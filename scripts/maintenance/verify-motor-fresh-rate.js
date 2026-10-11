@@ -179,6 +179,12 @@ check(
     ),
 );
 check(
+  "最初の開催だけ、2連率の列の見出しから「公式」を外す（2026-10-11 ユーザー決定）",
+  /firstMeet\s*\?\s*"analysis\.motor\.freshRate2Header"\s*:\s*"analysis\.motor\.officialRate2Header"/.test(
+    chart,
+  ),
+);
+check(
   "「※」は押しても行のドリルダウンを開かない（stopPropagation）",
   /className="motor-fresh-own-mark"[\s\S]{0,900}e\.stopPropagation\(\)/.test(
     chart,
@@ -226,6 +232,7 @@ const KEYS = [
   "freshPriorRuns",
   "freshFirstMeetBanner",
   "officialModeSourceNoteFresh",
+  "freshRate2Header",
 ];
 const BANNED =
   /数える|集計|算出|対象|似た|似ている|ふつう|いつも|競艇|tally|tallied/i;
@@ -250,6 +257,7 @@ check(
     ja.freshOwnExplain ===
       "公式の2連率がまだ出ていないモーターです。このレースより前の、この場での走り（{{n}}走）から出した2連率です" &&
     ja.freshPriorRuns === "前の節までの走り（{{n}}走）で出た数字" &&
+    ja.freshRate2Header === "2連率（節時点）" &&
     ja.freshFirstMeetBanner ===
       "{{venue}}は{{month}}月{{day}}日にモーターが新しくなりました。公式の2連率は次の節から入ります。それまでは、龍神レーダーがこの場での走りから出した数字を出します",
 );

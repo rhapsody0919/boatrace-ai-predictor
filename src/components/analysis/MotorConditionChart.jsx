@@ -763,8 +763,13 @@ function MotorConditionChart({
                       消さずに会場内順位の右へ移す（見比べられる位置は保つ）。過去レースは
                       2連率の列そのものが公式値なので、その列を棒にし、再計算の列は無い */}
                       {/* 過去レースもこの列は出走表時点の公式値なので、見出しは同じ（承認済みのモック） */}
+                      {/* 最初の開催は全艇が自前の値なので「公式」を外す（BOA-830、2026-10-11 ユーザー決定） */}
                       <th className="motor-wrap-head">
-                        {t("analysis.motor.officialRate2Header")}
+                        {t(
+                          firstMeet
+                            ? "analysis.motor.freshRate2Header"
+                            : "analysis.motor.officialRate2Header",
+                        )}
                       </th>
                       {showVenueRank && (
                         <th className="motor-wrap-head motor-venue-rank-head">

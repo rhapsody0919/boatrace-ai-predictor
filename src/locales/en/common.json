@@ -2671,7 +2671,8 @@
       "freshOwnHint": "Tap \"*\" to see where that number comes from.",
       "freshPriorRuns": "From starts up to the previous series ({{n}} starts)",
       "freshFirstMeetBanner": "{{venue}} switched to new motors on {{month}}/{{day}}. Official top-2 rates start from the next series. Until then, Ryujin Radar shows numbers worked out from the motors' starts at this venue",
-      "officialModeSourceNoteFresh": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card. For motors whose official value is 0, the \"Top-2 rate\" and \"Top-3 rate\", and the \"Power index\", are worked out by Ryujin Radar from the motor's starts at this venue before this race."
+      "officialModeSourceNoteFresh": "※ For past races, \"Top-2 rate\", \"Top-3 rate\" and \"Trial\" are the BOAT RACE official website values as of the race card. For motors whose official value is 0, the \"Top-2 rate\" and \"Top-3 rate\", and the \"Power index\", are worked out by Ryujin Radar from the motor's starts at this venue before this race.",
+      "freshRate2Header": "Top-2 (series start)"
     },
     "motorRanking": {
       "title": "🏁 Motor Ranking",

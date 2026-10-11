@@ -44,6 +44,9 @@ test("常滑 10/06 7R: 0走は「まだ走っていません」、1走で2着以
   await expect(page.locator(".motor-fresh-banner")).toHaveText(
     "常滑は10月6日にモーターが新しくなりました。公式の2連率は次の節から入ります。それまでは、龍神レーダーがこの場での走りから出した数字を出します",
   );
+  // 最初の開催は見出しから「公式」を外す（2026-10-11 ユーザー決定）
+  await expect(table.locator("thead")).toContainText("2連率（節時点）");
+  await expect(table.locator("thead")).not.toContainText("公式2連率");
   // 1号艇 20号機: この世代でこのレースより前に0走
   await expect(boatRow(table, 1).locator(".motor-rate-bar-cell")).toHaveText(
     "まだ走っていません",
@@ -81,6 +84,8 @@ test("唐津 9/30 3R: 公式が出ている艇は公式に「前の節までの�
   const table = await openMotorTab(page, "2026-09-30-23-03");
 
   await expect(page.locator(".motor-fresh-banner")).toHaveCount(0);
+  // 2節目以降（公式と自前の混在）は見出しを変えない
+  await expect(table.locator("thead")).toContainText("公式2連率（節時点）");
   // 1号艇 10号機: 公式 55.56（前の節まで9走）
   const official = boatRow(table, 1).locator(".motor-rate-bar-cell");
   await expect(official).toContainText("55.6%");

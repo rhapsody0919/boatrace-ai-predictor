@@ -2662,7 +2662,8 @@
       "freshOwnHint": "按下「※」即可看到該數字的來源。",
       "freshPriorRuns": "依上一節為止的出賽（{{n}}場）得出的數字",
       "freshFirstMeetBanner": "{{venue}}於{{month}}月{{day}}日更換了新馬達。官方2連率從下一節開始提供。在那之前，龍神雷達會顯示依此場地出賽得出的數字",
-      "officialModeSourceNoteFresh": "※ 過去的比賽中，「2連率」「3連率」「前檢」為出走表當時 BOAT RACE 官方網站的數值。但官方數值為0的馬達的「2連率」「3連率」，以及「機力指數」，是龍神雷達依本場比賽之前、在此場地的出賽得出的數值。"
+      "officialModeSourceNoteFresh": "※ 過去的比賽中，「2連率」「3連率」「前檢」為出走表當時 BOAT RACE 官方網站的數值。但官方數值為0的馬達的「2連率」「3連率」，以及「機力指數」，是龍神雷達依本場比賽之前、在此場地的出賽得出的數值。",
+      "freshRate2Header": "2連率（節次開始時）"
     },
     "motorRanking": {
       "title": "🏁 馬達排行榜",
