@@ -21,15 +21,38 @@ export const AI_CRAWLER_USER_AGENTS = [
   "DuckDuckBot",
 ];
 
+// 日替わりページ（/ と /venue/1〜24）のボット向け HTML を出す UA（ADR 0089 決定1）。
+// 今は AI_CRAWLER_USER_AGENTS と同じ。検索ボット（bingbot・Applebot・DuckDuckBot）だけ止めるときは、
+// ここから外す（ブログ等のスナップショットには残る）
+export const BOT_PAGE_USER_AGENTS = [...AI_CRAWLER_USER_AGENTS];
+
+const includesAny = (userAgent, list) =>
+  Boolean(userAgent) && list.some((ua) => userAgent.includes(ua));
+
 export function isTargetBot(userAgent) {
-  if (!userAgent) return false;
-  return AI_CRAWLER_USER_AGENTS.some((ua) => userAgent.includes(ua));
+  return includesAny(userAgent, AI_CRAWLER_USER_AGENTS);
 }
 
-// pathname + User-Agentから、配信すべきスナップショットの相対パスを返す（対象外はnull）
+// 人の URL と同じ 1〜24（0埋めなし）。api/_lib/botPage.js の VENUE_CODE と同じ範囲
+const BOT_PAGE_VENUE_PATH = /^\/venue\/([1-9]|1\d|2[0-4])$/;
+
+// 日本語の / と /venue/1〜24 だけ（ADR 0089 決定2）。言語の接頭辞付き・/venue/01・範囲外は null
+function resolveBotPagePath(pathname, userAgent) {
+  if (!includesAny(userAgent, BOT_PAGE_USER_AGENTS)) return null;
+  if (pathname === "/") return "/api/bot-page/top";
+  const venueMatch = pathname.match(BOT_PAGE_VENUE_PATH);
+  if (venueMatch) return `/api/bot-page/venue/${venueMatch[1]}`;
+  return null;
+}
+
+// pathname + User-Agentから、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
+// 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）
 // ⚠️ ここに対象を足したら middleware.js の config.matcher にも同じパスを足すこと。
 //    Vercel は matcher に一致したパスでしか middleware を起動しないため、片方だけでは配信されない
 export function resolveSnapshotPath(pathname, userAgent) {
+  const botPagePath = resolveBotPagePath(pathname, userAgent);
+  if (botPagePath) return botPagePath;
+
   if (!isTargetBot(userAgent)) return null;
 
   if (pathname === "/winning-technique") {

@@ -12,6 +12,9 @@
  *    パスワードは最初の ":" だけで分割、方式名 "Basic" は大文字小文字を区別しない、UTF-8 で復号）
  * 6. 検索・ユーザー起点の取得に使う UA（OAI-SearchBot・bingbot 等）もスナップショットに振り分け、
  *    Googlebot と人間のブラウザは振り分けない
+ * 7. 日本語の / と /venue/1〜24 は、配る UA のときだけ関数（/api/bot-page/*）へ振り分ける（ADR 0089）。
+ *    /venue/01・範囲外・数字以外・言語の接頭辞付き・/races/… は振り分けない。
+ *    rewrite 先に元のクエリ文字列を持ち込まない（CDN キャッシュのキーを増やさない）
  *
  * Vercel の matcher は path-to-regexp 構文。このリポジトリが使う
  * 「固定パス」と「/prefix/:path*」の2形だけを解釈し、それ以外の形が足されたら
@@ -19,7 +22,11 @@
  */
 
 import middleware, { config } from "../../middleware.js";
-import { resolveSnapshotPath } from "../../src/config/aiCrawlerBots.js";
+import {
+  AI_CRAWLER_USER_AGENTS,
+  BOT_PAGE_USER_AGENTS,
+  resolveSnapshotPath,
+} from "../../src/config/aiCrawlerBots.js";
 
 const USER = "verify-user";
 const PASSWORD = "verify-pass";
@@ -304,6 +311,110 @@ for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
     resolveSnapshotPath("/blog/some-article", ua) === null,
   );
 }
+
+console.log(
+  "[6] 日替わりページ（/ と /venue/1〜24）は配る UA のときだけ関数へ振り分ける（ADR 0089）",
+);
+const ORIGIN = "https://www.boat-ai.jp";
+const BOT_PAGE_UAS = {
+  GPTBot: BOT_UA,
+  ...SEARCH_BOT_UAS,
+};
+const BOT_PAGE_ROUTES = [
+  ["/", "/api/bot-page/top"],
+  ["/venue/1", "/api/bot-page/venue/1"],
+  ["/venue/9", "/api/bot-page/venue/9"],
+  ["/venue/10", "/api/bot-page/venue/10"],
+  ["/venue/24", "/api/bot-page/venue/24"],
+];
+for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+  for (const [path, target] of BOT_PAGE_ROUTES) {
+    check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
+    const res = await call(path, { ua });
+    check(
+      `${name} ${path} → ${target}`,
+      res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
+      describe(res),
+    );
+  }
+}
+for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+  for (const [path] of BOT_PAGE_ROUTES) {
+    const res = await call(path, { ua });
+    check(
+      `${name} ${path} → 素通り（SPA のまま）`,
+      res === undefined,
+      describe(res),
+    );
+  }
+}
+const NOT_BOT_PAGE_PATHS = [
+  "/venue/01",
+  "/venue/0",
+  "/venue/25",
+  "/venue/99",
+  "/venue/abc",
+  "/venue/1/",
+  "/venue/1/extra",
+  "/venue",
+  "/en/venue/1",
+  "/en/",
+  "/en",
+  "/zh-TW/venue/1",
+  "/races/2026-10-11/1",
+  "/race/20260929-01-01",
+];
+for (const path of NOT_BOT_PAGE_PATHS) {
+  for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+    const res = await call(path, { ua });
+    check(
+      `${name} ${path} → 素通り（SPA のまま）`,
+      res === undefined,
+      describe(res),
+    );
+  }
+}
+// rewrite 先に元のクエリを持ち込まない。/?x=1 と /?x=2 が同じ rewrite 先になる
+for (const [path, target] of [
+  ["/?x=1", "/api/bot-page/top"],
+  ["/?x=2", "/api/bot-page/top"],
+  ["/venue/1?x=1", "/api/bot-page/venue/1"],
+  ["/venue/1?x=2", "/api/bot-page/venue/1"],
+  ["/venue/1?date=2026-10-01", "/api/bot-page/venue/1"],
+]) {
+  const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
+  check(
+    `bingbot ${path} → ${target}（クエリを持ち込まない）`,
+    res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
+    describe(res),
+  );
+}
+// 既存のスナップショット（ブログ・/winning-technique・/today）の振り分けは変わらない
+for (const path of ["/winning-technique", "/today", "/blog/some-article"]) {
+  check(
+    `${path} は静的スナップショットのまま`,
+    resolveSnapshotPath(path, SEARCH_BOT_UAS.bingbot)?.startsWith(
+      "/ai-snapshots/",
+    ) ?? false,
+  );
+}
+// 関数の受ける会場コード（api/_lib/botPage.js）と、振り分ける会場コードが同じ 1〜24
+{
+  const { venueCodeFromUrl } = await import("../../api/_lib/botPage.js");
+  for (const code of ["0", "01", "1", "24", "25", "abc"]) {
+    const routed = resolveSnapshotPath(`/venue/${code}`, BOT_UA);
+    const accepted = venueCodeFromUrl(`/api/bot-page/venue/${code}`) !== null;
+    check(
+      `/venue/${code}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
+      Boolean(routed) === accepted,
+    );
+  }
+}
+check(
+  "ページ単位の UA 集合は AI_CRAWLER_USER_AGENTS の部分集合（Googlebot を含まない）",
+  BOT_PAGE_USER_AGENTS.every((ua) => AI_CRAWLER_USER_AGENTS.includes(ua)) &&
+    !BOT_PAGE_USER_AGENTS.some((ua) => /googlebot/i.test(ua)),
+);
 
 if (failures.length > 0) {
   console.error(`\nNG: ${failures.length}件失敗`);
