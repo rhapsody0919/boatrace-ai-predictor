@@ -266,8 +266,10 @@ function VenueRaceListPage() {
         { name: venueName, url: `/races/${date}/${venueCode}` },
       ];
 
+  // 本日の会場ページは4言語で出すので、canonical も表示中の言語の URL にする（hreflang・sitemap と合わせる）。
+  // 過去日付は ja 専用
   const canonicalPath = isToday
-    ? `/venue/${venueCode}`
+    ? localize(`/venue/${venueCode}`)
     : `/races/${date}/${venueCode}`;
 
   // /races/:date/:venueCode（過去日付）はja専用パス（TRANSLATED_PATHS未登録）のため、

@@ -152,7 +152,7 @@ function MeetPage() {
           <meta name="description" content={metaDescription} />
           <link
             rel="canonical"
-            href={`https://www.boat-ai.jp${canonicalPath}`}
+            href={`https://www.boat-ai.jp${localize(canonicalPath)}`}
           />
         </>
       )}
