@@ -33,6 +33,8 @@ const EDGE_FUNCTIONS = {
   "api/race-history/summary.js": CACHE_PATTERNS.DAILY_BATCH,
   "api/outcome-distribution/index.js": CACHE_PATTERNS.DAILY_BATCH,
   "api/races/today.js": CACHE_PATTERNS.REALTIME,
+  // ボット向け HTML の関数（ADR 0089）。材料の api/races/today.js と同じ s-maxage・swr
+  "api/_lib/botPage.js": CACHE_PATTERNS.REALTIME,
 };
 
 async function verifyCacheConfig() {
