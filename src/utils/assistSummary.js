@@ -236,11 +236,12 @@ const rateOfPair = (p) => (p?.[1] ? p[0] / p[1] : null);
  * @param {object|null} national 全国（NA）の scenario
  * @param {string} form
  * @param {(number|null)[]|null} exhRanks
- * @returns {null | {n: number, att: object|null, b1: object}} 各艇: {boat, rank, today, rows: [{band, k, n}], nat: (number|null)[]|null}
+ * @returns {null | {n: number, att: object|null, b1: object|null}} 各艇: {boat, rank, today, rows: [{band, k, n}], nat: (number|null)[]|null}
  */
 export function exhBands(scenario, national, form, exhRanks) {
+  // 攻める艇の無い形（横一線・内3艇そろう）は by_exh が無く、1号艇の区分（b1_by_exh）だけある
   const a = scenario?.attack?.[form];
-  if (!a?.by_exh) return null;
+  if (!a?.by_exh && !a?.b1_by_exh) return null;
   const na = national?.attack?.[form] ?? null;
   const ok =
     exhRanks?.length === 6 && exhRanks.every((r) => r != null) ? exhRanks : null;
@@ -260,8 +261,11 @@ export function exhBands(scenario, national, form, exhRanks) {
   };
   return {
     n: a.all?.n ?? 0,
-    att: a.attacker ? side(a.by_exh, na?.by_exh, "att_win", a.attacker) : null,
-    b1: side(a.b1_by_exh, na?.b1_by_exh, "b1_nige", 1),
+    att:
+      a.attacker && a.by_exh
+        ? side(a.by_exh, na?.by_exh, "att_win", a.attacker)
+        : null,
+    b1: a.b1_by_exh ? side(a.b1_by_exh, na?.b1_by_exh, "b1_nige", 1) : null,
   };
 }
 

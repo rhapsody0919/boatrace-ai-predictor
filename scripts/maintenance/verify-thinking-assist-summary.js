@@ -223,6 +223,11 @@ check(
   exhBands(nc, na, "d2", [2, 2, null, 1, 5, 3]).att.today === null &&
     exhBands(nc, na, "nope", [2, 2, 4, 1, 6, 4]) === null,
 );
+check(
+  "今日の展示を入れると: 攻める艇の無い形（横一線）は1号艇の逃げの区分だけ出す（/code-review 指摘）",
+  exhBands(nc, na, "flat", [2, 2, 4, 1, 6, 4])?.att === null &&
+    exhBands(nc, na, "flat", [2, 2, 4, 1, 6, 4])?.b1?.today === "top",
+);
 {
   const rs = [1, 2, 3, 4, 5, 6].map((boat) => ({ boat, absent: false }));
   const org = {

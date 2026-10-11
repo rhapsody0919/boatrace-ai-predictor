@@ -351,12 +351,16 @@ function ExhBandsBox({ post, bands, formLabel }) {
           {natLine(att, true)}
         </>
       )}
-      <p className="ta-note">
-        <b>{C.exhB1Title(b1.rank)}</b>
-      </p>
-      <BandRows side={b1} />
-      {natLine(b1, false)}
-      <p className="ta-note">{C.exhB1Note}</p>
+      {b1 && (
+        <>
+          <p className="ta-note">
+            <b>{C.exhB1Title(b1.rank)}</b>
+          </p>
+          <BandRows side={b1} />
+          {natLine(b1, false)}
+          <p className="ta-note">{C.exhB1Note}</p>
+        </>
+      )}
     </section>
   );
 }
