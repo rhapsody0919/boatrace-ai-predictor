@@ -87,6 +87,7 @@ import { getVenueGuidePath } from "../../utils/venueUtils";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
+import AssistEntryRow from "./assist/AssistEntryRow";
 import VenueTendencyPanel from "./VenueTendencyPanel";
 import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
 import RacerFormChart from "../analysis/RacerFormChart";
@@ -409,6 +410,8 @@ function PredictionPanel({
           タブの統合（枠別情報＋モータ情報など）はしない。8→6にしても334pxに
           入るのは4つのままで、可視数が1つも増えないのに、統合後のタブが縦に
           長くなる（タブを跨ぐのは1タップだが、縦スクロールは何回もスワイプする）。 */}
+      {/* タブ列のすぐ上の思考アシストの入口（BOA-832） */}
+      {venueCode && analysisRaceId && <AssistEntryRow raceId={analysisRaceId} />}
       {venueCode && analysisRaceId && (
         <RaceTabs
           key={analysisRaceId}

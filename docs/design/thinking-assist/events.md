@@ -8,7 +8,7 @@
 
 | イベント | パラメータ | いつ送るか |
 |---|---|---|
-| `assist_view_switch` | race_id, assist_view | 上部の切り替えで、もう一方へ移ったとき（レース詳細・思考アシストの両方）。選択中の方の押し直しは送らない |
+| `assist_view_switch` | race_id, assist_view, assist_entry | 上部の切り替えで、もう一方へ移ったとき（レース詳細・思考アシストの両方）。選択中の方の押し直しは送らない。タブ列のすぐ上の1行（BOA-832）から思考アシストへ移ったときも送る |
 | `assist_lens_select` | race_id, assist_lens | レンズを押して変えたとき。選択中のレンズの押し直しは送らない。ガイドの段で変わったときは送らない（`assist_guide_step` で分かる） |
 | `assist_deep_open` | race_id, assist_boat, assist_lens | 図の艇を押して深掘りを開いたとき・別の艇に替えたとき。開いている艇の押し直し（閉じる）は送らない |
 | `assist_metric_compare` | race_id, assist_metric, assist_lens | 値を押して6艇比較にしたとき（図の中・深掘りの中の両方）。比較中の項目の押し直し（戻す）は送らない |
@@ -20,6 +20,7 @@
 | パラメータ | 値 |
 |---|---|
 | assist_view | `race`（出走表とタブ）/ `assist`（思考アシスト） |
+| assist_entry | `top`（上部の切り替え）/ `tab_row`（タブ列のすぐ上の1行、BOA-832） |
 | assist_lens | `axis`（軸）/ `flow`（展開）/ `power`（機力）/ `bet`（買い目）。`assist_deep_open`・`assist_metric_compare` では押したときのレンズ |
 | assist_boat | 1〜6 |
 | assist_metric | `nat_win` 全国勝率 / `loc_win` 当地勝率 / `st_mean30` 平均ST（直近30走） / `st_course` 平均ST（このコース） / `motor_2` モーター2連率 / `exh_time` 展示タイム / `exh_st` 展示ST / `series_score` 今節の平均着順点 |
@@ -28,7 +29,7 @@
 
 ## 約束
 
-- 送るかどうかと中身は `src/utils/assistEvents.js` の `assistEventOf`（押す前の状態と操作から決める純関数）。切り替えだけは `AssistViewSwitch.jsx`
+- 送るかどうかと中身は `src/utils/assistEvents.js` の `assistEventOf`（押す前の状態と操作から決める純関数）。切り替えだけは `AssistViewSwitch.jsx` と `AssistEntryRow.jsx`
 - パラメータ名に GA4 の予約語（source・medium・campaign・term・content・id 等）を使わない。#656 で、カスタムイベントの `source` がセッションの流入元を Unassigned にした
 - 再現テスト: `scripts/maintenance/verify-thinking-assist-model.js`（名前・パラメータ・押し直しで送らない）、`e2e/thinking-assist-states.spec.js`「GA4 のイベント」（画面の操作から実際に送られる順と中身）
 
@@ -41,6 +42,7 @@
 | ディメンション名 | 範囲 | 説明 | イベント パラメータ |
 |---|---|---|---|
 | アシストの表示 | イベント | 上部の切り替えで移った先（race=出走表とタブ / assist=思考アシスト） | `assist_view` |
+| アシストの入口 | イベント | 思考アシストへ移った入口（top=上部の切り替え / tab_row=タブ列のすぐ上の1行） | `assist_entry` |
 | アシストのレンズ | イベント | 思考アシストのレンズ（axis / flow / power / bet） | `assist_lens` |
 | アシストの艇 | イベント | 思考アシストで深掘りを開いた艇番（1〜6） | `assist_boat` |
 | アシストの比較項目 | イベント | 思考アシストで6艇比較にした項目（nat_win・st_mean30 等） | `assist_metric` |

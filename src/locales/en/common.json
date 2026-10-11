@@ -145,7 +145,10 @@
       "raceCard": "Race card & tabs",
       "assist": "Thinking Assist",
       "new": "New",
-      "note": "Data and theories in the order to check them"
+      "note": "Data and theories laid out in an order you can read without getting lost"
+    },
+    "assistEntry": {
+      "lead": "To check the factors in order"
     },
     "metaTitle": "{{venue}} Race {{race}} AI data analysis ({{date}}) - Ryujin Radar",
     "metaDescription": "Free race data table, AI data analysis and first-turn prediction for {{venue}} Race {{race}} on {{date}}.",
