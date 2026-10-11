@@ -2866,9 +2866,13 @@ export const supabaseDataService = {
             softFail("節の初日", null),
           )
         : null,
-      isAllOfficialMotorRateZero(venueCode, raceDate).catch(
-        softFail("公式2連率の確認", false),
-      ),
+      // 最初の節は、入れ替えから90日以内で、このレースにも公式0の艇があるときだけ確かめる。
+      // 公式の値が取れていない日（全行 null）を、何か月後でも最初の節と取り違えないため
+      fresh && official.some((v) => v === 0)
+        ? isAllOfficialMotorRateZero(venueCode, raceDate).catch(
+            softFail("公式2連率の確認", false),
+          )
+        : false,
     ]);
     // 節の初日より前（race_id < "YYYY-MM-DD"）の走数。公式は節の途中で変わらないので、
     // 公式の値はこの走りで出た数字

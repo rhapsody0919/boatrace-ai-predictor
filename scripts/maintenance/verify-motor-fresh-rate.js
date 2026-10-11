@@ -198,6 +198,12 @@ check(
     ),
 );
 check(
+  "サービス: 最初の節の確認は、入れ替えから90日以内でこのレースに公式0の艇があるときだけ（セルフレビュー）",
+  /fresh && official\.some\(\(v\) => v === 0\)\s*\?\s*isAllOfficialMotorRateZero\(/.test(
+    service,
+  ),
+);
+check(
   "サービス: 一覧のキャッシュの版を上げた（v10 には自前の値の列が無い）",
   service.includes("`race-motor-breakdown-v11-") &&
     !service.includes("`race-motor-breakdown-v10-"),
