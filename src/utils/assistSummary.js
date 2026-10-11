@@ -195,8 +195,53 @@ export function hintSummary(scenario, today) {
 }
 
 /**
+ * 3連単の件数 → よく出た2連単（1着-2着）の多い順。同数は組み合わせの昇順（trifectaList と同じ）
+ * @param {Record<string, number>} tri
+ * @returns {Array<[number[], number]>}
+ */
+export function exactaList(tri) {
+  const sum = new Map();
+  for (const [x, c] of trifectaList(tri)) {
+    const key = `${x[0]}-${x[1]}`;
+    sum.set(key, (sum.get(key) ?? 0) + c);
+  }
+  return [...sum]
+    .map(([k, c]) => [k.split("-").map(Number), c])
+    .sort((a, b) => b[1] - a[1] || a[0].join("").localeCompare(b[0].join("")));
+}
+
+/**
+ * 1号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)）。範囲は軸の大きい数字と同じ範囲キーの scenario。
+ * 全体のセル（cells.all.forms.any）の3連単から、1着が boat の組だけで数える（返還のあったレースは scenario 側で除かれている）
+ * @param {object|null} scenario scenario の応答の scenario
+ * @returns {null | {n: number, second: number[], third: number[], topTrifecta: Array<[number[], number]>, few: boolean}}
+ *   second・third は1〜6号艇の件数（boat 自身は0）
+ */
+export function winFollowers(scenario, boat = 1) {
+  const rows = trifectaList(scenario?.cells?.all?.forms?.any?.tri, {
+    first: boat,
+  });
+  const n = rows.reduce((a, [, c]) => a + c, 0);
+  if (!n) return null;
+  const second = [0, 0, 0, 0, 0, 0];
+  const third = [0, 0, 0, 0, 0, 0];
+  for (const [x, c] of rows) {
+    second[x[1] - 1] += c;
+    third[x[2] - 1] += c;
+  }
+  return {
+    n,
+    second,
+    third,
+    topTrifecta: rows.slice(0, 3),
+    few: n < MIN_SCENARIO,
+  };
+}
+
+/**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）
- * @returns {null | {form: string, n: number, first: number[], topTrifecta: Array<[number[], number]>, attacker: number|null, few: boolean}}
+ * よく出た2連単（上位5つ）は BOA-831 案2（spec D-44 (4)）
+ * @returns {null | {form: string, n: number, first: number[], topExacta: Array<[number[], number]>, topTrifecta: Array<[number[], number]>, attacker: number|null, few: boolean}}
  */
 export function formSummary(scenario, form) {
   const cell = scenario?.cells?.waku?.forms?.[form];
@@ -205,6 +250,7 @@ export function formSummary(scenario, form) {
     form,
     n: cell.n,
     first: cell.first_boat,
+    topExacta: exactaList(cell.tri).slice(0, 5),
     topTrifecta: trifectaList(cell.tri).slice(0, 3),
     attacker: ATTACK_BOAT[form] ?? null,
     few: cell.n < MIN_SCENARIO,

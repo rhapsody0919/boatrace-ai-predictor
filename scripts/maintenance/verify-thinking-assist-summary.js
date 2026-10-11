@@ -26,6 +26,8 @@ import {
   factChips,
   factsScope,
   axisWhyKinds,
+  exactaList,
+  winFollowers,
   featChips,
   formSummary,
   hintSummary,
@@ -752,6 +754,60 @@ check(
           venueRefund: true,
         }),
       ) === '["fellBack"]',
+  );
+}
+
+// ---- 1号艇が1着のときの2着・3着（案1b）・よく出た2連単（案2）（BOA-831、spec D-44 (3)(4)）----
+{
+  const ncrSc = fx.scenario["NCR:2-2-2-0:1B1:junyu"].scenario;
+  const f = winFollowers(ncrSc);
+  check(
+    "案1b: 準優勝戦の範囲で1号艇が1着の65件、2着 2〜6号艇 25・18・11・7・4件、3着 14・16・20・9・6件（承認モック v2 の値）",
+    f?.n === 65 &&
+      JSON.stringify(f.second) === "[0,25,18,11,7,4]" &&
+      JSON.stringify(f.third) === "[0,14,16,20,9,6]" &&
+      f.few === false,
+    JSON.stringify(f),
+  );
+  check(
+    "案1b: 2着・3着の件数の合計は1号艇が1着の件数と一致（1号艇自身は0）",
+    f.second.reduce((a, b) => a + b, 0) === f.n &&
+      f.third.reduce((a, b) => a + b, 0) === f.n &&
+      f.second[0] === 0,
+  );
+  check(
+    "案1b: 1号艇が1着の組が無ければ null、30件未満は few（割合を出さない）",
+    winFollowers({
+      cells: { all: { forms: { any: { tri: { "2-1-3": 5 } } } } },
+    }) === null &&
+      winFollowers({
+        cells: { all: { forms: { any: { tri: { "1-2-3": 5 } } } } },
+      })?.few === true,
+  );
+  const ex = formSummary(nc, "d2")?.topExacta;
+  check(
+    "案2: 2コース凹みのよく出た2連単 1-3（24件）・1-4（17件）・1-2（14件）・3-1（13件）・3-4（12件）",
+    JSON.stringify(ex) ===
+      "[[[1,3],24],[[1,4],17],[[1,2],14],[[3,1],13],[[3,4],12]]",
+    JSON.stringify(ex),
+  );
+  check(
+    "2連単: 3連単を1着-2着でまとめ、同数は組み合わせの昇順",
+    JSON.stringify(
+      exactaList({ "1-2-3": 2, "1-2-4": 1, "2-1-3": 3, "1-3-2": 3 }),
+    ) === "[[[1,2],3],[[1,3],3],[[2,1],3]]",
+  );
+  check(
+    "案1b の言葉: 札・同じレース・返還",
+    ASSIST_COPY.followScope(
+      "全国・級の並びが同じ準優勝戦（1号艇がB1）",
+      1,
+      65,
+    ) === "全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件" &&
+      ASSIST_COPY.followSame(65, 119) ===
+        "65件は上の 65/119 の65と同じレース" &&
+      ASSIST_COPY.followRefund(60, 65) ===
+        "返還のあったレースは除く（上の65件のうち60件）",
   );
 }
 

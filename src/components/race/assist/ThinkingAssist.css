@@ -1896,3 +1896,53 @@
   color: var(--text-secondary);
   font-weight: var(--font-weight-normal);
 }
+
+/* ---- 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、承認モック v2） ---- */
+.ta-follow {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.ta-follow th,
+.ta-follow td {
+  padding: var(--spacing-1) 0;
+  text-align: left;
+  font-weight: var(--font-weight-normal);
+}
+
+.ta-follow thead th {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-secondary);
+}
+
+.ta-follow th[scope="row"] {
+  width: 32px;
+}
+
+.ta-follow td {
+  padding-right: var(--spacing-2);
+}
+
+.ta-follow-cell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 3em;
+  gap: var(--spacing-1-5);
+  align-items: center;
+  text-align: right;
+}
+
+.ta-follow-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border-hairline);
+  overflow: hidden;
+}
+
+.ta-follow-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--color-info-text);
+}

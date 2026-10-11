@@ -1845,3 +1845,39 @@ test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831�
     ]);
   });
 });
+
+test.describe("思考アシスト: 1号艇が1着のときの2着・3着と、よく出た2連単（BOA-831、spec D-44 (3)(4)）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("軸に2〜6号艇の2着・3着の表（準優勝戦の範囲・65件）があり、着順の切り替えでは変わらない。展開の形によく出た2連単", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const sum = page.locator(".ta-sum");
+    const box = sum.locator("section", {
+      has: page.getByRole("heading", {
+        name: "1号艇が1着のとき、2着・3着に来たのは",
+      }),
+    });
+    await expect(box).toBeVisible();
+    await expect(box).toContainText(
+      "全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件",
+    );
+    const row = (b) => box.getByRole("row", { name: new RegExp(`^${b}号艇`) });
+    await expect(row(2)).toContainText("38%");
+    await expect(row(2)).toContainText("22%");
+    await expect(row(4)).toContainText("31%");
+    await expect(box).toContainText("65件は上の 65/119 の65と同じレース");
+    await page
+      .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+      .getByRole("button", { name: "3着以内" })
+      .click();
+    await expect(row(2)).toContainText("38%");
+
+    await lensTab(page, "展開").click();
+    await expect(sum).toContainText(
+      "よく出た2連単: 1-3（24件）　1-4（17件）　1-2（14件）　3-1（13件）　3-4（12件）",
+    );
+  });
+});

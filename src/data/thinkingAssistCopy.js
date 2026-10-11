@@ -234,6 +234,17 @@ export const ASSIST_COPY = Object.freeze({
   // 軸・買い目の着順の切り替え（BOA-831、spec D-44）。言葉は龍神ソナーと同じ
   targets: TARGET_LABEL,
   targetGroup: "何着までで見るか（軸・買い目で共通）",
+  // 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、spec D-44 (3)）
+  followHeading: (boat) => `${boat}号艇が1着のとき、2着・3着に来たのは`,
+  followScope: (label, boat, n) =>
+    `${label} ${boat}号艇が1着の${n.toLocaleString("ja-JP")}件`,
+  followBoatCol: "艇",
+  followPos: (k) => `${k}着`,
+  followCount: (k) => `${k.toLocaleString("ja-JP")}件`,
+  followSame: (k, n) =>
+    `${k.toLocaleString("ja-JP")}件は上の ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")} の${k.toLocaleString("ja-JP")}と同じレース`,
+  followRefund: (k, axisK) =>
+    `返還のあったレースは除く（上の${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
   axisSub: Object.freeze({
     1: "誰が1着候補か",
     2: "2着までに残るか",
@@ -318,6 +329,8 @@ export const ASSIST_COPY = Object.freeze({
     `${label}・枠なり ${n.toLocaleString("ja-JP")}件`,
   flowFirstBoat: "1着の艇",
   flowTopTrifecta: "よく出た3連単",
+  // もし{形}になったら の1着-2着の組（BOA-831 案2、spec D-44 (4)）
+  flowTopExacta: "よく出た2連単",
   flowFew: "件数が少ないので割合は出していない",
   entryHeading: "進入",
   entryToday: (type) => `今日の展示は${type}`,
