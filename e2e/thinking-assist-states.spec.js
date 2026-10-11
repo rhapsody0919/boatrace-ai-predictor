@@ -1853,3 +1853,141 @@ test.describe("思考アシスト: 軸・買い目で共通の着順（BOA-831�
     ]);
   });
 });
+
+test.describe("思考アシスト: 1号艇が1着のときの2着・3着と、よく出た2連単（BOA-831、spec D-44 (3)(4)）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test("軸に2〜6号艇の2着・3着の表（準優勝戦の範囲・65件）があり、着順の切り替えでは変わらない。展開の形によく出た2連単", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    const sum = page.locator(".ta-sum");
+    const box = sum.locator("section", {
+      has: page.getByRole("heading", {
+        name: "1号艇が1着のとき、2着・3着に来たのは",
+      }),
+    });
+    await expect(box).toBeVisible();
+    await expect(box).toContainText(
+      "全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件",
+    );
+    const row = (b) => box.getByRole("row", { name: new RegExp(`^${b}号艇`) });
+    await expect(row(2)).toContainText("38%");
+    await expect(row(2)).toContainText("22%");
+    await expect(row(4)).toContainText("31%");
+    await expect(box).toContainText("65件は上の 65/119 の65と同じレース");
+    await page
+      .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+      .getByRole("button", { name: "3着以内" })
+      .click();
+    await expect(row(2)).toContainText("38%");
+    // 上の大きい数字が 94/119 のときは「上の 65/119」を指さない（ファン評価 1周目 指摘2）
+    await expect(box).toContainText(
+      "65件は、同じ範囲で1号艇が1着になった 65/119レースと同じ",
+    );
+    await expect(box).not.toContainText("上の 65/119");
+
+    await lensTab(page, "展開").click();
+    await expect(sum).toContainText(
+      "よく出た2連単: 1-3（24件）　1-4（17件）　1-2（14件）　3-1（13件）　3-4（12件）",
+    );
+  });
+});
+
+test.describe("思考アシスト: 買い目を同じタブの中に残す（2026-10-11 ユーザーの不具合報告）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  // 出走表とタブ・龍神ソナーの画面を挟むので、ほかの思考アシストのテストより重い（単独で約60秒）
+  test.setTimeout(150000);
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  async function markSheet(page) {
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    for (const [boat, pos] of [
+      [1, 1],
+      [2, 2],
+      [3, 2],
+      [2, 3],
+      [3, 3],
+      [4, 3],
+    ])
+      await sheet
+        .getByRole("button", { name: `${boat}号艇を${pos}着の候補に` })
+        .click();
+    await sheet.getByRole("spinbutton", { name: "予算" }).fill("2000");
+    await page.getByRole("button", { name: "閉じる", exact: true }).click();
+    await expect(footer(page)).toContainText("1-23-234（4点）");
+  }
+
+  test("マークシートの印・予算・着順・レンズは、龍神ソナーへ移ってブラウザで戻っても残る", async ({
+    page,
+  }) => {
+    await open(page);
+    await markSheet(page);
+    await page
+      .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+      .getByRole("button", { name: "3着以内" })
+      .click();
+    await lensTab(page, "買い目").click();
+    await page
+      .getByRole("link", { name: /龍神ソナー/ })
+      .first()
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/race/${RACE_ID}\\?tab=aiPrediction`),
+    );
+    await page.goBack();
+    await expect(page).toHaveURL(/\/assist$/);
+    await expect(footer(page)).toContainText("1-23-234（4点）");
+    await expect(lensTab(page, "買い目")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(
+      page
+        .getByRole("group", { name: "何着までで見るか（軸・買い目で共通）" })
+        .getByRole("button", { name: "3着以内" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    await expect(
+      page
+        .getByRole("dialog", { name: "マークシート" })
+        .getByRole("spinbutton", { name: "予算" }),
+    ).toHaveValue("2000");
+  });
+
+  test("上部の切り替えで出走表とタブへ移って戻る・再読み込みでも残る。保存はレースごとのキー", async ({
+    page,
+  }) => {
+    await open(page);
+    await markSheet(page);
+    await page
+      .getByRole("group", { name: "表示" })
+      .getByRole("button", { name: "出走表とタブ" })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/race/${RACE_ID}$`));
+    await page
+      .getByRole("group", { name: "表示" })
+      .getByRole("button", { name: /思考アシスト/ })
+      .click();
+    await expect(page).toHaveURL(/\/assist$/);
+    await expect(footer(page)).toContainText("1-23-234（4点）");
+    await page.reload();
+    await expect(footer(page)).toContainText("1-23-234（4点）", {
+      timeout: 20000,
+    });
+    const keys = await page.evaluate(() =>
+      Object.keys(sessionStorage).filter((k) =>
+        k.startsWith("boatai-user:assist:"),
+      ),
+    );
+    expect(keys).toEqual([`boatai-user:assist:${RACE_ID}`]);
+  });
+});

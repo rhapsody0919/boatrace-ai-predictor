@@ -5,6 +5,7 @@ BOA-161（ブログ記事のOGP/Twitterカード未反映バグ）の調査で�
 ## 事実
 
 - boatAIは `vercel.json` で `/((?!api/).*) → /index.html` のみを行う純粋なクライアントサイドSPA（React + Vite）。SSR・プリレンダリングの仕組みは無い。
+  - （2026-10-11 注記）例外として、AI クローラー・SNS のシェア用ボットにだけ、ビルド時に作った静的 HTML を返している（ADR 0032。`middleware.js`・`src/config/aiCrawlerBots.js`・`scripts/generate-ai-snapshots.js`）。返すのは日本語のブログ記事・`/winning-technique`・`/today` だけで、トップ・会場・レース詳細・選手・翻訳ページは今も JS を実行しないと中身が無い。Googlebot には出し分けない
 - ページ固有の `<title>` / `<meta>` / `<link rel="canonical">` タグは、Reactコンポーネントがマウントされた後にJavaScriptで書き換えられる。
 - Googlebot、および一部のX(Twitter)クローラーはJSレンダリングに対応しているため、`title` / `meta description` / 構造化データ（JSON-LD）等はReactでの実装で正しく取得できる。
 - Facebookなど**JavaScriptを実行しないクローラー**は、初期HTML（`index.html` に静的に書かれたタグ）しか見ない。ReactコンポーネントがJSで書き換えたページ固有のOGP/Twitterカードタグは反映されない。
