@@ -18,3 +18,10 @@
 
 ## 専任のデータ分析レーンは無い
 - 分析は BOA-271 の学習側・実装側レーンが行った（Phase M、slit-hint）。問い合わせは Orchestrate 経由（2026-10-11）
+
+## 思考アシスト
+- 2〜6号艇が1着のレースを「その艇の級でそろえた範囲（VC/NC）」で見ると中央値69件、30件未満24%、6号艇は57%。会場の全レース（VA）なら中央値1,698件・最小342件（6号艇、10%点400件）（10/8〜10/11の600R×5艇、docs/design/thinking-assist/analysis/boa845-axis-place.md、2026-10-12）
+- 2〜6号艇が1着のときの2着は軸で変わる: 1号艇+11〜+22pt、2号艇−6〜−12pt、4が1着なら5が+6pt。無条件の値より2着の Brier が3.4%良い（区間 [2.8, 4.0]%、学習〜2026-03・検証2026-04〜09の12,462R）（docs/design/thinking-assist/analysis/boa845-axis-place.md、2026-10-12）
+- 1着だけを条件にした3着は、相手の無条件の3着率より良くならない（Brier −0.24%、区間は0をまたぐ）（docs/design/thinking-assist/analysis/boa845-axis-place.md、2026-10-12）
+- 級でそろえた範囲の条件付きの率は30件未満だと無条件より悪い（2着 Brier 0.8123 対 0.7856）。30件未満は割合を出さず、件数が足りる範囲へ広げる（docs/design/thinking-assist/analysis/boa845-axis-place.md、2026-10-12）
+- 2〜6号艇の1着時の2着・3着は、1号艇の範囲・会場の全レース・全国の scenario（tri）からバッチの変更なしで出せる（src/utils/assistSummary.js の winFollowers の boat 引数、api/analogy/scenario の scope=VA）（docs/design/thinking-assist/analysis/boa845-axis-place.md、2026-10-12）
