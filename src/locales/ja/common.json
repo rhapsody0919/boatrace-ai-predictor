@@ -2638,8 +2638,6 @@
       "venueRankBadgeTied": "{{rank}}位タイ／{{total}}機中（{{value}}%）",
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "初下ろし",
-      "officialPendingBadge": "集計前",
-      "officialPendingNote": "「集計前」は、このモーターが初めて使われている節の途中で、公式の2連率の累計がまだ付いていない（その節が終わるまで0.0のまま）ことを示します。",
       "venueStatsFailedCell": "取得失敗",
       "venueStatsFailedNote": "会場公式サイトのモーター成績（1着率・優出数・優勝数）を取得できませんでした。「取得失敗」の欄は、ページを再読み込みすると取り直します。",
       "wakuStatsHeading": "コース別成績",
@@ -2655,7 +2653,16 @@
       "racerWakuNote": "💡 現行モーターの使用開始以降に、このモーターがこのコースで使われたレースだけで集計しています。オレンジ色の値は{{n}}走未満のため参考値です。",
       "drillPreGeneration": "このレースの{{n}}号機は入れ替え前のモーターで、現在の{{n}}号機とは別のモーターです。そのため推移・機力指数・使用履歴は表示していません。",
       "drillAsOfRaceNote": "💡 このレースの直前までの状況です（このレースと、それより後のレースは含みません）。",
-      "barScaleNote": "棒は6基の最大を全長にしています。"
+      "barScaleNote": "棒は6基の最大を全長にしています。",
+      "freshNotRun": "まだ走っていません",
+      "freshZeroRuns": "0%（{{n}}走）",
+      "freshOwnMark": "※",
+      "freshOwnExplain": "公式の2連率がまだ出ていないモーターです。このレースより前の、この場での走り（{{n}}走）から出した2連率です",
+      "freshOwnExplainBoat": "{{boat}}号艇: {{explain}}",
+      "freshOwnHint": "「※」を押すと、その数字の出どころが出ます。",
+      "freshPriorRuns": "前の節までの走り（{{n}}走）で出た数字",
+      "freshFirstMeetBanner": "{{venue}}は{{month}}月{{day}}日にモーターが新しくなりました。公式の2連率は次の節から入ります。それまでは、龍神レーダーがこの場での走りから出した数字を出します",
+      "officialModeSourceNoteFresh": "※ 過去のレースでは、「2連率」「3連率」「前検」は出走表時点の BOAT RACE オフィシャルウェブサイトの値です。ただし公式の値が0のモーターの「2連率」「3連率」と、「機力指数」は、このレースより前の、この場での走りから龍神レーダーが出した値です。"
     },
     "motorRanking": {
       "title": "🏁 モーターランキング",

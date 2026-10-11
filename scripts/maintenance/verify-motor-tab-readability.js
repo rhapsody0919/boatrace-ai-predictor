@@ -186,25 +186,13 @@ check(
     read("src/components/analysis/MotorRacerWakuDrillDown.jsx"),
   ),
 );
-// 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
+// 公式の 0.0 の「集計前」の印は、BOA-830（公式が 0 の艇は自前の値）に置き換えた。
+// 新しい決まりは verify-motor-fresh-rate.js が守る
 check(
-  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す。会場公式の成績が取れなかった行には付けない、BOA-740）",
-  /isOfficialPending = \(row\) =>\s*!row\.venue_stats_failed &&\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*\(row\.rate_source === "official" \|\| row\.sample_count > 0\) &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
-    chart,
-  ) &&
-    chart.includes('t("analysis.motor.officialPendingBadge")') &&
-    read("src/services/supabaseDataService.js").includes(
-      "official_3rate: row.motor_3rate ?? null",
-    ) &&
-    read("src/services/supabaseDataService.js").includes(
-      "`race-motor-breakdown-v10-",
-    ),
-);
-check(
-  "一覧: 「集計前」の印が付く行があるときは、表の下の注記でその意味を書く（ファン評価 P2）",
-  /breakdown\.some\(isOfficialPending\) &&\s*t\("analysis\.motor\.officialPendingNote"\)/.test(
-    chart,
-  ),
+  "一覧: 「集計前」の印と注記を出さない（BOA-830 で、公式が 0 の艇は自前の値に置き換えた）",
+  !chart.includes("isOfficialPending") &&
+    !chart.includes('t("analysis.motor.officialPendingBadge")') &&
+    !chart.includes('t("analysis.motor.officialPendingNote")'),
 );
 // ---- BOA-549: 走数が少ない機力指数（2026-09-29 ファン4人のパネル） ----
 check(
@@ -278,8 +266,7 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   check(
     `${lang}: 集計前の説明を「入れ替え後の最初の節」でなく、モーターが初めて使われた節で言う`,
     !/入れ替え後の最初の節|first meet since the changeover|更換後第一節|교체 후 첫 절/.test(
-      motor.officialPendingNote +
-        motor.trendNotYetOfficial +
+      motor.trendNotYetOfficial +
         motor.trendOfficialZeroUnknown,
     ),
   );
@@ -321,21 +308,6 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     /this\.getMotorPowerIndex\(\s*venueCode,\s*row\.motor_number,\s*days,\s*raceId,?\s*\)/.test(
       service,
     ),
-  );
-  check(
-    "過去レースの行にも公式3連率がある（「集計前」の判定）",
-    /rate_source: "official",[\s\S]{0,200}official_3rate: row\.motor_3rate/.test(
-      service,
-    ),
-  );
-  check(
-    "「集計前」の判定は、過去レースの行では走数の条件を見ない",
-    /row\.rate_source === "official" \|\| row\.sample_count > 0/.test(chart),
-  );
-  check(
-    "過去レースの一覧でも「集計前」の印と注記を出す",
-    /officialMode && isOfficialPending\(row\)/.test(chart) &&
-      !/!officialMode &&\s*breakdown\.some\(isOfficialPending\)/.test(chart),
   );
   // 展示タイムは速い（小さい）ほど上。枠番別成績の小さな線が逆（遅いほど上）で、
   // 下の推移グラフを「上ほど速い」にしたとき同じタブで向きが食い違った（PR #1193 ファン評価1周目）
@@ -383,12 +355,6 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     "選手ページの展示タイムも、375pxでラベルを間引かない",
     /yTicks=\{exhibitionAxis\?\.ticks\}\s*\/\/[^\n]*\n\s*slantXLabels/.test(
       racerCard,
-    ),
-  );
-  check(
-    "過去レースの3連率の0.0にも「集計前」を付ける",
-    /\{row\.motor_3rate\?\.toFixed\(1\)\}[\s\S]{0,300}officialMode && isOfficialPending\(row\)/.test(
-      chart,
     ),
   );
   check(

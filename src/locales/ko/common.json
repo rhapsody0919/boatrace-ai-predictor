@@ -2638,8 +2638,6 @@
       "venueRankBadgeTied": "{{total}}대 중 {{rank}}위 타이 ({{value}}%)",
       "sampleCount": "(n={{n}})",
       "firstUseBadge": "첫 사용",
-      "officialPendingBadge": "집계 전",
-      "officialPendingNote": " 「집계 전」은 이 모터가 처음 사용되는 절의 도중이라 공식 2연대율 누계가 아직 없음을 나타냅니다(그 절이 끝날 때까지 0.0으로 유지됩니다).",
       "venueStatsFailedCell": "불러오기 실패",
       "venueStatsFailedNote": "경정장 공식 사이트의 모터 성적(1착률, 우승전 진출, 우승)을 불러오지 못했습니다. 「불러오기 실패」 칸은 페이지를 새로고침하면 다시 불러옵니다.",
       "wakuStatsHeading": "코스별 성적",
@@ -2655,7 +2653,16 @@
       "racerWakuNote": "💡 현재 모터 사용 개시 이후, 이 모터가 이 코스에서 사용된 레이스만으로 집계했습니다. 주황색 값은 {{n}}회 미만이라 참고치입니다.",
       "drillPreGeneration": "이 레이스의 {{n}}호기는 교체 전 모터로, 현재의 {{n}}호기와는 다른 모터입니다. 따라서 추이, 기력 지수, 사용 이력은 표시하지 않습니다.",
       "drillAsOfRaceNote": "💡 이 레이스 직전까지의 상황입니다(이 레이스와 그 이후의 레이스는 포함하지 않습니다).",
-      "barScaleNote": "막대는 6대 중 최고값을 전체 길이로 합니다. "
+      "barScaleNote": "막대는 6대 중 최고값을 전체 길이로 합니다. ",
+      "freshNotRun": "아직 출주 없음",
+      "freshZeroRuns": "0%({{n}}회)",
+      "freshOwnMark": "※",
+      "freshOwnExplain": "공식 2연대율이 아직 나오지 않은 모터입니다. 이 레이스 이전, 이 경정장에서의 출주({{n}}회)로 낸 2연대율입니다",
+      "freshOwnExplainBoat": "{{boat}}호정: {{explain}}",
+      "freshOwnHint": "「※」를 누르면 그 숫자의 출처가 나옵니다.",
+      "freshPriorRuns": "이전 절까지의 출주({{n}}회)로 나온 숫자",
+      "freshFirstMeetBanner": "{{venue}}는 {{month}}월 {{day}}일에 모터가 새로 바뀌었습니다. 공식 2연대율은 다음 절부터 들어갑니다. 그때까지는 용신 레이더가 이 경정장에서의 출주로 낸 숫자를 보여 줍니다",
+      "officialModeSourceNoteFresh": "※ 지난 레이스에서는 「2연대율」「3연대율」「전검」은 출주표 시점의 BOAT RACE 공식 웹사이트 값입니다. 단, 공식 값이 0인 모터의 「2연대율」「3연대율」과 「기력 지수」는 이 레이스 이전, 이 경정장에서의 출주로 용신 레이더가 낸 값입니다."
     },
     "motorRanking": {
       "title": "🏁 모터 랭킹",

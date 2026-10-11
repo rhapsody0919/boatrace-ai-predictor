@@ -29,6 +29,7 @@ import {
   isClippedByGeneration,
   officialTallyState,
 } from "../../utils/motorGeneration";
+import { motorRateView, motorRate3View } from "../../utils/motorFreshRate";
 import { translatePartName } from "../race/raceIndicators";
 import RateBar from "../common/RateBar";
 import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
@@ -68,6 +69,10 @@ function MotorConditionChart({
   } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
 
   const [breakdown, setBreakdown] = useState([]);
+  // 新しいモーターの最初の開催か等（BOA-830）。{ generationStart, firstMeet }
+  const [freshness, setFreshness] = useState(null);
+  // 「※」を押した艇（自前の2連率の出どころを表の下に出す。BOA-830）
+  const [explainBoat, setExplainBoat] = useState(null);
   const [drillDownMotor, setDrillDownMotor] = useState(null);
   const [trendData, setTrendData] = useState(null);
 
@@ -127,7 +132,8 @@ function MotorConditionChart({
         setError(null);
         if (isNewRaceOrVenue) setDrillDownMotor(null);
         // { rows, fetchFailed? }。会場公式のモーター成績が取れなかった行は venue_stats_failed（BOA-740）
-        const { rows: data } = await supabaseDataService.getRaceMotorBreakdown(
+        const { rows: data, freshness: dataFreshness } =
+          await supabaseDataService.getRaceMotorBreakdown(
           selectedRace,
           selectedVenue,
           periodDays,
@@ -154,6 +160,8 @@ function MotorConditionChart({
         setGenerationStart(venueGenerationStart);
         setRacePreGeneration(preGeneration);
         setBreakdown(data);
+        setFreshness(dataFreshness ?? null);
+        setExplainBoat(null);
         // 会場内順位は一覧表のあとから足す（表の表示を待たせない）。当日のレースは最新の
         // スナップショット、過去のレースはレース日以前で最新（BOA-521 と同じ）
         setVenueRanks(null);
@@ -330,19 +338,6 @@ function MotorConditionChart({
   const venueHasOfficialStats = breakdown.some(
     (r) => r.race_count !== null && r.race_count !== undefined,
   );
-  // 一覧の「公式2連率 0.0」が、新モーターで公式の累計がまだ付いていない（集計前）か。
-  // 公式の2連率・3連率がどちらも 0 で、このレースより前に結果の出た走があり、会場公式の
-  // 出走数が 0（前の節で3着以内に入らなかった「集計済みの 0%」と区別する。値の無い
-  // 会場は断定しないので付けない。2026-09-29 ファン4人のパネル・ユーザー承認、ファン評価 P1）
-  // 過去レースの行（公式値）は自社の走数を持たないので、走数の条件は見ない
-  // （BOA-557。会場公式の出走数がレース日時点で 0 なら、公式の累計はまだ付いていない）
-  // 会場公式のモーター成績が取れなかった行（BOA-740）。出走数が無いので「集計前」とは断定しない
-  const isOfficialPending = (row) =>
-    !row.venue_stats_failed &&
-    Number(row.official_2rate) === 0 &&
-    Number(row.official_3rate) === 0 &&
-    (row.rate_source === "official" || row.sample_count > 0) &&
-    officialTallyState(venueHasOfficialStats, row.race_count) === "pending";
   // 会場公式の成績が取れなかったとき（BOA-740）は出走数が無いだけなので、「集計前」とは断定しない
   const drillTallyState = officialTallyState(
     venueHasOfficialStats && !venueMotorStats?.fetchFailed,
@@ -387,13 +382,16 @@ function MotorConditionChart({
       rate3: meet.rate3,
     }));
 
-  // 棒にする公式2連率（節時点）。過去レースは2連率の列そのものが公式値（BOA-329）
-  const officialRateOf = (row) => {
-    const v =
-      row.rate_source === "official" ? row.motor_2rate : row.official_2rate;
-    return v === null || v === undefined ? null : Number(v);
-  };
-  const officialRates = breakdown.map(officialRateOf);
+  // 棒にする2連率。公式（節時点。過去レースは2連率の列そのものが公式値、BOA-329）が 0 の艇は、
+  // 現世代でこのレースより前の自前の値（BOA-830、2026-10-11 ユーザー決定）。まだ走っていない艇は棒なし
+  const rateViews = breakdown.map(motorRateView);
+  const officialRates = rateViews.map((v) =>
+    v.kind === "official" || v.kind === "own"
+      ? v.value
+      : v.kind === "zero"
+        ? 0
+        : null,
+  );
   const officialRateValues = officialRates.filter((v) => v !== null);
   const officialRateMax =
     officialRateValues.length > 0 ? Math.max(...officialRateValues) : null;
@@ -401,12 +399,39 @@ function MotorConditionChart({
   // 全艇同値・値なしなら付けない）。表示と同じ1桁で比べる。生の値だと「38.3」に見える 38.33 と
   // 38.28 の片方にだけ印が付く（9/15〜10/02 で14レース。データ精度検証）。
   // 行全体の .best-motor（期間の2連率の最大）は外した。棒の札と別の列を指すと、どちらが最良か
-  // 分からないため（BOA-428、UI統一レーンと合意）
+  // 分からないため（BOA-428、UI統一レーンと合意）。
+  // 自前の値（数走の 100% 等）は公式と並べて最良にしない（BOA-830）
   const officialRateBestBoats = bestOf(
-    breakdown.map((r, i) => ({ boat: r.boat_number, value: officialRates[i] })),
+    breakdown.map((r, i) => ({
+      boat: r.boat_number,
+      value: rateViews[i].kind === "official" ? officialRates[i] : null,
+    })),
     "max",
     { digits: 1 },
   );
+  // 2連率の列の値ラベル（BOA-830）
+  const rateLabel = (view, i) => {
+    if (view.kind === "notRun") return t("analysis.motor.freshNotRun");
+    if (view.kind === "zero")
+      return t("analysis.motor.freshZeroRuns", { n: view.runs });
+    return officialRates[i] !== null ? `${officialRates[i].toFixed(1)}%` : "-";
+  };
+  // 新しいモーターの最初の節（その日の公式2連率が全行 0）。優出・優勝はまだ機会が無いので「-」
+  const firstMeet = freshness?.firstMeet === true;
+  // 一覧の機力指数。過去レースは公式に相当する値が無く「-」だったが、新しいモーターの
+  // 入れ替えから間もない間は自前の値を出す（BOA-830「機力指数はこの間も自前」）
+  const listPowerIndex = (row) =>
+    row.rate_source === "official"
+      ? {
+          value: row.generation_power_index ?? null,
+          n: row.generation_runs ?? null,
+        }
+      : { value: row.power_index ?? null, n: row.sample_count };
+  const explainRow =
+    explainBoat !== null
+      ? breakdown.find((r) => r.boat_number === explainBoat)
+      : null;
+  const explainView = explainRow ? motorRateView(explainRow) : null;
   // 会場内順位の列（BOA-428）。会場サイトの値を出さない会場（戸田・平和島・浜名湖・宮島）と、
   // その日以前のスナップショットが無いときは列ごと畳む。取得の失敗は列を残して印を出す
   // （列が黙って消えると、データが無い会場と区別できない）
@@ -698,6 +723,19 @@ function MotorConditionChart({
         drillDownMotor === null &&
         breakdown.length > 0 && (
           <>
+            {/* 新しいモーターの最初の節（BOA-830、2026-10-11 ユーザー決定の文言） */}
+            {firstMeet && freshness?.generationStart && (
+              <p className="motor-fresh-banner">
+                {t("analysis.motor.freshFirstMeetBanner", {
+                  venue: t(
+                    `venues.${selectedVenue}`,
+                    VENUE_NAMES[selectedVenue] || String(selectedVenue),
+                  ),
+                  month: Number(freshness.generationStart.slice(5, 7)),
+                  day: Number(freshness.generationStart.slice(8, 10)),
+                })}
+              </p>
+            )}
             <div
               className={`table-wrapper hscroll-hint mcc-list-hint${rankingScroll.hasMore ? " has-more" : ""}`}
             >
@@ -831,21 +869,45 @@ function MotorConditionChart({
                             fill={BOAT_LINE_COLORS[row.boat_number]}
                             best={officialRateBestBoats.has(row.boat_number)}
                             label={
-                              officialRates[i] !== null
-                                ? `${officialRates[i].toFixed(1)}%`
-                                : "-"
+                              rateViews[i].kind === "own" ? (
+                                <>
+                                  {rateLabel(rateViews[i], i)}
+                                  {/* 自前の値の印。押すと表の下に出どころを出す（行の
+                                      ドリルダウンは開かない） */}
+                                  <button
+                                    type="button"
+                                    className="motor-fresh-own-mark"
+                                    aria-expanded={explainBoat === row.boat_number}
+                                    aria-label={t(
+                                      "analysis.motor.freshOwnExplain",
+                                      { n: rateViews[i].runs },
+                                    )}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExplainBoat((b) =>
+                                        b === row.boat_number
+                                          ? null
+                                          : row.boat_number,
+                                      );
+                                    }}
+                                  >
+                                    {t("analysis.motor.freshOwnMark")}
+                                  </button>
+                                </>
+                              ) : (
+                                rateLabel(rateViews[i], i)
+                              )
                             }
                           />
-                          {/* 公式の2連率・3連率がどちらも 0 なのに、このレースより前に
-                              結果の出た走がある＝新モーターで公式の累計がまだ付いていない。
-                              公式の 0.0 は残し、「本当に0%」と読まれないよう印を添える
-                              （2026-09-29 ファン4人のパネル・ユーザー承認。過去レースも
-                              この列が公式値なので同じ。BOA-557） */}
-                          {isOfficialPending(row) && (
-                            <span className="motor-waku-n motor-official-pending">
-                              {t("analysis.motor.officialPendingBadge")}
-                            </span>
-                          )}
+                          {/* 入れ替えから90日以内の公式の値は、何走で出た数字かを添える（BOA-830） */}
+                          {rateViews[i].kind === "official" &&
+                            rateViews[i].priorRuns !== null && (
+                              <span className="motor-waku-n motor-fresh-prior-runs">
+                                {t("analysis.motor.freshPriorRuns", {
+                                  n: rateViews[i].priorRuns,
+                                })}
+                              </span>
+                            )}
                         </td>
                         {showVenueRank && (
                           <td className="motor-venue-rank">
@@ -866,14 +928,18 @@ function MotorConditionChart({
                           </td>
                         )}
                         <td className="rate">
-                          {row.motor_3rate?.toFixed(1)}
-                          {/* 過去レースは3連率も公式値。2連率だけに印を付けると、3連率の
-                              0.0 を「3着以内が一度も無い」と読まれる（BOA-557 ファン評価） */}
-                          {officialMode && isOfficialPending(row) && (
-                            <span className="motor-waku-n motor-official-pending">
-                              {t("analysis.motor.officialPendingBadge")}
-                            </span>
-                          )}
+                          {/* 過去レースは3連率も公式値。2連率を自前にした艇は3連率も自前にそろえる。
+                              2連率だけ差し替えると、3連率の 0.0 を「3着以内が一度も無い」と読まれる
+                              （BOA-830。当日のレースは期間の再計算なのでそのまま） */}
+                          {officialMode
+                            ? (() => {
+                                const v3 = motorRate3View(row);
+                                if (v3.kind === "notRun") return "-";
+                                return v3.value === null
+                                  ? "-"
+                                  : v3.value.toFixed(1);
+                              })()
+                            : row.motor_3rate?.toFixed(1)}
                         </td>
                         {hasPretest && (
                           <td className="rate motor-pretest-cell">
@@ -909,16 +975,15 @@ function MotorConditionChart({
                           className={`rate power-index ${
                             POWER_INDEX_TONE_CLASS[
                               powerIndexTone(
-                                row.power_index,
-                                row.sample_count,
+                                listPowerIndex(row).value,
+                                listPowerIndex(row).n,
                                 SMALL_SAMPLE_THRESHOLD,
                               )
                             ] ?? ""
                           }`}
                         >
-                          {row.power_index !== null &&
-                          row.power_index !== undefined
-                            ? formatPowerIndex(row.power_index)
+                          {listPowerIndex(row).value !== null
+                            ? formatPowerIndex(listPowerIndex(row).value)
                             : "-"}
                         </td>
                         {showFinalCount && (
@@ -927,7 +992,9 @@ function MotorConditionChart({
                           >
                             {row.venue_stats_failed
                               ? venueStatsFailedCell
-                              : (row.final_count ?? "-")}
+                              : firstMeet
+                                ? "-"
+                                : (row.final_count ?? "-")}
                           </td>
                         )}
                         {showChampionshipCount && (
@@ -936,7 +1003,9 @@ function MotorConditionChart({
                           >
                             {row.venue_stats_failed
                               ? venueStatsFailedCell
-                              : (row.championship_count ?? "-")}
+                              : firstMeet
+                                ? "-"
+                                : (row.championship_count ?? "-")}
                           </td>
                         )}
                       </tr>
@@ -945,6 +1014,19 @@ function MotorConditionChart({
                 </table>
               </div>
             </div>
+            {/* 「※」の数字の出どころ（BOA-830）。押した艇の説明を出す。押す前は押せることだけ書く */}
+            {rateViews.some((v) => v.kind === "own") && (
+              <p className="table-note motor-fresh-own-note">
+                {explainView?.kind === "own"
+                  ? t("analysis.motor.freshOwnExplainBoat", {
+                      boat: explainRow.boat_number,
+                      explain: t("analysis.motor.freshOwnExplain", {
+                        n: explainView.runs,
+                      }),
+                    })
+                  : t("analysis.motor.freshOwnHint")}
+              </p>
+            )}
             {/* BOA-451 / ADR-0067: 生値をそのまま出す列（前検タイム・公式2連率）
               の出典を表のすぐ下に1回だけ置く。集計・加工した列（期間別の
               2連率/3連率・機力指数）は当社の計算なので出典の対象外。
@@ -987,11 +1069,13 @@ function MotorConditionChart({
             )}
             <p className="table-note motor-official-source-note">
               {officialMode
-                ? t("analysis.motor.officialModeSourceNote")
+                ? t(
+                    // 自前の値（公式 0 の艇・機力指数）を出している過去レース（BOA-830）
+                    breakdown.some((r) => r.generation_runs != null)
+                      ? "analysis.motor.officialModeSourceNoteFresh"
+                      : "analysis.motor.officialModeSourceNote",
+                  )
                 : t("analysis.motor.officialSourceNote")}
-              {/* 「集計前」の意味は、印が付いている行があるときだけ書く（ファン評価 P2） */}
-              {breakdown.some(isOfficialPending) &&
-                t("analysis.motor.officialPendingNote")}
               {/* 会場公式サイト由来の列（1着率・優出数・優勝数）は、表に出ているものだけを
                   挙げる。1つも無い会場（戸田など）では文ごと出さない（BOA-513。列名が空の
                   まま「…の値、はそのレース日以前…」と文が崩れるのを防ぐ） */}
@@ -1000,8 +1084,8 @@ function MotorConditionChart({
               {breakdown.some(
                 (r) =>
                   powerIndexTone(
-                    r.power_index,
-                    r.sample_count,
+                    listPowerIndex(r).value,
+                    listPowerIndex(r).n,
                     SMALL_SAMPLE_THRESHOLD,
                   ) === "small",
               ) &&
