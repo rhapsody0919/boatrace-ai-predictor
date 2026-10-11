@@ -18,6 +18,7 @@ import {
   inspectMigration,
   isAppliedInLedger,
   markAppliedInLedger,
+  psqlArgs,
   renderSummary,
   validateMigrationPath,
 } from "../lib/dbApplySql.js";
@@ -149,10 +150,7 @@ function apply(migrationPath, expectedSha256) {
     );
   const pgEnv = pgEnvFromUrl(raw);
 
-  const args = ["-X", "-v", "ON_ERROR_STOP=1", "--echo-errors"];
-  if (inspection.mode === "single-transaction")
-    args.push("--single-transaction");
-  args.push("-f", migrationPath);
+  const args = psqlArgs(inspection.mode, migrationPath);
   console.log(`psql ${args.join(" ")}（mode=${inspection.mode}）`);
   const env = { ...process.env, ...pgEnv };
   delete env.SUPABASE_DB_URL;

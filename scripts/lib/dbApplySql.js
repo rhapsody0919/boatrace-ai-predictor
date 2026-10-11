@@ -239,6 +239,15 @@ const REJECT_RULES = [
   ],
 ];
 
+// apply の上限。ロック待ちは早めに諦め（再実行すればよい）、1文の実行は job の timeout（15分）より前に打ち切る
+export const LOCK_TIMEOUT = "10s";
+export const STATEMENT_TIMEOUT = "10min";
+// これを超える行には注意を出す（本文の枠の外に隠れる）
+const LONG_LINE_CHARS = 200;
+
+// 双方向制御（Trojan Source）・ゼロ幅文字・BOM。承認者が読む本文と実際の SQL をずらせるため拒否する
+const INVISIBLE_RE = /[\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/;
+
 const ID = String.raw`(?:"(?:[^"]|"")+"|[A-Za-z_][A-Za-z0-9_$]*)(?:\s*\.\s*(?:"(?:[^"]|"")+"|[A-Za-z_][A-Za-z0-9_$]*))?`;
 const TABLE_RULES = [
   [
@@ -324,6 +333,13 @@ export function extractTables(code) {
 export function inspectMigration(sql) {
   const { statements, metaCommands, errors } = splitStatements(sql);
   const rejections = [...errors];
+  for (const [idx, lineText] of sql.split("\n").entries()) {
+    if (INVISIBLE_RE.test(lineText)) {
+      rejections.push(
+        `${idx + 1}行目: 見えない制御文字（双方向制御・ゼロ幅・BOM）がある。承認画面の表示と実行される SQL がずれるため許可しない`,
+      );
+    }
+  }
   for (const m of metaCommands) {
     rejections.push(
       `${m.line}行目: psql のメタコマンド（\\…）は許可しない: ${m.text}`,
@@ -420,6 +436,22 @@ export function extractConfirmationSections(sql) {
   });
 }
 
+/**
+ * job summary の表のセルに入れるコード片（`…` で囲む前）。コードスパンの中では HTML も Markdown も解釈されないので、
+ * 抜け出す手段（` と改行）と、表の列を割る | だけを潰す
+ */
+export const codeCell = (text) =>
+  String(text).replace(/\s+/g, " ").replace(/`/g, "'").replace(/\|/g, "\\|");
+
+/** job summary の地の文（見出し等）に SQL 由来の文字列を入れるとき、Markdown・HTML として解釈させない */
+export const escapeInline = (text) =>
+  String(text)
+    .replace(/\s+/g, " ")
+    .replace(/[\\`*_[\]|~]/g, (c) => `\\${c}`)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
 const fenceFor = (text) => {
   const longest = Math.max(
     2,
@@ -440,7 +472,7 @@ export function renderSummary({
   inspection,
   fileUrl,
   alreadyApplied,
-  maxBodyLines = 400,
+  maxBodyLines = 2000,
 }) {
   const lines = sql.split("\n");
   const lineCount = sql.endsWith("\n") ? lines.length - 1 : lines.length;
@@ -451,6 +483,18 @@ export function renderSummary({
     out.push("### このファイルは適用できない（承認の前に止めた）");
     out.push("");
     for (const r of inspection.rejections) out.push(`- ${r}`);
+    out.push("");
+  }
+  const longLines = lines
+    .map((l, idx) => ({ line: idx + 1, length: l.length }))
+    .filter((l) => l.length > LONG_LINE_CHARS);
+  if (longLines.length > 0) {
+    out.push(
+      `> **注意: ${LONG_LINE_CHARS} 字を超える行がある（${longLines
+        .slice(0, 10)
+        .map((l) => `${l.line}行目 ${l.length}字`)
+        .join("、")}）。本文の枠は横にスクロールしないと見えないので、行末まで読んでから承認する**`,
+    );
     out.push("");
   }
   if (alreadyApplied) {
@@ -485,7 +529,7 @@ export function renderSummary({
     out.push("| テーブル | 操作 |");
     out.push("|---|---|");
     for (const t of inspection.tables)
-      out.push(`| \`${t.table}\` | ${t.ops.join(", ")} |`);
+      out.push(`| \`${codeCell(t.table)}\` | ${t.ops.join(", ")} |`);
   }
   out.push("");
   out.push("DO ブロック・関数本体（$$ の中）は抽出しない。");
@@ -501,7 +545,7 @@ export function renderSummary({
     for (const s of sections) {
       const text = s.lines.join("\n");
       const fence = fenceFor(text);
-      out.push(`**${s.heading}**`);
+      out.push(`**${escapeInline(s.heading)}**`);
       out.push("");
       out.push(`${fence}sql`);
       out.push(text);
@@ -514,11 +558,7 @@ export function renderSummary({
   out.push("| 行 | 文 |");
   out.push("|---|---|");
   for (const s of inspection.statements) {
-    const cell = s.head
-      .replace(/\|/g, "\\|")
-      .replace(/`/g, "'")
-      .replace(/</g, "&lt;");
-    out.push(`| ${s.line} | \`${cell}\` |`);
+    out.push(`| ${s.line} | \`${codeCell(s.head)}\` |`);
   }
   out.push("");
   const shown = lines.slice(0, maxBodyLines).join("\n");
@@ -534,6 +574,24 @@ export function renderSummary({
   out.push(fence);
   out.push("");
   return out.join("\n");
+}
+
+/**
+ * apply で psql に渡す引数。ロック待ちで本番の読み取りを長く止めないよう、ファイルの前にセッションの
+ * lock_timeout・statement_timeout を設定する（-c と -f は書いた順に同じ接続で実行される）。
+ * single-transaction では -c も含めて1つのトランザクションになる。file-transaction では SET が BEGIN の前に
+ * 確定し、ファイル自身のトランザクションにも効く。
+ *
+ * @param {"single-transaction" | "file-transaction"} mode
+ * @param {string} migrationPath
+ */
+export function psqlArgs(mode, migrationPath) {
+  const args = ["-X", "-v", "ON_ERROR_STOP=1", "--echo-errors"];
+  if (mode === "single-transaction") args.push("--single-transaction");
+  args.push("-c", `SET lock_timeout = '${LOCK_TIMEOUT}'`);
+  args.push("-c", `SET statement_timeout = '${STATEMENT_TIMEOUT}'`);
+  args.push("-f", migrationPath);
+  return args;
 }
 
 /** ファイル名の番号部分（"122"・"013b"） */

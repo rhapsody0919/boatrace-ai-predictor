@@ -10,7 +10,11 @@
  *   5. 冒頭コメントの確認 SQL の抽出
  *   6. 台帳（APPLIED.md）の更新（既存の行・行が無い場合）
  *   7. docs/db-migration/ の実ファイルの判定（CONCURRENTLY を含む 050・055 以外は通る）
- *   8. ワークフローの配線（secret は apply だけ、${{ inputs.* }} を run に直接書かない、書き込み権限は record だけ）
+ *   8. ワークフローの配線（secret は apply だけ、${{ inputs.* }} を run に直接書かない、書き込み権限は record だけ、
+ *      Environment production-db を使うのは db-apply.yml だけ）
+ *   9. 承認画面（job summary）を SQL の書き手が操作できない（表のセル・見出しのエスケープ、見えない制御文字の拒否、
+ *      長い行の注意、本文を切り詰めない）
+ *  10. psql の引数（lock_timeout・statement_timeout をファイルの前に設定する）
  */
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -21,6 +25,8 @@ import {
   inspectMigration,
   isAppliedInLedger,
   markAppliedInLedger,
+  psqlArgs,
+  renderSummary,
   splitStatements,
   validateMigrationPath,
 } from "../lib/dbApplySql.js";
@@ -486,6 +492,147 @@ check(
   check(
     "apply は承認前の sha256 を受け取る",
     /needs\.inspect\.outputs\.sha256/.test(body("apply")),
+  );
+}
+
+// 8b. production-db の secret を読めるのは db-apply.yml だけ（他のワークフローが environment: production-db を宣言すると、
+//     承認画面では区別できないまま同じ鍵が渡る）
+{
+  const dir = path.join(ROOT, ".github/workflows");
+  const users = readdirSync(dir)
+    .filter((f) => /\.ya?ml$/.test(f))
+    .filter((f) =>
+      /environment:\s*(?:\n\s*name:\s*)?["']?production-db\b/.test(
+        readFileSync(path.join(dir, f), "utf8"),
+      ),
+    );
+  check(
+    "Environment production-db を使うのは db-apply.yml だけ",
+    eq(users, ["db-apply.yml"]),
+    users.join(", "),
+  );
+}
+
+// 9. 承認画面（job summary）
+{
+  const summaryOf = (sql) =>
+    renderSummary({
+      path: "docs/db-migration/999_x.sql",
+      sha256: "0".repeat(64),
+      sql,
+      inspection: inspectMigration(sql),
+      fileUrl: "https://example.invalid/x",
+      alreadyApplied: false,
+    });
+  const tableRows = (md) =>
+    md
+      .split("\n")
+      .filter((l) => /^\| `/.test(l) && !/^\| [0-9]/.test(l));
+
+  // 引用識別子には ` | < 改行を入れられる。コードスパンを抜けて表を壊したり HTML を差し込んだりさせない
+  const evil = summaryOf(
+    'CREATE TABLE "a`<details><summary>確認済み</summary>|x" (id int);\n',
+  );
+  const evilRow = tableRows(evil)[0] ?? "";
+  check(
+    "触るテーブル: 識別子の ` でコードスパンを抜けない",
+    (evilRow.match(/`/g) ?? []).length === 2,
+    evilRow,
+  );
+  check(
+    "触るテーブル: 識別子の | で列を増やさない",
+    evilRow.split(/(?<!\\)\|/).length === 4,
+    evilRow,
+  );
+  const stmtRows = evil
+    .split("\n")
+    .filter((l) => /^\| [0-9]+ \| `/.test(l));
+  check(
+    "文の一覧: 識別子の ` でコードスパンを抜けない",
+    stmtRows.length === 1 && (stmtRows[0].match(/`/g) ?? []).length === 2,
+    stmtRows.join(" / "),
+  );
+
+  // 冒頭コメントの見出しは地の文に出る。HTML・強調を解釈させない
+  const heading = summaryOf(
+    "-- <details><summary>x</summary> **済** 確認:\n--   SELECT 1;\nSELECT 1;\n",
+  );
+  const headingLine =
+    heading.split("\n").find((l) => l.includes("確認") && l.startsWith("**")) ??
+    "";
+  check(
+    "確認 SQL の見出し: < > と * をエスケープする",
+    headingLine.includes("&lt;details&gt;") &&
+      !headingLine.includes("<details>") &&
+      headingLine.includes("\\*\\*済\\*\\*"),
+    headingLine,
+  );
+
+  // 見えない制御文字（Trojan Source）
+  for (const [label, ch] of [
+    ["RLO（U+202E）", "\u202E"],
+    ["LRI（U+2066）", "\u2066"],
+    ["ゼロ幅スペース（U+200B）", "\u200B"],
+    ["BOM（U+FEFF）", "\uFEFF"],
+  ]) {
+    check(
+      `見えない制御文字は拒否: ${label}`,
+      rejects(`SELECT 1; -- a${ch}b\n`).some((r) => r.includes("見えない制御文字")),
+    );
+  }
+  check(
+    "日本語のコメントは拒否しない",
+    rejects("-- 日本語のコメント（全角）\nSELECT 1;\n").length === 0,
+  );
+
+  // 長い行は注意を出す
+  const long = summaryOf(`SELECT 1;${" ".repeat(300)}DROP TABLE t;\n`);
+  check("200字を超える行には注意を出す", /200 字を超える行がある（1行目/.test(long));
+  check(
+    "短い行だけなら注意を出さない",
+    !/字を超える行がある/.test(summaryOf("SELECT 1;\n")),
+  );
+
+  // 本文は 001（748行）まで切り詰めずに全文を出す
+  const big = readFileSync(
+    path.join(ROOT, "docs/db-migration/001_schema.sql"),
+    "utf8",
+  );
+  const bigSummary = summaryOf(big);
+  check(
+    "本文: 既存の最長のマイグレーション（001）を切り詰めない",
+    bigSummary.includes("### 本文\n") &&
+      bigSummary.includes(big.trimEnd().split("\n").at(-1)),
+  );
+}
+
+// 10. psql の引数
+{
+  const single = psqlArgs("single-transaction", "docs/db-migration/999_x.sql");
+  const file = psqlArgs("file-transaction", "docs/db-migration/999_x.sql");
+  const idx = (args, needle) => args.findIndex((a) => a.includes(needle));
+  for (const [label, args] of [
+    ["single-transaction", single],
+    ["file-transaction", file],
+  ]) {
+    check(
+      `${label}: lock_timeout・statement_timeout を -f より前に設定する`,
+      idx(args, "lock_timeout") !== -1 &&
+        idx(args, "statement_timeout") !== -1 &&
+        idx(args, "lock_timeout") < args.indexOf("-f") &&
+        idx(args, "statement_timeout") < args.indexOf("-f"),
+      args.join(" "),
+    );
+    check(
+      `${label}: ON_ERROR_STOP=1 と -X`,
+      args.includes("ON_ERROR_STOP=1") && args.includes("-X"),
+    );
+    check(`${label}: 最後がファイル`, args.at(-1) === "docs/db-migration/999_x.sql");
+  }
+  check(
+    "--single-transaction は single-transaction のときだけ",
+    single.includes("--single-transaction") &&
+      !file.includes("--single-transaction"),
   );
 }
 

@@ -37,6 +37,8 @@ flowchart TD
 - 起動した時点の master のコミットに、そのファイルが通常ファイル（シンボリックリンク不可）として無い
 - トランザクションに包めない文: `CONCURRENTLY`（CREATE/DROP/REINDEX）、`VACUUM`、`ALTER SYSTEM`、`CREATE/DROP DATABASE`、`CREATE/DROP TABLESPACE`、`SUBSCRIPTION` の操作、`REINDEX SYSTEM/DATABASE`、`DISCARD ALL`
 - トランザクション制御（`BEGIN`・`COMMIT`・`ROLLBACK`・`SAVEPOINT` 等）。ただし「先頭の文が `BEGIN`、最後の文が `COMMIT`」の1組だけは許す（現行のマイグレーションの書き方。下記）
+  - `COMMIT;` の後に `GRANT` 等を書くと拒否される（139・140 がこの形）。`COMMIT` の後の文はトランザクションの外で単独実行になり、失敗しても前半が戻らないため。`COMMIT;` はファイルの最後に置く
+- 見えない制御文字（双方向制御 U+202A〜202E・U+2066〜2069、ゼロ幅 U+200B〜200F、BOM）。承認画面に見える SQL と実行される SQL をずらせるため
 - psql のメタコマンド（`\!` `\i` `\copy` 等。`\!` はランナー上でシェルを実行できる）
 - `COPY`（データの投入はこのワークフローでは扱わない）、`BEGIN ATOMIC` の関数本体（文の区切りを判定できない。`$$` で書く）
 - 閉じていない文字列・`$$`・コメント
@@ -51,6 +53,9 @@ flowchart TD
 | 先頭の文が `BEGIN`、最後の文が `COMMIT`（116〜122 の書き方） | `psql -X -v ON_ERROR_STOP=1 -f <file>`（ファイル自身の BEGIN〜COMMIT が1つのトランザクション） |
 
 どちらも、途中の文が失敗すれば psql はそこで止まって接続を閉じ、トランザクション全体が戻る。
+
+ファイルの前に `-c "SET lock_timeout = '10s'"`・`-c "SET statement_timeout = '10min'"` を実行する（`scripts/lib/dbApplySql.js` の `psqlArgs`）。
+混み合うテーブルへの `ALTER TABLE` がロック待ちになると、後ろに並んだ本番の読み取りも止まる。10秒で諦めて全体を戻し、時間を置いて再実行する。
 `--single-transaction` と、ファイル内の `BEGIN`/`COMMIT` を同時に使うと、ファイルの `COMMIT` の時点で確定してしまい、以後の文が単独で実行される（psql の仕様）。そのため2つの形に分けている。
 
 ## 初回設定（ユーザーが行う）
@@ -95,13 +100,15 @@ Settings > Actions > General > Workflow permissions で **Allow GitHub Actions t
 2. Actions > **DB Apply (production)** > **Run workflow**
    - Use workflow from: `master`
    - 適用するファイル: `docs/db-migration/122_venues_first_win_rate_race_count.sql` のようにリポジトリ直下からのパス
-3. 起動した run を開き、**inspect** の job summary を読む
+3. 起動した run を開き、**inspect** の job summary を読む。run 名が **DB Apply (production)** で、自分が今起動したものであることを確かめる（`production-db` を使うワークフローは db-apply.yml だけに限っている。`npm run verify:db-apply` が検査する）
    - ファイル・sha256・行数・実行のしかた（single-transaction / file-transaction）
    - 触るテーブル（CREATE/ALTER/INSERT/UPDATE/DELETE/DROP/TRUNCATE の対象。DO ブロック・関数本体の中は出ない）
    - 冒頭コメントの確認 SQL（適用前に SQL Editor で読み取りだけ実行して状態を確かめる、適用後に結果を照合する）
-   - 文の一覧と本文（400行を超える分はリンク先で読む）
+   - 文の一覧と本文（2000行まで全文。既存の最長は 001 の748行）
+   - 「200 字を超える行がある」の注意が出ていれば、その行を行末まで横にスクロールして読む
    - 「台帳では既に適用済み」の注意が出ていれば、再適用してよいかを確かめる
 4. 問題なければ **Review deployments** > `production-db` にチェック > **Approve and deploy**。やめるなら **Reject**
+   - 承認すると、起動した時点のコミットのファイルが適用される。承認待ちのまま古くなった run（その後に同じファイルを直した等）は承認せず Reject し、起動し直す
 5. apply が成功すると、record が `db-apply/<ファイル名>-<run番号>-<試行回数>` ブランチで APPLIED.md の PR を作る
    - GITHUB_TOKEN が作った PR には他のワークフロー（Quality Gates）が自動では走らない。PR を一度閉じて開き直すと走る
    - 中身（適用状況の列）を確認してマージする。「確認した根拠」の列を書き足すならこの PR に足す
@@ -117,13 +124,22 @@ Settings > Actions > General > Workflow permissions で **Allow GitHub Actions t
 | record | **適用済み** | 変わらない | **apply を再実行しない**。record だけを **Re-run failed jobs** で再実行する（失敗した job だけが動き、apply は再実行されない。ブランチ名に試行回数が入るので1回目に push したブランチとぶつからない。残った1回目のブランチは消す）。それでも無理なら APPLIED.md を手で直す PR を出す |
 
 - **Re-run all jobs** は apply も含めてやり直す（承認がもう一度要る）。適用済みのものを再適用しないよう、record の失敗では使わない
-- 同時に2本は走らない（`concurrency: db-apply`。2本目は1本目が終わるまで待つ）
+- 同時に2本は走らない（`concurrency: db-apply`。2本目は1本目が終わるまで待つ）。待てるのは1本だけで、3本目を起動すると待っている2本目は取り消される。承認待ちの run も枠を占めるので、使わない run は Reject する
+- 成功したが内容が誤っていた場合に自動で戻す手段は無い。戻す SQL を書いて同じ手順で適用する。最終手段は Supabase のバックアップからの復元（プランで有無・保持期間が違う。Dashboard > Database > Backups で確認する）
+- 台帳（APPLIED.md）は record の PR をマージするまで「適用済み」にならない。その間に同じファイルを起動しても「既に適用済み」の注意は出ない。record の PR は早めにマージする
 
 ## Claude（AI）は起動・承認しない
 
 起動（`gh workflow run db-apply` や API の dispatch）・deployment の承認（`pending_deployments`）・Environments の変更は、ユーザー本人だけが行う。
-Claude の `gh` はユーザーと同じアカウントで認証されているため API では承認できてしまうが、`.claude/hooks/guard-deploy-approval.sh`（PreToolUse）がこれらのコマンドを止めている。
 Claude の役割は、マイグレーションを書いて PR にすることと、適用後の確認（読み取り）まで。
+
+**技術的には止め切れていない。** Claude の `gh` はユーザーと同じアカウントで認証されているため、GitHub から見て Claude の承認と本人の承認は区別できない。
+`.claude/hooks/guard-deploy-approval.sh`（PreToolUse）と `.claude/settings.json` の deny は、よく使う書き方を文字列で止めているだけで、言い換え（workflow の表示名や数値の ID での起動、GraphQL での承認、ブラウザ操作）は通る。
+根本的に塞ぐには、Claude 用の `gh` を Environment の reviewer でない別アカウント（または権限を絞ったトークン）にする必要がある。それまでは「Claude は起動・承認しない」という規律が主な防御になる。
+
+## マイグレーションに書かないもの
+
+API キー・パスワード等の秘密の値。psql のエラー出力（`--echo-errors`）と job summary の本文にそのまま出る。
 
 ## 範囲外: データの一括投入
 
