@@ -495,6 +495,11 @@
       "guards": "ボット向け HTML（ADR 0089）のモデル src/utils/botPageModel.js。import の経路にブラウザ専用の依存（supabaseClient・import.meta.env・localStorage 等）が無く Node から読めること、本番の /api/races/today のフィクスチャから人の画面と同じ文字（会場名・節の名前・レース番号・締切時刻・グレード・中止・見出し・title・description・canonical）で組めること、UTC で動かしても日付が前日にずれないこと、0件と壊れた入力を区別すること（壊れた入力で開催なしにしない。ADR 0069）、選手名・オッズ・着順・荒れ度等を入れないこと、人の画面が同じ関数（transformTodayRaces・pageMeta・raceListDisplay）を使い続けていること"
     },
     {
+      "script": "verify-bot-page-function.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML の関数（ADR 0089。api/bot-page/top.js・api/bot-page/venue/[code].js、中身は api/_lib/botPage.js）。材料の取得と時計を差し替えてハンドラを呼び、成功時の 200・Content-Type・Cache-Control（s-maxage=300・stale-if-error=3600）、title・description・canonical・robots が人のページと同じ値、選手名・オッズ等が入らないこと、材料が取れない・壊れたら 503・Retry-After・no-store で「開催なし」にしないこと、0件だけ「開催なし」の 200、会場コードは 1〜24（0埋めなし）だけで他は 404、値のエスケープ、材料の60秒の使い回し（61秒後に取り直す・同時の呼び出しは1回の取得）、vercel.json で syd1・edge でないこと"
+    },
+    {
       "script": "verify-venue-series-title.js",
       "tier": "ci",
       "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"

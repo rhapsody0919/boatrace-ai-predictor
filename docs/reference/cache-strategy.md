@@ -57,6 +57,20 @@
 **Edge Functions：**
 - ✅ `api/races/today.js`
 
+**ボット向け HTML の関数（ADR 0089、Node・syd1）：**
+- ✅ `api/bot-page/top.js`・`api/bot-page/venue/[code].js`（ヘッダーは `api/_lib/botPage.js`）
+
+```javascript
+"Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=60, stale-if-error=3600"
+```
+
+- 材料の `api/races/today.js`（s-maxage=300）より短くしても新しくならないので、同じ300秒にする
+- `max-age=0`: ブラウザには残さない。CDN だけが持つ
+- `stale-if-error=3600`: 関数が 5xx を返したとき、CDN に前回の正常な応答があれば1時間までそれを返す
+- 関数の中でも、材料の JSON をモジュールスコープで60秒だけ使い回す。CDN のキャッシュが効かなかった場合も、`/api/races/today` と DB への取得を増やさない
+- 失敗（材料が取れない・形が違う）は 503・`Retry-After: 300`・`Cache-Control: no-store`。404・405 も `no-store`（任意のパスで CDN のキーを増やさない）
+- CDN のキーにはクエリ文字列が入る。関数はクエリを見ないが、クエリ付きの URL は別のキーになる（材料の取得は上の60秒の使い回しで抑える）
+
 ---
 
 ## キャッシュ時間を変更する際のチェックリスト
