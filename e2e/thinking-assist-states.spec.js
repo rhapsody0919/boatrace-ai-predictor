@@ -1865,7 +1865,7 @@ test.describe("思考アシスト: 1号艇が1着のときの2着・3着と、�
     const sum = page.locator(".ta-sum");
     const box = sum.locator("section", {
       has: page.getByRole("heading", {
-        name: "1号艇が1着のとき、2着・3着に来たのは",
+        name: "1号艇を軸にしたときの2着・3着",
       }),
     });
     await expect(box).toBeVisible();
@@ -1989,5 +1989,87 @@ test.describe("思考アシスト: 買い目を同じタブの中に残す（202
       ),
     );
     expect(keys).toEqual([`boatai-user:assist:${RACE_ID}`]);
+  });
+});
+
+test.describe("思考アシスト: 相手レンズ（spec D-46、2026-10-12 ユーザー承認 v4）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("375px: 相手のタブは機力と買い目の間。6艇に2着以内・3着以内、1号艇を軸にしたときの表、ガイドの⑤は相手", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await open(page);
+    const names = await page
+      .getByRole("tablist", { name: "見方" })
+      .getByRole("tab")
+      .allTextContents();
+    expect(names).toEqual(["軸", "展開", "機力", "相手", "買い目"]);
+    await lensTab(page, "相手").click();
+    await expect(page.locator(".ta-lens-q")).toContainText(
+      "2着・3着に残るのは？",
+    );
+    const board = page.locator(".ta-board");
+    await expect(board).toContainText("●2着以内・○3着以内");
+    await expect(board).toContainText(
+      "艇ごとに、その艇の深掘りと同じレースでの割合",
+    );
+    const lane1 = board.locator(".ta-lane").first();
+    await expect(lane1).toContainText("2着以内 70%");
+    await expect(lane1).toContainText("3着以内 79%");
+    await expect(page.locator(".ta-sum")).toContainText(
+      "1号艇を軸にしたときの2着・3着",
+    );
+    await expect(page.locator(".ta-sum")).toContainText(
+      "1号艇が1着のときだけ（ほかの艇が1着のときはまだ出ない）",
+    );
+    // 相手レンズでは上に大きい数字が無いので「上の 65/119」を指さない
+    await expect(page.locator(".ta-sum")).not.toContainText("上の 65/119");
+
+    await page.getByRole("button", { name: "ガイド" }).click();
+    for (let i = 0; i < 4; i++)
+      await page.getByRole("button", { name: "次へ" }).click();
+    await expect(page.getByText("ガイド 5/6 ⑤相手")).toBeVisible();
+    await expect(lensTab(page, "相手")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  test("320px: タブ5つが1行で、どれも幅44px以上・高さがそろう。ガイドは問いの行へ移る", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 700 });
+    await open(page);
+    const boxes = await page
+      .getByRole("tablist", { name: "見方" })
+      .getByRole("tab")
+      .evaluateAll((els) =>
+        els.map((e) => {
+          const r = e.getBoundingClientRect();
+          return {
+            w: r.width,
+            h: r.height,
+            top: r.top,
+            wrap: e.scrollWidth > e.clientWidth,
+          };
+        }),
+      );
+    expect(boxes).toHaveLength(5);
+    for (const b of boxes) {
+      expect(b.w).toBeGreaterThanOrEqual(44);
+      expect(b.wrap).toBe(false);
+      expect(b.h).toBe(boxes[0].h);
+      expect(b.top).toBe(boxes[0].top);
+    }
+    const guide = await page
+      .getByRole("button", { name: "ガイド" })
+      .evaluate((e) => e.getBoundingClientRect().top);
+    expect(guide).toBeGreaterThan(boxes[0].top + boxes[0].h - 1);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(320);
   });
 });

@@ -629,14 +629,24 @@ function BetLensSummary({ m }) {
 /**
  * レンズの要約（FR-4、screens S-1 D）。レースの全体に関わる値をレンズごとに並べる（承認モック v7 の renderSum）。
  * 6艇の値の最良は金枠だけで示す（隠し文字は図の数字の側だけ）
- * @param {{lens: string, axis: object|null, flow: object, power: object, bet: object}} props 各レンズの材料
+ * @param {{lens: string, axis: object|null, flow: object, power: object, place: object|null, bet: object}} props 各レンズの材料
  */
-export default function LensSummary({ lens, axis, flow, power, bet }) {
+export default function LensSummary({ lens, axis, flow, power, place, bet }) {
   return (
     <div className="ta-sum">
       {lens === "axis" && axis && <AxisSummary m={axis} />}
       {lens === "flow" && <FlowSummary m={flow} />}
       {lens === "power" && <PowerSummary m={power} />}
+      {lens === "place" && place?.follow && (
+        // 相手レンズ（spec D-46）: 1号艇を軸にしたときの2着・3着
+        <WinFollowers
+          f={place.follow}
+          label={place.label}
+          axisK={place.axisK}
+          axisN={place.axisN}
+          above={false}
+        />
+      )}
       {lens === "bet" && <BetLensSummary m={bet} />}
     </div>
   );

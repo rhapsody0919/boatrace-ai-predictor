@@ -21,14 +21,23 @@ export function ComboList({ rows }) {
  * @param {{f: ReturnType<typeof import("../../../utils/assistSummary").winFollowers>, label: string, axisK: number, axisN: number}} props
  *   axisK・axisN は軸の大きい数字（返還のあったレースを含む）。件数が同じなら「同じレース」と書く
  */
-export default function WinFollowers({ f, label, axisK, axisN, target = 1 }) {
+export default function WinFollowers({
+  f,
+  label,
+  axisK,
+  axisN,
+  target = 1,
+  above = true,
+}) {
   // 上の大きい数字が1着のときだけ「上の 65/119」を指す
-  const win = target === 1;
+  // 上に軸の大きい数字（1着）があるときだけ「上の 65/119」を指す。相手レンズ（above=false）では上を指さない
+  const win = above && target === 1;
   const note = followNoteKind(f.n, axisK);
   const val = (k) => (f.few ? C.followCount(k) : `${pct(k, f.n)}%`);
   return (
     <section className="ta-box">
       <h3>{C.followHeading(1)}</h3>
+      <p className="ta-note">{C.followOnly(1)}</p>
       <span className="ta-scopechip ta-num">
         {C.followScope(label, 1, f.n)}
       </span>

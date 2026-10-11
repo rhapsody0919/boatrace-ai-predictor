@@ -301,7 +301,8 @@ export function stageFromExhibition(exhibition, boats) {
 
 // ---- レースの図（screens「レンズごとの図 C」、N-2: 最初に見える数字は1艇2個まで）----
 
-export const LENSES = ["axis", "flow", "power", "bet"];
+// 相手（place）は機力と買い目の間（2026-10-12 ユーザー決定「買い目の隣」、spec D-46）
+export const LENSES = ["axis", "flow", "power", "place", "bet"];
 
 /** 平均ST・展示ST を「.132」の形に（画面の文字）。読み上げ・比べるときは小数のまま */
 export const stText = (v, digits = 3) =>
@@ -448,6 +449,7 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
  * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
  *   pastWin: 買い目レンズの「過去の{着順}」（艇ごとの差がつく材料の範囲での target の着順。assistSummary.b1Usual）
+ *   placeRates: 相手レンズの各艇の2着以内・3着以内（Map<艇, {t2: {k, n}, t3: {k, n}}>。艇ごとの範囲、spec D-46）
  *   target: 軸・買い目で共通の着順（1＝1着・2＝2着以内・3＝3着以内。spec D-44）。1以外では人気の札を「人気（1着）」にして薄くする
  *   stBasis: 展開レンズの展示前の平均ST（"course"＝このコース・直近30走、"overall"＝直近30走。BOA-815 案A）
  *   stMissing: v16 の保存が無いと分かった（"not_saved"）。軸レンズに平均ST を出せない理由を書く
@@ -465,6 +467,7 @@ export function boardModel({
   finalRound = false,
   hasToday = true,
   pastWin = null,
+  placeRates = null,
   target = 1,
   stBasis = "course",
   stMissing = false,
@@ -583,6 +586,56 @@ export function boardModel({
           dotAria: v == null ? null : METRICS[key].aria(v, r),
           // このコースの走が5走未満で直近30走で補った艇（BOA-815 方針4）
           filled: key === "st_course" && v != null && r.stCourseFilled,
+        };
+      }),
+    };
+  }
+
+  if (lens === "place") {
+    // 相手（spec D-46）: 横軸は割合 0〜100%。●2着以内（x）と○3着以内（x2）を同じ行に置く。
+    // 値は艇ごとの範囲（深掘り・買い目と同じ）。艇ごとに範囲が違うので6艇で比べる金枠は付けない。
+    // 30件未満は割合を出さず件数だけ（2026-10-12 統計検証: 艇の範囲の30件未満は0.2%）
+    const rate = (pair) => (pair && pair.n >= 30 ? pair.k / pair.n : null);
+    const text = (pair) =>
+      !pair
+        ? "—"
+        : pair.n < 30
+          ? ASSIST_COPY.placeFew(pair.n)
+          : `${Math.round((pair.k / pair.n) * 100)}%`;
+    return {
+      kind: "place",
+      title: ASSIST_COPY.placeTitle,
+      left: "0%",
+      right: "100%",
+      good: null,
+      lo: 0,
+      hi: 1,
+      rows: racers.map((r) => {
+        const p = placeRates?.get(r.boat) ?? null;
+        return {
+          boat: r.boat,
+          x: rate(p?.t2),
+          x2: rate(p?.t3),
+          nums: p
+            ? [
+                {
+                  metric: null,
+                  label: ASSIST_COPY.placeTop2,
+                  short: ASSIST_COPY.placeTop2,
+                  text: text(p.t2),
+                  aria: null,
+                  best: false,
+                },
+                {
+                  metric: null,
+                  label: ASSIST_COPY.placeTop3,
+                  short: ASSIST_COPY.placeTop3,
+                  text: text(p.t3),
+                  aria: null,
+                  best: false,
+                },
+              ]
+            : [],
         };
       }),
     };

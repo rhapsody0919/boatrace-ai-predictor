@@ -646,8 +646,10 @@ check(
 );
 const steps = guideSteps({ post: false, rough: null, hintTop: hs.top });
 check(
-  "ガイドは5段（軸・軸・展開・機力・買い目）、各段の1文は40字以内、展示前の④は展示の値を出さない",
-  steps.map((x) => x.lens).join() === "axis,axis,flow,power,bet" &&
+  "ガイドは6段（軸・軸・展開・機力・相手・買い目。spec D-46）、各段の1文は40字以内、展示前の④は展示の値を出さない",
+  steps.map((x) => x.lens).join() === "axis,axis,flow,power,place,bet" &&
+    ASSIST_COPY.guideStep(5, steps.length, steps[4].step) ===
+      "ガイド 5/6 ⑤相手" &&
     steps.every((x) => x.sub.length <= 40 && x.q.length <= 40) &&
     !steps[3].sub.includes("金枠"),
   JSON.stringify(steps.map((x) => x.sub)),

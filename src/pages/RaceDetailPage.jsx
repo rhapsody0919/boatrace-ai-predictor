@@ -327,7 +327,11 @@ function RaceDetailPage({ showViewSwitch = false }) {
         name="description"
         content={t("raceDetailPage.metaDescription", metaParams)}
       />
-      <link rel="canonical" href={`https://www.boat-ai.jp/race/${raceId}`} />
+      {/* 4言語で出すページなので、canonical は表示中の言語の URL（hreflang と合わせる） */}
+      <link
+        rel="canonical"
+        href={`https://www.boat-ai.jp${localize(`/race/${raceId}`)}`}
+      />
       <Header />
       {/* 上部の切り替え（BOA-430 PR6、D-22）。サイトのヘッダーの直下、パンくずの上（承認モック pr6-switch） */}
       {showViewSwitch && <AssistViewSwitch current="race" raceId={raceId} />}

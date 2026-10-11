@@ -74,6 +74,25 @@ function Track({ model, row, onMetric }) {
         aria-hidden="true"
         style={{ left: `${x}%`, background: row.flying ? undefined : color }}
       />
+      {/* 相手レンズ（spec D-46）: ○3着以内を2つ目の点で置き、●2着以内との間を線でつなぐ */}
+      {row.x2 != null && (
+        <>
+          <span
+            className="ta-track-span"
+            aria-hidden="true"
+            style={{
+              left: `${x}%`,
+              width: `${Math.max(0, scale(model, row.x2) - x)}%`,
+              background: color,
+            }}
+          />
+          <span
+            className="ta-track-dot ta-track-dot-o"
+            aria-hidden="true"
+            style={{ left: `${scale(model, row.x2)}%`, borderColor: color }}
+          />
+        </>
+      )}
       {row.dotText &&
         (def ? (
           // 点の値は押すと6艇比較（ファン評価で PR4 に回した「スタートの値の数字ボタン」）
@@ -175,6 +194,9 @@ export default function RaceLaneBoard({
           （BOA-831 ファン評価 1周目 指摘4） */}
       {bet && onTarget && <TargetSwitch target={target} onTarget={onTarget} />}
       {bet && <p className="ta-note">{ASSIST_COPY.pastWinNote(target)}</p>}
+      {model.kind === "place" && (
+        <p className="ta-note">{ASSIST_COPY.placeNote}</p>
+      )}
       <div className="ta-board-axis" aria-hidden="true">
         <span>
           {model.good === "left" && (

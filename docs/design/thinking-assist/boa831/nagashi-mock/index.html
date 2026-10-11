@@ -1,0 +1,200 @@
+<title>流しの相手の見方</title>
+<style>
+:root{
+  --bg:#f6f4ee; --card:#fffdf8; --ink:#1d1f24; --sub:#5d6068; --line:#dcd7cb;
+  --acc:#1f5fa8; --acc-soft:#e6eef8; --bar:#2a62b0; --bar-bg:#e2dccd; --new:#b2361f; --new-soft:#fbe9e4; --hl:#fff4cf;
+  --b1:#ffffff; --b1t:#1d1f24; --b2:#1d1f24; --b3:#d93a2b; --b4:#2a74d0; --b5:#e9c21b; --b5t:#1d1f24; --b6:#3f9a46;
+  --a1:#d93a2b; --a2:#2a74d0; --cb1:#3f9a46;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+    --acc:#8db8f0; --acc-soft:#22324a; --bar:#6ea2e8; --bar-bg:#353a42; --new:#f08a73; --new-soft:#3d2620; --hl:#3a3420;
+    --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+  --acc:#8db8f0; --acc-soft:#22324a; --bar:#6ea2e8; --bar-bg:#353a42; --new:#f08a73; --new-soft:#3d2620; --hl:#3a3420;
+  --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.6;padding-inline:16px;padding-block:24px 48px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:36px}
+h1{font-size:1.5rem;margin:0;text-wrap:balance} h2{font-size:1.2rem;margin:0;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;color:var(--sub);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+.card p,.card ol,.card ul{margin:0} .card ol,.card ul{padding-left:1.3em;display:grid;gap:6px}
+.frames{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+.side{display:grid;gap:10px;max-width:68ch} .side p,.side ul{margin:0} .side ul{padding-left:1.2em;display:grid;gap:4px}
+.tag{display:inline-block;font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--acc-soft);color:var(--acc)}
+.phone{width:100%;max-width:375px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:12px;display:grid;gap:10px}
+.phone.wide{max-width:760px;border-radius:12px}
+.flabel{font-size:.75rem;color:var(--sub);margin:0 0 6px;font-weight:700}
+.lens{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.lens span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:.9rem}
+.lens span.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.q{font-size:.85rem;color:var(--sub);margin:0} .q b{color:var(--ink)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;min-width:0}
+.box h3{font-size:1.05rem;margin:0}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--ink);border-radius:8px;overflow:hidden}
+.seg span{min-height:44px;display:grid;place-items:center;font-weight:700;font-size:.9rem;border-left:1px solid var(--ink)}
+.seg span:first-child{border-left:0} .seg span.on{background:var(--ink);color:var(--card)}
+.seglbl{font-size:.75rem;color:var(--sub);margin:0 0 4px}
+.small{font-size:.8rem;color:var(--sub);margin:0}
+.chip{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px}
+.newmark{outline:2px dashed var(--new);outline-offset:4px;border-radius:10px}
+.badge{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;border:1px solid transparent;flex:none}
+.c1{background:var(--b1);color:var(--b1t);border-color:var(--b1t)} .c2{background:var(--b2)} .c3{background:var(--b3)} .c4{background:var(--b4)} .c5{background:var(--b5);color:var(--b5t)} .c6{background:var(--b6)}
+.cls{font-size:.7rem;font-weight:700;border-radius:4px;padding:0 4px;color:#fff;line-height:1.5}
+.A1{background:var(--a1)} .A2{background:var(--a2)} .B1{background:var(--cb1)}
+.rows{display:grid}
+.row{display:grid;grid-template-columns:56px minmax(0,1fr) 3em 5.6em 14px;gap:8px;align-items:center;min-height:44px;font-size:.88rem;padding:0 6px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .who{display:flex;gap:4px;align-items:center}
+.row .p{text-align:right;font-weight:700}
+.row .k{color:var(--sub);font-size:.8rem}
+.row .go{color:var(--sub)}
+.row.sel{background:var(--hl);outline:2px solid var(--ink);outline-offset:-2px;border-radius:8px}
+.track{height:10px;background:var(--bar-bg);border-radius:5px;overflow:hidden} .fill{height:100%;background:var(--bar);border-radius:5px}
+.boats{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.boats span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:10px}
+.boats span.sel{outline:3px solid var(--ink);outline-offset:-1px}
+.entry{display:flex;justify-content:space-between;align-items:center;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--bg)}
+.entry b{display:block} .entry small{color:var(--sub)}
+.fold{color:var(--acc);font-weight:700;font-size:.9rem;text-align:center}
+.lineup{display:flex;gap:6px;align-items:center;font-size:.75rem;color:var(--sub)}
+.f2{display:grid;grid-template-columns:28px 1fr 1fr;gap:10px;align-items:center;font-size:.85rem}
+.f2 .h{font-size:.72rem;color:var(--sub);font-weight:700}
+.mini{display:grid;grid-template-columns:1fr 2.6em;gap:6px;align-items:center;text-align:right}
+.mini .track{height:8px}
+.dim{opacity:.55}
+table.cmp{border-collapse:collapse;font-size:.85rem;min-width:640px}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+table.cmp th{font-size:.75rem;color:var(--sub)} .scroll{overflow-x:auto}
+.qs{display:grid;gap:10px} .qs div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px} .qs b{display:block}
+.wide-inner{max-width:720px}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px;max-width:780px">
+    <span class="eyebrow">思考アシスト／流しの相手を軸で見る モック v2（例: 2026-10-06 徳山10R 準優勝戦・本番の値）</span>
+    <h1>2着以内・3着以内では、軸の大きい数字を6艇の並びに置き換える</h1>
+    <p>今は3号艇を開いて3着以内を選んでも、軸の大きい数字は「1号艇が3着以内に来たのは 79.0%」のまま（承認モック v2 どおりだが、1号艇固定を質問で明示していなかった）。下は本番の部品を省かずに並べた絵。赤い点線が変わる場所。</p>
+  </header>
+
+  <section class="card">
+    <span class="eyebrow">ファンにとっての価値</span>
+    <ol>
+      <li>流しは軸（1着）を決めて、2着・3着の相手を何艇にするかを決める買い方。2着以内・3着以内を選んだ人が見たいのは、6艇のうちどこまでが相手に残りやすいか。</li>
+      <li>今は6艇を並べて見られるのが買い目レンズだけで、横軸がオッズなので割合で比べにくい。</li>
+      <li>同じ艇の数字は、どの場所でも同じにする。3号艇の3着以内は、深掘りで「全体 65.1%」、買い目で「65%（417/641）」と出ている。新しく並べる行も同じ値にする（BOA-833 の教訓）。</li>
+    </ol>
+  </section>
+
+  <section style="display:grid;gap:12px">
+    <div class="frames">
+      <div>
+        <p class="flabel">375px・3号艇の丸を押して、3着以内を選んだ状態</p>
+        <div class="phone" aria-label="案B v2 375px">
+          <div class="lens"><span class="on">軸</span><span>展開</span><span>機力</span><span>買い目</span></div>
+          <p class="q"><b>1号艇は逃げる？</b> 3着までに残るか</p>
+          <div class="boats" aria-hidden="true"><span><i class="badge c1">1</i></span><span><i class="badge c2">2</i></span><span class="sel"><i class="badge c3">3</i></span><span><i class="badge c4">4</i></span><span><i class="badge c5">5</i></span><span><i class="badge c6">6</i></span></div>
+          <p class="small">（上: 図の艇の丸。下に3号艇の深掘りが開いている）</p>
+          <div class="box">
+            <div><p class="seglbl">何着までで見るか（軸・買い目で共通）</p>
+              <div class="seg"><span>1着</span><span>2着以内</span><span class="on">3着以内</span></div></div>
+            <div class="newmark" style="display:grid;gap:6px">
+              <h3>3着以内に来たのは（6艇）</h3>
+              <p class="small">艇ごとに、その艇の枠と級で集めたレース（深掘り・買い目と同じ値）</p>
+              <div class="rows num" id="rows375"></div>
+            </div>
+            <span class="chip num">1号艇: 全国・級の並びが同じ準優勝戦（1号艇がB1） 119件</span>
+            <div class="lineup"><span class="cls B1">B1</span> 1号艇 ／ ほかの5艇 <span class="cls A2">A2</span><span class="cls A1">A1</span><span class="cls A2">A2</span><span class="cls A1">A1</span><span class="cls B1">B1</span></div>
+            <p class="small newmark" style="padding:2px 6px">徳山の全レースの棒は、1着のときだけ出す（1号艇だけの値なので6艇の並びと混ぜない）</p>
+            <div class="fold">件数が上の枠と違う理由 ›</div>
+            <div class="entry"><span><b>1号艇の差がつく材料 ▲3件（3着以内）</b><small>モーター2連率・当地勝率 ほか1件</small></span><span aria-hidden="true">›</span></div>
+          </div>
+          <div class="box">
+            <h3>1号艇が1着のとき、2着・3着に来たのは</h3>
+            <span class="chip num">全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件</span>
+            <div class="f2 num" id="f2"></div>
+          </div>
+        </div>
+      </div>
+      <div style="flex:1;min-width:300px">
+        <p class="flabel">1440px（PC。文章と1行1項目の段は最大720px、左端をタブの列にそろえる）</p>
+        <div class="phone wide" aria-label="案B v2 1440px">
+          <div class="wide-inner" style="display:grid;gap:10px">
+            <div class="lens"><span class="on">軸</span><span>展開</span><span>機力</span><span>買い目</span></div>
+            <div class="box">
+              <div><p class="seglbl">何着までで見るか（軸・買い目で共通）</p>
+                <div class="seg"><span>1着</span><span class="on">2着以内</span><span>3着以内</span></div></div>
+              <div class="newmark" style="display:grid;gap:6px">
+                <h3>2着以内に来たのは（6艇）</h3>
+                <p class="small">艇ごとに、その艇の枠と級で集めたレース（深掘り・買い目と同じ値）</p>
+                <div class="rows num" id="rows1440"></div>
+              </div>
+              <span class="chip num">1号艇: 全国・級の並びが同じ準優勝戦（1号艇がB1） 119件</span>
+              <div class="fold">件数が上の枠と違う理由 ›</div>
+            </div>
+          </div>
+        </div>
+        <p class="small" style="margin-top:8px">1440px は 2着以内で、深掘りを開いていない状態（強調の行が無い）</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <div><span class="tag">推奨</span></div>
+    <h2>案B v2 の決まり</h2>
+    <ul>
+      <li>1着を選んでいるときは今のまま（「1号艇が1着になったのは 54.6%」と徳山の全レースの棒）</li>
+      <li>2着以内・3着以内を選んだときは、大きい数字を6艇の行に置き換える。1号艇の行は今の大きい数字と同じ値（79%・94/119）</li>
+      <li>行の値は艇ごとの範囲で、深掘りの「全体」・買い目の「過去の〇〇」と同じ。行に級の札を付け、件数が艇ごとに違う理由（枠と級で集めている）を見せる。詳しい説明は「件数が上の枠と違う理由」の中に1段落足す</li>
+      <li>深掘りで開いている艇の行を強調する。行は高さ44pxで右端に「›」、押すとその艇の深掘りが開く（艇の丸と同じ動き）</li>
+      <li>並びは艇番順（図の丸・深掘り・買い目と同じ順。ファンパネルでは割合の高い順の声もあった）</li>
+      <li>徳山の全レースの棒は1着のときだけ。下の「1号艇が1着のとき」の箱は今のまま（2着・3着の2列なので、6艇の1本の棒と見た目で分かれる）</li>
+      <li>縦の伸び: 375px で約 +190px（大きい数字の分が減る）</li>
+    </ul>
+    <p class="small">データ: v16 facts（取得済み、API の変更なし）。規模: PR 1本（小）</p>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">比べた案</span>
+    <div class="scroll"><table class="cmp">
+      <thead><tr><th>案</th><th>中身</th><th>判断</th></tr></thead>
+      <tbody>
+        <tr><td>B v2（推奨）</td><td>2着以内・3着以内では大きい数字を6艇の行に置き換え、開いた艇を強調</td><td>相手を比べられる。同じ艇の値はどこでも同じ</td></tr>
+        <tr><td>A</td><td>大きい数字を深掘りで開いた艇に合わせる（3号艇 65.1%・641件）</td><td>採らない。1艇ずつしか見られず、問い・会場の棒・下の箱が1号艇のままで箱の中で艇が混ざる</td></tr>
+        <tr><td>C</td><td>買い目レンズへ1行で送る</td><td>単独では不足。B の行の下に「6艇のオッズと並べる（買い目）›」を足すかは決めること3</td></tr>
+        <tr><td>1号艇の範囲で6艇（119レース）</td><td>同じ119レースで6艇（3号艇 58%）</td><td>採らない。深掘り・買い目の 65% と食い違う</td></tr>
+      </tbody></table></div>
+    <p class="small">見送り（別チケット）: 「3号艇が1着のとき、2着・3着に来たのは」（1号艇以外を軸にした流しの相手）。今の API は1号艇の範囲でしか出せず、追加が要る（規模: 中）。</p>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">決めること</span>
+    <div class="qs">
+      <div><b>1. 2着以内・3着以内のとき、軸の大きい数字を6艇の並びに置き換えるか</b>推奨: 置き換える（案B v2）。1着のときは今のまま。</div>
+      <div><b>2. 6艇の並び順</b>推奨: 艇番順（図・深掘り・買い目とそろう）。別案: 割合の高い順。</div>
+      <div><b>3. 「3号艇が1着のとき、2着・3着」（1号艇以外を軸にした流し）を別チケットで進めるか</b>推奨: 起票して、API の追加の規模を見てから決める。</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var CL=['B1','A2','A1','A2','A1','B1'];
+  var T3=[[94,119],[256,451],[417,641],[366,812],[116,264],[74,528]];
+  var T2=[[83,119],[161,451],[252,641],[186,812],[60,264],[19,528]];
+  function rows(id,V,sel){var h='';V.forEach(function(r,i){var b=i+1,p=100*r[0]/r[1];h+='<div class="row'+(b===sel?' sel':'')+'"><span class="who"><span class="badge c'+b+'">'+b+'</span><span class="cls '+CL[i]+'">'+CL[i]+'</span></span><div class="track"><div class="fill" style="width:'+p.toFixed(1)+'%"></div></div><span class="p">'+Math.round(p)+'%</span><span class="k">（'+r[0]+'/'+r[1]+'）</span><span class="go" aria-hidden="true">›</span></div>'});document.getElementById(id).innerHTML=h}
+  rows('rows375',T3,3); rows('rows1440',T2,0);
+  var S2=[25,18,11,7,4],S3=[14,16,20,9,6],h='<span></span><span class="h">2着</span><span class="h">3着</span>';
+  for(var b=2;b<=6;b++){var a=100*S2[b-2]/65,c=100*S3[b-2]/65;h+='<span class="badge c'+b+'">'+b+'</span><span class="mini"><span class="track"><span class="fill" style="display:block;width:'+a.toFixed(1)+'%"></span></span>'+Math.round(a)+'%</span><span class="mini"><span class="track"><span class="fill" style="display:block;width:'+c.toFixed(1)+'%"></span></span>'+Math.round(c)+'%</span>'}
+  document.getElementById('f2').innerHTML=h;
+})();
+</script>

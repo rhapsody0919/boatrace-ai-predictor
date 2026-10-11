@@ -902,12 +902,13 @@ test.describe("ガイド", () => {
     await expect(footerRegion(page)).not.toBeVisible();
   });
 
-  test("[screens S-1c] ⑤は買い目レンズに切り替え、フッターは隠さない", async ({
+  // spec D-46（2026-10-12 ユーザー承認、相手レンズを足してガイドを6段にした）で ⑤→⑥ に改めた
+  test("[screens S-1c] ⑥は買い目レンズに切り替え、フッターは隠さない", async ({
     page,
   }) => {
     await openAssist(page);
     await guideToggle(page).click();
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 5; i++) {
       await page.getByRole("button", { name: "次へ" }).click();
     }
     await expect(lensTab(page, "買い目")).toHaveAttribute(

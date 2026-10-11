@@ -180,7 +180,7 @@ function TodayVenueGridPage() {
 
       <div className="container">
         <main className="main-content">
-          <section className="race-list-section">
+          <section className="race-list-section" id="today-venues">
             <h2>
               🏁 {t("home.todayRaces")}{" "}
               {formatDateShortLocalized(getTodayJST(), i18n.resolvedLanguage)}
