@@ -42,11 +42,11 @@
   - 今の「同じレース／返還」の注記は外す
 - データ: 今ある `winFollowers(scenario, boat)` の艇の引数で作れる（3連単の全体のセル）。軸を問わない2着は同じ tri の2着の合計。バッチ・範囲キーの変更なし
 
-### ユーザーの回答待ち（オーケストレーターから届く。推奨はファンパネルの結果）
-1. 3着の列は出さず、よく出た3連単（3つ）と龍神ソナーの着順の流れへの導線を置くか → 推奨: 置く。導線は表の下に1行「着順の流れを見る（龍神ソナー）›」＋「1着のX号艇を押すと、その流れになる」。リンク先は `/race/{id}?tab=sonar&sonar=scenario`。軸を選んだ状態で開く URL は今回は作らない（龍神ソナーの共通部品の変更になるので別チケット）
-2. 最初に選ばれている軸の艇 → 推奨: 前に選んだ艇（同じタブ・同じレース。D-45 の sessionStorage `boatai-user:assist:{raceId}` に足す）→ 無ければ1着の候補が1艇だけならその艇（「1着の候補に合わせた」と小さく書く）→ 無ければ1号艇。別案: 常に1号艇
+### ユーザーの回答（2026-10-12、v3 を承認。`docs/design/thinking-assist/boa831/axis-any-mock/APPROVED.md`）
+1. 3着の列は出さず、よく出た3連単（軸に合わせて3つ）と龍神ソナーの着順の流れへの導線を置く。導線は表の下に1行「着順の流れを見る（龍神ソナー）›」＋「1着のX号艇を押すと、その流れになる」。リンク先は `/race/{id}?tab=sonar&sonar=scenario`。軸を選んだ状態で開く URL は BOA-847（今回は作らない）
+2. 最初に選ばれている軸の艇: 前に選んだ艇（同じタブ・同じレース。D-45 の sessionStorage `boatai-user:assist:{raceId}` に足す）→ 無ければ1着の候補が1艇だけならその艇（「1着の候補に合わせた」と小さく書く）→ 無ければ1号艇
 
 ### 実装の注意
 - 1号艇の表の範囲が替わるので、`e2e/thinking-assist-states.spec.js`「1号艇を軸にしたときの2着・3着（相手レンズ）」の期待値（65件・38%/22% など）と `verify-thinking-assist-summary.js` の案1b の検査を新しい範囲の値に直す。fixture（`e2e/thinking-assist-fixture.json.gz`）に VA の scenario がある（`VA:18`）
 - GA4: 軸の切り替えを assist_* の決まりで足す（例 `assist_place_axis`、assist_boat を流用できるか先に確かめる）。events.md とカスタムディメンションの一覧を更新
-- spec に D-48 を追記（決定の要旨は上）
+- spec D-48 は docs ブランチ feature/boa-430-thinking-assist に記録済み
