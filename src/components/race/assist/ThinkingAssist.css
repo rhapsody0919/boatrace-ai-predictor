@@ -294,6 +294,22 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 展示後の展示ST の入口（ファン評価 1周目 指摘3・4）。押せる高さ 44px */
+.ta-exh-open {
+  display: block;
+  min-height: 44px;
+  margin: 0 0 var(--spacing-1) auto;
+  padding: 0 var(--spacing-2);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-info-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* 展示後の展示{r}位（spec D-47 (2)）。手がかり・攻め手の印と見分けるため、色は付けず枠と太字だけ */
 .ta-tag-exh {
   /* 隣の押せる印（44px の押せる範囲）に合わせて縦に伸ばさない */

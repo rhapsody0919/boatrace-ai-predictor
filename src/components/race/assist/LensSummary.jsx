@@ -175,6 +175,7 @@ export function FlowConclusion({ m }) {
     hint: top,
     forms = [],
     onForm,
+    basis,
   } = m;
   if (!scenario) return null;
   const formName = top ? C.formNames[top.form] : null;
@@ -257,6 +258,7 @@ export function FlowConclusion({ m }) {
           <p className="ta-note ta-num">
             {C.flowShapeBase(p0(top.miss[0], top.miss[1]), hitP)}
           </p>
+          {basis === "overall" && <p className="ta-note">{C.flowHintBasis}</p>}
         </>
       ) : (
         <p className="ta-note">{C.flowNoHint}</p>
