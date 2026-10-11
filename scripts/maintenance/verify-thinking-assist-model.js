@@ -437,14 +437,44 @@ const flow = boardModel({
   finalRound: true,
 });
 check(
-  "展開レンズ（展示後）: 展示ST。5号艇の F は「F .01（フライング）」と書いて最良の候補から外し、最良は4号艇（.05）（BOA-801 2）",
-  flow.rows[4].dotText === "F .01（フライング）" &&
-    flow.rows[4].flying === true &&
-    flow.rows[3].flying === false &&
-    flow.rows
-      .filter((r) => r.dotBest)
+  "展開レンズ（展示後）: 横軸は展示前と同じ平均ST（このコース）。展示ST は図にしない（spec D-47 (1)）",
+  flow.title === "平均ST（このコース・直近30走） 左ほど早い" &&
+    flow.basis === "course" &&
+    flow.rows[2].dotText === ".142" &&
+    flow.rows.every((r) => !r.flying),
+  flow.title,
+);
+check(
+  "展開レンズ（展示後）: 各艇に展示タイムの6艇の順位（6.84・6.84・6.89・6.83・6.90・6.89 → 2,2,4,1,6,4。同タイムは同じ順位。spec D-47 (2)）",
+  flow.rows.map((r) => r.exhRank).join() === "2,2,4,1,6,4" &&
+    boardModel({ lens: "flow", stage: "pre", racers }).rows.every(
+      (r) => r.exhRank == null,
+    ),
+  flow.rows.map((r) => r.exhRank).join(),
+);
+check(
+  "展開レンズ（展示後）: 点の値を押すと展示ST の6艇比較。読み上げは見えている平均ST から始める",
+  flow.rows.every((r) => r.dotMetric === "exh_st") &&
+    flow.rows[0].dotLabel ===
+      "平均ST 0.148、展示ST（本番のスタートとは別）を6艇で比べる",
+  flow.rows[0].dotLabel,
+);
+const exhCmp = boardModel({
+  lens: "flow",
+  stage: "post",
+  racers,
+  metric: "exh_st",
+});
+check(
+  "展示ST の6艇比較: 名前は「展示ST（本番のスタートとは別）」、戻るは「平均ST（このコース・直近30走）に戻す」。5号艇の F は .00 より左（BOA-801 2）、最良は F を外して4号艇（.05）",
+  exhCmp.title === "展示ST（本番のスタートとは別）を6艇で比べる" &&
+    exhCmp.back === "平均ST（このコース・直近30走）に戻す" &&
+    exhCmp.rows[4].x < 0 &&
+    exhCmp.rows
+      .filter((r) => r.nums[0].best)
       .map((r) => r.boat)
       .join() === "4",
+  JSON.stringify([exhCmp.title, exhCmp.back]),
 );
 const flowPre = boardModel({
   lens: "flow",
@@ -518,9 +548,9 @@ check(
   flowOverall.title,
 );
 check(
-  "展示の後は横軸が展示ST で、切り替えを出さない",
+  "展示の後も平均ST の切り替えを出す（spec D-47 (1)）",
   boardModel({ lens: "flow", stage: "post", racers, stBasis: "overall" })
-    .basis === null,
+    .basis === "overall",
 );
 check(
   "v16 の保存が無いと分かったレースだけ、軸レンズに平均ST を出せない理由（読み込み中は出さない。BOA-808 6）",

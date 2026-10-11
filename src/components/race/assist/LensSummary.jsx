@@ -15,6 +15,7 @@ import {
   axisWhyKinds,
   b1Usual,
   entrySummary,
+  exhToday,
   powerWinners,
   exhibitionTable,
   factsEntry,
@@ -23,6 +24,7 @@ import {
   hintSummary,
   partsChangedBoats,
 } from "../../../utils/assistSummary";
+import { entryType } from "../../../utils/analogyScenario";
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
 import WinFollowers, { ComboList } from "./WinFollowers";
@@ -153,79 +155,110 @@ function AxisSummary({ m }) {
   );
 }
 
-function FlowSummary({ m }) {
+/**
+ * 展開レンズの図の上の結論（spec D-47 (3)、承認モック v2）: 本番のスタートの形の見立てと基準、展示後は今日の展示1行。
+ * 今日の展示は攻める艇の展示タイムの順位の区分で、その形のときの攻める艇の1着（枠なりのレース）。展示の進入が
+ * 枠なりでないと分かった日は、攻める艇のコースが変わるので出さない
+ */
+export function FlowConclusion({ m }) {
   const {
     scenario,
     today,
     post,
     v16Exhibition,
     courseByBoat,
-    similar,
-    racecardStage,
     reflecting,
     round,
+    exhRanks,
   } = m;
   const hs = scenario ? hintSummary(scenario, today) : null;
-  const top = hs?.top ?? null;
+  if (!hs) return null;
+  const top = hs.top;
+  const formName = top ? C.formNames[top.form] : null;
+  const exhForm =
+    post && top && v16Exhibition?.forms?.includes?.(top.form) ? true : false;
+  const entry = entryType(courseByBoat ?? []);
+  const ex =
+    post && top && (!entry || entry === "waku")
+      ? exhToday(scenario, top.form, exhRanks)
+      : null;
+  const hitP = top ? p0(top.hit[0], top.hit[1]) : null;
+  return (
+    <section className="ta-box ta-flow-concl">
+      <h3 className="ta-h3-row">
+        {C.flowShapeHeading}
+        {top && (
+          <TheoryButton
+            id={`TC-H:${top.id}`}
+            name={C.theoryHintTitle(formName)}
+            className="ta-th-hit"
+          >
+            {C.theoryHintButton}
+          </TheoryButton>
+        )}
+      </h3>
+      {top ? (
+        <>
+          <div className="ta-big">
+            <b>{formName}</b>
+            <span className="ta-big-cnt">{C.flowShapeRow}</span>
+            <span className="ta-big-pct ta-num">{hitP}%</span>
+            <span className="ta-big-cnt ta-num">
+              （{comma(top.hit[0])}/{comma(top.hit[1])}）
+            </span>
+          </div>
+          <div className="ta-legend">
+            <span className="ta-scopechip ta-num">
+              {/* 進入の札と件数が違う理由を添える（BOA-808 P3・BOA-809） */}
+              {C.scopeChipWhy(
+                C.flowScopeLabel(Boolean(round)),
+                top.hit[1] + top.miss[1],
+                C.scopeWhy.hint,
+              )}
+            </span>
+          </div>
+          <div className="ta-chk">
+            <span>✓ {C.hintConds[top.id]}</span>
+            {exhForm && <span>✓ {C.flowExhForm(formName)}</span>}
+          </div>
+          {/* 大きい数字と同じ「当てはまるとき」の棒は出さず、比べる相手（当てはまらないとき）の棒だけ（ユーザー決定 B） */}
+          <BaseBar label={C.flowMissBar} k={top.miss[0]} n={top.miss[1]} />
+          <p className="ta-note ta-num">
+            {C.flowShapeBase(p0(top.miss[0], top.miss[1]), hitP)}
+          </p>
+        </>
+      ) : (
+        <p className="ta-note">{C.flowNoHint}</p>
+      )}
+      {ex && (
+        <p className="ta-flow-today ta-num">
+          {C.flowToday(ex.att, ex.rank, C.exhBand[ex.band], formName)}{" "}
+          {ex.few ? (
+            C.flowTodayFew(ex.n)
+          ) : (
+            <>
+              <b>{p0(ex.k, ex.n)}%</b>（{ex.k}/{ex.n}）
+            </>
+          )}
+        </p>
+      )}
+      {post && reflecting && <p className="ta-note">{C.stateReflecting}</p>}
+    </section>
+  );
+}
+
+function FlowSummary({ m }) {
+  const { scenario, today, post, courseByBoat, similar, racecardStage, round } =
+    m;
+  const top = scenario ? hintSummary(scenario, today).top : null;
   const formName = top ? C.formNames[top.form] : null;
   const form = top ? formSummary(scenario, top.form) : null;
   const entry = post ? entrySummary(scenario, courseByBoat) : null;
-  const exhForm =
-    post && top && v16Exhibition?.forms?.includes?.(top.form) ? true : false;
   const simLabel = similar
     ? C.similarLabel(similar.n, similar.allInLayer)
     : null;
   return (
     <>
-      {hs && (
-        <section className="ta-box">
-          <h3 className="ta-h3-row">
-            {C.flowShapeHeading}
-            {top && (
-              <TheoryButton
-                id={`TC-H:${top.id}`}
-                name={C.theoryHintTitle(formName)}
-                className="ta-th-hit"
-              >
-                {C.theoryHintButton}
-              </TheoryButton>
-            )}
-          </h3>
-          {top ? (
-            <>
-              <div className="ta-big">
-                <span className="ta-big-cnt">{C.flowShapeLead(formName)}</span>
-                <span className="ta-big-pct ta-num">
-                  {p0(top.hit[0], top.hit[1])}%
-                </span>
-                <span className="ta-big-cnt ta-num">
-                  {C.flowShapeMiss(p0(top.miss[0], top.miss[1]))}
-                </span>
-              </div>
-              <div className="ta-legend">
-                <span className="ta-scopechip ta-num">
-                  {/* 進入の札と件数が違う理由を添える（BOA-808 P3・BOA-809） */}
-                  {C.scopeChipWhy(
-                    C.flowScopeLabel(Boolean(round)),
-                    top.hit[1] + top.miss[1],
-                    C.scopeWhy.hint,
-                  )}
-                </span>
-              </div>
-              <div className="ta-chk">
-                <span>✓ {C.hintConds[top.id]}</span>
-                {exhForm && <span>✓ {C.flowExhForm(formName)}</span>}
-              </div>
-              {/* 大きい数字と同じ「当てはまるとき」の棒は出さず、比べる相手（当てはまらないとき）の棒だけ（ユーザー決定 B） */}
-              <BaseBar label={C.flowMissBar} k={top.miss[0]} n={top.miss[1]} />
-              <p className="ta-note">{C.flowHintSource}</p>
-            </>
-          ) : (
-            <p className="ta-note">{C.flowNoHint}</p>
-          )}
-          {post && reflecting && <p className="ta-note">{C.stateReflecting}</p>}
-        </section>
-      )}
       {form && (
         <section className="ta-box">
           <h3 className="ta-h3-row">

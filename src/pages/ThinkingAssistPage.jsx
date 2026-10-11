@@ -22,7 +22,9 @@ import LensBar from "../components/race/assist/LensBar";
 import RaceLaneBoard from "../components/race/assist/RaceLaneBoard";
 import BetFooter from "../components/race/assist/BetFooter";
 import MarkSheet from "../components/race/assist/MarkSheet";
-import LensSummary from "../components/race/assist/LensSummary";
+import LensSummary, {
+  FlowConclusion,
+} from "../components/race/assist/LensSummary";
 import BoatDeepDive from "../components/race/assist/BoatDeepDive";
 import TheorySheet from "../components/race/assist/TheorySheet";
 import GlossarySheet from "../components/race/assist/GlossarySheet";
@@ -44,6 +46,7 @@ import {
   boardModel,
   buildRacers,
   classLineup,
+  exhRanks,
   restClassCounts,
   roughCard,
   roughState,
@@ -343,10 +346,7 @@ function ThinkingAssistBody() {
       const boat = HINT_BOAT[top.id];
       if (boat)
         add(boat, {
-          text: ASSIST_COPY.hintMark(
-            ASSIST_COPY.formNames[top.form],
-            Math.round((top.hit[0] / top.hit[1]) * 100),
-          ),
+          text: ASSIST_COPY.hintMark(ASSIST_COPY.formNames[top.form]),
           hit: true,
           theory: `TC-H:${top.id}`,
         });
@@ -524,6 +524,7 @@ function ThinkingAssistBody() {
       racecardStage: data.similar.racecardStage,
       reflecting: v16Status === "exhibition_reflecting",
       round: data.round,
+      exhRanks: post ? exhRanks(racers) : null,
     },
     power: {
       post,
@@ -721,6 +722,8 @@ function ThinkingAssistBody() {
             狭い画面では囲みが無いのと同じ（display: contents） */}
         <div className="ta-split">
           <div className="ta-split-fig">
+            {/* 展開は結論（形の見立て・今日の展示）を図の上に（spec D-47 (3)） */}
+            {state.lens === "flow" && <FlowConclusion m={summary.flow} />}
             {cancelled && state.lens === "bet" ? (
               // 中止のレースは買い目レンズにこの1行だけ（D-38）
               <p className="ta-status">{ASSIST_COPY.cancelled}</p>

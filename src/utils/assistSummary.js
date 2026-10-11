@@ -17,6 +17,7 @@ import {
   MIN_SCENARIO,
   entryType,
   hintRows,
+  rankBand,
 } from "./analogyScenario.js";
 import { trifectaList } from "./analogyAggregate.js";
 import { wilsonInterval } from "./wilson.js";
@@ -192,6 +193,32 @@ export function hintSummary(scenario, today) {
   );
   const up = rows.filter((r) => r.kind === "up").sort((a, b) => b.ph - a.ph);
   return { rows, top: up[0] ?? null };
+}
+
+/**
+ * 図の上の「今日の展示」1行（spec D-47 (3)）。攻める艇の展示タイムの順位（6艇の順位、同タイムは同じ順位）の区分で、
+ * その形のときの攻める艇の1着。範囲は形の見立てと同じ scenario の attack（枠なりのレース）。
+ * 区分の件数が30件未満なら割合を出さない（few。承認モック v2 の決まり）
+ * @param {object|null} scenario
+ * @param {string} form スリットの形
+ * @param {(number|null)[]|null} exhRanks 艇番順の展示タイムの順位
+ * @returns {null | {att: number, rank: number, band: "top"|"mid"|"low", k: number, n: number, few: boolean}}
+ */
+export function exhToday(scenario, form, exhRanks) {
+  const a = scenario?.attack?.[form];
+  const att = a?.attacker ?? null;
+  const rank = att ? (exhRanks?.[att - 1] ?? null) : null;
+  const band = rankBand(rank);
+  const pair = band ? a.by_exh?.[band]?.att_win : null;
+  if (!pair?.[1]) return null;
+  return {
+    att,
+    rank,
+    band,
+    k: pair[0],
+    n: pair[1],
+    few: pair[1] < MIN_SCENARIO,
+  };
 }
 
 /**

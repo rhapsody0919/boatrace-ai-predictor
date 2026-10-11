@@ -618,9 +618,10 @@ test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () 
   }) => {
     await open(page);
     await lensTab(page, "展開").click();
-    await expect(page.getByText("本番で2コース凹みになるのは")).toBeVisible();
+    await expect(page.getByText("本番でこの形になるのは")).toBeVisible();
+    // 割合は図の上の結論に出し、札には入れない（spec D-47 (2)）
     await expect(
-      page.getByText("★平均STの手がかり（2コース凹み）13%"),
+      page.getByText(/^★平均STの手がかり（2コース凹み） ›$/),
     ).toBeVisible();
     await expect(
       // PR5 で印は押せるボタン（セオリーカード）にした。名前は「{印}（{n}号艇）の過去レースの傾向」
@@ -629,10 +630,14 @@ test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () 
       }),
     ).toBeVisible();
     await page
-      .getByRole("button", { name: /^展示ST .*、6艇で比べる$/ })
+      .getByRole("button", {
+        name: /^平均ST .*、展示ST（本番のスタートとは別）を6艇で比べる$/,
+      })
       .first()
       .click();
-    await expect(page.getByRole("button", { name: /図を戻す/ })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /平均ST（このコース・直近30走）に戻す/ }),
+    ).toBeVisible();
   });
 
   test("深掘り: 今節の平均は 8.57＝60点÷7走、今日の走は点に入れない", async ({
@@ -831,6 +836,14 @@ test.describe("思考アシスト: PR4 のファン評価 1周目", () => {
   }) => {
     await open(page);
     await lensTab(page, "展開").click();
+    // 展示ST は点の値を押した6艇比較（spec D-47 (1)）
+    await page
+      .getByRole("button", { name: /^平均ST .*、展示ST/ })
+      .first()
+      .click();
+    await expect(
+      page.getByText("展示ST（本番のスタートとは別）を6艇で比べる"),
+    ).toBeVisible();
     const left = await page.evaluate(
       () =>
         document.querySelectorAll(".ta-lane")[4].querySelector(".ta-track-dot")
@@ -1013,10 +1026,10 @@ test.describe("思考アシスト: PR5 のシート・ガイド（デザイナ�
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByText("★平均STの手がかり（2コース凹み）13%"),
+      page.getByText(/^★平均STの手がかり（2コース凹み） ›$/),
     ).toBeVisible();
     const values = page.getByRole("button", {
-      name: /^展示ST .*、6艇で比べる$/,
+      name: /^平均ST .*、展示ST（本番のスタートとは別）を6艇で比べる$/,
     });
     const n = await values.count();
     expect(n).toBeGreaterThan(0);
@@ -1428,11 +1441,12 @@ test.describe("思考アシスト: 平均ST の期間と「このコース」（
         name: "平均ST（直近30走） 0.132、6艇で比べる",
       }),
     ).toBeVisible();
-    // 展示の後は横軸が展示ST になり、切り替えは出さない
+    // 展示の後も横軸は平均ST のまま、切り替えも残す（spec D-47 (1)）
     await page.getByRole("button", { name: "展示後", exact: true }).click();
     await expect(page.getByRole("group", { name: "使う平均ST" })).toHaveCount(
-      0,
+      1,
     );
+    await expect(page.getByText("平均ST（直近30走） 左ほど早い")).toBeVisible();
   });
 
   test("深掘りの平均ST は期間つきの名前、このコースは走数つき", async ({
@@ -2060,5 +2074,66 @@ test.describe("思考アシスト: 相手レンズ（spec D-46、2026-10-12 ユ�
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(320);
+  });
+});
+
+/** 展開レンズの作り直し PR-1（spec D-47 (1)〜(3)、承認モック v2 docs/design/thinking-assist/flow-v2/mock） */
+test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、承認モック v2）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  test("展示後も図の横軸は平均ST（このコース）で、各艇に展示{r}位（6.84・6.84・6.89・6.83・6.90・6.89 → 2,2,4,1,6,4）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    const board = page.getByRole("figure", { name: /展開/ });
+    await expect(
+      board.getByText("平均ST（このコース・直近30走） 左ほど早い"),
+    ).toBeVisible();
+    await expect(board.getByText(/^展示ST/)).toHaveCount(0);
+    const ranks = await page
+      .locator(".ta-lane")
+      .evaluateAll((lanes) =>
+        lanes.map(
+          (l) => l.querySelector(".ta-tag-exh")?.textContent ?? null,
+        ),
+      );
+    expect(ranks).toEqual([
+      "展示2位",
+      "展示2位",
+      "展示4位",
+      "展示1位",
+      "展示6位",
+      "展示4位",
+    ]);
+  });
+
+  test("結論は図の上に置き、形の見立て（13%・65/501）と今日の展示1行（攻める3号艇は展示4位 → 25%・13/53）", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "展開").click();
+    const concl = page.locator(".ta-flow-concl");
+    await expect(concl.getByText("2コース凹み", { exact: true })).toBeVisible();
+    await expect(concl.getByText("（65/501）")).toBeVisible();
+    await expect(
+      concl.getByText(
+        "今日の展示: 攻める3号艇は展示4位（3〜4位）→ 2コース凹みのとき1着 25%（13/53）",
+      ),
+    ).toBeVisible();
+    const conclBox = await concl.boundingBox();
+    const boardBox = await page.locator(".ta-board").boundingBox();
+    expect(conclBox.y + conclBox.height).toBeLessThanOrEqual(boardBox.y + 1);
+  });
+
+  test("展示前は今日の展示の1行と展示{r}位を出さない", async ({ page }) => {
+    await open(page);
+    await page.getByRole("button", { name: "展示前", exact: true }).click();
+    await lensTab(page, "展開").click();
+    await expect(page.getByText("本番でこの形になるのは")).toBeVisible();
+    await expect(page.getByText(/^今日の展示:/)).toHaveCount(0);
+    await expect(page.locator(".ta-tag-exh")).toHaveCount(0);
   });
 });
