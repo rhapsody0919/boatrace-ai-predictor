@@ -1,0 +1,170 @@
+<title>軸を選ぶ流しの相手</title>
+<style>
+:root{
+  --bg:#f6f4ee; --card:#fffdf8; --ink:#1d1f24; --sub:#5d6068; --line:#dcd7cb;
+  --acc:#1f5fa8; --acc-soft:#e6eef8; --rail:#e2dccd; --bar:#2a62b0; --base:#1d1f24; --new:#b2361f; --new-soft:#fbe9e4;
+  --b1:#ffffff; --b1t:#1d1f24; --b2:#1d1f24; --b3:#d93a2b; --b4:#2a74d0; --b5:#e9c21b; --b5t:#1d1f24; --b6:#3f9a46;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+    --acc:#8db8f0; --acc-soft:#22324a; --rail:#353a42; --bar:#6ea2e8; --base:#eceae4; --new:#f08a73; --new-soft:#3d2620;
+    --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+  --acc:#8db8f0; --acc-soft:#22324a; --rail:#353a42; --bar:#6ea2e8; --base:#eceae4; --new:#f08a73; --new-soft:#3d2620;
+  --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.6;padding-inline:16px;padding-block:24px 48px;font-size:16px}
+.wrap{max-width:1240px;margin:0 auto;display:grid;gap:32px}
+h1{font-size:1.5rem;margin:0;text-wrap:balance} h2{font-size:1.15rem;margin:0}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;color:var(--sub);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+.card p,.card ol,.card ul{margin:0} .card ol,.card ul{padding-left:1.3em;display:grid;gap:6px}
+.fixed{border:2px solid var(--ink);border-radius:12px;padding:12px 16px;background:var(--card);font-weight:700}
+.frames{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.flabel{font-size:.75rem;color:var(--sub);margin:0 0 6px;font-weight:700;max-width:375px}
+.phone{width:100%;max-width:375px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:12px;display:grid;gap:10px}
+.lens{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.lens span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:16px;white-space:nowrap}
+.lens span.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.q{font-size:.85rem;color:var(--sub);margin:0} .q b{color:var(--ink)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;min-width:0}
+.box h3{font-size:1.1rem;margin:0;text-wrap:balance}
+.small{font-size:.8rem;color:var(--sub);margin:0}
+.chip{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;justify-self:start}
+.newmark{outline:2px dashed var(--new);outline-offset:4px;border-radius:10px}
+.badge{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;color:#fff;border:1px solid transparent;flex:none}
+.c1{background:var(--b1);color:var(--b1t);border-color:var(--b1t)} .c2{background:var(--b2)} .c3{background:var(--b3)} .c4{background:var(--b4)} .c5{background:var(--b5);color:var(--b5t)} .c6{background:var(--b6)}
+.pickrow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center}
+.pickrow .lbl{font-size:.8rem;font-weight:700}
+.pick{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;border:1px solid var(--line);border-radius:12px;padding:4px;background:var(--bg)}
+.pick > span{min-height:52px;display:grid;justify-items:center;align-content:center;gap:2px;border:2px solid transparent;border-radius:9px;font-size:.66rem;color:var(--sub)}
+.pick > span.on{background:var(--acc-soft);border-color:var(--acc);color:var(--ink);font-weight:700}
+.concl{font-size:.95rem}
+.concl b{font-size:1.05rem}
+.rows{display:grid;gap:2px}
+.row{display:grid;grid-template-columns:30px minmax(0,1fr) 3em 4.6em;gap:8px;align-items:center;min-height:36px;font-size:.88rem;max-width:560px}
+.row .u{font-size:.75rem;color:var(--sub)}
+.row.axis{color:var(--sub)}
+.row.axis .ax{grid-column:2 / 5;font-size:.8rem}
+.trk{position:relative;height:12px;background:var(--rail);border-radius:6px}
+.trk .fl{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:6px}
+.trk .bl{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--base)}
+.row .p{text-align:right;font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:.75rem;color:var(--sub);align-items:center}
+.legend i{display:inline-block;vertical-align:middle;margin-right:4px}
+.legend .lf{width:18px;height:8px;background:var(--bar);border-radius:4px}
+.legend .lb{width:2px;height:14px;background:var(--base)}
+.mini{display:grid;gap:4px}
+.side{display:grid;gap:10px;max-width:76ch} .side p,.side ul{margin:0} .side ul{padding-left:1.2em;display:grid;gap:4px}
+.qs{display:grid;gap:10px} .qs > div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:6px} .qs b{display:block}
+.pc{width:100%;max-width:1100px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px}
+.split{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}}
+.ph{border:1px dashed var(--line);border-radius:12px;padding:12px;color:var(--sub);font-size:.85rem;min-height:140px;display:grid;place-items:center;text-align:center}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px;max-width:820px">
+    <span class="eyebrow">思考アシスト／相手レンズ BOA-845 モック v3（例: 2026-10-06 徳山10R・本番の値）</span>
+    <h1>軸にする艇を選ぶと、その艇が1着のときの2着が出る</h1>
+    <p>今の相手レンズの「1号艇を軸にしたときの2着・3着」を、6艇どれでも軸にできる形に広げる案。赤い点線が変わる場所。</p>
+  </header>
+
+  <div class="fixed">固定: 相手レンズの図（●2着以内・○3着以内）とタブの並びは今のまま。変わる: 「1号艇を軸にしたときの2着・3着」を「{X}号艇を軸にしたときの2着」にし、軸の艇を6つのボタンで選ぶ。範囲は全艇とも会場の全レース。3着の表は外す。</div>
+
+  <section class="card">
+    <span class="eyebrow">ファンにとっての価値と統計検証</span>
+    <ol>
+      <li>流しは軸（1着）を決めてから相手を選ぶ。1号艇以外を軸にする人（4号艇のカド一撃狙いなど）にも、2着の相手が分かる。</li>
+      <li>2着は軸の艇で変わる。例: 4号艇が1着のとき、2着は1号艇 37%（軸を問わないと16%）。4-5 のスジも出る（5号艇 18%、問わないと10%）。統計検証では、軸で分けた2着は分けないより当たる（Brier 3.4% 良い。2026-04〜09 の12,462R で確認）。</li>
+      <li>3着は、1着の艇だけで分けても当たり方が変わらない。だから3着の表は出さず、図の○（3着以内）を見る形にする。</li>
+      <li>範囲は会場の全レース。級でそろえた範囲は件数が足りない（中央値69件、30件未満24%）。会場の全レースなら、6号艇が軸でも件数の10%点が400件、最小でも342件ある（出典: docs/design/thinking-assist/analysis/boa845-axis-place.md、#1407）。</li>
+    </ol>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <h2>375px</h2>
+    <div class="frames">
+      <div><p class="flabel">① 4号艇を軸に選んだ状態</p><div class="phone" id="p4"></div></div>
+      <div><p class="flabel">② 1号艇（最初の状態。1着の候補が1艇ならその艇）</p><div class="phone" id="p1"></div></div>
+      <div><p class="flabel">③ 6号艇（件数が一番少ない軸の例）</p><div class="phone" id="p6"></div></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <h2>1440px</h2>
+    <div class="pc">
+      <div class="lens" style="max-width:720px"><span>軸</span><span>展開</span><span>機力</span><span class="on">相手</span><span>買い目</span></div>
+      <div class="split"><div class="ph">相手の図（●2着以内・○3着以内、今のまま）</div><div id="pc"></div></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <h2>最初に選ばれている軸の艇（ファンパネルで割れた3つの案）</h2>
+    <div class="frames" id="init"></div>
+    <p class="small">推奨: 3つを順に使う。前に選んだ艇（同じタブ・同じレース）→ 無ければ1着の候補が1艇だけならその艇（「1着の候補に合わせた」と小さく書く）→ 無ければ1号艇</p>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">決まりと規模</span>
+    <ul>
+      <li>軸の切り替えは1本の帯（「軸（1着）」の札＋6つ、各ボタンは丸と「軸」の2段、52px）。選んだ艇は塗り。図の艇の丸（押すと深掘り）と見た目を分ける。見出しにも艇の丸。読み上げは radiogroup</li><li>見出しの下に結論の1行（2着に一番来る艇と、軸を問わないときの値）。その下に3着を出さない旨の1行</li>
+      <li>範囲の札: 「{会場}の全レース {X}号艇が1着の{k}件」。行は6艇で固定（軸の艇は「軸（1着）」と書いて残す。切り替えで行が動かない）。棒は軸のときの2着、縦線と「問わず{p}%」は軸を問わない2着。1行の数字は2個。よく出た3連単は軸の艇に合わせて3つ</li>
+      <li>30件未満のとき（会場の全レースでは出にくい）: 割合を出さず件数だけ</li>
+      <li>表の下に龍神ソナーの展開シナリオ（着順の流れ）への導線を1行。軸を選んだ状態で開く URL は今は無いので、「1着の{X}号艇を押すと、その流れになる」と添える</li>
+      <li>3着の列は外す（軸で変わらない）。2連単は足さない（2着の表と同じ）。今の「同じレース／返還」の注記は外す（範囲が会場の全レースになり、軸の大きい数字とつながらないため）</li>
+      <li>データ: scenario API の scope=VA（会場の全レース）の3連単。今ある関数（winFollowers）の艇の引数で作れる。バッチ・範囲キーの変更なし</li>
+      <li>規模: PR 1本</li>
+    </ul>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">ユーザーに聞くこと</span>
+    <div class="qs">
+      <div><b>1. 範囲を全艇とも会場の全レースにそろえるか</b>推奨: そろえる（統計検証で一番良く、件数も足りる。1号艇の値も今の「準優勝戦の範囲 65件」から「徳山の全レース 10,910件」に替わる）。別案: 1号艇は今の範囲のまま、ほかの艇は会場の全レース。</div>
+      <div><b>2. 3着の列は出さず、よく出た3連単（軸に合わせて3つ）と龍神ソナーの着順の流れへの導線を置くか</b>推奨: 置く（ファンパネル。3連単は3つで足りる3人、5つ欲しい1人）。</div>
+      <div><b>3. 最初に選ばれている軸の艇</b>推奨: 前に選んだ艇 → 1着の候補が1艇だけならその艇 → 1号艇の順（ファンパネルは A 2人・B 1人・C 1人で割れたので、3つを順に使う）。別案: 常に1号艇。</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var LENS='<div class="lens"><span>軸</span><span>展開</span><span>機力</span><span class="on">相手</span><span>買い目</span></div>';
+  var Q='<p class="q"><b>2着・3着に残るのは？</b> 流しの相手を選ぶ</p>';
+  var D={1:{n:10910,s:[0,38,27,19,10,6]},4:{n:1326,s:[37,20,13,0,18,13]},6:{n:388,s:[43,19,14,15,9,0]}};
+  var U=[16,28,22,17,10,7];
+  var TRI={1:[['1-2-3',1585],['1-2-4',1194],['1-3-2',1017]],4:[['4-1-2',157],['4-1-5',129],['4-1-3',111]],6:[['6-1-2',60],['6-1-3',44],['6-1-4',40]]};
+  function box(x){var d=D[x],rows='';
+    for(var b=1;b<=6;b++){
+      if(b===x){rows+='<div class="row axis"><span class="badge c'+b+'">'+b+'</span><span class="ax">軸（1着）</span></div>';continue}
+      rows+='<div class="row num"><span class="badge c'+b+'">'+b+'</span><div class="trk"><span class="fl" style="width:'+d.s[b-1]+'%"></span><span class="bl" style="left:'+U[b-1]+'%"></span></div><span class="p">'+d.s[b-1]+'%</span><span class="u">問わず'+U[b-1]+'%</span></div>'}
+    var top=0,best=0;for(var b=1;b<=6;b++){if(b===x)continue;if(d.s[b-1]>d.s[top-1||0]||top===0)top=b}
+    var pick='';for(var b=1;b<=6;b++)pick+='<span class="'+(b===x?'on':'')+'" role="radio" aria-checked="'+(b===x)+'"><span class="badge c'+b+'">'+b+'</span>軸</span>';
+    var tri=TRI[x].map(function(t){return '<span style="white-space:nowrap">'+t[0]+'（'+t[1]+'件）</span>'}).join('　');
+    return '<div class="box newmark"><div class="pickrow"><span class="lbl">軸（1着）</span><div class="pick" role="radiogroup" aria-label="軸にする艇">'+pick+'</div></div>'+
+      '<h3 style="display:flex;gap:6px;align-items:center"><span class="badge c'+x+'">'+x+'</span>号艇を軸にしたときの2着</h3>'+
+      '<p class="concl num">'+x+'号艇が1着なら、2着は<b>'+top+'号艇 '+d.s[top-1]+'%</b>（軸を問わないと'+U[top-1]+'%）</p>'+
+      '<p class="small">3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る</p>'+
+      '<span class="chip num">徳山の全レース '+x+'号艇が1着の'+d.n.toLocaleString("ja-JP")+'件</span>'+
+      '<div class="legend"><span><i class="lf"></i>'+x+'号艇が1着のときの2着</span><span><i class="lb"></i>軸を問わない2着</span></div><div class="rows">'+rows+'</div>'+
+      '<p class="small num">よく出た3連単: '+tri+'</p>'+
+      '<div class="newmark" style="display:flex;justify-content:space-between;align-items:center;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 12px;background:var(--bg);font-size:.88rem"><span><b>着順の流れを見る（龍神ソナー）</b><br><span class="small">1着の'+x+'号艇を押すと、その流れになる</span></span><span aria-hidden="true">›</span></div>'+
+      (x===4?'<p class="small newmark" style="padding:2px 6px">1着の候補に合わせた（4号艇）</p>':'')+'</div>';}
+  var BOARD='<div class="box"><p class="small">（相手の図: ●2着以内・○3着以内、今のまま）</p></div>';
+  document.getElementById('p4').innerHTML=LENS+Q+BOARD+box(4);
+  document.getElementById('p1').innerHTML=LENS+Q+BOARD+box(1);
+  document.getElementById('p6').innerHTML=LENS+Q+BOARD+box(6);
+  document.getElementById('pc').innerHTML=box(4);
+  var OPTS=[['A 1着の候補に合わせる（20代男・30代女）','マークシートで1着に4号艇だけ → 4号艇',4],['B 常に1号艇（20代女）','何を入れても最初は1号艇',1],['C 前に選んだ艇（30代男）','ソナーへ移って戻ると、前に選んだ6号艇のまま',6]];
+  document.getElementById('init').innerHTML=OPTS.map(function(o){var p='';for(var b=1;b<=6;b++)p+='<span class="'+(b===o[2]?'on':'')+'"><span class="badge c'+b+'">'+b+'</span>軸</span>';return '<div class="box" style="max-width:360px"><b>'+o[0]+'</b><p class="small">'+o[1]+'</p><div class="pick">'+p+'</div></div>'}).join('');
+})();
+</script>
