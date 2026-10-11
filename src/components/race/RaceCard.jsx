@@ -3,6 +3,7 @@
  */
 
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
   gradeConfigOf,
   raceNumberLabel,
@@ -26,7 +27,7 @@ import RaceCardBadge from "./RaceCardBadge";
 import RaceCardDataTable from "./RaceCardDataTable";
 import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
 
-function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
+function RaceCard({ race, raceHref, nowHHMM = null }) {
   const { t } = useTranslation();
   const racePrediction = race.rawData;
   const volatility = racePrediction?.volatility;
@@ -185,9 +186,10 @@ function RaceCard({ race, onAnalyzeRace, nowHHMM = null }) {
         </div>
       )}
       <RaceCardDataTable raceId={race.id} players={racePrediction?.players} />
-      <button className="predict-btn" onClick={() => onAnalyzeRace(race)}>
+      {/* 遷移先の URL を持つリンクにする。button の onClick だと検索エンジンがレース詳細へのリンクを辿れない（SEO 点検 F3） */}
+      <Link className="predict-btn" to={raceHref}>
         {t("raceCard.view")}
-      </button>
+      </Link>
     </div>
   );
 }

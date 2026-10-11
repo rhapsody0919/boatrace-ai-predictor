@@ -475,6 +475,11 @@
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
     },
     {
+      "script": "verify-render-with-fresh-page.js",
+      "tier": "ci",
+      "guards": "ブログのスナップショット生成で、ページが1つ落ちても後続の記事を取りこぼさないこと（scripts/lib/renderWithFreshPage.js）。2026-10-11 の本番ビルドで、落ちたページを使い続けた後続の3記事が失敗し、AI クローラーに中身の無い画面が返っていた"
+    },
+    {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
       "guards": "進入コース別選手成績パーサー（BOA-293）"

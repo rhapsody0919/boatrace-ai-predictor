@@ -26,14 +26,16 @@ export function getTopPageMeta(t, lang) {
 
 /**
  * 会場ページ（本日分）。SG・G1 開催中は節タイトルを入れる（getVenueSeriesTitle）。
- * canonical は言語の接頭辞を付けない（人のページの従来の値と同じ）
+ * 4言語で出すページなので、canonical は表示中の言語の URL（hreflang・sitemap と合わせる。SEO 点検 F1、#1395）。
+ * ボット向け HTML（ADR 0089）は ja なので接頭辞なし
  *
  * @param {(key: string, params?: object) => string} t
  * @param {number} venueCode - 1〜24
  * @param {{raceGrade?: string|null, raceTitle?: string|null}[]} races - 会場の本日のレース（レース番号順）
+ * @param {string} [lang] - 表示中の言語（既定は ja）
  * @returns {{title: string, description: string, canonical: string}}
  */
-export function getTodayVenuePageMeta(t, venueCode, races) {
+export function getTodayVenuePageMeta(t, venueCode, races, lang = "ja") {
   const series = getVenueSeriesTitle(races);
   const params = { venue: t(`venues.${venueCode}`), series };
   return {
@@ -47,6 +49,6 @@ export function getTodayVenuePageMeta(t, venueCode, races) {
         : "venueRaceList.metaDescription",
       params,
     ),
-    canonical: `${SITE_ORIGIN}/venue/${venueCode}`,
+    canonical: `${SITE_ORIGIN}${localizePath(`/venue/${venueCode}`, lang)}`,
   };
 }
