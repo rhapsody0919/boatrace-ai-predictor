@@ -2369,6 +2369,8 @@
     "bannerLabel": "複製給AI使用",
     "bannerCatchphrase": "讓你的AI也能分析！",
     "toastSuccess": "已複製",
+    "toastAssist": "貼上前先確認資料 → 思考輔助",
+    "toastClose": "關閉",
     "toastError": "複製失敗",
     "promptSelectorWin": "單勝",
     "promptSelectorTrifecta": "3連單",

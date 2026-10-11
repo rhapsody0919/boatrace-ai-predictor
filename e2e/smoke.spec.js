@@ -3727,6 +3727,61 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     await expect(page.locator(".ai-copy-btn-inline")).toBeVisible();
   });
 
+  test("コピー直後のトーストに思考アシストへの1行が付き、6秒は消えず、押すと思考アシストへ移る（BOA-832）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await openFixedRaceBeforeStart(page);
+    const bannerButton = page.locator(".ai-copy-btn-banner");
+    await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    await bannerButton.click();
+    const toast = page.getByRole("status");
+    await expect(toast).toContainText("コピーしました");
+    const action = toast.locator(".app-toast-action");
+    await expect(action).toContainText("貼る前に材料を確かめる → 思考アシスト");
+    // 以前は2秒で消えた。3秒たっても出ている
+    await page.waitForTimeout(3000);
+    await expect(action).toBeVisible();
+    // 押せる高さ（44px）と、閉じる×
+    expect((await action.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    await expect(toast.getByRole("button", { name: "閉じる" })).toBeVisible();
+    const raceUrl = page.url();
+    await action.click();
+    await expect(page).toHaveURL(/\/assist$/);
+    const events = await page.evaluate(() =>
+      window.__events
+        .filter((e) => e[0] === "event" && e[1] === "assist_view_switch")
+        .map((e) => e[2].assist_entry),
+    );
+    expect(events).toEqual(["copy_toast"]);
+    // 表示の選択は残さない。戻るでレース詳細へ
+    expect(
+      await page.evaluate(() => localStorage.getItem("boatai-user:race-view")),
+    ).toBeNull();
+    await page.goBack();
+    await expect(page).toHaveURL(raceUrl);
+  });
+
+  test("トーストの×で閉じ、マウスを重ねている間は消えない（BOA-832）", async ({
+    page,
+  }) => {
+    await openFixedRaceBeforeStart(page);
+    const bannerButton = page.locator(".ai-copy-btn-banner");
+    await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    await bannerButton.click();
+    const toast = page.getByRole("status");
+    const action = toast.locator(".app-toast-action");
+    await expect(action).toBeVisible();
+    await action.hover();
+    await page.waitForTimeout(7000);
+    await expect(action).toBeVisible();
+    await toast.getByRole("button", { name: "閉じる" }).click();
+    await expect(page.locator(".app-toast-action")).toHaveCount(0);
+  });
+
   test("結果確定済みレースではコピーボタンが表示されない", async ({ page }) => {
     // unifiedモデル運用開始日（2026-08-11〜）以降の結果確定済み日付
     await page.goto("/races/2026-08-11");
@@ -3751,7 +3806,8 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
 
     const toast = page.getByRole("status");
     await expect(toast).toBeVisible();
-    await expect(toast).toHaveText("コピーしました");
+    // 思考アシストへの1行が続く（BOA-832）ので、文言の始まりで見る
+    await expect(toast).toContainText("コピーしました");
     // コピーしても読んでいた位置から動かない（以前はデータ出走表へスクロールしていた。BOA-770）
     expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
 
@@ -3783,7 +3839,8 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     await expect(bannerButton).toBeVisible({ timeout: 15000 });
     await bannerButton.click();
     const toast = page.getByRole("status");
-    await expect(toast).toHaveText("コピーしました");
+    // 思考アシストへの1行が続く（BOA-832）ので、文言の始まりで見る
+    await expect(toast).toContainText("コピーしました");
     const onTop = await toast.evaluate((el) => {
       const r = el.getBoundingClientRect();
       const hit = document.elementFromPoint(
