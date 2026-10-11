@@ -5,8 +5,13 @@
  * 2026-10-11 の本番ビルドで、ページが落ちたあと同じページを使い続けた後続の3記事
  * （player-data-analysis・betting-strategy・beginner-basics）がすべて
  * "Target page, context or browser has been closed" で失敗した。偽のページで同じ落ち方を再現する。
+ * さらに Preview では、Vercel の Chromium が単一プロセスで動くためブラウザごと落ち、作り直しの newPage も
+ * 失敗してブログの生成全体が止まった。偽のブラウザでこれも再現する（createPageOpener）。
  */
-import { renderWithFreshPage } from "../lib/renderWithFreshPage.js";
+import {
+  createPageOpener,
+  renderWithFreshPage,
+} from "../lib/renderWithFreshPage.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -31,7 +36,8 @@ function makeBrowser({ crashOn = new Set(), failAlways = new Set() } = {}) {
         closed = true;
       },
       async draw(id) {
-        if (closed) throw new Error("Target page, context or browser has been closed");
+        if (closed)
+          throw new Error("Target page, context or browser has been closed");
         if (failAlways.has(id)) throw new Error(`render failed: ${id}`);
         if (crashOn.has(id)) {
           crashOn.delete(id); // 一度だけ落ちる（描画中のクラッシュ）
@@ -96,11 +102,101 @@ const render = async (page, id) => page.draw(id);
 
 {
   const b = makeBrowser();
-  await renderWithFreshPage(ids, { concurrency: 3, openPage: b.openPage, render });
+  await renderWithFreshPage(ids, {
+    concurrency: 3,
+    openPage: b.openPage,
+    render,
+  });
   check(
     "失敗が無ければページは並列の数だけ開く（作り直しは失敗したときだけ）",
     b.opened() === 3,
     `opened=${b.opened()}`,
+  );
+}
+
+// 単一プロセスの Chromium: crashOn の記事を描くとブラウザごと落ち、そのブラウザの newPage も以後失敗する
+function makeSingleProcessLauncher({ crashOn = new Set() } = {}) {
+  let launches = 0;
+  const launch = async () => {
+    launches += 1;
+    let connected = true;
+    const pages = [];
+    return {
+      isConnected: () => connected,
+      close: async () => {
+        if (!connected) throw new Error("browser already closed");
+        connected = false;
+      },
+      newPage: async () => {
+        if (!connected) {
+          throw new Error(
+            "browser.newPage: Target page, context or browser has been closed",
+          );
+        }
+        let pageClosed = false;
+        const page = {
+          isClosed: () => pageClosed || !connected,
+          close: async () => {
+            if (pageClosed || !connected) throw new Error("already closed");
+            pageClosed = true;
+          },
+          async draw(id) {
+            if (!connected || pageClosed) {
+              throw new Error(
+                "Target page, context or browser has been closed",
+              );
+            }
+            if (crashOn.has(id)) {
+              crashOn.delete(id);
+              connected = false; // ブラウザごと落ちる
+              throw new Error(
+                "Target page, context or browser has been closed",
+              );
+            }
+          },
+        };
+        pages.push(page);
+        return page;
+      },
+    };
+  };
+  return { launch, launches: () => launches };
+}
+
+{
+  const l = makeSingleProcessLauncher({ crashOn: new Set(["post-4"]) });
+  const opener = createPageOpener(l.launch);
+  const r = await renderWithFreshPage(ids, {
+    concurrency: 4,
+    openPage: opener.openPage,
+    render,
+  });
+  await opener.close();
+  check(
+    "ブラウザごと落ちても起動し直して12件すべて描ける（修正前は newPage が失敗して生成全体が止まった）",
+    r.failed.length === 0 && new Set(r.succeeded).size === 12,
+    JSON.stringify(r.failed),
+  );
+  check(
+    "4並列で同時に落ちたことに気づいても、起動し直すのは1回だけ",
+    l.launches() === 2,
+    `launches=${l.launches()}`,
+  );
+}
+
+{
+  const l = makeSingleProcessLauncher();
+  const opener = createPageOpener(l.launch);
+  await renderWithFreshPage(ids, {
+    concurrency: 4,
+    openPage: opener.openPage,
+    render,
+  });
+  await opener.close();
+  check(
+    "落ちなければブラウザは1回だけ起動する",
+    l.launches() === 1,
+    `launches=${l.launches()}`,
   );
 }
 

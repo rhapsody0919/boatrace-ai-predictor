@@ -15,7 +15,10 @@ import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { blogPosts } from "../src/data/blogPosts.js";
-import { renderWithFreshPage } from "./lib/renderWithFreshPage.js";
+import {
+  createPageOpener,
+  renderWithFreshPage,
+} from "./lib/renderWithFreshPage.js";
 import {
   MORNING_DIGEST_DISCLAIMER,
   MORNING_DIGEST_GLOSSARY,
@@ -154,7 +157,7 @@ async function launchChromium() {
   return chromiumLocal.launch();
 }
 
-async function generateBlogSnapshots(browser, baseUrl) {
+async function generateBlogSnapshots(openPage, baseUrl) {
   const outDir = path.join(SNAPSHOT_DIR, "blog");
   mkdirSync(outDir, { recursive: true });
 
@@ -162,7 +165,7 @@ async function generateBlogSnapshots(browser, baseUrl) {
     blogPosts,
     {
       concurrency: CONCURRENCY,
-      openPage: () => browser.newPage(),
+      openPage,
       render: async (page, post) => {
         await page.goto(`${baseUrl}/blog/${post.id}`, {
           waitUntil: "networkidle",
@@ -319,17 +322,20 @@ async function main() {
     const started = await startStaticServer();
     server = started.server;
     const baseUrl = started.baseUrl;
-    let browser;
+    // ブラウザが落ちたら起動し直す（Vercel の Chromium は単一プロセスで、ページが落ちるとブラウザごと落ちる）
+    const opener = createPageOpener(launchChromium);
     try {
-      browser = await launchChromium();
-      const failed = await generateBlogSnapshots(browser, baseUrl);
+      const failed = await generateBlogSnapshots(opener.openPage, baseUrl);
       if (failed.length > 0) {
         console.error(
           `⚠️ ${failed.length}件のブログ記事スナップショット生成に失敗しましたが、ビルドは継続します。`,
         );
       }
+      if (opener.launches() > 1) {
+        console.log(`ブラウザを${opener.launches() - 1}回起動し直しました`);
+      }
     } finally {
-      if (browser) await browser.close();
+      await opener.close();
     }
   } catch (err) {
     console.error(
