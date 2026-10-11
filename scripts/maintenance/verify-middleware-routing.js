@@ -15,12 +15,16 @@
  * 7. 日本語の / と /venue/1〜24 は、配る UA のときだけ関数（/api/bot-page/*）へ振り分ける（ADR 0089）。
  *    /venue/01・範囲外・数字以外・言語の接頭辞付き・/races/… は振り分けない。
  *    rewrite 先に元のクエリ文字列を持ち込まない（CDN キャッシュのキーを増やさない）
+ * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24 だけ配る UA を除外する（missing）。
+ *    除外する UA の一覧が BOT_PAGE_USER_AGENTS と一致し、他のページの no-store は外れない
+ *    （外すと関数の応答が CDN に残らない。Preview で MISS が続いたため、ADR 0089「未確認」の1）
  *
  * Vercel の matcher は path-to-regexp 構文。このリポジトリが使う
  * 「固定パス」と「/prefix/:path*」の2形だけを解釈し、それ以外の形が足されたら
  * 解釈を誤らないよう失敗させる。
  */
 
+import { readFileSync } from "node:fs";
 import middleware, { config } from "../../middleware.js";
 import {
   AI_CRAWLER_USER_AGENTS,
@@ -415,6 +419,72 @@ check(
   BOT_PAGE_USER_AGENTS.every((ua) => AI_CRAWLER_USER_AGENTS.includes(ua)) &&
     !BOT_PAGE_USER_AGENTS.some((ua) => /googlebot/i.test(ua)),
 );
+
+console.log(
+  "[7] vercel.json の no-store 規則は / と /venue/1〜24 だけ配る UA を除外する",
+);
+{
+  const vercel = JSON.parse(
+    readFileSync(new URL("../../vercel.json", import.meta.url), "utf8"),
+  );
+  const isNoStore = (rule) =>
+    rule.headers?.some(
+      (h) => h.key === "Vercel-CDN-Cache-Control" && h.value === "no-store",
+    );
+  // source は固定パスか、正規表現の括弧を含む形だけ（:name の引数は使っていない）
+  const sourceRegExp = (source) => {
+    if (/\/:[A-Za-z]/.test(source)) {
+      throw new Error(`source "${source}" の :name 形はこの検証が解釈できない`);
+    }
+    return new RegExp(`^${source}$`);
+  };
+  const noStoreRules = vercel.headers.filter(isNoStore).map((rule) => ({
+    re: sourceRegExp(rule.source),
+    missingUa: rule.missing?.find(
+      (m) => m.type === "header" && m.key === "user-agent",
+    )?.value,
+  }));
+  // 人・Googlebot のとき（missing が効かない）と、配る UA のとき（missing が効く）に no-store が付くか
+  const noStoreFor = (path, ua) =>
+    noStoreRules.some(
+      ({ re, missingUa }) =>
+        re.test(path) && !(missingUa && new RegExp(missingUa).test(ua)),
+    );
+  for (const rule of noStoreRules.filter((r) => r.missingUa)) {
+    const names = rule.missingUa.match(/\(\?:([^)]+)\)/)?.[1].split("|") ?? [];
+    check(
+      `${rule.re} の missing の UA が BOT_PAGE_USER_AGENTS と一致`,
+      names.length === BOT_PAGE_USER_AGENTS.length &&
+        BOT_PAGE_USER_AGENTS.every((ua) => names.includes(ua)),
+      names.join(","),
+    );
+  }
+  for (const [path] of BOT_PAGE_ROUTES) {
+    for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+      check(`${name} ${path} は no-store を付けない`, !noStoreFor(path, ua));
+    }
+    for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+      check(`${name} ${path} は no-store のまま`, noStoreFor(path, ua));
+    }
+  }
+  for (const path of [
+    ...NOT_BOT_PAGE_PATHS,
+    "/today",
+    "/winning-technique",
+    "/blog/some-article",
+    "/index.html",
+  ]) {
+    for (const [name, ua] of Object.entries({
+      ...BOT_PAGE_UAS,
+      ...NOT_SNAPSHOT_UAS,
+    })) {
+      check(`${name} ${path} は no-store のまま`, noStoreFor(path, ua));
+    }
+  }
+  for (const path of ["/api/races/today", "/assets/index.js"]) {
+    check(`${path} は no-store の規則に入らない`, !noStoreFor(path, HUMAN_UA));
+  }
+}
 
 if (failures.length > 0) {
   console.error(`\nNG: ${failures.length}件失敗`);
