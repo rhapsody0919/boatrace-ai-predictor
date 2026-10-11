@@ -60,7 +60,9 @@ async function fetchAllNigeRaceResults() {
   while (true) {
     const { data, error } = await supabase
       .from("race_results")
-      .select(`race_id, rank1, rank2, rank3, ${TRIFECTA_PAYOUT_COLUMN}`)
+      .select(
+        `race_id, rank1, rank2, rank3, refund_boats, ${TRIFECTA_PAYOUT_COLUMN}`,
+      ) // refund_boats: 返還艇を飛ばして集計する（BOA-579）
       .eq("is_cancelled", false)
       .or(NOT_NO_RACE_FILTER) // 不成立は race_status で外す（is_no_race は全行 false。BOA-545）
       .eq("winning_technique", "逃げ")

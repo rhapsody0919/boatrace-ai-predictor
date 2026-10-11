@@ -75,13 +75,13 @@ async function main() {
     "predictions",
     "race_id, feature_contributions, top_pick, top_2nd, top_3rd, is_hit_win, is_hit_place, is_hit_trifecta, is_hit_trio, payout_win, payout_place, payout_trifecta, payout_trio",
     (q) =>
-      q.eq("model_id", opts.model).not("feature_contributions", "is", null),
+      q.eq("model_id", opts.model).not("feature_contributions", "is", null).order("race_id").order("model_id").order("prediction_id"),
   );
 
   const results = await fetchAll(
     "race_results",
     "race_id, winning_technique, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio",
-    (q) => q.not("winning_technique", "is", null),
+    (q) => q.not("winning_technique", "is", null).order("race_id"),
   );
 
   const resultMap = new Map();

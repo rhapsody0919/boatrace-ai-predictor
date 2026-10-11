@@ -64,7 +64,7 @@ export function parseTablesFromSql(rawSqlText) {
 
   // CREATE TABLE ... ( ... 閉じ括弧のみの行 );
   const createTableRe =
-    /CREATE TABLE(?:\s+IF NOT EXISTS)?\s+(\w+)\s*\(([\s\S]*?)\n\s*\);/gi;
+    /CREATE TABLE(?:\s+IF NOT EXISTS)?\s+(?:public\.)?(\w+)\s*\(([\s\S]*?)\n\s*\);/gi;
   let m;
   while ((m = createTableRe.exec(sqlText))) {
     const [, tableName, body] = m;
@@ -77,7 +77,7 @@ export function parseTablesFromSql(rawSqlText) {
       // テーブルレベルの制約行（CONSTRAINT/UNIQUE/CHECK/PRIMARY KEY(...)単独）
       if (/^(CONSTRAINT|UNIQUE|CHECK)\b/i.test(line)) {
         const fk = line.match(
-          /FOREIGN KEY\s*\(\s*(\w+)\s*\)\s*REFERENCES\s+(\w+)\s*\(\s*(\w+)\s*\)/i,
+          /FOREIGN KEY\s*\(\s*(\w+)\s*\)\s*REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i,
         );
         if (fk) {
           relationships.push({
@@ -112,7 +112,7 @@ export function parseTablesFromSql(rawSqlText) {
 
       table.columns.push({ name: columnName, type, isPk });
 
-      const ref = rest.match(/REFERENCES\s+(\w+)\s*\(\s*(\w+)\s*\)/i);
+      const ref = rest.match(/REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i);
       if (ref) {
         relationships.push({
           fromTable: tableName,
@@ -127,7 +127,7 @@ export function parseTablesFromSql(rawSqlText) {
   // ALTER TABLE x ADD COLUMN a ..., ADD COLUMN b ..., ...;
   // (1文で複数カラムをカンマ区切りで追加する書き方がこのプロジェクトの主流のため、
   // ADD COLUMN句ごとに独立した文だと決め打ちしない)
-  const alterTableRe = /ALTER TABLE\s+(\w+)\s+([\s\S]*?);/gi;
+  const alterTableRe = /ALTER TABLE\s+(?:public\.)?(\w+)\s+([\s\S]*?);/gi;
   while ((m = alterTableRe.exec(sqlText))) {
     const [, tableName, body] = m;
     if (!/ADD COLUMN/i.test(body)) continue;
@@ -146,7 +146,7 @@ export function parseTablesFromSql(rawSqlText) {
       const type = (typeMatch?.[1] || rest.split(/\s+/)[0]).trim();
       table.columns.push({ name: columnName, type, isPk: false });
 
-      const ref = rest.match(/REFERENCES\s+(\w+)\s*\(\s*(\w+)\s*\)/i);
+      const ref = rest.match(/REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i);
       if (ref) {
         relationships.push({
           fromTable: tableName,

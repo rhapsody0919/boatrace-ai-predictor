@@ -8,6 +8,8 @@
 import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import { bestOf } from "../../utils/bestOf";
+import { formatExhibitionSt } from "../../utils/formatters";
+import { isUnusedMotor, motorUsageCount } from "../../utils/motorUsage";
 import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
 import {
   meetPrevRunState,
@@ -22,6 +24,14 @@ export const TECHNIQUE_KEY_BY_NAME = Object.fromEntries(
 export const translateTechnique = (t, name) => {
   const key = TECHNIQUE_KEY_BY_NAME[name];
   return key ? t(`techniques.${key}`, name) : name;
+};
+
+// スマホ幅のデータ出走表の決まり手のマスに出す短い訳語（BOA-821）。英語は英語の部分、繁体字は漢字だけで、
+// 括弧の補足（「Nige (Escape)」「外攻（Makuri）」）を外す。補足の単語が折れず列を押し広げ、表が枠からはみ出していた。
+// 日本語・韓国語は今の訳語と同じ。未知の値はそのまま返す
+export const translateTechniqueShort = (t, name) => {
+  const key = TECHNIQUE_KEY_BY_NAME[name];
+  return key ? t(`techniquesShort.${key}`, translateTechnique(t, name)) : name;
 };
 
 // 部品交換の部品名（公式表記・日本語）→ partsNames.* のキー（BOA-669）
@@ -90,7 +100,7 @@ const ORIGINAL_EXHIBITION_ROW_META = {
 
 /**
  * 出典表記に並べる項目名（その会場・そのレースで実際に出した種別だけ）を訳して返す。
- * 児島のように「一周・まわり足」しか計測しない会場で「直線」まで書くと、
+ * 住之江・尼崎・徳山のように「一周・まわり足」しか計測しない会場で「直線」まで書くと、
  * 出していない値の出典を名乗ることになるため、行と同じ集合から作る
  */
 export function originalExhibitionKindLabels(t, kinds) {
@@ -145,6 +155,9 @@ function buildOriginalExhibitionRows(t, originalExhibition) {
  * @param {Object} analysis - useRaceAnalysisDataの戻り値
  * @param {Object} pending - ソース別ロード中フラグ（useRaceAnalysisDataのpending）
  */
+// 「2025-11-01」→「2025/11/1」（平均ST（公式）の期間の表記、BOA-815）
+const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
+
 function buildRowDefs({
   t,
   players,
@@ -166,6 +179,8 @@ function buildRowDefs({
     returnRate,
     racerStats,
     meetPrevRun,
+    officialAvgSt,
+    st30,
   } = analysis;
 
   const motorByBoat = byBoat(motor);
@@ -177,6 +192,12 @@ function buildRowDefs({
   const rateByBoat = byBoat(returnRate);
   const statsByBoat = new Map((racerStats ?? []).map((s) => [s.boatNumber, s]));
   const meetPrevByBoat = byBoat(meetPrevRun);
+  // 平均ST の2行（BOA-815）。公式は公式の出走表と同じ期、30走は v16 の st_mean30
+  const officialStByBoat = new Map(
+    (officialAvgSt?.rows ?? []).map((r) => [r.boatNumber, r.avgSt]),
+  );
+  const st30ByBoat = new Map((st30 ?? []).map((r) => [r.boatNumber, r.st30]));
+  const officialPeriod = officialAvgSt?.period ?? null;
 
   // ソース別プレースホルダ: ロード中はスケルトン、取得済みでデータ無しは「—」
   const ph = (source) =>
@@ -212,17 +233,23 @@ function buildRowDefs({
         value: toNumber(row?.motor_2rate ?? p.motor2Rate),
       };
     }),
-    avgSt: (racerStats ?? []).map((s) => ({
-      boat: s.boatNumber,
-      value: toNumber(s.avgST),
+    avgSt: players.map((p) => ({
+      boat: p.number,
+      value: toNumber(officialStByBoat.get(p.number)),
+    })),
+    avgSt30: players.map((p) => ({
+      boat: p.number,
+      value: toNumber(st30ByBoat.get(p.number)),
     })),
     st: (stPredictability ?? []).map((r) => ({
       boat: r.boat_number,
       value: r.sample_count > 0 ? toNumber(r.avg_deviation) : null,
     })),
+    // 展示でフライング・出遅れした艇（F.01 等）は最良の候補から外す。値は印を外した正の数で、
+    // そのままだと F の艇が一番早く見えて金枠が付いた（BOA-759）
     exSt: (stPredictability ?? []).map((r) => ({
       boat: r.boat_number,
-      value: toNumber(r.exhibition_st),
+      value: r.exhibition_start_flag ? null : toNumber(r.exhibition_st),
     })),
     exhibition: (exhibitionTime ?? []).map((r) => ({
       boat: r.boat_number,
@@ -295,8 +322,13 @@ function buildRowDefs({
       key: "motor",
       label: t("dataTable.rowMotor"),
       shortLabel: t("review.cols.motor"),
-      // モーター交換直後（全艇2連率0%）は理由をラベル横に注記する
+      // 未使用の新モーター（2連率0・使用回数0）があれば、その「—」の意味を注記する（BOA-702）。
+      // 使用回数が分からず全艇0%（モーター交換直後）のときは、従来どおり「交換直後」
       note: (() => {
+        const unused = cand.motor.some((c) =>
+          isUnusedMotor(c.value, motorByBoat.get(c.boat)),
+        );
+        if (unused) return t("dataTable.motorUnusedNote");
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
         return values.length > 0 && values.every((v) => v === 0)
           ? t("dataTable.motorResetNote")
@@ -308,10 +340,13 @@ function buildRowDefs({
         const row = motorByBoat.get(p.number);
         const rate = toNumber(row?.motor_2rate ?? p.motor2Rate);
         if (rate === null) return ph("motor");
-        // 全艇0%（モーター交換直後で実績なし）は0.0%表示が誤解を招くため「—」
+        // 一度も使われていない新モーター（2連率0・使用回数0）は、0.0% だと「2着以内0回」と読まれるため「—」（BOA-702）。
+        // 使用回数が1以上なら本物の0%なので 0.0% のまま
+        if (isUnusedMotor(rate, row)) return "—";
+        // 使用回数が分からず全艇0%（モーター交換直後で実績なし）も「—」（従来の扱い）
         const values = cand.motor.map((c) => c.value).filter((v) => v !== null);
         const allZero = values.length > 0 && values.every((v) => v === 0);
-        if (allZero) return "—";
+        if (allZero && motorUsageCount(row) === null) return "—";
         const powerIndex = toNumber(row?.power_index);
         return (
           <span className="drt-value">
@@ -372,20 +407,47 @@ function buildRowDefs({
         );
       },
     },
+    // 平均ST は2行で出す（BOA-815、2026-10-10 ユーザー承認）。
+    // 1行目は公式の出走表と同じ値（2桁、公式が2桁のため）。最良は表示桁で比べるので同じ値が並ぶことがある。
+    // 2026-10-02 に3桁にした理由（2桁だと最良が5艇同時に光る）は、3桁の2行目で補う
     {
       key: "avgSt",
       label: t("dataTable.rowAvgSt"),
       shortLabel: t("review.cols.avgSt"),
+      note: t("dataTable.rowAvgStOfficialNote"),
+      // 期間は名前に入れず「?」に出す（「前期」と書くと5〜6月・11〜12月に意味がずれる。2026-10-10 ユーザー判断）
+      ...(officialPeriod
+        ? {
+            hintKey: "avgStOfficialPeriod",
+            hintValues: {
+              from: slashDate(officialPeriod.calcFrom),
+              to: slashDate(officialPeriod.calcTo),
+            },
+          }
+        : {}),
       tab: "racecard",
-      // 平均STは小数3桁で出す。2桁だと 0.127〜0.134 が全部「0.13」になり、表示桁で比べる
-      // 最良（R1）が5艇同時に光った（2026-10-02 児島12R。ユーザー承認で3桁に）
-      best: bestOf(cand.avgSt, "min", { digits: 3 }),
+      best: bestOf(cand.avgSt, "min", { digits: 2 }),
       render: (p) => {
-        const rate = toNumber(statsByBoat.get(p.number)?.avgST);
+        const rate = toNumber(officialStByBoat.get(p.number));
+        return rate !== null ? (
+          <span className="drt-value">{rate.toFixed(2)}</span>
+        ) : (
+          ph("officialAvgSt")
+        );
+      },
+    },
+    {
+      key: "avgSt30",
+      label: t("dataTable.rowAvgSt30"),
+      shortLabel: t("review.cols.avgSt30"),
+      tab: "racecard",
+      best: bestOf(cand.avgSt30, "min", { digits: 3 }),
+      render: (p) => {
+        const rate = toNumber(st30ByBoat.get(p.number));
         return rate !== null ? (
           <span className="drt-value">{rate.toFixed(3)}</span>
         ) : (
-          ph("racerStats")
+          ph("st30")
         );
       },
     },
@@ -412,11 +474,18 @@ function buildRowDefs({
       tab: "st",
       best: bestOf(cand.exSt, "min", { digits: 2 }),
       render: (p) => {
-        const rate = toNumber(stByBoat.get(p.number)?.exhibition_st);
-        return rate !== null ? (
-          <span className="drt-value">{rate.toFixed(2)}</span>
+        const row = stByBoat.get(p.number);
+        const shown = formatExhibitionSt(
+          row?.exhibition_st,
+          row?.exhibition_start_flag,
+        );
+        if (shown === null) return ph("stPredictability");
+        return row?.exhibition_start_flag ? (
+          <span className="drt-value" title={t("dataTable.exStFlagTitle")}>
+            {shown}
+          </span>
         ) : (
-          ph("stPredictability")
+          <span className="drt-value">{shown}</span>
         );
       },
     },
@@ -453,7 +522,7 @@ function buildRowDefs({
     // （ボートレース日和の「展示情報」も 展示→周回→周り足→直線→ST の順で、
     // 「直線で伸びるが回りが重い」のような読み方をこの並びが支えている）。
     //
-    // 出せる項目は会場によって違う（児島は一周・まわり足のみ）ので、
+    // 出せる項目は会場によって違う（住之江・尼崎・徳山は一周・まわり足のみ）ので、
     // 取れた種別ぶんだけ行を作る。取れていない・096未適用で権限が無い場合は
     // originalExhibition が null / state != "published" になり、行は1つも作られない
     // （「—」を6つ並べない。ADR-0067 の前検タイム追記と同じ扱い）
@@ -679,7 +748,12 @@ function buildRowDefs({
         const top = row.techniques[0];
         return (
           <span className="drt-value drt-technique">
-            {localizedTechnique(top.technique)}
+            <span className="drt-tech-full">
+              {localizedTechnique(top.technique)}
+            </span>
+            <span className="drt-tech-short">
+              {translateTechniqueShort(t, top.technique)}
+            </span>
             <span className="drt-sub">
               {t("dataTable.winCount", { n: row.win_count })}
             </span>

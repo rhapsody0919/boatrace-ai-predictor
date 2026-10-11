@@ -197,7 +197,7 @@ async function load() {
   const starts = await fetchAllByRaceId(
     supabase,
     "race_start_timings",
-    "race_id, boat_number",
+    "race_id, boat_number, finish_mark",
   );
   const { data: official, error } = await supabase
     .from("racer_series_points")
@@ -215,8 +215,11 @@ const { conds, entries, results, starts, official } = await load();
 const resultById = new Map(results.map((r) => [r.race_id, r]));
 // 欠場の判定（BOA-489）。出荷コードの `getMeetScoreboard` と同じ組み立て:
 // STが1行も無いレースは取得漏れの可能性があるので全艇を出走扱いに倒す
+// 欠場艇にも行がある（finish_mark='欠'）ので、それは出走に数えない（getMeetScoreboard と同じ）
 const startedKeys = new Set(
-  (starts ?? []).map((r) => `${r.race_id}|${r.boat_number}`),
+  (starts ?? [])
+    .filter((r) => r.finish_mark !== "欠")
+    .map((r) => `${r.race_id}|${r.boat_number}`),
 );
 const racesWithSt = new Set((starts ?? []).map((r) => r.race_id));
 function didStart(raceId, boatNumber) {

@@ -38,12 +38,12 @@ async function main() {
     "predictions",
     "race_id, feature_contributions",
     (q) =>
-      q.eq("model_id", "standard").not("feature_contributions", "is", null),
+      q.eq("model_id", "standard").not("feature_contributions", "is", null).order("race_id").order("model_id").order("prediction_id"),
   );
   const results = await fetchAll(
     "race_results",
     "race_id, winning_technique",
-    (q) => q.not("winning_technique", "is", null),
+    (q) => q.not("winning_technique", "is", null).order("race_id"),
   );
   const resultMap = new Map(
     results.map((r) => [r.race_id, r.winning_technique]),

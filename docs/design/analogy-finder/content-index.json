@@ -1,0 +1,13 @@
+{
+  "feature": "BOA-271 龍神ソナー（旧名アナロジー・ファインダー v16）: レース詳細の AI予想タブで、今日と条件がそろう過去レースを数えて見せる（差がつく材料・類似レース・展開シナリオ）",
+  "released": "2026-10-08",
+  "content": {
+    "static_pages": [],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": true,
+  "not_applicable_reason": "公開（2026-10-08）の時点では、龍神ソナーを説明するブログ・静的ページ・SNS投稿はまだ無い。公開後にフローA（ブログ・SNSへの展開）で作ったら content に足し、not_applicable を false に戻す（.claude/rules/content-ops.md フローA-1）。"
+}

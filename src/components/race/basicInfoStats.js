@@ -38,7 +38,9 @@ import { getDaysAgoJST } from "../../utils/dateUtils.js";
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 export const SCOPES = ["local", "national"];
 export const GRADES = ["all", "ippan", "sgg1"];
-export const PERIODS = ["current", "last3m", "last1m"];
+// 画面のチップ（BOA-775）。official: 公式の出走表と同じ値（当サイトの走からは出さない）、
+// term: 本当の今期（5/1・11/1 以降）。"current"（全期間）は画面のチップには出さず、条件別の表など内部で使う
+export const PERIODS = ["official", "term", "last3m", "last1m"];
 
 // 小標本フラグの閾値（BOA-306本文の「n<6等の小標本」表記に合わせる）
 export const SMALL_SAMPLE_THRESHOLD = 6;
@@ -57,8 +59,25 @@ function matchesGrade(record, grade) {
 // 境界は JST の日付で切る（BOA-469）。以前はローカル時刻で setDate したあと
 // toISOString()（UTC）で日付を取り出しており、JST 0〜9時は境界が1日古くなって
 // 31日前・91日前の走が混ざっていた
+/**
+ * 今期（公式の成績の期間）の初日（純関数、BOA-775）。5/1〜10/31 と 11/1〜4/30 で区切る。
+ * @param {string} date `YYYY-MM-DD`
+ * @returns {string|null}
+ */
+export function currentTermStart(date) {
+  const [y, m] = (date ?? "").split("-").map(Number);
+  if (!y || !m) return null;
+  if (m >= 11) return `${y}-11-01`;
+  if (m >= 5) return `${y}-05-01`;
+  return `${y - 1}-11-01`;
+}
+
 function matchesPeriod(record, period, now) {
+  // term は本当の今期（5/1・11/1 以降）。以前のチップ「今期」は "current"（全期間、2025-12 以降）で、
+  // 名前と中身が食い違っていた（BOA-775）。"current" は条件別の表など内部の全期間の集計のために残す
   if (period === "current") return true;
+  if (period === "term")
+    return record.date >= currentTermStart(getDaysAgoJST(0, now));
   if (period === "last3m" || period === "last1m") {
     const days = period === "last3m" ? 90 : 30;
     const cutoffStr = getDaysAgoJST(days, now);
@@ -656,6 +675,30 @@ export function periodsEndedBefore(raceDate, count = 1) {
 }
 
 /**
+ * 公式の出走表が出している期（勝率・平均STの期）を返す（純関数、BOA-815）。
+ *   1〜6月  → (Y,1) = (Y-1)-05-01 〜 (Y-1)-10-31
+ *   7〜12月 → (Y,2) = (Y-1)-11-01 〜     Y-04-30
+ * **渡す日付は節の初日**（無ければレース日）。公式は節の途中で期を替えない。6/27〜7/1 の節の
+ * 7/1 は旧期 (Y,1) の値を出す（戸田 2026-07-01 8R で照合。レース日で決めると6艇中4艇が食い違った）。
+ * `periodsEndedBefore`（直前に終わった期）とは5〜6月と11〜12月で違う。公式の出走表と
+ * 2025-12〜2026-10 の照合結果は docs/design/avg-st-definition/mock/APPROVED.md
+ *
+ * @param {string} seriesStartDate 節の初日 `YYYY-MM-DD`（取れなければレース日）
+ * @returns {{periodYear: number, periodNo: number, calcFrom: string, calcTo: string}|null}
+ */
+export function officialPeriodOf(seriesStartDate) {
+  const [y, m] = (seriesStartDate ?? "").split("-").map(Number);
+  if (!y || !m) return null;
+  const periodNo = m >= 7 ? 2 : 1;
+  return {
+    periodYear: y,
+    periodNo,
+    calcFrom: periodNo === 1 ? `${y - 1}-05-01` : `${y - 1}-11-01`,
+    calcTo: periodNo === 1 ? `${y - 1}-10-31` : `${y}-04-30`,
+  };
+}
+
+/**
  * 「前期」（`racer_period_stats`）の1選手分を表示用に整える（純関数）。
  *
  * **指標の列に混ぜない**。`win_rate` は公式勝率（点、実測1.07〜8.24）で、
@@ -667,20 +710,34 @@ export function periodsEndedBefore(raceDate, count = 1) {
  * 直近2年の範囲は期の定義から決める（6艇で同じ表記になる）。範囲内に行が
  * 無い期（登録前の新人など）は0回として足す。
  *
- * @param {Array<Object>|{state: string}} rows `getRacerPeriodStats` の戻り値
- *   （直近4期分。前期以外の行も混ざる）
+ * ## 前期をまだ取り込んでいないとき（期替わり直後）
+ *
+ * 公式の fan は期の終わりから15〜60日遅れて公開される。その間（`latestImported`
+ * が false）は、前々期の値と、前々期で終わる4期の合計を返し、`fallback` を立てる。
+ * 判定は表全体（その期の行が1行も無いか）で行う。選手ごとの欠け（長期休場で
+ * fan に載らない等）では切り替えない（「公開待ち」と事実と違う注記が出るため）。
+ * 遡るのは前々期まで。前々期の行も無ければ null。
+ *
+ * @param {{rows: Array<Object>, latestImported: boolean}|{state: string, rows: []}} result
+ *   `getRacerPeriodStats` の戻り値
  * @param {number|null} racerId
  * @param {string} raceDate `YYYY-MM-DD`。この日より前に終わった期を「前期」とする
  * @returns {{winRate: number|null, top2Rate: number|null, avgSt: number|null,
  *            starts: number|null, calcFrom: string|null, calcTo: string|null,
  *            finals: number|null, wins: number|null,
- *            recent: {finals: number, wins: number, from: string, to: string}|null}|null}
- *   前期の行が無ければ null（呼び出し側は枠ごと出さない）
+ *            recent: {finals: number, wins: number, from: string, to: string},
+ *            fallback: boolean,
+ *            pending: {calcFrom: string, calcTo: string}|null}|null}
+ *   表示する期の行が無ければ null（呼び出し側は枠ごと出さない）。
+ *   pending は公開待ちの前期の算出期間（fallback のときだけ）
  */
-export function pickPeriodStats(rows, racerId, raceDate) {
+export function pickPeriodStats(result, racerId, raceDate) {
+  const rows = result?.rows;
   if (!Array.isArray(rows) || !racerId) return null;
-  const periods = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT);
-  if (periods.length === 0) return null;
+  const all = periodsEndedBefore(raceDate, RECENT_PERIOD_COUNT + 1);
+  if (all.length === 0) return null;
+  const fallback = result.latestImported === false;
+  const periods = fallback ? all.slice(1) : all.slice(0, RECENT_PERIOD_COUNT);
   const [latest] = periods;
   const own = rows.filter((r) => r.racer_id === racerId);
   const row = own.find(
@@ -711,6 +768,10 @@ export function pickPeriodStats(rows, racerId, raceDate) {
       from: oldest.calcFrom,
       to: latest.calcTo,
     },
+    fallback,
+    pending: fallback
+      ? { calcFrom: all[0].calcFrom, calcTo: all[0].calcTo }
+      : null,
   };
 }
 
@@ -779,6 +840,28 @@ export function lastStartTiming(runs, { valueOf, markOf }) {
 
 /** 今節の平均STが通常値とこれだけ違えば「踏んでいる／慎重」と言い切る閾値（秒） */
 export const MEET_ST_DIFF_THRESHOLD = 0.01;
+
+/**
+ * 今節のSTの判定文に良し悪しの色（緑・赤）を付けるか（race-detail-ui-unify R2）。
+ *
+ * 判定文そのものは差 0.01 から出るが、色は差が 0.02 以上（表示の2桁で）かつ
+ * 今節3走以上のときだけ付ける。0.01 は計測の誤差の範囲で、初日の1走だけの差に
+ * 赤の「慎重」を付けると、準優の1号艇まで不必要に疑わせた（PR #1187 ファン評価1周目）
+ *
+ * @param {number|null} diff 今節の平均ST − 通常の平均ST（負なら早い）
+ * @param {number} meetN 今節の走数
+ * @returns {"good"|"bad"|null}
+ */
+export const MEET_ST_COLOR_THRESHOLD = 0.02;
+export const MEET_ST_COLOR_MIN_RUNS = 3;
+export function meetStVerdictTone(diff, meetN) {
+  if (diff === null || diff === undefined || !(meetN >= MEET_ST_COLOR_MIN_RUNS))
+    return null;
+  const d = Number(diff.toFixed(2));
+  if (d <= -MEET_ST_COLOR_THRESHOLD) return "good";
+  if (d >= MEET_ST_COLOR_THRESHOLD) return "bad";
+  return null;
+}
 /**
  * 今節の展示**順位**がこれだけ動けば「上向き／下向き」と言い切る閾値（位）。
  *

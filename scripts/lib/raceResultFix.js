@@ -39,6 +39,13 @@ export const FIX_RESULT_COLUMNS = Object.freeze([
   "popularity_wide_3",
 ]);
 
+/**
+ * 空のときだけ埋める列。既存の値は上書きせず、再取得したページから読めなかったとき（null）に値を消すこともしない。
+ * 決まり手は、結果の取得のときに書けなかったレースが残る（2026-09-16 住之江7R。BOA-749）。取り直しで埋めるが、
+ * 公式ページの表記揺れ等で別の値に書き換えることはしない
+ */
+export const FILL_ONLY_COLUMNS = Object.freeze(["winning_technique"]);
+
 /** 078の列（適用済みのときだけ書く） */
 export const FIX_EXTRA_COLUMNS = Object.freeze([
   "race_status",
@@ -66,6 +73,13 @@ export function buildFixPlan(existingRow, newRow, parsed, schema) {
       normalizeValue(desired[column]) !== normalizeValue(existingRow[column])
     ) {
       update[column] = desired[column] ?? null;
+    }
+  }
+  for (const column of FILL_ONLY_COLUMNS) {
+    // 既存の行にその列が無い（読み出していない）ときは、空かどうか分からないので書かない
+    if (!(column in existingRow)) continue;
+    if (existingRow[column] == null && desired[column] != null) {
+      update[column] = desired[column];
     }
   }
   return {

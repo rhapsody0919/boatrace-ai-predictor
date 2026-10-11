@@ -11,91 +11,11 @@ import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { trackEvent } from "../../utils/analytics";
 import RaceMoodEffect from "./RaceMoodEffect";
 import TermHintButton from "./TermHintButton";
+import VolatilityPercentileBar from "./VolatilityPercentileBar";
 
 // VolatilityDisplayのlevel（high/low/standard）→ calculate-unified-volatility-accuracy.js
 // の集計キー（high/low/medium）への対応
 const STATS_LEVEL_KEY = { high: "high", low: "low", standard: "medium" };
-
-function PercentileBar({ percentile }) {
-  const { t } = useTranslation();
-  const pct = Math.round(percentile * 100);
-  const color =
-    percentile >= 0.7 ? "#ff9800" : percentile <= 0.3 ? "#4caf50" : "#2196f3";
-
-  return (
-    <div
-      style={{
-        marginTop: "0.75rem",
-        marginBottom: "0.25rem",
-        padding: "0.6rem 0.75rem",
-        background: "rgba(255,255,255,0.55)",
-        borderRadius: "6px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "0.4rem",
-        }}
-      >
-        <span style={{ fontSize: "0.82rem", color: "#555" }}>
-          {t("volatility.percentileBarLabel")}
-        </span>
-        <span style={{ fontSize: "1.25rem", fontWeight: "700", color }}>
-          {pct}
-        </span>
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          height: "6px",
-          background: "#e0e0e0",
-          borderRadius: "3px",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            width: `${pct}%`,
-            height: "100%",
-            background: color,
-            borderRadius: "3px",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "-3px",
-            bottom: "-3px",
-            width: "2px",
-            background: "#616161",
-            borderRadius: "1px",
-            transform: "translateX(-50%)",
-          }}
-        />
-      </div>
-
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          fontSize: "0.68rem",
-          color: "#999",
-          marginTop: "0.25rem",
-        }}
-      >
-        <span>{t("volatility.percentileBarMin")}</span>
-        <span>{t("volatility.percentileBarMedian")}</span>
-        <span>{t("volatility.percentileBarMax")}</span>
-      </div>
-    </div>
-  );
-}
 
 /**
  * LevelAccuracyStat - 今表示しているレベル（警戒/標準/堅い）に対応する実測値を
@@ -180,7 +100,7 @@ function ReasonsList({ reasons, language, t }) {
       <div
         style={{
           fontSize: "0.85rem",
-          color: "#777",
+          color: "var(--text-secondary)",
           paddingLeft: "1.7rem",
           marginTop: "0.5rem",
           fontStyle: "italic",
@@ -195,7 +115,7 @@ function ReasonsList({ reasons, language, t }) {
     <div
       style={{
         fontSize: "0.9rem",
-        color: "#555",
+        color: "var(--text-secondary)",
         paddingLeft: "1.7rem",
         marginTop: "0.5rem",
       }}
@@ -239,10 +159,11 @@ function VolatilityDisplay({
         className="volatility-display volatility-display-fallback"
         style={{
           padding: "1rem 1.5rem",
-          background: "#f5f5f5",
+          background:
+            "color-mix(in srgb, var(--text-secondary) 8%, var(--surface-card))",
           borderRadius: "8px",
           marginBottom: "1.5rem",
-          borderLeft: "4px solid #9e9e9e",
+          borderLeft: "4px solid var(--text-secondary)",
         }}
       >
         <div
@@ -254,7 +175,7 @@ function VolatilityDisplay({
           }}
         >
           <span style={{ fontSize: "1.2rem" }}>📊</span>
-          <span style={{ fontWeight: "600", color: "#333" }}>
+          <span style={{ fontWeight: "600", color: "var(--text-primary)" }}>
             {t("volatility.attentionTitle")}
           </span>
           <TermHintButton termKey="inKuzureIndex" />
@@ -264,8 +185,8 @@ function VolatilityDisplay({
               borderRadius: "12px",
               fontSize: "0.85rem",
               fontWeight: "500",
-              background: "#9e9e9e",
-              color: "white",
+              background: "var(--text-secondary)",
+              color: "var(--surface-card)",
             }}
           >
             {t("volatility.collectingData")}
@@ -274,7 +195,7 @@ function VolatilityDisplay({
         <div
           style={{
             fontSize: "0.8rem",
-            color: "#777",
+            color: "var(--text-secondary)",
             paddingLeft: "1.7rem",
           }}
         >
@@ -287,10 +208,19 @@ function VolatilityDisplay({
 
   const level = getVolatilityLevel(percentile);
   const icon = level === "high" ? "🌪️" : level === "low" ? "🎯" : "⚖️";
-  const bg =
-    level === "high" ? "#fff3e0" : level === "low" ? "#e8f5e9" : "#e3f2fd";
-  const border =
-    level === "high" ? "#ff9800" : level === "low" ? "#4caf50" : "#2196f3";
+  // 色はテーマのトークンから作る（race-detail-ui-unify FR-6・R6）。以前は明るい固定色の
+  // カード（#fff3e0 等）で、ダークでもカードだけ白く浮き、ラベルは白字に橙・緑の地で
+  // コントラストが足りなかった（約2〜3:1）。地はカード色に段階の色を薄く混ぜ、ラベルは
+  // 段階の色の文字＋薄い地（モック承認済み）
+  const tone =
+    level === "high"
+      ? "var(--color-warning-text)"
+      : level === "low"
+        ? "var(--color-success-text)"
+        : "var(--color-info-text)";
+  // 「高」は橙が紺に混ざると灰に寄ったので、少し濃くする（BOA-711）
+  const bg = `color-mix(in srgb, ${tone} ${level === "high" ? 12 : 8}%, var(--surface-card))`;
+  const border = tone;
   const attentionLabel =
     level === "high"
       ? t("volatility.attentionHigh")
@@ -312,6 +242,9 @@ function VolatilityDisplay({
       <div
         style={{
           display: "flex",
+          // 375px で見出しが「イン崩れ注意／度」と1文字だけ折れたので、見出しとラベルは
+          // 折らずに、入らないときはラベルを次の行へ送る（race-detail-ui-unify PR5）
+          flexWrap: "wrap",
           alignItems: "center",
           gap: "0.5rem",
           marginBottom: "0.5rem",
@@ -329,7 +262,13 @@ function VolatilityDisplay({
           <RaceMoodEffect level={level} />
           <span style={{ position: "relative", zIndex: 1 }}>{icon}</span>
         </span>
-        <span style={{ fontWeight: "600", color: "#333" }}>
+        <span
+          style={{
+            fontWeight: "600",
+            color: "var(--text-primary)",
+            whiteSpace: "nowrap",
+          }}
+        >
           {t("volatility.attentionTitle")}
         </span>
         <TermHintButton termKey="inKuzureIndex" />
@@ -338,9 +277,16 @@ function VolatilityDisplay({
             padding: "0.25rem 0.75rem",
             borderRadius: "12px",
             fontSize: "0.85rem",
-            fontWeight: "500",
-            background: border,
-            color: "white",
+            fontWeight: "700",
+            // 地はカード色そのもの（不透明）＋段階の色の枠。薄い色を重ねると文字が
+            // 3.5〜3.8:1 に落ちた。不透明の地を前面に置き、狭い幅で次の行に回ったときも
+            // アイコンの波紋（RaceMoodEffect）が重ならないようにする（PR #1209 ファン評価1周目）
+            background: "var(--surface-card)",
+            border: `1px solid ${tone}`,
+            color: tone,
+            whiteSpace: "nowrap",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {attentionLabel}
@@ -350,7 +296,7 @@ function VolatilityDisplay({
       <div
         style={{
           fontSize: "0.8rem",
-          color: "#777",
+          color: "var(--text-secondary)",
           paddingLeft: "1.7rem",
           marginBottom: "0.25rem",
         }}
@@ -360,7 +306,7 @@ function VolatilityDisplay({
 
       <LevelAccuracyStat level={level} venueCode={venueCode} raceId={raceId} />
 
-      <PercentileBar percentile={percentile} />
+      <VolatilityPercentileBar percentile={percentile} />
 
       <ReasonsList reasons={reasons} language={i18n.language} t={t} />
     </div>

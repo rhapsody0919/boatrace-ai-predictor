@@ -62,7 +62,7 @@ async function findVenueNotInKGroups() {
   const results = await fetchAll(
     "race_results",
     "race_id",
-    (q) => q.gte("race_id", FROM).lte("race_id", `${TO}~`),
+    (q) => q.gte("race_id", FROM).lte("race_id", `${TO}~`).order("race_id"),
     { throwOnError: true },
   );
   const hasResult = new Set(results.map((r) => r.race_id));

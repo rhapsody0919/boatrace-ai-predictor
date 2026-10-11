@@ -108,7 +108,8 @@ export default async function handler(req) {
       await updateYoutubeVideoTitle(accessToken, videoId, snippet, draft.title);
       results.push({ draftId: draft.id, videoId, before, after: draft.title });
     } catch (error) {
-      results.push({ draftId: draft.id, videoId, error: error.message });
+      console.error("SNS Hub title sync error:", error);
+      results.push({ draftId: draft.id, videoId, error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" });
     }
   }
 

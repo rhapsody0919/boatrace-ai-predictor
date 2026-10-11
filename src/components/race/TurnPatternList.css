@@ -54,6 +54,13 @@
   color: var(--text-primary);
 }
 
+/* 実際の決まり手（予想と違うとき）。予想の決まり手より一段控えめにする（BOA-724） */
+.turn-pattern-actual {
+  margin-left: var(--spacing-1);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 .turn-pattern-prob {
   flex-shrink: 0;
   font-weight: var(--font-weight-bold);
@@ -65,9 +72,10 @@
   flex-shrink: 0;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-bold);
-  color: var(--text-primary);
+  /* 要約文（✅ 的中）と同じ緑（BOA-711） */
+  color: var(--color-success-text);
   background: var(--surface-card);
-  border: var(--border-width-1) solid var(--color-success);
+  border: var(--border-width-1) solid var(--color-success-text);
   padding: 2px var(--spacing-2);
   border-radius: var(--radius-md);
   white-space: nowrap;
@@ -79,6 +87,16 @@
   font-weight: var(--font-weight-semibold);
   text-align: center;
   color: var(--text-primary);
+}
+
+/* 確定後の的中・不的中（race-detail-ui-unify R2）。文の頭に ✅ / ❌ が付くので
+   色だけに頼らない。以前はクラスだけあって CSS が無かった */
+.turn-pattern-summary--hit {
+  color: var(--color-success-text);
+}
+
+.turn-pattern-summary--miss {
+  color: var(--color-error-text);
 }
 
 /* BOA-543: 判定対象外（不成立のレース・返還艇の候補）。候補は残し、枠を点線・文字を弱めて区別する

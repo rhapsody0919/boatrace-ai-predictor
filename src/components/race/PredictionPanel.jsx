@@ -63,20 +63,39 @@
  * 冒頭コメント参照）。選手名表示のためplayersを渡す
  */
 import { useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import {
+  Link,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRaceData } from "../../hooks/useRaceData";
 import {
   RACE_TAB_PARAM,
   RACE_BOAT_PARAM,
+  RACE_SONAR_PARAM,
+  SONAR_RACE_TAB,
   parseBoatParam,
+  resolveInitialRaceTab,
 } from "../../utils/raceUrlState";
+import {
+  isAnalogyFinderEnabled,
+  isThinkingAssistEnabled,
+} from "../../config/featureFlags";
+import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import { SocialShareButtons } from "../SocialShareButtons";
-import { generatePredictionShareText, shareUrlFor } from "../../utils/share";
+import {
+  generatePredictionShareText,
+  generateResultShareText,
+  shareUrlFor,
+} from "../../utils/share";
+import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
 import { getVenueGuidePath } from "../../utils/venueUtils";
 import { isRaceCancelled } from "../../utils/raceCancellation";
 import PredictionLoadingOverlay from "./PredictionLoadingOverlay";
 import DataRaceTable from "./DataRaceTable";
+import AssistEntryRow from "./assist/AssistEntryRow";
 import VenueTendencyPanel from "./VenueTendencyPanel";
 import EmbeddedAnalysisSection from "./EmbeddedAnalysisSection";
 import RacerFormChart from "../analysis/RacerFormChart";
@@ -89,6 +108,7 @@ import MotorConditionChart from "../analysis/MotorConditionChart";
 import AiCopyBanner from "./AiCopyBanner";
 import AiCopyButton from "./AiCopyButton";
 import Toast, { useToast } from "../Toast";
+import { trackEvent } from "../../utils/analytics";
 import RaceTabs from "./RaceTabs";
 import RaceBasicInfoTab from "./RaceBasicInfoTab";
 import RaceWakuInfoTab from "./RaceWakuInfoTab";
@@ -108,7 +128,8 @@ function PredictionPanel({
   date,
   status,
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   // フックはearly returnより前で無条件に呼ぶ必要があるため、selectedRace未確定時は空オブジェクトを渡す
   const { venueCode, venueName } = useRaceData(selectedRace || {});
   const analysisRaceId = selectedRace ? getRaceId(selectedRace) : null;
@@ -155,7 +176,51 @@ function PredictionPanel({
     setSearchParams(params, { replace: true });
   };
   const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
-  const { toast: aiCopyToast, showToast: showAiCopyToast } = useToast();
+  // ほかのタブの中からタブを切り替える依頼（AI予想タブの「龍神ソナーのタブへ」）。
+  // RaceTabs は選択を自分で持つので、seq を増やして同じタブへの依頼も届くようにする
+  const [tabRequest, setTabRequest] = useState(null);
+  const {
+    toast: aiCopyToast,
+    showToast: showAiCopyToast,
+    hide: hideAiCopyToast,
+    hold: holdAiCopyToast,
+    release: releaseAiCopyToast,
+  } = useToast();
+  // AI用にコピーした直後のトーストに、思考アシストへの1行を足す（BOA-832、2026-10-11 ユーザー選択）。
+  // 6秒出し、マウスを重ねている間・フォーカスがある間は消さない。ja・フラグありのとき。
+  // 移っても表示の選択は残さない（上部の切り替えとは違う）。履歴に積むので戻るでレース詳細へ
+  const handleAiCopy = (message, type) => {
+    const raceIdForAssist = analysisRaceId;
+    if (
+      type !== "success" ||
+      !raceIdForAssist ||
+      !isThinkingAssistEnabled() ||
+      i18n.resolvedLanguage !== "ja"
+    ) {
+      showAiCopyToast(message, type);
+      return;
+    }
+    showAiCopyToast(message, type, {
+      duration: 6000,
+      action: {
+        label: t("aiCopy.toastAssist"),
+        onClick: () => {
+          hideAiCopyToast();
+          trackEvent("assist_view_switch", {
+            race_id: raceIdForAssist,
+            assist_view: "assist",
+            assist_entry: "copy_toast",
+          });
+          navigate(`/race/${raceIdForAssist}/assist`);
+        },
+      },
+    });
+  };
+  // 結果確定後の共有文に使う、1着の艇の進入コース（早期 return より前に呼ぶ。フックの順序の規則）
+  const winnerCourse = useRaceWinnerCourse(
+    selectedRace?.id,
+    Boolean(prediction?.result?.finished),
+  );
 
   if (!prediction && !isAnalyzing) return null;
 
@@ -193,6 +258,35 @@ function PredictionPanel({
   // 結果確定済みと中止確定（BOA-424）では出さない
   const showAiCopy = !isFinished && !isCancelled;
 
+  // 共有文（BOA-754）。結果確定後は、発走前の予想の文面（推奨の買い目・「的中率が上がって嬉しい」）を
+  // 共有させない。展開予測の候補のどれかが1着なら的中の文面、どれも1着でなければボタンを出さない
+  const shareTitle = isFinished
+    ? generateResultShareText(
+        {
+          venue: venueName || t("panel.unknownVenue"),
+          raceNo: selectedRace?.raceNumber || "?",
+          date: raceDate,
+          patterns: prediction?.turnPrediction?.patterns,
+          result: prediction?.result,
+          winnerEntryCourse: winnerCourse?.course ?? null,
+        },
+        t,
+      )
+    : generatePredictionShareText(
+        {
+          venue: venueName || t("panel.unknownVenue"),
+          raceNo: selectedRace?.raceNumber || "?",
+          date: raceDate,
+          isCancelled,
+          prediction: {
+            topPick: prediction.topPick?.number,
+            top3: prediction.top3 || [],
+          },
+        },
+        "unified",
+        t,
+      );
+
   // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
   // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
   // 独立して表示しているため二重表示を避けて隠す（BOA-305〜312フィードバック#7、
@@ -206,6 +300,7 @@ function PredictionPanel({
     activeMainTab !== "motor" &&
     activeMainTab !== "waku" &&
     activeMainTab !== "aiPrediction" &&
+    activeMainTab !== SONAR_RACE_TAB &&
     activeMainTab !== "oddsList" &&
     // 今節タブも同じ扱い（2026-09-27ユーザー指摘）。6艇の得点率・着順・前検と
     // 選んだ1艇の走りを出しており、下にデータ出走表・枠番傾向が続くと
@@ -341,7 +436,7 @@ function PredictionPanel({
           venueCode={venueCode}
           promptType={aiCopyPromptType}
           onPromptTypeChange={setAiCopyPromptType}
-          onCopy={showAiCopyToast}
+          onCopy={handleAiCopy}
         />
       )}
 
@@ -361,11 +456,18 @@ function PredictionPanel({
           タブの統合（枠別情報＋モータ情報など）はしない。8→6にしても334pxに
           入るのは4つのままで、可視数が1つも増えないのに、統合後のタブが縦に
           長くなる（タブを跨ぐのは1タップだが、縦スクロールは何回もスワイプする）。 */}
+      {/* タブ列のすぐ上の思考アシストの入口（BOA-832） */}
+      {venueCode && analysisRaceId && <AssistEntryRow raceId={analysisRaceId} />}
       {venueCode && analysisRaceId && (
         <RaceTabs
           key={analysisRaceId}
           defaultTabId={defaultMainTab}
-          initialTabId={searchParams.get(RACE_TAB_PARAM)}
+          initialTabId={resolveInitialRaceTab(
+            searchParams.get(RACE_TAB_PARAM),
+            searchParams.get(RACE_SONAR_PARAM),
+            isAnalogyFinderEnabled(),
+          )}
+          requestedTab={tabRequest}
           onActiveTabChange={(tabId) => {
             setActiveMainTab(tabId);
             // 既定のタブではクエリを付けない（素の /race/:raceId を保つ）
@@ -388,6 +490,23 @@ function PredictionPanel({
                 />
               ),
             },
+            // 龍神ソナー（BOA-271）。AI予想タブの下から独立したタブにした（2026-10-08 ユーザー決定、
+            // 承認モック docs/design/analogy-finder/mock/APPROVED.md）。位置は基本情報と AI予想の間。
+            // 公開は機能フラグで切り替える（隠している間はタブごと出さないので API も呼ばない）
+            ...(isAnalogyFinderEnabled()
+              ? [
+                  {
+                    id: SONAR_RACE_TAB,
+                    label: t("raceTabs.sonar"),
+                    content: (
+                      <AnalogyFinderSection
+                        key={analysisRaceId}
+                        raceId={analysisRaceId}
+                      />
+                    ),
+                  },
+                ]
+              : []),
             {
               // 日和には無い龍神レーダー独自の差別化要素。6艇横断で読むものでも
               // あるため前半に置く
@@ -411,6 +530,15 @@ function PredictionPanel({
                     null
                   }
                   isCancelled={isCancelled}
+                  onOpenSonar={
+                    isAnalogyFinderEnabled()
+                      ? () =>
+                          setTabRequest((r) => ({
+                            id: SONAR_RACE_TAB,
+                            seq: (r?.seq ?? 0) + 1,
+                          }))
+                      : null
+                  }
                 />
               ),
             },
@@ -611,7 +739,7 @@ function PredictionPanel({
           race={selectedRace}
           venueCode={venueCode}
           promptType={aiCopyPromptType}
-          onCopy={showAiCopyToast}
+          onCopy={handleAiCopy}
         />
       )}
       {showAiCopy && (
@@ -619,37 +747,33 @@ function PredictionPanel({
           message={aiCopyToast.message}
           type={aiCopyToast.type}
           visible={aiCopyToast.visible}
+          action={aiCopyToast.action}
+          onClose={hideAiCopyToast}
+          onHold={holdAiCopyToast}
+          onRelease={releaseAiCopyToast}
+          closeLabel={t("aiCopy.toastClose")}
         />
       )}
 
-      {/* SNSシェアボタン */}
-      <div className="social-share-wrapper">
-        <SocialShareButtons
-          // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
-          shareUrl={shareUrlFor(`${pathname}${search}`)}
-          title={generatePredictionShareText(
-            {
-              venue: venueName || t("panel.unknownVenue"),
-              raceNo: selectedRace?.raceNumber || "?",
-              date: raceDate,
-              isCancelled,
-              prediction: {
-                topPick: prediction.topPick?.number,
-                top3: prediction.top3 || [],
-              },
-            },
-            "unified",
-            t,
-          )}
-          hashtags={
-            // 中止のレースは予想を出さないので「AI予想」のタグを外す
-            isCancelled
-              ? ["ボートレース", "龍神レーダー"]
-              : ["ボートレース", "AI予想", "龍神レーダー"]
-          }
-          size={40}
-        />
-      </div>
+      {/* SNSシェアボタン（結果確定後で、展開予測の候補がどれも1着でなければ出さない。BOA-754） */}
+      {shareTitle && (
+        <div className="social-share-wrapper">
+          <SocialShareButtons
+            // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
+            shareUrl={shareUrlFor(`${pathname}${search}`)}
+            title={shareTitle}
+            hashtags={
+              isFinished
+                ? ["ボートレース", "展開予測", "龍神レーダー"]
+                : // 中止のレースは予想を出さないので「AI予想」のタグを外す
+                  isCancelled
+                  ? ["ボートレース", "龍神レーダー"]
+                  : ["ボートレース", "AI予想", "龍神レーダー"]
+            }
+            size={40}
+          />
+        </div>
+      )}
 
       {/* 会場攻略ガイドリンク */}
       {venueCode && getVenueGuidePath(venueCode) && (

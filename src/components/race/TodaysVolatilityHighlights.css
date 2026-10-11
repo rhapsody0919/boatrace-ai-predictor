@@ -73,9 +73,17 @@
   flex-shrink: 0;
 }
 
-.volatility-highlights__turn {
+.volatility-highlights__scale-note {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
-  font-size: 0.8rem;
+}
+
+.volatility-highlights__percentile-max {
+  margin-left: 0.2em;
+  font-size: 0.8em;
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
 }
 
 .volatility-highlights__accuracy-link {
@@ -104,4 +112,39 @@
   .volatility-highlights__column {
     flex: 1 1 auto;
   }
+}
+
+/* 締切を過ぎたレースの札（BOA-757）。締切前のレースが残っていない時間帯だけ出る。
+   枠を罫線の色にすると、ダークで背景に溶けて時刻の続きの文字に見えた（PR #1248 ファン評価1周目） */
+.volatility-highlights__closed {
+  margin-left: 0.4em;
+  padding: 0 0.4em;
+  border: var(--border-width-1) solid
+    color-mix(in srgb, var(--text-secondary) 50%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.volatility-highlights__closed-note {
+  margin: 0 0 var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* 締切済みのレースの結果（振り返り）。補助の文字（時刻・札）と区別できるよう、本文の色にする */
+.volatility-highlights__result {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+/* 列に入るレースが無いときの「該当なし」 */
+.volatility-highlights__empty {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: var(--border-width-1) dashed var(--border-hairline);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
 }

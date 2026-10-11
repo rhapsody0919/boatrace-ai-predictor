@@ -259,3 +259,24 @@ export function describePartialVoid({
   }
   return null;
 }
+
+/**
+ * 1着の艇が実際に入ったコース（BOA-708）。展開予測・イン崩れの的中判定は艇番で行う
+ * （予測が「枠なりを前提に、N号艇が勝つ」という艇の予測のため）が、前付けのあったレースでは
+ * 艇番とコースが違うので、表示では「N号艇（Mコース）」のように添える。
+ *
+ * - race_results.actual_course_{1着の艇番}（Kファイル由来。翌朝07:00の同期まで NULL）を優先する
+ * - 無ければ race_start_timings.entry_course（結果ページ由来）で補う（当日分）
+ * - どちらも無ければ null（コースは出さない）
+ *
+ * @param {object|null|undefined} result - race_results の行（rank1・actual_course_1..6）
+ * @param {number|null} [entryCourseOfWinner] - 1着の艇の entry_course
+ * @returns {number|null}
+ */
+export function winnerEntryCourseOf(result, entryCourseOfWinner = null) {
+  const boat = result?.rank1;
+  if (boat == null) return null;
+  const actual = result?.[`actual_course_${boat}`];
+  if (actual != null) return actual;
+  return entryCourseOfWinner ?? null;
+}

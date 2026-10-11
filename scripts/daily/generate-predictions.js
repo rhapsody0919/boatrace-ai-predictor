@@ -17,6 +17,7 @@ import {
 } from "../lib/unchangedRows.js";
 import { upsertRaceConditions } from "../lib/raceConditionsWriter.js";
 import { predictFirstMark } from "../lib/turnPrediction.js";
+import { boat1StReason } from "../lib/volatilityFactors.js";
 import {
   COURSE_DEFAULT_DISTRIBUTION,
   COURSE_DEFAULT_DEFENSE,
@@ -149,22 +150,13 @@ function calculateVolatilityScore(
     factors.push({ value: norm, weight: W.winRate, reason });
   }
 
-  // B. 1号艇の今節avgST — 遅いほどイン崩れしやすい
+  // B. 1号艇の平均ST（当サイトに蓄積した全期間） — 遅いほどイン崩れしやすい
   // 観測レンジ: 0.07〜0.34。予測力 26.7pt差
   const boat1ST =
     racerStatsList?.find((s) => s.boatNumber === 1)?.avgST ?? null;
   if (boat1ST != null) {
     const norm = Math.min(1, Math.max(0, (boat1ST - 0.07) / (0.34 - 0.07)));
-    let reason;
-    if (boat1ST >= 0.22)
-      reason = `1号艇の今節STが非常に遅い（平均${boat1ST.toFixed(3)}秒）→ 出遅れリスク大`;
-    else if (boat1ST >= 0.18)
-      reason = `1号艇の今節STが遅い（平均${boat1ST.toFixed(3)}秒）→ イン崩れリスク`;
-    else if (boat1ST <= 0.1)
-      reason = `1号艇の今節STが非常に速い（平均${boat1ST.toFixed(3)}秒）→ 逃げ鉄板`;
-    else if (boat1ST <= 0.14)
-      reason = `1号艇の今節STが速い（平均${boat1ST.toFixed(3)}秒）→ スタート安定`;
-    else reason = `1号艇の今節STは標準（平均${boat1ST.toFixed(3)}秒）`;
+    const reason = boat1StReason(boat1ST);
     factors.push({ value: norm, weight: W.avgST, reason });
   }
 
@@ -405,7 +397,12 @@ function calculateUpsetFocusScore(
 }
 
 // 選手データを処理（特定のスコア計算関数を使用）
-function processRacersWithScoreFn(racers, scoreFn, turnResult, exhibitionData) {
+export function processRacersWithScoreFn(
+  racers,
+  scoreFn,
+  turnResult,
+  exhibitionData,
+) {
   if (!racers || racers.length === 0) {
     console.warn("⚠️  選手データが空です");
     return [];
@@ -433,16 +430,19 @@ function processRacersWithScoreFn(racers, scoreFn, turnResult, exhibitionData) {
       age: racer.age,
       winRate: racer.globalWinRate.toFixed(3),
       localWinRate: racer.localWinRate.toFixed(3),
-      global2Rate: racer.global2Rate?.toFixed(1) || null,
-      local2Rate: racer.local2Rate?.toFixed(1) || null,
-      global3Rate: racer.global3Rate?.toFixed(1) || null,
-      local3Rate: racer.local3Rate?.toFixed(1) || null,
+      // 2連率・3連率は公式の出走表と同じ小数2桁で持つ（BOA-829）。以前は小数1桁に丸めており、朝の初期化から
+      // 発走60分前の取得で上書きされるまで、race_entries に丸めた値（公式 33.05 → 33.0）が入っていた。
+      // 龍神ソナー・思考アシストの朝の計算（出走表の時点）も丸めた値を読んでいた。表示の桁は画面側が決める
+      global2Rate: racer.global2Rate?.toFixed(2) || null,
+      local2Rate: racer.local2Rate?.toFixed(2) || null,
+      global3Rate: racer.global3Rate?.toFixed(2) || null,
+      local3Rate: racer.local3Rate?.toFixed(2) || null,
       motorNumber: racer.motorNumber,
-      motor2Rate: racer.motor2Rate.toFixed(1),
-      motor3Rate: racer.motor3Rate?.toFixed(1) || null,
+      motor2Rate: racer.motor2Rate.toFixed(2),
+      motor3Rate: racer.motor3Rate?.toFixed(2) || null,
       boatNumber: racer.boatNumber,
-      boat2Rate: racer.boat2Rate.toFixed(1),
-      boat3Rate: racer.boat3Rate?.toFixed(1) || null,
+      boat2Rate: racer.boat2Rate.toFixed(2),
+      boat3Rate: racer.boat3Rate?.toFixed(2) || null,
       // F数・L数（BOA-590。朝の初期化の出走表から。無ければ undefined のまま＝書かない）
       fCount: racer.fCount,
       lCount: racer.lCount,
@@ -480,7 +480,7 @@ function generateTopPickReasoning(topPickPlayer, players, modelType) {
     }
     if (motor2Rate >= 35) {
       strengths.push(
-        `モーター2連率${topPickPlayer.motor2Rate}%の${motor2Rate >= 40 ? "好" : "安定"}機材`,
+        `モーター2連率${motor2Rate.toFixed(1)}%の${motor2Rate >= 40 ? "好" : "安定"}機材`,
       );
     }
 
@@ -518,7 +518,7 @@ function generateTopPickReasoning(topPickPlayer, players, modelType) {
     const strengths = [];
     if (number >= 4 && motor2Rate >= 38) {
       strengths.push(
-        `${number}号艇ながらモーター2連率${topPickPlayer.motor2Rate}%の好機材`,
+        `${number}号艇ながらモーター2連率${motor2Rate.toFixed(1)}%の好機材`,
       );
     }
     if (localWinRate >= 5.5) {
@@ -546,7 +546,7 @@ function generateStatisticalInsights(players) {
   const goodMotors = players.filter((p) => parseFloat(p.motor2Rate) > 40);
   if (goodMotors.length > 0) {
     const motorList = goodMotors
-      .map((p) => `${p.number}号艇（${p.motor2Rate}%）`)
+      .map((p) => `${p.number}号艇（${parseFloat(p.motor2Rate).toFixed(1)}%）`)
       .join("、");
     insights.push(`好モーター: ${motorList}`);
   }

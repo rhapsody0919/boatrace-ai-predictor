@@ -9,7 +9,8 @@ const VIEWPORT_MARGIN = 8;
 // 下にこれだけの高さが無ければ、上に余裕があるとき上に開く
 const MIN_COMFORTABLE_HEIGHT = 320;
 
-export default function TermHintButton({ termKey }) {
+// values: 説明文の差し込み（例: 平均ST（公式）の期間 {{from}}〜{{to}}、BOA-815）
+export default function TermHintButton({ termKey, values = undefined }) {
   const { t, i18n } = useTranslation();
   const [position, setPosition] = useState(null);
   const buttonRef = useRef(null);
@@ -33,7 +34,7 @@ export default function TermHintButton({ termKey }) {
   // 説明文は locales の termHints.* に4言語で置く（BOA-592）。キーが無い用語は ? を出さない
   const hintKey = `termHints.${termKey}`;
   if (!i18n.exists(hintKey)) return null;
-  const explanation = t(hintKey);
+  const explanation = t(hintKey, values);
 
   const handleToggle = (event) => {
     event.stopPropagation();

@@ -1,0 +1,31 @@
+{
+ "n": 391099,
+ "by_period": {
+  "pool_cal": 335699,
+  "test": 28172,
+  "cal": 27228
+ },
+ "tech_missing": {
+  "cal": 0,
+  "pool_cal": 0,
+  "test": 1
+ },
+ "course_missing": {
+  "cal": 0,
+  "pool_cal": 0,
+  "test": 0
+ },
+ "kb_winner_mismatch": 0,
+ "grade_na": {
+  "cal": 0.1204,
+  "pool_cal": 0.1048,
+  "test": 0.0
+ },
+ "round_na": {
+  "cal": 0.0,
+  "pool_cal": 0.0,
+  "test": 0.0049
+ },
+ "features_rev": "dc6d02084aa6260c5042393f4cde9aca46786b77",
+ "sec": 41
+}

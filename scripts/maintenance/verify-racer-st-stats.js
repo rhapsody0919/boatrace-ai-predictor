@@ -6,14 +6,14 @@
  *   1. race_start_timings の取得が Supabase の1応答1000行の上限で切れず、最新の走が落ちない
  *      （修正前は race_id 200件ずつ .in() で取り、200×6=1200行が1000行で黙って切れていた）
  *   2. F の走は avg_st・avg_st_last_30・st_stddev から除かれ、flying_rate の分母には入る
- *   3. avg_st_last_30 は「F 以外の直近30走」（race_id 降順）で、入力の並び順に依存しない
+ *   3. avg_st_last_30 は新しい順30回の出走の窓の中の F・L 以外の平均（v16 の st_mean30 と同じ窓、BOA-815）で、
+ *      入力の並び順に依存しない。窓の中に有効な ST が3走未満なら null
  *   4. 取得エラーは例外になる（部分データで集計しない）
  */
 import {
   computeRacerStStats,
   fetchRacerEntries,
   fetchStartTimingsForEntries,
-  RECENT_ST_WINDOW,
 } from "../lib/racerStStats.js";
 
 let failures = 0;
@@ -268,12 +268,45 @@ const latestRaceId = entries[entries.length - 1].race_id;
       a.race_id.localeCompare(b.race_id),
   );
   const s = computeRacerStStats(e, shuffled);
-  // F 以外の直近30走 = d=38..9 → 0.10 が29走 + 0.30 が1走（d=9）
-  const expected = Number(((29 * 0.1 + 0.3) / RECENT_ST_WINDOW).toFixed(3));
+  // 窓は新しい順の30回の出走 = d=39..10。F（d=39）は平均から外すが窓の1枠は使う
+  // → d=38..10 の 0.10 が29走。修正前（F 以外の30走）は d=9 の 0.30 が入り 0.107 だった
   check(
-    "avg_st_last_30 は F を除いた新しい順の30走",
-    s.avg_st_last_30 === expected,
-    `期待: ${expected} 実際: ${s.avg_st_last_30}`,
+    "avg_st_last_30 は新しい順30回の出走の窓から F を外した平均（v16 と同じ窓）",
+    s.avg_st_last_30 === 0.1,
+    `期待: 0.1 実際: ${s.avg_st_last_30}`,
+  );
+}
+
+// --- 3b. L（出遅れ）は ST が記録されていても平均から外す。窓の中の有効な ST が3走未満なら null ---
+{
+  const mk = (d, st, extra = {}) => ({
+    race_id: `2026-08-0${d}-12-01`,
+    boat_number: 1,
+    start_timing: st,
+    is_flying: false,
+    ...extra,
+  });
+  const e = [1, 2, 3, 4].map((d) => ({
+    race_id: `2026-08-0${d}-12-01`,
+    boat_number: 1,
+  }));
+  const t = [
+    mk(1, 0.2),
+    mk(2, 0.1),
+    mk(3, 1.16, { is_late_start: true, official_finish_code: "L1" }),
+    mk(4, 0.15),
+  ];
+  const s = computeRacerStStats(e, t);
+  check(
+    "L1 の ST 1.16 は直近30走の平均に入らない（0.20・0.10・0.15 の平均 0.150）",
+    s.avg_st_last_30 === 0.15,
+    `実際: ${s.avg_st_last_30}`,
+  );
+  const two = computeRacerStStats(e.slice(0, 3), t);
+  check(
+    "窓の中の有効な ST が2走なら直近30走は null（v16 の min_periods=3）",
+    two.avg_st_last_30 === null,
+    `実際: ${two.avg_st_last_30}`,
   );
 }
 

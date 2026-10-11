@@ -38,6 +38,9 @@ const CASES = [
   ["表示桁で全艇同値なら空", () => [c(54.84, 54.8, 54.81), "max", { digits: 1 }], []],
   ["digits 0（回収率）", () => [c(99.6, 100.4, 87), "max", { digits: 0 }], [1, 2]],
   ["候補が null でも空", () => [null, "max", {}], []],
+  // 走数が少ない値（hidden）は比べるが返さない。次の艇へ繰り下げない（PR #1187 ファン評価1周目）
+  ["hidden の最良は返さず繰り下げない", () => [[{ boat: 1, value: 10, hidden: true }, { boat: 2, value: 7 }, { boat: 3, value: 5 }], "max", {}], []],
+  ["hidden と同値の最良は hidden 以外だけ返す", () => [[{ boat: 1, value: 8, hidden: true }, { boat: 2, value: 8 }, { boat: 3, value: 5 }], "max", {}], [2]],
 ];
 
 function run(bestOf) {
@@ -58,9 +61,10 @@ const failures = run(bestOf);
 // 変異検証: 要を壊したコピーでは検証が落ちること
 const source = fs.readFileSync(SRC, "utf8");
 const MUTANTS = [
-  ["同値を1艇だけ返す", "values.filter((c) => c.value === target).map((c) => c.boat)", "values.filter((c) => c.value === target).slice(0, 1).map((c) => c.boat)"],
+  ["同値を1艇だけ返す", ".map((c) => c.boat),\n  );", ".slice(0, 1).map((c) => c.boat),\n  );"],
   ["全艇同値を除かない", "if (min === max) return new Set();", ""],
   ["丸めない", "(digits === undefined ? v : Number(v.toFixed(digits)))", "v"],
+  ["hidden を返す", "c.value === target && !c.hidden", "c.value === target"],
 ];
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "verify-best-of-"));
 for (const [name, from, to] of MUTANTS) {

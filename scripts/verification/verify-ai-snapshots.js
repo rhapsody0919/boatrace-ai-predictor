@@ -65,6 +65,31 @@ async function main() {
     }
   }
 
+  // 配信対象の UA が全部スナップショットを受け取れることを、1ページで確かめる
+  // （検索・ユーザー起点の取得に使う UA を足したとき、本番で bingbot・OAI-SearchBot に
+  //  空の殻が返っていた。docs/proposal/ai-agent-era-strategy.md Phase 0）
+  for (const ua of AI_CRAWLER_USER_AGENTS) {
+    const pathName = "/winning-technique";
+    try {
+      const res = await fetch(`${baseUrl}${pathName}`, {
+        headers: { "User-Agent": `Mozilla/5.0 (compatible; ${ua}/1.0)` },
+      });
+      const html = await res.text();
+      results.push({
+        pathName: `${pathName} [UA=${ua}]`,
+        botOk: res.ok && html.includes("データ分析ツール"),
+        normalUnaffected: true,
+      });
+    } catch (err) {
+      results.push({
+        pathName: `${pathName} [UA=${ua}]`,
+        botOk: false,
+        normalUnaffected: false,
+        error: err.message,
+      });
+    }
+  }
+
   let hasFailure = false;
   for (const r of results) {
     const status =

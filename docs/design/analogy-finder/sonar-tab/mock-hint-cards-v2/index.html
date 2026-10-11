@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>号艇とコースの書き方</title>
+<style>
+:root{--page:#f6f2e9;--card:#fbf9f3;--line:#ddd4bf;--trk:#e7dfcc;--ink:#0f172a;--sub:#475569;--gold:#6b4f10;--bar:#c9a227;--ok:#166534;--okbg:#dcfce7;--tag:#efe7d3;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0b1626;--card:#132640;--line:#2b3d58;--trk:#24364f;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--bar:#d4ae3a;--ok:#86efac;--okbg:#14532d;--tag:#1d3352;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0b1626;--card:#132640;--line:#2b3d58;--trk:#24364f;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--bar:#d4ae3a;--ok:#86efac;--okbg:#14532d;--tag:#1d3352;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6;font-size:13.6px}
+.doc{max-width:1180px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--sub);font-size:13px;margin:0}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px;align-items:start}
+.phone{border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--page);max-width:375px}
+.tag{font-size:12.5px;font-weight:800;color:var(--gold);margin:0 0 6px}
+.c{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:10px;display:flex;flex-direction:column;gap:8px}
+.hd{display:flex;align-items:center;gap:8px}
+.hd b{font-size:14px}
+.ok{margin-left:auto;font-size:11.5px;font-weight:700;color:var(--ok);background:var(--okbg);border-radius:999px;padding:1px 8px}
+.today{font-size:12.5px;background:var(--page);border-radius:8px;padding:6px 8px;line-height:1.7;font-variant-numeric:tabular-nums}
+.boat{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;border:1px solid #94a3b8;vertical-align:-3px}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.lb{display:flex;justify-content:space-between;font-size:12.5px}
+.trk{position:relative;height:12px;border-radius:6px;background:var(--trk)}
+.trk i{position:absolute;inset:0 auto 0 0;background:var(--bar);border-radius:6px}
+.trk s{position:absolute;top:-3px;bottom:-3px;border-left:2px dashed var(--ink);opacity:.7}
+.leg{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:12px;background:var(--tag);border-radius:8px;padding:6px 8px;margin-bottom:8px}
+.leg span{white-space:nowrap}
+.ng{color:#b91c1c;font-weight:700}
+.notes{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:12px 14px;font-size:13px}
+.notes ul{margin:4px 0 0;padding-left:18px}
+</style>
+</head>
+<body>
+<div class="doc">
+  <p class="sub">BOA-814 の1 追加 ・ ②「当てはまる条件」のカード（カド一撃） ・ 375px ・ 津4R（10/10）</p>
+  <h1>①〜⑥が号艇かコースか分かるように書く</h1>
+  <p class="sub">事実（コードで確認）: 手がかりは枠なりが前提。比べているのは「各選手が、今日の艇番と同じコースに入ったときの直近30走の平均ST」。だから「4」は 4号艇＝4コース を指す</p>
+  <div class="cols">
+    <div>
+      <p class="tag">今（#1358）: 丸数字だけ</p>
+      <div class="phone"><div class="c">
+        <div class="hd"><b>カド一撃</b><span class="ok">✓ 今日あてはまる</span></div>
+        <div class="today">今日 <span class="boat b4">4</span> .093 が、<span class="ng">①〜③</span>で一番早い <span class="boat b1">1</span> .130 より <b>0.037秒早い</b></div>
+        <div class="lb"><span><span class="ng">①〜③</span>より早い</span><b>19% <small>134/711件</small></b></div>
+        <div class="trk"><i style="width:19%"></i><s style="left:12%"></s></div>
+      </div></div>
+    </div>
+    <div>
+      <p class="tag">案A: 毎回「4号艇（4コース）」と両方書く</p>
+      <div class="phone"><div class="c">
+        <div class="hd"><b>カド一撃</b><span class="ok">✓ 今日あてはまる</span></div>
+        <div class="today">今日 <span class="boat b4">4</span> 4号艇（4コース） .093 が、1〜3号艇（1〜3コース）で一番早い <span class="boat b1">1</span> 1号艇（1コース） .130 より <b>0.037秒早い</b></div>
+        <div class="lb"><span>1〜3コースより早い</span><b>19% <small>134/711件</small></b></div>
+        <div class="trk"><i style="width:19%"></i><s style="left:12%"></s></div>
+      </div></div>
+    </div>
+    <div>
+      <p class="tag">案B（推奨）: ②の上に1回だけ対応を示し、文は「コース」で書く</p>
+      <div class="phone">
+        <div class="leg"><b>枠なりの場合</b>
+          <span><span class="boat b1">1</span> 1号艇＝1コース</span><span><span class="boat b2">2</span>＝2コース</span><span><span class="boat b3">3</span>＝3コース</span><span><span class="boat b4">4</span>＝4コース</span><span><span class="boat b5">5</span>＝5コース</span><span><span class="boat b6">6</span>＝6コース</span>
+        </div>
+        <div class="c">
+          <div class="hd"><b>カド一撃</b><span class="ok">✓ 今日あてはまる</span></div>
+          <div class="today">今日 <span class="boat b4">4</span>4コース .093 が、1〜3コースで一番早い <span class="boat b1">1</span>1コース .130 より <b>0.037秒早い</b></div>
+          <div class="lb"><span>1〜3コースより早い</span><b>19% <small>134/711件</small></b></div>
+          <div class="trk"><i style="width:19%"></i><s style="left:12%"></s></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <b>案B で②の他の場所もそろえる</b>
+    <ul>
+      <li>対応の1行は②の「今日のスタートの手がかり」の見出しの札（「枠なりの場合」）のすぐ下に1回。手がかりの絵の丸・平均STの表の列の丸も、この1行で読める</li>
+      <li>カードの文と段階の名前は、丸数字（①〜⑥）をやめて「1〜3コース」「4コース」と書く（条件の全文と形の札の説明は、もともと「4コース」と書いている）</li>
+      <li>色の丸は残す（どの艇かが絵と表で一目で分かるため）。丸の横に「4コース」</li>
+      <li>案A は正確だが、1行が長くなり 375px で3行に折り返す</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

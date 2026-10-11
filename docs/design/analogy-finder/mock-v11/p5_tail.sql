@@ -1,0 +1,45 @@
+-- prep5: 例のレース 2026-09-27-20-12 の4条件（gap_band=1・b1_class=A1・venue=20・top_boat=4）の全16部分集合＋「1111」に任意の条件を1つ足した3つ。
+-- 母集団は 2026-09-26 まで。gen_p5.js が生成。
+-- 1行（cells の ';' 区切り）= key|n|n_kb|n_main|dmin|dmax|1着艇番1..6|決まり手 逃げ,差し,まくり,まくり差し,抜き,恵まれ,その他|
+--   n_hit(k=1..6 × t=1,2,3)|hit側の指標(k=1..6 × b1d,b1s,st1_tie,ib,md)|比べる相手の件数(k=1..6)|比べる相手の指標(k=1..6 × 5)
+-- 比べる相手: k=1 は 1号艇が1着でない、k≥2 は 1着が1号艇でも k号艇でもない。hit = 艇 k が1着。
+-- 指標の定義は prep.json と同じ（k=1 の b1d・b1s は 0 を出す）。ST 順位は min 順位、返還艇・不明は NULL。
+, c AS (
+  SELECT p.*,
+    CASE WHEN p.b1_win_gap IS NULL THEN 5 WHEN p.b1_win_gap >= 0.19 THEN 4 WHEN p.b1_win_gap >= -0.49 THEN 3
+         WHEN p.b1_win_gap >= -1.14 THEN 2 WHEN p.b1_win_gap >= -1.91 THEN 1 ELSE 0 END AS gap_band,
+    CASE WHEN p.motor_rank IS NULL THEN 3 WHEN p.motor_rank <= 2 THEN 0 WHEN p.motor_rank <= 4 THEN 1 ELSE 2 END AS motor_band,
+    ARRAY(SELECT CASE WHEN p.st_by_boat[i] IS NULL THEN NULL ELSE 1 + (SELECT count(*) FROM unnest(p.st_by_boat) x WHERE x < p.st_by_boat[i]) END
+          FROM generate_series(1, 6) i ORDER BY i) AS sr,
+    ARRAY(SELECT EXISTS (SELECT 1 FROM generate_series(1, k - 1) j WHERE p.ret_by_boat[j] OR p.code_by_boat[j] LIKE 'S%' OR p.code_by_boat[j] IN ('F', 'L', 'L0', 'L1'))
+          FROM generate_series(1, 6) k ORDER BY k) AS ib
+  FROM pool p WHERE p.race_date <= DATE '2026-09-26'
+), u AS (
+  SELECT c.*, c.fin_by_boat AS f, c.course_by_boat AS cb, key
+  FROM c CROSS JOIN LATERAL (
+    SELECT lpad(((m >> 3) & 1)::text, 1) || ((m >> 2) & 1)::text || ((m >> 1) & 1)::text || (m & 1)::text AS key
+    FROM generate_series(0, 15) m
+    WHERE ((m & 8) = 0 OR c.gap_band = 1) AND ((m & 4) = 0 OR c.b1_class = 'A1') AND ((m & 2) = 0 OR c.venue_code = 20) AND ((m & 1) = 0 OR c.top_boat = 4)
+    UNION ALL SELECT '1111+round' WHERE c.gap_band = 1 AND c.b1_class = 'A1' AND c.venue_code = 20 AND c.top_boat = 4 AND c.round = 'yusho'
+    UNION ALL SELECT '1111+grade' WHERE c.gap_band = 1 AND c.b1_class = 'A1' AND c.venue_code = 20 AND c.top_boat = 4 AND c.grade = 'G1'
+    UNION ALL SELECT '1111+motor' WHERE c.gap_band = 1 AND c.b1_class = 'A1' AND c.venue_code = 20 AND c.top_boat = 4 AND c.motor_band = 2
+  ) k
+)
+SELECT jsonb_build_object(
+ 'cells', (SELECT string_agg(concat_ws('|', key, n, n_kb, n_main, dmin, dmax, r1, tech, kt, hit_ind, cmp_n, cmp_ind), ';' ORDER BY key) FROM (
+   SELECT key, count(*) n, count(*) FILTER (WHERE source = 'kb') n_kb, count(*) FILTER (WHERE source = 'main') n_main, min(race_date) dmin, max(race_date) dmax,
+     concat_ws(',', count(*) FILTER (WHERE rank1 = 1), count(*) FILTER (WHERE rank1 = 2), count(*) FILTER (WHERE rank1 = 3), count(*) FILTER (WHERE rank1 = 4), count(*) FILTER (WHERE rank1 = 5), count(*) FILTER (WHERE rank1 = 6)) r1,
+     concat_ws(',', count(*) FILTER (WHERE tech_raw = '逃げ'), count(*) FILTER (WHERE tech_raw = '差し'), count(*) FILTER (WHERE tech_raw = 'まくり'), count(*) FILTER (WHERE tech_raw = 'まくり差し'), count(*) FILTER (WHERE tech_raw = '抜き'), count(*) FILTER (WHERE tech_raw = '恵まれ'), count(*) FILTER (WHERE tech_raw IS NULL OR tech_raw NOT IN ('逃げ', '差し', 'まくり', 'まくり差し', '抜き', '恵まれ'))) tech,
+     concat_ws(',', count(*) FILTER (WHERE coalesce(f[1] <= 1, false)), count(*) FILTER (WHERE coalesce(f[1] <= 2, false)), count(*) FILTER (WHERE coalesce(f[1] <= 3, false)), count(*) FILTER (WHERE coalesce(f[2] <= 1, false)), count(*) FILTER (WHERE coalesce(f[2] <= 2, false)), count(*) FILTER (WHERE coalesce(f[2] <= 3, false)), count(*) FILTER (WHERE coalesce(f[3] <= 1, false)), count(*) FILTER (WHERE coalesce(f[3] <= 2, false)), count(*) FILTER (WHERE coalesce(f[3] <= 3, false)), count(*) FILTER (WHERE coalesce(f[4] <= 1, false)), count(*) FILTER (WHERE coalesce(f[4] <= 2, false)), count(*) FILTER (WHERE coalesce(f[4] <= 3, false)), count(*) FILTER (WHERE coalesce(f[5] <= 1, false)), count(*) FILTER (WHERE coalesce(f[5] <= 2, false)), count(*) FILTER (WHERE coalesce(f[5] <= 3, false)), count(*) FILTER (WHERE coalesce(f[6] <= 1, false)), count(*) FILTER (WHERE coalesce(f[6] <= 2, false)), count(*) FILTER (WHERE coalesce(f[6] <= 3, false))) kt,
+     concat_ws(',', count(*) FILTER (WHERE f[1] = 1 AND false), count(*) FILTER (WHERE f[1] = 1 AND false), count(*) FILTER (WHERE f[1] = 1 AND coalesce(sr[1] = 1, false)), count(*) FILTER (WHERE f[1] = 1 AND ib[1]), count(*) FILTER (WHERE f[1] = 1 AND coalesce(cb[1] < 1, false)), count(*) FILTER (WHERE f[2] = 1 AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE f[2] = 1 AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE f[2] = 1 AND coalesce(sr[2] = 1, false)), count(*) FILTER (WHERE f[2] = 1 AND ib[2]), count(*) FILTER (WHERE f[2] = 1 AND coalesce(cb[2] < 2, false)), count(*) FILTER (WHERE f[3] = 1 AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE f[3] = 1 AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE f[3] = 1 AND coalesce(sr[3] = 1, false)), count(*) FILTER (WHERE f[3] = 1 AND ib[3]), count(*) FILTER (WHERE f[3] = 1 AND coalesce(cb[3] < 3, false)), count(*) FILTER (WHERE f[4] = 1 AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE f[4] = 1 AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE f[4] = 1 AND coalesce(sr[4] = 1, false)), count(*) FILTER (WHERE f[4] = 1 AND ib[4]), count(*) FILTER (WHERE f[4] = 1 AND coalesce(cb[4] < 4, false)), count(*) FILTER (WHERE f[5] = 1 AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE f[5] = 1 AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE f[5] = 1 AND coalesce(sr[5] = 1, false)), count(*) FILTER (WHERE f[5] = 1 AND ib[5]), count(*) FILTER (WHERE f[5] = 1 AND coalesce(cb[5] < 5, false)), count(*) FILTER (WHERE f[6] = 1 AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE f[6] = 1 AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE f[6] = 1 AND coalesce(sr[6] = 1, false)), count(*) FILTER (WHERE f[6] = 1 AND ib[6]), count(*) FILTER (WHERE f[6] = 1 AND coalesce(cb[6] < 6, false))) hit_ind,
+     concat_ws(',', count(*) FILTER (WHERE rank1 <> 1), count(*) FILTER (WHERE rank1 NOT IN (1, 2)), count(*) FILTER (WHERE rank1 NOT IN (1, 3)), count(*) FILTER (WHERE rank1 NOT IN (1, 4)), count(*) FILTER (WHERE rank1 NOT IN (1, 5)), count(*) FILTER (WHERE rank1 NOT IN (1, 6))) cmp_n,
+     concat_ws(',', count(*) FILTER (WHERE rank1 <> 1 AND false), count(*) FILTER (WHERE rank1 <> 1 AND false), count(*) FILTER (WHERE rank1 <> 1 AND coalesce(sr[1] = 1, false)), count(*) FILTER (WHERE rank1 <> 1 AND ib[1]), count(*) FILTER (WHERE rank1 <> 1 AND coalesce(cb[1] < 1, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 2) AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE rank1 NOT IN (1, 2) AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 2) AND coalesce(sr[2] = 1, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 2) AND ib[2]), count(*) FILTER (WHERE rank1 NOT IN (1, 2) AND coalesce(cb[2] < 2, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 3) AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE rank1 NOT IN (1, 3) AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 3) AND coalesce(sr[3] = 1, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 3) AND ib[3]), count(*) FILTER (WHERE rank1 NOT IN (1, 3) AND coalesce(cb[3] < 3, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 4) AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE rank1 NOT IN (1, 4) AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 4) AND coalesce(sr[4] = 1, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 4) AND ib[4]), count(*) FILTER (WHERE rank1 NOT IN (1, 4) AND coalesce(cb[4] < 4, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 5) AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE rank1 NOT IN (1, 5) AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 5) AND coalesce(sr[5] = 1, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 5) AND ib[5]), count(*) FILTER (WHERE rank1 NOT IN (1, 5) AND coalesce(cb[5] < 5, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 6) AND (f[1] IS NULL OR f[1] > 3)), count(*) FILTER (WHERE rank1 NOT IN (1, 6) AND coalesce(sr[1] >= 4, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 6) AND coalesce(sr[6] = 1, false)), count(*) FILTER (WHERE rank1 NOT IN (1, 6) AND ib[6]), count(*) FILTER (WHERE rank1 NOT IN (1, 6) AND coalesce(cb[6] < 6, false))) cmp_ind
+   FROM u GROUP BY key) z),
+ 'trifecta', (SELECT string_agg(key || '=' || t, ';' ORDER BY key) FROM (
+   SELECT key, string_agg(combo || ':' || c, ',' ORDER BY combo) t FROM (
+     SELECT key, rank1::text || rank2::text || rank3::text combo, count(*) c FROM u GROUP BY 1, 2) y GROUP BY key) z),
+ 'list_1111', (SELECT string_agg(concat_ws('|', race_date, venue_code, race_number, coalesce(grade, 'NULL'), coalesce(stage_raw, ''),
+       rank1 || '-' || rank2 || '-' || rank3, coalesce(tech_raw, 'NULL'), array_to_string(code_by_boat, ',', '-'),
+       array_to_string(st_by_boat, ',', '-'), array_to_string(sr, ',', '-'), array_to_string(course_by_boat, ',', '-'), coalesce(payout_3tan::text, '-'), source), ';' ORDER BY race_date, race_number)
+   FROM u WHERE key = '1111')
+) AS r;

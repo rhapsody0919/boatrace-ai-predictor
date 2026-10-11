@@ -175,17 +175,20 @@ B6 は `api/cron/racer-profiles.js`（PR #750。`scrape_job_state.mode` が off/
 
 ### 8.2 日次の定期取得（新しい期のファイルが公開されたとき）
 
-**推奨: 当面は、Vercel Cron のジョブを実装せず、手動CLI（または対話セッションの開始時確認）で年2回実行する。** 理由: (1) 更新は年2回・約1,650行で、Cron の価値は「公開の検知」だけ。(2) Vercel の関数にはファイルシステムが無く、生LZH の保管に Supabase Storage のバケットと台帳（`raw_snapshots`）が要る。これは別の担当の設計（optimal-scraping-design.md §2.2）で、未実装。(3) 公開が約1〜2か月ずれるため、短い窓の予定表になじまない。
-
-将来 Cron 化する場合の設計（PR #750 の日次ジョブの流儀。**実装しない**）:
+**2026-10-03 ユーザー承認で自動化した**（当初の推奨「当面は手動CLIで年2回」を変更）。理由: 公開が期の終わりから15〜60日と幅があり、人が毎日見に行くのは負担で、取り込みまで画面の前期欄に前々期を出し続けることになるため。生ファイルの保管先として台帳 `raw_snapshots` をマイグレーション125で新設した（Storage のバケット `raw-pages` は085で作成済み）。
 
 | 項目 | 内容 |
 |---|---|
-| ジョブ | `racer_period`（`kind: "daily"`、`hosts: ["boatrace.jp"]`）。`scrape_job_state.mode` が off の間は何もしない（共通ラッパ） |
-| 起動 | 毎日 JST 06:00 に1回。対象は `latestExpectedFanId(now)`（4月〜9月は fanYY04、10月〜3月は fanYY10）。取り込み済み（`racer_period_stats` に該当期の行あり）なら何もしない。なお、7月〜9月に fanYY04 がまだ404でも、この関数は「想定内の未公開」として扱う（公開遅延と欠落を区別できない）ため、期限（下記）超過の通知で補う |
-| 検知 | 未取り込みなら GET（404＝未公開は想定内で、`last_target_date` を進めず翌日再試行）。4月1日・10月1日から最大105日間試行（Last-Modified の実測: 算出期間の終了から+29日（fan2404）・+60日（fan2604）・+15日（fan2510）。4月1日起点なら+58日・+89日）。105日（7月中旬・1月中旬）を超えて未公開ならSlack通知 |
-| 処理 | 取得 → 生LZHをStorageへ保管 → 解析 → `racer_period_stats` upsert（約1,650行、200行/文）→ `racer_profiles` 反映。完了条件: 行数が記録された選手数と一致 |
-| 負荷 | 1日1リクエスト。年間の合計は最大約210リクエスト（105日×2期）＋取得2件（約180KB×2） |
+| ジョブ | `fan_period`（`kind: "daily"`、`hosts: ["boatrace.jp"]`）。実装: `scripts/lib/fanPeriodJob.js`、`api/cron/fan-period.js`。`scrape_job_state.mode` が off の間は何もしない（共通ラッパ） |
+| 起動 | 毎日 JST 06:00。06:30 は、06:00 が通信エラー等で完了しなかった日だけ処理する（取り込み済み・未公開を確認した日は `last_target_date` で何もしない） |
+| 対象 | 対象日より前に終わった期の fan（`fanIdEndedBefore`: 5〜10月は fanYY04、11〜12月は fanYY10、1〜4月は前年の fanYY10）。`racer_period_stats` にその期の行があれば何もしない（0リクエスト） |
+| 検知 | 未取り込みなら1回 GET。404 は「未公開を確認した」としてその日は済み（翌日に再試行）。期の終わりから105日を過ぎたら取得を止め、`last_report.alerts` で通知する（監視が Slack へ送る） |
+| 処理 | 取得 → 展開・解析・検査（レコード1,500件以上・異常0件・ファイル名と期の一致。満たさなければ書かない）→ 生LZHを `raw-pages` の `raw/fan/{fanYYMM}/{sha256先頭16桁}.lzh` に保管し `raw_snapshots` に記録（失敗しても取り込みは続ける）→ `racer_period_stats` に変更のある行だけ upsert（200行/文） |
+| 負荷 | 公開を待つあいだは1日1リクエスト（通信エラーの日だけ06:30にもう1回）。期ごとに通常は最大105回、年間で通常約212回（105×2＋取得2）。実測の公開時期（15〜60日）なら期ごとに15〜60回 |
+| 動作確認 | `GET /api/cron/fan-period?fanId=fan2604`（CRON_SECRET）。取り込み済みでも取り直し、既存行との差分を返す（shadow では書かない） |
+| やらないこと | `racer_profiles` への反映（画面は `racer_period_stats` を読む）。必要なら手動CLIの `sync-profiles` |
+| 検証 | `scripts/maintenance/verify-fan-period-job.js`（CI） |
+| 有効化 | [verification-runbook.md の V](../scraping-vercel-consolidation/verification-runbook.md) |
 
 ## 9. 月間スケジュール（N16）
 

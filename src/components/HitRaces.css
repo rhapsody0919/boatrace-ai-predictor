@@ -156,6 +156,12 @@
   background: linear-gradient(135deg, #475569 0%, #334155 100%);
 }
 
+/* 全期間にも地の色を付ける。無いと白文字の見出し「過去14日間の的中レース」が白地に溶けた
+   （BOA-724 のファン評価） */
+.hit-races-section.all {
+  background: linear-gradient(135deg, var(--color-primary-700) 0%, #075985 100%);
+}
+
 .hit-races-section h2 {
   color: white !important;
   margin-bottom: 1rem;
@@ -234,7 +240,7 @@
   background: #475569;
 }
 
-/* 展開予測的中の詳細（1マーク先頭コース・予想確率） */
+/* 展開予測的中の詳細（的中した候補のコース・予想確率） */
 .turn-hit-detail {
   border-top: 2px solid var(--border-hairline);
   padding-top: 0.75rem;
@@ -245,6 +251,11 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* 「（本命）」「（2コース進入）」を語の途中で折り返さない（BOA-724） */
+.turn-hit-nowrap {
+  white-space: nowrap;
 }
 
 .turn-hit-course-label {
@@ -371,14 +382,18 @@
 }
 
 @media (max-width: 480px) {
+  /* 375px で「全期間（14日間）」だけが2段目に落ち、タブの並びに見えなかった（BOA-754）。
+     最小幅と左右の余白を詰めて1段に収める */
   .period-selector {
-    gap: 0.5rem;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
   }
 
   .period-selector button {
-    padding: 0.5rem 1rem;
+    padding: 0.5rem 0.6rem;
     font-size: 0.85rem;
-    min-width: 90px;
+    min-width: 0;
+    white-space: nowrap;
   }
 
   .venue-stats-section {

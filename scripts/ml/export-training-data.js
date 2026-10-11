@@ -70,27 +70,27 @@ async function main() {
     await Promise.all([
       fetchAll(
         "races",
-        "race_id, race_date, venue_code, race_number, race_grade",
+        "race_id, race_date, venue_code, race_number, race_grade", (q) => q.order("race_id"),
       ),
       fetchAll(
         "race_entries",
-        "race_id, boat_number, racer_id, player_name, grade, age, win_rate, local_win_rate, global_2rate, global_3rate, local_2rate, local_3rate, motor_number, motor_2rate, motor_3rate, boat_2rate, boat_3rate",
+        "race_id, boat_number, racer_id, player_name, grade, age, win_rate, local_win_rate, global_2rate, global_3rate, local_2rate, local_3rate, motor_number, motor_2rate, motor_3rate, boat_2rate, boat_3rate", (q) => q.order("race_id").order("boat_number"),
       ),
       fetchAll(
         "exhibition_data",
-        "race_id, boat_number, exhibition_time, start_timing",
+        "race_id, boat_number, exhibition_time, start_timing", (q) => q.order("race_id").order("boat_number"),
       ),
       fetchAll(
         "race_conditions",
-        "race_id, weather, wind_direction, wind_speed, wave_height, temperature, water_temperature, series_day, is_final_day",
+        "race_id, weather, wind_direction, wind_speed, wave_height, temperature, water_temperature, series_day, is_final_day", (q) => q.order("race_id"),
       ),
       fetchAll(
         "race_results",
-        "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique",
+        "race_id, rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, is_cancelled, is_no_race, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique", (q) => q.order("race_id"),
       ),
       fetchAll(
         "race_start_timings",
-        "race_id, boat_number, start_timing, is_flying, is_late_start, entry_course",
+        "race_id, boat_number, start_timing, is_flying, is_late_start, entry_course", (q) => q.order("race_id").order("boat_number"),
       ),
     ]);
 

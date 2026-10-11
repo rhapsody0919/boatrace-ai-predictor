@@ -13,6 +13,9 @@
  * 隠す」ためにアクティブタブを外部で把握する目的で使う（BOA-305〜312フィードバック#7）。
  * URL の ?tab= への書き戻し（BOA-493）もこれで行う
  *
+ * requestedTab（{ id, seq }）を渡すと、seq が変わるたびにそのタブへ切り替える（タブの中のリンクから
+ * ほかのタブへ移るため。押したときと同じく race_tab_select を送る）。
+ *
  * initialTabIdを渡すと、マウント時にそのタブで開く（共有リンクの ?tab=、BOA-493）。
  * 今のタブ構成に無いID（確定前のレースの "result" 等）なら defaultTabId で開く
  *
@@ -36,12 +39,30 @@ import { useState, useEffect, useRef } from "react";
 import { trackEvent } from "../../utils/analytics";
 import "./RaceTabs.css";
 
-function RaceTabs({ tabs, defaultTabId, initialTabId, onActiveTabChange }) {
+function RaceTabs({
+  tabs,
+  defaultTabId,
+  initialTabId,
+  onActiveTabChange,
+  requestedTab,
+}) {
   const [activeId, setActiveId] = useState(() =>
     tabs.some((tab) => tab.id === initialTabId)
       ? initialTabId
       : (defaultTabId ?? tabs[0]?.id),
   );
+  // ?tab= のリンクでタブを開いたことを、マウント時に1回残す（龍神ソナーの反応の計測、2026-10-08）。
+  // race_tab_select は「押した」だけを数えるので、SNS 等から AI予想タブへ直行した人が数えられない。
+  // アプリ内のレースへのリンクは ?tab= を付けないので、これは共有リンク・外部からの来訪と再読み込み
+  // 開発時の StrictMode は effect を2回走らせるので ref で1回に絞る
+  const initialSent = useRef(false);
+  useEffect(() => {
+    if (initialSent.current) return;
+    initialSent.current = true;
+    if (tabs.some((tab) => tab.id === initialTabId))
+      trackEvent("race_tab_initial", { tab_id: initialTabId });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // レース遷移・結果確定でdefaultTabIdが変わった時だけ選択をリセットする
   // （タブを自分でクリックした後、無関係な再レンダーで勝手に戻らないようにする）
   const prevDefaultRef = useRef(defaultTabId);
@@ -131,6 +152,17 @@ function RaceTabs({ tabs, defaultTabId, initialTabId, onActiveTabChange }) {
       });
     }
   };
+
+  // タブの中からの切り替えの依頼（{ id, seq }）。押したときと同じ扱いにする（計測・縦の位置合わせも同じ）
+  // マウント時点で既にある依頼は前のレースのもの（RaceTabs はレースごとに作り直す）なので使わない
+  const seenRequest = useRef(requestedTab?.seq ?? null);
+  useEffect(() => {
+    if (!requestedTab || requestedTab.seq === seenRequest.current) return;
+    seenRequest.current = requestedTab.seq;
+    if (!tabs.some((tab) => tab.id === requestedTab.id)) return;
+    handleSelect(requestedTab.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedTab?.seq]);
 
   return (
     <div className="race-tabs">

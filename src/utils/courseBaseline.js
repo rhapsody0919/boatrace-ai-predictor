@@ -87,6 +87,28 @@ export function diffFromBaseline(value, baseline, direction) {
 }
 
 /**
+ * 平均との差に良し悪しの色を付けるか（race-detail-ui-unify R2）。
+ *
+ * - 向きが決まらない（差が無い・値が無い）なら色なし
+ * - 表示の1桁で ±threshold 以内の差は色なし。抜出（回数）は ±0.1、率（%）の行は ±1.0
+ *   （1走で率は約3ポイント動き、0.2ポイント差で赤くすると「平均並み」を悪いと読ませた。
+ *   BOA-711）。差は表示した値どうしで出したものを渡す
+ * - 走数が少ない（small）ときは色なし。1走で「−56.1」が赤く出て、初見の選手を
+ *   「スタートが極端に悪い」と断定して見せていた（PR #1187 ファン評価2周目。
+ *   今節タブのSTの判定文も3走未満は色を付けない）
+ *
+ * @param {{isBetter: boolean|null|undefined, diff: number|null|undefined, small?: boolean, threshold?: number}} p
+ * @returns {"better"|"worse"|null}
+ */
+export function diffTone({ isBetter, diff, small = false, threshold = 0.1 }) {
+  if (isBetter === null || isBetter === undefined) return null;
+  if (diff === null || diff === undefined) return null;
+  if (small) return null;
+  if (Number(Math.abs(diff).toFixed(1)) <= threshold) return null;
+  return isBetter ? "better" : "worse";
+}
+
+/**
  * 抜出の「期待回数」を求める。
  *
  * 抜出は率ではなく実回数を主表示にするため（外のコースは30走あたり0.2〜0.4回しか

@@ -73,7 +73,7 @@ async function findMissingRaces(from, to) {
   const results = await fetchAll(
     "race_results",
     "race_id, rank1",
-    (q) => q.gte("race_id", from).lte("race_id", `${to}~`),
+    (q) => q.gte("race_id", from).lte("race_id", `${to}~`).order("race_id"),
     { throwOnError: true },
   );
   const withRank1 = new Set(

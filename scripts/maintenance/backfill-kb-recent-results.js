@@ -125,7 +125,7 @@ export async function findMissingResultRaces(client, { from, to }) {
   const results = await fetchAll(
     "race_results",
     "race_id",
-    (q) => q.gte("race_id", from).lte("race_id", `${to}~`),
+    (q) => q.gte("race_id", from).lte("race_id", `${to}~`).order("race_id"),
     { throwOnError: true, client },
   );
   const existing = new Set(results.map((r) => r.race_id));
@@ -145,7 +145,7 @@ async function checkOtherTables(client, { from, to }) {
   const races = await fetchAll(
     "races",
     "race_id",
-    (q) => q.gte("race_date", from).lte("race_date", to),
+    (q) => q.gte("race_date", from).lte("race_date", to).order("race_id"),
     { throwOnError: true, client },
   );
   const totalRaces = races.length;
@@ -154,7 +154,7 @@ async function checkOtherTables(client, { from, to }) {
       await fetchAll(
         "race_entries",
         "race_id",
-        (q) => q.gte("race_id", from).lte("race_id", `${to}~`),
+        (q) => q.gte("race_id", from).lte("race_id", `${to}~`).order("race_id").order("boat_number"),
         { throwOnError: true, client },
       )
     ).map((r) => r.race_id),
@@ -164,7 +164,7 @@ async function checkOtherTables(client, { from, to }) {
       await fetchAll(
         "race_payouts",
         "race_id",
-        (q) => q.gte("race_id", from).lte("race_id", `${to}~`),
+        (q) => q.gte("race_id", from).lte("race_id", `${to}~`).order("race_id").order("bet_type").order("seq"),
         { throwOnError: true, client },
       )
     ).map((r) => r.race_id),

@@ -419,6 +419,8 @@ export function createKFileSyncRun({
       const parts = [
         ["進入コース", r.actualCourse],
         ["rank4〜6", r.rank456],
+        // 成績コード（マイグレーション116、BOA-553）。監視（last_report）から件数と状態が見えるようにする
+        ...(r.officialFinishCode ? [["成績コード", r.officialFinishCode]] : []),
       ];
       for (const [label, part] of parts) {
         if (
@@ -431,6 +433,11 @@ export function createKFileSyncRun({
         } else if (part.status === "no_races_parsed") {
           problems.push(
             `${date} ${label}: Kファイルからレースを抽出できませんでした`,
+          );
+        } else if (part.status === "column_missing") {
+          // 116 は適用済み。列が無いのは、DB の状態が想定と違う（書き込みが止まっている）
+          problems.push(
+            `${date} ${label}: 列が見つかりません（column_missing）`,
           );
         } else if (part.status === "kfile_unavailable") {
           if (!unpublished.includes(date)) unpublished.push(date);
@@ -446,7 +453,10 @@ export function createKFileSyncRun({
         if (parts.some(([, p]) => p.status === "synced")) rowsParsed++;
       }
       if (live)
-        rowsWritten += (r.actualCourse.updated ?? 0) + (r.rank456.updated ?? 0);
+        rowsWritten +=
+          (r.actualCourse.updated ?? 0) +
+          (r.rank456.updated ?? 0) +
+          (r.officialFinishCode?.updated ?? 0);
       days.push({
         date,
         downloads: r.downloads,
@@ -459,6 +469,15 @@ export function createKFileSyncRun({
           updated: r.rank456.updated,
           pending: r.rank456.pending,
         },
+        ...(r.officialFinishCode
+          ? {
+              officialFinishCode: {
+                status: r.officialFinishCode.status,
+                updated: r.officialFinishCode.updated,
+                pending: r.officialFinishCode.pending,
+              },
+            }
+          : {}),
       });
     }
 

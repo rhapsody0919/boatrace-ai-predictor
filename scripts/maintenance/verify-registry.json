@@ -10,6 +10,16 @@
   ],
   "entries": [
     {
+      "script": "verify-accident-rate.js",
+      "tier": "ci",
+      "guards": "選手の今期の事故率（BOA-327、src/utils/accidentRate.js）。公式の配点・優勝戦のF/L30点・2025-05以降の2本目以降のF加点・小数第2位切り捨て（40÷57は0.70で超えでない）・あと何点・目印の条件（事故点1点以上かつあと20点以内、行は出走30走以上）。マイグレーション126の RPC を PGlite で実行し、出走回数の数え方（S0・L0・K0・00を除く）・期間・匿名のEXECUTEを確かめる"
+    },
+    {
+      "script": "verify-adsense-anno-skip.js",
+      "tier": "ci",
+      "guards": "index.html の <body> に google-anno-skip クラスが付いていること（BOA-786）。外すと AdSense の自動広告が本文の語句を「競艇AI予想」等のリンク（広告インテント: ad intent links・アンカー・チップ）に変える。画面内に「競艇」を出さない規則と、AI予想と誤解させない方針に反し、管理画面では止められなかった"
+    },
+    {
       "script": "verify-actual-course-kfile-parser.js",
       "tier": "ci",
       "guards": "Kファイル方式の進入コースパーサー（scripts/lib/kfileParser.js、BOA-257）"
@@ -104,6 +114,11 @@
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
     },
     {
+      "script": "verify-fan-period-job.js",
+      "tier": "ci",
+      "guards": "期別成績（fan）の定期取り込み（scripts/lib/fanPeriodJob.js、api/cron/fan-period.js）。対象日→fanの対応、取り込み済みなら0リクエスト、未公開404はその日で済み（06:30の補足は叩かない）、期の終わりから105日超は取得せず通知、live の書き込みと生ファイルの保管（raw-pages・raw_snapshots）、shadow は書かない、異常・HTTP 500 は error、保管失敗でも取り込みは成功。vercel.json の06:00・06:30、レジストリ、125のRLS"
+    },
+    {
       "script": "verify-fan-period.js",
       "tier": "ci",
       "guards": "期別成績ファイル（fan）のパーサー・行変換・取得〜投入CLI"
@@ -112,6 +127,11 @@
       "script": "verify-feature-contributions-dedup.js",
       "tier": "ci",
       "guards": "predictions.feature_contributions の3モデル重複解消（BOA-408）"
+    },
+    {
+      "script": "verify-venue-motor-ranking.js",
+      "tier": "ci",
+      "guards": "会場のモーターの順位と並べ替え（同値は同じ順位・値なしは末尾・機番で並べたときは2連率の順位・浜名湖と宮島を出さない一覧）の回帰と変異検証（BOA-428）"
     },
     {
       "script": "verify-venue-first-win-rate.js",
@@ -166,9 +186,7 @@
     {
       "script": "verify-migration-numbers.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "docs/db-migration/ の番号重複・欠番・命名規則・APPLIED.md への記載漏れ",
       "note": "このスクリプトがCI未接続だったため、2026-09-25に番号063の重複がmasterに入った（102へリネームして解消）。本件の発端"
     },
@@ -337,6 +355,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-condition-stats.js",
+      "tier": "ci",
+      "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
+    },
+    {
       "script": "verify-racer-index-policy.js",
       "tier": "ci",
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
@@ -347,9 +370,24 @@
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
     },
     {
+      "script": "verify-race-entry-rate-precision.js",
+      "tier": "ci",
+      "guards": "朝の初期化が race_entries に書く2連率・3連率を公式と同じ小数2桁で持つ（generate-predictions の processRacersWithScoreFn、BOA-829）。0 は null にしない"
+    },
+    {
       "script": "verify-racer-st-stats.js",
       "tier": "ci",
       "guards": "選手の平均ST・直近30走・ST標準偏差（scripts/lib/racerStStats.js、BOA-581）: 1000行上限での取りこぼし・Fの除外・直近30走の並び・取得エラーの例外化"
+    },
+    {
+      "script": "verify-volatility-st-reason.js",
+      "tier": "ci",
+      "guards": "イン崩れ指数の理由文の1号艇の平均ST（scripts/lib/volatilityFactors.js の boat1StReason、BOA-818）: 値（当サイトに蓄積した全期間）を「今節」と書かない。予想バッチが同じ関数を使う"
+    },
+    {
+      "script": "verify-race-series-final-title.js",
+      "tier": "ci",
+      "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
     },
     {
       "script": "verify-rls-migration.js",
@@ -412,6 +450,11 @@
       "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
     },
     {
+      "script": "verify-meet-page-model.js",
+      "tier": "ci",
+      "guards": "節ページ（BOA-682）の日程・段階・基準のレース・勝ち上がり・勝負駆けの判定。崩れると前後の節を混ぜる、夜に予選の最後のレースの結果を落とす、予選最終日の夜に公式の得点率を使わない、勝負駆けを誤る"
+    },
+    {
       "script": "verify-sg-now-venues.js",
       "tier": "ci",
       "guards": "トップの「SG開催中」帯に出す会場の判定（SGのみ・先頭レースの値・NFKC・会場順）。崩れると SG の日に帯が出ないか、G1・一般戦の日に誤って出る"
@@ -464,6 +507,11 @@
       "note": "使い捨てのbareリポジトリとクローンだけを使い、本リポジトリには触れない。2026-09-25時点でレジストリ導入まで未登録・CI未接続だった"
     },
     {
+      "script": "verify-bot-push-workflows.js",
+      "tier": "ci",
+      "guards": "master へ push するワークフローがアプリ ryujin-bot のトークン（PUSH_TOKEN）で push し、ボットの push で regenerate-generated-docs 等が連鎖起動しないこと（master の ruleset の前提）"
+    },
+    {
       "script": "verify-race-status-exclusion.js",
       "tier": "ci",
       "guards": "画面（src/）の集計が、書かれていない旧フラグ is_cancelled・is_no_race ではなく race_results.race_status で不成立を外すこと（BOA-477）"
@@ -498,6 +546,11 @@
       "script": "verify-merge-order-guard.js",
       "tier": "ci",
       "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。台帳に制約があるのに for ループ・変数・$(...)・xargs 等でPR番号を確定できない場合も止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
+    },
+    {
+      "script": "verify-edit-on-master-hook.js",
+      "tier": "ci",
+      "guards": "master 上のメイン作業ツリーの直接編集を止めるフック（.claude/hooks/guard-edit-on-master.sh、2026-08-13 の誤削除インシデントの再発防止）。master のメインツリーは拒否、worktree・リポジトリ外・.git 配下・master 以外は素通し、jq が無くても素通し、settings.json の登録"
     },
     {
       "script": "verify-orchestrator-hooks.js",
@@ -542,9 +595,7 @@
     {
       "script": "verify-generated-docs-not-in-pr.js",
       "tier": "ci",
-      "args": [
-        "--base=origin/master"
-      ],
+      "args": ["--base=origin/master"],
       "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
@@ -583,6 +634,11 @@
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
       "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
+    },
+    {
+      "script": "verify-digest-motor-race-count.js",
+      "tier": "ci",
+      "guards": "「本日のデータ一覧」の行に付ける会場公式のモーター出走数（motor_race_count、BOA-702）。会場とモーター番号の組で引くこと、2連率の無い行・番号が分からない行は NULL、全行に同じキーを持たせること"
     },
     {
       "script": "verify-morning-digest.js",
@@ -635,14 +691,29 @@
       "guards": "出目分布・逃げ成功時分布の「3連単」の平均配当が3連単の列（payout_trio。列名と中身が逆）で集計されること、配当の無いレースを平均の分母に入れないこと、ルールの追跡の3連複の払戻が payout_trifecta であること（BOA-535。実データ・江戸川456レースのフィクスチャで、本番のSQLの値と照合）"
     },
     {
+      "script": "verify-outcome-distribution-refund.js",
+      "tier": "ci",
+      "guards": "出目分布・逃げ成功時分布の日次集計が、一部返還の返還艇（refund_boats）を3着に数えないこと。返還艇を飛ばすと1〜3着がそろわないレースはパターンにも total_races にも入れず、件数の合計が total_races と一致すること（BOA-579 の積み残し。2026-07-04〜10-01 の実データ5レース）"
+    },
+    {
       "script": "verify-exhibition-time-top-stats.js",
       "tier": "ci",
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
     },
     {
+      "script": "verify-index-jsonld.js",
+      "tier": "ci",
+      "guards": "index.html の JSON-LD に、実在しない評価（aggregateRating・review）と受け口の無い SearchAction を書かないこと、各ブロックが JSON として読めること。2025-12-20 に架空の評価（4.5・100件）が入り、AIクローラー向けスナップショットにも出ていた（Google の構造化データ方針違反。docs/proposal/ai-agent-era-strategy.md Phase 0）"
+    },
+    {
+      "script": "verify-no-accuracy-claims-in-meta.js",
+      "tier": "ci",
+      "guards": "サイト全体の説明文（index.html の meta・OGP・Twitter カード・JSON-LD、useSocialMeta の既定値、About の meta description、llms.txt の冒頭と生成スクリプト）に「高精度」「精度」「的中」「回収率」「必勝」が戻らないこと。的中率の土俵で戦わない方針（BOA-617）と、数えた値を主役にする方針（BOA-271）に合わせて 2026-10-05 に書き直した（docs/proposal/ai-agent-era-strategy.md R5）。ブログ記事とページ本文は対象外"
+    },
+    {
       "script": "verify-middleware-routing.js",
       "tier": "ci",
-      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
+      "guards": "middleware.js の管理画面Basic認証（/admin/rules・/admin/sns-hub は認証なしで401、一般ページは素通り、環境変数が未設定・空なら拒否、':'入りパスワードは最初の':'で分割、UTF-8で復号、壊れたbase64で例外を出さず401。判定は api/_lib/adminAuth.js の requireAdminAuth と共有）と、AIスナップショット配信の経路（resolveSnapshotPath が返すパスが config.matcher に一致し、管理画面がスナップショットに振り分けられないこと。検索・ユーザー起点の取得に使う UA（OAI-SearchBot・ChatGPT-User・Claude-SearchBot・Claude-User・Perplexity-User・bingbot・Applebot・DuckDuckBot）もスナップショットに振り分け、Googlebot と人間のブラウザは振り分けないこと）。BOA-555で /admin/rules が本番で認証なしに開けていた"
     },
     {
       "script": "verify-pit-report-backfill.js",
@@ -660,6 +731,38 @@
       "guards": "アナロジー・ファインダーの寄与度（BOA-271 FR-1）で、レース数30未満のスライスを会場→ラウンド→グレードの順に広げること、テーマを themes 配列の順と数で並べること（テーマ数を固定しない）、SD の2倍に満たない隣どうしの順位を強調しないこと（API と画面の直読みで共有する src/utils/analogyContribution.js）"
     },
     {
+      "script": "verify-analogy-facts.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダー v16（BOA-271）の定義の固定データ。優勝戦・準優勝戦の判定 v2 が固定の82件（scripts/ml/analogy/testdata/stage-rule-v2-cases.json）と一致し、サイトのバッジ（getRaceStageKey）と今節の得点の除外（seriesPoints.js の classifyStage）が同じ判定に従うこと。展示後の類似レースの並べ直し（src/utils/analogySimilarRerank.js）が Python の展示後の厳密な並び（testdata/v16-rerank.json）と順位で完全に一致すること"
+    },
+    {
+      "script": "verify-sonar-tab.js",
+      "tier": "ci",
+      "guards": "龍神ソナーの別タブ化（BOA-271、承認モック sonar-tab v3）。移す前の投稿のリンク ?tab=aiPrediction&sonar=… がソナーのタブで開き、sonar 無し・不正な値・機能フラグを戻したときは AI予想のままであること。GA4 の page_view の URL から ?sonar= を除くこと。ソナーの輪が外周より内側で、ラベルが重ならない間隔（24以上）で3本までであること"
+    },
+    {
+      "script": "verify-analogy-v16.js",
+      "tier": "manual",
+      "guards": "アナロジー・ファインダー v16（BOA-271）の前日の出力: 出走表の段が締切前にそろった割合（99%）、6艇の展示タイムがそろったレースの展示後の段が締切前にそろった割合（95%）。--cleanup で Storage の7日より前の similar/ を消す",
+      "reason": "本番の analogy_v16_snapshots・races・exhibition_data を読み、--cleanup は本番 Storage を消すため。Nightly DB Verify（JST 3:00）が毎晩実行する",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
+    },
+    {
+      "script": "verify-analogy-v16-api.js",
+      "tier": "ci",
+      "guards": "アナロジー・ファインダー v16（BOA-271）の展示後の段と読み出しの API の純粋関数: 展示後の段の対象の選び方（racecard あり・exhibition なし・締切前・6艇の展示タイムか欠場）、今日の展示の値（展示の進入の型・展示 ST の形・風速区分）、並べ直した上位の33項目の付け直し、画面と layer の状態、キャッシュ、NCR が優勝戦のときに今節の平均着順点を外すこと"
+    },
+    {
+      "script": "verify-analogy-v16-snapshots-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション133（BOA-271 v16 の analogy_v16_snapshots）を PGlite に適用し、RLS 有効・anon/authenticated は SELECT のみ・service_role は書ける・主キーの重複は ON CONFLICT DO NOTHING で1行・段ごとの列の約束（CHECK）・races の外部キー・冪等・ロールバックを確かめる"
+    },
+    {
+      "script": "verify-analogy-feedback-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション143（龍神ソナーの画面の中の声 analogy_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・同じブラウザ×レース×種類は1行・列挙値と一言の長さと理由の置き場所の CHECK・races の外部キー・created_at の上書き・同じブラウザ24時間40行の連投制限・冪等・ロールバックを確かめる"
+    },
+    {
       "script": "verify-analogy-storage.js",
       "tier": "ci",
       "guards": "アナロジー・ファインダーの学習（BOA-271）で、Storage の古い版を消すときに表示中の版を残すこと、表示中の版と同じ名前ではモデルを上書きしないこと、長期データのキャッシュの列名が今のコードと違えば失敗すること（scripts/ml/analogy/storageRules.js）"
@@ -673,6 +776,31 @@
       "script": "verify-best-of.js",
       "tier": "ci",
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"
+    },
+    {
+      "script": "verify-races-derived-backfill.js",
+      "tier": "ci",
+      "guards": "races の導出列の埋め直し（build-races-derived-backfill-sql.js、BOA-630）が、generate-predictions.js と同じ式（丸めてから平均・母標準偏差）で計算し、6列とも NULL の行だけを更新し（既存の値を上書きしない・再実行は0件）、モデルの出力の列（volatility_* 等）に触れないこと"
+    },
+    {
+      "script": "verify-race-detail-boa711.js",
+      "tier": "ci",
+      "guards": "レース詳細の色分け統一の積み残し（BOA-711）の修正。今節の着順の1着の金・選択行の太字なし、ST考察の差を表示値どうしで出す・向きの文字・折り返し、注記の条件、推移グラフの左の余白、的中タグの緑、決まり手の凡例の文字色、2号艇の矢印の輪郭、波紋の大きさ、比較バーの地、高の段階の地"
+    },
+    {
+      "script": "verify-turn-time-venues.js",
+      "tier": "ci",
+      "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"
+    },
+    {
+      "script": "verify-race-detail-color-tokens.js",
+      "tier": "ci",
+      "guards": "レース詳細まわりの色の直書きをトークンにしたこと（docs/design/race-detail-ui-unify R6・FR-6）。決まり手の色は techniqueColors.js の1か所で決め、4コンポーネントに hex を複製しない。名前ごとの色の割り当て。結果タブの金の背景に rgba を直書きしない"
+    },
+    {
+      "script": "verify-race-indicator-tones.js",
+      "tier": "ci",
+      "guards": "レース詳細の緑・赤を付けるかの判定（docs/design/race-detail-ui-unify plan §6）。今節のST判定文 meetStVerdictTone: 差 0.01 や今節2走以下では色なし、差 0.02 以上・3走以上で早い＝緑・遅い＝赤、浮動小数の誤差を2桁で丸める。ST考察の平均との差 diffTone: 走数の少ない艇・0.0 と出る差・向きなしは色なし"
     },
     {
       "script": "verify-disqualified-finish-marks.js",
@@ -699,6 +827,131 @@
       "script": "verify-race-outcome-filters.js",
       "tier": "ci",
       "guards": "不成立のレースを集計から外す判定を race_status（no_race）に統一すること（BOA-545）。旧フラグ is_no_race は全行 false で機能しておらず、scripts/daily の集計10本がそれで判定していた。scripts/daily・scripts/lib のコードが is_no_race を使わないことと、PostgREST の条件が078の IS DISTINCT FROM と同じ意味であることを検査する"
+    },
+    {
+      "script": "verify-absent-start-rows.js",
+      "tier": "ci",
+      "guards": "race_start_timings の欠場艇の行（finish_mark='欠'、ST は NULL）を、読み手が出走・ST として数えないこと。展示STと本番STのズレ（stDeviation）・選手の出走数とF率（racerStStats）・会場×枠番のトップスタート（update-top-start-stats）・得点率の配点の検証スクリプト。9/21 以降の欠場艇の行で、欠場を出走に数え、ST の NULL を 0 として計算に混ぜていた"
+    },
+    {
+      "script": "verify-missing-venue-day.js",
+      "tier": "ci",
+      "guards": "races が丸1日無い会場日の補完（backfill-missing-venue-day.js、BOA-721）: 既定は書かない・races のある会場日は上書きしない・出走表が12レースそろわなければ止める・中止の確定を全レースに立てる・過去の日付に予想を作らない"
+    },
+    {
+      "script": "verify-fetchall-order.js",
+      "tier": "ci",
+      "guards": "共通の fetchAll（scripts/lib/supabaseClient.js）が並び順の無いページ送りをしないこと（BOA-753。1000行を超えるとページの間で行が重複・欠落する。BOA-595・BOA-745 に続く3回目で仕組みにした）。(a) 静的: scripts/・api/ の fetchAll の呼び出しすべてに、組み立て（第3引数、変数なら同じファイルの定義）の .order( か、理由付きの unordered があること。(b) 実行時: 並び順の無いクエリは最初のリクエストの前に例外（呼び出し元と直し方つき）、理由が空の unordered も例外。(c) 変異検証。確かめない範囲: await import() で取り出した fetchAll の呼び出し（実行時の検査が止める）"
+    },
+    {
+      "script": "verify-motor-usage.js",
+      "tier": "ci",
+      "guards": "モーターの使用回数と「未使用（新モーター・実績なし）」の判定（src/utils/motorUsage.js、BOA-702）。使用回数は会場公式の出走数と、世代の始まりから数えた自社の出走数のうち、分かっているものの大きいほう。取得失敗の行の出走数・期間で切り詰めた窓や世代不明の自社の数は使わない。未使用は表示する2連率が0で使用回数0と分かるときだけ"
+    },
+    {
+      "script": "verify-winning-technique-filled.js",
+      "tier": "ci",
+      "guards": "前日以前のレースで、決まり手（race_results.winning_technique）が欠けていないか（BOA-749。2026-09-16 住之江7R が着順・払戻ありで NULL のまま残っていた）。CI では判定の純関数（不成立・中止・1着なし・当日を除く）と、取り直しのコマンドの分割（--apply の30件上限）を検証する。VERIFY_PRODUCTION=1 のときだけ本番を読み、欠けがあれば exit 1 で取り直しのコマンドを出す。nightly-verify-db.yml が毎晩この形で実行する"
+    },
+    {
+      "script": "verify-odds-math.js",
+      "tier": "ci",
+      "guards": "オッズの計算 src/utils/oddsMath.js（BOA-430 で RaceOddsListTab から移した formatOdds・compositeOdds・latestSnapshotWith）を手計算の固定値で固定する。思考アシストの買い目でも使うため、オッズ一覧の E2E を通らない値（999.96 の丸め、票なし・欠場の除外、単勝が全艇 null の行）もここで見る。あわせて /race/{id}/assist（末尾スラッシュ付きも）が ja 専用であること"
+    },
+    {
+      "script": "verify-thinking-assist-model.js",
+      "tier": "ci",
+      "guards": "思考アシスト（BOA-430）の画面のモデル src/utils/assistModel.js。2026-10-06 徳山10R の本番 v16 の値（scripts/lib/__fixtures__/thinking-assist/）で、全国・級の並びが同じの範囲の選び方（準優勝戦は NCR 112件、30件未満・キー無しは NC に戻して矢印なし。spec D-37）、基準つきバーの3段階（D-21）、類似レースの上位400件・件数と万舟の分母（D-35・D-36 (3)）、級の並びの絵（D-31）、最良の金枠の向き・桁・除外（FR-3a）、会場の決まり手の「最近↑／↓」（直近90日 対 前の275日、D-37）、時点（D-36 (1)）、レースの図のモデル（レンズごとの横軸・数字2個・最良、展示 F は最良から外す、欠場の艇を含む組は1着の合成オッズに数えない。PR3）"
+    },
+    {
+      "script": "verify-thinking-assist-summary.js",
+      "tier": "ci",
+      "guards": "思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル src/utils/assistSummary.js。2026-10-06 徳山10R の本番 v16 の値（e2e/thinking-assist-fixture.json.gz）で、差がつく材料の範囲（VC 300件未満は全国、準優勝戦は NCR に絞る。D-37）、札の今日の位置と準優勝戦の今節の点を使わないこと（FR-5）、図の良い方の札、平均ST の手がかり・スリットの形・進入の型（展開）、展示の表の最良（F を外す）・チルト・部品交換（機力）、今節の走（今日の走を点に入れない。D-29）・今節より前の5走（今節と後の走を除く。D-36 (10)）・進入コースで集めるコースの1着（D-36 (11)）、成績から付けた札（D-41。PR4）"
+    },
+    {
+      "script": "verify-venue-technique-period.js",
+      "tier": "ci",
+      "guards": "会場の決まり手の期間の表 venue_technique_period_stats（BOA-430・ADR 0088・マイグレーション 134）。CI では集計の純関数（scripts/lib/venueTechniquePeriod.js）を固定データで確かめる: 期間は集計日の前日まで N 日、長期の表（〜2025-12-02）と新しい表（2025-12-03〜）の境目と 2025-12-02 の重複を数えないこと、総数＝決まり手の件数の合計、90日 ⊂ 365日、除外（中止・不成立・1着なし・決まり手なし）、長期の表が0件なら失敗（新しい表だけを数えた 2,196件の誤りの再発防止）。VERIFY_PRODUCTION=1 のときだけ本番の表を読み、last_updated が2日より古い行・総数の不一致・365日の行が無い会場があれば exit 1。nightly-verify-db.yml が毎晩この形で実行する"
+    },
+    {
+      "script": "verify-volatility-accuracy-heading.js",
+      "tier": "ci",
+      "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
+    },
+    {
+      "script": "verify-ai-copy-text.js",
+      "tier": "ci",
+      "guards": "「AI用にコピー」の文面（src/utils/aiCopyText.js、BOA-770）。4言語で、末尾の出典1行（ブランド名＋表示言語のレース詳細URL）、見出し直後のレースの前提の行（日付・締切・グレード／節・水面の条件、取れない項目は「未取得」）、コピーした時刻（JST）と展示前の断り、表にある行の注記、券種にかかわらず展開予測が入ること。「競艇」・的中や回収を示唆する語が追加した文言に無いこと"
+    },
+    {
+      "script": "verify-analogy-dispatch.js",
+      "tier": "ci",
+      "guards": "BOA-271 アナロジーの週次の学習の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
+    },
+    {
+      "script": "verify-sns-bundle-import.js",
+      "tier": "ci",
+      "guards": "v0素材の型・容量・ハッシュ・QA保留、保存失敗の再試行、135の一括登録・重複・公開禁止・権限(PGlite)、承認/YouTube公開APIのガード。実サービス接続なし"
+    },
+    {
+      "script": "verify-sns-observations.js",
+      "tier": "ci",
+      "guards": "依頼2: 観測窓・欠測null・最新revision・型比較の母数・収集モック・公開確認UTM・ページング・SQL履歴/RLS（PGlite、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-x-send.js",
+      "tier": "ci",
+      "guards": "依頼3: X送信の承認版hash・編集時の承認失効・同時claim・$10予算予約・停止・要照合（外部成功後のDB失敗やPOST応答喪失で再送しない）・RLS/権限（135+137をPGlite、モックadapter、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-existing-fixes.js",
+      "tier": "ci",
+      "guards": "依頼4: 既存YouTube公開・ブログPRマージ・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-deadline-queue.js",
+      "tier": "ci",
+      "guards": "依頼5: 発走期限つき待ち行列・送信前検査（headless/public_url）・日次枠の再承認後保持・媒体変更後の枠保持・begin_postの日付またぎ保留（139をPGlite、モックadapter、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-mobile-approval.js",
+      "tier": "ci",
+      "guards": "依頼6: レース単位スマホ確認・版固定の個別承認・媒体hash（140をPGlite、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-mobile-api.js",
+      "tier": "ci",
+      "guards": "依頼6: mobile-approval APIの媒体hash取得が直列（並行上限1）であることと、X動画・画像の署名プレビュー返却"
+    },
+    {
+      "script": "verify-sns-mobile-groups.js",
+      "tier": "ci",
+      "guards": "依頼6: 当日レース単位のグループ化・ページング・対象日検証（xSendStore.mobileRace、DBクエリの限定）"
+    },
+    {
+      "script": "verify-sns-mobile-dom.js",
+      "tier": "ci",
+      "guards": "依頼6: JSDOM上でMobileApprovalPanel/SnsHubAdminの状態連携を検証（Chromium起動不可環境向け、レイアウト・動画再生は対象外）"
+    },
+    {
+      "script": "verify-wind-direction-display.js",
+      "tier": "ci",
+      "guards": "画面の風向を本当の方位に直す表（BOA-819、src/utils/windDirection.js）。24場の角度が龍神ソナーのモデルの表（scripts/ml/analogy/wind_basis.json の offsets_deg）と同じ・引く向き（徳山の DB「北西」は北、公式の直前情報の図と同じ）・無風はそのまま・会場が分からなければ出さない"
+    },
+    {
+      "script": "verify-race-start-formation.js",
+      "tier": "ci",
+      "guards": "レース結果のスタート隊形の並び（BOA-811、src/components/race/startFormation.js）。進入コースの順・前付けは枠なりより内側に入った艇だけ（欠場で繰り上がった艇は付けない）・欠場は一番下に残す・最速は F を除いて2艇以上のとき・出遅れは ST なし・ST は結果の表と同じ形（0.15、F.04）。例は本番の戸田 9/11 3R・江戸川 9/26 11R・津 9/25 6R・若松 9/27 10R"
+    },
+    {
+      "script": "verify-sns-edit-assist.js",
+      "tier": "ci",
+      "guards": "依頼7: 読みやすさ・加重文字数・日付時刻・数値出典・敬称の場所付き指摘、AI差し込み口は既定無効、正常文は誤検知しない（141は別途PGliteで検証）"
+    },
+    {
+      "script": "verify-sns-month-calendar.js",
+      "tier": "ci",
+      "guards": "依頼16: 全月カレンダーのJST日付計算・状態分類・型/会場フィルタ・日付不明記録の全期間計上・観測履歴抽出（1001行ページング）、queue()のposted_at/format/race_id/grade/observations拡張（モックDB取得、外部接続なし）"
     }
   ]
 }

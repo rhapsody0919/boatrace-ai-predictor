@@ -80,7 +80,7 @@ async function main() {
   const races = await fetchAll(
     "races",
     "race_id, race_date, venue_code, race_number, race_grade",
-    (q) => q.eq("race_date", date),
+    (q) => q.eq("race_date", date).order("race_id"),
   );
   if (races.length === 0) {
     console.log(`📭 ${date} のレースなし`);

@@ -67,6 +67,14 @@
     "nuki": "超越（Nuki）",
     "megumare": "幸運勝出（Megumare）"
   },
+  "techniquesShort": {
+    "nige": "逃走",
+    "sashi": "切入",
+    "makuri": "外攻",
+    "makurizashi": "外攻切入",
+    "nuki": "超越",
+    "megumare": "幸運勝出"
+  },
   "venueSelector": {
     "label": "選擇賽場：",
     "raceCount": "{{count}} 場比賽"
@@ -113,9 +121,33 @@
       "out_strong": "外道優勢",
       "balanced": "平衡型"
     },
-    "fetchError": "無法載入本場地的水面特性。"
+    "fetchError": "無法載入本場地的水面特性。",
+    "details": {
+      "summary": "查看更多（2連率、3連率、決勝方式明細）",
+      "placeRatesTitle": "各艇號的連對率",
+      "placeRatesNote": "2連率為進入前2名、3連率為進入前3名的比例（{{count}}場）",
+      "boat": "艇",
+      "winRate": "第1名率",
+      "top2Rate": "2連率",
+      "top3Rate": "3連率",
+      "techniqueTitle": "獲勝時的決勝方式",
+      "techniqueNote": "各艇號獲得第1名的比賽中，決勝方式的明細。括號內為次數",
+      "winCount": "第1名{{count}}次",
+      "smallSampleNote": "第1名次數較少的艇號，比例容易波動。",
+      "outcomeLink": "查看此賽場的常見結果排行（分析工具）"
+    }
   },
   "raceDetailPage": {
+    "assistSwitch": {
+      "label": "顯示",
+      "raceCard": "出走表與分頁",
+      "assist": "思考輔助",
+      "new": "新",
+      "note": "依照不會迷路的閱讀順序，排列數據與理論"
+    },
+    "assistEntry": {
+      "lead": "想依序查看資料的話"
+    },
     "metaTitle": "{{venue}} 第{{race}}場 AI數據分析（{{date}}）- 龍神雷達",
     "metaDescription": "免費查看{{date}}{{venue}}第{{race}}場的出賽表資料、AI數據分析與展開預測。",
     "backToList": "← 返回比賽一覽",
@@ -129,14 +161,15 @@
     "seriesDayNth": "第{{day}}天"
   },
   "volatility": {
-    "levelHigh": "冷門機率高",
+    "levelHigh": "冷門注意（高）",
     "levelLow": "熱門穩定",
     "description": "與該賽場過去90天的賽事相比，1號位落敗可能性的相對指標",
     "attentionTitle": "1號位失守注意度",
-    "attentionHigh": "冷門機率高",
+    "attentionHigh": "冷門注意（高）",
     "attentionLow": "熱門穩定",
     "attentionStandard": "普通",
-    "percentileBarLabel": "與賽場賽事比較",
+    "percentileBarLabel": "崩盤傾向（同賽場0〜100）",
+    "percentileBarMax100": "/ 100",
     "percentileBarMin": "穩健",
     "percentileBarMedian": "普通",
     "percentileBarMax": "容易爆冷",
@@ -151,21 +184,21 @@
     "loading": "資料載入中...",
     "noData": "目前實測資料尚不足。新的AI預測模型於2026年8月11日啟用，資料累積後即會顯示。",
     "chartNote": "※ 新的AI預測模型於2026年8月11日才啟用，目前已統計{{count}}場（每日增加）。場數較少時，數值可能波動較大。",
-    "title": "🌪️ 內道崩盤預測實績（過去90天）",
+    "title": "🌪️ 內道崩盤預測實績（2026年8月11日以來）",
     "level": {
       "low": "熱門穩定",
       "medium": "普通",
-      "high": "冷門機率高"
+      "high": "冷門注意（高）"
     },
     "baselineTitle": "整體平均 {{rate}}%",
-    "summaryPrefix": "標示「冷門機率高」的比賽中，實際上1號艇未獲得第1名的機率為",
+    "summaryPrefix": "標示「冷門注意（高）」的比賽中，實際上1號艇未獲得第1名的機率為",
     "summarySuffix": "",
     "summaryBaseline": "（整體平均：{{rate}}%）",
     "legendBaseline": "縱線＝整體平均 {{rate}}%",
     "legendCount": "（統計：{{count}}場）",
     "gradeDetailsSummary": "查看各等級詳情",
     "gradeHeader": "等級",
-    "highUpsetRateHeader": "標示「冷門機率高」時1號艇的落敗機率",
+    "highUpsetRateHeader": "標示「冷門注意（高）」時1號艇的落敗機率",
     "baselineRateHeader": "賽場整體1號艇落敗機率平均值",
     "countHeader": "件數",
     "gradeIppan": "一般",
@@ -238,7 +271,6 @@
     "popularityFromFinalOddsNote": "※ 單勝、複勝的人氣依截止時賠率（官方）計算（複勝依上限由低至高，相同賠率以範圍表示）。其他投注方式為官方公布。",
     "fastestStartTag": "最快",
     "courseNoData": "※本站尚未取得本場的進入航線",
-    "courseOrderLabel": "進入",
     "entryCourseLabel": "{{course}}道",
     "missingRanksNote": "※本場比賽第4名以後的名次資料尚未取得，因此部分名次未顯示",
     "cancelledTitle": "本場比賽已中止",
@@ -249,7 +281,7 @@
     "placeMiss": "❌ 未中",
     "turnSectionTitle": "🌊 展開預測驗證",
     "volatilitySectionTitle": "🌪️ 冷門風險回顧",
-    "volatilityPredictedWithPercentile": "預測：{{label}}（會場內百分位 {{percentile}}）",
+    "volatilityPredicted": "預測：{{label}}",
     "volatilityOutcomeLabel": "結果",
     "volatilityOutcomeCollapsed": "冷門",
     "volatilityOutcomeSolid": "熱門獲勝",
@@ -292,7 +324,8 @@
       "boat": "艇號",
       "racer": "選手",
       "start": "ST",
-      "time": "比賽時間"
+      "time": "比賽時間",
+      "timeShort": "時間"
     },
     "partialNoRaceTag": "部分投注類型不成立",
     "payoutNoRace": "不成立（退款）",
@@ -302,7 +335,21 @@
     "payoutNoAmountNote": "「—」表示官方派彩資料中沒有記載金額的組合",
     "payoutSpecial": "特別派彩",
     "volatilityOutcomeNotJudgeable": "不列入判定（比賽不成立）",
-    "stLegend": "右側箭頭為起跑時機（ST）。黃線為起跑線，越接近越早起跑。越過起跑線的紅色箭頭為起步犯規"
+    "stLegend": "右側數字為起跑時機（ST）。起跑隊形請看上方的圖。F 為起步犯規",
+    "startFormation": {
+      "title": "起跑隊形（依航道）",
+      "caption": "通過起跑線（スリット）時的排列。最上方為1道，越接近線起跑越早",
+      "aria": "起跑隊形。由上而下為1道起。越接近右側起跑線起跑越早",
+      "slit": "起跑線",
+      "flyingSide": "F →",
+      "slower": "← 較慢",
+      "course": "{{course}}道",
+      "mae": "搶內道",
+      "late": "L 出發延遲（無 ST）",
+      "absent": "{{boat}}號艇缺賽",
+      "absentLabel": "缺賽",
+      "scale": "1艇身（約0.13秒）"
+    }
   },
   "raceHistoryTable": {
     "date": "日期",
@@ -349,6 +396,23 @@
       "v3": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n能免費看到這麼精準的預測真開心✨\n希望今天也能命中！",
       "v4": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n從轉彎預測來看，這個預測似乎很可靠！\n大家覺得呢？🤔",
       "v5": "🏁 龍神雷達預測【{{date}}{{venue}}{{raceNo}}R】\n\n模型：{{model}}\n首選：{{topPick}}號艇\n推薦：{{top3}}\n\n最近命中率越來越高，好開心😊\n歡迎參考AI預測！"
+    },
+    "shareTurnHit": {
+      "headAsPredicted": "🌊 轉彎預測命中！【{{date}}{{venue}}{{raceNo}}R】",
+      "headWinner": "🌊 第1名的艇在轉彎預測中【{{date}}{{venue}}{{raceNo}}R】",
+      "winner": "{{boat}}號艇獲得第1名",
+      "winnerFromCourse": "{{boat}}號艇從第{{course}}道獲得第1名",
+      "prediction": "（AI預測：{{detail}}）",
+      "actual": "，實際：{{technique}}",
+      "asPredicted": "與預測相同的展開 ✅",
+      "closingWinner": "在龍神雷達查看轉彎預測",
+      "closing": {
+        "v1": "龍神雷達的轉彎預測命中🎉\nAI的分析能力令人驚訝！",
+        "v2": "龍神雷達的轉彎預測命中🎉\n免費就有這種準確度太厲害了！",
+        "v3": "龍神雷達的轉彎預測命中🎉\n感受到數據分析的力量！",
+        "v4": "龍神雷達的轉彎預測命中🎉\nAI預測又命中了！",
+        "v5": "龍神雷達的轉彎預測命中🎉\n對命中率很滿意！"
+      }
     }
   },
   "home": {
@@ -371,7 +435,15 @@
     "freeAccessNoticeRest": "— 無需開戶或加入會員，現在就能使用所有功能",
     "todayRaces": "今日賽事",
     "volatilityHighlightsTitle": "🌪️ 今日內道崩盤指數精選",
-    "volatilityHighlightsTurnPrediction": "預測第1名：{{course}}號艇（{{technique}}、{{probability}}%）",
+    "volatilityHighlightsScaleNote": "數字是與同賽場賽事相比的崩盤傾向（0〜100，100為最容易崩盤）。",
+    "volatilityHighlightsClosed": "已截止",
+    "volatilityHighlightsClosedNote": "今日比賽皆已截止，以下作為回顧顯示。",
+    "volatilityHighlightsHighEmptyOpen": "截止前的比賽中，沒有崩盤傾向70以上的比賽。",
+    "volatilityHighlightsLowEmptyOpen": "截止前的比賽中，沒有崩盤傾向30以下的比賽。",
+    "volatilityHighlightsHighEmptyClosed": "今日沒有崩盤傾向70以上的比賽。",
+    "volatilityHighlightsLowEmptyClosed": "今日沒有崩盤傾向30以下的比賽。",
+    "volatilityHighlightsResult": "結果：{{boat}}號艇獲得第1名",
+    "volatilityHighlightsResultPending": "結果：尚未更新",
     "volatilityHighlightsAccuracyLink": "查看實測準確率 →",
     "dataType": "比賽資料",
     "loadingTitle": "正在載入比賽資料...",
@@ -551,9 +623,13 @@
   "turnPatternList": {
     "title": "轉彎預測",
     "caption": "可能獲得第1名的候選艇（最多3艇，依機率排序）",
-    "hitTag": "命中",
-    "summaryHit": "✅ 其中一項預測命中",
+    "captionResult": "這是賽前的預測。🥇🥈🥉是預測的順位（不是名次），%是圓圈數字的艇以該獲勝方式獲得第1名的機率。",
+    "hitTag": "第1名",
+    "summaryHit": "✅ 上位預測中的艇獲得第1名",
+    "summaryAsPredicted": "✅ 與預測相同的展開（第1順位預測的艇以預測的獲勝方式獲得第1名）",
+    "actualTechnique": "（實際：{{technique}}）",
     "summaryMiss": "❌ 第1名是{{winnerNumber}}號艇，不在預測名單中",
+    "winnerEntryCourse": "第1名的{{boat}}號艇從第{{course}}道進場（本場艇號與航道不同，命中以艇號判定）",
     "notJudgeable": "不列入判定（比賽不成立）",
     "notJudgeableBody": "因未決定第1名，不判定命中與否",
     "refundedTag": "退款（不列入判定）"
@@ -574,7 +650,8 @@
     "meet": "本梯次",
     "beforeInfo": "臨場資訊",
     "oddsList": "賠率一覽",
-    "result": "結果"
+    "result": "結果",
+    "sonar": "龍神聲納"
   },
   "wakuInfo": {
     "note": "選擇選手後，可依期間與條件比較該選手在本場比賽預想航道的成績。點擊左側的期間名稱，可展開該航道最近10次的名次。全部6條航道的比較請從表格下方的摺疊區開啟。成績只統計本場比賽之前的場次（最近3個月、最近1個月從本場比賽的日期起算）。",
@@ -632,7 +709,7 @@
     "unavailableTitle": "尚無AI預測資料",
     "unavailableBody": "這場比賽尚未備齊AI預測所需的資料。",
     "analogy": {
-      "title": "類比搜尋",
+      "title": "龍神聲納",
       "views": {
         "contribution": "貢獻度"
       },
@@ -750,8 +827,1062 @@
       "listAllBoats": "各主題（全部艇）",
       "listAllBoatsCompare": "各主題（全部艇。各艇號的數值見上表）",
       "magnitudeNote": "比例是不分有利或不利的「影響大小」。",
-      "compareCaption": "各艇號的影響比例（%，每欄合計100%）。下方「全部艇」是包含2〜5號艇在內、6艇合計的數值。"
-    }
+      "compareCaption": "各艇號的影響比例（%，每欄合計100%）。下方「全部艇」是包含2〜5號艇在內、6艇合計的數值。",
+      "layer": {
+        "g1plus": "G1以上",
+        "gradeRound": "{{grade}}的{{round}}",
+        "races": "1號艇級別、1號艇與勝率第一的差距、勝率第一的艇號皆相同的過去比賽",
+        "racesCount": "1號艇級別、1號艇與勝率第一的差距、勝率第一的艇號皆相同的過去比賽{{count}}場",
+        "withKind": "與今天同為「{{kind}}」，{{races}}",
+        "plain": "與今天相同，{{races}}"
+      },
+      "scopeNames": {
+        "allSame": "6艇皆為{{cls}}",
+        "classCount": "{{cls}} {{n}}艇",
+        "selected": "（{{boat}}號艇為{{cls}}）",
+        "combo": "{{where}}、{{combo}}{{selected}}",
+        "national": "全國",
+        "withRound": "{{base}}的{{round}}",
+        "venueAll": "{{venue}}的全部比賽",
+        "venueG1": "{{venue}}的G1",
+        "nationalAll": "全國的全部比賽",
+        "sameCombo": "相同級別組合"
+      },
+      "heading": "龍神聲納 · {{venue}}{{race}}R",
+      "subtitle": "收集與今天條件相同的過往賽事",
+      "notes": {
+        "howToRead": "看法",
+        "counting": "比例的算法",
+        "caution": "注意",
+        "terms": "用語",
+        "today": "與今天展示的關係",
+        "period": "期間",
+        "attacker": "進攻的艇",
+        "methodCaution": "比例的算法、注意"
+      },
+      "stage": {
+        "label": "時點",
+        "racecard": "展示前（出賽表）",
+        "exhibition": "展示後（含賽前資訊）",
+        "chipBefore": "展示前（出賽表），展示後可切換",
+        "chipReflecting": "展示前（出賽表），正在反映展示結果"
+      },
+      "tabs": {
+        "label": "顯示",
+        "facts": "拉開差距的因素",
+        "similar": "相似比賽",
+        "scenario": "展開情境"
+      },
+      "states": {
+        "absent": "本場有選手缺席，因此不提供龍神聲納",
+        "notSaved": "本場比賽沒有可顯示的資料",
+        "error": "無法顯示。請稍後再重新開啟",
+        "retry": "重新載入",
+        "loading": "載入中…"
+      },
+      "finishWord": {
+        "1": "獲得第1名",
+        "2": "進入前2名",
+        "3": "進入前3名"
+      },
+      "rateName": {
+        "1": "第1名率",
+        "2": "前2名率",
+        "3": "前3名率"
+      },
+      "boat": "{{n}}號艇",
+      "facts": {
+        "heading": "{{boat}}號艇在什麼情況下{{finish}}？",
+        "boatLabel": "主角艇",
+        "scopeLabel": "收集的比賽",
+        "fellBack": "{{venue}}相同組合的比賽只有{{n}}場，因此改從全國收集",
+        "hexLabel": "今天{{boat}}號艇在6艇中的排名：{{list}}",
+        "hexNone": "今天—",
+        "hexFoot": "越外側代表在6艇中排名越前",
+        "bigLabel": "{{scope}}中，{{boat}}號艇的{{rate}}",
+        "bigCount": "{{hits}}/{{n}}場（{{period}}）",
+        "best": "在6艇中最{{word}}時",
+        "judge": {
+          "large": "差距大",
+          "small": "差距小",
+          "unclear": "差距{{pt}}個百分點，但波動範圍重疊",
+          "unclearFew": "差距{{pt}}個百分點，但件數少（{{n}}場）",
+          "none": "無法比較（沒有符合的比賽）",
+          "some": "有差距",
+          "unclearTiny": "幾乎沒有差距（波動範圍重疊）"
+        },
+        "reversed": "（反而是最{{word}}時較高）",
+        "stripLabel": "依{{item}}在6艇中排名區分的{{rate}}：{{list}}",
+        "todayValue": "{{boat}}號艇今天：{{value}}（{{rank}}）",
+        "rankOf6": "6艇中第{{n}}名",
+        "rankOf6Tie": "6艇中第{{from}}〜{{to}}名（{{same}}艇同值）",
+        "noToday": "今天無數值",
+        "noTodayLocal": "無本場紀錄",
+        "few": "（少）",
+        "units": {
+          "series_score": "分",
+          "exh_time": "秒",
+          "st_mean30": "秒"
+        },
+        "stripRank": "第{{rank}}位",
+        "stripTop": "第1位（{{word}}）",
+        "stripBottom": "第6位（{{word}}）",
+        "noteEarly": "節的前段（有艇在前一天之前的出賽場數少）差距容易顯得較小",
+        "noteFinal": "優勝戰、準優勝戰當天，積分排名幾乎與艇號順序相同，因此不在長條圖顯示今天的位置與其場數（上方的6艇中排名僅供參考）",
+        "boatFold": "艇體2連率（與名次關係較小的項目）",
+        "boatFoldNote": "（參考：以全國、6艇皆為A1來看）艇體2連率最高時與最低時的差距，在前2名、前3名為0〜3個百分點，小於馬達（4〜8個百分點）。不必過度在意的項目",
+        "classLine": "級別：今天6艇皆為{{cls}}，因此沒有差異",
+        "foot": {
+          "scope": "收集的比賽：{{desc}}。",
+          "finalNcr": "限定優勝戰時，不顯示本節平均名次積分（優勝戰的艇號由準優勝戰之前的成績決定，積分排名幾乎與艇號相同，比較沒有意義）。",
+          "series": "本節平均名次積分包含節前段（1〜2場）的數值（過去前段的比賽中同值很多，差距容易顯得較小）。",
+          "common": "這是過去的比例，不一定是原因。「差距大」是指最好時與最差時的波動範圍不重疊，且差距在10個百分點以上。「有差距」為5〜10個百分點。波動範圍重疊時只寫出差距，較少一方未滿100場時加註「件數少」與場數。一開始展開的，只有依差距明顯程度排列中「差距大」的前2項。未滿30場的比例以淡色顯示。本場勝率0.00（未在本場出賽）視為無紀錄，不列入排名。同值的艇同時計入最好與最差兩側。",
+          "exhPre": "展示時間於展示後公布。",
+          "exhPost": "2025年11月以前的展示時間因資料來源不同，可能略有偏差。",
+          "overlap": "依差距明顯程度排列。項目之間彼此重疊，無法區分是哪一項起作用。"
+        },
+        "scopeDesc": {
+          "VC": "{{venue}}中，級別組合與{{boat}}號艇級別皆與今天相同的比賽",
+          "NC": "全國中，級別組合與{{boat}}號艇級別皆與今天相同的比賽",
+          "NCR": "全國中，級別組合、{{boat}}號艇級別與階段皆與今天相同的比賽（場數少，波動範圍較大）",
+          "VA": "{{venue}}的全部比賽（未對齊級別組合，含許多實力差距大的比賽）"
+        },
+        "items": {
+          "nat_win": {
+            "label": "全國勝率",
+            "short": "全國勝率",
+            "desc": "全國比賽的勝率（出賽表數值，選手成績）"
+          },
+          "loc_win": {
+            "label": "當地勝率",
+            "short": "當地勝率",
+            "desc": "在本場（{{venue}}）的勝率（出賽表的數值，選手成績）"
+          },
+          "recent_win30": {
+            "label": "近30場第1名率",
+            "short": "近30場第1名率",
+            "desc": "該選手近30場中獲得第1名的比例（選手成績）"
+          },
+          "motor_2": {
+            "label": "馬達2連率（官方，本節時點）",
+            "short": "馬達2連率",
+            "desc": "馬達＝引擎。每節以抽籤分配。該馬達至今進入前2名的比例，可作為引擎實力的參考"
+          },
+          "boat_2": {
+            "label": "艇體2連率",
+            "short": "艇體2連率",
+            "desc": "艇體＝船身（搭載引擎的艇）。與馬達分開抽籤分配。該艇體至今進入前2名的比例"
+          },
+          "st_mean30": {
+            "label": "平均ST（近30場）",
+            "short": "平均ST",
+            "desc": "該選手近30場起跑時機的平均（越小越早）"
+          },
+          "exh_time": {
+            "label": "展示時間",
+            "short": "展示時間",
+            "desc": "展示航行中直線區間的時間。越小越快"
+          },
+          "series_score": {
+            "label": "本節平均名次積分（至前一天）",
+            "short": "本節名次積分",
+            "desc": "本節至前一天各場名次，以第1名10分、第2名8分、第3名6分、第4名4分、第5名2分、第6名1分計算的平均（F、L、失格為0分）。與官方得分率不同，也包含準優勝戰。節的首日沒有數值"
+          }
+        },
+        "words": {
+          "high": "高",
+          "low": "低",
+          "early": "早",
+          "late": "晚",
+          "fast": "快",
+          "slow": "慢"
+        },
+        "wind": {
+          "heading": "與今天的風、浪（風{{wind}}m、浪{{wave}}cm）相近的比賽中（展示時的數值）",
+          "sub": "僅此欄因對齊範圍後場數不足，改用{{venue}}的全部比賽。比較對象（虛線）也是{{venue}}的全部比賽",
+          "row": "{{rate}}（不論風況{{all}}）",
+          "foot": "{{venue}}風速{{band}}的比賽中，各艇號{{finish}}的比例（{{n}}場）。虛線為{{venue}}的全部比賽。風僅依風速區分（不區分順風、逆風）。過去比賽的風、浪為發賽時的紀錄，今天的數值為展示時點",
+          "pre": "今天的風、浪於展示後公布",
+          "bands": {
+            "0-1": "0〜1m",
+            "2-3": "2〜3m",
+            "4-5": "4〜5m",
+            "6+": "6m以上"
+          },
+          "headingWind": "與今天風速（{{wind}}m）相近的比賽（今天的波高{{wave}}cm。風、浪皆為展示時的數值）",
+          "windOnly": "本場的波高記錄值與風速幾乎相同，因此以風速分類計算",
+          "waveFew": "若再依波高細分只剩{{n}}場，數量太少，因此只依風速計算",
+          "bandsWave": "風{{wind}}、波{{wave}}",
+          "waveBands": {
+            "0-2": "0〜2cm",
+            "3-5": "3〜5cm",
+            "6+": "6cm以上"
+          },
+          "footWave": "在{{venue}}{{band}}的比賽中，各艇號{{finish}}的比例（{{n}}場）。虛線為{{venue}}的全部比賽。風只依速度分類（不區分順風、逆風）。過去比賽的風與波為出發時的記錄，今天的數值為展示時的數值"
+        },
+        "orderHeading": "依差距明顯程度排列",
+        "legendBar": "各排名的{{rate}}",
+        "legendToday": "今天的排名",
+        "legendUsual": "{{scope}}的全部比賽 {{usual}}",
+        "whatIs": "{{item}}是什麼",
+        "briefToday": "今天 {{rank}}（{{value}}）",
+        "briefBest": "{{word}}時",
+        "todayRangeOf6": "6艇為{{range}}",
+        "pairCount": "{{hits}}/{{n}}場",
+        "stripTitleShort": "6艇中各排名的{{rate}}",
+        "todayHit": "▲ 今天的第{{rank}}名：{{rate}}（{{hits}}/{{n}}場，波動範圍{{lo}}〜{{hi}}%）",
+        "comboFree": "不限",
+        "comboSentence": "與今天相同，6艇中{{combo}}，且{{boat}}號艇為{{cls}}的過去比賽{{round}}。{{boat}}號艇以外的5艇在哪個艇號不限",
+        "comboUniform": "與今天相同，{{combo}}的過去比賽{{round}}",
+        "comboRound": "（僅限{{round}}）",
+        "stripRankTie": "第{{from}}〜{{to}}位",
+        "rangeSep": "〜",
+        "radar": {
+          "hint": "點選艇後，該艇的線會變粗。最多可讓2艇變粗來比較（點第3艇時，先點的艇會恢復；再點一次粗線的艇即取消）。圖頂點的圓圈，是今天在該項目排名最前的艇",
+          "boat": "{{boat}}號艇（{{cls}}）",
+          "main": "主角",
+          "top2": "{{n}}項中有{{k}}項在前2名",
+          "typical": "虛線＝{{boat}}號艇{{finish}}時的平均排名",
+          "axisSub": "{{boat}}號艇 {{rank}}",
+          "axisAria": "顯示{{item}}的6艇表格",
+          "axisHint": "點選項目名稱（▼），這裡會顯示該項目6艇今天的排名，以及該排名時的{{rate}}",
+          "tableNote": "6艇各自在今天排名時的{{rate}}，以及該艇全部比賽的{{rate}}",
+          "colBoat": "艇",
+          "colValue": "今天的值",
+          "colRank": "排名",
+          "colAt": "該排名時",
+          "colAll": "全部比賽",
+          "tableFoot": "綠＝比該艇全部比賽高3個百分點以上，紅＝低。",
+          "toCard": "查看{{boat}}號艇的長條",
+          "collect": "收集方式：各艇皆為該艇級別相同的比賽（{{scope}}）。",
+          "collectAll": "收集方式：各艇皆為{{scope}}。"
+        },
+        "comboChip": "{{cls}}×{{n}}",
+        "comboShort": "與今天相同的組合，{{boat}}號艇為{{cls}}{{round}}",
+        "comboFreeShort": "{{boat}}號艇以外不限枠位",
+        "rankOfRec": "有紀錄的{{k}}艇中第{{n}}名",
+        "rankOfRecTie": "有紀錄的{{k}}艇中第{{from}}〜{{to}}名（{{same}}艇同值）",
+        "rankLast": "（最{{w}}）",
+        "firstDayNote": "首日沒有前一天以前的著順點，因此不顯示本節的平均著順點"
+      },
+      "outlook": {
+        "summary": "AI的判讀（輔助）：在其他項目相同的前提下，哪些項目有影響",
+        "heading": "容易左右{{boat}}號艇能否{{finish}}的項目",
+        "finish": {
+          "1": "獲得第1名",
+          "2": "進入前2名",
+          "3": "進入前3名"
+        },
+        "lede": "AI分析「哪些項目在影響這個艇號的獲勝機會」的比例（與AI數據分析不同的分析）。比例越大，結果越容易隨該項目變動",
+        "preparing": "展示前的AI判讀準備中。切換至展示後即可查看",
+        "foot": "比例是將正向與負向影響的大小合計後分配（{{period}}，全國{{races}}場）。展開後可查看各項目的比例與影響方向。各項目的比例是依主題內的比重分配。",
+        "boat1Note": "1號艇將艇號優勢與選手等級混合的部分（約{{pct}}%）歸入艇號，因此選手實力會顯得較小。",
+        "foot2": "上方過去的比例混合了選手實力等所有因素。AI會分開來看，因此方向可能相反（例：級別、馬達）。這不是原因的斷定。比例越大的項目，代表對該艇號結果的影響越大，並不代表「有了它就能贏」。",
+        "windNote": "（不區分順風、逆風）",
+        "themes": {
+          "racerRecord": "選手實力",
+          "startExhibition": "起跑、展示",
+          "machine": "馬達、艇體",
+          "racerProfile": "體重、年齡、主場",
+          "venueRace": "賽場、賽事編號",
+          "weatherWater": "天候、水面",
+          "raceFormat": "比賽條件"
+        },
+        "groups": {
+          "class": "級別",
+          "national": "全國勝率、2連率",
+          "nationalBoat1": "全國勝率、2連率（含1號艇的等級）",
+          "local": "當地勝率、2連率",
+          "recent": "近30場成績",
+          "boat1": "1號艇的級別、勝率",
+          "exhibitionTime": "展示時間",
+          "pastSt": "平均ST（近30場）",
+          "motor": "馬達2連率",
+          "boat": "艇體2連率",
+          "weight": "體重",
+          "age": "年齡",
+          "branch": "支部、主場",
+          "venue": "賽場",
+          "raceNumber": "賽事編號",
+          "weather": "天候",
+          "wind": "風",
+          "wave": "浪",
+          "grade": "等級",
+          "round": "階段",
+          "seriesDay": "節的第幾天"
+        },
+        "dir": {
+          "none": "方向不明確",
+          "varies": "依1號艇是否強勢而改變（影響方向依艇號、名次而異）",
+          "middle": {
+            "age": "中堅年齡較容易提高（並非越年輕或越年長越好）",
+            "weight": "中等體重較容易提高（並非越輕或越重越好）",
+            "other": "中間值時機會提高（並非單一方向）"
+          },
+          "higher": {
+            "national": "在6艇中全國勝率越高，機會越高",
+            "local": "在6艇中當地勝率越高，機會越高",
+            "recent": "在6艇中近30場第1名率越高，機會越高",
+            "exhibitionTime": "在6艇中展示時間越慢，機會越高",
+            "pastSt": "在6艇中平均ST（近30場）越慢，機會越高",
+            "motor": "在6艇中馬達2連率越高，機會越高",
+            "boat": "在6艇中艇體2連率越高，機會越高",
+            "class": "級別越高，機會越高",
+            "raceNumber": "賽事編號越後段，機會越高",
+            "seriesDay": "節的天數越後段，機會越高",
+            "wind": "風越強，機會越高",
+            "wave": "浪越高，機會越高",
+            "age": "年齡越大，機會越高",
+            "weight": "體重越重，機會越高",
+            "branch": "主場選手機會較高"
+          },
+          "lower": {
+            "national": "在6艇中全國勝率越低，機會越高",
+            "local": "在6艇中當地勝率越低，機會越高",
+            "recent": "在6艇中近30場第1名率越低，機會越高",
+            "exhibitionTime": "在6艇中展示時間越快，機會越高",
+            "pastSt": "在6艇中平均ST（近30場）越早，機會越高",
+            "motor": "在6艇中馬達2連率越低，機會越高",
+            "boat": "在6艇中艇體2連率越低，機會越高",
+            "class": "級別越低，機會越高",
+            "raceNumber": "賽事編號越前段，機會越高",
+            "seriesDay": "節的天數越前段，機會越高",
+            "wind": "風越弱，機會越高",
+            "wave": "浪越低，機會越高",
+            "age": "越年輕，機會越高",
+            "weight": "體重越輕，機會越高",
+            "branch": "非主場選手機會較高"
+          },
+          "category": "提高：{{up}}／降低：{{down}}"
+        },
+        "roundNames": {
+          "yosen": "預賽",
+          "junyu": "準優勝戰",
+          "yusho": "優勝戰",
+          "other": "一般戰等"
+        },
+        "weatherNames": {
+          "晴": "晴",
+          "曇り": "陰",
+          "雨": "雨",
+          "雪": "雪",
+          "霧": "霧",
+          "台風": "颱風"
+        }
+      },
+      "similar": {
+        "items": {
+          "venue": {
+            "label": "賽場",
+            "same": "相同賽場",
+            "near": "相同賽場群組（依1號艇第1名率將24個賽場分為4群）"
+          },
+          "race_number_band": {
+            "label": "賽事編號（1〜4R／5〜8R／9〜12R）",
+            "same": "區段（1〜4R／5〜8R／9〜12R）相同",
+            "near": "相鄰區段"
+          },
+          "race_number": {
+            "label": "賽事編號",
+            "same": "相同",
+            "near": "相差2R以內"
+          },
+          "grade": {
+            "label": "等級",
+            "same": "相同",
+            "near": "相鄰等級（依一般、G3、G2、G1、SG的順序相差1級）"
+          },
+          "grade_bin": {
+            "label": "是否為一般戰",
+            "same": "是否為一般戰相同"
+          },
+          "round": {
+            "label": "階段",
+            "same": "相同",
+            "near": "預賽與準優勝戰、準優勝戰與優勝戰"
+          },
+          "series_day": {
+            "label": "節的第幾天",
+            "same": "相同",
+            "near": "相差1天"
+          },
+          "is_final_day": {
+            "label": "是否為最終日",
+            "same": "相同"
+          },
+          "class_all6": {
+            "label": "6艇的級別排列",
+            "same": "6艇級別皆相同",
+            "near": "4〜5艇相同"
+          },
+          "n_A1": {
+            "label": "A1的艇數",
+            "same": "相同",
+            "near": "相差1艇"
+          },
+          "b1_class": {
+            "label": "1號艇的級別",
+            "same": "相同",
+            "near": "相鄰級別"
+          },
+          "win_gap_band": {
+            "label": "1號艇與勝率第一的勝率差（5段）",
+            "same": "1號艇與勝率第一的差距在同一區段（5段）",
+            "near": "相鄰區段"
+          },
+          "top_boat": {
+            "label": "勝率第一的艇",
+            "same": "相同（勝率相同時取艇號較小者）",
+            "near": "今天勝率第一的艇，在該場比賽中勝率第二"
+          },
+          "nat_win_6": {
+            "label": "6艇的全國勝率",
+            "same": "6艇的全國勝率平均差距在0.50以內",
+            "near": "平均差距在0.80以內"
+          },
+          "nat_win_rank_4": {
+            "label": "6艇的勝率排名",
+            "same": "勝率排名相同的艇達4艇以上",
+            "near": "2〜3艇"
+          },
+          "b1_nat_win": {
+            "label": "1號艇的全國勝率",
+            "same": "差距在0.50以內",
+            "near": "差距在1.00以內"
+          },
+          "loc_win_6": {
+            "label": "6艇的當地勝率",
+            "same": "6艇的當地勝率平均差距在0.75以內（排除無當地紀錄的選手）",
+            "near": "平均差距在1.20以內"
+          },
+          "recent_win30_6": {
+            "label": "6艇的近30場第1名率",
+            "same": "6艇平均差距在10個百分點以內",
+            "near": "平均差距在15個百分點以內"
+          },
+          "recent_top3_30_6": {
+            "label": "6艇的近30場3連率",
+            "same": "6艇平均差距在10個百分點以內",
+            "near": "平均差距在15個百分點以內"
+          },
+          "st_mean30_6": {
+            "label": "6艇的平均ST（近30場）",
+            "same": "6艇的平均ST平均差距在0.02秒以內",
+            "near": "平均差距在0.03秒以內"
+          },
+          "b1_st_rank_band": {
+            "label": "1號艇的平均ST排名（每2位一區）",
+            "same": "區段（第1〜2位／第3〜4位／第5〜6位）相同",
+            "near": "相鄰區段"
+          },
+          "motor_2_6": {
+            "label": "6艇的馬達2連率",
+            "same": "6艇平均差距在5個百分點以內",
+            "near": "平均差距在8個百分點以內"
+          },
+          "b1_motor_rank_band": {
+            "label": "1號艇的馬達2連率排名（每2位一區）",
+            "same": "6艇中排名的區段（第1〜2位／第3〜4位／第5〜6位）相同",
+            "near": "相鄰區段"
+          },
+          "boat_2_6": {
+            "label": "6艇的艇體2連率",
+            "same": "6艇平均差距在5個百分點以內",
+            "near": "平均差距在8個百分點以內"
+          },
+          "b1_boat_rank_band": {
+            "label": "1號艇的艇體2連率排名（每2位一區）",
+            "same": "6艇中排名的區段（第1〜2位／第3〜4位／第5〜6位）相同",
+            "near": "相鄰區段"
+          },
+          "age_6": {
+            "label": "6艇的年齡",
+            "same": "6艇的年齡平均差距在3歲以內",
+            "near": "平均差距在5歲以內"
+          },
+          "weight_6": {
+            "label": "6艇的體重",
+            "same": "6艇的體重平均差距在2.0kg以內",
+            "near": "平均差距在3.0kg以內"
+          },
+          "n_local": {
+            "label": "主場選手的艇數",
+            "same": "相同",
+            "near": "相差1艇"
+          },
+          "weather": {
+            "label": "天候",
+            "same": "相同",
+            "near": "晴與陰之間，或雨與雪之間"
+          },
+          "wind_bin": {
+            "label": "風速",
+            "same": "風速區段（0〜2m／3〜4m／5m以上）相同",
+            "near": "相鄰區段"
+          },
+          "wind_vector": {
+            "label": "風（風向×風速）",
+            "same": "風向與風速相近（差距1.5m以內）",
+            "near": "差距2.5m以內"
+          },
+          "wave_bin": {
+            "label": "浪高",
+            "same": "區段（0〜2cm／3〜5cm／6cm以上）相同",
+            "near": "相鄰區段"
+          },
+          "exh_time_diff_6": {
+            "label": "6艇的展示時間差（與平均的差）",
+            "same": "6艇的展示時間差平均在0.03秒以內",
+            "near": "平均在0.05秒以內"
+          }
+        },
+        "groups": {
+          "race": "比賽條件",
+          "power": "選手實力關係",
+          "start": "起跑",
+          "machine": "馬達、艇體",
+          "profile": "體重、年齡、主場",
+          "water": "天候、水面",
+          "exhibition": "展示"
+        },
+        "sliderLabel": "依相似度由高到低",
+        "fewer": "較少",
+        "more": "較多",
+        "farthest": "最不相似的第{{n}}場，{{total}}個項目中有{{same}}項相同、{{near}}項相近",
+        "heading": "相似比賽",
+        "ledeTail": "依出賽表相似度由高到低排列。展示後也會參考展示時間、天候、風、浪",
+        "sonarLabel": "今天的相似比賽{{n}}場",
+        "point": "{{date}} {{venue}}{{r}}R 第1名{{b}}號艇",
+        "sector": "{{b}}號艇獲勝的比賽 {{n}}場",
+        "ring": "第{{n}}名",
+        "tipRank": "相似度第{{n}}",
+        "payout": "3連單{{yen}}日圓",
+        "todayLabel": "今天：{{venue}}{{r}}R",
+        "shown": "顯示中：{{n}}場",
+        "likeSummary": "與今天相同的項目（各項目的比例）",
+        "likeLede": "{{n}}場中與今天相同的比賽比例（何謂相同，請見下方全項目表）",
+        "likeFixed": "以條件對齊的項目全部一致，因此不顯示",
+        "likeNone": "沒有半數以上一致的項目",
+        "likeWeak": "未一致（未達半數）",
+        "withNear": "（含相近{{p}}）",
+        "todayValue": "今天：{{v}}",
+        "weightOrder": "相似度計算的權重順序：全國成績、近期成績、平均ST、當地成績、賽場（以AI重視的項目決定相似度）",
+        "allItems": "查看全部{{n}}個項目（含未用於相似度計算的項目）",
+        "colItem": "項目（今天的數值）",
+        "colSame": "相同（{{n}}場中）",
+        "colNear": "含相近",
+        "colPool": "全部比賽中相同的比例",
+        "notUsed": "（未納入相似度計算）",
+        "openRace": "查看這場比賽的頁面 →",
+        "openOfficial": "在官方網站查看這場比賽的結果（將在新分頁開啟）↗",
+        "cmpSummary": "逐場對照（與今天並列全部項目）",
+        "cmpLede": "點選列即可與今天的比賽並列全部項目。○ 相同　△ 相近　× 不同",
+        "counts": "相同{{same}}、相近{{near}}、不同{{diff}}",
+        "cmpMore": "查看其餘{{n}}場",
+        "cmpLess": "回到{{n}}場",
+        "groupNotUsed": "（未納入相似度計算）",
+        "result": "結果：",
+        "finishDetail": "名次：{{order}}（全部艇：{{all}}）",
+        "boatFinish": "{{b}}號艇{{f}}",
+        "place": "第{{n}}名",
+        "placeOut": "第4名以後",
+        "stOrder": "ST順序（從1號艇起）：{{order}}",
+        "entry": "進場：{{e}}",
+        "resHeading": "相似比賽的結果",
+        "resSub": "相似度最高的{{n}}場中",
+        "resExcluded": "（排除沒有結果的{{k}}場）",
+        "winHeading": "哪艘艇獲勝？",
+        "hitHeading": "哪艘艇{{finish}}？",
+        "keySimilar": "相似比賽",
+        "keyCompare": "虛線：{{name}}{{n}}場",
+        "cmpGrade": "不限等級的{{kind}}（其他條件相同）",
+        "cmpRound": "也包含{{round}}以外（其他條件相同）",
+        "cmpSame": "條件一致的全部過去比賽",
+        "tip": "{{boat}}號艇：{{n}}場中{{hits}}場（{{pct}}，波動範圍{{lo}}〜{{hi}}%）",
+        "tipNational": "全國全部比賽{{p}}",
+        "few": "{{n}}場時比例容易波動（波動範圍較大）",
+        "allShown": "已列出條件一致的全部過去比賽",
+        "techHeading": "怎麼決勝的？",
+        "triHeading": "常見的3連單",
+        "triMore": "查看其餘{{k}}組（共{{m}}組）",
+        "none": "0場",
+        "otherHint": "點選上方長條或聲納圖的扇形，可查看該艇獲勝時其他艇的表現",
+        "otherTitle": "{{b}}號艇獲勝的{{n}}場中，其他艇呢？",
+        "otherHit": "{{b}}號艇獲勝",
+        "otherBase": "比較對象：{{name}}（{{n}}場）",
+        "otherBase1": "1號艇未獲勝的比賽",
+        "otherBaseK": "1號艇、{{b}}號艇以外獲勝的比賽",
+        "otherNone": "這{{n}}場中{{b}}號艇獲勝的比賽為0場。用滑桿擴大範圍或許能找到",
+        "other": {
+          "b1d": "1號艇失守（未進入前3名）",
+          "b1s": "1號艇的ST為第4以後",
+          "st1": "{{b}}號艇的ST最快（含同秒）",
+          "md": "{{b}}號艇進入比艇號更內側的航道（搶內道）"
+        },
+        "emptyLayer": "沒有與今天條件相同的過去比賽",
+        "foot": "這是過去的比例，不一定是原因。即使是相似比賽，也不一定會有相同結果。相似比賽是以AI重視的項目選出，因此容易與AI的判讀方向一致（不能作為獨立的佐證）。",
+        "values": {
+          "rnBand": "{{band}}（{{rn}}R）",
+          "bands": {
+            "0": "1〜4R",
+            "1": "5〜8R",
+            "2": "9〜12R"
+          },
+          "ippan": "一般戰",
+          "notIppan": "非一般戰",
+          "day": "第{{n}}天",
+          "final": "最終日",
+          "notFinal": "非最終日",
+          "nA1": "A1 {{n}}艇",
+          "gap": "{{gap}}（由下往上第{{band}}段）",
+          "rank": "第{{n}}位",
+          "local": "主場 {{n}}艇",
+          "weather": {
+            "sunny": "晴",
+            "cloudy": "陰",
+            "rain": "雨",
+            "snow": "雪",
+            "fog": "霧",
+            "typhoon": "颱風"
+          }
+        },
+        "allShownAfterFew": "。已列出所有條件相同的過去比賽",
+        "sliderZoom": "拖動時下方的圖會放大、縮小",
+        "ledeShort": "從1號艇級別等3項條件相同的過去比賽{{n}}場中，依出賽表相似度由高到低排列",
+        "ledeFull": "排列方式（全文）",
+        "picksLede": "這附近的相似比賽 {{n}}場（依相似度）",
+        "picksEmpty": "點選圖上的點，附近最多5場相似比賽會顯示在這裡",
+        "pickCompare": "在列表中比較",
+        "legendCenter": "越靠中心相似度越高",
+        "legendSector": "扇形＝第1名的艇",
+        "legendTap": "點選：在下方列出附近5場",
+        "legendHold": "長按：在原處顯示該場的資訊（電腦請將滑鼠移到上方）",
+        "keyErr": "場數少時的波動範圍（點選長條）",
+        "keyErrShort": "場數少時的波動範圍",
+        "outerIs": "外圈＝第{{n}}",
+        "ledeShortKind": "與今天相同的「{{kind}}」中，從1號艇級別等3項條件相同的過去比賽{{n}}場，依出賽表相似度由高到低排列",
+        "triMorePreview": "依場數多寡排序"
+      },
+      "sources": {
+        "summary": "使用的項目（由哪些數字算出）",
+        "facts": "拉開差距的因素",
+        "factsItems": "項目：本節平均名次積分（至前一天）、全國勝率、當地勝率、近30場第1名率、馬達2連率、艇體2連率、平均ST（近30場）、展示時間（僅展示後）。全國勝率、當地勝率、馬達2連率、艇體2連率為出賽表數值，展示時間為賽前資訊數值。近30場第1名率、平均ST（近30場）、本節平均名次積分由該選手過去的比賽結果計算（皆為前一天之前的出賽）",
+        "factsFinish": "名次：第1名、前2名、前3名。依過去比賽的結果算出",
+        "factsWind": "今天的風與波：風速與波高（展示時的數值）。風速分為0〜1m／2〜3m／4〜5m／6m以上（與類似比賽的風速分類不同）。在波高與風速具有不同資訊的比賽場（該場過去比賽中風速與波高的相關係數低於0.9），也依波高（0〜2cm／3〜5cm／6cm以上）細分（今天所屬分類未滿300場時只依風速）。其他比賽場的波高記錄值與風速幾乎相同，因此只依風速分類",
+        "similar": "相似比賽",
+        "similarLayer": "必定對齊的條件：{{cond}}",
+        "similarLayerBase": "1號艇的級別、1號艇與勝率第一的差距、勝率第一的艇號",
+        "similarDistance": "衡量相似度的項目（{{stage}}）：",
+        "similarNotUsed": "會列入對照但未用於相似度的項目：{{items}}",
+        "similarPost": "展示後也會將展示時間、天候、風、浪納入相似度。風速區段為0〜2m／3〜4m／5m以上",
+        "similarPre": "展示前不使用天候、風、浪、展示時間，也不列入對照",
+        "scenario": "展開情境",
+        "scenarioEntry": "進場：過去比賽正式賽的進場航道（哪艘艇進入第幾道）",
+        "scenarioSlit": "起跑線隊形：將過去比賽正式賽的起跑時機依航道順序排列後判定",
+        "scenarioResult": "結果：第1〜3名的艇、獲勝方式、3連單派彩",
+        "period": "過去的比例取自{{from}}〜{{to}}的比賽。AI的判讀以{{ai}}的資料建立。",
+        "interval": "波動範圍是假設每場比賽各自獨立發生所計算。相似比賽會集中在同一賽場、同一節，實際範圍會再大一些"
+      },
+      "count": "{{n}}場",
+      "techniques": {
+        "逃げ": "逃走（Nige）",
+        "差し": "切入（Sashi）",
+        "まくり": "外攻（Makuri）",
+        "まくり差し": "外攻切入（Makuri-zashi）",
+        "抜き": "超越（Nuki）",
+        "恵まれ": "幸運勝出（Megumare）",
+        "その他": "其他"
+      },
+      "flow": {
+        "heading": "名次的流向",
+        "filter": "顯示的比賽",
+        "all": "全部",
+        "not1": "1號艇以外獲勝的比賽",
+        "aria": "第1名→第2名→第3名的流向",
+        "link": "第{{from}}名 {{a}}號艇→第{{to}}名 {{b}}號艇 {{n}}場",
+        "first": "第1名 {{b}}號艇 {{n}}場",
+        "rank": "第{{n}}名",
+        "hint": "點選帶狀即可顯示場數",
+        "selected": "{{label}}（{{total}}場中）",
+        "firstNote": "僅以{{b}}號艇獲勝的{{n}}場，連接第1名→第2名→第3名畫出",
+        "note": "第2名→第3名的帶狀不限第1名的艇。點選第1名的方塊，會只以該艇獲勝的比賽重新畫出1→2→3的流向",
+        "ledeShort": "第1名 → 第2名 → 第3名。帶狀粗細代表場數，點選帶狀可看場數",
+        "howTo": "名次流向的看法",
+        "drawAll": "少見的流向也以淡色全部畫出",
+        "howToPreview": "淡色帶、第2名→第3名的帶、依第1名篩選",
+        "breakdown": "第{{from}}名{{a}}號艇→第{{to}}名{{b}}號艇的{{n}}場明細（占全部的{{p}}）",
+        "breakdownBack": "再點一次帶即可返回"
+      },
+      "listComma": "、",
+      "scenario": {
+        "heading": "展開情境",
+        "entryHeading": "進場會如何？",
+        "entry": {
+          "all": "不限進場",
+          "waku": "依艇號進場",
+          "mae": "有搶內道（1號艇在內道）",
+          "mae6": "僅6號艇",
+          "mae5": "僅5號艇",
+          "mae56": "5號艇、6號艇",
+          "maeOther": "其他",
+          "inlost": "1號艇被搶走內道"
+        },
+        "entryShort": {
+          "waku": "依艇號進場",
+          "mae": "有搶內道",
+          "mae6": "僅6號艇搶內道",
+          "mae5": "僅5號艇搶內道",
+          "mae56": "5號艇、6號艇搶內道",
+          "maeOther": "其他搶內道",
+          "inlost": "1號艇被搶走內道"
+        },
+        "eph": {
+          "waku": "依艇號進場",
+          "mae": "有艇搶內道",
+          "mae6": "僅6號艇搶內道",
+          "mae5": "僅5號艇搶內道",
+          "mae56": "5號艇、6號艇搶內道",
+          "maeOther": "有其他搶內道",
+          "inlost": "1號艇被搶走內道"
+        },
+        "ephConj": {
+          "waku": "依艇號進場，且",
+          "mae": "有艇搶內道，且",
+          "mae6": "僅6號艇搶內道，且",
+          "mae5": "僅5號艇搶內道，且",
+          "mae56": "5號艇、6號艇搶內道，且",
+          "maeOther": "有其他搶內道，且",
+          "inlost": "1號艇被搶走內道，且"
+        },
+        "ephRaces": {
+          "waku": "依艇號進場的比賽",
+          "mae": "有艇搶內道的比賽",
+          "mae6": "僅6號艇搶內道的比賽",
+          "mae5": "僅5號艇搶內道的比賽",
+          "mae56": "5號艇、6號艇搶內道的比賽",
+          "maeOther": "有其他搶內道的比賽",
+          "inlost": "1號艇被搶走內道的比賽"
+        },
+        "todayExh": "今天的展示",
+        "entryPre": "展示後，符合今天展示進場的類型會加上標記。",
+        "allOf": "{{name}}的全部比賽",
+        "hintHeading": "今天起跑的線索",
+        "hintOther": "目前選擇的不是依艇號進場。此線索適用於依艇號進場時，因此無法直接套用（STEP2的標籤也已移除）",
+        "hintSrc": "使用的平均ST",
+        "hintSrcs": {
+          "course": "此航道",
+          "overall": "整體"
+        },
+        "hintPicCourse": "各選手在今天的水道、依艇號進場時最近30場的平均ST（期間約半年至1年）。虛線是在{{venue}}跑過該水道的全體選手平均（不分級別）。虛線右側＝比該平均更早。",
+        "hintPicOverall": "各選手近30場的平均ST（不限航道）。因混入各航道起跑的差異，不顯示虛線。要看的是艇與艇之間的差距。",
+        "hintFilled": "{{boats}}號艇在此航道的出賽未滿5場，因此以整體平均ST補上。",
+        "hintRowHead": "平均ST（秒）",
+        "hintVenue": "在{{venue}}",
+        "hintVenueAll": "{{venue}}的全部選手（依航道）",
+        "hintExh": "今天的展示",
+        "runs": "{{n}}場",
+        "hintVenueFoot": "在{{venue}}的平均ST僅供參考（最多最近30場）。",
+        "hintFewVenue": "{{boats}}號艇在此賽場的出賽場數少，容易波動。",
+        "hintExhPost": "展示ST僅供參考，與正式賽ST的關聯較弱（各艇的相關係數0.08，平均ST為0.28）。F.09＝展示時提早0.09秒越過起跑線（因為是展示，不會受罰）。",
+        "hintExhPre": "展示ST於展示後公布。",
+        "hintConds": "今天的排列符合的條件（{{src}}的平均ST）",
+        "hints": {
+          "kado4": "4道（角位）的平均ST比1〜3道任一艇都早",
+          "kado4_02": "4道（角位）的平均ST比1〜3道任一艇都早0.02秒以上",
+          "in_slow02": "1道的平均ST比2道晚0.02秒以上",
+          "in_fastest": "1道的平均ST在6艇中最早",
+          "d2_slow01": "2道的平均ST比1道、3道都晚0.01秒以上",
+          "d3_slow01": "3道的平均ST比2道、4道都晚0.01秒以上",
+          "dash03": "4〜6道的平均ST總和比1〜3道的總和早0.03秒以上",
+          "flat03": "6艇平均ST的差距（最慢−最快）在0.03秒以內"
+        },
+        "hintNone": "今天的排列不符合任何條件",
+        "hintFoot": "依{{scope}}的依艇號進場比賽（{{n}}場，已排除有起步犯規、出發延遲的比賽，以及6艇平均ST不齊的比賽，因此與STEP2「任何隊形」的場數可能略有差異）算出。{{few}}即使符合，落空的情況仍較多（是線索而非決定因素）。",
+        "hintBadge": "符合今天的平均ST",
+        "forms": {
+          "any": {
+            "name": "不限隊形"
+          },
+          "flat": {
+            "name": "一字排開",
+            "def": "6艇ST差距在0.06秒以內"
+          },
+          "wall": {
+            "name": "內側3艇齊平",
+            "def": "1〜3道ST差距在0.02秒以內"
+          },
+          "d2": {
+            "name": "2道凹陷",
+            "def": "2道比兩側（1道、3道）晚0.05秒以上"
+          },
+          "d3": {
+            "name": "角位內側凹陷",
+            "def": "3道比兩側（2道、4道）晚0.05秒以上"
+          },
+          "kado": {
+            "name": "角位一擊",
+            "def": "4道比1〜3道任一艇都早0.03秒以上"
+          },
+          "d1": {
+            "name": "內道凹陷",
+            "def": "1道比2道晚0.05秒以上"
+          },
+          "dash": {
+            "name": "助跑組領先",
+            "def": "4〜6道平均比1〜3道早0.05秒以上"
+          }
+        },
+        "slitAria": "通過起跑線的排列（側面圖，數字為航道）",
+        "slitLine": "起跑線",
+        "slitScale": "1艇身（約0.13秒）",
+        "slitDef": "{{form}}：{{def}}。",
+        "slitToday": "參考：今天展示的隊形為{{forms}}",
+        "slitFlyShallow": "（{{boats}}號艇於展示時起步犯規。F.05以內視為 .00 判定隊形）",
+        "slitDeepFly": "參考：未顯示今天展示的隊形（展示中有艇深度起步犯規（F.06以上）或起步延遲，無法作為正式賽起步的參考）",
+        "slitPre": "展示後會以今天展示的起跑線隊形作為參考顯示",
+        "noForm": "不符合任何隊形",
+        "attackHeading": "進攻成功了嗎？",
+        "attackWakuOnly": "僅收集依艇號進場的情況（在STEP1選擇「依艇號進場」或「不限進場」即會顯示）",
+        "attackGuide": "在STEP2選擇起跑線隊形後，會顯示該隊形時進攻艇是否拿下勝利，或1號艇是否逃走成功",
+        "attackNoRecord": "沒有誰先通過第一轉彎標的紀錄，因此以名次與獲勝方式判斷",
+        "attacker": "進攻艇：",
+        "attackerNote": "此隊形時，外側艇中獲得第1名最多的艇（不代表一定會進攻）",
+        "role": {
+          "kado": "4道，角位",
+          "d3": "4道，角位",
+          "dash": "4道，角位",
+          "d1": "2道，趁內道起跑落後時進攻",
+          "d2": "3道，趁2道起跑落後時進攻"
+        },
+        "rankHead": "{{who}}的排名",
+        "tech": {
+          "makuri": "外攻（Makuri）",
+          "makurizashi": "外攻切入（Makuri-zashi）",
+          "sashi": "切入（Sashi）"
+        },
+        "noAttacker": "{{form}}是沒有艇從外側進攻的隊形。改看1號艇是否逃走成功",
+        "b1ExhNote": "1號艇的展示時間容易較快（即使同一選手，擔任1號艇時約快0.02秒，可能與展示時跑內側等有關）。即使展示時間排名上位，也要扣除這部分來看",
+        "overlap": "隊形會重疊（{{form}}中有{{p}}也符合{{other}}）。",
+        "coreEntryForm": "{{entry}}起跑線為{{form}}的比賽",
+        "coreEntry": "{{entry}}的比賽",
+        "coreForm": "起跑線為{{form}}的比賽",
+        "maeNote": "1號艇在內道",
+        "shareOf": "{{of}}的{{p}}",
+        "headIn": "{{scope}}中，{{core}}",
+        "entryWhole": "{{entry}}整體（不限隊形）",
+        "none": "{{head}}在過去1場都沒有",
+        "fewList": "{{head}}場數少，因此不以比例而是逐場列出",
+        "fewSummary": "第1名：{{first}}。萬舟{{manshu}}場",
+        "boatCount": "{{b}}號艇{{n}}場",
+        "keyScenario": "此情境",
+        "firstBoat": "獲得第1名的艇",
+        "top3Boat": "進入前3名的艇",
+        "techHeading": "怎麼決勝的？",
+        "manshu": "萬舟（3連單1萬日圓以上）",
+        "payout": "3連單{{yen}}日圓",
+        "entryLabel": "進場 {{e}}",
+        "slitLabel": "起跑線：{{forms}}",
+        "foot": "這是過去的比例，不一定是原因。起跑線隊形是賽後才知道的資訊，作為「如果這樣的話」的參考。排除有退款（F、L、缺席）的比賽{{n}}場，因此與「拉開差距的因素」的場數不一致（排除的件數也包含沒有第3名或進場不明的比賽）",
+        "attackerName": "{{boat}}（{{role}}）",
+        "hintPicA1": "A1之間的比賽，大多數艇都在右側。",
+        "hintPicTail": "要看的是艇與艇之間的差距。",
+        "hintFew": "件數較少，波動範圍較大。",
+        "entryHowTo": "進場的看法",
+        "termsFold": "用語、比例的算法",
+        "hintTable": "看數字（平均ST表）",
+        "hintRefShort": "{{venue}}全體選手的平均",
+        "slitRefLegend": "虛線＝{{name}}",
+        "slitFaster": "較快 →",
+        "resultNotSplit": "STEP4的結果未依STEP3進攻艇的排名區分。",
+        "fellBack": "{{venue}}相同組合的比賽（不含退款）只有{{n}}場，因此改從全國收集",
+        "shareOfNoRefund": "{{of}}（不含退款）的{{p}}",
+        "agreeVerdict": {
+          "up": "正式賽容易出現與展示相同的隊形（僅供參考）",
+          "same": "展示隊形與正式賽隊形幾乎沒有關係",
+          "down": "正式賽反而不容易出現與展示相同的隊形"
+        },
+        "atk": {
+          "fewTitle": "未滿50場（容易波動）",
+          "few": "少",
+          "scopeTag": "{{b}}號艇，{{cls}} 的比賽 {{n}}場",
+          "todayRow": "{{label}} 第{{rank}}位（{{band}}）→ {{what}}",
+          "band": {
+            "top": "前段",
+            "mid": "中段",
+            "low": "後段"
+          },
+          "ref": "┊{{name}} {{p}}",
+          "unclear": "前後段差異不明顯",
+          "attackerAria": "進攻艇的意思",
+          "attWin": "{{b}}號艇第1名",
+          "attTop2": "{{b}}號艇前2名",
+          "outerWin": "緊鄰外側的{{b}}號艇第1名",
+          "todayOf": "今天的{{b}}號艇",
+          "exh": "展示時間",
+          "motor": "馬達",
+          "attWinShort": "{{b}}號艇第1名",
+          "refShort": "全國",
+          "wins": "獲勝{{n}}次的決勝方式",
+          "lead": "比內側艇早0.05秒以上",
+          "b1Nige": "1號艇逃走",
+          "b1Top2": "1號艇前2名",
+          "nigeShort": "逃走",
+          "b1ExhAria": "1號艇展示時間的看法",
+          "b1ExhShort": "1號艇的展示時間容易較快",
+          "foldTitle": "依區段查看",
+          "foldPreview": "展示時間、馬達×前中後段，附全國數值",
+          "legend": "小字＝該區段的場數，┊＝{{name}}的比率。少＝未滿50場（容易波動）",
+          "tblAtt": "{{b}}號艇第1名（{{cls}} 的比賽）",
+          "tblB1": "1號艇逃走（{{cls}} 的比賽）",
+          "sameRacesNige": "同{{n}}場中1號艇逃走：{{p}}。與下表場數不同，數值也略有不同",
+          "footTie": "同值的艇以較前的排名計",
+          "tblAttAll": "{{b}}號艇第1名",
+          "tblB1All": "1號艇逃走",
+          "legendNoRef": "小字＝該區段的場數。少＝未滿50場（容易波動）",
+          "foldPreviewNoRef": "展示時間、馬達×前中後段",
+          "countDiff": "STEP3僅用6艇平均ST齊全的比賽，因此1號艇的框為{{n}}場（STEP2、4為{{m}}場）"
+        },
+        "entryFew": "{{n}}場 —",
+        "entryColType": "進場",
+        "entryColShare": "比例",
+        "entryColB1": "1號艇的勝率",
+        "hintTagPast": "過去紀錄（非預測）",
+        "hintTagWaku": "照枠進場時",
+        "hintSrcAria": "此水道與整體的差異",
+        "hintSrcDef": {
+          "course": "此水道＝僅進入今天水道時的平均（不含水道差異，便於比較）",
+          "overall": "整體＝不分水道的平均（混有起跑位置的差異）"
+        },
+        "hintDownTag": "反而不易出現",
+        "hintGo": "以{{form}}的形狀看STEP3、4 ›",
+        "hintTablePreview": "此水道、整體、場地、今天展示的平均ST",
+        "slitNoRate": "—",
+        "slitStatAny": "{{n}}場，1號艇勝率 {{b1}}",
+        "slitStat": "{{p}}，{{n}}場，1號艇勝率 {{b1}}",
+        "slitChange": "更改 ▾",
+        "scopeTagAll": "收集的比賽 {{n}}場",
+        "boatTag": "{{b}}號艇 {{cls}} {{n}}場",
+        "boatTagAll": "{{b}}號艇 {{n}}場",
+        "keyThin": "淡色長條＝未滿{{n}}場",
+        "boatScopeLine": "各艇取自本身級別的比賽（左側標籤）。相加不會是100%",
+        "manshuCount": "{{hits}}/{{n}}場",
+        "ledeShort": "用過去比賽確認「如果進場這樣、起跑這樣排列」的情況。",
+        "entryAgreeBar": "展示{{entry}} → 正式也{{entry}}",
+        "agreeSource": "全國，{{since}}以後的{{n}}場",
+        "entryHowToPreview": "比例的分母、前付的意思、慢起跑與衝刺",
+        "entryFootShare": "比例為{{name}}中的比例",
+        "entryFootMae": "前付＝進入比艇號更內側水道的艇",
+        "entryFootDash": "慢起跑與衝刺沒有紀錄，因此未區分",
+        "entryFootFew": "未滿{{n}}場的類型不顯示1號艇勝率（「—」）",
+        "slitHeadingShort": "起跑會如何排列？",
+        "slitAgreeHit": "展示為{{form}} → 正式也是",
+        "slitAgreeMiss": "展示為其他形 → 正式為{{form}}",
+        "termsPreview": "Kado、Kado-uke、圖的看法、7種形的定義",
+        "termKado": "Kado＝衝刺組（助跑較長的艇）最內側。7種形以照枠進場時的Kado（4號水道）為基準。Kado-uke＝其內側1艇（照枠時為3號水道）",
+        "termPic": "圖為側面看的排列範例（數字為水道，右側線為起跑線。比例尺1艇身≒0.13秒）",
+        "termOverlap": "1場比賽可能符合2種以上的形，也有不符合任何形的比賽（7個比例相加不會是100%）",
+        "termShare": "比例為所選進場中的比例。起跑線的形無法從今天的展示選擇",
+        "resultHeadingShort": "結果如何決定？",
+        "scopeMapHeading": "各數字取自哪些比賽",
+        "scopeMapPart": "部分",
+        "scopeMapB1": "1號艇級別相同",
+        "scopeMapOwn": "該艇級別相同",
+        "scopeMap": {
+          "attOwn": "STEP3 進攻艇的框與表",
+          "attB1": "STEP3 1號艇的框與表",
+          "barB1": "STEP4 第1名、前3名（1號艇）",
+          "barOwn": "STEP4 第1名、前3名（2〜6號艇）",
+          "rest": "STEP4 決勝方式、萬舟、名次流向、三連單"
+        },
+        "techHeadingShort": "決勝方式",
+        "notesHintHeading": "起跑線索",
+        "slitTodayTagOne": "今天的展示符合{{forms}}（STEP2的圖上有「今天的展示」標籤）。",
+        "slitTodayTagMany": "今天的展示符合{{forms}}共{{count}}種形（形可能重疊。STEP2的圖上有「今天的展示」標籤）。",
+        "hintCondsNote": "比例是過去依枠位進入的比賽中，起跑線呈現該形狀的比例。即使符合，落空的情況較多（是線索而非決定因素）",
+        "hintTodayOk": "✓ 今天符合",
+        "hintTodayLead": "今天",
+        "hintTodaySum": "{{from}}〜{{to}}道的總和",
+        "hintTodaySpreadPre": "最慢",
+        "hintTodayMid": {
+          "kado4": "比1〜3道最快的",
+          "kado4_02": "比1〜3道最快的",
+          "in_slow02": "比",
+          "in_fastest": "比2〜6道最快的",
+          "d2_slow01": "比1道、3道較慢的",
+          "d3_slow01": "比2道、4道較慢的",
+          "dash03": "比",
+          "flat03": "與最快"
+        },
+        "hintTodayDiff": {
+          "fast": "早 {{d}}秒",
+          "slow": "晚 {{d}}秒",
+          "spread": "相差 {{d}}秒"
+        },
+        "hintStage": {
+          "kado4": "比1〜3道早",
+          "kado4_02": "早0.02秒以上",
+          "in_slow02": "比2道晚0.02秒以上",
+          "in_fastest": "6艇中最早",
+          "d2_slow01": "比1道、3道晚0.01秒以上",
+          "d3_slow01": "比2道、4道晚0.01秒以上",
+          "dash03": "早0.03秒以上",
+          "flat03": "差距在0.03秒以內"
+        },
+        "hintFrac": "{{x}}/{{n}}場",
+        "hintAll": "全部（不論條件） {{p}}",
+        "hintMapFirst": " {{n}}號艇＝{{n}}道",
+        "hintMapRest": "＝{{n}}道",
+        "hintTodayCourse": "{{n}}道",
+        "stepLabel": "STEP{{n}}",
+        "races": {
+          "title": {
+            "first": "{{b}}號艇獲勝的比賽",
+            "tech": "決勝方式為{{tech}}的比賽",
+            "manshu": "萬舟（三連單1萬日圓以上）的比賽",
+            "tri": "{{combo}} 的比賽",
+            "band": "第{{from}}名{{a}}號艇→第{{to}}名{{b}}號艇的比賽"
+          },
+          "count": "{{m}}場中最近的{{k}}場",
+          "capped": "從全部{{n}}場中最近的{{kept}}場取出",
+          "otherScope": "此清單取自依1號艇級別收集的比賽（與長條的場數收集方式不同）",
+          "more": "顯示更多（最多{{n}}場）",
+          "close": "關閉清單",
+          "loading": "讀取中",
+          "error": "無法讀取清單。",
+          "retry": "重新讀取",
+          "notReady": "此清單從下一次早上的批次開始提供",
+          "none": "最近的{{kept}}場中沒有這樣的比賽",
+          "raceNo": "{{n}}R",
+          "techPay": "{{tech}}，{{yen}}日圓",
+          "bandLink": "查看此帶的比賽 ›"
+        }
+      },
+      "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
+      "feedback": {
+        "question": "龍神聲納對你的預測有幫助嗎？",
+        "useful": "有幫助",
+        "lacking": "還不夠",
+        "usefulAsk": "哪裡派上了用場？（選填）",
+        "usefulExample": "例：看了相同進場的件數，擴大了第2名的候選",
+        "lackingAsk": "有什麼的話就能派上用場？（選填、可複選）",
+        "reasons": {
+          "few_races": "件數太少",
+          "no_filter": "無法用想要的條件篩選",
+          "hard_to_read": "數字不容易看懂",
+          "how_to_use": "不知道怎麼用在預測上",
+          "other": "其他"
+        },
+        "lackingExample": "例：希望也對齊風向和水位來收集",
+        "commentLabel": "留言（選填）",
+        "count": "{{n}} / {{max}}",
+        "send": "送出",
+        "thanks": "已收到。會用於下一次的改善",
+        "note": "以匿名方式送出，不會公開。只有營運人員會閱讀",
+        "error": "無法送出。請稍候再試一次"
+      }
+    },
+    "sonarLink": "相似比賽與展開情境請見龍神聲納分頁",
+    "sonarLinkGo": "開啟"
   },
   "beforeInfo": {
     "subtitle": "隨著發走時間接近才會更新的當日限定資訊。部分項目要到發走前30/15/10分鐘才會確定",
@@ -790,6 +1921,8 @@
     "exhibitionChartEmpty": "尚未取得展示時間",
     "secondsUnit": "秒",
     "detailTableTitle": "展示資訊",
+    "bestLegend": "金框為6艇中最佳的數值（同值全部標示；「本梯次」各列以前一場比較）。⚠表示樣本少（未滿6件）僅供參考，最佳數值帶⚠時則任何艇都不標示。",
+    "turnTimeVenueNote": "本場的迴旋腳為場地獨自的計測，數值水準與其他場不同（約11〜12秒）。請在同一場比賽中比較。",
     "detailTableNote": "展示時間第1名勝率與此艇號的進場水道皆為2025年12月以後（最多過去2年）的統計，本節展示資訊為換用此馬達後（本節）的推移",
     "preExhibitionNote": "體重、調整重量為展示前的數值。傾角於展示航行後公布",
     "entryWeightFetchError": "無法取得出走表的體重",
@@ -827,6 +1960,7 @@
     "top3RateAbbrev": "3連對",
     "prevAbbrev": "前一場",
     "avgAbbrev": "平均",
+    "exhibitionFastestMark": "最快",
     "exhibitionChartNote": "長條越長代表展示越快（與最慢艇的差）。數字為實際展示時間（秒）",
     "originalExhibitionItemSeparator": "、"
   },
@@ -922,25 +2056,38 @@
     "rankPlain": "第{{rank}}名",
     "pretestRank": "第{{rank}}名",
     "compareSub": "本梯次共{{total}}人。",
-    "compareSubExcluded": "本梯次共{{all}}人（列入名次{{total}}人，不含獎典除外、中途歸鄉、缺賽{{excluded}}人）。",
+    "compareSubExcluded": "本梯次共{{all}}人（列入名次{{total}}人，不含下方列出的{{excluded}}人）。",
     "colPretestOf": "前檢（共{{total}}人）",
     "borderPending": "準優門檻要等所有出場選手都出賽過1場後才顯示。",
+    "excludedReason_absent": "缺賽",
+    "excludedReason_withdrawn": "中途歸鄉",
+    "excludedReason_awardExcluded": "獎典除外",
+    "excludedReason_flying": "獎典除外（本梯次F）",
+    "excludedMore": "；另有{{count}}人",
+    "excludedReasonSuffix": " ",
+    "excludedGroupSeparator": "／",
+    "excludedListLabel": "不列入名次：",
+    "borderPendingSeries": "準優門檻要等以同一優勝戰為目標的選手都出賽過1場後才顯示。",
+    "compareSubSeriesAllNotYet": "以同一優勝戰為目標的共{{all}}人（全員都還是本梯次首戰）。",
+    "compareSubAllNotYet": "本梯次共{{all}}人（全員都還是本梯次首戰）。",
     "borderAsOfRuns": "此為多數出場選手出賽{{runs}}場時點的門檻，預賽結束前仍會變動。",
-    "compareSubSeriesExcludedNotYet": "以同一優勝戰為目標的共{{all}}人（列入名次{{total}}人，不含獎典除外、中途歸鄉、缺賽的{{excluded}}人，以及尚未出賽的{{notYet}}人）。",
-    "compareSubSeriesNotYet": "以同一優勝戰為目標的共{{all}}人（列入名次{{total}}人，不含尚未出賽的{{notYet}}人）。",
-    "compareSubExcludedNotYet": "本梯次共{{all}}人（列入名次{{total}}人，不含獎典除外、中途歸鄉、缺賽的{{excluded}}人，以及尚未出賽的{{notYet}}人）。",
-    "compareSubNotYet": "本梯次共{{all}}人（列入名次{{total}}人，不含尚未出賽的{{notYet}}人）。",
+    "compareSubSeriesExcludedNotYet": "以同一優勝戰為目標的共{{all}}人（列入名次的是已出賽的{{total}}人，不含下方列出的{{excluded}}人，以及尚未出賽的{{notYet}}人）。",
+    "compareSubSeriesNotYet": "以同一優勝戰為目標的共{{all}}人（列入名次的是已出賽的{{total}}人，不含尚未出賽的{{notYet}}人）。",
+    "compareSubExcludedNotYet": "本梯次共{{all}}人（列入名次的是已出賽的{{total}}人，不含下方列出的{{excluded}}人，以及尚未出賽的{{notYet}}人）。",
+    "compareSubNotYet": "本梯次共{{all}}人（列入名次的是已出賽的{{total}}人，不含尚未出賽的{{notYet}}人）。",
     "notYetRunNote": "「本梯次首戰」為本場是本梯次第一場出賽、尚無得分率的選手。",
     "notYetRunCancelled": "尚未出賽",
     "notYetRunCancelledNote": "「尚未出賽」為本梯次還沒有出賽過的選手。",
     "meetEmptyCancelled": "本梯次尚未出賽。",
     "notYetRun": "本梯次首戰",
-    "compareSubSeriesExcluded": "以同一優勝戰為目標的共{{all}}人（列入名次{{total}}人，不含獎典除外、中途歸鄉、缺賽{{excluded}}人）。",
+    "compareSubSeriesExcluded": "以同一優勝戰為目標的共{{all}}人（列入名次{{total}}人，不含下方列出的{{excluded}}人）。",
     "compareSubSeries": "以同一優勝戰為目標的共{{total}}人。",
     "borderLine": "準優門檻為第{{slots}}名（{{rate}}）。",
     "rankTiedTitle": "同分{{tied}}人",
     "pretestCell": "{{time}}（第{{rank}}）",
     "rowHint": "點選該列，下方詳情會切換為該選手。",
+    "bestLegend": "金框為6艇中最佳的數值（同值全部標示）。",
+    "bestLegendWarn": "得分率與梯次名次中，若最佳數值屬於場數少的⚠艇，該欄任何艇都不標示。",
     "classTitle": "級別",
     "finishSeparator": "-",
     "finishDq": "失格",
@@ -948,12 +2095,13 @@
     "smallSampleLegend": "⚠ 表示未滿3場（得分率仍不穩定）。",
     "finishLabel": "名次",
     "finishLabelPrelim": "預賽名次",
-    "borderNote": "虛線以上為準優門檻之內（賽程尚未排定，並非確定）。",
+    "borderNote": "藍色虛線以上為準優門檻之內（賽程尚未排定，並非確定）。",
+    "borderNoneInTable": "這6艇中沒有準優門檻之內的選手（賽程尚未排定，並非確定）。",
     "prelimOverNote": "預賽已於{{date}}結束。得分率就此確定，不會因今日的名次而變動。",
     "seriesSplitNote": "本梯次為Ｗ優勝戰，晉級路線分為兩組（本梯次共{{meetTotal}}人）。梯次名次與準優門檻，僅以與顯示中6艇同樣以該優勝戰為目標的選手計算。",
     "seriesSplitNoteNoBorder": "本梯次為Ｗ優勝戰，晉級路線分為兩組（本梯次共{{meetTotal}}人）。梯次名次僅以與顯示中6艇同樣以該優勝戰為目標的選手計算。",
     "seriesMixedNote": "本梯次為Ｗ優勝戰，晉級路線分為兩組，但本場比賽兩組選手同場，因此梯次名次以本梯次全部{{total}}人計算。",
-    "rankSourceNote": "梯次名次為本站計算（本梯次的官方得分率一覽尚未公布或未能取得）。排除在名次之外的，是預賽結束前於本梯次偷跑（F）的選手（獎典除外），以及中途歸鄉的選手（前一天之前有出賽，但當天沒有排定任何一場的選手）。",
+    "rankSourceNote": "梯次名次為本站計算。排除在名次之外的，是預賽結束前於本梯次偷跑（F）的選手（獎典除外），以及中途歸鄉的選手（前一天之前有出賽，但當天沒有排定任何一場的選手）。",
     "rankSourceNoteAfterPrelim": "預賽結束後的偷跑不會被排除在名次之外，但預賽後中途歸鄉的選手會被排除（兩者皆與官方相同）。因此即使預賽已結束，有選手中途歸鄉時，後面的名次可能會往前遞補。",
     "rankSourceNoteOfficial": "得分率與梯次名次採用官方得分率一覽（預賽結束時點）的數值，扣分、獎典除外、中途歸鄉也依官方呈現。預賽期間官方一覽尚未公布，故為本站統計。",
     "sourceOfficial": "官方",
@@ -965,7 +2113,7 @@
     "sparkLast": "前一場 {{value}}",
     "sparkTip": "{{date}} {{no}}R，{{metric}} {{value}}，{{finish}}",
     "sparkTipFinish": "第{{finish}}名",
-    "sparkNote": "ST的虛線是該選手平常的平均，展示的虛線是當日全場的展示平均（水面輕重，每天可差近0.1秒）。越上面越快，在虛線之上代表在當天水面中算快。大點為前一場。縱軸依該選手本梯次的最小～最大拉伸，因此起伏大小無法與其他選手比較。不做上升／下降的判定。",
+    "sparkNote": "ST的虛線是該選手平常的平均，展示的虛線是當日全場的展示平均（水面輕重，每天可差近0.1秒）。越上面越快，在虛線之上代表在當天水面中算快。大點為前一場。縱軸依該選手本梯次的最小～最大拉伸，因此起伏大小無法與其他選手比較。不做上升／下降的判定。ST的「起步更積極」（綠）、「較保守」（紅）僅在本梯次3場以上且差距0.02以上時上色。",
     "sparkStMeta": "平均 {{avg}}（{{n}}場）／平常 {{base}}",
     "sparkExMetaRank": "前檢 {{value}}（第{{rank}}名）",
     "compareTrendTitle": "6艇的本梯次走勢",
@@ -988,12 +2136,13 @@
     "forecastRankHeader": "第{{rank}}名",
     "forecastNote": "有底色的格子代表今天取得該名次，今天結束時有望位於準優門檻（第{{slots}}名＝{{rate}}）以上。明天仍有預賽的日子，並不代表已確定晉級準優。今天預賽還剩2場以上的選手，只看1場的名次無法判斷，因此不上色。所需得分是達到門檻所需的分數，只計算今天已排定的預賽場次（明天仍有預賽時會改變）。",
     "forecastNoteNoBorder": "取得該名次後的得分率。以無事故完賽為前提。",
+    "forecastRateBlueNote": "得分率欄的藍色數字，代表該選手目前的得分率在準優門檻以上。今天的名次可能讓得分率下降，請搭配所需得分欄一起看。",
     "colNeeded": "所需得分",
     "neededPoints": "{{points}}",
     "neededPointsRuns": "今天{{runs}}場內",
     "neededUnreachable": "今天無法達到",
     "forecastDetailSummary": "門檻與所需得分的算法",
-    "forecastDetail": "門檻採用預賽結束時第{{slots}}名的得分率。與實際門檻可能相差數位（實測: 若松G1差0.07、桐生一般賽差0.83。沒有官方備註的梯次，本站資料無法排除F以外原因的獎典除外選手，且一般賽的準優人選不一定只看得分率）。所需得分＝門檻×(目前場次+剩餘場次)−目前得分，剩餘場次以當日已排定的預賽計算（有選手一天兩場，因人而異）。以無事故完賽為前提，不使用「確定晉級」的說法。",
+    "forecastDetail": "門檻採用預賽結束時第{{slots}}名的得分率。與實際門檻可能相差數位（實測: 若松G1差0.07、桐生一般賽差0.83。預賽期間不使用官方備註，本站資料無法排除F以外原因的獎典除外選手，且一般賽的準優人選不一定只看得分率）。所需得分＝門檻×(目前場次+剩餘場次)−目前得分，剩餘場次以當日已排定的預賽計算（有選手一天兩場，因人而異）。以無事故完賽為前提，不使用「確定晉級」的說法。",
     "withdrawn": "不列入",
     "withdrawnTitle": "視為中途歸鄉（前一天之前有出賽，但當天沒有排定任何一場的選手。為本站推定。官方名次表同樣會將中途歸鄉的選手排除在名次之外）",
     "withdrawnOfficialTitle": "依官方得分率一覽的備註為中途歸鄉（與官方名次表相同，排除在名次之外）",
@@ -1001,7 +2150,7 @@
     "awardExcluded": "獎典除外",
     "awardExcludedTitle": "官方得分率一覽的備註為獎典除外（無法出賽準優勝戰、優勝戰）。與官方相同，排除在名次之外",
     "flyingExcluded": "獎典除外（F）",
-    "flyingExcludedTitle": "本梯次有偷跑（F），因此獎典除外（無法出賽準優勝戰、優勝戰）。與官方相同，排除在名次之外。此為沒有官方備註的梯次中本站的判定",
+    "flyingExcludedTitle": "本梯次有偷跑（F），因此獎典除外（無法出賽準優勝戰、優勝戰）。與官方相同，排除在名次之外。此為本站的判定（官方得分率一覽在預賽結束後才使用）",
     "absent": "缺賽",
     "absentTitle": "本梯次至今全部缺賽，出賽數為0，因此沒有得分率與梯次內名次",
     "absentNote": "「缺賽」表示本梯次至今全部缺賽的選手。出賽數為0，因此沒有得分率與梯次內名次。",
@@ -1033,12 +2182,12 @@
     },
     "presetLabel": "{{scope}}{{grade}}",
     "periods": {
-      "current": "本期",
+      "official": "官方",
+      "term": "本期",
       "last3m": "最近3個月",
       "last1m": "最近1個月"
     },
     "periodSummary": "▸ 依期間篩選",
-    "periodCaveat": "※與等級條件組合時的「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）",
     "winRateSwitchCaveat": "※以等級、期間篩選後，顯示的不是官方的勝率（點數），而是該條件下取得第1名的比例（第1名率，%）",
     "relativeBarNote": "※長條長度僅為這6艇之間的比較。即使差距很小，長度也會拉得很開，實際差距請看數字",
     "sampleCount": "(n={{n}})",
@@ -1099,24 +2248,55 @@
     "conditionsHowToRead": "本表的閱讀方式",
     "smallSampleTitle": "樣本較少，僅供參考",
     "periodTitle": "前期（{{from}}〜{{to}}、官方期別成績）",
+    "periodTitleFallback": "前前期（{{from}}〜{{to}}、官方期別成績）",
+    "periodFallbackNote": "※尚未匯入前期（{{from}}〜{{to}}）成績，因此顯示前前期",
+    "periodDiffFallbackNote": "※匯入前期成績前，不顯示與出走表數值的差",
+    "periodDiffFallbackNoteDate": "※匯入前期成績前，不顯示與出走表數值的差（{{date}}以後的比賽將顯示與前期的差）",
     "periodWinRate": "勝率 {{value}}",
     "periodTop2Rate": "2連對率 {{value}}",
     "periodAvgSt": "平均ST {{value}}",
     "periodFinals": "優出 {{value}}次",
     "periodWins": "優勝 {{value}}次",
-    "periodRecentFinals": "近2年（{{from}}〜{{to}}）優出 {{finals}}次、優勝 {{wins}}次",
+    "periodRecentCounts": "優出 {{finals}}次、優勝 {{wins}}次",
+    "periodRecentRangeFallback": "至前前期為止的2年（{{from}}〜{{to}}）",
+    "periodRecentRange": "近2年（{{from}}〜{{to}}）",
     "periodVsCurrent": "（出走表、全國 {{current}}，較前期 {{diff}}）",
     "periodCurrentOnly": "（出走表、全國 {{current}}）",
     "periodDiffWithheldNote": "※換期後的3個月內，出走表數值大部分仍是與前期相同期間的成績，因此不顯示與前期的差（{{date}}以後的比賽才顯示）。",
     "periodFetchError": "無法取得前期成績",
+    "accidentBadgeOver": "事故率{{rate}} 超過B2線",
+    "accidentBadgeNear": "事故率 距B2線還差{{need}}分",
+    "accidentTitle": "本期事故率（參考，{{from}}〜{{to}}）",
+    "accidentTitleOpen": "本期事故率（參考，{{from}}〜）",
+    "accidentLineEarly": "出賽數少時一次事故就會大幅變動，因此距B2線的剩餘分數從出賽{{min}}場起顯示",
+    "accidentLegend": "事故率＝本期事故分÷出賽數（參考）。超過0.70時下次級別審查降為B2級。「還差◯分」是超過B2線為止的事故分（與預賽得分不同）。F、出發延遲20分（本期第2次以後的F為30分），妨害失格15分，失格、缺賽10分",
+    "accidentRateLabel": "事故率",
+    "accidentBreakdown": "事故分{{points}}÷出賽{{starts}}（{{kinds}}）",
+    "accidentKindCount": "{{kind}}{{n}}",
+    "accidentKindSeparator": "、",
+    "accidentKind": {
+      "F": "F",
+      "L1": "出發延遲",
+      "K1": "缺賽",
+      "S1": "失格",
+      "S2": "妨害失格"
+    },
+    "accidentNone": "無事故",
+    "accidentLineOver": "超過B2線（0.70）",
+    "accidentLineNear": "距B2線（0.70）還差{{need}}分",
+    "accidentNoStarts": "本期尚未出賽",
+    "accidentNote": "事故分依官方配分（F、出發延遲20分，妨害失格15分，選手責任的失格、缺賽10分。本期第2次以後的F為30分）。不含不良航法、待機行動違規（2分），因此可能低於官方數值。超過0.70時，下次級別審查將降為B2級",
+    "accidentFetchError": "無法取得本期事故率",
     "meetScoreForecastTitle": "今日名次會讓得分率這樣變動",
-    "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場、{{source}}、已確定）"
+    "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場、{{source}}、已確定）",
+    "periodCurrentNote": "本期以本站自 {{from}} 起記錄的場次計算（勝率為第1名率）",
+    "periodOfficialNoLocalSt": "官方平均ST只有全國的值（官方沒有當地的值）"
   },
   "dataTable": {
     "title": "數據出賽表",
     "subtitle": "一覽比較6位選手的分析數據。點擊列標籤可前往詳細分析頁面",
     "rowWinRate": "級別/勝率",
-    "rowMotor": "馬達2連率",
+    "rowMotor": "馬達2連率（過去90天）",
     "rowForm": "狀態（勝率Δ）",
     "rowSt": "ST穩定度",
     "rowExhibition": "展示時間",
@@ -1150,15 +2330,20 @@
     "rowReturnRate": "獨贏回收率",
     "noWins": "無勝場",
     "winCount": "{{n}}勝",
-    "note": "分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果",
+    "note": "勝率、當地、2連率為官方出賽表的值。平均ST、馬達2連率、艇號勝率為列名所示的期間，其他分析數據為過去90天（回收率為180天）的實績統計。醒目標示為本場最佳值。僅供參考，不保證結果",
     "guideLink": "詳細了解數據出賽表的使用方式",
     "rowLocalWinRate": "當地勝率",
     "rowTwoRate": "全國2連率",
     "rowAvgSt": "平均ST",
+    "rowAvgStOfficialNote": "官方",
+    "rowAvgStOfficial": "平均ST（官方）",
+    "rowAvgSt30": "平均ST(30場)",
     "rowExSt": "展示ST",
-    "rowCourseRate": "艇號勝率",
+    "exStFlagTitle": "F＝起步展示時起步犯規，L＝起步展示時起步延遲（官方標示）。不列入最佳值的比較",
+    "rowCourseRate": "艇號勝率（近1年）",
     "loading": "數據載入中…",
     "motorResetNote": "剛更換",
+    "motorUnusedNote": "新馬達、尚無實績",
     "motorBadgeUp": "機力↑",
     "motorBadgeDown": "機力↓"
   },
@@ -1183,8 +2368,9 @@
   "aiCopy": {
     "bannerLabel": "複製給AI使用",
     "bannerCatchphrase": "讓你的AI也能分析！",
-    "inlineButtonLabel": "複製給AI使用",
     "toastSuccess": "已複製",
+    "toastAssist": "貼上前先確認資料 → 思考輔助",
+    "toastClose": "關閉",
     "toastError": "複製失敗",
     "promptSelectorWin": "單勝",
     "promptSelectorTrifecta": "3連單",
@@ -1203,9 +2389,47 @@
     "turnPredictionColSecond": "第2名熱門",
     "turnPredictionColThird": "第3名熱門",
     "turnPredictionDistributionLabel": "整體決勝招式傾向",
-    "turnPredictionStrengthLabel": "依第一標展開預測計算的綜合實力排名",
     "promptVolatilityTrifecta": "以上是被判定為「內圈崩盤注意度」偏高（1號艇可能無法像平常一樣順利搶得領先）的比賽出賽表數據，以及第一標展開預測（依決勝招式分類的獲勝機率、第2、3名熱門艇）。請根據這份展開預測數據，判斷實際最有可能獲得第一名的艇號與決勝招式，並提出3組值得鎖定的3連單組合，附上理由。若1號艇的搶先機率依然偏高，請不要排除，將其納入候選。",
-    "previewToggleLabel": "查看將複製的提問內容"
+    "previewToggleLabel": "查看將複製的完整內容",
+    "promptSelectorTurn": "詢問展開",
+    "promptSelectorDataOnly": "只要數據",
+    "promptTurn": "以上是賽艇的出賽表數據與第一標展開預測。請考量水面條件（標示「尚未取得」的項目請不要推測），告訴我第一標可能會如何展開，以及值得注意的艇，並說明理由。",
+    "promptDataOnly": "以上是賽艇的出賽表數據。接下來我會提問。",
+    "unpublished": "尚未取得",
+    "gradeIppan": "一般",
+    "premiseDate": "日期",
+    "premiseDeadline": "截止預定（日本時間）",
+    "premiseMeet": "等級、賽程",
+    "premiseConditions": "水面條件",
+    "premiseWind": "風",
+    "premiseObservedAt": "{{time}}觀測",
+    "premiseAsOf": "複製時間",
+    "premiseAsOfValue": "{{time}}（日本時間）",
+    "premiseExhibitionUnpublished": "展示：未反映（展示前，或在開啟此頁面後才公布，因此展示ST、展示進入為「—」，展示時間為括號內的過去90天平均。體重、傾角、零件更換只填入已公布的部分）",
+    "notesHeading": "項目註記",
+    "note": {
+      "winRate": "F1、F2為出賽表上本期的偷跑次數，附「(本節)」表示其中有在本節前一天以前發生的（不得參加本節準決賽、決賽）。L1為本期起跑延遲次數",
+      "motor": "本站統計此馬達過去90天（僅限換裝後）的2連率。與官方出賽表的賽程時點2連率數值不同",
+      "form": "目前全國勝率與約90天前全國勝率的差。↑為上升，↓為下降",
+      "avgSt": "與官方出賽表相同的平均ST（秒，與勝率同一期的官方期別成績，小數2位）。越小代表起跑越快",
+      "avgSt30": "到前一天為止近30場正式比賽ST的平均（秒，不含F、L。與龍神聲納、思考輔助相同的值）。越小代表起跑越快",
+      "st": "過去90天展示ST與正式ST差距的平均（秒）。±後的數字越小，代表越能照展示起跑",
+      "exSt": "當天起跑展示的時機。F.01 等為起跑展示中的偷跑，L 為起跑延遲（官方標記）",
+      "exhibition": "當天的展示時間（秒）。括號內的值是當天展示前，改以顯示的過去90天平均展示時間",
+      "exhibitionCourse": "起跑展示時進入的水道（官方賽前資訊）。括號表示比艇號更內側、外側進入。正式比賽的進入可能不同",
+      "partsChanged": "為本場比賽更換的零件、螺旋槳。不代表更換的好壞",
+      "courseRate": "以與本次相同艇號出賽的近1年比賽的第1名率（第1名次數/出賽次數）",
+      "technique": "該選手獲得第1名時最常見的決勝招式（括號為過去90天的第1名次數），不分艇號計算",
+      "returnRate": "該選手以此艇號出賽、過去180天單勝的實際數值。僅供參考，不保證結果",
+      "dash": "「—」：無數據，或尚未取得"
+    },
+    "sourceLine": "出處：龍神雷達 {{url}}",
+    "followUpHeading": "貼上後的提問範例",
+    "followUp1": "根據水面條件與展開預測，預測第一標的展開",
+    "followUp2": "這之中你最在意哪一艘？也告訴我理由",
+    "followUp3": "第一標可能處於不利的是哪一艘？理由是什麼？",
+    "turnPredictionCandidateNote": "第2名熱門、第3名熱門是在該決勝招式下，進入第2、3名機率最高的艇（括號內為該機率）。同一艘艇可能同時出現在兩欄",
+    "inlinePromptCaption": "將附上「{{label}}」的提問一起複製（可在上方橫幅切換）"
   },
   "review": {
     "finishPosition": "第{{position}}名",
@@ -1216,6 +2440,7 @@
       "motor": "馬達",
       "form": "狀態",
       "avgSt": "平均ST",
+      "avgSt30": "ST(30場)",
       "st": "ST穩定",
       "exSt": "展示ST",
       "exhibition": "展示T",
@@ -1246,6 +2471,7 @@
     "dataLoadError": "數據載入失敗",
     "boatN": "{{n}}號艇",
     "raceOption": "{{number}}R（{{time}} JST）",
+    "raceOptionPast": "{{date}} {{number}}R",
     "lastUpdated": "（最後更新：{{date}}）",
     "noData": "無資料",
     "notMeasured": "未測量",
@@ -1326,19 +2552,27 @@
     "motor": {
       "title": "🔧 馬達狀況",
       "description": "選擇本日舉辦中的比賽，即可一覽各艇馬達的2連率/3連率。點擊在意的馬達，可以查看跨賽節（開催期間）的走勢。",
-      "motorNumberHeader": "馬達編號",
-      "motorUnit": "{{n}}號機",
+      "motorNumberShortHeader": "馬達",
       "pretestTimeHeader": "前檢",
       "pretestRank": "第{{rank}}名",
       "officialRate2Header": "官方2連率（節次開始時）",
+      "venueRankHeader": "場內排名",
+      "venueRankCell": "第{{rank}}名",
+      "venueRankCellTied": "第{{rank}}名並列",
+      "venueRankTotal": "/{{total}}",
+      "venueRankError": "無法取得",
+      "venueRankSourceNote": "場內排名依據{{venue}}官方網站的馬達成績（取得日 {{date}}）中的2連率計算。橫條為出賽表的官方2連率（節次開始時），因資料來源不同，橫條長短與排名可能不一致",
+      "venueRankSourceNotePeriodEnd": "場內排名依據{{venue}}官方網站的馬達成績（統計至 {{date}}）中的2連率計算。橫條為出賽表的官方2連率（節次開始時），因資料來源不同，橫條長短與排名可能不一致",
+      "motorRiderMixNote": "馬達的2連率也包含了使用過的選手的實力",
       "officialSourceNote": "※「前檢」與「官方2連率（節次開始時）」為 BOAT RACE 官方網站的數值原樣轉載（於節次開始時確定，節次期間不會變動）。「2連率」「3連率」「機力指數」為本站以所選期間重新計算的數值。",
       "officialModeSourceNote": "※ 過去的比賽中，「2連率」「3連率」「前檢」為出走表當時 BOAT RACE 官方網站的數值。「機力指數」在列表中僅於當天的比賽顯示（點選列可查看此比賽之前的數值）。",
       "venueColsPastNote": "{{venueCols}}為該比賽日以前最新的各場地官方網站數值。",
       "venueColsTodayNote": "{{venueCols}}為各場地官方網站的數值，僅在節結束時更新（與「2連率」「3連率」的統計期間不同）。",
       "quotedLabel": "「{{label}}」",
       "quotedLabelSeparator": "",
-      "rate2Header": "2連率 (%)",
+      "rate2PeriodHeader": "2連率（{{period}}）",
       "rate3Header": "3連率 (%)",
+      "rate3PeriodHeader": "3連率（{{period}}）",
       "powerIndexHeader": "機力指數",
       "finalCountHeader": "優出數",
       "championshipCountHeader": "優勝數",
@@ -1379,7 +2613,7 @@
       "exhibitionLegend": "展示時間",
       "exhibitionYAxis": "展示時間 (秒)",
       "exhibitionTrendEmpty": "找不到此馬達的展示時間資料",
-      "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快。",
+      "exhibitionTrendNote": "💡 即使是同一台馬達，也可能因保養調整或選手操控方式不同而使展示時間出現變化。數值越小代表時間越快，圖表以越上方越快的方向繪製。",
       "usageHistoryHeading": "📜 使用履歷",
       "usageHistoryRank": "第{{n}}名",
       "usageHistoryNotRun": "未賽",
@@ -1396,8 +2630,8 @@
       },
       "partsHistoryEmpty": "找不到此馬達的零件交換、螺旋槳交換紀錄",
       "partsHistoryNote": "💡 零件交換、螺旋槳交換單獨來看，可能是機力下滑的徵兆，也可能是剛保養完的好轉徵兆。徽章比較交換前後的平均展示時間僅供參考，不保證結果。",
-      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。強調顯示的列為本場比賽中2連率最高的艇。",
-      "highlightNote": "💡 標示的列是此比賽中2連率最高的艇。",
+      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。金框的數值為本場比賽中官方2連率最高的馬達。",
+      "highlightNote": "💡 金框的數值為本場比賽中官方2連率最高的馬達。",
       "focusedRowNote": "以線框起的列，是您在其他分頁選擇的艇。",
       "venueRankLabel": "場內排名（場地官方的2連率）",
       "venueRankBadge": "第{{rank}}名／共{{total}}台（{{value}}%）",
@@ -1406,11 +2640,13 @@
       "firstUseBadge": "首次使用",
       "officialPendingBadge": "尚未統計",
       "officialPendingNote": "「尚未統計」表示此馬達正處於首次被使用的節次中，官方2連率累計尚未產生（該節結束前維持0.0）。",
+      "venueStatsFailedCell": "載入失敗",
+      "venueStatsFailedNote": "無法取得賽場官方網站的馬達成績（第1名率、優出數、優勝數）。標示「載入失敗」的欄位，重新整理頁面後會重新取得。",
       "wakuStatsHeading": "各水道成績",
       "wakuStatsWindowNote": "💡 統計期間：{{date}}更換馬達之後（不含更換前同號碼的其他馬達）。橘色數值少於{{n}}場，僅供參考。",
       "wakuStatsUnknownGeneration": "由於無法取得現役馬達的開始使用日，因此不顯示（避免混入更換前同號碼馬達的成績）。",
       "courseHeader": "水道",
-      "exhibitionTrendHeader": "展示時間（平均、走勢）",
+      "exhibitionTrendHeader": "展示時間（平均、走勢，越上越快）",
       "wakuStatsExpand": "顯示全部6水道",
       "wakuStatsNote": "💡 「水道」為此馬達實際進入的水道編號（沒有進入水道資料的過去比賽則直接使用艇號）。點擊列可查看在該水道使用過此馬達的各選手成績。",
       "racerWakuBackLabel": "← 返回各水道成績",
@@ -1418,7 +2654,27 @@
       "racerWakuEmpty": "找不到此馬達、水道組合的出賽選手",
       "racerWakuNote": "💡 僅統計現役馬達開始使用後，此馬達在該水道被使用的比賽。橘色數值少於{{n}}場，僅供參考。",
       "drillPreGeneration": "此比賽的{{n}}號馬達是更換前的馬達，與目前的{{n}}號為不同的馬達，因此不顯示走勢、機力指數與使用履歷。",
-      "drillAsOfRaceNote": "💡 這是此比賽之前的狀況（不含此比賽及之後的比賽）。"
+      "drillAsOfRaceNote": "💡 這是此比賽之前的狀況（不含此比賽及之後的比賽）。",
+      "barScaleNote": "橫條以6台中的最高值為全長。"
+    },
+    "motorRanking": {
+      "title": "🏁 馬達排行榜",
+      "description": "選擇賽艇場後，將該場所有馬達依2連率排列。點擊欄位標題，也可依馬達編號、優勝次數、前檢時間排序。",
+      "rankHeader": "名次",
+      "rateHeader": "2連率",
+      "officialRateHeader": "官方2連率",
+      "finalHeader": "晉級優勝戰",
+      "championshipHeader": "優勝",
+      "userHeader": "本節使用選手",
+      "userHeaderRecent": "最近節次的使用選手（{{date}}）",
+      "sourceVenueSite": "出處：{{venue}}官方網站的馬達成績（取得日 {{date}}）",
+      "sourcePretest": "出處：BOATRACE 官方前檢資料（僅限最近節次使用的馬達）",
+      "sortNote": "點擊馬達、2連率、優勝、前檢的標題即可排序（前檢由快到慢）。數值相同為同一名次",
+      "sortNotePretest": "點擊馬達、官方2連率、前檢的標題即可排序（前檢由快到慢）。數值相同為同一名次",
+      "linkNote": "點擊馬達編號，可查看該馬達在最近節次最後一場比賽之前的走勢（與本列表的時間點不同）。最近節次未使用的馬達無法開啟",
+      "fetchError": "無法取得馬達成績",
+      "empty": "此賽艇場最近節次沒有馬達資料",
+      "raceCount": "{{n}}場"
     },
     "racerForm": {
       "title": "📈 選手狀態",
@@ -1542,6 +2798,7 @@
       "outcome": "📊 名次組合分布",
       "technique": "🎯 獲勝方式",
       "motor": "🔧 馬達狀況",
+      "motorranking": "🏁 馬達排行榜",
       "racer": "📈 選手狀態",
       "st": "⏱️ ST落差",
       "topstart": "🚀 搶先起航",
@@ -1556,7 +2813,8 @@
       "racecard": "📋 出賽表資料",
       "venueranking": "🏟️ 賽場排行榜",
       "venuegrade": "📊 賽場×等級",
-      "volatility": "🌪️ 內道崩盤指數實績"
+      "volatility": "🌪️ 內道崩盤指數實績",
+      "weather": "🌬️ 風與內道逃走率"
     },
     "features": {
       "outcome": {
@@ -1570,6 +2828,10 @@
       "motor": {
         "name": "馬達狀況",
         "description": "分析本日比賽各艇號的馬達2連率、3連率"
+      },
+      "motorranking": {
+        "name": "馬達排行榜",
+        "description": "依2連率、晉級優勝戰、優勝、前檢時間排列賽艇場的所有馬達"
       },
       "racer": {
         "name": "選手狀態",
@@ -1630,6 +2892,10 @@
       "volatility": {
         "name": "內道崩盤指數實績",
         "description": "公開新AI預測模型的內道崩盤指數（警戒/標準/穩定）實際命中的準確度"
+      },
+      "weather": {
+        "name": "風與內道逃走率",
+        "description": "依風向（順風、逆風）與風力，從官方競賽成績統計1道第1名率與賽場平均的差異"
       }
     },
     "info": {
@@ -1686,6 +2952,23 @@
           }
         ],
         "articleLinkText": "什麼是馬達狀況？了解本日比賽艇號別2連率的新功能"
+      },
+      "motorranking": {
+        "title": "關於馬達排行榜",
+        "dataView": "將各賽艇場官方網站公開的馬達成績（2連率、晉級優勝戰次數、優勝次數）整理成該場所有馬達的一覽。前檢時間與使用選手來自 BOATRACE 官方最近節次的前檢資料。戶田、平和島、濱名湖、宮島僅以 BOATRACE 官方2連率排列最近節次使用的馬達。",
+        "tips": [
+          {
+            "strong": "2連率排名靠前的馬達",
+            "text": " = 在該場容易進入前2名的馬達。搭配本節由誰使用一起看，可作為出賽表的判斷依據"
+          },
+          {
+            "strong": "前檢時間快的馬達",
+            "text": " = 節次首日前測得的本節速度參考"
+          },
+          {
+            "text": "馬達的2連率也包含了使用過的選手的實力。點擊馬達編號可查看各節次的走勢"
+          }
+        ]
       },
       "racer": {
         "title": "關於選手狀態",
@@ -1954,6 +3237,23 @@
             "text": "與各比賽預測畫面顯示的「內道崩盤注意度」徽章為同一指標"
           }
         ]
+      },
+      "weather": {
+        "title": "關於風與內道逃走率",
+        "dataView": "以官方競賽成績（K檔）2020年2月以來約37萬場比賽，將比賽當下的風換算成水面方向（順風＝從2號標吹向1號標的風），並將1道第1名率與同一賽場的平均比較。比較方法與判定標準在查看結果前就已決定。",
+        "tips": [
+          {
+            "strong": "順風4m以上",
+            "text": "時，幾乎所有賽場的1道第1名率都會下降"
+          },
+          {
+            "strong": "逆風4m以上",
+            "text": "時賽場間差異大，請選擇賽場確認"
+          },
+          {
+            "text": "賽前資訊的風可能是前一場比賽的數值，發船前也可能改變，請作為參考"
+          }
+        ]
       }
     },
     "notice": {
@@ -1988,9 +3288,12 @@
     "breakout": "搶出率",
     "late": "慢出率",
     "times": "{{n}}次",
+    "dirHigher": "越高越好",
+    "dirMore": "越多越好",
+    "dirLower": "越低越好",
     "expectedTimes": "平均{{n}}",
     "noInnerBoat": "無內側艇",
-    "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差。搶出在外側航道發生次數極少，以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。附「本節」的F，表示該選手在本節有起步犯規（不列入本節準決賽、決賽）。",
+    "caveat": "綠色表示優於相同航道、相同級別的平均，紅色表示較差（比例差距在±1.0以內、搶出差距在±0.1以內，以及場數少的⚠艇不上色）。搶出在外側航道發生次數極少（平均未滿1次且為0次時不上色），以比例顯示會全是0.0%，因此改以次數呈現。第1航道無內側艇故不顯示。起步犯規的出賽已從分母排除，另以徽章標示。此為本服務的獨自統計。附「本節」的F，表示該選手在本節有起步犯規（不列入本節準決賽、決賽）。",
     "histogramTitle": "ST分布",
     "historyTitle": "ST歷史",
     "histogramNote": "以{{grade}}在第{{course}}航道的{{n}}場／淺色長條＝相同航道、相同級別的平均（{{baselineN}}場）",
@@ -2072,7 +3375,9 @@
     "localWinRate": "該選手在本賽場的勝率。可用來判斷是否為其擅長的賽場",
     "motor": "使用這具馬達時拿下第1名或第2名的比例。數值越高，代表馬達狀態越好",
     "form": "近期勝率與平時勝率的差值，表示狀態是上升還是下滑",
-    "avgSt": "起跑時機的平均值。數值越小代表起跑越快",
+    "avgSt": "與官方出賽表相同的平均ST（與勝率同一期的官方期別成績）。數值越小代表起跑越快",
+    "avgStOfficialPeriod": "與官方出賽表相同的平均ST（{{from}}〜{{to}} 的成績。與勝率同一期的官方期別成績）。數值越小代表起跑越快",
+    "avgSt30": "到前一天為止近30場的平均ST（不含F、L）。與龍神聲納、思考輔助相同的值。數值越小代表起跑越快",
     "st": "起跑時機的穩定程度。數值越小代表每次都能穩定起跑",
     "exSt": "賽前展示航行時的起跑時機",
     "exhibition": "賽前展示航行的時間。數值越小代表機力越好",
@@ -2080,7 +3385,7 @@
     "oriHalfLap": "展示航行中半周（第一轉彎標到第二轉彎標）所花的秒數。越小越好",
     "oriTurn": "展示航行中迴旋所花的秒數。越小代表轉彎越俐落，越容易以切入（Sashi）或外攻切入（Makuri-zashi）搶到前面",
     "oriStraight": "展示航行中直線區間的秒數。越小代表直線越有伸展力，越有利於外攻（Makuri）或追趕",
-    "courseRate": "該艇號過去的勝率",
+    "courseRate": "該艇號近1年的勝率（第1名率）",
     "tilt": "馬達角度（傾角）的設定值，由選手在賽前展示時決定。數值高低本身並不代表表現好壞",
     "adjustmentWeight": "配合選手體重而加裝在艇上的調整重量。數值高低本身並不代表表現好壞",
     "todayWeight": "當日過磅時實際測得的體重。數值高低本身並不代表表現好壞",
@@ -2096,8 +3401,8 @@
     "prevResult": "在同一賽場、同一節中，本場之前最後一場出賽的名次與進場航道（包含前一天的比賽）。下方顯示該場的日期與場次。本節尚未出賽時顯示「本節首戰」。沒有名次的比賽以記號顯示：F＝偷跑、L＝出發延遲、缺賽＝缺賽、翻覆＝翻船、落水＝選手落水、沉沒＝沉沒、妨礙＝妨礙他艇、熄火＝引擎熄火、未完賽＝未跑完全程、失格＝失格、—＝無名次。前一場結果尚未公布時，顯示「等待結果」及該場的日期與場次（結果每1小時更新一次，比賽結束後可能仍會暫時顯示「等待結果」）",
     "technique": "該選手擅長的獲勝方式（逃走（Nige）、切入（Sashi）、外攻（Makuri）等）。可作為解讀轉彎預測的線索",
     "returnRate": "若實際購買該艇號的舟券，過去的回收率（僅供參考，不保證結果）",
-    "turnPrediction": "AI預測第一轉彎標（第一個轉彎）由哪艘艇領先，以附機率的前幾種模式呈現",
-    "inKuzureIndex": "以相對指數（百分位數）表示1號艇（內側航道）有多容易失守，比較對象為本賽場過去90天的比賽",
+    "turnPrediction": "AI預測哪艘艇可能以哪種獲勝方式（逃走、切入、外攻…）獲得第1名，以附機率的前幾種模式呈現。獲勝方式主要在第一轉彎標（第一個轉彎）的攻防中決定",
+    "inKuzureIndex": "以0〜100的指數表示1號艇（內側航道）有多容易失守，比較對象為本賽場過去90天的比賽（0最穩，100最容易失守）",
     "venueTendency": "彙整本賽場各艇號（航道）的決勝技、勝率等過去傾向",
     "venueTendencyTechnique": "該艇號過去獲勝時的決勝技（逃走（Nige）、切入（Sashi）、外攻（Makuri）等）傾向",
     "venueTendencyTopStart": "該艇號最早起跑（最快起跑）的比例",
@@ -2112,9 +3417,145 @@
     "attackDefense": "詳細分析過去比賽展開（各航道攻防模式）的資料",
     "pitConfidence": "直接刊載官方網站上顯示的標記。官方網站並未明示★的定義",
     "stStable": "與該場最早起跑的艇相比，起跑差距在0.05秒以內的比例。用來看起跑能否跟上。偷跑的場次不計入。本服務的獨自統計，與其他網站同名指標不一致",
-    "stBreakout": "比內側所有航道的艇早0.07秒以上起跑的次數。用來看能否從外側航道壓制內側。越外側的航道發生次數越少（5、6航道每30場約0.2〜0.4次），換算成比例會出現一排0.0%，因此以次數表示。「平均」為相同航道、相同級別選手的平均次數。1航道內側沒有艇，因此不顯示。偷跑的場次不計入。本服務的獨自統計，與其他網站同名指標不一致",
+    "stBreakout": "比內側所有航道的艇早0.07秒以上起跑的次數。用來看能否從外側航道壓制內側。越外側的航道發生次數越少（5、6航道每30場約0.2〜0.4次），換算成比例會出現一排0.0%，因此以次數表示。「平均」是相同航道、相同級別選手的搶出比例乘以該選手場數所得的次數（以此場數的平均選手會有幾次）。1航道內側沒有艇，因此不顯示。偷跑的場次不計入。本服務的獨自統計，與其他網站同名指標不一致",
     "stLate": "比該場最早起跑的艇慢0.1秒以上的比例。越外側的航道越容易偏高，因此一併標示與相同航道、相同級別平均值的差距。偷跑的場次不計入。本服務的獨自統計，與其他網站同名指標不一致",
     "flyingCount": "級別為本場比賽出賽表上的數值。F為本期偷跑次數（金色1次、紅色2次），於5月1日、11月1日歸零。附「本節」表示該選手在本節首日至前一天之間偷跑，仍會出賽本節剩餘比賽，但無法參加本節的準優勝戰、優勝戰（賞典除外，不含當天的F）。L為出發延遲次數，與下方的慢出率不同。穩定率、慢出率不計偷跑的場次",
-    "nigeSimulation": "僅彙整1航道的艇以逃走（Nige）拿下第1名的比賽，計算第2名來自各航道的比例。這是本賽場實績的統計，並非預測"
+    "nigeSimulation": "僅彙整1航道的艇以逃走（Nige）拿下第1名的比賽，計算第2名來自各航道的比例。這是本賽場實績的統計，並非預測",
+    "basicInfoOfficial": "「官方」為與官方出賽表相同的勝率、2連率、3連率、平均ST（{{from}}〜{{to}} 的成績。與勝率同一期的官方期別成績）。無法依等級篩選，選擇等級時會切換為「本期」"
+  },
+  "weatherInEscape": {
+    "loading": "正在載入統計…",
+    "fetchError": "無法載入風與1號道第1名率的統計。",
+    "lead": "依風向與風力，比較1道第1名率（內道逃走率）與同一賽場平均的差異。",
+    "pooledTitle": "全24個賽場",
+    "headline": "順風4m以上時，幾乎所有賽場（{{total}}個中{{same}}個）的1道第1名率都低於賽場平均（平均{{tail}}pt）。逆風4m以上則賽場間差異大，有大幅下降的賽場，也有幾乎不變的賽場。2〜3m時幾乎沒有變化。",
+    "bins": {
+      "head_strong": "強逆風",
+      "head": "逆風",
+      "calm_cross": "弱風、側風",
+      "tail": "順風",
+      "tail_strong": "強順風"
+    },
+    "binSubs": {
+      "head_strong": "4m以上",
+      "head": "2〜3m",
+      "calm_cross": "1m以下、側風",
+      "tail": "2〜3m",
+      "tail_strong": "4m以上"
+    },
+    "diagram": {
+      "mark1": "1號標",
+      "mark2": "2號標",
+      "stand": "看台",
+      "caption": "順風＝從2號標吹向1號標的風，逆風則相反。從看台看，右側是1號標"
+    },
+    "barAria": "{{label}} 1道第1名率 {{rate}}%（與賽場平均差 {{diff}}pt）",
+    "diffPt": "{{diff}}pt",
+    "raceCount": "{{countText}}場",
+    "reference": "參考值",
+    "pooledNote": "直線為整體平均（{{base}}%）。各區分的數值為整體平均加上賽場內差異（與同賽場平均之差，依場數加權平均）。差異的97.5%範圍：強順風 {{tailLow}}〜{{tailHigh}}pt、強逆風 {{headLow}}〜{{headHigh}}pt",
+    "techniqueTitle": "決勝方式的變化（全24個賽場）",
+    "techniqueLead": "逆風強時「捲」增加，順風強時「刺」增加",
+    "techniqueNote": "決勝方式的構成為記錄用統計，未像1道第1名率那樣進行判定（範圍、各賽場方向確認）。",
+    "venueTitle": "選擇賽場",
+    "venueAverage": "{{venue}}平均：{{rate}}%（{{countText}}場）",
+    "tooFew": "場數過少，不顯示",
+    "rankingTitle": "強風時各賽場的變化",
+    "rankingLead": "依下降幅度由大到小。僅限1,000場以上的賽場",
+    "diffHeader": "與賽場平均差",
+    "rateHeader": "第1名率",
+    "countHeader": "場數",
+    "rankingExcluded": "未滿1,000場而排除：{{venues}}",
+    "footSource": "期間 {{from}}〜{{to}}，官方競賽成績（K檔）{{countText}}場。在查看結果前，已先決定比較方法與判定標準再進行統計。",
+    "footTiming": "風為比賽當下的確定值。賽前資訊的氣象可能是前一場比賽的數值。",
+    "footAdjusted": "即使對齊季節、時段（場次）、1道選手級別比較，強風的差異也幾乎相同（強逆風 {{head}}pt、強順風 {{tail}}pt）。",
+    "footWave": "僅限弱風時（1m以下、側風），浪高6〜9cm的比賽比賽場平均{{diff}}pt（{{countText}}場。符合的賽場有限，僅供參考）。"
+  },
+  "meetPage": {
+    "metaTitle": "{{venue}} {{series}} 得分率排名、準優門檻 | 龍神雷達",
+    "metaDescription": "{{venue}}賽艇場{{series}}全體選手的得分率排名與準優門檻，以及晉級準優勝戰、優勝戰的名單。預賽最終日也能看出哪些選手正在關鍵一戰。",
+    "meetFallback": "{{date}}開幕的系列賽",
+    "titleFallback": "{{venue}}的系列賽",
+    "period": "{{start}}〜{{end}}",
+    "periodFrom": "{{start}}〜",
+    "dayN": "第{{n}}天",
+    "stage": {
+      "preOpen": "尚未開幕",
+      "prelim": "預賽中",
+      "prelimFinalDay": "預賽最終日",
+      "prelimDone": "預賽結束",
+      "semifinalDay": "準優勝戰日",
+      "finalDay": "優勝戰日",
+      "finished": "系列賽結束"
+    },
+    "rankingTitle": "得分率排名",
+    "rankingSubPrelim": "預賽得分率（本站依名次計算）、共{{count}}人",
+    "rankingSubOfficial": "預賽得分率（確定、官方得分率一覽的數值）、共{{count}}人",
+    "borderPrelim": "準優門檻（估計）第{{slots}}名 {{rate}}",
+    "borderFinal": "準優名額 第{{slots}}名 {{rate}}（確定）",
+    "borderLinePrelim": "以上為準優門檻估計（{{slots}}人）",
+    "borderLineFinal": "以上晉級準優（{{slots}}人）",
+    "colRank": "名次",
+    "colRacer": "選手",
+    "colClass": "級別",
+    "colRate": "得分率",
+    "filterLabel": "顯示的選手",
+    "filterAll": "全部",
+    "filterShobugake": "只看關鍵一戰",
+    "shobugakeNote": "關鍵一戰：門檻附近、今天的名次將決定能否晉級準優的選手",
+    "shobugakePending": "關鍵一戰的選手（當天名次決定能否晉級準優）於預賽最終日（第4天）顯示",
+    "remainingOnly": "今天剩{{runs}}場",
+    "remainingSafe": "今天剩{{runs}}場、目前在門檻內",
+    "remainingNeeded": "今天剩{{runs}}場、還差{{points}}分",
+    "remainingNeededPlace": "今天剩{{runs}}場、還差{{points}}分（第{{place}}名以內）",
+    "remainingUnreachable": "今天剩{{runs}}場、還差{{points}}分（最多{{max}}分，無法達到）",
+    "reason": {
+      "withdrawn": "中途返鄉",
+      "awardExcluded": "獎典除外",
+      "flying": "F（獎典除外）",
+      "absent": "缺賽",
+      "officialWithdrawn": "中途返鄉"
+    },
+    "qualifiersTitle": "晉級",
+    "semifinals": "準優勝戰（{{date}}）",
+    "finals": "優勝戰（{{date}}）",
+    "raceSemi": "{{n}}R 準優勝戰",
+    "raceFinal": "{{n}}R 優勝戰",
+    "toRace": "比賽詳情 ›",
+    "finishPlace": "第{{place}}名",
+    "resultPending": "比賽結束後顯示名次",
+    "semifinalsPending": "準優勝戰的賽程於預賽結束後公布",
+    "finalsPending": "優勝戰的賽程於準優勝戰結果出爐後公布",
+    "preOpen": "{{month}}月{{day}}日開幕。得分率於首日比賽後顯示",
+    "notFound": "找不到此系列賽",
+    "outOfScope": "此賽事不在系列賽頁面的範圍內（僅限有預賽、準優、優勝戰的SG、G1、G2）",
+    "backToVenue": "前往{{venue}}的比賽一覽",
+    "source": "出處：得分率、名次來自BOAT RACE官方網站的得分率一覽（預賽期間為前一晚時點的表）。尚無官方表的日子（如首日）為本站依名次計算的數值（不含扣分）。",
+    "noRateYet": "得分率於首日比賽後顯示",
+    "borderPending": "尚有{{count}}名選手未出賽，準優門檻待全員至少出賽一場後顯示",
+    "legendBest": "金框為得分率第1名（同分者皆標示）",
+    "winnerLabel": "優勝",
+    "winnerBoat": "（{{boat}}號艇）",
+    "rankingSubOfficialAsOf": "預賽得分率（第{{day}}天結束時、官方得分率一覽的數值。今天的結果於22時左右反映）、共{{count}}人",
+    "officialLiveLink": "含今天結果的最新名次請見官方得分率一覽（本頁每晚22時左右反映）",
+    "borderLineTie": "以上為準優門檻估計（第{{rank}}名同分{{tied}}人，可晉級{{seats}}人）",
+    "points": "{{points}}分",
+    "pointsWithPenalty": "{{points}}分、扣分{{penalty}}",
+    "sourceConfirmed": "出處：得分率、名次來自BOAT RACE官方網站的得分率一覽（預賽結束時，含扣分）。",
+    "marksLegendTitle": "名次欄的記號：",
+    "marksEquals": "＝",
+    "markName": {
+      "capsized": "翻覆",
+      "fell": "落水",
+      "sank": "沉沒",
+      "absent": "缺賽",
+      "flying": "搶跑",
+      "late": "出發延遲",
+      "disqualified": "失格",
+      "obstruction": "妨礙失格",
+      "stall": "引擎熄火",
+      "dnf": "未完賽"
+    },
+    "rankingSubOfficialAsOfToday": "預賽得分率（第{{day}}天結束時、官方得分率一覽的數值。已反映今天的結果）、共{{count}}人"
   }
 }

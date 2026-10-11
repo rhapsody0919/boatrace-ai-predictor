@@ -1,0 +1,154 @@
+<title>スタート隊形の絵の案</title>
+<style>
+:root{
+  --bg:#f5f1e8;--card:#fffdf8;--ink:#1f2328;--sub:#5b6270;--line:#e2dccd;--gold:#8a6a12;--goldbg:#f4ead0;
+  --ok:#1d6b3a;--okbg:#e5f3ea;--ask:#8a6a12;--askbg:#f4ead0;--red:#c62828;--blue:#1f5fae;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#16181c;--card:#1f2228;--ink:#e9eaee;--sub:#a3a9b5;--line:#343843;--gold:#e3c26a;--goldbg:#3a3220;--ok:#86d3a2;--okbg:#1d3326;--ask:#e3c26a;--askbg:#3a3220;--red:#f19a92;--blue:#8db8f0;}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#16181c;--card:#1f2228;--ink:#e9eaee;--sub:#a3a9b5;--line:#343843;--gold:#e3c26a;--goldbg:#3a3220;--ok:#86d3a2;--okbg:#1d3326;--ask:#e3c26a;--askbg:#3a3220;--red:#f19a92;--blue:#8db8f0;}
+body{background:var(--bg);color:var(--ink);font-family:"Noto Sans JP","Hiragino Sans",system-ui,sans-serif;line-height:1.6}
+.wrap{max-width:900px;margin:0 auto;padding-inline:16px;padding-block:20px 48px;display:grid;gap:22px}
+h1{font-size:1.4rem;margin:0;text-wrap:balance}
+h2{font-size:1.1rem;margin:0}
+p{margin:0}
+.lead{color:var(--sub);font-size:.9rem}
+.sum{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.9rem;display:grid;gap:6px}
+.sum b{color:var(--gold)}
+ul{margin:0;padding-left:1.2em}
+.layout{display:grid;grid-template-columns:minmax(0,375px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:760px){.layout{grid-template-columns:1fr}}
+.phone{width:100%;max-width:375px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.ctrl{display:grid;gap:8px;font-size:.88rem}
+.seg{display:flex;flex-wrap:wrap;gap:6px}
+.seg button{min-height:44px;padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font:inherit;font-size:.85rem;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#fff}
+.seg button:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.sec{padding:14px 12px;display:grid;gap:8px}
+.sec h3{margin:0;font-size:1rem}
+.cap{font-size:12px;color:var(--sub)}
+.tech{display:inline-block;background:#b8860b;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px}
+.row{display:grid;grid-template-columns:34px 22px 1fr 44px;gap:6px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:13px}
+.row.first{background:var(--goldbg)}
+.rank{font-weight:700;font-size:12px}
+.badge{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:4px;font-size:12px;font-weight:700;border:1px solid #999}
+.stmini{font-variant-numeric:tabular-nums;text-align:right;font-size:12px}
+.stmini.f{color:var(--red);font-weight:700}
+.sub{font-size:11px;color:var(--sub)}
+.note{font-size:12px;color:var(--sub)}
+.tag{display:inline-block;font-size:.72rem;padding:1px 8px;border-radius:99px;margin-left:6px}
+.t-ok{background:var(--okbg);color:var(--ok)}
+.t-ask{background:var(--askbg);color:var(--ask)}
+.panel{display:grid;gap:8px;font-size:.9rem}
+.panel h2{margin-top:6px}
+svg text{font-family:"Noto Sans JP","Hiragino Sans",system-ui,sans-serif}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <h1>レース結果の「スタート隊形」の絵（案）</h1>
+    <p class="lead">BOA-811。レース詳細の「結果」タブに、実際のスタート隊形をコース順の絵で出す。絵は龍神ソナーの展開シナリオの「スリットの形の絵」と同じ描き方（上が1コース、右のスリット線に近いほど早い、1艇身は約0.13秒の実縮尺）。左の電話の枠は 375px。下のボタンで例のレースと案を切り替えられる。</p>
+  </header>
+
+  <div class="sum">
+    <p><b>承認してほしいこと（推奨。ファン4人・UI/UX デザイナー役とも賛成）</b></p>
+    <ul>
+      <li>結果のタブの表の上に「スタート隊形（コース順）」の絵を足す（高さ約230px。今より増やさない）</li>
+      <li>結果の表（着順の行）の右の ST の矢印は外して、ST の数字と「最速」だけにする（絵と表で同じ ST を別の並び・別の縮尺で出さないため。デザイナー役の P1）</li>
+    </ul>
+    <p>意見が割れたのは置き場所だけ（ファン1人は「着順の下」）。推奨は表の上（スタートから順に読める）。</p>
+    <p>F は線より先に赤で「F .04」、出遅れ（L）は点線の艇と「L 出遅れ（ST なし）」、欠場は一番下の行に薄く「○号艇は欠場」。前付けはコースの順に並べ、枠なりより内側に入った艇に「前付け」の札（欠場で繰り上がっただけの艇には付けない）。ファンパネルと UI/UX デザイナー役のレビューを反映した版。</p>
+  </div>
+
+  <div class="layout">
+    <div class="phone" id="phone"></div>
+    <div class="ctrl">
+      <p><b>例のレース</b></p>
+      <div class="seg" id="races" role="group" aria-label="例のレース"></div>
+      <p style="margin-top:8px"><b>結果の表の ST の矢印</b></p>
+      <div class="seg" id="opts" role="group" aria-label="結果の表の ST の矢印">
+        <button type="button" data-o="B" aria-pressed="true">案B 外して数字だけ（推奨）</button>
+        <button type="button" data-o="A" aria-pressed="false">案A 今のまま残す</button>
+      </div>
+      <div class="panel">
+        <h2>見方</h2>
+        <ul>
+          <li>上から1コース〜6コース。左の札は「コース・艇番」。前付けがあると艇番が入れ替わる（例: 前付け）</li>
+          <li>右の白い縦線がスリット（スタートライン）。線に近いほど早いスタート。線より右は F（フライング）</li>
+          <li>艇の右の数字は本番の ST。一番早い艇に「最速」</li>
+          <li>下の目盛り「1艇身」は約0.13秒（龍神ソナーの絵と同じ縮尺）</li>
+        </ul>
+        <h2>データ</h2>
+        <p class="note">本番 DB（race_start_timings・race_results）で確かめた: 2026-09-10〜10-09 の 4,633 レースのうち、6艇の ST がそろうのは 4,590 レース。進入コースは本番 ST の entry_course（9/22 以降ほぼ全件）を先に、無ければ race_results の actual_course（4,633 件すべてにある）で埋める（今の結果のタブと同じ）。F は 81 レース・109 艇（例は 津 6R 2026-09-25 の3号艇 F .04）、出遅れ（L）は 1 艇（ST なし）、欠場 42 艇。</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS={1:["#ffffff","#13263a"],2:["#1b1b1b","#ffffff"],3:["#e53935","#ffffff"],4:["#1e88e5","#ffffff"],5:["#fdd835","#13263a"],6:["#43a047","#ffffff"]};
+const RACES=[
+  {key:"tokuyama",label:"徳山10R（枠なり）",title:"徳山 10R 2026-10-06",tech:"差し",rows:[[1,1,.19,"",2],[2,2,.15,"",1],[3,3,.14,"",5],[4,4,.16,"",3],[5,5,.16,"",4],[6,6,.23,"",6]]},
+  {key:"f",label:"F のあるレース",title:"津 6R 2026-09-25",tech:"恵まれ",rows:[[1,1,.03,"",1],[2,2,.08,"",4],[3,3,.04,"F",null],[4,4,.08,"",3],[5,5,.11,"",5],[6,6,.14,"",2]]},
+  {key:"mae",label:"前付けのあるレース",title:"戸田 3R 2026-09-11",tech:"まくり差し",rows:[[1,1,.18,"",6],[2,2,.22,"",4],[3,3,.11,"",2],[4,4,.10,"",5],[5,6,.14,"",1],[6,5,.11,"",3]]},
+  {key:"k",label:"欠場のあるレース",title:"江戸川 11R 2026-09-26",tech:"逃げ",rows:[[1,1,.20,"",1],[2,2,.25,"",3],[3,3,.21,"",2],[4,4,.28,"",4],[5,6,.26,"",5],[null,5,null,"K",null]]},
+  {key:"l",label:"出遅れのあるレース",title:"若松 10R 2026-09-27",tech:"抜き",rows:[[1,1,.23,"",2],[2,2,.17,"",4],[3,3,.19,"",1],[4,4,null,"L",null],[5,5,.27,"",3],[6,6,.21,"",5]]},
+];
+// rows: [コース, 艇番, ST, 記号, 着順]
+let race=RACES[0], opt="B";
+const st3=(v)=>"."+String(Math.round(v*100)).padStart(2,"0");
+
+// 前付け: 出走した艇の中で、枠なりの順（艇番の順）より内側のコースに入った艇だけ（欠場の繰り上がりは前付けにしない）
+function inward(r){
+  const part=r.rows.filter(x=>x[0]!=null).map(x=>x[1]).sort((a,b)=>a-b);
+  return new Set(r.rows.filter(x=>x[0]!=null&&x[0]<part.indexOf(x[1])+1).map(x=>x[1]));
+}
+function slitSvg(r){
+  const mae=inward(r);
+  const W=351,H=232,top=22,lane=(H-top-26)/6,L=58,lineX=W-56,SPB=.13;
+  const sts=r.rows.filter(x=>x[2]!=null&&x[3]!=="F").map(x=>x[2]);
+  const best=Math.min(...sts);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="スタート隊形。上から1コース。右のスリット線に近いほど早いスタート"><defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d4f73"/><stop offset="1" stop-color="#123a57"/></linearGradient></defs><rect width="${W}" height="${H}" rx="8" fill="url(#wg)"/>`;
+  s+=`<text x="${lineX}" y="14" fill="#ffffff" fill-opacity=".85" font-size="10" text-anchor="middle">スリット</text><text x="${W-6}" y="14" fill="#ffffff" fill-opacity=".7" font-size="10" text-anchor="end">F →</text><text x="74" y="14" fill="#ffffff" fill-opacity=".7" font-size="10">← 遅い</text>`;
+  for(let i=1;i<6;i++) s+=`<line x1="70" x2="${W}" y1="${top+lane*i}" y2="${top+lane*i}" stroke="#fff" stroke-opacity=".12"/>`;
+  s+=`<line x1="${lineX}" x2="${lineX}" y1="${top-2}" y2="${H-22}" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 3"/>`;
+  r.rows.forEach(([c,b,st,mk],i)=>{
+    const y=top+lane*i+lane/2, [fill,txt]=COLORS[b];
+    if(mk==="K"){ s+=`<text x="4" y="${y+4}" fill="#fff" fill-opacity=".55" font-size="12">欠場</text><rect x="48" y="${y-9}" width="18" height="18" rx="3" fill="${fill}" fill-opacity=".45" stroke="#fff" stroke-opacity=".3"/><text x="57" y="${y+4}" fill="${txt}" fill-opacity=".6" font-size="12" font-weight="700" text-anchor="middle">${b}</text><text x="74" y="${y+4}" fill="#fff" fill-opacity=".55" font-size="12">${b}号艇は欠場</text>`; return; }
+    s+=`<text x="4" y="${y+4}" fill="#fff" font-size="12">${c}コース</text><rect x="48" y="${y-9}" width="18" height="18" rx="3" fill="${fill}" stroke="#fff" stroke-opacity=".5"/><text x="57" y="${y+4}" fill="${txt}" font-size="12" font-weight="700" text-anchor="middle">${b}</text>`;
+    if(mae.has(b)) s+=`<rect x="70" y="${y-8}" width="38" height="16" rx="8" fill="#ffd27a"/><text x="89" y="${y+4}" fill="#13263a" font-size="10" font-weight="700" text-anchor="middle">前付け</text>`;
+    if(mk==="L"){ const x=150; s+=`<path d="M${x} ${y} l-22 -6 l-18 0 l0 12 l18 0 z" fill="none" stroke="#cfd8dc" stroke-dasharray="3 2" stroke-width="1.5"/><text x="${x+6}" y="${y+4}" fill="#ffd27a" font-size="12" font-weight="700">L 出遅れ（ST なし）</text>`; return; }
+    const x=lineX-((mk==="F"?-st:st)/SPB)*L;
+    const hull=`M${x} ${y} l-22 -6 l-18 0 l0 12 l18 0 z`;
+    s+=`<path d="${hull}" fill="${fill}" stroke="${mk==="F"?"#ff6b6b":"#ffffff"}" stroke-width="${mk==="F"?2.5:1}" stroke-opacity="${mk==="F"?1:.6}"/>`;
+    const lab=mk==="F"?`F ${st3(st)}`:st3(st);
+    const lx=mk==="F"?x+4:x+4;
+    s+=`<text x="${lx}" y="${y+4}" fill="${mk==="F"?"#ff8a80":"#ffffff"}" font-size="13" font-weight="700">${lab}${(!mk&&st===best)?" 最速":""}</text>`;
+  });
+  const y0=H-10; s+=`<line x1="${lineX-L}" x2="${lineX}" y1="${y0-4}" y2="${y0-4}" stroke="#fff" stroke-opacity=".7"/><line x1="${lineX-L}" x2="${lineX-L}" y1="${y0-8}" y2="${y0}" stroke="#fff" stroke-opacity=".7"/><line x1="${lineX}" x2="${lineX}" y1="${y0-8}" y2="${y0}" stroke="#fff" stroke-opacity=".7"/><text x="${lineX-L-6}" y="${y0}" fill="#fff" fill-opacity=".8" font-size="10" text-anchor="end">1艇身（約0.13秒）</text>`;
+  return s+"</svg>";
+}
+
+function table(r){
+  const order=[...r.rows].sort((a,b)=>(a[4]??9)-(b[4]??9));
+  const sts=r.rows.filter(x=>x[2]!=null&&x[3]!=="F").map(x=>x[2]); const best=Math.min(...sts);
+  return order.map(([c,b,st,mk,rank],i)=>{
+    const [fill,txt]=COLORS[b];
+    const stText= mk==="K"?"—":mk==="L"?"L":mk==="F"?`F ${st3(st)}`:st3(st);
+    const arrow = opt==="A" && st!=null ? `<div style="position:relative;height:10px;background:#eee8da;border-radius:5px"><span style="position:absolute;left:${Math.max(2,Math.min(92,(1-(st/.3))*90))}%;top:-2px;width:14px;height:14px;border-radius:3px;background:${fill};border:1px solid #888"></span><span style="position:absolute;left:90%;top:-4px;width:2px;height:18px;background:#c9a227"></span></div>`:"";
+    return `<div class="row${rank===1?" first":""}"><span class="rank">${rank?rank+"着":mk==="K"?"欠":(mk||"返還")}</span><span class="badge" style="background:${fill};color:${txt}">${b}</span><span>${r.key==="tokuyama"?(["","三馬","仲道","西岡","中村","濱野","倉富"][b]):"（選手名）"}<br><span class="sub">${c?c+"コース":"欠場"}</span>${arrow}</span><span class="stmini${mk==="F"?" f":""}">${stText}${(!mk&&st===best)?'<br><span class="sub">最速</span>':""}</span></div>`;
+  }).join("");
+}
+
+function render(){
+  const r=race;
+  document.getElementById("phone").innerHTML=`<div class="sec"><h3>レース結果 <span class="tech">決まり手: ${r.tech}</span></h3><p class="cap">${r.title}</p></div>
+  <div class="sec" style="padding-top:0"><h3>スタート隊形（コース順）</h3><p class="cap">スリット（スタートライン）を通ったときの並び。上が1コース、線に近いほど早いスタート</p>${slitSvg(r)}</div>
+  <div class="sec" style="padding-top:4px">${table(r)}<p class="note">${opt==="B"?"右の数字は ST。スタートの並びは上の絵で見る":"右の矢印は ST。黄色い線がスタートライン"}</p></div>`;
+  document.querySelectorAll("#races button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.k===r.key)));
+  document.querySelectorAll("#opts button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.o===opt)));
+}
+document.getElementById("races").innerHTML=RACES.map(r=>`<button type="button" data-k="${r.key}">${r.label}</button>`).join("");
+document.getElementById("races").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;race=RACES.find(r=>r.key===b.dataset.k);render();});
+document.getElementById("opts").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;opt=b.dataset.o;render();});
+render();
+</script>

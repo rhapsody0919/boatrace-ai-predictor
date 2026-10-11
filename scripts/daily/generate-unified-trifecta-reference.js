@@ -55,7 +55,7 @@ async function fetchLatestTrifectaAll(raceIds) {
   const rows = await fetchAll(
     "race_odds",
     "race_id, captured_at, trifecta_all",
-    (q) => q.in("race_id", raceIds).not("trifecta_all", "is", null),
+    (q) => q.in("race_id", raceIds).not("trifecta_all", "is", null).order("race_id").order("captured_at"),
   );
   return latestByRaceId(rows);
 }

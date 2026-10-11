@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { exhibitionSparklineY } from "../../utils/chartDomain";
 import { useTranslation } from "react-i18next";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import InlineFetchError from "../InlineFetchError";
@@ -6,7 +7,8 @@ import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
 import { formatGenerationDate } from "../../utils/motorGeneration";
 import { formatRateOrCount } from "../../utils/smallSampleRate";
 import "./MotorConditionChart.css";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
+import "./MotorWakuStatsGrid.css";
 
 /**
  * MotorWakuStatsGrid - モーター単体の枠番（進入コース）別成績・展示タイム推移
@@ -30,14 +32,13 @@ function ExhibitionSparkline({ trend }) {
   const times = trend.map((t) => t.time);
   const min = Math.min(...times);
   const max = Math.max(...times);
-  const range = max - min || 1;
   const width = 80;
   const height = 24;
   const points = times
     .map((t, i) => {
       const x = (i / (times.length - 1)) * width;
-      // 展示タイムは速い(小さい)ほど良いため、上に行くほど速いタイムになるよう反転する
-      const y = height - ((t - min) / range) * height;
+      // 展示タイムは速い(小さい)ほど良いため、上に行くほど速いタイムにする
+      const y = exhibitionSparklineY(t, min, max, height);
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
@@ -123,8 +124,10 @@ function MotorWakuStatsGrid({
   const {
     ref: scrollRef,
     hasMore: scrollHasMore,
+    hasLess: scrollHasLess,
     update: updateScroll,
     scrollRight,
+    scrollLeft,
   } = useHorizontalScrollHint([rows?.length, expanded]);
 
   if (!rows || rows.length === 0) return null;
@@ -162,21 +165,18 @@ function MotorWakuStatsGrid({
         })}
       </p>
       <div
-        className={`table-wrapper hscroll-hint${scrollHasMore ? " has-more" : ""}`}
+        className={`table-wrapper mwsg-hint hscroll-hint${scrollHasMore ? " has-more" : ""}`}
       >
-        {scrollHasMore && (
-          <button
-            type="button"
-            className="hscroll-more"
-            onClick={scrollRight}
-            aria-hidden="true"
-            tabIndex={-1}
-          >
-            ›
-          </button>
-        )}
+        {/* 右へ送るとコースの列が消えて、ボタンでは戻れなかった。コースの列を固定し、
+            「‹」も出す（BOA-699・BOA-704） */}
+        <HorizontalScrollButtons
+          hasMore={scrollHasMore}
+          hasLess={scrollHasLess}
+          onMore={scrollRight}
+          onLess={scrollLeft}
+        />
         <div className="table-scroll" ref={scrollRef} onScroll={updateScroll}>
-          <table className="motor-ranking-table motor-waku-table">
+          <table className="motor-ranking-table motor-waku-table mwsg-table">
             <thead>
               <tr>
                 <th>{t("analysis.motor.courseHeader")}</th>

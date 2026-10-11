@@ -1,23 +1,27 @@
 import { test, expect } from "./fixtures.js";
+import fs from "fs";
+import zlib from "zlib";
+import { contribution } from "./analogy-contribution-fixture.js";
 import {
-  THEMES,
-  boatRow,
-  contribution,
-} from "./analogy-contribution-fixture.js";
+  analogyV16Facts,
+  analogyV16Scenario,
+  analogyV16Similar,
+  routeAnalogyV16,
+} from "./analogy-v16-fixture.js";
 
 /**
- * アナロジー・ファインダーの寄与度（BOA-271 FR-1）。
+ * アナロジー・ファインダーの節の smoke（BOA-271 v16）。
  *
- * 寄与度 API（/api/analogy/contribution）と予想の Edge API・Supabase REST を差し替え、DB に依存しない。
- * 公開までは機能フラグ（src/config/featureFlags.js）で隠しているので、テストは内部確認の印を立てて行う。
- * 固定するもの:
- *   - 印が無ければ節を出さず、寄与度の API も呼ばない（DB への問い合わせが無い）。?analogy=1 で出せる
- *   - 学習前（is_active の版が無い）は節ごと出さない
- *   - API にはこのレースの会場・グレード・ラウンドを既定の条件として渡す
- *   - テーマは API の themes 配列から描く（7つ目のテーマを足しても出る）
+ * v16 で節の中身を作り直した（旧 FR-1 の寄与度の画面 ContributionView は描かない。plan「フロントエンド」）ので、
+ * 旧画面の検査（会場・グレード・ラウンドの条件・艇番比較の表・小標本 等）は外し、節の出し方を固定する。
+ * 3タブの中身は受け入れ E2E（e2e/acceptance/analogy-finder.spec.js）、幅は e2e/layout.spec.js が見る。
+ * facts・similar・scenario は例のレースの固定の応答（e2e/analogy-v16-fixture.js）、寄与度 API・予想の Edge API・
+ * Supabase REST も差し替え、DB に依存しない。固定するもの:
+ *   - 機能フラグの印が無ければ節を出さず、v16 の API も寄与度の API も呼ばない。?analogy=1 で出せる
  *   - 予想が無いレースでも節を出す（予想の有無と切り離す）
- *   - 艇番比較の表・テーマの内訳・小標本・広げた段の表示
- *   - 375px で横スクロールが出ない
+ *   - 保存の無いレース（status=not_saved）は節の中を1行だけにする
+ *   - AIの見立ては寄与度 API を全国（venue=0・all・all）と時点（stage）で読む。展示前の集計が無ければ準備中の1文
+ *   - 今日の風・波の欄は、会場ごとに風だけ／風×波で数える（spec A-9、Q-F3）
  */
 
 const DATE = "2026-09-22";
@@ -68,13 +72,13 @@ const edgeData = {
   races: [race(1), race(2, { predictions: false })],
 };
 
-async function setup(page, respond, { preview = true } = {}) {
-  const calls = [];
+async function setup(page, { preview = true, facts = null } = {}) {
+  const calls = { contribution: [], facts: 0 };
   await page.addInitScript((on) => {
     localStorage.setItem("boatai-language", "ja");
     localStorage.setItem("boatai:cookie-consent", "accepted");
-    // 公開までは機能フラグで隠している（src/config/featureFlags.js）。内部確認の印を立てて検証する
     if (on) localStorage.setItem("boatai-user:analogy-finder-preview", "1");
+    else localStorage.removeItem("boatai-user:analogy-finder-preview");
   }, preview);
   await page.route("**/api/predictions/**", (route) =>
     route.fulfill({ json: edgeData }),
@@ -82,50 +86,778 @@ async function setup(page, respond, { preview = true } = {}) {
   await page.route("**/rest/v1/**", (route) =>
     route.fulfill({ status: 200, json: [] }),
   );
+  await routeAnalogyV16(page, { preview });
+  await page.route("**/api/analogy/facts/**", (route) => {
+    calls.facts += 1;
+    return facts ? route.fulfill({ json: facts }) : route.fallback();
+  });
   await page.route("**/api/analogy/contribution*", (route) => {
     const u = new URL(route.request().url());
-    const params = {
-      venue: Number(u.searchParams.get("venue")),
-      grade: u.searchParams.get("grade"),
-      round: u.searchParams.get("round"),
-      target: Number(u.searchParams.get("target")),
-    };
-    calls.push(params);
-    return route.fulfill({ json: respond(params) });
+    const params = Object.fromEntries(u.searchParams);
+    calls.contribution.push(params);
+    if (params.stage === "racecard")
+      return route.fulfill({ json: { available: false, stageMissing: true } });
+    return route.fulfill({
+      json: contribution({
+        venue: 0,
+        grade: "all",
+        round: "all",
+        target: Number(params.target),
+      }),
+    });
   });
   return calls;
 }
 
-async function openAiTab(page, n = 1) {
+// 龍神ソナーは基本情報と AI予想の間の独立タブ（2026-10-08、承認モック sonar-tab v3）
+async function openSonarTab(page, n = 1) {
   await page.goto(`/race/${DATE}-09-${String(n).padStart(2, "0")}`);
   await expect(page.getByText("テスト選手1").first()).toBeVisible({
     timeout: 20000,
   });
-  await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+  await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
 }
 
-const sectionOf = (page) =>
-  page.getByRole("region", { name: "アナロジー・ファインダー" });
+const sectionOf = (page) => page.getByRole("region", { name: /龍神ソナー/ });
 
-test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1）", () => {
-  test("公開前の既定では節を出さず、寄与度の API も呼ばない", async ({
+test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () => {
+  test("公開後（ANALOGY_FINDER_PUBLIC=true）は、内部確認の印が無くても節を出す", async ({
     page,
   }) => {
-    const calls = await setup(page, (p) => contribution(p), { preview: false });
-    await openAiTab(page);
-    await expect(page.locator(".prediction-result")).toBeVisible();
-    await page.waitForLoadState("networkidle").catch(() => {});
-    await expect(page.locator(".af-section")).toHaveCount(0);
-    expect(calls).toHaveLength(0);
+    // 2026-10-08 ユーザー決定で公開。戻すときは featureFlags.js の ANALOGY_FINDER_PUBLIC を false にする
+    const calls = await setup(page, { preview: false });
+    await openSonarTab(page);
+    await expect(sectionOf(page)).toBeVisible();
+    await expect.poll(() => calls.facts).toBeGreaterThan(0);
+  });
+
+  test("節の表示（レースごとに1回）とタブの切り替えを計測する（GA4 の予約語を使わない）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    await expect(section.getByRole("tablist")).toBeVisible();
+    await section.getByRole("tab", { name: "類似レース" }).click();
+    await section.getByRole("tab", { name: "展開シナリオ" }).click();
+    const events = await page.evaluate(() =>
+      window.__events.filter(
+        (e) => e[0] === "event" && String(e[1]).startsWith("analogy_"),
+      ),
+    );
+    const views = events.filter((e) => e[1] === "analogy_section_view");
+    expect(views).toHaveLength(1);
+    expect(Object.keys(views[0][2]).sort()).toEqual([
+      "analogy_stage",
+      "race_id",
+    ]);
+    expect(
+      events
+        .filter((e) => e[1] === "analogy_tab_select")
+        .map((e) => e[2].analogy_tab),
+    ).toEqual(["similar", "scenario"]);
+    for (const e of events)
+      for (const k of Object.keys(e[2]))
+        expect([
+          "source",
+          "medium",
+          "campaign",
+          "term",
+          "content",
+          "id",
+        ]).not.toContain(k);
+  });
+
+  test("節が画面に入ったら1回、条件を変えたら操作の名前で計測する（選択中の押し直しは数えない）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    await expect(section.getByRole("tablist")).toBeVisible();
+    await section.scrollIntoViewIfNeeded();
+    const named = (name) =>
+      page.evaluate(
+        (n) => window.__events.filter((e) => e[0] === "event" && e[1] === n),
+        name,
+      );
+    await expect
+      .poll(async () => (await named("analogy_section_visible")).length)
+      .toBe(1);
+    const [visible] = await named("analogy_section_visible");
+    expect(Object.keys(visible[2]).sort()).toEqual([
+      "analogy_stage",
+      "race_id",
+    ]);
+    // 見た時刻を覚える（7日以内の再訪を数えるため）
+    expect(
+      Number(
+        await page.evaluate(() =>
+          localStorage.getItem("boatai-user:analogy-last-seen"),
+        ),
+      ),
+    ).toBeGreaterThan(0);
+
+    const target = section.getByRole("group").filter({ hasText: "2着以内" });
+    await target.getByRole("button", { name: "1着", exact: true }).click(); // 選択中の押し直し
+    await target.getByRole("button", { name: "2着以内", exact: true }).click();
+    await section.getByRole("tab", { name: "類似レース" }).click(); // タブは analogy_tab_select だけ
+    const changes = await named("analogy_control_change");
+    expect(changes.map((e) => e[2])).toEqual([
+      {
+        race_id: `${DATE}-09-01`,
+        analogy_tab: "facts",
+        analogy_control: "target",
+      },
+    ]);
+    // 画面に入ったのは1回だけ（タブを切り替えても増えない）
+    expect(await named("analogy_section_visible")).toHaveLength(1);
+  });
+
+  test("七角形の操作は操作の名前で数え、主役を押し直して何も変わらないときは数えない（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    const controls = () =>
+      page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "analogy_control_change")
+          .map((e) => e[2].analogy_control),
+      );
+    await section.getByRole("button", { name: /1号艇（A1）/ }).click(); // 主役だけが太いときの押し直し（変化なし）
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 2艇目を太く
+    await section.getByRole("button", { name: /4号艇（A1）/ }).click(); // 太い艇を外す（変化あり）
+    const item = section.getByRole("button", { name: /全国勝率の6艇の表/ });
+    await item.focus();
+    await page.keyboard.press("Enter"); // SVG の項目名もキーで開ける
+    await expect(section.getByTestId("analogy-radar-table")).toBeVisible();
+    expect(await controls()).toEqual([
+      "facts_radar_boat",
+      "facts_radar_boat",
+      "facts_radar_item",
+    ]);
+  });
+
+  test("七角形は凡例で2艇まで太くして比べ、3艇目で先に押した艇が戻り、太い艇を押し直すと外れる（2026-10-09 ユーザー決定）", async ({
+    page,
+  }) => {
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    const legend = (b) =>
+      section.getByRole("button", {
+        name: new RegExp(`^${b}\\s*${b}号艇（A1）`),
+      });
+    const pressed = async () => {
+      const out = [];
+      for (const b of [1, 2, 3, 4, 5, 6])
+        if ((await legend(b).getAttribute("aria-pressed")) === "true")
+          out.push(b);
+      return out;
+    };
+    await expect(
+      section.getByRole("button", { name: "主役＋2艇" }),
+    ).toHaveCount(0);
+    expect(await pressed()).toEqual([1]); // 最初は主役
+    await legend(4).click();
+    expect(await pressed()).toEqual([1, 4]); // 主役と2艇目
+    await legend(6).click();
+    expect(await pressed()).toEqual([4, 6]); // 3艇目で先に押した主役が戻る
+    await expect(section.locator(".af-hep-typ")).toContainText("6号艇"); // 点線は最後に押した艇
+    await legend(4).click();
+    expect(await pressed()).toEqual([6]); // 太い艇を押し直すと外れる
+    await legend(6).click();
+    expect(await pressed()).toEqual([1]); // 0艇になったら主役に戻る
+  });
+
+  test("前回ソナーを見て7日以内なら、開いた最初に再訪を1回送る（再読み込みでは送らない）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = JSON.parse(sessionStorage.getItem("__ev") ?? "[]");
+      window.gtag = (...args) => {
+        window.__events.push(args);
+        sessionStorage.setItem("__ev", JSON.stringify(window.__events));
+      };
+      if (!sessionStorage.getItem("__seeded")) {
+        sessionStorage.setItem("__seeded", "1");
+        localStorage.setItem(
+          "boatai-user:analogy-last-seen",
+          String(Date.now() - 3 * 24 * 60 * 60 * 1000 - 60 * 1000),
+        );
+      }
+    });
+    await setup(page);
+    await page.goto(`/race/${DATE}-09-01`);
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    const returns = () =>
+      page.evaluate(() =>
+        window.__events.filter(
+          (e) => e[0] === "event" && e[1] === "analogy_return_visit",
+        ),
+      );
+    await expect.poll(async () => (await returns()).length).toBe(1);
+    expect((await returns())[0][2]).toEqual({ analogy_days_since: 3 });
+    await page.reload();
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    await page.waitForTimeout(1500); // page_view の確定待ち（PAGE_VIEW_SETTLE_MS）
+    expect(await returns()).toHaveLength(1);
+  });
+
+  test("見てから30分以内に開いたタブは同じ来訪として再訪を送らない（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+      localStorage.setItem(
+        "boatai-user:analogy-last-seen",
+        String(Date.now() - 5 * 60 * 1000),
+      );
+    });
+    await setup(page);
+    await page.goto(`/race/${DATE}-09-01`);
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => window.__events.filter((e) => e[1] === "page_view").length,
+        ),
+      )
+      .toBeGreaterThan(0);
+    expect(
+      await page.evaluate(() =>
+        window.__events.filter((e) => e[1] === "analogy_return_visit"),
+      ),
+    ).toHaveLength(0);
+  });
+
+  test("ソナーの扇は選択を外す押し直しとキーボードの操作も条件変更に数える（レビュー指摘）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    await section.getByRole("tab", { name: "類似レース" }).click();
+    const sector = section.getByRole("button", {
+      name: /^1号艇が勝ったレース/,
+    });
+    // 点が密な扇の真ん中は点のタップになる（近い点を並べる）ので、図の外の艇番を押す（承認モック sonar-tab v3）
+    const badge = section.getByTestId("analogy-sonar-boat-1");
+    await badge.click(); // 選ぶ
+    await expect(sector).toHaveAttribute("aria-pressed", "true");
+    await badge.click(); // 外す（押し直し）
+    await expect(sector).toHaveAttribute("aria-pressed", "false");
+    await sector.focus();
+    await page.keyboard.press("Enter"); // キーボードで選ぶ
+    const controls = await page.evaluate(() =>
+      window.__events
+        .filter((e) => e[1] === "analogy_control_change")
+        .map((e) => e[2].analogy_control),
+    );
+    expect(controls).toEqual(["similar_boat", "similar_boat", "similar_boat"]);
+  });
+
+  test("?tab=sonar のリンクで開いたら race_tab_initial を1回送る。素の URL では送らない", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page);
+    const initials = () =>
+      page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "race_tab_initial")
+          .map((e) => e[2]),
+      );
+    await page.goto(`/race/${DATE}-09-01?tab=sonar`);
+    await expect(sectionOf(page)).toBeVisible({ timeout: 20000 });
+    expect(await initials()).toEqual([{ tab_id: "sonar" }]);
+    await page.goto(`/race/${DATE}-09-02`);
+    await expect(page.getByText("テスト選手1").first()).toBeVisible({
+      timeout: 20000,
+    });
+    expect(await initials()).toEqual([]);
+  });
+
+  test.describe("別タブ化（2026-10-08、承認モック sonar-tab v3）", () => {
+    test("タブは基本情報と AI予想の間。AI予想タブにはソナーを描かず、一番下の案内1行でソナーのタブへ移る", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      await page.goto(`/race/${DATE}-09-01?tab=aiPrediction`);
+      const link = page.getByTestId("ai-tab-sonar-link");
+      await expect(link).toBeVisible({ timeout: 20000 });
+      const tabs = await page.locator(".race-tabs-btn").allInnerTexts();
+      expect(tabs.slice(0, 3)).toEqual(["基本情報", "龍神ソナー", "AI予想"]);
+      await expect(sectionOf(page)).toHaveCount(0);
+      await link.click();
+      await expect(sectionOf(page)).toBeVisible();
+      await expect(
+        page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(page).toHaveURL(/[?&]tab=sonar(&|$)/);
+      const selects = await page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "race_tab_select")
+          .map((e) => e[2].tab_id),
+      );
+      expect(selects).toEqual(["sonar"]);
+    });
+
+    test("移す前の投稿のリンク ?tab=aiPrediction&sonar=similar は、ソナーのタブの類似レースで開く", async ({
+      page,
+    }) => {
+      await setup(page);
+      await page.goto(`/race/${DATE}-09-01?tab=aiPrediction&sonar=similar`);
+      const section = sectionOf(page);
+      await expect(section).toBeVisible({ timeout: 20000 });
+      await expect(
+        section.getByRole("tab", { name: "類似レース" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(page).toHaveURL(/[?&]tab=sonar(&|$)/);
+    });
+
+    test("?sonar= は1回だけ効く。ほかのタブから戻ると内部タブは選び直さない。不正な値は差がつく材料", async ({
+      page,
+    }) => {
+      await setup(page);
+      await page.goto(`/race/${DATE}-09-01?tab=sonar&sonar=scenario`);
+      const section = sectionOf(page);
+      await expect(
+        section.getByRole("tab", { name: "展開シナリオ" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+      await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
+      await expect(
+        section.getByRole("tab", { name: "差がつく材料" }),
+      ).toHaveAttribute("aria-selected", "true");
+      await page.goto(`/race/${DATE}-09-02?tab=sonar&sonar=odds`);
+      await expect(
+        sectionOf(page).getByRole("tab", { name: "差がつく材料" }),
+      ).toHaveAttribute("aria-selected", "true");
+    });
+
+    test("節の表示はタブを開き直しても同じレースでは1回だけ送る", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      await openSonarTab(page);
+      await expect(sectionOf(page).getByRole("tablist")).toBeVisible();
+      await page.locator(".race-tabs-btn", { hasText: "基本情報" }).click();
+      await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
+      await expect(sectionOf(page).getByRole("tablist")).toBeVisible();
+      const views = await page.evaluate(
+        () =>
+          window.__events.filter(
+            (e) => e[0] === "event" && e[1] === "analogy_section_view",
+          ).length,
+      );
+      expect(views).toBe(1);
+    });
+
+    test("展開シナリオで全国の全レース・G1 を選んでも、範囲の説明に i18n のキーを出さない（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        const scope = new URL(route.request().url()).searchParams.get("scope");
+        return route.fulfill({
+          json: { ...base, scope: scope ?? base.scope, vc_fell_back: null },
+        });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      const group = section.getByRole("group", { name: "集めたレース" });
+      for (const name of [/全国の全レース/, /G1/]) {
+        await group.getByRole("button", { name }).click();
+        await expect(group.getByRole("button", { name })).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        );
+        await expect(section).not.toContainText("aiPredictionTab.");
+        await expect(section.getByTestId("analogy-scope-combo")).toHaveCount(0);
+      }
+    });
+
+    test("艇を替えると、カードの開閉を「差が大きい」の上位2枚だけ開くに合わせ直す（code-review 指摘、BOA-805）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      // ボート2連率は畳んだ「着順との関係が小さい項目」の中なので外す
+      const cards = section.locator(
+        ".af-cards > [data-testid='analogy-fact-card']",
+      );
+      await expect(cards.first()).toBeVisible();
+      // 開閉を手で全部逆にしてから艇を替える
+      for (const c of await cards.all()) await c.locator("summary").click();
+      await section.locator(".af-boat-btn").nth(1).click();
+      await expect(section.locator(".af-boat-btn").nth(1)).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      // 並び順（差がはっきりしている順）で「差が大きい」の先頭2枚だけが開く
+      let largeSeen = 0;
+      for (const c of await cards.all()) {
+        const large =
+          (await c.locator(".af-card-judge").innerText()).trim() ===
+          "差が大きい";
+        const want = large && largeSeen < 2;
+        if (large) largeSeen += 1;
+        expect(await c.evaluate((el) => el.open)).toBe(want);
+      }
+      expect(
+        await cards.evaluateAll((els) => els.filter((e) => e.open).length),
+      ).toBeLessThanOrEqual(2);
+      // 時点を切り替えて展示タイムのカードが増減しても、開くのは2枚まで（code-review 指摘、BOA-805）
+      const stageBtn = section.getByRole("button", {
+        name: "展示前（出走表）",
+      });
+      if (await stageBtn.count()) {
+        await stageBtn.click();
+        await section
+          .getByRole("button", { name: "展示後（直前情報も）" })
+          .click();
+        expect(
+          await cards.evaluateAll((els) => els.filter((e) => e.open).length),
+        ).toBeLessThanOrEqual(2);
+      }
+    });
+
+    test("はっきりしないカードの札に、差のポイントと件数を書く（BOA-805）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      // ボート2連率は畳んだ折りたたみの中なので外す
+      const judges = await sectionOf(page)
+        .locator(".af-cards > [data-testid='analogy-fact-card'] .af-card-judge")
+        .allInnerTexts();
+      expect(judges.length).toBeGreaterThan(0);
+      for (const j of judges)
+        expect(j.trim()).toMatch(
+          /^(差が大きい|差がある|差は小さい|差はほとんど無い（ぶれ幅が重なる）|差は\d+ポイントあるが、(ぶれ幅が重なる|件数が少ない（[\d,]+件）)|比べられない（当てはまるレースが無い）)/,
+        );
+    });
+
+    test("長押しの吹き出しは図の外をタップすると閉じる（code-review 指摘）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const sonar = section.getByTestId("analogy-sonar");
+      const first = sonar.locator("circle[aria-label]").first();
+      await first.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      const dot = await first.boundingBox();
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: dot.x + dot.width / 2,
+        clientY: dot.y + dot.height / 2,
+        bubbles: true,
+      });
+      const tip = section.getByTestId("analogy-sonar-tip");
+      await expect(tip).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await section
+        .getByTestId("analogy-sonar-legend")
+        .dispatchEvent("pointerdown", { pointerType: "touch", bubbles: true });
+      await expect(tip).toHaveCount(0);
+      // 図の外の艇番で扇を選んだときも閉じる（ファン評価2周目 指摘6）
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: dot.x + dot.width / 2,
+        clientY: dot.y + dot.height / 2,
+        bubbles: true,
+      });
+      await expect(tip).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await section.getByTestId("analogy-sonar-boat-3").click();
+      await expect(tip).toHaveCount(0);
+    });
+
+    test("英語の展開シナリオで、スリット図の凡例の文字が重ならない（ファン評価1周目 指摘3）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await page.addInitScript(() =>
+        localStorage.setItem("boatai-language", "en"),
+      );
+      await page.setViewportSize({ width: 375, height: 900 });
+      await page.goto(`/en/race/${DATE}-09-01?tab=sonar&sonar=scenario`);
+      const svg = page.locator(".af-hint-pic svg");
+      await expect(svg).toBeVisible({ timeout: 20000 });
+      const overlaps = await svg.evaluate((el) => {
+        const boxes = [...el.querySelectorAll("text")]
+          .map((t) => ({ s: t.textContent, r: t.getBoundingClientRect() }))
+          .filter((b) => /Dotted|Faster|length|Slit/.test(b.s));
+        const hit = (a, b) =>
+          a.left < b.right &&
+          b.left < a.right &&
+          a.top < b.bottom &&
+          b.top < a.bottom;
+        const out = [];
+        for (let i = 0; i < boxes.length; i++)
+          for (let j = i + 1; j < boxes.length; j++)
+            if (hit(boxes[i].r, boxes[j].r))
+              out.push(`${boxes[i].s} / ${boxes[j].s}`);
+        return { n: boxes.length, out };
+      });
+      expect(overlaps.n).toBe(4);
+      expect(overlaps.out).toEqual([]);
+    });
+
+    test("ソナーの点はタップで近い点を最大5件並べ、長押しで吹き出しを出す。点の操作も条件変更に数える", async ({
+      page,
+    }) => {
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const sonar = section.getByTestId("analogy-sonar");
+      await expect(sonar).toBeVisible();
+      // 点の1つの上（点は小さいままで、当たり判定だけ指の大きさ）
+      const first = sonar.locator("circle[aria-label]").first();
+      // 上に固定した内部タブ・ヘッダーの下に隠れないよう、点を画面の真ん中へ
+      await first.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      const dot = await first.boundingBox();
+      const at = { x: dot.x + dot.width / 2, y: dot.y + dot.height / 2 };
+      await page.mouse.click(at.x, at.y);
+      const picks = section.getByTestId("analogy-sonar-pick");
+      await expect(picks.first()).toBeVisible();
+      expect(await picks.count()).toBeLessThanOrEqual(5);
+      // マウスを重ねて出た吹き出しを消してから、長押し（指）。0.4秒で吹き出し
+      await page.mouse.move(0, 0);
+      await expect(section.getByTestId("analogy-sonar-tip")).toHaveCount(0);
+      await sonar.dispatchEvent("pointerdown", {
+        pointerType: "touch",
+        clientX: at.x,
+        clientY: at.y,
+        bubbles: true,
+      });
+      await expect(section.getByTestId("analogy-sonar-tip")).toBeVisible();
+      await sonar.dispatchEvent("pointerup", { pointerType: "touch" });
+      await expect
+        .poll(() =>
+          page.evaluate(() =>
+            window.__events
+              .filter((e) => e[1] === "analogy_control_change")
+              .map((e) => e[2].analogy_control),
+          ),
+        )
+        .toEqual(["similar_point", "similar_point_hold"]);
+    });
+  });
+
+  test.describe("画面の中の声（モック承認 2026-10-08、マイグレーション143）", () => {
+    async function routeFeedback(page, { status = 201, body = "" } = {}) {
+      const posts = [];
+      await page.route("**/rest/v1/analogy_feedback*", (route) => {
+        posts.push(route.request().postDataJSON());
+        return route.fulfill({ status, body });
+      });
+      return posts;
+    }
+    const feedbackOf = (page) => page.getByTestId("analogy-feedback");
+
+    test("1段目で vote、2段目の「送る」で detail を保存し、お礼に替わる。再訪してもお礼だけ", async ({
+      page,
+    }) => {
+      test.setTimeout(120000);
+      await page.addInitScript(() => {
+        window.__events = [];
+        window.gtag = (...args) => window.__events.push(args);
+      });
+      await setup(page);
+      const posts = await routeFeedback(page);
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await expect(
+        fb.getByText("龍神ソナーは予想の材料になりましたか？"),
+      ).toBeVisible();
+      await expect(
+        fb.getByText("匿名で送られ、公開されません。読むのは運営だけです"),
+      ).toBeVisible();
+      await fb.getByRole("button", { name: "物足りない" }).click();
+      await expect.poll(() => posts.length).toBe(1);
+      const [vote] = posts;
+      expect(vote).toMatchObject({
+        kind: "vote",
+        race_id: `${DATE}-09-01`,
+        verdict: "lacking",
+        reasons: null,
+        comment: null,
+        analogy_tab: "facts",
+        lang: "ja",
+      });
+      expect(vote.client_key).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
+      await fb.getByLabel("件数が少ない").check();
+      await fb.getByLabel("その他").check();
+      await fb
+        .getByRole("textbox")
+        .fill("  風向きと水位もそろえて数えてほしい  ");
+      await expect(fb.getByText("21 / 200")).toBeVisible();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      expect(posts).toHaveLength(2);
+      expect(posts[1]).toMatchObject({
+        kind: "detail",
+        verdict: "lacking",
+        reasons: ["few_races", "other"],
+        comment: "風向きと水位もそろえて数えてほしい",
+        client_key: vote.client_key,
+      });
+      const names = await page.evaluate(() =>
+        window.__events
+          .filter((e) => String(e[1]).startsWith("analogy_feedback_"))
+          .map((e) => [e[1], Object.keys(e[2]).sort().join(",")]),
+      );
+      // 「見えた」は IntersectionObserver なので、押す前後どちらに来るかは決まらない
+      expect(names.sort()).toEqual([
+        ["analogy_feedback_send", "analogy_verdict,race_id"],
+        ["analogy_feedback_view", "race_id"],
+        ["analogy_feedback_vote", "analogy_verdict,race_id"],
+      ]);
+
+      await openSonarTab(page); // 開き直す（localStorage は残る）
+      await expect(
+        feedbackOf(page).getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      await expect(
+        feedbackOf(page).getByRole("button", { name: "なった" }),
+      ).toHaveCount(0);
+    });
+
+    test("「なった」を選び直しても vote は1回だけ。detail は送った時点の評価で、一言が空なら NULL", async ({
+      page,
+    }) => {
+      await setup(page);
+      const posts = await routeFeedback(page);
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "物足りない" }).click();
+      await fb.getByRole("button", { name: "なった" }).click();
+      await expect(fb.getByText("どこが使えましたか？（任意）")).toBeVisible();
+      await expect(fb.getByRole("checkbox")).toHaveCount(0);
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+      expect(posts.map((p) => [p.kind, p.verdict])).toEqual([
+        ["vote", "lacking"],
+        ["detail", "useful"],
+      ]);
+      expect(posts[1]).toMatchObject({ reasons: null, comment: null });
+    });
+
+    test("同じブラウザの2行目（UNIQUE 違反 23505）は受け取り済みとして扱う", async ({
+      page,
+    }) => {
+      await setup(page);
+      await routeFeedback(page, {
+        status: 409,
+        body: JSON.stringify({
+          code: "23505",
+          message: "duplicate key value violates unique constraint",
+        }),
+      });
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "なった" }).click();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toBeVisible();
+    });
+
+    test("送れなかったら理由を出し、お礼に替えない（握りつぶさない）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await routeFeedback(page, {
+        status: 500,
+        body: JSON.stringify({ code: "P0001", message: "too many" }),
+      });
+      await openSonarTab(page);
+      const fb = feedbackOf(page);
+      await fb.getByRole("button", { name: "なった" }).click();
+      await expect(
+        fb.getByText("送れませんでした。時間をおいてもう一度押してください"),
+      ).toBeVisible();
+      await fb.getByRole("button", { name: "送る" }).click();
+      await expect(
+        fb.getByText("送れませんでした。時間をおいてもう一度押してください"),
+      ).toBeVisible();
+      await expect(
+        fb.getByText("受け取りました。次の改善に使います"),
+      ).toHaveCount(0);
+    });
+
+    test("保存の無いレースでは出さない", async ({ page }) => {
+      await setup(page, {
+        facts: { race_id: `${DATE}-09-01`, status: "not_saved" },
+      });
+      await openSonarTab(page);
+      await expect(sectionOf(page)).toBeVisible();
+      await expect(feedbackOf(page)).toHaveCount(0);
+    });
   });
 
   test("?analogy=1 を付けて開くと内部確認として節を出し、端末に覚える", async ({
     page,
   }) => {
-    await setup(page, (p) => contribution(p), { preview: false });
+    await setup(page, { preview: false });
     await page.goto(`/race/${DATE}-09-01?analogy=1`);
-    await page.locator(".race-tabs-btn", { hasText: "AI予想" }).click();
+    await page.locator(".race-tabs-btn", { hasText: "龍神ソナー" }).click();
     await expect(sectionOf(page)).toBeVisible();
+    await expect(sectionOf(page).getByRole("tablist")).toBeVisible();
     expect(
       await page.evaluate(() =>
         localStorage.getItem("boatai-user:analogy-finder-preview"),
@@ -133,258 +865,1071 @@ test.describe("アナロジー・ファインダーの寄与度（BOA-271 FR-1�
     ).toBe("1");
   });
 
-  test("学習前（版が無い）は節ごと出さない", async ({ page }) => {
-    const calls = await setup(page, () => ({ available: false }));
-    await openAiTab(page);
-    await expect.poll(() => calls.length).toBeGreaterThan(0);
-    await expect(page.locator(".prediction-result")).toBeVisible();
-    await expect(sectionOf(page)).toHaveCount(0);
-  });
-
-  test("このレースの会場・グレード・ラウンドを既定の条件にし、6テーマを出す", async ({
-    page,
-  }) => {
-    const calls = await setup(page, (p) => contribution(p));
-    await openAiTab(page);
-    const section = sectionOf(page);
-    await expect(section).toBeVisible();
-    expect(calls[0]).toEqual({
-      venue: 9,
-      grade: "G1",
-      round: "junyu",
-      target: 1,
-    });
-    await expect(
-      section.getByRole("heading", { level: 3, name: "寄与度" }),
-    ).toBeVisible();
-    for (const [, name] of THEMES.map((t) => [t.key, t.name])) {
-      await expect(
-        section.getByRole("button", { name: new RegExp(name) }),
-      ).toBeVisible();
-    }
-    await expect(section.getByText("n=1,234レース（7,404艇）")).toBeVisible();
-    await expect(section.getByText("2025-10〜2026-10")).toBeVisible();
-    await expect(section.getByText("モデル 2026-10-05")).toBeVisible();
-    await expect(section.getByText("小標本")).toHaveCount(0);
-    expect(await section.innerText()).not.toMatch(/AI指数|総合点|競艇/);
-  });
-
   test("予想が無いレースでも節を出す", async ({ page }) => {
-    await setup(page, (p) => contribution(p));
-    await openAiTab(page, 2);
+    await setup(page);
+    await openSonarTab(page, 2);
     await expect(sectionOf(page)).toBeVisible();
   });
 
-  test("テーマは API の themes 配列から描く（7つ目を足しても出る）", async ({
-    page,
-  }) => {
-    const themes = [
-      ...THEMES,
-      {
-        key: "market",
-        name: "市場",
-        description: "",
-        features: [],
-        groups: [{ key: "odds", label: "単勝オッズ" }],
-      },
-    ];
-    await setup(page, (p) => contribution(p, { themes }));
-    await openAiTab(page);
+  test("保存の無いレースは節の中を1行だけにする", async ({ page }) => {
+    await setup(page, { facts: { status: "not_saved" } });
+    await openSonarTab(page);
+    const section = sectionOf(page);
     await expect(
-      sectionOf(page).getByRole("button", { name: /市場/ }),
+      section.getByText("このレースは、表示できるデータがありません"),
     ).toBeVisible();
+    await expect(section.getByRole("tablist")).toHaveCount(0);
   });
 
-  test("着順・グレードを切り替えると条件を変えて読み直す", async ({ page }) => {
-    const calls = await setup(page, (p) => contribution(p));
-    await openAiTab(page);
+  test("AIの見立ては全国の値を時点つきで読み、展示前の集計が無ければ準備中の1文だけ", async ({
+    page,
+  }) => {
+    const calls = await setup(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
-    await expect(section).toBeVisible();
-    await section.getByRole("tab", { name: "3着以内", exact: true }).click();
-    await expect.poll(() => calls.at(-1)?.target).toBe(3);
-    await section.getByText("詳細条件", { exact: true }).click();
     await section
-      .getByLabel("グレード", { exact: true })
-      .selectOption({ label: "SG" });
-    await expect.poll(() => calls.at(-1)?.grade).toBe("SG");
-    await section
-      .getByLabel("ラウンド", { exact: true })
-      .selectOption({ label: "すべて" });
-    await expect.poll(() => calls.at(-1)?.round).toBe("all");
-  });
-
-  test("艇番比較は表で数値を出し、テーマを押すと内訳が開く", async ({
-    page,
-  }) => {
-    await setup(page, (p) => contribution(p));
-    await openAiTab(page);
-    const section = sectionOf(page);
-    await section.getByRole("checkbox", { name: "艇番で比較" }).check();
-    const table = section.getByRole("table");
-    await expect(table.getByRole("columnheader")).toHaveCount(3);
-    await expect(table.getByRole("columnheader").nth(1)).toContainText("1号艇");
-    await expect(table.getByRole("columnheader").nth(2)).toContainText("6号艇");
-    await expect(table.getByRole("row")).toHaveCount(1 + THEMES.length);
-    // 比較中は全艇の順位バッジを出さない（艇番ごとの順位と食い違うため。ファン評価2周目）
-    await expect(section.locator(".af-rank")).toHaveCount(0);
-    // 表が着順の率でなく「効きの割合」であることを表に書く（ファン評価3周目）
-    await expect(table.locator("caption")).toContainText("効きの割合");
-
-    const theme = section.getByRole("button", { name: /選手・基礎成績/ });
-    await expect(theme).toHaveAttribute("aria-expanded", "false");
-    await theme.click();
-    await expect(theme).toHaveAttribute("aria-expanded", "true");
-    await expect(section.getByText("全国勝率・2連率")).toBeVisible();
-    await expect(section.getByText(/個別の値は参考/)).toBeVisible();
-  });
-
-  test("小標本と、広げて集計したことを出す", async ({ page }) => {
-    await setup(page, (p) =>
-      contribution(
-        { ...p, venue: 0, round: "all" },
-        { nRaces: 12, widened: ["venue", "round"] },
-      ),
-    );
-    await openAiTab(page);
-    const section = sectionOf(page);
-    await expect(section.getByText("小標本")).toBeVisible();
-    await expect(
-      section.getByText(
-        /はレース数が少ないため、全会場・全ラウンドに広げて集計しています$/,
-      ),
-    ).toBeVisible();
-  });
-
-  test("取得に失敗したら「データなし」ではなく再試行できるエラーを出す", async ({
-    page,
-  }) => {
-    let fail = true;
-    await setup(page, (p) => (fail ? null : contribution(p)));
-    await page.route("**/api/analogy/contribution*", (route) =>
-      fail
-        ? route.fulfill({ status: 500, json: { error: "x" } })
-        : route.fallback(),
-    );
-    // 直読みの経路も失敗させる
-    await page.route("**/rest/v1/analogy_models*", (route) =>
-      fail
-        ? route.fulfill({ status: 500, json: { message: "x" } })
-        : route.fallback(),
-    );
-    await openAiTab(page);
-    const section = sectionOf(page);
-    await expect(section.getByRole("alert")).toContainText(
-      "寄与度を読み込めませんでした",
-    );
-    fail = false;
-    await section.getByRole("button", { name: /再/ }).click();
-    await expect(section.getByText("n=1,234レース（7,404艇）")).toBeVisible();
-  });
-
-  test("API が失敗しても Supabase の直読みで出し、レースが少ないスライスは広げる", async ({
-    page,
-  }) => {
-    await setup(page, (p) => contribution(p));
-    await page.route("**/api/analogy/contribution*", (route) =>
-      route.fulfill({ status: 500, json: { error: "x" } }),
-    );
-    await page.route("**/rest/v1/analogy_models*", (route) =>
-      route.fulfill({
-        json: [
-          {
-            model_version: "2026-10-05",
-            trained_at: "2026-10-05T00:00:00Z",
-            themes: THEMES,
-            metrics: { periods: { test: ["2025-10-02", "2026-10-01"] } },
-          },
-        ],
-      }),
-    );
-    // このレースのスライス（津・G1・準優勝戦）は12レースしかない。全会場に広げると500レース
-    const rows = [0, 1, 2, 3, 4, 5, 6].flatMap((b) => [
-      boatRow(b, 1, 12, THEMES),
-      boatRow(b, 1, 500, THEMES, { venue_code: 0 }),
-    ]);
-    await page.route("**/rest/v1/analogy_contribution_profiles*", (route) =>
-      route.fulfill({ json: rows }),
-    );
-    await openAiTab(page);
-    const section = sectionOf(page);
-    await expect(section.getByText("n=500レース（3,000艇）")).toBeVisible();
-    await expect(
-      // 選んだ条件（このレースの条件）と、実際に集計した範囲の両方を書く（ファン評価1周目 P2）
-      section.getByText(
-        "津・G1・準優勝戦はレース数が少ないため、全会場に広げて集計しています",
-      ),
-    ).toBeVisible();
-    await expect(section.getByText("小標本")).toHaveCount(0);
-  });
-
-  test("テーブルがまだ無い（マイグレーション未適用）ときは節を出さない", async ({
-    page,
-  }) => {
-    await setup(page, (p) => contribution(p));
-    await page.route("**/api/analogy/contribution*", (route) =>
-      route.fulfill({ status: 404, body: "not found" }),
-    );
-    let asked = 0;
-    await page.route("**/rest/v1/analogy_models*", (route) => {
-      asked += 1;
-      return route.fulfill({
-        status: 404,
-        json: {
-          code: "PGRST205",
-          message: "Could not find the table 'public.analogy_models'",
-        },
-      });
+      .getByText(
+        "AIの見立て（補助）: ほかの項目をそろえたうえで、どの項目が効くか",
+      )
+      .click();
+    await expect.poll(() => calls.contribution.length).toBeGreaterThan(0);
+    expect(calls.contribution[0]).toMatchObject({
+      venue: "0",
+      grade: "all",
+      round: "all",
+      target: "1",
+      stage: "exhibition",
     });
-    await openAiTab(page);
-    await expect.poll(() => asked).toBeGreaterThan(0);
-    await expect(page.locator(".prediction-result")).toBeVisible();
-    await expect(page.locator(".af-section")).toHaveCount(0);
-    await expect(page.getByRole("alert")).toHaveCount(0);
+    await section.getByRole("button", { name: "展示前（出走表）" }).click();
+    await expect(
+      section.getByText(
+        "展示前のAIの見立ては準備中。展示後に切り替えると見られる",
+      ),
+    ).toBeVisible();
+    expect(await section.innerText()).not.toMatch(/寄与度|モデル|競艇/);
   });
 
-  test("棒はシェアの大きい順に並べ、棒の長さはシェアそのもの（全テーマで100%）。大きさの意味を書く", async ({
+  test.describe("今日の風・波の欄（spec A-9、Q-F3）", () => {
+    // 例のレース（若松12R）は今日の風1m・波1cm → 風の区分 0-1・波の区分 0-2
+    const VA = "VA:20";
+    const withWave = (n) => {
+      const f = analogyV16Facts();
+      const va = f.facts[VA];
+      va.wave_mode = { corr: 0.52, n: 15000, use_wave: true };
+      for (let b = 1; b <= 6; b++)
+        for (const t of ["win", "top2", "top3"])
+          va.wind_wave["0-1"]["0-2"][String(b)][t] = [Math.min(n, 100), n];
+      return f;
+    };
+    const windSection = (page) => sectionOf(page).locator(".af-wind");
+
+    test("波高が風速とほぼ同じ会場は風だけで数え、見出しに今日の波を添える", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const w = windSection(page);
+      await expect(
+        w.getByText(
+          "今日の風（1m）に近いレースでは（今日の波1cm。風・波は展示の時点）",
+        ),
+      ).toBeVisible();
+      await expect(
+        w.getByText(
+          "この会場の波高は風速とほぼ同じ値で記録されるので、風で分けている",
+        ),
+      ).toBeVisible();
+      await expect(w).toContainText("若松で風0〜1mだったレースで");
+    });
+
+    test("波高が別の情報を持つ会場で今日の区分が300件以上なら風×波で数える", async ({
+      page,
+    }) => {
+      await setup(page, { facts: withWave(300) });
+      await openSonarTab(page);
+      const w = windSection(page);
+      await expect(
+        w.getByText("今日の風・波（風1m・波1cm）に近いレースでは"),
+      ).toBeVisible();
+      await expect(w).toContainText(
+        "若松で風0〜1m・波0〜2cmだったレースで、各艇番が1着になった割合（300レース）",
+      );
+      await expect(
+        w.getByText(/風で分けている|風だけで分けています/),
+      ).toHaveCount(0);
+    });
+
+    test("波高が別の情報を持つ会場でも今日の区分が300件未満なら風だけに戻して1行注記", async ({
+      page,
+    }) => {
+      await setup(page, { facts: withWave(299) });
+      await openSonarTab(page);
+      const w = windSection(page);
+      await expect(
+        w.getByText(
+          "今日の風（1m）に近いレースでは（今日の波1cm。風・波は展示の時点）",
+        ),
+      ).toBeVisible();
+      await expect(
+        w.getByText("波で分けると299件と少ないので、風だけで分けています"),
+      ).toBeVisible();
+      await expect(w).toContainText("若松で風0〜1mだったレースで");
+    });
+  });
+
+  test("展示で深いフライング（F.06以上）の艇がいるレースは、今日の展示の形を出さない（Q-F6）", async ({
     page,
   }) => {
-    await setup(page, (p) => contribution(p));
-    await openAiTab(page);
+    // 例のレース（若松12R）は展示で3号艇が F.09
+    await setup(page);
+    await openSonarTab(page);
     const section = sectionOf(page);
-    const heads = section.locator(".af-theme-head");
-    await expect(heads).toHaveCount(THEMES.length);
-    const values = await section.locator(".af-theme-value").allInnerTexts();
-    const nums = values.map((v) => Number(v.replace("%", "")));
-    expect(nums).toEqual([...nums].sort((a, b) => b - a));
-    // 表示の % の合計は100（四捨五入だけだと 99・101 になる。ファン評価2周目）
-    expect(nums.reduce((x, y) => x + y, 0)).toBe(100);
-    // 棒の長さ: 1位の棒が溝いっぱい（100%）にならない（シェアの値そのものの長さ）
-    const ratio = await section
-      .locator(".af-theme")
-      .first()
-      .evaluate((li) => {
-        const fill = li.querySelector(".af-bar-fill").getBoundingClientRect();
-        const track = li.querySelector(".af-bar-track").getBoundingClientRect();
-        return fill.width / track.width;
-      });
-    expect(Math.abs(ratio - nums[0] / 100)).toBeLessThan(0.02);
+    await section.getByRole("tab", { name: "展開シナリオ" }).click();
     await expect(
-      section.getByText(/有利・不利のどちらに働いたかを問わない/),
+      section.getByText(
+        /参考: 今日の展示の形は出していない（展示で深いフライング（F\.06以上）/,
+      ),
     ).toBeVisible();
+    await expect(
+      section.getByText(/参考: 今日の展示の形は(?!出していない)/),
+    ).toHaveCount(0);
   });
 
-  test("375px で横スクロールが出ない", async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await setup(page, (p) => contribution(p));
-    await openAiTab(page);
-    const section = sectionOf(page);
-    await section.getByRole("checkbox", { name: "艇番で比較" }).check();
-    await section.getByRole("button", { name: /環境/ }).click();
-    const overflow = await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth -
-        document.documentElement.clientWidth,
+  test.describe("ファン評価3周目の P3（BOA-778）", () => {
+    test("優勝戦の日の今節の平均着順点のカードは、今日の位置の枠と件数の行を出さない", async ({
+      page,
+    }) => {
+      // 例のレース（若松12R）は優勝戦の日。「枠で囲んだ棒…」の見方は凡例に1回だけになった（承認モック sonar-tab v3）
+      await setup(page);
+      await openSonarTab(page);
+      const cards = sectionOf(page).getByTestId("analogy-fact-card");
+      const card = cards.filter({ hasText: "今節の平均着順点（前日まで）" });
+      await expect(card).toBeVisible();
+      if ((await card.getAttribute("open")) === null)
+        await card.locator("summary").click();
+      await expect(card).toHaveAttribute("open", "");
+      await expect(card.locator(".af-strip-col.is-today")).toHaveCount(0);
+      await expect(card.getByTestId("analogy-today-hit")).toHaveCount(0);
+      const other = cards.filter({ hasText: "全国勝率" }).first();
+      if ((await other.getAttribute("open")) === null)
+        await other.locator("summary").click();
+      await expect(other.locator(".af-strip-col.is-today")).toHaveCount(1);
+      await expect(other.getByTestId("analogy-today-hit")).toBeVisible();
+      await expect(sectionOf(page)).toContainText("今日の順位");
+    });
+
+    test("説明・注記は話題ごとの見出し＋1文ずつの箇条書きで、12px 以上で出す", async ({
+      page,
+    }) => {
+      // BOA-778 で脚注を行に分け、2026-10-06 ユーザー決定で全タブを「見出し＋箇条書き」にした
+      await setup(page);
+      await openSonarTab(page);
+      // 割合の出し方・注意は一番下の折りたたみ（承認モック sonar-tab v3）
+      await sectionOf(page)
+        .getByTestId("analogy-notes-fold")
+        .first()
+        .locator("summary")
+        .click();
+      const counting = sectionOf(page)
+        .locator(".af-notes")
+        .filter({
+          has: page.locator(".af-notes-h", { hasText: "割合の出し方" }),
+        })
+        .first();
+      await expect(counting.locator("li").first()).toBeVisible();
+      await expect
+        .poll(() => counting.locator("li").count())
+        .toBeGreaterThanOrEqual(2);
+      const size = await counting
+        .locator("ul")
+        .evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+      expect(size).toBeGreaterThanOrEqual(12);
+      // 1つの li に2文が入らない（「。」で区切った1文ずつ）
+      for (const li of await counting.locator("li").allInnerTexts())
+        expect((li.match(/。/g) ?? []).length).toBeLessThanOrEqual(1);
+    });
+
+    test("2〜6号艇の率は、その艇の級をそろえた範囲の件数で出し、6艇を足しても100%にならないと書く（BOA-806）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      const urls = [];
+      // 4号艇は級をそろえた範囲で件数200（1着50・2着30・3着20）、5号艇は③のすぐ外の艇の1着だけ持つ
+      const four = Object.fromEntries(
+        Object.entries(base.scenario.cells).map(([e, { forms }]) => [
+          e,
+          Object.fromEntries(
+            Object.keys(forms).map((f) => [f, [200, 50, 30, 20]]),
+          ),
+        ]),
+      );
+      const kado = base.scenario.attack.kado;
+      const boats = {
+        2: null,
+        3: null,
+        4: {
+          scope: "VC:20:6-0-0-0:4A1",
+          data: {
+            cells: four,
+            attack: {
+              kado: {
+                ...kado,
+                all: { ...kado.all, n: 154, att_win: [77, 154] },
+              },
+            },
+            winner: {},
+          },
+          reference: null,
+        },
+        5: {
+          scope: "VC:20:6-0-0-0:5A1",
+          data: { cells: {}, attack: {}, winner: { kado: [11, 100] } },
+          reference: null,
+        },
+        6: null,
+      };
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        urls.push(route.request().url());
+        return route.fulfill({ json: { ...base, boats } });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section).toContainText("足しても100%にならない");
+      // 4号艇の棒の左に級・件数の札（承認モック mock-scenario-v1）。率はその艇の件数で出す
+      const bar4 = section
+        .locator(".af-bar")
+        .filter({ hasText: "A1 200件" })
+        .first();
+      await expect(bar4).toContainText("25%");
+      await expect(bar4).toContainText("50件");
+      expect(urls.length).toBeGreaterThan(0);
+      expect(
+        urls.every((u) => new URL(u).searchParams.get("boats") === "1"),
+      ).toBe(true);
+      // 流れ図・3連単は1号艇の範囲のまま。どの数字がどのレースからかは一番下の表に書く
+      await expect(section).toContainText("どの数字がどのレースからか");
+      await section
+        .getByRole("button", { name: /^カド一撃/ })
+        .first()
+        .click();
+      const box = section.getByTestId("analogy-attack-box").first();
+      await expect(box.locator(".af-scope-tag")).toHaveText(
+        /^4\s*4号艇・A1 のレース 154件$/,
+      );
+      await expect(box).toContainText("4号艇が1着");
+      await expect(box).toContainText("50%");
+      await expect(box).toContainText("すぐ外の5号艇が1着");
+      await expect(box).toContainText("11%");
+    });
+
+    test("③の箱の札は、攻める艇の範囲があればその艇、無ければ1号艇の範囲を示す（BOA-806、承認モック mock-scenario-v1）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      const kado = base.scenario.attack.kado;
+      let boats = {
+        2: null,
+        3: null,
+        4: {
+          scope: "VC:20:6-0-0-0:4A1",
+          data: { cells: {}, attack: { kado }, winner: {} },
+          reference: null,
+        },
+        5: null,
+        6: null,
+      };
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json: { ...base, boats } }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await section
+        .getByRole("button", { name: /^カド一撃/ })
+        .first()
+        .click();
+      // ②は選んだら1行に畳み、③の頭に文脈の札
+      await expect(section.getByTestId("analogy-slit-chosen")).toBeVisible();
+      await expect(
+        section.getByRole("button", { name: /枠なり × カド一撃/ }),
+      ).toBeVisible();
+      const tags = section
+        .getByTestId("analogy-attack-box")
+        .locator(".af-scope-tag");
+      await expect(tags.nth(0)).toHaveText(/^4\s*4号艇・A1 のレース/);
+      await expect(tags.nth(1)).toHaveText(/^1\s*1号艇・A1 のレース/);
+      // 「変える」で②を開き直せる
+      await section.getByRole("button", { name: /変える/ }).click();
+      await expect(section.locator("#af-pat-kado")).toBeVisible();
+    });
+
+    test("展開シナリオの作り直しのレビュー指摘（2026-10-09）: 札と中身・級をそろえない範囲・展示前の注記・類似レースの線", async ({
+      page,
+    }) => {
+      // 3号艇だけ B1 にし、艇ごとの範囲（boats）は無い日（朝のバッチの前の版）にする
+      const facts = analogyV16Facts();
+      facts.today.classes = ["A1", "A1", "B1", "A1", "A1", "A1"];
+      await setup(page, { facts });
+      const base = analogyV16Scenario();
+      let scope = null;
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        const json = { ...base, boats: null };
+        // 若松の全レースのとき、比べる相手（全国の全レース）は固定データに無いので null
+        if (scope) Object.assign(json, { scope, reference: null });
+        return route.fulfill({ json });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      // 類似レースの .af-tip（件数の案内）に、展開シナリオの (i) の線が付かない
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const tip = section.locator(".af-tab-similar .af-tip").first();
+      await expect(tip).toBeAttached();
+      expect(
+        await tip.evaluate((el) => getComputedStyle(el).borderLeftWidth),
+      ).toBe("0px");
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      // 3号艇はその艇の範囲の値が無いので、札に級を書かない（中身は1号艇の範囲の値）
+      const tags = section.locator("#af-scn-s4 .af-bar-tag");
+      await expect(tags.nth(0)).toHaveText(/^1号艇 A1 [\d,]+件$/);
+      await expect(tags.nth(2)).toHaveText(/^3号艇 [\d,]+件$/);
+      // 展示前でも③の1号艇の箱に展示タイムの割り引きの注記を出す
+      await section.getByRole("button", { name: "展示前（出走表）" }).click();
+      await section.locator("#af-pat-kado").click();
+      const boxes = section.getByTestId("analogy-attack-box");
+      await expect(boxes.last()).toContainText(
+        "1号艇は展示タイムが速く出やすい",
+      );
+      // 級をそろえない範囲（若松の全レース）では札に級を書かず、対応の表も出さない
+      scope = "VA:20";
+      await section
+        .getByRole("group", { name: "集めたレース" })
+        .getByRole("button", { name: /若松の全レース/ })
+        .click();
+      await section.locator("#af-pat-kado").click();
+      await expect(boxes.last().locator(".af-scope-tag")).toHaveText(
+        /^集めたレース [\d,]+件$/,
+      );
+      await expect(section).not.toContainText("どの数字がどのレースからか");
+      // 比べる相手が無いときは、区分の表の凡例に ┊ の説明を出さない（ファン評価: 「┊＝—の率」と欠けて出た）
+      const fold = section.locator(".af-scn-fold", { hasText: "区分で見る" });
+      await fold.locator("summary").click();
+      await expect(fold).toContainText("小さい数字＝その区分の件数。少＝");
+      await expect(fold).not.toContainText("┊＝");
+    });
+
+    test("③の件数が②④より少ない理由を箱のすぐ上に出し、展示が2つの形に当たるときは形ごとに一致を出す（ファン評価 P2）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      // 今日の展示はカド受け凹みとイン凹みの2つに当たる
+      const json = {
+        ...base,
+        exhibition: {
+          ...base.exhibition,
+          forms: ["d3", "d1"],
+          forms_excluded: false,
+        },
+      };
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section).toContainText(
+        "今日の展示はカド受け凹み・イン凹みの2つの形に当たる",
+      );
+      await expect(section).toContainText("展示がカド受け凹み → 本番も");
+      await expect(section).toContainText("展示がイン凹み → 本番も");
+      await expect(section.locator("#af-pat-d3 .af-today-badge")).toBeVisible();
+      await expect(section.locator("#af-pat-d1 .af-today-badge")).toBeVisible();
+      // ③の1号艇の箱は平均STが6艇そろうレースだけ（111件）、②④は112件。理由を箱のすぐ上に
+      await section.locator("#af-pat-kado").click();
+      await expect(section.locator("#af-scn-s3")).toContainText(
+        "1号艇の箱は111件（STEP2・4は112件）",
+      );
+    });
+
+    test("当てはまる条件は今日の値と差・形の名前・0〜100% の棒と全体の点線で見せ、当てはまらない時の行は出さない（BOA-814、承認モック mock-hint-cards-v1）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      // 固定データ: このコースの平均ST ①.150 ②.150 ③.133 ④.127 で、当てはまるのはカド一撃（kado4）だけ
+      await expect(section).toContainText(
+        "今日の並びが当てはまる条件（このコースの平均ST）",
+      );
+      const cards = section.getByTestId("analogy-hint-card");
+      await expect(cards).toHaveCount(1);
+      const card = cards.first();
+      await expect(card).toContainText("カド一撃");
+      await expect(card).toContainText("✓ 今日あてはまる");
+      await expect(card.locator(".af-hintc-today")).toHaveText(
+        /今日\s*4\s*4コース\s*\.127\s*が、1〜3コースで一番早い\s*3\s*3コース\s*\.133\s*より 0\.006秒早い/,
+      );
+      // 当てはまる時 38/205件＝19%。全体（どの条件でも）＝(38+73)/(205+693)＝12%
+      await expect(card).toContainText("1〜3コースより早い");
+      // 丸の数字が号艇かコースか分かるよう、②の上に対応を1回（枠なりなので号艇＝コース。ユーザー指摘・案B）
+      const map = section.getByTestId("analogy-hint-map");
+      await expect(map).toContainText("1号艇＝1コース");
+      await expect(map).toContainText("＝6コース");
+      await expect(card).not.toContainText(/[①②③④⑤⑥]〜/);
+      await expect(card).toContainText("19% 38/205件");
+      await expect(card).toContainText("全体（どの条件でも） 12%");
+      await expect(section).not.toContainText("当てはまらない時");
+      const pct = (sel) =>
+        card
+          .locator(sel)
+          .evaluate(
+            (el) =>
+              (parseFloat(
+                getComputedStyle(el)[el.tagName === "S" ? "left" : "width"],
+              ) /
+                el.parentElement.getBoundingClientRect().width) *
+              100,
+          );
+      // 棒は 0〜100% の目盛り（以前は 33% で満杯）。点線は全体の割合の位置
+      expect(Math.round(await pct(".af-hintc-trk i"))).toBe(19);
+      expect(Math.round(await pct(".af-hintc-trk s"))).toBe(12);
+      // ボタンはその形を②で選ぶ
+      await card
+        .getByRole("button", { name: "カド一撃の形でSTEP3・4を見る ›" })
+        .click();
+      await expect(section.locator("#af-scn-s3")).toContainText("カド一撃");
+    });
+
+    test("平均STの表は行ごとに一番良い値に金枠。走数が少ない値は一番でも付けず、次の艇にも繰り下げない（BOA-814）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      let courseSt = base.course_st;
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json: { ...base, course_st: courseSt } }),
+      );
+      const bestIn = (section, row, exact = true) =>
+        section
+          .locator(".af-hint-t tbody tr")
+          .filter({ has: page.getByRole("rowheader", { name: row, exact }) })
+          .locator("td")
+          .evaluateAll((tds) =>
+            tds.flatMap((td, i) =>
+              td.classList.contains("ind-best") ? [i + 1] : [],
+            ),
+          );
+      const open = async () => {
+        await openSonarTab(page);
+        const section = sectionOf(page);
+        await section.getByRole("tab", { name: "展開シナリオ" }).click();
+        await section.getByText("数字で見る（平均STの表）").click();
+        return section;
+      };
+      // 固定データ: このコース・全体は4号艇（.127・.109）、会場は5号艇（.120）が一番早い
+      let section = await open();
+      expect(await bestIn(section, "このコース")).toEqual([4]);
+      expect(await bestIn(section, "全体")).toEqual([4]);
+      expect(await bestIn(section, "津で")).toEqual([5]);
+
+      // 4号艇のこのコースが2走、5号艇の会場が3走なら、その行は誰にも付けない（2号艇 .122 に繰り下げない）
+      courseSt = {
+        ...base.course_st,
+        course_n: [30, 30, 30, 2, 30, 29],
+        venue_n: [29, 30, 30, 30, 3, 30],
+      };
+      await page.reload();
+      section = await open();
+      expect(await bestIn(section, "このコース")).toEqual([]);
+      expect(await bestIn(section, "津で")).toEqual([]);
+      expect(await bestIn(section, "全体")).toEqual([4]);
+    });
+
+    test("STEP4 の件数の札を押すと、図の下に元のレースの一覧が開き、行がそのレースの結果へのリンクになる（BOA-823）", async ({
+      page,
+    }) => {
+      await setup(page);
+      // 範囲の元のレースの一覧（scope_races の形）。2号艇が1着は 10/09・10/06、1-3-2 は 10/08、万舟は 10/07
+      const races = {
+        n: 4000,
+        kept: 3000,
+        entry_bits: [
+          "waku",
+          "inlost",
+          "mae",
+          "mae6",
+          "mae5",
+          "mae56",
+          "maeOther",
+        ],
+        form_bits: ["flat", "wall", "d2", "d3", "kado", "d1", "dash"],
+        rows: [
+          ["2026-10-09-02-09", 1, 0b10011, "214", "差し", 1980],
+          ["2026-10-08-01-04", 1, 0b1, "132", "逃げ", 1240],
+          ["2026-10-07-12-07", 1, 0b10000, "415", "まくり", 15600],
+          ["2026-10-06-04-03", 1, 0, "213", "差し", 1120],
+          ["2026-10-05-04-03", 4, 0, "216", "差し", 3000],
+          ...Array.from({ length: 8 }, (_, i) => [
+            `2026-09-${String(20 - i).padStart(2, "0")}-05-01`,
+            1,
+            0,
+            "123",
+            "逃げ",
+            500,
+          ]),
+        ],
+      };
+      let racesCalls = 0;
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        if (new URL(route.request().url()).searchParams.get("races") !== "1")
+          return route.fallback();
+        racesCalls += 1;
+        return route.fulfill({
+          json: { status: "ok", run_id: "x", scope: "NC:x", races },
+        });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      expect(racesCalls).toBe(0); // 押すまで読まない
+      const s4 = section.locator("#af-scn-s4");
+      // 1着の棒（2号艇）。件数は札「◯件 ›」
+      const bar2 = s4
+        .locator("button.af-bar")
+        .filter({ hasText: "2号艇" })
+        .first();
+      await expect(bar2.locator(".af-cnt-chip")).toHaveText(/^[\d,]+件 ›$/);
+      await bar2.click();
+      const panel = s4.getByTestId("analogy-race-panel");
+      await expect(panel).toHaveCount(1);
+      await expect(panel).toContainText("2号艇が1着のレース");
+      // 進入は枠なり（既定）なので、前付けの 10/05 は入らない
+      await expect(panel).toContainText("2件のうち直近2件");
+      await expect(panel).toContainText(
+        "全4,000件のうち、直近3,000件の中から出している",
+      );
+      const rows = panel.locator(".af-rl-row");
+      await expect(rows).toHaveCount(2);
+      await expect(rows.first()).toHaveAttribute(
+        "href",
+        "/race/2026-10-09-02-09",
+      );
+      await expect(rows.first()).toContainText("差し・1,980円");
+      // 3連単の行（一番上）を押すと、1着の一覧は閉じて3連単の一覧が開く（同時に1つ）
+      const triRow = s4.locator("button.af-bar:has(.af-tri)").first();
+      const combo = (await triRow.locator(".af-tri").innerText()).replace(
+        /\s/g,
+        "",
+      );
+      await triRow.click();
+      await expect(s4.getByTestId("analogy-race-panel")).toHaveCount(1);
+      await expect(s4.getByTestId("analogy-race-panel")).toContainText(
+        `${combo} のレース`,
+      );
+      // 万舟
+      await s4
+        .getByRole("button", { name: /^[\d,]+件 ›$/ })
+        .last()
+        .click();
+      await expect(s4.getByTestId("analogy-race-panel")).toContainText(
+        "万舟（3連単1万円以上）のレース",
+      );
+      await expect(s4.locator(".af-rl-row")).toHaveCount(1);
+      // ✕ で閉じる
+      await s4.getByRole("button", { name: "一覧を閉じる" }).click();
+      await expect(s4.getByTestId("analogy-race-panel")).toHaveCount(0);
+      // もっと見る（5件 → 最大20件）: 逃げ（9件）
+      await s4
+        .locator("button.af-bar")
+        .filter({ hasText: /^逃げ/ })
+        .first()
+        .click();
+      const p2 = s4.getByTestId("analogy-race-panel");
+      await expect(p2.locator(".af-rl-row")).toHaveCount(5);
+      await p2.getByRole("button", { name: /^もっと見る/ }).click();
+      await expect(p2.locator(".af-rl-row")).toHaveCount(9);
+      expect(racesCalls).toBe(1); // 一度読めば押し直しても読み直さない
+    });
+
+    test("展開シナリオの段の番号は四角の STEP 札で、画面に丸数字（①〜④）を出さない（2026-10-10 ユーザー承認）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section.locator(".af-scn-h .af-stepn")).toHaveText([
+        "STEP1",
+        "STEP2",
+        "STEP3",
+        "STEP4",
+      ]);
+      const radius = await section
+        .locator(".af-scn-h .af-stepn")
+        .first()
+        .evaluate((el) => getComputedStyle(el).borderRadius);
+      expect(radius).not.toBe("50%");
+      await section.locator("#af-pat-kado").click();
+      await section
+        .locator("details")
+        .evaluateAll((ds) => ds.forEach((d) => (d.open = true)));
+      expect(await section.innerText()).not.toMatch(/[①②③④]/);
+      // 差し込み漏れ（{{b}} がそのまま出る）が無い（丸数字の置き換えで札に号艇を足したときに出た）
+      expect(await section.innerText()).not.toMatch(/\{\{/);
+    });
+
+    test("展開シナリオの P3（2026-10-09 レビュー）: 畳む・開く後のフォーカス、空の区切り線・決まり手の見出し、①の列の読み上げ", async ({
+      page,
+    }) => {
+      // モーターの値が無く（順位が分からない）、展示前なら、③に今日の区分の行は無い
+      const facts = analogyV16Facts();
+      facts.today.items.motor_2.values = [null, null, null, null, null, null];
+      await setup(page, { facts });
+      const base = analogyV16Scenario();
+      const kado = structuredClone(base.scenario.attack.kado);
+      // 勝ちはあるが、まくり・まくり差し・差しは0（すべて抜き・恵まれ）
+      for (const n of ["makuri", "makurizashi", "sashi"])
+        kado.all[`att_${n}_of_win`] = [0, kado.all.att_win[0]];
+      const json = {
+        ...base,
+        scenario: {
+          ...base.scenario,
+          attack: { ...base.scenario.attack, kado },
+        },
+      };
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({ json }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      // ①の行は読み上げで列の名前が付く
+      await expect(
+        section.getByRole("button", { name: /^枠なり.*割合.*1号艇の1着率/ }),
+      ).toBeVisible();
+      await section.getByRole("button", { name: "展示前（出走表）" }).click();
+      await section.locator("#af-pat-kado").click();
+      // 押したボタンが消えても、フォーカスは「変える」に移る
+      await expect(section.locator("#af-slit-change")).toBeFocused();
+      const s3 = section.locator("#af-scn-s3");
+      await expect(s3.getByTestId("analogy-attack-box").first()).toBeVisible();
+      await expect(s3.locator(".af-atk-sep")).toHaveCount(0);
+      await expect(s3).not.toContainText("回の決まり手");
+      // 「変える」で開くと、選んでいた形にフォーカス
+      await section.locator("#af-slit-change").click();
+      await expect(section.locator("#af-pat-kado")).toBeFocused();
+    });
+
+    test("着順の流れの帯を押すと、よく出た3連単がその帯の内訳に絞られ、合計が帯の件数と一致する（BOA-816）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const sums = async (scope) => {
+        const vals = await scope
+          .getByTestId("analogy-band-breakdown")
+          .locator(".af-bar-v")
+          .allInnerTexts();
+        return vals.reduce(
+          (a, v) => a + Number(v.match(/([\d,]+)件/)[1].replace(/,/g, "")),
+          0,
+        );
+      };
+      for (const tab of ["展開シナリオ", "類似レース"]) {
+        await section.getByRole("tab", { name: tab }).click();
+        const panel = section.getByRole("tabpanel");
+        // 1着→2着の帯のうち一番上（1着1号艇→2着◯号艇）を押す
+        const link = panel
+          .getByRole("button", { name: /^1着 1号艇→2着 \d号艇 [\d,]+件$/ })
+          .first();
+        const label = await link.getAttribute("aria-label");
+        const n = Number(label.match(/([\d,]+)件$/)[1].replace(/,/g, ""));
+        const to = label.match(/2着 (\d)号艇/)[1];
+        // 帯は曲線で、外接矩形の中心が別の帯に重なることがあるので、キーボードで押す（帯は Enter で押せる部品）
+        const press = async () => {
+          await link.focus();
+          await page.keyboard.press("Enter");
+        };
+        // 押す前の一覧で、この帯に入る3連単の行（例「1-2-3 9.9% 365件」）を覚えておく
+        const rowText = (bar) =>
+          bar.evaluate((el) => ({
+            combo: el.querySelector(".af-tri").innerText.replace(/\s/g, ""),
+            v: el.querySelector(".af-bar-v").innerText.replace(/\s+/g, " "),
+          }));
+        const before = await Promise.all(
+          (await panel.locator(".af-bar:has(.af-tri)").all()).map(rowText),
+        );
+        const inBand = before.find((r) => r.combo.startsWith(`1-${to}-`));
+        await press();
+        const bd = panel.getByTestId("analogy-band-breakdown");
+        await expect(bd).toContainText(
+          new RegExp(
+            `1着1号艇→2着${to}号艇の${n.toLocaleString("ja-JP")}件の内訳（全体の\\d+%）`,
+          ),
+        );
+        expect(await sums(panel)).toBe(n);
+        // 内訳の行は押す前と同じ書き方・同じ数字（全体の割合と件数。案C、2026-10-10 ユーザー決定）
+        const after = await Promise.all(
+          (await bd.locator(".af-bar").all()).map(rowText),
+        );
+        // 展開シナリオは件数が押せる札（「75件 ›」、BOA-823）
+        for (const r of after) expect(r.v).toMatch(/^[\d.]+% [\d,]+件( ›)?$/);
+        if (inBand)
+          expect(after.find((r) => r.combo === inBand.combo)).toEqual(inBand);
+        // もう一度押すと戻る
+        await press();
+        await expect(bd).toHaveCount(0);
+        // 帯を押した後に1着の四角で絞ると、帯の選択は外れる
+        await press();
+        await expect(bd).toBeVisible();
+        await panel
+          .getByRole("button", { name: /^1着 1号艇 [\d,]+件$/ })
+          .click();
+        await expect(bd).toHaveCount(0);
+      }
+    });
+
+    test("1着の1号艇と「1号艇以外が勝ったレース」は両立しないので、片方を選ぶともう片方が外れる（ユーザー指摘 2026-10-10）", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      for (const tab of ["展開シナリオ", "類似レース"]) {
+        await section.getByRole("tab", { name: tab }).click();
+        const panel = section.getByRole("tabpanel");
+        const box1 = panel.getByRole("button", {
+          name: /^1着 1号艇 [\d,]+件$/,
+        });
+        const not1 = panel.getByRole("button", {
+          name: "1号艇以外が勝ったレース",
+        });
+        // 1号艇で絞った後に「1号艇以外」を押すと、1号艇の絞りが外れて流れと3連単が出る（以前は0件で何も出なかった）
+        await box1.click();
+        await expect(box1).toHaveAttribute("aria-pressed", "true");
+        await not1.click();
+        await expect(not1).toHaveAttribute("aria-pressed", "true");
+        await expect(
+          panel.locator(".af-flow path[role='button']").first(),
+        ).toBeAttached();
+        await expect(panel.locator(".af-tri").first()).toBeVisible();
+        await expect(panel.locator(".af-tri").first()).not.toContainText(/^1-/);
+        if (tab === "類似レース") {
+          // 「1号艇以外」のまま、上の「どの艇が勝った？」の棒で1号艇を選ぶと「1号艇以外」が外れる
+          await panel
+            .getByRole("button", { name: /^1号艇 [\d.]+% [\d,]+件$/ })
+            .first()
+            .click();
+          await expect(not1).toHaveAttribute("aria-pressed", "false");
+          await expect(box1).toHaveAttribute("aria-pressed", "true");
+        }
+        await panel.getByRole("button", { name: "すべて" }).click();
+      }
+    });
+
+    test("七角形の表で見た3号艇の展示タイムは、3号艇を一番上で選んだときと同じ数字（2026-10-09 ユーザー指摘）", async ({
+      page,
+    }) => {
+      // 3号艇の集めたレースだけ値を変え、1号艇の集めたレースの3号艇の列と違う数字にする
+      // （以前の「比べる艇」は1号艇の集めたレースで出していたので、ここで食い違った）
+      const facts = analogyV16Facts();
+      const k3 = facts.today.scope_keys["3"].VC;
+      for (const r of ["1", "2", "3", "4", "5", "6"])
+        facts.facts[k3].by["3"].exh_time[r].win = [1, 50];
+      await setup(page, { facts });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const exhCard = section.locator(
+        ".af-cards > [data-testid='analogy-fact-card'][data-key='exh_time']",
+      );
+      // 一番上で3号艇を選んだときのカードの今日の行
+      await section.locator(".af-boat-btn").nth(2).click();
+      if (!(await exhCard.evaluate((e) => e.open)))
+        await exhCard.locator("summary").click();
+      const top = await exhCard.getByTestId("analogy-today-hit").innerText();
+      expect(top).toContain("2%（1/50件");
+      // 1号艇を一番上にして、七角形の展示タイムを押した表の3号艇の行
+      await section.locator(".af-boat-btn").nth(0).click();
+      await section
+        .getByRole("button", { name: /展示タイムの6艇の表/ })
+        .click();
+      const at = section
+        .getByTestId("analogy-radar-table")
+        .locator("tr[data-boat='3'] [data-testid='analogy-radar-at']");
+      await expect(at).toHaveText("2% 1/50件");
+      // 凡例で3号艇を押して太くしても、同じ表の数字は変わらない
+      await section.getByRole("button", { name: /3号艇（A1）/ }).click();
+      await expect(at).toHaveText("2% 1/50件");
+      // 「全レース」の率は、上の大きい数字（主役＝1号艇）と同じ桁（レビュー指摘: 表だけ整数だった）
+      const big = await section.locator(".af-big b").first().innerText();
+      await expect(
+        section
+          .getByTestId("analogy-radar-table")
+          .locator("tr[data-boat='1'] td")
+          .last(),
+      ).toHaveText(big);
+    });
+
+    test("手がかりの件数が②の件数とずれる理由を書く", async ({ page }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      await expect(section).toContainText(
+        "平均STが6艇そろわないレースを除くので、STEP2の「どの形でも」と件数が少しずれることがある",
+      );
+    });
+
+    test("ソナーの回る飾りは扇ではなく細い線", async ({ page }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      const sweep = section.locator(".af-sweep");
+      await expect(sweep.locator("line")).toHaveCount(1);
+      await expect(sweep.locator("path")).toHaveCount(0);
+    });
+  });
+
+  test.describe("AIの見立て（T5-2、本番の版 2026-10-06 の応答）", () => {
+    const outlook = JSON.parse(
+      zlib.gunzipSync(
+        fs.readFileSync(
+          new URL("./analogy-outlook-fixture.json.gz", import.meta.url),
+        ),
+      ),
     );
-    expect(overflow).toBeLessThanOrEqual(2);
+    const openOutlook = async (page, stage) => {
+      await setup(page);
+      await page.route("**/api/analogy/contribution*", (route) => {
+        const st = new URL(route.request().url()).searchParams.get("stage");
+        return route.fulfill({
+          json: outlook[st === "racecard" ? "racecard" : "exhibition"],
+        });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      if (stage === "racecard")
+        await section.getByRole("button", { name: "展示前（出走表）" }).click();
+      await section.locator(".af-boat-btn").nth(1).click();
+      const ai = section.locator(".af-ai");
+      await ai.locator("summary").first().click();
+      await ai.locator(".af-ai-theme").evaluateAll((ds) =>
+        ds.forEach((d) => {
+          d.open = true;
+        }),
+      );
+      return ai;
+    };
+
+    test("展示後は7テーマで、項目ごとの向きとカテゴリの上がる・下がるを出す", async ({
+      page,
+    }) => {
+      const ai = await openOutlook(page, "exhibition");
+      await expect(ai.locator(".af-ai-theme")).toHaveCount(7);
+      await expect(ai).toContainText(
+        "6艇の中で全国勝率が高いほど見込みが上がる",
+      );
+      await expect(ai).toContainText(
+        "6艇の中で展示タイムが速いほど見込みが上がる",
+      );
+      // グレードは SG・G1・G2…の順、ラウンドは予選・準優勝戦・優勝戦・一般戦などの順に並べる
+      await expect(ai).toContainText("上がる: SG・G1・G2／下がる: —");
+      await expect(ai).toContainText(
+        "上がる: 予選／下がる: 準優勝戦・優勝戦・一般戦など",
+      );
+      await expect(ai).toContainText("1号艇が強いかどうかで変わる");
+      await expect(ai).not.toContainText(/寄与度|モデル/);
+    });
+
+    test("展示前は、その段に無いテーマ（天候・水面）を出さない", async ({
+      page,
+    }) => {
+      const ai = await openOutlook(page, "racecard");
+      await expect(ai.locator(".af-ai-theme")).toHaveCount(6);
+      await expect(ai).not.toContainText("天候・水面");
+      await expect(ai).not.toContainText("展示タイム");
+    });
+
+    test("項目の割合はテーマの % に合計がそろう（グループが1つのテーマはテーマと同じ値）", async ({
+      page,
+    }) => {
+      // 展示前の「スタート・展示」は平均STだけ。内訳の share（0.077）とテーマの割合（0.097）は分母が違うので、
+      // そのまま出すと 8% と 10% で合わなかった（学習側の回答 2026-10-06）
+      const ai = await openOutlook(page, "racecard");
+      const theme = ai.locator(".af-ai-theme", { hasText: "スタート・展示" });
+      const themePct = await theme.locator("summary .af-num").innerText();
+      await expect(theme.locator(".af-ai-item .af-num")).toHaveText([themePct]);
+      for (const th of await ai.locator(".af-ai-theme").all()) {
+        const total = parseInt(
+          await th.locator("summary .af-num").innerText(),
+          10,
+        );
+        const items = await th.locator(".af-ai-item .af-num").allInnerTexts();
+        expect(items.reduce((a, x) => a + parseInt(x, 10), 0)).toBe(total);
+      }
+    });
+  });
+
+  test.describe("ファン評価4周目（実データ、2026-10-07 ユーザー決定）", () => {
+    test("当地勝率 0.00 の艇は「当地の記録なし」で、6艇中の順位を付けない", async ({
+      page,
+    }) => {
+      const f = analogyV16Facts();
+      f.today.items.loc_win.values[0] = 0;
+      await setup(page, { facts: f });
+      await openSonarTab(page);
+      const card = sectionOf(page)
+        .getByTestId("analogy-fact-card")
+        .filter({ hasText: "当地勝率" })
+        .first();
+      if ((await card.getAttribute("open")) === null)
+        await card.locator("summary").click();
+      await expect(card).toContainText("1号艇の今日: —（当地の記録なし）");
+    });
+
+    test("記録の無い艇がいるときは「記録のある5艇中5位（一番低い）」と書き、七角形の読み上げも同じ順位（BOA-802）", async ({
+      page,
+    }) => {
+      const f = analogyV16Facts();
+      // 3号艇は当地の記録なし（0.00）。1号艇は記録のある5艇の中で一番低い
+      f.today.items.loc_win.values[2] = 0;
+      f.today.items.loc_win.values[0] = 5.0;
+      await setup(page, { facts: f });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      const card = section
+        .getByTestId("analogy-fact-card")
+        .filter({ hasText: "当地勝率" })
+        .first();
+      if ((await card.getAttribute("open")) === null)
+        await card.locator("summary").click();
+      await expect(card).toContainText("記録のある5艇中5位（一番低い）");
+      await expect(card).not.toContainText("6艇中5位");
+      await expect(section.locator(".af-hep svg[role=group]")).toHaveAttribute(
+        "aria-label",
+        /当地勝率 記録のある5艇中5位（一番低い）/,
+      );
+    });
+
+    test("節の初日は今節の平均着順点のカードと七角形の軸を出さず、1行で断る（BOA-802）", async ({
+      page,
+    }) => {
+      const f = analogyV16Facts();
+      f.today.round = "yosen";
+      f.today.series_runs_before_today = [0, 0, 0, 0, 0, 0];
+      await setup(page, { facts: f });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await expect(section.getByTestId("analogy-first-day")).toHaveText(
+        "初日は前日までの着順点が無いので、今節の平均着順点は出していない",
+      );
+      await expect(
+        section
+          .getByTestId("analogy-fact-card")
+          .filter({ hasText: "今節の平均着順点" }),
+      ).toHaveCount(0);
+      await expect(
+        section.locator(".af-hep svg[role=group]"),
+      ).not.toHaveAttribute("aria-label", /今節/);
+      // 初日でない日は今まで通り（モーター2連率の呼び名に期間が付く）
+      await expect(
+        section
+          .getByTestId("analogy-fact-card")
+          .filter({ hasText: "モーター2連率（公式・節の時点）" }),
+      ).toHaveCount(1);
+    });
+
+    test("類似レースの全項目表で、展示で決まる項目の「全レースで同じ割合」は出さない", async ({
+      page,
+    }) => {
+      await setup(page);
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      await section
+        .locator("details")
+        .evaluateAll((ds) => ds.forEach((d) => (d.open = true)));
+      const row = section.locator("table.af-like-table tr", {
+        hasText: "天候",
+      });
+      await expect(row).toHaveCount(1);
+      await expect(row.locator("td").last()).toHaveText("—");
+    });
+
+    test("展示後の段が数え直した応答（pool_rate_exhibition）なら、展示の項目の割合も出す", async ({
+      page,
+    }) => {
+      await setup(page);
+      const sim = analogyV16Similar("exhibition");
+      sim.similar.pool_rate = { ...sim.similar.pool_rate, weather: 0.61 };
+      sim.similar.pool_rate_exhibition = true;
+      await page.route("**/api/analogy/similar/**", (route) =>
+        route.fulfill({ json: sim }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      await section
+        .locator("details")
+        .evaluateAll((ds) => ds.forEach((d) => (d.open = true)));
+      const row = section.locator("table.af-like-table tr", {
+        hasText: "天候",
+      });
+      await expect(row.locator("td").last()).toHaveText("61%");
+    });
+
+    test("結果の無い類似レースを決まり方から外したら、その件数を書く", async ({
+      page,
+    }) => {
+      await setup(page);
+      const sim = analogyV16Similar("exhibition");
+      sim.similar.neighbors[0].finish = null;
+      // 後から登録した route が先に効く
+      await page.route("**/api/analogy/similar/**", (route) =>
+        route.fulfill({ json: sim }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "類似レース" }).click();
+      await expect(section).toContainText("（結果が無い1件を除く）");
+    });
+  });
+
+  test.describe("公開前の点検（Codex、2026-10-07）", () => {
+    test("タブ3で既定が全国に替わったときは理由の1行を出し、範囲を選び直したら消す", async ({
+      page,
+    }) => {
+      await setup(page);
+      const fell = analogyV16Scenario();
+      fell.vc_fell_back = 47;
+      const picked = analogyV16Scenario();
+      picked.vc_fell_back = null;
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        route.fulfill({
+          json: new URL(route.request().url()).searchParams.get("scope")
+            ? picked
+            : fell,
+        }),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      const line = section.getByText(
+        /で同じ組み合わせのレース（返還を除く）は47件と少ないので、全国から集めています/,
+      );
+      await expect(line).toBeVisible();
+      await section
+        .getByRole("group", { name: "集めたレース" })
+        .getByRole("button")
+        .first()
+        .click();
+      await expect(line).toHaveCount(0);
+    });
   });
 });

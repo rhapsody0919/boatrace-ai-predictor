@@ -20,6 +20,21 @@
   line-height: 1;
   cursor: pointer;
   padding: 0;
+  position: relative;
+}
+
+/* 押せる範囲は 24×24（BOA-820。見た目は 16px のまま。WCAG 2.5.8 の最低 24px）。
+   ボタンの大きさを変えると表のラベルの行の高さや「?」の位置が変わるので、透明の当たり判定だけを外へ広げる。
+   inset は枠線の内側から測るので、内側 14px（16px − 枠線1px×2）＋5px×2＝24px */
+.term-hint__button::before {
+  content: "";
+  position: absolute;
+  inset: -5px;
+}
+
+.term-hint__button:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
 }
 
 .term-hint__button:hover,

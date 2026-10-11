@@ -34,6 +34,10 @@
 .flying-badge-meet {
   padding: 0 2px;
   font-size: 0.7rem;
+  /* 「이번 시리즈」「this meet」のように語が2つあると、ST考察の375px（1列約49px）では
+     1行に収まらず両端が欠けた。語の切れ目でだけ折り返す（音節・文字の途中では切らない） */
+  white-space: normal;
+  word-break: keep-all;
   background: rgba(255, 255, 255, 0.55);
   border-radius: var(--radius-sm);
 }

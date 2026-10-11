@@ -17,6 +17,7 @@ import {
 } from "../../../../_lib/snsHubHelpers.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 
 export const config = {
   runtime: "edge",
@@ -51,6 +52,12 @@ export default async function handler(req) {
     if (!draft) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
     }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse(
+        { error: "公開不可: v0素材の保留はこの操作で解除できません" },
+        409,
+      );
+    }
     if (draft.status !== "approved" && draft.status !== "ready_to_post") {
       return jsonResponse(
         {
@@ -68,6 +75,12 @@ export default async function handler(req) {
     return jsonResponse({ data: updated });
   } catch (error) {
     console.error("SNS Hub mark-posted Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse(
+      {
+        error:
+          "処理を完了できませんでした。最新の状態を再読み込みして確認してください。",
+      },
+      error.status || 500,
+    );
   }
 }

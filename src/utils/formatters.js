@@ -166,3 +166,19 @@ export function formatCapturedAtJst(capturedAt) {
   if (!month || !day) return null;
   return `${month}/${day} ${pick("hour")}:${pick("minute")}`;
 }
+
+/**
+ * 展示STを公式の表記で書く（BOA-759）。展示でフライング・出遅れした艇は、公式の直前情報が
+ * 「F.01」「L」のように頭に印を付けて出す。DB の start_timing は印を外した正の数（F.01→0.01）
+ * なので、印（exhibition_data.start_flag）と合わせないと、F の艇が一番早い ST に見える
+ *
+ * @param {number|null|undefined} value start_timing（秒）
+ * @param {"F"|"L"|null|undefined} flag start_flag
+ * @returns {string|null} 値も印も無ければ null
+ */
+export function formatExhibitionSt(value, flag) {
+  const n = value == null || value === "" ? null : Number(value);
+  const digits = n != null && Number.isFinite(n) ? n.toFixed(2) : null;
+  if (flag) return `${flag}${digits != null ? digits.replace(/^0/, "") : ""}`;
+  return digits;
+}

@@ -28,6 +28,8 @@ import {
   buildKbDay,
   decodeLzhText,
   summarizeKbDay,
+  parseKText,
+  _internal as kbInternal,
   buildKbUrl,
   kbArchiveRelPath,
   PENDING_MARKER,
@@ -833,6 +835,56 @@ for (const d of DAYS) {
     "K確定状況: 実物のプレースホルダ（k260920-pending.lzh、321バイト）は、日全体が未確定として扱われる",
     c4.allPending === true || (c4.total === 0 && real.includes(P)),
     JSON.stringify(c4),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// 中止のレース（BOA-412）: 払戻金の要約の「NR 中　止」を cancelled_race_numbers に取る
+// フィクスチャは実物の K の抜粋: 2025-12-12 江戸川（全日中止）と 2025-12-03 鳴門（11・12R が中止の途中打ち切り）
+// ---------------------------------------------------------------------------
+{
+  const k = parseKText(read("k251212-03-k251203-14-cancelled.txt"));
+  const edogawa = k.venues.find((v) => v.venue_code === 3);
+  const naruto = k.venues.find((v) => v.venue_code === 14);
+  check(
+    "中止: 全日中止（江戸川 2025-12-12）は、成績0レース・中止 1〜12R",
+    edogawa?.races.length === 0 &&
+      JSON.stringify(edogawa?.cancelled_race_numbers) ===
+        JSON.stringify([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+    JSON.stringify(edogawa?.cancelled_race_numbers),
+  );
+  check(
+    "中止: 途中打ち切り（鳴門 2025-12-03）は、成績 1〜10R・中止 11・12R（重ならず、合わせて12）",
+    naruto?.races.length === 10 &&
+      JSON.stringify(naruto?.cancelled_race_numbers) === "[11,12]" &&
+      !naruto.races.some((r) =>
+        naruto.cancelled_race_numbers.includes(r.race_number),
+      ),
+    JSON.stringify({
+      races: naruto?.races.length,
+      c: naruto?.cancelled_race_numbers,
+    }),
+  );
+  check(
+    "中止: 要約の行は、従来どおり payout_summary_lines にも残す（既存の挙動を変えない）",
+    edogawa?.payout_summary_lines.some((l) => /1R\s+中/.test(l)),
+  );
+  const normal = parseKText(read("k260315.txt"));
+  check(
+    "中止: 中止の無い日（k260315）は、全会場で cancelled_race_numbers が空。払戻の要約行を中止と取り違えない",
+    normal.venues.length > 0 &&
+      normal.venues.every((v) => v.cancelled_race_numbers.length === 0),
+  );
+  const re = kbInternal.K_SUMMARY_CANCELLED_RE;
+  check(
+    "中止の行の正規表現: 全角スペースの有無を問わず取り、払戻の要約（組番と金額）は取らない",
+    re.test("           1R  中　止") &&
+      re.test("          12R  中止") &&
+      !re.test("           1R  3-1-2    2340  3-1-2   680"),
+  );
+  check(
+    "中止: summarizeKbDay に k_cancelled_races（中止のレース数）が出る",
+    summarizeKbDay({ date: "x", k, b: null }).k_cancelled_races === 14,
   );
 }
 

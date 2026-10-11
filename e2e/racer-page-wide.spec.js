@@ -18,10 +18,16 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       return { sw: w.scrollWidth, cw: w.clientWidth };
     });
     expect(m.sw).toBeLessThanOrEqual(m.cw);
-    // 平均STカードは絞り込みに連動しない日次集計の値（「桐生での平均ST」と読まれていた）
-    await expect(
-      page.locator(".racer-stat-card h3", { hasText: "平均ST" }).first(),
-    ).toHaveText("平均ST（全会場・全条件）");
+    // 平均STカードは絞り込みに連動しない全会場の値（「桐生での平均ST」と読まれていた）。
+    // 主は公式の出走表と同じ値、注記に直近30走（BOA-815。全期間の値は出さない）
+    const stCard = page
+      .locator(".racer-stat-card")
+      .filter({ has: page.locator("h3", { hasText: "平均ST" }) })
+      .first();
+    await expect(stCard.locator("h3")).toHaveText("平均ST（公式）");
+    await expect(stCard).toContainText("の成績（勝率と同じ期の公式の期別成績）・全会場");
+    await expect(stCard).toContainText("直近30走:");
+    await expect(stCard.locator(".racer-stat-value")).toHaveText(/^0\.\d{2}$/);
   });
 
   test("STの推移はフライングの走を赤い点で残し、ツールチップに会場とR番号を出す", async ({

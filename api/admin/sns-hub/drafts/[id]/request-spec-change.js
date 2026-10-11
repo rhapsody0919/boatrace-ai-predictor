@@ -89,6 +89,6 @@ export default async function handler(req) {
     return jsonResponse({ data: { draftId: id }, issue: issueResult });
   } catch (error) {
     console.error("SNS Hub request-spec-change Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 500);
   }
 }

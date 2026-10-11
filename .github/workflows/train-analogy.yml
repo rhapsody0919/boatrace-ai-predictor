@@ -16,11 +16,14 @@ on:
         description: "版の名前（省略時は JST の今日の日付）"
         required: false
         default: ""
-      record_perrace:
-        description: "事前登録5 の記録2（ファンに見える値・seed の揺れ）を取る。初回の本番学習で1回だけ（約数分増える）"
-        type: boolean
+      profiles_only_version:
+        description: "学習せず、Storage に置いた版のモデル（seed ごと）から profiles を作り直して書く（profiles の計算で失敗した版の名前。例 2026-10-05）"
         required: false
-        default: false
+        default: ""
+      write_only_version:
+        description: "学習せず、Storage に置いた版の profiles を DB に書いて切り替えるだけ（書き込みの段で失敗した版の名前。例 2026-10-05）"
+        required: false
+        default: ""
 
 concurrency:
   group: train-analogy
@@ -34,7 +37,6 @@ jobs:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       ANALOGY_MODEL_VERSION: ${{ inputs.model_version }}
-      ANALOGY_RECORD_PERRACE: ${{ inputs.record_perrace && '1' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -55,22 +57,66 @@ jobs:
         run: python -m pytest scripts/ml/analogy/tests -q
 
       - name: Export training data
+        if: inputs.write_only_version == ''
         run: node scripts/ml/analogy/export_pool.js
 
       - name: Build features
+        if: inputs.write_only_version == ''
         working-directory: scripts/ml/analogy
         run: python features.py
 
       # 品質ゲートの比較の相手は固定した参照版（scripts/ml/analogy/reference.json）。直前の版ではない
       - name: Download reference model (品質ゲートの比較用)
+        if: inputs.write_only_version == '' && inputs.profiles_only_version == ''
         run: node scripts/ml/analogy/storage.js download-reference
 
-      - name: Train, quality gate, contribution profiles
+      - name: Train and quality gate
+        if: inputs.write_only_version == '' && inputs.profiles_only_version == ''
         working-directory: scripts/ml/analogy
-        run: python train.py
+        run: python train.py --train-only
+
+      # レースごとの寄与度の JS（TreeSHAP・直前情報8列）が学習側と一致するか（ADR 案（#1134）決定6）。
+      # 一致しなければアップロードも切り替えもしない（表示は前の版のまま）。終了コード 0 一致 / 1 不一致 / 2 入力の不備
+      - name: Parity check (treeshap-parity.js)
+        if: inputs.write_only_version == '' && inputs.profiles_only_version == ''
+        run: |
+          set +e
+          node scripts/ml/analogy/treeshap-parity.js data/ml/analogy/out/
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            echo "$code" > data/ml/analogy/out/parity_failed.txt
+            exit 1
+          fi
 
       - name: Upload model to Storage
+        if: inputs.write_only_version == '' && inputs.profiles_only_version == ''
         run: node scripts/ml/analogy/storage.js upload-model
+
+      # profiles の計算だけやり直す（学習とモデルの置き場は前の実行のもの。データは今回書き出し、学習した回の test の期間で切る）
+      - name: Download trained models (profiles_only_version)
+        if: inputs.profiles_only_version != ''
+        env:
+          PROFILES_ONLY_VERSION: ${{ inputs.profiles_only_version }}
+        run: node scripts/ml/analogy/storage.js download-trained-models "$PROFILES_ONLY_VERSION"
+
+      # モデルを Storage に置いた後に profiles を作る（ここで失敗しても profiles_only_version でやり直せる）
+      - name: Contribution profiles
+        if: inputs.write_only_version == ''
+        working-directory: scripts/ml/analogy
+        run: python train.py --profiles-only
+
+      # 書き込みの前に置く（書き込みで失敗しても write_only_version でやり直せる）
+      - name: Upload profiles to Storage
+        if: inputs.write_only_version == ''
+        run: node scripts/ml/analogy/storage.js upload-profiles
+
+      # 書き込みだけやり直す（学習と Storage への置き場は前の実行のもの）
+      - name: Download trained version (write_only_version)
+        if: inputs.write_only_version != ''
+        env:
+          WRITE_ONLY_VERSION: ${{ inputs.write_only_version }}
+        run: node scripts/ml/analogy/storage.js download-trained "$WRITE_ONLY_VERSION"
 
       - name: Write profiles and activate
         working-directory: scripts/ml/analogy
@@ -85,7 +131,7 @@ jobs:
         run: |
           drift=data/ml/analogy/out/drift.json
           if [ "$(jq -r .flagged "$drift")" != "true" ]; then exit 0; fi
-          detail=$(jq -r '[.changes[] | "finish_target=\(.finish_target) \(.theme) \(.max_abs_change * 1000 | round / 1000)"] | join(" / ")' "$drift")
+          detail=$(jq -r '[.changes[] | "\(.stage) finish_target=\(.finish_target) \(.theme) \(.max_abs_change * 1000 | round / 1000)"] | join(" / ")' "$drift")
           payload=$(jq -n --arg d "$detail" --arg prev "$(jq -r .previous "$drift")" --arg url "$RUN_URL" \
             '{text: (":warning: *アナロジー・ファインダーの寄与度のシェアが前の版（" + $prev + "）から大きく動きました*（切り替えは済み）\n" + $d + "\n" + $url)}')
           curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
@@ -112,6 +158,8 @@ jobs:
           if [ -f "$failed" ]; then
             echo "## 品質ゲートで停止（表示は前の版のまま）" >> "$GITHUB_STEP_SUMMARY"
             jq '.gate' "$failed" >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f data/ml/analogy/out/parity_failed.txt ]; then
+            echo "## 一致検査（treeshap-parity.js）で停止（終了コード $(cat data/ml/analogy/out/parity_failed.txt)。表示は前の版のまま）" >> "$GITHUB_STEP_SUMMARY"
           elif [ -f "$meta" ]; then
             if [ -f "$activated" ]; then
               echo "## 版 $(jq -r .model_version $meta) に切り替えた" >> "$GITHUB_STEP_SUMMARY"
@@ -128,8 +176,12 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
+          parity=data/ml/analogy/out/parity_failed.txt
           if [ -f data/ml/analogy/out/gate_failed.json ]; then
             reason="品質ゲートで停止（表示は前の版のまま）: $(jq -r '.gate.reasons | join(" / ")' data/ml/analogy/out/gate_failed.json)"
+          elif [ -f "$parity" ]; then
+            if [ "$(cat "$parity")" = "1" ]; then kind="JS と学習側の値が不一致"; else kind="入力の不備（ファイルが無い・形が違う）"; fi
+            reason="一致検査（treeshap-parity.js）で停止: ${kind}。アップロード・切り替えはしていない（表示は前の版のまま）"
           elif [ -f data/ml/analogy/out/activated.json ]; then
             reason="新しい版への切り替えの後（古い版の削除）で失敗。表示は新しい版"
           else

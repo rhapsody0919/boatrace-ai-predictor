@@ -1,0 +1,82 @@
+<title>事故率モック v2</title>
+<style>
+:root{--bg:#f4f5f8;--card:#ffffff;--text:#1d2433;--sub:#5b6577;--hair:#dfe3ea;--gold:#c9a227;--add:#fff7d6;--addline:#e3c55a;--up:#1f8a4c;--down:#c0392b;--ink:#0f2747}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#12161d;--card:#1b212b;--text:#e7ebf2;--sub:#9aa5b8;--hair:#2c3442;--add:#3a3216;--addline:#8a7428;--up:#4cc283;--down:#ef6f61;--ink:#cfe0ff}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#12161d;--card:#1b212b;--text:#e7ebf2;--sub:#9aa5b8;--hair:#2c3442;--add:#3a3216;--addline:#8a7428;--up:#4cc283;--down:#ef6f61;--ink:#cfe0ff}
+body{background:var(--bg);color:var(--text);font-family:"Hiragino Sans","Noto Sans JP",system-ui,sans-serif;padding-inline:16px;padding-block:24px;line-height:1.6}
+main{max-width:1500px;margin:0 auto;display:grid;gap:28px}
+h1{font-size:20px;margin:0;text-wrap:balance}
+h2{font-size:15px;margin:0 0 8px;color:var(--ink)}
+p,li{font-size:13px;color:var(--sub);margin:0}
+ul{margin:4px 0 0;padding-left:18px;display:grid;gap:2px}
+.frames{display:grid;gap:12px}
+.label{font-size:12px;font-weight:700;color:var(--sub);letter-spacing:.04em}
+.scroll{overflow-x:auto}
+.w375{width:375px;max-width:100%}
+.w1440{width:1440px}
+.page{background:var(--card);border:1px solid var(--hair);border-radius:8px;padding:12px}
+.row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--hair);font-size:14px}
+.boat{width:22px;height:22px;border-radius:4px;display:grid;place-items:center;font-weight:700;font-size:12px;border:1px solid #333}
+.b1{background:#fff;color:#000}.b4{background:#2b62d9;color:#fff;border-color:#2b62d9}
+.name{font-weight:700}.gr{font-size:11px;color:var(--sub)}
+.tabs{display:flex;gap:6px;margin:8px 0}
+.tab{font-size:12px;padding:2px 10px;border-radius:999px;border:1px solid var(--hair);color:var(--sub)}
+.tab.on{background:var(--gold);border-color:var(--gold);color:#fff;font-weight:700}
+.period{margin-top:10px;padding-top:6px;border-top:1px solid var(--hair)}
+.ph{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:2px}
+.vals{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:14px;font-variant-numeric:tabular-nums}
+.diff{font-size:11px;color:var(--sub);margin-left:.25em;display:inline-block}
+.diff.up{color:var(--up)}.diff.down{color:var(--down)}
+.new{margin-top:4px;background:var(--add);outline:1px dashed var(--addline);border-radius:4px;padding:2px 6px}
+.new .vals span b{font-weight:700}
+.sub2{font-size:11px;color:var(--sub)}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.notes{background:var(--card);border:1px solid var(--hair);border-radius:8px;padding:14px;display:grid;gap:10px}
+table{border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+td,th{border-bottom:1px solid var(--hair);padding:4px 10px;text-align:right}
+th:first-child,td:first-child{text-align:left}
+
+.bar{display:flex;align-items:center;gap:6px;padding:7px 0;border-bottom:1px solid var(--hair);font-size:13px;flex-wrap:wrap}
+.fb{font-size:10px;font-weight:700;border-radius:3px;padding:0 4px;border:1px solid var(--gold);color:var(--gold)}
+.acc{font-size:10px;font-weight:700;border-radius:999px;padding:1px 7px;border:1px solid var(--hair);color:var(--text)}
+.acc.over{border-color:var(--down);color:var(--down)}
+.rate{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--sub);font-size:12px}
+.accbox{margin-top:8px;padding-top:6px;border-top:1px solid var(--hair)}
+.accv{font-size:14px;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:baseline}
+.accv b{font-size:15px}
+.cap{font-size:11px;color:var(--sub);margin-top:2px}
+.b2{background:#000;color:#fff;border-color:#000}.b3{background:#d33;color:#fff;border-color:#d33}.b5{background:#e7c400;color:#000;border-color:#e7c400}.b6{background:#1a9b4a;color:#fff;border-color:#1a9b4a}
+</style>
+<main>
+<div><h1>今期の事故率（BOA-327）レース詳細 基本情報タブ</h1>
+<p>実データ: 2026-10-03 びわこ 8R の6選手。今期（2026-05-01〜10-02）の公式成績ファイル（K）の着欄コードから、公式の配点で計算した値。黄色の点線枠が追加分。</p></div>
+<section class="notes"><h2>提案（ファン4人パネルの結論「形を変えて作る」）</h2><ul>
+<li>前期ではなく今期の途中経過を出す（勝負駆け・降格を読むのは今期の値）</li>
+<li>選手の行（Fバッジの隣）には、B2ラインを超えた選手と、あとF1本（20点）以内で超える選手にだけ目印を出す。全員に数字を並べない</li>
+<li>選手のバーを開いた欄に、事故率・内訳・B2ラインまでの残り点を出す。注記で「目安」であることを常に断る</li>
+<li>色はB2ラインを超えたときだけ赤（自然な基準がある値）。ライン付近は無色の枠</li>
+<li>計算の検算: 前の期（2025-05〜10）で、Kから計算して0.70を超えた22人は全員B2。出走回数の数え方は fan と1,625人全員で一致</li>
+</ul></section>
+<div class="frames">
+<div class="label">375px（選手の行。1号艇を開いた状態）</div>
+<div class="scroll"><div class="w375 page"><div class="bar"><span class="boat b1">1</span><span class="name">高山 弘斗</span><span class="gr">A2</span><span class="fb">F1</span><span class="new" style="padding:0 2px;outline-offset:1px"><span class="acc">B2ラインまで あと6点</span></span><span class="rate">▼</span></div><div class="accbox new" style="outline-offset:2px">
+<div class="ph">今期の事故率（目安・2026-05-01〜10-02）</div>
+<div class="accv"><span>事故率 <b>0.62</b></span><span class="sub2">事故点40÷出走64（F1・失格2）</span><span>B2ライン（0.70）まで あと6点</span></div>
+<div class="cap">事故点は公式の配点（F・出遅れ20点、妨害失格15点、選手責任の失格・欠場10点。今期2本目以降のFは加点）。不良航法・待機行動違反（2点）は含まないため、公式の値より低いことがあります。0.70を超えると次の級別審査でB2級になります</div></div><div class="bar"><span class="boat b2">2</span><span class="name">山下 大輝</span><span class="gr">A1</span><span class="rate">▶</span></div><div class="bar"><span class="boat b3">3</span><span class="name">川崎 智幸</span><span class="gr">A2</span><span class="fb">F1</span><span class="rate">▶</span></div><div class="bar"><span class="boat b4">4</span><span class="name">柳橋 宏紀</span><span class="gr">B1</span><span class="rate">▶</span></div><div class="bar"><span class="boat b5">5</span><span class="name">小川 知行</span><span class="gr">A2</span><span class="rate">▶</span></div><div class="bar"><span class="boat b6">6</span><span class="name">鳥本 智史</span><span class="gr">B1</span><span class="fb">F1</span><span class="new" style="padding:0 2px"><span class="acc over">事故率0.78 B2ライン超え</span></span><span class="rate">▶</span></div></div></div>
+<div class="label">1440px（右は6号艇を開いた場合）</div>
+<div class="scroll"><div class="w1440 page"><div class="grid2"><div><div class="bar"><span class="boat b1">1</span><span class="name">高山 弘斗</span><span class="gr">A2</span><span class="fb">F1</span><span class="new" style="padding:0 2px;outline-offset:1px"><span class="acc">B2ラインまで あと6点</span></span><span class="rate">▶</span></div><div class="bar"><span class="boat b2">2</span><span class="name">山下 大輝</span><span class="gr">A1</span><span class="rate">▶</span></div><div class="bar"><span class="boat b3">3</span><span class="name">川崎 智幸</span><span class="gr">A2</span><span class="fb">F1</span><span class="rate">▶</span></div><div class="bar"><span class="boat b4">4</span><span class="name">柳橋 宏紀</span><span class="gr">B1</span><span class="rate">▶</span></div><div class="bar"><span class="boat b5">5</span><span class="name">小川 知行</span><span class="gr">A2</span><span class="rate">▶</span></div><div class="bar"><span class="boat b6">6</span><span class="name">鳥本 智史</span><span class="gr">B1</span><span class="fb">F1</span><span class="new" style="padding:0 2px"><span class="acc over">事故率0.78 B2ライン超え</span></span><span class="rate">▶</span></div></div><div><div class="bar"><span class="boat b6">6</span><span class="name">鳥本 智史</span><span class="gr">B1</span><span class="fb">F1</span><span class="new" style="padding:0 2px"><span class="acc over">事故率0.78 B2ライン超え</span></span><span class="rate">▼</span></div><div class="accbox new" style="outline-offset:2px">
+<div class="ph">今期の事故率（目安・2026-05-01〜10-02）</div>
+<div class="accv"><span style="color:var(--down)">事故率 <b>0.78</b></span><span class="sub2">事故点30÷出走38（F1・失格1）</span><span style="color:var(--down)">B2ライン（0.70）超え</span></div>
+<div class="cap">事故点は公式の配点（F・出遅れ20点、妨害失格15点、選手責任の失格・欠場10点。今期2本目以降のFは加点）。不良航法・待機行動違反（2点）は含まないため、公式の値より低いことがあります。0.70を超えると次の級別審査でB2級になります</div></div></div></div></div></div>
+</div>
+<section class="notes"><h2>このレース6人の値</h2><div class="scroll"><table>
+<thead><tr><th>艇・選手</th><th>出走</th><th>F</th><th>失格</th><th>事故点</th><th>事故率</th><th>ラインまで</th></tr></thead><tbody>
+<tr><td>1 高山 弘斗</td><td>64</td><td>1</td><td>2</td><td>40</td><td>0.62</td><td>あと6点</td></tr>
+<tr><td>2 山下 大輝</td><td>96</td><td>0</td><td>0</td><td>0</td><td>0.00</td><td>あと69点</td></tr>
+<tr><td>3 川崎 智幸</td><td>99</td><td>1</td><td>0</td><td>20</td><td>0.20</td><td>あと51点</td></tr>
+<tr><td>4 柳橋 宏紀</td><td>93</td><td>0</td><td>1</td><td>10</td><td>0.10</td><td>あと57点</td></tr>
+<tr><td>5 小川 知行</td><td>95</td><td>0</td><td>0</td><td>0</td><td>0.00</td><td>あと68点</td></tr>
+<tr><td>6 鳥本 智史</td><td>38</td><td>1</td><td>1</td><td>30</td><td>0.78</td><td>超え</td></tr>
+</tbody></table></div>
+<p>「あと◯点」は、今の出走数のまま0.71以上（小数第2位切り捨てで0.70超）になる点数。出走が増えれば余裕も増える。全選手（1,625人）では、超えが34人、事故点1点以上でライン付近（20点以内）が106人。</p></section>
+</main>

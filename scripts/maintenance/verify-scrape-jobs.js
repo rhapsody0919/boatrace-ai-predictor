@@ -2153,7 +2153,10 @@ check(
   };
   let threw;
   try {
-    await fetchAll("t", "id", null, { client: pagedClient });
+    await fetchAll("t", "id", null, {
+      client: pagedClient,
+      unordered: "偽のクライアント（テスト。2ページ目の失敗だけを確かめる）",
+    });
   } catch (e) {
     threw = e;
   }
@@ -2166,6 +2169,7 @@ check(
   const partial = await fetchAll("t", "id", null, {
     client: pagedClient,
     throwOnError: false,
+    unordered: "偽のクライアント（テスト。2ページ目の失敗だけを確かめる）",
   });
   console.error = originalError;
   check(

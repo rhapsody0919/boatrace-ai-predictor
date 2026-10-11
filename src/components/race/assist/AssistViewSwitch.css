@@ -1,0 +1,95 @@
+/* 上部の切り替え（BOA-430 PR6）。ページの切り替えなので、ページ内の塗りの切り替え（展示前/後・レンズ）より軽い
+   下線のタブ型（承認モック mock/pr6-switch.html）。余白は龍神ソナーで決めた値（横 16px・内側 12px） */
+.assist-view-switch {
+  display: grid;
+  gap: var(--spacing-1);
+  padding: var(--spacing-2) var(--spacing-4) 0;
+  border-bottom: 1px solid var(--border-hairline);
+  background: var(--surface-card);
+}
+
+.assist-view-switch__seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.assist-view-switch__seg button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-1);
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.assist-view-switch__seg button[aria-pressed="true"] {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+  border-bottom-color: var(--color-info-text);
+}
+
+.assist-view-switch__seg button:focus-visible {
+  outline: 3px solid var(--color-info-text);
+  outline-offset: -3px;
+}
+
+/* レース詳細を見ているときの「思考アシスト」側（BOA-832、2026-10-11 ユーザー選択）。上部にあっても気づかれなかったので
+   文字色・太字・末尾の「›」で目立たせる。地色は付けない（地色の付いた側が選択中に読まれる）。選択中は ✓＋下線のまま */
+.assist-view-switch__seg button.is-entry {
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.assist-view-switch__arrow {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+}
+
+.assist-view-switch__seg button.is-entry:hover {
+  text-decoration: underline;
+}
+
+/* 「新」は塗りの札（以前は縁取りで目に留まらなかった） */
+.assist-view-switch__new {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  color: var(--surface-card);
+  background: var(--brand-accent-primary);
+  border: 1px solid var(--brand-accent-primary);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-1);
+  line-height: 1.4;
+}
+
+.assist-view-switch__note {
+  max-width: 480px;
+  width: 100%;
+  margin: 0 auto var(--spacing-2);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  text-align: right;
+}
+
+/* PC（1024px 以上）は左寄せにし、レース詳細の本文・思考アシストの PC 表示の左端（24px）にそろえる
+   （BOA-801 5、龍神ソナーの PC 表示と同じ決まり。2026-10-10 ユーザー決定） */
+@media (min-width: 1024px) {
+  .assist-view-switch {
+    padding-inline: var(--spacing-6);
+  }
+
+  .assist-view-switch__seg,
+  .assist-view-switch__note {
+    margin-inline: 0;
+  }
+}

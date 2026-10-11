@@ -1,0 +1,5304 @@
+{
+ "analysis": "T1-1 優勝戦・準優勝戦の判定を広げる",
+ "preregistration": "docs/design/analogy-finder/analysis/t1/preregistration-t1.md「共通」「T1-1」",
+ "preregistration_commit": "238e0bb5a",
+ "period": [
+  "2019-04-01",
+  "2026-10-03"
+ ],
+ "data_version": "本番 Supabase（読み取りのみ）。取得時刻・行数・最大日・sha256 は inputs",
+ "in_sample_note": "モデルを評価しない名前の判定の数え上げ（全件・in-sample）",
+ "population": "a〜c・e は開催されたレース（長期 has_result、本体 cancellation_status 空・race_results.rank1 あり・is_cancelled/is_no_race でない・race_status≠no_race）。d は本体の全レースと開催分の両方。all_a1＝出走表の級別が A1 の艇が6艇（長期 kb_archive_boats.class、本体 race_entries.grade）",
+ "inputs": {
+  "conditions.csv": {
+   "sha256": "b10c8a7e54af09b5b65893262f9389b4b26b2b37169386bdac0d4261a7b74cc5",
+   "table": "race_conditions",
+   "filter": null,
+   "rows": 47532,
+   "max_date": "2026-10-03",
+   "fetched_at": "2026-10-04T11:15:48.916Z"
+  },
+  "entries_a1.csv": {
+   "sha256": "627c7f009769046df70f1fc64023929b5b030c4e38d882ab25c5fdc5db059aee",
+   "table": "race_entries",
+   "filter": {
+    "grade": "A1"
+   },
+   "rows": 68808,
+   "max_date": "2026-10-03",
+   "fetched_at": "2026-10-04T11:15:55.749Z"
+  },
+  "kb_boats_a1.csv": {
+   "sha256": "e13ec2cdd913820eb57f41859898645473f513bf25ae52cfbbc8f740956eaf9d",
+   "table": "kb_archive_boats",
+   "filter": {
+    "class": "A1"
+   },
+   "rows": 557065,
+   "max_date": "2025-12-02",
+   "fetched_at": "2026-10-04T11:15:42.492Z"
+  },
+  "kb_races.csv": {
+   "sha256": "114bb2e835aa61307a7149ab6dd05fbf89d66491c3e24b0707068cf27f6f3c08",
+   "table": "kb_archive_races",
+   "filter": null,
+   "rows": 372276,
+   "max_date": "2025-12-02",
+   "fetched_at": "2026-10-04T11:15:14.804Z"
+  },
+  "kb_venue_days.csv": {
+   "sha256": "ec3aeb31d03e92a51bfe35384826434ede11d43595b34930f9b0b563c0ee8bbc",
+   "table": "kb_archive_venue_days",
+   "filter": null,
+   "rows": 31023,
+   "max_date": "2025-12-02",
+   "fetched_at": "2026-10-04T11:15:17.967Z"
+  },
+  "race_series.csv": {
+   "sha256": "6891a9c82d29732314a07991c0c44e8a2d27aacca24b4117bfd11ca51e76a325",
+   "table": "race_series",
+   "filter": null,
+   "rows": 6448,
+   "max_date": "2026-12-03",
+   "fetched_at": "2026-10-04T11:15:44.224Z"
+  },
+  "races.csv": {
+   "sha256": "52f7251caad51863ad6f1da0e21ffeda69419b9185ba50415fa9dac91523f28a",
+   "table": "races",
+   "filter": null,
+   "rows": 47736,
+   "max_date": "2026-10-03",
+   "fetched_at": "2026-10-04T11:15:46.506Z"
+  },
+  "results.csv": {
+   "sha256": "29de1a91522f13547d5ff43f25187c74d4752f62a97dd5e4a4ec5dc5c73fad89",
+   "table": "race_results",
+   "filter": null,
+   "rows": 47183,
+   "max_date": "2026-10-03",
+   "fetched_at": "2026-10-04T11:15:51.897Z"
+  },
+  "t1_1_accept22.json": {
+   "sha256": "a4d9ce16dd0a4df1a6cb05f3316cc3594ec357f7b8e7b6ab013937e0f434dbc1"
+  }
+ },
+ "rules": {
+  "old": "本体: raceStageConfig.js の RACE_STAGE_CATEGORY_RULES（NFKC）→ features.py の round。長期: prep10（p10_executed_check_kb.sql）と同じく、名前で 準々/準優進出→other、準優勝戦→junyu、優勝戦→yusho、それ以外は stage_kind",
+  "v1": "事前登録の新しいルール。準々/準優進出→どちらでもない。/準優勝?戦/・準決・セミファイナル→準優勝戦。優勝戦・決勝戦・王座決定戦・賞金女王決定・王将位決定戦・（ファイナル かつ 進出なし）・（空白を除いた末尾が優 かつ 準優なし）→優勝戦。長期は 名前が準優勝戦→準優勝戦、名前か stage_kind が優勝戦→優勝戦、stage_kind が semifinal→準優勝戦",
+  "v2_extra": [
+   {
+    "kind": "final_exclude",
+    "rule": "「ファイナル選」を含む名前は優勝戦にしない（c 由来）",
+    "reason": "c（新しいルールで優勝戦なのに fd12 でない）に kb『ファイナル選』1件（2019-12-24-16-12、児島。開催名『児島ファイナル2019』の初日12R。同じ節の最終日 2019-12-29 の12Rに別に『優勝戦』があり、初日の『ファイナル選抜』＝選抜戦と読める）。v1 の規則『ファイナルを含み進出を含まない』が拾った誤判定"
+   },
+   {
+    "kind": "final_include",
+    "rule": "空白を除いた末尾が「優勝」で「準優」を含まない名前は優勝戦（b 由来）",
+    "reason": "b（fd12 なのに優勝戦にならない）に、長期の名前が6文字で切れて『〜優勝戦』の『戦』が落ちたものが並んだ（団体・優勝 9・個性派王優勝 4・ツッピー優勝 3・ダービー優勝 2・PRGT優勝・ゴールド優勝・スピード優勝・パタち杯優勝・内山信二優勝・海の安全優勝 各1、いずれも12Rで同じ日に別の優勝戦が無い）。v1 の『末尾が優』は『〜優』で切れたものしか拾わない。同じ形の名前は全期間で他に『シリーズ優勝』5（11R、GP・QC のシリーズ優勝戦）・『ツッキー優勝』3（11R、男女Ｗ優勝戦の日）・stage_kind=final の『優勝』だけで、どれも優勝戦"
+   }
+  ],
+  "v2_is_same_as_v1": false,
+  "kind_only_reference": "features.py の load_kb は長期の round を stage_kind だけで決める（round_from_kb_kind）。参考に件数を出す"
+ },
+ "fd12_definitions": {
+  "fd12_end": "長期: kb_archive_venue_days.is_final_day の日の12R。本体: race_series.end_date か race_conditions.is_final_day の日の12R（prep10 と同じ）",
+  "fd12_last": "節（同じ会場で開始日がその日以前で最も遅い race_series）で開催されたレースのある最後の日の12R（開催されたもの）",
+  "fd12_end_seriesonly": "参考: 長期・本体とも race_series.end_date の日の12R",
+  "races_without_series": 144,
+  "held_races_without_series": 144,
+  "series_with_held_races_finished": 6298,
+  "unfinished_series_excluded": 140,
+  "held_races_in_unfinished_series": 396
+ },
+ "counts": {
+  "races_all": {
+   "kb": 372276,
+   "main": 47736
+  },
+  "races_held": {
+   "kb": 367516,
+   "main": 47175
+  },
+  "held_all_a1": {
+   "kb": 22783,
+   "main": 2852
+  },
+  "fd12_end_vs_last": {
+   "both": 6248,
+   "end_only": 3,
+   "last_only": 19,
+   "end_seriesonly": 6248
+  },
+  "kind_only_final_kb": 5506,
+  "kind_only_semifinal_kb": 16556
+ },
+ "kb_rule1_vs_kind": {
+  "note": "長期で名前が 準々/準優進出（規則1＝どちらでもない）なのに stage_kind が semifinal/final のレース。規則1を先に当てたので round は other。事前登録の長期の優先の文を字面どおりに読むと stage_kind に従い junyu/yusho になる（features.py の round_from_kb_kind も junyu/yusho）",
+  "names": [
+   {
+    "source": "kb",
+    "stage_name": "準優進出戦",
+    "stage_kind": "semifinal",
+    "n": 1272,
+    "n_all_a1": 0,
+    "race_numbers": "6,7,8,9,10,11,12",
+    "example_race_id": "2025-11-29-15-11"
+   },
+   {
+    "source": "kb",
+    "stage_name": "準優進出チャ",
+    "stage_kind": "semifinal",
+    "n": 3,
+    "n_all_a1": 0,
+    "race_numbers": "9,10,11",
+    "example_race_id": "2025-08-14-11-11"
+   },
+   {
+    "source": "kb",
+    "stage_name": "準優進出シー",
+    "stage_kind": "semifinal",
+    "n": 1,
+    "n_all_a1": 0,
+    "race_numbers": "12",
+    "example_race_id": "2025-08-14-11-12"
+   }
+  ]
+ },
+ "old_rule_fd12": {
+  "fd12_end": {
+   "all": {
+    "kb": {
+     "fd12": 5544,
+     "fd12_and_final": 5456,
+     "fd12_not_final": 88,
+     "miss_rate_wilson95": [
+      0.0159,
+      0.0129,
+      0.0195
+     ],
+     "final_not_fd12": 83
+    },
+    "main": {
+     "fd12": 707,
+     "fd12_and_final": 686,
+     "fd12_not_final": 21,
+     "miss_rate_wilson95": [
+      0.0297,
+      0.0195,
+      0.045
+     ],
+     "final_not_fd12": 27
+    },
+    "total": {
+     "fd12": 6251,
+     "fd12_and_final": 6142,
+     "fd12_not_final": 109,
+     "miss_rate_wilson95": [
+      0.0174,
+      0.0145,
+      0.021
+     ],
+     "final_not_fd12": 110
+    }
+   },
+   "all_a1": {
+    "kb": {
+     "fd12": 526,
+     "fd12_and_final": 507,
+     "fd12_not_final": 19,
+     "miss_rate_wilson95": [
+      0.0361,
+      0.0232,
+      0.0557
+     ],
+     "final_not_fd12": 6
+    },
+    "main": {
+     "fd12": 67,
+     "fd12_and_final": 64,
+     "fd12_not_final": 3,
+     "miss_rate_wilson95": [
+      0.0448,
+      0.0153,
+      0.1236
+     ],
+     "final_not_fd12": 1
+    },
+    "total": {
+     "fd12": 593,
+     "fd12_and_final": 571,
+     "fd12_not_final": 22,
+     "miss_rate_wilson95": [
+      0.0371,
+      0.0246,
+      0.0555
+     ],
+     "final_not_fd12": 7
+    }
+   },
+   "b_missed_names": [
+    {
+     "source": "main",
+     "stage_name": "特別選抜戦Ａ組",
+     "stage_kind": "-",
+     "n": 11,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2026-10-02-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "団体・優勝",
+     "stage_kind": "other",
+     "n": 9,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-02-02-18-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル",
+     "stage_kind": "other",
+     "n": 7,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-13-10-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "決勝戦",
+     "stage_kind": "other",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-26-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "other",
+     "n": 6,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-07-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "県内選手権優",
+     "stage_kind": "other",
+     "n": 6,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2024-11-28-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "バッチこい優",
+     "stage_kind": "other",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-16-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王座決定戦",
+     "stage_kind": "other",
+     "n": 5,
+     "n_all_a1": 5,
+     "race_numbers": "12",
+     "example_race_id": "2023-04-14-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "個性派王優勝",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-10-01-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "特別選抜A組",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-06-05-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "特別選抜戦A",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-11-22-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "発祥地N選抜",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-03-23-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 3,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-31-07-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ツッピー優勝",
+     "stage_kind": "other",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-03-13-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ホットマン優",
+     "stage_kind": "other",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-07-05-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "特別選抜戦Ａ",
+     "stage_kind": "-",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-20-24-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "選抜戦Ａ",
+     "stage_kind": "-",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2026-07-03-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリー優",
+     "stage_kind": "other",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-12-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ダービー優勝",
+     "stage_kind": "other",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-10-31-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "住信SBI優",
+     "stage_kind": "other",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-09-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "PRGT優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-01-12-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "auじぶん優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-10-06-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "じぶん銀行優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-10-17-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "オオムラGP",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-01-01-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ゴールド優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-03-11-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリC優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-06-02-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "スピード優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-02-27-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "パタち杯優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-09-08-11-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "内山信二優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-03-03-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜ダービー優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-04-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "決勝戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-25-13-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "海の安全優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-11-19-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-07-12-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "県内選手権優",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-10-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-31-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "関ヶ原決戦",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-07-30-06-12"
+    }
+   ],
+   "c_final_not_fd12_names": [
+    {
+     "source": "kb",
+     "stage_name": "優勝戦",
+     "stage_kind": "final",
+     "n": 75,
+     "n_all_a1": 6,
+     "race_numbers": "11",
+     "example_race_id": "2025-11-30-22-11"
+    },
+    {
+     "source": "main",
+     "stage_name": "優勝戦",
+     "stage_kind": "-",
+     "n": 25,
+     "n_all_a1": 1,
+     "race_numbers": "11",
+     "example_race_id": "2026-10-02-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "男子優勝戦",
+     "stage_kind": "other",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-06-03-14-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "B組優勝戦",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2020-01-01-24-11"
+    },
+    {
+     "source": "main",
+     "stage_name": "ツッキー優勝戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2026-08-30-09-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2019-11-22-03-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝戦B組女",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-03-08-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝戦女子",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2025-08-03-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝戦男子",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-05-13-01-11"
+    },
+    {
+     "source": "main",
+     "stage_name": "Ｓ戦優勝戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2025-12-31-24-11"
+    }
+   ]
+  },
+  "fd12_last": {
+   "all": {
+    "kb": {
+     "fd12": 5560,
+     "fd12_and_final": 5453,
+     "fd12_not_final": 107,
+     "miss_rate_wilson95": [
+      0.0192,
+      0.016,
+      0.0232
+     ],
+     "final_not_fd12": 86
+    },
+    "main": {
+     "fd12": 707,
+     "fd12_and_final": 686,
+     "fd12_not_final": 21,
+     "miss_rate_wilson95": [
+      0.0297,
+      0.0195,
+      0.045
+     ],
+     "final_not_fd12": 27
+    },
+    "total": {
+     "fd12": 6267,
+     "fd12_and_final": 6139,
+     "fd12_not_final": 128,
+     "miss_rate_wilson95": [
+      0.0204,
+      0.0172,
+      0.0242
+     ],
+     "final_not_fd12": 113
+    }
+   },
+   "all_a1": {
+    "kb": {
+     "fd12": 529,
+     "fd12_and_final": 507,
+     "fd12_not_final": 22,
+     "miss_rate_wilson95": [
+      0.0416,
+      0.0276,
+      0.0622
+     ],
+     "final_not_fd12": 6
+    },
+    "main": {
+     "fd12": 67,
+     "fd12_and_final": 64,
+     "fd12_not_final": 3,
+     "miss_rate_wilson95": [
+      0.0448,
+      0.0153,
+      0.1236
+     ],
+     "final_not_fd12": 1
+    },
+    "total": {
+     "fd12": 596,
+     "fd12_and_final": 571,
+     "fd12_not_final": 25,
+     "miss_rate_wilson95": [
+      0.0419,
+      0.0286,
+      0.0612
+     ],
+     "final_not_fd12": 7
+    }
+   },
+   "b_missed_names": [
+    {
+     "source": "main",
+     "stage_name": "特別選抜戦Ａ組",
+     "stage_kind": "-",
+     "n": 11,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2026-10-02-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "団体・優勝",
+     "stage_kind": "other",
+     "n": 9,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-02-02-18-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル",
+     "stage_kind": "other",
+     "n": 7,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-13-10-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "決勝戦",
+     "stage_kind": "other",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-26-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "other",
+     "n": 6,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-07-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "県内選手権優",
+     "stage_kind": "other",
+     "n": 6,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2024-11-28-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "バッチこい優",
+     "stage_kind": "other",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-16-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王座決定戦",
+     "stage_kind": "other",
+     "n": 5,
+     "n_all_a1": 5,
+     "race_numbers": "12",
+     "example_race_id": "2023-04-14-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "個性派王優勝",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-10-01-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準優勝戦",
+     "stage_kind": "semifinal",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-08-28-21-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "特別選抜A組",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-06-05-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "特別選抜戦A",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-11-22-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "発祥地N選抜",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-03-23-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "other",
+     "n": 4,
+     "n_all_a1": 3,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-31-07-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ツッピー優勝",
+     "stage_kind": "other",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-03-13-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ホットマン優",
+     "stage_kind": "other",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-07-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "一般戦",
+     "stage_kind": "other",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-03-21-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "予選特選",
+     "stage_kind": "qualifier",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-08-30-11-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "特別選抜戦Ａ",
+     "stage_kind": "-",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-20-24-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "選抜戦Ａ",
+     "stage_kind": "-",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2026-07-03-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリー優",
+     "stage_kind": "other",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-12-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ダービー優勝",
+     "stage_kind": "other",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-10-31-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "住信SBI優",
+     "stage_kind": "other",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-09-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "記者選抜戦",
+     "stage_kind": "other",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-10-16-03-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "PRGT優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-01-12-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "auじぶん優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-10-06-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "じぶん銀行優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-10-17-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ウインクDR",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2021-01-29-02-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "オオムラGP",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-01-01-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ゴールド優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-03-11-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリC優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-06-02-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "スピード優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-02-27-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ドリーム戦",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-04-17-18-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "パタち杯優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-09-08-11-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ペイペイDR",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2022-11-06-17-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "一般",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-01-23-15-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "一般桐生特選",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2020-12-20-01-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "予選",
+     "stage_kind": "qualifier",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-07-05-03-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "予選特別選抜",
+     "stage_kind": "qualifier",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-08-11-03-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "内山信二優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-03-03-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜ダービー優",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-04-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "決勝戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-25-13-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "海の安全優勝",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-11-19-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-07-12-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "県内選手権優",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-10-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-31-24-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "関ヶ原決戦",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-07-30-06-12"
+    }
+   ],
+   "c_final_not_fd12_names": [
+    {
+     "source": "kb",
+     "stage_name": "優勝戦",
+     "stage_kind": "final",
+     "n": 78,
+     "n_all_a1": 6,
+     "race_numbers": "11,12",
+     "example_race_id": "2025-11-30-22-11"
+    },
+    {
+     "source": "main",
+     "stage_name": "優勝戦",
+     "stage_kind": "-",
+     "n": 25,
+     "n_all_a1": 1,
+     "race_numbers": "11",
+     "example_race_id": "2026-10-02-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "男子優勝戦",
+     "stage_kind": "other",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-06-03-14-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "B組優勝戦",
+     "stage_kind": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2020-01-01-24-11"
+    },
+    {
+     "source": "main",
+     "stage_name": "ツッキー優勝戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2026-08-30-09-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2019-11-22-03-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝戦B組女",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-03-08-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝戦女子",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2025-08-03-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝戦男子",
+     "stage_kind": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-05-13-01-11"
+    },
+    {
+     "source": "main",
+     "stage_name": "Ｓ戦優勝戦",
+     "stage_kind": "-",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2025-12-31-24-11"
+    }
+   ]
+  }
+ },
+ "v1": {
+  "a": {
+   "old": {
+    "all": {
+     "kb": {
+      "final": 5539,
+      "semifinal": 15338
+     },
+     "main": {
+      "final": 713,
+      "semifinal": 1942
+     },
+     "total": {
+      "final": 6252,
+      "semifinal": 17280
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "final": 513,
+      "semifinal": 857
+     },
+     "main": {
+      "final": 65,
+      "semifinal": 105
+     },
+     "total": {
+      "final": 578,
+      "semifinal": 962
+     }
+    }
+   },
+   "new": {
+    "all": {
+     "kb": {
+      "final": 5590,
+      "semifinal": 15358
+     },
+     "main": {
+      "final": 717,
+      "semifinal": 1944
+     },
+     "total": {
+      "final": 6307,
+      "semifinal": 17302
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "final": 533,
+      "semifinal": 869
+     },
+     "main": {
+      "final": 68,
+      "semifinal": 107
+     },
+     "total": {
+      "final": 601,
+      "semifinal": 976
+     }
+    }
+   },
+   "changed_final_or_semifinal": 77,
+   "changed_final_or_semifinal_all_a1": 37,
+   "changed_names": [
+    {
+     "source": "kb",
+     "stage_name": "準決勝戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 12,
+     "n_all_a1": 12,
+     "race_numbers": "10,11,12",
+     "example_race_id": "2025-01-25-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 7,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-13-10-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "決勝戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-26-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 6,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-07-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "県内選手権優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 6,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2024-11-28-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "バッチこい優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-16-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王座決定戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 5,
+     "n_all_a1": 5,
+     "race_numbers": "12",
+     "example_race_id": "2023-04-14-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦前半",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "3,4,5,6",
+     "example_race_id": "2024-02-28-05-06"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦後半",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2024-02-28-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 4,
+     "n_all_a1": 3,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-31-07-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ホットマン優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-07-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリー優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-12-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "住信SBI優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-09-13-05-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "準決勝戦",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 2,
+     "n_all_a1": 2,
+     "race_numbers": "11,12",
+     "example_race_id": "2026-01-24-13-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "auじぶん優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-10-06-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "じぶん銀行優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-10-17-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリC優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-06-02-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル選",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2019-12-24-16-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜ダービー優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-04-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "決勝戦",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-25-13-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-07-12-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "県内選手権優",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-10-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-31-24-12"
+    }
+   ]
+  },
+  "b_c": {
+   "fd12_end": {
+    "all": {
+     "kb": {
+      "fd12": 5544,
+      "fd12_and_final": 5506,
+      "fd12_not_final": 38,
+      "miss_rate_wilson95": [
+       0.0069,
+       0.005,
+       0.0094
+      ],
+      "final_not_fd12": 84
+     },
+     "main": {
+      "fd12": 707,
+      "fd12_and_final": 690,
+      "fd12_not_final": 17,
+      "miss_rate_wilson95": [
+       0.024,
+       0.0151,
+       0.0382
+      ],
+      "final_not_fd12": 27
+     },
+     "total": {
+      "fd12": 6251,
+      "fd12_and_final": 6196,
+      "fd12_not_final": 55,
+      "miss_rate_wilson95": [
+       0.0088,
+       0.0068,
+       0.0114
+      ],
+      "final_not_fd12": 111
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "fd12": 526,
+      "fd12_and_final": 526,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0073
+      ],
+      "final_not_fd12": 7
+     },
+     "main": {
+      "fd12": 67,
+      "fd12_and_final": 67,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0542
+      ],
+      "final_not_fd12": 1
+     },
+     "total": {
+      "fd12": 593,
+      "fd12_and_final": 593,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0064
+      ],
+      "final_not_fd12": 8
+     }
+    },
+    "b_missed_names": [
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ組",
+      "stage_kind": "-",
+      "n": 11,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-10-02-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "団体・優勝",
+      "stage_kind": "other",
+      "n": 9,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-02-02-18-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "個性派王優勝",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-10-01-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜A組",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-06-05-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜戦A",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-11-22-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "発祥地N選抜",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-03-23-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ツッピー優勝",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-03-13-09-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-20-24-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-07-03-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ダービー優勝",
+      "stage_kind": "other",
+      "n": 2,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-10-31-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "PRGT優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-01-12-05-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "オオムラGP",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-01-01-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ゴールド優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-03-11-09-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "スピード優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-02-27-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "パタち杯優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2023-09-08-11-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "内山信二優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-03-03-05-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "海の安全優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-11-19-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "関ヶ原決戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2023-07-30-06-12"
+     }
+    ],
+    "c_final_not_fd12_names": [
+     {
+      "source": "kb",
+      "stage_name": "優勝戦",
+      "stage_kind": "final",
+      "n": 75,
+      "n_all_a1": 6,
+      "race_numbers": "11",
+      "example_race_id": "2025-11-30-22-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "優勝戦",
+      "stage_kind": "-",
+      "n": 25,
+      "n_all_a1": 1,
+      "race_numbers": "11",
+      "example_race_id": "2026-10-02-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "男子優勝戦",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-06-03-14-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "B組優勝戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2020-01-01-24-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "ツッキー優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2026-08-30-09-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ファイナル選",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2019-12-24-16-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2019-11-22-03-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦B組女",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-03-08-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦女子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-08-03-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦男子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-05-13-01-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "Ｓ戦優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-12-31-24-11"
+     }
+    ]
+   },
+   "fd12_last": {
+    "all": {
+     "kb": {
+      "fd12": 5560,
+      "fd12_and_final": 5503,
+      "fd12_not_final": 57,
+      "miss_rate_wilson95": [
+       0.0103,
+       0.0079,
+       0.0133
+      ],
+      "final_not_fd12": 87
+     },
+     "main": {
+      "fd12": 707,
+      "fd12_and_final": 690,
+      "fd12_not_final": 17,
+      "miss_rate_wilson95": [
+       0.024,
+       0.0151,
+       0.0382
+      ],
+      "final_not_fd12": 27
+     },
+     "total": {
+      "fd12": 6267,
+      "fd12_and_final": 6193,
+      "fd12_not_final": 74,
+      "miss_rate_wilson95": [
+       0.0118,
+       0.0094,
+       0.0148
+      ],
+      "final_not_fd12": 114
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "fd12": 529,
+      "fd12_and_final": 526,
+      "fd12_not_final": 3,
+      "miss_rate_wilson95": [
+       0.0057,
+       0.0019,
+       0.0165
+      ],
+      "final_not_fd12": 7
+     },
+     "main": {
+      "fd12": 67,
+      "fd12_and_final": 67,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0542
+      ],
+      "final_not_fd12": 1
+     },
+     "total": {
+      "fd12": 596,
+      "fd12_and_final": 593,
+      "fd12_not_final": 3,
+      "miss_rate_wilson95": [
+       0.005,
+       0.0017,
+       0.0147
+      ],
+      "final_not_fd12": 8
+     }
+    },
+    "b_missed_names": [
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ組",
+      "stage_kind": "-",
+      "n": 11,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-10-02-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "団体・優勝",
+      "stage_kind": "other",
+      "n": 9,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-02-02-18-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "個性派王優勝",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-10-01-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "準優勝戦",
+      "stage_kind": "semifinal",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-08-28-21-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜A組",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-06-05-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜戦A",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-11-22-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "発祥地N選抜",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-03-23-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ツッピー優勝",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-03-13-09-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "一般戦",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-03-21-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "予選特選",
+      "stage_kind": "qualifier",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-08-30-11-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-20-24-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-07-03-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ダービー優勝",
+      "stage_kind": "other",
+      "n": 2,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-10-31-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "記者選抜戦",
+      "stage_kind": "other",
+      "n": 2,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-10-16-03-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "PRGT優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-01-12-05-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ウインクDR",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2021-01-29-02-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "オオムラGP",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-01-01-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ゴールド優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-03-11-09-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "スピード優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-02-27-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ドリーム戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2021-04-17-18-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "パタち杯優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2023-09-08-11-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ペイペイDR",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2022-11-06-17-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "一般",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-01-23-15-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "一般桐生特選",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2020-12-20-01-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "予選",
+      "stage_kind": "qualifier",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-07-05-03-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "予選特別選抜",
+      "stage_kind": "qualifier",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-08-11-03-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "内山信二優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-03-03-05-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "海の安全優勝",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-11-19-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "関ヶ原決戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2023-07-30-06-12"
+     }
+    ],
+    "c_final_not_fd12_names": [
+     {
+      "source": "kb",
+      "stage_name": "優勝戦",
+      "stage_kind": "final",
+      "n": 78,
+      "n_all_a1": 6,
+      "race_numbers": "11,12",
+      "example_race_id": "2025-11-30-22-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "優勝戦",
+      "stage_kind": "-",
+      "n": 25,
+      "n_all_a1": 1,
+      "race_numbers": "11",
+      "example_race_id": "2026-10-02-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "男子優勝戦",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-06-03-14-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "B組優勝戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2020-01-01-24-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "ツッキー優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2026-08-30-09-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ファイナル選",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2019-12-24-16-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2019-11-22-03-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦B組女",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-03-08-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦女子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-08-03-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦男子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-05-13-01-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "Ｓ戦優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-12-31-24-11"
+     }
+    ]
+   }
+  },
+  "d": {
+   "all_races": {
+    "n_races": 47736,
+    "badge_changed": 6,
+    "badge_changed_all_a1": 5,
+    "series_points_excluded_changed": 6,
+    "series_points_excluded_changed_all_a1": 5,
+    "either_changed": 6,
+    "badge_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "semifinal",
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ],
+    "series_points_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ]
+   },
+   "held": {
+    "n_races": 47175,
+    "badge_changed": 6,
+    "badge_changed_all_a1": 5,
+    "series_points_excluded_changed": 6,
+    "series_points_excluded_changed_all_a1": 5,
+    "either_changed": 6,
+    "badge_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "semifinal",
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ],
+    "series_points_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ]
+   }
+  },
+  "e": {
+   "kb_held": 367516,
+   "kb_held_named": 367516,
+   "kb_held_unnamed": 0,
+   "disagree": 1548,
+   "disagree_all_a1": 49,
+   "by_pair": {
+    "name=final/kind=other": 84,
+    "name=other/kind=final": 46,
+    "name=other/kind=semifinal": 1340,
+    "name=semifinal/kind=other": 78
+   },
+   "names": [
+    {
+     "source": "kb",
+     "stage_name": "準優進出戦",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 1272,
+     "n_all_a1": 0,
+     "race_numbers": "6,7,8,9,10,11,12",
+     "example_race_id": "2025-11-29-15-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準優勝",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 64,
+     "n_all_a1": 5,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2020-09-16-03-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "優勝",
+     "stage_kind": "final",
+     "name_judgement": "other",
+     "n": 46,
+     "n_all_a1": 3,
+     "race_numbers": "11,12",
+     "example_race_id": "2020-09-17-03-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優勝戦前",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 22,
+     "n_all_a1": 0,
+     "race_numbers": "3,4,5,6,7",
+     "example_race_id": "2020-12-01-05-06"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優勝戦後",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 22,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2020-12-01-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準決勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 12,
+     "n_all_a1": 12,
+     "race_numbers": "10,11,12",
+     "example_race_id": "2025-01-25-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 7,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-13-10-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "GP優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-22-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "女子準優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 6,
+     "n_all_a1": 0,
+     "race_numbers": "10,12",
+     "example_race_id": "2023-06-02-14-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "決勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-26-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-07-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "男子準優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 6,
+     "n_all_a1": 0,
+     "race_numbers": "9,11",
+     "example_race_id": "2023-06-02-14-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "県内選手権優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2024-11-28-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "バッチこい優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-16-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "海属王優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-09-09-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王座決定戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 5,
+     "n_all_a1": 5,
+     "race_numbers": "12",
+     "example_race_id": "2023-04-14-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦前半",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "3,4,5,6",
+     "example_race_id": "2024-02-28-05-06"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦後半",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2024-02-28-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "団体・優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-11-03-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 4,
+     "n_all_a1": 3,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-31-07-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ホットマン優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-07-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "女子優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-06-03-14-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準優進出チャ",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11",
+     "example_race_id": "2025-08-14-11-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "澤乃井優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2023-03-27-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "男子優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-06-03-14-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "B組準優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "9,10",
+     "example_race_id": "2019-12-31-24-10"
+    },
+    {
+     "source": "kb",
+     "stage_name": "QC優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-31-22-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリー優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-12-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "住信SBI優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-09-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "大郷優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-08-20-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "蛭子優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-06-21-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "B組優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2020-01-01-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "auじぶん優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-10-06-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "じぶん銀行優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-10-17-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリC優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-06-02-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル選",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2019-12-24-16-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜ダービー優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-04-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜王優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-10-29-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "安全王優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-04-17-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準優進出シー",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-08-14-11-12"
+    }
+   ]
+  },
+  "acceptance_22R": {
+   "n": 22,
+   "final_under_new": 22,
+   "passed": true,
+   "not_final": []
+  }
+ },
+ "v2": {
+  "a": {
+   "old": {
+    "all": {
+     "kb": {
+      "final": 5539,
+      "semifinal": 15338
+     },
+     "main": {
+      "final": 713,
+      "semifinal": 1942
+     },
+     "total": {
+      "final": 6252,
+      "semifinal": 17280
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "final": 513,
+      "semifinal": 857
+     },
+     "main": {
+      "final": 65,
+      "semifinal": 105
+     },
+     "total": {
+      "final": 578,
+      "semifinal": 962
+     }
+    }
+   },
+   "new": {
+    "all": {
+     "kb": {
+      "final": 5621,
+      "semifinal": 15358
+     },
+     "main": {
+      "final": 717,
+      "semifinal": 1944
+     },
+     "total": {
+      "final": 6338,
+      "semifinal": 17302
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "final": 534,
+      "semifinal": 869
+     },
+     "main": {
+      "final": 68,
+      "semifinal": 107
+     },
+     "total": {
+      "final": 602,
+      "semifinal": 976
+     }
+    }
+   },
+   "changed_final_or_semifinal": 108,
+   "changed_final_or_semifinal_all_a1": 38,
+   "changed_names": [
+    {
+     "source": "kb",
+     "stage_name": "準決勝戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 12,
+     "n_all_a1": 12,
+     "race_numbers": "10,11,12",
+     "example_race_id": "2025-01-25-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "団体・優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 9,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-02-02-18-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 7,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-13-10-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "決勝戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-26-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 6,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-07-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "県内選手権優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 6,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2024-11-28-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "シリーズ優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 5,
+     "n_all_a1": 2,
+     "race_numbers": "11",
+     "example_race_id": "2021-12-31-22-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "バッチこい優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-16-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王座決定戦",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 5,
+     "n_all_a1": 5,
+     "race_numbers": "12",
+     "example_race_id": "2023-04-14-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦前半",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "3,4,5,6",
+     "example_race_id": "2024-02-28-05-06"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦後半",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2024-02-28-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "個性派王優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-10-01-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 4,
+     "n_all_a1": 3,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-31-07-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ツッキー優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2024-03-13-09-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ツッピー優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-03-13-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ホットマン優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-07-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリー優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-12-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ダービー優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-10-31-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "住信SBI優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-09-13-05-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "準決勝戦",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "junyu",
+     "n": 2,
+     "n_all_a1": 2,
+     "race_numbers": "11,12",
+     "example_race_id": "2026-01-24-13-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "PRGT優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-01-12-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "auじぶん優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-10-06-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "じぶん銀行優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-10-17-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ゴールド優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-03-11-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリC優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-06-02-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "スピード優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-02-27-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "パタち杯優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-09-08-11-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "内山信二優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-03-03-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜ダービー優",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-04-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "決勝戦",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-25-13-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "海の安全優勝",
+     "stage_kind": "other",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-11-19-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2026-01-07-12-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "県内選手権優",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-10-20-12"
+    },
+    {
+     "source": "main",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "-",
+     "round_old_": "other",
+     "round_new_": "yusho",
+     "n": 1,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-12-31-24-12"
+    }
+   ]
+  },
+  "b_c": {
+   "fd12_end": {
+    "all": {
+     "kb": {
+      "fd12": 5544,
+      "fd12_and_final": 5530,
+      "fd12_not_final": 14,
+      "miss_rate_wilson95": [
+       0.0025,
+       0.0015,
+       0.0042
+      ],
+      "final_not_fd12": 91
+     },
+     "main": {
+      "fd12": 707,
+      "fd12_and_final": 690,
+      "fd12_not_final": 17,
+      "miss_rate_wilson95": [
+       0.024,
+       0.0151,
+       0.0382
+      ],
+      "final_not_fd12": 27
+     },
+     "total": {
+      "fd12": 6251,
+      "fd12_and_final": 6220,
+      "fd12_not_final": 31,
+      "miss_rate_wilson95": [
+       0.005,
+       0.0035,
+       0.007
+      ],
+      "final_not_fd12": 118
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "fd12": 526,
+      "fd12_and_final": 526,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0073
+      ],
+      "final_not_fd12": 8
+     },
+     "main": {
+      "fd12": 67,
+      "fd12_and_final": 67,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0542
+      ],
+      "final_not_fd12": 1
+     },
+     "total": {
+      "fd12": 593,
+      "fd12_and_final": 593,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0064
+      ],
+      "final_not_fd12": 9
+     }
+    },
+    "b_missed_names": [
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ組",
+      "stage_kind": "-",
+      "n": 11,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-10-02-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜A組",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-06-05-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜戦A",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-11-22-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "発祥地N選抜",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-03-23-24-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-20-24-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-07-03-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "オオムラGP",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-01-01-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "関ヶ原決戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2023-07-30-06-12"
+     }
+    ],
+    "c_final_not_fd12_names": [
+     {
+      "source": "kb",
+      "stage_name": "優勝戦",
+      "stage_kind": "final",
+      "n": 75,
+      "n_all_a1": 6,
+      "race_numbers": "11",
+      "example_race_id": "2025-11-30-22-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "優勝戦",
+      "stage_kind": "-",
+      "n": 25,
+      "n_all_a1": 1,
+      "race_numbers": "11",
+      "example_race_id": "2026-10-02-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "シリーズ優勝",
+      "stage_kind": "other",
+      "n": 5,
+      "n_all_a1": 2,
+      "race_numbers": "11",
+      "example_race_id": "2021-12-31-22-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ツッキー優勝",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2024-03-13-09-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "男子優勝戦",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-06-03-14-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "B組優勝戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2020-01-01-24-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "ツッキー優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2026-08-30-09-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2019-11-22-03-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦B組女",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-03-08-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦女子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-08-03-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦男子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-05-13-01-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "Ｓ戦優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-12-31-24-11"
+     }
+    ]
+   },
+   "fd12_last": {
+    "all": {
+     "kb": {
+      "fd12": 5560,
+      "fd12_and_final": 5527,
+      "fd12_not_final": 33,
+      "miss_rate_wilson95": [
+       0.0059,
+       0.0042,
+       0.0083
+      ],
+      "final_not_fd12": 94
+     },
+     "main": {
+      "fd12": 707,
+      "fd12_and_final": 690,
+      "fd12_not_final": 17,
+      "miss_rate_wilson95": [
+       0.024,
+       0.0151,
+       0.0382
+      ],
+      "final_not_fd12": 27
+     },
+     "total": {
+      "fd12": 6267,
+      "fd12_and_final": 6217,
+      "fd12_not_final": 50,
+      "miss_rate_wilson95": [
+       0.008,
+       0.0061,
+       0.0105
+      ],
+      "final_not_fd12": 121
+     }
+    },
+    "all_a1": {
+     "kb": {
+      "fd12": 529,
+      "fd12_and_final": 526,
+      "fd12_not_final": 3,
+      "miss_rate_wilson95": [
+       0.0057,
+       0.0019,
+       0.0165
+      ],
+      "final_not_fd12": 8
+     },
+     "main": {
+      "fd12": 67,
+      "fd12_and_final": 67,
+      "fd12_not_final": 0,
+      "miss_rate_wilson95": [
+       0.0,
+       0.0,
+       0.0542
+      ],
+      "final_not_fd12": 1
+     },
+     "total": {
+      "fd12": 596,
+      "fd12_and_final": 593,
+      "fd12_not_final": 3,
+      "miss_rate_wilson95": [
+       0.005,
+       0.0017,
+       0.0147
+      ],
+      "final_not_fd12": 9
+     }
+    },
+    "b_missed_names": [
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ組",
+      "stage_kind": "-",
+      "n": 11,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-10-02-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "準優勝戦",
+      "stage_kind": "semifinal",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-08-28-21-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜A組",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-06-05-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "特別選抜戦A",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-11-22-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "発祥地N選抜",
+      "stage_kind": "other",
+      "n": 4,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-03-23-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "一般戦",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-03-21-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "予選特選",
+      "stage_kind": "qualifier",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-08-30-11-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "特別選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-20-24-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "選抜戦Ａ",
+      "stage_kind": "-",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2026-07-03-20-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "記者選抜戦",
+      "stage_kind": "other",
+      "n": 2,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2024-10-16-03-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ウインクDR",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2021-01-29-02-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "オオムラGP",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-01-01-24-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ドリーム戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2021-04-17-18-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ペイペイDR",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2022-11-06-17-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "一般",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-01-23-15-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "一般桐生特選",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2020-12-20-01-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "予選",
+      "stage_kind": "qualifier",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2020-07-05-03-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "予選特別選抜",
+      "stage_kind": "qualifier",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2022-08-11-03-12"
+     },
+     {
+      "source": "kb",
+      "stage_name": "関ヶ原決戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2023-07-30-06-12"
+     }
+    ],
+    "c_final_not_fd12_names": [
+     {
+      "source": "kb",
+      "stage_name": "優勝戦",
+      "stage_kind": "final",
+      "n": 78,
+      "n_all_a1": 6,
+      "race_numbers": "11,12",
+      "example_race_id": "2025-11-30-22-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "優勝戦",
+      "stage_kind": "-",
+      "n": 25,
+      "n_all_a1": 1,
+      "race_numbers": "11",
+      "example_race_id": "2026-10-02-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "シリーズ優勝",
+      "stage_kind": "other",
+      "n": 5,
+      "n_all_a1": 2,
+      "race_numbers": "11",
+      "example_race_id": "2021-12-31-22-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "ツッキー優勝",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2024-03-13-09-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "男子優勝戦",
+      "stage_kind": "other",
+      "n": 3,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-06-03-14-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "B組優勝戦",
+      "stage_kind": "other",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2020-01-01-24-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "ツッキー優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2026-08-30-09-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2019-11-22-03-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦B組女",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-03-08-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦女子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-08-03-24-11"
+     },
+     {
+      "source": "kb",
+      "stage_name": "優勝戦男子",
+      "stage_kind": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2023-05-13-01-11"
+     },
+     {
+      "source": "main",
+      "stage_name": "Ｓ戦優勝戦",
+      "stage_kind": "-",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "11",
+      "example_race_id": "2025-12-31-24-11"
+     }
+    ]
+   }
+  },
+  "d": {
+   "all_races": {
+    "n_races": 47736,
+    "badge_changed": 6,
+    "badge_changed_all_a1": 5,
+    "series_points_excluded_changed": 6,
+    "series_points_excluded_changed_all_a1": 5,
+    "either_changed": 6,
+    "badge_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "semifinal",
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ],
+    "series_points_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ]
+   },
+   "held": {
+    "n_races": 47175,
+    "badge_changed": 6,
+    "badge_changed_all_a1": 5,
+    "series_points_excluded_changed": 6,
+    "series_points_excluded_changed_all_a1": 5,
+    "either_changed": 6,
+    "badge_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "semifinal",
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "badge_old": "-",
+      "badge_new": "final",
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ],
+    "series_points_changes_by_name": [
+     {
+      "source": "main",
+      "stage_name": "準決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 2,
+      "n_all_a1": 2,
+      "race_numbers": "11,12",
+      "example_race_id": "2026-01-24-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "決勝戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-25-13-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "王将位決定戦",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2026-01-07-12-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "県内選手権優",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 0,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-10-20-12"
+     },
+     {
+      "source": "main",
+      "stage_name": "賞金女王決定",
+      "stage_kind": "-",
+      "sp_old": false,
+      "sp_new": true,
+      "n": 1,
+      "n_all_a1": 1,
+      "race_numbers": "12",
+      "example_race_id": "2025-12-31-24-12"
+     }
+    ]
+   }
+  },
+  "e": {
+   "kb_held": 367516,
+   "kb_held_named": 367516,
+   "kb_held_unnamed": 0,
+   "disagree": 1533,
+   "disagree_all_a1": 47,
+   "by_pair": {
+    "name=final/kind=other": 115,
+    "name=other/kind=semifinal": 1340,
+    "name=semifinal/kind=other": 78
+   },
+   "names": [
+    {
+     "source": "kb",
+     "stage_name": "準優進出戦",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 1272,
+     "n_all_a1": 0,
+     "race_numbers": "6,7,8,9,10,11,12",
+     "example_race_id": "2025-11-29-15-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準優勝",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 64,
+     "n_all_a1": 5,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2020-09-16-03-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優勝戦前",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 22,
+     "n_all_a1": 0,
+     "race_numbers": "3,4,5,6,7",
+     "example_race_id": "2020-12-01-05-06"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優勝戦後",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 22,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2020-12-01-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準決勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 12,
+     "n_all_a1": 12,
+     "race_numbers": "10,11,12",
+     "example_race_id": "2025-01-25-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "団体・優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 9,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-02-02-18-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ファイナル",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 7,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-13-10-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "GP優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-22-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "女子準優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 6,
+     "n_all_a1": 0,
+     "race_numbers": "10,12",
+     "example_race_id": "2023-06-02-14-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "決勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 6,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-26-08-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王将位決定戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2025-01-07-12-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "男子準優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 6,
+     "n_all_a1": 0,
+     "race_numbers": "9,11",
+     "example_race_id": "2023-06-02-14-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "県内選手権優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 6,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2024-11-28-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "シリーズ優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 5,
+     "n_all_a1": 2,
+     "race_numbers": "11",
+     "example_race_id": "2021-12-31-22-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "バッチこい優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-10-16-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "海属王優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 5,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-09-09-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "王座決定戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 5,
+     "n_all_a1": 5,
+     "race_numbers": "12",
+     "example_race_id": "2023-04-14-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦前半",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "3,4,5,6",
+     "example_race_id": "2024-02-28-05-06"
+    },
+    {
+     "source": "kb",
+     "stage_name": "W準優戦後半",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11,12",
+     "example_race_id": "2024-02-28-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "個性派王優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-10-01-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "団体・優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 4,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-11-03-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "賞金女王決定",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 4,
+     "n_all_a1": 3,
+     "race_numbers": "12",
+     "example_race_id": "2024-12-31-07-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ツッキー優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2024-03-13-09-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ツッピー優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-03-13-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ホットマン優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-07-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "女子優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-06-03-14-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準優進出チャ",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "9,10,11",
+     "example_race_id": "2025-08-14-11-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "澤乃井優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 1,
+     "race_numbers": "12",
+     "example_race_id": "2023-03-27-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "男子優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 3,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2023-06-03-14-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "B組準優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "semifinal",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "9,10",
+     "example_race_id": "2019-12-31-24-10"
+    },
+    {
+     "source": "kb",
+     "stage_name": "QC優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 2,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-31-22-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリー優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-12-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ダービー優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-10-31-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "住信SBI優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-09-13-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "大郷優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-08-20-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "蛭子優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 2,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-06-21-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "B組優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "11",
+     "example_race_id": "2020-01-01-24-11"
+    },
+    {
+     "source": "kb",
+     "stage_name": "PRGT優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-01-12-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "auじぶん優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-10-06-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "じぶん銀行優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-10-17-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "ゴールド優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2020-03-11-09-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "サントリC優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-06-02-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "スピード優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2024-02-27-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "パタち杯優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2023-09-08-11-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "内山信二優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-03-03-05-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜ダービー優",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2021-12-04-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "夜王優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-10-29-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "安全王優勝戦",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2019-04-17-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "海の安全優勝",
+     "stage_kind": "other",
+     "name_judgement": "final",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2022-11-19-20-12"
+    },
+    {
+     "source": "kb",
+     "stage_name": "準優進出シー",
+     "stage_kind": "semifinal",
+     "name_judgement": "other",
+     "n": 1,
+     "n_all_a1": 0,
+     "race_numbers": "12",
+     "example_race_id": "2025-08-14-11-12"
+    }
+   ]
+  },
+  "acceptance_22R": {
+   "n": 22,
+   "final_under_new": 22,
+   "passed": true,
+   "not_final": []
+  }
+ },
+ "judgement": {
+  "acceptance": "受入: prep10 の22R（6艇ともA1で今のルールが取りこぼしていたもの）が v1・v2 とも全件優勝戦（v1.acceptance_22R・v2.acceptance_22R）",
+  "c_rule": "c に中身が優勝戦でない名前『ファイナル選』1件（児島ファイナル2019 の初日12R、ファイナル選抜）→ 除く規則を1回足した（rules.v2_extra）。v2 の c に残るのは11Rの優勝戦（同じ日の12Rに別の優勝戦がある GP・QC のシリーズ優勝戦、男女Ｗ優勝戦等）だけで、中身が優勝戦でない名前は残らない",
+  "b_rule": "b に長期の名前が切れた『〜優勝』（戦が落ちたもの）が10名前・25件（v1.b_c.fd12_end.b_missed_names）→ 末尾『優勝』を優勝戦にする規則を1回足した（rules.v2_extra）",
+  "b_remaining_other_kind": "v2 の b（fd12_end）に残るのは、同じ日の11Rに優勝戦があって12Rが選抜戦の節（大村・若松の 特別選抜戦A 系 25件）と 発祥地N選抜 4件（大村、選抜戦）。別の種別なので残す。fd12_last だけに出るもの（準優勝戦・一般戦・予選特選・DR 等）は節が途中で打ち切られ優勝戦が無かった日",
+  "user_return": [
+   {
+    "stage_name": "関ヶ原決戦",
+    "race_id": "2023-07-30-06-12",
+    "n": 1,
+    "context": "浜名湖『MB大賞天下無双!群雄割拠浜名湖の陣地区対抗戦』の最終日（6日目、is_final_day）12R。前日の11R・12Rが準優勝戦、当日に別の優勝戦なし。節の流れからは優勝戦に当たるが、名前（決戦）だけでは決められないので規則は足していない"
+   },
+   {
+    "stage_name": "オオムラGP",
+    "race_id": "2020-01-01-24-12",
+    "n": 1,
+    "context": "大村『第2回オオムラグランプリ日本財団会長杯』の最終日（4日目）12R。前日の11R・12Rが『A組トライア』、当日11Rが『B組優勝戦』。A組の優勝戦に当たると読めるが、名前（GP）だけでは決められないので規則は足していない"
+   },
+   {
+    "stage_name": "準優進出戦 ほか（長期 stage_kind=semifinal）",
+    "n": 1276,
+    "context": "事前登録の規則1（準々・準優進出→どちらでもない、今のまま）と、長期の優先の文（stage_kind が semifinal なら準優勝戦）が食い違う。規則1を先にして other にした（kb_rule1_vs_kind）。features.py の今の学習（stage_kind だけ）は junyu にしている。6艇ともA1 は0件"
+   }
+  ]
+ },
+ "consistency_check_strings": {
+  "note": "JS（raceStageConfig.js）と Python（features.py）が同じ答えになることを tests/test_features.py で固定するための一覧。expected は最終版のルールで NFKC 後に当てた種別キー（名前だけの判定。長期の stage_kind との組み合わせは含まない）",
+  "cases": [
+   {
+    "stage": "B組優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "B組準優勝戦",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "GP優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "PRGT優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "QC優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "W準優勝戦前",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "W準優勝戦後",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "W準優戦前半",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "W準優戦後半",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "auじぶん優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "じぶん銀行優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "ウインクDR",
+    "expected_category": "dream",
+    "boundary_example": false
+   },
+   {
+    "stage": "オオムラGP",
+    "expected_category": null,
+    "boundary_example": false
+   },
+   {
+    "stage": "ゴールド優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "サントリC優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "サントリー優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "シリーズ優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "スピード優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "セミファイナル",
+    "expected_category": "semifinal",
+    "boundary_example": true
+   },
+   {
+    "stage": "ダービー優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "ツッキー優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "ツッキー優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "ツッピー優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "ドリーム戦",
+    "expected_category": "dream",
+    "boundary_example": false
+   },
+   {
+    "stage": "バッチこい優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "パタち杯優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "ファイナル",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "ファイナル進出戦",
+    "expected_category": null,
+    "boundary_example": true
+   },
+   {
+    "stage": "ファイナル選",
+    "expected_category": null,
+    "boundary_example": false
+   },
+   {
+    "stage": "ペイペイDR",
+    "expected_category": "dream",
+    "boundary_example": false
+   },
+   {
+    "stage": "ホットマン優",
+    "expected_category": "final",
+    "boundary_example": true
+   },
+   {
+    "stage": "一般",
+    "expected_category": "general",
+    "boundary_example": false
+   },
+   {
+    "stage": "一般戦",
+    "expected_category": "general",
+    "boundary_example": false
+   },
+   {
+    "stage": "一般桐生特選",
+    "expected_category": "generalSpecial",
+    "boundary_example": false
+   },
+   {
+    "stage": "予選",
+    "expected_category": "qualifier",
+    "boundary_example": false
+   },
+   {
+    "stage": "予選特別選抜",
+    "expected_category": "qualifierSpecial",
+    "boundary_example": false
+   },
+   {
+    "stage": "予選特選",
+    "expected_category": "qualifierSpecial",
+    "boundary_example": false
+   },
+   {
+    "stage": "住信SBI優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "個性派王優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "優勝戦B組女",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "優勝戦女子",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "優勝戦男子",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "内山信二優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "団体・優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "団体・優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "夜ダービー優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "夜王優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "大郷優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "女子優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "女子準優勝戦",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "安全王優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "決勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "海の安全優勝",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "海属王優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "準々決勝戦",
+    "expected_category": "semifinalQualifier",
+    "boundary_example": true
+   },
+   {
+    "stage": "準優",
+    "expected_category": null,
+    "boundary_example": true
+   },
+   {
+    "stage": "準優勝",
+    "expected_category": null,
+    "boundary_example": false
+   },
+   {
+    "stage": "準優勝戦",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "準優進出シー",
+    "expected_category": "semifinalQualifier",
+    "boundary_example": false
+   },
+   {
+    "stage": "準優進出チャ",
+    "expected_category": "semifinalQualifier",
+    "boundary_example": false
+   },
+   {
+    "stage": "準優進出戦",
+    "expected_category": "semifinalQualifier",
+    "boundary_example": false
+   },
+   {
+    "stage": "準決勝戦",
+    "expected_category": "semifinal",
+    "boundary_example": true
+   },
+   {
+    "stage": "澤乃井優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "特別選抜A組",
+    "expected_category": "selection",
+    "boundary_example": false
+   },
+   {
+    "stage": "特別選抜戦A",
+    "expected_category": "selection",
+    "boundary_example": false
+   },
+   {
+    "stage": "特別選抜戦Ａ",
+    "expected_category": "selection",
+    "boundary_example": false
+   },
+   {
+    "stage": "特別選抜戦Ａ組",
+    "expected_category": "selection",
+    "boundary_example": false
+   },
+   {
+    "stage": "王将位決定戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "王座決定戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "男子優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "男子準優勝戦",
+    "expected_category": "semifinal",
+    "boundary_example": false
+   },
+   {
+    "stage": "発祥地N選抜",
+    "expected_category": "selection",
+    "boundary_example": false
+   },
+   {
+    "stage": "県内選手権優",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "蛭子優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "記者選抜戦",
+    "expected_category": "selection",
+    "boundary_example": false
+   },
+   {
+    "stage": "賞金女王決定",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "選抜戦Ａ",
+    "expected_category": "selection",
+    "boundary_example": false
+   },
+   {
+    "stage": "関ヶ原決戦",
+    "expected_category": null,
+    "boundary_example": false
+   },
+   {
+    "stage": "Ｓ戦優勝戦",
+    "expected_category": "final",
+    "boundary_example": false
+   },
+   {
+    "stage": "Ｗ準優戦前半",
+    "expected_category": "semifinal",
+    "boundary_example": true
+   }
+  ]
+ },
+ "rounds_csv": {
+  "path": "$ANALOGY_SCRATCH/t1/rounds.csv",
+  "rows": 420012,
+  "rows_by_source": {
+   "kb": 372276,
+   "main": 47736
+  },
+  "sha256": "e6eee428307c8361205883d4a100cd20d59181431b269efba8c7e94bc9c75ef5",
+  "columns": [
+   "race_id",
+   "source",
+   "round_old",
+   "round_new",
+   "category_new",
+   "stage_name",
+   "stage_kind"
+  ],
+  "note": "全レース（開催されなかったものを含む）。round_*: yosen/junyu/yusho/other（名前も stage_kind も無ければ空）。category_new: raceStageConfig の種別キー（v2 のルール）。長期で準優・優勝戦以外は名前の種別、名前が空なら stage_kind の qualifier→qualifier・ほかは空",
+  "round_new_counts": {
+   "kb:junyu": 15602,
+   "kb:other": 169098,
+   "kb:yosen": 181885,
+   "kb:yusho": 5691,
+   "main:(空)": 204,
+   "main:junyu": 1960,
+   "main:other": 21777,
+   "main:yosen": 23073,
+   "main:yusho": 722
+  }
+ },
+ "generated_at": "2026-10-04T11:21:22.533380+00:00",
+ "content_sha256": "123c19586b2c8d90c7e5b96dc62b7b1a1ad060cc6210c618e9550b6aa69c335b"
+}

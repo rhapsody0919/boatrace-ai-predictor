@@ -19,6 +19,7 @@ import BandWrapAxisTick from "../BandWrapAxisTick";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { translateTechnique } from "../race/raceIndicators";
 import "./WinningTechniqueChart.css";
+import { techniqueColor } from "../../utils/techniqueColors";
 
 const VENUES = [
   { code: "01", name: "桐生" },
@@ -46,28 +47,6 @@ const VENUES = [
   { code: "23", name: "唐津" },
   { code: "24", name: "大村" },
 ];
-
-const TECHNIQUE_COLORS = {
-  逃げ: "#0ea5e9",
-  差し: "#10b981",
-  まくり: "#f59e0b",
-  まくり差し: "#ef4444",
-  抜き: "#8b5cf6",
-  恵まれ: "#94a3b8",
-};
-
-function techniqueColor(technique, index) {
-  const palette = [
-    "#0ea5e9",
-    "#10b981",
-    "#f59e0b",
-    "#ef4444",
-    "#8b5cf6",
-    "#94a3b8",
-    "#ec4899",
-  ];
-  return TECHNIQUE_COLORS[technique] ?? palette[index % palette.length];
-}
 
 function LosingTechniqueChart({ initialVenueCode = null }) {
   const { t } = useTranslation();
@@ -215,7 +194,13 @@ function LosingTechniqueChart({ initialVenueCode = null }) {
             ticks={[0, 20, 40, 60, 80, 100]}
           />
           <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
-          <Legend />
+          <Legend
+            // 凡例の文字は本文色にし、色は横の四角で示す。系列の色（橙・灰）の文字は
+            // ライトで約2〜2.5:1 と読みにくかった（BOA-711）
+            formatter={(value) => (
+              <span style={{ color: "var(--text-primary)" }}>{value}</span>
+            )}
+          />
           {allTechniques.map((technique, idx) => (
             <Bar
               key={technique}

@@ -31,5 +31,5 @@
 
 - [ ] B6 を「新人登録のみ」に縮小（plan.md §7 段階2〜3）
 - [ ] 節の初日が `races` に欠けている件（plan.md §9.5）の原因調査・修復
-- [ ] fan の Vercel Cron 化（Storage のバケット・`raw_snapshots` 台帳が前提）
+- [x] fan の Vercel Cron 化（2026-10-03 ユーザー承認。`fan_period` ジョブ、台帳 `raw_snapshots` はマイグレーション125。有効化は verification-runbook.md の V）
 - [ ] `race_series.grade` が NULL の節の補完（K/B の節名から）、`races.race_grade` との食い違いの実測

@@ -1,0 +1,7 @@
+{
+  "feature": "SNS全月カレンダー（内部管理画面）",
+  "content": { "static_pages": [], "note_articles": [], "blog_posts": [], "youtube_videos": [], "x_posts": [] },
+  "not_applicable": true,
+  "release_status": "local_patch_only",
+  "released": "2026-10-08"
+}

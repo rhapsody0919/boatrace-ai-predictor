@@ -293,7 +293,9 @@ beforeinfo ページの HTML は展示前後でテーブル構造が同一。セ
 
 | データ | 取得状況 | 保存先 |
 |--------|---------|--------|
-| ピットレポート・得点率一覧・得点率早見表 | ❌ | 完全に未対応（[BOA-292](https://linear.app/boat-ai/issue/BOA-292)、対象がSG/G1のみのため優先度は低） |
+| ピットレポート | ✅ | `race_pit_reports`・`race_pit_comments`（BOA-611。SGは全レース、G1・G2は7R以降。直前情報タブに表示） |
+| 得点率一覧（`race/pointrank`） | ✅ | `racer_series_points`（`scripts/daily/scrape-point-rank.js`。表が出るのはSG/G1の4日目以降。一般戦はページがあっても「データはありません」） |
+| 得点率早見表（`race/pointchart`） | ❌ | 未取得。自社計算（`seriesPoints.js` の `forecastSeriesScore`）で今節タブに表示。公式は予選中の当日しか表が出ず、過去日・予選後は「データはありません」になるため、実データの中身は未確認（[BOA-292](https://linear.app/boat-ai/issue/BOA-292)、2026-10-02確認） |
 
 ## 2026-09-14 横断調査: 未取得データの棚卸し
 

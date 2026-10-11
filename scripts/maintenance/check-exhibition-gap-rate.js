@@ -40,7 +40,7 @@ async function main() {
   const results = await fetchAll(
     "race_results",
     "race_id",
-    (q) => inDay(q).not("payout_win", "is", null),
+    (q) => inDay(q).not("payout_win", "is", null).order("race_id"),
     strict,
   );
   const exhibitions = await fetchAll(

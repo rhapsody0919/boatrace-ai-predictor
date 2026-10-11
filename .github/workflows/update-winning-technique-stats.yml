@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# 手動実行と定期実行が重なると、会場ごとの delete→insert が交互に走って書き込みが衝突する（BOA-430）
+concurrency:
+  group: update-winning-technique-stats
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 

@@ -141,7 +141,7 @@ Ryujin Radar generates predictions by analyzing motor performance, racer data, c
 **How to use Ryujin Radar for this:**
 
 - **Read the finish order with turn predictions** — visualize the race up to the first turn, cross-check against Ryujin Radar's tracked hit rate, and spot gaps against the odds
-- **Use the Upset Index to read a race's character** — lean toward longshots in races flagged "High upset chance," and toward favorites in races flagged "Favorite friendly"
+- **Use the Upset Index to read a race's character** — lean toward longshots in races flagged "Upset alert (high)," and toward favorites in races flagged "Favorite friendly"
 
 Don't just bet on the odds — **cross-reference Ryujin Radar's data-driven predictions with the odds to find bets with positive expected value**. That's the first step toward a stable long-term return rate.
 

@@ -18,6 +18,7 @@ import { pageViewPath } from "./utils/raceUrlState";
 import App from "./App";
 import VenueGridPage from "./pages/VenueGridPage";
 import VenueRaceListPage from "./pages/VenueRaceListPage";
+import MeetPage from "./pages/MeetPage";
 import RaceDetailPage from "./pages/RaceDetailPage";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
@@ -31,6 +32,7 @@ import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
 import WinningTechniqueAnalysis from "./pages/WinningTechniqueAnalysis";
 import MorningDataDigest from "./pages/MorningDataDigest";
+import ThinkingAssistPage from "./pages/ThinkingAssistPage";
 import Holmes from "./pages/Holmes";
 import ContentHub from "./pages/ContentHub";
 import EnglishGuide from "./pages/EnglishGuide";
@@ -182,7 +184,14 @@ function LocalizedRoutes({ lng = "ja" }) {
       {/* 開催場一覧（トップ）: 会場一覧 → 会場別レース一覧 → レース詳細の3階層ナビ */}
       <Route path="/" element={<VenueGridPage />} />
       <Route path="venue/:venueCode" element={<VenueRaceListPage />} />
+      {/* 節ページ（SG/G1/G2 の全選手の得点率ランキング・準優ボーダー・勝ち上がり、BOA-682） */}
+      <Route
+        path="venue/:venueCode/meet/:startDate"
+        element={<MeetPage />}
+      />
       <Route path="race/:raceId" element={<RaceDetailPage />} />
+      {/* 思考アシスト（BOA-430）。ja 専用（languages.js の JA_ONLY_UNDER_TRANSLATED）。言語付きの URL は ja 版へ移る */}
+      <Route path="race/:raceId/assist" element={<ThinkingAssistPage />} />
 
       {/* タブページ（SEO対応: 個別URL） */}
       <Route path="hit-races" element={<App tab="hit-races" />} />

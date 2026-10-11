@@ -133,6 +133,73 @@
   min-width: 0;
 }
 
+/* 今期の事故率の目印（BOA-327）。行の2段目（名前の列から右端まで）に出す */
+.rbit-accident-badge {
+  grid-column: 2 / -1;
+  justify-self: start;
+  margin-top: calc(-1 * var(--spacing-1));
+  flex-shrink: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  line-height: 1.4;
+  padding: 0 var(--spacing-1);
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-full);
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.rbit-accident-badge.is-over {
+  border-color: var(--color-error-text);
+  color: var(--color-error-text);
+}
+
+/* 開いた欄の今期の事故率（BOA-327） */
+.rbit-accident {
+  margin-bottom: var(--spacing-3);
+  padding-bottom: var(--spacing-2);
+  border-bottom: var(--border-width-1) solid var(--border-hairline);
+}
+
+.rbit-accident-heading {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-1);
+}
+
+.rbit-accident-values {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-1) var(--spacing-3);
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rbit-accident-rate-num {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+.rbit-accident-breakdown {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.rbit-accident.is-over .rbit-accident-rate,
+.rbit-accident.is-over .rbit-accident-line {
+  color: var(--color-error-text);
+}
+
+.rbit-accident-note {
+  margin: var(--spacing-1) 0 0;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+}
+
 .rbit-name {
   font-size: var(--font-size-sm);
   overflow: hidden;
@@ -447,6 +514,23 @@
   color: var(--text-secondary);
 }
 
+.rbit-period-recent-counts {
+  display: inline-block;
+  margin-left: 0.25em;
+}
+
+/* 前期を取り込む前に前々期を出しているとき。古い期の値が主役に見えないよう、
+   見出しを本文色・太字にし、値は薄くする（ファン評価2周目 P2） */
+.rbit-period.is-fallback .rbit-period-heading {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.rbit-period.is-fallback .rbit-period-values,
+.rbit-period.is-fallback .rbit-period-finals {
+  color: var(--text-secondary);
+}
+
 /* 今節の「変化」（FR-3 Phase A）。生データの表より前に、通常値との差を出す */
 .rbit-meet-trend {
   margin-bottom: var(--spacing-2);
@@ -582,6 +666,13 @@
   margin: var(--spacing-1) 0 0;
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
+}
+
+/* 前期が公開待ちで前々期を出しているときの注記。値の行は通常と同じ見た目なので、
+   前々期だと気づけるよう本文と同じ大きさ・色にする */
+.rbit-period-note.rbit-period-pending {
+  font-size: var(--font-size-xs);
+  color: var(--text-primary);
 }
 
 .rbit-period-diff {

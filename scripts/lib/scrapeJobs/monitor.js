@@ -428,7 +428,11 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
     const active = def.kind === "monitor" || isActiveMode(row.mode);
     if (!active) continue;
 
-    if ((row.consecutive_failures ?? 0) >= THRESHOLDS.consecutiveFailures) {
+    // failureAlertAfter: 起動が週1回のジョブは、既定の3回を待つと通知が数週遅れる（registry.js）
+    if (
+      (row.consecutive_failures ?? 0) >=
+      (def.failureAlertAfter ?? THRESHOLDS.consecutiveFailures)
+    ) {
       alerts.push({
         key: `failures:${row.job}`,
         kind: "failures",

@@ -25,12 +25,15 @@ import { parseRaceResultPage } from "../lib/raceResultParser.js";
 import { raceResultUrl } from "../lib/raceStatusParsers.js";
 import {
   buildDisqualifiedMarkRows,
+  buildOfficialRowRows,
   isDisqualifiedCode,
 } from "../lib/disqualifiedFinishMark.js";
 import { fetchRaceResultHtml } from "../daily/scrape-results.js";
 
 const DEFAULT_FROM = "2025-12-01";
-const DEFAULT_TO = "2026-09-20";
+const DEFAULT_TO = "2026-10-02";
+/** 計画で取得するレース数の上限の既定。導けるレースを SQL で埋める前に走らせて、全レースを取りに行くのを防ぐ */
+const DEFAULT_MAX_TARGET_RACES = 3000;
 const INTERVAL_MS = 3000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -50,7 +53,40 @@ export async function loadTargets(client, from, to) {
         .order("boat_number", { ascending: true }),
     { throwOnError: true, client },
   );
-  return rows.filter((r) => isDisqualifiedCode(r.official_finish_code));
+  return rows
+    .filter((r) => isDisqualifiedCode(r.official_finish_code))
+    .map((r) => ({ ...r, kind: "mark" }));
+}
+
+/**
+ * BOA-667: 公式の行の順（official_row）が NULL の既存の行（読み取りのみ）。結果のある行（着欄か成績コードがある）
+ * だけ。導けるレースを SQL で埋めた後に実行する前提で、残るのは導けないレースの行
+ */
+export async function loadOfficialRowTargets(client, from, to) {
+  const rows = await fetchAll(
+    "race_start_timings",
+    "race_id, boat_number, finish_mark, official_finish_code",
+    (q) =>
+      q
+        .is("official_row", null)
+        .gte("race_id", from)
+        .lt("race_id", `${to}~`)
+        .order("race_id", { ascending: true })
+        .order("boat_number", { ascending: true }),
+    { throwOnError: true, client },
+  );
+  const withResult = new Set(
+    rows
+      .filter((r) => r.finish_mark !== null || r.official_finish_code !== null)
+      .map((r) => r.race_id),
+  );
+  return rows
+    .filter((r) => withResult.has(r.race_id))
+    .map((r) => ({
+      race_id: r.race_id,
+      boat_number: r.boat_number,
+      kind: "row",
+    }));
 }
 
 /**
@@ -72,7 +108,13 @@ export async function buildPlan(
     if (!byRace.has(t.race_id)) byRace.set(t.race_id, []);
     byRace.get(t.race_id).push(t);
   }
-  const plan = { rows: [], anomalies: [], races: 0, stopped: null };
+  const plan = {
+    rows: [],
+    officialRows: [],
+    anomalies: [],
+    races: 0,
+    stopped: null,
+  };
   let index = 0;
   for (const [raceId, raceTargets] of byRace) {
     if (index >= maxRaces) break;
@@ -100,36 +142,47 @@ export async function buildPlan(
       plan.anomalies.push(`${raceId}: 着順表を読めない`);
       continue;
     }
-    const { rows, anomalies } = buildDisqualifiedMarkRows(
+    const marks = buildDisqualifiedMarkRows(
       raceId,
       boats,
-      raceTargets,
+      raceTargets.filter((t) => t.kind !== "row"),
     );
-    plan.rows.push(...rows);
-    plan.anomalies.push(...anomalies);
+    const order = buildOfficialRowRows(
+      raceId,
+      boats,
+      raceTargets.filter((t) => t.kind === "row"),
+    );
+    plan.rows.push(...marks.rows);
+    plan.officialRows.push(...order.rows);
+    plan.anomalies.push(...marks.anomalies, ...order.anomalies);
     if (index % 100 === 0) log(`  ${index}/${byRace.size}レース`);
   }
   return plan;
 }
 
 /**
- * 計画の行を書く。1行ずつ update（挿入しない）、着欄が NULL の行だけ（既存の値を上書きしない）。
+ * 計画の行を書く。1行ずつ update（挿入しない）、対象の列が NULL の行だけ（既存の値を上書きしない）。
+ * rows は着欄（finish_mark）、officialRows は公式の行の順（official_row、BOA-667）。
  * @returns {Promise<{written: number, skipped: number}>} skipped: 計画の後に値が入っていた・行が無かった
  */
 export async function applyPlan(
   rows,
-  { client = supabase, now = () => new Date() } = {},
+  { client = supabase, now = () => new Date(), officialRows = [] } = {},
 ) {
   const updatedAt = now().toISOString();
   let written = 0;
   let skipped = 0;
-  for (const row of rows) {
+  const writes = [
+    ...rows.map((row) => ({ row, column: "finish_mark" })),
+    ...officialRows.map((row) => ({ row, column: "official_row" })),
+  ];
+  for (const { row, column } of writes) {
     const { data, error } = await client
       .from("race_start_timings")
-      .update({ finish_mark: row.finish_mark, updated_at: updatedAt })
+      .update({ [column]: row[column], updated_at: updatedAt })
       .eq("race_id", row.race_id)
       .eq("boat_number", row.boat_number)
-      .is("finish_mark", null)
+      .is(column, null)
       .select("race_id");
     if (error) {
       throw new Error(
@@ -156,13 +209,15 @@ async function main() {
     const planPath = getArg("plan");
     if (!planPath) throw new Error("--apply には --plan=FILE が必要です");
     const plan = JSON.parse(fs.readFileSync(planPath, "utf8"));
+    const officialRows = plan.officialRows ?? [];
+    const total = plan.rows.length + officialRows.length;
     const confirm = Number(getArg("confirm"));
-    if (confirm !== plan.rows.length) {
+    if (confirm !== total) {
       throw new Error(
-        `--confirm=${getArg("confirm")} が計画の行数 ${plan.rows.length} と一致しません`,
+        `--confirm=${getArg("confirm")} が計画の行数 ${total}（着欄 ${plan.rows.length}・行の順 ${officialRows.length}）と一致しません`,
       );
     }
-    const result = await applyPlan(plan.rows);
+    const result = await applyPlan(plan.rows, { officialRows });
     console.log(
       `[APPLY] 書いた行 ${result.written}・書かなかった行（計画の後に値が入った・行が無い） ${result.skipped}`,
     );
@@ -176,10 +231,27 @@ async function main() {
   }
   if (!out) throw new Error("--out=FILE（計画の保存先）を指定してください");
   const maxRaces = getArg("max-races") ? Number(getArg("max-races")) : Infinity;
-  const targets = await loadTargets(supabase, from, to);
+  // 公式への取得は JST 0〜6時だけ（開催時間帯の負荷を避ける。オーケストレーターの指示、BOA-667）
+  const jstHour = (new Date().getUTCHours() + 9) % 24;
+  if (jstHour >= 6 && !process.argv.includes("--any-time")) {
+    throw new Error(
+      `結果ページの取得は JST 0〜6時に行う（現在 ${jstHour}時）。時間外に実行する場合は --any-time を付ける`,
+    );
+  }
+  const markTargets = await loadTargets(supabase, from, to);
+  const rowTargets = await loadOfficialRowTargets(supabase, from, to);
+  const targets = [...markTargets, ...rowTargets];
   const raceCount = new Set(targets.map((t) => t.race_id)).size;
+  const maxTargetRaces = getArg("max-target-races")
+    ? Number(getArg("max-target-races"))
+    : DEFAULT_MAX_TARGET_RACES;
+  if (raceCount > maxTargetRaces) {
+    throw new Error(
+      `対象が ${raceCount}レースで、上限 ${maxTargetRaces} を超えます。導けるレースの official_row を SQL で埋める前に実行していないか確かめる（docs/issues/boa-667-official-row-backfill.md）。意図した件数なら --max-target-races で上限を上げる`,
+    );
+  }
   console.log(
-    `[PLAN] ${from}〜${to}: 失格コードで着欄が NULL の艇 ${targets.length}（${raceCount}レース）。結果ページを取得します`,
+    `[PLAN] ${from}〜${to}: 失格コードで着欄が NULL の艇 ${markTargets.length}・行の順が NULL の行 ${rowTargets.length}（合わせて${raceCount}レース）。結果ページを取得します`,
   );
   const plan = await buildPlan(targets, { maxRaces });
   fs.writeFileSync(
@@ -191,7 +263,7 @@ async function main() {
     ),
   );
   console.log(
-    `[PLAN] 取得したレース ${plan.races}・書く行 ${plan.rows.length} ${JSON.stringify(tallyBy(plan.rows, "finish_mark"))}・異常 ${plan.anomalies.length}${plan.stopped ? `・${plan.stopped}` : ""} → ${out}`,
+    `[PLAN] 取得したレース ${plan.races}・書く行 着欄 ${plan.rows.length} ${JSON.stringify(tallyBy(plan.rows, "finish_mark"))}・行の順 ${plan.officialRows.length}（--confirm=${plan.rows.length + plan.officialRows.length}）・異常 ${plan.anomalies.length}${plan.stopped ? `・${plan.stopped}` : ""} → ${out}`,
   );
   for (const a of plan.anomalies.slice(0, 20)) console.log(`  ⚠️ ${a}`);
   if (plan.stopped) process.exitCode = 1;

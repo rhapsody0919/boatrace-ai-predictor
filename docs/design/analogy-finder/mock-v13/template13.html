@@ -1,0 +1,518 @@
+<title>アナロジー・ファインダー統合案</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --gold-800:#6b500f; --gold-700:#8a6a1a; --gold-500:#c9a227; --gold-300:#e8d089;
+  --navy-100:#142842; --navy-300:#24344d; --navy-600:#0d1b2e; --navy-900:#060d18;
+  --ivory-100:#fbf9f3; --ivory-300:#ddd4bf; --ivory-600:#f7f3ea;
+  --page:var(--ivory-600); --card:var(--ivory-100); --sunken:#f3efe4;
+  --border:var(--ivory-300); --text:#0f172a; --text2:#475569; --muted:#7c8799; --grid:#e4dfd2;
+  --accent:var(--gold-800); --accent-strong:var(--gold-700); --bar:var(--gold-700); --bar2:#64748b; --tick:#0f172a;
+  --up:#047857; --down:#b91c1c; --warn:#946006; --hit:#0f766e;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:var(--navy-600); --card:var(--navy-100); --sunken:#0a1526; --border:var(--navy-300);
+  --text:#f8fafc; --text2:#cbd5e1; --muted:#8392a8; --grid:var(--navy-300);
+  --accent:var(--gold-500); --accent-strong:var(--gold-300); --bar:var(--gold-500); --bar2:#94a3b8; --tick:#f8fafc;
+  --up:#34d399; --down:#f87171; --warn:#f2c46b; --hit:#2dd4bf; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --page:var(--navy-600); --card:var(--navy-100); --sunken:#0a1526; --border:var(--navy-300);
+  --text:#f8fafc; --text2:#cbd5e1; --muted:#8392a8; --grid:var(--navy-300);
+  --accent:var(--gold-500); --accent-strong:var(--gold-300); --bar:var(--gold-500); --bar2:#94a3b8; --tick:#f8fafc;
+  --up:#34d399; --down:#f87171; --warn:#f2c46b; --hit:#2dd4bf; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--text);font-family:"Noto Sans JP","Hiragino Sans",sans-serif;padding-inline:16px;padding-block:20px 56px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-strong);font-weight:700}
+h1{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:clamp(21px,5vw,26px);margin:2px 0 0;text-wrap:balance;line-height:1.3}
+.note{font-size:11.5px;color:var(--text2);background:var(--card);border:1px dashed var(--border);border-radius:8px;padding:8px 12px}
+.mockbox{border:1.5px dashed var(--warn);border-radius:10px;padding:10px 12px;background:var(--card);display:grid;gap:8px}
+.mockbox .t{font-size:11.5px;font-weight:700;color:var(--warn)}
+.row{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.lbl{font-size:11.5px;color:var(--text2);font-weight:700}
+.seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.seg button,.btn{font-family:"Zen Kaku Gothic New",sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--sunken);color:var(--text2);border-radius:8px;padding:6px 12px}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--ivory-100)}
+.btn{font-size:12px;padding:4px 10px}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent-strong);outline-offset:2px}
+select{font:inherit;font-size:12.5px;color:var(--text);background:var(--sunken);border:1px solid var(--border);border-radius:8px;padding:6px 8px;max-width:100%}
+.rankbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px 12px}
+.sections{display:flex;flex-direction:column;gap:14px}
+section.block{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 16px 18px;display:flex;flex-direction:column;gap:10px}
+.block h2{font-family:"Zen Kaku Gothic New",sans-serif;font-size:18px;font-weight:900;margin:0;text-wrap:balance}
+.sub{font-size:12px;color:var(--text2);margin:0}
+h3{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14.5px;margin:4px 0 0}
+.foot{font-size:11px;color:var(--muted);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12px;display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--accent-strong);border-radius:999px;padding:4px 11px;background:var(--card);color:var(--text);cursor:pointer}
+.chip .k{color:var(--text2)}
+.chip .x{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--muted)}
+.chip[aria-pressed="false"]{border-style:dashed;border-color:var(--muted);color:var(--muted);text-decoration:line-through}
+.chip:disabled{cursor:default;opacity:.55}
+.chip.opt,.chip.opt[aria-pressed="false"]{border-color:var(--border);border-style:dotted;color:var(--text2);text-decoration:none}
+.chip.opt[aria-pressed="true"]{border-style:solid;border-color:var(--accent-strong);color:var(--text)}
+.hero{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hero .n{font-family:"JetBrains Mono",monospace;font-size:34px;font-weight:700;color:var(--accent-strong);line-height:1}
+.hero .t{font-size:13px;color:var(--text2)}
+.summary{font-size:14px;font-weight:500}
+.summary b{font-family:"JetBrains Mono",monospace}
+.scope{background:radial-gradient(ellipse at 50% 50%,#11243f 0%,var(--navy-900) 78%);border-radius:12px;padding:6px}
+.scope svg text{pointer-events:none}.scope svg{display:block;width:100%;height:auto;max-width:440px;margin:0 auto;overflow:visible}
+.scope-cap{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.06em;color:#e8d089;opacity:.75;padding:2px 8px 4px}
+.card{background:var(--sunken);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12.5px}
+.card b{font-family:"JetBrains Mono",monospace}
+.bars{display:grid;gap:5px}
+.br{display:grid;grid-template-columns:5.8em 1fr 6.2em;gap:8px;align-items:center;font-size:12.5px;cursor:pointer;background:none;border:none;padding:0;color:inherit;font-family:inherit;text-align:left}
+.br .v{font-family:"JetBrains Mono",monospace;text-align:right;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
+.wtrk{position:relative;height:12px;background:var(--grid);border-radius:4px}
+.wtrk .f{position:absolute;left:0;top:0;height:100%;background:var(--bar);border-radius:4px}
+.wtrk .w{position:absolute;top:50%;height:2px;background:var(--tick);opacity:.55;transform:translateY(-50%)}
+.wtrk .w::before,.wtrk .w::after{content:"";position:absolute;top:-4px;width:2px;height:10px;background:var(--tick)}
+.wtrk .w::before{left:0}.wtrk .w::after{right:0}
+.wtrk .nt{position:absolute;top:-3px;width:0;height:18px;border-left:2px dotted var(--hit)}
+.br.sel .f{background:var(--hit)}
+.key{display:flex;gap:14px;font-size:11px;color:var(--text2);flex-wrap:wrap}
+.key i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.bn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:4px;font-size:12.5px;font-weight:700;border:1px solid #94a3b8;font-family:"JetBrains Mono",monospace;flex-shrink:0}
+.bnrow{display:inline-flex;gap:2px}
+.tip{font-family:"JetBrains Mono",monospace;font-size:12.5px;min-height:1.6em}
+.pair{display:grid;gap:3px}
+.pr{display:grid;grid-template-columns:1fr 7em;gap:8px;align-items:center;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums}
+.pr span:last-child{text-align:right}
+.ind{display:grid;gap:3px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:6px 7px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+td{font-variant-numeric:tabular-nums}
+thead th{font-family:"Zen Kaku Gothic New",sans-serif;font-size:11.5px;color:var(--text2)}
+tr.hl td{background:rgba(15,118,110,.14)}
+tr[data-i]{cursor:pointer}
+.boats{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.boats button{font:inherit;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:6px 0;cursor:pointer;display:grid;justify-items:center;gap:2px}
+.boats button[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px 0}
+.arr{font-weight:700;font-size:14px}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--muted)}
+.lead{font-size:13.5px;background:var(--sunken);border-left:3px solid var(--accent-strong);border-radius:0 8px 8px 0;padding:8px 12px}
+.th{border-top:1px solid var(--border);padding-top:6px}
+.th>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1.4em 8.5em 1fr;gap:8px;align-items:center;font-size:13px}
+.th>summary::-webkit-details-marker{display:none}
+.dv{position:relative;height:12px}
+.dv::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;border-left:1px solid var(--muted)}
+.dv i{position:absolute;top:1px;height:10px;border-radius:3px}
+.els{display:grid;gap:4px;padding:6px 0 2px 2.2em}
+.el{display:grid;grid-template-columns:1.4em 1fr;gap:6px;font-size:12px;color:var(--text2)}
+.oth{font-size:10px;font-weight:700;color:var(--hit);border:1px solid var(--hit);border-radius:3px;padding:0 4px;margin-left:4px}
+details.more>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--accent-strong)}
+details.fold{border:1px solid var(--border);border-radius:14px;background:var(--card);padding:12px 16px}
+details.fold>summary{cursor:pointer;font-family:"Zen Kaku Gothic New",sans-serif;font-size:16px;font-weight:900}
+.fold .inner{display:grid;gap:10px;margin-top:10px}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.big>div{background:var(--sunken);border-radius:8px;padding:8px 10px}
+.big .n{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;color:var(--accent-strong)}
+.big .c{font-size:11px;color:var(--text2)}
+.warn{font-size:12px;color:var(--warn);background:rgba(148,96,6,.08);border:1px solid rgba(148,96,6,.3);border-radius:8px;padding:6px 10px}
+.detail{font-size:12px;color:var(--text2);display:grid;gap:6px}
+.detail ul{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.ir{display:grid;grid-template-columns:9.5em 5.5em 1fr;gap:8px;font-size:12px}
+.slider{background:var(--sunken);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:grid;gap:4px}
+.slider input{width:100%;accent-color:var(--accent-strong)}
+.sv{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--text2)}.sv b{font-size:24px;color:var(--accent-strong)}
+.lk{display:grid;grid-template-columns:minmax(0,1.3fr) 1fr 6.5em;gap:8px;align-items:center;font-size:12.5px;padding:3px 0}
+.lk small{display:block;color:var(--muted);font-size:10.5px}
+.lk .lkb{display:block}.lk .v{font-family:"JetBrains Mono",monospace;text-align:right;font-size:12px}.lk .v small{display:inline}
+.muted{color:var(--muted)}.warn2{color:var(--warn)}
+.nbr{border-top:1px solid var(--border)}.nbr.hl{background:rgba(15,118,110,.10)}
+.nbh{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;grid-template-areas:"rk nm o" "rk sc o";gap:0 8px;align-items:center;padding:7px 2px;cursor:pointer}
+.nbh:focus-visible{outline:2px solid var(--accent-strong)}
+.nbh .rk{grid-area:rk;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--muted)}
+.nbh .nm{grid-area:nm;font-size:12.5px}.nbh .nm small{display:block;color:var(--text2);font-size:11px}
+.nbh .sc{grid-area:sc;font-family:"JetBrains Mono",monospace;font-size:11.5px}
+.nbh .bnrow{grid-area:o}
+.ss{font-size:10px;color:var(--warn);border:1px solid var(--warn);border-radius:3px;padding:0 3px;font-weight:700}
+.nbd{padding:4px 0 10px 2.2em;display:grid;gap:8px}
+.res{font-size:12.5px;background:var(--sunken);border-radius:8px;padding:6px 10px}
+.cg{display:grid;gap:2px}
+.ci{display:grid;grid-template-columns:1.4em minmax(0,1fr) minmax(0,1.2fr);gap:6px;font-size:12px;align-items:baseline}
+.ci .mk{font-weight:700;text-align:center}
+.ci .cv{font-family:"JetBrains Mono",monospace;font-size:11.5px;word-break:break-all}.ci .cv small{display:block;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.pulse{animation:pl 2.4s ease-out infinite}@keyframes pl{0%{r:6;opacity:.9}100%{r:22;opacity:0}}}
+[hidden]{display:none!important}
+.rankbar{position:static!important}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px}
+.tabs button{font-family:"Zen Kaku Gothic New",sans-serif;font-size:12.5px;font-weight:700;border:1px solid var(--border);background:var(--sunken);color:var(--text2);border-radius:8px;padding:8px 4px;cursor:pointer;line-height:1.3}
+.tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--ivory-100)}
+#sharedN{display:grid;gap:6px;margin-top:8px}#sharedN .slider{padding:6px 10px}
+.rankbar{display:grid;gap:0}
+.cmpwrap>summary{font-size:12px;color:var(--text2);font-weight:500}
+.sb{display:grid;grid-template-columns:8.5em 1fr 7.5em;gap:8px;align-items:center;font-size:12.5px}
+.sb .v{font-family:"JetBrains Mono",monospace;font-size:11.5px;text-align:right}
+.sb .two{display:grid;gap:2px}
+.confirm{background:var(--card);border:1px solid var(--accent-strong);border-radius:10px;padding:12px 14px;font-size:12.5px}
+.confirm h2{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14px;margin:0 0 6px}
+.confirm ol{margin:0;padding-left:1.3em;display:grid;gap:4px}
+@media (max-width:480px){.br{grid-template-columns:5em 1fr 5.6em}.th>summary{grid-template-columns:1.4em 7.5em 1fr}.big{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.sweep{animation:sw 8s linear infinite;transform-origin:220px 220px}@keyframes sw{to{transform:rotate(360deg)}}}
+</style>
+
+<div class="wrap">
+  <div class="note"><b>モック Version 13（2026-10-03）</b>。3タブ（AIの見立て／類似している過去レース／過去レースの傾向）に戻した。着順は3タブ、件数のスライダーは2つ目と3つ目のタブで共通。数字はすべて実データ（本番 DB、例のレースの前日まで）と、寄与度用の本番モデル（版 2026-10-02）から出した。例のレースは <b>若松 12R（2026-09-27、G1 ヤングダービー優勝戦）</b>で、発走前に見ている想定（結果は 4-1-5 差し）。</div>
+
+  <div class="mockbox" aria-label="モックの切り替え">
+    <span class="t">モックの切り替え（比べる用。本番には出さない）</span>
+    <div class="row"><span class="lbl">似たレースの選び方</span><div class="seg" id="swKnn"><button type="button" data-v="mix" aria-pressed="true">推奨: 勝率差・1号艇の級別・勝率トップは必ずそろえ、その中を似ている順</button><button type="button" data-v="pure" aria-pressed="false">代案: 全部を似ている順（当初どおり）</button></div></div>
+    <div class="row"><span class="lbl">テーマ</span><div class="seg" id="swTh"><button type="button" data-v="7" aria-pressed="true">推奨: 7テーマ</button><button type="button" data-v="6" aria-pressed="false">代案: 6テーマ</button></div></div>
+  </div>
+
+  <header>
+    <span class="eyebrow">アナロジー・ファインダー · 若松 12R</span>
+  </header>
+
+  <div class="rankbar" aria-label="着順・件数">
+    <div class="row"><span class="lbl">着順</span>
+    <div class="seg" id="rankSeg"><button type="button" data-r="1" aria-pressed="true">1着</button><button type="button" data-r="2" aria-pressed="false">2着以内</button><button type="button" data-r="3" aria-pressed="false">3着以内</button></div></div>
+    <div class="tabs" role="tablist" id="tabs"><button type="button" role="tab" data-t="ai" aria-selected="true">AIの見立て</button><button type="button" role="tab" data-t="sim" aria-selected="false">類似している過去レース</button><button type="button" role="tab" data-t="res" aria-selected="false">過去レースの傾向</button></div>
+    <div id="sharedN">
+    <div class="slider">
+      <div class="row" style="justify-content:space-between"><span class="lbl">似ている順に</span><span class="sv"><b id="nLbl"></b>件</span></div>
+      <input type="range" id="nSlider" min="0" max="11" step="1" value="5" aria-label="似ている順に何件見るか">
+      <div class="row" style="justify-content:space-between"><span class="foot">少なく</span><span class="foot" id="pctLbl"></span><span class="foot">多く</span></div>
+    </div>
+    <div class="row"><button type="button" class="chip opt" id="ssChip" aria-pressed="false"><span class="k">同じ節のレース</span><span id="ssLbl">含めている</span></button></div>
+    </div>
+  </div>
+
+  <div class="sections" id="sections">
+  <section class="block" id="secAi" aria-labelledby="hAi">
+    <h2 id="hAi">AIの見立て: 6艇に差をつけた材料</h2>
+    <p class="sub">AI（寄与度用のモデル。AI 予想とは別）が、このレースの6艇の見込みに差をつけた材料を、テーマ別の割合にした（展示後の値）</p>
+    <div class="lead" id="aiLead"></div>
+    <div class="scope"><svg id="radar" viewBox="-50 0 500 370" role="img" aria-label="テーマの図"></svg></div>
+    <div class="row"><span class="lbl">気になる艇をタップ</span><label class="row lbl" style="gap:4px;font-weight:500"><input type="checkbox" id="two"> 2艇を並べる</label><select id="boatB" aria-label="並べる艇"></select></div>
+    <div class="boats" id="boatSeg"></div>
+    <div id="aiPanel"></div>
+    <details class="more"><summary>展示前の見立て</summary><p class="foot" style="margin-top:6px">本番は朝に出走表の時点の見立てを出し、展示の後にこの値へ置き換える。展示前は天候・水面を使わないので、その行と中身は出さない。モックの版（2026-10-02）には出走表の時点のモデルが無いので、空にしている。</p></details>
+    <p class="foot">AIの見立てで、原因の断定ではない。見立てと実際の着順は違うことがある。</p>
+    <div class="sub2" style="border-top:1px dashed var(--border);padding-top:10px;display:grid;gap:8px">
+      <h3>会場・グレード・ラウンドで比べる</h3>
+      <p class="sub">その条件のレース全体で、AI が6艇に差をつけた材料の割合。全国と比べる</p>
+      <div class="row"><select id="cV" aria-label="会場"></select><select id="cG" aria-label="グレード"></select><select id="cR" aria-label="ラウンド"></select></div>
+      <div id="cOut"></div>
+    </div>
+  </section>
+
+  <section class="block" id="secSim" aria-labelledby="hSim">
+    <h2 id="hSim">類似している過去レース</h2>
+    <p class="sub" id="simSub"></p>
+    <div class="scope"><svg id="sonar" viewBox="0 0 440 440" role="img" aria-label="似たレースのソナー。中心が今日のレースで、近いほど似ている。扇は1着の艇"></svg>
+      <div class="scope-cap"><span>TARGET: 若松12R</span><span id="sonarCap"></span></div></div>
+    <p class="foot">中心に近い点ほど、今日のレースと出走表の数字が近い（似ている順の何番目かで置いている。輪は10・100・800番目）。扇は1着になった艇。点を押すとそのレースを今日と見比べる</p>
+    <div class="likes">
+      <h3>何が似ている？</h3>
+      <div id="likeTop"></div>
+      <details class="more"><summary id="likeMore">全部の項目を見る</summary><div class="tbl" style="margin-top:6px"><table id="likeAll"></table></div></details>
+    </div>
+    <details class="more cmpwrap"><summary>1件ずつ見比べる（今日と全項目を並べる）</summary>
+      <p class="sub" style="margin-top:6px">行を押すと、今日のレースと全項目を並べる。○ 同じ　△ 近い　× 違う</p>
+      <div id="cmpList"></div>
+    </details>
+  </section>
+
+  <section class="block" id="secRes" aria-labelledby="hRes">
+    <h2 id="hRes">類似している過去レースの傾向</h2>
+    <div class="hero"><span class="n" id="resN"></span><span class="t" id="resT"></span></div>
+    <h3 id="hWin"></h3>
+    <div class="key"><span><i style="background:var(--bar)"></i>似たレース</span><span><i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>若松の全レース（似ているかを問わない）</span><span>ひげ＝95%の幅。棒をタップ</span></div>
+    <div class="bars" id="barWin"></div>
+    <div class="tip" id="barTip"></div>
+    <h3>どう決まった？</h3>
+    <div class="bars" id="barTech"></div>
+    <div id="otherBoats"></div>
+    <h3 style="margin-top:8px">着順の流れ</h3>
+    <p class="sub">1着 → 2着 → 3着。帯の太さが件数。少ない流れも薄く全部描いている。帯をタップ</p>
+    <div class="row"><div class="seg" id="flowF"><button type="button" data-f="all" aria-pressed="true">すべて</button><button type="button" data-f="not1" aria-pressed="false">1号艇以外が勝ったレース</button></div></div>
+    <div class="scope" style="background:var(--navy-900)"><svg id="sankey" viewBox="0 0 640 400" role="img" aria-label="似たレースの1着→2着→3着の流れ"></svg></div>
+    <div class="tip" id="flowTip">帯をタップすると件数が出る</div>
+    <p class="foot" id="flowNote"></p>
+    <h3>よく出た3連単</h3>
+    <div class="bars" id="triTop"></div>
+    <details class="more"><summary id="triMore">ほかの組み合わせも見る</summary><div class="bars" id="triAll" style="margin-top:6px"></div></details>
+    <p class="foot">数えた割合で、原因とは限らない。似ているからといって、同じ結果になるとは限らない。AI が重く見る項目で似たレースを選んでいるので、AI の見立てと同じ向きになりやすい（別々の裏付けにはならない）。</p>
+  </section>
+  </div>
+
+  <details class="fold"><summary>くわしく</summary>
+    <div class="inner detail" id="detail"></div>
+  </details>
+
+  <section class="confirm" aria-labelledby="cf">
+    <h2 id="cf">見てほしい点</h2>
+    <ol>
+      <li>3タブの構成と名前（AIの見立て／類似している過去レース／過去レースの傾向）</li>
+      <li>AIの見立て: 「6艇に差がついた材料」の言い方。艇を選ぶと上げ下げ。天候・水面とレースの条件は、条件の中身と数えた値を添えて残した</li>
+      <li>AIの見立て: 下の「会場・グレード・ラウンドで比べる」（材料の割合を全国と比べる。差が小さいものは「ほぼ同じ」）</li>
+      <li>類似している過去レース: 「1件ずつ見比べる」は畳んで控えめにした</li>
+      <li>似たレースの選び方（上の切り替え）: 推奨は勝率差・1号艇の級別・勝率トップをそろえた中を似ている順</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+/*DATA*/
+const TH7=[["venueCourse","枠・会場"],["racerRecord","選手の実力"],["startExhibition","スタート・展示"],["machine","モーター・ボート"],["weatherWater","天候・水面"],["raceFormat","レースの条件"],["racerProfile","体重・年齢・地元"]];
+const TH6=[["venueCourse","枠・会場"],["racerRecord","選手の実力"],["startExhibition","スタート・展示"],["machine","モーター・ボート"],["environment","天候・水面・レースの条件"],["racerProfile","体重・年齢・地元"]];
+const GR={venueCourse:[["venue","会場"],["boatNumber","枠番"],["raceNumber","レース番号"]],racerRecord:[["class","級別"],["national","全国勝率・2連率"],["local","当地勝率・2連率"],["recent","直近30走の成績"],["boat1","1号艇の級別・勝率",1]],startExhibition:[["exhibitionTime","展示タイム"],["pastSt","過去の平均ST"]],machine:[["motor","モーター2連率"],["boat","ボート2連率"]],weatherWater:[["weather","天候"],["wind","風向・風速"],["wave","波高"]],raceFormat:[["grade","グレード"],["round","ラウンド"],["seriesDay","節の日目"]],racerProfile:[["age","年齢"],["weight","体重"],["branch","支部・地元"]]};
+GR.environment=[...GR.weatherWater,...GR.raceFormat];
+const BC={1:["#f4f1ea","#000"],2:["#1f2937","#fff"],3:["#e53935","#fff"],4:["#1e88e5","#fff"],5:["#fdd835","#000"],6:["#43a047","#fff"]};
+const FLOW={1:"#e5e1d6",2:"#8b95a5",3:"#ef5350",4:"#42a5f5",5:"#f0c419",6:"#4caf50"};
+const RT={1:"1着",2:"2着以内",3:"3着以内"},RK={1:"t1",2:"t2",3:"t3"};
+const VEN=["桐生","戸田","江戸川","平和島","多摩川","浜名湖","蒲郡","常滑","津","三国","びわこ","住之江","尼崎","鳴門","丸亀","児島","宮島","徳山","下関","若松","芦屋","福岡","唐津","大村"];
+const GN={all:"全グレード",ippan:"一般",G3:"G3",G2:"G2",G1:"G1",SG:"SG"},RN={all:"全ラウンド",yosen:"予選",junyu:"準優勝戦",yusho:"優勝戦",other:"その他"};
+const TECH=["逃げ","差し","まくり","まくり差し","抜き","恵まれ"];
+const C=D.sim.conditions;
+// 4条件の並び（うしろから外す順）と任意3条件
+const CH=[["勝率差",`1号艇がほかの最高より ${(-C.gap_band_range.hi).toFixed(2)}〜${(-C.gap_band_range.lo).toFixed(2)} 低い`],["1号艇",`${C.b1_class}級`],["会場",C.venue_name],["勝率トップ",`${C.top_boat}号艇`]];
+const OPT=[["round","ラウンド","優勝戦"],["grade","グレード","G1"],["motor","1号艇のモーター","6艇中5〜6位"]];
+const st={tab:"ai",rank:1,boat:0,ni:9,swKnn:"mix",noSS:false,open:null,listAll:false,flow:"all",flowSel:null,flowFirst:null,swOrder:"sim",swTh:"7",two:false,b2:1,pick:null,v:"20",g:"all",r:"all",cmp:"nat"};
+const $=id=>document.getElementById(id);
+const bn=n=>`<span class="bn" style="background:${BC[n][0]};color:${BC[n][1]}">${n}</span>`;
+const pc=(p,d=1)=>(p*100).toFixed(d)+"%";
+function wilson(x,n){if(!n)return [0,0];const z=1.96,p=x/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return [Math.max(0,c-h),Math.min(1,c+h)];}
+const key=()=>st.opt?"1111+"+st.opt:st.on.join("");
+const S=()=>D.sets[key()];
+const NAT=D.sets["0000"];
+const fin=f=>/^\d+$/.test(f)?`${+f}着`:f==="F"?"F（返還）":f==="L"?"出遅れ（返還）":/^S/.test(f)?"失格":f==="K"||f==="欠"?"欠場":f;
+function parentKey(){if(st.opt)return "1111";const o=[...st.on],i=o.lastIndexOf(1);if(i<0)return null;o[i]=0;return o.join("");}
+function wbar(lab,x,n,natP,sel,id,extra=""){const p=n?x/n:0,[lo,hi]=wilson(x,n);
+  return `<button type="button" class="br${sel?" sel":""}" ${id?`data-b="${id}"`:""} data-tip="${x}/${n}件・95%の幅 ${pc(lo)}〜${pc(hi)}${extra}${natP!=null?`・全国 ${pc(natP)}`:""}"><span>${lab}</span><span class="wtrk"><span class="f" style="width:${p*100}%"></span>${n?`<span class="w" style="left:${lo*100}%;width:${(hi-lo)*100}%"></span>`:""}${natP!=null?`<span class="nt" style="left:${natP*100}%"></span>`:""}</span><span class="v">${pc(p,0)} <small>${x}件</small></span></button>`;}
+function wireTips(el,tipEl){el.querySelectorAll(".br").forEach(b=>b.onclick=()=>{tipEl.textContent=b.querySelector("span").textContent+": "+b.dataset.tip;if(b.dataset.b){st.boat=st.boat===+b.dataset.b?0:+b.dataset.b;render();}});}
+
+// ---------- 似たレース（k-NN） ----------
+let K=D.knn;const NS=[10,20,30,50,75,100,150,200,300,400,600,800];
+let ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));
+function setK(){K=st.swKnn==="mix"&&D.knn3?D.knn3:D.knn;ITEM=Object.fromEntries(K.items.map(x=>[x.key,x]));}
+const DUP={n_A1:"class_all6",race_number:"race_number_band",grade_bin:"grade",wind_vector:"wind_bin"};
+const MK=["×","△","○"],MC=["down","warn2","up"];
+function curNb(){const all=st.noSS?K.nb.filter(n=>!n.ss):K.nb;return all.slice(0,NS[st.ni]);}
+function agg(nb){const a={n:nb.length,win:[0,0,0,0,0,0],hit:{1:[0,0,0,0,0,0],2:[0,0,0,0,0,0],3:[0,0,0,0,0,0]},tech:{},tri:{}};
+  nb.forEach(x=>{const o=x.o;if(!o||o.length<3)return;a.win[o[0]-1]++;o.forEach((b,i)=>{for(let t=i+1;t<=3;t++)a.hit[t][b-1]++;});const tq=x.res.technique;a.tech[tq]=(a.tech[tq]||0)+1;const k=o.join("");a.tri[k]=(a.tri[k]||0)+1;});return a;}
+const isBad=f=>!/^[1-6]$/.test(String(f));
+function renderSim(){
+  const nb=curNb(),N=nb.length,P=K.pool.n;
+  $("nLbl").textContent=N;
+  $("simSub").textContent=st.swKnn==="mix"&&D.knn3?"勝率差の帯・1号艇の級別・勝率トップの艇が今日と同じ過去レースに絞り、その中を、出走表の数字が今日の若松12Rに近い順に並べた（会場が同じものを近く数える）":"出走表の数字が今日の若松12Rに近い過去レースを、似ている順に並べた。同じ会場のレースを優先して探している（会場が違うと遠く数える）";
+  const far=nb[N-1],fc=far?Object.entries(far.m).filter(([k,m])=>m!=null&&ITEM[k]?.inDist&&!DUP[k]).map(([,m])=>m):[];
+  $("pctLbl").textContent=far?`${N}件目のレースでも ○${fc.filter(m=>m===2).length} △${fc.filter(m=>m===1).length} ×${fc.filter(m=>m===0).length}`:"";
+  $("ssLbl").textContent=st.noSS?`除いている（${K.nb.slice(0,NS[st.ni]+40).filter(n=>n.ss).length?"":""}今日と同じ節の前日までのレース）`:`含めている（この中に ${nb.filter(n=>n.ss).length}件）`;
+  $("ssChip").setAttribute("aria-pressed",st.noSS);
+  renderSonar(nb);
+  // 何が似ている？
+  const rows=K.items.map(it=>{const v=nb.map(x=>x.m[it.key]).filter(x=>x!=null);const same=v.filter(x=>x===2).length;return {it,same,n:v.length,rate:v.length?same/v.length:null};});
+  const main=rows.filter(r=>r.it.inDist&&!DUP[r.it.key]&&r.rate!=null&&r.n>=5);
+  const nearRate=r=>{const v=nb.map(x=>x.m[r.it.key]).filter(x=>x!=null);return v.length?v.filter(x=>x>=1).length/v.length:null;};
+  const strong=main.filter(r=>r.rate>=.5).sort((a,b)=>b.rate-a.rate);
+  const weak=main.filter(r=>r.rate<.5).sort((a,b)=>a.rate-b.rate);
+  const bar=(r)=>{const nr=nearRate(r);return `<div class="lk"><span>${r.it.label}<small>今日: ${K.today[r.it.key]??"—"}</small></span><span class="lkb"><span class="wtrk" style="height:10px"><span class="f" style="width:${r.rate*100}%"></span>${nr!=null?`<span class="w" style="left:${r.rate*100}%;width:${Math.max(0,nr-r.rate)*100}%;opacity:.35"></span>`:""}</span></span><span class="v">${pc(r.rate,0)}<small>${nr!=null&&nr>r.rate+.005?` △込み ${pc(nr,0)}`:""}</small></span></div>`;};
+  $("likeTop").innerHTML=`<p class="sub">この ${N}件のうち、その項目が今日と同じ（基準は全項目の表に）レースの割合</p>`+(strong.map(bar).join("")||`<p class="foot">半分以上がそろう項目は無い</p>`)+(weak.length?`<h3 style="font-size:13px;margin-top:8px">そろっていない（半分未満）</h3>`+weak.map(bar).join(""):"")+`<p class="foot" style="margin-top:6px">近さで重く見た順: 全国の成績・直近の成績・平均ST・当地の成績・会場（AI が重く見る項目で近さを決めている）</p>`;
+  $("likeMore").textContent=`全 ${K.items.length} 項目を見る`;
+  $("likeAll").innerHTML=`<thead><tr><th>項目</th><th>今日</th><th>同じ（${N}件）</th><th>近いまで</th><th>全レース</th></tr></thead><tbody>${rows.slice().sort((a,b)=>(b.rate??-1)-(a.rate??-1)).map(r=>{const near=nb.map(x=>x.m[r.it.key]).filter(x=>x!=null);const nr=near.length?near.filter(x=>x>=1).length/near.length:null;return `<tr><td>${r.it.label}${r.it.inDist?"":` <small class="muted">（近さの計算には入れていない）</small>`}<br><small class="muted">${r.it.rule}</small></td><td>${K.today[r.it.key]??"—"}</td><td>${r.rate==null?"—":pc(r.rate,0)+` <small>${r.same}/${r.n}</small>`}</td><td>${nr==null?"—":pc(nr,0)}</td><td>${pc(r.it.pool,0)}</td></tr>`;}).join("")}</tbody>`;
+  renderCmp(nb);renderRes(nb);
+}
+function renderSonar(nb){
+  const svg=$("sonar"),cx=220,cy=220,R=188,rOf=rk=>18+(R-24)*Math.log10(Math.max(1,rk))/Math.log10(800);
+  const ang=b=>-90+(b-1)*60;let h="";
+  for(let b=1;b<=6;b++){const a0=(ang(b)-30)*Math.PI/180,a1=(ang(b)+30)*Math.PI/180;h+=`<path d="M${cx},${cy}L${cx+R*Math.cos(a0)},${cy+R*Math.sin(a0)}A${R},${R} 0 0 1 ${cx+R*Math.cos(a1)},${cy+R*Math.sin(a1)}Z" fill="${FLOW[b]}" fill-opacity="${st.boat===b?.16:.05}" stroke="#0d1b2e" data-sec="${b}" style="cursor:pointer"/>`;}
+  [10,100,800].forEach(k=>{h+=`<circle cx="${cx}" cy="${cy}" r="${rOf(k)}" fill="none" stroke="#c9a227" stroke-opacity="${k<=nb.length?.45:.18}" ${k>nb.length?'stroke-dasharray="3 4"':""}/><text x="${cx+4}" y="${cy-rOf(k)+11}" fill="#e8d089" font-size="9.5" opacity=".8" font-family="JetBrains Mono,monospace">${k}番目</text>`;});
+  const idxIn={1:0,2:0,3:0,4:0,5:0,6:0},cnt={1:0,2:0,3:0,4:0,5:0,6:0};nb.forEach(x=>{if(x.o)cnt[x.o[0]]++;});
+  nb.forEach(x=>{if(!x.o)return;const b=x.o[0],i=idxIn[b]++;const frac=(((x.r*0.6180339)%1)*0.84)+0.08;const a=(ang(b)-30+60*frac)*Math.PI/180;const rr=rOf(x.rank??x.r);
+    const hl=st.pick===x.r;h+=`<circle cx="${(cx+rr*Math.cos(a)).toFixed(1)}" cy="${(cy+rr*Math.sin(a)).toFixed(1)}" r="${hl?6:nb.length>300?2.4:nb.length>100?3.2:4.2}" fill="${FLOW[b]}" stroke="${hl?"#fff":x.ss?"#e8d089":"#0d1b2e"}" stroke-width="${hl?2.5:x.ss?1.6:.8}" data-race="${x.r}" style="cursor:pointer"/>`;});
+  h+=`<g class="sweep"><path d="M${cx},${cy}L${cx+R},${cy}A${R},${R} 0 0 1 ${cx+R*Math.cos(.35)},${cy+R*Math.sin(.35)}Z" fill="#c9a227" fill-opacity=".12"/></g>`;
+  for(let b=1;b<=6;b++){const a=ang(b)*Math.PI/180,x=cx+(R+18)*Math.cos(a),y=cy+(R+18)*Math.sin(a);h+=`<g data-sec="${b}" style="cursor:pointer"><rect x="${x-11}" y="${y-11}" width="22" height="22" rx="4" fill="${BC[b][0]}" stroke="#94a3b8"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="13" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text></g>`;}
+  h+=`<circle cx="${cx}" cy="${cy}" r="6" fill="#e8d089"/><circle cx="${cx}" cy="${cy}" r="6" fill="none" stroke="#e8d089" class="pulse"/>`;
+  svg.innerHTML=h;
+  $("sonarCap").textContent=`HITS: ${nb.length}`;
+  svg.querySelectorAll("[data-sec]").forEach(e=>e.onclick=()=>{const b=+e.dataset.sec;st.boat=st.boat===b?0:b;render();});
+  svg.querySelectorAll("[data-race]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();st.pick=+e.dataset.race;st.open=st.pick;render();const w=document.querySelector(".cmpwrap");if(w)w.open=true;document.getElementById("nb-"+st.pick)?.scrollIntoView({block:"nearest",behavior:"smooth"});});
+}
+function cmpDetail(x){
+  const groups=[["レースの条件",["venue","race_number_band","grade","grade_bin","round","series_day","is_final_day"]],["選手の力関係",["class_all6","n_A1","b1_class","win_gap_band","top_boat","nat_win_6","nat_win_rank_4","b1_nat_win","loc_win_6","recent_win30_6","recent_top3_30_6"]],["スタート",["st_mean30_6","b1_st_rank_band"]],["モーター・ボート",["motor_2_6","b1_motor_rank_band","boat_2_6","b1_boat_rank_band"]],["体重・年齢・地元",["age_6","weight_6","n_local"]],["天候・水面（近さの計算には入れていない）",["weather","wind_bin","wind_vector","wave_bin"]],["展示（参考。近さの計算には入れていない）",["exh_time_diff_6"]]];
+  return groups.map(([gname,keys])=>`<div class="cg"><div class="lbl">${gname}</div>${keys.filter(k=>ITEM[k]).map(k=>{const m=x.m[k];return `<div class="ci"><span class="mk ${m==null?"muted":MC[m]}">${m==null?"—":MK[m]}</span><span>${ITEM[k].label}</span><span class="cv">${x.t[k]??"—"}<small>今日 ${K.today[k]??"—"}</small></span></div>`;}).join("")}</div>`).join("");
+}
+function renderCmp(nb){
+  const show=nb.slice(0,st.listAll?nb.length:20);
+  const cnt=x=>{const v=Object.entries(x.m).filter(([k,m])=>m!=null&&ITEM[k]?.inDist).map(([,m])=>m);return [v.filter(m=>m===2).length,v.filter(m=>m===1).length,v.filter(m=>m===0).length];};
+  const flt=x=>{if(st.flow==="not1"&&x.o&&x.o[0]===1)return false;if(st.flowFirst&&x.o&&x.o[0]!==st.flowFirst)return false;if(st.flowSel){const f=st.flowSel;return x.o&&x.o[f.p]===f.a&&x.o[f.p+1]===f.b;}return true;};
+  $("cmpList").innerHTML=show.map(x=>{const [s2,s1,s0]=cnt(x),op=st.open===x.r,hl=(st.flowSel||st.flowFirst)&&flt(x);
+    return `<div class="nbr${op?" open":""}${hl?" hl":""}" id="nb-${x.r}"><button type="button" class="nbh" data-r="${x.r}"><span class="rk">${x.r}</span><span class="nm">${x.d} ${x.v} ${x.rn}R<small>${x.g==="ippan"?"一般":x.g} ${x.res.stage||RN[x.rd]||""}${x.ss?` <b class="ss">同じ節</b>`:""}</small></span><span class="sc"><span class="up">○${s2}</span> <span class="warn2">△${s1}</span> <span class="down">×${s0}</span></span><span class="bnrow">${(x.o||[]).map(bn).join("")}</span></button>
+    ${op?`<div class="nbd"><div class="res">結果: <span class="bnrow">${(x.o||[]).map(bn).join("")}</span> ${x.res.technique||""}${x.res.payout_3tan?`　3連単 ${x.res.payout_3tan.toLocaleString()}円（${x.res.popularity_3tan}番人気）`:""}<br><small>着: ${x.res.finish.map((f,i)=>`${i+1}号艇 ${fin(f)}`).join("・")}　ST順: ${x.res.st_rank.map(v=>v??"—").join("/")}　進入: ${x.res.course.join("")}</small></div>${cmpDetail(x)}</div>`:""}</div>`;}).join("")+(nb.length>20?`<button type="button" class="btn" id="listAll">${st.listAll?"20件に戻す":`残り ${nb.length-20}件も見る`}</button>`:"");
+  $("cmpList").querySelectorAll(".nbh").forEach(b=>b.onclick=()=>{const r=+b.dataset.r;st.open=st.open===r?null:r;st.pick=st.open;render();});
+  const la=$("listAll");if(la)la.onclick=()=>{st.listAll=!st.listAll;render();};
+}
+function renderRes(nb){
+  const a=agg(nb),N=a.n,t=st.rank;
+  $("resN").textContent=N+"件";
+  $("resT").textContent=`似ている順の ${N}件で（同じ節を${st.noSS?"除く":"含む"}）`;
+  const lk=document.querySelector("#secRes .key span:nth-child(2)");if(lk)lk.innerHTML=`<i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>${st.swKnn==="mix"&&D.knn3layer?`3条件がそろった過去レース全体（${D.knn3layer.n.toLocaleString()}件）`:"若松の全レース（似ているかを問わない）"}`;
+  $("hWin").textContent=t===1?"どの艇が勝った？":`どの艇が${RT[t]}に入った？`;
+  const LY=st.swKnn==="mix"&&D.knn3layer?D.knn3layer:null;
+  const W20=D.start["20|all|all"],wk={1:"win",2:"top2",3:"top3"}[t],C20=D.cube["20|all|all"],all8=agg(st.noSS?K.nb.filter(n=>!n.ss).slice(0,800):K.nb.slice(0,800));
+  $("barWin").innerHTML=[1,2,3,4,5,6].map(b=>wbar(`${bn(b)} ${b}号艇`,a.hit[t][b-1],N,LY?LY.boat_finish[b][wk]/LY.n:W20.boats[b][wk].p,st.boat===b,b,`・${all8.n}件では ${pc(all8.hit[t][b-1]/all8.n)}・全国 ${pc(NAT.n_hit[b][RK[t]]/NAT.n)}`)).join("")+(N<100?`<div class="warn">${N}件だと割合はぶれやすい（ひげが長い）。棒をタップすると ${all8.n}件での割合も出る</div>`:"");
+  wireTips($("barWin"),$("barTip"));
+  $("barTech").innerHTML=TECH.map((k,i)=>wbar(k,a.tech[k]||0,N,LY?(LY.technique[k]||0)/LY.n:C20[9+i]/C20[0],false,null,`・全国 ${pc(NAT.technique[k]/NAT.n)}`)).join("");
+  wireTips($("barTech"),$("barTip"));
+  renderOther(nb);renderFlow(a);
+}
+function renderOther(nb){
+  const k=st.boat;
+  if(!k){$("otherBoats").innerHTML=`<div class="card">艇（扇・棒・下の艇ボタン）を選ぶと、「その艇が勝ったとき、ほかの艇はどうだった？」が出る</div>`;return;}
+  const ok=nb.filter(x=>x.o&&x.o.length>=3),hitR=ok.filter(x=>x.o[0]===k),cmpR=ok.filter(x=>x.o[0]!==1&&x.o[0]!==k);
+  const F={b1d:x=>{const f=x.res.finish[0];return isBad(f)||+f>=4;},b1s:x=>(x.res.st_rank[0]??0)>=4,st1_tie:x=>x.res.st_rank[k-1]===1,ib:x=>x.res.finish.slice(0,k-1).some(isBad),md:x=>(x.res.course[k-1]??k)<k};
+  const lbl={b1d:"1号艇が崩れた（4着以下・F・出遅れ・失格）",b1s:"1号艇の ST が4番手以下",st1_tie:`${k}号艇の ST がトップ（同タイム含む）`,ib:`${k}号艇より内の艇に F・出遅れ・失格`,md:`${k}号艇が枠より内に入った（前付け）`};
+  const keys=k===1?["st1_tie"]:["b1d","b1s","st1_tie","ib","md"];
+  const cmpName=k===1?"1号艇が勝たなかったレース":`1・${k}号艇以外が勝ったレース`;
+  const C1=k===1?ok.filter(x=>x.o[0]!==1):cmpR;
+  const pr=(x,n,cls)=>{const [lo,hi]=wilson(x,n);return `<div class="pr"><span class="wtrk" style="height:9px"><span class="f" style="width:${n?x/n*100:0}%;${cls}"></span>${n?`<span class="w" style="left:${lo*100}%;width:${(hi-lo)*100}%"></span>`:""}</span><span>${x}/${n}</span></div>`;};
+  let h=`<h3>${bn(k)} ${k}号艇が勝った ${hitR.length}件、ほかの艇は？</h3><div class="key"><span><i style="background:var(--hit)"></i>${k}号艇が勝った</span><span><i style="background:var(--bar2)"></i>くらべる相手: ${cmpName}（${C1.length}件）</span></div>`;
+  if(!hitR.length)h+=`<div class="warn">この ${nb.length}件では ${k}号艇が勝ったレースは0件。スライダーで広げると見つかるかもしれない</div>`;
+  else h+=keys.map(q=>`<div class="ind"><span>${lbl[q]}</span><div class="pair">${pr(hitR.filter(F[q]).length,hitR.length,"background:var(--hit)")}${pr(C1.filter(F[q]).length,C1.length,"background:var(--bar2)")}</div></div>`).join("");
+  $("otherBoats").innerHTML=h;
+}
+function renderFlow(a){
+  const svg=$("sankey");
+  const tri=Object.entries(a.tri).map(([k,c])=>[k.split("").map(Number),c]).filter(([x])=>(st.flow==="all"||x[0]!==1)&&(!st.flowFirst||x[0]===st.flowFirst));
+  const tot=tri.reduce((s,[,c])=>s+c,0);
+  const X=[40,300,560],W=26,H=340,top=30,gap=8;
+  const col=[0,1,2].map(p=>{const m={};for(let b=1;b<=6;b++)m[b]=0;tri.forEach(([x,c])=>m[x[p]]+=c);return m;});
+  const scale=tot?(H-gap*5)/tot:0;
+  const pos=col.map(m=>{let y=top;const o={};for(let b=1;b<=6;b++){o[b]={y,h:Math.max(m[b]*scale,m[b]?1.5:0)};y+=o[b].h+gap;}return o;});
+  const link=p=>{const m={};tri.forEach(([x,c])=>{const k=x[p]+"-"+x[p+1];m[k]=(m[k]||0)+c;});return Object.entries(m).map(([k,c])=>[k.split("-").map(Number),c]);};
+  let h="";const outY=pos.map(o=>Object.fromEntries(Object.entries(o).map(([b,v])=>[b,v.y]))),inY=pos.map(o=>Object.fromEntries(Object.entries(o).map(([b,v])=>[b,v.y])));
+  [0,1].forEach(p=>{link(p).sort((u,v)=>u[0][0]-v[0][0]||u[0][1]-v[0][1]).forEach(([[x,y],c])=>{const w=Math.max(c*scale,1);const y0=outY[p][x]+w/2,y1=inY[p+1][y]+w/2;outY[p][x]+=c*scale;inY[p+1][y]+=c*scale;
+    const x0=X[p]+W,x1=X[p+1],mx=(x0+x1)/2,sel=st.flowSel&&st.flowSel.p===p&&st.flowSel.a===x&&st.flowSel.b===y;
+    const op=sel?.95:(st.flowSel?.12:(0.25+0.6*Math.min(1,c/(tot*.08||1))));
+    h+=`<path d="M${x0},${y0}C${mx},${y0} ${mx},${y1} ${x1},${y1}" stroke="${FLOW[x]}" stroke-width="${w}" fill="none" stroke-opacity="${op}" data-l="${p},${x},${y},${c}" style="cursor:pointer"/>`;});});
+  pos.forEach((o,p)=>{for(let b=1;b<=6;b++){if(!o[b].h)continue;h+=`<rect x="${X[p]}" y="${o[b].y}" width="${W}" height="${o[b].h}" fill="${BC[b][0]}" stroke="${p===0&&st.flowFirst===b?"#fff":"#94a3b8"}" stroke-width="${p===0&&st.flowFirst===b?2:.8}" ${p===0?`data-first="${b}" style="cursor:pointer"`:""}/>`;if(o[b].h>=11)h+=`<text x="${X[p]+W/2}" y="${o[b].y+o[b].h/2+4}" text-anchor="middle" font-size="11" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text>`;
+    h+=`<text x="${p===2?X[p]+W+6:p===0?X[p]-6:X[p]+W+4}" y="${o[b].y+o[b].h/2+4}" text-anchor="${p===0?"end":"start"}" font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b]||""}</text>`;}});
+  ["1着","2着","3着"].forEach((tx,p)=>h+=`<text x="${X[p]+W/2}" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#f3ead0" font-family="Zen Kaku Gothic New,sans-serif">${tx}</text>`);
+  svg.innerHTML=h;
+  $("flowNote").textContent=st.flowFirst?"":"2着→3着の帯は、1着の艇を問わずに数えている。1着の箱をタップすると、その艇が勝ったレースだけで 1→2→3 の流れを描き直す";
+  svg.querySelectorAll("[data-first]").forEach(e=>e.onclick=()=>{const b=+e.dataset.first;st.flowFirst=st.flowFirst===b?null:b;st.flowSel=null;$("flowTip").textContent=st.flowFirst?`${b}号艇が勝った ${a.win[b-1]}件だけで描いている（1→2→3 の本当の流れ）。上の一覧でも色を付けている`:"帯をタップすると件数が出る";render();});
+  svg.querySelectorAll("[data-l]").forEach(e=>e.onclick=()=>{const [p,x,y,c]=e.dataset.l.split(",").map(Number);st.flowSel=st.flowSel&&st.flowSel.p===p&&st.flowSel.a===x&&st.flowSel.b===y?null:{p,a:x,b:y,c};$("flowTip").textContent=st.flowSel?`${p?"2着":"1着"} ${x}号艇 → ${p?"3着":"2着"} ${y}号艇: ${c}件（${tot}件中）。上の一覧でも色を付けている`:"帯をタップすると件数が出る";render();});
+  const all=tri.sort((u,v)=>v[1]-u[1]);
+  const row=([x,c])=>`<div class="br" style="cursor:default"><span class="bnrow">${x.map(bn).join("")}</span><span class="wtrk"><span class="f" style="width:${c/all[0][1]*100}%"></span></span><span class="v">${c}/${tot}件</span></div>`;
+  const cut=all.length>5?all[4][1]:0,topN=all.filter(([,c])=>c>=cut&&c>1).length||Math.min(5,all.length);
+  $("triTop").innerHTML=all.slice(0,topN).map(row).join("")||`<p class="foot">0件</p>`;
+  $("triMore").textContent=`ほかの ${Math.max(0,all.length-topN)} 通りも見る（出た組み合わせは全 ${all.length} 通り。件数が同じものはまとめて上に出している）`;
+  $("triAll").innerHTML=all.slice(topN).map(row).join("");
+}
+
+// ---------- AIの見立て ----------
+const THS=()=>st.swTh==="7"?TH7:TH6;
+const RR=()=>D.race[st.rank];
+const bth=b=>st.swTh==="7"?RR().boats[b-1].th:RR().boats6[b-1].th;
+const rsh=()=>st.swTh==="7"?RR().sh7:RR().sh6;
+const EPS=0.01;
+const arrow=v=>v>EPS?`<span class="arr up" aria-label="プラス">↑</span>`:v<-EPS?`<span class="arr down" aria-label="マイナス">↓</span>`:`<span class="arr flat" aria-label="ほぼ0">・</span>`;
+function to100(v){const s=v.reduce((a,b)=>a+b,0),raw=v.map(x=>x/s*100),fl=raw.map(Math.floor);let r=100-fl.reduce((a,b)=>a+b,0);raw.map((x,i)=>[x-fl[i],i]).sort((a,b)=>b[0]-a[0]).slice(0,r).forEach(([,i])=>fl[i]++);return fl;}
+function radar(svg,labels,series,opt={}){
+  const n=labels.length,Cc=[200,182],Rr=118,pt=(i,r)=>{const a=-Math.PI/2+2*Math.PI*i/n;return [Cc[0]+r*Math.cos(a),Cc[1]+r*Math.sin(a)];};
+  const lo=opt.lo??0,hi=opt.hi,rr=x=>Math.max(0,Math.min(1,(x-lo)/(hi-lo)))*Rr;let h="";
+  [.25,.5,.75,1].map(k=>lo+(hi-lo)*k).forEach(k=>h+=`<polygon points="${labels.map((_,i)=>pt(i,rr(k)).join(",")).join(" ")}" fill="none" stroke="rgba(201,162,39,.25)"/>`);
+  labels.forEach((_,i)=>{const [x,y]=pt(i,Rr);h+=`<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;});
+  series.forEach(s=>{h+=`<polygon points="${s.v.map((x,i)=>pt(i,rr(x)).join(",")).join(" ")}" fill="${s.c}" fill-opacity=".18" stroke="${s.c}" stroke-width="2"/>`;s.v.forEach((x,i)=>{const [px,py]=pt(i,rr(x));h+=`<circle cx="${px}" cy="${py}" r="3" fill="${s.c}" stroke="#0d1b2e"/>`;});});
+  labels.forEach((t,i)=>{const [x,y]=pt(i,Rr+20),dx=x-Cc[0],an=dx>8?"start":dx<-8?"end":"middle";
+    h+=`<text x="${x}" y="${y}" text-anchor="${an}" fill="#f3ead0" opacity="${i===0?.45:1}" font-size="11" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif"><tspan x="${x}">${t}</tspan><tspan x="${x}" dy="1.25em" fill="#e8d089" font-family="JetBrains Mono,monospace" font-size="10.5">${opt.vals[i]}</tspan></text>`;});
+  svg.innerHTML=h;
+}
+function renderAi(){
+  const ths=THS(),sh=rsh(),v=ths.map(([k])=>sh[k]),lab=to100(v);
+  const top=ths.slice(1).map(([k,n],i)=>[n,lab[i+1]]).sort((a,b)=>b[1]-a[1]);
+  $("aiLead").innerHTML=`枠・会場（${lab[0]}%）はレース前から決まっている分。それを除くと「<b>${top[0][0]}</b>」${top[0][1]}%、「${top[1][0]}」${top[1][1]}% が大きい`;
+  const hi=Math.max(.1,Math.ceil(Math.max(...v.slice(1))*1.25*20)/20);
+  radar($("radar"),ths.map(t=>t[1]),[{v:v.map((x,i)=>i===0?Math.min(x,hi):x),c:"#e8d089"}],{hi,vals:lab.map((x,i)=>i===0?x+"%（目盛りの外）":x+"%")});
+  const tot=b=>ths.slice(1).reduce((a,[k])=>a+bth(b)[k],0);
+  $("boatSeg").innerHTML=[1,2,3,4,5,6].map(n=>`<button type="button" data-b="${n}" aria-pressed="${st.boat===n}">${bn(n)}${arrow(tot(n))}</button>`).join("");
+  $("boatSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{st.boat=st.boat===+b.dataset.b?0:+b.dataset.b;render();});
+  $("boatB").innerHTML=[1,2,3,4,5,6].map(n=>`<option value="${n}" ${n===st.b2?"selected":""}>${n}号艇と並べる</option>`).join("");
+  $("boatB").disabled=!st.two;
+  const k=st.boat;
+  if(!k){$("aiPanel").innerHTML=`<div class="card">艇をタップすると、AIの見立てのプラス材料・マイナス材料が出る（矢印は枠・会場以外を合わせた向き）</div>`;return;}
+  const sel=st.two&&st.b2!==k?[k,st.b2]:[k];
+  const mx=Math.max(...[1,2,3,4,5,6].flatMap(n=>ths.slice(1).map(([q])=>Math.abs(bth(n)[q]))));
+  const ord=ths.slice(1).sort((a,b)=>Math.abs(bth(k)[b[0]])-Math.abs(bth(k)[a[0]]));
+  const sumAbs=b=>ths.slice(1).reduce((a,[q])=>a+Math.abs(bth(b)[q]),0);
+  const small=(b,q)=>Math.abs(bth(b)[q])<Math.max(EPS,.1*sumAbs(b));
+  const arrowB=(b,q)=>small(b,q)?`<span class="arr flat" aria-label="ほぼ0">・</span>`:arrow(bth(b)[q]);
+  const dv=(b,q)=>{const x=bth(b)[q],w=Math.abs(x)/mx*50;return `<i style="${x>=0?`left:50%`:`left:${50-w}%`};width:${w}%;background:${small(b,q)?"var(--muted)":x>0?"var(--up)":"var(--down)"};${sel.length>1&&b===sel[1]?"opacity:.55;top:6px;height:5px":sel.length>1?"top:0;height:5px":""}"></i>`;};
+  const mk={1:"win",2:"top2",3:"top3"}[st.rank],SA=D.start["20|all|all"],SG=D.start["20|G1|all"];
+  const NM={weatherWater:"天候・水面（西北西1m・波1cm）",raceFormat:"レースの条件（G1・優勝戦・6日目）",environment:"天候・水面・レースの条件"};
+  const ENV={weatherWater:1,raceFormat:1,environment:1};
+  const row=([q,n0])=>{const n=NM[q]||n0;return `<details class="th"><summary>${arrowB(k,q)}<span>${n}</span><span class="dv">${sel.map(b=>dv(b,q)).join("")}</span></summary><div class="els">${ENV[q]?`<div class="el"><span></span><span class="muted">6艇とも同じ条件だが、AI の中では艇番によって効き方が変わる。AI の平均的な傾向は、風が強いと内の艇に不利・外の艇に有利、準優勝戦・優勝戦は1号艇に有利な向き</span></div>`:GR[q].map(([g,l,o])=>sel.map(b=>`<div class="el">${arrow(RR().boats[b-1].gr[g])}<span>${sel.length>1?bn(b)+" ":""}${l}: ${D.facts[g][b-1]}${o&&b!==1?`<span class="oth">他艇の要素</span>`:""}</span></div>`).join("")).join("")}</div></details>`;};
+  const c=D.cond,ref=c?`<div class="card" style="margin-top:8px;display:grid;gap:3px"><div class="lbl">数えた値（参考。2019-04〜2026-09-26 の過去レース）</div>${sel.map(b=>{const W=c.wkWind01.boats[b][mk],G=c.g1Yusho.boats[b][mk];return `<div>${bn(b)} 若松の${RT[st.rank]}率: 全レース ${pc(SA.boats[b][mk].p)}（${SA.boats[b][mk].x.toLocaleString()}/${SA.n.toLocaleString()}）・G1 ${pc(SG.boats[b][mk].p)}（${SG.boats[b][mk].x}/${SG.n}）・風0〜1m ${pc(W.p)}（${W.x}/${W.n}）<br>全国の G1以上の優勝戦: ${pc(G.p)}（${G.x}/${G.n}）</div>`;}).join("")}<p class="foot">数えた値は、選手の強さや、優勝戦は予選の上位ほど内の枠に入ることも、全部まざった率。上の AI の矢印は、それらを別に数えた後の残りなので、向きが逆になることがある</p></div>`:"";
+  $("aiPanel").innerHTML=`<div class="card" style="display:grid;gap:6px"><div class="row">${sel.map(b=>`${bn(b)} <b>${b}号艇</b>`).join(" と ")} の${RT[st.rank]}</div>
+  <div class="key"><span><i style="background:var(--down)"></i>マイナス材料 ← </span><span>→ <i style="background:var(--up)"></i>プラス材料</span>${sel.length>1?`<span>上の線: ${sel[0]}号艇、下の薄い線: ${sel[1]}号艇</span>`:""}</div>
+  ${ord.slice(0,ord.length-2).map(row).join("")}<details class="th"><summary><span class="arr flat">…</span><span>ほか2テーマ</span><span></span></summary>${ord.slice(-2).map(row).join("")}</details>
+  <p class="foot">プラス・マイナスは6艇の平均と比べたもの。その艇の材料全体の1割に満たないものは「・」（ほぼ0）にしている</p></div>
+  ${ref}`;
+}
+
+// ---------- ほかの場・グレード ----------
+const ck=(v,g,r)=>`${v}|${g}|${r}`;
+const cname=(v,g,r)=>`${v==="0"?"全国":VEN[+v-1]}×${GN[g]}×${RN[r]}`;
+function renderC(){
+  const S=D.share;if(!S){$("cOut").innerHTML=`<p class="foot">集計中</p>`;return;}
+  const m={1:"win",2:"top2",3:"top3"}[st.rank],bk="boat"+(st.boat||0),key=ck(st.v,st.g,st.r);
+  const A=S.cells[key],N0=S.cells["0|all|all"];
+  const who=st.boat?`${st.boat}号艇`:"6艇全体";
+  if(!A||!A.s){$("cOut").innerHTML=`<div class="warn">${cname(st.v,st.g,st.r)}は、このモデルの集計期間（約1年）では ${A?A.n:0}レースしかなく、300レース未満なので出さない</div>`;return;}
+  const a=A.s[m][bk],z=N0.s[m][bk];
+  const ths=THS().filter(([k])=>a[k]);
+  const mx=Math.max(...ths.flatMap(([k])=>[a[k][0],z[k][0]]));
+  const ENVK={weatherWater:1,raceFormat:1,environment:1};
+  $("cOut").innerHTML=`<p class="sub">${cname(st.v,st.g,st.r)}（${A.n.toLocaleString()}レース）の${who}・${RT[st.rank]}。点線は全国</p>`+ths.map(([k,n])=>{const [s,d,dsd]=a[k],nz=z[k][0],same=!(nz>0&&Math.abs(d)/nz>=.2&&Math.abs(d)>=.005&&Math.abs(d)>=2*dsd);return `<div class="sb"${ENVK[k]?' style="opacity:.6"':""}><span>${n}${ENVK[k]?" ※":""}</span><span class="wtrk"><span class="f" style="width:${s/mx*100}%"></span><span class="nt" style="left:${nz/mx*100}%"></span></span><span class="v">${(s*100).toFixed(0)}%　${same?`<span class="muted">ほぼ同じ</span>`:`${d>0?"+":""}${(d*100).toFixed(1)}pt`}</span></div>`;}).join("")+`<p class="foot">数字が動いても、その条件で何かが「効かない／効く」という意味ではない。</p><details class="more"><summary>この比べ方について</summary><p class="foot" style="margin-top:4px">割合は、AI がその条件のレースで6艇に差をつけた材料の大きさを、テーマで分けたもの（合わせて100%なので、どれかが増えると他は減る）。${st.boat?"艇を選んだときは、プラスもマイナスも大きさとして数えた割合（向きは上の矢印で見る）。":""}その条件で6艇の値（勝率など）が近いと、そのテーマは小さく出る（「その条件ではそれが効かない」という意味ではない）。※ 天候・水面とレースの条件は6艇で同じ値なので、ほかの材料との組み合わせを通してだけ動く。全国との差が全国の値の2割以上・0.5pt以上で、かつ揺れの2倍以上のときだけ差を書き、それ以外は「ほぼ同じ」（2割は仮の基準。揺れは日の選び方だけで、モデルの学習の揺れは入っていない）。300レース未満の条件は出さない（仮の基準）。期間 ${S.period||""}</p></details>`;
+}
+
+// ---------- くわしく ----------
+function renderDetail(){
+  
+  $("detail").innerHTML=`<ul>
+  <li>似たレース: 出走表の数字（6艇の級別・全国勝率・当地勝率・直近30走の成績・平均ST・モーター/ボート2連率・年齢・体重・地元、会場・R番号・グレード・ラウンド・節の日目）を、今日のレースと比べて近い順に並べた（k近傍）。会場が違うと距離を足す。展示タイム・天候・風・波は、出走表の時点では分からないので近さの計算に入れていない</li>
+  <li>近さの重み: 寄与度用のモデル（版 ${D.meta.modelVersion}）で、着順の見込みを大きく動かす項目ほど重く見る。モデルの予想の値は使っていない</li>
+  <li>探したのは 2019-04-01〜2026-09-26（例のレースの前日まで）の ${D.knn.pool.n.toLocaleString()}レース。長期データの「最終日か」は値が使えないので近さに入れていない</li>
+  <li>「何が似ている？」の割合は、近いレースの中でその項目が今日と同じ帯に入る割合。全レースでの割合と比べている。似ているからといって、同じ結果になるとは限らない。近い順に少なく絞るほど、結果の割合はぶれやすい（ひげが長くなる）</li>
+  <li>ソナーは似ている順の何番目かで置いている（10・100・800番目の輪）。点の向き（扇の中の位置）に意味はない</li>
+  <li>推奨の選び方では、勝率差の帯・1号艇の級別・勝率トップの艇の3つが同じレースだけに絞り、その中を似ている順に並べる（当てはまりへの影響が大きい3つを必ずそろえるため）</li>
+  <li>ひげ（95%の幅）はレースどうしが独立だとして計算している。似たレースは会場や同じ節に固まるので、実際の幅はやや広い</li>
+  <li>同じ節を除くと、保存している800件から除くので、800件より少なくなる（本番では除いた後に800件をそろえる）</li>
+  <li>全国の割合（2019-04-01〜2026-09-26 の 408,723レース）と、似たレースを探した母集団（408,888レース）は、2着・3着が無いレースなどの扱いで165レース違う</li>
+  <li>棒のひげは 95% の幅（Wilson）。点線は全国の全レース</li>
+  <li>「ほかの艇は？」のくらべる相手は、結果で機械的に決まらない群（1号艇とその艇以外が勝ったレース）</li>
+  <li>長期データには3着の同着が ${NAT.boats_in_top3_beyond_3n}件ある。3着以内の数は同着の両方を数えている</li>
+  <li>AIの見立て: 寄与度用のモデル（版 ${D.meta.modelVersion}、AI 予想とは別）の説明。テーマごとに、そのテーマの材料を足し合わせた上で6艇の平均からどれだけ動かしたかを割合にした。原因の断定ではない</li>
+  </ul>
+`;
+}
+
+function order(){const m={ai:"secAi",sim:"secSim",res:"secRes"};Object.entries(m).forEach(([k,id])=>$(id).hidden=st.tab!==k);document.querySelectorAll("#tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.t===st.tab));$("sharedN").hidden=st.tab==="ai";}
+function render(){
+  document.querySelectorAll("#rankSeg button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.r===st.rank));
+  [["swTh"],["swKnn"]].forEach(([id])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st[id])));
+  setK();$("nSlider").value=st.ni;
+  document.querySelectorAll("#flowF button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===st.flow));
+  order();renderSim();renderAi();renderC();renderDetail();
+}
+document.querySelectorAll("#rankSeg button").forEach(b=>b.onclick=()=>{st.rank=+b.dataset.r;render();});
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{st.tab=b.dataset.t;render();});
+[["swTh"],["swKnn"]].forEach(([id])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{st[id]=b.dataset.v;st.open=null;st.pick=null;st.flowSel=null;st.flowFirst=null;render();}));
+$("nSlider").oninput=e=>{st.ni=+e.target.value;st.flowSel=null;st.flowFirst=null;render();};
+$("ssChip").onclick=()=>{st.noSS=!st.noSS;st.flowSel=null;st.flowFirst=null;render();};
+document.querySelectorAll("#flowF button").forEach(b=>b.onclick=()=>{st.flow=b.dataset.f;st.flowSel=null;st.flowFirst=null;$("flowTip").textContent="帯をタップすると件数が出る";render();});
+$("two").onchange=e=>{st.two=e.target.checked;render();};
+$("boatB").onchange=e=>{st.b2=+e.target.value;render();};
+$("cV").innerHTML=`<option value="0">全国</option>`+VEN.map((n,i)=>`<option value="${i+1}">${n}</option>`).join("");
+$("cG").innerHTML=Object.entries(GN).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");
+$("cR").innerHTML=Object.entries(RN).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");
+$("cV").value=st.v;$("cG").value=st.g;$("cR").value=st.r;
+["V","G","R"].forEach(x=>$("c"+x).onchange=e=>{st[x.toLowerCase()]=e.target.value;renderC();});
+render();
+</script>

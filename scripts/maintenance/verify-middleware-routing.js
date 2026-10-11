@@ -10,6 +10,8 @@
  * 4. 管理画面のパスはボットのUser-Agentでもスナップショットに振り分けられない
  * 5. 認証判定は api/_lib/adminAuth.js の requireAdminAuth と同じ（環境変数が空なら拒否、
  *    パスワードは最初の ":" だけで分割、方式名 "Basic" は大文字小文字を区別しない、UTF-8 で復号）
+ * 6. 検索・ユーザー起点の取得に使う UA（OAI-SearchBot・bingbot 等）もスナップショットに振り分け、
+ *    Googlebot と人間のブラウザは振り分けない
  *
  * Vercel の matcher は path-to-regexp 構文。このリポジトリが使う
  * 「固定パス」と「/prefix/:path*」の2形だけを解釈し、それ以外の形が足されたら
@@ -255,6 +257,51 @@ for (const path of ["/winning-technique", "/today", "/blog/some-article"]) {
   check(
     `${path} は配信対象のまま（resolveSnapshotPath が null を返さない）`,
     resolveSnapshotPath(path, BOT_UA) !== null,
+  );
+}
+
+console.log("[5] 検索・ユーザー起点の取得に使う UA もスナップショットに振り分ける");
+// 実際の UA 文字列（各社の公開ドキュメントの形）。名前だけでなく文字列全体で判定できることを見る
+const SEARCH_BOT_UAS = {
+  "OAI-SearchBot":
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot",
+  "ChatGPT-User":
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot",
+  "Claude-SearchBot":
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +Claude-SearchBot@anthropic.com)",
+  "Claude-User":
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +Claude-User@anthropic.com)",
+  "Perplexity-User":
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)",
+  bingbot:
+    "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm) Chrome/116.0.1938.76 Safari/537.36",
+  Applebot:
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)",
+  DuckDuckBot: "DuckDuckBot/1.1; (+http://duckduckgo.com/duckduckbot.html)",
+};
+for (const [name, ua] of Object.entries(SEARCH_BOT_UAS)) {
+  for (const path of ["/blog/some-article", "/today"]) {
+    const res = await call(path, { ua });
+    check(
+      `${name} ${path} → スナップショットへ rewrite`,
+      res?.headers.get("x-middleware-rewrite")?.endsWith(
+        resolveSnapshotPath(path, BOT_UA),
+      ) ?? false,
+      describe(res),
+    );
+  }
+}
+const NOT_SNAPSHOT_UAS = {
+  Googlebot: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  "Edge（人間）":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
+  "Safari（人間）":
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+};
+for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+  check(
+    `${name} はスナップショットに振り分けない`,
+    resolveSnapshotPath("/blog/some-article", ua) === null,
   );
 }
 

@@ -256,7 +256,7 @@ Using your phone at the venue significantly boosts both the accuracy and the fun
 Using Ryujin Radar at the venue gives you information you can't get from the race program alone.
 
 - **Data race table**: Compare all 6 racers' win rates, motor performance, and exhibition times on the spot
-- **Turn prediction & Upset Index**: See the likely 1st-place finishers alongside a "Favorite friendly" or "High upset chance" label
+- **Turn prediction & Upset Index**: See the likely 1st-place finishers alongside a "Favorite friendly" or "Upset alert (high)" label
 - **Tracked hit rate**: The turn prediction's actual hit rate is always public
 
 Narrow down your picks from the race program, then use Ryujin Radar's data race table to back it up — this combination is the strongest approach.

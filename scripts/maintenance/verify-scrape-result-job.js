@@ -1462,6 +1462,43 @@ const kDb = () =>
       bad.report.days.length === 4,
     show(bad),
   );
+  // 成績コード（BOA-553）: last_report に件数と状態を出す。列が無い（column_missing）は error
+  const withCode = (code) => async (date) => ({
+    date,
+    downloads: 1,
+    actualCourse: { updated: 2, status: "synced" },
+    rank456: { updated: 0, pending: 0, status: "nothing_pending" },
+    officialFinishCode: { updated: 84, pending: 84, ...code(date) },
+  });
+  const fc = await createKFileSyncRun({
+    syncDate: withCode(() => ({ status: "synced" })),
+  })(ctx("live"));
+  check(
+    "kfile-sync: 成績コードの同期の件数・状態を last_report の各日に出し、書き込み件数に足す（4日×(進入2＋成績コード84)=344）",
+    !fc.outcome &&
+      fc.rowsWritten === 344 &&
+      fc.report.days.every(
+        (d) =>
+          d.officialFinishCode?.status === "synced" &&
+          d.officialFinishCode.updated === 84 &&
+          d.officialFinishCode.pending === 84,
+      ),
+    show(fc.report.days[0]),
+  );
+  const fcMissing = await createKFileSyncRun({
+    syncDate: withCode((d) =>
+      d === "2026-09-18"
+        ? { status: "column_missing", updated: 0, pending: 0 }
+        : { status: "nothing_pending", updated: 0, pending: 0 },
+    ),
+  })(ctx("live"));
+  check(
+    "kfile-sync: 成績コードの列が無い（column_missing）は outcome=error（116 は適用済みなので、書き込みが止まっている）",
+    fcMissing.outcome === "error" &&
+      /成績コード/.test(fcMissing.error) &&
+      /column_missing/.test(fcMissing.error),
+    show(fcMissing),
+  );
   const zero = await createKFileSyncRun({
     syncDate: mk(() => ({ status: "no_races_parsed" })),
   })(ctx("live"));

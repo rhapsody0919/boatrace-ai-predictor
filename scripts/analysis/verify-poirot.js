@@ -65,7 +65,7 @@ async function main() {
       let query = q;
       if (opts.from) query = query.gte("race_id", opts.from);
       if (opts.to) query = query.lte("race_id", `${opts.to}~`); // race_id は日付先頭
-      return query;
+      return query.order("race_id").order("model_version");
     },
   );
   if (preds.length === 0) {

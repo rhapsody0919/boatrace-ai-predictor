@@ -23,7 +23,7 @@
  * 指摘#3で固定指標(勝率)から選択中指標に連動するよう変更。以前使っていた
  * getRacerVenueStatsは廃止）
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
@@ -43,10 +43,16 @@ import {
   SMALL_SAMPLE_THRESHOLD,
   WAVE_EXCLUDED_VENUE_CODES,
   recordsBeforeRace,
+  currentTermStart,
 } from "./basicInfoStats";
+import TermHintButton from "./TermHintButton";
 import InlineFetchError from "../InlineFetchError";
 import FlyingBadge from "./FlyingBadge";
 import { bestOf } from "../../utils/bestOf";
+import {
+  ACCIDENT_BADGE_MIN_STARTS,
+  computeAccidentStats,
+} from "../../utils/accidentRate";
 import "./RaceBasicInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
@@ -69,7 +75,9 @@ const GRADES = ["all", "ippan", "sgg1"];
 // 欲しくなったら条件別タブ側を多軸化するのが筋。1の重複が言えるのは既定状態
 // （全国・全レース）についてで、当地やSG・G1を選ぶと条件別タブ側は絞らない
 // 集計のままなので数字は一致しない
-const PERIODS = ["current", "last3m", "last1m"];
+const PERIODS = ["official", "term", "last3m", "last1m"];
+// 「2026-05-01」→「2026/5/1」（期間の表記、BOA-775）
+const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 const PRESETS = [
   { scope: "local", grade: "ippan" },
   { scope: "local", grade: "sgg1" },
@@ -108,8 +116,18 @@ function RaceBasicInfoTab({
   const localize = useLocalizedPath();
   const [metric, setMetric] = useState("winRate");
   const [scope, setScope] = useState("national");
-  const [grade, setGrade] = useState("all");
-  const [period, setPeriod] = useState("current");
+  const [grade, setGradeState] = useState("all");
+  // 初期は「公式」（公式の出走表と同じ値、BOA-775）。公式の値はグレードで絞れないので、
+  // グレードを選ぶと今期（term）に、公式に戻すとグレードを全レースに戻す（チップの表示と中身を食い違わせない）
+  const [period, setPeriodState] = useState("official");
+  const setGrade = (g) => {
+    setGradeState(g);
+    if (g !== "all" && period === "official") setPeriodState("term");
+  };
+  const setPeriod = (p) => {
+    setPeriodState(p);
+    if (p === "official") setGradeState("all");
+  };
   // 展開中の艇はタブをまたいで共有する（BOA-492）。null は「誰も展開していない」で、
   // 従来のタブ内stateと同じ初期値。枠別・今節タブで艇を選んでからこのタブへ来ると、
   // その艇が展開済みで開く
@@ -129,6 +147,9 @@ function RaceBasicInfoTab({
   const setExpandedView = (view) =>
     setExpandedViewState({ boat: expandedBoat, view });
   const [officialRates, setOfficialRates] = useState(null);
+  // 平均ST（公式）。undefined=取得中、null=取得失敗、{period, rows}=取得済み
+  const [officialAvgSt, setOfficialAvgSt] = useState(undefined);
+  const [officialAvgStRetry, setOfficialAvgStRetry] = useState(0);
   const [scopedStatsByRacer, setScopedStatsByRacer] = useState({});
   // 「前期」（racer_period_stats、phase a FR-4c）。6人分を1クエリで取る。
   // undefined=未取得、配列=取得済み、それ以外（{state:"forbidden"}）＝095未適用
@@ -138,6 +159,10 @@ function RaceBasicInfoTab({
   // （racerIdsKey / raceDate）が変わらず、再取得が起きないまま
   // 枠もエラーも消えて「失敗がデータなしに化ける」状態になる
   const [periodRetryToken, setPeriodRetryToken] = useState(0);
+  // 今期の事故率（目安、BOA-327）の元データ。6人分を1回の RPC で取る。
+  // undefined=未取得、{rows, range}=取得済み、{state:"unavailable"}=126未適用（出さない）、null=取得失敗
+  const [accidentRecords, setAccidentRecords] = useState(undefined);
+  const [accidentRetryToken, setAccidentRetryToken] = useState(0);
 
   const sortedPlayers = [...(players ?? [])].sort(
     (a, b) => a.number - b.number,
@@ -163,6 +188,24 @@ function RaceBasicInfoTab({
     };
   }, [raceId]);
 
+  useEffect(() => {
+    if (!raceId) return undefined;
+    let cancelled = false;
+    setOfficialAvgSt(undefined);
+    supabaseDataService
+      .getRaceOfficialAvgSt(raceId)
+      .then((data) => {
+        if (!cancelled) setOfficialAvgSt(data);
+      })
+      .catch((err) => {
+        console.error("平均ST（公式）取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setOfficialAvgSt(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [raceId, officialAvgStRetry]);
+
   // 「前期」は条件別タブを開いたときだけ要る値だが、6人分まとめて1クエリで済み
   // （racer_period_stats を period_year/period_no で絞って .in() する）、
   // タブを開くたびに待たせない方が読み手の体験が良いのでレース単位で先に取る。
@@ -182,6 +225,8 @@ function RaceBasicInfoTab({
   const periodAnchor = raceId
     ? new Date(`${raceId.slice(0, 10)}T12:00:00+09:00`)
     : new Date();
+  // 「今期」の初日（BOA-775）。表示中のレースの日付で決める
+  const currentTermFrom = currentTermStart(raceDate);
   useEffect(() => {
     const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
     if (ids.length === 0 || !raceDate) return undefined;
@@ -205,6 +250,63 @@ function RaceBasicInfoTab({
       cancelled = true;
     };
   }, [racerIdsKey, raceDate, periodRetryToken]);
+
+  useEffect(() => {
+    const ids = racerIdsKey.split(",").filter(Boolean).map(Number);
+    if (ids.length === 0 || !raceDate) return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getRacerAccidentRecords(ids, raceDate)
+      .then((data) => {
+        if (!cancelled) setAccidentRecords(data);
+      })
+      .catch((err) => {
+        // 126 未適用はサービス層が {state:"unavailable"} で返すので、ここに来るのは通信の失敗。
+        // 「事故が無い」と区別して、開いた欄に再試行つきのエラーを出す
+        console.error("事故率取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setAccidentRecords(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerIdsKey, raceDate, accidentRetryToken]);
+  // racerId → computeAccidentStats の結果。取得前・未適用・失敗は空
+  const accidentByRacer = useMemo(() => {
+    const map = new Map();
+    if (!Array.isArray(accidentRecords?.rows)) return map;
+    const byId = new Map(accidentRecords.rows.map((r) => [r.racer_id, r]));
+    for (const p of sortedPlayers) {
+      if (!p.racerId) continue;
+      // 今期まだ1走もしていない選手は RPC の行が無い。出走0として扱う
+      map.set(
+        p.racerId,
+        computeAccidentStats(
+          byId.get(p.racerId) ?? { starts: 0, incidents: [] },
+          accidentRecords.range,
+        ),
+      );
+    }
+    return map;
+    // sortedPlayers は毎回作り直す配列なので、中身の代わりに racerIdsKey で再計算する
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accidentRecords, racerIdsKey]);
+  // 期間の表示（「2026-05-01〜10-02」）。to はレースの前日。同じ年なら月日だけにする
+  const accidentRangeLabel = (() => {
+    const range = accidentRecords?.range;
+    if (!range) return null;
+    const last = new Date(`${range.to}T00:00:00Z`);
+    last.setUTCDate(last.getUTCDate() - 1);
+    const lastStr = last.toISOString().slice(0, 10);
+    // 期の初日のレースは、前日が期の前になる（「2026-05-01〜04-30」と逆になる。ファン評価1周目）
+    if (lastStr < range.from) return { from: range.from, to: null };
+    return {
+      from: range.from,
+      to:
+        lastStr.slice(0, 4) === range.from.slice(0, 4)
+          ? lastStr.slice(5)
+          : lastStr,
+    };
+  })();
 
   const ensureScopedStats = useCallback((racerId) => {
     if (!racerId) return;
@@ -230,10 +332,9 @@ function RaceBasicInfoTab({
     });
   }, []);
 
-  // 平均STには公式集計値の相当品が無いため、常に自社集計（getRacerScopedRaceStats）
-  // を使う。勝率/2連対率/3連対率はグレード・期間を絞り込んだ場合のみ自社集計に切り替わる
-  const needsOwnAggregation =
-    metric === "avgSt" || grade !== "all" || period !== "current";
+  // 「公式」（全レース）のときだけ公式の値（勝率/2連対率/3連対率は出走表、平均STは期別成績）を出し、
+  // それ以外（今期・直近・グレードで絞る）は当サイトの走（getRacerScopedRaceStats）から計算する（BOA-775）
+  const needsOwnAggregation = period !== "official" || grade !== "all";
 
   // 自社集計が必要になった瞬間、6選手分の履歴データをまとめて取得する
   useEffect(() => {
@@ -263,6 +364,20 @@ function RaceBasicInfoTab({
 
   // 表示用の1艇分の値を計算する（value/n/isSmallSample/loading）
   const valueFor = (p) => {
+    if (!needsOwnAggregation && metric === "avgSt") {
+      // 公式の平均STは全国の値だけ（当地の公式の平均STは無い）
+      const v =
+        scope === "local"
+          ? null
+          : ((officialAvgSt?.rows ?? []).find((r) => r.boatNumber === p.number)
+              ?.avgSt ?? null);
+      return {
+        value: v,
+        n: null,
+        isSmallSample: false,
+        loading: officialAvgSt === undefined,
+      };
+    }
     if (!needsOwnAggregation) {
       const row = officialRowFor(p.number);
       if (!row)
@@ -487,9 +602,33 @@ function RaceBasicInfoTab({
               {t(`basicInfo.periods.${p}`)}
             </button>
           ))}
+          {/* 「公式」の期間は「?」に出す（公式の出走表と同じ期。BOA-775） */}
+          {officialAvgSt?.period && (
+            <TermHintButton
+              termKey="basicInfoOfficial"
+              values={{
+                from: slashDate(officialAvgSt.period.calcFrom),
+                to: slashDate(officialAvgSt.period.calcTo),
+              }}
+            />
+          )}
         </div>
-        {grade !== "all" && period === "current" && (
-          <p className="rbit-period-caveat">{t("basicInfo.periodCaveat")}</p>
+        {period === "official" && metric === "avgSt" && scope === "local" && (
+          <p className="rbit-period-caveat">
+            {t("basicInfo.periodOfficialNoLocalSt")}
+          </p>
+        )}
+        {period === "term" && currentTermFrom && (
+          <p className="rbit-period-caveat">
+            {t("basicInfo.periodCurrentNote", {
+              from: slashDate(currentTermFrom),
+            })}
+          </p>
+        )}
+        {officialAvgSt === null && period === "official" && metric === "avgSt" && (
+          <InlineFetchError
+            onRetry={() => setOfficialAvgStRetry((n) => n + 1)}
+          />
         )}
       </details>
 
@@ -580,10 +719,102 @@ function RaceBasicInfoTab({
                 <span className="rbit-expand-arrow">
                   {expandedBoat === boat ? "▼" : "▶"}
                 </span>
+                {/* 今期の事故率（BOA-327）。B2ラインを超えた選手と、あとF1本（20点）以内で
+                      超える選手にだけ出す（出走30走以上。accidentRate.js）。名前の列に入れると列が広がり、
+                      その行だけ棒の枠が短くなって6艇の長さを比べられなくなるので、2段目に置く */}
+                {(() => {
+                  const acc = accidentByRacer.get(player?.racerId);
+                  if (!acc?.showBadge) return null;
+                  return (
+                    <span
+                      className={`rbit-accident-badge${acc.status === "over" ? " is-over" : ""}`}
+                    >
+                      {acc.status === "over"
+                        ? t("basicInfo.accidentBadgeOver", {
+                            rate: acc.rate.toFixed(2),
+                          })
+                        : t("basicInfo.accidentBadgeNear", {
+                            need: acc.need,
+                          })}
+                    </span>
+                  );
+                })()}
               </button>
 
               {expandedBoat === boat && (
                 <div className="rbit-expanded">
+                  {/* 今期の事故率（目安、BOA-327）。どのサブタブでも見えるよう、タブの上に置く */}
+                  {accidentRecords === null && (
+                    <InlineFetchError
+                      message={t("basicInfo.accidentFetchError")}
+                      onRetry={() => {
+                        setAccidentRecords(undefined);
+                        setAccidentRetryToken((v) => v + 1);
+                      }}
+                    />
+                  )}
+                  {(() => {
+                    const acc = accidentByRacer.get(player?.racerId);
+                    if (!acc || !accidentRangeLabel) return null;
+                    const kinds = ["F", "L1", "K1", "S1", "S2"]
+                      .filter((k) => acc.counts[k] > 0)
+                      .map((k) =>
+                        t("basicInfo.accidentKindCount", {
+                          kind: t(`basicInfo.accidentKind.${k}`),
+                          n: acc.counts[k],
+                        }),
+                      )
+                      .join(t("basicInfo.accidentKindSeparator"));
+                    return (
+                      <div
+                        className={`rbit-accident${acc.settled && acc.status === "over" ? " is-over" : ""}`}
+                      >
+                        <div className="rbit-accident-heading">
+                          {accidentRangeLabel.to
+                            ? t("basicInfo.accidentTitle", accidentRangeLabel)
+                            : t("basicInfo.accidentTitleOpen", {
+                                from: accidentRangeLabel.from,
+                              })}
+                        </div>
+                        {acc.starts === 0 ? (
+                          <p className="rbit-accident-values">
+                            {t("basicInfo.accidentNoStarts")}
+                          </p>
+                        ) : (
+                          <div className="rbit-accident-values">
+                            {/* 数字だけを太字にする（承認済みモックどおり） */}
+                            <span className="rbit-accident-rate">
+                              {t("basicInfo.accidentRateLabel")}{" "}
+                              <span className="rbit-accident-rate-num">
+                                {acc.rate.toFixed(2)}
+                              </span>
+                            </span>
+                            <span className="rbit-accident-breakdown">
+                              {t("basicInfo.accidentBreakdown", {
+                                points: acc.points,
+                                starts: acc.starts,
+                                kinds: kinds || t("basicInfo.accidentNone"),
+                              })}
+                            </span>
+                            <span className="rbit-accident-line">
+                              {!acc.settled
+                                ? t("basicInfo.accidentLineEarly", {
+                                    min: ACCIDENT_BADGE_MIN_STARTS,
+                                  })
+                                : acc.status === "over"
+                                  ? t("basicInfo.accidentLineOver")
+                                  : t("basicInfo.accidentLineNear", {
+                                      need: acc.need,
+                                    })}
+                            </span>
+                          </div>
+                        )}
+                        <p className="rbit-accident-note">
+                          {t("basicInfo.accidentNote")}
+                        </p>
+                      </div>
+                    );
+                  })()}
                   <div className="rbit-expanded-tabs">
                     <button
                       type="button"
@@ -786,9 +1017,25 @@ function RaceBasicInfoTab({
                         period?.calcTo ?? null,
                       );
                       const raceDate = (raceId ?? "").slice(0, 10);
+                      // 前期を取り込む前に前々期を出しているとき（period.fallback）も差を出さない。
+                      // 出走表の勝率は前期の成績に近く、前々期との差を「前期から」と読ませると誤る
                       const diffWithheld = Boolean(
-                        diffShownFrom && raceDate && raceDate < diffShownFrom,
+                        period?.fallback ||
+                        (diffShownFrom && raceDate && raceDate < diffShownFrom),
                       );
+                      // 前々期を出しているときの、差を出さない理由。コードが知っている事実
+                      // （前期を取り込んでいない・差を出し始める日）だけを書く。「公式の公開待ち」
+                      // 「出走表は前期に近い」は日付によって外れる（期の初め3か月を過ぎれば公式は
+                      // 公開済みで、出走表も前期から離れる）。ファン評価1周目・2周目で同じ注記に
+                      // 指摘が続いたため、外の事実を言い切らない形にした
+                      const fallbackDiffNote = (p, date) => {
+                        const from = periodDiffShownFrom(p.pending.calcTo);
+                        return from && date && date < from
+                          ? t("basicInfo.periodDiffFallbackNoteDate", {
+                              date: from,
+                            })
+                          : t("basicInfo.periodDiffFallbackNote");
+                      };
                       // 2連対率の差は率の変化ではなくポイント差なので pt を付ける
                       const diffLabel = (d, unit = "", diffUnit = unit) =>
                         d && (
@@ -1013,13 +1260,32 @@ function RaceBasicInfoTab({
                           {/* 「前期」は公式の期別成績で、単位が点。自社集計の
                               1着率%と同じ列に混ぜられないため別枠にする */}
                           {period && (
-                            <div className="rbit-period">
+                            <div
+                              className={`rbit-period${period.fallback ? " is-fallback" : ""}`}
+                            >
                               <div className="rbit-period-heading">
-                                {t("basicInfo.periodTitle", {
-                                  from: period.calcFrom,
-                                  to: period.calcTo,
-                                })}
+                                {t(
+                                  period.fallback
+                                    ? "basicInfo.periodTitleFallback"
+                                    : "basicInfo.periodTitle",
+                                  {
+                                    from: period.calcFrom,
+                                    to: period.calcTo,
+                                  },
+                                )}
                               </div>
+                              {/* 公式の fan が公開される前（期替わり直後）は前々期を出す。
+                                  その期を表として取り込んでいないときだけ（pickPeriodStats） */}
+                              {/* 値の行は通常の前期と同じ見た目なので、見出しの「々」1文字だけに
+                                  頼らず、この注記を本文と同じ大きさ・色で出す（ファン評価1周目 P2） */}
+                              {period.fallback && (
+                                <p className="rbit-period-note rbit-period-pending">
+                                  {t("basicInfo.periodFallbackNote", {
+                                    from: period.pending.calcFrom,
+                                    to: period.pending.calcTo,
+                                  })}
+                                </p>
+                              )}
                               <div className="rbit-period-values">
                                 <span>
                                   {t("basicInfo.periodWinRate", {
@@ -1065,24 +1331,37 @@ function RaceBasicInfoTab({
                                     value: period.wins ?? "—",
                                   })}
                                 </span>
+                                {/* 範囲と回数を分け、回数は1つの塊で折り返す（375pxで「回」だけが
+                                    次の行に落ちた。ファン評価2周目 P2） */}
                                 <span className="rbit-period-recent">
-                                  {t("basicInfo.periodRecentFinals", {
-                                    from: period.recent.from
-                                      .slice(0, 7)
-                                      .replace("-", "/"),
-                                    to: period.recent.to
-                                      .slice(0, 7)
-                                      .replace("-", "/"),
-                                    finals: period.recent.finals,
-                                    wins: period.recent.wins,
-                                  })}
+                                  {t(
+                                    period.fallback
+                                      ? "basicInfo.periodRecentRangeFallback"
+                                      : "basicInfo.periodRecentRange",
+                                    {
+                                      from: period.recent.from
+                                        .slice(0, 7)
+                                        .replace("-", "/"),
+                                      to: period.recent.to
+                                        .slice(0, 7)
+                                        .replace("-", "/"),
+                                    },
+                                  )}
+                                  <span className="rbit-period-recent-counts">
+                                    {t("basicInfo.periodRecentCounts", {
+                                      finals: period.recent.finals,
+                                      wins: period.recent.wins,
+                                    })}
+                                  </span>
                                 </span>
                               </div>
                               {diffWithheld && (winDiff || top2Diff) && (
                                 <p className="rbit-period-note">
-                                  {t("basicInfo.periodDiffWithheldNote", {
-                                    date: diffShownFrom,
-                                  })}
+                                  {period.fallback
+                                    ? fallbackDiffNote(period, raceDate)
+                                    : t("basicInfo.periodDiffWithheldNote", {
+                                        date: diffShownFrom,
+                                      })}
                                 </p>
                               )}
                             </div>
@@ -1102,6 +1381,11 @@ function RaceBasicInfoTab({
       {(officialRates ?? []).some(
         (r) => (r.f_count ?? 0) > 0 || (r.l_count ?? 0) > 0,
       ) && <p className="rbit-note">{t("flyingBadge.legend")}</p>}
+      {/* 事故率の目印の凡例（BOA-327）。目印が1つでも出ているときだけ。「あと◯点」を予選の得点と
+          取り違えないよう、何の点数かを書く（ファン評価1周目） */}
+      {[...accidentByRacer.values()].some((a) => a.showBadge) && (
+        <p className="rbit-note">{t("basicInfo.accidentLegend")}</p>
+      )}
     </div>
   );
 }

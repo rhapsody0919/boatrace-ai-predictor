@@ -26,6 +26,7 @@
  * 持っていないので、走った分から計算した値をそのまま返す。
  */
 import { finishPositionOf } from "./basicInfoStats.js";
+import { getRaceStageKey } from "../../constants/raceStageConfig.js";
 
 /** 予選・一般戦の着順点 */
 export const SCORE_POINTS = { 1: 10, 2: 8, 3: 6, 4: 4, 5: 2, 6: 1 };
@@ -89,6 +90,9 @@ export function classifyStage(stage) {
   if (!s) return "normal";
   // 「準々優勝戦」「準優進出戦」も勝ち上がり戦なので先に落とす
   if (s.includes("準優") || s.includes("優勝戦")) return "excluded";
+  // 「優勝戦」「準優」を含まない優勝戦・準優勝戦（決勝戦・準決勝戦・王将位決定戦・〜優 等）。
+  // バッジと同じ判定 v2（raceStageConfig.js の getRaceStageKey、BOA-271 T1-1）
+  if (getRaceStageKey(stage)) return "excluded";
   // 「ドリーム」と、その略記「DR」（「桐生DR戦女子」「ツッキーDR戦」等）。
   // 「ドラドキ」は桐生のシリーズ名で、DRを含まないので当たらない
   if (s.includes("ドリーム") || s.includes("DR")) return "dream";
@@ -787,6 +791,38 @@ export function listAbsentOnlyRacers(scoreboard) {
       (r) =>
         r.finishes.length > 0 && r.finishes.every((f) => f === FINISH_ABSENT),
     );
+}
+
+/**
+ * 順位の対象から外した選手を、理由ごとにまとめる（純関数、BOA-697）。
+ *
+ * 人数の行（「…5人を除く」）だけでは誰が外れたかが分からず、予選の後に順位が
+ * 動いた理由もその場で読めなかった。公式の得点率一覧が備考欄で一人ずつ見せるのに
+ * 近い形で、名前を理由ごとに並べる。並びは 今節F → 賞典除外（公式の備考）→
+ * 途中帰郷 → 欠場。公式の備考による途中帰郷も「途中帰郷」にまとめる。
+ *
+ * @param {Array<{racerId: number, playerName: string, withdrawn?: boolean,
+ *   excludedReason?: string|null}>} ranking `buildMeetRanking` の行
+ * @param {Array<{racerId: number, playerName: string}>} absentOnly 全部の走が欠場の選手
+ * @returns {Array<{reason: "flying"|"awardExcluded"|"withdrawn"|"absent",
+ *   names: string[]}>} 該当者がいる理由だけ
+ */
+export function groupExcludedRacers(ranking, absentOnly) {
+  const order = ["flying", "awardExcluded", "withdrawn", "absent"];
+  const byReason = new Map(order.map((r) => [r, []]));
+  const nameOf = (r) => String(r.playerName ?? "").replace(/\s+/g, "");
+  for (const r of ranking ?? []) {
+    if (!r.withdrawn) continue;
+    const reason =
+      r.excludedReason === "flying" || r.excludedReason === "awardExcluded"
+        ? r.excludedReason
+        : "withdrawn";
+    byReason.get(reason).push(nameOf(r));
+  }
+  for (const r of absentOnly ?? []) byReason.get("absent").push(nameOf(r));
+  return order
+    .map((reason) => ({ reason, names: byReason.get(reason) }))
+    .filter((g) => g.names.length > 0);
 }
 
 /**

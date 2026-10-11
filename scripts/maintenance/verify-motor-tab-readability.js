@@ -31,7 +31,10 @@ import {
   powerIndexTone,
 } from "../../src/utils/smallSampleRate.js";
 import { officialTallyState } from "../../src/utils/motorGeneration.js";
-import { exhibitionTimeAxis } from "../../src/utils/chartDomain.js";
+import {
+  exhibitionTimeAxis,
+  exhibitionSparklineY,
+} from "../../src/utils/chartDomain.js";
 import { competitionRank } from "../../src/utils/competitionRank.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -185,8 +188,8 @@ check(
 );
 // 公式の 0.0 が「集計前」か「本当に0%」かを区別する（2026-09-29 ファン4人・ユーザー承認）
 check(
-  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す）",
-  /isOfficialPending = \(row\) =>\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*\(row\.rate_source === "official" \|\| row\.sample_count > 0\) &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
+  "一覧: 公式2連率・3連率がどちらも0で、結果の出た走があり、会場公式の出走数が0（集計前）のときだけ「集計前」を添える（公式の0.0は残す。会場公式の成績が取れなかった行には付けない、BOA-740）",
+  /isOfficialPending = \(row\) =>\s*!row\.venue_stats_failed &&\s*Number\(row\.official_2rate\) === 0 &&\s*Number\(row\.official_3rate\) === 0 &&\s*\(row\.rate_source === "official" \|\| row\.sample_count > 0\) &&\s*officialTallyState\(venueHasOfficialStats, row\.race_count\) === "pending"/.test(
     chart,
   ) &&
     chart.includes('t("analysis.motor.officialPendingBadge")') &&
@@ -194,7 +197,7 @@ check(
       "official_3rate: row.motor_3rate ?? null",
     ) &&
     read("src/services/supabaseDataService.js").includes(
-      "`race-motor-breakdown-v8-",
+      "`race-motor-breakdown-v10-",
     ),
 );
 check(
@@ -256,6 +259,12 @@ check(
 check(
   "一覧: オレンジ色の機力指数がある行があるときは、表の下の注記で意味（6走未満の参考値）を書く",
   chart.includes('t("analysis.motor.powerIndexSmallSampleNote"'),
+);
+check(
+  "1基の詳細: 会場公式の成績が取れなかったとき（fetchFailed）は、推移グラフを「集計前」と判定しない（BOA-740）",
+  /officialTallyState\(\s*venueHasOfficialStats && !venueMotorStats\?\.fetchFailed,\s*venueMotorStats\?\.raceCount,?\s*\)/.test(
+    chart,
+  ),
 );
 check(
   "選手ページ: 参考値の文言をレースページと同じ「— 走数が少ないため参考値」にそろえる",
@@ -327,6 +336,26 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     "過去レースの一覧でも「集計前」の印と注記を出す",
     /officialMode && isOfficialPending\(row\)/.test(chart) &&
       !/!officialMode &&\s*breakdown\.some\(isOfficialPending\)/.test(chart),
+  );
+  // 展示タイムは速い（小さい）ほど上。枠番別成績の小さな線が逆（遅いほど上）で、
+  // 下の推移グラフを「上ほど速い」にしたとき同じタブで向きが食い違った（PR #1193 ファン評価1周目）
+  check(
+    "展示タイムの小さな推移線は速いほど上（最小が上端 y=0、最大が下端 y=height）",
+    exhibitionSparklineY(6.7, 6.7, 6.9, 24) === 0 &&
+      exhibitionSparklineY(6.9, 6.7, 6.9, 24) === 24 &&
+      exhibitionSparklineY(6.8, 6.8, 6.8, 24) === 0 &&
+      grid.includes("exhibitionSparklineY(t, min, max, height)"),
+  );
+  check(
+    "モータ情報の展示タイムの推移は縦軸を反転し（速いほど上）、渡した目盛りを全部出す",
+    /dataKey: "exhibition_time"/.test(chart) &&
+      /yTicks=\{exhibitionAxis\?\.ticks\}[\s\S]{0,300}yReversed/.test(chart) &&
+      read("src/components/analysis/TrendLineChart.jsx").includes(
+        "interval={yTicks ? 0 : undefined}",
+      ) &&
+      read("src/components/analysis/TrendLineChart.jsx").includes(
+        "reversed={yReversed}",
+      ),
   );
   // 展示タイムの縦軸の端は0.2秒の倍数（6.43 / 6.63 … や上端だけ7.10にしない）
   // 範囲だけ渡すと recharts が5本に等分し、幅0.6秒で 6.80/6.95/7.10… になった（ファン評価）
@@ -447,7 +476,8 @@ for (const lang of ["ja", "en", "zh-TW", "ko"]) {
     "会場内順位は competitionRank で出し、同値なら「◯位タイ」の文言を使う",
     /competitionRank\(\s*valued\.map/.test(service) &&
       !/rank: rankIndex \+ 1/.test(service) &&
-      service.includes("`venue-motor-ranking-v2-") &&
+      // v2（BOA-529）以降。v3 は出走数 0 を外した（BOA-428）
+      /`venue-motor-ranking-v[2-9]-/.test(service) &&
       /venueMotorRanking\.tied > 1\s*\?\s*"analysis\.motor\.venueRankBadgeTied"/.test(
         chart,
       ) &&

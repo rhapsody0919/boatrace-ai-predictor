@@ -188,7 +188,7 @@ async function fetchRaceResults(periodDays, venueFilter) {
       if (venueFilter) {
         query = query.like("race_id", `%-${venueFilter}-%`);
       }
-      return query;
+      return query.order("race_id");
     },
   );
 
@@ -223,7 +223,7 @@ async function fetchPredictions(periodDays, venueFilter, modelFilter) {
         .gte("race_id", fromDate);
       if (venueFilter) query = query.like("race_id", `%-${venueFilter}-%`);
       if (modelFilter) query = query.eq("model_id", modelFilter);
-      return query;
+      return query.order("race_id").order("model_id").order("prediction_id");
     },
   );
 

@@ -614,6 +614,13 @@ async function exhibitionShadowWritesNothing(run) {
       "weather" in conditions[0],
     show({ r, calls: first.fetcher.calls, rows: rows.length }),
   );
+  const order = db.state.upserts.map((u) => u.table);
+  check(
+    "A2 live: 気象（race_conditions）を展示データより先に書く（展示タイムを見て動く展示後の段が、同じ取得回の気象を読む。BOA-271 T4-3）",
+    order.indexOf("race_conditions") >= 0 &&
+      order.indexOf("race_conditions") < order.indexOf("exhibition_data"),
+    show(order),
+  );
 
   const second = await runExhibition(realExhibitionRun, db, { mode: "live" });
   check(

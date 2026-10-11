@@ -43,10 +43,14 @@ import {
   flyingRacerIdsInMeet,
   postPrelimFlyingRacerIds,
   withdrawnByAbsence,
+  groupExcludedRacers,
   runFinishLabel,
   officialMarkOf,
 } from "../../src/components/race/seriesPoints.js";
-import { getRaceStageKey } from "../../src/constants/raceStageConfig.js";
+import {
+  getRaceStageKey,
+  getRaceStageCategory,
+} from "../../src/constants/raceStageConfig.js";
 import {
   dayCenter,
   dayTickLabels,
@@ -548,7 +552,10 @@ check(
     check(
       "全走欠場の選手を選んだ詳細に欠場の見出し、「欠」があれば意味の注記を出す",
       meetTab.includes('t("meetTab.absentDetail")') &&
-        /r\.finishes\.includes\(FINISH_ABSENT\)[\s\S]{0,80}t\("meetTab\.finishAbsentNote"\)/.test(
+        // 「欠」を含む走の判定で注記を出し分けていること。条件を変数に切り出す・
+        // 段落を組み替える（BOA-714・BOA-738）たびに書き方の照合が外れたので、
+        // 変数名と JSX の書き方には依存しない（判定の式と、その変数で注記を出すことだけ見る）
+        /(\w+) = [^;]*r\.finishes\.includes\(FINISH_ABSENT\)[\s\S]*\b\1 &&[\s\S]{0,40}t\("meetTab\.finishAbsentNote"\)/.test(
           meetTab,
         ),
       true,
@@ -752,6 +759,23 @@ check("バッジ: 会場名付きの優勝戦", getRaceStageKey("ツッキー優
 check("バッジ: 準優勝戦", getRaceStageKey("準優勝戦"), "semifinal");
 check("バッジ: 準々優勝戦は山場でない", getRaceStageKey("準々優勝戦"), null);
 check("バッジ: 準優進出戦は準優でない", getRaceStageKey("準優進出戦"), null);
+// 男女Ｗ優勝戦の準優勝戦は「Ｗ準優戦前半/後半」と書く（「勝」が無い）。以前は準優勝戦に
+// 当たらず、見出しのチップが「会場独自の名前」、英韓中の文中に原文の日本語が入った（BOA-728）
+check(
+  "バッジ: Ｗ準優戦前半は準優勝戦",
+  getRaceStageKey("Ｗ準優戦前半"),
+  "semifinal",
+);
+check(
+  "区分: Ｗ準優戦後半は準優勝戦",
+  getRaceStageCategory("Ｗ準優戦後半")?.key,
+  "semifinal",
+);
+check(
+  "区分: 準優進出戦は準優勝戦でない",
+  getRaceStageCategory("準優進出戦")?.key,
+  "semifinalQualifier",
+);
 check("バッジ: 予選", getRaceStageKey("予選"), null);
 
 // ---- 5. 全件取得のページング -----------------------------------------------
@@ -1738,6 +1762,32 @@ check(
     new Map([[2, 12]]),
   );
   check("今節のモーターの行が無ければ採らない", onlyOther.has(2), false);
+}
+
+// 順位の対象外の内訳は理由ごとに、今節F → 賞典除外 → 途中帰郷 → 欠場 の順でまとめる。
+// 公式の備考による途中帰郷も「途中帰郷」に入れ、順位の付いた選手は入れない（BOA-697）
+{
+  const groups = groupExcludedRacers(
+    [
+      { racerId: 1, playerName: "山田　太郎", withdrawn: false, excludedReason: null },
+      { racerId: 2, playerName: "鈴木一郎", withdrawn: true, excludedReason: "withdrawn" },
+      { racerId: 3, playerName: "佐藤花子", withdrawn: true, excludedReason: "flying" },
+      { racerId: 4, playerName: "高橋", withdrawn: true, excludedReason: "officialWithdrawn" },
+      { racerId: 5, playerName: "田中", withdrawn: true, excludedReason: "awardExcluded" },
+    ],
+    [{ racerId: 6, playerName: "伊藤" }],
+  );
+  check(
+    "理由ごとにまとめ、順位の付いた選手を入れない",
+    groups,
+    [
+      { reason: "flying", names: ["佐藤花子"] },
+      { reason: "awardExcluded", names: ["田中"] },
+      { reason: "withdrawn", names: ["鈴木一郎", "高橋"] },
+      { reason: "absent", names: ["伊藤"] },
+    ],
+  );
+  check("対象外が居なければ空", groupExcludedRacers([], []), []);
 }
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);

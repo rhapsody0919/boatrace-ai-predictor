@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>帯の内訳の割合</title>
+<style>
+:root{--page:#f7f3ea;--card:#fbf9f3;--line:#ddd4bf;--ink:#0f172a;--sub:#475569;--gold:#8a6a14;--bar:#c9a227;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0d1b2e;--card:#142842;--line:#2b3d58;--ink:#f8fafc;--sub:#cbd5e1;--gold:#d4ae3a;--bar:#d4ae3a;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0d1b2e;--card:#142842;--line:#2b3d58;--ink:#f8fafc;--sub:#cbd5e1;--gold:#d4ae3a;--bar:#d4ae3a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:13.6px;line-height:1.6;padding:20px 16px 48px}
+.doc{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;margin:0}
+p{margin:0}
+.sub{color:var(--sub)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.card.rec{border:2px solid var(--gold)}
+.tag{font-size:12px;font-weight:700;color:var(--gold)}
+h2{font-size:15px;margin:0}
+.head{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13.6px}
+.sw{width:22px;height:10px;border-radius:3px;background:#e5e1d6;border:1px solid #94a3b8;flex:none}
+.back{font-size:12px;color:var(--sub)}
+.row{display:grid;grid-template-columns:86px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:26px;font-size:12.5px;font-variant-numeric:tabular-nums}
+.tri{display:flex;gap:2px;align-items:center}
+.bb{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:4px;font-size:11px;font-weight:800;border:1px solid #94a3b8}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.trk{height:10px;border-radius:5px;background:var(--line);position:relative;overflow:hidden}
+.trk i{position:absolute;inset:0 auto 0 0;background:var(--bar);border-radius:5px}
+.v{text-align:right;white-space:nowrap}
+.v small{color:var(--sub)}
+ul{margin:0;padding-left:18px}
+.notes{border-top:1px solid var(--line);padding-top:8px;font-size:12.5px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div class="doc">
+  <p class="sub">BOA-816 龍神ソナー ・ 着順の流れの帯を押したときの「よく出た3連単」の内訳 ・ 数字は戸田6R（10/9、集めたレース4,708件）の本番の値</p>
+  <h1>内訳の行に、集めたレース全体の中での割合を出すか</h1>
+  <p class="sub">帯「1着1号艇→2着2号艇」615件を押した状態。帯を押す前の「よく出た3連単」では、1-2-3 は「5.3% 249件」と出ている</p>
+  <div class="grid" id="g"></div>
+  <div class="card">
+    <b>ファン4人のパネルの結論: 推奨は案C</b>
+    <ul>
+      <li>3連単のオッズと比べるのは「全体の中でどれくらい出るか」（1-2-3 が5.3%）。帯の中の40%はオッズと比べられない</li>
+      <li>案Cなら、同じ出目は帯を押す前と後で同じ数字（5.3% 249件）。今の形は押すと「249件（帯の中の40%）」に変わり、数字が合わないように見える</li>
+      <li>帯の中での大きさ（3着の選び方）は、棒の長さと件数（249／615）で見える</li>
+      <li>文字は今より増えない（行の「帯の中の◯%」が消え、見出しに「全体の◯%」が1つ増えるだけ）</li>
+      <li>案Aは1行に％が2つで読めない、案Bは見出しの13%と行の40%が混ざる、で落ちた</li>
+    </ul>
+  </div>
+</div>
+<script>
+const rows=[["1-2-3",249],["1-2-4",150],["1-2-5",147],["1-2-6",69]];const T=4708,N=615,M=249;
+const bb=(n)=>`<span class="bb b${n}">${n}</span>`;
+const tri=(k)=>`<span class="tri">${k.split("-").map(bb).join("-")}</span>`;
+const pct=(x,d=0)=>(x*100).toFixed(d)+"%";
+const plans=[
+ {id:"A",title:"案A: 2つの割合を並べる",head:`1着1号艇→2着2号艇の615件の内訳`,v:(c)=>`${c}件 <small>帯の中${pct(c/N)}・全体${pct(c/T,1)}</small>`},
+ {id:"B",title:"案B: 全体の割合は見出しに1回、行は帯の中（今の形＋見出し）",head:`1着1号艇→2着2号艇の615件の内訳（全体の${pct(N/T)}）`,v:(c)=>`${c}件 <small>（帯の中の${pct(c/N)}）</small>`},
+ {id:"C",title:"案C（推奨）: 行は押す前の一覧と同じ「全体の割合・件数」、帯の中は棒の長さ",head:`1着1号艇→2着2号艇の615件の内訳（全体の${pct(N/T)}）`,v:(c)=>`${pct(c/T,1)} <small>${c}件</small>`,rec:true},
+];
+document.getElementById("g").innerHTML=plans.map(p=>`<div class="card${p.rec?" rec":""}">${p.rec?'<span class="tag">推奨</span>':""}<h2>${p.title}</h2><div class="head"><i class="sw"></i>${p.head}</div><p class="back">帯をもう一度押すと戻る</p>${rows.map(([k,c])=>`<div class="row">${tri(k)}<span class="trk"><i style="width:${c/M*100}%"></i></span><span class="v">${p.v(c)}</span></div>`).join("")}</div>`).join("");
+</script>
+</body>
+</html>

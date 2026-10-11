@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>段の番号と艇の丸</title>
+<style>
+:root{--page:#f6f2e9;--card:#fbf9f3;--line:#ddd4bf;--ink:#0f172a;--sub:#475569;--gold:#6b4f10;--goldbg:#6b4f10;--goldink:#fff;--bar:#c9a227;--ng:#b91c1c;--okc:#166534;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0b1626;--card:#132640;--line:#2b3d58;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--goldbg:#d4ae3a;--goldink:#1a1404;--bar:#d4ae3a;--ng:#fca5a5;--okc:#86efac;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0b1626;--card:#132640;--line:#2b3d58;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--goldbg:#d4ae3a;--goldink:#1a1404;--bar:#d4ae3a;--ng:#fca5a5;--okc:#86efac;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6;font-size:13.6px}
+.doc{max-width:980px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:16px}
+h1{font-size:20px;margin:0}
+h2{font-size:16px;margin:4px 0 0}
+.sub{color:var(--sub);font-size:13px;margin:0}
+.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.box{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.lbl{font-size:12px;font-weight:800}
+.lbl.now{color:var(--ng)}.lbl.new{color:var(--okc)}
+.stepc{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--goldbg);color:var(--goldink);font-weight:800;font-size:13px;margin-right:6px}
+.steppill{display:inline-block;border-radius:6px;background:var(--goldbg);color:var(--goldink);font-weight:800;font-size:12px;padding:1px 7px;margin-right:6px;letter-spacing:.02em}
+.h3{font-size:16px;font-weight:800;display:flex;align-items:center}
+.boat{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;border:1px solid #94a3b8;vertical-align:-3px;margin-right:3px}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.go{align-self:flex-end;border:1px solid var(--gold);border-radius:8px;color:var(--gold);font-weight:700;padding:6px 10px;font-size:13px}
+.row{display:grid;grid-template-columns:150px minmax(0,1fr) 90px;gap:6px;align-items:center;font-size:12.5px;font-variant-numeric:tabular-nums}
+.trk{height:10px;border-radius:5px;background:var(--line)}.trk i{display:block;height:100%;background:var(--bar);border-radius:5px}
+.tag{font-size:11.5px;color:var(--sub)}
+.form{border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px}
+.form small{display:block;color:var(--sub)}
+.ng{color:var(--ng);font-weight:800}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--sub)}
+.notes{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:12px 14px;font-size:13px}
+.notes ul{margin:4px 0 0;padding-left:18px}
+</style>
+</head>
+<body>
+<div class="doc">
+  <p class="sub">龍神ソナー（展開シナリオ中心）・375px の見え方 ・ 数字は本番 津4R（10/10） ・ #1358 の案B（②の上に「1号艇＝1コース…」を1回、文は「4コース」）とそろえる</p>
+  <h1>丸の数字を「段の番号」と「艇・コース」で見分けられるようにする</h1>
+
+  <h2>1. 段の番号（①進入〜④結果）: 丸をやめて「STEP」の札に</h2>
+  <div class="pair">
+    <div class="box"><span class="lbl now">今</span>
+      <div class="h3"><span class="stepc">3</span>攻めは決まった？</div>
+      <div>②でカド一撃を選ぶと…</div>
+      <span class="go">カド一撃の形で③④を見る ›</span>
+    </div>
+    <div class="box"><span class="lbl new">案</span>
+      <div class="h3"><span class="steppill">STEP3</span>攻めは決まった？</div>
+      <div>STEP2でカド一撃を選ぶと…</div>
+      <span class="go">カド一撃の形でSTEP3・4を見る ›</span>
+    </div>
+  </div>
+  <p class="sub">段の札は四角（金の地に白文字）、艇は色の丸。形が違うので混ざらない。文中の「②で」「③④を」も「STEP2で」「STEP3・4を」に</p>
+
+  <h2>2. 文の中の「①」が1号艇を指している所: 「1号艇」と書く</h2>
+  <div class="pair">
+    <div class="box"><span class="lbl now">今</span>
+      <div class="form"><b>カド一撃</b><small>12%・454件 ・ <span class="ng">①</span> 48%</small></div>
+      <div class="tag"><span class="ng">①</span>＝1号艇の1着率</div>
+      <div class="tag">進入の表の列「<span class="ng">①</span>の1着率」</div>
+    </div>
+    <div class="box"><span class="lbl new">案</span>
+      <div class="form"><b>カド一撃</b><small>12%・454件 ・ 1号艇1着 48%</small></div>
+      <div class="tag">（凡例の1行は不要になるので消す）</div>
+      <div class="tag">進入の表の列「1号艇の1着率」</div>
+    </div>
+  </div>
+
+  <h2>3. 色の丸だけで番号を出している所: 意味に合わせて「号艇」か「コース」を添える</h2>
+  <div class="pair">
+    <div class="box"><span class="lbl now">今（③の箱の札・④の棒）</span>
+      <div><span class="boat b4">4</span>A2 のレース 275件</div>
+      <div class="row"><span><span class="boat b1">1</span><span class="tag">A1 454件</span></span><span class="trk"><i style="width:62%"></i></span><span>48% 220件</span></div>
+      <div class="row"><span><span class="boat b4">4</span><span class="tag">A2 276件</span></span><span class="trk"><i style="width:31%"></i></span><span>24% 66件</span></div>
+    </div>
+    <div class="box"><span class="lbl new">案</span>
+      <div><span class="boat b4">4</span>4号艇・A2 のレース 275件</div>
+      <div class="row"><span><span class="boat b1">1</span>1号艇 <span class="tag">A1 454件</span></span><span class="trk"><i style="width:62%"></i></span><span>48% 220件</span></div>
+      <div class="row"><span><span class="boat b4">4</span>4号艇 <span class="tag">A2 276件</span></span><span class="trk"><i style="width:31%"></i></span><span>24% 66件</span></div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>場所</th><th>丸が指すもの</th><th>案</th></tr></thead>
+    <tbody>
+      <tr><td>展開シナリオ STEP2 の手がかりの絵・平均STの表・当てはまる条件</td><td>コース（枠なりなので号艇＝コース）</td><td>#1358 で済み（上に対応1行、文は「4コース」）。変えない</td></tr>
+      <tr><td>展開シナリオ STEP3 の箱の札</td><td>号艇</td><td>「④ 4号艇・A2 のレース」</td></tr>
+      <tr><td>展開シナリオ STEP4 の「1着になった艇」「3着以内に入った艇」</td><td>号艇</td><td>丸の横に「1号艇」</td></tr>
+      <tr><td>集めたレース（級の並び 1〜6 の上の丸）</td><td>号艇（その枠の級）</td><td>変えない（下の文が「1号艇以外は枠を問わない」と説明している）</td></tr>
+      <tr><td>着順の流れの四角・よく出た3連単（1-2-3）</td><td>号艇（着順の並び）</td><td>変えない（3連単の書き方の決まり。四角の上に「1着・2着・3着」がある）</td></tr>
+      <tr><td>差がつく材料（七角形の艇の行）・類似レース（どの艇が勝った？）</td><td>号艇</td><td>変えない（すでに「1号艇」と書いている）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="notes">
+    <b>洗い出し（コードと4言語の文言を全部見た結果）</b>
+    <ul>
+      <li>丸の数字の文字（①〜⑥）は、龍神ソナーの文言では展開シナリオだけに18か所（4言語とも同じ数）。差がつく材料・類似レースには無い</li>
+      <li>内訳: 段の番号を指すもの 14か所（「②で選ぶ」「③④を見る」「③は…」「④の結果は…」など）、1号艇を指すもの 4か所（「①の1着率」「① 48%」「①＝1号艇の1着率」）</li>
+      <li>段の見出しの丸（1〜4）は文字ではなく金の丸の部品。艇の色の丸と形が同じなので、STEP の四角に変える</li>
+      <li>文の量は増えない（「②で」→「STEP2で」、「①」→「1号艇」程度）。375px で折り返しが増えるのは STEP4 の棒の左（「1号艇」の分、約2文字）だけ</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

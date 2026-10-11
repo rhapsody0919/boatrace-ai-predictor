@@ -71,7 +71,7 @@ async function main() {
     (q) =>
       q
         .eq("model_id", MODEL_ID)
-        .eq("feature_contributions->>volatilityPercentileIsFallback", "false"),
+        .eq("feature_contributions->>volatilityPercentileIsFallback", "false").order("race_id").order("model_id").order("prediction_id"),
   );
   console.log(`  ${predictions.length}件`);
 
@@ -79,7 +79,7 @@ async function main() {
   const results = await fetchAll(
     "race_results",
     "race_id, rank1, is_cancelled, race_status",
-    (q) => q.not("rank1", "is", null),
+    (q) => q.not("rank1", "is", null).order("race_id"),
   );
   const resultByRaceId = new Map(results.map((r) => [r.race_id, r]));
   console.log(`  ${results.length}件`);
@@ -124,7 +124,7 @@ async function main() {
     };
   }
 
-  // 会場別: 「イン崩れ確率高」ラベル時の実際のイン崩れ率 vs 会場全体の平均
+  // 会場別: 「イン崩れ注意（高）」ラベル時の実際のイン崩れ率 vs 会場全体の平均
   // （VolatilityAccuracySection.jsxが期待するshapeに合わせる。BOA-175）
   const venueCodes = [...new Set(joined.map((r) => r.venueCode))];
   const byVenue = venueCodes

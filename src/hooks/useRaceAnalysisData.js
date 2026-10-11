@@ -15,10 +15,15 @@
  */
 import { useState, useEffect, useCallback } from "react";
 import { supabaseDataService } from "../services/supabaseDataService";
+import { getRaceSt30 } from "../services/analogyService";
 
 const SOURCES = {
+  // サービス層は { rows, fetchFailed? } を返す（会場公式のモーター成績の取得失敗をキャッシュさせないため、
+  // BOA-740）。失敗した行は venue_stats_failed を持つ。画面は行だけを使う
   motor: (raceId, venueCode) =>
-    supabaseDataService.getRaceMotorBreakdown(raceId, venueCode ?? null),
+    supabaseDataService
+      .getRaceMotorBreakdown(raceId, venueCode ?? null)
+      .then((result) => result.rows),
   racerForm: (raceId) => supabaseDataService.getRaceRacerFormBreakdown(raceId),
   stPredictability: (raceId) =>
     supabaseDataService.getRaceStPredictabilityBreakdown(raceId),
@@ -35,6 +40,9 @@ const SOURCES = {
   returnRate: (raceId) =>
     supabaseDataService.getRaceRacerBoatReturnRate(raceId),
   racerStats: (raceId) => supabaseDataService.getRaceRacerStats(raceId),
+  // 平均ST の2行（BOA-815）: 公式の出走表と同じ期の値と、v16 の直近30走
+  officialAvgSt: (raceId) => supabaseDataService.getRaceOfficialAvgSt(raceId),
+  st30: (raceId) => getRaceSt30(raceId),
   // 今節の前走（BOA-610）。サービス層は { rows } を返す（結果待ちをキャッシュさせないため）
   meetPrevRun: (raceId) =>
     supabaseDataService

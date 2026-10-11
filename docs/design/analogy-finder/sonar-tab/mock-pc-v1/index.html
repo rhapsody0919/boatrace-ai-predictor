@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>龍神ソナー PC表示</title>
+<style>
+:root{--page:#f6f2e9;--card:#fbf9f3;--line:#ddd4bf;--ink:#0f172a;--sub:#475569;--gold:#6b4f10;--goldbg:#6b4f10;--goldink:#fff;--dark:#0f1d33;--darkline:#2b3d58;--bar:#c9a227;--hl:#c9a22733;--note:#fff7da;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0b1626;--card:#132640;--line:#2b3d58;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--goldbg:#d4ae3a;--goldink:#1a1404;--dark:#0a1424;--darkline:#30455f;--bar:#d4ae3a;--hl:#d4ae3a33;--note:#2a2410;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0b1626;--card:#132640;--line:#2b3d58;--ink:#f1f5f9;--sub:#cbd5e1;--gold:#d4ae3a;--goldbg:#d4ae3a;--goldink:#1a1404;--dark:#0a1424;--darkline:#30455f;--bar:#d4ae3a;--hl:#d4ae3a33;--note:#2a2410;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.6}
+.doc{max-width:1200px;margin:0 auto;padding:20px 16px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--sub);font-size:13px;margin:0}
+.ctl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ctl b{font-size:13px;margin-right:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--card);color:var(--ink);padding:7px 12px;font:inherit;font-size:13px;cursor:pointer;min-height:36px}
+.seg button[aria-pressed="true"]{background:var(--goldbg);color:var(--goldink);font-weight:700}
+.vp{border:1px solid var(--line);border-radius:10px;background:var(--page);overflow:hidden;position:relative}
+.vp-inner{width:1440px;transform-origin:0 0;padding:16px 24px 32px;font-size:13px}
+.vp-cap{font-size:12px;color:var(--sub);margin:0}
+.tabs{display:flex;gap:28px;border-bottom:1px solid var(--line);padding:0 12px 8px;font-size:13px;color:var(--sub)}
+.tabs .on{color:var(--gold);font-weight:700;border-bottom:3px solid var(--gold);padding-bottom:6px;margin-bottom:-9px}
+.col{margin-top:14px}
+.now .col{width:720px;margin-left:336px}
+.new .col{width:1200px;margin-left:0}
+.itabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.itabs span{border:1px solid var(--line);border-radius:8px;text-align:center;padding:7px;font-weight:700;background:var(--card)}
+.itabs .on{background:var(--goldbg);color:var(--goldink);border-color:transparent}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.chip{border:1px solid var(--line);border-radius:8px;padding:4px 10px;background:var(--card);font-size:12px}
+.chip.on{background:var(--goldbg);color:var(--goldink);border-color:transparent;font-weight:700}
+.lbl{font-size:12px;color:var(--sub);margin-right:4px}
+h3{font-size:16px;margin:18px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+h4{font-size:13px;margin:0 0 6px}
+.two{display:grid;gap:16px}
+.new .two{grid-template-columns:440px minmax(0,1fr);align-items:start}
+.new .two.even{grid-template-columns:1fr 1fr}
+.new .stick{position:sticky;top:8px}
+.card{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:10px 12px}
+.darkbox{background:var(--dark);border-radius:10px;padding:10px;color:#e2e8f0;display:grid;place-items:center}
+.darkbox svg{width:100%;max-width:420px;height:auto;display:block}
+.boat{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;border:1px solid #94a3b8;flex:none}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.brow{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-bottom:6px;background:var(--card);font-size:12px}
+.brow.on{border-color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.brow em{margin-left:auto;font-style:normal;color:var(--sub)}
+.bar{display:grid;grid-template-columns:22px 70px minmax(0,1fr) 92px;gap:6px;align-items:center;font-size:12px;margin:4px 0;font-variant-numeric:tabular-nums}
+.bar .tag{font-size:11px;color:var(--sub)}
+.trk{height:10px;border-radius:5px;background:var(--line);overflow:hidden}
+.trk i{display:block;height:100%;background:var(--bar)}
+.v{text-align:right}
+.tri{display:grid;grid-template-columns:76px minmax(0,1fr) 96px;gap:8px;align-items:center;font-size:12px;margin:4px 0;font-variant-numeric:tabular-nums}
+.tri-c{display:flex;gap:2px;align-items:center}
+.tri-c .boat{border-radius:4px}
+.bdh{display:flex;gap:6px;align-items:center;font-weight:700;font-size:12.5px}
+.sw{width:22px;height:9px;border-radius:3px;background:#e5e1d6;border:1px solid #94a3b8}
+.foot{font-size:11.5px;color:var(--sub);margin:4px 0 0}
+.mark{outline:2px dashed var(--bar);outline-offset:3px}
+.pin{display:inline-block;font-size:11px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:6px;padding:0 6px;margin-left:6px}
+.forms{display:grid;gap:6px}
+.now .forms{grid-template-columns:1fr 1fr}
+.new .forms{grid-template-columns:repeat(4,1fr)}
+.form{border:1px solid var(--line);border-radius:8px;padding:6px 8px;background:var(--card);font-size:12px}
+.form.on{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.form small{display:block;color:var(--sub)}
+.box{border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--card)}
+.box .big{font-size:20px;font-weight:800}
+.notes{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:12px 14px;font-size:13px}
+.notes ul{margin:4px 0 0;padding-left:18px}
+.hl{background:var(--note);border-radius:8px;padding:8px 10px;font-size:12.5px}
+</style>
+</head>
+<body>
+<div class="doc">
+  <p class="sub">BOA-813 ・ 龍神ソナー ・ 幅1440pxの画面をそのまま縮小して表示（375pxは今のまま変えない） ・ 数字は本番 津4R（10/10）</p>
+  <h1>龍神ソナーの PC 表示: 中央の細い列 → 図｜結果の2カラム</h1>
+  <div class="ctl">
+    <b>表示</b>
+    <div class="seg" id="mode"><button aria-pressed="false" data-v="now">今</button><button aria-pressed="true" data-v="new">案</button></div>
+    <b style="margin-left:12px">タブ</b>
+    <div class="seg" id="tab"><button aria-pressed="true" data-v="facts">差がつく材料</button><button aria-pressed="false" data-v="similar">類似レース</button><button aria-pressed="false" data-v="scenario">展開シナリオ</button></div>
+  </div>
+  <p class="vp-cap" id="cap"></p>
+  <div class="vp" id="vp"><div class="vp-inner new" id="inner"></div></div>
+  <div class="notes">
+    <b>案で変えること（1024px 以上だけ。375〜1023px は今のまま）</b>
+    <ul>
+      <li>列を最大 1200px に広げ、左端をタブの列にそろえる（今は 720px で中央。1440px で左右に 360px ずつ空いている）</li>
+      <li>図を左（440px、今と同じ大きさ）、押すと変わる結果を右に置く。図が画面の高さに収まるときだけ、図を上に止める（点線の枠）</li>
+      <li>①〜④の見出しは横幅いっぱいのまま、上から順に読む。2カラムにするのは各セクションの中だけ</li>
+      <li>展開シナリオ: ②手がかりの絵｜当てはまる条件、形の札は 1280px 以上で4列。③攻める艇｜1号艇。④1着｜3着以内、決まり手｜万舟、着順の流れ｜よく出た3連単</li>
+      <li>文言は変えない。文字も増やさない（並べ替えだけ）</li>
+    </ul>
+    <p class="foot">規模: CSS（1024px 以上の指定）と、2カラムにする組を包む要素の追加。3つのタブで1日程度。e2e のレイアウト検査（1024・1440・1920）に「列の左端がタブの列にそろう」「図と結果が横に並ぶ」を足す。</p>
+  </div>
+</div>
+<script>
+const B=(n)=>`<span class="boat b${n}">${n}</span>`;
+const bars=(rows,max)=>rows.map(([n,tag,p,c])=>`<div class="bar">${B(n)}<span class="tag">${tag}</span><span class="trk"><i style="width:${p/max*100}%"></i></span><span class="v">${p}% <small>${c}件</small></span></div>`).join("");
+const radar=`<div class="darkbox"><svg viewBox="0 0 420 300"><g fill="none" stroke="#3b4f6b">${[1,.75,.5,.25].map(s=>`<polygon points="${[0,1,2,3,4,5].map(i=>{const a=Math.PI/3*i-Math.PI/2;return `${210+130*s*Math.cos(a)},${150+120*s*Math.sin(a)}`}).join(" ")}"/>`).join("")}</g><polygon points="210,40 320,100 320,200 210,250 120,200 130,100" fill="none" stroke="#fff" stroke-width="3"/><polygon points="210,80 280,120 290,180 210,215 150,185 160,120" fill="none" stroke="#e53935" stroke-width="1.5"/><polygon points="210,95 260,130 270,170 210,205 140,175 170,130" fill="none" stroke="#43a047" stroke-width="1.5"/><g fill="#e2e8f0" font-size="12" text-anchor="middle"><text x="210" y="24">全国勝率</text><text x="370" y="96">当地勝率</text><text x="372" y="210">直近30走1着率</text><text x="210" y="290">モーター2連率</text><text x="52" y="210">平均ST</text><text x="52" y="96">今節の着順点</text></g></svg></div>`;
+const sankey=`<div class="darkbox"><svg viewBox="0 0 420 260"><g font-size="11" fill="#e2e8f0"><text x="20" y="16">1着</text><text x="200" y="16">2着</text><text x="380" y="16">3着</text></g>${[[30,150,"#f8fafc"],[185,22,"#111"],[212,22,"#e53935"],[239,18,"#1e88e5"]].map(([y,h,c])=>`<rect x="18" y="${y}" width="14" height="${h}" fill="${c}" stroke="#94a3b8"/>`).join("")}${[[30,40,"#111"],[75,35,"#e53935"],[115,28,"#1e88e5"],[148,24,"#fdd835"],[178,20,"#43a047"]].map(([y,h,c])=>`<rect x="198" y="${y}" width="14" height="${h}" fill="${c}" stroke="#94a3b8"/>`).join("")}${[[30,30,"#111"],[65,34,"#e53935"],[104,32,"#1e88e5"],[141,28,"#fdd835"],[174,22,"#43a047"]].map(([y,h,c])=>`<rect x="378" y="${y}" width="14" height="${h}" fill="${c}" stroke="#94a3b8"/>`).join("")}<path d="M32 30 C120 30 110 30 198 30 L198 70 C110 70 120 72 32 72 Z" fill="#f8fafc" opacity=".85" stroke="#c9a227" stroke-width="2"/>${[[72,75,110],[110,115,140],[140,148,165],[165,178,180]].map(([y1,y2,y3])=>`<path d="M32 ${y1} C120 ${y1} 110 ${y2} 198 ${y2} L198 ${y2+20} C110 ${y2+20} 120 ${y3} 32 ${y3} Z" fill="#f8fafc" opacity=".25"/>`).join("")}${[[30,65],[70,104],[110,141],[150,174]].map(([a,b],i)=>`<path d="M212 ${a} C300 ${a} 290 ${b} 378 ${b} L378 ${b+18} C290 ${b+18} 300 ${a+22} 212 ${a+22} Z" fill="#94a3b8" opacity=".25"/>`).join("")}</svg></div>`;
+const triRows=(rows)=>rows.map(([k,p,c,w])=>`<div class="tri"><span class="tri-c">${k.split("-").map(B).join("-")}</span><span class="trk"><i style="width:${w}%"></i></span><span class="v">${p}% <small>${c}件</small></span></div>`).join("");
+const tri=`<div class="card"><h4>よく出た3連単</h4><div class="bdh"><i class="sw"></i>1着1号艇→2着2号艇の972件の内訳（全体の26%）</div><p class="foot">帯をもう一度押すと戻る</p>${triRows([["1-2-3",9.9,365,100],["1-2-4",8.5,311,85],["1-2-5",5.5,203,56],["1-2-6",2.5,93,25]])}</div>`;
+const scopeRow=`<div class="row"><span class="lbl">集めたレース</span><span class="chip">津・同じ級別の組み合わせ</span><span class="chip on">全国・同じ級別の組み合わせ</span><span class="chip">津の全レース</span><span class="chip">全国の全レース</span></div>`;
+const boatRows=[[1,"1号艇（A1）","6項目中 4 項目で2位以内",true],[2,"2号艇（A2）","6項目中 0 項目で2位以内"],[3,"3号艇（A2）","6項目中 2 項目で2位以内"],[4,"4号艇（A2）","6項目中 1 項目で2位以内"],[5,"5号艇（A1）","6項目中 2 項目で2位以内"],[6,"6号艇（A1）","6項目中 3 項目で2位以内"]].map(([n,l,r,on])=>`<div class="brow${on?" on":""}">${B(n)}<b>${l}</b>${on?'<span class="pin">主役</span>':""}<em>${r}</em></div>`).join("");
+const facts=(isNew)=>`
+<div class="row"><span class="lbl">着順</span><span class="chip on">1着</span><span class="chip">2着以内</span><span class="chip">3着以内</span></div>
+<h3>1号艇が1着になったのは、どんなとき？</h3>
+<div class="row"><span class="lbl">主役の艇</span>${[1,2,3,4,5,6].map(n=>`<span class="chip${n===1?" on":""}">${B(n)}</span>`).join("")}</div>
+${scopeRow}
+<div class="two">
+  <div class="${isNew?"stick mark":""}">${radar}<p class="foot">艇を押すと、その艇の線が太くなる。2艇まで太くして比べられる</p></div>
+  <div>${boatRows}
+    <div class="card"><h4>全国勝率 ▼ を押したとき（項目の詳細）</h4><p class="foot">1号艇 2位 ・ 1着率は上位のとき 76%、下位のとき 61%</p></div>
+    <div class="card" style="margin-top:8px"><h4>差がはっきりしている順</h4><p class="foot">当地勝率 ・ 直近30走1着率 ・ モーター2連率 …</p></div>
+  </div>
+</div>`;
+const similar=(isNew)=>`
+<h3>今日と条件がそろう類似レース</h3>
+${scopeRow}
+<div class="two">
+  <div class="${isNew?"stick mark":""}"><div class="darkbox"><svg viewBox="0 0 420 300"><g fill="none" stroke="#3b4f6b"><circle cx="210" cy="150" r="130"/><circle cx="210" cy="150" r="90"/><circle cx="210" cy="150" r="50"/></g>${Array.from({length:70},(_,i)=>{const a=i*2.4,r=20+(i*37%110);const c=["#f8fafc","#111","#e53935","#1e88e5","#fdd835","#43a047"][i%6];return `<circle cx="${210+r*Math.cos(a)}" cy="${150+r*Math.sin(a)}" r="4" fill="${c}" stroke="#94a3b8" stroke-width=".5"/>`}).join("")}<circle cx="210" cy="150" r="7" fill="#c9a227"/></svg></div>
+  <div class="row"><span class="lbl">集める件数</span><span class="trk" style="flex:1"><i style="width:60%"></i></span><b>400件</b></div></div>
+  <div>
+    <div class="card"><h4>点の近くの類似レース（最大5件）</h4><p class="foot">2026-08-14 津 7R ・ 1-3-4 ／ 2026-07-02 蒲郡 5R ・ 1-2-5 ／ …</p></div>
+    <div class="card" style="margin-top:8px"><h4>どの艇が勝った？</h4>${bars([[1,"",58,232],[2,"",11,44],[3,"",10,40],[4,"",9,36],[5,"",8,32],[6,"",4,16]],58)}</div>
+    <div class="card" style="margin-top:8px"><h4>どう決まった？</h4><p class="foot">逃げ 56% ・ まくり 14% ・ 差し 12% ・ まくり差し 11% ・ 抜き 7%</p></div>
+  </div>
+</div>
+<h3>着順の流れ</h3>
+<div class="two">
+  <div class="${isNew?"stick mark":""}">${sankey}</div>
+  <div>${tri}</div>
+</div>`;
+const scenario=(isNew)=>`
+${scopeRow}
+<h3>① 進入はどうなる？</h3>
+<div class="row"><span class="chip on">枠なり 87%</span><span class="chip">どの進入でも</span><span class="chip">前付けあり（1号艇イン）12%</span><span class="chip">1号艇がインを取られた 1%</span></div>
+<h3>② スタートはどう並ぶ？</h3>
+<div class="two">
+  <div class="card"><h4>今日のスタートの手がかり</h4><svg viewBox="0 0 420 150" style="width:100%"><line x1="60" y1="10" x2="60" y2="140" stroke="#94a3b8" stroke-dasharray="4 3"/>${[[1,70],[2,90],[3,78],[4,40],[5,66],[6,84]].map(([n,x],i)=>`<rect x="20" y="${12+i*22}" width="${x}" height="14" rx="3" fill="${["#f8fafc","#111","#e53935","#1e88e5","#fdd835","#43a047"][n-1]}" stroke="#94a3b8"/>`).join("")}</svg></div>
+  <div class="card"><h4>当てはまる条件（このコースの平均STで判定）</h4><p class="foot">4コース（カド）の平均STが、1〜3コースのどれよりも早い</p><div class="bar"><span></span><span class="tag">当てはまる時</span><span class="trk"><i style="width:57%"></i></span><span class="v">19%</span></div><div class="bar"><span></span><span class="tag">当てはまらない時</span><span class="trk"><i style="width:33%"></i></span><span class="v">11%</span></div></div>
+</div>
+<div class="forms" style="margin-top:10px">${[["どの形でも","3,672件"],["横一線","19%・702件"],["内3艇そろう","18%・658件"],["2コース凹み","8%・291件"],["カド受け凹み","5%・195件"],["カド一撃","12%・454件",1],["イン凹み","7%・275件"],["ダッシュ勢先行","11%・407件"]].map(([n,c,on])=>`<div class="form${on?" on":""}"><b>${n}</b><small>${c}</small></div>`).join("")}</div>
+<h3>③ 攻めは決まった？</h3>
+<div class="two even">
+  <div class="box">${B(4)} <b>A2 のレース 275件</b><p class="foot">4号艇が1着</p><div class="big">24%</div><p class="foot">4号艇が2着以内 37% ・ すぐ外の5号艇が1着 13%</p></div>
+  <div class="box">${B(1)} <b>A1 のレース 453件</b><p class="foot">1号艇が逃げた</p><div class="big">45%</div><p class="foot">1号艇が2着以内 66%</p></div>
+</div>
+<h3>④ 結果はどう決まった？</h3>
+<div class="two even">
+  <div class="card"><h4>1着になった艇</h4>${bars([[1,"A1 454件",48,220],[2,"A2 292件",7,19],[3,"A2 300件",7,20],[4,"A2 276件",24,66],[5,"A1 218件",13,29],[6,"A1 196件",3,5]],77)}</div>
+  <div class="card"><h4>3着以内に入った艇</h4>${bars([[1,"A1 454件",77,348],[2,"A2 292件",36,105],[3,"A2 300件",33,98],[4,"A2 276件",54,149],[5,"A1 218件",58,126],[6,"A1 196件",40,78]],77)}</div>
+  <div class="card"><h4>決まり手</h4><p class="foot">逃げ 45% ・ まくり 23% ・ まくり差し 16% ・ 抜き 9% ・ 差し 7%</p></div>
+  <div class="card"><h4>万舟（3連単1万円以上）</h4><p class="foot">このシナリオ 35% ・ 枠なり全体（どの形でも） 15%</p></div>
+</div>
+<h4 style="margin-top:14px">着順の流れ</h4>
+<div class="two">
+  <div class="${isNew?"stick mark":""}">${sankey}</div>
+  <div>${tri}</div>
+</div>`;
+const V={facts,similar,scenario};
+let mode="new",tab="facts";
+const vp=document.getElementById("vp"),inner=document.getElementById("inner"),cap=document.getElementById("cap");
+function render(){
+  inner.className="vp-inner "+mode;
+  const name={facts:"差がつく材料",similar:"類似レース",scenario:"展開シナリオ（②でカド一撃を選んだ状態）"}[tab];
+  inner.innerHTML=`<div class="tabs"><span>基本情報</span><span class="on">龍神ソナー</span><span>AI予想</span><span>今節</span><span>直前情報</span><span>枠別情報</span><span>モータ情報</span><span>オッズ一覧</span></div><div class="col"><div class="itabs">${["facts","similar","scenario"].map(k=>`<span class="${k===tab?"on":""}">${{facts:"差がつく材料",similar:"類似レース",scenario:"展開シナリオ"}[k]}</span>`).join("")}</div>${V[tab](mode==="new")}</div>`;
+  cap.textContent=(mode==="now"?"今: 列は720pxで中央。左右に360pxずつ空く。":"案: 列は最大1200pxで、左端をタブの列にそろえる。点線の枠＝画面の高さに収まるとき上に止める図。")+" ・ "+name;
+  fit();
+}
+function fit(){const s=vp.clientWidth/1440;inner.style.transform=`scale(${s})`;vp.style.height=inner.scrollHeight*s+"px";}
+for(const [id,set] of [["mode",v=>mode=v],["tab",v=>tab=v]]){const g=document.getElementById(id);g.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;set(b.dataset.v);[...g.children].forEach(x=>x.setAttribute("aria-pressed",String(x===b)));render();});}
+addEventListener("resize",fit);render();
+</script>
+</body>
+</html>

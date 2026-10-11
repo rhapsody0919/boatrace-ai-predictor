@@ -44,24 +44,24 @@ export async function getPoirotPredictions() {
   if (!supabase) return { date, races: [] };
 
   try {
-    const { data: races, error: raceErr } = await supabase
+    const { data: races } = await supabase
       .from("races")
       .select("race_id, venue_code, race_number, start_time")
       .eq("race_date", date)
       .order("venue_code")
       .order("race_number");
-    if (raceErr || !races || races.length === 0) return { date, races: [] };
+    if (!races || races.length === 0) return { date, races: [] };
 
     const raceIds = races.map((r) => r.race_id);
     const preds = [];
     for (let i = 0; i < raceIds.length; i += 100) {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("poirot_predictions")
         .select(
           "race_id, model_version, win_probs, top_pick, top_2nd, top_3rd, trifecta_prob, predicted_at",
         )
         .in("race_id", raceIds.slice(i, i + 100));
-      if (!error && data) preds.push(...data);
+      if (data) preds.push(...data);
     }
     if (preds.length === 0) return { date, races: [] };
 

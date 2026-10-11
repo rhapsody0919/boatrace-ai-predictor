@@ -28,6 +28,7 @@
     "verify:venue-motor-stats-drift": "node scripts/maintenance/verify-venue-motor-stats-drift-detection.js",
     "verify:race-stage": "node scripts/maintenance/verify-race-stage-parsing.js",
     "verify:series-points-stage": "node scripts/maintenance/verify-series-points-stage-rules.js",
+    "verify:meet-page-model": "node scripts/maintenance/verify-meet-page-model.js",
     "verify:meet-start-date": "node scripts/maintenance/verify-meet-start-date.js",
     "verify:meet-before-race": "node scripts/maintenance/verify-meet-before-race.js",
     "verify:race-notices": "node scripts/maintenance/verify-race-notices-parser.js",
@@ -39,6 +40,11 @@
     "verify:display-coverage": "node scripts/maintenance/verify-display-coverage.js",
     "generate:display-coverage": "node scripts/maintenance/generate-display-coverage.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
+    "verify:analogy-facts": "node scripts/maintenance/verify-analogy-facts.js",
+    "verify:sonar-tab": "node scripts/maintenance/verify-sonar-tab.js",
+    "verify:analogy-v16-api": "node scripts/maintenance/verify-analogy-v16-api.js",
+    "verify:analogy-v16-snapshots-migration": "node scripts/maintenance/verify-analogy-v16-snapshots-migration.js",
+    "verify:analogy-feedback-migration": "node scripts/maintenance/verify-analogy-feedback-migration.js",
     "verify:kb-backfill": "node scripts/maintenance/verify-kb-file-parser.js",
     "verify:fan-period": "node scripts/maintenance/verify-fan-period.js",
     "verify:racelist-backfill": "node scripts/maintenance/verify-racelist-backfill.js",
@@ -68,6 +74,7 @@
     "verify:boatcast-job": "node scripts/maintenance/verify-boatcast-job.js",
     "verify:motor-pretest": "node scripts/maintenance/verify-motor-pretest.js",
     "verify:daily-reconcile": "node scripts/maintenance/verify-daily-reconcile.js",
+    "verify:analogy-dispatch": "node scripts/maintenance/verify-analogy-dispatch.js",
     "verify:morning-digest-sns-topic": "node scripts/verification/verify-morning-digest-sns-topic.js",
     "verify:morning-init-refactor": "node scripts/maintenance/verify-morning-init-refactor.js",
     "verify:morning-init-jobs": "node scripts/maintenance/verify-morning-init-jobs.js",
@@ -78,6 +85,7 @@
     "verify:weather": "node scripts/maintenance/verify-weather-parsing.js",
     "verify:course-entry-tendency": "node scripts/maintenance/verify-course-entry-tendency.js",
     "verify:frontend-pure-functions": "node scripts/maintenance/verify-frontend-pure-functions.js",
+    "verify:venue-motor-ranking": "node scripts/maintenance/verify-venue-motor-ranking.js",
     "verify:rpc-output-keys": "node scripts/maintenance/verify-rpc-output-keys.js",
     "verify:rpc-key-regression": "node scripts/maintenance/verify-rpc-key-regression.js",
     "verify:rls-migration": "node scripts/maintenance/verify-rls-migration.js",
@@ -93,6 +101,7 @@
     "verify:registry": "node scripts/maintenance/run-verify-registry.js --check",
     "verify:list": "node scripts/maintenance/run-verify-registry.js --list",
     "test:e2e": "playwright test",
+    "test:x-send-ui": "playwright test --config playwright.x-send.config.js",
     "test:e2e:record": "E2E_RECORD=1 playwright test",
     "test:e2e:live": "E2E_LIVE=1 playwright test",
     "e2e:recording:fetch": "node scripts/maintenance/e2e-recording.js fetch",
@@ -105,7 +114,9 @@
     "linear:update": "node scripts/linear-cli.js update",
     "linear:comment": "node scripts/linear-cli.js comment",
     "linear:list": "node scripts/linear-cli.js list",
-    "linear:get": "node scripts/linear-cli.js get"
+    "linear:get": "node scripts/linear-cli.js get",
+    "verify:sns-bundle-import": "node scripts/maintenance/verify-sns-bundle-import.js",
+    "verify:sns-observations": "node scripts/maintenance/verify-sns-observations.js"
   },
   "dependencies": {
     "@kirinsaninc/lhats": "^0.1.0",
@@ -134,7 +145,8 @@
     "recharts": "^3.6.0",
     "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
-    "twitter-api-v2": "^1.29.0"
+    "twitter-api-v2": "^1.29.0",
+    "twitter-text": "^3.1.0"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
@@ -150,6 +162,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "gh-pages": "^6.3.0",
     "globals": "^16.5.0",
+    "jsdom": "^26.1.0",
     "postcss": "^8.5.6",
     "vite": "^7.2.4"
   }

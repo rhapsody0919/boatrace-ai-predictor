@@ -1,3 +1,4 @@
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
  * Vercel Edge Function: YouTube下書きの承認→YouTube Data API v3への自動投稿
  * POST /api/admin/sns-hub/drafts/:id/publish-youtube
@@ -22,7 +23,6 @@ import {
   isConfigured,
   isValidDraftId,
   getDraftById,
-  updateDraft,
   signStoragePath,
 } from "../../../../_lib/snsHubHelpers.js";
 import {
@@ -30,6 +30,8 @@ import {
   uploadYoutubeVideo,
   uploadYoutubeThumbnail,
 } from "../../../../_lib/youtubeUpload.js";
+
+import { externalRpc, claimExternal, recordExternal, finishExternal, completedResponse } from "../../../../_lib/snsExternalOperations.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
 
@@ -102,6 +104,19 @@ export default async function handler(req) {
         400,
       );
     }
+    if (draft.source_data?.deadline_queue) {
+      return jsonResponse({ error: '期限付き投稿は待ち行列で個別承認してください。接続準備中です' }, 409);
+    }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse({ error: "公開不可: v0素材の保留はこの操作で解除できません" }, 409);
+    }
+    if (draft.external_operation_state === "external_done") {
+      return jsonResponse(completedResponse(await finishExternal(draft)));
+    }
+    if (draft.external_operation_state === "done") return jsonResponse(completedResponse(draft));
+    if (draft.external_operation_state === "reconcile") {
+      return jsonResponse({ error: "送信中または要照合です。再アップロードせず外部結果を確認してください" }, 409);
+    }
     if (draft.status !== "pending_review") {
       return jsonResponse(
         {
@@ -152,9 +167,17 @@ export default async function handler(req) {
     }
     const videoBlob = await videoResponse.blob();
 
+    const operationToken = await claimExternal(draft, approverId);
     const uploaded = await uploadVideo(accessToken, draft, videoBlob);
     const youtubeVideoId = uploaded.id;
+    if (!youtubeVideoId) throw new Error("動画IDを確認できません。再送せず照合してください");
     const youtubeUrl = `https://youtu.be/${youtubeVideoId}`;
+    // サムネ処理より先に動画IDを永続化。ここで失敗してもclaimは残る。
+    const recorded = await recordExternal(id, operationToken, {
+      youtubeUrl, posted_at: new Date().toISOString(),
+      source_data: { youtube_video_id: youtubeVideoId, youtube_url: youtubeUrl },
+      thumbnailWarning: draft.cover_image_path ? "unconfirmed" : null,
+    });
 
     // サムネイル設定は動画本体のアップロードとは独立した成否として扱う。
     // ここで例外を投げると、動画自体はYouTube上に既に公開済み（取り消し不可）
@@ -178,29 +201,20 @@ export default async function handler(req) {
         await uploadThumbnail(accessToken, youtubeVideoId, thumbBlob);
       } catch (error) {
         console.error("SNS Hub publish-youtube thumbnail error:", error);
-        thumbnailError = error.message;
+        thumbnailError = "failed";
       }
     }
 
-    const updated = await updateDraft(id, {
-      status: "posted",
-      approver_id: approverId,
-      approved_at: new Date().toISOString(),
-      posted_at: new Date().toISOString(),
-      source_data: {
-        ...(draft.source_data || {}),
-        youtube_url: youtubeUrl,
-        ...(thumbnailError && { youtube_thumbnail_error: thumbnailError }),
-      },
-    });
+    // サムネ結果の保存失敗時も、先に保存した動画IDは残り再送しない。
+    if (draft.cover_image_path) {
+      await externalRpc("sns_update_external_warning", {
+        p_id: id, p_token: operationToken, p_warning: thumbnailError,
+      });
+    }
+    return jsonResponse(completedResponse(await finishExternal(recorded)));
 
-    return jsonResponse({
-      data: updated,
-      youtubeUrl,
-      ...(thumbnailError && { thumbnailWarning: thumbnailError }),
-    });
   } catch (error) {
     console.error("SNS Hub publish-youtube Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, error.status || 500);
   }
 }

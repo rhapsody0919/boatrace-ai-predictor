@@ -47,3 +47,34 @@ export function buildDisqualifiedMarkRows(raceId, parsedBoats, targets) {
   }
   return { rows, anomalies };
 }
+
+/**
+ * BOA-667: 公式の着順表の行の順（official_row）を、取り直した結果ページから既存の行へ写す。
+ * DB の着・着欄から導けないレース（非完走の記号が2種類以上・着欄が NULL の艇がいる）だけが対象
+ * （導けるレースは docs/issues/boa-667-official-row-backfill.md の SQL が埋める）。
+ * 着順表に無い艇（既存の行はあるのにページに無い）は書かずに異常とする。
+ *
+ * @param {string} raceId
+ * @param {{boat_number: number, official_row: number}[]} parsedBoats parseRaceResultPage の boats
+ * @param {{boat_number: number}[]} targets そのレースの、official_row が NULL の既存の行
+ * @returns {{rows: {race_id: string, boat_number: number, official_row: number}[], anomalies: string[]}}
+ */
+export function buildOfficialRowRows(raceId, parsedBoats, targets) {
+  const rows = [];
+  const anomalies = [];
+  for (const t of targets) {
+    const boat = parsedBoats.find((b) => b.boat_number === t.boat_number);
+    if (!boat || !Number.isInteger(boat.official_row)) {
+      anomalies.push(
+        `${raceId} ${t.boat_number}号艇: 着順表に無い（行の順を書かない）`,
+      );
+      continue;
+    }
+    rows.push({
+      race_id: raceId,
+      boat_number: t.boat_number,
+      official_row: boat.official_row,
+    });
+  }
+  return { rows, anomalies };
+}

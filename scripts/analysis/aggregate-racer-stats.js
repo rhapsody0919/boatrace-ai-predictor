@@ -276,14 +276,21 @@ async function calculateDefenseDistribution(racerId, venueCode = null) {
 
 // ===== コース別出走数算出 =====
 
+// 枠番別の出走数・勝数（course_race_counts）の期間（BOA-824、2026-10-10 ユーザー選択の案1）。
+// データ出走表の「枠番勝率（直近1年）」と、予想バッチ（1マーク展開予測・AIのスコア）の入力を兼ねる。
+// 以前は期間で絞らない全期間（DB は 2025-12-02 から）で、データ出走表の注記「過去90日間」とも食い違っていた。
+// DB が1年分たまる 2026-12-02 までは値が変わらない
+const COURSE_RACE_COUNTS_WINDOW_DAYS = 365;
+
 /**
- * 選手のコース別出走数・勝数を算出
+ * 選手のコース別出走数・勝数を算出（直近 COURSE_RACE_COUNTS_WINDOW_DAYS 日）
  * @param {number} racerId - 選手登録番号
  * @param {number|null} venueCode - 会場コード（nullの場合は全会場）
  * @returns {Object} { "1": { "total": 50, "wins": 28, "top2": 35, "top3": 40 }, "2": { ... } }
  */
 async function calculateCourseRaceCounts(racerId, venueCode = null) {
-  const filteredEntries = await fetchFilteredEntries(racerId, venueCode, null);
+  const since = getDateDaysAgo(COURSE_RACE_COUNTS_WINDOW_DAYS);
+  const filteredEntries = await fetchFilteredEntries(racerId, venueCode, since);
 
   if (filteredEntries.length === 0) {
     return null;

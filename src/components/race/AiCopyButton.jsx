@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useAiCopyText } from "../../hooks/useAiCopyText";
+import { getAiCopyPromptLabel } from "../../utils/aiCopyPrompts";
 
 export default function AiCopyButton({
   variant = "inline",
@@ -8,7 +9,6 @@ export default function AiCopyButton({
   race,
   venueCode,
   promptType,
-  onBeforeCopy,
   onCopy,
 }) {
   const { t } = useTranslation();
@@ -22,7 +22,6 @@ export default function AiCopyButton({
   if (!isReady) return null;
 
   const handleCopy = async () => {
-    onBeforeCopy?.();
     try {
       const text = buildText(promptType);
       await navigator.clipboard.writeText(text);
@@ -32,12 +31,8 @@ export default function AiCopyButton({
     }
   };
 
-  const label =
-    variant === "banner"
-      ? t("aiCopy.bannerLabel")
-      : t("aiCopy.inlineButtonLabel");
-
-  const baseStyle = {
+  // 上のバナーと下のボタンは同じ機能なので、同じ見た目・同じ文言にそろえる（BOA-770 推奨12）
+  const style = {
     border: "none",
     cursor: "pointer",
     borderRadius: "var(--radius-md)",
@@ -45,26 +40,40 @@ export default function AiCopyButton({
     color: "#ffffff",
     background: "var(--gradient-primary)",
     whiteSpace: "nowrap",
+    padding: "10px 18px",
+    fontSize: "1rem",
+    ...(variant === "inline" && { marginTop: "0.75rem" }),
   };
 
-  const style =
-    variant === "banner"
-      ? { ...baseStyle, padding: "10px 18px", fontSize: "1rem" }
-      : {
-          ...baseStyle,
-          padding: "6px 14px",
-          fontSize: "var(--font-size-sm)",
-          marginTop: "0.75rem",
-        };
-
-  return (
+  const button = (
     <button
       type="button"
       className={`ai-copy-btn ai-copy-btn-${variant}`}
       onClick={handleCopy}
       style={style}
     >
-      {label}
+      {t("aiCopy.bannerLabel")}
     </button>
+  );
+
+  if (variant !== "inline") return button;
+
+  // ページ末尾のボタンは単独だと SNS 共有の仲間に見え、どの質問が付くかも分からないため、
+  // 上のバナーで選んでいる質問を添える（BOA-770 ファン評価）
+  return (
+    <div className="ai-copy-inline">
+      {button}
+      <p
+        style={{
+          margin: "6px 0 0",
+          fontSize: "var(--font-size-sm)",
+          color: "var(--text-secondary)",
+        }}
+      >
+        {t("aiCopy.inlinePromptCaption", {
+          label: getAiCopyPromptLabel(t, promptType),
+        })}
+      </p>
+    </div>
   );
 }

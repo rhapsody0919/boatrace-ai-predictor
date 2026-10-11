@@ -1,0 +1,226 @@
+{
+ "load_start": [
+  44.46142578125,
+  67.314453125,
+  109.55126953125
+ ],
+ "threads": 4,
+ "rounds": 250,
+ "data_range": [
+  "2019-04-01",
+  "2026-10-01"
+ ],
+ "periods": {
+  "fit": [
+   "2025-06-01",
+   "2025-11-02",
+   23403
+  ],
+  "temp": [
+   "2025-11-03",
+   "2025-12-02",
+   3825
+  ],
+  "test": [
+   "2026-04-01",
+   "2026-09-30",
+   28185
+  ]
+ },
+ "live_nan_rate": {
+  "fit": {
+   "exh_time": 0.0,
+   "exh_time_diff": 0.0,
+   "exh_time_rank": 0.0,
+   "weather_code": 0.0,
+   "wind_x": 0.0,
+   "wind_y": 0.0,
+   "wind_speed": 0.0,
+   "wave_height": 0.0
+  },
+  "test": {
+   "exh_time": 0.0436,
+   "exh_time_diff": 0.0436,
+   "exh_time_rank": 0.0436,
+   "weather_code": 0.0365,
+   "wind_x": 0.0998,
+   "wind_y": 0.0998,
+   "wind_speed": 0.0365,
+   "wave_height": 0.0365
+  }
+ },
+ "logloss": {
+  "with": {
+   "ll_temp": 1.1999273548313767,
+   "ll_temp1": 1.2435399147571795,
+   "temperature": 0.7453869962395406,
+   "top1_acc": 0.571048430015966
+  },
+  "without": {
+   "ll_temp": 1.2113498479060916,
+   "ll_temp1": 1.2567422588487667,
+   "temperature": 0.745368125682678,
+   "top1_acc": 0.5673940039027852
+  },
+  "baseline1": 1.3250431564755676
+ },
+ "paired_without_minus_with": {
+  "mean": 0.01142249307471519,
+  "ci95": [
+   0.009015162725216831,
+   0.013879295346568116
+  ],
+  "n": 28185,
+  "n_days": 183
+ },
+ "paired_without_minus_with_temp1": {
+  "mean": 0.013202344091587406,
+  "ci95": [
+   0.00993466765162588,
+   0.016539250140449675
+  ],
+  "n": 28185,
+  "n_days": 183
+ },
+ "paired_live_complete_races": {
+  "mean": 0.011835127214191611,
+  "ci95": [
+   0.009315726261552644,
+   0.014374284151168093
+  ],
+  "n": 26781,
+  "n_days": 183
+ },
+ "shap_n_races": 5000,
+ "centered_share_mean": {
+  "with": {
+   "venueCourse": 0.3564,
+   "racerRecord": 0.343,
+   "startExhibition": 0.1468,
+   "machine": 0.0742,
+   "environment": 0.0205,
+   "racerProfile": 0.0591
+  },
+  "with_live_nan": {
+   "venueCourse": 0.3872,
+   "racerRecord": 0.3586,
+   "startExhibition": 0.091,
+   "machine": 0.078,
+   "environment": 0.02,
+   "racerProfile": 0.0652
+  },
+  "without": {
+   "venueCourse": 0.3792,
+   "racerRecord": 0.3803,
+   "startExhibition": 0.0626,
+   "machine": 0.0906,
+   "environment": 0.01,
+   "racerProfile": 0.0773
+  },
+  "F5_correct_order": {
+   "venueCourse": 0.378,
+   "racerRecord": 0.3451,
+   "startExhibition": 0.1534,
+   "machine": 0.0545,
+   "environment": 0.0203,
+   "racerProfile": 0.0488
+  },
+  "F5_correct_order_live_nan": {
+   "venueCourse": 0.4155,
+   "racerRecord": 0.3665,
+   "startExhibition": 0.0854,
+   "machine": 0.0595,
+   "environment": 0.0208,
+   "racerProfile": 0.0523
+  },
+  "F5_perrace_order": {
+   "venueCourse": 0.3638,
+   "racerRecord": 0.3895,
+   "startExhibition": 0.1511,
+   "machine": 0.0296,
+   "environment": 0.0198,
+   "racerProfile": 0.0463
+  },
+  "F5_perrace_order_live_nan": {
+   "venueCourse": 0.3967,
+   "racerRecord": 0.4105,
+   "startExhibition": 0.0896,
+   "machine": 0.0339,
+   "environment": 0.0206,
+   "racerProfile": 0.0487
+  }
+ },
+ "top1_rate": {
+  "with": {
+   "venueCourse": 0.552,
+   "racerRecord": 0.448,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "with_live_nan": {
+   "venueCourse": 0.595,
+   "racerRecord": 0.405,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "without": {
+   "venueCourse": 0.5092,
+   "racerRecord": 0.4908,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "F5_correct_order": {
+   "venueCourse": 0.6044,
+   "racerRecord": 0.3956,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "F5_correct_order_live_nan": {
+   "venueCourse": 0.6506,
+   "racerRecord": 0.3494,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "F5_perrace_order": {
+   "venueCourse": 0.3946,
+   "racerRecord": 0.6054,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "F5_perrace_order_live_nan": {
+   "venueCourse": 0.4302,
+   "racerRecord": 0.5698,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  }
+ },
+ "top1_same_with_vs_without": 0.9312,
+ "mean_abs_diff_with_vs_without": {
+  "venueCourse": 0.0246,
+  "racerRecord": 0.0375,
+  "startExhibition": 0.0842,
+  "machine": 0.0169,
+  "environment": 0.0105,
+  "racerProfile": 0.0189
+ },
+ "seconds": 2292,
+ "load_end": [
+  183.3349609375,
+  228.392578125,
+  217.51318359375
+ ]
+}

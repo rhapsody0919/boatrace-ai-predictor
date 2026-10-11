@@ -15,6 +15,9 @@ import base from "./playwright.config.js";
 export default defineConfig({
   ...base,
   testDir: "./e2e/acceptance",
+  // sns-x-send.spec.js は専用のテスト用サーバーが要る（playwright.x-send.config.js、
+  // npm run test:x-send-ui）。本体のdevサーバーで開くとアプリ本体が表示されて必ず落ちる
+  testIgnore: [/sns-x-send\.spec\.js/],
   // 本体の JSON レポート（e2e-results.json、check-e2e-skips.js が読む）を上書きしない
   reporter: [["list"]],
   projects: [{ name: "acceptance" }],

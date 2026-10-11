@@ -1,0 +1,25 @@
+.sns-observation-panel {
+  color: var(--text-primary);
+}
+.sns-observation-panel label {
+  display: inline-block;
+  margin: var(--spacing-2);
+}
+.sns-observation-panel select {
+  background: var(--surface-card);
+  color: var(--text-primary);
+  padding: var(--spacing-2);
+}
+.sns-observation-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-4);
+  margin-block: var(--spacing-4);
+  overflow-wrap: anywhere;
+}
+
+.sns-observation-curve {
+  width: 100%;
+  max-width: 30rem;
+}

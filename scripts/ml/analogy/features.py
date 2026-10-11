@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import unicodedata
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
@@ -51,6 +52,22 @@ ROUND_CODE = {r: i for i, r in enumerate(ROUNDS)}
 DIR16 = ["北", "北北東", "北東", "東北東", "東", "東南東", "南東", "南南東",
          "南", "南南西", "南西", "西南西", "西", "西北西", "北西", "北北西"]
 DIR_ANGLE = {d: i * 22.5 for i, d in enumerate(DIR16)}
+# 本体の風向（直前情報・結果ページのアイコン）は方位ではなく、ページの水面の図（会場ごとに北の向きが違う）に対する向き。
+# 長期分（K ファイル、方位）の基準に直す表。作り方と根拠は build-wind-basis.js と docs/design/analogy-finder/wind-basis.md
+WIND_BASIS_FILE = Path(__file__).resolve().parent / "wind_basis.json"
+# 本体で DB の風向が空・風速>0 のレース（2025-12・01 はほぼ全件、他の月は K/B の補完で風速だけ入った行）は、
+# K ファイルの風向（方位、回転なし）で埋める
+K_WIND_FILL_FILE = Path(__file__).resolve().parent / "k_wind_fill.csv"
+
+
+def load_wind_basis(path: Path = WIND_BASIS_FILE) -> dict:
+    """{"offsets_deg": {"1": 角度, …}}（per_race_meta.json にもそのまま入れる）"""
+    return {"offsets_deg": json.loads(path.read_text())["offsets_deg"]}
+
+
+def wind_offset(venue_code: pd.Series, basis: dict) -> pd.Series:
+    """本体の風向から引く角度。表に無い会場は NaN（風向を欠損にする。無風は0のまま）"""
+    return venue_code.astype(int).astype(str).map(basis["offsets_deg"]).astype("float64")
 VENUE_PREF = {1: "群馬", 2: "埼玉", 3: "東京", 4: "東京", 5: "東京", 6: "静岡",
               7: "愛知", 8: "愛知", 9: "三重", 10: "福井", 11: "滋賀", 12: "大阪",
               13: "兵庫", 14: "徳島", 15: "香川", 16: "岡山", 17: "広島", 18: "山口",
@@ -62,11 +79,31 @@ def _has_special(s: str) -> bool:
     return any(k in s for k in ("特選", "特賞", "特別", "選抜"))
 
 
-# src/constants/raceStageConfig.js の RACE_STAGE_CATEGORY_RULES と同じ順序（tests で一致を固定）
+# 優勝戦・準優勝戦の判定 v2（#1134 の docs/design/analogy-finder/analysis/t1/t1-1-stage-rule.json の rules。
+# 一致検査の82件は tests/test_features.py）。準々・準優進出は準優勝戦にしない（Q-C(3)）。
+# src/constants/raceStageConfig.js の RACE_STAGE_CATEGORY_RULES（#1262 で v2）と同じ答え（82件で突き合わせる）
+def _strip_ws(s: str) -> str:
+    return re.sub(r"\s", "", s)
+
+
+def _is_final(s: str) -> bool:
+    # 長期の名前は6文字で切れるので「〜優勝」「〜優」も優勝戦（準優を除く）
+    if _strip_ws(s).endswith("優勝") and "準優" not in s:
+        return True
+    if "ファイナル選" in s:  # ファイナル選抜（選抜戦）
+        return False
+    return ("優勝戦" in s
+            or any(k in s for k in ("決勝戦", "王座決定戦", "賞金女王決定", "王将位決定戦"))
+            or ("ファイナル" in s and "進出" not in s)
+            or (_strip_ws(s).endswith("優") and "準優" not in s))
+
+
 _STAGE_RULES = [
     ("semifinalQualifier", lambda s: "準々" in s or "準優進出" in s),
-    ("semifinal", lambda s: "準優勝戦" in s),
-    ("final", lambda s: "優勝戦" in s),
+    # 男女Ｗ優勝戦の「Ｗ準優戦前半/後半」も準優勝戦（BOA-728）
+    ("semifinal", lambda s: re.search(r"準優勝?戦", s) is not None or "準決" in s
+     or "セミファイナル" in s),
+    ("final", _is_final),
     ("dream", lambda s: "ドリーム" in s or "DR" in s),
     ("qualifierSpecial", lambda s: "予選" in s and _has_special(s)),
     ("generalSpecial", lambda s: "一般" in s and _has_special(s)),
@@ -80,16 +117,50 @@ _CATEGORY_ROUND = {"qualifier": "yosen", "qualifierSpecial": "yosen", "semifinal
 _KB_KIND_ROUND = {"qualifier": "yosen", "semifinal": "junyu", "final": "yusho", "other": "other"}
 
 
+# 判定 v2 の前の規則（版 2026-10-02 までの学習）。事前登録5 の記録（ラウンドが変わった行数・参照版を旧定義で
+# 評価した値）にだけ使う。名前の判定は準優勝戦・優勝戦の2つだけが v2 と違う
+_STAGE_RULES_V1 = [
+    _STAGE_RULES[0],
+    ("semifinal", lambda s: re.search(r"準優勝?戦", s) is not None),
+    ("final", lambda s: "優勝戦" in s),
+    *_STAGE_RULES[3:],
+]
+
+
+def stage_category(stage) -> str | None:
+    """レースの名前（NFKC）→ 種別キー（raceStageConfig.js の区分と同じキー）。空なら None。"""
+    if not isinstance(stage, str) or not stage:
+        return None
+    s = unicodedata.normalize("NFKC", stage)
+    return next((k for k, test in _STAGE_RULES if test(s)), None)
+
+
 def round_from_stage(stage) -> str | None:
     """本体の race_conditions.race_stage → 4区分。ステージが空なら None。"""
     if not isinstance(stage, str) or not stage:
         return None
+    return _CATEGORY_ROUND.get(stage_category(stage), "other")
+
+
+def round_from_stage_v1(stage) -> str | None:
+    if not isinstance(stage, str) or not stage:
+        return None
     s = unicodedata.normalize("NFKC", stage)
-    key = next((k for k, test in _STAGE_RULES if test(s)), None)
-    return _CATEGORY_ROUND.get(key, "other")
+    return _CATEGORY_ROUND.get(next((k for k, test in _STAGE_RULES_V1 if test(s)), None), "other")
 
 
-def round_from_kb_kind(kind) -> str | None:
+def round_from_kb_kind(stage, kind) -> str | None:
+    """長期の kb_archive_races の stage（名前）と stage_kind → 4区分。名前を先に見て、決まらないときだけ
+    stage_kind（t1_1_stage_rule.py の kb_new）。名前が準々・準優進出なら stage_kind が semifinal でも
+    準優勝戦にしない（Q-C(3)）。名前が優勝戦・準優勝戦でなければ、ほかの区分は stage_kind で決める
+    （長期の名前は短く切れていて、予選などの判定は stage_kind の方が確か）。"""
+    cat = stage_category(stage)
+    if cat == "semifinalQualifier":
+        return "other"
+    if cat == "semifinal":
+        return "junyu"
+    if cat == "final" or kind == "final":
+        return "yusho"
     return _KB_KIND_ROUND.get(kind) if isinstance(kind, str) else None
 
 
@@ -142,10 +213,13 @@ def _bool(s: pd.Series) -> pd.Series:
                   "True": True, "False": False}).fillna(False).astype(bool)
 
 
-def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day) -> pd.DataFrame:
+def encode_race_level(r: pd.DataFrame, weather, wind_dir, wind_speed, final_day,
+                      wind_offset: pd.Series | float = 0.0) -> pd.DataFrame:
+    """wind_offset: 風向の角度から引く値（本体を K の基準に直す。長期分は0）。NaN は風向を欠損にする"""
     out = pd.DataFrame({"race_id": r["race_id"]})
     out["weather_code"] = r[weather].map(WEATHER_CODE).astype("float32")
-    ang = r[wind_dir].map(DIR_ANGLE)
+    # 推論側の JS（analogyRaceFeatures.js の windComponents）と同じ計算の順（角度−回転 → ラジアン）にする
+    ang = r[wind_dir].map(DIR_ANGLE) - wind_offset
     ws = pd.to_numeric(r[wind_speed], errors="coerce")
     # 本体は無風を「風向が空・風速0」で持つ（'無風' の行は無い）。風向が空で風速>0 は不明（NaN）
     calm = (r[wind_dir] == "無風") | (r[wind_dir].isna() & (ws == 0))
@@ -191,7 +265,10 @@ def load_kb(src: Path = D) -> pd.DataFrame:
                        "wind_speed": r["wind_speed"], "wave_height": r["wave_height"],
                        "series_day": r["series_day"],
                        "grade": r["race_grade"].where(r["race_grade"].isin(GRADES)),
-                       "round": r["stage_kind"].map(round_from_kb_kind)}).merge(enc, on="race_id")
+                       "round": [round_from_kb_kind(st, k) for st, k in zip(r["stage"], r["stage_kind"])],
+                       # v2 の前の定義（長期は stage_kind だけ）。記録用
+                       "round_v1": r["stage_kind"].map(_KB_KIND_ROUND),
+                       }).merge(enc, on="race_id")
     # 欠場（K0/K1）・不明は、そのレースごと除外する（発走前に分かる欠場を含む6艇比較にしない）
     kcat = [c for c in b["finish_raw"].cat.categories if str(c).startswith("K")]
     bad = set(b.loc[b["finish_raw"].isin(kcat) | b["finish_raw"].isna(), "race_id"])
@@ -208,6 +285,20 @@ def load_kb(src: Path = D) -> pd.DataFrame:
     return df
 
 
+def main_wind(cond: pd.DataFrame, basis: dict,
+              fill_path: Path = K_WIND_FILL_FILE) -> tuple[pd.DataFrame, pd.Series]:
+    """本体の風向と、引く角度。DB の風向が空で風速>0 のうち K の風向があるレースは、K の値（方位）を入れて
+    回転しない。それ以外は会場の回転を引く。"""
+    cond = cond.copy()
+    offset = wind_offset((cond["race_id"] // 100) % 100, basis)  # race_id は rid_to_int の後（YYYYMMDDVVRR）
+    f = pd.read_csv(fill_path, dtype=str)
+    fill = pd.Series(f["wind_direction"].to_numpy(), index=rid_to_int(f["race_id"]).to_numpy())
+    ws = pd.to_numeric(cond["wind_speed"], errors="coerce")
+    use_k = cond["wind_direction"].isna() & (ws > 0) & cond["race_id"].isin(fill.index)
+    cond.loc[use_k, "wind_direction"] = cond.loc[use_k, "race_id"].map(fill)
+    return cond, offset.where(~use_k, 0.0)
+
+
 def load_main(src: Path = D) -> pd.DataFrame:
     races = read("races", src)
     ent = read("entries", src)
@@ -221,8 +312,11 @@ def load_main(src: Path = D) -> pd.DataFrame:
     df = df.merge(exh[["race_id", "boat_number", "exhibition_time", "is_absent"]]
                   .rename(columns={"is_absent": "exh_absent"}),
                   on=["race_id", "boat_number"], how="left")
-    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day")
+    cond, offset = main_wind(cond, load_wind_basis())
+    enc = encode_race_level(cond, "weather", "wind_direction", "wind_speed", "is_final_day",
+                            wind_offset=offset)
     enc["round"] = cond["race_stage"].map(round_from_stage)
+    enc["round_v1"] = cond["race_stage"].map(round_from_stage_v1)
     df = df.merge(cond[["race_id", "wind_speed", "wave_height", "series_day"]],
                   on="race_id", how="left").merge(enc, on="race_id", how="left")
     df = df.merge(st[["race_id", "boat_number", "start_timing", "is_flying", "is_late_start"]],
@@ -232,8 +326,7 @@ def load_main(src: Path = D) -> pd.DataFrame:
     fr = pd.Series(np.nan, index=df.index)
     for k in range(1, 7):
         fr = fr.where(df[f"rank{k}"] != df["boat_number"], k)
-    has_res = (df["rank1"].notna() & ~_bool(df["is_cancelled"]) & ~_bool(df["is_no_race"])
-               & ~races_cancelled(df))
+    has_res = has_result(df)
     absent = _bool(df["is_absent"]) | _bool(df["exh_absent"])
     bad = set(df.loc[absent | ~has_res, "race_id"])
     out = pd.DataFrame({
@@ -249,13 +342,21 @@ def load_main(src: Path = D) -> pd.DataFrame:
         "grade": df["race_grade"].where(df["race_grade"].isin(GRADES)),
         "series_day": df["series_day"],
         "weather_code": df["weather_code"], "wind_x": df["wind_x"], "wind_y": df["wind_y"],
-        "round": df["round"], "is_final_day_num": df["is_final_day_num"],
+        "round": df["round"], "round_v1": df["round_v1"], "is_final_day_num": df["is_final_day_num"],
         "finish_rank": fr,
         "st_result": df["start_timing"], "is_flying": _bool(df["is_flying"]),
         "is_late": _bool(df["is_late_start"]),
     })
     out["race_ok"] = ~out["race_id"].isin(bad)
     return out
+
+
+def has_result(df: pd.DataFrame) -> pd.Series:
+    """着順があり、返還・不成立・中止でないレース（本体）。不成立は is_no_race が立たず race_status だけが
+    'no_race' の行がある（v16_pool.load_races と同じ判定。spec D-5）"""
+    status = df["race_status"] if "race_status" in df.columns else pd.Series(None, index=df.index)
+    return (df["rank1"].notna() & ~_bool(df["is_cancelled"]) & ~_bool(df["is_no_race"])
+            & status.ne("no_race") & ~races_cancelled(df))
 
 
 def races_cancelled(df: pd.DataFrame) -> pd.Series:
@@ -409,6 +510,7 @@ def build_with_maps(src: Path = D, branch_map: dict[str, int] | None = None):
     df["cls_ord"] = df["cls"].astype(object).map(CLASS_ORD).astype("float32")
     df["grade_code"] = df["grade"].map(GRADE_CODE).astype("float32")
     df["round_code"] = df["round"].map(ROUND_CODE).astype("float32")
+    df["round_code_v1"] = df["round_v1"].map(ROUND_CODE).astype("float32")
     br = df["branch"].astype(object)
     df["is_local"] = np.where(br.isna(), np.nan,
                               (br == df["venue_code"].map(VENUE_PREF)).astype(float)).astype("float32")

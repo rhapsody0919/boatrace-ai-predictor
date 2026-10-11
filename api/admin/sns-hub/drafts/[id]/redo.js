@@ -1,3 +1,4 @@
+import { isBundlePublicationBlocked } from "../../../../_lib/snsBundleValidation.js";
 /**
  * Vercel Edge Function: 下書きへの修正指摘（統合版）
  * POST /api/admin/sns-hub/drafts/:id/redo
@@ -94,6 +95,9 @@ export default async function handler(req) {
     if (!draft) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
     }
+    if (isBundlePublicationBlocked(draft)) {
+      return jsonResponse({ error: "v0素材はローカルで修正して再取り込みしてください" }, 409);
+    }
     if (draft.status !== "pending_review") {
       return jsonResponse(
         {
@@ -112,7 +116,7 @@ export default async function handler(req) {
       // 無いため明示的にセットする（管理画面の「処理中」経過時間表示が参照する、
       // spec.md課題2）
       updated_at: new Date().toISOString(),
-    });
+    }, "pending_review");
 
     // ADR 0038: 下書きのplatformから正しいチャネル別パイプラインの発火先を解決する
     const routineResult = await fireRoutine(
@@ -126,7 +130,7 @@ export default async function handler(req) {
         language: draft.language,
         freeText: freeText || null,
       },
-    );
+    ).catch(() => ({ fired: false, reason: "起動通信に失敗しました" }));
 
     // 「恒久ルール化」を選んだ場合のみ、自由記述を今後の生成方針への提案(insight)
     // として登録する。scope==='all'なら全チャネル共通（platform/language/format
@@ -154,6 +158,6 @@ export default async function handler(req) {
     return jsonResponse({ data: updated, routine: routineResult });
   } catch (error) {
     console.error("SNS Hub redo Edge function error:", error);
-    return jsonResponse({ error: error.message }, 500);
+    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, error.status || 500);
   }
 }

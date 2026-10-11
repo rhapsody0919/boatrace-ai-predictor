@@ -495,6 +495,39 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
       .toBe("ja");
   });
 
+  // BOA-430: 思考アシストは /race 配下（翻訳済み）だが ja 専用。言語付きの URL は ja 版へ移る。2026-10-10 に公開したので noindex は付けない
+  test("思考アシスト（/en/race/{id}/assist）はja版へリダイレクトされ、公開後は noindex を付けない", async ({
+    page,
+  }) => {
+    await page.goto("/en/race/2026-10-06-18-10/assist");
+    await expect(page).toHaveURL(/\/race\/2026-10-06-18-10\/assist$/);
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.lang))
+      .toBe("ja");
+    // 見出しは「{会場} {R}R 思考アシスト」（ページ名は視覚的に隠した文字。PR3 で画面を入れた）
+    await expect(
+      page.getByRole("heading", { level: 1, name: /思考アシスト/ }),
+    ).toBeVisible();
+    await expect(
+      page.locator('meta[name="robots"][content*="noindex"]'),
+    ).toHaveCount(0);
+  });
+
+  // BOA-430 PR3: 機能フラグが無くても URL 直接で開け、1段目のデータ（出走表）でレースの図が出る（spec FR-1・N-5）
+  test("思考アシストはフラグ無しでも開き、軸レンズのレースの図に1〜6号艇が出る", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-06-18-10/assist");
+    await expect(
+      page.getByRole("figure", { name: "レースの図（軸）" }),
+    ).toBeVisible();
+    for (let n = 1; n <= 6; n++)
+      await expect(
+        page.getByRole("button", { name: new RegExp(`^${n}号艇\\s`) }),
+      ).toBeVisible();
+    await expect(page.getByRole("region", { name: "買い目" })).toBeVisible();
+  });
+
   test("翻訳済みページ（/en/guide）はリダイレクトされずlang=enで配信される", async ({
     page,
   }) => {
@@ -1099,10 +1132,11 @@ test.describe("開催場一覧ページ（venue-list-redesign）", () => {
     // BOA-221でチルト・調整重量の2行を追加したため11→13行、
     // BOA-268で全国2連率の行を追加したため13→14行、
     // BOA-289で当日体重・前走成績の2行を追加したため14→16行、
-    // BOA-304で部品交換の行を追加したため16→17行になる
+    // BOA-304で部品交換の行を追加したため16→17行、
+    // BOA-815で平均STを公式と直近30走の2行にしたため17→18行になる
     // （直前情報タブへの分離はDataRaceTable専用のbuildBasicIndicatorRows経由のみで、
     // このカードは従来通りbuildIndicatorRows＝全指標を使うため件数は変わらず増える）
-    expect(expandedLabels.length).toBe(17);
+    expect(expandedLabels.length).toBe(18);
   });
 
   test("非開催の会場カードは「本日開催なし」でリンクを持たない", async ({
@@ -2425,21 +2459,25 @@ test.describe("レースページ再設計（BOA-168）", () => {
     expect(wrap[0]).toBeLessThanOrEqual(wrap[1]);
   });
 
-  test("結果タブに進入コースを出し、古い「精度確認中」の注記を出さない（BOA-625）", async ({
+  test("結果タブに進入コースを出し、古い「精度確認中」の注記を出さない（BOA-625・BOA-811）", async ({
     page,
   }) => {
     // 2026-09-30 児島7R: 公式のスタート情報は 1-2-3-6-4-5。6号艇（峰竜太）は4コース
     await page.goto("/race/2026-09-30-16-07");
-    const order = page.locator(".rr-course-order");
-    await expect(order).toBeVisible({ timeout: 30000 });
-    await expect(order.locator(".rr-boat-chip")).toHaveText([
-      "1",
-      "2",
-      "3",
-      "6",
-      "4",
-      "5",
-    ]);
+    const fig = page.locator(".rr-formation-svg");
+    await expect(fig).toBeVisible({ timeout: 30000 });
+    // スタート隊形の絵はコース順（上が1コース）。進入の並びの1行はこの絵に置き換えた（BOA-811）
+    const order = () =>
+      fig.evaluate((svg) =>
+        [...svg.querySelectorAll("g[data-course]")].map((g) => g.dataset.boat),
+      );
+    expect(await order()).toEqual(["1", "2", "3", "6", "4", "5"]);
+    // 前付けは枠なりより内側に入った6号艇だけ（押し出された4・5号艇には付けない）
+    expect(
+      await fig.evaluate((svg) =>
+        [...svg.querySelectorAll("g[data-mae]")].map((g) => g.dataset.boat),
+      ),
+    ).toEqual(["6"]);
     const mine = page.locator(".rr-row", {
       has: page.locator(".rr-boat-chip", { hasText: /^6$/ }),
     });
@@ -2455,16 +2493,8 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 本番STの進入が無いレース（2026-09-14 徳山7R）は、Kファイルの進入で埋める（枠なり）。
     // 以前は「データがありません」と出していたが、公式には進入が出ている（ファン評価1周目）
     await page.goto("/race/2026-09-14-18-07");
-    const order2 = page.locator(".rr-course-order");
-    await expect(order2).toBeVisible({ timeout: 30000 });
-    await expect(order2.locator(".rr-boat-chip")).toHaveText([
-      "1",
-      "2",
-      "3",
-      "4",
-      "5",
-      "6",
-    ]);
+    await expect(fig).toBeVisible({ timeout: 30000 });
+    expect(await order()).toEqual(["1", "2", "3", "4", "5", "6"]);
   });
 
   test("過去のレースの基本情報のバーは、そのレースより前の走で、期間もレースの日から数える（BOA-605）", async ({
@@ -2488,7 +2518,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     for (const lang of ["en", "zh-TW"]) {
       await page.goto(`/${lang}/race/2026-09-26-13-04`);
-      await page.locator(".race-tabs-btn").nth(2).click();
+      await page.locator(".race-tabs-btn").nth(3).click(); // 今節（基本情報・龍神ソナー・AI予想・今節）
       const table = page.locator(".rmt-compare");
       await table.waitFor({ timeout: 30000 });
       const over = await table.evaluate((t) => {
@@ -2666,7 +2696,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 除外の選手も節は走っているので24人のまま、順位の対象を分けて書く。
     // Ｗ優勝戦で分けた節は「節の出場」ではなく「同じ優勝戦をめざすのは」と書く
     // （下の注記の「節全体は48人」と食い違って読めた。BOA-660）
-    await expect(page.locator(".rmt-sub")).toContainText(
+    await expect(page.locator(".rmt-sub").first()).toContainText(
       "同じ優勝戦をめざすのは24人（順位の対象は21人",
     );
     // 人数が半分になる理由を1行で断る（黙って半分にすると「なぜ減った」になる）
@@ -3173,8 +3203,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     // 1000行を超える選手がいる）、待たずに次のレースへ移ると2ページ目が録画に入らず、
     // 速い再生でだけ出て本番へ素通りしていた（BOA-556）。走数は取得前「—」、
     // 取得後は数字（0を含む）になる
+    // 走数が少ない艇は⚠が付く（race-detail-ui-unify plan §6）
     await expect(page.locator(".rsc-grid .rsc-runs")).toHaveText(
-      Array(6).fill(/^\d+$/),
+      Array(6).fill(/^⚠?\d+$/),
       // 録画（本番に繋ぐ）では6選手分の2年窓を取るので、他の待ちと同じ長さにする
       { timeout: 25000 },
     );
@@ -3534,8 +3565,9 @@ test.describe("的中レース一覧のunified一本化（BOA-174）", () => {
 
     const raceCardCount = await page.locator(".race-card").count();
     if (raceCardCount > 0) {
+      // 本命が予想どおりに勝ったときだけ「展開予測的中」、それ以外は「1着の艇が的中」（BOA-724）
       await expect(page.locator(".hit-badge").first()).toHaveText(
-        /展開予測的中/,
+        /展開予測的中|1着の艇が的中/,
       );
       await expect(page.locator(".turn-hit-detail").first()).toBeVisible();
     }
@@ -3695,6 +3727,61 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
     await expect(page.locator(".ai-copy-btn-inline")).toBeVisible();
   });
 
+  test("コピー直後のトーストに思考アシストへの1行が付き、6秒は消えず、押すと思考アシストへ移る（BOA-832）", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await openFixedRaceBeforeStart(page);
+    const bannerButton = page.locator(".ai-copy-btn-banner");
+    await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    await bannerButton.click();
+    const toast = page.getByRole("status");
+    await expect(toast).toContainText("コピーしました");
+    const action = toast.locator(".app-toast-action");
+    await expect(action).toContainText("貼る前に材料を確かめる → 思考アシスト");
+    // 以前は2秒で消えた。3秒たっても出ている
+    await page.waitForTimeout(3000);
+    await expect(action).toBeVisible();
+    // 押せる高さ（44px）と、閉じる×
+    expect((await action.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    await expect(toast.getByRole("button", { name: "閉じる" })).toBeVisible();
+    const raceUrl = page.url();
+    await action.click();
+    await expect(page).toHaveURL(/\/assist$/);
+    const events = await page.evaluate(() =>
+      window.__events
+        .filter((e) => e[0] === "event" && e[1] === "assist_view_switch")
+        .map((e) => e[2].assist_entry),
+    );
+    expect(events).toEqual(["copy_toast"]);
+    // 表示の選択は残さない。戻るでレース詳細へ
+    expect(
+      await page.evaluate(() => localStorage.getItem("boatai-user:race-view")),
+    ).toBeNull();
+    await page.goBack();
+    await expect(page).toHaveURL(raceUrl);
+  });
+
+  test("トーストの×で閉じ、マウスを重ねている間は消えない（BOA-832）", async ({
+    page,
+  }) => {
+    await openFixedRaceBeforeStart(page);
+    const bannerButton = page.locator(".ai-copy-btn-banner");
+    await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    await bannerButton.click();
+    const toast = page.getByRole("status");
+    const action = toast.locator(".app-toast-action");
+    await expect(action).toBeVisible();
+    await action.hover();
+    await page.waitForTimeout(7000);
+    await expect(action).toBeVisible();
+    await toast.getByRole("button", { name: "閉じる" }).click();
+    await expect(page.locator(".app-toast-action")).toHaveCount(0);
+  });
+
   test("結果確定済みレースではコピーボタンが表示されない", async ({ page }) => {
     // unifiedモデル運用開始日（2026-08-11〜）以降の結果確定済み日付
     await page.goto("/races/2026-08-11");
@@ -3714,21 +3801,100 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
 
     const bannerButton = page.locator(".ai-copy-btn-banner");
     await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    const scrollBefore = await page.evaluate(() => window.scrollY);
     await bannerButton.click();
 
     const toast = page.getByRole("status");
     await expect(toast).toBeVisible();
-    await expect(toast).toHaveText("コピーしました");
+    // 思考アシストへの1行が続く（BOA-832）ので、文言の始まりで見る
+    await expect(toast).toContainText("コピーしました");
+    // コピーしても読んでいた位置から動かない（以前はデータ出走表へスクロールしていた。BOA-770）
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
 
     const clipboardText = await page.evaluate(() =>
       navigator.clipboard.readText(),
     );
-    // 見出し・表・プロンプト文の3ブロックが揃っており、
+    // 見出し → レースの前提 → 表 → 注記 → 質問文 → 出典（BOA-770）。
     // 値の未解決を示す undefined/NaN が混入していないことを確認する
-    expect(clipboardText).toMatch(/^## .+\n\n\|/);
+    expect(clipboardText).toMatch(
+      /^## .+\n\n- 日付: \d{4}-\d{2}-\d{2}\n- 締切予定: /,
+    );
+    expect(clipboardText).toContain("- コピーした時刻: ");
     expect(clipboardText).toContain("| 項目 |");
+    expect(clipboardText).toContain("項目の注記:");
+    expect(clipboardText).toMatch(
+      /\n出典: 龍神レーダー https:\/\/www\.boat-ai\.jp\/race\/\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/,
+    );
     expect(clipboardText).not.toContain("undefined");
     expect(clipboardText).not.toContain("NaN");
+    expect(clipboardText).not.toContain("競艇");
+  });
+
+  test("375px でもコピー後のトーストが下部ナビに隠れない", async ({ page }) => {
+    // 以前はトーストの z-index（70）が RaceBottomNav（1500）より低く、スマホでは
+    // 「コピーしました」が見えなかった（BOA-770 ファン評価）
+    await page.setViewportSize({ width: 375, height: 800 });
+    await openFixedRaceBeforeStart(page);
+    const bannerButton = page.locator(".ai-copy-btn-banner");
+    await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    await bannerButton.click();
+    const toast = page.getByRole("status");
+    // 思考アシストへの1行が続く（BOA-832）ので、文言の始まりで見る
+    await expect(toast).toContainText("コピーしました");
+    const onTop = await toast.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        r.left + r.width / 2,
+        r.top + r.height / 2,
+      );
+      return el.contains(hit);
+    });
+    expect(onTop).toBe(true);
+  });
+
+  test("375px のプレビューで、表以外（前提の行・質問文・出典）は折り返して読める", async ({
+    page,
+  }) => {
+    // 以前は全文を1つの <pre>（折り返しなし）で出しており、375px で質問文と
+    // 出典が箱の右に切れていた（BOA-770 ファン評価2周目）
+    await page.setViewportSize({ width: 375, height: 800 });
+    await openFixedRaceBeforeStart(page);
+    await expect(page.locator(".ai-copy-btn-banner")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "コピーされる全文を見る" }).click();
+    const preview = page.getByTestId("ai-copy-preview");
+    await expect(preview).toContainText("出典: 龍神レーダー");
+    const overflowing = await preview.evaluate((el) =>
+      [...el.querySelectorAll("pre")]
+        .filter((pre) => !pre.textContent.startsWith("|"))
+        .filter((pre) => pre.scrollWidth > pre.clientWidth + 1)
+        .map((pre) => pre.textContent.slice(0, 30)),
+    );
+    expect(overflowing).toEqual([]);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBeLessThanOrEqual(375);
+  });
+
+  test("プレビューでコピーされる全文（表と出典を含む）が見られる", async ({
+    page,
+  }) => {
+    await openFixedRaceBeforeStart(page);
+    await expect(page.locator(".ai-copy-btn-banner")).toBeVisible({
+      timeout: 15000,
+    });
+    await page.getByRole("button", { name: "コピーされる全文を見る" }).click();
+    const preview = page.getByTestId("ai-copy-preview");
+    await expect(preview).toContainText("| 項目 |");
+    await expect(preview).toContainText("出典: 龍神レーダー");
+    // 「データだけ」に切り替えると質問文が差し替わる
+    await page.getByRole("radio", { name: "データだけ" }).click();
+    await expect(preview).toContainText("このあと質問します。");
+    // ページ末尾のボタンに、上で選んだ質問が添えられる（BOA-770 ファン評価）
+    await expect(page.locator(".ai-copy-inline")).toContainText(
+      "質問「データだけ」付きでコピーします",
+    );
   });
 });
 
@@ -4661,9 +4827,15 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
 
     const table = page.locator(".motor-ranking-table").first();
     await expect(table.locator("thead")).toContainText("前検");
-    // 過去レースは2連率の列そのものが出走表時点の公式値なので、同じ値になる
-    // 「公式2連率（節時点）」の列は畳む（BOA-329、2026-09-29 ユーザー判断(c)）
-    await expect(table.locator("thead")).not.toContainText("公式2連率");
+    // 過去レースは2連率の列そのものが出走表時点の公式値なので、同じ値の列を2本並べない
+    // （BOA-329、2026-09-29 ユーザー判断(c)）。BOA-428 で、残す1本の見出しを当日と同じ
+    // 「公式2連率（節時点）」にした（承認済みのモック）。期間で集計した2連率の列は出さない
+    await expect(
+      table.locator("thead th", { hasText: "公式2連率" }),
+    ).toHaveCount(1);
+    await expect(table.locator("thead")).not.toContainText(
+      /2連率（(過去|直近)/,
+    );
     // 6艇のどれかに前検の秒数（6.60〜6.9x）が出ている
     await expect(table.locator("td.motor-pretest-cell").first()).toHaveText(
       /\d\.\d{2}/,
@@ -4690,8 +4862,13 @@ test.describe("レース詳細のモータ情報タブ: 前検タイムと公式
     await expect(table.locator("td.motor-pretest-cell")).toHaveCount(0);
     // 過去レースでは2連率の列が race_entries 由来の公式値で、前検が無くても出る。
     // 期間の切り替えは出さず、公式値である旨の注記に置き換える（BOA-329）
-    await expect(table.locator("thead")).toContainText("2連率");
-    await expect(table.locator("thead")).not.toContainText("公式2連率");
+    // 1本だけの2連率の列は、BOA-428 から見出しが「公式2連率（節時点）」
+    await expect(
+      table.locator("thead th", { hasText: "公式2連率" }),
+    ).toHaveCount(1);
+    await expect(table.locator("thead")).not.toContainText(
+      /2連率（(過去|直近)/,
+    );
     await expect(page.locator(".period-toggle")).toHaveCount(0);
     await expect(
       page.getByText("出走表時点の公式値で表示しています"),
@@ -5486,6 +5663,9 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     ["2026-09-20-14-10", "選抜戦", null],
     // ファン評価3周目: 予選期間の「予選選抜」は最終日の選抜戦と分ける
     ["2026-09-17-15-11", "予選特別戦", "予選選抜"],
+    // 男女Ｗ優勝戦の準優勝戦は「Ｗ準優戦前半」（「勝」が無い）。以前は「会場独自の
+    // レース名」として原文のまま出ていた（BOA-728）
+    ["2026-03-24-05-03", "🥈 準優勝戦", "W準優戦前半"],
   ]) {
     test(`${raceId} の種別は「${label}」`, async ({ page }) => {
       await page.goto(`/race/${raceId}`);

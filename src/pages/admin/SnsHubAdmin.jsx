@@ -6,8 +6,12 @@
  * （docs/design/sns-marketing-hub/screens.md参照）。
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+import MobileApprovalPanel from "./sns-hub/MobileApprovalPanel.jsx";
+import DeadlineQueuePanel from "./sns-hub/DeadlineQueuePanel.jsx";
+import XSendPanel from "./sns-hub/XSendPanel.jsx";
+import BundleImportPanel from "./sns-hub/BundleImportPanel.jsx";
 import {
   getDrafts,
   getApprovers,
@@ -39,6 +43,8 @@ import {
   shareVideoFile,
   downloadFileBlob,
 } from "../../utils/webShare";
+import BlogPrReview from "./sns-hub/BlogPrReview";
+import { actionFeedback } from "./sns-hub/actionFeedback";
 import Toast, { useToast } from "../../components/Toast";
 import {
   GLOBAL_RULES,
@@ -58,6 +64,7 @@ import {
   getDefaultDraftCardExpanded,
 } from "./sns-hub/utils";
 import "./SnsHubAdmin.css";
+import MetricsTab from "./sns-hub/MetricsTab.jsx";
 import { errorMessageOf } from "../../utils/errorMessage.js";
 
 const PLATFORM_UPLOAD_URLS = {
@@ -154,6 +161,7 @@ const STATUS_FILTERS = [
 // 前提となる設定であり、コンテンツレビュー用のプラットフォームタブとは
 // 性質が異なるため、5プラットフォームタブと並べると発見しづらいという指摘）
 const NON_PLATFORM_TABS = [
+  { id: "metrics", label: "48h/7d観測" },
   { id: "insights", label: "戦略メモ" },
   { id: "catalog", label: "フォーマットカタログ" },
 ];
@@ -178,11 +186,24 @@ const FORMAT_LABELS = {
 };
 
 function SnsHubAdmin() {
+  const [actionMessages, setActionMessages] = useState([]);
   // activeTab: プラットフォーム軸の主タブ（tiktok/x/youtube/note/blog/insights/catalog）
   // activeStatusFilter: プラットフォームタブ内のステータス副フィルタ
   const [activeTab, setActiveTab] = useState("tiktok");
   const [activeStatusFilter, setActiveStatusFilter] = useState("review");
   const [drafts, setDrafts] = useState([]);
+  const draftReadEpoch = useRef(0);
+  const mobileOperationRef = useRef({});
+  const [mobileOperations, setMobileOperations] = useState({});
+  const getMobileOperation = useCallback(id => mobileOperationRef.current[id], []);
+  const handleMobileOperation = useCallback((id, pending) => {
+    const previous = mobileOperationRef.current[id];
+    const operation = { epoch: (previous?.epoch || 0) + (pending ? 1 : 0), pending };
+    // 同期的に更新し、render前に届く操作前poll/一覧応答も失効させる。
+    mobileOperationRef.current[id] = operation;
+    if (pending) draftReadEpoch.current++;
+    setMobileOperations(v => ({ ...v, [id]: operation }));
+  }, []);
   const [approvers, setApprovers] = useState([]);
   const [insights, setInsights] = useState([]);
   const [revisions, setRevisions] = useState([]);
@@ -257,9 +278,12 @@ function SnsHubAdmin() {
         setLoading(true);
         setError(null);
       }
+      const readEpoch = fetchScope.drafts ? ++draftReadEpoch.current : null;
       try {
         await Promise.all([
-          fetchScope.drafts ? getDrafts().then(setDrafts) : null,
+          fetchScope.drafts ? getDrafts().then(data => {
+            if (readEpoch === draftReadEpoch.current) setDrafts(data);
+          }) : null,
           fetchScope.approvers ? getApprovers().then(setApprovers) : null,
           fetchScope.insights ? getInsights().then(setInsights) : null,
           fetchScope.revisions ? getRecentRevisions().then(setRevisions) : null,
@@ -298,12 +322,16 @@ function SnsHubAdmin() {
   // （却下、恒久ルール化を選んだ修正指摘）を呼ぶ箇所はinsights: trueも指定すること
   async function handleAction(actionFn, args, reloadScope = { drafts: true }) {
     try {
-      await actionFn(...args);
-      showToast("操作を反映しました", "success");
+      const result = await actionFn(...args);
+      const messages = actionFeedback(result);
+      setActionMessages(previous => [...previous, ...messages]);
+      showToast(messages.length ? "操作結果に警告があります" : "操作を反映しました", messages.length ? "error" : "success");
       await loadDrafts({ silent: true, fetch: reloadScope });
     } catch (err) {
       console.error("アクションエラー:", err);
-      showToast(err.message || "操作に失敗しました", "error");
+      setActionMessages(previous => [...previous, "操作に失敗しました。最新状態を確認してください。"]);
+      await loadDrafts({ silent: true, fetch: reloadScope });
+      showToast("操作に失敗しました。最新状態を確認してください。", "error");
     }
   }
 
@@ -362,9 +390,9 @@ function SnsHubAdmin() {
   // 大幅に長い文言はモバイル幅で画面外にはみ出すリスクがある（コードレビュー
   // で指摘）。PR URL等の詳細は埋め込まず短い確認メッセージのみ表示する
   // （URL自体は下書きプレビューに別途表示済み）
-  async function handleMergeBlogPr(draftId, approverId) {
+  async function handleMergeBlogPr(draftId, approverId, headSha) {
     try {
-      const result = await mergeBlogPr(draftId, approverId);
+      const result = await mergeBlogPr(draftId, approverId, headSha);
       if (result?.merge?.merged) {
         const shaLabel = result.merge.sha
           ? `(${result.merge.sha.slice(0, 7)})`
@@ -375,8 +403,10 @@ function SnsHubAdmin() {
       }
       await loadDrafts({ silent: true, fetch: { drafts: true } });
     } catch (err) {
+      setActionMessages(previous => [...previous, "マージに失敗しました。PRと最新状態を確認してください。"]);
+      await loadDrafts({ silent: true, fetch: { drafts: true } });
       console.error("ブログPRマージエラー:", err);
-      showToast(err.message || "マージに失敗しました", "error");
+      showToast("マージに失敗しました。PRと最新状態を確認してください。", "error");
     }
   }
 
@@ -406,7 +436,8 @@ function SnsHubAdmin() {
 
   const isInsightsTab = activeTab === "insights";
   const isCatalogTab = activeTab === "catalog";
-  const isPlatformTab = !isInsightsTab && !isCatalogTab;
+  const isMetricsTab = activeTab === "metrics";
+  const isPlatformTab = !isInsightsTab && !isCatalogTab && !isMetricsTab;
   const activeStatusDef = STATUS_FILTERS.find(
     (f) => f.id === activeStatusFilter,
   );
@@ -421,6 +452,16 @@ function SnsHubAdmin() {
   return (
     <div className="sns-hub-admin-page">
       <Header />
+      <MobileApprovalPanel approvers={approvers} onOperationChange={handleMobileOperation}
+        onChanged={() => loadDrafts({ silent: true, fetch: { drafts: true, revisions: true } })} />
+      <DeadlineQueuePanel />
+      <BundleImportPanel
+        onImported={() => loadDrafts({ silent: true, fetch: { drafts: true } })}
+      />
+      {actionMessages.length > 0 && <div className="sns-hub-error-state" role="alert">
+        {actionMessages.map((message, index) => <p key={index}>{message}</p>)}
+        <button onClick={() => setActionMessages([])}>通知を閉じる</button>
+      </div>}
 
       <TopicApprovalSection
         topics={topics}
@@ -479,7 +520,8 @@ function SnsHubAdmin() {
                 className={`sns-hub-tab-btn ${activeTab === tab.id ? "active" : ""}`}
                 onClick={() => setActiveTab(tab.id)}
               >
-                {tab.label} ({count})
+                {tab.label}
+                {tab.id !== "metrics" && ` (${count})`}
               </button>
             );
           })}
@@ -510,7 +552,9 @@ function SnsHubAdmin() {
       )}
 
       <div className="sns-hub-tab-content">
-        {isCatalogTab ? (
+        {isMetricsTab ? (
+          <MetricsTab />
+        ) : isCatalogTab ? (
           <CatalogTab templateVariants={templateVariants} />
         ) : isInsightsTab ? (
           <InsightTab
@@ -542,11 +586,14 @@ function SnsHubAdmin() {
                 contentType={contentTypeByGroupId[draft.content_group_id]}
                 youtubeUrl={youtubeUrlByGroupId[draft.content_group_id]}
                 approvers={approvers}
+                mobileOperation={mobileOperations[draft.id]}
+                getMobileOperation={getMobileOperation}
+                onXChanged={() => loadDrafts({ silent: true, fetch: { drafts: true } })}
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
                 }
-                onMergeBlogPr={(approverId) =>
-                  handleMergeBlogPr(draft.id, approverId)
+                onMergeBlogPr={(approverId, headSha) =>
+                  handleMergeBlogPr(draft.id, approverId, headSha)
                 }
                 onPublishYoutube={(approverId) =>
                   handleAction(publishYoutube, [draft.id, approverId])
@@ -1258,6 +1305,9 @@ function DraftCard({
   onApprove,
   onMergeBlogPr,
   onPublishYoutube,
+  onXChanged,
+  mobileOperation,
+  getMobileOperation,
   onRevise,
   onRequestSpecChange,
   onMarkPosted,
@@ -1267,7 +1317,12 @@ function DraftCard({
   const [selectedApproverId, setSelectedApproverId] = useState(
     approvers[0]?.id || null,
   );
+  const [blogReview, setBlogReview] = useState(null);
   const [openPanel, setOpenPanel] = useState(null); // null | 'feedback'
+  const [xSendStatus, setXSendStatus] = useState({ state:'unknown', epoch:0 });
+  const mobileEpoch = mobileOperation?.epoch || 0;
+  const xSendState = mobileOperation?.pending || xSendStatus.epoch !== mobileEpoch ? 'unknown' : xSendStatus.state;
+  const handleXStateChange = useCallback(state => setXSendStatus({ state, epoch:mobileEpoch }), [mobileEpoch]);
   const [confirmingArchive, setConfirmingArchive] = useState(false);
   const [expanded, setExpanded] = useState(getDefaultDraftCardExpanded);
 
@@ -1276,7 +1331,14 @@ function DraftCard({
     : draft.format;
 
   // 承認・修正はpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
-  const canAct = draft.status === "pending_review";
+  const canAct = draft.status === "pending_review" && !draft.external_operation_state;
+  // api/_lib/snsBundleValidation.jsのisBundlePublicationBlocked()と同じ判定式。
+  // フロントはapi/_libを直接importしないため手書きで複製している。あちらを変えたらここも直すこと
+  const publicationBlocked = Boolean(
+    draft.publish_blocked ||
+    draft.bundle_import_id ||
+    draft.bundle_version_hash,
+  );
 
   // 修正指摘パネルを開いている間は、トグルで折りたたんでも
   // パネルをアンマウントしない（コードレビューで指摘: 折りたたむと入力中の
@@ -1294,6 +1356,15 @@ function DraftCard({
           active={isOpen}
         />
       )}
+      {draft.external_operation_state === "reconcile" && <p role="alert">送信中または要照合です。外部結果の確認が終わるまで再送・修正できません。</p>}
+      {draft.external_operation_state === "external_done" && <div>
+        <p>外部操作は完了済みです。DBへの反映だけを再試行できます。</p>
+        <button className="draft-action-btn" onClick={() => draft.platform === "youtube"
+          ? onPublishYoutube(draft.approver_id || selectedApproverId)
+          : onMergeBlogPr(draft.approver_id || selectedApproverId, draft.external_operation_result?.source_data?.blog_reviewed_head_sha)}>
+          DB反映を再試行
+        </button>
+      </div>}
       {draft.platform === "youtube" && (
         <ThumbnailPreview thumbnailUrl={draft.cover_image_url} />
       )}
@@ -1312,6 +1383,19 @@ function DraftCard({
       )}
 
       <div className="draft-card-body">
+        {publicationBlocked && (
+          <div className="sns-bundle-publication-hold">
+            <strong>公開不可</strong>
+            <p>
+              v0素材の修正はローカルで再生成し、新しい版を取り込んでください。
+            </p>
+            <ul>
+              {(draft.publication_hold_reasons || []).map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="draft-card-badges">
           <span
             className={`draft-badge draft-badge-platform draft-badge-platform-${draft.platform}`}
@@ -1378,21 +1462,22 @@ function DraftCard({
                   onSelect={setSelectedApproverId}
                 />
 
+                {draft.platform === "blog" && <BlogPrReview draft={draft} review={blogReview} onReview={setBlogReview} />}
                 <div className="draft-actions">
                   {draft.platform === "blog" ? (
                     <BlogApproveAction
-                      disabled={!selectedApproverId}
-                      onApprove={() => onMergeBlogPr(selectedApproverId)}
+                      disabled={publicationBlocked || !selectedApproverId || !blogReview?.confirmed || blogReview.prUrl !== draft.pr_url}
+                      onApprove={() => onMergeBlogPr(selectedApproverId, blogReview.headSha)}
                     />
                   ) : draft.platform === "youtube" ? (
                     <YouTubeApproveAction
-                      disabled={!selectedApproverId}
+                      disabled={!selectedApproverId || publicationBlocked}
                       onApprove={() => onPublishYoutube(selectedApproverId)}
                     />
                   ) : (
                     <button
                       className="draft-action-btn approve"
-                      disabled={!selectedApproverId}
+                      disabled={!selectedApproverId || publicationBlocked}
                       onClick={() => onApprove(selectedApproverId)}
                     >
                       ✅ 承認
@@ -1400,6 +1485,7 @@ function DraftCard({
                   )}
                   <button
                     className="draft-action-btn revise"
+                    disabled={publicationBlocked}
                     onClick={() =>
                       setOpenPanel(openPanel === "feedback" ? null : "feedback")
                     }
@@ -1440,8 +1526,18 @@ function DraftCard({
               </>
             )}
 
-            {(draft.status === "approved" ||
-              draft.status === "ready_to_post") &&
+            {draft.platform === "x" && (
+              <XSendPanel draft={draft} approverId={selectedApproverId} blocked={publicationBlocked}
+                onChanged={onXChanged} onStateChange={handleXStateChange}
+                externalOperation={mobileOperation} getExternalOperation={getMobileOperation} />
+            )}
+
+            {(draft.platform !== "x" ||
+              !["unknown", "queued", "sending", "reconcile", "posted"].includes(
+                xSendState,
+              )) &&
+              (draft.status === "approved" ||
+                draft.status === "ready_to_post") &&
               (draft.platform === "note" ? (
                 <NoteCopyActionLinks
                   draft={draft}
@@ -1456,7 +1552,7 @@ function DraftCard({
               <TikTokMetricsForm onSubmit={onAddMetric} />
             )}
 
-            {draft.status !== "posted" &&
+            {draft.status !== "posted" && !draft.external_operation_state &&
               (confirmingArchive ? (
                 <div className="draft-hide-confirm">
                   <span>非表示にしますか？</span>

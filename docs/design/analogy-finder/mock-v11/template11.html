@@ -1,0 +1,475 @@
+<title>アナロジー・ファインダー統合案</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --gold-800:#6b500f; --gold-700:#8a6a1a; --gold-500:#c9a227; --gold-300:#e8d089;
+  --navy-100:#142842; --navy-300:#24344d; --navy-600:#0d1b2e; --navy-900:#060d18;
+  --ivory-100:#fbf9f3; --ivory-300:#ddd4bf; --ivory-600:#f7f3ea;
+  --page:var(--ivory-600); --card:var(--ivory-100); --sunken:#f3efe4;
+  --border:var(--ivory-300); --text:#0f172a; --text2:#475569; --muted:#7c8799; --grid:#e4dfd2;
+  --accent:var(--gold-800); --accent-strong:var(--gold-700); --bar:var(--gold-700); --bar2:#64748b; --tick:#0f172a;
+  --up:#047857; --down:#b91c1c; --warn:#946006; --hit:#0f766e;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:var(--navy-600); --card:var(--navy-100); --sunken:#0a1526; --border:var(--navy-300);
+  --text:#f8fafc; --text2:#cbd5e1; --muted:#8392a8; --grid:var(--navy-300);
+  --accent:var(--gold-500); --accent-strong:var(--gold-300); --bar:var(--gold-500); --bar2:#94a3b8; --tick:#f8fafc;
+  --up:#34d399; --down:#f87171; --warn:#f2c46b; --hit:#2dd4bf; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --page:var(--navy-600); --card:var(--navy-100); --sunken:#0a1526; --border:var(--navy-300);
+  --text:#f8fafc; --text2:#cbd5e1; --muted:#8392a8; --grid:var(--navy-300);
+  --accent:var(--gold-500); --accent-strong:var(--gold-300); --bar:var(--gold-500); --bar2:#94a3b8; --tick:#f8fafc;
+  --up:#34d399; --down:#f87171; --warn:#f2c46b; --hit:#2dd4bf; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--text);font-family:"Noto Sans JP","Hiragino Sans",sans-serif;padding-inline:16px;padding-block:20px 56px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-strong);font-weight:700}
+h1{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:clamp(21px,5vw,26px);margin:2px 0 0;text-wrap:balance;line-height:1.3}
+.note{font-size:11.5px;color:var(--text2);background:var(--card);border:1px dashed var(--border);border-radius:8px;padding:8px 12px}
+.mockbox{border:1.5px dashed var(--warn);border-radius:10px;padding:10px 12px;background:var(--card);display:grid;gap:8px}
+.mockbox .t{font-size:11.5px;font-weight:700;color:var(--warn)}
+.row{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.lbl{font-size:11.5px;color:var(--text2);font-weight:700}
+.seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.seg button,.btn{font-family:"Zen Kaku Gothic New",sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--sunken);color:var(--text2);border-radius:8px;padding:6px 12px}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--ivory-100)}
+.btn{font-size:12px;padding:4px 10px}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent-strong);outline-offset:2px}
+select{font:inherit;font-size:12.5px;color:var(--text);background:var(--sunken);border:1px solid var(--border);border-radius:8px;padding:6px 8px;max-width:100%}
+.rankbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px 12px}
+.sections{display:flex;flex-direction:column;gap:14px}
+section.block{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 16px 18px;display:flex;flex-direction:column;gap:10px}
+.block h2{font-family:"Zen Kaku Gothic New",sans-serif;font-size:18px;font-weight:900;margin:0;text-wrap:balance}
+.sub{font-size:12px;color:var(--text2);margin:0}
+h3{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14.5px;margin:4px 0 0}
+.foot{font-size:11px;color:var(--muted);margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12px;display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--accent-strong);border-radius:999px;padding:4px 11px;background:var(--card);color:var(--text);cursor:pointer}
+.chip .k{color:var(--text2)}
+.chip .x{font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--muted)}
+.chip[aria-pressed="false"]{border-style:dashed;border-color:var(--muted);color:var(--muted);text-decoration:line-through}
+.chip:disabled{cursor:default;opacity:.55}
+.chip.opt,.chip.opt[aria-pressed="false"]{border-color:var(--border);border-style:dotted;color:var(--text2);text-decoration:none}
+.chip.opt[aria-pressed="true"]{border-style:solid;border-color:var(--accent-strong);color:var(--text)}
+.hero{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hero .n{font-family:"JetBrains Mono",monospace;font-size:34px;font-weight:700;color:var(--accent-strong);line-height:1}
+.hero .t{font-size:13px;color:var(--text2)}
+.summary{font-size:14px;font-weight:500}
+.summary b{font-family:"JetBrains Mono",monospace}
+.scope{background:radial-gradient(ellipse at 50% 50%,#11243f 0%,var(--navy-900) 78%);border-radius:12px;padding:6px}
+.scope svg text{pointer-events:none}.scope svg{display:block;width:100%;height:auto;max-width:440px;margin:0 auto;overflow:visible}
+.scope-cap{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.06em;color:#e8d089;opacity:.75;padding:2px 8px 4px}
+.card{background:var(--sunken);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:12.5px}
+.card b{font-family:"JetBrains Mono",monospace}
+.bars{display:grid;gap:5px}
+.br{display:grid;grid-template-columns:5.8em 1fr 6.2em;gap:8px;align-items:center;font-size:12.5px;cursor:pointer;background:none;border:none;padding:0;color:inherit;font-family:inherit;text-align:left}
+.br .v{font-family:"JetBrains Mono",monospace;text-align:right;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:12px}
+.wtrk{position:relative;height:12px;background:var(--grid);border-radius:4px}
+.wtrk .f{position:absolute;left:0;top:0;height:100%;background:var(--bar);border-radius:4px}
+.wtrk .w{position:absolute;top:50%;height:2px;background:var(--tick);opacity:.55;transform:translateY(-50%)}
+.wtrk .w::before,.wtrk .w::after{content:"";position:absolute;top:-4px;width:2px;height:10px;background:var(--tick)}
+.wtrk .w::before{left:0}.wtrk .w::after{right:0}
+.wtrk .nt{position:absolute;top:-3px;width:0;height:18px;border-left:2px dotted var(--hit)}
+.br.sel .f{background:var(--hit)}
+.key{display:flex;gap:14px;font-size:11px;color:var(--text2);flex-wrap:wrap}
+.key i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.bn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:4px;font-size:12.5px;font-weight:700;border:1px solid #94a3b8;font-family:"JetBrains Mono",monospace;flex-shrink:0}
+.bnrow{display:inline-flex;gap:2px}
+.tip{font-family:"JetBrains Mono",monospace;font-size:12.5px;min-height:1.6em}
+.pair{display:grid;gap:3px}
+.pr{display:grid;grid-template-columns:1fr 7em;gap:8px;align-items:center;font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--text2);font-variant-numeric:tabular-nums}
+.pr span:last-child{text-align:right}
+.ind{display:grid;gap:3px;padding:6px 0;border-top:1px solid var(--border);font-size:12.5px}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:6px 7px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+td{font-variant-numeric:tabular-nums}
+thead th{font-family:"Zen Kaku Gothic New",sans-serif;font-size:11.5px;color:var(--text2)}
+tr.hl td{background:rgba(15,118,110,.14)}
+tr[data-i]{cursor:pointer}
+.boats{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.boats button{font:inherit;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:6px 0;cursor:pointer;display:grid;justify-items:center;gap:2px}
+.boats button[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px 0}
+.arr{font-weight:700;font-size:14px}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--muted)}
+.lead{font-size:13.5px;background:var(--sunken);border-left:3px solid var(--accent-strong);border-radius:0 8px 8px 0;padding:8px 12px}
+.th{border-top:1px solid var(--border);padding-top:6px}
+.th>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1.4em 8.5em 1fr;gap:8px;align-items:center;font-size:13px}
+.th>summary::-webkit-details-marker{display:none}
+.dv{position:relative;height:12px}
+.dv::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;border-left:1px solid var(--muted)}
+.dv i{position:absolute;top:1px;height:10px;border-radius:3px}
+.els{display:grid;gap:4px;padding:6px 0 2px 2.2em}
+.el{display:grid;grid-template-columns:1.4em 1fr;gap:6px;font-size:12px;color:var(--text2)}
+.oth{font-size:10px;font-weight:700;color:var(--hit);border:1px solid var(--hit);border-radius:3px;padding:0 4px;margin-left:4px}
+details.more>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--accent-strong)}
+details.fold{border:1px solid var(--border);border-radius:14px;background:var(--card);padding:12px 16px}
+details.fold>summary{cursor:pointer;font-family:"Zen Kaku Gothic New",sans-serif;font-size:16px;font-weight:900}
+.fold .inner{display:grid;gap:10px;margin-top:10px}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.big>div{background:var(--sunken);border-radius:8px;padding:8px 10px}
+.big .n{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;color:var(--accent-strong)}
+.big .c{font-size:11px;color:var(--text2)}
+.warn{font-size:12px;color:var(--warn);background:rgba(148,96,6,.08);border:1px solid rgba(148,96,6,.3);border-radius:8px;padding:6px 10px}
+.detail{font-size:12px;color:var(--text2);display:grid;gap:6px}
+.detail ul{margin:0;padding-left:1.2em;display:grid;gap:4px}
+.ir{display:grid;grid-template-columns:9.5em 5.5em 1fr;gap:8px;font-size:12px}
+.confirm{background:var(--card);border:1px solid var(--accent-strong);border-radius:10px;padding:12px 14px;font-size:12.5px}
+.confirm h2{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14px;margin:0 0 6px}
+.confirm ol{margin:0;padding-left:1.3em;display:grid;gap:4px}
+@media (max-width:480px){.br{grid-template-columns:5em 1fr 5.6em}.th>summary{grid-template-columns:1.4em 7.5em 1fr}.big{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.sweep{animation:sw 8s linear infinite;transform-origin:220px 220px}@keyframes sw{to{transform:rotate(360deg)}}}
+</style>
+
+<div class="wrap">
+  <div class="note"><b>モック Version 11（2026-10-03）</b>。Version 10 を作り直した。サンキー図とソナーを戻し、似たレースは条件を自動で外さない。数字はすべて実データ（本番 DB、例のレースの前日まで）と、寄与度用の本番モデル（版 2026-10-02）から出した。例のレースは <b>若松 12R（2026-09-27、G1 ヤングダービー優勝戦）</b>で、発走前に見ている想定。</div>
+
+  <div class="mockbox" aria-label="モックの切り替え">
+    <span class="t">モックの切り替え（比べる用。本番には出さない）</span>
+    <div class="row"><span class="lbl">節の順序</span><div class="seg" id="swOrder"><button type="button" data-v="sim" aria-pressed="true">推奨: 似たレースが先</button><button type="button" data-v="ai" aria-pressed="false">代案: AIの見立てが先</button></div></div>
+    <div class="row"><span class="lbl">チップの外し方</span><div class="seg" id="swChip"><button type="button" data-v="tail" aria-pressed="true">推奨: うしろから順に</button><button type="button" data-v="any" aria-pressed="false">代案: どれでも</button></div></div>
+    <div class="row"><span class="lbl">テーマ</span><div class="seg" id="swTh"><button type="button" data-v="7" aria-pressed="true">推奨: 7テーマ</button><button type="button" data-v="6" aria-pressed="false">代案: 6テーマ</button></div></div>
+  </div>
+
+  <header>
+    <span class="eyebrow">アナロジー・ファインダー · 若松 12R</span>
+    <h1>似たレースと、見比べる</h1>
+  </header>
+
+  <div class="rankbar row" aria-label="着順">
+    <span class="lbl">着順</span>
+    <div class="seg" id="rankSeg"><button type="button" data-r="1" aria-pressed="true">1着</button><button type="button" data-r="2" aria-pressed="false">2着以内</button><button type="button" data-r="3" aria-pressed="false">3着以内</button></div>
+  </div>
+
+  <div class="sections" id="sections">
+  <section class="block" id="secSim" aria-labelledby="hSim">
+    <h2 id="hSim">似たレースでは、こう決まった</h2>
+    <div class="chips" id="chips"></div>
+    <div class="chips" id="optChips"></div>
+    <div class="hero"><span class="n" id="simN"></span><span class="t" id="simT"></span></div>
+    <div class="summary" id="simSummary"></div>
+    <div class="scope"><svg id="sonar" viewBox="0 0 440 440" role="img" aria-label="似たレースのソナー。扇は勝った艇番、輪は条件をどこまでそろえたか"></svg>
+      <div class="scope-cap"><span id="sonarCap"></span><span>扇＝1着の艇　輪＝そろえた条件</span></div></div>
+    <div class="key" id="ringKey" style="display:grid;gap:2px"></div>
+    <div class="card" id="sonarCard">点を押すとそのレース、扇を押すとその艇を選ぶ</div>
+    <h3 id="hWin"></h3>
+    <div class="key"><span><i style="background:var(--bar)"></i>似たレース</span><span><i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>全国の全レース（条件をそろえていない）</span><span>ひげ＝95%の幅。棒をタップ</span></div>
+    <div class="bars" id="barWin"></div>
+    <div class="tip" id="barTip"></div>
+    <h3>どう決まった？</h3>
+    <div class="bars" id="barTech"></div>
+    <div id="otherBoats"></div>
+    <p class="foot">数えた割合で、原因とは限らない。</p>
+  </section>
+
+  <section class="block" id="secFlow" aria-labelledby="hFlow">
+    <h2 id="hFlow">着順の流れ</h2>
+    <p class="sub">1着 → 2着 → 3着。帯の太さが件数。少ない流れも薄く全部描いている。帯をタップ</p>
+    <div class="row"><div class="seg" id="flowF"><button type="button" data-f="all" aria-pressed="true">すべて</button><button type="button" data-f="not1" aria-pressed="false">1号艇以外が勝ったレース</button></div></div>
+    <div class="scope" style="background:var(--navy-900)"><svg id="sankey" viewBox="0 0 640 400" role="img" aria-label="似たレースの1着→2着→3着の流れ"></svg></div>
+    <div class="tip" id="flowTip">帯をタップすると件数が出る</div>
+    <p class="foot" id="flowNote"></p>
+    <h3>よく出た3連単</h3>
+    <div class="bars" id="triTop"></div>
+    <details class="more"><summary id="triMore">ほかの組み合わせも見る</summary><div class="bars" id="triAll" style="margin-top:6px"></div></details>
+  </section>
+
+  <section class="block" id="secList" aria-labelledby="hList">
+    <h2 id="hList"></h2>
+    <div id="listBody"></div>
+  </section>
+
+  <section class="block" id="secAi" aria-labelledby="hAi">
+    <h2 id="hAi">AIの見立て: 勝負を分けそうなのは？</h2>
+    <p class="sub">AIの見立てで、6艇の差が大きく出たテーマ（展示後の値）</p>
+    <div class="lead" id="aiLead"></div>
+    <div class="scope"><svg id="radar" viewBox="-50 0 500 370" role="img" aria-label="テーマの図"></svg></div>
+    <div class="row"><span class="lbl">気になる艇をタップ</span><label class="row lbl" style="gap:4px;font-weight:500"><input type="checkbox" id="two"> 2艇を並べる</label><select id="boatB" aria-label="並べる艇"></select></div>
+    <div class="boats" id="boatSeg"></div>
+    <div id="aiPanel"></div>
+    <details class="more"><summary>展示前の見立て</summary><p class="foot" style="margin-top:6px">本番は朝に出走表の時点の見立てを出し、展示の後にこの値へ置き換える。モックの版（2026-10-02）には出走表の時点のモデルが無いので、空にしている。</p></details>
+    <p class="foot">AIの見立てで、原因の断定ではない。見立てと実際の着順は違うことがある。</p>
+  </section>
+  </div>
+
+  <details class="fold" id="secOther"><summary>ほかの場・グレードだと？</summary>
+    <div class="inner">
+      <div class="row"><select id="cV" aria-label="会場"></select><select id="cG" aria-label="グレード"></select><select id="cR" aria-label="ラウンド"></select></div>
+      <div class="row"><span class="lbl">くらべる相手</span><select id="cCmp" aria-label="くらべる相手"><option value="nat">全国（全グレード・全ラウンド）</option><option value="venue">この会場の全体</option><option value="gr">全国の同じグレード・ラウンド</option></select></div>
+      <div id="cOut"></div>
+      <p class="foot">数えた割合で、原因とは限らない。</p>
+    </div>
+  </details>
+
+  <details class="fold"><summary>くわしく</summary>
+    <div class="inner detail" id="detail"></div>
+  </details>
+
+  <section class="confirm" aria-labelledby="cf">
+    <h2 id="cf">見てほしい点</h2>
+    <ol>
+      <li>最初の画面: 「似たレースでは、こう決まった」の件数・ソナー・どの艇が勝ったか。楽しめるか</li>
+      <li>ソナー: 扇が勝った艇番、輪が「条件をどこまでそろえたか」（真ん中が4条件ぜんぶ一致）。点・扇を押してみてほしい</li>
+      <li>条件チップ: 自動では外さない。外すとどうなるかをチップに「外すと○件」で出している。外し方（うしろから順に／どれでも）は上の切り替えで比べられる</li>
+      <li>サンキー図: 3段を常に出し、少ない流れも薄く描く。帯をタップ。「1号艇以外が勝ったレース」への切り替え</li>
+      <li>「AIの見立て: 勝負を分けそうなのは？」: プラス材料・マイナス材料の矢印と棒、「2艇を並べる」</li>
+      <li>見出しの言葉（「似たレースでは、こう決まった」「AIの見立て: 勝負を分けそうなのは？」「どの艇が勝った？」）</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+/*DATA*/
+const TH7=[["venueCourse","枠・会場"],["racerRecord","選手の実力"],["startExhibition","スタート・展示"],["machine","モーター・ボート"],["weatherWater","天候・水面"],["raceFormat","グレード・ラウンド・節"],["racerProfile","体重・年齢・地元"]];
+const TH6=[["venueCourse","枠・会場"],["racerRecord","選手の実力"],["startExhibition","スタート・展示"],["machine","モーター・ボート"],["environment","天候・水面・節"],["racerProfile","体重・年齢・地元"]];
+const GR={venueCourse:[["venue","会場"],["boatNumber","枠番"],["raceNumber","レース番号"]],racerRecord:[["class","級別"],["national","全国勝率・2連率"],["local","当地勝率・2連率"],["recent","直近30走の成績"],["boat1","1号艇の級別・勝率",1]],startExhibition:[["exhibitionTime","展示タイム"],["pastSt","過去の平均ST"]],machine:[["motor","モーター2連率"],["boat","ボート2連率"]],weatherWater:[["weather","天候"],["wind","風向・風速"],["wave","波高"]],raceFormat:[["grade","グレード"],["round","ラウンド"],["seriesDay","節の日目"]],racerProfile:[["age","年齢"],["weight","体重"],["branch","支部・地元"]]};
+GR.environment=[...GR.weatherWater,...GR.raceFormat];
+const BC={1:["#f4f1ea","#000"],2:["#1f2937","#fff"],3:["#e53935","#fff"],4:["#1e88e5","#fff"],5:["#fdd835","#000"],6:["#43a047","#fff"]};
+const FLOW={1:"#e5e1d6",2:"#8b95a5",3:"#ef5350",4:"#42a5f5",5:"#f0c419",6:"#4caf50"};
+const RT={1:"1着",2:"2着以内",3:"3着以内"},RK={1:"t1",2:"t2",3:"t3"};
+const VEN=["桐生","戸田","江戸川","平和島","多摩川","浜名湖","蒲郡","常滑","津","三国","びわこ","住之江","尼崎","鳴門","丸亀","児島","宮島","徳山","下関","若松","芦屋","福岡","唐津","大村"];
+const GN={all:"全グレード",ippan:"一般",G3:"G3",G2:"G2",G1:"G1",SG:"SG"},RN={all:"全ラウンド",yosen:"予選",junyu:"準優勝戦",yusho:"優勝戦",other:"その他"};
+const TECH=["逃げ","差し","まくり","まくり差し","抜き","恵まれ"];
+const C=D.sim.conditions;
+// 4条件の並び（うしろから外す順）と任意3条件
+const CH=[["勝率差",`1号艇がほかの最高より ${(-C.gap_band_range.hi).toFixed(2)}〜${(-C.gap_band_range.lo).toFixed(2)} 低い`],["1号艇",`${C.b1_class}級`],["会場",C.venue_name],["勝率トップ",`${C.top_boat}号艇`]];
+const OPT=[["round","ラウンド","優勝戦"],["grade","グレード","G1"],["motor","1号艇のモーター","6艇中5〜6位"]];
+const st={rank:1,boat:0,on:[1,1,1,1],opt:null,flow:"all",flowSel:null,flowFirst:null,swOrder:"sim",swChip:"tail",swTh:"7",two:false,b2:1,pick:null,v:"20",g:"all",r:"all",cmp:"nat"};
+const $=id=>document.getElementById(id);
+const bn=n=>`<span class="bn" style="background:${BC[n][0]};color:${BC[n][1]}">${n}</span>`;
+const pc=(p,d=1)=>(p*100).toFixed(d)+"%";
+function wilson(x,n){if(!n)return [0,0];const z=1.96,p=x/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return [Math.max(0,c-h),Math.min(1,c+h)];}
+const key=()=>st.opt?"1111+"+st.opt:st.on.join("");
+const S=()=>D.sets[key()];
+const NAT=D.sets["0000"];
+const fin=f=>/^\d+$/.test(f)?`${+f}着`:f==="F"?"F（返還）":f==="L"?"出遅れ（返還）":/^S/.test(f)?"失格":f==="K"||f==="欠"?"欠場":f;
+function parentKey(){if(st.opt)return "1111";const o=[...st.on],i=o.lastIndexOf(1);if(i<0)return null;o[i]=0;return o.join("");}
+function wbar(lab,x,n,natP,sel,id,extra=""){const p=n?x/n:0,[lo,hi]=wilson(x,n);
+  return `<button type="button" class="br${sel?" sel":""}" ${id?`data-b="${id}"`:""} data-tip="${x}/${n}件・95%の幅 ${pc(lo)}〜${pc(hi)}${extra}${natP!=null?`・全国 ${pc(natP)}`:""}"><span>${lab}</span><span class="wtrk"><span class="f" style="width:${p*100}%"></span>${n?`<span class="w" style="left:${lo*100}%;width:${(hi-lo)*100}%"></span>`:""}${natP!=null?`<span class="nt" style="left:${natP*100}%"></span>`:""}</span><span class="v">${pc(p,0)} <small>${x}件</small></span></button>`;}
+function wireTips(el,tipEl){el.querySelectorAll(".br").forEach(b=>b.onclick=()=>{tipEl.textContent=b.querySelector("span").textContent+": "+b.dataset.tip;if(b.dataset.b){st.boat=st.boat===+b.dataset.b?0:+b.dataset.b;render();}});}
+
+// ---------- 似たレース ----------
+function renderChips(){
+  const any=st.swChip==="any";
+  const lastOn=st.on.lastIndexOf(1),firstOff=st.on.indexOf(0);
+  $("chips").innerHTML=CH.map(([k,v],i)=>{
+    const on=st.on[i]===1;
+    const can=any||(on?i===lastOn:i===firstOff);
+    const t=[...st.on];t[i]=on?0:1;if(!any&&on)for(let j=i;j<4;j++)t[j]=0;
+    const n=D.sets[t.join("")]?.n;
+    return `<button type="button" class="chip" data-i="${i}" aria-pressed="${on}" ${can&&!st.opt?"":"disabled"}><span class="k">${k}</span>${v}${can&&!st.opt?`<span class="x">${on?"外すと":"戻すと"}${n?.toLocaleString()}件</span>`:""}</button>`;}).join("");
+  $("chips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{const i=+b.dataset.i,on=st.on[i]===1;st.on[i]=on?0:1;if(st.swChip==="tail"){if(on)for(let j=i;j<4;j++)st.on[j]=0;}st.pick=null;st.flowSel=null;st.flowFirst=null;render();});
+  const full=st.on.every(x=>x===1);
+  $("optChips").innerHTML=`<span class="lbl">さらに絞る</span>`+OPT.map(([k,l,v])=>{const n=D.sets["1111+"+k].n;return `<button type="button" class="chip opt" data-o="${k}" aria-pressed="${st.opt===k}" ${full?"":"disabled"}><span class="k">${l}</span>${v}<span class="x">${st.opt===k?"外すと 74件":n+"件"}</span></button>`;}).join("");
+  $("optChips").querySelectorAll(".chip").forEach(b=>b.onclick=()=>{st.opt=st.opt===b.dataset.o?null:b.dataset.o;st.pick=null;st.flowSel=null;st.flowFirst=null;render();});
+}
+function setName(){const on=CH.filter((_,i)=>st.on[i]).map(c=>c[0]);if(st.opt)return "4条件＋"+OPT.find(o=>o[0]===st.opt)[1];if(on.length===4)return "4条件ぜんぶ一致";if(!on.length)return "条件なし（全レース）";return on.join("・")+"が一致";}
+function renderSim(){
+  const s=S();
+  $("simN").textContent=s.n.toLocaleString()+"件";
+  $("simT").textContent=`${setName()}（探した期間 2019-04-01〜2026-09-26。例のレースの前日まで）`;
+  const w1=s.winner_boat[0];
+  $("simSummary").innerHTML=s.n?`${s.n.toLocaleString()}件のうち、1号艇が勝ったのは <b>${w1}件</b>（${pc(w1/s.n,0)}）。1号艇以外では ${[2,3,4,5,6].sort((a,b)=>s.winner_boat[b-1]-s.winner_boat[a-1]).slice(0,2).map(o=>`${o}号艇 ${s.winner_boat[o-1]}件`).join("・")}`:"0件。チップを外すと広がる";
+  renderSonar();
+  const t=RK[st.rank];
+  $("hWin").textContent=st.rank===1?"どの艇が勝った？":`どの艇が${RT[st.rank]}に入った？`;
+  const pk=parentKey(),P=pk?D.sets[pk]:null;
+  $("barWin").innerHTML=[1,2,3,4,5,6].map(b=>{const x=s.n_hit[b][t],nx=NAT.n_hit[b][t];return wbar(`${bn(b)} ${b}号艇`,x,s.n,nx/NAT.n,st.boat===b,b,P?`・条件を1つ外すと ${pc(P.n_hit[b][t]/P.n)}（${P.n.toLocaleString()}件）`:"");}).join("");
+  wireTips($("barWin"),$("barTip"));
+  const techAll=TECH.map(k=>s.technique[k]||0);
+  $("barTech").innerHTML=TECH.map((k,i)=>wbar(k,techAll[i],s.n,NAT.technique[k]/NAT.n,false)).join("");
+  wireTips($("barTech"),$("barTip"));
+  renderOther(s);
+}
+function renderOther(s){
+  const k=st.boat;
+  if(!k){$("otherBoats").innerHTML=`<div class="card">艇（扇・棒・下の艇ボタン）を選ぶと、「その艇が勝ったとき、ほかの艇はどうだった？」が出る</div>`;return;}
+  const w=s.win_indicators?.[k];
+  if(!w){$("otherBoats").innerHTML="";return;}
+  const lbl={b1d:"1号艇が崩れた（4着以下・F・出遅れ・失格）",b1s:"1号艇の ST が4番手以下",st1_tie:`${k}号艇の ST がトップ（同タイム含む）`,ib:`${k}号艇より内の艇に F・出遅れ・失格`,md:`${k}号艇が枠より内に入った（前付け）`};
+  const keys=k===1?["st1_tie"]:["b1d","b1s","st1_tie","ib","md"];
+  const cmpName=k===1?"1号艇が勝たなかったレース":`1・${k}号艇以外が勝ったレース`;
+  const pr=(x,n,cls)=>{const [lo,hi]=wilson(x,n);return `<div class="pr"><span class="wtrk" style="height:9px"><span class="f" style="width:${n?x/n*100:0}%;${cls}"></span>${n?`<span class="w" style="left:${lo*100}%;width:${(hi-lo)*100}%"></span>`:""}</span><span>${x}/${n}</span></div>`;};
+  let h=`<h3>${bn(k)} ${k}号艇が勝った ${w.hit_n}件、ほかの艇は？</h3><div class="key"><span><i style="background:var(--hit)"></i>${k}号艇が勝った</span><span><i style="background:var(--bar2)"></i>くらべる相手: ${cmpName}（${w.compare_n}件）</span></div>`;
+  if(!w.hit_n)h+=`<div class="warn">この条件では ${k}号艇が勝ったレースは0件。チップを外すと広がる</div>`;
+  else h+=keys.map(q=>`<div class="ind"><span>${lbl[q]}</span><div class="pair">${pr(w.hit[q],w.hit_n,"background:var(--hit)")}${pr(w.compare_counts[q],w.compare_n,"background:var(--bar2)")}</div></div>`).join("");
+  $("otherBoats").innerHTML=h;
+}
+// ソナー: 扇＝勝った艇番、輪＝チップの段（内から 1111, 1110, 1100, 1000）
+function renderSonar(){
+  const svg=$("sonar"),cx=220,cy=220,R=[0,62,112,152,190];
+  const stages=["1111","1110","1100","1000"].map(k=>D.sets[k]);
+  const ring=i=>{const a=stages[i].winner_boat,b=i?stages[i-1].winner_boat:[0,0,0,0,0,0];return a.map((x,j)=>x-b[j]);};
+  const ang=b=>-90+(b-1)*60;
+  const arc=(r0,r1,a0,a1)=>{const p=(r,a)=>[cx+r*Math.cos(a*Math.PI/180),cy+r*Math.sin(a*Math.PI/180)];const [x0,y0]=p(r1,a0),[x1,y1]=p(r1,a1),[x2,y2]=p(r0,a1),[x3,y3]=p(r0,a0);return `M${x0},${y0}A${r1},${r1} 0 0 1 ${x1},${y1}L${x2},${y2}`+(r0?`A${r0},${r0} 0 0 0 ${x3},${y3}`:"")+"Z";};
+  let h="";
+  const curStage=st.opt?-1:(st.swChip==="tail"?["1111","1110","1100","1000"].indexOf(st.on.join("")):-2);
+  for(let i=3;i>=0;i--){const cnt=ring(i),tot=cnt.reduce((a,b)=>a+b,0);
+    for(let b=1;b<=6;b++){const share=tot?cnt[b-1]/tot:0,fr=Math.min(1,share/.6);h+=`<path d="${arc(R[i],R[i+1],ang(b)-30,ang(b)+30)}" fill="${FLOW[b]}" fill-opacity=".05" stroke="#0d1b2e" stroke-width="1" data-sec="${b}" style="cursor:pointer"/>`;if(fr>0)h+=`<path d="${arc(R[i],R[i]+(R[i+1]-R[i])*fr,ang(b)-27,ang(b)+27)}" fill="${FLOW[b]}" fill-opacity=".55" data-sec="${b}" style="cursor:pointer"/>`;}
+    h+=`<circle cx="${cx}" cy="${cy}" r="${R[i+1]}" fill="none" stroke="#c9a227" stroke-opacity="${curStage===i?.95:.3}" stroke-width="${curStage===i?2.5:1}"/>`;}
+  if(st.boat)h+=`<path d="${arc(0,R[4],ang(st.boat)-30,ang(st.boat)+30)}" fill="none" stroke="#e8d089" stroke-width="2.5"/>`;
+  // 内2つの輪は1レース1点（輪の中の位置に意味はない）
+  const pts=(i,cnt,list)=>{let o="";for(let b=1;b<=6;b++){const n=cnt[b-1];const rows=Math.max(1,Math.ceil(n/(i?22:9)));let k=0;for(let r=0;r<rows;r++){const per=Math.ceil(n/rows);for(let c=0;c<per&&k<n;c++,k++){const a=(ang(b)-26+52*(c+.5)/per)*Math.PI/180,rr=R[i]+(R[i+1]-R[i])*((r+.5)/rows)*.85+6;const x=cx+rr*Math.cos(a),y=cy+rr*Math.sin(a);
+      const idx=list?list[b][k]:null;const hl=st.pick===idx&&idx!=null;
+      o+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${i?2:4}" fill="${FLOW[b]}" stroke="${hl?"#fff":"#0d1b2e"}" stroke-width="${hl?2:.8}" ${idx!=null?`data-race="${idx}" style="cursor:pointer"`:""}/>`;}}}return o;};
+  const L=D.list1111,byB={1:[],2:[],3:[],4:[],5:[],6:[]};L.forEach((r,i)=>byB[+r.top3[0]].push(i));
+  h+=pts(0,ring(0),byB);
+  h+=`<g class="sweep"><path d="M${cx},${cy}L${cx+R[4]},${cy}A${R[4]},${R[4]} 0 0 1 ${cx+R[4]*Math.cos(.35)},${cy+R[4]*Math.sin(.35)}Z" fill="#c9a227" fill-opacity=".12"/></g>`;
+  for(let b=1;b<=6;b++){const a=ang(b)*Math.PI/180,x=cx+(R[4]+18)*Math.cos(a),y=cy+(R[4]+18)*Math.sin(a);h+=`<g data-sec="${b}" style="cursor:pointer"><rect x="${x-11}" y="${y-11}" width="22" height="22" rx="4" fill="${BC[b][0]}" stroke="#94a3b8"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="13" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text></g>`;}
+  const rl=["4条件ぜんぶ一致","勝率トップだけ違う","会場も違う（若松以外。勝率トップは問わない）","級別も違う（1号艇がA1以外。会場・勝率トップは問わない）"];
+  $("ringKey").innerHTML=rl.map((t,i)=>`<span style="${curStage===i?"color:var(--text);font-weight:700":""}">${["◎","②","③","④"][i]} ${t} ${(i?stages[i].n-stages[i-1].n:stages[0].n).toLocaleString()}件</span>`).join("")+`<span>扇の塗りの長さ＝その輪の中で勝った割合（どの輪も同じ目盛り。輪いっぱいで60%）。◎ の点は1レース1点で、押すとそのレース</span>`;
+  rl.forEach((t,i)=>{const a=-118*Math.PI/180,r=(R[i]+R[i+1])/2;h+=`<text x="${cx+r*Math.cos(a)}" y="${cy+r*Math.sin(a)+4}" text-anchor="middle" fill="#e8d089" font-size="11" font-weight="700" font-family="JetBrains Mono,monospace">${["◎","②","③","④"][i]}</text>`;});
+  h+=`<circle cx="${cx}" cy="${cy}" r="5" fill="#e8d089"/>`;
+  svg.innerHTML=h;
+  $("sonarCap").textContent=`TARGET: 若松12R`;
+  svg.querySelectorAll("[data-sec]").forEach(e=>e.onclick=()=>{const b=+e.dataset.sec;st.boat=st.boat===b?0:b;render();if(st.boat){const sh=[0,1,2,3].map(i=>{const c=ring(i),t=c.reduce((x,y)=>x+y,0);return `${["◎","②","③","④"][i]} ${pc(c[b-1]/t,0)}（${c[b-1].toLocaleString()}/${t.toLocaleString()}）`;});$("sonarCard").innerHTML=`${bn(b)} ${b}号艇が勝った割合: ${sh.join("　")}`;}});
+  svg.querySelectorAll("[data-race]").forEach(e=>e.onclick=ev=>{ev.stopPropagation();st.pick=+e.dataset.race;showRace(st.pick);renderSonar();renderList();});
+}
+function showRace(i){const r=D.list1111[i];$("sonarCard").innerHTML=`<b>${r.race_date}</b> ${VEN[r.venue_code-1]} ${r.race_number}R ${r.grade==="ippan"?"一般":r.grade} ${r.stage}　<span class="bnrow">${r.top3.split("-").map(n=>bn(+n)).join("")}</span> ${r.technique_raw}${r.payout_3tan_yen?`　3連単 ${r.payout_3tan_yen.toLocaleString()}円`:""}`;}
+
+// ---------- サンキー ----------
+function renderFlow(){
+  const s=S(),svg=$("sankey");
+  const tri=Object.entries(s.trifecta).map(([k,c])=>[k.split("").map(Number),c]).filter(([a])=>(st.flow==="all"||a[0]!==1)&&(!st.flowFirst||a[0]===st.flowFirst));
+  const tot=tri.reduce((a,[,c])=>a+c,0);
+  const X=[40,300,560],W=26,H=340,top=30,gap=8;
+  const col=[0,1,2].map(p=>{const m={};for(let b=1;b<=6;b++)m[b]=0;tri.forEach(([a,c])=>m[a[p]]+=c);return m;});
+  const scale=tot?(H-gap*5)/tot:0;
+  const pos=col.map(m=>{let y=top;const o={};for(let b=1;b<=6;b++){o[b]={y,h:Math.max(m[b]*scale,m[b]?1.5:0)};y+=o[b].h+gap;}return o;});
+  const link=(p)=>{const m={};tri.forEach(([a,c])=>{const k=a[p]+"-"+a[p+1];m[k]=(m[k]||0)+c;});return Object.entries(m).map(([k,c])=>[k.split("-").map(Number),c]);};
+  let h="";
+  const outY=pos.map(o=>Object.fromEntries(Object.entries(o).map(([b,v])=>[b,v.y]))),inY=pos.map(o=>Object.fromEntries(Object.entries(o).map(([b,v])=>[b,v.y])));
+  [0,1].forEach(p=>{link(p).sort((a,b)=>a[0][0]-b[0][0]||a[0][1]-b[0][1]).forEach(([[a,b],c])=>{const w=Math.max(c*scale,1);const y0=outY[p][a]+w/2,y1=inY[p+1][b]+w/2;outY[p][a]+=c*scale;inY[p+1][b]+=c*scale;
+    const x0=X[p]+W,x1=X[p+1],mx=(x0+x1)/2,sel=st.flowSel&&st.flowSel.p===p&&st.flowSel.a===a&&st.flowSel.b===b;
+    const op=sel?.95:(st.flowSel?.12:(0.25+0.6*Math.min(1,c/(tot*.08||1))));
+    h+=`<path d="M${x0},${y0}C${mx},${y0} ${mx},${y1} ${x1},${y1}" stroke="${FLOW[a]}" stroke-width="${w}" fill="none" stroke-opacity="${op}" data-l="${p},${a},${b},${c}" style="cursor:pointer"/>`;});});
+  pos.forEach((o,p)=>{for(let b=1;b<=6;b++){if(!o[b].h)continue;h+=`<rect x="${X[p]}" y="${o[b].y}" width="${W}" height="${o[b].h}" fill="${BC[b][0]}" stroke="${p===0&&st.flowFirst===b?"#fff":"#94a3b8"}" stroke-width="${p===0&&st.flowFirst===b?2:.8}" ${p===0?`data-first="${b}" style="cursor:pointer"`:""}/>`;if(o[b].h>=11)h+=`<text x="${X[p]+W/2}" y="${o[b].y+o[b].h/2+4}" text-anchor="middle" font-size="11" font-weight="700" fill="${BC[b][1]}" font-family="JetBrains Mono,monospace">${b}</text>`;
+    h+=`<text x="${p===2?X[p]+W+6:p===0?X[p]-6:X[p]+W+4}" y="${o[b].y+o[b].h/2+4}" text-anchor="${p===0?"end":"start"}" font-size="10" fill="#e8d089" font-family="JetBrains Mono,monospace">${col[p][b]||""}</text>`;}});
+  ["1着","2着","3着"].forEach((t,p)=>h+=`<text x="${X[p]+W/2}" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="#f3ead0" font-family="Zen Kaku Gothic New,sans-serif">${t}</text>`);
+  svg.innerHTML=h;
+  svg.querySelectorAll("[data-first]").forEach(e=>e.onclick=()=>{const b=+e.dataset.first;st.flowFirst=st.flowFirst===b?null:b;st.flowSel=null;$("flowTip").textContent=st.flowFirst?`${b}号艇が勝った ${s.winner_boat[b-1]}件だけで描いている（1→2→3 の本当の流れ）`:"帯をタップすると件数が出る";renderFlow();renderList();});
+  $("flowNote").textContent=st.flowFirst?"":"2着→3着の帯は、1着の艇を問わずに数えている。1着の箱をタップすると、その艇が勝ったレースだけで 1→2→3 の流れを描き直す";
+  svg.querySelectorAll("[data-l]").forEach(e=>e.onclick=()=>{const [p,a,b,c]=e.dataset.l.split(",").map(Number);st.flowSel=st.flowSel&&st.flowSel.p===p&&st.flowSel.a===a&&st.flowSel.b===b?null:{p,a,b,c};$("flowTip").textContent=st.flowSel?`${p?"2着":"1着"} ${a}号艇 → ${p?"3着":"2着"} ${b}号艇: ${c}件（${tot}件中）`:"帯をタップすると件数が出る";renderFlow();renderList();});
+  const all=tri.sort((a,b)=>b[1]-a[1]);
+  const row=([a,c])=>{return `<div class="br" style="cursor:default"><span class="bnrow">${a.map(bn).join("")}</span><span class="wtrk"><span class="f" style="width:${c/all[0][1]*100}%"></span></span><span class="v">${c}/${tot}件</span></div>`;};
+  const cut=all.length>5?all[4][1]:0,topN=all.filter(([,c])=>c>=cut&&c>1).length||Math.min(5,all.length);
+  $("triTop").innerHTML=all.slice(0,topN).map(row).join("")||`<p class="foot">0件</p>`;
+  $("triMore").textContent=`ほかの ${Math.max(0,all.length-topN)} 通りも見る（出た組み合わせは全 ${all.length} 通り。件数が同じものはまとめて上に出している）`;
+  $("triAll").innerHTML=all.slice(topN).map(row).join("");
+}
+
+// ---------- 一覧 ----------
+function listRows(){
+  if(st.opt==="motor")return null;
+  if(st.opt||st.on.every(x=>x===1)){let L=D.list1111.map((r,i)=>[r,i]);if(st.opt==="round")L=L.filter(([r])=>r.stage==="優勝戦");if(st.opt==="grade")L=L.filter(([r])=>r.grade==="G1");return L;}
+  return null;
+}
+function renderList(){
+  const s=S(),rows=listRows();
+  $("hList").textContent=`${s.n.toLocaleString()}件のレース`;
+  if(!rows){$("listBody").innerHTML=`<p class="foot">モックでは、4条件ぜんぶ一致（74件）と、そこから「さらに絞る」のラウンド・グレードの一覧だけを持っている。本番は新しい順に出す。</p>`;return;}
+  const f=st.flowSel;
+  let R=rows.slice().sort((a,b)=>b[0].race_date.localeCompare(a[0].race_date));
+  const match=([r])=>{if(st.flow==="not1"&&r.top3[0]==="1")return false;if(st.flowFirst&&+r.top3[0]!==st.flowFirst)return false;if(!f)return true;const a=r.top3.split("-").map(Number);return a[f.p]===f.a&&a[f.p+1]===f.b;};
+  const hit=R.filter(match);
+  const show=s.n<=30?R:R.slice(0,10);
+  $("listBody").innerHTML=`${f||st.flowFirst?`<p class="sub">サンキーで選んだ流れに当たるのは ${hit.length}件。色を付けている</p>`:""}<div class="tbl"><table><thead><tr><th>日付</th><th>グレード・ステージ</th><th>1-2-3</th><th>決まり手</th><th>1号艇</th><th>3連単</th></tr></thead><tbody>${show.map(([r,i])=>`<tr data-i="${i}" class="${((f||st.flowFirst)&&match([r]))||st.pick===i?"hl":""}"><td>${r.race_date} ${r.race_number}R</td><td>${r.grade==="ippan"?"一般":r.grade} ${r.stage}</td><td><span class="bnrow">${r.top3.split("-").map(n=>bn(+n)).join("")}</span></td><td>${r.technique_raw}</td><td>${fin(r.finish_by_boat[0])}</td><td>${r.payout_3tan_yen?r.payout_3tan_yen.toLocaleString()+"円":"—"}</td></tr>`).join("")}</tbody></table></div>${R.length>show.length?`<details class="more"><summary>残り ${R.length-show.length}件を見る</summary><div class="tbl"><table><tbody>${R.slice(10).map(([r,i])=>`<tr data-i="${i}" class="${(f&&match([r]))?"hl":""}"><td>${r.race_date} ${r.race_number}R</td><td>${r.grade==="ippan"?"一般":r.grade} ${r.stage}</td><td><span class="bnrow">${r.top3.split("-").map(n=>bn(+n)).join("")}</span></td><td>${r.technique_raw}</td><td>${fin(r.finish_by_boat[0])}</td><td>${r.payout_3tan_yen?r.payout_3tan_yen.toLocaleString()+"円":"—"}</td></tr>`).join("")}</tbody></table></div></details>`:""}`;
+  $("listBody").querySelectorAll("tr[data-i]").forEach(tr=>tr.onclick=()=>{st.pick=+tr.dataset.i;showRace(st.pick);renderSonar();renderList();});
+}
+
+// ---------- AIの見立て ----------
+const THS=()=>st.swTh==="7"?TH7:TH6;
+const RR=()=>D.race[st.rank];
+const bth=b=>st.swTh==="7"?RR().boats[b-1].th:RR().boats6[b-1].th;
+const rsh=()=>st.swTh==="7"?RR().sh7:RR().sh6;
+const EPS=0.01;
+const arrow=v=>v>EPS?`<span class="arr up" aria-label="プラス">↑</span>`:v<-EPS?`<span class="arr down" aria-label="マイナス">↓</span>`:`<span class="arr flat" aria-label="ほぼ0">・</span>`;
+function to100(v){const s=v.reduce((a,b)=>a+b,0),raw=v.map(x=>x/s*100),fl=raw.map(Math.floor);let r=100-fl.reduce((a,b)=>a+b,0);raw.map((x,i)=>[x-fl[i],i]).sort((a,b)=>b[0]-a[0]).slice(0,r).forEach(([,i])=>fl[i]++);return fl;}
+function radar(svg,labels,series,opt={}){
+  const n=labels.length,Cc=[200,182],Rr=118,pt=(i,r)=>{const a=-Math.PI/2+2*Math.PI*i/n;return [Cc[0]+r*Math.cos(a),Cc[1]+r*Math.sin(a)];};
+  const lo=opt.lo??0,hi=opt.hi,rr=x=>Math.max(0,Math.min(1,(x-lo)/(hi-lo)))*Rr;let h="";
+  [.25,.5,.75,1].map(k=>lo+(hi-lo)*k).forEach(k=>h+=`<polygon points="${labels.map((_,i)=>pt(i,rr(k)).join(",")).join(" ")}" fill="none" stroke="rgba(201,162,39,.25)"/>`);
+  labels.forEach((_,i)=>{const [x,y]=pt(i,Rr);h+=`<line x1="${Cc[0]}" y1="${Cc[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;});
+  series.forEach(s=>{h+=`<polygon points="${s.v.map((x,i)=>pt(i,rr(x)).join(",")).join(" ")}" fill="${s.c}" fill-opacity=".18" stroke="${s.c}" stroke-width="2"/>`;s.v.forEach((x,i)=>{const [px,py]=pt(i,rr(x));h+=`<circle cx="${px}" cy="${py}" r="3" fill="${s.c}" stroke="#0d1b2e"/>`;});});
+  labels.forEach((t,i)=>{const [x,y]=pt(i,Rr+20),dx=x-Cc[0],an=dx>8?"start":dx<-8?"end":"middle";
+    h+=`<text x="${x}" y="${y}" text-anchor="${an}" fill="#f3ead0" opacity="${i===0?.45:1}" font-size="11" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif"><tspan x="${x}">${t}</tspan><tspan x="${x}" dy="1.25em" fill="#e8d089" font-family="JetBrains Mono,monospace" font-size="10.5">${opt.vals[i]}</tspan></text>`;});
+  svg.innerHTML=h;
+}
+function renderAi(){
+  const ths=THS(),sh=rsh(),v=ths.map(([k])=>sh[k]),lab=to100(v);
+  const top=ths.slice(1).map(([k,n],i)=>[n,lab[i+1]]).sort((a,b)=>b[1]-a[1]);
+  $("aiLead").innerHTML=`枠・会場（${lab[0]}%）はレース前から決まっている分。それを除くと「<b>${top[0][0]}</b>」${top[0][1]}%、「${top[1][0]}」${top[1][1]}% が大きい`;
+  const hi=Math.max(.1,Math.ceil(Math.max(...v.slice(1))*1.25*20)/20);
+  radar($("radar"),ths.map(t=>t[1]),[{v:v.map((x,i)=>i===0?Math.min(x,hi):x),c:"#e8d089"}],{hi,vals:lab.map((x,i)=>i===0?x+"%（目盛りの外）":x+"%")});
+  const tot=b=>ths.slice(1).reduce((a,[k])=>a+bth(b)[k],0);
+  $("boatSeg").innerHTML=[1,2,3,4,5,6].map(n=>`<button type="button" data-b="${n}" aria-pressed="${st.boat===n}">${bn(n)}${arrow(tot(n))}</button>`).join("");
+  $("boatSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{st.boat=st.boat===+b.dataset.b?0:+b.dataset.b;render();});
+  $("boatB").innerHTML=[1,2,3,4,5,6].map(n=>`<option value="${n}" ${n===st.b2?"selected":""}>${n}号艇と並べる</option>`).join("");
+  $("boatB").disabled=!st.two;
+  const k=st.boat;
+  if(!k){$("aiPanel").innerHTML=`<div class="card">艇をタップすると、AIの見立てのプラス材料・マイナス材料が出る（矢印は枠・会場以外を合わせた向き）</div>`;return;}
+  const sel=st.two&&st.b2!==k?[k,st.b2]:[k];
+  const mx=Math.max(...[1,2,3,4,5,6].flatMap(n=>ths.slice(1).map(([q])=>Math.abs(bth(n)[q]))));
+  const ord=ths.slice(1).sort((a,b)=>Math.abs(bth(k)[b[0]])-Math.abs(bth(k)[a[0]]));
+  const dv=(b,q)=>{const x=bth(b)[q],w=Math.abs(x)/mx*50;return `<i style="${x>=0?`left:50%`:`left:${50-w}%`};width:${w}%;background:${x>EPS?"var(--up)":x<-EPS?"var(--down)":"var(--muted)"};${sel.length>1&&b===sel[1]?"opacity:.55;top:6px;height:5px":sel.length>1?"top:0;height:5px":""}"></i>`;};
+  const mk={1:"win",2:"top2",3:"top3"}[st.rank],SA=D.start["20|all|all"],SG=D.start["20|G1|all"];
+  const row=([q,n])=>`<details class="th"><summary>${arrow(bth(k)[q])}<span>${n}</span><span class="dv">${sel.map(b=>dv(b,q)).join("")}</span></summary><div class="els">${GR[q].map(([g,l,o])=>sel.map(b=>`<div class="el">${arrow(RR().boats[b-1].gr[g])}<span>${sel.length>1?bn(b)+" ":""}${l}: ${D.facts[g][b-1]}${o&&b!==1?`<span class="oth">他艇の要素</span>`:""}</span></div>`).join("")).join("")}</div></details>`;
+  $("aiPanel").innerHTML=`<div class="card" style="display:grid;gap:6px"><div class="row">${sel.map(b=>`${bn(b)} <b>${b}号艇</b>`).join(" と ")} の${RT[st.rank]}</div>
+  <div class="key"><span><i style="background:var(--down)"></i>マイナス材料 ← </span><span>→ <i style="background:var(--up)"></i>プラス材料</span>${sel.length>1?`<span>上の線: ${sel[0]}号艇、下の薄い線: ${sel[1]}号艇</span>`:""}</div>
+  ${ord.slice(0,ord.length-2).map(row).join("")}<details class="th"><summary><span class="arr flat">…</span><span>ほか2テーマ</span><span></span></summary>${ord.slice(-2).map(row).join("")}</details>
+  <p class="foot">プラス・マイナスは6艇の平均と比べたもので、下の率からの増減ではない</p></div>
+  <div class="card" style="margin-top:8px"><div class="lbl">数えた値: 若松での${RT[st.rank]}率（${SA.period[0]}〜${SA.period[1]}）</div>${sel.map(b=>`<div>${bn(b)} 全レース ${pc(SA.boats[b][mk].p)}（${SA.boats[b][mk].x.toLocaleString()}/${SA.n.toLocaleString()}）　G1 ${pc(SG.boats[b][mk].p)}（${SG.boats[b][mk].x}/${SG.n}）</div>`).join("")}</div>`;
+}
+
+// ---------- ほかの場・グレード ----------
+const ck=(v,g,r)=>`${v}|${g}|${r}`;
+const cname=(v,g,r)=>`${v==="0"?"全国":VEN[+v-1]}×${GN[g]}×${RN[r]}`;
+function renderC(){
+  const A=D.cube[ck(st.v,st.g,st.r)],ckey=st.cmp==="nat"?["0","all","all"]:st.cmp==="venue"?[st.v,"all","all"]:["0",st.g,st.r],B=D.cube[ck(...ckey)];
+  if(!A){$("cOut").innerHTML=`<div class="warn">${cname(st.v,st.g,st.r)}は0件</div>`;return;}
+  const big=(X,name)=>{const [lo,hi]=wilson(X[3],X[0]);return `<div><div class="c">${name}の1号艇の1着率</div><div class="n">${pc(X[3]/X[0])}</div><div class="c">${X[3].toLocaleString()}/${X[0].toLocaleString()}レース・95%の幅 ${pc(lo)}〜${pc(hi)}</div></div>`;};
+  $("cOut").innerHTML=`${A[0]<30?`<div class="warn">${A[0]}件と少ない。幅が広い</div>`:""}<div class="big">${big(A,cname(st.v,st.g,st.r))}${big(B,cname(...ckey))}</div>
+  <h3>どの艇が勝った？</h3><div class="key"><span><i style="background:var(--bar)"></i>${cname(st.v,st.g,st.r)}</span><span><i style="border-left:2px dotted var(--hit);width:2px;height:12px"></i>${cname(...ckey)}</span></div>
+  <div class="bars">${[1,2,3,4,5,6].map(b=>wbar(`${bn(b)} ${b}号艇`,A[2+b],A[0],B[2+b]/B[0],false)).join("")}</div>
+  <h3>どう決まった？</h3><div class="bars">${TECH.map((t,i)=>wbar(t,A[9+i],A[0],B[9+i]/B[0],false)).join("")}</div>`;
+}
+
+// ---------- くわしく ----------
+function renderDetail(){
+  const cells=D.idx.cells,m={1:"win",2:"top2",3:"top3"}[st.rank],A=cells["20|all|all"];
+  $("detail").innerHTML=`<ul>
+  <li>似たレース: 4条件（1号艇とほかの最高の勝率差の帯・1号艇の級別・会場・勝率トップの艇）がそろった過去レース。例のレースの前日（2026-09-26）までの ${NAT.n.toLocaleString()}レース（長期データ＋本体、6艇がそろい1〜3着が確定したもの）から数えた。条件は自動では外さない</li>
+  <li>ソナー: 扇は勝った艇番、輪は条件をどこまでそろえたか（内から 4条件ぜんぶ／勝率トップだけ違う／若松以外／1号艇がA1以外）。内の2つの輪は1レース1点で、輪の中の位置に意味はない。外の2つの輪は扇の濃さで、勝った艇の割合</li>
+  <li>似たレースには、例のレースと同じ節の前日までのレースも入る（同じ選手が重なるので、ひげは実際より狭く出ることがある）</li>
+  <li>棒のひげは 95% の幅（Wilson）。点線は全国の全レース</li>
+  <li>「ほかの艇は？」のくらべる相手は、結果で機械的に決まらない群（${"1号艇"}の指標なら、1号艇とその艇以外が勝ったレース）</li>
+  <li>長期データには3着の同着が ${NAT.boats_in_top3_beyond_3n}件ある。3着以内の数は同着の両方を数えている</li>
+  <li>AIの見立て: 寄与度用のモデル（版 ${D.meta.modelVersion}、AI 予想とは別）の説明。テーマごとに、そのテーマの材料を足し合わせた上で6艇の平均からどれだけ動かしたかを割合にした。原因の断定ではない</li>
+  <li>「ほかの場・グレードだと？」: 2019-04-01〜2026-09-26 の過去レースを数えた値</li>
+  </ul>
+  <h3>全国と比べたテーマの大きさ（若松の全レース、${RT[st.rank]}）</h3>
+  <p class="foot">AIの見立てで、各テーマが6艇の見込みを動かした量を全国=100で比べた値。期間 ${D.idx.period[0]}〜${D.idx.period[1]}（データの穴の ${D.idx.excluded.join("・")} を除く）、${A.n.toLocaleString()}レース。差が10以上かつ ± の2倍以上のときだけ「大きい／小さい」。± はレースの選び方の揺れだけで、モデルの学習の揺れは入っていない。その条件で6艇の値（勝率など）が近いと、そのテーマは小さく出る（若松でモーターが小さいのは「モーターが効かない」という意味ではない）。天候・水面とグレード・ラウンド・節（※）は6艇で同じ値なので、ほかの材料との組み合わせを通してだけ動く</p>
+  ${TH7.map(([k,n])=>{const [x,sd]=A[m][k];const w=Math.abs(x-100)<Math.max(10,2*sd)?"全国並み":x>100?"全国より大きい":"全国より小さい";return `<div class="ir"${k==="weatherWater"||k==="raceFormat"?' style="opacity:.6"':""}><span>${n}${k==="weatherWater"||k==="raceFormat"?" ※":""}</span><span>${x.toFixed(0)} ±${sd.toFixed(1)}</span><span>${w}</span></div>`}).join("")}`;
+}
+
+function order(){const s=$("sections"),ai=$("secAi"),sim=$("secSim");if(st.swOrder==="ai")s.insertBefore(ai,sim);else s.appendChild(ai);}
+function render(){
+  document.querySelectorAll("#rankSeg button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.r===st.rank));
+  [["swOrder"],["swChip"],["swTh"]].forEach(([id])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st[id])));
+  document.querySelectorAll("#flowF button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.f===st.flow));
+  order();renderChips();renderSim();renderFlow();renderList();renderAi();renderC();renderDetail();
+}
+document.querySelectorAll("#rankSeg button").forEach(b=>b.onclick=()=>{st.rank=+b.dataset.r;render();});
+[["swOrder"],["swChip"],["swTh"]].forEach(([id])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{st[id]=b.dataset.v;if(id==="swChip"&&b.dataset.v==="tail"){const f=st.on.indexOf(0);if(f>=0)for(let j=f;j<4;j++)st.on[j]=0;}render();}));
+document.querySelectorAll("#flowF button").forEach(b=>b.onclick=()=>{st.flow=b.dataset.f;st.flowSel=null;st.flowFirst=null;$("flowTip").textContent="帯をタップすると件数が出る";render();});
+$("two").onchange=e=>{st.two=e.target.checked;render();};
+$("boatB").onchange=e=>{st.b2=+e.target.value;render();};
+$("cV").innerHTML=`<option value="0">全国</option>`+VEN.map((n,i)=>`<option value="${i+1}">${n}</option>`).join("");
+$("cG").innerHTML=Object.entries(GN).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");
+$("cR").innerHTML=Object.entries(RN).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");
+$("cV").value=st.v;$("cG").value=st.g;$("cR").value=st.r;
+["V","G","R"].forEach(x=>$("c"+x).onchange=e=>{st[x.toLowerCase()]=e.target.value;renderC();});
+$("cCmp").onchange=e=>{st.cmp=e.target.value;renderC();};
+render();
+</script>

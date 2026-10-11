@@ -6,6 +6,8 @@
  * と同じパターン: 未知の値は変換せずそのまま返す
  */
 
+import { trueWindDirection } from "../../utils/windDirection.js";
+
 const WEATHER_KEY_BY_LABEL = {
   晴: "sunny",
   曇り: "cloudy",
@@ -49,9 +51,13 @@ export function weatherIcon(label) {
   return WEATHER_ICON_BY_LABEL[label] ?? "🌤️";
 }
 
-export function translateWindDirection(t, label) {
-  const key = WIND_DIRECTION_KEY_BY_LABEL[label];
-  return key ? t(`beforeInfo.windDirection.${key}`, label) : label;
+// DB の風向はアイコンの番号を方位名にしたもので本当の方位ではないため、会場ごとに直してから訳す（BOA-819）。
+// 会場が分からなければ null（ずれた方位を出さない）
+export function translateWindDirection(t, label, venueCode) {
+  const dir = trueWindDirection(label, venueCode);
+  if (dir == null) return null;
+  const key = WIND_DIRECTION_KEY_BY_LABEL[dir];
+  return key ? t(`beforeInfo.windDirection.${key}`, dir) : dir;
 }
 
 const JST_TIME_FORMAT = new Intl.DateTimeFormat("en-GB", {

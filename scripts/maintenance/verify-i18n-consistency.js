@@ -25,6 +25,9 @@
  *    区切りは言語ごとに en: `/` か `, `、zh-TW: `、`、ko: `, ` を使う
  * 5. en・ko に漢字・かなが無いこと（BOA-633。ko に「決定技」「艇」が残っていた）。
  *    zh-TW は漢字を使う言語なので対象外
+ * 6. ko で使わないと決めた訳語が無いこと（BOA-713）。「준우승」（韓国語では2位の意味）・
+ *    「상전」（韓国語の単語として通じない）・「이번 절」（今節。タブ名の「이번 시리즈」に揃える、BOA-720）。
+ *    用語集 docs/reference/i18n-glossary.md の「準優勝戦・賞典除外（ko）」「今節（ko）」行
  *
  * 2026-09-25時点で1〜3とも違反ゼロ（4 は BOA-442 で61件を置き換えてから追加）。この状態を保つための検査であって、
  * 既存の違反を洗い出すためのものではない。
@@ -157,7 +160,9 @@ if (allEmpty.length > 0) {
 for (const lang of LANGS.filter((l) => l !== BASE_LANG)) {
   checked += 1;
   const withNakaguro = Object.entries(locales[lang])
-    .filter(([, value]) => typeof value === "string" && value.includes("\u30FB"))
+    .filter(
+      ([, value]) => typeof value === "string" && value.includes("\u30FB"),
+    )
     .map(([key]) => key);
   if (withNakaguro.length > 0) {
     failures.push(
@@ -176,6 +181,41 @@ for (const lang of ["en", "ko"]) {
   if (withCjk.length > 0) {
     failures.push(
       `${lang}: 漢字・かなを含むキーが ${withCjk.length} 件 → ${withCjk.slice(0, 5).join(", ")}${withCjk.length > 5 ? " ..." : ""}（訳し残しの可能性）`,
+    );
+  }
+}
+
+// 6. ko で使わないと決めた訳語（BOA-713）
+const KO_RETIRED_TERMS = [
+  {
+    term: "준우승",
+    use: "준결승전（準優勝戦）・준결승 진출전（準優進出戦）",
+    row: "準優勝戦・賞典除外（ko）",
+  },
+  // 「상전」だけだと 예상전개 等の正しい語にも当たるので、使っていた形で引く
+  {
+    term: "상전 제외",
+    use: "준결승전·우승전 출전 제외（賞典除外）",
+    row: "準優勝戦・賞典除外（ko）",
+  },
+  // 우승전（優勝戦）と対にならない「결승」の組（BOA-713 ファン評価2周目）
+  {
+    term: "준결승·결승",
+    use: "준결승전·우승전 출전 제외（賞典除外）",
+    row: "準優勝戦・賞典除外（ko）",
+  },
+  // 「절」は韓国語で「節（期間）」の意味では一般的でなく、タブ名の「이번 시리즈」と別物に読める（BOA-720）
+  { term: "이번 절", use: "이번 시리즈（今節）", row: "今節（ko）" },
+  { term: "같은 절", use: "같은 시리즈（同じ節）", row: "今節（ko）" },
+];
+checked += 1;
+for (const { term, use, row } of KO_RETIRED_TERMS) {
+  const keys = Object.entries(locales.ko)
+    .filter(([, value]) => typeof value === "string" && value.includes(term))
+    .map(([key]) => key);
+  if (keys.length > 0) {
+    failures.push(
+      `ko: 使わないと決めた訳語「${term}」が ${keys.length} 件 → ${keys.slice(0, 5).join(", ")}${keys.length > 5 ? " ..." : ""}（${use} を使う。用語集の「${row}」行）`,
     );
   }
 }

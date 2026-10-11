@@ -8,6 +8,7 @@ export { default as RaceCard } from "./RaceCard";
 export { default as RaceCardBadge } from "./RaceCardBadge";
 export { default as RaceCardDataTable } from "./RaceCardDataTable";
 export { default as VolatilityDisplay } from "./VolatilityDisplay";
+export { default as VolatilityPercentileBar } from "./VolatilityPercentileBar";
 export { default as RaceResult } from "./RaceResult";
 export { default as TrifectaReferenceCard } from "./TrifectaReferenceCard";
 export { default as AttackDefenseTable } from "./AttackDefenseTable";

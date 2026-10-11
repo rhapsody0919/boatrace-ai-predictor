@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>展開シナリオ 作り直し</title>
+<style>
+:root{--page:#f7f3ea;--card:#fbf9f3;--line:#ddd4bf;--ink:#0f172a;--sub:#475569;--gold:#8a6a14;--gold-soft:#f1e7c6;--today:#0f766e;--frame:#e7e1d3;--scope:#0d1b2e;--scope-ink:#f3ead0;--scope-sub:#e8d089;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--page:#0d1b2e;--card:#142842;--line:#2b3d58;--ink:#f8fafc;--sub:#cbd5e1;--gold:#d4ae3a;--gold-soft:#2a3346;--today:#2dd4bf;--frame:#091424;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0d1b2e;--card:#142842;--line:#2b3d58;--ink:#f8fafc;--sub:#cbd5e1;--gold:#d4ae3a;--gold-soft:#2a3346;--today:#2dd4bf;--frame:#091424;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--frame);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;font-size:13.6px;line-height:1.6;padding:20px 16px 60px}
+.doc{max-width:1000px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-size:21px;margin:0}
+p{margin:0}
+.lead{color:var(--sub);max-width:72ch}
+.cols{display:grid;grid-template-columns:375px minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:820px){.cols{grid-template-columns:minmax(0,1fr)}}
+.side{display:flex;flex-direction:column;gap:14px}
+.notes{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.notes ul,.notes ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.planseg{display:flex;gap:6px;flex-wrap:wrap}
+.planseg button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;padding:8px 12px;min-height:44px;cursor:pointer}
+.planseg button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--card)}
+.count{font-variant-numeric:tabular-nums}
+/* ---- 端末 ---- */
+.device{width:100%;max-width:375px;background:var(--page);border:1px solid var(--line);border-radius:18px;overflow:hidden;padding:16px}
+.dv{display:flex;flex-direction:column}
+.sec{display:flex;flex-direction:column;gap:16px;padding:24px 0;border-top:1px solid var(--line)}
+.sec:first-child{border-top:0;padding-top:0}
+h3{font-size:19.2px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px;line-height:1.35}
+h3 .no{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--gold);color:var(--card);font-size:14px;flex:none}
+h4{font-size:15.2px;font-weight:800;margin:0}
+.hblk{display:flex;flex-direction:column;gap:8px}
+.small{font-size:12px;color:var(--sub);line-height:1.5}
+.sub{color:var(--sub)}
+.bb{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:5px;font-size:11px;font-weight:800;border:1px solid #94a3b8;flex:none}
+.b1{background:#fff;color:#000}.b2{background:#000;color:#fff}.b3{background:#e53935;color:#fff}.b4{background:#1e88e5;color:#fff}.b5{background:#fdd835;color:#000}.b6{background:#43a047;color:#fff}
+.tag{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:12px;color:var(--sub);white-space:nowrap}
+.tag.today{border-color:var(--today);color:var(--today);font-weight:700}
+.tag.scope{border-style:solid;color:var(--ink);font-weight:700}
+button.tag{font:inherit;font-size:12px;cursor:pointer;background:none;min-height:32px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg2 button,.seg button{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--sub);border-radius:8px;padding:6px 10px;min-height:44px;cursor:pointer;text-align:left;line-height:1.35}
+.seg{display:inline-flex;gap:6px}
+.seg2 button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:var(--card)}
+.fold{border:1px solid var(--line);border-radius:10px;background:var(--card)}
+.fold>summary{list-style:none;min-height:44px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;font-weight:700;cursor:pointer}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::after{content:"▾";color:var(--sub)}
+.fold[open]>summary::after{content:"▴"}
+.fold>summary small{font-weight:400;color:var(--sub);font-size:12px;display:block}
+.fold>.in{padding:0 12px 12px;display:flex;flex-direction:column;gap:8px}
+.fold ul{margin:0;padding-left:18px}
+.combo{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.slot{display:inline-flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--sub)}
+.slot b{font-size:12px;color:var(--ink)}
+/* ①の行 */
+.rows{display:flex;flex-direction:column;gap:4px}
+.rowh{display:grid;grid-template-columns:1fr 92px 64px;font-size:12px;color:var(--sub);padding:0 10px}
+.rowh span:nth-child(n+2){text-align:right}
+.erow{display:grid;grid-template-columns:1fr 92px 64px;align-items:center;min-height:48px;border:1px solid var(--line);border-radius:8px;background:var(--card);padding:4px 10px;font:inherit;color:var(--ink);cursor:pointer;text-align:left;border-left-width:4px}
+.erow[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.erow .nm{display:flex;flex-direction:column;gap:2px}
+.erow .pc{display:flex;align-items:center;gap:6px;justify-content:flex-end;font-weight:700}
+.minibar{display:inline-block;height:8px;border-radius:4px;background:var(--gold)}
+.erow .b1r{text-align:right;font-weight:700}
+.agree{display:flex;flex-direction:column;gap:6px}
+.abar{display:grid;grid-template-columns:150px 1fr 40px;gap:8px;align-items:center;font-size:12.5px}
+.trk{height:10px;background:var(--line);border-radius:5px;position:relative;overflow:hidden}
+.trk i{position:absolute;left:0;top:0;bottom:0;background:var(--gold);border-radius:5px}
+/* 手がかり */
+.hint{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:12px}
+.dark{background:var(--scope);border-radius:10px;padding:8px}
+.dark svg{display:block;width:100%;height:auto}
+.cond{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.go{font:inherit;font-weight:700;color:var(--gold);background:none;border:1px solid var(--gold);border-radius:8px;min-height:44px;cursor:pointer;align-self:flex-end;padding:0 12px}
+/* ②の格子 */
+.legend1{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--sub);align-items:center}
+.anycard{min-height:48px;display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:10px;background:var(--card);padding:6px 12px;font:inherit;color:var(--ink);cursor:pointer;font-weight:700;border-left-width:4px}
+.anycard[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fcard{border:1px solid var(--line);border-radius:10px;background:var(--card);padding:6px 8px 8px;font:inherit;color:var(--ink);cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:124px}
+.fcard[aria-pressed="true"]{border-color:var(--gold);border-width:2px;background:var(--gold-soft)}
+.fcard .ico{background:var(--scope);border-radius:6px;padding:2px 4px}
+.fcard .ico svg{display:block;width:100%;height:auto}
+.fcard b{font-size:13.6px}
+.fcard .st{font-size:12.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+.chosen{display:flex;align-items:center;gap:10px;border:2px solid var(--gold);border-radius:10px;background:var(--gold-soft);padding:6px 10px;min-height:56px}
+.chosen .ico{width:56px;background:var(--scope);border-radius:6px;padding:2px}
+.chosen .ico svg{display:block;width:100%}
+.chosen .t{flex:1;display:flex;flex-direction:column;font-size:12.5px}
+.chosen .t b{font-size:14px}
+.chg{font:inherit;font-weight:700;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;min-height:44px;padding:0 10px;cursor:pointer}
+/* ③の箱 */
+.ctx{display:flex;gap:6px;flex-wrap:wrap}
+.attacker{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-weight:700}
+.ibtn{font:inherit;width:44px;height:44px;border:0;background:none;color:var(--sub);cursor:pointer;display:inline-grid;place-items:center;margin:-10px -8px -10px -6px}
+.ibtn span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;border:1px solid var(--sub);font-size:12px;font-weight:700}
+.tip{font-size:12px;color:var(--sub);border-left:3px solid var(--line);padding-left:8px}
+.box{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--card)}
+.box .bh{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--sub);font-weight:700}
+.brow{display:grid;grid-template-columns:128px 1fr 52px;gap:8px;align-items:center;min-height:28px}
+.brow .lb{font-size:13px}
+.brow .v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.brow.main .v{font-size:20px}
+.brow.main .lb{font-weight:700}
+.btrk{height:12px;border-radius:6px;background:var(--line);position:relative;overflow:hidden}
+.btrk i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.todayh{font-size:12px;color:var(--sub);display:flex;align-items:center;gap:6px;margin-top:4px}
+.todayh::before,.todayh::after{content:"";flex:1;border-top:1px solid var(--line)}
+.trow{display:flex;flex-wrap:wrap;gap:2px 6px;align-items:baseline;font-size:12.5px;font-variant-numeric:tabular-nums}
+.trow b{font-size:15.2px}
+.trow .nat{color:var(--sub);font-size:12px}
+.few{font-size:11px;color:var(--sub);border:1px dotted var(--sub);border-radius:4px;padding:0 3px}
+.unclear{font-size:11.5px;border:1px solid var(--line);border-radius:4px;padding:0 4px;color:var(--sub)}
+.stack{display:flex;height:16px;border-radius:4px;overflow:hidden;font-size:11px;color:#fff;font-weight:700}
+.stack span{display:grid;place-items:center}
+table.t{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t thead th{font-size:12px;color:var(--sub)}
+table.t td small{display:block;font-size:11.5px;color:var(--sub)}
+table.t tr.on td{background:var(--gold-soft);font-weight:700}
+/* ④ */
+.legend4{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--sub);align-items:center}
+.legend4 i{display:inline-block;vertical-align:middle;margin-right:4px}
+.prow{display:grid;grid-template-columns:24px 64px 1fr 76px;gap:6px;align-items:center;min-height:28px;font-variant-numeric:tabular-nums}
+.prow .lab{font-size:12px;color:var(--sub);line-height:1.2}
+.prow .lab b{color:var(--ink);font-size:12.5px}
+.prow .v{text-align:right;font-weight:700}
+.prow .v small{font-weight:400;color:var(--sub);font-size:11.5px;margin-left:3px}
+.ptrk{height:12px;border-radius:6px;background:var(--line);position:relative}
+.ptrk i{position:absolute;left:0;top:0;bottom:0;border-radius:6px}
+.ptrk u{position:absolute;top:-3px;bottom:-3px;border-left:2px dotted #2dd4bf}
+.prow.thin .ptrk i{opacity:.4}
+.flow{background:var(--scope);color:var(--scope-ink);border-radius:10px;padding:16px;text-align:center;font-size:12.5px;min-height:140px;display:grid;place-items:center}
+.tri{display:flex;flex-direction:column;gap:6px}
+.tri div{display:flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums}
+.mocknote{font-size:11.5px;color:#9a5b00;font-weight:700}
+.planB .sec>.bhead{display:flex;justify-content:space-between;align-items:center;min-height:48px;cursor:pointer;background:none;border:0;font:inherit;color:inherit;padding:0;text-align:left;width:100%}
+.planB .sec>.bhead .ans{font-size:12.5px;color:var(--sub);font-weight:700;text-align:right}
+</style>
+</head>
+<body>
+<div class="doc">
+  <header style="display:flex;flex-direction:column;gap:6px">
+    <p class="small">BOA-271 龍神ソナー ・ 展開シナリオの作り直し（BOA-806 の③④を含む） ・ モック v1</p>
+    <h1>展開シナリオを、答えを先に・詳しくは畳んで見せる</h1>
+    <p class="lead">数字は多摩川12R（10/5・展示後）の本番の値。案は左上で切り替えられる。①の進入と②のスリットの形を押すと、③④が変わる（①は「枠なり」以外を選ぶと③④の値はモックでは枠なりのまま）。</p>
+  </header>
+  <div class="cols">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="planseg" id="plans"><button type="button" data-plan="A" aria-pressed="true">案A（推奨）ひと続き</button><button type="button" data-plan="B" aria-pressed="false">案B 1段ずつ開く</button></div>
+      <p class="small count" id="count"></p>
+      <div class="device"><div class="dv" id="dev"></div></div>
+    </div>
+    <div class="side">
+      <div class="notes">
+        <b>ファンにとっての価値（ファン4人のパネル＋独立の UI/UX レビュー）</b>
+        <ul>
+          <li>知りたい答え（攻めは決まったか・1号艇は逃げたか・どの艇が来たか）が、各段の最初に棒で出る。今は答えの前に注意書きや表がある</li>
+          <li>数字の箱ごとに「どのレースから出した数字か」の札（例: ④ B1 のレース 67件）。1号艇の逃げが36%と34%の2つ出ていた理由が、札で分かる</li>
+          <li>④の棒は、左に艇ごとの「級・件数」。6艇で件数が違うことが文章を読まなくても分かる</li>
+          <li>②は選んだら1行に畳む。③が②の直後に来るので、押した結果がすぐ見える</li>
+          <li>情報は消していない。表・用語・割合の出し方は畳んだ中に残し、見出しに中身の予告を付けた。注記の折りたたみは一番下の1か所に（同じ名前の折りたたみが2つあったのを解消）</li>
+          <li>押す所はすべて高さ44px以上。見出しは段（①〜④）と中の見出しの2段だけ</li>
+        </ul>
+      </div>
+      <div class="notes">
+        <b>案</b>
+        <ul>
+          <li><b>案A（推奨）</b>: ひと続きのまま。各段は答えが先、詳しくは畳む。②だけ、選んだら1行に畳む。左上の数字は、今いちばん上から下まで閉じた状態で見える字数</li>
+          <li><b>案B</b>: ①〜④を1段ずつ開く。閉じた段の1行に答え。③と④を同時に見比べられない・押す回数が増える（パネルで2対2、UI/UX レビューは A を推奨）</li>
+        </ul>
+        <p class="small">今の画面: ②カド一撃を選んだ状態で、閉じていても見える字数 3,683字・高さ 7,389px（全部開くと 5,237字・9,650px）</p>
+      </div>
+      <div class="notes">
+        <b>決めてほしいこと（推奨を先に）</b>
+        <ol>
+          <li>案: <b>A（ひと続き）</b>／B（1段ずつ）</li>
+          <li>②を選んだ後: <b>1行に畳む（「変える」で開く）</b>／開いたまま</li>
+          <li>③の表（展示タイム・モーター×上中下）: <b>畳む（今日の区分の2行だけ常に出す）</b>／常に出す</li>
+          <li>④の艇の棒の左: <b>級・件数の札（A1 68件）</b>／今の「1号艇」の文字のまま</li>
+        </ol>
+      </div>
+      <div class="notes">
+        <b>このモックで今のままの部品</b>
+        <ul>
+          <li>スリットの形の絵・今日の手がかりの絵・着順の流れの図は、今の本番の部品を使う（モックでは簡略な絵）。②の絵は艇の部分だけを切り出して小さくする</li>
+          <li>案B は動きを見るための簡略版</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const D = {"classes": ["A1", "A2", "A2", "B1", "A2", "B1"], "exh_time": [6.670000076293945, 6.769999980926514, 6.769999980926514, 6.699999809265137, 6.699999809265137, 6.71999979019165], "exh_rank": [1, 5, 5, 2, 2, 4], "motor": [36.4, 36.3, 33.9, 40.5, 42.7, 31.8], "motor_rank": [3, 4, 5, 2, 1, 6], "entry": {"all": {"n": 425, "b1": 315}, "waku": {"n": 362, "b1": 268}, "mae": {"n": 61, "b1": 47}, "inlost": {"n": 2, "b1": 0}}, "forms": {"any": {"n": 362, "first": [268, 25, 21, 25, 19, 4], "per": [[362, 268, 43, 13], [413, 55, 118, 89], [362, 38, 80, 96], [359, 15, 49, 62], [419, 28, 60, 82], [235, 1, 8, 33]], "tech": {"逃げ": 259, "差し": 24, "まくり": 27, "まくり差し": 36, "抜き": 16, "恵まれ": 0, "その他": 0}, "manshu": [53, 362], "tri": [["1-2-3", 37], ["1-3-2", 28], ["1-2-4", 24], ["1-3-4", 23], ["1-3-5", 23], ["1-4-3", 14], ["1-4-5", 14], ["1-2-6", 13], ["1-3-6", 13], ["1-2-5", 12], ["1-4-2", 12], ["1-5-2", 12], ["1-4-6", 11], ["1-5-4", 8], ["1-5-6", 6], ["2-1-3", 6], ["4-1-6", 6], ["1-5-3", 5], ["1-6-2", 5], ["3-1-4", 5], ["1-6-3", 4], ["5-1-6", 4], ["5-4-6", 4], ["2-1-5", 3], ["2-1-6", 3], ["3-1-5", 3], ["3-2-1", 3], ["4-1-3", 3], ["4-6-2", 3], ["1-6-4", 2], ["1-6-5", 2], ["2-3-1", 2], ["2-5-6", 2], ["3-1-2", 2], ["3-2-5", 2], ["4-2-3", 2], ["4-5-3", 2], ["4-6-5", 2], ["5-1-2", 2], ["5-2-3", 2], ["5-2-6", 2], ["2-1-4", 1], ["2-3-5", 1], ["2-3-6", 1], ["2-4-3", 1], ["2-4-5", 1], ["2-5-1", 1], ["2-5-3", 1], ["2-6-1", 1], ["2-6-4", 1], ["3-1-6", 1], ["3-2-4", 1], ["3-2-6", 1], ["3-4-1", 1], ["3-5-1", 1], ["3-5-4", 1], ["4-1-2", 1], ["4-2-1", 1], ["4-3-1", 1], ["4-3-2", 1], ["4-5-2", 1], ["4-6-1", 1], ["4-6-3", 1], ["5-1-3", 1], ["5-1-4", 1], ["5-3-4", 1], ["5-4-1", 1], ["5-6-4", 1], ["6-1-2", 1], ["6-3-5", 1], ["6-4-5", 1], ["6-5-3", 1]]}, "flat": {"n": 65, "first": [55, 3, 3, 0, 4, 0], "per": [[65, 55, 7, 2], [69, 8, 26, 15], [56, 3, 12, 17], [64, 0, 6, 13], [74, 4, 12, 10], [33, 0, 1, 1]], "tech": {"逃げ": 55, "差し": 4, "まくり": 1, "まくり差し": 3, "抜き": 2, "恵まれ": 0, "その他": 0}, "manshu": [6, 65], "tri": [["1-2-3", 10], ["1-2-4", 6], ["1-3-4", 6], ["1-3-2", 5], ["1-3-5", 4], ["1-4-6", 4], ["1-2-5", 3], ["1-4-2", 3], ["5-1-6", 3], ["1-2-6", 2], ["1-3-6", 2], ["1-4-3", 2], ["1-6-4", 2], ["2-1-3", 2], ["1-4-5", 1], ["1-5-2", 1], ["1-5-4", 1], ["1-5-6", 1], ["1-6-2", 1], ["1-6-3", 1], ["2-3-1", 1], ["3-1-2", 1], ["3-2-6", 1], ["3-5-1", 1], ["5-1-2", 1]], "b1": {"n": 65, "nige": [55, 65], "top2": [62, 65], "exh": {"top": [31, 38], "mid": [15, 16], "low": [9, 11]}, "mot": {"top": [19, 22], "mid": [24, 28], "low": [12, 15]}, "exh_ref": {"top": [344, 445], "mid": [162, 207], "low": [81, 117]}, "mot_ref": {"top": [196, 254], "mid": [197, 259], "low": [193, 255]}}, "attacker": null, "overlap": {"wall": [20, 65], "d2": [0, 65], "d3": [0, 65], "kado": [3, 65], "d1": [3, 65], "dash": [0, 65]}}, "wall": {"n": 57, "first": [47, 5, 1, 1, 3, 0], "per": [[57, 47, 4, 4], [60, 11, 16, 16], [56, 5, 11, 13], [57, 1, 7, 14], [76, 4, 13, 16], [43, 0, 1, 6]], "tech": {"逃げ": 45, "差し": 6, "まくり": 1, "まくり差し": 2, "抜き": 3, "恵まれ": 0, "その他": 0}, "manshu": [6, 57], "tri": [["1-3-2", 5], ["1-2-3", 4], ["1-2-4", 4], ["1-3-4", 4], ["1-4-2", 4], ["1-4-3", 4], ["1-4-5", 4], ["1-5-4", 4], ["1-2-5", 3], ["1-5-2", 3], ["1-2-6", 2], ["1-3-5", 2], ["2-3-1", 2], ["1-3-6", 1], ["1-4-6", 1], ["1-6-2", 1], ["1-6-5", 1], ["2-1-3", 1], ["2-1-5", 1], ["2-6-1", 1], ["3-5-1", 1], ["4-6-3", 1], ["5-1-2", 1], ["5-1-6", 1], ["5-2-3", 1]], "b1": {"n": 57, "nige": [45, 57], "top2": [51, 57], "exh": {"top": [29, 37], "mid": [5, 7], "low": [11, 13]}, "mot": {"top": [14, 19], "mid": [17, 18], "low": [14, 20]}, "exh_ref": {"top": [321, 426], "mid": [133, 179], "low": [86, 130]}, "mot_ref": {"top": [186, 253], "mid": [198, 254], "low": [156, 228]}}, "attacker": null, "overlap": {"flat": [20, 57], "d2": [0, 57], "d3": [0, 57], "kado": [10, 57], "d1": [0, 57], "dash": [6, 57]}}, "d2": {"n": 20, "first": [14, 1, 1, 1, 2, 1], "per": [[20, 14, 4, 1], [23, 1, 3, 4], [24, 2, 10, 6], [25, 1, 3, 5], [23, 2, 2, 4], [12, 0, 0, 3]], "tech": {"逃げ": 13, "差し": 0, "まくり": 0, "まくり差し": 4, "抜き": 3, "恵まれ": 0, "その他": 0}, "manshu": [2, 20], "tri": [["1-2-3", 4], ["1-3-4", 3], ["1-3-5", 2], ["1-2-5", 1], ["1-3-2", 1], ["1-3-6", 1], ["1-4-6", 1], ["1-5-3", 1], ["2-1-3", 1], ["3-1-4", 1], ["4-3-1", 1], ["5-1-2", 1], ["5-1-4", 1], ["6-3-5", 1]], "b1": {"n": 20, "nige": [13, 20], "top2": [18, 20], "exh": {"top": [7, 10], "mid": [4, 8], "low": [2, 2]}, "mot": {"top": [6, 9], "mid": [3, 5], "low": [4, 6]}, "exh_ref": {"top": [137, 191], "mid": [72, 122], "low": [33, 56]}, "mot_ref": {"top": [95, 145], "mid": [73, 113], "low": [74, 111]}}, "attacker": 3, "overlap": {"flat": [0, 20], "wall": [0, 20], "d3": [0, 20], "kado": [6, 20], "d1": [0, 20], "dash": [11, 20]}, "att": {"n": 24, "win": [2, 24], "top2": [12, 24], "nige": [13, 24], "exh": {"top": [2, 10], "mid": [0, 7], "low": [0, 7]}, "mot": {"top": [2, 12], "mid": [0, 4], "low": [0, 8]}, "exh_ref": {"top": [57, 216], "mid": [38, 210], "low": [21, 177]}, "mot_ref": {"top": [44, 232], "mid": [44, 190], "low": [28, 180]}, "tech": {"makuri": [0, 2], "makurizashi": [2, 2], "sashi": [0, 2]}, "lead": null}, "outer": [1, 24]}, "d3": {"n": 18, "first": [15, 1, 0, 1, 1, 0], "per": [[18, 15, 1, 0], [29, 6, 6, 8], [12, 0, 0, 3], [14, 1, 4, 4], [18, 1, 4, 6], [14, 0, 1, 2]], "tech": {"逃げ": 15, "差し": 1, "まくり": 0, "まくり差し": 2, "抜き": 0, "恵まれ": 0, "その他": 0}, "manshu": [2, 18], "tri": [["1-2-4", 3], ["1-5-2", 2], ["1-2-3", 1], ["1-2-5", 1], ["1-2-6", 1], ["1-3-2", 1], ["1-3-5", 1], ["1-3-6", 1], ["1-4-2", 1], ["1-4-5", 1], ["1-5-4", 1], ["1-6-3", 1], ["2-4-5", 1], ["4-1-6", 1], ["5-4-6", 1]], "b1": {"n": 18, "nige": [15, 18], "top2": [16, 18], "exh": {"top": [10, 13], "mid": [4, 4], "low": [1, 1]}, "mot": {"top": [6, 8], "mid": [6, 7], "low": [3, 3]}, "exh_ref": {"top": [114, 171], "mid": [31, 57], "low": [20, 40]}, "mot_ref": {"top": [58, 101], "mid": [60, 91], "low": [47, 76]}}, "attacker": 4, "overlap": {"flat": [0, 18], "wall": [0, 18], "d2": [0, 18], "kado": [3, 18], "d1": [0, 18], "dash": [2, 18]}, "att": {"n": 14, "win": [1, 14], "top2": [5, 14], "nige": [7, 14], "exh": {"top": [1, 6], "mid": [0, 3], "low": [0, 5]}, "mot": {"top": [0, 8], "mid": [1, 5], "low": [0, 1]}, "exh_ref": {"top": [22, 99], "mid": [11, 107], "low": [8, 91]}, "mot_ref": {"top": [21, 110], "mid": [14, 107], "low": [6, 80]}, "tech": {"makuri": [1, 1], "makurizashi": [0, 1], "sashi": [0, 1]}, "lead": null}, "outer": [1, 18]}, "kado": {"n": 68, "first": [26, 4, 6, 20, 10, 2], "per": [[68, 26, 13, 4], [84, 7, 12, 19], [83, 10, 17, 19], [67, 10, 9, 11], [85, 16, 17, 16], [63, 1, 6, 11]], "tech": {"逃げ": 23, "差し": 6, "まくり": 19, "まくり差し": 14, "抜き": 6, "恵まれ": 0, "その他": 0}, "manshu": [28, 68], "tri": [["1-3-5", 4], ["1-3-6", 4], ["4-1-6", 4], ["5-4-6", 3], ["1-2-4", 2], ["1-3-2", 2], ["1-4-5", 2], ["1-5-4", 2], ["1-6-3", 2], ["3-1-4", 2], ["4-1-3", 2], ["4-2-3", 2], ["4-5-3", 2], ["4-6-2", 2], ["4-6-5", 2], ["1-2-3", 1], ["1-2-5", 1], ["1-3-4", 1], ["1-4-2", 1], ["1-4-3", 1], ["1-5-3", 1], ["1-5-6", 1], ["1-6-5", 1], ["2-3-6", 1], ["2-4-5", 1], ["2-5-6", 1], ["2-6-4", 1], ["3-1-2", 1], ["3-2-1", 1], ["3-2-5", 1], ["3-5-4", 1], ["4-1-2", 1], ["4-2-1", 1], ["4-3-2", 1], ["4-5-2", 1], ["4-6-1", 1], ["4-6-3", 1], ["5-1-2", 1], ["5-1-3", 1], ["5-1-4", 1], ["5-2-3", 1], ["5-2-6", 1], ["5-4-1", 1], ["5-6-4", 1], ["6-3-5", 1], ["6-4-5", 1]], "b1": {"n": 68, "nige": [23, 68], "top2": [39, 68], "exh": {"top": [15, 43], "mid": [4, 11], "low": [4, 14]}, "mot": {"top": [11, 28], "mid": [7, 19], "low": [5, 21]}, "exh_ref": {"top": [189, 392], "mid": [70, 165], "low": [34, 103]}, "mot_ref": {"top": [123, 256], "mid": [88, 203], "low": [82, 201]}}, "attacker": 4, "overlap": {"flat": [3, 68], "wall": [10, 68], "d2": [6, 68], "d3": [3, 68], "d1": [4, 68], "dash": [43, 68]}, "att": {"n": 67, "win": [10, 67], "top2": [19, 67], "nige": [24, 67], "exh": {"top": [6, 25], "mid": [3, 20], "low": [1, 22]}, "mot": {"top": [4, 29], "mid": [3, 18], "low": [3, 20]}, "exh_ref": {"top": [73, 220], "mid": [48, 259], "low": [23, 189]}, "mot_ref": {"top": [74, 276], "mid": [44, 225], "low": [26, 167]}, "tech": {"makuri": [8, 10], "makurizashi": [2, 10], "sashi": [0, 10]}, "lead": [49, 67]}, "outer": [16, 85]}, "d1": {"n": 27, "first": [10, 9, 6, 1, 1, 0], "per": [[27, 10, 8, 2], [39, 18, 6, 5], [35, 7, 8, 7], [31, 0, 4, 6], [36, 1, 4, 5], [20, 0, 1, 2]], "tech": {"逃げ": 10, "差し": 5, "まくり": 4, "まくり差し": 6, "抜き": 2, "恵まれ": 0, "その他": 0}, "manshu": [11, 27], "tri": [["2-1-6", 3], ["1-2-3", 2], ["1-4-6", 2], ["3-1-4", 2], ["1-3-2", 1], ["1-3-4", 1], ["1-3-5", 1], ["1-4-2", 1], ["1-4-3", 1], ["1-5-3", 1], ["2-1-4", 1], ["2-4-3", 1], ["2-5-1", 1], ["2-5-3", 1], ["2-5-6", 1], ["2-6-4", 1], ["3-1-5", 1], ["3-2-1", 1], ["3-2-4", 1], ["3-5-4", 1], ["4-1-6", 1], ["5-2-6", 1]], "b1": {"n": 26, "nige": [10, 26], "top2": [18, 26], "exh": {"top": [5, 15], "mid": [3, 8], "low": [2, 3]}, "mot": {"top": [2, 4], "mid": [3, 12], "low": [5, 10]}, "exh_ref": {"top": [103, 202], "mid": [38, 97], "low": [25, 55]}, "mot_ref": {"top": [61, 113], "mid": [56, 119], "low": [49, 122]}}, "attacker": 2, "overlap": {"flat": [3, 26], "wall": [0, 26], "d2": [0, 26], "d3": [0, 26], "kado": [4, 26], "dash": [6, 26]}, "att": {"n": 38, "win": [18, 38], "top2": [23, 38], "nige": [9, 38], "exh": {"top": [7, 11], "mid": [8, 17], "low": [3, 10]}, "mot": {"top": [5, 12], "mid": [6, 11], "low": [7, 15]}, "exh_ref": {"top": [108, 338], "mid": [65, 250], "low": [39, 187]}, "mot_ref": {"top": [82, 300], "mid": [79, 253], "low": [51, 222]}, "tech": {"makuri": [10, 18], "makurizashi": [0, 18], "sashi": [8, 18]}, "lead": null}, "outer": [6, 34]}, "dash": {"n": 79, "first": [41, 6, 7, 15, 6, 4], "per": [[79, 41, 12, 7], [94, 9, 8, 18], [86, 9, 19, 22], [82, 9, 10, 11], [88, 12, 15, 20], [52, 1, 4, 11]], "tech": {"逃げ": 38, "差し": 5, "まくり": 17, "まくり差し": 13, "抜き": 6, "恵まれ": 0, "その他": 0}, "manshu": [24, 79], "tri": [["1-3-5", 7], ["1-3-2", 5], ["1-2-3", 4], ["1-3-6", 4], ["1-4-5", 4], ["1-5-3", 3], ["4-1-6", 3], ["1-2-4", 2], ["1-3-4", 2], ["1-4-3", 2], ["1-5-4", 2], ["3-1-5", 2], ["4-5-3", 2], ["5-4-6", 2], ["1-2-6", 1], ["1-4-6", 1], ["1-5-2", 1], ["1-5-6", 1], ["1-6-3", 1], ["1-6-5", 1], ["2-1-5", 1], ["2-3-6", 1], ["2-5-1", 1], ["2-5-6", 1], ["2-6-1", 1], ["2-6-4", 1], ["3-1-4", 1], ["3-2-1", 1], ["3-2-4", 1], ["3-4-1", 1], ["3-5-4", 1], ["4-1-2", 1], ["4-1-3", 1], ["4-2-1", 1], ["4-2-3", 1], ["4-3-2", 1], ["4-5-2", 1], ["4-6-1", 1], ["4-6-2", 1], ["4-6-3", 1], ["4-6-5", 1], ["5-1-3", 1], ["5-1-4", 1], ["5-4-1", 1], ["5-6-4", 1], ["6-1-2", 1], ["6-3-5", 1], ["6-4-5", 1], ["6-5-3", 1]], "b1": {"n": 79, "nige": [38, 79], "top2": [53, 79], "exh": {"top": [26, 49], "mid": [7, 14], "low": [5, 16]}, "mot": {"top": [16, 26], "mid": [11, 23], "low": [11, 30]}, "exh_ref": {"top": [198, 383], "mid": [78, 166], "low": [41, 109]}, "mot_ref": {"top": [116, 237], "mid": [108, 212], "low": [93, 209]}}, "attacker": 4, "overlap": {"flat": [0, 79], "wall": [6, 79], "d2": [11, 79], "d3": [2, 79], "kado": [43, 79], "d1": [6, 79]}, "att": {"n": 82, "win": [9, 82], "top2": [19, 82], "nige": [33, 82], "exh": {"top": [6, 31], "mid": [3, 25], "low": [0, 26]}, "mot": {"top": [5, 36], "mid": [2, 19], "low": [2, 27]}, "exh_ref": {"top": [52, 219], "mid": [46, 286], "low": [28, 254]}, "mot_ref": {"top": [65, 284], "mid": [37, 260], "low": [24, 215]}, "tech": {"makuri": [7, 9], "makurizashi": [2, 9], "sashi": [0, 9]}, "lead": [47, 82]}, "outer": [12, 88]}}, "agreement": null, "course_st": {"overall": [0.13966666162014008, 0.10400000214576721, 0.12399999797344208, 0.1682758629322052, 0.16833333671092987, 0.1276666671037674], "course": [0.1545, 0.116, 0.1187, 0.157, 0.1443, 0.1687], "course_n": [29, 30, 30, 30, 30, 30], "course_filled": [0.1545, 0.116, 0.1187, 0.157, 0.1443, 0.1687], "venue": [0.14, 0.1195, 0.153, 0.1633, 0.1627, 0.1493], "venue_n": [11, 21, 30, 30, 30, 30], "venue_course_all": {"mean": [0.1568, 0.1676, 0.1597, 0.1529, 0.1566, 0.1727], "n": [13756, 13789, 13778, 13762, 13763, 13761]}}};
+const FORMS=["flat","wall","d2","d3","kado","d1","dash"];
+const FN={flat:"横一線",wall:"内3艇そろう",d2:"2コース凹み",d3:"カド受け凹み",kado:"カド一撃",d1:"イン凹み",dash:"ダッシュ勢先行"};
+const FDEF={flat:"6艇の差が0.03秒以内",wall:"1〜3コースが並び、4〜6コースより0.03秒以上早い",d2:"2コースが両隣より0.05秒以上遅い",d3:"3コースが両隣より0.05秒以上遅い",kado:"4コースが1〜3コースのどれよりも0.03秒以上早い",d1:"1コースが2コースより0.05秒以上遅い",dash:"4〜6コースの平均が1〜3コースより0.03秒以上早い"};
+const ROLE={kado:"4コース。カド",d3:"4コース。カド",dash:"4コース。カド",d2:"3コース",d1:"2コース"};
+// 形の絵（スリットの形の並びの例。モック用の簡略な絵。数字が大きいほど前）
+const SHAPE={flat:[0,0,0,0,0,0],wall:[2,2,2,0,0,0],d2:[1,-2,1,1,1,1],d3:[1,1,-2,1,1,1],kado:[0,0,0,3,1,1],d1:[-2,1,1,1,1,1],dash:[0,0,0,2,2,2],any:[0,0,0,0,0,0]};
+const LINE={1:"#e8d089",2:"#94a3b8",3:"#ef5350",4:"#42a5f5",5:"#f0c419",6:"#4caf50"};
+const pct=(p,d=0)=>p==null||!isFinite(p)?"—":`${(p*100).toFixed(d)}%`;
+const r=(a)=>a&&a[1]?a[0]/a[1]:null;
+const bb=(n)=>`<span class="bb b${n}">${n}</span>`;
+const fmt=(n)=>Number(n).toLocaleString("ja-JP");
+const band=(rk)=>rk<=2?"top":rk<=4?"mid":"low";
+const BANDN={top:"上位",mid:"中位",low:"下位"};
+let plan="A", entry="waku", form="kado", stOpen=false, openB="s3", tips={};
+function icon(f,w=150){const s=SHAPE[f]||SHAPE.any;let g=`<svg viewBox="0 0 150 64">`;g+=`<line x1="120" y1="2" x2="120" y2="62" stroke="#e8d089" stroke-dasharray="3 3"/>`;s.forEach((v,i)=>{const x=104+v*7,y=6+i*9.6;g+=`<rect x="${x-22}" y="${y}" width="22" height="7" rx="3" fill="${LINE[i+1]}"/><text x="${x-26}" y="${y+6.5}" font-size="7" fill="#f3ead0" text-anchor="end">${i+1}</text>`});return g+`</svg>`}
+function wilson(k,n){if(!n)return[0,0];const z=1.96,p=k/n,d=1+z*z/n,c=p+z*z/(2*n),m=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n));return[(c-m)/d,(c+m)/d]}
+// 本番の clearDiff（src/utils/analogyScenario.js）と同じ: 上位と下位の差が標準誤差の2倍を超えなければはっきりしない
+function unclear(top,low){if(!top||!low||!top[1]||!low[1])return true;const p1=top[0]/top[1],p2=low[0]/low[1];const se=Math.sqrt(p1*(1-p1)/top[1]+p2*(1-p2)/low[1]);return !(Math.abs(p1-p2)>2*se)}
+function scopeSec(){return `<section class="sec"><div class="hblk"><p class="sub">「もし進入がこうなって、スタートがこう並んだら」を、過去レースで確かめる。</p></div>
+<div class="hblk"><h4>集めたレース</h4><div class="seg2"><button type="button" aria-pressed="true">多摩川・同じ級別の組み合わせ</button><button type="button" aria-pressed="false">全国・同じ級別の組み合わせ</button><button type="button" aria-pressed="false">多摩川の全レース</button><button type="button" aria-pressed="false">全国の全レース</button></div>
+<div class="combo">${[1,2,3,4,5,6].map(b=>`<span class="slot">${bb(b)}<b>${b===1?"A1":"—"}</b></span>`).join("")}<span class="small">2〜6号艇は枠を問わない</span></div>
+<div class="combo"><span class="tag">A1×1</span><span class="tag">A2×3</span><span class="tag">B1×2</span><span class="small">今日と同じ組み合わせ・1号艇がA1</span></div></div></section>`}
+function entrySec(){const E=[["waku","枠なり",true],["all","どの進入でも"],["mae","前付けあり（1号艇イン）"],["inlost","1号艇がインを取られた"]];const tot=D.entry.all.n;
+return `<div class="rows"><div class="rowh"><span>進入</span><span>割合</span><span>①の1着率</span></div>${E.map(([e,nm,today])=>{const x=D.entry[e];const share=x.n/tot;return `<button type="button" class="erow" data-entry="${e}" aria-pressed="${entry===e}"><span class="nm">${nm}${today?` <span class="tag today">今日の展示</span>`:""}</span><span class="pc"><span class="minibar" style="width:${Math.max(2,share*44)}px"></span>${pct(share)}</span><span class="b1r">${x.n>=30?pct(x.b1/x.n):`<span class="small">${x.n}件 —</span>`}</span></button>`}).join("")}</div>
+<div class="agree"><div class="abar"><span>展示 枠なり → 本番も枠なり</span><span class="trk"><i style="width:93%"></i></span><b>93%</b></div><p class="small">全国・2026/4以降の3,029レース</p></div>
+<details class="fold"><summary><span>進入の見方<small>割合の分母・前付けの意味・スローとダッシュ</small></span></summary><div class="in"><ul><li>割合は、多摩川・同じ級別の組み合わせの全レースの中での割合</li><li>前付け＝艇番より内のコースに入った艇</li><li>スロー・ダッシュの別は記録が無いので分けていない</li><li>30件未満の型は1着率を出さない（「—」）</li></ul></div></details>`}
+function hintBox(){const st=D.course_st;const xs=st.course;const mn=0.10,mx=0.18;
+let g=`<svg viewBox="0 0 320 120">`;g+=`<line x1="290" y1="6" x2="290" y2="112" stroke="#e8d089"/><text x="286" y="116" font-size="9" fill="#e8d089" text-anchor="end">スリット</text><text x="10" y="116" font-size="9" fill="#e8d089">早い →</text>`;
+xs.forEach((v,i)=>{const x=60+(mx-v)/(mx-mn)*220,y=12+i*16;const vx=60+(mx-st.venue_course_all.mean[i])/(mx-mn)*220;g+=`<line x1="${vx}" y1="${y-2}" x2="${vx}" y2="${y+10}" stroke="#2dd4bf" stroke-dasharray="2 2"/><rect x="${x-28}" y="${y}" width="28" height="8" rx="4" fill="${LINE[i+1]}"/><text x="${x-32}" y="${y+8}" font-size="9" fill="#f3ead0" text-anchor="end">${i+1}</text><text x="${x+4}" y="${y+8}" font-size="8.5" fill="#cbd5e1">.${String(Math.round(v*1000)).padStart(3,"0")}</text>`});g+=`</svg>`;
+return `<div class="hint"><div class="hblk"><h4>今日のスタートの手がかり</h4><div class="combo"><span class="tag">過去の記録（予想ではない）</span><span class="tag">枠なりの場合</span></div></div>
+<div class="dark">${g}</div><p class="small">点線＝多摩川でそのコースを走った全選手の平均。右ほど早い</p>
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="small">使う平均ST</span><span class="seg"><button type="button" aria-pressed="true">このコース</button><button type="button" aria-pressed="false">全体</button></span><button type="button" class="ibtn" data-tip="avg" aria-label="このコースと全体の違い"><span>i</span></button></div>
+<p class="small">このコース＝今日のコースに入ったときだけの平均（コースの差が入らないので比べやすい）</p>${tips.avg?`<p class="tip">全体＝コースを問わない平均。スタートの速さそのものを見るときに使う</p>`:""}
+<div class="cond"><b>当てはまる: 1コースが2コースより0.02秒以上遅い</b>
+<div class="abar"><span>当てはまる時のイン凹み</span><span class="trk"><i style="width:${4*3}%"></i></span><b>4%</b></div>
+<div class="abar"><span>当てはまらない時</span><span class="trk"><i style="width:${7*3}%"></i></span><b>7%</b></div>
+<p class="small">23件。当てはまっても外れる方が多い（決め手ではなく手がかり）</p><button type="button" class="go" data-form="d1">②でイン凹みを選ぶ ›</button></div>
+<details class="fold"><summary><span>数字で見る<small>平均STの表（このコース・全体・多摩川・今日の展示）</small></span></summary><div class="in"><p class="small">（今の本番の表のまま）</p></div></details></div>`}
+function slitGrid(){const any=D.forms.any;return `<div class="legend1"><span>┃ スリット</span><span>├┤ 1艇身（約0.13秒）</span><span>①＝1号艇の1着率</span></div>
+<button type="button" class="anycard" data-form="any" aria-pressed="${form==="any"}"><span>どの形でも</span><span class="small" style="font-weight:700">${fmt(any.n)}件 ・ ① ${pct(any.first[0]/any.n)}</span></button>
+<div class="grid">${FORMS.map(f=>{const x=D.forms[f];return `<button type="button" class="fcard" data-form="${f}" aria-pressed="${form===f}"><span class="ico">${icon(f)}</span><b>${FN[f]}</b><span class="st">${pct(x.n/any.n)}・${x.n}件 ・ ① ${x.n>=30?pct(x.first[0]/x.n):"—"}</span>${f==="d2"?`<span class="tag today">今日の展示</span>`:""}</button>`}).join("")}</div>
+<div class="agree"><h4>今日の展示との関係</h4><div class="abar"><span>展示が2コース凹み → 本番も</span><span class="trk"><i style="width:${14*3}%"></i></span><b>14%</b></div><div class="abar"><span>展示が別の形 → 本番が2コース凹み</span><span class="trk"><i style="width:${8*3}%"></i></span><b>8%</b></div><p class="small"><span class="tag">同じ形になりやすい（参考程度）</span> 2026/4以降の2,546レース</p></div>
+<details class="fold"><summary><span>用語・割合の出し方<small>カド・カド受け、絵の見方、7つの形の定義</small></span></summary><div class="in"><ul><li>カド＝ダッシュ勢（助走を長くとる艇）の一番内。7つの形は、枠なりのときのカド（4コース）を基準に決めている。カド受け＝その1つ内</li>${FORMS.map(f=>`<li>${FN[f]}: ${FDEF[f]}</li>`).join("")}<li>1つのレースが2つ以上の形に当てはまることがある（足すと100%を超える）</li><li>割合は、選んだ進入の中での割合</li></ul></div></details>`}
+function chosenRow(){const x=D.forms[form];const any=D.forms.any;return `<div class="chosen"><span class="ico">${icon(form)}</span><span class="t"><b>${form==="any"?"どの形でも":FN[form]}</b><span>${form==="any"?"":pct(x.n/any.n)+"・"}${x.n}件 ・ ① ${pct(x.first[0]/x.n)}</span></span><button type="button" class="chg" data-open-st="1">変える ▾</button></div>`}
+function bar(lb,p,color,main,extra=""){return `<div class="brow${main?" main":""}"><span class="lb">${lb}</span><span class="btrk"><i style="width:${(p??0)*100}%;background:${color}"></i></span><span class="v">${pct(p)}</span></div>${extra}`}
+function todayLine(label,rk,bandKey,pair,ref,what,unc){const fewm=pair&&pair[1]<50?` <span class="few" title="50件未満">少</span>`:"";return `<div class="trow"><span>${label} ${rk}位（${BANDN[bandKey]}）→ ${what}</span><b>${pct(r(pair))}</b><span class="small">${pair?`${pair[0]}/${pair[1]}`:""}</span>${fewm}<span class="nat">┊全国 ${pct(r(ref))}</span>${unc?` <span class="unclear">上下の差 はっきりせず</span>`:""}</div>`}
+function attackSec(){const x=D.forms[form];if(form==="any")return `<p class="sub">②でスリットの形を選ぶと、その形のときに攻める艇が勝ちきったか、1号艇が逃げたかが出る</p><button type="button" class="go" data-open-st="1">②で形を選ぶ ›</button>`;
+if(entry!=="waku"&&entry!=="all")return `<p class="sub">進入が枠なりのときだけを集めている（①で「枠なり」か「どの進入でも」を選ぶと出る）</p>`;
+const a=x.attacker,A=x.att,B=x.b1,cls=D.classes;let h=`<div class="ctx"><button type="button" class="tag scope" data-open-st="1">枠なり × ${FN[form]} ✎</button><span class="tag">多摩川・同じ級別の組み合わせ</span></div>`;
+if(a){h+=`<div class="attacker">攻める艇 ${bb(a)} ${a}号艇（${ROLE[form]}）<button type="button" class="ibtn" data-tip="att" aria-label="攻める艇とは"><span>i</span></button></div>${tips.att?`<p class="tip">この形のとき、外の艇で一番1着が多い艇（必ず攻めるという意味ではない）。1マークで誰が先に回ったかの記録は無いので、着順と決まり手で見ている</p>`:""}`;
+const er=D.exh_rank[a-1],mr=D.motor_rank[a-1];const tech=A.tech;const wins=A.win[0];
+h+=`<div class="box"><div class="bh">${bb(a)} ${cls[a-1]} のレース ${A.n}件</div>${bar(`${a}号艇が1着`,r(A.win),LINE[a],true)}${bar(`${a}号艇が2着以内`,r(A.top2),LINE[a])}${x.outer?bar(`すぐ外の${a+1}号艇が1着`,r(x.outer),LINE[a+1]):""}
+<div class="todayh">今日の${a}号艇</div>${todayLine("展示タイム",er,band(er),A.exh[band(er)],A.exh_ref&&A.exh_ref[band(er)],`${a}号艇の1着`,unclear(A.exh.top,A.exh.low))}${todayLine("モーター",mr,band(mr),A.mot[band(mr)],A.mot_ref&&A.mot_ref[band(mr)],`${a}号艇の1着`,unclear(A.mot.top,A.mot.low))}
+${wins?`<div class="small">勝った${wins}回の決まり手</div><div class="stack">${[["makuri","まくり","#42a5f5"],["makurizashi","まくり差し","#7e57c2"],["sashi","差し","#26a69a"]].filter(([k])=>tech[k][0]>0).map(([k,n,c])=>`<span style="flex:${tech[k][0]};background:${c}"></span>`).join("")}</div><div class="small">${[["makuri","まくり","#42a5f5"],["makurizashi","まくり差し","#7e57c2"],["sashi","差し","#26a69a"]].filter(([k])=>tech[k][0]>0).map(([k,n,c])=>`<span style="color:${c};font-weight:700">■</span> ${n} ${tech[k][0]}`).join("　")}</div>`:""}
+${A.lead&&!["d1","d2","d3"].includes(form)?bar(`内の艇より0.05秒以上前に出た`,r(A.lead),"#94a3b8",false):""}</div>`}
+else h+=`<p class="sub">${FN[form]}は、外から攻める艇がいない形。1号艇が逃げきれたかを見る</p>`;
+const e1=D.exh_rank[0],m1=D.motor_rank[0];
+h+=`<div class="box"><div class="bh">${bb(1)} ${cls[0]} のレース ${B.n}件</div>${bar("1号艇が逃げた",r(B.nige),"#e8d089",true)}${bar("1号艇が2着以内",r(B.top2),"#e8d089")}
+<div class="todayh">今日の1号艇</div>${todayLine("展示タイム",e1,band(e1),B.exh[band(e1)],B.exh_ref&&B.exh_ref[band(e1)],"逃げ",unclear(B.exh.top,B.exh.low))}<div class="trow"><button type="button" class="ibtn" data-tip="b1exh" aria-label="1号艇の展示タイム"><span>i</span></button><span class="small">1号艇は展示タイムが速く出やすい</span></div>${tips.b1exh?`<p class="tip">同じ選手でも1号艇のときに約0.02秒速い（展示で内を走る分などが考えられる）。順位が上位でも、その分を割り引いて見る</p>`:""}${todayLine("モーター",m1,band(m1),B.mot[band(m1)],B.mot_ref&&B.mot_ref[band(m1)],"逃げ",unclear(B.mot.top,B.mot.low))}</div>`;
+const tbl=(title,rows,who)=>`<b>${title}</b><table class="t"><thead><tr><th>${who}の順位</th><th>上位</th><th>中位</th><th>下位</th></tr></thead><tbody>${rows.map(([nm,o,ref])=>`<tr><td>${nm}</td>${["top","mid","low"].map(k=>`<td>${pct(r(o[k]))}${o[k][1]<50?` <span class="few">少</span>`:""}<small>${o[k][0]}/${o[k][1]}${ref?` ┊${pct(r(ref[k]))}`:""}</small></td>`).join("")}</tr>`).join("")}</tbody></table>`;
+h+=`<details class="fold"><summary><span>区分で見る<small>展示タイム・モーター×上中下、全国の値つき</small></span></summary><div class="in"><p class="small">小さい数字＝その区分の件数、┊＝全国・同じ級別の組み合わせの率。<span class="few">少</span>＝50件未満（ぶれやすい）</p>
+${a?tbl(`${a}号艇の1着（${cls[a-1]} のレース）`,[["展示タイム",A.exh,A.exh_ref],["モーター",A.mot,A.mot_ref]],`${a}号艇`)+`<p class="small">同じ${A.n}件の1号艇の逃げ: ${pct(r(A.nige))}（${A.nige[0]}/${A.nige[1]}）。下の表と件数が違うので値も少し違う</p>`:""}
+${tbl(`1号艇の逃げ（${cls[0]} のレース）`,[["展示タイム",B.exh,B.exh_ref],["モーター",B.mot,B.mot_ref]],"1号艇")}<p class="small">平均STが6艇そろうレースだけから出したので、④より件数が少し少ないことがある。同じ値の艇は上の順位にそろえている</p></div></details>`;
+return h}
+function resultSec(){const x=D.forms[form];const base=form!=="any"?D.forms.any:D.forms.any;const cls=D.classes;
+let h=`<div class="ctx"><span class="tag scope">${bb(1)} ${cls[0]} のレース ${x.n}件</span><span class="small">枠なりの${pct(x.n/D.forms.any.n)}・全レースの${pct(x.n/D.entry.all.n)}</span></div>
+<div class="legend4"><span><i class="minibar" style="width:16px"></i>このシナリオ</span><span><i style="border-left:2px dotted #2dd4bf;height:12px"></i>枠なり全体</span><span>薄い棒＝30件未満</span></div>`;
+const rows=(k)=>[1,2,3,4,5,6].map(b=>{const c=x.per[b-1],bs=base.per[b-1];const hit=k==="first"?c[1]:c[1]+c[2]+c[3];const bh=k==="first"?bs[1]:bs[1]+bs[2]+bs[3];const p=c[0]?hit/c[0]:null;return `<div class="prow${c[0]<30?" thin":""}">${bb(b)}<span class="lab"><b>${cls[b-1]}</b> ${c[0]}件</span><span class="ptrk"><i style="width:${(p??0)*100}%;background:${LINE[b]}"></i><u style="left:${(bh/bs[0])*100}%"></u></span><span class="v">${pct(p)}<small>${hit}</small></span></div>`}).join("");
+h+=`<div class="hblk"><h4>1着になった艇</h4><p class="small">各艇、自分の級のレース（左の札）から出した率。足しても100%にならない</p>${rows("first")}</div>
+<div class="hblk"><h4>3着以内に入った艇</h4>${rows("top3")}</div>
+<div class="hblk"><h4>決まり手</h4>${["逃げ","差し","まくり","まくり差し","抜き","恵まれ"].map(t=>{const v=x.tech[t]||0;const bv=base.tech[t]||0;return `<div class="prow"><span></span><span class="lab"><b>${t}</b></span><span class="ptrk"><i style="width:${v/x.n*100}%;background:var(--gold)"></i><u style="left:${bv/base.n*100}%"></u></span><span class="v">${pct(v/x.n)}<small>${v}</small></span></div>`}).join("")}</div>
+<div class="hblk"><h4>万舟（3連単1万円以上）</h4><div class="abar"><span>このシナリオ</span><span class="trk"><i style="width:${r(x.manshu)*100}%"></i></span><b>${pct(r(x.manshu))}</b></div><div class="abar"><span>枠なり全体</span><span class="trk"><i style="width:${r(base.manshu)*100}%;opacity:.5"></i></span><b>${pct(r(base.manshu))}</b></div><p class="small">${x.manshu[0]}/${x.manshu[1]}レース</p></div>
+<div class="hblk"><h4>着順の流れ</h4><span class="seg"><button type="button" aria-pressed="true">すべて</button><button type="button" aria-pressed="false">①以外が勝った</button></span><div class="flow">着順の流れの図（今の本番の部品）<br>1着 → 2着 → 3着。帯・1着の四角を押すと件数</div><details class="fold"><summary><span>着順の流れの見方<small>薄い帯・2着→3着の帯・1着で絞る</small></span></summary><div class="in"><ul><li>少ない流れも薄く全部描いている</li><li>2着→3着の帯は、1着の艇を問わずに出している</li><li>1着の四角を押すと、その艇が勝ったレースだけで流れを描き直す</li></ul></div></details></div>
+<div class="hblk"><h4>よく出た3連単</h4><div class="tri">${x.tri.slice(0,3).map(([k,v])=>`<div>${k.split("-").map(n=>bb(+n)).join("→")}<span class="small">${v}件・${pct(v/x.n)}</span></div>`).join("")}</div><details class="fold"><summary><span>残り${x.tri.length-3}通り（全${x.tri.length}通り）<small>件数の多い順</small></span></summary><div class="in"><div class="tri">${x.tri.slice(3).map(([k,v])=>`<div>${k.split("-").map(n=>bb(+n)).join("→")}<span class="small">${v}件</span></div>`).join("")}</div></div></details></div>`;
+return h}
+function bottom(){return `<section class="sec"><div class="hblk"><b>龍神ソナーは予想の材料になりましたか？</b><span class="seg"><button type="button">なった</button><button type="button">物足りない</button></span></div>
+<details class="fold"><summary><span>割合の出し方・注意<small>進入・手がかり・スリットの形・③・④・どの数字がどのレースからか</small></span></summary><div class="in">
+<b>どの数字がどのレースからか</b><table class="t"><thead><tr><th>部品</th><th>1号艇の級でそろえた</th><th>その艇の級でそろえた</th></tr></thead><tbody>
+<tr><td>③ 攻める艇の箱・表</td><td></td><td>○</td></tr><tr><td>③ 1号艇の箱・表</td><td>○</td><td></td></tr><tr><td>④ 1着・3着以内（1号艇）</td><td>○</td><td></td></tr><tr><td>④ 1着・3着以内（2〜6号艇）</td><td></td><td>○</td></tr><tr><td>④ 決まり手・万舟・流れ・3連単</td><td>○</td><td></td></tr></tbody></table>
+<b>注意</b><ul><li>過去の割合で、原因とは限らない</li><li>スリットの形はレース後に分かるもので、「もしこうなったら」の参考。今日の展示からは選べない</li><li>返還（F・L・欠場）があったレースなどを除くので、「差がつく材料」の件数とは合わない</li><li>④の結果は、③の攻める艇の順位では分けていない</li></ul>
+<b>手がかり</b><ul><li>平均ST＝各選手が今日のコースで枠なりだったときの直近30走の平均（期間はおよそ半年〜1年）。見るのは艇どうしの差</li><li>手がかりは多摩川・同じ級別の組み合わせの枠なりのレース（361件）。F・出遅れと、平均STが6艇そろわないレースを除くので、②の件数と少しずれる</li><li>展示STは参考で、本番のSTとの関係は弱い（艇ごとの相関 0.08。平均STは 0.28）</li></ul></div></details></section>`}
+function sectionsA(){const s2=(form==="any"||stOpen)?`${hintBox()}${slitGrid()}`:chosenRow();
+return `${scopeSec()}<section class="sec"><h3><span class="no">1</span>進入はどうなる？</h3>${entrySec()}</section>
+<section class="sec" id="s2"><h3><span class="no">2</span>スタートはどう並ぶ？</h3>${s2}</section>
+<section class="sec"><h3><span class="no">3</span>攻めは決まった？</h3>${attackSec()}</section>
+<section class="sec"><h3><span class="no">4</span>結果はどう決まった？</h3>${resultSec()}</section>${bottom()}`}
+function sectionsB(){const x=D.forms[form];const ans={s1:entry==="waku"?"枠なり":entry,s2:form==="any"?"どの形でも":FN[form],s3:form==="any"?"②を選ぶと出る":x.attacker?`${x.attacker}号艇の1着 ${pct(r(x.att.win))}`:`1号艇の逃げ ${pct(r(x.b1.nige))}`,s4:`①の1着 ${pct(x.first[0]/x.n)}・${x.tri[0][0]}`};
+const sec=(id,no,title,body)=>`<section class="sec"><button type="button" class="bhead" data-sec="${id}"><h3><span class="no">${no}</span>${title}</h3><span class="ans">${ans[id]} ${openB===id?"▴":"▾"}</span></button>${openB===id?body:""}</section>`;
+return `${scopeSec()}${sec("s1",1,"進入",entrySec())}${sec("s2",2,"スタート",hintBox()+slitGrid())}${sec("s3",3,"攻め",attackSec())}${sec("s4",4,"結果",resultSec())}${bottom()}`}
+function visibleChars(){const el=document.getElementById("dev");const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT);let n=0,t;while(t=w.nextNode()){const p=t.parentElement;if(p.closest("details:not([open])>.in"))continue;if(p.closest("svg"))continue;n+=t.textContent.replace(/\s/g,"").length}return n}
+function render(){const dev=document.getElementById("dev");const keep=[...dev.querySelectorAll("details")].map(d=>d.open);dev.className="dv"+(plan==="B"?" planB":"");dev.innerHTML=plan==="A"?sectionsA():sectionsB();
+document.querySelectorAll("#plans button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.plan===plan));
+document.getElementById("count").textContent=`閉じた状態で見える字数: ${fmt(visibleChars())}字・高さ ${fmt(Math.round(dev.getBoundingClientRect().height))}px（今の画面はカド一撃で 3,683字・7,389px）`}
+document.getElementById("plans").addEventListener("click",e=>{const b=e.target.closest("[data-plan]");if(!b)return;plan=b.dataset.plan;render()});
+document.getElementById("dev").addEventListener("click",e=>{const t=e.target;
+const en=t.closest("[data-entry]");if(en){entry=en.dataset.entry;render();return}
+const f=t.closest("[data-form]");if(f){form=f.dataset.form;stOpen=false;if(plan==="B")openB="s3";render();if(plan==="A")document.getElementById("s2")?.scrollIntoView({block:"start",behavior:"smooth"});return}
+const o=t.closest("[data-open-st]");if(o){stOpen=true;if(plan==="B")openB="s2";render();document.getElementById("s2")?.scrollIntoView({block:"start",behavior:"smooth"});return}
+const tp=t.closest("[data-tip]");if(tp){tips[tp.dataset.tip]=!tips[tp.dataset.tip];render();return}
+const sb=t.closest("[data-sec]");if(sb){openB=openB===sb.dataset.sec?null:sb.dataset.sec;render();return}
+});
+document.getElementById("dev").addEventListener("toggle",()=>{document.getElementById("count").textContent=`閉じた状態で見える字数: ${fmt(visibleChars())}字・高さ ${fmt(Math.round(document.getElementById("dev").getBoundingClientRect().height))}px（今の画面はカド一撃で 3,683字・7,389px）`},true);
+render();
+</script>
+</body>
+</html>

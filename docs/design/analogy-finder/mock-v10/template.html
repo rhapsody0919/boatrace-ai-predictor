@@ -1,0 +1,360 @@
+<title>アナロジー・ファインダー統合案</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<style>
+:root{
+  --gold-800:#6b500f; --gold-700:#8a6a1a; --gold-500:#c9a227; --gold-300:#e8d089;
+  --navy-100:#142842; --navy-300:#24344d; --navy-600:#0d1b2e; --navy-900:#060d18;
+  --ivory-100:#fbf9f3; --ivory-300:#ddd4bf; --ivory-600:#f7f3ea;
+  --page:var(--ivory-600); --card:var(--ivory-100); --sunken:#f3efe4;
+  --border:var(--ivory-300); --text:#0f172a; --text2:#475569; --muted:#7c8799; --grid:#e4dfd2;
+  --accent:var(--gold-800); --accent-strong:var(--gold-700); --bar:var(--gold-700); --bar2:#64748b;
+  --up:#047857; --down:#b91c1c; --warn:#946006; --hit:#0f766e;
+  --scope-bg:#0d1b2e; --scope-ink:#f3ead0; --scope-gold:#c9a227; --scope-line:rgba(201,162,39,.28);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --page:var(--navy-600); --card:var(--navy-100); --sunken:#0a1526; --border:var(--navy-300);
+  --text:#f8fafc; --text2:#cbd5e1; --muted:#8392a8; --grid:var(--navy-300);
+  --accent:var(--gold-500); --accent-strong:var(--gold-300); --bar:var(--gold-500); --bar2:#94a3b8;
+  --up:#34d399; --down:#f87171; --warn:#f2c46b; --hit:#2dd4bf; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --page:var(--navy-600); --card:var(--navy-100); --sunken:#0a1526; --border:var(--navy-300);
+  --text:#f8fafc; --text2:#cbd5e1; --muted:#8392a8; --grid:var(--navy-300);
+  --accent:var(--gold-500); --accent-strong:var(--gold-300); --bar:var(--gold-500); --bar2:#94a3b8;
+  --up:#34d399; --down:#f87171; --warn:#f2c46b; --hit:#2dd4bf; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--page);color:var(--text);font-family:"Noto Sans JP","Hiragino Sans",sans-serif;padding-inline:16px;padding-block:20px 56px;line-height:1.6}
+.wrap{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-strong);font-weight:700}
+h1{font-family:"Zen Kaku Gothic New",sans-serif;font-weight:900;font-size:clamp(20px,4.5vw,24px);margin:4px 0 0;text-wrap:balance;line-height:1.35}
+.lede{font-size:13px;color:var(--text2);margin:6px 0 0}
+.note{font-size:11.5px;color:var(--text2);background:var(--card);border:1px dashed var(--border);border-radius:8px;padding:8px 12px}
+.mockbox{border:1.5px dashed var(--warn);border-radius:10px;padding:10px 12px;background:var(--card);display:grid;gap:8px}
+.mockbox .t{font-size:11.5px;font-weight:700;color:var(--warn)}
+.row{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap}
+.lbl{font-size:11.5px;color:var(--text2);font-weight:700;white-space:nowrap}
+.seg{display:inline-flex;gap:6px;flex-wrap:wrap}
+.seg button,.btn{font-family:"Zen Kaku Gothic New",sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:var(--sunken);color:var(--text2);border-radius:8px;padding:6px 12px}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--ivory-100)}
+.btn{font-size:12px;padding:4px 10px}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:2px solid var(--accent-strong);outline-offset:2px}
+select{font:inherit;font-size:12.5px;color:var(--text);background:var(--sunken);border:1px solid var(--border);border-radius:8px;padding:6px 8px;max-width:100%}
+.rankbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:8px 12px}
+section.block{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 16px 18px;display:flex;flex-direction:column;gap:10px}
+.block h2{font-family:"Zen Kaku Gothic New",sans-serif;font-size:17px;font-weight:700;margin:0;text-wrap:balance;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tag{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;border:1.5px solid var(--accent-strong);color:var(--accent-strong);border-radius:4px;padding:0 6px}
+.sub{font-size:12px;color:var(--text2);margin:0}
+.lead{font-size:13.5px;line-height:1.7;background:var(--sunken);border-left:3px solid var(--accent-strong);border-radius:0 8px 8px 0;padding:8px 12px}
+.foot{font-size:11px;color:var(--muted);margin:0}
+h3{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14px;margin:6px 0 0}
+.scope{background:radial-gradient(ellipse at 50% 45%,#11243f 0%,var(--navy-900) 80%);border-radius:12px;padding:8px}
+.scope svg{display:block;width:100%;height:auto;max-width:420px;margin:0 auto;overflow:visible}
+.legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text2)}
+.legend i{display:inline-block;width:18px;border-top:2.5px solid var(--sc);vertical-align:middle;margin-right:4px}
+.legend i.d{border-top-style:dashed}
+.boats{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.boats button{font:inherit;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:8px;padding:6px 0;cursor:pointer;display:grid;justify-items:center;gap:2px;font-family:"JetBrains Mono",monospace;font-size:12px}
+.boats button[aria-pressed="true"]{border:2px solid var(--accent-strong);padding:5px 0}
+.bn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:4px;font-size:12.5px;font-weight:700;border:1px solid #94a3b8;font-family:"JetBrains Mono",monospace}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--muted)}
+.panel{border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:grid;gap:8px;background:var(--card)}
+.start{font-size:13px;background:var(--sunken);border-radius:8px;padding:8px 10px}
+.start b{font-family:"JetBrains Mono",monospace}
+.th{border-top:1px solid var(--border);padding-top:6px}
+.th>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:1.6em 9.5em 1fr;gap:8px;align-items:center;font-size:13px}
+.th>summary::-webkit-details-marker{display:none}
+.arr{font-weight:700;font-size:14px;text-align:center}
+.trk{height:8px;background:var(--grid);border-radius:4px;overflow:hidden}
+.trk i{display:block;height:100%;border-radius:4px}
+.trk i.u{background:var(--up)} .trk i.d{background:var(--down)} .trk i.n{background:var(--bar)} .trk i.m{background:var(--bar2)}
+.els{display:grid;gap:4px;padding:6px 0 2px 2.2em}
+.el{display:grid;grid-template-columns:1.4em 1fr;gap:6px;font-size:12px;color:var(--text2)}
+.oth{font-size:10px;font-weight:700;color:var(--hit);border:1px solid var(--hit);border-radius:3px;padding:0 4px;margin-left:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--accent-strong);border-radius:999px;padding:3px 10px;font-size:12px;background:var(--card)}
+.chip .k{color:var(--text2)}
+.chip.off{border-style:dashed;border-color:var(--muted);color:var(--muted)}
+.chip.opt{border-color:var(--border);color:var(--text2);border-style:dotted}
+.count{font-family:"JetBrains Mono",monospace;font-size:22px;color:var(--accent-strong);font-weight:700}
+.dist{display:grid;gap:4px}
+.dr{display:grid;grid-template-columns:6.5em 1fr 7.5em;gap:8px;align-items:center;font-size:12px}
+.dr .v{font-family:"JetBrains Mono",monospace;text-align:right;color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dr2{display:grid;grid-template-columns:6.5em 1fr;gap:8px;align-items:center;font-size:12px}
+.pair{display:grid;gap:2px}
+.pair .pb{display:grid;grid-template-columns:1fr 7.5em;gap:6px;align-items:center;font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--text2);font-variant-numeric:tabular-nums}
+.pair .pb span:last-child{text-align:right;white-space:nowrap}
+.key{display:flex;gap:14px;font-size:11px;color:var(--text2);flex-wrap:wrap}
+.key i{display:inline-block;width:12px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{padding:5px 7px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+td{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+thead th{font-family:"Zen Kaku Gothic New",sans-serif;font-size:11.5px;color:var(--text2)}
+.big{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.big>div{background:var(--sunken);border-radius:8px;padding:8px 10px}
+.big .n{font-family:"JetBrains Mono",monospace;font-size:20px;font-weight:700;color:var(--accent-strong)}
+.big .c{font-size:11px;color:var(--text2)}
+.warn{font-size:12px;color:var(--warn);background:rgba(148,96,6,.08);border:1px solid rgba(148,96,6,.3);border-radius:8px;padding:6px 10px}
+.idx{display:grid;gap:3px}
+.ir{display:grid;grid-template-columns:9.5em 1fr 1fr;gap:8px;font-size:12px;align-items:baseline}
+.ir .v{font-family:"JetBrains Mono",monospace;font-variant-numeric:tabular-nums}
+.sub2{border-top:1px dashed var(--border);padding-top:10px;display:grid;gap:8px}
+.removable{border:1px dashed var(--muted);border-radius:10px;padding:10px 12px;display:grid;gap:8px}
+.confirm{background:var(--card);border:1px solid var(--accent-strong);border-radius:10px;padding:12px 14px;font-size:12.5px}
+.confirm h2{font-family:"Zen Kaku Gothic New",sans-serif;font-size:14px;margin:0 0 6px}
+.confirm ol{margin:0;padding-left:1.3em;display:grid;gap:4px}
+@media (max-width:480px){.th>summary{grid-template-columns:1.6em 8em 1fr}.dr{grid-template-columns:5.5em 1fr 6.8em}.big{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="note"><b>モック Version 10（2026-10-03）</b>。4つの分かれ目をすべて推奨の形にした。代案は下の「モックの切り替え」で見られる。画面の数字はすべて実データ（本番 DB、2026-10-03 取得）と寄与度用の本番モデル（版 2026-10-02）から出した。例のレースは <b>若松 12R（2026-09-27、G1 ヤングダービー優勝戦）</b>で、発走前に見ている想定。実際の結果は 4-1-5（差し）。</div>
+
+  <div class="mockbox" aria-label="モックの切り替え">
+    <span class="t">モックの切り替え（比べる用。本番には出さない）</span>
+    <div class="row"><span class="lbl">艇の見せ方</span><div class="seg" id="swBoat"><button type="button" data-v="rec" aria-pressed="true">推奨: 参考の率＋上げ下げ</button><button type="button" data-v="hex" aria-pressed="false">代案: 艇の六角形</button></div></div>
+    <div class="row"><span class="lbl">テーマ</span><div class="seg" id="swTh"><button type="button" data-v="7" aria-pressed="true">推奨: 7テーマ</button><button type="button" data-v="6" aria-pressed="false">代案: 6テーマ</button></div></div>
+    <div class="row"><span class="lbl">C の補助（見込みを動かした量）</span><div class="seg" id="swIdx"><button type="button" data-v="on" aria-pressed="true">推奨: 出す</button><button type="button" data-v="off" aria-pressed="false">代案: 出さない</button></div></div>
+  </div>
+
+  <header>
+    <span class="eyebrow">アナロジー・ファインダー</span>
+    <h1>このレースの見立てと、過去の似たレース</h1>
+    <p class="lede">A でこのレースの6艇の差を見て、B で似た過去レースの決着を数え、C で会場・グレード・ラウンドを変えて比べる。</p>
+  </header>
+
+  <div class="rankbar row" aria-label="着順">
+    <span class="lbl">着順</span>
+    <div class="seg" id="rankSeg"><button type="button" data-r="1" aria-pressed="true">1着</button><button type="button" data-r="2" aria-pressed="false">2着以内</button><button type="button" data-r="3" aria-pressed="false">3着以内</button></div>
+    <span class="foot" id="rankNote"></span>
+  </div>
+
+  <section class="block" aria-labelledby="hA">
+    <span class="eyebrow">A · このレース</span>
+    <h2 id="hA"></h2>
+    <p class="sub" id="subA"></p>
+    <div class="lead" id="leadA"></div>
+    <div class="scope"><svg id="radarA" viewBox="-50 0 500 370" role="img" aria-label="テーマの図"></svg></div>
+    <div class="legend" id="legendA"></div>
+    <details class="note"><summary>展示前の値（出走表の時点）</summary><p class="foot" style="margin-top:6px">本番では朝に出走表の時点の値を出し、展示の後にこの値へ置き換える（展示前の値はここに畳んで残す）。モックの版（2026-10-02）には出走表の時点のモデルが無いため、ここは空にしている。</p></details>
+    <div class="row"><span class="lbl">艇を選ぶ（矢印は、枠以外のテーマを合わせた向き）</span></div>
+    <div class="boats" id="boatSeg"></div>
+    <div id="boatPanel"></div>
+    <p class="foot">寄与度用のモデル（AI 予想とは別）の説明で、原因の断定ではない。モデルの見立てと実際の着順は違うことがある。</p>
+  </section>
+
+  <section class="block" aria-labelledby="hB">
+    <span class="eyebrow">B · 類似度の高い過去レース</span>
+    <h2 id="hB">似た過去レースはどう決着したか</h2>
+    <div class="chips" id="chips"></div>
+    <div class="lead" id="reasonB"></div>
+    <div class="chips" id="optChips"></div>
+    <h3>1着の艇番（枠）</h3><div class="dist" id="dWin"></div>
+    <h3>決まり手</h3><div class="dist" id="dTech"></div>
+    <h3>1着→2着→3着（多い順に10）</h3><div class="dist" id="dTri"></div>
+    <div id="otherB"></div>
+    <p class="foot">過去レースで実際に起きたことを数えた割合で、原因とは限らない。［ ］は 95% の区間。</p>
+  </section>
+
+  <section class="block" aria-labelledby="hC">
+    <span class="eyebrow">C · 条件を変えて探る</span>
+    <h2 id="hC">会場・グレード・ラウンドを変えて比べる</h2>
+    <div class="row">
+      <select id="cV" aria-label="会場"></select>
+      <select id="cG" aria-label="グレード"></select>
+      <select id="cR" aria-label="ラウンド"></select>
+    </div>
+    <div class="row"><button class="btn" type="button" id="cThis">このレースの条件にする（若松×G1×優勝戦）</button></div>
+    <div class="row"><span class="lbl">比べる相手</span><select id="cCmp" aria-label="比べる相手"><option value="nat">全国（全グレード・全ラウンド）</option><option value="venue">この会場の全体</option><option value="gr">全国の同じグレード・ラウンド</option></select></div>
+    <div id="cOut"></div>
+    <div class="removable" id="idxBox">
+      <div class="row"><span class="tag">補助</span><h3 style="margin:0">テーマが見込みを動かした量（全国=100）</h3></div>
+      <p class="sub">寄与度用のモデル（版 2026-10-02）で、各テーマが6艇の見込みを6艇の平均からどれだけ動かしたか（テーマの中の上げ下げを足し合わせた後の大きさ。A の割合と同じ単位）を、全国を100として比べた値。6艇の差の大きさや荒れやすさではない（テーマ同士で打ち消し合う分も含む）。合計や順位は出さない。</p>
+      <div id="idxOut"></div>
+      <p class="foot">「全国より大きい／小さい」は、全国との差が10以上で、かつ ± の2倍以上のときだけ書く（± はレースの選び方の揺れだけで、モデルの学習の揺れは入っていない）。その条件で6艇の値（勝率など）が近いと、そのテーマは小さく出る（例: SG・G1 の「選手の実力」）。※ 天候・水面とグレード・ラウンド・節は6艇で同じ値なので、ほかの要素との組み合わせを通してだけ動く。大きく出ても、そのテーマ自体の効きが大きいとは言えない。</p>
+    </div>
+  </section>
+
+  <section class="confirm" aria-labelledby="cf">
+    <h2 id="cf">見てほしい点</h2>
+    <ol>
+      <li>構成: A このレース → B 似た過去レース → C 条件で探る の縦の流れ。着順は上の1つで全体に効き、艇は A と B で共有、会場などの条件は C の中だけ</li>
+      <li>艇の見せ方: A で艇を選ぶと「参考: その艇番の着順率（若松の全レースと G1、数えた値）」と「モデルの見立て: 枠以外で6艇の平均と比べて上げているもの・下げているもの（矢印と棒）」が別の枠で出る（検証で「出発点＋上げ下げ」の並びが足し算に読まれると指摘され、名前と枠を分けた）。上の切り替えで代案（艇の六角形）と比べられる</li>
+      <li>条件で楽しむ量: C は実際の決着（1号艇の1着率・1着の艇番・決まり手）を比べるのが主で、テーマの量（全国=100）は破線の枠の補助。補助を外した形も切り替えで見られる</li>
+      <li>テーマ名: 7テーマ（「天候・水面」と「グレード・ラウンド・節」を分けた）。6テーマも切り替えで見られる</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+/*DATA*/
+const TH7=[["venueCourse","枠・会場"],["racerRecord","選手の実力"],["startExhibition","スタート・展示"],["machine","モーター・ボート"],["weatherWater","天候・水面"],["raceFormat","グレード・ラウンド・節"],["racerProfile","体重・年齢・地元"]];
+const TH6=[["venueCourse","枠・会場"],["racerRecord","選手の実力"],["startExhibition","スタート・展示"],["machine","モーター・ボート"],["environment","天候・水面・節"],["racerProfile","体重・年齢・地元"]];
+const GR={venueCourse:[["venue","会場"],["boatNumber","枠番"],["raceNumber","レース番号"]],racerRecord:[["class","級別"],["national","全国勝率・2連率"],["local","当地勝率・2連率"],["recent","直近30走の成績"],["boat1","1号艇の級別・勝率",1]],startExhibition:[["exhibitionTime","展示タイム"],["pastSt","過去の平均ST"]],machine:[["motor","モーター2連率"],["boat","ボート2連率"]],weatherWater:[["weather","天候"],["wind","風向・風速"],["wave","波高"]],raceFormat:[["grade","グレード"],["round","ラウンド"],["seriesDay","節の日目"]],racerProfile:[["age","年齢"],["weight","体重"],["branch","支部・地元"]]};
+GR.environment=[...GR.weatherWater,...GR.raceFormat];
+const BC={1:["#fff","#000"],2:["#000","#fff"],3:["#e53935","#fff"],4:["#1e88e5","#fff"],5:["#fdd835","#000"],6:["#43a047","#fff"]};
+const LINE={0:"#e8d089",1:"#cbd5e1",2:"#94a3b8",3:"#ef5350",4:"#42a5f5",5:"#f0c419",6:"#4caf50"};
+const RT={1:"1着",2:"2着以内",3:"3着以内"};
+const VEN=["桐生","戸田","江戸川","平和島","多摩川","浜名湖","蒲郡","常滑","津","三国","びわこ","住之江","尼崎","鳴門","丸亀","児島","宮島","徳山","下関","若松","芦屋","福岡","唐津","大村"];
+const GN={all:"全グレード",ippan:"一般",G3:"G3",G2:"G2",G1:"G1",SG:"SG"},RN={all:"全ラウンド",yosen:"予選",junyu:"準優勝戦",yusho:"優勝戦",other:"その他"};
+const TECH=["逃げ","差し","まくり","まくり差し","抜き","恵まれ"];
+const st={rank:1,boat:0,swBoat:"rec",swTh:"7",swIdx:"on",v:"20",g:"all",r:"all",cmp:"nat"};
+const $=id=>document.getElementById(id);
+const bn=n=>`<span class="bn" style="background:${BC[n][0]};color:${BC[n][1]}">${n}</span>`;
+const pc=(p,d=1)=>(p*100).toFixed(d)+"%";
+function wilson(x,n){if(!n)return [0,0];const z=1.96,p=x/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return [Math.max(0,c-h),Math.min(1,c+h)];}
+const ci=(x,n)=>{const [a,b]=wilson(x,n);return `［${(a*100).toFixed(1)}〜${(b*100).toFixed(1)}%］`;};
+const ciO=o=>`［${(o.lo*100).toFixed(1)}〜${(o.hi*100).toFixed(1)}%］`;
+const THS=()=>st.swTh==="7"?TH7:TH6;
+const R=()=>D.race[st.rank];
+const boatTh=b=>st.swTh==="7"?R().boats[b-1].th:R().boats6[b-1].th;
+const boatSh=b=>st.swTh==="7"?R().boats[b-1].sh:R().boats6[b-1].sh;
+const raceSh=()=>st.swTh==="7"?R().sh7:R().sh6;
+const EPS=0.01;
+const arrow=v=>v>EPS?`<span class="arr up" aria-label="上げている">↑</span>`:v<-EPS?`<span class="arr down" aria-label="下げている">↓</span>`:`<span class="arr flat" aria-label="ほぼ動かさない">・</span>`;
+const nonCourse=b=>THS().slice(1).reduce((a,[k])=>a+boatTh(b)[k],0);
+function to100(v){const s=v.reduce((a,b)=>a+b,0),raw=v.map(x=>x/s*100),fl=raw.map(Math.floor);let r=100-fl.reduce((a,b)=>a+b,0);raw.map((x,i)=>[x-fl[i],i]).sort((a,b)=>b[0]-a[0]).slice(0,r).forEach(([,i])=>fl[i]++);return fl;}
+
+// 図（テーマ数の多角形）。series: [{v:[0..1],c,dash,dimFirst}]
+function radar(svg,labels,series,opt={}){
+  const n=labels.length,C=[200,182],Rr=118,pt=(i,r)=>{const a=-Math.PI/2+2*Math.PI*i/n;return [C[0]+r*Math.cos(a),C[1]+r*Math.sin(a)];};
+  const lo=opt.lo??0,hi=opt.hi??Math.max(.1,Math.ceil(Math.max(...series.flatMap(s=>s.v))*10)/10);
+  const rr=x=>Math.max(0,Math.min(1,(x-lo)/(hi-lo)))*Rr;let h="";
+  (opt.rings||[.25,.5,.75,1].map(k=>lo+(hi-lo)*k)).forEach(k=>h+=`<polygon points="${labels.map((_,i)=>pt(i,rr(k)).join(",")).join(" ")}" fill="none" stroke="rgba(201,162,39,${opt.mid===k?.6:.25})" ${opt.mid===k?'stroke-dasharray="3 3"':""}/>`);
+  labels.forEach((_,i)=>{const [x,y]=pt(i,Rr);h+=`<line x1="${C[0]}" y1="${C[1]}" x2="${x}" y2="${y}" stroke="rgba(201,162,39,.2)"/>`;});
+  if(opt.ringLabel)opt.ringLabel.forEach(([k,t])=>h+=`<text x="${C[0]+4}" y="${C[1]-rr(k)+10}" fill="#c9a227" opacity=".75" font-size="9" font-family="JetBrains Mono,monospace">${t}</text>`);
+  series.forEach(s=>{h+=`<polygon points="${s.v.map((x,i)=>pt(i,rr(x)).join(",")).join(" ")}" fill="${s.c}" fill-opacity="${s.fill??.18}" stroke="${s.c}" stroke-width="2" ${s.dash?'stroke-dasharray="6 4"':""}/>`;s.v.forEach((x,i)=>{const [px,py]=pt(i,rr(x));h+=`<circle cx="${px}" cy="${py}" r="3" fill="${s.c}" stroke="#0d1b2e"/>`;});});
+  labels.forEach((t,i)=>{const [x,y]=pt(i,Rr+20),dx=x-C[0],an=dx>8?"start":dx<-8?"end":"middle";const dim=opt.dim&&opt.dim[i];
+    h+=`<text x="${x}" y="${y}" text-anchor="${an}" fill="#f3ead0" opacity="${dim?.45:1}" font-size="11" font-weight="700" font-family="Zen Kaku Gothic New,sans-serif"><tspan x="${x}">${t}</tspan>${opt.vals?`<tspan x="${x}" dy="1.25em" fill="#e8d089" font-family="JetBrains Mono,monospace" font-size="10.5">${opt.vals[i]}</tspan>`:""}</text>`;});
+  svg.innerHTML=h;
+}
+
+function renderA(){
+  const ths=THS(),sh=raceSh(),v=ths.map(([k])=>sh[k]),lab=to100(v);
+  $("hA").innerHTML=`モデルは6艇の見込みを、どのテーマで分けたか <span class="tag">${RT[st.rank]}</span>`;
+  $("subA").textContent=`寄与度用のモデル（AI 予想とは別。版 ${D.meta.modelVersion}、展示後の値）の見立て。テーマごとに、6艇の${RT[st.rank]}の見込みを6艇の平均からどれだけ動かしたか（テーマの中の上げ下げを足し合わせた後の大きさ）を、割合にしたもの`;
+  const top=ths.slice(1).map(([k,n],i)=>[n,lab[i+1]]).sort((a,b)=>b[1]-a[1]);
+  $("leadA").innerHTML=`「枠・会場」（${lab[0]}%）は最初から決まっている分なので、図では薄くしている。それを除くと、モデルが6艇の見込みを大きく動かしたのは「${top[0][0]}」${top[0][1]}%、「${top[1][0]}」${top[1][1]}%。`;
+  // 枠・会場は他より桁違いに大きいので、目盛りは枠以外で決め、枠・会場は外周で止めて値を文字で出す
+  const hiA=Math.max(.1,Math.ceil(Math.max(...v.slice(1))*1.25*20)/20);
+  const series=[{v:v.map((x,i)=>i===0?Math.min(x,hiA):x),c:LINE[0]}];let opt={hi:hiA,vals:lab.map((x,i)=>i===0?x+"%（目盛りの外）":x+"%"),dim:ths.map((_,i)=>i===0)};
+  if(st.boat&&st.swBoat==="hex"){const bs=boatSh(st.boat);series[0].fill=.06;const bv=ths.map(([k])=>bs[k]);opt.hi=Math.max(hiA,Math.ceil(Math.max(...bv.slice(1))*1.25*20)/20);series[0].v=v.map((x,i)=>i===0?Math.min(x,opt.hi):x);series.push({v:bv.map((x,i)=>i===0?Math.min(x,opt.hi):x),c:LINE[st.boat],dash:false});opt.vals=null;}
+  radar($("radarA"),ths.map(t=>t[1]),series,opt);
+  $("legendA").innerHTML=st.boat&&st.swBoat==="hex"?`<span style="--sc:${LINE[0]}"><i></i>6艇全体</span><span style="--sc:${LINE[st.boat]}"><i></i>${st.boat}号艇</span>`:"";
+  $("boatSeg").innerHTML=[1,2,3,4,5,6].map(n=>{const s=nonCourse(n);return `<button type="button" data-b="${n}" aria-pressed="${st.boat===n}">${bn(n)}${arrow(s)}</button>`}).join("");
+  $("boatSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{st.boat=st.boat===+b.dataset.b?0:+b.dataset.b;render();});
+  $("boatPanel").innerHTML=st.boat?(st.swBoat==="rec"?panelRec(st.boat):panelHex(st.boat)):`<p class="foot">艇を選ぶと、その艇番の着順率（参考）と、モデルが枠以外で上げているもの・下げているものが出る。B の「その艇が来たとき、ほかの艇はどうだったか」も同じ艇で出る。</p>`;
+}
+function startLine(b){
+  const s=D.start;if(!s)return `<div class="start">出発点: 集計中</div>`;
+  const m={1:"win",2:"top2",3:"top3"}[st.rank],line=(W,name)=>{const o=W.boats[b][m];return `<div>${name}: <b>${pc(o.p)}</b> ${ciO(o)}　${o.x.toLocaleString()}/${o.n.toLocaleString()}レース、${W.period[0]}〜${W.period[1]}</div>`;};
+  return `<div class="start"><div class="eyebrow" style="margin-bottom:2px">参考: ${b}号艇（${b}枠）の${RT[st.rank]}率（過去レースを数えた値）</div>${line(s["20|all|all"],"若松の全レース")}${line(s["20|G1|all"],"若松の G1")}<div class="foot">6艇がそろい1〜3着が確定したレースで数えた（マイグレーション 120 の母集団）。出場選手の力関係は数えていないので、この6艇の見込みとは別の量。</div></div>`;
+}
+function groupRows(b,tk){
+  const g=R().boats[b-1].gr;
+  return GR[tk].map(([gk,label,other])=>`<div class="el">${arrow(g[gk])}<span>${label}: ${D.facts[gk][b-1]}${other&&b!==1?`<span class="oth">他艇の要素</span>`:""}</span></div>`).join("");
+}
+function panelRec(b){
+  const ths=THS().slice(1),th=boatTh(b);
+  const mx=Math.max(...[1,2,3,4,5,6].flatMap(n=>THS().slice(1).map(([k])=>Math.abs(boatTh(n)[k]))));
+  const ord=[...ths].sort((a,c)=>Math.abs(th[c[0]])-Math.abs(th[a[0]]));
+  const row=([k,n])=>`<details class="th"><summary>${arrow(th[k])}<span>${n}</span><span class="trk"><i class="${th[k]>EPS?"u":th[k]<-EPS?"d":"m"}" style="width:${Math.abs(th[k])/mx*100}%"></i></span></summary><div class="els">${groupRows(b,k)}</div></details>`;
+  return `<div class="panel"><div class="row">${bn(b)}<b>${b}号艇の${RT[st.rank]}</b></div>${startLine(b)}
+  <div class="eyebrow" style="margin-top:4px">モデルの見立て: 枠以外で、6艇の平均と比べて上げているもの・下げているもの（大きい順）</div>
+  ${ord.slice(0,ord.length-2).map(row).join("")}
+  <details class="th"><summary><span class="arr flat">…</span><span>その他 2テーマ</span><span></span></summary><div>${ord.slice(-2).map(row).join("")}</div></details>
+  <p class="foot">棒の長さは6艇・全テーマで共通の尺度。矢印は、寄与度用のモデルが${b}号艇の${RT[st.rank]}の見込みを、6艇の平均と比べて上げた（↑）か下げた（↓）か。上の参考の率からの増減ではない。</p></div>`;
+}
+function panelHex(b){
+  const ths=THS(),th=boatTh(b),sh=boatSh(b),lab=to100(ths.map(([k])=>sh[k]));
+  return `<div class="panel"><div class="row">${bn(b)}<b>${b}号艇の${RT[st.rank]}</b><span class="tag">代案</span></div>${startLine(b)}
+  <div class="tbl"><table><thead><tr><th>テーマ</th><th>割合</th><th>向き</th></tr></thead><tbody>${ths.map(([k,n],i)=>`<tr${i===0?' style="opacity:.6"':""}><td style="font-family:inherit">${i===0?n+"（最初から決まっている分）":n}</td><td>${lab[i]}%</td><td>${arrow(th[k])}</td></tr>`).join("")}</tbody></table></div>
+  <p class="foot">割合は、この艇の見込みを6艇の平均から動かした大きさをテーマに分けたもの。向きを持たない（下げているテーマも大きく出る）ので、向きは表の矢印で見る。枠・会場の軸は薄くしている。</p></div>`;
+}
+
+function renderB(){
+  const c=D.sim.conditions,d=D.sim.depth,L=D.sim.layer;
+  $("chips").innerHTML=`<span class="chip"><span class="k">勝率差</span>1号艇が ${(-c.gap_band_range.hi).toFixed(2)}〜${(-c.gap_band_range.lo).toFixed(2)} 低い</span><span class="chip"><span class="k">1号艇</span>${c.b1_class}級</span><span class="chip"><span class="k">会場</span>${c.venue_name}</span><span class="chip off"><span class="k">勝率1位</span>${c.top_boat}号艇（外した）</span>`;
+  $("reasonB").innerHTML=`1号艇の勝率がほかの5艇の最高より ${(-c.gap_band_range.hi).toFixed(2)}〜${(-c.gap_band_range.lo).toFixed(2)} 低い（このレースは ${(-c.b1_win_gap).toFixed(2)} 低い）、1号艇が${c.b1_class}級、${c.venue_name} ── この3つが同じ過去レース <span class="count">${L.n}</span>件（${L.period[0]}〜${L.period[1]}）。4つ目の「勝率1位が${c.top_boat}号艇」まで同じにすると ${d.layers[3].n}件で、200件に届かないので外した。`;
+  const a=d.add_optional;
+  $("optChips").innerHTML=`<span class="lbl">ほかのテーマでも絞る</span><button class="chip opt" type="button" title="モックでは押せない">＋ラウンド（優勝戦）${a.plus_round.at_auto_depth}件</button><button class="chip opt" type="button" title="モックでは押せない">＋グレード（G1）${a.plus_grade.at_auto_depth}件</button><button class="chip opt" type="button" title="モックでは押せない">＋1号艇のモーター（6艇中5〜6位）${a.plus_motor.at_auto_depth}件</button>`;
+  const dist=(el,entries)=>{const mx=Math.max(...entries.map(e=>e[1].p));el.innerHTML=entries.map(([k,o])=>`<div class="dr"><span>${k}</span><span class="trk"><i class="n" style="width:${o.p/mx*100}%"></i></span><span class="v">${pc(o.p)} <small>${o.x}件</small></span></div>`).join("");};
+  dist($("dWin"),[1,2,3,4,5,6].map(n=>[`${bn(n)} ${n}号艇`,L.winner_boat[n]]));
+  dist($("dTech"),TECH.filter(t=>L.technique[t]).map(t=>[t,L.technique[t]]));
+  dist($("dTri"),L.trifecta_top10.map(o=>[o.combo.split("-").map(n=>bn(+n)).join(""),o]));
+  // ほかの艇
+  const k=st.boat;
+  if(!k){$("otherB").innerHTML=`<div class="panel"><p class="foot">A で艇を選ぶと、「その艇が${RT[st.rank]}だった過去レースで、ほかの艇はどうだったか」が出る。</p></div>`;return;}
+  const kt=D.sim.kByT.find(x=>x.k===k&&x.t===st.rank);
+  if(st.rank!==1){$("otherB").innerHTML=`<div class="panel"><div class="row">${bn(k)}<b>${k}号艇が${RT[st.rank]}だった ${kt.n_hit}件（${L.n}件中）</b></div><p class="foot">モックでは、ほかの艇の指標は1着だけ数えている。</p></div>`;return;}
+  const t1=D.sim.t1.find(x=>x.k===k);
+  const lbl={b1d:"1号艇が4着以下、または F・出遅れ・失格",b1s:"1号艇の ST が6艇中4位以下",st1_tie:`${k}号艇の ST が6艇中1位（同タイムを含む）`,ib:`${k}号艇より内の艇に F・出遅れ・失格`,md:`${k}号艇が枠より内のコースに入った（前付け）`};
+  const keys=(k===1?["st1_tie"]:["b1d","b1s","st1_tie","ib","md"]);
+  const cmpName=k===1?"1号艇が1着でなかった":`1号艇と${k}号艇以外が1着だった`;
+  const cmpOf=o=>{if(k===1)return o.compare;const x=o.compare.x-o.hit.x,n=o.compare.n-o.hit.n,[lo,hi]=wilson(x,n);return {x,n,p:x/n,lo,hi};};
+  const cmpN=k===1?t1.compare_n:t1.compare_n-t1.n_hit;
+  let h=`<div class="panel"><div class="row">${bn(k)}<b>${k}号艇が1着だった ${t1.n_hit}件では</b></div>
+  <div class="key"><span><i style="background:var(--hit)"></i>${k}号艇が1着（${t1.n_hit}件）</span><span><i style="background:var(--bar2)"></i>比べる相手: ${cmpName}レース（${cmpN}件）</span></div>`;
+  h+=keys.map(key=>{const o=t1.indicators[key],cm=cmpOf(o);return `<div class="dr2"><span style="grid-column:1/-1">${lbl[key]}</span><span></span><div class="pair"><div class="pb"><span class="trk"><i style="width:${o.hit.p*100}%;background:var(--hit)"></i></span><span>${o.hit.x}/${o.hit.n} ${ciO(o.hit)}</span></div><div class="pb"><span class="trk"><i class="m" style="width:${cm.p*100}%"></i></span><span>${cm.x}/${cm.n} ${ciO(cm)}</span></div></div></div>`}).join("");
+  if(t1.n_hit<30&&t1.races_if_n_hit_lt_30){h+=`<h3>${t1.n_hit}件の一覧</h3><div class="tbl"><table><thead><tr><th>日付</th><th>1-2-3</th><th>決まり手</th><th>1号艇</th><th>${k}号艇</th></tr></thead><tbody>${t1.races_if_n_hit_lt_30.map(r=>`<tr><td>${r.race_date} ${r.race_number}R</td><td>${r.top3}</td><td style="font-family:inherit">${r.technique_raw}</td><td style="font-family:inherit">${fin(r.b1_finish)}・ST ${stR(r.b1_st_rank)}</td><td style="font-family:inherit">ST ${stR(r.k_st_rank)}・${r.k_course}コース</td></tr>`).join("")}</tbody></table></div>`;}
+  h+=`<p class="foot">比べる相手を「全部のレース」にすると、1号艇が勝ったレースが入るため1号艇の指標は機械的に低く出る。そのため、結果で機械的に決まらず、${k}号艇の1着とも重ならない「${cmpName}レース」と比べている。</p></div>`;
+  $("otherB").innerHTML=h;
+}
+
+const fin=f=>/^\d+$/.test(f)?`${+f}着`:f==="F"?"F（返還）":f==="L"?"出遅れ（返還）":/^S/.test(f)?"失格":f==="K"||f==="欠"?"欠場":f;
+const stR=x=>/^\d+$/.test(String(x))?`${x}位`:"—";
+const ck=(v,g,r)=>`${v}|${g}|${r}`;
+const cname=(v,g,r)=>`${v==="0"?"全国":VEN[+v-1]}×${GN[g]}×${RN[r]}`;
+function cmpKey(){return st.cmp==="nat"?["0","all","all"]:st.cmp==="venue"?[st.v,"all","all"]:["0",st.g,st.r];}
+function dropBtns(minN,src){
+  const opts=[];if(st.r!=="all")opts.push(["r","all","ラウンドを外す"]);if(st.g!=="all")opts.push(["g","all","グレードを外す"]);if(st.v!=="0")opts.push(["v","0","会場を外す"]);
+  return opts.map(([f,val,t])=>{const k={v:st.v,g:st.g,r:st.r,[f]:val};const n=src(ck(k.v,k.g,k.r));return `<button class="btn" type="button" data-f="${f}" data-val="${val}">${t}: ${n.toLocaleString()}件</button>`}).join(" ");
+}
+function wireDrop(el){el.querySelectorAll("button[data-f]").forEach(b=>b.onclick=()=>{st[b.dataset.f]=b.dataset.val;$("c"+b.dataset.f.toUpperCase()).value=b.dataset.val;render();});}
+function renderC(){
+  const A=D.cube[ck(st.v,st.g,st.r)],ckey=cmpKey(),B=D.cube[ck(...ckey)];
+  const nA=A?A[0]:0,nameA=cname(st.v,st.g,st.r),nameB=cname(...ckey);
+  let h=`<h3>実際の決着</h3><p class="sub">過去レースを数えた値（${D.cubePeriod}。例のレースの前日まで）。［ ］は 95% の区間。30件未満の条件は薄くしている。</p>`;
+  if(!A){h+=`<div class="warn">${nameA}は0件。${dropBtns(0,k=>D.cube[k]?D.cube[k][0]:0)}</div>`;$("cOut").innerHTML=h;wireDrop($("cOut"));renderIdx();return;}
+  if(nA<30)h+=`<div class="warn">${nameA}は ${nA}件と少なく、割合の区間が広い。${dropBtns(0,k=>D.cube[k]?D.cube[k][0]:0)}</div>`;
+  const b1=(X)=>`<div class="n">${pc(X[3]/X[0])}</div><div class="c">${X[3].toLocaleString()}/${X[0].toLocaleString()}レース ${ci(X[3],X[0])}<br>${X[1]}〜${X[2]}</div>`;
+  h+=`<div class="big"><div><div class="c">${nameA}の1号艇の1着率</div>${b1(A)}</div><div><div class="c">${nameB}</div>${b1(B)}</div></div>`;
+  const pair=(lab,xa,xb)=>`<div class="dr2"${nA<30?' style="opacity:.6"':""}><span>${lab}</span><div class="pair"><div class="pb"><span class="trk"><i class="n" style="width:${xa/A[0]*100}%"></i></span><span>${xa}/${nA} ${ci(xa,nA)}</span></div><div class="pb"><span class="trk"><i class="m" style="width:${xb/B[0]*100}%"></i></span><span>${pc(xb/B[0])}</span></div></div></div>`;
+  h+=`<div class="key"><span><i style="background:var(--bar)"></i>${nameA}</span><span><i style="background:var(--bar2)"></i>${nameB}</span></div>`;
+  h+=`<h3>1着の艇番（枠）</h3><div class="dist">${[1,2,3,4,5,6].map(n=>pair(`${bn(n)} ${n}号艇`,A[2+n],B[2+n])).join("")}</div>`;
+  h+=`<h3>決まり手</h3><div class="dist">${TECH.map((t,i)=>pair(t,A[9+i],B[9+i])).join("")}</div>`;
+  $("cOut").innerHTML=h;wireDrop($("cOut"));renderIdx();
+}
+function renderIdx(){
+  $("idxBox").hidden=st.swIdx==="off";if(st.swIdx==="off")return;
+  const cells=D.idx.cells,m={1:"win",2:"top2",3:"top3"}[st.rank];
+  const A=cells[ck(st.v,st.g,st.r)],ckey=cmpKey(),B=cells[ck(...ckey)];
+  let h=`<p class="foot">期間: ${D.idx.period[0]}〜${D.idx.period[1]}（データの穴の ${D.idx.excluded.join("・")} を除く）。${D.idx.minN}レース未満の条件は出さない。± は日単位のブートストラップの標準偏差。</p>`;
+  if(st.swTh==="6")h+=`<div class="warn">6テーマの形では「天候・水面・節」の値をモックに持っていないので、7テーマで出している。</div>`;
+  if(!A||!A[m]){const n=A?A.n:0;h+=`<div class="warn">${cname(st.v,st.g,st.r)}は、このモデルの集計期間では ${n}レースで、${D.idx.minN}レース未満なので出さない。${dropBtns(0,k=>cells[k]?cells[k].n:0)}</div>`;$("idxOut").innerHTML=h;wireDrop($("idxOut"));return;}
+  const ths=TH7,va=ths.map(([k])=>A[m][k][0]),vb=B&&B[m]?ths.map(([k])=>B[m][k][0]):null;
+  const svg=`<div class="scope"><svg id="radarC" viewBox="-50 0 500 370" role="img" aria-label="テーマが見込みを動かした量"></svg></div><div class="legend"><span style="--sc:${LINE[0]}"><i></i>${cname(st.v,st.g,st.r)}（${A.n.toLocaleString()}R）</span>${vb?`<span style="--sc:#94a3b8"><i class="d"></i>${cname(...ckey)}</span>`:""}</div>`;
+  const word=(x,sd)=>Math.abs(x-100)<Math.max(10,2*sd)?"全国並み":x>100?"全国より大きい":"全国より小さい";
+  const same={weatherWater:1,raceFormat:1};
+  h+=svg+`<div class="idx">${ths.map(([k,n],i)=>{const [x,sd]=A[m][k];return `<div class="ir"${same[k]?' style="opacity:.6"':""}><span>${n}${same[k]?" ※":""}</span><span class="v">${x.toFixed(0)} ±${sd.toFixed(1)}</span><span class="sub">${word(x,sd)}</span></div>`}).join("")}</div>`;
+  $("idxOut").innerHTML=h;
+  const all=[...va,...(vb||[])],hi=Math.max(140,Math.ceil(Math.max(...all)/20)*20),lo=Math.min(60,Math.floor(Math.min(...all)/20)*20);
+  radar($("radarC"),ths.map(t=>t[1]),[{v:va,c:LINE[0]},...(vb?[{v:vb,c:"#94a3b8",dash:true,fill:.04}]:[])],{lo,hi,rings:[lo,(lo+100)/2,100,(100+hi)/2,hi],mid:100,ringLabel:[[100,"全国=100"],[hi,String(hi)]],vals:va.map(x=>x.toFixed(0))});
+}
+function render(){
+  document.querySelectorAll("#rankSeg button").forEach(b=>b.setAttribute("aria-pressed",+b.dataset.r===st.rank));
+  [["swBoat","swBoat"],["swTh","swTh"],["swIdx","swIdx"]].forEach(([id,k])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===st[k])));
+  $("rankNote").textContent=st.rank===2?"2着以内は、モデルの見立てが1着とほぼ同じ形になる":"";
+  renderA();renderB();renderC();
+}
+$("cV").innerHTML=`<option value="0">全国</option>`+VEN.map((n,i)=>`<option value="${i+1}">${n}</option>`).join("");
+$("cG").innerHTML=Object.entries(GN).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");
+$("cR").innerHTML=Object.entries(RN).map(([k,n])=>`<option value="${k}">${n}</option>`).join("");
+$("cV").value=st.v;$("cG").value=st.g;$("cR").value=st.r;
+$("cV").onchange=e=>{st.v=e.target.value;render();};$("cG").onchange=e=>{st.g=e.target.value;render();};$("cR").onchange=e=>{st.r=e.target.value;render();};
+$("cThis").onclick=()=>{st.v="20";st.g="G1";st.r="yusho";$("cV").value="20";$("cG").value="G1";$("cR").value="yusho";render();};
+$("cCmp").onchange=e=>{st.cmp=e.target.value;render();};
+document.querySelectorAll("#rankSeg button").forEach(b=>b.onclick=()=>{st.rank=+b.dataset.r;render();});
+[["swBoat","swBoat"],["swTh","swTh"],["swIdx","swIdx"]].forEach(([id,k])=>document.querySelectorAll(`#${id} button`).forEach(b=>b.onclick=()=>{st[k]=b.dataset.v;render();}));
+render();
+</script>

@@ -10,27 +10,28 @@ import { motion, useReducedMotion } from "framer-motion";
 // scaleは実際のアイコンサイズ（1.2rem、約19px）を基準にした値。
 // Artifactプロトタイプでは108pxの専用ステージ内でscale:9としていたが、
 // アイコンサイズにそのまま適用すると300px超まで広がりテキストと重なるため、
-// アイコン周辺に収まる控えめな値（2〜3倍）に調整した
+// アイコン周辺に収まる控えめな値（2〜3倍）に調整した。さらに 3.2 倍ではカードの上端から
+// 16px はみ出し、見出しの1文字目にかかったので、アイコンの余白に収まる値に下げた（BOA-711）
 const LEVEL_CONFIG = {
   high: {
     rings: 5,
     duration: 1.15,
     delayStep: 0.28,
-    maxScale: 3.2,
+    maxScale: 2,
     color: "var(--color-warning-light)",
   },
   standard: {
     rings: 3,
     duration: 1.9,
     delayStep: 0.63,
-    maxScale: 2.6,
+    maxScale: 2,
     color: "var(--color-info)",
   },
   low: {
     rings: 2,
     duration: 2.8,
     delayStep: 1.4,
-    maxScale: 2,
+    maxScale: 1.8,
     color: "var(--color-success-light)",
   },
 };

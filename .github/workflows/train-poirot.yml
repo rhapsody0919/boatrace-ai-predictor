@@ -13,6 +13,9 @@ on:
 jobs:
   train:
     runs-on: ubuntu-latest
+    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く。
+    # 別ブランチの workflow_dispatch や、別ブランチに足したワークフローから bypass 用のトークンを作らせないため
+    environment: ryujin-bot
     # data/watson/model.json（ワトソンのメタデータ）の自動コミットに必要
     permissions:
       contents: write
@@ -74,6 +77,17 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
 
+      # master への push はアプリ ryujin-bot の名義で行う（master の ruleset の bypass に GITHUB_TOKEN は入れられないため）。
+      # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
+      - name: Create ryujin-bot token
+        id: app-token
+        if: github.ref == 'refs/heads/master'
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
+          private-key: ${{ secrets.RYUJIN_BOT_PRIVATE_KEY }}
+          permission-contents: write
+
       - name: Commit and push if changed
         run: |
           git config --local user.email "action@github.com"
@@ -82,3 +96,5 @@ jobs:
           git diff --staged --quiet || git commit -m "chore: update watson/mycroft model metadata [automated]"
           # 従来は pull せずに push していたため、実行中（15〜50分）にmasterが進むと失敗した。rebase+リトライで push する（BOA-360）
           bash scripts/maintenance/push-with-retry.sh
+        env:
+          PUSH_TOKEN: ${{ steps.app-token.outputs.token }}

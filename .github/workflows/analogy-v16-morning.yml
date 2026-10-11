@@ -1,0 +1,73 @@
+name: Analogy v16 Morning
+
+# BOA-271 アナロジー・ファインダー v16 の朝のバッチ（出走表の時点）。今日のレースの facts・scenario・today・
+# similar・layer を Storage の非公開のバケット analogy-v16 に書き、analogy_v16_snapshots（stage=racecard）を書く。
+# docs/design/analogy-finder/plan.md「朝のバッチ」。
+#
+# schedule は使わない（GitHub Actions の定時実行は遅れ・欠落が常態）。起動は Vercel Cron からの workflow_dispatch
+# （JST 7:10・9:40・13:40、7:40 は racecard の段が無いレースがあるときだけ。tasks T2-5b、学習側の #1207 の
+# scripts/lib/analogyDispatch.js に足す）。それまでは手動で実行する。
+# 2回目以降の回は、まだ作っていないレースと出走表のハッシュが変わったレースだけを作る（v16_morning.select_targets）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "対象の日付（YYYY-MM-DD、省略時は JST の今日）"
+        required: false
+        default: ""
+
+concurrency:
+  group: analogy-v16-morning
+  cancel-in-progress: false
+
+jobs:
+  morning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install Python deps
+        run: pip install -r scripts/ml/analogy/requirements.txt
+
+      # 本体の前月・当月だけ DB から読み、それより前は週次の学習が置いた Storage のキャッシュを読む
+      - name: Export data (daily)
+        run: node scripts/ml/analogy/export_pool.js --daily
+
+      - name: Download active model (類似レースの距離の重み)
+        run: node scripts/ml/analogy/storage.js download-active-model
+
+      - name: Build and upload
+        working-directory: scripts/ml/analogy
+        env:
+          DATE: ${{ inputs.date }}
+        run: |
+          python v16_morning.py --upload ${DATE:+--date "$DATE"} \
+            --model ../../../data/ml/analogy/out/active/model_win.txt \
+            --model-version "$(cat ../../../data/ml/analogy/out/active/version.txt)" \
+            --out ../../../data/ml/analogy/v16
+
+      # 対象のレースに today・similar がそろわなかった・途中で落ちた（plan「失敗の扱い」）
+      - name: Notify Slack (失敗)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          payload=$(jq -n --arg url "$RUN_URL" \
+            '{text: (":x: *アナロジー・ファインダー v16 の朝のバッチが失敗しました*（画面は前の回の数字か「準備中」のまま）\n" + $url)}')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

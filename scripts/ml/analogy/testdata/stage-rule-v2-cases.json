@@ -1,0 +1,334 @@
+{
+ "source": "#1134 748bd1293 docs/design/analogy-finder/analysis/t1/t1-1-stage-rule.json の consistency_check_strings（優勝戦の判定 v2）",
+ "content_sha256": "123c19586b2c8d90c7e5b96dc62b7b1a1ad060cc6210c618e9550b6aa69c335b",
+ "cases": [
+  {
+   "stage": "B組優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "B組準優勝戦",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "GP優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "PRGT優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "QC優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "W準優勝戦前",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "W準優勝戦後",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "W準優戦前半",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "W準優戦後半",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "auじぶん優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "じぶん銀行優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "ウインクDR",
+   "expected_category": "dream"
+  },
+  {
+   "stage": "オオムラGP",
+   "expected_category": null
+  },
+  {
+   "stage": "ゴールド優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "サントリC優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "サントリー優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "シリーズ優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "スピード優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "セミファイナル",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "ダービー優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "ツッキー優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "ツッキー優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "ツッピー優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "ドリーム戦",
+   "expected_category": "dream"
+  },
+  {
+   "stage": "バッチこい優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "パタち杯優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "ファイナル",
+   "expected_category": "final"
+  },
+  {
+   "stage": "ファイナル進出戦",
+   "expected_category": null
+  },
+  {
+   "stage": "ファイナル選",
+   "expected_category": null
+  },
+  {
+   "stage": "ペイペイDR",
+   "expected_category": "dream"
+  },
+  {
+   "stage": "ホットマン優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "一般",
+   "expected_category": "general"
+  },
+  {
+   "stage": "一般戦",
+   "expected_category": "general"
+  },
+  {
+   "stage": "一般桐生特選",
+   "expected_category": "generalSpecial"
+  },
+  {
+   "stage": "予選",
+   "expected_category": "qualifier"
+  },
+  {
+   "stage": "予選特別選抜",
+   "expected_category": "qualifierSpecial"
+  },
+  {
+   "stage": "予選特選",
+   "expected_category": "qualifierSpecial"
+  },
+  {
+   "stage": "住信SBI優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "個性派王優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "優勝戦B組女",
+   "expected_category": "final"
+  },
+  {
+   "stage": "優勝戦女子",
+   "expected_category": "final"
+  },
+  {
+   "stage": "優勝戦男子",
+   "expected_category": "final"
+  },
+  {
+   "stage": "内山信二優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "団体・優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "団体・優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "夜ダービー優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "夜王優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "大郷優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "女子優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "女子準優勝戦",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "安全王優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "決勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "海の安全優勝",
+   "expected_category": "final"
+  },
+  {
+   "stage": "海属王優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "準々決勝戦",
+   "expected_category": "semifinalQualifier"
+  },
+  {
+   "stage": "準優",
+   "expected_category": null
+  },
+  {
+   "stage": "準優勝",
+   "expected_category": null
+  },
+  {
+   "stage": "準優勝戦",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "準優進出シー",
+   "expected_category": "semifinalQualifier"
+  },
+  {
+   "stage": "準優進出チャ",
+   "expected_category": "semifinalQualifier"
+  },
+  {
+   "stage": "準優進出戦",
+   "expected_category": "semifinalQualifier"
+  },
+  {
+   "stage": "準決勝戦",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "澤乃井優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "特別選抜A組",
+   "expected_category": "selection"
+  },
+  {
+   "stage": "特別選抜戦A",
+   "expected_category": "selection"
+  },
+  {
+   "stage": "特別選抜戦Ａ",
+   "expected_category": "selection"
+  },
+  {
+   "stage": "特別選抜戦Ａ組",
+   "expected_category": "selection"
+  },
+  {
+   "stage": "王将位決定戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "王座決定戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "男子優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "男子準優勝戦",
+   "expected_category": "semifinal"
+  },
+  {
+   "stage": "発祥地N選抜",
+   "expected_category": "selection"
+  },
+  {
+   "stage": "県内選手権優",
+   "expected_category": "final"
+  },
+  {
+   "stage": "蛭子優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "記者選抜戦",
+   "expected_category": "selection"
+  },
+  {
+   "stage": "賞金女王決定",
+   "expected_category": "final"
+  },
+  {
+   "stage": "選抜戦Ａ",
+   "expected_category": "selection"
+  },
+  {
+   "stage": "関ヶ原決戦",
+   "expected_category": null
+  },
+  {
+   "stage": "Ｓ戦優勝戦",
+   "expected_category": "final"
+  },
+  {
+   "stage": "Ｗ準優戦前半",
+   "expected_category": "semifinal"
+  }
+ ]
+}

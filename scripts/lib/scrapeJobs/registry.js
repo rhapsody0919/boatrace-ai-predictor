@@ -267,6 +267,18 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
 
+  // N13 期別成績（fan、racer_period_stats）。06:00指定（cron: 06:00・06:30 JST）。対象日より前に終わった期の fan が
+  // 未取り込みなら1回取得する（約180KB）。取り込み済みなら0リクエスト、未公開（404）ならその日は済み。期の終わりから105日を
+  // 過ぎたら取得を止めて通知する。2026-10-03 ユーザー承認で手動CLIから自動化。
+  // 実装: scripts/lib/fanPeriodJob.js、api/cron/fan-period.js
+  fan_period: {
+    kind: "daily",
+    targetTimeJst: "06:00",
+    leaseSec: 120,
+    maxDurationSec: 120,
+    hosts: ["boatrace.jp"],
+  },
+
   // A5 レース特記事項（race_special_notes）。夜1回、その日の開催会場のページを全部取る（22:30指定。cron: 22:30・
   // 23:00・23:30 JST。後の2回は、取得に失敗した会場があった場合の補足）。2026-10-03 にユーザー承認で、10分ごと
   // （1日約1,300回）から夜1回に減らした（ページに事故がほとんど載らず、取得の量に見合わない。データ信頼性レーンの調査）。
@@ -387,6 +399,27 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
   },
 
+  // BOA-271 アナロジー・ファインダーの週次の学習の起動（workflow_dispatch。scripts/lib/analogyDispatch.js）。
+  // 週1回しか起動しないので、10分ごとの死活を見る continuous ではなく monitor にし、モードのゲートは
+  // api/cron 側で掛ける（modeGated: true。off の間は何もしない）。dispatch の失敗は1回目から通知する
+  // （failureAlertAfter: 1。トークンの期限切れ等は次の起動でも直らないため）
+  analogy_dispatch_train: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+  // BOA-271 v16 の朝のバッチの起動（analogy-v16-morning.yml。scripts/lib/analogyDispatch.js、T2-5b）。
+  // 1日4回（7:10・7:40 は拾い直しだけ・9:40・13:40）なので、学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける
+  analogy_dispatch_morning: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+
   // ↓ N23・N29（tasks.md T4b-20・T4b-21）
   // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
   // 指定を cron より10分早くするのは、起動が数秒早まっても、対象日が前日に化けないため）。開催中の会場（races）ごとに
@@ -434,6 +467,15 @@ export const SCRAPE_JOBS = Object.freeze({
     kind: "daily",
     targetTimeJst: "05:30",
     leaseSec: 300,
+    maxDurationSec: 120,
+  },
+  // BOA-271 アナロジー・ファインダー v16 の展示後の段（類似レースの並べ直し。plan「展示後の段」、tasks T4-3）。
+  // 2分ごと（JST 6:00〜23:58）に、6艇の展示タイムがそろった（か欠場が分かった）締切前のレースを最大20件処理する。
+  // 外部サイトへは通信しない。
+  // 実装: scripts/lib/analogyV16Exhibition.js、api/cron/analogy-exhibition.js
+  analogy_v16_exhibition: {
+    kind: "continuous",
+    leaseSec: 120,
     maxDurationSec: 120,
   },
 });

@@ -31,6 +31,7 @@ import {
   buildLiveFeatures,
   meanFloat32,
   windComponents,
+  windOffsetFor,
 } from "../../src/utils/analogyRaceFeatures.js";
 import {
   ParityInputError,
@@ -191,6 +192,50 @@ const exitCode = (dir) => {
     windComponents("北", 2).wind_y === 2 &&
       windComponents("北", 2).wind_x === 0,
   );
+
+  // 本体の風向の会場ごとの回転（wind_basis。BOA-271 風向の基準）
+  const basis = { offsets_deg: { 3: 247.5, 6: 90 } };
+  check("回転の表が無い版は回さない（0）", windOffsetFor(null, 3) === 0);
+  check("表の会場は、その角度", windOffsetFor(basis, 3) === 247.5);
+  check("表に無い会場は NaN", Number.isNaN(windOffsetFor(basis, 99)));
+  {
+    // DB の「東」（90°）から 90° を引く → 北（K の基準）。風速2 → wind_y=2
+    const w = windComponents("東", 2, 90);
+    check(
+      "回転を引いてから成分にする（東−90° → 北）",
+      w.wind_y === 2 && w.wind_x === 0,
+    );
+    const ex = windComponents("北", 3, NaN);
+    check(
+      "回転が NaN の会場の風は NaN、無風は0のまま",
+      Number.isNaN(ex.wind_x) &&
+        JSON.stringify(windComponents(null, 0, NaN)) === '{"wind_x":0,"wind_y":0}',
+    );
+  }
+  {
+    // 固定データに回転が入っていて、回転を外すと一致しなくなること（作り直しの取りこぼしの検知）
+    const d = load();
+    check(
+      "固定データの per_race_meta に wind_basis がある",
+      Object.keys(d.meta.wind_basis?.offsets_deg ?? {}).length === 24,
+    );
+    const rotated = d.fixture.races.filter(
+      (r) =>
+        d.meta.wind_basis.offsets_deg[Number(r.race_id.slice(11, 13))] !== 0 &&
+        r.live_raw.conditions.wind_direction &&
+        Number(r.live_raw.conditions.wind_speed) > 0,
+    );
+    check(
+      "固定データに、回転の0でない会場の風のあるレースが10件以上ある",
+      rotated.length >= 10,
+    );
+    const { wind_basis: _, ...noBasis } = d.meta;
+    const r = checkParity({ ...d, meta: noBasis });
+    check(
+      "wind_basis を外すと一致検査が不一致になる",
+      !r.ok && r.models.win.feature_mismatches > 0,
+    );
+  }
 
   const live = buildLiveFeatures({
     boatNumbers: [1, 2, 3, 4, 5, 6],

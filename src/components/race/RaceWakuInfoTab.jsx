@@ -63,7 +63,7 @@ import {
 import RaceStConsiderationCard from "./RaceStConsiderationCard";
 import NigeSimulationCard from "./NigeSimulationCard";
 import RecentRunsBar from "./RecentRunsBar";
-import "../common/HorizontalScrollHint.css";
+import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
 import "./RaceWakuInfoTab.css";
 
 const METRICS = ["winRate", "top2Rate", "top3Rate"];
@@ -441,7 +441,11 @@ function RaceWakuInfoTab({
               style={
                 active
                   ? {
-                      background: color.bg,
+                      // 赤・青・緑は白い名前とのコントラストが足りないので、一段濃い色にする
+                      // （トークンがある艇だけ。白・黒・黄は公式の色のまま。BOA-703）
+                      background: color.bg
+                        ? `var(--boat-${p.number}-strong, ${color.bg})`
+                        : undefined,
                       color: color.text,
                       "--rwit-chip-num-bg": color.text,
                       "--rwit-chip-num-fg":
@@ -636,28 +640,12 @@ function RaceWakuInfoTab({
                 <div
                   className={`rwit-grid-hscroll hscroll-hint${gridHasMore ? " has-more" : ""}`}
                 >
-                  {gridHasLess && (
-                    <button
-                      type="button"
-                      className="hscroll-less"
-                      onClick={scrollGridLeft}
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    >
-                      ‹
-                    </button>
-                  )}
-                  {gridHasMore && (
-                    <button
-                      type="button"
-                      className="hscroll-more"
-                      onClick={scrollGridRight}
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    >
-                      ›
-                    </button>
-                  )}
+                  <HorizontalScrollButtons
+                    hasMore={gridHasMore}
+                    hasLess={gridHasLess}
+                    onMore={scrollGridRight}
+                    onLess={scrollGridLeft}
+                  />
                   <div
                     className="rwit-grid-wrapper"
                     ref={gridScrollRef}

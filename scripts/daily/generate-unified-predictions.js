@@ -50,11 +50,11 @@ async function fetchRaceDataFromSupabase(
   // 単純な.select("*").in()だと後方の会場が無条件に切り捨てられる（2026-08-13判明、
   // 大村12レース全滅で発覚）。fetchAll（.range()ページネーション）必須
   const [entriesData, conditionsData] = await Promise.all([
-    fetchAll("race_entries", "*", (q) => q.in("race_id", raceIds), {
+    fetchAll("race_entries", "*", (q) => q.in("race_id", raceIds).order("race_id").order("boat_number"), {
       client,
       throwOnError,
     }),
-    fetchAll("race_conditions", "*", (q) => q.in("race_id", raceIds), {
+    fetchAll("race_conditions", "*", (q) => q.in("race_id", raceIds).order("race_id"), {
       client,
       throwOnError,
     }),
@@ -172,7 +172,7 @@ async function fetchVolatilityDistributionByVenue(
       q
         .eq("model_id", MODEL_ID)
         .gte("race_id", cutoffStr)
-        .lt("race_id", beforeDate),
+        .lt("race_id", beforeDate).order("race_id").order("model_id").order("prediction_id"),
     { client, throwOnError },
   );
 
@@ -207,7 +207,7 @@ export async function findRacesMissingUnified(
     fetchAll(
       "race_entries",
       "race_id",
-      (q) => q.gte("race_id", date).lt("race_id", `${date}~`),
+      (q) => q.gte("race_id", date).lt("race_id", `${date}~`).order("race_id").order("boat_number"),
       { client, throwOnError: true },
     ),
     fetchAll(
@@ -217,7 +217,7 @@ export async function findRacesMissingUnified(
         q
           .eq("model_id", MODEL_ID)
           .gte("race_id", date)
-          .lt("race_id", `${date}~`),
+          .lt("race_id", `${date}~`).order("race_id").order("model_id").order("prediction_id"),
       { client, throwOnError: true },
     ),
     includeStarted

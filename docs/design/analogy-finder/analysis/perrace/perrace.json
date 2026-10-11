@@ -1,0 +1,138 @@
+{
+ "n_races": 28185,
+ "uncentered": {
+  "mean": {
+   "venueCourse": 0.3053,
+   "racerRecord": 0.4528,
+   "startExhibition": 0.1305,
+   "machine": 0.0383,
+   "environment": 0.0242,
+   "racerProfile": 0.0488
+  },
+  "p10": {
+   "venueCourse": 0.2626,
+   "racerRecord": 0.3887,
+   "startExhibition": 0.0996,
+   "machine": 0.0307,
+   "environment": 0.0162,
+   "racerProfile": 0.0356
+  },
+  "p90": {
+   "venueCourse": 0.351,
+   "racerRecord": 0.5138,
+   "startExhibition": 0.1635,
+   "machine": 0.0462,
+   "environment": 0.0345,
+   "racerProfile": 0.0646
+  },
+  "top1_rate": {
+   "venueCourse": 0.0303,
+   "racerRecord": 0.9697,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "top2_rate": {
+   "venueCourse": 1.0,
+   "racerRecord": 1.0,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "top3_rate": {
+   "venueCourse": 1.0,
+   "racerRecord": 1.0,
+   "startExhibition": 0.9991,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0009
+  }
+ },
+ "centered": {
+  "mean": {
+   "venueCourse": 0.364,
+   "racerRecord": 0.3894,
+   "startExhibition": 0.1507,
+   "machine": 0.0296,
+   "environment": 0.0197,
+   "racerProfile": 0.0466
+  },
+  "p10": {
+   "venueCourse": 0.2995,
+   "racerRecord": 0.2964,
+   "startExhibition": 0.1106,
+   "machine": 0.0227,
+   "environment": 0.0136,
+   "racerProfile": 0.0303
+  },
+  "p90": {
+   "venueCourse": 0.4351,
+   "racerRecord": 0.4767,
+   "startExhibition": 0.193,
+   "machine": 0.0368,
+   "environment": 0.0278,
+   "racerProfile": 0.0644
+  },
+  "top1_rate": {
+   "venueCourse": 0.3988,
+   "racerRecord": 0.6012,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "top2_rate": {
+   "venueCourse": 1.0,
+   "racerRecord": 0.9979,
+   "startExhibition": 0.0021,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  },
+  "top3_rate": {
+   "venueCourse": 1.0,
+   "racerRecord": 1.0,
+   "startExhibition": 0.9986,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0014
+  }
+ },
+ "racecard_vs_full_centered": {
+  "mean_racecard": {
+   "venueCourse": 0.3967,
+   "racerRecord": 0.4105,
+   "startExhibition": 0.0893,
+   "machine": 0.0338,
+   "environment": 0.0206,
+   "racerProfile": 0.0491
+  },
+  "top1_same_rate": 0.9636,
+  "mean_abs_diff": {
+   "venueCourse": 0.0327,
+   "racerRecord": 0.0214,
+   "startExhibition": 0.0615,
+   "machine": 0.0045,
+   "environment": 0.0028,
+   "racerProfile": 0.0033
+  },
+  "top1_rate_racecard": {
+   "venueCourse": 0.4316,
+   "racerRecord": 0.5684,
+   "startExhibition": 0.0,
+   "machine": 0.0,
+   "environment": 0.0,
+   "racerProfile": 0.0
+  }
+ },
+ "seconds_168R_x3models": 10.05,
+ "scale": "full",
+ "data": {
+  "boats_pkl": "data/ml/analogy/boats.pkl (2026-10-01 17:05)",
+  "model": "main_win_F5.txt（44特徴量、FR-1 と同じ）",
+  "period": "2026-04-01〜2026-09-30（test）",
+  "note": "探索的・事前登録なし。計算時間は load average 約250 の下で1コア"
+ }
+}

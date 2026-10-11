@@ -1,0 +1,49 @@
+/* タブ列のすぐ上の1行（BOA-832）。ページを移る入口なので、ページ内の選択（塗りの札）とは見た目を分ける。
+   高さ44px（押しやすさ）、PC は最大 720・左端はタブの列（BOA-820 の決まり） */
+.assist-entry-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  width: 100%;
+  max-width: 720px;
+  min-height: 44px;
+  margin: var(--spacing-2) 0;
+  padding: 0 var(--spacing-4);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: color-mix(
+    in srgb,
+    var(--brand-accent-primary) 12%,
+    var(--surface-card)
+  );
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  text-align: left;
+  cursor: pointer;
+}
+
+.assist-entry-row b {
+  color: var(--brand-accent-primary);
+}
+
+.assist-entry-row__arrow {
+  font-size: var(--font-size-lg);
+  line-height: 1;
+  color: var(--brand-accent-primary);
+}
+
+.assist-entry-row:hover {
+  background: color-mix(
+    in srgb,
+    var(--brand-accent-primary) 20%,
+    var(--surface-card)
+  );
+  text-decoration: underline;
+}
+
+.assist-entry-row:focus-visible {
+  outline: 3px solid var(--color-info-text);
+  outline-offset: 2px;
+}

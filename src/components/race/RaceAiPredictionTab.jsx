@@ -26,17 +26,16 @@ import PredictionCard from "./PredictionCard";
 import OutcomePatternPreview from "./OutcomePatternPreview";
 import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
-import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
-import { isAnalogyFinderEnabled } from "../../config/featureFlags";
+import VolatilityPercentileBar from "./VolatilityPercentileBar";
+import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
 
 function RaceAiPredictionTab({
   prediction,
   venueCode,
   venueName,
   raceId,
-  raceGrade = null,
-  raceStage = null,
   isCancelled = false,
+  onOpenSonar = null,
 }) {
   const { t } = useTranslation();
 
@@ -59,15 +58,19 @@ function RaceAiPredictionTab({
         venueName={venueName}
         raceId={raceId}
       />
-      {/* 公開までは機能フラグで隠す（隠している間は描かないので API も呼ばない。src/config/featureFlags.js） */}
-      {isAnalogyFinderEnabled() && (
-        <AnalogyFinderSection
-          key={raceId}
-          venueCode={venueCode}
-          venueName={venueName}
-          raceGrade={raceGrade}
-          raceStage={raceStage}
-        />
+      {/* 龍神ソナーは独立したタブに移した（2026-10-08）。ここに置いていた頃に見ていた人向けの案内 */}
+      {onOpenSonar && (
+        <button
+          type="button"
+          className="ai-tab-sonar-link"
+          onClick={onOpenSonar}
+          data-testid="ai-tab-sonar-link"
+        >
+          <span>{t("aiPredictionTab.sonarLink")}</span>
+          <span className="ai-tab-sonar-link-go" aria-hidden="true">
+            {t("aiPredictionTab.sonarLinkGo")} ›
+          </span>
+        </button>
       )}
     </>
   );
@@ -77,6 +80,16 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
   const { t } = useTranslation();
   const result = prediction?.result;
   const finished = Boolean(result?.finished);
+
+  // 1着の艇が実際に入ったコース（BOA-708）。的中は艇番で判定するが、前付けで艇番と
+  // コースが違ったレースでは「逆に見える」ので、注記で添える。当日は entry_course で補い、
+  // それも無ければ出さない（取得に失敗しても注記を出さないだけで、判定の表示は止めない）
+  const winner = useRaceWinnerCourse(raceId, finished);
+  const showWinnerCourse =
+    winner != null &&
+    winner.course != null &&
+    winner.boat != null &&
+    winner.course !== winner.boat;
 
   const turnPatterns = prediction?.turnPrediction?.patterns;
   const hasTurnPrediction =
@@ -93,9 +106,6 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
     // 不成立のレースは1着が決まっていないので、振り返りも「判定対象外」にする（BOA-543）
     const canJudge = isJudgeable(result);
     const isUpset = result.rank1 !== 1;
-    const volatilityPercentileValue = Math.round(
-      (prediction.volatilityPercentile ?? 0) * 100,
-    );
 
     if (!showVolatilityOutcome && !hasTurnPrediction) {
       return (
@@ -123,13 +133,22 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             <h5 className="result-verify-title">
               {t("result.volatilitySectionTitle")}
             </h5>
+            {/* 指数はレース前と同じ 0〜100 のバーで見せる。以前は「会場内パーセンタイル0」と
+                文字で出していて、専門用語のうえ「0」が確率0%に見えた（BOA-706） */}
             <p className="result-volatility-line">
-              {t("result.volatilityPredictedWithPercentile", {
+              {t("result.volatilityPredicted", {
                 label: t(
                   `volatility.level${volatilityLevel === "high" ? "High" : "Low"}`,
                 ),
-                percentile: volatilityPercentileValue,
               })}
+            </p>
+            <VolatilityPercentileBar
+              percentile={prediction.volatilityPercentile ?? 0}
+            />
+            {/* 何と比べた 0〜100 かを、レース前のカードと同じ一文で書く。無いと「イン崩れ注意（高）」の
+                真下の「99」が「崩れる確率99%」に読めた（PR #1186 ファン評価1・3周目） */}
+            <p className="result-volatility-caveat">
+              {t("volatility.description")}
             </p>
             <p className="result-volatility-line">
               {t("result.volatilityOutcomeLabel")}
@@ -165,7 +184,19 @@ function PredictionBlocks({ prediction, venueCode, venueName, raceId }) {
             <h5 className="result-verify-title">
               {t("result.turnSectionTitle")}
             </h5>
-            <TurnPatternList patterns={turnPatterns} result={result} />
+            <TurnPatternList
+              patterns={turnPatterns}
+              result={result}
+              winnerEntryCourse={winner?.course ?? null}
+            />
+            {showWinnerCourse && (
+              <p className="result-verify-entry-note">
+                {t("turnPatternList.winnerEntryCourse", {
+                  boat: winner.boat,
+                  course: winner.course,
+                })}
+              </p>
+            )}
           </div>
         )}
       </div>

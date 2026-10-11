@@ -9,6 +9,7 @@
  *   (c) 書き込み: 1行ずつ update（挿入しない）、着欄が NULL の行だけ（既存の値を上書きしない）。書く列は
  *       finish_mark・updated_at だけ。失敗は握りつぶさず例外
  *   (d) 変異検証: 上を壊した版で、検証が失敗する
+ *   (e) BOA-667: 公式の行の順（official_row）を同じ取得で写し、NULL の行だけ書く
  *
  * 実行: node scripts/maintenance/verify-disqualified-finish-marks.js
  */
@@ -283,6 +284,95 @@ async function evaluateApply(cli) {
   return failed;
 }
 
+/**
+ * (e) BOA-667: 公式の行の順（official_row）を、取り直した結果ページから既存の行へ写す。
+ * 着欄（失格）と同じ1回の取得で、両方の行を計画に入れる。書き込みは official_row が NULL の行だけ
+ */
+async function evaluateOfficialRow(lib, parser, cli) {
+  const failed = [];
+  const expect = (label, pass, detail) => {
+    if (!pass) failed.push(`${label}${detail ? ` ${detail}` : ""}`);
+  };
+  // 多摩川12R の着順表は 2→3→1→4(落)→5(転)→6(F)
+  const tama = parser.parseRaceResultPage(
+    fixture("raceresult-2026-09-10-05-12-fall-capsize-f.html"),
+  ).boats;
+  const built = lib.buildOfficialRowRows(TAMA, tama, [
+    { boat_number: 1 },
+    { boat_number: 6 },
+    { boat_number: 7 },
+  ]);
+  expect(
+    "(e) 行の順を着順表の上からの順で書く（1号艇=3、6号艇=6）。着順表に無い艇は異常",
+    JSON.stringify(built.rows) ===
+      JSON.stringify([
+        { race_id: TAMA, boat_number: 1, official_row: 3 },
+        { race_id: TAMA, boat_number: 6, official_row: 6 },
+      ]) && built.anomalies.length === 1,
+    show(built),
+  );
+  const fetched = [];
+  const plan = await cli.buildPlan(
+    [
+      { ...t(TAMA, 4, "S1"), kind: "mark" },
+      ...[1, 2, 3, 4, 5, 6].map((b) => ({
+        race_id: TAMA,
+        boat_number: b,
+        kind: "row",
+      })),
+    ],
+    {
+      fetchHtml: async (url) => (fetched.push(url), fixture(PAGES[url])),
+      wait: async () => {},
+      log: () => {},
+    },
+  );
+  expect(
+    "(e) 計画: 1レース1回の取得で、着欄（4号艇=落）と行の順（6艇）の両方を作る",
+    fetched.length === 1 &&
+      plan.rows.length === 1 &&
+      plan.rows[0].finish_mark === "落" &&
+      JSON.stringify(
+        plan.officialRows.map((r) => [r.boat_number, r.official_row]),
+      ) ===
+        JSON.stringify([
+          [1, 3],
+          [2, 1],
+          [3, 2],
+          [4, 4],
+          [5, 5],
+          [6, 6],
+        ]),
+    show(plan),
+  );
+  const table = [
+    { race_id: TAMA, boat_number: 1, finish_mark: "3", official_row: null },
+    { race_id: TAMA, boat_number: 2, finish_mark: "1", official_row: 9 },
+  ];
+  const client = fakeClient(table);
+  const result = await cli.applyPlan([], {
+    client,
+    now: () => new Date("2026-10-04T00:00:00Z"),
+    officialRows: [
+      { race_id: TAMA, boat_number: 1, official_row: 3 },
+      { race_id: TAMA, boat_number: 2, official_row: 1 },
+    ],
+  });
+  expect(
+    "(e) 書き込み: official_row が NULL の行だけ（既存の値は上書きしない）。列は official_row・updated_at",
+    JSON.stringify(result) === JSON.stringify({ written: 1, skipped: 1 }) &&
+      table[0].official_row === 3 &&
+      table[1].official_row === 9 &&
+      client.calls.every(
+        (c) =>
+          Object.keys(c.values).sort().join() === "official_row,updated_at" &&
+          c.filters.some(([op, col]) => op === "is" && col === "official_row"),
+      ),
+    show({ result, table }),
+  );
+  return failed;
+}
+
 const lib = await import("../lib/disqualifiedFinishMark.js");
 const parser = await import("../lib/raceResultParser.js");
 const cli = await import("./backfill-disqualified-finish-marks.js");
@@ -292,6 +382,8 @@ const p = await evaluatePlan(cli);
 check("(b) 計画（取得）", p.length === 0, p.join(" / "));
 const a = await evaluateApply(cli);
 check("(c) 書き込み", a.length === 0, a.join(" / "));
+const o = await evaluateOfficialRow(lib, parser, cli);
+check("(e) 公式の行の順（BOA-667）", o.length === 0, o.join(" / "));
 
 // (d) 変異検証
 let mutantSeq = 0;
@@ -327,7 +419,7 @@ for (const [label, rel, from, to, run] of [
   [
     "既存の着欄を上書きする（NULL の条件を外す）",
     CLI,
-    '.is("finish_mark", null)\n      .select("race_id");',
+    '.is(column, null)\n      .select("race_id");',
     '.select("race_id");',
     (m) => evaluateApply(m),
   ],

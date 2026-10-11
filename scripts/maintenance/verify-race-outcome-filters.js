@@ -67,6 +67,9 @@ for (const rel of [
 for (const dir of ["scripts/daily", "scripts/lib"]) {
   for (const name of fs.readdirSync(path.join(ROOT, dir))) {
     if (!name.endsWith(".js")) continue;
+    // 他の検証が変異検証のために一時的に書くファイル（*.__mutant*.js）は対象外。並行して実行すると、読む前に
+    // 消えて ENOENT になる（CI の verify:ci で実際に起きた）
+    if (name.includes(".__mutant")) continue;
     const rel = `${dir}/${name}`;
     if (ALLOWED.has(rel)) continue;
     const code = stripComments(fs.readFileSync(path.join(ROOT, rel), "utf8"));

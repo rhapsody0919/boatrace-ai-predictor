@@ -70,7 +70,7 @@ async function collectVotersPerRace(opts) {
       let query = q.eq("is_shadow", false);
       if (opts.from) query = query.gte("predicted_at", `${opts.from}T00:00:00`);
       if (opts.to) query = query.lte("predicted_at", `${opts.to}T23:59:59`);
-      return query;
+      return query.order("race_id").order("model_id").order("prediction_id");
     },
   );
 
