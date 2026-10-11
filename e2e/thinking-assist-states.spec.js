@@ -42,10 +42,18 @@ async function open(page) {
 async function routeExhibition(page, edit, gate = null) {
   await page.route("**/rest/v1/exhibition_data*", async (route) => {
     if (!route.request().url().includes("start_flag")) return route.fallback();
-    const res = await fetchRecorded(route);
-    const rows = await res.json();
-    if (gate) await gate;
-    await route.fulfill({ response: res, json: edit(rows) });
+    try {
+      const res = await fetchRecorded(route);
+      const rows = await res.json();
+      if (gate) await gate;
+      await route.fulfill({ response: res, json: edit(rows) });
+    } catch (e) {
+      // 録画に無いときは本番へ素通しする（fixtures.js の fetchRecorded）。その途中でテストが終わると
+      // 「route.fetch: Target page, context or browser has been closed」になる（#1400 の CI、指摘12）。
+      // ページを閉じた後の失敗だけは無視する。ほかの失敗はそのまま落とす
+      if (page.isClosed() || /has been closed/.test(String(e?.message))) return;
+      throw e;
+    }
   });
 }
 
@@ -365,6 +373,11 @@ test.describe("思考アシスト: ファン評価 3周目", () => {
     );
     await open(page);
     await lensTab(page, "展開").click();
+    // 差し替えた値（4号艇の展示ST .32）が図に出るまで待ってから測る。待たないと、差し替えの前の図を測って
+    // 空振りで通り、素通しの途中でテストが終わって落ちる（#1400 の CI）
+    await expect(
+      page.locator(".ta-lane").nth(3).locator(".ta-track-val"),
+    ).toHaveText(".32");
     const over = await page.evaluate(() =>
       [...document.querySelectorAll(".ta-track")]
         .map((t) => {
