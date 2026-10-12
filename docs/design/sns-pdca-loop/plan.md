@@ -102,12 +102,12 @@ flowchart TD
 ## 3. 止める操作（spec A6、ADR 0092・0094）
 
 - **止めるのは「許可のリスト」で効かせる**（153）: 自動送信の承認者の job は、`transition_sns_x_send` の `claim`・`check`・`begin_post`・`youtube_call`・`youtube_publish_begin` のたびに「item.state='notified' かつ チャネルの mode='auto'」を確かめる。claim のときに外れていたら `hold('auto_stopped')`。claim の後（sending・reconcile）は hold を受け付けないので、外れていたら RAISE して外部呼び出しを止め、YouTube でアップロード済みなら `youtube_retain`（非公開のまま残す）に回る。claim は `now() >= veto_until` も確かめる（X・YouTube とも）。
-- **YouTube の時刻（変更の提案。ユーザーの判断待ち）**: Q1 の決定は「YouTube は通知の時点で非公開アップロード、60分前に公開」。しかし既存の YouTube の流れ（146・`runYoutubeQueueJob`）は、(a) アップロードの直後に同じ実行の中で公開まで続け、(b) 処理の確認は1回の試行で3回まで、(c) クォータは claim した日（太平洋時間）に縛られ、締切が JST 17〜19時のレースは日付をまたいで公開できない。通知の時点でアップロードすると、この3つを作り直すことになる。**案: YouTube も締切の60分前にアップロードを始め、同じ実行で処理の完了を待って公開する（非公開→確認→公開の案B は維持）**。Shorts の処理は通常数分で、失効（締切30分前）まで30分ある。間に合わなければ非公開のまま残る（今の契約どおり）
+- **YouTube の時刻（2026-10-13 ユーザー決定、確認C）**: Q1 の決定は「YouTube は通知の時点で非公開アップロード、60分前に公開」。しかし既存の YouTube の流れ（146・`runYoutubeQueueJob`）は、(a) アップロードの直後に同じ実行の中で公開まで続け、(b) 処理の確認は1回の試行で3回まで、(c) クォータは claim した日（太平洋時間）に縛られ、締切が JST 17〜19時のレースは日付をまたいで公開できない。通知の時点でアップロードすると、この3つを作り直すことになる。**決定: YouTube も締切の60分前にアップロードを始め、同じ実行で処理の完了を待って公開する（非公開→確認→公開の案B は維持）**。Shorts の処理は通常数分で、失効（締切30分前）まで30分ある。間に合わなければ非公開のまま残る（今の契約どおり）
 - **Slack のリンク**: `https://www.boat-ai.jp/api/sns-stop/<token>`。token は item ごとのランダム 32 バイト、DB には SHA-256 だけを保存。期限は `veto_until`＋30分。GET は確認の画面（対象と「この投稿を止める」ボタン1つ）を返すだけで、止めるのは POST。応答に `Cache-Control: no-store`・`Referrer-Policy: no-referrer`・`X-Robots-Tag: noindex` を付ける。管理画面の Basic 認証は通らない。できるのは「その item を止める」ことだけ
 - **管理画面**: `POST /api/admin/sns-hub/auto-send` `{action:'stop', itemId}` / `{action:'mode', channel, mode:'manual'}`（自動を切る）/ `{action:'mode', channel, mode:'auto', approverId}`（自動にする。承認者が「本人」で、L3 の条件を満たすときだけ）/ `{action:'incident', channel, itemId?, note}`（誤投稿の記録）
 - **`stop_sns_auto_item`**（153）: item を `stopped` にする（これで上の許可のリストが外れ、以後の外部呼び出しは止まる）。そのうえで job の状態ごとに後片付けをする:
   - `queued`・`held`: 下書きの status を `pending_review` に戻す（既存の `cancel` は queued しか受け付けないので使わない。148 のガードが未送信の job を取り消す）
-  - YouTube は下の「YouTube の時刻」の案なら、アップロードと公開を止められる期限の後に1回の実行で続けて行うので、止めた時点で未送信なら job は queued のまま（上と同じ扱い）。実行中なら下の許可のリストで止まり、アップロード済みなら非公開のまま残る
+  - YouTube は下の「YouTube の時刻」の決定により、アップロードと公開を止められる期限の後に1回の実行で続けて行うので、止めた時点で未送信なら job は queued のまま（上と同じ扱い）。実行中なら下の許可のリストで止まり、アップロード済みなら非公開のまま残る
   - `sending`・`reconcile`・`posted`: 触らない（148 のガードで下書きを変えられない）。返り値で「送信が始まっていた」を知らせる
 - **自動を切る**: `sns_auto_send_control.mode='manual'`。`notified` の item は許可のリストから外れるので、それ以上は送られない。item は `stopped`（`stopped_via='mode_off'`）にし、後片付けは上と同じ
 
@@ -121,7 +121,7 @@ flowchart TD
 - **YouTube adapter**（新規 `api/_lib/youtubeQueueAdapter.js`）: `upload` は再開可能アップロード（privacyStatus=private）。32 MiB なら1回の関数で終わる見込みなので、**続きから送る仕組みは作らない**（関数の時間内に終わらなければ reconcile で止まり、オーナーの照合に回る）。`processing`・`makePublic`・`lookup` は `videos.list`・`videos.update`。既存 `youtubeUpload.js` のトークン取得を使う。サムネイルの Content-Type を媒体に合わせる
 - **試運転**（A9）: `sns_auto_send_control.dry_run=true`（153、初期値 true）のあいだも、job を作るところまでは行い、**claim の前で止める**（X の月の予約・日次の枠・YouTube のクォータを消費しないため）。検査・preflight（ヘッドレスを含む）までを行い、結果を item.checks の `dry_run` に残す。dry_run が true のまま L2 に入らないよう、管理画面と毎日の Slack の要約に「試運転中」を出す
 - **送る直前の確認（ヘッドレス）**: 既存の preflight は送信の関数の中で毎回ヘッドレスを呼ぶ（無ければ `public_check_unconfigured`）。`sns-send` でも Chromium を起動する。1回の実行で最大3件に絞り、同じ実行の中では起動した Chromium を使い回す。メモリは 2 GB
-- **毎日の基準日**: 既存の契約は、claim に `daily_baseline_date = 当日 JST`（X）と `quota.baseline_day = 当日 PT`・`verified`（YouTube）を求め、オーナーが毎日 SQL で更新する前提になっている。自動送信ではこれを毎日手でやるのは続かない。**案: `sns-auto-plan` の毎回、JST の日付（X）・太平洋時間の日付（YouTube）が変わっていたら基準日を当日にし、`daily_external_count`・`external_uploads`・`external_general` を0で入れる**（YouTube の日付は JST 16:00〜17:00 に変わるので、朝の1回だけでは夕方以降に古くなる）（オーナーが手で出した投稿があれば管理画面から足す）。これは既存の契約の変更なのでユーザーの判断に回す（下の「確認が要る点」）
+- **毎日の基準日**: 既存の契約は、claim に `daily_baseline_date = 当日 JST`（X）と `quota.baseline_day = 当日 PT`・`verified`（YouTube）を求め、オーナーが毎日 SQL で更新する前提になっている。自動送信ではこれを毎日手でやるのは続かない。**決定（2026-10-13 ユーザー、確認B）: `sns-auto-plan` の毎回、JST の日付（X）・太平洋時間の日付（YouTube）が変わっていたら基準日を当日にし、`daily_external_count`・`external_uploads`・`external_general` を0で入れる**（YouTube の日付は JST 16:00〜17:00 に変わるので、朝の1回だけでは夕方以降に古くなる）（オーナーが手で出した投稿があれば管理画面から足す）。既存の契約（139・146 の「オーナーが毎日設定する」）を変えるので、contract.md にも追記する
 - **予約額を種類別にする**（153、P0 の指摘）: 既存の claim は、送信の種類に関係なく1回ごとに `attempt_ceiling_microusd` を予約し、YouTube の claim も同じ X の台帳を消費する。1日7回（X 6＋YouTube 1）× URL つきの上限額で、月 $10 は約1週間で尽きる。153 で `sns_x_send_control` に `ceiling_x_url_microusd`（URL つきの親）・`ceiling_x_plain_microusd`（子）を足し、claim はスレッドの位置で使い分け、YouTube は0にする（YouTube Data API は無料。クォータは別の台帳）
 - **日次上限をチャネル別にする**（153）: 既存の `daily_limit` は X・YouTube で1つ。スレッドの子も1回と数えるので、上限1では子が送れず、6では YouTube も6本通る。`daily_limit_x`（スレッドの投稿の数で6）・`daily_limit_youtube`（1）に分ける
 - **費用**: X の予約台帳そのものは既存のまま。153 で `renew_sns_x_send_period(start, end)`（オーナーが本番 SQL で実行。今の期間が終わってからだけ実行でき、`reserved_microusd` を0に戻す）を足す。期間の終わりの3日前から Slack に知らせる。取り込みの読み取りも同じ台帳に予約する（154 の `reserve_sns_x_read`。残りが「月の残り日数×1日の送信の予約額」を下回ったら拒否）
@@ -132,7 +132,7 @@ flowchart TD
 - **`sns-metrics`**（5分ごと、終日。許容差15分に対して1回抜けても間に合うように）: `due_at` を過ぎた pending を処理する
   - YouTube: `videos.list(statistics)` の累積値（views・likes・comments）を `measurement_kind='snapshot'` で保存
   - X: `GET /2/users/{id}/tweets`（自分の投稿、Owned Reads $0.001）の `public_metrics`・`non_public_metrics`・`organic_metrics`。投稿から30日を過ぎると非公開の指標は取れないので、168h でも十分に間に合う
-  - 時刻: 136 は「累積値は対象の時刻ちょうど（`observed_at = period_end`）だけ保存できる」。cron では秒単位で合わせられないので、**154 で許容差を足す（未確定。下の「確認が要る点」）**。許容差を超えたら値を null・欠測理由「取得が遅れた」で保存する
+  - 時刻: 136 は「累積値は対象の時刻ちょうど（`observed_at = period_end`）だけ保存できる」。cron では秒単位で合わせられないので、**154 で15分の許容差を足す（2026-10-13 ユーザー決定、確認A）**。許容差を超えたら値を null・欠測理由「取得が遅れた」で保存する
   - 失敗は `attempts` を増やし、3回続けたら Slack（spec C4）
 - **`sns-daily`**（1日1回、JST 10:00）: YouTube Analytics の日次は確定まで数日かかることがあるので、毎日 D−3〜D−1（太平洋時間の日）を取り直し、値が変わったときだけ UPDATE する。「投稿日＋翌日」は太平洋時間の暦日で数える
   - YouTube Analytics の動画ごとの日次（engagedViews・averageViewPercentage・subscribersGained）を `sns_channel_daily` ではなく観測の表へ、`measurement_kind='period'`・`window` は投稿日〜翌日の2日の値として保存したいが、136 の窓は 48h/168h に固定で暦日の窓を入れられない。**暦日の値は 154 の `sns_channel_daily`（draft_id 任意）に入れる**。版の判定（spec 統計検証）はこの表の「投稿日＋翌日」を使う
@@ -263,23 +263,24 @@ erDiagram
 |---|---|
 | 承認 hash・snapshot（137・140） | そのまま。自動承認も同じ snapshot を作る |
 | 期限キュー（139）の 90分前・30分失効 | 60分前（Q1）に設定値を変える。コードは変えない |
-| 案B（146） | そのまま。非公開アップロードを通知の時点に、公開を `veto_until` 以降に |
+| 案B（146） | そのまま（非公開で上げて確認してから公開）。アップロードも公開も `veto_until`（締切60分前）以降に同じ実行で行う（2026-10-13 ユーザー決定） |
 | 投稿済みの承認保護（148） | そのまま |
 | v0 の恒久保留（135） | v0 はそのまま。v1 だけ検査を通れば解除 |
-| X の月 $10（137） | そのまま。月の切り替えの関数を足す。上限額はユーザーの回答待ち |
+| X の月 $10（137） | そのまま（$10、2026-10-12 ユーザー決定）。月の切り替えの関数を足す。予約額は種類別にする |
 | 観測（136） | 表はそのまま。累積値の時刻の許容差と、UTM 表の制約だけ 154 で緩める |
 | 改善案（039・ADR 0030） | 表はそのまま。自動採用を戻す |
 | `.claude/CLAUDE.md` の個別承認 | L3 の前に変更（[rule-change-proposal.md](rule-change-proposal.md)） |
 | x-send の contract「過去の承認から自動 queue 化しない」「本人を検査」、deadline-queue の contract「親子は個別承認」 | ADR 0094 で例外を定め、/step4 で各 contract に「自動送信の承認者は ADR 0094 の条件でだけ通る」を追記する |
-| 毎日の基準日（139・146） | 自動で当日にする案。ユーザーの判断待ち |
+| 毎日の基準日（139・146） | 自動で当日にする（2026-10-13 ユーザー決定）。contract.md に追記 |
 
-## 確認が要る点（オーケストレーター経由でユーザーへ）
+## ユーザーの決定（確認が要る点への回答）
 
-1. **累積値の時刻の許容差**: 136 の契約で「未承認」のまま。推奨は「48h・168h の時刻から15分以内に取れた値を保存し、実際の取得時刻を `observed_at` に残す。15分を超えたら欠測」。理由: cron は5〜10分ごとで、秒単位では合わせられない。Shorts の再生は2日で99%が出るので、15分のずれは値にほぼ影響しない
+1. **累積値の時刻の許容差**（2026-10-13 決定: 推奨どおり15分）: 136 の契約で「未承認」のままだった。推奨は「48h・168h の時刻から15分以内に取れた値を保存し、実際の取得時刻を `observed_at` に残す。15分を超えたら欠測」。理由: cron は5〜10分ごとで、秒単位では合わせられない。Shorts の再生は2日で99%が出るので、15分のずれは値にほぼ影響しない
 2. ~~X の月額上限~~ → $10 のまま（2026-10-12 ユーザー決定。L3 前に実請求で見直す）
-3. **毎日の基準日を自動にするか**（日付が変わったら毎回更新する案に直した）: 既存の契約は、X の `daily_baseline_date`（JST）と YouTube の `baseline_day`（PT）・`verified` をオーナーが毎日 SQL で当日にしないと送れない。推奨は「`sns-auto-plan` の最初の回が当日にし、他の経路の本数は0で入れる。手で出した投稿があれば管理画面から足す」。理由: 毎日の手作業が1回でも抜けるとその日は送れず、自動送信の意味が無くなる。他の経路の本数を0とみなす危険は、オーナーが手で出したときに足し忘れると日次上限を1本超えうること（上限は Shorts 1・X 1 なので、超えても1本）
+3. **毎日の基準日を自動にするか**（2026-10-13 決定: 推奨どおり自動。日付が変わるたびに更新）: 既存の契約は、X の `daily_baseline_date`（JST）と YouTube の `baseline_day`（PT）・`verified` をオーナーが毎日 SQL で当日にしないと送れない。推奨は「`sns-auto-plan` の最初の回が当日にし、他の経路の本数は0で入れる。手で出した投稿があれば管理画面から足す」。理由: 毎日の手作業が1回でも抜けるとその日は送れず、自動送信の意味が無くなる。他の経路の本数を0とみなす危険は、オーナーが手で出したときに足し忘れると日次上限を1本超えうること（上限は Shorts 1・X 1 なので、超えても1本）
 
-4. **YouTube の時刻**: 上の §3「YouTube の時刻」の案（60分前にアップロードを始め、同じ実行で公開）に変えてよいか
+4. **YouTube の時刻**（2026-10-13 決定: 推奨どおり。60分前にアップロードを始め、同じ実行で公開）
+5. **モック**（2026-10-13 承認。`mock/APPROVED.md`）
 
 ## 設計検証（system-architect、2026-10-12）の指摘と対応
 
@@ -296,7 +297,7 @@ erDiagram
 | P1 | YouTube を止めたときの穴（reconcile での RAISE、ID が無いときの retain） | 採用。job の状態ごとの後片付け（§3） |
 | P1 | 親子の結びつけの手順と、同時 claim で子が held に落ちる | 採用。親から順に approve、子は親が posted のものだけ選び、時刻をずらす（§2・§4） |
 | P1 | 既存の契約の文言と衝突し、自動送信そのものの ADR が無い | 採用。ADR 0094 を足し、contract への追記を tasks に入れる |
-| P1 | 毎日の基準日の手作業 | 案を出してユーザーの判断に回す（確認が要る点 3） |
+| P1 | 毎日の基準日の手作業 | 案を出し、ユーザーが 2026-10-13 に採用（日付が変わるたびに自動で更新） |
 | P1 | 鮮度の検査と通知の時刻の食い違い | 採用。4時間＋送る直前の読み直し（§2） |
 | P1 | `sns_channel_daily` の式の一意索引は PostgREST の upsert に使えない | 採用。`UNIQUE NULLS NOT DISTINCT` の制約にする（154） |
 | P1 | X トークンの refresh は1トランザクションにできない | 採用。`locked_by` の条件付き UPDATE（§4・ADR 0093） |
@@ -322,8 +323,8 @@ erDiagram
 |---|---|---|
 | P0 | 予約額が送信の種類によらず一律で、YouTube も X の台帳を消費し、月 $10 が約1週間で尽きる | 採用。種類別の予約額、YouTube は0（§4、139:159-168・146:216 で再現） |
 | P1 | 日次上限が X・YouTube で1つ。スレッドの子が送れない | 採用。チャネル別の上限（§4） |
-| P1 | 通知の時点の YouTube の非公開アップロードは、既存の流れ（同じ実行で公開・確認3回・PT の日付）とかみ合わない | 案を出してユーザーの判断に回す（§3「YouTube の時刻」、snsDeadlineQueue.js:109-111 で再現） |
-| P1 | PT の日付が変わると YouTube の公開が拒否される | 上の案で解消（アップロードと公開を同じ実行で行う）。基準日も日付が変わるたびに更新（§4） |
+| P1 | 通知の時点の YouTube の非公開アップロードは、既存の流れ（同じ実行で公開・確認3回・PT の日付）とかみ合わない | 案を出し、ユーザーが 2026-10-13 に採用（§3「YouTube の時刻」、snsDeadlineQueue.js:109-111 で再現） |
+| P1 | PT の日付が変わると YouTube の公開が拒否される | 上の決定で解消（アップロードと公開を同じ実行で行う）。基準日も日付が変わるたびに更新（§4） |
 | P1 | engagedViews/views の必要本数が「30回以上の動画」で数えられ、過小 | 採用。太平洋時間の2日の窓で取り直し、投稿本数に換算（1.5倍で版ごと27本・約8週）。spec・読み物・知見ノートを直した |
 | P2 | 「守り」を基準値1点と比べると半分の週で悪化になる | 採用。直近4週の分布の下側10%で判定（spec） |
 | P2 | `deadline_queue` を誰がいつ書くか、UTM の差し込みの順番 | 採用（§2） |
