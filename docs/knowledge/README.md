@@ -15,6 +15,7 @@
 | [ui-layout.md](ui-layout.md) | サイトの画面の決まり（幅・押せる大きさ・余白・置き場所） | visual-designer |
 | [measurement.md](measurement.md) | 計測の設計と GA4 | measurement-planner |
 | [db-operations.md](db-operations.md) | ADR と番号、本番 DB の運用、Supabase の読み方 | system-architect |
+| [seo.md](seo.md) | 検索・ボット向け HTML・ブログの SEO（SPA の制約、食い合い） | seo-marketer |
 | [user-insights.md](user-insights.md) | オーナーがサイトを使って気づいたことと、その後の対応 | 全員（画面を変える前） |
 
 ## 書き方
