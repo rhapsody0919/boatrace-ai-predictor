@@ -23,6 +23,11 @@ import {
   entrySummary,
   exhibitionTable,
   exhToday,
+  attackTech,
+  descending,
+  exhBands,
+  hintForms,
+  originalBest,
   factsScopeLabel,
   factChips,
   factsScope,
@@ -173,6 +178,80 @@ check(
     !fm.few,
 );
 check("形の集計が無ければ null", formSummary(nc, "nope") === null);
+// ---- 展開レンズの中身（spec D-47 (4)〜(7)、PR-2）----
+const na = fx.scenario.NA.scenario;
+const forms2 = hintForms(nc, today);
+check(
+  "当てはまる形: 2コース凹みの1つ（d2_slow01、65/501）",
+  forms2.length === 1 &&
+    forms2[0].form === "d2" &&
+    forms2[0].hit.join() === "65,501",
+  JSON.stringify(forms2.map((f) => [f.form, f.id])),
+);
+const tech2 = attackTech(nc, "d2");
+check(
+  "もし2コース凹み: 攻める3号艇が1着の36件の決まり手 まくり15・まくり差し17・差し2・ほか2（抜き。合計が36にそろう）",
+  tech2?.att === 3 &&
+    tech2.w === 36 &&
+    JSON.stringify(tech2.rows) ===
+      JSON.stringify([
+        ["makuri", 15],
+        ["makurizashi", 17],
+        ["sashi", 2],
+        ["other", 2],
+      ]),
+  JSON.stringify(tech2),
+);
+const bands2 = exhBands(nc, na, "d2", [2, 2, 4, 1, 6, 4]);
+check(
+  "今日の展示を入れると: 攻める3号艇（4位・mid）は 14/61・13/53・9/47、1号艇（2位・top）の逃げは 33/78・15/40・15/43",
+  bands2.att.today === "mid" &&
+    bands2.att.rows.map((r) => `${r.k}/${r.n}`).join() === "14/61,13/53,9/47" &&
+    bands2.b1.today === "top" &&
+    bands2.b1.rows.map((r) => `${r.k}/${r.n}`).join() === "33/78,15/40,15/43",
+  JSON.stringify(bands2),
+);
+check(
+  "今日の展示を入れると: 全国は攻める艇 24%・18%・13%、1号艇の逃げ 59%・51%・46%（どちらも順位が上ほど多い）",
+  bands2.att.nat.map((v) => Math.round(v * 100)).join() === "24,18,13" &&
+    bands2.b1.nat.map((v) => Math.round(v * 100)).join() === "59,51,46" &&
+    descending(bands2.att.nat) &&
+    descending(bands2.b1.nat) &&
+    !descending([0.3, 0.31, 0.2]),
+);
+check(
+  "今日の展示を入れると: 展示タイムが欠けた日は区分の値だけ出し、今日の区分を付けない",
+  exhBands(nc, na, "d2", [2, 2, null, 1, 5, 3]).att.today === null &&
+    exhBands(nc, na, "nope", [2, 2, 4, 1, 6, 4]) === null,
+);
+check(
+  "今日の展示を入れると: 攻める艇の無い形（横一線）は1号艇の逃げの区分だけ出す（/code-review 指摘）",
+  exhBands(nc, na, "flat", [2, 2, 4, 1, 6, 4])?.att === null &&
+    exhBands(nc, na, "flat", [2, 2, 4, 1, 6, 4])?.b1?.today === "top",
+);
+{
+  const rs = [1, 2, 3, 4, 5, 6].map((boat) => ({ boat, absent: false }));
+  const org = {
+    kinds: ["一周", "まわり足", "直線"],
+    byBoat: {
+      1: { 一周: 37.31, まわり足: 11.49, 直線: 7.1 },
+      2: { 一周: 37.5, まわり足: 11.6, 直線: 6.9 },
+      3: { 一周: 37.6, まわり足: 11.7, 直線: 7.0 },
+      4: { 一周: 37.4, まわり足: 11.55, 直線: 7.0 },
+      5: { 一周: 37.8, まわり足: 11.9, 直線: 7.2 },
+      6: { 一周: 37.7, まわり足: 11.8, 直線: 7.3 },
+    },
+  };
+  check(
+    "オリジナル展示: 一周・まわり足だけ（直線は出さない）。徳山の例は1号艇が両方とも6艇で一番",
+    JSON.stringify(originalBest(org, rs)) ===
+      JSON.stringify([
+        { kind: "一周", boats: [1] },
+        { kind: "まわり足", boats: [1] },
+      ]) && originalBest(null, rs).length === 0,
+    JSON.stringify(originalBest(org, rs)),
+  );
+}
 // 図の上の「今日の展示」（spec D-47 (3)）。展示タイムの順位 2,2,4,1,6,4 → 攻める3号艇は4位（3〜4位）
 const ext = exhToday(nc, "d2", [2, 2, 4, 1, 6, 4]);
 check(

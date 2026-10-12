@@ -1089,6 +1089,120 @@
   line-height: 1.6;
 }
 
+/* 形が2つ以上当てはまるときの選択（承認モック v2 ④）。選んだ形だけ枠を太く。押せる高さ 44px */
+.ta-form-pick {
+  display: grid;
+  gap: var(--spacing-1-5);
+}
+
+.ta-form-opt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: var(--spacing-1-5) var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ta-form-opt[aria-pressed="true"] {
+  outline: 2px solid var(--text-primary);
+  outline-offset: -1px;
+}
+
+/* もし{形}の決まり手・今日の展示の区分の行（名前・棒・値） */
+.ta-tech,
+.ta-band {
+  display: grid;
+  gap: var(--spacing-1);
+}
+
+.ta-tech-row {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr) auto;
+  gap: var(--spacing-2);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.ta-tech-trk {
+  position: relative;
+  height: 8px;
+  border-radius: var(--radius-sm);
+  background: var(--border-hairline);
+  overflow: hidden;
+}
+
+.ta-tech-trk i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--color-info-text);
+}
+
+.ta-band-row {
+  display: grid;
+  grid-template-columns: 2.4em 4.2em minmax(0, 1fr) auto;
+  gap: var(--spacing-2);
+  align-items: center;
+  padding: var(--spacing-1) var(--spacing-1-5);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}
+
+.ta-band-row small {
+  color: var(--text-secondary);
+}
+
+.ta-band-today {
+  outline: 2px solid var(--text-primary);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--color-warning-text) 12%, transparent);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-band-tag:not(:empty) {
+  font-size: var(--font-size-2xs);
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--spacing-1);
+  text-align: center;
+}
+
+.ta-band-few {
+  grid-column: 3 / 5;
+  color: var(--text-secondary);
+  font-weight: normal;
+}
+
+.ta-band-nat {
+  padding-top: var(--spacing-1);
+  border-top: 1px dashed var(--border-hairline);
+}
+
+.ta-org-best {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+}
+
+.ta-link-btn {
+  background: none;
+  border: 0;
+  padding: var(--spacing-2) 0;
+  font: inherit;
+  color: var(--color-info-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 .ta-sum .ta-note,
 .ta-flow-concl .ta-note,
 .ta-deep .ta-note {

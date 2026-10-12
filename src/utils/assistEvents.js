@@ -7,7 +7,8 @@
  * - シートは開いたとき。種類は mark・rough・venue・term・theory
  * - 軸の要約の入口1行（openFacts、2026-10-11 案D）から深掘りを開いたときも assist_deep_open。開いている艇の押し直しは送らない
  * - 買い目の着順の切り替え（BOA-831、spec D-46 で買い目だけ）は assist_target。選択中の着順の押し直しは送らない。押したレンズも送る
- * @param {{lens: string, deep: number|null, metric: string|null, target?: number}} state 押す前の状態
+ * - 展開レンズで形を選び替えた（形が2つ以上当てはまるとき、spec D-47）ときは assist_flow_form
+ * @param {{lens: string, deep: number|null, metric: string|null, target?: number, flowForm?: string|null}} state 押す前の状態
  * @param {{type: string, [key: string]: unknown}} action
  * @returns {{name: string, params: Record<string, string|number>} | null}
  */
@@ -41,6 +42,14 @@ export function assistEventOf(state, action) {
         : {
             name: "assist_target",
             params: { assist_target: action.target, assist_lens: state.lens },
+          };
+    case "flowForm":
+      // 展開レンズの形の選択（承認モック v2 ④）。選んでいる形の押し直しは画面が送らない
+      return action.form === state.flowForm
+        ? null
+        : {
+            name: "assist_flow_form",
+            params: { assist_form: action.form },
           };
     case "guide":
       return action.step == null
