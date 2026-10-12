@@ -181,7 +181,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/venueJobSupport.js` | 会場ごとに取得する日次ジョブ（B3 会場別モーター成績・B4 進入コース別選手成績。tasks.md T4b-14・T4b-13）の | updateHealthForDate, isTransientReason, reasonFromError, previouslySettledVenues, driftAlertsToReport |
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
-| `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun |
+| `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups |
 | `scripts/lib/snsCampaigns.js` | 企画型（キャンペーン型）SNS投稿パイプライン用 sns_campaigns / sns_campaign_entries | createCampaign, getCampaign, getActiveCampaigns, findQualifyingRaces, getRaceIdsWithResults ほか6件 |
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
@@ -265,6 +265,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/prevResult.js` | 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と | finishMarkKeyOf, meetPrevRunState, meetPrevRunWhenParams |
 | `src/utils/raceCancellation.js` | 開催中止・順延の判定を1箇所に集める。 | hasRaceResult, isRaceCancelled, isCancellationSuspected, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
+| `src/utils/raceDetailHeading.js` | レース詳細（/race/:raceId）の見出し・title・description・canonical・パンくずの組み方。 | getSeriesDayLabel, getStageChip, getRaceDetailHeading, getRaceDetailMeta, getRaceListLink ほか1件 |
 | `src/utils/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText |
 | `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか11件 |
@@ -329,4 +330,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 294 ファイル / export 1589 件。
+対象 295 ファイル / export 1597 件。
