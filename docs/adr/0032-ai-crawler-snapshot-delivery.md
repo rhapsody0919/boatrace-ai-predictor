@@ -37,3 +37,17 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 - `middleware.js`が複数の関心事（SNSハブ認証・ボット判定）を1ファイルで扱うことになる。今後さらに用途が増える場合は関数分割を検討する
 - スナップショットは次回デプロイまで更新されない。ブログ記事修正時は再デプロイが必要（通常のデプロイフローに乗るため追加の運用負荷は無い）
 - Edge Runtimeの制約（Node.js API不可）を受けるが、`rewrite()`のみで完結するため実装上の支障は無い
+
+## 追記: 選手ページ（BOA-848）
+
+`docs/proposal/ai-agent-era-strategy.md` §10 Phase 1 の K。オーナーの決定（2026-10-12）で作って公開する。
+
+- **出すページ**: `/racer/{4桁の登録番号}`。言語の接頭辞は付けない（選手ページは ja 専用）。出すのは sitemap に載る選手だけ（`src/utils/racerIndexPolicy.js` の `isRacerIndexable`。ビルドは `public/sitemap.xml` の選手 URL を読む。sitemap は毎日 `update-sitemap.yml` が書き直す）。描いたページが noindex なら保存しない
+- **作り方**: ブログと同じ。Playwright で dist の `/racer/{番号}` を描き、プロフィールと成績が揃った目印（`RacerProfile.jsx` の `data-snapshot-ready`）が付いてから HTML をそのまま保存する。人の画面を描いたものなので、人の画面に無い文言は入らない（ADR 0089 決定3）
+- **ビルドが本番 DB を読む**: 描くページが、公開の anon キーで本番の Supabase を読む（1人あたり十数リクエスト）。書き込みは無い
+- **本番のビルドだけで作る**（`VERCEL_ENV=production`）。Preview・手元のビルドでは作らない（Preview のたびに本番 DB へ数千のリクエストを送らないため）。確かめるときだけ `RACER_SNAPSHOT_LIMIT`（正の整数）でその人数を作る。本番では `RACER_SNAPSHOT_LIMIT` を無視する（`scripts/lib/racerSnapshotPlan.js`）
+- **失敗したら SPA**: 描けなかった・成績が取れなかったページは保存しない。ファイルが無いので vercel.json の catch-all で SPA の外枠が返る（ブログと同じ）。ビルドは止めない
+- **並列数**: 4（ブログと同じ）。Vercel のビルドの Chromium は単一プロセスなので、並列を増やしても使うコアは増えず、1ページが落ちたときに巻き添えになるページが増える。待ち時間の大半は Supabase の応答なので、4 で足りる
+- **ビルド時間**: Preview（4コア 8GB、`RACER_SNAPSHOT_LIMIT=20`）で 20人 22.8秒（1人 約1.1秒）。全員（2026-10-12 時点の sitemap で325人）では約6分の見込みで、ビルド全体は今の約2分から約8分になる。Vercel のビルドの上限（45分）までは余裕がある
+- **中身の古さ**: 次のデプロイまで変わらない。sitemap の自動コミットで毎日1回は本番がデプロイされるので、最大でおよそ1日前の内容（「今節のモーター状況」も同じ）
+- **戻し方**: `resolveSnapshotPath` と `middleware.js` の matcher から `/racer` を外す（ファイルが残っても配られない）。または PR を revert

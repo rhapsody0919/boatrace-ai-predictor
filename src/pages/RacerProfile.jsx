@@ -125,6 +125,10 @@ export default function RacerProfile() {
     ? `${displayName}選手の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別成績、枠番別成績、決まり手傾向とプロフィール（支部・出身地等）をまとめて紹介。`
     : "選手プロフィール | 龍神レーダー";
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
+  // AI クローラー向けスナップショット（scripts/generate-ai-snapshots.js、BOA-848）が保存してよいかの目印。
+  // プロフィールと成績の両方が揃ったときだけ付ける。成績の取得に失敗したページは保存しない（SPA の外枠に戻る）
+  const snapshotReady =
+    !loading && !error && Boolean(data?.profile) && !statsLoading && !!stats;
 
   return (
     <>
@@ -137,7 +141,10 @@ export default function RacerProfile() {
 
       <Header />
 
-      <div className="racer-profile-page">
+      <div
+        className="racer-profile-page"
+        data-snapshot-ready={snapshotReady ? "true" : undefined}
+      >
         <nav className="racer-profile-breadcrumb">
           <Link to="/">← ホームに戻る</Link>
           <Link to="/racers">選手一覧へ →</Link>

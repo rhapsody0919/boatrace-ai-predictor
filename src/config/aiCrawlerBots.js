@@ -45,6 +45,11 @@ function resolveBotPagePath(pathname, userAgent) {
   return null;
 }
 
+// 選手ページ（/racer/:racerId、BOA-848）。登録番号は4桁（sitemap の選手 URL はすべて4桁）。
+// 言語の接頭辞は付けない（選手ページは ja 専用）。スナップショットは sitemap に載る選手だけ作るので、
+// 作っていない番号はファイルが無く、vercel.json の catch-all で SPA の外枠に戻る（ブログと同じ）
+const RACER_PATH = /^\/racer\/(\d{4})$/;
+
 // pathname + User-Agentから、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
 // 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）
 // ⚠️ ここに対象を足したら middleware.js の config.matcher にも同じパスを足すこと。
@@ -64,6 +69,11 @@ export function resolveSnapshotPath(pathname, userAgent) {
   // （canonicalが常に /today で、日付別URLを検索対象にしない設計と揃える）
   if (pathname === "/today") {
     return "/ai-snapshots/today.html";
+  }
+
+  const racerMatch = pathname.match(RACER_PATH);
+  if (racerMatch) {
+    return `/ai-snapshots/racer/${racerMatch[1]}.html`;
   }
 
   const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
