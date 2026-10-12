@@ -8,6 +8,8 @@
  *   i18n JSONから直接HTMLテンプレートとして生成する（ライブAPI非依存、ビルドの決定性を保つ）
  * - /today（BOA-402）: 同じ方式。日替わりの選手・レースは入れず、ページの目的と
  *   各指標の定義だけを src/data/morningDigestCopy.js（画面と共有）から生成する
+ * - 選手ページ（BOA-848）: ブログと同じ方式（dist/ を描いて保存）。sitemap に載る選手だけ、
+ *   本番のビルドだけで作る（scripts/lib/racerSnapshotPlan.js）。ページが本番 DB を anon で読む
  */
 import { createServer } from "node:http";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
@@ -19,6 +21,7 @@ import {
   createPageOpener,
   renderWithFreshPage,
 } from "./lib/renderWithFreshPage.js";
+import { planRacerSnapshots } from "./lib/racerSnapshotPlan.js";
 import {
   MORNING_DIGEST_DISCLAIMER,
   MORNING_DIGEST_GLOSSARY,
@@ -33,6 +36,8 @@ const ROOT = path.join(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
 const SNAPSHOT_DIR = path.join(DIST_DIR, "ai-snapshots");
 const CONCURRENCY = 4;
+// 選手ページの並列数。理由は PR の説明と ADR 0032 の追記（BOA-848）
+const RACER_CONCURRENCY = 4;
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -193,6 +198,69 @@ async function generateBlogSnapshots(openPage, baseUrl) {
   return failed;
 }
 
+/**
+ * 選手ページ（/racer/{番号}）のスナップショット（BOA-848）。
+ *
+ * 人の画面を描いた HTML をそのまま保存するので、人の画面に無い文言は入らない（ADR 0089 決定3）。
+ * 保存するのは、プロフィールと成績が揃った目印（RacerProfile.jsx の data-snapshot-ready）が付いてから。
+ * 失敗したページは保存しない（vercel.json の catch-all で SPA の外枠に戻る。ブログと同じ）。
+ * 描いたページが noindex なら保存しない（sitemap が書かれた後に条件から外れた選手）。
+ */
+async function generateRacerSnapshots(openPage, baseUrl) {
+  const { ids, reason } = planRacerSnapshots({
+    vercelEnv: process.env.VERCEL_ENV,
+    limit: process.env.RACER_SNAPSHOT_LIMIT,
+    sitemapXml: readFileSync(path.join(DIST_DIR, "sitemap.xml"), "utf-8"),
+  });
+  console.log(`選手ページのスナップショット: ${reason}`);
+  if (ids.length === 0) return { total: 0, failed: [], skipped: [] };
+
+  const outDir = path.join(SNAPSHOT_DIR, "racer");
+  mkdirSync(outDir, { recursive: true });
+
+  const skipped = [];
+  const startedAt = Date.now();
+  const { succeeded, failed: failedItems } = await renderWithFreshPage(ids, {
+    concurrency: RACER_CONCURRENCY,
+    openPage,
+    retries: 2,
+    render: async (page, id) => {
+      await page.goto(`${baseUrl}/racer/${id}`, {
+        waitUntil: "networkidle",
+        timeout: 30000,
+      });
+      await page.waitForSelector('[data-snapshot-ready="true"]', {
+        timeout: 20000,
+      });
+      const robots = await page.getAttribute('meta[name="robots"]', "content");
+      if (robots?.includes("noindex")) {
+        skipped.push(id);
+        return;
+      }
+      const html = dedupeDefaultTitle(await page.content());
+      writeFileSync(path.join(outDir, `${id}.html`), html, "utf-8");
+    },
+  });
+  const failed = failedItems.map(({ item, error }) => ({
+    id: item,
+    error: error.split("\n")[0],
+  }));
+  const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+
+  console.log(
+    `✓ 選手ページスナップショット: ${succeeded.length - skipped.length}/${ids.length}件（${seconds}秒、並列${RACER_CONCURRENCY}）`,
+  );
+  if (skipped.length > 0) {
+    console.log(`  noindex のため保存しなかった選手: ${skipped.join(", ")}`);
+  }
+  if (failed.length > 0) {
+    console.error(
+      `⚠️ 生成に失敗した選手（SPA の外枠に戻る）: ${failed.map((f) => `${f.id} (${f.error})`).join(", ")}`,
+    );
+  }
+  return { total: ids.length, failed, skipped };
+}
+
 function generateWinningTechniqueSnapshot() {
   const commonJa = JSON.parse(
     readFileSync(path.join(ROOT, "src/locales/ja/common.json"), "utf-8"),
@@ -332,6 +400,15 @@ async function main() {
       if (failed.length > 0) {
         console.error(
           `⚠️ ${failed.length}件のブログ記事スナップショット生成に失敗しましたが、ビルドは継続します。`,
+        );
+      }
+      // 選手ページの失敗は、ブログの生成結果に影響させない（それぞれ別に落ちてよい）
+      try {
+        await generateRacerSnapshots(opener.openPage, baseUrl);
+      } catch (err) {
+        console.error(
+          "⚠️ 選手ページのスナップショット生成が途中で止まりましたが、ビルドは継続します:",
+          err.message,
         );
       }
       if (opener.launches() > 1) {

@@ -18,6 +18,8 @@
  * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24 だけ配る UA を除外する（missing）。
  *    除外する UA の一覧が BOT_PAGE_USER_AGENTS と一致し、他のページの no-store は外れない
  *    （外すと関数の応答が CDN に残らない。Preview で MISS が続いたため、ADR 0089「未確認」の1）
+ * 9. 選手ページ（/racer/{4桁}、BOA-848）は配る UA のときだけ /ai-snapshots/racer/{番号}.html へ振り分ける。
+ *    Googlebot・人のブラウザ・番号の形が違うもの・言語の接頭辞付き・/racers は振り分けない
  *
  * Vercel の matcher は path-to-regexp 構文。このリポジトリが使う
  * 「固定パス」と「/prefix/:path*」の2形だけを解釈し、それ以外の形が足されたら
@@ -250,6 +252,7 @@ const SNAPSHOT_CANDIDATES = [
   "/winning-technique",
   "/today",
   "/blog/some-article",
+  "/racer/3256",
   ...PUBLIC_PATHS,
   ...ADMIN_PATHS,
 ];
@@ -264,7 +267,12 @@ for (const path of SNAPSHOT_CANDIDATES) {
     describe(res),
   );
 }
-for (const path of ["/winning-technique", "/today", "/blog/some-article"]) {
+for (const path of [
+  "/winning-technique",
+  "/today",
+  "/blog/some-article",
+  "/racer/3256",
+]) {
   check(
     `${path} は配信対象のまま（resolveSnapshotPath が null を返さない）`,
     resolveSnapshotPath(path, BOT_UA) !== null,
@@ -421,6 +429,63 @@ check(
 );
 
 console.log(
+  "[6b] 選手ページ（/racer/{4桁}）は配る UA のときだけスナップショットへ振り分ける（BOA-848）",
+);
+for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+  for (const id of ["3256", "5121"]) {
+    const path = `/racer/${id}`;
+    const target = `/ai-snapshots/racer/${id}.html`;
+    check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
+    const res = await call(path, { ua });
+    check(
+      `${name} ${path} → ${target}`,
+      res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
+      describe(res),
+    );
+  }
+}
+for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+  const res = await call("/racer/3256", { ua });
+  check(
+    `${name} /racer/3256 → 素通り（SPA のまま）`,
+    res === undefined,
+    describe(res),
+  );
+}
+{
+  const res = await call("/racer/3256");
+  check("人のUA /racer/3256 → 素通り", res === undefined, describe(res));
+}
+const NOT_RACER_SNAPSHOT_PATHS = [
+  "/racer/325",
+  "/racer/32560",
+  "/racer/abc",
+  "/racer/3256/",
+  "/racer/3256/extra",
+  "/racer",
+  "/racers",
+  "/en/racer/3256",
+  "/ko/racer/3256",
+];
+for (const path of NOT_RACER_SNAPSHOT_PATHS) {
+  const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
+  check(
+    `bingbot ${path} → 素通り（SPA のまま）`,
+    res === undefined,
+    describe(res),
+  );
+}
+{
+  const res = await call("/racer/3256?tab=x", { ua: BOT_UA });
+  check(
+    "GPTBot /racer/3256?tab=x → クエリを持ち込まない",
+    res?.headers.get("x-middleware-rewrite") ===
+      `${ORIGIN}/ai-snapshots/racer/3256.html`,
+    describe(res),
+  );
+}
+
+console.log(
   "[7] vercel.json の no-store 規則は / と /venue/1〜24 だけ配る UA を除外する",
 );
 {
@@ -472,6 +537,7 @@ console.log(
     "/today",
     "/winning-technique",
     "/blog/some-article",
+    "/racer/3256",
     "/index.html",
   ]) {
     for (const [name, ua] of Object.entries({

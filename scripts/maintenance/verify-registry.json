@@ -480,6 +480,11 @@
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
     },
     {
+      "script": "verify-racer-snapshot-plan.js",
+      "tier": "ci",
+      "guards": "選手ページの AI スナップショット（BOA-848）を作る範囲（scripts/lib/racerSnapshotPlan.js）。本番のビルドだけで sitemap の選手（isRacerIndexable の集合）を全員作り、Preview・手元では RACER_SNAPSHOT_LIMIT が無ければ作らないこと（Preview のビルドから本番 DB に数千のリクエストを送らない）。本番では RACER_SNAPSHOT_LIMIT を無視すること"
+    },
+    {
       "script": "verify-render-with-fresh-page.js",
       "tier": "ci",
       "guards": "ブログのスナップショット生成で、ページが1つ落ちても後続の記事を取りこぼさないこと（scripts/lib/renderWithFreshPage.js）。2026-10-11 の本番ビルドで、落ちたページを使い続けた後続の3記事が失敗し、AI クローラーに中身の無い画面が返っていた"
