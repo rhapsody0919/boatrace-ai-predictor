@@ -177,7 +177,7 @@ jobs:
   # 録画済みのファイルを読むだけ（書き込みをしない）ので分割して問題ない
   replay:
     needs: record
-    if: needs.record.outputs.run == 'true'
+    if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -219,7 +219,15 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
-        run: npx playwright test --fully-parallel --reporter=list,blob ${{ matrix.args }}
+        run: npx playwright test --fully-parallel --reporter=list,blob ${{ matrix.args }} 2>&1 | tee replay.log
+
+      - name: Upload replay log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-rerecord-replay-log-${{ matrix.shard }}
+          path: replay.log
+          retention-days: 7
 
       - name: Upload blob report
         if: ${{ !cancelled() }}
@@ -266,10 +274,10 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
-        if: needs.record.outputs.run == 'true'
+        if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
 
       - name: Download replay blobs
-        if: needs.record.outputs.run == 'true'
+        if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
         uses: actions/download-artifact@v4
         with:
           pattern: e2e-rerecord-blob-*
@@ -278,13 +286,13 @@ jobs:
 
       # merge-reports はテストが落ちていても終了コード0を返す。合否は次の「採用判定」で決める
       - name: Merge reports
-        if: needs.record.outputs.run == 'true'
+        if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-results.json
         run: npx playwright merge-reports --reporter=dot,json all-blob-reports
 
       - name: Download recordings (公開用)
-        if: needs.record.outputs.run == 'true'
+        if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
         uses: actions/download-artifact@v4
         with:
           name: e2e-rerecord-recordings
@@ -292,7 +300,7 @@ jobs:
 
       - name: 採用判定
         id: judge
-        if: needs.record.outputs.run == 'true'
+        if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
         run: |
           set +e
           if [ ! -f e2e-results.json ]; then
@@ -312,6 +320,16 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           exit 0
+
+      # 不採用の原因（どのテストが落ちた・skipが増えたか）をstep summary以上に深掘りしたいとき用。
+      # merge-reports が作る集約レポート自体はこのジョブのランナー上だけに残り、ジョブ終了で消える
+      - name: Upload merged results
+        if: needs.record.result == 'success' && needs.record.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-rerecord-results
+          path: e2e-results.json
+          retention-days: 7
 
       # 3分割（replayのmatrix）が全テストを1回ずつ走らせたか（#1318のe2e-shardと同じ検査を
       # 共用する）。ここが失敗すると後続のステップは（bareのif:がsuccess()を含意するため）
@@ -359,8 +377,14 @@ jobs:
         run: node scripts/maintenance/e2e-recording.js prune --keep=14
 
       - name: Notify Slack (採用しなかった・失敗したとき)
+        # record job が gate ステップ到達前（checkout・resolve-sha・setup-node・gate自身の
+        # クラッシュ等）に失敗すると、run/notify 出力が未設定（空文字）のまま replay・judge の
+        # 各stepが（failureではなく）skipになり、judge job自身は失敗しない。その場合
+        # failure() も notify=='true' もどちらも真にならずSlack通知が出なかった（BOA-799で検出）。
+        # needs.record.result で record job自体の失敗も直接見る
         if: >-
-          always() && (failure() || needs.record.outputs.notify == 'true' ||
+          always() && (failure() || needs.record.result == 'failure' ||
+          needs.record.result == 'cancelled' || needs.record.outputs.notify == 'true' ||
           (needs.record.outputs.run == 'true' && steps.judge.outputs.adopt != 'true'))
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
