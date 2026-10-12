@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "./supabaseClient";
+import { venueWaterProfile } from "../data/venueWaterProfiles.js";
 import { stDeviation } from "../utils/stDeviation.js";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
 import {
@@ -2000,14 +2001,17 @@ export const supabaseDataService = {
   },
 
   /**
-   * 会場固有の水面特性（水質・イン/アウト傾向のクラスタ分類）を取得する
-   * venuesテーブルはモデル調整（softmax-temperature-calibration）用に
-   * water_type/clusterを保持しているが、フロントエンドでは未使用だった
+   * 会場固有の水面特性（水質・干満差・イン/アウト傾向のクラスタ分類）を取得する
+   * 水質・干満差は公式の場データを写した src/data/venueWaterProfiles.js を使う。
+   * venues.water_type は初期データが8会場で公式と食い違っていた（唐津を海水とする等）ため
+   * 画面には出さない。cluster は venues から読む（update_venue_stats が直近90日の
+   * 1号艇1着率で毎日決める龍神の分類で、公式の分類ではない）
    * @param {number} venueCode - 会場コード（1-24）
-   * @returns {Promise<{ waterType: string, cluster: string } | null>}
+   * @returns {Promise<{ waterType: string|null, tidal: boolean|null, cluster: string } | null>}
    */
   getVenueCharacteristics(venueCode) {
-    return withCache(`venue-characteristics-${venueCode}`, async () => {
+    // v2: 水質を公式の値に直し tidal を足した（古い形の localStorage を読まない）
+    return withCache(`venue-characteristics-v2-${venueCode}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return null;
@@ -2015,13 +2019,18 @@ export const supabaseDataService = {
 
       const { data } = await supabase
         .from("venues")
-        .select("water_type, cluster")
+        .select("cluster")
         .eq("code", venueCode)
         .maybeSingle();
 
       if (!data) return null;
 
-      return { waterType: data.water_type, cluster: data.cluster };
+      const water = venueWaterProfile(venueCode);
+      return {
+        waterType: water?.waterType ?? null,
+        tidal: water?.tidal ?? null,
+        cluster: data.cluster,
+      };
     });
   },
 

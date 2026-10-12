@@ -268,7 +268,7 @@ export const VENUE_GUIDES_KO = [
       url: "https://gama-win.com/card/about/index.html",
     },
     facts: {
-      water: "담수（인공 수지）— 잔잔하고 빠르며 강풍의 영향이 적음",
+      water: "기수, 조수 영향 없음 — 잔잔하고 빠르며 강풍의 영향이 적음",
       character: "1코스 승률이 높지만 2턴 마크의 중앙 코스 역전도 흔함",
       nightRace: true,
     },
@@ -426,7 +426,7 @@ export const VENUE_GUIDES_KO = [
     },
     facts: {
       water:
-        "이세만을 마주봄 — 바람이 강할 때는 도카이에서 가장 거친 수로 중 하나",
+        "기수, 조수 영향 없음 — 이세만을 마주봄, 바람이 강할 때는 도카이에서 가장 거친 수로 중 하나",
       character:
         "바람에 좌우됨: 바람이 세면 거칠고 예측 불가, 잔잔하면 1코스 유리",
       nightRace: false,
@@ -1710,7 +1710,7 @@ export const VENUE_GUIDES_KO = [
       url: "https://edogawa-emember.com/",
     },
     facts: {
-      water: "하천（조수 영향, 바람과 물살의 영향을 받음）",
+      water: "기수（하천, 조수 영향, 바람과 물살의 영향을 받음）",
       character: "일본에서 가장 거친 수면 — 이변을 예상하세요",
       nightRace: false,
     },

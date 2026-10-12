@@ -69,7 +69,7 @@ export const TEXT_THEORY = Object.freeze({
   },
   "TC-T3": {
     title: "潮（満潮・干潮）",
-    cond: "海水・汽水の会場で、満潮か干潮か",
+    cond: "干満差のある会場で、満潮か干潮か",
     likely:
       "満潮はうねりでイン・差しが残りやすく、干潮はまくりが通りやすいと言われる",
     prepNote: "潮位のデータがまだ無い",

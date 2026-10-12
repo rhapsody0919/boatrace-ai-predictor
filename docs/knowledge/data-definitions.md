@@ -28,3 +28,6 @@
 
 ## 中止・順延
 - 中止・順延は races.cancellation_status（'confirmed'/'tentative'/NULL）で判定する。結果の有無から推定しない。判定は「confirmed かつ結果が無い」にする（confirmed なのに結果がある32本）（2026-09、BOA-512、memory technical_races_cancellation_status_marks_postponed_races）
+
+## 会場
+- 会場の水質・干満差の正本は BOAT RACE 公式の場データ（boatrace.jp/owpc/pc/data/stadium?jcd=01〜24、「2026/06/30現在」、2026-10-12 照合）。写しは src/data/venueWaterProfiles.js、固定は verify-venue-water-profiles.js。venues.water_type の初期データは8会場で誤っていた（149で修正）。海水・汽水でも干満差なしの会場がある（蒲郡・常滑・津）ので、潮の有無を水質から推定しない（2026-10-12）
