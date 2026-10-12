@@ -228,7 +228,7 @@
     },
     "api/bot-page/**/*.js": {
       "regions": ["syd1"],
-      "includeFiles": "{src/locales/ja/common.json,index.html}"
+      "includeFiles": "{src/locales/ja/common.json,src/locales/en/common.json,src/locales/zh-TW/common.json,src/locales/ko/common.json,index.html}"
     }
   },
   "redirects": [
