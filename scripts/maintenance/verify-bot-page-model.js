@@ -65,6 +65,9 @@ const BROWSER_ONLY = [
   { re: /\bdocument\./, name: "document" },
   { re: /from\s+["']react/, name: "react" },
 ];
+// 例外: blogPosts.js は import.meta.env の有無で読み方を分ける（Vite では import.meta.glob、Node では fs）。
+// Node では import.meta.env が undefined なので fs の分岐を通る（トップのブログ欄、BOA-848 の後続）
+const ALLOWED = { "src/data/blogPosts.js": ["import.meta.env"] };
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const visited = new Set();
@@ -73,6 +76,7 @@ function walk(rel) {
   visited.add(rel);
   const src = stripComments(read(rel));
   for (const { re, name } of BROWSER_ONLY) {
+    if (ALLOWED[rel]?.includes(name)) continue;
     checked += 1;
     if (re.test(src))
       failures.push(`${rel}: ブラウザ専用の依存（${name}）がある`);

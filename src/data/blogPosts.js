@@ -106,6 +106,19 @@ export const getLatestPosts = (limit = 5, lang = "ja") =>
     .sort((a, b) => new Date(b.date) - new Date(a.date))
     .slice(0, limit);
 
+// トップ（VenueGridPage）のブログ欄に出す記事。人の画面とボット向け HTML（src/utils/botPageModel.js）が共有する。
+// 従来はfeatured記事のみ表示していたため、直近の新着記事がfeatured未設定の場合ホームに一切出ない問題があった
+// （2026-09-04、直近10記事が全てfeatured:falseと判明）。人気（featured）/新着（日付順）の2つに分け、
+// 新着側にはfeatured枠と重複する記事を出さない
+export function getHomeBlogPosts(lang = "ja") {
+  const popularPosts = getFeaturedPosts(lang).slice(0, 3);
+  const popularIds = new Set(popularPosts.map((post) => post.id));
+  const newPosts = getLatestPosts(6, lang)
+    .filter((post) => !popularIds.has(post.id))
+    .slice(0, 3);
+  return { popularPosts, newPosts };
+}
+
 // タグ重複度→日付降順で候補記事をランク付けする共通ロジック
 // （getRelatedPosts/getRelatedPostsEn で共有。タイブレーク条件の変更漏れを防ぐ）
 function rankRelatedPosts(currentPost, candidates, limit) {
