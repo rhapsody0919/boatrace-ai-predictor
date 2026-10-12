@@ -12,7 +12,7 @@ flowchart LR
   R["レース詳細 AI予想タブ<br/>注意度カード"] -->|類似レースで見る| S["龍神ソナー タブ"]
   R -->|思考アシストで考える ja| AS["/race/:id/assist<br/>堅い？荒れる？"]
   R -->|段ごとの実績| AC["/accuracy<br/>注意度の帯ごとの実績"]
-  HR["/hit-races"] -->|301| AC
+  HR["/hit-races"] -->|転送| AC
 ```
 
 ## 画面ごとの変更
@@ -69,7 +69,7 @@ flowchart LR
 - 展開予測の大きい数字・会場別の表を外す
 - 注意度の3段ごとに、実際に1号艇が1着を逃した割合・件数・ぶれ幅の棒（段の範囲の帯・全国の点線）。「公開後」と「公開前の検証」の切り替え（承認）、件数30未満の段は割合を出さない。起算日と「同じ日・同じ会場に偏るので、実際の幅はもう少し広い」の注記
 - 旧 `VolatilityAccuracyChart`（`/winning-technique?tab=volatility` でも使う）は旧指数の実績なので、新しい部品 `InCautionAccuracyChart` に置き換え、`/winning-technique` のタブも同じ部品にする
-- `/hit-races` は `/accuracy` へ301（`vercel.json`・`AppRouter.jsx`）。ヘッダーのナビ（`Header.jsx:147`）・sitemap から外す。`/accuracy/history` の扱いは plan で決める
+- `/hit-races` は `/accuracy` へ転送（最初は一時的な転送 307、数日後に 308。plan「URL」。`vercel.json`・`AppRouter.jsx`）。ヘッダーのナビ（`Header.jsx:147`）・sitemap から外す。`/accuracy/history` の扱いは plan で決める
 
 ### S-6 /races（`RaceHistory.jsx`、FR-1）
 - 日別の展開予測の的中率を外す。残る内容が無くなる場合のページの扱いは plan で決める

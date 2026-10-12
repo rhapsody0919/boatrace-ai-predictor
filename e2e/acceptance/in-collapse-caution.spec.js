@@ -6,6 +6,14 @@
 // 公開までは機能フラグで隠され、URL に ?caution=1 を付けると新しい画面が出て
 // localStorage に印が付く（spec.md 自体には書かれておらず、依頼元からの前提として受領）。
 // このファイルの goto はすべて caution=1 を付ける。
+//
+// 2026-10-13 screens.md 更新（曖昧点への回答）を反映して書き直し:
+//   - S-1 の文言・並びはモック（1-ai-tab-375.png）どおりに確定
+//   - 外すボタンの data-testid「ai-tab-sonar-link」（依頼元から受領。外れたことの確認に
+//     文言の手がかりが無いため、この1か所だけ例外的に testid セレクタを使う）
+//   - S-2 の場所 /races/:date/:venueCode、S-3 の場所 / ・/races/:date、S-8 の場所
+//     /about・/faq・/how-to-use が確定
+//   - 帯の端の表記「−3.5未満」「+3.0以上」が確定
 import { test, expect } from "../fixtures.js";
 
 // ---------------------------------------------------------------------------
@@ -17,15 +25,27 @@ const withCaution = (path) =>
 
 const CAUTION_TITLE = "イン崩れ注意度";
 const LEVEL_NAMES = ["崩れやすい", "中くらい", "堅め"];
-// spec 用語節: 「ほかの材料（展示・モーター等）は龍神ソナーの『差がつく材料』で」の1行
+// screens S-1: 「ほかの材料（展示・モーター等）は龍神ソナーの『差がつく材料』で」の1行
 const OTHER_MATERIAL_NOTE =
   "ほかの材料（展示・モーター等）は龍神ソナーの「差がつく材料」で";
-// spec 制約「AI予想の免責文は残す。注意度は結果を保証しない旨の注記を引き継ぐ」
-// 文言そのものは承認済みモック（mock/1-ai-tab-375.png）のとおり
+// screens S-1: 免責（承認済みモックのとおり）
 const DISCLAIMER = "過去の実績の割合で、今日の結果を保証するものではありません";
-// 理由（勝率差）の行。screens の図とモックの実際の表記が違うため、
-// 「1号艇…一番高い…号艇」の語順だけを跨行で緩く確かめる（曖昧点として報告）
-const REASON_PATTERN = /1号艇[\s\S]{0,80}一番高い[\s\S]{0,30}号艇/;
+// screens S-1: 値が無いレースの空状態の1行
+const EMPTY_STATE_TEXT = "このレースはイン崩れ注意度を出していません";
+// screens S-1: 理由の見出しと3行の表
+const REASON_HEADING = "今日の勝率差（全国勝率）";
+const REASON_ROW_ME = /1号艇\s*\S+?（[^）]+）\s*[\d.]+/;
+const REASON_ROW_MAX = /一番高い\s*\d号艇\s*\S+?（[^）]+）\s*[\d.]+/;
+const REASON_ROW_DIFF = /差\s*[−\-+]?[\d.]+/;
+// screens S-1: 導線の2つのボタン文言（思考アシストは ja のみ）
+const SONAR_BUTTON_TEXT = /類似レース[\d,]+件で見ると？/;
+const ASSIST_BUTTON_TEXT = "軸から考える";
+// spec 用語: 勝率差の帯の端の表記
+const BAND_LOWER_EDGE = "−3.5未満";
+const BAND_UPPER_EDGE = "+3.0以上";
+// 外す旧ボタン（screens S-1。data-testid は依頼元から受領。外れたことの確認に文言の
+// 手がかりが無いため、ロール・文言ベースの原則の例外としてこの1か所だけ使う）
+const OLD_SONAR_LINK_TESTID = "ai-tab-sonar-link";
 
 /** トップから /race/:id へのリンクを集める（レースIDを固定しないため。本番データで変わる） */
 async function findRaceHrefs(page) {
@@ -40,6 +60,21 @@ async function findRaceHrefs(page) {
     await page.waitForTimeout(500);
   }
   return [];
+}
+
+/** トップから /races/:date/:venueCode（会場のレース一覧）へのリンクを1件探す */
+async function findVenueListHref(page) {
+  await page.goto(withCaution("/"));
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    const hrefs = await page
+      .getByRole("link")
+      .evaluateAll((els) => els.map((e) => e.getAttribute("href") ?? ""));
+    const href = hrefs.find((h) => /^\/races\/[^/]+\/[^/?#]+/.test(h));
+    if (href) return href;
+    await page.waitForTimeout(500);
+  }
+  return null;
 }
 
 /** レース詳細の AI予想タブを ?caution=1 付きで開く（spec FR-1「?tab=aiPrediction は今のまま開く」） */
@@ -107,12 +142,31 @@ async function readCautionPercent(page) {
 const linkTo = (page, nameRe) =>
   page.getByRole("link", { name: nameRe }).first();
 
+/** セルの中の横棒と、その外枠（トラック）。モーター比較の受け入れテストと同じ判定方法 */
+async function hasFrame(loc) {
+  return loc.evaluate((e) => {
+    for (let n = e; n; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      const border = ["Top", "Right", "Bottom", "Left"].some(
+        (s) =>
+          parseFloat(cs[`border${s}Width`]) > 0 &&
+          cs[`border${s}Style`] !== "none",
+      );
+      const outline =
+        parseFloat(cs.outlineWidth) > 0 && cs.outlineStyle !== "none";
+      if (border || outline) return true;
+      if (n.tagName === "BODY") break;
+    }
+    return false;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // S-1 レース詳細 AI予想タブのイン崩れ注意度カード（FR-2・FR-3、新規 InCautionCard）
 // ---------------------------------------------------------------------------
 
 test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カード", () => {
-  test("[FR-2 / FR-3 / screens S-1] 先頭にカードがあり、大きい数字・基準・件数・理由・免責が出る", async ({
+  test("[FR-2 / FR-3 / screens S-1] 先頭にカードがあり、大きい数字・基準・件数・免責が出る", async ({
     page,
   }) => {
     await openAnyRaceCautionCard(page);
@@ -139,15 +193,15 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     ).toBe(true);
   });
 
-  test("[FR-3] 棒の両端に段の名前（堅め・崩れやすい）が出る", async ({
+  test("[screens S-1] 棒の下の両端に「← 堅め（35%未満）」「崩れやすい（55%以上）→」が出る", async ({
     page,
   }) => {
     await openAnyRaceCautionCard(page);
-    await expect(page.getByText(/堅め/).first()).toBeVisible();
-    await expect(page.getByText(/崩れやすい/).first()).toBeVisible();
+    await expect(page.getByText(/堅め（35%未満）/).first()).toBeVisible();
+    await expect(page.getByText(/崩れやすい（55%以上）/).first()).toBeVisible();
   });
 
-  test("[FR-3 受入基準] 「会場内パーセンタイル」「イン崩れ指数」の言葉が出ない（0〜100の指数をやめる）", async ({
+  test("[FR-3 受入基準 / screens S-1] 「会場内パーセンタイル」「イン崩れ指数」の言葉が出ない（0〜100の指数をやめる）", async ({
     page,
   }) => {
     await openAnyRaceCautionCard(page);
@@ -155,33 +209,80 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     await expect(page.getByText(/イン崩れ指数/)).toHaveCount(0);
   });
 
-  test("[FR-3] 理由は勝率差の1つだけで、「ほかの材料は龍神ソナーの『差がつく材料』で」の1行が出る", async ({
+  test("[screens S-1] 範囲の文「1号艇と、他の艇で一番高い勝率の差が今日と同じくらい（帯）のレース。全国◯件（期間）」が出る", async ({
     page,
   }) => {
     await openAnyRaceCautionCard(page);
     const text = await page.evaluate(() => document.body.innerText);
-    expect(REASON_PATTERN.test(text), "勝率差の理由の記載が見当たらない").toBe(
-      true,
+    const m = text.match(
+      /1号艇と、他の艇で一番高い勝率の差が今日と同じくらい（([^）]+)）のレース/,
     );
+    expect(m, "範囲の文が見つからない").not.toBeNull();
+    // 帯は「−2.5〜−2.0」の形、端は「−3.5未満」「+3.0以上」（spec 用語）
+    expect(m[1]).toMatch(
+      /^(−?\d+(?:\.\d+)?〜[−+]?\d+(?:\.\d+)?|−3\.5未満|\+3\.0以上)$/,
+    );
+  });
+
+  test("[spec 用語 既定値] 勝率差の帯が端のとき「−3.5未満」「+3.0以上」の表記になる", async ({
+    page,
+  }) => {
+    const pattern = new RegExp(
+      `${BAND_LOWER_EDGE}|\\${BAND_UPPER_EDGE.replace("+", "\\+")}`,
+    );
+    const href = await findRaceWithCardText(page, pattern);
+    test.skip(!href, "端の帯（−3.5未満 または +3.0以上）のレースへ辿れない");
+    await expect(page.getByText(pattern)).toBeVisible();
+  });
+
+  test("[screens S-1] 理由は「今日の勝率差（全国勝率）」の見出しと3行の表（1号艇・一番高い◯号艇・差）", async ({
+    page,
+  }) => {
+    await openAnyRaceCautionCard(page);
+    await expect(page.getByText(REASON_HEADING)).toBeVisible();
+    const text = await page.evaluate(() => document.body.innerText);
+    expect(
+      REASON_ROW_ME.test(text),
+      "「1号艇 名前（級）勝率」の行が見当たらない",
+    ).toBe(true);
+    expect(
+      REASON_ROW_MAX.test(text),
+      "「一番高い◯号艇 名前（級）勝率」の行が見当たらない",
+    ).toBe(true);
+    expect(REASON_ROW_DIFF.test(text), "「差 ◯」の行が見当たらない").toBe(true);
     await expect(page.getByText(OTHER_MATERIAL_NOTE)).toBeVisible();
   });
 
-  test("[FR-3 / screens 画面の流れ] 龍神ソナー・思考アシストへの導線がある", async ({
+  test("[screens S-1] 導線は「類似レース◯件で見ると？ 龍神ソナー›」「軸から考える 思考アシスト›」の2つのボタン", async ({
     page,
   }) => {
     await openAnyRaceCautionCard(page);
+    await expect(page.getByText(SONAR_BUTTON_TEXT).first()).toBeVisible();
     await expect(linkTo(page, /龍神ソナー/)).toBeVisible();
+    await expect(page.getByText(ASSIST_BUTTON_TEXT).first()).toBeVisible();
     await expect(linkTo(page, /思考アシスト/)).toBeVisible();
   });
 
-  test("[FR-6 / screens 画面の流れ] 「段ごとの実績」のリンクで /accuracy へ移る", async ({
+  test("[screens S-1] 「段ごとの実績を見る」のリンクで /accuracy へ移る", async ({
     page,
   }) => {
     await openAnyRaceCautionCard(page);
-    const link = linkTo(page, /段ごとの実績/);
+    const link = linkTo(page, /段ごとの実績を見る/);
     await expect(link).toBeVisible();
     await link.click();
     await expect(page).toHaveURL(/\/accuracy/);
+  });
+
+  test("[screens S-1] 旧「龍神ソナーへの案内」ボタン（ai-tab-sonar-link）が外れている", async ({
+    page,
+  }) => {
+    // screens S-1「展開予測のブロックと『龍神ソナーへの案内』ボタン（data-testid=
+    // "ai-tab-sonar-link"）を外す」。撤去対象の旧ボタンに文言の手がかりが無いため、
+    // この1か所だけ data-testid セレクタの例外を使う（依頼元から受領した前提）
+    await openAnyRaceCautionCard(page);
+    await expect(
+      page.locator(`[data-testid="${OLD_SONAR_LINK_TESTID}"]`),
+    ).toHaveCount(0);
   });
 
   test("[FR-1] AI予想タブに展開予測のブロック・的中率が出ない", async ({
@@ -235,7 +336,7 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     await expect(page.getByText(NOTE)).toBeVisible();
   });
 
-  test("[FR-2 / screens S-1] 値が無いレースはカードを出さず、タブに空状態の1行が出る", async ({
+  test("[FR-2 / screens S-1] 値が無いレースはカードを出さず「このレースはイン崩れ注意度を出していません」の1行が出る", async ({
     page,
   }) => {
     const hrefs = await findRaceHrefs(page);
@@ -255,11 +356,8 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
       !found,
       "注意度カードが出ないレースへ辿れない（全レースに値がある）",
     );
-    // 値が無いレースに絞って「カードが出ない」ことを確かめる。空状態の具体的な文言は
-    // spec・screens に書かれていないため、タブが白紙でないことまでしか確かめられない
     await expect(aiTabCautionHeading(page)).toHaveCount(0);
-    const text = await page.evaluate(() => document.body.innerText.trim());
-    expect(text.length, "AI予想タブが空白のまま").toBeGreaterThan(0);
+    await expect(page.getByText(EMPTY_STATE_TEXT)).toBeVisible();
   });
 
   for (const width of [375, 1440]) {
@@ -272,9 +370,65 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
       const p = await readCautionPercent(page);
       expect(p).not.toBeNull();
       await expect(page.getByText(/全国\s*[\d,]+\s*件/).first()).toBeVisible();
+      await expect(page.getByText(REASON_HEADING)).toBeVisible();
       await expect(linkTo(page, /龍神ソナー/)).toBeVisible();
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// S-2 レース一覧のバッジ（RaceCard.jsx の拡張、FR-1・FR-5）
+// ---------------------------------------------------------------------------
+
+test.describe("S-2 会場のレース一覧（/races/:date/:venueCode）のバッジ", () => {
+  test("[FR-5 / screens S-2] 3段の札と割合のバッジが出る（例「▲ 崩れやすい 65%」）", async ({
+    page,
+  }) => {
+    const href = await findVenueListHref(page);
+    test.skip(
+      !href,
+      "ホームから /races/:date/:venueCode への導線が無い（開催の無い日等）",
+    );
+    await page.goto(withCaution(href));
+    const text = await page.evaluate(() => document.body.innerText);
+    expect(
+      LEVEL_NAMES.some((n) => text.includes(n)),
+      "段の札（崩れやすい/中くらい/堅め）が見当たらない",
+    ).toBe(true);
+    expect(text).toMatch(/\d+(?:\.\d+)?%/);
+  });
+
+  test("[screens S-2 承認] 真ん中の段（中くらい）のバッジは色なし・枠線だけで出る", async ({
+    page,
+  }) => {
+    const href = await findVenueListHref(page);
+    test.skip(
+      !href,
+      "ホームから /races/:date/:venueCode への導線が無い（開催の無い日等）",
+    );
+    await page.goto(withCaution(href));
+    const middle = page.getByText(/中くらい/).first();
+    test.skip(
+      !(await middle.isVisible().catch(() => false)),
+      "この一覧に「中くらい」の段のレースが無い",
+    );
+    expect(await hasFrame(middle), "中くらいの段のバッジに枠線が無い").toBe(
+      true,
+    );
+  });
+
+  test("[FR-1 / screens S-2] 展開予測の的中/外れのバッジが出ない", async ({
+    page,
+  }) => {
+    const href = await findVenueListHref(page);
+    test.skip(
+      !href,
+      "ホームから /races/:date/:venueCode への導線が無い（開催の無い日等）",
+    );
+    await page.goto(withCaution(href));
+    const text = await page.evaluate(() => document.body.innerText);
+    expect(text).not.toMatch(/的中|外れ/);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -338,12 +492,12 @@ test.describe("S-7 思考アシスト「堅い？荒れる？」", () => {
 // S-3 ホームの今日のハイライト（FR-5）
 // ---------------------------------------------------------------------------
 
-test.describe("S-3 ホームの今日のハイライト", () => {
-  test("[FR-5] 今日のハイライトに注意度の割合と段の札が出る", async ({
+test.describe("S-3 ホームの今日のイン崩れ注意度（/）", () => {
+  test("[screens S-3] 見出し「今日のイン崩れ注意度」の下に注意度の割合と段の札が出る", async ({
     page,
   }) => {
     await page.goto(withCaution("/"));
-    const heading = page.getByText(/イン崩れ注意度/).first();
+    const heading = page.getByText("今日のイン崩れ注意度").first();
     test.skip(
       !(await heading.isVisible().catch(() => false)),
       "今日のハイライトが出ていない（対象レースが無い等）",
@@ -354,6 +508,19 @@ test.describe("S-3 ホームの今日のハイライト", () => {
       LEVEL_NAMES.some((n) => text.includes(n)),
       "段の札（崩れやすい/中くらい/堅め）が見当たらない",
     ).toBe(true);
+  });
+
+  test("[screens S-3] 崩れやすい順・堅めの順の両方が、切り替え操作なしで同時に見える", async ({
+    page,
+  }) => {
+    await page.goto(withCaution("/"));
+    const heading = page.getByText("今日のイン崩れ注意度").first();
+    test.skip(
+      !(await heading.isVisible().catch(() => false)),
+      "今日のハイライトが出ていない（対象レースが無い等）",
+    );
+    await expect(page.getByText(/崩れやすい/).first()).toBeVisible();
+    await expect(page.getByText(/堅め/).first()).toBeVisible();
   });
 
   test("[FR-5 / FR-3] 今日のハイライトに「会場内パーセンタイル」の言葉が出ない", async ({
@@ -470,24 +637,28 @@ test.describe("S-5 /accuracy イン崩れ注意度の段ごとの実績", () => 
 });
 
 // ---------------------------------------------------------------------------
-// FR-1 展開予測を画面から外す（残り: /races・/about）
+// FR-1 展開予測を画面から外す（残り: /races）
 // ---------------------------------------------------------------------------
 
-test.describe("FR-1 展開予測を画面から外す", () => {
-  test("[FR-1 / S-6] /races に日別の展開予測の的中率が出ない", async ({
-    page,
-  }) => {
-    await page.goto(withCaution("/races"));
-    const text = await page.evaluate(() => document.body.innerText);
-    expect(text).not.toMatch(/展開予測/);
-  });
+test("[FR-1 / S-6] /races に日別の展開予測の的中率が出ない", async ({
+  page,
+}) => {
+  await page.goto(withCaution("/races"));
+  const text = await page.evaluate(() => document.body.innerText);
+  expect(text).not.toMatch(/展開予測/);
+});
 
-  test("[FR-1 / FR-7 / S-8] /about から展開予測の説明・「的中率約79%」が消えている", async ({
+// ---------------------------------------------------------------------------
+// S-8 説明のページ（About・FAQ・HowToUse、FR-1・FR-7）
+// ---------------------------------------------------------------------------
+
+for (const path of ["/about", "/faq", "/how-to-use"]) {
+  test(`[FR-1 / FR-7 / S-8] ${path} から展開予測の説明・「的中率約79%」が消えている`, async ({
     page,
   }) => {
-    await page.goto(withCaution("/about"));
+    await page.goto(withCaution(path));
     const text = await page.evaluate(() => document.body.innerText);
     expect(text).not.toContain("的中率約79%");
     expect(text).not.toMatch(/展開予測/);
   });
-});
+}

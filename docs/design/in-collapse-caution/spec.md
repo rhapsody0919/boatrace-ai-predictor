@@ -52,7 +52,7 @@
 | AI予想タブ（発走前の展開予測カード `PredictionCard statKey="turn"`・`TurnPatternList`、確定後の答え合わせと1着の艇の進入コースの注記） | 外す |
 | レース一覧の的中/外れバッジ（`RaceCard.jsx`） | 外す |
 | `/races` の日別の展開予測の的中率 | 外す |
-| `/hit-races` | `/accuracy` へ301。ヘッダーのナビ・sitemap から外す |
+| `/hit-races` | `/accuracy` へ転送（最初は307、数日後に308。plan「URL」）。ヘッダーのナビ・sitemap から外す |
 | `/accuracy` | 展開予測の数字を外し、FR-6 の帯ごとの実績ページに作り替える |
 | About・FAQ・HowToUse・HomeAiIntro の展開予測の説明と「的中率約79%」 | 外す（About は FR-7 で書き直す） |
 | 確定後のシェア文（`generateTurnHitShareText` 等）・AIコピーの展開予測の節 | 外す |
@@ -61,7 +61,7 @@
 - 計算（`predictFirstMark`・`turnPrediction`）は残す。残す理由は SNS 企画の買い目・本文・カード（`campaignVolatilityModel.js` ほか）と旧3モデルの生成（`generate-predictions.js`）が使っていること、当たり方の記録（`is_hit_turn`）。AI予想の本命・出現パターンは展開予測に依存しない（コース別勝率の上位2艇）。データ出走表にAI予想行は無い（2026-10-13 にコードで確かめて直した。[plan.md](./plan.md) §8）
 - 共通の決まり手名 `TECHNIQUE_NAMES`（`src/utils/turnPrediction.js:7`）は `raceIndicators.jsx` も使うので、置き場所を移して残す
 - `?tab=aiPrediction` は今のまま AI予想タブで開く（案A）
-- 受入基準: 上の全画面で、展開予測の確率・的中/外れ・的中率が出ない（4言語）。`/hit-races` が301で `/accuracy` に移る。AI予想の本命・データ出走表のAI予想行の値が変更の前後で変わらない
+- 受入基準: 上の全画面で、展開予測の確率・的中/外れ・的中率が出ない（4言語）。`/hit-races` が `/accuracy` に移る。AI予想の本命の値が変更の前後で変わらない
 
 ### FR-2 イン崩れ注意度の値（P0）
 
