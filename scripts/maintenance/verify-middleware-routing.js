@@ -13,9 +13,12 @@
  * 6. 検索・ユーザー起点の取得に使う UA（OAI-SearchBot・bingbot 等）もスナップショットに振り分け、
  *    Googlebot と人間のブラウザは振り分けない
  * 7. 日本語の / と /venue/1〜24 は、配る UA のときだけ関数（/api/bot-page/*）へ振り分ける（ADR 0089）。
- *    /venue/01・範囲外・数字以外・言語の接頭辞付き・/races/… は振り分けない。
+ *    /venue/01・範囲外・数字以外・/races/… は振り分けない（言語版は 7b）。
  *    rewrite 先に元のクエリ文字列を持ち込まない（CDN キャッシュのキーを増やさない）
- * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24 だけ配る UA を除外する（missing）。
+ * 7b. 言語版の /{en|zh-TW|ko}/（末尾の / なしも）と /{lang}/venue/1〜24 は、配る UA のときだけ
+ *    /api/bot-page/{lang}/top・/api/bot-page/{lang}/venue/{code} へ振り分ける（BOA-848 第2段）。
+ *    言語ごとに rewrite 先が分かれ（CDN のキーが言語で混ざらない）、言語の一覧と会場コードの範囲が関数（api/_lib/botPage.js）と一致する
+ * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24（と言語版）だけ配る UA を除外する（missing）。
  *    除外する UA の一覧が BOT_PAGE_USER_AGENTS と一致し、他のページの no-store は外れない
  *    （外すと関数の応答が CDN に残らない。Preview で MISS が続いたため、ADR 0089「未確認」の1）
  * 9. 選手ページ（/racer/{4桁}、BOA-848）は配る UA のときだけ /ai-snapshots/racer/{番号}.html へ振り分ける。
@@ -30,6 +33,7 @@ import { readFileSync } from "node:fs";
 import middleware, { config } from "../../middleware.js";
 import {
   AI_CRAWLER_USER_AGENTS,
+  BOT_PAGE_PREFIXED_LANGS,
   BOT_PAGE_USER_AGENTS,
   resolveSnapshotPath,
 } from "../../src/config/aiCrawlerBots.js";
@@ -338,6 +342,13 @@ const BOT_PAGE_ROUTES = [
   ["/venue/9", "/api/bot-page/venue/9"],
   ["/venue/10", "/api/bot-page/venue/10"],
   ["/venue/24", "/api/bot-page/venue/24"],
+  // 言語版（BOA-848 第2段）。人の URL は /en/（canonical）だが、/en も同じ SPA のトップなので同じ HTML を返す
+  ...["en", "zh-TW", "ko"].flatMap((lang) => [
+    [`/${lang}/`, `/api/bot-page/${lang}/top`],
+    [`/${lang}`, `/api/bot-page/${lang}/top`],
+    [`/${lang}/venue/1`, `/api/bot-page/${lang}/venue/1`],
+    [`/${lang}/venue/24`, `/api/bot-page/${lang}/venue/24`],
+  ]),
 ];
 for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
   for (const [path, target] of BOT_PAGE_ROUTES) {
@@ -369,12 +380,31 @@ const NOT_BOT_PAGE_PATHS = [
   "/venue/1/",
   "/venue/1/extra",
   "/venue",
-  "/en/venue/1",
-  "/en/",
-  "/en",
-  "/zh-TW/venue/1",
   "/races/2026-10-11/1",
   "/race/20260929-01-01",
+  // 言語版でも、0埋め・範囲外・ほかのパス・対応外の言語・大文字違いは振り分けない
+  "/en/venue/01",
+  "/en/venue/0",
+  "/en/venue/25",
+  "/en/venue/abc",
+  "/en/venue/1/",
+  "/en/venue",
+  "/en//",
+  "/en/race/2026-10-11-01-01",
+  "/en/blog",
+  "/en/guide",
+  "/en/venues",
+  "/zh-TW/today",
+  "/ko/racer/3256",
+  "/fr/",
+  "/fr/venue/1",
+  "/EN/",
+  "/EN/venue/1",
+  "/zh-tw/venue/1",
+  "/ja/",
+  "/ja/venue/1",
+  "/english",
+  "/en-US/venue/1",
 ];
 for (const path of NOT_BOT_PAGE_PATHS) {
   for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
@@ -395,6 +425,8 @@ for (const [path, target] of [
   ["/venue/1?x=1", "/api/bot-page/venue/1"],
   ["/venue/1?x=2", "/api/bot-page/venue/1"],
   ["/venue/1?date=2026-10-01", "/api/bot-page/venue/1"],
+  ["/en/?x=1", "/api/bot-page/en/top"],
+  ["/ko/venue/3?date=2026-10-01", "/api/bot-page/ko/venue/3"],
 ]) {
   const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
   check(
@@ -423,6 +455,57 @@ for (const path of ["/winning-technique", "/today", "/blog/some-article"]) {
       Boolean(routed) === accepted,
     );
   }
+  // 言語版: 言語の一覧が関数と同じで、振り分け先を関数が受ける（会場コードの範囲も同じ）
+  const { BOT_PAGE_PREFIXED_LANGS: FUNCTION_LANGS, prefixedLangFromUrl } =
+    await import("../../api/_lib/botPage.js");
+  check(
+    "言語版の言語の一覧が関数（api/_lib/botPage.js）と同じ",
+    JSON.stringify(BOT_PAGE_PREFIXED_LANGS) === JSON.stringify(FUNCTION_LANGS),
+    `${BOT_PAGE_PREFIXED_LANGS} / ${FUNCTION_LANGS}`,
+  );
+  for (const lang of [...BOT_PAGE_PREFIXED_LANGS, "fr", "ja"]) {
+    for (const code of ["0", "01", "1", "24", "25", "abc"]) {
+      const path = `/${lang}/venue/${code}`;
+      const routed = resolveSnapshotPath(path, BOT_UA);
+      const accepted =
+        prefixedLangFromUrl("venue", path) === lang &&
+        venueCodeFromUrl(path, lang) !== null;
+      check(
+        `${path}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
+        Boolean(routed) === accepted,
+      );
+      if (routed) {
+        check(
+          `${path}: rewrite 先 ${routed} も関数が同じ言語・会場として受ける`,
+          prefixedLangFromUrl("venue", routed) === lang &&
+            venueCodeFromUrl(routed, lang) === Number(code),
+        );
+      }
+    }
+    for (const path of [`/${lang}/`, `/${lang}`]) {
+      const routed = resolveSnapshotPath(path, BOT_UA);
+      const accepted = prefixedLangFromUrl("top", path) === lang;
+      check(
+        `${path}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
+        Boolean(routed) === accepted,
+      );
+      if (routed) {
+        check(
+          `${path}: rewrite 先 ${routed} も関数が同じ言語として受ける`,
+          prefixedLangFromUrl("top", routed) === lang,
+        );
+      }
+    }
+  }
+  // 言語ごとに rewrite 先が違う（CDN のキーで言語が混ざらない）
+  const targets = ["/", "/en/", "/zh-TW/", "/ko/"].map((p) =>
+    resolveSnapshotPath(p, BOT_UA),
+  );
+  check(
+    "/・/en/・/zh-TW/・/ko/ の rewrite 先がすべて違う",
+    new Set(targets).size === 4,
+    targets.join(","),
+  );
 }
 check(
   "ページ単位の UA 集合は AI_CRAWLER_USER_AGENTS の部分集合（Googlebot を含まない）",
@@ -517,6 +600,11 @@ console.log(
       ({ re, missingUa }) =>
         re.test(path) && !(missingUa && new RegExp(missingUa).test(ua)),
     );
+  check(
+    "missing の付いた no-store 規則は / ・/venue/N・言語版のトップ・言語版の会場の4つ",
+    noStoreRules.filter((r) => r.missingUa).length === 4,
+    String(noStoreRules.filter((r) => r.missingUa).length),
+  );
   for (const rule of noStoreRules.filter((r) => r.missingUa)) {
     const names = rule.missingUa.match(/\(\?:([^)]+)\)/)?.[1].split("|") ?? [];
     check(
