@@ -372,7 +372,8 @@ export const METRICS = {
     aria: (v) => v.toFixed(3),
   },
   exh_st: {
-    label: "展示ST",
+    // 図は平均ST。展示ST は押して比べる所で、本番のスタートとは別と名前に書く（spec D-47 (1)）
+    label: "展示ST（本番のスタートとは別）",
     short: "展示ST",
     value: (r) => r.exhSt,
     text: (v, r) => `${r?.exhFlying ? "F" : ""}${stText(Math.abs(v), 2)}`,
@@ -430,6 +431,20 @@ function span(values) {
 }
 
 /**
+ * 展示タイムの6艇の順位（艇番順）。同タイムは同じ順位、値の無い艇は null（龍神ソナーの区分と同じ min 順位。spec D-47 (2)）
+ * @param {{exhTime: number|null}[]} racers
+ * @returns {(number|null)[]}
+ */
+export const exhRanks = (racers) =>
+  racers.map((r) =>
+    r.exhTime == null
+      ? null
+      : 1 +
+        racers.filter((o) => o.exhTime != null && o.exhTime < r.exhTime)
+          .length,
+  );
+
+/**
  * 1着になる組（20通り）の合成オッズ。欠場の艇を含む組・オッズの無い組は数えない（D-38）
  * @returns {Map<number, number>} 艇番 → 合成オッズ
  */
@@ -451,7 +466,7 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
  *   pastWin: 買い目レンズの「過去の{着順}」（艇ごとの差がつく材料の範囲での target の着順。assistSummary.b1Usual）
  *   placeRates: 相手レンズの各艇の2着以内・3着以内（Map<艇, {t2: {k, n}, t3: {k, n}}>。艇ごとの範囲、spec D-46）
  *   target: 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。spec D-44・D-46 で買い目だけ）。1以外では人気の札を「人気（1着）」にして薄くする
- *   stBasis: 展開レンズの展示前の平均ST（"course"＝このコース・直近30走、"overall"＝直近30走。BOA-815 案A）
+ *   stBasis: 展開レンズの平均ST（展示前も展示後も。spec D-47 (1)。"course"＝このコース・直近30走、"overall"＝直近30走。BOA-815 案A）
  *   stMissing: v16 の保存が無いと分かった（"not_saved"）。軸レンズに平均ST を出せない理由を書く
  *   hasToday: v16 の today が届いているか。届いていない（読み込み中・保存が無い）ときは v16 の値（平均ST）を
  *   「記録なし」と書かず出さない（記録が無いのではなく、データが無いだけ。ファン評価 1周目 指摘3）
@@ -496,6 +511,14 @@ export function boardModel({
     return {
       kind: "metric",
       title: `${def.label}を6艇で比べる`,
+      // 展開レンズの点から開いた展示ST は、戻る先（図の平均ST）を名前で書く（承認モック v2 ⑤）
+      back:
+        metric === "exh_st" && lens === "flow"
+          ? ASSIST_COPY.backTo(
+              METRICS[stBasis === "overall" ? "st_mean30" : "st_course"]
+                .label,
+            )
+          : null,
       left: st ? ".00" : (def.tick ?? def.text)(s.lo),
       right: st ? ".25" : (def.tick ?? def.text)(s.hi),
       good: dir === "min" ? "left" : "right",
@@ -505,6 +528,8 @@ export function boardModel({
         boat: r.boat,
         x: plotOf(r),
         nums: [numOf(metric, r, b)],
+        // 展示ST の F は良いスタートと読まれないよう、点を赤い枠で出す（BOA-801 2。展示ST は展開の図からここへ移った、spec D-47 (1)）
+        flying: metric === "exh_st" && Boolean(r.exhFlying),
       })),
     };
   }
@@ -534,26 +559,29 @@ export function boardModel({
   }
 
   if (lens === "flow") {
-    // 展示後は展示ST（F は最良の候補から外す）、展示前は平均ST。左ほど早い。
-    // 展示前の平均ST は「このコース｜直近30走」を切り替える（BOA-815 案A。龍神ソナーと同じ操作）
-    const overall = !post && stBasis === "overall";
-    const key = post ? "exh_st" : overall ? "st_mean30" : "st_course";
-    const value = (r) => (post ? r.exhSt : overall ? r.stMean : r.stCourse);
+    // 横軸は展示前も展示後も平均ST（左ほど早い）。「このコース｜直近30走」を切り替える（BOA-815 案A。龍神ソナーと同じ操作）。
+    // 展示ST は本番のスタートとは別なので図にせず、展示後は点の値を押した6艇比較で出す（spec D-47 (1)）
+    const overall = stBasis === "overall";
+    const key = overall ? "st_mean30" : "st_course";
+    const value = (r) => (overall ? r.stMean : r.stCourse);
     const best2 = bestBoats(
       key,
       racers.map((r) => ({
         boat: r.boat,
         value: value(r),
-        flying: r.exhFlying,
         // このコースの走が少ない艇（補った値を含む）は金枠を付けない（龍神ソナーの平均STの表と同じ）
         runs: key === "st_course" ? r.stCourseN : null,
       })),
     );
+    const ranks = post ? exhRanks(racers) : null;
     return {
       kind: "flow",
-      title: post ? "展示ST（左ほど早い）" : `${METRICS[key].label} 左ほど早い`,
-      // 切り替えは展示前だけ（展示の後は横軸が展示ST になる）
-      basis: post ? null : overall ? "overall" : "course",
+      title: `${METRICS[key].label} 左ほど早い`,
+      basis: overall ? "overall" : "course",
+      // v16 の保存が無いレースは平均ST の点が出ない。黙って空の図にせず理由を書く（ファン評価 1周目 指摘3）
+      noSt: stMissing,
+      // 展示後は展示ST の6艇比較への入口を図の上に置く（点の値が無い艇・レースでも入れる。同 指摘3・4）
+      exhCompare: post && racers.some((r) => r.exhSt != null),
       left: ".00",
       right: ".25",
       good: "left",
@@ -562,28 +590,37 @@ export function boardModel({
       slit: true,
       rows: racers.map((r) => {
         const v = value(r);
-        const flying = post && r.exhFlying;
-        // F は良いスタートと読まれないよう「F .01（フライング）」と書き、点は左端の外に赤い枠で出す（BOA-801 2）
-        const text =
-          v == null
+        // 展示後の点の値は押すと展示ST の6艇比較。展示ST が無い艇は押せない
+        const dotMetric = post
+          ? r.exhSt == null
             ? null
-            : flying
-              ? `F ${stText(Math.abs(v), 2)}（フライング）`
-              : stText(v, post ? 2 : 3);
+            : "exh_st"
+          : v == null
+            ? null
+            : key;
         return {
           boat: r.boat,
-          // F は .00 より左（目盛りの端に寄せる）。平均ST（展示前）は F が無い
-          x:
-            v == null ? null : post && r.exhFlying ? -Math.abs(v) : Math.abs(v),
+          x: v == null ? null : Math.abs(v),
           nums: [],
-          // 展示前の値（このコースの平均ST）は v16 から。届いていなければ「記録なし」とも書かない
-          pending: !post && !hasToday,
-          dotText: text,
+          // このコースの平均ST は v16 から。届いていなければ「記録なし」とも書かない
+          pending: !hasToday,
+          dotText: v == null ? null : stText(v, 3),
           dotBest: best2.has(r.boat),
-          flying,
-          // 点の値は押すと6艇比較（読み上げは「{項目名} {値}、6艇で比べる」）
-          dotMetric: v == null ? null : key,
-          dotAria: v == null ? null : METRICS[key].aria(v, r),
+          dotMetric: v == null ? null : dotMetric,
+          // 読み上げは見えている値（平均ST）から始め、押すと何が出るかを続ける（見えている文字を名前に含める）
+          dotLabel:
+            v == null || !dotMetric
+              ? null
+              : post
+                ? ASSIST_COPY.compareExhStAria(
+                    METRICS[key].aria(v, r),
+                    METRICS.exh_st.label,
+                  )
+                : ASSIST_COPY.compareAria(
+                    METRICS[key].label,
+                    METRICS[key].aria(v, r),
+                  ),
+          exhRank: ranks?.[r.boat - 1] ?? null,
           // このコースの走が5走未満で直近30走で補った艇（BOA-815 方針4）
           filled: key === "st_course" && v != null && r.stCourseFilled,
         };

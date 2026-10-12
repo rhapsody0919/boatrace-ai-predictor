@@ -100,7 +100,9 @@ function Track({ model, row, onMetric }) {
             type="button"
             className={`${valClass} ta-track-val-btn`}
             style={{ left: `${x}%` }}
-            aria-label={ASSIST_COPY.compareAria(def.label, row.dotAria)}
+            aria-label={
+              row.dotLabel ?? ASSIST_COPY.compareAria(def.label, row.dotAria)
+            }
             onClick={() => onMetric(row.dotMetric, row.boat)}
           >
             {row.dotText}
@@ -169,7 +171,7 @@ export default function RaceLaneBoard({
       data-guide="board"
     >
       {model.basis && onBasis && (
-        // 展示前の平均ST の切り替え（BOA-815 案A）。展示の後は横軸が展示ST になるので出さない
+        // 平均ST の切り替え（BOA-815 案A）。展示後も横軸は平均ST（spec D-47 (1)）
         <div className="ta-basis">
           <span>{ASSIST_COPY.stBasisGroup}</span>
           <span
@@ -189,6 +191,15 @@ export default function RaceLaneBoard({
             ))}
           </span>
         </div>
+      )}
+      {model.exhCompare && (
+        <button
+          type="button"
+          className="ta-exh-open"
+          onClick={() => onMetric("exh_st", null)}
+        >
+          {ASSIST_COPY.exhStOpen} ›
+        </button>
       )}
       {/* 着順の切り替えと注記はオッズの見出しより上に置く。見出しと点の間に挟むと、点の位置まで着順で変わったように見える
           （BOA-831 ファン評価 1周目 指摘4） */}
@@ -248,6 +259,12 @@ export default function RaceLaneBoard({
                 {r.absent && (
                   <span className="ta-tag ta-tag-warn">
                     {ASSIST_COPY.absent}
+                  </span>
+                )}
+                {row.exhRank != null && (
+                  // 展示後の展示タイムの6艇の順位（spec D-47 (2)）。数字は点の上の値とこの札の2個まで
+                  <span className="ta-tag ta-tag-exh ta-num">
+                    {ASSIST_COPY.exhRankTag(row.exhRank)}
                   </span>
                 )}
                 {row.filled && (
@@ -328,7 +345,7 @@ export default function RaceLaneBoard({
       {model.noSt && <p className="ta-note">{ASSIST_COPY.stNoData}</p>}
       {model.kind === "metric" && (
         <button type="button" className="ta-back" onClick={onBack}>
-          × {ASSIST_COPY.backToFigure}
+          × {model.back ?? ASSIST_COPY.backToFigure}
         </button>
       )}
     </figure>

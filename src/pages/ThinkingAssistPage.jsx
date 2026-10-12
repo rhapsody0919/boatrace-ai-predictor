@@ -22,7 +22,9 @@ import LensBar from "../components/race/assist/LensBar";
 import RaceLaneBoard from "../components/race/assist/RaceLaneBoard";
 import BetFooter from "../components/race/assist/BetFooter";
 import MarkSheet from "../components/race/assist/MarkSheet";
-import LensSummary from "../components/race/assist/LensSummary";
+import LensSummary, {
+  FlowConclusion,
+} from "../components/race/assist/LensSummary";
 import BoatDeepDive from "../components/race/assist/BoatDeepDive";
 import TheorySheet from "../components/race/assist/TheorySheet";
 import GlossarySheet from "../components/race/assist/GlossarySheet";
@@ -44,6 +46,7 @@ import {
   boardModel,
   buildRacers,
   classLineup,
+  exhRanks,
   restClassCounts,
   roughCard,
   roughState,
@@ -51,6 +54,7 @@ import {
   similarSummary,
 } from "../utils/assistModel";
 import {
+  axisMarks,
   winFollowers,
   HINT_BOAT,
   b1Usual,
@@ -58,6 +62,7 @@ import {
   factChips,
   factsScope,
   factsScopeLabel,
+  hintForms,
   hintSummary,
   partsChangedBoats,
   tiltOutliers,
@@ -88,8 +93,12 @@ const initialState = {
   // 入口から開くたびに深掘りを作り直して、開いている艇でも材料の位置まで送る
   deepNonce: 0,
   metric: null,
-  // 展開レンズの展示前の平均ST（BOA-815 案A）
+  // 展開レンズの平均ST（BOA-815 案A。展示後も、spec D-47 (1)）
   stBasis: "course",
+  // 展開レンズで選んだスリットの形（形が2つ以上当てはまるとき。null＝率が一番高い形。承認モック v2 ④）
+  flowForm: null,
+  // 相手レンズで選んだ軸の艇（BOA-845、spec D-48 (6)）。null＝まだ選んでいない（1着の候補が1艇ならその艇、無ければ1号艇）
+  placeAxis: null,
   // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
@@ -149,6 +158,10 @@ function reducer(state, action) {
       return { ...state, metric: null };
     case "stBasis":
       return { ...state, stBasis: action.basis, metric: null };
+    case "flowForm":
+      return { ...state, flowForm: action.form };
+    case "placeAxis":
+      return { ...state, placeAxis: action.boat };
     case "closeDeep":
       return { ...state, deep: null, metric: null };
     case "toggleBet": {
@@ -213,7 +226,15 @@ function ThinkingAssistBody() {
     saveAssistSession(raceId, state);
     // 残す項目が変わったときだけ書く（深掘り・シートの開閉では書かない）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [raceId, state.bets, state.budget, state.mode, state.target, state.lens]);
+  }, [
+    raceId,
+    state.bets,
+    state.budget,
+    state.mode,
+    state.target,
+    state.lens,
+    state.placeAxis,
+  ]);
   // 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
   // シート・ガイドの memo の中からも呼ぶので、状態は描画のたびに ref へ移して act 自体は作り直さない
   const stateRef = useRef(state);
@@ -320,6 +341,13 @@ function ThinkingAssistBody() {
     () => (ncScenario ? hintSummary(ncScenario, today) : null),
     [ncScenario, today],
   );
+  // 今日当てはまる形（率の高い順）と選んでいる形（承認モック v2 ④）。選んだ形が無くなったら先頭
+  const flowForms = useMemo(
+    () => hintForms(ncScenario, today),
+    [ncScenario, today],
+  );
+  const flowHint =
+    flowForms.find((f) => f.form === state.flowForm) ?? flowForms[0] ?? null;
 
   // 図の印（screens「レンズごとの図 C」の印）
   const marks = useMemo(() => {
@@ -338,15 +366,12 @@ function ThinkingAssistBody() {
             theory: `TC-F:${i + 1}:${c.key}`,
           });
       });
-    if (state.lens === "flow" && hints?.top) {
-      const top = hints.top;
+    if (state.lens === "flow" && flowHint) {
+      const top = flowHint;
       const boat = HINT_BOAT[top.id];
       if (boat)
         add(boat, {
-          text: ASSIST_COPY.hintMark(
-            ASSIST_COPY.formNames[top.form],
-            Math.round((top.hit[0] / top.hit[1]) * 100),
-          ),
+          text: ASSIST_COPY.hintMark(ASSIST_COPY.formNames[top.form]),
           hit: true,
           theory: `TC-H:${top.id}`,
         });
@@ -376,7 +401,7 @@ function ThinkingAssistBody() {
         });
     }
     return out;
-  }, [state.lens, boatFacts, hints, post, racers, maintenanceRows]);
+  }, [state.lens, boatFacts, flowHint, post, racers, maintenanceRows]);
 
   const model = useMemo(
     () =>
@@ -423,6 +448,14 @@ function ThinkingAssistBody() {
     [v16Off, today, race, data.scenario.byKey],
   );
   const national = anyCell(data.scenario.na.data);
+  const vaScenario = data.scenario.va.data?.scenario ?? null;
+  // 最初に選ばれている軸の艇（spec D-48 (6)）: 前に選んだ艇（同じタブ・同じレースの保存）→ 1着の候補が1艇だけならその艇 → 1号艇
+  const firstPicks = [...state.bets[1]].filter(
+    (b) => !data.absentBoats.includes(b),
+  );
+  const placeAuto = state.placeAxis == null && firstPicks.length === 1;
+  const placeAxis = state.placeAxis ?? (placeAuto ? firstPicks[0] : 1);
+  const placeF = winFollowers(vaScenario, placeAxis);
   const venueAll = anyCell(data.scenario.va.data);
   const rough = roughCard(scope, national);
   const lineup = classLineup(today?.classes, 1);
@@ -524,6 +557,18 @@ function ThinkingAssistBody() {
       racecardStage: data.similar.racecardStage,
       reflecting: v16Status === "exhibition_reflecting",
       round: data.round,
+      exhRanks: post ? exhRanks(racers) : null,
+      hint: flowHint,
+      forms: flowForms,
+      onForm: (form) => act({ type: "flowForm", form }),
+      national: v16Off ? null : (data.scenario.na.data?.scenario ?? null),
+      original:
+        data.original.data?.state === "published" ? data.original.data : null,
+      racers,
+      venue: venueName,
+      onPower: () => act({ type: "lens", lens: "power" }),
+      onBet: () => act({ type: "lens", lens: "bet" }),
+      basis: state.stBasis,
     },
     power: {
       post,
@@ -552,22 +597,20 @@ function ThinkingAssistBody() {
             }
           : null,
     },
-    place:
-      factsAll && winFacts[0].scope
-        ? {
-            follow: v16Off
-              ? null
-              : winFollowers(data.scenario.axis?.data?.scenario ?? null),
-            label: factsScopeLabel(
-              winFacts[0].scope,
-              venueName,
-              1,
-              today?.classes?.[0],
-            ),
-            axisK: b1u?.k ?? 0,
-            axisN: b1u?.n ?? 0,
-          }
-        : null,
+    // 相手レンズの「{X}号艇を軸にしたときの2着」（BOA-845、spec D-48）。範囲は全艇とも会場の全レース（VA）
+    place: v16Off
+      ? null
+      : {
+          f: placeF,
+          marks: axisMarks(vaScenario, placeF, placeAxis),
+          axis: placeAxis,
+          auto: placeAuto,
+          venue: venueName,
+          raceId,
+          onAxis: (boat) => act({ type: "placeAxis", boat }),
+          ready: data.scenario.va.status === "ready",
+          failed: data.scenario.va.status === "error",
+        },
     bet: {
       bet: {
         points: tickets.length,
@@ -683,7 +726,7 @@ function ThinkingAssistBody() {
           onStage={(stage) => dispatch({ type: "stage", stage })}
           oddsAt={oddsAt}
           showSonar={isAnalogyFinderEnabled()}
-          waterType={data.venueInfo.data?.waterType ?? null}
+          tidal={data.venueInfo.data?.tidal === true}
           onVenue={() => act({ type: "sheet", sheet: "venue" })}
         >
           {post && v16Status === "exhibition_reflecting" && (
@@ -721,6 +764,8 @@ function ThinkingAssistBody() {
             狭い画面では囲みが無いのと同じ（display: contents） */}
         <div className="ta-split">
           <div className="ta-split-fig">
+            {/* 展開は結論（形の見立て・今日の展示）を図の上に（spec D-47 (3)） */}
+            {state.lens === "flow" && <FlowConclusion m={summary.flow} />}
             {cancelled && state.lens === "bet" ? (
               // 中止のレースは買い目レンズにこの1行だけ（D-38）
               <p className="ta-status">{ASSIST_COPY.cancelled}</p>

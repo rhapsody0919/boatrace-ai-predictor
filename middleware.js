@@ -14,7 +14,7 @@
  * 2. AIクローラー・SNSシェアボット向け静的スナップショット配信（ADR 0032）
  *    対象ボットのリクエストのみ、ビルド時生成済みの静的HTML（dist/ai-snapshots/）へ
  *    rewriteする（ブログ・翻訳記事・ブログ一覧・/winning-technique・/today・選手ページ）。通常ユーザー・Googlebotの挙動には影響しない。
- *    日本語の / と /venue/1〜24 は、同じ UA のときだけ関数（/api/bot-page/*）へ rewrite する（ADR 0089）
+ *    / と /venue/1〜24 とその言語版（/en/ 等）は、同じ UA のときだけ関数（/api/bot-page/*）へ rewrite する（ADR 0089、BOA-848）
  */
 import { rewrite } from "@vercel/functions";
 import { resolveSnapshotPath } from "./src/config/aiCrawlerBots.js";
@@ -42,6 +42,16 @@ export const config = {
     // ADR 0089: 日本語の / と /venue/1〜24（範囲の判定は resolveSnapshotPath 側）
     "/",
     "/venue/:path*",
+    // BOA-848 第2段: 言語版の / と /venue/1〜24（範囲の判定は resolveSnapshotPath 側）
+    "/en",
+    "/en/",
+    "/en/venue/:path*",
+    "/zh-TW",
+    "/zh-TW/",
+    "/zh-TW/venue/:path*",
+    "/ko",
+    "/ko/",
+    "/ko/venue/:path*",
   ],
 };
 

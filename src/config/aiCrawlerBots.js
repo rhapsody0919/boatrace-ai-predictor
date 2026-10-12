@@ -36,12 +36,23 @@ export function isTargetBot(userAgent) {
 // 人の URL と同じ 1〜24（0埋めなし）。api/_lib/botPage.js の VENUE_CODE と同じ範囲
 const BOT_PAGE_VENUE_PATH = /^\/venue\/([1-9]|1\d|2[0-4])$/;
 
-// 日本語の / と /venue/1〜24 だけ（ADR 0089 決定2）。言語の接頭辞付き・/venue/01・範囲外は null
+// 言語版を出す言語（BOA-848 第2段）。api/_lib/botPage.js の BOT_PAGE_PREFIXED_LANGS と同じ
+// （middleware から読むので languages.js は import しない。一致は verify-middleware-routing.js で固定）
+export const BOT_PAGE_PREFIXED_LANGS = ["en", "zh-TW", "ko"];
+const BOT_PAGE_LANG_TOP_PATH = /^\/(en|zh-TW|ko)\/?$/;
+const BOT_PAGE_LANG_VENUE_PATH = /^\/(en|zh-TW|ko)\/venue\/([1-9]|1\d|2[0-4])$/;
+
+// / と /venue/1〜24（ADR 0089 決定2）と、その言語版 /{en|zh-TW|ko}/・/{lang}/venue/1〜24（BOA-848 第2段）。
+// /venue/01・範囲外・ほかの言語・ほかのパスは null。言語版は言語ごとに rewrite 先を分ける（CDN のキーを言語で分ける）
 function resolveBotPagePath(pathname, userAgent) {
   if (!includesAny(userAgent, BOT_PAGE_USER_AGENTS)) return null;
   if (pathname === "/") return "/api/bot-page/top";
   const venueMatch = pathname.match(BOT_PAGE_VENUE_PATH);
   if (venueMatch) return `/api/bot-page/venue/${venueMatch[1]}`;
+  const langTop = pathname.match(BOT_PAGE_LANG_TOP_PATH);
+  if (langTop) return `/api/bot-page/${langTop[1]}/top`;
+  const langVenue = pathname.match(BOT_PAGE_LANG_VENUE_PATH);
+  if (langVenue) return `/api/bot-page/${langVenue[1]}/venue/${langVenue[2]}`;
   return null;
 }
 

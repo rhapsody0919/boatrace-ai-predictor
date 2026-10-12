@@ -3,6 +3,8 @@
  * Supabase RPC関数を呼び出し、CDNでキャッシュ
  */
 
+import { predictionsCacheControl } from '../_lib/predictionsCache.js';
+
 export const config = {
   runtime: 'edge',
 };
@@ -64,16 +66,8 @@ export default async function handler(req) {
 
     const data = await response.json();
 
-    // 今日の日付かどうかでキャッシュ時間を調整
-    const today = new Date().toISOString().split('T')[0];
-    const isToday = date === today;
-
-    // 今日のデータ: 5分キャッシュ（morning-init が全レースを逐次ロードする間に
-    //   古い部分データがキャッシュされても 5分以内に正しいデータへ更新される）
-    // 過去データ: 1日キャッシュ
-    const cacheControl = isToday
-      ? 's-maxage=300, stale-while-revalidate=60'
-      : 's-maxage=86400, stale-while-revalidate=3600';
+    // JST の今日より前の日付だけ1日、今日・未来は5分（判定は api/_lib/predictionsCache.js。UTC で比べない）
+    const cacheControl = predictionsCacheControl(date, Date.now());
 
     return new Response(JSON.stringify(data), {
       status: 200,
