@@ -48,6 +48,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/improve-recovery-rate-hitrate-ko.jpg": { width: 1000, height: 422 },
   "/images/blog/improve-recovery-rate-hitrate-zh-tw.jpg": { width: 1000, height: 428 },
   "/images/blog/karatsu-nige-outcome-123-rate.jpg": { width: 1200, height: 630 },
+  "/images/blog/karatsu-water-wind-guide.jpg": { width: 576, height: 391 },
   "/images/blog/kiryu-freshwater-nige-rate.jpg": { width: 1200, height: 630 },
   "/images/blog/kiryu-losing-makuri-share.jpg": { width: 1200, height: 630 },
   "/images/blog/kiryu-nige-outcome-123-rate.jpg": { width: 1200, height: 630 },
