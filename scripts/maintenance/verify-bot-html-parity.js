@@ -3,8 +3,8 @@
  * 日中の照合（ADR 0089「監視」）。本番のボット向け HTML が、人の画面の部分集合になっているかを確かめる。
  *
  * 見るもの（失敗なら終了コード 1）:
- * 1. 部分集合の照合: / と、開催中の会場2つの /venue/{code}（と、振り分けていれば言語版の /{lang}/・/{lang}/venue/{先頭の会場}、
- *    BOA-848 第2段）について、bingbot の UA で取った HTML の
+ * 1. 部分集合の照合: / と、開催中の会場2つの /venue/{code}（と、振り分けていれば言語版の /{lang}/・/{lang}/venue/{先頭の会場}・
+ *    /today・本日の先頭の会場の最初のレース /race/{id}、BOA-848 第2段）について、bingbot の UA で取った HTML の
  *    本文の文字列（見出し・会場名・節の名前・グレード・レース番号・締切時刻・最終更新）・リンク先・
  *    head（title・description・canonical・hreflang・JSON-LD）が、Playwright で人として描いたページにすべてあること
  *    （hreflang は hreflang と href の組、JSON-LD は JSON として読んだ値で比べる。人の側は document 全体を見る）
@@ -165,6 +165,8 @@ async function main() {
     venues.map((v) => v.code),
     {
       langs: PREFIXED_LANGS,
+      // 本日の先頭の会場の最初のレース（レース詳細のボット向け HTML、BOA-848 第2段。振り分けているときだけ）
+      extraPaths: venues.length > 0 ? [venues[0].firstRacePath] : [],
       isRouted: (p) =>
         resolveSnapshotPath(p, UA.bingbot)?.startsWith("/api/bot-page/") ??
         false,

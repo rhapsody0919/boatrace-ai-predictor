@@ -249,14 +249,18 @@ export function pickOpenVenues(json, n) {
  * isRouted（ボット向け HTML へ振り分けているか）が真のものだけを照合する。配線する前の言語版は skipped に入る
  * （配線の PR が入れば、照合の側を変えずに照合するページに加わる）
  *
+ * /today と、extraPaths（本日のレース詳細など、BOA-848 第2段）も同じく、振り分けているときだけ照合する
+ *
  * @param {number[]} venueCodes - 開催中の会場コード（pickOpenVenues の順）
- * @param {{langs: string[], isRouted: (path: string) => boolean}} options
+ * @param {{langs: string[], isRouted: (path: string) => boolean, extraPaths?: string[]}} options
  * @returns {{checked: string[], skipped: string[]}}
  */
-export function parityPaths(venueCodes, { langs, isRouted }) {
+export function parityPaths(venueCodes, { langs, isRouted, extraPaths = [] }) {
   const candidates = [
     "/",
     ...venueCodes.map((c) => `/venue/${c}`),
+    "/today",
+    ...extraPaths,
     ...langs.flatMap((lang) => [
       `/${lang}/`,
       ...(venueCodes.length > 0 ? [`/${lang}/venue/${venueCodes[0]}`] : []),
