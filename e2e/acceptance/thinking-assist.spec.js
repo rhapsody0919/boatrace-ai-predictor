@@ -683,8 +683,11 @@ test.describe("セオリーカードと用語のシート", () => {
     page,
   }) => {
     await openAssist(page, { noExhibition: true });
-    const text = await page.locator("body").innerText();
-    expect(text).toContain("展示の後に分かる");
+    await lensTab(page, "展開").click();
+    await page
+      .getByRole("button", { name: "枠なりの過去レースの傾向", exact: true })
+      .click();
+    await expect(page.getByRole("dialog")).toContainText("展示の後に分かる");
   });
 });
 
