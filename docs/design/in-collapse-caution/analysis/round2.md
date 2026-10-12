@@ -1,6 +1,6 @@
 # 統計検証 第2回: 類似レースの割合（C2）を長い期間で作り直して比べる（2026-10-11、data-scientist）
 
-やり直しの上限3回のうちの2回目。記号は [第1回](../round1/README.md) と同じ。結果の正は `result2.json`。
+やり直しの上限3回のうちの2回目。記号は [第1回](./round1.md) と同じ。結果の正は `data/analysis/in-collapse-caution/round2/result2.json`、スクリプトは `scripts/analysis/in-collapse-caution/round2/`。
 
 ## 作り方
 

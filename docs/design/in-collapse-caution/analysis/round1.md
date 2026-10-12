@@ -1,6 +1,6 @@
 # 統計検証 第1回: 1号艇が1着を逃すかを、どの量がよく当てるか（2026-10-11、data-scientist）
 
-やり直しの上限3回のうちの1回目。結果の正は同じフォルダの `result.json`・`extra.json`・`clean_o.json`。
+やり直しの上限3回のうちの1回目。結果の正は `data/analysis/in-collapse-caution/round1/` の `result.json`・`extra.json`・`clean_o.json`、スクリプトは `scripts/analysis/in-collapse-caution/round1/`。
 
 ## 比べたもの
 
@@ -48,4 +48,4 @@
 
 ## 再現
 
-スクリプトはこのフォルダ。手元の pool CSV（`export_pool.js` の出力）と本番の読み取りで動く。順に `fetch_o.mjs` → `fetch_delta.mjs` → pool の連結 → `fetch_c2.mjs` → `build.py` → `prep.py` → `analyze.py` → `extra.py`・`clean_o.py`。Python 3.12・pandas・scikit-learn、Node 22（`--env-file=.env.local`）。
+スクリプトは `scripts/analysis/in-collapse-caution/round1/`。中間の pkl・CSV と出力の JSON はスクリプトと同じ場所に書かれる（pkl・CSV はリポジトリに入れない。JSON は `data/analysis/` に写す）。手元の pool CSV（`export_pool.js` の出力）と本番の読み取りで動く。順に `fetch_o.mjs` → `fetch_delta.mjs` → pool の連結 → `fetch_c2.mjs` → `build.py` → `prep.py` → `analyze.py` → `extra.py`・`clean_o.py`。Python 3.12・pandas・scikit-learn、Node 22（`--env-file=.env.local`）。
