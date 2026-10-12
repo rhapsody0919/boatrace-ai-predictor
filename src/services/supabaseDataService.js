@@ -2003,7 +2003,7 @@ export const supabaseDataService = {
   /**
    * 会場固有の水面特性（水質・干満差・イン/アウト傾向のクラスタ分類）を取得する
    * 水質・干満差は公式の場データを写した src/data/venueWaterProfiles.js を使う。
-   * venues.water_type は初期データが8会場で公式と食い違っていた（唐津を海水とする等）ため
+   * venues.water_type は初期データが7会場で公式と食い違っていた（唐津を海水とする等）ため
    * 画面には出さない。cluster は venues から読む（update_venue_stats が直近90日の
    * 1号艇1着率で毎日決める龍神の分類で、公式の分類ではない）
    * @param {number} venueCode - 会場コード（1-24）

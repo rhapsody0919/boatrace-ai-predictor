@@ -938,7 +938,7 @@
     {
       "script": "verify-venue-water-profiles.js",
       "tier": "ci",
-      "guards": "24会場の水質・干満差が BOAT RACE 公式の場データ（stadium?jcd=01〜24、2026/06/30現在、2026-10-12 照合）と一致すること。照合済みの表を固定データで持ち、src/data/venueWaterProfiles.js・getVenueCharacteristics が venues.water_type（初期データが8会場で誤り、唐津を海水と表示した）を使わないこと・思考アシストの潮を水質から推定しないこと（蒲郡・常滑・津は干満差なし）・英語/繁体字/韓国語の会場ガイドの facts.water・001_schema.sql の初期データを確かめる"
+      "guards": "24会場の水質・干満差が BOAT RACE 公式の場データ（stadium?jcd=01〜24、2026/06/30現在、2026-10-12 照合）と一致すること。照合済みの表を固定データで持ち、src/data/venueWaterProfiles.js・getVenueCharacteristics が venues.water_type（初期データが7会場で誤り、唐津を海水と表示した）を使わないこと・思考アシストの潮を水質から推定しないこと（蒲郡・常滑・津は干満差なし）・英語/繁体字/韓国語の会場ガイドの facts.water・001_schema.sql の初期データを確かめる"
     },
     {
       "script": "verify-volatility-accuracy-heading.js",

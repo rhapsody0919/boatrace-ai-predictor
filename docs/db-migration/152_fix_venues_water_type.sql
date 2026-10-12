@@ -1,9 +1,9 @@
--- 149: venues.water_type を BOAT RACE 公式の場データに合わせる
+-- 152: venues.water_type を BOAT RACE 公式の場データに合わせる
 --
 -- ⚠️ この案は「本番へ未適用」。適用はユーザーの承認後に、ユーザーが実行する（db-apply ワークフローか SQL Editor）。
 --
 -- 背景:
---   001_schema.sql の初期データが8会場で公式と食い違っていた（唐津を海水とする等）。
+--   001_schema.sql の初期データが7会場で公式と食い違っていた（唐津を海水とする等）。
 --   正本: https://www.boatrace.jp/owpc/pc/data/stadium?jcd=01〜24 の「水質」（2026/06/30現在、2026-10-12 照合）。
 --   画面は src/data/venueWaterProfiles.js（公式の写し）を使うようにしたので、この適用の前後で画面は変わらない。
 --   DB の値も公式に揃え、今後 water_type を読むコードが誤った値を拾わないようにする。
