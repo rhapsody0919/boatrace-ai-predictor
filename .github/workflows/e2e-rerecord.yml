@@ -6,19 +6,43 @@ name: E2E Re-record (録画の自動撮り直し)
 # 人手で撮り直す前提は成り立たず、撮り直さないと録画に無い通信が増えていく（PRゲートは
 # 素通しして一覧に出すが、素通しが多いほど本番依存に戻る）。
 #
-# 手順:
-#   1. 本番に繋いで全件を録画する（E2E_RECORD=1）
-#   2. 撮った録画だけで再生して全件実行する（E2E_REPLAY_STRICT=1: 録画に無い通信は abort）
-#   3. 採用条件を満たすときだけ採用する
+# 手順（BOA-799、2026-10-12〜。1ジョブ→3ジョブに分割）:
+#   1. [record] 本番に繋いで全件を録画する（E2E_RECORD=1）。録画データを artifact で渡す
+#   2. [replay] 撮った録画だけで再生して全件実行する（E2E_REPLAY_STRICT=1: 録画に無い通信は abort）。
+#      #1318（BOA-769 E）と同じ spec 単位の3分割で並行に走らせる
+#   3. [judge] 3分割のレポートを集約し、採用条件を満たすときだけ採用する
 #      - 2 が全件通る
 #      - skip が現行の録画より増えていない（発走前のレースが少ない日に撮ると skip が増える）
-#   4. 採用したら GitHub Release に zip で添付し、ポインタ（e2e/recording.json）を master に
+#      - 3分割の全テストがちょうど1回ずつ走った（check-e2e-shard-coverage.js、#1318と共用）
+#      採用したら GitHub Release に zip で添付し、ポインタ（e2e/recording.json）を master に
 #      直接 push する（push-with-retry.sh。regenerate-generated-docs.yml と同じ流儀）。
 #      push はアプリ ryujin-bot のトークンで行う（master の ruleset の bypass のため）。この push で
 #      起動しうるワークフローは、[automated] のコミットでは動かない条件を持つ（regenerate-generated-docs・
 #      quality-gates）か、paths で e2e/recording.json を対象にしていない（post-merge-checks）
-#   5. 古い録画 Release を消す（直近14件を残す）
+#      古い録画 Release も消す（直近14件を残す）
 #   採用しなかった・失敗したときは Slack に通知する（定期実行は1日1回まで。下記）
+#
+# なぜ3ジョブに分けたか（BOA-799）: 以前は1ジョブ・timeout-minutes 90 で、録画と再生を
+# 合わせた所要が90分に迫り、再生の途中でタイムアウト→cancelled になる日が増えていた
+# （2026-10-05/07(×2)/08/10/11の直近1週間で6回）。録画の所要が #1318（E2Eのshard化）以降も
+# 伸び続けており（2026-10-02: 約26〜34分 → 2026-10-11: 約67分、実測）、再生（録画件数と同じ
+# ペースで伸びる。2026-10-02: 約24〜33分 → 2026-10-09: 約40分）を同じ90分に押し込められなく
+# なった。録画はテスト件数の増加と本番応答の遅さの両方で伸びている可能性があり（録画の伸びが
+# 再生の伸びより大きい）、本調査では録画自体の分割（1本のHARを3並列で書き込む不整合リスクが
+# あり見送った）までは行わない。録画の伸びが続く場合は別途チケット化する。
+#
+# ジョブを分けた設計:
+#   - record: 録画を1ジョブのまま（HARファイルは1回の実行で1本に束ねる必要があり、
+#     3並列で同時に書き込むと録画の整合性が崩れるリスクがあるため分割しない）。
+#     timeout-minutes を90（以前の全体と同じ値）に戻し、再生と共有しない専用の予算にする
+#   - replay: 3つに分けて並行に走らせる（#1318と同じ spec 単位の分け方）。
+#     record が artifact で渡した録画（e2e/recordings/）をダウンロードして使う
+#   - judge: 3分割のレポートを集約し、採用判定・Release公開・古い録画の削除・Slack通知を行う。
+#     ryujin-bot のトークンを使うため environment: ryujin-bot はこのジョブだけに付ける
+#     （record・replay は本番Supabaseの読み取り専用キーしか使わず、environment は不要）
+#   - 3ジョブとも同じコミット（record が解決したSHA）を checkout する。ジョブをまたいで
+#     `ref: master` を名前で再解決すると、ジョブの間に master が進んだ場合、録画と再生で
+#     違うコードのテストを比べることになる
 #
 # 起動は1日4回（JST 10:23 / 12:47 / 14:37 / 16:13）。毎時0分は負荷が集中するため避ける
 # （公式: "High load times include the start of every hour" /
@@ -39,7 +63,8 @@ name: E2E Re-record (録画の自動撮り直し)
 # workflow_dispatch は毎回通知する。
 # 必要な権限: contents: write（Release の作成・削除とポインタの push）、
 # actions: read（その日の他の実行が通知済みかを見る）。
-# 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ）、SLACK_WEBHOOK_URL
+# 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ、repoのSecrets）、
+# SLACK_WEBHOOK_URL、RYUJIN_BOT_APP_ID / RYUJIN_BOT_PRIVATE_KEY（judgeジョブのみ、environment ryujin-bot）
 
 on:
   schedule:
@@ -61,23 +86,30 @@ permissions:
   actions: read
 
 jobs:
-  rerecord:
+  record:
     runs-on: ubuntu-latest
-    # アプリ ryujin-bot の Secrets は environment ryujin-bot（Deployment branches: master だけ）に置く。
-    # 別ブランチの workflow_dispatch や、別ブランチに足したワークフローから bypass 用のトークンを作らせないため
-    environment: ryujin-bot
     timeout-minutes: 90
+    outputs:
+      run: ${{ steps.gate.outputs.run }}
+      notify: ${{ steps.gate.outputs.notify }}
+      result: ${{ steps.gate.outputs.result }}
+      sha: ${{ steps.resolve-sha.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: master
+
+      # replay・judge も同じコミットを見るようにする（ジョブの間にmasterが進んでも、
+      # 録画と再生で違うコードのテストを比べないため）
+      - name: 使うコミットを固定する
+        id: resolve-sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
 
-      # checkout の後に判定する。本命が採用して push したポインタを、予備はここで読む
       - name: 撮り直すか（定期実行のみ）
         id: gate
         env:
@@ -123,27 +155,138 @@ jobs:
           # 採用は次の「撮った録画だけでの再生」で判定する。録画そのものができていなければ落とす
           test -f e2e/recordings/api.har
 
-      - name: 撮った録画だけで再生（録画に無い通信は abort）
-        id: replay
+      # replay ジョブ（別マシン）へ録画データを渡す
+      - name: Upload recordings (replayジョブへ渡す)
         if: steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-rerecord-recordings
+          path: e2e/recordings/
+          retention-days: 1
+
+      - name: Upload record log
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-rerecord-record-log
+          path: record.log
+          retention-days: 7
+
+  # #1318（BOA-769 E）と同じ spec 単位の3分割で並行に再生する。録画は1本のHARに束ねる
+  # 必要があり3並列での同時書き込みは不整合のリスクがあるため分割しないが、再生は
+  # 録画済みのファイルを読むだけ（書き込みをしない）ので分割して問題ない
+  replay:
+    needs: record
+    if: needs.record.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: 1
+            args: e2e/smoke.spec.js e2e/race-odds-live.spec.js
+          - shard: 2
+            args: e2e/layout.spec.js e2e/race-detail-details.spec.js
+          - shard: 3
+            args: --grep-invert "(^|[ /])(smoke|race-odds-live|layout|race-detail-details)\.spec\.js( |$)"
+    name: replay (${{ matrix.shard }}/${{ strategy.job-total }})
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.record.outputs.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Download recordings
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-rerecord-recordings
+          path: e2e/recordings/
+
+      - name: 撮った録画だけで再生（録画に無い通信は abort）
         env:
           CI: true
           E2E_RECORDING_SOURCE: local
           E2E_REPLAY_STRICT: '1'
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: |
-          set +e
-          # 録画の実行が書いたレポートを採点しないよう、再生の前に消す
-          mv e2e-results.json record-results.json 2>/dev/null
-          npx playwright test > replay.log 2>&1
-          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
-          tail -40 replay.log
-          exit 0
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
+        run: npx playwright test --fully-parallel --reporter=list,blob ${{ matrix.args }}
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-rerecord-blob-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 1
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-rerecord-traces-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 7
+
+  # 3分割のレポートを集約し、採用判定・Release公開・古い録画の削除・Slack通知を行う。
+  # record・replayが（gateでrun=falseだった等の理由で）走らなくても、Slack通知のために
+  # 必ず実行する（if: always()）
+  judge:
+    needs: [record, replay]
+    if: always()
+    runs-on: ubuntu-latest
+    # ryujin-bot のトークン（Create ryujin-bot token ステップ）を使うため、このジョブだけ
+    # environment ryujin-bot を付ける（Deployment branches: master だけ。別ブランチの
+    # workflow_dispatch等からbypass用のトークンを作らせないため）
+    environment: ryujin-bot
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.record.outputs.sha || 'master' }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+        if: needs.record.outputs.run == 'true'
+
+      - name: Download replay blobs
+        if: needs.record.outputs.run == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          pattern: e2e-rerecord-blob-*
+          path: all-blob-reports
+          merge-multiple: true
+
+      # merge-reports はテストが落ちていても終了コード0を返す。合否は次の「採用判定」で決める
+      - name: Merge reports
+        if: needs.record.outputs.run == 'true'
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-results.json
+        run: npx playwright merge-reports --reporter=dot,json all-blob-reports
+
+      - name: Download recordings (公開用)
+        if: needs.record.outputs.run == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-rerecord-recordings
+          path: e2e/recordings/
 
       - name: 採用判定
         id: judge
-        if: steps.gate.outputs.run == 'true'
+        if: needs.record.outputs.run == 'true'
         run: |
           set +e
           if [ ! -f e2e-results.json ]; then
@@ -164,11 +307,22 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           exit 0
 
+      # 3分割（replayのmatrix）が全テストを1回ずつ走らせたか（#1318のe2e-shardと同じ検査を
+      # 共用する）。ここが失敗すると後続のステップは（bareのif:がsuccess()を含意するため）
+      # 自動的にスキップされ、採用しない扱いになる
+      - name: Check shard coverage
+        if: needs.record.outputs.run == 'true' && steps.judge.outputs.adopt == 'true'
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
+        run: |
+          npx playwright test --list --reporter=json
+          node scripts/maintenance/check-e2e-shard-coverage.js e2e-list.json e2e-results.json
+
       # master への push はアプリ ryujin-bot の名義で行う（master の ruleset の bypass に GITHUB_TOKEN は入れられないため）。
       # トークンの有効期限は1時間なので、checkout ではなく push の直前に作る
       - name: Create ryujin-bot token
         id: app-token
-        if: ${{ github.ref == 'refs/heads/master' && (steps.judge.outputs.adopt == 'true') }}
+        if: steps.judge.outputs.adopt == 'true'
         uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.RYUJIN_BOT_APP_ID }}
@@ -198,30 +352,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/maintenance/e2e-recording.js prune --keep=14
 
-      # 再生で落ちたテストの trace・error-context も残す。どの通信が録画に無くて
-      # abort されたかは trace でしか分からない（2026-09-30 は残しておらず特定できなかった）。
-      # test-results は再生の実行が作り直すので、ここにあるのは再生の失敗分だけ
-      - name: Upload logs
-        if: always() && steps.gate.outputs.run == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-rerecord-logs
-          path: |
-            record.log
-            replay.log
-            record-results.json
-            e2e-results.json
-            test-results/**/trace.zip
-            test-results/**/error-context.md
-          retention-days: 7
-
       - name: Notify Slack (採用しなかった・失敗したとき)
         if: >-
-          always() && (failure() || steps.gate.outputs.notify == 'true' ||
-          (steps.gate.outputs.run == 'true' && steps.judge.outputs.adopt != 'true'))
+          always() && (failure() || needs.record.outputs.notify == 'true' ||
+          (needs.record.outputs.run == 'true' && steps.judge.outputs.adopt != 'true'))
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-          RESULT: ${{ steps.judge.outputs.result || steps.gate.outputs.result }}
+          RESULT: ${{ steps.judge.outputs.result || needs.record.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           EVENT_NAME: ${{ github.event_name }}
           # failure() は if: の中でしか使えない（env に書くとワークフロー全体が無効になる）。
