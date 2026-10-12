@@ -8,8 +8,9 @@
  *   scripts/lib/courseEntryTendency.js）。全会場の枠番→実進入コースの回数と、このレースの会場の分
  * - 今節の展示: 節の初日からこのレースより前の各走で、そのレースの中での展示タイムの順位（1が最速、
  *   同着は同順位）。今節タブ（getMeetScoreboard の meetRunsByRacer・展示の順位）と同じ定義で、
- *   このレース自身の展示は含まない。中止が確定したレース（races.cancellation_status='confirmed'）は
- *   走っていないので外す（出走表は残るため、外さないと展示の無い走として並ぶ）
+ *   このレース自身の展示は含まない。中止が確定したレース（races.cancellation_status='confirmed'）のうち
+ *   展示も無いものは外す（出走表は残るため、外さないと展示の無い走として並ぶ）。展示の後に中止になった
+ *   レース（実例: 2026-09-21 三国10R）は展示の値があるので残す（今節タブも展示の点として出す）
  */
 import { findMeetStartDate } from "../../src/utils/meetGrouping.js";
 import { rest } from "./analogyV16.js";
@@ -102,7 +103,7 @@ export function buildRacers({
           r.racer_id === e.racer_id &&
           r.race_id.slice(0, 10) >= meetStart &&
           r.race_id < raceId &&
-          !cancelled.has(r.race_id),
+          !(cancelled.has(r.race_id) && !timesByRace.has(r.race_id)),
       )
       .sort((a, b) => a.race_id.localeCompare(b.race_id))
       .map((r) => {
