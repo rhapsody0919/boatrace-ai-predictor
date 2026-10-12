@@ -132,6 +132,8 @@ function HitRaceCard({
         <SocialShareButtons
           // 的中したレースの詳細を共有する（以前はトップ固定、BOA-691）
           shareUrl={shareUrlFor(`/race/${hitRace.raceId}`)}
+          raceId={hitRace.raceId}
+          shareKind="hit"
           title={generateTurnHitShareText(
             {
               venue: hitRace.venue,

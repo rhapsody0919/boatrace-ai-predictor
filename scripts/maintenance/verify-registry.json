@@ -698,6 +698,11 @@
       "guards": "「本日のデータ一覧」の行に付ける会場公式のモーター出走数（motor_race_count、BOA-702）。会場とモーター番号の組で引くこと、2連率の無い行・番号が分からない行は NULL、全行に同じキーを持たせること"
     },
     {
+      "script": "verify-share-events.js",
+      "tier": "ci",
+      "guards": "AI用にコピー・SNS シェアの GA4 のイベント（ai_copy・race_share、BOA-822 の計測）の名前とパラメータ、レースが分からない・種類の無いシェアは送らないこと、GA4 の予約語を使わないこと"
+    },
+    {
       "script": "verify-morning-digest.js",
       "tier": "manual",
       "guards": "「本日のデータ一覧」（BOA-402）の集計",
