@@ -52,6 +52,11 @@ export const config = {
     "/ko",
     "/ko/",
     "/ko/venue/:path*",
+    // BOA-848 第2段: 本日のレース詳細とその言語版（id の形と「本日」の判定は resolveSnapshotPath 側）
+    "/race/:path*",
+    "/en/race/:path*",
+    "/zh-TW/race/:path*",
+    "/ko/race/:path*",
   ],
 };
 
