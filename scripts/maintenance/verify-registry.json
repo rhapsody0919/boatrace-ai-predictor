@@ -532,6 +532,11 @@
       "guards": "ボット向け HTML の関数（ADR 0089。api/bot-page/top.js・api/bot-page/venue/[code].js、中身は api/_lib/botPage.js）。材料の取得と時計を差し替えてハンドラを呼び、成功時の 200・Content-Type・Cache-Control（s-maxage=300・stale-if-error=3600）、title・description・canonical・robots が人のページと同じ値、選手名・オッズ等が入らないこと、材料が取れない・壊れたら 503・Retry-After・no-store で「開催なし」にしないこと、0件だけ「開催なし」の 200、会場コードは 1〜24（0埋めなし）だけで他は 404、値のエスケープ、材料の60秒の使い回し（61秒後に取り直す・同時の呼び出しは1回の取得）、vercel.json で syd1・edge でないこと"
     },
     {
+      "script": "verify-bot-race-function.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML のレース詳細の関数（ADR 0089 第2段・BOA-848。api/bot-page/race/[id].js・[lang]/race/[id].js、中身は api/_lib/botRace.js）。本番の /api/predictions のフィクスチャで、head が人のレース詳細と同じ関数（src/utils/raceDetailHeading.js）の値・hreflang 4言語・JSON-LD が共通の3つとパンくず、本文が人の初期表示の部分集合（パンくず・グレードと節タイトル・会場名と NR・種別・日目（他レースで補う、丸一日中止なら出さない）・レース一覧へのリンク・データ分析結果の見出しと締切（結果が出たら消す））、出走表の選手・オッズ・払戻・着順・タイムが入らないこと（ADR 0089 決定7）、本日（JST）の id だけで他は 404、取得の失敗・0件は 503、無い id は 404、60秒の使い回し、人の RaceDetailPage が同じ関数を使い続けていること"
+    },
+    {
       "script": "verify-venue-series-title.js",
       "tier": "ci",
       "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
