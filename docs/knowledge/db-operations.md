@@ -20,3 +20,8 @@
 ## 画面からの読み取り
 - 画面から Supabase を読むのは src/services/supabaseClient.js の1つの入口だけ。.throwOnError() が既定で、失敗を「データなし」に化けさせない（BOA-359、.claude/rules/frontend-data-fetch.md）
 - Supabase の上限1000行はエラーにならず切り捨てる。1000行を超えうるクエリは .range() のヘルパを使う（BOA-301・BOA-372、.claude/rules/frontend-data-fetch.md）
+- PostgREST は GROUP BY が使えないので、日ごとの小さな表を JS で合計すると、エラーにならないまま1000行で切れる。合計は RPC で行う（2026-10-12、BOA-822、docs/design/in-collapse-caution/architecture-y.md）
+- 既存のキーの意味を変えて使い回すと verify-rpc-key-regression は通ってしまう（値の変化は検知しない）。意味が変わるなら新しいキーを足し、古いキーは NULL になるに任せる（2026-10-12、ADR-0074「限界」、同 architecture-y.md）
+- 小数2桁の値（勝率など）の差で帯を切るときは 1/100 の整数で計算する。浮動小数では 6.10−5.60 が 0.4999… で帯が1つずれる（2026-10-12、同 architecture-y.md）
+- 朝の unified の予想は、欠けたレースがあると日全体を作り直すことがある（scripts/lib/racesInit/job.js:25）。予想が読む入力の表は開催時間外に更新する（2026-10-12、同 architecture-y.md）
+- 予想を作るときの「前日まで」はレースの日付で読む（race_date < 対象日）。「最新まで」で読むと過去の日を作り直したときに結果が混ざる（2026-10-12、BOA-628 と同じ系統、同 architecture-y.md）
