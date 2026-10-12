@@ -500,6 +500,18 @@
       "guards": "会場別モーター成績パーサー（BOA-264）"
     },
     {
+      "script": "verify-bot-html-parity.js",
+      "tier": "manual",
+      "guards": "日中の照合（ADR 0089「監視」）。本番の / と開催中の2会場の /venue/{code} で、bingbot の UA で取ったボット向け HTML の本文の文字列（見出し・会場名・節の名前・グレード・レース番号・締切時刻・最終更新）・リンク先・title・description・canonical が、Playwright で人として描いたページにすべてあること（人の画面に無い文言を検索ボットにだけ出さない）。bingbot の直後に人の UA で同じ URL を取って SPA の外枠が返ること（CDN の取り違え）、Googlebot の UA の / が SPA の外枠であること。人の UA の TTFB の中央値（/・/venue・/race）は記録だけ",
+      "reason": "本番 https://www.boat-ai.jp に接続し、Playwright で人の画面を描くため。毎日 JST 12:00 ごろ bot-html-parity.yml が実行し、失敗を Slack に流す。照合の関数は verify-bot-html-parity-logic.js（ci）がフィクスチャで確かめる",
+      "command": "node scripts/maintenance/verify-bot-html-parity.js"
+    },
+    {
+      "script": "verify-bot-html-parity-logic.js",
+      "tier": "ci",
+      "guards": "日中の照合の関数 scripts/lib/botHtmlParity.js（ADR 0089）。本番の HTML と人の DOM を保存したフィクスチャ（scripts/lib/__fixtures__/bot-html-parity/）で、同じなら無いもの0件、人の DOM に無い文言・リンク先・title・canonical を1つ足したボット HTML で落ちること、最終更新の時刻は CDN の差（10分以内）だけ許して前置きの違い・30分の差で落ちること、人の UA にボット向け HTML が返った応答を見分けること、開催中の会場の選び方（中止だけの会場を飛ばす）"
+    },
+    {
       "script": "verify-bot-page-model.js",
       "tier": "ci",
       "guards": "ボット向け HTML（ADR 0089）のモデル src/utils/botPageModel.js。import の経路にブラウザ専用の依存（supabaseClient・import.meta.env・localStorage 等）が無く Node から読めること、本番の /api/races/today のフィクスチャから人の画面と同じ文字（会場名・節の名前・レース番号・締切時刻・グレード・中止・見出し・title・description・canonical）で組めること、UTC で動かしても日付が前日にずれないこと、0件と壊れた入力を区別すること（壊れた入力で開催なしにしない。ADR 0069）、選手名・オッズ・着順・荒れ度等を入れないこと、人の画面が同じ関数（transformTodayRaces・pageMeta・raceListDisplay）を使い続けていること"

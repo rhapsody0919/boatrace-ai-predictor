@@ -1,0 +1,119 @@
+name: Bot HTML Parity (日中の照合)
+
+# ADR 0089「監視」の日中の照合。本番の / と /venue/{開催中の2会場} について、bingbot の UA で取った
+# ボット向け HTML の文字列が、Playwright で人として描いた画面にすべてあるかを確かめる。
+# あわせて、ボットの直後に人の UA で同じ URL を取って SPA の外枠が返ること（CDN の取り違え）と、
+# Googlebot の UA の / が SPA の外枠であることを見る。人の UA の TTFB の中央値はログに残すだけ。
+#
+# 検索ボットにボット向け HTML を配る条件（ADR 0089「動的レンダリング・クローキングへの立場」）なので、
+# 失敗は Slack に流す。止めたいときはこのワークフローを消すか無効にするだけでよい（配信には影響しない）。
+#
+# JST 12:00 に置くのは、デイレース・モーニングの会場が開催中で、会場ページにレースが並ぶ時間帯だから。
+
+on:
+  schedule:
+    # JST 12:00 = UTC 03:00
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: bot-html-parity
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: 本番のボット向け HTML を照合
+        id: parity
+        run: |
+          set +e
+          RESULT=$(node scripts/maintenance/verify-bot-html-parity.js 2>&1)
+          CODE=$?
+          echo "$RESULT"
+          # 区切りが固定だと、ログに区切りと同じ行があった時点で値が切れ、残りが出力の行として読まれる。
+          # 毎回ランダムな区切りにする（BOA-652）
+          delim="EOF_$(openssl rand -hex 16)"
+          {
+            echo "summary<<$delim"
+            echo "$RESULT"
+            echo "$delim"
+          } >> "$GITHUB_OUTPUT"
+          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
+          # 失敗はSlackに流してから明示的に落とす
+          exit 0
+
+      - name: Notify Slack (照合の失敗)
+        if: steps.parity.outputs.exit_code != '' && steps.parity.outputs.exit_code != '0'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SUMMARY: ${{ steps.parity.outputs.summary }}
+          EXIT_CODE: ${{ steps.parity.outputs.exit_code }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # 通知の形（attachments + section/mrkdwn）は nightly-verify-db.yml・e2e-live.yml に揃える。
+        # ログに引用符・改行が入るため、JSON は jq で組み立ててエスケープを任せる（BOA-644）。
+        # Slack の section の text は3000文字が上限で、超えると通知ごと拒否されるため、
+        # ログだけを切り詰める（BOA-652。定型文は削らない）。ログは末尾（失敗の一覧）を残す
+        run: |
+          if [ "$EXIT_CODE" = "1" ]; then
+            HEAD=":rotating_light: *ボット向け HTML の日中の照合が失敗しました（ADR 0089）*"
+            TAIL="人の画面に無い文言を検索ボットにだけ出している、または人にボット向け HTML が返っている可能性があります。取り違え（重大）なら、急ぐときは Vercel の Instant Rollback で戻す。照合だけの失敗なら、ボット向け HTML（api/_lib/botPage.js・src/utils/botPageModel.js）と人の画面のどちらが変わったかを見る（ADR 0089「戻し方」）。"
+          else
+            HEAD=":warning: *ボット向け HTML の日中の照合が途中で止まりました（ADR 0089）*"
+            TAIL="照合の結果は出ていません。本番に繋がらない・ブラウザが起動しない等、監視の側の失敗です。"
+          fi
+          payload=$(jq -n --arg head "$HEAD" --arg tail "$TAIL" --arg summary "$SUMMARY" --arg url "$RUN_URL" '
+            ($head + "\n") as $h
+            | ("\n" + $tail + "\n<" + $url + "|実行ログ>") as $t
+            | (2900 - ($h + $t | length)) as $room
+            | {
+                attachments: [{
+                  color: "#c0392b",
+                  blocks: [{
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: ($h + "```" + ($summary | if length > $room then .[(length - $room):] else . end) + "```" + $t)
+                    }
+                  }]
+                }]
+              }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
+
+      # npm ci・Playwright の取得など、照合より前の手順で落ちたとき（照合の結果が無い）。
+      # 照合のステップは常に exit 0 で終わるので、ここで failure() が真なのは監視自体の失敗だけ
+      - name: Notify Slack (監視のワークフローの失敗)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          payload=$(jq -n --arg url "$RUN_URL" '{
+            attachments: [{
+              color: "#c9a227",
+              blocks: [{
+                type: "section",
+                text: {
+                  type: "mrkdwn",
+                  text: (":warning: *ボット向け HTML の日中の照合のワークフローが失敗しました（ADR 0089）*\n照合より前の手順（npm ci・Playwright の取得等）で止まり、今日の照合は行われていません。\n<" + $url + "|実行ログ>")
+                }
+              }]
+            }]
+          }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
+
+      - name: 照合の失敗をジョブの失敗として扱う
+        if: steps.parity.outputs.exit_code != '' && steps.parity.outputs.exit_code != '0'
+        run: exit 1

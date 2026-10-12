@@ -106,6 +106,10 @@ ADR 0032 は、AI クローラー向けの中身を「ビルド時に作る静�
   - 本番の / と /venue/{開催中の2会場} について、bingbot の UA で取った HTML と、Playwright で人として描いた DOM を比べる
   - 見る項目: 見出し・会場名・節の名前・レース番号・締切時刻・リンク先
   - ボット側の文字列がすべて人の DOM にあれば合格
+  - 実装（PR4）: ワークフロー `.github/workflows/bot-html-parity.yml`（毎日 UTC 03:00 = JST 12:00、手動でも動かせる）が `scripts/maintenance/verify-bot-html-parity.js`（tier manual）を実行する。照合の関数は `scripts/lib/botHtmlParity.js`、その検証は `scripts/maintenance/verify-bot-html-parity-logic.js`（tier ci、本番の HTML を保存したフィクスチャ）
+  - あわせて見るもの: bingbot の直後に人の UA で同じ URL を取り SPA の外枠が返ること（上の「未確認」の2を毎日確かめる）、Googlebot の UA の / が SPA の外枠であること。人の UA の TTFB の中央値（/・/venue・middleware を通らない /race）はログに残すだけで、失敗にしない
+  - 最終更新の時刻だけは、同じ文言で10分以内の差を許す。材料の `/api/races/today` は CDN に地域ごとに5分残り、関数（syd1）とブラウザが別の時点の材料を読む（2026-10-12 の本番でボット 08:42、人 08:40）
+  - 照合の失敗（終了コード 1）、照合の途中で止まった（2）、照合より前の手順で落ちた、のどれも Slack に流す（`SLACK_WEBHOOK_URL`、`nightly-verify-db.yml` と同じ形）
 - **verify-middleware-routing.js（CI）を拡げる**
   - / と /venue/1〜24: 上記 UA なら関数へ振り分ける
   - Googlebot と人のブラウザ: 振り分けない
