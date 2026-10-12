@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && npx playwright install chromium && node scripts/generate-ai-snapshots.js",
+    "build": "vite build && npx playwright install chromium && RACER_SNAPSHOT_LIMIT=20 node scripts/generate-ai-snapshots.js",
     "lint": "eslint .",
     "check:contrast": "node scripts/maintenance/check-token-contrast.js",
     "verify:css-collisions": "node scripts/maintenance/verify-css-class-collisions.js",
