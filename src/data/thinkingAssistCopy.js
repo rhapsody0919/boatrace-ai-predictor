@@ -776,3 +776,20 @@ export const GLOSSARY = Object.freeze({
     ],
   },
 });
+
+// 会場に絞った「{会場}・級の並びが同じ」（BOA-839 フォローアップ）。
+// 会場は24場あるためGLOSSARYに静的なキーを24個並べず、「全国・級の並びが同じ」と
+// 同じ内容を会場名だけ差し替えて組み立てる（itemsは共有し重複させない）。
+const VENUE_CLASS_LINEUP_SUFFIX = "・級の並びが同じ";
+export function glossaryForTerm(term) {
+  if (GLOSSARY[term]) return GLOSSARY[term];
+  if (term.endsWith(VENUE_CLASS_LINEUP_SUFFIX)) {
+    const venue = term.slice(0, -VENUE_CLASS_LINEUP_SUFFIX.length);
+    return {
+      lead: `${venue}の過去レース（2019/4/1〜）で、6艇の級の艇数と1号艇の級が今日と同じレース`,
+      items: GLOSSARY["全国・級の並びが同じ"].items,
+      classes: true,
+    };
+  }
+  return null;
+}
