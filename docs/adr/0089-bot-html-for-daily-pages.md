@@ -20,9 +20,9 @@ ADR 0032 は、AI クローラー向けの中身を「ビルド時に作る静�
 2. **出すページ**: 第1段は、日本語の / と /venue/1〜24（0埋めなし、人の URL と同じ）。次のパスには出さない。
    - `/venue/01` のような0埋め・範囲外・数字以外（人と同じ SPA のまま）
    - 言語の接頭辞が付くパス
-   - `?date=` 付き
    - `/races/:date` 系
    - /today とレース詳細は第2段とし、本 ADR に追記して決める
+   - クエリ文字列（`?date=` を含む）は人もボットも読まない。人の / と /venue/:code は日付を URL のパス（`/races/:date/...`）からしか取らず、`/venue/1?date=2026-10-01` を開いても本日の会場ページを出す（canonical も `/venue/1`）。そのためボットにも本日の HTML を返し、rewrite 先にクエリを持ち込まない（CDN のキーを増やさない）。2026-10-12 に本番で、人とボットの両方が本日の桐生を出すことを確かめた（SEO 再点検の N1。当初の「`?date=` 付きには出さない」は、人の画面の動きと食い違っていたので直した）
 3. **HTML の組み方**
    - `middleware.js` の `resolveSnapshotPath` が、上記 UA のときだけ `/api/bot-page/top`・`/api/bot-page/venue/{code}` へ rewrite する。matcher に `/` と `/venue/:code` を足す
    - 関数（Node、`vercel.json` の functions で syd1）は、`/api/races/today` の JSON から HTML を組む
