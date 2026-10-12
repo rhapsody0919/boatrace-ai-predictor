@@ -10,6 +10,9 @@
  *   各指標の定義だけを src/data/morningDigestCopy.js（画面と共有）から生成する
  * - 選手ページ（BOA-848）: ブログと同じ方式（dist/ を描いて保存）。sitemap に載る選手だけ、
  *   本番のビルドだけで作る（scripts/lib/racerSnapshotPlan.js）。ページが本番 DB を anon で読む
+ * - 翻訳記事とブログ一覧（BOA-848 第2段、ADR 0089 追記）: ブログと同じ方式。翻訳記事は blogPostsEn・
+ *   blogPostsZhTw・blogPostsKo に載る記事の /{lang}/blog/{id}、一覧は /blog と /{lang}/blog。
+ *   一覧の NEW の印は描いた時点の日付で決まるので外して保存する（ビルドから日が経つと人の画面と食い違うため）
  */
 import { createServer } from "node:http";
 import { mkdirSync, writeFileSync, readFileSync } from "node:fs";
@@ -17,12 +20,18 @@ import { readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { blogPosts } from "../src/data/blogPosts.js";
+import { blogPostsEn } from "../src/data/blogPostsEn.js";
+import { blogPostsZhTw } from "../src/data/blogPostsZhTw.js";
+import { blogPostsKo } from "../src/data/blogPostsKo.js";
 import {
   createPageOpener,
   renderWithFreshPage,
 } from "./lib/renderWithFreshPage.js";
 import { planRacerSnapshots } from "./lib/racerSnapshotPlan.js";
-import { summarizeSnapshotRun } from "./lib/snapshotStatus.js";
+import {
+  summarizeSnapshotRun,
+  addSnapshotGroup,
+} from "./lib/snapshotStatus.js";
 import {
   MORNING_DIGEST_DISCLAIMER,
   MORNING_DIGEST_GLOSSARY,
@@ -197,6 +206,95 @@ async function generateBlogSnapshots(openPage, baseUrl) {
     );
   }
   return failed;
+}
+
+// 翻訳記事の言語と記事の一覧（src/config/languages.js の BLOG_TRANSLATION_SOURCES と同じ）
+const BLOG_TRANSLATIONS = {
+  en: blogPostsEn,
+  "zh-TW": blogPostsZhTw,
+  ko: blogPostsKo,
+};
+
+/**
+ * 描いて保存するページの組を、ブログと同じ方式で作る（翻訳記事・ブログ一覧、BOA-848 第2段）
+ *
+ * @param {{label: string, items: {key: string, url: string, file: string}[], waitSelector: string,
+ *   beforeSave?: (page: import("playwright").Page) => Promise<void>}} spec
+ *   url はローカルサーバーからのパス、file は SNAPSHOT_DIR からの相対パス
+ * @returns {Promise<{total: number, failed: {id: string, error: string}[]}>}
+ */
+async function generateRenderedPages(
+  openPage,
+  baseUrl,
+  { label, items, waitSelector, beforeSave },
+) {
+  const startedAt = Date.now();
+  const { succeeded, failed: failedItems } = await renderWithFreshPage(items, {
+    concurrency: CONCURRENCY,
+    openPage,
+    retries: 2,
+    render: async (page, item) => {
+      await page.goto(`${baseUrl}${item.url}`, {
+        waitUntil: "networkidle",
+        timeout: 15000,
+      });
+      await page.waitForSelector(waitSelector, { timeout: 10000 });
+      if (beforeSave) await beforeSave(page);
+      const html = dedupeDefaultTitle(await page.content());
+      const out = path.join(SNAPSHOT_DIR, item.file);
+      mkdirSync(path.dirname(out), { recursive: true });
+      writeFileSync(out, html, "utf-8");
+    },
+  });
+  const failed = failedItems.map(({ item, error }) => ({
+    id: item.key,
+    error: error.split("\n")[0],
+  }));
+  const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
+  console.log(
+    `✓ ${label}: ${succeeded.length}/${items.length}件（${seconds}秒）`,
+  );
+  if (failed.length > 0) {
+    console.error(
+      `⚠️ 生成に失敗した${label}: ${failed.map((f) => `${f.id} (${f.error})`).join(", ")}`,
+    );
+  }
+  return { total: items.length, failed };
+}
+
+/** 翻訳記事（/{lang}/blog/{id}）。保存先は ai-snapshots/{lang}/blog/{id}.html。言語ごとの結果を返す */
+async function generateTranslatedBlogSnapshots(openPage, baseUrl) {
+  const results = {};
+  for (const [lang, posts] of Object.entries(BLOG_TRANSLATIONS)) {
+    results[lang] = await generateRenderedPages(openPage, baseUrl, {
+      label: `翻訳記事（${lang}）`,
+      items: posts.map((post) => ({
+        key: post.id,
+        url: `/${lang}/blog/${post.id}`,
+        file: `${lang}/blog/${post.id}.html`,
+      })),
+      waitSelector: ".blog-post-content",
+    });
+  }
+  return results;
+}
+
+/** ブログ一覧（/blog と /{lang}/blog）。保存先は ai-snapshots/blog-list.html と ai-snapshots/{lang}/blog-list.html */
+async function generateBlogListSnapshots(openPage, baseUrl) {
+  return generateRenderedPages(openPage, baseUrl, {
+    label: "ブログ一覧",
+    items: ["ja", ...Object.keys(BLOG_TRANSLATIONS)].map((lang) =>
+      lang === "ja"
+        ? { key: "ja", url: "/blog", file: "blog-list.html" }
+        : { key: lang, url: `/${lang}/blog`, file: `${lang}/blog-list.html` },
+    ),
+    waitSelector: ".blog-grid .blog-card",
+    // NEW の印（投稿から7日以内）は描いた日で決まる。ビルドから日が経つと、人の画面に無い NEW が残るので外す
+    beforeSave: (page) =>
+      page.evaluate(() => {
+        document.querySelectorAll(".new-badge").forEach((el) => el.remove());
+      }),
+  });
 }
 
 /**
@@ -393,6 +491,8 @@ async function main() {
   let fatalError = null;
   let relaunches = 0;
   let racerResult = null;
+  let translatedResult = null;
+  let listResult = null;
   let server;
   try {
     const started = await startStaticServer();
@@ -402,11 +502,38 @@ async function main() {
     const opener = createPageOpener(launchChromium);
     try {
       failed = await generateBlogSnapshots(opener.openPage, baseUrl);
+      // 翻訳記事・一覧（BOA-848 第2段）。止まっても ja の記事・選手ページの結果には影響させない
+      try {
+        translatedResult = await generateTranslatedBlogSnapshots(
+          opener.openPage,
+          baseUrl,
+        );
+      } catch (err) {
+        translatedResult = { fatalError: err.message };
+        console.error(
+          "⚠️ 翻訳記事のスナップショット生成が途中で止まった:",
+          err.message,
+        );
+      }
+      try {
+        listResult = await generateBlogListSnapshots(opener.openPage, baseUrl);
+      } catch (err) {
+        listResult = { total: null, failed: [], fatalError: err.message };
+        console.error(
+          "⚠️ ブログ一覧のスナップショット生成が途中で止まった:",
+          err.message,
+        );
+      }
       // 選手ページの失敗は、ブログの生成結果に影響させない（それぞれ別に落ちてよい）
       try {
         racerResult = await generateRacerSnapshots(opener.openPage, baseUrl);
       } catch (err) {
-        racerResult = { total: null, failed: [], skipped: [], fatalError: err.message };
+        racerResult = {
+          total: null,
+          failed: [],
+          skipped: [],
+          fatalError: err.message,
+        };
         console.error(
           "⚠️ 選手ページのスナップショット生成が途中で止まりましたが、ビルドは継続します:",
           err.message,
@@ -449,6 +576,21 @@ async function main() {
       fatalError: racerResult.fatalError ?? null,
     };
   }
+  // 翻訳記事・一覧（BOA-848 第2段）。失敗があれば ok を false にする（毎日の照合が Slack に流す）
+  if (translatedResult) {
+    if (translatedResult.fatalError) {
+      addSnapshotGroup(status, lines, "blogI18n", {
+        total: null,
+        failed: [],
+        fatalError: translatedResult.fatalError,
+      });
+    } else {
+      for (const [lang, r] of Object.entries(translatedResult)) {
+        addSnapshotGroup(status, lines, `blogI18n.${lang}`, r);
+      }
+    }
+  }
+  if (listResult) addSnapshotGroup(status, lines, "blogList", listResult);
   writeFileSync(
     path.join(SNAPSHOT_DIR, "status.json"),
     `${JSON.stringify(status, null, 2)}\n`,
