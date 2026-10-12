@@ -1,7 +1,10 @@
 import BottomSheet from "./BottomSheet";
 import ClassLineup from "./ClassLineup";
 import { SCORE_POINTS } from "../seriesPoints";
-import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
+import {
+  ASSIST_COPY as C,
+  glossaryForTerm,
+} from "../../../data/thinkingAssistCopy";
 
 /** 今節の平均着順点の配点の表（着 → 点）。F・L・失格は0点 */
 function PointsTable() {
@@ -62,7 +65,7 @@ export default function GlossarySheet({
   finalRound,
   onClose,
 }) {
-  const g = GLOSSARY[term];
+  const g = glossaryForTerm(term);
   return (
     <BottomSheet title={term} onClose={onClose}>
       {g ? (

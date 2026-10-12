@@ -1,0 +1,239 @@
+<title>展開レンズの作り直し</title>
+<style>
+:root{
+  --bg:#f6f4ee; --card:#fffdf8; --ink:#1d1f24; --sub:#5d6068; --line:#dcd7cb;
+  --acc:#1f5fa8; --acc-soft:#e6eef8; --rail:#e2dccd; --bar:#2a62b0; --base:#9a948a; --new:#b2361f; --new-soft:#fbe9e4; --hl:#fff4cf; --gold:#8a6a12; --gold-soft:#f6edd2;
+  --b1:#ffffff; --b1t:#1d1f24; --b2:#1d1f24; --b3:#d93a2b; --b4:#2a74d0; --b5:#e9c21b; --b5t:#1d1f24; --b6:#3f9a46;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+    --acc:#8db8f0; --acc-soft:#22324a; --rail:#353a42; --bar:#6ea2e8; --base:#8b8f96; --new:#f08a73; --new-soft:#3d2620; --hl:#3a3420; --gold:#e3c26a; --gold-soft:#3a3220;
+    --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#b3b5bb; --line:#373b43;
+  --acc:#8db8f0; --acc-soft:#22324a; --rail:#353a42; --bar:#6ea2e8; --base:#8b8f96; --new:#f08a73; --new-soft:#3d2620; --hl:#3a3420; --gold:#e3c26a; --gold-soft:#3a3220;
+  --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",system-ui,sans-serif;line-height:1.6;padding-inline:16px;padding-block:24px 48px;font-size:16px}
+.wrap{max-width:1280px;margin:0 auto;display:grid;gap:32px}
+h1{font-size:1.5rem;margin:0;text-wrap:balance} h2{font-size:1.15rem;margin:0;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-size:.75rem;letter-spacing:.08em;color:var(--sub);font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:10px}
+.card p,.card ol,.card ul{margin:0} .card ol,.card ul{padding-left:1.3em;display:grid;gap:6px}
+.fixed{border:2px solid var(--ink);border-radius:12px;padding:12px 16px;background:var(--card);font-weight:700}
+.frames{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start}
+.flabel{font-size:.75rem;color:var(--sub);margin:0 0 6px;font-weight:700;max-width:375px}
+.phone{width:100%;max-width:375px;background:var(--bg);border:1px solid var(--line);border-radius:20px;padding:12px;display:grid;gap:10px}
+.lens{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.lens span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:16px;white-space:nowrap}
+.lens span.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.q{font-size:.85rem;color:var(--sub);margin:0} .q b{color:var(--ink)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;min-width:0}
+.box h3{font-size:1.05rem;margin:0;text-wrap:balance}
+.small{font-size:.8rem;color:var(--sub);margin:0}
+.note{font-size:.8rem;color:var(--sub);margin:0;line-height:1.6}
+.chip{display:inline-block;font-size:.75rem;border:1px solid var(--line);border-radius:999px;padding:2px 10px;justify-self:start}
+.newmark{outline:2px dashed var(--new);outline-offset:4px;border-radius:10px}
+.badge{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;color:#fff;border:1px solid transparent;flex:none}
+.badge.s{width:20px;height:20px;font-size:.7rem}
+.c1{background:var(--b1);color:var(--b1t);border-color:var(--b1t)} .c2{background:var(--b2)} .c3{background:var(--b3)} .c4{background:var(--b4)} .c5{background:var(--b5);color:var(--b5t)} .c6{background:var(--b6)}
+/* 結論（図の上） */
+.concl{display:grid;gap:6px}
+.form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;min-height:44px;border:1px solid var(--line);border-radius:10px;padding:6px 12px;background:var(--bg);font-size:.9rem}
+.form.sel{border-color:var(--ink);outline:2px solid var(--ink);background:var(--card)}
+.form.only{border:0;padding:0;background:transparent}
+.form b{font-size:1rem}
+.form .pct{font-size:1.4rem;font-weight:700;line-height:1}
+.base{display:grid;grid-template-columns:minmax(0,1fr) 3em;gap:8px;align-items:center;font-size:.78rem;color:var(--sub)}
+.base .tr{height:8px;background:var(--rail);border-radius:4px;position:relative;overflow:hidden}
+.base .fl{position:absolute;left:0;top:0;bottom:0;background:var(--bar);border-radius:4px}
+.base .fl.b{background:var(--base)}
+.today{border-left:4px solid var(--ink);padding:4px 10px;background:var(--hl);border-radius:0 8px 8px 0;font-size:.9rem}
+/* 図 */
+.gtitle{font-size:.78rem;color:var(--sub);text-align:center}
+.axis{display:grid;grid-template-columns:52px minmax(0,1fr) 44px;font-size:.72rem;color:var(--sub)}
+.axis .scale{display:flex;justify-content:space-between}
+.lane{display:grid;grid-template-columns:52px minmax(0,1fr) 44px;align-items:center;padding:4px 0;border-top:1px solid var(--line);min-height:62px}
+.who{display:grid;justify-items:center;font-size:.72rem;line-height:1.2}
+.who b{font-size:.78rem}
+.trk{position:relative;height:28px}
+.trk .rail{position:absolute;left:0;right:0;top:15px;height:3px;background:var(--rail);border-radius:2px}
+.trk .pt{position:absolute;top:9px;width:14px;height:14px;border-radius:50%;margin-left:-7px}
+.trk .lb{position:absolute;top:-6px;font-size:.72rem;transform:translateX(-50%)}
+.trk .arrow{position:absolute;top:8px;font-size:.8rem;color:var(--new);font-weight:700}
+.tags{grid-column:2;display:flex;flex-wrap:wrap;gap:4px}
+.tg{font-size:.72rem;border-radius:6px;padding:0 6px;border:1px solid var(--line);background:var(--bg)}
+.tg.exh{border-color:var(--ink);font-weight:700}
+.tg.hit{border-color:var(--gold);background:var(--gold-soft);color:var(--gold)}
+.plus{width:44px;height:44px;border:1px solid var(--line);border-radius:8px;display:grid;place-items:center;font-size:1.2rem;color:var(--sub);grid-row:span 2}
+/* もし */
+.tech{display:grid;gap:4px}
+.tech .r{display:grid;grid-template-columns:6.5em minmax(0,1fr) 5.6em;gap:8px;align-items:center;font-size:.85rem}
+.tr{height:8px;background:var(--rail);border-radius:4px;overflow:hidden} .fl{height:100%;background:var(--bar)}
+.bars6{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;align-items:end;height:110px;text-align:center;font-size:.72rem}
+.bars6 .c{display:grid;grid-template-rows:auto 1fr auto;justify-items:center;height:100%;gap:2px}
+.bars6 i{display:block;width:70%;align-self:end;border-radius:3px 3px 0 0;border:1px solid var(--line);min-height:3px}
+.sujis{display:flex;flex-wrap:wrap;gap:6px}
+.suji{border:1px solid var(--gold);background:var(--gold-soft);color:var(--gold);border-radius:999px;padding:4px 10px;font-size:.8rem;font-weight:700;min-height:32px;display:inline-flex;align-items:center}
+/* 今日の展示 */
+.band{display:grid;gap:4px}
+.band .r{display:grid;grid-template-columns:auto 4.2em minmax(0,1fr) 6.8em;gap:8px;align-items:center;font-size:.85rem;padding:4px 6px;border-radius:8px}
+.band .r.today{background:var(--hl);outline:2px solid var(--ink);outline-offset:-2px;font-weight:700}
+.band .r .t{font-size:.68rem;border:1px solid var(--ink);border-radius:4px;padding:0 4px;visibility:hidden}
+.band .r.today .t{visibility:visible}
+.band .r .v{text-align:right}
+.band .r .v small{font-weight:400;color:var(--sub)}
+.band .r .few{grid-column:3 / 5;font-size:.8rem;color:var(--sub);font-weight:400}
+.nat{font-size:.8rem;color:var(--sub);margin:0;padding:4px 6px;border-top:1px dashed var(--line)}
+.pending{border:1px dashed var(--line);border-radius:10px;padding:10px;color:var(--sub);font-size:.85rem}
+.nowrap{white-space:nowrap}
+.pc{width:100%;max-width:1100px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:12px}
+.split{display:grid;grid-template-columns:minmax(0,480px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:860px){.split{grid-template-columns:minmax(0,1fr)}}
+.side{display:grid;gap:10px;max-width:76ch} .side p,.side ul{margin:0} .side ul{padding-left:1.2em;display:grid;gap:4px}
+.qs{display:grid;gap:10px} .qs > div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:6px} .qs b{display:block}
+table.cmp{border-collapse:collapse;font-size:.85rem;min-width:680px}
+table.cmp th,table.cmp td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+table.cmp th{font-size:.75rem;color:var(--sub)} .scroll{overflow-x:auto}
+</style>
+
+<div class="wrap">
+  <header style="display:grid;gap:10px;max-width:840px">
+    <span class="eyebrow">思考アシスト／展開レンズの作り直し モック v2（例: 2026-10-06 徳山10R 準優勝戦・本番の値）</span>
+    <h1>スタートの形の見立てと今日の展示を、図の上に1行ずつ</h1>
+    <p>ユーザーの依頼「龍神ソナーの展開予測と展示後のオリジナル展示データを組み合わせるかつ、ボートレースのセオリーも組み合わせる」へのファンパネルの推奨を、先に行った統計検証（下の表）と、UI/UX デザイナー役・言葉役のレビューに合わせて作り直した。赤い点線が新しく足す・変わる場所。</p>
+  </header>
+
+  <div class="fixed">固定: 図の横軸は展示後も平均ST（このコース）。展開の確率は作らない（形の割合と率を掛けない）。変わる: 図の上に結論2行（形の見立て・今日の展示）、各艇に「展示{r}位」、決まり手の内訳、展示タイムの順位ごとの割合（全国の差を根拠に）、進入が続く割合（全国）、オリジナル展示の周回・まわり足の印。展示STは押して比べる所へ。3連単は展開から外す。</div>
+
+  <section class="card">
+    <span class="eyebrow">統計検証（モックの前に実施。2026-10-12）</span>
+    <div class="scroll"><table class="cmp">
+      <thead><tr><th>材料</th><th>効き目（全国）</th><th>1レースの範囲の件数</th><th>見せ方</th></tr></thead>
+      <tbody>
+        <tr><td>攻める艇の展示タイムの順位 → 攻める艇の1着</td><td>上位−下位 +11〜+18ポイント、区間は重ならない（モーター2連率の順位の差の約3倍）。2コース凹みの3号艇: 24.2%・17.6%・13.0%</td><td>今日の区分の中央値 203件、30件未満 3.6%。3〜4位は他と差が出にくい（分かれるのは4%）</td><td>割合で。全国の差を添える。30件未満は件数だけ</td></tr>
+        <tr><td>1号艇の展示タイムの順位 → 1号艇の逃げ</td><td>+12〜+14ポイント。1号艇の展示の偏りを補正しても差はほぼ残る。2コース凹み: 59.4%・50.9%・46.4%</td><td>下位が薄い（中央値104件、30件未満9.6%）</td><td>全国の差を主な根拠に、範囲の率は件数を添えて</td></tr>
+        <tr><td>平均STの手がかり → スリットの形</td><td>当てはまると形の率が 1.3〜2.3倍。ただし当てはまっても形になるのは1〜3割（2コース凹み: 13.3% / 当てはまらない 6.4%）</td><td>中央値 1,293件</td><td>基準の率と並べる。「当たる」と書かない</td></tr>
+        <tr><td>展示が全艇枠なり → 本番も全艇枠なり</td><td>93.3%（3,602/3,862）。級で差なし、会場で 84〜100%</td><td>範囲ごとは中央値 53件</td><td>全国の値で</td></tr>
+        <tr><td>オリジナル展示（周回・まわり足）</td><td>展示タイムをそろえても1着に効く。2〜6コースの1着: 周回1位 16% / ほか 8%、まわり足1位 13% / ほか 8%。直線は効かない</td><td>約2,800レース。形ごとの効き目は件数不足で判定できない</td><td>「6艇で一番」の印と全体の効きだけ。直線・形ごとは出さない。秒数は主役にしない</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <h2>375px</h2>
+    <div class="frames">
+      <div><p class="flabel">① 展示前</p><div class="phone" id="pre"></div></div>
+      <div><p class="flabel">② 展示後（オリジナル展示がある会場）</p><div class="phone" id="post"></div></div>
+      <div><p class="flabel">③ 展示後（オリジナル展示が無い会場・件数が少ない範囲の例。並びは②と同じ）</p><div class="phone" id="few"></div></div>
+      <div><p class="flabel">④ 形が2つ当てはまるとき（例。このレースは1つ）</p><div class="phone" id="alt"></div></div>
+      <div><p class="flabel">⑤ 艇の値を押して6艇を比べた状態（展示ST）</p><div class="phone" id="cmp"></div></div>
+    </div>
+  </section>
+
+  <section style="display:grid;gap:10px">
+    <h2>1440px（展示後。左に結論・図、右に押した結果）</h2>
+    <div class="pc">
+      <div class="lens" style="max-width:720px"><span>軸</span><span class="on">展開</span><span>機力</span><span>相手</span><span>買い目</span></div>
+      <div class="split"><div id="pcL" style="display:grid;gap:12px"></div><div id="pcR" style="display:grid;gap:12px"></div></div>
+    </div>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">決まりと規模</span>
+    <ul>
+      <li>図の上に結論2行: 「本番のスタートの形」（主の形・割合・件数と、手がかりが当てはまらないときの基準の棒）と、展示後は「今日の展示」1行（攻める艇の展示順位とその区分の1着、件数）</li>
+      <li>図: 横軸は展示前も展示後も平均ST（このコース・直近30走）。各艇の札は「展示{r}位」と「★平均STの手がかり（形）」だけ。攻める艇は点の横の ▶ の印。オリジナル展示の印は図に置かない</li>
+      <li>形が2つ当てはまるときは、主と次の形を同じ形式（名前・割合・件数）で並べ、選んでいる方だけを塗る。押すと下の「もし」と「今日の展示」が変わる。1つのときは枠を付けない</li>
+      <li>もし{形}になったら: 攻める艇が1着のときの決まり手の内訳 → 1着の艇 → {形}のときによく出た2連単 → スジのチップ。3連単は買い目レンズへ</li>
+      <li>今日の展示を入れると: 攻める艇・1号艇それぞれ、展示タイムの順位の区分ごとの割合（範囲の件数つき）。全国の差を1行で添える。今日の区分は前の札「今日」と塗りで示す。30件未満の区分は棒を出さず「N件だけ（少ないので割合は出さない）」</li>
+      <li>進入: 展示が全艇枠なりなら「全国で、本番も全艇枠なりは 93%（3,602/3,862）」</li>
+      <li>オリジナル展示（ある会場だけ）: 周回・まわり足で6艇で一番の艇に印と、全体の効き目の1行。直線と秒数は出さない（秒数は機力レンズ）。形ごとの言い回しはしない</li>
+      <li>データ: v16 scenario（NC・NA の attack と hints）、オリジナル展示（今の取得）。API の変更なし。spec FR-4 の「展示後は展示ST」を改める D-xx が要る</li>
+      <li>規模: PR 2〜3本</li>
+    </ul>
+  </section>
+
+  <section class="side" style="max-width:none">
+    <span class="eyebrow">ユーザーに聞くこと</span>
+    <div class="qs">
+      <div><b>1. 展示後も図の横軸を平均STにし、展示STは押して比べる所へ移すか</b>推奨: 移す（展示STは本番のスタートとは別）。別案: 今のまま展示後は展示ST。</div>
+      <div><b>2. この形（結論2行を図の上→図→もし→今日の展示を入れると→進入・オリジナル展示）で進めるか</b>推奨: 進める。</div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var B=[['三馬','B1'],['仲道','A2'],['西岡','A1'],['中村','A2'],['濱野','A1'],['倉富','B1']];
+  var CST=[.148,.1613,.1417,.181,.142,.185], EXH=[2,2,4,1,6,4];
+  var EST=['.07','.17','.06','.05','F.01','.12'], ESTV=[.07,.17,.06,.05,.01,.12];
+  var COL=['var(--b1)','var(--b2)','var(--b3)','var(--b4)','var(--b5)','var(--b6)'];
+  var LENS='<div class="lens"><span>軸</span><span class="on">展開</span><span>機力</span><span>相手</span><span>買い目</span></div>';
+  var Q='<p class="q"><b>スタートでどこが出る？</b> 誰が攻めるか</p>';
+  function pos(v,lo,hi){return Math.max(3,Math.min(97,(v-lo)/(hi-lo)*100))}
+  function board(o){
+    var h='<div class="box" style="padding:10px"><div class="gtitle">'+o.title+'</div><div class="axis"><span></span><span class="scale"><span>◀早い '+o.l+'</span><span>'+o.r+'</span></span><span></span></div>';
+    for(var i=0;i<6;i++){var x=pos(o.vals[i],o.lo,o.hi);
+      h+='<div class="lane"><span class="who"><span class="badge c'+(i+1)+'">'+(i+1)+'</span><b>'+B[i][0]+'</b>'+B[i][1]+'</span><div class="trk"><span class="rail"></span><span class="lb num" style="left:'+x+'%">'+o.txt(i)+'</span><span class="pt" style="left:'+x+'%;background:'+COL[i]+';border:1px solid var(--line)"></span>'+(o.att===i+1?'<span class="arrow" style="left:calc('+x+'% + 10px)">▶攻め手</span>':'')+'</div><span class="plus">+</span><div class="tags">'+(o.tags?o.tags(i):'')+'</div></div>';}
+    return h+'</div>';
+  }
+  var cst=function(i){return '.'+String(Math.round(CST[i]*100)).padStart(2,'0')};
+  function tags(post){return function(i){var t='';if(post)t+='<span class="tg exh newmark">展示'+EXH[i]+'位</span>';if(i===1)t+='<span class="tg hit">★平均STの手がかり（2コース凹み）</span>';return t}}
+  var stBoard=function(post){return board({lo:.12,hi:.20,l:'.12',r:'.20',title:'平均ST（このコース・直近30走）',vals:CST,txt:cst,tags:tags(post),att:3})};
+  function concl(o){
+    var forms=o.forms.map(function(f,i){return '<div class="form'+(o.forms.length===1?' only':(i===o.sel?' sel':''))+'"><span><b>'+f.name+'</b> 本番でこの形になるのは</span><span class="num"><span class="pct">'+f.p+'%</span> <span class="small">（'+(f.cnt||(f.k+'/'+f.n))+'）</span></span></div>'}).join('');
+    var h='<div class="box newmark concl"><h3>本番のスタートの形</h3>'+forms+
+      '<div class="base num"><span class="tr"><span class="fl b" style="width:'+o.base+'%"></span></span><span>'+o.base+'%</span></div><p class="note">平均STの手がかりが当てはまらないときは '+o.base+'%。なりやすい形でも、9割近くはこの形にならない</p>';
+    if(o.today) h+='<p class="today num">'+o.today+'</p>';
+    return h+'</div>';
+  }
+  function ifForm(f){
+    var techs=f.tech.map(function(t){var p=100*t[1]/f.w;return '<div class="r num"><span>'+t[0]+'</span><div class="tr"><div class="fl" style="width:'+p.toFixed(1)+'%"></div></div><span class="nowrap">'+Math.round(p)+'%（'+t[1]+'件）</span></div>'}).join('');
+    var bars=f.first.map(function(k,i){var p=100*k/f.n;return '<div class="c"><span>'+Math.round(p)+'%</span><i style="height:'+Math.max(3,p*1.6)+'%;background:'+COL[i]+'"></i><span class="badge s c'+(i+1)+'">'+(i+1)+'</span></div>'}).join('');
+    var ex=f.ex.map(function(x){return '<span class="nowrap">'+x[0]+'（'+x[1]+'件）</span>'}).join('　');
+    var sj=f.suji.map(function(s){return '<span class="suji">'+s+' ›</span>'}).join('');
+    return '<div class="box"><h3>もし'+f.name+'になったら</h3><span class="chip num">全国・級の並びが同じ（予選も含む）・枠なり '+f.n+'件</span>'+
+      '<div class="newmark" style="display:grid;gap:6px;padding:4px"><p class="small"><b style="color:var(--ink)">攻める'+f.att+'号艇</b>が1着の'+f.w+'件の決まり手</p><div class="tech">'+techs+'</div></div>'+
+      '<p class="small">'+f.name+'のときの1着の艇</p><div class="bars6 num">'+bars+'</div>'+
+      '<p class="note num">'+f.name+'のときによく出た2連単: '+ex+'</p>'+
+      '<div class="sujis newmark">'+sj+'</div><p class="note">よく出た3連単は買い目レンズ</p></div>';
+  }
+  var D2={name:'2コース凹み',n:161,att:3,w:36,tech:[['まくり',15],['まくり差し',17],['差し',2]],first:[65,18,36,29,10,3],ex:[['1-3',24],['1-4',17],['1-2',14],['3-1',13],['3-4',12]],suji:['3まくり→3-4','3まくり差し→3-1']};
+  var KADO={name:'カド一撃',n:381,att:4,w:120,tech:[['まくり',90],['まくり差し',18],['差し',6]],first:[64,74,60,120,49,14],ex:[['4-5',50],['4-2',30],['2-1',21],['1-2',20],['3-4',19]],suji:['4まくり→4-5']};
+  function bands(rows,today){return rows.map(function(r){var few=r[1]<30,isT=r[0]===today;
+    if(few) return '<div class="r'+(isT?' today':'')+'"><span class="t">今日</span><span>'+r[0]+'</span><span class="few num">'+r[1]+'件だけ（少ないので割合は出さない）</span></div>';
+    var p=100*r[2]/r[1];return '<div class="r'+(isT?' today':'')+'"><span class="t">今日</span><span>'+r[0]+'</span><div class="tr"><div class="fl" style="width:'+p.toFixed(1)+'%"></div></div><span class="v num">'+Math.round(p)+'% <small>('+r[2]+'/'+r[1]+')</small></span></div>'}).join('')}
+  function exhBox(o){
+    return '<div class="box newmark"><h3>今日の展示を入れると</h3><span class="chip num">'+o.scope+'</span>'+
+      '<p class="small"><b style="color:var(--ink)">攻める'+o.att+'号艇（展示'+o.attRank+'位）</b>: 展示タイムの順位ごとの1着</p><div class="band">'+bands(o.att3,o.attToday)+'</div>'+
+      '<p class="nat num">全国では 1〜2位 '+o.natAtt[0]+'%・3〜4位 '+o.natAtt[1]+'%・5〜6位 '+o.natAtt[2]+'%（順位が上ほど1着が多い）'+(o.attToday==='3〜4位'?'。3〜4位はほかの順位との差が出にくい':'')+'</p>'+
+      '<p class="small"><b style="color:var(--ink)">1号艇（展示'+o.b1Rank+'位）</b>: 展示タイムの順位ごとの逃げ</p><div class="band">'+bands(o.b1,o.b1Today)+'</div>'+
+      '<p class="nat num">全国では 1〜2位 '+o.natB1[0]+'%・3〜4位 '+o.natB1[1]+'%・5〜6位 '+o.natB1[2]+'%</p>'+
+      '<p class="note">1号艇は展示が速く出やすい（同じ選手でも約0.02秒）。その分を差し引いても、順位ごとの差はほとんど変わらない。過去の割合で、原因とは限らない</p></div>';
+  }
+  var EX_D2={scope:'2コース凹みの161件',att:3,attRank:4,attToday:'3〜4位',att3:[['1〜2位',61,14],['3〜4位',53,13],['5〜6位',47,9]],natAtt:[24,18,13],b1Rank:2,b1Today:'1〜2位',b1:[['1〜2位',78,33],['3〜4位',40,15],['5〜6位',43,15]],natB1:[59,51,46]};
+  var EX_KADO={scope:'カド一撃の381件',att:4,attRank:1,attToday:'1〜2位',att3:[['1〜2位',146,56],['3〜4位',131,43],['5〜6位',104,21]],natAtt:[40,29,22],b1Rank:2,b1Today:'1〜2位',b1:[['1〜2位',163,29],['3〜4位',113,15],['5〜6位',105,16]],natB1:[38,'－',25]};
+  var EX_FEW={scope:'2コース凹みの4件（準優勝戦だけで集めた範囲の例）',att:3,attRank:4,attToday:'3〜4位',att3:[['1〜2位',1,0],['3〜4位',1,1],['5〜6位',2,1]],natAtt:[24,18,13],b1Rank:2,b1Today:'1〜2位',b1:[['1〜2位',4,1],['3〜4位',0,0],['5〜6位',0,0]],natB1:[59,51,46]};
+  var ENTRY_PRE='<div class="box"><h3>進入</h3><div class="pending">今日の展示の進入は、展示の後に分かる</div></div>';
+  var ENTRY_POST='<div class="box"><h3>進入</h3><p>✓ 今日の展示は全艇枠なり</p><p class="newmark num" style="padding:4px">全国で、展示が全艇枠なりのとき本番も全艇枠なりは <b>93%</b>（3,602/3,862）</p></div>';
+  var ORG='<div class="box newmark"><h3>オリジナル展示（徳山: 一周・まわり足）</h3><p><span class="badge s c1" style="display:inline-grid;vertical-align:middle">1</span> 1号艇: 一周・まわり足とも6艇で一番</p><p class="note num">一周・まわり足が6艇で一番の艇は1着が多い（2〜6コースの1着: 一周1位 16%・ほか 8%、まわり足1位 13%・ほか 8%。展示タイムの順位をそろえても残る差。1コースでも同じ向き）</p><p class="note">会場ごとに測る区間が違うので、この会場の中での順位で見る。秒数は機力レンズ ›</p></div>';
+  var ORG_NONE='<div class="box"><p class="note">この会場はオリジナル展示を出していない</p></div>';
+  var PRE_EXH='<div class="box"><h3>今日の展示を入れると</h3><div class="pending">展示の後に分かる（攻める艇・1号艇の展示タイムの順位ごとの割合）</div></div>';
+  var TODAY='今日の展示: 攻める3号艇は展示4位（3〜4位）→ 2コース凹みのとき1着 25%（13/53）';
+  var C1={forms:[{name:'2コース凹み',p:13,k:65,n:501}],sel:0,base:5};
+  document.getElementById('pre').innerHTML=LENS+Q+concl(C1)+stBoard(false)+ifForm(D2)+PRE_EXH+ENTRY_PRE;
+  document.getElementById('post').innerHTML=LENS+Q+concl({forms:C1.forms,sel:0,base:5,today:TODAY})+stBoard(true)+ifForm(D2)+exhBox(EX_D2)+ENTRY_POST+ORG;
+  document.getElementById('few').innerHTML=LENS+Q+concl({forms:C1.forms,sel:0,base:5,today:'今日の展示: 攻める3号艇は展示4位（3〜4位）→ この範囲は4件だけ'})+stBoard(true)+ifForm(D2)+exhBox(EX_FEW)+ENTRY_POST+ORG_NONE;
+  document.getElementById('alt').innerHTML=LENS+Q+concl({forms:[{name:'カド一撃',p:24,cnt:'全国の例'},{name:'2コース凹み',p:13,k:65,n:501}],sel:0,base:13,today:'今日の展示: 攻める4号艇は展示1位（1〜2位）→ カド一撃のとき1着 38%（56/146）'})+ifForm(KADO)+exhBox(EX_KADO);
+  document.getElementById('cmp').innerHTML=LENS+Q+'<div class="newmark">'+board({lo:0,hi:.2,l:'.00',r:'.20',title:'展示ST（本番のスタートとは別）',vals:ESTV,txt:function(i){return EST[i]}})+'</div><div class="form"><span>平均ST（このコース）に戻す</span><span aria-hidden="true">×</span></div>';
+  document.getElementById('pcL').innerHTML=concl({forms:C1.forms,sel:0,base:5,today:TODAY})+stBoard(true)+ENTRY_POST+ORG;
+  document.getElementById('pcR').innerHTML=ifForm(D2)+exhBox(EX_D2);
+})();
+</script>

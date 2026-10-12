@@ -66,3 +66,19 @@ test("選手一覧: canonical は /racers", async ({ page }) => {
   });
   expect(await canonicalOf(page)).toBe(`${SITE}/racers`);
 });
+
+// ADR 0089 決定2（SEO 再点検 N1）: 人の /venue/:code は ?date= を読まず本日を出す。
+// ボット向け HTML も ?date= を無視して本日を返すので、人と中身が同じになる。人の側が ?date= を読むように
+// 変わったら、ボット向けの振り分け（aiCrawlerBots.js・middleware.js）も見直すこと
+test("会場ページは ?date= 付きでも本日のページで、canonical はクエリなし", async ({
+  page,
+}) => {
+  await page.goto("/venue/20?date=2026-10-01", {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(page.locator('link[rel="canonical"]')).toHaveCount(1, {
+    timeout: 30000,
+  });
+  expect(await canonicalOf(page)).toBe(`${SITE}/venue/20`);
+  await expect(page).toHaveTitle(/本日/);
+});

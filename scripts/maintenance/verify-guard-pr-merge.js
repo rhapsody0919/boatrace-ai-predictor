@@ -277,31 +277,34 @@ check(
   ])?.decision,
   "ask",
 );
+// 実際のPR #843 が e2e=IN_PROGRESS で、当時はPENDINGしか除外していなかったため
+// 「e2eが赤い」扱いで確認を求めてしまった（2026-09-25、実データで発覚）。
+// その修正では「RUNNING_STATESは何もしない（素通し）」にしたが、BOA-769 D（2026-10-12〜）で
+// 「待たせる（ask）」に変える。実行中に素通しすると、手元の全件実行をやめた運用では
+// 走り終わる前にマージできてしまうため（verifyのRUNNING判定と揃える）
 check(
-  "e2eが実行中なら何もしない(PENDING)",
+  "e2eが実行中なら待たせる(PENDING)",
   judgeChecks("1", [
     { name: "verify", state: "SUCCESS" },
     { name: "e2e", state: "PENDING" },
-  ]),
-  null,
+  ])?.decision,
+  "ask",
 );
-// 実際のPR #843 が e2e=IN_PROGRESS で、PENDINGしか除外していなかったため
-// 「e2eが赤い」扱いで確認を求めてしまった（2026-09-25、実データで発覚）
 check(
-  "e2eが実行中なら何もしない(IN_PROGRESS)",
+  "e2eが実行中なら待たせる(IN_PROGRESS)",
   judgeChecks("1", [
     { name: "verify", state: "SUCCESS" },
     { name: "e2e", state: "IN_PROGRESS" },
-  ]),
-  null,
+  ])?.decision,
+  "ask",
 );
 check(
-  "e2eが実行中なら何もしない(QUEUED)",
+  "e2eが実行中なら待たせる(QUEUED)",
   judgeChecks("1", [
     { name: "verify", state: "SUCCESS" },
     { name: "e2e", state: "QUEUED" },
-  ]),
-  null,
+  ])?.decision,
+  "ask",
 );
 check("配列でなければ判断しない", judgeChecks("1", null), null);
 check(

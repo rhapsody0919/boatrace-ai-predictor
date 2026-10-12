@@ -65,8 +65,11 @@ test.describe("レース詳細の表示の細部", () => {
     // 発走前の AI予想（.prediction-result）と確定後の振り返り（.race-ai-prediction-tab）の
     // どちらになるかは録画の時刻しだいなので、トップのレースから辿って出た方を測る
     await page.goto("/");
+    // ブログ欄の記事タイトルにもRレース番号が入ることがある（例:「唐津12Rで読む」）ため、
+    // href が /race/ のリンクだけを対象にする（アクセシブルネームでの絞り込みだとブログ記事に先に一致する）。
     await page
-      .getByRole("link", { name: /\d{1,2}\s*R/ })
+      .locator('a[href*="/race/"]')
+      .filter({ hasText: /\d{1,2}\s*R/ })
       .first()
       .click();
     await page.waitForURL(/\/race\//);
@@ -570,7 +573,9 @@ test.describe("レース詳細の表示の細部", () => {
     await more.click();
     await expect(more).toHaveCount(0);
     const cut = await hint.evaluate((el) => {
-      const box = el.querySelector(".drt-table-wrapper").getBoundingClientRect();
+      const box = el
+        .querySelector(".drt-table-wrapper")
+        .getBoundingClientRect();
       const cells = [...el.querySelector(".drt-table tr").children];
       return cells.at(-1).getBoundingClientRect().right - box.right;
     });
@@ -858,15 +863,22 @@ test.describe("レース詳細の表示の細部", () => {
       });
       const m = await page.locator(".mcc-list-table").evaluate((t) =>
         [...t.querySelectorAll("tbody tr")].map((tr) => {
-          const chip = tr.querySelector(".rr-boat-chip").getBoundingClientRect();
+          const chip = tr
+            .querySelector(".rr-boat-chip")
+            .getBoundingClientRect();
           const lane = tr.children[0].getBoundingClientRect();
           const name = tr.children[1].getBoundingClientRect();
-          return { chipRight: chip.right, laneRight: lane.right, nameLeft: name.left };
+          return {
+            chipRight: chip.right,
+            laneRight: lane.right,
+            nameLeft: name.left,
+          };
         }),
       );
-      const head = await page.locator(".mcc-list-table thead th").first().evaluate(
-        (th) => th.scrollWidth - th.clientWidth,
-      );
+      const head = await page
+        .locator(".mcc-list-table thead th")
+        .first()
+        .evaluate((th) => th.scrollWidth - th.clientWidth);
       expect(head, "枠の見出しが列からはみ出さない").toBeLessThanOrEqual(0);
       for (const r of m) {
         expect(r.chipRight).toBeLessThanOrEqual(r.laneRight);
@@ -1160,7 +1172,10 @@ test.describe("横スクロールの表の仕上げ", () => {
       });
       expect(ring, "「‹」の丸の縁が、固定した列の右の線と同じ色").toBe(true);
       // 罫線の色のままだと、ライト約1.4:1・ダーク約1.2:1だった
-      expect(contrast(line, bg), `線 ${line} / 地 ${bg}`).toBeGreaterThanOrEqual(2);
+      expect(
+        contrast(line, bg),
+        `線 ${line} / 地 ${bg}`,
+      ).toBeGreaterThanOrEqual(2);
     });
   }
 });

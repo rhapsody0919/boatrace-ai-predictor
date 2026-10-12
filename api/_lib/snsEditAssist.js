@@ -2,7 +2,12 @@ import twitterText from 'twitter-text';
 import { matchRiskRules } from '../../scripts/lib/riskRuleMatcher.js';
 
 export const EDIT_ENGINE = 'deterministic-v1';
-const fieldText = d => [['title',d.title],['caption_text',d.caption_text],
+const fieldText = d => [['title',d.title,'body'],['caption_text',d.caption_text,d.platform==='youtube' && !d.source_data?.bundle ? 'description' : 'body'],
+  ...(d.hashtags || []).map((tag,i)=>[`hashtags[${i}]`,tag,'hashtags']),
+  ...(d.source_data?.bundle?.x_hashtags || []).filter(()=>d.platform==='x').map((tag,i)=>[`bundle.x_hashtags[${i}]`,tag,'hashtags']),
+  ...(d.source_data?.bundle?.youtube_tags || []).filter(()=>d.platform==='youtube').map((tag,i)=>[`bundle.youtube_tags[${i}]`,tag,'hashtags']),
+  ...(d.platform==='youtube' ? [['bundle.youtube_description',d.source_data?.bundle?.youtube_description,'description']] : []),
+  ['bundle.script',d.platform==='youtube' ? d.source_data?.bundle?.script : undefined,'body'],
   ...(d.source_data?.bundle?.scenes || []).flatMap((s,i)=>(s.lines || []).map((line,j)=>[`scenes[${i}].lines[${j}]`,line]))];
 const atPath = (raw,path) => path.reduce((v,k)=>v != null && Object.hasOwn(v,k) ? v[k] : undefined,raw);
 
@@ -11,8 +16,8 @@ export function inspectDraft(draft, rules, sources) {
   const findings=[];
   const add=(rule,location,content,reason,suggestion)=>findings.push({id:`${rule}:${findings.length}`,rule,location,content,reason,suggestion,origin:'deterministic'});
   const fields=fieldText(draft).filter(([,text])=>typeof text==='string');
-  for(const [location,text] of fields) {
-    for(const hit of matchRiskRules(text,draft.platform,rules))
+  for(const [location,text,field='body'] of fields) {
+    for(const hit of matchRiskRules(text,draft.platform,rules,field))
       add(hit.id,location,`用語・表現「${hit.matchedPattern}」`,hit.description,'ブランドガイドとリスクルールを確認して言い換えてください。');
     text.split(/[。！？!?\n]/u).forEach((sentence,i)=>{
       if(Array.from(sentence).length>80) add('sentence-length',`${location}:文${i+1}`,`${Array.from(sentence).length}文字の文`,'長い文はスマホで追いにくくなります。','一文80文字を目安に分割してください（編集上の目安）。');

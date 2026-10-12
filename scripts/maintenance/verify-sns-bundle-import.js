@@ -1,3 +1,8 @@
+import "./snsDraftDiff.js";
+import {
+  runYoutubeQueueJob,
+  createMockYoutubeAdapter,
+} from "../../api/_lib/snsDeadlineQueue.js";
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
 import "./snsRawErrors.js";
 import {
@@ -53,6 +58,9 @@ async function fixture(change = {}) {
     })),
     claims: [{ source: "facts", path: ["count"], value: 30 }],
     source_data: {},
+    video: {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true},
+    video_probe: {tool:"ffprobe",width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true,
+      sha256:await sha256(new Uint8Array([0,0,0,20,102,116,121,112,105,115,111,109]))},
     ...change,
   };
   const files = new Map([
@@ -117,6 +125,68 @@ async function refreshHash(files, name) {
   integrity[name] = await sha256(files.get(name));
   files.set("integrity.json", json(integrity));
 }
+await check("会場18の戸田誤表記・原文レース違いは拒否せず警告を保存", async () => {
+  const files = await fixture({race_id:"2026-10-07-18-10", venueName:"戸田", script:"戸田の10R", source_data:{venueCode:18}});
+  files.set("facts.json", json({today:{race_id:"2026-10-07-18-09",venue_code:18}, similar:[{race_id:"2026-10-06-02-01"}]}));
+  const meta = JSON.parse(new TextDecoder().decode(files.get("facts.meta.json")));
+  meta.sha256 = await sha256(files.get("facts.json"));
+  files.set("facts.meta.json", json(meta));
+  await refreshHash(files, "facts.json");
+  const result = await validateBundle(form(files));
+  assert(result.riskFlags.x.some(w => w.id === "bundle-venue-mismatch"));
+  assert(result.riskFlags.youtube.some(w => w.id === "bundle-body-venue-2"));
+  assert(result.riskFlags.x.some(w => w.id === "bundle-race-mismatch"));
+  assert(!result.riskFlags.x.some(w => w.matchedPattern.includes("similar")));
+  let saved;
+  await importValidatedBundle(result, {saveFile:async()=>{}, register:async payload => {saved=payload;}});
+  assert.deepEqual(saved.p_risk_flags, result.riskFlags);
+  assert(saved.p_hold_reasons.some(h => h.includes("QA保留")));
+});
+await check("source_dataのコード・scope不一致と唐津の名称境界", async () => {
+  const bad = await validateBundle(form(await fixture({source_data:{race_code:"2026-10-07-11-09",venueCode:18,scope_key:"VC:18:test"}})));
+  assert(bad.riskFlags.x.some(w => w.id === "bundle-race-mismatch"));
+  assert(bad.riskFlags.x.some(w => w.matchedPattern === "source_data.venueCode"));
+  assert(bad.riskFlags.x.some(w => w.matchedPattern === "source_data.scope_key"));
+  const good = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title:"唐津の展望"})));
+  assert(!good.riskFlags.x.some(w => w.id.startsWith("bundle-body-venue")));
+});
+for (const title of ["唐 津の展望", "唐　津の展望"]) {
+  await check(`対象会場の空白入り表記「${title}」は津の警告を付けない`, async () => {
+    const result = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title})));
+    for (const platform of ["x", "youtube"]) {
+      assert(!result.riskFlags[platform].some(w => w.id === "bundle-body-venue-9"));
+    }
+    const other = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title:`${title}と津の比較`})));
+    for (const platform of ["x", "youtube"]) {
+      assert(other.riskFlags[platform].some(w => w.id === "bundle-body-venue-9"));
+    }
+  });
+}
+await check("動画の宣言・scene合計・実hashの不一致と不足は警告のみ", async () => {
+  const mp4 = (await fixture()).get("draft.mp4");
+  const video = {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true};
+  const video_probe = {...video,tool:"ffprobe",sha256:await sha256(mp4)};
+  const ok = await validateBundle(form(await fixture({video,video_probe})));
+  assert(!ok.riskFlags.x.some(w => w.id.startsWith("bundle-video")));
+  const bad = await validateBundle(form(await fixture({video:{...video,width:720,has_audio:false}, video_probe:{...video_probe,duration_seconds:19,sha256:"0".repeat(64)}})));
+  for (const id of ["bundle-video-mismatch","bundle-video-scenes-mismatch","bundle-video-hash-mismatch"])
+    assert(bad.riskFlags.youtube.some(w => w.id === id), id);
+  const missing = await validateBundle(form(await fixture({video_probe:{}})));
+  assert(missing.riskFlags.x.some(w => w.id === "bundle-video-probe-missing"));
+});
+await check("正準表を副作用なしで共有し、類似レースの識別子は照合しない", async () => {
+  const {VENUE_NAMES} = await import("../lib/venueNames.js");
+  assert.equal(Object.keys(VENUE_NAMES).length,24);
+  assert.equal(VENUE_NAMES[18],"徳山");
+  const files = await fixture({venue_name:"びわこ",source_data:{race_code:"2026-10-07-11-10",venue_code:11}});
+  files.set("similar.json", json({neighbors:[{race_id:"2026-10-06-18-01",venue_code:18}]}));
+  const meta = JSON.parse(new TextDecoder().decode(files.get("similar.meta.json")));
+  meta.sha256=await sha256(files.get("similar.json"));
+  files.set("similar.meta.json",json(meta));
+  await refreshHash(files,"similar.json");
+  const result=await validateBundle(form(files));
+  assert(!result.riskFlags.x.some(w => /bundle-(race|venue|body)/.test(w.id)));
+});
 const files = await fixture();
 const validated = await validateBundle(form(files));
 const riskRules = JSON.parse(
@@ -886,7 +956,13 @@ await check(
 );
 
 // API本体を読み、依存境界だけモックに差し替える。鍵・本番接続は不要。
-async function mockHandler(path, draft, denied = false) {
+async function mockHandler(
+  path,
+  draft,
+  denied = false,
+  allowUpdate = false,
+  rules = riskRules,
+) {
   let source = await fs.readFile(new URL(path, root), "utf8");
   const mock =
     "data:text/javascript," +
@@ -894,7 +970,7 @@ async function mockHandler(path, draft, denied = false) {
     export const jsonResponse=(body,status=200)=>new Response(JSON.stringify(body),{status});
     export const isConfigured=()=>true; export const isValidDraftId=()=>true;
     export const getDraftById=async()=>(${JSON.stringify(draft)});
-    export const updateDraft=async()=>{throw new Error('更新してはいけない')};
+    export const updateDraft=async()=>{${allowUpdate ? "return {};" : "throw new Error('更新してはいけない');"}};
     export const signStoragePath=async()=>{throw new Error('署名してはいけない')};
     export const requireAdminAuth=async()=>${denied ? "new Response('denied',{status:401})" : "null"};
     export const getYoutubeAccessToken=async()=>{throw new Error('投稿してはいけない')};
@@ -911,6 +987,10 @@ async function mockHandler(path, draft, denied = false) {
     /"[^"\n]+_lib\/snsBundleValidation\.js"/g,
     JSON.stringify(new URL("api/_lib/snsBundleValidation.js", root).href),
   );
+  source = source.replace(
+    /"[^"\n]+lib\/riskRuleMatcher\.js"/g,
+    JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href),
+  );
   const storageMock =
     "data:text/javascript," +
     encodeURIComponent(`
@@ -922,17 +1002,142 @@ async function mockHandler(path, draft, denied = false) {
     JSON.stringify(storageMock),
   );
   source = source.replace(
-    /"[^"\n]+risk-rules\.json"/g,
+    /"[^"\n]+risk-rules\.json"(\s+with\s*\{[^}]*\})?/g,
     JSON.stringify(
       "data:text/javascript," +
-        encodeURIComponent(
-          `export default ${JSON.stringify({ rules: riskRules })}`,
-        ),
+        encodeURIComponent(`export default ${JSON.stringify({ rules })}`),
     ),
   );
   return (await import("data:text/javascript," + encodeURIComponent(source)))
     .default;
 }
+await check(
+  "ハッシュタグ例外はNode・承認API・bundle・編集補助で一致しenabled一つで解除",
+  async () => {
+    const cases = [
+      ["Xタグ", "x", "hashtags", "#競艇", false],
+      ["X本文", "x", "body", "確認 #競艇", true],
+      ["X別タグ", "x", "hashtags", "#競艇場", true],
+      ["タグ裸語", "x", "hashtags", "競艇", true],
+      ["タグ内文", "x", "hashtags", "説明 #競艇", true],
+      ["YouTubeタグ", "youtube", "hashtags", "#競艇", false],
+      [
+        "YouTube末尾",
+        "youtube",
+        "description",
+        "件数を確認\n#競艇 #Shorts",
+        false,
+      ],
+      ["YouTube本文残存", "youtube", "description", "競艇の件数\n#競艇", true],
+      ["YouTube途中", "youtube", "description", "#競艇 の件数", true],
+      ["YouTube別タグ", "youtube", "description", "件数\n#競艇場", true],
+      ["ナレーション", "youtube", "script", "確認\n#競艇", true],
+      ["動画内文字", "youtube", "scene", "#競艇", true],
+      ["タイトル", "youtube", "title", "#競艇", true],
+      ["他媒体タグ", "tiktok", "hashtags", "#競艇", true],
+    ];
+    const rows = [];
+    for (const enabled of [true, false]) {
+      const rules = structuredClone(riskRules);
+      rules.find(
+        (r) => r.id === "banned-term-kyoutei",
+      ).hashtag_exception.enabled = enabled;
+      for (const [name, platform, field, content, warn] of cases) {
+        const expected = warn || !enabled;
+        const nodeField = ["title", "script", "scene"].includes(field)
+          ? "body"
+          : field;
+        const node = checkRiskRules(content, platform, nodeField, rules).some(
+          (r) => r.id === "banned-term-kyoutei",
+        );
+        const draft = {
+          platform,
+          status: "pending_review",
+          title: "件数",
+          caption_text: "確認",
+        };
+        const bundle = {};
+        if (field === "hashtags") {
+          draft.hashtags = [content];
+          bundle[platform === "x" ? "x_hashtags" : "youtube_tags"] = [content];
+        }
+        if (field === "body") {
+          draft.caption_text = content;
+          bundle.x_text = content;
+        }
+        if (field === "description") {
+          draft.caption_text = content;
+          bundle.youtube_description = content;
+        }
+        if (field === "title") {
+          draft.title = content;
+          bundle.title = content;
+        }
+        if (field === "script") {
+          draft.caption_text = content;
+          draft.source_data = { bundle: { script: content } };
+          bundle.script = content;
+        }
+        if (field === "scene") {
+          bundle.scenes = Array.from({ length: 3 }, () => ({
+            seconds: 6,
+            tab: "観測",
+            component: "件数",
+            lines: [content],
+          }));
+          draft.source_data = { bundle: { scenes: bundle.scenes } };
+        }
+        const handler = await mockHandler(
+          "api/admin/sns-hub/drafts/[id]/approve.js",
+          draft,
+          false,
+          true,
+          rules,
+        );
+        const response = await handler(
+          new Request("https://local.invalid/drafts/test/approve", {
+            method: "POST",
+            body: JSON.stringify({ approverId: "mock" }),
+          }),
+        );
+        assert.equal(response.status, 200);
+        const api = (await response.json()).riskWarnings.some(
+          (r) => r.id === "banned-term-kyoutei",
+        );
+        const edit = inspectDraft(draft, rules).some(
+          (r) => r.rule === "banned-term-kyoutei",
+        );
+        // v0 bundleはX/YouTubeのみ。他媒体は汎用matcherの保守的判定を確認する。
+        const result = await validateBundle(form(await fixture(bundle)), rules);
+        const bundleHit =
+          platform === "tiktok"
+            ? null
+            : result.riskFlags[platform].some(
+                (r) => r.id === "banned-term-kyoutei",
+              );
+        assert.equal(node, expected, name);
+        assert.equal(api, expected, name);
+        assert.equal(edit, expected, name);
+        if (bundleHit !== null) assert.equal(bundleHit, expected, name);
+        rows.push({
+          enabled,
+          name,
+          expected: expected ? "警告" : "許可",
+          Node: node,
+          API: api,
+          bundle: bundleHit,
+          edit,
+        });
+      }
+    }
+    console.table(rows);
+    // optional欄も型検査し、ナレーションとタグ欄を混同しない。
+    await assert.rejects(
+      validateBundle(form(await fixture({ x_hashtags: "invalid" })), riskRules),
+      /タグ欄/,
+    );
+  },
+);
 await check("承認APIとYouTube公開APIは副作用前に409・認証なし401", async () => {
   for (const name of ["approve", "publish-youtube"]) {
     const path = `api/admin/sns-hub/drafts/[id]/${name}.js`;
@@ -1091,6 +1296,64 @@ await check(
   },
 );
 
+await check(
+  "Shorts公開未確認は要照合、呼出し前のクォータ記録と候補ID保存",
+  async () => {
+    const mediaBytes = new Uint8Array([1]);
+    const snapshot_text = JSON.stringify({
+      source: { video_storage_path: "a.mp4" },
+      media: [
+        {
+          path: "a.mp4",
+          type: "video/mp4",
+          size: 1,
+          sha256: await sha256(mediaBytes),
+        },
+      ],
+      queue: { youtube_mode: "scheduled" },
+    });
+    let state = "queued";
+    const actions = [];
+    const store = {
+      async transition(id, action, result) {
+        actions.push({ action, result });
+        if (action === "claim") state = "sending";
+        if (action === "begin_post") state = "reconcile";
+        if (action === "complete") state = "posted";
+        return {
+          id,
+          external_post_id: "abcdefghijk",
+          state,
+          channel: "youtube",
+          snapshot_text,
+          approved_hash: await sha256(encode(snapshot_text)),
+        };
+      },
+    };
+    await assert.rejects(
+      runYoutubeQueueJob("mock", {
+        store,
+        youtube: createMockYoutubeAdapter({ privacyStatus: "private" }),
+        preflight: async () => {},
+        loadMedia: async () => mediaBytes,
+      }),
+      /unconfirmed/,
+    );
+    assert.equal(state, "reconcile");
+    assert.deepEqual(
+      actions
+        .filter((a) => a.action === "youtube_call")
+        .map((a) => a.result.method),
+      ["videos.insert", "videos.update", "videos.list"],
+    );
+    assert.equal(
+      actions.find((a) => a.action === "youtube_uploaded").result.id,
+      "abcdefghijk",
+    );
+    assert(!actions.some((a) => a.action === "complete"));
+  },
+);
+
 const sample = process.argv.find((a) => a.startsWith("--sample="))?.slice(9);
 if (sample)
   await check(
@@ -1111,3 +1374,6 @@ if (sample)
 console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
 );
+
+if (process.argv.includes("--draft-diff-ui"))
+  await import("./snsDraftDiffUi.js");

@@ -55,9 +55,9 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 ### 検証・テスト
 - 変更には再現テストまたは検証を付ける。置き場所は内容で選ぶ: UI挙動は `e2e/`（Playwright）、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（新規に書いたら `scripts/maintenance/verify-registry.json` にも登録する。未登録だと `npm run verify:ci` が失敗する）
 - PR 作成前に手元で `npm run build` を通す（ビルドエラーが無いことを確認する）
-- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更では `npm run test:e2e` も実行し、デグレが無いことを確認する
+- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更でも、手元で全件 `npm run test:e2e` は実行しない（BOA-769 D、2026-10-12〜）。CIのE2E（3shardに分割、所要約20分、`.github/workflows/e2e-smoke-test.yml`）が全部のテストを検証し、`scripts/maintenance/guard-pr-merge.js` が e2e の結果が出るまでマージを止める。手元の全件実行は、複数のworktree・セッションが同じMacで並行稼働する運用（スワップ15GB・load 28〜67に達した実績）とCPU・メモリを取り合うため避ける。関係する一部だけ素早く確認したい場合は `npx playwright test e2e/<対象ファイル>.spec.js` のように対象を絞って実行してよい
 - CSS・レイアウトを変更した場合は `npm run test:layout`（375/768/1024/1440/1920px の5軸）も実行し、横スクロール・グリッドの崩れが無いことを確認する
-- `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない（手元で先に確かめたい場合は `npm run verify:ci` か該当する個別の `npm run verify:*`）
+- `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない。全件は手元で実行しない（BOA-769 D、2026-10-12〜。複数セッションが同じMacで同時に`npm run verify:ci`全件を走らせ、load averageが100前後に達した実績がある）。手元で先に確かめたい場合は、変更に関係する個別の `npm run verify:*` だけを実行する
 - `CREATE OR REPLACE FUNCTION` で既存 RPC のキーを削除していないかは `npm run verify:rpc-key-regression`（SQLファイル同士の比較、本番接続不要）がPR時にCIで検知する。あなたは本番Supabaseに接続できないため、本番の実物との最終照合（`verify-rpc-output-keys.js`、本番接続が要る）はユーザー・Claude側が本番適用後に行う
 - 新しいページ・分析タブ・主要機能を実装した場合は、対応する `docs/design/{slug}/content-index.json` を作成する（または `not_applicable: true` で対象外を明記する）。`docs/db-migration/` に新規マイグレーションを追加した場合は `docs/db-migration/APPLIED.md`（適用状況の台帳）に行を追加する（適用自体はユーザーが行うが、台帳への追記はマイグレーションファイルと同じPRに含める）
 - `npm run test:e2e` は既定で録画を再生し、時計を録画時刻に固定する。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PRコメントとstep summaryに一覧が出る（新しいクエリを足したPRで素通しが出るのは想定どおりで、撮り直しは不要）。録画の撮り直し（`npm run test:e2e:record`）は通常不要（`e2e-rerecord.yml` が毎日自動で行う）
@@ -118,6 +118,19 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 ### 6. スクリプトの実行環境（P2）
 
 - `scripts/` 配下のスクリプトで GitHub Actions（日次 cron）から `node` 直接実行されるもの（例: `generate-sitemap.js`）が、Vite 専用構文（`import.meta.glob` 等）に依存する `src/` 配下のファイルを import していないか。Node 直実行で構文エラーになり自動処理が止まる
+
+## Review guidelines
+
+Codex の GitHub レビューで P0/P1 として見る観点。投稿の範囲・書き方は下の「Code Review Rules」に従う。
+
+- **数値の範囲・母数・条件の食い違い**: 件数と割合の母数がそろっているか（同じ画面の「N件」と「x%」が別の範囲・期間・条件で出ていないか）。札・見出しの範囲の呼び名と、実際に使った範囲が一致しているか
+- **後出しの統計**: そのレースの時点では分からない情報（結果・確定後の値・未来の日付のデータ）を、事前の傾向・判定に使っていないか
+- **言い方の規則**（画面・UI 文言・SNS 本文）: 禁止語「数える・似た・似ている・ふつう・いつも」、「似たレース」（「類似レース」と書く）、「競艇」（本文・UI 不可。例外は上の「4.」）、誇大・保証の表現（「必ず当たる」「的中保証」「鉄板」等。`sns-video-studio/remotion/risk-rules.json`）。「集計・算出・対象」は禁止語ではない（2026-10-12）。龍神ソナー・思考アシストで「数える」を言い換えるときに限り、この3語も使わない
+- **verify の登録漏れ**: 新しい `scripts/maintenance/verify-*.js` が `scripts/maintenance/verify-registry.json` に登録されているか（未登録だと `npm run verify:ci` が落ちる）
+- **読み取りエラーの握りつぶし**: 本番 DB の取得失敗を `return []`・`.catch(() => [])`・`data || []` で空にし、「データなし」と同じ表示にしていないか（`.claude/rules/frontend-data-fetch.md`。除外集合が空になると除外が反転する）
+- **1000行上限**: 件数が1000行を超えうる取得に `.range()` のページングがあるか
+- **i18n のキー欠け**: 足したキーが `src/locales/{ja,en,zh-TW,ko}/common.json` の4言語すべてにあるか（プレースホルダーの一致を含む）
+- **Edge Functions の import 属性**: `api/` で JSON 等を import するとき、import 属性（`with { type: "json" }`）の有無が既存の書き方とそろっているか。Vite の `npm run build` は `api/` を束ねないので、build が通っても Vercel・Node（verify-*.js から import する検査）で読めない形になっていないか
 
 ## Code Review Rules
 

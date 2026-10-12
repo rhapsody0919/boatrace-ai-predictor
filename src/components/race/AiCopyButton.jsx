@@ -1,6 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { useAiCopyText } from "../../hooks/useAiCopyText";
 import { getAiCopyPromptLabel } from "../../utils/aiCopyPrompts";
+import { trackEvent } from "../../utils/analytics";
+import { aiCopyEventOf } from "../../utils/shareEvents";
 
 export default function AiCopyButton({
   variant = "inline",
@@ -25,6 +27,9 @@ export default function AiCopyButton({
     try {
       const text = buildText(promptType);
       await navigator.clipboard.writeText(text);
+      // コピーできたときだけ送る（BOA-822 の計測。展開予測の節を外す前後を比べる）
+      const ev = aiCopyEventOf({ raceId, promptType, place: variant });
+      if (ev) trackEvent(ev.name, ev.params);
       onCopy?.(t("aiCopy.toastSuccess"), "success");
     } catch {
       onCopy?.(t("aiCopy.toastError"), "error");

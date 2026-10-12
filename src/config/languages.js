@@ -209,3 +209,26 @@ export function localizePath(path, lng) {
   if (!lng || lng === DEFAULT_LANGUAGE) return basePath;
   return basePath === "/" ? `/${lng}/` : `/${lng}${basePath}`;
 }
+
+/**
+ * ページの言語版の組（hreflang）。1言語しか無いページは空配列。デフォルト言語の版があれば x-default も足す。
+ * 画面の HreflangTags・sitemap・ボット向け HTML（ADR 0089）が同じ値を出すよう、ここで1回だけ組む
+ *
+ * @param {string} basePath - 言語プレフィックスを除いたパス
+ * @param {string} siteUrl - 例 https://www.boat-ai.jp
+ * @returns {{hreflang: string, href: string}[]}
+ */
+export function getHreflangAlternates(basePath, siteUrl) {
+  const languages = getAvailableLanguages(basePath);
+  if (languages.length < 2) return [];
+  const urlFor = (code) => `${siteUrl}${localizePath(basePath, code)}`;
+  return [
+    ...languages.map(({ code, hreflang }) => ({
+      hreflang,
+      href: urlFor(code),
+    })),
+    ...(languages.some(({ code }) => code === DEFAULT_LANGUAGE)
+      ? [{ hreflang: "x-default", href: urlFor(DEFAULT_LANGUAGE) }]
+      : []),
+  ];
+}

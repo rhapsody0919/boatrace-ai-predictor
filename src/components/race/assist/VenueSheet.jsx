@@ -58,8 +58,8 @@ function Techniques({ trend }) {
 /**
  * 会場の特徴のシート（D-14・D-18・D-35・D-37）。ヘッダーの会場名から開く。
  * 水質（venues の water_type）・型（この会場の1号艇の1着を全国の全レースと比べる）、1号艇の1着（v16 facts の VA）、決まり手（直近1年＋直近90日と「最近↑／↓」）、
- * 潮の傾向（海水・汽水だけ）、会場ページへのリンク。取得の失敗と空を分ける（D-36 (5)）
- * @param {{venue: string, venueCode: number, info: {status: string, data: {waterType: string}|null}, typeVerdict: ReturnType<import("../../../utils/assistModel").baseVerdict>|null,
+ * 潮の傾向（干満差のある会場だけ）、会場ページへのリンク。取得の失敗と空を分ける（D-36 (5)）
+ * @param {{venue: string, venueCode: number, info: {status: string, data: {waterType: string, tidal: boolean}|null}, typeVerdict: ReturnType<import("../../../utils/assistModel").baseVerdict>|null,
  *   tech: {status: string, data: object[]|null}, vaB1: {k: number, n: number}|null, onClose: () => void}} props
  */
 export default function VenueSheet({
@@ -74,7 +74,8 @@ export default function VenueSheet({
   const water = info.data?.waterType ?? null;
   const trend =
     tech.status === "ready" ? venueTechniqueTrend(tech.data ?? []) : null;
-  const tidal = water === "sea" || water === "brackish";
+  // 干満差は公式の場データの値（海水・汽水でも干満差なしの会場がある。蒲郡・常滑・津）
+  const tidal = info.data?.tidal === true;
   return (
     <BottomSheet title={C.venueTitle(venue)} onClose={onClose}>
       {info.status === "error" ? (
