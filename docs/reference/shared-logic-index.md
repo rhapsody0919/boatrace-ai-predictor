@@ -188,7 +188,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
 | `scripts/lib/stripNonCode.js` | コメント・文字列・テンプレート・正規表現リテラルの中身を空白に置き換える簡易な字句解析（純関数）。 | stripNonCode |
-| `scripts/lib/supabaseClient.js` | バッチ処理用 Supabaseクライアント | fetchAll, supabase, isSupabaseEnabled, VENUE_NAMES, VENUE_CODES |
+| `scripts/lib/supabaseClient.js` | — | fetchAll, supabase, isSupabaseEnabled, VENUE_CODES |
 | `scripts/lib/turnPrediction.js` | 1マーク展開予測ロジック v5（バックエンド用） | predictFirstMarkV2, predictFirstMark |
 | `scripts/lib/unchangedRows.js` | 「変更の無い行は書かない」ための共通ライブラリ（WS8(b)、BOA-349） | normalizeTimestamp, roundToScale, normalizeValue, diffRows, planWriteAll ほか8件 |
 | `scripts/lib/unifiedModel.js` | 新AI予想モデル「unified」のスコアリング本体（AI予想モデル大規模改修 Task6b/Task8, ADR0009, FR1/FR2/FR6） | calculateUnifiedScores, softmaxProbabilities |
@@ -204,6 +204,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueMotorStats/parsers/miyajimaPdf.js` | miyajimaPdf - 宮島専用パーサー（BOA-264） | parseMiyajimaMotorPdf |
 | `scripts/lib/venueMotorStats/venueConfig.js` | venueConfig - 会場別モーター成績スクレイピング設定（BOA-264） | VENUE_MOTOR_STATS_CONFIG, EXCLUDED_VENUES |
 | `scripts/lib/venueMotorStatsJob.js` | 会場別モーター成績（B3、venue_motor_stats）の共通ラッパ向けハンドラー（tasks.md T4b-14-1）。 | runVenueMotorStatsJob, VENUE_MOTOR_STATS_CONCURRENCY |
+| `scripts/lib/venueNames.js` | 会場コードの正準表。Node・Edge共通、副作用なし。 | VENUE_NAMES |
 | `scripts/lib/venueParameters.js` | 会場別パラメータ | getVolatilityThreshold, getVenueType, VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG, VENUE_VOLATILITY_THRESHOLD ほか2件 |
 | `scripts/lib/venueTechniquePeriod.js` | 会場の決まり手を期間（直近90日・直近365日）ごとに数える（BOA-430 思考アシスト、ADR 0088、マイグレーション 134）。 | addDays, periodRange, sourceRanges, fromLiveRow, fromArchiveRow ほか8件 |
 | `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | boat1StReason, calculateVolatilityComposite, toVolatilityPercentile |
@@ -328,4 +329,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 293 ファイル / export 1588 件。
+対象 294 ファイル / export 1588 件。
