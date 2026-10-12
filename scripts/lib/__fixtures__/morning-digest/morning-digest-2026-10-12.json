@@ -1,0 +1,69 @@
+{
+  "_note": "本番の morning_digest_days・morning_digest_rows（2026-10-12）を、api/_lib/botToday.js と同じ select で読んだもの。選手の値は select していない",
+  "day": [
+    {
+      "generated_at": "2026-10-11T20:30:27.806+00:00",
+      "venue_count": 14,
+      "race_count": 168,
+      "window_start": "2025-12-02",
+      "window_end": "2026-10-10",
+      "window_days": 313,
+      "notes": {
+        "thresholds": { "nige": 70, "makuri": 25, "nigashi": 22 },
+        "sectionCounts": {
+          "nige": 23,
+          "flying": 1,
+          "makuri": 1,
+          "nigashi": 11,
+          "featured": 1,
+          "returned": 3,
+          "nigeCandidates": 23
+        },
+        "volatilityAvailable": 168,
+        "clampedPredictedRows": 0
+      }
+    }
+  ],
+  "rows": [
+    { "section": "featured", "rank": 1, "race_id": "2026-10-12-06-11", "venue_code": 6, "race_number": 11, "start_time": "16:02:00", "reason": "この選手が1コースに入ったとき逃げ切った割合は、全国56走で87.5%。この会場の平均は51.05%です。AIが当日条件から算出したイン崩れ指数は6.82%で、過去の実績と当日条件がどちらも「イン有利」方向を向いています。" },
+    { "section": "flying", "rank": 1, "race_id": "2026-10-11-09-03", "venue_code": 9, "race_number": 3, "start_time": "11:25:00", "reason": null },
+    { "section": "makuri", "rank": 1, "race_id": "2026-10-12-02-05", "venue_code": 2, "race_number": 5, "start_time": "12:44:00", "reason": null },
+    { "section": "nigashi", "rank": 1, "race_id": "2026-10-12-12-11", "venue_code": 12, "race_number": 11, "start_time": "20:03:00", "reason": null },
+    { "section": "nigashi", "rank": 2, "race_id": "2026-10-12-18-08", "venue_code": 18, "race_number": 8, "start_time": "12:12:00", "reason": null },
+    { "section": "nigashi", "rank": 3, "race_id": "2026-10-12-22-02", "venue_code": 22, "race_number": 2, "start_time": "11:34:00", "reason": null },
+    { "section": "nigashi", "rank": 4, "race_id": "2026-10-12-02-08", "venue_code": 2, "race_number": 8, "start_time": "14:16:00", "reason": null },
+    { "section": "nigashi", "rank": 5, "race_id": "2026-10-12-18-01", "venue_code": 18, "race_number": 1, "start_time": "08:51:00", "reason": null },
+    { "section": "nigashi", "rank": 6, "race_id": "2026-10-12-03-12", "venue_code": 3, "race_number": 12, "start_time": "16:25:00", "reason": null },
+    { "section": "nigashi", "rank": 7, "race_id": "2026-10-12-12-01", "venue_code": 12, "race_number": 1, "start_time": "15:16:00", "reason": null },
+    { "section": "nigashi", "rank": 8, "race_id": "2026-10-12-16-07", "venue_code": 16, "race_number": 7, "start_time": "14:08:00", "reason": null },
+    { "section": "nigashi", "rank": 9, "race_id": "2026-10-12-11-01", "venue_code": 11, "race_number": 1, "start_time": "10:25:00", "reason": null },
+    { "section": "nigashi", "rank": 10, "race_id": "2026-10-12-01-09", "venue_code": 1, "race_number": 9, "start_time": "19:16:00", "reason": null },
+    { "section": "nigashi", "rank": 11, "race_id": "2026-10-12-02-05", "venue_code": 2, "race_number": 5, "start_time": "12:44:00", "reason": null },
+    { "section": "nige", "rank": 1, "race_id": "2026-10-12-06-11", "venue_code": 6, "race_number": 11, "start_time": "16:02:00", "reason": null },
+    { "section": "nige", "rank": 2, "race_id": "2026-10-12-09-07", "venue_code": 9, "race_number": 7, "start_time": "13:26:00", "reason": null },
+    { "section": "nige", "rank": 3, "race_id": "2026-10-12-12-12", "venue_code": 12, "race_number": 12, "start_time": "20:31:00", "reason": null },
+    { "section": "nige", "rank": 4, "race_id": "2026-10-12-12-08", "venue_code": 12, "race_number": 8, "start_time": "18:25:00", "reason": null },
+    { "section": "nige", "rank": 5, "race_id": "2026-10-12-09-10", "venue_code": 9, "race_number": 10, "start_time": "15:07:00", "reason": null },
+    { "section": "nige", "rank": 6, "race_id": "2026-10-12-19-09", "venue_code": 19, "race_number": 9, "start_time": "21:25:00", "reason": null },
+    { "section": "nige", "rank": 7, "race_id": "2026-10-12-12-09", "venue_code": 12, "race_number": 9, "start_time": "18:55:00", "reason": null },
+    { "section": "nige", "rank": 8, "race_id": "2026-10-12-09-08", "venue_code": 9, "race_number": 8, "start_time": "13:59:00", "reason": null },
+    { "section": "nige", "rank": 9, "race_id": "2026-10-12-18-12", "venue_code": 18, "race_number": 12, "start_time": "14:29:00", "reason": null },
+    { "section": "nige", "rank": 10, "race_id": "2026-10-12-09-12", "venue_code": 9, "race_number": 12, "start_time": "16:20:00", "reason": null },
+    { "section": "nige", "rank": 11, "race_id": "2026-10-12-16-12", "venue_code": 16, "race_number": 12, "start_time": "16:50:00", "reason": null },
+    { "section": "nige", "rank": 12, "race_id": "2026-10-12-12-10", "venue_code": 12, "race_number": 10, "start_time": "19:23:00", "reason": null },
+    { "section": "nige", "rank": 13, "race_id": "2026-10-12-14-07", "venue_code": 14, "race_number": 7, "start_time": "11:21:00", "reason": null },
+    { "section": "nige", "rank": 14, "race_id": "2026-10-12-19-10", "venue_code": 19, "race_number": 10, "start_time": "21:51:00", "reason": null },
+    { "section": "nige", "rank": 15, "race_id": "2026-10-12-22-06", "venue_code": 22, "race_number": 6, "start_time": "13:37:00", "reason": null },
+    { "section": "nige", "rank": 16, "race_id": "2026-10-12-09-01", "venue_code": 9, "race_number": 1, "start_time": "10:29:00", "reason": null },
+    { "section": "nige", "rank": 17, "race_id": "2026-10-12-12-11", "venue_code": 12, "race_number": 11, "start_time": "20:03:00", "reason": null },
+    { "section": "nige", "rank": 18, "race_id": "2026-10-12-14-04", "venue_code": 14, "race_number": 4, "start_time": "09:53:00", "reason": null },
+    { "section": "nige", "rank": 19, "race_id": "2026-10-12-11-06", "venue_code": 11, "race_number": 6, "start_time": "12:54:00", "reason": null },
+    { "section": "nige", "rank": 20, "race_id": "2026-10-12-11-08", "venue_code": 11, "race_number": 8, "start_time": "14:04:00", "reason": null },
+    { "section": "nige", "rank": 21, "race_id": "2026-10-12-22-10", "venue_code": 22, "race_number": 10, "start_time": "15:40:00", "reason": null },
+    { "section": "nige", "rank": 22, "race_id": "2026-10-12-18-02", "venue_code": 18, "race_number": 2, "start_time": "09:17:00", "reason": null },
+    { "section": "nige", "rank": 23, "race_id": "2026-10-12-09-11", "venue_code": 9, "race_number": 11, "start_time": "15:42:00", "reason": null },
+    { "section": "returned", "rank": 1, "race_id": null, "venue_code": 6, "race_number": null, "start_time": null, "reason": null },
+    { "section": "returned", "rank": 2, "race_id": null, "venue_code": 12, "race_number": null, "start_time": null, "reason": null },
+    { "section": "returned", "rank": 3, "race_id": null, "venue_code": 15, "race_number": null, "start_time": null, "reason": null }
+  ]
+}
