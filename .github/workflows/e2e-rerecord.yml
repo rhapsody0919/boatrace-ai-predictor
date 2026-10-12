@@ -254,6 +254,12 @@ jobs:
         with:
           ref: ${{ needs.record.outputs.sha || 'master' }}
 
+      # SHA を checkout すると detached HEAD になり、「git branch --show-current が空＝
+      # push先ブランチを特定できない」で後段のpush処理が必ず失敗する。ローカルブランチ名を
+      # master にしておけば、origin/master へ fetch・rebase・push する既存の仕組みがそのまま働く
+      - name: ブランチを作る（detached HEAD のままだと後段のpushが失敗するため）
+        run: git checkout -B master
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
