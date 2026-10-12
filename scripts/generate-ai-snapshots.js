@@ -22,6 +22,7 @@ import {
   renderWithFreshPage,
 } from "./lib/renderWithFreshPage.js";
 import { planRacerSnapshots } from "./lib/racerSnapshotPlan.js";
+import { summarizeSnapshotRun } from "./lib/snapshotStatus.js";
 import {
   MORNING_DIGEST_DISCLAIMER,
   MORNING_DIGEST_GLOSSARY,
@@ -388,6 +389,10 @@ async function main() {
   // ブログ記事スナップショット生成が万一失敗しても、ビルド全体は成功させ
   // /winning-technique・/today分だけは配信を継続する（2026-09-11〜09-12インシデントの
   // 再発防止、詳細はPR#624参照）。
+  let failed = [];
+  let fatalError = null;
+  let relaunches = 0;
+  let racerResult = null;
   let server;
   try {
     const started = await startStaticServer();
@@ -396,28 +401,23 @@ async function main() {
     // ブラウザが落ちたら起動し直す（Vercel の Chromium は単一プロセスで、ページが落ちるとブラウザごと落ちる）
     const opener = createPageOpener(launchChromium);
     try {
-      const failed = await generateBlogSnapshots(opener.openPage, baseUrl);
-      if (failed.length > 0) {
-        console.error(
-          `⚠️ ${failed.length}件のブログ記事スナップショット生成に失敗しましたが、ビルドは継続します。`,
-        );
-      }
+      failed = await generateBlogSnapshots(opener.openPage, baseUrl);
       // 選手ページの失敗は、ブログの生成結果に影響させない（それぞれ別に落ちてよい）
       try {
-        await generateRacerSnapshots(opener.openPage, baseUrl);
+        racerResult = await generateRacerSnapshots(opener.openPage, baseUrl);
       } catch (err) {
+        racerResult = { total: null, failed: [], skipped: [], fatalError: err.message };
         console.error(
           "⚠️ 選手ページのスナップショット生成が途中で止まりましたが、ビルドは継続します:",
           err.message,
         );
       }
-      if (opener.launches() > 1) {
-        console.log(`ブラウザを${opener.launches() - 1}回起動し直しました`);
-      }
     } finally {
+      relaunches = Math.max(0, opener.launches() - 1);
       await opener.close();
     }
   } catch (err) {
+    fatalError = err.message;
     console.error(
       "⚠️ ブログ記事スナップショットの生成に失敗しましたが、ビルドは継続します（/winning-technique・/today分は生成済み）:",
       err.message,
@@ -425,6 +425,36 @@ async function main() {
   } finally {
     if (server) server.close();
   }
+
+  // 失敗をログの途中に埋もれさせない。最後にまとめを出し、配信物にも残す（毎日の照合が読む）
+  const { status, lines } = summarizeSnapshotRun({
+    total: blogPosts.length,
+    failed,
+    fatalError,
+    relaunches,
+    generatedAt: new Date().toISOString(),
+  });
+  // 選手ページ（BOA-848）の結果も残す。ok はブログの結果のまま（選手の失敗は記録だけ。判断は毎日の照合の側で見て決める）
+  if (racerResult) {
+    status.racer = {
+      total: racerResult.total,
+      succeeded:
+        racerResult.total == null
+          ? null
+          : racerResult.total -
+            racerResult.failed.length -
+            racerResult.skipped.length,
+      failedIds: racerResult.failed.map((f) => f.id),
+      skippedIds: racerResult.skipped,
+      fatalError: racerResult.fatalError ?? null,
+    };
+  }
+  writeFileSync(
+    path.join(SNAPSHOT_DIR, "status.json"),
+    `${JSON.stringify(status, null, 2)}\n`,
+    "utf-8",
+  );
+  (status.ok ? console.log : console.error)(lines.join("\n"));
 
   console.log("スナップショット生成が完了しました。");
 }

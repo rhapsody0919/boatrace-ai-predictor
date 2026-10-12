@@ -16,6 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   classifyHtml,
+  evaluateSnapshotStatus,
   extractBotItems,
   findMissing,
   median,
@@ -261,6 +262,72 @@ for (const p of pages) {
   check("中央値（奇数）", median([30, 10, 20]), 20);
   check("中央値（偶数）", median([40, 10, 20, 30]), 25);
   check("中央値（空）", median([]), null);
+}
+
+// status.json の判定（SEO 再点検 F5）。失敗や途中停止を ok にしない
+{
+  const ok = {
+    generatedAt: "t",
+    ok: true,
+    blog: { total: 121, succeeded: 121, failedIds: [], fatalError: null },
+  };
+  const failed = {
+    generatedAt: "t",
+    ok: false,
+    blog: {
+      total: 121,
+      succeeded: 119,
+      failedIds: ["a", "b"],
+      fatalError: null,
+    },
+  };
+  const fatal = {
+    generatedAt: "t",
+    ok: false,
+    blog: { total: 121, succeeded: null, failedIds: [], fatalError: "closed" },
+  };
+  check(
+    "status.json: 全件成功は ok",
+    evaluateSnapshotStatus(200, JSON.stringify(ok)).level,
+    "ok",
+  );
+  check(
+    "status.json: 失敗があれば fail",
+    evaluateSnapshotStatus(200, JSON.stringify(failed)).level,
+    "fail",
+  );
+  check(
+    "status.json: 失敗した ID をメッセージに出す",
+    evaluateSnapshotStatus(200, JSON.stringify(failed)).message.includes(
+      "a, b",
+    ),
+    true,
+  );
+  check(
+    "status.json: 途中で止まったら fail",
+    evaluateSnapshotStatus(200, JSON.stringify(fatal)).level,
+    "fail",
+  );
+  check(
+    "status.json: 404 は注記（デプロイ前）",
+    evaluateSnapshotStatus(404, "").level,
+    "note",
+  );
+  check(
+    "status.json: JSON でない（SPA の外枠）は fail",
+    evaluateSnapshotStatus(200, "<!doctype html>").level,
+    "fail",
+  );
+  check(
+    "status.json: 形が違えば fail",
+    evaluateSnapshotStatus(200, "{}").level,
+    "fail",
+  );
+  check(
+    "status.json: 500 は fail",
+    evaluateSnapshotStatus(500, "").level,
+    "fail",
+  );
 }
 
 if (failures.length > 0) {

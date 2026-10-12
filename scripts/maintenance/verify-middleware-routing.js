@@ -386,7 +386,9 @@ for (const path of NOT_BOT_PAGE_PATHS) {
     );
   }
 }
-// rewrite 先に元のクエリを持ち込まない。/?x=1 と /?x=2 が同じ rewrite 先になる
+// rewrite 先に元のクエリを持ち込まない。/?x=1 と /?x=2 が同じ rewrite 先になる。
+// ?date= も同じ扱い: 人の /venue/:code は日付をパスからしか取らず、?date= 付きでも本日を出すので、
+// ボットにも本日の HTML を返すのが人と同じ中身になる（ADR 0089 決定2、SEO 再点検 N1）
 for (const [path, target] of [
   ["/?x=1", "/api/bot-page/top"],
   ["/?x=2", "/api/bot-page/top"],
