@@ -1886,7 +1886,8 @@
           "none": "최근 {{kept}}건 중에는 이 레이스가 없다",
           "raceNo": "{{n}}R",
           "techPay": "{{tech}}, {{yen}}엔",
-          "bandLink": "이 띠의 레이스 보기 ›"
+          "bandLink": "이 띠의 레이스 보기 ›",
+          "expired": "이 날의 목록은 더 이상 없다(목록은 7일분만 남긴다)"
         }
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",

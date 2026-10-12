@@ -185,10 +185,13 @@ export const getAnalogySimilar = (raceId, stage) =>
  * タブ3（範囲キーの scenario）。scope を省略すると API が既定（VC、300件未満なら NC）を選ぶ。
  * boats が true なら2〜6号艇の「構成＋その艇の級」の範囲の値も取る（龍神ソナーの③④。BOA-806。思考アシストは使わない）
  */
-/** STEP4 の件数を押したときの元のレースの一覧（BOA-823）。scope は今表示している範囲キー */
-export const getAnalogyScenarioRaces = (raceId, scope, stage) =>
+/**
+ * STEP4 の件数を押したときの元のレースの一覧（BOA-823）。scope は今表示している範囲キー。
+ * boat=2〜6 は、その艇の「構成＋その艇の級」の範囲の一覧（1着の棒と同じ範囲。BOA-833）
+ */
+export const getAnalogyScenarioRaces = (raceId, scope, stage, boat = 1) =>
   getV16(
-    `/api/analogy/scenario/${encodeURIComponent(raceId)}?${stageQuery(stage)}&races=1&scope=${encodeURIComponent(scope)}`,
+    `/api/analogy/scenario/${encodeURIComponent(raceId)}?${stageQuery(stage)}&races=1&scope=${encodeURIComponent(scope)}${boat > 1 ? `&boat=${boat}` : ""}`,
   );
 
 export const getAnalogyScenario = (raceId, scope, stage, boats = false) =>

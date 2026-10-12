@@ -79,10 +79,16 @@ export const useAnalogyScenario = (
     enabled,
   );
 
-/** STEP4 の件数を押したときだけ、範囲の元のレースの一覧を読む（BOA-823） */
-export const useAnalogyScenarioRaces = (raceId, scope, stage, enabled) =>
+/** STEP4 の件数を押したときだけ、範囲の元のレースの一覧を読む（BOA-823）。boat=2〜6 はその艇の範囲（BOA-833） */
+export const useAnalogyScenarioRaces = (
+  raceId,
+  scope,
+  stage,
+  enabled,
+  boat = 1,
+) =>
   useAnalogyResource(
-    `scenario-races|${raceId}|${scope ?? ""}|${stage}`,
-    () => getAnalogyScenarioRaces(raceId, scope, stage),
+    `scenario-races|${raceId}|${scope ?? ""}|${stage}|${boat}`,
+    () => getAnalogyScenarioRaces(raceId, scope, stage, boat),
     enabled && Boolean(scope),
   );

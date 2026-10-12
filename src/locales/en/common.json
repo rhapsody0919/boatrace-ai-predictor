@@ -1892,7 +1892,8 @@
           "none": "No such race among the latest {{kept}}",
           "raceNo": "R{{n}}",
           "techPay": "{{tech}} · ¥{{yen}}",
-          "bandLink": "See the races in this band ›"
+          "bandLink": "See the races in this band ›",
+          "expired": "The list for this day is no longer kept (lists are kept for 7 days)"
         }
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
