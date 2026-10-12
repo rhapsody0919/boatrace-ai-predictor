@@ -1455,6 +1455,129 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(racesCalls).toBe(1); // 一度読めば押し直しても読み直さない
     });
 
+    test("2〜6号艇の1着の札を押すと、棒と同じ「その艇の級」の範囲の一覧が開き、件数がそろう（BOA-833）", async ({
+      page,
+    }) => {
+      await setup(page);
+      const base = analogyV16Scenario();
+      // 2号艇は級をそろえた範囲（1着 2件）。一覧もその範囲のファイル（boat=2）から出す
+      const two = Object.fromEntries(
+        Object.entries(base.scenario.cells).map(([e, { forms }]) => [
+          e,
+          Object.fromEntries(
+            Object.keys(forms).map((f) => [f, [100, 2, 10, 10]]),
+          ),
+        ]),
+      );
+      const boats = {
+        2: {
+          scope: "VC:20:6-0-0-0:2A1",
+          data: { cells: two, attack: {}, winner: {} },
+          reference: null,
+        },
+        3: null,
+        4: null,
+        5: null,
+        6: null,
+      };
+      const list = (ids, fin) => ({
+        n: ids.length,
+        kept: ids.length,
+        entry_bits: [
+          "waku",
+          "inlost",
+          "mae",
+          "mae6",
+          "mae5",
+          "mae56",
+          "maeOther",
+        ],
+        form_bits: ["flat", "wall", "d2", "d3", "kado", "d1", "dash"],
+        rows: ids.map((id) => [id, 1, 0, fin, "差し", 1500]),
+      });
+      const asked = [];
+      await page.route("**/api/analogy/scenario/**", (route) => {
+        const u = new URL(route.request().url());
+        if (u.searchParams.get("races") === "1") {
+          asked.push(u.searchParams.get("boat") ?? "1");
+          const boat = u.searchParams.get("boat");
+          return route.fulfill({
+            json: {
+              status: "ok",
+              run_id: "x",
+              scope: "x",
+              // 2号艇の範囲は2件、1号艇の範囲は3件（件数が違うことを確かめる）
+              races:
+                boat === "2"
+                  ? list(["2026-10-09-02-09", "2026-10-08-02-09"], "213")
+                  : list(
+                      [
+                        "2026-10-09-01-01",
+                        "2026-10-08-01-01",
+                        "2026-10-07-01-01",
+                      ],
+                      "123",
+                    ),
+            },
+          });
+        }
+        return route.fulfill({ json: { ...base, boats } });
+      });
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      const s4 = section.locator("#af-scn-s4");
+      const bar2 = s4
+        .locator("button.af-bar")
+        .filter({ hasText: "2号艇" })
+        .first();
+      await expect(bar2.locator(".af-cnt-chip")).toHaveText("2件 ›");
+      await bar2.click();
+      const panel = s4.getByTestId("analogy-race-panel");
+      await expect(panel).toContainText("2件のうち直近2件");
+      await expect(panel.locator(".af-rl-row")).toHaveCount(2);
+      await expect(panel).not.toContainText(
+        "1号艇の級でそろえたレースから出している",
+      );
+      expect(asked).toEqual(["2"]);
+      // 1号艇の札は1号艇の範囲の一覧
+      await s4
+        .locator("button.af-bar")
+        .filter({ hasText: "1号艇" })
+        .first()
+        .click();
+      await expect(
+        s4.getByTestId("analogy-race-panel").locator(".af-rl-row"),
+      ).toHaveCount(3);
+      expect(asked).toEqual(["2", "1"]);
+    });
+
+    test("一覧のファイルが無いとき、7日より前のレースは「この日の一覧はもう無い」と出す（BOA-833）", async ({
+      page,
+    }) => {
+      // 例のレースは 2026-09 の日付で、7日より前
+      await setup(page);
+      await page.route("**/api/analogy/scenario/**", (route) =>
+        new URL(route.request().url()).searchParams.get("races") === "1"
+          ? route.fulfill({
+              json: { status: "ok", run_id: "x", scope: "x", races: null },
+            })
+          : route.fallback(),
+      );
+      await openSonarTab(page);
+      const section = sectionOf(page);
+      await section.getByRole("tab", { name: "展開シナリオ" }).click();
+      const s4 = section.locator("#af-scn-s4");
+      await s4
+        .locator("button.af-bar")
+        .filter({ hasText: "1号艇" })
+        .first()
+        .click();
+      await expect(s4.getByTestId("analogy-race-panel")).toContainText(
+        "この日の一覧はもう無い（一覧は7日分だけ残している）",
+      );
+    });
+
     test("展開シナリオの段の番号は四角の STEP 札で、画面に丸数字（①〜④）を出さない（2026-10-10 ユーザー承認）", async ({
       page,
     }) => {

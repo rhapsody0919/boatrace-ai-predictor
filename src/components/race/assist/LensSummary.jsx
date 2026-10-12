@@ -14,17 +14,24 @@ import {
 import {
   axisWhyKinds,
   b1Usual,
+  attackTech,
+  descending,
   entrySummary,
+  exhBands,
   exhToday,
+  originalBest,
   powerWinners,
   exhibitionTable,
   factsEntry,
   factsScopeLabel,
   formSummary,
-  hintSummary,
   partsChangedBoats,
 } from "../../../utils/assistSummary";
-import { entryType } from "../../../utils/analogyScenario";
+import {
+  MIN_SCENARIO,
+  clearDiff,
+  entryType,
+} from "../../../utils/analogyScenario";
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
 import WinFollowers, { ComboList } from "./WinFollowers";
@@ -169,18 +176,18 @@ function AxisSummary({ m }) {
 export function FlowConclusion({ m }) {
   const {
     scenario,
-    today,
     post,
     v16Exhibition,
     courseByBoat,
     reflecting,
     round,
     exhRanks,
+    hint: top,
+    forms = [],
+    onForm,
     basis,
   } = m;
-  const hs = scenario ? hintSummary(scenario, today) : null;
-  if (!hs) return null;
-  const top = hs.top;
+  if (!scenario) return null;
   const formName = top ? C.formNames[top.form] : null;
   const exhForm =
     post && top && v16Exhibition?.forms?.includes?.(top.form) ? true : false;
@@ -206,14 +213,45 @@ export function FlowConclusion({ m }) {
       </h3>
       {top ? (
         <>
-          <div className="ta-big">
-            <b>{formName}</b>
-            <span className="ta-big-cnt">{C.flowShapeRow}</span>
-            <span className="ta-big-pct ta-num">{hitP}%</span>
-            <span className="ta-big-cnt ta-num">
-              （{comma(top.hit[0])}/{comma(top.hit[1])}）
-            </span>
-          </div>
+          {forms.length > 1 ? (
+            // 形が2つ以上当てはまるときは同じ形式で並べ、選んだ形で下の「もし」「今日の展示」が変わる（承認モック v2 ④）
+            <>
+              <p className="ta-note">{C.flowFormPickNote(forms.length)}</p>
+              <div
+                className="ta-form-pick"
+                role="group"
+                aria-label={C.flowFormPick}
+              >
+                {forms.map((f) => (
+                  <button
+                    key={f.form}
+                    type="button"
+                    className="ta-form-opt"
+                    aria-pressed={f.form === top.form}
+                    onClick={() => f.form !== top.form && onForm(f.form)}
+                  >
+                    <b>{C.formNames[f.form]}</b>
+                    <span className="ta-big-cnt">{C.flowShapeRow}</span>
+                    <span className="ta-big-pct ta-num">
+                      {p0(f.hit[0], f.hit[1])}%
+                    </span>
+                    <span className="ta-big-cnt ta-num">
+                      （{comma(f.hit[0])}/{comma(f.hit[1])}）
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="ta-big">
+              <b>{formName}</b>
+              <span className="ta-big-cnt">{C.flowShapeRow}</span>
+              <span className="ta-big-pct ta-num">{hitP}%</span>
+              <span className="ta-big-cnt ta-num">
+                （{comma(top.hit[0])}/{comma(top.hit[1])}）
+              </span>
+            </div>
+          )}
           <div className="ta-legend">
             <span className="ta-scopechip ta-num">
               {/* 進入の札と件数が違う理由を添える（BOA-808 P3・BOA-809） */}
@@ -255,13 +293,139 @@ export function FlowConclusion({ m }) {
   );
 }
 
+/** 区分ごとの1行（今日の区分は札「今日」と塗り。30件未満は棒を出さず件数だけ） */
+function BandRows({ side }) {
+  return (
+    <div className="ta-band">
+      {side.rows.map((r) => {
+        const today = r.band === side.today;
+        return (
+          <div
+            key={r.band}
+            className={`ta-band-row ta-num${today ? " ta-band-today" : ""}`}
+          >
+            <span className="ta-band-tag" aria-hidden={!today}>
+              {today ? C.exhTodayTag : ""}
+            </span>
+            <span>{C.exhBand[r.band]}</span>
+            {r.n < MIN_SCENARIO ? (
+              <span className="ta-band-few">{C.exhFew(r.n)}</span>
+            ) : (
+              <>
+                <span className="ta-tech-trk" aria-hidden="true">
+                  <i style={{ width: `${pct(r.k, r.n)}%` }} />
+                </span>
+                <span className="ta-nowrap">
+                  {p0(r.k, r.n)}%{" "}
+                  <small>
+                    （{r.k}/{r.n}）
+                  </small>
+                </span>
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const natPcts = (nat) => nat.map((v) => Math.round(v * 100));
+
+/**
+ * 今日の展示を入れると（spec D-47 (5)、承認モック v2）。攻める艇の1着と1号艇の逃げを展示タイムの順位の区分ごとに、
+ * 範囲の件数つきで。全国の値を1行添える（範囲の区分の差は件数が少なく分かれにくいので、全国の差を主な根拠にする）。展示前は「展示の後に分かる」
+ */
+function ExhBandsBox({ post, bands, formLabel, notWaku }) {
+  if (!post)
+    return (
+      <section className="ta-box">
+        <h3>{C.exhHeading}</h3>
+        <p className="ta-note">{C.exhPending}</p>
+      </section>
+    );
+  if (!bands) return null;
+  const { att, b1 } = bands;
+  // att は攻める艇の1着の行（「順位が上ほど1着が多い」「3〜4位は差が出にくい」を付ける）。1号艇の逃げの行は値だけ
+  const natLine = (side, att) =>
+    side.nat && side.nat.every((v) => v != null) ? (
+      <p className="ta-note ta-num ta-band-nat">
+        {C.exhNat(natPcts(side.nat))}
+        {att && descending(side.nat) && C.exhNatDesc}
+      </p>
+    ) : null;
+  // 範囲の区分の差（上位と下位）が分かれないとき、または今日が3〜4位のときは全国の値を目安にと書く
+  const unclear = (side) => {
+    const pair = (b) => {
+      const r = side.rows.find((x) => x.band === b);
+      return r ? [r.k, r.n] : null;
+    };
+    return side.today === "mid" || !clearDiff(pair("top"), pair("low"));
+  };
+  return (
+    <section className="ta-box">
+      <h3>{C.exhHeading}</h3>
+      <div className="ta-legend">
+        <span className="ta-scopechip ta-num">{formLabel}</span>
+      </div>
+      {notWaku && <p className="ta-note">{notWaku}</p>}
+      {att && (
+        <>
+          <p className="ta-note">
+            <b>{C.exhAttTitle(att.boat, att.rank)}</b>
+          </p>
+          <BandRows side={att} />
+          {natLine(att, true)}
+          {unclear(att) && <p className="ta-note">{C.exhUnclear}</p>}
+        </>
+      )}
+      {b1 && (
+        <>
+          <p className="ta-note">
+            <b>{C.exhB1Title(b1.rank)}</b>
+          </p>
+          <BandRows side={b1} />
+          {natLine(b1, false)}
+          <p className="ta-note">{C.exhB1Note}</p>
+        </>
+      )}
+    </section>
+  );
+}
+
 function FlowSummary({ m }) {
-  const { scenario, today, post, courseByBoat, similar, racecardStage, round } =
-    m;
-  const top = scenario ? hintSummary(scenario, today).top : null;
+  const {
+    scenario,
+    national,
+    post,
+    courseByBoat,
+    similar,
+    racecardStage,
+    round,
+    exhRanks,
+    hint: top,
+    original,
+    racers,
+    venue,
+    onPower,
+    onBet,
+  } = m;
   const formName = top ? C.formNames[top.form] : null;
   const form = top ? formSummary(scenario, top.form) : null;
+  const tech = top ? attackTech(scenario, top.form) : null;
+  const bands =
+    top && post ? exhBands(scenario, national, top.form, exhRanks) : null;
+  const scopeText = form
+    ? C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)
+    : null;
   const entry = post ? entrySummary(scenario, courseByBoat) : null;
+  const notWaku =
+    entry && entry.type !== "waku"
+      ? C.flowNotWaku(C.entryNames[entry.type])
+      : null;
+  const best = post ? originalBest(original, racers) : [];
+  const bothBest =
+    best.length === 2 && best[0].boats.join() === best[1].boats.join();
   const simLabel = similar
     ? C.similarLabel(similar.n, similar.allInLayer)
     : null;
@@ -274,24 +438,37 @@ function FlowSummary({ m }) {
             <TheoryButton id={`TC-S:${form.form}`} name={formName} />
           </h3>
           <div className="ta-legend">
-            <span className="ta-scopechip ta-num">
-              {C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)}
-            </span>
-            <span>{C.flowFirstBoat}</span>
+            <span className="ta-scopechip ta-num">{scopeText}</span>
           </div>
           {form.few ? (
             <p className="ta-note">{C.flowFew}</p>
           ) : (
             <>
+              {tech && (
+                // 攻める艇が1着のときの決まり手（spec D-47 (4)）。1着の艇の前に置く
+                <div className="ta-tech">
+                  <p className="ta-note">
+                    {C.flowTechHeading(tech.att, tech.w)}
+                  </p>
+                  {tech.rows.map(([t, k]) => (
+                    <div key={t} className="ta-tech-row ta-num">
+                      <span>{C.flowTechNames[t]}</span>
+                      <span className="ta-tech-trk" aria-hidden="true">
+                        <i style={{ width: `${pct(k, tech.w)}%` }} />
+                      </span>
+                      <span className="ta-nowrap">
+                        {C.flowTechVal(p0(k, tech.w), k)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="ta-note">{C.flowFirstBoat}</p>
               <Bars6 values={form.first.map((k) => k / form.n)} />
               {form.topExacta.length > 0 && (
                 <p className="ta-note ta-num">
-                  {C.flowTopExacta}: <ComboList rows={form.topExacta} />
-                </p>
-              )}
-              {form.topTrifecta.length > 0 && (
-                <p className="ta-note ta-num">
-                  {C.flowTopTrifecta}: <ComboList rows={form.topTrifecta} />
+                  {C.flowExactaOf(formName)}:{" "}
+                  <ComboList rows={form.topExacta} />
                 </p>
               )}
             </>
@@ -302,7 +479,19 @@ function FlowSummary({ m }) {
               <b>{C.sujiChip[1]}</b>
             </TheoryButton>
           )}
+          {/* 3連単は展開から外し、買い目レンズへ（spec D-47 (4)） */}
+          <button type="button" className="ta-link-btn" onClick={onBet}>
+            {C.flowTrifectaToBet} ›
+          </button>
         </section>
+      )}
+      {form && (
+        <ExhBandsBox
+          post={post}
+          bands={bands}
+          formLabel={scopeText}
+          notWaku={notWaku}
+        />
       )}
       {(entry || !post) && (
         <section className="ta-box">
@@ -323,6 +512,14 @@ function FlowSummary({ m }) {
                 <span>✓ {C.entryToday(C.entryNames[entry.type])}</span>
                 {entry.type === "waku" && <TermButton term="枠なり" />}
               </div>
+              {entry.type === "waku" && (
+                // 展示の進入が本番も続くか（全国の値。範囲ごとは件数が足りない。spec D-47 (6)）
+                <p className="ta-note ta-num">
+                  {C.entryNatWaku}{" "}
+                  <b>{p0(C.entryNatWakuK, C.entryNatWakuN)}%</b>（
+                  {comma(C.entryNatWakuK)}/{comma(C.entryNatWakuN)}）
+                </p>
+              )}
               {entry.n > 0 ? (
                 <>
                   {/* 集めた範囲と件数を書く（上の枠の準優勝戦の値と比べられるように。ファン評価 PR4 1周目 指摘1） */}
@@ -349,6 +546,41 @@ function FlowSummary({ m }) {
           ) : (
             <p className="ta-note">{C.entryPre}</p>
           )}
+        </section>
+      )}
+      {best.length > 0 && (
+        // オリジナル展示（spec D-47 (7)）: 一周・まわり足の「6艇で一番」と全体の効き目だけ。直線・秒数・形ごとは出さない
+        <section className="ta-box">
+          <h3>
+            {C.orgHeading(
+              venue,
+              best.map((b) => b.kind),
+            )}
+          </h3>
+          {bothBest ? (
+            <p className="ta-org-best">
+              {best[0].boats.map((b) => (
+                <BoatBadge key={b} n={b} size="sm" />
+              ))}{" "}
+              {C.orgBothBest(best[0].boats)}
+            </p>
+          ) : (
+            best.map((b) => (
+              <p key={b.kind} className="ta-org-best">
+                {b.boats.map((n) => (
+                  <BoatBadge key={n} n={n} size="sm" />
+                ))}{" "}
+                {C.orgBest(b.kind, b.boats)}
+              </p>
+            ))
+          )}
+          <p className="ta-note ta-num">{C.orgEffect}</p>
+          <p className="ta-note">
+            {C.orgVenueNote}
+            <button type="button" className="ta-link-btn" onClick={onPower}>
+              {C.orgToPower} ›
+            </button>
+          </p>
         </section>
       )}
       {similar && similar.n > 0 && (
@@ -659,15 +891,20 @@ export default function LensSummary({ lens, axis, flow, power, place, bet }) {
       {lens === "axis" && axis && <AxisSummary m={axis} />}
       {lens === "flow" && <FlowSummary m={flow} />}
       {lens === "power" && <PowerSummary m={power} />}
-      {lens === "place" && place?.follow && (
-        // 相手レンズ（spec D-46）: 1号艇を軸にしたときの2着・3着
+      {lens === "place" && place?.ready && (
+        // 相手レンズ: {X}号艇を軸にしたときの2着（BOA-845、spec D-48）
         <WinFollowers
-          f={place.follow}
-          label={place.label}
-          axisK={place.axisK}
-          axisN={place.axisN}
-          above={false}
+          f={place.f}
+          marks={place.marks}
+          axis={place.axis}
+          auto={place.auto}
+          venue={place.venue}
+          raceId={place.raceId}
+          onAxis={place.onAxis}
         />
+      )}
+      {lens === "place" && place?.failed && (
+        <p className="ta-note">{C.partFailed(C.partVenueAll)}</p>
       )}
       {lens === "bet" && <BetLensSummary m={bet} />}
     </div>

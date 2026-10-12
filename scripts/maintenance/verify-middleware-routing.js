@@ -13,11 +13,19 @@
  * 6. 検索・ユーザー起点の取得に使う UA（OAI-SearchBot・bingbot 等）もスナップショットに振り分け、
  *    Googlebot と人間のブラウザは振り分けない
  * 7. 日本語の / と /venue/1〜24 は、配る UA のときだけ関数（/api/bot-page/*）へ振り分ける（ADR 0089）。
- *    /venue/01・範囲外・数字以外・言語の接頭辞付き・/races/… は振り分けない。
+ *    /venue/01・範囲外・数字以外・/races/… は振り分けない（言語版は 7b）。
  *    rewrite 先に元のクエリ文字列を持ち込まない（CDN キャッシュのキーを増やさない）
- * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24 だけ配る UA を除外する（missing）。
+ * 7b. 言語版の /{en|zh-TW|ko}/（末尾の / なしも）と /{lang}/venue/1〜24 は、配る UA のときだけ
+ *    /api/bot-page/{lang}/top・/api/bot-page/{lang}/venue/{code} へ振り分ける（BOA-848 第2段）。
+ *    言語ごとに rewrite 先が分かれ（CDN のキーが言語で混ざらない）、言語の一覧と会場コードの範囲が関数（api/_lib/botPage.js）と一致する
+ * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24（と言語版）だけ配る UA を除外する（missing）。
  *    除外する UA の一覧が BOT_PAGE_USER_AGENTS と一致し、他のページの no-store は外れない
  *    （外すと関数の応答が CDN に残らない。Preview で MISS が続いたため、ADR 0089「未確認」の1）
+ * 10. ブログ一覧（/blog・/{lang}/blog）と翻訳記事（/{lang}/blog/{id}）は、配る UA のときだけ
+ *    /ai-snapshots/blog-list.html・/ai-snapshots/{lang}/blog-list.html・/ai-snapshots/{lang}/blog/{id}.html へ振り分ける（BOA-848 第2段）
+ * 11. 本日（JST）のレース詳細（/race/{id}・/{lang}/race/{id}）は、配る UA のときだけ /api/bot-page/race/{id}・
+ *    /api/bot-page/{lang}/race/{id} へ振り分ける（BOA-848 第2段）。過去・未来・形の違う id・/assist・対応外の言語は振り分けない。
+ *    「本日」は JST の日付。vercel.json の no-store は、本日かどうかによらず id の形のパスだけ配る UA を除外する
  * 9. 選手ページ（/racer/{4桁}、BOA-848）は配る UA のときだけ /ai-snapshots/racer/{番号}.html へ振り分ける。
  *    Googlebot・人のブラウザ・番号の形が違うもの・言語の接頭辞付き・/racers は振り分けない
  *
@@ -30,6 +38,7 @@ import { readFileSync } from "node:fs";
 import middleware, { config } from "../../middleware.js";
 import {
   AI_CRAWLER_USER_AGENTS,
+  BOT_PAGE_PREFIXED_LANGS,
   BOT_PAGE_USER_AGENTS,
   resolveSnapshotPath,
 } from "../../src/config/aiCrawlerBots.js";
@@ -334,10 +343,19 @@ const BOT_PAGE_UAS = {
 };
 const BOT_PAGE_ROUTES = [
   ["/", "/api/bot-page/top"],
+  // /today（BOA-848 第2段）。?date= 付きは振り分けない（下の NOT_BOT_PAGE_PATHS ではなく個別に見る）
+  ["/today", "/api/bot-page/today"],
   ["/venue/1", "/api/bot-page/venue/1"],
   ["/venue/9", "/api/bot-page/venue/9"],
   ["/venue/10", "/api/bot-page/venue/10"],
   ["/venue/24", "/api/bot-page/venue/24"],
+  // 言語版（BOA-848 第2段）。人の URL は /en/（canonical）だが、/en も同じ SPA のトップなので同じ HTML を返す
+  ...["en", "zh-TW", "ko"].flatMap((lang) => [
+    [`/${lang}/`, `/api/bot-page/${lang}/top`],
+    [`/${lang}`, `/api/bot-page/${lang}/top`],
+    [`/${lang}/venue/1`, `/api/bot-page/${lang}/venue/1`],
+    [`/${lang}/venue/24`, `/api/bot-page/${lang}/venue/24`],
+  ]),
 ];
 for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
   for (const [path, target] of BOT_PAGE_ROUTES) {
@@ -369,12 +387,32 @@ const NOT_BOT_PAGE_PATHS = [
   "/venue/1/",
   "/venue/1/extra",
   "/venue",
-  "/en/venue/1",
-  "/en/",
-  "/en",
-  "/zh-TW/venue/1",
   "/races/2026-10-11/1",
   "/race/20260929-01-01",
+  // 言語版でも、0埋め・範囲外・ほかのパス・対応外の言語・大文字違いは振り分けない
+  "/en/venue/01",
+  "/en/venue/0",
+  "/en/venue/25",
+  "/en/venue/abc",
+  "/en/venue/1/",
+  "/en/venue",
+  "/en//",
+  // /en/race/{id} は、本日なら関数へ振り分け、過去・未来は振り分けない（[6d]）。id の形のパスは本日かどうかによらず
+  // vercel.json の no-store から配る UA を除くので、この一覧（[7] で no-store のままを確かめる）には入れない
+  // /en/blog は翻訳記事の一覧としてスナップショットへ振り分ける（BOA-848 第2段、下の 7c）
+  "/en/guide",
+  "/en/venues",
+  "/zh-TW/today",
+  "/ko/racer/3256",
+  "/fr/",
+  "/fr/venue/1",
+  "/EN/",
+  "/EN/venue/1",
+  "/zh-tw/venue/1",
+  "/ja/",
+  "/ja/venue/1",
+  "/english",
+  "/en-US/venue/1",
 ];
 for (const path of NOT_BOT_PAGE_PATHS) {
   for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
@@ -395,6 +433,8 @@ for (const [path, target] of [
   ["/venue/1?x=1", "/api/bot-page/venue/1"],
   ["/venue/1?x=2", "/api/bot-page/venue/1"],
   ["/venue/1?date=2026-10-01", "/api/bot-page/venue/1"],
+  ["/en/?x=1", "/api/bot-page/en/top"],
+  ["/ko/venue/3?date=2026-10-01", "/api/bot-page/ko/venue/3"],
 ]) {
   const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
   check(
@@ -403,8 +443,27 @@ for (const [path, target] of [
     describe(res),
   );
 }
-// 既存のスナップショット（ブログ・/winning-technique・/today）の振り分けは変わらない
-for (const path of ["/winning-technique", "/today", "/blog/some-article"]) {
+// /today の ?date= 付きは振り分けない（人の /today は ?date= の日を出す。BOA-848 第2段）。ほかのクエリは落として関数へ
+for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+  for (const path of ["/today?date=2026-10-01", "/today?x=1&date=", "/today?date"]) {
+    const res = await call(path, { ua });
+    check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+  }
+}
+{
+  const res = await call("/today?x=1", { ua: SEARCH_BOT_UAS.bingbot });
+  check(
+    "bingbot /today?x=1 → /api/bot-page/today（クエリを持ち込まない）",
+    res?.headers.get("x-middleware-rewrite") === `${ORIGIN}/api/bot-page/today`,
+    describe(res),
+  );
+  check(
+    "resolveSnapshotPath は search を渡さなければ /today を関数へ",
+    resolveSnapshotPath("/today", BOT_UA) === "/api/bot-page/today",
+  );
+}
+// 既存のスナップショット（ブログ・/winning-technique）の振り分けは変わらない
+for (const path of ["/winning-technique", "/blog/some-article"]) {
   check(
     `${path} は静的スナップショットのまま`,
     resolveSnapshotPath(path, SEARCH_BOT_UAS.bingbot)?.startsWith(
@@ -423,6 +482,57 @@ for (const path of ["/winning-technique", "/today", "/blog/some-article"]) {
       Boolean(routed) === accepted,
     );
   }
+  // 言語版: 言語の一覧が関数と同じで、振り分け先を関数が受ける（会場コードの範囲も同じ）
+  const { BOT_PAGE_PREFIXED_LANGS: FUNCTION_LANGS, prefixedLangFromUrl } =
+    await import("../../api/_lib/botPage.js");
+  check(
+    "言語版の言語の一覧が関数（api/_lib/botPage.js）と同じ",
+    JSON.stringify(BOT_PAGE_PREFIXED_LANGS) === JSON.stringify(FUNCTION_LANGS),
+    `${BOT_PAGE_PREFIXED_LANGS} / ${FUNCTION_LANGS}`,
+  );
+  for (const lang of [...BOT_PAGE_PREFIXED_LANGS, "fr", "ja"]) {
+    for (const code of ["0", "01", "1", "24", "25", "abc"]) {
+      const path = `/${lang}/venue/${code}`;
+      const routed = resolveSnapshotPath(path, BOT_UA);
+      const accepted =
+        prefixedLangFromUrl("venue", path) === lang &&
+        venueCodeFromUrl(path, lang) !== null;
+      check(
+        `${path}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
+        Boolean(routed) === accepted,
+      );
+      if (routed) {
+        check(
+          `${path}: rewrite 先 ${routed} も関数が同じ言語・会場として受ける`,
+          prefixedLangFromUrl("venue", routed) === lang &&
+            venueCodeFromUrl(routed, lang) === Number(code),
+        );
+      }
+    }
+    for (const path of [`/${lang}/`, `/${lang}`]) {
+      const routed = resolveSnapshotPath(path, BOT_UA);
+      const accepted = prefixedLangFromUrl("top", path) === lang;
+      check(
+        `${path}: 振り分け(${Boolean(routed)})と関数の受け入れ(${accepted})が一致`,
+        Boolean(routed) === accepted,
+      );
+      if (routed) {
+        check(
+          `${path}: rewrite 先 ${routed} も関数が同じ言語として受ける`,
+          prefixedLangFromUrl("top", routed) === lang,
+        );
+      }
+    }
+  }
+  // 言語ごとに rewrite 先が違う（CDN のキーで言語が混ざらない）
+  const targets = ["/", "/en/", "/zh-TW/", "/ko/"].map((p) =>
+    resolveSnapshotPath(p, BOT_UA),
+  );
+  check(
+    "/・/en/・/zh-TW/・/ko/ の rewrite 先がすべて違う",
+    new Set(targets).size === 4,
+    targets.join(","),
+  );
 }
 check(
   "ページ単位の UA 集合は AI_CRAWLER_USER_AGENTS の部分集合（Googlebot を含まない）",
@@ -488,6 +598,182 @@ for (const path of NOT_RACER_SNAPSHOT_PATHS) {
 }
 
 console.log(
+  "[6c] ブログ一覧と翻訳記事は配る UA のときだけスナップショットへ振り分ける（BOA-848 第2段）",
+);
+{
+  const routes = [
+    ["/blog", "/ai-snapshots/blog-list.html"],
+    ["/en/blog", "/ai-snapshots/en/blog-list.html"],
+    ["/zh-TW/blog", "/ai-snapshots/zh-TW/blog-list.html"],
+    ["/ko/blog", "/ai-snapshots/ko/blog-list.html"],
+    ["/en/blog/some-article", "/ai-snapshots/en/blog/some-article.html"],
+    ["/zh-TW/blog/some-article", "/ai-snapshots/zh-TW/blog/some-article.html"],
+    ["/ko/blog/some-article", "/ai-snapshots/ko/blog/some-article.html"],
+    // ja の記事は従来どおり
+    ["/blog/some-article", "/ai-snapshots/blog/some-article.html"],
+  ];
+  for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+    for (const [path, target] of routes) {
+      check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
+      const res = await call(path, { ua });
+      check(
+        `${name} ${path} → ${target}`,
+        res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
+        describe(res),
+      );
+    }
+  }
+  for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+    for (const [path] of routes) {
+      const res = await call(path, { ua });
+      check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+    }
+  }
+  for (const path of [
+    "/blog/",
+    "/en/blog/",
+    "/en/blog/a/b",
+    "/fr/blog",
+    "/fr/blog/some-article",
+    "/EN/blog/some-article",
+    "/ja/blog/some-article",
+    "/en/blogs",
+  ]) {
+    const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
+    check(`bingbot ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+  }
+  {
+    const res = await call("/en/blog/some-article?x=1", { ua: BOT_UA });
+    check(
+      "GPTBot /en/blog/some-article?x=1 → クエリを持ち込まない",
+      res?.headers.get("x-middleware-rewrite") ===
+        `${ORIGIN}/ai-snapshots/en/blog/some-article.html`,
+      describe(res),
+    );
+  }
+  // 振り分け先の翻訳記事の言語が、生成側（generate-ai-snapshots.js の BLOG_TRANSLATIONS）と languages.js の翻訳の言語と同じ
+  const { SUPPORTED_LANGUAGES } = await import("../../src/config/languages.js");
+  const langs = SUPPORTED_LANGUAGES.map((l) => l.code).filter((c) => c !== "ja");
+  for (const lang of langs) {
+    check(
+      `${lang} の翻訳記事を振り分ける`,
+      resolveSnapshotPath(`/${lang}/blog/x`, BOT_UA) === `/ai-snapshots/${lang}/blog/x.html`,
+    );
+  }
+  const gen = readFileSync(
+    new URL("../generate-ai-snapshots.js", import.meta.url),
+    "utf8",
+  );
+  for (const lang of langs) {
+    check(
+      `生成側が ${lang} の翻訳記事を作る（BLOG_TRANSLATIONS）`,
+      new RegExp(`(?:^|\\s|")${lang.replace("-", "\\-")}"?:\\s*blogPosts`, "m").test(gen),
+    );
+  }
+}
+
+console.log(
+  "[6d] 本日（JST）のレース詳細は配る UA のときだけ関数へ振り分ける（BOA-848 第2段）",
+);
+const jstDateOf = (ms) =>
+  new Date(ms + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const TODAY = jstDateOf(Date.now());
+const RACE_ROUTES = [
+  [`/race/${TODAY}-01-01`, `/api/bot-page/race/${TODAY}-01-01`],
+  [`/race/${TODAY}-24-12`, `/api/bot-page/race/${TODAY}-24-12`],
+  [`/en/race/${TODAY}-06-05`, `/api/bot-page/en/race/${TODAY}-06-05`],
+  [`/zh-TW/race/${TODAY}-12-03`, `/api/bot-page/zh-TW/race/${TODAY}-12-03`],
+  [`/ko/race/${TODAY}-01-12`, `/api/bot-page/ko/race/${TODAY}-01-12`],
+];
+for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+  for (const [path, target] of RACE_ROUTES) {
+    check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
+    const res = await call(path, { ua });
+    check(
+      `${name} ${path} → ${target}`,
+      res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
+      describe(res),
+    );
+  }
+}
+for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+  for (const [path] of RACE_ROUTES) {
+    const res = await call(path, { ua });
+    check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+  }
+}
+const NOT_RACE_PATHS = [
+  "/race/2020-01-01-01-01", // 過去
+  "/race/2099-01-01-01-01", // 未来
+  `/race/${TODAY}-00-01`,
+  `/race/${TODAY}-25-01`,
+  `/race/${TODAY}-01-00`,
+  `/race/${TODAY}-01-13`,
+  `/race/${TODAY}-1-1`,
+  `/race/${TODAY}-01-01/assist`,
+  `/race/${TODAY}-01-01/`,
+  "/race",
+  "/race/abc",
+  `/fr/race/${TODAY}-01-01`,
+  `/ja/race/${TODAY}-01-01`,
+  `/EN/race/${TODAY}-01-01`,
+];
+for (const path of NOT_RACE_PATHS) {
+  const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
+  check(`bingbot ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+}
+{
+  const res = await call(`/race/${TODAY}-01-01?tab=odds`, { ua: BOT_UA });
+  check(
+    "GPTBot /race/{本日}?tab=odds → クエリを持ち込まない",
+    res?.headers.get("x-middleware-rewrite") ===
+      `${ORIGIN}/api/bot-page/race/${TODAY}-01-01`,
+    describe(res),
+  );
+}
+// 「本日」は JST。UTC ではまだ前日の JST 0:00〜8:59 も、JST の今日を振り分ける
+{
+  const at = Date.parse("2026-10-11T21:00:00Z"); // JST 10/12 06:00
+  check(
+    "JST 6時（UTC は前日）: JST の今日のレースを振り分ける",
+    resolveSnapshotPath("/race/2026-10-12-01-01", BOT_UA, "", at) ===
+      "/api/bot-page/race/2026-10-12-01-01",
+  );
+  check(
+    "JST 6時: UTC の今日（JST では前日）のレースは振り分けない",
+    resolveSnapshotPath("/race/2026-10-11-01-01", BOT_UA, "", at) === null,
+  );
+  const midnight = Date.parse("2026-10-12T15:00:00Z"); // JST 10/13 00:00
+  check(
+    "JST 0:00 で前日のレースは振り分けから外れる",
+    resolveSnapshotPath("/race/2026-10-12-01-01", BOT_UA, "", midnight) === null &&
+      resolveSnapshotPath("/race/2026-10-13-01-01", BOT_UA, "", midnight) ===
+        "/api/bot-page/race/2026-10-13-01-01",
+  );
+}
+// 振り分けた id を関数が同じ言語・同じレースとして受ける（関数の parseBotRaceUrl）
+{
+  const { parseBotRaceUrl } = await import("../../api/_lib/botRace.js");
+  for (const [path, target] of RACE_ROUTES) {
+    const lang = path.match(/^\/(en|zh-TW|ko)\//)?.[1];
+    const mode = lang ? "prefixed" : "ja";
+    const a = parseBotRaceUrl(path, mode);
+    const b = parseBotRaceUrl(target, mode);
+    check(
+      `${path}: 振り分け先 ${target} を関数が同じレースとして受ける`,
+      a !== null && JSON.stringify(a) === JSON.stringify(b),
+    );
+  }
+  for (const path of NOT_RACE_PATHS.filter((p) => !/20(20|99)-/.test(p))) {
+    const lang = path.match(/^\/(en|zh-TW|ko)\//)?.[1];
+    check(
+      `${path}: 関数も受けない（形が違う）`,
+      parseBotRaceUrl(path, lang ? "prefixed" : "ja") === null,
+    );
+  }
+}
+
+console.log(
   "[7] vercel.json の no-store 規則は / と /venue/1〜24 だけ配る UA を除外する",
 );
 {
@@ -517,6 +803,11 @@ console.log(
       ({ re, missingUa }) =>
         re.test(path) && !(missingUa && new RegExp(missingUa).test(ua)),
     );
+  check(
+    "missing の付いた no-store 規則は / ・/venue/N・言語版のトップ・言語版の会場・/today・レース詳細の6つ",
+    noStoreRules.filter((r) => r.missingUa).length === 6,
+    String(noStoreRules.filter((r) => r.missingUa).length),
+  );
   for (const rule of noStoreRules.filter((r) => r.missingUa)) {
     const names = rule.missingUa.match(/\(\?:([^)]+)\)/)?.[1].split("|") ?? [];
     check(
@@ -526,7 +817,7 @@ console.log(
       names.join(","),
     );
   }
-  for (const [path] of BOT_PAGE_ROUTES) {
+  for (const [path] of [...BOT_PAGE_ROUTES, ...RACE_ROUTES]) {
     for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
       check(`${name} ${path} は no-store を付けない`, !noStoreFor(path, ua));
     }
@@ -536,7 +827,6 @@ console.log(
   }
   for (const path of [
     ...NOT_BOT_PAGE_PATHS,
-    "/today",
     "/winning-technique",
     "/blog/some-article",
     "/racer/3256",

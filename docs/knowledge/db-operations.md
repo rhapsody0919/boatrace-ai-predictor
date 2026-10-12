@@ -25,3 +25,9 @@
 - 小数2桁の値（勝率など）の差で帯を切るときは 1/100 の整数で計算する。浮動小数では 6.10−5.60 が 0.4999… で帯が1つずれる（2026-10-12、同 architecture-y.md）
 - 朝の unified の予想は、欠けたレースがあると日全体を作り直すことがある（scripts/lib/racesInit/job.js:25）。予想が読む入力の表は開催時間外に更新する（2026-10-12、同 architecture-y.md）
 - 予想を作るときの「前日まで」はレースの日付で読む（race_date < 対象日）。「最新まで」で読むと過去の日を作り直したときに結果が混ざる（2026-10-12、BOA-628 と同じ系統、同 architecture-y.md）
+
+## SNS の送信
+- SNS の送信を止めるのは許可のリスト（自動送信の job は item が notified かつ mode が自動のときだけ進める）にし、claim・check・begin_post・youtube_publish_begin の全部で見る。拒否のリストや下書きの状態の変更だけでは、送信中・要照合で 148 のガードが RAISE し止まらない（2026-10-12、system-architect、docs/design/sns-pdca-loop/plan.md §3）
+- v0 素材の公開保留は5か所にある: sns_bundle_imports の CHECK、取り込みの関数、版×媒体×言語の一意索引、approve の bundle_import_id、transition_sns_send_139・youtube_call_guard の bundle_import_id。外すなら全部を変える（2026-10-12、135:8,26,89・139:137・146:174）
+- 送信の契約は、毎日 daily_baseline_date（JST）と YouTube の baseline_day（PT）を当日にしないと claim できない（2026-10-12、139:144・146:143）
+- PostgREST の upsert は式の一意索引（COALESCE）を on_conflict に使えない。NULL を含むキーは UNIQUE NULLS NOT DISTINCT の制約にする（本番は PG 17.6、2026-10-12）

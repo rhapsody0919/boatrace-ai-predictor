@@ -447,7 +447,26 @@
       "step3": "Open the \"Ryujin Sonar\" tab, or switch to \"Thinking Assist\" at the top",
       "step3SonarOnly": "Open the \"Ryujin Sonar\" tab",
       "venuesLink": "Pick a venue racing today ↑",
-      "disclaimer": "Both lay out past races and official data. They do not guarantee any result."
+      "disclaimer": "Both lay out past races and official data. They do not guarantee any result.",
+      "toolsIntro": "In Ryujin Sonar, you can check the results of past races under close conditions, and the past rates when you change the entry or start pattern. In Thinking Assist, you can look at racers' records and past tendencies along the questions you want answered, such as the axis boat, race flow, boat power and the other contenders.",
+      "toolsIntroSonarOnly": "In Ryujin Sonar, you can check the results of past races under close conditions, and the past rates when you change the entry or start pattern.",
+      "faqTitle": "Frequently asked questions",
+      "faq": {
+        "q1": "Can I see the AI boat race predictions for free?",
+        "a1": "Ryujin Radar's AI predictions are free, with no sign-up required. The past rates in Ryujin Sonar, and racers' records and past tendencies in Thinking Assist, can also be checked without signing up.",
+        "a1SonarOnly": "Ryujin Radar's AI predictions are free, with no sign-up required. The past rates in Ryujin Sonar can also be checked without signing up.",
+        "q2": "What data can I check when looking at the AI predictions?",
+        "a2": "In Ryujin Sonar, you can check the results of past races under close conditions and the past rates for each entry or start pattern. In Thinking Assist, you can look at racers' records and past tendencies along questions such as the axis boat, race flow, boat power and the other contenders.",
+        "a2SonarOnly": "In Ryujin Sonar, you can check the results of past races under close conditions and the past rates for each entry or start pattern. The race card also shows racer and motor records.",
+        "q3": "In what order should I use Ryujin Sonar and Thinking Assist?",
+        "a3": "Check the date, venue, race number and race card, read the conditions, period and number of races in Ryujin Sonar, then look at the points you care about in Thinking Assist. If you are unsure where to look, open the \"Guide\" in Thinking Assist.",
+        "q3SonarOnly": "In what order should I read Ryujin Sonar?",
+        "a3SonarOnly": "Check the date, venue, race number and race card first, then read the conditions, period and number of races in Ryujin Sonar.",
+        "q4": "Can I use it before the exhibition?",
+        "a4": "Before the exhibition, you can still check the race card records and past race tendencies. Exhibition times and other same-day values appear after the exhibition, so \"preparing\" or \"—\" until then does not mean zero.",
+        "q5": "Are the past rates the predicted probability for this race?",
+        "a5": "The past rates are the results of past races under the conditions you chose on screen, not the predicted probability for this race. Read them together with the conditions, period, number of races, and how finishing order and refunds are handled, and do not use them as a guaranteed number."
+      }
     },
     "freeAccessNoticeStrong": "100% Free, No Sign-up",
     "freeAccessNoticeRest": "— use every feature right now, no bank account or membership required",
@@ -1873,7 +1892,8 @@
           "none": "No such race among the latest {{kept}}",
           "raceNo": "R{{n}}",
           "techPay": "{{tech}} · ¥{{yen}}",
-          "bandLink": "See the races in this band ›"
+          "bandLink": "See the races in this band ›",
+          "expired": "The list for this day is no longer kept (lists are kept for 7 days)"
         }
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",

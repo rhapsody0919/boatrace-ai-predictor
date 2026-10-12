@@ -13,8 +13,8 @@
  *
  * 2. AIクローラー・SNSシェアボット向け静的スナップショット配信（ADR 0032）
  *    対象ボットのリクエストのみ、ビルド時生成済みの静的HTML（dist/ai-snapshots/）へ
- *    rewriteする（ブログ・/winning-technique・/today・選手ページ）。通常ユーザー・Googlebotの挙動には影響しない。
- *    日本語の / と /venue/1〜24 は、同じ UA のときだけ関数（/api/bot-page/*）へ rewrite する（ADR 0089）
+ *    rewriteする（ブログ・翻訳記事・ブログ一覧・/winning-technique・選手ページ）。通常ユーザー・Googlebotの挙動には影響しない。
+ *    / と /venue/1〜24 とその言語版（/en/ 等）と /today（?date= なし）は、同じ UA のときだけ関数（/api/bot-page/*）へ rewrite する（ADR 0089、BOA-848）
  */
 import { rewrite } from "@vercel/functions";
 import { resolveSnapshotPath } from "./src/config/aiCrawlerBots.js";
@@ -33,11 +33,30 @@ export const config = {
     // resolveSnapshotPath に対象を足すだけでは配信されない。Vercel は
     // matcher に一致したパスでしか middleware を起動しないため、必ず両方に足す
     "/today",
+    // BOA-848 第2段: 翻訳記事とブログ一覧（/blog は上の "/blog/:path*" に含まれる）
+    "/en/blog/:path*",
+    "/zh-TW/blog/:path*",
+    "/ko/blog/:path*",
     // BOA-848: 選手ページ（番号の形の判定は resolveSnapshotPath 側）
     "/racer/:path*",
     // ADR 0089: 日本語の / と /venue/1〜24（範囲の判定は resolveSnapshotPath 側）
     "/",
     "/venue/:path*",
+    // BOA-848 第2段: 言語版の / と /venue/1〜24（範囲の判定は resolveSnapshotPath 側）
+    "/en",
+    "/en/",
+    "/en/venue/:path*",
+    "/zh-TW",
+    "/zh-TW/",
+    "/zh-TW/venue/:path*",
+    "/ko",
+    "/ko/",
+    "/ko/venue/:path*",
+    // BOA-848 第2段: 本日のレース詳細とその言語版（id の形と「本日」の判定は resolveSnapshotPath 側）
+    "/race/:path*",
+    "/en/race/:path*",
+    "/zh-TW/race/:path*",
+    "/ko/race/:path*",
   ],
 };
 
@@ -70,6 +89,7 @@ export default function middleware(request) {
   const snapshotPath = resolveSnapshotPath(
     url.pathname,
     request.headers.get("user-agent"),
+    url.search,
   );
   if (snapshotPath) {
     // snapshotPath はパスだけなので、new URL で元のクエリ文字列は落ちる（rewrite 先に持ち込まない）。

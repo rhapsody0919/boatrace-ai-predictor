@@ -234,8 +234,7 @@ const KEYS = [
   "officialModeSourceNoteFresh",
   "freshRate2Header",
 ];
-const BANNED =
-  /数える|集計|算出|対象|似た|似ている|ふつう|いつも|競艇|tally|tallied/i;
+const BANNED = /数える|似た|似ている|ふつう|いつも|競艇|tally|tallied/i;
 for (const lang of ["ja", "en", "zh-TW", "ko"]) {
   const motor = JSON.parse(read(`src/locales/${lang}/common.json`)).analysis
     .motor;

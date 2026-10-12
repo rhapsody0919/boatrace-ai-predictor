@@ -36,12 +36,46 @@ export function isTargetBot(userAgent) {
 // 人の URL と同じ 1〜24（0埋めなし）。api/_lib/botPage.js の VENUE_CODE と同じ範囲
 const BOT_PAGE_VENUE_PATH = /^\/venue\/([1-9]|1\d|2[0-4])$/;
 
-// 日本語の / と /venue/1〜24 だけ（ADR 0089 決定2）。言語の接頭辞付き・/venue/01・範囲外は null
-function resolveBotPagePath(pathname, userAgent) {
+// レース詳細（BOA-848 第2段）。id は YYYY-MM-DD-VV-RR（会場 01〜24・レース 01〜12、src/utils/raceId.js と同じ）。
+// 言語版（/en/ 等）も同じ。/race/{id}/assist（思考アシスト、ja 専用）は含めない
+const BOT_PAGE_RACE_PATH =
+  /^(?:\/(en|zh-TW|ko))?\/race\/((\d{4}-\d{2}-\d{2})-(?:0[1-9]|1\d|2[0-4])-(?:0[1-9]|1[0-2]))$/;
+
+const jstDateOf = (nowMs) =>
+  new Date(nowMs + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+// 言語版を出す言語（BOA-848 第2段）。api/_lib/botPage.js の BOT_PAGE_PREFIXED_LANGS と同じ
+// （middleware から読むので languages.js は import しない。一致は verify-middleware-routing.js で固定）
+export const BOT_PAGE_PREFIXED_LANGS = ["en", "zh-TW", "ko"];
+const BOT_PAGE_LANG_TOP_PATH = /^\/(en|zh-TW|ko)\/?$/;
+const BOT_PAGE_LANG_VENUE_PATH = /^\/(en|zh-TW|ko)\/venue\/([1-9]|1\d|2[0-4])$/;
+
+// / と /venue/1〜24（ADR 0089 決定2）と、その言語版 /{en|zh-TW|ko}/・/{lang}/venue/1〜24（BOA-848 第2段）。
+// /venue/01・範囲外・ほかの言語・ほかのパスは null。言語版は言語ごとに rewrite 先を分ける（CDN のキーを言語で分ける）
+// 本日（JST）のレース詳細とその言語版（BOA-848 第2段）。過去と未来のレース・/assist は null
+// /today（BOA-848 第2段）は ?date= の無いときだけ。人の /today は ?date= の日を出すので、本日を返す関数とは中身が違う
+function resolveBotPagePath(pathname, userAgent, search, nowMs) {
   if (!includesAny(userAgent, BOT_PAGE_USER_AGENTS)) return null;
   if (pathname === "/") return "/api/bot-page/top";
+  if (pathname === "/today") {
+    return new URLSearchParams(search ?? "").has("date")
+      ? null
+      : "/api/bot-page/today";
+  }
   const venueMatch = pathname.match(BOT_PAGE_VENUE_PATH);
   if (venueMatch) return `/api/bot-page/venue/${venueMatch[1]}`;
+  const langTop = pathname.match(BOT_PAGE_LANG_TOP_PATH);
+  if (langTop) return `/api/bot-page/${langTop[1]}/top`;
+  const langVenue = pathname.match(BOT_PAGE_LANG_VENUE_PATH);
+  if (langVenue) return `/api/bot-page/${langVenue[1]}/venue/${langVenue[2]}`;
+  const raceMatch = pathname.match(BOT_PAGE_RACE_PATH);
+  // 過去・未来のレースは SPA のまま（関数は本日の id だけを出す。CDN のキーも本日分に限る）
+  if (raceMatch && raceMatch[3] === jstDateOf(nowMs)) {
+    const [, lang, id] = raceMatch;
+    return lang
+      ? `/api/bot-page/${lang}/race/${id}`
+      : `/api/bot-page/race/${id}`;
+  }
   return null;
 }
 
@@ -49,13 +83,21 @@ function resolveBotPagePath(pathname, userAgent) {
 // 言語の接頭辞は付けない（選手ページは ja 専用）。スナップショットは sitemap に載る選手だけ作るので、
 // 作っていない番号はファイルが無く、vercel.json の catch-all で SPA の外枠に戻る（ブログと同じ）
 const RACER_PATH = /^\/racer\/(\d{4})$/;
+// /{en|zh-TW|ko}/blog と /{lang}/blog/{id}（BOA-848 第2段）
+const BLOG_LANG_PATH = /^\/(en|zh-TW|ko)\/blog(?:\/([^/]+))?$/;
 
-// pathname + User-Agentから、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
-// 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）
+// pathname + User-Agent（+ クエリ文字列）から、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
+// 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）。search を見るのは /today の ?date= だけ
 // ⚠️ ここに対象を足したら middleware.js の config.matcher にも同じパスを足すこと。
 //    Vercel は matcher に一致したパスでしか middleware を起動しないため、片方だけでは配信されない
-export function resolveSnapshotPath(pathname, userAgent) {
-  const botPagePath = resolveBotPagePath(pathname, userAgent);
+// search は /today の ?date= の判定、nowMs はレース詳細の「本日」の判定だけに使う（検証で時計を差し替える）
+export function resolveSnapshotPath(
+  pathname,
+  userAgent,
+  search = "",
+  nowMs = Date.now(),
+) {
+  const botPagePath = resolveBotPagePath(pathname, userAgent, search, nowMs);
   if (botPagePath) return botPagePath;
 
   if (!isTargetBot(userAgent)) return null;
@@ -64,12 +106,9 @@ export function resolveSnapshotPath(pathname, userAgent) {
     return "/ai-snapshots/winning-technique.html";
   }
 
-  // /today（BOA-402）。スナップショットはビルド時生成なので、日替わりの中身は入らず
-  // ページの目的と各指標の定義だけ（plan.md §5）。?date= 付きは対象にしない
-  // （canonicalが常に /today で、日付別URLを検索対象にしない設計と揃える）
-  if (pathname === "/today") {
-    return "/ai-snapshots/today.html";
-  }
+  // /today は上の resolveBotPagePath で関数へ振り分ける（BOA-848 第2段）。?date= 付きは振り分けない（SPA のまま）。
+  // ビルド時の /ai-snapshots/today.html（定義だけ）は戻すときのために残している
+  if (pathname === "/today") return null;
 
   const racerMatch = pathname.match(RACER_PATH);
   if (racerMatch) {
@@ -79,6 +118,17 @@ export function resolveSnapshotPath(pathname, userAgent) {
   const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
   if (blogMatch) {
     return `/ai-snapshots/blog/${blogMatch[1]}.html`;
+  }
+
+  // ブログ一覧と翻訳記事（BOA-848 第2段）。スナップショットは scripts/generate-ai-snapshots.js が作る。
+  // 翻訳の無い記事はファイルが無く、vercel.json の catch-all で SPA の外枠に戻る（ja の記事と同じ）
+  if (pathname === "/blog") return "/ai-snapshots/blog-list.html";
+  const langBlog = pathname.match(BLOG_LANG_PATH);
+  if (langBlog) {
+    const [, lang, id] = langBlog;
+    return id
+      ? `/ai-snapshots/${lang}/blog/${id}.html`
+      : `/ai-snapshots/${lang}/blog-list.html`;
   }
 
   return null;

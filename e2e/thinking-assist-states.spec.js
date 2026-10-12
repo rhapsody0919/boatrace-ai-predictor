@@ -1876,7 +1876,7 @@ test.describe("思考アシスト: 着順の切り替えは買い目だけ、軸
     ).toBeVisible();
     await expect(sum.locator(".ta-big-pct")).toHaveText("54.6%");
     await expect(seg(page)).toHaveCount(0);
-    await expect(sum).not.toContainText("1号艇を軸にしたときの2着・3着");
+    await expect(sum).not.toContainText("号艇を軸にしたときの2着");
     await expect(page.locator(".ta-lens-q")).toContainText("誰が1着候補か");
 
     await lensTab(page, "買い目").click();
@@ -1919,7 +1919,7 @@ test.describe("思考アシスト: 着順の切り替えは買い目だけ、軸
 test.describe("思考アシスト: 1号艇を軸にしたときの2着・3着（相手レンズ）と、よく出た2連単（spec D-44 (4)・D-46）", () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
-  test("相手レンズに2〜6号艇の2着・3着の表（準優勝戦の範囲・65件）。展開の形によく出た2連単", async ({
+  test("相手レンズに1号艇を軸にしたときの2着（会場の全レース・10,910件、spec D-48）。展開の形によく出た2連単", async ({
     page,
   }) => {
     await routeThinkingAssistV16(page);
@@ -1927,19 +1927,18 @@ test.describe("思考アシスト: 1号艇を軸にしたときの2着・3着（
     await lensTab(page, "相手").click();
     const sum = page.locator(".ta-sum");
     const box = sum.locator("section", {
-      has: page.getByRole("heading", { name: "1号艇を軸にしたときの2着・3着" }),
+      has: page.getByRole("heading", { name: "1号艇を軸にしたときの2着" }),
     });
     await expect(box).toBeVisible();
-    await expect(box).toContainText(
-      "全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件",
-    );
+    await expect(box).toContainText("徳山の全レース 1号艇が1着の10,910件");
     const row = (b) => box.getByRole("row", { name: new RegExp(`^${b}号艇`) });
     await expect(row(2)).toContainText("38%");
-    await expect(row(2)).toContainText("22%");
-    await expect(row(4)).toContainText("31%");
-    await expect(box).toContainText(
-      "65件は、同じ範囲で1号艇が1着になった 65/119レースと同じ",
-    );
+    // 1号艇を軸にしたときは印が付かない（q_nw 基準。比べる数字は出さない）
+    await expect(box).not.toContainText("問わず");
+    await expect(box.locator(".ta-follow-m-up, .ta-follow-m-down")).toHaveCount(0);
+    await expect(row(1)).toContainText("軸（1着）");
+    // 3着の列は出さない（spec D-48 (3)）
+    await expect(box.getByRole("columnheader")).toHaveCount(0);
 
     await lensTab(page, "展開").click();
     await expect(sum).toContainText(
@@ -2073,13 +2072,8 @@ test.describe("思考アシスト: 相手レンズ（spec D-46、2026-10-12 ユ�
     await expect(lane1).toContainText("2着以内 70%");
     await expect(lane1).toContainText("3着以内 79%");
     await expect(page.locator(".ta-sum")).toContainText(
-      "1号艇を軸にしたときの2着・3着",
+      "1号艇を軸にしたときの2着",
     );
-    await expect(page.locator(".ta-sum")).toContainText(
-      "1号艇が1着のときだけ（ほかの艇が1着のときはまだ出ない）",
-    );
-    // 相手レンズでは上に大きい数字が無いので「上の 65/119」を指さない
-    await expect(page.locator(".ta-sum")).not.toContainText("上の 65/119");
 
     await page.getByRole("button", { name: "ガイド" }).click();
     for (let i = 0; i < 4; i++)
@@ -2172,7 +2166,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(concl.getByText("（65/501）")).toBeVisible();
     await expect(
       concl.getByText(
-        "今日の展示: 攻め手の3号艇は展示タイム4位 → 2コース凹みで攻め手が展示タイム3〜4位のとき1着 25%（13/53）",
+        "今日の展示: 攻め手の3号艇は展示タイム4位。2コース凹みで攻め手が展示タイム3〜4位のとき1着 25%（13/53）",
       ),
     ).toBeVisible();
     const conclBox = await concl.boundingBox();
@@ -2197,7 +2191,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(
       page.locator(".ta-flow-today"),
     ).toHaveText(
-      "今日の展示: 攻め手の3号艇は展示タイム4位 → 2コース凹みで攻め手が展示タイム3〜4位のときは4件だけ（少ないので割合は出さない）",
+      "今日の展示: 攻め手の3号艇は展示タイム4位。2コース凹みで攻め手が展示タイム3〜4位のときは4件だけ（少ないので割合は出さない）",
     );
   });
 
@@ -2256,5 +2250,248 @@ test.describe("思考アシスト: 展開レンズ PR-1 のファン評価 1周�
       .getByRole("button", { name: "直近30走" })
       .click();
     await expect(note).toBeVisible();
+  });
+});
+
+/** 展開レンズの作り直し PR-2（spec D-47 (4)〜(7)、承認モック v2） */
+test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、承認モック v2）", () => {
+  test("もし2コース凹み: 決まり手の内訳 → 1着の艇 → 2連単。3連単は買い目レンズへ", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText("攻め手の3号艇が1着の36件の決まり手"),
+    ).toBeVisible();
+    const tech = page.locator(".ta-tech-row");
+    await expect(tech).toHaveText([
+      /^まくり.*42%（15件）$/,
+      /^まくり差し.*47%（17件）$/,
+      /^差し.*6%（2件）$/,
+      /^ほか.*6%（2件）$/,
+    ]);
+    await expect(
+      page.getByText(/^2コース凹みのときによく出た2連単: 1-3/),
+    ).toBeVisible();
+    await expect(page.getByText(/^よく出た3連単:/)).toHaveCount(0);
+    // 押すと買い目レンズへ（PR-2 ファン評価 1周目 指摘8）
+    await page.getByRole("button", { name: "よく出た3連単は買い目レンズ ›" }).click();
+    await expect(lensTab(page, "買い目")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("今日の展示を入れると: 区分ごとの割合、今日の区分に札、全国の値と3〜4位の注記", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText("攻め手の3号艇（展示タイム4位）: 展示タイムの順位ごとの1着"),
+    ).toBeVisible();
+    const today = page.locator(".ta-band-today");
+    await expect(today).toHaveCount(2);
+    await expect(today.first()).toContainText("3〜4位");
+    await expect(today.first()).toContainText("25% （13/53）");
+    await expect(today.nth(1)).toContainText("1〜2位");
+    await expect(today.nth(1)).toContainText("42% （33/78）");
+    await expect(
+      page.getByText(
+        "全国の全レースでは 1〜2位 24%・3〜4位 18%・5〜6位 13%（順位が上ほど1着が多い）",
+      ),
+    ).toBeVisible();
+    // 今日が3〜4位で範囲の区分の差がはっきりしないので、全国の値を目安にと書く（PR-2 ファン評価 1周目 指摘3）
+    await expect(
+      page.getByText(
+        "この範囲は件数が少なく、順位ごとの差がはっきりしない。全国の全レースの値を目安に",
+      ),
+    ).toBeVisible();
+    await expect(
+      // 1号艇の逃げの行には「順位が上ほど1着が多い」を付けない（承認モック v2、wording-editor 指摘）
+      page.getByText("全国の全レースでは 1〜2位 59%・3〜4位 51%・5〜6位 46%", {
+        exact: true,
+      }),
+    ).toBeVisible();
+  });
+
+  test("展示前の今日の展示を入れるとは「展示の後に分かる」", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await page.getByRole("button", { name: "展示前", exact: true }).click();
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(
+        "展示の後に分かる（攻める艇・1号艇の展示タイムの順位ごとの割合）",
+      ),
+    ).toBeVisible();
+    await expect(page.locator(".ta-band-row")).toHaveCount(0);
+  });
+
+  test("進入: 展示が全艇枠なりなら全国の 93%（3,602/3,862）", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByText(
+        "全国で、展示が全艇枠なりのとき本番も全艇枠なりは 93%（3,602/3,862）",
+      ),
+    ).toBeVisible();
+  });
+
+  test("オリジナル展示: 一周・まわり足の「6艇で一番」と効き目だけ（直線は出さない）。「秒数は機力レンズ」で機力へ", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "展開").click();
+    await expect(
+      page.getByRole("heading", { name: "オリジナル展示（徳山）: 一周・まわり足の一番" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("1号艇: 一周・まわり足とも6艇で一番"),
+    ).toBeVisible();
+    await expect(page.locator(".ta-org-best", { hasText: "直線" })).toHaveCount(0);
+    await page.getByRole("button", { name: /^秒数は機力レンズ/ }).click();
+    await expect(lensTab(page, "機力")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("形が2つ当てはまるとき（カド一撃・2コース凹み）は選べ、選んだ形で「もし」と今日の展示が変わる", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        facts: (body) => {
+          body.today.hints.course.kado4 = true;
+          return body;
+        },
+      },
+    });
+    await open(page);
+    await lensTab(page, "展開").click();
+    const pick = page.getByRole("group", { name: "本番のスタートの形を選ぶ" });
+    const kado = pick.getByRole("button", { name: /^カド一撃/ });
+    const d2 = pick.getByRole("button", { name: /^2コース凹み/ });
+    await expect(kado).toHaveAttribute("aria-pressed", "true");
+    // 押せると分かる1行（PR-2 ファン評価 1周目 指摘7）
+    await expect(page.getByText("当てはまる形が2つ。押すと下が変わる")).toBeVisible();
+    await expect(kado).toContainText("25%（158/634）");
+    await expect(page.getByText("もしカド一撃になったら")).toBeVisible();
+    await expect(page.locator(".ta-flow-today")).toHaveText(
+      "今日の展示: 攻め手の4号艇は展示タイム1位。カド一撃で攻め手が展示タイム1〜2位のとき1着 38%（56/146）",
+    );
+    await d2.click();
+    await expect(d2).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("もし2コース凹みになったら")).toBeVisible();
+    await expect(
+      page.getByText(/^★平均STの手がかり（2コース凹み） ›$/),
+    ).toBeVisible();
+    await expect(page.locator(".ta-flow-today")).toContainText(
+      "攻め手の3号艇は展示タイム4位",
+    );
+  });
+});
+
+/** BOA-845（spec D-48、承認モック v3 docs/design/thinking-assist/boa831/axis-any-mock） */
+test.describe("思考アシスト: 2〜6号艇を軸にしたときの2着（BOA-845、spec D-48）", () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+  const axisGroup = (page) =>
+    page.getByRole("radiogroup", { name: "軸にする艇" });
+
+  test("軸の艇を選ぶと見出し・結論・表・3連単が替わり、軸を問わない2着を並べる。導線は龍神ソナーの展開シナリオ", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "相手").click();
+    await expect(
+      axisGroup(page).getByRole("radio", { name: "1号艇を軸" }),
+    ).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator(".ta-follow-concl")).toHaveText(
+      "1号艇が1着なら、2着は2号艇 38%",
+    );
+    await axisGroup(page).getByRole("radio", { name: "4号艇を軸" }).click();
+    await expect(
+      page.getByRole("heading", { name: "4号艇を軸にしたときの2着" }),
+    ).toBeVisible();
+    await expect(page.locator(".ta-follow-concl")).toHaveText(
+      "4号艇が1着なら、2着は1号艇 37%",
+    );
+    // 印（q_nw 基準・5pt・95%区間・件数300以上。2026-10-12 ユーザー回答「推奨通り」）: 2号艇↓・3号艇↓・5号艇↑・6号艇↑、1号艇は無し
+    const box4 = page.locator(".ta-sum section", {
+      has: page.getByRole("heading", { name: "4号艇を軸にしたときの2着" }),
+    });
+    const mark = (b) =>
+      box4.getByRole("row", { name: new RegExp(`^${b}号艇`) }).locator(".ta-follow-u");
+    await expect(mark(1)).toHaveText("");
+    await expect(mark(2)).toHaveText("↓少なめ");
+    await expect(mark(3)).toHaveText("↓少なめ");
+    await expect(mark(5)).toHaveText("↑多め");
+    await expect(mark(6)).toHaveText("↑多め");
+    await expect(box4).toContainText(
+      "↑多め・↓少なめ＝4号艇が1着のときの2着率と、その艇が1着でなかったレースでの2着率（4号艇を除いて割り直し）の差。件数300件以上で、5ポイント以上かつぶれの範囲を超えるときだけ付ける",
+    );
+    await expect(page.locator(".ta-sum")).toContainText(
+      "徳山の全レース 4号艇が1着の1,326件",
+    );
+    await expect(page.locator(".ta-sum")).toContainText(
+      "よく出た3連単: 4-1-2（157件）",
+    );
+    await expect(page.locator(".ta-sum")).toContainText(
+      "3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る",
+    );
+    const link = page.getByRole("link", { name: /着順の流れを見る（龍神ソナー）/ });
+    await expect(link).toContainText("1着の4号艇を押すと、その流れになる");
+    await expect(link).toHaveAttribute(
+      "href",
+      `/race/${RACE_ID}?tab=sonar&sonar=scenario`,
+    );
+    // 押せる高さ（帯のボタン 52px、導線 44px）
+    const h = await axisGroup(page)
+      .getByRole("radio")
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().height);
+    expect(h).toBeGreaterThanOrEqual(52);
+  });
+
+  test("矢印キーで軸の艇を動かせる（radiogroup）", async ({ page }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "相手").click();
+    await axisGroup(page).getByRole("radio", { name: "1号艇を軸" }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(
+      axisGroup(page).getByRole("radio", { name: "2号艇を軸" }),
+    ).toHaveAttribute("aria-checked", "true");
+    await expect(
+      axisGroup(page).getByRole("radio", { name: "2号艇を軸" }),
+    ).toBeFocused();
+  });
+
+  test("最初の軸: 1着の候補が1艇だけならその艇（「1着の候補に合わせた」）、選んだ艇は再読み込みしても残る", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 4, 1).click();
+    await lensTab(page, "相手").click();
+    await expect(
+      axisGroup(page).getByRole("radio", { name: "4号艇を軸" }),
+    ).toHaveAttribute("aria-checked", "true");
+    await expect(page.getByText("1着の候補に合わせた（4号艇）")).toBeVisible();
+    await axisGroup(page).getByRole("radio", { name: "6号艇を軸" }).click();
+    await expect(page.getByText(/^1着の候補に合わせた/)).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole("tablist", { name: "見方" })).toBeVisible({
+      timeout: 20000,
+    });
+    await lensTab(page, "相手").click();
+    await expect(
+      axisGroup(page).getByRole("radio", { name: "6号艇を軸" }),
+    ).toHaveAttribute("aria-checked", "true");
   });
 });
