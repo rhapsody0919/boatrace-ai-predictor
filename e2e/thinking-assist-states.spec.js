@@ -62,6 +62,42 @@ test.describe("思考アシスト: 状態の出し分け（Codex 依頼27）", (
     await routeThinkingAssistV16(page);
   });
 
+  test("BOA-839: 軸の会場の札と級の並びの説明の呼び名がそろう", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        facts: (body) => {
+          body.facts["VC:18:2-2-2-0:1B1"].n = 300;
+          return body;
+        },
+      },
+    });
+    await open(page);
+    await expect(
+      page.getByText("徳山・級の並びが同じ（1号艇がB1）", { exact: false }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        "徳山・級の並びが同じ: 1号艇は B1、ほかの5艇は A1 が2艇・A2 が2艇・B1 が1艇（どの枠にいたかは問わない）",
+        { exact: false },
+      ),
+    ).toHaveCount(1);
+    await expect(
+      page.getByText("全国・級の並びが同じ: 1号艇は B1", { exact: false }),
+    ).toHaveCount(1);
+    // 「?」も会場名の用語を開く（全国の説明にならない。食い違いの再発防止）
+    await page
+      .getByRole("button", { name: "徳山・級の並びが同じとは" })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "徳山・級の並びが同じ" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("徳山の過去レース（2019/4/1〜）で", { exact: false }),
+    ).toBeVisible();
+  });
+
   test("F01: オッズの取得に失敗したら「発売後に出る」と断定せず、失敗を出す", async ({
     page,
   }) => {

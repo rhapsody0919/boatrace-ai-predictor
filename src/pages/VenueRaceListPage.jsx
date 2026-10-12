@@ -28,7 +28,10 @@ import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getNowHHMMJST, getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDate } from "../utils/formatters";
-import { getTodayVenuePageMeta } from "../utils/pageMeta";
+import {
+  getTodayVenuePageMeta,
+  getTodayVenueBreadcrumbItems,
+} from "../utils/pageMeta";
 import { venueNameOf } from "../utils/raceListDisplay";
 import "./VenueRaceListPage.css";
 
@@ -253,11 +256,9 @@ function VenueRaceListPage() {
   const liveNextRace = liveNextIndex >= 0 ? venueRaces[liveNextIndex] : null;
 
   const backLink = isToday ? localize("/") : `/races/${date}`;
+  // 本日分のパンくずは、ボット向け HTML（ADR 0089）の BreadcrumbList と同じ関数で組む
   const breadcrumbItems = isToday
-    ? [
-        { name: t("analysisPage.breadcrumbHome"), url: localize("/") },
-        { name: venueName, url: localize(`/venue/${venueCode}`) },
-      ]
+    ? getTodayVenueBreadcrumbItems(t, venueCode, i18n.resolvedLanguage)
     : [
         { name: t("analysisPage.breadcrumbHome"), url: "/" },
         { name: "過去の予想", url: "/races" },

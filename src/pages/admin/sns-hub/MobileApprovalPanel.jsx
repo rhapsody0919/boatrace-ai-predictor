@@ -7,6 +7,7 @@ import {
   redoDraft,
 } from "../../../services/snsHubService.js";
 import "./MobileApprovalPanel.css";
+import DraftDiffPanel from "./DraftDiffPanel.jsx";
 import EditAssistFindings from "./EditAssistFindings.jsx";
 const time = (value) =>
   value && Number.isFinite(Date.parse(value))
@@ -134,6 +135,7 @@ export function MobileRaceReview({
             )}
             <p className="sns-mobile-copy">{d.caption_text}</p>
             <p>{d.hashtags?.join(" ")}</p>
+            <DraftDiffPanel draft={d} versionHash={row.versionHash || null} />
             <EditAssistFindings
               row={row}
               approverId={approverId}

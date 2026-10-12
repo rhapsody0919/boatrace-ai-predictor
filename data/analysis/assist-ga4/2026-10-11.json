@@ -1,0 +1,457 @@
+{
+  "from": "2026-10-11",
+  "to": "2026-10-11",
+  "fetchedAt": "2026-10-11T23:38:38.176Z",
+  "host": "www.boat-ai.jp",
+  "notes": [
+    "数字は本番（www.boat-ai.jp）だけ。Preview の閲覧は excludedHosts",
+    "breakdowns はそのパラメータを持つイベントだけ。value が空文字か (not set) の行は値が届いていない分（カスタムディメンションを登録する前の分を含む。2026-10-11 登録）",
+    "ユーザー自身の確認や他のレーンの本番確認が混ざりうる（内部の人の通信を分ける設定は確かめていない）"
+  ],
+  "assist": {
+    "pageViews": 110,
+    "users": 16,
+    "engagementSeconds": 5247
+  },
+  "raceDetail": {
+    "pageViews": 947,
+    "users": 61
+  },
+  "assistShareOfRaceDetail": {
+    "pageViewsPct": 11.6,
+    "usersPct": 26.2
+  },
+  "excludedHosts": [
+    {
+      "hostName": "boatrace-ai-predictor-git-fix-boa-6977e7-rhapsody0919s-projects.vercel.app",
+      "screenPageViews": 2,
+      "totalUsers": 1
+    }
+  ],
+  "byDevice": [
+    {
+      "deviceCategory": "mobile",
+      "screenPageViews": 107,
+      "totalUsers": 15
+    },
+    {
+      "deviceCategory": "tablet",
+      "screenPageViews": 3,
+      "totalUsers": 1
+    }
+  ],
+  "byHour": [
+    {
+      "hour": "7",
+      "screenPageViews": 1,
+      "totalUsers": 1
+    },
+    {
+      "hour": "8",
+      "screenPageViews": 1,
+      "totalUsers": 1
+    },
+    {
+      "hour": "9",
+      "screenPageViews": 2,
+      "totalUsers": 1
+    },
+    {
+      "hour": "10",
+      "screenPageViews": 2,
+      "totalUsers": 1
+    },
+    {
+      "hour": "11",
+      "screenPageViews": 5,
+      "totalUsers": 2
+    },
+    {
+      "hour": "12",
+      "screenPageViews": 11,
+      "totalUsers": 4
+    },
+    {
+      "hour": "13",
+      "screenPageViews": 1,
+      "totalUsers": 1
+    },
+    {
+      "hour": "14",
+      "screenPageViews": 2,
+      "totalUsers": 1
+    },
+    {
+      "hour": "15",
+      "screenPageViews": 14,
+      "totalUsers": 2
+    },
+    {
+      "hour": "16",
+      "screenPageViews": 9,
+      "totalUsers": 4
+    },
+    {
+      "hour": "17",
+      "screenPageViews": 12,
+      "totalUsers": 2
+    },
+    {
+      "hour": "18",
+      "screenPageViews": 9,
+      "totalUsers": 2
+    },
+    {
+      "hour": "19",
+      "screenPageViews": 9,
+      "totalUsers": 4
+    },
+    {
+      "hour": "20",
+      "screenPageViews": 16,
+      "totalUsers": 4
+    },
+    {
+      "hour": "21",
+      "screenPageViews": 8,
+      "totalUsers": 4
+    },
+    {
+      "hour": "22",
+      "screenPageViews": 6,
+      "totalUsers": 5
+    },
+    {
+      "hour": "23",
+      "screenPageViews": 2,
+      "totalUsers": 1
+    }
+  ],
+  "newVsReturning": [
+    {
+      "newVsReturning": "returning",
+      "totalUsers": 13,
+      "screenPageViews": 100
+    },
+    {
+      "newVsReturning": "new",
+      "totalUsers": 4,
+      "screenPageViews": 10
+    }
+  ],
+  "events": [
+    {
+      "eventName": "assist_lens_select",
+      "eventCount": 147,
+      "totalUsers": 13
+    },
+    {
+      "eventName": "assist_view_switch",
+      "eventCount": 133,
+      "totalUsers": 16
+    },
+    {
+      "eventName": "assist_sheet_open",
+      "eventCount": 53,
+      "totalUsers": 10
+    },
+    {
+      "eventName": "assist_deep_open",
+      "eventCount": 37,
+      "totalUsers": 5
+    },
+    {
+      "eventName": "assist_metric_compare",
+      "eventCount": 21,
+      "totalUsers": 3
+    },
+    {
+      "eventName": "assist_target",
+      "eventCount": 19,
+      "totalUsers": 4
+    },
+    {
+      "eventName": "assist_guide_step",
+      "eventCount": 11,
+      "totalUsers": 2
+    }
+  ],
+  "breakdowns": {
+    "assist_view": [
+      {
+        "eventName": "assist_view_switch",
+        "value": "assist",
+        "eventCount": 68
+      },
+      {
+        "eventName": "assist_view_switch",
+        "value": "race",
+        "eventCount": 33
+      },
+      {
+        "eventName": "assist_view_switch",
+        "value": "",
+        "eventCount": 32
+      }
+    ],
+    "assist_entry": [
+      {
+        "eventName": "assist_view_switch",
+        "value": "tab_row",
+        "eventCount": 59
+      },
+      {
+        "eventName": "assist_view_switch",
+        "value": "top",
+        "eventCount": 39
+      },
+      {
+        "eventName": "assist_view_switch",
+        "value": "",
+        "eventCount": 32
+      },
+      {
+        "eventName": "assist_view_switch",
+        "value": "copy_toast",
+        "eventCount": 3
+      }
+    ],
+    "assist_lens": [
+      {
+        "eventName": "assist_lens_select",
+        "value": "flow",
+        "eventCount": 53
+      },
+      {
+        "eventName": "assist_lens_select",
+        "value": "power",
+        "eventCount": 27
+      },
+      {
+        "eventName": "assist_lens_select",
+        "value": "",
+        "eventCount": 24
+      },
+      {
+        "eventName": "assist_lens_select",
+        "value": "axis",
+        "eventCount": 24
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "axis",
+        "eventCount": 19
+      },
+      {
+        "eventName": "assist_lens_select",
+        "value": "bet",
+        "eventCount": 19
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "axis",
+        "eventCount": 16
+      },
+      {
+        "eventName": "assist_target",
+        "value": "axis",
+        "eventCount": 15
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "bet",
+        "eventCount": 6
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "flow",
+        "eventCount": 5
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "power",
+        "eventCount": 4
+      },
+      {
+        "eventName": "assist_target",
+        "value": "bet",
+        "eventCount": 4
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "",
+        "eventCount": 3
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "flow",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "power",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "",
+        "eventCount": 1
+      }
+    ],
+    "assist_boat": [
+      {
+        "eventName": "assist_deep_open",
+        "value": "1",
+        "eventCount": 12
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "3",
+        "eventCount": 6
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "5",
+        "eventCount": 6
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "2",
+        "eventCount": 5
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "",
+        "eventCount": 3
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "6",
+        "eventCount": 3
+      },
+      {
+        "eventName": "assist_deep_open",
+        "value": "4",
+        "eventCount": 2
+      }
+    ],
+    "assist_metric": [
+      {
+        "eventName": "assist_metric_compare",
+        "value": "st_mean30",
+        "eventCount": 9
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "nat_win",
+        "eventCount": 4
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "motor_2",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "exh_st",
+        "eventCount": 1
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "loc_win",
+        "eventCount": 1
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "series_score",
+        "eventCount": 1
+      },
+      {
+        "eventName": "assist_metric_compare",
+        "value": "st_course",
+        "eventCount": 1
+      }
+    ],
+    "assist_sheet": [
+      {
+        "eventName": "assist_sheet_open",
+        "value": "theory",
+        "eventCount": 18
+      },
+      {
+        "eventName": "assist_sheet_open",
+        "value": "mark",
+        "eventCount": 14
+      },
+      {
+        "eventName": "assist_sheet_open",
+        "value": "",
+        "eventCount": 9
+      },
+      {
+        "eventName": "assist_sheet_open",
+        "value": "rough",
+        "eventCount": 8
+      },
+      {
+        "eventName": "assist_sheet_open",
+        "value": "term",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_sheet_open",
+        "value": "venue",
+        "eventCount": 2
+      }
+    ],
+    "assist_guide_step": [
+      {
+        "eventName": "assist_guide_step",
+        "value": "1",
+        "eventCount": 3
+      },
+      {
+        "eventName": "assist_guide_step",
+        "value": "2",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_guide_step",
+        "value": "3",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_guide_step",
+        "value": "4",
+        "eventCount": 2
+      },
+      {
+        "eventName": "assist_guide_step",
+        "value": "5",
+        "eventCount": 2
+      }
+    ],
+    "assist_target": [
+      {
+        "eventName": "assist_target",
+        "value": "2",
+        "eventCount": 9
+      },
+      {
+        "eventName": "assist_target",
+        "value": "3",
+        "eventCount": 7
+      },
+      {
+        "eventName": "assist_target",
+        "value": "1",
+        "eventCount": 3
+      }
+    ]
+  }
+}

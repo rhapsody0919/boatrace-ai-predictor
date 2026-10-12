@@ -86,8 +86,14 @@ function AxisSummary({ m }) {
         <ClassLineup lineup={classLineup(classes, 1)} />
         {counts && (
           <p className="ta-note">
-            {C.classNote(1, classes[0], counts)}
-            <TermButton term="全国・級の並びが同じ" />
+            {C.classNote(1, classes[0], counts, factsScopeLabel(scope, venue))}
+            <TermButton
+              term={
+                scope.kind === "VC" && venue
+                  ? C.scopeVenue(venue)
+                  : "全国・級の並びが同じ"
+              }
+            />
           </p>
         )}
         {va && venue && (
