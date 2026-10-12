@@ -55,7 +55,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 ### 検証・テスト
 - 変更には再現テストまたは検証を付ける。置き場所は内容で選ぶ: UI挙動は `e2e/`（Playwright）、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（新規に書いたら `scripts/maintenance/verify-registry.json` にも登録する。未登録だと `npm run verify:ci` が失敗する）
 - PR 作成前に手元で `npm run build` を通す（ビルドエラーが無いことを確認する）
-- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更では `npm run test:e2e` も実行し、デグレが無いことを確認する
+- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更でも、手元で全件 `npm run test:e2e` は実行しない（BOA-769 D、2026-10-12〜）。CIのE2E（3shardに分割、所要約20分、`.github/workflows/e2e-smoke-test.yml`）が全部のテストを検証し、`scripts/maintenance/guard-pr-merge.js` が e2e の結果が出るまでマージを止める。手元の全件実行は、複数のworktree・セッションが同じMacで並行稼働する運用（スワップ15GB・load 28〜67に達した実績）とCPU・メモリを取り合うため避ける。関係する一部だけ素早く確認したい場合は `npx playwright test e2e/<対象ファイル>.spec.js` のように対象を絞って実行してよい
 - CSS・レイアウトを変更した場合は `npm run test:layout`（375/768/1024/1440/1920px の5軸）も実行し、横スクロール・グリッドの崩れが無いことを確認する
 - `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない（手元で先に確かめたい場合は `npm run verify:ci` か該当する個別の `npm run verify:*`）
 - `CREATE OR REPLACE FUNCTION` で既存 RPC のキーを削除していないかは `npm run verify:rpc-key-regression`（SQLファイル同士の比較、本番接続不要）がPR時にCIで検知する。あなたは本番Supabaseに接続できないため、本番の実物との最終照合（`verify-rpc-output-keys.js`、本番接続が要る）はユーザー・Claude側が本番適用後に行う
