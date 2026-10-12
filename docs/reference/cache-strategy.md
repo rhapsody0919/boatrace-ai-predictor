@@ -58,7 +58,7 @@
 - ✅ `api/races/today.js`
 
 **ボット向け HTML の関数（ADR 0089、Node・syd1）：**
-- ✅ `api/bot-page/top.js`・`api/bot-page/venue/[code].js`（ヘッダーは `api/_lib/botPage.js`）
+- ✅ `api/bot-page/top.js`・`api/bot-page/venue/[code].js`・言語版の `api/bot-page/[lang]/top.js`・`api/bot-page/[lang]/venue/[code].js`（ヘッダーは `api/_lib/botPage.js`）
 
 ```javascript
 "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=60, stale-if-error=3600"
