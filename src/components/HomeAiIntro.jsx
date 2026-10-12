@@ -16,16 +16,58 @@ import "./HomeAiIntro.css";
  * 検索から初めて来た人が、龍神ソナー・思考アシストで何が分かり、どう開けばよいかを読めるようにする。
  * 思考アシストの切り替えはレース詳細で ja のときだけ出る（RaceDetailPage の showViewSwitch）ので、
  * そのカードと操作の文は ja だけで出す
+ *
+ * 短文とよくある質問（SEO 施策 A2、2026-10-12 オーナー承認の原稿）:
+ * 答えは <details> の中に置き、閉じていても DOM にある。FAQPage の JSON-LD は、画面に出す問いと答えの
+ * 文字列（faqItems）からそのまま作り、画面と食い違わないようにする。
+ * 思考アシストに触れる問い・答えは、ja 以外では龍神ソナーだけの言い方（*SonarOnly）に替える。
+ * ボット向け HTML（api/_lib/botPage.js の renderTopHtml）には入れない。ボット側は人の画面の部分集合で
+ * あればよく（ADR 0089 決定3）、人の側だけに増えても照合は落ちない
  */
+const FAQ_KEYS = [
+  { q: "q1", a: "a1", aSonarOnly: "a1SonarOnly" },
+  { q: "q2", a: "a2", aSonarOnly: "a2SonarOnly" },
+  { q: "q3", a: "a3", qSonarOnly: "q3SonarOnly", aSonarOnly: "a3SonarOnly" },
+  { q: "q4", a: "a4" },
+  { q: "q5", a: "a5" },
+];
+
+function buildFaqItems(t, showAssist) {
+  const pick = (key, sonarOnlyKey) =>
+    t(`home.aiIntro.faq.${!showAssist && sonarOnlyKey ? sonarOnlyKey : key}`);
+  return FAQ_KEYS.map((k) => ({
+    question: pick(k.q, k.qSonarOnly),
+    answer: pick(k.a, k.aSonarOnly),
+  }));
+}
+
+function toFaqPageLd(items) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map(({ question, answer }) => ({
+      "@type": "Question",
+      name: question,
+      acceptedAnswer: { "@type": "Answer", text: answer },
+    })),
+  };
+}
+
 function HomeAiIntro() {
   const { t, i18n } = useTranslation();
   const showAssist = i18n.resolvedLanguage === "ja";
+  const faqItems = buildFaqItems(t, showAssist);
 
   return (
     <section className="home-ai-intro" aria-labelledby="home-ai-intro-title">
       <h2 id="home-ai-intro-title">{t("home.aiIntro.title")}</h2>
       <p>{t("home.aiIntro.lead")}</p>
       <p>{t("home.aiIntro.method")}</p>
+      <p className="home-ai-intro__tools-intro">
+        {showAssist
+          ? t("home.aiIntro.toolsIntro")
+          : t("home.aiIntro.toolsIntroSonarOnly")}
+      </p>
 
       <div className="home-ai-intro__check">
         <h3>{t("home.aiIntro.checkTitle")}</h3>
@@ -78,6 +120,19 @@ function HomeAiIntro() {
           <Link to="/hit-races">{t("home.aiIntro.hitRacesLink")}</Link>
         </li>
       </ul>
+
+      <div className="home-ai-intro__faq">
+        <h3>{t("home.aiIntro.faqTitle")}</h3>
+        {faqItems.map(({ question, answer }) => (
+          <details key={question} className="home-ai-intro__faq-item">
+            <summary>{question}</summary>
+            <p>{answer}</p>
+          </details>
+        ))}
+        <script type="application/ld+json">
+          {JSON.stringify(toFaqPageLd(faqItems))}
+        </script>
+      </div>
     </section>
   );
 }

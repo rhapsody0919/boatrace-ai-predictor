@@ -124,3 +124,117 @@ test.describe("ソナー・思考アシストの問いと操作順（B1）", () 
     expect(link.height).toBeGreaterThanOrEqual(44);
   });
 });
+
+// SEO 施策 A2（2026-10-12 オーナー承認の原稿）。トップの AI 説明に短文とよくある質問5問を足した。
+// 答えは <details> の中にあり、閉じていても DOM にある。FAQPage の JSON-LD は画面の問いと答えと同じ文字列
+test.describe("よくある質問と FAQPage（A2）", () => {
+  test.describe.configure({ timeout: 120000 });
+
+  const intro = (page) => page.locator(".home-ai-intro");
+
+  // 画面の問いと答え（summary と p の文字列）を順に取る
+  const readFaq = (section) =>
+    section.locator(".home-ai-intro__faq-item").evaluateAll((items) =>
+      items.map((d) => ({
+        question: d.querySelector("summary").textContent.trim(),
+        answer: d.querySelector("p").textContent.trim(),
+      })),
+    );
+
+  // ページ内の FAQPage の JSON-LD（ちょうど1つ）を問いと答えの組にして返す
+  const readFaqLd = async (page) => {
+    const lds = await page
+      .locator('script[type="application/ld+json"]')
+      .evaluateAll((ss) => ss.map((s) => JSON.parse(s.textContent)));
+    const faq = lds.filter((ld) => ld["@type"] === "FAQPage");
+    expect(faq).toHaveLength(1);
+    return faq[0].mainEntity.map((q) => ({
+      question: q.name,
+      answer: q.acceptedAnswer.text,
+    }));
+  };
+
+  test("ja: 短文とよくある質問5問が出て、答えは閉じていても DOM にある", async ({
+    page,
+  }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const section = intro(page);
+    await expect(section).toBeVisible({ timeout: 30000 });
+    await expect(section.locator(".home-ai-intro__tools-intro")).toContainText(
+      "思考アシストでは",
+    );
+    await expect(section.locator(".home-ai-intro__faq h3")).toHaveText(
+      "よくある質問",
+    );
+    const faq = await readFaq(section);
+    expect(faq.map((f) => f.question)).toEqual([
+      "ボートレースのAI予想は無料で見られますか？",
+      "AI予想を見るとき、どのデータを確かめられますか？",
+      "龍神ソナーと思考アシストは、どの順番で使いますか？",
+      "展示前でも見られますか？",
+      "過去の割合は、今回のレースの予測確率ですか？",
+    ]);
+    expect(faq.every((f) => f.answer.length > 0)).toBe(true);
+    expect(faq[0].answer).toContain("無料・会員登録なし");
+
+    // 閉じた状態で始まり、押すと答えが見える
+    const first = section.locator(".home-ai-intro__faq-item").first();
+    await expect(first.locator("p")).toBeHidden();
+    await first.locator("summary").click();
+    await expect(first.locator("p")).toBeVisible();
+  });
+
+  test("ja: FAQPage の JSON-LD は画面の問いと答えと一致し、index.html の型と重ならない", async ({
+    page,
+  }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const section = intro(page);
+    await expect(section).toBeVisible({ timeout: 30000 });
+    expect(await readFaqLd(page)).toEqual(await readFaq(section));
+    // index.html の WebSite・SoftwareApplication・Organization は1つずつのまま
+    const types = await page
+      .locator('script[type="application/ld+json"]')
+      .evaluateAll((ss) => ss.map((s) => JSON.parse(s.textContent)["@type"]));
+    for (const type of ["WebSite", "SoftwareApplication", "Organization"]) {
+      expect(types.filter((x) => x === type)).toHaveLength(1);
+    }
+  });
+
+  test("en: 思考アシストに触れず龍神ソナーだけの言い方にし、JSON-LD も画面と同じ", async ({
+    page,
+  }) => {
+    await page.goto("/en/", { waitUntil: "domcontentloaded" });
+    const section = intro(page);
+    await expect(section).toBeVisible({ timeout: 30000 });
+    await expect(section.locator(".home-ai-intro__tools-intro")).toContainText(
+      "Ryujin Sonar",
+    );
+    const faq = await readFaq(section);
+    expect(faq).toHaveLength(5);
+    expect(faq[2].question).toBe("In what order should I read Ryujin Sonar?");
+    for (const f of faq) {
+      expect(`${f.question} ${f.answer}`).not.toContain("Thinking Assist");
+    }
+    expect(await readFaqLd(page)).toEqual(faq);
+  });
+
+  test("375px: よくある質問を開いても横にはみ出さず、問いの行は44px以上", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const section = intro(page);
+    await expect(section).toBeVisible({ timeout: 30000 });
+    const items = section.locator(".home-ai-intro__faq-item");
+    await expect(items).toHaveCount(5);
+    for (let i = 0; i < 5; i++) {
+      await items.nth(i).locator("summary").click();
+      const box = await items.nth(i).locator("summary").boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(44);
+    }
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - window.innerWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+});
