@@ -1491,9 +1491,11 @@ test.describe("思考アシスト: BOA-801（見せ方の残り）", () => {
   }) => {
     await open(page);
     await lensTab(page, "展開").click();
+    // 展示ST は図から6艇比較へ移した（spec D-47 (1)）。F の赤い枠はそこで出す
+    await page.getByRole("button", { name: "展示STを6艇で比べる ›" }).click();
     const lane5 = page.locator(".ta-lane").nth(4);
     await expect(lane5.locator(".ta-track-dot-f")).toHaveCount(1);
-    await expect(lane5.getByText("F .01（フライング）")).toBeVisible();
+    await expect(lane5.getByText("F.01")).toBeVisible();
     await expect(page.locator(".ta-track-dot-f")).toHaveCount(1);
   });
 
