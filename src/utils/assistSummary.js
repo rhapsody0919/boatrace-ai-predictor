@@ -348,7 +348,7 @@ export function exactaList(tri) {
 }
 
 /**
- * 1号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)）。範囲は軸の大きい数字と同じ範囲キーの scenario。
+ * {boat}号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)。BOA-845 で軸を2〜6号艇にも、範囲は会場の全レース。spec D-48）。
  * 全体のセル（cells.all.forms.any）の3連単から、1着が boat の組だけで数える（返還のあったレースは scenario 側で除かれている）
  * @param {object|null} scenario scenario の応答の scenario
  * @returns {null | {n: number, second: number[], third: number[], topTrifecta: Array<[number[], number]>, few: boolean}}
@@ -375,13 +375,48 @@ export function winFollowers(scenario, boat = 1) {
   };
 }
 
+/** 相手レンズの印の決まり（BOA-845、docs/design/thinking-assist/analysis/boa845-axis-place.md「相手レンズの印のルール（案C）の検証」） */
+export const AXIS_MARK = Object.freeze({ th: 0.05, minN: 300 });
+
 /**
- * 案1b の件数と軸の大きい数字（1着、返還を含む）の関係。同じなら same、少ないなら返還を除いた分で refund、
- * 多いとき（別の応答で時刻がずれた等）は書かない（null。BOA-831 /code-review の指摘）
- * @returns {"same"|"refund"|null}
+ * {X}号艇を軸にしたときの2着に付ける ↑多め／↓少なめ（BOA-845、2026-10-12 ユーザー回答「推奨通り」）。
+ * 比べる基準 q_nw は「j が1着でなかったレースでの j の2着率」を、軸の艇を除いて合計100%に割り直した値
+ * （全レースの2着率だと1号艇が全組で ↑ になる。負けたレースだから2着が増えるだけで、スジの情報ではない）。
+ * 印は「|p − q_nw| ≥ 5pt」かつ「p の95%区間（Wilson）が q_nw をまたがない」かつ「軸の件数300以上」。丸める前の値で判定する
+ * 範囲は winFollowers と同じ scenario の全体のセルの3連単（返還のあったレースを除く）
+ * @param {object|null} scenario
+ * @param {ReturnType<typeof winFollowers>} f その軸の winFollowers
+ * @param {number} axis
+ * @returns {Array<"up"|"down"|null>} 1〜6号艇の印（軸の艇は null）
  */
-export const followNoteKind = (n, axisK) =>
-  n === axisK ? "same" : n < axisK ? "refund" : null;
+export function axisMarks(scenario, f, axis) {
+  const none = [null, null, null, null, null, null];
+  // 統計検証は軸が2〜6号艇の600組（24会場×5艇×相手5艇）だけ。1号艇を軸にしたときは確かめていないので印を出さない
+  if (!f || f.n < AXIS_MARK.minN || axis === 1) return none;
+  const rows = trifectaList(scenario?.cells?.all?.forms?.any?.tri);
+  const n = rows.reduce((a, [, c]) => a + c, 0);
+  if (!n) return none;
+  const first = [0, 0, 0, 0, 0, 0];
+  const second = [0, 0, 0, 0, 0, 0];
+  for (const [x, c] of rows) {
+    first[x[0] - 1] += c;
+    second[x[1] - 1] += c;
+  }
+  // 2着は1着でないレースでしか起きないので、j が2着の件数 ÷ j が1着でなかった件数
+  const raw = second.map((k, i) => (n - first[i] > 0 ? k / (n - first[i]) : 0));
+  raw[axis - 1] = 0;
+  const sum = raw.reduce((a, b) => a + b, 0);
+  return raw.map((r, i) => {
+    if (i === axis - 1 || !sum) return null;
+    const base = r / sum;
+    const p = f.second[i] / f.n;
+    const ci = wilsonInterval(f.second[i], f.n);
+    if (!ci || (base >= ci[0] && base <= ci[1])) return null;
+    if (p - base >= AXIS_MARK.th) return "up";
+    if (p - base <= -AXIS_MARK.th) return "down";
+    return null;
+  });
+}
 
 /**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）

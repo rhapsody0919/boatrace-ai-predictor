@@ -2111,6 +2111,143 @@
   background: var(--color-info-text);
 }
 
+/* 相手レンズの軸の切り替え（BOA-845、承認モック v3）。1本の帯に6つ、丸と「軸」の2段、選んだ艇は塗り。
+   図の艇の丸（押すと深掘り）と見分けるため、枠で囲んだ帯にする */
+.ta-axis-pick-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+.ta-axis-pick-lbl {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-axis-pick {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--spacing-1);
+  padding: var(--spacing-1);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+}
+
+.ta-axis-pick button {
+  min-height: 52px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 2px;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-2xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.ta-axis-pick button[aria-checked="true"] {
+  background: color-mix(in srgb, var(--color-info-text) 14%, transparent);
+  border-color: var(--color-info-text);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-follow-h {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+}
+
+.ta-follow-concl {
+  margin: 0;
+  font-size: var(--font-size-md, 0.95rem);
+}
+
+.ta-follow-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.ta-follow-legend i {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: var(--spacing-1);
+}
+
+.ta-follow-lf {
+  width: 18px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-info-text);
+}
+
+
+.ta-follow-bar {
+  width: 100%;
+}
+
+.ta-follow-track {
+  position: relative;
+  display: block;
+  overflow: visible;
+}
+
+
+.ta-follow-p {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ta-follow-u {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* 印（↑多め・↓少なめ）。色だけに頼らず文字で書く */
+.ta-follow-m-up {
+  color: var(--color-info-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-follow-m-down {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-follow-axis {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+/* 龍神ソナーの着順の流れへの導線（押せる高さ 44px） */
+.ta-follow-sonar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: var(--spacing-1-5) var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: var(--font-size-sm);
+}
+
+.ta-follow-sonar-sub {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 /* よく出た組の「1-3（24件）」を途中で改行しない（BOA-831 ファン評価 1周目 指摘6） */
 .ta-nowrap {
   white-space: nowrap;

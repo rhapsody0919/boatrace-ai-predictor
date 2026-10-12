@@ -34,7 +34,7 @@ import {
   axisWhyKinds,
   exactaList,
   winFollowers,
-  followNoteKind,
+  axisMarks,
   featChips,
   formSummary,
   hintSummary,
@@ -864,32 +864,49 @@ check(
   );
 }
 
-// ---- 1号艇が1着のときの2着・3着（案1b）・よく出た2連単（案2）（BOA-831、spec D-44 (3)(4)）----
+// ---- {X}号艇を軸にしたときの2着（BOA-845、spec D-48）・よく出た2連単（案2）----
 {
-  const ncrSc = fx.scenario["NCR:2-2-2-0:1B1:junyu"].scenario;
-  const f = winFollowers(ncrSc);
+  const vaSc = fx.scenario["VA:18"].scenario;
+  const f1 = winFollowers(vaSc, 1);
+  const f4 = winFollowers(vaSc, 4);
+  const pctOf = (f) => f.second.map((k) => Math.round((k / f.n) * 100)).join();
   check(
-    "案1b: 準優勝戦の範囲で1号艇が1着の65件、2着 2〜6号艇 25・18・11・7・4件、3着 14・16・20・9・6件（承認モック v2 の値）",
-    f?.n === 65 &&
-      JSON.stringify(f.second) === "[0,25,18,11,7,4]" &&
-      JSON.stringify(f.third) === "[0,14,16,20,9,6]" &&
-      f.few === false,
-    JSON.stringify(f),
+    "軸の2着: 範囲は会場の全レース。1号艇が1着の10,910件で2着 38・27・19・10・6%（承認モック v3 の値）",
+    f1?.n === 10910 && pctOf(f1) === "0,38,27,19,10,6" && f1.few === false,
+    pctOf(f1),
   );
   check(
-    "案1b: 2着・3着の件数の合計は1号艇が1着の件数と一致（1号艇自身は0）",
-    f.second.reduce((a, b) => a + b, 0) === f.n &&
-      f.third.reduce((a, b) => a + b, 0) === f.n &&
-      f.second[0] === 0,
+    "軸の2着: 4号艇が1着の1,326件で2着は1号艇 37%・2号艇 20%・3号艇 13%・5号艇 18%・6号艇 13%、よく出た3連単 4-1-2・4-1-5・4-1-3",
+    f4?.n === 1326 &&
+      pctOf(f4) === "37,20,13,0,18,13" &&
+      f4.topTrifecta.map(([x]) => x.join("-")).join() === "4-1-2,4-1-5,4-1-3",
+    pctOf(f4),
   );
   check(
-    "案1b: 1号艇が1着の組が無ければ null、30件未満は few（割合を出さない）",
+    "印（q_nw 基準・5pt・95%区間・件数300以上）: 4号艇を軸にすると 2号艇↓・3号艇↓・5号艇↑・6号艇↑、1号艇は印なし（基準 q だと付いていた）。統計検証 boa845-axis-place.md の徳山の例と同じ",
+    JSON.stringify(axisMarks(vaSc, f4, 4)) ===
+      JSON.stringify([null, "down", "down", null, "up", "up"]),
+    JSON.stringify(axisMarks(vaSc, f4, 4)),
+  );
+  check(
+    "印: 2号艇を軸にすると1号艇↑だけ。件数300未満の軸には付けない（6号艇 388件は付く、仮に299件なら付かない）",
+    JSON.stringify(axisMarks(vaSc, winFollowers(vaSc, 2), 2)) ===
+      JSON.stringify(["up", null, null, null, null, null]) &&
+      axisMarks(vaSc, { ...winFollowers(vaSc, 6), n: 299 }, 6).every(
+        (m) => m === null,
+      ) &&
+      // 1号艇を軸にしたときは統計検証の範囲外（軸 2〜6号艇の600組）なので出さない
+      axisMarks(vaSc, f1, 1).every((m) => m === null),
+  );
+  check(
+    "軸の2着: その艇が1着の組が無ければ null、30件未満は few（割合を出さない）。範囲の組が無ければ印も無し",
     winFollowers({
       cells: { all: { forms: { any: { tri: { "2-1-3": 5 } } } } },
     }) === null &&
       winFollowers({
         cells: { all: { forms: { any: { tri: { "1-2-3": 5 } } } } },
-      })?.few === true,
+      })?.few === true &&
+      axisMarks(null, f4, 4).every((m) => m === null),
   );
   const ex = formSummary(nc, "d2")?.topExacta;
   check(
@@ -905,26 +922,13 @@ check(
     ) === "[[[1,2],3],[[1,3],3],[[2,1],3]]",
   );
   check(
-    "案1b の言葉: 札・同じレース・返還",
-    ASSIST_COPY.followScope(
-      "全国・級の並びが同じ準優勝戦（1号艇がB1）",
-      1,
-      65,
-    ) === "全国・級の並びが同じ準優勝戦（1号艇がB1） 1号艇が1着の65件" &&
-      ASSIST_COPY.followSame(65, 119) ===
-        "65件は上の 65/119 の65と同じレース" &&
-      ASSIST_COPY.followRefund(60, 65) ===
-        "返還のあったレースは除く（上の65件のうち60件）" &&
-      ASSIST_COPY.followSameAlone(65, 119) ===
-        "65件は、同じ範囲で1号艇が1着になった 65/119レースと同じ" &&
-      ASSIST_COPY.followRefundAlone(60, 65) ===
-        "返還のあったレースは除く（同じ範囲で1号艇が1着になった65件のうち60件）",
-  );
-  check(
-    "案1b: 件数の注記は同じなら same、少ないなら refund、多いときは出さない（/code-review の指摘）",
-    followNoteKind(65, 65) === "same" &&
-      followNoteKind(60, 65) === "refund" &&
-      followNoteKind(66, 65) === null,
+    "軸の2着の言葉: 札・結論・印",
+    ASSIST_COPY.followScope(ASSIST_COPY.followVenueAll("徳山"), 4, 1326) ===
+      "徳山の全レース 4号艇が1着の1,326件" &&
+      ASSIST_COPY.followConcl(4, 1, 37).join("") ===
+        "4号艇が1着なら、2着は1号艇 37%" &&
+      ASSIST_COPY.followMark.up === "↑多め" &&
+      ASSIST_COPY.followMark.down === "↓少なめ",
   );
 }
 

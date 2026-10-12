@@ -54,6 +54,7 @@ import {
   similarSummary,
 } from "../utils/assistModel";
 import {
+  axisMarks,
   winFollowers,
   HINT_BOAT,
   b1Usual,
@@ -96,6 +97,8 @@ const initialState = {
   stBasis: "course",
   // 展開レンズで選んだスリットの形（形が2つ以上当てはまるとき。null＝率が一番高い形。承認モック v2 ④）
   flowForm: null,
+  // 相手レンズで選んだ軸の艇（BOA-845、spec D-48 (6)）。null＝まだ選んでいない（1着の候補が1艇ならその艇、無ければ1号艇）
+  placeAxis: null,
   // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
@@ -157,6 +160,8 @@ function reducer(state, action) {
       return { ...state, stBasis: action.basis, metric: null };
     case "flowForm":
       return { ...state, flowForm: action.form };
+    case "placeAxis":
+      return { ...state, placeAxis: action.boat };
     case "closeDeep":
       return { ...state, deep: null, metric: null };
     case "toggleBet": {
@@ -221,7 +226,15 @@ function ThinkingAssistBody() {
     saveAssistSession(raceId, state);
     // 残す項目が変わったときだけ書く（深掘り・シートの開閉では書かない）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [raceId, state.bets, state.budget, state.mode, state.target, state.lens]);
+  }, [
+    raceId,
+    state.bets,
+    state.budget,
+    state.mode,
+    state.target,
+    state.lens,
+    state.placeAxis,
+  ]);
   // 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
   // シート・ガイドの memo の中からも呼ぶので、状態は描画のたびに ref へ移して act 自体は作り直さない
   const stateRef = useRef(state);
@@ -435,6 +448,14 @@ function ThinkingAssistBody() {
     [v16Off, today, race, data.scenario.byKey],
   );
   const national = anyCell(data.scenario.na.data);
+  const vaScenario = data.scenario.va.data?.scenario ?? null;
+  // 最初に選ばれている軸の艇（spec D-48 (6)）: 前に選んだ艇（同じタブ・同じレースの保存）→ 1着の候補が1艇だけならその艇 → 1号艇
+  const firstPicks = [...state.bets[1]].filter(
+    (b) => !data.absentBoats.includes(b),
+  );
+  const placeAuto = state.placeAxis == null && firstPicks.length === 1;
+  const placeAxis = state.placeAxis ?? (placeAuto ? firstPicks[0] : 1);
+  const placeF = winFollowers(vaScenario, placeAxis);
   const venueAll = anyCell(data.scenario.va.data);
   const rough = roughCard(scope, national);
   const lineup = classLineup(today?.classes, 1);
@@ -576,22 +597,20 @@ function ThinkingAssistBody() {
             }
           : null,
     },
-    place:
-      factsAll && winFacts[0].scope
-        ? {
-            follow: v16Off
-              ? null
-              : winFollowers(data.scenario.axis?.data?.scenario ?? null),
-            label: factsScopeLabel(
-              winFacts[0].scope,
-              venueName,
-              1,
-              today?.classes?.[0],
-            ),
-            axisK: b1u?.k ?? 0,
-            axisN: b1u?.n ?? 0,
-          }
-        : null,
+    // 相手レンズの「{X}号艇を軸にしたときの2着」（BOA-845、spec D-48）。範囲は全艇とも会場の全レース（VA）
+    place: v16Off
+      ? null
+      : {
+          f: placeF,
+          marks: axisMarks(vaScenario, placeF, placeAxis),
+          axis: placeAxis,
+          auto: placeAuto,
+          venue: venueName,
+          raceId,
+          onAxis: (boat) => act({ type: "placeAxis", boat }),
+          ready: data.scenario.va.status === "ready",
+          failed: data.scenario.va.status === "error",
+        },
     bet: {
       bet: {
         points: tickets.length,
