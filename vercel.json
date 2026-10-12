@@ -260,7 +260,7 @@
       ]
     },
     {
-      "source": "/((?!api|assets|venue/(?:[1-9]|1\\d|2[0-4])$|(?:(?:en|zh-TW|ko)/)?race/\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}$).+)",
+      "source": "/((?!api|assets|(?:(?:en|zh-TW|ko)/)?venue/(?:[1-9]|1\\d|2[0-4])$|(?:en|zh-TW|ko)/?$|today$|(?:(?:en|zh-TW|ko)/)?race/\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}$).+)",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
         { "key": "CDN-Cache-Control", "value": "no-store" },
@@ -280,6 +280,39 @@
     },
     {
       "source": "/venue/((?:[1-9]|1\\d|2[0-4]))",
+      "missing": [
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+      ],
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
+        { "key": "CDN-Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/((?:en|zh-TW|ko)/?)",
+      "missing": [
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+      ],
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
+        { "key": "CDN-Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/((?:en|zh-TW|ko)/venue/(?:[1-9]|1\\d|2[0-4]))",
+      "missing": [
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+      ],
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
+        { "key": "CDN-Cache-Control", "value": "no-store" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "no-store" }
+      ]
+    },
+    {
+      "source": "/today",
       "missing": [
         { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
       ],

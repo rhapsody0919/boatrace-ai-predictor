@@ -478,6 +478,7 @@ for (const p of pages) {
         "/",
         "/venue/1",
         "/venue/12",
+        "/today",
         "/en/",
         "/en/venue/1",
         "/zh-TW/",
@@ -488,13 +489,14 @@ for (const p of pages) {
       skipped: [],
     },
   );
-  const jaOnly = (p) => !/^\/(en|zh-TW|ko)\//.test(p);
+  const jaOnly = (p) => !/^\/(en|zh-TW|ko)\//.test(p) && p !== "/today";
   check(
     "言語版を振り分けていなければ飛ばす",
     parityPaths([1, 12], { langs, isRouted: jaOnly }),
     {
       checked: ["/", "/venue/1", "/venue/12"],
       skipped: [
+        "/today",
         "/en/",
         "/en/venue/1",
         "/zh-TW/",
@@ -507,7 +509,26 @@ for (const p of pages) {
   check(
     "開催が無ければ / と言語版のトップだけ",
     parityPaths([], { langs, isRouted: all }).checked,
-    ["/", "/en/", "/zh-TW/", "/ko/"],
+    ["/", "/today", "/en/", "/zh-TW/", "/ko/"],
+  );
+  check(
+    "extraPaths（本日のレース詳細）も振り分けているときだけ照合する",
+    [
+      parityPaths([1], {
+        langs: [],
+        isRouted: all,
+        extraPaths: ["/race/2026-10-12-01-01"],
+      }).checked,
+      parityPaths([1], {
+        langs: [],
+        isRouted: (p) => !p.startsWith("/race/"),
+        extraPaths: ["/race/2026-10-12-01-01"],
+      }).skipped,
+    ],
+    [
+      ["/", "/venue/1", "/today", "/race/2026-10-12-01-01"],
+      ["/race/2026-10-12-01-01"],
+    ],
   );
   // 照合スクリプトの isRouted（今のリポジトリの振り分け）: 日本語の / と /venue/N は関数へ振り分けている
   const BINGBOT =
@@ -517,8 +538,8 @@ for (const p of pages) {
   check("今の振り分け: / は照合する", isRouted("/"), true);
   check("今の振り分け: /venue/1 は照合する", isRouted("/venue/1"), true);
   check(
-    "今の振り分け: スナップショット（/today）は照合しない",
-    isRouted("/today"),
+    "今の振り分け: 静的スナップショット（/winning-technique）は照合しない",
+    isRouted("/winning-technique"),
     false,
   );
 }

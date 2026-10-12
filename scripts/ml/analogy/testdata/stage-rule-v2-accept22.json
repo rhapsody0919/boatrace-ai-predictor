@@ -1,0 +1,137 @@
+{
+  "source": "BOA-785（in/2026-10-12/task-20-boa-785.md）の22R一覧の写し。根拠: docs/design/analogy-finder/analysis/t1/t1-result.md:19 と t1-1-stage-rule.json の v2.acceptance_22R（n=22、final_under_new=22、not_final=[]）。一覧の元: master 未収録の t1_1_accept22.json（prep10 の p10_executed_check_{kb,main}.sql を2026-10-04に本番DBで読み取りのみで再実行）。本固定データの作成時にはDBに接続していない。",
+  "cases": [
+    {
+      "race_id": "2019-05-15-09-12",
+      "source": "kb",
+      "stage": "王座決定戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2019-12-01-04-12",
+      "source": "kb",
+      "stage": "決勝戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2020-06-25-20-12",
+      "source": "kb",
+      "stage": "県内選手権優",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2020-08-30-05-12",
+      "source": "kb",
+      "stage": "ホットマン優",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2020-11-20-09-12",
+      "source": "kb",
+      "stage": "王座決定戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2020-12-06-20-12",
+      "source": "kb",
+      "stage": "決勝戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2021-01-07-12-12",
+      "source": "kb",
+      "stage": "王将位決定戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2021-04-18-09-12",
+      "source": "kb",
+      "stage": "王座決定戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2021-12-07-14-12",
+      "source": "kb",
+      "stage": "決勝戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2022-05-14-09-12",
+      "source": "kb",
+      "stage": "王座決定戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2022-12-31-12-12",
+      "source": "kb",
+      "stage": "賞金女王決定",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2023-01-07-12-12",
+      "source": "kb",
+      "stage": "王将位決定戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2023-01-15-11-12",
+      "source": "kb",
+      "stage": "決勝戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2023-04-14-09-12",
+      "source": "kb",
+      "stage": "王座決定戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2023-10-09-03-12",
+      "source": "kb",
+      "stage": "ファイナル",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2023-12-31-05-12",
+      "source": "kb",
+      "stage": "賞金女王決定",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2024-01-14-24-12",
+      "source": "kb",
+      "stage": "決勝戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2024-12-31-07-12",
+      "source": "kb",
+      "stage": "賞金女王決定",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2025-01-26-08-12",
+      "source": "kb",
+      "stage": "決勝戦",
+      "stage_kind": "other"
+    },
+    {
+      "race_id": "2025-12-31-24-12",
+      "source": "main",
+      "stage": "賞金女王決定",
+      "stage_kind": null
+    },
+    {
+      "race_id": "2026-01-07-12-12",
+      "source": "main",
+      "stage": "王将位決定戦",
+      "stage_kind": null
+    },
+    {
+      "race_id": "2026-01-25-13-12",
+      "source": "main",
+      "stage": "決勝戦",
+      "stage_kind": null
+    }
+  ]
+}

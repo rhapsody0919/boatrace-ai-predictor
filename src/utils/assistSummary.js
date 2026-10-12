@@ -16,7 +16,9 @@ import {
   ATTACK_BOAT,
   MIN_SCENARIO,
   entryType,
+  hintBadgeByForm,
   hintRows,
+  rankBand,
 } from "./analogyScenario.js";
 import { trifectaList } from "./analogyAggregate.js";
 import { wilsonInterval } from "./wilson.js";
@@ -195,6 +197,141 @@ export function hintSummary(scenario, today) {
 }
 
 /**
+ * 今日当てはまる「なりやすい」形（形ごとに当てはまったときの率が一番高い手がかり）。率の高い順（先頭が hintSummary の top）。
+ * 2つ以上なら図の上の結論で選べる（承認モック v2 ④、spec D-47 (3)）
+ * @returns {Array<object>} hintRows の行
+ */
+export const hintForms = (scenario, today) =>
+  scenario
+    ? Object.values(hintBadgeByForm(hintSummary(scenario, today).rows)).sort(
+        (a, b) => b.ph - a.ph,
+      )
+    : [];
+
+/**
+ * もし{形}になったら の決まり手の内訳（spec D-47 (4)）。攻める艇が1着のレースの決まり手（まくり・まくり差し・差しの順。0件は外す）
+ * 範囲は形の見立てと同じ scenario の attack（枠なりのレース）
+ * @returns {null | {att: number, w: number, rows: Array<[string, number]>}}
+ */
+export function attackTech(scenario, form) {
+  const a = scenario?.attack?.[form];
+  const w = a?.all?.att_win?.[0] ?? 0;
+  if (!a?.attacker || !w) return null;
+  const rows = ["makuri", "makurizashi", "sashi"]
+    .map((t) => [t, a.all[`att_${t}_of_win`]?.[0] ?? 0])
+    .filter(([, k]) => k > 0);
+  // 抜き・恵まれ等は「ほか」にまとめ、行の合計を1着の件数にそろえる（data-accuracy-verifier の指摘: 36件の内訳が95%で終わる）
+  const other = w - rows.reduce((s, [, k]) => s + k, 0);
+  return { att: a.attacker, w, rows: other > 0 ? [...rows, ["other", other]] : rows };
+}
+
+const BANDS = ["top", "mid", "low"];
+const rateOfPair = (p) => (p?.[1] ? p[0] / p[1] : null);
+
+/**
+ * 今日の展示を入れると（spec D-47 (5)）: 攻める艇の1着・1号艇の逃げを、その艇の展示タイムの順位の区分（1〜2位・3〜4位・5〜6位）ごとに。
+ * 範囲は形の見立てと同じ scenario、nat は全国（NA）の同じ形の値。today は今日の区分（6艇の展示タイムがそろわなければ null。exhToday と同じ）
+ * @param {object|null} scenario
+ * @param {object|null} national 全国（NA）の scenario
+ * @param {string} form
+ * @param {(number|null)[]|null} exhRanks
+ * @returns {null | {n: number, att: object|null, b1: object|null}} 各艇: {boat, rank, today, rows: [{band, k, n}], nat: (number|null)[]|null}
+ */
+export function exhBands(scenario, national, form, exhRanks) {
+  // 攻める艇の無い形（横一線・内3艇そろう）は by_exh が無く、1号艇の区分（b1_by_exh）だけある
+  const a = scenario?.attack?.[form];
+  if (!a?.by_exh && !a?.b1_by_exh) return null;
+  const na = national?.attack?.[form] ?? null;
+  const ok =
+    exhRanks?.length === 6 && exhRanks.every((r) => r != null) ? exhRanks : null;
+  const side = (by, natBy, key, boat) => {
+    const rank = ok ? ok[boat - 1] : null;
+    return {
+      boat,
+      rank,
+      today: rankBand(rank),
+      rows: BANDS.map((band) => ({
+        band,
+        k: by?.[band]?.[key]?.[0] ?? 0,
+        n: by?.[band]?.[key]?.[1] ?? 0,
+      })),
+      nat: natBy ? BANDS.map((b) => rateOfPair(natBy[b]?.[key])) : null,
+    };
+  };
+  return {
+    n: a.all?.n ?? 0,
+    att:
+      a.attacker && a.by_exh
+        ? side(a.by_exh, na?.by_exh, "att_win", a.attacker)
+        : null,
+    b1: a.b1_by_exh ? side(a.b1_by_exh, na?.b1_by_exh, "b1_nige", 1) : null,
+  };
+}
+
+/** 全国の値が上位 > 中位 > 下位の順に並ぶか（「順位が上ほど多い」と書いてよいか） */
+export const descending = (vals) =>
+  Array.isArray(vals) &&
+  vals.every((v) => v != null) &&
+  vals[0] > vals[1] &&
+  vals[1] > vals[2];
+
+/**
+ * オリジナル展示の「6艇で一番」（spec D-47 (7)）。一周（周回）・まわり足だけ（直線は効かないので出さない。秒数は機力レンズ）
+ * @param {{kinds: string[], byBoat: object}|null} original
+ * @param {object[]} racers
+ * @returns {Array<{kind: string, boats: number[]}>}
+ */
+export function originalBest(original, racers) {
+  return (original?.kinds ?? [])
+    .filter((k) => k === "一周" || k === "まわり足")
+    .map((kind) => ({
+      kind,
+      boats: [
+        ...bestBoats(
+          OX_RULE[kind],
+          racers
+            .filter((r) => !r.absent)
+            .map((r) => ({
+              boat: r.boat,
+              value: num(original?.byBoat?.[r.boat]?.[kind]),
+            })),
+        ),
+      ].sort((x, y) => x - y),
+    }))
+    .filter((b) => b.boats.length > 0);
+}
+
+/**
+ * 図の上の「今日の展示」1行（spec D-47 (3)）。攻める艇の展示タイムの順位（6艇の順位、同タイムは同じ順位）の区分で、
+ * その形のときの攻める艇の1着。範囲は形の見立てと同じ scenario の attack（枠なりのレース）。
+ * 区分の件数が30件未満なら割合を出さない（few。承認モック v2 の決まり）。展示タイムが1艇でも無ければ null
+ * @param {object|null} scenario
+ * @param {string} form スリットの形
+ * @param {(number|null)[]|null} exhRanks 艇番順の展示タイムの順位
+ * @returns {null | {att: number, rank: number, band: "top"|"mid"|"low", k: number, n: number, few: boolean}}
+ */
+export function exhToday(scenario, form, exhRanks) {
+  // 区分の表（v16 の by_exh）は6艇の展示タイムがそろったレースだけで作る。欠けた日は5艇の順位になり母集団がずれるので出さない
+  // （data-accuracy-verifier の指摘。10月の 1,692R 中 14R）
+  if (!exhRanks || exhRanks.length !== 6 || exhRanks.some((r) => r == null))
+    return null;
+  const a = scenario?.attack?.[form];
+  const att = a?.attacker ?? null;
+  const rank = att ? (exhRanks?.[att - 1] ?? null) : null;
+  const band = rankBand(rank);
+  const pair = band ? a.by_exh?.[band]?.att_win : null;
+  if (!pair?.[1]) return null;
+  return {
+    att,
+    rank,
+    band,
+    k: pair[0],
+    n: pair[1],
+    few: pair[1] < MIN_SCENARIO,
+  };
+}
+
+/**
  * 3連単の件数 → よく出た2連単（1着-2着）の多い順。同数は組み合わせの昇順（trifectaList と同じ）
  * @param {Record<string, number>} tri
  * @returns {Array<[number[], number]>}
@@ -211,7 +348,7 @@ export function exactaList(tri) {
 }
 
 /**
- * 1号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)）。範囲は軸の大きい数字と同じ範囲キーの scenario。
+ * {boat}号艇が1着のとき、2着・3着に来た艇（BOA-831 案1b、spec D-44 (3)。BOA-845 で軸を2〜6号艇にも、範囲は会場の全レース。spec D-48）。
  * 全体のセル（cells.all.forms.any）の3連単から、1着が boat の組だけで数える（返還のあったレースは scenario 側で除かれている）
  * @param {object|null} scenario scenario の応答の scenario
  * @returns {null | {n: number, second: number[], third: number[], topTrifecta: Array<[number[], number]>, few: boolean}}
@@ -238,13 +375,48 @@ export function winFollowers(scenario, boat = 1) {
   };
 }
 
+/** 相手レンズの印の決まり（BOA-845、docs/design/thinking-assist/analysis/boa845-axis-place.md「相手レンズの印のルール（案C）の検証」） */
+export const AXIS_MARK = Object.freeze({ th: 0.05, minN: 300 });
+
 /**
- * 案1b の件数と軸の大きい数字（1着、返還を含む）の関係。同じなら same、少ないなら返還を除いた分で refund、
- * 多いとき（別の応答で時刻がずれた等）は書かない（null。BOA-831 /code-review の指摘）
- * @returns {"same"|"refund"|null}
+ * {X}号艇を軸にしたときの2着に付ける ↑多め／↓少なめ（BOA-845、2026-10-12 ユーザー回答「推奨通り」）。
+ * 比べる基準 q_nw は「j が1着でなかったレースでの j の2着率」を、軸の艇を除いて合計100%に割り直した値
+ * （全レースの2着率だと1号艇が全組で ↑ になる。負けたレースだから2着が増えるだけで、スジの情報ではない）。
+ * 印は「|p − q_nw| ≥ 5pt」かつ「p の95%区間（Wilson）が q_nw をまたがない」かつ「軸の件数300以上」。丸める前の値で判定する
+ * 範囲は winFollowers と同じ scenario の全体のセルの3連単（返還のあったレースを除く）
+ * @param {object|null} scenario
+ * @param {ReturnType<typeof winFollowers>} f その軸の winFollowers
+ * @param {number} axis
+ * @returns {Array<"up"|"down"|null>} 1〜6号艇の印（軸の艇は null）
  */
-export const followNoteKind = (n, axisK) =>
-  n === axisK ? "same" : n < axisK ? "refund" : null;
+export function axisMarks(scenario, f, axis) {
+  const none = [null, null, null, null, null, null];
+  // 統計検証は軸が2〜6号艇の600組（24会場×5艇×相手5艇）だけ。1号艇を軸にしたときは確かめていないので印を出さない
+  if (!f || f.n < AXIS_MARK.minN || axis === 1) return none;
+  const rows = trifectaList(scenario?.cells?.all?.forms?.any?.tri);
+  const n = rows.reduce((a, [, c]) => a + c, 0);
+  if (!n) return none;
+  const first = [0, 0, 0, 0, 0, 0];
+  const second = [0, 0, 0, 0, 0, 0];
+  for (const [x, c] of rows) {
+    first[x[0] - 1] += c;
+    second[x[1] - 1] += c;
+  }
+  // 2着は1着でないレースでしか起きないので、j が2着の件数 ÷ j が1着でなかった件数
+  const raw = second.map((k, i) => (n - first[i] > 0 ? k / (n - first[i]) : 0));
+  raw[axis - 1] = 0;
+  const sum = raw.reduce((a, b) => a + b, 0);
+  return raw.map((r, i) => {
+    if (i === axis - 1 || !sum) return null;
+    const base = r / sum;
+    const p = f.second[i] / f.n;
+    const ci = wilsonInterval(f.second[i], f.n);
+    if (!ci || (base >= ci[0] && base <= ci[1])) return null;
+    if (p - base >= AXIS_MARK.th) return "up";
+    if (p - base <= -AXIS_MARK.th) return "down";
+    return null;
+  });
+}
 
 /**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）

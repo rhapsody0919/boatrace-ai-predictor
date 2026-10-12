@@ -258,12 +258,26 @@ export function judgeChecks(pr, checks) {
     };
   }
   const e2e = checks.find((c) => c.name === "e2e");
-  if (e2e && e2e.state !== "SUCCESS" && !RUNNING_STATES.has(e2e.state)) {
+  // BOA-769 D（2026-10-12〜）: 以前はRUNNING_STATESを素通し（何もしない）にしていたが、
+  // それだと走り終わる前にマージできてしまう。実際のPR #843（2026-09-25）でIN_PROGRESSを
+  // 「赤い」と誤判定した問題はverifyと同じ「ask」で両立する（待たせるだけで止めない）。
+  // 手元でのE2E全件実行をやめ、CIのshard実行（約20分）と、このガードだけでデグレを
+  // 検知する運用に変えたため、ここで待たせる意味が増した（AGENTS.md「検証・テスト」）。
+  if (e2e && RUNNING_STATES.has(e2e.state)) {
     return {
       decision: "ask",
       reason:
-        `PR #${pr} の e2e が ${e2e.state} です。e2eは本番Supabaseに直結していてDBの状態で落ちることが` +
-        `あるため自動では止めませんが、コードの退行でないことを確認してからマージしてください。`,
+        `PR #${pr} の e2e はまだ実行中です（${e2e.state}）。3つに分けたshardが並行で走り、` +
+        `実測で約20分かかります（BOA-769）。結果が出てからマージしてください（gh pr checks ${pr}）。`,
+    };
+  }
+  if (e2e && e2e.state !== "SUCCESS") {
+    return {
+      decision: "ask",
+      reason:
+        `PR #${pr} の e2e が ${e2e.state} です。e2eは録画（HAR）の再生で決定的に実行するが、` +
+        `録画に無い通信は本番へ素通しするため、DBの状態で落ちることがあります（ADR-0077）。` +
+        `自動では止めませんが、コードの退行でないことを確認してからマージしてください。`,
     };
   }
   return null;

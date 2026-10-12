@@ -9,6 +9,7 @@
  */
 import { blogPosts } from "../../src/data/blogPosts.js";
 import { AI_CRAWLER_USER_AGENTS } from "../../src/config/aiCrawlerBots.js";
+import { MORNING_DIGEST_META } from "../../src/data/morningDigestCopy.js";
 
 const baseUrl = process.argv[2] || "http://localhost:5173";
 const BOT_UA = AI_CRAWLER_USER_AGENTS[0]; // GPTBot、代表として1つ使う
@@ -41,9 +42,9 @@ async function main() {
       expectedText: "データ分析ツール",
     },
     {
-      // 日替わりの中身ではなく、静的な指標の定義が入っていることを見る（BOA-402）
+      // /today はボット向けの関数（BOA-848 第2段）。本日分が未生成（JST 05:30 ごろまで）でも出る見出しを見る
       pathName: "/today",
-      expectedText: "逃げが堅い選手",
+      expectedText: MORNING_DIGEST_META.h1,
     },
     ...blogPosts.slice(0, 5).map((post) => ({
       pathName: `/blog/${post.id}`,
