@@ -1891,7 +1891,8 @@ test.describe("思考アシスト: 1号艇を軸にしたときの2着・3着（
     await expect(row(2)).toContainText("38%");
     await expect(row(2)).toContainText("問わず28%");
     await expect(row(1)).toContainText("軸（1着）");
-    await expect(box).not.toContainText("3着 ");
+    // 3着の列は出さない（spec D-48 (3)）
+    await expect(box.getByRole("columnheader")).toHaveCount(0);
 
     await lensTab(page, "展開").click();
     await expect(sum).toContainText(
