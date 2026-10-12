@@ -60,6 +60,8 @@ function resolveBotPagePath(pathname, userAgent) {
 // 言語の接頭辞は付けない（選手ページは ja 専用）。スナップショットは sitemap に載る選手だけ作るので、
 // 作っていない番号はファイルが無く、vercel.json の catch-all で SPA の外枠に戻る（ブログと同じ）
 const RACER_PATH = /^\/racer\/(\d{4})$/;
+// /{en|zh-TW|ko}/blog と /{lang}/blog/{id}（BOA-848 第2段）
+const BLOG_LANG_PATH = /^\/(en|zh-TW|ko)\/blog(?:\/([^/]+))?$/;
 
 // pathname + User-Agentから、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
 // 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）
@@ -90,6 +92,17 @@ export function resolveSnapshotPath(pathname, userAgent) {
   const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
   if (blogMatch) {
     return `/ai-snapshots/blog/${blogMatch[1]}.html`;
+  }
+
+  // ブログ一覧と翻訳記事（BOA-848 第2段）。スナップショットは scripts/generate-ai-snapshots.js が作る。
+  // 翻訳の無い記事はファイルが無く、vercel.json の catch-all で SPA の外枠に戻る（ja の記事と同じ）
+  if (pathname === "/blog") return "/ai-snapshots/blog-list.html";
+  const langBlog = pathname.match(BLOG_LANG_PATH);
+  if (langBlog) {
+    const [, lang, id] = langBlog;
+    return id
+      ? `/ai-snapshots/${lang}/blog/${id}.html`
+      : `/ai-snapshots/${lang}/blog-list.html`;
   }
 
   return null;
