@@ -87,9 +87,11 @@ export function buildRacers({
 
   const boats = own.map((e) => {
     const tendency = tendencyByRacer.get(e.racer_id) ?? null;
+    // racer_id が NULL の行どうしを同じ選手とみなさない（NULL の行が節の他の艇の走を拾う）
     const meetRuns = windowEntries
       .filter(
         (r) =>
+          e.racer_id != null &&
           r.racer_id === e.racer_id &&
           r.race_id.slice(0, 10) >= meetStart &&
           r.race_id < raceId,

@@ -234,6 +234,26 @@ const call = async (query) => {
   check("今節に走っていない選手は meet_runs が空", b6?.meet_runs, []);
 }
 
+// ---- racer_id が NULL の艇は、他の NULL の行の走を拾わない ----
+{
+  const racers = buildRacers({
+    raceId: RACE,
+    windowEntries: [
+      entry(RACE, 1, null),
+      entry("2026-10-12-01-02", 3, null),
+      entry("2026-10-12-01-03", 5, null),
+    ],
+    windowConditions: [],
+    stats: [],
+    exhibitionRows: exh("2026-10-12-01-02", [6.8, 6.8, 6.7, 6.8, 6.8, 6.8]),
+  });
+  check(
+    "racer_id が NULL の艇は meet_runs が空",
+    racers?.boats[0].meet_runs,
+    [],
+  );
+}
+
 // ---- 出走表が無いレース ----
 check(
   "このレースの出走表が無ければ null",
