@@ -19,6 +19,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/ai-vs-human-comparison-ja.jpg": { width: 1000, height: 431 },
   "/images/blog/ai-vs-human-comparison-ko.jpg": { width: 1000, height: 416 },
   "/images/blog/ai-vs-human-comparison-zh-tw.jpg": { width: 1000, height: 422 },
+  "/images/blog/amagasaki-water-wind-guide.jpg": { width: 576, height: 391 },
   "/images/blog/ashiya-stats-en.jpg": { width: 1000, height: 272 },
   "/images/blog/ashiya-stats-ja.jpg": { width: 1000, height: 304 },
   "/images/blog/ashiya-stats-ko.jpg": { width: 1000, height: 274 },
