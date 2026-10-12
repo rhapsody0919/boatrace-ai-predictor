@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>一覧・ホーム・本日のデータ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0369a1}a:hover{color:#0284c7}
+</style>
+</helmet>
+<div style="width: 375px; min-height: 1180px; box-sizing: border-box; background: #f7f3ea; color: #0f172a; font-family: system-ui, -apple-system, 'Hiragino Sans', sans-serif; padding: 16px; display: flex; flex-direction: column; gap: 20px;">
+
+  <section aria-labelledby="l-list" style="display: flex; flex-direction: column; gap: 10px;">
+    <h2 id="l-list" style="margin: 0; font-size: 15px;">会場のレース一覧（RaceCard）</h2>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 12px; background: #fbf9f3; border: 1px solid #ddd4bf; border-left: 4px solid #b5651d; border-radius: 8px; text-decoration: none; color: #0f172a;">
+      <span style="font-weight: 700; width: 36px;">4R</span><span style="font-size: 13px; color: #475569;">12:14</span>
+      <span style="margin-left: auto; font-size: 12px; font-weight: 700; color: #7a3d00; background: #fbe3c8; border-radius: 999px; padding: 3px 9px; white-space: nowrap;">▲ 崩れやすい 65%</span>
+    </a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 12px; background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; text-decoration: none; color: #0f172a;">
+      <span style="font-weight: 700; width: 36px;">11R</span><span style="font-size: 13px; color: #475569;">22:18</span>
+      <span style="margin-left: auto; font-size: 12px; color: #475569; border: 1px solid #ddd4bf; border-radius: 999px; padding: 3px 9px;">中くらい 43%</span>
+    </a>
+    <a href="#" style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 10px 12px; background: #fbf9f3; border: 1px solid #ddd4bf; border-left: 4px solid #0b7a55; border-radius: 8px; text-decoration: none; color: #0f172a;">
+      <span style="font-weight: 700; width: 36px;">3R</span><span style="font-size: 13px; color: #475569;">12:08</span>
+      <span style="margin-left: auto; font-size: 12px; font-weight: 700; color: #065f43; background: #d8f0e5; border-radius: 999px; padding: 3px 9px;">堅め 21%</span>
+    </a>
+    <div style="font-size: 12px; color: #475569; line-height: 1.6;">展開予測の的中/外れのバッジは外す。真ん中の段は色なし・枠線だけで出す（出さないと「値が無い」と同じ見た目になる）</div>
+  </section>
+
+  <section aria-labelledby="l-home" style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+    <h2 id="l-home" style="margin: 0; font-size: 15px;">ホーム: 今日のイン崩れ注意度</h2>
+    <div style="font-size: 12px; color: #475569;">1号艇が1着を逃した割合が高い順</div>
+    <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 14px;">
+      <li><a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; border-radius: 6px; text-decoration: none; color: #0f172a; background: #f7f3ea;"><span>1</span><span>戸田 4R</span><b style="margin-left: auto;">65%</b><span style="font-size: 12px; color: #7a3d00;">▲ 崩れやすい</span></a></li>
+      <li><a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; border-radius: 6px; text-decoration: none; color: #0f172a; background: #f7f3ea;"><span>2</span><span>[会場] [R]</span><b style="margin-left: auto;">[値]</b></a></li>
+      <li><a href="#" style="display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 8px; border-radius: 6px; text-decoration: none; color: #0f172a; background: #f7f3ea;"><span>3</span><span>[会場] [R]</span><b style="margin-left: auto;">[値]</b></a></li>
+    </ol>
+    <div style="font-size: 12px; color: #475569;">堅めの順（低い順）も同じ形で5件</div>
+  </section>
+
+  <section aria-labelledby="l-today" style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+    <h2 id="l-today" style="margin: 0; font-size: 15px;">/today 本日のデータ一覧</h2>
+    <div style="display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 1.6;">
+      <div>[選手] 1コースの逃げ [n]%（全国 [n]走）</div>
+      <div style="font-size: 13px; color: #475569;">イン崩れ注意度 <b style="color: #0f172a;">65%</b>（崩れやすい）</div>
+    </div>
+    <div style="border-top: 1px solid #ddd4bf; padding-top: 8px; font-size: 13px; color: #475569; line-height: 1.6;">用語集: イン崩れ注意度＝1号艇と、他の艇で一番高い勝率の差が今日と同じくらいの過去レース（全国）で、1号艇が1着を逃した割合。以前の「当日の条件からAIが…」の説明はやめる</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":375,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

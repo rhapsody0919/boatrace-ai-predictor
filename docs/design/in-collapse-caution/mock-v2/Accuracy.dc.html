@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>段ごとの実績</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0369a1}a:hover{color:#0284c7}
+</style>
+</helmet>
+<div style="width: 375px; min-height: 1180px; box-sizing: border-box; background: #f7f3ea; color: #0f172a; font-family: system-ui, -apple-system, 'Hiragino Sans', sans-serif; padding: 16px; display: flex; flex-direction: column; gap: 16px;">
+  <h1 style="margin: 0; font-size: 20px;">イン崩れ注意度の段ごとの実績</h1>
+  <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.7;">注意度の段ごとに、実際に1号艇が1着を逃したレースの割合。段が上がるほど高くなっているかを確かめられます。</p>
+  <div role="tablist" aria-label="期間" style="display: flex; gap: 8px;">
+    <button type="button" role="tab" aria-selected="false" style="min-height: 44px; padding: 0 12px; border: 1px solid #ddd4bf; border-radius: 999px; background: #fbf9f3; color: #0f172a; font-size: 13px;">公開後（[日付]〜）</button>
+    <button type="button" role="tab" aria-selected="true" style="min-height: 44px; padding: 0 12px; border: 1px solid #6b500f; border-radius: 999px; background: #fbe9c8; color: #0f172a; font-size: 13px; font-weight: 700;">公開前の検証（2025/6/1〜2026/10/10）</button>
+  </div>
+  <div style="font-size: 12px; color: #475569; line-height: 1.6;">公開前の検証: 公開前のレースに、同じ作り方の値（前日までの過去レースだけで作る）を当てはめた結果。75,295レース</div>
+
+  <section aria-labelledby="acc-bars" style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 16px;">
+    <h2 id="acc-bars" style="margin: 0; font-size: 15px;">段ごとに1号艇が1着を逃した割合</h2>
+    <div style="position: relative; height: 14px;"><span style="position: absolute; left: 45.4%; transform: translateX(-50%); font-size: 11px; color: #475569; white-space: nowrap;">全国 45.4%</span></div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="font-weight: 700; color: #7a3d00;">崩れやすい（55%以上）</span><b>65.5%</b></div>
+      <div role="img" aria-label="65.5%、ぶれ幅64.9〜66.1%" style="position: relative; height: 12px; border-radius: 4px; background: #ece5d3;">
+        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 65.5%; border-radius: 4px; background: #b5651d;"></div>
+        <div style="position: absolute; left: 45.4%; top: -4px; bottom: -4px; border-left: 2px dashed #0f172a;"></div>
+      </div>
+      <div aria-hidden="true" style="position: relative; height: 4px; border-radius: 2px; background: #ece5d3;"><div style="position: absolute; left: 55%; width: 45%; top: 0; bottom: 0; background: #f3cfa9;"></div></div>
+      <div style="font-size: 12px; color: #475569;">22,310レース（全体の30%）・ぶれ幅 64.9〜66.1%</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="font-weight: 700; color: #334155;">中くらい（35〜55%）</span><b>42.6%</b></div>
+      <div role="img" aria-label="42.6%、ぶれ幅42.1〜43.1%" style="position: relative; height: 12px; border-radius: 4px; background: #ece5d3;">
+        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 42.6%; border-radius: 4px; background: #64748b;"></div>
+        <div style="position: absolute; left: 45.4%; top: -4px; bottom: -4px; border-left: 2px dashed #0f172a;"></div>
+      </div>
+      <div aria-hidden="true" style="position: relative; height: 4px; border-radius: 2px; background: #ece5d3;"><div style="position: absolute; left: 35%; width: 20%; top: 0; bottom: 0; background: #d5d9e0;"></div></div>
+      <div style="font-size: 12px; color: #475569;">34,195レース（全体の45%）・ぶれ幅 42.1〜43.1%</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; justify-content: space-between; font-size: 14px;"><span style="font-weight: 700; color: #065f43;">堅め（35%未満）</span><b>26.7%</b></div>
+      <div role="img" aria-label="26.7%、ぶれ幅26.0〜27.3%" style="position: relative; height: 12px; border-radius: 4px; background: #ece5d3;">
+        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 26.7%; border-radius: 4px; background: #0b7a55;"></div>
+        <div style="position: absolute; left: 45.4%; top: -4px; bottom: -4px; border-left: 2px dashed #0f172a;"></div>
+      </div>
+      <div aria-hidden="true" style="position: relative; height: 4px; border-radius: 2px; background: #ece5d3;"><div style="position: absolute; left: 0%; width: 35%; top: 0; bottom: 0; background: #bfe3d2;"></div></div>
+      <div style="font-size: 12px; color: #475569;">18,790レース（全体の25%）・ぶれ幅 26.0〜27.3%</div>
+    </div>
+
+    <div style="font-size: 12px; color: #475569;">棒の下の薄い帯＝その段の範囲。点線＝全国の全レース</div>
+  </section>
+
+  <section style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #475569; line-height: 1.7;">
+    <div style="font-size: 14px; font-weight: 700; color: #0f172a;">注意度の中身</div>
+    <div>1号艇の全国勝率と、2〜6号艇で一番高い全国勝率の差を0.5刻みの帯に分け、同じ帯の過去レース（全国、2019/4/1〜前日）で1号艇が1着を逃した割合です。準優勝戦・優勝戦は、それぞれの過去レースで分けています。</div>
+    <div>ぶれ幅は1レースずつ別々に起きたとみなした計算です。同じ日・同じ会場に偏るので、実際の幅はもう少し広くなります。</div>
+  </section>
+
+  <section style="background: #fbf9f3; border: 1px dashed #ddd4bf; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #475569; line-height: 1.6;">
+    <div style="font-weight: 700; color: #0f172a;">公開後の件数がまだ少ないとき</div>
+    <div>崩れやすい（55%以上）　[n]レース（少ないので割合は出さない）</div>
+    <div>公開から[n]日。30レースに届いた段から割合を出す</div>
+  </section>
+  <div style="font-size: 12px; color: #475569; line-height: 1.6;">展開予測の的中率・会場別の表と、的中レースの一覧（/hit-races はここへ移す）はなくなる。</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":375,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
