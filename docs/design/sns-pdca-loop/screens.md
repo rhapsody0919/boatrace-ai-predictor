@@ -28,6 +28,7 @@ flowchart TD
 | 6 | `DeadlineQueueList`（既存、`DeadlineQueuePanel.jsx`） | 既存拡張 | 行に「自動」「個別承認」「止めた」の区別と、止められる期限を足す |
 | 7 | `XSendPanel`（既存） | 変更なし | 全停止（paused）の既存ボタンはそのまま。#1 の「自動を切る」とは別物であることを、#1 の側の説明で示す |
 | 8 | `InsightCard`（既存、`SnsHubAdmin.jsx` 内） | 既存拡張 | `proposed` の案に「自動採用まで あと N 日（M/D）」を出す。risk-rules に触れる案は「自動では採用しない（理由）」を出す。`research_method='codex-weekly'` を「Codex の週次案」と表示する。採用・却下ボタンは今のまま |
+| 10 | X との連携（#1 の内部） | 新規 | X のトークンが無い・失効したときだけ「X と連携する」ボタンを出す。押すと X の許可画面（PKCE）へ移り、戻ってきたら「連携しました（@アカウント名）」と出す。トークンの値は画面に出さない（ADR 0093） |
 | 9 | `InsightHistoryEntry`（既存） | 既存拡張 | 自動で採用・却下されたものに「自動」の印を付ける（`decision_note` の書き方で区別できるようにし、列は足さない） |
 
 ## 文言（案。wording-editor で確認する）

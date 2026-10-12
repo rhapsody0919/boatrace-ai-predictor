@@ -25,3 +25,7 @@ insightの`proposed`→`active`昇格（週次デフォルト採用、spec.md要
 **是正**: 週次自動昇格の復元は行わず、`sns-hub`管理画面「戦略メモ」タブの`InsightCard`に手動の「採用」ボタンを追加し、人間が個別にactive化する運用に切り替えた（`api/admin/sns-hub/insights/[id]/approve.js`）。risk-rules照合は参考の警告表示として同エンドポイント内で行うが、承認自体はブロックしない（risk-rules.json自体の既存方針を踏襲）。`getProposedInsightsForPromotion()`/`activateInsight()`/`retireInsight()`（`scripts/lib/snsStrategyInsights.js`）と`promote-strategy-insights.js`本体は削除した。
 
 この変更により、上記「却下した選択肢」の1点目・2点目で比較したトレードオフの前提（Routine側で行うか・独立cronにするか）自体が変わり、「そもそも自動処理にしない」という第3の選択肢を採用したことになる。理由: 本プロジェクトのSNS投稿系はドラフト承認・ネタ承認を含め一貫して人間の個別承認を必須とする設計になっており、insight昇格だけを唯一の自動判定にする一貫性の無さより、既存の承認UIパターン（却下ボタンと対になる採用ボタン）に揃える方が実装・運用コストの両面で合理的と判断した。
+
+## 2026-10-12追記: 週次の自動採用に戻す
+
+ユーザー決定（2026-10-12、SNS PDCA ループ）で「週1回の改善案は止めなければ採用、risk-rules に触れる案は自動で外す」に戻す。実行主体は Routine ではなく Vercel Cron `sns-insights`（ADR-0066）。risk-rules の照合は `scripts/lib/riskRules.js` の決定的なパターン一致（ADR 0028）なので、Claude の判断を要しない。2026-09-05 追記の手動の「採用」「却下」ボタンは残し、期限前に手で決めてもよい。設計は docs/design/sns-pdca-loop/plan.md §6。
