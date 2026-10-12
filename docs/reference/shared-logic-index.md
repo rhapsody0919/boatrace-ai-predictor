@@ -31,7 +31,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/boatcast/oritenSchema.js` | オリジナル展示・モーター使用開始日の保存先（マイグレーション091）が、接続先のDBに適用済みかの判定。 | detectBoatcastSchema, clearBoatcastSchemaCache, ORITEN_TABLES, MOTOR_START_TABLES, BOATCAST_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/boatcast/probe.js` | BOATCASTへ、Vercel（実際の本番のリージョン）から到達できるかの確認（probe）。 | createBoatcastProbeHandler |
 | `scripts/lib/boatcast/publicMap.js` | BOATCASTのオリジナル展示（bc_oriten）の「公開マップ」（会場 × 項目）。事前に凍結した静的な設定。 | venueEntry, publicVenueCodes, isPublicVenue, venueOfRaceId, expectedValueRows ほか4件 |
-| `scripts/lib/botHtmlParity.js` | ボット向け HTML（ADR 0089）と人の画面の照合に使う純粋な関数。 | extractBotItems, canonicalJson, normalizeHref, findMissing, classifyHtml ほか4件 |
+| `scripts/lib/botHtmlParity.js` | ボット向け HTML（ADR 0089）と人の画面の照合に使う純粋な関数。 | extractBotItems, canonicalJson, normalizeHref, findMissing, classifyHtml ほか5件 |
 | `scripts/lib/campaignResultRetrospective.js` | 企画エントリの結果確定後、「なぜ当たった/外れたか」を実データで説明する | buildResultRetrospective |
 | `scripts/lib/campaignVolatilityModel.js` | イン崩れ狙い企画（docs/design/sns-hub-campaign-pipeline/）用の買い目生成モデル。 | computeCampaignPicks, MODEL_NAME |
 | `scripts/lib/cancellationStatus.js` | レース中止・順延検出の状態遷移ロジック（BOA-254） | isCancellationConfirmed, computeCancellationTransition, CONFIRM_STREAK_THRESHOLD, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
@@ -181,14 +181,14 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/venueJobSupport.js` | 会場ごとに取得する日次ジョブ（B3 会場別モーター成績・B4 進入コース別選手成績。tasks.md T4b-14・T4b-13）の | updateHealthForDate, isTransientReason, reasonFromError, previouslySettledVenues, driftAlertsToReport |
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
-| `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun |
+| `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups |
 | `scripts/lib/snsCampaigns.js` | 企画型（キャンペーン型）SNS投稿パイプライン用 sns_campaigns / sns_campaign_entries | createCampaign, getCampaign, getActiveCampaigns, findQualifyingRaces, getRaceIdsWithResults ほか6件 |
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
 | `scripts/lib/stripNonCode.js` | コメント・文字列・テンプレート・正規表現リテラルの中身を空白に置き換える簡易な字句解析（純関数）。 | stripNonCode |
-| `scripts/lib/supabaseClient.js` | バッチ処理用 Supabaseクライアント | fetchAll, supabase, isSupabaseEnabled, VENUE_NAMES, VENUE_CODES |
+| `scripts/lib/supabaseClient.js` | — | fetchAll, supabase, isSupabaseEnabled, VENUE_CODES |
 | `scripts/lib/turnPrediction.js` | 1マーク展開予測ロジック v5（バックエンド用） | predictFirstMarkV2, predictFirstMark |
 | `scripts/lib/unchangedRows.js` | 「変更の無い行は書かない」ための共通ライブラリ（WS8(b)、BOA-349） | normalizeTimestamp, roundToScale, normalizeValue, diffRows, planWriteAll ほか8件 |
 | `scripts/lib/unifiedModel.js` | 新AI予想モデル「unified」のスコアリング本体（AI予想モデル大規模改修 Task6b/Task8, ADR0009, FR1/FR2/FR6） | calculateUnifiedScores, softmaxProbabilities |
@@ -204,6 +204,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueMotorStats/parsers/miyajimaPdf.js` | miyajimaPdf - 宮島専用パーサー（BOA-264） | parseMiyajimaMotorPdf |
 | `scripts/lib/venueMotorStats/venueConfig.js` | venueConfig - 会場別モーター成績スクレイピング設定（BOA-264） | VENUE_MOTOR_STATS_CONFIG, EXCLUDED_VENUES |
 | `scripts/lib/venueMotorStatsJob.js` | 会場別モーター成績（B3、venue_motor_stats）の共通ラッパ向けハンドラー（tasks.md T4b-14-1）。 | runVenueMotorStatsJob, VENUE_MOTOR_STATS_CONCURRENCY |
+| `scripts/lib/venueNames.js` | 会場コードの正準表。Node・Edge共通、副作用なし。 | VENUE_NAMES |
 | `scripts/lib/venueParameters.js` | 会場別パラメータ | getVolatilityThreshold, getVenueType, VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG, VENUE_VOLATILITY_THRESHOLD ほか2件 |
 | `scripts/lib/venueTechniquePeriod.js` | 会場の決まり手を期間（直近90日・直近365日）ごとに数える（BOA-430 思考アシスト、ADR 0088、マイグレーション 134）。 | addDays, periodRange, sourceRanges, fromLiveRow, fromArchiveRow ほか8件 |
 | `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | boat1StReason, calculateVolatilityComposite, toVolatilityPercentile |
@@ -234,9 +235,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
 | `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか9件 |
 | `src/utils/assistEvents.js` | 思考アシスト（BOA-430）の GA4 のイベント。画面の操作（reducer の action）と押す前の状態から、送るイベントを決める純関数。 | assistEventOf |
-| `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか24件 |
+| `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか25件 |
 | `src/utils/assistSession.js` | 思考アシストの買い目などを、同じタブの中でレースごとに残す（sessionStorage）。 | parseAssistSession, loadAssistSession, saveAssistSession, ASSIST_SESSION_PREFIX, ASSIST_SESSION_MAX ほか1件 |
-| `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか22件 |
+| `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか29件 |
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
@@ -264,6 +265,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/prevResult.js` | 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と | finishMarkKeyOf, meetPrevRunState, meetPrevRunWhenParams |
 | `src/utils/raceCancellation.js` | 開催中止・順延の判定を1箇所に集める。 | hasRaceResult, isRaceCancelled, isCancellationSuspected, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
+| `src/utils/raceDetailHeading.js` | レース詳細（/race/:raceId）の見出し・title・description・canonical・パンくずの組み方。 | getSeriesDayLabel, getStageChip, getRaceDetailHeading, getRaceDetailMeta, getRaceListLink ほか1件 |
 | `src/utils/raceId.js` | selectedRace からDBの race_id（YYYY-MM-DD-VV-RR）を導出する | getRaceId, parseRaceId |
 | `src/utils/raceListDisplay.js` | トップの会場カード（VenueGridCard）と会場ページのレースカード（RaceCard）が出す文字の組み方。 | venueNameOf, venueCardHeadline, gradeConfigOf, raceNumberLabel, deadlineValueText |
 | `src/utils/raceOutcome.js` | レースの成立状態（通常・一部返還・不成立）と、返還艇・的中判定の可否を1箇所で決める（BOA-543）。 | getRaceOutcomeState, getRefundBoats, isBoatRefunded, isJudgeable, isBetJudgeable ほか11件 |
@@ -277,6 +279,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか2件 |
+| `src/utils/shareEvents.js` | AI用にコピー・SNS シェアの GA4 のイベント（BOA-822 の計測、docs/design/in-collapse-caution/measureme… | aiCopyEventOf, raceShareEventOf, SHARE_CHANNELS, SHARE_KINDS |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
 | `src/utils/snsDraftDiff.js` | 投稿用の値だけ。署名URL・状態変更は本文差分に含めない。 | draftContent, characterDiff, numericDiff, compareDraftSnapshots |
 | `src/utils/snsMonthCalendar.js` | — | calendarDay, calendarState, calendarRowDay, calendarVenue, calendarMonth ほか3件 |
@@ -328,4 +331,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 293 ファイル / export 1588 件。
+対象 296 ファイル / export 1609 件。

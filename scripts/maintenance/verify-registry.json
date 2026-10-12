@@ -532,6 +532,21 @@
       "guards": "ボット向け HTML の関数（ADR 0089。api/bot-page/top.js・api/bot-page/venue/[code].js、中身は api/_lib/botPage.js）。材料の取得と時計を差し替えてハンドラを呼び、成功時の 200・Content-Type・Cache-Control（s-maxage=300・stale-if-error=3600）、title・description・canonical・robots が人のページと同じ値、選手名・オッズ等が入らないこと、材料が取れない・壊れたら 503・Retry-After・no-store で「開催なし」にしないこと、0件だけ「開催なし」の 200、会場コードは 1〜24（0埋めなし）だけで他は 404、値のエスケープ、材料の60秒の使い回し（61秒後に取り直す・同時の呼び出しは1回の取得）、vercel.json で syd1・edge でないこと"
     },
     {
+      "script": "verify-bot-today-function.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML の /today の関数（ADR 0089 第2段・BOA-848。api/bot-page/today.js、中身は api/_lib/botToday.js）。本番の morning_digest のフィクスチャで、head が人の /today と同じ値・JSON-LD が共通の3つとパンくず、本文が人の画面の部分集合（見出し・日付と開催数・期間・注目レース・各セクションの名前と件数・初期表示の6枚のレース・用語・免責）、選手の値を select せず本文にも出さないこと、取得の失敗を「まだ公開されていません」にせず 503、行が無い・generated_at が NULL のときだけ「まだ公開されていません」、日付は JST の今日、60秒の使い回し、カードの枚数が人の DigestCardGrid と同じこと"
+    },
+    {
+      "script": "verify-bot-race-function.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML のレース詳細の関数（ADR 0089 第2段・BOA-848。api/bot-page/race/[id].js・[lang]/race/[id].js、中身は api/_lib/botRace.js）。本番の /api/predictions のフィクスチャで、head が人のレース詳細と同じ関数（src/utils/raceDetailHeading.js）の値・hreflang 4言語・JSON-LD が共通の3つとパンくず、本文が人の初期表示の部分集合（パンくず・グレードと節タイトル・会場名と NR・種別・日目（他レースで補う、丸一日中止なら出さない）・レース一覧へのリンク・データ分析結果の見出しと締切（結果が出たら消す））、出走表の選手・オッズ・払戻・着順・タイムが入らないこと（ADR 0089 決定7）、本日（JST）の id だけで他は 404、取得の失敗・0件は 503、無い id は 404、60秒の使い回し、人の RaceDetailPage が同じ関数を使い続けていること"
+    },
+    {
+      "script": "verify-predictions-cache.js",
+      "tier": "ci",
+      "guards": "/api/predictions/{date} の CDN キャッシュの長さ（api/_lib/predictionsCache.js）。JST の今日・未来は s-maxage=300、今日より前だけ s-maxage=86400。JST 0:00〜8:59（UTC ではまだ前日）に当日を1日キャッシュにしないこと（以前の UTC 判定の不具合）、日付の境目、api/predictions/[date].js が同じ関数を使い UTC の日付で判定していないこと"
+    },
+    {
       "script": "verify-venue-series-title.js",
       "tier": "ci",
       "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
@@ -681,6 +696,11 @@
       "script": "verify-digest-motor-race-count.js",
       "tier": "ci",
       "guards": "「本日のデータ一覧」の行に付ける会場公式のモーター出走数（motor_race_count、BOA-702）。会場とモーター番号の組で引くこと、2連率の無い行・番号が分からない行は NULL、全行に同じキーを持たせること"
+    },
+    {
+      "script": "verify-share-events.js",
+      "tier": "ci",
+      "guards": "AI用にコピー・SNS シェアの GA4 のイベント（ai_copy・race_share、BOA-822 の計測）の名前とパラメータ、レースが分からない・種類の無いシェアは送らないこと、GA4 の予約語を使わないこと"
     },
     {
       "script": "verify-morning-digest.js",
@@ -916,6 +936,11 @@
       "guards": "会場の決まり手の期間の表 venue_technique_period_stats（BOA-430・ADR 0088・マイグレーション 134）。CI では集計の純関数（scripts/lib/venueTechniquePeriod.js）を固定データで確かめる: 期間は集計日の前日まで N 日、長期の表（〜2025-12-02）と新しい表（2025-12-03〜）の境目と 2025-12-02 の重複を数えないこと、総数＝決まり手の件数の合計、90日 ⊂ 365日、除外（中止・不成立・1着なし・決まり手なし）、長期の表が0件なら失敗（新しい表だけを数えた 2,196件の誤りの再発防止）。VERIFY_PRODUCTION=1 のときだけ本番の表を読み、last_updated が2日より古い行・総数の不一致・365日の行が無い会場があれば exit 1。nightly-verify-db.yml が毎晩この形で実行する"
     },
     {
+      "script": "verify-venue-water-profiles.js",
+      "tier": "ci",
+      "guards": "24会場の水質・干満差が BOAT RACE 公式の場データ（stadium?jcd=01〜24、2026/06/30現在、2026-10-12 照合）と一致すること。照合済みの表を固定データで持ち、src/data/venueWaterProfiles.js・getVenueCharacteristics が venues.water_type（初期データが7会場で誤り、唐津を海水と表示した）を使わないこと・思考アシストの潮を水質から推定しないこと（蒲郡・常滑・津は干満差なし）・英語/繁体字/韓国語の会場ガイドの facts.water・001_schema.sql の初期データを確かめる"
+    },
+    {
       "script": "verify-volatility-accuracy-heading.js",
       "tier": "ci",
       "guards": "精度ページの「イン崩れ予測の実績」の見出しが、集計（calculate-unified-volatility-accuracy.js）の期間と合っていること（BOA-717）。集計が期間を絞っていない間は、4言語の見出しが「直近N日」を名乗らず、運用開始日（2026-08-11）を書いていること。集計に期間の条件を足すと失敗するので、見出しを合わせ直してから更新する"
@@ -999,6 +1024,11 @@
       "script": "verify-sns-shorts-send.js",
       "tier": "ci",
       "guards": "依頼9・10: YouTube Shorts案B（private insert→処理確認→public update→実公開確認）・PT/JST日跨ぎの日次枠・upload lease失効時の非公開残置・処理pollの上限3回・update応答喪失時の要照合（142をPGlite、モックadapter、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-approval-posted.js",
+      "tier": "ci",
+      "guards": "依頼11: 投稿済み（posted_at非NULLまたはjob.state=posted、アーカイブ後も含む）X・YouTube下書きの承認対象編集を拒否し承認記録・jobを保持（144をPGlite、外部接続なし）"
     }
   ]
 }

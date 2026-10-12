@@ -43,20 +43,20 @@ const SITE_ORIGIN = "https://www.boat-ai.jp";
 
 // 成功時のヘッダー。scripts/verification/verify-cache-config.js がこのファイルの最初の "Cache-Control" を読むので、
 // 失敗時のヘッダーより前に置く（docs/reference/cache-strategy.md パターン B）
-const SUCCESS_HEADERS = {
+export const SUCCESS_HEADERS = {
   "Content-Type": "text/html; charset=utf-8",
   "Cache-Control":
     "public, max-age=0, s-maxage=300, stale-while-revalidate=60, stale-if-error=3600",
 };
 
-const UNAVAILABLE_HEADERS = {
+export const UNAVAILABLE_HEADERS = {
   "Content-Type": "text/plain; charset=utf-8",
   "Cache-Control": "no-store",
   "Retry-After": "300",
 };
 
 // 404・405・400 は CDN に残さない（任意のパスでキャッシュのキーを増やさない）
-const CLIENT_ERROR_HEADERS = {
+export const CLIENT_ERROR_HEADERS = {
   "Content-Type": "text/plain; charset=utf-8",
   "Cache-Control": "no-store",
 };
@@ -258,7 +258,7 @@ export function originOf(headers) {
  * @param {{path: string, lang: string, jsonLd: object[]}} extras - path は hreflang を組むパス（言語プレフィックスなし）、
  *   lang は html の lang、jsonLd は人のページと同じ JSON-LD
  */
-function documentHtml(meta, bodyHtml, { path, lang, jsonLd }) {
+export function documentHtml(meta, bodyHtml, { path, lang, jsonLd }) {
   const headExtras = [
     ...getHreflangAlternates(path, SITE_ORIGIN).map(
       ({ hreflang, href }) =>

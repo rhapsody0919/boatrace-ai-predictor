@@ -437,14 +437,46 @@ const flow = boardModel({
   finalRound: true,
 });
 check(
-  "展開レンズ（展示後）: 展示ST。5号艇の F は「F .01（フライング）」と書いて最良の候補から外し、最良は4号艇（.05）（BOA-801 2）",
-  flow.rows[4].dotText === "F .01（フライング）" &&
-    flow.rows[4].flying === true &&
-    flow.rows[3].flying === false &&
-    flow.rows
-      .filter((r) => r.dotBest)
+  "展開レンズ（展示後）: 横軸は展示前と同じ平均ST（このコース）。展示ST は図にしない（spec D-47 (1)）",
+  flow.title === "平均ST（このコース・直近30走） 左ほど早い" &&
+    flow.basis === "course" &&
+    flow.rows[2].dotText === ".142" &&
+    flow.rows.every((r) => !r.flying),
+  flow.title,
+);
+check(
+  "展開レンズ（展示後）: 各艇に展示タイムの6艇の順位（6.84・6.84・6.89・6.83・6.90・6.89 → 2,2,4,1,6,4。同タイムは同じ順位。spec D-47 (2)）",
+  flow.rows.map((r) => r.exhRank).join() === "2,2,4,1,6,4" &&
+    boardModel({ lens: "flow", stage: "pre", racers }).rows.every(
+      (r) => r.exhRank == null,
+    ),
+  flow.rows.map((r) => r.exhRank).join(),
+);
+check(
+  "展開レンズ（展示後）: 点の値を押すと展示ST の6艇比較。読み上げは見えている平均ST から始める",
+  flow.rows.every((r) => r.dotMetric === "exh_st") &&
+    flow.rows[0].dotLabel ===
+      "平均ST 0.148、展示ST（本番のスタートとは別）を6艇で比べる",
+  flow.rows[0].dotLabel,
+);
+const exhCmp = boardModel({
+  lens: "flow",
+  stage: "post",
+  racers,
+  metric: "exh_st",
+});
+check(
+  "展示ST の6艇比較: 名前は「展示ST（本番のスタートとは別）」、戻るは「平均ST（このコース・直近30走）に戻す」。5号艇の F は .00 より左（BOA-801 2）、最良は F を外して4号艇（.05）",
+  exhCmp.title === "展示ST（本番のスタートとは別）を6艇で比べる" &&
+    exhCmp.back === "平均ST（このコース・直近30走）に戻す" &&
+    exhCmp.rows[4].x < 0 &&
+    exhCmp.rows[4].flying === true &&
+    exhCmp.rows.filter((r) => r.flying).length === 1 &&
+    exhCmp.rows
+      .filter((r) => r.nums[0].best)
       .map((r) => r.boat)
       .join() === "4",
+  JSON.stringify([exhCmp.title, exhCmp.back]),
 );
 const flowPre = boardModel({
   lens: "flow",
@@ -518,9 +550,9 @@ check(
   flowOverall.title,
 );
 check(
-  "展示の後は横軸が展示ST で、切り替えを出さない",
+  "展示の後も平均ST の切り替えを出す（spec D-47 (1)）",
   boardModel({ lens: "flow", stage: "post", racers, stBasis: "overall" })
-    .basis === null,
+    .basis === "overall",
 );
 check(
   "v16 の保存が無いと分かったレースだけ、軸レンズに平均ST を出せない理由（読み込み中は出さない。BOA-808 6）",
@@ -753,6 +785,34 @@ check(
   );
 }
 
+// ---- 相手レンズの軸の艇（BOA-845、spec D-48）----
+{
+  const st = { lens: "place", deep: null, metric: null, placeAxis: null };
+  check(
+    "イベント: 軸の艇の選び替えは assist_place_axis（assist_boat を流用）。選んでいる艇の押し直しは送らない",
+    JSON.stringify(assistEventOf(st, { type: "placeAxis", boat: 4 })) ===
+      JSON.stringify({
+        name: "assist_place_axis",
+        params: { assist_boat: 4, assist_lens: "place" },
+      }) &&
+      assistEventOf({ ...st, placeAxis: 4 }, { type: "placeAxis", boat: 4 }) ===
+        null,
+  );
+}
+
+// ---- 展開レンズの形の選択（spec D-47、承認モック v2 ④）----
+{
+  const st = { lens: "flow", deep: null, metric: null, flowForm: "kado" };
+  check(
+    "イベント: 形の選び替えは assist_flow_form。選んでいる形の押し直しは送らない",
+    JSON.stringify(assistEventOf(st, { type: "flowForm", form: "d2" })) ===
+      JSON.stringify({
+        name: "assist_flow_form",
+        params: { assist_form: "d2" },
+      }) && assistEventOf(st, { type: "flowForm", form: "kado" }) === null,
+  );
+}
+
 // ---- 軸・買い目で共通の着順（BOA-831、spec D-44）----
 {
   const st = { lens: "axis", deep: null, metric: null, target: 1 };
@@ -818,18 +878,20 @@ check(
     mode: "equal",
     target: 3,
     lens: "bet",
+    placeAxis: 4,
     deep: 2,
     sheet: "mark",
   };
   const back = parseAssistSession(serializeAssistSession(st));
   check(
-    "保存: 買い目・予算・配分の方式・着順・レンズを戻し、深掘り・シートは残さない",
+    "保存: 買い目・予算・配分の方式・着順・レンズ・相手レンズの軸の艇（BOA-845）を戻し、深掘り・シートは残さない",
     JSON.stringify([...back.bets[1]]) === "[1]" &&
       JSON.stringify([...back.bets[3]]) === "[2,3,4]" &&
       back.budget === "2000" &&
       back.mode === "equal" &&
       back.target === 3 &&
       back.lens === "bet" &&
+      back.placeAxis === 4 &&
       !("deep" in back) &&
       !("sheet" in back),
     JSON.stringify(back),
@@ -841,14 +903,15 @@ check(
       parseAssistSession('{"x":1}') === null &&
       (() => {
         const v = parseAssistSession(
-          '{"bets":{"1":[1,9,"2",1],"2":[],"3":[]},"budget":"abc","mode":"kelly","target":5,"lens":"zzz"}',
+          '{"bets":{"1":[1,9,"2",1],"2":[],"3":[]},"budget":"abc","mode":"kelly","target":5,"lens":"zzz","placeAxis":7}',
         );
         return (
           JSON.stringify([...v.bets[1]]) === "[1]" &&
           !("budget" in v) &&
           !("mode" in v) &&
           !("target" in v) &&
-          !("lens" in v)
+          !("lens" in v) &&
+          !("placeAxis" in v)
         );
       })(),
   );

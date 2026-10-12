@@ -8,9 +8,18 @@
  * （カウントダウン・受付中など）や、ボットに出さない表（選手・オッズ）があるので、逆向きは見ない。
  */
 import * as cheerio from "cheerio";
+import { failedSnapshotGroups } from "./snapshotStatus.js";
 
-/** 本文の比較では空白（改行・タブ・全角でない空白）を全部除く。人の DOM は要素の境目に改行が入るため */
-export const normalizeText = (s) => String(s ?? "").replace(/\s+/g, "");
+/**
+ * 本文の比較では空白（改行・タブ・全角でない空白）を全部除く。人の DOM は要素の境目に改行が入るため。
+ * 英字の大文字・小文字も区別しない。人の innerText は CSS の text-transform を反映する
+ * （会場ページの締切のラベル .info-item .label は uppercase。en で「Betting deadline」が「BETTING DEADLINE」になる、
+ * 言語版の Preview の照合で分かった）
+ */
+export const normalizeText = (s) =>
+  String(s ?? "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 
 /**
  * ボット向け HTML から、照合する文字列を取り出す
@@ -236,6 +245,34 @@ export function pickOpenVenues(json, n) {
     .slice(0, n);
 }
 
+/**
+ * 照合するページの一覧。/ と開催中の会場のほかに、言語版（BOA-848 第2段）の /{lang}/ と /{lang}/venue/{先頭の会場} を候補にし、
+ * isRouted（ボット向け HTML へ振り分けているか）が真のものだけを照合する。配線する前の言語版は skipped に入る
+ * （配線の PR が入れば、照合の側を変えずに照合するページに加わる）
+ *
+ * /today と、extraPaths（本日のレース詳細など、BOA-848 第2段）も同じく、振り分けているときだけ照合する
+ *
+ * @param {number[]} venueCodes - 開催中の会場コード（pickOpenVenues の順）
+ * @param {{langs: string[], isRouted: (path: string) => boolean, extraPaths?: string[]}} options
+ * @returns {{checked: string[], skipped: string[]}}
+ */
+export function parityPaths(venueCodes, { langs, isRouted, extraPaths = [] }) {
+  const candidates = [
+    "/",
+    ...venueCodes.map((c) => `/venue/${c}`),
+    "/today",
+    ...extraPaths,
+    ...langs.flatMap((lang) => [
+      `/${lang}/`,
+      ...(venueCodes.length > 0 ? [`/${lang}/venue/${venueCodes[0]}`] : []),
+    ]),
+  ];
+  return {
+    checked: candidates.filter((p) => isRouted(p)),
+    skipped: candidates.filter((p) => !isRouted(p)),
+  };
+}
+
 /** 中央値（空なら null） */
 export function median(values) {
   const xs = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
@@ -276,20 +313,39 @@ export function evaluateSnapshotStatus(httpStatus, body) {
   if (typeof status?.ok !== "boolean" || !blog) {
     return { level: "fail", message: "status.json の形が違う" };
   }
+  // 翻訳記事・一覧（BOA-848 第2段）の件数。無ければ（足す前の版）出さない
+  const i18n =
+    status.blogI18n && !("fatalError" in status.blogI18n)
+      ? Object.entries(status.blogI18n)
+          .map(([lang, e]) => `${lang} ${e.succeeded}/${e.total}`)
+          .join("・")
+      : "";
+  const list = status.blogList
+    ? `一覧 ${status.blogList.succeeded}/${status.blogList.total}`
+    : "";
+  const extra = [i18n && `翻訳 ${i18n}`, list].filter(Boolean).join("、");
   if (status.ok) {
     return {
       level: "ok",
-      message: `ブログ ${blog.succeeded}/${blog.total} 件（${status.generatedAt} のビルド）`,
+      message: `ブログ ${blog.succeeded}/${blog.total} 件${extra ? `（${extra}）` : ""}（${status.generatedAt} のビルド）`,
     };
   }
+  const groups = failedSnapshotGroups(status);
+  const groupText = groups.length > 0 ? `。${groups.join("。")}` : "";
   if (blog.fatalError) {
     return {
       level: "fail",
-      message: `ブログの生成が途中で止まった（${status.generatedAt} のビルド）: ${blog.fatalError}`,
+      message: `ブログの生成が途中で止まった（${status.generatedAt} のビルド）: ${blog.fatalError}${groupText}`,
+    };
+  }
+  if ((blog.failedIds ?? []).length === 0 && groups.length > 0) {
+    return {
+      level: "fail",
+      message: `ブログ ${blog.succeeded}/${blog.total} 件${groupText}（${status.generatedAt} のビルド）`,
     };
   }
   return {
     level: "fail",
-    message: `ブログ ${blog.succeeded}/${blog.total} 件。失敗: ${(blog.failedIds ?? []).join(", ")}（${status.generatedAt} のビルド）`,
+    message: `ブログ ${blog.succeeded}/${blog.total} 件。失敗: ${(blog.failedIds ?? []).join(", ")}${groupText}（${status.generatedAt} のビルド）`,
   };
 }

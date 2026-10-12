@@ -19,7 +19,6 @@ import {
 import { supabaseDataService } from "../services/supabaseDataService";
 import { latestSnapshotWith } from "../utils/oddsMath";
 import { raceRound, stageFromExhibition } from "../utils/assistModel";
-import { factsScope } from "../utils/assistSummary";
 import { parseRaceId } from "../utils/raceId";
 
 /**
@@ -121,26 +120,6 @@ export function useThinkingAssistData(
   const na = useAnalogyScenario(raceId, keys?.NA, v16Stage, Boolean(keys?.NA));
   // 会場の全レース（堅い？荒れる？の材料の細い点線、参考。FR-2・D-21）
   const va = useAnalogyScenario(raceId, keys?.VA, v16Stage, Boolean(keys?.VA));
-  // 軸の大きい数字と同じ範囲（1号艇の差がつく材料の範囲）の scenario。「1号艇が1着のとき、2着・3着に来たのは」の表
-  // （BOA-831 案1b、spec D-44 (3)）。NC・NCR は上で取っているので、VC のときだけ取り足す
-  const axisKey =
-    factsScope(facts.data?.facts ?? null, today, 1, round)?.key ?? null;
-  const vc = useAnalogyScenario(
-    raceId,
-    keys?.VC,
-    v16Stage,
-    Boolean(keys?.VC && axisKey === keys.VC),
-  );
-  const axis =
-    axisKey == null
-      ? null
-      : axisKey === keys?.NC
-        ? nc
-        : axisKey === keys?.NCR
-          ? ncr
-          : axisKey === keys?.VC
-            ? vc
-            : null;
   // 類似レース: 展示後で v16 の展示後の段が無い（neighbors が無い）ときは、出走表の時点の値で描く（screens「状態」）。
   // 展示後の段の取得の失敗は「段が無い」と分けて失敗のまま返す（FR-11、Codex 依頼27 F02）
   const similarRacecard = useAnalogySimilar(raceId, "racecard", enabled);
@@ -215,7 +194,7 @@ export function useThinkingAssistData(
     defaultStage,
     round,
     facts,
-    scenario: { nc, ncr, na, va, axis, byKey: scenarios },
+    scenario: { nc, ncr, na, va, byKey: scenarios },
     similar,
     maintenance,
     original,

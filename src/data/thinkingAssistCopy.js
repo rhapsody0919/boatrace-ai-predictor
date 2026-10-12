@@ -127,6 +127,10 @@ export const ASSIST_COPY = Object.freeze({
   bestHidden: "（6艇で一番）",
   compareAria: (label, value) => `${label} ${value}、6艇で比べる`,
   backToFigure: "図を戻す",
+  backTo: (label) => `${label}に戻す`,
+  // 展開レンズの展示後の点: 見えている値は平均ST、押すと展示ST の6艇比較（spec D-47 (1)）
+  compareExhStAria: (value, exhLabel) =>
+    `平均ST ${value}、${exhLabel}を6艇で比べる`,
   absent: "欠場",
   absentRemoved: (boats, k) =>
     `${boats.join("・")}号艇の欠場で${k}点を外しました`,
@@ -247,11 +251,25 @@ export const ASSIST_COPY = Object.freeze({
   targets: TARGET_LABEL,
   // 買い目だけの切り替え（軸は1着だけ、2着以内・3着以内は相手レンズ。spec D-46）
   targetGroup: "何着までで見るか",
-  // 1号艇が1着のとき、2着・3着に来たのは（BOA-831 案1b、spec D-44 (3)）
-  // 1号艇を軸にしたときだけの表と分かる見出し（v4。ほかの艇が1着のときは BOA-845）
-  followHeading: (boat) => `${boat}号艇を軸にしたときの2着・3着`,
-  followOnly: (boat) =>
-    `${boat}号艇が1着のときだけ（ほかの艇が1着のときはまだ出ない）`,
+  // 相手レンズの「{X}号艇を軸にしたときの2着」（BOA-845、spec D-48、承認モック v3）
+  followHeading: (boat) => `${boat}号艇を軸にしたときの2着`,
+  followAxisLabel: "軸（1着）",
+  followAxisGroup: "軸にする艇",
+  followAxisBtn: "軸",
+  followConcl: (x, y, p) => [`${x}号艇が1着なら、2着は`, `${y}号艇 ${p}%`],
+  followNoThird:
+    "3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る",
+  followLegendAxis: (x) => `${x}号艇が1着のときの2着`,
+  // 印（BOA-845、2026-10-12 ユーザー回答「推奨通り」）。比べた数字は出さず、印の意味を表の下に1行
+  followMark: Object.freeze({ up: "↑多め", down: "↓少なめ" }),
+  followMarkNote: (x) =>
+    `↑多め・↓少なめ＝${x}号艇が1着のときの2着率を、その艇が1着でなかったレース全体での2着率（${x}号艇を除いて割り直し）と比べて5ポイント以上の差（件数が300件以上で、ぶれの範囲を超えるものだけ）`,
+  followSonar: "着順の流れを見る（龍神ソナー）",
+  followSonarSub: (x) => `1着の${x}号艇を押すと、その流れになる`,
+  followAuto: (x) => `1着の候補に合わせた（${x}号艇）`,
+  followNone: (x) => `この会場の全レースで、${x}号艇が1着のレースがまだ無い`,
+  partVenueAll: "会場の全レースの値",
+  followVenueAll: (venue) => `${venue ?? ""}の全レース`,
   // 相手レンズの図（D-46）。●2着以内・○3着以内を同じ行に置く。値は艇ごとの範囲（深掘り・買い目と同じ）
   placeTitle: "●2着以内・○3着以内（右ほど高い）",
   placeNote: "艇ごとに、その艇の深掘りと同じレースでの割合",
@@ -260,18 +278,7 @@ export const ASSIST_COPY = Object.freeze({
   placeFew: (n) => `${n.toLocaleString("ja-JP")}件（少ない）`,
   followScope: (label, boat, n) =>
     `${label} ${boat}号艇が1着の${n.toLocaleString("ja-JP")}件`,
-  followBoatCol: "艇",
-  followPos: (k) => `${k}着`,
   followCount: (k) => `${k.toLocaleString("ja-JP")}件`,
-  followSame: (k, n) =>
-    `${k.toLocaleString("ja-JP")}件は上の ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")} の${k.toLocaleString("ja-JP")}と同じレース`,
-  // 2着以内・3着以内を選んでいるときは上に 65/119 が無いので、上を指さない書き方（ファン評価 1周目 指摘2）
-  followSameAlone: (k, n) =>
-    `${k.toLocaleString("ja-JP")}件は、同じ範囲で1号艇が1着になった ${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レースと同じ`,
-  followRefundAlone: (k, axisK) =>
-    `返還のあったレースは除く（同じ範囲で1号艇が1着になった${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
-  followRefund: (k, axisK) =>
-    `返還のあったレースは除く（上の${axisK.toLocaleString("ja-JP")}件のうち${k.toLocaleString("ja-JP")}件）`,
   races: (k, n) =>
     `${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}レース`,
   venueAllN: (venue, n) => `${venue}の全レース ${n.toLocaleString("ja-JP")}件`,
@@ -314,8 +321,15 @@ export const ASSIST_COPY = Object.freeze({
     mae: "前付けあり（1号艇イン）",
     inlost: "1号艇がインを取られた",
   }),
-  // 図は展示ST でも、手がかりは平均ST から出していると札に書く（screens「★平均STの手がかり（{形}）」。ファン評価 PR4 1周目 指摘8）
-  hintMark: (form, p) => `★平均STの手がかり（${form}）${p}%`,
+  // 手がかりは平均ST から出していると札に書く（ファン評価 PR4 1周目 指摘8）。割合は図の上の結論に出し、札には入れない（spec D-47 (2)）
+  hintMark: (form) => `★平均STの手がかり（${form}）`,
+  // 展示後の各艇の展示タイムの6艇の順位（spec D-47 (2)）
+  // 「展示{r}位」だと展示ST の順位に読める（ファン評価 1周目 指摘1）。展示タイムと書く
+  exhRankTag: (r) => `展示タイム${r}位`,
+  // 展示後の展示ST の入口（平均ST の点が無いレースでも入れる。ファン評価 1周目 指摘3・4）
+  exhStOpen: "展示STを6艇で比べる",
+  // 直近30走に切り替えても、手がかりは「このコース」の平均ST で見ている（ファン評価 1周目 指摘2）
+  flowHintBasis: "手がかりは平均ST（このコース）で見ている。図は直近30走",
   // 何の形のときの攻め手かを書く（同 指摘9）
   attackMark: (form) => `${form}なら攻め手`,
   // 買い目の図の「過去の1着」がどの範囲の値か（艇ごとに違う。271 の指摘の型「どのレースから出した数字か」）
@@ -331,8 +345,68 @@ export const ASSIST_COPY = Object.freeze({
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
   flowShapeHeading: "本番のスタートの形",
-  flowShapeLead: (form) => `本番で${form}になるのは`,
-  flowShapeMiss: (p) => `（当てはまらないときは${p}%）`,
+  // 図の上の結論（spec D-47 (3)、承認モック v2）
+  flowShapeRow: "本番でこの形になるのは",
+  flowShapeBase: (miss, hit) =>
+    `平均STの手がかりが当てはまらないときは ${miss}%。なりやすい形でも、${100 - hit}%のレースはこの形にならない`,
+  exhBand: Object.freeze({ top: "1〜2位", mid: "3〜4位", low: "5〜6位" }),
+  // 文末は件数で分ける（30件未満は「…のときは4件だけ」。wording-editor の指摘: 「1着」の後に件数の注記を続けると文がつながらない）
+  // 区分と母数を言葉で書く（ファン評価 1周目 指摘5）。攻め手は条件つきなので「攻める」と言い切らない（同 指摘6）
+  flowToday: (att, rank, band, form) =>
+    `今日の展示: 攻め手の${att}号艇は展示タイム${rank}位。${form}で攻め手が展示タイム${band}のとき`,
+  flowTodayWin: "1着",
+  flowTodayFew: (n) => `は${n}件だけ（少ないので割合は出さない）`,
+  // 形が2つ以上当てはまるときの選択（承認モック v2 ④）
+  flowFormPick: "本番のスタートの形を選ぶ",
+  // 押せると分かるように（PR-2 ファン評価 1周目 指摘7）
+  flowFormPickNote: (n) => `当てはまる形が${n}つ。押すと下が変わる`,
+  // もし{形}になったら（spec D-47 (4)）
+  flowTechHeading: (att, w) => `攻め手の${att}号艇が1着の${w}件の決まり手`,
+  flowTechNames: Object.freeze({
+    makuri: "まくり",
+    makurizashi: "まくり差し",
+    sashi: "差し",
+    other: "ほか",
+  }),
+  flowTechVal: (p, k) => `${p}%（${k}件）`,
+  flowExactaOf: (form) => `${form}のときによく出た2連単`,
+  flowTrifectaToBet: "よく出た3連単は買い目レンズ",
+  // 今日の展示が枠なりでないとき（PR-2 ファン評価 1周目 指摘6）
+  flowNotWaku: (type) =>
+    `今日の展示は${type}。下の数字は枠なりのレースで集めた`,
+  // 今日の展示を入れると（spec D-47 (5)）
+  exhHeading: "今日の展示を入れると",
+  exhPending: "展示の後に分かる（攻める艇・1号艇の展示タイムの順位ごとの割合）",
+  exhAttTitle: (att, rank) =>
+    `攻め手の${att}号艇${rank ? `（展示タイム${rank}位）` : ""}: 展示タイムの順位ごとの1着`,
+  exhB1Title: (rank) =>
+    `1号艇${rank ? `（展示タイム${rank}位）` : ""}: 展示タイムの順位ごとの逃げ`,
+  exhTodayTag: "今日",
+  exhFew: (n) => `${n}件だけ（少ないので割合は出さない）`,
+  exhNat: (ps) =>
+    `全国の全レースでは 1〜2位 ${ps[0]}%・3〜4位 ${ps[1]}%・5〜6位 ${ps[2]}%`,
+  // 攻める艇の1着の行だけに付ける（承認モック v2。1号艇の逃げの行には付けない。wording-editor 指摘）
+  exhNatDesc: "（順位が上ほど1着が多い）",
+  // この範囲の区分の差がはっきりしないとき・今日が3〜4位のとき（PR-2 ファン評価 1周目 指摘3）
+  exhUnclear:
+    "この範囲は件数が少なく、順位ごとの差がはっきりしない。全国の全レースの値を目安に",
+  exhB1Note:
+    "1号艇は展示が速く出やすい（同じ選手でも約0.02秒）。その分を差し引いても、順位ごとの差はほとんど変わらない。過去の割合で、原因とは限らない",
+  // 進入（spec D-47 (6)）。全国の値（本番 DB 2026-04-10〜10-10。展開レンズの統計検証、spec「統計検証」の節）
+  entryNatWaku: "全国で、展示が全艇枠なりのとき本番も全艇枠なりは",
+  entryNatWakuK: 3602,
+  entryNatWakuN: 3862,
+  // オリジナル展示（spec D-47 (7)）。直線・秒数・形ごとは出さない。効き目は 2,844R の検証（spec「統計検証」の節）
+  // 機力レンズの測定項目（直線を含む）と食い違わないよう、出す2項目を見出しで言う（PR-2 ファン評価 1周目 指摘5）
+  orgHeading: (venue, kinds) =>
+    `オリジナル展示${venue ? `（${venue}）` : ""}: ${kinds.join("・")}の一番`,
+  orgBothBest: (boats) =>
+    `${boats.join("・")}号艇: 一周・まわり足とも6艇で一番`,
+  orgBest: (kind, boats) => `${kind}: ${boats.join("・")}号艇が6艇で一番`,
+  orgEffect:
+    "一周・まわり足が6艇で一番の艇は1着が多い（2〜6コースの1着: 一周1位 16%・ほか 8%、まわり足1位 13%・ほか 8%。展示タイムの順位をそろえても残る差。1コースでも同じ向き）",
+  orgVenueNote: "会場ごとに測る区間が違うので、この会場の中での順位で見る。",
+  orgToPower: "秒数は機力レンズ",
   flowMissBar: "当てはまらないとき",
   flowHintSource: "平均ST（このコース・直近30走）の並び。展示STではない",
   // 展開レンズの展示前の横軸の切り替え（BOA-815 案A。龍神ソナーと同じ「このコース｜直近30走」）
@@ -771,8 +845,25 @@ export const GLOSSARY = Object.freeze({
   水質: {
     lead: "海水・淡水・汽水",
     items: [
-      "海水・汽水は潮の満ち引きで水面が変わる",
+      "干満差のある会場は潮の満ち引きで水面が変わる（蒲郡・常滑・津は海水・汽水でも干満差なし。公式の場データ）",
       "淡水は体が浮きにくく、体重差が効きやすいと言われる",
     ],
   },
 });
+
+// 会場に絞った「{会場}・級の並びが同じ」（BOA-839 フォローアップ）。
+// 会場は24場あるためGLOSSARYに静的なキーを24個並べず、「全国・級の並びが同じ」と
+// 同じ内容を会場名だけ差し替えて組み立てる（itemsは共有し重複させない）。
+const VENUE_CLASS_LINEUP_SUFFIX = "・級の並びが同じ";
+export function glossaryForTerm(term) {
+  if (GLOSSARY[term]) return GLOSSARY[term];
+  if (term.endsWith(VENUE_CLASS_LINEUP_SUFFIX)) {
+    const venue = term.slice(0, -VENUE_CLASS_LINEUP_SUFFIX.length);
+    return {
+      lead: `${venue}の過去レース（2019/4/1〜）で、6艇の級の艇数と1号艇の級が今日と同じレース`,
+      items: GLOSSARY["全国・級の並びが同じ"].items,
+      classes: true,
+    };
+  }
+  return null;
+}
