@@ -391,7 +391,8 @@ export const AXIS_MARK = Object.freeze({ th: 0.05, minN: 300 });
  */
 export function axisMarks(scenario, f, axis) {
   const none = [null, null, null, null, null, null];
-  if (!f || f.n < AXIS_MARK.minN) return none;
+  // 統計検証は軸が2〜6号艇の600組（24会場×5艇×相手5艇）だけ。1号艇を軸にしたときは確かめていないので印を出さない
+  if (!f || f.n < AXIS_MARK.minN || axis === 1) return none;
   const rows = trifectaList(scenario?.cells?.all?.forms?.any?.tri);
   const n = rows.reduce((a, [, c]) => a + c, 0);
   if (!n) return none;

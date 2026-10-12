@@ -894,7 +894,9 @@ check(
       JSON.stringify(["up", null, null, null, null, null]) &&
       axisMarks(vaSc, { ...winFollowers(vaSc, 6), n: 299 }, 6).every(
         (m) => m === null,
-      ),
+      ) &&
+      // 1号艇を軸にしたときは統計検証の範囲外（軸 2〜6号艇の600組）なので出さない
+      axisMarks(vaSc, f1, 1).every((m) => m === null),
   );
   check(
     "軸の2着: その艇が1着の組が無ければ null、30件未満は few（割合を出さない）。範囲の組が無ければ印も無し",
