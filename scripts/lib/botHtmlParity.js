@@ -8,6 +8,7 @@
  * （カウントダウン・受付中など）や、ボットに出さない表（選手・オッズ）があるので、逆向きは見ない。
  */
 import * as cheerio from "cheerio";
+import { failedSnapshotGroups } from "./snapshotStatus.js";
 
 /**
  * 本文の比較では空白（改行・タブ・全角でない空白）を全部除く。人の DOM は要素の境目に改行が入るため。
@@ -312,20 +313,39 @@ export function evaluateSnapshotStatus(httpStatus, body) {
   if (typeof status?.ok !== "boolean" || !blog) {
     return { level: "fail", message: "status.json の形が違う" };
   }
+  // 翻訳記事・一覧（BOA-848 第2段）の件数。無ければ（足す前の版）出さない
+  const i18n =
+    status.blogI18n && !("fatalError" in status.blogI18n)
+      ? Object.entries(status.blogI18n)
+          .map(([lang, e]) => `${lang} ${e.succeeded}/${e.total}`)
+          .join("・")
+      : "";
+  const list = status.blogList
+    ? `一覧 ${status.blogList.succeeded}/${status.blogList.total}`
+    : "";
+  const extra = [i18n && `翻訳 ${i18n}`, list].filter(Boolean).join("、");
   if (status.ok) {
     return {
       level: "ok",
-      message: `ブログ ${blog.succeeded}/${blog.total} 件（${status.generatedAt} のビルド）`,
+      message: `ブログ ${blog.succeeded}/${blog.total} 件${extra ? `（${extra}）` : ""}（${status.generatedAt} のビルド）`,
     };
   }
+  const groups = failedSnapshotGroups(status);
+  const groupText = groups.length > 0 ? `。${groups.join("。")}` : "";
   if (blog.fatalError) {
     return {
       level: "fail",
-      message: `ブログの生成が途中で止まった（${status.generatedAt} のビルド）: ${blog.fatalError}`,
+      message: `ブログの生成が途中で止まった（${status.generatedAt} のビルド）: ${blog.fatalError}${groupText}`,
+    };
+  }
+  if ((blog.failedIds ?? []).length === 0 && groups.length > 0) {
+    return {
+      level: "fail",
+      message: `ブログ ${blog.succeeded}/${blog.total} 件${groupText}（${status.generatedAt} のビルド）`,
     };
   }
   return {
     level: "fail",
-    message: `ブログ ${blog.succeeded}/${blog.total} 件。失敗: ${(blog.failedIds ?? []).join(", ")}（${status.generatedAt} のビルド）`,
+    message: `ブログ ${blog.succeeded}/${blog.total} 件。失敗: ${(blog.failedIds ?? []).join(", ")}${groupText}（${status.generatedAt} のビルド）`,
   };
 }

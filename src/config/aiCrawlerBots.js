@@ -36,7 +36,14 @@ export function isTargetBot(userAgent) {
 // 人の URL と同じ 1〜24（0埋めなし）。api/_lib/botPage.js の VENUE_CODE と同じ範囲
 const BOT_PAGE_VENUE_PATH = /^\/venue\/([1-9]|1\d|2[0-4])$/;
 
-// 日本語の / と /venue/1〜24 だけ（ADR 0089 決定2）。言語の接頭辞付き・/venue/01・範囲外は null。
+// 言語版を出す言語（BOA-848 第2段）。api/_lib/botPage.js の BOT_PAGE_PREFIXED_LANGS と同じ
+// （middleware から読むので languages.js は import しない。一致は verify-middleware-routing.js で固定）
+export const BOT_PAGE_PREFIXED_LANGS = ["en", "zh-TW", "ko"];
+const BOT_PAGE_LANG_TOP_PATH = /^\/(en|zh-TW|ko)\/?$/;
+const BOT_PAGE_LANG_VENUE_PATH = /^\/(en|zh-TW|ko)\/venue\/([1-9]|1\d|2[0-4])$/;
+
+// / と /venue/1〜24（ADR 0089 決定2）と、その言語版 /{en|zh-TW|ko}/・/{lang}/venue/1〜24（BOA-848 第2段）。
+// /venue/01・範囲外・ほかの言語・ほかのパスは null。言語版は言語ごとに rewrite 先を分ける（CDN のキーを言語で分ける）
 // /today（BOA-848 第2段）は ?date= の無いときだけ。人の /today は ?date= の日を出すので、本日を返す関数とは中身が違う
 function resolveBotPagePath(pathname, userAgent, search) {
   if (!includesAny(userAgent, BOT_PAGE_USER_AGENTS)) return null;
@@ -48,6 +55,10 @@ function resolveBotPagePath(pathname, userAgent, search) {
   }
   const venueMatch = pathname.match(BOT_PAGE_VENUE_PATH);
   if (venueMatch) return `/api/bot-page/venue/${venueMatch[1]}`;
+  const langTop = pathname.match(BOT_PAGE_LANG_TOP_PATH);
+  if (langTop) return `/api/bot-page/${langTop[1]}/top`;
+  const langVenue = pathname.match(BOT_PAGE_LANG_VENUE_PATH);
+  if (langVenue) return `/api/bot-page/${langVenue[1]}/venue/${langVenue[2]}`;
   return null;
 }
 
@@ -55,6 +66,8 @@ function resolveBotPagePath(pathname, userAgent, search) {
 // 言語の接頭辞は付けない（選手ページは ja 専用）。スナップショットは sitemap に載る選手だけ作るので、
 // 作っていない番号はファイルが無く、vercel.json の catch-all で SPA の外枠に戻る（ブログと同じ）
 const RACER_PATH = /^\/racer\/(\d{4})$/;
+// /{en|zh-TW|ko}/blog と /{lang}/blog/{id}（BOA-848 第2段）
+const BLOG_LANG_PATH = /^\/(en|zh-TW|ko)\/blog(?:\/([^/]+))?$/;
 
 // pathname + User-Agent（+ クエリ文字列）から、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
 // 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）。search を見るのは /today の ?date= だけ
@@ -82,6 +95,17 @@ export function resolveSnapshotPath(pathname, userAgent, search = "") {
   const blogMatch = pathname.match(/^\/blog\/([^/]+)$/);
   if (blogMatch) {
     return `/ai-snapshots/blog/${blogMatch[1]}.html`;
+  }
+
+  // ブログ一覧と翻訳記事（BOA-848 第2段）。スナップショットは scripts/generate-ai-snapshots.js が作る。
+  // 翻訳の無い記事はファイルが無く、vercel.json の catch-all で SPA の外枠に戻る（ja の記事と同じ）
+  if (pathname === "/blog") return "/ai-snapshots/blog-list.html";
+  const langBlog = pathname.match(BLOG_LANG_PATH);
+  if (langBlog) {
+    const [, lang, id] = langBlog;
+    return id
+      ? `/ai-snapshots/${lang}/blog/${id}.html`
+      : `/ai-snapshots/${lang}/blog-list.html`;
   }
 
   return null;

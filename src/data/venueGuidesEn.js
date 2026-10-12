@@ -196,7 +196,7 @@ export const VENUE_GUIDES_EN = [
       url: "https://edogawa-emember.com/",
     },
     facts: {
-      water: "River (tidal, affected by wind and current)",
+      water: "Brackish (river) / tidal — affected by wind and current",
       character: "The roughest water in Japan — expect upsets",
       nightRace: false,
     },
@@ -705,7 +705,7 @@ export const VENUE_GUIDES_EN = [
       url: "https://gama-win.com/card/about/index.html",
     },
     facts: {
-      water: "Freshwater pool — calm and fast, sheltered from wind",
+      water: "Brackish, no tidal effect — calm and fast, sheltered from wind",
       character:
         "Lane 1 wins often, but center-lane comebacks are common at mark 2",
       nightRace: true,
@@ -864,7 +864,7 @@ export const VENUE_GUIDES_EN = [
     },
     facts: {
       water:
-        "Faces Ise Bay — can be one of the roughest courses in Tokai when windy",
+        "Brackish, no tidal effect — faces Ise Bay, can be one of the roughest courses in Tokai when windy",
       character:
         "Wind-dependent: rough and unpredictable when windy, lane-1-favored when calm",
       nightRace: false,

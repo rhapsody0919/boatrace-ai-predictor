@@ -163,6 +163,43 @@ def test_stage_category_v2_matches_race_stage_config_js():
     assert wrong == []
 
 
+STAGE_RULE_V2_ACCEPT22 = json.loads((Path(__file__).resolve().parents[1] / "testdata"
+                                     / "stage-rule-v2-accept22.json").read_text())
+
+
+def test_stage_rule_v2_accept22_fixture():
+    """T1-1 で取りこぼしていた22R（長期19・本体3）を重複なく固定する。"""
+    cases = STAGE_RULE_V2_ACCEPT22["cases"]
+    assert len(cases) == 22
+    assert sum(c["source"] == "kb" for c in cases) == 19
+    assert sum(c["source"] == "main" for c in cases) == 3
+    assert len({c["race_id"] for c in cases}) == 22
+    assert all(c["stage_kind"] == "other" for c in cases if c["source"] == "kb")
+    assert all(c["stage_kind"] is None for c in cases if c["source"] == "main")
+
+
+def test_stage_rule_v2_accept22_are_yusho():
+    cases = STAGE_RULE_V2_ACCEPT22["cases"]
+    wrong = [c["race_id"] for c in cases
+             if (F.round_from_kb_kind(c["stage"], c["stage_kind"]) if c["source"] == "kb"
+                 else F.round_from_stage(c["stage"])) != "yusho"]
+    assert wrong == []
+
+
+def test_stage_rule_v1_accept22_were_missed():
+    cases = STAGE_RULE_V2_ACCEPT22["cases"]
+    wrong = [c["race_id"] for c in cases if F.round_from_stage_v1(c["stage"]) == "yusho"]
+    assert wrong == []
+
+
+def test_stage_rule_v2_accept22_are_final_in_js():
+    cases = STAGE_RULE_V2_ACCEPT22["cases"]
+    js = js_categories([c["stage"] for c in cases])
+    assert len(js) == len(cases)
+    wrong = [c["race_id"] for c, category in zip(cases, js) if category != "final"]
+    assert wrong == []
+
+
 def test_round_v1_keeps_old_rule_for_records():
     # 記録用の旧定義: 準決・決勝戦・〜優 は優勝戦・準優勝戦にならない
     assert F.round_from_stage_v1("準決勝戦") == "other"

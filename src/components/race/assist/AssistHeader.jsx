@@ -9,7 +9,7 @@ import { TheoryButton } from "./SheetButtons";
 /**
  * ヘッダー（spec FR-2、screens S-1 A）: 会場・R・ラウンド・グレード・締切、気象（展示後だけ）・時点の切り替え、
  * 堅い？荒れる？の枠（children）、オッズの取得時刻、龍神ソナーへの導線（ソナーを表示できる端末だけ、D-36 (8)）。
- * 会場名を押すと会場の特徴のシート。ラウンド・風・潮（海水・汽水の会場だけ）の「傾向 ›」はセオリーカード（D-15。Codex F09）
+ * 会場名を押すと会場の特徴のシート。ラウンド・風・潮（干満差のある会場だけ。公式の場データ）の「傾向 ›」はセオリーカード（D-15。Codex F09）
  */
 export default function AssistHeader({
   race,
@@ -21,7 +21,7 @@ export default function AssistHeader({
   onStage,
   oddsAt,
   showSonar,
-  waterType = null,
+  tidal = false,
   onVenue,
   children,
 }) {
@@ -114,7 +114,7 @@ export default function AssistHeader({
         ) : (
           <span>{ASSIST_COPY.weatherAfterExhibition}</span>
         )}
-        {(waterType === "sea" || waterType === "brackish") && (
+        {tidal && (
           <span>
             {ASSIST_COPY.tide}{" "}
             <span className="ta-note">{ASSIST_COPY.tidePrep}</span>{" "}
