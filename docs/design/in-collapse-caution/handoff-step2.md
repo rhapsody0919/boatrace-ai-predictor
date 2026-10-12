@@ -11,7 +11,7 @@
 2. [spec.md](./spec.md): FR-1〜FR-8・統計検証の節・未確定事項
 3. [mock/APPROVED.md](./mock/APPROVED.md): 承認範囲（置き場所は案A＝AI予想タブ。推奨の案B ではない）と承認後の食い違い
 4. [screens.md](./screens.md): 画面と部品の作り方
-5. [architecture-y.md](./architecture-y.md): system-architect の判定（夜の「日×帯」の表 → 朝に RPC で合計、新しいキー `inCaution`、マイグレーション 149〜151、ADR 0090）。番号はオーケストレーターが確保済み
+5. [architecture-y.md](./architecture-y.md): system-architect の判定（夜の「日×帯」の表 → 朝に RPC で合計、新しいキー `inCaution`、マイグレーション 149〜151、ADR 0095）。マイグレーションの番号はオーケストレーターが確保済み。ADR は予約の 0090 を sns-pdca-loop が使ったため 0095 に変更（2026-10-13）
 6. [measurement.md](./measurement.md)・[events-share.md](./events-share.md): 計測
 7. [today-impact.md](./today-impact.md)・[inventory.md](./inventory.md): 変える箇所の洗い出し
 8. 統計: [analysis/round1.md](./analysis/round1.md)〜[round4.md](./analysis/round4.md)（統計の検証は4回で閉じた。plan の段で数字を新しく出す必要が出たら、オーケストレーター経由でユーザーに回す）

@@ -1,6 +1,6 @@
 # 案Y の設計判定（2026-10-12、system-architect）
 
-plan（/step2）の土台。本番 DB は見ていない（コード・マイグレーション・`docs/db-migration/APPLIED.md` から）。ADR の追加は1本（次の番号は 0090、`verify:adr-numbers`）: 「イン崩れ注意度は勝率差の帯ごとの全国実績。日ごとの小さな表を夜に作る」。ADR-0012（会場内パーセンタイル）には「置き換え済み」と書き足す。ADR-0070（/today は 05:30 に事前計算）はそのまま。
+plan（/step2）の土台。本番 DB は見ていない（コード・マイグレーション・`docs/db-migration/APPLIED.md` から）。ADR の追加は1本（次の番号は 0095。0090〜0094 は sns-pdca-loop が使用済み、`verify:adr-numbers`）: 「イン崩れ注意度は勝率差の帯ごとの全国実績。日ごとの小さな表を夜に作る」。ADR-0012（会場内パーセンタイル）には「置き換え済み」と書き足す。ADR-0070（/today は 05:30 に事前計算）はそのまま。
 
 ```mermaid
 flowchart LR
