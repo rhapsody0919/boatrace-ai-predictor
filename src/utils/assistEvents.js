@@ -6,7 +6,7 @@
  * - ガイドは段を出したとき（1段目＝1）。閉じたときは送らない
  * - シートは開いたとき。種類は mark・rough・venue・term・theory
  * - 軸の要約の入口1行（openFacts、2026-10-11 案D）から深掘りを開いたときも assist_deep_open。開いている艇の押し直しは送らない
- * - 軸・買い目で共通の着順の切り替え（BOA-831）は assist_target。選択中の着順の押し直しは送らない。押したレンズも送る
+ * - 買い目の着順の切り替え（BOA-831、spec D-46 で買い目だけ）は assist_target。選択中の着順の押し直しは送らない。押したレンズも送る
  * @param {{lens: string, deep: number|null, metric: string|null, target?: number}} state 押す前の状態
  * @param {{type: string, [key: string]: unknown}} action
  * @returns {{name: string, params: Record<string, string|number>} | null}

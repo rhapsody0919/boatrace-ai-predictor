@@ -1,0 +1,152 @@
+{
+ "generated_at": "2026-10-12T04:42:07+09:00",
+ "note": "diff=Brier(a)-Brier(b)。正なら b が良い。relative=diff/Brier(a)(%)。区間はレース単位のブートストラップ2000回の2.5%・97.5%点",
+ "B": 2000,
+ "seed": 845,
+ "pairs": [
+  {
+   "pos": 2,
+   "a": "base_unc",
+   "b": "NA",
+   "n": 12462,
+   "diff": 0.026527,
+   "lo": 0.021924,
+   "hi": 0.031135,
+   "relative_pct": 3.433594,
+   "relative_lo_pct": 2.837805,
+   "relative_hi_pct": 4.029982
+  },
+  {
+   "pos": 2,
+   "a": "NA",
+   "b": "own_default",
+   "n": 12462,
+   "diff": -0.012411,
+   "lo": -0.014922,
+   "hi": -0.009954,
+   "relative_pct": -1.663617,
+   "relative_lo_pct": -2.000087,
+   "relative_hi_pct": -1.334283
+  },
+  {
+   "pos": 2,
+   "a": "NA",
+   "b": "VA",
+   "n": 12462,
+   "diff": 0.001284,
+   "lo": 0.000464,
+   "hi": 0.002065,
+   "relative_pct": 0.172155,
+   "relative_lo_pct": 0.062248,
+   "relative_hi_pct": 0.276812
+  },
+  {
+   "pos": 2,
+   "a": "NA",
+   "b": "shrink_unc",
+   "n": 12462,
+   "diff": 0.002022,
+   "lo": 4.6e-05,
+   "hi": 0.004112,
+   "relative_pct": 0.270961,
+   "relative_lo_pct": 0.006143,
+   "relative_hi_pct": 0.551145
+  },
+  {
+   "pos": 2,
+   "a": "base_unc",
+   "b": "shrink_unc",
+   "n": 12462,
+   "diff": 0.028549,
+   "lo": 0.024767,
+   "hi": 0.032328,
+   "relative_pct": 3.695252,
+   "relative_lo_pct": 3.205803,
+   "relative_hi_pct": 4.184448
+  },
+  {
+   "pos": 2,
+   "a": "NA",
+   "b": "ladder100",
+   "n": 12462,
+   "diff": 0.000729,
+   "lo": -0.000392,
+   "hi": 0.001795,
+   "relative_pct": 0.097771,
+   "relative_lo_pct": -0.052524,
+   "relative_hi_pct": 0.240658
+  },
+  {
+   "pos": 3,
+   "a": "base_unc",
+   "b": "NA",
+   "n": 12462,
+   "diff": -0.001872,
+   "lo": -0.00432,
+   "hi": 0.00061,
+   "relative_pct": -0.235453,
+   "relative_lo_pct": -0.543472,
+   "relative_hi_pct": 0.076681
+  },
+  {
+   "pos": 3,
+   "a": "NA",
+   "b": "own_default",
+   "n": 12462,
+   "diff": -0.018007,
+   "lo": -0.02037,
+   "hi": -0.015742,
+   "relative_pct": -2.259914,
+   "relative_lo_pct": -2.556464,
+   "relative_hi_pct": -1.975628
+  },
+  {
+   "pos": 3,
+   "a": "NA",
+   "b": "VA",
+   "n": 12462,
+   "diff": -0.000613,
+   "lo": -0.001086,
+   "hi": -0.000163,
+   "relative_pct": -0.076952,
+   "relative_lo_pct": -0.136348,
+   "relative_hi_pct": -0.020487
+  },
+  {
+   "pos": 3,
+   "a": "NA",
+   "b": "shrink_unc",
+   "n": 12462,
+   "diff": -0.000317,
+   "lo": -0.001721,
+   "hi": 0.001137,
+   "relative_pct": -0.039728,
+   "relative_lo_pct": -0.215981,
+   "relative_hi_pct": 0.142659
+  },
+  {
+   "pos": 3,
+   "a": "base_unc",
+   "b": "shrink_unc",
+   "n": 12462,
+   "diff": -0.002188,
+   "lo": -0.004216,
+   "hi": -0.000172,
+   "relative_pct": -0.275275,
+   "relative_lo_pct": -0.530422,
+   "relative_hi_pct": -0.021678
+  },
+  {
+   "pos": 3,
+   "a": "NA",
+   "b": "ladder100",
+   "n": 12462,
+   "diff": -0.000923,
+   "lo": -0.001727,
+   "hi": -8e-05,
+   "relative_pct": -0.115869,
+   "relative_lo_pct": -0.21673,
+   "relative_hi_pct": -0.010091
+  }
+ ]
+}

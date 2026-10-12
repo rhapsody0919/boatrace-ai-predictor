@@ -93,7 +93,12 @@ export default async function handler(req) {
       data.push({
         inspection,
         inspectionError,
-        draft: row.draft,
+        draft: Object.fromEntries(
+          Object.entries(row.draft).filter(
+            ([key]) =>
+              !["diff_current", "diff_previous", "diff_approved"].includes(key),
+          ),
+        ),
         job: row.job,
         versionHash: review.versionHash,
         holds: review.holds,

@@ -119,6 +119,19 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
 - `scripts/` 配下のスクリプトで GitHub Actions（日次 cron）から `node` 直接実行されるもの（例: `generate-sitemap.js`）が、Vite 専用構文（`import.meta.glob` 等）に依存する `src/` 配下のファイルを import していないか。Node 直実行で構文エラーになり自動処理が止まる
 
+## Review guidelines
+
+Codex の GitHub レビューで P0/P1 として見る観点。投稿の範囲・書き方は下の「Code Review Rules」に従う。
+
+- **数値の範囲・母数・条件の食い違い**: 件数と割合の母数がそろっているか（同じ画面の「N件」と「x%」が別の範囲・期間・条件で出ていないか）。札・見出しの範囲の呼び名と、実際に使った範囲が一致しているか
+- **後出しの統計**: そのレースの時点では分からない情報（結果・確定後の値・未来の日付のデータ）を、事前の傾向・判定に使っていないか
+- **言い方の規則**（画面・UI 文言・SNS 本文）: 禁止語「数える・集計・算出・対象・似た・似ている・ふつう・いつも」、「似たレース」（「類似レース」と書く）、「競艇」（本文・UI 不可。例外は上の「4.」）、誇大・保証の表現（「必ず当たる」「的中保証」「鉄板」等。`sns-video-studio/remotion/risk-rules.json`）
+- **verify の登録漏れ**: 新しい `scripts/maintenance/verify-*.js` が `scripts/maintenance/verify-registry.json` に登録されているか（未登録だと `npm run verify:ci` が落ちる）
+- **読み取りエラーの握りつぶし**: 本番 DB の取得失敗を `return []`・`.catch(() => [])`・`data || []` で空にし、「データなし」と同じ表示にしていないか（`.claude/rules/frontend-data-fetch.md`。除外集合が空になると除外が反転する）
+- **1000行上限**: 件数が1000行を超えうる取得に `.range()` のページングがあるか
+- **i18n のキー欠け**: 足したキーが `src/locales/{ja,en,zh-TW,ko}/common.json` の4言語すべてにあるか（プレースホルダーの一致を含む）
+- **Edge Functions の import 属性**: `api/` で JSON 等を import するとき、import 属性（`with { type: "json" }`）の有無が既存の書き方とそろっているか。Vite の `npm run build` は `api/` を束ねないので、build が通っても Vercel・Node（verify-*.js から import する検査）で読めない形になっていないか
+
 ## Code Review Rules
 
 GitHub 上の `@codex review` はこの節に従う。上の節（姿勢・固有観点）も前提として読む。

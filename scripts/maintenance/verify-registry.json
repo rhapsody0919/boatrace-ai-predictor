@@ -104,6 +104,11 @@
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
     },
     {
+      "script": "verify-db-apply.js",
+      "tier": "ci",
+      "guards": "本番 DB 適用ワークフロー（.github/workflows/db-apply.yml、scripts/lib/dbApplySql.js）。パスの検証（ディレクトリの外・大文字・別拡張子を通さない）、文の分割（文字列・$$・コメントの中の ; を区切りにしない）、拒否する SQL（先頭 BEGIN・末尾 COMMIT 以外のトランザクション制御、CONCURRENTLY・VACUUM・ALTER SYSTEM・psql のメタコマンド 等）、触るテーブルの抽出、台帳の更新、実ファイルで拒否されるのが 050・055 だけであること、ワークフローの配線（secret は承認後の job だけ、run に ${{ }} を直接書かない、書き込み権限は台帳の job だけ）"
+    },
+    {
       "script": "verify-deploy-hook-policy.js",
       "tier": "ci",
       "guards": "Deploy Hookを叩く条件の判定（scripts/lib/deployHookPolicy.js、BOA-361）"
@@ -475,6 +480,21 @@
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
     },
     {
+      "script": "verify-racer-snapshot-plan.js",
+      "tier": "ci",
+      "guards": "選手ページの AI スナップショット（BOA-848）を作る範囲（scripts/lib/racerSnapshotPlan.js）。本番のビルドだけで sitemap の選手（isRacerIndexable の集合）を全員作り、Preview・手元では RACER_SNAPSHOT_LIMIT が無ければ作らないこと（Preview のビルドから本番 DB に数千のリクエストを送らない）。本番では RACER_SNAPSHOT_LIMIT を無視すること"
+    },
+    {
+      "script": "verify-snapshot-status.js",
+      "tier": "ci",
+      "guards": "AI スナップショット生成の結果のまとめ（scripts/lib/snapshotStatus.js）。失敗・途中停止を OK と書かず、ログの最後と /ai-snapshots/status.json に件数と失敗した記事の ID を残すこと（SEO 再点検 F5。#1393 の前は失敗がログに埋もれ、本番で3記事が欠けたままだった）"
+    },
+    {
+      "script": "verify-render-with-fresh-page.js",
+      "tier": "ci",
+      "guards": "ブログのスナップショット生成で、ページが1つ落ちても後続の記事を取りこぼさないこと（scripts/lib/renderWithFreshPage.js）。2026-10-11 の本番ビルドで、落ちたページを使い続けた後続の3記事が失敗し、AI クローラーに中身の無い画面が返っていた"
+    },
+    {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
       "guards": "進入コース別選手成績パーサー（BOA-293）"
@@ -488,6 +508,38 @@
       "script": "verify-venue-motor-stats-parsers.js",
       "tier": "ci",
       "guards": "会場別モーター成績パーサー（BOA-264）"
+    },
+    {
+      "script": "verify-bot-html-parity.js",
+      "tier": "manual",
+      "guards": "日中の照合（ADR 0089「監視」）。本番の / と開催中の2会場の /venue/{code} で、bingbot の UA で取ったボット向け HTML の本文の文字列（見出し・会場名・節の名前・グレード・レース番号・締切時刻・最終更新）・リンク先・title・description・canonical が、Playwright で人として描いたページにすべてあること（人の画面に無い文言を検索ボットにだけ出さない）。bingbot の直後に人の UA で同じ URL を取って SPA の外枠が返ること（CDN の取り違え）、Googlebot の UA の / が SPA の外枠であること。人の UA の TTFB の中央値（/・/venue・/race）は記録だけ",
+      "reason": "本番 https://www.boat-ai.jp に接続し、Playwright で人の画面を描くため。毎日 JST 12:00 ごろ bot-html-parity.yml が実行し、失敗を Slack に流す。照合の関数は verify-bot-html-parity-logic.js（ci）がフィクスチャで確かめる",
+      "command": "node scripts/maintenance/verify-bot-html-parity.js"
+    },
+    {
+      "script": "verify-bot-html-parity-logic.js",
+      "tier": "ci",
+      "guards": "日中の照合の関数 scripts/lib/botHtmlParity.js（ADR 0089）。本番の HTML と人の DOM を保存したフィクスチャ（scripts/lib/__fixtures__/bot-html-parity/）で、同じなら無いもの0件、人の DOM に無い文言・リンク先・title・canonical を1つ足したボット HTML で落ちること、最終更新の時刻は CDN の差（10分以内）だけ許して前置きの違い・30分の差で落ちること、人の UA にボット向け HTML が返った応答を見分けること、開催中の会場の選び方（中止だけの会場を飛ばす）"
+    },
+    {
+      "script": "verify-bot-page-model.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML（ADR 0089）のモデル src/utils/botPageModel.js。import の経路にブラウザ専用の依存（supabaseClient・import.meta.env・localStorage 等）が無く Node から読めること、本番の /api/races/today のフィクスチャから人の画面と同じ文字（会場名・節の名前・レース番号・締切時刻・グレード・中止・見出し・title・description・canonical）で組めること、UTC で動かしても日付が前日にずれないこと、0件と壊れた入力を区別すること（壊れた入力で開催なしにしない。ADR 0069）、選手名・オッズ・着順・荒れ度等を入れないこと、人の画面が同じ関数（transformTodayRaces・pageMeta・raceListDisplay）を使い続けていること"
+    },
+    {
+      "script": "verify-bot-page-function.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML の関数（ADR 0089。api/bot-page/top.js・api/bot-page/venue/[code].js、中身は api/_lib/botPage.js）。材料の取得と時計を差し替えてハンドラを呼び、成功時の 200・Content-Type・Cache-Control（s-maxage=300・stale-if-error=3600）、title・description・canonical・robots が人のページと同じ値、選手名・オッズ等が入らないこと、材料が取れない・壊れたら 503・Retry-After・no-store で「開催なし」にしないこと、0件だけ「開催なし」の 200、会場コードは 1〜24（0埋めなし）だけで他は 404、値のエスケープ、材料の60秒の使い回し（61秒後に取り直す・同時の呼び出しは1回の取得）、vercel.json で syd1・edge でないこと"
+    },
+    {
+      "script": "verify-bot-race-function.js",
+      "tier": "ci",
+      "guards": "ボット向け HTML のレース詳細の関数（ADR 0089 第2段・BOA-848。api/bot-page/race/[id].js・[lang]/race/[id].js、中身は api/_lib/botRace.js）。本番の /api/predictions のフィクスチャで、head が人のレース詳細と同じ関数（src/utils/raceDetailHeading.js）の値・hreflang 4言語・JSON-LD が共通の3つとパンくず、本文が人の初期表示の部分集合（パンくず・グレードと節タイトル・会場名と NR・種別・日目（他レースで補う、丸一日中止なら出さない）・レース一覧へのリンク・データ分析結果の見出しと締切（結果が出たら消す））、出走表の選手・オッズ・払戻・着順・タイムが入らないこと（ADR 0089 決定7）、本日（JST）の id だけで他は 404、取得の失敗・0件は 503、無い id は 404、60秒の使い回し、人の RaceDetailPage が同じ関数を使い続けていること"
+    },
+    {
+      "script": "verify-predictions-cache.js",
+      "tier": "ci",
+      "guards": "/api/predictions/{date} の CDN キャッシュの長さ（api/_lib/predictionsCache.js）。JST の今日・未来は s-maxage=300、今日より前だけ s-maxage=86400。JST 0:00〜8:59（UTC ではまだ前日）に当日を1日キャッシュにしないこと（以前の UTC 判定の不具合）、日付の境目、api/predictions/[date].js が同じ関数を使い UTC の日付で判定していないこと"
     },
     {
       "script": "verify-venue-series-title.js",
@@ -952,6 +1004,16 @@
       "script": "verify-sns-month-calendar.js",
       "tier": "ci",
       "guards": "依頼16: 全月カレンダーのJST日付計算・状態分類・型/会場フィルタ・日付不明記録の全期間計上・観測履歴抽出（1001行ページング）、queue()のposted_at/format/race_id/grade/observations拡張（モックDB取得、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-shorts-send.js",
+      "tier": "ci",
+      "guards": "依頼9・10: YouTube Shorts案B（private insert→処理確認→public update→実公開確認）・PT/JST日跨ぎの日次枠・upload lease失効時の非公開残置・処理pollの上限3回・update応答喪失時の要照合（142をPGlite、モックadapter、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-approval-posted.js",
+      "tier": "ci",
+      "guards": "依頼11: 投稿済み（posted_at非NULLまたはjob.state=posted、アーカイブ後も含む）X・YouTube下書きの承認対象編集を拒否し承認記録・jobを保持（144をPGlite、外部接続なし）"
     }
   ]
 }

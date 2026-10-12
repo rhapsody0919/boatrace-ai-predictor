@@ -1,0 +1,7 @@
+.sns-draft-diff { min-width: 0; max-width: 100%; margin-block: var(--spacing-3); padding: var(--spacing-3); color: var(--text-primary); background: var(--surface-card); border: 1px solid var(--border-hairline); border-radius: var(--radius-md); overflow-wrap: anywhere; }
+.sns-draft-diff label { display: flex; flex-direction: column; gap: var(--spacing-2); }
+.sns-draft-diff select, .sns-draft-diff button { min-height: 44px; max-width: 100%; color: var(--text-primary); background: var(--surface-card); border: 1px solid var(--border-hairline); border-radius: var(--radius-md); }
+.sns-draft-diff-copy { white-space: pre-wrap; }
+.sns-draft-diff del { color: var(--text-primary); text-decoration: line-through; }
+.sns-draft-diff ins { color: var(--text-primary); text-decoration: underline; font-weight: var(--font-weight-bold); }
+.sns-draft-diff dd { margin-inline-start: var(--spacing-3); }

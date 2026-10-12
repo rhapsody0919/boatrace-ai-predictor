@@ -13,7 +13,7 @@
 | `assist_deep_open` | race_id, assist_boat, assist_lens | 図の艇を押して深掘りを開いたとき・別の艇に替えたとき、軸の要約の入口1行（「1号艇の差がつく材料 ›」）から開いたとき。開いている艇の押し直しは送らない |
 | `assist_metric_compare` | race_id, assist_metric, assist_lens | 値を押して6艇比較にしたとき（図の中・深掘りの中の両方）。比較中の項目の押し直し（戻す）は送らない |
 | `assist_sheet_open` | race_id, assist_sheet | シートを開いたとき |
-| `assist_target` | race_id, assist_target, assist_lens | 軸・買い目で共通の着順の切り替え（BOA-831）を押して変えたとき。選択中の着順の押し直しは送らない |
+| `assist_target` | race_id, assist_target, assist_lens | 買い目レンズの着順の切り替え（BOA-831。spec D-46 で軸から外し買い目だけ）を押して変えたとき。選択中の着順の押し直しは送らない |
 | `assist_guide_step` | race_id, assist_guide_step | ガイドの段を出したとき（「ガイド」で1段目、「次へ」「戻る」のたび）。閉じたときは送らない |
 
 パラメータの値:
@@ -22,7 +22,7 @@
 |---|---|
 | assist_view | `race`（出走表とタブ）/ `assist`（思考アシスト） |
 | assist_entry | `top`（上部の切り替え）/ `tab_row`（タブ列のすぐ上の1行、BOA-832）/ `copy_toast`（AI用にコピーした直後のトースト、BOA-832） |
-| assist_lens | `axis`（軸）/ `flow`（展開）/ `power`（機力）/ `bet`（買い目）。`assist_deep_open`・`assist_metric_compare` では押したときのレンズ |
+| assist_lens | `axis`（軸）/ `flow`（展開）/ `power`（機力）/ `place`（相手、spec D-46）/ `bet`（買い目）。`assist_deep_open`・`assist_metric_compare` では押したときのレンズ |
 | assist_boat | 1〜6 |
 | assist_metric | `nat_win` 全国勝率 / `loc_win` 当地勝率 / `st_mean30` 平均ST（直近30走） / `st_course` 平均ST（このコース） / `motor_2` モーター2連率 / `exh_time` 展示タイム / `exh_st` 展示ST / `series_score` 今節の平均着順点 |
 | assist_sheet | `mark` マークシート / `rough` 堅い？荒れる？の材料 / `venue` 会場の特徴 / `theory` セオリーカード / `term` 用語 |
@@ -45,9 +45,19 @@
 |---|---|---|---|
 | アシストの表示 | イベント | 上部の切り替えで移った先（race=出走表とタブ / assist=思考アシスト） | `assist_view` |
 | アシストの入口 | イベント | 思考アシストへ移った入口（top=上部の切り替え / tab_row=タブ列のすぐ上の1行 / copy_toast=AI用にコピーした直後のトースト） | `assist_entry` |
-| アシストのレンズ | イベント | 思考アシストのレンズ（axis / flow / power / bet） | `assist_lens` |
+| アシストのレンズ | イベント | 思考アシストのレンズ（axis / flow / power / place / bet） | `assist_lens` |
 | アシストの艇 | イベント | 思考アシストで深掘りを開いた艇番（1〜6） | `assist_boat` |
 | アシストの比較項目 | イベント | 思考アシストで6艇比較にした項目（nat_win・st_mean30 等） | `assist_metric` |
 | アシストのシート | イベント | 思考アシストで開いたシート（mark・rough・venue・theory・term） | `assist_sheet` |
-| アシストの着順 | イベント | 思考アシストの軸・買い目で選んだ着順（1=1着 / 2=2着以内 / 3=3着以内） | `assist_target` |
+| アシストの着順 | イベント | 思考アシストの買い目で選んだ着順（1=1着 / 2=2着以内 / 3=3着以内） | `assist_target` |
 | アシストのガイドの段 | イベント | 思考アシストのガイドで出した段（1〜） | `assist_guide_step` |
+
+## 公開後の読み取り
+
+`node scripts/analysis/assist-ga4/report.js --from=YYYY-MM-DD [--to=YYYY-MM-DD]` で取り、`data/analysis/assist-ga4/` に JSON で残す。本番（www.boat-ai.jp）だけを数え、Preview の閲覧は `excludedHosts` に分ける。内訳は各パラメータを持つイベントだけで取る（値が空欄の行は値が届いていない分で、登録前の分を含む）。
+
+| 期間 | 結果 | 要点 |
+|---|---|---|
+| 2026-10-11（公開1日目） | [2026-10-11.json](../../../data/analysis/assist-ga4/2026-10-11.json) | /assist 110 PV・16人（再訪13人）。レース詳細 947 PV・61人に対し PV 11.6%・人数 26%。入口は tab_row 59・top 39・copy_toast 3。レンズは flow 53・power 27・axis 24・bet 19。深掘り5人・6艇比較3人・ガイド2人で、割合では読めない人数。ユーザー本人や他のレーンの確認が混ざりうる |
+
+次は1週間分（10/11〜17）を 10/18 に読む（入口ごとの到達、出走表へ戻る割合、レンズごとの使われ方）。

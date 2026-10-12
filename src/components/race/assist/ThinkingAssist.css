@@ -294,6 +294,31 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 展示後の展示ST の入口（ファン評価 1周目 指摘3・4）。押せる高さ 44px */
+.ta-exh-open {
+  display: block;
+  min-height: 44px;
+  margin: 0 0 var(--spacing-1) auto;
+  padding: 0 var(--spacing-2);
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--font-size-sm);
+  color: var(--color-info-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* 展示後の展示{r}位（spec D-47 (2)）。手がかり・攻め手の印と見分けるため、色は付けず枠と太字だけ */
+.ta-tag-exh {
+  /* 隣の押せる印（44px の押せる範囲）に合わせて縦に伸ばさない */
+  align-self: center;
+  border-color: var(--text-primary);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
 .ta-tag-warn {
   border-color: var(--color-error-text);
   color: var(--color-error-text);
@@ -421,11 +446,15 @@
 
 .ta-lens-tabs {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  /* 軸・展開・機力・相手・買い目（spec D-46）。タブの字は折らない */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: var(--spacing-1-5);
+  grid-area: tabs;
 }
 
 .ta-lens-tabs button {
+  white-space: nowrap;
+  padding: 0;
   border: 1px solid var(--border-hairline);
   background: transparent;
   color: var(--text-primary);
@@ -1040,7 +1069,28 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 展開レンズの図の上の結論（spec D-47 (3)）。図と同じ左右の余白 */
+.ta-flow-concl {
+  margin: var(--spacing-3) var(--spacing-3) 0;
+}
+
+.ta-flow-concl .ta-big b {
+  font-size: var(--font-size-lg);
+}
+
+/* 今日の展示の1行。左の太線と淡い地で、形の見立てと分ける（承認モック v2） */
+.ta-flow-today {
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-2-5);
+  border-left: 4px solid var(--text-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: color-mix(in srgb, var(--color-warning-text) 12%, transparent);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
 .ta-sum .ta-note,
+.ta-flow-concl .ta-note,
 .ta-deep .ta-note {
   font-size: var(--font-size-sm);
   line-height: 1.625;
@@ -1844,7 +1894,7 @@
   color: var(--text-secondary);
 }
 
-/* ---- 軸・買い目で共通の着順の切り替え（BOA-831、spec D-44。承認モック v2） ---- */
+/* ---- 買い目の着順の切り替え（BOA-831、spec D-44・D-46） ---- */
 .ta-target {
   display: grid;
   gap: var(--spacing-1);
@@ -1950,4 +2000,62 @@
 /* よく出た組の「1-3（24件）」を途中で改行しない（BOA-831 ファン評価 1周目 指摘6） */
 .ta-nowrap {
   white-space: nowrap;
+}
+
+/* ---- 相手レンズ（spec D-46）: ●2着以内と○3着以内を同じ行に置き、間を線でつなぐ ---- */
+.ta-track-span {
+  position: absolute;
+  top: 50%;
+  height: 3px;
+  transform: translateY(-50%);
+  border-radius: 2px;
+  opacity: 0.6;
+}
+
+.ta-track-dot.ta-track-dot-o {
+  background: var(--surface-card);
+  border: 3px solid var(--text-primary);
+  box-shadow: none;
+}
+
+/* レンズの並び（spec D-46）: 1行目にタブとガイド、2行目に問い。
+   360px 以下ではガイドを問いの行の右端へ移し、タブ5つを1行（1つ44px 以上）に収める（visual-designer v3 P1-1） */
+.ta-lens {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "tabs guide"
+    "q q"
+    "hint hint";
+  column-gap: var(--spacing-1-5);
+}
+
+.ta-lens .ta-lens-row {
+  display: contents;
+}
+
+.ta-lens .ta-guide-btn {
+  grid-area: guide;
+}
+
+.ta-lens .ta-lens-q {
+  grid-area: q;
+}
+
+.ta-lens .ta-hint {
+  grid-area: hint;
+}
+
+@media (max-width: 360px) {
+  .ta-lens {
+    grid-template-areas:
+      "tabs tabs"
+      "q guide"
+      "hint hint";
+    align-items: center;
+  }
+
+  .ta-lens .ta-guide-btn {
+    margin-top: var(--spacing-1-5);
+  }
 }

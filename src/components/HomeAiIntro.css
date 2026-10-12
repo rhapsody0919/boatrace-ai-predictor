@@ -41,6 +41,87 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 「レースを開いたら、この2つで確かめる」（SEO 施策 B1） */
+.home-ai-intro__check {
+  max-width: 880px;
+  margin: 1.5rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-hairline);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.home-ai-intro__check h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+
+.home-ai-intro__tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+}
+
+.home-ai-intro__tool {
+  padding: 1.25rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
+  background: var(--surface-page);
+}
+
+.home-ai-intro .home-ai-intro__tool p {
+  margin: 0;
+  max-width: none;
+}
+
+.home-ai-intro .home-ai-intro__tool-name {
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+}
+
+.home-ai-intro .home-ai-intro__tool-where {
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.home-ai-intro__tool ul {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--text-primary);
+  line-height: 1.8;
+}
+
+.home-ai-intro__steps {
+  margin: 0;
+  padding: 1rem 1rem 1rem 2.2em;
+  border-radius: 12px;
+  background: var(--surface-page);
+  color: var(--text-primary);
+  line-height: 1.9;
+}
+
+.home-ai-intro__venues-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--brand-accent-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+.home-ai-intro .home-ai-intro__note {
+  margin: 0;
+  max-width: none;
+  font-size: 0.85rem;
+}
+
+/* 「開催中の会場から選ぶ」で飛んだとき、固定のヘッダーに見出しが隠れないようにする */
+#today-venues {
+  scroll-margin-top: 80px;
+}
+
 @media (max-width: 768px) {
   .home-ai-intro {
     margin-top: 2rem;

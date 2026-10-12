@@ -5,7 +5,11 @@
  */
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { GRADE_CONFIG } from "../../constants/gradeConfig";
+import {
+  venueNameOf,
+  venueCardHeadline,
+  raceNumberLabel,
+} from "../../utils/raceListDisplay";
 import {
   getRaceStageKey,
   getRaceStageBadge,
@@ -46,7 +50,7 @@ function VenueGridCard({
   nextOpenDate,
 }) {
   const { t } = useTranslation();
-  const venueName = t(`venues.${venueCode}`);
+  const venueName = venueNameOf(t, venueCode);
 
   const races = venueData?.races || [];
   const isOpen = races.length > 0;
@@ -71,10 +75,8 @@ function VenueGridCard({
       ? t(`venueGrid.timeOfDay.${timeOfDay}`)
       : null;
 
-  // グレードはレース単位だが会場単位の代表値として先頭レースの値を使う
-  // （SG/G1等の節では全レース同一グレード）
-  const gradeConfig = GRADE_CONFIG[races[0]?.raceGrade];
-  const raceTitle = races[0]?.raceTitle || null;
+  // グレード・節の名前は先頭レースの値を会場の代表値にする（ボット向け HTML と共有。raceListDisplay.js）
+  const { gradeConfig, raceTitle } = venueCardHeadline(races);
   const highlightedStageRace = findHighlightedStageRace(races);
   const stageConfig =
     highlightedStageRace && getRaceStageBadge(highlightedStageRace.raceStage);
@@ -103,7 +105,7 @@ function VenueGridCard({
             style={{ background: stageConfig.color }}
           >
             {stageConfig.emoji} {t(stageConfig.i18nKey)}{" "}
-            {highlightedStageRace.raceNo}R
+            {raceNumberLabel(highlightedStageRace.raceNo)}
           </span>
         )}
         {gradeConfig && (

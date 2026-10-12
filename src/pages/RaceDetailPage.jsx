@@ -39,70 +39,15 @@ import { useNowHHMM } from "../hooks/useNowHHMM";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus } from "../utils/raceStatus";
-import { isRaceCancelled } from "../utils/raceCancellation";
 import { formatDateLocalized } from "../utils/formatters";
-import { GRADE_CONFIG } from "../constants/gradeConfig";
+// 見出し・title・description・canonical・パンくずは、ボット向け HTML（ADR 0089 第2段）と同じ関数で組む
 import {
-  getRaceStageBadge,
-  getRaceStageCategory,
-} from "../constants/raceStageConfig";
+  getRaceDetailHeading,
+  getRaceDetailMeta,
+  getRaceDetailBreadcrumbItems,
+  getRaceListLink,
+} from "../utils/raceDetailHeading";
 import "./RaceDetailPage.css";
-
-// 開催の何日目かの表示ラベル（BOA-488）。値が無ければnull（「—」も出さない）。
-// 初日と最終日が同時に立つ1日開催は実在しないため、判定順は仕様の記載順に従う
-function getSeriesDayLabel(seriesDay, isFinalDay, t) {
-  if (seriesDay === 1) return t("raceDetailPage.seriesDayFirst");
-  if (isFinalDay === true) return t("raceDetailPage.seriesDayFinal");
-  if (Number.isInteger(seriesDay) && seriesDay > 1) {
-    return t("raceDetailPage.seriesDayNth", { day: seriesDay });
-  }
-  return null;
-}
-
-// 見出しの種別チップ（BOA-509）。分類できたものは分類名、できないもの
-// （会場の企画レース名）は公式表記のまま出す。race_stage はレースごとの値なので
-// 他レースで補わない（無ければ出さない）
-const SPECIAL_STAGE_KEYS = new Set([
-  "dream",
-  "selection",
-  "qualifierSpecial",
-  "generalSpecial",
-  "special",
-]);
-
-function getStageChip(raceStage, t) {
-  if (!raceStage) return null;
-  const official = raceStage.normalize("NFKC");
-  const category = getRaceStageCategory(raceStage);
-  if (!category) {
-    // 企画レース名は種別名と見分けがつかないので、何の名前かをツールチップで補う
-    return {
-      variant: "raw",
-      label: official,
-      title: t("raceStage.venueOriginal"),
-      isOfficial: true,
-    };
-  }
-  const label = t(category.i18nKey);
-  const variant =
-    category.key === "final" || category.key === "semifinal"
-      ? category.key
-      : SPECIAL_STAGE_KEYS.has(category.key)
-        ? "special"
-        : "plain";
-  return {
-    variant,
-    label,
-    // 優勝戦・準優勝戦は RaceCard のバッジと同じ絵文字を添える
-    emoji: getRaceStageBadge(raceStage)?.emoji,
-    // 分類名と公式表記が同じ（「予選」「優勝戦」等）ならツールチップは出さない
-    title:
-      label === official
-        ? undefined
-        : t("raceStage.officialName", { name: official }),
-    isOfficial: false,
-  };
-}
 
 // rawData（getPredictionsのrace）からPredictionSection用のprediction objectを構築
 // （RaceDetail.jsxのprocessRacePredictionと同じロジック）
@@ -223,40 +168,26 @@ function RaceDetailPage({ showViewSwitch = false }) {
   }
 
   const venueName = t(`venues.${parsed.venueCode}`);
-  const raceListLink = isToday
-    ? localize(`/venue/${parsed.venueCode}`)
-    : `/races/${date}/${parsed.venueCode}`;
+  const lang = i18n.resolvedLanguage;
+  const raceKey = {
+    raceId,
+    venueCode: parsed.venueCode,
+    raceNo: parsed.raceNo,
+    date,
+  };
+  const raceListLink = getRaceListLink(raceKey, isToday, lang);
 
   const prediction = racePrediction
     ? buildPrediction(racePrediction, t("errors.noPredictionData"))
     : null;
   // 取得失敗時は racePrediction が null になり、ページ全体が DataFetchError を出す。
-  // ここでの null は「取得できたが値が無い」だけなので、何も出さない。
-  // series_day はレース単位で出走表の取得時に書き込まれるため、当日はまだ
-  // 埋まっていないレースが残る（2026-09-28昼の実測で144R中52Rがnull。
-  // 丸亀は1Rだけ3日目で2〜12Rがnull）。日目は会場・日付単位で
-  // 同じ値なので、自レースに無ければ同じ会場の他レースの値を使う（追加クエリなし）。
-  // series_day・is_final_day・race_title はそれぞれ単独で欠けることがあるため
-  // 項目ごとに補う。2026-09-04 浜名湖9R・11R は series_day=6 だけ入り
-  // is_final_day・race_title・race_stage が null で、レースごとにまとめて補うと
-  // 同じ日の12Rが「最終日」なのに「6日目」と出た（BOA-509 ファン評価 P1）
-  const venueValue = (key) =>
-    racePrediction?.[key] ??
-    venueRaces.find((r) => r.rawData[key] != null)?.rawData[key] ??
-    null;
-  // 丸一日レースが無かった日（その会場のその日のレースが全部中止確定）は日目を出さない
-  // （BOA-658）。公式は翌日に同じ日目を振り直すので、series_day の値（津 9/22 は2）を
-  // そのまま出すと「2日目」が2日続く。今節タブも「日目に数えていません」と断っている
-  const wholeDayCancelled =
-    venueRaces.length > 0 &&
-    venueRaces.every((r) => isRaceCancelled(r.rawData));
-  const seriesDayLabel =
-    racePrediction && !wholeDayCancelled
-      ? getSeriesDayLabel(venueValue("seriesDay"), venueValue("isFinalDay"), t)
-      : null;
-  // 節タイトル（BOA-509）
-  const rawSeriesTitle = racePrediction ? venueValue("raceTitle") : null;
-  const seriesTitle = rawSeriesTitle ? rawSeriesTitle.normalize("NFKC") : null;
+  // ここでの null は「取得できたが値が無い」だけなので、何も出さない
+  const { gradeConfig, seriesTitle, stageChip, seriesDayLabel } =
+    getRaceDetailHeading(
+      racePrediction,
+      venueRaces.map((r) => r.rawData),
+      t,
+    );
   const selectedRace = racePrediction
     ? {
         id: racePrediction.raceId,
@@ -269,11 +200,6 @@ function RaceDetailPage({ showViewSwitch = false }) {
         seriesTitle,
         rawData: racePrediction,
       }
-    : null;
-  // 一般（ippan）は GRADE_CONFIG に無いのでバッジを出さない（BOA-96 と同じ）
-  const gradeConfig = GRADE_CONFIG[racePrediction?.raceGrade];
-  const stageChip = racePrediction
-    ? getStageChip(racePrediction.raceStage, t)
     : null;
   const status = getRaceStatus(
     { startTime: racePrediction?.startTime, result: racePrediction?.result },
@@ -291,43 +217,22 @@ function RaceDetailPage({ showViewSwitch = false }) {
     );
   };
 
-  const breadcrumbItems = [
-    { name: t("analysisPage.breadcrumbHome"), url: localize("/") },
-    ...(isToday
-      ? []
-      : [
-          {
-            name: t("raceDetailPage.pastPredictionsBreadcrumb"),
-            url: "/races",
-          },
-          {
-            name: formatDateLocalized(date, i18n.resolvedLanguage),
-            url: `/races/${date}`,
-          },
-        ]),
-    { name: venueName, url: raceListLink },
-    {
-      name: `${parsed.raceNo}R`,
-      url: localize(`/race/${raceId}`),
-    },
-  ];
-
-  const metaParams = {
-    venue: venueName,
-    race: parsed.raceNo,
-    date: formatDateLocalized(date, i18n.resolvedLanguage),
-  };
+  const breadcrumbItems = getRaceDetailBreadcrumbItems(
+    t,
+    raceKey,
+    isToday,
+    lang,
+  );
+  const pageMeta = getRaceDetailMeta(t, raceKey, lang);
 
   return (
     <>
       {/* 開催日を入れる。無いと同じ会場・同じR番号の全日付で title・description が同じになり、
           検索結果で重複扱いになる（集客レーン、2026-10-02） */}
-      <title>{t("raceDetailPage.metaTitle", metaParams)}</title>
-      <meta
-        name="description"
-        content={t("raceDetailPage.metaDescription", metaParams)}
-      />
-      <link rel="canonical" href={`https://www.boat-ai.jp/race/${raceId}`} />
+      <title>{pageMeta.title}</title>
+      <meta name="description" content={pageMeta.description} />
+      {/* 4言語で出すページなので、canonical は表示中の言語の URL（hreflang と合わせる） */}
+      <link rel="canonical" href={pageMeta.canonical} />
       <Header />
       {/* 上部の切り替え（BOA-430 PR6、D-22）。サイトのヘッダーの直下、パンくずの上（承認モック pr6-switch） */}
       {showViewSwitch && <AssistViewSwitch current="race" raceId={raceId} />}

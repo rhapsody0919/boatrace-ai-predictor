@@ -9,6 +9,11 @@
  */
 import { shouldOpenAssist, showNewBadge } from "../../src/utils/raceView.js";
 import { assistEventOf } from "../../src/utils/assistEvents.js";
+import {
+  ASSIST_SESSION_PREFIX,
+  parseAssistSession,
+  serializeAssistSession,
+} from "../../src/utils/assistSession.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -432,14 +437,46 @@ const flow = boardModel({
   finalRound: true,
 });
 check(
-  "展開レンズ（展示後）: 展示ST。5号艇の F は「F .01（フライング）」と書いて最良の候補から外し、最良は4号艇（.05）（BOA-801 2）",
-  flow.rows[4].dotText === "F .01（フライング）" &&
-    flow.rows[4].flying === true &&
-    flow.rows[3].flying === false &&
-    flow.rows
-      .filter((r) => r.dotBest)
+  "展開レンズ（展示後）: 横軸は展示前と同じ平均ST（このコース）。展示ST は図にしない（spec D-47 (1)）",
+  flow.title === "平均ST（このコース・直近30走） 左ほど早い" &&
+    flow.basis === "course" &&
+    flow.rows[2].dotText === ".142" &&
+    flow.rows.every((r) => !r.flying),
+  flow.title,
+);
+check(
+  "展開レンズ（展示後）: 各艇に展示タイムの6艇の順位（6.84・6.84・6.89・6.83・6.90・6.89 → 2,2,4,1,6,4。同タイムは同じ順位。spec D-47 (2)）",
+  flow.rows.map((r) => r.exhRank).join() === "2,2,4,1,6,4" &&
+    boardModel({ lens: "flow", stage: "pre", racers }).rows.every(
+      (r) => r.exhRank == null,
+    ),
+  flow.rows.map((r) => r.exhRank).join(),
+);
+check(
+  "展開レンズ（展示後）: 点の値を押すと展示ST の6艇比較。読み上げは見えている平均ST から始める",
+  flow.rows.every((r) => r.dotMetric === "exh_st") &&
+    flow.rows[0].dotLabel ===
+      "平均ST 0.148、展示ST（本番のスタートとは別）を6艇で比べる",
+  flow.rows[0].dotLabel,
+);
+const exhCmp = boardModel({
+  lens: "flow",
+  stage: "post",
+  racers,
+  metric: "exh_st",
+});
+check(
+  "展示ST の6艇比較: 名前は「展示ST（本番のスタートとは別）」、戻るは「平均ST（このコース・直近30走）に戻す」。5号艇の F は .00 より左（BOA-801 2）、最良は F を外して4号艇（.05）",
+  exhCmp.title === "展示ST（本番のスタートとは別）を6艇で比べる" &&
+    exhCmp.back === "平均ST（このコース・直近30走）に戻す" &&
+    exhCmp.rows[4].x < 0 &&
+    exhCmp.rows[4].flying === true &&
+    exhCmp.rows.filter((r) => r.flying).length === 1 &&
+    exhCmp.rows
+      .filter((r) => r.nums[0].best)
       .map((r) => r.boat)
       .join() === "4",
+  JSON.stringify([exhCmp.title, exhCmp.back]),
 );
 const flowPre = boardModel({
   lens: "flow",
@@ -513,9 +550,9 @@ check(
   flowOverall.title,
 );
 check(
-  "展示の後は横軸が展示ST で、切り替えを出さない",
+  "展示の後も平均ST の切り替えを出す（spec D-47 (1)）",
   boardModel({ lens: "flow", stage: "post", racers, stBasis: "overall" })
-    .basis === null,
+    .basis === "overall",
 );
 check(
   "v16 の保存が無いと分かったレースだけ、軸レンズに平均ST を出せない理由（読み込み中は出さない。BOA-808 6）",
@@ -802,6 +839,91 @@ check(
       noOdds[0].label === "過去の3着以内" &&
       noOdds[0].text === "70%（83/119）",
     JSON.stringify(noOdds),
+  );
+}
+
+// ---- 買い目を同じタブの中に残す（2026-10-11 ユーザーの不具合報告）----
+{
+  const st = {
+    bets: { 1: new Set([1]), 2: new Set([2, 3]), 3: new Set([2, 3, 4]) },
+    budget: "2000",
+    mode: "equal",
+    target: 3,
+    lens: "bet",
+    deep: 2,
+    sheet: "mark",
+  };
+  const back = parseAssistSession(serializeAssistSession(st));
+  check(
+    "保存: 買い目・予算・配分の方式・着順・レンズを戻し、深掘り・シートは残さない",
+    JSON.stringify([...back.bets[1]]) === "[1]" &&
+      JSON.stringify([...back.bets[3]]) === "[2,3,4]" &&
+      back.budget === "2000" &&
+      back.mode === "equal" &&
+      back.target === 3 &&
+      back.lens === "bet" &&
+      !("deep" in back) &&
+      !("sheet" in back),
+    JSON.stringify(back),
+  );
+  check(
+    "保存: 壊れた値・形の違う値は捨てる（ページを落とさない）",
+    parseAssistSession("{") === null &&
+      parseAssistSession(null) === null &&
+      parseAssistSession('{"x":1}') === null &&
+      (() => {
+        const v = parseAssistSession(
+          '{"bets":{"1":[1,9,"2",1],"2":[],"3":[]},"budget":"abc","mode":"kelly","target":5,"lens":"zzz"}',
+        );
+        return (
+          JSON.stringify([...v.bets[1]]) === "[1]" &&
+          !("budget" in v) &&
+          !("mode" in v) &&
+          !("target" in v) &&
+          !("lens" in v)
+        );
+      })(),
+  );
+  check(
+    "保存: キーは boatai-user: 接頭辞（キャッシュの全削除 boatai:* で消えない）",
+    ASSIST_SESSION_PREFIX === "boatai-user:assist:" &&
+      !ASSIST_SESSION_PREFIX.startsWith("boatai:"),
+  );
+}
+
+// ---- 相手レンズ（spec D-46、2026-10-12 ユーザー承認 v4）----
+{
+  const placeRates = new Map([
+    [1, { t2: { k: 83, n: 119 }, t3: { k: 94, n: 119 } }],
+    [3, { t2: { k: 252, n: 641 }, t3: { k: 417, n: 641 } }],
+    [5, { t2: { k: 5, n: 12 }, t3: { k: 8, n: 12 } }],
+  ]);
+  const m = boardModel({ lens: "place", stage: "post", racers, placeRates });
+  const r1 = m.rows[0];
+  const r3 = m.rows[2];
+  const r5 = m.rows[4];
+  check(
+    "相手レンズ: 横軸は割合 0〜100%、●2着以内（x）と○3着以内（x2）、数字は1艇2個（2着以内・3着以内）、金枠なし",
+    m.kind === "place" &&
+      m.lo === 0 &&
+      m.hi === 1 &&
+      Math.abs(r1.x - 83 / 119) < 1e-9 &&
+      Math.abs(r1.x2 - 94 / 119) < 1e-9 &&
+      r1.nums.length === 2 &&
+      r1.nums[0].label === "2着以内" &&
+      r1.nums[0].text === "70%" &&
+      r1.nums[1].text === "79%" &&
+      r3.nums[1].text === "65%" &&
+      m.rows.every((r) => r.nums.every((n) => !n.best)),
+    JSON.stringify([r1, r3]),
+  );
+  check(
+    "相手レンズ: 30件未満の艇は点を置かず、割合でなく件数だけ（件数の分布の検証で出るのは0.2%）",
+    r5.x == null &&
+      r5.x2 == null &&
+      r5.nums[0].text === "12件（少ない）" &&
+      m.rows[1].nums.length === 0,
+    JSON.stringify(r5),
   );
 }
 

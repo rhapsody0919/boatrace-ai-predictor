@@ -2,8 +2,8 @@ import { useId } from "react";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 /**
- * 軸・買い目で共通の着順の切り替え（1着／2着以内／3着以内。BOA-831、spec D-44）。
- * 押した結果が見えるよう、軸では大きい数字の直上、買い目では図の上に置く。状態は親（ページ内だけ）
+ * 買い目レンズの着順の切り替え（1着／2着以内／3着以内。BOA-831、spec D-44・D-46）。
+ * 買い目の図の「過去の{着順}」だけに効く（軸は1着だけ、2着以内・3着以内の6艇は相手レンズ）。状態は親
  */
 export default function TargetSwitch({ target, onTarget }) {
   const labelId = useId();

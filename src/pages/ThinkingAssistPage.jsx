@@ -1,7 +1,8 @@
 /**
  * 思考アシスト（BOA-430）。1レースの予想を、レースの図と4つの見方（軸・展開・機力・買い目）で組み立てるページ。
  * ja 専用（languages.js の isFullyTranslatedPath の例外）。公開まで noindex（spec D-36 (9)）。
- * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。
+ * 状態は useReducer 1つで、URL・localStorage に残さない（plan「状態」）。買い目・予算・配分の方式・着順・レンズだけは
+ * 同じタブの中でレースごとに sessionStorage に残し、ソナー等へ移ってから戻る・再読み込みで消えないようにする（utils/assistSession.js）。
  * レンズの要約・図の印・深掘りは PR4。セオリーカード・用語・会場の特徴・ガイドは PR5。上部の切り替え（AssistViewSwitch）は PR6
  */
 import {
@@ -21,7 +22,9 @@ import LensBar from "../components/race/assist/LensBar";
 import RaceLaneBoard from "../components/race/assist/RaceLaneBoard";
 import BetFooter from "../components/race/assist/BetFooter";
 import MarkSheet from "../components/race/assist/MarkSheet";
-import LensSummary from "../components/race/assist/LensSummary";
+import LensSummary, {
+  FlowConclusion,
+} from "../components/race/assist/LensSummary";
 import BoatDeepDive from "../components/race/assist/BoatDeepDive";
 import TheorySheet from "../components/race/assist/TheorySheet";
 import GlossarySheet from "../components/race/assist/GlossarySheet";
@@ -43,6 +46,7 @@ import {
   boardModel,
   buildRacers,
   classLineup,
+  exhRanks,
   restClassCounts,
   roughCard,
   roughState,
@@ -73,7 +77,9 @@ import {
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
+import { parseRaceId } from "../utils/raceId";
 import { trueWindDirection, windRelation } from "../utils/windDirection.js";
+import { loadAssistSession, saveAssistSession } from "../utils/assistSession";
 import "../components/race/assist/ThinkingAssist.css";
 
 const initialState = {
@@ -87,7 +93,7 @@ const initialState = {
   metric: null,
   // 展開レンズの展示前の平均ST（BOA-815 案A）
   stBasis: "course",
-  // 軸・買い目で共通の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44）。ページ内だけ
+  // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
   budget: "1000",
@@ -187,10 +193,30 @@ const withoutBoats = (bets, boats) =>
       )
     : bets;
 
+/**
+ * レースが替わったら状態を作り直す（別のレースの買い目を持ち越さない）。同じレースに戻ったら sessionStorage から戻す
+ */
 export default function ThinkingAssistPage() {
   const { raceId } = useParams();
+  return <ThinkingAssistBody key={raceId} />;
+}
+
+const initState = (raceId) => ({
+  ...initialState,
+  ...(loadAssistSession(raceId) ?? {}),
+});
+
+function ThinkingAssistBody() {
+  const { raceId } = useParams();
+  const parsedRaceId = parseRaceId(raceId);
   useRobotsMeta(!THINKING_ASSIST_PUBLIC);
-  const [state, dispatch] = useReducer(reducer, initialState);
+  const [state, dispatch] = useReducer(reducer, raceId, initState);
+  // 買い目・予算・配分の方式・着順・レンズを同じタブの中に残す（2026-10-11 ユーザーの不具合報告）
+  useEffect(() => {
+    saveAssistSession(raceId, state);
+    // 残す項目が変わったときだけ書く（深掘り・シートの開閉では書かない）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [raceId, state.bets, state.budget, state.mode, state.target, state.lens]);
   // 操作を GA4 に送ってから状態を変える。送るかどうかは押す前の状態で決める（docs/design/thinking-assist/events.md）。
   // シート・ガイドの memo の中からも呼ぶので、状態は描画のたびに ref へ移して act 自体は作り直さない
   const stateRef = useRef(state);
@@ -245,10 +271,10 @@ export default function ThinkingAssistPage() {
     [race, today, data.exhibition.data, data.rates.data],
   );
 
-  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）。
-  // target は軸・買い目で共通の着順（D-44）。機力レンズのモーターの札は1着のまま（切り替えは軸・買い目だけ）
-  const factsOf = useCallback(
-    (target) =>
+  // 艇ごとの差がつく材料（範囲は v16 の既定、優勝戦・準優勝戦の日は同じラウンド。D-37）。1着だけ
+  // （軸は1着の問い。2着以内・3着以内は相手レンズ、買い目の「過去の〇〇」は pastWin。spec D-46）
+  const winFacts = useMemo(
+    () =>
       [1, 2, 3, 4, 5, 6].map((boat) => {
         const scope = factsScope(factsAll, today, boat, data.round);
         return {
@@ -261,18 +287,13 @@ export default function ThinkingAssistPage() {
             // 展示タイムの札は v16 の展示後の段の値があるときだけ（無いと全艇「—」になる。ファン評価 PR4 1周目 指摘4）
             post: post && Array.isArray(v16Exhibition?.exh_time),
             finalRound,
-            target,
           }),
         };
       }),
     [factsAll, today, data.round, v16Exhibition, post, finalRound],
   );
-  const winFacts = useMemo(() => factsOf(1), [factsOf]);
-  const boatFacts = useMemo(
-    () => (state.target === 1 ? winFacts : factsOf(state.target)),
-    [factsOf, winFacts, state.target],
-  );
-  // 買い目レンズの「過去の1着」（艇ごとの範囲。6艇で比べない）
+  const boatFacts = winFacts;
+  // 買い目レンズの「過去の{着順}」（艇ごとの範囲。6艇で比べない。着順の切り替えは買い目だけ）
   const pastWin = useMemo(
     () =>
       new Map(
@@ -281,6 +302,22 @@ export default function ThinkingAssistPage() {
           .filter(([, u]) => u),
       ),
     [boatFacts, state.target],
+  );
+  // 相手レンズの各艇の2着以内・3着以内（艇ごとの範囲。軸・買い目の切り替えに関わらない。spec D-46）
+  const placeRates = useMemo(
+    () =>
+      new Map(
+        winFacts
+          .map((f, i) => [
+            i + 1,
+            {
+              t2: b1Usual(f.scope, i + 1, 2),
+              t3: b1Usual(f.scope, i + 1, 3),
+            },
+          ])
+          .filter(([, p]) => p.t2 || p.t3),
+      ),
+    [winFacts],
   );
   const hints = useMemo(
     () => (ncScenario ? hintSummary(ncScenario, today) : null),
@@ -309,10 +346,7 @@ export default function ThinkingAssistPage() {
       const boat = HINT_BOAT[top.id];
       if (boat)
         add(boat, {
-          text: ASSIST_COPY.hintMark(
-            ASSIST_COPY.formNames[top.form],
-            Math.round((top.hit[0] / top.hit[1]) * 100),
-          ),
+          text: ASSIST_COPY.hintMark(ASSIST_COPY.formNames[top.form]),
           hit: true,
           theory: `TC-H:${top.id}`,
         });
@@ -355,6 +389,7 @@ export default function ThinkingAssistPage() {
         finalRound,
         hasToday: today != null,
         pastWin,
+        placeRates,
         target: state.target,
         stBasis: state.stBasis,
         stMissing: data.facts.status === "ready" && v16Status === "not_saved",
@@ -368,6 +403,7 @@ export default function ThinkingAssistPage() {
       finalRound,
       today,
       pastWin,
+      placeRates,
       state.target,
       state.stBasis,
       data.facts.status,
@@ -476,11 +512,6 @@ export default function ThinkingAssistPage() {
           vaCell: venueAll,
           classes: today?.classes ?? null,
           onFacts: (all) => act({ type: "openFacts", boat: 1, all }),
-          target: state.target,
-          onTarget,
-          follow: v16Off
-            ? null
-            : winFollowers(data.scenario.axis?.data?.scenario ?? null),
         }
       : null,
     flow: {
@@ -493,6 +524,8 @@ export default function ThinkingAssistPage() {
       racecardStage: data.similar.racecardStage,
       reflecting: v16Status === "exhibition_reflecting",
       round: data.round,
+      exhRanks: post ? exhRanks(racers) : null,
+      basis: state.stBasis,
     },
     power: {
       post,
@@ -521,6 +554,22 @@ export default function ThinkingAssistPage() {
             }
           : null,
     },
+    place:
+      factsAll && winFacts[0].scope
+        ? {
+            follow: v16Off
+              ? null
+              : winFollowers(data.scenario.axis?.data?.scenario ?? null),
+            label: factsScopeLabel(
+              winFacts[0].scope,
+              venueName,
+              1,
+              today?.classes?.[0],
+            ),
+            axisK: b1u?.k ?? 0,
+            axisN: b1u?.n ?? 0,
+          }
+        : null,
     bet: {
       bet: {
         points: tickets.length,
@@ -559,7 +608,6 @@ export default function ThinkingAssistPage() {
     v16Exhibition,
     courseByBoat,
     boatFacts,
-    target: state.target,
     racers,
     vaFacts: vaKey && factsAll ? factsAll[vaKey] : null,
     wind: {
@@ -669,13 +717,14 @@ export default function ThinkingAssistPage() {
           lens={state.lens}
           onLens={(lens) => act({ type: "lens", lens })}
           guideOn={state.guide !== null}
-          target={state.target}
           onGuide={() => onGuideStep(state.guide === null ? 0 : null)}
         />
         {/* PC（1024px 以上）は図を左・押して変わる結果を右に（BOA-801 5・BOA-820、龍神ソナーの PC 表示 BOA-813 と同じ決まり）。
             狭い画面では囲みが無いのと同じ（display: contents） */}
         <div className="ta-split">
           <div className="ta-split-fig">
+            {/* 展開は結論（形の見立て・今日の展示）を図の上に（spec D-47 (3)） */}
+            {state.lens === "flow" && <FlowConclusion m={summary.flow} />}
             {cancelled && state.lens === "bet" ? (
               // 中止のレースは買い目レンズにこの1行だけ（D-38）
               <p className="ta-status">{ASSIST_COPY.cancelled}</p>
@@ -715,7 +764,6 @@ export default function ThinkingAssistPage() {
                 round={data.round}
                 scope={boatFacts[deepBoat - 1].scope}
                 chips={boatFacts[deepBoat - 1].chips}
-                target={state.target}
                 runs={
                   racers[deepBoat - 1]?.racerId == null
                     ? // 選手の登録番号が無い艇は走を取れない。読み込み中に残さない
@@ -757,6 +805,7 @@ export default function ThinkingAssistPage() {
                 axis={summary.axis}
                 flow={summary.flow}
                 power={summary.power}
+                place={summary.place}
                 bet={summary.bet}
               />
             )}
@@ -784,6 +833,21 @@ export default function ThinkingAssistPage() {
   return (
     <AssistSheetContext.Provider value={sheetApi}>
       <title>{`${ASSIST_COPY.title}（${raceId}）`}</title>
+      {parsedRaceId && (
+        <meta
+          name="description"
+          content={ASSIST_COPY.metaDescription({
+            date: parsedRaceId.date,
+            venue: venueName,
+            raceNo: parsedRaceId.raceNo,
+          })}
+        />
+      )}
+      {/* ja 専用のページ。canonical は自分自身（レース詳細とは別の画面） */}
+      <link
+        rel="canonical"
+        href={`https://www.boat-ai.jp/race/${raceId}/assist`}
+      />
       <Header />
       {/* 上部の切り替え（PR6、D-22）。フラグがあるときだけ。レース詳細と同じ位置（サイトのヘッダーの直下） */}
       {showViewSwitch && <AssistViewSwitch current="assist" raceId={raceId} />}

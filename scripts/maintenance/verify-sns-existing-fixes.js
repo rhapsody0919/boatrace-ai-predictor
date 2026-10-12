@@ -22,8 +22,31 @@ const { default: youtube } =
   await import("../../api/admin/sns-hub/drafts/[id]/publish-youtube.js");
 const { default: blog } =
   await import("../../api/admin/sns-hub/drafts/[id]/merge-blog-pr.js");
-const { default: approve } =
-  await import("../../api/admin/sns-hub/drafts/[id]/approve.js");
+const root = new URL("../../", import.meta.url);
+const approveSource = (
+  await readFile(
+    new URL("api/admin/sns-hub/drafts/[id]/approve.js", root),
+    "utf8",
+  )
+)
+  .replace(
+    /"[^"\n]+risk-rules\.json"/,
+    JSON.stringify(
+      "data:text/javascript," +
+        encodeURIComponent("export default {rules:[]};"),
+    ),
+  )
+  .replace(
+    /"[^"\n]+(?:lib\/riskRuleMatcher|_lib\/snsBundleValidation|_lib\/snsHubHelpers|_lib\/adminAuth)\.js"/g,
+    (m) =>
+      JSON.stringify(
+        new URL(m.slice(1, -1), new URL("api/admin/sns-hub/drafts/[id]/", root))
+          .href,
+      ),
+  );
+const { default: approve } = await import(
+  "data:text/javascript," + encodeURIComponent(approveSource)
+);
 const { default: redo } =
   await import("../../api/admin/sns-hub/drafts/[id]/redo.js");
 const { default: preview } =

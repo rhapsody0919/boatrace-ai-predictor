@@ -15,6 +15,7 @@ import {
   axisWhyKinds,
   b1Usual,
   entrySummary,
+  exhToday,
   powerWinners,
   exhibitionTable,
   factsEntry,
@@ -23,9 +24,9 @@ import {
   hintSummary,
   partsChangedBoats,
 } from "../../../utils/assistSummary";
+import { entryType } from "../../../utils/analogyScenario";
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
-import TargetSwitch from "./TargetSwitch";
 import WinFollowers, { ComboList } from "./WinFollowers";
 
 const pct = (k, n) => (n ? (k / n) * 100 : 0);
@@ -48,23 +49,17 @@ function AxisSummary({ m }) {
     vaCell,
     classes,
     onFacts,
-    target = 1,
-    onTarget,
-    follow = null,
   } = m;
-  const u = b1Usual(scope, 1, target);
-  // 案1b の「同じレース」の比べる相手は1着の件数（切り替えに関わらず）
-  const u1 = b1Usual(scope, 1, 1);
+  // 軸は1着だけ（2着以内・3着以内は相手レンズ。spec D-46）
+  const u = b1Usual(scope, 1);
   const entry = factsEntry(chips);
   if (!u) return null;
-  const va = vaFacts ? b1Usual({ facts: vaFacts }, 1, target) : null;
-  // 上の枠（堅い？荒れる？）は1着だけなので、件数の違いの説明は1着を選んだときだけ（BOA-831）
-  const win = target === 1;
+  const va = vaFacts ? b1Usual({ facts: vaFacts }) : null;
   const why = axisWhyKinds({
     kind: scope.kind,
     fellBack: scope.fellBack,
     venue,
-    win,
+    win: true,
     venueRefund: Boolean(va && vaCell?.n > 0),
   });
   const label = factsScopeLabel(scope, venue, 1, classes?.[0]);
@@ -73,10 +68,8 @@ function AxisSummary({ m }) {
   return (
     <>
       <section className="ta-box" data-guide="axis">
-        {/* 軸・買い目で共通の着順の切り替え。押して変わる大きい数字の直上に置く（BOA-831、デザイナー役 P2-2） */}
-        {onTarget && <TargetSwitch target={target} onTarget={onTarget} />}
         <h3 className="ta-h3-row">
-          {C.axisHeading(1, target)}
+          {C.axisHeading(1)}
           {venue && (
             <TheoryButton id="TC-V1" name={C.theoryVenueTitle(venue)} />
           )}
@@ -90,15 +83,21 @@ function AxisSummary({ m }) {
         <ClassLineup lineup={classLineup(classes, 1)} />
         {counts && (
           <p className="ta-note">
-            {C.classNote(1, classes[0], counts)}
-            <TermButton term="全国・級の並びが同じ" />
+            {C.classNote(1, classes[0], counts, factsScopeLabel(scope, venue))}
+            <TermButton
+              term={
+                scope.kind === "VC" && venue
+                  ? C.scopeVenue(venue)
+                  : "全国・級の並びが同じ"
+              }
+            />
           </p>
         )}
         {va && venue && (
           <BaseBar label={C.venueAllN(venue, va.n)} k={va.k} n={va.n} />
         )}
         {/* 上の枠と数字が違う理由は畳まずに出す（同じ「1号艇の1着」が 58% と 54.6% に見える。デザイナーのレビュー P1-3） */}
-        {win && hc && headerScope.kind === scope.kind && (
+        {hc && headerScope.kind === scope.kind && (
           <p className="ta-note ta-num">
             {C.whyRefund(
               comma(u.n),
@@ -142,7 +141,7 @@ function AxisSummary({ m }) {
             <span>
               <b>
                 {entry.hits > 0
-                  ? C.factsEntry(1, entry.hits, target)
+                  ? C.factsEntry(1, entry.hits)
                   : C.factsEntryNone(1)}
               </b>
               {entry.hits > 0 && (
@@ -158,93 +157,116 @@ function AxisSummary({ m }) {
           </button>
         )}
       </section>
-      {/* 軸の着順の切り替えでは変わらない（「1号艇が1着のとき」が前提。D-44 (3)） */}
-      {follow && (
-        <WinFollowers
-          f={follow}
-          label={label}
-          axisK={u1.k}
-          axisN={u1.n}
-          target={target}
-        />
-      )}
     </>
   );
 }
 
-function FlowSummary({ m }) {
+/**
+ * 展開レンズの図の上の結論（spec D-47 (3)、承認モック v2）: 本番のスタートの形の見立てと基準、展示後は今日の展示1行。
+ * 今日の展示は攻める艇の展示タイムの順位の区分で、その形のときの攻める艇の1着（枠なりのレース）。展示の進入が
+ * 枠なりでないと分かった日は、攻める艇のコースが変わるので出さない
+ */
+export function FlowConclusion({ m }) {
   const {
     scenario,
     today,
     post,
     v16Exhibition,
     courseByBoat,
-    similar,
-    racecardStage,
     reflecting,
     round,
+    exhRanks,
+    basis,
   } = m;
   const hs = scenario ? hintSummary(scenario, today) : null;
-  const top = hs?.top ?? null;
+  if (!hs) return null;
+  const top = hs.top;
+  const formName = top ? C.formNames[top.form] : null;
+  const exhForm =
+    post && top && v16Exhibition?.forms?.includes?.(top.form) ? true : false;
+  const entry = entryType(courseByBoat ?? []);
+  const ex =
+    post && top && (!entry || entry === "waku")
+      ? exhToday(scenario, top.form, exhRanks)
+      : null;
+  const hitP = top ? p0(top.hit[0], top.hit[1]) : null;
+  return (
+    <section className="ta-box ta-flow-concl">
+      <h3 className="ta-h3-row">
+        {C.flowShapeHeading}
+        {top && (
+          <TheoryButton
+            id={`TC-H:${top.id}`}
+            name={C.theoryHintTitle(formName)}
+            className="ta-th-hit"
+          >
+            {C.theoryHintButton}
+          </TheoryButton>
+        )}
+      </h3>
+      {top ? (
+        <>
+          <div className="ta-big">
+            <b>{formName}</b>
+            <span className="ta-big-cnt">{C.flowShapeRow}</span>
+            <span className="ta-big-pct ta-num">{hitP}%</span>
+            <span className="ta-big-cnt ta-num">
+              （{comma(top.hit[0])}/{comma(top.hit[1])}）
+            </span>
+          </div>
+          <div className="ta-legend">
+            <span className="ta-scopechip ta-num">
+              {/* 進入の札と件数が違う理由を添える（BOA-808 P3・BOA-809） */}
+              {C.scopeChipWhy(
+                C.flowScopeLabel(Boolean(round)),
+                top.hit[1] + top.miss[1],
+                C.scopeWhy.hint,
+              )}
+            </span>
+          </div>
+          <div className="ta-chk">
+            <span>✓ {C.hintConds[top.id]}</span>
+            {exhForm && <span>✓ {C.flowExhForm(formName)}</span>}
+          </div>
+          {/* 大きい数字と同じ「当てはまるとき」の棒は出さず、比べる相手（当てはまらないとき）の棒だけ（ユーザー決定 B） */}
+          <BaseBar label={C.flowMissBar} k={top.miss[0]} n={top.miss[1]} />
+          <p className="ta-note ta-num">
+            {C.flowShapeBase(p0(top.miss[0], top.miss[1]), hitP)}
+          </p>
+          {basis === "overall" && <p className="ta-note">{C.flowHintBasis}</p>}
+        </>
+      ) : (
+        <p className="ta-note">{C.flowNoHint}</p>
+      )}
+      {ex && (
+        <p className="ta-flow-today ta-num">
+          {C.flowToday(ex.att, ex.rank, C.exhBand[ex.band], formName)}
+          {ex.few ? (
+            C.flowTodayFew(ex.n)
+          ) : (
+            <>
+              {C.flowTodayWin} <b>{p0(ex.k, ex.n)}%</b>（{ex.k}/{ex.n}）
+            </>
+          )}
+        </p>
+      )}
+      {post && reflecting && <p className="ta-note">{C.stateReflecting}</p>}
+    </section>
+  );
+}
+
+function FlowSummary({ m }) {
+  const { scenario, today, post, courseByBoat, similar, racecardStage, round } =
+    m;
+  const top = scenario ? hintSummary(scenario, today).top : null;
   const formName = top ? C.formNames[top.form] : null;
   const form = top ? formSummary(scenario, top.form) : null;
   const entry = post ? entrySummary(scenario, courseByBoat) : null;
-  const exhForm =
-    post && top && v16Exhibition?.forms?.includes?.(top.form) ? true : false;
   const simLabel = similar
     ? C.similarLabel(similar.n, similar.allInLayer)
     : null;
   return (
     <>
-      {hs && (
-        <section className="ta-box">
-          <h3 className="ta-h3-row">
-            {C.flowShapeHeading}
-            {top && (
-              <TheoryButton
-                id={`TC-H:${top.id}`}
-                name={C.theoryHintTitle(formName)}
-                className="ta-th-hit"
-              >
-                {C.theoryHintButton}
-              </TheoryButton>
-            )}
-          </h3>
-          {top ? (
-            <>
-              <div className="ta-big">
-                <span className="ta-big-cnt">{C.flowShapeLead(formName)}</span>
-                <span className="ta-big-pct ta-num">
-                  {p0(top.hit[0], top.hit[1])}%
-                </span>
-                <span className="ta-big-cnt ta-num">
-                  {C.flowShapeMiss(p0(top.miss[0], top.miss[1]))}
-                </span>
-              </div>
-              <div className="ta-legend">
-                <span className="ta-scopechip ta-num">
-                  {/* 進入の札と件数が違う理由を添える（BOA-808 P3・BOA-809） */}
-                  {C.scopeChipWhy(
-                    C.flowScopeLabel(Boolean(round)),
-                    top.hit[1] + top.miss[1],
-                    C.scopeWhy.hint,
-                  )}
-                </span>
-              </div>
-              <div className="ta-chk">
-                <span>✓ {C.hintConds[top.id]}</span>
-                {exhForm && <span>✓ {C.flowExhForm(formName)}</span>}
-              </div>
-              {/* 大きい数字と同じ「当てはまるとき」の棒は出さず、比べる相手（当てはまらないとき）の棒だけ（ユーザー決定 B） */}
-              <BaseBar label={C.flowMissBar} k={top.miss[0]} n={top.miss[1]} />
-              <p className="ta-note">{C.flowHintSource}</p>
-            </>
-          ) : (
-            <p className="ta-note">{C.flowNoHint}</p>
-          )}
-          {post && reflecting && <p className="ta-note">{C.stateReflecting}</p>}
-        </section>
-      )}
       {form && (
         <section className="ta-box">
           <h3 className="ta-h3-row">
@@ -629,14 +651,24 @@ function BetLensSummary({ m }) {
 /**
  * レンズの要約（FR-4、screens S-1 D）。レースの全体に関わる値をレンズごとに並べる（承認モック v7 の renderSum）。
  * 6艇の値の最良は金枠だけで示す（隠し文字は図の数字の側だけ）
- * @param {{lens: string, axis: object|null, flow: object, power: object, bet: object}} props 各レンズの材料
+ * @param {{lens: string, axis: object|null, flow: object, power: object, place: object|null, bet: object}} props 各レンズの材料
  */
-export default function LensSummary({ lens, axis, flow, power, bet }) {
+export default function LensSummary({ lens, axis, flow, power, place, bet }) {
   return (
     <div className="ta-sum">
       {lens === "axis" && axis && <AxisSummary m={axis} />}
       {lens === "flow" && <FlowSummary m={flow} />}
       {lens === "power" && <PowerSummary m={power} />}
+      {lens === "place" && place?.follow && (
+        // 相手レンズ（spec D-46）: 1号艇を軸にしたときの2着・3着
+        <WinFollowers
+          f={place.follow}
+          label={place.label}
+          axisK={place.axisK}
+          axisN={place.axisN}
+          above={false}
+        />
+      )}
       {lens === "bet" && <BetLensSummary m={bet} />}
     </div>
   );
