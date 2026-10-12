@@ -693,6 +693,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-digest-featured-candidates.js",
+      "tier": "ci",
+      "guards": "注目レースは表示上限で切る前の逃げ候補から選ぶ（BOA-851）"
+    },
+    {
       "script": "verify-digest-motor-race-count.js",
       "tier": "ci",
       "guards": "「本日のデータ一覧」の行に付ける会場公式のモーター出走数（motor_race_count、BOA-702）。会場とモーター番号の組で引くこと、2連率の無い行・番号が分からない行は NULL、全行に同じキーを持たせること"
