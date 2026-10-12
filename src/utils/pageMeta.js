@@ -52,3 +52,21 @@ export function getTodayVenuePageMeta(t, venueCode, races, lang = "ja") {
     canonical: `${SITE_ORIGIN}${localizePath(`/venue/${venueCode}`, lang)}`,
   };
 }
+
+/**
+ * 会場ページ（本日分）のパンくず（ホーム › 会場名）。画面の Breadcrumb と、ボット向け HTML の BreadcrumbList が同じ値を使う
+ *
+ * @param {(key: string, params?: object) => string} t
+ * @param {number} venueCode - 1〜24
+ * @param {string} [lang] - 表示中の言語（既定は ja）
+ * @returns {{name: string, url: string}[]}
+ */
+export function getTodayVenueBreadcrumbItems(t, venueCode, lang = "ja") {
+  return [
+    { name: t("analysisPage.breadcrumbHome"), url: localizePath("/", lang) },
+    {
+      name: t(`venues.${venueCode}`),
+      url: localizePath(`/venue/${venueCode}`, lang),
+    },
+  ];
+}

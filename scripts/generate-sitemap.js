@@ -6,7 +6,7 @@ import {
   DEFAULT_LANGUAGE,
   localizePath,
   parseLangFromPath,
-  getAvailableLanguages,
+  getHreflangAlternates,
 } from "../src/config/languages.js";
 import { VENUE_GUIDES_EN } from "../src/data/venueGuidesEn.js";
 import {
@@ -532,9 +532,8 @@ async function getMeetPages(latest) {
     console.warn("⚠️ Supabase未設定のため、節ページはスキップします");
     return [];
   }
-  const { isOutOfScopeMeetTitle, MEET_PAGE_GRADES } = await import(
-    "../src/utils/meetPageModel.js"
-  );
+  const { isOutOfScopeMeetTitle, MEET_PAGE_GRADES } =
+    await import("../src/utils/meetPageModel.js");
   const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const until = new Date(todayJst);
   until.setUTCDate(until.getUTCDate() + 14);
@@ -611,23 +610,11 @@ async function getLatestRaceDates() {
   return result;
 }
 
-// 言語版の組（hreflang）。画面の HreflangTags と同じ getAvailableLanguages で決める。
+// 言語版の組（hreflang）。画面の HreflangTags と同じ getHreflangAlternates で決める。
 // 画面の hreflang は JS 実行後にしか無く、日本語の検索に /en/・/ko/ が出ていた（BOA-560）。
 // 1言語しか無いページは出さない（画面も出さない）
 function alternatesFor(loc) {
-  const { basePath } = parseLangFromPath(loc);
-  const languages = getAvailableLanguages(basePath);
-  if (languages.length < 2) return [];
-  const urlFor = (code) => `${SITE_URL}${localizePath(basePath, code)}`;
-  return [
-    ...languages.map(({ code, hreflang }) => ({
-      hreflang,
-      href: urlFor(code),
-    })),
-    ...(languages.some(({ code }) => code === DEFAULT_LANGUAGE)
-      ? [{ hreflang: "x-default", href: urlFor(DEFAULT_LANGUAGE) }]
-      : []),
-  ];
+  return getHreflangAlternates(parseLangFromPath(loc).basePath, SITE_URL);
 }
 
 // sitemap.xmlの生成

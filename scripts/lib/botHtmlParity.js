@@ -16,9 +16,11 @@ export const normalizeText = (s) => String(s ?? "").replace(/\s+/g, "");
  * ボット向け HTML から、照合する文字列を取り出す
  *
  * @param {string} html
- * @returns {{texts: string[], hrefs: string[], head: {title: string, description: string, canonical: string}}}
+ * @returns {{texts: string[], hrefs: string[], head: {title: string, description: string, canonical: string,
+ *   alternates: {hreflang: string, href: string}[], jsonLd: string[]}}}
  *   texts: <main> の中のテキストノード（見出し・会場名・節の名前・グレード・レース番号・締切時刻・最終更新など）を重複なしで
  *   hrefs: <main> の中の <a href>
+ *   head.alternates: <link rel="alternate" hreflang>、head.jsonLd: <script type="application/ld+json"> の中身（文字列のまま）
  */
 export function extractBotItems(html) {
   const $ = cheerio.load(html);
@@ -44,8 +46,42 @@ export function extractBotItems(html) {
       description:
         $('head > meta[name="description"]').first().attr("content") ?? "",
       canonical: $('head > link[rel="canonical"]').first().attr("href") ?? "",
+      alternates: alternatesOf($),
+      jsonLd: $('script[type="application/ld+json"]')
+        .map((_, s) => $(s).text())
+        .get(),
     },
   };
+}
+
+function alternatesOf($) {
+  return $('link[rel="alternate"][hreflang]')
+    .map((_, l) => ({
+      hreflang: $(l).attr("hreflang") ?? "",
+      href: $(l).attr("href") ?? "",
+    }))
+    .get();
+}
+
+/** キーの順によらない JSON の文字列（JSON-LD の比較用） */
+export function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
+  if (value && typeof value === "object") {
+    return `{${Object.keys(value)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${canonicalJson(value[k])}`)
+      .join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/** JSON として読めれば canonicalJson、読めなければ null */
+function parseLd(text) {
+  try {
+    return canonicalJson(JSON.parse(text));
+  } catch {
+    return null;
+  }
 }
 
 /** 人の画面のリンク先を、同じ origin ならパス（＋クエリ）にそろえる。違う origin・解釈できないものはそのまま */
@@ -93,11 +129,14 @@ function stampMatches(botText, humanTextNormalized, toleranceMin) {
  * ボット側の文字列のうち、人の画面に無いものを返す（空配列なら合格）
  *
  * @param {ReturnType<typeof extractBotItems>} bot
- * @param {{text: string, hrefs: string[], head: {title: string, description: string, canonicals: string[]}}} human
- *   人の画面を Playwright で描いた結果（body の innerText・a[href] の属性値・head）
+ * @param {{text: string, hrefs: string[], head: {title: string, description: string, canonicals: string[],
+ *   alternates?: {hreflang: string, href: string}[], jsonLd?: string[]}}} human
+ *   人の画面を Playwright で描いた結果（body の innerText・a[href] の属性値・head。alternates・jsonLd は
+ *   document 全体の link[rel=alternate][hreflang] と script[type="application/ld+json"] の中身）
  * @param {string} origin - 例 https://www.boat-ai.jp
  * @param {{stampToleranceMin?: number}} [options] - 最終更新の時刻の許容差（分）。既定 10（CDN の5分×2）
- * @returns {{kind: "text"|"href"|"title"|"description"|"canonical", value: string}[]}
+ * @returns {{kind: "text"|"href"|"title"|"description"|"canonical"|"hreflang"|"jsonld", value: string}[]}
+ *   hreflang は「hreflang href」、jsonld はボット側の JSON-LD の中身（JSON として読めないものも無いものに出す）
  */
 export function findMissing(
   bot,
@@ -131,6 +170,22 @@ export function findMissing(
   }
   if (!(human.head?.canonicals ?? []).includes(bot.head.canonical)) {
     missing.push({ kind: "canonical", value: bot.head.canonical });
+  }
+  const pair = ({ hreflang, href }) => `${hreflang} ${href}`;
+  const humanAlternates = new Set((human.head?.alternates ?? []).map(pair));
+  for (const a of bot.head.alternates ?? []) {
+    if (!humanAlternates.has(pair(a))) {
+      missing.push({ kind: "hreflang", value: pair(a) });
+    }
+  }
+  const humanLd = new Set(
+    (human.head?.jsonLd ?? []).map(parseLd).filter((v) => v !== null),
+  );
+  for (const text of bot.head.jsonLd ?? []) {
+    const ld = parseLd(text);
+    if (ld === null || !humanLd.has(ld)) {
+      missing.push({ kind: "jsonld", value: text });
+    }
   }
   return missing;
 }

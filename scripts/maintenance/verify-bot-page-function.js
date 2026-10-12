@@ -12,6 +12,8 @@
  * 6. 節の名前などの値がテキスト・属性とも HTML エスケープされる
  * 7. 材料は60秒だけ使い回し、61秒後に取り直す。取得中の呼び出しは1回の取得を待つ
  * 8. 関数のファイルが Node から import でき、vercel.json で syd1 に置かれ、edge になっていない
+ * 9. head の hreflang（4言語と x-default）が人のページと同じ URL、JSON-LD が JSON として読めて型・中身が人のページと同じ
+ *    （トップは index.html の共通の3つ、会場はそれに BreadcrumbList）。値に </script> があっても要素が閉じない（BOA-848）
  *
  * 実行環境のタイムゾーンを UTC にして走らせる（関数は UTC で動く）。
  */
@@ -38,9 +40,16 @@ function check(label, actual, expected) {
   }
 }
 
-const { createBotPageHandler, createTodayRacesSource, getJaT, ROBOTS } =
-  await import("../../api/_lib/botPage.js");
-const { getTopPageMeta, getTodayVenuePageMeta } =
+const {
+  createBotPageHandler,
+  createTodayRacesSource,
+  getJaT,
+  ROBOTS,
+  jsonLdScriptText,
+  parseJsonLdScripts,
+  renderVenueHtml,
+} = await import("../../api/_lib/botPage.js");
+const { getTopPageMeta, getTodayVenuePageMeta, getTodayVenueBreadcrumbItems } =
   await import("../../src/utils/pageMeta.js");
 // 関数のファイルそのものが Node から読める（import の時点で取得しない）
 const topModule = await import("../../api/bot-page/top.js");
@@ -97,12 +106,19 @@ const jsonResponse = (body, status = 200) =>
 async function call(
   page,
   url,
-  { json = fresh(), method = "GET", fetchImpl, now = () => NOW } = {},
+  {
+    json = fresh(),
+    method = "GET",
+    fetchImpl,
+    now = () => NOW,
+    getSiteJsonLd,
+  } = {},
 ) {
   const f = fetchImpl ?? stubFetch(() => jsonResponse(json));
   const handler = createBotPageHandler(page, {
     getTodayJson: createTodayRacesSource({ fetchImpl: f, now }),
     now,
+    ...(getSiteJsonLd ? { getSiteJsonLd } : {}),
   });
   const res = fakeRes();
   await handler({ method, url, headers: { host: HOST } }, res);
@@ -135,6 +151,16 @@ const expectedHead = (meta) => ({
 });
 const links = (html) =>
   [...html.matchAll(/<a href="([^"]*)"/g)].map((m) => m[1]);
+// head の hreflang の行（属性の値はエスケープを戻す）
+const alternatesOf = (html) =>
+  [
+    ...html.matchAll(
+      /<link rel="alternate" hreflang="([^"]*)" href="([^"]*)">/g,
+    ),
+  ].map((m) => ({ hreflang: decode(m[1]), href: decode(m[2]) }));
+// JSON-LD 以外の <script>（値のエスケープ漏れで入ったもの）があるか
+const hasRawScript = (html) =>
+  /<script(?! type="application\/ld\+json">)/i.test(html);
 
 // ---- 1・2. トップ ----
 {
@@ -432,21 +458,13 @@ for (const code of [1, 24]) {
     .body;
   const escaped =
     "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;&amp;&#39;&quot;";
-  check(
-    "エスケープ: トップに生の <script> が無い",
-    top.includes("<script"),
-    false,
-  );
+  check("エスケープ: トップに生の <script> が無い", hasRawScript(top), false);
   check(
     "エスケープ: トップの本文はエスケープ済み",
     top.includes(escaped),
     true,
   );
-  check(
-    "エスケープ: 会場に生の <script> が無い",
-    venue.includes("<script"),
-    false,
-  );
+  check("エスケープ: 会場に生の <script> が無い", hasRawScript(venue), false);
   // 一般戦は title に節の名前が入らないので、SG にして title・description（属性）に入れる
   for (const r of kiryu.races) r.raceGrade = "SG";
   const sg = (await call("venue", "/api/bot-page/venue/1", { json })).res.body;
@@ -462,7 +480,7 @@ for (const code of [1, 24]) {
   );
   check(
     "エスケープ: SG の会場にも生の <script> が無い",
-    sg.includes("<script"),
+    hasRawScript(sg),
     false,
   );
 }
@@ -526,9 +544,9 @@ for (const code of [1, 24]) {
   const fn = vercel.functions?.["api/bot-page/**/*.js"];
   check("vercel.json: syd1", fn?.regions, ["syd1"]);
   check(
-    "vercel.json: ja の文言のファイルを同梱",
+    "vercel.json: ja の文言のファイルと index.html（共通の JSON-LD）を同梱",
     fn?.includeFiles,
-    "src/locales/ja/common.json",
+    "{src/locales/ja/common.json,index.html}",
   );
   for (const rel of ["api/bot-page/top.js", "api/bot-page/venue/[code].js"]) {
     check(
@@ -537,6 +555,163 @@ for (const code of [1, 24]) {
       false,
     );
   }
+}
+
+// ---- 9. hreflang・JSON-LD（BOA-848） ----
+{
+  const SITE = "https://www.boat-ai.jp";
+  // 人のページの HreflangTags が出す行（src/config/languages.js の SUPPORTED_LANGUAGES・localizePath の結果）
+  const expectedAlternates = (base) => [
+    { hreflang: "ja", href: `${SITE}${base}` },
+    { hreflang: "en", href: `${SITE}/en${base === "/" ? "/" : base}` },
+    { hreflang: "zh-Hant", href: `${SITE}/zh-TW${base === "/" ? "/" : base}` },
+    { hreflang: "ko", href: `${SITE}/ko${base === "/" ? "/" : base}` },
+    { hreflang: "x-default", href: `${SITE}${base}` },
+  ];
+  // 人のページの初期 HTML（index.html）の共通の JSON-LD
+  const siteLd = parseJsonLdScripts(read("index.html"));
+  check(
+    "index.html の共通の JSON-LD の型",
+    siteLd.map((ld) => ld["@type"]),
+    ["WebSite", "SoftwareApplication", "Organization"],
+  );
+
+  const top = (await call("top", "/api/bot-page/top")).res.body;
+  check("hreflang: トップ", alternatesOf(top), expectedAlternates("/"));
+  const topLd = parseJsonLdScripts(top);
+  check("JSON-LD: トップは index.html と同じ（型・中身）", topLd, siteLd);
+  check(
+    "hreflang・JSON-LD は head の中",
+    top.split("</head>")[1].includes("ld+json") ||
+      top.split("</head>")[1].includes('rel="alternate"'),
+    false,
+  );
+
+  const venue = (await call("venue", "/api/bot-page/venue/1")).res.body;
+  check("hreflang: 会場", alternatesOf(venue), expectedAlternates("/venue/1"));
+  const venueLd = parseJsonLdScripts(venue);
+  check(
+    "JSON-LD: 会場の型（共通の3つ＋パンくず）",
+    venueLd.map((ld) => ld["@type"]),
+    ["WebSite", "SoftwareApplication", "Organization", "BreadcrumbList"],
+  );
+  check(
+    "JSON-LD: 会場の共通部分は index.html と同じ",
+    venueLd.slice(0, 3),
+    siteLd,
+  );
+  // 人の会場ページの Breadcrumb（ホーム › 桐生）と同じ
+  check("JSON-LD: 会場のパンくず", venueLd[3], {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "ホーム", item: `${SITE}/` },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "桐生",
+        item: `${SITE}/venue/1`,
+      },
+    ],
+  });
+  check(
+    "パンくずの項目は人の画面と同じ関数の値",
+    getTodayVenueBreadcrumbItems(t, 1),
+    [
+      { name: "ホーム", url: "/" },
+      { name: "桐生", url: "/venue/1" },
+    ],
+  );
+  // 0件の日も同じ head（人の会場ページは0件でもパンくずを出す）
+  const empty = { success: true, scrapedAt: "2026-10-11T12:00:00Z", data: [] };
+  const emptyVenue = (
+    await call("venue", "/api/bot-page/venue/1", { json: empty })
+  ).res.body;
+  check(
+    "0件: 会場の hreflang・JSON-LD の型は同じ",
+    [
+      alternatesOf(emptyVenue),
+      parseJsonLdScripts(emptyVenue).map((ld) => ld["@type"]),
+    ],
+    [alternatesOf(venue), venueLd.map((ld) => ld["@type"])],
+  );
+
+  // </script> を含む値で要素が閉じない
+  const evil = `</script><script>alert("x")</script><!--&\u2028`;
+  check(
+    "jsonLdScriptText: < > & を \\uXXXX にする",
+    /[<>&]/.test(jsonLdScriptText({ name: evil })),
+    false,
+  );
+  check(
+    "jsonLdScriptText: JSON として読むと元の値",
+    JSON.parse(jsonLdScriptText({ name: evil })).name,
+    evil,
+  );
+  const evilSite = await call("top", "/api/bot-page/top", {
+    getSiteJsonLd: async () => [{ "@type": "WebSite", name: evil }],
+  });
+  check(
+    "</script>: 共通の JSON-LD の値でも要素が閉じない（<script> は JSON-LD の1つだけ）",
+    [
+      (evilSite.res.body.match(/<script/g) || []).length,
+      (evilSite.res.body.match(/<\/script>/g) || []).length,
+      hasRawScript(evilSite.res.body),
+    ],
+    [1, 1, false],
+  );
+  check(
+    "</script>: 読み戻すと元の値",
+    parseJsonLdScripts(evilSite.res.body)[0].name,
+    evil,
+  );
+  const venueModelHtml = renderVenueHtml(
+    {
+      path: "/venue/1",
+      meta: { title: "t", description: "d", canonical: `${SITE}/venue/1` },
+      heading: "h",
+      emptyText: "e",
+      races: [],
+      breadcrumbItems: [
+        { name: "ホーム", url: "/" },
+        { name: evil, url: "/venue/1" },
+      ],
+    },
+    "v",
+  );
+  check(
+    "</script>: パンくずの名前でも要素が閉じない",
+    [
+      hasRawScript(venueModelHtml),
+      parseJsonLdScripts(venueModelHtml)[0].itemListElement[1].name,
+    ],
+    [false, evil],
+  );
+  // index.html が読めない・JSON-LD が壊れていたら 503（黙って JSON-LD を落とさない）
+  const origError = console.error;
+  console.error = () => {};
+  try {
+    const broken = await call("top", "/api/bot-page/top", {
+      getSiteJsonLd: async () => {
+        throw new Error("index.html が無い");
+      },
+    });
+    check("共通の JSON-LD が読めない: 503", broken.res.statusCode, 503);
+  } finally {
+    console.error = origError;
+  }
+  check(
+    "parseJsonLdScripts: JSON でない JSON-LD は例外",
+    (() => {
+      try {
+        parseJsonLdScripts('<script type="application/ld+json">{x</script>');
+        return "通った";
+      } catch {
+        return "例外";
+      }
+    })(),
+    "例外",
+  );
 }
 
 if (failures.length > 0) {
