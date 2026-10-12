@@ -18,7 +18,7 @@ flowchart LR
   G --> PR[("predictions unified<br/>feature_contributions.inCaution")]
   PR -->|157| R1["get_today_races<br/>get_predictions_by_date(_light)"]
   PR -->|05:30| D["generate-morning-digest.js<br/>156 in_caution_* 列"]
-  PR -->|06:00〜| S["SNS 企画 findQualifyingRaces<br/>metric 'inCaution.rate'"]
+  PR -->|06:00〜| S["SNS 企画 findQualifyingRaces<br/>metric 'inCaution.pct'<br/>unified の行で判定"]
   R1 --> UI["AI予想タブ・一覧・ホーム・思考アシスト<br/>（isInCautionEnabled）"]
   D --> TD["/today"]
   AC --> ACC["/accuracy・/winning-technique"]
@@ -41,8 +41,9 @@ flowchart LR
 
 ### 段（level）
 
-- `level = r < 35 ? "low" : r < 55 ? "mid" : "high"`、`r = floor(rate × 100 + 0.5)`（画面に出す整数の%で判定する。34.6% を「35%」と出して「35%未満」に入れない）
-- 閾値と丸め方は `src/data/inCautionConfig.json`（`thresholds: [35, 55]`・`from: "2019-04-01"`・`prelaunch` の期間・`launchDate`）に1か所だけ置き、JS（`src/utils/inCautionLevel.js`）と Python（`in_caution_bands.py`）の両方が読む。Python の `round()` は偶数丸めなので使わない（`floor(x + 0.5)`）。境目の例（34.49%・34.5%・54.5%）を JS と Python で同じ答えになるかを verify で固定する
+- 画面に出す整数の% `pct = floor((200 × nonWin + n) / (2 × n))`（整数だけで四捨五入。浮動小数の `rate × 100` を丸めると、保存の桁によって 0.145・0.285・0.565・0.575 などで答えがずれる。system-architect L5）。`pct` を保存し、画面の%も段もこれから出す
+- `level = pct < 35 ? "low" : pct < 55 ? "mid" : "high"`（34.6% を「35%」と出して「35%未満」に入れない）
+- 閾値・期間・定義の版は `src/data/inCautionConfig.json`（`def: "gapband-r-v1"`・`thresholds: [35, 55]`・`bandWidthCents: 50`・`bandMin: -8`・`bandMax: 6`・`from: "2019-04-01"`・`minTotalN`・`prelaunch` の期間・`launchDate`）に1か所だけ置き、JS（`src/utils/inCautionLevel.js`）と Python（`in_caution_bands.py` が `ROOT/src/data/` を読む。無ければ FileNotFoundError で落ちて Slack）の両方が読む。閾値・帯・期間を変えたら `def` を上げる（verify で値の組と `def` を固定）。境目の例（`nonWin/n` が 34.49%・34.5%・54.5% になる組）を JS と Python で同じ答えになるかを verify で固定する
 - 段は朝の生成が決めて保存し、RPC・画面・digest・/accuracy は保存した `level` を使う（閾値をかけ直さない。architecture-y.md §2）
 
 ### 出さないレース
@@ -52,7 +53,7 @@ flowchart LR
 | 1号艇が欠場（`race_entries.is_absent`）・1号艇の勝率が無い | `inCaution: null`、`inCautionSkip: "boat1_absent" / "boat1_no_rate"` | spec FR-2 |
 | 2〜6号艇の欠場が2艇以上 | `null`、`"multi_absent"`（58R、未検証） | round4 item5 |
 | 2〜6号艇の勝率が全部無い | `null`、`"others_no_rate"` | 勝率差が出せない |
-| RPC の失敗・表が空 | `null`、`"rates_unavailable"`。予想全体は止めない。0% や前日の値で埋めない | architecture-y.md §1 |
+| RPC の失敗・表が欠けている | `null`、`"rates_unavailable"`。予想全体は止めない。0% や前日の値で埋めない。「表が欠けている」は RPC の `first_date` が config の `from` より後、`last_date` が前日より3日以上古い、合計の `n` が `minTotalN`（例 40万）未満のどれか（初回の full の前・full の失敗後に、直近14日分だけの表から、もっともらしいが違う率を書かない。system-architect M2） | architecture-y.md §1 |
 | 1艇欠場 | 残りの艇で出し、`absentBoats: [n]` を付ける（画面は「欠場あり（5艇）」） | round4 item5（AUC 0.667、3,983R） |
 | 帯の件数 < 300 | 出し、`lowSample: true`（画面は「件数少なめ（n件）」） | spec FR-2 |
 
@@ -63,23 +64,23 @@ flowchart LR
 
 ```json
 {
-  "rate": 0.6480, "n": 35181, "nonWin": 22797, "level": "high",
+  "pct": 65, "n": 35181, "nonWin": 22797, "level": "high",
   "gapCents": -212, "band": -5, "round": "other",
   "boat1WinRate": 4.81, "topOtherBoat": 3, "topOtherWinRate": 6.93,
-  "baseRate": 0.4540, "baseN": 486000,
-  "absentBoats": [], "lowSample": false,
-  "from": "2019-04-01", "through": "2026-10-10", "def": "gapband-r-v1"
+  "basePct": 45, "absentBoats": [], "lowSample": false,
+  "through": "2026-10-10", "def": "gapband-r-v1"
 }
 ```
 
-- `rate`・`baseRate` は小数4桁。`through` は RPC の `last_date`（夜のジョブが遅れたら前日より古くなる）。`def` は定義の版（帯の幅・期間・ラウンドの分け方を変えたら上げる。/accuracy の公開後の実績は同じ `def` の行だけを数える）
+- `pct`・`basePct` は上の整数の式。率そのものが要るとき（検証）は `nonWin / n`。`through` は RPC の全体の `last_date`（帯ごとの最終日ではない。夜のジョブが遅れたら前日より古くなる）。`def` は定義の版（/accuracy の公開後の実績は同じ `def` の行だけを数える）。期間の始まりは `def` から決まる（config の `from`）ので保存しない
+- 1レース約250字（今の feature_contributions は 1,169〜1,290字、system-architect が 2026-10-12 の168行で実測）。RPC では選ばずにそのまま返す（get_today_races の出力が約1.5割増える。RPC 側でキーを選ぶと、保存の形と RPC の2か所でキーの一覧を持つことになるので、保存の形を小さくする方を選んだ。system-architect L6）
 - 理由の1つめ（勝率差）は `boat1WinRate`・`topOtherBoat`・`topOtherWinRate` から画面で組み立てる（文を保存しない。4言語のため）
 - 2つめ以降の理由（spec FR-3「v16 の差がつく材料の言い方で最大2つ」）: **モックの承認範囲では理由は勝率差の1行と「ほかの材料（展示・モーター等）は龍神ソナーの『差がつく材料』で」の1行だけ**で、2つめ以降の行は描かれていない（mock/1-ai-tab-375.png）。承認したモックに合わせて、2つめ以降の理由は出さない。v16 の材料は 07:10 以降に作られ、朝 5時台の生成では読めない（today-impact.md）ことも理由。平均ST は出さないので BOA-818 の期間の食い違いは画面から消える
 
 ### 生成側の変更（`scripts/daily/generate-unified-predictions.js`）
 
 - 新しい純関数 `scripts/lib/inCaution.js`: `computeInCaution({entries, raceStage, rates, base, through})` → `{inCaution, skip}`。`rates` は RPC の行を `Map("round|band" → {n, nonWin})` にしたもの。段は `src/utils/inCautionLevel.js` の `levelOf(rate)` を import（DRY、生成と画面で同じ関数）
-- `generateUnifiedPredictions` の先頭で RPC を1回呼ぶ（`client.rpc("get_in_caution_band_rates", {p_from: null, p_through: 前日})`）。失敗は catch して全レース `rates_unavailable`、`console.error` に残す（races-init の後始末は例外で止めない）
+- `generateUnifiedPredictions` の先頭で RPC を1回呼ぶ（`client.rpc("get_in_caution_band_rates", {p_from: null, p_through: 前日})`）。失敗は間隔を空けて3回まで再試行し、それでも失敗したら全レース `rates_unavailable` で予想の行は書いた上で、戻り値に `inCautionFailed: true` を返す。races-init の後始末（`job.js:139-150`）はこれを見て `fin.unified` を「失敗」で記録し、次の起動（2分後）でやり直させる（後始末が unified を作り直すのは「行が無いレースがあるとき」だけなので、そのままだと一時的な失敗でもその日は null のまま /today の 05:30 まで固まる。system-architect M3）。`morning-init.js` の経路も同じ戻り値を見る
 - `race_conditions` は今も `*` で読んでいるので `race_stage` の追加の読み取りは要らない。`race_entries.is_absent` も `*` に含まれる
 - 旧キー（`turnPrediction`・`volatilityComposite`・`volatilityPercentile`・`volatilityPercentileIsFallback`・`volatilityReasons`）は §7 の「旧キーをやめる」まで書き続ける
 - 同じ日の作り直し（races-init の後始末、`job.js:24-25`）で全レースを書き直しても、夜の表は日中に変わらないので値は同じ（/today の 05:30 の固定と食い違わない）
@@ -94,7 +95,11 @@ flowchart LR
 | workflow | `.github/workflows/in-caution-nightly.yml` | `analogy-v16-morning.yml` と同じ形（`export_pool.js --daily` → Python）。inputs: `full`（全期間を書き直す）。失敗は Slack |
 | 起動 | `scripts/lib/analogyDispatch.js` の `DISPATCH_WORKFLOWS` に `in_caution_nightly`、`api/cron/in-caution-dispatch.js`、`vercel.json` の cron `30 17 * * *`（JST 2:30）、`scripts/lib/scrapeJobs/registry.js` に `in_caution_dispatch`（modeGated、`failureAlertAfter: 1`） | GitHub Actions の schedule は使わない（遅れ・欠落が常態、analogyDispatch.js の冒頭） |
 
-- 毎晩は直近14日（`race_date >= 対象日−14`）だけを upsert する（結果の訂正・遅れて入った結果を拾う）。全期間は初回と `full=true` のときだけ（約5万行、1000行ずつ）
+- 毎晩は直近14日（`race_date >= 対象日−14`）だけを作り直す（結果の訂正・遅れて入った結果を拾う）。全期間は初回と `full=true` のときだけ（約5万行、1000行ずつ）
+- 書き方は「upsert してから古い行を消す」: 実行の開始時刻を `computed_at` として全行の payload に入れて upsert（`on_conflict=race_date,round_grp,gap_band`、`Prefer: resolution=merge-duplicates`。更新では DEFAULT が効かないので payload に入れる）→ 窓の中で `computed_at < 開始時刻` の行を DELETE。件数が0になったセル（CHECK `n > 0` で0の行は書けない）を消すため。full も先に全部消さずに同じやり方にする（途中で落ちても半分の表を作らない。system-architect M1）
+- 14日のモードは本体の表だけを export し（`export_pool.js --daily races entries exhibition conditions results start_timings`）、Python は `load_main` だけを使う。長期（kb_archive、2025-12-02 まで）は full のときだけ読む（毎晩6年分を Storage から読まない。system-architect L7。`--daily` とテーブル名の指定を同時に使えるかは実装で確かめる）
+- workflow に `concurrency: in-caution-nightly`。full の手動実行も JST 04:30〜23:00 は書かない（`force=true` のときだけ書く）。「日中に表を書き換えない」をコードで守る（system-architect L8）
+- Python から表を読むとき（公開前の検証）は主キー順に limit/offset で1000行ずつ、`count=exact` で件数を照合。predictions は `race_id` の gte/lt と `select=race_id,ic:feature_contributions->inCaution` で読み、LIKE は使わない（anon の `race_id=like.…` は 57014 になった。system-architect L9）
 - 14日より前の本体の結果の訂正は週次の学習のキャッシュ（`analogy/source/main/`）に入ってから `full` で拾う。6年分の合計に対する影響はほぼ無いので、定期の `full` は作らない（YAGNI）
 - 日中に表を書き換えない（朝の生成が日全体を作り直すことがあり、/today と食い違う）。2:30 は結果の確定（前日の最終レース 21時頃＋訂正）より後、races-init（05:00〜）より前
 - `--daily` は週次のキャッシュの月が1つでも欠けると失敗する（export_pool.js の冒頭）。v16 の朝のバッチと同じ前提で、失敗は Slack に出る
@@ -115,7 +120,7 @@ erDiagram
         timestamptz computed_at
     }
     morning_digest_rows {
-        numeric(5,2) in_caution_rate
+        smallint in_caution_pct
         integer in_caution_n
         text in_caution_level
     }
@@ -143,9 +148,9 @@ erDiagram
 | `RateBar`（共通化） | `src/components/race/RateBar.jsx` | 思考アシストの `RoughCard.jsx` の `MiniBar` を切り出す。`RoughCard`・`InCautionCard`・`InCautionAccuracyChart` の3か所 |
 | `InCautionBadge`（新規、札） | `src/components/race/InCautionBadge.jsx` | `level`。カード・`RaceCard`・ホーム・/today で同じ言葉と色 |
 | `RaceCard` | 拡張 | `racePrediction.inCaution`。真ん中の段は枠線だけ。`raceCard.badgeTurn` と的中/外れを外す |
-| `TodaysVolatilityHighlights` | 拡張（名前は据え置き） | `race.inCaution.rate`・`level`。`volatilityHighlights.js` の入力を `{rate, level, closed}` に |
+| `TodaysVolatilityHighlights` | 拡張（名前は据え置き） | `race.inCaution.pct`・`level`。`volatilityHighlights.js` の入力を `{rate, level, closed}` に |
 | `InCautionAccuracyChart`（新規） | `src/components/analysis/` | `accuracy_cache.in_caution_accuracy`（新しい `getInCautionAccuracy()`、6h キャッシュ、`getUnifiedVolatilityAccuracy` と同じ形） |
-| 思考アシスト `RoughCard`・`RoughSheet` | 拡張 | 1着のバー = `1 − inCaution.rate`（件数は `inCaution.n`）。万舟は今の級の並びのまま。アシストのページは `useThinkingAssistData.js:34` が `useDatePredictions`（`getPredictions`）でレースを読んでいるので、157 の後は `inCaution` がそのまま届く（問い合わせは増えない） |
+| 思考アシスト `RoughCard`・`RoughSheet` | 拡張 | 1着のバー = `100 − inCaution.pct`（%）（件数は `inCaution.n`）。万舟は今の級の並びのまま。アシストのページは `useThinkingAssistData.js:34` が `useDatePredictions`（`getPredictions`）でレースを読んでいるので、157 の後は `inCaution` がそのまま届く（問い合わせは増えない） |
 
 - `isInCautionEnabled()` が false の間は今の画面のまま（旧部品を消さない）。true で新部品に切り替わる。公開後の掃除の PR で旧部品と分岐を消す
 - 段の色（ダークモードは意味トークン、mock-reviews-v1.md）: 崩れやすい＝`--color-warning-dark-text`（文字）＋その薄い塗り、中くらい＝`--border-hairline` の枠線・塗りなし、堅め＝`--color-success-text`＋薄い塗り、本文＝`--text-primary`。4つとも `src/styles/design-tokens.css` にライト・ダーク両方ある（63・66・123・124 行、ダーク 368〜377 行）。新しい CSS は `in-caution-` の接頭辞（`verify:css-collisions`）。ダークで 3:1 以上を e2e の layout で確かめる
@@ -177,9 +182,10 @@ erDiagram
 
 ## 5. /today と朝のダイジェスト（FR-5、156）
 
-- `generate-morning-digest.js` の `fetchVolatility`（:275）と並べて `fetchInCaution` を足し、行に `in_caution_rate`（`rate × 100`、小数2桁）・`in_caution_n`・`in_caution_level` を書く。`OPTIONAL_ROW_COLUMNS`（:824）に3列を足し、156 の適用前は列を外して書く（131 と同じ）
-- 注目レースの選び方（`pickFeatured` :582-627、`digestMetrics.js:147-169` の方向一致度）は、フラグの切り替えの日から `in_caution_rate` を使う（`v/100` → `in_caution_rate/100`）。0〜100 の一様な順位から 20〜82% の率に替わるので、逃げの方向一致度（`1 − v`）の重みが変わる。選ばれるレースの変化は公開前に過去7日分で比べて PR に書く。**BOA-851（同じ `pickFeatured` の取りこぼし）を先にマージしてから触る**
+- `generate-morning-digest.js` の `fetchVolatility`（:275）と並べて `fetchInCaution` を足し、行に `in_caution_pct`（保存の `pct`）・`in_caution_n`・`in_caution_level` を書く。`OPTIONAL_ROW_COLUMNS`（:824）に3列を足し、156 の適用前は列を外して書く（131 と同じ）
+- 注目レースの選び方（`pickFeatured` :582-627、`digestMetrics.js:147-169` の方向一致度）は、フラグの切り替えの日から `in_caution_pct` を使う（`v/100` → `in_caution_pct/100`）。0〜100 の一様な順位から 20〜82% の率に替わるので、逃げの方向一致度（`1 − v`）の重みが変わる。選ばれるレースの変化は公開前に過去7日分で比べて PR に書く。**BOA-851（同じ `pickFeatured` の取りこぼし）を先にマージしてから触る**
 - digest の切り替えはフラグと別に、`MORNING_DIGEST_IN_CAUTION` の定数（digest のスクリプトはブラウザのフラグを読めない）を公開の PR で true にする
+- **用語集・説明の本文（`src/data/morningDigestCopy.js`）は、ボット向け HTML（`api/_lib/botToday.js`）がサーバー側で読むのでブラウザのフラグで隠せない**。書き直しは公開の PR（§7 の 8）に入れる（先に入れるとボット向け HTML だけが新しい用語になる。system-architect M6）
 - 画面: `DigestRaceCard.jsx:96-99` を「イン崩れ注意度 {p}%」、`FeaturedRaceCard.jsx:97-108` の「50以上なら高い」を札に。SNS のネタの本文（:879-899）・理由文（:617）・用語集（`morningDigestCopy.js:25-26・97・134-148`、`MorningDataDigest.jsx:333-345`）を FR-2 の中身で書き直す。ボット向け HTML（`api/_lib/botToday.js:32,203-211`）は用語の本文を `morningDigestCopy.js` から読むので連動する
 - 過去の日の /today は `volatility_percentile` のまま（旧指数の行は出し直さない。spec「旧指数の過去の実績は出さない」と同じく、画面は `in_caution_*` が無い行は注意度の欄を出さない）
 
@@ -196,7 +202,7 @@ erDiagram
 }
 ```
 
-- **公開前の検証**: 表だけで作れる。期間の各日 d・(ラウンド, 帯) について、2019-04-01〜d−1 の累積の率で段を決め、その日の `n`・`non_win` をその段に足す。round4 の L と同じ作り方（前日までの過去レースだけで作る）だが、ラウンドで分けた率（B05r）で段を決めるので、round4 の 26.7／42.6／65.5%（分けない B05）から少し変わる。/accuracy に出す値はこの再計算の値で、data-accuracy-verifier で round4 との差を確かめて PR に書く。期間は `inCautionConfig.json` の `prelaunch`（2025-06-01〜2026-10-10、ユーザー承認の期間）
+- **公開前の検証**: 表だけで作れる。期間が固定なので、毎晩は作り直さず、full のときと `in_caution_accuracy.prelaunch` が無いとき（または `def` が違うとき）だけ作る。期間の各日 d・(ラウンド, 帯) について、2019-04-01〜d−1 の累積の率で段を決め、その日の `n`・`non_win` をその段に足す。round4 の L と同じ作り方（前日までの過去レースだけで作る）だが、ラウンドで分けた率（B05r）で段を決めるので、round4 の 26.7／42.6／65.5%（分けない B05）から少し変わる。/accuracy に出す値はこの再計算の値で、data-accuracy-verifier で round4 との差を確かめて PR に書く。期間は `inCautionConfig.json` の `prelaunch`（2025-06-01〜2026-10-10、ユーザー承認の期間）
 - **公開後**: `launchDate`（公開の PR で `inCautionConfig.json` に書く）以降の、`inCaution.def` が同じ unified の行（保存した `level`）と、完全レースの1号艇の1着の有無を突き合わせる。完全レースでないレース（1艇欠場で出したレース等）は数えない（夜の表と同じ母集団）
 - 画面: 段ごとに率・件数・Wilson の95%区間（画面で計算、純関数）、段の範囲の帯、全国の点線。公開後の段の件数が30未満なら率を出さず件数だけ。注記「同じ日・同じ会場に偏るので、実際の幅はもう少し広い」
 - 旧 `calculate-unified-volatility-accuracy.js`（`calculate-accuracy.yml` の JST 23:30）は、`/winning-technique?tab=volatility` と `/accuracy` を切り替えた後の掃除の PR で外す。`calculate-unified-model-accuracy.js`（`unified_model_accuracy` の `place`・`turn`）は展開予測の的中の記録として書き続ける（§8）
@@ -210,13 +216,13 @@ erDiagram
 | 3 | 生成（`inCaution` を書く、旧キーも書く）＋ `inCautionLevel.js`・`inCautionConfig.json` ＋ verify | 予想の行に新しいキーが増えるだけ | 2 |
 | 4 | 157 を適用（`md5(prosrc)` を確かめてから）→ `verify-rpc-output-keys.js` → APPLIED.md | RPC の出力に1キー増える | 3 の翌朝に値が入っている |
 | 5 | 画面（フラグ false で隠す）: AI予想タブ・一覧・ホーム・思考アシスト・/accuracy・/winning-technique・/races。複数 PR に分けてよい | 無し（`?caution=1` で内部確認） | 4 |
-| 6 | 156 を適用＋ digest（列を書く。注目レースは定数 false のまま旧の選び方）＋ SNS 企画（metric の `inCaution.rate`）＋ AIコピーの選択肢（`level === "high"`） | /today の行に列が増えるだけ | BOA-851 |
-| 7 | 説明の書き直し（About・FAQ・HowToUse・HomeAiIntro・ブログ上位2記事と翻訳版、FR-7）。フラグで隠せないブログは公開の PR と同時に | — | — |
-| 8 | **公開**: `IN_CAUTION_PUBLIC = true`、`MORNING_DIGEST_IN_CAUTION = true`、`launchDate`、`/hit-races` の 301・ナビ・sitemap、ブログ | 全画面が同時に切り替わる | 計測の基準 7日以上（10/18 以降）、GA4 の4件の登録、ユーザーの確認 |
+| 6 | 156 を適用＋ digest（列を書く。注目レースは定数 false のまま旧の選び方）＋ SNS 企画（metric の `inCaution.pct`、unified の行で判定）＋ AIコピーの選択肢（`level === "high"`、フラグの側） | /today の行に列が増えるだけ（`morningDigestCopy.js` の本文は触らない） | BOA-851 |
+| 7 | 説明の書き直し（About・FAQ・HowToUse・HomeAiIntro、FR-7）。画面の文はフラグで分ける。フラグで隠せないもの（ブログ上位2記事と翻訳版、`morningDigestCopy.js` の用語集・説明）は公開の PR に入れる | — | — |
+| 8 | **公開**: `IN_CAUTION_PUBLIC = true`、`MORNING_DIGEST_IN_CAUTION = true`、`launchDate`、`/hit-races` の 301・ナビ・sitemap、ブログ上位2記事、`morningDigestCopy.js`（ボット向け HTML も同時に替わる） | 全画面が同時に切り替わる | 計測の基準 7日以上（10/18 以降）、GA4 の4件の登録、ユーザーの確認 |
 | 9 | 掃除: 旧部品・分岐・i18n キー・`turnPrediction.js`（src）・`calculate-unified-volatility-accuracy.js`・`todays-volatility-digest.js` を消す | — | 8 の後、問題が無いことを数日見てから |
-| 10 | 旧キーをやめる: 生成の `volatilityFactors` の呼び出しと90日の分布の読み込みを外す（旧キーを書かない）。`find-video-worthy-race.js`・`AnswerCheckHookCM.jsx` を `inCaution` に替える | 旧キーの無い行が増える | 9、読み手が残っていないことを grep で確認 |
+| 10 | 旧キーをやめる: 生成の `volatilityFactors` の呼び出しと90日の分布の読み込みを外す（旧キーを書かない）。`find-video-worthy-race.js`・`AnswerCheckHookCM.jsx` を `inCaution` に替える。digest の `fetchVolatility`・`volatility_percentile` の書き込みと `scripts/verification/verify-morning-digest-sns-topic.js` も外す | 旧キーの無い行が増える | 9、読み手が残っていないことを grep（`volatilityPercentile`・`volatilityComposite`・`volatilityReasons`・`volatility_percentile`）で確認 |
 
-- SNS 企画: `sns_campaigns` は 2026-09-08 の1件だけで `status = completed`（2026-10-13 読み取りで確認、`selection_criteria` は `volatilityPercentile >= 0.985`）。動いている企画は無いので、旧キーをやめても企画は止まらない。`findQualifyingRaces`（`snsCampaigns.js:111-189`）は `metric` を `feature_contributions` の直下のキーで読むので、`"inCaution.rate"` の点区切りを読めるようにする（1関数の変更）。次の企画の閾値は企画を作るときに決める（`create-campaign.js` の既定値の 0.985 は新しい値では意味が無いので、既定値を外して必須にする）
+- SNS 企画: `sns_campaigns` は 2026-09-08 の1件だけで `status = completed`（2026-10-13 読み取りで確認、`selection_criteria` は `volatilityPercentile >= 0.985`）。動いている企画は無いので、旧キーをやめても企画は止まらない。`findQualifyingRaces`（`snsCampaigns.js:111-189`）は `metric` を `feature_contributions` の直下のキーで読むので、`"inCaution.pct"` の点区切りを読めるようにする。あわせて `model_id` を select し、`inCaution.*` の条件のときは unified の行を使う（今は standard と unified のうち `predicted_at` が新しい方の1行を使うので、standard が新しいレースは `inCaution` が取れず黙って対象外になる。system-architect M5）。次の企画の閾値は企画を作るときに決める（`create-campaign.js` の既定値の 0.985 は新しい値では意味が無いので、既定値を外して必須にする）
 - ロールバック: 8 は `IN_CAUTION_PUBLIC = false` の1行と vercel.json の redirect を戻すだけで旧画面に戻る（10 までは旧キーを書いているので旧画面が動く）。157 は 109・110 を再実行。156 は列を残す。155 は生成側と夜のジョブを先に戻してから DROP
 
 ## 8. 展開予測の計算を残す理由（FR-1、spec の未確定事項の確定）
@@ -233,7 +239,7 @@ spec FR-1 は「AI予想の統合モデル（本命・データ出走表のAI予
 | 今のイン崩れ指数 | 依存する（AI逃げ確率、重み 0.12） | `volatilityFactors.js:124-140`。§7 の 10 で旧キーをやめると無くなる |
 | 当たり方の記録（`is_hit_turn`・`race_history_cache`・`unified_model_accuracy.turn`） | 依存する | `hitCalculator.js:61-78`、`update-race-history-cache.js`、`calculate-unified-model-accuracy.js:117-131` |
 
-- 結論: 計算（`scripts/lib/turnPrediction.js`）と unified・standard の行の `turnPrediction` は残す。残す理由は「SNS 企画の買い目と旧3モデルの生成が使っている」「計算を残すなら当たり方を見る唯一の手段」。画面から外したあとも SNS 企画の2枚目のカードには展開予測が出る（サイトの画面ではないので Q1 の範囲外として残す。扱いは別チケット）
+- 結論: 計算（`scripts/lib/turnPrediction.js`）と unified・standard の行の `turnPrediction` は残す。残す理由は「SNS 企画の買い目と旧3モデルの生成が使っている」「計算を残すなら当たり方を見る唯一の手段」。画面から外したあとも SNS 企画の2枚目のカードには展開予測が出る（サイトの画面ではないので Q1 の範囲外として残す。扱いは BOA-858）
 - `generate-unified-trifecta-reference.js` は起動元が無く表示も廃止済み（2026-08-14）。BOA-822 では触らない
 - `get_today_races` の `turnPrediction` キーは src に読み手が無いが、157 では消さない（キーを消すと `verify-rpc-key-regression` に理由の登録が要り、BOA-822 の範囲を広げる）
 
@@ -243,7 +249,8 @@ spec FR-1 は「AI予想の統合モデル（本命・データ出走表のAI予
 |---|---|---|
 | 勝率差・帯・ラウンド・段・欠場の扱い（`computeInCaution`）、境目（帯 −8 は −3.5 未満、勝率差 −350 は帯 −7、34.49%・34.5%・54.5%） | `scripts/maintenance/verify-in-caution.js` | ci |
 | JS と Python の帯・段が同じ答え（固定の20件の入力を両方に通す） | `scripts/ml/analogy/tests/test_in_caution_bands.py`（`tests/test_features.py` と同じ置き場所）＋ verify-in-caution.js が同じ JSON を読む | ci |
-| 夜の表の鮮度（`max(race_date)` が前日）、今日の unified の行で `inCaution` がある割合と `inCautionSkip` の内訳、`through` の遅れ | `scripts/maintenance/verify-in-caution-coverage.js`（`nightly-verify-db.yml` に足す） | manual |
+| 夜の表の鮮度（`max(race_date)` が前日、`min(race_date)` が config の `from`、合計の `n`） | `scripts/maintenance/verify-in-caution-coverage.js --table`。JST 04:30 頃（夜のジョブの後・races-init の前）に起動。`nightly-verify-db.yml`（JST 3:00）は 2:30 の dispatch の30分後で、full や起動の遅れで空振り・誤報になるので使わない（system-architect M4） | manual |
+| 今日の unified の行で `inCaution` がある割合、`inCautionSkip` の内訳、`through` の遅れ | `verify-in-caution-coverage.js --today`。JST 05:40 以降（races-init の後）に起動 | manual |
 | RPC の出力キー | `verify-rpc-output-keys.js` の `MIGRATION_157_IN_CAUTION_KEYS` | manual（既存） |
 | 送るイベント（`caution_visible`・`caution_click`） | `verify-frontend-pure-functions.js` に純関数、e2e に1本（measurement.md） | ci |
 | 画面（375・1440px、ダーク、0〜100 の数字が出ない、展開予測が出ない、4言語） | `e2e/acceptance/in-collapse-caution.spec.js`（acceptance-test-writer）、`e2e/layout.spec.js` | — |
@@ -272,9 +279,32 @@ spec FR-1 は「AI予想の統合モデル（本命・データ出走表のAI予
 | 旧キーを先にやめる | 旧画面に戻せない、旧の読み手が0件を正常として止まる | §7 の順。10 は 9 の後 |
 | フラグの切り替えと vercel.json の不一致 | /hit-races が 301 なのに画面は旧（または逆） | 同じ PR に入れる |
 
-## 12. 別スコープ（Linear に起票）
+## 12. 別スコープ（Linear に起票済み、2026-10-13）
 
-- 展開予測・イン崩れ指数に触れる残りのブログ（ja 41本・4言語65ファイル）、動画13作品、`public/llms.txt` の書き直し（spec FR-7「別チケット」）
-- SNS 企画の展開予測（買い目の優遇・2枚目のカード・結果の振り返り）を残すか（§8。サイトの画面ではないので Q1 の範囲外）
-- `races.volatility_*` の旧列（書くのをやめる → 読み手を消す → DROP）と `race_history_cache` の展開予測の集計ジョブの停止（architecture-y.md §4・§5）
+- BOA-857: 展開予測・イン崩れ指数に触れる残りのブログ（ja 41本・4言語65ファイル）、動画13作品、`public/llms.txt` の書き直し（spec FR-7「別チケット」）
+- BOA-858: SNS 企画の展開予測（買い目の優遇・2枚目のカード・結果の振り返り）を残すか（§8。サイトの画面ではないので Q1 の範囲外）
+- BOA-859: `races.volatility_*` の旧列（書くのをやめる → 読み手を消す → DROP）と `race_history_cache` の展開予測の集計ジョブの停止（architecture-y.md §4・§5）
 - BOA-822 の公開で前提が無くなる既存のチケット（BOA-725・BOA-747・BOA-748・BOA-758・BOA-761・BOA-762・BOA-763・BOA-767。旧指数・展開予測の画面の細部）は、公開の後に Canceled／Duplicate にする候補（状態は今は変えない）
+
+## 設計検証（system-architect、2026-10-13）の指摘と対応
+
+判定: 大筋は ADR-0085・0070・0074 と整合。157 が 109・110 から `'inCaution'` の7行×3か所だけ違うことを diff で確認。本番の `md5(prosrc)` は 109・110 のファイルと一致（2026-10-13、レーンが読み取りで再確認: `5d0ff6d8…`・`a5c39f55…`・`8f6cf80c…`）。
+
+| # | 重大度 | 指摘 | 検証 | 対応 |
+|---|---|---|---|---|
+| H1 | 高 | 157 が `verify:migration-rls` で落ちる（114番以降は関数ごとに権限か除外の印が要る） | 手元で再現（NG 3件） | 採用。`-- function-exempt` を3行、自己検査に anon の EXECUTE を足した。再実行で OK |
+| M1 | 中 | 14日の upsert では件数0になったセルが残り、`computed_at` も更新されない | CHECK `n > 0` と upsert の仕様から確か | 採用。§2「upsert してから古い行を消す」 |
+| M2 | 中 | 表が欠けていても朝の生成が気づかない。`last_date` が帯ごと | RPC の定義から確か | 採用。RPC に全体の `first_date`・`last_date`、生成で3つのガード（§1 の表） |
+| M3 | 中 | RPC の一時的な失敗でその日は null のまま戻らない | `job.js:139-150` の後始末の条件から確か | 採用。3回の再試行、`inCautionFailed` で後始末を失敗にして次の起動でやり直す（§1） |
+| M4 | 中 | 監視の時刻（3:00）が夜のジョブの30分後で、今日の行もまだ無い | `nightly-verify-db.yml` の時刻から確か | 採用。表は 04:30 頃、今日の行は 05:40 以降に分けた（§9）。起動の仕組みは tasks で決める |
+| M5 | 中 | SNS 企画が standard の行を使うと `inCaution` が取れず黙って0件 | `snsCampaigns.js` のコメント（standard・unified の新しい方の1行）で確か | 採用。unified の行で判定（§7） |
+| M6 | 中 | `morningDigestCopy.js` はボット向け HTML がサーバーで読むのでフラグで隠せない | `api/_lib/botToday.js` が import | 採用。公開の PR に入れる（§5・§7） |
+| L1・L2 | 低 | 155 の「−4.0未満」、ヘッダーの節の参照が古い | 確か | 採用 |
+| L3 | 低 | 157 の自己検査が 109 より弱い | 確か | 採用。109 の条件を足した |
+| L4 | 低 | 156 の NOT VALID → VALIDATE は同じトランザクションで効果なし、適用の時刻 | 確か | 採用。時刻の注記を足した（害が無いので書き方はそのまま） |
+| L5 | 低 | `floor(rate×100+0.5)` は保存の桁で答えが変わる | 指摘どおり（0.145 等） | 採用。整数の式で `pct` を保存。156 も `in_caution_pct smallint` に替えた |
+| L6 | 低 | get_today_races の出力が約2割増える。RPC 側でキーを選ぶ案 | 実測は agent（216,334字・132レース） | 一部採用。保存の形を小さくした（約250字）。RPC でキーを選ぶ案は、キーの一覧を2か所に持つので採らない |
+| L7 | 低 | 毎晩6年分を Storage から読む | export_pool.js の `--daily` の仕様 | 採用。14日のモードは本体だけ |
+| L8 | 低 | concurrency と日中の書き込みの禁止 | — | 採用 |
+| L9 | 低 | Python の読み方（ページング・LIKE を使わない） | agent が 57014 を観測 | 採用 |
+| ADR | 低 | 却下の理由の言い方、Storage に置く案、ADR-0066 の例外、ADR-0012 の状態 | — | 採用。ADR-0095 に反映（ADR-0012 の状態は ADR を採用にするときに書き足す） |

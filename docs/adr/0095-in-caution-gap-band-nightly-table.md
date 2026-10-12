@@ -4,6 +4,7 @@
 - 置き換えるもの: [ADR-0012](./0012-ai-model-redesign-volatility-continuous-score.md)（イン崩れ指数の連続値統合方式）の、画面に出す値（会場内の直近90日のパーセンタイル）。合成値の計算は旧キーをやめるまで残る
 - 関連: [ADR-0085](./0085-analogy-v16-daily-batch-to-storage.md)（完全レースの判定を Python の features.py だけに置く）、[ADR-0070](./0070-morning-digest-precomputed-rows.md)（/today は 05:30 に事前計算。変えない）、[ADR-0074](./0074-rpc-key-regression-check.md)（RPC のキーの回帰検査）
 - 設計: [docs/design/in-collapse-caution/plan.md](../design/in-collapse-caution/plan.md)
+- [ADR-0066](./0066-scraping-execution-consolidation-to-vercel.md)（取得は Vercel Functions）の例外: これは外部サイトの取得ではなく DB のデータからの計算なので、ADR-0085 と同じく GitHub Actions で動かし、起動だけ Vercel Cron から行う
 
 ## 背景
 
@@ -14,7 +15,7 @@
 ## 決定
 
 - 夜（JST 2:30、Vercel Cron → workflow_dispatch）に Python（`scripts/ml/analogy/in_caution_bands.py`）が、`features.py` の `race_ok` で完全レースを決め、「日 × ラウンド × 帯」の件数と1号艇の非1着数を表 `in_caution_gap_band_daily`（マイグレーション 155、約5万行）に書く。毎晩は直近14日を upsert する
-- 朝の生成（`generate-unified-predictions.js`）は RPC `get_in_caution_band_rates(p_from, p_through)`（service_role のみ）で期間を合計した約45行を1回読み、レースごとに `feature_contributions.inCaution`（率・件数・段・勝率差・through・定義の版）を書く。段（35%・55%、画面に出す整数の%で判定）は生成のときに1つの関数で決めて保存する
+- 朝の生成（`generate-unified-predictions.js`）は RPC `get_in_caution_band_rates(p_from, p_through)`（service_role のみ）で期間を合計した約45行を1回読み、レースごとに `feature_contributions.inCaution`（率・件数・段・勝率差・through・定義の版）を書く。画面に出す整数の% `pct = floor((200×nonWin + n)/(2n))` と段（35・55）は生成のときに1つの関数で決めて保存する
 - 期間は表に入れず RPC の引数で決める。勝率差は 1/100 の整数で計算する
 - 新しいキー `inCaution` を足し、`volatilityPercentile` の意味は変えない。読み手を全部切り替えてから旧キーをやめる
 - /accuracy の実績（公開前の検証・公開後）も同じ夜のジョブが `accuracy_cache.in_caution_accuracy` に書く
@@ -25,8 +26,9 @@
 |---|---|
 | A. 朝の生成の中で、過去レースを全部読んで JS で率を出す | 約48万レース×6艇を毎朝読む（Disk IO、races-init の時間）。完全レースの判定を JS に書き直すことになり、統計検証（Python）とずれる（ADR-0085 と同じ理由） |
 | B. 帯ごとの率の小さな表（約45行）だけを夜に作る | 期間を変えるたびに作り直しが要る。/accuracy の「公開前の検証」は日ごとの累積が要るので、別に日ごとの表が要る |
-| C. 日ごとの表を PostgREST で読み、JS で合計する | GROUP BY できず、約5万行を読むと1000行で黙って切れる（BOA-301・BOA-372）。ページングしても毎朝5万行を読む |
+| C. 日ごとの表を PostgREST で読み、JS で合計する | Supabase の既定では PostgREST の集約関数が無効で、約5万行を読むと1000行で黙って切れる（BOA-301・BOA-372）。ページングしても毎朝5万行を読む |
 | D. SQL（マテリアライズドビュー・RPC）で完全レースを判定して帯ごとに数える | 完全レースの判定（長期の kb_archive と本体で列が違う、返還の扱い、F・L）を SQL に書き直すことになり、統計検証とずれる。長期と本体をまたぐ重いクエリを本番で走らせる |
+| E2. 日ごとの表を Storage のファイルに置く（ADR-0085 の形） | 朝の生成（races-init、Vercel Function）が Storage に依存する。期間の合計を SQL でできず、毎朝ファイル全体を読む。verify・確認の SELECT で読めない。DB の表なら RPC で期間を合計でき、本番の確認も SQL で済む |
 | E. 帯の率を固定値（統計検証の時点の表）としてコードに置く | 前日までの実績にならない（spec FR-2）。/accuracy の公開後の実績も出せない |
 | F. `volatilityPercentile` に新しい値を入れて使い回す | RPC の 0.7/0.3・/today の 50・集計・SNS 企画の閾値が古い意味のまま動く。値の意味の変化は `verify-rpc-key-regression` でも検知できない（ADR-0074「限界」） |
 

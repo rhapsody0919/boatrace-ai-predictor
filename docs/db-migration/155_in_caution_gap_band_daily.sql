@@ -1,6 +1,6 @@
 -- 155: イン崩れ注意度の「日×ラウンド×勝率差の帯」の表と、期間を指定して合計する RPC（BOA-822）
 --
--- 対応spec/plan: docs/design/in-collapse-caution/plan.md「データ設計」、ADR-0095
+-- 対応spec/plan: docs/design/in-collapse-caution/plan.md §2「表と RPC（155）」、ADR-0095
 --
 -- ⚠️ この案は「本番へ未適用」。適用はユーザーが SQL Editor で行う（docs/db-migration/APPLIED.md）。
 --
@@ -11,7 +11,7 @@
 --   この表に書き、朝は RPC で期間を指定して合計する（約45行）。PostgREST は GROUP BY できず、JS で合計すると
 --   1000行で黙って切れる（docs/knowledge/db-operations.md）。
 --
--- 表の行: 1日 × ラウンド（other / junyu / yusho）× 帯（-8〜6）。帯 -8 は「−4.0未満」、6 は「+3.0以上」。
+-- 表の行: 1日 × ラウンド（other / junyu / yusho）× 帯（-8〜6）。帯 -8 は「−3.5未満」（−4.0〜−3.5 とそれより下）、6 は「+3.0以上」。
 --   帯 = clamp(floor(勝率差の 1/100 の整数 / 50), -8, 6)。勝率差が出せないレース（1号艇か他の5艇全部の勝率が無い）は
 --   書かない。約2,400日 × 最大45行、実際は約5万行。
 --   source は長期（kb_archive、2025-12-02 まで）と本体（2025-12-03〜）のどちらから作ったか（確認用）。
@@ -49,15 +49,18 @@ REVOKE ALL ON public.in_caution_gap_band_daily FROM PUBLIC, anon, authenticated;
 GRANT ALL ON public.in_caution_gap_band_daily TO service_role;
 
 -- 期間（p_from〜p_through、両端を含む）の帯ごとの合計。p_from が NULL なら表の最初の日から。
--- last_date は期間の中で行がある最後の日（朝の生成が inCaution.through に書き、夜のジョブの遅れを見る）
+-- first_date・last_date は期間の中で行がある最初・最後の日（帯ごとではなく全体。全行に同じ値）。朝の生成は
+-- first_date が inCautionConfig.json の from より後、last_date が前日より3日以上古い、合計の n が下限未満の
+-- どれかなら値を書かない（表が欠けた状態で、もっともらしいが違う率を書かない。plan §1）
 CREATE OR REPLACE FUNCTION public.get_in_caution_band_rates(p_from date, p_through date)
-RETURNS TABLE (round_grp text, gap_band smallint, n bigint, non_win bigint, last_date date)
+RETURNS TABLE (round_grp text, gap_band smallint, n bigint, non_win bigint, first_date date, last_date date)
 LANGUAGE sql
 STABLE
 SECURITY INVOKER
 SET search_path = public
 AS $$
-  SELECT d.round_grp, d.gap_band, sum(d.n)::bigint, sum(d.non_win)::bigint, max(d.race_date)
+  SELECT d.round_grp, d.gap_band, sum(d.n)::bigint, sum(d.non_win)::bigint,
+         min(min(d.race_date)) OVER (), max(max(d.race_date)) OVER ()
   FROM public.in_caution_gap_band_daily d
   WHERE (p_from IS NULL OR d.race_date >= p_from)
     AND d.race_date <= p_through
