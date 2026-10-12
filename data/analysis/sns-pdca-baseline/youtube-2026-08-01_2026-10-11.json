@@ -1,0 +1,911 @@
+{
+  "generatedAt": "2026-10-12T11:59:03.811Z",
+  "range": {
+    "since": "2026-08-01",
+    "to": "2026-10-11"
+  },
+  "channel": {
+    "videoCount": 35,
+    "subscriberCount": 9
+  },
+  "uploads": 41,
+  "played": 35,
+  "distribution": {
+    "views": {
+      "n": 35,
+      "sum": 9757,
+      "mean": 278.771,
+      "sd": 365.429,
+      "zeroDays": 0,
+      "median": 157,
+      "p25": 8,
+      "p75": 411.5,
+      "max": 1188,
+      "logSd": 2.07
+    },
+    "engagedViews": {
+      "n": 35,
+      "sum": 1783,
+      "mean": 50.943,
+      "sd": 82.716,
+      "zeroDays": 2,
+      "median": 14,
+      "p25": 4,
+      "p75": 45,
+      "max": 299,
+      "logSd": 1.589
+    }
+  },
+  "engagedRatio30plus": {
+    "n": 19,
+    "sum": 2.694763206065777,
+    "mean": 0.142,
+    "sd": 0.078,
+    "zeroDays": 0
+  },
+  "averageViewPercentage30plus": {
+    "n": 18,
+    "sum": 1002.7900000000001,
+    "mean": 55.711,
+    "sd": 11.905,
+    "zeroDays": 0
+  },
+  "twoDayShareOfViews": 0.99,
+  "feedRate100In2Days": 0.514,
+  "trafficSourceLast28": [
+    [
+      "NO_LINK_OTHER",
+      0
+    ],
+    [
+      "SUBSCRIBER",
+      2
+    ],
+    [
+      "YT_CHANNEL",
+      18
+    ],
+    [
+      "YT_SEARCH",
+      34
+    ],
+    [
+      "YT_OTHER_PAGE",
+      1
+    ],
+    [
+      "EXT_URL",
+      16
+    ],
+    [
+      "NOTIFICATION",
+      3
+    ],
+    [
+      "SHORTS",
+      621
+    ]
+  ],
+  "perVideo": [
+    {
+      "id": "aQyGx2vEBsQ",
+      "publishedAt": "2026-09-01T00:45:09Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "suBtPTPSPGI",
+      "publishedAt": "2026-09-01T00:52:02Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "XcHwY6f8fTc",
+      "publishedAt": "2026-09-01T01:31:25Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "QVS91pltHgE",
+      "publishedAt": "2026-09-01T09:31:17Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "F86arz_9sUw",
+      "publishedAt": "2026-09-01T09:33:00Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "kKN0SeYqglc",
+      "publishedAt": "2026-09-01T10:04:48Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "VPauSM8CfuQ",
+      "publishedAt": "2026-09-02T11:48:53Z",
+      "twoDay": {
+        "views": 1,
+        "engagedViews": 1,
+        "averageViewPercentage": 6.660000000000001,
+        "averageViewDuration": 2,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 5,
+        "engagedViews": 5,
+        "averageViewPercentage": 58.46,
+        "averageViewDuration": 18,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "w85sKsR3ByU",
+      "publishedAt": "2026-09-04T05:16:30Z",
+      "twoDay": {
+        "views": 1,
+        "engagedViews": 1,
+        "averageViewPercentage": 9.05,
+        "averageViewDuration": 1,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 7,
+        "engagedViews": 5,
+        "averageViewPercentage": 78.65,
+        "averageViewDuration": 16,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "45m07YxVD5s",
+      "publishedAt": "2026-09-04T12:15:06Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 1,
+        "engagedViews": 1,
+        "averageViewPercentage": 31.290000000000003,
+        "averageViewDuration": 9,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "WyYBMMdEy50",
+      "publishedAt": "2026-09-04T12:15:10Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 4,
+        "engagedViews": 4,
+        "averageViewPercentage": 79.62,
+        "averageViewDuration": 16,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "z-y2RajsWkg",
+      "publishedAt": "2026-09-04T21:49:28Z",
+      "twoDay": {
+        "views": 1,
+        "engagedViews": 1,
+        "averageViewPercentage": 43.33,
+        "averageViewDuration": 9,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 5,
+        "engagedViews": 5,
+        "averageViewPercentage": 64.54,
+        "averageViewDuration": 13,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "7ambXFIdIHQ",
+      "publishedAt": "2026-09-05T01:40:38Z",
+      "twoDay": {
+        "views": 0,
+        "engagedViews": 0,
+        "averageViewPercentage": null,
+        "averageViewDuration": null,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 12,
+        "engagedViews": 9,
+        "averageViewPercentage": 70.95,
+        "averageViewDuration": 14,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "4hM-CtSjdSw",
+      "publishedAt": "2026-09-05T11:33:24Z",
+      "twoDay": {
+        "views": 155,
+        "engagedViews": 19,
+        "averageViewPercentage": 48.47,
+        "averageViewDuration": 9,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 157,
+        "engagedViews": 19,
+        "averageViewPercentage": 48.47,
+        "averageViewDuration": 9,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "R8mu_0BiLQ4",
+      "publishedAt": "2026-09-06T00:39:49Z",
+      "twoDay": {
+        "views": 387,
+        "engagedViews": 125,
+        "averageViewPercentage": 298.02,
+        "averageViewDuration": 41,
+        "likes": 0,
+        "subscribersGained": 1
+      },
+      "toDate": {
+        "views": 405,
+        "engagedViews": 134,
+        "averageViewPercentage": 287.6,
+        "averageViewDuration": 40,
+        "likes": 0,
+        "subscribersGained": 2
+      }
+    },
+    {
+      "id": "DtJmCsw7eSo",
+      "publishedAt": "2026-09-06T00:47:18Z",
+      "twoDay": {
+        "views": 6,
+        "engagedViews": 5,
+        "averageViewPercentage": 39.26,
+        "averageViewDuration": 6,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 9,
+        "engagedViews": 8,
+        "averageViewPercentage": 49.36,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "bQ5bEUJ5-40",
+      "publishedAt": "2026-09-06T00:49:34Z",
+      "twoDay": {
+        "views": 5,
+        "engagedViews": 4,
+        "averageViewPercentage": 67.21,
+        "averageViewDuration": 12,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 5,
+        "engagedViews": 4,
+        "averageViewPercentage": 67.21,
+        "averageViewDuration": 12,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "39gU8zbQ0zc",
+      "publishedAt": "2026-09-06T00:53:14Z",
+      "twoDay": {
+        "views": 1181,
+        "engagedViews": 285,
+        "averageViewPercentage": 59.47,
+        "averageViewDuration": 12,
+        "likes": 3,
+        "subscribersGained": 2
+      },
+      "toDate": {
+        "views": 1182,
+        "engagedViews": 286,
+        "averageViewPercentage": 59.540000000000006,
+        "averageViewDuration": 12,
+        "likes": 3,
+        "subscribersGained": 2
+      }
+    },
+    {
+      "id": "JOfBXqULcWQ",
+      "publishedAt": "2026-09-06T03:23:08Z",
+      "twoDay": {
+        "views": 1186,
+        "engagedViews": 299,
+        "averageViewPercentage": 66.61,
+        "averageViewDuration": 13,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 1188,
+        "engagedViews": 299,
+        "averageViewPercentage": 66.61,
+        "averageViewDuration": 13,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "0Lxs2m2ITNI",
+      "publishedAt": "2026-09-06T12:59:14Z",
+      "twoDay": {
+        "views": 1062,
+        "engagedViews": 174,
+        "averageViewPercentage": 58.20000000000001,
+        "averageViewDuration": 9,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 1065,
+        "engagedViews": 176,
+        "averageViewPercentage": 57.96,
+        "averageViewDuration": 9,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "4OWsmwzYJI8",
+      "publishedAt": "2026-09-06T13:00:26Z",
+      "twoDay": {
+        "views": 194,
+        "engagedViews": 14,
+        "averageViewPercentage": 62.580000000000005,
+        "averageViewDuration": 10,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 194,
+        "engagedViews": 14,
+        "averageViewPercentage": 62.580000000000005,
+        "averageViewDuration": 10,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "2HApJXqfZiQ",
+      "publishedAt": "2026-09-06T13:00:45Z",
+      "twoDay": {
+        "views": 332,
+        "engagedViews": 43,
+        "averageViewPercentage": 61.85000000000001,
+        "averageViewDuration": 12,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 335,
+        "engagedViews": 43,
+        "averageViewPercentage": 61.85000000000001,
+        "averageViewDuration": 12,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "x2Tviudd5vY",
+      "publishedAt": "2026-09-06T21:14:38Z",
+      "twoDay": {
+        "views": 571,
+        "engagedViews": 85,
+        "averageViewPercentage": 65.88,
+        "averageViewDuration": 12,
+        "likes": 1,
+        "subscribersGained": 1
+      },
+      "toDate": {
+        "views": 578,
+        "engagedViews": 87,
+        "averageViewPercentage": 65.03,
+        "averageViewDuration": 12,
+        "likes": 1,
+        "subscribersGained": 1
+      }
+    },
+    {
+      "id": "3JfbfyvlNtE",
+      "publishedAt": "2026-09-07T03:45:54Z",
+      "twoDay": {
+        "views": 24,
+        "engagedViews": 11,
+        "averageViewPercentage": 51.190000000000005,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 27,
+        "engagedViews": 12,
+        "averageViewPercentage": 52.65,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "JcOjFJCl7Ac",
+      "publishedAt": "2026-09-07T03:48:22Z",
+      "twoDay": {
+        "views": 3,
+        "engagedViews": 0,
+        "averageViewPercentage": 0,
+        "averageViewDuration": 0,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 3,
+        "engagedViews": 0,
+        "averageViewPercentage": 0,
+        "averageViewDuration": 0,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "ZItY5S-B_G4",
+      "publishedAt": "2026-09-07T05:33:29Z",
+      "twoDay": {
+        "views": 27,
+        "engagedViews": 3,
+        "averageViewPercentage": 41.76,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 27,
+        "engagedViews": 3,
+        "averageViewPercentage": 41.76,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "BUUYYnErZg0",
+      "publishedAt": "2026-09-07T06:09:03Z",
+      "twoDay": {
+        "views": 888,
+        "engagedViews": 219,
+        "averageViewPercentage": 65.91,
+        "averageViewDuration": 11,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 888,
+        "engagedViews": 219,
+        "averageViewPercentage": 65.91,
+        "averageViewDuration": 11,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "pTbXd1J4AZE",
+      "publishedAt": "2026-09-07T11:21:32Z",
+      "twoDay": {
+        "views": 240,
+        "engagedViews": 20,
+        "averageViewPercentage": 48.71,
+        "averageViewDuration": 8,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 240,
+        "engagedViews": 20,
+        "averageViewPercentage": 48.71,
+        "averageViewDuration": 8,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "8hTZm8zcZ58",
+      "publishedAt": "2026-09-08T04:51:12Z",
+      "twoDay": {
+        "views": 24,
+        "engagedViews": 4,
+        "averageViewPercentage": 30.709999999999997,
+        "averageViewDuration": 6,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 24,
+        "engagedViews": 4,
+        "averageViewPercentage": 30.709999999999997,
+        "averageViewDuration": 6,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "pMceG6eG9a4",
+      "publishedAt": "2026-09-08T08:51:17Z",
+      "twoDay": {
+        "views": 470,
+        "engagedViews": 24,
+        "averageViewPercentage": 47.07,
+        "averageViewDuration": 7,
+        "likes": 2,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 470,
+        "engagedViews": 24,
+        "averageViewPercentage": 47.07,
+        "averageViewDuration": 7,
+        "likes": 2,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "OO6hnzxTvZk",
+      "publishedAt": "2026-09-08T11:33:13Z",
+      "twoDay": {
+        "views": 411,
+        "engagedViews": 43,
+        "averageViewPercentage": 42.39,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 418,
+        "engagedViews": 47,
+        "averageViewPercentage": 46.34,
+        "averageViewDuration": 9,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "24_G6DfEFzM",
+      "publishedAt": "2026-09-09T08:30:02Z",
+      "twoDay": {
+        "views": 65,
+        "engagedViews": 3,
+        "averageViewPercentage": 30.680000000000003,
+        "averageViewDuration": 5,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 65,
+        "engagedViews": 3,
+        "averageViewPercentage": 30.680000000000003,
+        "averageViewDuration": 5,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "eA2kIfS2ZlA",
+      "publishedAt": "2026-09-09T08:34:04Z",
+      "twoDay": {
+        "views": 966,
+        "engagedViews": 190,
+        "averageViewPercentage": 47.69,
+        "averageViewDuration": 8,
+        "likes": 2,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 966,
+        "engagedViews": 190,
+        "averageViewPercentage": 47.69,
+        "averageViewDuration": 8,
+        "likes": 2,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "Y8j_2wtx0_4",
+      "publishedAt": "2026-09-09T08:46:36Z",
+      "twoDay": {
+        "views": 449,
+        "engagedViews": 54,
+        "averageViewPercentage": 55.53,
+        "averageViewDuration": 10,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 450,
+        "engagedViews": 55,
+        "averageViewPercentage": 55.31,
+        "averageViewDuration": 10,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "zDWzJOqlDJs",
+      "publishedAt": "2026-09-09T12:58:07Z",
+      "twoDay": {
+        "views": 349,
+        "engagedViews": 39,
+        "averageViewPercentage": 47.47,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 349,
+        "engagedViews": 39,
+        "averageViewPercentage": 47.47,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "rUatlbhI0uE",
+      "publishedAt": "2026-09-10T04:22:46Z",
+      "twoDay": {
+        "views": 16,
+        "engagedViews": 5,
+        "averageViewPercentage": 148.15,
+        "averageViewDuration": 25,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 21,
+        "engagedViews": 9,
+        "averageViewPercentage": 125.11000000000001,
+        "averageViewDuration": 21,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "hKf_wFVXtsE",
+      "publishedAt": "2026-09-10T04:23:03Z",
+      "twoDay": {
+        "views": 13,
+        "engagedViews": 3,
+        "averageViewPercentage": 48.78,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 13,
+        "engagedViews": 3,
+        "averageViewPercentage": 48.78,
+        "averageViewDuration": 8,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "oeiyEmnt5bM",
+      "publishedAt": "2026-09-11T02:31:48Z",
+      "twoDay": {
+        "views": 2,
+        "engagedViews": 0,
+        "averageViewPercentage": 0,
+        "averageViewDuration": 0,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 2,
+        "engagedViews": 0,
+        "averageViewPercentage": 0,
+        "averageViewDuration": 0,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "6Of7h1puM_o",
+      "publishedAt": "2026-09-11T02:32:13Z",
+      "twoDay": {
+        "views": 6,
+        "engagedViews": 1,
+        "averageViewPercentage": 26.669999999999998,
+        "averageViewDuration": 5,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 6,
+        "engagedViews": 1,
+        "averageViewPercentage": 26.669999999999998,
+        "averageViewDuration": 5,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "gkMqyaesMzc",
+      "publishedAt": "2026-09-14T04:59:49Z",
+      "twoDay": {
+        "views": 174,
+        "engagedViews": 9,
+        "averageViewPercentage": 49.09,
+        "averageViewDuration": 9,
+        "likes": 0,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 184,
+        "engagedViews": 14,
+        "averageViewPercentage": 78.46,
+        "averageViewDuration": 15,
+        "likes": 0,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "CA-MCjtyehQ",
+      "publishedAt": "2026-09-14T05:00:29Z",
+      "twoDay": {
+        "views": 187,
+        "engagedViews": 20,
+        "averageViewPercentage": 43.15,
+        "averageViewDuration": 7,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 191,
+        "engagedViews": 21,
+        "averageViewPercentage": 41.5,
+        "averageViewDuration": 7,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    },
+    {
+      "id": "TKRczASGnyY",
+      "publishedAt": "2026-09-15T22:14:47Z",
+      "twoDay": {
+        "views": 260,
+        "engagedViews": 19,
+        "averageViewPercentage": 70.79,
+        "averageViewDuration": 12,
+        "likes": 1,
+        "subscribersGained": 0
+      },
+      "toDate": {
+        "views": 261,
+        "engagedViews": 20,
+        "averageViewPercentage": 71.61,
+        "averageViewDuration": 12,
+        "likes": 1,
+        "subscribersGained": 0
+      }
+    }
+  ]
+}

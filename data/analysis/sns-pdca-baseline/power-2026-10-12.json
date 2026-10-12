@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-10-12T11:59:16.671Z",
+  "inputs": {
+    "ga4": "data/analysis/sns-pdca-baseline/ga4-2026-08-15_2026-10-11.json",
+    "youtube": "data/analysis/sns-pdca-baseline/youtube-2026-08-01_2026-10-11.json",
+    "sonarPerDay": 0.25
+  },
+  "baseline": {
+    "xUsersPerDayPosting": 1.111,
+    "xSd": 1.367,
+    "overdispersion": 1.682,
+    "engagedRatio": 0.142,
+    "engagedRatioSd": 0.078,
+    "averageViewPercentage": 55.711,
+    "averageViewPercentageSd": 11.905,
+    "feedRate": 0.514,
+    "viewsLogSd": 2.07,
+    "engagedViewsLogSd": 1.589
+  },
+  "perArm": {
+    "xUsersDays": {
+      "+20%": 654,
+      "+50%": 119,
+      "+100%": 36
+    },
+    "xUsersWeeks": {
+      "+20%": 94,
+      "+50%": 17,
+      "+100%": 6
+    },
+    "snsSonarUsersDays": {
+      "+20%": 1727,
+      "+50%": 314,
+      "+100%": 95
+    },
+    "youtubeViewsVideos": {
+      "+20%": 2024,
+      "+50%": 410,
+      "+100%": 140
+    },
+    "youtubeEngagedViewsVideos": {
+      "+20%": 1193,
+      "+50%": 242,
+      "+100%": 83
+    },
+    "engagedRatioVideos": {
+      "+20%": 119,
+      "+50%": 19,
+      "+100%": 5
+    },
+    "averageViewPercentageVideos": {
+      "+5pt": 89,
+      "+10pt": 23
+    },
+    "feedRateVideos": {
+      "+20%": 362,
+      "+50%": 51,
+      "+100%": null,
+      "to90%": 18
+    }
+  }
+}
