@@ -3,8 +3,8 @@
  * 日中の照合（ADR 0089「監視」）。本番のボット向け HTML が、人の画面の部分集合になっているかを確かめる。
  *
  * 見るもの（失敗なら終了コード 1）:
- * 1. 部分集合の照合: / と、開催中の会場2つの /venue/{code}（と、振り分けていれば言語版の /{lang}/・/{lang}/venue/{先頭の会場}、
- *    BOA-848 第2段）について、bingbot の UA で取った HTML の
+ * 1. 部分集合の照合: / と、開催中の会場2つの /venue/{code}（と、振り分けていれば言語版の /{lang}/・/{lang}/venue/{先頭の会場}・
+ *    /today・本日の先頭の会場の最初のレース /race/{id}、BOA-848 第2段）について、bingbot の UA で取った HTML の
  *    本文の文字列（見出し・会場名・節の名前・グレード・レース番号・締切時刻・最終更新）・リンク先・
  *    head（title・description・canonical・hreflang・JSON-LD）が、Playwright で人として描いたページにすべてあること
  *    （hreflang は hreflang と href の組、JSON-LD は JSON として読んだ値で比べる。人の側は document 全体を見る）
@@ -13,7 +13,7 @@
  * 4. スナップショット生成: /ai-snapshots/status.json が ok であること（ブログ等の生成の失敗はビルドを止めないので、ここで見つける。SEO 再点検 F5）
  *
  * 記録だけ（失敗にしない）:
- * 5. TTFB: 人の UA で /・/venue/{会場}・/en/・/race/{本日のレース}（middleware を通らない比較用）を交互に10巡し、中央値を出す
+ * 5. TTFB: 人の UA で /・/venue/{会場}・/en/・/race/{本日のレース}・/about（middleware を通らない比較用）を交互に10巡し、中央値を出す
  *
  * 照合の関数は scripts/lib/botHtmlParity.js（検証は verify-bot-html-parity-logic.js、tier ci）。
  * 監視自体が途中で止まった（本番に繋がらない・ブラウザが起動しない等）は終了コード 2。
@@ -165,6 +165,8 @@ async function main() {
     venues.map((v) => v.code),
     {
       langs: PREFIXED_LANGS,
+      // 本日の先頭の会場の最初のレース（レース詳細のボット向け HTML、BOA-848 第2段。振り分けているときだけ）
+      extraPaths: venues.length > 0 ? [venues[0].firstRacePath] : [],
       isRouted: (p) =>
         resolveSnapshotPath(p, UA.bingbot)?.startsWith("/api/bot-page/") ??
         false,
@@ -281,10 +283,15 @@ async function main() {
   }
 
   // ---- TTFB（記録だけ） ----
-  // /en/ は言語版の配線（BOA-848 第2段）の前後で middleware を通るかが変わるので、比べられるよう毎日残す
-  const ttfbPaths = venues.length
-    ? ["/", `/venue/${venues[0].code}`, "/en/", venues[0].firstRacePath]
-    : ["/", "/venue/1", "/en/"];
+  // /en/ と /race/{本日} は、言語版・レース詳細の配線（BOA-848 第2段）の前後で middleware を通るかが変わるので、
+  // 比べられるよう毎日残す。middleware を通らない比較用は /about（レース詳細の配線後は /race も middleware を通る）
+  const ttfbPaths = [
+    "/",
+    venues.length ? `/venue/${venues[0].code}` : "/venue/1",
+    "/en/",
+    ...(venues.length ? [venues[0].firstRacePath] : []),
+    "/about",
+  ];
   const samples = Object.fromEntries(ttfbPaths.map((p) => [p, []]));
   for (let i = 0; i < TTFB_ROUNDS; i += 1) {
     for (const p of ttfbPaths) samples[p].push(await ttfb(p));
@@ -293,9 +300,7 @@ async function main() {
     `[TTFB] 人の UA・${TTFB_ROUNDS}巡の中央値（記録だけ、失敗にしない）`,
   );
   for (const p of ttfbPaths) {
-    const note = p.startsWith("/race/")
-      ? "（middleware を通らない比較用）"
-      : "";
+    const note = p === "/about" ? "（middleware を通らない比較用）" : "";
     console.log(`  ${p}: ${median(samples[p]).toFixed(0)}ms${note}`);
   }
 
