@@ -350,13 +350,15 @@ export const ASSIST_COPY = Object.freeze({
   // 文末は件数で分ける（30件未満は「…のときは4件だけ」。wording-editor の指摘: 「1着」の後に件数の注記を続けると文がつながらない）
   // 区分と母数を言葉で書く（ファン評価 1周目 指摘5）。攻め手は条件つきなので「攻める」と言い切らない（同 指摘6）
   flowToday: (att, rank, band, form) =>
-    `今日の展示: 攻め手の${att}号艇は展示タイム${rank}位 → ${form}で攻め手が展示タイム${band}のとき`,
+    `今日の展示: 攻め手の${att}号艇は展示タイム${rank}位。${form}で攻め手が展示タイム${band}のとき`,
   flowTodayWin: "1着",
   flowTodayFew: (n) => `は${n}件だけ（少ないので割合は出さない）`,
   // 形が2つ以上当てはまるときの選択（承認モック v2 ④）
   flowFormPick: "本番のスタートの形を選ぶ",
+  // 押せると分かるように（PR-2 ファン評価 1周目 指摘7）
+  flowFormPickNote: (n) => `当てはまる形が${n}つ。押すと下が変わる`,
   // もし{形}になったら（spec D-47 (4)）
-  flowTechHeading: (att, w) => `攻める${att}号艇が1着の${w}件の決まり手`,
+  flowTechHeading: (att, w) => `攻め手の${att}号艇が1着の${w}件の決まり手`,
   flowTechNames: Object.freeze({
     makuri: "まくり",
     makurizashi: "まくり差し",
@@ -366,6 +368,9 @@ export const ASSIST_COPY = Object.freeze({
   flowTechVal: (p, k) => `${p}%（${k}件）`,
   flowExactaOf: (form) => `${form}のときによく出た2連単`,
   flowTrifectaToBet: "よく出た3連単は買い目レンズ",
+  // 今日の展示が枠なりでないとき（PR-2 ファン評価 1周目 指摘6）
+  flowNotWaku: (type) =>
+    `今日の展示は${type}。下の数字は枠なりのレースで集めた`,
   // 今日の展示を入れると（spec D-47 (5)）
   exhHeading: "今日の展示を入れると",
   exhPending: "展示の後に分かる（攻める艇・1号艇の展示タイムの順位ごとの割合）",
@@ -376,10 +381,12 @@ export const ASSIST_COPY = Object.freeze({
   exhTodayTag: "今日",
   exhFew: (n) => `${n}件だけ（少ないので割合は出さない）`,
   exhNat: (ps) =>
-    `全国では 1〜2位 ${ps[0]}%・3〜4位 ${ps[1]}%・5〜6位 ${ps[2]}%`,
+    `全国の全レースでは 1〜2位 ${ps[0]}%・3〜4位 ${ps[1]}%・5〜6位 ${ps[2]}%`,
   // 攻める艇の1着の行だけに付ける（承認モック v2。1号艇の逃げの行には付けない。wording-editor 指摘）
   exhNatDesc: "（順位が上ほど1着が多い）",
-  exhNatMid: "。3〜4位はほかの順位との差が出にくい",
+  // この範囲の区分の差がはっきりしないとき・今日が3〜4位のとき（PR-2 ファン評価 1周目 指摘3）
+  exhUnclear:
+    "この範囲は件数が少なく、順位ごとの差がはっきりしない。全国の全レースの値を目安に",
   exhB1Note:
     "1号艇は展示が速く出やすい（同じ選手でも約0.02秒）。その分を差し引いても、順位ごとの差はほとんど変わらない。過去の割合で、原因とは限らない",
   // 進入（spec D-47 (6)）。全国の値（本番 DB 2026-04-10〜10-10。展開レンズの統計検証、spec「統計検証」の節）
@@ -387,8 +394,9 @@ export const ASSIST_COPY = Object.freeze({
   entryNatWakuK: 3602,
   entryNatWakuN: 3862,
   // オリジナル展示（spec D-47 (7)）。直線・秒数・形ごとは出さない。効き目は 2,844R の検証（spec「統計検証」の節）
+  // 機力レンズの測定項目（直線を含む）と食い違わないよう、出す2項目を見出しで言う（PR-2 ファン評価 1周目 指摘5）
   orgHeading: (venue, kinds) =>
-    `オリジナル展示（${venue ? `${venue}: ` : ""}${kinds.join("・")}）`,
+    `オリジナル展示${venue ? `（${venue}）` : ""}: ${kinds.join("・")}の一番`,
   orgBothBest: (boats) =>
     `${boats.join("・")}号艇: 一周・まわり足とも6艇で一番`,
   orgBest: (kind, boats) => `${kind}: ${boats.join("・")}号艇が6艇で一番`,

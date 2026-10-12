@@ -27,7 +27,11 @@ import {
   formSummary,
   partsChangedBoats,
 } from "../../../utils/assistSummary";
-import { MIN_SCENARIO, entryType } from "../../../utils/analogyScenario";
+import {
+  MIN_SCENARIO,
+  clearDiff,
+  entryType,
+} from "../../../utils/analogyScenario";
 import { ASSIST_COPY as C, GLOSSARY } from "../../../data/thinkingAssistCopy";
 import { TermButton, TheoryButton } from "./SheetButtons";
 import WinFollowers, { ComboList } from "./WinFollowers";
@@ -211,30 +215,33 @@ export function FlowConclusion({ m }) {
         <>
           {forms.length > 1 ? (
             // 形が2つ以上当てはまるときは同じ形式で並べ、選んだ形で下の「もし」「今日の展示」が変わる（承認モック v2 ④）
-            <div
-              className="ta-form-pick"
-              role="group"
-              aria-label={C.flowFormPick}
-            >
-              {forms.map((f) => (
-                <button
-                  key={f.form}
-                  type="button"
-                  className="ta-form-opt"
-                  aria-pressed={f.form === top.form}
-                  onClick={() => f.form !== top.form && onForm(f.form)}
-                >
-                  <b>{C.formNames[f.form]}</b>
-                  <span className="ta-big-cnt">{C.flowShapeRow}</span>
-                  <span className="ta-big-pct ta-num">
-                    {p0(f.hit[0], f.hit[1])}%
-                  </span>
-                  <span className="ta-big-cnt ta-num">
-                    （{comma(f.hit[0])}/{comma(f.hit[1])}）
-                  </span>
-                </button>
-              ))}
-            </div>
+            <>
+              <p className="ta-note">{C.flowFormPickNote(forms.length)}</p>
+              <div
+                className="ta-form-pick"
+                role="group"
+                aria-label={C.flowFormPick}
+              >
+                {forms.map((f) => (
+                  <button
+                    key={f.form}
+                    type="button"
+                    className="ta-form-opt"
+                    aria-pressed={f.form === top.form}
+                    onClick={() => f.form !== top.form && onForm(f.form)}
+                  >
+                    <b>{C.formNames[f.form]}</b>
+                    <span className="ta-big-cnt">{C.flowShapeRow}</span>
+                    <span className="ta-big-pct ta-num">
+                      {p0(f.hit[0], f.hit[1])}%
+                    </span>
+                    <span className="ta-big-cnt ta-num">
+                      （{comma(f.hit[0])}/{comma(f.hit[1])}）
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="ta-big">
               <b>{formName}</b>
@@ -309,7 +316,10 @@ function BandRows({ side }) {
                   <i style={{ width: `${pct(r.k, r.n)}%` }} />
                 </span>
                 <span className="ta-nowrap">
-                  {p0(r.k, r.n)}% <small>({r.k}/{r.n})</small>
+                  {p0(r.k, r.n)}%{" "}
+                  <small>
+                    （{r.k}/{r.n}）
+                  </small>
                 </span>
               </>
             )}
@@ -326,7 +336,7 @@ const natPcts = (nat) => nat.map((v) => Math.round(v * 100));
  * 今日の展示を入れると（spec D-47 (5)、承認モック v2）。攻める艇の1着と1号艇の逃げを展示タイムの順位の区分ごとに、
  * 範囲の件数つきで。全国の値を1行添える（範囲の区分の差は件数が少なく分かれにくいので、全国の差を主な根拠にする）。展示前は「展示の後に分かる」
  */
-function ExhBandsBox({ post, bands, formLabel }) {
+function ExhBandsBox({ post, bands, formLabel, notWaku }) {
   if (!post)
     return (
       <section className="ta-box">
@@ -342,15 +352,23 @@ function ExhBandsBox({ post, bands, formLabel }) {
       <p className="ta-note ta-num ta-band-nat">
         {C.exhNat(natPcts(side.nat))}
         {att && descending(side.nat) && C.exhNatDesc}
-        {att && side.today === "mid" && C.exhNatMid}
       </p>
     ) : null;
+  // 範囲の区分の差（上位と下位）が分かれないとき、または今日が3〜4位のときは全国の値を目安にと書く
+  const unclear = (side) => {
+    const pair = (b) => {
+      const r = side.rows.find((x) => x.band === b);
+      return r ? [r.k, r.n] : null;
+    };
+    return side.today === "mid" || !clearDiff(pair("top"), pair("low"));
+  };
   return (
     <section className="ta-box">
       <h3>{C.exhHeading}</h3>
       <div className="ta-legend">
         <span className="ta-scopechip ta-num">{formLabel}</span>
       </div>
+      {notWaku && <p className="ta-note">{notWaku}</p>}
       {att && (
         <>
           <p className="ta-note">
@@ -358,6 +376,7 @@ function ExhBandsBox({ post, bands, formLabel }) {
           </p>
           <BandRows side={att} />
           {natLine(att, true)}
+          {unclear(att) && <p className="ta-note">{C.exhUnclear}</p>}
         </>
       )}
       {b1 && (
@@ -389,6 +408,7 @@ function FlowSummary({ m }) {
     racers,
     venue,
     onPower,
+    onBet,
   } = m;
   const formName = top ? C.formNames[top.form] : null;
   const form = top ? formSummary(scenario, top.form) : null;
@@ -399,6 +419,10 @@ function FlowSummary({ m }) {
     ? C.flowFormScope(C.flowScopeLabel(Boolean(round)), form.n)
     : null;
   const entry = post ? entrySummary(scenario, courseByBoat) : null;
+  const notWaku =
+    entry && entry.type !== "waku"
+      ? C.flowNotWaku(C.entryNames[entry.type])
+      : null;
   const best = post ? originalBest(original, racers) : [];
   const bothBest =
     best.length === 2 && best[0].boats.join() === best[1].boats.join();
@@ -414,9 +438,7 @@ function FlowSummary({ m }) {
             <TheoryButton id={`TC-S:${form.form}`} name={formName} />
           </h3>
           <div className="ta-legend">
-            <span className="ta-scopechip ta-num">
-              {scopeText}
-            </span>
+            <span className="ta-scopechip ta-num">{scopeText}</span>
           </div>
           {form.few ? (
             <p className="ta-note">{C.flowFew}</p>
@@ -458,10 +480,19 @@ function FlowSummary({ m }) {
             </TheoryButton>
           )}
           {/* 3連単は展開から外し、買い目レンズへ（spec D-47 (4)） */}
-          <p className="ta-note">{C.flowTrifectaToBet}</p>
+          <button type="button" className="ta-link-btn" onClick={onBet}>
+            {C.flowTrifectaToBet} ›
+          </button>
         </section>
       )}
-      {form && <ExhBandsBox post={post} bands={bands} formLabel={scopeText} />}
+      {form && (
+        <ExhBandsBox
+          post={post}
+          bands={bands}
+          formLabel={scopeText}
+          notWaku={notWaku}
+        />
+      )}
       {(entry || !post) && (
         <section className="ta-box">
           <h3 className="ta-h3-row">

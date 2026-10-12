@@ -2172,7 +2172,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(concl.getByText("（65/501）")).toBeVisible();
     await expect(
       concl.getByText(
-        "今日の展示: 攻め手の3号艇は展示タイム4位 → 2コース凹みで攻め手が展示タイム3〜4位のとき1着 25%（13/53）",
+        "今日の展示: 攻め手の3号艇は展示タイム4位。2コース凹みで攻め手が展示タイム3〜4位のとき1着 25%（13/53）",
       ),
     ).toBeVisible();
     const conclBox = await concl.boundingBox();
@@ -2197,7 +2197,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     await expect(
       page.locator(".ta-flow-today"),
     ).toHaveText(
-      "今日の展示: 攻め手の3号艇は展示タイム4位 → 2コース凹みで攻め手が展示タイム3〜4位のときは4件だけ（少ないので割合は出さない）",
+      "今日の展示: 攻め手の3号艇は展示タイム4位。2コース凹みで攻め手が展示タイム3〜4位のときは4件だけ（少ないので割合は出さない）",
     );
   });
 
@@ -2268,7 +2268,7 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByText("攻める3号艇が1着の36件の決まり手"),
+      page.getByText("攻め手の3号艇が1着の36件の決まり手"),
     ).toBeVisible();
     const tech = page.locator(".ta-tech-row");
     await expect(tech).toHaveText([
@@ -2281,7 +2281,9 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
       page.getByText(/^2コース凹みのときによく出た2連単: 1-3/),
     ).toBeVisible();
     await expect(page.getByText(/^よく出た3連単:/)).toHaveCount(0);
-    await expect(page.getByText("よく出た3連単は買い目レンズ")).toBeVisible();
+    // 押すと買い目レンズへ（PR-2 ファン評価 1周目 指摘8）
+    await page.getByRole("button", { name: "よく出た3連単は買い目レンズ ›" }).click();
+    await expect(lensTab(page, "買い目")).toHaveAttribute("aria-selected", "true");
   });
 
   test("今日の展示を入れると: 区分ごとの割合、今日の区分に札、全国の値と3〜4位の注記", async ({
@@ -2296,17 +2298,23 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     const today = page.locator(".ta-band-today");
     await expect(today).toHaveCount(2);
     await expect(today.first()).toContainText("3〜4位");
-    await expect(today.first()).toContainText("25% (13/53)");
+    await expect(today.first()).toContainText("25% （13/53）");
     await expect(today.nth(1)).toContainText("1〜2位");
-    await expect(today.nth(1)).toContainText("42% (33/78)");
+    await expect(today.nth(1)).toContainText("42% （33/78）");
     await expect(
       page.getByText(
-        "全国では 1〜2位 24%・3〜4位 18%・5〜6位 13%（順位が上ほど1着が多い）。3〜4位はほかの順位との差が出にくい",
+        "全国の全レースでは 1〜2位 24%・3〜4位 18%・5〜6位 13%（順位が上ほど1着が多い）",
+      ),
+    ).toBeVisible();
+    // 今日が3〜4位で範囲の区分の差がはっきりしないので、全国の値を目安にと書く（PR-2 ファン評価 1周目 指摘3）
+    await expect(
+      page.getByText(
+        "この範囲は件数が少なく、順位ごとの差がはっきりしない。全国の全レースの値を目安に",
       ),
     ).toBeVisible();
     await expect(
       // 1号艇の逃げの行には「順位が上ほど1着が多い」を付けない（承認モック v2、wording-editor 指摘）
-      page.getByText("全国では 1〜2位 59%・3〜4位 51%・5〜6位 46%", {
+      page.getByText("全国の全レースでは 1〜2位 59%・3〜4位 51%・5〜6位 46%", {
         exact: true,
       }),
     ).toBeVisible();
@@ -2347,7 +2355,7 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByRole("heading", { name: "オリジナル展示（徳山: 一周・まわり足）" }),
+      page.getByRole("heading", { name: "オリジナル展示（徳山）: 一周・まわり足の一番" }),
     ).toBeVisible();
     await expect(
       page.getByText("1号艇: 一周・まわり足とも6艇で一番"),
@@ -2374,10 +2382,12 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     const kado = pick.getByRole("button", { name: /^カド一撃/ });
     const d2 = pick.getByRole("button", { name: /^2コース凹み/ });
     await expect(kado).toHaveAttribute("aria-pressed", "true");
+    // 押せると分かる1行（PR-2 ファン評価 1周目 指摘7）
+    await expect(page.getByText("当てはまる形が2つ。押すと下が変わる")).toBeVisible();
     await expect(kado).toContainText("25%（158/634）");
     await expect(page.getByText("もしカド一撃になったら")).toBeVisible();
     await expect(page.locator(".ta-flow-today")).toHaveText(
-      "今日の展示: 攻め手の4号艇は展示タイム1位 → カド一撃で攻め手が展示タイム1〜2位のとき1着 38%（56/146）",
+      "今日の展示: 攻め手の4号艇は展示タイム1位。カド一撃で攻め手が展示タイム1〜2位のとき1着 38%（56/146）",
     );
     await d2.click();
     await expect(d2).toHaveAttribute("aria-pressed", "true");
