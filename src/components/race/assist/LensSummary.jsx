@@ -84,7 +84,7 @@ function AxisSummary({ m }) {
             {C.classNote(1, classes[0], counts, factsScopeLabel(scope, venue))}
             <TermButton
               term={
-                scope.kind === "VC"
+                scope.kind === "VC" && venue
                   ? C.scopeVenue(venue)
                   : "全国・級の並びが同じ"
               }
