@@ -188,3 +188,53 @@ export function median(values) {
   const mid = Math.floor(xs.length / 2);
   return xs.length % 2 === 1 ? xs[mid] : (xs[mid - 1] + xs[mid]) / 2;
 }
+
+/**
+ * 配信物の /ai-snapshots/status.json（scripts/lib/snapshotStatus.js がビルド時に書く）を判定する。
+ * ブログ等のスナップショット生成の失敗はビルドを止めないので、ここで見つけて Slack に流す（SEO 再点検 F5）。
+ *
+ * @param {number} httpStatus
+ * @param {string} body
+ * @returns {{ level: "ok"|"note"|"fail", message: string }}
+ */
+export function evaluateSnapshotStatus(httpStatus, body) {
+  if (httpStatus === 404) {
+    return {
+      level: "note",
+      message: "status.json がまだ無い（書き出す版がデプロイされる前）",
+    };
+  }
+  if (httpStatus !== 200) {
+    return { level: "fail", message: `status.json が HTTP ${httpStatus}` };
+  }
+  let status;
+  try {
+    status = JSON.parse(body);
+  } catch {
+    return {
+      level: "fail",
+      message:
+        "status.json が無い、または JSON でない（SPA の外枠が返った等。書き出す版がデプロイされていないか、ビルドで書けなかった）",
+    };
+  }
+  const blog = status?.blog;
+  if (typeof status?.ok !== "boolean" || !blog) {
+    return { level: "fail", message: "status.json の形が違う" };
+  }
+  if (status.ok) {
+    return {
+      level: "ok",
+      message: `ブログ ${blog.succeeded}/${blog.total} 件（${status.generatedAt} のビルド）`,
+    };
+  }
+  if (blog.fatalError) {
+    return {
+      level: "fail",
+      message: `ブログの生成が途中で止まった（${status.generatedAt} のビルド）: ${blog.fatalError}`,
+    };
+  }
+  return {
+    level: "fail",
+    message: `ブログ ${blog.succeeded}/${blog.total} 件。失敗: ${(blog.failedIds ?? []).join(", ")}（${status.generatedAt} のビルド）`,
+  };
+}

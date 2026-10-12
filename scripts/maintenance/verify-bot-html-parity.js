@@ -8,9 +8,10 @@
  *    head（title・description・canonical）が、Playwright で人として描いたページにすべてあること
  * 2. 取り違え: bingbot で取った直後に人の UA で同じ URL を取り、SPA の外枠が返ること（ボット向けが返ったら重大）
  * 3. Googlebot: Googlebot の UA で / を取ると SPA の外枠であること
+ * 4. スナップショット生成: /ai-snapshots/status.json が ok であること（ブログ等の生成の失敗はビルドを止めないので、ここで見つける。SEO 再点検 F5）
  *
  * 記録だけ（失敗にしない）:
- * 4. TTFB: 人の UA で /・/venue/{会場}・/race/{本日のレース}（middleware を通らない比較用）を交互に10巡し、中央値を出す
+ * 5. TTFB: 人の UA で /・/venue/{会場}・/race/{本日のレース}（middleware を通らない比較用）を交互に10巡し、中央値を出す
  *
  * 照合の関数は scripts/lib/botHtmlParity.js（検証は verify-bot-html-parity-logic.js、tier ci）。
  * 監視自体が途中で止まった（本番に繋がらない・ブラウザが起動しない等）は終了コード 2。
@@ -27,6 +28,7 @@ import path from "node:path";
 import { chromium } from "playwright";
 import {
   classifyHtml,
+  evaluateSnapshotStatus,
   extractBotItems,
   findMissing,
   median,
@@ -173,6 +175,13 @@ async function main() {
       `[Googlebot] / に SPA の外枠が返らない（${gbKind}、HTTP ${gb.status}）`,
     );
   }
+
+  // ---- スナップショット生成の結果（status.json） ----
+  const st = await get("/ai-snapshots/status.json", UA.human);
+  const stResult = evaluateSnapshotStatus(st.status, st.body);
+  console.log(`[スナップショット] ${stResult.message}`);
+  if (stResult.level === "fail") failures.push(`[スナップショット] ${stResult.message}`);
+  if (stResult.level === "note") notes.push(stResult.message);
 
   // ---- 部分集合の照合 ----
   const browser = await chromium.launch();
