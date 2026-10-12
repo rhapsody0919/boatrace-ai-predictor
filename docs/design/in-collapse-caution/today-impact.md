@@ -42,7 +42,7 @@ flowchart LR
 ## 置き換えで変える所
 
 - 作る側: `generate-unified-predictions.js:33-35・160-190・350-372`（composite・percentile・reasons）、v16 の朝のバッチ（C2 の保存を足す）
-- DB: `morning_digest_rows.volatility_percentile`（098）、RPC `get_today_races`（110）・`get_predictions_by_date(_light)`（109）。次のマイグレーション番号は 149
+- DB: `morning_digest_rows.volatility_percentile`（098）、RPC `get_today_races`（110）・`get_predictions_by_date(_light)`（109）。次のマイグレーション番号は 149（2026-10-13 に 155〜157 を使うと決めた。plan.md）
 - 検証: `verify-morning-digest.js`、`verify-morning-digest-sns-topic.js`、`verify-volatility-accuracy-heading.js`、`verify-volatility-st-reason.js`、`verify-frontend-pure-functions.js`、`verify-morning-init-refactor.js`
 - e2e のモック: `today-highlights-result`・`race-share-text`・`race-cancelled-ai`・`race-outcome-display`・`race-result-popularity`・`analogy-contribution`・`race-detail-details`
 - ほか: `AiCopyBanner.jsx`・`AiCopyPromptSelector.jsx`・`aiCopyPrompts.js`・`find-video-worthy-race.js`・`unchangedRows.js`・`AnswerCheckHookCM.jsx`
