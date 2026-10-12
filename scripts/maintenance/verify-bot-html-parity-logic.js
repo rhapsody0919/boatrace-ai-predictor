@@ -2,10 +2,13 @@
 /**
  * 日中の照合（verify-bot-html-parity.js、ADR 0089「監視」）の関数 scripts/lib/botHtmlParity.js を、
  * 本番の HTML と人の DOM を1回保存したフィクスチャ（scripts/lib/__fixtures__/bot-html-parity/、2026-10-12）で確かめる。
+ * トップ（top・en）は、説明の本文・よくある質問・ブログ欄・案内の帯を足した版の Preview（2026-10-13、PR #1456）で取り直した。
+ * 人の DOM の本文は innerText に閉じた <details> の中身を足したもの（verify-bot-html-parity.js の humanSnapshot）
  * ネットワークにもブラウザにも繋がない。
  *
  * 守るもの:
- * 1. 同じなら通る: 本番のボット向け HTML（/・/venue/1・/venue/2）と、同じ時点の人の DOM で、無いものが0件
+ * 1. 同じなら通る: ボット向け HTML（/・/en/・/venue/1・/venue/2）と、同じ時点の人の DOM で、無いものが0件。
+ *    トップのよくある質問の答え（人の画面では閉じた <details> の中）も人の側にある
  * 2. 人の DOM に無い文言・リンク・title を1つ足したボット HTML で落ちる（足したものだけが一覧に出る）
  *    hreflang・JSON-LD も同じ（人に無い行・型・値で落ち、キーの順の違いでは落ちない。BOA-848）
  * 3. 最終更新の時刻: CDN の差（2分）は通り、許容を超える差・前置きの違いは落ちる
@@ -49,6 +52,7 @@ function check(label, actual, expected) {
 
 const pages = [
   { name: "top", path: "/" },
+  { name: "en", path: "/en/" },
   { name: "venue-1", path: "/venue/1" },
   { name: "venue-2", path: "/venue/2" },
 ];
@@ -84,7 +88,55 @@ for (const p of pages) {
     ["桐生", "平和島"].every((n) => top.texts.includes(n)),
     true,
   );
-  check("/: 会場ページへのリンクを含む", top.hrefs.includes("/venue/1"), true);
+  check(
+    "/: 会場ページへのリンクを含む",
+    top.hrefs.some((h) => /^\/venue\/\d+$/.test(h)),
+    true,
+  );
+  // 説明の本文・よくある質問・ブログ欄（PR #1456）も取り出して照合している
+  check(
+    "/: 説明の見出し・よくある質問の見出しと答えを含む",
+    [
+      top.texts.includes("龍神レーダーのボートレースAI予想"),
+      top.texts.includes("よくある質問"),
+      top.texts.some((t) => t.startsWith("過去の割合は、画面で選んだ条件")),
+    ],
+    [true, true, true],
+  );
+  check(
+    "/: 成績ページ・的中レース・ブログ記事へのリンクを含む",
+    [
+      top.hrefs.includes("/accuracy"),
+      top.hrefs.includes("/hit-races"),
+      top.hrefs.filter((h) => /^\/blog\/./.test(h)).length,
+    ],
+    [true, true, 6],
+  );
+  const en = extractBotItems(readFix("en.bot.html"));
+  check(
+    "/en/: 案内の帯（/en/about）とブログ記事（/en/blog/...）へのリンクを含む",
+    [
+      en.hrefs.includes("/en/about"),
+      en.hrefs.filter((h) => /^\/en\/blog\/./.test(h)).length,
+    ],
+    [true, 6],
+  );
+  // 閉じた <details> の答えを人の側に足していなければ落ちる（照合のロジックを直した理由）
+  {
+    const human = JSON.parse(readFix("top.human-dom.json"));
+    const answer = top.texts.find((t) =>
+      t.startsWith("過去の割合は、画面で選んだ条件"),
+    );
+    check(
+      "/: 人の側から閉じた details の答えを除くと、その答えが無いものに出る",
+      findMissing(
+        top,
+        { ...human, text: human.text.replaceAll(answer, "") },
+        ORIGIN,
+      ).map((m) => m.value),
+      [answer],
+    );
+  }
   const v1 = extractBotItems(readFix("venue-1.bot.html"));
   check(
     "/venue/1: 締切時刻の見出しを含む",
@@ -166,7 +218,11 @@ for (const p of pages) {
     top.head.alternates.map((a) => a.hreflang),
     ["ja", "en", "zh-Hant", "ko", "x-default"],
   );
-  check("/: JSON-LD を3つ取り出せる", top.head.jsonLd.length, 3);
+  check(
+    "/: JSON-LD を4つ取り出せる（共通の3つ＋FAQPage）",
+    top.head.jsonLd.map((s) => JSON.parse(s)["@type"]),
+    ["WebSite", "SoftwareApplication", "Organization", "FAQPage"],
+  );
   const v1 = extractBotItems(readFix("venue-1.bot.html"));
   check(
     "/venue/1: JSON-LD の型（共通の3つ＋パンくず）",
@@ -250,14 +306,23 @@ for (const p of pages) {
 }
 
 // ---- 3. 最終更新の時刻 ----
+// 時刻は人の DOM の値から組む（フィクスチャを取り直しても、ボットと人の差に左右されない）
 {
   const botHtml = readFix("top.bot.html");
   const human = JSON.parse(readFix("top.human-dom.json"));
-  const stamp = /レースデータ更新: (\d{2}\/\d{2}) (\d{2}):(\d{2})/.exec(
-    botHtml,
+  const STAMP = /レースデータ更新: (\d{2}\/\d{2}) (\d{2}):(\d{2})/;
+  const stamp = STAMP.exec(human.text);
+  check(
+    "フィクスチャに最終更新がある",
+    Boolean(stamp && STAMP.test(botHtml)),
+    true,
   );
-  check("フィクスチャに最終更新がある", Boolean(stamp), true);
-  // フィクスチャは本番で取ったままの 08:42（ボット）と 08:40（人）。1 の「0件」はこの許容で通っている
+  const plusMin = (min) => {
+    const total = Number(stamp[2]) * 60 + Number(stamp[3]) + min;
+    const hh = String(Math.floor(total / 60) % 24).padStart(2, "0");
+    const mm = String(total % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  };
   const at = (hhmm) =>
     botHtml.replace(
       /レースデータ更新: \d{2}\/\d{2} \d{2}:\d{2}/,
@@ -265,13 +330,18 @@ for (const p of pages) {
     );
   check(
     "最終更新が人と同じ時刻なら通る",
-    findMissing(extractBotItems(at("08:40")), human, ORIGIN),
+    findMissing(extractBotItems(at(plusMin(0))), human, ORIGIN),
+    [],
+  );
+  check(
+    "最終更新が2分ずれても通る（CDN の差）",
+    findMissing(extractBotItems(at(plusMin(2))), human, ORIGIN),
     [],
   );
   check(
     "最終更新が30分ずれると落ちる",
-    findMissing(extractBotItems(at("09:10")), human, ORIGIN),
-    [{ kind: "text", value: `レースデータ更新: ${stamp[1]} 09:10` }],
+    findMissing(extractBotItems(at(plusMin(30))), human, ORIGIN),
+    [{ kind: "text", value: `レースデータ更新: ${stamp[1]} ${plusMin(30)}` }],
   );
   const otherLabel = botHtml.replace("レースデータ更新:", "オッズ更新:");
   check(
@@ -281,7 +351,7 @@ for (const p of pages) {
   );
   check(
     "許容を0分にすると2分の差で落ちる",
-    findMissing(extractBotItems(botHtml), human, ORIGIN, {
+    findMissing(extractBotItems(at(plusMin(2))), human, ORIGIN, {
       stampToleranceMin: 0,
     }).length,
     1,
