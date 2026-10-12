@@ -762,6 +762,8 @@ function PredictionPanel({
             // 今見ているレース（言語・選んだタブ・艇込み）を共有する（BOA-691）
             shareUrl={shareUrlFor(`${pathname}${search}`)}
             title={shareTitle}
+            raceId={analysisRaceId}
+            shareKind={isFinished ? "result" : "prediction"}
             hashtags={
               isFinished
                 ? ["ボートレース", "展開予測", "龍神レーダー"]

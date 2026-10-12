@@ -287,3 +287,31 @@ test.describe("シェアボタンの共有 URL（BOA-691）", () => {
     );
   });
 });
+
+// GA4 の race_share（BOA-822 の計測）。展開予測を画面から外す前後で、シェアの数を比べる基準を取る
+test.describe("レース詳細のSNSシェアの GA4 イベント", () => {
+  test("X で共有すると race_share（race_id・x・prediction）を1回送る", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await setup(page, "ja");
+    await shareOnX(page, `/race/${DATE}-09-02`);
+    const events = await page.evaluate(() =>
+      window.__events.filter((e) => e[0] === "event" && e[1] === "race_share"),
+    );
+    expect(events).toEqual([
+      [
+        "event",
+        "race_share",
+        {
+          race_id: `${DATE}-09-02`,
+          share_channel: "x",
+          share_kind: "prediction",
+        },
+      ],
+    ]);
+  });
+});
