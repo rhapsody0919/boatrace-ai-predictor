@@ -18,6 +18,9 @@
  * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24 だけ配る UA を除外する（missing）。
  *    除外する UA の一覧が BOT_PAGE_USER_AGENTS と一致し、他のページの no-store は外れない
  *    （外すと関数の応答が CDN に残らない。Preview で MISS が続いたため、ADR 0089「未確認」の1）
+ * 11. 本日（JST）のレース詳細（/race/{id}・/{lang}/race/{id}）は、配る UA のときだけ /api/bot-page/race/{id}・
+ *    /api/bot-page/{lang}/race/{id} へ振り分ける（BOA-848 第2段）。過去・未来・形の違う id・/assist・対応外の言語は振り分けない。
+ *    「本日」は JST の日付。vercel.json の no-store は、本日かどうかによらず id の形のパスだけ配る UA を除外する
  * 9. 選手ページ（/racer/{4桁}、BOA-848）は配る UA のときだけ /ai-snapshots/racer/{番号}.html へ振り分ける。
  *    Googlebot・人のブラウザ・番号の形が違うもの・言語の接頭辞付き・/racers は振り分けない
  *
@@ -488,6 +491,107 @@ for (const path of NOT_RACER_SNAPSHOT_PATHS) {
 }
 
 console.log(
+  "[6d] 本日（JST）のレース詳細は配る UA のときだけ関数へ振り分ける（BOA-848 第2段）",
+);
+const jstDateOf = (ms) =>
+  new Date(ms + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const TODAY = jstDateOf(Date.now());
+const RACE_ROUTES = [
+  [`/race/${TODAY}-01-01`, `/api/bot-page/race/${TODAY}-01-01`],
+  [`/race/${TODAY}-24-12`, `/api/bot-page/race/${TODAY}-24-12`],
+  [`/en/race/${TODAY}-06-05`, `/api/bot-page/en/race/${TODAY}-06-05`],
+  [`/zh-TW/race/${TODAY}-12-03`, `/api/bot-page/zh-TW/race/${TODAY}-12-03`],
+  [`/ko/race/${TODAY}-01-12`, `/api/bot-page/ko/race/${TODAY}-01-12`],
+];
+for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+  for (const [path, target] of RACE_ROUTES) {
+    check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
+    const res = await call(path, { ua });
+    check(
+      `${name} ${path} → ${target}`,
+      res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
+      describe(res),
+    );
+  }
+}
+for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+  for (const [path] of RACE_ROUTES) {
+    const res = await call(path, { ua });
+    check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+  }
+}
+const NOT_RACE_PATHS = [
+  "/race/2020-01-01-01-01", // 過去
+  "/race/2099-01-01-01-01", // 未来
+  `/race/${TODAY}-00-01`,
+  `/race/${TODAY}-25-01`,
+  `/race/${TODAY}-01-00`,
+  `/race/${TODAY}-01-13`,
+  `/race/${TODAY}-1-1`,
+  `/race/${TODAY}-01-01/assist`,
+  `/race/${TODAY}-01-01/`,
+  "/race",
+  "/race/abc",
+  `/fr/race/${TODAY}-01-01`,
+  `/ja/race/${TODAY}-01-01`,
+  `/EN/race/${TODAY}-01-01`,
+];
+for (const path of NOT_RACE_PATHS) {
+  const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
+  check(`bingbot ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+}
+{
+  const res = await call(`/race/${TODAY}-01-01?tab=odds`, { ua: BOT_UA });
+  check(
+    "GPTBot /race/{本日}?tab=odds → クエリを持ち込まない",
+    res?.headers.get("x-middleware-rewrite") ===
+      `${ORIGIN}/api/bot-page/race/${TODAY}-01-01`,
+    describe(res),
+  );
+}
+// 「本日」は JST。UTC ではまだ前日の JST 0:00〜8:59 も、JST の今日を振り分ける
+{
+  const at = Date.parse("2026-10-11T21:00:00Z"); // JST 10/12 06:00
+  check(
+    "JST 6時（UTC は前日）: JST の今日のレースを振り分ける",
+    resolveSnapshotPath("/race/2026-10-12-01-01", BOT_UA, at) ===
+      "/api/bot-page/race/2026-10-12-01-01",
+  );
+  check(
+    "JST 6時: UTC の今日（JST では前日）のレースは振り分けない",
+    resolveSnapshotPath("/race/2026-10-11-01-01", BOT_UA, at) === null,
+  );
+  const midnight = Date.parse("2026-10-12T15:00:00Z"); // JST 10/13 00:00
+  check(
+    "JST 0:00 で前日のレースは振り分けから外れる",
+    resolveSnapshotPath("/race/2026-10-12-01-01", BOT_UA, midnight) === null &&
+      resolveSnapshotPath("/race/2026-10-13-01-01", BOT_UA, midnight) ===
+        "/api/bot-page/race/2026-10-13-01-01",
+  );
+}
+// 振り分けた id を関数が同じ言語・同じレースとして受ける（関数の parseBotRaceUrl）
+{
+  const { parseBotRaceUrl } = await import("../../api/_lib/botRace.js");
+  for (const [path, target] of RACE_ROUTES) {
+    const lang = path.match(/^\/(en|zh-TW|ko)\//)?.[1];
+    const mode = lang ? "prefixed" : "ja";
+    const a = parseBotRaceUrl(path, mode);
+    const b = parseBotRaceUrl(target, mode);
+    check(
+      `${path}: 振り分け先 ${target} を関数が同じレースとして受ける`,
+      a !== null && JSON.stringify(a) === JSON.stringify(b),
+    );
+  }
+  for (const path of NOT_RACE_PATHS.filter((p) => !/20(20|99)-/.test(p))) {
+    const lang = path.match(/^\/(en|zh-TW|ko)\//)?.[1];
+    check(
+      `${path}: 関数も受けない（形が違う）`,
+      parseBotRaceUrl(path, lang ? "prefixed" : "ja") === null,
+    );
+  }
+}
+
+console.log(
   "[7] vercel.json の no-store 規則は / と /venue/1〜24 だけ配る UA を除外する",
 );
 {
@@ -526,7 +630,7 @@ console.log(
       names.join(","),
     );
   }
-  for (const [path] of BOT_PAGE_ROUTES) {
+  for (const [path] of [...BOT_PAGE_ROUTES, ...RACE_ROUTES]) {
     for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
       check(`${name} ${path} は no-store を付けない`, !noStoreFor(path, ua));
     }

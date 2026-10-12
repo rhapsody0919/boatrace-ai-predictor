@@ -36,12 +36,29 @@ export function isTargetBot(userAgent) {
 // 人の URL と同じ 1〜24（0埋めなし）。api/_lib/botPage.js の VENUE_CODE と同じ範囲
 const BOT_PAGE_VENUE_PATH = /^\/venue\/([1-9]|1\d|2[0-4])$/;
 
-// 日本語の / と /venue/1〜24 だけ（ADR 0089 決定2）。言語の接頭辞付き・/venue/01・範囲外は null
-function resolveBotPagePath(pathname, userAgent) {
+// レース詳細（BOA-848 第2段）。id は YYYY-MM-DD-VV-RR（会場 01〜24・レース 01〜12、src/utils/raceId.js と同じ）。
+// 言語版（/en/ 等）も同じ。/race/{id}/assist（思考アシスト、ja 専用）は含めない
+const BOT_PAGE_RACE_PATH =
+  /^(?:\/(en|zh-TW|ko))?\/race\/((\d{4}-\d{2}-\d{2})-(?:0[1-9]|1\d|2[0-4])-(?:0[1-9]|1[0-2]))$/;
+
+const jstDateOf = (nowMs) =>
+  new Date(nowMs + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+// 日本語の / と /venue/1〜24（ADR 0089 決定2）と、本日（JST）のレース詳細（BOA-848 第2段）。
+// 言語の接頭辞付きの / と /venue・/venue/01・範囲外・過去と未来のレースは null
+function resolveBotPagePath(pathname, userAgent, nowMs) {
   if (!includesAny(userAgent, BOT_PAGE_USER_AGENTS)) return null;
   if (pathname === "/") return "/api/bot-page/top";
   const venueMatch = pathname.match(BOT_PAGE_VENUE_PATH);
   if (venueMatch) return `/api/bot-page/venue/${venueMatch[1]}`;
+  const raceMatch = pathname.match(BOT_PAGE_RACE_PATH);
+  // 過去・未来のレースは SPA のまま（関数は本日の id だけを出す。CDN のキーも本日分に限る）
+  if (raceMatch && raceMatch[3] === jstDateOf(nowMs)) {
+    const [, lang, id] = raceMatch;
+    return lang
+      ? `/api/bot-page/${lang}/race/${id}`
+      : `/api/bot-page/race/${id}`;
+  }
   return null;
 }
 
@@ -54,8 +71,9 @@ const RACER_PATH = /^\/racer\/(\d{4})$/;
 // 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）
 // ⚠️ ここに対象を足したら middleware.js の config.matcher にも同じパスを足すこと。
 //    Vercel は matcher に一致したパスでしか middleware を起動しないため、片方だけでは配信されない
-export function resolveSnapshotPath(pathname, userAgent) {
-  const botPagePath = resolveBotPagePath(pathname, userAgent);
+// nowMs はレース詳細の「本日」の判定だけに使う（検証で時計を差し替える）
+export function resolveSnapshotPath(pathname, userAgent, nowMs = Date.now()) {
+  const botPagePath = resolveBotPagePath(pathname, userAgent, nowMs);
   if (botPagePath) return botPagePath;
 
   if (!isTargetBot(userAgent)) return null;
