@@ -5,7 +5,8 @@
  * 見るもの（失敗なら終了コード 1）:
  * 1. 部分集合の照合: / と、開催中の会場2つの /venue/{code} について、bingbot の UA で取った HTML の
  *    本文の文字列（見出し・会場名・節の名前・グレード・レース番号・締切時刻・最終更新）・リンク先・
- *    head（title・description・canonical）が、Playwright で人として描いたページにすべてあること
+ *    head（title・description・canonical・hreflang・JSON-LD）が、Playwright で人として描いたページにすべてあること
+ *    （hreflang は hreflang と href の組、JSON-LD は JSON として読んだ値で比べる。人の側は document 全体を見る）
  * 2. 取り違え: bingbot で取った直後に人の UA で同じ URL を取り、SPA の外枠が返ること（ボット向けが返ったら重大）
  * 3. Googlebot: Googlebot の UA で / を取ると SPA の外枠であること
  * 4. スナップショット生成: /ai-snapshots/status.json が ok であること（ブログ等の生成の失敗はビルドを止めないので、ここで見つける。SEO 再点検 F5）
@@ -103,6 +104,15 @@ async function humanSnapshot(page) {
       canonicals: [...document.querySelectorAll('link[rel="canonical"]')].map(
         (l) => l.getAttribute("href"),
       ),
+      alternates: [
+        ...document.querySelectorAll('link[rel="alternate"][hreflang]'),
+      ].map((l) => ({
+        hreflang: l.getAttribute("hreflang") ?? "",
+        href: l.getAttribute("href") ?? "",
+      })),
+      jsonLd: [
+        ...document.querySelectorAll('script[type="application/ld+json"]'),
+      ].map((s) => s.textContent ?? ""),
     },
   }));
 }
@@ -220,9 +230,14 @@ async function main() {
         `${fixtureName(p)}.human-dom.json`,
         `${JSON.stringify(snapshot, null, 2)}\n`,
       );
-      const total = bot.texts.length + bot.hrefs.length + 3;
+      const total =
+        bot.texts.length +
+        bot.hrefs.length +
+        3 +
+        bot.head.alternates.length +
+        bot.head.jsonLd.length;
       console.log(
-        `[照合] ${p}: ${total - missing.length}/${total} 件が人の画面にある（本文 ${bot.texts.length}・リンク ${bot.hrefs.length}・head 3）`,
+        `[照合] ${p}: ${total - missing.length}/${total} 件が人の画面にある（本文 ${bot.texts.length}・リンク ${bot.hrefs.length}・head 3・hreflang ${bot.head.alternates.length}・JSON-LD ${bot.head.jsonLd.length}）`,
       );
       if (missing.length > 0) {
         failures.push(

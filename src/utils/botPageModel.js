@@ -3,7 +3,7 @@
  *
  * - 人の画面の部分集合にする。人のトップ（VenueGridPage・VenueGridCard）と会場ページ（VenueRaceListPage・
  *   RaceCard）が出している文字のうち、開催の予定（会場名・節の名前・レース番号・締切時刻・グレード・中止）
- *   と、ページの見出し・最終更新時刻・title・meta description・canonical だけを入れる
+ *   と、ページの見出し・最終更新時刻・title・meta description・canonical・パンくず（BreadcrumbList 用）だけを入れる
  * - 整形は人の画面と同じ transformTodayRaces、文字は人の画面と同じ関数（raceListDisplay.js・pageMeta.js）と
  *   i18n のキーで作る。t は ja の i18next の t を渡す（ボットは ja 固定）
  * - 選手一覧・オッズ・払戻・着順・展開予測・荒れ度は入れない（ADR 0089 決定7）
@@ -14,7 +14,11 @@
  */
 import { ALL_VENUE_CODES } from "../constants/index.js";
 import { transformTodayRaces } from "./todayRaces.js";
-import { getTopPageMeta, getTodayVenuePageMeta } from "./pageMeta.js";
+import {
+  getTopPageMeta,
+  getTodayVenuePageMeta,
+  getTodayVenueBreadcrumbItems,
+} from "./pageMeta.js";
 import {
   venueNameOf,
   venueCardHeadline,
@@ -127,6 +131,8 @@ export function buildTopModel(todayJson, { t, today }) {
   });
 
   return {
+    // 言語プレフィックスを除いたパス（hreflang を組むのに使う）
+    path: "/",
     meta: getTopPageMeta(t, LANG),
     heading: `🏁 ${t("home.todayRaces")} ${formatDateShortLocalized(today, LANG)}`,
     updatedText: updatedText(t, transformed.scrapedAt),
@@ -152,7 +158,10 @@ export function buildVenueModel(todayJson, venueCode, { t }) {
   const venueName = venueNameOf(t, venueCode);
 
   return {
+    path: `/venue/${venueCode}`,
     meta: getTodayVenuePageMeta(t, venueCode, races),
+    // 人の画面のパンくず（BreadcrumbList の JSON-LD に使う）
+    breadcrumbItems: getTodayVenueBreadcrumbItems(t, venueCode, LANG),
     heading: `🏁 ${venueName} ${t("venueRaceList.todayTitle")}`,
     // 人の画面と同じく、0件なら「本日、このレース場での開催はありません」
     emptyText: races.length === 0 ? t("home.noRacesToday") : null,

@@ -24,6 +24,34 @@
     "description": "桐生競艇（ボートレース桐生）の本日の全レースをAIが予想。1マークの展開予測・イン崩れ指数と締切時刻を無料・登録不要で確認できます。",
     "canonicals": [
       "https://www.boat-ai.jp/venue/1"
+    ],
+    "alternates": [
+      {
+        "hreflang": "ja",
+        "href": "https://www.boat-ai.jp/venue/1"
+      },
+      {
+        "hreflang": "en",
+        "href": "https://www.boat-ai.jp/en/venue/1"
+      },
+      {
+        "hreflang": "zh-Hant",
+        "href": "https://www.boat-ai.jp/zh-TW/venue/1"
+      },
+      {
+        "hreflang": "ko",
+        "href": "https://www.boat-ai.jp/ko/venue/1"
+      },
+      {
+        "hreflang": "x-default",
+        "href": "https://www.boat-ai.jp/venue/1"
+      }
+    ],
+    "jsonLd": [
+      "\n    {\n      \"@context\": \"https://schema.org\",\n      \"@type\": \"WebSite\",\n      \"name\": \"龍神レーダー\",\n      \"url\": \"https://www.boat-ai.jp/\",\n      \"description\": \"選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。\"\n    }\n    ",
+      "\n    {\n      \"@context\": \"https://schema.org\",\n      \"@type\": \"SoftwareApplication\",\n      \"name\": \"龍神レーダー\",\n      \"applicationCategory\": \"SportsApplication\",\n      \"offers\": {\n        \"@type\": \"Offer\",\n        \"price\": \"0\",\n        \"priceCurrency\": \"JPY\"\n      },\n      \"description\": \"選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービス。\"\n    }\n    ",
+      "\n    {\n      \"@context\": \"https://schema.org\",\n      \"@type\": \"Organization\",\n      \"name\": \"龍神レーダー\",\n      \"url\": \"https://www.boat-ai.jp/\",\n      \"logo\": \"https://www.boat-ai.jp/logo.png\",\n      \"sameAs\": [\"https://x.com/kyouteiboatai\"]\n    }\n    ",
+      "{\"@context\":\"https://schema.org\",\"@type\":\"BreadcrumbList\",\"itemListElement\":[{\"@type\":\"ListItem\",\"position\":1,\"name\":\"ホーム\",\"item\":\"https://www.boat-ai.jp/\"},{\"@type\":\"ListItem\",\"position\":2,\"name\":\"桐生\",\"item\":\"https://www.boat-ai.jp/venue/1\"}]}"
     ]
   }
 }

@@ -9,6 +9,9 @@
  * - 会場コードはパスの末尾の 1〜24（0埋めなし）だけ。それ以外は 404。クエリ文字列は見ない
  *   middleware の rewrite から呼ばれると req.url は元の /venue/{code} のまま届く（Preview で確認）ので、
  *   /api/bot-page/venue/{code} と /venue/{code} の両方を受ける
+ * - head の hreflang・JSON-LD は人のページと同じ値（BOA-848）。hreflang は HreflangTags と同じ getHreflangAlternates、
+ *   JSON-LD は index.html の共通のもの＋会場ページのパンくず（Breadcrumb と同じ breadcrumbLd.js）。
+ *   JSON-LD の中身は < > & を \uXXXX にして、値で </script> が閉じないようにする
  *
  * 検証: scripts/maintenance/verify-bot-page-function.js
  */
@@ -21,6 +24,14 @@ import {
   TodayRacesShapeError,
 } from "../../src/utils/botPageModel.js";
 import { getJSTNow } from "../../src/utils/dateUtils.js";
+import { getHreflangAlternates } from "../../src/config/languages.js";
+import {
+  isValidCrumbs,
+  toBreadcrumbListLd,
+} from "../../src/utils/breadcrumbLd.js";
+
+// 人のページの HreflangTags と同じ（hreflang の URL は本番のドメインで出す）
+const SITE_ORIGIN = "https://www.boat-ai.jp";
 
 // 成功時のヘッダー。scripts/verification/verify-cache-config.js がこのファイルの最初の "Cache-Control" を読むので、
 // 失敗時のヘッダーより前に置く（docs/reference/cache-strategy.md パターン B）
@@ -97,6 +108,53 @@ export function getJaT() {
   return jaTPromise;
 }
 
+// ---- JSON-LD ----
+
+/**
+ * JSON-LD の値を <script> の中身の文字列にする。値に "</script>" 等があっても要素が閉じないよう、
+ * < > & と U+2028・U+2029 を \uXXXX にする（JSON として読んだ値は変わらない）
+ */
+export function jsonLdScriptText(value) {
+  return JSON.stringify(value).replace(
+    /[<>&\u2028\u2029]/g,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
+}
+
+const LD_SCRIPT = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+
+/** HTML の中の JSON-LD（<script type="application/ld+json">）を読む。JSON として読めないものがあれば例外 */
+export function parseJsonLdScripts(html) {
+  return [...String(html).matchAll(LD_SCRIPT)].map((m, i) => {
+    try {
+      return JSON.parse(m[1]);
+    } catch (e) {
+      throw new Error(`JSON-LD の ${i + 1} 個目が JSON でない: ${e?.message}`);
+    }
+  });
+}
+
+// 人のページの初期 HTML（index.html）にある共通の JSON-LD（WebSite・SoftwareApplication・Organization）。
+// 値は index.html から読む（同じ値を2箇所に書かない）。vercel.json の includeFiles で関数に同梱する
+let siteJsonLdPromise = null;
+export function getSiteJsonLd() {
+  if (!siteJsonLdPromise) {
+    siteJsonLdPromise = (async () => {
+      const list = parseJsonLdScripts(
+        readFileSync(new URL("../../index.html", import.meta.url), "utf8"),
+      );
+      if (list.length === 0) {
+        throw new Error("index.html に JSON-LD が無い");
+      }
+      return list;
+    })().catch((e) => {
+      siteJsonLdPromise = null;
+      throw e;
+    });
+  }
+  return siteJsonLdPromise;
+}
+
 // ---- 材料の取得 ----
 
 /**
@@ -164,7 +222,23 @@ export function originOf(headers) {
 
 // ---- HTML ----
 
-function documentHtml(meta, bodyHtml) {
+/**
+ * @param {{title: string, description: string, canonical: string}} meta
+ * @param {string} bodyHtml
+ * @param {{path: string, jsonLd: object[]}} extras - path は hreflang を組むパス（言語プレフィックスなし）、
+ *   jsonLd は人のページと同じ JSON-LD
+ */
+function documentHtml(meta, bodyHtml, { path, jsonLd }) {
+  const headExtras = [
+    ...getHreflangAlternates(path, SITE_ORIGIN).map(
+      ({ hreflang, href }) =>
+        `<link rel="alternate" hreflang="${escapeHtml(hreflang)}" href="${escapeHtml(href)}">`,
+    ),
+    ...jsonLd.map(
+      (ld) =>
+        `<script type="application/ld+json">${jsonLdScriptText(ld)}</script>`,
+    ),
+  ];
   return `<!doctype html>
 <html lang="ja">
 <head>
@@ -173,6 +247,7 @@ function documentHtml(meta, bodyHtml) {
 <meta name="description" content="${escapeHtml(meta.description)}">
 <meta name="robots" content="${escapeHtml(ROBOTS)}">
 <link rel="canonical" href="${escapeHtml(meta.canonical)}">
+${headExtras.join("\n")}
 </head>
 <body>
 <main>
@@ -185,7 +260,11 @@ ${bodyHtml}
 
 const span = (text) => (text ? ` <span>${escapeHtml(text)}</span>` : "");
 
-export function renderTopHtml(model) {
+/**
+ * @param {ReturnType<typeof buildTopModel>} model
+ * @param {{siteJsonLd?: object[]}} [options] - index.html の共通の JSON-LD（getSiteJsonLd）
+ */
+export function renderTopHtml(model, { siteJsonLd = [] } = {}) {
   const items = model.venues.map((v) =>
     v.isOpen
       ? `<li><a href="${escapeHtml(v.href)}">${escapeHtml(v.name)}</a>${span(v.gradeLabel)}${span(v.raceTitle)}</li>`
@@ -198,10 +277,19 @@ export function renderTopHtml(model) {
   ]
     .filter(Boolean)
     .join("\n");
-  return documentHtml(model.meta, body);
+  // 人のトップは index.html の共通の JSON-LD だけ（パンくずは無い）
+  return documentHtml(model.meta, body, {
+    path: model.path,
+    jsonLd: siteJsonLd,
+  });
 }
 
-export function renderVenueHtml(model, viewLabel) {
+/**
+ * @param {ReturnType<typeof buildVenueModel>} model
+ * @param {string} viewLabel - レースカードのリンクの文言
+ * @param {{siteJsonLd?: object[]}} [options] - index.html の共通の JSON-LD（getSiteJsonLd）
+ */
+export function renderVenueHtml(model, viewLabel, { siteJsonLd = [] } = {}) {
   const items = model.races.map((r) => {
     const parts = [
       `<h3>${escapeHtml(r.venueName)}</h3>`,
@@ -224,7 +312,16 @@ export function renderVenueHtml(model, viewLabel) {
   ]
     .filter(Boolean)
     .join("\n");
-  return documentHtml(model.meta, body);
+  // 人の会場ページは、共通の JSON-LD に加えて Breadcrumb の BreadcrumbList を出す（項目が欠けたら出さないのも同じ）
+  return documentHtml(model.meta, body, {
+    path: model.path,
+    jsonLd: [
+      ...siteJsonLd,
+      ...(isValidCrumbs(model.breadcrumbItems)
+        ? [toBreadcrumbListLd(model.breadcrumbItems)]
+        : []),
+    ],
+  });
 }
 
 // ---- 応答 ----
@@ -246,12 +343,12 @@ export function venueCodeFromUrl(url) {
 
 /**
  * @param {{page: "top"|"venue", method?: string, url?: string, headers?: Record<string, string>}} req
- * @param {{getTodayJson: (origin: string) => Promise<unknown>, now: () => number, getT: () => Promise<Function>}} deps
+ * @param {{getTodayJson: (origin: string) => Promise<unknown>, now: () => number, getT: () => Promise<Function>, getSiteJsonLd?: () => Promise<object[]>}} deps
  * @returns {Promise<{status: number, headers: Record<string, string>, body: string}>}
  */
 export async function respondBotPage(
   { page, method, url, headers },
-  { getTodayJson, now, getT },
+  { getTodayJson, now, getT, getSiteJsonLd: loadSiteJsonLd = getSiteJsonLd },
 ) {
   if (method !== "GET" && method !== "HEAD") {
     return plain(
@@ -268,18 +365,24 @@ export async function respondBotPage(
   if (!origin) return plain(400, CLIENT_ERROR_HEADERS, "400 Bad Request\n");
 
   try {
-    const [json, t] = await Promise.all([getTodayJson(origin), getT()]);
+    const [json, t, siteJsonLd] = await Promise.all([
+      getTodayJson(origin),
+      getT(),
+      loadSiteJsonLd(),
+    ]);
     const html =
       page === "venue"
         ? renderVenueHtml(
             buildVenueModel(json, venueCode, { t }),
             t("raceCard.view"),
+            { siteJsonLd },
           )
         : renderTopHtml(
             buildTopModel(json, {
               t,
               today: getJSTNow(new Date(now())).toISOString().slice(0, 10),
             }),
+            { siteJsonLd },
           );
     return plain(200, SUCCESS_HEADERS, html);
   } catch (e) {
@@ -300,16 +403,21 @@ const defaultSource = createTodayRacesSource();
  * Vercel の Node 関数のハンドラ（req, res）を作る
  *
  * @param {"top"|"venue"} page
- * @param {{getTodayJson?: Function, now?: () => number, getT?: () => Promise<Function>}} [deps] - verify で差し替える
+ * @param {{getTodayJson?: Function, now?: () => number, getT?: () => Promise<Function>, getSiteJsonLd?: () => Promise<object[]>}} [deps] - verify で差し替える
  */
 export function createBotPageHandler(
   page,
-  { getTodayJson = defaultSource, now = Date.now, getT = getJaT } = {},
+  {
+    getTodayJson = defaultSource,
+    now = Date.now,
+    getT = getJaT,
+    getSiteJsonLd: loadSiteJsonLd = getSiteJsonLd,
+  } = {},
 ) {
   return async function handler(req, res) {
     const { status, headers, body } = await respondBotPage(
       { page, method: req.method, url: req.url, headers: req.headers },
-      { getTodayJson, now, getT },
+      { getTodayJson, now, getT, getSiteJsonLd: loadSiteJsonLd },
     );
     res.statusCode = status;
     for (const [k, v] of Object.entries(headers)) res.setHeader(k, v);

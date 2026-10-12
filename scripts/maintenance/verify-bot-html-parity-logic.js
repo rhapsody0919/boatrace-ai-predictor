@@ -7,6 +7,7 @@
  * 守るもの:
  * 1. 同じなら通る: 本番のボット向け HTML（/・/venue/1・/venue/2）と、同じ時点の人の DOM で、無いものが0件
  * 2. 人の DOM に無い文言・リンク・title を1つ足したボット HTML で落ちる（足したものだけが一覧に出る）
+ *    hreflang・JSON-LD も同じ（人に無い行・型・値で落ち、キーの順の違いでは落ちない。BOA-848）
  * 3. 最終更新の時刻: CDN の差（2分）は通り、許容を超える差・前置きの違いは落ちる
  * 4. 取り違え: 人の UA にボット向け HTML が返った応答を "bot" と見分ける（SPA の外枠は "spa"）
  * 5. 開催中の会場の選び方（中止だけの会場を飛ばす・place_cd の順・レースの URL）と中央値
@@ -149,6 +150,99 @@ for (const p of pages) {
     findMissing(extractBotItems(botHtml), humanWithoutDeadline, ORIGIN),
     [{ kind: "text", value: "15:19" }],
   );
+}
+
+// ---- 2b. hreflang・JSON-LD（BOA-848） ----
+// フィクスチャの hreflang・JSON-LD は、PR の Preview（2026-10-12）で取ったボット向け HTML の head と人の DOM を、
+// 同日の本番のフィクスチャに足したもの
+{
+  const top = extractBotItems(readFix("top.bot.html"));
+  check(
+    "/: hreflang を取り出せる（4言語と x-default）",
+    top.head.alternates.map((a) => a.hreflang),
+    ["ja", "en", "zh-Hant", "ko", "x-default"],
+  );
+  check("/: JSON-LD を3つ取り出せる", top.head.jsonLd.length, 3);
+  const v1 = extractBotItems(readFix("venue-1.bot.html"));
+  check(
+    "/venue/1: JSON-LD の型（共通の3つ＋パンくず）",
+    v1.head.jsonLd.map((s) => JSON.parse(s)["@type"]),
+    ["WebSite", "SoftwareApplication", "Organization", "BreadcrumbList"],
+  );
+
+  const botHtml = readFix("venue-1.bot.html");
+  const human = JSON.parse(readFix("venue-1.human-dom.json"));
+  const missingOf = (html, h = human) =>
+    findMissing(extractBotItems(html), h, ORIGIN);
+
+  const withAlternate = botHtml.replace(
+    "</head>",
+    `<link rel="alternate" hreflang="fr" href="${ORIGIN}/fr/venue/1">\n</head>`,
+  );
+  check(
+    "hreflang を1行足すと、その行だけが無いものに出る",
+    missingOf(withAlternate),
+    [{ kind: "hreflang", value: `fr ${ORIGIN}/fr/venue/1` }],
+  );
+  const wrongHref = botHtml.replace(
+    `hreflang="en" href="${ORIGIN}/en/venue/1"`,
+    `hreflang="en" href="${ORIGIN}/en/venue/01"`,
+  );
+  check("hreflang の URL が違うと落ちる", missingOf(wrongHref), [
+    { kind: "hreflang", value: `en ${ORIGIN}/en/venue/01` },
+  ]);
+
+  const extraLd = '{"@context":"https://schema.org","@type":"SportsEvent"}';
+  check(
+    "人に無い型の JSON-LD を足すと落ちる",
+    missingOf(
+      botHtml.replace(
+        "</head>",
+        `<script type="application/ld+json">${extraLd}</script>\n</head>`,
+      ),
+    ),
+    [{ kind: "jsonld", value: extraLd }],
+  );
+  const renamed = botHtml.replace('"name":"桐生"', '"name":"きりゅう"');
+  check(
+    "JSON-LD の値が1つ違うと落ちる",
+    missingOf(renamed).map((m) => [m.kind, JSON.parse(m.value)["@type"]]),
+    [["jsonld", "BreadcrumbList"]],
+  );
+  check(
+    "JSON として読めない JSON-LD は落ちる",
+    missingOf(
+      botHtml.replace(
+        "</head>",
+        '<script type="application/ld+json">{oops</script>\n</head>',
+      ),
+    ),
+    [{ kind: "jsonld", value: "{oops" }],
+  );
+  // 人の画面から BreadcrumbList が消えたら落ちる（向きを取り違えていない）
+  const humanWithoutCrumb = {
+    ...human,
+    head: {
+      ...human.head,
+      jsonLd: human.head.jsonLd.filter((s) => !s.includes("BreadcrumbList")),
+    },
+  };
+  check(
+    "人の画面からパンくずの JSON-LD が消えると落ちる",
+    missingOf(botHtml, humanWithoutCrumb).map((m) => m.kind),
+    ["jsonld"],
+  );
+  // キーの順・空白の違い（人の側は index.html の整形のまま）は同じとみなす
+  const reordered = botHtml.replace(
+    /<script type="application\/ld\+json">(\{"@context":"https:\/\/schema.org","@type":"Organization"[^<]*)<\/script>/,
+    (_, json) => {
+      const o = JSON.parse(json);
+      const flipped = Object.fromEntries(Object.entries(o).reverse());
+      return `<script type="application/ld+json">${JSON.stringify(flipped)}</script>`;
+    },
+  );
+  check("キーの順を入れ替えても落ちない", reordered !== botHtml, true);
+  check("キーの順を入れ替えても無いものは0件", missingOf(reordered), []);
 }
 
 // ---- 3. 最終更新の時刻 ----
