@@ -13,7 +13,7 @@
  * 4. スナップショット生成: /ai-snapshots/status.json が ok であること（ブログ等の生成の失敗はビルドを止めないので、ここで見つける。SEO 再点検 F5）
  *
  * 記録だけ（失敗にしない）:
- * 5. TTFB: 人の UA で /・/venue/{会場}・/race/{本日のレース}（middleware を通らない比較用）を交互に10巡し、中央値を出す
+ * 5. TTFB: 人の UA で /・/venue/{会場}・/en/・/race/{本日のレース}（middleware を通らない比較用）を交互に10巡し、中央値を出す
  *
  * 照合の関数は scripts/lib/botHtmlParity.js（検証は verify-bot-html-parity-logic.js、tier ci）。
  * 監視自体が途中で止まった（本番に繋がらない・ブラウザが起動しない等）は終了コード 2。
@@ -281,9 +281,10 @@ async function main() {
   }
 
   // ---- TTFB（記録だけ） ----
+  // /en/ は言語版の配線（BOA-848 第2段）の前後で middleware を通るかが変わるので、比べられるよう毎日残す
   const ttfbPaths = venues.length
-    ? ["/", `/venue/${venues[0].code}`, venues[0].firstRacePath]
-    : ["/", "/venue/1"];
+    ? ["/", `/venue/${venues[0].code}`, "/en/", venues[0].firstRacePath]
+    : ["/", "/venue/1", "/en/"];
   const samples = Object.fromEntries(ttfbPaths.map((p) => [p, []]));
   for (let i = 0; i < TTFB_ROUNDS; i += 1) {
     for (const p of ttfbPaths) samples[p].push(await ttfb(p));
