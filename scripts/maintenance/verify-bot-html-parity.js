@@ -3,7 +3,8 @@
  * 日中の照合（ADR 0089「監視」）。本番のボット向け HTML が、人の画面の部分集合になっているかを確かめる。
  *
  * 見るもの（失敗なら終了コード 1）:
- * 1. 部分集合の照合: / と、開催中の会場2つの /venue/{code} について、bingbot の UA で取った HTML の
+ * 1. 部分集合の照合: / と、開催中の会場2つの /venue/{code}（と、振り分けていれば言語版の /{lang}/・/{lang}/venue/{先頭の会場}、
+ *    BOA-848 第2段）について、bingbot の UA で取った HTML の
  *    本文の文字列（見出し・会場名・節の名前・グレード・レース番号・締切時刻・最終更新）・リンク先・
  *    head（title・description・canonical・hreflang・JSON-LD）が、Playwright で人として描いたページにすべてあること
  *    （hreflang は hreflang と href の組、JSON-LD は JSON として読んだ値で比べる。人の側は document 全体を見る）
@@ -12,11 +13,13 @@
  * 4. スナップショット生成: /ai-snapshots/status.json が ok であること（ブログ等の生成の失敗はビルドを止めないので、ここで見つける。SEO 再点検 F5）
  *
  * 記録だけ（失敗にしない）:
- * 5. TTFB: 人の UA で /・/venue/{会場}・/race/{本日のレース}（middleware を通らない比較用）を交互に10巡し、中央値を出す
+ * 5. TTFB: 人の UA で /・/venue/{会場}・/en/・/race/{本日のレース}（middleware を通らない比較用）を交互に10巡し、中央値を出す
  *
  * 照合の関数は scripts/lib/botHtmlParity.js（検証は verify-bot-html-parity-logic.js、tier ci）。
  * 監視自体が途中で止まった（本番に繋がらない・ブラウザが起動しない等）は終了コード 2。
- * 本番へのリクエストは、ページの HTML で 40 前後（Playwright の描画が読むアセット・API は別）。
+ * 本番へのリクエストは、ページの HTML で 40 前後。言語版を配線した後は 60 前後（Playwright の描画が読むアセット・API は別）。
+ * 言語版を照合するかは、このリポジトリの振り分け（resolveSnapshotPath）で決める。ワークフローは master を checkout するので、
+ * 本番に出ている振り分けと同じになる
  *
  * 使い方:
  *   node scripts/maintenance/verify-bot-html-parity.js
@@ -33,8 +36,19 @@ import {
   extractBotItems,
   findMissing,
   median,
+  parityPaths,
   pickOpenVenues,
 } from "../lib/botHtmlParity.js";
+import { resolveSnapshotPath } from "../../src/config/aiCrawlerBots.js";
+import {
+  DEFAULT_LANGUAGE,
+  SUPPORTED_LANGUAGES,
+} from "../../src/config/languages.js";
+
+// 言語版の候補（ja 以外の対応言語）。振り分けているかは resolveSnapshotPath で見る
+const PREFIXED_LANGS = SUPPORTED_LANGUAGES.map(({ code }) => code).filter(
+  (code) => code !== DEFAULT_LANGUAGE,
+);
 
 const ORIGIN = (
   process.env.BOT_PARITY_ORIGIN || "https://www.boat-ai.jp"
@@ -61,7 +75,9 @@ if (saveDirIndex >= 0 && !saveDir) {
 }
 
 const fixtureName = (p) =>
-  p === "/" ? "top" : p.replace(/^\//, "").replaceAll("/", "-");
+  p === "/"
+    ? "top"
+    : p.replace(/^\//, "").replace(/\/$/, "").replaceAll("/", "-");
 function save(file, content) {
   if (!saveDir) return;
   mkdirSync(saveDir, { recursive: true });
@@ -145,7 +161,20 @@ async function main() {
   if (venues.length === 0) {
     notes.push("本日は開催中の会場が無いため、/ だけを照合する");
   }
-  const paths = ["/", ...venues.map((v) => `/venue/${v.code}`)];
+  const { checked: paths, skipped } = parityPaths(
+    venues.map((v) => v.code),
+    {
+      langs: PREFIXED_LANGS,
+      isRouted: (p) =>
+        resolveSnapshotPath(p, UA.bingbot)?.startsWith("/api/bot-page/") ??
+        false,
+    },
+  );
+  if (skipped.length > 0) {
+    notes.push(
+      `ボット向け HTML へ振り分けていないので照合しない: ${skipped.join(" ")}`,
+    );
+  }
   console.log(
     `照合するページ: ${paths.join(" ")}${venues.length ? `（${venues.map((v) => v.name).join("・")}）` : ""}`,
   );
@@ -252,9 +281,10 @@ async function main() {
   }
 
   // ---- TTFB（記録だけ） ----
+  // /en/ は言語版の配線（BOA-848 第2段）の前後で middleware を通るかが変わるので、比べられるよう毎日残す
   const ttfbPaths = venues.length
-    ? ["/", `/venue/${venues[0].code}`, venues[0].firstRacePath]
-    : ["/", "/venue/1"];
+    ? ["/", `/venue/${venues[0].code}`, "/en/", venues[0].firstRacePath]
+    : ["/", "/venue/1", "/en/"];
   const samples = Object.fromEntries(ttfbPaths.map((p) => [p, []]));
   for (let i = 0; i < TTFB_ROUNDS; i += 1) {
     for (const p of ttfbPaths) samples[p].push(await ttfb(p));

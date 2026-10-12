@@ -9,8 +9,16 @@
  */
 import * as cheerio from "cheerio";
 
-/** 本文の比較では空白（改行・タブ・全角でない空白）を全部除く。人の DOM は要素の境目に改行が入るため */
-export const normalizeText = (s) => String(s ?? "").replace(/\s+/g, "");
+/**
+ * 本文の比較では空白（改行・タブ・全角でない空白）を全部除く。人の DOM は要素の境目に改行が入るため。
+ * 英字の大文字・小文字も区別しない。人の innerText は CSS の text-transform を反映する
+ * （会場ページの締切のラベル .info-item .label は uppercase。en で「Betting deadline」が「BETTING DEADLINE」になる、
+ * 言語版の Preview の照合で分かった）
+ */
+export const normalizeText = (s) =>
+  String(s ?? "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 
 /**
  * ボット向け HTML から、照合する文字列を取り出す
@@ -234,6 +242,30 @@ export function pickOpenVenues(json, n) {
     .filter((v) => v && Number.isInteger(v.code) && v.code >= 1 && v.code <= 24)
     .sort((a, b) => a.code - b.code)
     .slice(0, n);
+}
+
+/**
+ * 照合するページの一覧。/ と開催中の会場のほかに、言語版（BOA-848 第2段）の /{lang}/ と /{lang}/venue/{先頭の会場} を候補にし、
+ * isRouted（ボット向け HTML へ振り分けているか）が真のものだけを照合する。配線する前の言語版は skipped に入る
+ * （配線の PR が入れば、照合の側を変えずに照合するページに加わる）
+ *
+ * @param {number[]} venueCodes - 開催中の会場コード（pickOpenVenues の順）
+ * @param {{langs: string[], isRouted: (path: string) => boolean}} options
+ * @returns {{checked: string[], skipped: string[]}}
+ */
+export function parityPaths(venueCodes, { langs, isRouted }) {
+  const candidates = [
+    "/",
+    ...venueCodes.map((c) => `/venue/${c}`),
+    ...langs.flatMap((lang) => [
+      `/${lang}/`,
+      ...(venueCodes.length > 0 ? [`/${lang}/venue/${venueCodes[0]}`] : []),
+    ]),
+  ];
+  return {
+    checked: candidates.filter((p) => isRouted(p)),
+    skipped: candidates.filter((p) => !isRouted(p)),
+  };
 }
 
 /** 中央値（空なら null） */
