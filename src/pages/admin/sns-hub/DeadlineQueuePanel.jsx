@@ -75,6 +75,14 @@ export function DeadlineQueueList({ rows, now }) {
                   : "未収集（0ではありません）"}
               </p>
             )}
+            {row.channel === "youtube" && row.external_post_id && (
+              <p>
+                動画ID: {row.external_post_id} /{" "}
+                {row.youtube_stage === "private_retained"
+                  ? "非公開のまま残置（削除はオーナー操作）"
+                  : "公開状態は照合で確認"}
+              </p>
+            )}
             {row.error_code && <p>保留・失敗理由: {row.error_code}</p>}
           </li>
         ))}
