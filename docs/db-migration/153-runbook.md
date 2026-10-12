@@ -49,7 +49,7 @@ SELECT conname FROM pg_constraint WHERE conname IN ('sns_bundle_imports_schema_v
 -- 期待値: 11行とも ok=true（PGlite で同じ SQL を入れたときの md5）。transition_sns_x_send だけ prosecdef=true
 SELECT p.proname, p.prosecdef, md5(pg_get_functiondef(p.oid)) = x.h AS ok
 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
-JOIN (VALUES ('approve_sns_x_send', '070bbb13fc23c2bdd690731cb9101654'),
+JOIN (VALUES ('approve_sns_x_send', 'b33a3ce36ae4dc6ad72541528d4d5141'),
              ('enqueue_sns_metric_jobs', 'b635b35552120b7704ee08ae146c8e69'),
              ('guard_sns_preview_bundle_draft', 'fa8810c4052da42d36dbb7b1e73d8679'),
              ('import_sns_preview_bundle', '78c84e804f3b8bbd9f5be53fad77c804'),
@@ -57,9 +57,9 @@ JOIN (VALUES ('approve_sns_x_send', '070bbb13fc23c2bdd690731cb9101654'),
              ('reserve_sns_x_read', '59d41f4d2d51935e000b6373772f926b'),
              ('roll_sns_send_baselines', '386df8e8daaf4375e7662929c48745bd'),
              ('sns_bundle_send_allowed', 'ef21efb1872336925a3a1925c2a00863'),
-             ('stop_sns_auto_item', 'e4887d6348758cba547f2c9221b46f52'),
-             ('transition_sns_send_139', '664095834c240e5ee5f3e2431b1fad00'),
-             ('transition_sns_x_send', '3690a86e5539af6941ef996d3e5d3985')) x(name, h) ON x.name = p.proname
+             ('stop_sns_auto_item', '6256d23dafbfa477df9c4364ba67b478'),
+             ('transition_sns_send_139', '9afa26357d86e2d56494b9ac17028388'),
+             ('transition_sns_x_send', '839f9159b9adb26e0dd0113259d5ae59')) x(name, h) ON x.name = p.proname
 WHERE n.nspname = 'public' ORDER BY 1;
 
 -- 期待値: 2行（x・youtube）、mode=manual、dry_run=true、auto_approver_id が NULL でない

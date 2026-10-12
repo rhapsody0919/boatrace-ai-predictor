@@ -25,6 +25,21 @@ const transition = async (id, action, result = {}) =>
     ])
   ).r;
 let me, autoApprover;
+// 153 の前提（本番に適用済み）。153-runbook.md の md5 の照合でも、153 を入れる前の状態として使う
+const PRE_153 = [
+  "035_sns_marketing_hub_schema.sql",
+  "042_content_drafts_columns.sql",
+  "135_sns_preview_bundle_import.sql",
+  "136_sns_metric_observations.sql",
+  "137_sns_x_send.sql",
+  "138_sns_external_operations.sql",
+  "139_sns_deadline_queue.sql",
+  "140_sns_mobile_approval.sql",
+  "145_sns_edit_assist.sql",
+  "146_sns_shorts_send.sql",
+  "147_sns_draft_diff.sql",
+  "148_sns_posted_approval_guard.sql",
+];
 
 before(async () => {
   await db.exec(
@@ -38,18 +53,7 @@ before(async () => {
     "CREATE TABLE scrape_job_state(job TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'off' CHECK (mode IN ('off','shadow','live')));",
   );
   for (const file of [
-    "035_sns_marketing_hub_schema.sql",
-    "042_content_drafts_columns.sql",
-    "135_sns_preview_bundle_import.sql",
-    "136_sns_metric_observations.sql",
-    "137_sns_x_send.sql",
-    "138_sns_external_operations.sql",
-    "139_sns_deadline_queue.sql",
-    "140_sns_mobile_approval.sql",
-    "145_sns_edit_assist.sql",
-    "146_sns_shorts_send.sql",
-    "147_sns_draft_diff.sql",
-    "148_sns_posted_approval_guard.sql",
+    ...PRE_153,
     "153_sns_auto_send.sql",
     "154_sns_tokens_metric_jobs.sql",
   ]) {
@@ -75,7 +79,10 @@ beforeEach(async () => {
     DELETE FROM sns_metric_jobs; DELETE FROM sns_metric_observations; DELETE FROM sns_channel_daily; DELETE FROM sns_youtube_quota_reads; DELETE FROM sns_youtube_quota_attempts;
     DELETE FROM sns_mobile_reviews;
     UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_incidents;
-    DELETE FROM sns_auto_send_items; DELETE FROM sns_drafts; DELETE FROM sns_bundle_imports;`);
+    DELETE FROM sns_auto_send_items;
+    -- 138 の外部操作の途中の下書きは sns_guard_external が削除を拒否するので、後片付けの間だけトリガーを止める
+    ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
+    DELETE FROM sns_bundle_imports;`);
   await setClock(0);
   await db.exec(`
     UPDATE sns_x_send_control SET paused=false,timing_approved=true,schedule_minutes=60,expiry_minutes=30,
@@ -197,6 +204,43 @@ test("v0 は今までどおり公開・承認できない", async () => {
     /v0素材は公開不可/,
   );
   await assert.rejects(approve(x, me), /承認できません/);
+  // 153 の import の v0 分岐: 重複・同時の取り込み、共通の group、型は NULL、公開情報は NULL
+  const imported = await first("SELECT * FROM sns_bundle_imports WHERE id=$1", [
+    r.content_group_id,
+  ]);
+  assert.equal(imported.release_evidence.release_status, null);
+  assert.ok(imported.release_evidence.missing_reason.startsWith("v0"));
+  const again = () =>
+    first(
+      "SELECT import_sns_preview_bundle(b.version_hash,b.schema_version,b.bundle,b.qa,b.source_manifest,b.missing_files,b.hold_reasons,'{}'::jsonb) r FROM sns_bundle_imports b WHERE id=$1",
+      [r.content_group_id],
+    );
+  const results = await Promise.all([again(), again()]);
+  assert.ok(
+    results.every((x) => x.r.drafts.every((d) => d.result === "duplicate")),
+  );
+  const rows = await all(
+    "SELECT * FROM sns_drafts WHERE bundle_import_id=$1 ORDER BY platform",
+    [r.content_group_id],
+  );
+  assert.deepEqual(
+    rows.map((d) => [
+      d.platform,
+      d.caption_text,
+      d.video_storage_path,
+      d.cover_image_path,
+    ]),
+    [
+      ["x", "v0の本文", "b/draft.mp4", "b/scene-1.png"],
+      ["youtube", "台本", "b/draft.mp4", "b/scene-1.png"],
+    ],
+  );
+  for (const d of rows) {
+    assert.equal(d.content_group_id, r.content_group_id);
+    assert.equal(d.template_variant_id, null);
+    assert.equal(d.publish_blocked, true);
+    assert.equal(d.status, "pending_review");
+  }
 });
 
 test("v1 は検査に合格した item があるときだけ公開保留を外せる", async () => {
@@ -273,6 +317,15 @@ test("6件のスレッドは日次上限6で途中で切れず、枠が足りな
       )
     ).state,
     "sent",
+  );
+  // 送り終えた item を止めても何も変えず、送った本数を返す
+  const item = await first(
+    "SELECT id FROM sns_auto_send_items WHERE bundle_import_id=$1",
+    [r.content_group_id],
+  );
+  assert.deepEqual(
+    (await first("SELECT stop_sns_auto_item($1,'link') r", [item.id])).r,
+    { state: "sent", already_started: 6 },
   );
 
   const r2 = await importBundle({ raceId: "R2" });
@@ -394,6 +447,13 @@ test("止めた後: queued の job は取り消され、claim・check・begin_po
     (await transition(child1.id, "check")).error_code,
     "auto_stopped",
   );
+  // 止めた時点で sending だった子1の下書きも公開保留に戻る
+  const d1 = await first("SELECT * FROM sns_drafts WHERE id=$1", [
+    child1.draft_id,
+  ]);
+  assert.equal(d1.status, "pending_review");
+  assert.equal(d1.publish_blocked, true);
+  assert.equal((await job(child1.id)).state, "cancelled");
   assert.equal((await job(child2.id)).state, "cancelled");
   const d2 = await first("SELECT * FROM sns_drafts WHERE id=$1", [
     child2.draft_id,
@@ -556,11 +616,15 @@ test("基準日は日付が変わったときだけ当日にし、未設定・�
 test("月の切り替えは今の期間が終わってからだけ、予約額を0に戻す", async () => {
   await db.exec("UPDATE sns_x_send_control SET reserved_microusd=5000");
   await assert.rejects(
-    db.query("SELECT renew_sns_x_send_period('2026-11-01T00:00:00Z','2026-12-01T00:00:00Z')"),
+    db.query(
+      "SELECT renew_sns_x_send_period('2026-11-01T00:00:00Z','2026-12-01T00:00:00Z')",
+    ),
     /period_overlaps_current/,
   );
   await db.query("UPDATE test_clock SET value='2026-11-01T00:00:01Z'");
-  await db.query("SELECT renew_sns_x_send_period('2026-11-01T00:00:00Z','2026-12-01T00:00:00Z')");
+  await db.query(
+    "SELECT renew_sns_x_send_period('2026-11-01T00:00:00Z','2026-12-01T00:00:00Z')",
+  );
   const c = await first(
     "SELECT reserved_microusd r, period_end FROM sns_x_send_control",
   );
@@ -649,4 +713,71 @@ test("暦日の値は同じ日・対象・指標で1行（draft_id が NULL で�
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`;
   await db.query(insert, row);
   await assert.rejects(db.query(insert, row), /duplicate|unique/i);
+});
+
+test("138 の外部操作の途中の下書きがあっても止める操作は失敗しない", async () => {
+  const r = await importBundle({ threads: 2 });
+  const item = await createItem(r.content_group_id, "x");
+  const [, child] = await drafts(r.content_group_id, "x");
+  await db.query(
+    "UPDATE sns_drafts SET external_operation_state='reconcile', external_operation_token=gen_random_uuid() WHERE id=$1",
+    [child.id],
+  );
+  const stopped = await first("SELECT stop_sns_auto_item($1,'link') r", [
+    item.id,
+  ]);
+  assert.deepEqual(stopped.r, { state: "stopped", already_started: 1 });
+  const [parent] = await drafts(r.content_group_id, "x");
+  assert.equal(parent.publish_blocked, true);
+});
+
+test("153-runbook.md の手順1・手順3の md5 が、置き換え前（本番と一致した版）と 153・154 の定義に合う", async () => {
+  const runbook = await readFile(
+    new URL("../../docs/db-migration/153-runbook.md", import.meta.url),
+    "utf8",
+  );
+  const blocks = [...runbook.matchAll(/```sql\n([\s\S]*?)```/g)].map(
+    (m) => m[1],
+  );
+  const md5Query = (block) => block.slice(0, block.indexOf(";"));
+  const allOk = async (pg, block) =>
+    (await pg.query(md5Query(block))).rows.map((row) => [row.proname, row.ok]);
+  const before = new PGlite();
+  try {
+    // now() を置き換えない素の SQL で入れる（md5 は本番と同じ定義の文字列で比べる）
+    await before.exec(
+      "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS; CREATE TABLE scrape_job_state(job TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'off');",
+    );
+    for (const file of PRE_153)
+      await before.exec(
+        await readFile(
+          new URL("../../docs/db-migration/" + file, import.meta.url),
+          "utf8",
+        ),
+      );
+    const pre = await allOk(before, blocks[0]);
+    assert.equal(pre.length, 5);
+    assert.ok(
+      pre.every(([, ok]) => ok),
+      JSON.stringify(pre),
+    );
+    for (const file of [
+      "153_sns_auto_send.sql",
+      "154_sns_tokens_metric_jobs.sql",
+    ])
+      await before.exec(
+        await readFile(
+          new URL("../../docs/db-migration/" + file, import.meta.url),
+          "utf8",
+        ),
+      );
+    const post = await allOk(before, blocks[1]);
+    assert.equal(post.length, 11);
+    assert.ok(
+      post.every(([, ok]) => ok),
+      JSON.stringify(post),
+    );
+  } finally {
+    await before.close();
+  }
 });

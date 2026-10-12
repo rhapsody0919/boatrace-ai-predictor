@@ -270,7 +270,7 @@ BEGIN
   END IF;
   SELECT * INTO ac FROM public.sns_auto_send_control WHERE channel=d.platform;
   IF d.bundle_import_id IS NOT NULL THEN
-    SELECT * INTO it FROM public.sns_auto_send_items WHERE bundle_import_id=d.bundle_import_id AND channel=d.platform FOR UPDATE;
+    SELECT * INTO it FROM public.sns_auto_send_items WHERE bundle_import_id=d.bundle_import_id AND channel=d.platform FOR SHARE;
   END IF;
   IF ac.auto_approver_id IS NOT NULL AND p_approver_id = ac.auto_approver_id THEN
     IF ac.mode IS DISTINCT FROM 'auto' OR it.id IS NULL OR it.state IS DISTINCT FROM 'notified' THEN
@@ -347,7 +347,7 @@ BEGIN
   v_ceiling := CASE WHEN j.channel='youtube' THEN 0
     WHEN d.thread_index=0 THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
     ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END;
-  IF j.channel='x' AND d.thread_index=0 AND d.bundle_import_id IS NOT NULL THEN
+  IF p_action IN ('claim','begin_post') AND j.channel='x' AND d.thread_index=0 AND d.bundle_import_id IS NOT NULL THEN
     SELECT count(*) INTO v_need FROM public.sns_drafts WHERE bundle_import_id=d.bundle_import_id AND platform='x' AND status<>'archived';
     v_need := greatest(v_need,1);
     v_rest := (v_need-1)*coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd);
@@ -468,6 +468,14 @@ BEGIN
    AND (it.id IS NULL OR it.state='stopped' OR (v_auto AND (it.state IS DISTINCT FROM 'notified' OR ac.mode IS DISTINCT FROM 'auto'))) THEN
    IF j.state IN ('queued','sending') THEN
      UPDATE public.sns_x_send_jobs SET state='held',error_code='auto_stopped',updated_at=now() WHERE id=j.id RETURNING * INTO j;
+     -- 止めた時点で sending だった job は stop_sns_auto_item が下書きを飛ばすので、ここで公開保留に戻す
+     -- （148 のガードが承認を外し held の job を取り消す。理由は auto_stopped を残す）
+     IF it.state='stopped' AND coalesce(d.external_operation_state,'done')='done' THEN
+       UPDATE public.sns_drafts SET publish_blocked=true, publication_hold_reasons='["auto_stopped"]'::jsonb,
+         status=CASE WHEN status IN ('approved','ready_to_post') THEN 'pending_review' ELSE status END
+         WHERE id=d.id;
+       UPDATE public.sns_x_send_jobs SET error_code='auto_stopped' WHERE id=j.id RETURNING * INTO j;
+     END IF;
      RETURN to_jsonb(j);
    END IF;
    RAISE EXCEPTION 'auto_stopped';
@@ -590,7 +598,7 @@ $$;
 
 -- 止める: item を stopped にし（送信の関数の許可のリストが外れる）、まだ送信が始まっていない下書きを公開保留に戻す。
 -- 公開保留に戻すと 148 の guard_sns_x_approval が承認を外し、queued・held の job を取り消す（139 の cancel は queued だけなので使わない）。
--- sending・reconcile・posted の job の下書きには触らない（148 のガードで RAISE するため）。返り値で「送信が始まっていた」件数を返す。
+-- sending・reconcile・posted の job の下書き、138 の外部操作の途中の下書きには触らない（148・138 のガードで RAISE するため）。返り値で「送信が始まっていた」件数を返す。
 -- 下書き→item の順でロックする（transition_sns_x_send と同じ順。デッドロックを避ける）。
 CREATE OR REPLACE FUNCTION public.stop_sns_auto_item(p_item_id UUID, p_via TEXT)
 RETURNS JSONB LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
@@ -604,9 +612,12 @@ BEGIN
     ORDER BY id FOR UPDATE;
   SELECT * INTO v_item FROM public.sns_auto_send_items WHERE id = p_item_id FOR UPDATE;
   IF v_item.state = 'stopped' THEN RETURN jsonb_build_object('state', 'stopped', 'already', true); END IF;
-  IF v_item.state = 'sent' THEN RETURN jsonb_build_object('state', 'sent', 'already_started', 1); END IF;
-  SELECT count(*) INTO v_started FROM public.sns_x_send_jobs
-    WHERE auto_item_id = p_item_id AND state IN ('sending', 'reconcile', 'posted');
+  -- 送信が始まっていた件数: 送信の job が sending・reconcile・posted、または 138 の手動の外部操作の途中・完了の下書き
+  SELECT count(*) INTO v_started FROM public.sns_drafts d
+    WHERE d.bundle_import_id = v_item.bundle_import_id AND d.platform = v_item.channel
+      AND (d.external_operation_state IN ('reconcile', 'external_done')
+        OR EXISTS (SELECT 1 FROM public.sns_x_send_jobs jj WHERE jj.draft_id = d.id AND jj.state IN ('sending', 'reconcile', 'posted')));
+  IF v_item.state = 'sent' THEN RETURN jsonb_build_object('state', 'sent', 'already_started', v_started); END IF;
   UPDATE public.sns_auto_send_items
     SET state = 'stopped', stopped_at = now(), stopped_via = p_via, updated_at = now()
     WHERE id = p_item_id;
@@ -615,6 +626,8 @@ BEGIN
         status = CASE WHEN d.status IN ('approved', 'ready_to_post') THEN 'pending_review' ELSE d.status END
     WHERE d.bundle_import_id = v_item.bundle_import_id AND d.platform = v_item.channel
       AND d.status NOT IN ('posted', 'archived') AND d.posted_at IS NULL
+      -- 138 の外部操作の途中・完了の下書きは sns_guard_external が変更を拒否するので触らない（止める操作ごと失敗させない）
+      AND (d.external_operation_state IS NULL OR d.external_operation_state = 'done')
       AND NOT EXISTS (SELECT 1 FROM public.sns_x_send_jobs jj WHERE jj.draft_id = d.id AND jj.state IN ('sending', 'reconcile', 'posted'));
   RETURN jsonb_build_object('state', 'stopped', 'already_started', v_started);
 END $$;
