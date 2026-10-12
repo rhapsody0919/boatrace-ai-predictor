@@ -22,6 +22,7 @@ import {
   courseWins,
   entrySummary,
   exhibitionTable,
+  exhToday,
   factsScopeLabel,
   factChips,
   factsScope,
@@ -172,6 +173,31 @@ check(
     !fm.few,
 );
 check("形の集計が無ければ null", formSummary(nc, "nope") === null);
+// 図の上の「今日の展示」（spec D-47 (3)）。展示タイムの順位 2,2,4,1,6,4 → 攻める3号艇は4位（3〜4位）
+const ext = exhToday(nc, "d2", [2, 2, 4, 1, 6, 4]);
+check(
+  "今日の展示: 攻める3号艇は展示4位（3〜4位）→ 2コース凹みのとき1着 13/53（件数30以上なので割合を出す）",
+  ext?.att === 3 &&
+    ext.rank === 4 &&
+    ext.band === "mid" &&
+    ext.k === 13 &&
+    ext.n === 53 &&
+    ext.few === false,
+  JSON.stringify(ext),
+);
+const ncFew = structuredClone(nc);
+ncFew.attack.d2.by_exh.mid.att_win = [1, 4];
+check(
+  "今日の展示: 区分の件数が30件未満なら few（割合を出さない）",
+  exhToday(ncFew, "d2", [2, 2, 4, 1, 6, 4])?.few === true,
+);
+check(
+  "今日の展示: 展示タイムが1艇でも無ければ（区分の表は6艇そろったレースだけ）・形の攻めの集計が無ければ null",
+  exhToday(nc, "d2", [2, 2, null, 1, 6, 4]) === null &&
+    exhToday(nc, "d2", [2, null, 3, 1, 5, 3]) === null &&
+    exhToday(nc, "d2", null) === null &&
+    exhToday(nc, "flat", [2, 2, 4, 1, 6, 4]) === null,
+);
 const en = entrySummary(nc, [1, 2, 3, 4, 5, 6]);
 check(
   "進入: 枠なり → 型 waku、そのときの1号艇の1着（scenario の waku の値）",

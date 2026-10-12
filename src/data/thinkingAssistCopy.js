@@ -127,6 +127,10 @@ export const ASSIST_COPY = Object.freeze({
   bestHidden: "（6艇で一番）",
   compareAria: (label, value) => `${label} ${value}、6艇で比べる`,
   backToFigure: "図を戻す",
+  backTo: (label) => `${label}に戻す`,
+  // 展開レンズの展示後の点: 見えている値は平均ST、押すと展示ST の6艇比較（spec D-47 (1)）
+  compareExhStAria: (value, exhLabel) =>
+    `平均ST ${value}、${exhLabel}を6艇で比べる`,
   absent: "欠場",
   absentRemoved: (boats, k) =>
     `${boats.join("・")}号艇の欠場で${k}点を外しました`,
@@ -314,8 +318,15 @@ export const ASSIST_COPY = Object.freeze({
     mae: "前付けあり（1号艇イン）",
     inlost: "1号艇がインを取られた",
   }),
-  // 図は展示ST でも、手がかりは平均ST から出していると札に書く（screens「★平均STの手がかり（{形}）」。ファン評価 PR4 1周目 指摘8）
-  hintMark: (form, p) => `★平均STの手がかり（${form}）${p}%`,
+  // 手がかりは平均ST から出していると札に書く（ファン評価 PR4 1周目 指摘8）。割合は図の上の結論に出し、札には入れない（spec D-47 (2)）
+  hintMark: (form) => `★平均STの手がかり（${form}）`,
+  // 展示後の各艇の展示タイムの6艇の順位（spec D-47 (2)）
+  // 「展示{r}位」だと展示ST の順位に読める（ファン評価 1周目 指摘1）。展示タイムと書く
+  exhRankTag: (r) => `展示タイム${r}位`,
+  // 展示後の展示ST の入口（平均ST の点が無いレースでも入れる。ファン評価 1周目 指摘3・4）
+  exhStOpen: "展示STを6艇で比べる",
+  // 直近30走に切り替えても、手がかりは「このコース」の平均ST で見ている（ファン評価 1周目 指摘2）
+  flowHintBasis: "手がかりは平均ST（このコース）で見ている。図は直近30走",
   // 何の形のときの攻め手かを書く（同 指摘9）
   attackMark: (form) => `${form}なら攻め手`,
   // 買い目の図の「過去の1着」がどの範囲の値か（艇ごとに違う。271 の指摘の型「どのレースから出した数字か」）
@@ -331,8 +342,17 @@ export const ASSIST_COPY = Object.freeze({
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
   flowShapeHeading: "本番のスタートの形",
-  flowShapeLead: (form) => `本番で${form}になるのは`,
-  flowShapeMiss: (p) => `（当てはまらないときは${p}%）`,
+  // 図の上の結論（spec D-47 (3)、承認モック v2）
+  flowShapeRow: "本番でこの形になるのは",
+  flowShapeBase: (miss, hit) =>
+    `平均STの手がかりが当てはまらないときは ${miss}%。なりやすい形でも、${100 - hit}%のレースはこの形にならない`,
+  exhBand: Object.freeze({ top: "1〜2位", mid: "3〜4位", low: "5〜6位" }),
+  // 文末は件数で分ける（30件未満は「…のときは4件だけ」。wording-editor の指摘: 「1着」の後に件数の注記を続けると文がつながらない）
+  // 区分と母数を言葉で書く（ファン評価 1周目 指摘5）。攻め手は条件つきなので「攻める」と言い切らない（同 指摘6）
+  flowToday: (att, rank, band, form) =>
+    `今日の展示: 攻め手の${att}号艇は展示タイム${rank}位 → ${form}で攻め手が展示タイム${band}のとき`,
+  flowTodayWin: "1着",
+  flowTodayFew: (n) => `は${n}件だけ（少ないので割合は出さない）`,
   flowMissBar: "当てはまらないとき",
   flowHintSource: "平均ST（このコース・直近30走）の並び。展示STではない",
   // 展開レンズの展示前の横軸の切り替え（BOA-815 案A。龍神ソナーと同じ「このコース｜直近30走」）
