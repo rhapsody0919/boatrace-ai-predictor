@@ -8,7 +8,8 @@
  *   scripts/lib/courseEntryTendency.js）。全会場の枠番→実進入コースの回数と、このレースの会場の分
  * - 今節の展示: 節の初日からこのレースより前の各走で、そのレースの中での展示タイムの順位（1が最速、
  *   同着は同順位）。今節タブ（getMeetScoreboard の meetRunsByRacer・展示の順位）と同じ定義で、
- *   このレース自身の展示は含まない
+ *   このレース自身の展示は含まない。中止が確定したレース（races.cancellation_status='confirmed'）は
+ *   走っていないので外す（出走表は残るため、外さないと展示の無い走として並ぶ）
  */
 import { findMeetStartDate } from "../../src/utils/meetGrouping.js";
 import { rest } from "./analogyV16.js";
@@ -66,7 +67,13 @@ export function buildRacers({
   windowConditions,
   stats,
   exhibitionRows,
+  cancelledRows = [],
 }) {
+  const cancelled = new Set(
+    cancelledRows
+      .filter((r) => r.cancellation_status === "confirmed")
+      .map((r) => r.race_id),
+  );
   const own = windowEntries
     .filter((e) => e.race_id === raceId)
     .sort((a, b) => a.boat_number - b.boat_number);
@@ -94,7 +101,8 @@ export function buildRacers({
           e.racer_id != null &&
           r.racer_id === e.racer_id &&
           r.race_id.slice(0, 10) >= meetStart &&
-          r.race_id < raceId,
+          r.race_id < raceId &&
+          !cancelled.has(r.race_id),
       )
       .sort((a, b) => a.race_id.localeCompare(b.race_id))
       .map((r) => {
@@ -148,13 +156,18 @@ export async function loadRacers(raceId) {
   ];
   if (racerIds.length === 0) return null;
   const meetStart = meetStartOf(windowEntries, windowConditions, date);
-  const [stats, exhibitionRows] = await Promise.all([
+  const meetRange = `race_id=gte.${meetStart}&race_id=lt.${encodeURIComponent(raceId)}&race_id=${like}`;
+  const [stats, exhibitionRows, cancelledRows] = await Promise.all([
     rest(
       `racer_aggregated_stats?select=racer_id,course_entry_tendency&venue_code=eq.0&racer_id=in.(${racerIds.join(",")})`,
     ),
     // 節は最長7日 × 12R × 6艇 = 504行で、既定上限1000行に収まる
     rest(
-      `exhibition_data?select=race_id,boat_number,exhibition_time&race_id=gte.${meetStart}&race_id=lt.${encodeURIComponent(raceId)}&race_id=${like}`,
+      `exhibition_data?select=race_id,boat_number,exhibition_time&${meetRange}`,
+    ),
+    // 中止の行だけ（部分インデックス idx_races_cancellation_status が効く）
+    rest(
+      `races?select=race_id,cancellation_status&cancellation_status=not.is.null&${meetRange}`,
     ),
   ]);
   return buildRacers({
@@ -163,5 +176,6 @@ export async function loadRacers(raceId) {
     windowConditions,
     stats,
     exhibitionRows,
+    cancelledRows,
   });
 }

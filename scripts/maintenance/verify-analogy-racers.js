@@ -8,6 +8,10 @@
  *    集計の行が無い選手は null
  * 3. include を渡さないとき（画面）は racers を返さず、追加の読み出しもしない（負荷が変わらない）
  * 4. snapshot が無いレース（status=not_saved）でも racers は返す
+ * 5. 中止で日目が振り直された節（10/10 が丸一日中止で、10/11 も「2日目」）でも節の初日は変わらず、
+ *    中止が確定したレースは走に入らない（実例: 2026-09-21〜22 の戸田・津）
+ * 6. 応答は include の有無で混ざらない（include ありの後に include なしを呼んでも racers が無い、
+ *    racers 以外は同じ、Cache-Control も同じ規則）。CDN のキャッシュは URL（クエリ込み）で分かれる
  */
 import { buildRacers } from "../../api/_lib/racerEntryExhibition.js";
 
@@ -42,7 +46,11 @@ const exh = (race_id, times) =>
 
 const tables = {
   analogy_v16_snapshots: [],
-  races: [{ race_id: RACE, race_date: "2026-10-12", start_time: "13:00:00" }],
+  races: [
+    { race_id: RACE, race_date: "2026-10-12", start_time: "13:00:00" },
+    // 10/10 は丸一日中止（出走表は残る）
+    { race_id: "2026-10-10-01-08", cancellation_status: "confirmed" },
+  ],
   race_entries: [
     ...TODAY_RACERS.map((id, i) => entry(RACE, i + 1, id)),
     // 前の節（10/7 が最終日）→ 入らない
@@ -50,8 +58,8 @@ const tables = {
     // 今節
     entry("2026-10-09-01-03", 2, 4528),
     entry("2026-10-10-01-08", 4, 4528),
-    // 節の初日は出走表の開催日から決まる（2日以上空くと別の節）。4528 が走らない日も開催はある
-    entry("2026-10-11-01-01", 1, 9999),
+    // 展示の行がまだ無い走（中止ではない）→ 入る
+    entry("2026-10-11-01-06", 3, 4528),
     entry("2026-10-12-01-02", 1, 4528),
     entry("2026-10-12-01-02", 2, 5234),
     entry("2026-10-12-01-02", 3, 4550),
@@ -68,14 +76,15 @@ const tables = {
     { race_id: "2026-10-06-01-01", series_day: 2, is_final_day: false },
     { race_id: "2026-10-07-01-01", series_day: 3, is_final_day: true },
     { race_id: "2026-10-09-01-01", series_day: 1, is_final_day: false },
+    // 10/10 が中止になり、10/11 にもう一度「2日目」
     { race_id: "2026-10-10-01-01", series_day: 2, is_final_day: false },
-    { race_id: "2026-10-11-01-01", series_day: 3, is_final_day: false },
-    { race_id: "2026-10-12-01-01", series_day: 4, is_final_day: false },
+    { race_id: "2026-10-11-01-01", series_day: 2, is_final_day: false },
+    { race_id: "2026-10-12-01-01", series_day: 3, is_final_day: false },
   ],
   exhibition_data: [
     ...exh("2026-10-06-01-04", [6.6, 6.7, 6.7, 6.7, 6.7, 6.7]),
     ...exh("2026-10-09-01-03", [6.75, 6.7, 6.75, 6.8, 6.8, 6.8]),
-    // 10-10-01-08 は展示の行が無い
+    // 10-10-01-08（中止）と 10-11-01-06 は展示の行が無い
     // 同着（6.80 が2艇）と欠場（5号艇）
     ...exh("2026-10-12-01-02", [6.8, 6.75, 6.8, 6.9, null, 6.85]),
     ...exh(RACE, [6.5, 6.5, 6.5, 6.5, 6.5, 6.5]),
@@ -129,6 +138,9 @@ function matches(row, column, filter) {
       return v < decodeURIComponent(value);
     case "in":
       return value.slice(1, -1).split(",").includes(v);
+    case "not":
+      if (value !== "is.null") throw new Error(`未対応の not.${value}`);
+      return row[column] !== null && row[column] !== undefined;
     case "like":
       return new RegExp(
         `^${value.replaceAll("_", ".").replaceAll("*", ".*")}$`,
@@ -154,7 +166,11 @@ const call = async (query) => {
   const res = await handler(
     new Request(`http://localhost/api/analogy/facts/${RACE}${query}`),
   );
-  return { status: res.status, body: await res.json() };
+  return {
+    status: res.status,
+    cache: res.headers.get("Cache-Control"),
+    body: await res.json(),
+  };
 };
 
 // ---- 3. include なし: racers を返さず、追加の読み出しもしない ----
@@ -177,7 +193,7 @@ const call = async (query) => {
   check("snapshot が無くても返す（not_saved）", body.status, "not_saved");
   const racers = body.racers;
   check(
-    "節の初日（前の節の最終日の翌開催日）",
+    "節の初日（前の節の最終日の翌開催日。中止で日目が振り直されても変わらない）",
     racers?.meet_start,
     "2026-10-09",
   );
@@ -188,7 +204,7 @@ const call = async (query) => {
   );
   const [b1, b2, , , b5, b6] = racers?.boats ?? [];
   check(
-    "1号艇の今節の走（このレースより前・同じ会場・今節だけ）",
+    "1号艇の今節の走（このレースより前・同じ会場・今節だけ・中止は外す）",
     b1?.meet_runs,
     [
       {
@@ -199,8 +215,8 @@ const call = async (query) => {
         exhibition_field: 6,
       },
       {
-        race_id: "2026-10-10-01-08",
-        boat_number: 4,
+        race_id: "2026-10-11-01-06",
+        boat_number: 3,
         exhibition_time: null,
         exhibition_rank: null,
         exhibition_field: 0,
@@ -232,6 +248,24 @@ const call = async (query) => {
   check("会場の分が無い選手は venue が null", b2?.course_entry?.venue, null);
   check("集計の行が無い選手は course_entry が null", b6?.course_entry, null);
   check("今節に走っていない選手は meet_runs が空", b6?.meet_runs, []);
+}
+
+// ---- 6. include の有無で応答が混ざらない ----
+{
+  const withRacers = await call("?include=racers");
+  const plain = await call("");
+  check(
+    "include ありの後の include なしに racers が混ざらない",
+    "racers" in plain.body,
+    false,
+  );
+  const { racers: _r, ...rest } = withRacers.body;
+  check("racers 以外は include の有無で同じ", rest, plain.body);
+  check(
+    "Cache-Control は include の有無で同じ規則",
+    withRacers.cache,
+    plain.cache,
+  );
 }
 
 // ---- racer_id が NULL の艇は、他の NULL の行の走を拾わない ----
