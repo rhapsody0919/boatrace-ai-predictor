@@ -1,0 +1,52 @@
+# 展開レンズの作り直し（承認モック v2）の実装の引き継ぎ
+
+承認: `mock/APPROVED.md`（2026-10-12）。spec D-47・「統計検証」の節は docs ブランチ `feature/boa-430-thinking-assist`（42dff7074）。この文書は実装に入るレーンのためのもの。
+
+## 例のレースの値（本番 API、2026-10-06 徳山10R、展示後）
+- 平均STの手がかり: d2_slow01 が当てはまる → 2コース凹み 13%（65/501）、当てはまらないとき 5%（全国 NA: 13.3% / 6.4%）
+- 攻める艇 3号艇は展示4位（展示タイム 1号艇6.84・2号艇6.84・3号艇6.89・4号艇6.83・5号艇6.90・6号艇6.89 → min 順位 2,2,4,1,6,4）
+- NC 範囲の 2コース凹み（枠なり161件）: 攻める艇の1着 by_exh top 14/61・mid 13/53・low 9/47。1号艇の逃げ b1_by_exh top 33/78・mid 15/40・low 15/43。決まり手 att_makuri_of_win 15/36・att_makurizashi_of_win 17/36・att_sashi_of_win 2/36
+- 全国（NA）の 2コース凹み: 攻める艇の1着 top 2356/9753・mid 1639/9325・low 1013/7819。1号艇の逃げ top 8429/14191・mid 4097/8043・low 2163/4663
+- オリジナル展示（徳山: 一周・まわり足）: 1号艇が両方とも6艇で一番（一周 37.31・まわり足 11.49）
+
+## 今のコードの場所
+- 図: `src/utils/assistModel.js` の `boardModel` の `lens === "flow"`（展示後は `exh_st`）。札は `src/pages/ThinkingAssistPage.jsx` の `marks`（`hintMark` に割合が入っている）
+- 要約: `src/components/race/assist/LensSummary.jsx` の `FlowSummary`（形の箱・もし{形}・進入・類似レースの決まり手）
+- 形・手がかり: `src/utils/assistSummary.js` の `hintSummary`・`formSummary`（`topExacta`・`topTrifecta`）・`entrySummary`
+- 展示順位の区分: `src/utils/analogyScenario.js:307`（1〜2位 top・3〜4位 mid・5〜6位 low）。龍神ソナーは `src/components/race/analogy/AttackTable.jsx` で同じ値を出している
+- オリジナル展示: ページは機力レンズ用に `data.original` を取っている（`PowerSummary`・`exhibitionTable`）
+- 全国の値: `data.scenario.na`（NA 範囲の scenario）は取得済み
+
+## PR の分け方（承認範囲の表のとおり）
+- PR-1 図と結論: 展示後も平均ST、展示{r}位の札、手がかりの札から割合を外す、図の上の結論2行、展示ST の6艇比較の見出し「展示ST（本番のスタートとは別）」
+- PR-2 中身: 決まり手の内訳、3連単を外し2連単の見出しに{形}、今日の展示を入れると（区分の割合・全国の値・30件未満は件数だけ）、進入の全国 93.3%（3,602/3,862）、オリジナル展示の周回・まわり足の印
+
+## 守ること
+- 1艇の数字は2個まで（図は点の上の値と展示{r}位）
+- 中位（3〜4位）から強い意味を読ませない（全国の差の1行で「3〜4位はほかとの差が出にくい」）
+- オリジナル展示は直線・秒数・形ごとの言い回しを出さない
+- 言葉は `src/data/thinkingAssistCopy.js` の既存の型にそろえる（hintMark の「★平均STの手がかり（{形}）」、powerTheory.x1 の「1号艇は展示が速く出やすい」）。画面の文に日付を入れない
+- UI/UX デザイナー役・言葉役のレビュー（v1 への指摘）はモック v2 に反映済み。実装後はモック比較とファン評価1周
+
+## PR-3 BOA-845: 2〜6号艇を軸にしたときの2着（相手レンズ）
+このレーンで展開レンズの PR-1・PR-2 の後に実装する（2026-10-12 オーケストレーターの指示）。
+
+### 決まったこと
+- ユーザー回答「そろえる」（2026-10-12）: 範囲は全艇とも会場の全レース（scenario API の `scope=VA:{会場}`）。今の相手レンズの「1号艇を軸にしたときの2着・3着」（1号艇の範囲、例の準優勝戦65件）も会場の全レースに替わる（例: 徳山の全レース 10,910件）
+- モック: https://claude.ai/artifact/8Ktc2y4N6JCYjzKBHqz1XZ （Version 4 が最新）。ファンパネル: `docs/design/thinking-assist/boa831/fan-panel-boa845.md`・`fan-panel-boa845-q2.md`。統計検証: `docs/design/thinking-assist/analysis/boa845-axis-place.md`（#1407）
+- 見せ方（visual-designer の指摘を反映した v2 以降）:
+  - 見出し「[X]号艇を軸にしたときの2着」（見出しに艇の丸）。軸の切り替えは1本の帯（「軸（1着）」の札＋6つ、各ボタンは丸と「軸」の2段、52px、選んだ艇は塗り、radiogroup）。図の艇の丸（押すと深掘り）と見た目を分ける
+  - 見出しの下に結論の1行「X号艇が1着なら、2着はY号艇 p%（軸を問わないと q%）」、その下に「3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る」
+  - 範囲の札「{会場}の全レース X号艇が1着のk件」。行は6艇で固定（軸の艇は「軸（1着）」と書いて残す）。棒は軸のときの2着、縦線と「問わずq%」は軸を問わない2着（1行の数字2個）。30件未満は割合を出さず件数だけ（会場の全レースの最小は342件で、まず出ない）
+  - よく出た3連単は軸の艇に合わせて3つ（例 4号艇: 4-1-2・4-1-5・4-1-3）。2連単は足さない
+  - 今の「同じレース／返還」の注記は外す
+- データ: 今ある `winFollowers(scenario, boat)` の艇の引数で作れる（3連単の全体のセル）。軸を問わない2着は同じ tri の2着の合計。バッチ・範囲キーの変更なし
+
+### ユーザーの回答（2026-10-12、v3 を承認。`docs/design/thinking-assist/boa831/axis-any-mock/APPROVED.md`）
+1. 3着の列は出さず、よく出た3連単（軸に合わせて3つ）と龍神ソナーの着順の流れへの導線を置く。導線は表の下に1行「着順の流れを見る（龍神ソナー）›」＋「1着のX号艇を押すと、その流れになる」。リンク先は `/race/{id}?tab=sonar&sonar=scenario`。軸を選んだ状態で開く URL は BOA-847（今回は作らない）
+2. 最初に選ばれている軸の艇: 前に選んだ艇（同じタブ・同じレース。D-45 の sessionStorage `boatai-user:assist:{raceId}` に足す）→ 無ければ1着の候補が1艇だけならその艇（「1着の候補に合わせた」と小さく書く）→ 無ければ1号艇
+
+### 実装の注意
+- 1号艇の表の範囲が替わるので、`e2e/thinking-assist-states.spec.js`「1号艇を軸にしたときの2着・3着（相手レンズ）」の期待値（65件・38%/22% など）と `verify-thinking-assist-summary.js` の案1b の検査を新しい範囲の値に直す。fixture（`e2e/thinking-assist-fixture.json.gz`）に VA の scenario がある（`VA:18`）
+- GA4: 軸の切り替えを assist_* の決まりで足す（例 `assist_place_axis`、assist_boat を流用できるか先に確かめる）。events.md とカスタムディメンションの一覧を更新
+- spec D-48 は docs ブランチ feature/boa-430-thinking-assist に記録済み

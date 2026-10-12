@@ -13,6 +13,11 @@ export async function sha256(bytes) {
   ).join("");
 }
 
+/** SQL140 revisionと実媒体snapshotによる既存の確認版。 */
+export async function mobileVersion(revision, snapshot) {
+  return sha256(new TextEncoder().encode(JSON.stringify([revision, snapshot])));
+}
+
 export async function createXSnapshot(draft, loadMedia) {
   if (draft.source_data?.dataCardUrl)
     throw new Error("追加画像のある投稿は手動経路を使ってください");
@@ -20,11 +25,13 @@ export async function createXSnapshot(draft, loadMedia) {
   const text = buildPostText(draft);
   if (!text.trim() && !path) throw new Error("内容が空です");
   const media = [];
-  if (path) {
-    const maxBytes =
-      draft.platform === "youtube"
-        ? YOUTUBE_MEDIA_MAX_BYTES
-        : X_MEDIA_MAX_BYTES;
+  const maxBytes =
+    draft.platform === "youtube" ? YOUTUBE_MEDIA_MAX_BYTES : X_MEDIA_MAX_BYTES;
+  const paths =
+    draft.platform === "youtube"
+      ? [path, draft.cover_image_path].filter(Boolean)
+      : [path].filter(Boolean);
+  for (const path of paths) {
     const bytes = await loadMedia(path, maxBytes);
     if (!bytes.byteLength || bytes.byteLength > maxBytes)
       throw new Error("媒体の容量が不正です");
