@@ -9,8 +9,16 @@
  */
 import * as cheerio from "cheerio";
 
-/** 本文の比較では空白（改行・タブ・全角でない空白）を全部除く。人の DOM は要素の境目に改行が入るため */
-export const normalizeText = (s) => String(s ?? "").replace(/\s+/g, "");
+/**
+ * 本文の比較では空白（改行・タブ・全角でない空白）を全部除く。人の DOM は要素の境目に改行が入るため。
+ * 英字の大文字・小文字も区別しない。人の innerText は CSS の text-transform を反映する
+ * （会場ページの締切のラベル .info-item .label は uppercase。en で「Betting deadline」が「BETTING DEADLINE」になる、
+ * 言語版の Preview の照合で分かった）
+ */
+export const normalizeText = (s) =>
+  String(s ?? "")
+    .replace(/\s+/g, "")
+    .toLowerCase();
 
 /**
  * ボット向け HTML から、照合する文字列を取り出す

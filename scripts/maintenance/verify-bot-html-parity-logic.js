@@ -11,6 +11,7 @@
  * 3. 最終更新の時刻: CDN の差（2分）は通り、許容を超える差・前置きの違いは落ちる
  * 4. 取り違え: 人の UA にボット向け HTML が返った応答を "bot" と見分ける（SPA の外枠は "spa"）
  * 5. 開催中の会場の選び方（中止だけの会場を飛ばす・place_cd の順・レースの URL）と中央値
+ * 5b. 英字の大文字・小文字は区別しない（人の innerText は CSS の text-transform: uppercase を反映する）
  * 6. 照合するページの一覧（parityPaths）: 言語版は、ボット向け HTML へ振り分けているときだけ照合し、配線前は飛ばす（BOA-848 第2段）
  */
 import { readFileSync } from "node:fs";
@@ -424,6 +425,44 @@ for (const p of pages) {
     "status.json: 500 は fail",
     evaluateSnapshotStatus(500, "").level,
     "fail",
+  );
+}
+
+// ---- 5b. CSS の text-transform（人の innerText は大文字になる） ----
+{
+  const bot = {
+    texts: ["Betting deadline", "15:19 JST"],
+    hrefs: [],
+    head: {
+      title: "",
+      description: "",
+      canonical: "",
+      alternates: [],
+      jsonLd: [],
+    },
+  };
+  const human = (text) => ({
+    text,
+    hrefs: [],
+    head: {
+      title: "",
+      description: "",
+      canonicals: [""],
+      alternates: [],
+      jsonLd: [],
+    },
+  });
+  check(
+    "uppercase で描かれたラベルは同じとみなす",
+    findMissing(bot, human("BETTING DEADLINE\n15:19 JST"), ORIGIN),
+    [],
+  );
+  check(
+    "文字が違えば大文字・小文字に関係なく落ちる",
+    findMissing(bot, human("BETTING CLOSE\n15:19 JST"), ORIGIN).map(
+      (m) => m.value,
+    ),
+    ["Betting deadline"],
   );
 }
 
