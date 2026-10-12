@@ -340,6 +340,8 @@ const BOT_PAGE_UAS = {
 };
 const BOT_PAGE_ROUTES = [
   ["/", "/api/bot-page/top"],
+  // /today（BOA-848 第2段）。?date= 付きは振り分けない（下の NOT_BOT_PAGE_PATHS ではなく個別に見る）
+  ["/today", "/api/bot-page/today"],
   ["/venue/1", "/api/bot-page/venue/1"],
   ["/venue/9", "/api/bot-page/venue/9"],
   ["/venue/10", "/api/bot-page/venue/10"],
@@ -437,8 +439,27 @@ for (const [path, target] of [
     describe(res),
   );
 }
-// 既存のスナップショット（ブログ・/winning-technique・/today）の振り分けは変わらない
-for (const path of ["/winning-technique", "/today", "/blog/some-article"]) {
+// /today の ?date= 付きは振り分けない（人の /today は ?date= の日を出す。BOA-848 第2段）。ほかのクエリは落として関数へ
+for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+  for (const path of ["/today?date=2026-10-01", "/today?x=1&date=", "/today?date"]) {
+    const res = await call(path, { ua });
+    check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+  }
+}
+{
+  const res = await call("/today?x=1", { ua: SEARCH_BOT_UAS.bingbot });
+  check(
+    "bingbot /today?x=1 → /api/bot-page/today（クエリを持ち込まない）",
+    res?.headers.get("x-middleware-rewrite") === `${ORIGIN}/api/bot-page/today`,
+    describe(res),
+  );
+  check(
+    "resolveSnapshotPath は search を渡さなければ /today を関数へ",
+    resolveSnapshotPath("/today", BOT_UA) === "/api/bot-page/today",
+  );
+}
+// 既存のスナップショット（ブログ・/winning-technique）の振り分けは変わらない
+for (const path of ["/winning-technique", "/blog/some-article"]) {
   check(
     `${path} は静的スナップショットのまま`,
     resolveSnapshotPath(path, SEARCH_BOT_UAS.bingbot)?.startsWith(
@@ -678,8 +699,8 @@ console.log(
         re.test(path) && !(missingUa && new RegExp(missingUa).test(ua)),
     );
   check(
-    "missing の付いた no-store 規則は / ・/venue/N・言語版のトップ・言語版の会場の4つ",
-    noStoreRules.filter((r) => r.missingUa).length === 4,
+    "missing の付いた no-store 規則は / ・/venue/N・言語版のトップ・言語版の会場・/today の5つ",
+    noStoreRules.filter((r) => r.missingUa).length === 5,
     String(noStoreRules.filter((r) => r.missingUa).length),
   );
   for (const rule of noStoreRules.filter((r) => r.missingUa)) {
@@ -701,7 +722,6 @@ console.log(
   }
   for (const path of [
     ...NOT_BOT_PAGE_PATHS,
-    "/today",
     "/winning-technique",
     "/blog/some-article",
     "/racer/3256",

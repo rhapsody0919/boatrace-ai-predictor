@@ -44,9 +44,15 @@ const BOT_PAGE_LANG_VENUE_PATH = /^\/(en|zh-TW|ko)\/venue\/([1-9]|1\d|2[0-4])$/;
 
 // / と /venue/1〜24（ADR 0089 決定2）と、その言語版 /{en|zh-TW|ko}/・/{lang}/venue/1〜24（BOA-848 第2段）。
 // /venue/01・範囲外・ほかの言語・ほかのパスは null。言語版は言語ごとに rewrite 先を分ける（CDN のキーを言語で分ける）
-function resolveBotPagePath(pathname, userAgent) {
+// /today（BOA-848 第2段）は ?date= の無いときだけ。人の /today は ?date= の日を出すので、本日を返す関数とは中身が違う
+function resolveBotPagePath(pathname, userAgent, search) {
   if (!includesAny(userAgent, BOT_PAGE_USER_AGENTS)) return null;
   if (pathname === "/") return "/api/bot-page/top";
+  if (pathname === "/today") {
+    return new URLSearchParams(search ?? "").has("date")
+      ? null
+      : "/api/bot-page/today";
+  }
   const venueMatch = pathname.match(BOT_PAGE_VENUE_PATH);
   if (venueMatch) return `/api/bot-page/venue/${venueMatch[1]}`;
   const langTop = pathname.match(BOT_PAGE_LANG_TOP_PATH);
@@ -63,12 +69,12 @@ const RACER_PATH = /^\/racer\/(\d{4})$/;
 // /{en|zh-TW|ko}/blog と /{lang}/blog/{id}（BOA-848 第2段）
 const BLOG_LANG_PATH = /^\/(en|zh-TW|ko)\/blog(?:\/([^/]+))?$/;
 
-// pathname + User-Agentから、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
-// 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）
+// pathname + User-Agent（+ クエリ文字列）から、配信すべきスナップショット（または ADR 0089 の関数）の相対パスを返す（配らないときはnull）
+// 返すパスにクエリ文字列は付けない（middleware は rewrite 先に元のクエリを持ち込まない）。search を見るのは /today の ?date= だけ
 // ⚠️ ここに対象を足したら middleware.js の config.matcher にも同じパスを足すこと。
 //    Vercel は matcher に一致したパスでしか middleware を起動しないため、片方だけでは配信されない
-export function resolveSnapshotPath(pathname, userAgent) {
-  const botPagePath = resolveBotPagePath(pathname, userAgent);
+export function resolveSnapshotPath(pathname, userAgent, search = "") {
+  const botPagePath = resolveBotPagePath(pathname, userAgent, search);
   if (botPagePath) return botPagePath;
 
   if (!isTargetBot(userAgent)) return null;
@@ -77,12 +83,9 @@ export function resolveSnapshotPath(pathname, userAgent) {
     return "/ai-snapshots/winning-technique.html";
   }
 
-  // /today（BOA-402）。スナップショットはビルド時生成なので、日替わりの中身は入らず
-  // ページの目的と各指標の定義だけ（plan.md §5）。?date= 付きは対象にしない
-  // （canonicalが常に /today で、日付別URLを検索対象にしない設計と揃える）
-  if (pathname === "/today") {
-    return "/ai-snapshots/today.html";
-  }
+  // /today は上の resolveBotPagePath で関数へ振り分ける（BOA-848 第2段）。?date= 付きは振り分けない（SPA のまま）。
+  // ビルド時の /ai-snapshots/today.html（定義だけ）は戻すときのために残している
+  if (pathname === "/today") return null;
 
   const racerMatch = pathname.match(RACER_PATH);
   if (racerMatch) {
