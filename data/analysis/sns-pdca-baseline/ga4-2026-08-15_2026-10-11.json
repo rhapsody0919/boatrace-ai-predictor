@@ -1,0 +1,426 @@
+{
+  "generatedAt": "2026-10-12T11:58:20.535Z",
+  "range": {
+    "from": "2026-08-15",
+    "to": "2026-10-11"
+  },
+  "note": "GA4 は Cookie に同意した人だけ。流入元は完全一致のリスト。ユーザー数は日ごとの totalUsers の和（同じ人が別の日に来れば2と数える）",
+  "sources": {
+    "x": [
+      "t.co",
+      "x.com",
+      "twitter.com",
+      "x"
+    ],
+    "youtube": [
+      "youtube.com",
+      "m.youtube.com",
+      "youtube",
+      "youtu.be",
+      "com.google.android.youtube"
+    ]
+  },
+  "periods": {
+    "beforePosting": {
+      "from": "2026-08-15",
+      "to": "2026-08-28",
+      "x": {
+        "n": 14,
+        "sum": 2,
+        "mean": 0.143,
+        "sd": 0.363,
+        "zeroDays": 12
+      },
+      "youtube": {
+        "n": 14,
+        "sum": 0,
+        "mean": 0,
+        "sd": 0,
+        "zeroDays": 14
+      }
+    },
+    "posting": {
+      "from": "2026-08-29",
+      "to": "2026-09-15",
+      "x": {
+        "n": 18,
+        "sum": 20,
+        "mean": 1.111,
+        "sd": 1.367,
+        "zeroDays": 8
+      },
+      "youtube": {
+        "n": 18,
+        "sum": 4,
+        "mean": 0.222,
+        "sd": 0.548,
+        "zeroDays": 15
+      }
+    },
+    "last28": {
+      "from": "2026-09-14",
+      "to": "2026-10-11",
+      "x": {
+        "n": 28,
+        "sum": 11,
+        "mean": 0.393,
+        "sd": 0.497,
+        "zeroDays": 17
+      },
+      "youtube": {
+        "n": 28,
+        "sum": 0,
+        "mean": 0,
+        "sd": 0,
+        "zeroDays": 28
+      }
+    }
+  },
+  "organicSearchDaily": {
+    "n": 58,
+    "sum": 1841,
+    "mean": 31.741,
+    "sd": 12.536,
+    "zeroDays": 0
+  },
+  "utmSocial": [
+    {
+      "source": "x",
+      "campaign": "prediction-accuracy",
+      "content": "20260910",
+      "users": 1
+    },
+    {
+      "source": "x",
+      "campaign": "venue",
+      "content": "20260910",
+      "users": 1
+    }
+  ],
+  "sonarTabUsersBySource": {
+    "from": "2026-10-08",
+    "rows": [
+      {
+        "source": "google",
+        "users": 35
+      },
+      {
+        "source": "(direct)",
+        "users": 13
+      },
+      {
+        "source": "(not set)",
+        "users": 3
+      },
+      {
+        "source": "volatility_display",
+        "users": 2
+      },
+      {
+        "source": "duckduckgo",
+        "users": 1
+      },
+      {
+        "source": "t.co",
+        "users": 1
+      },
+      {
+        "source": "yahoo",
+        "users": 1
+      }
+    ],
+    "sns": 1
+  },
+  "daily": [
+    {
+      "date": "20260815",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260816",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260817",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260818",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260819",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260820",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260821",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260822",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260823",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260824",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260825",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260826",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260827",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260828",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260829",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260830",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260831",
+      "x": 2,
+      "youtube": 0
+    },
+    {
+      "date": "20260901",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260902",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260903",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260904",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260905",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260906",
+      "x": 0,
+      "youtube": 1
+    },
+    {
+      "date": "20260907",
+      "x": 0,
+      "youtube": 2
+    },
+    {
+      "date": "20260908",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260909",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260910",
+      "x": 2,
+      "youtube": 0
+    },
+    {
+      "date": "20260911",
+      "x": 4,
+      "youtube": 1
+    },
+    {
+      "date": "20260912",
+      "x": 4,
+      "youtube": 0
+    },
+    {
+      "date": "20260913",
+      "x": 3,
+      "youtube": 0
+    },
+    {
+      "date": "20260914",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260915",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260916",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260917",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260918",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260919",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260920",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260921",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260922",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260923",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260924",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260925",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260926",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260927",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260928",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20260929",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20260930",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261001",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261002",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261003",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261004",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261005",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20261006",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261007",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261008",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20261009",
+      "x": 0,
+      "youtube": 0
+    },
+    {
+      "date": "20261010",
+      "x": 1,
+      "youtube": 0
+    },
+    {
+      "date": "20261011",
+      "x": 1,
+      "youtube": 0
+    }
+  ]
+}
