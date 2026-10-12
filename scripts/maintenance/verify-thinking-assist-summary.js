@@ -34,7 +34,7 @@ import {
   axisWhyKinds,
   exactaList,
   winFollowers,
-  secondAny,
+  axisMarks,
   featChips,
   formSummary,
   hintSummary,
@@ -882,23 +882,29 @@ check(
       f4.topTrifecta.map(([x]) => x.join("-")).join() === "4-1-2,4-1-5,4-1-3",
     pctOf(f4),
   );
-  const any = secondAny(vaSc);
   check(
-    "軸を問わない2着: 17,278件で 16・28・22・17・10・7%（承認モック v3 の「問わず」）",
-    any?.n === 17278 &&
-      any.second.map((k) => Math.round((k / any.n) * 100)).join() ===
-        "16,28,22,17,10,7" &&
-      any.second.reduce((a, b) => a + b, 0) === any.n,
+    "印（q_nw 基準・5pt・95%区間・件数300以上）: 4号艇を軸にすると 2号艇↓・3号艇↓・5号艇↑・6号艇↑、1号艇は印なし（基準 q だと付いていた）。統計検証 boa845-axis-place.md の徳山の例と同じ",
+    JSON.stringify(axisMarks(vaSc, f4, 4)) ===
+      JSON.stringify([null, "down", "down", null, "up", "up"]),
+    JSON.stringify(axisMarks(vaSc, f4, 4)),
   );
   check(
-    "軸の2着: その艇が1着の組が無ければ null、30件未満は few（割合を出さない）。問わずも組が無ければ null",
+    "印: 2号艇を軸にすると1号艇↑だけ。件数300未満の軸には付けない（6号艇 388件は付く、仮に299件なら付かない）",
+    JSON.stringify(axisMarks(vaSc, winFollowers(vaSc, 2), 2)) ===
+      JSON.stringify(["up", null, null, null, null, null]) &&
+      axisMarks(vaSc, { ...winFollowers(vaSc, 6), n: 299 }, 6).every(
+        (m) => m === null,
+      ),
+  );
+  check(
+    "軸の2着: その艇が1着の組が無ければ null、30件未満は few（割合を出さない）。範囲の組が無ければ印も無し",
     winFollowers({
       cells: { all: { forms: { any: { tri: { "2-1-3": 5 } } } } },
     }) === null &&
       winFollowers({
         cells: { all: { forms: { any: { tri: { "1-2-3": 5 } } } } },
       })?.few === true &&
-      secondAny(null) === null,
+      axisMarks(null, f4, 4).every((m) => m === null),
   );
   const ex = formSummary(nc, "d2")?.topExacta;
   check(
@@ -914,12 +920,13 @@ check(
     ) === "[[[1,2],3],[[1,3],3],[[2,1],3]]",
   );
   check(
-    "軸の2着の言葉: 札・結論・問わず",
+    "軸の2着の言葉: 札・結論・印",
     ASSIST_COPY.followScope(ASSIST_COPY.followVenueAll("徳山"), 4, 1326) ===
       "徳山の全レース 4号艇が1着の1,326件" &&
-      ASSIST_COPY.followConcl(4, 1, 37, 16).join("") ===
-        "4号艇が1着なら、2着は1号艇 37%（軸を問わないと16%）" &&
-      ASSIST_COPY.followAny(16) === "問わず16%",
+      ASSIST_COPY.followConcl(4, 1, 37).join("") ===
+        "4号艇が1着なら、2着は1号艇 37%" &&
+      ASSIST_COPY.followMark.up === "↑多め" &&
+      ASSIST_COPY.followMark.down === "↓少なめ",
   );
 }
 

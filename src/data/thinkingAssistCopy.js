@@ -256,16 +256,14 @@ export const ASSIST_COPY = Object.freeze({
   followAxisLabel: "軸（1着）",
   followAxisGroup: "軸にする艇",
   followAxisBtn: "軸",
-  followConcl: (x, y, p, q) => [
-    `${x}号艇が1着なら、2着は`,
-    `${y}号艇 ${p}%`,
-    `（軸を問わないと${q}%）`,
-  ],
+  followConcl: (x, y, p) => [`${x}号艇が1着なら、2着は`, `${y}号艇 ${p}%`],
   followNoThird:
     "3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る",
   followLegendAxis: (x) => `${x}号艇が1着のときの2着`,
-  followLegendAny: "軸を問わない2着",
-  followAny: (q) => `問わず${q}%`,
+  // 印（BOA-845、2026-10-12 ユーザー回答「推奨通り」）。比べた数字は出さず、印の意味を表の下に1行
+  followMark: Object.freeze({ up: "↑多め", down: "↓少なめ" }),
+  followMarkNote: (x) =>
+    `↑多め・↓少なめ＝${x}号艇が1着のときの2着率を、その艇が1着でなかったレース全体での2着率（${x}号艇を除いて割り直し）と比べて5ポイント以上の差（件数が300件以上で、ぶれの範囲を超えるものだけ）`,
   followSonar: "着順の流れを見る（龍神ソナー）",
   followSonarSub: (x) => `1着の${x}号艇を押すと、その流れになる`,
   followAuto: (x) => `1着の候補に合わせた（${x}号艇）`,

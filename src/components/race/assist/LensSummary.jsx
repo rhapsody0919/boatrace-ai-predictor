@@ -895,7 +895,7 @@ export default function LensSummary({ lens, axis, flow, power, place, bet }) {
         // 相手レンズ: {X}号艇を軸にしたときの2着（BOA-845、spec D-48）
         <WinFollowers
           f={place.f}
-          any={place.any}
+          marks={place.marks}
           axis={place.axis}
           auto={place.auto}
           venue={place.venue}

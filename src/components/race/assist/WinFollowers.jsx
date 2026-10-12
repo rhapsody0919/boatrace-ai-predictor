@@ -65,23 +65,29 @@ function AxisPicker({ axis, onAxis }) {
 
 /**
  * 「{X}号艇を軸にしたときの2着」（BOA-845、spec D-48、承認モック v3）。範囲は全艇とも会場の全レース（scenario の VA）。
- * 6行固定（軸の艇は「軸（1着）」）。棒は軸のときの2着、縦線と「問わずq%」は軸を問わない2着（1行の数字は2個）。
+ * 6行固定（軸の艇は「軸（1着）」）。棒と割合は軸のときの2着。比べる数字は出さず、差のある行に ↑多め／↓少なめ（axisMarks）。
  * 3着は軸の艇で変わらない（boa845-axis-place.md）ので出さない。30件未満は割合を出さず件数だけ
  * @param {{f: ReturnType<typeof import("../../../utils/assistSummary").winFollowers>|null,
- *   any: ReturnType<typeof import("../../../utils/assistSummary").secondAny>|null, axis: number, venue: string|null,
+ *   marks: Array<"up"|"down"|null>|null（assistSummary.axisMarks）, axis: number, venue: string|null,
  *   onAxis: (boat: number) => void, auto: boolean, raceId: string}} props auto は1着の候補に合わせて選んだとき
  */
-export default function WinFollowers({ f, any, axis, venue, onAxis, auto, raceId }) {
-  const q = (b) => (any ? pct(any.second[b - 1], any.n) : null);
+export default function WinFollowers({
+  f,
+  marks = null,
+  axis,
+  venue,
+  onAxis,
+  auto,
+  raceId,
+}) {
   const others = [1, 2, 3, 4, 5, 6].filter((b) => b !== axis);
   const topBoat =
     f && !f.few
       ? others.reduce((a, b) => (f.second[b - 1] > f.second[a - 1] ? b : a))
       : null;
-  const concl =
-    topBoat && any
-      ? C.followConcl(axis, topBoat, pct(f.second[topBoat - 1], f.n), q(topBoat))
-      : null;
+  const concl = topBoat
+    ? C.followConcl(axis, topBoat, pct(f.second[topBoat - 1], f.n))
+    : null;
   return (
     <section className="ta-box">
       <AxisPicker axis={axis} onAxis={onAxis} />
@@ -95,7 +101,6 @@ export default function WinFollowers({ f, any, axis, venue, onAxis, auto, raceId
         <p className="ta-follow-concl ta-num">
           {concl[0]}
           <b>{concl[1]}</b>
-          {concl[2]}
         </p>
       )}
       <p className="ta-note">{C.followNoThird}</p>
@@ -112,12 +117,6 @@ export default function WinFollowers({ f, any, axis, venue, onAxis, auto, raceId
                 <i className="ta-follow-lf" />
                 {C.followLegendAxis(axis)}
               </span>
-              {any && (
-                <span>
-                  <i className="ta-follow-lb" />
-                  {C.followLegendAny}
-                </span>
-              )}
             </div>
           )}
           <table className="ta-follow ta-num">
@@ -143,21 +142,19 @@ export default function WinFollowers({ f, any, axis, venue, onAxis, auto, raceId
                         <span className="ta-follow-track" aria-hidden="true">
                           <span
                             className="ta-follow-fill"
-                            style={{ width: `${(f.second[b - 1] / f.n) * 100}%` }}
+                            style={{
+                              width: `${(f.second[b - 1] / f.n) * 100}%`,
+                            }}
                           />
-                          {any && (
-                            <span
-                              className="ta-follow-base"
-                              style={{ left: `${q(b)}%` }}
-                            />
-                          )}
                         </span>
                       </td>
                       <td className="ta-follow-p">
                         <b>{pct(f.second[b - 1], f.n)}%</b>
                       </td>
-                      <td className="ta-follow-u">
-                        {any ? C.followAny(q(b)) : ""}
+                      <td
+                        className={`ta-follow-u${marks?.[b - 1] ? ` ta-follow-m-${marks[b - 1]}` : ""}`}
+                      >
+                        {marks?.[b - 1] ? C.followMark[marks[b - 1]] : ""}
                       </td>
                     </>
                   )}
@@ -165,6 +162,9 @@ export default function WinFollowers({ f, any, axis, venue, onAxis, auto, raceId
               ))}
             </tbody>
           </table>
+          {marks?.some(Boolean) && (
+            <p className="ta-note">{C.followMarkNote(axis)}</p>
+          )}
           {f.topTrifecta.length > 0 && (
             <p className="ta-note ta-num">
               {C.flowTopTrifecta}: <ComboList rows={f.topTrifecta} />

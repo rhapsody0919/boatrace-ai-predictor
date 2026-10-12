@@ -54,7 +54,7 @@ import {
   similarSummary,
 } from "../utils/assistModel";
 import {
-  secondAny,
+  axisMarks,
   winFollowers,
   HINT_BOAT,
   b1Usual,
@@ -455,6 +455,7 @@ function ThinkingAssistBody() {
   );
   const placeAuto = state.placeAxis == null && firstPicks.length === 1;
   const placeAxis = state.placeAxis ?? (placeAuto ? firstPicks[0] : 1);
+  const placeF = winFollowers(vaScenario, placeAxis);
   const venueAll = anyCell(data.scenario.va.data);
   const rough = roughCard(scope, national);
   const lineup = classLineup(today?.classes, 1);
@@ -600,8 +601,8 @@ function ThinkingAssistBody() {
     place: v16Off
       ? null
       : {
-          f: winFollowers(vaScenario, placeAxis),
-          any: secondAny(vaScenario),
+          f: placeF,
+          marks: axisMarks(vaScenario, placeF, placeAxis),
           axis: placeAxis,
           auto: placeAuto,
           venue: venueName,

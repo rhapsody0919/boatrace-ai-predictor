@@ -375,18 +375,46 @@ export function winFollowers(scenario, boat = 1) {
   };
 }
 
+/** 相手レンズの印の決まり（BOA-845、docs/design/thinking-assist/analysis/boa845-axis-place.md「相手レンズの印のルール（案C）の検証」） */
+export const AXIS_MARK = Object.freeze({ th: 0.05, minN: 300 });
+
 /**
- * 軸を問わない2着（BOA-845、spec D-48 (4)）。全体のセル（cells.all.forms.any）の3連単の2着の艇ごとの件数。
- * winFollowers と同じ範囲・同じく返還のあったレースを除いた件数で数える
- * @returns {null | {n: number, second: number[]}}
+ * {X}号艇を軸にしたときの2着に付ける ↑多め／↓少なめ（BOA-845、2026-10-12 ユーザー回答「推奨通り」）。
+ * 比べる基準 q_nw は「j が1着でなかったレースでの j の2着率」を、軸の艇を除いて合計100%に割り直した値
+ * （全レースの2着率だと1号艇が全組で ↑ になる。負けたレースだから2着が増えるだけで、スジの情報ではない）。
+ * 印は「|p − q_nw| ≥ 5pt」かつ「p の95%区間（Wilson）が q_nw をまたがない」かつ「軸の件数300以上」。丸める前の値で判定する
+ * 範囲は winFollowers と同じ scenario の全体のセルの3連単（返還のあったレースを除く）
+ * @param {object|null} scenario
+ * @param {ReturnType<typeof winFollowers>} f その軸の winFollowers
+ * @param {number} axis
+ * @returns {Array<"up"|"down"|null>} 1〜6号艇の印（軸の艇は null）
  */
-export function secondAny(scenario) {
+export function axisMarks(scenario, f, axis) {
+  const none = [null, null, null, null, null, null];
+  if (!f || f.n < AXIS_MARK.minN) return none;
   const rows = trifectaList(scenario?.cells?.all?.forms?.any?.tri);
   const n = rows.reduce((a, [, c]) => a + c, 0);
-  if (!n) return null;
+  if (!n) return none;
+  const first = [0, 0, 0, 0, 0, 0];
   const second = [0, 0, 0, 0, 0, 0];
-  for (const [x, c] of rows) second[x[1] - 1] += c;
-  return { n, second };
+  for (const [x, c] of rows) {
+    first[x[0] - 1] += c;
+    second[x[1] - 1] += c;
+  }
+  // 2着は1着でないレースでしか起きないので、j が2着の件数 ÷ j が1着でなかった件数
+  const raw = second.map((k, i) => (n - first[i] > 0 ? k / (n - first[i]) : 0));
+  raw[axis - 1] = 0;
+  const sum = raw.reduce((a, b) => a + b, 0);
+  return raw.map((r, i) => {
+    if (i === axis - 1 || !sum) return null;
+    const base = r / sum;
+    const p = f.second[i] / f.n;
+    const ci = wilsonInterval(f.second[i], f.n);
+    if (!ci || (base >= ci[0] && base <= ci[1])) return null;
+    if (p - base >= AXIS_MARK.th) return "up";
+    if (p - base <= -AXIS_MARK.th) return "down";
+    return null;
+  });
 }
 
 /**

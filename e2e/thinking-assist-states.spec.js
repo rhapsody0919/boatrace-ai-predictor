@@ -1933,7 +1933,9 @@ test.describe("思考アシスト: 1号艇を軸にしたときの2着・3着（
     await expect(box).toContainText("徳山の全レース 1号艇が1着の10,910件");
     const row = (b) => box.getByRole("row", { name: new RegExp(`^${b}号艇`) });
     await expect(row(2)).toContainText("38%");
-    await expect(row(2)).toContainText("問わず28%");
+    // 1号艇を軸にしたときは印が付かない（q_nw 基準。比べる数字は出さない）
+    await expect(box).not.toContainText("問わず");
+    await expect(box.locator(".ta-follow-m-up, .ta-follow-m-down")).toHaveCount(0);
     await expect(row(1)).toContainText("軸（1着）");
     // 3着の列は出さない（spec D-48 (3)）
     await expect(box.getByRole("columnheader")).toHaveCount(0);
@@ -2409,14 +2411,28 @@ test.describe("思考アシスト: 2〜6号艇を軸にしたときの2着（BOA
       axisGroup(page).getByRole("radio", { name: "1号艇を軸" }),
     ).toHaveAttribute("aria-checked", "true");
     await expect(page.locator(".ta-follow-concl")).toHaveText(
-      "1号艇が1着なら、2着は2号艇 38%（軸を問わないと28%）",
+      "1号艇が1着なら、2着は2号艇 38%",
     );
     await axisGroup(page).getByRole("radio", { name: "4号艇を軸" }).click();
     await expect(
       page.getByRole("heading", { name: "4号艇を軸にしたときの2着" }),
     ).toBeVisible();
     await expect(page.locator(".ta-follow-concl")).toHaveText(
-      "4号艇が1着なら、2着は1号艇 37%（軸を問わないと16%）",
+      "4号艇が1着なら、2着は1号艇 37%",
+    );
+    // 印（q_nw 基準・5pt・95%区間・件数300以上。2026-10-12 ユーザー回答「推奨通り」）: 2号艇↓・3号艇↓・5号艇↑・6号艇↑、1号艇は無し
+    const box4 = page.locator(".ta-sum section", {
+      has: page.getByRole("heading", { name: "4号艇を軸にしたときの2着" }),
+    });
+    const mark = (b) =>
+      box4.getByRole("row", { name: new RegExp(`^${b}号艇`) }).locator(".ta-follow-u");
+    await expect(mark(1)).toHaveText("");
+    await expect(mark(2)).toHaveText("↓少なめ");
+    await expect(mark(3)).toHaveText("↓少なめ");
+    await expect(mark(5)).toHaveText("↑多め");
+    await expect(mark(6)).toHaveText("↑多め");
+    await expect(box4).toContainText(
+      "↑多め・↓少なめ＝4号艇が1着のときの2着率を、その艇が1着でなかったレース全体での2着率（4号艇を除いて割り直し）と比べて5ポイント以上の差",
     );
     await expect(page.locator(".ta-sum")).toContainText(
       "徳山の全レース 4号艇が1着の1,326件",

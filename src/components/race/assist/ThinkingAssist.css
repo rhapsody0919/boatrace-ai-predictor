@@ -2188,11 +2188,6 @@
   background: var(--color-info-text);
 }
 
-.ta-follow-lb {
-  width: 2px;
-  height: 14px;
-  background: var(--text-secondary);
-}
 
 .ta-follow-bar {
   width: 100%;
@@ -2204,14 +2199,6 @@
   overflow: visible;
 }
 
-.ta-follow-base {
-  position: absolute;
-  top: -4px;
-  bottom: -4px;
-  width: 2px;
-  margin-left: -1px;
-  background: var(--text-secondary);
-}
 
 .ta-follow-p {
   text-align: right;
@@ -2222,6 +2209,17 @@
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
   white-space: nowrap;
+}
+
+/* 印（↑多め・↓少なめ）。色だけに頼らず文字で書く */
+.ta-follow-m-up {
+  color: var(--color-info-text);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-follow-m-down {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-bold);
 }
 
 .ta-follow-axis {
