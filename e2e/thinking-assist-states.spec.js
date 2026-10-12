@@ -2432,7 +2432,7 @@ test.describe("思考アシスト: 2〜6号艇を軸にしたときの2着（BOA
     await expect(mark(5)).toHaveText("↑多め");
     await expect(mark(6)).toHaveText("↑多め");
     await expect(box4).toContainText(
-      "↑多め・↓少なめ＝4号艇が1着のときの2着率を、その艇が1着でなかったレース全体での2着率（4号艇を除いて割り直し）と比べて5ポイント以上の差",
+      "↑多め・↓少なめ＝4号艇が1着のときの2着率と、その艇が1着でなかったレースでの2着率（4号艇を除いて割り直し）の差。件数300件以上で、5ポイント以上かつぶれの範囲を超えるときだけ付ける",
     );
     await expect(page.locator(".ta-sum")).toContainText(
       "徳山の全レース 4号艇が1着の1,326件",
