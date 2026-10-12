@@ -19,6 +19,7 @@ import {
   createPageOpener,
   renderWithFreshPage,
 } from "./lib/renderWithFreshPage.js";
+import { summarizeSnapshotRun } from "./lib/snapshotStatus.js";
 import {
   MORNING_DIGEST_DISCLAIMER,
   MORNING_DIGEST_GLOSSARY,
@@ -320,6 +321,9 @@ async function main() {
   // ブログ記事スナップショット生成が万一失敗しても、ビルド全体は成功させ
   // /winning-technique・/today分だけは配信を継続する（2026-09-11〜09-12インシデントの
   // 再発防止、詳細はPR#624参照）。
+  let failed = [];
+  let fatalError = null;
+  let relaunches = 0;
   let server;
   try {
     const started = await startStaticServer();
@@ -328,19 +332,13 @@ async function main() {
     // ブラウザが落ちたら起動し直す（Vercel の Chromium は単一プロセスで、ページが落ちるとブラウザごと落ちる）
     const opener = createPageOpener(launchChromium);
     try {
-      const failed = await generateBlogSnapshots(opener.openPage, baseUrl);
-      if (failed.length > 0) {
-        console.error(
-          `⚠️ ${failed.length}件のブログ記事スナップショット生成に失敗しましたが、ビルドは継続します。`,
-        );
-      }
-      if (opener.launches() > 1) {
-        console.log(`ブラウザを${opener.launches() - 1}回起動し直しました`);
-      }
+      failed = await generateBlogSnapshots(opener.openPage, baseUrl);
     } finally {
+      relaunches = Math.max(0, opener.launches() - 1);
       await opener.close();
     }
   } catch (err) {
+    fatalError = err.message;
     console.error(
       "⚠️ ブログ記事スナップショットの生成に失敗しましたが、ビルドは継続します（/winning-technique・/today分は生成済み）:",
       err.message,
@@ -348,6 +346,21 @@ async function main() {
   } finally {
     if (server) server.close();
   }
+
+  // 失敗をログの途中に埋もれさせない。最後にまとめを出し、配信物にも残す（毎日の照合が読む）
+  const { status, lines } = summarizeSnapshotRun({
+    total: blogPosts.length,
+    failed,
+    fatalError,
+    relaunches,
+    generatedAt: new Date().toISOString(),
+  });
+  writeFileSync(
+    path.join(SNAPSHOT_DIR, "status.json"),
+    `${JSON.stringify(status, null, 2)}\n`,
+    "utf-8",
+  );
+  (status.ok ? console.log : console.error)(lines.join("\n"));
 
   console.log("スナップショット生成が完了しました。");
 }
