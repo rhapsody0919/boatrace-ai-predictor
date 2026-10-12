@@ -236,6 +236,30 @@ export function pickOpenVenues(json, n) {
     .slice(0, n);
 }
 
+/**
+ * 照合するページの一覧。/ と開催中の会場のほかに、言語版（BOA-848 第2段）の /{lang}/ と /{lang}/venue/{先頭の会場} を候補にし、
+ * isRouted（ボット向け HTML へ振り分けているか）が真のものだけを照合する。配線する前の言語版は skipped に入る
+ * （配線の PR が入れば、照合の側を変えずに照合するページに加わる）
+ *
+ * @param {number[]} venueCodes - 開催中の会場コード（pickOpenVenues の順）
+ * @param {{langs: string[], isRouted: (path: string) => boolean}} options
+ * @returns {{checked: string[], skipped: string[]}}
+ */
+export function parityPaths(venueCodes, { langs, isRouted }) {
+  const candidates = [
+    "/",
+    ...venueCodes.map((c) => `/venue/${c}`),
+    ...langs.flatMap((lang) => [
+      `/${lang}/`,
+      ...(venueCodes.length > 0 ? [`/${lang}/venue/${venueCodes[0]}`] : []),
+    ]),
+  ];
+  return {
+    checked: candidates.filter((p) => isRouted(p)),
+    skipped: candidates.filter((p) => !isRouted(p)),
+  };
+}
+
 /** 中央値（空なら null） */
 export function median(values) {
   const xs = values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
