@@ -707,7 +707,7 @@ function ThinkingAssistBody() {
           onStage={(stage) => dispatch({ type: "stage", stage })}
           oddsAt={oddsAt}
           showSonar={isAnalogyFinderEnabled()}
-          waterType={data.venueInfo.data?.waterType ?? null}
+          tidal={data.venueInfo.data?.tidal === true}
           onVenue={() => act({ type: "sheet", sheet: "venue" })}
         >
           {post && v16Status === "exhibition_reflecting" && (

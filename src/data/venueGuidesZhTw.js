@@ -202,7 +202,7 @@ export const VENUE_GUIDES_ZH_TW = [
         "https://commons.wikimedia.org/wiki/File:%E6%B1%9F%E6%88%B8%E5%B7%9D%E7%AB%B6%E8%89%87%E5%A0%B4_-_panoramio.jpg",
     },
     facts: {
-      water: "河川（受潮汐、風向與水流影響）",
+      water: "汽水（河川，受潮汐、風向與水流影響）",
       character: "日本水面最不穩定的賽場——預期會有爆冷",
       nightRace: false,
     },
@@ -623,7 +623,7 @@ export const VENUE_GUIDES_ZH_TW = [
         "https://commons.wikimedia.org/wiki/File:20080719_Gamagori_kyotei_Central_Gate.jpg",
     },
     facts: {
-      water: "淡水人工水池——平穩快速，有屏障阻擋強風",
+      water: "汽水，不受潮汐影響——平穩快速，有屏障阻擋強風",
       character: "1號艇奪冠率高，但第二標中央水道逆轉也很常見",
       nightRace: true,
     },
@@ -850,7 +850,7 @@ export const VENUE_GUIDES_ZH_TW = [
       creditUrl: "https://commons.wikimedia.org/wiki/File:Tsu-kyotei-01.jpg",
     },
     facts: {
-      water: "面朝伊勢灣——風大時是東海地區最刁鑽的賽道之一",
+      water: "汽水，不受潮汐影響——面朝伊勢灣，風大時是東海地區最刁鑽的賽道之一",
       character: "風向決定一切：風大時混亂難測，風平浪靜時1號艇較有利",
       nightRace: false,
     },
