@@ -18,6 +18,8 @@
  * 8. vercel.json のページの no-store 規則は、/ と /venue/1〜24 だけ配る UA を除外する（missing）。
  *    除外する UA の一覧が BOT_PAGE_USER_AGENTS と一致し、他のページの no-store は外れない
  *    （外すと関数の応答が CDN に残らない。Preview で MISS が続いたため、ADR 0089「未確認」の1）
+ * 10. ブログ一覧（/blog・/{lang}/blog）と翻訳記事（/{lang}/blog/{id}）は、配る UA のときだけ
+ *    /ai-snapshots/blog-list.html・/ai-snapshots/{lang}/blog-list.html・/ai-snapshots/{lang}/blog/{id}.html へ振り分ける（BOA-848 第2段）
  * 9. 選手ページ（/racer/{4桁}、BOA-848）は配る UA のときだけ /ai-snapshots/racer/{番号}.html へ振り分ける。
  *    Googlebot・人のブラウザ・番号の形が違うもの・言語の接頭辞付き・/racers は振り分けない
  *
@@ -485,6 +487,81 @@ for (const path of NOT_RACER_SNAPSHOT_PATHS) {
       `${ORIGIN}/ai-snapshots/racer/3256.html`,
     describe(res),
   );
+}
+
+console.log(
+  "[6c] ブログ一覧と翻訳記事は配る UA のときだけスナップショットへ振り分ける（BOA-848 第2段）",
+);
+{
+  const routes = [
+    ["/blog", "/ai-snapshots/blog-list.html"],
+    ["/en/blog", "/ai-snapshots/en/blog-list.html"],
+    ["/zh-TW/blog", "/ai-snapshots/zh-TW/blog-list.html"],
+    ["/ko/blog", "/ai-snapshots/ko/blog-list.html"],
+    ["/en/blog/some-article", "/ai-snapshots/en/blog/some-article.html"],
+    ["/zh-TW/blog/some-article", "/ai-snapshots/zh-TW/blog/some-article.html"],
+    ["/ko/blog/some-article", "/ai-snapshots/ko/blog/some-article.html"],
+    // ja の記事は従来どおり
+    ["/blog/some-article", "/ai-snapshots/blog/some-article.html"],
+  ];
+  for (const [name, ua] of Object.entries(BOT_PAGE_UAS)) {
+    for (const [path, target] of routes) {
+      check(`${name} ${path} は matcher に一致する`, matchesMatcher(path));
+      const res = await call(path, { ua });
+      check(
+        `${name} ${path} → ${target}`,
+        res?.headers.get("x-middleware-rewrite") === `${ORIGIN}${target}`,
+        describe(res),
+      );
+    }
+  }
+  for (const [name, ua] of Object.entries(NOT_SNAPSHOT_UAS)) {
+    for (const [path] of routes) {
+      const res = await call(path, { ua });
+      check(`${name} ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+    }
+  }
+  for (const path of [
+    "/blog/",
+    "/en/blog/",
+    "/en/blog/a/b",
+    "/fr/blog",
+    "/fr/blog/some-article",
+    "/EN/blog/some-article",
+    "/ja/blog/some-article",
+    "/en/blogs",
+  ]) {
+    const res = await call(path, { ua: SEARCH_BOT_UAS.bingbot });
+    check(`bingbot ${path} → 素通り（SPA のまま）`, res === undefined, describe(res));
+  }
+  {
+    const res = await call("/en/blog/some-article?x=1", { ua: BOT_UA });
+    check(
+      "GPTBot /en/blog/some-article?x=1 → クエリを持ち込まない",
+      res?.headers.get("x-middleware-rewrite") ===
+        `${ORIGIN}/ai-snapshots/en/blog/some-article.html`,
+      describe(res),
+    );
+  }
+  // 振り分け先の翻訳記事の言語が、生成側（generate-ai-snapshots.js の BLOG_TRANSLATIONS）と languages.js の翻訳の言語と同じ
+  const { SUPPORTED_LANGUAGES } = await import("../../src/config/languages.js");
+  const langs = SUPPORTED_LANGUAGES.map((l) => l.code).filter((c) => c !== "ja");
+  for (const lang of langs) {
+    check(
+      `${lang} の翻訳記事を振り分ける`,
+      resolveSnapshotPath(`/${lang}/blog/x`, BOT_UA) === `/ai-snapshots/${lang}/blog/x.html`,
+    );
+  }
+  const gen = readFileSync(
+    new URL("../generate-ai-snapshots.js", import.meta.url),
+    "utf8",
+  );
+  for (const lang of langs) {
+    check(
+      `生成側が ${lang} の翻訳記事を作る（BLOG_TRANSLATIONS）`,
+      new RegExp(`(?:^|\\s|")${lang.replace("-", "\\-")}"?:\\s*blogPosts`, "m").test(gen),
+    );
+  }
 }
 
 console.log(
