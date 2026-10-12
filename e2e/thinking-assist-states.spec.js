@@ -368,16 +368,24 @@ test.describe("思考アシスト: ファン評価 3周目", () => {
   test("指摘12: 目盛りの外の値の数字は図の右端からはみ出さない", async ({
     page,
   }) => {
-    await routeExhibition(page, (rows) =>
-      rows.map((r) => (r.boat_number === 4 ? { ...r, start_timing: 0.32 } : r)),
-    );
+    // 図は展示後も平均ST（このコース）なので（spec D-47 (1)）、4号艇の平均ST を .320（目盛りの外）に差し替える。
+    // 後から足した route が先に使われるので、beforeEach の固定の応答より優先される
+    await routeThinkingAssistV16(page, {
+      overrides: {
+        facts: (body) => {
+          body.today.course_st.course[3] = 0.32;
+          if (body.today.course_st.course_filled)
+            body.today.course_st.course_filled[3] = 0.32;
+          return body;
+        },
+      },
+    });
     await open(page);
     await lensTab(page, "展開").click();
-    // 差し替えた値（4号艇の展示ST .32）が図に出るまで待ってから測る。待たないと、差し替えの前の図を測って
-    // 空振りで通り、素通しの途中でテストが終わって落ちる（#1400 の CI）
+    // 差し替えた値が図に出るまで待ってから測る（待たないと差し替えの前の図を測って空振りで通る。#1400 の CI）
     await expect(
       page.locator(".ta-lane").nth(3).locator(".ta-track-val"),
-    ).toHaveText(".32");
+    ).toHaveText(".320");
     const over = await page.evaluate(() =>
       [...document.querySelectorAll(".ta-track")]
         .map((t) => {
