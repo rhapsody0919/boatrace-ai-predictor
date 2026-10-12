@@ -13,6 +13,11 @@ export async function sha256(bytes) {
   ).join("");
 }
 
+/** SQL140 revisionと実媒体snapshotによる既存の確認版。 */
+export async function mobileVersion(revision, snapshot) {
+  return sha256(new TextEncoder().encode(JSON.stringify([revision, snapshot])));
+}
+
 export async function createXSnapshot(draft, loadMedia) {
   if (draft.source_data?.dataCardUrl)
     throw new Error("追加画像のある投稿は手動経路を使ってください");
