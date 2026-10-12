@@ -55,6 +55,7 @@ const result = {
     averageViewPercentage: avp.mean,
     averageViewPercentageSd: avp.sd,
     feedRate: feed,
+    ratedShareOfUploads: yt.ratedShareOfUploads,
     viewsLogSd: yt.distribution.views.logSd,
     engagedViewsLogSd: yt.distribution.engagedViews.logSd,
   },
@@ -70,6 +71,9 @@ const result = {
       nForLogLift(yt.distribution.engagedViews.logSd, l),
     ),
     engagedRatioVideos: byLift((l) => nForMeanDiff(er.sd, er.mean * (l - 1))),
+    // 率の指標は「2日で30回以上の本数」での件数。投稿本数に換算した値も出す（÷ ratedShareOfUploads）
+    engagedRatioUploads: byLift((l) => Math.ceil(nForMeanDiff(er.sd, er.mean * (l - 1)) / yt.ratedShareOfUploads)),
+    averageViewPercentageUploads: { "+5pt": Math.ceil(nForMeanDiff(avp.sd, 5) / yt.ratedShareOfUploads), "+10pt": Math.ceil(nForMeanDiff(avp.sd, 10) / yt.ratedShareOfUploads) },
     averageViewPercentageVideos: {
       "+5pt": nForMeanDiff(avp.sd, 5),
       "+10pt": nForMeanDiff(avp.sd, 10),

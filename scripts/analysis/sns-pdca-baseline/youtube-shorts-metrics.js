@@ -70,6 +70,9 @@ do {
   pageToken = res.data.nextPageToken;
 } while (pageToken);
 
+const ptDate = (iso) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Los_Angeles" }).format(new Date(iso));
+
 const METRICS =
   "views,engagedViews,averageViewPercentage,averageViewDuration,likes,subscribersGained";
 async function videoReport(id, startDate, endDate) {
@@ -104,8 +107,9 @@ const perVideo = [];
 for (const v of videos
   .filter((x) => x.publishedAt >= SINCE)
   .sort((a, b) => (a.publishedAt < b.publishedAt ? -1 : 1))) {
-  const d0 = v.publishedAt.slice(0, 10);
-  const d1 = new Date(Date.parse(d0) + 86400000).toISOString().slice(0, 10);
+  // YouTube Analytics の日は太平洋時間の暦日。UTC の日付を使うと半数近くで1日ずれる
+  const d0 = ptDate(v.publishedAt);
+  const d1 = new Date(Date.parse(`${d0}T00:00:00Z`) + 86400000).toISOString().slice(0, 10);
   // 逐次に取る（同時に投げてクォータを一気に使わないため）
   perVideo.push({
     ...v,
@@ -127,23 +131,16 @@ const dist = (k) => {
     logSd: summarize(s.map((x) => Math.log(x + 1))).sd,
   };
 };
-// 率は再生30回以上だけで見る（少ない再生で率が暴れるため）。平均視聴率100%超はループ再生の外れ値として除く
-const rated = played.filter((v) => v.toDate.views >= 30);
-const engagedRatio = summarize(
-  rated.map((v) => v.toDate.engagedViews / v.toDate.views),
-);
-const avgViewPct = summarize(
-  rated
-    .map((v) => v.toDate.averageViewPercentage)
-    .filter((p) => p != null && p <= 100),
-);
-const twoDayShare = round(
-  played.reduce((a, v) => a + v.twoDay.views, 0) /
-    played.reduce((a, v) => a + v.toDate.views, 0),
-);
-const feedRate = round(
-  played.filter((v) => v.twoDay.views >= 100).length / played.length,
-);
+// 版の判定は投稿後2日（PT の暦日で投稿日＋翌日）の値で行う。率は2日で再生30回以上の動画だけで見る（少ない再生で率が暴れるため）。
+// 30回以上かどうかは版の効果を受けるので、必要件数は「30回以上の本数」を「投稿本数」に換算して読む（ratedShareOfUploads）。
+// 平均視聴率100%超はループ再生の外れ値として除く
+const rated = played.filter((v) => v.twoDay.views >= 30);
+const engagedRatio = summarize(rated.map((v) => v.twoDay.engagedViews / v.twoDay.views));
+const avgViewPct = summarize(rated.map((v) => v.twoDay.averageViewPercentage).filter((p) => p != null && p <= 100));
+const ratedShareOfUploads = round(rated.length / perVideo.length);
+const twoDayShare = round(played.reduce((a, v) => a + v.twoDay.views, 0) / played.reduce((a, v) => a + v.toDate.views, 0));
+// フィードに乗った率の分母はアップロードした全本数（再生0の動画も「乗らなかった」に数える）
+const feedRate = round(perVideo.filter((v) => v.twoDay.views >= 100).length / perVideo.length);
 
 const traffic = await analytics.reports.query({
   ids: "channel==MINE",
@@ -167,6 +164,7 @@ const result = {
   distribution: { views: dist("views"), engagedViews: dist("engagedViews") },
   engagedRatio30plus: engagedRatio,
   averageViewPercentage30plus: avgViewPct,
+  ratedShareOfUploads,
   twoDayShareOfViews: twoDayShare,
   feedRate100In2Days: feedRate,
   trafficSourceLast28: traffic.data.rows ?? [],

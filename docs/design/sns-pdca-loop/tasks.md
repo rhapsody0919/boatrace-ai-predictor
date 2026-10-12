@@ -9,8 +9,9 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 - [ ] **1. 153 の置き換える関数を書く**
   本番の `pg_get_functiondef` を土台に、153 の「置き換える既存の関数」6つ（取り込み・公開保留のトリガー・approve・transition_sns_send_139・transition_sns_x_send のラッパと youtube_call_guard・posted で item を sent にする）を CREATE OR REPLACE で書く。置き換える前の定義を `docs/db-migration/153-runbook.md` に戻し方として保存する。`transition_sns_x_send` は SECURITY DEFINER を維持
 - [ ] **2. 154 を確定する**（**待ち**: 確認A＝累積値の許容差15分）
+- [ ] **2b. L0 の前に YouTube の権限を確かめる**: 投稿用の `YOUTUBE_REFRESH_TOKEN`（scope は youtube.upload）で、非公開の動画1本を `videos.update` で公開に切り替えられるか、カスタムサムネイルが 403（チャンネルの電話番号の確認）にならないかを試す。できなければオーナーにトークンの取り直し（`youtube` の scope）か電話番号の確認を頼む
 - [ ] **3. PGlite の検証を足す**
-  既存の `scripts/maintenance/verify-sns-*.js` に足す（新しい verify を作るなら `verify-registry.json` に登録）。最低限の再現テスト: v0 は今までどおり公開できない／v1 は検査合格だけ公開できる／スレッド6件を1つの素材で作れる／自動送信の承認者は mode=auto・notified でだけ通る／止めた後の claim・check・begin_post・youtube_publish_begin がすべて hold になる／通知前（notifying）は approve できない／dry_run=true は claim しない／veto_until 前の X の claim は進まない／YouTube の非公開アップロードの claim は veto_until を待たない／子は親が posted でないと claim しない／`renew_sns_x_send_period` は期間の途中で拒否／`reserve_sns_x_read` は残りの送信分を割るとき false／posted で metric_jobs が2件できる／147 のトリガー `sns_diff_approval` と矛盾しない
+  既存の `scripts/maintenance/verify-sns-*.js` に足す（新しい verify を作るなら `verify-registry.json` に登録）。最低限の再現テスト: v0 は今までどおり公開できない／v1 は検査合格だけ公開できる／スレッド6件を1つの素材で作れる／6件のスレッドが日次上限で途中で切れない／YouTube の claim は X の月の台帳を消費しない／URL つきの親と子で予約額が違う／同じレースの item は2つ作れない／自動送信の承認者は mode=auto・notified でだけ通る／止めた後の claim・check・begin_post・youtube_publish_begin がすべて hold になる／通知前（notifying）は approve できない／dry_run=true は claim しない／veto_until 前の X の claim は進まない／YouTube の非公開アップロードの claim は veto_until を待たない／子は親が posted でないと claim しない／`renew_sns_x_send_period` は期間の途中で拒否／`reserve_sns_x_read` は残りの送信分を割るとき false／posted で metric_jobs が2件できる／147 のトリガー `sns_diff_approval` と矛盾しない
 - [ ] **4. 各 contract.md に ADR 0094 への参照を足す**（x-send・deadline-queue・mobile-approval・shorts-send・metrics）
 - [ ] **5. オーナー: 153 → 154 を SQL Editor で適用**。事前・事後の読み取りの確認は Claude（plan の system-architect の手順）。APPLIED.md を更新
 
@@ -49,7 +50,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
   - [ ] 継続監視: 上記が日次で自動計測され、閾値超過で Slack 通知されることを確認する
 - [ ] **22. cron `sns-daily`**（JST 10:00）: YouTube Analytics の動画ごとの暦日の値と、GA4 の UTM・YouTube 経由の日次を `sns_channel_daily` へ。GA4 の流入元のリストは `scripts/lib/snsGa4.js` に出して分析スクリプトと共用
   - [ ] 本番実測: 期待件数（算出根拠: 日数×（動画数×指標数＋UTM の投稿数×指標数＋チャネル全体の指標数））に対し、充足率99%以上
-  - [ ] タイミング実測: 直近5日（土日を含む）で、前日分が当日 JST 11:00 までに入った割合（欠落率2%以内）
+  - [ ] タイミング実測: 直近5日（土日を含む）で、D−3 の値（確定済み）が入っている割合（欠落率2%以内）。YouTube Analytics の確定の遅れを含めるため D−1 では測らない
   - [ ] 継続監視: 未実行・0件を Slack に通知
 - [ ] **23. UTM**: X の親の投稿の URL を承認時に `buildObservationUtm`（campaign=race-full）で作り、`sns_post_tracking` に保存
 
@@ -64,6 +65,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 - [ ] **27. オーナー: 本番 SQL で送信の設定**（`renew_sns_x_send_period`、`attempt_ceiling_microusd`、`daily_limit`、`schedule_minutes=60`・`timing_approved=true`、`max_source_age_seconds=14400`、YouTube のクォータの上限・verified）。管理画面から「X と連携する」
 - [ ] **28. L1 試運転**（1〜2日、dry_run=true）: 保留の理由を全件確認。`sns_auto_send_control.dry_run=false` はオーナー
 - [ ] **29. L2**（7日）: paused=false。機械の検査とオーナーの判断の一致を記録
+- [ ] **29b. 受け入れ E2E**（`e2e/acceptance/sns-pdca-loop.spec.js`）を、直した spec・screens で書き直させる（acceptance-test-writer）
 - [ ] **30. オーナー: `.claude/CLAUDE.md` の変更**（[rule-change-proposal.md](rule-change-proposal.md)、自動モード以外のセッション）
-- [ ] **31. L3**: 条件を満たしたらオーナーが「自動にする」
+- [ ] **31. L3**: 条件（止める操作の本番の試験を除く）を満たしたらオーナーが「自動にする」。初日の最初の1件で、止めるリンクと「自動を切る」を本番で試して `stop_tested_at` を記録する（L2 は個別承認なので、止める操作は L3 に入るまで試せない）
 - [ ] **32. 統計検証のやり直し**: 再開から4週後に X の48h の指標のばらつきで必要件数を出し直す（`scripts/analysis/sns-pdca-baseline/`）。ソナー利用の基準値も4週分で出し直す

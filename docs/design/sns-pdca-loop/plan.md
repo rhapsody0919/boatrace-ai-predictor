@@ -90,8 +90,10 @@ flowchart TD
 - **個別承認の画面と同じ条件**: 自動の分岐でも、`approve_sns_mobile_channel` が見る条件（qa.pass・numeric_claims_match・release_evidence・claims が空でない）を item.checks に対して検査する
 - **リンク先の表示**（A2）: 既存の `createDeadlinePreflight` の `headless` を実装する（ADR 0091）。`markers` は `scripts/lib/snsScreenMarkers.js` に画面ごとの印を固定する（/step4 で実画面で決める）。結果を `release_evidence` として下書きに保存
 - **禁止表現**: 既存の `scripts/lib/riskRules.js` と `sns-video-studio/remotion/risk-rules.json`、用語の検査（競艇・類似レース）
-- **新しい型**（A10）: bundle の `format`・`template_variant` が、過去に `posted` になった下書きに無ければ新しい型として個別承認へ
-- **事前通知の順番**: `checking → notifying`（token の hash を条件付き UPDATE で書く。cron が2回走っても通知とリンクは1つ）→ Slack（`unfurl_links:false`）→ `notified` → approve。**Slack に送れないときは approve しない**ので、通知が届かないまま送られることは無い
+- **新しい型**（A10）: 判定のキーは `source_data.format` と `source_data.local_template_variant_id`（bundle 由来の下書きは `template_variant_id` が NULL のため）。この組が過去に `posted` になった下書きに無ければ新しい型として個別承認へ
+- **同じレースの item は1つ**: 153 で `(race_id, channel)` の部分一意（state が stopped・held_manual 以外）にする。直した素材を入れ直したときは、前の item が notified 以前なら stopped（`stopped_via='superseded'`）にしてから新しい item を作る
+- **送信の承認の直前に auto-plan が書くもの**（`source_data.deadline_queue`）: `deadline_at`（races から）、`expires_at`（締切−30分）、`source_revision`、`source_observed_at`（数値の照合をやり直した時刻。Codex の生成時刻は使わない）、`public_url`（UTM つき）、`screen_key`、`youtube_mode`、子は `parent_job_id`。順番は「UTM を本文に差し込む → 禁止表現の検査をやり直す → deadline_queue を書く → 承認」
+- **事前通知の順番**: `checking → notifying`（token の hash を条件付き UPDATE で書く。cron が2回走っても通知とリンクは1つ）→ Slack（`unfurl_links:false`）→ `notified`（`WHERE state='notifying'` の条件付き。止める操作と競合したら止めた方が勝つ）→ approve。**Slack に送れないときは approve しない**ので、通知が届かないまま送られることは無い
 - **自動送信の承認者**: 153 で `sns_approvers` に「自動送信（止められなかった）」を `active=false`（管理画面の選択肢に出さない）で入れる。分岐は表示名の文字列ではなく `sns_auto_send_control.auto_approver_id`（153）で行う
 - **スレッド**: 親（thread_index 0）を approve → 返った job の id を子の `source_data.deadline_queue.parent_job_id` に書く → 子を approve、を順に行う。返信先は**直前の投稿**（index n の子は n-1 に返信。見た目が普通のスレッドになる）。子の `scheduled_at` は親から index×1分ずつずらし、runner は「親が posted の子」だけを選ぶ（同時に claim して `parent_not_posted` で held に落ちないため）
 - **送る時刻**（A7）: `sns_x_send_control.schedule_minutes=60`、`timing_approved=true`（ユーザー決定 Q1。本番 SQL でオーナーが設定）。`expiry_minutes=30` は維持
@@ -99,26 +101,30 @@ flowchart TD
 
 ## 3. 止める操作（spec A6、ADR 0092・0094）
 
-- **止めるのは「許可のリスト」で効かせる**（153）: 自動送信の承認者の job は、`transition_sns_x_send` の `claim`・`check`・`begin_post`・`youtube_publish_begin` のたびに「item.state='notified' かつ チャネルの mode='auto' かつ dry_run=false」を確かめ、外れたら `hold('auto_stopped')`。X はさらに `now() >= veto_until` を確かめる。YouTube の非公開アップロードの claim は veto_until を待たない（通知の時点で始める）が、公開（`youtube_publish_begin`）は `now() >= veto_until` を確かめる。これで、止める・自動を切る・通知の失敗のどれも、item か control の1行の UPDATE で次の外部呼び出しの前に効く
+- **止めるのは「許可のリスト」で効かせる**（153）: 自動送信の承認者の job は、`transition_sns_x_send` の `claim`・`check`・`begin_post`・`youtube_call`・`youtube_publish_begin` のたびに「item.state='notified' かつ チャネルの mode='auto'」を確かめる。claim のときに外れていたら `hold('auto_stopped')`。claim の後（sending・reconcile）は hold を受け付けないので、外れていたら RAISE して外部呼び出しを止め、YouTube でアップロード済みなら `youtube_retain`（非公開のまま残す）に回る。claim は `now() >= veto_until` も確かめる（X・YouTube とも）。
+- **YouTube の時刻（変更の提案。ユーザーの判断待ち）**: Q1 の決定は「YouTube は通知の時点で非公開アップロード、60分前に公開」。しかし既存の YouTube の流れ（146・`runYoutubeQueueJob`）は、(a) アップロードの直後に同じ実行の中で公開まで続け、(b) 処理の確認は1回の試行で3回まで、(c) クォータは claim した日（太平洋時間）に縛られ、締切が JST 17〜19時のレースは日付をまたいで公開できない。通知の時点でアップロードすると、この3つを作り直すことになる。**案: YouTube も締切の60分前にアップロードを始め、同じ実行で処理の完了を待って公開する（非公開→確認→公開の案B は維持）**。Shorts の処理は通常数分で、失効（締切30分前）まで30分ある。間に合わなければ非公開のまま残る（今の契約どおり）
 - **Slack のリンク**: `https://www.boat-ai.jp/api/sns-stop/<token>`。token は item ごとのランダム 32 バイト、DB には SHA-256 だけを保存。期限は `veto_until`＋30分。GET は確認の画面（対象と「この投稿を止める」ボタン1つ）を返すだけで、止めるのは POST。応答に `Cache-Control: no-store`・`Referrer-Policy: no-referrer`・`X-Robots-Tag: noindex` を付ける。管理画面の Basic 認証は通らない。できるのは「その item を止める」ことだけ
 - **管理画面**: `POST /api/admin/sns-hub/auto-send` `{action:'stop', itemId}` / `{action:'mode', channel, mode:'manual'}`（自動を切る）/ `{action:'mode', channel, mode:'auto', approverId}`（自動にする。承認者が「本人」で、L3 の条件を満たすときだけ）/ `{action:'incident', channel, itemId?, note}`（誤投稿の記録）
 - **`stop_sns_auto_item`**（153）: item を `stopped` にする（これで上の許可のリストが外れ、以後の外部呼び出しは止まる）。そのうえで job の状態ごとに後片付けをする:
-  - `queued`・`held`: 既存の `cancel` で取り消し、下書きを `pending_review` に戻す
-  - YouTube で非公開アップロード済み（`youtube_stage` が uploaded・ready）: `youtube_retain` で非公開のまま残す
-  - YouTube のアップロード途中（ID がまだ無い）: そのまま。アップロードが終わって ID が付いた後の `youtube_publish_begin` が許可のリストで止まり、`youtube_retain` に回る
+  - `queued`・`held`: 下書きの status を `pending_review` に戻す（既存の `cancel` は queued しか受け付けないので使わない。148 のガードが未送信の job を取り消す）
+  - YouTube は下の「YouTube の時刻」の案なら、アップロードと公開を止められる期限の後に1回の実行で続けて行うので、止めた時点で未送信なら job は queued のまま（上と同じ扱い）。実行中なら下の許可のリストで止まり、アップロード済みなら非公開のまま残る
   - `sending`・`reconcile`・`posted`: 触らない（148 のガードで下書きを変えられない）。返り値で「送信が始まっていた」を知らせる
 - **自動を切る**: `sns_auto_send_control.mode='manual'`。`notified` の item は許可のリストから外れるので、それ以上は送られない。item は `stopped`（`stopped_via='mode_off'`）にし、後片付けは上と同じ
 
 ## 4. 送信（spec A1・A9、cron `sns-send`）
 
-- 2分ごと（JST 8:00〜21:00）。`createScrapeCronHandler`（`scripts/lib/scrapeJobs/cronWrapper.js`）に新しいジョブ `sns_send` を登録する（ADR-0066 改訂1 に、外部サイトを取得しないジョブが乗った先例がある）。`maxDuration=300`、`leaseSec` は300以上。monitor の死活の通知は JST 8:00〜21:30 だけにする（レジストリにジョブごとの稼働時間を足す）
+- **5本の cron と共通ラッパ**: `sns_auto_plan`（continuous、5分）・`sns_send`（continuous、2分）・`sns_metrics`（continuous、5分）・`sns_daily`（daily、JST 10:00）・`sns_insights`（daily、月曜 JST 5:00）を `scripts/lib/scrapeJobs/registry.js` に登録し、すべて `createScrapeCronHandler` を通す。`scrape_job_state` の行は mode=off で作られるので、153 で5行を `mode='shadow'` で入れ、L1 でオーナーが `live` にする
+- `sns-send` は2分ごと（JST 8:00〜21:00）。`createScrapeCronHandler`（`scripts/lib/scrapeJobs/cronWrapper.js`）に新しいジョブ `sns_send` を登録する（ADR-0066 改訂1 に、外部サイトを取得しないジョブが乗った先例がある）。`maxDuration=300`、`leaseSec` は300以上。monitor の死活の通知は JST 8:00〜21:30 だけにする（レジストリにジョブごとの稼働時間を足す）
 - 1回の流れ: `xSendStore.sweep()` → `queued` で `scheduled_at` を過ぎた job（子は親が posted のものだけ）を古い順に最大3件 → チャネルごとに既存の `runXSendJob` / `runYoutubeQueueJob` / `runYoutubePublishJob` を呼ぶ
 - **X adapter**（新規 `api/_lib/xApiAdapter.js`）: fetch で X API v2 を直接呼ぶ。`initialize`/`append`/`finalize`/`status` は `/2/media/upload/*`、`createPost` は `POST /2/tweets`（子は `reply.in_reply_to_tweet_id`）。動画は Storage から読み、5 MB ずつ送る
 - **X のトークン**（ADR 0093）: 154 の `sns_oauth_tokens` に AES-256-GCM（IV と認証タグを列に持つ）で暗号化して保存。refresh は X の HTTP をはさむので1つのトランザクションにはできない。`lock_until` と `locked_by` を条件付き UPDATE で取り、保存は `WHERE locked_by=自分` の条件付き UPDATE にする。ロックは HTTP のタイムアウト（30秒）より長い90秒。refresh に成功して保存に失敗したら refresh token を失うので、Slack に「X の連携のやり直しが要る」と通知する
 - **YouTube adapter**（新規 `api/_lib/youtubeQueueAdapter.js`）: `upload` は再開可能アップロード（privacyStatus=private）。32 MiB なら1回の関数で終わる見込みなので、**続きから送る仕組みは作らない**（関数の時間内に終わらなければ reconcile で止まり、オーナーの照合に回る）。`processing`・`makePublic`・`lookup` は `videos.list`・`videos.update`。既存 `youtubeUpload.js` のトークン取得を使う。サムネイルの Content-Type を媒体に合わせる
-- **試運転**（A9）: `sns_auto_send_control.dry_run=true`（153、初期値 true）のあいだは **claim の前で止める**（X の月の予約・日次の枠・YouTube のクォータを消費しないため）。検査・preflight（ヘッドレスを含む）までを行い、結果を item.checks の `dry_run` に残す。dry_run が true のまま L2 に入らないよう、管理画面と毎日の Slack の要約に「試運転中」を出す
-- **毎日の基準日**: 既存の契約は、claim に `daily_baseline_date = 当日 JST`（X）と `quota.baseline_day = 当日 PT`・`verified`（YouTube）を求め、オーナーが毎日 SQL で更新する前提になっている。自動送信ではこれを毎日手でやるのは続かない。**案: `sns-auto-plan` の最初の回が、その日の基準日を当日にし、`daily_external_count`・`external_uploads`・`external_general` を0で入れる**（オーナーが手で出した投稿があれば管理画面から足す）。これは既存の契約の変更なのでユーザーの判断に回す（下の「確認が要る点」）
-- **費用**: X は既存の予約台帳のまま。153 で `renew_sns_x_send_period(start, end)`（オーナーが本番 SQL で実行。今の期間が終わってからだけ実行でき、`reserved_microusd` を0に戻す）を足す。期間の終わりの3日前から Slack に知らせる。取り込みの読み取りも同じ台帳に予約する（154 の `reserve_sns_x_read`。残りが「月の残り日数×1日の送信の予約額」を下回ったら拒否）
+- **試運転**（A9）: `sns_auto_send_control.dry_run=true`（153、初期値 true）のあいだも、job を作るところまでは行い、**claim の前で止める**（X の月の予約・日次の枠・YouTube のクォータを消費しないため）。検査・preflight（ヘッドレスを含む）までを行い、結果を item.checks の `dry_run` に残す。dry_run が true のまま L2 に入らないよう、管理画面と毎日の Slack の要約に「試運転中」を出す
+- **送る直前の確認（ヘッドレス）**: 既存の preflight は送信の関数の中で毎回ヘッドレスを呼ぶ（無ければ `public_check_unconfigured`）。`sns-send` でも Chromium を起動する。1回の実行で最大3件に絞り、同じ実行の中では起動した Chromium を使い回す。メモリは 2 GB
+- **毎日の基準日**: 既存の契約は、claim に `daily_baseline_date = 当日 JST`（X）と `quota.baseline_day = 当日 PT`・`verified`（YouTube）を求め、オーナーが毎日 SQL で更新する前提になっている。自動送信ではこれを毎日手でやるのは続かない。**案: `sns-auto-plan` の毎回、JST の日付（X）・太平洋時間の日付（YouTube）が変わっていたら基準日を当日にし、`daily_external_count`・`external_uploads`・`external_general` を0で入れる**（YouTube の日付は JST 16:00〜17:00 に変わるので、朝の1回だけでは夕方以降に古くなる）（オーナーが手で出した投稿があれば管理画面から足す）。これは既存の契約の変更なのでユーザーの判断に回す（下の「確認が要る点」）
+- **予約額を種類別にする**（153、P0 の指摘）: 既存の claim は、送信の種類に関係なく1回ごとに `attempt_ceiling_microusd` を予約し、YouTube の claim も同じ X の台帳を消費する。1日7回（X 6＋YouTube 1）× URL つきの上限額で、月 $10 は約1週間で尽きる。153 で `sns_x_send_control` に `ceiling_x_url_microusd`（URL つきの親）・`ceiling_x_plain_microusd`（子）を足し、claim はスレッドの位置で使い分け、YouTube は0にする（YouTube Data API は無料。クォータは別の台帳）
+- **日次上限をチャネル別にする**（153）: 既存の `daily_limit` は X・YouTube で1つ。スレッドの子も1回と数えるので、上限1では子が送れず、6では YouTube も6本通る。`daily_limit_x`（スレッドの投稿の数で6）・`daily_limit_youtube`（1）に分ける
+- **費用**: X の予約台帳そのものは既存のまま。153 で `renew_sns_x_send_period(start, end)`（オーナーが本番 SQL で実行。今の期間が終わってからだけ実行でき、`reserved_microusd` を0に戻す）を足す。期間の終わりの3日前から Slack に知らせる。取り込みの読み取りも同じ台帳に予約する（154 の `reserve_sns_x_read`。残りが「月の残り日数×1日の送信の予約額」を下回ったら拒否）
 
 ## 5. 取り込み（spec C1〜C4、cron `sns-metrics`・`sns-daily`）
 
@@ -128,7 +134,7 @@ flowchart TD
   - X: `GET /2/users/{id}/tweets`（自分の投稿、Owned Reads $0.001）の `public_metrics`・`non_public_metrics`・`organic_metrics`。投稿から30日を過ぎると非公開の指標は取れないので、168h でも十分に間に合う
   - 時刻: 136 は「累積値は対象の時刻ちょうど（`observed_at = period_end`）だけ保存できる」。cron では秒単位で合わせられないので、**154 で許容差を足す（未確定。下の「確認が要る点」）**。許容差を超えたら値を null・欠測理由「取得が遅れた」で保存する
   - 失敗は `attempts` を増やし、3回続けたら Slack（spec C4）
-- **`sns-daily`**（1日1回、JST 10:00）:
+- **`sns-daily`**（1日1回、JST 10:00）: YouTube Analytics の日次は確定まで数日かかることがあるので、毎日 D−3〜D−1（太平洋時間の日）を取り直し、値が変わったときだけ UPDATE する。「投稿日＋翌日」は太平洋時間の暦日で数える
   - YouTube Analytics の動画ごとの日次（engagedViews・averageViewPercentage・subscribersGained）を `sns_channel_daily` ではなく観測の表へ、`measurement_kind='period'`・`window` は投稿日〜翌日の2日の値として保存したいが、136 の窓は 48h/168h に固定で暦日の窓を入れられない。**暦日の値は 154 の `sns_channel_daily`（draft_id 任意）に入れる**。版の判定（spec 統計検証）はこの表の「投稿日＋翌日」を使う
   - GA4: 前日の X の UTM（`utm_content=draftId/variantId`）ごとのセッション・ユーザー・ソナーを開いた人、YouTube 経由（プロフィールの UTM＋参照元 youtube）の日次を `sns_channel_daily` へ。クエリは `scripts/analysis/sns-pdca-baseline/ga4-sns-inflow.js` と同じ流入元の完全一致のリスト（共通部分を `scripts/lib/snsGa4.js` に出す）
 - **UTM**: X の親の投稿の URL は送信の承認時に `buildObservationUtm` で作る。136 の `sns_post_tracking` は campaign が `sonar-preview` 固定・`template_variant_id` 必須なので、154 で campaign に `race-full` を許し、`template_variant_id` を任意にする
@@ -139,7 +145,7 @@ flowchart TD
 - **自動採用**（B1）: 週1回（月曜 JST 5:00）。`status='proposed'` かつ `created_at` が7日以上前の案を、`scripts/lib/riskRules.js` で照合し、通れば `active`（`activated_at`、`decision_note='自動採用（1週間止められなかった）'`）、触れれば `retired`（`decision_note='自動で外した: <規則名>'`）。ADR 0030 に 2026-10-12 の追記を足す
 - **保存**（B2）: `scripts/sns/push-insights.js <ファイル>`。既存の `createInsight` を使い、`research_method='codex-weekly'`、`source='own-metrics'`
 - **次の生成へ**（B3）: `scripts/sns/weekly-export.js` が `active` な案と、観測の表（投稿ごと・版ごと）を1つの JSON に書き出し、hq が Codex に渡す。v1 bundle の `bundle.json` に `referenced_insight_ids` を入れてもらい、取り込みで `sns_drafts.referenced_insight_ids` に入れる
-- **週次の数字**（B4）: 同じ `weekly-export.js` の出力に入れる（spec 統計検証の「守り」の判定もここで計算する）
+- **週次の数字**（B4）: 同じ `weekly-export.js` の出力に入れる（spec 統計検証の「守り」の判定もここで計算する。1000行の上限があるので `.range()` で読む）
 
 ## 7. 画面（screens.md）
 
@@ -199,6 +205,12 @@ erDiagram
         TEXT channel
         TEXT note
         TIMESTAMPTZ recorded_at
+    }
+    sns_x_send_control {
+        BIGINT ceiling_x_url_microusd
+        BIGINT ceiling_x_plain_microusd
+        INTEGER daily_limit_x
+        INTEGER daily_limit_youtube
     }
     sns_x_send_jobs {
         UUID auto_item_id
@@ -265,7 +277,9 @@ erDiagram
 
 1. **累積値の時刻の許容差**: 136 の契約で「未承認」のまま。推奨は「48h・168h の時刻から15分以内に取れた値を保存し、実際の取得時刻を `observed_at` に残す。15分を超えたら欠測」。理由: cron は5〜10分ごとで、秒単位では合わせられない。Shorts の再生は2日で99%が出るので、15分のずれは値にほぼ影響しない
 2. **X の月額上限**（spec の未確定のまま）
-3. **毎日の基準日を自動にするか**: 既存の契約は、X の `daily_baseline_date`（JST）と YouTube の `baseline_day`（PT）・`verified` をオーナーが毎日 SQL で当日にしないと送れない。推奨は「`sns-auto-plan` の最初の回が当日にし、他の経路の本数は0で入れる。手で出した投稿があれば管理画面から足す」。理由: 毎日の手作業が1回でも抜けるとその日は送れず、自動送信の意味が無くなる。他の経路の本数を0とみなす危険は、オーナーが手で出したときに足し忘れると日次上限を1本超えうること（上限は Shorts 1・X 1 なので、超えても1本）
+3. **毎日の基準日を自動にするか**（日付が変わったら毎回更新する案に直した）: 既存の契約は、X の `daily_baseline_date`（JST）と YouTube の `baseline_day`（PT）・`verified` をオーナーが毎日 SQL で当日にしないと送れない。推奨は「`sns-auto-plan` の最初の回が当日にし、他の経路の本数は0で入れる。手で出した投稿があれば管理画面から足す」。理由: 毎日の手作業が1回でも抜けるとその日は送れず、自動送信の意味が無くなる。他の経路の本数を0とみなす危険は、オーナーが手で出したときに足し忘れると日次上限を1本超えうること（上限は Shorts 1・X 1 なので、超えても1本）
+
+4. **YouTube の時刻**: 上の §3「YouTube の時刻」の案（60分前にアップロードを始め、同じ実行で公開）に変えてよいか
 
 ## 設計検証（system-architect、2026-10-12）の指摘と対応
 
@@ -299,3 +313,27 @@ erDiagram
 | P3 | `GRANT ALL` は広い | 採用。SELECT・INSERT・UPDATE に絞る |
 | P3 | Vercel Cron の本数（今54本＋5本） | 上限は100本（一次情報で確認済み）。問題なし |
 | 情報 | 148 は本番に適用済みなのに APPLIED.md は未適用 | 別 PR（#1452）で更新中とオーケストレーターから聞いている。このPRでは触らない |
+
+## 設計レビュー（design-reviewer、2026-10-12）の指摘と対応
+
+数値は power.js を JSON から再計算して全セル一致（観点1は問題なし）。指摘は実ファイルで再現してから採否を決めた。
+
+| 重さ | 指摘 | 対応 |
+|---|---|---|
+| P0 | 予約額が送信の種類によらず一律で、YouTube も X の台帳を消費し、月 $10 が約1週間で尽きる | 採用。種類別の予約額、YouTube は0（§4、139:159-168・146:216 で再現） |
+| P1 | 日次上限が X・YouTube で1つ。スレッドの子が送れない | 採用。チャネル別の上限（§4） |
+| P1 | 通知の時点の YouTube の非公開アップロードは、既存の流れ（同じ実行で公開・確認3回・PT の日付）とかみ合わない | 案を出してユーザーの判断に回す（§3「YouTube の時刻」、snsDeadlineQueue.js:109-111 で再現） |
+| P1 | PT の日付が変わると YouTube の公開が拒否される | 上の案で解消（アップロードと公開を同じ実行で行う）。基準日も日付が変わるたびに更新（§4） |
+| P1 | engagedViews/views の必要本数が「30回以上の動画」で数えられ、過小 | 採用。太平洋時間の2日の窓で取り直し、投稿本数に換算（1.5倍で版ごと27本・約8週）。spec・読み物・知見ノートを直した |
+| P2 | 「守り」を基準値1点と比べると半分の週で悪化になる | 採用。直近4週の分布の下側10%で判定（spec） |
+| P2 | `deadline_queue` を誰がいつ書くか、UTM の差し込みの順番 | 採用（§2） |
+| P2 | 同じレースに item が2つできうる | 採用。`(race_id, channel)` の部分一意と置き換えの規則（§2） |
+| P2 | `held` の job に `cancel` は使えない | 採用。下書きの status を戻す（§3、139:181-183 で再現） |
+| P2 | 試運転では job も adapter も動かず、止める操作も試せない | 一部採用。試運転でも job は作り claim の前で止める（§4）。止める操作の本番の試験は L3 の初日に1件で行う（tasks） |
+| P2 | 共通の cron ラッパは行が無いと off のまま | 採用。5本の kind を明記し、153 で行を入れる（§4） |
+| P2 | 送る直前の preflight も毎回ヘッドレスを呼ぶ | 採用。sns-send でも起動し、実行の中で使い回す（§4） |
+| P2 | 通知のリンク先・「自動を切る」の文言が食い違う | 採用。リンク先は ADR 0092 の止める画面を正本にし、screens に #11 を足し、文言を直した |
+| P2 | YouTube Analytics の日次は確定が遅れる・PT の日付 | 採用。D−3〜D−1 を取り直す（§5）。基準値のスクリプトも PT に直した |
+| P3 | spec の古い記述・子の本数・分母・新しい型のキー・notifying の条件付き更新・JST 11:00 前のレース | 採用（spec・§2） |
+| 未確認 | 投稿用の `YOUTUBE_REFRESH_TOKEN`（scope は youtube.upload）で `videos.update`（公開への切り替え）ができるか | L0 で非公開の動画1本で試す（tasks に追加）。できなければ投稿用のトークンを `youtube` の scope で取り直す |
+| 未確認 | カスタムサムネイルが 403（チャンネルの電話番号の確認が未完了、2026-09-02 の記録） | L0 で確かめる（tasks に追加）。未解決なら表紙を送らない |

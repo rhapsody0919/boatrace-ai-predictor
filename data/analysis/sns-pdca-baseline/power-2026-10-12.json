@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T11:59:16.671Z",
+  "generatedAt": "2026-10-12T12:41:55.690Z",
   "inputs": {
     "ga4": "data/analysis/sns-pdca-baseline/ga4-2026-08-15_2026-10-11.json",
     "youtube": "data/analysis/sns-pdca-baseline/youtube-2026-08-01_2026-10-11.json",
@@ -9,13 +9,14 @@
     "xUsersPerDayPosting": 1.111,
     "xSd": 1.367,
     "overdispersion": 1.682,
-    "engagedRatio": 0.142,
-    "engagedRatioSd": 0.078,
-    "averageViewPercentage": 55.711,
-    "averageViewPercentageSd": 11.905,
-    "feedRate": 0.514,
-    "viewsLogSd": 2.07,
-    "engagedViewsLogSd": 1.589
+    "engagedRatio": 0.126,
+    "engagedRatioSd": 0.069,
+    "averageViewPercentage": 56.375,
+    "averageViewPercentageSd": 13.805,
+    "feedRate": 0.659,
+    "ratedShareOfUploads": 0.707,
+    "viewsLogSd": 1.723,
+    "engagedViewsLogSd": 1.312
   },
   "perArm": {
     "xUsersDays": {
@@ -34,29 +35,38 @@
       "+100%": 95
     },
     "youtubeViewsVideos": {
-      "+20%": 2024,
-      "+50%": 410,
-      "+100%": 140
+      "+20%": 1402,
+      "+50%": 284,
+      "+100%": 97
     },
     "youtubeEngagedViewsVideos": {
-      "+20%": 1193,
-      "+50%": 242,
-      "+100%": 83
+      "+20%": 813,
+      "+50%": 165,
+      "+100%": 57
     },
     "engagedRatioVideos": {
-      "+20%": 119,
+      "+20%": 118,
       "+50%": 19,
       "+100%": 5
     },
+    "engagedRatioUploads": {
+      "+20%": 167,
+      "+50%": 27,
+      "+100%": 8
+    },
+    "averageViewPercentageUploads": {
+      "+5pt": 170,
+      "+10pt": 43
+    },
     "averageViewPercentageVideos": {
-      "+5pt": 89,
-      "+10pt": 23
+      "+5pt": 120,
+      "+10pt": 30
     },
     "feedRateVideos": {
-      "+20%": 362,
-      "+50%": 51,
+      "+20%": 177,
+      "+50%": 18,
       "+100%": null,
-      "to90%": 18
+      "to90%": 43
     }
   }
 }

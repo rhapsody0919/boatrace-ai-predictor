@@ -34,7 +34,7 @@ CREATE TABLE public.sns_auto_send_items (
   notified_at TIMESTAMPTZ,
   stop_token_hash TEXT UNIQUE,              -- 止めるリンクの token の SHA-256（hex）
   stopped_at TIMESTAMPTZ,
-  stopped_via TEXT CHECK (stopped_via IN ('link', 'admin', 'mode_off')),
+  stopped_via TEXT CHECK (stopped_via IN ('link', 'admin', 'mode_off', 'superseded')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (bundle_import_id, channel),
@@ -44,6 +44,9 @@ CREATE TABLE public.sns_auto_send_items (
   CHECK (state <> 'stopped' OR stopped_at IS NOT NULL)
 );
 CREATE INDEX sns_auto_send_items_veto ON public.sns_auto_send_items (veto_until) WHERE state = 'notified';
+-- 同じレース・同じチャネルの item は1つ（直した素材を入れ直したときは前の item を stopped（superseded）にしてから作る）
+CREATE UNIQUE INDEX sns_auto_send_items_race_channel ON public.sns_auto_send_items (race_id, channel)
+  WHERE state NOT IN ('stopped', 'held_manual');
 
 -- 誤投稿の記録（L3 の条件・L2 へ戻す条件）。オーナーが管理画面から記録する。
 CREATE TABLE public.sns_auto_send_incidents (
@@ -53,6 +56,14 @@ CREATE TABLE public.sns_auto_send_incidents (
   note TEXT NOT NULL CHECK (char_length(note) BETWEEN 1 AND 500),
   recorded_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- 予約額を種類別に、日次上限をチャネル別にする（design-reviewer の P0・P1）。
+-- 既存の attempt_ceiling_microusd・daily_limit は個別承認の経路のために残し、claim の置き換えで使い分ける。
+ALTER TABLE public.sns_x_send_control
+  ADD COLUMN ceiling_x_url_microusd BIGINT CHECK (ceiling_x_url_microusd > 0),     -- URL を含む親の投稿の1回の上限額
+  ADD COLUMN ceiling_x_plain_microusd BIGINT CHECK (ceiling_x_plain_microusd > 0), -- 子の投稿の1回の上限額
+  ADD COLUMN daily_limit_x INTEGER CHECK (daily_limit_x > 0),                       -- X の1日の投稿の数（スレッドの各投稿を数える）
+  ADD COLUMN daily_limit_youtube INTEGER CHECK (daily_limit_youtube > 0);
 
 -- job と item の結びつき（item は下書きの配列を持たず、job 側から FK で指す）。
 ALTER TABLE public.sns_x_send_jobs ADD COLUMN auto_item_id UUID REFERENCES public.sns_auto_send_items(id);
@@ -113,13 +124,21 @@ END $$;
 -- 1. import_sns_preview_bundle（135）: v1 を受け付け、x_thread の本数分の X 下書きを thread_index つきで作る
 -- 2. guard_sns_preview_bundle_draft（135）: v1 は item の検査（risk・claims・display・mobile_gate）が合格した下書きだけ
 --    publish_blocked=false・publication_hold_reasons=[] にでき、approved・posted に進める。v0 は今のまま
+-- 3a. transition_sns_send_139 の claim: 予約額は、YouTube は0、X は thread_index=0 なら ceiling_x_url、それ以外は ceiling_x_plain
+--     （未設定なら従来の attempt_ceiling）。日次上限は daily_limit_x・daily_limit_youtube（未設定なら従来の daily_limit）
 -- 3. approve_sns_x_send（146 の最新）: 承認者が control.auto_approver_id のときは、mode='auto'・dry_run=false・
 --    item.state='notified' のときだけ通し、job.auto_item_id を入れる。v1 で検査合格なら bundle_import_id があっても通す
 -- 4. transition_sns_send_139（139・146）: v1 で検査合格なら bundle_import_id の拒否を外す
 -- 5. transition_sns_x_send のラッパ（146）と youtube_call_guard（146）: auto_item_id がある job は、
---    claim・check・begin_post・youtube_publish_begin のたびに item.state='notified'・mode='auto'・dry_run=false を確かめ、
---    外れたら hold('auto_stopped')。X の claim と YouTube の youtube_publish_begin は now() >= veto_until も確かめる
+--    claim・check・begin_post・youtube_call・youtube_publish_begin のたびに item.state='notified'・mode='auto' を確かめる。
+--    claim で外れたら hold('auto_stopped')、claim の後は RAISE（hold は queued・sending にしか効かないため）。
+--    claim は dry_run=false と now() >= veto_until も確かめる（X・YouTube とも。YouTube はアップロードと公開を同じ実行で行う案）
 -- 6. 送信が posted になったら item を 'sent' にする（スレッドは全部 posted のとき）
+
+-- 共通の cron ラッパは scrape_job_state に行が無い・mode='off' だと何もしない。試運転の前提として shadow で入れる（live はオーナーが L1 で）
+INSERT INTO public.scrape_job_state (job, mode)
+VALUES ('sns_auto_plan', 'shadow'), ('sns_send', 'shadow'), ('sns_metrics', 'shadow'), ('sns_daily', 'shadow'), ('sns_insights', 'shadow')
+ON CONFLICT (job) DO NOTHING;
 
 ALTER TABLE public.sns_auto_send_control ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sns_auto_send_items ENABLE ROW LEVEL SECURITY;

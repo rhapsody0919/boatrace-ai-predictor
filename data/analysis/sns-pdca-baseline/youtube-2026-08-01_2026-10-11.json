@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T11:59:03.811Z",
+  "generatedAt": "2026-10-12T12:41:49.335Z",
   "range": {
     "since": "2026-08-01",
     "to": "2026-10-11"
@@ -13,45 +13,46 @@
   "distribution": {
     "views": {
       "n": 35,
-      "sum": 9757,
-      "mean": 278.771,
-      "sd": 365.429,
+      "sum": 13575,
+      "mean": 387.857,
+      "sd": 366.097,
       "zeroDays": 0,
-      "median": 157,
-      "p25": 8,
-      "p75": 411.5,
-      "max": 1188,
-      "logSd": 2.07
+      "median": 248,
+      "p25": 168,
+      "p75": 460,
+      "max": 1190,
+      "logSd": 1.723
     },
     "engagedViews": {
       "n": 35,
-      "sum": 1783,
-      "mean": 50.943,
-      "sd": 82.716,
-      "zeroDays": 2,
-      "median": 14,
-      "p25": 4,
-      "p75": 45,
-      "max": 299,
-      "logSd": 1.589
+      "sum": 2346,
+      "mean": 67.029,
+      "sd": 93.3,
+      "zeroDays": 0,
+      "median": 24,
+      "p25": 14.5,
+      "p75": 51,
+      "max": 300,
+      "logSd": 1.312
     }
   },
   "engagedRatio30plus": {
-    "n": 19,
-    "sum": 2.694763206065777,
-    "mean": 0.142,
-    "sd": 0.078,
+    "n": 29,
+    "sum": 3.657604218249901,
+    "mean": 0.126,
+    "sd": 0.069,
     "zeroDays": 0
   },
   "averageViewPercentage30plus": {
-    "n": 18,
-    "sum": 1002.7900000000001,
-    "mean": 55.711,
-    "sd": 11.905,
+    "n": 28,
+    "sum": 1578.49,
+    "mean": 56.375,
+    "sd": 13.805,
     "zeroDays": 0
   },
-  "twoDayShareOfViews": 0.99,
-  "feedRate100In2Days": 0.514,
+  "ratedShareOfUploads": 0.707,
+  "twoDayShareOfViews": 0.992,
+  "feedRate100In2Days": 0.659,
   "trafficSourceLast28": [
     [
       "NO_LINK_OTHER",
@@ -231,18 +232,18 @@
       "id": "w85sKsR3ByU",
       "publishedAt": "2026-09-04T05:16:30Z",
       "twoDay": {
-        "views": 1,
-        "engagedViews": 1,
-        "averageViewPercentage": 9.05,
-        "averageViewDuration": 1,
+        "views": 4,
+        "engagedViews": 4,
+        "averageViewPercentage": 40.86,
+        "averageViewDuration": 8,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 7,
-        "engagedViews": 5,
-        "averageViewPercentage": 78.65,
-        "averageViewDuration": 16,
+        "views": 10,
+        "engagedViews": 8,
+        "averageViewPercentage": 68.45,
+        "averageViewDuration": 14,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -351,18 +352,18 @@
       "id": "R8mu_0BiLQ4",
       "publishedAt": "2026-09-06T00:39:49Z",
       "twoDay": {
-        "views": 387,
-        "engagedViews": 125,
-        "averageViewPercentage": 298.02,
-        "averageViewDuration": 41,
+        "views": 1090,
+        "engagedViews": 282,
+        "averageViewPercentage": 175.18,
+        "averageViewDuration": 24,
         "likes": 0,
         "subscribersGained": 1
       },
       "toDate": {
-        "views": 405,
-        "engagedViews": 134,
-        "averageViewPercentage": 287.6,
-        "averageViewDuration": 40,
+        "views": 1108,
+        "engagedViews": 291,
+        "averageViewPercentage": 174.19,
+        "averageViewDuration": 24,
         "likes": 0,
         "subscribersGained": 2
       }
@@ -371,37 +372,37 @@
       "id": "DtJmCsw7eSo",
       "publishedAt": "2026-09-06T00:47:18Z",
       "twoDay": {
-        "views": 6,
-        "engagedViews": 5,
-        "averageViewPercentage": 39.26,
-        "averageViewDuration": 6,
+        "views": 200,
+        "engagedViews": 24,
+        "averageViewPercentage": 63.85000000000001,
+        "averageViewDuration": 10,
         "likes": 0,
-        "subscribersGained": 0
+        "subscribersGained": 1
       },
       "toDate": {
-        "views": 9,
-        "engagedViews": 8,
-        "averageViewPercentage": 49.36,
-        "averageViewDuration": 8,
+        "views": 203,
+        "engagedViews": 27,
+        "averageViewPercentage": 64.11,
+        "averageViewDuration": 10,
         "likes": 0,
-        "subscribersGained": 0
+        "subscribersGained": 1
       }
     },
     {
       "id": "bQ5bEUJ5-40",
       "publishedAt": "2026-09-06T00:49:34Z",
       "twoDay": {
-        "views": 5,
-        "engagedViews": 4,
-        "averageViewPercentage": 67.21,
+        "views": 218,
+        "engagedViews": 24,
+        "averageViewPercentage": 67.03,
         "averageViewDuration": 12,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 5,
-        "engagedViews": 4,
-        "averageViewPercentage": 67.21,
+        "views": 218,
+        "engagedViews": 24,
+        "averageViewPercentage": 67.03,
         "averageViewDuration": 12,
         "likes": 0,
         "subscribersGained": 0
@@ -411,17 +412,17 @@
       "id": "39gU8zbQ0zc",
       "publishedAt": "2026-09-06T00:53:14Z",
       "twoDay": {
-        "views": 1181,
-        "engagedViews": 285,
-        "averageViewPercentage": 59.47,
+        "views": 1182,
+        "engagedViews": 287,
+        "averageViewPercentage": 59.260000000000005,
         "averageViewDuration": 12,
         "likes": 3,
         "subscribersGained": 2
       },
       "toDate": {
-        "views": 1182,
-        "engagedViews": 286,
-        "averageViewPercentage": 59.540000000000006,
+        "views": 1184,
+        "engagedViews": 288,
+        "averageViewPercentage": 59.31999999999999,
         "averageViewDuration": 12,
         "likes": 3,
         "subscribersGained": 2
@@ -433,15 +434,15 @@
       "twoDay": {
         "views": 1186,
         "engagedViews": 299,
-        "averageViewPercentage": 66.61,
+        "averageViewPercentage": 66.66,
         "averageViewDuration": 13,
         "likes": 1,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 1188,
-        "engagedViews": 299,
-        "averageViewPercentage": 66.61,
+        "views": 1190,
+        "engagedViews": 300,
+        "averageViewPercentage": 66.52,
         "averageViewDuration": 13,
         "likes": 1,
         "subscribersGained": 0
@@ -531,18 +532,18 @@
       "id": "3JfbfyvlNtE",
       "publishedAt": "2026-09-07T03:45:54Z",
       "twoDay": {
-        "views": 24,
-        "engagedViews": 11,
-        "averageViewPercentage": 51.190000000000005,
-        "averageViewDuration": 8,
+        "views": 877,
+        "engagedViews": 235,
+        "averageViewPercentage": 55.46,
+        "averageViewDuration": 9,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 27,
-        "engagedViews": 12,
-        "averageViewPercentage": 52.65,
-        "averageViewDuration": 8,
+        "views": 880,
+        "engagedViews": 236,
+        "averageViewPercentage": 55.52,
+        "averageViewDuration": 9,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -551,18 +552,18 @@
       "id": "JcOjFJCl7Ac",
       "publishedAt": "2026-09-07T03:48:22Z",
       "twoDay": {
-        "views": 3,
-        "engagedViews": 0,
-        "averageViewPercentage": 0,
-        "averageViewDuration": 0,
+        "views": 179,
+        "engagedViews": 17,
+        "averageViewPercentage": 47.92,
+        "averageViewDuration": 8,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 3,
-        "engagedViews": 0,
-        "averageViewPercentage": 0,
-        "averageViewDuration": 0,
+        "views": 179,
+        "engagedViews": 17,
+        "averageViewPercentage": 47.92,
+        "averageViewDuration": 8,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -571,18 +572,18 @@
       "id": "ZItY5S-B_G4",
       "publishedAt": "2026-09-07T05:33:29Z",
       "twoDay": {
-        "views": 27,
-        "engagedViews": 3,
-        "averageViewPercentage": 41.76,
-        "averageViewDuration": 8,
+        "views": 90,
+        "engagedViews": 9,
+        "averageViewPercentage": 52.54,
+        "averageViewDuration": 11,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 27,
-        "engagedViews": 3,
-        "averageViewPercentage": 41.76,
-        "averageViewDuration": 8,
+        "views": 91,
+        "engagedViews": 9,
+        "averageViewPercentage": 52.54,
+        "averageViewDuration": 11,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -591,17 +592,17 @@
       "id": "BUUYYnErZg0",
       "publishedAt": "2026-09-07T06:09:03Z",
       "twoDay": {
-        "views": 888,
-        "engagedViews": 219,
-        "averageViewPercentage": 65.91,
+        "views": 890,
+        "engagedViews": 220,
+        "averageViewPercentage": 65.72,
         "averageViewDuration": 11,
         "likes": 1,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 888,
-        "engagedViews": 219,
-        "averageViewPercentage": 65.91,
+        "views": 890,
+        "engagedViews": 220,
+        "averageViewPercentage": 65.72,
         "averageViewDuration": 11,
         "likes": 1,
         "subscribersGained": 0
@@ -631,20 +632,20 @@
       "id": "8hTZm8zcZ58",
       "publishedAt": "2026-09-08T04:51:12Z",
       "twoDay": {
-        "views": 24,
-        "engagedViews": 4,
-        "averageViewPercentage": 30.709999999999997,
-        "averageViewDuration": 6,
+        "views": 248,
+        "engagedViews": 17,
+        "averageViewPercentage": 34.9,
+        "averageViewDuration": 7,
         "likes": 0,
-        "subscribersGained": 0
+        "subscribersGained": 1
       },
       "toDate": {
-        "views": 24,
-        "engagedViews": 4,
-        "averageViewPercentage": 30.709999999999997,
-        "averageViewDuration": 6,
+        "views": 248,
+        "engagedViews": 17,
+        "averageViewPercentage": 34.9,
+        "averageViewDuration": 7,
         "likes": 0,
-        "subscribersGained": 0
+        "subscribersGained": 1
       }
     },
     {
@@ -771,18 +772,18 @@
       "id": "rUatlbhI0uE",
       "publishedAt": "2026-09-10T04:22:46Z",
       "twoDay": {
-        "views": 16,
-        "engagedViews": 5,
-        "averageViewPercentage": 148.15,
-        "averageViewDuration": 25,
+        "views": 395,
+        "engagedViews": 21,
+        "averageViewPercentage": 88.36,
+        "averageViewDuration": 15,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 21,
-        "engagedViews": 9,
-        "averageViewPercentage": 125.11000000000001,
-        "averageViewDuration": 21,
+        "views": 400,
+        "engagedViews": 25,
+        "averageViewPercentage": 89.63,
+        "averageViewDuration": 15,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -791,18 +792,18 @@
       "id": "hKf_wFVXtsE",
       "publishedAt": "2026-09-10T04:23:03Z",
       "twoDay": {
-        "views": 13,
-        "engagedViews": 3,
-        "averageViewPercentage": 48.78,
-        "averageViewDuration": 8,
+        "views": 419,
+        "engagedViews": 30,
+        "averageViewPercentage": 73.16,
+        "averageViewDuration": 13,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 13,
-        "engagedViews": 3,
-        "averageViewPercentage": 48.78,
-        "averageViewDuration": 8,
+        "views": 423,
+        "engagedViews": 30,
+        "averageViewPercentage": 73.16,
+        "averageViewDuration": 13,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -811,18 +812,18 @@
       "id": "oeiyEmnt5bM",
       "publishedAt": "2026-09-11T02:31:48Z",
       "twoDay": {
-        "views": 2,
-        "engagedViews": 0,
-        "averageViewPercentage": 0,
-        "averageViewDuration": 0,
+        "views": 213,
+        "engagedViews": 16,
+        "averageViewPercentage": 85.16,
+        "averageViewDuration": 14,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 2,
-        "engagedViews": 0,
-        "averageViewPercentage": 0,
-        "averageViewDuration": 0,
+        "views": 213,
+        "engagedViews": 16,
+        "averageViewPercentage": 85.16,
+        "averageViewDuration": 14,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -831,18 +832,18 @@
       "id": "6Of7h1puM_o",
       "publishedAt": "2026-09-11T02:32:13Z",
       "twoDay": {
-        "views": 6,
-        "engagedViews": 1,
-        "averageViewPercentage": 26.669999999999998,
-        "averageViewDuration": 5,
+        "views": 353,
+        "engagedViews": 41,
+        "averageViewPercentage": 40.58,
+        "averageViewDuration": 8,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 6,
-        "engagedViews": 1,
-        "averageViewPercentage": 26.669999999999998,
-        "averageViewDuration": 5,
+        "views": 353,
+        "engagedViews": 41,
+        "averageViewPercentage": 40.58,
+        "averageViewDuration": 8,
         "likes": 0,
         "subscribersGained": 0
       }
@@ -851,17 +852,17 @@
       "id": "gkMqyaesMzc",
       "publishedAt": "2026-09-14T04:59:49Z",
       "twoDay": {
-        "views": 174,
-        "engagedViews": 9,
-        "averageViewPercentage": 49.09,
+        "views": 207,
+        "engagedViews": 10,
+        "averageViewPercentage": 47.43,
         "averageViewDuration": 9,
         "likes": 0,
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 184,
-        "engagedViews": 14,
-        "averageViewPercentage": 78.46,
+        "views": 217,
+        "engagedViews": 15,
+        "averageViewPercentage": 75.4,
         "averageViewDuration": 15,
         "likes": 0,
         "subscribersGained": 0
@@ -879,7 +880,7 @@
         "subscribersGained": 0
       },
       "toDate": {
-        "views": 191,
+        "views": 193,
         "engagedViews": 21,
         "averageViewPercentage": 41.5,
         "averageViewDuration": 7,
