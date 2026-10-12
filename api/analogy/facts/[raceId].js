@@ -5,6 +5,8 @@
  * 応答: status（api/_lib/analogyV16.js の resolveStatus）、today（今日の6艇の値と6艇中の順位・範囲キー・前日までの走数）、
  *   facts（今日の6艇それぞれの範囲キー VC・NC・NCR・VA の集計。キーで引く）、exhibition（stage=exhibition のとき、
  *   今日の展示の値: 展示タイム・順位・風速区分）。AIの見立ては /api/analogy/contribution（stage 付き）を画面が読む
+ * ?include=racers のときだけ racers（6艇の進入傾向と今節の展示タイム順位、api/_lib/racerEntryExhibition.js）も返す。
+ *   毎日の全貌 Shorts 用（BOA-855）。画面は渡さない。snapshot が無いレースでも返す
  * NCR が優勝戦のときは、その範囲から今節の平均着順点を外す（spec A-4。優勝戦の枠は準優勝戦までの成績で決まる）
  */
 import {
@@ -12,6 +14,7 @@ import {
   objectPath,
   readObject,
 } from "../../_lib/analogyV16.js";
+import { loadRacers } from "../../_lib/racerEntryExhibition.js";
 
 export const config = { runtime: "edge" };
 
@@ -29,7 +32,17 @@ export function withoutSeriesScoreOnFinal(key, facts) {
   return { ...facts, by };
 }
 
-export default createHandler(async ({ raceId, stage, state, snapshot }) => {
+export default createHandler(async ({ raceId, url, ...ctx }) => {
+  const [body, racers] = await Promise.all([
+    buildFacts({ raceId, ...ctx }),
+    url.searchParams.get("include") === "racers"
+      ? loadRacers(raceId)
+      : undefined,
+  ]);
+  return racers === undefined ? body : { ...body, racers };
+});
+
+async function buildFacts({ raceId, stage, state, snapshot }) {
   const rc = state.racecard;
   if (!rc) return {};
   const today = await readObject(
@@ -66,4 +79,4 @@ export default createHandler(async ({ raceId, stage, state, snapshot }) => {
     facts,
     exhibition,
   };
-});
+}
