@@ -50,3 +50,11 @@ claim/check/begin_postで期限・鮮度・承認版を再検査する。claim�
 ## 依頼10（142）の追加契約
 
 YouTube媒体はvideo＋任意coverの実hash照合に拡張。runYoutubeQueueJobのadapterにはbeforeCall/ uploadedコールバックが追加され、公開確認・PTクォータ・期限後の照合を142で扱う。詳細とオーナー判断の停止点は[Shorts送信契約](../sns-hub-shorts-send/contract.md)を参照。既存YouTube専用のモックadapter実装はこの新契約へ更新する。139の試行時媒体計数は変更しない。
+
+## 自動送信と毎日の基準日（SQL153、ADR 0094、2026-10-13）
+
+- 「親子は個別承認」には ADR 0094 の例外がある。自動送信の承認者（x-send の contract 参照）は、item が `notified` のときに親から順に承認し、子の `deadline_queue.parent_job_id` は直前の投稿の job（index n は n-1 に返信）。子の `scheduled_at` は親から index 分ずつずらす。runner は親が posted の子だけを選ぶ（DB は今までどおり `parent_not_posted` で保留する）
+- 送る時刻は締切の60分前（`schedule_minutes=60`、2026-10-12 ユーザー決定。設定値の変更でコードは変えない）。`expiry_minutes=30` は維持
+- **基準日は自動で当日にする**（2026-10-13 ユーザー決定）。`roll_sns_send_baselines()` を `sns-auto-plan` が毎回呼び、JST の日付が変わっていたら `daily_baseline_date` を当日・`daily_external_count` を0にする。オーナーが一度も設定していない（NULL）ときは何もしない。オーナーが手で出した投稿は管理画面から足す
+- 日次上限はチャネル別: `daily_limit_x`（スレッドの各投稿を数える）・`daily_limit_youtube`（未設定なら `daily_limit`）。スレッドの親の claim は、スレッド全体の本数が今日の枠に入るときだけ通す（途中で切れない）
+- YouTube も締切の60分前（`veto_until`）にアップロードを始め、同じ実行で処理の完了を待って公開する（下の shorts-send の contract。2026-10-13 ユーザー決定）

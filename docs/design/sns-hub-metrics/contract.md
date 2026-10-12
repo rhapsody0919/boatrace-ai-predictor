@@ -49,3 +49,11 @@ GETは共通の読み始め時刻をcreated_at/posted_atの上限にしてidのg
 ## 返答02cに基づく修正（2026-10-07）
 
 provider入力は保存窓への適合検査と分離し、値・欠測理由・曲線・その他の入力妥当性を変換前に検査する。不正ならfailedとし、その収集結果の全行を保存しない。正常な入力で対象窓不一致・遅いsnapshot・最終データ時点不足がある場合だけ欠測へ変換し、保存用の厳密なvalidateObservationを再度通す。保存APIの検査は緩めない。
+
+## 累積値の時刻の許容差と取り込みジョブ（SQL154、ADR 0094、2026-10-13）
+
+- 上の「累積スナップショットは対象時点での取得のみ値を保存でき、遅れて取った累積値は欠測とする（時刻の許容差は未承認）」は、**48h・168h の時刻から15分以内に取れた累積値は保存する**に変える（2026-10-13 ユーザー決定）。`observed_at` には実際の取得時刻を残し、累積値の `data_through` は `observed_at` と同じ値にする。15分を超えたら値は null・欠測理由「取得が遅れた」。期間の値（period）の規則は変えない
+- 送信の job が posted になると、`sns_metric_jobs` に 48h・7d の2件ができる（X はスレッドの子にも作る）。`due_at = posted_at + 48h / 168h`
+- 暦日の値（YouTube Analytics の動画ごと・チャネル全体、GA4 の流入）は観測の表ではなく `sns_channel_daily` に入れる（136 の窓に暦日を入れない）
+- UTM の表（`sns_post_tracking`）は campaign に `race-full` を許し、`template_variant_id` を任意にした（bundle 由来の下書きは template_variant_id が NULL のため）
+- collector の JS 側の検査（遅い snapshot を欠測にする処理）を15分の許容差に合わせるのは、取り込みの実装（sns-pdca-loop の tasks PR-6）で行う

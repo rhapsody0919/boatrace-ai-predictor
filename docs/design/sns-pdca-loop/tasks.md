@@ -6,13 +6,13 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-1 DB（153・154）
 
-- [ ] **1. 153 の置き換える関数を書く**
+- [x] **1. 153 の置き換える関数を書く**
   本番の `pg_get_functiondef` を土台に、153 の「置き換える既存の関数」6つ（取り込み・公開保留のトリガー・approve・transition_sns_send_139・transition_sns_x_send のラッパと youtube_call_guard・posted で item を sent にする）を CREATE OR REPLACE で書く。置き換える前の定義を `docs/db-migration/153-runbook.md` に戻し方として保存する。`transition_sns_x_send` は SECURITY DEFINER を維持
-- [ ] **2. 154 を確定する**（累積値の許容差15分は 2026-10-13 決定）
+- [x] **2. 154 を確定する**（累積値の許容差15分は 2026-10-13 決定）
 - [ ] **2b. L0 の前に YouTube の権限を確かめる**: 投稿用の `YOUTUBE_REFRESH_TOKEN`（scope は youtube.upload）で、非公開の動画1本を `videos.update` で公開に切り替えられるか、カスタムサムネイルが 403（チャンネルの電話番号の確認）にならないかを試す。できなければオーナーにトークンの取り直し（`youtube` の scope）か電話番号の確認を頼む
-- [ ] **3. PGlite の検証を足す**
-  既存の `scripts/maintenance/verify-sns-*.js` に足す（新しい verify を作るなら `verify-registry.json` に登録）。最低限の再現テスト: v0 は今までどおり公開できない／v1 は検査合格だけ公開できる／スレッド6件を1つの素材で作れる／6件のスレッドが日次上限で途中で切れない／YouTube の claim は X の月の台帳を消費しない／URL つきの親と子で予約額が違う／同じレースの item は2つ作れない／自動送信の承認者は mode=auto・notified でだけ通る／止めた後の claim・check・begin_post・youtube_publish_begin がすべて hold になる／通知前（notifying）は approve できない／dry_run=true は claim しない／veto_until 前の X の claim は進まない／YouTube の非公開アップロードの claim は veto_until を待たない／子は親が posted でないと claim しない／`renew_sns_x_send_period` は期間の途中で拒否／`reserve_sns_x_read` は残りの送信分を割るとき false／posted で metric_jobs が2件できる／147 のトリガー `sns_diff_approval` と矛盾しない
-- [ ] **4. 各 contract.md に ADR 0094 への参照を足す**（x-send・deadline-queue・mobile-approval・shorts-send・metrics）。deadline-queue と shorts-send には「基準日は自動で当日にする」「YouTube は60分前にアップロードし同じ実行で公開」、metrics には「累積値は15分の許容差」も足す
+- [x] **3. PGlite の検証を足す**
+  既存の `scripts/maintenance/verify-sns-*.js` に足す（新しい verify を作るなら `verify-registry.json` に登録）。最低限の再現テスト: v0 は今までどおり公開できない／v1 は検査合格だけ公開できる／スレッド6件を1つの素材で作れる／6件のスレッドが日次上限で途中で切れない／YouTube の claim は X の月の台帳を消費しない／URL つきの親と子で予約額が違う／同じレースの item は2つ作れない／自動送信の承認者は mode=auto・notified でだけ通る／止めた後の claim・check・begin_post が held になり youtube_publish_begin は拒否される／通知前（notifying）は approve できない／dry_run=true は claim しない／veto_until 前の X・YouTube の claim は進まない（YouTube も60分前にアップロードを始める 2026-10-13 決定に合わせた）／子は親が posted でないと claim しない／`renew_sns_x_send_period` は期間の途中で拒否／`reserve_sns_x_read` は残りの送信分を割るとき false／posted で metric_jobs が2件できる／147 のトリガー `sns_diff_approval` と矛盾しない
+- [x] **4. 各 contract.md に ADR 0094 への参照を足す**（x-send・deadline-queue・mobile-approval・shorts-send・metrics）。deadline-queue と shorts-send には「基準日は自動で当日にする」「YouTube は60分前にアップロードし同じ実行で公開」、metrics には「累積値は15分の許容差」も足す
 - [ ] **5. オーナー: 153 → 154 を SQL Editor で適用**。事前・事後の読み取りの確認は Claude（plan の system-architect の手順）。APPLIED.md を更新
 
 ## PR-2 素材 v1 の取り込み

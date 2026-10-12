@@ -67,6 +67,13 @@ const ALLOWED_KEY_REMOVALS = {
     "3モデル体系のunified一本化で撤去（凍結）",
   "get_predictions_by_date_light.recommendedModel":
     "3モデル体系のunified一本化で撤去（凍結）",
+  // 146 で 139 の transition_sns_x_send を transition_sns_send_139 に改名し、同名の新しい関数はラッパになった
+  // （146 は CREATE FUNCTION のため、この検査は 153 で初めて 139 の定義と比べる）。
+  // 2つのキーは 153 の transition_sns_send_139 にそのまま残っている
+  "transition_sns_x_send.posted":
+    "146 で本体を transition_sns_send_139 に改名（キーは改名先に残る）",
+  "transition_sns_x_send.daily_claim_date_changed":
+    "146 で本体を transition_sns_send_139 に改名（キーは改名先に残る）",
 };
 
 /** ファイル名から番号（"103" 等。サブ番号付きの "013b" も許す）を取り出す */

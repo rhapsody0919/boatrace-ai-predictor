@@ -37,3 +37,11 @@ node --test --test-concurrency=1 scripts/maintenance/verify-sns-shorts-send.js s
 node scripts/maintenance/verify-sns-bundle-import.js
 
 全てローカルPGlite＋モック。品質ゲート台帳は変更しない。実adapter・外部並行接続・UI実動画再生は未検証。
+
+## 自動送信・時刻・基準日・予約額（SQL153、ADR 0094、2026-10-13）
+
+- **YouTube は締切の60分前（`veto_until`）にアップロードを始め、同じ実行で処理の完了を待って公開する**（2026-10-13 ユーザー決定）。案B（非公開で上げて確認してから公開）は維持。間に合わなければ非公開のまま残る（今の契約どおり）。自動送信の承認者の job は `veto_until` より前に claim しない
+- 止めた後（item が stopped・自動を切った）は `youtube_call`・`youtube_publish_begin` を RAISE する。アップロード済みなら呼び出し側が `youtube_retain` で非公開のまま残す
+- **基準日は自動で当日にする**（2026-10-13 ユーザー決定）。`roll_sns_send_baselines()` が、`verified=true` かつ太平洋時間の日付が変わっていたら `baseline_day` を当日・`external_uploads`・`external_general` を0にする。未確認（verified=false・NULL）のときは何もしない
+- YouTube の claim は X の月の台帳を消費しない（予約額0。YouTube Data API は無料で、クォータは本 contract の台帳で数える）
+- 日次上限は `daily_limit_youtube`（未設定なら `daily_limit`）
