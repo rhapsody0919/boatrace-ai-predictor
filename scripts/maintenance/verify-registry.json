@@ -822,7 +822,7 @@
     {
       "script": "verify-analogy-racers.js",
       "tier": "ci",
-      "guards": "/api/analogy/facts の include=racers（BOA-855、毎日の全貌 Shorts 用）: 今節の展示タイム順位が節の初日からこのレースより前の同じ会場の走だけで、同着は同順位・展示の無い艇は母数から外すこと。進入傾向は venue_code=0 の行の全会場とこの会場の分で、行の無い選手は null。include を渡さない画面には racers を返さず追加の読み出しもしないこと。snapshot の無いレースでも返すこと"
+      "guards": "/api/analogy/facts の include=racers（BOA-855、毎日の全貌 Shorts 用）: 今節の展示タイム順位が節の初日からこのレースより前の同じ会場の走だけで、同着は同順位・展示の無い艇は母数から外すこと。進入傾向は venue_code=0 の行の全会場とこの会場の分で、行の無い選手は null。include を渡さない画面には racers を返さず追加の読み出しもしないこと。snapshot の無いレースでも返すこと。各走の state（ok・absent・missing）と締切前のレースを入れないこと、集計の終わり以前の日のレースは course_entry=null・after_race になること（BOA-860）"
     },
     {
       "script": "verify-analogy-v16-snapshots-migration.js",
