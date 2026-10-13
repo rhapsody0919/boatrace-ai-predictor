@@ -812,7 +812,11 @@ function RaceBasicInfoTab({
                           </div>
                         )}
                         <p className="rbit-accident-note">
-                          {t("basicInfo.accidentNote")}
+                          {t(
+                            player.grade === "B2"
+                              ? "basicInfo.accidentNoteB2"
+                              : "basicInfo.accidentNote",
+                          )}
                         </p>
                       </div>
                     );
