@@ -1054,6 +1054,11 @@
       "script": "verify-sns-x-oauth.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知）、PostgREST の条件付き UPDATE（外部接続なし）"
+    },
+    {
+      "script": "verify-sns-x-adapter.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 17: X API v2 の実 adapter（分割アップロード initialize・append（multipart の segment_index・media）・finalize・STATUS、POST /2/tweets の media・reply、トークンは1つの adapter で1回、投稿の失敗は再試行しない・X の詳細な本文をエラーに入れない、posted_at は投稿 ID の snowflake から）と、runXSendJob に実 adapter をつないだ承認から posted まで（SQL137 を PGlite、fetch はモックで外部接続なし）"
     }
   ]
 }
