@@ -268,6 +268,11 @@
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
     },
     {
+      "script": "verify-node-function-json-imports.js",
+      "tier": "ci",
+      "guards": "nodejs の関数が JSON を import して読み込みで落ちないこと（2026-10-13、/api/admin/sns-hub/mobile-approval が毎回失敗し「今日のレースを取得できません」になった）。api/ で .json を import してよいのは runtime: edge の関数だけ（api/_lib は不可）、mobile-approval.js を実際に Node で import できること"
+    },
+    {
       "script": "verify-no-undef.js",
       "tier": "ci",
       "timeoutSec": 300,
