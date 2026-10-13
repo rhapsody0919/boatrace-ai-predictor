@@ -27,6 +27,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 import {
   formatGenerationDate,
   isClippedByGeneration,
+  isVenueRankSnapshotBeforeGeneration,
   officialTallyState,
 } from "../../utils/motorGeneration";
 import { motorRateView, motorRate3View } from "../../utils/motorFreshRate";
@@ -440,6 +441,15 @@ function MotorConditionChart({
   const venueRankCell = (motorNumber) => {
     if (venueRanks?.state === "error") {
       return t("analysis.motor.venueRankError");
+    }
+    if (
+      isVenueRankSnapshotBeforeGeneration({
+        raceDate: selectedRace?.slice(0, 10) ?? null,
+        scrapedDate: venueRanks?.scrapedDate ?? null,
+        generationStart,
+      })
+    ) {
+      return "—";
     }
     const hit = venueRanks?.ranks.get(motorNumber);
     // スナップショットに載っていないモーター（入れ替え直後の会場で欠けることがある）
