@@ -403,5 +403,34 @@ check(
   null,
 );
 
+// ---- Codex の BOA-856 報告の3点（getVenueMeetStart の窓・開催日の基準・空入力）を変えていないこと ----
+// getVenueMeetStart は種別の行の日付だけを開催日として渡し、種別が1行も無ければ null を返す。
+// 報告の合成入力（出走表 10/11〜13、種別は 10/11 が1日目・10/13 が2日目、最終日の印なし）で、
+// 旧実装は 2026-10-13（種別の日付だけだと 10/11→10/13 が2日空き）、出走表を基準にする
+// getMeetScoreboard・meetStartOf は 2026-10-11 だった。この差はそのまま残す
+const CODEX_CONDS = [
+  { race_id: "2026-10-11-05-01", series_day: 1, is_final_day: false },
+  { race_id: "2026-10-13-05-01", series_day: 2, is_final_day: false },
+];
+check(
+  "getVenueMeetStart の組み方（種別の日付だけ）は 2026-10-13（旧と同じ）",
+  meetStartFromRows(datesOf(CODEX_CONDS), CODEX_CONDS, "2026-10-13"),
+  "2026-10-13",
+);
+check(
+  "getMeetScoreboard・meetStartOf の組み方（出走表の日付）は 2026-10-11（旧と同じ）",
+  meetStartFromRows(
+    ["2026-10-11", "2026-10-12", "2026-10-13"],
+    CODEX_CONDS,
+    "2026-10-13",
+  ) ?? "2026-10-13",
+  "2026-10-11",
+);
+check(
+  "getVenueMeetStart の組み方は種別が空なら null（旧と同じ。呼び出し側は ?? を付けない）",
+  meetStartFromRows(datesOf([]), [], "2026-10-13"),
+  null,
+);
+
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);
 process.exit(failures === 0 ? 0 : 1);
