@@ -14,10 +14,11 @@ export async function getYoutubeAccessToken({
   clientId,
   clientSecret,
   refreshToken,
+  fetchImpl = fetch,
 }) {
   if (!clientId || !clientSecret || !refreshToken) return null;
 
-  const response = await fetch("https://oauth2.googleapis.com/token", {
+  const response = await fetchImpl("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({

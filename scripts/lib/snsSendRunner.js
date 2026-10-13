@@ -26,9 +26,15 @@ export const YOUTUBE_POLL_WAIT_SEC = 30;
 const slug = (message) =>
   /^[a-z_]{1,64}$/.test(message ?? "") ? message : "unexpected_error";
 
+/** 1回の実行で見る候補の上限。送る前の検査に落ちた job は送信の件数（maxJobs）に数えない */
+export const SNS_SEND_MAX_CANDIDATES = 20;
+
 /**
  * @param {{mode: string, now: () => Date, shouldStop: () => boolean}} ctx
- * @param {{store, adapters: {x: () => Promise<object>, youtube: () => Promise<object>}, preflight, loadMedia, wait?, maxJobs?, pollWaitSec?}} deps
+ * @param {{store, adapters: {x: () => Promise<object>, youtube: () => Promise<object>}, preflight, loadMedia, notify?, wait?, maxJobs?, pollWaitSec?}} deps
+ * notify(text): 一度きりの事象（要照合・送信の失敗）を Slack に直接知らせる。続いている状態（検査で止まっている・トークンを取れない）は
+ * report.alerts に入れ、監視（scrape-monitor、5分ごと）が同じ key を再通知の間隔ごとに知らせる。
+ * report は2分ごとの実行で上書きされるので、一度きりの事象を report だけに入れると監視が読む前に消える
  */
 export async function runSnsSend(
   ctx,
@@ -37,8 +43,10 @@ export async function runSnsSend(
     adapters,
     preflight,
     loadMedia,
+    notify = async () => {},
     wait = (sec) => new Promise((resolve) => setTimeout(resolve, sec * 1000)),
     maxJobs = SNS_SEND_MAX_JOBS,
+    maxCandidates = SNS_SEND_MAX_CANDIDATES,
     pollWaitSec = YOUTUBE_POLL_WAIT_SEC,
   },
 ) {
@@ -46,13 +54,34 @@ export async function runSnsSend(
   // shadow では DB の状態を変えない（sweep も行わない）
   if (live) await store.sweep();
   const controls = await store.controls();
-  const jobs = await store.dueJobs(ctx.now(), maxJobs);
+  const candidates = await store.dueJobs(ctx.now(), maxCandidates);
   const results = [];
   const alerts = [];
+  const tell = async (text) => {
+    try {
+      await notify(text);
+    } catch (error) {
+      console.error(`Slack に通知できません（${text}）: ${error.message}`);
+    }
+  };
+  // トークンは1回の実行でチャネルごとに1回だけ取る（失敗も覚えて、同じ実行の残りの job では取り直さない）
+  const adapterCache = new Map();
+  const adapterFor = (channel) => {
+    if (!adapterCache.has(channel))
+      adapterCache.set(
+        channel,
+        adapters[channel]().then(
+          (adapter) => ({ adapter }),
+          (error) => ({ error }),
+        ),
+      );
+    return adapterCache.get(channel);
+  };
+  let attempted = 0;
   let posted = 0;
 
-  for (const job of jobs) {
-    if (ctx.shouldStop()) break;
+  for (const job of candidates) {
+    if (attempted >= maxJobs || ctx.shouldStop()) break;
     const result = { id: job.id, channel: job.channel };
     results.push(result);
     try {
@@ -71,17 +100,16 @@ export async function runSnsSend(
       result.outcome = live ? "dry_run" : "shadow";
       continue;
     }
-    let adapter;
-    try {
-      adapter = await adapters[job.channel]();
-    } catch (error) {
+    const { adapter, error: tokenError } = await adapterFor(job.channel);
+    if (tokenError) {
       result.outcome = "token_failed";
       alerts.push({
         key: `token:${job.channel}`,
-        text: `${job.channel} のトークンを取れないので送信していない（claim していない）: ${error.message}`,
+        text: `${job.channel} のトークンを取れないので送信していない（claim していない）: ${tokenError.message}`,
       });
       continue;
     }
+    attempted += 1;
     try {
       const done =
         job.channel === "x"
@@ -105,18 +133,16 @@ export async function runSnsSend(
       result.error_code = done.error_code ?? null;
       if (done.state === "posted") posted += 1;
       if (done.state === "reconcile")
-        alerts.push({
-          key: `reconcile:${job.id}`,
-          text: `要照合: ${job.channel} job ${job.id}（${done.youtube_stage ?? done.error_code ?? "結果が不明"}）。管理画面で照合する`,
-        });
+        await tell(
+          `SNS の送信が要照合: ${job.channel} job ${job.id}（${done.youtube_stage ?? done.error_code ?? "結果が不明"}）。管理画面で照合する`,
+        );
     } catch (error) {
       // job の状態（held・要照合）は送信の関数が DB に残している。ここでは理由を知らせるだけ
       result.outcome = "error";
       result.reason = slug(error.message);
-      alerts.push({
-        key: `send:${job.id}`,
-        text: `送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
-      });
+      await tell(
+        `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
+      );
     }
   }
   return {

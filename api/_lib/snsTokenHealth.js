@@ -1,54 +1,61 @@
 /**
  * 送信・取り込みの鍵の健全性（sns-pdca-loop tasks 19）。Vercel の Sensitive の値は手元で読めないので、
  * 本番の関数の中で「refresh できるか」「scope が足りるか」だけを確かめ、値は返さない。
- * X のトークンは期限が近ければ実際に refresh して保存する（getXAccessToken の通常の動き）。
+ * X は保存値を読んで復号できるかだけを見る（refresh token は使い切りなので、確認のためには refresh しない）。
  */
-import { getXAccessToken } from "./snsTokenStore.js";
+import { decryptTokens, REFRESH_MARGIN_MS } from "./snsTokenStore.js";
+import { getYoutubeAccessToken } from "./youtubeUpload.js";
 
-const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 const SCOPE = "https://www.googleapis.com/auth/";
 
-async function googleCheck(
-  { clientId, clientSecret, refreshToken },
-  fetchImpl,
-) {
-  if (!clientId || !clientSecret || !refreshToken) return { configured: false };
-  const response = await fetchImpl(GOOGLE_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: "refresh_token",
-    }),
-    signal: AbortSignal.timeout(30000),
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || !body.access_token)
-    return {
-      configured: true,
-      refresh: false,
-      error: `HTTP ${response.status}${body.error ? ` ${body.error}` : ""}`,
-    };
+// 送信と同じ関数（getYoutubeAccessToken）で refresh し、tokeninfo で scope を読む
+async function googleCheck(keys, fetchImpl) {
+  if (!keys.clientId || !keys.clientSecret || !keys.refreshToken)
+    return { configured: false };
+  let accessToken;
+  try {
+    accessToken = await getYoutubeAccessToken({ ...keys, fetchImpl });
+  } catch (error) {
+    return { configured: true, refresh: false, error: error.message };
+  }
   const info = await fetchImpl(
-    `${GOOGLE_TOKENINFO_URL}?access_token=${encodeURIComponent(body.access_token)}`,
-    {
-      signal: AbortSignal.timeout(30000),
-    },
+    `${GOOGLE_TOKENINFO_URL}?access_token=${encodeURIComponent(accessToken)}`,
+    { signal: AbortSignal.timeout(30000) },
   );
   const infoBody = await info.json().catch(() => ({}));
   const scopes = String(infoBody.scope ?? "")
     .split(" ")
     .filter(Boolean)
     .map((s) => s.replace(SCOPE, ""));
-  return {
-    configured: true,
-    refresh: true,
-    scopes,
-    accessToken: body.access_token,
-  };
+  return { configured: true, refresh: true, scopes, accessToken };
+}
+
+async function xCheck(env, xDb, now) {
+  if (
+    !env.X_OAUTH_CLIENT_ID ||
+    !env.X_OAUTH_CLIENT_SECRET ||
+    !env.SNS_TOKEN_ENC_KEY
+  )
+    return { configured: false };
+  try {
+    const row = await xDb.read();
+    if (!row) return { configured: true, connected: false };
+    await decryptTokens(row, env.SNS_TOKEN_ENC_KEY);
+    return {
+      configured: true,
+      connected: true,
+      decrypt: true,
+      accountId: Boolean(row.account_id),
+      accessExpiresAt: row.access_expires_at,
+      refreshDue:
+        Date.parse(row.access_expires_at) - REFRESH_MARGIN_MS <=
+        now().getTime(),
+      lastRefreshedAt: row.refreshed_at ?? null,
+    };
+  } catch (error) {
+    return { configured: true, connected: false, error: error.message };
+  }
 }
 
 export async function checkTokenHealth({
@@ -57,34 +64,6 @@ export async function checkTokenHealth({
   xDb,
   now = () => new Date(),
 } = {}) {
-  const result = {};
-
-  if (
-    !env.X_OAUTH_CLIENT_ID ||
-    !env.X_OAUTH_CLIENT_SECRET ||
-    !env.SNS_TOKEN_ENC_KEY
-  ) {
-    result.x = { configured: false };
-  } else {
-    try {
-      const { accountId } = await getXAccessToken({
-        db: xDb,
-        keyBase64: env.SNS_TOKEN_ENC_KEY,
-        clientId: env.X_OAUTH_CLIENT_ID,
-        clientSecret: env.X_OAUTH_CLIENT_SECRET,
-        fetchImpl,
-        maxWaits: 3,
-      });
-      result.x = {
-        configured: true,
-        connected: true,
-        accountId: Boolean(accountId),
-      };
-    } catch (error) {
-      result.x = { configured: true, connected: false, error: error.message };
-    }
-  }
-
   const youtube = await googleCheck(
     {
       clientId: env.YOUTUBE_CLIENT_ID,
@@ -93,7 +72,6 @@ export async function checkTokenHealth({
     },
     fetchImpl,
   );
-  delete youtube.accessToken;
   if (youtube.refresh)
     Object.assign(youtube, {
       // アップロード（videos.insert）と公開の切り替え（videos.update）に要る scope
@@ -104,7 +82,7 @@ export async function checkTokenHealth({
         ["youtube", "youtube.force-ssl", "youtubepartner"].includes(s),
       ),
     });
-  result.youtube = youtube;
+  delete youtube.accessToken;
 
   const analytics = await googleCheck(
     {
@@ -126,6 +104,6 @@ export async function checkTokenHealth({
     analytics.reportsStatus = reports.status;
   }
   delete analytics.accessToken;
-  result.analytics = analytics;
-  return result;
+
+  return { x: await xCheck(env, xDb, now), youtube, analytics };
 }

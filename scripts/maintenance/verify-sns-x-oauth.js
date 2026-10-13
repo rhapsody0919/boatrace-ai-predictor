@@ -339,7 +339,7 @@ test("access token: 同時に3つ呼んでも refresh は1回（使い切りの 
   );
 });
 
-test("access token: refresh に失敗したらロックを外して通知、保存に失敗したら連携のやり直しを通知", async () => {
+test("access token: refresh に失敗したらロックを外して投げる（通知しない）、保存に失敗したら連携のやり直しを通知", async () => {
   const db = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
   const notices = [];
   await assert.rejects(
@@ -352,7 +352,8 @@ test("access token: refresh に失敗したらロックを外して通知、保�
     /トークンを取得できません/,
   );
   assert.equal(db.row.locked_by, null);
-  assert.match(notices[0], /更新できません/);
+  // refresh の失敗は続く状態なので通知しない（runner が report.alerts で再通知の間隔ごとに知らせる）
+  assert.deepEqual(notices, []);
 
   const lost = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
   lost.saveLocked = async () => false; // ロックが切れて別の呼び出しに取られた

@@ -77,5 +77,6 @@ export default createScrapeCronHandler({
         readCurrent: null,
       }),
       loadMedia: loadXMedia,
+      notify,
     }),
 });

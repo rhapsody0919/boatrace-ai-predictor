@@ -237,9 +237,13 @@ test("live・dry_run=false: X と YouTube を送って posted、最大件数を�
 test("YouTube の処理が3回の確認で終わらなければ、公開せず非公開のまま残す", async () => {
   const y = await approvedJob("youtube");
   const youtube = createMockYoutubeAdapter({ processingStatus: "processing" });
+  const notices = [];
   const result = await runSnsSend(
     ctx(),
-    deps({ adapters: { youtube: async () => youtube } }),
+    deps({
+      adapters: { youtube: async () => youtube },
+      notify: async (t) => notices.push(t),
+    }),
   );
   const row = await job(y.id);
   assert.equal(row.state, "reconcile");
@@ -252,7 +256,10 @@ test("YouTube の処理が3回の確認で終わらなければ、公開せず�
     youtube.calls.some((c) => c.method === "videos.update"),
     false,
   );
-  assert.match(result.report.alerts[0].key, /^reconcile:/);
+  // 一度きりの事象は report（2分ごとに上書き）ではなく、その場で Slack に知らせる
+  assert.equal(notices.length, 1);
+  assert.match(notices[0], /要照合/);
+  assert.deepEqual(result.report.alerts, []);
 });
 
 test("スレッドの子は親が posted になってから選ぶ", async () => {
@@ -375,4 +382,126 @@ test("死活の監視: sns_send は JST 8:00〜21:00 の中だけを見る", () 
   assert.equal(livenessCheckable(at("21:10"), 25, active), false);
   // 稼働時間の無いジョブは、今までどおり 7:00〜24:00
   assert.equal(livenessCheckable(at("21:10"), 25, null), true);
+});
+
+test("検査に落ちた job は送信の件数に数えず、後ろの job を送る。トークンは1回の実行で1回だけ取る", async () => {
+  const bad = [];
+  for (let i = 0; i < 3; i++)
+    bad.push(await approvedJob("x", { scheduledOffsetMin: -10 + i }));
+  const good1 = await approvedJob("x", { scheduledOffsetMin: -2 });
+  const good2 = await approvedJob("x", { scheduledOffsetMin: -1 });
+  const badIds = new Set(bad.map((j) => j.id));
+  let tokenCalls = 0;
+  const result = await runSnsSend(
+    ctx(),
+    deps({
+      maxJobs: 2,
+      preflight: async (job) => {
+        if (badIds.has(job.id))
+          throw new Error("race_unconfirmed_or_withdrawn");
+      },
+      adapters: {
+        x: async () => {
+          tokenCalls++;
+          // 1つの adapter で2件送るので、実際の X と同じく投稿ごとに別の ID を返す
+          const adapter = createMockXAdapter();
+          let n = 0;
+          return {
+            ...adapter,
+            createPost: async (payload) => ({
+              ...(await adapter.createPost(payload)),
+              id: String(1900000000000000000n + BigInt(++n)),
+            }),
+          };
+        },
+      },
+    }),
+  );
+  assert.deepEqual(
+    result.body.jobs.map((r) => r.outcome),
+    [
+      "precheck_failed",
+      "precheck_failed",
+      "precheck_failed",
+      "posted",
+      "posted",
+    ],
+  );
+  assert.equal((await job(good1.id)).state, "posted");
+  assert.equal((await job(good2.id)).state, "posted");
+  assert.equal(tokenCalls, 1);
+
+  // トークンの失敗も1回だけ試し、同じ実行の残りの job では取り直さない
+  await approvedJob("x", { scheduledOffsetMin: -1 });
+  await approvedJob("x", { scheduledOffsetMin: -1 });
+  let failingCalls = 0;
+  const failed = await runSnsSend(
+    ctx(),
+    deps({
+      preflight: async (job) => {
+        if (badIds.has(job.id))
+          throw new Error("race_unconfirmed_or_withdrawn");
+      },
+      adapters: {
+        x: async () => {
+          failingCalls++;
+          throw new Error("X と連携していません");
+        },
+      },
+    }),
+  );
+  assert.equal(failingCalls, 1);
+  assert.equal(
+    failed.body.jobs.filter((r) => r.outcome === "token_failed").length,
+    2,
+  );
+});
+
+test("鍵の健全性: X は保存値を読むだけで refresh しない", async () => {
+  const { encryptTokens } = await import("../../api/_lib/snsTokenStore.js");
+  const key = Buffer.alloc(32, 7).toString("base64");
+  const row = {
+    ...(await encryptTokens({ access_token: "a", refresh_token: "r" }, key)),
+    account_id: "1",
+    access_expires_at: "2026-10-13T03:02:00Z",
+    refreshed_at: "2026-10-13T01:00:00Z",
+  };
+  const env = {
+    X_OAUTH_CLIENT_ID: "i",
+    X_OAUTH_CLIENT_SECRET: "s",
+    SNS_TOKEN_ENC_KEY: key,
+  };
+  const health = await checkTokenHealth({
+    env,
+    xDb: { read: async () => row },
+    fetchImpl: async () => assert.fail("X にも Google にも問い合わせない"),
+    now: () => new Date("2026-10-13T03:00:00Z"),
+  });
+  assert.deepEqual(health.x, {
+    configured: true,
+    connected: true,
+    decrypt: true,
+    accountId: true,
+    accessExpiresAt: "2026-10-13T03:02:00Z",
+    refreshDue: true,
+    lastRefreshedAt: "2026-10-13T01:00:00Z",
+  });
+  const wrongKey = await checkTokenHealth({
+    env: { ...env, SNS_TOKEN_ENC_KEY: Buffer.alloc(32, 8).toString("base64") },
+    xDb: { read: async () => row },
+    fetchImpl: async () => assert.fail("呼ばない"),
+  });
+  assert.equal(wrongKey.x.connected, false);
+  assert.match(wrongKey.x.error, /復号できません/);
+  const refreshFails = await checkTokenHealth({
+    env: {
+      YOUTUBE_CLIENT_ID: "a",
+      YOUTUBE_CLIENT_SECRET: "b",
+      YOUTUBE_REFRESH_TOKEN: "c",
+    },
+    xDb: {},
+    fetchImpl: async () =>
+      new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 }),
+  });
+  assert.equal(refreshFails.youtube.refresh, false);
 });

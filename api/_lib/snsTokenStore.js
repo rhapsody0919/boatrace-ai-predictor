@@ -253,7 +253,7 @@ async function notifyLogged(notify, message) {
 }
 
 /**
- * 有効な access token を返す。期限の5分前を過ぎていたら、行ロックを取って refresh する。
+ * 有効な access token を返す。期限の5分前を過ぎていたら、行ロックを取って refresh する（refresh の失敗は投げるだけで通知しない）。
  * ロックを取れないときは待って読み直す（別の呼び出しが refresh 中）。
  * refresh に成功して保存に失敗したら refresh token を失うので、notify で「連携のやり直しが要る」と知らせる。
  */
@@ -323,10 +323,8 @@ export async function getXAccessToken({
         .catch((e) =>
           console.error(`X のトークンのロックを外せません: ${e.message}`),
         );
-      await notifyLogged(
-        notify,
-        `X のトークンを更新できません: ${error.message}`,
-      );
+      // refresh の失敗は続く状態なので、ここでは通知しない（呼び出し側の runner が report.alerts で、再通知の間隔ごとに知らせる。
+      // 2分ごとの実行のたびに Slack へ流さないため）。通知するのは、取り返しのつかない「保存の失敗」だけ
       throw error;
     }
     const sealed = await encryptTokens(
