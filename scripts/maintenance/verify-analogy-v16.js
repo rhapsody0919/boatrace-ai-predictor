@@ -57,14 +57,10 @@ export const CLEANUP = [
   ["pool", 1],
   ...SONAR_KINDS.map((kind) => [kind, SONAR_KEEP_DAYS]),
 ];
-/** 毎晩見るのは、残す日数の境目から前のこの日数だけ（消し終えた古い日を毎晩見直さない。休んだ夜があっても拾える長さ） */
-export const CLEANUP_LOOKBACK_DAYS = 30;
 /** Storage の合計がこれを超えたら失敗にして Slack に流す（Supabase Pro の 100GB の手前、BOA-807） */
 export const STORAGE_WARN_BYTES = 80e9;
 /** analogy-v16 の日ごとの大きさの控え（毎晩全部を数え直すと、2年分で数万回の一覧の取得になるため） */
 const USAGE_LEDGER = "_usage/days.json.gz";
-/** 日ごとの大きさは、この日数より新しい日だけ毎晩数え直す（similar・similar-display が消えて小さくなる間） */
-export const USAGE_RECOUNT_DAYS = 9;
 /** 1回の削除の要求に入れるパスの数（scenario-boat-races は1日 1,000個を超える） */
 const DELETE_CHUNK = 500;
 
@@ -128,21 +124,39 @@ export function summarizeDay(races, snaps, exh, entries) {
   return out;
 }
 
-/** 残す日数を過ぎた日付のフォルダ（`YYYY-MM-DD`）を選ぶ。境目から CLEANUP_LOOKBACK_DAYS 日前までだけ（純粋関数） */
+const isDate = (f) => /^\d{4}-\d{2}-\d{2}$/.test(f);
+
+/** 残す日数を過ぎた日付のフォルダ（`YYYY-MM-DD`）を選ぶ。下限は無い（夜の確認が何日止まっても、復旧した夜に古い残りを拾う）（純粋関数） */
 export function datesToClean(folders, today, keepDays = KEEP_SIMILAR_DAYS) {
   const limit = addDays(today, -keepDays);
-  const from = addDays(limit, -CLEANUP_LOOKBACK_DAYS);
-  return folders.filter(
-    (f) => /^\d{4}-\d{2}-\d{2}$/.test(f) && f < limit && f >= from,
-  );
+  return folders.filter((f) => isDate(f) && f < limit);
 }
 
-/** 日ごとの大きさの控えのうち、数え直す日（控えに無い日と、新しい USAGE_RECOUNT_DAYS 日）（純粋関数） */
-export function datesToMeasure(ledger, folders, today) {
-  const recent = addDays(today, -USAGE_RECOUNT_DAYS);
-  return folders.filter(
-    (f) => /^\d{4}-\d{2}-\d{2}$/.test(f) && (!(f in ledger) || f >= recent),
+/** その日のフォルダの中で、残す日数を過ぎた種類（CLEANUP に無い種類は消さない）（純粋関数） */
+export const kindsToClean = (kinds, date, today) =>
+  kinds.filter((k) =>
+    CLEANUP.some(([x, keep]) => x === k && date < addDays(today, -keep)),
   );
+
+/**
+ * 日ごとの控え（{日付: {bytes, at: 掃除して数えた日}}）のうち、今夜掃除して数え直す日（純粋関数）。
+ * 控えに無い日・古い形の日、まだ書き足されうる日（数えたのがその日の翌日まで）、
+ * 前回の後に夜の掃除の境目（日付 + 残す日数 + 1日）を越えた日。
+ * 何日止まっても、復旧した夜にその間に境目を越えた日をすべて拾う（下限なし）。
+ * 消えた分を古い大きさのまま足さない。毎晩2年分の全部を潜らずに済む（1日に実行のフォルダが約200個ある）
+ */
+export function datesToMeasure(ledger, folders, today) {
+  const keeps = [...new Set(CLEANUP.map(([, k]) => k))];
+  return folders.filter((d) => {
+    if (!isDate(d)) return false;
+    const e = ledger[d];
+    if (typeof e?.bytes !== "number" || typeof e?.at !== "string") return true;
+    if (e.at < addDays(d, 2)) return true;
+    return keeps.some((k) => {
+      const cleanedOn = addDays(d, k + 1);
+      return e.at < cleanedOn && cleanedOn <= today;
+    });
+  });
 }
 
 /** 控えから、もう無い日を外す（純粋関数） */
@@ -167,11 +181,35 @@ export function usageLine(byBucket, warnBytes = STORAGE_WARN_BYTES) {
   };
 }
 
-const dateFolders = async () =>
-  (await listObjects("")).filter((r) => r.id === null).map((r) => r.name);
+/** Storage への一覧・削除を、夜の確認全体で同時に何本まで出すか（全部を同時に潜ると Storage が HTTP 429 を返した） */
+export const STORAGE_PARALLEL = 8;
 
-/** 1つのフォルダの中で同時に潜るフォルダの数（全部を同時に潜ると Storage が HTTP 429 を返した） */
-export const SIZE_PARALLEL = 8;
+/** 同時に走らせる数を n 本までにする（純粋な部品。待っている間の関数は順に走らせる） */
+export function makeLimiter(n) {
+  let active = 0;
+  const queue = [];
+  const next = () => {
+    if (active >= n || queue.length === 0) return;
+    active += 1;
+    const { fn, resolve, reject } = queue.shift();
+    fn()
+      .then(resolve, reject)
+      .finally(() => {
+        active -= 1;
+        next();
+      });
+  };
+  return (fn) =>
+    new Promise((resolve, reject) => {
+      queue.push({ fn, resolve, reject });
+      next();
+    });
+}
+
+const io = makeLimiter(STORAGE_PARALLEL);
+const list = (prefix, bucket = BUCKET) => io(() => listObjects(prefix, bucket));
+const dirsOf = (rows) => rows.filter((r) => r.id === null).map((r) => r.name);
+const dateFolders = async () => dirsOf(await list(""));
 
 /** ファイルの大きさ。無ければ例外（0 と数えると合計を少なく見積もり、80GB の警告が出なくなる） */
 const fileSize = (prefix, r) => {
@@ -181,60 +219,57 @@ const fileSize = (prefix, r) => {
   return n;
 };
 
-/** prefix の下のファイルの大きさの合計。フォルダは SIZE_PARALLEL 個ずつ並べて潜る（順に潜ると1日分で約80秒かかった） */
+/** prefix の下のファイルの大きさの合計。フォルダは並べて潜り、一覧の取得は全体で STORAGE_PARALLEL 本まで（順に潜ると1日分で約80秒かかった） */
 export async function sizeOf(prefix, bucket = BUCKET) {
-  const rows = await listObjects(prefix, bucket);
-  let sum = rows
+  const rows = await list(prefix, bucket);
+  const files = rows
     .filter((r) => r.id !== null)
     .reduce((a, r) => a + fileSize(prefix, r), 0);
-  const dirs = rows.filter((r) => r.id === null);
-  for (let i = 0; i < dirs.length; i += SIZE_PARALLEL)
-    for (const n of await Promise.all(
-      dirs
-        .slice(i, i + SIZE_PARALLEL)
-        .map((r) => sizeOf(`${prefix}${r.name}/`, bucket)),
-    ))
-      sum += n;
-  return sum;
+  const dirs = await Promise.all(
+    dirsOf(rows).map((d) => sizeOf(`${prefix}${d}/`, bucket)),
+  );
+  return dirs.reduce((a, b) => a + b, files);
 }
 
 /** 全バケットの容量。analogy-v16 は日ごとの控えで数え、それ以外（小さい）は毎晩全部を数える */
-async function storageUsage(today) {
-  const folders = (await dateFolders()).filter((f) =>
-    /^\d{4}-\d{2}-\d{2}$/.test(f),
-  );
-  const ledger = pruneLedger((await readObject(USAGE_LEDGER)) ?? {}, folders);
-  for (const d of datesToMeasure(ledger, folders, today))
-    ledger[d] = await sizeOf(`${d}/`);
+async function storageUsage(today, ledger, due) {
+  const sizes = await Promise.all(due.map((d) => sizeOf(`${d}/`)));
+  due.forEach((d, i) => (ledger[d] = { bytes: sizes[i], at: today }));
   await writeObject(USAGE_LEDGER, ledger, { upsert: true });
   const byBucket = {};
   for (const id of await listBuckets())
     byBucket[id] =
       id === BUCKET
-        ? Object.values(ledger).reduce((a, v) => a + v, 0)
+        ? Object.values(ledger).reduce((a, v) => a + v.bytes, 0)
         : await sizeOf("", id);
   return byBucket;
 }
 
-async function cleanup(today) {
-  const top = await dateFolders();
-  let n = 0;
-  for (const [kind, keep] of CLEANUP) {
-    for (const date of datesToClean(top, today, keep)) {
-      for (const run of (await listObjects(`${date}/`)).filter(
-        (r) => r.id === null,
-      )) {
-        const files = await listObjects(`${date}/${run.name}/${kind}/`);
-        const paths = files
-          .filter((f) => f.id !== null)
-          .map((f) => `${date}/${run.name}/${kind}/${f.name}`);
-        for (let i = 0; i < paths.length; i += DELETE_CHUNK)
-          await deleteObjects(paths.slice(i, i + DELETE_CHUNK));
-        n += paths.length;
-      }
-    }
-  }
-  return n;
+/** 今夜訪れる日（datesToMeasure）のうち、残す日数を過ぎた種類のファイルを消す。日付→実行→種類の順に1回ずつ潜る */
+async function cleanup(today, due) {
+  const minKeep = Math.min(...CLEANUP.map(([, k]) => k));
+  const dates = datesToClean(due, today, minKeep);
+  const counts = await Promise.all(
+    dates.map(async (date) => {
+      let n = 0;
+      for (const run of dirsOf(await list(`${date}/`)))
+        for (const kind of kindsToClean(
+          dirsOf(await list(`${date}/${run}/`)),
+          date,
+          today,
+        )) {
+          const prefix = `${date}/${run}/${kind}/`;
+          const paths = (await list(prefix))
+            .filter((f) => f.id !== null)
+            .map((f) => prefix + f.name);
+          for (let i = 0; i < paths.length; i += DELETE_CHUNK)
+            await io(() => deleteObjects(paths.slice(i, i + DELETE_CHUNK)));
+          n += paths.length;
+        }
+      return n;
+    }),
+  );
+  return counts.reduce((a, b) => a + b, 0);
 }
 
 const pct = (a, b) => (b === 0 ? "—" : `${((100 * a) / b).toFixed(1)}%`);
@@ -289,10 +324,13 @@ async function main() {
     }
   }
   if (argv.includes("--cleanup")) {
+    const folders = (await dateFolders()).filter(isDate);
+    const ledger = pruneLedger((await readObject(USAGE_LEDGER)) ?? {}, folders);
+    const due = datesToMeasure(ledger, folders, today);
     console.log(
-      `🧹 similar/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/・pool/（前日より前）・龍神ソナーの表示用と元のレースの一覧（${SONAR_KEEP_DAYS}日より前）を ${await cleanup(today)} 件消した`,
+      `🧹 similar/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/・pool/（前日より前）・龍神ソナーの表示用と元のレースの一覧（${SONAR_KEEP_DAYS}日より前）を ${await cleanup(today, due)} 件消した（見た日 ${due.length}）`,
     );
-    const { line, warn } = usageLine(await storageUsage(today));
+    const { line, warn } = usageLine(await storageUsage(today, ledger, due));
     console.log(line);
     if (warn) {
       console.error(`❌ ${warn}`);

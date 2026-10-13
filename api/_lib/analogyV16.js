@@ -212,12 +212,27 @@ export function createHandler(build) {
   };
 }
 
+/** Storage が混み合って HTTP 429 を返したときに待つ時間（ミリ秒）。待つたびに倍にし、この回数だけ試し直す（夜の確認の一覧・削除、BOA-807） */
+export const STORAGE_RETRY_MS = [1000, 2000, 4000, 8000];
+
+/** 429 のときだけ待って試し直す fetch。Retry-After（秒）があればそれを待つ */
+async function fetchRetry429(url, init) {
+  for (let i = 0; ; i += 1) {
+    const res = await fetch(url, init);
+    if (res.status !== 429 || i >= STORAGE_RETRY_MS.length) return res;
+    const after = Number(res.headers?.get?.("retry-after"));
+    await new Promise((r) =>
+      setTimeout(r, after > 0 ? after * 1000 : STORAGE_RETRY_MS[i]),
+    );
+  }
+}
+
 /** Storage の prefix の直下（フォルダは id が null の行）。bucket は夜の確認が全バケットの容量を数えるときだけ渡す */
 export async function listObjects(prefix, bucket = BUCKET) {
   const { url, key } = env();
   const out = [];
   for (let offset = 0; ; offset += 1000) {
-    const res = await fetch(`${url}/storage/v1/object/list/${bucket}`, {
+    const res = await fetchRetry429(`${url}/storage/v1/object/list/${bucket}`, {
       method: "POST",
       headers: { ...authHeaders(key), "Content-Type": "application/json" },
       body: JSON.stringify({ prefix, limit: 1000, offset }),
@@ -245,7 +260,7 @@ export async function listBuckets() {
 export async function deleteObjects(paths) {
   if (paths.length === 0) return;
   const { url, key } = env();
-  const res = await fetch(`${url}/storage/v1/object/${BUCKET}`, {
+  const res = await fetchRetry429(`${url}/storage/v1/object/${BUCKET}`, {
     method: "DELETE",
     headers: { ...authHeaders(key), "Content-Type": "application/json" },
     body: JSON.stringify({ prefixes: paths }),

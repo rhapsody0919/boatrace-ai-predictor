@@ -27,8 +27,9 @@ import {
   CLEANUP,
   datesToClean,
   datesToMeasure,
+  kindsToClean,
   pruneLedger,
-  SIZE_PARALLEL,
+  STORAGE_PARALLEL,
   SONAR_KINDS,
   sizeOf,
   summarizeDay,
@@ -512,27 +513,91 @@ check(
     [],
   );
   check(
-    "消すのは残す日数の境目から30日前まで（消し終えた古い日を毎晩見直さない）",
+    "消す日付に下限は無い（夜の確認が30日を超えて止まっても、復旧した夜に古い残りを拾う。BOA-807 D3）",
     datesToClean(
-      ["2024-08-13", "2024-09-12", "2024-09-13", "2024-10-12", "2024-10-13"],
+      ["2022-01-01", "2024-09-12", "2024-10-12", "2024-10-13", "_usage"],
       "2026-10-13",
       730,
     ),
-    ["2024-09-13", "2024-10-12"],
+    ["2022-01-01", "2024-09-12", "2024-10-12"],
   );
   check(
-    "容量の控え: 控えに無い日と新しい9日だけ数え直す",
+    "その日のフォルダで消すのは、残す日数を過ぎた種類だけ（知らない種類は消さない）",
+    [
+      kindsToClean(
+        ["similar", "pool", "facts", "x"],
+        "2026-09-01",
+        "2026-10-13",
+      ),
+      kindsToClean(
+        ["similar", "facts", "layer", "x"],
+        "2024-01-01",
+        "2026-10-13",
+      ),
+      kindsToClean(["similar", "pool"], "2026-10-12", "2026-10-13"),
+    ],
+    [["similar", "pool"], ["similar", "facts", "layer"], []],
+  );
+  check(
+    "容量の控え: 控えに無い日・古い形・書き足されうる日・数えた後に掃除の境目を越えた日を数え直す（BOA-807 D2）",
     datesToMeasure(
-      { "2026-09-01": 1, "2026-10-03": 1, "2026-10-04": 1 },
-      ["2026-09-01", "2026-09-02", "2026-10-03", "2026-10-04", "_usage"],
+      {
+        // 掃除が遅れ、similar（7日）が消える前に数えた。10/13 は境目（9/1+8日）を越えているので数え直す
+        "2026-09-01": { bytes: 9, at: "2026-09-03" },
+        // 境目をすべて越えてから数えた（730日の境目はまだ先）
+        "2026-09-02": { bytes: 9, at: "2026-09-11" },
+        // 古い形（数だけ）
+        "2026-09-03": 9,
+        // 数えたのが翌日まで（まだ書き足されうる）
+        "2026-10-12": { bytes: 9, at: "2026-10-13" },
+        "2026-10-10": { bytes: 9, at: "2026-10-12" },
+      },
+      [
+        "2026-09-01",
+        "2026-09-02",
+        "2026-09-03",
+        "2026-09-04",
+        "2026-10-10",
+        "2026-10-12",
+        "_usage",
+      ],
       "2026-10-13",
     ),
-    ["2026-09-02", "2026-10-04"],
+    ["2026-09-01", "2026-09-03", "2026-09-04", "2026-10-12"],
+  );
+  check(
+    "夜の確認が40日止まっても、その間に2年の境目を越えた日を復旧した夜に掃除する（BOA-807 D3）",
+    datesToMeasure(
+      {
+        // 2年の境目は 2026-10-02。最後に掃除したのは止まる前の 2026-09-01
+        "2024-10-01": { bytes: 9, at: "2026-09-01" },
+        // 境目（2026-10-15）はまだ先
+        "2024-10-14": { bytes: 9, at: "2026-09-01" },
+      },
+      ["2024-10-01", "2024-10-14"],
+      "2026-10-13",
+    ),
+    ["2024-10-01"],
+  );
+  check(
+    "容量の控え: 前日（similar-display・pool、1日）の境目も越えたら数え直す",
+    datesToMeasure(
+      { "2026-10-10": { bytes: 9, at: "2026-10-12" } },
+      ["2026-10-10"],
+      "2026-10-13",
+    ),
+    [],
   );
   check(
     "容量の控え: もう無い日を外す",
-    pruneLedger({ "2024-01-01": 5, "2026-10-12": 3 }, ["2026-10-12"]),
-    { "2026-10-12": 3 },
+    pruneLedger(
+      {
+        "2024-01-01": { bytes: 5, at: "x" },
+        "2026-10-12": { bytes: 3, at: "x" },
+      },
+      ["2026-10-12"],
+    ),
+    { "2026-10-12": { bytes: 3, at: "x" } },
   );
   check(
     "容量の1行: 大きい順に並べ、80GB 以下は警告しない",
@@ -559,7 +624,7 @@ check(
   );
 }
 
-// ---- 6b. 容量を数えるとき、同時に潜るフォルダは SIZE_PARALLEL 個まで（429 を避ける）。size が無ければ例外（BOA-807）
+// ---- 6b. Storage の一覧は夜の確認全体で STORAGE_PARALLEL 本まで、429 は待って試し直す。size が無ければ例外（BOA-807 D1）
 {
   process.env.SUPABASE_URL = "https://example.invalid";
   process.env.SUPABASE_SERVICE_KEY = "test";
@@ -567,30 +632,48 @@ check(
   let inFlight = 0;
   let maxInFlight = 0;
   let noSize = false;
+  let throttle = 0;
   globalThis.fetch = async (_url, init) => {
     inFlight += 1;
     maxInFlight = Math.max(maxInFlight, inFlight);
     await new Promise((r) => setTimeout(r, 5));
     inFlight -= 1;
+    if (throttle > 0) {
+      throttle -= 1;
+      return new Response("busy", {
+        status: 429,
+        headers: { "retry-after": "0.01" },
+      });
+    }
     const { prefix } = JSON.parse(init.body);
-    // 根は30個のフォルダ、各フォルダは 10 バイトのファイル1つ
-    const body =
-      prefix === ""
+    // 根は30個のフォルダ、その下に5個ずつのフォルダ、その下に 10 バイトのファイル1つ
+    // noSize のときは根に大きさの無いファイルを1つだけ置く（潜る前に例外になり、後のテストへ取得が漏れない）
+    const body = noSize
+      ? [{ id: "f", name: "a.json.gz", metadata: {} }]
+      : prefix === ""
         ? Array.from({ length: 30 }, (_, i) => ({ id: null, name: `d${i}` }))
-        : [
-            {
-              id: "f",
-              name: "a.json.gz",
-              metadata: noSize ? {} : { size: 10 },
-            },
-          ];
+        : prefix.split("/").length === 2
+          ? Array.from({ length: 5 }, (_, i) => ({ id: null, name: `e${i}` }))
+          : [
+              {
+                id: "f",
+                name: "a.json.gz",
+                metadata: { size: 10 },
+              },
+            ];
     return new Response(JSON.stringify(body), { status: 200 });
   };
   try {
     check(
-      "容量: 30フォルダを数え、同時に潜るのは SIZE_PARALLEL 個まで",
-      [await sizeOf("", "x"), maxInFlight <= SIZE_PARALLEL],
-      [300, true],
+      "容量: 30×5フォルダを数え、再帰の全体で同時の一覧は STORAGE_PARALLEL 本まで",
+      [await sizeOf("", "x"), maxInFlight <= STORAGE_PARALLEL],
+      [1500, true],
+    );
+    throttle = 3;
+    check(
+      "容量: Storage が 429 を返しても、待って試し直して数え切る",
+      await sizeOf("", "x"),
+      1500,
     );
     noSize = true;
     let err = null;
