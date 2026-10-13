@@ -5404,7 +5404,7 @@ export const supabaseDataService = {
   },
 
   /**
-   * 本日開催中のレースの出走選手について、直近90日間の平均展示タイム（周回展示2周目の150mのタイム）を取得する（BOA-164）
+   * 本日開催中のレースの出走選手について、直近90日間の平均展示タイム（周回展示の2周目の150mのタイム）を取得する（BOA-164）
    */
   getRaceExhibitionTimeBreakdown(raceId) {
     return withCache(`race-exhibition-time-breakdown-${raceId}`, async () => {
@@ -5647,7 +5647,7 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定選手の展示タイム（周回展示2周目の150mのタイム）の推移を取得する（BOA-164）
+   * 指定選手の展示タイム（周回展示の2周目の150mのタイム）の推移を取得する（BOA-164）
    * 同日複数レースは平均してグラフ用に日付単位でまとめる
    */
   getExhibitionTimeTrend(racerId) {

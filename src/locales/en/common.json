@@ -2575,7 +2575,7 @@
       "fastestCountHeader": "Times fastest",
       "fastestRateHeader": "Fastest rate (%)",
       "winWhenFastestHeader": "Win rate when fastest (%)",
-      "note": "💡 \"Fastest exhibition\" means recording the fastest exhibition time in that race (the time over a 150 m section on the 2nd lap of the lap exhibition, excluding ties). A lane with a high fastest rate but low win rate may be \"fast in exhibition but unable to close out the race.\"",
+      "note": "💡 \"Fastest exhibition\" means recording the fastest exhibition time in that race (the time over a 150 m section on the 2nd lap of the pre-race lap-course run, excluding ties). A lane with a high fastest rate but low win rate may be \"fast in exhibition but unable to close out the race.\"",
       "empty": "No exhibition time data found"
     },
     "topStart": {
