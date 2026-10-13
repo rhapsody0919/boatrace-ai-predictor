@@ -579,8 +579,12 @@ function buildSections({
  * ベースレートが逃げ53%・まくり4%と桁違いなので、zスコアに標準化してから
  * イン崩れ指数との方向一致度を掛ける（plan.md §3.3、レビュー指摘C-1）。
  */
-function pickFeatured(sections) {
-  const candidates = [...sections.nige, ...sections.makuri, ...sections.nigashi]
+export function pickFeatured(sections) {
+  const candidates = [
+    ...(sections.nigeAll ?? sections.nige),
+    ...sections.makuri,
+    ...sections.nigashi,
+  ]
     .filter((r) => r.volatility_percentile !== null)
     .map((r) => ({
       row: r,

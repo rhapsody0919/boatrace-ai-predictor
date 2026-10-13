@@ -19,3 +19,8 @@
 ## 公開後の読み方
 - 公開日をまたぐ比較は、登録日より前が欠けていないかを先に確かめる（ga4-custom-dimensions.md の「遡らない」から）
 - 「特筆すべき動きが無い」も省略せず報告する（2026-08-25 の多言語 PV の漏れ、.claude/CLAUDE.md「調査・分析結果の報告原則」）
+- シェア文・AIコピーは GA4 のイベントを送っていない。表示を変えた前後の利用は比べられないので、比べたいなら変える7日以上前にイベントを足す（2026-10-12、Data API と src/utils/share.js・useAiCopyText.js、docs/design/in-collapse-caution/measurement.md）
+- `deep_link_click` の `link_source` と `tab` は GA4 に未登録で、内訳は Data API でも出ない（2026-10-12、getMetadata、同 measurement.md）
+- レース詳細の中の動きを前後で比べる基準は 10/11 以降しか使えない（tab_id 登録 10/8、ソナー別タブ化 10/9 09:17、思考アシスト公開 10/11）（2026-10-12、同 measurement.md）
+- 9/28 以前の / の PV にはレース詳細が混ざっている。ページ別の比較は 9/29 以降（2026-10-12、BOA-531、同 measurement.md）
+- 置き場所を比べる機能は、イベントを共通にしてパラメータで置き場所を区別すると、後で動かしても前後がつながる（2026-10-12、同 measurement.md）

@@ -693,6 +693,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-digest-featured-candidates.js",
+      "tier": "ci",
+      "guards": "注目レースは表示上限で切る前の逃げ候補から選ぶ（BOA-851）"
+    },
+    {
       "script": "verify-digest-motor-race-count.js",
       "tier": "ci",
       "guards": "「本日のデータ一覧」の行に付ける会場公式のモーター出走数（motor_race_count、BOA-702）。会場とモーター番号の組で引くこと、2連率の無い行・番号が分からない行は NULL、全行に同じキーを持たせること"
@@ -813,6 +818,11 @@
       "script": "verify-analogy-v16-api.js",
       "tier": "ci",
       "guards": "アナロジー・ファインダー v16（BOA-271）の展示後の段と読み出しの API の純粋関数: 展示後の段の対象の選び方（racecard あり・exhibition なし・締切前・6艇の展示タイムか欠場）、今日の展示の値（展示の進入の型・展示 ST の形・風速区分）、並べ直した上位の33項目の付け直し、画面と layer の状態、キャッシュ、NCR が優勝戦のときに今節の平均着順点を外すこと"
+    },
+    {
+      "script": "verify-analogy-racers.js",
+      "tier": "ci",
+      "guards": "/api/analogy/facts の include=racers（BOA-855、毎日の全貌 Shorts 用）: 今節の展示タイム順位が節の初日からこのレースより前の同じ会場の走だけで、同着は同順位・展示の無い艇は母数から外すこと。進入傾向は venue_code=0 の行の全会場とこの会場の分で、行の無い選手は null。include を渡さない画面には racers を返さず追加の読み出しもしないこと。snapshot の無いレースでも返すこと。各走の state（ok・absent・missing）と締切前のレースを入れないこと、集計の終わり以前の日のレースは course_entry=null・after_race になること（BOA-860）"
     },
     {
       "script": "verify-analogy-v16-snapshots-migration.js",

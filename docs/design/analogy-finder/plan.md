@@ -223,7 +223,7 @@ erDiagram
 
 | エンドポイント | 中身 | キャッシュ |
 |---|---|---|
-| `GET /api/analogy/facts/[raceId]?stage=` | `status`（下）、today（6艇の値と順位・範囲キー・前日までの走数）、使う範囲キー（VC・NC・NCR・VA）の facts、stage=exhibition なら exhibition（展示タイム・順位・風速区分）。AIの見立ては facts に入れず、画面が既存の `/api/analogy/contribution`（stage 付き、#1259）を読む（#1269 で決めた） | 締切前 `s-maxage=60`、締切後 `s-maxage=86400` |
+| `GET /api/analogy/facts/[raceId]?stage=` | `status`（下）、today（6艇の値と順位・範囲キー・前日までの走数）、使う範囲キー（VC・NC・NCR・VA）の facts、stage=exhibition なら exhibition（展示タイム・順位・風速区分）。AIの見立ては facts に入れず、画面が既存の `/api/analogy/contribution`（stage 付き、#1259）を読む（#1269 で決めた）。`include=racers` のときだけ racers（6艇の進入傾向と今節の展示タイム順位。毎日の全貌 Shorts 用、BOA-855。画面は渡さない。進入傾向は集計の終わり＝calculated_at の JST 日付の前日以前のレースでは after_race・null、今節の各走は state＝ok/absent/missing で締切前のレースは入れない、BOA-860） | 締切前 `s-maxage=60`、締切後 `s-maxage=86400` |
 | `GET /api/analogy/similar/[raceId]?stage=` | `status`、表示する上位800件（各件の全33項目・結果）、層の件数、比べる相手、全レースで同じ割合 | 同上 |
 | `GET /api/analogy/scenario/[raceId]?scope=&stage=` | `status`、範囲キーの scenario 全体（進入×形の全セル。画面が選択に応じて取り出す）、today の手がかりの当否、stage=exhibition なら展示の進入・形 | 同上 |
 | `GET /api/analogy/layer/[raceId]` | BOA-635 用。layer ファイルの中身と `status`（下の「BOA-635 との接続」） | 同上 |

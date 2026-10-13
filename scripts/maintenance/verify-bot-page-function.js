@@ -17,6 +17,9 @@
  * 10. 言語版（BOA-848 第2段、api/bot-page/[lang]/*）: en・zh-TW・ko のトップと会場が、その言語の文言・title・description・
  *    canonical・html の lang・リンク先（/{lang}/venue/N・/{lang}/race/{id}）・パンくずで出る。hreflang・共通の JSON-LD は ja と同じ。
  *    言語はパスから読み、対応外の言語・接頭辞なし・0埋め・範囲外は 404。選手名が入らない
+ * 11. トップ（ja と言語版）に、人のトップと同じ並びで説明の本文（HomeAiIntro）・龍神ソナーと思考アシスト（ja だけ）の案内・
+ *    成績ページと的中レースへのリンク・よくある質問5問（FAQPage の JSON-LD と一致）・ブログ欄（注目3・新着3、人と同じ関数）・
+ *    言語版の案内の帯がある。イン崩れ注意度のハイライト・選手名・操作の部品が無い。値はエスケープされる
  *
  * 実行環境のタイムゾーンを UTC にして走らせる（関数は UTC で動く）。
  */
@@ -57,6 +60,9 @@ const {
 } = await import("../../api/_lib/botPage.js");
 const { getTopPageMeta, getTodayVenuePageMeta, getTodayVenueBreadcrumbItems } =
   await import("../../src/utils/pageMeta.js");
+const { buildFaqItems, isAssistShown, toFaqPageLd } =
+  await import("../../src/utils/homeAiIntroFaq.js");
+const { getHomeBlogPosts } = await import("../../src/data/blogPosts.js");
 // 関数のファイルそのものが Node から読める（import の時点で取得しない）
 const topModule = await import("../../api/bot-page/top.js");
 const venueModule = await import("../../api/bot-page/venue/[code].js");
@@ -172,6 +178,10 @@ const expectedHead = (meta) => ({
 });
 const links = (html) =>
   [...html.matchAll(/<a href="([^"]*)"/g)].map((m) => m[1]);
+// トップの「本日開催中のレース」の欄（会場の一覧）。説明の本文・ブログ欄のリンクと分けて見る
+const todaySection = (html) =>
+  html.match(/<section id="today-venues">[\s\S]*?<\/section>/)?.[0] ?? "";
+const venueLinks = (html) => links(html).filter((h) => /\/venue\//.test(h));
 // head の hreflang の行（属性の値はエスケープを戻す）
 const alternatesOf = (html) =>
   [
@@ -216,7 +226,7 @@ const hasRawScript = (html) =>
   );
   check(
     "トップ: 会場へのリンク（人と同じ /venue/N、開催中の13会場）",
-    links(html),
+    venueLinks(html),
     [1, 2, 3, 6, 8, 9, 12, 15, 16, 18, 19, 22, 23].map((c) => `/venue/${c}`),
   );
   check(
@@ -225,7 +235,11 @@ const hasRawScript = (html) =>
     true,
   );
   check("トップ: 節の名前", html.includes("第８回日本一しょうゆ杯"), true);
-  check("トップ: 会場は24行", (html.match(/<li>/g) || []).length, 24);
+  check(
+    "トップ: 会場は24行",
+    (todaySection(html).match(/<li>/g) || []).length,
+    24,
+  );
 }
 
 // robots は index.html（人のページ）と同じ
@@ -316,14 +330,18 @@ check(
     racerNames.length > 0,
     true,
   );
-  const pages = [(await call("top", "/api/bot-page/top")).res.body];
+  // トップは本日開催中のレースの欄だけを見る（説明の本文・よくある質問・ブログ欄は人の画面の文言で、
+  // 「展開予測」「着順」等の語を含む。選手名は下の 11 でトップ全体を見る）
+  const pages = [
+    todaySection((await call("top", "/api/bot-page/top")).res.body),
+  ];
   for (const v of json.data) {
     pages.push(
       (await call("venue", `/api/bot-page/venue/${v.place_cd}`)).res.body,
     );
   }
   // head の meta description は人のページと同じ文言（「展開予測」を含む）なので、本文だけを見る
-  const all = pages.map((h) => h.split("<body>")[1]).join("\n");
+  const all = pages.map((h) => h.split("<body>")[1] ?? h).join("\n");
   check(
     "選手名が HTML に無い",
     racerNames.filter((n) => all.includes(n)).slice(0, 3),
@@ -398,10 +416,10 @@ check(
   const empty = { success: true, scrapedAt: "2026-10-11T12:00:00Z", data: [] };
   const top = await call("top", "/api/bot-page/top", { json: empty });
   check("0件: トップは 200", top.res.statusCode, 200);
-  check("0件: トップは会場へのリンクなし", links(top.res.body), []);
+  check("0件: トップは会場へのリンクなし", venueLinks(top.res.body), []);
   check(
     "0件: トップは24会場の名前",
-    (top.res.body.match(/<li>/g) || []).length,
+    (todaySection(top.res.body).match(/<li>/g) || []).length,
     24,
   );
   const venue = await call("venue", "/api/bot-page/venue/1", { json: empty });
@@ -565,9 +583,9 @@ for (const code of [1, 24]) {
   const fn = vercel.functions?.["api/bot-page/**/*.js"];
   check("vercel.json: syd1", fn?.regions, ["syd1"]);
   check(
-    "vercel.json: 4言語の文言のファイルと index.html（共通の JSON-LD）を同梱",
+    "vercel.json: 4言語の文言のファイルと index.html（共通の JSON-LD）とブログ記事のメタデータ（トップのブログ欄）を同梱",
     fn?.includeFiles,
-    "{src/locales/ja/common.json,src/locales/en/common.json,src/locales/zh-TW/common.json,src/locales/ko/common.json,index.html}",
+    "{src/locales/ja/common.json,src/locales/en/common.json,src/locales/zh-TW/common.json,src/locales/ko/common.json,index.html,src/data/blog-posts/*.json}",
   );
   check(
     "vercel.json: 同梱する文言のファイルが言語版の言語と ja をすべて含む",
@@ -612,7 +630,11 @@ for (const code of [1, 24]) {
   const top = (await call("top", "/api/bot-page/top")).res.body;
   check("hreflang: トップ", alternatesOf(top), expectedAlternates("/"));
   const topLd = parseJsonLdScripts(top);
-  check("JSON-LD: トップは index.html と同じ（型・中身）", topLd, siteLd);
+  check(
+    "JSON-LD: トップは index.html の共通と、人の HomeAiIntro と同じ FAQPage（型・中身）",
+    topLd,
+    [...siteLd, toFaqPageLd(buildFaqItems(t, isAssistShown("ja")))],
+  );
   check(
     "hreflang・JSON-LD は head の中",
     top.split("</head>")[1].includes("ld+json") ||
@@ -685,13 +707,13 @@ for (const code of [1, 24]) {
     getSiteJsonLd: async () => [{ "@type": "WebSite", name: evil }],
   });
   check(
-    "</script>: 共通の JSON-LD の値でも要素が閉じない（<script> は JSON-LD の1つだけ）",
+    "</script>: 共通の JSON-LD の値でも要素が閉じない（<script> は共通の1つと FAQPage だけ）",
     [
       (evilSite.res.body.match(/<script/g) || []).length,
       (evilSite.res.body.match(/<\/script>/g) || []).length,
       hasRawScript(evilSite.res.body),
     ],
-    [1, 1, false],
+    [2, 2, false],
   );
   check(
     "</script>: 読み戻すと元の値",
@@ -804,7 +826,7 @@ for (const code of [1, 24]) {
     );
     check(
       `${lang} トップ: 会場へのリンク（人と同じ /${lang}/venue/N）`,
-      links(html),
+      venueLinks(html),
       [1, 2, 3, 6, 8, 9, 12, 15, 16, 18, 19, 22, 23].map(
         (c) => `/${lang}/venue/${c}`,
       ),
@@ -820,9 +842,12 @@ for (const code of [1, 24]) {
       alternatesOf(jaTop),
     );
     check(
-      `${lang} トップ: JSON-LD は ja と同じ（index.html の共通）`,
+      `${lang} トップ: JSON-LD は ja と同じ index.html の共通と、その言語の FAQPage`,
       parseJsonLdScripts(html),
-      parseJsonLdScripts(jaTop),
+      [
+        ...parseJsonLdScripts(jaTop).slice(0, 3),
+        toFaqPageLd(buildFaqItems(tl, isAssistShown(lang))),
+      ],
     );
 
     // 会場
@@ -999,9 +1024,219 @@ for (const code of [1, 24]) {
   );
 }
 
+// ---- 11. トップの説明の本文・よくある質問・ブログ欄・案内の帯（人のトップの部分集合） ----
+{
+  const json = fresh();
+  const racerNames = json.data.flatMap((v) =>
+    v.races.flatMap((r) => (r.racers || []).map((p) => p.name)),
+  );
+  const textOf = (fragment) =>
+    decode(fragment.replace(/<[^>]+>/g, "").trim()) ?? "";
+  for (const lang of ["ja", ...BOT_PAGE_PREFIXED_LANGS]) {
+    const tl = await getLocaleT(lang);
+    const url =
+      lang === "ja" ? "/api/bot-page/top" : `/api/bot-page/${lang}/top`;
+    const html = (
+      await call("top", url, lang === "ja" ? {} : { langMode: "prefixed" })
+    ).res.body;
+    const body = html.split("<body>")[1];
+    const has = (fragment) => body.includes(fragment);
+    const e = escapeHtml;
+    const showAssist = isAssistShown(lang);
+
+    // 見出し（人の画面と同じ並び: 本日開催中 → AI予想 → 2つで確かめる → よくある質問 → ブログ → 注目・新着）
+    const headings = [...body.matchAll(/<h([1-4])>([\s\S]*?)<\/h\1>/g)].map(
+      (m) => `h${m[1]} ${textOf(m[2])}`,
+    );
+    const { popularPosts, newPosts } = getHomeBlogPosts(lang);
+    check(`${lang} トップ: 見出しの並び`, headings, [
+      `h2 🏁 ${tl("home.todayRaces")} ${(await import("../../src/utils/formatters.js")).formatDateShortLocalized("2026-10-11", lang)}`,
+      `h2 ${tl("home.aiIntro.title")}`,
+      `h3 ${tl("home.aiIntro.checkTitle")}`,
+      `h3 ${tl("home.aiIntro.faqTitle")}`,
+      `h2 📝 ${tl("home.blogTitle")}`,
+      `h3 🌟 ${tl("home.popularArticles")}`,
+      ...popularPosts.map((p) => `h3 ${p.title}`),
+      `h3 🆕 ${tl("home.newArticles")}`,
+      ...newPosts.map((p) => `h3 ${p.title}`),
+    ]);
+
+    // 紹介文（ja 以外は龍神ソナーだけの文）
+    for (const key of [
+      "home.aiIntro.lead",
+      "home.aiIntro.method",
+      showAssist
+        ? "home.aiIntro.toolsIntro"
+        : "home.aiIntro.toolsIntroSonarOnly",
+      "home.aiIntro.sonarWhere",
+      "home.aiIntro.sonarQ1",
+      "home.aiIntro.sonarQ2",
+      "home.aiIntro.step1",
+      showAssist ? "home.aiIntro.step3" : "home.aiIntro.step3SonarOnly",
+      "home.aiIntro.disclaimer",
+      "home.blogDesc",
+    ]) {
+      check(`${lang} トップ: ${key}`, has(`>${e(tl(key))}<`), true);
+    }
+    check(
+      `${lang} トップ: 操作の2段目（ボタンの文言入り）`,
+      has(
+        `<li>${e(tl("home.aiIntro.step2", { button: tl("raceCard.view") }))}</li>`,
+      ),
+      true,
+    );
+    check(
+      `${lang} トップ: 思考アシストのカードは ja だけ（人と同じ判定）`,
+      [
+        has(`<p>${e(tl("raceDetailPage.assistSwitch.assist"))}</p>`),
+        has(`>${e(tl("home.aiIntro.assistWhere"))}<`),
+      ],
+      [showAssist, showAssist],
+    );
+    if (!showAssist) {
+      check(
+        `${lang} トップ: 思考アシストの文（toolsIntro・step3）が無い`,
+        [
+          has(`>${e(tl("home.aiIntro.toolsIntro"))}<`),
+          has(`>${e(tl("home.aiIntro.step3"))}<`),
+        ],
+        [false, false],
+      );
+    }
+
+    // リンク（人と同じ href）
+    check(
+      `${lang} トップ: 開催中の会場から選ぶ（ページ内リンク）と、その先の id`,
+      [
+        has(`<a href="#today-venues">${e(tl("home.aiIntro.venuesLink"))}</a>`),
+        has(`<section id="today-venues">`),
+      ],
+      [true, true],
+    );
+    check(
+      `${lang} トップ: 成績ページ・的中レースへのリンク（接頭辞なし）`,
+      [
+        has(`<a href="/accuracy">${e(tl("home.aiIntro.accuracyLink"))}</a>`),
+        has(`<a href="/hit-races">${e(tl("home.aiIntro.hitRacesLink"))}</a>`),
+      ],
+      [true, true],
+    );
+    const prefix = lang === "ja" ? "" : `/${lang}`;
+    check(
+      `${lang} トップ: ブログの記事へのリンク（注目3・新着3、人と同じ順）`,
+      links(body).filter((h) => /\/blog\/./.test(h)),
+      [...popularPosts, ...newPosts].map((p) => `${prefix}/blog/${p.id}`),
+    );
+    check(
+      `${lang} トップ: 注目3本・新着3本`,
+      [popularPosts.length, newPosts.length],
+      [3, 3],
+    );
+    check(
+      `${lang} トップ: ブログ一覧へのリンク`,
+      has(`<a href="${prefix}/blog">${e(tl("home.viewAllPosts"))}</a>`),
+      true,
+    );
+
+    // 案内の帯（ja は人の画面が初回訪問の案内カードを出すので無い）
+    check(
+      `${lang} トップ: 案内の帯`,
+      has(`<a href="${prefix}/about">${e(tl("home.introBannerText"))}</a>`),
+      lang !== "ja",
+    );
+    check(
+      `${lang} トップ: 帯の閉じるボタンなど操作の部品が無い`,
+      /<button|<input|<form/i.test(body),
+      false,
+    );
+
+    // よくある質問: 画面の問い・答えが人と同じ関数の値で、FAQPage の JSON-LD と一致する
+    const faqItems = buildFaqItems(tl, showAssist);
+    const shown = [
+      ...body.matchAll(
+        /<details open>\n<summary>([\s\S]*?)<\/summary>\n<p>([\s\S]*?)<\/p>\n<\/details>/g,
+      ),
+    ].map((m) => ({ question: decode(m[1]), answer: decode(m[2]) }));
+    check(
+      `${lang} トップ: よくある質問5問（人と同じ関数の値）`,
+      shown,
+      faqItems,
+    );
+    const faqLd = parseJsonLdScripts(html).find(
+      (ld) => ld["@type"] === "FAQPage",
+    );
+    check(
+      `${lang} トップ: FAQPage の問い・答えが画面の文言と一致`,
+      faqLd?.mainEntity?.map((q) => ({
+        question: q.name,
+        answer: q.acceptedAnswer?.text,
+      })),
+      shown,
+    );
+
+    // 入れないもの: イン崩れ注意度のハイライト・選手名・オッズ
+    const volatilityKeys = [
+      "home.volatilityHighlightsTitle",
+      "home.volatilityHighlightsScaleNote",
+      "home.volatilityHighlightsAccuracyLink",
+    ];
+    check(
+      `${lang} トップ: イン崩れ注意度のハイライトが無い`,
+      volatilityKeys.filter((k) => has(e(tl(k)))),
+      [],
+    );
+    check(
+      `${lang} トップ: 選手名が無い`,
+      racerNames.filter((n) => body.includes(n)).slice(0, 3),
+      [],
+    );
+  }
+
+  // エスケープ: 文言（t）と記事以外の値が全部 < > & ' " を含んでも、生のタグにならず、FAQPage は元の値に戻る
+  const evil = `<script>alert("x")</script>&'"`;
+  const { buildTopModel } = await import("../../src/utils/botPageModel.js");
+  const { renderTopHtml } = await import("../../api/_lib/botPage.js");
+  const evilModel = buildTopModel(fresh(), {
+    t: () => evil,
+    today: "2026-10-11",
+    lang: "en",
+  });
+  const evilHtml = renderTopHtml(evilModel);
+  check(
+    "エスケープ: トップの文言に生の <script> が無い",
+    hasRawScript(evilHtml),
+    false,
+  );
+  check(
+    "エスケープ: 文言はエスケープ済みで出る",
+    evilHtml.includes(
+      "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;&amp;&#39;&quot;",
+    ),
+    true,
+  );
+  check(
+    "エスケープ: FAQPage は読み戻すと元の値",
+    parseJsonLdScripts(evilHtml)[0].mainEntity[0].name,
+    evil,
+  );
+  // 記事の値（タイトル・説明）もエスケープする
+  const postModel = structuredClone(evilModel);
+  postModel.blog.groups[0].posts[0].title = evil;
+  postModel.blog.groups[0].posts[0].href = `/blog/"><script>`;
+  const postHtml = renderTopHtml(postModel);
+  check(
+    "エスケープ: 記事のタイトル・リンク先",
+    [
+      hasRawScript(postHtml),
+      postHtml.includes('href="/blog/&quot;&gt;&lt;script&gt;"'),
+    ],
+    [false, true],
+  );
+}
+
 if (failures.length > 0) {
   console.error(
-    `❌ verify-bot-page-function: ${failures.length}件の失敗（${checked}件中）`,
+    `❌ verify-bot-page-function:${failures.length}件の失敗（${checked}件中）`,
   );
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);

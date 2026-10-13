@@ -31,7 +31,7 @@ import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { getLanguage } from "../config/languages";
 import { getTopPageMeta } from "../utils/pageMeta";
-import { getFeaturedPosts, getLatestPosts } from "../data/blogPosts";
+import { getHomeBlogPosts, getLatestPosts } from "../data/blogPosts";
 import { formatDate } from "../utils/formatters";
 import { getTodayJST } from "../utils/dateUtils";
 import { computeNextOpenDates } from "../utils/nextOpenDate";
@@ -257,18 +257,10 @@ function TodayVenueGridPage() {
             <p className="blog-preview-lead">{t("home.blogDesc")}</p>
 
             {(() => {
-              // 従来はfeatured記事のみ表示していたため、直近の新着記事が
-              // featured未設定の場合ホームに一切出ない問題があった
-              // （2026-09-04、直近10記事が全てfeatured:falseと判明）。
-              // 人気（featured）/新着（日付順）の2セクションに分け、
-              // 新着側にはfeatured枠と重複する記事を出さない
-              const popularPosts = getFeaturedPosts(
+              // 記事の選び方はボット向け HTML（botPageModel.js）と共有する
+              const { popularPosts, newPosts } = getHomeBlogPosts(
                 i18n.resolvedLanguage,
-              ).slice(0, 3);
-              const popularIds = new Set(popularPosts.map((post) => post.id));
-              const newPosts = getLatestPosts(6, i18n.resolvedLanguage)
-                .filter((post) => !popularIds.has(post.id))
-                .slice(0, 3);
+              );
 
               const renderCard = (post) => (
                 <Link

@@ -29,9 +29,11 @@
 - 予想・賭け事を直接連想させる語・構図の警告は TikTok だけ。X と YouTube は対象外で同じ規則（2026-10-10 ユーザー判断で YouTube を X にそろえた、risk-rules.json の gambling-connotation-words）
 - X・YouTube では「本命寄り」・過去の万舟率くらいは可（2026-10-11、オーナー）
 - risk-rules.json の検出は警告だけで承認は止めない。生成の指示と自動チェックの両方がこのファイルを読む。食い違う判定をしたら片方だけ直さない（risk-rules.json の _comment）
-- note の公開済み2記事の「確実に増やす」「稼ぐロードマップ」「再現性重視」は利益保証表現として記録し、様子見（2026-09-05 ユーザー判断、memory note_compliance_flag_watch_2026_09_05）
+- note 固有の知見は [note.md](note.md) へ移動（2026-10-13）
 - 過去の「回収率1343%」「高精度」等を単独で先に直す提案はしない。AI予想の作り直し（BOA-617）の中でだけ扱う（2026-10-01 ユーザー判断、memory feedback_no_proposals_on_past_accuracy_claims）
 - AdSense の表現の決まりはリポジトリに正本が無い。答えるときは Google の公式ポリシーを確かめて出典を付け、決まりができたらここに足す（2026-10-11、オーケストレーター依頼への確認結果）
 
 ## content-qa との分担
 - content-qa はブログ記事の公開前6観点（.claude/commands/publish-blog.md）の合否判定。wording-editor は画面・モック・SNS・spec を含む全ての文の言葉の相談と、禁止語・誇大・対訳の判定。ブログの公開前は content-qa、言い換え案は wording-editor（2026-10-11、オーケストレーター依頼）
+- 「崩れやすい」「堅め」は旧指数のラベルの語（percentileBarMax 等）の継続で、保証・射幸心の表現に当たらない（直下に免責の併記が前提）（2026-10-12、BOA-822 wording-editor、docs/design/in-collapse-caution/mock-reviews-v1.md）
+- 新しい用語は実装の前に docs/reference/i18n-glossary.md に4言語の対訳を登録する（BOA-822 では イン崩れ注意度・勝率差・崩れやすい／中くらい／堅め・段ごとの実績）（2026-10-12、同）

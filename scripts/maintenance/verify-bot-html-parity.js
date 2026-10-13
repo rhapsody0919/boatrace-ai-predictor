@@ -104,10 +104,23 @@ async function ttfb(pathname) {
   return ms;
 }
 
-/** 人の画面を描いて、本文・リンク・head を取る */
+/**
+ * 人の画面を描いて、本文・リンク・head を取る
+ *
+ * 本文は innerText（見えている文字）に、閉じた <details> の中身（textContent）を足す。トップのよくある質問
+ * （HomeAiIntro）は答えを閉じた <details> に入れており、答えは DOM にあって開けば見えるが、innerText には
+ * 入らない。ボット向けは開いた形で答えを出すので、足さないと答えが「人に無い」と出る。
+ * body 全体を textContent にしないのは、<script>（JSON-LD に FAQ の文言がある）や非表示の要素の文字まで
+ * 人の側に入り、照合が甘くなるため
+ */
 async function humanSnapshot(page) {
   return page.evaluate(() => ({
-    text: document.body?.innerText ?? "",
+    text: [
+      document.body?.innerText ?? "",
+      ...[...document.querySelectorAll("details:not([open])")].map(
+        (d) => d.textContent ?? "",
+      ),
+    ].join("\n"),
     hrefs: [...document.querySelectorAll("a[href]")].map((a) =>
       a.getAttribute("href"),
     ),
@@ -221,7 +234,8 @@ async function main() {
   const st = await get("/ai-snapshots/status.json", UA.human);
   const stResult = evaluateSnapshotStatus(st.status, st.body);
   console.log(`[スナップショット] ${stResult.message}`);
-  if (stResult.level === "fail") failures.push(`[スナップショット] ${stResult.message}`);
+  if (stResult.level === "fail")
+    failures.push(`[スナップショット] ${stResult.message}`);
   if (stResult.level === "note") notes.push(stResult.message);
 
   // ---- 部分集合の照合 ----

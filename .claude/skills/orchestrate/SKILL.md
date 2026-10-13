@@ -87,12 +87,22 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - 修正前は落ち、修正後は通る再現テストが同じ PR にある
   - 画面の見せ方（表示項目・配色・並び順・文言の方針）と、表示する数値の判断（集計・算出の定義）を変えない
   - .claude・CI ゲート・permission の変更、本番 DB への書き込みを伴わない
+- F. ブログ記事の掲載・改稿（2026-10-12 ユーザー決定）。変更が `public/blog/`・`src/data/blog-posts/`・`public/images/blog/`・`src/data/blogImageDimensions.js`・`src/data/blogPostsEn.js` だけの PR。A の条件に加えて次をすべて満たす
+  - content-qa（`.claude/agents/content-qa.md`）の6観点で不合格が0
+  - wording-editor で P0・P1 が0
+  - ファンのレビュー（boatrace-fan-reviewer か discussion-panel）で P0・P1 が0
+  - seo-marketer で P0・P1 が0
+  - 本文の数値を出典（DB・分析結果・公式）と照合済み
+  - どれかで P0・P1 が出たら直して、そのレビューを回し直す
+  - 判断が要るもの（事業・法務・ブランドの表記、「競艇」の例外、誇大・的中率・回収率の表現、原稿の主張を変える改稿）は F に当たらず、ユーザーに回す
+  - sns-hub（SNS 投稿）とは別の扱い。SNS 投稿の最終送信は引き続きユーザーの承認
 
 段階0に当たらない PR のうち、画面の見せ方と数値の判断を伴うもの（BOA-271 を含む）だけをユーザー確認に残す。確認は5の「朝と夜の2回にまとめる」に従い、1件ずつ出さない。.claude・CI・permission・本番 DB への書き込みを伴うものは従来どおり段階2。
 
 段階0でマージしたら:
 - マージ後に本番の該当ページを開き、表示とコンソールエラーを確かめる（レーンに依頼してよい）。崩れていたら git revert の PR を自己マージする（Vercel の Instant Rollback は全体が壊れたときの非常手段に限る）
 - 1日2回のダイジェスト（下の5）に、変更前後のスクリーンショットつきで載せる
+- F でマージした記事は、ダイジェストにタイトル・URL・4つのレビュー（content-qa・wording-editor・ファン・seo-marketer）の結果の要約を載せる
 - 1日1〜2件は抜き打ちで、マージ前に通常の確認としてユーザーに出す。異議が出た種類は段階2に戻す
 
 ### 段階1: 代理で決め、ダイジェストで事後に報告する

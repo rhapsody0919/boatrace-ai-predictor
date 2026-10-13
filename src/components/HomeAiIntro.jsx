@@ -1,5 +1,10 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import {
+  buildFaqItems,
+  isAssistShown,
+  toFaqPageLd,
+} from "../utils/homeAiIntroFaq.js";
 import "./HomeAiIntro.css";
 
 /**
@@ -21,41 +26,14 @@ import "./HomeAiIntro.css";
  * 答えは <details> の中に置き、閉じていても DOM にある。FAQPage の JSON-LD は、画面に出す問いと答えの
  * 文字列（faqItems）からそのまま作り、画面と食い違わないようにする。
  * 思考アシストに触れる問い・答えは、ja 以外では龍神ソナーだけの言い方（*SonarOnly）に替える。
- * ボット向け HTML（api/_lib/botPage.js の renderTopHtml）には入れない。ボット側は人の画面の部分集合で
- * あればよく（ADR 0089 決定3）、人の側だけに増えても照合は落ちない
+ * 問い・答えと JSON-LD を組む関数は src/utils/homeAiIntroFaq.js に置き、ボット向け HTML
+ * （api/_lib/botPage.js の renderTopHtml）と共有する。ボット向けトップはこのセクションの文言を
+ * 同じ i18n のキーで出す（src/utils/botPageModel.js の buildTopModel）。ここで文言・キーを変えたら、
+ * あちらも合わせる（照合 verify-bot-html-parity.js が食い違いを見つける）
  */
-const FAQ_KEYS = [
-  { q: "q1", a: "a1", aSonarOnly: "a1SonarOnly" },
-  { q: "q2", a: "a2", aSonarOnly: "a2SonarOnly" },
-  { q: "q3", a: "a3", qSonarOnly: "q3SonarOnly", aSonarOnly: "a3SonarOnly" },
-  { q: "q4", a: "a4" },
-  { q: "q5", a: "a5" },
-];
-
-function buildFaqItems(t, showAssist) {
-  const pick = (key, sonarOnlyKey) =>
-    t(`home.aiIntro.faq.${!showAssist && sonarOnlyKey ? sonarOnlyKey : key}`);
-  return FAQ_KEYS.map((k) => ({
-    question: pick(k.q, k.qSonarOnly),
-    answer: pick(k.a, k.aSonarOnly),
-  }));
-}
-
-function toFaqPageLd(items) {
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: items.map(({ question, answer }) => ({
-      "@type": "Question",
-      name: question,
-      acceptedAnswer: { "@type": "Answer", text: answer },
-    })),
-  };
-}
-
 function HomeAiIntro() {
   const { t, i18n } = useTranslation();
-  const showAssist = i18n.resolvedLanguage === "ja";
+  const showAssist = isAssistShown(i18n.resolvedLanguage);
   const faqItems = buildFaqItems(t, showAssist);
 
   return (
