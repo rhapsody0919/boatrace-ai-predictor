@@ -31,7 +31,7 @@ node --env-file=.env.local scripts/analysis/analyze-moriarty-recommendation-qual
 （`report.json#timing.skips`）。
 
 画面の「本日の推奨レース」に出ていたのは、終わったレースの後出しと、午後の一部だけだった。
-累積回収率（`model_performance_daily`）も後出し分を含んだ値になっている。
+累積回収率（`model_performance_daily`）も後出し分を含んだ値になっている。その期間の `model_performance_daily` は949件（確定済み848件に未確定101件を加えた数）で、利益率は 83.3%（投資254,200円・払戻211,880円）。
 
 ## 2. 取得時オッズは締切時オッズと大きくずれ、期待値を過大評価する
 
@@ -50,7 +50,7 @@ node --env-file=.env.local scripts/analysis/analyze-moriarty-recommendation-qual
 
 勝ち艇だけで見ると（払戻 ÷ 取得時オッズ。`report.json#drift.ratio_payout_over_captured_winner`）、5分前の窓で
 10〜20倍は 0.48、20〜50倍は 0.29。30倍で買ったつもりの艇が勝っても、払戻は中央値で 9倍弱になる。
-一律 0.95 のヘアカットでは、中穴以上の期待値を 2〜4倍過大評価する。
+一律 0.95 のヘアカットでは、中穴以上の期待値を約1.7〜3.8倍過大評価する（全艇の中央値 0.95 ÷ 0.561〜0.95 ÷ 0.248。勝ち艇だけなら約2.0〜3.3倍）。
 
 結果、取得時オッズ 20〜50倍の推奨（240件）は均等買いで回収率 27.6%、全体を引き下げている
 （`report.json#roi.win_by_captured_odds_band`）。
@@ -69,7 +69,7 @@ node --env-file=.env.local scripts/analysis/analyze-moriarty-recommendation-qual
 （`report.json#roi.by_base_model`・`#roi.win_calibration_by_base_model`）
 
 スタンダード由来だけ校正が崩れている（想定の半分しか当たらない）。平均オッズ 26.6倍の中穴を「期待値1.15以上」と
-誤判定して買い続けた結果。
+誤判定して買い続けた結果。26.6倍は、standard 由来の確定済み単勝301件の取得時オッズの平均を再計算した値で、`report.json` にはキーが無い（`reasons.odds` の平均）。
 
 ## 4. 対応
 
@@ -88,6 +88,14 @@ node --env-file=.env.local scripts/analysis/analyze-moriarty-recommendation-qual
 ### 推奨の再開条件（案）
 発走前に作った推奨だけで集計し、30日以上・300件以上で均等買い回収率が 100% を超えること。
 後出し分を含む `model_performance_daily` の累積値は再開の根拠にしない。
+
+## 4a. 未確定の推奨（101件）
+
+2026-09-01〜09-09 の非skip推奨100件と 09-13 の1件は、`bet_recommendations.actual_hit` が null のまま
+（同日の skip 行も null）。`update-moriarty-outcomes.js` の日次集計は `race_results` から直接判定するため、
+`model_performance_daily` には含まれる。一方、本監査は `actual_hit !== null` を確定の条件にしているため、
+この101件は除外されている。101件を `race_results` で判定すると、投資21,800円・払戻12,400円・的中11件になり、
+`model_performance_daily` との差と一致する（独立検証で確認済み）。書き戻しが行われていない原因は別途調べる。
 
 ## 5. 数値の出典
 
