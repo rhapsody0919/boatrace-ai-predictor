@@ -47,6 +47,7 @@
 
 - [ ] **17. 機能フラグ** `IN_CAUTION_PUBLIC = false`・`IN_CAUTION_PREVIEW_KEY`・`isInCautionEnabled()`（`src/config/featureFlags.js`、`?caution=1`）
 - [ ] **18. i18n の対訳を登録**（実装の前に）: `docs/reference/i18n-glossary.md` のドメイン用語に「イン崩れ注意度」「勝率差」「崩れやすい／中くらい／堅め」「段ごとの実績」「公開前の検証」。訳は `wording-editor` に当てる
+  - 今の用語集は「イン崩れ指数」（120 行）・「イン崩れ注意（高）」（121 行）・「荒れ度」（141 行）だけで、「イン崩れ注意度」の行が無い（2026-10-13 Orchestrate の指摘）。新しい行を4言語で足し、既存の3行の補足に「BOA-822 の公開で画面からは外れる（旧指数）」を書く（plan §4 i18n）。公開の PR を待たずに PR-4 の最初に入れる
 - [ ] **19. 共通の部品**: `RateBar`（`RoughCard.jsx` の `MiniBar` を切り出し、`RoughCard` を置き換えても見た目が変わらないことを確かめる）、`InCautionBadge`（3段、意味トークン、真ん中は枠線だけ）、`TECHNIQUE_NAMES` を `src/constants/techniqueNames.js` へ移す
 - [ ] **20. `InCautionCard`** と AI予想タブ（案A）: 先頭にカード、展開予測・答え合わせ・イン崩れの振り返り・`VolatilityDisplay`・`ai-tab-sonar-link` をフラグ true の側で描かない。`OutcomePatternPreview` は残す。確定後の1行、値が無いときの空状態、1号艇が後から欠場したら（直前情報の `is_absent`）カードを出さない、注記（準優・優勝戦・欠場あり・件数少なめ）。4言語
 - [ ] **21. `RaceCard`** の札と割合、展開予測の的中/外れのバッジを外す
