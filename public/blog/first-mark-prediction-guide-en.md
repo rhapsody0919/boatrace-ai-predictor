@@ -10,7 +10,7 @@ Ryujin Radar includes a **"Turn Prediction"** feature that statistically predict
 
 Unlike horse racing or bicycle racing, boat racing takes place **on the water**. Passing another boat on the water is extremely difficult, so **the boat that takes the lead tends to hold it wire-to-wire**.
 
-### The winning-technique patterns decided at the first mark
+### Breakdown of winning techniques (national average)
 
 | Technique | Description | National average frequency |
 |---------|------|-------------|
