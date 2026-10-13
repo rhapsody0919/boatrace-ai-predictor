@@ -419,23 +419,39 @@ export function axisMarks(scenario, f, axis) {
 }
 
 /**
+ * 件数の降順の組を上限で切ったとき、切った後ろに残る「境目と同じ件数」の組の数（BOA-838）
+ * @param {Array<[number[], number]>} rows 件数の降順（同数は組の昇順）
+ * @param {number} limit
+ * @returns {{n: number, k: number} | null} n 組・各 k 件。残らなければ null
+ */
+export function tiesBeyond(rows, limit) {
+  const k = rows[limit - 1]?.[1];
+  if (k == null) return null;
+  const n = rows.slice(limit).filter(([, count]) => count === k).length;
+  return n > 0 ? { n, k } : null;
+}
+
+/**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）
- * よく出た2連単（上位5つ）は BOA-831 案2（spec D-44 (4)）。2連単・3連単とも境目の同数はすべて含める（BOA-838）
- * @returns {null | {form: string, n: number, first: number[], topExacta: Array<[number[], number]>, topTrifecta: Array<[number[], number]>, attacker: number|null, few: boolean}}
+ * よく出た2連単（上位5つ）は BOA-831 案2（spec D-44 (4)）
+ * 上限で切った後ろに境目と同じ件数の組が残るときは、その数を `exactaTies`・`trifectaTies` で返す。画面は
+ * 「同じk件の組がほかにn組」と添える（BOA-838、2026-10-13 オーケストレーター決定。全部並べると、サンプルが
+ * 少ない形で1件ずつの組が十数組並ぶ）
+ * @returns {null | {form: string, n: number, first: number[], topExacta: Array<[number[], number]>, topTrifecta: Array<[number[], number]>, exactaTies: {n: number, k: number}|null, trifectaTies: {n: number, k: number}|null, attacker: number|null, few: boolean}}
  */
 export function formSummary(scenario, form) {
   const cell = scenario?.cells?.waku?.forms?.[form];
   if (!cell?.n) return null;
-  const topWithTies = (rows, limit) => {
-    const cutoff = rows[limit - 1]?.[1];
-    return rows.filter(([, count], i) => i < limit || count === cutoff);
-  };
+  const exacta = exactaList(cell.tri);
+  const trifecta = trifectaList(cell.tri);
   return {
     form,
     n: cell.n,
     first: cell.first_boat,
-    topExacta: topWithTies(exactaList(cell.tri), 5),
-    topTrifecta: topWithTies(trifectaList(cell.tri), 3),
+    topExacta: exacta.slice(0, 5),
+    topTrifecta: trifecta.slice(0, 3),
+    exactaTies: tiesBeyond(exacta, 5),
+    trifectaTies: tiesBeyond(trifecta, 3),
     attacker: ATTACK_BOAT[form] ?? null,
     few: cell.n < MIN_SCENARIO,
   };
