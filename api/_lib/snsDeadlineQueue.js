@@ -92,6 +92,8 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
       if (bytes.byteLength !== media.size || await sha256(bytes) !== media.sha256) throw new Error('媒体が変更されています');
       verifiedMedia.push({ ...media, bytes });
     }
+    // adapter が送る前に分かる不備（題名の長さ等）は begin_post の前に落とす。後で落ちると、何も上がっていない job が要照合に残る
+    if (youtube.validate) youtube.validate(snapshot);
     await preflight(job);
     const beginning = await store.transition(id, 'begin_post');
     if (beginning.state !== 'reconcile') return beginning;
