@@ -13,11 +13,12 @@ import { buildObservationUtm } from "../../src/utils/snsObservations.js";
 export function insertTrackingUrl(text, raceUrl, trackingUrl) {
   if (typeof text !== "string") throw new Error("本文がありません");
   const count = (needle) => text.split(needle).length - 1;
-  if (count(trackingUrl) === 1) return text;
   const escaped = raceUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   // URL の続きの文字（英数・記号）が後ろに来ない位置だけを、URL の終わりとみなす（「。」や改行は終わり）
   const pattern = new RegExp(`${escaped}(?![\\w\\-./?%&=#~:+@!$'()*,;])`, "g");
   const hits = text.match(pattern)?.length ?? 0;
+  // 差し替え済み（auto-plan のやり直し）。素の URL が別に残っていれば曖昧として止める
+  if (count(trackingUrl) === 1 && hits === 0) return text;
   if (hits === 0) throw new Error("race_url_missing");
   if (hits > 1 || count(raceUrl) !== hits)
     throw new Error("race_url_ambiguous");

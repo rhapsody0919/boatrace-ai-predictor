@@ -133,6 +133,10 @@ test("本文の URL をちょうど1か所差し替える（句点・改行の�
     `見どころ ${tracking}`,
   );
   assert.throws(
+    () => insertTrackingUrl(`${tracking} と ${raceUrl}`, raceUrl, tracking),
+    /race_url_ambiguous/,
+  );
+  assert.throws(
     () => insertTrackingUrl("URL なし", raceUrl, tracking),
     /race_url_missing/,
   );
