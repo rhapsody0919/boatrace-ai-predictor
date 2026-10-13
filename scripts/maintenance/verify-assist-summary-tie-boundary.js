@@ -1,7 +1,7 @@
 /**
  * BOA-838: formSummary の上位の境目にある同数の組をすべて残す。
  * 実行: node scripts/maintenance/verify-assist-summary-tie-boundary.js
- * verify-registry.json への登録が必要（取り込みレーンが行う）。
+ * verify-registry.json に ci で登録済み。
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
