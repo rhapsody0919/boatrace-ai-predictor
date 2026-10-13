@@ -4,7 +4,8 @@ export const X_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
 /** YouTube動画はXのmedia upload上限とは無関係の制約（Twitter API由来の32MBをそのまま転用しない）。 */
 export const YOUTUBE_MEDIA_MAX_BYTES = 500 * 1024 * 1024;
 export const X_MAX_POLLS = 10;
-export const X_CHUNK_BYTES = 5 * 1024 * 1024;
+// X の分割アップロードは1回 5 MB まで。5 MiB（5,242,880）は十進の 5 MB を超えるので、余裕をとって 4 MiB にする
+export const X_CHUNK_BYTES = 4 * 1024 * 1024;
 
 export async function sha256(bytes) {
   return Array.from(

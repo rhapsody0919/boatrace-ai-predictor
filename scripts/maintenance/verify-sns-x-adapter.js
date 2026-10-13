@@ -215,3 +215,73 @@ test("runXSendJob に実 adapter をつなぐと、6MB の動画は2つに分け
   );
   assert.equal(calls.filter((c) => c.path === "/2/tweets").length, 1);
 });
+
+test("runXSendJob: 媒体の処理が failed・append が失敗したら投稿せず held にする", async () => {
+  const me = (
+    await first("SELECT id FROM sns_approvers WHERE display_name='本人'")
+  ).id;
+  const bytes = new Uint8Array(1024).fill(3);
+  const loadMedia = async () => bytes;
+  const store = {
+    transition: async (id, action, result = {}) =>
+      (
+        await first("SELECT transition_sns_x_send($1,$2,$3) r", [
+          id,
+          action,
+          result,
+        ])
+      ).r,
+  };
+  for (const make of [
+    () => fakeX({ processing: ["failed"] }),
+    () => {
+      const base = fakeX();
+      return {
+        calls: base.calls,
+        fetchImpl: async (url, options) =>
+          /\/append$/.test(new URL(url).pathname)
+            ? (base.calls.push({ path: new URL(url).pathname }),
+              json({ title: "Service Unavailable" }, 503))
+            : base.fetchImpl(url, options),
+      };
+    },
+  ]) {
+    const draft = await first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,video_storage_path) VALUES(gen_random_uuid(),'short','x','ja','全貌','v.mp4') RETURNING *",
+    );
+    const job = (
+      await first("SELECT approve_sns_x_send($1,$2,$3) r", [
+        draft.id,
+        me,
+        await createXSnapshot(draft, loadMedia),
+      ])
+    ).r;
+    const { calls, fetchImpl } = make();
+    await assert.rejects(
+      runXSendJob(job.id, {
+        store,
+        x: createXApiAdapter({ fetchImpl, accessToken: "tok" }),
+        loadMedia,
+        wait: async () => {},
+        preflight: async () => {},
+      }),
+    );
+    assert.equal(calls.filter((c) => c.path === "/2/tweets").length, 0);
+    assert.equal(
+      (await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [job.id]))
+        .state,
+      "held",
+    );
+  }
+});
+
+test("成功の応答を解釈できないときは理由つきで投げる（再送しない）", async () => {
+  const x = createXApiAdapter({
+    accessToken: "tok",
+    fetchImpl: async () => new Response("<html>", { status: 201 }),
+  });
+  await assert.rejects(
+    x.createPost({ text: "本文" }),
+    /応答を解釈できません: HTTP 201/,
+  );
+});

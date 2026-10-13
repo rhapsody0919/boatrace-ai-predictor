@@ -60,3 +60,10 @@ USDの100万分の1単位の整数。上限は最大$10。period_start/endは実
 - `sns_auto_send_control.dry_run=true` のあいだは、承認者によらずそのチャネルの claim を拒否する（job は queued のまま、予約を消費しない）
 - 予約額は種類別: スレッドの親（URL つき）は `ceiling_x_url_microusd`、子は `ceiling_x_plain_microusd`（未設定なら `attempt_ceiling_microusd`）。スレッドの親の claim は、子の分まで月の残りに入るときだけ通す
 - 月の切り替えは `renew_sns_x_send_period(start, end)`（オーナーが SQL Editor で実行。今の期間が終わってからだけ。予約額を0に戻す）
+
+## 実 adapter（sns-pdca-loop tasks 17、2026-10-13）
+
+- `api/_lib/xApiAdapter.js` が X API v2 を直接呼ぶ（分割アップロード initialize・append・finalize・STATUS、`POST /2/tweets`）。分割の大きさは 4 MiB（X の上限 5 MB の内側）
+- **access token は runner が claim の前に `getXAccessToken`（`api/_lib/snsTokenStore.js`）で取り、`createXApiAdapter({accessToken})` に渡す**。adapter の中では取らない。テキストだけの投稿では最初の X の呼び出しが begin_post の後の createPost になり、そこでトークンの取得に失敗すると、何も投稿していない job が要照合に落ちるため
+- `posted_at` は投稿の ID（snowflake）の作成時刻。投稿の後に読み取りの API は呼ばない
+- 成功の応答を解釈できない・ID が無いときも再送せず、要照合に残す

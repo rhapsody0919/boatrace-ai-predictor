@@ -37,11 +37,16 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
     });
     const text = await response.text();
     let body = {};
+    let parseError = null;
     try {
       body = text ? JSON.parse(text) : {};
-    } catch {
-      body = {};
+    } catch (error) {
+      parseError = error;
     }
+    if (response.ok && parseError)
+      throw new Error(
+        `X API ${method} ${path.split("?")[0]} の応答を解釈できません: HTTP ${response.status}`,
+      );
     if (!response.ok) {
       // 応答の本文（API の詳細）は DB・ログに残さない契約なので、状態コードと X のエラーの種類だけを出す
       const kind = body?.title || body?.errors?.[0]?.title || "";
