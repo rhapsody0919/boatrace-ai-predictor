@@ -505,3 +505,48 @@ test("鍵の健全性: X は保存値を読むだけで refresh しない", asyn
   });
   assert.equal(refreshFails.youtube.refresh, false);
 });
+
+test("鍵の健全性: ?x_read=1 のときだけ X の自分のアカウントを読み、既定では X を呼ばない", async () => {
+  const { encryptTokens } = await import("../../api/_lib/snsTokenStore.js");
+  const key = Buffer.alloc(32, 9).toString("base64");
+  const row = {
+    ...(await encryptTokens(
+      { access_token: "x-access", refresh_token: "x-refresh" },
+      key,
+    )),
+    key_version: 1,
+    account_id: "1234567890",
+    access_expires_at: new Date(Date.now() + 3600000).toISOString(),
+  };
+  const env = {
+    X_OAUTH_CLIENT_ID: "i",
+    X_OAUTH_CLIENT_SECRET: "s",
+    SNS_TOKEN_ENC_KEY: key,
+  };
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({ url: String(url), auth: options.headers?.Authorization });
+    if (String(url) === "https://api.x.com/2/users/me")
+      return Response.json({ data: { id: "1234567890" } });
+    throw new Error("想定外: " + url);
+  };
+  const xDb = { read: async () => row };
+  const plain = await checkTokenHealth({ env, xDb, fetchImpl });
+  assert.equal(plain.x.read, undefined);
+  assert.equal(calls.length, 0);
+  const withRead = await checkTokenHealth({ env, xDb, fetchImpl, xRead: true });
+  assert.deepEqual(withRead.x.read, { ok: true, sameAccount: true });
+  assert.deepEqual(calls, [
+    { url: "https://api.x.com/2/users/me", auth: "Bearer x-access" },
+  ]);
+  assert.ok(!JSON.stringify(withRead).includes("x-access"));
+  const denied = await checkTokenHealth({
+    env,
+    xDb,
+    xRead: true,
+    fetchImpl: async () =>
+      new Response(JSON.stringify({ title: "Unauthorized" }), { status: 401 }),
+  });
+  assert.equal(denied.x.read.ok, false);
+  assert.match(denied.x.read.error, /HTTP 401/);
+});

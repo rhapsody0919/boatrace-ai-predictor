@@ -3,7 +3,12 @@
  * 本番の関数の中で「refresh できるか」「scope が足りるか」だけを確かめ、値は返さない。
  * X は保存値を読んで復号できるかだけを見る（refresh token は使い切りなので、確認のためには refresh しない）。
  */
-import { decryptTokens, REFRESH_MARGIN_MS } from "./snsTokenStore.js";
+import {
+  decryptTokens,
+  fetchAccountId,
+  getXAccessToken,
+  REFRESH_MARGIN_MS,
+} from "./snsTokenStore.js";
 import { getYoutubeAccessToken } from "./youtubeUpload.js";
 
 const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
@@ -31,7 +36,7 @@ async function googleCheck(keys, fetchImpl) {
   return { configured: true, refresh: true, scopes, accessToken };
 }
 
-async function xCheck(env, xDb, now) {
+async function xCheck(env, xDb, now, xRead, fetchImpl) {
   if (
     !env.X_OAUTH_CLIENT_ID ||
     !env.X_OAUTH_CLIENT_SECRET ||
@@ -52,9 +57,29 @@ async function xCheck(env, xDb, now) {
         Date.parse(row.access_expires_at) - REFRESH_MARGIN_MS <=
         now().getTime(),
       lastRefreshedAt: row.refreshed_at ?? null,
+      ...(xRead ? { read: await xReadCheck(env, xDb, row, fetchImpl) } : {}),
     };
   } catch (error) {
     return { configured: true, connected: false, error: error.message };
+  }
+}
+
+// ?x_read=1 のときだけ、実際に X の自分のアカウント（GET /2/users/me）を読む。期限が近ければ送信と同じく refresh して保存する。
+// 1回 $0.001 程度。200 なら tweet.read・users.read が通っている（tweet.write・media.write は最初の実投稿で確かめる）
+async function xReadCheck(env, xDb, row, fetchImpl) {
+  try {
+    const { accessToken } = await getXAccessToken({
+      db: xDb,
+      keyBase64: env.SNS_TOKEN_ENC_KEY,
+      clientId: env.X_OAUTH_CLIENT_ID,
+      clientSecret: env.X_OAUTH_CLIENT_SECRET,
+      fetchImpl,
+      maxWaits: 3,
+    });
+    const accountId = await fetchAccountId(accessToken, fetchImpl);
+    return { ok: true, sameAccount: accountId === row.account_id };
+  } catch (error) {
+    return { ok: false, error: error.message };
   }
 }
 
@@ -63,6 +88,7 @@ export async function checkTokenHealth({
   fetchImpl = fetch,
   xDb,
   now = () => new Date(),
+  xRead = false,
 } = {}) {
   const youtube = await googleCheck(
     {
@@ -105,5 +131,9 @@ export async function checkTokenHealth({
   }
   delete analytics.accessToken;
 
-  return { x: await xCheck(env, xDb, now), youtube, analytics };
+  return {
+    x: await xCheck(env, xDb, now, xRead, fetchImpl),
+    youtube,
+    analytics,
+  };
 }
