@@ -630,11 +630,21 @@ export function MorningDigestCM() {
  * X用の静止画（1080x1350、4:5）。本文280 weightに収まらない一覧をここに逃がす。
  * 企画カード（CampaignEntryCard）で4:5を採用したのと同じ理由で、主な閲覧環境が
  * スマホのタイムラインのため縦長にする。
+ *
+ * props省略時はRemotion Studioでのプレビュー用に承認済みのデモデータ（2026-09-25）
+ * を使う。日次生成（renderMorningDigestCard.js）は実データの行を渡す。
  */
-export function MorningDigestXCard() {
-  const maxRate = Math.max(
-    ...NIGE_ROWS.map((r) => Math.max(r.rate, r.baseline)),
-  );
+export function MorningDigestXCard({
+  dateLabel = DAY.dateLabel,
+  venueCount = DAY.venueCount,
+  raceCount = DAY.raceCount,
+  nigeRows = NIGE_ROWS,
+  makuriRows = MAKURI_ROWS,
+} = {}) {
+  const maxRate =
+    nigeRows.length > 0
+      ? Math.max(...nigeRows.map((r) => Math.max(r.rate, r.baseline)))
+      : 0;
   return (
     <AbsoluteFill
       style={{
@@ -661,60 +671,68 @@ export function MorningDigestXCard() {
             borderRadius: 999,
           }}
         >
-          本日のデータ一覧 {DAY.dateLabel}
+          本日のデータ一覧 {dateLabel}
         </div>
         <div style={{ color: "rgba(248,250,252,0.7)", fontSize: 24 }}>
-          {DAY.venueCount}会場{DAY.raceCount}レース
+          {venueCount}会場{raceCount}レース
         </div>
       </div>
 
-      <div
-        style={{
-          color: GOLD,
-          fontSize: 44,
-          fontWeight: 900,
-          marginBottom: 4,
-        }}
-      >
-        逃げが堅い5レース
-      </div>
-      <div
-        style={{
-          color: "rgba(248,250,252,0.7)",
-          fontSize: 21,
-          marginBottom: 20,
-        }}
-      >
-        1コース逃げ切り率70%超
-      </div>
+      {nigeRows.length > 0 && (
+        <>
+          <div
+            style={{
+              color: GOLD,
+              fontSize: 44,
+              fontWeight: 900,
+              marginBottom: 4,
+            }}
+          >
+            逃げが堅い{nigeRows.length}レース
+          </div>
+          <div
+            style={{
+              color: "rgba(248,250,252,0.7)",
+              fontSize: 21,
+              marginBottom: 20,
+            }}
+          >
+            1コース逃げ切り率70%超
+          </div>
 
-      {NIGE_ROWS.map((row, i) => (
-        <StaticRow key={`n${i}`} row={row} rank={i + 1} maxRate={maxRate} />
-      ))}
+          {nigeRows.map((row, i) => (
+            <StaticRow key={`n${i}`} row={row} rank={i + 1} maxRate={maxRate} />
+          ))}
+        </>
+      )}
 
-      <div
-        style={{
-          color: GOLD,
-          fontSize: 44,
-          fontWeight: 900,
-          marginTop: 16,
-          marginBottom: 4,
-        }}
-      >
-        まくりが利く2レース
-      </div>
-      <div
-        style={{
-          color: "rgba(248,250,252,0.7)",
-          fontSize: 21,
-          marginBottom: 18,
-        }}
-      >
-        そのコースでのまくり1着率25%超（全国平均は4〜5%）
-      </div>
-      {MAKURI_ROWS.map((row, i) => (
-        <StaticRow key={`m${i}`} row={row} rank={i + 1} maxRate={40} />
-      ))}
+      {makuriRows.length > 0 && (
+        <>
+          <div
+            style={{
+              color: GOLD,
+              fontSize: 44,
+              fontWeight: 900,
+              marginTop: 16,
+              marginBottom: 4,
+            }}
+          >
+            まくりが利く{makuriRows.length}レース
+          </div>
+          <div
+            style={{
+              color: "rgba(248,250,252,0.7)",
+              fontSize: 21,
+              marginBottom: 18,
+            }}
+          >
+            そのコースでのまくり1着率25%超（全国平均は4〜5%）
+          </div>
+          {makuriRows.map((row, i) => (
+            <StaticRow key={`m${i}`} row={row} rank={i + 1} maxRate={40} />
+          ))}
+        </>
+      )}
 
       <div style={{ flex: 1 }} />
       <div
