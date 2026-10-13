@@ -39,6 +39,11 @@
    列に入り、1440px で表が 1174px、選手名と得点率・節内順位・前検の間が約800px 離れた
    （BOA-755）。すぐ下の得点率早見（BOA-736）と同じ 769px〜・640px にそろえる */
 @media (min-width: 769px) {
+  /* BOA-826: 表は640pxのまま、外枠の余白を抑えて左端を維持する */
+  .rmt-card {
+    max-width: 720px;
+  }
+
   .rmt-compare {
     max-width: 640px;
   }
