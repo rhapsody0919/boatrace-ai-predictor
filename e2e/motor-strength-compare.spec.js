@@ -38,7 +38,9 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     await expect(
       page.locator(".table-note", { hasText: "ベージュの地は" }),
     ).toHaveText("ベージュの地は、その列で一番の値です。");
-    await expect(page.locator(".table-note", { hasText: "金枠の値は" })).toBeVisible();
+    await expect(
+      page.locator(".table-note", { hasText: "金枠の値は" }),
+    ).toBeVisible();
     await page.locator(".motor-ranking-table tbody tr").first().click();
     await expect(page.locator(".motor-ranking-table")).toHaveCount(0);
     await expect(
@@ -58,14 +60,21 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
           row.championship_count = value;
           row.first_place_count = value;
         }
-        await route.fulfill({ response, json: body });
+        // fetchRecorded の戻り値は APIResponse ではないので、status・headers を明示する。
+        // 書き換えた本文と食い違うので、元の長さ・圧縮のヘッダは渡さない
+        const headers = { ...response.headers() };
+        delete headers["content-length"];
+        delete headers["content-encoding"];
+        await route.fulfill({ status: response.status(), headers, json: body });
       });
       await page.goto(KOJIMA_7R);
       await expect(page.locator(".motor-venue-rank").first()).toBeVisible({
         timeout: 30000,
       });
       await expect(page.locator(".motor-stat-rank1")).toHaveCount(0);
-      await expect(page.locator(".table-note", { hasText: "金枠の値は" })).toBeVisible();
+      await expect(
+        page.locator(".table-note", { hasText: "金枠の値は" }),
+      ).toBeVisible();
       await expect(
         page.locator(".table-note", { hasText: "ベージュの地は" }),
       ).toHaveCount(0);
@@ -173,7 +182,9 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     await expect(
       page.locator(".table-note", { hasText: "ベージュの地は" }),
     ).toHaveCount(0);
-    await expect(page.locator(".table-note", { hasText: "金枠の値は" })).toBeVisible();
+    await expect(
+      page.locator(".table-note", { hasText: "金枠の値は" }),
+    ).toBeVisible();
     await expect(page.locator(".motor-venue-rank")).toHaveCount(0);
     await expect(
       page.locator(".motor-ranking-table thead th", {
