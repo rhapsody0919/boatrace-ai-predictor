@@ -1564,3 +1564,88 @@ test.describe("レイアウト: 枠別情報の ST考察と「1コースが逃�
     }
   });
 });
+/**
+ * SNSハブの管理画面は地（.sns-hub-admin-page・.sns-hub-tab-content）を明るい色で固定しているが、
+ * 後から足したパネル（全月カレンダー・レース単位の確認）は意味トークン（--text-primary・--surface-card）を
+ * 使っていた。ダークテーマでは意味トークンが白文字・紺の地に切り替わり、明るい地に白文字が載って
+ * 読めなくなった（2026-10-13 オーナー報告）。ダークテーマで、文字色と実際の地の色のコントラストを測る。
+ * 地は、その要素から親へたどって最初に不透明な背景色。基準は WCAG の本文 4.5:1
+ */
+test.describe("レイアウト: SNSハブの文字が地とかぶらない（ダークテーマ）", () => {
+  const SELECTORS = [
+    ".sns-month-calendar h2",
+    ".sns-month-calendar > p",
+    ".sns-month-calendar-filters label",
+    ".sns-month-calendar-filters button",
+    ".sns-month-calendar-weekday",
+    ".sns-month-calendar-x",
+    ".sns-month-calendar-youtube",
+    ".sns-month-calendar-grid button",
+    ".sns-mobile-approval h2",
+    ".sns-mobile-approval p",
+  ];
+  for (const width of [375, 1440]) {
+    test(`${width}px: 全月カレンダーとレース単位の確認の文字が 4.5:1 以上`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript(() =>
+        localStorage.setItem("ryujin-radar-theme", "dark"),
+      );
+      // dev サーバーには Edge Function が無いので管理APIはスタブにする（上の BOA-570 と同じ）
+      await page.route(/\/api\/admin\/sns-hub\//, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ data: [], date: "2026-10-13" }),
+        }),
+      );
+      await page.goto("/admin/sns-hub");
+      await expect(
+        page.locator(".sns-month-calendar-weekday").first(),
+      ).toBeVisible();
+      const measured = await page.evaluate((selectors) => {
+        const rgba = (s) => {
+          const m = s.match(/rgba?\(([^)]+)\)/);
+          if (!m) return null;
+          const [r, g, b, a = 1] = m[1]
+            .split(/[ ,/]+/)
+            .filter(Boolean)
+            .map(Number);
+          return { r, g, b, a };
+        };
+        const lum = ({ r, g, b }) => {
+          const ch = (v) => {
+            const c = v / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          };
+          return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+        };
+        const bgOf = (el) => {
+          for (let n = el; n; n = n.parentElement) {
+            const c = rgba(getComputedStyle(n).backgroundColor);
+            if (c && c.a > 0.5) return c;
+          }
+          return { r: 255, g: 255, b: 255, a: 1 };
+        };
+        const out = [];
+        for (const sel of selectors)
+          for (const el of document.querySelectorAll(sel)) {
+            if (!el.textContent.trim() || !el.getClientRects().length) continue;
+            const fg = rgba(getComputedStyle(el).color);
+            const bg = bgOf(el);
+            const [hi, lo] = [lum(fg), lum(bg)].sort((a, b) => b - a);
+            out.push({
+              sel,
+              text: el.textContent.trim().slice(0, 20),
+              ratio: Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100,
+            });
+          }
+        return out;
+      }, SELECTORS);
+      expect(measured.length, "測った要素がある").toBeGreaterThan(10);
+      const low = measured.filter((m) => m.ratio < 4.5);
+      expect(low, JSON.stringify(low.slice(0, 8))).toEqual([]);
+    });
+  }
+});
