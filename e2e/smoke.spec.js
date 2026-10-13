@@ -795,6 +795,68 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     await expect(page.locator(".selected-motor-heading")).toBeVisible();
   });
 
+  // BOA-744: 録画fixtureの時計を使わず、実時刻＋合成応答で一覧外リンクを再現する。
+  for (const tab of ["techprofile", "returnrate"]) {
+    test(`${tab} のディープリンクは当日一覧にない会場・レースも保持する（BOA-744）`, async ({ browser, baseURL }) => {
+      const context = await browser.newContext({ baseURL });
+      try {
+        await applyCookieConsent(context);
+        const page = await context.newPage();
+        const requests = [];
+        const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+        const otherRace = `${today}-01-01`;
+        const rows = Array.from({ length: 6 }, (_, i) => ({
+          boat_number: i + 1, racer_id: 4000 + i, player_name: `リンク先選手${i + 1}`,
+          win_count: 1, techniques: [{ technique: "逃げ", percentage: 100 }],
+          sample_count: 10, win_return_rate: 100, place_return_rate: 100,
+        }));
+        let releaseVenues;
+        const venuesReady = new Promise((resolve) => { releaseVenues = resolve; });
+        await context.route("**/*", async (route) => {
+          const url = new URL(route.request().url());
+          if (url.pathname.includes("/rest/v1/")) {
+            let data = [];
+            if (url.pathname.endsWith("/races")) {
+              if (url.searchParams.get("select") === "venue_code") {
+                await venuesReady;
+                data = [{ venue_code: 1 }]; // 戸田を含めない
+              } else {
+                data = url.searchParams.get("venue_code") === "eq.1"
+                  ? [{ race_id: otherRace, race_number: 1, start_time: "12:00" }]
+                  : [];
+              }
+            } else if (url.pathname.includes("/rpc/get_race_")) {
+              const id = route.request().postDataJSON()?.p_race_id;
+              requests.push(id);
+              data = id === ANALYSIS_FIXED_RACE_ID ? rows : [];
+            }
+            return route.fulfill({ json: data });
+          }
+          if (url.pathname.startsWith("/api/")) return route.fulfill({ json: [] });
+          if (url.origin !== new URL(baseURL).origin) return route.abort();
+          return route.fallback();
+        });
+        const targetRequest = page.waitForRequest((request) =>
+          request.url().includes(`/rpc/${tab === "techprofile" ? "get_race_technique_profile" : "get_race_return_rate"}`) &&
+          request.postDataJSON()?.p_race_id === ANALYSIS_FIXED_RACE_ID,
+        );
+        await page.goto(`/winning-technique?tab=${tab}&venue_code=2&race_id=${ANALYSIS_FIXED_RACE_ID}`);
+        await targetRequest; // RPCのレースIDはURLではなくPOST本文に入る
+        releaseVenues();
+        await expect(page.locator(".controls-section select").first().locator("option")).toHaveCount(1);
+        await expect(page.locator(".controls-section select")).toHaveCount(1);
+        // 一覧の適用後まで待つ。初回の正しい取得だけで修正前を通さない。
+        await page.waitForTimeout(300);
+        expect(requests.length).toBeGreaterThan(0);
+        expect(requests.every((id) => id === ANALYSIS_FIXED_RACE_ID)).toBe(true);
+        await expect(page.locator(".motor-ranking-row")).toHaveCount(6);
+        await expect(page.locator(".motor-ranking-row").first()).toContainText("リンク先選手1");
+      } finally {
+        await context.close();
+      }
+    });
+  }
+
   test("選手別決まり手傾向タブで固定の過去レースの内訳が表示される（BOA-165、固定日の技法はBOA-664）", async ({
     page,
   }) => {
