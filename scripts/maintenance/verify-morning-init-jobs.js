@@ -35,6 +35,7 @@ import {
 } from "../lib/scrapeJobs/monitor.js";
 import {
   IN_CAUTION_MAX_ATTEMPTS,
+  inCautionAlertUntil,
   RACES_INIT_VENUES_PER_INVOCATION,
   backoffMinutes,
   createPredictCodeOnTick,
@@ -874,6 +875,25 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
       d.calls.unified === IN_CAUTION_MAX_ATTEMPTS &&
       env.row().last_target_date === DATE,
     show({ body: last.body, unified: d.calls.unified }),
+  );
+  // 2026-10-13 レビュー F1: 打ち切りの次の起動の成功の報告でも、通知（finalize_failed）を残す。
+  // 残さないと 05:1x の成功で alerts が空になり、scrape-monitor（JST 07:00〜）に届かない
+  const kept = (env.row().last_report?.alerts ?? []).find(
+    (a) => a.key === "finalize_failed",
+  );
+  check(
+    "(e) 打ち切りの次の起動（成功）の報告にも、打ち切りの通知を JST 09:00 まで残す",
+    env.row().consecutive_failures === 0 &&
+      /イン崩れ注意度/.test(kept?.text ?? "") &&
+      kept?.until === "2026-09-21T00:00:00.000Z",
+    show(env.row().last_report?.alerts),
+  );
+  check(
+    "(e) 通知を残す期限: 3時間後と当日 JST 09:00 の遅い方",
+    inCautionAlertUntil(jst("2026-09-21 05:10")) ===
+      "2026-09-21T00:00:00.000Z" &&
+      inCautionAlertUntil(jst("2026-09-21 07:30")) ===
+        "2026-09-21T01:30:00.000Z",
   );
 }
 
