@@ -647,10 +647,15 @@ function RaceMeetTab({
                   const tied = tiedCount(row.rank);
                   const inBorder = showBorderBadge && rankInBorder(row, slots);
                   // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
-                  // 数字を突き合わせないと分からず、実際に読み落とされた
+                  // 数字を突き合わせないと分からず、実際に読み落とされた。
+                  // 次の行だけでなく、下に目安内の行が1つも無いことで決める。順位の
+                  // 対象外（途中帰郷・賞典除外）が目安内の間に挟まると、線が2本になり
+                  // 下の目安内の艇が「線より下」に見えた（BOA-782 ファン評価2周目）
                   const borderEdge =
                     inBorder &&
-                    !(arr[i + 1] && rankInBorder(arr[i + 1].row, slots));
+                    !arr
+                      .slice(i + 1)
+                      .some((x) => rankInBorder(x.row, slots));
                   return (
                     <tr
                       key={p.number}

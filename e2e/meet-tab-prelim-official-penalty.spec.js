@@ -69,6 +69,11 @@ test("前夜の公式の表があれば、減点を引き、途中帰郷を順�
   await expect(page.locator(".rmt-rank-note")).toContainText(
     "今日の番組に残っていても順位から外しています",
   );
+  // 目安の点線は1本だけ。対象外の奈須（2行目）が目安内の艇の間に挟まっても、
+  // その手前に線を引かない（ファン評価2周目 指摘1）
+  await expect(page.locator(".rmt-compare tbody tr.is-border-edge")).toHaveCount(
+    1,
+  );
 });
 
 test("表の時点が表示中のレースの日と同じ（後出しになる）なら使わない", async ({
