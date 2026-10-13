@@ -1,4 +1,5 @@
 import twitterText from 'twitter-text';
+import { SCREEN_TABS } from '../../scripts/lib/snsScreenMarkers.js';
 
 // 推奨値は運用承認ではない。DB timing_approved=falseが初期値。
 export const QUEUE_TIMING_PROPOSAL = { scheduleMinutes: 90, expiryMinutes: 30 };
@@ -16,9 +17,10 @@ export function deadlineSchedule(deadlineAt, policy = QUEUE_TIMING_PROPOSAL) {
 export async function checkPublicDisplay(queue, headless, markers) {
   if (!headless || !queue?.public_url || !markers?.[queue.screen_key]?.length) throw new Error('public_check_unconfigured');
   const url = new URL(queue.public_url);
-  // UTM以外のqueryは公開仕様が確定するまで受け付けない。
+  // UTM 以外の query は、タブを直接開く tab（SCREEN_TABS の値だけ）しか受け付けない（sns-pdca-loop tasks 10）。
   if (url.origin !== 'https://www.boat-ai.jp' || url.username || url.password ||
-    url.hash || [...url.searchParams.keys()].some(k => !['utm_source','utm_medium','utm_campaign','utm_content'].includes(k))) throw new Error('public_url_invalid');
+    url.hash || [...url.searchParams.keys()].some(k => !['utm_source','utm_medium','utm_campaign','utm_content','tab'].includes(k)) ||
+    (url.searchParams.has('tab') && !SCREEN_TABS.includes(url.searchParams.get('tab')))) throw new Error('public_url_invalid');
   const selectors = markers[queue.screen_key];
   const result = await headless.inspect({ url: url.href, context: { storageState: null }, requiredSelectors: selectors });
   if (result.finalUrl !== url.href || !selectors.every(s => result.visibleSelectors?.includes(s))) throw new Error('public_component_missing');

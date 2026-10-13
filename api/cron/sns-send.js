@@ -8,8 +8,9 @@
  *   live                送る。ただしチャネルの sns_auto_send_control.dry_run が true の間は、送る前の検査までで止める
  *
  * 送る前の検査（createDeadlinePreflight）は、元データの読み直し（tasks 9、snsClaimCheck.js の readCurrent: 素材 v1 の claims を
- * 公開 API で照合・中止・欠場・締切）の後に、リンク先の表示の確認（tasks 10）を行う。10 が入るまでは必ず public_check_unconfigured で
- * 止まる（fail-closed）。その間は claim しないので、外部へは何も送られない。
+ * 公開 API で照合・中止・欠場・締切）の後に、リンク先の表示の確認（tasks 10）を、未ログインの Chromium（api/_lib/snsHeadless.js）で
+ * screen_key の印（scripts/lib/snsScreenMarkers.js）が見えるかで確かめる。Chromium は1回の実行で1回だけ起動し、終わったら閉じる。
+ * どれかに落ちたら claim しないので、外部へは何も送られない（fail-closed）
  *
  * cron式（vercel.json）は UTC。分は2分ごと、時は 23・0〜11（UTC）= JST 8:00〜20:58 の2分ごと
  */
@@ -21,6 +22,8 @@ import {
   runSnsSend,
 } from "../../scripts/lib/snsSendRunner.js";
 import { createDeadlinePreflight } from "../_lib/snsDeadlineQueue.js";
+import { createChromiumHeadless } from "../_lib/snsHeadless.js";
+import { SCREEN_MARKERS } from "../../scripts/lib/snsScreenMarkers.js";
 import { createReadCurrent } from "../_lib/snsClaimCheck.js";
 import { loadXMedia, xSendStore } from "../_lib/snsXSendStore.js";
 import {
@@ -43,49 +46,60 @@ const notify = async (text) => {
 
 export default createScrapeCronHandler({
   job: "sns_send",
-  run: (ctx) =>
-    runSnsSend(ctx, {
-      store: createSnsSendStore({
-        db: createPostgrestReader({
-          url: SUPABASE_URL,
-          key: SUPABASE_SERVICE_KEY,
-        }),
-        xSendStore,
-      }),
-      adapters: {
-        x: async () =>
-          createXApiAdapter({
-            accessToken: (
-              await getXAccessToken({
-                db: createPostgrestTokenDb(),
-                keyBase64: env.SNS_TOKEN_ENC_KEY,
-                clientId: env.X_OAUTH_CLIENT_ID,
-                clientSecret: env.X_OAUTH_CLIENT_SECRET,
-                notify,
-              })
-            ).accessToken,
-          }),
-        youtube: async () => {
-          const accessToken = await getYoutubeAccessToken({
-            clientId: env.YOUTUBE_CLIENT_ID,
-            clientSecret: env.YOUTUBE_CLIENT_SECRET,
-            refreshToken: env.YOUTUBE_REFRESH_TOKEN,
-          });
-          if (!accessToken) throw new Error("YouTube の鍵が未設定です");
-          return createYoutubeQueueAdapter({ accessToken });
-        },
-      },
-      preflight: createDeadlinePreflight({
-        headless: null,
-        markers: {},
-        readCurrent: createReadCurrent({
+  run: async (ctx) => {
+    const headless = createChromiumHeadless();
+    try {
+      return await runSnsSend(ctx, {
+        store: createSnsSendStore({
           db: createPostgrestReader({
             url: SUPABASE_URL,
             key: SUPABASE_SERVICE_KEY,
           }),
+          xSendStore,
         }),
-      }),
-      loadMedia: loadXMedia,
-      notify,
-    }),
+        adapters: {
+          x: async () =>
+            createXApiAdapter({
+              accessToken: (
+                await getXAccessToken({
+                  db: createPostgrestTokenDb(),
+                  keyBase64: env.SNS_TOKEN_ENC_KEY,
+                  clientId: env.X_OAUTH_CLIENT_ID,
+                  clientSecret: env.X_OAUTH_CLIENT_SECRET,
+                  notify,
+                })
+              ).accessToken,
+            }),
+          youtube: async () => {
+            const accessToken = await getYoutubeAccessToken({
+              clientId: env.YOUTUBE_CLIENT_ID,
+              clientSecret: env.YOUTUBE_CLIENT_SECRET,
+              refreshToken: env.YOUTUBE_REFRESH_TOKEN,
+            });
+            if (!accessToken) throw new Error("YouTube の鍵が未設定です");
+            return createYoutubeQueueAdapter({ accessToken });
+          },
+        },
+        preflight: createDeadlinePreflight({
+          headless,
+          markers: SCREEN_MARKERS,
+          readCurrent: createReadCurrent({
+            db: createPostgrestReader({
+              url: SUPABASE_URL,
+              key: SUPABASE_SERVICE_KEY,
+            }),
+          }),
+        }),
+        loadMedia: loadXMedia,
+        notify,
+      });
+    } finally {
+      // 閉じるのに失敗しても、送信の結果（送った件数・要照合）は消さない
+      await headless
+        .close()
+        .catch((error) =>
+          console.error(`Chromium を閉じられません: ${error.message}`),
+        );
+    }
+  },
 });
