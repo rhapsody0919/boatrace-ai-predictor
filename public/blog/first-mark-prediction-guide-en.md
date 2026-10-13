@@ -21,9 +21,9 @@ Unlike horse racing or bicycle racing, boat racing takes place **on the water**.
 | **Nuki (slip-through)** | A pass that happens after the 2nd turn onward | ~4% |
 | **Megumare (lucky win)** | A boat moves up after the leader crashes or capsizes | ~1% |
 
-Lane 1's wire-to-wire win accounts for about 55%, but in the remaining 45%, **a boat from lanes 2–6 overtakes at the first mark**. Being able to predict that 45% opens up real opportunities for higher-payout bets.
+By winning technique, Nige accounts for about 55% and techniques other than Nige for about 45%. Note that this table is a breakdown of each race's final winning technique, and it also includes techniques such as Nuki that are decided after the 2nd turn onward. **The winning-technique breakdown is not the same as the share of races in which each lane leads at the first mark.** Being able to predict developments that end in a technique other than Nige opens up real opportunities for higher-payout bets.
 
-![Donut chart showing the breakdown of winning patterns decided at the first mark: Nige 55%, Sashi 15%, Makuri 12%, Makuri-zashi 13%, Nuki 4%, and Megumare 1%, with the 45% share held by lanes other than 1 highlighted at the center](/images/blog/first-mark-kimarite-donut-en.jpg)
+![Donut chart showing the breakdown of winning techniques: Nige 55%, Sashi 15%, Makuri 12%, Makuri-zashi 13%, Nuki 4%, and Megumare 1%, with the combined 45% for techniques other than Nige shown at the center (not the share of races led by a lane other than 1 at the first mark)](/images/blog/first-mark-kimarite-donut-en.jpg)
 
 ---
 
@@ -44,7 +44,7 @@ For example, if a racer's record from lane 2 is:
 - Overtake: 25%
 - Overtake-and-pass: 10%
 
-then, if this racer draws lane 2, the model can predict a high probability they'll win via an inside pass.
+then this racer's wins from lane 2 come mostly via an inside pass. Note, however, that this example is the breakdown of winning techniques in the races they won from lane 2. It is not the same as the probability of winning via an inside pass across all of their starts from lane 2.
 
 #### 2. Lane-1 defensive strength (defensive pattern)
 
@@ -85,15 +85,9 @@ The model calculates **each racer's overall ability** from their national win ra
 
 Ryujin Radar's race detail page shows the turn prediction **two ways**.
 
-### 1. The turn-prediction animation
+### 1. The "AI Prediction" tab and "Ryujin Sonar"
 
-Shows how the race is expected to unfold at the first mark, as a **visual animation**.
-
-- Each boat's path from the start toward the turn mark
-- Who's likely to round the turn mark first
-- The most probable winning-technique pattern
-
-Watching the animation gives you an intuitive read on things like "the inside looks likely to win wire-to-wire in this race" or "lane 3 looks primed for an overtake."
+On the race detail page, the "AI Prediction" tab shows the candidates likely to finish 1st, ranked by probability. To check past developments under specific conditions, open the separate "Ryujin Sonar" tab.
 
 ### 2. The detailed turn-data table
 
@@ -176,7 +170,7 @@ Ryujin Radar's turn prediction provides **the reasoning behind a race's developm
 2. **Lane 1's defensive strength**: whether the inside can hold wire-to-wire
 3. **ST data**: same-day start feel combined with long-term ability
 4. **Motor performance**: its effect on the odds of an overtake or inside pass landing
-5. **Animated display**: an intuitive way to grasp how the race will unfold
+5. **The "AI Prediction" tab and "Ryujin Sonar"**: see 1st-place candidates ranked by probability, and check past developments under specific conditions
 
 When you wonder "why is the AI favoring lane 1?", the turn prediction is the feature that **shows you the reasoning behind it, backed by data**.
 
