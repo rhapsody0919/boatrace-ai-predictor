@@ -169,7 +169,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/preRaceDigest.js` | レース情報（A1）・展示（A2）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeRaceInfoDigest, computeExhibitionDigest, RACE_ENTRY_DIGEST_COLUMNS, RACE_CONDITION_DIGEST_COLUMNS, EXHIBITION_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/preRaceHandlers.js` | レース情報（A1）・展示（A2）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parsePreRaceId, createScheduleLoader, createSeriesDayLoader, createRaceInfoSlotHandler, createExhibitionSlotHandler ほか6件 |
 | `scripts/lib/scrapeJobs/predictionOddsHandlers.js` | 買い目オッズ（A4、prediction_odds）を、A3（オッズ取得、race_odds）の成功フックから導出する（BOA-404、 | fetchPredictionsByModel, fetchLatestRaceOdds, deriveRowsForRaces, buildShadowDigest, deriveAndUpsertPredictionOdds ほか3件 |
-| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | isScheduledDate, isCatchupOffset, isWeightOnlyOffset, graceMinFor, graceOverridesOf ほか6件 |
+| `scripts/lib/scrapeJobs/registry.js` | ジョブレジストリ: 窓・許容幅・再試行・リース・並列度・実行時間の定義（plan.md §3.6・§4.3・§4.4）。 | activeMinutesOf, isScheduledDate, isCatchupOffset, isWeightOnlyOffset, graceMinFor ほか7件 |
 | `scripts/lib/scrapeJobs/resultDigest.js` | 結果取得（A6）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | pickResultColumns, pickStartTimingColumns, computeResultDigest, RESULT_DIGEST_COLUMNS, START_TIMING_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/resultHandlers.js` | 結果取得（A6）まわりの Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseRaceId, addDays, overdueWindows, createResultSlotHandler, createResultOnTick ほか5件 |
 | `scripts/lib/scrapeJobs/schemaErrors.js` | 「予定表のテーブル・関数がDBに無い」エラーの判定。 | isScrapeSchemaMissingError, isClaimByOffsetMissingError, SCRAPE_SCHEMA_OBJECTS |
@@ -184,6 +184,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups |
 | `scripts/lib/snsCampaigns.js` | 企画型（キャンペーン型）SNS投稿パイプライン用 sns_campaigns / sns_campaign_entries | createCampaign, getCampaign, getActiveCampaigns, findQualifyingRaces, getRaceIdsWithResults ほか6件 |
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
+| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか3件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
@@ -332,4 +333,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 297 ファイル / export 1616 件。
+対象 298 ファイル / export 1625 件。
