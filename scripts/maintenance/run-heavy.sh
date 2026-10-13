@@ -37,7 +37,10 @@ if [ $# -eq 0 ]; then
   exit 2
 fi
 
-# CIでは素通し（別マシンで動くためローカルの資源競合が無い）
+# CIでは素通し（別マシンで動くためローカルの資源競合が無い）。ここで素通しする
+# コマンドそのものには手を入れない（--workers等はpackage.json側では固定せず、
+# 下のplaywright検出でローカル実行時にだけ付与する。CI専用ワークフロー
+# （e2e-live.yml等）がnpm run test:e2e経由でも既定の並列度を保てるようにするため）
 if [ "${CI:-}" = "true" ] || [ "${CI:-}" = "1" ]; then
   "$@"
   exit $?
@@ -48,7 +51,30 @@ MAX_SLOTS="${RYUJIN_HEAVY_MAX_SLOTS:-2}"
 POLL_INTERVAL="${RYUJIN_HEAVY_POLL_INTERVAL:-2}"
 SLOTS_DIR="$LOCK_DIR/slots"
 WAIT_DIR="$LOCK_DIR/waiting"
-mkdir -p "$SLOTS_DIR" "$WAIT_DIR"
+# mkdir -p が失敗すると（権限・ディスクフル等）、下のチケット取得ループが
+# sleep無しで無限に回り続けCPUを専有する。ここで失敗を検知して止める
+if ! mkdir -p "$SLOTS_DIR" "$WAIT_DIR"; then
+  echo "::error::$LOCK_DIR を作成できません（権限・ディスク容量を確認してください）" >&2
+  exit 1
+fi
+
+# ラップ対象がplaywrightの場合、ローカル実行時だけ --workers=1 を付ける
+# （枠は既定2本。各枠が内部でさらに複数workerを使うと実質の並列数が
+# 枠数×workers倍になり、制限の意味が薄れるため）。既に--workersが
+# 指定されている場合は上書きしない
+cmd_args=("$@")
+if [ "${cmd_args[0]:-}" = "playwright" ] || [ "${cmd_args[0]:-}" = "npx" ]; then
+  has_workers=0
+  for a in "${cmd_args[@]}"; do
+    case "$a" in
+      --workers*) has_workers=1 ;;
+    esac
+  done
+  if [ "$has_workers" -eq 0 ]; then
+    cmd_args+=("--workers=1")
+  fi
+fi
+set -- "${cmd_args[@]}"
 
 # 自分の順番待ちチケットを取る（空いている最小の番号をmkdirで原子的に確保する。
 # mkdirは既存なら必ず失敗するので、2プロセスが同じ番号を取ることは無い）

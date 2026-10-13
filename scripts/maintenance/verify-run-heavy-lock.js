@@ -60,10 +60,15 @@ async function main() {
     maxObserved = Math.max(maxObserved, countActiveSlots(lockDir));
   }, 50);
 
+  // spawnに"error"ハンドラが無いと、bashがPATHに無い等でNodeが未捕捉例外として
+  // クラッシュし、lockDirの削除（下のrmSync）まで到達しない
   const exitCodes = await Promise.all(
     children.map(
       (child) =>
-        new Promise((resolve) => child.on("exit", (code) => resolve(code))),
+        new Promise((resolve) => {
+          child.on("error", () => resolve(1));
+          child.on("exit", (code) => resolve(code ?? 1));
+        }),
     ),
   );
   clearInterval(poll);
