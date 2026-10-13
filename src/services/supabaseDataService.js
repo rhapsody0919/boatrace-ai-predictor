@@ -57,6 +57,7 @@ import {
 import {
   countsForSeriesScore,
   shouldUseOfficialSeries,
+  prelimOfficialAdjustments,
   prelimEndRaceIdOf,
   prelimEndDayOf,
   noRaceDaysOf,
@@ -7074,7 +7075,8 @@ export const supabaseDataService = {
     // v28: まだ1走もしていない選手（notYetStartedRacerIds）を足した（BOA-690）
     // v29: 節ページの useOfficial を足した（BOA-682）。キーを分けないと、今節タブと
     //      節ページで公式値の採否が違う結果を取り違える
-    const cacheKey = `meet-scoreboard-v29-${raceId}${useOfficial ? ":of" : ""}`;
+    // v30: 予選中に公式の前夜の減点・途中帰郷を足した（officialPenaltyByRacer、BOA-782）
+    const cacheKey = `meet-scoreboard-v30-${raceId}${useOfficial ? ":of" : ""}`;
     return withCache(cacheKey, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
 
@@ -7215,7 +7217,11 @@ export const supabaseDataService = {
           // 公式の得点率は `(着順点 − 減点) ÷ 走数` で、当社は減点を持って
           // いないため、減点のある選手とその下の全員の順位がズレる（BOA-475）。
           // 走数の列は無いが `placements` の文字数から出せる
-          .select("racer_id, remarks, placements, total_points, penalty_points")
+          // scraped_at: 予選中に減点・途中帰郷だけ借りるとき、表の時点が表示中の
+          // レースより前かを確かめる（BOA-782、prelimOfficialAdjustments）
+          .select(
+            "racer_id, remarks, placements, total_points, penalty_points, scraped_at",
+          )
           .eq("venue_code", venueCode)
           .eq("meet_start_date", meetStart)
           .then(({ data }) => data ?? []),
@@ -7240,6 +7246,30 @@ export const supabaseDataService = {
       const stageById = new Map(
         (conditions ?? []).map((c) => [c.race_id, c.race_stage]),
       );
+      // 公式の値を丸ごと使うか（予選の後、または節ページが決めたとき）
+      const usesOfficialSeries =
+        useOfficial === true ||
+        shouldUseOfficialSeries(
+          stageById.get(raceId) ?? null,
+          raceId,
+          prelimEndRaceIdOf(conditions ?? []),
+        );
+      // 使わないとき（予選中の今節タブ）は、前夜の公式の表から減点と途中帰郷だけを
+      // 当社計算に足す（オーナー決定 2026-10-13、BOA-782）。表の時点が表示中の
+      // レースの日より前でなければ null（後から過去のレースを開いたときの後出しを防ぐ）
+      const prelimOfficial = usesOfficialSeries
+        ? null
+        : prelimOfficialAdjustments(
+            officialSeries,
+            officialAsOfDate(
+              (officialSeries ?? [])
+                .map((r) => r.scraped_at)
+                .filter(Boolean)
+                .sort()
+                .pop() ?? null,
+            ),
+            date,
+          );
       // **男女Ｗ優勝戦の節を2シリーズに分ける**（BOA-511）。同じレースを走った
       // 選手を辿った連結成分がシリーズになる。該当しなければ null。
       // 出走表は節ぶんを既に持っているので追加クエリ0本
@@ -7333,19 +7363,15 @@ export const supabaseDataService = {
         officialByRacer: (() => {
           // 「使ってよいか」の判断は純関数に切り出してある（回帰テスト可能）。
           // 節ページが公式値を使うと決めたとき（useOfficial）はそちらに従う
-          if (
-            useOfficial !== true &&
-            !shouldUseOfficialSeries(
-              stageById.get(raceId) ?? null,
-              raceId,
-              prelimEndRaceIdOf(conditions ?? []),
-            )
-          )
-            return null;
+          if (!usesOfficialSeries) return null;
           const rows = officialSeries ?? [];
           if (rows.length === 0) return null;
           return Object.fromEntries(rows.map((r) => [r.racer_id, r]));
         })(),
+        // 予選中に当社計算へ足す、公式の前夜の減点（BOA-782）。`buildMeetRanking` が引く。
+        // 表の時点（YYYY-MM-DD）は画面の注記に使う。使えなければ null
+        officialPenaltyByRacer: prelimOfficial?.penaltyByRacer ?? null,
+        officialPrelimAsOf: prelimOfficial?.asOf ?? null,
         // **順位の対象から外す選手と、その理由**（途中帰郷・賞典除外）。
         // 公式の順位表はこの選手たちを順位から外すため、当社が全員で順位を
         // 振ると下位ほどズレ、ボーダーの目安も狂う。理由は画面の説明の出し分けに使う
@@ -7358,15 +7384,9 @@ export const supabaseDataService = {
           // 日に使うと、まだ走っている選手を「途中帰郷」で外した（児島G1 10/1 9R の
           // 丸野一樹。PR #1149 ファン評価2周目）
           // 節ページが公式値を使うと決めたとき（useOfficial）もそれに従う
-          const official =
-            useOfficial === true ||
-            shouldUseOfficialSeries(
-              stageById.get(raceId) ?? null,
-              raceId,
-              prelimEndRaceIdOf(conditions ?? []),
-            )
-              ? (officialSeries ?? []).filter((r) => r.remarks)
-              : [];
+          const official = usesOfficialSeries
+            ? (officialSeries ?? []).filter((r) => r.remarks)
+            : [];
           if (official.length > 0) {
             return {
               withdrawnRacerIds: official.map((r) => r.racer_id),
@@ -7404,6 +7424,11 @@ export const supabaseDataService = {
           // 予選中でも予選の後でも、その日から外す（withdrawnByAbsence の実測を参照）。
           // 以前は最終日まで待っていたため、予選中に帰った選手が予選の最終日の
           // 準優の目安の計算に残っていた
+          // 予選中は前夜の公式の備考の途中帰郷を先に入れる（BOA-782）。推定より確実で、
+          // 推定では表示日にまだ番組が残っている選手を拾えない（三国G1 10/6 の安河内将）
+          for (const id of prelimOfficial?.withdrawnRacerIds ?? []) {
+            if (!reasons[id]) reasons[id] = "officialWithdrawn";
+          }
           for (const id of withdrawnByAbsence(meetRows, date)) {
             if (!reasons[id]) reasons[id] = "withdrawn";
           }
