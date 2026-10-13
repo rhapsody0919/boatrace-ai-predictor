@@ -1,0 +1,173 @@
+/**
+ * YouTube Data API v3 の実 adapter（sns-pdca-loop tasks 18）。snsDeadlineQueue.js の
+ * runYoutubeQueueJob・runYoutubePublishJob・reconcileYoutubeJob の契約どおりの形にする（案B: 非公開で上げて確かめてから公開）:
+ * - upload({snapshot, media, privacyStatus:'private', publishAt:null, beforeCall, uploaded}) → uploaded の戻り値
+ * - processing(job) → {confirmed, id, privacyStatus, processingStatus}
+ * - makePublic({job, privacyStatus:'public', publishAt:null, beforeCall}) → {confirmed, id, privacyStatus, posted_at}
+ * - lookup(job) → 同上（照合の読み取り）
+ * 各 Data API の呼び出しの直前に beforeCall(method) でクォータの台帳へ記録する（146 の契約）。自動で再試行しない。
+ * 動画は 32 MiB までなので、1回の multipart で上げる（続きから送る仕組みは作らない。plan §4）。
+ * access token は runner が claim の前に取って渡す（X の adapter と同じ理由）。
+ */
+const API = "https://www.googleapis.com/youtube/v3";
+const UPLOAD_API = "https://www.googleapis.com/upload/youtube/v3";
+const TIMEOUT_MS = 120000;
+const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
+// 投稿の作り直しのたびに子供向けの設定がずれないよう、upload と公開で同じ値を送る
+const MADE_FOR_KIDS = false;
+
+export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
+  if (!accessToken) throw new Error("YouTube の access token がありません");
+  async function call(url, { method = "GET", headers = {}, body } = {}) {
+    const response = await fetchImpl(url, {
+      method,
+      headers: { Authorization: `Bearer ${accessToken}`, ...headers },
+      body,
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    });
+    const text = await response.text();
+    let parsed = null;
+    let parseError = null;
+    try {
+      parsed = text ? JSON.parse(text) : {};
+    } catch (error) {
+      parseError = error;
+    }
+    const where = `${method} ${new URL(url).pathname}`;
+    if (!response.ok) {
+      // API の本文は DB・ログに残さない契約なので、状態コードと Google のエラーの理由だけを出す
+      const reason =
+        parsed?.error?.errors?.[0]?.reason || parsed?.error?.status || "";
+      throw new Error(
+        `YouTube API ${where} が失敗: HTTP ${response.status}${reason ? ` ${reason}` : ""}`,
+      );
+    }
+    if (parseError)
+      throw new Error(
+        `YouTube API ${where} の応答を解釈できません: HTTP ${response.status}`,
+      );
+    return parsed;
+  }
+  // 自分がアップロードした動画だけが processingDetails を返す（他人の動画では見えない）。これを本人の動画の確認に使う
+  async function readVideo(id) {
+    const body = await call(
+      `${API}/videos?part=status,snippet,processingDetails&id=${encodeURIComponent(id)}`,
+    );
+    return body.items?.find((item) => item.id === id) ?? null;
+  }
+  const approvedTitle = (job) => job?.snapshot?.youtube_title ?? null;
+  const isOwnApproved = (video, job) =>
+    Boolean(
+      video &&
+      video.processingDetails &&
+      video.snippet?.title === approvedTitle(job),
+    );
+
+  return {
+    async upload({
+      snapshot,
+      media,
+      privacyStatus,
+      publishAt,
+      beforeCall,
+      uploaded,
+    }) {
+      if (privacyStatus !== "private" || publishAt !== null)
+        throw new Error("YouTube は非公開でだけ上げる（案B）");
+      const [video, cover] = media;
+      if (!video?.bytes || video.type !== "video/mp4")
+        throw new Error("動画がありません");
+      const metadata = {
+        snippet: {
+          title: snapshot.youtube_title,
+          description: snapshot.source?.caption_text ?? "",
+        },
+        status: {
+          privacyStatus: "private",
+          selfDeclaredMadeForKids: MADE_FOR_KIDS,
+        },
+      };
+      const boundary = `ryujin-${crypto.randomUUID()}`;
+      const body = new Blob([
+        `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`,
+        `--${boundary}\r\nContent-Type: video/mp4\r\n\r\n`,
+        video.bytes,
+        `\r\n--${boundary}--`,
+      ]);
+      await beforeCall("videos.insert");
+      const inserted = await call(
+        `${UPLOAD_API}/videos?uploadType=multipart&part=snippet,status`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": `multipart/related; boundary=${boundary}`,
+          },
+          body,
+        },
+      );
+      if (!VIDEO_ID.test(inserted?.id ?? ""))
+        throw new Error("YouTube の動画 ID が返りません");
+      const job = await uploaded(inserted.id);
+      if (cover) {
+        await beforeCall("thumbnails.set");
+        // サムネイルの Content-Type は媒体に合わせる（承認時に jpeg・png だけを通している）
+        await call(
+          `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(inserted.id)}&uploadType=media`,
+          {
+            method: "POST",
+            headers: { "Content-Type": cover.type },
+            body: cover.bytes,
+          },
+        );
+      }
+      return job;
+    },
+
+    async processing(job) {
+      const video = await readVideo(job.external_post_id);
+      return {
+        confirmed: isOwnApproved(video, job),
+        id: video?.id ?? null,
+        privacyStatus: video?.status?.privacyStatus ?? null,
+        processingStatus: video?.processingDetails?.processingStatus ?? null,
+      };
+    },
+
+    async makePublic({ job, privacyStatus, publishAt, beforeCall }) {
+      if (privacyStatus !== "public" || publishAt !== null)
+        throw new Error("公開は即時だけ");
+      await beforeCall("videos.update");
+      await call(`${API}/videos?part=status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: job.external_post_id,
+          status: {
+            privacyStatus: "public",
+            selfDeclaredMadeForKids: MADE_FOR_KIDS,
+          },
+        }),
+      });
+      await beforeCall("videos.list");
+      return publicationResult(await readVideo(job.external_post_id), job);
+    },
+
+    async lookup(job) {
+      return publicationResult(await readVideo(job.external_post_id), job);
+    },
+  };
+
+  // 公開を確かめた結果。posted_at は公開後の snippet.publishedAt（非公開の間の時刻や upload の終了時刻は使わない）
+  function publicationResult(video, job) {
+    const confirmed =
+      isOwnApproved(video, job) &&
+      video.status?.privacyStatus === "public" &&
+      Number.isFinite(Date.parse(video.snippet?.publishedAt));
+    return {
+      confirmed,
+      id: video?.id ?? null,
+      privacyStatus: video?.status?.privacyStatus ?? null,
+      posted_at: confirmed ? video.snippet.publishedAt : null,
+    };
+  }
+}
