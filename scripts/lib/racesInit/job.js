@@ -56,6 +56,11 @@ const RECHECK_UNTIL_JST_MIN = 9 * 60;
 /** 会場の失敗の通知を出す連続失敗回数と、通知を出す期間（時間） */
 const ALERT_AFTER_ATTEMPTS = 3;
 const ALERT_NOTIFY_HOURS = 3;
+/**
+ * イン崩れ注意度の表が読めなかった（RPC の失敗・表の欠け）ときに、後始末の unified をやり直す回数の上限（BOA-822）。
+ * 起動は2分ごとなので約10分。超えたら失敗として通知し、その日はやり直さない
+ */
+export const IN_CAUTION_MAX_ATTEMPTS = 5;
 /** last_report に残す、失敗の内容の最大数 */
 const MAX_FAILURES_IN_REPORT = 10;
 
@@ -140,7 +145,8 @@ async function defaultEnsureUnified(client, date, now) {
     await import("../../daily/generate-unified-predictions.js");
   // 発走済みのレースは、欠けていても数えず、書きもしない（BOA-628）
   const missing = await findRacesMissingUnified(date, client, { now });
-  if (missing.length === 0) return { missing: 0, generated: 0 };
+  if (missing.length === 0)
+    return { missing: 0, generated: 0, inCautionFailed: false };
   // 発走前のレースを upsert し直す（冪等。従来の ensureUnifiedPredictions と同じ）
   const result = await generateUnifiedPredictions({
     date,
@@ -148,7 +154,11 @@ async function defaultEnsureUnified(client, date, now) {
     strict: true,
     now,
   });
-  return { missing: missing.length, generated: result.generated };
+  return {
+    missing: missing.length,
+    generated: result.generated,
+    inCautionFailed: result.inCautionFailed === true,
+  };
 }
 
 async function defaultDeployHook() {
@@ -383,11 +393,14 @@ export async function runRacesInitJob(ctx, deps = {}) {
 
   // 4. 後始末（live のみ。全ての会場が済んでから）
   let finalizeError = null;
+  let finalizePending = false;
   if (!breakerOpen && remaining().length === 0) {
     if (live) {
-      finalizeError = await finalizeCycle({ ctx, d, cursor, date });
+      ({ error: finalizeError, pending: finalizePending } = await finalizeCycle(
+        { ctx, d, cursor, date },
+      ));
     }
-    if (!finalizeError) cursor.done = true;
+    if (!finalizeError && !finalizePending) cursor.done = true;
   }
 
   // 結果
@@ -487,7 +500,10 @@ async function saveProgress(ctx, { cursor, report }) {
 
 /**
  * 後始末（live）。各ステップの完了は cursor.finalize に記録し、済みのステップは、再実行しない。
- * 失敗したステップで止め、その内容を返す（成功なら null）。
+ * 失敗したステップで止め、その内容を返す（成功なら error: null）。
+ * unified でイン崩れ注意度の表が読めなかったときは、unified を済みにせず pending: true を返す（失敗にしない。
+ * 次の起動が作り直す）。IN_CAUTION_MAX_ATTEMPTS 回目は済みにして失敗を返す（1回だけ通知し、翌起動で後始末を終える）。
+ * @returns {Promise<{error: string|null, pending: boolean}>}
  */
 async function finalizeCycle({ ctx, d, cursor, date }) {
   const fin = cursor.finalize;
@@ -498,6 +514,24 @@ async function finalizeCycle({ ctx, d, cursor, date }) {
     }
     if (!fin.unified) {
       const r = await d.ensureUnified(ctx.client, date, ctx.now);
+      if (r.inCautionFailed) {
+        fin.inCautionAttempts = (fin.inCautionAttempts ?? 0) + 1;
+        if (fin.inCautionAttempts < IN_CAUTION_MAX_ATTEMPTS) {
+          console.warn(
+            `⚠️ イン崩れ注意度の表が読めない（${fin.inCautionAttempts}/${IN_CAUTION_MAX_ATTEMPTS}回目）。次の起動で unified を作り直す`,
+          );
+          return { error: null, pending: true };
+        }
+        fin.unified = {
+          missing: r.missing,
+          generated: r.generated,
+          inCautionFailed: true,
+        };
+        return {
+          error: `イン崩れ注意度の表が${IN_CAUTION_MAX_ATTEMPTS}回読めなかった（予想は書いた。inCaution は空のまま。in_caution_gap_band_daily・get_in_caution_band_rates を確認）`,
+          pending: false,
+        };
+      }
       fin.unified = { missing: r.missing, generated: r.generated };
     }
     if (!fin.hook) {
@@ -510,10 +544,10 @@ async function finalizeCycle({ ctx, d, cursor, date }) {
         console.warn(`⚠️ Vercel Deploy Hook 失敗: ${fin.hook.reason}`);
       }
     }
-    return null;
+    return { error: null, pending: false };
   } catch (error) {
     console.error("❌ races-init 後始末:", error);
-    return truncateError(error);
+    return { error: truncateError(error), pending: false };
   }
 }
 

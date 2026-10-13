@@ -2,7 +2,8 @@
  * 新AI予想モデル「unified」朝の日次バッチ（Task9a、オッズ不要）
  *
  * FR1複勝予想・FR2展開予測・FR3イン崩れバッジを算出し、predictions（model_id='unified'）へ
- * 書き込む。FR4（3連単参考情報）はオッズが必要なため、別バッチ
+ * 書き込む。BOA-822 のイン崩れ注意度（feature_contributions.inCaution）も書く（夜の表の RPC を1回読む。
+ * 旧キー volatility* は、読み手を全部切り替えるまで書き続ける。docs/design/in-collapse-caution/plan.md §1）。FR4（3連単参考情報）はオッズが必要なため、別バッチ
  * generate-unified-trifecta-reference.js（Task9b、発走前）で扱う（plan.md参照）。
  *
  * predictions.top_pick/top_2nd/top_3rd の意味（model_id='unified'の場合）:
@@ -22,7 +23,12 @@
 import { fileURLToPath } from "node:url";
 import { supabase, fetchAll } from "../lib/supabaseClient.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
-import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
+import {
+  addDaysToDateString,
+  getTodayDateJST,
+  parseDateArg,
+} from "../lib/dateUtils.js";
+import { computeInCaution, toInCautionRates } from "../lib/inCaution.js";
 import { predictFirstMark } from "../lib/turnPrediction.js";
 import {
   calculateVolatilityComposite,
@@ -33,6 +39,8 @@ const MODEL_ID = "unified";
 const VOLATILITY_LOOKBACK_DAYS = 90;
 const FALLBACK_PERCENTILE = 0.5; // 分布データが不足する場合のフォールバック（運用開始直後）
 const MIN_DISTRIBUTION_SAMPLES = 20; // これ未満ならフォールバックを使う
+const IN_CAUTION_RPC_ATTEMPTS = 3;
+const IN_CAUTION_RPC_RETRY_MS = 2000;
 
 function parseArgs(argv = process.argv.slice(2)) {
   return {
@@ -50,14 +58,24 @@ async function fetchRaceDataFromSupabase(
   // 単純な.select("*").in()だと後方の会場が無条件に切り捨てられる（2026-08-13判明、
   // 大村12レース全滅で発覚）。fetchAll（.range()ページネーション）必須
   const [entriesData, conditionsData] = await Promise.all([
-    fetchAll("race_entries", "*", (q) => q.in("race_id", raceIds).order("race_id").order("boat_number"), {
-      client,
-      throwOnError,
-    }),
-    fetchAll("race_conditions", "*", (q) => q.in("race_id", raceIds).order("race_id"), {
-      client,
-      throwOnError,
-    }),
+    fetchAll(
+      "race_entries",
+      "*",
+      (q) => q.in("race_id", raceIds).order("race_id").order("boat_number"),
+      {
+        client,
+        throwOnError,
+      },
+    ),
+    fetchAll(
+      "race_conditions",
+      "*",
+      (q) => q.in("race_id", raceIds).order("race_id"),
+      {
+        client,
+        throwOnError,
+      },
+    ),
   ]);
 
   const entriesByRace = new Map();
@@ -84,6 +102,7 @@ async function fetchRaceDataFromSupabase(
       entries: entries.sort((a, b) => a.boat_number - b.boat_number),
       windSpeed: cond.wind_speed ?? null,
       waveHeight: cond.wave_height ?? null,
+      raceStage: cond.race_stage ?? null,
     });
   }
   return races;
@@ -172,7 +191,10 @@ async function fetchVolatilityDistributionByVenue(
       q
         .eq("model_id", MODEL_ID)
         .gte("race_id", cutoffStr)
-        .lt("race_id", beforeDate).order("race_id").order("model_id").order("prediction_id"),
+        .lt("race_id", beforeDate)
+        .order("race_id")
+        .order("model_id")
+        .order("prediction_id"),
     { client, throwOnError },
   );
 
@@ -189,10 +211,52 @@ async function fetchVolatilityDistributionByVenue(
 }
 
 /**
+ * イン崩れ注意度の帯ごとの合計（RPC get_in_caution_band_rates、2019-04-01〜対象日の前日）。
+ * 失敗は間隔を空けて3回まで試し、それでも失敗したら null（全レース rates_unavailable。予想の行は書く）。
+ * 表が欠けているときは usable: false（toInCautionRates）。
+ *
+ * @param {string} date 対象日（YYYY-MM-DD、JST）。過去の日を作り直すときも、その日の前日まで
+ * @returns {Promise<ReturnType<typeof toInCautionRates>|null>}
+ */
+async function fetchInCautionRates(
+  date,
+  client,
+  { retryMs = IN_CAUTION_RPC_RETRY_MS } = {},
+) {
+  const previousDay = addDaysToDateString(date, -1);
+  for (let attempt = 1; attempt <= IN_CAUTION_RPC_ATTEMPTS; attempt++) {
+    let data = null;
+    let error = null;
+    try {
+      ({ data, error } = await client.rpc("get_in_caution_band_rates", {
+        p_from: null,
+        p_through: previousDay,
+      }));
+    } catch (e) {
+      error = e; // 接続の失敗等で例外になったときも、同じく再試行する
+    }
+    if (!error) {
+      const rates = toInCautionRates(data, previousDay);
+      if (!rates.usable)
+        console.error(`❌ イン崩れ注意度の表が欠けている: ${rates.reason}`);
+      return rates;
+    }
+    console.error(
+      `❌ get_in_caution_band_rates の失敗（${attempt}/${IN_CAUTION_RPC_ATTEMPTS}）: ${error.message}`,
+    );
+    if (attempt < IN_CAUTION_RPC_ATTEMPTS)
+      await new Promise((r) => setTimeout(r, retryMs * attempt));
+  }
+  return null;
+}
+
+/**
  * 対象日の、race_entries があるのに unified の予測が無いレースの race_id 一覧を返す。
  * 「その日に unified が1件でもあればスキップ」という日単位の判定だと、朝一番の取得時点で race_entries が
  * 間に合っていなかったレースが、その後に取得されても永久に生成対象外になる（2026-08-14、三国4〜7R。
  * morning-init.js の ensureUnifiedPredictions と同じ判定）。
+ * イン崩れ注意度の表が読めなかった行（inCautionSkip = 'rates_unavailable'）も欠けとして数える（次の races-init の
+ * 起動・morning-init で作り直す。BOA-822 design-reviewer 指摘1）。
  *
  * @param {string} date YYYY-MM-DD
  * @param {import("@supabase/supabase-js").SupabaseClient} [client]
@@ -203,11 +267,16 @@ export async function findRacesMissingUnified(
   client = supabase,
   { includeStarted = false, now = () => new Date() } = {},
 ) {
-  const [entryRows, predRows, schedule] = await Promise.all([
+  const [entryRows, predRows, unavailableRows, schedule] = await Promise.all([
     fetchAll(
       "race_entries",
       "race_id",
-      (q) => q.gte("race_id", date).lt("race_id", `${date}~`).order("race_id").order("boat_number"),
+      (q) =>
+        q
+          .gte("race_id", date)
+          .lt("race_id", `${date}~`)
+          .order("race_id")
+          .order("boat_number"),
       { client, throwOnError: true },
     ),
     fetchAll(
@@ -217,14 +286,34 @@ export async function findRacesMissingUnified(
         q
           .eq("model_id", MODEL_ID)
           .gte("race_id", date)
-          .lt("race_id", `${date}~`).order("race_id").order("model_id").order("prediction_id"),
+          .lt("race_id", `${date}~`)
+          .order("race_id")
+          .order("model_id")
+          .order("prediction_id"),
+      { client, throwOnError: true },
+    ),
+    fetchAll(
+      "predictions",
+      "race_id",
+      (q) =>
+        q
+          .eq("model_id", MODEL_ID)
+          .gte("race_id", date)
+          .lt("race_id", `${date}~`)
+          .eq("feature_contributions->>inCautionSkip", "rates_unavailable")
+          .order("race_id")
+          .order("model_id")
+          .order("prediction_id"),
       { client, throwOnError: true },
     ),
     includeStarted
       ? Promise.resolve([])
       : getRaceSchedule(date, { client, throwOnError: true }),
   ]);
-  const predRaceIds = new Set((predRows || []).map((r) => r.race_id));
+  const unavailable = new Set((unavailableRows || []).map((r) => r.race_id));
+  const predRaceIds = new Set(
+    (predRows || []).map((r) => r.race_id).filter((id) => !unavailable.has(id)),
+  );
   // 発走済みのレースは、欠けていても数えない（生成側が書かないため、数えると毎回の再実行が止まらない。BOA-628）
   const at = now();
   const started = new Set(
@@ -248,7 +337,10 @@ export async function findRacesMissingUnified(
  * @param {() => Date} [params.now] テスト用の時刻の差し替え
  * @param {boolean} [params.strict] true（既定。BOA-391）なら、DBの読み取りの失敗を「対象なし」「データ無し」にせず例外にする。
  *   CLI の例外は、呼び出し元の morning-init.js が try/catch で受けて続行する
- * @returns {Promise<{targetRaces: number, generated: number, written: number}>}
+ * @param {number} [params.inCautionRetryMs] イン崩れ注意度の RPC の再試行の間隔（テスト用）
+ * @returns {Promise<{targetRaces: number, generated: number, written: number, inCautionFailed?: boolean}>}
+ *   inCautionFailed: イン崩れ注意度の表が読めなかった（RPC の失敗・表の欠け）。予想の行は書いてある。
+ *   races-init の後始末はこれを見て、次の起動で作り直す（5回まで）
  */
 export async function generateUnifiedPredictions({
   date,
@@ -257,6 +349,7 @@ export async function generateUnifiedPredictions({
   strict = true,
   includeStarted = false,
   now = () => new Date(),
+  inCautionRetryMs,
 }) {
   if (!client) {
     throw new Error("Supabase環境変数が未設定です。");
@@ -306,6 +399,11 @@ export async function generateUnifiedPredictions({
     strict,
   );
 
+  const inCautionRates = await fetchInCautionRates(date, client, {
+    retryMs: inCautionRetryMs,
+  });
+  const inCautionFailed = !inCautionRates?.usable;
+
   const predictionsData = [];
   for (const race of races) {
     const turnPredictionPlayers = race.entries.map((e) => {
@@ -353,6 +451,12 @@ export async function generateUnifiedPredictions({
       ? FALLBACK_PERCENTILE
       : toVolatilityPercentile(volatility.composite, dist);
 
+    const { inCaution, skip: inCautionSkip } = computeInCaution({
+      entries: race.entries,
+      raceStage: race.raceStage,
+      rates: inCautionRates,
+    });
+
     predictionsData.push({
       race_id: race.raceId,
       model_id: MODEL_ID,
@@ -370,6 +474,8 @@ export async function generateUnifiedPredictions({
         // 「データ収集中」表示に切り替えられるようフラグを持たせる（2026-08-14ユーザー指摘）
         volatilityPercentileIsFallback,
         volatilityReasons: volatility.reasons,
+        inCaution,
+        inCautionSkip,
       },
     });
   }
@@ -383,6 +489,7 @@ export async function generateUnifiedPredictions({
       targetRaces: raceIds.length,
       generated: predictionsData.length,
       written: 0,
+      inCautionFailed,
     };
   }
 
@@ -420,6 +527,7 @@ export async function generateUnifiedPredictions({
     targetRaces: raceIds.length,
     generated: predictionsData.length,
     written,
+    inCautionFailed,
   };
 }
 
