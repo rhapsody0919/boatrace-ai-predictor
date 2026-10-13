@@ -39,7 +39,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 - [x] **9. 数値の照合** `api/_lib/snsClaimCheck.js`: endpoint の許可リスト、公開 API の読み直し、値の照合。preflight の `readCurrent` からも呼ぶ（許可リストは `/api/analogy/{facts,similar,scenario,layer}/{素材と同じレース}` と `?stage=`。`checkClaims` の `revision` を auto-plan（12）が `deadline_queue.source_revision` に、`deadlineIso` を `deadline_at` に入れる。sns-send の preflight に接続済み）
 - [x] **10. ヘッドレス** `api/_lib/snsHeadless.js`（playwright-core＋@sparticuz/chromium、ADR 0091）と `scripts/lib/snsScreenMarkers.js`（実画面で印を決める）。関数のサイズを測り、250 MB を超えるなら chromium-min に切り替える（2026-10-13: 印は本番の `/race/{id}?tab=sonar` を未ログインで開いて決めた（`race-sonar`: analogy-stage-chip・analogy-fact-card）。リンクは `?tab=sonar` を許す（#1513 の UTM も同じ）。@sparticuz/chromium 68 MB＋playwright-core 11 MB で 250 MB に届かないので chromium-min にしない。関数のメモリは Fluid compute ではダッシュボードで設定（既定のまま）。Chromium の bin は vercel.json の includeFiles で同梱）
-- [ ] **11. 個別承認の画面と同じ条件の検査** を部品にして、mobile-approval と自動の両方から使う
+- [x] **11. 個別承認の画面と同じ条件の検査** を部品にして、mobile-approval と自動の両方から使う（`snsMobileApproval.js` の `sendHolds`（`mobileHolds` は同じ関数）。v1 は `source_data.claim_check`（ok・revision＝`deadline_queue.source_revision`）と `release_evidence`（表示の確認）を見る。どちらも 12 の auto-plan が書く。v1 は bundle 由来でも `publish_blocked=false` なら公開保留にしない）
 
 ## PR-4 自動承認・事前通知・止める
 
