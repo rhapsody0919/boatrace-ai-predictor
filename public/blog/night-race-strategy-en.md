@@ -16,7 +16,7 @@ This article breaks down the **5 defining features** of night races and a **data
 
 Night races typically run from around **3:00 PM to 8:30 PM**. Because they're easy to catch after work, they've grown rapidly in popularity in recent years.
 
-### The 7 night-race venues
+### Main night-race venues
 
 | Venue | Character |
 |------|------|
@@ -25,10 +25,9 @@ Night races typically run from around **3:00 PM to 8:30 PM**. Because they're ea
 | **Marugame** (Kagawa) | Salt water, affected by tides; frequent headwinds |
 | **Shimonoseki** (Yamaguchi) | Salt water, small pool; stable water conditions |
 | **Wakamatsu** (Fukuoka) | Salt water, large tidal swings; sensitive to wind |
-| **Tokuyama** (Yamaguchi) | Among the nation's best inside win rates; calm water |
 | **Omura** (Nagasaki) | Nation's highest inside-lane 1st-place rate; the heartland of night racing |
 
-![Card grid showing the character of all 7 night-race venues: Kiryu, Gamagori, Marugame, Shimonoseki, Wakamatsu, Tokuyama, and Omura, each with its water and weather conditions](/images/blog/night-venues-grid-en.jpg)
+![Card grid showing the character of the main night-race venues: Kiryu, Gamagori, Marugame, Shimonoseki, Wakamatsu, and Omura, each with its water and weather conditions](/images/blog/night-venues-grid-en.jpg)
 
 ---
 
@@ -58,7 +57,7 @@ Wind tends to **weaken at night** compared to daytime.
 
 **Why:**
 - After sunset, the temperature gradient at ground level shrinks, weakening convection
-- This is especially pronounced at inland Kiryu, and even at bay-adjacent venues like Gamagori, Tokuyama, and Omura
+- This is especially pronounced at inland Kiryu, and even at bay-adjacent venues like Gamagori and Omura
 
 **Impact on your predictions:**
 - Calmer water makes an inside wire-to-wire win more likely
@@ -153,14 +152,13 @@ Not all night-race venues are the same. Understanding each venue's traits matter
 | Marugame | ★★★☆☆ | ★★★☆☆ | Check the tide; the inside is favored at high tide |
 | Shimonoseki | ★★★★☆ | ★★☆☆☆ | Small, stable pool; high inside wire-to-wire rate |
 | Wakamatsu | ★★★☆☆ | ★★★☆☆ | Water conditions shift with wind and tide — rely on the data |
-| Tokuyama | ★★★★★ | ★☆☆☆☆ | Top-tier inside win rate; lane 1 is highly reliable |
 | Omura | ★★★★★ | ★☆☆☆☆ | The inside-lane heartland of night racing; results tend to be predictable |
 
 ---
 
 ## Streamline your night-race predictions with Ryujin Radar
 
-Night races are a genre where understanding the fundamentals can meaningfully raise your hit rate. But researching the water conditions, temperature swings, and each racer's night-racing aptitude across all 7 venues yourself is a lot of work.
+Night races are a genre where understanding the fundamentals can meaningfully raise your hit rate. But researching the water conditions, temperature swings, and each racer's night-racing aptitude across every night-race venue yourself is a lot of work.
 
 **With Ryujin Radar:**
 - All night races across every venue are analyzed by AI in real time
