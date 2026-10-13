@@ -1060,7 +1060,7 @@
     {
       "script": "verify-sns-x-oauth.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知）、PostgREST の条件付き UPDATE（外部接続なし）"
+      "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知、保存が成り立たず確かめる読み直しも失敗したときも通知）、PostgREST の条件付き UPDATE（外部接続なし）"
     },
     {
       "script": "verify-sns-x-adapter.js",
