@@ -9,11 +9,26 @@
 // 実際に存在するレースIDへの置き換えが必要になる可能性がある（仕様の曖昧点として報告）。
 // 発走後・確定済みのレースIDは v16 公開（2026-10-06ごろ）より後の日付にする必要がある
 // （spec「データ（土台）」: 公開より前のレースは layer API を呼ばず not_saved 扱い）。
-import { test, expect } from "../fixtures.js";
+import { test, expect, e2eNow } from "../fixtures.js";
 
 const PENDING_RACE_ID = "2099-12-31-01-01"; // 発走前（締切前）を想定
 const FINISHED_RACE_ID = "2026-10-08-01-01"; // 発走後・確定済み（v16公開後）を想定
 const PRE_PUBLISH_RACE_ID = "2020-01-01-01-01"; // v16公開より前の日付（not_savedと同じ扱い）
+
+// FR-5「savedAt から30日を過ぎた Entry を読み込みのたびに取り除く」との整合用。
+// テストの「今」は e2eNow()（録画の再生ではHAR録画時刻、E2E_LIVEでは実時刻）に
+// 固定されている（e2e/fixtures.js の context.clock.setFixedTime）ので、固定の
+// 日付文字列（例: 2026-01-01）を savedAt に使うと、録画が撮り直されるたびに
+// 「30日以内」の前提が崩れうる。e2eNow() からの相対時刻で揃える。
+// 10日前: 常に30日以内（表示されることを期待するEntryに使う）。
+// 31日前: 常に30日超過（読み込みで取り除かれることを期待するEntryに使う）。
+const NOW = e2eNow();
+const RECENT_SAVED_AT = new Date(
+  NOW.getTime() - 10 * 24 * 60 * 60 * 1000,
+).toISOString();
+const EXPIRED_SAVED_AT = new Date(
+  NOW.getTime() - 31 * 24 * 60 * 60 * 1000,
+).toISOString();
 
 const BASE_CONDITIONS = {
   b1_class: "A1",
@@ -946,7 +961,7 @@ test.describe("FR-5 端末内保存", () => {
     );
     await page.goto(`/race/${FINISHED_RACE_ID}`);
     await page.evaluate(
-      ({ raceId }) => {
+      ({ raceId, savedAt }) => {
         const value = {
           v: 1,
           entries: [
@@ -954,7 +969,7 @@ test.describe("FR-5 端末内保存", () => {
               raceId,
               type: "boat1",
               input: { outcome: "win" },
-              savedAt: "2026-01-01T00:00:00.000Z",
+              savedAt,
               snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12" },
               result: {
                 n: 5,
@@ -971,7 +986,7 @@ test.describe("FR-5 端末内保存", () => {
           JSON.stringify(value),
         );
       },
-      { raceId: FINISHED_RACE_ID },
+      { raceId: FINISHED_RACE_ID, savedAt: RECENT_SAVED_AT },
     );
     await page.reload();
     await page.getByRole("tab", { name: "結果" }).click();
@@ -979,6 +994,85 @@ test.describe("FR-5 端末内保存", () => {
     await expect(
       page.getByText("あなたの予想 1号艇が1着 は、過去5レース中 2回（40.0%）"),
     ).toBeVisible();
+  });
+
+  test("[spec FR-5] savedAt から30日を過ぎた Entry は振り返りに表示されず、読み込みで localStorage からも取り除かれる", async ({
+    page,
+  }) => {
+    // 30日以内（RECENT_SAVED_AT・type=boat1）と30日超過（EXPIRED_SAVED_AT・
+    // type=payout）の2件を保存しておき、30日以内の分だけ表示され、30日超過の分は
+    // 振り返りの表示時（読み込み）に取り除かれることを確かめる
+    await mockLayer(
+      page,
+      okBody({
+        rows: GENERIC_ROWS,
+        run_id: "run-xyz",
+        pool_cutoff: "2026-10-12",
+      }),
+    );
+    await page.goto(`/race/${FINISHED_RACE_ID}`);
+    await page.evaluate(
+      ({ raceId, recentSavedAt, expiredSavedAt }) => {
+        const value = {
+          v: 1,
+          entries: [
+            {
+              raceId,
+              type: "boat1",
+              input: { outcome: "win" },
+              savedAt: recentSavedAt,
+              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12" },
+              result: {
+                n: 5,
+                count: 2,
+                excluded: [],
+                label: null,
+                truncated: false,
+              },
+            },
+            {
+              raceId,
+              type: "payout",
+              input: { band: "high" },
+              savedAt: expiredSavedAt,
+              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12" },
+              result: {
+                n: 5,
+                count: 1,
+                excluded: [],
+                label: null,
+                truncated: false,
+              },
+            },
+          ],
+        };
+        localStorage.setItem(
+          "boatai-user:past-rate-check:v1",
+          JSON.stringify(value),
+        );
+      },
+      {
+        raceId: FINISHED_RACE_ID,
+        recentSavedAt: RECENT_SAVED_AT,
+        expiredSavedAt: EXPIRED_SAVED_AT,
+      },
+    );
+    await page.reload();
+    await page.getByRole("tab", { name: "結果" }).click();
+    await expect(reviewHeading(page)).toBeVisible();
+    // 30日以内（boat1）は表示される
+    await expect(
+      page.getByText("あなたの予想 1号艇が1着 は、過去5レース中 2回（40.0%）"),
+    ).toBeVisible();
+    // 30日超過（payout）は表示されない
+    await expect(page.getByText(/^あなたの予想 3連単が/)).toHaveCount(0);
+    // 読み込みのたびに取り除く（FR-5）: localStorage から30日超過の Entry が消える
+    const saved = await page.evaluate(() =>
+      localStorage.getItem("boatai-user:past-rate-check:v1"),
+    );
+    const entries = saved ? JSON.parse(saved).entries : [];
+    expect(entries.some((e) => e.type === "payout")).toBe(false);
+    expect(entries.some((e) => e.type === "boat1")).toBe(true);
   });
 
   test("[spec FR-4] 保存した予想が無いレースでは決着の行だけが表示される", async ({
@@ -1009,7 +1103,7 @@ test.describe("FR-5 端末内保存", () => {
     );
     await page.goto(`/race/${FINISHED_RACE_ID}`);
     await page.evaluate(
-      ({ raceId }) => {
+      ({ raceId, savedAt }) => {
         const value = {
           v: 1,
           entries: [
@@ -1017,7 +1111,7 @@ test.describe("FR-5 端末内保存", () => {
               raceId,
               type: "boat1",
               input: { outcome: "win" },
-              savedAt: "2026-01-01T00:00:00.000Z",
+              savedAt,
               snapshot: { runId: "run-old", poolCutoff: "2026-09-01" },
               result: {
                 n: 5,
@@ -1034,7 +1128,7 @@ test.describe("FR-5 端末内保存", () => {
           JSON.stringify(value),
         );
       },
-      { raceId: FINISHED_RACE_ID },
+      { raceId: FINISHED_RACE_ID, savedAt: RECENT_SAVED_AT },
     );
     await page.reload();
     await page.getByRole("tab", { name: "結果" }).click();

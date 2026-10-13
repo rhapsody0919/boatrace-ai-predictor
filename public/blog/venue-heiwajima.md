@@ -34,7 +34,7 @@
 
 ### 3. 昼の開催
 
-平和島は昼に開催する会場です。[BOAT RACE公式のレース一覧](https://www.boatrace.jp/owpc/pc/race/raceindex?jcd=04)では、1Rの締切が10時台、最終の12Rが16時台です（2026年10月1日・13日に確認）。
+平和島は昼に開催する会場です。[BOAT RACE公式のレース一覧](https://www.boatrace.jp/owpc/pc/race/raceindex?jcd=04&hd=20261013)では、1Rの締切が10時台、最終の12Rが16時台です（2026年10月1日・13日に確認）。
 
 ### 4. 風の影響
 

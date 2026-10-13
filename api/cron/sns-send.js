@@ -7,8 +7,9 @@
  *   shadow              送る前の検査までで止める（DB の状態も変えない）
  *   live                送る。ただしチャネルの sns_auto_send_control.dry_run が true の間は、送る前の検査までで止める
  *
- * 送る前の検査（createDeadlinePreflight）は、リンク先の表示の確認（tasks 10）と元データの読み直し（tasks 9）が入るまで、
- * 必ず source_check_unconfigured で止まる（fail-closed）。その間は claim しないので、外部へは何も送られない。
+ * 送る前の検査（createDeadlinePreflight）は、元データの読み直し（tasks 9、snsClaimCheck.js の readCurrent: 素材 v1 の claims を
+ * 公開 API で照合・中止・欠場・締切）の後に、リンク先の表示の確認（tasks 10）を行う。10 が入るまでは必ず public_check_unconfigured で
+ * 止まる（fail-closed）。その間は claim しないので、外部へは何も送られない。
  *
  * cron式（vercel.json）は UTC。分は2分ごと、時は 23・0〜11（UTC）= JST 8:00〜20:58 の2分ごと
  */
@@ -20,6 +21,7 @@ import {
   runSnsSend,
 } from "../../scripts/lib/snsSendRunner.js";
 import { createDeadlinePreflight } from "../_lib/snsDeadlineQueue.js";
+import { createReadCurrent } from "../_lib/snsClaimCheck.js";
 import { loadXMedia, xSendStore } from "../_lib/snsXSendStore.js";
 import {
   createPostgrestTokenDb,
@@ -33,8 +35,10 @@ import { SUPABASE_SERVICE_KEY, SUPABASE_URL } from "../_lib/snsHubHelpers.js";
 export const config = { maxDuration: 300 };
 
 const env = process.env;
+// Webhook が未設定なら投げる（runner が「届かなかった通知」として report.alerts に残す）
 const notify = async (text) => {
-  if (env.SLACK_WEBHOOK_URL) await postSlack(env.SLACK_WEBHOOK_URL, { text });
+  if (!env.SLACK_WEBHOOK_URL) throw new Error("SLACK_WEBHOOK_URL が未設定です");
+  await postSlack(env.SLACK_WEBHOOK_URL, { text });
 };
 
 export default createScrapeCronHandler({
@@ -74,7 +78,12 @@ export default createScrapeCronHandler({
       preflight: createDeadlinePreflight({
         headless: null,
         markers: {},
-        readCurrent: null,
+        readCurrent: createReadCurrent({
+          db: createPostgrestReader({
+            url: SUPABASE_URL,
+            key: SUPABASE_SERVICE_KEY,
+          }),
+        }),
       }),
       loadMedia: loadXMedia,
       notify,

@@ -37,7 +37,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-3 検査（禁止表現・数値の照合・リンク先の表示）
 
-- [ ] **9. 数値の照合** `api/_lib/snsClaimCheck.js`: endpoint の許可リスト、公開 API の読み直し、値の照合。preflight の `readCurrent` からも呼ぶ
+- [x] **9. 数値の照合** `api/_lib/snsClaimCheck.js`: endpoint の許可リスト、公開 API の読み直し、値の照合。preflight の `readCurrent` からも呼ぶ（許可リストは `/api/analogy/{facts,similar,scenario,layer}/{素材と同じレース}` と `?stage=`。`checkClaims` の `revision` を auto-plan（12）が `deadline_queue.source_revision` に、`deadlineIso` を `deadline_at` に入れる。sns-send の preflight に接続済み）
 - [ ] **10. ヘッドレス** `api/_lib/snsHeadless.js`（playwright-core＋@sparticuz/chromium、ADR 0091）と `scripts/lib/snsScreenMarkers.js`（実画面で印を決める）。関数のサイズを測り、250 MB を超えるなら chromium-min に切り替える
 - [x] **11. 個別承認の画面と同じ条件の検査** を部品にして、mobile-approval と自動の両方から使う（`snsMobileApproval.js` の `sendHolds`（`mobileHolds` は同じ関数）。v1 は `source_data.claim_check`（ok・revision＝`deadline_queue.source_revision`）と `release_evidence`（表示の確認）を見る。どちらも 12 の auto-plan が書く。v1 は bundle 由来でも `publish_blocked=false` なら公開保留にしない）
 
@@ -68,7 +68,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
   - [ ] 本番実測: 期待件数（算出根拠: 日数×（動画数×指標数＋UTM の投稿数×指標数＋チャネル全体の指標数））に対し、充足率99%以上
   - [ ] タイミング実測: 直近5日（土日を含む）で、D−3 の値（確定済み）が入っている割合（欠落率2%以内）。YouTube Analytics の確定の遅れを含めるため D−1 では測らない
   - [ ] 継続監視: 未実行・0件を Slack に通知
-- [ ] **23. UTM**: X の親の投稿の URL を承認時に `buildObservationUtm`（campaign=race-full）で作り、`sns_post_tracking` に保存
+- [x] **23. UTM**: X の親の投稿の URL を承認時に `buildObservationUtm`（campaign=race-full）で作り、`sns_post_tracking` に保存（部品は `scripts/lib/snsPostTracking.js` の `prepareRaceTracking`・`createPostTrackingStore`。呼ぶのは 12 の auto-plan で、順番は plan §2 の「UTM を本文に差し込む → 禁止表現の検査 → deadline_queue → 承認」。`utm_content` は下書きの ID）
 
 ## PR-7 改善案
 

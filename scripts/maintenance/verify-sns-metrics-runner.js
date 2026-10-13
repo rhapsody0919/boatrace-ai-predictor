@@ -49,14 +49,23 @@ const sendStore = {
         await all("SELECT channel, mode, dry_run FROM sns_auto_send_control")
       ).map((r) => [r.channel, r]),
     ),
-  dueJobs: async (now, limit) =>
-    pickDueJobs(
+  // runner の store の形（#1520: 走査位置つきの dueJobs と、リース切れの sending の読み取り）に合わせる。
+  // このテストは送った後の取り込みを見るので、走査位置は使わない
+  dueJobs: async (now, limit) => ({
+    jobs: pickDueJobs(
       await all(
         "SELECT * FROM sns_x_send_jobs WHERE state='queued' AND scheduled_at<=$1 ORDER BY scheduled_at, id",
         [now.toISOString()],
       ),
       await all("SELECT id, state, external_post_id FROM sns_x_send_jobs"),
       limit,
+    ),
+    nextCursor: null,
+  }),
+  expiredSending: async (now) =>
+    all(
+      "SELECT id, channel FROM sns_x_send_jobs WHERE state='sending' AND lease_until<=$1",
+      [now.toISOString()],
     ),
 };
 

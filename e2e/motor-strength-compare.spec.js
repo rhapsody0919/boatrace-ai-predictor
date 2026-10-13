@@ -36,9 +36,50 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       timeout: 30000,
     });
     await expect(
+      page.locator(".table-note", { hasText: "ベージュの地は" }),
+    ).toHaveText("ベージュの地は、その列で一番の値です。");
+    await expect(
       page.locator(".table-note", { hasText: "金枠の値は" }),
-    ).toContainText("ベージュの地は、その列で一番の値です。");
+    ).toBeVisible();
+    await page.locator(".motor-ranking-table tbody tr").first().click();
+    await expect(page.locator(".motor-ranking-table")).toHaveCount(0);
+    await expect(
+      page.locator(".table-note", { hasText: "ベージュの地は" }),
+    ).toHaveCount(0);
   });
+
+  for (const value of [null, 0]) {
+    test(`強調3列が全艇${value === null ? "null" : "同値"}ならベージュの注記を出さない`, async ({
+      page,
+    }) => {
+      await page.route("**/rest/v1/venue_motor_stats*", async (route) => {
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        for (const row of Array.isArray(body) ? body : body ? [body] : []) {
+          row.final_count = value;
+          row.championship_count = value;
+          row.first_place_count = value;
+        }
+        // fetchRecorded の戻り値は APIResponse ではないので、status・headers を明示する。
+        // 書き換えた本文と食い違うので、元の長さ・圧縮のヘッダは渡さない
+        const headers = { ...response.headers() };
+        delete headers["content-length"];
+        delete headers["content-encoding"];
+        await route.fulfill({ status: response.status(), headers, json: body });
+      });
+      await page.goto(KOJIMA_7R);
+      await expect(page.locator(".motor-venue-rank").first()).toBeVisible({
+        timeout: 30000,
+      });
+      await expect(page.locator(".motor-stat-rank1")).toHaveCount(0);
+      await expect(
+        page.locator(".table-note", { hasText: "金枠の値は" }),
+      ).toBeVisible();
+      await expect(
+        page.locator(".table-note", { hasText: "ベージュの地は" }),
+      ).toHaveCount(0);
+    });
+  }
 
   test("棒の長さの比が公式2連率の比と一致し、会場内順位が出る", async ({
     page,
@@ -85,6 +126,36 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     );
     // 行全体の金の強調（期間の2連率の最大）は外した。最良は値ラベルだけで示す
     await expect(page.locator(".motor-ranking-row.best-motor")).toHaveCount(0);
+  });
+
+  test("入れ替え後のレースでは、入れ替え前に取った会場内順位を出さない（BOA-834）", async ({
+    page,
+  }) => {
+    // 児島の使用開始日を 9/30（このレースの日）にし、会場内順位のスナップショットの取得日を
+    // 9/27 に見せる（常滑 10/06 の実例と同じ形）。中身は録画の 9/30 の行をそのまま使う
+    await page.route(/\/rest\/v1\/venue_motor_start_dates\?/, (route) =>
+      route.fulfill({ json: [{ start_date: "2026-09-30" }] }),
+    );
+    await page.route(
+      /\/rest\/v1\/venue_motor_stats\?select=scraped_date&/,
+      (route) => route.fulfill({ json: { scraped_date: "2026-09-27" } }),
+    );
+    await page.route(
+      /\/rest\/v1\/venue_motor_stats\?.*scraped_date=eq\.2026-09-27/,
+      (route) =>
+        route.fallback({
+          url: route.request().url().replace("eq.2026-09-27", "eq.2026-09-30"),
+        }),
+    );
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-venue-rank-note")).toContainText(
+      "取得日 2026/9/27）",
+      { timeout: 30000 },
+    );
+    const ranks = await page
+      .locator(".motor-venue-rank")
+      .evaluateAll((els) => els.map((el) => el.textContent.trim()));
+    expect(ranks).toEqual(["—", "—", "—", "—", "—", "—"]);
   });
 
   test("375px で枠・選手・機番・棒・会場内順位が横スクロールなしで見える", async ({
@@ -137,6 +208,13 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       timeout: 30000,
     });
     await expect(page.locator(".rate-bar")).toHaveCount(6);
+    await expect(page.locator(".motor-stat-rank1")).toHaveCount(0);
+    await expect(
+      page.locator(".table-note", { hasText: "ベージュの地は" }),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(".table-note", { hasText: "金枠の値は" }),
+    ).toBeVisible();
     await expect(page.locator(".motor-venue-rank")).toHaveCount(0);
     await expect(
       page.locator(".motor-ranking-table thead th", {
