@@ -6,14 +6,16 @@
 
 ## PR-1 夜の表とジョブ（155、plan §2）
 
-- [ ] **1. `src/data/inCautionConfig.json`** を作る（`def`・`thresholds`・`bandWidthCents`・`bandMin`・`bandMax`・`from`・`minTotalN`・`prelaunch`・`launchDate: null`）。`minTotalN` は 2019-04〜2026-10-10 の完全レースの数（round4 の件数）から決め、根拠を JSON の横の README か plan に書く。`import ... with { type: "json" }` が Node 22・Vite・Vercel 関数のバンドルで動くかを先に確かめ、動かなければ JS の定数の module を正にする（plan §1）
-- [ ] **2. `scripts/ml/analogy/in_caution_bands.py`**
+#1461。task 1 は JSON の import をやめ、`src/constants/inCautionConfig.js`（JS の正）と `src/data/inCautionConfig.json`（Python 用）にした（Vercel 関数のバンドルで確かめる手段が無いため。一致は `verify-in-caution.js`）。進み具合は [handoff-step4-progress.md](./handoff-step4-progress.md)（PR-2）
+
+- [x] **1. `src/data/inCautionConfig.json`** を作る（`def`・`thresholds`・`bandWidthCents`・`bandMin`・`bandMax`・`from`・`minTotalN`・`prelaunch`・`launchDate: null`）。`minTotalN` は 2019-04〜2026-10-10 の完全レースの数（round4 の件数）から決め、根拠を JSON の横の README か plan に書く。`import ... with { type: "json" }` が Node 22・Vite・Vercel 関数のバンドルで動くかを先に確かめ、動かなければ JS の定数の module を正にする（plan §1）
+- [x] **2. `scripts/ml/analogy/in_caution_bands.py`**
   - `features.load_main`（full のときは `load_kb` も）＋ `add_labels` で完全レースの1号艇の行を作り、勝率差（1/100 の整数）・帯（clamp(floor(g/50), −8, 6)）・ラウンド（`round_from_stage` の junyu・yusho、ほかは other）を付け、日×ラウンド×帯で `n`・`non_win` を数える。勝率差が出せないレースは数えない
   - 書き方は「開始時刻を `computed_at` に入れて upsert → 窓の中の古い行を DELETE」（plan §2、M1）。窓は既定で直近14日、`--full` で全期間。JST 04:30〜23:00 は `--force` が無ければ書かずに終わる
   - 書き込みは `db.request`（PostgREST、service_role）。1000行ずつ
-- [ ] **3. pytest** `scripts/ml/analogy/tests/test_in_caution_bands.py`: 帯の境目（−350 は帯 −7、−351 は −8、300 は 6）、勝率 0.00 は勝率として数える（NULL だけ外す）、ラウンドの分け方、欠場のあるレースを数えない、F の1号艇は非1着、upsert の後に0件のセルが消える（db をモック）。固定の入力 `scripts/ml/analogy/tests/fixtures/in_caution_cases.json` は task 7 の JS の verify と共有する
-- [ ] **4. workflow `.github/workflows/in-caution-nightly.yml`**: `analogy-v16-morning.yml` と同じ形。14日のモードは `export_pool.js --daily races entries exhibition conditions results start_timings`（テーブル名の指定が `--daily` と同時に使えるかを確かめ、使えなければ export_pool.js を直す）、full は全テーブル。inputs `full`・`force`。`concurrency: in-caution-nightly`。失敗は Slack
-- [ ] **5. 起動**: `scripts/lib/analogyDispatch.js` の `DISPATCH_WORKFLOWS` に `in_caution_nightly`、`api/cron/in-caution-dispatch.js`、`vercel.json` の cron `30 17 * * *`、`scripts/lib/scrapeJobs/registry.js` に `in_caution_dispatch`（modeGated、`failureAlertAfter: 1`、mode は off で入れる）。`verify-analogy-dispatch.js` に1件足す
+- [x] **3. pytest** `scripts/ml/analogy/tests/test_in_caution_bands.py`: 帯の境目（−350 は帯 −7、−351 は −8、300 は 6）、勝率 0.00 は勝率として数える（NULL だけ外す）、ラウンドの分け方、欠場のあるレースを数えない、F の1号艇は非1着、upsert の後に0件のセルが消える（db をモック）。固定の入力 `scripts/ml/analogy/tests/fixtures/in_caution_cases.json` は task 7 の JS の verify と共有する
+- [x] **4. workflow `.github/workflows/in-caution-nightly.yml`**: `analogy-v16-morning.yml` と同じ形。14日のモードは `export_pool.js --daily races entries exhibition conditions results start_timings`（テーブル名の指定が `--daily` と同時に使えるかを確かめ、使えなければ export_pool.js を直す）、full は全テーブル。inputs `full`・`force`。`concurrency: in-caution-nightly`。失敗は Slack
+- [x] **5. 起動**: `scripts/lib/analogyDispatch.js` の `DISPATCH_WORKFLOWS` に `in_caution_nightly`、`api/cron/in-caution-dispatch.js`、`vercel.json` の cron `30 17 * * *`、`scripts/lib/scrapeJobs/registry.js` に `in_caution_dispatch`（modeGated、`failureAlertAfter: 1`、mode は off で入れる）。`verify-analogy-dispatch.js` に1件足す
 - [ ] **6. オーナー: 155 を SQL Editor で適用**。事前: `to_regclass('public.in_caution_gap_band_daily')` が NULL。事後（Claude が読み取り）: `relrowsecurity = true`、anon の SELECT・EXECUTE が false、advisor の `rls_disabled_in_public` 0件。APPLIED.md を更新
 - [ ] **6b. オーナー: workflow_dispatch で `full=true`・`force=true` を1回実行**
   - 完了の定義（件数）: 年ごとの `sum(n)`（勝率差が出せないレースを除くので少し少なくてよい）が、統計検証の完全レースの数と1%以内で合う: 2019 40,359／2020 54,263／2021 54,362／2022 54,672／2023 54,605／2024 54,616／2025 54,504／2026（10-10まで）43,613（design-reviewer が races.pkl から出した値。合計 410,994）。`min(race_date)` が 2019-04-01、`max(race_date)` が前日。(other, −5) の 2019-04-01〜2026-10-10 の合計が 34,842件・非1着 22,634（64.96%）。実測の SQL と結果を PR コメントに貼る
