@@ -64,6 +64,59 @@ const TRAILING_GAP_THRESHOLD_PX = 40;
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそろう", async ({
+  page,
+}) => {
+  await page.goto("/race/2026-09-21-02-05?tab=basic", {
+    waitUntil: "domcontentloaded",
+  });
+  const rows = page.locator(".rbit-bar-row");
+  await expect(rows).toHaveCount(6);
+  // レイアウトだけの再現用。録画のF数に依存せず、FlyingBadgeと同じ構造を
+  // 6号艇にだけ置く（本番データ・集計値は変更しない）。
+  // 置き換えと測定は1回の evaluate（同期）の中で行う。await を挟むと、その間に
+  // データの再描画が本物の F バッジを戻し、バッジが2つになって落ちた（BOA-871）
+  for (const label of ["", "今節", "this meet", "이번 시리즈", "本節"]) {
+    const measured = await rows.evaluateAll((elements, meetLabel) => {
+      for (const row of elements) {
+        row.querySelectorAll(".flying-badge").forEach((badge) => badge.remove());
+      }
+      const badge = document.createElement("span");
+      badge.className = `flying-badge is-f2${meetLabel ? " has-meet" : ""}`;
+      badge.textContent = "F2";
+      if (meetLabel) {
+        const meet = document.createElement("span");
+        meet.className = "flying-badge-meet";
+        meet.textContent = meetLabel;
+        badge.append(meet);
+      }
+      elements[5].querySelector(".rbit-name-cell").append(badge);
+      return {
+        badges: elements.map((row) => row.querySelectorAll(".flying-badge").length),
+        widths: elements.map(
+          (row) => row.querySelector(".rbit-bar-track").getBoundingClientRect().width,
+        ),
+        overflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      };
+    }, label);
+    expect(measured.badges, `${label}: バッジは6号艇にだけ1つ`).toEqual([
+      0, 0, 0, 0, 0, 1,
+    ]);
+    const { widths } = measured;
+    expect(widths).toHaveLength(6);
+    expect(Math.min(...widths), `${label}: 空の棒枠`).toBeGreaterThan(0);
+    expect(
+      Math.max(...widths) - Math.min(...widths),
+      `${label}: 6艇の棒枠の幅 ${widths.join(", ")}`,
+    ).toBeLessThanOrEqual(1);
+    expect(measured.overflow, `${label}: 横スクロール`).toBeLessThanOrEqual(
+      OVERFLOW_TOLERANCE_PX,
+    );
+  }
+});
+
 /**
  * ページごとに「データが描画された」とみなす要素。gotoAndSettle はこれが見えるまで待つ。
  *
@@ -1208,6 +1261,7 @@ async function checkHscrollHints(page, label) {
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り20px` })
       .toMatchObject({
         remaining: 20,
+        fadeWidth: 20,
         hasMore: true,
         moreButton: true,
       });
@@ -1217,6 +1271,7 @@ async function checkHscrollHints(page, label) {
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
       .toMatchObject({
         remaining: 10,
+        fadeWidth: 10,
         hasMore: true,
         moreButton: true,
       });
@@ -1230,7 +1285,11 @@ async function checkHscrollHints(page, label) {
     await readHint(hint, null);
     await expect
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 左端` })
-      .toMatchObject({ hasMore: true, moreButton: true });
+      .toMatchObject({
+        hasMore: true,
+        moreButton: true,
+        fadeWidth: Math.min(40, maxScroll),
+      });
     expect(
       (await readHint(hint)).moreWidth,
       `${at}: 「›」の押せる幅`,
@@ -1295,6 +1354,9 @@ async function readHint(hint, fromEnd) {
       remainingRaw: box.scrollWidth - box.clientWidth - box.scrollLeft,
       maxScroll: box.scrollWidth - box.clientWidth,
       hasMore: el.classList.contains("has-more"),
+      fadeWidth: el.classList.contains("has-more")
+        ? Math.round(parseFloat(getComputedStyle(el, "::after").width))
+        : 0,
       moreButton: Boolean(more),
       moreWidth: more ? more.getBoundingClientRect().width : 0,
       // 「›」の記号の中心から箱の右端までの距離
@@ -1378,6 +1440,23 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
         `${width}px: 券種の左端から金額の右端まで`,
       ).toBeLessThanOrEqual(640);
     }
+  });
+
+  test("払戻の注記と水面傾向の間に16pxの余白（BOA-707）", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "layout-desktop", "1440pxで確認");
+    await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
+    const card = page.locator(".race-result .vds-card");
+    await expect(card).toBeVisible({ timeout: 30000 });
+    const gap = await card.evaluate((el) => {
+      const prev = el.previousElementSibling;
+      if (!prev) throw new Error("水面傾向カードの直前に払戻表・注記が無い");
+      return (
+        el.getBoundingClientRect().top - prev.getBoundingClientRect().bottom
+      );
+    });
+    expect(gap).toBeGreaterThanOrEqual(16);
   });
 
   // 今節タブの得点率早見。箱の幅いっぱいに広がり、余りが全部選手名の列に入って、
@@ -1501,4 +1580,89 @@ test.describe("レイアウト: 枠別情報の ST考察と「1コースが逃�
       expect(m.overflow, `${path} ${width}px: 横スクロール`).toBe(0);
     }
   });
+});
+/**
+ * SNSハブの管理画面は地（.sns-hub-admin-page・.sns-hub-tab-content）を明るい色で固定しているが、
+ * 後から足したパネル（全月カレンダー・レース単位の確認）は意味トークン（--text-primary・--surface-card）を
+ * 使っていた。ダークテーマでは意味トークンが白文字・紺の地に切り替わり、明るい地に白文字が載って
+ * 読めなくなった（2026-10-13 オーナー報告）。ダークテーマで、文字色と実際の地の色のコントラストを測る。
+ * 地は、その要素から親へたどって最初に不透明な背景色。基準は WCAG の本文 4.5:1
+ */
+test.describe("レイアウト: SNSハブの文字が地とかぶらない（ダークテーマ）", () => {
+  const SELECTORS = [
+    ".sns-month-calendar h2",
+    ".sns-month-calendar > p",
+    ".sns-month-calendar-filters label",
+    ".sns-month-calendar-filters button",
+    ".sns-month-calendar-weekday",
+    ".sns-month-calendar-x",
+    ".sns-month-calendar-youtube",
+    ".sns-month-calendar-grid button",
+    ".sns-mobile-approval h2",
+    ".sns-mobile-approval p",
+  ];
+  for (const width of [375, 1440]) {
+    test(`${width}px: 全月カレンダーとレース単位の確認の文字が 4.5:1 以上`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.addInitScript(() =>
+        localStorage.setItem("ryujin-radar-theme", "dark"),
+      );
+      // dev サーバーには Edge Function が無いので管理APIはスタブにする（上の BOA-570 と同じ）
+      await page.route(/\/api\/admin\/sns-hub\//, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({ data: [], date: "2026-10-13" }),
+        }),
+      );
+      await page.goto("/admin/sns-hub");
+      await expect(
+        page.locator(".sns-month-calendar-weekday").first(),
+      ).toBeVisible();
+      const measured = await page.evaluate((selectors) => {
+        const rgba = (s) => {
+          const m = s.match(/rgba?\(([^)]+)\)/);
+          if (!m) return null;
+          const [r, g, b, a = 1] = m[1]
+            .split(/[ ,/]+/)
+            .filter(Boolean)
+            .map(Number);
+          return { r, g, b, a };
+        };
+        const lum = ({ r, g, b }) => {
+          const ch = (v) => {
+            const c = v / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          };
+          return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b);
+        };
+        const bgOf = (el) => {
+          for (let n = el; n; n = n.parentElement) {
+            const c = rgba(getComputedStyle(n).backgroundColor);
+            if (c && c.a > 0.5) return c;
+          }
+          return { r: 255, g: 255, b: 255, a: 1 };
+        };
+        const out = [];
+        for (const sel of selectors)
+          for (const el of document.querySelectorAll(sel)) {
+            if (!el.textContent.trim() || !el.getClientRects().length) continue;
+            const fg = rgba(getComputedStyle(el).color);
+            const bg = bgOf(el);
+            const [hi, lo] = [lum(fg), lum(bg)].sort((a, b) => b - a);
+            out.push({
+              sel,
+              text: el.textContent.trim().slice(0, 20),
+              ratio: Math.round(((hi + 0.05) / (lo + 0.05)) * 100) / 100,
+            });
+          }
+        return out;
+      }, SELECTORS);
+      expect(measured.length, "測った要素がある").toBeGreaterThan(10);
+      const low = measured.filter((m) => m.ratio < 4.5);
+      expect(low, JSON.stringify(low.slice(0, 8))).toEqual([]);
+    });
+  }
 });

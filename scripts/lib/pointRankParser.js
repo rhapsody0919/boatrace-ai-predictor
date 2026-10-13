@@ -31,6 +31,14 @@ export function parsePointRankTable($) {
     $(t).find("th").text().includes("得点率"),
   );
   if (table.length === 0) return null;
+  // 「早見（4日目）」の見出しが指す日目（BOA-784）。見出しに日目が無ければ null
+  const nextSeriesDay = parseHayamiSeriesDay(
+    table
+      .find("th")
+      .filter((_, th) => $(th).text().includes("早見"))
+      .first()
+      .text(),
+  );
 
   const rows = [];
   table.find("tr.is-p10-0").each((_, tr) => {
@@ -58,8 +66,64 @@ export function parsePointRankTable($) {
       totalPoints: isNaN(totalPoints) ? null : totalPoints,
       penaltyPoints: isNaN(penaltyPoints) ? null : penaltyPoints,
       remarks: remarks || null,
+      // 早見: 翌日の1走目・2走目のレース番号（BOA-784）。空欄は null
+      nextRace1: parseHayamiRaceNumber($, tds[8]),
+      nextRace2: parseHayamiRaceNumber($, tds[9]),
+      nextSeriesDay,
+      // 空欄でないのに番号を読めないセルがあるか。書式が想定と違うことを取得の報告で知らせる
+      nextRaceUnreadable: [tds[8], tds[9]].some(
+        (td) =>
+          $(td).text().replace(/[\s\u00A0]/gu, "") !== "" &&
+          parseHayamiRaceNumber($, td) === null,
+      ),
     });
   });
 
   return rows;
+}
+
+/** 全角の数字を半角にする */
+function toHalfWidthDigits(text) {
+  return String(text ?? "").replace(/[\uFF10-\uFF19]/gu, (c) =>
+    String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+  );
+}
+
+/**
+ * 「早見」の見出しから日目を読む（「早見（４日目）」→ 4、BOA-784）。
+ * 予選中の夜より前の取得（2026-09-19 の徳山G1）では見出しは「早見」だけで、日目は無い
+ *
+ * @param {string} text 見出しの文字列
+ * @returns {number|null}
+ */
+export function parseHayamiSeriesDay(text) {
+  const m = toHalfWidthDigits(text).match(/(\d{1,2})\s*日目/u);
+  if (!m) return null;
+  const day = Number(m[1]);
+  return day >= 1 && day <= 9 ? day : null;
+}
+
+/**
+ * 「早見」の1セルからレース番号を読む（BOA-784）。
+ *
+ * 値の入ったページは予選中の夜にしか出ず、過去日のページは確定後の表（早見は空欄）に置き換わるため、
+ * 実物のセルの書式は取得前に確かめられていない（issue の記録は「5R」「11R」）。「5R」「５Ｒ」「5」と、
+ * 出走表へのリンク（`rno=5`）のどれでも読めるようにする。1〜12 以外・数字が無いものは null
+ *
+ * @param {import('cheerio').CheerioAPI} $
+ * @param {import('domhandler').Element|undefined} td
+ * @returns {number|null}
+ */
+export function parseHayamiRaceNumber($, td) {
+  if (!td) return null;
+  const cell = $(td);
+  const text = toHalfWidthDigits(cell.text())
+    .replace(/\s/gu, "")
+    .replace(/\uFF32/gu, "R");
+  const fromText = text.match(/^(\d{1,2})R?$/iu);
+  const fromLink = (cell.find("a").attr("href") ?? "").match(/[?&]rno=(\d{1,2})/u);
+  const raw = fromText?.[1] ?? fromLink?.[1];
+  if (!raw) return null;
+  const n = Number(raw);
+  return n >= 1 && n <= 12 ? n : null;
 }

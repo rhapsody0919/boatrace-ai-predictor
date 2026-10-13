@@ -871,7 +871,25 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
     await expect(sectionOf(page)).toBeVisible();
   });
 
+  test("2年より前のレースは、snapshot が残っていても「この日の龍神ソナーはもう無い」と出す（BOA-807）", async ({
+    page,
+  }) => {
+    // 夜の掃除は Storage のファイルだけを消し、snapshot の行は残る。状態が ok でも日付で決める
+    await page.clock.setFixedTime(new Date("2028-10-01T12:00:00+09:00"));
+    await setup(page);
+    await openSonarTab(page);
+    const section = sectionOf(page);
+    await expect(
+      section.getByText(
+        "この日の龍神ソナーはもうありません（2年分だけ残しています）",
+      ),
+    ).toBeVisible();
+    await expect(section.getByRole("tablist")).toHaveCount(0);
+  });
+
   test("保存の無いレースは節の中を1行だけにする", async ({ page }) => {
+    // 例のレース（2026-09-22）が2年を過ぎても「もう無い」に変わらないよう、時計を固定する（BOA-807）
+    await page.clock.setFixedTime(new Date("2026-10-13T12:00:00+09:00"));
     await setup(page, { facts: { status: "not_saved" } });
     await openSonarTab(page);
     const section = sectionOf(page);
@@ -1552,10 +1570,10 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
       expect(asked).toEqual(["2", "1"]);
     });
 
-    test("一覧のファイルが無いとき、7日より前のレースは「この日の一覧はもう無い」と出す（BOA-833）", async ({
+    test("一覧のファイルが無いとき、2年以内のレースは「もう無い」ではなく準備中の1文を出す（BOA-833・807）", async ({
       page,
     }) => {
-      // 例のレースは 2026-09 の日付で、7日より前
+      await page.clock.setFixedTime(new Date("2028-09-21T12:00:00+09:00"));
       await setup(page);
       await page.route("**/api/analogy/scenario/**", (route) =>
         new URL(route.request().url()).searchParams.get("races") === "1"
@@ -1573,9 +1591,9 @@ test.describe("アナロジー・ファインダーの節（BOA-271 v16）", () 
         .filter({ hasText: "1号艇" })
         .first()
         .click();
-      await expect(s4.getByTestId("analogy-race-panel")).toContainText(
-        "この日の一覧はもう無い（一覧は7日分だけ残している）",
-      );
+      const panel = s4.getByTestId("analogy-race-panel");
+      await expect(panel).toBeVisible();
+      await expect(sectionOf(page)).not.toContainText("もうありません");
     });
 
     test("展開シナリオの段の番号は四角の STEP 札で、画面に丸数字（①〜④）を出さない（2026-10-10 ユーザー承認）", async ({

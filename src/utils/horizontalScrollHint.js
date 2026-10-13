@@ -5,13 +5,23 @@
  */
 export const HSCROLL_MORE_MIN = 1;
 
+/** 右端のフェードの最大幅（px） */
+export const HSCROLL_FADE_MAX = 40;
+
+/** 残りの幅までフェードを縮める。手がかりを出さない1px以下では0にする */
+export function hscrollFadeWidth(remaining) {
+  return remaining > HSCROLL_MORE_MIN
+    ? Math.min(HSCROLL_FADE_MAX, remaining)
+    : 0;
+}
+
 /** 左に送った量がこれを超えたら「‹」を出す（px）。指が少し触れただけで出さないため */
 export const HSCROLL_LESS_MIN = 12;
 
 /**
  * 横スクロールの手がかりの出し方を決める（純関数。verify-frontend-pure-functions で固定）。
  *
- * - 右に HSCROLL_MORE_MIN より多く残っている: 「›」と幅40pxのフェード（hasMore）
+ * - 右に HSCROLL_MORE_MIN より多く残っている: 「›」と最大40pxのフェード（hasMore）
  *   以前は 12px 以下の残りでは「›」を出さず細いフェードだけにしていた（#1169）。380〜386px の
  *   枠別の全コース表で 4〜10px だけ溢れ、6コースの「(n=20)」が「(n=2」に読めた。右の余白
  *   （tailPaddingFor）も足されず、指で送らない限り読めなかった（BOA-735、ユーザー判断で境目を下げた）

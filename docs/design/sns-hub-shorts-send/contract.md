@@ -45,3 +45,13 @@ node scripts/maintenance/verify-sns-bundle-import.js
 - **基準日は自動で当日にする**（2026-10-13 ユーザー決定）。`roll_sns_send_baselines()` が、`verified=true` かつ太平洋時間の日付が変わっていたら `baseline_day` を当日・`external_uploads`・`external_general` を0にする。未確認（verified=false・NULL）のときは何もしない
 - YouTube の claim は X の月の台帳を消費しない（予約額0。YouTube Data API は無料で、クォータは本 contract の台帳で数える）
 - 日次上限は `daily_limit_youtube`（未設定なら `daily_limit`）
+
+## 実 adapter（sns-pdca-loop tasks 18、2026-10-13）
+
+- `api/_lib/youtubeQueueAdapter.js` が YouTube Data API v3 を直接呼ぶ。upload は1回の multipart（32 MiB まで。続きから送る仕組みは作らない）、`privacyStatus=private`・`selfDeclaredMadeForKids=false`。公開は `videos.update`（part=status）で同じ子供向けの設定のまま public にする
+- **本人の動画の確認**: `videos.list` の `processingDetails` は自分がアップロードした動画にだけ返る。これがあり、題名が承認の `youtube_title` と同じときだけ `confirmed=true`
+- `posted_at` は公開を確かめた後の `snippet.publishedAt`。非公開の間の時刻・upload の終了時刻は使わない
+- サムネイルの Content-Type は媒体（jpeg・png）に合わせる。サムネイルが失敗したら公開せず非公開のまま残す（`youtube_retain`）。チャンネルの電話番号の確認が済んでいないと 403 になるので、その間は承認の snapshot に表紙を入れない
+- access token は runner が claim の前に `getYoutubeAccessToken`（`api/_lib/youtubeUpload.js`）で取り、`createYoutubeQueueAdapter({accessToken})` に渡す。公開の切り替えには `youtube` の scope が要る（sns-pdca-loop tasks 26）
+- **説明とタグ**（2026-10-13 修正）: 説明は承認の完成文（`snapshot.text` = 本文＋改行＋タグの行）、タグは承認の `source.hashtags` から先頭の # を外したもの（空・重複は除く）。どちらも承認の hash に入る値なので、承認した版と送る版がずれない。旧来の手動送信（publish-youtube.js）は説明に本文だけ・タグに hashtags を渡していた
+- **動画の大きさ**: 1回の multipart で上げるので 32 MiB まで。承認は 500 MiB まで通るが、超える動画は begin_post の前に `youtube_video_too_large` で保留にする

@@ -135,3 +135,26 @@ test("英語では訳語で出す（BOA-269）", async ({ page }) => {
     `/en/winning-technique?venue_code=${VENUE}&tab=outcome`,
   );
 });
+
+for (const width of [375, 768]) {
+  test(`${width}pxで決まり手の内訳を項目の途中で改行しない（BOA-766）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 1024 });
+    const details = await openDetails(page, `/venue/${VENUE}`);
+    await details.locator("summary").click();
+
+    const boat3 = page.getByTestId("venue-details-technique-3");
+    const label = "まくり 50%(1)・まくり差し 50%(1)";
+    await expect(boat3.locator(".venue-details__breakdown")).toHaveText(label);
+    await expect(boat3.getByRole("img")).toHaveAttribute("aria-label", label);
+    const items = boat3.locator(".venue-details__breakdown-item");
+    await expect(items).toHaveCount(2);
+    await expect(items).toHaveText(["まくり 50%(1)", "まくり差し 50%(1)"]);
+    for (const item of await items.all()) {
+      await expect(item).toBeVisible();
+      expect(await item.evaluate((el) => el.getClientRects().length)).toBe(1);
+      await expect(item).toHaveCSS("white-space", "nowrap");
+    }
+  });
+}

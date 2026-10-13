@@ -8,13 +8,17 @@
 |---|---|---|
 | [stat-findings.md](stat-findings.md) | 統計検証の結果の索引（各行に元の読み物のパス） | data-scientist |
 | [data-definitions.md](data-definitions.md) | 公式データの仕様、数値の出典と母集団、生データの所在 | official-data-spec・data-scientist |
+| [data-columns.md](data-columns.md) | DB の列・テーブルの読み違い、公式ファイル・公式ページの取得の時点、オッズ | official-data-spec・data-scientist・system-architect |
 | [number-wording.md](number-wording.md) | 数字の言い方（母数・範囲・全国と個人・未検証の付け方） | wording-editor・visual-designer・ファンパネル |
 | [glossary.md](glossary.md) | 用語と禁止語、誇大・保証・射幸心、SNS の表現の可否 | wording-editor・ファンパネル |
 | [fan-reactions.md](fan-reactions.md) | オーナーとファン役が SNS・ブログ・画面で良し悪しとしたこと | ファンパネル・visual-designer |
 | [video-composition.md](video-composition.md) | SNS 動画の構成・画面配置・字幕・動き・音 | visual-designer |
 | [ui-layout.md](ui-layout.md) | サイトの画面の決まり（幅・押せる大きさ・余白・置き場所） | visual-designer |
+| [ui-implementation.md](ui-implementation.md) | 画面の実装の落とし穴（CLS・部品の埋め込み・状態の共有・機能変更で古くなるもの） | visual-designer・実装者 |
+| [i18n.md](i18n.md) | 多言語の実装の落とし穴と言語ごとの検索の需要 | 多言語のページ・記事を触る人 |
 | [measurement.md](measurement.md) | 計測の設計と GA4 | measurement-planner |
 | [db-operations.md](db-operations.md) | ADR と番号、本番 DB の運用、Supabase の読み方 | system-architect |
+| [batch-and-ci.md](batch-and-ci.md) | 定時実行・API のキャッシュ・Vercel・CI と E2E の落とし穴 | system-architect・実装者 |
 | [seo.md](seo.md) | 検索・ボット向け HTML・ブログの SEO（SPA の制約、食い合い） | seo-marketer |
 | [user-insights.md](user-insights.md) | オーナーがサイトを使って気づいたことと、その後の対応 | 全員（画面を変える前） |
 | [x.md](x.md) | X（旧Twitter）固有の投稿・動画の知見 | X 運用（`/x-growth-report`等） |
@@ -24,6 +28,8 @@
 ## 書き方
 - 1行1知見。行末に（日付、根拠）。根拠は誰の指摘か・出典のパス（リポジトリ内）。一時フォルダのパスは出典にしない
 - 1ファイル500行未満。超えそうなら話題を分け、この表に足す
+- 1ファイル 15KB を目安にする。超えたら同じ趣旨の行をまとめる
+- 足すのは毎日の差分案（hq の knowledge-harvest、22:30）からを基本にする。各セッションは完了報告・PR 本文の「## 知見の候補」に書き、直接足すのは急ぐときだけにする
 - 同じ知見は1か所に書く。別の話題から使うときはファイル名で指す
 - 古くなった項目は消し、置き換える行に「（日付の『…』を置き換え）」と書く
 - 鍵・個人情報は書かない

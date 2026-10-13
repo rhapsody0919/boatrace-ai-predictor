@@ -5,12 +5,14 @@
  * 順位は `competitionRank`（同じ値は同じ順位、次の順位は飛ぶ: 1, 2, 2, 4）。
  */
 import { competitionRank } from "./competitionRank.js";
+export { formatMonthDay } from "./nextOpenDate.js";
 
 /**
  * 会場サイトのモーター成績（`venue_motor_stats`）を出さない会場。
  * 浜名湖（6）・宮島（17）は会場サイトに明示的な著作権条項がある（ADR-0067:21）。
- * 取得はしているが、BOA-428 の表示には使わない（2026-10-02 ユーザー判断。取得の停止は BOA-681）。
- * 戸田（2）・平和島（4）は会場サイトにページが無く、行そのものが無い
+ * BOA-428 の表示には使わない（2026-10-02 ユーザー判断）。取得は BOA-681 で止め、取得済みの行も
+ * 本番で削除する（オーナー決定 2026-10-13）。削除の後は戸田（2）・平和島（4）と同じく行そのものが無く、
+ * モータ情報タブは公式の値だけになる。この定数は、削除の前に古い行が残っている間の保険として残す
  */
 export const VENUE_SITE_STATS_HIDDEN = [6, 17];
 
@@ -115,12 +117,9 @@ const shiftDay = (date, days) => {
  * @returns {Map<number, object>} motor_number → その節の直近の出走表の行
  */
 export function currentSeriesRiders(entries, pretestDate) {
-  const dates = new Set(entries.map((e) => e.race_id.slice(0, 10)));
-  if (dates.size === 0) return new Map();
-  const latest = [...dates].sort().at(-1);
-  if (latest < shiftDay(pretestDate, -1)) return new Map();
-  let start = latest;
-  while (dates.has(shiftDay(start, -1))) start = shiftDay(start, -1);
+  const range = currentSeriesRange(entries, pretestDate);
+  if (range === null) return new Map();
+  const { start } = range;
   const byMotor = new Map();
   for (const e of entries) {
     if (e.race_id.slice(0, 10) < start) continue;
@@ -128,4 +127,15 @@ export function currentSeriesRiders(entries, pretestDate) {
     if (!prev || e.race_id > prev.race_id) byMotor.set(e.motor_number, e);
   }
   return byMotor;
+}
+
+/** 出走表の連続開催日の範囲。まだ今の節が走っていなければ null。 */
+export function currentSeriesRange(entries, pretestDate) {
+  const dates = new Set(entries.map((e) => e.race_id.slice(0, 10)));
+  if (dates.size === 0) return null;
+  const latest = [...dates].sort().at(-1);
+  if (latest < shiftDay(pretestDate, -1)) return null;
+  let start = latest;
+  while (dates.has(shiftDay(start, -1))) start = shiftDay(start, -1);
+  return { start, end: latest };
 }

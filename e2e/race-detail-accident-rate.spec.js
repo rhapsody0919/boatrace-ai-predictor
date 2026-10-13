@@ -102,6 +102,10 @@ test("行は「超え」と「あと20点以内」の選手にだけ目印を出
     "不良航法・待機行動違反（2点）は含まないため、公式の値より低いことがあります",
   );
 
+  await expect(box.locator(".rbit-accident-note")).toContainText(
+    "当日のこのレースより前のレースは含みません",
+  );
+
   // ライン付近の選手を開く（開いた欄は1人ずつ）
   await page
     .locator(".rbit-bar-row", {

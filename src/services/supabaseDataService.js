@@ -52,6 +52,7 @@ import {
   VENUE_SITE_STATS_HIDDEN,
   rankBy,
   currentSeriesRiders,
+  currentSeriesRange,
 } from "../utils/venueMotorRanking.js";
 import {
   countsForSeriesScore,
@@ -3493,7 +3494,7 @@ export const supabaseDataService = {
    */
   getVenueMotorList(venueCode) {
     const venue = Number(venueCode);
-    return withCache(`venue-motor-list-v1-${venue}`, async () => {
+    return withCache(`venue-motor-list-v2-${venue}`, async () => {
       const failed = { state: "error", fetchFailed: true };
       if (!supabase) {
         console.error("Supabase client not initialized");
@@ -3518,6 +3519,7 @@ export const supabaseDataService = {
 
         let pretestRows = [];
         let riders = new Map();
+        let seriesRange = null;
         let nameByRacer = new Map();
         if (pretestDate !== null) {
           // 出走表は、節（最長7日）を含む前検日の8日前から今日まで。会場で絞る（race_id は
@@ -3540,6 +3542,7 @@ export const supabaseDataService = {
           ]);
           pretestRows = pretest.data ?? [];
           riders = currentSeriesRiders(entries.data ?? [], pretestDate);
+          seriesRange = currentSeriesRange(entries.data ?? [], pretestDate);
           // 出走表に名前が無い選手（まだ走っていない）だけ racer_profiles から引く
           const withoutName = [
             ...new Set(pretestRows.map((r) => r.racer_id)),
@@ -3611,6 +3614,7 @@ export const supabaseDataService = {
             source: "venueSite",
             scrapedDate: snapshot.scrapedDate,
             pretestDate,
+            seriesRange,
             rows,
           };
         }
@@ -3622,6 +3626,7 @@ export const supabaseDataService = {
           source: "pretest",
           scrapedDate: null,
           pretestDate,
+          seriesRange,
           rows: usedMotors.map((motorNumber) => ({
             motorNumber,
             top2Rate: toNumber(
@@ -5405,7 +5410,7 @@ export const supabaseDataService = {
   },
 
   /**
-   * 本日開催中のレースの出走選手について、直近90日間の平均展示タイム（周回タイム）を取得する（BOA-164）
+   * 本日開催中のレースの出走選手について、直近90日間の平均展示タイム（周回展示の2周目の150mのタイム）を取得する（BOA-164）
    */
   getRaceExhibitionTimeBreakdown(raceId) {
     return withCache(`race-exhibition-time-breakdown-${raceId}`, async () => {
@@ -5648,7 +5653,7 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定選手の展示タイム（周回タイム）の推移を取得する（BOA-164）
+   * 指定選手の展示タイム（周回展示の2周目の150mのタイム）の推移を取得する（BOA-164）
    * 同日複数レースは平均してグラフ用に日付単位でまとめる
    */
   getExhibitionTimeTrend(racerId) {

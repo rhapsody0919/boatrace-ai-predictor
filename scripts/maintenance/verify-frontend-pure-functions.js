@@ -44,6 +44,7 @@ const TARGETS = {
   volatilityLevel: "src/utils/volatilityLevel.js",
   hscrollHint: "src/utils/horizontalScrollHint.js",
   volatilityHighlights: "src/utils/volatilityHighlights.js",
+  inCautionLevel: "src/utils/inCautionLevel.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -964,10 +965,30 @@ function suiteBasicInfoStats(m, check) {
       m.officialPeriodOf("2027-01-01"),
     ],
     [
-      { periodYear: 2026, periodNo: 1, calcFrom: "2025-05-01", calcTo: "2025-10-31" },
-      { periodYear: 2026, periodNo: 2, calcFrom: "2025-11-01", calcTo: "2026-04-30" },
-      { periodYear: 2026, periodNo: 2, calcFrom: "2025-11-01", calcTo: "2026-04-30" },
-      { periodYear: 2027, periodNo: 1, calcFrom: "2026-05-01", calcTo: "2026-10-31" },
+      {
+        periodYear: 2026,
+        periodNo: 1,
+        calcFrom: "2025-05-01",
+        calcTo: "2025-10-31",
+      },
+      {
+        periodYear: 2026,
+        periodNo: 2,
+        calcFrom: "2025-11-01",
+        calcTo: "2026-04-30",
+      },
+      {
+        periodYear: 2026,
+        periodNo: 2,
+        calcFrom: "2025-11-01",
+        calcTo: "2026-04-30",
+      },
+      {
+        periodYear: 2027,
+        periodNo: 1,
+        calcFrom: "2026-05-01",
+        calcTo: "2026-10-31",
+      },
     ],
   );
   check(
@@ -1010,8 +1031,22 @@ function suiteBasicInfoStats(m, check) {
     check(
       "filterRecords: term は今期（5/1 以降）だけ、current は全期間のまま（条件別の表が使う）",
       [
-        m.filterRecords(recs, { venueCode: 1, scope: "national", grade: "all", period: "term", now }).map((r) => r.date),
-        m.filterRecords(recs, { venueCode: 1, scope: "national", grade: "all", period: "current", now }).length,
+        m
+          .filterRecords(recs, {
+            venueCode: 1,
+            scope: "national",
+            grade: "all",
+            period: "term",
+            now,
+          })
+          .map((r) => r.date),
+        m.filterRecords(recs, {
+          venueCode: 1,
+          scope: "national",
+          grade: "all",
+          period: "current",
+          now,
+        }).length,
       ],
       [["2026-05-01", "2026-09-30"], 3],
     );
@@ -1674,6 +1709,11 @@ function suiteMeetGrouping(m, check) {
 // （#1130 ファン評価。全コース表で5px残りでも40pxのフェードと「›」が最後の列を覆い、
 // 4px以下の残りでは何も出なかった）
 function suiteHscrollHint(m, check) {
+  check(
+    "hscroll: フェードは残りの幅まで縮め、上限40px・残り1px以下は0",
+    [50, 40, 20, 10, 4, 1.5, 1, 0, -10].map((v) => m.hscrollFadeWidth(v)),
+    [40, 40, 20, 10, 4, 1.5, 0, 0, 0],
+  );
   const st = (scrollWidth, clientWidth, scrollLeft) =>
     m.horizontalScrollHintState({ scrollWidth, clientWidth, scrollLeft });
   check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
@@ -1975,6 +2015,60 @@ function suiteVolatilityLevel(m, check) {
   ]);
 }
 
+// BOA-822 イン崩れ注意度の段・帯。帯の答えは Python の夜の集計（in_caution_bands.py）の pytest と同じ固定の入力
+// （scripts/ml/analogy/tests/fixtures/in_caution_cases.json）で確かめる
+const IN_CAUTION_CASES = JSON.parse(
+  fs.readFileSync(
+    path.join(ROOT, "scripts/ml/analogy/tests/fixtures/in_caution_cases.json"),
+    "utf8",
+  ),
+).gapCases;
+
+function suiteInCautionLevel(m, check) {
+  for (const c of IN_CAUTION_CASES) {
+    const [b1, ...others] = c.rates.map(m.rateCents);
+    const top = others.filter((v) => v !== null);
+    const gap = b1 === null || top.length === 0 ? null : b1 - Math.max(...top);
+    check(`inCaution: ${c.name}`, [gap, m.bandOf(gap)], [c.gapCents, c.band]);
+  }
+  // 整数だけで四捨五入: 34.49% は 34、34.5% は 35（段は 35 から中くらい）、54.5% は 55（崩れやすい）
+  const at = (nonWin, n) => [m.pctOf(nonWin, n), m.levelOf(m.pctOf(nonWin, n))];
+  check("inCaution: 3449/10000 は 34%・堅め", at(3449, 10000), [34, "low"]);
+  check("inCaution: 345/1000 は 35%・中くらい", at(345, 1000), [35, "mid"]);
+  check("inCaution: 5449/10000 は 54%・中くらい", at(5449, 10000), [54, "mid"]);
+  check("inCaution: 545/1000 は 55%・崩れやすい", at(545, 1000), [55, "high"]);
+  check(
+    "inCaution: 浮動小数で丸めるとずれる組（29/200=14.5%、57/200=28.5%、113/200=56.5%）も整数で四捨五入",
+    [m.pctOf(29, 200), m.pctOf(57, 200), m.pctOf(113, 200)],
+    [15, 29, 57],
+  );
+  check(
+    "inCaution: 例のレース (other, −5) 22634/34842 は 65%・崩れやすい",
+    at(22634, 34842),
+    [65, "high"],
+  );
+  check(
+    "inCaution: 件数0は null（0 で割らない）",
+    [m.pctOf(0, 0), m.levelOf(null)],
+    [null, null],
+  );
+  check(
+    "inCaution: 帯の範囲（端は片側だけ）",
+    [m.bandRange(-8), m.bandRange(-5), m.bandRange(0), m.bandRange(6)],
+    [
+      { from: null, to: -3.5 },
+      { from: -2.5, to: -2 },
+      { from: 0, to: 0.5 },
+      { from: 3, to: null },
+    ],
+  );
+  check(
+    "inCaution: ラウンド（準々・準優進出は other、空も other）",
+    ["準優勝戦", "優勝戦", "予選", "準優進出戦", "", null].map(m.roundOf),
+    ["junyu", "yusho", "other", "other", "other", "other"],
+  );
+}
+
 const SUITES = {
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
@@ -1989,6 +2083,7 @@ const SUITES = {
   volatilityLevel: suiteVolatilityLevel,
   hscrollHint: suiteHscrollHint,
   volatilityHighlights: suiteVolatilityHighlights,
+  inCautionLevel: suiteInCautionLevel,
 };
 
 // ---------------------------------------------------------------------------
@@ -1996,6 +2091,30 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "inCautionLevel",
+    "浮動小数で % を丸める（system-architect L5 の退行）",
+    "return Math.floor((200 * nonWin + n) / (2 * n));",
+    "return Math.round((nonWin / n) * 100);",
+  ],
+  [
+    "inCautionLevel",
+    "勝率 0.00 を勝率なしにする（design-reviewer 指摘4 の退行）",
+    'if (rate === null || rate === undefined || rate === "") return null;',
+    "if (!Number(rate)) return null;",
+  ],
+  [
+    "inCautionLevel",
+    "帯の下限で丸めない",
+    "Math.max(Math.floor(gapCents / bandWidthCents), bandMin)",
+    "Math.floor(gapCents / bandWidthCents)",
+  ],
+  [
+    "inCautionLevel",
+    "段の境目を以下にする（35% を堅めに入れる）",
+    'if (pct < low) return "low";',
+    'if (pct <= low) return "low";',
+  ],
   [
     "volatilityHighlights",
     "締切済みのレースも締切前と一緒に選ぶ（BOA-757 の退行）",

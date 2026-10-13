@@ -469,6 +469,13 @@ function FlowSummary({ m }) {
                 <p className="ta-note ta-num">
                   {C.flowExactaOf(formName)}:{" "}
                   <ComboList rows={form.topExacta} />
+                  {/* 境目と同じ件数の組が上限の外に残るとき（BOA-838）。区切りは ComboList と同じ全角空白 */}
+                  {form.exactaTies && (
+                    <span className="ta-nowrap">
+                      {"\u3000"}
+                      {C.comboTiesMore(form.exactaTies)}
+                    </span>
+                  )}
                 </p>
               )}
             </>

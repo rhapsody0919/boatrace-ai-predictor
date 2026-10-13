@@ -268,6 +268,11 @@
       "guards": "前検タイム・前検順位・節時点のモーター/ボート2連対率（N23、motor_pretest_stats）"
     },
     {
+      "script": "verify-node-function-json-imports.js",
+      "tier": "ci",
+      "guards": "nodejs の関数が JSON を import して読み込みで落ちないこと（2026-10-13、/api/admin/sns-hub/mobile-approval が毎回失敗し「今日のレースを取得できません」になった）。api/ で .json を import してよいのは runtime: edge の関数だけ（api/_lib は不可）、mobile-approval.js を実際に Node で import できること"
+    },
+    {
       "script": "verify-no-undef.js",
       "tier": "ci",
       "timeoutSec": 300,
@@ -941,6 +946,11 @@
       "guards": "思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル src/utils/assistSummary.js。2026-10-06 徳山10R の本番 v16 の値（e2e/thinking-assist-fixture.json.gz）で、差がつく材料の範囲（VC 300件未満は全国、準優勝戦は NCR に絞る。D-37）、札の今日の位置と準優勝戦の今節の点を使わないこと（FR-5）、図の良い方の札、平均ST の手がかり・スリットの形・進入の型（展開）、展示の表の最良（F を外す）・チルト・部品交換（機力）、今節の走（今日の走を点に入れない。D-29）・今節より前の5走（今節と後の走を除く。D-36 (10)）・進入コースで集めるコースの1着（D-36 (11)）、成績から付けた札（D-41。PR4）"
     },
     {
+      "script": "verify-assist-summary-tie-boundary.js",
+      "tier": "ci",
+      "guards": "思考アシスト（BOA-430）の formSummary の「よく出た2連単（5位）・3連単（3位）」で、境目と同数の組を黙って落とさないこと（BOA-838）。境目未満は含めない、並びは組の昇順のまま"
+    },
+    {
       "script": "verify-venue-technique-period.js",
       "tier": "ci",
       "guards": "会場の決まり手の期間の表 venue_technique_period_stats（BOA-430・ADR 0088・マイグレーション 134）。CI では集計の純関数（scripts/lib/venueTechniquePeriod.js）を固定データで確かめる: 期間は集計日の前日まで N 日、長期の表（〜2025-12-02）と新しい表（2025-12-03〜）の境目と 2025-12-02 の重複を数えないこと、総数＝決まり手の件数の合計、90日 ⊂ 365日、除外（中止・不成立・1着なし・決まり手なし）、長期の表が0件なら失敗（新しい表だけを数えた 2,196件の誤りの再発防止）。VERIFY_PRODUCTION=1 のときだけ本番の表を読み、last_updated が2日より古い行・総数の不一致・365日の行が無い会場があれば exit 1。nightly-verify-db.yml が毎晩この形で実行する"
@@ -964,6 +974,13 @@
       "script": "verify-analogy-dispatch.js",
       "tier": "ci",
       "guards": "BOA-271 アナロジーの週次の学習・v16 の朝のバッチ、BOA-822 イン崩れ注意度の夜の表の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
+    },
+    {
+      "script": "verify-in-caution-coverage.js",
+      "tier": "manual",
+      "guards": "BOA-822 イン崩れ注意度の本番の充足（完了の定義A・C）: 夜の表の最初の日・最後の日（前日）・合計の件数、今日の unified で inCaution がある割合（99%以上）・出さない理由の内訳・through。判定は api/cron/in-caution-health.js と同じ純関数",
+      "reason": "本番の in_caution_gap_band_daily（service_role の RPC）と predictions を読むため",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-in-caution-coverage.js --table --today"
     },
     {
       "script": "verify-in-caution.js",
@@ -1048,17 +1065,32 @@
     {
       "script": "verify-sns-auto-send.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop PR-1: SQL153・154（v1 素材の公開保留の解除は検査合格の item があるときだけ・v0 は今のまま、X スレッド6件の取り込み、自動送信の承認者は mode=auto かつ notified だけ、止めた後の claim・check・begin_post は held・YouTube の公開開始は拒否、dry_run は claim を拒否、veto_until 前は claim しない、予約額の種類別（YouTube は0）・日次上限のチャネル別・スレッドが途中で切れない、基準日の自動更新、月の切り替え、X 読み取りの予約、posted で取り込みジョブ2件、累積値の15分の許容差、暦日の値の一意）をPGlite、外部接続なし"
+      "guards": "sns-pdca-loop PR-1・19a: SQL153・154・158（158: /today の digest の item・通り道 B は A の予定の本数を先に枠から引く・月の自動切り替え・today_digest の UTM・158-runbook の md5。153・154: v1 素材の公開保留の解除は検査合格の item があるときだけ・v0 は今のまま、X スレッド6件の取り込み、自動送信の承認者は mode=auto かつ notified だけ、止めた後の claim・check・begin_post は held・YouTube の公開開始は拒否、dry_run は claim を拒否、veto_until 前は claim しない、予約額の種類別（YouTube は0）・日次上限のチャネル別・スレッドが途中で切れない、基準日の自動更新、月の切り替え、X 読み取りの予約、posted で取り込みジョブ2件、累積値の15分の許容差、暦日の値の一意）をPGlite、外部接続なし"
     },
     {
       "script": "verify-sns-x-oauth.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知）、PostgREST の条件付き UPDATE（外部接続なし）"
+      "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知、保存が成り立たず確かめる読み直しも失敗したときも通知）、PostgREST の条件付き UPDATE（外部接続なし）"
     },
     {
       "script": "verify-sns-x-adapter.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 17: X API v2 の実 adapter（分割アップロード initialize・append（multipart の segment_index・media）・finalize・STATUS、POST /2/tweets の media・reply、トークンは runner が claim の前に取って渡す、投稿の失敗は再試行しない・X の詳細な本文をエラーに入れない・成功の応答を解釈できなければ理由つきで投げる・媒体の処理の失敗や append の失敗では begin_post に進まない、分割は 4 MiB、posted_at は投稿 ID の snowflake から）と、runXSendJob に実 adapter をつないだ承認から posted まで（SQL137 を PGlite、fetch はモックで外部接続なし）"
+      "guards": "sns-pdca-loop tasks 17: X API v2 の実 adapter（分割アップロード initialize・append（multipart の segment_index・media）・finalize・STATUS、POST /2/tweets の media・reply、トークンは runner が claim の前に取って渡す、投稿の失敗は再試行しない・X の詳細な本文をエラーに入れない・成功の応答を解釈できなければ理由つきで投げる・媒体の処理の失敗や append の失敗では begin_post に進まない・STATUS の応答に状態が無い・finalize に data が無いときも投稿しない・finalize の processing_info はキーが無いときだけ省略とみなし null・false・0・空文字・state の無い値と、data がオブジェクトでない応答は投稿の前に止める・媒体の処理の待ちは1〜30秒に収め check_after_secs が数でなければ投稿の前に止める・動画は finalize で省略されても STATUS で完了を確かめる、分割は 4 MiB、posted_at は投稿 ID の snowflake から）と、runXSendJob に実 adapter をつないだ承認から posted まで（SQL137 を PGlite、fetch はモックで外部接続なし）"
+    },
+    {
+      "script": "verify-sns-youtube-adapter.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は非公開のまま残す、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
+    },
+    {
+      "script": "verify-sns-send-runner.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・トークンは1回の実行で1回・要照合は report ではなくその場で通知、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-metrics-runner.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 21: 48h・7d の取り込み（cron sns_metrics）。窓の終わりから15分以内に読めた累積値だけ保存し data_through は取得時刻、15分を過ぎた job は外部を読まずに欠測で閉じる、応答が15分を過ぎたら値を捨てる、API が返さない指標だけ欠測、失敗は pending でやり直し3回目で1度だけ Slack・15分を過ぎたら最後の失敗の理由つきで欠測、X の読み取りは月の台帳に1件分予約し残りが送信の分を割るときは読まない、トークンを取れなければやり直しと report.alerts、外部 ID が無い job は failed、shadow は読まず DB も変えない、直近の欠測率2%超で report.alerts、X は since_id・until_id で1件に絞る・エラー本文を出さない、YouTube は50件ずつ・非公開の数は null、PostgREST の条件。SQL154 までを PGlite、外部接続なし"
     }
   ]
 }

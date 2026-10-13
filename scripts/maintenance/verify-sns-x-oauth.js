@@ -339,7 +339,7 @@ test("access token: 同時に3つ呼んでも refresh は1回（使い切りの 
   );
 });
 
-test("access token: refresh に失敗したらロックを外して通知、保存に失敗したら連携のやり直しを通知", async () => {
+test("access token: refresh に失敗したらロックを外して投げる（通知しない）、保存に失敗したら連携のやり直しを通知", async () => {
   const db = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
   const notices = [];
   await assert.rejects(
@@ -352,7 +352,8 @@ test("access token: refresh に失敗したらロックを外して通知、保�
     /トークンを取得できません/,
   );
   assert.equal(db.row.locked_by, null);
-  assert.match(notices[0], /更新できません/);
+  // refresh の失敗は続く状態なので通知しない（runner が report.alerts で再通知の間隔ごとに知らせる）
+  assert.deepEqual(notices, []);
 
   const lost = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
   lost.saveLocked = async () => false; // ロックが切れて別の呼び出しに取られた
@@ -464,4 +465,55 @@ test("access token: 保存の DB エラーは理由つきで通知し、通知�
 
   const old = { ...(await storedRow("2026-10-13T05:00:00Z")), key_version: 2 };
   await assert.rejects(getXAccessToken(base(memoryDb(old))), /未対応の鍵の版/);
+});
+
+test("access token: 保存が成り立たず、確かめるための読み直しも失敗したら、連携のやり直しを通知してから投げる（D1）", async () => {
+  for (const breakRead of [
+    (db) => {
+      db.read = async () => {
+        throw new Error("HTTP 503");
+      };
+    },
+    (db) => {
+      // 別のトークンが入ったように見えるが、壊れていて復号できない
+      const original = db.read.bind(db);
+      db.read = async () => ({
+        ...(await original()),
+        ciphertext: "AAAA",
+        auth_tag: "AAAAAAAAAAAAAAAAAAAAAA==",
+      });
+    },
+  ]) {
+    const db = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
+    const notices = [];
+    let reads = 0;
+    const realRead = db.read.bind(db);
+    db.saveLocked = async () => false; // ロックを別の呼び出しに取られた
+    const harness = {
+      ...db,
+      read: async () => {
+        reads += 1;
+        // 1・2回目（ロック前後の読み取り）は通し、保存の後の読み直しだけを壊す
+        if (reads <= 2) return realRead();
+        return harness.brokenRead();
+      },
+      tryLock: db.tryLock.bind(db),
+      saveLocked: db.saveLocked,
+      release: db.release.bind(db),
+    };
+    const broken = { read: realRead };
+    breakRead(broken);
+    harness.brokenRead = broken.read;
+    await assert.rejects(
+      getXAccessToken(
+        base(harness, {
+          fetchImpl: refreshMock().fetchImpl,
+          notify: async (m) => notices.push(m),
+        }),
+      ),
+      /連携のやり直し/,
+    );
+    assert.equal(notices.length, 1);
+    assert.match(notices[0], /連携のやり直しが要る/);
+  }
 });

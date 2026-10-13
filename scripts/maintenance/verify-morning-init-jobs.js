@@ -34,6 +34,8 @@ import {
   formatDailySummary,
 } from "../lib/scrapeJobs/monitor.js";
 import {
+  IN_CAUTION_MAX_ATTEMPTS,
+  inCautionAlertUntil,
   RACES_INIT_VENUES_PER_INVOCATION,
   backoffMinutes,
   createPredictCodeOnTick,
@@ -211,7 +213,14 @@ function newDeps({
     hook: 0,
     noProgramChecks: [],
   };
-  const state = { venues, existing, failVenues, unifiedFails: false };
+  const state = {
+    venues,
+    existing,
+    failVenues,
+    unifiedFails: false,
+    // イン崩れ注意度の表が読めない回数（BOA-822）。Infinity なら毎回
+    inCautionFails: 0,
+  };
   const deps = {
     getVenues: async (date) => {
       calls.getVenues++;
@@ -240,7 +249,9 @@ function newDeps({
     ensureUnified: async () => {
       calls.unified++;
       if (state.unifiedFails) throw new Error("unified-down");
-      return { missing: 0, generated: 0 };
+      const inCautionFailed = state.inCautionFails > 0;
+      state.inCautionFails--;
+      return { missing: 0, generated: 0, inCautionFailed };
     },
     triggerDeployHook: async () => {
       calls.hook++;
@@ -811,11 +822,154 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
   );
 }
 
+{
+  // BOA-822: イン崩れ注意度の表が読めなかった（RPC の失敗・表の欠け）。後始末を失敗にせず、次の起動で unified を作り直す
+  const env = newEnv({ mode: "live" });
+  const d = newDeps({ venues: [1] });
+  d.state.inCautionFails = 1;
+  const r1 = await env.invoke(T0, { deps: d.deps });
+  const c1 = env.row().cursor;
+  check(
+    "(e) イン崩れ注意度の表が読めない: 失敗にせず、unified を済みにしない（対象日も済みにしない・Deploy Hook はまだ叩かない）",
+    r1.status === 200 &&
+      c1.done === false &&
+      c1.finalize.unified === undefined &&
+      c1.finalize.inCautionAttempts === 1 &&
+      d.calls.hook === 0 &&
+      env.row().last_target_date === undefined,
+    show({ status: r1.status, finalize: c1.finalize }),
+  );
+  const r2 = await env.invoke(at(2), { deps: d.deps });
+  check(
+    "(e) 次の起動で unified を作り直し、表が読めれば done",
+    r2.body.done === true &&
+      d.calls.unified === 2 &&
+      d.calls.hook === 1 &&
+      env.row().last_target_date === DATE,
+    show({ body: r2.body, unified: d.calls.unified }),
+  );
+}
+{
+  // 5回読めなければ打ち切って失敗を1回だけ記録し、翌起動で後始末を終える
+  const env = newEnv({ mode: "live" });
+  const d = newDeps({ venues: [1] });
+  d.state.inCautionFails = Infinity;
+  const statuses = [];
+  for (let i = 0; i < IN_CAUTION_MAX_ATTEMPTS; i++)
+    statuses.push((await env.invoke(at(2 * i), { deps: d.deps })).status);
+  const alerts = env.row().last_report?.alerts ?? [];
+  check(
+    `(e) イン崩れ注意度の表が${IN_CAUTION_MAX_ATTEMPTS}回読めない: ${IN_CAUTION_MAX_ATTEMPTS}回目だけ失敗にして通知し、unified を済みにする`,
+    same(statuses, [...Array(IN_CAUTION_MAX_ATTEMPTS - 1).fill(200), 500]) &&
+      /イン崩れ注意度/.test(env.row().last_error ?? "") &&
+      alerts.some((a) => a.key === "finalize_failed") &&
+      env.row().cursor.finalize.unified?.inCautionFailed === true,
+    show({ statuses, finalize: env.row().cursor.finalize }),
+  );
+  const last = await env.invoke(at(2 * IN_CAUTION_MAX_ATTEMPTS), {
+    deps: d.deps,
+  });
+  check(
+    "(e) 打ち切りの次の起動: unified を作り直さず、後始末を終えて done",
+    last.body.done === true &&
+      d.calls.unified === IN_CAUTION_MAX_ATTEMPTS &&
+      env.row().last_target_date === DATE,
+    show({ body: last.body, unified: d.calls.unified }),
+  );
+  // 2026-10-13 レビュー F1: 打ち切りの次の起動の成功の報告でも、通知（finalize_failed）を残す。
+  // 残さないと 05:1x の成功で alerts が空になり、scrape-monitor（JST 07:00〜）に届かない
+  const kept = (env.row().last_report?.alerts ?? []).find(
+    (a) => a.key === "finalize_failed",
+  );
+  check(
+    "(e) 打ち切りの次の起動（成功）の報告にも、打ち切りの通知を JST 09:00 まで残す",
+    env.row().consecutive_failures === 0 &&
+      /イン崩れ注意度/.test(kept?.text ?? "") &&
+      kept?.until === "2026-09-21T00:00:00.000Z",
+    show(env.row().last_report?.alerts),
+  );
+  check(
+    "(e) 通知を残す期限: 3時間後と当日 JST 09:00 の遅い方",
+    inCautionAlertUntil(jst("2026-09-21 05:10")) ===
+      "2026-09-21T00:00:00.000Z" &&
+      inCautionAlertUntil(jst("2026-09-21 07:30")) ===
+        "2026-09-21T01:30:00.000Z",
+  );
+}
+
+// イン崩れ注意度の夜の表（RPC get_in_caution_band_rates の行）。全期間・前日まで・全部の帯にセルがある（BOA-822）
+const inCautionTable = (through) =>
+  Array.from({ length: 15 }, (_, i) => ({
+    round_grp: "other",
+    gap_band: i - 8,
+    n: 30000,
+    non_win: 9000 + i * 1000,
+    first_date: "2019-04-01",
+    last_date: through,
+  }));
+{
+  // BOA-822 統合: 1回目の起動は RPC が失敗（3回試して null）→ 全レース rates_unavailable で予想は書く。
+  // 2回目の起動で findRacesMissingUnified が rates_unavailable の行を欠けとして拾い、inCaution が入る
+  let rpcUp = false;
+  const env = newEnv({
+    mode: "live",
+    rpcs: {
+      ensure_scrape_slots: () => 7,
+      get_in_caution_band_rates: ({ p_through }) => {
+        if (!rpcUp) throw new Error("rpc-down");
+        return inCautionTable(p_through);
+      },
+    },
+    tables: {
+      venues: [{ code: 1, avg_first_win_rate: 0.5 }],
+      racer_aggregated_stats: [],
+      scrape_job_state: [{ job: JOB, mode: "live", consecutive_failures: 0 }],
+    },
+  });
+  const deps = {
+    getVenues: async () => [1],
+    scrapeVenue: async () => structuredClone(GOLDEN_VENUE),
+    triggerDeployHook: async () => ({ triggered: true }),
+  };
+  const r1 = await env.invoke(T0, { deps });
+  const u1 = env.client.data.predictions.filter(
+    (p) => p.model_id === "unified",
+  );
+  check(
+    "(g) RPC の失敗: 予想（unified 12）は書き、inCaution は null・rates_unavailable、対象日は済みにしない",
+    r1.status === 200 &&
+      u1.length === 12 &&
+      u1.every(
+        (p) =>
+          p.feature_contributions.inCaution === null &&
+          p.feature_contributions.inCautionSkip === "rates_unavailable",
+      ) &&
+      env.row().cursor.done === false,
+    show({ status: r1.status, fc: u1[0]?.feature_contributions }),
+  );
+  rpcUp = true;
+  const r2 = await env.invoke(at(2), { deps });
+  const u2 = env.client.data.predictions.filter(
+    (p) => p.model_id === "unified",
+  );
+  check(
+    "(g) 2回目の起動: rates_unavailable の行を欠けとして作り直し、12レースに inCaution が入って done",
+    r2.body.done === true &&
+      u2.length === 12 &&
+      u2.every((p) => p.feature_contributions.inCaution?.level) &&
+      env.row().cursor.finalize.unified?.missing === 12,
+    show({ body: r2.body, finalize: env.row().cursor.finalize }),
+  );
+}
+
 // ---------------------------------------------------------------------------
 // (g) 統合（既定の依存 × インメモリDB）とダイジェスト
 // ---------------------------------------------------------------------------
 {
-  const rpcs = { ensure_scrape_slots: () => 7 };
+  const rpcs = {
+    ensure_scrape_slots: () => 7,
+    get_in_caution_band_rates: ({ p_through }) => inCautionTable(p_through),
+  };
   const env = newEnv({
     mode: "live",
     rpcs,
@@ -874,6 +1028,26 @@ const at = (minutes, base = T0) => new Date(base.getTime() + minutes * 60_000);
       slotCall.args.p_skip_lapsed === true &&
       env.row().cursor.finalize.slots.created === 7,
     show(slotCall?.args?.p_defs?.map((x) => x.job)),
+  );
+  const unified = d.predictions.filter((p) => p.model_id === "unified");
+  const ic = env.client.rpcCalls.filter(
+    (c) => c.name === "get_in_caution_band_rates",
+  );
+  check(
+    "(g) unified にイン崩れ注意度（BOA-822）: RPC を前日までで1回読み、全レースに inCaution（段・%・def）を書く",
+    ic.length === 1 &&
+      same(ic[0].args, { p_from: null, p_through: "2026-09-20" }) &&
+      unified.every(
+        (p) =>
+          p.feature_contributions.inCautionSkip === null &&
+          ["low", "mid", "high"].includes(
+            p.feature_contributions.inCaution?.level,
+          ) &&
+          p.feature_contributions.inCaution.def === "gapband-r-v1" &&
+          // 旧キーは読み手を全部切り替えるまで書き続ける
+          typeof p.feature_contributions.volatilityPercentile === "number",
+      ),
+    show(unified[0]?.feature_contributions),
   );
   check(
     "(g) 後始末の unified: 欠けたレースがあったので日全体（12レース）を生成した",
