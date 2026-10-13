@@ -240,6 +240,10 @@
     }
   ],
   "functions": {
+    "api/cron/sns-send.js": {
+      "regions": ["syd1"],
+      "includeFiles": "node_modules/@sparticuz/chromium/bin/**"
+    },
     "api/cron/*.js": {
       "regions": ["syd1"]
     },
