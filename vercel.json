@@ -225,6 +225,14 @@
     {
       "path": "/api/cron/in-caution-dispatch",
       "schedule": "30 17 * * *"
+    },
+    {
+      "path": "/api/cron/in-caution-health",
+      "schedule": "30 19 * * *"
+    },
+    {
+      "path": "/api/cron/in-caution-health",
+      "schedule": "45 20 * * *"
     }
   ],
   "functions": {

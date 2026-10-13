@@ -966,6 +966,13 @@
       "guards": "BOA-271 アナロジーの週次の学習・v16 の朝のバッチ、BOA-822 イン崩れ注意度の夜の表の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
     },
     {
+      "script": "verify-in-caution-coverage.js",
+      "tier": "manual",
+      "guards": "BOA-822 イン崩れ注意度の本番の充足（完了の定義A・C）: 夜の表の最初の日・最後の日（前日）・合計の件数、今日の unified で inCaution がある割合（99%以上）・出さない理由の内訳・through。判定は api/cron/in-caution-health.js と同じ純関数",
+      "reason": "本番の in_caution_gap_band_daily（service_role の RPC）と predictions を読むため",
+      "command": "node --env-file=.env.local scripts/maintenance/verify-in-caution-coverage.js --table --today"
+    },
+    {
       "script": "verify-in-caution.js",
       "tier": "ci",
       "guards": "BOA-822 イン崩れ注意度の定義（閾値・帯・期間・件数の下限・def）が JS の定数と Python が読む src/data/inCautionConfig.json で同じで、def を上げずに値を変えていないこと"
