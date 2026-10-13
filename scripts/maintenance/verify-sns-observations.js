@@ -152,6 +152,74 @@ assert.equal(
   ])[0].count,
   1,
 );
+// BOA-800: Xのクリック・impressionsは尺なしでも有効。動画の尺判定は維持する。
+for (const metric of ["url_link_clicks", "impressions"]) {
+  const options = { window: "48h", metric, now: Date.parse(period.period_end) + 1 };
+  const input = row({ metric_name: metric, duration_seconds: null, metric_value: 12 });
+  const xDraft = { ...draft, platform: "x" };
+  const [x] = compareObservations([xDraft], [input], options);
+  assert.deepEqual(x.values, [12]);
+  assert.equal(x.missing["尺未確認"], undefined);
+  assert.equal(x.median, 12);
+  const [video] = compareObservations([draft], [input], options);
+  assert.deepEqual(video.values, []);
+  assert.equal(video.missing["尺未確認"], 1);
+  assert.equal(video.median, null);
+  // 尺の違いでXの同一系列を分割しない。
+  const second = { ...xDraft, id: "x-second" };
+  const combined = compareObservations([xDraft, second], [input,
+    row({ ...input, draft_id: second.id, duration_seconds: 18, metric_value: 0 }),
+  ], options);
+  assert.equal(combined.length, 1);
+  assert.deepEqual(combined[0].values, [0, 12]);
+  assert.equal(combined[0].median, 6);
+  assert.equal(compareObservations([{ ...xDraft, template_variant_id: null }],
+    [input], options)[0].missing["型の版未確認"], 1);
+  assert.equal(compareObservations([xDraft], [row({ ...input, source: "mock" })],
+    options)[0].missing["未収集"], 1);
+}
+assert.equal(compare([row({ duration_seconds: null })],
+  [{ ...draft, platform: "x" }])[0].missing["尺未確認"], 1);
+
+// 実際のJSXを描画し、比較の見出しとX側の尺非表示を検査（取得はモック）。
+{
+  const { transform } = await import("esbuild");
+  const React = await import("react");
+  const { renderToStaticMarkup } = await import("react-dom/server");
+  const metric = "url_link_clicks";
+  const groups = compareObservations([draft, { ...draft, id: "x-ui", platform: "x" }],
+    [row({ metric_name: metric }), row({ draft_id: "x-ui", metric_name: metric,
+      duration_seconds: null, metric_value: 12 })],
+    { window: "48h", metric, now: Date.parse(period.period_end) + 1 });
+  let source = await fs.readFile(new URL(
+    "../../src/pages/admin/sns-hub/MetricsTab.jsx", import.meta.url), "utf8");
+  source = source
+    .replace(/import \{ useEffect, useState \} from "react";/,
+      `import React from "${new URL("../../node_modules/react/index.js", import.meta.url).href}";
+       const useEffect = () => {};
+       const useState = (initial) => [typeof initial === "object"
+         ? ${JSON.stringify({ loading: false, error: null, groups })}
+         : initial === "views" ? "${metric}" : initial, () => {}];`)
+    .replace(/import \{ getMetricObservations \} from [^;]+;/,
+      "const getMetricObservations = () => { throw new Error('取得禁止'); };")
+    .replace(/import \{[\s\S]*?\} from [^;]*snsObservations\.js";/,
+      `const OBSERVATION_METRICS = ["${metric}"];`)
+    .replace(/import "\.\/MetricsTab\.css";/, "")
+    .replace(/import ObservationCsvPanel from [^;]+;/,
+      "const ObservationCsvPanel = () => null;");
+  const { code } = await transform(source, { loader: "jsx", format: "esm" });
+  const { default: MetricsTab } = await import(
+    "data:text/javascript," + encodeURIComponent(code));
+  const html = renderToStaticMarkup(React.createElement(MetricsTab));
+  const sections = [...html.matchAll(/<section><h3>(.*?)<\/h3>([\s\S]*?)<\/section>/g)];
+  assert.equal(sections.length, 2);
+  assert.equal(sections[0][1], "X（リンククリック／impressions）");
+  assert.doesNotMatch(sections[0][2], /尺:/);
+  assert.match(sections[0][2], /中央値: 12/);
+  assert.equal(sections[1][1], "YouTube（動画）");
+  assert.match(sections[1][2], /尺: 18秒/);
+}
+
 let saved = [];
 const result = await collectDueObservations({
   drafts: [draft],

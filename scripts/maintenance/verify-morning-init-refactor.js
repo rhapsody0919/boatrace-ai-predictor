@@ -321,7 +321,9 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
       client.data.race_conditions.every((r) => r.race_title || r.race_stage),
   );
   // BOA-590: F数・L数を朝の初期化で書く（レース情報の窓＝発走60分前まで NULL にしない）
-  const fl = client.data.race_entries.filter((e) => e.race_id === "2026-09-21-01-01");
+  const fl = client.data.race_entries.filter(
+    (e) => e.race_id === "2026-09-21-01-01",
+  );
   check(
     "(b) BOA-590: race_entries に F数・L数を書く（5号艇 F1、ほかは F0・L0）",
     fl.length === 6 &&
@@ -350,7 +352,8 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     const sent = c2.data.race_entries;
     check(
       "(b) BOA-590: F数・L数が読めなかった艇は、f_count・l_count の列を送らない",
-      sent.length > 0 && sent.every((r) => !("f_count" in r) && !("l_count" in r)),
+      sent.length > 0 &&
+        sent.every((r) => !("f_count" in r) && !("l_count" in r)),
       show(sent.slice(0, 1)),
     );
   }
@@ -455,6 +458,18 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
       local_win_rate: 5 - i * 0.2,
       motor_2rate: 40 - i,
     }));
+  // イン崩れ注意度の夜の表（BOA-822）。無いと全レースが rates_unavailable になり、欠けとして数え直される
+  const rpcs = {
+    get_in_caution_band_rates: ({ p_through }) =>
+      Array.from({ length: 15 }, (_, i) => ({
+        round_grp: "other",
+        gap_band: i - 8,
+        n: 30000,
+        non_win: 9000 + i * 1000,
+        first_date: "2019-04-01",
+        last_date: p_through,
+      })),
+  };
   const tables = () => ({
     races: [
       { race_id: "2026-09-21-01-01", start_time: "15:26:00" },
@@ -471,7 +486,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     predictions: [],
   });
 
-  const client = createFakeSupabaseClient({ tables: tables() });
+  const client = createFakeSupabaseClient({ tables: tables(), rpcs });
   const missingBefore = await findRacesMissingUnified(DATE, client, {
     now: () => FIXED_NOW,
   });
@@ -511,6 +526,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
 
   const failingClient = createFakeSupabaseClient({
     tables: tables(),
+    rpcs,
     failOn: { "predictions:upsert": "boom-unified" },
   });
   const err = await rejects(
@@ -538,6 +554,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
 
   const dbDown = createFakeSupabaseClient({
     tables: tables(),
+    rpcs,
     failOn: { "races:select": "db-down" },
   });
   const lenient = await generateUnifiedPredictions({
@@ -577,7 +594,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   // BOA-628: 発走済みのレースは書かず、欠けていても数えない（15:30 の時点で 1R=15:26 は発走済み、2R=15:57 は発走前）
   {
     const at = () => new Date(`${DATE}T15:30:00+09:00`);
-    const c2 = createFakeSupabaseClient({ tables: tables() });
+    const c2 = createFakeSupabaseClient({ tables: tables(), rpcs });
     const missing = await findRacesMissingUnified(DATE, c2, { now: at });
     check(
       "(c) BOA-628: findRacesMissingUnified は発走済みのレースを数えない（2R だけ）",
@@ -603,7 +620,7 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
       same(again, []),
       show(again),
     );
-    const c3 = createFakeSupabaseClient({ tables: tables() });
+    const c3 = createFakeSupabaseClient({ tables: tables(), rpcs });
     const all = await generateUnifiedPredictions({
       date: DATE,
       client: c3,

@@ -33,6 +33,7 @@
  */
 import {
   SCRAPE_JOBS,
+  activeMinutesOf,
   isCatchupOffset,
   isScheduledDate,
   isWeightOnlyOffset,
@@ -96,9 +97,13 @@ const isHostRow = (row) => String(row.job).startsWith("host:");
 export function livenessCheckable(
   now,
   graceMin = THRESHOLDS.livenessStartGraceMin,
+  active = null,
 ) {
   const m = jstMinutesOfDay(now);
-  return m >= OPERATING_START_MIN + graceMin && m < OPERATING_END_MIN;
+  // 稼働時間を持つジョブ（activeHoursJst。例: SNS の送信は JST 8:00〜21:00）は、その時間の中だけを見る
+  const start = active?.start ?? OPERATING_START_MIN;
+  const end = active?.end ?? OPERATING_END_MIN;
+  return m >= start + graceMin && m < end;
 }
 
 const minutesBetween = (later, earlier) =>
@@ -462,7 +467,10 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
       def.kind === "continuous"
         ? THRESHOLDS.continuousLivenessStaleMin
         : THRESHOLDS.livenessStartGraceMin;
-    if (staleMin !== null && livenessCheckable(now, graceMin)) {
+    if (
+      staleMin !== null &&
+      livenessCheckable(now, graceMin, activeMinutesOf(def))
+    ) {
       const last = row.last_tick_at ? new Date(row.last_tick_at) : null;
       if (!last || minutesBetween(now, last) >= staleMin) {
         alerts.push({

@@ -50,10 +50,10 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-5 送信
 
-- [ ] **16. X の OAuth（PKCE）** `api/admin/sns-hub/x-oauth/start.js`・`callback.js`、`api/_lib/snsTokenStore.js`（AES-256-GCM、locked_by の条件付き保存、ADR 0093）
-- [ ] **17. X adapter** `api/_lib/xApiAdapter.js`（media upload v2・POST /2/tweets・返信）
-- [ ] **18. YouTube adapter** `api/_lib/youtubeQueueAdapter.js`（resumable・private、processing・makePublic・lookup、サムネイルの Content-Type）
-- [ ] **19. cron `sns-send`**（2分ごと、JST 8:00〜21:00、maxDuration 300）: sweep → 対象の選び方（子は親が posted のもの）→ 既存の run* 関数。dry_run は claim の前で止める
+- [x] **16. X の OAuth（PKCE）** `api/admin/sns-hub/x-oauth/start.js`・`callback.js`、`api/_lib/snsTokenStore.js`（AES-256-GCM、locked_by の条件付き保存、ADR 0093）（PR #1470）
+- [x] **17. X adapter** `api/_lib/xApiAdapter.js`（media upload v2・POST /2/tweets・返信）（PR #1472。分割は 4 MiB、トークンは runner が claim の前に渡す）
+- [x] **18. YouTube adapter** `api/_lib/youtubeQueueAdapter.js`（resumable・private、processing・makePublic・lookup、サムネイルの Content-Type）（PR #1473。1回の multipart で上げる、題名の不備は begin_post の前に held）
+- [x] **19. cron `sns-send`**（2分ごと、JST 8:00〜21:00、maxDuration 300）: sweep → 対象の選び方（子は親が posted のもの）→ 既存の run* 関数。dry_run は claim の前で止める（この PR。送る前の検査は claim の前にも通し、落ちたら claim しない。鍵の健全性 API `/api/admin/sns-hub/token-health` も足した。リンク先の表示の確認（10）・元データの読み直し（9）が入るまでは送る前の検査で必ず止まる）
 - [ ] **20. 費用**: `reserve_sns_x_read` の呼び出し、期間の終わりの3日前の Slack
 - [ ] **19a. DB 158**（番号は着手時に origin/master で確認）: `sns_auto_send_items.kind`（race・digest。digest は bundle_import_id なし、race_id は `today:YYYY-MM-DD`、承認の関数は下書きの ID で引く）、`sns_drafts.send_lane`（A・B）、B の claim は今日まだ送っていない A の予定の本数を先に引く、`roll_sns_x_send_period()`（期間が終わったら同じ額で次の1か月へ。2026-10-13 オーナー決定）、`sns_post_tracking` の campaign に `today_digest` を足す。PGlite の再現テスト: A と B が同じ日に重なったとき B が A の枠を食わない／期間の途中では切り替わらない・終わったら同じ額で切り替わる／digest の item を止められる
 - [ ] **19b. /today の X 投稿**（通り道 A）: `morning_digest_rows` から決まった型で本文を組み立てる（AI 生成なし、禁止表現の検査は通す）。7:45 送信・5:45 通知・止める操作つき。UTM は `utm_campaign=today_digest`・`utm_content=日付`。L1 から dry_run で回し、L2 はオーナーが毎朝 5:45〜7:45 にスマホで承認、L3 で自動。日次上限は L2 で `daily_limit_x=7`、L3 で 97
