@@ -7,10 +7,13 @@
 // 固定のレースID: spec.md・screens.md には「レース一覧→詳細」の導線が書かれておらず
 // （本機能はレース詳細ページの拡張のみを記述する）、辿れる導線が無いため固定値を使う。
 // 実際に存在するレースIDへの置き換えが必要になる可能性がある（仕様の曖昧点として報告）。
+// 発走後・確定済みのレースIDは v16 公開（2026-10-06ごろ）より後の日付にする必要がある
+// （spec「データ（土台）」: 公開より前のレースは layer API を呼ばず not_saved 扱い）。
 import { test, expect } from "../fixtures.js";
 
 const PENDING_RACE_ID = "2099-12-31-01-01"; // 発走前（締切前）を想定
-const FINISHED_RACE_ID = "2020-01-01-01-01"; // 発走後・確定済み（結果タブがある）を想定
+const FINISHED_RACE_ID = "2026-10-08-01-01"; // 発走後・確定済み（v16公開後）を想定
+const PRE_PUBLISH_RACE_ID = "2020-01-01-01-01"; // v16公開より前の日付（not_savedと同じ扱い）
 
 const BASE_CONDITIONS = {
   b1_class: "A1",
@@ -32,7 +35,6 @@ function okBody({
   return {
     status: "ok",
     run_id,
-    race_id: "dummy",
     conditions,
     n_total: n_total ?? rows.length,
     n_returned: n_returned ?? rows.length,
@@ -42,12 +44,23 @@ function okBody({
   };
 }
 
-async function mockLayer(page, body, { httpStatus = 200 } = {}) {
+/**
+ * layer API のモック。応答が status="ok" のときは race_id を自動でリクエストURLの
+ * raceId に合わせる（raceId の取り違え検査を行うテスト以外は一致させておく必要がある。
+ * options.raceId で明示的に不一致にできる）。
+ */
+async function mockLayer(page, body, { httpStatus = 200, raceId } = {}) {
   await page.route("**/api/analogy/layer/**", async (route) => {
+    const url = route.request().url();
+    const pathRaceId = url.match(/\/api\/analogy\/layer\/([^/?]+)/)?.[1];
+    const finalBody =
+      body && typeof body === "object" && body.status === "ok"
+        ? { ...body, race_id: raceId ?? pathRaceId }
+        : body;
     await route.fulfill({
       status: httpStatus,
       contentType: "application/json",
-      body: JSON.stringify(body),
+      body: JSON.stringify(finalBody),
     });
   });
 }
@@ -115,6 +128,22 @@ const TENKAI_ROWS = [
   genericRow(3, { winning_technique: null }),
 ];
 
+/** 指定件数だけ match / 残りを nonMatch にした行配列を作る（FR-3 の線の検証用） */
+function buildCountedRows(matchCount, totalCount, matchRow, nonMatchRow) {
+  return Array.from({ length: totalCount }, (_, i) =>
+    i < matchCount ? matchRow(i) : nonMatchRow(i),
+  );
+}
+
+function allRows(n, overrides) {
+  return Array.from({ length: n }, (_, i) => genericRow(i, overrides));
+}
+
+// 着順「流す」（1号艇1着・2着{3,4}・3着{3,5}）での一致行・不一致行
+const nagashiMatchRow = (i) => genericRow(i, { rank1: 1, rank2: 3, rank3: 5 });
+const nagashiNonMatchRow = (i) =>
+  genericRow(i, { rank1: 1, rank2: 2, rank3: 4 });
+
 async function openAiPredictionTab(page, raceId) {
   await page.goto(`/race/${raceId}`);
   await page.getByRole("tab", { name: "AI予想" }).click();
@@ -134,6 +163,25 @@ async function pickOrder134(page) {
   await page.getByRole("button", { name: "1号艇", exact: true }).nth(0).click();
   await page.getByRole("button", { name: "3号艇", exact: true }).nth(1).click();
   await page.getByRole("button", { name: "4号艇", exact: true }).nth(2).click();
+}
+
+// 着順タブで「流す」オンにし、1着=1号艇・2着{3,4}・3着{3,5} を選ぶ（有効な組は
+// (3,5)(4,3)(4,5) の3通り）
+async function pickOrderNagashi(page) {
+  await page.getByRole("button", { name: "1号艇", exact: true }).nth(0).click();
+  await page.getByRole("button", { name: "流す（2着・3着を複数）" }).click();
+  for (const boat of [3, 4]) {
+    await page
+      .getByRole("button", { name: `${boat}号艇`, exact: true })
+      .nth(1)
+      .click();
+  }
+  for (const boat of [3, 5]) {
+    await page
+      .getByRole("button", { name: `${boat}号艇`, exact: true })
+      .nth(2)
+      .click();
+  }
 }
 
 const judgeButton = (page) =>
@@ -166,12 +214,42 @@ test.describe("AI予想タブの表示条件", () => {
     await expect(checkerHeading(page)).toHaveCount(0);
   });
 
-  test("[spec FR-4] 取得に失敗すると InlineFetchError（再試行つき）が表示される", async ({
+  test("[spec FR-4][screens] 取得に失敗すると「データ取得エラー」とボタン「再読み込み」が表示される", async ({
     page,
   }) => {
     await mockLayer(page, { message: "bad gateway" }, { httpStatus: 502 });
     await openAiPredictionTab(page, PENDING_RACE_ID);
-    await expect(page.getByRole("button", { name: /再試行/ })).toBeVisible();
+    await expect(page.getByText("データ取得エラー")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "再読み込み" }),
+    ).toBeVisible();
+    await expect(checkerHeading(page)).toHaveCount(0);
+  });
+
+  test("[spec データ（土台）] v16公開より前の日付のレースでは layer API を呼ばず「あなたの予想」も表示されない", async ({
+    page,
+  }) => {
+    let called = false;
+    await page.route("**/api/analogy/layer/**", async (route) => {
+      called = true;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(okBody({ rows: GENERIC_ROWS })),
+      });
+    });
+    await openAiPredictionTab(page, PRE_PUBLISH_RACE_ID);
+    await expect(checkerHeading(page)).toHaveCount(0);
+    expect(called).toBe(false);
+  });
+
+  test("[spec データ（土台）] layer の race_id が表示中の raceId と異なる応答では「あなたの予想」が表示されない", async ({
+    page,
+  }) => {
+    await mockLayer(page, okBody({ rows: GENERIC_ROWS }), {
+      raceId: "9999-01-01-01-99",
+    });
+    await openAiPredictionTab(page, PENDING_RACE_ID);
     await expect(checkerHeading(page)).toHaveCount(0);
   });
 });
@@ -203,22 +281,53 @@ test.describe("結果タブ（振り返り）の表示条件", () => {
     await expect(reviewHeading(page)).toHaveCount(0);
   });
 
-  test("[spec FR-4] 取得に失敗すると結果タブでも InlineFetchError（再試行つき）が表示される", async ({
+  test("[spec FR-4][screens] 取得に失敗すると結果タブでも「データ取得エラー」とボタン「再読み込み」が表示される", async ({
     page,
   }) => {
     await mockLayer(page, { message: "bad gateway" }, { httpStatus: 502 });
     await openResultTab(page, FINISHED_RACE_ID);
-    await expect(page.getByRole("button", { name: /再試行/ })).toBeVisible();
+    await expect(page.getByText("データ取得エラー")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "再読み込み" }),
+    ).toBeVisible();
+    await expect(reviewHeading(page)).toHaveCount(0);
+  });
+
+  test("[spec データ（土台）] v16公開より前の日付のレースでは結果タブでも layer API を呼ばず「振り返り」も表示されない", async ({
+    page,
+  }) => {
+    let called = false;
+    await page.route("**/api/analogy/layer/**", async (route) => {
+      called = true;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(okBody({ rows: GENERIC_ROWS })),
+      });
+    });
+    await openResultTab(page, PRE_PUBLISH_RACE_ID);
+    await expect(reviewHeading(page)).toHaveCount(0);
+    expect(called).toBe(false);
+  });
+
+  test("[spec データ（土台）] layer の race_id が表示中の raceId と異なる応答では「振り返り」が表示されない", async ({
+    page,
+  }) => {
+    await mockLayer(page, okBody({ rows: GENERIC_ROWS }), {
+      raceId: "9999-01-01-01-99",
+    });
+    await openResultTab(page, FINISHED_RACE_ID);
     await expect(reviewHeading(page)).toHaveCount(0);
   });
 });
 
 test.describe("画面の構造・操作要素", () => {
-  test("[spec FR-4][screens] AI予想タブ内で「あなたの予想」はイン崩れ注意度のカード・出現パターンより後に表示される", async ({
+  test("[spec FR-4][screens S-1] AI予想タブ内で「あなたの予想」はイン崩れ注意度のカード・出現パターンより後に表示される", async ({
     page,
   }) => {
-    // 置き場所（末尾か先頭か）はまだ未確定（spec「未確定事項」）なので、位置の
-    // 厳密な順序検証はこの1本にまとめ、他のテストでは位置を前提にしない
+    // 置き場所はタブの末尾に確定済み（spec FR-4、screens S-1）。ただし
+    // イン崩れ注意度のカード・出現パターン自体は layer API 以外のデータに依存し、
+    // 固定レースIDでは出ないことがあるため、出ている場合だけ順序を確かめる
     await mockLayer(page, okBody({ rows: GENERIC_ROWS }));
     await openAiPredictionTab(page, PENDING_RACE_ID);
     const names = await page.getByRole("heading").allTextContents();
@@ -230,7 +339,7 @@ test.describe("画面の構造・操作要素", () => {
     }
   });
 
-  test("[screens S-1] 型の切り替えは6タブのtablist（aria-label「予想の型」）で、既定は「着順」", async ({
+  test("[screens] 型の切り替えは6タブのtablist（aria-label「予想の型」）で、既定は「着順」", async ({
     page,
   }) => {
     await mockLayer(page, okBody({ rows: GENERIC_ROWS }));
@@ -253,6 +362,16 @@ test.describe("画面の構造・操作要素", () => {
     );
   });
 
+  test("[screens] 着順の各行は role=group で囲まれ、aria-labelが「1着」「2着」「3着」", async ({
+    page,
+  }) => {
+    await mockLayer(page, okBody({ rows: GENERIC_ROWS }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    for (const label of ["1着", "2着", "3着"]) {
+      await expect(page.getByRole("group", { name: label })).toBeVisible();
+    }
+  });
+
   test("[screens] 着順タブで3着まで決めると点数が「1-3-4（1点）」の形式で表示される", async ({
     page,
   }) => {
@@ -267,27 +386,7 @@ test.describe("画面の構造・操作要素", () => {
   }) => {
     await mockLayer(page, okBody({ rows: GENERIC_ROWS }));
     await openAiPredictionTab(page, PENDING_RACE_ID);
-    await page
-      .getByRole("button", { name: "1号艇", exact: true })
-      .nth(0)
-      .click();
-    await page.getByRole("button", { name: "流す（2着・3着を複数）" }).click();
-    await page
-      .getByRole("button", { name: "3号艇", exact: true })
-      .nth(1)
-      .click();
-    await page
-      .getByRole("button", { name: "4号艇", exact: true })
-      .nth(1)
-      .click();
-    await page
-      .getByRole("button", { name: "3号艇", exact: true })
-      .nth(2)
-      .click();
-    await page
-      .getByRole("button", { name: "5号艇", exact: true })
-      .nth(2)
-      .click();
+    await pickOrderNagashi(page);
     // 2着{3,4}・3着{3,5}のうち、同じ艇が2着・3着に重なる組(3,3)は点数に数えない
     // → 有効な組は(3,5)(4,3)(4,5)の3通り
     await expect(page.getByText("（3点）")).toBeVisible();
@@ -426,6 +525,26 @@ test.describe("画面の構造・操作要素", () => {
     await expect(page.getByText("同時には起きない形です")).toBeVisible();
   });
 
+  test("[spec FR-1] 内3艇そろう→カド一撃の順に選んだ後は、2コース凹みを押せる（押すと最も古い内3艇そろうが外れるため）", async ({
+    page,
+  }) => {
+    await mockLayer(page, okBody({ rows: GENERIC_ROWS }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await page.getByRole("tab", { name: "スリット" }).click();
+    await page.getByRole("button", { name: /^内3艇そろう/ }).click();
+    await page.getByRole("button", { name: /^カド一撃/ }).click();
+    const d2 = page.getByRole("button", { name: /^2コース凹み/ });
+    await expect(d2).toBeEnabled();
+    await d2.click();
+    await expect(
+      page.getByRole("button", { name: /^内3艇そろう/ }),
+    ).toHaveAttribute("aria-pressed", "false");
+    await expect(
+      page.getByRole("button", { name: /^カド一撃/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(d2).toHaveAttribute("aria-pressed", "true");
+  });
+
   test("[spec FR-1] 横一線・内3艇そろうだけを選んだときは強さの選択が隠れる", async ({
     page,
   }) => {
@@ -542,7 +661,7 @@ test.describe("FR-2 結果の見せ方", () => {
     ).toBeVisible();
   });
 
-  test("[spec FR-2] 比べた相手の注記に層の説明文と期間が表示される", async ({
+  test("[spec FR-2] 比べた相手の注記に層の説明文・期間・「全国」が表示される", async ({
     page,
   }) => {
     // n_total=7286・n_returned=2000・pool_cutoff=2026-10-12・最も古い行の
@@ -565,7 +684,7 @@ test.describe("FR-2 結果の見せ方", () => {
     await judgeButton(page).click();
     await expect(
       page.getByText(
-        "比べた相手: 今日と同じく、1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番がそろう過去レース7,286件のうち、新しい2,000件（2024-03〜2026-10）",
+        "比べた相手: 今日と同じく、1号艇の級別・1号艇と勝率トップの差・勝率トップの艇番がそろう過去レース7,286件のうち、新しい2,000件（全国、2024-03〜2026-10）",
       ),
     ).toBeVisible();
   });
@@ -580,7 +699,7 @@ test.describe("FR-2 結果の見せ方", () => {
     await expect(page.getByText(/回（/)).toHaveCount(0);
   });
 
-  test("[spec FR-2] 着順タブで2点以上を選ぶと、組み合わせ別の内訳が件数の多い順で上位4組＋「ほか」の形式で表示される", async ({
+  test("[spec FR-2][spec 共通の数え方] 着順タブで2点以上を選ぶと、組み合わせ別の内訳が件数の多い順で上位4組＋語だけの「ほか」で表示される", async ({
     page,
   }) => {
     await mockLayer(page, okBody({ rows: BREAKDOWN_ROWS }));
@@ -609,6 +728,9 @@ test.describe("FR-2 結果の見せ方", () => {
     await expect(breakdown).toContainText("1-2-4 5回");
     await expect(breakdown).toContainText("1-2-5 4回");
     await expect(breakdown).toContainText("ほか");
+    // 「ほか」は語だけで件数を付けない（例: 「ほか2件」のような表記にしない）
+    const breakdownText = await breakdown.textContent();
+    expect(breakdownText).not.toMatch(/ほか\d/);
   });
 
   test('[非機能要件] 結果の領域は aria-live="polite" で知らせる', async ({
@@ -622,24 +744,149 @@ test.describe("FR-2 結果の見せ方", () => {
   });
 });
 
-test.describe("FR-3 定番／レア（線の検証が済むまで）", () => {
-  test("[spec FR-3] 線の検証が済んでいない現状では、ラベルも「定番は…、レアは…」の注記も表示されない", async ({
+test.describe("FR-3 定番／レア（線 x=15, y=5）", () => {
+  test("[spec FR-3] 着順の流しでは、割合が15%ちょうどのとき「定番」ラベルが付く", async ({
     page,
   }) => {
-    await mockLayer(page, okBody({ rows: GENERIC_ROWS }));
+    const rows = buildCountedRows(15, 100, nagashiMatchRow, nagashiNonMatchRow);
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await pickOrderNagashi(page);
+    await judgeButton(page).click();
+    await expect(page.getByText("過去100レース中 15回（15.0%）")).toBeVisible();
+    await expect(page.getByText("定番", { exact: true })).toBeVisible();
+  });
+
+  test("[spec FR-3] 着順の流しでは、割合が5%ちょうどのときラベルが付かない", async ({
+    page,
+  }) => {
+    const rows = buildCountedRows(5, 100, nagashiMatchRow, nagashiNonMatchRow);
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await pickOrderNagashi(page);
+    await judgeButton(page).click();
+    await expect(page.getByText("過去100レース中 5回（5.0%）")).toBeVisible();
+    await expect(page.getByText("定番", { exact: true })).toHaveCount(0);
+    await expect(page.getByText("レア", { exact: true })).toHaveCount(0);
+  });
+
+  test("[spec FR-3] 着順の流しでは、割合が5%未満のとき「レア」ラベルが付く", async ({
+    page,
+  }) => {
+    const rows = buildCountedRows(4, 100, nagashiMatchRow, nagashiNonMatchRow);
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await pickOrderNagashi(page);
+    await judgeButton(page).click();
+    await expect(page.getByText("過去100レース中 4回（4.0%）")).toBeVisible();
+    await expect(page.getByText("レア", { exact: true })).toBeVisible();
+  });
+
+  test("[spec FR-3] ラベルを出す小分け（着順の流し）では注記に「定番は15%以上、レアは5%未満」の文が付く", async ({
+    page,
+  }) => {
+    const rows = buildCountedRows(15, 100, nagashiMatchRow, nagashiNonMatchRow);
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await pickOrderNagashi(page);
+    await judgeButton(page).click();
+    await expect(page.getByText(/定番は15%以上、レアは5%未満/)).toBeVisible();
+  });
+
+  test("[spec FR-3「小分けごとのラベル」] 着順の1点ではラベルも注記の文も出ない（割合が高くても）", async ({
+    page,
+  }) => {
+    const rows = allRows(5, { rank1: 1, rank2: 3, rank3: 4 }); // 100%一致
+    await mockLayer(page, okBody({ rows }));
     await openAiPredictionTab(page, PENDING_RACE_ID);
     await pickOrder134(page);
     await judgeButton(page).click();
-    await expect(page.getByText(/回（/)).toBeVisible();
+    await expect(page.getByText("過去5レース中 5回（100.0%）")).toBeVisible();
     await expect(page.getByText("定番", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("レア", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/定番は.*以上、レアは.*未満/)).toHaveCount(0);
   });
 
-  // T0-1 の検証で x・y が決まり、本 spec に書き戻された後に有効化する。
-  // 線の値に依存する判定は現時点では書けない（タスク指示どおり fixme にする）。
-  test.fixme("[spec FR-3] 線が確定した後、割合がx%以上の型の主文に「定番」ラベルが付く", async () => {});
-  test.fixme("[spec FR-3] 線が確定した後、割合がy%未満の型の主文に「レア」ラベルが付く", async () => {});
+  test("[spec FR-3「小分けごとのラベル」] 1号艇ではラベルが出ない（割合が高くても）", async ({
+    page,
+  }) => {
+    const rows = allRows(5, { rank1: 1 }); // 100%一致
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await page.getByRole("tab", { name: "1号艇" }).click();
+    await page.getByRole("button", { name: "1号艇が 1着" }).click();
+    await judgeButton(page).click();
+    await expect(page.getByText("過去5レース中 5回（100.0%）")).toBeVisible();
+    await expect(page.getByText("定番", { exact: true })).toHaveCount(0);
+  });
+
+  test("[spec FR-3「小分けごとのラベル」] 展開ではラベルが出る", async ({
+    page,
+  }) => {
+    const rows = allRows(5, { rank1: 3, winning_technique: "まくり" }); // 100%一致
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await page.getByRole("tab", { name: "展開" }).click();
+    await page.getByRole("button", { name: "3号艇", exact: true }).click();
+    await page.getByRole("button", { name: "まくり" }).click();
+    await judgeButton(page).click();
+    await expect(page.getByText("定番", { exact: true })).toBeVisible();
+  });
+
+  test("[spec FR-3「小分けごとのラベル」] スリットの形ではラベルが出る", async ({
+    page,
+  }) => {
+    // コースごとのST（秒）: cent換算 10,11,12,13,14,15 → 横一線（max-min=5<=6）に一致
+    const rows = allRows(5, {
+      st_by_course: [0.1, 0.11, 0.12, 0.13, 0.14, 0.15],
+    });
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await page.getByRole("tab", { name: "スリット" }).click();
+    await page.getByRole("button", { name: /^横一線/ }).click();
+    await judgeButton(page).click();
+    await expect(page.getByText("定番", { exact: true })).toBeVisible();
+  });
+
+  test("[spec FR-3「小分けごとのラベル」] スリットの「自分で作る」ではラベルが出ない（割合が高くても）", async ({
+    page,
+  }) => {
+    // 1コース: S-6*c1 = 250-0 = 250 >= 30 → 「出る」に一致
+    const rows = allRows(5, {
+      st_by_course: [0, 0.5, 0.5, 0.5, 0.5, 0.5],
+    });
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await page.getByRole("tab", { name: "スリット" }).click();
+    await page.getByRole("button", { name: "自分で作る（1艇ずつ）" }).click();
+    await page.getByRole("button", { name: "1コース: 指定なし" }).click();
+    await judgeButton(page).click();
+    await expect(page.getByText("定番", { exact: true })).toHaveCount(0);
+  });
+
+  test("[spec FR-3「小分けごとのラベル」] 進入ではラベルが出る（境界の小分けでも出す）", async ({
+    page,
+  }) => {
+    const rows = allRows(5, { course_by_boat: [1, 2, 3, 3, 5, 6] }); // 4号艇が3コース
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await page.getByRole("tab", { name: "進入" }).click();
+    await page.getByRole("button", { name: "4号艇", exact: true }).click();
+    await page.getByRole("button", { name: "3コース以内に入る" }).click();
+    await judgeButton(page).click();
+    await expect(page.getByText("定番", { exact: true })).toBeVisible();
+  });
+
+  test("[spec FR-3「小分けごとのラベル」] 配当の帯ではラベルが出ない（割合が高くても）", async ({
+    page,
+  }) => {
+    const rows = allRows(5, { payout_3tan: 20000 }); // 万舟に100%一致
+    await mockLayer(page, okBody({ rows }));
+    await openAiPredictionTab(page, PENDING_RACE_ID);
+    await page.getByRole("tab", { name: "配当の帯" }).click();
+    await page.getByRole("button", { name: "万舟（10,000円以上）" }).click();
+    await judgeButton(page).click();
+    await expect(page.getByText("定番", { exact: true })).toHaveCount(0);
+  });
 });
 
 test.describe("FR-5 端末内保存", () => {
