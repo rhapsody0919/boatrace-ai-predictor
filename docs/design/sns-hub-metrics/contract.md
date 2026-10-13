@@ -57,3 +57,4 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 - 暦日の値（YouTube Analytics の動画ごと・チャネル全体、GA4 の流入）は観測の表ではなく `sns_channel_daily` に入れる（136 の窓に暦日を入れない）
 - UTM の表（`sns_post_tracking`）は campaign に `race-full` を許し、`template_variant_id` を任意にした（bundle 由来の下書きは template_variant_id が NULL のため）
 - collector の JS 側の検査（遅い snapshot を欠測にする処理）を15分の許容差に合わせるのは、取り込みの実装（sns-pdca-loop の tasks PR-6）で行う
+- X の親の投稿の UTM（sns-pdca-loop tasks 23）: `buildObservationUtm` に `campaign`（`sonar-preview`・`race-full`）を足した。`race-full` は型の版が任意で、`utm_content` は下書きの ID（型の版があれば `下書き/版`）。レースの URL にクエリ・fragment があれば作らない。本文への差し込みと `sns_post_tracking` への保存は `scripts/lib/snsPostTracking.js`（auto-plan が承認の前に呼ぶ）

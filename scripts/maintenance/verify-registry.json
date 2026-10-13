@@ -1076,6 +1076,11 @@
       "script": "verify-sns-send-runner.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・トークンは1回の実行で1回・要照合は report ではなくその場で通知、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-post-tracking.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 23: X の親の投稿の UTM（campaign=race-full は型の版なしで作れ utm_content は下書きの ID、sonar-preview は型の版が必須のまま、許可の無い campaign・クエリつきの URL は作らない、本文のレースの URL をちょうど1か所だけ差し替え句点・改行の直前も終わりとみなし番号が続く別のレースは差し替えない、差し替え済みならそのまま、子・YouTube は対象外、sns_post_tracking に型の版なしで保存できやり直しは同じ URL なら成功・違えば投げる）。SQL154 までを PGlite、外部接続なし"
     }
   ]
 }

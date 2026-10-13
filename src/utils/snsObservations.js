@@ -324,12 +324,17 @@ export function compareObservations(
   });
 }
 
-/** 呼び出し側が正式公開証拠を確認するまでURLを返さない。投稿本文は変更しない。 */
+export const OBSERVATION_UTM_CAMPAIGNS = ["sonar-preview", "race-full"];
+
+/** 呼び出し側が正式公開証拠を確認するまでURLを返さない。投稿本文は変更しない。
+ * campaign: sonar-preview（型の版つき）・race-full（sns-pdca-loop の通り道 A。素材 v1 は型の版が無いので variantId は任意）
+ */
 export function buildObservationUtm({
   raceUrl,
   draftId,
-  variantId,
+  variantId = null,
   releaseEvidence,
+  campaign = "sonar-preview",
 }) {
   if (
     !releaseEvidence?.confirmed_by ||
@@ -342,15 +347,21 @@ export function buildObservationUtm({
   if (
     url.origin !== "https://www.boat-ai.jp" ||
     !/^\/race\/[^/]+$/.test(url.pathname) ||
+    url.search ||
+    url.hash ||
     url.username ||
     url.password
   )
     throw new Error("公開レースURLが不正です");
-  if (!draftId || !variantId) throw new Error("投稿と型の版が必要です");
+  if (!OBSERVATION_UTM_CAMPAIGNS.includes(campaign))
+    throw new Error("UTM の campaign が不正です");
+  if (!draftId || (campaign === "sonar-preview" && !variantId))
+    throw new Error("投稿と型の版が必要です");
+  const content = variantId ? `${draftId}/${variantId}` : draftId;
   url.searchParams.set("utm_source", "x");
   url.searchParams.set("utm_medium", "social");
-  url.searchParams.set("utm_campaign", "sonar-preview");
-  url.searchParams.set("utm_content", `${draftId}/${variantId}`);
+  url.searchParams.set("utm_campaign", campaign);
+  url.searchParams.set("utm_content", content);
   return {
     url: url.toString(),
     release_evidence: releaseEvidence,
@@ -360,8 +371,8 @@ export function buildObservationUtm({
     tracking_url: url.toString(),
     utm_source: "x",
     utm_medium: "social",
-    utm_campaign: "sonar-preview",
-    utm_content: `${draftId}/${variantId}`,
+    utm_campaign: campaign,
+    utm_content: content,
   };
 }
 
