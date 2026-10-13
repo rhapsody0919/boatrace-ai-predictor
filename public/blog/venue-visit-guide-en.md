@@ -204,7 +204,7 @@ Plenty of regulars are solo visitors who keep coming back.
 
 ## The appeal of night races
 
-Night races, held at 6 venues nationwide, have a different kind of appeal from day races.
+Night races are held at Kiryu, Gamagori, Suminoe, Marugame, Shimonoseki, Wakamatsu and Omura (Shimonoseki confirmed on the [official race list](https://www.boatrace.jp/owpc/pc/race/raceindex?jcd=19&hd=20261013)). They have a different kind of appeal from day races.
 
 ### Night race venues
 
