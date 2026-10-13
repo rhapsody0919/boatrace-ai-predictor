@@ -419,6 +419,9 @@ export async function validateBundle(
     riskFlags.x_thread = bundle.x_thread.map((post) => [
       ...matchRiskRules(
         [
+          // 下書きに付くのは投稿の本文だけでなく、共通のタイトルと添付の動画の場面の文字も（全体の riskFlags.x と同じ欄）
+          { text: bundle.title, field: "body" },
+          ...(bundle.scenes || []).flatMap((scene) => (scene.lines || []).map((line) => ({ text: line, field: "body" }))),
           { text: post.text, field: "body" },
           ...(post.index === 0 ? bundle.x_hashtags || [] : []).map((tag) => ({ text: tag, field: "hashtags" })),
         ],

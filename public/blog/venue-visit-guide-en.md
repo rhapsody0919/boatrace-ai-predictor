@@ -26,7 +26,7 @@ Boat racing runs in 3 formats.
 |---------|--------|-----------|
 | Day races | ~10:00 AM–4:30 PM | Toda, Edogawa, Mikuni, etc. |
 | Morning races | ~8:30 AM–2:30 PM | Ashiya, Naruto, Karatsu, etc. |
-| Night races | ~3:00–8:30 PM | Kiryu, Gamagori, Suminoe, Marugame, Wakamatsu, Omura, etc. |
+| Night races | ~3:00–8:30 PM | Kiryu, Gamagori, Suminoe, Marugame, Shimonoseki, Wakamatsu, Omura |
 
 Stopping by a night race on your way home from work is a perfectly good way to enjoy it.
 
@@ -204,7 +204,7 @@ Plenty of regulars are solo visitors who keep coming back.
 
 ## The appeal of night races
 
-Night races, held at 6 venues nationwide, have a different kind of appeal from day races.
+Night races are held at Kiryu, Gamagori, Suminoe, Marugame, Shimonoseki, Wakamatsu and Omura. They have a different kind of appeal from day races.
 
 ### Night race venues
 
@@ -214,6 +214,7 @@ Night races, held at 6 venues nationwide, have a different kind of appeal from d
 | Gamagori | Moonlight Race | A view overlooking Mikawa Bay |
 | Suminoe | Suminoe Night Race | Nighttime battles at boat racing's holy ground |
 | Marugame | Marugame Night Race | Night views over the Seto Inland Sea |
+| Shimonoseki | — | Faces the Kanmon Strait |
 | Wakamatsu | Wakamatsu Night Race | A night-view spot in Kitakyushu |
 | Omura | Birthplace Night Race | The birthplace of boat racing itself |
 
@@ -256,7 +257,7 @@ Using your phone at the venue significantly boosts both the accuracy and the fun
 Using Ryujin Radar at the venue gives you information you can't get from the race program alone.
 
 - **Data race table**: Compare all 6 racers' win rates, motor performance, and exhibition times on the spot
-- **Turn prediction & Upset Index**: See the likely 1st-place finishers alongside a "Favorite friendly" or "Upset alert (high)" label
+- **Turn prediction & Upset alert level**: See the likely 1st-place finishers alongside a "Favorite friendly" or "Upset alert (high)" label
 - **Tracked hit rate**: The turn prediction's actual hit rate is always public
 
 Narrow down your picks from the race program, then use Ryujin Radar's data race table to back it up — this combination is the strongest approach.
@@ -271,10 +272,12 @@ There are 24 boat racing venues nationwide, each with its own character. Visitin
 
 | Type | Character | Example venues |
 |--------|------|-----------|
-| Salt water | Water conditions shift with the tide | Heiwajima, Gamagori, Kojima |
+| Salt water | Water conditions shift with the tide | Heiwajima, Kojima |
 | Fresh water | Firmer water surface, favors inside passes | Kiryu, Tamagawa, Biwako |
 | Brackish water | A mix of salt and fresh water | Hamanako, Edogawa, Fukuoka |
 | Pool-type | Calm and stable | Tsu, Naruto, Ashiya |
+
+Gamagori is brackish water, and the [official venue data](https://www.boatrace.jp/owpc/pc/data/stadium?jcd=07) lists its tidal range as "none."
 
 ### A "pilgrimage" is worth considering too
 

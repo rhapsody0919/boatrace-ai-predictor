@@ -87,6 +87,36 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     await expect(page.locator(".motor-ranking-row.best-motor")).toHaveCount(0);
   });
 
+  test("入れ替え後のレースでは、入れ替え前に取った会場内順位を出さない（BOA-834）", async ({
+    page,
+  }) => {
+    // 児島の使用開始日を 9/30（このレースの日）にし、会場内順位のスナップショットの取得日を
+    // 9/27 に見せる（常滑 10/06 の実例と同じ形）。中身は録画の 9/30 の行をそのまま使う
+    await page.route(/\/rest\/v1\/venue_motor_start_dates\?/, (route) =>
+      route.fulfill({ json: [{ start_date: "2026-09-30" }] }),
+    );
+    await page.route(
+      /\/rest\/v1\/venue_motor_stats\?select=scraped_date&/,
+      (route) => route.fulfill({ json: { scraped_date: "2026-09-27" } }),
+    );
+    await page.route(
+      /\/rest\/v1\/venue_motor_stats\?.*scraped_date=eq\.2026-09-27/,
+      (route) =>
+        route.fallback({
+          url: route.request().url().replace("eq.2026-09-27", "eq.2026-09-30"),
+        }),
+    );
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-venue-rank-note")).toContainText(
+      "取得日 2026/9/27）",
+      { timeout: 30000 },
+    );
+    const ranks = await page
+      .locator(".motor-venue-rank")
+      .evaluateAll((els) => els.map((el) => el.textContent.trim()));
+    expect(ranks).toEqual(["—", "—", "—", "—", "—", "—"]);
+  });
+
   test("375px で枠・選手・機番・棒・会場内順位が横スクロールなしで見える", async ({
     page,
   }) => {

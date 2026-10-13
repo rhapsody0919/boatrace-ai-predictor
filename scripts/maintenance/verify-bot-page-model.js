@@ -413,6 +413,24 @@ checkThrows(
     { level: "high", venueWinRate: 0.5 },
   );
   check("transformTodayRaces: scrapedAt はそのまま", out.scrapedAt, "x");
+  check(
+    "transformTodayRaces: inCaution（BOA-822、RPC 157）は無ければ null にそろえる",
+    out.data[0].races[0].inCaution,
+    null,
+  );
+  const ic = { pct: 65, level: "high", n: 34842 };
+  check(
+    "transformTodayRaces: inCaution はレース直下にそのまま通す",
+    transformTodayRaces(
+      {
+        data: [
+          { place_cd: 5, races: [{ raceNo: 1, placeCd: 5, inCaution: ic }] },
+        ],
+      },
+      {},
+    ).data[0].races[0].inCaution,
+    ic,
+  );
 }
 
 // ---- 5. 人の画面が同じ関数を使っている ----

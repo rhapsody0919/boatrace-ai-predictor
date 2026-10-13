@@ -61,6 +61,23 @@ const ALERT_NOTIFY_HOURS = 3;
  * 起動は2分ごとなので約10分。超えたら失敗として通知し、その日はやり直さない
  */
 export const IN_CAUTION_MAX_ATTEMPTS = 5;
+
+/**
+ * イン崩れ注意度の打ち切りの通知を残す期限。scrape-monitor の運用窓（JST 07:00〜）に必ず入るよう、
+ * 3時間後と当日 JST 09:00 の遅い方
+ * @param {Date} now
+ */
+export function inCautionAlertUntil(now) {
+  const jstDate = new Date(now.getTime() + 9 * 3600 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  return new Date(
+    Math.max(
+      now.getTime() + ALERT_NOTIFY_HOURS * 3600 * 1000,
+      Date.parse(`${jstDate}T09:00:00+09:00`),
+    ),
+  ).toISOString();
+}
 /** last_report に残す、失敗の内容の最大数 */
 const MAX_FAILURES_IN_REPORT = 10;
 
@@ -427,6 +444,13 @@ export async function runRacesInitJob(ctx, deps = {}) {
       ).toISOString(),
       text: `朝の初期化の後始末に失敗しています（対象日 ${date}）: ${finalizeError}`,
     });
+  } else if (
+    cursor.finalize?.inCautionAlert &&
+    new Date(cursor.finalize.inCautionAlert.until) > ctx.now()
+  ) {
+    // イン崩れ注意度の打ち切りの通知は、次の起動の成功の報告でも残す（成功の報告が alerts を空にして、
+    // scrape-monitor の運用窓 JST 07:00 より前に消えるため。2026-10-13 レビュー F1）。key は同じなので二重には出ない
+    alerts.push(cursor.finalize.inCautionAlert);
   }
 
   const report = {
@@ -527,10 +551,13 @@ async function finalizeCycle({ ctx, d, cursor, date }) {
           generated: r.generated,
           inCautionFailed: true,
         };
-        return {
-          error: `イン崩れ注意度の表が${IN_CAUTION_MAX_ATTEMPTS}回読めなかった（予想は書いた。inCaution は空のまま。in_caution_gap_band_daily・get_in_caution_band_rates を確認）`,
-          pending: false,
+        const error = `イン崩れ注意度の表が${IN_CAUTION_MAX_ATTEMPTS}回読めなかった（予想は書いた。inCaution は空のまま。in_caution_gap_band_daily・get_in_caution_band_rates を確認）`;
+        fin.inCautionAlert = {
+          key: "finalize_failed",
+          until: inCautionAlertUntil(ctx.now()),
+          text: `朝の初期化の後始末に失敗しています（対象日 ${date}）: ${error}`,
         };
+        return { error, pending: false };
       }
       fin.unified = { missing: r.missing, generated: r.generated };
     }
