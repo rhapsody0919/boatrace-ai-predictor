@@ -287,3 +287,128 @@ test("成功の応答を解釈できないときは理由つきで投げる（�
     /応答を解釈できません: HTTP 201/,
   );
 });
+
+// 媒体の処理の応答が欠けたときに投稿へ進まない（開発の補助の点検 D1、2026-10-13）
+async function sendWith(fetchImpl, { path = "v.mp4" } = {}) {
+  const me = (
+    await first("SELECT id FROM sns_approvers WHERE display_name='本人'")
+  ).id;
+  const media = new Uint8Array(1024).fill(5);
+  const loadMedia = async () => media;
+  const draft = await first(
+    "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,video_storage_path,cover_image_path) VALUES(gen_random_uuid(),'short','x','ja','全貌',$1,$2) RETURNING *",
+    path.endsWith(".mp4") ? [path, null] : [null, path],
+  );
+  const job = (
+    await first("SELECT approve_sns_x_send($1,$2,$3) r", [
+      draft.id,
+      me,
+      await createXSnapshot(draft, loadMedia),
+    ])
+  ).r;
+  const store = {
+    transition: async (id, action, result = {}) =>
+      (
+        await first("SELECT transition_sns_x_send($1,$2,$3) r", [
+          id,
+          action,
+          result,
+        ])
+      ).r,
+  };
+  return {
+    job,
+    run: () =>
+      runXSendJob(job.id, {
+        store,
+        x: createXApiAdapter({ fetchImpl, accessToken: "tok" }),
+        loadMedia,
+        wait: async () => {},
+        preflight: async () => {},
+      }),
+  };
+}
+const postIds = (() => {
+  let n = 0n;
+  return () => String(1900000000000000000n + ++n);
+})();
+function mediaFake({ finalize, status }) {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    const u = new URL(url);
+    calls.push(u.pathname + u.search);
+    if (u.pathname === "/2/media/upload/initialize")
+      return json({ data: { id: "m1" } });
+    if (/\/append$/.test(u.pathname))
+      return new Response(null, { status: 204 });
+    if (/\/finalize$/.test(u.pathname)) return finalize();
+    if (u.pathname === "/2/media/upload") return status();
+    if (u.pathname === "/2/tweets")
+      return json({ data: { id: postIds() } }, 201);
+    throw new Error("想定外: " + url);
+  };
+  return { calls, fetchImpl };
+}
+
+test("媒体の処理中に STATUS の応答が欠けたら（{}・空本文・null）、投稿へ進まない", async () => {
+  for (const missing of [
+    () => json({}),
+    () => new Response("", { status: 200 }),
+    () => json(null),
+    () => json({ data: {} }),
+  ]) {
+    const fake = mediaFake({
+      finalize: () =>
+        json({
+          data: {
+            id: "m1",
+            processing_info: { state: "in_progress", check_after_secs: 1 },
+          },
+        }),
+      status: missing,
+    });
+    const { run, job } = await sendWith(fake.fetchImpl);
+    await assert.rejects(run(), /処理状態が読めません/);
+    assert.equal(fake.calls.filter((c) => c === "/2/tweets").length, 0);
+    assert.notEqual(
+      (await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [job.id]))
+        .state,
+      "reconcile",
+    );
+  }
+});
+
+test("finalize の応答に data が無ければ投稿へ進まない", async () => {
+  const fake = mediaFake({
+    finalize: () => json({}),
+    status: () => assert.fail("呼ばない"),
+  });
+  const { run } = await sendWith(fake.fetchImpl);
+  await assert.rejects(run(), /finalize の応答に data がありません/);
+  assert.equal(fake.calls.filter((c) => c === "/2/tweets").length, 0);
+});
+
+test("動画は finalize で processing_info が省略されても STATUS で完了を確かめてから投稿し、画像は省略で完了", async () => {
+  const video = mediaFake({
+    finalize: () => json({ data: { id: "m1" } }),
+    status: () =>
+      json({ data: { id: "m1", processing_info: { state: "succeeded" } } }),
+  });
+  const v = await sendWith(video.fetchImpl);
+  assert.equal((await v.run()).state, "posted");
+  assert.deepEqual(video.calls.slice(-2), [
+    "/2/media/upload?command=STATUS&media_id=m1",
+    "/2/tweets",
+  ]);
+
+  const image = mediaFake({
+    finalize: () => json({ data: { id: "m1" } }),
+    status: () => assert.fail("呼ばない"),
+  });
+  const i = await sendWith(image.fetchImpl, { path: "c.png" });
+  assert.equal((await i.run()).state, "posted");
+  assert.equal(
+    image.calls.some((c) => c.startsWith("/2/media/upload?command=STATUS")),
+    false,
+  );
+});

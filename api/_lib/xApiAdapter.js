@@ -25,6 +25,8 @@ export function postedAtFromId(id) {
  */
 export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
   if (!accessToken) throw new Error("X の access token がありません");
+  // 媒体 ID ごとの種類（finalize で動画かどうかを見るため）
+  const categories = new Map();
   async function call(path, { method = "GET", json, form } = {}) {
     const response = await fetchImpl(`${X_API_BASE}${path}`, {
       method,
@@ -63,6 +65,7 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
         json: { media_type: type, total_bytes: size, media_category: category },
       });
       if (!body?.data?.id) throw new Error("X の媒体 ID が返りません");
+      categories.set(body.data.id, category);
       return { id: body.data.id };
     },
     async append({ id, index, bytes }) {
@@ -74,6 +77,9 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
         form,
       });
     },
+    // 処理の完了は明示の状態でだけ認める。応答に data が無い（空・{}・null）ときは投げて、投稿の前に保留にする。
+    // 画像は processing_info を省略した finalize の応答を完了とみなす。動画は省略されても完了とせず、STATUS で
+    // 明示の状態を確かめる（処理を待たずに投稿へ進まないため。開発の補助の点検 D1、2026-10-13）
     async finalize(id) {
       const body = await call(
         `/2/media/upload/${encodeURIComponent(id)}/finalize`,
@@ -81,13 +87,24 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
           method: "POST",
         },
       );
-      return { processing_info: body?.data?.processing_info ?? null };
+      if (!body?.data)
+        throw new Error("X の媒体の finalize の応答に data がありません");
+      const info = body.data.processing_info;
+      if (info) return { processing_info: info };
+      return categories.get(id) === "tweet_video"
+        ? { processing_info: { state: "pending", check_after_secs: 1 } }
+        : { processing_info: null };
     },
     async status(id) {
       const body = await call(
         `/2/media/upload?command=STATUS&media_id=${encodeURIComponent(id)}`,
       );
-      return { processing_info: body?.data?.processing_info ?? null };
+      const info = body?.data?.processing_info;
+      if (!info?.state)
+        throw new Error(
+          "X の媒体の処理状態が読めません（STATUS の応答に processing_info.state がありません）",
+        );
+      return { processing_info: info };
     },
     async createPost({ text, mediaIds = [], replyTo }) {
       const body = await call("/2/tweets", {

@@ -27,7 +27,7 @@ store.transitionはSQL137のtransition_sns_x_send。X adapterはinitialize({size
 
 ## 上限と停止
 
-USDの100万分の1単位の整数。上限は最大$10。period_start/endは実際のX請求期間をオーナー側で設定する。全upload（32MiBで最大7chunk）・最大10poll・投稿作成・照合等を含む1試行の保守的な費用上限attempt_ceiling_microusdが未設定ならclaimできない。全試行を先に予約、失敗時も返金しない。期間を跨いだjobの継続を拒否する。月更新は自動化していない。
+USDの100万分の1単位の整数。上限は最大$10。period_start/endは実際のX請求期間をオーナー側で設定する。全upload（32MiBで最大8chunk。分割は 4 MiB、2026-10-13）・最大10poll・投稿作成・照合等を含む1試行の保守的な費用上限attempt_ceiling_microusdが未設定ならclaimできない。全試行を先に予約、失敗時も返金しない。期間を跨いだjobの継続を拒否する。月更新は自動化していない。
 
 初期paused=true、請求期間・費用未設定。停止APIはpaused=trueにしかできず、再開APIは提供しない。停止は次の外部呼び出し前に効く。すでに開始した外部通信は取り消せない。停止応答/チェックと外部通信開始の間の競合は残るため「送信中も必ず取消できる」と表示しない。
 
@@ -67,3 +67,4 @@ USDの100万分の1単位の整数。上限は最大$10。period_start/endは実
 - **access token は runner が claim の前に `getXAccessToken`（`api/_lib/snsTokenStore.js`）で取り、`createXApiAdapter({accessToken})` に渡す**。adapter の中では取らない。テキストだけの投稿では最初の X の呼び出しが begin_post の後の createPost になり、そこでトークンの取得に失敗すると、何も投稿していない job が要照合に落ちるため
 - `posted_at` は投稿の ID（snowflake）の作成時刻。投稿の後に読み取りの API は呼ばない
 - 成功の応答を解釈できない・ID が無いときも再送せず、要照合に残す
+- **媒体の処理の完了**（2026-10-13、開発の補助の点検 D1）: 処理の完了は明示の状態（`processing_info.state`）でだけ認める。STATUS の応答に状態が無い（空・`{}`・`null`）ときは投げて、投稿の前に保留にする。finalize の応答に `data` が無いときも同じ。画像は finalize で `processing_info` が省略されたら完了、動画は省略されても STATUS で確かめる
