@@ -45,10 +45,10 @@ import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 import { upsertWithOptionalColumns } from "../lib/optionalColumns.js";
 
 /**
- * マイグレーション158（早見の列、BOA-784）。未適用の DB では、この列を除いて他の列を書き続ける
+ * マイグレーション159（早見の列、BOA-784）。未適用の DB では、この列を除いて他の列を書き続ける
  */
 const NEXT_RACE_COLUMN_GROUPS = {
-  "マイグレーション158（早見の列）": [
+  "マイグレーション159（早見の列）": [
     "next_race_1",
     "next_race_2",
     "next_series_day",

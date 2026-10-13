@@ -1,4 +1,4 @@
--- 158: 得点率一覧（racer_series_points）に「早見」の列（翌日の1走目・2走目のレース番号）を足す（BOA-784）
+-- 159: 得点率一覧（racer_series_points）に「早見」の列（翌日の1走目・2走目のレース番号）を足す（BOA-784）
 --
 -- ⚠️ この案は「本番へ未適用」。適用はユーザーが SQL Editor で行う（docs/db-migration/APPLIED.md）。
 --

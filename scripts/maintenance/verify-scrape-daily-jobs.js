@@ -727,7 +727,7 @@ const pointRankFetch = (overrides = {}) =>
       show(dry),
     );
   }
-  // 早見の列（翌日の1走目・2走目、BOA-784）。マイグレーション158の列を書き、未適用の DB では
+  // 早見の列（翌日の1走目・2走目、BOA-784）。マイグレーション159の列を書き、未適用の DB では
   // その列だけを除いて他の列を書き続ける
   {
     const tables = () => ({
@@ -756,7 +756,7 @@ const pointRankFetch = (overrides = {}) =>
       show({ first, venues: result.venues }),
     );
 
-    // 158 が未適用の DB: 早見の列を含む upsert は PGRST204 で拒否される
+    // 159 が未適用の DB: 早見の列を含む upsert は PGRST204 で拒否される
     const legacy = createFakeClient({ tables: tables() });
     const legacyFrom = legacy.from.bind(legacy);
     let rejected = 0;
@@ -786,7 +786,7 @@ const pointRankFetch = (overrides = {}) =>
     });
     const legacyRows = legacy.data.racer_series_points ?? [];
     check(
-      "得点率: 158 が未適用なら早見の列だけを除いて書き直し、他の列（52行）は書く",
+      "得点率: 159 が未適用なら早見の列だけを除いて書き直し、他の列（52行）は書く",
       rejected === 1 &&
         legacyResult.updated === true &&
         legacyResult.failures.length === 0 &&
