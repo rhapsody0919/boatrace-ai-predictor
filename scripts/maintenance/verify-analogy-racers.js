@@ -11,6 +11,9 @@
  * 5. 中止で日目が振り直された節（10/10 が丸一日中止で、10/11 も「2日目」）でも節の初日は変わらず、
  *    中止が確定して展示も無いレースは走に入らない（実例: 2026-09-21〜22 の戸田・津）。展示の後に
  *    中止になったレースは展示の値があるので残す（実例: 2026-09-21 三国10R。今節タブと同じ集合）
+ * 7. 各走の state（BOA-860）: 展示タイムあり ok・本人欠場 absent・締切後で展示の行が無い missing。
+ *    締切前のレース（同じ日のまだ走っていないレース。実例: 2026-10-13 朝の 12-06 の 12-01 行）は走に入れない
+ * 8. 進入傾向の集計の終わり（calculated_at の JST 日付の前日）以前の日のレースは course_entry=null・after_race=true
  * 6. 応答は include の有無で混ざらない（include ありの後に include なしを呼んでも racers が無い、
  *    racers 以外は同じ、Cache-Control も同じ規則）。CDN のキャッシュは URL（クエリ込み）で分かれる
  */
@@ -31,6 +34,8 @@ function check(label, actual, expected) {
 }
 
 const RACE = "2026-10-12-01-05";
+// 集計は 10/11 23:00 JST（対象期間の終わりは 10/10）。RACE（10/12）は after_race にならない
+const CALCULATED_AT = "2026-10-11T14:00:00+00:00";
 const TODAY_RACERS = [4528, 5234, 4550, 4950, 4051, 3612];
 const entry = (race_id, boat_number, racer_id) => ({
   race_id,
@@ -100,6 +105,7 @@ const tables = {
     {
       racer_id: 4528,
       venue_code: 0,
+      calculated_at: CALCULATED_AT,
       course_entry_tendency: {
         since: "2025-10-11",
         all: { 1: { n: 30, courses: { 1: 29, 2: 1 } } },
@@ -115,6 +121,7 @@ const tables = {
     ...[5234, 4550, 4950, 4051].map((racer_id) => ({
       racer_id,
       venue_code: 0,
+      calculated_at: CALCULATED_AT,
       course_entry_tendency: {
         since: "2025-10-11",
         all: { 2: { n: 10, courses: { 2: 10 } } },
@@ -215,6 +222,7 @@ const call = async (query) => {
       {
         race_id: "2026-10-09-01-03",
         boat_number: 2,
+        state: "ok",
         exhibition_time: 6.7,
         exhibition_rank: 1,
         exhibition_field: 6,
@@ -222,6 +230,7 @@ const call = async (query) => {
       {
         race_id: "2026-10-11-01-06",
         boat_number: 3,
+        state: "missing",
         exhibition_time: null,
         exhibition_rank: null,
         exhibition_field: 0,
@@ -229,6 +238,7 @@ const call = async (query) => {
       {
         race_id: "2026-10-11-01-09",
         boat_number: 6,
+        state: "ok",
         exhibition_time: 6.6,
         exhibition_rank: 1,
         exhibition_field: 6,
@@ -236,6 +246,7 @@ const call = async (query) => {
       {
         race_id: "2026-10-12-01-02",
         boat_number: 1,
+        state: "ok",
         exhibition_time: 6.8,
         exhibition_rank: 2,
         exhibition_field: 5,
@@ -248,18 +259,113 @@ const call = async (query) => {
     [1],
   );
   check(
-    "展示の無い艇（欠場）は順位 null",
-    b5?.meet_runs.map((r) => [r.exhibition_time, r.exhibition_rank]),
-    [[null, null]],
+    "本人が欠場した走は state=absent・順位 null（母数は他の5艇）",
+    b5?.meet_runs.map((r) => [
+      r.state,
+      r.exhibition_time,
+      r.exhibition_rank,
+      r.exhibition_field,
+    ]),
+    [["absent", null, null, 5]],
   );
   check("1号艇の進入傾向（全会場と、このレースの会場）", b1?.course_entry, {
     since: "2025-10-11",
+    calculated_at: CALCULATED_AT,
     all: { 1: { n: 30, courses: { 1: 29, 2: 1 } } },
     venue: { 1: { n: 4, courses: { 1: 4 } } },
   });
   check("会場の分が無い選手は venue が null", b2?.course_entry?.venue, null);
   check("集計の行が無い選手は course_entry が null", b6?.course_entry, null);
   check("今節に走っていない選手は meet_runs が空", b6?.meet_runs, []);
+  check(
+    "集計の後のレースは after_race=false",
+    racers?.boats.map((b) => b.after_race),
+    [false, false, false, false, false, false],
+  );
+}
+
+// ---- 7. 締切前のレースは今節の走に入れない（2026-10-13-12-06 の 12-01 行の形） ----
+{
+  const race = "2026-10-13-12-06";
+  const input = (now) => ({
+    raceId: race,
+    windowEntries: [
+      entry(race, 1, 5307),
+      entry("2026-10-12-12-03", 6, 5307),
+      entry("2026-10-13-12-01", 4, 5307),
+    ],
+    windowConditions: [],
+    stats: [],
+    exhibitionRows: exh("2026-10-12-12-03", [6.8, 6.8, 6.8, 6.8, 6.8, 6.84]),
+    raceRows: [
+      {
+        race_id: "2026-10-12-12-03",
+        race_date: "2026-10-12",
+        start_time: "16:20:00",
+      },
+      {
+        race_id: "2026-10-13-12-01",
+        race_date: "2026-10-13",
+        start_time: "15:18:00",
+      },
+    ],
+    now,
+  });
+  const ids = (now) =>
+    buildRacers(input(now)).boats[0].meet_runs.map((r) => [
+      r.race_id,
+      r.state,
+    ]);
+  check(
+    "締切前（10/13 08:28 JST）は 12-01 を出さない",
+    ids(new Date("2026-10-13T08:28:00+09:00")),
+    [["2026-10-12-12-03", "ok"]],
+  );
+  check(
+    "締切後に展示の行が無ければ missing",
+    ids(new Date("2026-10-13T15:30:00+09:00")),
+    [
+      ["2026-10-12-12-03", "ok"],
+      ["2026-10-13-12-01", "missing"],
+    ],
+  );
+}
+
+// ---- 8. 集計の対象期間の終わり以前の日のレースは after_race ----
+{
+  const stat = (calculated_at) => ({
+    racer_id: 4528,
+    calculated_at,
+    course_entry_tendency: { since: "2025-10-12", all: {}, venues: {} },
+  });
+  const boat = (calculated_at) =>
+    buildRacers({
+      raceId: RACE,
+      windowEntries: [entry(RACE, 1, 4528)],
+      windowConditions: [],
+      stats: [stat(calculated_at)],
+      exhibitionRows: [],
+    }).boats[0];
+  // 10/13 23:00 JST の集計 → 終わりは 10/12 → 10/12 の RACE は自分の結果が入っている
+  const past = boat("2026-10-13T14:00:00+00:00");
+  check(
+    "終わりの日のレースは course_entry=null・after_race=true",
+    [past.course_entry, past.after_race],
+    [null, true],
+  );
+  // 10/12 23:00 JST の集計 → 終わりは 10/11 → 10/12 の RACE は入っていない
+  const today = boat("2026-10-12T14:00:00+00:00");
+  check(
+    "終わりの翌日のレースは出す",
+    [today.course_entry?.calculated_at, today.after_race],
+    ["2026-10-12T14:00:00+00:00", false],
+  );
+  // JST の日付で切る（UTC では前日の 15:30 = JST 0:30）
+  check(
+    "calculated_at は JST の日付で見る",
+    boat("2026-10-12T15:30:00+00:00").after_race,
+    true,
+  );
 }
 
 // ---- 6. include の有無で応答が混ざらない ----

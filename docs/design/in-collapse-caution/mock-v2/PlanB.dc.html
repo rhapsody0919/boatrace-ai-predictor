@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>案B 基本情報の上部</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0369a1}a:hover{color:#0284c7}
+</style>
+</helmet>
+<div style="width: 375px; min-height: 1180px; box-sizing: border-box; background: #f7f3ea; color: #0f172a; font-family: system-ui, -apple-system, 'Hiragino Sans', sans-serif; display: flex; flex-direction: column;">
+  <div style="padding: 14px 16px 8px; display: flex; flex-direction: column; gap: 2px;">
+    <div style="font-size: 12px; color: #475569;">2026/10/11　戸田 4R　12:14</div>
+    <div style="font-size: 18px; font-weight: 700;">戸田 4R</div>
+  </div>
+  <div style="display: flex; gap: 4px; padding: 0 12px; overflow-x: auto; border-bottom: 1px solid #ddd4bf;">
+    <a href="#" style="padding: 12px 10px; font-size: 14px; color: #0f172a; font-weight: 700; text-decoration: none; white-space: nowrap; border-bottom: 3px solid #6b500f;">基本情報</a>
+    <a href="#" style="padding: 12px 10px; font-size: 14px; color: #475569; text-decoration: none; white-space: nowrap;">龍神ソナー</a>
+    <a href="#" style="padding: 12px 10px; font-size: 14px; color: #475569; text-decoration: none; white-space: nowrap;">今節</a>
+    <a href="#" style="padding: 12px 10px; font-size: 14px; color: #475569; text-decoration: none; white-space: nowrap;">直前情報</a>
+    <a href="#" style="padding: 12px 10px; font-size: 14px; color: #475569; text-decoration: none; white-space: nowrap;">枠別情報</a>
+  </div>
+
+  <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="font-size: 12px; color: #475569;">開いたとき（閉じた状態が既定）</div>
+    <section aria-labelledby="ic-b1" style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h2 id="ic-b1" style="margin: 0; font-size: 15px; white-space: nowrap;">イン崩れ注意度</h2>
+        <span style="font-size: 12px; font-weight: 700; color: #7a3d00; background: #fbe3c8; border-radius: 999px; padding: 3px 9px; white-space: nowrap;">▲ 崩れやすい</span>
+        <span style="margin-left: auto; font-size: 24px; font-weight: 800;">65<span style="font-size: 14px;">%</span></span>
+      </div>
+      <div style="position: relative; height: 14px;"><span style="position: absolute; left: 45%; transform: translateX(-50%); font-size: 11px; color: #475569; white-space: nowrap;">全国 45%</span></div>
+      <div role="img" aria-label="65%。全国の全レースは45%" style="position: relative; height: 8px; border-radius: 4px; background: #ece5d3;">
+        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 65%; border-radius: 4px; background: #b5651d;"></div>
+        <div style="position: absolute; left: 45%; top: -4px; bottom: -4px; border-left: 2px dashed #0f172a;"></div>
+      </div>
+      <div aria-hidden="true" style="display: flex; height: 4px; border-radius: 2px; overflow: hidden;"><span style="width: 35%; background: #bfe3d2;"></span><span style="width: 20%; background: #e2e5ea;"></span><span style="width: 45%; background: #f3cfa9;"></span></div>
+      <div style="font-size: 12px; color: #475569; line-height: 1.6;">1号艇が1着を逃した割合（勝率差が今日と同じくらいのレース・全国）</div>
+      <button type="button" aria-expanded="false" style="align-self: flex-start; min-height: 44px; padding: 0 4px; border: none; background: none; color: #0369a1; font-size: 14px; cursor: pointer;">詳しく ▾</button>
+    </section>
+
+    <div style="font-size: 12px; color: #475569;">「詳しく」を開いたとき</div>
+    <section aria-labelledby="ic-b2" style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h2 id="ic-b2" style="margin: 0; font-size: 15px; white-space: nowrap;">イン崩れ注意度</h2>
+        <span style="font-size: 12px; font-weight: 700; color: #7a3d00; background: #fbe3c8; border-radius: 999px; padding: 3px 9px; white-space: nowrap;">▲ 崩れやすい</span>
+        <span style="margin-left: auto; font-size: 24px; font-weight: 800;">65<span style="font-size: 14px;">%</span></span>
+      </div>
+      <div style="font-size: 12px; color: #475569; line-height: 1.6;">1号艇と、他の艇で一番高い勝率の差が今日と同じくらい（−2.5〜−2.0）のレース。全国 35,181件（2019/4/1〜2026/10/10）</div>
+      <div style="border-top: 1px solid #ddd4bf; padding-top: 8px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; font-size: 14px; line-height: 1.6;">
+        <span>1号艇 澤崎（B1）</span><b style="text-align: right;">4.81</b>
+        <span>一番高い 3号艇 村上（A1）</span><b style="text-align: right;">6.93</b>
+        <span style="color: #475569;">差</span><b style="text-align: right;">−2.12</b>
+      </div>
+      <div style="font-size: 12px; color: #475569; line-height: 1.6;">ほかの材料（展示・モーター等）は龍神ソナーの「差がつく材料」で</div>
+      <p style="margin: 0; font-size: 12px; color: #475569;">過去の実績の割合で、今日の結果を保証するものではありません。</p>
+      <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid #ddd4bf; border-radius: 8px; text-decoration: none; color: #0f172a; font-size: 14px;"><span>類似レース400件で見ると？</span><span style="color: #0369a1; white-space: nowrap; flex-shrink: 0;">龍神ソナー ›</span></a>
+      <a href="#" style="display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 44px; padding: 0 12px; border: 1px solid #ddd4bf; border-radius: 8px; text-decoration: none; color: #0f172a; font-size: 14px;"><span>軸から考える</span><span style="color: #0369a1; white-space: nowrap; flex-shrink: 0;">思考アシスト ›</span></a>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="#" style="display: inline-flex; align-items: center; min-height: 44px; font-size: 14px;">段ごとの実績を見る ›</a>
+        <button type="button" aria-expanded="true" style="min-height: 44px; padding: 0 4px; border: none; background: none; color: #0369a1; font-size: 14px; cursor: pointer;">閉じる ▴</button>
+      </div>
+    </section>
+
+    <div style="font-size: 12px; color: #475569;">確定後（結果タブで開く）: 結果タブの上部に1行</div>
+    <section style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px;">
+      <span style="font-weight: 700;">イン崩れ注意度</span>
+      <span style="font-size: 12px; font-weight: 700; color: #7a3d00; background: #fbe3c8; border-radius: 999px; padding: 3px 9px; white-space: nowrap;">▲ 崩れやすい 65%</span>
+      <span>→ 1号艇は2着</span>
+    </section>
+
+    <section style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="font-size: 15px; font-weight: 700;">データ出走表</div>
+      <div style="height: 160px; border-radius: 6px; background: #ece5d3;" aria-hidden="true"></div>
+    </section>
+
+    <section style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="font-size: 15px; font-weight: 700;">出現パターン</div>
+      <div style="font-size: 13px; color: #475569; line-height: 1.6;">基本情報タブの一番下に移す（AI予想の本命の艇が1着のときの出目）</div>
+    </section>
+    <div style="font-size: 12px; color: #475569; line-height: 1.6;">AI予想タブは無くなる。古いリンク（?tab=aiPrediction）は基本情報で開く。</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":375,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
