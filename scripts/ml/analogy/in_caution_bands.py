@@ -132,6 +132,12 @@ def load(full: bool, src: Path = F.D) -> pd.DataFrame:
     return F.add_labels(pd.concat(parts, ignore_index=True))
 
 
+def refuse_in_quiet_hours(a: argparse.Namespace, now: datetime) -> None:
+    if not a.dry_run and not a.force and in_quiet_hours(now):
+        # 遅れて動いた日を黙って成功にしない（design-reviewer 指摘6）
+        sys.exit(f"JST {now.astimezone(JST):%H:%M} は書かない時間（04:30〜23:00）。書くなら --force")
+
+
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--full", action="store_true", help="全期間を書き直す")
@@ -141,9 +147,7 @@ def main(argv: list[str] | None = None) -> None:
     a = ap.parse_args(argv)
     cfg = load_config()
     started = datetime.now(timezone.utc)
-    if not a.dry_run and not a.force and in_quiet_hours(started):
-        # 遅れて動いた日を黙って成功にしない（design-reviewer 指摘6）
-        sys.exit(f"JST {started.astimezone(JST):%H:%M} は書かない時間（04:30〜23:00）。書くなら --force")
+    refuse_in_quiet_hours(a, started)
     target = date.fromisoformat(a.date) if a.date else started.astimezone(JST).date()
     lo, hi = window(target, a.full, cfg)
     rows = boat1_rows(load(a.full), cfg)
@@ -154,6 +158,8 @@ def main(argv: list[str] | None = None) -> None:
                "n_by_year": {str(y): int(v) for y, v in
                              counts.groupby(pd.to_datetime(counts["race_date"]).dt.year)["n"].sum().items()}}
     if not a.dry_run:
+        # 読み込み・集計の間に 04:30 を過ぎたときも書かない（開始時だけの判定では、04:30 直前に始まった実行が時間内に書く）
+        refuse_in_quiet_hours(a, datetime.now(timezone.utc))
         try:
             summary["written"] = write_table(counts, lo, hi, started.isoformat())
         except db.PostgrestError as e:

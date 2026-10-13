@@ -5,10 +5,10 @@
  * 2つが同じ値かは scripts/maintenance/verify-in-caution.js（CI）が検査する。値を変えるときは両方を直し、
  * 閾値・帯・期間を変えたら def を上げる（/accuracy の公開後の実績は同じ def の行だけを数える）。
  *
- * JSON を JS から import しない理由（plan §1・design-reviewer 指摘10）: `import … with { type: "json" }` は
- * Node 20.10+・22 と Vite では動くが、この repo の src に Node・Vite・Vercel 関数の3つから JSON を import する
- * 前例が無く、Vercel 関数のバンドルで動くかを本番と同じ形で確かめる手段が無い。生成（races-init）は Vercel 関数で
- * 動くので、どこからでも読める JS の定数を正にした。
+ * JSON を JS から import しない理由（plan §1・design-reviewer 指摘10）: `import … with { type: "json" }` が動くことを
+ * 確かめたのは Node 20.20・22 だけ（Vite・Vercel 関数のバンドルは未確認）。この repo の src に Node・Vite・Vercel 関数の
+ * 3つから JSON を import する前例が無く、Vercel 関数で動くかを本番と同じ形で確かめる手段も無い。生成（races-init）は
+ * Vercel 関数で動くので、どこからでも読める JS の定数を正にした。
  *
  * - thresholds: 段の境目（pct < 35 → low、pct < 55 → mid、それ以外 → high）
  * - bandWidthCents・bandMin・bandMax: 帯 = clamp(floor(勝率差の 1/100 の整数 / 50), -8, 6)。-8 は「−3.5未満」、6 は「+3.0以上」

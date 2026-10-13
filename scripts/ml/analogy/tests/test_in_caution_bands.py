@@ -180,3 +180,13 @@ def test_main_refuses_to_write_in_quiet_hours(monkeypatch):
     monkeypatch.setattr(I, "load", lambda full: pytest.fail("時間外は読み込まない"))
     with pytest.raises(SystemExit, match="--force"):
         I.main([])
+
+
+def test_main_refuses_when_quiet_hours_start_during_load(monkeypatch):
+    # 開始時は時間外（書ける）だが、読み込み・集計の後に 04:30 を過ぎた
+    calls = iter([False, True])
+    monkeypatch.setattr(I, "in_quiet_hours", lambda now: next(calls))
+    monkeypatch.setattr(I, "load", lambda full: labelled({1: [4.81, 5.12, 6.93, 3.2, 4.0, 5.5]}))
+    monkeypatch.setattr(I, "write_table", lambda *a, **k: pytest.fail("時間内は書かない"))
+    with pytest.raises(SystemExit, match="--force"):
+        I.main(["--date", "2026-10-06"])
