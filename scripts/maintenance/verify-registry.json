@@ -10,6 +10,13 @@
   ],
   "entries": [
     {
+      "script": "verify-run-heavy-lock.js",
+      "tier": "manual",
+      "guards": "scripts/maintenance/run-heavy.sh（BOA-769）。手元で同時に走らせる重い処理（playwright test・vite build）を最大枠数（既定2）に制限するロック。3本同時起動して、同時に走る（枠を確保した）本数が上限を超えないこと、全本が完走すること",
+      "reason": "実プロセスを3本起動しsleepで待つ実タイマー依存の統合テストのため。CIランナーのCPU競合でタイミングが変わり不安定になる可能性がある",
+      "command": "node scripts/maintenance/verify-run-heavy-lock.js"
+    },
+    {
       "script": "verify-accident-rate.js",
       "tier": "ci",
       "guards": "選手の今期の事故率（BOA-327、src/utils/accidentRate.js）。公式の配点・優勝戦のF/L30点・2025-05以降の2本目以降のF加点・小数第2位切り捨て（40÷57は0.70で超えでない）・あと何点・目印の条件（事故点1点以上かつあと20点以内、行は出走30走以上）。マイグレーション126の RPC を PGlite で実行し、出走回数の数え方（S0・L0・K0・00を除く）・期間・匿名のEXECUTEを確かめる"
