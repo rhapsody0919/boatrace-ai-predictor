@@ -50,6 +50,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/first-mark-kimarite-donut-zh-tw.jpg": { width: 1000, height: 507 },
   "/images/blog/heiwajima-course1-winrate.jpg": { width: 1200, height: 630 },
   "/images/blog/heiwajima-topstart-winrate.jpg": { width: 1200, height: 630 },
+  "/images/blog/heiwajima-water-wind-guide.jpg": { width: 576, height: 391 },
   "/images/blog/hitrate-paradox-en.jpg": { width: 1000, height: 442 },
   "/images/blog/hitrate-paradox-ja.jpg": { width: 1000, height: 488 },
   "/images/blog/hitrate-paradox-ko.jpg": { width: 1000, height: 444 },
