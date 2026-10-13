@@ -9,6 +9,45 @@ const RACE = "/race/2026-10-09-20-09";
 const left = (locator) =>
   locator.evaluate((el) => Math.round(el.getBoundingClientRect().left));
 
+// BOA-828: 広い画面だけヘッダーをページの中身にそろえる。
+for (const width of [375, 768, 1440, 1600, 1920]) {
+  test(`${width}px: 通常・縮小ヘッダーの左右の位置`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(RACE);
+    await expect(page.locator(".race-tabs-btn").first()).toBeVisible();
+    const header = page.locator(".app-header");
+    await expect(header).not.toHaveClass(/compressed/);
+
+    for (const compressed of [false, true]) {
+      if (compressed) {
+        await page.evaluate(() => window.scrollTo(0, 400));
+        await expect(header).toHaveClass(/compressed/);
+      }
+      const edges = await page.evaluate(() => {
+        const rect = (selector) =>
+          document.querySelector(selector).getBoundingClientRect();
+        return {
+          logo: rect(".app-header .logo").left,
+          nav: rect(".app-header .nav").right,
+          tabLeft: rect(".race-tabs-bar").left,
+          tabRight: rect(".race-tabs-bar").right,
+        };
+      });
+      if (width >= 1600) {
+        expect(Math.abs(edges.logo - edges.tabLeft)).toBeLessThanOrEqual(1);
+        expect(Math.abs(edges.nav - edges.tabRight)).toBeLessThanOrEqual(1);
+        expect(Math.abs(edges.logo - (width - 1552) / 2)).toBeLessThanOrEqual(1);
+      } else {
+        const padding = compressed ? 16 : width <= 480 ? 10 : width <= 768 ? 12 : 32;
+        expect(Math.abs(edges.logo - padding)).toBeLessThanOrEqual(1);
+        if (width === 1440) {
+          expect(Math.abs(edges.nav - (width - padding))).toBeLessThanOrEqual(1);
+        }
+      }
+    }
+  });
+}
+
 for (const width of [1440, 1920]) {
   test(`${width}px: AI予想の中身・共有ボタンの左端はタブの列にそろい、幅は720まで`, async ({
     page,
