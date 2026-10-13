@@ -20,7 +20,7 @@
 - 本 PR は ADR-0081 を足す。ADR-0081 が参照する ADR（0085・0087）は master にある
 
 ## T0 準備（分析のみ、画面なし）
-- [ ] T0-1 定番／レアの線の検証（spec FR-3 の手順1〜8）。(1) FR-3 の検証方法の節を単独コミットで push し、`second-opinion-reviewer` で方法論を1パス見る、(2) v16 の列がそろう export を `export_pool.js` で作り直す（読み取りだけ）、(3) `scripts/analysis/past-rate-check/label-threshold.py` で実行。結果を `analysis/label-threshold-result.md` に書き、spec FR-3・`label.js` に x・y を書き戻し、`docs/knowledge/stat-findings.md` に1行足す。手順7に当たる型はオーケストレーター経由でユーザーに戻す
+- [x] T0-1 定番／レアの線の検証（2026-10-13、線 (15, 5)。[analysis/label-threshold-result.md](./analysis/label-threshold-result.md)）（spec FR-3 の手順1〜8）。(1) FR-3 の検証方法の節を単独コミットで push し、`second-opinion-reviewer` で方法論を1パス見る、(2) v16 の列がそろう export を `export_pool.js` で作り直す（読み取りだけ）、(3) `scripts/analysis/past-rate-check/label-threshold.py` で実行。結果を `analysis/label-threshold-result.md` に書き、spec FR-3・`label.js` に x・y を書き戻し、`docs/knowledge/stat-findings.md` に1行足す。手順7に当たる型はオーケストレーター経由でユーザーに戻す
 - [ ] T0-1a 判定式の二重実装の検査: 固定データ10件で、Python の判定と `src/utils/pastRate/count.js`（T1-2）の件数が一致することを確かめる小さな検査を同じディレクトリに置く（T1-2 の後に実行）
 - [x] T0-2 形に添える全国の出現率（1段目・2段目）と2形 AND の件数（2026-10-13、[analysis/slit-pattern-rates.md](./analysis/slit-pattern-rates.md)）
 - [ ] T0-3 本番の値の約束の実測: 数レースの layer ファイルで、(a) `payout_3tan` が本体の `race_results.payout_trio` と一致し `payout_trifecta`（3連複）と一致しないこと（無作為100R）、(b) F・出遅れのあるレースで該当コースの `st_by_course` が null、(c) 不成立のレースが行に無い、(d) 実進入不明の期間で `course_by_boat` が艇番で埋まっていないこと、(e) rank1〜3 に返還艇が入るレースが行に無い（`race_start_timings.finish_mark` と `race_results.refund_boats` を独立の正解として照合）、(f) 同じ run_id なら発走前と発走後で同じ行が返る（D-6）、(g) 応答の gzip 後の大きさ、(h) 層が2,000件を超えるレース（`n_returned < n_total`）の割合、(i) 本番で layer ファイルがある最初の日（`LAYER_FIRST_DATE`）。結果を `analysis/pool-contract-check.md` に残す。違えば BOA-271 側に戻す
