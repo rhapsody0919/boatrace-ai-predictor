@@ -114,15 +114,39 @@ export async function runSnsAutoPlan(
         });
       }
     }
+  if (live)
+    for (const { item, reason } of plans.abandons) {
+      try {
+        await store.updateItem(item.id, "checking", {
+          state: "held_manual",
+          held_reason: `検査をやり直さずに閉じた: ${reason}`,
+        });
+      } catch (error) {
+        alerts.push({
+          key: `abandon:${item.id}`,
+          text: `SNS の自動送信: ${item.race_id} ${item.channel} の検査中の item を閉じられない: ${error.message}`,
+        });
+      }
+    }
   for (const plan of plans.todo) {
     if (checked >= maxBundles || ctx.shouldStop()) break;
     checked += 1;
-    const shared = await sharedChecks(plan, {
-      checkClaims,
-      headless,
-      markers,
-      now,
-    });
+    let shared, isNewFormat;
+    try {
+      shared = await sharedChecks(plan, {
+        checkClaims,
+        headless,
+        markers,
+        now,
+      });
+      isNewFormat = !(await store.hasPostedFormat(plan.format, plan.variant));
+    } catch (error) {
+      alerts.push({
+        key: `plan:${plan.raceId}`,
+        text: `SNS の自動送信の検査に失敗: ${plan.raceId}: ${error.message}`,
+      });
+      continue;
+    }
     for (const channel of CHANNELS) {
       const target = plan.channels[channel];
       if (!target) continue;
@@ -136,10 +160,7 @@ export async function runSnsAutoPlan(
         const outcome = evaluateChannel(plan, channel, shared, {
           control: controls[channel],
           riskRules,
-          isNewFormat: !(await store.hasPostedFormat(
-            plan.format,
-            plan.variant,
-          )),
+          isNewFormat,
           now,
         });
         Object.assign(result, {
@@ -173,11 +194,12 @@ export async function runSnsAutoPlan(
       }
     }
   }
-  if (live && controls.x?.mode === "auto")
-    alerts.push({
-      key: "auto_unimplemented",
-      text: "SNS の X が mode=auto だが、事前通知・自動の承認は未実装（tasks 12 の後半）。個別承認に回している",
-    });
+  for (const channel of CHANNELS)
+    if (live && controls[channel]?.mode === "auto")
+      alerts.push({
+        key: `auto_unimplemented:${channel}`,
+        text: `SNS の ${channel} が mode=auto だが、事前通知・自動の承認は未実装（tasks 12 の後半）。個別承認に回している`,
+      });
   return {
     rowsWritten: written,
     report: { items: results, alerts },
@@ -195,13 +217,20 @@ export function planCandidates({ bundles, races, stages, drafts, items }, now) {
   const repairs = [];
   const skipped = [];
   const seen = new Set();
-  const skip = (bundle, reason) =>
+  const abandons = [];
+  // 進めない素材の checking の item（取得の失敗のやり直し中）は held_manual に閉じる。閉じないと
+  // 部分一意索引（race_id, channel）を塞いだまま残り、直した素材の item も作れない
+  const skip = (bundle, reason) => {
+    for (const i of items)
+      if (i.bundle_import_id === bundle.id && i.state === "checking")
+        abandons.push({ item: i, reason });
     skipped.push({
       bundle_import_id: bundle.id,
       race_id: bundle.bundle?.race_id ?? null,
       outcome: "skipped",
       reason,
     });
+  };
   const sorted = [...bundles].sort((a, b) =>
     String(b.created_at).localeCompare(String(a.created_at)),
   );
@@ -278,7 +307,7 @@ export function planCandidates({ bundles, races, stages, drafts, items }, now) {
         null,
     });
   }
-  return { todo, skipped, repairs };
+  return { todo, skipped, repairs, abandons };
 }
 
 /** 素材ごとに1回: 親の投稿のレースの URL、数値の照合、リンク先の表示の確認 */

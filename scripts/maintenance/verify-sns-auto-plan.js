@@ -617,3 +617,87 @@ test("cron の登録: sns_auto_plan は JST 5:30〜21:00 の中だけを死活�
     /risk-rules\.json/,
   );
 });
+
+const failingFetch = async () => ({
+  ok: false,
+  revision: null,
+  observedAt: T0.toISOString(),
+  results: [{ id: "c1", ok: false, reason: "fetch_failed: HTTP 503" }],
+});
+
+test("やり直し中（checking）の古い素材の item は、新しい素材が入ったら閉じ、次の実行で新しい素材の item を作る", async () => {
+  await importBundle({ createdAt: "2026-10-15T00:00:00Z" });
+  await run({ checkClaims: failingFetch });
+  assert.deepEqual(
+    (await items()).map((i) => i.state),
+    ["checking", "checking"],
+  );
+  const newer = await importBundle({ createdAt: "2026-10-16T00:00:00Z" });
+  await run();
+  assert.deepEqual((await items()).map((i) => i.state).sort(), [
+    "held_manual",
+    "held_manual",
+  ]);
+  await run();
+  const live = (await items()).filter((i) => i.state === "manual");
+  assert.equal(live.length, 2);
+  assert.ok(live.every((i) => i.bundle_import_id === newer));
+});
+
+test("やり直し中（checking）の item は、送る時刻を過ぎたら held_manual に閉じる", async () => {
+  await importBundle();
+  await run({ checkClaims: failingFetch });
+  const late = new Date("2026-10-16T05:00:00Z");
+  await runSnsAutoPlan(
+    { mode: "live", now: () => late, shouldStop: () => false },
+    {
+      store: sqlStore,
+      checkClaims: okClaims,
+      headless: createMockHeadless({
+        visibleSelectors: SCREEN_MARKERS["race-sonar"],
+      }),
+      markers: SCREEN_MARKERS,
+      riskRules,
+      trackingStore,
+    },
+  );
+  const rows = await items();
+  assert.deepEqual(
+    rows.map((i) => i.state),
+    ["held_manual", "held_manual"],
+  );
+  assert.match(rows[0].held_reason, /too_late/);
+});
+
+test("1つの素材の検査が例外で落ちても、ほかのレースの item は作る", async () => {
+  await addRace("2026-10-16-09-11", "優勝戦");
+  await importBundle({ raceId: "2026-10-16-09-11" });
+  await importBundle();
+  const result = await run({
+    checkClaims: async ({ raceId }) => {
+      if (raceId === RACE) throw new Error("boom");
+      return okClaims();
+    },
+  });
+  assert.deepEqual(
+    result.report.alerts
+      .filter((a) => a.key.startsWith("plan:"))
+      .map((a) => a.key),
+    [`plan:${RACE}`],
+  );
+  assert.ok((await items()).every((i) => i.race_id === "2026-10-16-09-11"));
+  assert.equal((await items()).length, 2);
+});
+
+test("YouTube だけ mode=auto でも、自動は未実装と知らせる", async () => {
+  await db.exec(
+    "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='youtube'",
+  );
+  const result = await run();
+  assert.ok(
+    result.report.alerts.some((a) => a.key === "auto_unimplemented:youtube"),
+  );
+  assert.ok(
+    !result.report.alerts.some((a) => a.key === "auto_unimplemented:x"),
+  );
+});
