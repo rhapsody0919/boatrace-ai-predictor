@@ -106,7 +106,21 @@ test("race-full: 型の版が無くても作れ、utm_content は下書きの ID
       campaign: "today_digest",
     }),
   );
-  const withQuery = `${raceUrl}?tab=sonar`;
+  // タブを直接開く ?tab=sonar だけは許し、UTM はその後ろに足す（2026-10-13 本番で ?tab=sonar がそのまま残ることを確認）
+  const sonar = `${raceUrl}?tab=sonar`;
+  const sonarTracking = buildObservationUtm({
+    raceUrl: sonar,
+    draftId: "d1",
+    releaseEvidence: { ...evidence, url: sonar },
+    campaign: "race-full",
+  }).tracking_url;
+  assert.equal(new URL(sonarTracking).searchParams.get("tab"), "sonar");
+  assert.equal(new URL(sonarTracking).searchParams.get("utm_content"), "d1");
+  assert.equal(
+    insertTrackingUrl(`見どころ ${sonar}`, sonar, sonarTracking),
+    `見どころ ${sonarTracking}`,
+  );
+  const withQuery = `${raceUrl}?tab=odds`;
   assert.throws(() =>
     buildObservationUtm({
       raceUrl: withQuery,

@@ -325,6 +325,12 @@ export function compareObservations(
 }
 
 export const OBSERVATION_UTM_CAMPAIGNS = ["sonar-preview", "race-full"];
+// レースの URL に付けてよいクエリ（タブを直接開くリンク。送る前の表示の確認 checkPublicDisplay と同じ許可）
+export const RACE_URL_TABS = ["sonar"];
+const allowedRaceQuery = (url) =>
+  !url.search ||
+  ([...url.searchParams.keys()].join(",") === "tab" &&
+    RACE_URL_TABS.includes(url.searchParams.get("tab")));
 
 /** 呼び出し側が正式公開証拠を確認するまでURLを返さない。投稿本文は変更しない。
  * campaign: sonar-preview（型の版つき）・race-full（sns-pdca-loop の通り道 A。素材 v1 は型の版が無いので variantId は任意）
@@ -347,7 +353,7 @@ export function buildObservationUtm({
   if (
     url.origin !== "https://www.boat-ai.jp" ||
     !/^\/race\/[^/]+$/.test(url.pathname) ||
-    url.search ||
+    !allowedRaceQuery(url) ||
     url.hash ||
     url.username ||
     url.password
