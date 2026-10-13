@@ -11,6 +11,10 @@
       "schedule": "0,30 14 * * *"
     },
     {
+      "path": "/api/cron/sns-send",
+      "schedule": "*/2 23,0-11 * * *"
+    },
+    {
       "path": "/api/cron/analogy-exhibition",
       "schedule": "*/2 21-23,0-14 * * *"
     },
