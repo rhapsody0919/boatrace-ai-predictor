@@ -288,19 +288,9 @@
   }
 }
 
-/* ===== Verification Notice（推奨停止中の理由。ダークテーマでも読めるよう濃い単色背景+白文字） ===== */
-.moriarty-verification-notice {
-  padding: var(--spacing-4);
-  border-radius: var(--radius-md);
-  background: #b45309;
-  color: white;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-relaxed);
-}
-
+/* ===== Verification Notice（容器は .moriarty-notice--warning を使い、中の並びだけ定義する） ===== */
 .moriarty-verification-title {
   margin: 0 0 var(--spacing-2) 0;
-  font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
 }
 

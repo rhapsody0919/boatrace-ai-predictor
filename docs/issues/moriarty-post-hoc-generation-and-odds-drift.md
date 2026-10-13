@@ -13,6 +13,8 @@ node --env-file=.env.local scripts/analysis/analyze-moriarty-recommendation-qual
 
 ## 1. 推奨の72%が発走後に作られている
 
+注: `bet_recommendations.created_at` は初回の書き込み時刻で、同じ日に再実行されると推奨の内容は更新されるが時刻は残る。本監査の対象期間は、日ごとに1回の実行のみだった（`gh run list` で確認）。再実行が入る日は、生成時刻の判定から外す必要がある。
+
 生成は GitHub Actions `generate-moriarty.yml` の1日1回（cron は 00:00 UTC＝09:00 JST だが、実起動は
 11〜13時 JST。`report.json#timing.generation_hour_jst_distribution`）。生成時点で「その日の最新スナップショット」
 のオッズを読むため、午前のレースは締切時点（0分窓）のオッズで発走後に、午後の一部は早い窓のオッズで、
@@ -68,8 +70,8 @@ node --env-file=.env.local scripts/analysis/analyze-moriarty-recommendation-qual
 
 （`report.json#roi.by_base_model`・`#roi.win_calibration_by_base_model`）
 
-スタンダード由来だけ校正が崩れている（想定の半分しか当たらない）。平均オッズ 26.6倍の中穴を「期待値1.15以上」と
-誤判定して買い続けた結果。26.6倍は、standard 由来の確定済み単勝301件の取得時オッズの平均を再計算した値で、`report.json` にはキーが無い（`reasons.odds` の平均）。
+スタンダード由来だけ校正が崩れている（想定の半分しか当たらない）。平均オッズ 26.9倍の中穴を「期待値1.15以上」と
+誤判定して買い続けた結果（`roi.by_base_model.standard.mean_captured_odds`、確定済み302件の取得時オッズの平均）。
 
 ## 4. 対応
 

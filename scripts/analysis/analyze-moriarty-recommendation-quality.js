@@ -105,13 +105,26 @@ function summarizeRatios(ratios) {
 
 // 的中率・回収率の集計箱。kelly は bet_fraction に比例した投資額、flat は均等100円
 function newBucket(label) {
-  return { label, n: 0, hits: 0, investment: 0, payout: 0, flatPayout: 0 };
+  return {
+    label,
+    n: 0,
+    hits: 0,
+    investment: 0,
+    payout: 0,
+    flatPayout: 0,
+    oddsSum: 0,
+    oddsN: 0,
+  };
 }
 
 function addBet(bucket, rec) {
   const amount = betAmountFor(rec);
   bucket.n += 1;
   bucket.investment += amount;
+  if (typeof rec.reasons?.odds === "number") {
+    bucket.oddsSum += rec.reasons.odds;
+    bucket.oddsN += 1;
+  }
   if (rec.actual_hit) {
     bucket.hits += 1;
     bucket.payout += rec.actual_payout ?? 0;
@@ -129,6 +142,7 @@ function finalizeBucket(b) {
     payout: b.payout,
     roi_kelly: b.investment > 0 ? round(b.payout / b.investment, 4) : null,
     roi_flat: b.n > 0 ? round(b.flatPayout / (b.n * 100), 4) : null,
+    mean_captured_odds: b.oddsN > 0 ? round(b.oddsSum / b.oddsN, 2) : null,
   };
 }
 
@@ -179,6 +193,9 @@ function buildProvenance(data, from, to) {
     );
     note(r.race_id);
   }
+  for (const r of data.races) {
+    hash.update(`race|${r.race_id}|${r.race_date}|${r.start_time}\n`);
+  }
   for (const r of data.results) {
     hash.update(`res|${r.race_id}|${r.rank1}|${r.payout_win}\n`);
     note(r.race_id);
@@ -224,8 +241,13 @@ function analyzeTiming(data) {
     LEAD_BUCKETS.map((b) => [b.key, newBucket(b.label)]),
   );
   let betsWithoutStart = 0;
+  let unclassified = 0;
   for (const rec of data.recs) {
     if (!isSettled(rec)) continue;
+    if (!rec.created_at) {
+      unclassified += 1;
+      continue;
+    }
     const start = startByRace.get(rec.race_id);
     if (!start) {
       betsWithoutStart += 1;
@@ -234,6 +256,10 @@ function analyzeTiming(data) {
     const leadMin =
       (start.getTime() - new Date(rec.created_at).getTime()) / MINUTE_MS;
     const bucket = LEAD_BUCKETS.find((b) => b.test(leadMin));
+    if (!bucket) {
+      unclassified += 1;
+      continue;
+    }
     addBet(leadBuckets[bucket.key], rec);
   }
 
@@ -266,6 +292,7 @@ function analyzeTiming(data) {
   return {
     settled_bets_by_lead: finalizeGroups(leadBuckets),
     settled_bets_without_start_time: betsWithoutStart,
+    settled_bets_without_created_at: unclassified,
     skips: {
       n: skips,
       generated_over_60min_before_start: skipsWithoutOdds,
@@ -352,11 +379,11 @@ function analyzeDrift(data) {
 
   const allBoats = {}; // window -> band -> ratios
   const winner = {};
-  const windowLabel = (row) =>
-    row.window_min == null ? "legacy_gha" : String(row.window_min);
-
+  // window_min が NULL の行（旧 GitHub Actions の書き込み）は、レース単位で一意でないため集計から外す
+  // （uq_race_odds_race_window は NULL を重複扱いしない）
   for (const row of data.odds) {
-    const w = windowLabel(row);
+    if (row.window_min == null) continue;
+    const w = String(row.window_min);
     const finalAll = finalByRace.get(row.race_id);
     const res = resultByRace.get(row.race_id);
     for (let b = 1; b <= 6; b += 1) {

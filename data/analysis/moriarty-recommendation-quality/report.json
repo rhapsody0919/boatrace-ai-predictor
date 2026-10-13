@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-13T22:03:26.551Z",
+  "generated_at": "2026-10-13T22:18:32.765Z",
   "script": "scripts/analysis/analyze-moriarty-recommendation-quality.js",
   "provenance": {
     "period": {
@@ -14,7 +14,7 @@
       "race_odds": 37302,
       "race_odds_final": 2176
     },
-    "input_sha256": "d44e336722a6a33267a9de2633aa1073f289349dcc75e126ef80c1950222eb37"
+    "input_sha256": "48f2adb701fdb3e4bc63306719ebfbd8f9f4bc55a327cc7daa6eabf809bfb82e"
   },
   "definitions": {
     "investment": "仮想バンクロール10,000円 × bet_fraction（100円単位、最低100円）。update-moriarty-outcomes.js と同じ",
@@ -34,7 +34,8 @@
         "investment": 140200,
         "payout": 117130,
         "roi_kelly": 0.8354,
-        "roi_flat": 0.7431
+        "roi_flat": 0.7431,
+        "mean_captured_odds": 22.96
       },
       "within_15": {
         "label": "発走15分以内",
@@ -44,7 +45,8 @@
         "investment": 28200,
         "payout": 32360,
         "roi_kelly": 1.1475,
-        "roi_flat": 0.886
+        "roi_flat": 0.886,
+        "mean_captured_odds": 21.96
       },
       "15_to_60": {
         "label": "発走15〜60分前",
@@ -54,7 +56,8 @@
         "investment": 64000,
         "payout": 49990,
         "roi_kelly": 0.7811,
-        "roi_flat": 0.7196
+        "roi_flat": 0.7196,
+        "mean_captured_odds": 14.59
       },
       "over_60": {
         "label": "発走60分以上前",
@@ -64,10 +67,12 @@
         "investment": 0,
         "payout": 0,
         "roi_kelly": null,
-        "roi_flat": null
+        "roi_flat": null,
+        "mean_captured_odds": null
       }
     },
     "settled_bets_without_start_time": 0,
+    "settled_bets_without_created_at": 0,
     "skips": {
       "n": 5411,
       "generated_over_60min_before_start": 4174,
@@ -134,7 +139,8 @@
       "investment": 232400,
       "payout": 199480,
       "roi_kelly": 0.8583,
-      "roi_flat": 0.7548
+      "roi_flat": 0.7548,
+      "mean_captured_odds": 21.44
     },
     "by_bet_type": {
       "win": {
@@ -145,7 +151,8 @@
         "investment": 231400,
         "payout": 198610,
         "roi_kelly": 0.8583,
-        "roi_flat": 0.7535
+        "roi_flat": 0.7535,
+        "mean_captured_odds": 20.95
       },
       "trio": {
         "label": "trio",
@@ -155,7 +162,8 @@
         "investment": 1000,
         "payout": 870,
         "roi_kelly": 0.87,
-        "roi_flat": 0.87
+        "roi_flat": 0.87,
+        "mean_captured_odds": 62.75
       }
     },
     "by_base_model": {
@@ -167,7 +175,8 @@
         "investment": 173600,
         "payout": 165340,
         "roi_kelly": 0.9524,
-        "roi_flat": 1.0301
+        "roi_flat": 1.0301,
+        "mean_captured_odds": 8.21
       },
       "standard": {
         "label": "standard",
@@ -177,7 +186,8 @@
         "investment": 33200,
         "payout": 7400,
         "roi_kelly": 0.2229,
-        "roi_flat": 0.2381
+        "roi_flat": 0.2381,
+        "mean_captured_odds": 26.9
       },
       "upsetFocus": {
         "label": "upsetFocus",
@@ -187,7 +197,8 @@
         "investment": 25600,
         "payout": 26740,
         "roi_kelly": 1.0445,
-        "roi_flat": 1.0528
+        "roi_flat": 1.0528,
+        "mean_captured_odds": 30.17
       }
     },
     "win_by_captured_odds_band": {
@@ -199,7 +210,8 @@
         "investment": 76100,
         "payout": 65740,
         "roi_kelly": 0.8639,
-        "roi_flat": 0.9271
+        "roi_flat": 0.9271,
+        "mean_captured_odds": 6.73
       },
       "20to50": {
         "label": "20〜50倍",
@@ -209,7 +221,8 @@
         "investment": 29500,
         "payout": 10520,
         "roi_kelly": 0.3566,
-        "roi_flat": 0.2758
+        "roi_flat": 0.2758,
+        "mean_captured_odds": 30.14
       },
       "10to20": {
         "label": "10〜20倍",
@@ -219,7 +232,8 @@
         "investment": 49700,
         "payout": 48940,
         "roi_kelly": 0.9847,
-        "roi_flat": 0.8136
+        "roi_flat": 0.8136,
+        "mean_captured_odds": 15.5
       },
       "3to5": {
         "label": "3〜5倍",
@@ -229,7 +243,8 @@
         "investment": 67200,
         "payout": 61570,
         "roi_kelly": 0.9162,
-        "roi_flat": 0.9686
+        "roi_flat": 0.9686,
+        "mean_captured_odds": 3.95
       },
       "ge50": {
         "label": "50倍以上",
@@ -239,7 +254,8 @@
         "investment": 6000,
         "payout": 9320,
         "roi_kelly": 1.5533,
-        "roi_flat": 1.5533
+        "roi_flat": 1.5533,
+        "mean_captured_odds": 76.85
       },
       "lt3": {
         "label": "3倍未満",
@@ -249,7 +265,8 @@
         "investment": 2900,
         "payout": 2520,
         "roi_kelly": 0.869,
-        "roi_flat": 0.9
+        "roi_flat": 0.9,
+        "mean_captured_odds": 2.76
       }
     },
     "win_by_calibrated_probability_band": {
@@ -261,7 +278,8 @@
         "investment": 96000,
         "payout": 79700,
         "roi_kelly": 0.8302,
-        "roi_flat": 0.9026
+        "roi_flat": 0.9026,
+        "mean_captured_odds": 4.34
       },
       "lt10": {
         "label": "10%未満",
@@ -271,7 +289,8 @@
         "investment": 48300,
         "payout": 29000,
         "roi_kelly": 0.6004,
-        "roi_flat": 0.6183
+        "roi_flat": 0.6183,
+        "mean_captured_odds": 31.17
       },
       "20to30": {
         "label": "20〜30%",
@@ -281,7 +300,8 @@
         "investment": 65400,
         "payout": 70140,
         "roi_kelly": 1.0725,
-        "roi_flat": 1.1306
+        "roi_flat": 1.1306,
+        "mean_captured_odds": 7.82
       },
       "10to20": {
         "label": "10〜20%",
@@ -291,7 +311,8 @@
         "investment": 20400,
         "payout": 19770,
         "roi_kelly": 0.9691,
-        "roi_flat": 0.7495
+        "roi_flat": 0.7495,
+        "mean_captured_odds": 13.35
       },
       "ge50": {
         "label": "50%以上",
@@ -301,7 +322,8 @@
         "investment": 1300,
         "payout": 0,
         "roi_kelly": 0,
-        "roi_flat": 0
+        "roi_flat": 0,
+        "mean_captured_odds": 3.4
       }
     },
     "win_calibration_by_base_model": {
@@ -679,56 +701,6 @@
           "p25": 0.172,
           "p75": 0.438,
           "mean": 0.341
-        }
-      },
-      "legacy_gha": {
-        "lt3": {
-          "label": "3倍未満",
-          "n": 9905,
-          "median": 1.118,
-          "p25": 1,
-          "p75": 1.5,
-          "mean": 1.406
-        },
-        "3to5": {
-          "label": "3〜5倍",
-          "n": 1723,
-          "median": 0.822,
-          "p25": 0.5,
-          "p75": 1.237,
-          "mean": 1.082
-        },
-        "5to10": {
-          "label": "5〜10倍",
-          "n": 1744,
-          "median": 0.659,
-          "p25": 0.385,
-          "p75": 1.04,
-          "mean": 0.864
-        },
-        "10to20": {
-          "label": "10〜20倍",
-          "n": 903,
-          "median": 0.459,
-          "p25": 0.259,
-          "p75": 0.777,
-          "mean": 0.574
-        },
-        "20to50": {
-          "label": "20〜50倍",
-          "n": 440,
-          "median": 0.233,
-          "p25": 0.126,
-          "p75": 0.437,
-          "mean": 0.338
-        },
-        "ge50": {
-          "label": "50倍以上",
-          "n": 111,
-          "median": 0.104,
-          "p25": 0.068,
-          "p75": 0.189,
-          "mean": 0.16
         }
       },
       "-5": {

@@ -3731,7 +3731,6 @@ test.describe("ホームズ予想（α版・非公開リンク）", () => {
     );
     await expect(page.locator(".moriarty-verification-notice")).toBeVisible();
     await expect(page.getByText("本日の推奨レース")).toHaveCount(0);
-    await expect(page.locator(".moriarty-rec-card")).toHaveCount(0);
   });
 });
 

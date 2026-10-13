@@ -28,7 +28,10 @@ function getStage(totalBets) {
  */
 function MoriartyVerificationNotice() {
   return (
-    <div className="moriarty-verification-notice" role="status">
+    <div
+      className="moriarty-notice moriarty-notice--warning moriarty-verification-notice"
+      role="status"
+    >
       <p className="moriarty-verification-title">
         買い目の提示を止めています（検証中）
       </p>
@@ -41,7 +44,7 @@ function MoriartyVerificationNotice() {
         </li>
       </ul>
       <p className="moriarty-verification-footer">
-        発走前に作った推奨だけで回収率が100%を超えることを確かめるまで、買い目は出しません。下の成績は、これまでの推奨（後出し分を含む）の記録です。
+        発走前に作った推奨だけで回収率が100%を超えることを確かめるまで、買い目は出しません。下の成績は、これまでの推奨（後出し分を含む）の記録です。何も選ばず買った場合の回収率は約75%です。
       </p>
     </div>
   );
