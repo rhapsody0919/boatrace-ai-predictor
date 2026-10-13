@@ -146,6 +146,12 @@ flowchart TD
 - **保存**（B2）: `scripts/sns/push-insights.js <ファイル>`。既存の `createInsight` を使い、`research_method='codex-weekly'`、`source='own-metrics'`
 - **次の生成へ**（B3）: `scripts/sns/weekly-export.js` が `active` な案と、観測の表（投稿ごと・版ごと）を1つの JSON に書き出し、hq が Codex に渡す。v1 bundle の `bundle.json` に `referenced_insight_ids` を入れてもらい、取り込みで `sns_drafts.referenced_insight_ids` に入れる
 - **週次の数字**（B4）: 同じ `weekly-export.js` の出力に入れる（spec 統計検証の「守り」の判定もここで計算する。1000行の上限があるので `.range()` で読む）
+- **チャネルの知見ノートへの1行**（B5、2026-10-13 オーナー方針、hq 経由）: チャネルごとに「次に変えた1点とその結果（48h・7d の数字）」を `docs/knowledge/x.md`・`youtube.md` に1行足す。**方式: DB を正本にし、週1で docs に書き出す**（Vercel の cron から PR は作らない）
+  - 「変えた1点」= `sns_strategy_insights` で `active` になった案（自動採用・手動の両方。`activated_at` が起点）。「結果」= その案を `referenced_insight_ids` に持つ投稿の 48h・7d の観測（`sns_metric_observations`）を、採用前の4週の同じチャネル・同じ指標と並べた中央値と本数。新しい表・列は足さない（どちらも既存の DB にある）
+  - 書き出しは `weekly-export.js` の `--knowledge`（hq が毎週の書き出しと同じ実行で走らせる）。採用から7日を過ぎ、その案を使った投稿の 7d の観測が1本以上そろった案だけを対象にする。行の末尾に `（insight:<id>）` を入れ、同じ id の行が既にあれば書かない（冪等）。7d がそろわない案は次の週に回す
+  - 行の形: `- YYYY-MM-DD 変えた点: <案の要旨>。48h <指標> 中央値 <値>（<本数>本、採用前4週 <値>）・7d <同>。根拠: sns_metric_observations（insight:<id>）`。本数が少ない・欠測があるときもその旨を書いて省かない（読み物の報告原則）
+  - 反映: hq が出力の差分で docs だけの PR を作る（docs だけの PR は段階0）。Codex に渡す鍵は使わない
+  - 理由: (a) 結果の確定は 7d の観測を待つので、採用の瞬間（cron）では書けない。(b) cron から GitHub に書くには Vercel に書き込みの鍵が要り、鍵を増やす（ADR-0066 の鍵の置き場の外）。(c) 正本の数字は DB にあり、docs は写しにすぎないので、書き出しを何度やり直しても同じ行になる形が安全
 
 ## 7. 画面（screens.md）
 

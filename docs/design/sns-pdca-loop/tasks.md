@@ -58,6 +58,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 - [ ] **24. cron `sns-insights`**（月曜 JST 5:00）: 1週間たった proposed を riskRules で照合して active／retired
 - [ ] **25. `scripts/sns/push-insights.js`・`scripts/sns/weekly-export.js`**（`.range()` で読む。統計検証の「守り」の判定を出力に入れる）。`InsightCard` に自動採用までの日数（screens #8・#9）
+- [ ] **25b. `weekly-export.js --knowledge`**（2026-10-13 オーナー方針）: チャネルごとに、採用した1点とその結果（48h・7d の中央値と本数、採用前4週との比較）を `docs/knowledge/x.md`・`youtube.md` に1行ずつ書き出す（plan §6 B5）。insight の id で冪等、7d がそろった案だけ。再現テスト: 同じ入力で2回実行して行が増えない／7d がそろわない案は書かない／本数・欠測を省かない。hq が週1で走らせ docs だけの PR にする手順を `docs/operation/sns-pdca-loop-runbook.md`（tasks 8）に書く
 
 ## 運用の段取り（実装の後）
 
