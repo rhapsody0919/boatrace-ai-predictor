@@ -1,6 +1,5 @@
 import { VENUE_NAMES } from "../../scripts/lib/venueNames.js";
 import { matchRiskRules, bundleRiskFields } from "../../scripts/lib/riskRuleMatcher.js";
-import twitterText from "twitter-text";
 
 /** v0 は恒久の公開保留。管理画面の手取り込み（import-bundle）は v0 だけを受け付ける。 */
 export const BUNDLE_SCHEMA = "ryujin-preview/0";
@@ -23,7 +22,7 @@ export const BUNDLE_LIMITS_V1 = {
 const SOURCES = ["facts", "similar", "scenario", "layer"];
 // v1 だけのファイル。X 用の動画（push-bundle が draft.mp4 から ffmpeg で書き出す。tasks 6、2026-10-13 オーケストレーター判断）
 export const X_VIDEO = "draft-x.mp4";
-const X_THREAD_MAX = 6;
+export const X_THREAD_MAX = 6;
 const REQUIRED = ["bundle.json", "qa.json", "integrity.json"];
 const EXPECTED = [
   ...REQUIRED,
@@ -35,6 +34,8 @@ const EXPECTED = [
   "scene-3.png",
   ...SOURCES.flatMap((s) => [`${s}.json`, `${s}.meta.json`]),
 ];
+/** v0・v1 共通のファイル名（v1 はこれに X_VIDEO を足す） */
+export const BUNDLE_FILE_NAMES = EXPECTED;
 // qa.json・integrity.json・各*.meta.jsonは、manifestの外側でそれ自身のハッシュを
 // 固定する手段が無い自己申告ファイル（integrity.jsonが自分自身を含むことはできず、
 // meta.jsonはraw jsonを固定する側であってmeta.json自身を固定する側ではない）。
@@ -47,8 +48,9 @@ const SELF_ATTESTED = new Set([
   ...SOURCES.map((s) => `${s}.meta.json`),
 ]);
 const SHA = /^[a-f0-9]{64}$/;
-const record = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
-const text = (v, max) =>
+export const record = (v) =>
+  v !== null && typeof v === "object" && !Array.isArray(v);
+export const text = (v, max) =>
   typeof v === "string" && v.trim().length > 0 && v.length <= max;
 
 export class BundleValidationError extends Error {
@@ -57,7 +59,7 @@ export class BundleValidationError extends Error {
     this.status = status;
   }
 }
-function ensure(ok, message, status) {
+export function ensure(ok, message, status) {
   if (!ok) throw new BundleValidationError(message, status);
 }
 export async function sha256(bytes) {
@@ -108,14 +110,20 @@ export async function readBundleForm(req) {
 /**
  * @param {FormData} form
  * @param {object[]} riskRules
- * @param {{schemas?: string[], limits?: typeof BUNDLE_LIMITS, derived?: string[]}} [options]
+ * @param {{schemas?: string[], limits?: typeof BUNDLE_LIMITS, derived?: string[], v1Fields?: Function}} [options]
  *   schemas: 受け付ける版（既定は v0 だけ）。limits: 容量の上限。derived: 取り込み側が元のファイルから作ったファイル
- *   （integrity.json に無いのが正しいので、ハッシュの保留にしない）
+ *   （integrity.json に無いのが正しいので、ハッシュの保留にしない）。v1Fields: v1 の欄の検査（snsBundleV1.js）。
+ *   twitter-text を使うので、Edge の管理 API（isBundlePublicationBlocked だけを使う）に入れないよう、ここでは import しない
  */
 export async function validateBundle(
   form,
   riskRules = [],
-  { schemas = [BUNDLE_SCHEMA], limits = BUNDLE_LIMITS, derived = [] } = {},
+  {
+    schemas = [BUNDLE_SCHEMA],
+    limits = BUNDLE_LIMITS,
+    derived = [],
+    v1Fields = null,
+  } = {},
 ) {
   const acceptsV1 = schemas.includes(BUNDLE_SCHEMA_V1);
   const allowedNames = acceptsV1 ? [...EXPECTED, X_VIDEO] : EXPECTED;
@@ -195,7 +203,10 @@ export async function validateBundle(
     "race_idが不正です",
   );
   ensure(["racecard", "exhibition"].includes(bundle.stage), "stageが不正です");
-  if (v1) validateV1Fields(bundle, files);
+  if (v1) {
+    ensure(typeof v1Fields === "function", "v1の検査（v1Fields）が渡されていません", 500);
+    v1Fields(bundle, files);
+  }
   else {
     ensure(
       typeof bundle.local_only === "boolean" &&
@@ -426,59 +437,6 @@ export async function validateBundle(
     versionHash,
     riskFlags,
   };
-}
-
-/** v1 の bundle.json の欄（plan §1）。締切は bundle の値を使わず、送信の側で races から計算する */
-function validateV1Fields(bundle, files) {
-  ensure(
-    text(bundle.title, 100) &&
-      text(bundle.script, 20000) &&
-      text(bundle.format, 50) &&
-      text(bundle.screen_key, 100) &&
-      (bundle.x_text === undefined || text(bundle.x_text, 20000)) &&
-      (bundle.template_variant_id === undefined || text(bundle.template_variant_id, 100)),
-    "v1の本文・タイトル・screen_keyが不正です",
-  );
-  const thread = bundle.x_thread;
-  ensure(
-    Array.isArray(thread) && thread.length >= 1 && thread.length <= X_THREAD_MAX,
-    `v1のx_threadは1〜${X_THREAD_MAX}件です`,
-  );
-  thread.forEach((post, i) => {
-    ensure(
-      record(post) && post.index === i && text(post.text, 20000),
-      "x_threadのindexは0からの連番で、本文が必要です",
-    );
-    ensure(twitterText.parseTweet(post.text).valid, `x_thread[${i}]: Xの文字数を超えています`);
-    // URL を含む投稿は単価が高い（spec の費用の決まり）ので、URL はスレッドの親だけ
-    ensure(i === 0 || twitterText.extractUrls(post.text).length === 0, `x_thread[${i}]: URLは親（index 0）だけに置けます`);
-    if (post.media !== undefined)
-      ensure(
-        typeof post.media === "string" && files.has(post.media) && /\.(mp4|png)$/.test(post.media),
-        `x_thread[${i}]: 媒体が添付にありません`,
-      );
-  });
-  ensure(thread[0].media === X_VIDEO, `x_thread[0]の媒体は${X_VIDEO}です`);
-  ensure(
-    Array.isArray(bundle.claims) &&
-      bundle.claims.length >= 1 &&
-      bundle.claims.length <= 100 &&
-      bundle.claims.every(
-        (c) =>
-          record(c) &&
-          text(c.id, 100) &&
-          text(c.text, 500) &&
-          Object.hasOwn(c, "value") &&
-          record(c.source) &&
-          typeof c.source.endpoint === "string" &&
-          /^\/api\/[A-Za-z0-9/_\-.]+$/.test(c.source.endpoint) &&
-          Array.isArray(c.source.path) &&
-          c.source.path.length > 0 &&
-          c.source.path.length <= 30 &&
-          c.source.path.every((p) => typeof p === "string" || Number.isInteger(p)),
-      ),
-    "v1のclaimsが不正です（id・text・value・source.endpoint・source.path）",
-  );
 }
 
 /** 入力のreleaseフラグやQA.passを書き換えてもv0を公開可能にしない。 */

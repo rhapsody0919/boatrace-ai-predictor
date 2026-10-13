@@ -30,6 +30,7 @@ import {
   importValidatedBundle,
   bundleStore,
 } from "../../api/_lib/snsBundleImport.js";
+import { validateV1Fields } from "../../api/_lib/snsBundleV1.js";
 import {
   prepareBundle,
   summarize as summarizeBundle,
@@ -1384,6 +1385,7 @@ const V1_OPTIONS = {
   schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
   limits: BUNDLE_LIMITS_V1,
   derived: [X_VIDEO],
+  v1Fields: validateV1Fields,
 };
 async function fixtureV1(change = {}, { withXVideo = true } = {}) {
   const v1 = {
@@ -1414,6 +1416,11 @@ async function fixtureV1(change = {}, { withXVideo = true } = {}) {
 }
 await check("v1: 管理画面の手取り込み（既定の v0 だけ）では受け付けない", async () => {
   await assert.rejects(validateBundle(form(await fixtureV1())), /未対応または重複したファイル名|v0のみ/);
+  // v1 を受け付けても、v1 の欄の検査（twitter-text）を渡さなければ通さない
+  await assert.rejects(
+    validateBundle(form(await fixtureV1()), [], { ...V1_OPTIONS, v1Fields: null }),
+    /v1Fields/,
+  );
   const noXVideo = await fixtureV1({}, { withXVideo: false });
   await assert.rejects(validateBundle(form(noXVideo)), /v0のみ/);
 });
@@ -1428,7 +1435,7 @@ await check("v1: x_thread・claims・screen_key を検査し、v0 の恒久保�
 });
 await check("v1: 子の URL・連番の崩れ・親の媒体・文字数・claims の形は拒否する", async () => {
   const bad = [
-    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 1, text: "子 https://www.boat-ai.jp/race/1" }] }, /URLは親/],
+    [{ x_thread: [{ index: 0, text: "親 https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }, { index: 1, text: "子 https://www.boat-ai.jp/race/1" }] }, /URLは親/],
     [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 2, text: "子" }] }, /連番/],
     [{ x_thread: [{ index: 0, text: "親", media: "scene-1.png" }] }, /draft-x\.mp4/],
     [{ x_thread: [{ index: 0, text: "あ".repeat(141), media: X_VIDEO }] }, /文字数/],
@@ -1437,6 +1444,8 @@ await check("v1: 子の URL・連番の崩れ・親の媒体・文字数・claim
     [{ claims: [{ source: "facts", path: ["count"], value: 30 }] }, /v1のclaims/],
     [{ claims: [{ id: "c", text: "t", value: 1, source: { endpoint: "https://evil.example/api/x", path: ["a"] } }] }, /v1のclaims/],
     [{ screen_key: undefined }, /screen_key/],
+    [{ x_thread: [{ index: 0, text: "URL なしの親", media: X_VIDEO }] }, /レースのURL/],
+    [{ x_thread: [{ index: 0, text: "https://example.com/race/1", media: X_VIDEO }] }, /レースのURL/],
   ];
   for (const [change, message] of bad)
     await assert.rejects(

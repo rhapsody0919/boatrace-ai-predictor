@@ -22,27 +22,15 @@ import {
   BUNDLE_LIMITS_V1,
   BUNDLE_SCHEMA,
   BUNDLE_SCHEMA_V1,
+  BUNDLE_FILE_NAMES,
   X_VIDEO,
   validateBundle,
 } from "../../api/_lib/snsBundleValidation.js";
+import { validateV1Fields } from "../../api/_lib/snsBundleV1.js";
+import { pathToFileURL } from "node:url";
 
 const run = promisify(execFile);
-const ALLOWED = [
-  "bundle.json",
-  "qa.json",
-  "integrity.json",
-  "script.txt",
-  "x-draft.txt",
-  "draft.mp4",
-  X_VIDEO,
-  "scene-1.png",
-  "scene-2.png",
-  "scene-3.png",
-  ...["facts", "similar", "scenario", "layer"].flatMap((s) => [
-    `${s}.json`,
-    `${s}.meta.json`,
-  ]),
-];
+const ALLOWED = [...BUNDLE_FILE_NAMES, X_VIDEO];
 
 const mimeOf = (name) =>
   name.endsWith(".json")
@@ -122,6 +110,7 @@ export async function prepareBundle(
       schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
       limits: BUNDLE_LIMITS_V1,
       derived,
+      v1Fields: validateV1Fields,
     });
     return { validated, ignored, derived };
   } finally {
@@ -184,7 +173,7 @@ async function main() {
   console.log(JSON.stringify(summarize(prepared, data), null, 2));
 }
 
-if (import.meta.url === `file://${process.argv[1]}`)
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
   main().catch((error) => {
     console.error(`push-bundle を止めた: ${error.message}`);
     process.exitCode = 1;
