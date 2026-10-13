@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 103 |
+| テーブル・ビューの定義 | 104 |
 | 読んでいる（テーブルを直接） | 57 |
 | 読んでいる（RPC経由のみ） | 3 |
 | 画面から読んでいない（例外登録あり） | 23 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **20** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **21** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,12 +24,13 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `append_sns_metric_observation` / `decide_sns_edit_finding` / `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（20件）
+## 要判断: 画面から読んでいない（例外登録なし）（21件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
 | `analogy_v16_snapshots` | 表 | 133_analogy_v16_snapshots.sql | なし | GRANT（133_analogy_v16_snapshots.sql） |  |
 | `external_predictions` | 表 | 021_external_predictions.sql | なし | GRANT（021_external_predictions.sql） |  |
+| `in_caution_gap_band_daily` | 表 | 155_in_caution_gap_band_daily.sql | なし | 記述なし |  |
 | `prediction_odds` | 表 | 011_prediction_odds.sql | なし | ポリシー（011_prediction_odds.sql） |  |
 | `race_payouts` | 表 | 079_race_payouts.sql | なし | GRANT（109_predictions_rpc_race_status_payouts.sql） |  |
 | `race_special_notes` | 表 | 060_race_special_notes.sql | なし | 記述なし |  |
