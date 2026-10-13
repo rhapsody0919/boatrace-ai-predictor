@@ -85,7 +85,12 @@ export default createScrapeCronHandler({
         notify,
       });
     } finally {
-      await headless.close();
+      // 閉じるのに失敗しても、送信の結果（送った件数・要照合）は消さない
+      await headless
+        .close()
+        .catch((error) =>
+          console.error(`Chromium を閉じられません: ${error.message}`),
+        );
     }
   },
 });

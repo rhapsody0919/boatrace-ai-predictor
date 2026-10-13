@@ -106,6 +106,39 @@ test("Chromium は1回だけ起動し、毎回新しい context で開いて閉�
   );
 });
 
+test("1回の実行で開く回数に上限があり、起動の失敗は同じ実行の中で繰り返さない", async () => {
+  const fake = fakeBrowser({ visible: SCREEN_MARKERS["race-sonar"] });
+  const headless = createChromiumHeadless({
+    launch: fake.launch,
+    maxInspections: 2,
+  });
+  const call = () =>
+    headless.inspect({
+      url: URL_SONAR,
+      context: { storageState: null },
+      requiredSelectors: [],
+    });
+  await call();
+  await call();
+  await assert.rejects(call(), /public_check_budget/);
+  let launches = 0;
+  const broken = createChromiumHeadless({
+    launch: async () => {
+      launches += 1;
+      throw new Error("Failed to launch");
+    },
+  });
+  const brokenCall = () =>
+    broken.inspect({
+      url: URL_SONAR,
+      context: { storageState: null },
+      requiredSelectors: [],
+    });
+  await assert.rejects(brokenCall(), /Failed to launch/);
+  await assert.rejects(brokenCall(), /Failed to launch/);
+  assert.equal(launches, 1);
+});
+
 test("checkPublicDisplay: ?tab=sonar は通し、他のタブ・他のクエリは止め、印が欠けるかリダイレクトされたら止める", async () => {
   const queue = (url) => ({ public_url: url, screen_key: "race-sonar" });
   const all = createMockHeadless({
