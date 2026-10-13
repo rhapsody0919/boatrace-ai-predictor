@@ -216,7 +216,7 @@ test("runXSendJob に実 adapter をつなぐと、6MB の動画は2つに分け
   assert.equal(calls.filter((c) => c.path === "/2/tweets").length, 1);
 });
 
-test("runXSendJob: 媒体の処理が failed・append が失敗したら投稿せず held にする", async () => {
+test("runXSendJob: 媒体の処理が failed・append が失敗したら begin_post に進まず投稿しない", async () => {
   const me = (
     await first("SELECT id FROM sns_approvers WHERE display_name='本人'")
   ).id;
@@ -267,10 +267,12 @@ test("runXSendJob: 媒体の処理が failed・append が失敗したら投稿�
       }),
     );
     assert.equal(calls.filter((c) => c.path === "/2/tweets").length, 0);
+    // 投稿の前に止まる（begin_post に進まない）。この DB は 137 だけなので hold が無く、held ではなく sending のまま残る
+    // （139 以降は hold で held になる。verify-sns-deadline-queue が確かめている）
     assert.equal(
       (await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [job.id]))
         .state,
-      "held",
+      "sending",
     );
   }
 });
