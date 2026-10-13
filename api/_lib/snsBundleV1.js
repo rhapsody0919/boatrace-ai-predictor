@@ -73,7 +73,7 @@ export function validateV1Fields(bundle, files) {
           Object.hasOwn(c, "value") &&
           record(c.source) &&
           typeof c.source.endpoint === "string" &&
-          /^\/api\/[A-Za-z0-9/_\-.]+$/.test(c.source.endpoint) &&
+          /^\/api\/[A-Za-z0-9/_\-.]+(\?[A-Za-z0-9=&_\-.]+)?$/.test(c.source.endpoint) &&
           Array.isArray(c.source.path) &&
           c.source.path.length > 0 &&
           c.source.path.length <= 30 &&

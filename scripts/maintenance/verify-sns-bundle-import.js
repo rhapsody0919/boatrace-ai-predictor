@@ -1396,7 +1396,7 @@ async function fixtureV1(change = {}, { withXVideo = true } = {}) {
       { index: 1, text: "観測した件数を確認", media: "scene-1.png" },
     ],
     claims: [
-      { id: "c1", text: "類似30件", value: 30, source: { endpoint: "/api/analogy/facts/2026-10-07-11-10", path: ["count"] } },
+      { id: "c1", text: "類似30件", value: 30, source: { endpoint: "/api/analogy/facts/2026-10-07-11-10?stage=racecard", path: ["count"] } },
     ],
     local_only: undefined,
     release_verified: undefined,
