@@ -75,7 +75,7 @@ export function normalizeStage(stage) {
 /**
  * 得点率の配点区分。
  *
- * - `excluded` … 勝ち上がり戦（準優・優勝戦）。得点率に算入しない
+ * - `excluded` … 勝ち上がり戦（準々・準決・準優・優勝戦）。得点率に算入しない
  * - `dream` … ドリーム戦。`SPECIAL_SCORE_POINTS`
  * - `tokusen` … 特選・特賞・選抜。`TOKUSEN_SCORE_POINTS`
  * - `normal` … 予選・一般戦とそれ以外。`SCORE_POINTS`
@@ -88,8 +88,14 @@ export function normalizeStage(stage) {
 export function classifyStage(stage) {
   const s = normalizeStage(stage);
   if (!s) return "normal";
-  // 「準々優勝戦」「準優進出戦」も勝ち上がり戦なので先に落とす
-  if (s.includes("準優") || s.includes("優勝戦")) return "excluded";
+  // 「準々決勝戦」「準々優勝戦」「準決勝戦」「準優進出戦」も先に落とす
+  if (
+    s.includes("準々") ||
+    s.includes("準決") ||
+    s.includes("準優") ||
+    s.includes("優勝戦")
+  )
+    return "excluded";
   // 「優勝戦」「準優」を含まない優勝戦・準優勝戦（決勝戦・準決勝戦・王将位決定戦・〜優 等）。
   // バッジと同じ判定 v2（raceStageConfig.js の getRaceStageKey、BOA-271 T1-1）
   if (getRaceStageKey(stage)) return "excluded";
