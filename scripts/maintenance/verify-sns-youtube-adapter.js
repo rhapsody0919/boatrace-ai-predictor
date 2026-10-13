@@ -64,7 +64,7 @@ beforeEach(async () => {
 });
 after(() => db.close());
 
-async function approvedJob({ withCover = true } = {}) {
+async function approvedJob({ withCover = true, title = "全貌 唐津12R" } = {}) {
   const deadline_at = new Date(Date.now() + 7200000).toISOString();
   const queue = {
     deadline_at,
@@ -74,8 +74,8 @@ async function approvedJob({ withCover = true } = {}) {
     source_observed_at: new Date().toISOString(),
   };
   const d = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,cover_image_path,source_data) VALUES(gen_random_uuid(),'short','youtube','ja','全貌 唐津12R','説明','v.mp4',$1,$2) RETURNING *",
-    [withCover ? "c.png" : null, { deadline_queue: queue }],
+    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,cover_image_path,source_data) VALUES(gen_random_uuid(),'short','youtube','ja',$3,'説明','v.mp4',$1,$2) RETURNING *",
+    [withCover ? "c.png" : null, { deadline_queue: queue }, title],
   );
   return (
     await first("SELECT approve_sns_x_send($1,$2,$3,now()) r", [
@@ -330,5 +330,80 @@ test("非公開以外での upload・予約公開・トークン無しは受け�
   assert.throws(
     () => createYoutubeQueueAdapter({}),
     /access token がありません/,
+  );
+});
+
+test("題名が YouTube の決まりに合わないときは begin_post の前に held にし、何も呼ばない", async () => {
+  for (const title of ["あ".repeat(101), "<告知>"]) {
+    const job = await approvedJob({ withCover: false, title });
+    const fake = fakeYoutube();
+    await assert.rejects(run(job, fake));
+    assert.equal(fake.calls.length, 0);
+    assert.equal(
+      (await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [job.id]))
+        .state,
+      "held",
+    );
+  }
+});
+
+test("videos.update の失敗は update_started の要照合に残し、公開の確認で private が返れば公開済みと扱わない", async () => {
+  const job = await approvedJob({ withCover: false });
+  const base = fakeYoutube();
+  const failingUpdate = {
+    calls: base.calls,
+    fetchImpl: async (url, options = {}) =>
+      options.method === "PUT"
+        ? (base.calls.push({
+            method: "PUT",
+            path: new URL(url).pathname,
+            options,
+          }),
+          json({ error: { errors: [{ reason: "backendError" }] } }, 500))
+        : base.fetchImpl(url, options),
+  };
+  await assert.rejects(run(job, failingUpdate), /HTTP 500 backendError/);
+  assert.deepEqual(
+    await first(
+      "SELECT state, youtube_stage FROM sns_x_send_jobs WHERE id=$1",
+      [job.id],
+    ),
+    {
+      state: "reconcile",
+      youtube_stage: "update_started",
+    },
+  );
+
+  const stillPrivate = await approvedJob({ withCover: false });
+  const base2 = fakeYoutube();
+  const ignoresUpdate = {
+    calls: base2.calls,
+    fetchImpl: async (url, options = {}) =>
+      options.method === "PUT"
+        ? json({ id: "ignored" })
+        : base2.fetchImpl(url, options),
+  };
+  await assert.rejects(
+    run(stillPrivate, ignoresUpdate),
+    /youtube_publication_unconfirmed/,
+  );
+  assert.equal(
+    (
+      await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [
+        stillPrivate.id,
+      ])
+    ).state,
+    "reconcile",
+  );
+});
+
+test("動画 ID の無い job の照合は YouTube を呼ばず要照合のまま", async () => {
+  const youtube = createYoutubeQueueAdapter({
+    accessToken: "tok",
+    fetchImpl: async () => assert.fail("呼ばない"),
+  });
+  assert.equal(
+    (await youtube.lookup({ external_post_id: null })).confirmed,
+    false,
   );
 });

@@ -13,8 +13,17 @@ const API = "https://www.googleapis.com/youtube/v3";
 const UPLOAD_API = "https://www.googleapis.com/upload/youtube/v3";
 const TIMEOUT_MS = 120000;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
-// 投稿の作り直しのたびに子供向けの設定がずれないよう、upload と公開で同じ値を送る
-const MADE_FOR_KIDS = false;
+// videos.update の part=status は status を丸ごと書き換える（指定しない項目は既定値に戻る）。
+// upload と公開で同じ項目を送るよう、privacyStatus 以外はここにまとめる
+const STATUS_FIELDS = { selfDeclaredMadeForKids: false };
+const TITLE_MAX = 100;
+
+/** YouTube が受け付けない題名（空・100文字超・< >）を、送る前に見つける */
+export function validateYoutubeSnapshot(snapshot) {
+  const title = snapshot?.youtube_title ?? "";
+  if (!title.trim() || [...title].length > TITLE_MAX || /[<>]/.test(title))
+    throw new Error("youtube_title_invalid");
+}
 
 export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
   if (!accessToken) throw new Error("YouTube の access token がありません");
@@ -84,7 +93,7 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
         },
         status: {
           privacyStatus: "private",
-          selfDeclaredMadeForKids: MADE_FOR_KIDS,
+          ...STATUS_FIELDS,
         },
       };
       const boundary = `ryujin-${crypto.randomUUID()}`;
@@ -123,8 +132,12 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
       return job;
     },
 
+    validate: validateYoutubeSnapshot,
+
     async processing(job) {
-      const video = await readVideo(job.external_post_id);
+      const video = job.external_post_id
+        ? await readVideo(job.external_post_id)
+        : null;
       return {
         confirmed: isOwnApproved(video, job),
         id: video?.id ?? null,
@@ -144,7 +157,7 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
           id: job.external_post_id,
           status: {
             privacyStatus: "public",
-            selfDeclaredMadeForKids: MADE_FOR_KIDS,
+            ...STATUS_FIELDS,
           },
         }),
       });
@@ -152,7 +165,9 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
       return publicationResult(await readVideo(job.external_post_id), job);
     },
 
+    // 動画 ID が分からない（insert の応答を失った）job は一覧を探さずオーナーの照合に残す（呼び出しもしない）
     async lookup(job) {
+      if (!job.external_post_id) return publicationResult(null, job);
       return publicationResult(await readVideo(job.external_post_id), job);
     },
   };
