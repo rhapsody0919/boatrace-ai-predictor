@@ -214,6 +214,7 @@ Night races are held at Kiryu, Gamagori, Suminoe, Marugame, Shimonoseki, Wakamat
 | Gamagori | Moonlight Race | A view overlooking Mikawa Bay |
 | Suminoe | Suminoe Night Race | Nighttime battles at boat racing's holy ground |
 | Marugame | Marugame Night Race | Night views over the Seto Inland Sea |
+| Shimonoseki | — | Faces the Kanmon Strait |
 | Wakamatsu | Wakamatsu Night Race | A night-view spot in Kitakyushu |
 | Omura | Birthplace Night Race | The birthplace of boat racing itself |
 
