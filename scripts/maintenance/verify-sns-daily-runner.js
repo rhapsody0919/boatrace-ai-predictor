@@ -442,14 +442,14 @@ test("PostgREST の store: 既存の行は1000行ずつ読み、upsert は一意
         init.headers?.Prefer,
       ]);
       if (init.method === "POST") return new Response(null, { status: 201 });
-      const page = init.headers.Range === "0-999" ? 1000 : 3;
+      const page = String(url).includes("offset=0") ? 1000 : 3;
       return Response.json(Array.from({ length: page }, () => ({})));
     },
   });
   assert.equal((await pg.existing("2026-10-12", "2026-10-15")).length, 1003);
   assert.deepEqual(
-    calls.map((c) => c[1]),
-    ["0-999", "1000-1999"],
+    calls.map((c) => c[0].match(/limit=\d+&offset=\d+/)[0]),
+    ["limit=1000&offset=0", "limit=1000&offset=1000"],
   );
   assert.match(calls[0][0], /day=gte\.2026-10-12&day=lte\.2026-10-15/);
   await pg.upsert([{}]);

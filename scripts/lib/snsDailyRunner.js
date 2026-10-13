@@ -363,10 +363,8 @@ const COLUMNS =
 /** PostgREST の読み書き（service_role）。失敗は握りつぶさず投げる */
 export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
-  async function get(path, extra = {}) {
-    const response = await fetchImpl(`${url}/rest/v1/${path}`, {
-      headers: { ...headers, ...extra },
-    });
+  async function get(path) {
+    const response = await fetchImpl(`${url}/rest/v1/${path}`, { headers });
     if (!response.ok)
       throw new Error(
         `日次の取り込みの DB の読み取りに失敗: HTTP ${response.status} ${path.split("?")[0]}`,
@@ -388,8 +386,7 @@ export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
       const out = [];
       for (let offset = 0; ; offset += 1000) {
         const page = await get(
-          `sns_channel_daily?day=gte.${from}&day=lte.${to}&select=${COLUMNS}&order=id.asc`,
-          { Range: `${offset}-${offset + 999}` },
+          `sns_channel_daily?day=gte.${from}&day=lte.${to}&select=${COLUMNS}&order=id.asc&limit=1000&offset=${offset}`,
         );
         out.push(...page);
         if (page.length < 1000) return out;
