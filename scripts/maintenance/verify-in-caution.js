@@ -355,10 +355,14 @@ const five = [5.0, 5.0, 5.0, 5.0, 5.0];
       { race_id: "2026-10-13-02-01", ic: null, skip: null },
     ],
     races: [
-      { race_id: "2026-10-13-01-02" }, // 中止・結果なし → 除く
-      { race_id: "2026-10-13-02-01" }, // 中止だが結果あり → 除かない（BOA-512）
+      { race_id: "2026-10-13-01-01", cancellation_status: "tentative" }, // 未確定は除かない
+      { race_id: "2026-10-13-01-02", cancellation_status: "confirmed" }, // 中止・結果なし → 除く
+      { race_id: "2026-10-13-02-01", cancellation_status: "confirmed" }, // 中止だが結果あり → 除かない（BOA-512）
     ],
-    race_results: [{ race_id: "2026-10-13-02-01" }],
+    race_results: [
+      { race_id: "2026-10-13-01-02", rank1: null },
+      { race_id: "2026-10-13-02-01", rank1: 3 },
+    ],
   };
   const fakeClient = {
     rpc: async (name, args) => {
@@ -367,15 +371,22 @@ const five = [5.0, 5.0, 5.0, 5.0, 5.0];
     },
     from: (table) => {
       calls.push(["from", table]);
-      const filters = [];
+      // eq・not(is null) は実際に絞り込む（読み取りの条件そのものを検査するため）
+      let rowsOf = tables[table];
       const q = {
         select: () => q,
-        eq: (c, v) => (filters.push([c, v]), q),
-        not: (c, op, v) => (filters.push([c, `not.${op}.${v}`]), q),
+        eq: (c, v) => (
+          (rowsOf = rowsOf.filter((r) => !(c in r) || r[c] === v)),
+          q
+        ),
+        not: (c, op, v) =>
+          op === "is" && v === null
+            ? ((rowsOf = rowsOf.filter((r) => r[c] != null)), q)
+            : q,
         gte: () => q,
         lt: () => q,
         order: () => q,
-        range: async () => ({ data: tables[table], error: null, filters }),
+        range: async () => ({ data: rowsOf, error: null }),
       };
       return q;
     },
