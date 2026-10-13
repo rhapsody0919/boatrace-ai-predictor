@@ -55,9 +55,9 @@ jobs:
         env:
           FULL: ${{ inputs.full }}
         run: |
-          kb=""
-          if [ "$FULL" = "true" ]; then kb="kb_boats kb_races kb_venue_days"; fi
-          node scripts/ml/analogy/export_pool.js --daily $kb races entries exhibition conditions results start_timings
+          tables=(races entries exhibition conditions results start_timings)
+          if [ "$FULL" = "true" ]; then tables=(kb_boats kb_races kb_venue_days "${tables[@]}"); fi
+          node scripts/ml/analogy/export_pool.js --daily "${tables[@]}"
 
       - name: Count and write
         working-directory: scripts/ml/analogy
@@ -65,10 +65,10 @@ jobs:
           FULL: ${{ inputs.full }}
           FORCE: ${{ inputs.force }}
         run: |
-          args=""
-          if [ "$FULL" = "true" ]; then args="$args --full"; fi
-          if [ "$FORCE" = "true" ]; then args="$args --force"; fi
-          python in_caution_bands.py $args
+          args=()
+          if [ "$FULL" = "true" ]; then args+=(--full); fi
+          if [ "$FORCE" = "true" ]; then args+=(--force); fi
+          python in_caution_bands.py "${args[@]}"
 
       - name: Notify Slack (失敗)
         if: failure()
