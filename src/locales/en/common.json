@@ -2568,7 +2568,7 @@
     },
     "exTop": {
       "title": "⏲️ Fastest Exhibition Time → Win Conversion",
-      "description": "Based on race results from the past 90 days, this shows which lanes tend to record the fastest exhibition (lap) time at each venue, and how often the fastest boat actually wins.",
+      "description": "Based on race results from the past 90 days, this shows which lanes tend to record the fastest exhibition time at each venue, and how often the fastest boat actually wins.",
       "summary": "Exhibition time results over the past 90 days",
       "fastestRate": "Fastest exhibition rate",
       "winWhenFastest": "Win rate when fastest",
@@ -2576,7 +2576,7 @@
       "fastestCountHeader": "Times fastest",
       "fastestRateHeader": "Fastest rate (%)",
       "winWhenFastestHeader": "Win rate when fastest (%)",
-      "note": "💡 \"Fastest exhibition\" means recording the fastest lap time in that race (excluding ties). A lane with a high fastest rate but low win rate may be \"fast in exhibition but unable to close out the race.\"",
+      "note": "💡 \"Fastest exhibition\" means recording the fastest exhibition time in that race (the time over a 150 m section on the 2nd lap of the pre-race lap-course run, excluding ties). A lane with a high fastest rate but low win rate may be \"fast in exhibition but unable to close out the race.\"",
       "empty": "No exhibition time data found"
     },
     "topStart": {
@@ -2758,7 +2758,7 @@
     },
     "exTrend": {
       "title": "📈 Racer Exhibition Time Trend",
-      "description": "Select a race being held today to see how each racer's exhibition (lap) time has trended over the past 90 days. Unlike the venue/lane-based Exhibition Time tab, this tracks each racer's individual condition.",
+      "description": "Select a race being held today to see how each racer's exhibition time has trended over the past 90 days. Unlike the venue/lane-based Exhibition Time tab, this tracks each racer's individual condition.",
       "todayTimeHeader": "Today's exhibition time",
       "avgTimeHeader": "Avg. past exhibition time",
       "legend": "Exhibition time",
@@ -2910,7 +2910,7 @@
       },
       "extrend": {
         "name": "Racer Exhibition Time Trend",
-        "description": "Analyzes how each racer's exhibition (lap) time has trended over the past 90 days"
+        "description": "Analyzes how each racer's exhibition time has trended over the past 90 days"
       },
       "techprofile": {
         "name": "Racer Winning Technique Profile",
@@ -3111,7 +3111,7 @@
       },
       "extime": {
         "title": "About Fastest Exhibition Time → Win Conversion",
-        "dataView": "Based on race results from the past 90 days, this analyzes by lane, for each venue, \"which lane tends to record the fastest exhibition (lap) time\" and \"how often the fastest boat actually wins.\"",
+        "dataView": "Based on race results from the past 90 days, this analyzes by lane, for each venue, \"which lane tends to record the fastest exhibition time\" and \"how often the fastest boat actually wins.\"",
         "tips": [
           {
             "strong": "Lanes with a high fastest-exhibition rate but low win rate",
@@ -3129,7 +3129,7 @@
       },
       "extrend": {
         "title": "About Racer Exhibition Time Trend",
-        "dataView": "This shows how each racer's exhibition (lap) time has trended over the past 90 days. Unlike Fastest Exhibition Time → Win Conversion (venue/lane-based), this tracks each racer's individual condition.",
+        "dataView": "This shows how each racer's exhibition time has trended over the past 90 days. Unlike Fastest Exhibition Time → Win Conversion (venue/lane-based), this tracks each racer's individual condition.",
         "tips": [
           {
             "strong": "Racers whose exhibition time keeps worsening",
