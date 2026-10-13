@@ -132,7 +132,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/sg-race-timeline-ja.jpg": { width: 1000, height: 605 },
   "/images/blog/sg-race-timeline-ko.jpg": { width: 1000, height: 562 },
   "/images/blog/sg-race-timeline-zh-tw.jpg": { width: 1000, height: 592 },
-  "/images/blog/shimonoseki-tailwind-kaikyo-2027.jpg": { width: 576, height: 391 },
+  "/images/blog/shimonoseki-water-wind-guide.jpg": { width: 576, height: 391 },
   "/images/blog/signals-probability-en.jpg": { width: 1000, height: 316 },
   "/images/blog/signals-probability-ja.jpg": { width: 1000, height: 330 },
   "/images/blog/signals-probability-ko.jpg": { width: 1000, height: 318 },
