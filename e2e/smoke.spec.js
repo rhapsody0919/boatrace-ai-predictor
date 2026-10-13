@@ -2006,6 +2006,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     );
     // 「前期」は指標の列に混ぜず、算出期間つきの別枠で出す（単位が点のため）
     await expect(page.locator(".rbit-period-heading")).toContainText(
+      /\d{4}\/\d{2}\/\d{2}〜\d{4}\/\d{2}\/\d{2}/,
+    );
+    await expect(page.locator(".rbit-period-heading")).not.toContainText(
       /\d{4}-\d{2}-\d{2}/,
     );
     await expect(page.locator(".rbit-period-values")).toContainText("勝率");
@@ -2077,7 +2080,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
       { timeout: 25000 },
     );
     await expect(page.locator(".rbit-period-note")).toContainText(
-      "2026-08-01以降のレースで出します",
+      "2026/08/01以降のレースで出します",
     );
 
     // 英語の長い文言が375pxで枠からはみ出して切れない（ファン評価3周目。
@@ -2090,6 +2093,10 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rbit-period-diff").nth(1)).toBeVisible({
       timeout: 25000,
     });
+    await expect(page.locator(".rbit-period-values")).toContainText(
+      /Win rate \d+\.\d{2}/,
+    );
+    await expect(page.locator(".rbit-period-values")).not.toContainText("Win pts");
     const overflow = await page.evaluate(() => {
       const box = document
         .querySelector(".rbit-period")

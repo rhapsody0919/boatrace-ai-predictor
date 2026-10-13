@@ -2291,7 +2291,7 @@
     "periodFallbackNote": "* The previous term ({{from}} – {{to}}) has not been loaded yet, so the term before last is shown.",
     "periodDiffFallbackNote": "* The difference from the race-card figure is not shown until the previous term is loaded.",
     "periodDiffFallbackNoteDate": "* The difference from the race-card figure is not shown until the previous term is loaded (the difference from the previous term is shown for races from {{date}}).",
-    "periodWinRate": "Win pts {{value}}",
+    "periodWinRate": "Win rate {{value}}",
     "periodTop2Rate": "Top-2 rate {{value}}",
     "periodAvgSt": "Avg. ST {{value}}",
     "periodFinals": "Finals {{value}}",
