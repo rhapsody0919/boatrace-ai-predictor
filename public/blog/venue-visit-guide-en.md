@@ -26,7 +26,7 @@ Boat racing runs in 3 formats.
 |---------|--------|-----------|
 | Day races | ~10:00 AM–4:30 PM | Toda, Edogawa, Mikuni, etc. |
 | Morning races | ~8:30 AM–2:30 PM | Ashiya, Naruto, Karatsu, etc. |
-| Night races | ~3:00–8:30 PM | Kiryu, Gamagori, Suminoe, Marugame, Wakamatsu, Omura, etc. |
+| Night races | ~3:00–8:30 PM | Kiryu, Gamagori, Suminoe, Marugame, Shimonoseki, Wakamatsu, Omura |
 
 Stopping by a night race on your way home from work is a perfectly good way to enjoy it.
 
