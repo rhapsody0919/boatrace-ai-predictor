@@ -266,7 +266,7 @@ export const ASSIST_COPY = Object.freeze({
   followMarkNote: (x) =>
     `↑多め・↓少なめ＝${x}号艇が1着のときの2着率と、その艇が1着でなかったレースでの2着率（${x}号艇を除いて割り直し）の差。件数300件以上で、5ポイント以上かつぶれの範囲を超えるときだけ付ける`,
   followSonar: "着順の流れを見る（龍神ソナー）",
-  followSonarSub: (x) => `1着の${x}号艇を押すと、その流れになる`,
+  followSonarSub: (x) => `1着に${x}号艇を選んだ状態で開く`,
   followAuto: (x) => `1着の候補に合わせた（${x}号艇）`,
   followNone: (x) => `この会場の全レースで、${x}号艇が1着のレースがまだ無い`,
   partVenueAll: "会場の全レースの値",

@@ -15,6 +15,9 @@
 | `GITHUB_MERGE_TOKEN` | ブログ記事Draft PRの自動マージ（sns-hub admin、Fine-grained PAT、ADR 0034） |
 | `YOUTUBE_CLIENT_ID` | YouTube Data API v3連携（ADR 0035） |
 | `YOUTUBE_CLIENT_SECRET` | YouTube Data API v3連携（ADR 0035） |
-| `YOUTUBE_REFRESH_TOKEN` | YouTube Data API v3連携、ユーザー自身のOAuth同意で取得（ADR 0035） |
+| `YOUTUBE_REFRESH_TOKEN` | YouTube Data API v3連携、ユーザー自身のOAuth同意で取得（ADR 0035）。自動送信の公開の切り替え（`videos.update`）に `youtube` の scope が要る（sns-pdca-loop tasks 26） |
+| `X_OAUTH_CLIENT_ID` | X の OAuth 2.0（PKCE）の Client ID。Production のみ（sns-pdca-loop、ADR 0093） |
+| `X_OAUTH_CLIENT_SECRET` | X の OAuth 2.0 の Client Secret（confidential client）。Production のみ・Sensitive（ADR 0093） |
+| `SNS_TOKEN_ENC_KEY` | X のトークンを DB（`sns_oauth_tokens`）に AES-256-GCM で暗号化する鍵（32バイトの base64）。Production のみ・Sensitive（ADR 0093） |
 
 ローカルは `.env.local`、本番は Vercel環境変数で管理。

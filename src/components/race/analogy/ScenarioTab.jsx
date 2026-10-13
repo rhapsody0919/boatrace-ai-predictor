@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import NoteList, { NotesFold } from "./NoteList";
 import ScenarioFold from "./ScenarioFold";
@@ -31,6 +31,7 @@ import {
   minRanks,
 } from "../../../utils/analogyScenario";
 import { agreementVerdict, scopeKind } from "../../../utils/analogyFacts";
+import { trifectaList } from "../../../utils/analogyAggregate";
 import { wilsonInterval } from "../../../utils/wilson";
 
 const k = "aiPredictionTab.analogy.scenario";
@@ -48,13 +49,28 @@ export default function ScenarioTab({
   today,
   raceId,
   feedback,
+  initialFirst = null,
+  onInitialFirstUsed,
 }) {
   const { t } = useTranslation();
   const scopeLbl = useId();
   const [entry, setEntry] = useState("waku");
   const [slit, setSlit] = useState("any");
   const [version, setVersion] = useState("course");
-  const [first, setFirst] = useState(null);
+  // 初期のセル（枠なり・形は問わない）でその艇の1着が0件なら使わない。流れが空になり、
+  // 1着の四角も消えて選択を外せなくなるため
+  const [first, setFirst] = useState(() =>
+    initialFirst !== null &&
+    trifectaList(data.scenario?.cells?.waku?.forms?.any?.tri, {
+      first: initialFirst,
+    }).length > 0
+      ? initialFirst
+      : null,
+  );
+  // 初期値は描画できたときに使い切る。内部タブを戻しても再選択しない
+  useEffect(() => {
+    onInitialFirstUsed?.();
+  }, [onInitialFirstUsed]);
   const [not1, setNot1] = useState(false);
   // 着順の流れで押した帯（よく出た3連単をその帯の内訳に絞る。BOA-816）
   const [band, setBand] = useState(null);

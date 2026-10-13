@@ -15,6 +15,8 @@ export const RACE_BOAT_PARAM = "boat";
 // 龍神ソナーの中の切り替え（差がつく材料／類似レース／展開シナリオ）。投稿などから直接開くためのもので、
 // 読むだけで書き戻さない（2026-10-08 D3）
 export const RACE_SONAR_PARAM = "sonar";
+// 展開シナリオの1着の初期値。sonar と同じく読むだけで書き戻さない
+export const RACE_FIRST_PARAM = "first";
 export const SONAR_TAB_IDS = ["facts", "similar", "scenario"];
 export const SONAR_RACE_TAB = "sonar";
 
@@ -43,6 +45,11 @@ export function parseBoatParam(raw) {
   return Number(raw);
 }
 
+/** `?first=` を 1〜6 の艇番に直す。それ以外は null */
+export function parseFirstParam(raw) {
+  return parseBoatParam(raw);
+}
+
 /**
  * GA4 の page_view で使う URL（パス＋クエリ）。レース詳細ではタブ・艇・ソナーの中の切り替えのクエリを除く。
  * ほかのページはそのまま（/winning-technique?tab= はタブごとに数えたいので除かない）
@@ -53,6 +60,7 @@ export function pageViewPath(pathname, search) {
   params.delete(RACE_TAB_PARAM);
   params.delete(RACE_BOAT_PARAM);
   params.delete(RACE_SONAR_PARAM);
+  params.delete(RACE_FIRST_PARAM);
   const rest = params.toString();
   return rest ? `${pathname}?${rest}` : pathname;
 }

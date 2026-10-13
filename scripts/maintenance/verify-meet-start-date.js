@@ -21,7 +21,12 @@
  * 接続しないので tier=ci。実データ全件との突き合わせは `verify-meet-grouping.js`
  * （tier=manual）が担う。
  */
-import { findMeetStartDate } from "../../src/utils/meetGrouping.js";
+import {
+  findMeetStartDate,
+  meetDaysFromRows,
+  meetStartFromRows,
+  seriesDayByDate,
+} from "../../src/utils/meetGrouping.js";
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -326,6 +331,105 @@ check(
   "入力が日付順でなくても結果は同じ",
   findMeetStartDate([...TODA].reverse(), "2026-09-28"),
   "2026-09-26",
+);
+
+// ---- 行から節の初日を決める共通の入口（BOA-856。今節タブ・会場の節の初日・節ページ・
+// Shorts 用 API の4か所が同じ関数を使う） ----
+const cond = (date, seriesDay, isFinalDay = false, r = "01") => ({
+  race_id: `${date}-02-${r}`,
+  series_day: seriesDay,
+  is_final_day: isFinalDay,
+});
+check(
+  "seriesDayByDate: その日の最小の series_day と、1行でも最終日なら最終日",
+  [
+    ...seriesDayByDate([
+      cond("2026-09-24", null, true, "12"),
+      cond("2026-09-24", 6, false, "01"),
+      cond("2026-09-23", 5),
+    ]).entries(),
+  ],
+  [
+    ["2026-09-24", { seriesDay: 6, isFinalDay: true }],
+    ["2026-09-23", { seriesDay: 5, isFinalDay: false }],
+  ],
+);
+check(
+  "meetDaysFromRows: 種別の無い日の isFinalDay は null、日付は重複を除いて昇順",
+  meetDaysFromRows(
+    ["2026-09-19", "2026-09-18", "2026-09-19"],
+    [cond("2026-09-18", 1)],
+  ),
+  [
+    { date: "2026-09-18", seriesDay: 1, isFinalDay: false },
+    { date: "2026-09-19", seriesDay: null, isFinalDay: null },
+  ],
+);
+// 戸田 2026-09（本番の実測）: 9/21 が中止確定で、9/22 にもう一度「4日目」。節は 9/18〜9/24
+const TODA_RENUMBER = [
+  cond("2026-09-17", 6, true),
+  cond("2026-09-18", 1),
+  cond("2026-09-19", 2),
+  cond("2026-09-20", 3),
+  cond("2026-09-21", 4),
+  cond("2026-09-22", 4),
+  cond("2026-09-23", 5),
+  cond("2026-09-24", 6, true),
+  cond("2026-09-26", 1),
+];
+const datesOf = (rows) => rows.map((c) => c.race_id.slice(0, 10));
+check(
+  "meetStartFromRows: 中止で日目が振り直されても節の初日は変わらない",
+  meetStartFromRows(datesOf(TODA_RENUMBER), TODA_RENUMBER, "2026-09-24"),
+  "2026-09-18",
+);
+check(
+  "meetStartFromRows: 最終日の翌開催日から次の節",
+  meetStartFromRows(datesOf(TODA_RENUMBER), TODA_RENUMBER, "2026-09-26"),
+  "2026-09-26",
+);
+check(
+  "meetStartFromRows: 出走表にしか無い日（種別が未取得）も開催日として数える",
+  meetStartFromRows(
+    ["2026-09-18", "2026-09-19", "2026-09-20"],
+    [cond("2026-09-18", 1), cond("2026-09-19", 2)],
+    "2026-09-20",
+  ),
+  "2026-09-18",
+);
+check(
+  "meetStartFromRows: 開催日が空なら null",
+  meetStartFromRows([], [], "2026-09-24"),
+  null,
+);
+
+// ---- Codex の BOA-856 報告の3点（getVenueMeetStart の窓・開催日の基準・空入力）を変えていないこと ----
+// getVenueMeetStart は種別の行の日付だけを開催日として渡し、種別が1行も無ければ null を返す。
+// 報告の合成入力（出走表 10/11〜13、種別は 10/11 が1日目・10/13 が2日目、最終日の印なし）で、
+// 旧実装は 2026-10-13（種別の日付だけだと 10/11→10/13 が2日空き）、出走表を基準にする
+// getMeetScoreboard・meetStartOf は 2026-10-11 だった。この差はそのまま残す
+const CODEX_CONDS = [
+  { race_id: "2026-10-11-05-01", series_day: 1, is_final_day: false },
+  { race_id: "2026-10-13-05-01", series_day: 2, is_final_day: false },
+];
+check(
+  "getVenueMeetStart の組み方（種別の日付だけ）は 2026-10-13（旧と同じ）",
+  meetStartFromRows(datesOf(CODEX_CONDS), CODEX_CONDS, "2026-10-13"),
+  "2026-10-13",
+);
+check(
+  "getMeetScoreboard・meetStartOf の組み方（出走表の日付）は 2026-10-11（旧と同じ）",
+  meetStartFromRows(
+    ["2026-10-11", "2026-10-12", "2026-10-13"],
+    CODEX_CONDS,
+    "2026-10-13",
+  ) ?? "2026-10-13",
+  "2026-10-11",
+);
+check(
+  "getVenueMeetStart の組み方は種別が空なら null（旧と同じ。呼び出し側は ?? を付けない）",
+  meetStartFromRows(datesOf([]), [], "2026-10-13"),
+  null,
 );
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);

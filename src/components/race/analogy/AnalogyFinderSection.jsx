@@ -12,7 +12,7 @@
  * ただし投稿などから内部タブへ直接来られるよう、?sonar=facts|similar|scenario を開いたときに1回だけ読む
  * （読むだけで、押しても URL は書き換えない。2026-10-08 D3）。
  */
-import { useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import AnalogyControls, { AnalogyTabs } from "./AnalogyControls";
@@ -30,6 +30,8 @@ import { venueLabel } from "../../../utils/analogyFormat";
 import { markAnalogySeen, trackEvent } from "../../../utils/analytics";
 import {
   RACE_SONAR_PARAM,
+  RACE_FIRST_PARAM,
+  parseFirstParam,
   SONAR_TAB_IDS,
   parseSonarParam,
 } from "../../../utils/raceUrlState";
@@ -42,7 +44,7 @@ const SONAR_SECTION_ID = "ryujin-sonar";
 // コンポーネントの ref ではほかのタブから戻るたびに送り直してしまう（別タブにした 2026-10-08 から）
 const viewedRaces = new Set();
 const visibleRaces = new Set();
-// ?sonar= を使い終えたレース。ほかのタブから戻るたびに内部タブを選び直さないため
+// ?sonar=・?first= を使い終えたリンク。ほかのタブから戻るたびに選び直さないため
 const linkUsedRaces = new Set();
 
 /** 展示前の時点の札（screens「状態」）。展示後はボタン2つにする */
@@ -70,15 +72,22 @@ export default function AnalogyFinderSection({ raceId }) {
   const [stageChoice, setStageChoice] = useState(null);
   const [target, setTarget] = useState(1);
   const [searchParams] = useSearchParams();
+  const firstParam = parseFirstParam(searchParams.get(RACE_FIRST_PARAM));
+  // 別の軸から来たリンクは同じレースでも新しい初期値として読む
+  const linkKey = `${raceId}:${firstParam ?? ""}`;
   // 1回目の描画で決める（使い終えた印は描画の後に付ける）
   const [linkedTab] = useState(() =>
-    linkUsedRaces.has(raceId)
+    linkUsedRaces.has(linkKey)
       ? null
       : parseSonarParam(searchParams.get(RACE_SONAR_PARAM)),
   );
   useEffect(() => {
-    if (linkedTab) linkUsedRaces.add(raceId);
-  }, [linkedTab, raceId]);
+    if (linkedTab) linkUsedRaces.add(linkKey);
+  }, [linkedTab, linkKey]);
+  const [linkedFirst, setLinkedFirst] = useState(() =>
+    linkedTab === "scenario" ? firstParam : null,
+  );
+  const consumeFirst = useCallback(() => setLinkedFirst(null), []);
   const [tab, setTab] = useState(linkedTab ?? "facts");
   const [opened, setOpened] = useState({
     facts: true,
@@ -301,6 +310,8 @@ export default function AnalogyFinderSection({ raceId }) {
           today={facts.data?.today ?? null}
           raceId={raceId}
           feedback={feedback}
+          initialFirst={linkedFirst}
+          onInitialFirstUsed={consumeFirst}
         />
       ) : (
         <p className="af-v16-line">

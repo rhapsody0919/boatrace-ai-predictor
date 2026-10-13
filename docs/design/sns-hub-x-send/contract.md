@@ -50,3 +50,20 @@ USDの100万分の1単位の整数。上限は最大$10。period_start/endは実
 承認・取消・停止の操作開始時に親へunknownを通知し、画面も状態未確定と表示する。操作後の状態GETが成功して初めて確定状態へ戻す。POST応答喪失・POST成功後のGET失敗では手動投稿と再承認を閉じたままにする。操作前に開始したpollの応答は世代番号で除外し、操作中はpollを開始しない。失敗後の新しいpollが確定状態を返せばそれを反映する（要照合jobの解除ではない）。
 
 承認対象が画面で見た版かクリック時の最新版か、実adapterのtimeout/SDK retry、総費用、要照合解除・本人認可は未決事項であり、今回独断で設計を追加しない。送信直前のヘッドレス公開確認は依頼5。初期停止・connected=falseを維持する。
+
+## 自動送信の例外（SQL153、ADR 0094、2026-10-13）
+
+上の「本人の日本語X下書きのみ」「過去の承認から自動queue化しない」「本人を検査する」には、ADR 0094 の例外が1つだけある。承認者が `sns_auto_send_control.auto_approver_id`（「自動送信（止められなかった）」、`active=false` で選択肢に出さない）のときは、そのチャネルの `mode='auto'` かつ同じ bundle・チャネルの `sns_auto_send_items.state='notified'`（機械の検査を通り、事前通知を送った）のときだけ承認を通す。分岐は表示名ではなく ID で行う。
+
+- 自動送信の承認者の job は、claim・check・begin_post（YouTube は youtube_call・youtube_publish_begin も）のたびに、item が止められていないこと・`notified` であること・`mode='auto'` を確かめる。外れたら queued・sending は `held`（`auto_stopped`）、reconcile は RAISE。claim は止められる期限（`veto_until`、締切の60分前）より前には進めない
+- v1 素材の下書きは、同じ bundle・チャネルの item が検査を通った状態（manual・notifying・notified・sent）のときだけ公開保留を外して承認できる。v0 は今までどおり不可。本人の承認でも、item を止めた後は claim しない
+- `sns_auto_send_control.dry_run=true` のあいだは、承認者によらずそのチャネルの claim を拒否する（job は queued のまま、予約を消費しない）
+- 予約額は種類別: スレッドの親（URL つき）は `ceiling_x_url_microusd`、子は `ceiling_x_plain_microusd`（未設定なら `attempt_ceiling_microusd`）。スレッドの親の claim は、子の分まで月の残りに入るときだけ通す
+- 月の切り替えは `renew_sns_x_send_period(start, end)`（オーナーが SQL Editor で実行。今の期間が終わってからだけ。予約額を0に戻す）
+
+## 実 adapter（sns-pdca-loop tasks 17、2026-10-13）
+
+- `api/_lib/xApiAdapter.js` が X API v2 を直接呼ぶ（分割アップロード initialize・append・finalize・STATUS、`POST /2/tweets`）。分割の大きさは 4 MiB（X の上限 5 MB の内側）
+- **access token は runner が claim の前に `getXAccessToken`（`api/_lib/snsTokenStore.js`）で取り、`createXApiAdapter({accessToken})` に渡す**。adapter の中では取らない。テキストだけの投稿では最初の X の呼び出しが begin_post の後の createPost になり、そこでトークンの取得に失敗すると、何も投稿していない job が要照合に落ちるため
+- `posted_at` は投稿の ID（snowflake）の作成時刻。投稿の後に読み取りの API は呼ばない
+- 成功の応答を解釈できない・ID が無いときも再送せず、要照合に残す

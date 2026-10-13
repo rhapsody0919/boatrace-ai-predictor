@@ -16,11 +16,12 @@
 - [x] **3. pytest** `scripts/ml/analogy/tests/test_in_caution_bands.py`: 帯の境目（−350 は帯 −7、−351 は −8、300 は 6）、勝率 0.00 は勝率として数える（NULL だけ外す）、ラウンドの分け方、欠場のあるレースを数えない、F の1号艇は非1着、upsert の後に0件のセルが消える（db をモック）。固定の入力 `scripts/ml/analogy/tests/fixtures/in_caution_cases.json` は task 7 の JS の verify と共有する
 - [x] **4. workflow `.github/workflows/in-caution-nightly.yml`**: `analogy-v16-morning.yml` と同じ形。14日のモードは `export_pool.js --daily races entries exhibition conditions results start_timings`（テーブル名の指定が `--daily` と同時に使えるかを確かめ、使えなければ export_pool.js を直す）、full は全テーブル。inputs `full`・`force`。`concurrency: in-caution-nightly`。失敗は Slack
 - [x] **5. 起動**: `scripts/lib/analogyDispatch.js` の `DISPATCH_WORKFLOWS` に `in_caution_nightly`、`api/cron/in-caution-dispatch.js`、`vercel.json` の cron `30 17 * * *`、`scripts/lib/scrapeJobs/registry.js` に `in_caution_dispatch`（modeGated、`failureAlertAfter: 1`、mode は off で入れる）。`verify-analogy-dispatch.js` に1件足す
-- [ ] **6. オーナー: 155 を SQL Editor で適用**。事前: `to_regclass('public.in_caution_gap_band_daily')` が NULL。事後（Claude が読み取り）: `relrowsecurity = true`、anon の SELECT・EXECUTE が false、advisor の `rls_disabled_in_public` 0件。APPLIED.md を更新
-- [ ] **6b. オーナー: workflow_dispatch で `full=true`・`force=true` を1回実行**
+- [x] **6. オーナー: 155 を SQL Editor で適用**。事前: `to_regclass('public.in_caution_gap_band_daily')` が NULL。事後（Claude が読み取り）: `relrowsecurity = true`、anon の SELECT・EXECUTE が false、advisor の `rls_disabled_in_public` 0件。APPLIED.md を更新
+- [x] **6b. オーナー: workflow_dispatch で `full=true`・`force=true` を1回実行**
   - 完了の定義（件数）: 年ごとの `sum(n)`（勝率差が出せないレースを除くので少し少なくてよい）が、統計検証の完全レースの数と1%以内で合う: 2019 40,359／2020 54,263／2021 54,362／2022 54,672／2023 54,605／2024 54,616／2025 54,504／2026（10-10まで）43,613（design-reviewer が races.pkl から出した値。合計 410,994）。`min(race_date)` が 2019-04-01、`max(race_date)` が前日。(other, −5) の 2019-04-01〜2026-10-10 の合計が 34,842件・非1着 22,634（64.96%）。実測の SQL と結果を PR コメントに貼る
   - 完了の定義（タイミング）: 確かめてから mode を live にし、翌日 JST 3:30 までに `max(race_date)` が前日になっている
   - 完了の定義（継続監視）: task 12 の `verify-in-caution-coverage.js --table`
+  - 結果（2026-10-13、run 38348285812）: 年ごとの `sum(n)` は 2019〜2025 が上の値と完全一致、2026 の 10-10 までが 43,613（一致）。(other, −5) は 34,842件・22,634（一致）。表は 2019-04-01〜2026-10-12・49,801行・基準 45.19%。例のレースを本番の表と computeInCaution で出し直して pct 65・34,842件・帯 −5（plan の保存例と一致）。mode の live はオーナーの手順3
 
 ## PR-2 値の生成（plan §1）
 

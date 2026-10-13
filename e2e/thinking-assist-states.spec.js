@@ -2444,10 +2444,11 @@ test.describe("思考アシスト: 2〜6号艇を軸にしたときの2着（BOA
       "3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る",
     );
     const link = page.getByRole("link", { name: /着順の流れを見る（龍神ソナー）/ });
-    await expect(link).toContainText("1着の4号艇を押すと、その流れになる");
+    await expect(link).toContainText("1着に4号艇を選んだ状態で開く");
+    // 軸の艇を1着に選んだ状態で開く（BOA-847）
     await expect(link).toHaveAttribute(
       "href",
-      `/race/${RACE_ID}?tab=sonar&sonar=scenario`,
+      `/race/${RACE_ID}?tab=sonar&sonar=scenario&first=4`,
     );
     // 押せる高さ（帯のボタン 52px、導線 44px）
     const h = await axisGroup(page)
