@@ -19,6 +19,7 @@ import {
   validateObservation,
   withinSnapshotTolerance,
 } from "../../src/utils/snsObservations.js";
+import { X_API_BASE } from "../../api/_lib/xApiAdapter.js";
 
 export const SNS_METRICS_MAX_JOBS = 50;
 export const SNS_METRICS_ALERT_ATTEMPTS = 3;
@@ -30,7 +31,6 @@ const YOUTUBE_BATCH = 50;
 const TIMEOUT_MS = 30000;
 
 export const YOUTUBE_API_BASE = "https://www.googleapis.com/youtube/v3";
-export const X_API_BASE = "https://api.x.com";
 
 // 指標の定義（定義の文字列が違う系列は比較で混ぜない。値を変えるときは末尾の版を上げる）
 const YOUTUBE_METRICS = [
@@ -133,12 +133,13 @@ export async function runSnsMetrics(
       ...(lastError ? { reason: lastError } : {}),
     });
   };
-  const fail = async (job, error) => {
+  // quiet: 続いている状態（トークンを取れない）は report.alerts で知らせるので、job ごとの Slack は出さない
+  const fail = async (job, error, { quiet = false } = {}) => {
     const attempts = job.attempts + 1;
     const reason = shortError(error);
     await store.retry(job.id, attempts, reason);
     results.push({ id: job.id, window: job.window, outcome: "retry", reason });
-    if (attempts === SNS_METRICS_ALERT_ATTEMPTS)
+    if (!quiet && attempts === SNS_METRICS_ALERT_ATTEMPTS)
       await tell(
         `SNS の取り込みが${attempts}回続けて失敗: ${job.channel} ${job.window} job ${job.id}: ${reason}`,
       );
@@ -164,6 +165,17 @@ export async function runSnsMetrics(
         live[job.channel].push({ job, period });
         continue;
       }
+      // 値は保存できたが閉じる（finish）のに失敗した job は、欠測で上書きせずに閉じる（比較は最新の revision を使うため）
+      if (
+        await store.hasValues(
+          job.draft.id,
+          job.window,
+          SOURCE_BY_CHANNEL[job.channel],
+        )
+      ) {
+        await close(job, "done", []);
+        continue;
+      }
       const reason = `取得が遅れた（窓の終わりから15分を過ぎた）${job.last_error ? `。最後の失敗: ${job.last_error}` : ""}`;
       await close(job, "missing", missingRows(job, period, now, reason));
     } catch (error) {
@@ -179,7 +191,7 @@ export async function runSnsMetrics(
     try {
       reader = await readers[channel]();
     } catch (error) {
-      for (const { job } of targets) await fail(job, error);
+      for (const { job } of targets) await fail(job, error, { quiet: true });
       alerts.push({
         key: `token:${channel}`,
         text: `${channel} のトークンを取れないので取り込みを止めている: ${shortError(error)}`,
@@ -422,12 +434,13 @@ export function dailySendMicrousd(control) {
 
 /** PostgREST の読み書き（service_role）。失敗は握りつぶさず投げる */
 export function createSnsMetricsStore({ url, key, fetchImpl = fetch }) {
-  async function call(path, { method = "GET", body } = {}) {
+  async function call(path, { method = "GET", body, count = false } = {}) {
     const response = await fetchImpl(`${url}/rest/v1/${path}`, {
       method,
       headers: {
         apikey: key,
         Authorization: `Bearer ${key}`,
+        ...(count ? { Prefer: "count=exact" } : {}),
         ...(body
           ? {
               "Content-Type": "application/json",
@@ -441,6 +454,15 @@ export function createSnsMetricsStore({ url, key, fetchImpl = fetch }) {
       throw new Error(
         `取り込みの DB 操作に失敗: HTTP ${response.status} ${method} ${path.split("?")[0]}`,
       );
+    if (count) {
+      // 行は1件だけ読み、件数は Content-Range（0-0/N）から取る（PostgREST の max-rows で数え漏れないため）
+      const total = Number(
+        response.headers.get("content-range")?.split("/")[1],
+      );
+      if (!Number.isInteger(total))
+        throw new Error(`件数を読めない: ${path.split("?")[0]}`);
+      return total;
+    }
     const text = await response.text();
     return text ? JSON.parse(text) : null;
   }
@@ -495,12 +517,26 @@ export function createSnsMetricsStore({ url, key, fetchImpl = fetch }) {
         },
       });
     },
-    async recentOutcomes(now, days) {
-      const since = new Date(now.getTime() - days * 86400000).toISOString();
+    async hasValues(draftId, window, source) {
       const rows = await call(
-        `sns_metric_jobs?state=in.(done,missing,failed)&done_at=gte.${encodeURIComponent(since)}&select=state&limit=10000`,
+        `sns_metric_observations?draft_id=eq.${draftId}&window=eq.${window}&source=eq.${source}&metric_value=not.is.null&select=id&limit=1`,
       );
-      return countOutcomes(rows);
+      return rows.length > 0;
+    },
+    async recentOutcomes(now, days) {
+      const since = encodeURIComponent(
+        new Date(now.getTime() - days * 86400000).toISOString(),
+      );
+      const entries = await Promise.all(
+        ["done", "missing", "failed"].map(async (state) => [
+          state,
+          await call(
+            `sns_metric_jobs?state=eq.${state}&done_at=gte.${since}&select=id&limit=1`,
+            { count: true },
+          ),
+        ]),
+      );
+      return Object.fromEntries(entries);
     },
   };
 }
@@ -515,11 +551,4 @@ export function joinDueJobs(jobs, drafts, sends) {
     draft: draftById.get(job.draft_id) ?? null,
     external_post_id: sendByDraft.get(job.draft_id)?.external_post_id ?? null,
   }));
-}
-
-export function countOutcomes(rows) {
-  const count = { done: 0, missing: 0, failed: 0 };
-  for (const row of rows)
-    if (Object.hasOwn(count, row.state)) count[row.state] += 1;
-  return count;
 }
