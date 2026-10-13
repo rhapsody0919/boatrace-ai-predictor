@@ -1514,6 +1514,33 @@ await check("v1: push-bundle はフォルダを読み、draft-x.mp4 が無けれ
     await rm(dir, { recursive: true, force: true });
   }
 });
+await check("v1: X の投稿ごとの risk に、共通のタイトルと場面の文字の警告も入る（点検 08-15 D1）", async () => {
+  const rules = [{ id: "t", category: "c", description: "d", platforms: "all", patterns: ["必勝"] }];
+  const title = await validateBundle(form(await fixtureV1({ title: "必勝の展望" })), rules, V1_OPTIONS);
+  assert(title.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
+  const scene = await validateBundle(
+    form(await fixtureV1({ scenes: Array.from({ length: 3 }, () => ({ seconds: 6, tab: "差がつく材料", component: "観測件数", lines: ["必勝"] })) })),
+    rules,
+    V1_OPTIONS,
+  );
+  assert(scene.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
+});
+await check("push-bundle: v0 の素材には v0 の容量の上限（2 MiB）をかける（点検 08-15 D2）", async () => {
+  const { mkdtemp, writeFile, rm } = fs;
+  const { tmpdir } = await import("node:os");
+  const dir = await mkdtemp(`${tmpdir()}/sns-v0-`);
+  try {
+    const files = await fixture();
+    const big = new Uint8Array(3 * 1024 * 1024);
+    big.set(MP4);
+    files.set("draft.mp4", big);
+    await refreshHash(files, "draft.mp4");
+    for (const [name, bytes] of files) await writeFile(`${dir}/${name}`, bytes);
+    await assert.rejects(prepareBundle(dir), /容量超過/);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
 );
