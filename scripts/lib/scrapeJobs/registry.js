@@ -429,6 +429,15 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
+  // BOA-822 イン崩れ注意度の監視（api/cron/in-caution-health.js、scripts/lib/inCautionHealth.js）。JST 04:30 に夜の表、
+  // 05:45 に今日の unified を見る。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する
+  in_caution_health: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
 
   // ↓ N23・N29（tasks.md T4b-20・T4b-21）
   // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
@@ -488,7 +497,35 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 120,
     maxDurationSec: 120,
   },
+  // sns-pdca-loop tasks 19 SNS の送信（X・YouTube）。2分ごと（JST 8:00〜21:00）に、送る時刻を過ぎた job を最大3件送る。
+  // YouTube は1回の実行の中でアップロード→処理の確認→公開まで進める（ADR 0094・plan §3）ので、maxDuration は 300秒。
+  // 外部サイトの取得はしない（ADR-0066 改訂1 の先例）。稼働時間の外は、死活の監視が鳴らない（activeHoursJst）。
+  // 実装: scripts/lib/snsSendRunner.js、api/cron/sns-send.js
+  sns_send: {
+    kind: "continuous",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    activeHoursJst: { start: "08:00", end: "21:00" },
+  },
 });
+
+/** JST の HH:MM を、0時からの分にする */
+const hhmmToMinutes = (text) => {
+  const [h, m] = String(text).split(":").map(Number);
+  return h * 60 + m;
+};
+
+/**
+ * ジョブの稼働時間（JST、分）。activeHoursJst の無いジョブは null（監視の運用窓に従う）。
+ * @param {{activeHoursJst?: {start: string, end: string}}|undefined} def
+ */
+export function activeMinutesOf(def) {
+  if (!def?.activeHoursJst) return null;
+  return {
+    start: hhmmToMinutes(def.activeHoursJst.start),
+    end: hhmmToMinutes(def.activeHoursJst.end),
+  };
+}
 
 /**
  * 日次ジョブが、その日（JST の YYYY-MM-DD）に起動する予定か。runDaysOfMonth の無いジョブは毎日。
@@ -605,6 +642,19 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
     }
     if (!Number.isInteger(def.leaseSec) || def.leaseSec < 1) {
       problems.push(`${name}: leaseSec が不正です: ${def.leaseSec}`);
+    }
+    if (def.activeHoursJst !== undefined) {
+      const ok = (t) => /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(t ?? "");
+      if (
+        !ok(def.activeHoursJst.start) ||
+        !ok(def.activeHoursJst.end) ||
+        hhmmToMinutes(def.activeHoursJst.start) >=
+          hhmmToMinutes(def.activeHoursJst.end)
+      ) {
+        problems.push(
+          `${name}: activeHoursJst は同じ日の HH:MM で start < end にしてください: ${JSON.stringify(def.activeHoursJst)}`,
+        );
+      }
     }
     if (def.kind === "window") {
       const graceSec = def.graceMin * 60;
