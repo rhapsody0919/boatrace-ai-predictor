@@ -359,9 +359,10 @@ function textCard(id, ctx) {
         C.formNames[f.form],
         f.attacker,
         f.n,
-        f.topTrifecta
-          .map(([x, k]) => C.trifectaCount(x.join("-"), k))
-          .join("・"),
+        [
+          ...f.topTrifecta.map(([x, k]) => C.trifectaCount(x.join("-"), k)),
+          ...(f.trifectaTies ? [C.comboTiesMore(f.trifectaTies)] : []),
+        ].join("・"),
       );
   }
   return {
