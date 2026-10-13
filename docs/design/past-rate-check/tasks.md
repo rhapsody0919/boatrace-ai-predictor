@@ -6,7 +6,8 @@
 - 済み: v16 の朝のバッチが本番で layer ファイルと `analogy_v16_snapshots` を作り、`GET /api/analogy/layer/[raceId]` が master にある
 - 済み: `BoatBadge`（#1118）、AI予想タブの `PredictionBlocks` の外の位置（#1122・#1333）、`describeAnalogyLayer`、`slitForms`・`SlitShapeIcon`
 - 済み: T0-2（スリットの全国の出現率）
-- 未: 設計の承認（本 PR のマージ）。T0-1（定番／レアの線）は画面のラベルの前提で、T3〜T4 と並行してよい（`label.js` は線が決まるまで null を返す）
+- T0-1（定番／レアの線）は本 PR のマージ前に済ませる（2026-10-13 オーケストレーター判断。オーナーの決まり「UI/UX に要る統計検証は見せ方・設計を決める前に」）。合格しなかった材料は FR-3 どおり出さない形で設計を確定する。統計のやり直しは3回まで
+- 未: 設計の承認（本 PR のマージ）
 
 本機能は新しいデータ取得を含まない（v16 の layer API を読むだけ）ので、`data-acquisition.md` の「完了の定義」3行は BOA-271 v16 の tasks 側で満たす。本機能は T0-3 で、layer ファイルに値の約束が守られていることだけを実測する。
 
