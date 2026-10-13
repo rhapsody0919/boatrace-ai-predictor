@@ -27,7 +27,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 - [x] **3. PGlite の検証を足す**
   既存の `scripts/maintenance/verify-sns-*.js` に足す（新しい verify を作るなら `verify-registry.json` に登録）。最低限の再現テスト: v0 は今までどおり公開できない／v1 は検査合格だけ公開できる／スレッド6件を1つの素材で作れる／6件のスレッドが日次上限で途中で切れない／YouTube の claim は X の月の台帳を消費しない／URL つきの親と子で予約額が違う／同じレースの item は2つ作れない／自動送信の承認者は mode=auto・notified でだけ通る／止めた後の claim・check・begin_post が held になり youtube_publish_begin は拒否される／通知前（notifying）は approve できない／dry_run=true は claim しない／veto_until 前の X・YouTube の claim は進まない（YouTube も60分前にアップロードを始める 2026-10-13 決定に合わせた）／子は親が posted でないと claim しない／`renew_sns_x_send_period` は期間の途中で拒否／`reserve_sns_x_read` は残りの送信分を割るとき false／posted で metric_jobs が2件できる／147 のトリガー `sns_diff_approval` と矛盾しない
 - [x] **4. 各 contract.md に ADR 0094 への参照を足す**（x-send・deadline-queue・mobile-approval・shorts-send・metrics）。deadline-queue と shorts-send には「基準日は自動で当日にする」「YouTube は60分前にアップロードし同じ実行で公開」、metrics には「累積値は15分の許容差」も足す
-- [ ] **5. オーナー: 153 → 154 を SQL Editor で適用**。事前・事後の読み取りの確認は Claude（plan の system-architect の手順）。APPLIED.md を更新
+- [x] **5. オーナー: 153 → 154 を SQL Editor で適用**（2026-10-13 適用、事後の確認 OK）。事前・事後の読み取りの確認は Claude（plan の system-architect の手順）。APPLIED.md を更新
 
 ## PR-2 素材 v1 の取り込み
 
