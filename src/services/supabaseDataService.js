@@ -1061,6 +1061,9 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
       // （066マイグレーション）が UI 用の形で既に組み立てて返すため、そのまま渡すだけでよい
       // （Edge API が失敗したときも同じ RPC を直接呼ぶ。BOA-355）
       weather: race.weather ?? null,
+      // BOA-822 イン崩れ注意度（RPC 157。unified の feature_contributions.inCaution をそのまま）。
+      // 画面は raceData.unified からは読まず、この値だけを読む。157 の適用前・値が無いレースは null
+      inCaution: race.inCaution ?? null,
       volatility: race.volatility
         ? {
             ...race.volatility,
