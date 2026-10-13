@@ -7,9 +7,10 @@
  *   shadow              送る前の検査までで止める（DB の状態も変えない）
  *   live                送る。ただしチャネルの sns_auto_send_control.dry_run が true の間は、送る前の検査までで止める
  *
- * 送る前の検査（createDeadlinePreflight）のリンク先の表示の確認（tasks 10）は、未ログインの Chromium（api/_lib/snsHeadless.js）で
- * screen_key の印（scripts/lib/snsScreenMarkers.js）が見えるかを確かめる。Chromium は1回の実行で1回だけ起動し、終わったら閉じる。
- * その前に元データの読み直し（tasks 9、snsClaimCheck.js の readCurrent: 素材 v1 の claims を公開 API で照合・中止・欠場・締切）を行う
+ * 送る前の検査（createDeadlinePreflight）は、元データの読み直し（tasks 9、snsClaimCheck.js の readCurrent: 素材 v1 の claims を
+ * 公開 API で照合・中止・欠場・締切）の後に、リンク先の表示の確認（tasks 10）を、未ログインの Chromium（api/_lib/snsHeadless.js）で
+ * screen_key の印（scripts/lib/snsScreenMarkers.js）が見えるかで確かめる。Chromium は1回の実行で1回だけ起動し、終わったら閉じる。
+ * どれかに落ちたら claim しないので、外部へは何も送られない（fail-closed）
  *
  * cron式（vercel.json）は UTC。分は2分ごと、時は 23・0〜11（UTC）= JST 8:00〜20:58 の2分ごと
  */
@@ -21,9 +22,9 @@ import {
   runSnsSend,
 } from "../../scripts/lib/snsSendRunner.js";
 import { createDeadlinePreflight } from "../_lib/snsDeadlineQueue.js";
-import { createReadCurrent } from "../_lib/snsClaimCheck.js";
 import { createChromiumHeadless } from "../_lib/snsHeadless.js";
 import { SCREEN_MARKERS } from "../../scripts/lib/snsScreenMarkers.js";
+import { createReadCurrent } from "../_lib/snsClaimCheck.js";
 import { loadXMedia, xSendStore } from "../_lib/snsXSendStore.js";
 import {
   createPostgrestTokenDb,
