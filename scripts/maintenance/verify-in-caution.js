@@ -7,6 +7,7 @@
  *   (c) レースの値（computeInCaution）: 出さない理由の全分岐、境目、同点、欠場1艇、件数少なめ、例のレース
  *   (d) JS と Python の勝率差・帯が同じ: Python の pytest と同じ固定の入力
  *       （scripts/ml/analogy/tests/fixtures/in_caution_cases.json）を computeInCaution に通す
+ *   (e) 監視（scripts/lib/inCautionHealth.js、api/cron/in-caution-health.js）: 表・今日の unified の判定、時刻での切り替え、配線
  *
  * 使い方: node scripts/maintenance/verify-in-caution.js
  */
@@ -15,6 +16,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { IN_CAUTION_CONFIG } from "../../src/constants/inCautionConfig.js";
 import { computeInCaution, toInCautionRates } from "../lib/inCaution.js";
+import {
+  evaluateInCautionTable,
+  evaluateInCautionToday,
+  runInCautionHealth,
+} from "../lib/inCautionHealth.js";
+import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -263,6 +270,123 @@ const five = [5.0, 5.0, 5.0, 5.0, 5.0];
     diff.length === 0,
     `(d) Python と同じ固定の入力 ${cases.length}件で勝率差・帯が同じ`,
     diff.join("\n   "),
+  );
+}
+
+// ---------------------------------------------------------------- (e)
+{
+  check(
+    evaluateInCautionTable(tableRows(), PREV).ok === true,
+    "(e) 監視: 全期間・前日までの表は問題なし",
+  );
+  const t1 = evaluateInCautionTable(tableRows({ last: "2026-10-09" }), PREV);
+  const t2 = evaluateInCautionTable([], PREV);
+  check(
+    !t1.ok && /2026-10-09/.test(t1.issues[0]) && !t2.ok,
+    "(e) 監視: 夜のジョブが1日遅れた（最後の日が前日でない）・表が空は問題（Actions が動かなかった日も拾う）",
+    JSON.stringify([t1.issues, t2.issues]),
+  );
+  const ic = { through: PREV, level: "mid" };
+  const rows = (withValue, skips = {}) => [
+    ...Array.from({ length: withValue }, (_, i) => ({
+      race_id: `r${i}`,
+      ic,
+      skip: null,
+    })),
+    ...Object.entries(skips).flatMap(([skip, k]) =>
+      Array.from({ length: k }, (_, i) => ({
+        race_id: `${skip}${i}`,
+        ic: null,
+        skip,
+      })),
+    ),
+  ];
+  const ok = evaluateInCautionToday(
+    rows(150, {
+      boat1_absent: 2,
+      multi_absent: 1,
+      sparse_cell: 1,
+      others_no_rate: 1,
+    }),
+    PREV,
+  );
+  check(
+    ok.ok && ok.summary.expectedSkips === 4 && ok.summary.withValue === 150,
+    "(e) 監視: 出さないのが正しい理由（1号艇の欠場・2艇以上の欠場・件数の少ないセル）は割合の分母から除く（150/151 で合格）",
+    JSON.stringify(ok),
+  );
+  const bad = evaluateInCautionToday(
+    rows(150, { rates_unavailable: 30 }),
+    PREV,
+  );
+  const zero = evaluateInCautionToday([], PREV);
+  const stale = evaluateInCautionToday(
+    [{ race_id: "a", ic: { through: "2026-10-08" }, skip: null }],
+    PREV,
+  );
+  check(
+    !bad.ok && /rates_unavailable/.test(bad.issues[0]) && !zero.ok && !stale.ok,
+    "(e) 監視: 表が読めなかった行が多い・行が0件・through が前日でないは問題",
+    JSON.stringify([bad.issues, zero.issues, stale.issues]),
+  );
+  // 時刻での切り替えと失敗の返し方（偽の client）
+  const calls = [];
+  const fakeClient = {
+    rpc: async (name, args) => {
+      calls.push(["rpc", name, args]);
+      return { data: tableRows({ last: "2026-10-12" }), error: null };
+    },
+    from: (table) => {
+      calls.push(["from", table]);
+      const q = {
+        select: () => q,
+        eq: () => q,
+        gte: () => q,
+        lt: () => q,
+        order: () => q,
+        range: async () => ({ data: [], error: null }),
+      };
+      return q;
+    },
+  };
+  const at = (hhmm) => () => new Date(`2026-10-13T${hhmm}:00+09:00`);
+  const r1 = await runInCautionHealth({ client: fakeClient, now: at("04:30") });
+  const r2 = await runInCautionHealth({ client: fakeClient, now: at("05:45") });
+  check(
+    r1.report?.target === "table" &&
+      r1.outcome === undefined &&
+      JSON.stringify(calls[0]) ===
+        JSON.stringify([
+          "rpc",
+          "get_in_caution_band_rates",
+          { p_from: null, p_through: "2026-10-12" },
+        ]) &&
+      r2.report?.target === "today" &&
+      r2.outcome === "error" &&
+      /0件/.test(r2.error) &&
+      calls[1]?.[1] === "predictions",
+    "(e) 監視: JST 04:30 は表（前日まで）、05:45 は今日の unified。問題は実行の失敗にする",
+    JSON.stringify({ r1, r2, calls }),
+  );
+  const def = SCRAPE_JOBS.in_caution_health;
+  const src = fs.readFileSync(
+    path.join(ROOT, "api/cron/in-caution-health.js"),
+    "utf8",
+  );
+  const vercel = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+  );
+  const crons = vercel.crons
+    .filter((c) => c.path === "/api/cron/in-caution-health")
+    .map((c) => c.schedule);
+  check(
+    def?.kind === "monitor" &&
+      def.failureAlertAfter === 1 &&
+      Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def.maxDurationSec &&
+      /modeGated:\s*true/.test(src) &&
+      JSON.stringify(crons) === JSON.stringify(["30 19 * * *", "45 20 * * *"]),
+    "(e) 配線: in_caution_health は monitor・failureAlertAfter 1・モードのゲート、cron は JST 04:30・05:45",
+    JSON.stringify({ def, crons }),
   );
 }
 
