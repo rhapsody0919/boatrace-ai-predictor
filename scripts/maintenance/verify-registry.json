@@ -1096,6 +1096,11 @@
       "script": "verify-sns-post-tracking.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 23: X の親の投稿の UTM（campaign=race-full は型の版なしで作れ utm_content は下書きの ID、sonar-preview は型の版が必須のまま、許可の無い campaign・クエリつきの URL は作らない、本文のレースの URL をちょうど1か所だけ差し替え句点・改行の直前も終わりとみなし番号が続く別のレースは差し替えない、差し替え済みならそのまま、子・YouTube は対象外、sns_post_tracking に型の版なしで保存できやり直しは同じ URL なら成功・違えば投げる）。SQL154 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-claim-check.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 9: 素材 v1 の数値の照合（許可リストはアナロジーの4本・同じレース・stage だけ、同じ endpoint は1回だけ読む、数値は桁まで完全一致・文字列は正規化・型違いは不一致、不一致・path なし・読めない・許可外・claims が空は不合格、版は照合した値から決まり順に依存しない）と送る直前の readCurrent（締切・中止・欠場・版、v1 でない下書きと照合の不合格は投げる）、preflight で版・締切の変化・欠場を止め、照合が通ってもヘッドレス未接続で止まる。外部接続なし"
     }
   ]
 }
