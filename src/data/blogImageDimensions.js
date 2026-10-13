@@ -82,6 +82,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/odds-expected-value-matrix-en.jpg": { width: 1000, height: 620 },
   "/images/blog/odds-expected-value-matrix-ja.jpg": { width: 1000, height: 620 },
   "/images/blog/odds-expected-value-matrix-ko.jpg": { width: 1000, height: 620 },
+  "/images/blog/omura-wind-direction-guide.jpg": { width: 576, height: 394 },
   "/images/blog/picks-compare-table-en.jpg": { width: 1000, height: 458 },
   "/images/blog/picks-compare-table-ja.jpg": { width: 1000, height: 509 },
   "/images/blog/picks-compare-table-ko.jpg": { width: 1000, height: 464 },
