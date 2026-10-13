@@ -407,3 +407,61 @@ test("PostgREST: ロックは期限切れか空のときだけ取り、保存は
     locked_by: null,
   });
 });
+
+test("access token: refresh 中にオーナーが連携をやり直したら、誤って『やり直しが要る』を出さず新しいトークンを使う", async () => {
+  const db = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
+  const reconnected = await storedRow("2026-10-13T05:00:00Z", {
+    access_token: "reconnected-access",
+    refresh_token: "reconnected-refresh",
+  });
+  const notices = [];
+  const result = await getXAccessToken(
+    base(db, {
+      notify: async (m) => notices.push(m),
+      fetchImpl: async () => {
+        await db.upsert(reconnected); // コールバックの upsert がロックを外して新しい値を入れる
+        return json({
+          access_token: "access-2",
+          refresh_token: "refresh-2",
+          expires_in: 7200,
+        });
+      },
+    }),
+  );
+  assert.equal(result.accessToken, "reconnected-access");
+  assert.deepEqual(notices, []);
+});
+
+test("access token: 保存の DB エラーは理由つきで通知し、通知の失敗で元のエラーを隠さない、鍵の版違いは拒否する", async () => {
+  const db = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
+  db.saveLocked = async () => {
+    throw new Error("HTTP 500");
+  };
+  const notices = [];
+  await assert.rejects(
+    getXAccessToken(
+      base(db, {
+        fetchImpl: refreshMock().fetchImpl,
+        notify: async (m) => notices.push(m),
+      }),
+    ),
+    /DB の保存に失敗: HTTP 500/,
+  );
+  assert.match(notices[0], /HTTP 500/);
+
+  const failing = memoryDb(await storedRow("2026-10-13T02:00:00Z"));
+  await assert.rejects(
+    getXAccessToken(
+      base(failing, {
+        fetchImpl: refreshMock({ status: 400 }).fetchImpl,
+        notify: async () => {
+          throw new Error("Slack down");
+        },
+      }),
+    ),
+    /トークンを取得できません/,
+  );
+
+  const old = { ...(await storedRow("2026-10-13T05:00:00Z")), key_version: 2 };
+  await assert.rejects(getXAccessToken(base(memoryDb(old))), /未対応の鍵の版/);
+});

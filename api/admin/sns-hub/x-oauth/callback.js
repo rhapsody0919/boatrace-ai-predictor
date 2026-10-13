@@ -22,6 +22,14 @@ const back = (query) =>
     },
   });
 
+// state の照合は長さと全文字を必ず見る（adminAuth.js と同じく、比較の時間で中身を推測させない）
+function sameText(a, b) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 function readCookie(req) {
   const raw = (req.headers.get("cookie") || "")
     .split(";")
@@ -53,7 +61,7 @@ export async function handleCallback(
   const saved = readCookie(req);
   const state = url.searchParams.get("state");
   const code = url.searchParams.get("code");
-  if (!saved || !state || !code || state !== saved.state)
+  if (!saved || !state || !code || !sameText(state, saved.state))
     return back("x=error&reason=state");
   if (
     !env.X_OAUTH_CLIENT_ID ||

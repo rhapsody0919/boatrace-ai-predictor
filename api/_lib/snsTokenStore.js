@@ -243,6 +243,15 @@ export function createPostgrestTokenDb({
   };
 }
 
+// 通知に失敗しても元の失敗を優先して投げる。通知できなかったこと自体はログに残す
+async function notifyLogged(notify, message) {
+  try {
+    await notify(message);
+  } catch (error) {
+    console.error(`Slack に通知できません（${message}）: ${error.message}`);
+  }
+}
+
 /**
  * 有効な access token を返す。期限の5分前を過ぎていたら、行ロックを取って refresh する。
  * ロックを取れないときは待って読み直す（別の呼び出しが refresh 中）。
@@ -309,16 +318,22 @@ export async function getXAccessToken({
         fetchImpl,
       });
     } catch (error) {
-      await db.release(lockId).catch(() => {});
-      await notify(
-        `X のトークンを更新できません。送信を保留します: ${error.message}`,
-      ).catch(() => {});
+      await db
+        .release(lockId)
+        .catch((e) =>
+          console.error(`X のトークンのロックを外せません: ${e.message}`),
+        );
+      await notifyLogged(
+        notify,
+        `X のトークンを更新できません: ${error.message}`,
+      );
       throw error;
     }
     const sealed = await encryptTokens(
       { access_token: fresh.access_token, refresh_token: fresh.refresh_token },
       keyBase64,
     );
+    let saveError = null;
     const saved = await db
       .saveLocked(lockId, {
         ...sealed,
@@ -327,12 +342,28 @@ export async function getXAccessToken({
         ).toISOString(),
         refreshed_at: now().toISOString(),
       })
-      .catch(() => false);
+      .catch((e) => {
+        saveError = e;
+        return false;
+      });
     if (!saved) {
-      await notify(
-        "X のトークンを更新したが保存できなかった。X の連携のやり直しが要る（管理画面の「X と連携する」）",
-      ).catch(() => {});
-      throw new Error("X のトークンを保存できません（連携のやり直しが要る）");
+      // ロック中にオーナーが連携をやり直していた（upsert でロックが外れ、別のトークンが入った）なら、それを使う
+      const latest = saveError ? null : await db.read();
+      if (latest && latest.ciphertext !== locked.ciphertext)
+        return {
+          accessToken: (await decryptTokens(latest, keyBase64)).access_token,
+          accountId: latest.account_id,
+        };
+      const reason = saveError
+        ? `DB の保存に失敗: ${saveError.message}`
+        : "ロックが切れて別の呼び出しに取られた";
+      await notifyLogged(
+        notify,
+        `X のトークンを更新したが保存できなかった（${reason}）。X の連携のやり直しが要る（管理画面の「X と連携する」）`,
+      );
+      throw new Error(
+        `X のトークンを保存できません（${reason}。連携のやり直しが要る）`,
+      );
     }
     return {
       accessToken: fresh.access_token,
