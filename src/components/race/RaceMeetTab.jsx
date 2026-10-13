@@ -75,8 +75,6 @@ const EXCLUDED_LABEL_KEY = {
 const CJK_SENTENCE_LANGS = new Set(["ja", "zh-TW"]);
 // 順位の対象外の内訳で名前を出す上限（超えた分は「ほか◯人」、BOA-697）
 const EXCLUDED_LIST_MAX = 6;
-// 準優・優勝戦に乗れない（必要得点を出さない）理由
-const AWARD_EXCLUDED_REASONS = new Set(["awardExcluded", "flying"]);
 
 // 準優の目安（上から slots 位）の中か。順位の対象外は rank が null で、
 // `null <= 18` は true になるため、比べる前に外す（BOA-587 ファン評価1周目）
@@ -682,6 +680,14 @@ function RaceMeetTab({
                           </span>
                         )}
                         {row.rate.toFixed(2)}
+                        {/* 公式の前夜の減点を引いた選手（BOA-782）。着順の点と合わない理由を行で示す */}
+                        {row.penaltyFromOfficial > 0 && (
+                          <span className="rmt-penalty">
+                            {t("meetTab.penaltyMark", {
+                              points: row.penaltyFromOfficial,
+                            })}
+                          </span>
+                        )}
                       </td>
                       <td className={`rmt-rank${bestCls(bestRank, p.number)}`}>
                         {/* 途中で節を離脱した選手・賞典除外の選手は順位の対象外
@@ -1085,14 +1091,14 @@ function RaceMeetTab({
                           </td>
                           {hasNeeded && (
                             <td className="rmt-needed">
-                              {/* 賞典除外の選手は準優に乗れないので、必要得点を
-                                出さない（BOA-587） */}
-                              {AWARD_EXCLUDED_REASONS.has(
-                                row.excludedReason,
-                              ) ? (
+                              {/* 順位の対象外（賞典除外・今節F・途中帰郷）の選手は準優に
+                                乗れないので、必要得点を出さない（BOA-587）。公式の備考で
+                                途中帰郷の選手は今日の番組に残っていることがあり、「必要得点0」と
+                                出て目安に届いたように読まれた（BOA-782 ファン評価1周目） */}
+                              {row.withdrawn ? (
                                 <span className="rmt-excluded">
                                   {t(
-                                    `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason]}`,
+                                    `meetTab.${EXCLUDED_LABEL_KEY[row.excludedReason] ?? "withdrawn"}`,
                                   )}
                                 </span>
                               ) : needed === null ? (

@@ -56,9 +56,19 @@ test("前夜の公式の表があれば、減点を引き、途中帰郷を順�
   );
   const nasu = page.locator(".rmt-compare tbody tr", { hasText: "奈須" });
   await expect(nasu.locator(".rmt-rank")).toContainText("対象外");
-  // 当社計算の 2.00（4点 / 2走）から減点2を引いて 1.00
+  // 当社計算の 2.00（4点 / 2走）から減点2を引いて 1.00。行に減点の印を出す（ファン評価1周目 指摘3）
   const nakamura = page.locator(".rmt-compare tbody tr", { hasText: "中村" });
   await expect(nakamura).toContainText("1.00");
+  await expect(nakamura.locator(".rmt-penalty")).toHaveText("減点2");
+  // 途中帰郷の選手は早見の必要得点を出さない。「0」と出て目安に届いたように読まれた（指摘1）
+  const nasuForecast = page.locator(".rmt-forecast-table tbody tr", {
+    hasText: "奈須",
+  });
+  await expect(nasuForecast.locator(".rmt-needed")).toHaveText("対象外");
+  // 注記は「今日の番組に残っていても外す」と書き、既存の途中帰郷の定義と食い違わない（指摘2）
+  await expect(page.locator(".rmt-rank-note")).toContainText(
+    "今日の番組に残っていても順位から外しています",
+  );
 });
 
 test("表の時点が表示中のレースの日と同じ（後出しになる）なら使わない", async ({
@@ -72,4 +82,5 @@ test("表の時点が表示中のレースの日と同じ（後出しになる�
   await expect(nasu.locator(".rmt-rank")).not.toContainText("対象外");
   const nakamura = page.locator(".rmt-compare tbody tr", { hasText: "中村" });
   await expect(nakamura).toContainText("2.00");
+  await expect(nakamura.locator(".rmt-penalty")).toHaveCount(0);
 });
