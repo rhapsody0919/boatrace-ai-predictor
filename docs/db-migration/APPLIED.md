@@ -202,4 +202,5 @@
 | 155 | 155_in_caution_gap_band_daily.sql | 未適用（案。夜のジョブのマージより前に適用） | イン崩れ注意度の日×ラウンド×勝率差の帯の件数の表（RLS 有効・service_role のみ）と、期間を合計する RPC get_in_caution_band_rates（service_role のみ）。設計 docs/design/in-collapse-caution/plan.md。番号は 149〜151 の予約を verify-migration-numbers（master の最大 154 より大きいこと）に合わせて 155〜157 に変更（2026-10-13） |
 | 156 | 156_morning_digest_rows_in_caution.sql | 未適用（案。digest の書き手の前後どちらでもよい） | morning_digest_rows に in_caution_pct・in_caution_n・in_caution_level。設計 docs/design/in-collapse-caution/plan.md。番号は 149〜151 の予約を verify-migration-numbers（master の最大 154 より大きいこと）に合わせて 155〜157 に変更（2026-10-13） |
 | 157 | 157_rpc_in_caution.sql | 未適用（案。適用前に本番の md5(prosrc) が 109・110 と一致するかを読み取りで確かめる） | get_predictions_by_date(_light)・get_today_races に inCaution を1キー足す（土台 109・110）。設計 docs/design/in-collapse-caution/plan.md。番号は hq が予約（2026-10-12） |
+| 158 | 158_racer_series_points_next_races.sql | 未適用（案。取得のコードは列が無くても他の列を書くので、適用の前後どちらでもよい） | racer_series_points に早見の列 next_race_1・next_race_2（翌日の1走目・2走目のレース番号）と next_series_day（見出しの日目）を足す（BOA-784）。権限は変えない |
 | （番号なし） | add-defense-distribution.sql | 適用済み | 列 racer_aggregated_stats.defense_distribution・course_race_counts が存在 |
