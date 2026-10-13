@@ -19,16 +19,17 @@ export function postedAtFromId(id) {
 }
 
 /**
- * getAccessToken: () => Promise<{accessToken}>（snsTokenStore の getXAccessToken を渡す）。1つの adapter の中では1回だけ呼ぶ
+ * accessToken は呼び出し側（runner）が claim の前に getXAccessToken で取って渡す。
+ * adapter の中で取ると、テキストだけの投稿では最初の呼び出しが begin_post の後の createPost になり、
+ * トークンの取得の失敗で、何も投稿していない job が要照合に落ちるため
  */
-export function createXApiAdapter({ getAccessToken, fetchImpl = fetch }) {
-  let token = null;
+export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
+  if (!accessToken) throw new Error("X の access token がありません");
   async function call(path, { method = "GET", json, form } = {}) {
-    token ??= (await getAccessToken()).accessToken;
     const response = await fetchImpl(`${X_API_BASE}${path}`, {
       method,
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken}`,
         ...(json ? { "Content-Type": "application/json" } : {}),
       },
       body: json ? JSON.stringify(json) : form,

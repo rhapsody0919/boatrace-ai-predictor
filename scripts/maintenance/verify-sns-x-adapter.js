@@ -38,7 +38,8 @@ function fakeX({
       return json({
         data: { id: "m1", media_key: "7_m1", expires_after_secs: 86400 },
       });
-    if (/\/append$/.test(u.pathname)) return new Response(null, { status: 204 });
+    if (/\/append$/.test(u.pathname))
+      return new Response(null, { status: 204 });
     if (/\/finalize$/.test(u.pathname) || u.pathname === "/2/media/upload")
       return json({
         data: {
@@ -69,16 +70,9 @@ test("posted_at は投稿 ID の snowflake から求める", () => {
   assert.throws(() => postedAtFromId("abc"), /不正/);
 });
 
-test("媒体の分割アップロードと投稿: エンドポイント・本文の形・トークンは1回だけ取る", async () => {
+test("媒体の分割アップロードと投稿: エンドポイント・本文の形・渡したトークンで呼ぶ、トークンが無ければ作らない", async () => {
   const { calls, fetchImpl } = fakeX();
-  let tokenCalls = 0;
-  const x = createXApiAdapter({
-    fetchImpl,
-    getAccessToken: async () => {
-      tokenCalls++;
-      return { accessToken: "tok" };
-    },
-  });
+  const x = createXApiAdapter({ fetchImpl, accessToken: "tok" });
   const upload = await x.initialize({
     size: 6 * 1024 * 1024,
     type: "video/mp4",
@@ -97,7 +91,6 @@ test("媒体の分割アップロードと投稿: エンドポイント・本文
   });
   assert.equal(post.id, "1845678901234567890");
   assert.equal(post.posted_at, postedAtFromId("1845678901234567890"));
-  assert.equal(tokenCalls, 1);
 
   assert.deepEqual(
     calls.map((c) => `${c.method} ${c.path}`),
@@ -126,6 +119,10 @@ test("媒体の分割アップロードと投稿: エンドポイント・本文
     media: { media_ids: ["m1"] },
     reply: { in_reply_to_tweet_id: "1800000000000000000" },
   });
+  assert.throws(
+    () => createXApiAdapter({ fetchImpl }),
+    /access token がありません/,
+  );
   // 媒体も返信先も無い投稿は本文だけを送る
   await x.createPost({ text: "だけ" });
   assert.deepEqual(JSON.parse(calls[5].options.body), { text: "だけ" });
@@ -135,7 +132,7 @@ test("投稿の失敗は1回だけ呼んで投げ、X の詳細な本文はエ�
   const { calls, fetchImpl } = fakeX({ postStatus: 429 });
   const x = createXApiAdapter({
     fetchImpl,
-    getAccessToken: async () => ({ accessToken: "tok" }),
+    accessToken: "tok",
   });
   await assert.rejects(x.createPost({ text: "本文" }), (error) => {
     assert.match(error.message, /HTTP 429 Too Many Requests/);
@@ -200,7 +197,7 @@ test("runXSendJob に実 adapter をつなぐと、6MB の動画は2つに分け
     store,
     x: createXApiAdapter({
       fetchImpl,
-      getAccessToken: async () => ({ accessToken: "tok" }),
+      accessToken: "tok",
     }),
     loadMedia,
     wait: async () => {},
