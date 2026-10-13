@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
   mobileHolds,
+  sendHolds,
   prepareMobileReview,
   approveMobileReview,
 } from "../../api/_lib/snsMobileApproval.js";
@@ -186,6 +187,46 @@ test("動画未完成、QA失敗、出典/件数/範囲/公開証拠欠落、v0�
     change(v);
     assert.ok(mobileHolds(v).length > 0);
   }
+});
+test("素材 v1: 照合の結果と表示の確認がそろえば保留なし、照合の未完了・版の不一致・公開保留は保留（tasks 11）", () => {
+  const future = new Date(Date.now() + 3600000).toISOString();
+  const v1 = {
+    status: "pending_review",
+    platform: "x",
+    bundle_import_id: "b1",
+    bundle_version_hash: "h1",
+    publish_blocked: false,
+    publication_hold_reasons: [],
+    risk_flags: [],
+    video_storage_path: "bundle-imports/h1/draft-x.mp4",
+    source_data: {
+      schema_version: "ryujin-preview/1",
+      bundle: { claims: [{ id: "c1", text: "t", value: 30, source: { endpoint: "/api/analogy/facts/2026-10-16-11-12", path: ["count"] } }] },
+      qa: { pass: true, numeric_claims_match: true },
+      release_evidence: { status: "released", url: "https://www.boat-ai.jp/race/2026-10-16-11-12?tab=sonar" },
+      claim_check: { ok: true, revision: "r1" },
+      deadline_queue: { expires_at: future, deadline_at: future, source_revision: "r1" },
+    },
+  };
+  assert.deepEqual(sendHolds(v1), []);
+  assert.equal(mobileHolds, sendHolds);
+  const cases = [
+    [(v) => delete v.source_data.claim_check, "数値の照合が未完了・不一致"],
+    [(v) => (v.source_data.claim_check.ok = false), "数値の照合が未完了・不一致"],
+    [(v) => (v.source_data.deadline_queue.source_revision = "r0"), "数値の照合が未完了・不一致"],
+    [(v) => (v.publish_blocked = true), "公開保留素材"],
+    [(v) => delete v.source_data.release_evidence, "正式公開証拠なし"],
+    [(v) => (v.source_data.qa.numeric_claims_match = false), "QA未確認・失敗"],
+  ];
+  for (const [change, reason] of cases) {
+    const v = structuredClone(v1);
+    change(v);
+    assert.ok(sendHolds(v).includes(reason), reason);
+  }
+  // v0 は bundle 由来なら publish_blocked に関係なく保留のまま
+  const v0 = structuredClone(v1);
+  v0.source_data.schema_version = "ryujin-preview/0";
+  assert.ok(sendHolds(v0).includes("公開保留素材"));
 });
 test("テーブル/RPCは一般ロールに公開しない", async () => {
   await db.exec("SET ROLE authenticated");

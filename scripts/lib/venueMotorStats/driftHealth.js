@@ -7,6 +7,7 @@
  * もう存在しない）。一方 no_data_rows やhttp_5xx等は、モーター交換期間中の
  * 一時的なデータ非公開や、サイト側の一時的な障害でも起こりうるため対象外とする
  */
+import { EXCLUDED_VENUES } from "./venueConfig.js";
 export const STRUCTURAL_DRIFT_REASONS = [
   "motor_stats_table_not_found",
   "table_not_found",
@@ -60,13 +61,18 @@ export function updateVenueHealth(entry, outcome) {
 /**
  * 履歴全体から、構造変化の疑いがある会場（閾値日数以上、構造起因のreasonで
  * 失敗し続けている会場）を抽出する。
+ *
+ * 取得の対象から外した会場（EXCLUDED_VENUES）は除く。履歴（GitHub Actions の health ファイル、
+ * Vercel の last_report.health）は全会場のキーを持ち越すので、外したときに失敗が続いていた会場は
+ * 二度と更新されず、警告が出続ける（BOA-681 で浜名湖・宮島を外したときの点検の指摘）
  * @param {Record<string, {consecutiveFailDays: number, lastReason: string|null}>} health
  * @returns {Array<{venueCode: string, consecutiveFailDays: number, lastReason: string}>}
  */
 export function findDriftAlerts(health) {
   return Object.entries(health)
     .filter(
-      ([, entry]) =>
+      ([venueCode, entry]) =>
+        !(venueCode in EXCLUDED_VENUES) &&
         entry.consecutiveFailDays >= DRIFT_ALERT_THRESHOLD_DAYS &&
         isStructuralDriftReason(entry.lastReason),
     )

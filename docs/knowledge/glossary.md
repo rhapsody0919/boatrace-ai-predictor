@@ -12,16 +12,22 @@
 - モックは画面の文字だけでなく周りの説明・価値の欄も禁止語を grep で検査する: grep -nE "ふつう|普通|似た|似て|いつも|数え"（2026-10-09 の差し戻し、memory feedback_banned_words_scan_mock_and_notes）
 - 「集計前」の印は禁止語ではない（2026-10-12）。2026-10-11・BOA-830 時点では禁止語を含むとして言い換えを検討していたが、「集計」が禁止語から外れたため前提が変わった
 - 廃止済みのモデル名（本命狙いモデル・スタンダードモデル・穴狙いモデル・今日のおすすめ）は使わない（sns-video-studio/remotion/risk-rules.json の deprecated-model-names、scripts/maintenance/check-deprecated-terms.js）
+- 禁止語の一覧に足すのはオーナーが指摘した語だけ。出典にオーナーの原文と範囲（画面・チャネル）を書く。ファン役・wording-editor の言い換え案で避けた語は、オーナーが認めるまで入れない（2026-10-12、memory feedback_dont_generalize_wording_bans、BOA-835 を取り消した）
 
 ## 呼び方
 - 「展示前版」「展示後版」の「版」はファンに分かりにくい。「直前予想」「展示前の予想」と言う（2026-10-12、オーナー）
 - 2着の相手は「相手」と言う（2026-10-12、デザイナー役 v10）
 - リング交換は「本」を単位にする（2026-10-12、ファン役 v10）
+- サービス名は「龍神レーダー」（Ryujin Radar）、サブタイトルは「無料のボートレースAI予想＆データ分析」。ドメイン boat-ai.jp は維持し、表示の名前だけを変えた。「龍神杯」は蒲郡の公式大会名と重なる（2026-08-19 ユーザー決定、memory boatai_rebrand_investigation_2026_08_19）
+- 類似レースの機能名は「龍神ソナー」（旧名アナロジー・ファインダー。docs/design/analogy-finder/ 等のパスには旧名が残る）（2026-10-06、memory feedback_boa271_ui_details_user_decides、BOA-271）
+- ボートレースの「勝率」は着順点の平均で、1着の割合ではない。1着の割合は「1着率」と書く（2026-09-25、memory morning_data_digest_2026_09_25、BOA-402）
 
 ## 用語の対訳
 - 4言語の用語は docs/reference/i18n-glossary.md が正本。新しい用語は glossary に足してから訳す（.claude/rules/i18n-new-pages.md）
 - 韓国語の「今期」に 금기 を使わない（禁忌と読める）（memory i18n_korean_this_term_not_geumgi）
 - ハングル「경정」・繁体字「賽艇」は「競艇」とは別文字列で禁止の外（docs/reference/i18n-glossary.md の方針）
+- 韓国語の競技名は本番 UI（src/locales/ko/common.json）と同じ「경정」を使う。並行で翻訳した ko ブログが「보트레이스」と「경정」に分かれた。置き換えるときは받침の有無に合わせて助詞（는/은 等）も直す（2026-08-17、memory ko_blog_full_expansion_2026_08_17、PR #317）
+- 多言語の図や翻訳記事の訳語（会場名・券種名・機能名）は、その言語の既存の記事を grep して合わせる（2026-08-17、memory overnight_content_expansion_2026_08_16）
 
 ## 誇大・保証・射幸心・SNS の規則
 - 的中・勝利を保証する表現は全プラットフォームで警告。「当たり」「的中」単独は警告しない（risk-rules.json の guaranteed-hit）
@@ -32,6 +38,8 @@
 - note 固有の知見は [note.md](note.md) へ移動（2026-10-13）
 - 過去の「回収率1343%」「高精度」等を単独で先に直す提案はしない。AI予想の作り直し（BOA-617）の中でだけ扱う（2026-10-01 ユーザー判断、memory feedback_no_proposals_on_past_accuracy_claims）
 - AdSense の表現の決まりはリポジトリに正本が無い。答えるときは Google の公式ポリシーを確かめて出典を付け、決まりができたらここに足す（2026-10-11、オーケストレーター依頼への確認結果）
+- サービス名・見出しに運・幸運系の語（「福」等）を使わない。データで見せる差別化の軸と逆向きになる（2026-08-19、memory boatai_rebrand_investigation_2026_08_19）
+- meta・llms.txt に「高精度」「的中率」等の精度を誇る語を戻さない。scripts/maintenance/verify-no-accuracy-claims-in-meta.js が CI で止める（2026-10-05、memory ai_agent_era_strategy_2026_10_05、PR #1264・#1265）
 
 ## content-qa との分担
 - content-qa はブログ記事の公開前6観点（.claude/commands/publish-blog.md）の合否判定。wording-editor は画面・モック・SNS・spec を含む全ての文の言葉の相談と、禁止語・誇大・対訳の判定。ブログの公開前は content-qa、言い換え案は wording-editor（2026-10-11、オーケストレーター依頼）

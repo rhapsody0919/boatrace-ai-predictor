@@ -5,7 +5,8 @@
  * AI由来の項目（総合力スコア・AI予想順ソート）は含めず、枠番順の純粋な
  * 出走表データ（race_entries + racerStats + 展示データ）を表示する。
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { useTranslation } from "react-i18next";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { getRaceSt30 } from "../../services/analogyService";
@@ -64,71 +65,23 @@ function rankClass(rows, accessor, value, dir = "max") {
 
 function RaceCardDataTable({ initialVenueCode = null, initialRaceId = null }) {
   const { t } = useTranslation();
-  const [venues, setVenues] = useState([]);
-  const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
-  const [races, setRaces] = useState([]);
-  const [selectedRace, setSelectedRace] = useState(initialRaceId);
+  const {
+    venues,
+    selectedVenue,
+    setSelectedVenue,
+    races,
+    selectedRace,
+    setSelectedRace,
+    loading,
+    setLoading,
+    error,
+    setError,
+  } = useVenueRaceSelector({ initialVenueCode, initialRaceId, t });
   const [entries, setEntries] = useState([]);
   const [racerStats, setRacerStats] = useState(null);
   const [avgSt, setAvgSt] = useState({ official: new Map(), st30: new Map() });
   const [st30Failed, setSt30Failed] = useState(false);
   const [st30Retry, setSt30Retry] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const pendingInitialRaceId = useRef(initialRaceId);
-
-  useEffect(() => {
-    const loadVenues = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list = await supabaseDataService.getVenuesWithTodaysRaces();
-        setVenues(list);
-        const preferred =
-          initialVenueCode !== null && list.includes(initialVenueCode)
-            ? initialVenueCode
-            : (list[0] ?? null);
-        setSelectedVenue(preferred);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load venues with today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadVenues();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (selectedVenue === null) {
-      setRaces([]);
-      return;
-    }
-    const loadRaces = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list =
-          await supabaseDataService.getTodaysRacesForVenue(selectedVenue);
-        setRaces(list);
-
-        const pending = pendingInitialRaceId.current;
-        const pendingExists =
-          pending !== null && list.some((r) => r.race_id === pending);
-        setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
-        pendingInitialRaceId.current = null;
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRaces();
-  }, [selectedVenue]);
-
   useEffect(() => {
     if (selectedRace === null) return;
     const loadData = async () => {

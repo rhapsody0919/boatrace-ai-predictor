@@ -916,7 +916,8 @@
         "notSaved": "There is no data to show for this race",
         "error": "Couldn't load this. Please try again later",
         "retry": "Reload",
-        "loading": "Loading…"
+        "loading": "Loading…",
+        "expired": "Ryujin Sonar for this day is no longer available (kept for 2 years)"
       },
       "finishWord": {
         "1": "finished 1st",
@@ -1892,8 +1893,7 @@
           "none": "No such race among the latest {{kept}}",
           "raceNo": "R{{n}}",
           "techPay": "{{tech}} · ¥{{yen}}",
-          "bandLink": "See the races in this band ›",
-          "expired": "The list for this day is no longer kept (lists are kept for 7 days)"
+          "bandLink": "See the races in this band ›"
         }
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
@@ -2325,6 +2325,7 @@
     "accidentLineNear": "{{need}} pts to the B2 line (0.70)",
     "accidentNoStarts": "No starts yet this term",
     "accidentNote": "Accident points follow the official scale (F / late start 20, obstruction 15, disqualification or scratch by the racer's fault 10; 30 for a second or later F this term). Improper-maneuver and waiting-rule violations (2 pts) are not included, so this can be lower than the official figure. Above 0.70, the racer drops to class B2 at the next class review. Races earlier on the same day as this race are not included.",
+    "accidentNoteB2": "Accident points follow the official scale (F / late start 20, obstruction 15, disqualification or scratch by the racer's fault 10; 30 for a second or later F this term). Improper-maneuver and waiting-rule violations (2 pts) are not included, so this can be lower than the official figure. 0.70 is the line for dropping from class A or B1 to B2 (this racer is currently B2). Races earlier on the same day as this race are not included.",
     "accidentFetchError": "Could not load this term's accident rate",
     "meetScoreForecastTitle": "How today's finish moves the score rate",
     "meetScorePrelimOver": "Qualifying score rate {{rate}} ({{n}} runs, {{source}}, final)",
@@ -2567,7 +2568,7 @@
     },
     "exTop": {
       "title": "⏲️ Fastest Exhibition Time → Win Conversion",
-      "description": "Based on race results from the past 90 days, this shows which lanes tend to record the fastest exhibition (lap) time at each venue, and how often the fastest boat actually wins.",
+      "description": "Based on race results from the past 90 days, this shows which lanes tend to record the fastest exhibition time at each venue, and how often the fastest boat actually wins.",
       "summary": "Exhibition time results over the past 90 days",
       "fastestRate": "Fastest exhibition rate",
       "winWhenFastest": "Win rate when fastest",
@@ -2575,7 +2576,7 @@
       "fastestCountHeader": "Times fastest",
       "fastestRateHeader": "Fastest rate (%)",
       "winWhenFastestHeader": "Win rate when fastest (%)",
-      "note": "💡 \"Fastest exhibition\" means recording the fastest lap time in that race (excluding ties). A lane with a high fastest rate but low win rate may be \"fast in exhibition but unable to close out the race.\"",
+      "note": "💡 \"Fastest exhibition\" means recording the fastest exhibition time in that race (the time over a 150 m section on the 2nd lap of the pre-race lap-course run, excluding ties). A lane with a high fastest rate but low win rate may be \"fast in exhibition but unable to close out the race.\"",
       "empty": "No exhibition time data found"
     },
     "topStart": {
@@ -2672,8 +2673,8 @@
       },
       "partsHistoryEmpty": "No parts or propeller change records found for this motor",
       "partsHistoryNote": "💡 A parts or propeller change alone can be either a sign of declining motor performance or a sign of improvement right after maintenance. The badge compares average exhibition time before and after the change as a rough guide only, and does not guarantee results.",
-      "note": "💡 Click a table row to see that motor's trend across meets. The gold-framed value is the motor with the highest official top-2 rate in this race.",
-      "highlightNote": "💡 The gold-framed value is the motor with the highest official top-2 rate in this race.",
+      "note": "💡 Click a table row to see that motor's trend across meets. The gold-framed value is the motor with the highest official top-2 rate in this race. A beige fill marks the best value in that column.",
+      "highlightNote": "💡 The gold-framed value is the motor with the highest official top-2 rate in this race. A beige fill marks the best value in that column.",
       "focusedRowNote": "The outlined row is the boat you selected on another tab.",
       "venueRankLabel": "Rank in venue (venue's official top-2 rate)",
       "venueRankBadge": "#{{rank}} of {{total}} motors ({{value}}%)",
@@ -2757,7 +2758,7 @@
     },
     "exTrend": {
       "title": "📈 Racer Exhibition Time Trend",
-      "description": "Select a race being held today to see how each racer's exhibition (lap) time has trended over the past 90 days. Unlike the venue/lane-based Exhibition Time tab, this tracks each racer's individual condition.",
+      "description": "Select a race being held today to see how each racer's exhibition time has trended over the past 90 days. Unlike the venue/lane-based Exhibition Time tab, this tracks each racer's individual condition.",
       "todayTimeHeader": "Today's exhibition time",
       "avgTimeHeader": "Avg. past exhibition time",
       "legend": "Exhibition time",
@@ -2909,7 +2910,7 @@
       },
       "extrend": {
         "name": "Racer Exhibition Time Trend",
-        "description": "Analyzes how each racer's exhibition (lap) time has trended over the past 90 days"
+        "description": "Analyzes how each racer's exhibition time has trended over the past 90 days"
       },
       "techprofile": {
         "name": "Racer Winning Technique Profile",
@@ -3110,7 +3111,7 @@
       },
       "extime": {
         "title": "About Fastest Exhibition Time → Win Conversion",
-        "dataView": "Based on race results from the past 90 days, this analyzes by lane, for each venue, \"which lane tends to record the fastest exhibition (lap) time\" and \"how often the fastest boat actually wins.\"",
+        "dataView": "Based on race results from the past 90 days, this analyzes by lane, for each venue, \"which lane tends to record the fastest exhibition time\" and \"how often the fastest boat actually wins.\"",
         "tips": [
           {
             "strong": "Lanes with a high fastest-exhibition rate but low win rate",
@@ -3128,7 +3129,7 @@
       },
       "extrend": {
         "title": "About Racer Exhibition Time Trend",
-        "dataView": "This shows how each racer's exhibition (lap) time has trended over the past 90 days. Unlike Fastest Exhibition Time → Win Conversion (venue/lane-based), this tracks each racer's individual condition.",
+        "dataView": "This shows how each racer's exhibition time has trended over the past 90 days. Unlike Fastest Exhibition Time → Win Conversion (venue/lane-based), this tracks each racer's individual condition.",
         "tips": [
           {
             "strong": "Racers whose exhibition time keeps worsening",

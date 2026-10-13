@@ -1,5 +1,13 @@
 /** SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 */
 export const OBSERVATION_WINDOWS = { "48h": 48, "7d": 168 };
+// 累積値（snapshot）は窓の終わりから15分以内に取れた値だけ保存する（2026-10-13 ユーザー決定、SQL154 の CHECK と同じ）
+export const SNAPSHOT_TOLERANCE_MS = 15 * 60 * 1000;
+
+/** 累積値の取得時刻が窓の終わりから許容差の中か */
+export const withinSnapshotTolerance = (observedAt, periodEnd) => {
+  const lag = Date.parse(observedAt) - Date.parse(periodEnd);
+  return lag >= 0 && lag <= SNAPSHOT_TOLERANCE_MS;
+};
 // 型比較の対象は運用中のチャネルだけ（hq判断 2026-10-08）。TikTok・blog・noteは「未収集」としても出さない
 export const OBSERVED_PLATFORMS = ["x", "youtube"];
 export const OBSERVATION_SOURCES = [
@@ -14,6 +22,7 @@ export const OBSERVATION_SOURCES = [
 export const OBSERVATION_METRICS = [
   "views",
   "likes",
+  "comments",
   "saves",
   "shares",
   "impressions",
@@ -117,16 +126,22 @@ function validateObservationInput(input, draft, requireWindowMatch) {
       : input.missing_reason !== null
   )
     throw new Error("欠測はnullと理由を記録してください");
+  // 期間の値は窓の終わりまでのデータ、累積値は取得した時点までのデータ（data_through=observed_at、SQL154）
   const complete =
     input.data_through !== null &&
-    Date.parse(input.data_through) === Date.parse(period.period_end);
+    Date.parse(input.data_through) ===
+      Date.parse(
+        input.measurement_kind === "snapshot"
+          ? input.observed_at
+          : period.period_end,
+      );
   if (requireWindowMatch && input.metric_value !== null && !complete)
     throw new Error("遅延・期間不一致は欠測として記録してください");
   if (
     requireWindowMatch &&
     input.measurement_kind === "snapshot" &&
     input.metric_value !== null &&
-    Date.parse(input.observed_at) !== Date.parse(period.period_end)
+    !withinSnapshotTolerance(input.observed_at, period.period_end)
   )
     throw new Error("遅い累積値を過去の窓に代入できません");
   const denominatorName = input.denominator_name ?? null;
@@ -324,12 +339,23 @@ export function compareObservations(
   });
 }
 
-/** 呼び出し側が正式公開証拠を確認するまでURLを返さない。投稿本文は変更しない。 */
+export const OBSERVATION_UTM_CAMPAIGNS = ["sonar-preview", "race-full"];
+// レースの URL に付けてよいクエリ（タブを直接開くリンク。送る前の表示の確認 checkPublicDisplay と同じ許可）
+export const RACE_URL_TABS = ["sonar"];
+const allowedRaceQuery = (url) =>
+  !url.search ||
+  ([...url.searchParams.keys()].join(",") === "tab" &&
+    RACE_URL_TABS.includes(url.searchParams.get("tab")));
+
+/** 呼び出し側が正式公開証拠を確認するまでURLを返さない。投稿本文は変更しない。
+ * campaign: sonar-preview（型の版つき）・race-full（sns-pdca-loop の通り道 A。素材 v1 は型の版が無いので variantId は任意）
+ */
 export function buildObservationUtm({
   raceUrl,
   draftId,
-  variantId,
+  variantId = null,
   releaseEvidence,
+  campaign = "sonar-preview",
 }) {
   if (
     !releaseEvidence?.confirmed_by ||
@@ -342,15 +368,21 @@ export function buildObservationUtm({
   if (
     url.origin !== "https://www.boat-ai.jp" ||
     !/^\/race\/[^/]+$/.test(url.pathname) ||
+    !allowedRaceQuery(url) ||
+    url.hash ||
     url.username ||
     url.password
   )
     throw new Error("公開レースURLが不正です");
-  if (!draftId || !variantId) throw new Error("投稿と型の版が必要です");
+  if (!OBSERVATION_UTM_CAMPAIGNS.includes(campaign))
+    throw new Error("UTM の campaign が不正です");
+  if (!draftId || (campaign === "sonar-preview" && !variantId))
+    throw new Error("投稿と型の版が必要です");
+  const content = variantId ? `${draftId}/${variantId}` : draftId;
   url.searchParams.set("utm_source", "x");
   url.searchParams.set("utm_medium", "social");
-  url.searchParams.set("utm_campaign", "sonar-preview");
-  url.searchParams.set("utm_content", `${draftId}/${variantId}`);
+  url.searchParams.set("utm_campaign", campaign);
+  url.searchParams.set("utm_content", content);
   return {
     url: url.toString(),
     release_evidence: releaseEvidence,
@@ -360,8 +392,8 @@ export function buildObservationUtm({
     tracking_url: url.toString(),
     utm_source: "x",
     utm_medium: "social",
-    utm_campaign: "sonar-preview",
-    utm_content: `${draftId}/${variantId}`,
+    utm_campaign: campaign,
+    utm_content: content,
   };
 }
 

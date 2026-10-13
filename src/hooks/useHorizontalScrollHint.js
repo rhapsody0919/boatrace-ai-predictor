@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   HSCROLL_MORE_MIN,
+  hscrollFadeWidth,
   horizontalScrollHintState,
   horizontalScrollStep,
   snapScrollTarget,
@@ -118,6 +119,11 @@ export function useHorizontalScrollHint(deps = []) {
   const update = useCallback(() => {
     const el = ref.current;
     if (!el) return;
+    const remaining = el.scrollWidth - el.clientWidth - el.scrollLeft;
+    el.closest(".hscroll-hint")?.style.setProperty(
+      "--hscroll-fade-width",
+      `${hscrollFadeWidth(remaining)}px`,
+    );
     const state = horizontalScrollHintState({
       scrollWidth: el.scrollWidth,
       clientWidth: el.clientWidth,

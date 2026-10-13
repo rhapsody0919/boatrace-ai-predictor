@@ -17,7 +17,7 @@
   top: 0;
   right: 0;
   bottom: 0;
-  width: 40px;
+  width: var(--hscroll-fade-width, 40px);
   pointer-events: none;
   /* sticky な見出し行（z-index: 4）より上に出す。既定のままだと
      表の見出しの裏に隠れて「›」もフェードも見えなかった */
