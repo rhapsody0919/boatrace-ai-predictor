@@ -838,6 +838,10 @@ a.predict-btn {
   padding: 0.02rem var(--spacing-2);
 }
 
+.race-result .vds-card {
+  margin-top: var(--spacing-4);
+}
+
 .rr-note {
   margin: var(--spacing-2) 0 0;
   font-size: var(--font-size-2xs);

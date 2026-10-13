@@ -219,6 +219,16 @@ function PayoutRow({
           ))
         )}
       </span>
+      <span
+        className="rr-amount num"
+        title={noAmount ? t("result.payoutNoAmount") : undefined}
+      >
+        {typeof amount === "number"
+          ? `¥${amount.toLocaleString()}`
+          : noAmount
+            ? "—"
+            : ""}
+      </span>
       <span className="rr-pop">
         {popularity
           ? popularityTo
@@ -233,16 +243,6 @@ function PayoutRow({
             ※
           </span>
         )}
-      </span>
-      <span
-        className="rr-amount num"
-        title={noAmount ? t("result.payoutNoAmount") : undefined}
-      >
-        {typeof amount === "number"
-          ? `¥${amount.toLocaleString()}`
-          : noAmount
-            ? "—"
-            : ""}
       </span>
     </div>
   );

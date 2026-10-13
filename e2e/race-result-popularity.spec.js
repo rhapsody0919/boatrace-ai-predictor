@@ -362,3 +362,24 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
     await expect(page.getByTestId("payout-popularity-note")).toHaveCount(0);
   });
 });
+
+for (const width of [1440, 375]) {
+  test(`${width}px: 払戻は券種・組番・払戻金・人気の順（BOA-707）`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    const root = await openResult(page, KOJIMA, FINAL_ROW);
+    const row = root.locator(".rr-payout-row").filter({ hasText: "¥1,530" });
+    expect(
+      await row.evaluate((el) =>
+        [...el.children].map((child) => child.classList[0]),
+      ),
+    ).toEqual(["rr-payout-type", "rr-combo", "rr-amount", "rr-pop"]);
+    const amount = await row.locator(".rr-amount").boundingBox();
+    const pop = await row.locator(".rr-pop").boundingBox();
+    if (width > 480) {
+      expect(amount.x + amount.width).toBeLessThanOrEqual(pop.x);
+    } else {
+      expect(pop.y).toBeGreaterThanOrEqual(amount.y + amount.height - 1);
+    }
+    await expect(popOf(root, "単勝", "1")).toHaveText("1人気※");
+  });
+}
