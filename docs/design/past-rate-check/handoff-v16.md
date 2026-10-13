@@ -9,10 +9,11 @@
 - 確定モック: https://claude.ai/artifact/RHjYWn3GWXYUetEHf6M7aq の Version 3。差分 D1〜D4 は `screens.md`「モックとの差分」（2026-10-02 オーケストレーター判断）
 - AI の当たり外れは数えない。数えるのはユーザーの予想が過去にどれだけ起きたか。端末内保存（会員登録なし）
 
-## 2. 最初にユーザー判断を取ること（Orchestrate 経由、1行で）
-- **母集団の食い違い**: 本機能は v16 の layer（同じ条件の新しい順最大2,000件、`GET /api/analogy/layer/[raceId]`）で数える設計。一方、思考アシストは `docs/adr/0087-thinking-assist-similar-race-counting.md` で「今日に近い順の上位400件」に決め、「(B) 新しい順の2,000件（layer API）」を「期間がレースごとにばらつき『最近』の意味が一定しない」として却下している。龍神ソナーは近い順800件。同じ「類似レース」の呼び名で3つの母集団の値が並ぶことになる。呼び名を分けて layer のままにするか、ADR-0087 にそろえるか
-- **BOA-430 への埋め込み（spec FR-6）**: 思考アシストは `/race/:raceId/assist` のレンズ式（軸・展開・機力・相手・買い目、`src/data/thinkingAssistCopy.js`）で 10/10 に公開済み。spec が前提にした「Step2・Step4 に埋め込む」は無くなった。外すか、レンズに合わせて見直すか
+## 2. オーナー決定（2026-10-13、Orchestrate 経由）
+- **母集団と呼び名**: v16 の layer（同じ条件の新しい順最大2,000件、`GET /api/analogy/layer/[raceId]`）のまま数える。呼び名は「類似レース」を使わず「同じ条件の過去レース」にして、龍神ソナー（近い順800件）・思考アシスト（近い順400件、ADR-0087）と分ける。ADR 0081 には、ADR-0087 が却下した「(B) 新しい順2,000件」をこの機能では採る理由を書く。問いが「過去にどれだけ起きたか」なので、全期間を新しい順に数えるのが合う
+- **FR-6（思考アシストへの埋め込み）は今回外す**。出すのはレース詳細の AI予想タブ（発走前）と結果タブ（振り返り）だけ。部品の境界（props で絞れる形）は残してよいが、BOA-430 側の作業と検証は書かない
 - 統計の前提（CLAUDE.md「UI/UX に要る統計検証」）: 定番／レアの線と、スリット7形の出現率の固定は T0 にある。見せ方を決める前に `data-scientist` で済ませ、結果を `docs/knowledge/stat-findings.md` に残す
+- 言葉: 「類似レース」「似たレース」は使わない（「似たレース」は禁止語）。新しい文は `wording-editor` を通す
 
 ## 3. 今の master の事実（2026-10-13 調べ済み、origin/master b00db6e9e）
 - layer API（`api/analogy/layer/[raceId].js`）: 応答は `{status, ...layerファイル}`。状態は `ok`／`not_saved`／`empty_layer`／`absent`。ok 以外は `rows` なし。Storage に layer が無いときも `not_saved`
@@ -48,7 +49,7 @@
     - 「直近7日の作り直しで行の出入り」は D-6 と矛盾しているので消す
     - 結果タブに締切を渡す
   - FR-5 の理由を直す
-  - FR-6 は 2 の判断に合わせる
+  - FR-6 は外す（2）。spec の「位置づけ」「共通の数え方」の呼び名を「同じ条件の過去レース」にする
 - screens.md
   - S-1: 「その下の BOA-271 の節はそのまま」を消す。出さない条件に `not_saved` を足す
   - S-2: 締切の props を足す
@@ -70,11 +71,10 @@
   - T1-5 は `getV16`／`useAnalogyV16.js` にする
   - T2-1 の照合は runId だけにする（depth・poolCutoff・conditions・snapshotAt の記述を消す）
   - T4-2 の「`snapshot: false` でも出す」を消す
-  - 2 の判断を確かめるタスクを足す
 - ADR 0081
   - 「BOA-271 側が経路を決める」を消す
   - ADR-0087 が却下した (B) との関係を書く
-  - BOA-430 への埋め込みを 2 に合わせる
+  - BOA-430 への埋め込みを消す（2）
 - `e2e/acceptance/past-rate-check.spec.js`: 実装者は書き換えられないので、`acceptance-test-writer` で作り直す
   - 全体が旧 RPC（`/rest/v1/rpc/get_analogy_similar_races`）前提になっている。止める先を `**/api/analogy/layer/**` にする
   - 応答
@@ -91,7 +91,7 @@
 
 ## 5. 進め方
 SDD は `.claude/rules/sdd-workflow.md` に従う。
-1. 2 の判断を Orchestrate へ出す。判断を待つ間に、判断に関係しない書き直し（3・4 の事実の反映）を進める
+1. 2 の決定と 3・4 の事実を spec・screens に反映する
 2. spec・screens を直したら、`acceptance-test-writer` で受け入れE2Eを作り直す
 3. plan・tasks を直す
 4. `design-reviewer` を通す（省略不可）
