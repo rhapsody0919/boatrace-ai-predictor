@@ -17,6 +17,9 @@
 | [db-operations.md](db-operations.md) | ADR と番号、本番 DB の運用、Supabase の読み方 | system-architect |
 | [seo.md](seo.md) | 検索・ボット向け HTML・ブログの SEO（SPA の制約、食い合い） | seo-marketer |
 | [user-insights.md](user-insights.md) | オーナーがサイトを使って気づいたことと、その後の対応 | 全員（画面を変える前） |
+| [x.md](x.md) | X（旧Twitter）固有の投稿・動画の知見 | X 運用（`/x-growth-report`等） |
+| [youtube.md](youtube.md) | YouTube（Shorts 含む）固有のタイトル・構成の知見 | YouTube 運用 |
+| [note.md](note.md) | note.com 固有の記事・コンプライアンスの知見 | note 運用（`/note-growth-report`等） |
 
 ## 書き方
 - 1行1知見。行末に（日付、根拠）。根拠は誰の指摘か・出典のパス（リポジトリ内）。一時フォルダのパスは出典にしない
