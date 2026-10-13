@@ -20,6 +20,8 @@ import {
   sortMotorRows,
   formatMotorRate,
   formatSlashDate,
+  formatMonthDay,
+  MOTOR_SORT_KEYS,
 } from "../../utils/venueMotorRanking";
 import RateBar from "../common/RateBar";
 import { bestOf } from "../../utils/bestOf";
@@ -110,18 +112,27 @@ function VenueMotorRanking({ initialVenueCode = null }) {
       : t(`venues.${venue}`, VENUE_NAMES[venue] || String(venue));
   const fromPretest = result?.state === "ok" && result.source === "pretest";
   const pretestDate = result?.state === "ok" ? result.pretestDate : null;
+  const seriesRange = result?.state === "ok" ? result.seriesRange : null;
+  const recentDate = seriesRange
+    ? t("meetPage.period", {
+        start: formatMonthDay(seriesRange.start),
+        end: formatMonthDay(seriesRange.end),
+      })
+    : pretestDate === null
+      ? null
+      : formatSlashDate(pretestDate);
   const userHeader =
     pretestDate === null || pretestDate === getTodayJST()
       ? t("analysis.motorRanking.userHeader")
       : t("analysis.motorRanking.userHeaderRecent", {
-          date: formatSlashDate(pretestDate),
+          date: recentDate,
         });
 
   const sortHeader = (key, label) => (
     <th
       aria-sort={
         sortKey === key
-          ? key === "motorNumber" || key === "pretestTime"
+          ? MOTOR_SORT_KEYS[key].ascending
             ? "ascending"
             : "descending"
           : undefined
@@ -134,7 +145,13 @@ function VenueMotorRanking({ initialVenueCode = null }) {
       >
         {label}
         <span className="vmr-sort-mark" aria-hidden="true">
-          {sortKey === key ? "▼" : "▽"}
+          {MOTOR_SORT_KEYS[key].ascending
+            ? sortKey === key
+              ? "▲"
+              : "△"
+            : sortKey === key
+              ? "▼"
+              : "▽"}
         </span>
       </button>
     </th>
