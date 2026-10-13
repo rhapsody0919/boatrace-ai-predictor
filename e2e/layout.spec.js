@@ -68,6 +68,33 @@ const TRAILING_GAP_THRESHOLD_PX = 40;
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+for (const venue of ["heiwajima", "biwako", "marugame"]) {
+  test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`/blog/${venue}-water-wind-guide`);
+    const tables = page.locator(".blog-post-content table");
+    await expect(tables.first()).toBeVisible();
+    const measurements = await tables.evaluateAll((elements) =>
+      elements.map((table) => {
+        const cell = table.querySelector("tbody tr:first-child td:first-child");
+        return {
+          label: cell?.textContent,
+          height: cell?.getBoundingClientRect().height,
+          laterColumns: [...table.querySelectorAll("th:not(:first-child), td:not(:first-child)")]
+            .map((element) => getComputedStyle(element).whiteSpace),
+          overflowX: getComputedStyle(table).overflowX,
+        };
+      }),
+    );
+    for (const measurement of measurements) {
+      expect(measurement.height, `${venue}: ${measurement.label}`).toBeGreaterThan(0);
+      expect(measurement.height, `${venue}: ${measurement.label}`).toBeLessThanOrEqual(52);
+      expect(measurement.laterColumns).not.toContain("nowrap");
+      expect(measurement.overflowX).toBe("auto");
+    }
+  });
+}
+
 test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそろう", async ({
   page,
 }) => {
