@@ -373,6 +373,69 @@ test("鍵の健全性: refresh の可否と scope だけを返し、トークン
   assert.ok(!(await res.text()).includes("secret-value"));
 });
 
+test("鍵の健全性: x_read で refresh の後に保存できなかったら、Slack に連携のやり直しを知らせる（点検 2026-10-13-11）", async () => {
+  const { encryptTokens } = await import("../../api/_lib/snsTokenStore.js");
+  const key = Buffer.alloc(32, 9).toString("base64");
+  const row = {
+    ...(await encryptTokens(
+      { access_token: "old-access", refresh_token: "old-refresh" },
+      key,
+    )),
+    key_version: 1,
+    account_id: "1234567890",
+    // 期限の5分前を過ぎている（refresh に進む）
+    access_expires_at: new Date(Date.now() + 60000).toISOString(),
+  };
+  const env = {
+    X_OAUTH_CLIENT_ID: "i",
+    X_OAUTH_CLIENT_SECRET: "s",
+    SNS_TOKEN_ENC_KEY: key,
+    SLACK_WEBHOOK_URL: "https://hooks.slack.test/token-health",
+  };
+  const slack = [];
+  const fetchImpl = async (url, options = {}) => {
+    if (String(url) === "https://api.x.com/2/oauth2/token")
+      return Response.json({
+        access_token: "new-access",
+        refresh_token: "new-refresh",
+        expires_in: 7200,
+      });
+    if (String(url) === env.SLACK_WEBHOOK_URL) {
+      slack.push(JSON.parse(options.body).text);
+      return new Response("ok");
+    }
+    throw new Error("想定外: " + url);
+  };
+  const xDb = {
+    read: async () => row,
+    tryLock: async () => true,
+    release: async () => true,
+    saveLocked: async () => {
+      throw new Error("DB が落ちている");
+    },
+  };
+  process.env.SNS_HUB_BASIC_AUTH_USER = "owner";
+  process.env.SNS_HUB_BASIC_AUTH_PASSWORD = "pw";
+  // 本番と同じ経路（handler は notify を渡さない＝既定の Slack 通知）で確かめる
+  const res = await handleTokenHealth(
+    new Request(
+      "https://www.boat-ai.jp/api/admin/sns-hub/token-health?x_read=1",
+      {
+        headers: {
+          authorization: `Basic ${Buffer.from("owner:pw").toString("base64")}`,
+        },
+      },
+    ),
+    { env, fetchImpl, xDb },
+  );
+  const { data } = await res.json();
+  assert.equal(data.x.read.ok, false);
+  assert.match(data.x.read.error, /保存できません/);
+  assert.equal(slack.length, 1);
+  assert.match(slack[0], /連携のやり直しが要る/);
+  assert.ok(!slack[0].includes("new-refresh"));
+});
+
 test("死活の監視: sns_send は JST 8:00〜21:00 の中だけを見る", () => {
   const active = activeMinutesOf(SCRAPE_JOBS.sns_send);
   assert.deepEqual(active, { start: 480, end: 1260 });
