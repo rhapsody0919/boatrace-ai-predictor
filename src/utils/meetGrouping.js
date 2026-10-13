@@ -220,3 +220,50 @@ export function findMeetStartDate(days, targetDate) {
   }
   return answer ?? meetStart;
 }
+
+/**
+ * 日ごとの `series_day`（その日の最小値。最終レースだけ null のことがある）と最終日の印をまとめる。
+ * 節の初日を決める材料（BOA-856 で節ページ・今節タブ・会場の節の初日・Shorts 用 API の4か所から1本化）。
+ *
+ * @param {Array<{race_id: string, series_day?: number|null, is_final_day?: boolean|null}>} conditions
+ * @returns {Map<string, {seriesDay: number|null, isFinalDay: boolean}>}
+ */
+export function seriesDayByDate(conditions) {
+  const map = new Map();
+  for (const c of conditions ?? []) {
+    const d = String(c.race_id).slice(0, 10);
+    const cur = map.get(d) ?? { seriesDay: null, isFinalDay: false };
+    if (
+      c.series_day != null &&
+      (cur.seriesDay == null || c.series_day < cur.seriesDay)
+    )
+      cur.seriesDay = c.series_day;
+    if (c.is_final_day) cur.isFinalDay = true;
+    map.set(d, cur);
+  }
+  return map;
+}
+
+/**
+ * 開催日と種別の行から `findMeetStartDate` に渡す日の並びを作る。
+ * 種別が1行も無い日の `isFinalDay` は null（「最終日でない」ではなく「分からない」）
+ *
+ * @param {string[]} dates 開催日（YYYY-MM-DD、重複・順不同でよい）
+ * @param {Array<{race_id: string, series_day?: number|null, is_final_day?: boolean|null}>} conditions
+ * @returns {Array<{date: string, seriesDay: number|null, isFinalDay: boolean|null}>}
+ */
+export function meetDaysFromRows(dates, conditions) {
+  const byDate = seriesDayByDate(conditions);
+  return [...new Set(dates)].sort().map((date) => ({
+    date,
+    seriesDay: byDate.get(date)?.seriesDay ?? null,
+    isFinalDay: byDate.has(date) ? byDate.get(date).isFinalDay : null,
+  }));
+}
+
+/**
+ * 開催日と種別の行から、targetDate を含む節の初日を返す。開催日が空なら null
+ */
+export function meetStartFromRows(dates, conditions, targetDate) {
+  return findMeetStartDate(meetDaysFromRows(dates, conditions), targetDate);
+}
