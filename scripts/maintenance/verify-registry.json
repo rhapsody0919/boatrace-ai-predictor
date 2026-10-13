@@ -1055,7 +1055,7 @@
     {
       "script": "verify-sns-auto-send.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop PR-1: SQL153・154（v1 素材の公開保留の解除は検査合格の item があるときだけ・v0 は今のまま、X スレッド6件の取り込み、自動送信の承認者は mode=auto かつ notified だけ、止めた後の claim・check・begin_post は held・YouTube の公開開始は拒否、dry_run は claim を拒否、veto_until 前は claim しない、予約額の種類別（YouTube は0）・日次上限のチャネル別・スレッドが途中で切れない、基準日の自動更新、月の切り替え、X 読み取りの予約、posted で取り込みジョブ2件、累積値の15分の許容差、暦日の値の一意）をPGlite、外部接続なし"
+      "guards": "sns-pdca-loop PR-1・19a: SQL153・154・158（158: /today の digest の item・通り道 B は A の予定の本数を先に枠から引く・月の自動切り替え・today_digest の UTM・158-runbook の md5。153・154: v1 素材の公開保留の解除は検査合格の item があるときだけ・v0 は今のまま、X スレッド6件の取り込み、自動送信の承認者は mode=auto かつ notified だけ、止めた後の claim・check・begin_post は held・YouTube の公開開始は拒否、dry_run は claim を拒否、veto_until 前は claim しない、予約額の種類別（YouTube は0）・日次上限のチャネル別・スレッドが途中で切れない、基準日の自動更新、月の切り替え、X 読み取りの予約、posted で取り込みジョブ2件、累積値の15分の許容差、暦日の値の一意）をPGlite、外部接続なし"
     },
     {
       "script": "verify-sns-x-oauth.js",

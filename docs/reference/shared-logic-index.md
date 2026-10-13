@@ -204,7 +204,6 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueMotorStats/parserUtils.js` | parserUtils - 会場公式サイトのモーター成績パーサー間で共通の変換・DOM操作 | normalizeText, toIntOrNull, toFloatOrNull, toStrictIntOrNull, parseBestTime ほか5件 |
 | `scripts/lib/venueMotorStats/parsers/gamagori.js` | gamagori - 蒲郡専用パーサー（BOA-264） | parseGamagoriMotorTable |
 | `scripts/lib/venueMotorStats/parsers/genericTable.js` | genericTable - 会場公式サイトのモーター成績テーブルの汎用パーサー（BOA-264） | parseGenericMotorTable, _internal |
-| `scripts/lib/venueMotorStats/parsers/miyajimaPdf.js` | miyajimaPdf - 宮島専用パーサー（BOA-264） | parseMiyajimaMotorPdf |
 | `scripts/lib/venueMotorStats/venueConfig.js` | venueConfig - 会場別モーター成績スクレイピング設定（BOA-264） | VENUE_MOTOR_STATS_CONFIG, EXCLUDED_VENUES |
 | `scripts/lib/venueMotorStatsJob.js` | 会場別モーター成績（B3、venue_motor_stats）の共通ラッパ向けハンドラー（tasks.md T4b-14-1）。 | runVenueMotorStatsJob, VENUE_MOTOR_STATS_CONCURRENCY |
 | `scripts/lib/venueNames.js` | 会場コードの正準表。Node・Edge共通、副作用なし。 | VENUE_NAMES |
@@ -336,4 +335,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 301 ファイル / export 1640 件。
+対象 300 ファイル / export 1639 件。
