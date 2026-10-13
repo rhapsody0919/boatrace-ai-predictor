@@ -68,7 +68,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
   - [ ] 本番実測: 期待件数（算出根拠: 日数×（動画数×指標数＋UTM の投稿数×指標数＋チャネル全体の指標数））に対し、充足率99%以上
   - [ ] タイミング実測: 直近5日（土日を含む）で、D−3 の値（確定済み）が入っている割合（欠落率2%以内）。YouTube Analytics の確定の遅れを含めるため D−1 では測らない
   - [ ] 継続監視: 未実行・0件を Slack に通知
-- [ ] **23. UTM**: X の親の投稿の URL を承認時に `buildObservationUtm`（campaign=race-full）で作り、`sns_post_tracking` に保存
+- [x] **23. UTM**: X の親の投稿の URL を承認時に `buildObservationUtm`（campaign=race-full）で作り、`sns_post_tracking` に保存（部品は `scripts/lib/snsPostTracking.js` の `prepareRaceTracking`・`createPostTrackingStore`。呼ぶのは 12 の auto-plan で、順番は plan §2 の「UTM を本文に差し込む → 禁止表現の検査 → deadline_queue → 承認」。`utm_content` は下書きの ID）
 
 ## PR-7 改善案
 
