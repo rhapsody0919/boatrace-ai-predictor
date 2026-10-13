@@ -45,6 +45,8 @@ export function bundleRiskFields(bundle, platform) {
     {text:bundle.title,field:'body'},
     ...(bundle.scenes || []).flatMap(scene=>(scene.lines || []).map(text=>({text,field:'body'}))),
     {text:platform === 'x' ? bundle.x_text : bundle.script,field:'body'},
+    // v1 の X スレッド（sns-pdca-loop tasks 6）。各投稿の本文も見る
+    ...(platform === 'x' && Array.isArray(bundle.x_thread) ? bundle.x_thread.map(post=>({text:post?.text,field:'body'})) : []),
     ...(platform === 'x' ? bundle.x_hashtags || [] : bundle.youtube_tags || []).map(text=>({text,field:'hashtags'})),
     ...(platform === 'youtube' ? [{text:bundle.youtube_description,field:'description'}] : []),
   ];

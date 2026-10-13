@@ -56,4 +56,6 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 - 送信の job が posted になると、`sns_metric_jobs` に 48h・7d の2件ができる（X はスレッドの子にも作る）。`due_at = posted_at + 48h / 168h`
 - 暦日の値（YouTube Analytics の動画ごと・チャネル全体、GA4 の流入）は観測の表ではなく `sns_channel_daily` に入れる（136 の窓に暦日を入れない）
 - UTM の表（`sns_post_tracking`）は campaign に `race-full` を許し、`template_variant_id` を任意にした（bundle 由来の下書きは template_variant_id が NULL のため）
-- collector の JS 側の検査（遅い snapshot を欠測にする処理）を15分の許容差に合わせるのは、取り込みの実装（sns-pdca-loop の tasks PR-6）で行う
+- collector の JS 側の検査（遅い snapshot を欠測にする処理）も15分の許容差に合わせた（sns-pdca-loop tasks 21。`validateObservation` は累積値に `data_through=observed_at` を求める）
+- 取り込みの cron `sns_metrics`（`scripts/lib/snsMetricsRunner.js`）: YouTube は `videos.list(statistics)` の views・likes・comments、X は `GET /2/users/{id}/tweets`（since_id・until_id で対象の1件に絞る。Owned Reads）の impressions・url_link_clicks（non_public_metrics）と likes・shares（retweet_count、引用は含まない）・saves（bookmark_count）。読み取りの前に `reserve_sns_x_read` で1件分（$0.001）を予約する。窓の終わりから15分を過ぎて処理する job は外部を読まずに欠測で閉じる。値を保存した後に閉じるのが失敗した job は、次の実行で欠測に上書きせず done で閉じる
+- YouTube の `videos.list`（1回1ユニット、50件ずつ）は送信のクォータの台帳（146 の `sns_youtube_quota_reads`）に載せない。台帳は送信の job と試行の番号が必須で、取り込みの読み取りを入れられない。1日の読み取りは多くても L3 の YouTube 16本×2窓＝32ユニット程度（上限 10,000）

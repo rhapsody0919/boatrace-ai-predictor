@@ -116,13 +116,6 @@ export default function ScenarioTab({
     Boolean(racePick) && (listBoat === 1 || boatMissing),
   );
   const racesRes = listBoat > 1 && !boatMissing ? boatRes : baseRes;
-  // 一覧のファイルは7日分だけ残す（夜の掃除、BOA-833）。それより前の日のレースは「もう無い」と出す。
-  // 描画のたびに時刻を読まないよう、最初の描画で1回だけ決める
-  const [keepFrom] = useState(() =>
-    new Date(Date.now() + (9 - 7 * 24) * 3600 * 1000)
-      .toISOString()
-      .slice(0, 10),
-  );
   // ②は形を選んだら1行に畳む（承認モック mock-scenario-v1）。「変える」・③の文脈の札で開く
   const [slitOpen, setSlitOpen] = useState(false);
   const exhibitionStage = stage === "exhibition";
@@ -202,7 +195,6 @@ export default function ScenarioTab({
   const E = entry !== "all" ? entry : null;
   const sl = slit !== "any";
   const formName = (f) => t(`${k}.forms.${f}.name`);
-  const expired = String(raceId).slice(0, 10) < keepFrom;
   const racePanel = (group) => {
     if (racePick?.group !== group) return null;
     const rk = `${k}.races.title`;
@@ -238,7 +230,6 @@ export default function ScenarioTab({
         )}
         // その艇の範囲の一覧がまだ無い朝の版だけ、1号艇の範囲の一覧で代えて断る（BOA-833）
         otherScope={boatMissing}
-        expired={expired}
         onClose={() => setPicked(null)}
       />
     );

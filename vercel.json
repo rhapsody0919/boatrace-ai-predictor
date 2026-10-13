@@ -15,6 +15,10 @@
       "schedule": "*/2 23,0-11 * * *"
     },
     {
+      "path": "/api/cron/sns-metrics",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/sns-daily",
       "schedule": "0 1 * * *"
     },
@@ -239,7 +243,7 @@
       "schedule": "30 19 * * *"
     },
     {
-      "path": "/api/cron/in-caution-health",
+      "path": "/api/cron/in-caution-today-health",
       "schedule": "45 20 * * *"
     }
   ],
@@ -249,6 +253,9 @@
     },
     "api/odds/live.js": {
       "regions": ["syd1"]
+    },
+    "api/admin/sns-hub/mobile-approval.js": {
+      "includeFiles": "sns-video-studio/remotion/risk-rules.json"
     },
     "api/bot-page/**/*.js": {
       "regions": ["syd1"],

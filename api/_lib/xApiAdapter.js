@@ -18,6 +18,18 @@ export function postedAtFromId(id) {
   ).toISOString();
 }
 
+const isPlainObject = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+/** processing_info は state（空でない文字列）を持つオブジェクトだけを認める。それ以外は投げて、投稿の前に保留にする */
+function validProcessingInfo(info, where) {
+  if (!isPlainObject(info) || typeof info.state !== "string" || !info.state)
+    throw new Error(
+      `X の媒体の処理状態が読めません（${where} の processing_info が不正です）`,
+    );
+  return info;
+}
+
 /**
  * accessToken は呼び出し側（runner）が claim の前に getXAccessToken で取って渡す。
  * adapter の中で取ると、テキストだけの投稿では最初の呼び出しが begin_post の後の createPost になり、
@@ -25,6 +37,8 @@ export function postedAtFromId(id) {
  */
 export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
   if (!accessToken) throw new Error("X の access token がありません");
+  // 媒体 ID ごとの種類（finalize で動画かどうかを見るため）
+  const categories = new Map();
   async function call(path, { method = "GET", json, form } = {}) {
     const response = await fetchImpl(`${X_API_BASE}${path}`, {
       method,
@@ -63,6 +77,7 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
         json: { media_type: type, total_bytes: size, media_category: category },
       });
       if (!body?.data?.id) throw new Error("X の媒体 ID が返りません");
+      categories.set(body.data.id, category);
       return { id: body.data.id };
     },
     async append({ id, index, bytes }) {
@@ -74,6 +89,9 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
         form,
       });
     },
+    // 処理の完了は明示の状態でだけ認める。応答に data が無い（空・{}・null）ときは投げて、投稿の前に保留にする。
+    // 画像は processing_info を省略した finalize の応答を完了とみなす。動画は省略されても完了とせず、STATUS で
+    // 明示の状態を確かめる（処理を待たずに投稿へ進まないため。開発の補助の点検 D1、2026-10-13）
     async finalize(id) {
       const body = await call(
         `/2/media/upload/${encodeURIComponent(id)}/finalize`,
@@ -81,13 +99,35 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
           method: "POST",
         },
       );
-      return { processing_info: body?.data?.processing_info ?? null };
+      if (!isPlainObject(body?.data))
+        throw new Error("X の媒体の finalize の応答に data がありません");
+      // processing_info のキーが無い（undefined）ときだけ「省略」とみなす（2026-10-13 オーケストレーター決定）。
+      // null・false・0・空文字・状態の無いオブジェクトなど、それ以外の不正な値は投稿の前に止める
+      if (!("processing_info" in body.data))
+        return categories.get(id) === "tweet_video"
+          ? { processing_info: { state: "pending", check_after_secs: 1 } }
+          : { processing_info: null };
+      return {
+        processing_info: validProcessingInfo(
+          body.data.processing_info,
+          "finalize",
+        ),
+      };
     },
     async status(id) {
       const body = await call(
         `/2/media/upload?command=STATUS&media_id=${encodeURIComponent(id)}`,
       );
-      return { processing_info: body?.data?.processing_info ?? null };
+      if (!isPlainObject(body?.data))
+        throw new Error(
+          "X の媒体の処理状態が読めません（STATUS の応答に data がありません）",
+        );
+      return {
+        processing_info: validProcessingInfo(
+          body.data.processing_info,
+          "STATUS",
+        ),
+      };
     },
     async createPost({ text, mediaIds = [], replyTo }) {
       const body = await call("/2/tweets", {

@@ -1,0 +1,8966 @@
+{
+ "generated_at": "2026-10-13T06:33:41+00:00",
+ "data_dir": "/private/tmp/claude-501/-Users-terukina-boatrace-ai-predictor--claude-worktrees-kind-taussig-c5400d/0048e4aa-21fa-4def-b029-36d1104d2f83/scratchpad/analogy-export",
+ "export_manifest": {
+  "exportedAt": "2026-10-13T06:13:21.783Z",
+  "tables": {
+   "kb_boats": {
+    "rows": 2233656,
+    "maxKey": "2025-12-02-21-12",
+    "sha256": "9971e6ab830cd737e2726deab1688126500d705822e3951668522ef17f081e17"
+   },
+   "kb_races": {
+    "rows": 372276,
+    "maxKey": "2025-12-02-21-12",
+    "sha256": "e63b2f5e1a31d48f3ad8b8e13c358bc4d35c11fb09546297efdd998d176839b2"
+   },
+   "kb_venue_days": {
+    "rows": 31023,
+    "maxKey": "2025-12-02-21",
+    "sha256": "97c9fdba3e1cc12e5b7ac5a7f2301196f3962c4fe1887378a55dbd18e1274e71"
+   },
+   "race_series": {
+    "rows": 6448,
+    "maxKey": "24",
+    "sha256": "5a94d0f87ed2af9c3cf289df6ec1282a0e8a29ab71764f776c36ef0b0140dee1"
+   },
+   "races": {
+    "rows": 49248,
+    "maxKey": "2026-10-13-22-12",
+    "sha256": "7e047c615794e929e07649fdfb7fd962f2c398570e766bb96bb94fb42c69ab66"
+   },
+   "entries": {
+    "rows": 295488,
+    "maxKey": "2026-10-13-22-12",
+    "sha256": "d5cf5ac490b1f69fd020e00c4d2686e0d6cab5fa279eb6d970083a55f8c6b055"
+   },
+   "exhibition": {
+    "rows": 291537,
+    "maxKey": "2026-10-13-22-11",
+    "sha256": "d159af59cc866fe4b6dcf69d01c409921a64e6023b29519da6dbd531d80b435c"
+   },
+   "conditions": {
+    "rows": 49044,
+    "maxKey": "2026-10-13-22-12",
+    "sha256": "059cc0d5648d8f41f61b6e65977b646e902bc73807520b59c7b7353148738eb4"
+   },
+   "results": {
+    "rows": 48633,
+    "maxKey": "2026-10-13-22-08",
+    "sha256": "39e5b7169f55f97dda49c2222ceedbf2baa8ed46a77c8d881f0dfd85ec70ec2f"
+   },
+   "start_timings": {
+    "rows": 291792,
+    "maxKey": "2026-10-13-22-08",
+    "sha256": "628e5081d76b684df24ff44e56f55a0fef438ac71d177fe75dda90600e0bcd88"
+   }
+  }
+ },
+ "prereg": "docs/design/past-rate-check/analysis/label-threshold-prereg.md",
+ "test_period": [
+  "2026-04-01",
+  "2026-09-30"
+ ],
+ "lines_order": [
+  [
+   15,
+   5
+  ],
+  [
+   20,
+   5
+  ],
+  [
+   15,
+   3
+  ],
+  [
+   25,
+   3
+  ],
+  [
+   10,
+   3
+  ]
+ ],
+ "min_pairs": 200,
+ "min_races": 100,
+ "bootstrap": {
+  "n": 1000,
+  "seed": 20261013,
+  "unit": "race_date",
+  "method": "percentile"
+ },
+ "checks": {
+  "generated_at": "2026-10-13T06:24:09.188Z",
+  "export_dir": "/private/tmp/claude-501/-Users-terukina-boatrace-ai-predictor--claude-worktrees-kind-taussig-c5400d/0048e4aa-21fa-4def-b029-36d1104d2f83/scratchpad/t01/../analogy-export",
+  "export_gap": {
+   "races": {
+    "days": 302,
+    "db_total": 47244,
+    "export_total": 47244,
+    "over_1pct": []
+   },
+   "race_results": {
+    "days": 302,
+    "db_total": 46691,
+    "export_total": 46691,
+    "over_1pct": []
+   },
+   "race_start_timings": {
+    "days": 302,
+    "db_total": 280146,
+    "export_total": 280146,
+    "over_1pct": []
+   }
+  },
+  "win_rate_updates": [
+   {
+    "month": "2025-12",
+    "rows": 27216,
+    "updated_at_set": 22999,
+    "updated_after_race_day": 22999,
+    "updated_across_term_switch": 22999,
+    "updated_ne_created": 0,
+    "max_lag_days": 303
+   },
+   {
+    "month": "2026-01",
+    "rows": 32040,
+    "updated_at_set": 26835,
+    "updated_after_race_day": 26835,
+    "updated_across_term_switch": 26835,
+    "updated_ne_created": 0,
+    "max_lag_days": 274
+   },
+   {
+    "month": "2026-02",
+    "rows": 25200,
+    "updated_at_set": 5296,
+    "updated_after_race_day": 5296,
+    "updated_across_term_switch": 5296,
+    "updated_ne_created": 0,
+    "max_lag_days": 243
+   },
+   {
+    "month": "2026-03",
+    "rows": 28152,
+    "updated_at_set": 0,
+    "updated_after_race_day": 0,
+    "updated_across_term_switch": 0,
+    "updated_ne_created": 0,
+    "max_lag_days": 0
+   },
+   {
+    "month": "2026-04",
+    "rows": 26280,
+    "updated_at_set": 1026,
+    "updated_after_race_day": 1026,
+    "updated_across_term_switch": 1026,
+    "updated_ne_created": 360,
+    "max_lag_days": 169
+   },
+   {
+    "month": "2026-05",
+    "rows": 29376,
+    "updated_at_set": 1656,
+    "updated_after_race_day": 1656,
+    "updated_across_term_switch": 0,
+    "updated_ne_created": 1656,
+    "max_lag_days": 139
+   },
+   {
+    "month": "2026-06",
+    "rows": 28152,
+    "updated_at_set": 2448,
+    "updated_after_race_day": 2448,
+    "updated_across_term_switch": 0,
+    "updated_ne_created": 2448,
+    "max_lag_days": 122
+   },
+   {
+    "month": "2026-07",
+    "rows": 29592,
+    "updated_at_set": 2016,
+    "updated_after_race_day": 2016,
+    "updated_across_term_switch": 0,
+    "updated_ne_created": 2016,
+    "max_lag_days": 83
+   },
+   {
+    "month": "2026-08",
+    "rows": 29592,
+    "updated_at_set": 792,
+    "updated_after_race_day": 792,
+    "updated_across_term_switch": 0,
+    "updated_ne_created": 792,
+    "max_lag_days": 49
+   },
+   {
+    "month": "2026-09",
+    "rows": 27936,
+    "updated_at_set": 11880,
+    "updated_after_race_day": 1728,
+    "updated_across_term_switch": 0,
+    "updated_ne_created": 11880,
+    "max_lag_days": 21
+   }
+  ],
+  "prod_layers": [
+   {
+    "race_id": "2026-10-06-02-01",
+    "run_id": "092648-37393828199",
+    "n_total": 348,
+    "pool_cutoff": "2026-10-05"
+   },
+   {
+    "race_id": "2026-10-06-02-06",
+    "run_id": "092648-37393828199",
+    "n_total": 8841,
+    "pool_cutoff": "2026-10-05"
+   },
+   {
+    "race_id": "2026-10-06-02-12",
+    "run_id": "092648-37393828199",
+    "n_total": 61,
+    "pool_cutoff": "2026-10-05"
+   },
+   {
+    "race_id": "2026-10-06-05-01",
+    "run_id": "092648-37393828199",
+    "n_total": 9288,
+    "pool_cutoff": "2026-10-05"
+   },
+   {
+    "race_id": "2026-10-06-05-06",
+    "run_id": "092648-37393828199",
+    "n_total": 1603,
+    "pool_cutoff": "2026-10-05"
+   },
+   {
+    "race_id": "2026-10-07-01-01",
+    "run_id": "071249-37538909638",
+    "n_total": 8846,
+    "pool_cutoff": "2026-10-06"
+   },
+   {
+    "race_id": "2026-10-07-01-06",
+    "run_id": "071249-37538909638",
+    "n_total": 58312,
+    "pool_cutoff": "2026-10-06"
+   },
+   {
+    "race_id": "2026-10-07-01-12",
+    "run_id": "071249-37538909638",
+    "n_total": 6973,
+    "pool_cutoff": "2026-10-06"
+   },
+   {
+    "race_id": "2026-10-07-03-01",
+    "run_id": "071249-37538909638",
+    "n_total": 8846,
+    "pool_cutoff": "2026-10-06"
+   },
+   {
+    "race_id": "2026-10-07-03-06",
+    "run_id": "071249-37538909638",
+    "n_total": 9900,
+    "pool_cutoff": "2026-10-06"
+   },
+   {
+    "race_id": "2026-10-08-01-01",
+    "run_id": "071330-37694483248",
+    "n_total": 4434,
+    "pool_cutoff": "2026-10-07"
+   },
+   {
+    "race_id": "2026-10-08-01-06",
+    "run_id": "071330-37694483248",
+    "n_total": 58331,
+    "pool_cutoff": "2026-10-07"
+   },
+   {
+    "race_id": "2026-10-08-01-12",
+    "run_id": "071330-37694483248",
+    "n_total": 6976,
+    "pool_cutoff": "2026-10-07"
+   },
+   {
+    "race_id": "2026-10-08-03-01",
+    "run_id": "071330-37694483248",
+    "n_total": 8850,
+    "pool_cutoff": "2026-10-07"
+   },
+   {
+    "race_id": "2026-10-08-03-06",
+    "run_id": "071330-37694483248",
+    "n_total": 1165,
+    "pool_cutoff": "2026-10-07"
+   },
+   {
+    "race_id": "2026-10-09-01-01",
+    "run_id": "071249-37851809687",
+    "n_total": 1953,
+    "pool_cutoff": "2026-10-08"
+   },
+   {
+    "race_id": "2026-10-09-01-06",
+    "run_id": "071249-37851809687",
+    "n_total": 19666,
+    "pool_cutoff": "2026-10-08"
+   },
+   {
+    "race_id": "2026-10-09-01-12",
+    "run_id": "071249-37851809687",
+    "n_total": 5190,
+    "pool_cutoff": "2026-10-08"
+   },
+   {
+    "race_id": "2026-10-09-02-01",
+    "run_id": "071249-37851809687",
+    "n_total": 9908,
+    "pool_cutoff": "2026-10-08"
+   },
+   {
+    "race_id": "2026-10-09-02-06",
+    "run_id": "071249-37851809687",
+    "n_total": 8853,
+    "pool_cutoff": "2026-10-08"
+   },
+   {
+    "race_id": "2026-10-10-01-01",
+    "run_id": "071255-37997778480",
+    "n_total": 9717,
+    "pool_cutoff": "2026-10-09"
+   },
+   {
+    "race_id": "2026-10-10-01-06",
+    "run_id": "071255-37997778480",
+    "n_total": 58367,
+    "pool_cutoff": "2026-10-09"
+   },
+   {
+    "race_id": "2026-10-10-01-12",
+    "run_id": "071255-37997778480",
+    "n_total": 5193,
+    "pool_cutoff": "2026-10-09"
+   },
+   {
+    "race_id": "2026-10-10-02-01",
+    "run_id": "071255-37997778480",
+    "n_total": 4439,
+    "pool_cutoff": "2026-10-09"
+   },
+   {
+    "race_id": "2026-10-10-02-06",
+    "run_id": "071255-37997778480",
+    "n_total": 5236,
+    "pool_cutoff": "2026-10-09"
+   },
+   {
+    "race_id": "2026-10-11-01-01",
+    "run_id": "071351-38090441504",
+    "n_total": 1956,
+    "pool_cutoff": "2026-10-10"
+   },
+   {
+    "race_id": "2026-10-11-01-06",
+    "run_id": "071351-38090441504",
+    "n_total": 19684,
+    "pool_cutoff": "2026-10-10"
+   },
+   {
+    "race_id": "2026-10-11-01-12",
+    "run_id": "071351-38090441504",
+    "n_total": 4663,
+    "pool_cutoff": "2026-10-10"
+   },
+   {
+    "race_id": "2026-10-11-02-01",
+    "run_id": "071351-38090441504",
+    "n_total": 1239,
+    "pool_cutoff": "2026-10-10"
+   },
+   {
+    "race_id": "2026-10-11-02-06",
+    "run_id": "071351-38090441504",
+    "n_total": 13191,
+    "pool_cutoff": "2026-10-10"
+   },
+   {
+    "race_id": "2026-10-12-01-01",
+    "run_id": "071210-38179378987",
+    "n_total": 9929,
+    "pool_cutoff": "2026-10-11"
+   },
+   {
+    "race_id": "2026-10-12-01-06",
+    "run_id": "071210-38179378987",
+    "n_total": 58410,
+    "pool_cutoff": "2026-10-11"
+   },
+   {
+    "race_id": "2026-10-12-01-12",
+    "run_id": "071210-38179378987",
+    "n_total": 175,
+    "pool_cutoff": "2026-10-11"
+   },
+   {
+    "race_id": "2026-10-12-02-01",
+    "run_id": "071210-38179378987",
+    "n_total": 8867,
+    "pool_cutoff": "2026-10-11"
+   },
+   {
+    "race_id": "2026-10-12-02-06",
+    "run_id": "071210-38179378987",
+    "n_total": 8867,
+    "pool_cutoff": "2026-10-11"
+   }
+  ]
+ },
+ "fixed_data_check": {
+  "n": 35,
+  "n_ok": 35,
+  "all_ok": true,
+  "races": [
+   {
+    "race_id": "2026-10-06-02-01",
+    "run_id": "092648-37393828199",
+    "pool_cutoff": "2026-10-05",
+    "n_total_prod": 348,
+    "cond_prod": {
+     "b1_class": "B2",
+     "gap_band": 1,
+     "top_boat": 4,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B2",
+     "gap_band": 1,
+     "top_boat": 4,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 348,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 348,
+    "n_rows": 348,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-06-02-06",
+    "run_id": "092648-37393828199",
+    "pool_cutoff": "2026-10-05",
+    "n_total_prod": 8841,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 8841,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-06-02-12",
+    "run_id": "092648-37393828199",
+    "pool_cutoff": "2026-10-05",
+    "n_total_prod": 61,
+    "cond_prod": {
+     "b1_class": "A2",
+     "gap_band": 2,
+     "top_boat": 5,
+     "round": "yusho",
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A2",
+     "gap_band": 2,
+     "top_boat": 5,
+     "round": "yusho",
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 61,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 61,
+    "n_rows": 61,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-06-05-01",
+    "run_id": "092648-37393828199",
+    "pool_cutoff": "2026-10-05",
+    "n_total_prod": 9288,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 9288,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-06-05-06",
+    "run_id": "092648-37393828199",
+    "pool_cutoff": "2026-10-05",
+    "n_total_prod": 1603,
+    "cond_prod": {
+     "b1_class": "A2",
+     "gap_band": 0,
+     "top_boat": 4,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A2",
+     "gap_band": 0,
+     "top_boat": 4,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 1603,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 1603,
+    "n_rows": 1603,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-07-01-01",
+    "run_id": "071249-37538909638",
+    "pool_cutoff": "2026-10-06",
+    "n_total_prod": 8846,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 8846,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-07-01-06",
+    "run_id": "071249-37538909638",
+    "pool_cutoff": "2026-10-06",
+    "n_total_prod": 58312,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 58312,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-07-01-12",
+    "run_id": "071249-37538909638",
+    "pool_cutoff": "2026-10-06",
+    "n_total_prod": 6973,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 3,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 3,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 6973,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-07-03-01",
+    "run_id": "071249-37538909638",
+    "pool_cutoff": "2026-10-06",
+    "n_total_prod": 8846,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 8846,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-07-03-06",
+    "run_id": "071249-37538909638",
+    "pool_cutoff": "2026-10-06",
+    "n_total_prod": 9900,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 9900,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-08-01-01",
+    "run_id": "071330-37694483248",
+    "pool_cutoff": "2026-10-07",
+    "n_total_prod": 4434,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 2,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 2,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 4434,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-08-01-06",
+    "run_id": "071330-37694483248",
+    "pool_cutoff": "2026-10-07",
+    "n_total_prod": 58331,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 58331,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-08-01-12",
+    "run_id": "071330-37694483248",
+    "pool_cutoff": "2026-10-07",
+    "n_total_prod": 6976,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 3,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 3,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 6976,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-08-03-01",
+    "run_id": "071330-37694483248",
+    "pool_cutoff": "2026-10-07",
+    "n_total_prod": 8850,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 8850,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-08-03-06",
+    "run_id": "071330-37694483248",
+    "pool_cutoff": "2026-10-07",
+    "n_total_prod": 1165,
+    "cond_prod": {
+     "b1_class": "B2",
+     "gap_band": 0,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B2",
+     "gap_band": 0,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 1165,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 1165,
+    "n_rows": 1165,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-09-01-01",
+    "run_id": "071249-37851809687",
+    "pool_cutoff": "2026-10-08",
+    "n_total_prod": 1953,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 3,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 3,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 1953,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 1953,
+    "n_rows": 1953,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-09-01-06",
+    "run_id": "071249-37851809687",
+    "pool_cutoff": "2026-10-08",
+    "n_total_prod": 19666,
+    "cond_prod": {
+     "b1_class": "A2",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A2",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 19666,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-09-01-12",
+    "run_id": "071249-37851809687",
+    "pool_cutoff": "2026-10-08",
+    "n_total_prod": 5190,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 2,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 2,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 5190,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-09-02-01",
+    "run_id": "071249-37851809687",
+    "pool_cutoff": "2026-10-08",
+    "n_total_prod": 9908,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 9908,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-09-02-06",
+    "run_id": "071249-37851809687",
+    "pool_cutoff": "2026-10-08",
+    "n_total_prod": 8853,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 8853,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-10-01-01",
+    "run_id": "071255-37997778480",
+    "pool_cutoff": "2026-10-09",
+    "n_total_prod": 9717,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 9717,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-10-01-06",
+    "run_id": "071255-37997778480",
+    "pool_cutoff": "2026-10-09",
+    "n_total_prod": 58367,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 58367,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-10-01-12",
+    "run_id": "071255-37997778480",
+    "pool_cutoff": "2026-10-09",
+    "n_total_prod": 5193,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 2,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 2,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 5193,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-10-02-01",
+    "run_id": "071255-37997778480",
+    "pool_cutoff": "2026-10-09",
+    "n_total_prod": 4439,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 2,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 2,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 4439,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-10-02-06",
+    "run_id": "071255-37997778480",
+    "pool_cutoff": "2026-10-09",
+    "n_total_prod": 5236,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 2,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 2,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 5236,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-11-01-01",
+    "run_id": "071351-38090441504",
+    "pool_cutoff": "2026-10-10",
+    "n_total_prod": 1956,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 3,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 3,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 1956,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 1956,
+    "n_rows": 1956,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-11-01-06",
+    "run_id": "071351-38090441504",
+    "pool_cutoff": "2026-10-10",
+    "n_total_prod": 19684,
+    "cond_prod": {
+     "b1_class": "A2",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A2",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 19684,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-11-01-12",
+    "run_id": "071351-38090441504",
+    "pool_cutoff": "2026-10-10",
+    "n_total_prod": 4663,
+    "cond_prod": {
+     "b1_class": "A2",
+     "gap_band": 1,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A2",
+     "gap_band": 1,
+     "top_boat": 6,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 4663,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-11-02-01",
+    "run_id": "071351-38090441504",
+    "pool_cutoff": "2026-10-10",
+    "n_total_prod": 1239,
+    "cond_prod": {
+     "b1_class": "B2",
+     "gap_band": 0,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B2",
+     "gap_band": 0,
+     "top_boat": 3,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 1239,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 1239,
+    "n_rows": 1239,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-11-02-06",
+    "run_id": "071351-38090441504",
+    "pool_cutoff": "2026-10-10",
+    "n_total_prod": 13191,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 0,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 0,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 13191,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-12-01-01",
+    "run_id": "071210-38179378987",
+    "pool_cutoff": "2026-10-11",
+    "n_total_prod": 9929,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 2,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 9929,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-12-01-06",
+    "run_id": "071210-38179378987",
+    "pool_cutoff": "2026-10-11",
+    "n_total_prod": 58410,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 4,
+     "top_boat": 1,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 58410,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-12-01-12",
+    "run_id": "071210-38179378987",
+    "pool_cutoff": "2026-10-11",
+    "n_total_prod": 175,
+    "cond_prod": {
+     "b1_class": "A1",
+     "gap_band": 3,
+     "top_boat": 6,
+     "round": "yusho",
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "A1",
+     "gap_band": 3,
+     "top_boat": 6,
+     "round": "yusho",
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 175,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 175,
+    "n_rows": 175,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-12-02-01",
+    "run_id": "071210-38179378987",
+    "pool_cutoff": "2026-10-11",
+    "n_total_prod": 8867,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 8867,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   },
+   {
+    "race_id": "2026-10-12-02-06",
+    "run_id": "071210-38179378987",
+    "pool_cutoff": "2026-10-11",
+    "n_total_prod": 8867,
+    "cond_prod": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_mine": {
+     "b1_class": "B1",
+     "gap_band": 1,
+     "top_boat": 5,
+     "round": null,
+     "grade_g1plus": false
+    },
+    "cond_same": true,
+    "n_total_mine": 8867,
+    "ids_same": true,
+    "order_same": true,
+    "rows_same_values": 2000,
+    "n_rows": 2000,
+    "only_prod": [],
+    "only_mine": [],
+    "ok": true
+   }
+  ]
+ },
+ "pool": {
+  "n_cand": 411235,
+  "date_range": [
+   "2019-04-01",
+   "2026-10-13"
+  ]
+ },
+ "n_options": {
+  "order_single": 120,
+  "order_nagashi": 60,
+  "boat1": 3,
+  "tenkai": 24,
+  "slit_form": 39,
+  "slit_custom": 72,
+  "entry": 12,
+  "payout": 3
+ },
+ "options_zero_in_pool": [],
+ "lines": [
+  {
+   "x": 15,
+   "y": 5,
+   "subgroups": {
+    "order_single": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 642,
+      "n_races": 634,
+      "rate": 0.13862928348909656,
+      "ci95": [
+       0.11165769274831024,
+       0.1658447680950088
+      ],
+      "verdict": "境界",
+      "verdict_point_rule": "不合格",
+      "by_month": {
+       "2026-04": {
+        "n": 93,
+        "rate": 0.17204301075268819
+       },
+       "2026-05": {
+        "n": 112,
+        "rate": 0.17857142857142858
+       },
+       "2026-06": {
+        "n": 99,
+        "rate": 0.10101010101010101
+       },
+       "2026-07": {
+        "n": 121,
+        "rate": 0.08264462809917356
+       },
+       "2026-08": {
+        "n": 122,
+        "rate": 0.19672131147540983
+       },
+       "2026-09": {
+        "n": 95,
+        "rate": 0.09473684210526316
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 135001,
+      "n_races": 28005,
+      "rate": 0.03696268916526544,
+      "ci95": [
+       0.03608066368748959,
+       0.03775564619228296
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 21517,
+        "rate": 0.03769112794534554
+       },
+       "2026-05": {
+        "n": 23921,
+        "rate": 0.0383345177877179
+       },
+       "2026-06": {
+        "n": 23101,
+        "rate": 0.03618890957101424
+       },
+       "2026-07": {
+        "n": 22591,
+        "rate": 0.03691735646939046
+       },
+       "2026-08": {
+        "n": 22816,
+        "rate": 0.03554523141654979
+       },
+       "2026-09": {
+        "n": 21055,
+        "rate": 0.03709332700071242
+       }
+      }
+     }
+    },
+    "order_nagashi": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 63057,
+      "n_races": 23307,
+      "rate": 0.17390614840541097,
+      "ci95": [
+       0.17054315503664386,
+       0.17710789904020055
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 10284,
+        "rate": 0.17551536367172307
+       },
+       "2026-05": {
+        "n": 10953,
+        "rate": 0.17447274719255
+       },
+       "2026-06": {
+        "n": 10565,
+        "rate": 0.1769995267392333
+       },
+       "2026-07": {
+        "n": 10748,
+        "rate": 0.16654261257908448
+       },
+       "2026-08": {
+        "n": 10830,
+        "rate": 0.17017543859649123
+       },
+       "2026-09": {
+        "n": 9677,
+        "rate": 0.1805311563501085
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 303899,
+      "n_races": 27954,
+      "rate": 0.03803895373133837,
+      "ci95": [
+       0.03697362837444549,
+       0.03901975221370206
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 46837,
+        "rate": 0.037214168285756986
+       },
+       "2026-05": {
+        "n": 51858,
+        "rate": 0.03820047051563886
+       },
+       "2026-06": {
+        "n": 49718,
+        "rate": 0.0390804135323223
+       },
+       "2026-07": {
+        "n": 53774,
+        "rate": 0.03758321865585599
+       },
+       "2026-08": {
+        "n": 52688,
+        "rate": 0.03856665654418463
+       },
+       "2026-09": {
+        "n": 49024,
+        "rate": 0.037532637075718016
+       }
+      }
+     }
+    },
+    "boat1": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 4920,
+      "n_races": 4920,
+      "rate": 0.17032520325203251,
+      "ci95": [
+       0.15955115895768152,
+       0.1820096972432968
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 776,
+        "rate": 0.16237113402061856
+       },
+       "2026-05": {
+        "n": 771,
+        "rate": 0.19584954604409857
+       },
+       "2026-06": {
+        "n": 873,
+        "rate": 0.1718213058419244
+       },
+       "2026-07": {
+        "n": 811,
+        "rate": 0.1812577065351418
+       },
+       "2026-08": {
+        "n": 824,
+        "rate": 0.15655339805825244
+       },
+       "2026-09": {
+        "n": 865,
+        "rate": 0.15606936416184972
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 10,
+      "n_races": 10,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 4,
+        "rate": 0.0
+       },
+       "2026-05": {
+        "n": 2,
+        "rate": 0.0
+       },
+       "2026-06": {
+        "n": 2,
+        "rate": 0.0
+       },
+       "2026-07": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-08": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-09": {
+        "n": 2,
+        "rate": 0.0
+       }
+      }
+     }
+    },
+    "tenkai": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 2874,
+      "n_races": 2536,
+      "rate": 0.18754349338900486,
+      "ci95": [
+       0.1735204887124086,
+       0.2017457628436524
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 364,
+        "rate": 0.18956043956043955
+       },
+       "2026-05": {
+        "n": 446,
+        "rate": 0.19955156950672645
+       },
+       "2026-06": {
+        "n": 407,
+        "rate": 0.19656019656019655
+       },
+       "2026-07": {
+        "n": 468,
+        "rate": 0.18162393162393162
+       },
+       "2026-08": {
+        "n": 701,
+        "rate": 0.17403708987161198
+       },
+       "2026-09": {
+        "n": 488,
+        "rate": 0.19262295081967212
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 67707,
+      "n_races": 25906,
+      "rate": 0.03859275998050423,
+      "ci95": [
+       0.03710042886210663,
+       0.04014900310777156
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 10325,
+        "rate": 0.038934624697336565
+       },
+       "2026-05": {
+        "n": 11538,
+        "rate": 0.03969492113017854
+       },
+       "2026-06": {
+        "n": 11099,
+        "rate": 0.039372916478962065
+       },
+       "2026-07": {
+        "n": 11593,
+        "rate": 0.040110411455188476
+       },
+       "2026-08": {
+        "n": 12043,
+        "rate": 0.037781283733289046
+       },
+       "2026-09": {
+        "n": 11109,
+        "rate": 0.035646772886848505
+       }
+      }
+     }
+    },
+    "slit_form": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 51366,
+      "n_races": 26098,
+      "rate": 0.16781528637620216,
+      "ci95": [
+       0.16467143111464846,
+       0.17121845360017673
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 7793,
+        "rate": 0.16578981136917748
+       },
+       "2026-05": {
+        "n": 8649,
+        "rate": 0.16649323621227888
+       },
+       "2026-06": {
+        "n": 8210,
+        "rate": 0.16930572472594396
+       },
+       "2026-07": {
+        "n": 9148,
+        "rate": 0.16407958023611718
+       },
+       "2026-08": {
+        "n": 9244,
+        "rate": 0.17330160103851147
+       },
+       "2026-09": {
+        "n": 8322,
+        "rate": 0.16762797404470078
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 116314,
+      "n_races": 27369,
+      "rate": 0.038112351049744655,
+      "ci95": [
+       0.03696816618191513,
+       0.039256806772830714
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 18388,
+        "rate": 0.038992821405264305
+       },
+       "2026-05": {
+        "n": 20102,
+        "rate": 0.039598049945279074
+       },
+       "2026-06": {
+        "n": 19022,
+        "rate": 0.03622121753758806
+       },
+       "2026-07": {
+        "n": 20282,
+        "rate": 0.03909870821418006
+       },
+       "2026-08": {
+        "n": 19813,
+        "rate": 0.03886337253318528
+       },
+       "2026-09": {
+        "n": 18707,
+        "rate": 0.035708558293686854
+       }
+      }
+     }
+    },
+    "slit_custom": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 29552,
+      "n_races": 16901,
+      "rate": 0.16675690308608554,
+      "ci95": [
+       0.1616164902714659,
+       0.17160655189148305
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 4424,
+        "rate": 0.17540687160940324
+       },
+       "2026-05": {
+        "n": 4712,
+        "rate": 0.17423599320882852
+       },
+       "2026-06": {
+        "n": 4964,
+        "rate": 0.16478646253021756
+       },
+       "2026-07": {
+        "n": 5151,
+        "rate": 0.1634634051640458
+       },
+       "2026-08": {
+        "n": 5202,
+        "rate": 0.16858900422914264
+       },
+       "2026-09": {
+        "n": 5099,
+        "rate": 0.1557168072171014
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 266681,
+      "n_races": 27393,
+      "rate": 0.037734221785579024,
+      "ci95": [
+       0.03643668528437469,
+       0.03889786991125742
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 41355,
+        "rate": 0.04144601620118486
+       },
+       "2026-05": {
+        "n": 45318,
+        "rate": 0.0385718698971711
+       },
+       "2026-06": {
+        "n": 43496,
+        "rate": 0.036807982343203975
+       },
+       "2026-07": {
+        "n": 46350,
+        "rate": 0.03682847896440129
+       },
+       "2026-08": {
+        "n": 45787,
+        "rate": 0.03693188022801232
+       },
+       "2026-09": {
+        "n": 44375,
+        "rate": 0.036101408450704225
+       }
+      }
+     }
+    },
+    "entry": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 806,
+      "n_races": 804,
+      "rate": 0.13027295285359802,
+      "ci95": [
+       0.10666628440366974,
+       0.15356755077711798
+      ],
+      "verdict": "境界",
+      "verdict_point_rule": "不合格",
+      "by_month": {
+       "2026-04": {
+        "n": 156,
+        "rate": 0.1346153846153846
+       },
+       "2026-05": {
+        "n": 173,
+        "rate": 0.15028901734104047
+       },
+       "2026-06": {
+        "n": 170,
+        "rate": 0.10588235294117647
+       },
+       "2026-07": {
+        "n": 174,
+        "rate": 0.13218390804597702
+       },
+       "2026-08": {
+        "n": 107,
+        "rate": 0.12149532710280374
+       },
+       "2026-09": {
+        "n": 26,
+        "rate": 0.15384615384615385
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 34041,
+      "n_races": 23743,
+      "rate": 0.03757233923797773,
+      "ci95": [
+       0.035318662326724,
+       0.039620877808592914
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 5009,
+        "rate": 0.04092633260131763
+       },
+       "2026-05": {
+        "n": 5370,
+        "rate": 0.03985102420856611
+       },
+       "2026-06": {
+        "n": 5404,
+        "rate": 0.03737971872686899
+       },
+       "2026-07": {
+        "n": 6290,
+        "rate": 0.03672496025437202
+       },
+       "2026-08": {
+        "n": 6251,
+        "rate": 0.0364741641337386
+       },
+       "2026-09": {
+        "n": 5717,
+        "rate": 0.034808465978660136
+       }
+      }
+     }
+    },
+    "payout": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 24249,
+      "n_races": 20465,
+      "rate": 0.1673058682832282,
+      "ci95": [
+       0.1628930052815351,
+       0.17176198587576758
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 3950,
+        "rate": 0.16455696202531644
+       },
+       "2026-05": {
+        "n": 4246,
+        "rate": 0.17192651907677814
+       },
+       "2026-06": {
+        "n": 4076,
+        "rate": 0.16535819430814525
+       },
+       "2026-07": {
+        "n": 3986,
+        "rate": 0.17084796788760662
+       },
+       "2026-08": {
+        "n": 4040,
+        "rate": 0.16856435643564358
+       },
+       "2026-09": {
+        "n": 3951,
+        "rate": 0.1622374082510757
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 2966,
+      "n_races": 2966,
+      "rate": 0.044504383007417395,
+      "ci95": [
+       0.03667613800179919,
+       0.05286671470653611
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 391,
+        "rate": 0.04603580562659847
+       },
+       "2026-05": {
+        "n": 498,
+        "rate": 0.05622489959839357
+       },
+       "2026-06": {
+        "n": 509,
+        "rate": 0.03929273084479371
+       },
+       "2026-07": {
+        "n": 615,
+        "rate": 0.04065040650406504
+       },
+       "2026-08": {
+        "n": 553,
+        "rate": 0.045207956600361664
+       },
+       "2026-09": {
+        "n": 400,
+        "rate": 0.04
+       }
+      }
+     }
+    }
+   },
+   "failed": [],
+   "pass": true,
+   "failed_point_rule": [
+    "order_single:teiban",
+    "entry:teiban"
+   ],
+   "pass_point_rule": false
+  },
+  {
+   "x": 20,
+   "y": 5,
+   "subgroups": {
+    "order_single": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 37,
+      "n_races": 21,
+      "rate": 0.05405405405405406,
+      "ci95": [
+       0.0,
+       0.16
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 1,
+        "rate": 0.0
+       },
+       "2026-05": {
+        "n": 5,
+        "rate": 0.0
+       },
+       "2026-06": {
+        "n": 8,
+        "rate": 0.0
+       },
+       "2026-07": {
+        "n": 2,
+        "rate": 0.5
+       },
+       "2026-08": {
+        "n": 13,
+        "rate": 0.07692307692307693
+       },
+       "2026-09": {
+        "n": 8,
+        "rate": 0.0
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 135001,
+      "n_races": 28005,
+      "rate": 0.03696268916526544,
+      "ci95": [
+       0.03608066368748959,
+       0.03775564619228296
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 21517,
+        "rate": 0.03769112794534554
+       },
+       "2026-05": {
+        "n": 23921,
+        "rate": 0.0383345177877179
+       },
+       "2026-06": {
+        "n": 23101,
+        "rate": 0.03618890957101424
+       },
+       "2026-07": {
+        "n": 22591,
+        "rate": 0.03691735646939046
+       },
+       "2026-08": {
+        "n": 22816,
+        "rate": 0.03554523141654979
+       },
+       "2026-09": {
+        "n": 21055,
+        "rate": 0.03709332700071242
+       }
+      }
+     }
+    },
+    "order_nagashi": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 51175,
+      "n_races": 17156,
+      "rate": 0.22819736199316074,
+      "ci95": [
+       0.22339268240590943,
+       0.232882511357626
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 8228,
+        "rate": 0.2339572192513369
+       },
+       "2026-05": {
+        "n": 8657,
+        "rate": 0.22016864964768396
+       },
+       "2026-06": {
+        "n": 8413,
+        "rate": 0.23558778081540474
+       },
+       "2026-07": {
+        "n": 8483,
+        "rate": 0.21902628786985737
+       },
+       "2026-08": {
+        "n": 8871,
+        "rate": 0.23165370307744335
+       },
+       "2026-09": {
+        "n": 8523,
+        "rate": 0.22902733779185733
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 303899,
+      "n_races": 27954,
+      "rate": 0.03803895373133837,
+      "ci95": [
+       0.03697362837444549,
+       0.03901975221370206
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 46837,
+        "rate": 0.037214168285756986
+       },
+       "2026-05": {
+        "n": 51858,
+        "rate": 0.03820047051563886
+       },
+       "2026-06": {
+        "n": 49718,
+        "rate": 0.0390804135323223
+       },
+       "2026-07": {
+        "n": 53774,
+        "rate": 0.03758321865585599
+       },
+       "2026-08": {
+        "n": 52688,
+        "rate": 0.03856665654418463
+       },
+       "2026-09": {
+        "n": 49024,
+        "rate": 0.037532637075718016
+       }
+      }
+     }
+    },
+    "boat1": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 2745,
+      "n_races": 2745,
+      "rate": 0.22185792349726777,
+      "ci95": [
+       0.20602696950491425,
+       0.23918682558875276
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 445,
+        "rate": 0.2157303370786517
+       },
+       "2026-05": {
+        "n": 531,
+        "rate": 0.24670433145009416
+       },
+       "2026-06": {
+        "n": 469,
+        "rate": 0.22174840085287847
+       },
+       "2026-07": {
+        "n": 508,
+        "rate": 0.23622047244094488
+       },
+       "2026-08": {
+        "n": 401,
+        "rate": 0.20947630922693267
+       },
+       "2026-09": {
+        "n": 391,
+        "rate": 0.18925831202046037
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 10,
+      "n_races": 10,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 4,
+        "rate": 0.0
+       },
+       "2026-05": {
+        "n": 2,
+        "rate": 0.0
+       },
+       "2026-06": {
+        "n": 2,
+        "rate": 0.0
+       },
+       "2026-07": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-08": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-09": {
+        "n": 2,
+        "rate": 0.0
+       }
+      }
+     }
+    },
+    "tenkai": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 687,
+      "n_races": 586,
+      "rate": 0.20232896652110627,
+      "ci95": [
+       0.17655566525219324,
+       0.2316904003123898
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 75,
+        "rate": 0.18666666666666668
+       },
+       "2026-05": {
+        "n": 118,
+        "rate": 0.23728813559322035
+       },
+       "2026-06": {
+        "n": 109,
+        "rate": 0.1926605504587156
+       },
+       "2026-07": {
+        "n": 98,
+        "rate": 0.20408163265306123
+       },
+       "2026-08": {
+        "n": 115,
+        "rate": 0.20869565217391303
+       },
+       "2026-09": {
+        "n": 172,
+        "rate": 0.18604651162790697
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 67707,
+      "n_races": 25906,
+      "rate": 0.03859275998050423,
+      "ci95": [
+       0.03710042886210663,
+       0.04014900310777156
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 10325,
+        "rate": 0.038934624697336565
+       },
+       "2026-05": {
+        "n": 11538,
+        "rate": 0.03969492113017854
+       },
+       "2026-06": {
+        "n": 11099,
+        "rate": 0.039372916478962065
+       },
+       "2026-07": {
+        "n": 11593,
+        "rate": 0.040110411455188476
+       },
+       "2026-08": {
+        "n": 12043,
+        "rate": 0.037781283733289046
+       },
+       "2026-09": {
+        "n": 11109,
+        "rate": 0.035646772886848505
+       }
+      }
+     }
+    },
+    "slit_form": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 5386,
+      "n_races": 4785,
+      "rate": 0.20219086520608986,
+      "ci95": [
+       0.19072614052816417,
+       0.21340616613131727
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 954,
+        "rate": 0.1928721174004193
+       },
+       "2026-05": {
+        "n": 868,
+        "rate": 0.1923963133640553
+       },
+       "2026-06": {
+        "n": 949,
+        "rate": 0.20337197049525815
+       },
+       "2026-07": {
+        "n": 693,
+        "rate": 0.20634920634920634
+       },
+       "2026-08": {
+        "n": 808,
+        "rate": 0.1943069306930693
+       },
+       "2026-09": {
+        "n": 1114,
+        "rate": 0.2199281867145422
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 116314,
+      "n_races": 27369,
+      "rate": 0.038112351049744655,
+      "ci95": [
+       0.03696816618191513,
+       0.039256806772830714
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 18388,
+        "rate": 0.038992821405264305
+       },
+       "2026-05": {
+        "n": 20102,
+        "rate": 0.039598049945279074
+       },
+       "2026-06": {
+        "n": 19022,
+        "rate": 0.03622121753758806
+       },
+       "2026-07": {
+        "n": 20282,
+        "rate": 0.03909870821418006
+       },
+       "2026-08": {
+        "n": 19813,
+        "rate": 0.03886337253318528
+       },
+       "2026-09": {
+        "n": 18707,
+        "rate": 0.035708558293686854
+       }
+      }
+     }
+    },
+    "slit_custom": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 18182,
+      "n_races": 14642,
+      "rate": 0.21730282697173028,
+      "ci95": [
+       0.2111082571380654,
+       0.2237694254207973
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 3157,
+        "rate": 0.2356667722521381
+       },
+       "2026-05": {
+        "n": 3139,
+        "rate": 0.22204523733673145
+       },
+       "2026-06": {
+        "n": 2765,
+        "rate": 0.2112115732368897
+       },
+       "2026-07": {
+        "n": 2922,
+        "rate": 0.202943189596167
+       },
+       "2026-08": {
+        "n": 3084,
+        "rate": 0.2178988326848249
+       },
+       "2026-09": {
+        "n": 3115,
+        "rate": 0.21219903691813805
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 266681,
+      "n_races": 27393,
+      "rate": 0.037734221785579024,
+      "ci95": [
+       0.03643668528437469,
+       0.03889786991125742
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 41355,
+        "rate": 0.04144601620118486
+       },
+       "2026-05": {
+        "n": 45318,
+        "rate": 0.0385718698971711
+       },
+       "2026-06": {
+        "n": 43496,
+        "rate": 0.036807982343203975
+       },
+       "2026-07": {
+        "n": 46350,
+        "rate": 0.03682847896440129
+       },
+       "2026-08": {
+        "n": 45787,
+        "rate": 0.03693188022801232
+       },
+       "2026-09": {
+        "n": 44375,
+        "rate": 0.036101408450704225
+       }
+      }
+     }
+    },
+    "entry": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 101,
+      "n_races": 99,
+      "rate": 0.12871287128712872,
+      "ci95": [
+       0.07070409982174687,
+       0.19232954545454545
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 16,
+        "rate": 0.1875
+       },
+       "2026-05": {
+        "n": 14,
+        "rate": 0.14285714285714285
+       },
+       "2026-06": {
+        "n": 9,
+        "rate": 0.0
+       },
+       "2026-07": {
+        "n": 14,
+        "rate": 0.14285714285714285
+       },
+       "2026-08": {
+        "n": 24,
+        "rate": 0.16666666666666666
+       },
+       "2026-09": {
+        "n": 24,
+        "rate": 0.08333333333333333
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 34041,
+      "n_races": 23743,
+      "rate": 0.03757233923797773,
+      "ci95": [
+       0.035318662326724,
+       0.039620877808592914
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 5009,
+        "rate": 0.04092633260131763
+       },
+       "2026-05": {
+        "n": 5370,
+        "rate": 0.03985102420856611
+       },
+       "2026-06": {
+        "n": 5404,
+        "rate": 0.03737971872686899
+       },
+       "2026-07": {
+        "n": 6290,
+        "rate": 0.03672496025437202
+       },
+       "2026-08": {
+        "n": 6251,
+        "rate": 0.0364741641337386
+       },
+       "2026-09": {
+        "n": 5717,
+        "rate": 0.034808465978660136
+       }
+      }
+     }
+    },
+    "payout": {
+     "teiban": {
+      "band": [
+       20,
+       25
+      ],
+      "n_pairs": 5493,
+      "n_races": 5474,
+      "rate": 0.2364827962861824,
+      "ci95": [
+       0.22537066070596443,
+       0.2479211126416288
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 881,
+        "rate": 0.25312145289443816
+       },
+       "2026-05": {
+        "n": 922,
+        "rate": 0.2440347071583514
+       },
+       "2026-06": {
+        "n": 865,
+        "rate": 0.2300578034682081
+       },
+       "2026-07": {
+        "n": 948,
+        "rate": 0.23839662447257384
+       },
+       "2026-08": {
+        "n": 967,
+        "rate": 0.2326783867631851
+       },
+       "2026-09": {
+        "n": 910,
+        "rate": 0.22087912087912087
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       3,
+       5
+      ],
+      "n_pairs": 2966,
+      "n_races": 2966,
+      "rate": 0.044504383007417395,
+      "ci95": [
+       0.03667613800179919,
+       0.05286671470653611
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 391,
+        "rate": 0.04603580562659847
+       },
+       "2026-05": {
+        "n": 498,
+        "rate": 0.05622489959839357
+       },
+       "2026-06": {
+        "n": 509,
+        "rate": 0.03929273084479371
+       },
+       "2026-07": {
+        "n": 615,
+        "rate": 0.04065040650406504
+       },
+       "2026-08": {
+        "n": 553,
+        "rate": 0.045207956600361664
+       },
+       "2026-09": {
+        "n": 400,
+        "rate": 0.04
+       }
+      }
+     }
+    }
+   },
+   "failed": [],
+   "pass": true,
+   "failed_point_rule": [],
+   "pass_point_rule": true
+  },
+  {
+   "x": 15,
+   "y": 3,
+   "subgroups": {
+    "order_single": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 642,
+      "n_races": 634,
+      "rate": 0.13862928348909656,
+      "ci95": [
+       0.11165769274831024,
+       0.1658447680950088
+      ],
+      "verdict": "境界",
+      "verdict_point_rule": "不合格",
+      "by_month": {
+       "2026-04": {
+        "n": 93,
+        "rate": 0.17204301075268819
+       },
+       "2026-05": {
+        "n": 112,
+        "rate": 0.17857142857142858
+       },
+       "2026-06": {
+        "n": 99,
+        "rate": 0.10101010101010101
+       },
+       "2026-07": {
+        "n": 121,
+        "rate": 0.08264462809917356
+       },
+       "2026-08": {
+        "n": 122,
+        "rate": 0.19672131147540983
+       },
+       "2026-09": {
+        "n": 95,
+        "rate": 0.09473684210526316
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 553222,
+      "n_races": 28080,
+      "rate": 0.016275563878515316,
+      "ci95": [
+       0.015982959968623475,
+       0.01654562332323108
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 83055,
+        "rate": 0.01580880139666486
+       },
+       "2026-05": {
+        "n": 93424,
+        "rate": 0.016013015927384827
+       },
+       "2026-06": {
+        "n": 90294,
+        "rate": 0.016324451237070017
+       },
+       "2026-07": {
+        "n": 99059,
+        "rate": 0.016485125026499358
+       },
+       "2026-08": {
+        "n": 97230,
+        "rate": 0.01625012856114368
+       },
+       "2026-09": {
+        "n": 90160,
+        "rate": 0.016725820763087845
+       }
+      }
+     }
+    },
+    "order_nagashi": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 63057,
+      "n_races": 23307,
+      "rate": 0.17390614840541097,
+      "ci95": [
+       0.17054315503664386,
+       0.17710789904020055
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 10284,
+        "rate": 0.17551536367172307
+       },
+       "2026-05": {
+        "n": 10953,
+        "rate": 0.17447274719255
+       },
+       "2026-06": {
+        "n": 10565,
+        "rate": 0.1769995267392333
+       },
+       "2026-07": {
+        "n": 10748,
+        "rate": 0.16654261257908448
+       },
+       "2026-08": {
+        "n": 10830,
+        "rate": 0.17017543859649123
+       },
+       "2026-09": {
+        "n": 9677,
+        "rate": 0.1805311563501085
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 599602,
+      "n_races": 28080,
+      "rate": 0.01820374181540422,
+      "ci95": [
+       0.017718598547257134,
+       0.018714796241422377
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 92863,
+        "rate": 0.01844652875741684
+       },
+       "2026-05": {
+        "n": 102267,
+        "rate": 0.01829524675604056
+       },
+       "2026-06": {
+        "n": 98461,
+        "rate": 0.01735712617178375
+       },
+       "2026-07": {
+        "n": 103214,
+        "rate": 0.01838897823938613
+       },
+       "2026-08": {
+        "n": 104996,
+        "rate": 0.018819764562459523
+       },
+       "2026-09": {
+        "n": 97801,
+        "rate": 0.01787302788315048
+       }
+      }
+     }
+    },
+    "boat1": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 4920,
+      "n_races": 4920,
+      "rate": 0.17032520325203251,
+      "ci95": [
+       0.15955115895768152,
+       0.1820096972432968
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 776,
+        "rate": 0.16237113402061856
+       },
+       "2026-05": {
+        "n": 771,
+        "rate": 0.19584954604409857
+       },
+       "2026-06": {
+        "n": 873,
+        "rate": 0.1718213058419244
+       },
+       "2026-07": {
+        "n": 811,
+        "rate": 0.1812577065351418
+       },
+       "2026-08": {
+        "n": 824,
+        "rate": 0.15655339805825244
+       },
+       "2026-09": {
+        "n": 865,
+        "rate": 0.15606936416184972
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 0,
+      "n_races": 0,
+      "rate": null,
+      "ci95": [
+       null,
+       null
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-05": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-06": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-07": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-08": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-09": {
+        "n": 0,
+        "rate": null
+       }
+      }
+     }
+    },
+    "tenkai": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 2874,
+      "n_races": 2536,
+      "rate": 0.18754349338900486,
+      "ci95": [
+       0.1735204887124086,
+       0.2017457628436524
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 364,
+        "rate": 0.18956043956043955
+       },
+       "2026-05": {
+        "n": 446,
+        "rate": 0.19955156950672645
+       },
+       "2026-06": {
+        "n": 407,
+        "rate": 0.19656019656019655
+       },
+       "2026-07": {
+        "n": 468,
+        "rate": 0.18162393162393162
+       },
+       "2026-08": {
+        "n": 701,
+        "rate": 0.17403708987161198
+       },
+       "2026-09": {
+        "n": 488,
+        "rate": 0.19262295081967212
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 143660,
+      "n_races": 28080,
+      "rate": 0.019483502714743143,
+      "ci95": [
+       0.018855254552154557,
+       0.02016230472044254
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 22622,
+        "rate": 0.01927327380426134
+       },
+       "2026-05": {
+        "n": 24594,
+        "rate": 0.020614784093681386
+       },
+       "2026-06": {
+        "n": 23571,
+        "rate": 0.019260956259810783
+       },
+       "2026-07": {
+        "n": 24492,
+        "rate": 0.019394087865425444
+       },
+       "2026-08": {
+        "n": 24737,
+        "rate": 0.019525407284634352
+       },
+       "2026-09": {
+        "n": 23644,
+        "rate": 0.018778548468956182
+       }
+      }
+     }
+    },
+    "slit_form": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 51366,
+      "n_races": 26098,
+      "rate": 0.16781528637620216,
+      "ci95": [
+       0.16467143111464846,
+       0.17121845360017673
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 7793,
+        "rate": 0.16578981136917748
+       },
+       "2026-05": {
+        "n": 8649,
+        "rate": 0.16649323621227888
+       },
+       "2026-06": {
+        "n": 8210,
+        "rate": 0.16930572472594396
+       },
+       "2026-07": {
+        "n": 9148,
+        "rate": 0.16407958023611718
+       },
+       "2026-08": {
+        "n": 9244,
+        "rate": 0.17330160103851147
+       },
+       "2026-09": {
+        "n": 8322,
+        "rate": 0.16762797404470078
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 262985,
+      "n_races": 27375,
+      "rate": 0.018544783923037437,
+      "ci95": [
+       0.017856242675757632,
+       0.01926219560893674
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 39766,
+        "rate": 0.018533420509983405
+       },
+       "2026-05": {
+        "n": 44888,
+        "rate": 0.019002851541614685
+       },
+       "2026-06": {
+        "n": 43273,
+        "rate": 0.018025096480484365
+       },
+       "2026-07": {
+        "n": 45329,
+        "rate": 0.019215072028943944
+       },
+       "2026-08": {
+        "n": 46128,
+        "rate": 0.01875216788067985
+       },
+       "2026-09": {
+        "n": 43601,
+        "rate": 0.01768308066328754
+       }
+      }
+     }
+    },
+    "slit_custom": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 29552,
+      "n_races": 16901,
+      "rate": 0.16675690308608554,
+      "ci95": [
+       0.1616164902714659,
+       0.17160655189148305
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 4424,
+        "rate": 0.17540687160940324
+       },
+       "2026-05": {
+        "n": 4712,
+        "rate": 0.17423599320882852
+       },
+       "2026-06": {
+        "n": 4964,
+        "rate": 0.16478646253021756
+       },
+       "2026-07": {
+        "n": 5151,
+        "rate": 0.1634634051640458
+       },
+       "2026-08": {
+        "n": 5202,
+        "rate": 0.16858900422914264
+       },
+       "2026-09": {
+        "n": 5099,
+        "rate": 0.1557168072171014
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 586965,
+      "n_races": 27375,
+      "rate": 0.01901305870026322,
+      "ci95": [
+       0.018396702157189762,
+       0.019596982374833358
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 90248,
+        "rate": 0.01939101143515646
+       },
+       "2026-05": {
+        "n": 100934,
+        "rate": 0.019884280817167654
+       },
+       "2026-06": {
+        "n": 96268,
+        "rate": 0.0189678813312835
+       },
+       "2026-07": {
+        "n": 103014,
+        "rate": 0.018677073019201275
+       },
+       "2026-08": {
+        "n": 102053,
+        "rate": 0.01951926939923373
+       },
+       "2026-09": {
+        "n": 94448,
+        "rate": 0.017586396747416567
+       }
+      }
+     }
+    },
+    "entry": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 806,
+      "n_races": 804,
+      "rate": 0.13027295285359802,
+      "ci95": [
+       0.10666628440366974,
+       0.15356755077711798
+      ],
+      "verdict": "境界",
+      "verdict_point_rule": "不合格",
+      "by_month": {
+       "2026-04": {
+        "n": 156,
+        "rate": 0.1346153846153846
+       },
+       "2026-05": {
+        "n": 173,
+        "rate": 0.15028901734104047
+       },
+       "2026-06": {
+        "n": 170,
+        "rate": 0.10588235294117647
+       },
+       "2026-07": {
+        "n": 174,
+        "rate": 0.13218390804597702
+       },
+       "2026-08": {
+        "n": 107,
+        "rate": 0.12149532710280374
+       },
+       "2026-09": {
+        "n": 26,
+        "rate": 0.15384615384615385
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 72890,
+      "n_races": 27636,
+      "rate": 0.01979695431472081,
+      "ci95": [
+       0.018581894245187136,
+       0.02087693819194365
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 11270,
+        "rate": 0.021472937000887312
+       },
+       "2026-05": {
+        "n": 12796,
+        "rate": 0.02008440137542982
+       },
+       "2026-06": {
+        "n": 12035,
+        "rate": 0.020191109264644787
+       },
+       "2026-07": {
+        "n": 12494,
+        "rate": 0.018328797822955017
+       },
+       "2026-08": {
+        "n": 12588,
+        "rate": 0.020336828725770577
+       },
+       "2026-09": {
+        "n": 11707,
+        "rate": 0.01845049970103357
+       }
+      }
+     }
+    },
+    "payout": {
+     "teiban": {
+      "band": [
+       15,
+       20
+      ],
+      "n_pairs": 24249,
+      "n_races": 20465,
+      "rate": 0.1673058682832282,
+      "ci95": [
+       0.1628930052815351,
+       0.17176198587576758
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 3950,
+        "rate": 0.16455696202531644
+       },
+       "2026-05": {
+        "n": 4246,
+        "rate": 0.17192651907677814
+       },
+       "2026-06": {
+        "n": 4076,
+        "rate": 0.16535819430814525
+       },
+       "2026-07": {
+        "n": 3986,
+        "rate": 0.17084796788760662
+       },
+       "2026-08": {
+        "n": 4040,
+        "rate": 0.16856435643564358
+       },
+       "2026-09": {
+        "n": 3951,
+        "rate": 0.1622374082510757
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 3,
+      "n_races": 3,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-05": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-06": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-07": {
+        "n": 2,
+        "rate": 0.0
+       },
+       "2026-08": {
+        "n": 1,
+        "rate": 0.0
+       },
+       "2026-09": {
+        "n": 0,
+        "rate": null
+       }
+      }
+     }
+    }
+   },
+   "failed": [],
+   "pass": true,
+   "failed_point_rule": [
+    "order_single:teiban",
+    "entry:teiban"
+   ],
+   "pass_point_rule": false
+  },
+  {
+   "x": 25,
+   "y": 3,
+   "subgroups": {
+    "order_single": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 17,
+      "n_races": 8,
+      "rate": 0.058823529411764705,
+      "ci95": [
+       0.0,
+       0.3
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 4,
+        "rate": 0.25
+       },
+       "2026-05": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-06": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-07": {
+        "n": 5,
+        "rate": 0.0
+       },
+       "2026-08": {
+        "n": 8,
+        "rate": 0.0
+       },
+       "2026-09": {
+        "n": 0,
+        "rate": null
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 553222,
+      "n_races": 28080,
+      "rate": 0.016275563878515316,
+      "ci95": [
+       0.015982959968623475,
+       0.01654562332323108
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 83055,
+        "rate": 0.01580880139666486
+       },
+       "2026-05": {
+        "n": 93424,
+        "rate": 0.016013015927384827
+       },
+       "2026-06": {
+        "n": 90294,
+        "rate": 0.016324451237070017
+       },
+       "2026-07": {
+        "n": 99059,
+        "rate": 0.016485125026499358
+       },
+       "2026-08": {
+        "n": 97230,
+        "rate": 0.01625012856114368
+       },
+       "2026-09": {
+        "n": 90160,
+        "rate": 0.016725820763087845
+       }
+      }
+     }
+    },
+    "order_nagashi": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 33025,
+      "n_races": 11627,
+      "rate": 0.2675246025738077,
+      "ci95": [
+       0.2618273340746607,
+       0.2734506196186707
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 4527,
+        "rate": 0.27347028937486195
+       },
+       "2026-05": {
+        "n": 5276,
+        "rate": 0.2767247915087187
+       },
+       "2026-06": {
+        "n": 5327,
+        "rate": 0.2605594143044866
+       },
+       "2026-07": {
+        "n": 6184,
+        "rate": 0.27619663648124193
+       },
+       "2026-08": {
+        "n": 5845,
+        "rate": 0.25526090675791274
+       },
+       "2026-09": {
+        "n": 5866,
+        "rate": 0.2640640981929765
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 599602,
+      "n_races": 28080,
+      "rate": 0.01820374181540422,
+      "ci95": [
+       0.017718598547257134,
+       0.018714796241422377
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 92863,
+        "rate": 0.01844652875741684
+       },
+       "2026-05": {
+        "n": 102267,
+        "rate": 0.01829524675604056
+       },
+       "2026-06": {
+        "n": 98461,
+        "rate": 0.01735712617178375
+       },
+       "2026-07": {
+        "n": 103214,
+        "rate": 0.01838897823938613
+       },
+       "2026-08": {
+        "n": 104996,
+        "rate": 0.018819764562459523
+       },
+       "2026-09": {
+        "n": 97801,
+        "rate": 0.01787302788315048
+       }
+      }
+     }
+    },
+    "boat1": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 4920,
+      "n_races": 4920,
+      "rate": 0.2680894308943089,
+      "ci95": [
+       0.2560823572657856,
+       0.28167187061017035
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 712,
+        "rate": 0.2752808988764045
+       },
+       "2026-05": {
+        "n": 803,
+        "rate": 0.2627646326276463
+       },
+       "2026-06": {
+        "n": 752,
+        "rate": 0.2632978723404255
+       },
+       "2026-07": {
+        "n": 789,
+        "rate": 0.2877059569074778
+       },
+       "2026-08": {
+        "n": 933,
+        "rate": 0.2679528403001072
+       },
+       "2026-09": {
+        "n": 931,
+        "rate": 0.2545649838882922
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 0,
+      "n_races": 0,
+      "rate": null,
+      "ci95": [
+       null,
+       null
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-05": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-06": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-07": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-08": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-09": {
+        "n": 0,
+        "rate": null
+       }
+      }
+     }
+    },
+    "tenkai": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 2820,
+      "n_races": 2816,
+      "rate": 0.25851063829787235,
+      "ci95": [
+       0.24362168390493538,
+       0.2748189632223686
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 363,
+        "rate": 0.2699724517906336
+       },
+       "2026-05": {
+        "n": 463,
+        "rate": 0.24190064794816415
+       },
+       "2026-06": {
+        "n": 467,
+        "rate": 0.24411134903640258
+       },
+       "2026-07": {
+        "n": 523,
+        "rate": 0.29063097514340347
+       },
+       "2026-08": {
+        "n": 555,
+        "rate": 0.25225225225225223
+       },
+       "2026-09": {
+        "n": 449,
+        "rate": 0.2516703786191537
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 143660,
+      "n_races": 28080,
+      "rate": 0.019483502714743143,
+      "ci95": [
+       0.018855254552154557,
+       0.02016230472044254
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 22622,
+        "rate": 0.01927327380426134
+       },
+       "2026-05": {
+        "n": 24594,
+        "rate": 0.020614784093681386
+       },
+       "2026-06": {
+        "n": 23571,
+        "rate": 0.019260956259810783
+       },
+       "2026-07": {
+        "n": 24492,
+        "rate": 0.019394087865425444
+       },
+       "2026-08": {
+        "n": 24737,
+        "rate": 0.019525407284634352
+       },
+       "2026-09": {
+        "n": 23644,
+        "rate": 0.018778548468956182
+       }
+      }
+     }
+    },
+    "slit_form": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 475,
+      "n_races": 445,
+      "rate": 0.2463157894736842,
+      "ci95": [
+       0.2098489524289373,
+       0.281185584038055
+      ],
+      "verdict": "境界",
+      "verdict_point_rule": "不合格",
+      "by_month": {
+       "2026-04": {
+        "n": 67,
+        "rate": 0.23880597014925373
+       },
+       "2026-05": {
+        "n": 82,
+        "rate": 0.2073170731707317
+       },
+       "2026-06": {
+        "n": 80,
+        "rate": 0.2125
+       },
+       "2026-07": {
+        "n": 78,
+        "rate": 0.21794871794871795
+       },
+       "2026-08": {
+        "n": 80,
+        "rate": 0.325
+       },
+       "2026-09": {
+        "n": 88,
+        "rate": 0.2727272727272727
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 262985,
+      "n_races": 27375,
+      "rate": 0.018544783923037437,
+      "ci95": [
+       0.017856242675757632,
+       0.01926219560893674
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 39766,
+        "rate": 0.018533420509983405
+       },
+       "2026-05": {
+        "n": 44888,
+        "rate": 0.019002851541614685
+       },
+       "2026-06": {
+        "n": 43273,
+        "rate": 0.018025096480484365
+       },
+       "2026-07": {
+        "n": 45329,
+        "rate": 0.019215072028943944
+       },
+       "2026-08": {
+        "n": 46128,
+        "rate": 0.01875216788067985
+       },
+       "2026-09": {
+        "n": 43601,
+        "rate": 0.01768308066328754
+       }
+      }
+     }
+    },
+    "slit_custom": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 22028,
+      "n_races": 17497,
+      "rate": 0.2600326856727801,
+      "ci95": [
+       0.2539294560085305,
+       0.2662483371627922
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 3040,
+        "rate": 0.28289473684210525
+       },
+       "2026-05": {
+        "n": 3959,
+        "rate": 0.2667340237433695
+       },
+       "2026-06": {
+        "n": 3835,
+        "rate": 0.26492829204693613
+       },
+       "2026-07": {
+        "n": 4171,
+        "rate": 0.24742268041237114
+       },
+       "2026-08": {
+        "n": 3834,
+        "rate": 0.24595722483046425
+       },
+       "2026-09": {
+        "n": 3189,
+        "rate": 0.25744747569771087
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 586965,
+      "n_races": 27375,
+      "rate": 0.01901305870026322,
+      "ci95": [
+       0.018396702157189762,
+       0.019596982374833358
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 90248,
+        "rate": 0.01939101143515646
+       },
+       "2026-05": {
+        "n": 100934,
+        "rate": 0.019884280817167654
+       },
+       "2026-06": {
+        "n": 96268,
+        "rate": 0.0189678813312835
+       },
+       "2026-07": {
+        "n": 103014,
+        "rate": 0.018677073019201275
+       },
+       "2026-08": {
+        "n": 102053,
+        "rate": 0.01951926939923373
+       },
+       "2026-09": {
+        "n": 94448,
+        "rate": 0.017586396747416567
+       }
+      }
+     }
+    },
+    "entry": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 51,
+      "n_races": 50,
+      "rate": 0.1568627450980392,
+      "ci95": [
+       0.0768867924528302,
+       0.25
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 12,
+        "rate": 0.25
+       },
+       "2026-05": {
+        "n": 15,
+        "rate": 0.26666666666666666
+       },
+       "2026-06": {
+        "n": 11,
+        "rate": 0.0
+       },
+       "2026-07": {
+        "n": 7,
+        "rate": 0.14285714285714285
+       },
+       "2026-08": {
+        "n": 5,
+        "rate": 0.0
+       },
+       "2026-09": {
+        "n": 1,
+        "rate": 0.0
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 72890,
+      "n_races": 27636,
+      "rate": 0.01979695431472081,
+      "ci95": [
+       0.018581894245187136,
+       0.02087693819194365
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 11270,
+        "rate": 0.021472937000887312
+       },
+       "2026-05": {
+        "n": 12796,
+        "rate": 0.02008440137542982
+       },
+       "2026-06": {
+        "n": 12035,
+        "rate": 0.020191109264644787
+       },
+       "2026-07": {
+        "n": 12494,
+        "rate": 0.018328797822955017
+       },
+       "2026-08": {
+        "n": 12588,
+        "rate": 0.020336828725770577
+       },
+       "2026-09": {
+        "n": 11707,
+        "rate": 0.01845049970103357
+       }
+      }
+     }
+    },
+    "payout": {
+     "teiban": {
+      "band": [
+       25,
+       30
+      ],
+      "n_pairs": 3078,
+      "n_races": 3077,
+      "rate": 0.2894736842105263,
+      "ci95": [
+       0.27162396595155447,
+       0.30715756388268073
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 541,
+        "rate": 0.33826247689463956
+       },
+       "2026-05": {
+        "n": 537,
+        "rate": 0.3128491620111732
+       },
+       "2026-06": {
+        "n": 444,
+        "rate": 0.26576576576576577
+       },
+       "2026-07": {
+        "n": 525,
+        "rate": 0.2723809523809524
+       },
+       "2026-08": {
+        "n": 523,
+        "rate": 0.26195028680688337
+       },
+       "2026-09": {
+        "n": 508,
+        "rate": 0.2795275590551181
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 3,
+      "n_races": 3,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-05": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-06": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-07": {
+        "n": 2,
+        "rate": 0.0
+       },
+       "2026-08": {
+        "n": 1,
+        "rate": 0.0
+       },
+       "2026-09": {
+        "n": 0,
+        "rate": null
+       }
+      }
+     }
+    }
+   },
+   "failed": [],
+   "pass": true,
+   "failed_point_rule": [
+    "slit_form:teiban"
+   ],
+   "pass_point_rule": false
+  },
+  {
+   "x": 10,
+   "y": 3,
+   "subgroups": {
+    "order_single": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 8483,
+      "n_races": 8203,
+      "rate": 0.10515147942944712,
+      "ci95": [
+       0.09938922391104787,
+       0.11195151877899147
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 1207,
+        "rate": 0.11516155758077878
+       },
+       "2026-05": {
+        "n": 1433,
+        "rate": 0.10327983251919051
+       },
+       "2026-06": {
+        "n": 1421,
+        "rate": 0.0992258972554539
+       },
+       "2026-07": {
+        "n": 1571,
+        "rate": 0.10120942075111394
+       },
+       "2026-08": {
+        "n": 1428,
+        "rate": 0.10364145658263306
+       },
+       "2026-09": {
+        "n": 1423,
+        "rate": 0.11033028812368235
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 553222,
+      "n_races": 28080,
+      "rate": 0.016275563878515316,
+      "ci95": [
+       0.015982959968623475,
+       0.01654562332323108
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 83055,
+        "rate": 0.01580880139666486
+       },
+       "2026-05": {
+        "n": 93424,
+        "rate": 0.016013015927384827
+       },
+       "2026-06": {
+        "n": 90294,
+        "rate": 0.016324451237070017
+       },
+       "2026-07": {
+        "n": 99059,
+        "rate": 0.016485125026499358
+       },
+       "2026-08": {
+        "n": 97230,
+        "rate": 0.01625012856114368
+       },
+       "2026-09": {
+        "n": 90160,
+        "rate": 0.016725820763087845
+       }
+      }
+     }
+    },
+    "order_nagashi": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 103833,
+      "n_races": 26310,
+      "rate": 0.12293779434283898,
+      "ci95": [
+       0.12035131281480999,
+       0.1255414968561779
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 15497,
+        "rate": 0.11518358391946829
+       },
+       "2026-05": {
+        "n": 18022,
+        "rate": 0.12146265675285761
+       },
+       "2026-06": {
+        "n": 16831,
+        "rate": 0.12667102370625632
+       },
+       "2026-07": {
+        "n": 18390,
+        "rate": 0.12735182164219686
+       },
+       "2026-08": {
+        "n": 18017,
+        "rate": 0.12243991785535883
+       },
+       "2026-09": {
+        "n": 17076,
+        "rate": 0.12362379948465683
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 599602,
+      "n_races": 28080,
+      "rate": 0.01820374181540422,
+      "ci95": [
+       0.017718598547257134,
+       0.018714796241422377
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 92863,
+        "rate": 0.01844652875741684
+       },
+       "2026-05": {
+        "n": 102267,
+        "rate": 0.01829524675604056
+       },
+       "2026-06": {
+        "n": 98461,
+        "rate": 0.01735712617178375
+       },
+       "2026-07": {
+        "n": 103214,
+        "rate": 0.01838897823938613
+       },
+       "2026-08": {
+        "n": 104996,
+        "rate": 0.018819764562459523
+       },
+       "2026-09": {
+        "n": 97801,
+        "rate": 0.01787302788315048
+       }
+      }
+     }
+    },
+    "boat1": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 6125,
+      "n_races": 6125,
+      "rate": 0.11853061224489796,
+      "ci95": [
+       0.11004065659166337,
+       0.12652430761899994
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 1066,
+        "rate": 0.11913696060037524
+       },
+       "2026-05": {
+        "n": 1126,
+        "rate": 0.1172291296625222
+       },
+       "2026-06": {
+        "n": 1028,
+        "rate": 0.0943579766536965
+       },
+       "2026-07": {
+        "n": 930,
+        "rate": 0.12258064516129032
+       },
+       "2026-08": {
+        "n": 984,
+        "rate": 0.1402439024390244
+       },
+       "2026-09": {
+        "n": 991,
+        "rate": 0.11907164480322906
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 0,
+      "n_races": 0,
+      "rate": null,
+      "ci95": [
+       null,
+       null
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-05": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-06": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-07": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-08": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-09": {
+        "n": 0,
+        "rate": null
+       }
+      }
+     }
+    },
+    "tenkai": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 10440,
+      "n_races": 8501,
+      "rate": 0.11992337164750957,
+      "ci95": [
+       0.11427958477755203,
+       0.12561408985383885
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 1409,
+        "rate": 0.11994322214336409
+       },
+       "2026-05": {
+        "n": 1776,
+        "rate": 0.11317567567567567
+       },
+       "2026-06": {
+        "n": 1648,
+        "rate": 0.12014563106796117
+       },
+       "2026-07": {
+        "n": 1930,
+        "rate": 0.12020725388601036
+       },
+       "2026-08": {
+        "n": 1907,
+        "rate": 0.12008390141583639
+       },
+       "2026-09": {
+        "n": 1770,
+        "rate": 0.12598870056497175
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 143660,
+      "n_races": 28080,
+      "rate": 0.019483502714743143,
+      "ci95": [
+       0.018855254552154557,
+       0.02016230472044254
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 22622,
+        "rate": 0.01927327380426134
+       },
+       "2026-05": {
+        "n": 24594,
+        "rate": 0.020614784093681386
+       },
+       "2026-06": {
+        "n": 23571,
+        "rate": 0.019260956259810783
+       },
+       "2026-07": {
+        "n": 24492,
+        "rate": 0.019394087865425444
+       },
+       "2026-08": {
+        "n": 24737,
+        "rate": 0.019525407284634352
+       },
+       "2026-09": {
+        "n": 23644,
+        "rate": 0.018778548468956182
+       }
+      }
+     }
+    },
+    "slit_form": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 87119,
+      "n_races": 27285,
+      "rate": 0.1280547297374855,
+      "ci95": [
+       0.1255885078838885,
+       0.1305364587612623
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 13043,
+        "rate": 0.12290117304301158
+       },
+       "2026-05": {
+        "n": 15039,
+        "rate": 0.12773455681893742
+       },
+       "2026-06": {
+        "n": 14409,
+        "rate": 0.12297869387188563
+       },
+       "2026-07": {
+        "n": 15589,
+        "rate": 0.13265764320995574
+       },
+       "2026-08": {
+        "n": 14880,
+        "rate": 0.13313172043010751
+       },
+       "2026-09": {
+        "n": 14159,
+        "rate": 0.12790451303058126
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 262985,
+      "n_races": 27375,
+      "rate": 0.018544783923037437,
+      "ci95": [
+       0.017856242675757632,
+       0.01926219560893674
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 39766,
+        "rate": 0.018533420509983405
+       },
+       "2026-05": {
+        "n": 44888,
+        "rate": 0.019002851541614685
+       },
+       "2026-06": {
+        "n": 43273,
+        "rate": 0.018025096480484365
+       },
+       "2026-07": {
+        "n": 45329,
+        "rate": 0.019215072028943944
+       },
+       "2026-08": {
+        "n": 46128,
+        "rate": 0.01875216788067985
+       },
+       "2026-09": {
+        "n": 43601,
+        "rate": 0.01768308066328754
+       }
+      }
+     }
+    },
+    "slit_custom": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 149942,
+      "n_races": 26751,
+      "rate": 0.11760547411665843,
+      "ci95": [
+       0.1152583796953715,
+       0.11985907751243638
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 22949,
+        "rate": 0.12501634058128894
+       },
+       "2026-05": {
+        "n": 26393,
+        "rate": 0.11840260675179025
+       },
+       "2026-06": {
+        "n": 24291,
+        "rate": 0.11827425795562142
+       },
+       "2026-07": {
+        "n": 27077,
+        "rate": 0.11626103334933707
+       },
+       "2026-08": {
+        "n": 25464,
+        "rate": 0.1136899151743638
+       },
+       "2026-09": {
+        "n": 23768,
+        "rate": 0.11460787613598115
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 586965,
+      "n_races": 27375,
+      "rate": 0.01901305870026322,
+      "ci95": [
+       0.018396702157189762,
+       0.019596982374833358
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 90248,
+        "rate": 0.01939101143515646
+       },
+       "2026-05": {
+        "n": 100934,
+        "rate": 0.019884280817167654
+       },
+       "2026-06": {
+        "n": 96268,
+        "rate": 0.0189678813312835
+       },
+       "2026-07": {
+        "n": 103014,
+        "rate": 0.018677073019201275
+       },
+       "2026-08": {
+        "n": 102053,
+        "rate": 0.01951926939923373
+       },
+       "2026-09": {
+        "n": 94448,
+        "rate": 0.017586396747416567
+       }
+      }
+     }
+    },
+    "entry": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 5111,
+      "n_races": 5067,
+      "rate": 0.101936998630405,
+      "ci95": [
+       0.09333970525229739,
+       0.1104061823066415
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 782,
+        "rate": 0.0907928388746803
+       },
+       "2026-05": {
+        "n": 860,
+        "rate": 0.11511627906976744
+       },
+       "2026-06": {
+        "n": 752,
+        "rate": 0.09308510638297872
+       },
+       "2026-07": {
+        "n": 824,
+        "rate": 0.10679611650485436
+       },
+       "2026-08": {
+        "n": 938,
+        "rate": 0.10554371002132196
+       },
+       "2026-09": {
+        "n": 955,
+        "rate": 0.09842931937172775
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 72890,
+      "n_races": 27636,
+      "rate": 0.01979695431472081,
+      "ci95": [
+       0.018581894245187136,
+       0.02087693819194365
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 11270,
+        "rate": 0.021472937000887312
+       },
+       "2026-05": {
+        "n": 12796,
+        "rate": 0.02008440137542982
+       },
+       "2026-06": {
+        "n": 12035,
+        "rate": 0.020191109264644787
+       },
+       "2026-07": {
+        "n": 12494,
+        "rate": 0.018328797822955017
+       },
+       "2026-08": {
+        "n": 12588,
+        "rate": 0.020336828725770577
+       },
+       "2026-09": {
+        "n": 11707,
+        "rate": 0.01845049970103357
+       }
+      }
+     }
+    },
+    "payout": {
+     "teiban": {
+      "band": [
+       10,
+       15
+      ],
+      "n_pairs": 10835,
+      "n_races": 10827,
+      "rate": 0.14296262113520997,
+      "ci95": [
+       0.13677585435130057,
+       0.14927811163924298
+      ],
+      "verdict": "合格",
+      "verdict_point_rule": "合格",
+      "by_month": {
+       "2026-04": {
+        "n": 1592,
+        "rate": 0.146356783919598
+       },
+       "2026-05": {
+        "n": 1802,
+        "rate": 0.13706992230854606
+       },
+       "2026-06": {
+        "n": 1787,
+        "rate": 0.14045886961387802
+       },
+       "2026-07": {
+        "n": 1980,
+        "rate": 0.1388888888888889
+       },
+       "2026-08": {
+        "n": 1969,
+        "rate": 0.1564245810055866
+       },
+       "2026-09": {
+        "n": 1705,
+        "rate": 0.1378299120234604
+       }
+      }
+     },
+     "rare": {
+      "band": [
+       1,
+       3
+      ],
+      "n_pairs": 3,
+      "n_races": 3,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "verdict": "判定不能",
+      "verdict_point_rule": null,
+      "by_month": {
+       "2026-04": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-05": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-06": {
+        "n": 0,
+        "rate": null
+       },
+       "2026-07": {
+        "n": 2,
+        "rate": 0.0
+       },
+       "2026-08": {
+        "n": 1,
+        "rate": 0.0
+       },
+       "2026-09": {
+        "n": 0,
+        "rate": null
+       }
+      }
+     }
+    }
+   },
+   "failed": [],
+   "pass": true,
+   "failed_point_rule": [],
+   "pass_point_rule": true
+  }
+ ],
+ "adopted": [
+  15,
+  5
+ ],
+ "adopted_point_rule": [
+  20,
+  5
+ ],
+ "report_abc": {
+  "15,5": {
+   "order_single": {
+    "all": {
+     "n_pairs": 3380400,
+     "n_races": 28172,
+     "share_teiban": 0.00021003431546562536,
+     "share_rare": 0.9751952431664892,
+     "teiban_share_of_labeled": 0.000215330304555904,
+     "wilson_stable_share": 0.9733612150694819
+    },
+    "truncated": {
+     "n_pairs": 2857800,
+     "n_races": 23815,
+     "share_teiban": 0.00012807054377493178,
+     "share_rare": 0.9758230107075373,
+     "teiban_share_of_labeled": 0.00013122639672751485,
+     "wilson_stable_share": 0.9840061554502159
+    },
+    "not_truncated": {
+     "n_pairs": 522600,
+     "n_races": 4357,
+     "share_teiban": 0.0006582472254114045,
+     "share_rare": 0.9717623421354764,
+     "teiban_share_of_labeled": 0.0006769161745577907,
+     "wilson_stable_share": 0.9149387922162511
+    }
+   },
+   "order_nagashi": {
+    "all": {
+     "n_pairs": 1690200,
+     "n_races": 28172,
+     "share_teiban": 0.09103597207431073,
+     "share_rare": 0.7306123535676251,
+     "teiban_share_of_labeled": 0.1107967596759676,
+     "wilson_stable_share": 0.8837753375337534
+    },
+    "truncated": {
+     "n_pairs": 1428900,
+     "n_races": 23815,
+     "share_teiban": 0.08878018055847155,
+     "share_rare": 0.7296220869200084,
+     "teiban_share_of_labeled": 0.10847988096612408,
+     "wilson_stable_share": 0.9031182257795565
+    },
+    "not_truncated": {
+     "n_pairs": 261300,
+     "n_races": 4357,
+     "share_teiban": 0.10337160352085725,
+     "share_rare": 0.7360275545350172,
+     "teiban_share_of_labeled": 0.12314952014042446,
+     "wilson_stable_share": 0.780646043723072
+    }
+   },
+   "boat1": {
+    "all": {
+     "n_pairs": 84510,
+     "n_races": 28172,
+     "share_teiban": 0.8493314400662644,
+     "share_rare": 0.00029582297952904983,
+     "teiban_share_of_labeled": 0.9996518202835576,
+     "wilson_stable_share": 0.9594161722514694
+    },
+    "truncated": {
+     "n_pairs": 71445,
+     "n_races": 23815,
+     "share_teiban": 0.8457274826789838,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.9725270178574384
+    },
+    "not_truncated": {
+     "n_pairs": 13065,
+     "n_races": 4357,
+     "share_teiban": 0.8690394182931497,
+     "share_rare": 0.0019135093761959434,
+     "teiban_share_of_labeled": 0.9978029703840408,
+     "wilson_stable_share": 0.8897969944634854
+    }
+   },
+   "tenkai": {
+    "all": {
+     "n_pairs": 676080,
+     "n_races": 28172,
+     "share_teiban": 0.046256360194059876,
+     "share_rare": 0.8643326233581825,
+     "teiban_share_of_labeled": 0.050798286635988114,
+     "wilson_stable_share": 0.942504519752904
+    },
+    "truncated": {
+     "n_pairs": 571560,
+     "n_races": 23815,
+     "share_teiban": 0.046483308838967036,
+     "share_rare": 0.8624798796276857,
+     "teiban_share_of_labeled": 0.05113882435369095,
+     "wilson_stable_share": 0.9566086074448489
+    },
+    "not_truncated": {
+     "n_pairs": 104520,
+     "n_races": 4357,
+     "share_teiban": 0.045015308075009565,
+     "share_rare": 0.8744642173746652,
+     "teiban_share_of_labeled": 0.04895737950553567,
+     "wilson_stable_share": 0.8662594689086822
+    }
+   },
+   "slit_form": {
+    "all": {
+     "n_pairs": 1071018,
+     "n_races": 28172,
+     "share_teiban": 0.05347435804066785,
+     "share_rare": 0.7284900907361034,
+     "teiban_share_of_labeled": 0.06838464091854547,
+     "wilson_stable_share": 0.9023281249626864
+    },
+    "truncated": {
+     "n_pairs": 905580,
+     "n_races": 23815,
+     "share_teiban": 0.053392301066719675,
+     "share_rare": 0.7273206122043331,
+     "teiban_share_of_labeled": 0.06838916093114832,
+     "wilson_stable_share": 0.915913482074914
+    },
+    "not_truncated": {
+     "n_pairs": 165438,
+     "n_races": 4357,
+     "share_teiban": 0.05392352422055392,
+     "share_rare": 0.7348916210302349,
+     "teiban_share_of_labeled": 0.06836015325670498,
+     "wilson_stable_share": 0.828727969348659
+    }
+   },
+   "slit_custom": {
+    "all": {
+     "n_pairs": 1977264,
+     "n_races": 28172,
+     "share_teiban": 0.03545252429619919,
+     "share_rare": 0.7396321381464488,
+     "teiban_share_of_labeled": 0.04574019589611281,
+     "wilson_stable_share": 0.9099753547525785
+    },
+    "truncated": {
+     "n_pairs": 1671840,
+     "n_races": 23815,
+     "share_teiban": 0.03522705522059527,
+     "share_rare": 0.7368976696334577,
+     "teiban_share_of_labeled": 0.04562352957581288,
+     "wilson_stable_share": 0.9281507263711499
+    },
+    "not_truncated": {
+     "n_pairs": 305424,
+     "n_races": 4357,
+     "share_teiban": 0.036686704384724184,
+     "share_rare": 0.7546001623971921,
+     "teiban_share_of_labeled": 0.04636334296046806,
+     "wilson_stable_share": 0.8128956710995622
+    }
+   },
+   "entry": {
+    "all": {
+     "n_pairs": 337593,
+     "n_races": 28172,
+     "share_teiban": 0.5862591937629038,
+     "share_rare": 0.32210087294464046,
+     "teiban_share_of_labeled": 0.6454039705728895,
+     "wilson_stable_share": 0.9461937806532401
+    },
+    "truncated": {
+     "n_pairs": 285387,
+     "n_races": 23815,
+     "share_teiban": 0.5858045390995386,
+     "share_rare": 0.3270856766425941,
+     "teiban_share_of_labeled": 0.6417031632038138,
+     "wilson_stable_share": 0.9580427364534194
+    },
+    "not_truncated": {
+     "n_pairs": 52206,
+     "n_races": 4357,
+     "share_teiban": 0.5887445887445888,
+     "share_rare": 0.2948511665325825,
+     "teiban_share_of_labeled": 0.6663053610527,
+     "wilson_stable_share": 0.8792733421491903
+    }
+   },
+   "payout": {
+    "all": {
+     "n_pairs": 84504,
+     "n_races": 28172,
+     "share_teiban": 0.7872526744296128,
+     "share_rare": 0.03544210924926631,
+     "teiban_share_of_labeled": 0.956919491952072,
+     "wilson_stable_share": 0.8313890766818659
+    },
+    "truncated": {
+     "n_pairs": 71442,
+     "n_races": 23815,
+     "share_teiban": 0.7879118725679572,
+     "share_rare": 0.037512947565857616,
+     "teiban_share_of_labeled": 0.9545531626250636,
+     "wilson_stable_share": 0.834644734610819
+    },
+    "not_truncated": {
+     "n_pairs": 13062,
+     "n_races": 4357,
+     "share_teiban": 0.7836472209462563,
+     "share_rare": 0.024115755627009645,
+     "teiban_share_of_labeled": 0.9701450099516633,
+     "wilson_stable_share": 0.8131930622689792
+    }
+   }
+  },
+  "20,5": {
+   "order_single": {
+    "all": {
+     "n_pairs": 3380400,
+     "n_races": 28172,
+     "share_teiban": 2.011596260797539e-05,
+     "share_rare": 0.9751952431664892,
+     "teiban_share_of_labeled": 2.0627200361097343e-05,
+     "wilson_stable_share": 0.973550772336983
+    },
+    "truncated": {
+     "n_pairs": 2857800,
+     "n_races": 23815,
+     "share_teiban": 0.0,
+     "share_rare": 0.9758230107075373,
+     "teiban_share_of_labeled": 0.0,
+     "wilson_stable_share": 0.9841352999795245
+    },
+    "not_truncated": {
+     "n_pairs": 522600,
+     "n_races": 4357,
+     "share_teiban": 0.00013011863758132414,
+     "share_rare": 0.9717623421354764,
+     "teiban_share_of_labeled": 0.00013388172337279564,
+     "wilson_stable_share": 0.9154359720502214
+    }
+   },
+   "order_nagashi": {
+    "all": {
+     "n_pairs": 1690200,
+     "n_races": 28172,
+     "share_teiban": 0.053728552833984144,
+     "share_rare": 0.7306123535676251,
+     "teiban_share_of_labeled": 0.06850153089742497,
+     "wilson_stable_share": 0.8819062935385493
+    },
+    "truncated": {
+     "n_pairs": 1428900,
+     "n_races": 23815,
+     "share_teiban": 0.05272377353208762,
+     "share_rare": 0.7296220869200084,
+     "teiban_share_of_labeled": 0.06739189941085648,
+     "wilson_stable_share": 0.903455068190723
+    },
+    "not_truncated": {
+     "n_pairs": 261300,
+     "n_races": 4357,
+     "share_teiban": 0.059223115193264446,
+     "share_rare": 0.7360275545350172,
+     "teiban_share_of_labeled": 0.07447100322908196,
+     "wilson_stable_share": 0.7659805870095622
+    }
+   },
+   "boat1": {
+    "all": {
+     "n_pairs": 84510,
+     "n_races": 28172,
+     "share_teiban": 0.7911134776949473,
+     "share_rare": 0.00029582297952904983,
+     "teiban_share_of_labeled": 0.9996262073502586,
+     "wilson_stable_share": 0.979680631560061
+    },
+    "truncated": {
+     "n_pairs": 71445,
+     "n_races": 23815,
+     "share_teiban": 0.7963748337882287,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.9859570803381549
+    },
+    "not_truncated": {
+     "n_pairs": 13065,
+     "n_races": 4357,
+     "share_teiban": 0.7623421354764638,
+     "share_rare": 0.0019135093761959434,
+     "teiban_share_of_labeled": 0.9974962443665498,
+     "wilson_stable_share": 0.9439158738107161
+    }
+   },
+   "tenkai": {
+    "all": {
+     "n_pairs": 676080,
+     "n_races": 28172,
+     "share_teiban": 0.04200538397822743,
+     "share_rare": 0.8643326233581825,
+     "teiban_share_of_labeled": 0.04634626777009483,
+     "wilson_stable_share": 0.9428909012871334
+    },
+    "truncated": {
+     "n_pairs": 571560,
+     "n_races": 23815,
+     "share_teiban": 0.04175939533907201,
+     "share_rare": 0.8624798796276857,
+     "teiban_share_of_labeled": 0.04618179777759289,
+     "wilson_stable_share": 0.9577769737262178
+    },
+    "not_truncated": {
+     "n_pairs": 104520,
+     "n_races": 4357,
+     "share_teiban": 0.043350554917719095,
+     "share_rare": 0.8744642173746652,
+     "teiban_share_of_labeled": 0.047232356926925886,
+     "wilson_stable_share": 0.8626915459188992
+    }
+   },
+   "slit_form": {
+    "all": {
+     "n_pairs": 1071018,
+     "n_races": 28172,
+     "share_teiban": 0.005514379776997212,
+     "share_rare": 0.7284900907361034,
+     "teiban_share_of_labeled": 0.007512733230551612,
+     "wilson_stable_share": 0.9252148494146021
+    },
+    "truncated": {
+     "n_pairs": 905580,
+     "n_races": 23815,
+     "share_teiban": 0.0035303341504891892,
+     "share_rare": 0.7273206122043331,
+     "teiban_share_of_labeled": 0.00483044342775639,
+     "wilson_stable_share": 0.942096626999716
+    },
+    "not_truncated": {
+     "n_pairs": 165438,
+     "n_races": 4357,
+     "share_teiban": 0.016374714394516376,
+     "share_rare": 0.7348916210302349,
+     "teiban_share_of_labeled": 0.0217961508753862,
+     "wilson_stable_share": 0.8353179711637487
+    }
+   },
+   "slit_custom": {
+    "all": {
+     "n_pairs": 1977264,
+     "n_races": 28172,
+     "share_teiban": 0.020506619247606793,
+     "share_rare": 0.7396321381464488,
+     "teiban_share_of_labeled": 0.02697746832158457,
+     "wilson_stable_share": 0.9085406139075646
+    },
+    "truncated": {
+     "n_pairs": 1671840,
+     "n_races": 23815,
+     "share_teiban": 0.02057194468370179,
+     "share_rare": 0.7368976696334577,
+     "teiban_share_of_labeled": 0.027158772173649367,
+     "wilson_stable_share": 0.9265671589932785
+    },
+    "not_truncated": {
+     "n_pairs": 305424,
+     "n_races": 4357,
+     "share_teiban": 0.02014903871339515,
+     "share_rare": 0.7546001623971921,
+     "teiban_share_of_labeled": 0.026007175850600313,
+     "wilson_stable_share": 0.8120670929352948
+    }
+   },
+   "entry": {
+    "all": {
+     "n_pairs": 337593,
+     "n_races": 28172,
+     "share_teiban": 0.5838717035009612,
+     "share_rare": 0.32210087294464046,
+     "teiban_share_of_labeled": 0.6444695111982999,
+     "wilson_stable_share": 0.9485368644760503
+    },
+    "truncated": {
+     "n_pairs": 285387,
+     "n_races": 23815,
+     "share_teiban": 0.5834112976414483,
+     "share_rare": 0.3270856766425941,
+     "teiban_share_of_labeled": 0.640761379904866,
+     "wilson_stable_share": 0.9605609519557888
+    },
+    "not_truncated": {
+     "n_pairs": 52206,
+     "n_races": 4357,
+     "share_teiban": 0.5863885377159713,
+     "share_rare": 0.2948511665325825,
+     "teiban_share_of_labeled": 0.6654132069730035,
+     "wilson_stable_share": 0.8806242664000348
+    }
+   },
+   "payout": {
+    "all": {
+     "n_pairs": 84504,
+     "n_races": 28172,
+     "share_teiban": 0.5002958439837167,
+     "share_rare": 0.03544210924926631,
+     "teiban_share_of_labeled": 0.9338443187842375,
+     "wilson_stable_share": 0.9262899805619368
+    },
+    "truncated": {
+     "n_pairs": 71442,
+     "n_races": 23815,
+     "share_teiban": 0.4993841157862322,
+     "share_rare": 0.037512947565857616,
+     "teiban_share_of_labeled": 0.9301300935943896,
+     "wilson_stable_share": 0.9474932867533957
+    },
+    "not_truncated": {
+     "n_pairs": 13062,
+     "n_races": 4357,
+     "share_teiban": 0.5052824988516307,
+     "share_rare": 0.024115755627009645,
+     "teiban_share_of_labeled": 0.9544468546637744,
+     "wilson_stable_share": 0.8086767895878525
+    }
+   }
+  },
+  "15,3": {
+   "order_single": {
+    "all": {
+     "n_pairs": 3380400,
+     "n_races": 28172,
+     "share_teiban": 0.00021003431546562536,
+     "share_rare": 0.9352588451070879,
+     "teiban_share_of_labeled": 0.0002245230387517278,
+     "wilson_stable_share": 0.9524488664590725
+    },
+    "truncated": {
+     "n_pairs": 2857800,
+     "n_races": 23815,
+     "share_teiban": 0.00012807054377493178,
+     "share_rare": 0.9353387220939184,
+     "teiban_share_of_labeled": 0.0001369054944364375,
+     "wilson_stable_share": 0.9718861200646224
+    },
+    "not_truncated": {
+     "n_pairs": 522600,
+     "n_races": 4357,
+     "share_teiban": 0.0006582472254114045,
+     "share_rare": 0.9348220436280138,
+     "teiban_share_of_labeled": 0.0007036462786521083,
+     "wilson_stable_share": 0.8461591958795783
+    }
+   },
+   "order_nagashi": {
+    "all": {
+     "n_pairs": 1690200,
+     "n_races": 28172,
+     "share_teiban": 0.09103597207431073,
+     "share_rare": 0.5508117382558277,
+     "teiban_share_of_labeled": 0.14183422423908906,
+     "wilson_stable_share": 0.8071329611163192
+    },
+    "truncated": {
+     "n_pairs": 1428900,
+     "n_races": 23815,
+     "share_teiban": 0.08878018055847155,
+     "share_rare": 0.5452823850514382,
+     "teiban_share_of_labeled": 0.14001801300645025,
+     "wilson_stable_share": 0.8407007854200607
+    },
+    "not_truncated": {
+     "n_pairs": 261300,
+     "n_races": 4357,
+     "share_teiban": 0.10337160352085725,
+     "share_rare": 0.5810486031381554,
+     "teiban_share_of_labeled": 0.1510352887233769,
+     "wilson_stable_share": 0.6370758056128697
+    }
+   },
+   "boat1": {
+    "all": {
+     "n_pairs": 84510,
+     "n_races": 28172,
+     "share_teiban": 0.8493314400662644,
+     "share_rare": 0.0001774937877174299,
+     "teiban_share_of_labeled": 0.9997910630710942,
+     "wilson_stable_share": 0.9595498105638511
+    },
+    "truncated": {
+     "n_pairs": 71445,
+     "n_races": 23815,
+     "share_teiban": 0.8457274826789838,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.9725270178574384
+    },
+    "not_truncated": {
+     "n_pairs": 13065,
+     "n_races": 4357,
+     "share_teiban": 0.8690394182931497,
+     "share_rare": 0.001148105625717566,
+     "teiban_share_of_labeled": 0.9986806227460638,
+     "wilson_stable_share": 0.8905796464068959
+    }
+   },
+   "tenkai": {
+    "all": {
+     "n_pairs": 676080,
+     "n_races": 28172,
+     "share_teiban": 0.046256360194059876,
+     "share_rare": 0.7641861909833156,
+     "teiban_share_of_labeled": 0.057075433819288805,
+     "wilson_stable_share": 0.8879461385155606
+    },
+    "truncated": {
+     "n_pairs": 571560,
+     "n_races": 23815,
+     "share_teiban": 0.046483308838967036,
+     "share_rare": 0.7615683392819651,
+     "teiban_share_of_labeled": 0.05752517050990581,
+     "wilson_stable_share": 0.9085828732272383
+    },
+    "not_truncated": {
+     "n_pairs": 104520,
+     "n_races": 4357,
+     "share_teiban": 0.045015308075009565,
+     "share_rare": 0.7785017221584386,
+     "teiban_share_of_labeled": 0.05466226735134884,
+     "wilson_stable_share": 0.7772149545739713
+    }
+   },
+   "slit_form": {
+    "all": {
+     "n_pairs": 1071018,
+     "n_races": 28172,
+     "share_teiban": 0.05347435804066785,
+     "share_rare": 0.6198887413656914,
+     "teiban_share_of_labeled": 0.07941385277543594,
+     "wilson_stable_share": 0.8340797910103386
+    },
+    "truncated": {
+     "n_pairs": 905580,
+     "n_races": 23815,
+     "share_teiban": 0.053392301066719675,
+     "share_rare": 0.6171370834161531,
+     "teiban_share_of_labeled": 0.07962708615357253,
+     "wilson_stable_share": 0.8539964230309378
+    },
+    "not_truncated": {
+     "n_pairs": 165438,
+     "n_races": 4357,
+     "share_teiban": 0.05392352422055392,
+     "share_rare": 0.634950857723135,
+     "teiban_share_of_labeled": 0.07827773195514452,
+     "wilson_stable_share": 0.7279627257252163
+    }
+   },
+   "slit_custom": {
+    "all": {
+     "n_pairs": 1977264,
+     "n_races": 28172,
+     "share_teiban": 0.03545252429619919,
+     "share_rare": 0.6047583934163572,
+     "teiban_share_of_labeled": 0.055376319452453894,
+     "wilson_stable_share": 0.8219874773475233
+    },
+    "truncated": {
+     "n_pairs": 1671840,
+     "n_races": 23815,
+     "share_teiban": 0.03522705522059527,
+     "share_rare": 0.5999748779787539,
+     "teiban_share_of_labeled": 0.0554580415761105,
+     "wilson_stable_share": 0.8446385725962281
+    },
+    "not_truncated": {
+     "n_pairs": 305424,
+     "n_races": 4357,
+     "share_teiban": 0.036686704384724184,
+     "share_rare": 0.6309425585415684,
+     "teiban_share_of_labeled": 0.05495071355009563,
+     "wilson_stable_share": 0.7040213819822471
+    }
+   },
+   "entry": {
+    "all": {
+     "n_pairs": 337593,
+     "n_races": 28172,
+     "share_teiban": 0.5862591937629038,
+     "share_rare": 0.22126643621165132,
+     "teiban_share_of_labeled": 0.7259945344166682,
+     "wilson_stable_share": 0.8816132641270656
+    },
+    "truncated": {
+     "n_pairs": 285387,
+     "n_races": 23815,
+     "share_teiban": 0.5858045390995386,
+     "share_rare": 0.2283495744375182,
+     "teiban_share_of_labeled": 0.7195253691644896,
+     "wilson_stable_share": 0.8895325566281758
+    },
+    "not_truncated": {
+     "n_pairs": 52206,
+     "n_races": 4357,
+     "share_teiban": 0.5887445887445888,
+     "share_rare": 0.1825460675018197,
+     "teiban_share_of_labeled": 0.7633238960909949,
+     "wilson_stable_share": 0.8359161575522773
+    }
+   },
+   "payout": {
+    "all": {
+     "n_pairs": 84504,
+     "n_races": 28172,
+     "share_teiban": 0.7872526744296128,
+     "share_rare": 0.00034317902111142667,
+     "teiban_share_of_labeled": 0.9995642701525055,
+     "wilson_stable_share": 0.8362857786792878
+    },
+    "truncated": {
+     "n_pairs": 71442,
+     "n_races": 23815,
+     "share_teiban": 0.7879118725679572,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.8379641144075324
+    },
+    "not_truncated": {
+     "n_pairs": 13062,
+     "n_races": 4357,
+     "share_teiban": 0.7836472209462563,
+     "share_rare": 0.0022201806767723166,
+     "teiban_share_of_labeled": 0.9971748660496834,
+     "wilson_stable_share": 0.8270823185582075
+    }
+   }
+  },
+  "25,3": {
+   "order_single": {
+    "all": {
+     "n_pairs": 3380400,
+     "n_races": 28172,
+     "share_teiban": 9.170512365400544e-06,
+     "share_rare": 0.9352588451070879,
+     "teiban_share_of_labeled": 9.805223970293334e-06,
+     "wilson_stable_share": 0.9526524712327381
+    },
+    "truncated": {
+     "n_pairs": 2857800,
+     "n_races": 23815,
+     "share_teiban": 0.0,
+     "share_rare": 0.9353387220939184,
+     "teiban_share_of_labeled": 0.0,
+     "wilson_stable_share": 0.9720191948330927
+    },
+    "not_truncated": {
+     "n_pairs": 522600,
+     "n_races": 4357,
+     "share_teiban": 5.931879066207424e-05,
+     "share_rare": 0.9348220436280138,
+     "teiban_share_of_labeled": 6.345060779541886e-05,
+     "wilson_stable_share": 0.8466951443910686
+    }
+   },
+   "order_nagashi": {
+    "all": {
+     "n_pairs": 1690200,
+     "n_races": 28172,
+     "share_teiban": 0.023451070879185895,
+     "share_rare": 0.5508117382558277,
+     "teiban_share_of_labeled": 0.04083682680845934,
+     "wilson_stable_share": 0.7933555803049395
+    },
+    "truncated": {
+     "n_pairs": 1428900,
+     "n_races": 23815,
+     "share_teiban": 0.02348729792147806,
+     "share_rare": 0.5452823850514382,
+     "teiban_share_of_labeled": 0.04129491888300327,
+     "wilson_stable_share": 0.8300055985185458
+    },
+    "not_truncated": {
+     "n_pairs": 261300,
+     "n_races": 4357,
+     "share_teiban": 0.023252965939533105,
+     "share_rare": 0.5810486031381554,
+     "teiban_share_of_labeled": 0.038479075894214204,
+     "wilson_stable_share": 0.6047218563177627
+    }
+   },
+   "boat1": {
+    "all": {
+     "n_pairs": 84510,
+     "n_races": 28172,
+     "share_teiban": 0.7586321145426577,
+     "share_rare": 0.0001774937877174299,
+     "teiban_share_of_labeled": 0.9997660891668096,
+     "wilson_stable_share": 0.981333915511407
+    },
+    "truncated": {
+     "n_pairs": 71445,
+     "n_races": 23815,
+     "share_teiban": 0.7726502904332003,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.9809789500380421
+    },
+    "not_truncated": {
+     "n_pairs": 13065,
+     "n_races": 4357,
+     "share_teiban": 0.6819747416762342,
+     "share_rare": 0.001148105625717566,
+     "teiban_share_of_labeled": 0.9983193277310924,
+     "wilson_stable_share": 0.9835294117647059
+    }
+   },
+   "tenkai": {
+    "all": {
+     "n_pairs": 676080,
+     "n_races": 28172,
+     "share_teiban": 0.04098923204354514,
+     "share_rare": 0.7641861909833156,
+     "teiban_share_of_labeled": 0.050907207139353705,
+     "wilson_stable_share": 0.8872021059476857
+    },
+    "truncated": {
+     "n_pairs": 571560,
+     "n_races": 23815,
+     "share_teiban": 0.041666666666666664,
+     "share_rare": 0.7615683392819651,
+     "teiban_share_of_labeled": 0.05187356920215118,
+     "wilson_stable_share": 0.9078974595782591
+    },
+    "not_truncated": {
+     "n_pairs": 104520,
+     "n_races": 4357,
+     "share_teiban": 0.03728473019517796,
+     "share_rare": 0.7785017221584386,
+     "teiban_share_of_labeled": 0.04570403208781929,
+     "wilson_stable_share": 0.7757722890718457
+    }
+   },
+   "slit_form": {
+    "all": {
+     "n_pairs": 1071018,
+     "n_races": 28172,
+     "share_teiban": 0.00048551938436142063,
+     "share_rare": 0.6198887413656914,
+     "teiban_share_of_labeled": 0.0007826233534808678,
+     "wilson_stable_share": 0.8602219640234064
+    },
+    "truncated": {
+     "n_pairs": 905580,
+     "n_races": 23815,
+     "share_teiban": 0.0,
+     "share_rare": 0.6171370834161531,
+     "teiban_share_of_labeled": 0.0,
+     "wilson_stable_share": 0.8831564576187179
+    },
+    "not_truncated": {
+     "n_pairs": 165438,
+     "n_races": 4357,
+     "share_teiban": 0.0031431714600031434,
+     "share_rare": 0.634950857723135,
+     "teiban_share_of_labeled": 0.004925875053284706,
+     "wilson_stable_share": 0.7388054752995784
+    }
+   },
+   "slit_custom": {
+    "all": {
+     "n_pairs": 1977264,
+     "n_races": 28172,
+     "share_teiban": 0.01131108440754497,
+     "share_rare": 0.6047583934163572,
+     "teiban_share_of_labeled": 0.01836007920323906,
+     "wilson_stable_share": 0.8082514867025905
+    },
+    "truncated": {
+     "n_pairs": 1671840,
+     "n_races": 23815,
+     "share_teiban": 0.011620729256388171,
+     "share_rare": 0.5999748779787539,
+     "teiban_share_of_labeled": 0.019000674823225656,
+     "wilson_stable_share": 0.8298555487095228
+    },
+    "not_truncated": {
+     "n_pairs": 305424,
+     "n_races": 4357,
+     "share_teiban": 0.009616140185447116,
+     "share_rare": 0.6309425585415684,
+     "teiban_share_of_labeled": 0.015012113963259422,
+     "wilson_stable_share": 0.6953414910908701
+    }
+   },
+   "entry": {
+    "all": {
+     "n_pairs": 337593,
+     "n_races": 28172,
+     "share_teiban": 0.5835725266815367,
+     "share_rare": 0.22126643621165132,
+     "teiban_share_of_labeled": 0.7250798651493515,
+     "wilson_stable_share": 0.8837575632664478
+    },
+    "truncated": {
+     "n_pairs": 285387,
+     "n_races": 23815,
+     "share_teiban": 0.5834112976414483,
+     "share_rare": 0.2283495744375182,
+     "teiban_share_of_labeled": 0.7186984710747369,
+     "wilson_stable_share": 0.8921550853383751
+    },
+    "not_truncated": {
+     "n_pairs": 52206,
+     "n_races": 4357,
+     "share_teiban": 0.5844538941884074,
+     "share_rare": 0.1825460675018197,
+     "teiban_share_of_labeled": 0.7619999001048898,
+     "wilson_stable_share": 0.8351730682783077
+    }
+   },
+   "payout": {
+    "all": {
+     "n_pairs": 84504,
+     "n_races": 28172,
+     "share_teiban": 0.4352930038814731,
+     "share_rare": 0.00034317902111142667,
+     "teiban_share_of_labeled": 0.9992122348083557,
+     "wilson_stable_share": 0.9511042294841496
+    },
+    "truncated": {
+     "n_pairs": 71442,
+     "n_races": 23815,
+     "share_teiban": 0.44056717337140616,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.9588880063542494
+    },
+    "not_truncated": {
+     "n_pairs": 13062,
+     "n_races": 4357,
+     "share_teiban": 0.40644617975807684,
+     "share_rare": 0.0022201806767723166,
+     "teiban_share_of_labeled": 0.9945672536530535,
+     "wilson_stable_share": 0.9052079430498314
+    }
+   }
+  },
+  "10,3": {
+   "order_single": {
+    "all": {
+     "n_pairs": 3380400,
+     "n_races": 28172,
+     "share_teiban": 0.002719500650810555,
+     "share_rare": 0.9352588451070879,
+     "teiban_share_of_labeled": 0.002899321357587593,
+     "wilson_stable_share": 0.9509714130004902
+    },
+    "truncated": {
+     "n_pairs": 2857800,
+     "n_races": 23815,
+     "share_teiban": 0.002622996710756526,
+     "share_rare": 0.9353387220939184,
+     "teiban_share_of_labeled": 0.00279648588867703,
+     "wilson_stable_share": 0.9703488929519677
+    },
+    "not_truncated": {
+     "n_pairs": 522600,
+     "n_races": 4357,
+     "share_teiban": 0.0032472254114045158,
+     "share_rare": 0.9348220436280138,
+     "teiban_share_of_labeled": 0.003461605148551205,
+     "wilson_stable_share": 0.8450192254734974
+    }
+   },
+   "order_nagashi": {
+    "all": {
+     "n_pairs": 1690200,
+     "n_races": 28172,
+     "share_teiban": 0.15246834694119038,
+     "share_rare": 0.5508117382558277,
+     "teiban_share_of_labeled": 0.21679605345070682,
+     "wilson_stable_share": 0.8140902039566444
+    },
+    "truncated": {
+     "n_pairs": 1428900,
+     "n_races": 23815,
+     "share_teiban": 0.15355728182518022,
+     "share_rare": 0.5452823850514382,
+     "teiban_share_of_labeled": 0.2197317769775239,
+     "wilson_stable_share": 0.8443897886181467
+    },
+    "not_truncated": {
+     "n_pairs": 261300,
+     "n_races": 4357,
+     "share_teiban": 0.146513585916571,
+     "share_rare": 0.5810486031381554,
+     "teiban_share_of_labeled": 0.20137603097121698,
+     "wilson_stable_share": 0.6549402457498738
+    }
+   },
+   "boat1": {
+    "all": {
+     "n_pairs": 84510,
+     "n_races": 28172,
+     "share_teiban": 0.9218080700508815,
+     "share_rare": 0.0001774937877174299,
+     "teiban_share_of_labeled": 0.9998074874545991,
+     "wilson_stable_share": 0.9747423540434051
+    },
+    "truncated": {
+     "n_pairs": 71445,
+     "n_races": 23815,
+     "share_teiban": 0.9174189936314647,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.9771912426577161
+    },
+    "not_truncated": {
+     "n_pairs": 13065,
+     "n_races": 4357,
+     "share_teiban": 0.9458094144661309,
+     "share_rare": 0.001148105625717566,
+     "teiban_share_of_labeled": 0.9987875848690592,
+     "wilson_stable_share": 0.9617685095376657
+    }
+   },
+   "tenkai": {
+    "all": {
+     "n_pairs": 676080,
+     "n_races": 28172,
+     "share_teiban": 0.06169831972547628,
+     "share_rare": 0.7641861909833156,
+     "teiban_share_of_labeled": 0.07470574750521165,
+     "wilson_stable_share": 0.8825174975464034
+    },
+    "truncated": {
+     "n_pairs": 571560,
+     "n_races": 23815,
+     "share_teiban": 0.06227342711176429,
+     "share_rare": 0.7615683392819651,
+     "teiban_share_of_labeled": 0.0755890629147863,
+     "wilson_stable_share": 0.9028659410671622
+    },
+    "not_truncated": {
+     "n_pairs": 104520,
+     "n_races": 4357,
+     "share_teiban": 0.05855338691159587,
+     "share_rare": 0.7785017221584386,
+     "teiban_share_of_labeled": 0.06995165106470527,
+     "wilson_stable_share": 0.7730000342900251
+    }
+   },
+   "slit_form": {
+    "all": {
+     "n_pairs": 1071018,
+     "n_races": 28172,
+     "share_teiban": 0.13481659505255747,
+     "share_rare": 0.6198887413656914,
+     "teiban_share_of_labeled": 0.17863474464402582,
+     "wilson_stable_share": 0.857350523256749
+    },
+    "truncated": {
+     "n_pairs": 905580,
+     "n_races": 23815,
+     "share_teiban": 0.1363833123523046,
+     "share_rare": 0.6171370834161531,
+     "teiban_share_of_labeled": 0.1809948517892707,
+     "wilson_stable_share": 0.8803821370423507
+    },
+    "not_truncated": {
+     "n_pairs": 165438,
+     "n_races": 4357,
+     "share_teiban": 0.12624064604262625,
+     "share_rare": 0.634950857723135,
+     "teiban_share_of_labeled": 0.16584610497895658,
+     "wilson_stable_share": 0.7325498292702295
+    }
+   },
+   "slit_custom": {
+    "all": {
+     "n_pairs": 1977264,
+     "n_races": 28172,
+     "share_teiban": 0.111285594639866,
+     "share_rare": 0.6047583934163572,
+     "teiban_share_of_labeled": 0.1554172599674532,
+     "wilson_stable_share": 0.8002144358557093
+    },
+    "truncated": {
+     "n_pairs": 1671840,
+     "n_races": 23815,
+     "share_teiban": 0.11460067949086036,
+     "share_rare": 0.5999748779787539,
+     "teiban_share_of_labeled": 0.16037587389173116,
+     "wilson_stable_share": 0.8193881753408513
+    },
+    "not_truncated": {
+     "n_pairs": 305424,
+     "n_races": 4357,
+     "share_teiban": 0.09313937346115564,
+     "share_rare": 0.6309425585415684,
+     "teiban_share_of_labeled": 0.12863098683258573,
+     "wilson_stable_share": 0.6966385110693099
+    }
+   },
+   "entry": {
+    "all": {
+     "n_pairs": 337593,
+     "n_races": 28172,
+     "share_teiban": 0.601398725684478,
+     "share_rare": 0.22126643621165132,
+     "teiban_share_of_labeled": 0.7310370653089736,
+     "wilson_stable_share": 0.8806053448362775
+    },
+    "truncated": {
+     "n_pairs": 285387,
+     "n_races": 23815,
+     "share_teiban": 0.6000168192664698,
+     "share_rare": 0.2283495744375182,
+     "teiban_share_of_labeled": 0.7243374717116813,
+     "wilson_stable_share": 0.8899050358494955
+    },
+    "not_truncated": {
+     "n_pairs": 52206,
+     "n_races": 4357,
+     "share_teiban": 0.6089529939087461,
+     "share_rare": 0.1825460675018197,
+     "teiban_share_of_labeled": 0.7693666658599744,
+     "wilson_stable_share": 0.8274001113235401
+    }
+   },
+   "payout": {
+    "all": {
+     "n_pairs": 84504,
+     "n_races": 28172,
+     "share_teiban": 0.915471456972451,
+     "share_rare": 0.00034317902111142667,
+     "teiban_share_of_labeled": 0.9996252745832795,
+     "wilson_stable_share": 0.9663522418917173
+    },
+    "truncated": {
+     "n_pairs": 71442,
+     "n_races": 23815,
+     "share_teiban": 0.9120825284846449,
+     "share_rare": 0.0,
+     "teiban_share_of_labeled": 1.0,
+     "wilson_stable_share": 0.9738800816439281
+    },
+    "not_truncated": {
+     "n_pairs": 13062,
+     "n_races": 4357,
+     "share_teiban": 0.9340070433318022,
+     "share_rare": 0.0022201806767723166,
+     "teiban_share_of_labeled": 0.9976285877831385,
+     "wilson_stable_share": 0.9262409027720991
+    }
+   }
+  }
+ },
+ "brier": {
+  "order_single": {
+   "all": {
+    "n_pairs": 3380400,
+    "brier_p": 0.008087716522748941,
+    "brier_q": 0.008133759968535216,
+    "skill": 0.00566078246277113,
+    "ci95": [
+     0.005299180772146433,
+     0.006069312640073532
+    ]
+   },
+   "truncated": {
+    "n_pairs": 2857800,
+    "brier_p": 0.008085733479774298,
+    "brier_q": 0.008137910965168641,
+    "skill": 0.006411655966459873,
+    "ci95": [
+     0.006049501441574306,
+     0.006795700824309731
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 522600,
+    "brier_p": 0.00809856064868284,
+    "brier_q": 0.00811106054607254,
+    "skill": 0.0015410928470694918,
+    "ci95": [
+     9.528421370360309e-05,
+     0.00303396188494481
+    ]
+   }
+  },
+  "order_nagashi": {
+   "all": {
+    "n_pairs": 1690200,
+    "brier_p": 0.04362162628404667,
+    "brier_q": 0.044440605003450595,
+    "skill": 0.01842861318697908,
+    "ci95": [
+     0.01753478119130493,
+     0.019435890962996746
+    ]
+   },
+   "truncated": {
+    "n_pairs": 1428900,
+    "brier_p": 0.043622433934844856,
+    "brier_q": 0.04450623294007442,
+    "skill": 0.019857870389065613,
+    "ci95": [
+     0.018906366678632627,
+     0.020900685682446803
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 261300,
+    "brier_p": 0.04361720970453898,
+    "brier_q": 0.04408172341660861,
+    "skill": 0.010537557882653426,
+    "ci95": [
+     0.007833293880466238,
+     0.013287108408871392
+    ]
+   }
+  },
+  "boat1": {
+   "all": {
+    "n_pairs": 84510,
+    "brier_p": 0.16795928429039095,
+    "brier_q": 0.18527790167583502,
+    "skill": 0.09347373447560403,
+    "ci95": [
+     0.08703841324217264,
+     0.09921909576447606
+    ]
+   },
+   "truncated": {
+    "n_pairs": 71445,
+    "brier_p": 0.16818767418293787,
+    "brier_q": 0.1858774928732615,
+    "skill": 0.09516923440744507,
+    "ci95": [
+     0.0884888868132781,
+     0.10141044723711005
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 13065,
+    "brier_p": 0.16671035081369626,
+    "brier_q": 0.18199908092572872,
+    "skill": 0.08400443581509942,
+    "ci95": [
+     0.06563910142362418,
+     0.10145276702589734
+    ]
+   }
+  },
+  "tenkai": {
+   "all": {
+    "n_pairs": 676080,
+    "brier_p": 0.025273640206733984,
+    "brier_q": 0.0265693289828889,
+    "skill": 0.04876633418139231,
+    "ci95": [
+     0.04589199398419073,
+     0.051623861142884364
+    ]
+   },
+   "truncated": {
+    "n_pairs": 571560,
+    "brier_p": 0.02538332704228865,
+    "brier_q": 0.026745949955711806,
+    "skill": 0.0509468878719771,
+    "ci95": [
+     0.048087148537392384,
+     0.05397788021939689
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 104520,
+    "brier_p": 0.024673825743190183,
+    "brier_q": 0.02560349006950706,
+    "skill": 0.03631006256541869,
+    "ci95": [
+     0.028083493856791476,
+     0.04446458525002192
+    ]
+   }
+  },
+  "slit_form": {
+   "all": {
+    "n_pairs": 1071018,
+    "brier_p": 0.035956391462189104,
+    "brier_q": 0.036101626446812564,
+    "skill": 0.0040229485183287395,
+    "ci95": [
+     0.003248693594255689,
+     0.004780434702447808
+    ]
+   },
+   "truncated": {
+    "n_pairs": 905580,
+    "brier_p": 0.036368667774036224,
+    "brier_q": 0.03650357325381506,
+    "skill": 0.003695678744675579,
+    "ci95": [
+     0.0030185493701446603,
+     0.004419748103431745
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 165438,
+    "brier_p": 0.033699659741045954,
+    "brier_q": 0.033901436711169367,
+    "skill": 0.0059518707670855875,
+    "ci95": [
+     0.002847171866751835,
+     0.00897501181289419
+    ]
+   }
+  },
+  "slit_custom": {
+   "all": {
+    "n_pairs": 1977264,
+    "brier_p": 0.03532888925459388,
+    "brier_q": 0.035459889241531456,
+    "skill": 0.003694314611229488,
+    "ci95": [
+     0.003070012533345243,
+     0.00426621297503611
+    ]
+   },
+   "truncated": {
+    "n_pairs": 1671840,
+    "brier_p": 0.03602415942676526,
+    "brier_q": 0.03615317697621051,
+    "skill": 0.0035686365690669186,
+    "ci95": [
+     0.003054823227540826,
+     0.004078530916051992
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 305424,
+    "brier_p": 0.031523096374391074,
+    "brier_q": 0.03166494789328817,
+    "skill": 0.004479764797818198,
+    "ci95": [
+     0.0018180624945687118,
+     0.0070519057989398915
+    ]
+   }
+  },
+  "entry": {
+   "all": {
+    "n_pairs": 337593,
+    "brier_p": 0.059907715921793864,
+    "brier_q": 0.06078935019772873,
+    "skill": 0.014503104130364708,
+    "ci95": [
+     0.01207245110080395,
+     0.0170873784981126
+    ]
+   },
+   "truncated": {
+    "n_pairs": 285387,
+    "brier_p": 0.060307763188887455,
+    "brier_q": 0.06129585988314605,
+    "skill": 0.016120121263365816,
+    "ci95": [
+     0.013540184315554402,
+     0.01882077230630385
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 52206,
+    "brier_p": 0.05772083530626989,
+    "brier_q": 0.058020486856500054,
+    "skill": 0.005164581796276213,
+    "ci95": [
+     -0.002690202738195735,
+     0.012990935517445623
+    ]
+   }
+  },
+  "payout": {
+   "all": {
+    "n_pairs": 84504,
+    "brier_p": 0.169557613657417,
+    "brier_q": 0.17557036007948634,
+    "skill": 0.03424693336248319,
+    "ci95": [
+     0.030904495465236635,
+     0.0377180565146909
+    ]
+   },
+   "truncated": {
+    "n_pairs": 71442,
+    "brier_p": 0.16909474785672765,
+    "brier_q": 0.1756057710449807,
+    "skill": 0.03707750120914477,
+    "ci95": [
+     0.033351813754351235,
+     0.04074941485636963
+    ]
+   },
+   "not_truncated": {
+    "n_pairs": 13062,
+    "brier_p": 0.17208923657372757,
+    "brier_q": 0.17537668145470828,
+    "skill": 0.018745051244624555,
+    "ci95": [
+     0.011756992148653582,
+     0.026035663446091633
+    ]
+   }
+  }
+ },
+ "step7_line": [
+  15,
+  5
+ ],
+ "step7": {
+  "order_single": {
+   "all": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満",
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "truncated": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満",
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "not_truncated": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満",
+    "(a) 定番かレアの一方が95%以上"
+   ]
+  },
+  "order_nagashi": {
+   "all": [],
+   "truncated": [],
+   "not_truncated": []
+  },
+  "boat1": {
+   "all": [
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "truncated": [
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "not_truncated": [
+    "(a) 定番かレアの一方が95%以上"
+   ]
+  },
+  "tenkai": {
+   "all": [],
+   "truncated": [],
+   "not_truncated": [
+    "(a) 定番かレアの一方が95%以上"
+   ]
+  },
+  "slit_form": {
+   "all": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満"
+   ],
+   "truncated": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満"
+   ],
+   "not_truncated": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満"
+   ]
+  },
+  "slit_custom": {
+   "all": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満",
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "truncated": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満",
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "not_truncated": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満",
+    "(a) 定番かレアの一方が95%以上"
+   ]
+  },
+  "entry": {
+   "all": [],
+   "truncated": [],
+   "not_truncated": [
+    "(c) Brier skill の CI が0をまたぐか 0.01 未満"
+   ]
+  },
+  "payout": {
+   "all": [
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "truncated": [
+    "(a) 定番かレアの一方が95%以上"
+   ],
+   "not_truncated": [
+    "(a) 定番かレアの一方が95%以上"
+   ]
+  }
+ },
+ "main_share_median": {
+  "all": 0.2925,
+  "truncated": 0.3565,
+  "not_truncated": 0.0791765637371338
+ },
+ "n_test_races": 28172,
+ "n_test_days": 183,
+ "n_truncated": 23815,
+ "n_empty_layer": 2,
+ "n_total_quantiles": {
+  "0.1": 1358.0,
+  "0.5": 7144.0,
+  "0.9": 54848.0
+ },
+ "national_rates": [
+  {
+   "sub": "order_single",
+   "key": "1-2-3",
+   "long": 0.07112319070287972,
+   "long_n": 362779,
+   "main": 0.07283430732210382,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-2-4",
+   "long": 0.05282279294005442,
+   "long_n": 362779,
+   "main": 0.05154262633207288,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-2-5",
+   "long": 0.03637200609737609,
+   "long_n": 362779,
+   "main": 0.03671794431075971,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-2-6",
+   "long": 0.027256263455161408,
+   "long_n": 362779,
+   "main": 0.0270067033344792,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-3-2",
+   "long": 0.05203443418720488,
+   "long_n": 362779,
+   "main": 0.05455053282915091,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-3-4",
+   "long": 0.04547672274304742,
+   "long_n": 362779,
+   "main": 0.04397988999656239,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-3-5",
+   "long": 0.031873399507689255,
+   "long_n": 362779,
+   "main": 0.032678755586112065,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-3-6",
+   "long": 0.02355152861659578,
+   "long_n": 362779,
+   "main": 0.02414919216225507,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-4-2",
+   "long": 0.035583647344526556,
+   "long_n": 362779,
+   "main": 0.03471983499484359,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-4-3",
+   "long": 0.03068810487927912,
+   "long_n": 362779,
+   "main": 0.027350464077002406,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-4-5",
+   "long": 0.0211947218554547,
+   "long_n": 362779,
+   "main": 0.021270195943623237,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-4-6",
+   "long": 0.017884166393313836,
+   "long_n": 362779,
+   "main": 0.017231007218975594,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-5-2",
+   "long": 0.020613100537792983,
+   "long_n": 362779,
+   "main": 0.021785837057408042,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-5-3",
+   "long": 0.0182783457697386,
+   "long_n": 362779,
+   "main": 0.01952990718459952,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-5-4",
+   "long": 0.013881729648077755,
+   "long_n": 362779,
+   "main": 0.014975077346167067,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-5-6",
+   "long": 0.010403027738650804,
+   "long_n": 362779,
+   "main": 0.01069955311103472,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-6-2",
+   "long": 0.012735026007569346,
+   "long_n": 362779,
+   "main": 0.013320728772774149,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-6-3",
+   "long": 0.010524313700627655,
+   "long_n": 362779,
+   "main": 0.011064798899965624,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-6-4",
+   "long": 0.009066125657769606,
+   "long_n": 362779,
+   "main": 0.008679958748710897,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "1-6-5",
+   "long": 0.006499824962304874,
+   "long_n": 362779,
+   "main": 0.00625214850464077,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-1-3",
+   "long": 0.02190314213336494,
+   "long_n": 362779,
+   "main": 0.02066861464420763,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-1-4",
+   "long": 0.01824802427924439,
+   "long_n": 362779,
+   "main": 0.016436060501890684,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-1-5",
+   "long": 0.013366264309676138,
+   "long_n": 362779,
+   "main": 0.011988655895496735,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-1-6",
+   "long": 0.010345141256798217,
+   "long_n": 362779,
+   "main": 0.008551048470264696,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-3-1",
+   "long": 0.009611912486665436,
+   "long_n": 362779,
+   "main": 0.010119456858026813,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-3-4",
+   "long": 0.008244688915290024,
+   "long_n": 362779,
+   "main": 0.008379168099003093,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-3-5",
+   "long": 0.0063289220158829484,
+   "long_n": 362779,
+   "main": 0.007047095221725679,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-3-6",
+   "long": 0.005399981807105703,
+   "long_n": 362779,
+   "main": 0.005414231694740461,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-4-1",
+   "long": 0.0074949211503422195,
+   "long_n": 362779,
+   "main": 0.007090065314541079,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-4-3",
+   "long": 0.006058785100570871,
+   "long_n": 362779,
+   "main": 0.0062736335510484706,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-4-5",
+   "long": 0.004796308496357286,
+   "long_n": 362779,
+   "main": 0.004554829838432451,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-4-6",
+   "long": 0.00399141074869273,
+   "long_n": 362779,
+   "main": 0.0041466139566861465,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-5-1",
+   "long": 0.004719126520553836,
+   "long_n": 362779,
+   "main": 0.005177896184255758,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-5-3",
+   "long": 0.004148531199435469,
+   "long_n": 362779,
+   "main": 0.004275524235132348,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-5-4",
+   "long": 0.0033629289457217755,
+   "long_n": 362779,
+   "main": 0.0035665177036782398,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-5-6",
+   "long": 0.0027895771254675713,
+   "long_n": 362779,
+   "main": 0.002212959779993125,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-6-1",
+   "long": 0.003486971406834464,
+   "long_n": 362779,
+   "main": 0.002943451357854933,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-6-3",
+   "long": 0.0029908015623837103,
+   "long_n": 362779,
+   "main": 0.00266414575455483,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-6-4",
+   "long": 0.0025001447162046313,
+   "long_n": 362779,
+   "main": 0.002148504640770024,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "2-6-5",
+   "long": 0.0018523674192828141,
+   "long_n": 362779,
+   "main": 0.0017188037126160192,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-1-2",
+   "long": 0.012426298104355544,
+   "long_n": 362779,
+   "main": 0.013707459608112753,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-1-4",
+   "long": 0.014683870896606475,
+   "long_n": 362779,
+   "main": 0.01516844276383637,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-1-5",
+   "long": 0.01186397228064469,
+   "long_n": 362779,
+   "main": 0.013643004468889653,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-1-6",
+   "long": 0.008881440215668493,
+   "long_n": 362779,
+   "main": 0.0088948092127879,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-2-1",
+   "long": 0.007403956678859581,
+   "long_n": 362779,
+   "main": 0.006488484015125473,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-2-4",
+   "long": 0.007097985274781616,
+   "long_n": 362779,
+   "main": 0.007476796149879684,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-2-5",
+   "long": 0.0060339766083483334,
+   "long_n": 362779,
+   "main": 0.006746304572017876,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-2-6",
+   "long": 0.004810090992036474,
+   "long_n": 362779,
+   "main": 0.004791165348917154,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-4-1",
+   "long": 0.006990481808483953,
+   "long_n": 362779,
+   "main": 0.006896699896871777,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-4-2",
+   "long": 0.00564806672933108,
+   "long_n": 362779,
+   "main": 0.005929872808525267,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-4-5",
+   "long": 0.005890638653284782,
+   "long_n": 362779,
+   "main": 0.005478686833963561,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-4-6",
+   "long": 0.0048018214946289614,
+   "long_n": 362779,
+   "main": 0.004791165348917154,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-5-1",
+   "long": 0.00488175996956825,
+   "long_n": 362779,
+   "main": 0.005457201787555861,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-5-2",
+   "long": 0.004242252170053945,
+   "long_n": 362779,
+   "main": 0.004404434513578549,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-5-4",
+   "long": 0.003952819760791005,
+   "long_n": 362779,
+   "main": 0.003824338260570643,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-5-6",
+   "long": 0.0033160684604125377,
+   "long_n": 362779,
+   "main": 0.0033516672396012377,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-6-1",
+   "long": 0.0032195909906582243,
+   "long_n": 362779,
+   "main": 0.0034161223788243384,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-6-2",
+   "long": 0.002693099655713258,
+   "long_n": 362779,
+   "main": 0.0019981093159161223,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-6-4",
+   "long": 0.002739960141022496,
+   "long_n": 362779,
+   "main": 0.002750085940185631,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "3-6-5",
+   "long": 0.00229065078188098,
+   "long_n": 362779,
+   "main": 0.0017617738054314198,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-1-2",
+   "long": 0.00901926517246037,
+   "long_n": 362779,
+   "main": 0.008508078377449295,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-1-3",
+   "long": 0.007120037267868316,
+   "long_n": 362779,
+   "main": 0.006080268133379168,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-1-5",
+   "long": 0.008754641255419967,
+   "long_n": 362779,
+   "main": 0.009002234444826401,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-1-6",
+   "long": 0.007111767770460804,
+   "long_n": 362779,
+   "main": 0.006832244757648677,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-2-1",
+   "long": 0.00630411352366041,
+   "long_n": 362779,
+   "main": 0.006424028875902372,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-2-3",
+   "long": 0.004222956676103082,
+   "long_n": 362779,
+   "main": 0.0038887933997937434,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-2-5",
+   "long": 0.00470258752573881,
+   "long_n": 362779,
+   "main": 0.005134926091440358,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-2-6",
+   "long": 0.004308408149314045,
+   "long_n": 362779,
+   "main": 0.0037169130285321416,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-3-1",
+   "long": 0.00462540554993536,
+   "long_n": 362779,
+   "main": 0.0046622550704709526,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-3-2",
+   "long": 0.003365685444857613,
+   "long_n": 362779,
+   "main": 0.0031368167755242353,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-3-5",
+   "long": 0.004131992204620444,
+   "long_n": 362779,
+   "main": 0.003996218631832245,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-3-6",
+   "long": 0.003608257368811315,
+   "long_n": 362779,
+   "main": 0.0032872121003781367,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-5-1",
+   "long": 0.006508094459712387,
+   "long_n": 362779,
+   "main": 0.006810759711240976,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-5-2",
+   "long": 0.004597840558576985,
+   "long_n": 362779,
+   "main": 0.004877105534547955,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-5-3",
+   "long": 0.0038398032962216667,
+   "long_n": 362779,
+   "main": 0.004103643863870746,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-5-6",
+   "long": 0.005146383886608652,
+   "long_n": 362779,
+   "main": 0.005500171880371262,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-6-1",
+   "long": 0.00402448873832278,
+   "long_n": 362779,
+   "main": 0.0038028532141629427,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-6-2",
+   "long": 0.0029301585813952848,
+   "long_n": 362779,
+   "main": 0.0033516672396012377,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-6-3",
+   "long": 0.002376102255091943,
+   "long_n": 362779,
+   "main": 0.0019551392231007218,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "4-6-5",
+   "long": 0.0031258700200397487,
+   "long_n": 362779,
+   "main": 0.003394637332416638,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-1-2",
+   "long": 0.005612232240565193,
+   "long_n": 362779,
+   "main": 0.006080268133379168,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-1-3",
+   "long": 0.005091253903891901,
+   "long_n": 362779,
+   "main": 0.005306806462701959,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-1-4",
+   "long": 0.004358025133759121,
+   "long_n": 362779,
+   "main": 0.004834135441732554,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-1-6",
+   "long": 0.004471041598328459,
+   "long_n": 362779,
+   "main": 0.004963045720178755,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-2-1",
+   "long": 0.0036689003497997405,
+   "long_n": 362779,
+   "main": 0.0041466139566861465,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-2-3",
+   "long": 0.002549761700649707,
+   "long_n": 362779,
+   "main": 0.0027286008937779304,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-2-4",
+   "long": 0.0020976958423723534,
+   "long_n": 362779,
+   "main": 0.002298899965623926,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-2-6",
+   "long": 0.0022934072810168174,
+   "long_n": 362779,
+   "main": 0.002470780336885528,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-3-1",
+   "long": 0.002687586657441583,
+   "long_n": 362779,
+   "main": 0.0025352354761086285,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-3-2",
+   "long": 0.0021307738320024035,
+   "long_n": 362779,
+   "main": 0.002298899965623926,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-3-4",
+   "long": 0.0019350623933579397,
+   "long_n": 362779,
+   "main": 0.0018906840838776211,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-3-6",
+   "long": 0.0018523674192828141,
+   "long_n": 362779,
+   "main": 0.0019336541766930217,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-4-1",
+   "long": 0.0032361299854732494,
+   "long_n": 362779,
+   "main": 0.003502062564455139,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-4-2",
+   "long": 0.002381615253363618,
+   "long_n": 362779,
+   "main": 0.0020840495015469235,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-4-3",
+   "long": 0.0018303154261961139,
+   "long_n": 362779,
+   "main": 0.0019336541766930217,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-4-6",
+   "long": 0.002676560660898233,
+   "long_n": 362779,
+   "main": 0.0029004812650395323,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-6-1",
+   "long": 0.002359563260276918,
+   "long_n": 362779,
+   "main": 0.002621175661739429,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-6-2",
+   "long": 0.0017172989616267755,
+   "long_n": 362779,
+   "main": 0.0017188037126160192,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-6-3",
+   "long": 0.0014416490480430235,
+   "long_n": 362779,
+   "main": 0.0015039532485390168,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "5-6-4",
+   "long": 0.0014140840566846482,
+   "long_n": 362779,
+   "main": 0.0014394981093159161,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-1-2",
+   "long": 0.003572422880045427,
+   "long_n": 362779,
+   "main": 0.0035665177036782398,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-1-3",
+   "long": 0.0028198986159617837,
+   "long_n": 362779,
+   "main": 0.0028360261258164317,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-1-4",
+   "long": 0.002433988736944531,
+   "long_n": 362779,
+   "main": 0.0023848401512547267,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-1-5",
+   "long": 0.0017062729650834255,
+   "long_n": 362779,
+   "main": 0.0015039532485390168,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-2-1",
+   "long": 0.0022300078008925545,
+   "long_n": 362779,
+   "main": 0.0021055345479546236,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-2-3",
+   "long": 0.0016842209719967252,
+   "long_n": 362779,
+   "main": 0.0016758336198006189,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-2-4",
+   "long": 0.0014857530342164238,
+   "long_n": 362779,
+   "main": 0.001074252320385012,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-2-5",
+   "long": 0.0011136256508783584,
+   "long_n": 362779,
+   "main": 0.001160192506015813,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-3-1",
+   "long": 0.001651142982366675,
+   "long_n": 362779,
+   "main": 0.0016543485733929186,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-3-2",
+   "long": 0.0013617105731037354,
+   "long_n": 362779,
+   "main": 0.001074252320385012,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-3-4",
+   "long": 0.0012321551137193718,
+   "long_n": 362779,
+   "main": 0.0010527672739773118,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-3-5",
+   "long": 0.0009702876958148074,
+   "long_n": 362779,
+   "main": 0.0008379168099003094,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-4-1",
+   "long": 0.0016483864832308375,
+   "long_n": 362779,
+   "main": 0.0015898934341698177,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-4-2",
+   "long": 0.0012927980947077973,
+   "long_n": 362779,
+   "main": 0.0015469233413544173,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-4-3",
+   "long": 0.0010309306768032328,
+   "long_n": 362779,
+   "main": 0.0009883121347542111,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-4-5",
+   "long": 0.0010750346629766331,
+   "long_n": 362779,
+   "main": 0.0010097971811619112,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-5-1",
+   "long": 0.0011604861361875962,
+   "long_n": 362779,
+   "main": 0.0012676177380543142,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-5-2",
+   "long": 0.0009702876958148074,
+   "long_n": 362779,
+   "main": 0.0006660364386387074,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-5-3",
+   "long": 0.0007497677649478057,
+   "long_n": 362779,
+   "main": 0.0006445513922310073,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_single",
+   "key": "6-5-4",
+   "long": 0.0008104107459362312,
+   "long_n": 362779,
+   "main": 0.0010097971811619112,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-23-456",
+   "long": 0.21735271335992437,
+   "long_n": 362779,
+   "main": 0.2160751117222413,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-24-356",
+   "long": 0.20451845338346486,
+   "long_n": 362779,
+   "main": 0.20241062220694397,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-25-346",
+   "long": 0.1937653502545627,
+   "long_n": 362779,
+   "main": 0.1965881746304572,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-26-345",
+   "long": 0.18640825406101236,
+   "long_n": 362779,
+   "main": 0.1870917841182537,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-34-256",
+   "long": 0.182121897904785,
+   "long_n": 362779,
+   "main": 0.18459951873496047,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-35-246",
+   "long": 0.16596054347136963,
+   "long_n": 362779,
+   "main": 0.1701400825025782,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-36-245",
+   "long": 0.1576855330655854,
+   "long_n": 362779,
+   "main": 0.1594620144379512,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-45-236",
+   "long": 0.1334503926633019,
+   "long_n": 362779,
+   "main": 0.13131660364386388,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-46-235",
+   "long": 0.11722563874976225,
+   "long_n": 362779,
+   "main": 0.11397817119284978,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "1-56-234",
+   "long": 0.08509864132157595,
+   "long_n": 362779,
+   "main": 0.0893563080096253,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-13-456",
+   "long": 0.06193302258399742,
+   "long_n": 362779,
+   "main": 0.05781625988312135,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-14-356",
+   "long": 0.060461052045460185,
+   "long_n": 362779,
+   "main": 0.05618339635613613,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-15-346",
+   "long": 0.06079734494003236,
+   "long_n": 362779,
+   "main": 0.05571072533516672,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-16-345",
+   "long": 0.060860744420156626,
+   "long_n": 362779,
+   "main": 0.05562478514953592,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-34-156",
+   "long": 0.03762345670504632,
+   "long_n": 362779,
+   "main": 0.03837229288415263,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-35-146",
+   "long": 0.03412821580080435,
+   "long_n": 362779,
+   "main": 0.03487023031969749,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-36-145",
+   "long": 0.03202500696016032,
+   "long_n": 362779,
+   "main": 0.03235647988999656,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-45-136",
+   "long": 0.0292023518450627,
+   "long_n": 362779,
+   "main": 0.029176693021656926,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-46-135",
+   "long": 0.026680155135771363,
+   "long_n": 362779,
+   "main": 0.025244929529047784,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "2-56-134",
+   "long": 0.021208504351133885,
+   "long_n": 362779,
+   "main": 0.020776039876246134,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-12-456",
+   "long": 0.05337133626808608,
+   "long_n": 362779,
+   "main": 0.056720522516328635,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-14-256",
+   "long": 0.04951223747791355,
+   "long_n": 362779,
+   "main": 0.05244499828119629,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-15-246",
+   "long": 0.047502749607888,
+   "long_n": 362779,
+   "main": 0.04935115159848745,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-16-245",
+   "long": 0.04669785186022344,
+   "long_n": 362779,
+   "main": 0.04902887590237195,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-24-156",
+   "long": 0.035930966235642084,
+   "long_n": 362779,
+   "main": 0.035192506015812995,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-25-146",
+   "long": 0.03146268113644946,
+   "long_n": 362779,
+   "main": 0.03138965280165005,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-26-145",
+   "long": 0.028786120475551232,
+   "long_n": 362779,
+   "main": 0.028639566861464422,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-45-126",
+   "long": 0.029880450632478725,
+   "long_n": 362779,
+   "main": 0.030831041595049846,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-46-125",
+   "long": 0.026732528619352276,
+   "long_n": 362779,
+   "main": 0.025481265039532484,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "3-56-124",
+   "long": 0.021729482687807177,
+   "long_n": 362779,
+   "main": 0.021850292196631146,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-12-356",
+   "long": 0.036220398644905026,
+   "long_n": 362779,
+   "main": 0.03465537985562049,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-13-256",
+   "long": 0.03599160921663051,
+   "long_n": 362779,
+   "main": 0.03476280508765899,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-15-236",
+   "long": 0.03683509795219679,
+   "long_n": 362779,
+   "main": 0.0359015125472671,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-16-235",
+   "long": 0.033326074552275625,
+   "long_n": 362779,
+   "main": 0.03229202475077346,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-23-156",
+   "long": 0.027680764322080387,
+   "long_n": 362779,
+   "main": 0.027221553798556206,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-25-136",
+   "long": 0.030329759991620242,
+   "long_n": 362779,
+   "main": 0.03044431075971124,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-26-135",
+   "long": 0.024756118738956775,
+   "long_n": 362779,
+   "main": 0.024600378136816776,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-35-126",
+   "long": 0.02785166726850231,
+   "long_n": 362779,
+   "main": 0.028274321072533515,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-36-125",
+   "long": 0.022203600539171232,
+   "long_n": 362779,
+   "main": 0.02234444826400825,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "4-56-123",
+   "long": 0.024276487889321047,
+   "long_n": 362779,
+   "main": 0.02490116878652458,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-12-346",
+   "long": 0.020861185460018358,
+   "long_n": 362779,
+   "main": 0.022602268820900655,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-13-246",
+   "long": 0.02035950261729593,
+   "long_n": 362779,
+   "main": 0.022000687521485048,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-14-236",
+   "long": 0.022063019083243516,
+   "long_n": 362779,
+   "main": 0.023268305259539362,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-16-234",
+   "long": 0.01963454334457066,
+   "long_n": 362779,
+   "main": 0.020883465108284635,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-23-146",
+   "long": 0.014535019943271247,
+   "long_n": 362779,
+   "main": 0.01527586799587487,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-24-136",
+   "long": 0.01625507540403386,
+   "long_n": 362779,
+   "main": 0.0176821931935373,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-26-134",
+   "long": 0.01353165425782639,
+   "long_n": 362779,
+   "main": 0.014738741835682365,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-34-126",
+   "long": 0.0149650338084619,
+   "long_n": 362779,
+   "main": 0.01525438294946717,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-36-124",
+   "long": 0.012244369161390267,
+   "long_n": 362779,
+   "main": 0.01250429700928154,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "5-46-123",
+   "long": 0.0129665719349797,
+   "long_n": 362779,
+   "main": 0.01336369886558955,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-12-345",
+   "long": 0.011243759975081247,
+   "long_n": 362779,
+   "main": 0.010635097971811619,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-13-245",
+   "long": 0.011276837964711298,
+   "long_n": 362779,
+   "main": 0.010420247507734617,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-14-235",
+   "long": 0.0114973578955783,
+   "long_n": 362779,
+   "main": 0.011451529735304227,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-15-234",
+   "long": 0.011356776439650586,
+   "long_n": 362779,
+   "main": 0.011107768992781025,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-23-145",
+   "long": 0.00868297227788819,
+   "long_n": 362779,
+   "main": 0.007885012031625989,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-24-135",
+   "long": 0.008782206246778342,
+   "long_n": 362779,
+   "main": 0.008529563423856995,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-25-134",
+   "long": 0.008120646454177337,
+   "long_n": 362779,
+   "main": 0.007777586799587487,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-34-125",
+   "long": 0.007999360492200486,
+   "long_n": 362779,
+   "main": 0.007713131660364386,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-35-124",
+   "long": 0.007186193247128417,
+   "long_n": 362779,
+   "main": 0.006724819525610175,
+   "main_n": 46544
+  },
+  {
+   "sub": "order_nagashi",
+   "key": "6-45-123",
+   "long": 0.006852656851692077,
+   "long_n": 362779,
+   "main": 0.0067033344792024755,
+   "main_n": 46544
+  },
+  {
+   "sub": "boat1",
+   "key": "win",
+   "long": 0.5478624727451148,
+   "long_n": 362779,
+   "main": 0.5503394637332417,
+   "main_n": 46544
+  },
+  {
+   "sub": "boat1",
+   "key": "stay",
+   "long": 0.8095645007015291,
+   "long_n": 362779,
+   "main": 0.8100077346167067,
+   "main_n": 46544
+  },
+  {
+   "sub": "boat1",
+   "key": "out",
+   "long": 0.19043549929847098,
+   "long_n": 362779,
+   "main": 0.18999226538329322,
+   "main_n": 46544
+  },
+  {
+   "sub": "tenkai",
+   "key": "1逃げ",
+   "long": 0.5199832404852541,
+   "long_n": 362779,
+   "main": 0.524224910298004,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "1差し",
+   "long": 0.00046309185482070354,
+   "long_n": 362779,
+   "main": 0.00025782609629804696,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "1まくり",
+   "long": 0.0007497677649478057,
+   "long_n": 362779,
+   "main": 0.0008379348129686526,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "1まくり差し",
+   "long": 3.859098790172529e-05,
+   "long_n": 362779,
+   "main": 4.2971016049674494e-05,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "2逃げ",
+   "long": 0.0028226551150976214,
+   "long_n": 362779,
+   "main": 0.0030509421395268892,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "2差し",
+   "long": 0.08463003646848356,
+   "long_n": 362779,
+   "main": 0.0780998216702834,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "2まくり",
+   "long": 0.03749390124566196,
+   "long_n": 362779,
+   "main": 0.038824313000880906,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "2まくり差し",
+   "long": 0.0024146932429936685,
+   "long_n": 362779,
+   "main": 0.001912210214210515,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "3逃げ",
+   "long": 0.0008765667251963317,
+   "long_n": 362779,
+   "main": 0.0009668478611176761,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "3差し",
+   "long": 0.015968399493906757,
+   "long_n": 362779,
+   "main": 0.015770362890230538,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "3まくり",
+   "long": 0.04810642291863641,
+   "long_n": 362779,
+   "main": 0.050082719205895625,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "3まくり差し",
+   "long": 0.04401853470018937,
+   "long_n": 362779,
+   "main": 0.046301269793524266,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "4逃げ",
+   "long": 0.0005954038133409045,
+   "long_n": 362779,
+   "main": 0.00042971016049674494,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "4差し",
+   "long": 0.01919074698370082,
+   "long_n": 362779,
+   "main": 0.017811486152590077,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "4まくり",
+   "long": 0.04375115428401313,
+   "long_n": 362779,
+   "main": 0.045785617600928176,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "4まくり差し",
+   "long": 0.026385209728236752,
+   "long_n": 362779,
+   "main": 0.025954493694003395,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "5逃げ",
+   "long": 0.0003390493937080151,
+   "long_n": 362779,
+   "main": 0.00042971016049674494,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "5差し",
+   "long": 0.005493702777724179,
+   "long_n": 362779,
+   "main": 0.005736630642631545,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "5まくり",
+   "long": 0.012743295504976859,
+   "long_n": 362779,
+   "main": 0.013127645403175557,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "5まくり差し",
+   "long": 0.030111996559889078,
+   "long_n": 362779,
+   "main": 0.03347442150269643,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "6逃げ",
+   "long": 0.0004052053729681156,
+   "long_n": 362779,
+   "main": 0.00023634058827320972,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "6差し",
+   "long": 0.00530350433735139,
+   "long_n": 362779,
+   "main": 0.00382442042842103,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "6まくり",
+   "long": 0.008335653386772663,
+   "long_n": 362779,
+   "main": 0.008314891605612015,
+   "main_n": 46543
+  },
+  {
+   "sub": "tenkai",
+   "key": "6まくり差し",
+   "long": 0.012139622194228442,
+   "long_n": 362779,
+   "main": 0.012783877274778163,
+   "main_n": 46543
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat",
+   "long": 0.14204542265970044,
+   "long_n": 356386,
+   "main": 0.145748987854251,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "wall",
+   "long": 0.15101042128478673,
+   "long_n": 356386,
+   "main": 0.15547438831191693,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d2@1",
+   "long": 0.0890439018367725,
+   "long_n": 356386,
+   "main": 0.08715455025523676,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3@1",
+   "long": 0.06385772729568502,
+   "long_n": 356386,
+   "main": 0.057780320366132724,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "kado@1",
+   "long": 0.14927073454063852,
+   "long_n": 356386,
+   "main": 0.14858739658510825,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d1@1",
+   "long": 0.12151992502511322,
+   "long_n": 356386,
+   "main": 0.11844305580003521,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "dash@1",
+   "long": 0.15274169018985034,
+   "long_n": 356386,
+   "main": 0.15021563105087132,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat+wall",
+   "long": 0.049384655962916614,
+   "long_n": 356386,
+   "main": 0.05060728744939271,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat+d2@1",
+   "long": 0.0018154472959094913,
+   "long_n": 356386,
+   "main": 0.001848266150325647,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat+d3@1",
+   "long": 0.0008473958011818646,
+   "long_n": 356386,
+   "main": 0.0007481077275127619,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat+kado@1",
+   "long": 0.006843703175770092,
+   "long_n": 356386,
+   "main": 0.007129026579827495,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat+d1@1",
+   "long": 0.004556856891123669,
+   "long_n": 356386,
+   "main": 0.004620665375814117,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat+dash@1",
+   "long": 0.0001487151571610557,
+   "long_n": 356386,
+   "main": 0.0002640380214750924,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "wall+kado@1",
+   "long": 0.027296246204957547,
+   "long_n": 356386,
+   "main": 0.027922020770991023,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "wall+dash@1",
+   "long": 0.011919660143776692,
+   "long_n": 356386,
+   "main": 0.012497799683154374,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d2+kado@1",
+   "long": 0.017380031763312813,
+   "long_n": 356386,
+   "main": 0.017096461890512234,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d2+dash@1",
+   "long": 0.025730528135224168,
+   "long_n": 356386,
+   "main": 0.025677697588452737,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3+kado@1",
+   "long": 0.015985476421632724,
+   "long_n": 356386,
+   "main": 0.013223904242210878,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3+d1@1",
+   "long": 0.010598059407496366,
+   "long_n": 356386,
+   "main": 0.009307340256997008,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3+dash@1",
+   "long": 0.023926304624760794,
+   "long_n": 356386,
+   "main": 0.021123041718007392,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "kado+d1@1",
+   "long": 0.020609676025433097,
+   "long_n": 356386,
+   "main": 0.018768702693187818,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "kado+dash@1",
+   "long": 0.08893446992867285,
+   "long_n": 356386,
+   "main": 0.08849674353106847,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d1+dash@1",
+   "long": 0.02987771685756455,
+   "long_n": 356386,
+   "main": 0.02717391304347826,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d2@2",
+   "long": 0.0361630367073903,
+   "long_n": 356386,
+   "main": 0.034280936454849496,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3@2",
+   "long": 0.029496108152396557,
+   "long_n": 356386,
+   "main": 0.02506160887167752,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "kado@2",
+   "long": 0.08035949784783913,
+   "long_n": 356386,
+   "main": 0.08079563457137828,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d1@2",
+   "long": 0.05409583990392439,
+   "long_n": 356386,
+   "main": 0.05254356627354339,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "dash@2",
+   "long": 0.06757560622471141,
+   "long_n": 356386,
+   "main": 0.06592149269494807,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "flat+kado@2",
+   "long": 0.0006004725213672815,
+   "long_n": 356386,
+   "main": 0.000660095053687731,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "wall+kado@2",
+   "long": 0.014220536160230762,
+   "long_n": 356386,
+   "main": 0.015182186234817813,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "wall+dash@2",
+   "long": 0.003911489227971918,
+   "long_n": 356386,
+   "main": 0.0041145925013201905,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d2+kado@2",
+   "long": 0.004281874147693793,
+   "long_n": 356386,
+   "main": 0.004268614680513994,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d2+dash@2",
+   "long": 0.007724770333290309,
+   "long_n": 356386,
+   "main": 0.0075910931174089065,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3+kado@2",
+   "long": 0.004551244998400611,
+   "long_n": 356386,
+   "main": 0.0034985037845449746,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3+d1@2",
+   "long": 0.0022223095183312477,
+   "long_n": 356386,
+   "main": 0.001848266150325647,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d3+dash@2",
+   "long": 0.008148468233881241,
+   "long_n": 356386,
+   "main": 0.007217039253652526,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "kado+d1@2",
+   "long": 0.00524992564242142,
+   "long_n": 356386,
+   "main": 0.004422636859707798,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "kado+dash@2",
+   "long": 0.038180512141329906,
+   "long_n": 356386,
+   "main": 0.03788945608167576,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_form",
+   "key": "d1+dash@2",
+   "long": 0.008791029950671462,
+   "long_n": 356386,
+   "main": 0.007965146981165287,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out",
+   "long": 0.215993333071445,
+   "long_n": 356386,
+   "main": 0.20799595141700405,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent",
+   "long": 0.10008249482302896,
+   "long_n": 356386,
+   "main": 0.09886023587396585,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out",
+   "long": 0.11792831368235565,
+   "long_n": 356386,
+   "main": 0.1148565393416652,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent",
+   "long": 0.11891881274797551,
+   "long_n": 356386,
+   "main": 0.11811300827319134,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3out",
+   "long": 0.11484177268467335,
+   "long_n": 356386,
+   "main": 0.11360235873965852,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3dent",
+   "long": 0.08670935446398007,
+   "long_n": 356386,
+   "main": 0.08112568209822214,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4out",
+   "long": 0.11684521838680532,
+   "long_n": 356386,
+   "main": 0.11263421932758318,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4dent",
+   "long": 0.09608402125784964,
+   "long_n": 356386,
+   "main": 0.09602182714310861,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "5out",
+   "long": 0.1053436442508965,
+   "long_n": 356386,
+   "main": 0.10326086956521739,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "5dent",
+   "long": 0.11997946047263361,
+   "long_n": 356386,
+   "main": 0.117144868861116,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "6out",
+   "long": 0.09215850229807007,
+   "long_n": 356386,
+   "main": 0.09102710790353812,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "6dent",
+   "long": 0.24896039687305338,
+   "long_n": 356386,
+   "main": 0.24592941383559233,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+2out",
+   "long": 0.06056354626724956,
+   "long_n": 356386,
+   "main": 0.05905650413659567,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+2dent",
+   "long": 0.01508757358594333,
+   "long_n": 356386,
+   "main": 0.014302059496567507,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+2out",
+   "long": 0.007374027038099139,
+   "long_n": 356386,
+   "main": 0.007349058264390072,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+2dent",
+   "long": 0.022189423826974124,
+   "long_n": 356386,
+   "main": 0.021893152613976414,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+3out",
+   "long": 0.0378550223633925,
+   "long_n": 356386,
+   "main": 0.037053335680337966,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+3dent",
+   "long": 0.019708967243382176,
+   "long_n": 356386,
+   "main": 0.01731649357507481,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+3out",
+   "long": 0.015887268298979195,
+   "long_n": 356386,
+   "main": 0.01579827495159303,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+3dent",
+   "long": 0.007856649812282188,
+   "long_n": 356386,
+   "main": 0.007745115296602711,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+4out",
+   "long": 0.01201225637370716,
+   "long_n": 356386,
+   "main": 0.011837704629466643,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+4dent",
+   "long": 0.047743177341421944,
+   "long_n": 356386,
+   "main": 0.04688875198028516,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+4out",
+   "long": 0.031945699326011684,
+   "long_n": 356386,
+   "main": 0.03082643900721704,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+4dent",
+   "long": 0.002020281380301134,
+   "long_n": 356386,
+   "main": 0.002002288329519451,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+5out",
+   "long": 0.00737122109173761,
+   "long_n": 356386,
+   "main": 0.007063017074458722,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+5dent",
+   "long": 0.06656827148092237,
+   "long_n": 356386,
+   "main": 0.06438127090301003,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+5out",
+   "long": 0.03369380390924447,
+   "long_n": 356386,
+   "main": 0.032674705157542686,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+5dent",
+   "long": 0.0017593283686789044,
+   "long_n": 356386,
+   "main": 0.0016502376342193276,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+6out",
+   "long": 0.006619227466847744,
+   "long_n": 356386,
+   "main": 0.005984861820102095,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1out+6dent",
+   "long": 0.10738637320208987,
+   "long_n": 356386,
+   "main": 0.10383295194508009,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+6out",
+   "long": 0.02805104577620894,
+   "long_n": 356386,
+   "main": 0.028076042950184826,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "1dent+6dent",
+   "long": 0.006237618761679752,
+   "long_n": 356386,
+   "main": 0.006534941031508537,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+3out",
+   "long": 0.0350827473582015,
+   "long_n": 356386,
+   "main": 0.03597518042598134,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+3dent",
+   "long": 0.008869596448794285,
+   "long_n": 356386,
+   "main": 0.008119169160359091,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+3out",
+   "long": 0.01188037689471528,
+   "long_n": 356386,
+   "main": 0.010121457489878543,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+3dent",
+   "long": 0.017851430752049743,
+   "long_n": 356386,
+   "main": 0.017646541101918677,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+4out",
+   "long": 0.007250565398191848,
+   "long_n": 356386,
+   "main": 0.00679897905298363,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+4dent",
+   "long": 0.0318138198470198,
+   "long_n": 356386,
+   "main": 0.031464530892448515,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+4out",
+   "long": 0.03686732924413417,
+   "long_n": 356386,
+   "main": 0.03417092061256821,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+4dent",
+   "long": 0.002424337656361361,
+   "long_n": 356386,
+   "main": 0.0022443231825382856,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+5out",
+   "long": 0.0035242686300808674,
+   "long_n": 356386,
+   "main": 0.003300475268438655,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+5dent",
+   "long": 0.04752150757886112,
+   "long_n": 356386,
+   "main": 0.04603062841049111,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+5out",
+   "long": 0.041920838641248535,
+   "long_n": 356386,
+   "main": 0.041960042246083434,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+5dent",
+   "long": 0.0017873878322941978,
+   "long_n": 356386,
+   "main": 0.0013421932758317199,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+6out",
+   "long": 0.0026432014725606507,
+   "long_n": 356386,
+   "main": 0.0024203485301883473,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2out+6dent",
+   "long": 0.07041241799621759,
+   "long_n": 356386,
+   "main": 0.06911195212110544,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+6out",
+   "long": 0.03609008210199054,
+   "long_n": 356386,
+   "main": 0.03610719943671889,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "2dent+6dent",
+   "long": 0.005957024125526816,
+   "long_n": 356386,
+   "main": 0.006006864988558352,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3out+4out",
+   "long": 0.015037066551435803,
+   "long_n": 356386,
+   "main": 0.013795986622073578,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3out+4dent",
+   "long": 0.0235923970077388,
+   "long_n": 356386,
+   "main": 0.02442351698644605,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3dent+4out",
+   "long": 0.022913357988248697,
+   "long_n": 356386,
+   "main": 0.020748987854251014,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3dent+4dent",
+   "long": 0.00407704006330215,
+   "long_n": 356386,
+   "main": 0.0033444816053511705,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3out+5out",
+   "long": 0.006821255604877857,
+   "long_n": 356386,
+   "main": 0.006094877662383383,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3out+5dent",
+   "long": 0.038186124034052964,
+   "long_n": 356386,
+   "main": 0.03703133251188171,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3dent+5out",
+   "long": 0.02931372163889715,
+   "long_n": 356386,
+   "main": 0.027129906706565746,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3dent+5dent",
+   "long": 0.0019108494722014893,
+   "long_n": 356386,
+   "main": 0.001540221791938039,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3out+6out",
+   "long": 0.003950772477033329,
+   "long_n": 356386,
+   "main": 0.003960570322126386,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3out+6dent",
+   "long": 0.06365008726493185,
+   "long_n": 356386,
+   "main": 0.0633031156486534,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3dent+6out",
+   "long": 0.026389925530183565,
+   "long_n": 356386,
+   "main": 0.02574370709382151,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "3dent+6dent",
+   "long": 0.00511804616342954,
+   "long_n": 356386,
+   "main": 0.004136595669776448,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4out+5out",
+   "long": 0.02971216602223432,
+   "long_n": 356386,
+   "main": 0.028252068297834887,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4out+5dent",
+   "long": 0.01283720460399679,
+   "long_n": 356386,
+   "main": 0.011903714134835416,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4dent+5out",
+   "long": 0.010309046932258844,
+   "long_n": 356386,
+   "main": 0.01025347650061609,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4dent+5dent",
+   "long": 0.01911971850746101,
+   "long_n": 356386,
+   "main": 0.018526667840168983,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4out+6out",
+   "long": 0.015637539072803085,
+   "long_n": 356386,
+   "main": 0.015204189403274072,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4out+6dent",
+   "long": 0.03570286150409949,
+   "long_n": 356386,
+   "main": 0.03483101566625594,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4dent+6out",
+   "long": 0.012657624036858911,
+   "long_n": 356386,
+   "main": 0.012211758493223025,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "4dent+6dent",
+   "long": 0.021476713451145667,
+   "long_n": 356386,
+   "main": 0.020814997359619784,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "5out+6out",
+   "long": 0.02983843360850314,
+   "long_n": 356386,
+   "main": 0.02977028692131667,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "5out+6dent",
+   "long": 0.016226787808724247,
+   "long_n": 356386,
+   "main": 0.015380214750924133,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "5dent+6out",
+   "long": 0.0064789301487712765,
+   "long_n": 356386,
+   "main": 0.006468931526139764,
+   "main_n": 45448
+  },
+  {
+   "sub": "slit_custom",
+   "key": "5dent+6dent",
+   "long": 0.05255818129780631,
+   "long_n": 356386,
+   "main": 0.052279528252068296,
+   "main_n": 45448
+  },
+  {
+   "sub": "entry",
+   "key": "3in3",
+   "long": 0.9296380321253036,
+   "long_n": 362767,
+   "main": 0.9423643519215467,
+   "main_n": 46499
+  },
+  {
+   "sub": "entry",
+   "key": "3in4",
+   "long": 0.9822889072049001,
+   "long_n": 362767,
+   "main": 0.9873330609260415,
+   "main_n": 46499
+  },
+  {
+   "sub": "entry",
+   "key": "3waku",
+   "long": 0.9103887619325903,
+   "long_n": 362767,
+   "main": 0.9221488634164176,
+   "main_n": 46499
+  },
+  {
+   "sub": "entry",
+   "key": "4in3",
+   "long": 0.030664648820304164,
+   "long_n": 362763,
+   "main": 0.03083605711336659,
+   "main_n": 46504
+  },
+  {
+   "sub": "entry",
+   "key": "4in4",
+   "long": 0.8947963270785609,
+   "long_n": 362763,
+   "main": 0.9178995355238259,
+   "main_n": 46504
+  },
+  {
+   "sub": "entry",
+   "key": "4waku",
+   "long": 0.8641316782582568,
+   "long_n": 362763,
+   "main": 0.8870634784104593,
+   "main_n": 46504
+  },
+  {
+   "sub": "entry",
+   "key": "5in3",
+   "long": 0.024825989276804544,
+   "long_n": 362765,
+   "main": 0.0193006993006993,
+   "main_n": 46475
+  },
+  {
+   "sub": "entry",
+   "key": "5in4",
+   "long": 0.07257591002439596,
+   "long_n": 362765,
+   "main": 0.06298009682625068,
+   "main_n": 46475
+  },
+  {
+   "sub": "entry",
+   "key": "5waku",
+   "long": 0.8151888963929816,
+   "long_n": 362765,
+   "main": 0.844389456697149,
+   "main_n": 46475
+  },
+  {
+   "sub": "entry",
+   "key": "6in3",
+   "long": 0.029399521999332896,
+   "long_n": 362761,
+   "main": 0.022076860179885527,
+   "main_n": 46474
+  },
+  {
+   "sub": "entry",
+   "key": "6in4",
+   "long": 0.05628223541119359,
+   "long_n": 362761,
+   "main": 0.0410552136678573,
+   "main_n": 46474
+  },
+  {
+   "sub": "entry",
+   "key": "6waku",
+   "long": 0.8459702117923371,
+   "long_n": 362761,
+   "main": 0.8691956793045574,
+   "main_n": 46474
+  },
+  {
+   "sub": "payout",
+   "key": "kata",
+   "long": 0.18469646809765725,
+   "long_n": 362779,
+   "main": 0.19643739659210555,
+   "main_n": 46539
+  },
+  {
+   "sub": "payout",
+   "key": "chuana",
+   "long": 0.6448995118240031,
+   "long_n": 362779,
+   "main": 0.6400868089129548,
+   "main_n": 46539
+  },
+  {
+   "sub": "payout",
+   "key": "manshu",
+   "long": 0.1704040200783397,
+   "long_n": 362779,
+   "main": 0.16347579449493974,
+   "main_n": 46539
+  }
+ ]
+}

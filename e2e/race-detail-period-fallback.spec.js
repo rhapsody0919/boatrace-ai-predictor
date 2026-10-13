@@ -50,14 +50,14 @@ test("前期を取り込む前は、前々期を名乗って出し、公開待�
 
   // 見出しは実際の期を名乗る（「前期」と書かない）
   await expect(page.locator(".rbit-period-heading")).toHaveText(
-    "前々期（2025-05-01〜2025-10-31・公式の期別成績）",
+    "前々期（2025/05/01〜2025/10/31・公式の期別成績）",
     { timeout: 25000 },
   );
   const notes = page.locator(".rbit-period-note");
   // 値の行は通常と同じ見た目なので、公開待ちの注記は本文と同じ大きさで出す（ファン評価1周目 P2）
   await expect(notes.first()).toHaveClass(/rbit-period-pending/);
   await expect(notes.first()).toHaveText(
-    "※前期（2025-11-01〜2026-04-30）の成績をまだ取り込んでいないため、前々期を表示しています",
+    "※前期（2025/11/01〜2026/04/30）の成績をまだ取り込んでいないため、前々期を表示しています",
   );
 
   // 出走表の値は残し、差は出さない。差を出さない理由を添える
@@ -92,11 +92,11 @@ test("期の初め3か月のレースでは、前期との差を出し始める�
   await page.locator(".rbit-bar-row").first().click();
   await page.locator(".rbit-expanded-tab", { hasText: "条件別" }).click();
   await expect(page.locator(".rbit-period-heading")).toHaveText(
-    "前々期（2025-05-01〜2025-10-31・公式の期別成績）",
+    "前々期（2025/05/01〜2025/10/31・公式の期別成績）",
     { timeout: 25000 },
   );
   await expect(page.locator(".rbit-period-note").nth(1)).toHaveText(
-    "※前期の成績を取り込むまで、出走表の値との差は出していません（前期との差は2026-08-01以降のレースで出します）",
+    "※前期の成績を取り込むまで、出走表の値との差は出していません（前期との差は2026/08/01以降のレースで出します）",
   );
 });
 

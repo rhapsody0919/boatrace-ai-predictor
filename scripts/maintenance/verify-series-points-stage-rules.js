@@ -78,6 +78,8 @@ const CLASSIFY_CASES = [
   ["優勝戦", "excluded"],
   ["準優勝戦", "excluded"],
   ["準々優勝戦", "excluded"], // 実データ4件
+  ["準々決勝戦", "excluded"], // BOA-771: 2026-01-23 江戸川G1の9〜12R
+  ["準決勝戦", "excluded"],
   ["準優進出戦", "excluded"], // 実データ39件
   ["ツッキー優勝戦", "excluded"],
   ["団体・優勝戦", "excluded"],

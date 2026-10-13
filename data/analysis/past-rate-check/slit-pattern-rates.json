@@ -1,0 +1,1016 @@
+{
+ "generated_at": "2026-10-13T05:58:10+00:00",
+ "data_dir": "/Users/terukina/boatrace-ai-predictor/.claude/worktrees/recursing-poincare-93292f/data/ml/analogy",
+ "loader": "互換の読み込み（本体の返還は is_flying・is_late_start のみ、実進入は actual_courses.csv）",
+ "date_range": [
+  "2019-04-01",
+  "2026-10-01"
+ ],
+ "kb_end": "2025-12-02",
+ "stages_def": {
+  "1": {
+   "dent": 5,
+   "kado": 3,
+   "out": 5
+  },
+  "2": {
+   "dent": 8,
+   "kado": 5,
+   "out": 8
+  }
+ },
+ "scopes": {
+  "layer_all": {
+   "n": 398587,
+   "stages": {
+    "1": {
+     "single": {
+      "flat": {
+       "count": 56758,
+       "rate": 14.24
+      },
+      "wall": {
+       "count": 60342,
+       "rate": 15.14
+      },
+      "d2": {
+       "count": 35412,
+       "rate": 8.88
+      },
+      "d3": {
+       "count": 25202,
+       "rate": 6.32
+      },
+      "kado": {
+       "count": 59444,
+       "rate": 14.91
+      },
+      "d1": {
+       "count": 48300,
+       "rate": 12.12
+      },
+      "dash": {
+       "count": 60775,
+       "rate": 15.25
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 19724,
+       "rate": 4.948
+      },
+      "flat+d2": {
+       "count": 725,
+       "rate": 0.182
+      },
+      "flat+d3": {
+       "count": 331,
+       "rate": 0.083
+      },
+      "flat+kado": {
+       "count": 2737,
+       "rate": 0.687
+      },
+      "flat+d1": {
+       "count": 1819,
+       "rate": 0.456
+      },
+      "flat+dash": {
+       "count": 63,
+       "rate": 0.016
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 10899,
+       "rate": 2.734
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 4767,
+       "rate": 1.196
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 6912,
+       "rate": 1.734
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 10254,
+       "rate": 2.573
+      },
+      "d3+kado": {
+       "count": 6249,
+       "rate": 1.568
+      },
+      "d3+d1": {
+       "count": 4173,
+       "rate": 1.047
+      },
+      "d3+dash": {
+       "count": 9431,
+       "rate": 2.366
+      },
+      "kado+d1": {
+       "count": 8117,
+       "rate": 2.036
+      },
+      "kado+dash": {
+       "count": 35401,
+       "rate": 8.882
+      },
+      "d1+dash": {
+       "count": 11785,
+       "rate": 2.957
+      }
+     }
+    },
+    "2": {
+     "single": {
+      "flat": {
+       "count": 56758,
+       "rate": 14.24
+      },
+      "wall": {
+       "count": 60342,
+       "rate": 15.14
+      },
+      "d2": {
+       "count": 14349,
+       "rate": 3.6
+      },
+      "d3": {
+       "count": 11585,
+       "rate": 2.91
+      },
+      "kado": {
+       "count": 32025,
+       "rate": 8.03
+      },
+      "d1": {
+       "count": 21493,
+       "rate": 5.39
+      },
+      "dash": {
+       "count": 26870,
+       "rate": 6.74
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 19724,
+       "rate": 4.948
+      },
+      "flat+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+kado": {
+       "count": 242,
+       "rate": 0.061
+      },
+      "flat+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+dash": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 5706,
+       "rate": 1.432
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 1566,
+       "rate": 0.393
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 1702,
+       "rate": 0.427
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 3074,
+       "rate": 0.771
+      },
+      "d3+kado": {
+       "count": 1768,
+       "rate": 0.444
+      },
+      "d3+d1": {
+       "count": 870,
+       "rate": 0.218
+      },
+      "d3+dash": {
+       "count": 3213,
+       "rate": 0.806
+      },
+      "kado+d1": {
+       "count": 2058,
+       "rate": 0.516
+      },
+      "kado+dash": {
+       "count": 15206,
+       "rate": 3.815
+      },
+      "d1+dash": {
+       "count": 3471,
+       "rate": 0.871
+      }
+     }
+    }
+   },
+   "label": "layer_ok・全期間",
+   "n_scope": 414069,
+   "n_excluded_st": 15482,
+   "period": [
+    "2019-04-01",
+    "2026-09-30"
+   ]
+  },
+  "layer_6m": {
+   "n": 27462,
+   "stages": {
+    "1": {
+     "single": {
+      "flat": {
+       "count": 4028,
+       "rate": 14.67
+      },
+      "wall": {
+       "count": 4246,
+       "rate": 15.46
+      },
+      "d2": {
+       "count": 2419,
+       "rate": 8.81
+      },
+      "d3": {
+       "count": 1580,
+       "rate": 5.75
+      },
+      "kado": {
+       "count": 4114,
+       "rate": 14.98
+      },
+      "d1": {
+       "count": 3340,
+       "rate": 12.16
+      },
+      "dash": {
+       "count": 4156,
+       "rate": 15.13
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 1385,
+       "rate": 5.043
+      },
+      "flat+d2": {
+       "count": 52,
+       "rate": 0.189
+      },
+      "flat+d3": {
+       "count": 16,
+       "rate": 0.058
+      },
+      "flat+kado": {
+       "count": 191,
+       "rate": 0.696
+      },
+      "flat+d1": {
+       "count": 129,
+       "rate": 0.47
+      },
+      "flat+dash": {
+       "count": 7,
+       "rate": 0.025
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 740,
+       "rate": 2.695
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 317,
+       "rate": 1.154
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 495,
+       "rate": 1.802
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 739,
+       "rate": 2.691
+      },
+      "d3+kado": {
+       "count": 365,
+       "rate": 1.329
+      },
+      "d3+d1": {
+       "count": 262,
+       "rate": 0.954
+      },
+      "d3+dash": {
+       "count": 581,
+       "rate": 2.116
+      },
+      "kado+d1": {
+       "count": 535,
+       "rate": 1.948
+      },
+      "kado+dash": {
+       "count": 2455,
+       "rate": 8.94
+      },
+      "d1+dash": {
+       "count": 768,
+       "rate": 2.797
+      }
+     }
+    },
+    "2": {
+     "single": {
+      "flat": {
+       "count": 4028,
+       "rate": 14.67
+      },
+      "wall": {
+       "count": 4246,
+       "rate": 15.46
+      },
+      "d2": {
+       "count": 982,
+       "rate": 3.58
+      },
+      "d3": {
+       "count": 692,
+       "rate": 2.52
+      },
+      "kado": {
+       "count": 2201,
+       "rate": 8.01
+      },
+      "d1": {
+       "count": 1478,
+       "rate": 5.38
+      },
+      "dash": {
+       "count": 1832,
+       "rate": 6.67
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 1385,
+       "rate": 5.043
+      },
+      "flat+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+kado": {
+       "count": 16,
+       "rate": 0.058
+      },
+      "flat+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+dash": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 400,
+       "rate": 1.457
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 112,
+       "rate": 0.408
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 126,
+       "rate": 0.459
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 218,
+       "rate": 0.794
+      },
+      "d3+kado": {
+       "count": 96,
+       "rate": 0.35
+      },
+      "d3+d1": {
+       "count": 51,
+       "rate": 0.186
+      },
+      "d3+dash": {
+       "count": 200,
+       "rate": 0.728
+      },
+      "kado+d1": {
+       "count": 134,
+       "rate": 0.488
+      },
+      "kado+dash": {
+       "count": 1054,
+       "rate": 3.838
+      },
+      "d1+dash": {
+       "count": 227,
+       "rate": 0.827
+      }
+     }
+    }
+   },
+   "label": "layer_ok・2026-04〜2026-09",
+   "n_scope": 28191,
+   "n_excluded_st": 729,
+   "period": [
+    "2026-04-01",
+    "2026-09-30"
+   ]
+  },
+  "layer_2603_09": {
+   "n": 30546,
+   "stages": {
+    "1": {
+     "single": {
+      "flat": {
+       "count": 4455,
+       "rate": 14.58
+      },
+      "wall": {
+       "count": 4717,
+       "rate": 15.44
+      },
+      "d2": {
+       "count": 2697,
+       "rate": 8.83
+      },
+      "d3": {
+       "count": 1748,
+       "rate": 5.72
+      },
+      "kado": {
+       "count": 4556,
+       "rate": 14.92
+      },
+      "d1": {
+       "count": 3708,
+       "rate": 12.14
+      },
+      "dash": {
+       "count": 4634,
+       "rate": 15.17
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 1532,
+       "rate": 5.015
+      },
+      "flat+d2": {
+       "count": 59,
+       "rate": 0.193
+      },
+      "flat+d3": {
+       "count": 17,
+       "rate": 0.056
+      },
+      "flat+kado": {
+       "count": 209,
+       "rate": 0.684
+      },
+      "flat+d1": {
+       "count": 143,
+       "rate": 0.468
+      },
+      "flat+dash": {
+       "count": 7,
+       "rate": 0.023
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 843,
+       "rate": 2.76
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 373,
+       "rate": 1.221
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 539,
+       "rate": 1.765
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 814,
+       "rate": 2.665
+      },
+      "d3+kado": {
+       "count": 400,
+       "rate": 1.31
+      },
+      "d3+d1": {
+       "count": 297,
+       "rate": 0.972
+      },
+      "d3+dash": {
+       "count": 648,
+       "rate": 2.121
+      },
+      "kado+d1": {
+       "count": 577,
+       "rate": 1.889
+      },
+      "kado+dash": {
+       "count": 2714,
+       "rate": 8.885
+      },
+      "d1+dash": {
+       "count": 848,
+       "rate": 2.776
+      }
+     }
+    },
+    "2": {
+     "single": {
+      "flat": {
+       "count": 4455,
+       "rate": 14.58
+      },
+      "wall": {
+       "count": 4717,
+       "rate": 15.44
+      },
+      "d2": {
+       "count": 1087,
+       "rate": 3.56
+      },
+      "d3": {
+       "count": 775,
+       "rate": 2.54
+      },
+      "kado": {
+       "count": 2439,
+       "rate": 7.98
+      },
+      "d1": {
+       "count": 1645,
+       "rate": 5.39
+      },
+      "dash": {
+       "count": 2039,
+       "rate": 6.68
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 1532,
+       "rate": 5.015
+      },
+      "flat+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+kado": {
+       "count": 19,
+       "rate": 0.062
+      },
+      "flat+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+dash": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 458,
+       "rate": 1.499
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 128,
+       "rate": 0.419
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 132,
+       "rate": 0.432
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 235,
+       "rate": 0.769
+      },
+      "d3+kado": {
+       "count": 107,
+       "rate": 0.35
+      },
+      "d3+d1": {
+       "count": 55,
+       "rate": 0.18
+      },
+      "d3+dash": {
+       "count": 225,
+       "rate": 0.737
+      },
+      "kado+d1": {
+       "count": 139,
+       "rate": 0.455
+      },
+      "kado+dash": {
+       "count": 1161,
+       "rate": 3.801
+      },
+      "d1+dash": {
+       "count": 247,
+       "rate": 0.809
+      }
+     }
+    }
+   },
+   "label": "layer_ok・2026-03〜09（spec の旧表と同じ月）",
+   "n_scope": 32842,
+   "n_excluded_st": 2296,
+   "period": [
+    "2026-03-10",
+    "2026-09-30"
+   ]
+  },
+  "tab3_waku_all": {
+   "n": 313698,
+   "stages": {
+    "1": {
+     "single": {
+      "flat": {
+       "count": 47196,
+       "rate": 15.05
+      },
+      "wall": {
+       "count": 49422,
+       "rate": 15.75
+      },
+      "d2": {
+       "count": 26790,
+       "rate": 8.54
+      },
+      "d3": {
+       "count": 18647,
+       "rate": 5.94
+      },
+      "kado": {
+       "count": 47071,
+       "rate": 15.01
+      },
+      "d1": {
+       "count": 36437,
+       "rate": 11.62
+      },
+      "dash": {
+       "count": 46155,
+       "rate": 14.71
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 16498,
+       "rate": 5.259
+      },
+      "flat+d2": {
+       "count": 603,
+       "rate": 0.192
+      },
+      "flat+d3": {
+       "count": 255,
+       "rate": 0.081
+      },
+      "flat+kado": {
+       "count": 2301,
+       "rate": 0.734
+      },
+      "flat+d1": {
+       "count": 1474,
+       "rate": 0.47
+      },
+      "flat+dash": {
+       "count": 49,
+       "rate": 0.016
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 8955,
+       "rate": 2.855
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 3851,
+       "rate": 1.228
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 5260,
+       "rate": 1.677
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 7480,
+       "rate": 2.384
+      },
+      "d3+kado": {
+       "count": 4743,
+       "rate": 1.512
+      },
+      "d3+d1": {
+       "count": 2984,
+       "rate": 0.951
+      },
+      "d3+dash": {
+       "count": 6923,
+       "rate": 2.207
+      },
+      "kado+d1": {
+       "count": 6168,
+       "rate": 1.966
+      },
+      "kado+dash": {
+       "count": 27673,
+       "rate": 8.822
+      },
+      "d1+dash": {
+       "count": 8536,
+       "rate": 2.721
+      }
+     }
+    },
+    "2": {
+     "single": {
+      "flat": {
+       "count": 47196,
+       "rate": 15.05
+      },
+      "wall": {
+       "count": 49422,
+       "rate": 15.75
+      },
+      "d2": {
+       "count": 10361,
+       "rate": 3.3
+      },
+      "d3": {
+       "count": 8349,
+       "rate": 2.66
+      },
+      "kado": {
+       "count": 25193,
+       "rate": 8.03
+      },
+      "d1": {
+       "count": 15657,
+       "rate": 4.99
+      },
+      "dash": {
+       "count": 19864,
+       "rate": 6.33
+      }
+     },
+     "pairs": {
+      "flat+wall": {
+       "count": 16498,
+       "rate": 5.259
+      },
+      "flat+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+kado": {
+       "count": 199,
+       "rate": 0.063
+      },
+      "flat+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "flat+dash": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d2": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+kado": {
+       "count": 4657,
+       "rate": 1.485
+      },
+      "wall+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "wall+dash": {
+       "count": 1255,
+       "rate": 0.4
+      },
+      "d2+d3": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+kado": {
+       "count": 1242,
+       "rate": 0.396
+      },
+      "d2+d1": {
+       "count": 0,
+       "rate": 0.0
+      },
+      "d2+dash": {
+       "count": 2135,
+       "rate": 0.681
+      },
+      "d3+kado": {
+       "count": 1302,
+       "rate": 0.415
+      },
+      "d3+d1": {
+       "count": 593,
+       "rate": 0.189
+      },
+      "d3+dash": {
+       "count": 2317,
+       "rate": 0.739
+      },
+      "kado+d1": {
+       "count": 1473,
+       "rate": 0.47
+      },
+      "kado+dash": {
+       "count": 11669,
+       "rate": 3.72
+      },
+      "d1+dash": {
+       "count": 2343,
+       "rate": 0.747
+      }
+     }
+    }
+   },
+   "label": "tab3_ok・枠なり・全期間（dent-max.md との照合用）",
+   "n_scope": 316422,
+   "n_excluded_st": 2724,
+   "period": [
+    "2019-04-01",
+    "2026-09-30"
+   ]
+  }
+ }
+}
