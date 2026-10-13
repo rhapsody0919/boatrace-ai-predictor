@@ -958,6 +958,16 @@ function RaceMeetTab({
                 ? "meetTab.rankSourceNoteOfficial"
                 : "meetTab.rankSourceNote",
             )}
+            {/* 予選中は公式の前夜の減点・途中帰郷を足している（BOA-782）。得点率が
+                自社の着順点の合計と合わない理由と、その値の時点を書く */}
+            {!usesOfficialScore && board?.officialPrelimAsOf && (
+              <>
+                {sp}
+                {t("meetTab.rankSourceNotePrelimOfficial", {
+                  date: `${Number(board.officialPrelimAsOf.slice(5, 7))}/${Number(board.officialPrelimAsOf.slice(8, 10))}`,
+                })}
+              </>
+            )}
             {/* 予選の後の扱い（Fは外さない・帰郷は外す）は、予選が終わってから
                 関係する話なので、予選中は出さない（注記が長くなるだけだった） */}
             {!usesOfficialScore && prelimOver && (
