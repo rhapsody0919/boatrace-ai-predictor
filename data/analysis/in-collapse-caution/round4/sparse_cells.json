@@ -1,0 +1,482 @@
+{
+ "definition": "plan §1。hidden=セルが無い・前日までの件数100未満（出さない）、low_sample=100〜299件（件数少なめ）、no_gap=勝率差が出せない（勝率なし、出さない）",
+ "source": "races.pkl",
+ "race_ok_only": true,
+ "a_prelaunch_2025-06-01_2026-10-10": {
+  "all": {
+   "races": 75295,
+   "hidden": {
+    "n": 28,
+    "share": 0.00037
+   },
+   "low_sample": {
+    "n": 171,
+    "share": 0.00227
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  },
+  "by_round": {
+   "一般": {
+    "races": 34561,
+    "hidden": {
+     "n": 2,
+     "share": 6e-05
+    },
+    "low_sample": {
+     "n": 5,
+     "share": 0.00014
+    },
+    "no_gap": {
+     "n": 0,
+     "share": 0.0
+    }
+   },
+   "準優": {
+    "races": 3126,
+    "hidden": {
+     "n": 24,
+     "share": 0.00768
+    },
+    "low_sample": {
+     "n": 70,
+     "share": 0.02239
+    },
+    "no_gap": {
+     "n": 0,
+     "share": 0.0
+    }
+   },
+   "予選": {
+    "races": 36452,
+    "hidden": {
+     "n": 0,
+     "share": 0.0
+    },
+    "low_sample": {
+     "n": 3,
+     "share": 8e-05
+    },
+    "no_gap": {
+     "n": 0,
+     "share": 0.0
+    }
+   },
+   "優勝戦": {
+    "races": 1156,
+    "hidden": {
+     "n": 2,
+     "share": 0.00173
+    },
+    "low_sample": {
+     "n": 93,
+     "share": 0.08045
+    },
+    "no_gap": {
+     "n": 0,
+     "share": 0.0
+    }
+   }
+  }
+ },
+ "b_last30_2026-09-11_2026-10-10": {
+  "days": 30,
+  "all": {
+   "races": 4632,
+   "hidden": {
+    "n": 2,
+    "share": 0.00043
+   },
+   "low_sample": {
+    "n": 10,
+    "share": 0.00216
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  },
+  "per_day": {
+   "hidden": 0.07,
+   "low_sample": 0.33,
+   "no_gap": 0.0
+  },
+  "SG_準優": {
+   "races": 0,
+   "hidden": {
+    "n": 0,
+    "share": null
+   },
+   "low_sample": {
+    "n": 0,
+    "share": null
+   },
+   "no_gap": {
+    "n": 0,
+    "share": null
+   }
+  },
+  "SG_優勝戦": {
+   "races": 0,
+   "hidden": {
+    "n": 0,
+    "share": null
+   },
+   "low_sample": {
+    "n": 0,
+    "share": null
+   },
+   "no_gap": {
+    "n": 0,
+    "share": null
+   }
+  },
+  "G1_準優": {
+   "races": 18,
+   "hidden": {
+    "n": 0,
+    "share": 0.0
+   },
+   "low_sample": {
+    "n": 0,
+    "share": 0.0
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  },
+  "G1_優勝戦": {
+   "races": 6,
+   "hidden": {
+    "n": 0,
+    "share": 0.0
+   },
+   "low_sample": {
+    "n": 1,
+    "share": 0.16667
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  }
+ },
+ "c_examples": {
+  "hidden": [
+   {
+    "race_id": 202610040912,
+    "date": "2026-10-04",
+    "venue_code": 9,
+    "race_number": 12,
+    "grade": "ippan",
+    "round": "junyu",
+    "nat_win": 8.09000015258789,
+    "top_other": 5.949999809265137,
+    "gb": 4.0,
+    "cell_n": 49,
+    "y": 0,
+    "band": "+2.0〜+2.5"
+   },
+   {
+    "race_id": 202609262210,
+    "date": "2026-09-26",
+    "venue_code": 22,
+    "race_number": 10,
+    "grade": "ippan",
+    "round": "junyu",
+    "nat_win": 4.059999942779541,
+    "top_other": 7.309999942779541,
+    "gb": -7.0,
+    "cell_n": 26,
+    "y": 1,
+    "band": "-3.5〜-3.0"
+   },
+   {
+    "race_id": 202607232211,
+    "date": "2026-07-23",
+    "venue_code": 22,
+    "race_number": 11,
+    "grade": "G3",
+    "round": "junyu",
+    "nat_win": 4.690000057220459,
+    "top_other": 7.409999847412109,
+    "gb": -6.0,
+    "cell_n": 76,
+    "y": 0,
+    "band": "-3.0〜-2.5"
+   },
+   {
+    "race_id": 202605272110,
+    "date": "2026-05-27",
+    "venue_code": 21,
+    "race_number": 10,
+    "grade": "ippan",
+    "round": "junyu",
+    "nat_win": 5.179999828338623,
+    "top_other": 8.449999809265137,
+    "gb": -7.0,
+    "cell_n": 25,
+    "y": 1,
+    "band": "-3.5〜-3.0"
+   },
+   {
+    "race_id": 202604141510,
+    "date": "2026-04-14",
+    "venue_code": 15,
+    "race_number": 10,
+    "grade": "ippan",
+    "round": "junyu",
+    "nat_win": 4.889999866485596,
+    "top_other": 7.510000228881836,
+    "gb": -6.0,
+    "cell_n": 75,
+    "y": 0,
+    "band": "-3.0〜-2.5"
+   },
+   {
+    "race_id": 202604090811,
+    "date": "2026-04-09",
+    "venue_code": 8,
+    "race_number": 11,
+    "grade": "ippan",
+    "round": "junyu",
+    "nat_win": 3.940000057220459,
+    "top_other": 6.610000133514404,
+    "gb": -6.0,
+    "cell_n": 74,
+    "y": 0,
+    "band": "-3.0〜-2.5"
+   }
+  ],
+  "low_sample": [
+   {
+    "race_id": 202610052210,
+    "date": "2026-10-05",
+    "venue_code": 22,
+    "race_number": 10,
+    "grade": "ippan",
+    "round": "junyu",
+    "nat_win": 5.679999828338623,
+    "top_other": 7.96999979019165,
+    "gb": -5.0,
+    "cell_n": 227,
+    "y": 0,
+    "band": "-2.5〜-2.0"
+   },
+   {
+    "race_id": 202610050912,
+    "date": "2026-10-05",
+    "venue_code": 9,
+    "race_number": 12,
+    "grade": "ippan",
+    "round": "yusho",
+    "nat_win": 8.09000015258789,
+    "top_other": 6.699999809265137,
+    "gb": 2.0,
+    "cell_n": 180,
+    "y": 0,
+    "band": "+1.0〜+1.5"
+   },
+   {
+    "race_id": 202610042201,
+    "date": "2026-10-04",
+    "venue_code": 22,
+    "race_number": 1,
+    "grade": "ippan",
+    "round": "yosen",
+    "nat_win": 7.96999979019165,
+    "top_other": 4.869999885559082,
+    "gb": 6.0,
+    "cell_n": 107,
+    "y": 0,
+    "band": "+3.0以上"
+   },
+   {
+    "race_id": 202609251012,
+    "date": "2026-09-25",
+    "venue_code": 10,
+    "race_number": 12,
+    "grade": "ippan",
+    "round": "yusho",
+    "nat_win": 5.380000114440918,
+    "top_other": 7.53000020980835,
+    "gb": -5.0,
+    "cell_n": 125,
+    "y": 0,
+    "band": "-2.5〜-2.0"
+   },
+   {
+    "race_id": 202609250112,
+    "date": "2026-09-25",
+    "venue_code": 1,
+    "race_number": 12,
+    "grade": "ippan",
+    "round": "yusho",
+    "nat_win": 5.28000020980835,
+    "top_other": 6.980000019073486,
+    "gb": -4.0,
+    "cell_n": 299,
+    "y": 0,
+    "band": "-2.0〜-1.5"
+   },
+   {
+    "race_id": 202609221612,
+    "date": "2026-09-22",
+    "venue_code": 16,
+    "race_number": 12,
+    "grade": "ippan",
+    "round": "yusho",
+    "nat_win": 5.5,
+    "top_other": 7.039999961853027,
+    "gb": -4.0,
+    "cell_n": 298,
+    "y": 1,
+    "band": "-2.0〜-1.5"
+   }
+  ]
+ },
+ "cells_hidden_or_low_in_period": [
+  {
+   "rgrp": "junyu",
+   "gb": -8.0,
+   "status": "hidden",
+   "races": 2
+  },
+  {
+   "rgrp": "junyu",
+   "gb": -7.0,
+   "status": "hidden",
+   "races": 5
+  },
+  {
+   "rgrp": "junyu",
+   "gb": -6.0,
+   "status": "hidden",
+   "races": 16
+  },
+  {
+   "rgrp": "junyu",
+   "gb": -5.0,
+   "status": "low_sample",
+   "races": 37
+  },
+  {
+   "rgrp": "junyu",
+   "gb": 3.0,
+   "status": "low_sample",
+   "races": 33
+  },
+  {
+   "rgrp": "junyu",
+   "gb": 4.0,
+   "status": "hidden",
+   "races": 1
+  },
+  {
+   "rgrp": "other",
+   "gb": 6.0,
+   "status": "hidden",
+   "races": 2
+  },
+  {
+   "rgrp": "other",
+   "gb": 6.0,
+   "status": "low_sample",
+   "races": 8
+  },
+  {
+   "rgrp": "yusho",
+   "gb": -6.0,
+   "status": "hidden",
+   "races": 2
+  },
+  {
+   "rgrp": "yusho",
+   "gb": -5.0,
+   "status": "low_sample",
+   "races": 20
+  },
+  {
+   "rgrp": "yusho",
+   "gb": -4.0,
+   "status": "low_sample",
+   "races": 47
+  },
+  {
+   "rgrp": "yusho",
+   "gb": 2.0,
+   "status": "low_sample",
+   "races": 26
+  }
+ ],
+ "a2_prelaunch_sg_g1_and_excluded": {
+  "SG_準優": {
+   "races": 33,
+   "hidden": {
+    "n": 0,
+    "share": 0.0
+   },
+   "low_sample": {
+    "n": 0,
+    "share": 0.0
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  },
+  "SG_優勝戦": {
+   "races": 14,
+   "hidden": {
+    "n": 0,
+    "share": 0.0
+   },
+   "low_sample": {
+    "n": 2,
+    "share": 0.14286
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  },
+  "G1_準優": {
+   "races": 146,
+   "hidden": {
+    "n": 0,
+    "share": 0.0
+   },
+   "low_sample": {
+    "n": 0,
+    "share": 0.0
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  },
+  "G1_優勝戦": {
+   "races": 50,
+   "hidden": {
+    "n": 0,
+    "share": 0.0
+   },
+   "low_sample": {
+    "n": 1,
+    "share": 0.02
+   },
+   "no_gap": {
+    "n": 0,
+    "share": 0.0
+   }
+  },
+  "not_race_ok_in_period": {
+   "n": 1012,
+   "of_all_rows": 76307,
+   "note": "races.pkl の完全レースでない行（欠場・返還・1〜3着の返還艇など）。1艇欠場のレースは画面では残りの艇で出す（このファイルの分母に入っていない）"
+  }
+ }
+}

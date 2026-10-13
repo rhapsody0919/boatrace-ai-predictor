@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>思考アシスト 堅い？荒れる？</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#0369a1}a:hover{color:#0284c7}
+</style>
+</helmet>
+<div style="width: 375px; min-height: 1180px; box-sizing: border-box; background: #f7f3ea; color: #0f172a; font-family: system-ui, -apple-system, 'Hiragino Sans', sans-serif; padding: 16px; display: flex; flex-direction: column; gap: 18px;">
+  <div style="font-size: 13px; color: #475569; line-height: 1.6;">思考アシストの「このレースは堅い？荒れる？」の枠。同じ問いに注意度と別の数字が出ないよう、2案から選ぶ</div>
+
+  <section aria-labelledby="as-a" style="display: flex; flex-direction: column; gap: 8px;">
+    <h2 id="as-a" style="margin: 0; font-size: 15px;">(a) 1着のバーを注意度と同じ値にする</h2>
+    <div style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 15px; font-weight: 700;">このレースは堅い？荒れる？</div>
+      <div style="display: grid; grid-template-columns: 7em minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px;">
+        <span>1号艇の1着<br><span style="font-size: 11px; color: #475569;">勝率差が同じくらい 35,181件</span></span>
+        <div role="img" aria-label="35%。全国の全レースは55%" style="position: relative; height: 8px; border-radius: 4px; background: #ece5d3;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 35%; border-radius: 4px; background: #6b500f;"></div><div style="position: absolute; left: 55%; top: -3px; bottom: -3px; border-left: 2px dashed #0f172a;"></div></div>
+        <span><b>35%</b> ↓ 全国 55%</span>
+        <span>万舟<br><span style="font-size: 11px; color: #475569;">級の並びが同じ [n]件</span></span>
+        <div role="img" aria-label="級の並びのレースの万舟の割合" style="position: relative; height: 8px; border-radius: 4px; background: #ece5d3;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 20%; border-radius: 4px; background: #6b500f;"></div></div>
+        <span><b>[値]%</b></span>
+      </div>
+      <div style="font-size: 12px; color: #475569; line-height: 1.6;">1号艇の1着 35% は、イン崩れ注意度 65%（1着を逃した割合）の裏返し</div>
+    </div>
+    <div style="font-size: 12px; color: #475569; line-height: 1.6;">一致する。ただし1つの枠の中で、1着と万舟で過去レースの範囲が違う</div>
+  </section>
+
+  <section aria-labelledby="as-b" style="display: flex; flex-direction: column; gap: 8px;">
+    <h2 id="as-b" style="margin: 0; font-size: 15px;">(b) 今のまま（級の並び）で、範囲の名前で分ける</h2>
+    <div style="background: #fbf9f3; border: 1px solid #ddd4bf; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="font-size: 15px; font-weight: 700;">このレースは堅い？荒れる？</div>
+      <div style="font-size: 12px; color: #475569;">級の並びが同じレース（全国 [n]件）では</div>
+      <div style="display: grid; grid-template-columns: 7em minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 13px;">
+        <span>1号艇の1着</span>
+        <div role="img" aria-label="級の並びのレースでの1号艇の1着率" style="position: relative; height: 8px; border-radius: 4px; background: #ece5d3;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 40%; border-radius: 4px; background: #6b500f;"></div><div style="position: absolute; left: 55%; top: -3px; bottom: -3px; border-left: 2px dashed #0f172a;"></div></div>
+        <span><b>[値]%</b></span>
+        <span>万舟</span>
+        <div role="img" aria-label="級の並びのレースの万舟の割合" style="position: relative; height: 8px; border-radius: 4px; background: #ece5d3;"><div style="position: absolute; left: 0; top: 0; bottom: 0; width: 20%; border-radius: 4px; background: #6b500f;"></div></div>
+        <span><b>[値]%</b></span>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #475569; line-height: 1.6;"><span>勝率差で見た注意度は 65%（1着は35%）</span><a href="#" style="display: inline-flex; align-items: center; min-height: 44px; white-space: nowrap;">注意度 ›</a></div>
+    </div>
+    <div style="font-size: 12px; color: #475569; line-height: 1.6;">枠の中はそろう。注意度とは数字が違い、違う理由（範囲）を1行で添える</div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":375,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
