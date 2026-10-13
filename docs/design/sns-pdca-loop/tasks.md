@@ -41,7 +41,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-4 自動承認・事前通知・止める
 
-- [ ] **12. cron `sns-auto-plan`**（5分ごと、JST 8:00〜21:00）: item 作成（締切は races から）→ 検査 → notifying → Slack → notified → approve（スレッドは親から順に）。JST・太平洋時間の日付が変わるたびに基準日を当日にする（2026-10-13 決定）。`registry.js` に稼働時間つきで登録、`vercel.json` に追加
+- [ ] **12. cron `sns-auto-plan`**（5分ごと、JST 8:00〜21:00）: item 作成（締切は races から）。item を作るのは `race_conditions.race_stage` が優勝戦・準優勝戦のレースだけ（L3 ではその日の該当レースをすべて出す、2026-10-13 オーナー決定。L2 は日次上限で1日1レース）→ 検査 → notifying → Slack → notified → approve（スレッドは親から順に）。JST・太平洋時間の日付が変わるたびに基準日を当日にする（2026-10-13 決定）。`registry.js` に稼働時間つきで登録、`vercel.json` に追加
 - [ ] **13. 止めるリンク** `api/sns-stop/[token].js`（GET は確認の画面、POST で止める、no-store・no-referrer・noindex）
 - [ ] **14. 管理 API** `api/admin/sns-hub/auto-send.js`（一覧・止める・モード・誤投稿の記録、L3 の条件の計算）
 - [ ] **15. 画面** `AutoSendPanel`（screens #1〜#4・#10）、`MobileApprovalPanel`・`DeadlineQueueList` の拡張（#5・#6）。375px・ライト／ダークを Playwright で確認。受け入れ E2E（`e2e/acceptance/sns-pdca-loop.spec.js`）を通す
@@ -75,7 +75,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 ## 運用の段取り（実装の後）
 
 - [ ] **26. オーナー: 鍵を Vercel に登録**（`YOUTUBE_ANALYTICS_*`、`GOOGLE_SERVICE_ACCOUNT_KEY`、`SNS_TOKEN_ENC_KEY`、`X_OAUTH_CLIENT_ID`・`X_OAUTH_CLIENT_SECRET`）と、X の Developer Console のコールバック URL・spending limit（月額上限は $10、2026-10-12 決定）。手順は Claude がオーケストレーターに渡す
-- [ ] **27. オーナー: 本番 SQL で送信の設定**（`renew_sns_x_send_period`、`attempt_ceiling_microusd`、`daily_limit`、`schedule_minutes=60`・`timing_approved=true`、`max_source_age_seconds=14400`、YouTube のクォータの上限・verified）。管理画面から「X と連携する」
+- [ ] **27. オーナー: 本番 SQL で送信の設定**（L2・L3 の日次上限と月の上限額は 153-runbook.md「L2・L3 の送信の設定」。L3 の月の上限額は $10 では足りない（見込み 月 $77、予約で $111、案 $120）。`renew_sns_x_send_period`、`attempt_ceiling_microusd`、`daily_limit`、`schedule_minutes=60`・`timing_approved=true`、`max_source_age_seconds=14400`、YouTube のクォータの上限・verified）。管理画面から「X と連携する」
 - [ ] **28. L1 試運転**（1〜2日、dry_run=true）: 保留の理由を全件確認。`sns_auto_send_control.dry_run=false` はオーナー
 - [ ] **29. L2**（7日）: paused=false。機械の検査とオーナーの判断の一致を記録
 - [ ] **29b. 受け入れ E2E**（`e2e/acceptance/sns-pdca-loop.spec.js`）を、直した spec・screens で書き直させる（acceptance-test-writer）

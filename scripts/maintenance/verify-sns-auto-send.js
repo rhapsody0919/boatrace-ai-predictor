@@ -781,3 +781,23 @@ test("153-runbook.md の手順1・手順3の md5 が、置き換え前（本番�
     await before.close();
   }
 });
+
+test("月の上限額は $200 まで設定でき、L3 の設定（1日16レース×6件）で送れる", async () => {
+  await db.exec("UPDATE sns_x_send_control SET budget_microusd=200000000");
+  await assert.rejects(
+    db.query("UPDATE sns_x_send_control SET budget_microusd=200000001"),
+    /check/i,
+  );
+  // 153-runbook.md の L3 の設定
+  await db.exec(
+    "UPDATE sns_x_send_control SET budget_microusd=120000000, ceiling_x_url_microusd=250000, ceiling_x_plain_microusd=30000, daily_limit_x=96, daily_limit_youtube=16",
+  );
+  const r = await importBundle({ threads: 6 });
+  await createItem(r.content_group_id, "x");
+  const jobs = await approveThread(r.content_group_id);
+  for (const [i, j] of jobs.entries()) {
+    await setClock(61 + i);
+    assert.equal((await postX(j.id, String(7000 + i))).state, "posted");
+  }
+  assert.equal(await reserved(), 250000 + 5 * 30000);
+});

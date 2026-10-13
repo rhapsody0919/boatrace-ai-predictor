@@ -68,6 +68,11 @@ ALTER TABLE public.sns_x_send_control
   ADD COLUMN ceiling_x_plain_microusd BIGINT CHECK (ceiling_x_plain_microusd > 0), -- スレッドの子の1回の上限額
   ADD COLUMN daily_limit_x INTEGER CHECK (daily_limit_x > 0),                       -- X の1日の投稿の数（スレッドの各投稿を数える）
   ADD COLUMN daily_limit_youtube INTEGER CHECK (daily_limit_youtube > 0);
+-- L3 では優勝戦・準優勝戦をすべて自動で出す（2026-10-13 オーナー決定）。直近30日で月269レース、1レースの X は親＋子5＋取り込みで
+-- 最大 約$0.29（予約の上限額では約$0.41）になり、137 の月の上限 $10 では足りない。CHECK の上限を $200 に広げる（実際の額はオーナーが本番 SQL で決める。既定は $10 のまま）
+ALTER TABLE public.sns_x_send_control DROP CONSTRAINT sns_x_send_control_budget_microusd_check; -- 名前は本番の pg_constraint で確認済み
+ALTER TABLE public.sns_x_send_control ADD CONSTRAINT sns_x_send_control_budget_microusd_check
+  CHECK (budget_microusd BETWEEN 1 AND 200000000);
 
 -- job と item の結びつき（item は下書きの配列を持たず、job 側から FK で指す）。
 ALTER TABLE public.sns_x_send_jobs ADD COLUMN auto_item_id UUID REFERENCES public.sns_auto_send_items(id);

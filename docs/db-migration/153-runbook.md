@@ -36,9 +36,9 @@ SELECT to_regclass('public.sns_auto_send_items') AS items, to_regclass('public.s
        to_regclass('public.sns_oauth_tokens') AS tokens,
        (SELECT count(*) FROM public.sns_approvers WHERE display_name = '自動送信（止められなかった）') AS approver,
        (SELECT count(*) FROM public.sns_x_send_jobs) AS jobs;
--- 期待値: 4つの制約名が全部ある（153・154 が DROP する名前）
+-- 期待値: 5つの制約名が全部ある（153・154 が DROP する名前）
 SELECT conname FROM pg_constraint WHERE conname IN ('sns_bundle_imports_schema_version_check', 'sns_metric_observations_check5',
-  'sns_metric_observations_check6', 'sns_post_tracking_utm_campaign_check') ORDER BY 1;
+  'sns_metric_observations_check6', 'sns_post_tracking_utm_campaign_check', 'sns_x_send_control_budget_microusd_check') ORDER BY 1;
 ```
 
 ## 手順2（本体）
@@ -78,6 +78,26 @@ SELECT has_function_privilege('anon', 'public.stop_sns_auto_item(uuid,text)', 'E
 ```
 適用後に Supabase の advisor（security）で `rls_disabled_in_public`・`security_definer_view` が0件であることも確かめる。
 
+## L2・L3 の送信の設定（オーナーが本番 SQL で実行。額はオーナーが決める）
+L3 では、その日の優勝戦・準優勝戦をすべて自動で出す（2026-10-13 オーナー決定）。L2（最初の1週間、1件ずつ承認）は1日1レースのまま。
+
+見込み（2026-09-13〜10-12 の30日、`race_conditions.race_stage` が優勝戦・準優勝戦系、中止を除く）: 優勝戦 71・準優勝戦系 198 の計269レース。1日平均9.0、最多16（10/8）。準優進出戦・準々優勝戦などを数えているので、上限寄りの数字。
+- X の実費（1レース = URL つきの親 $0.20 ＋ 子5件 × $0.015 ＋ 取り込み 6件 × 2窓 × $0.001 = $0.287）× 269 ≒ **月 $77**。媒体のアップロードの単価は料金表に無く、含めていない
+- 予約の上限額（親 $0.25・子 $0.03 で見積もる場合）では、1レース $0.41 × 269 ≒ 月 $111。月の上限額はこの予約の合計を上回る必要がある
+- 案: 月の上限額は **$120**（X の Developer Console の spending limit も同じ額にする）。L2 の間は $10 のまま
+- YouTube: 1日最大16本のアップロードになる。Google Cloud のクォータ（videos.insert の枠）が足りるかを L3 の前にオーナーが確認する
+
+```sql
+-- L2（1件ずつ承認、1日1レース）
+UPDATE public.sns_x_send_control SET daily_limit_x = 6, daily_limit_youtube = 1 WHERE id = true;
+-- L3（優勝戦・準優勝戦をすべて。1日最多16レース × X 6件）。budget はオーナーが決めた額（例は $120）
+UPDATE public.sns_x_send_control
+  SET budget_microusd = 120000000, ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000,
+      daily_limit_x = 96, daily_limit_youtube = 16
+  WHERE id = true;
+```
+日次上限は「その日のレース数」を毎日数えて入れる形にはしない。自動送信の item は優勝戦・準優勝戦のレースにしか作らない（`sns-auto-plan`）ので、出る本数はその日のレース数で決まる。上限はそれを超えた暴走を止める天井（直近30日の最多16レース）として置く。
+
 ## 戻し方
 v1 の素材を取り込む前（`sns_bundle_imports` に v1 が無く、`sns_drafts.thread_index` が全部0、`sns_auto_send_items` が0行）にだけ使える。v1 のデータがあると、一意索引と CHECK の作り直しで失敗する（その場合はオーケストレーターに知らせる）。
 
@@ -111,6 +131,9 @@ CREATE UNIQUE INDEX sns_drafts_bundle_version_channel_language
   ON public.sns_drafts (bundle_version_hash, platform, language) WHERE bundle_version_hash IS NOT NULL;
 ALTER TABLE public.sns_drafts DROP COLUMN thread_index;
 ALTER TABLE public.sns_x_send_jobs DROP COLUMN auto_item_id;
+UPDATE public.sns_x_send_control SET budget_microusd = least(budget_microusd, 10000000) WHERE id = true;
+ALTER TABLE public.sns_x_send_control DROP CONSTRAINT sns_x_send_control_budget_microusd_check;
+ALTER TABLE public.sns_x_send_control ADD CONSTRAINT sns_x_send_control_budget_microusd_check CHECK (budget_microusd BETWEEN 1 AND 10000000);
 ALTER TABLE public.sns_x_send_control DROP COLUMN ceiling_x_url_microusd, DROP COLUMN ceiling_x_plain_microusd,
   DROP COLUMN daily_limit_x, DROP COLUMN daily_limit_youtube;
 DROP TABLE public.sns_auto_send_incidents, public.sns_auto_send_items, public.sns_auto_send_control;
