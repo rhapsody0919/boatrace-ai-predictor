@@ -1674,6 +1674,11 @@ function suiteMeetGrouping(m, check) {
 // （#1130 ファン評価。全コース表で5px残りでも40pxのフェードと「›」が最後の列を覆い、
 // 4px以下の残りでは何も出なかった）
 function suiteHscrollHint(m, check) {
+  check(
+    "hscroll: フェードは残りの幅まで縮め、上限40px・残り1px以下は0",
+    [50, 40, 20, 10, 4, 1.5, 1, 0, -10].map((v) => m.hscrollFadeWidth(v)),
+    [40, 40, 20, 10, 4, 1.5, 0, 0, 0],
+  );
   const st = (scrollWidth, clientWidth, scrollLeft) =>
     m.horizontalScrollHintState({ scrollWidth, clientWidth, scrollLeft });
   check("hscroll: 収まっていれば何も出さない", st(300, 300, 0), {
