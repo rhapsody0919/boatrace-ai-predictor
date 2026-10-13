@@ -963,7 +963,12 @@
     {
       "script": "verify-analogy-dispatch.js",
       "tier": "ci",
-      "guards": "BOA-271 アナロジーの週次の学習の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
+      "guards": "BOA-271 アナロジーの週次の学習・v16 の朝のバッチ、BOA-822 イン崩れ注意度の夜の表の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
+    },
+    {
+      "script": "verify-in-caution.js",
+      "tier": "ci",
+      "guards": "BOA-822 イン崩れ注意度の定義（閾値・帯・期間・件数の下限・def）が JS の定数と Python が読む src/data/inCautionConfig.json で同じで、def を上げずに値を変えていないこと"
     },
     {
       "script": "verify-sns-bundle-import.js",

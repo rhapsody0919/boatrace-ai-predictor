@@ -1,0 +1,13 @@
+{
+  "def": "gapband-r-v1",
+  "thresholds": [35, 55],
+  "bandWidthCents": 50,
+  "bandMin": -8,
+  "bandMax": 6,
+  "from": "2019-04-01",
+  "minTotalN": 400000,
+  "minCellN": 100,
+  "lowSampleN": 300,
+  "prelaunch": { "from": "2025-06-01", "to": "2026-10-10" },
+  "launchDate": null
+}

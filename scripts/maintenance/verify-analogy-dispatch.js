@@ -8,6 +8,7 @@
  *   (d) 配線: レジストリ（monitor・validateRegistry）、api/cron の maxDuration と modeGated、vercel.json の cron
  *   (e) v16 の朝のバッチ（T2-5b）: analogy-v16-morning.yml を起動する。7:40 の起動だけ、出走表の段が無い今日のレース
  *       （締切まで10分以上・中止でない）があるときに起動し、ほかの起動は常に起動する。配線（レジストリ・api/cron・vercel.json）
+ *   (f) BOA-822 イン崩れ注意度の夜の表（in-caution-nightly.yml）: inputs 空で起動、配線（レジストリ・api/cron・vercel.json の JST 2:30・workflow の concurrency）
  *
  * 使い方: node scripts/maintenance/verify-analogy-dispatch.js
  */
@@ -304,6 +305,61 @@ const run = (f, env = ENV) =>
     same(crons, ["10 22 * * *", "40 22 * * *", "40 0 * * *", "40 4 * * *"]),
     "(e) vercel.json: JST 7:10・7:40・9:40・13:40",
     JSON.stringify(crons),
+  );
+}
+
+// ---------------------------------------------------------------- (f)
+{
+  const f = fakeFetch();
+  const r = await createAnalogyDispatchRun("in_caution_nightly", {
+    fetchImpl: f,
+    env: ENV,
+  })(ctxOf(at("02:30")));
+  check(
+    r.report?.dispatched === true &&
+      f.calls[0]?.url.endsWith(
+        "/workflows/in-caution-nightly.yml/dispatches",
+      ) &&
+      same(JSON.parse(f.calls[0].init.body), { ref: "master", inputs: {} }),
+    "(f) in_caution_nightly は in-caution-nightly.yml を inputs 空（直近14日・時間外は書かない）で起動する",
+    JSON.stringify(f.calls[0]),
+  );
+  const def = SCRAPE_JOBS.in_caution_dispatch;
+  check(
+    def?.kind === "monitor" && def.failureAlertAfter === 1,
+    "(f) in_caution_dispatch: monitor・failureAlertAfter 1",
+  );
+  const src = fs.readFileSync(
+    path.join(ROOT, "api/cron/in-caution-dispatch.js"),
+    "utf8",
+  );
+  check(
+    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
+      /modeGated:\s*true/.test(src) &&
+      src.includes('job: "in_caution_dispatch"') &&
+      src.includes('createAnalogyDispatchRun("in_caution_nightly")'),
+    "(f) api/cron/in-caution-dispatch.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
+  );
+  const vercel = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+  );
+  const crons = vercel.crons
+    .filter((c) => c.path === "/api/cron/in-caution-dispatch")
+    .map((c) => c.schedule);
+  check(
+    same(crons, ["30 17 * * *"]),
+    "(f) vercel.json: JST 2:30（UTC 17:30）に1本（結果の確定の後、races-init の前）",
+    JSON.stringify(crons),
+  );
+  const wf = fs.readFileSync(
+    path.join(ROOT, ".github/workflows/in-caution-nightly.yml"),
+    "utf8",
+  );
+  check(
+    !/^\s*schedule:/m.test(wf) &&
+      /group:\s*in-caution-nightly/.test(wf) &&
+      /if: failure\(\)/.test(wf),
+    "(f) in-caution-nightly.yml: schedule を使わない・concurrency・失敗は Slack",
   );
 }
 

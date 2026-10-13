@@ -1,0 +1,81 @@
+name: In-Caution Nightly
+
+# BOA-822 イン崩れ注意度の夜の表（in_caution_gap_band_daily、マイグレーション 155、ADR-0095）。
+# 完全レースの1号艇を日×ラウンド×勝率差の帯で数え、直近14日（full なら 2019-04-01 から）を書き直す。
+# docs/design/in-collapse-caution/plan.md §2。
+#
+# schedule は使わない（GitHub Actions の定時実行は遅れ・欠落が常態）。起動は Vercel Cron からの workflow_dispatch
+# （JST 2:30、api/cron/in-caution-dispatch.js → scripts/lib/analogyDispatch.js の in_caution_nightly）。
+# JST 04:30〜23:00 は書かずに失敗する（日中に表を書き換えると朝の生成と /today が食い違う）。手動で書くなら force。
+
+on:
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "全期間（2019-04-01〜前日）を書き直す。初回と、14日より前の訂正を拾うとき"
+        type: boolean
+        required: false
+        default: false
+      force:
+        description: "JST 04:30〜23:00 でも書く"
+        type: boolean
+        required: false
+        default: false
+
+concurrency:
+  group: in-caution-nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install Python deps
+        run: pip install -r scripts/ml/analogy/requirements.txt
+
+      # 本体の前月・当月だけ DB から読み、それより前は週次の学習が置いた Storage のキャッシュを読む（Storage には書かない）。
+      # 長期（kb_*、2025-12-02 まで）は full のときだけ読む（毎晩6年分を Storage から読まない）
+      - name: Export data (daily)
+        env:
+          FULL: ${{ inputs.full }}
+        run: |
+          tables=(races entries exhibition conditions results start_timings)
+          if [ "$FULL" = "true" ]; then tables=(kb_boats kb_races kb_venue_days "${tables[@]}"); fi
+          node scripts/ml/analogy/export_pool.js --daily "${tables[@]}"
+
+      - name: Count and write
+        working-directory: scripts/ml/analogy
+        env:
+          FULL: ${{ inputs.full }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          args=()
+          if [ "$FULL" = "true" ]; then args+=(--full); fi
+          if [ "$FORCE" = "true" ]; then args+=(--force); fi
+          python in_caution_bands.py "${args[@]}"
+
+      - name: Notify Slack (失敗)
+        if: failure()
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          payload=$(jq -n --arg url "$RUN_URL" \
+            '{text: (":x: *イン崩れ注意度の夜の表（in_caution_gap_band_daily）の更新が失敗しました*（朝の生成は前日までの合計のまま。時間外で書かなかったときもここに出る）\n" + $url)}')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

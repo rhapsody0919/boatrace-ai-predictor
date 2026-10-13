@@ -419,6 +419,16 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
+  // BOA-822 イン崩れ注意度の夜の表の起動（in-caution-nightly.yml。scripts/lib/analogyDispatch.js）。1日1回（JST 2:30）なので
+  // 学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける。dispatch の失敗は1回目から通知する。
+  // Actions が動かなかった日は、表の鮮度の監視（api/cron/in-caution-health.js、tasks 12）が Slack に出す
+  in_caution_dispatch: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
 
   // ↓ N23・N29（tasks.md T4b-20・T4b-21）
   // N23 前検タイム・前検順位・節時点のモーター/ボート2連対率（motor_pretest_stats）。05:20指定（cron: 05:30・06:00・06:30 JST。
