@@ -239,6 +239,9 @@ export function compareObservations(
       Date.parse(observationPeriod(draft.posted_at, window).period_end) > now
     )
       continue;
+    const requiresDuration =
+      draft.platform !== "x" ||
+      !["url_link_clicks", "impressions"].includes(metric);
     const rows = byDraft.get(draft.id) || [];
     for (const row of rows.length
       ? rows
@@ -257,7 +260,7 @@ export function compareObservations(
         draft.language,
         draft.format,
         draft.template_variant_id,
-        row.duration_seconds,
+        requiresDuration ? row.duration_seconds : null,
         row.source,
         row.definition,
         row.measurement_kind,
@@ -270,7 +273,7 @@ export function compareObservations(
           language: draft.language,
           format: draft.format,
           variant: draft.template_variant_id,
-          duration: row.duration_seconds,
+          duration: requiresDuration ? row.duration_seconds : null,
           source: row.source,
           definition: row.definition,
           kind: row.measurement_kind,
@@ -293,7 +296,7 @@ export function compareObservations(
       });
       const reason =
         row.missing_reason ||
-        (row.duration_seconds === null
+        (requiresDuration && row.duration_seconds === null
           ? "尺未確認"
           : !draft.template_variant_id
             ? "型の版未確認"
