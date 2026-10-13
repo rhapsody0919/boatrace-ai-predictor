@@ -256,7 +256,7 @@ Using your phone at the venue significantly boosts both the accuracy and the fun
 Using Ryujin Radar at the venue gives you information you can't get from the race program alone.
 
 - **Data race table**: Compare all 6 racers' win rates, motor performance, and exhibition times on the spot
-- **Turn prediction & Upset Index**: See the likely 1st-place finishers alongside a "Favorite friendly" or "Upset alert (high)" label
+- **Turn prediction & Upset alert level**: See the likely 1st-place finishers alongside a "Favorite friendly" or "Upset alert (high)" label
 - **Tracked hit rate**: The turn prediction's actual hit rate is always public
 
 Narrow down your picks from the race program, then use Ryujin Radar's data race table to back it up — this combination is the strongest approach.
@@ -271,10 +271,12 @@ There are 24 boat racing venues nationwide, each with its own character. Visitin
 
 | Type | Character | Example venues |
 |--------|------|-----------|
-| Salt water | Water conditions shift with the tide | Heiwajima, Gamagori, Kojima |
+| Salt water | Water conditions shift with the tide | Heiwajima, Kojima |
 | Fresh water | Firmer water surface, favors inside passes | Kiryu, Tamagawa, Biwako |
 | Brackish water | A mix of salt and fresh water | Hamanako, Edogawa, Fukuoka |
 | Pool-type | Calm and stable | Tsu, Naruto, Ashiya |
+
+Gamagori is brackish water, and the [official venue data](https://www.boatrace.jp/owpc/pc/data/stadium?jcd=07) lists its tidal range as "none."
 
 ### A "pilgrimage" is worth considering too
 
