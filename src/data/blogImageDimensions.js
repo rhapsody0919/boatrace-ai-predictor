@@ -147,6 +147,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/suji-funaken-chart-ja.jpg": { width: 1000, height: 588 },
   "/images/blog/suji-funaken-chart-ko.jpg": { width: 1000, height: 588 },
   "/images/blog/suji-funaken-chart-zh-tw.jpg": { width: 1000, height: 588 },
+  "/images/blog/suminoe-water-wind-guide.jpg": { width: 576, height: 394 },
   "/images/blog/toda-course1-winrate-low.jpg": { width: 1200, height: 630 },
   "/images/blog/toda-losing-makuri-share.jpg": { width: 1200, height: 630 },
   "/images/blog/top-start-chart.jpg": { width: 968, height: 750 },
