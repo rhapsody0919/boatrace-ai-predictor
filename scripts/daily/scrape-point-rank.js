@@ -42,6 +42,18 @@ import {
 } from "../lib/supabaseClient.js";
 import { parsePointRankTable } from "../lib/pointRankParser.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
+import { upsertWithOptionalColumns } from "../lib/optionalColumns.js";
+
+/**
+ * マイグレーション159（早見の列、BOA-784）。未適用の DB では、この列を除いて他の列を書き続ける
+ */
+const NEXT_RACE_COLUMN_GROUPS = {
+  "マイグレーション159（早見の列）": [
+    "next_race_1",
+    "next_race_2",
+    "next_series_day",
+  ],
+};
 
 const USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
@@ -332,9 +344,28 @@ export async function run(date, options = {}) {
       total_points: r.totalPoints,
       penalty_points: r.penaltyPoints,
       remarks: r.remarks,
+      next_race_1: r.nextRace1 ?? null,
+      next_race_2: r.nextRace2 ?? null,
+      next_series_day: r.nextSeriesDay ?? null,
     }));
-    console.log(`  ✅ ${name}: ${rows.length}名（開催初日${meetStartDate}）`);
-    return { venueCode, expected, raceGrade, seriesDay, meetStartDate, rows };
+    // 早見の書式が想定と違う（空欄でないのに番号を読めない）行。書き込みは止めず、報告に出す（BOA-784）
+    const nextRaceUnreadable = fetched.rows.filter(
+      (r) => r.nextRaceUnreadable,
+    ).length;
+    const nextRaceRows = rows.filter((r) => r.next_race_1 != null).length;
+    console.log(
+      `  ✅ ${name}: ${rows.length}名（開催初日${meetStartDate}、早見あり${nextRaceRows}名${nextRaceUnreadable > 0 ? `、⚠️ 早見を読めない${nextRaceUnreadable}名` : ""}）`,
+    );
+    return {
+      venueCode,
+      expected,
+      raceGrade,
+      seriesDay,
+      meetStartDate,
+      rows,
+      nextRaceRows,
+      nextRaceUnreadable,
+    };
   };
 
   const venueCodes = [...venueGrades.keys()].sort((a, b) => a - b);
@@ -374,6 +405,8 @@ export async function run(date, options = {}) {
       seriesDay: r.seriesDay ?? null,
       meetStartDate: r.meetStartDate ?? null,
       rows: r.rows.length,
+      nextRaceRows: r.nextRaceRows ?? 0,
+      nextRaceUnreadable: r.nextRaceUnreadable ?? 0,
       failed: Boolean(r.failure),
     });
   }
@@ -407,9 +440,14 @@ export async function run(date, options = {}) {
   // scraped_at は DEFAULT now() だが、DEFAULT は INSERT のときしか効かない。開催期間中は同じ行を
   // 毎日更新するため、載せないと初回挿入時の値が残り続ける（BOA-463）
   const scrapedAt = new Date().toISOString();
-  const { error } = await client.from("racer_series_points").upsert(
+  const { error } = await upsertWithOptionalColumns(
+    client,
+    "racer_series_points",
     rows.map((row) => ({ ...row, scraped_at: scrapedAt })),
-    { onConflict: "venue_code,meet_start_date,racer_id" },
+    {
+      onConflict: "venue_code,meet_start_date,racer_id",
+      optionalColumnGroups: NEXT_RACE_COLUMN_GROUPS,
+    },
   );
   if (error) {
     failures.push(`racer_series_points 書き込みエラー: ${error.message}`);
