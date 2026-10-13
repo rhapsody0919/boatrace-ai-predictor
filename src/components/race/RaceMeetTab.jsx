@@ -642,7 +642,14 @@ function RaceMeetTab({
                   row: ranking.find((r) => r.racerId === p.racerId),
                 }))
                 .filter((x) => x.row)
-                .sort((a, b) => b.row.rate - a.row.rate)
+                // 順位の対象外（途中帰郷・賞典除外）は末尾（目安の点線の下）に回す。
+                // 得点率の順のままだと点線より上に並び、「点線より上が目安内」と読めた
+                // （BOA-782 ファン評価3周目）
+                .sort(
+                  (a, b) =>
+                    Number(a.row.withdrawn) - Number(b.row.withdrawn) ||
+                    b.row.rate - a.row.rate,
+                )
                 .map(({ player: p, row }, i, arr) => {
                   const tied = tiedCount(row.rank);
                   const inBorder = showBorderBadge && rankInBorder(row, slots);
@@ -1395,11 +1402,15 @@ function RaceMeetTab({
                 n: mine.runs,
                 // 公式の得点率一覧がある開催では公式の値をそのまま出している。
                 // 出典を「当社計算」と書いたままにすると嘘になる（BOA-475）
-                source: t(
-                  mine.fromOfficial
-                    ? "meetTab.sourceOfficial"
-                    : "meetTab.sourceOwn",
-                ),
+                // 当社計算に公式の前夜の減点を足したときは、それも出典に書く。
+                // 「当社計算」だけだと着順の点と合わず、計算違いに読まれた（BOA-782 ファン評価3周目）
+                source: mine.fromOfficial
+                  ? t("meetTab.sourceOfficial")
+                  : mine.penaltyFromOfficial > 0
+                    ? t("meetTab.sourceOwnWithPenalty", {
+                        points: mine.penaltyFromOfficial,
+                      })
+                    : t("meetTab.sourceOwn"),
               },
             )}
             {/* 順位の対象外（賞典除外・途中帰郷）の理由は、予選が終わった後も出す。
