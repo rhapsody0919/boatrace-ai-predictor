@@ -18,32 +18,41 @@ for (const width of [375, 768, 1440, 1600, 1920]) {
     const header = page.locator(".app-header");
     await expect(header).not.toHaveClass(/compressed/);
 
-    for (const compressed of [false, true]) {
+    // 768px 以下ではヘッダーは縮まない（Header.jsx の isMobile）。縮小は 769px 以上だけ確かめる
+    for (const compressed of width > 768 ? [false, true] : [false]) {
       if (compressed) {
-        await page.evaluate(() => window.scrollTo(0, 400));
-        await expect(header).toHaveClass(/compressed/);
+        // 中身が入りきる前はページが短く、スクロールが閾値（100px）に届かないことがある。
+        // 届くまでスクロールし直す
+        await expect(async () => {
+          await page.evaluate(() => window.scrollTo(0, 400));
+          await expect(header).toHaveClass(/compressed/, { timeout: 1000 });
+        }).toPass({ timeout: 20000 });
       }
-      const edges = await page.evaluate(() => {
-        const rect = (selector) =>
-          document.querySelector(selector).getBoundingClientRect();
-        return {
-          logo: rect(".app-header .logo").left,
-          nav: rect(".app-header .nav").right,
-          tabLeft: rect(".race-tabs-bar").left,
-          tabRight: rect(".race-tabs-bar").right,
-        };
-      });
-      if (width >= 1600) {
-        expect(Math.abs(edges.logo - edges.tabLeft)).toBeLessThanOrEqual(1);
-        expect(Math.abs(edges.nav - edges.tabRight)).toBeLessThanOrEqual(1);
-        expect(Math.abs(edges.logo - (width - 1552) / 2)).toBeLessThanOrEqual(1);
-      } else {
-        const padding = compressed ? 16 : width <= 480 ? 10 : width <= 768 ? 12 : 32;
-        expect(Math.abs(edges.logo - padding)).toBeLessThanOrEqual(1);
-        if (width === 1440) {
-          expect(Math.abs(edges.nav - (width - padding))).toBeLessThanOrEqual(1);
+      // 縮むときは padding が動く（transition）。動いている途中で測らないよう、
+      // 位置が決まりどおりになるまで測り直す
+      await expect(async () => {
+        const edges = await page.evaluate(() => {
+          const rect = (selector) =>
+            document.querySelector(selector).getBoundingClientRect();
+          return {
+            logo: rect(".app-header .logo").left,
+            nav: rect(".app-header .nav").right,
+            tabLeft: rect(".race-tabs-bar").left,
+            tabRight: rect(".race-tabs-bar").right,
+          };
+        });
+        if (width >= 1600) {
+          expect(Math.abs(edges.logo - edges.tabLeft)).toBeLessThanOrEqual(1);
+          expect(Math.abs(edges.nav - edges.tabRight)).toBeLessThanOrEqual(1);
+          expect(Math.abs(edges.logo - (width - 1552) / 2)).toBeLessThanOrEqual(1);
+        } else {
+          const padding = compressed ? 16 : width <= 480 ? 10 : width <= 768 ? 12 : 32;
+          expect(Math.abs(edges.logo - padding)).toBeLessThanOrEqual(1);
+          if (width === 1440) {
+            expect(Math.abs(edges.nav - (width - padding))).toBeLessThanOrEqual(1);
+          }
         }
-      }
+      }).toPass({ timeout: 5000 });
     }
   });
 }
