@@ -27,6 +27,8 @@ Night races typically run from around **3:00 PM to 8:30 PM**. Because they're ea
 | **Wakamatsu** (Fukuoka) | Salt water, large tidal swings; sensitive to wind |
 | **Omura** (Nagasaki) | Nation's highest inside-lane 1st-place rate; the heartland of night racing |
 
+Besides the venues in the table, Suminoe also holds night races year-round ([official Suminoe venue guide](https://www.boatrace.jp/owpc/pc/site/place/stadium/br12/)).
+
 ![Card grid showing the character of the main night-race venues: Kiryu, Gamagori, Marugame, Shimonoseki, Wakamatsu, and Omura, each with its water and weather conditions](/images/blog/night-venues-grid-en.jpg)
 
 ---

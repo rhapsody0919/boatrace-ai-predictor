@@ -27,6 +27,8 @@
 | **若松**（福岡） | 海水，潮位變化大。易受風勢影響 |
 | **大村**（長崎） | 全國最高水準的內道第一名率。夜間賽的代表會場 |
 
+除了表中的會場，住之江也全年舉辦夜間賽（[BOAT RACE官方住之江介紹](https://www.boatrace.jp/owpc/pc/site/place/stadium/br12/)）。
+
 ![主要夜間賽會場的特徵卡片圖：桐生・蒲郡・丸龜・下關・若松・大村，各自的水面與氣象條件一覽](/images/blog/night-venues-grid-zh-tw.jpg)
 
 ---
