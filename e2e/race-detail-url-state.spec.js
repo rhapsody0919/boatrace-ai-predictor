@@ -183,7 +183,8 @@ const firstBoat = (page, boat) =>
   });
 
 // 思考アシスト用の既存スタブは boats=1 を拒むため、ソナー用の応答に上書きする。
-async function routeFirstScenario(page) {
+// edit で応答を書き換えられる（例: ある艇の1着を0件にする）
+async function routeFirstScenario(page, edit = (body) => body) {
   const {
     THINKING_ASSIST_RACE,
     routeThinkingAssistV16,
@@ -194,10 +195,21 @@ async function routeFirstScenario(page) {
   await page.route("**/api/analogy/scenario/**", (route) => {
     const scope = new URL(route.request().url()).searchParams.get("scope");
     return route.fulfill({
-      json: thinkingAssistScenario(scope ?? thinkingAssistScopeKeys().NC),
+      json: edit(thinkingAssistScenario(scope ?? thinkingAssistScopeKeys().NC)),
     });
   });
   return THINKING_ASSIST_RACE;
+}
+
+/** 応答の全セルの3連単から、boat が1着の組を消す（その範囲で1着が0件の艇を作る） */
+function withoutWinsOf(boat) {
+  return (body) => {
+    for (const entry of Object.values(body.scenario?.cells ?? {}))
+      for (const form of Object.values(entry.forms ?? {}))
+        for (const key of Object.keys(form.tri ?? {}))
+          if (key.startsWith(`${boat}-`)) delete form.tri[key];
+    return body;
+  };
 }
 
 test("相手レンズの軸を選んだ URL で着順の流れを開く", async ({ page }) => {
@@ -287,4 +299,21 @@ test("別の軸から入り直すと、その軸を1着に選ぶ", async ({ page
   await pickAxisAndOpen(4);
   await page.goBack();
   await pickAxisAndOpen(2);
+});
+
+// 1着が0件の艇を初期値にすると、流れが空になり1着の四角も消えて選択を外せなくなる（BOA-847 取り込み時の指摘）
+test("その範囲で1着が0件の艇の first は初期選択に使わない", async ({ page }) => {
+  test.slow();
+  const THINKING_ASSIST_RACE = await routeFirstScenario(
+    page,
+    withoutWinsOf(6),
+  );
+  await openRace(
+    page,
+    `/race/${THINKING_ASSIST_RACE}?tab=sonar&sonar=scenario&first=6`,
+  );
+  await expect(firstBoat(page, 1)).toBeVisible();
+  await expect(
+    page.locator('.af-flow [role="button"][aria-pressed="true"]'),
+  ).toHaveCount(0);
 });

@@ -31,6 +31,7 @@ import {
   minRanks,
 } from "../../../utils/analogyScenario";
 import { agreementVerdict, scopeKind } from "../../../utils/analogyFacts";
+import { trifectaList } from "../../../utils/analogyAggregate";
 import { wilsonInterval } from "../../../utils/wilson";
 
 const k = "aiPredictionTab.analogy.scenario";
@@ -56,7 +57,16 @@ export default function ScenarioTab({
   const [entry, setEntry] = useState("waku");
   const [slit, setSlit] = useState("any");
   const [version, setVersion] = useState("course");
-  const [first, setFirst] = useState(initialFirst);
+  // 初期のセル（枠なり・形は問わない）でその艇の1着が0件なら使わない。流れが空になり、
+  // 1着の四角も消えて選択を外せなくなるため
+  const [first, setFirst] = useState(() =>
+    initialFirst !== null &&
+    trifectaList(data.scenario?.cells?.waku?.forms?.any?.tri, {
+      first: initialFirst,
+    }).length > 0
+      ? initialFirst
+      : null,
+  );
   // 初期値は描画できたときに使い切る。内部タブを戻しても再選択しない
   useEffect(() => {
     onInitialFirstUsed?.();
