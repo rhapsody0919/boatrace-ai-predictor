@@ -172,8 +172,8 @@ Cutting just 2 combinations already improves your return rate.
 
 ```
 [Predicted development]
-- Exhibition: lane 1 ST slow
-- Exhibition: lane 4 ST fast
+- Exhib. ST: lane 1 slow
+- Exhib. ST: lane 4 fast
 → May overtake in the race
 → Go with the lane-4 overtake suji
 
