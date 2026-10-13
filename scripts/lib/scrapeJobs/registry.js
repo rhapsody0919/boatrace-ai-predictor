@@ -515,6 +515,16 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 120,
     maxDurationSec: 120,
   },
+  // sns-pdca-loop tasks 12 SNS の自動送信の計画。5分ごと（JST 5:30〜21:00）に、その日の優勝戦・準優勝戦の素材 v1 から
+  // レース×チャネルの item を作り、検査（数値の照合・リンク先の表示・禁止表現・承認の条件）して個別承認に回す。
+  // リンク先の表示の確認で Chromium を起動するので maxDuration は 300秒。龍神の公開 API と公開画面だけを読む（外部サイトは取得しない）。
+  // 実装: scripts/lib/snsAutoPlanRunner.js、api/cron/sns-auto-plan.js
+  sns_auto_plan: {
+    kind: "continuous",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    activeHoursJst: { start: "05:30", end: "21:00" },
+  },
 });
 
 /** JST の HH:MM を、0時からの分にする */
