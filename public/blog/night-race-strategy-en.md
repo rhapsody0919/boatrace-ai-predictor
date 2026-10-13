@@ -16,18 +16,17 @@ This article breaks down the **5 defining features** of night races and a **data
 
 Night races typically run from around **3:00 PM to 8:30 PM**. Because they're easy to catch after work, they've grown rapidly in popularity in recent years.
 
-### Main night-race venues
+### The 7 night-race venues
 
 | Venue | Character |
 |------|------|
 | **Kiryu** (Gunma) | Inland, large temperature swings — especially cold at night in winter |
 | **Gamagori** (Aichi) | Calm water, favors the inside; long history of night racing |
+| **Suminoe** (Osaka) | Pool-type water surrounded by concrete seawalls; night racing year-round except some races |
 | **Marugame** (Kagawa) | Salt water, affected by tides; frequent headwinds |
 | **Shimonoseki** (Yamaguchi) | Salt water, small pool; stable water conditions |
 | **Wakamatsu** (Fukuoka) | Salt water, large tidal swings; sensitive to wind |
 | **Omura** (Nagasaki) | Nation's highest inside-lane 1st-place rate; the heartland of night racing |
-
-Besides the venues in the table, Suminoe also holds night races year-round ([official Suminoe venue guide](https://www.boatrace.jp/owpc/pc/site/place/stadium/br12/)).
 
 ![Card grid showing the character of the main night-race venues: Kiryu, Gamagori, Marugame, Shimonoseki, Wakamatsu, and Omura, each with its water and weather conditions](/images/blog/night-venues-grid-en.jpg)
 
