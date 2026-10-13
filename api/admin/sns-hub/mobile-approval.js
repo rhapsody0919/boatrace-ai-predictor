@@ -11,7 +11,8 @@ import {
   approveMobileReview,
 } from "../../_lib/snsMobileApproval.js";
 import { saveDraftInspection } from "../../_lib/snsEditAssist.js";
-import riskRules from "../../../sns-video-studio/remotion/risk-rules.json";
+// JSON は nodejs の関数では import できない（読み込みで落ちる）ので、ファイルとして読む部品から受け取る
+import riskRules from "../../_lib/snsRiskRulesFile.js";
 // twitter-text（依存のpunycode）はVercel Edge Functionで未サポートのため、nodejs runtimeを使う。
 export const config = { runtime: "nodejs" };
 export default async function handler(req) {

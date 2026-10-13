@@ -602,27 +602,29 @@ test("媒体変更を伴う再承認でも試行時の媒体の日次枠を保�
   }
 });
 
-test("YouTube動画はXの32MB上限を適用しない、Xは32MB超を拒否したまま", async () => {
+test("YouTube の動画も X と同じ 32 MiB まで。超えると承認の前に止める（送信の上限とそろえる）", async () => {
   await enable();
-  const overX = X_MEDIA_MAX_BYTES + 1024;
-  // YouTubeはXの32MB上限より大きく、かつ500MB上限より十分小さいサイズで検証する（上限ぎりぎりの巨大配列確保を避ける）
-  const overXButUnderYoutubeCap = X_MEDIA_MAX_BYTES + 8 * 1024 * 1024;
-  assert.ok(overXButUnderYoutubeCap < YOUTUBE_MEDIA_MAX_BYTES);
-  const bigMedia = async () => new Uint8Array(overX);
-  const underCapMedia = async () => new Uint8Array(overXButUnderYoutubeCap);
+  assert.equal(YOUTUBE_MEDIA_MAX_BYTES, X_MEDIA_MAX_BYTES);
+  const overCap = async () => new Uint8Array(YOUTUBE_MEDIA_MAX_BYTES + 1);
+  const atCap = async () => new Uint8Array(YOUTUBE_MEDIA_MAX_BYTES);
+  const insertDraft = (platform) =>
+    first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,source_data,title,video_storage_path) VALUES(gen_random_uuid(),'short',$1,'ja',$2,$3,'動画タイトル','demo/a.mp4') RETURNING *",
+      [platform, "ボートレースの発見", { deadline_queue: queue() }],
+    );
 
-  const xDraft = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,source_data,title,video_storage_path) VALUES(gen_random_uuid(),'short','x','ja',$1,$2,'動画タイトル','demo/a.mp4') RETURNING *",
-    ["ボートレースの発見", { deadline_queue: queue() }],
+  await assert.rejects(
+    createXSnapshot(await insertDraft("x"), overCap),
+    /媒体の容量/,
   );
-  await assert.rejects(createXSnapshot(xDraft, bigMedia), /媒体の容量/);
+  await assert.rejects(
+    createXSnapshot(await insertDraft("youtube"), overCap),
+    /媒体の容量/,
+  );
 
-  const ytDraft = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,source_data,title,video_storage_path) VALUES(gen_random_uuid(),'short','youtube','ja',$1,$2,'動画タイトル','demo/a.mp4') RETURNING *",
-    ["ボートレースの発見", { deadline_queue: queue() }],
-  );
-  const snapshot = await createXSnapshot(ytDraft, underCapMedia);
-  assert.equal(snapshot.media[0].size, overXButUnderYoutubeCap);
+  const ytDraft = await insertDraft("youtube");
+  const snapshot = await createXSnapshot(ytDraft, atCap);
+  assert.equal(snapshot.media[0].size, YOUTUBE_MEDIA_MAX_BYTES);
   const approved = (
     await first("SELECT approve_sns_x_send($1,$2,$3,now()) result", [
       ytDraft.id,

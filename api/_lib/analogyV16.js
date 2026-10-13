@@ -68,8 +68,8 @@ export async function readObject(path) {
   return gunzipJson(res);
 }
 
-/** Storage に gzip の JSON を置く。上書きしない（同じパスがあれば失敗） */
-export async function writeObject(path, obj) {
+/** Storage に gzip の JSON を置く。既定は上書きしない（同じパスがあれば失敗）。upsert は夜の確認の容量の控えだけ */
+export async function writeObject(path, obj, { upsert = false } = {}) {
   const { url, key } = env();
   const gz = await new Response(
     new Blob([JSON.stringify(obj)])
@@ -81,7 +81,7 @@ export async function writeObject(path, obj) {
     headers: {
       ...authHeaders(key),
       "Content-Type": "application/gzip",
-      "x-upsert": "false",
+      "x-upsert": String(upsert),
     },
     body: gz,
   });
@@ -212,12 +212,12 @@ export function createHandler(build) {
   };
 }
 
-/** Storage の prefix の直下（フォルダは id が null の行） */
-export async function listObjects(prefix) {
+/** Storage の prefix の直下（フォルダは id が null の行）。bucket は夜の確認が全バケットの容量を数えるときだけ渡す */
+export async function listObjects(prefix, bucket = BUCKET) {
   const { url, key } = env();
   const out = [];
   for (let offset = 0; ; offset += 1000) {
-    const res = await fetch(`${url}/storage/v1/object/list/${BUCKET}`, {
+    const res = await fetch(`${url}/storage/v1/object/list/${bucket}`, {
       method: "POST",
       headers: { ...authHeaders(key), "Content-Type": "application/json" },
       body: JSON.stringify({ prefix, limit: 1000, offset }),
@@ -228,6 +228,17 @@ export async function listObjects(prefix) {
     out.push(...rows);
     if (rows.length < 1000) return out;
   }
+}
+
+/** Storage のバケットの id の一覧（夜の確認が容量を数える） */
+export async function listBuckets() {
+  const { url, key } = env();
+  const res = await fetch(`${url}/storage/v1/bucket`, {
+    headers: authHeaders(key),
+  });
+  if (!res.ok)
+    throw new UpstreamError(`storage bucket 一覧: HTTP ${res.status}`);
+  return (await res.json()).map((b) => b.id);
 }
 
 /** Storage のファイルを消す（パスの配列） */

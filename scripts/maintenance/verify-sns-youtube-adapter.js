@@ -4,7 +4,7 @@ import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
-import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import { createXSnapshot, sha256 } from "../../api/_lib/snsXSend.js";
 import {
   deadlineSchedule,
   reconcileYoutubeJob,
@@ -16,7 +16,8 @@ const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
 const video = new Uint8Array([1, 2, 3, 4]);
 const cover = new Uint8Array([9, 9]);
-const loadMedia = async (path) => (path.endsWith(".png") ? cover : video);
+const loadMedia = async (path) =>
+  path.endsWith(".png") || path.endsWith(".jpg") ? cover : video;
 const store = {
   transition: async (id, action, result = {}) =>
     (
@@ -64,7 +65,12 @@ beforeEach(async () => {
 });
 after(() => db.close());
 
-async function approvedJob({ withCover = true, title = "全貌 唐津12R" } = {}) {
+async function approvedJob({
+  withCover = true,
+  title = "全貌 唐津12R",
+  hashtags = null,
+  cover = "c.png",
+} = {}) {
   const deadline_at = new Date(Date.now() + 7200000).toISOString();
   const queue = {
     deadline_at,
@@ -74,8 +80,8 @@ async function approvedJob({ withCover = true, title = "全貌 唐津12R" } = {}
     source_observed_at: new Date().toISOString(),
   };
   const d = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,cover_image_path,source_data) VALUES(gen_random_uuid(),'short','youtube','ja',$3,'説明','v.mp4',$1,$2) RETURNING *",
-    [withCover ? "c.png" : null, { deadline_queue: queue }, title],
+    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,hashtags,video_storage_path,cover_image_path,source_data) VALUES(gen_random_uuid(),'short','youtube','ja',$3,'説明',$4,'v.mp4',$1,$2) RETURNING *",
+    [withCover ? cover : null, { deadline_queue: queue }, title, hashtags],
   );
   return (
     await first("SELECT approve_sns_x_send($1,$2,$3,now()) r", [
@@ -405,5 +411,188 @@ test("動画 ID の無い job の照合は YouTube を呼ばず要照合のま�
   assert.equal(
     (await youtube.lookup({ external_post_id: null })).confirmed,
     false,
+  );
+});
+
+// 送った multipart の metadata（1つ目のパート）を取り出す
+async function uploadedMetadata(call) {
+  const text = await new Response(call.options.body).text();
+  return JSON.parse(text.split("\r\n\r\n")[1].split("\r\n")[0]);
+}
+
+test("承認したタグと本文を YouTube に送る（承認の hash に入る値と同じ）", async () => {
+  const job = await approvedJob({
+    withCover: false,
+    hashtags: ["#ボートレース", "#唐津", "#ボートレース", ""],
+  });
+  const fake = fakeYoutube();
+  await run(job, fake);
+  const meta = await uploadedMetadata(fake.calls[0]);
+  const approved = JSON.parse(job.snapshot_text);
+  assert.equal(meta.snippet.description, approved.text);
+  assert.equal(
+    meta.snippet.description,
+    "説明\n\n#ボートレース #唐津 #ボートレース",
+  );
+  assert.deepEqual(meta.snippet.tags, ["ボートレース", "唐津"]);
+  assert.deepEqual(approved.source.hashtags, [
+    "#ボートレース",
+    "#唐津",
+    "#ボートレース",
+    "",
+  ]);
+  // タグの無い下書きは空の配列
+  const plain = await approvedJob({ withCover: false });
+  const fake2 = fakeYoutube();
+  await run(plain, fake2);
+  assert.deepEqual((await uploadedMetadata(fake2.calls[0])).snippet.tags, []);
+});
+
+test("表紙が JPEG なら Content-Type は image/jpeg", async () => {
+  const job = await approvedJob({ cover: "c.jpg" });
+  const fake = fakeYoutube();
+  assert.equal((await run(job, fake)).state, "posted");
+  assert.equal(fake.calls[1].options.headers["Content-Type"], "image/jpeg");
+});
+
+test("題名は100文字（絵文字などの補助文字も1文字）までは通る", async () => {
+  for (const title of ["あ".repeat(100), "🚤".repeat(100)]) {
+    const job = await approvedJob({ withCover: false, title });
+    assert.equal((await run(job, fakeYoutube({ title }))).state, "posted");
+  }
+});
+
+test("upload の成功の応答が JSON でない・通信が例外で切れたときは、要照合に残し表紙も公開も試さない", async () => {
+  for (const failing of [
+    async () => new Response("<html>ok</html>", { status: 200 }),
+    async () => {
+      throw new DOMException(
+        "The operation was aborted due to timeout",
+        "TimeoutError",
+      );
+    },
+  ]) {
+    const job = await approvedJob();
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(new URL(url).pathname);
+      if (new URL(url).pathname === "/upload/youtube/v3/videos")
+        return failing();
+      throw new Error("ここまで進まない: " + url);
+    };
+    await assert.rejects(run(job, { calls, fetchImpl }));
+    assert.deepEqual(calls, ["/upload/youtube/v3/videos"]);
+    const row = await first(
+      "SELECT state, youtube_stage, external_post_id FROM sns_x_send_jobs WHERE id=$1",
+      [job.id],
+    );
+    // 動画が上がったかは分からないので非公開と断定せず、要照合（ID 不明）のまま
+    assert.deepEqual(row, {
+      state: "reconcile",
+      youtube_stage: null,
+      external_post_id: null,
+    });
+  }
+});
+
+test("公開の更新の後の確認の読み取りが失われても、公開済み・非公開のどちらとも断定せず update_started の要照合に残す", async () => {
+  const job = await approvedJob({ withCover: false });
+  const base = fakeYoutube();
+  let gets = 0;
+  const fetchImpl = async (url, options = {}) => {
+    const u = new URL(url);
+    if (
+      u.pathname === "/youtube/v3/videos" &&
+      (options.method || "GET") === "GET" &&
+      ++gets === 2
+    ) {
+      throw new TypeError("fetch failed");
+    }
+    return base.fetchImpl(url, options);
+  };
+  await assert.rejects(
+    run(job, { calls: base.calls, fetchImpl }),
+    /fetch failed/,
+  );
+  assert.deepEqual(
+    await first(
+      "SELECT state, youtube_stage FROM sns_x_send_jobs WHERE id=$1",
+      [job.id],
+    ),
+    {
+      state: "reconcile",
+      youtube_stage: "update_started",
+    },
+  );
+});
+
+test("公開を読めても publishedAt が無いときは公開済みにしない", async () => {
+  const job = await approvedJob({ withCover: false });
+  const fake = fakeYoutube({ publishedAt: null });
+  await assert.rejects(run(job, fake), /youtube_publication_unconfirmed/);
+  assert.equal(
+    (await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [job.id]))
+      .state,
+    "reconcile",
+  );
+});
+
+test("32 MiB を超える動画は begin_post の前に held にし、何も呼ばない", async () => {
+  const big = new Uint8Array(32 * 1024 * 1024 + 1);
+  const job = await (async () => {
+    const deadline_at = new Date(Date.now() + 7200000).toISOString();
+    const d = await first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,source_data) VALUES(gen_random_uuid(),'short','youtube','ja','全貌','説明','big.mp4',$1) RETURNING *",
+      [
+        {
+          deadline_queue: {
+            deadline_at,
+            ...deadlineSchedule(deadline_at),
+            youtube_mode: "immediate",
+            source_revision: "v1",
+            source_observed_at: new Date().toISOString(),
+          },
+        },
+      ],
+    );
+    // 承認の createXSnapshot は 32 MiB で止める。SQL の外枠（500 MiB）だけを通った承認を想定して、
+    // 小さい動画で作った snapshot の媒体を大きい動画に差し替えて承認する
+    await assert.rejects(
+      createXSnapshot(d, async () => big),
+      /媒体の容量/,
+    );
+    const small = await createXSnapshot(d, async () => new Uint8Array(1024));
+    const snapshot = {
+      ...small,
+      media: [
+        { ...small.media[0], size: big.byteLength, sha256: await sha256(big) },
+      ],
+    };
+    return (
+      await first("SELECT approve_sns_x_send($1,$2,$3,now()) r", [
+        d.id,
+        me,
+        snapshot,
+      ])
+    ).r;
+  })();
+  const fake = fakeYoutube();
+  await assert.rejects(
+    runYoutubeQueueJob(job.id, {
+      store,
+      youtube: createYoutubeQueueAdapter({
+        accessToken: "tok",
+        fetchImpl: fake.fetchImpl,
+      }),
+      loadMedia: async () => big,
+      preflight: async () => {},
+    }),
+    /youtube_video_too_large/,
+  );
+  assert.equal(fake.calls.length, 0);
+  assert.equal(
+    (await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [job.id]))
+      .state,
+    "held",
   );
 });

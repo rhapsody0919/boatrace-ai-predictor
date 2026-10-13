@@ -27,7 +27,7 @@ store.transitionはSQL137のtransition_sns_x_send。X adapterはinitialize({size
 
 ## 上限と停止
 
-USDの100万分の1単位の整数。上限は最大$10。period_start/endは実際のX請求期間をオーナー側で設定する。全upload（32MiBで最大7chunk）・最大10poll・投稿作成・照合等を含む1試行の保守的な費用上限attempt_ceiling_microusdが未設定ならclaimできない。全試行を先に予約、失敗時も返金しない。期間を跨いだjobの継続を拒否する。月更新は自動化していない。
+USDの100万分の1単位の整数。上限は最大$10。period_start/endは実際のX請求期間をオーナー側で設定する。全upload（32MiBで最大8chunk。分割は 4 MiB、2026-10-13）・最大10poll・投稿作成・照合等を含む1試行の保守的な費用上限attempt_ceiling_microusdが未設定ならclaimできない。全試行を先に予約、失敗時も返金しない。期間を跨いだjobの継続を拒否する。月更新は自動化していない（SQL158 で同じ額の自動の切り替えを足した。下の「自動送信の例外」）。
 
 初期paused=true、請求期間・費用未設定。停止APIはpaused=trueにしかできず、再開APIは提供しない。停止は次の外部呼び出し前に効く。すでに開始した外部通信は取り消せない。停止応答/チェックと外部通信開始の間の競合は残るため「送信中も必ず取消できる」と表示しない。
 
@@ -53,13 +53,14 @@ USDの100万分の1単位の整数。上限は最大$10。period_start/endは実
 
 ## 自動送信の例外（SQL153、ADR 0094、2026-10-13）
 
-上の「本人の日本語X下書きのみ」「過去の承認から自動queue化しない」「本人を検査する」には、ADR 0094 の例外が1つだけある。承認者が `sns_auto_send_control.auto_approver_id`（「自動送信（止められなかった）」、`active=false` で選択肢に出さない）のときは、そのチャネルの `mode='auto'` かつ同じ bundle・チャネルの `sns_auto_send_items.state='notified'`（機械の検査を通り、事前通知を送った）のときだけ承認を通す。分岐は表示名ではなく ID で行う。
+上の「本人の日本語X下書きのみ」「過去の承認から自動queue化しない」「本人を検査する」には、ADR 0094 の例外が1つだけある。承認者が `sns_auto_send_control.auto_approver_id`（「自動送信（止められなかった）」、`active=false` で選択肢に出さない）のときは、そのチャネルの `mode='auto'` かつ対応する `sns_auto_send_items.state='notified'`（機械の検査を通り、事前通知を送った）のときだけ承認を通す。対応する item は、素材のレース（`kind='race'`）は同じ bundle・チャネル、bundle の無い /today の投稿（`kind='digest'`、SQL158）は下書きの ID（`item.draft_id`）で引く。分岐は表示名ではなく ID で行う。
 
 - 自動送信の承認者の job は、claim・check・begin_post（YouTube は youtube_call・youtube_publish_begin も）のたびに、item が止められていないこと・`notified` であること・`mode='auto'` を確かめる。外れたら queued・sending は `held`（`auto_stopped`）、reconcile は RAISE。claim は止められる期限（`veto_until`、締切の60分前）より前には進めない
 - v1 素材の下書きは、同じ bundle・チャネルの item が検査を通った状態（manual・notifying・notified・sent）のときだけ公開保留を外して承認できる。v0 は今までどおり不可。本人の承認でも、item を止めた後は claim しない
 - `sns_auto_send_control.dry_run=true` のあいだは、承認者によらずそのチャネルの claim を拒否する（job は queued のまま、予約を消費しない）
 - 予約額は種類別: スレッドの親（URL つき）は `ceiling_x_url_microusd`、子は `ceiling_x_plain_microusd`（未設定なら `attempt_ceiling_microusd`）。スレッドの親の claim は、子の分まで月の残りに入るときだけ通す
-- 月の切り替えは `renew_sns_x_send_period(start, end)`（オーナーが SQL Editor で実行。今の期間が終わってからだけ。予約額を0に戻す）
+- 月の切り替えは、期間が終わったら同じ額で自動に進む（SQL158 の `roll_sns_x_send_period()`。sns-auto-plan が毎回呼び、`now() >= period_end` のときだけ期間を1か月ずつ進めて予約額を0にする。額は変えない。2026-10-13 オーナー決定）
+- オーナーの操作として残るのは、最初の期間の設定と額の変更: `renew_sns_x_send_period(start, end)`（SQL Editor。今の期間が終わってからだけ。期間は月の1日始まり）と `budget_microusd` の変更。額を変えたら X Console の spending limit も合わせる
 
 ## 実 adapter（sns-pdca-loop tasks 17、2026-10-13）
 
@@ -67,3 +68,4 @@ USDの100万分の1単位の整数。上限は最大$10。period_start/endは実
 - **access token は runner が claim の前に `getXAccessToken`（`api/_lib/snsTokenStore.js`）で取り、`createXApiAdapter({accessToken})` に渡す**。adapter の中では取らない。テキストだけの投稿では最初の X の呼び出しが begin_post の後の createPost になり、そこでトークンの取得に失敗すると、何も投稿していない job が要照合に落ちるため
 - `posted_at` は投稿の ID（snowflake）の作成時刻。投稿の後に読み取りの API は呼ばない
 - 成功の応答を解釈できない・ID が無いときも再送せず、要照合に残す
+- **媒体の処理の完了**（2026-10-13、開発の補助の点検 D1）: 処理の完了は明示の状態（`processing_info.state`）でだけ認める。STATUS の応答に状態が無い（空・`{}`・`null`）ときは投げて、投稿の前に保留にする。finalize の応答に `data` が無いときも同じ。画像は finalize で `processing_info` が省略されたら完了、動画は省略されても STATUS で確かめる

@@ -479,6 +479,14 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 公式の前夜の減点（BOA-782）。得点率の下に小さく出す */
+.rmt-penalty {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .rmt-needed-runs {
   display: block;
   font-size: var(--font-size-2xs);

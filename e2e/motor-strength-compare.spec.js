@@ -30,6 +30,16 @@ const readTable = (page) =>
   }));
 
 test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
+  test("ベージュの地が列で一番の値を示すことを注記に書く", async ({ page }) => {
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-stat-rank1").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(
+      page.locator(".table-note", { hasText: "金枠の値は" }),
+    ).toContainText("ベージュの地は、その列で一番の値です。");
+  });
+
   test("棒の長さの比が公式2連率の比と一致し、会場内順位が出る", async ({
     page,
   }) => {
@@ -75,6 +85,36 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
     );
     // 行全体の金の強調（期間の2連率の最大）は外した。最良は値ラベルだけで示す
     await expect(page.locator(".motor-ranking-row.best-motor")).toHaveCount(0);
+  });
+
+  test("入れ替え後のレースでは、入れ替え前に取った会場内順位を出さない（BOA-834）", async ({
+    page,
+  }) => {
+    // 児島の使用開始日を 9/30（このレースの日）にし、会場内順位のスナップショットの取得日を
+    // 9/27 に見せる（常滑 10/06 の実例と同じ形）。中身は録画の 9/30 の行をそのまま使う
+    await page.route(/\/rest\/v1\/venue_motor_start_dates\?/, (route) =>
+      route.fulfill({ json: [{ start_date: "2026-09-30" }] }),
+    );
+    await page.route(
+      /\/rest\/v1\/venue_motor_stats\?select=scraped_date&/,
+      (route) => route.fulfill({ json: { scraped_date: "2026-09-27" } }),
+    );
+    await page.route(
+      /\/rest\/v1\/venue_motor_stats\?.*scraped_date=eq\.2026-09-27/,
+      (route) =>
+        route.fallback({
+          url: route.request().url().replace("eq.2026-09-27", "eq.2026-09-30"),
+        }),
+    );
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-venue-rank-note")).toContainText(
+      "取得日 2026/9/27）",
+      { timeout: 30000 },
+    );
+    const ranks = await page
+      .locator(".motor-venue-rank")
+      .evaluateAll((els) => els.map((el) => el.textContent.trim()));
+    expect(ranks).toEqual(["—", "—", "—", "—", "—", "—"]);
   });
 
   test("375px で枠・選手・機番・棒・会場内順位が横スクロールなしで見える", async ({
@@ -262,8 +302,29 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       .toBe("児島");
     await expect
       .poll(() => selectedText(page, "motor-race-select"))
-      .toMatch(/7R/);
+      .toBe("9/30 7R");
+    await expect(page.locator('label[for="motor-venue-select"]')).toHaveText(
+      "ボートレース場:",
+    );
   });
+
+  for (const [name, url] of [
+    ["ディープリンクなし", "/winning-technique?tab=motor"],
+    ["今日開催する会場へのリンク", KOJIMA_7R],
+  ]) {
+    test(`${name}では会場の見出しに「本日開催中」を残す`, async ({ page }) => {
+      await page.route(/\/rest\/v1\/races\?select=venue_code&/, (route) =>
+        route.fulfill({ json: [{ venue_code: 16 }] }),
+      );
+      await page.goto(url);
+      await expect
+        .poll(() => selectedText(page, "motor-venue-select"))
+        .toBe("児島");
+      await expect(page.locator('label[for="motor-venue-select"]')).toHaveText(
+        "ボートレース場（本日開催中）:",
+      );
+    });
+  }
 
   test("選手ページの「今節のモーター状況」から飛んだ先でも、会場の選択がそのレースの会場を表示する", async ({
     page,

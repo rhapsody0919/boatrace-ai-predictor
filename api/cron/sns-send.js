@@ -35,8 +35,10 @@ import { SUPABASE_SERVICE_KEY, SUPABASE_URL } from "../_lib/snsHubHelpers.js";
 export const config = { maxDuration: 300 };
 
 const env = process.env;
+// Webhook が未設定なら投げる（runner が「届かなかった通知」として report.alerts に残す）
 const notify = async (text) => {
-  if (env.SLACK_WEBHOOK_URL) await postSlack(env.SLACK_WEBHOOK_URL, { text });
+  if (!env.SLACK_WEBHOOK_URL) throw new Error("SLACK_WEBHOOK_URL が未設定です");
+  await postSlack(env.SLACK_WEBHOOK_URL, { text });
 };
 
 export default createScrapeCronHandler({
