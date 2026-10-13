@@ -21,7 +21,7 @@
  *   応答が時刻で変わるが、締切前の応答のキャッシュは60秒なので遅れても60秒。このレースの締切後は
  *   前のレースもすべて締切後なので、1日のキャッシュでも古くならない
  */
-import { findMeetStartDate } from "../../src/utils/meetGrouping.js";
+import { meetStartFromRows } from "../../src/utils/meetGrouping.js";
 import { deadlineOf, rest } from "./analogyV16.js";
 
 // 節は最長でも7日程度。表示日から9日前までを見れば前節との境目が入る（getMeetScoreboard と同じ窓）。
@@ -34,34 +34,12 @@ function shiftDays(date, days) {
   return d.toISOString().slice(0, 10);
 }
 
-/** 窓の開催日ごとの種別から節の初日を決める（getMeetScoreboard と同じ材料の組み方） */
+/** 窓の開催日ごとの種別から節の初日を決める（getMeetScoreboard と同じ meetStartFromRows） */
 export function meetStartOf(windowEntries, windowConditions, date) {
-  const conditionByDate = new Map();
-  for (const c of windowConditions) {
-    const d = c.race_id.slice(0, 10);
-    const cur = conditionByDate.get(d) ?? {
-      seriesDay: null,
-      isFinalDay: false,
-    };
-    if (
-      c.series_day != null &&
-      (cur.seriesDay == null || c.series_day < cur.seriesDay)
-    )
-      cur.seriesDay = c.series_day;
-    if (c.is_final_day) cur.isFinalDay = true;
-    conditionByDate.set(d, cur);
-  }
-  const days = [...new Set(windowEntries.map((r) => r.race_id.slice(0, 10)))];
   return (
-    findMeetStartDate(
-      days.map((d) => ({
-        date: d,
-        seriesDay: conditionByDate.get(d)?.seriesDay ?? null,
-        // 種別が1行も取れていない日は「分からない」（false＝最終日でない、と区別する）
-        isFinalDay: conditionByDate.has(d)
-          ? conditionByDate.get(d).isFinalDay
-          : null,
-      })),
+    meetStartFromRows(
+      windowEntries.map((r) => r.race_id.slice(0, 10)),
+      windowConditions,
       date,
     ) ?? date
   );

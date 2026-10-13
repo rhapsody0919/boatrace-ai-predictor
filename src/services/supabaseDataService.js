@@ -19,7 +19,8 @@ import {
   // 「groupIntoCurrentMeet is not defined」になって今節の印が全レースで消えていた
   groupIntoCurrentMeet,
   groupIntoMeetBeforeRace,
-  findMeetStartDate,
+  meetStartFromRows,
+  seriesDayByDate,
 } from "../utils/meetGrouping";
 import { deriveRaceStContext } from "../utils/stConsideration";
 import { isWithinFreshMotorWindow } from "../utils/motorFreshRate.js";
@@ -42,7 +43,6 @@ import {
   meetPageState,
   pickMeetAnchor,
   buildQualifiers,
-  seriesDayByDate,
   officialAsOfDate,
 } from "../utils/meetPageModel.js";
 import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
@@ -595,7 +595,7 @@ async function getMotorGenerationStart(venueCode) {
 /**
  * 会場の、その日を含む節の初日（BOA-830。公式の2連率は「前の節まで」の走りで出ているので、
  * 何走で出た数字かを数える起点）。種別（race_conditions）の series_day・is_final_day・
- * 開催日の空きから findMeetStartDate で決める（getMeetScoreboard と同じ）。
+ * 開催日の空きから meetStartFromRows で決める（getMeetScoreboard と同じ）。
  * 種別が1行も無ければ null
  * @returns {Promise<string|null>} YYYY-MM-DD
  */
@@ -610,23 +610,15 @@ async function getVenueMeetStart(venueCode, date) {
         .gte("race_id", addDaysToDateString(date, -12))
         .lte("race_id", `${date}-zz`)
         .like("race_id", `__________-${vv}-__`);
-      const byDate = new Map();
-      for (const c of data ?? []) {
-        const d = c.race_id.slice(0, 10);
-        const cur = byDate.get(d) ?? {
-          date: d,
-          seriesDay: null,
-          isFinalDay: false,
-        };
-        if (
-          c.series_day != null &&
-          (cur.seriesDay == null || c.series_day < cur.seriesDay)
-        )
-          cur.seriesDay = c.series_day;
-        if (c.is_final_day) cur.isFinalDay = true;
-        byDate.set(d, cur);
-      }
-      return { meetStart: findMeetStartDate([...byDate.values()], date) };
+      // 開催日は種別の行の日付（出走表は読まない）
+      const rows = data ?? [];
+      return {
+        meetStart: meetStartFromRows(
+          rows.map((c) => c.race_id.slice(0, 10)),
+          rows,
+          date,
+        ),
+      };
     },
   );
   return cached.meetStart;
@@ -7124,32 +7116,11 @@ export const supabaseDataService = {
       //
       // `race_entries` にしか無い日（種別が未取得）も拾えるよう、日付は出走表側を
       // 基準にし、`series_day` は種別から引く
-      const conditionByDate = new Map();
-      for (const c of windowConditions) {
-        const d = c.race_id.slice(0, 10);
-        const cur = conditionByDate.get(d) ?? {
-          seriesDay: null,
-          isFinalDay: false,
-        };
-        if (
-          c.series_day != null &&
-          (cur.seriesDay == null || c.series_day < cur.seriesDay)
-        )
-          cur.seriesDay = c.series_day;
-        if (c.is_final_day) cur.isFinalDay = true;
-        conditionByDate.set(d, cur);
-      }
+      // 種別が1行も取れていない日の isFinalDay は null（「分からない」）。meetDaysFromRows が扱う
       const meetStart =
-        findMeetStartDate(
-          [...new Set(rows.map((r) => r.race_id.slice(0, 10)))].map((d) => ({
-            date: d,
-            seriesDay: conditionByDate.get(d)?.seriesDay ?? null,
-            // 種別が1行も取れていない日は「分からない」。false（最終日でない）と
-            // 区別する必要があるので null を渡す
-            isFinalDay: conditionByDate.has(d)
-              ? conditionByDate.get(d).isFinalDay
-              : null,
-          })),
+        meetStartFromRows(
+          rows.map((r) => r.race_id.slice(0, 10)),
+          windowConditions,
           date,
         ) ?? date;
       const meetRows = rows.filter((r) => r.race_id.slice(0, 10) >= meetStart);

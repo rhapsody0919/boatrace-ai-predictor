@@ -8,7 +8,11 @@
  * 設計: docs/design/meet-page/plan.md §2
  * 検証: scripts/maintenance/verify-meet-page-model.js
  */
-import { findMeetStartDate } from "./meetGrouping.js";
+import {
+  findMeetStartDate,
+  meetDaysFromRows,
+  seriesDayByDate,
+} from "./meetGrouping.js";
 import {
   normalizeStage,
   pointsNeededForBorder,
@@ -40,29 +44,6 @@ export function isOutOfScopeMeetTitle(title) {
 const dateOf = (raceId) => String(raceId).slice(0, 10);
 
 /**
- * 日ごとの `series_day`（その日の最小値。最終レースだけ null のことがある）と
- * 最終日の印をまとめる。
- *
- * @param {Array<{race_id: string, series_day?: number|null, is_final_day?: boolean|null}>} conditions
- * @returns {Map<string, {seriesDay: number|null, isFinalDay: boolean}>}
- */
-export function seriesDayByDate(conditions) {
-  const map = new Map();
-  for (const c of conditions ?? []) {
-    const d = dateOf(c.race_id);
-    const cur = map.get(d) ?? { seriesDay: null, isFinalDay: false };
-    if (
-      c.series_day != null &&
-      (cur.seriesDay == null || c.series_day < cur.seriesDay)
-    )
-      cur.seriesDay = c.series_day;
-    if (c.is_final_day) cur.isFinalDay = true;
-    map.set(d, cur);
-  }
-  return map;
-}
-
-/**
  * 節に属する日（昇順）。境目の判定は `findMeetStartDate` に任せる
  * （前日が最終日・`series_day` の巻き戻り・2日以上の空き）。
  *
@@ -86,11 +67,7 @@ export function meetDaysOf(startDate, conditions, entries) {
   ]
     .filter((d) => d >= startDate)
     .sort();
-  const days = dates.map((d) => ({
-    date: d,
-    seriesDay: byDate.get(d)?.seriesDay ?? null,
-    isFinalDay: byDate.has(d) ? byDate.get(d).isFinalDay : null,
-  }));
+  const days = meetDaysFromRows(dates, conditions);
   return dates.filter((d) => findMeetStartDate(days, d) === startDate);
 }
 
