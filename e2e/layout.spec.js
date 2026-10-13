@@ -64,6 +64,51 @@ const TRAILING_GAP_THRESHOLD_PX = 40;
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそろう", async ({
+  page,
+}) => {
+  await page.goto("/race/2026-09-21-02-05?tab=basic", {
+    waitUntil: "domcontentloaded",
+  });
+  const rows = page.locator(".rbit-bar-row");
+  await expect(rows).toHaveCount(6);
+  // レイアウトだけの再現用。録画のF数に依存せず、FlyingBadgeと同じ構造を
+  // 6号艇にだけ置く（本番データ・集計値は変更しない）。
+  for (const label of ["", "今節", "this meet", "이번 시리즈", "本節"]) {
+    await rows.evaluateAll((elements, meetLabel) => {
+      for (const row of elements) {
+        row.querySelectorAll(".flying-badge").forEach((badge) => badge.remove());
+      }
+      const badge = document.createElement("span");
+      badge.className = `flying-badge is-f2${meetLabel ? " has-meet" : ""}`;
+      badge.textContent = "F2";
+      if (meetLabel) {
+        const meet = document.createElement("span");
+        meet.className = "flying-badge-meet";
+        meet.textContent = meetLabel;
+        badge.append(meet);
+      }
+      elements[5].querySelector(".rbit-name-cell").append(badge);
+    }, label);
+    await expect(rows.locator(".flying-badge")).toHaveCount(1);
+    const widths = await rows.locator(".rbit-bar-track").evaluateAll(
+      (tracks) => tracks.map((track) => track.getBoundingClientRect().width),
+    );
+    expect(widths).toHaveLength(6);
+    expect(Math.min(...widths), `${label}: 空の棒枠`).toBeGreaterThan(0);
+    expect(
+      Math.max(...widths) - Math.min(...widths),
+      `${label}: 6艇の棒枠の幅 ${widths.join(", ")}`,
+    ).toBeLessThanOrEqual(1);
+    expect(
+      await page.evaluate(() =>
+        document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+      `${label}: 横スクロール`,
+    ).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+  }
+});
+
 /**
  * ページごとに「データが描画された」とみなす要素。gotoAndSettle はこれが見えるまで待つ。
  *

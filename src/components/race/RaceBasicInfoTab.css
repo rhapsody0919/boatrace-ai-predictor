@@ -85,12 +85,16 @@
 }
 
 .rbit-bars {
-  display: flex;
-  flex-direction: column;
+  /* 名前・Fバッジ・数値の列幅を6艇で共有し、棒の比較範囲をそろえる */
+  display: grid;
+  grid-template-columns: auto minmax(3.5em, auto) minmax(0, 1fr) auto auto;
   gap: var(--spacing-2);
 }
 
 .rbit-bar-block {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   background: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-lg);
@@ -99,7 +103,8 @@
 
 .rbit-bar-row {
   display: grid;
-  grid-template-columns: auto minmax(3.5em, auto) 1fr auto auto;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   gap: var(--spacing-2);
   width: 100%;
@@ -286,6 +291,7 @@
 }
 
 .rbit-expanded {
+  grid-column: 1 / -1;
   padding: var(--spacing-3);
   border-top: var(--border-width-1) solid var(--border-hairline);
   background: var(--surface-page);
