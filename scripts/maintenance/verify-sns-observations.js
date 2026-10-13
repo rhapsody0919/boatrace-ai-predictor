@@ -65,6 +65,26 @@ for (const edit of [
 assert.throws(() =>
   validateObservation(base, { ...draft, status: "pending_review" }),
 );
+// 累積値は窓の終わりから15分以内なら保存でき、data_through は取得時刻（SQL154、2026-10-13 決定）
+const snapshotAt = (minutes) => {
+  const observed = new Date(
+    Date.parse(period.period_end) + minutes * 60000,
+  ).toISOString();
+  return {
+    ...base,
+    measurement_kind: "snapshot",
+    observed_at: observed,
+    data_through: observed,
+  };
+};
+assert.equal(validateObservation(snapshotAt(15), draft).metric_value, 0);
+assert.throws(() => validateObservation(snapshotAt(15.1), draft));
+assert.throws(() =>
+  validateObservation(
+    { ...snapshotAt(5), data_through: period.period_end },
+    draft,
+  ),
+);
 assert.equal(
   validateObservation(
     {
