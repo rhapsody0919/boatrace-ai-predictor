@@ -38,6 +38,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/beginners-bet-types-ja.jpg": { width: 1000, height: 567 },
   "/images/blog/beginners-bet-types-ko.jpg": { width: 1000, height: 515 },
   "/images/blog/beginners-bet-types-zh-tw.jpg": { width: 1000, height: 528 },
+  "/images/blog/biwako-water-wind-guide.jpg": { width: 576, height: 391 },
   "/images/blog/boat-number-technique-consistency.jpg": { width: 1200, height: 630 },
   "/images/blog/data-race-table.jpg": { width: 1104, height: 650 },
   "/images/blog/edogawa-course1-win-rate.jpg": { width: 1200, height: 630 },
