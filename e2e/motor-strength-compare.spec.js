@@ -30,6 +30,16 @@ const readTable = (page) =>
   }));
 
 test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
+  test("ベージュの地が列で一番の値を示すことを注記に書く", async ({ page }) => {
+    await page.goto(KOJIMA_7R);
+    await expect(page.locator(".motor-stat-rank1").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(
+      page.locator(".table-note", { hasText: "金枠の値は" }),
+    ).toContainText("ベージュの地は、その列で一番の値です。");
+  });
+
   test("棒の長さの比が公式2連率の比と一致し、会場内順位が出る", async ({
     page,
   }) => {
