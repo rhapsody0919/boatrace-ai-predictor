@@ -1010,7 +1010,7 @@
     {
       "script": "verify-sns-deadline-queue.js",
       "tier": "ci",
-      "guards": "依頼5: 発走期限つき待ち行列・送信前検査（headless/public_url）・日次枠の再承認後保持・媒体変更後の枠保持・begin_postの日付またぎ保留（139をPGlite、モックadapter、外部接続なし）"
+      "guards": "承認の媒体の上限は X・YouTube とも 32 MiB（送信の上限とそろえる）。依頼5: 発走期限つき待ち行列・送信前検査（headless/public_url）・日次枠の再承認後保持・媒体変更後の枠保持・begin_postの日付またぎ保留（139をPGlite、モックadapter、外部接続なし）"
     },
     {
       "script": "verify-sns-mobile-approval.js",
