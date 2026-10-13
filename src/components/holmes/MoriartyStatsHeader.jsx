@@ -29,7 +29,9 @@ function MoriartyStatsHeader({ stats }) {
         <div className="moriarty-stat-value" style={{ color: roiColor }}>
           {roiPercent}%
         </div>
-        <div className="moriarty-stat-label">累積回収率</div>
+        <div className="moriarty-stat-label">
+          累積回収率（何も選ばず買うと約75%）
+        </div>
       </div>
       <div className="moriarty-stat-card">
         <div className="moriarty-stat-value">{winRatePercent}%</div>
