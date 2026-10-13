@@ -1091,6 +1091,11 @@
       "script": "verify-sns-metrics-runner.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 21: 48h・7d の取り込み（cron sns_metrics）。窓の終わりから15分以内に読めた累積値だけ保存し data_through は取得時刻、15分を過ぎた job は外部を読まずに欠測で閉じる、応答が15分を過ぎたら値を捨てる、API が返さない指標だけ欠測、失敗は pending でやり直し3回目で1度だけ Slack・15分を過ぎたら最後の失敗の理由つきで欠測、X の読み取りは月の台帳に1件分予約し残りが送信の分を割るときは読まない、トークンを取れなければやり直しと report.alerts、外部 ID が無い job は failed、shadow は読まず DB も変えない、直近の欠測率2%超で report.alerts、X は since_id・until_id で1件に絞る・エラー本文を出さない、YouTube は50件ずつ・非公開の数は null、PostgREST の条件。SQL154 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-post-tracking.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 23: X の親の投稿の UTM（campaign=race-full は型の版なしで作れ utm_content は下書きの ID、sonar-preview は型の版が必須のまま、許可の無い campaign・クエリつきの URL は作らない、本文のレースの URL をちょうど1か所だけ差し替え句点・改行の直前も終わりとみなし番号が続く別のレースは差し替えない、差し替え済みならそのまま、子・YouTube は対象外、sns_post_tracking に型の版なしで保存できやり直しは同じ URL なら成功・違えば投げる）。SQL154 までを PGlite、外部接続なし"
     }
   ]
 }
