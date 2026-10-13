@@ -163,6 +163,27 @@ function runChecks(mod) {
     e("2026-09-29-15-01", 4534, 2),
     e("2026-09-30-15-01", 4534, 2),
   ];
+  for (const date of ["2026-10-02", "2026-10-03"]) {
+    check(`節の期間: ${date}`, mod.currentSeriesRange(ENTRIES, date), {
+      start: "2026-09-26",
+      end: "2026-10-02",
+    });
+  }
+  check(
+    "古い出走表の期間は無し",
+    mod.currentSeriesRange(ENTRIES, "2026-10-08"),
+    null,
+  );
+  check(
+    "出走表が空なら期間は無し",
+    mod.currentSeriesRange([], "2026-10-02"),
+    null,
+  );
+  check(
+    "期間の日付: 月日の0を詰める",
+    ["2026-09-28", "2026-10-03"].map((date) => mod.formatMonthDay(date)),
+    ["9/28", "10/3"],
+  );
   const riders = mod.currentSeriesRiders(ENTRIES, "2026-10-02");
   check(
     "使用者: 節の途中で入った選手の直近のレースで上書きする",
@@ -235,7 +256,7 @@ const MUTANTS = [
   },
   {
     name: "出走表が古くても使う",
-    from: "if (latest < shiftDay(pretestDate, -1)) return new Map();",
+    from: "if (latest < shiftDay(pretestDate, -1)) return null;",
     to: "",
   },
 ];
@@ -252,6 +273,10 @@ async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "verify-vmr-"));
   try {
     fs.copyFileSync(DEP, path.join(tmp, "competitionRank.js"));
+    fs.copyFileSync(
+      path.join(ROOT, "src/utils/nextOpenDate.js"),
+      path.join(tmp, "nextOpenDate.js"),
+    );
     const source = fs.readFileSync(TARGET, "utf8");
     const survivors = [];
     for (const [i, m] of MUTANTS.entries()) {

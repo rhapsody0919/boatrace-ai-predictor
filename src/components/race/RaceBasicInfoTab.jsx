@@ -78,6 +78,8 @@ const GRADES = ["all", "ippan", "sgg1"];
 const PERIODS = ["official", "term", "last3m", "last1m"];
 // 「2026-05-01」→「2026/5/1」（期間の表記、BOA-775）
 const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
+// 「2026-05-01」→「2026/05/01」（0埋めを保つ。前期欄の日付、公式の期別成績と同じ形。BOA-723）
+const slashDatePadded = (ymd) => ymd.replaceAll("-", "/");
 const PRESETS = [
   { scope: "local", grade: "ippan" },
   { scope: "local", grade: "sgg1" },
@@ -1032,7 +1034,7 @@ function RaceBasicInfoTab({
                         const from = periodDiffShownFrom(p.pending.calcTo);
                         return from && date && date < from
                           ? t("basicInfo.periodDiffFallbackNoteDate", {
-                              date: from,
+                              date: slashDatePadded(from),
                             })
                           : t("basicInfo.periodDiffFallbackNote");
                       };
@@ -1269,8 +1271,8 @@ function RaceBasicInfoTab({
                                     ? "basicInfo.periodTitleFallback"
                                     : "basicInfo.periodTitle",
                                   {
-                                    from: period.calcFrom,
-                                    to: period.calcTo,
+                                    from: slashDatePadded(period.calcFrom),
+                                    to: slashDatePadded(period.calcTo),
                                   },
                                 )}
                               </div>
@@ -1281,8 +1283,8 @@ function RaceBasicInfoTab({
                               {period.fallback && (
                                 <p className="rbit-period-note rbit-period-pending">
                                   {t("basicInfo.periodFallbackNote", {
-                                    from: period.pending.calcFrom,
-                                    to: period.pending.calcTo,
+                                    from: slashDatePadded(period.pending.calcFrom),
+                                    to: slashDatePadded(period.pending.calcTo),
                                   })}
                                 </p>
                               )}
@@ -1360,7 +1362,7 @@ function RaceBasicInfoTab({
                                   {period.fallback
                                     ? fallbackDiffNote(period, raceDate)
                                     : t("basicInfo.periodDiffWithheldNote", {
-                                        date: diffShownFrom,
+                                        date: slashDatePadded(diffShownFrom),
                                       })}
                                 </p>
                               )}

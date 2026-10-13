@@ -437,6 +437,8 @@ export const ASSIST_COPY = Object.freeze({
   simTechHeading: (label) => `${label}の決まり手`,
   simB1: (k, p) => `1着は1号艇 ${k}件（${p}%）`,
   trifectaCount: (combo, k) => `${combo}（${k}件）`,
+  // 上限で切った後ろに、境目と同じ件数の組が残るとき（BOA-838。文言は wording-editor 2026-10-13）
+  comboTiesMore: ({ n, k }) => `同じ${k}件の組がほかに${n}組`,
 
   // 機力（TC-X1・T5・T6・T9・T10）
   powerExhHeading: (venue, kinds) =>

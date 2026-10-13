@@ -429,9 +429,17 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
-  // BOA-822 イン崩れ注意度の監視（api/cron/in-caution-health.js、scripts/lib/inCautionHealth.js）。JST 04:30 に夜の表、
-  // 05:45 に今日の unified を見る。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する
+  // BOA-822 イン崩れ注意度の監視（scripts/lib/inCautionHealth.js）。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する。
+  // 夜の表（JST 04:30、api/cron/in-caution-health.js）と今日の unified（05:45、api/cron/in-caution-today-health.js）を
+  // 別のジョブにする。成功の記録が失敗の記録を消すので、同じジョブだと 04:30 の失敗が 07:00 の通知の前に消える
   in_caution_health: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+  in_caution_today_health: {
     kind: "monitor",
     leaseSec: 60,
     maxDurationSec: 60,
@@ -506,6 +514,14 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 300,
     maxDurationSec: 300,
     activeHoursJst: { start: "08:00", end: "21:00" },
+  },
+  // sns-pdca-loop tasks 21 SNS の 48h・7d の取り込み。5分ごと（終日）に、due_at を過ぎた sns_metric_jobs を最大50件処理する。
+  // 累積値は窓の終わりから15分以内だけ保存する（SQL154）ので、終日動かす。X は自分の投稿の読み取り（Owned Reads）だけ。
+  // 実装: scripts/lib/snsMetricsRunner.js、api/cron/sns-metrics.js
+  sns_metrics: {
+    kind: "continuous",
+    leaseSec: 120,
+    maxDurationSec: 120,
   },
 });
 

@@ -78,3 +78,5 @@ sns-video-studio/published/
 
 # E2Eの録画の本体（GitHub Release の添付。e2e/recording.json がポインタ。ADR-0077）
 e2e/recordings/
+# BOA-635 T0-1 の中間データ（label-threshold.py の LT_WORK の既定。再実行で作り直せる）
+data/analysis/past-rate-check/work/
