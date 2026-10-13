@@ -26,6 +26,7 @@ import {
   listObjects,
   readObject,
   rest,
+  UpstreamError,
   writeObject,
 } from "../../api/_lib/analogyV16.js";
 import { SONAR_KEEP_DAYS } from "../../src/utils/analogyRetention.js";
@@ -169,17 +170,32 @@ export function usageLine(byBucket, warnBytes = STORAGE_WARN_BYTES) {
 const dateFolders = async () =>
   (await listObjects("")).filter((r) => r.id === null).map((r) => r.name);
 
-/** prefix の下のファイルの大きさの合計。フォルダは並べて潜る（順に潜ると1日分で約80秒かかった） */
-async function sizeOf(prefix, bucket = BUCKET) {
+/** 1つのフォルダの中で同時に潜るフォルダの数（全部を同時に潜ると Storage が HTTP 429 を返した） */
+export const SIZE_PARALLEL = 8;
+
+/** ファイルの大きさ。無ければ例外（0 と数えると合計を少なく見積もり、80GB の警告が出なくなる） */
+const fileSize = (prefix, r) => {
+  const n = r.metadata?.size;
+  if (typeof n !== "number")
+    throw new UpstreamError(`storage ${prefix}${r.name}: metadata.size が無い`);
+  return n;
+};
+
+/** prefix の下のファイルの大きさの合計。フォルダは SIZE_PARALLEL 個ずつ並べて潜る（順に潜ると1日分で約80秒かかった） */
+export async function sizeOf(prefix, bucket = BUCKET) {
   const rows = await listObjects(prefix, bucket);
-  const sizes = await Promise.all(
-    rows.map((r) =>
-      r.id === null
-        ? sizeOf(`${prefix}${r.name}/`, bucket)
-        : Number(r.metadata?.size ?? 0),
-    ),
-  );
-  return sizes.reduce((a, b) => a + b, 0);
+  let sum = rows
+    .filter((r) => r.id !== null)
+    .reduce((a, r) => a + fileSize(prefix, r), 0);
+  const dirs = rows.filter((r) => r.id === null);
+  for (let i = 0; i < dirs.length; i += SIZE_PARALLEL)
+    for (const n of await Promise.all(
+      dirs
+        .slice(i, i + SIZE_PARALLEL)
+        .map((r) => sizeOf(`${prefix}${r.name}/`, bucket)),
+    ))
+      sum += n;
+  return sum;
 }
 
 /** 全バケットの容量。analogy-v16 は日ごとの控えで数え、それ以外（小さい）は毎晩全部を数える */

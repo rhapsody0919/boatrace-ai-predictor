@@ -28,7 +28,9 @@ import {
   datesToClean,
   datesToMeasure,
   pruneLedger,
+  SIZE_PARALLEL,
   SONAR_KINDS,
+  sizeOf,
   summarizeDay,
   usageLine,
 } from "./verify-analogy-v16.js";
@@ -555,6 +557,52 @@ check(
     ],
     ["2024-10-13", true, false],
   );
+}
+
+// ---- 6b. 容量を数えるとき、同時に潜るフォルダは SIZE_PARALLEL 個まで（429 を避ける）。size が無ければ例外（BOA-807）
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const realFetch = globalThis.fetch;
+  let inFlight = 0;
+  let maxInFlight = 0;
+  let noSize = false;
+  globalThis.fetch = async (_url, init) => {
+    inFlight += 1;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    await new Promise((r) => setTimeout(r, 5));
+    inFlight -= 1;
+    const { prefix } = JSON.parse(init.body);
+    // 根は30個のフォルダ、各フォルダは 10 バイトのファイル1つ
+    const body =
+      prefix === ""
+        ? Array.from({ length: 30 }, (_, i) => ({ id: null, name: `d${i}` }))
+        : [
+            {
+              id: "f",
+              name: "a.json.gz",
+              metadata: noSize ? {} : { size: 10 },
+            },
+          ];
+    return new Response(JSON.stringify(body), { status: 200 });
+  };
+  try {
+    check(
+      "容量: 30フォルダを数え、同時に潜るのは SIZE_PARALLEL 個まで",
+      [await sizeOf("", "x"), maxInFlight <= SIZE_PARALLEL],
+      [300, true],
+    );
+    noSize = true;
+    let err = null;
+    await sizeOf("", "x").catch((e) => (err = e.message));
+    check(
+      "容量: metadata.size が無いファイルは0と数えず例外にする",
+      /metadata\.size/.test(err ?? ""),
+      true,
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 }
 
 // ---- 7. 展示後の段は、関数の上限の手前（shouldStop）で止まる -----------------------------
