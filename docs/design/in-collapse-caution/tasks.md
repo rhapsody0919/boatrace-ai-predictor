@@ -76,6 +76,9 @@
 
 - [ ] **37. 待ち: 公開の日をユーザーが決める**（計測の基準 10/11〜 を7日以上、できれば14日。GA4 の4ディメンションの登録が済んでいること）
 - [ ] **38. 説明の書き直し**: About・FAQ・HowToUse・HomeAiIntro（フラグの側）、ブログ上位2記事（rough-race-signals・first-mark-prediction-guide）と翻訳版、`morningDigestCopy.js`（用語集・説明）。`content-qa`・`wording-editor`・`seo-marketer`
+  - rough-race-signals（GSC 623表示・21クリック・平均7.6位の入口記事、2026-10-13 Orchestrate）: 直すのは表示名「イン崩れ指数」→「イン崩れ注意度」（63・148・152・154・156・162・210・211・218 行の現在の画面を案内する箇所。192 行の当時の実践例の名前は変えない）と、トップへの案内文の短文3つ（見出し・現行の案内文・本文末の CTA）だけ。案内文は公開後の中身（勝率差の帯の全国実績の割合、3段）で書く。過去の実践例・率・倍率は触らない（BOA-617）。修正案と照合表: `~/ryujin-marketing/out/reports/2026-10-13-audit-20261013-01.md`・`~/ryujin-marketing/out/text-audit/20261013-01/comparison.md`（「本日のイン崩れ注意度ハイライト」「同じ会場のレースと比べた相対値」は今の画面の説明なので、そのままは使わない）
+  - 同記事の実践例のリンク `/race/2025-12-15-04-10` は今「レースが見つかりませんでした」。リンクを外し、日付・会場・レース番号の文字だけ残す（推奨。注記で「今の画面では開けない」と書くより短い）。同じ PR で
+  - 名前が変わらないので先行もできるが、案内文の中身が公開で変わるため公開の PR で一緒に直す（2026-10-13 判断、二度書き直さないため）
 - [ ] **38b. Orchestrate に Preview の URL（`?caution=1`）と見るところを渡す**（公開の1行 PR はユーザーの判断。2026-10-13 Orchestrate）
 - [ ] **39. 公開の PR**: `IN_CAUTION_PUBLIC = true`、`MORNING_DIGEST_IN_CAUTION = true`、`inCautionConfig.json` の `launchDate`、`/hit-races` の 307（`vercel.json` の `permanent: false`・`AppRouter.jsx`）・ナビ・`App.jsx`・リンク・sitemap、`verify-hit-verification-guidance.js` ほか既存の verify と e2e の期待を新しい画面に（plan §9 の一覧）、ブログ・`morningDigestCopy.js`
 - [ ] **40. ファン評価ループ**（`.claude/rules/review-fix-cycle.md`、Preview で `?caution=1`）と `mock-diff-checker`（承認したモックとの差）を公開の PR の前に通す
