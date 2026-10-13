@@ -174,10 +174,10 @@ export default function WinFollowers({
       ) : (
         <p className="ta-note">{C.followNone(axis)}</p>
       )}
-      {/* 龍神ソナーの着順の流れ（サンキー図）へ。軸を選んだ状態で開く URL は BOA-847 */}
+      {/* 龍神ソナーの着順の流れ（サンキー図）へ。軸を1着に選んだ状態で開く（BOA-847） */}
       <Link
         className="ta-follow-sonar"
-        to={`/race/${raceId}?tab=sonar&sonar=scenario`}
+        to={`/race/${raceId}?tab=sonar&sonar=scenario&first=${axis}`}
       >
         <span>
           <b>{C.followSonar}</b>

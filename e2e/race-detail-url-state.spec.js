@@ -175,3 +175,116 @@ test("タブ・艇を選んでも GA4 の page_view は増えない（クエリ�
   // 数える URL にもタブ・艇は含めない（同じレースは1つの page_location にまとまる）
   expect(views[0]).toMatch(/\/race\/2026-09-27-02-11$/);
 });
+
+// BOA-847: URL は初期値として読むだけ。操作しても first を書き戻さない。
+const firstBoat = (page, boat) =>
+  page.locator(".af-flow").getByRole("button", {
+    name: new RegExp(`^1着 ${boat}号艇 [\\d,]+件$`),
+  });
+
+// 思考アシスト用の既存スタブは boats=1 を拒むため、ソナー用の応答に上書きする。
+async function routeFirstScenario(page) {
+  const {
+    THINKING_ASSIST_RACE,
+    routeThinkingAssistV16,
+    thinkingAssistScenario,
+    thinkingAssistScopeKeys,
+  } = await import("./thinking-assist-fixture.js");
+  await routeThinkingAssistV16(page);
+  await page.route("**/api/analogy/scenario/**", (route) => {
+    const scope = new URL(route.request().url()).searchParams.get("scope");
+    return route.fulfill({
+      json: thinkingAssistScenario(scope ?? thinkingAssistScopeKeys().NC),
+    });
+  });
+  return THINKING_ASSIST_RACE;
+}
+
+test("相手レンズの軸を選んだ URL で着順の流れを開く", async ({ page }) => {
+  test.slow();
+  const THINKING_ASSIST_RACE = await routeFirstScenario(page);
+  await page.goto(`/race/${THINKING_ASSIST_RACE}/assist`);
+  await page
+    .getByRole("tablist", { name: "見方" })
+    .getByRole("tab", { name: "相手", exact: true })
+    .click();
+  await page.getByRole("radio", { name: "4号艇を軸" }).click();
+  const link = page.locator(".ta-follow-sonar");
+  await expect(link).toHaveAttribute(
+    "href",
+    `/race/${THINKING_ASSIST_RACE}?tab=sonar&sonar=scenario&first=4`,
+  );
+  await link.click();
+  await expect(firstBoat(page, 4)).toHaveAttribute("aria-pressed", "true");
+  const initial = searchOf(page);
+  await firstBoat(page, 4).click();
+  await expect(firstBoat(page, 4)).toHaveAttribute("aria-pressed", "false");
+  expect(searchOf(page)).toBe(initial);
+});
+
+test("直接開いた first は1〜6だけを初期選択に使う", async ({ page }) => {
+  test.slow();
+  const THINKING_ASSIST_RACE = await routeFirstScenario(page);
+  const path = `/race/${THINKING_ASSIST_RACE}?tab=sonar&sonar=scenario`;
+  await openRace(page, `${path}&first=4`);
+  await expect(firstBoat(page, 4)).toHaveAttribute("aria-pressed", "true");
+  for (const raw of ["", "0", "7", "04", "4.0", "x"]) {
+    await openRace(page, `${path}&first=${raw}`);
+    await expect(firstBoat(page, 4)).toBeVisible();
+    await expect(
+      page.locator('.af-flow [role="button"][aria-pressed="true"]'),
+    ).toHaveCount(0);
+  }
+});
+
+test("first は艇番だけを受け取り、レースの page_view から除く", async () => {
+  const { parseFirstParam, pageViewPath } =
+    await import("../src/utils/raceUrlState.js");
+  for (let b = 1; b <= 6; b += 1) expect(parseFirstParam(String(b))).toBe(b);
+  for (const raw of [null, undefined, "", "0", "7", "04", "4.0", "x", " 4"])
+    expect(parseFirstParam(raw)).toBeNull();
+  expect(
+    pageViewPath("/race/example", "?tab=sonar&sonar=scenario&first=4&x=1"),
+  ).toBe("/race/example?x=1");
+  expect(pageViewPath("/about", "?first=4")).toBe("/about?first=4");
+});
+
+// BOA-847 取り込み時に追加: 内部タブの往復と、別の軸からの入り直し
+test("first は1回だけ使い、内部タブを往復しても選び直さない", async ({
+  page,
+}) => {
+  test.slow();
+  const THINKING_ASSIST_RACE = await routeFirstScenario(page);
+  await openRace(
+    page,
+    `/race/${THINKING_ASSIST_RACE}?tab=sonar&sonar=scenario&first=4`,
+  );
+  await expect(firstBoat(page, 4)).toHaveAttribute("aria-pressed", "true");
+  const inner = page.locator(".af-tabs");
+  await inner.getByRole("tab", { name: "差がつく材料" }).click();
+  await inner.getByRole("tab", { name: "展開シナリオ" }).click();
+  await expect(firstBoat(page, 4)).toBeVisible();
+  await expect(
+    page.locator('.af-flow [role="button"][aria-pressed="true"]'),
+  ).toHaveCount(0);
+});
+
+// 使い終えた印はモジュールの Set にあるので、再読み込み（page.goto）ではなく
+// 画面内の移動（戻る）で入り直す。再読み込みすると印が消えて検査にならない
+test("別の軸から入り直すと、その軸を1着に選ぶ", async ({ page }) => {
+  test.slow();
+  const THINKING_ASSIST_RACE = await routeFirstScenario(page);
+  const pickAxisAndOpen = async (boat) => {
+    await page
+      .getByRole("tablist", { name: "見方" })
+      .getByRole("tab", { name: "相手", exact: true })
+      .click();
+    await page.getByRole("radio", { name: `${boat}号艇を軸` }).click();
+    await page.locator(".ta-follow-sonar").click();
+    await expect(firstBoat(page, boat)).toHaveAttribute("aria-pressed", "true");
+  };
+  await page.goto(`/race/${THINKING_ASSIST_RACE}/assist`);
+  await pickAxisAndOpen(4);
+  await page.goBack();
+  await pickAxisAndOpen(2);
+});
