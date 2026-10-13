@@ -1113,6 +1113,11 @@
       "script": "verify-sns-headless.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 10: 送る前のリンク先の表示の確認（印の表は race-sonar の data-testid 2つ・許すタブは sonar だけ、Chromium は1回だけ起動し毎回新しい未ログインの context で開いて閉じる・解析のタグを止める・見えた印だけ返す・ログイン状態を持ち込む呼び出しは断る、checkPublicDisplay は ?tab=sonar を通し他のタブ・クエリ・印の欠け・リダイレクト・未知の screen_key を止める）。Chromium はモックで外部接続なし（--live <race_id> で本番を手で確かめる）"
+    },
+    {
+      "script": "verify-sns-claim-check.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 9: 素材 v1 の数値の照合（許可リストはアナロジーの4本・同じレース・stage だけ、同じ endpoint は1回だけ読む、数値は桁まで完全一致・文字列は正規化・型違いは不一致、不一致・path なし・読めない・許可外・claims が空は不合格、版は照合した値から決まり順に依存しない）と送る直前の readCurrent（締切・中止・欠場・版、v1 でない下書きと照合の不合格は投げる）、preflight で版・締切の変化・欠場を止め、照合が通ってもヘッドレス未接続で止まる。外部接続なし"
     }
   ]
 }
