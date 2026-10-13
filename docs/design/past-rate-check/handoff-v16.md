@@ -1,6 +1,6 @@
 # 引き継ぎ: BOA-635 過去に発生した割合を見る（v16 公開後の master に合わせて SDD をやり直す）
 
-2026-10-13 のセッション「龍神ソナー（BOA-271）レーン」から次のセッションへ。報告・確認は SendMessage でオーケストレーター（「Orchestrate」）へ。マージは Orchestrate が行う。
+2026-10-13 のセッション「龍神ソナー（BOA-271）レーン」から次のセッションへ。同日、4節の書き直しは済んだ（spec・screens・plan・tasks・ADR-0081・受け入れ E2E）。報告・確認は SendMessage でオーケストレーター（「Orchestrate」）へ。マージは Orchestrate が行う。
 
 作業ブランチ: `feature/boa635-sdd-v16`（origin/master から切った。このファイルを含む）。draft PR #1093（`feature/boa-635-past-rate`、旧 BOA-271 PR #1039 の上に積んでいて master より46コミット先）から、設計の6ファイルだけを持ってきた。中身は 2026-10-05 時点のままで、まだ書き直していない。#1093 はこのブランチの PR ができたら閉じる。
 
