@@ -1023,3 +1023,65 @@ test("158-runbook.md の手順1・手順3の md5 が、153・154 の定義と 15
     await pg.close();
   }
 });
+
+test("158: B の差し引きは、承認前の A・検査中の A・/today を数え、別の日の A と held_manual は数えない。claim のときだけ引く", async () => {
+  // 今日: 承認前の A（2件のスレッド、検査中）と /today（notified、承認前）→ 3件
+  const r = await importBundle({ threads: 2 });
+  await db.query(
+    "UPDATE sns_drafts SET send_lane='A' WHERE bundle_import_id=$1",
+    [r.content_group_id],
+  );
+  await createItem(r.content_group_id, "x", "checking");
+  const today = await digestDraft();
+  await digestItem(today.id);
+  // 別の日（明日が締切）の A と、検査に落ちた A は数えない
+  const tomorrow = await importBundle({ threads: 3, raceId: "R7" });
+  await db.query(
+    "UPDATE sns_drafts SET send_lane='A' WHERE bundle_import_id=$1",
+    [tomorrow.content_group_id],
+  );
+  await db.query(
+    `INSERT INTO sns_auto_send_items(bundle_import_id,channel,race_id,deadline_at,notify_by,veto_until,state,checks,stop_token_hash,notified_at)
+     VALUES($1,'x','R7',$2,$3,$4,'notified','{"passed":true}',$5,$6)`,
+    [
+      tomorrow.content_group_id,
+      at(DEADLINE + 1440),
+      at(DEADLINE + 1260),
+      at(DEADLINE + 1380),
+      hash(),
+      at(0),
+    ],
+  );
+  const failed = await importBundle({ threads: 3, raceId: "R8" });
+  await db.query(
+    "UPDATE sns_drafts SET send_lane='A' WHERE bundle_import_id=$1",
+    [failed.content_group_id],
+  );
+  await createItem(failed.content_group_id, "x", "held_manual", "R8");
+
+  const b = await first(
+    "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,send_lane) VALUES(gen_random_uuid(),'topic','x','ja','企画','B') RETURNING *",
+  );
+  const bJob = await approve(await prepare(b.id), me, at(0));
+  await setClock(1);
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=3");
+  await assert.rejects(transition(bJob.id, "claim"), /日次全体上限/);
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=4");
+  assert.equal((await transition(bJob.id, "claim")).state, "sending");
+  // claim の後に A が増えても、begin_post では引き直さない
+  const more = await digestDraft();
+  await db.query(
+    `INSERT INTO sns_auto_send_items(kind,draft_id,channel,race_id,deadline_at,notify_by,veto_until,state,checks,stop_token_hash,notified_at)
+     VALUES('digest',$1,'x','today:extra',$2,$3,$4,'notified','{"passed":true}',$5,$6)`,
+    [
+      more.id,
+      at(DEADLINE),
+      at(DEADLINE - 180),
+      at(DEADLINE - 60),
+      hash(),
+      at(0),
+    ],
+  );
+  await transition(bJob.id, "check");
+  assert.equal((await transition(bJob.id, "begin_post")).state, "reconcile");
+});

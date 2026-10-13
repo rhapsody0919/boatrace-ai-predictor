@@ -39,7 +39,7 @@ FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
 JOIN (VALUES ('approve_sns_x_send', '72126a0fd13dd053827ffef57bc55232'),
              ('roll_sns_x_send_period', '7f20419b7fdc2d24b12f147bd2b21c70'),
              ('stop_sns_auto_item', '8f6be3f0fe42849e368eca9b0741c79f'),
-             ('transition_sns_send_139', '4a6450f6b32808b9d0bda371ad7e316c')) x(name, h) ON x.name = p.proname
+             ('transition_sns_send_139', '92f75a55cd05b12d4bef689981cf3bdd')) x(name, h) ON x.name = p.proname
 WHERE n.nspname = 'public' ORDER BY 1;
 
 -- 期待値: anon_roll・auth_roll は false、sr_roll は true

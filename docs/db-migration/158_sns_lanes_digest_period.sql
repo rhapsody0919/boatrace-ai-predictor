@@ -119,14 +119,16 @@ BEGIN
     v_rest := (v_need-1)*coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd);
   END IF;
   -- 通り道 B（企画・承認）は、今日まだ送っていない A（定型・自動）の予定の本数を先に枠から引く（A を先に入れる。158、plan §8）。
-  -- A の予定 = 今日が締切の A の item（検査を通り manual・notifying・notified）の X の下書きのうち、まだ claim していないもの
-  IF p_action IN ('claim','begin_post') AND j.channel='x' AND d.send_lane='B' THEN
+  -- A の予定 = 今日が締切の A の item（検査中・検査を通ったもの: checking・manual・notifying・notified）の X の下書きのうち、
+  -- まだ claim していないもの。検査中も数えるのは、朝に A が検査を通る前に B が枠を使い切らないため（落ちた A は held_manual になり外れる）。
+  -- claim のときだけ引く。begin_post でやり直すと、間に A が増えたときに claim 済みの B が予約額を使ったまま held になる
+  IF p_action='claim' AND j.channel='x' AND d.send_lane='B' THEN
     SELECT count(*) INTO v_a_pending FROM public.sns_drafts ad
       JOIN public.sns_auto_send_items ai ON ai.channel='x' AND (
         (ai.kind='race' AND ad.bundle_import_id=ai.bundle_import_id) OR (ai.kind='digest' AND ad.id=ai.draft_id))
       LEFT JOIN public.sns_x_send_jobs aj ON aj.draft_id=ad.id
       WHERE ad.send_lane='A' AND ad.platform='x' AND ad.status NOT IN ('posted','archived')
-        AND ai.state IN ('manual','notifying','notified')
+        AND ai.state IN ('checking','manual','notifying','notified')
         AND (ai.deadline_at AT TIME ZONE 'Asia/Tokyo')::date=(now() AT TIME ZONE 'Asia/Tokyo')::date
         AND (aj.id IS NULL OR (aj.state='queued' AND aj.attempts=0));
     v_need := v_need + v_a_pending;
@@ -254,6 +256,7 @@ END $$;
 
 -- 月の切り替えを同じ額で自動にする（2026-10-13 オーナー決定）。sns-auto-plan が毎回呼ぶ。
 -- 今の期間が終わっていたら、期間を1か月ずつ進め（止まっていた月の分も追いつく）、予約額を0にする。額（budget_microusd）は変えない
+-- 前提: 期間は月の1日始まり（オーナーが renew_sns_x_send_period で設定）。29〜31日始まりだと interval '1 month' の加算で日がずれる
 CREATE OR REPLACE FUNCTION public.roll_sns_x_send_period()
 RETURNS JSONB LANGUAGE plpgsql SECURITY INVOKER SET search_path = public AS $$
 DECLARE
