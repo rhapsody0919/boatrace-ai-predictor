@@ -9,10 +9,11 @@
  * まだ一度も snapshot が無い（公開前・朝のバッチの起動前）ときは「未稼働」として通す（毎晩の誤報を出さない）。
  * 展示後の段の Cron がまだ一度も書いていないときは、展示後の段の閾値を見ない。
  *
- * --cleanup: Storage の非公開のバケット analogy-v16 の、7日より前の日付の similar/（候補ファイル）・scenario-races/・
- *   scenario-boat-races/（STEP4 の元のレースの一覧、BOA-823・833）と、前日より前の
+ * --cleanup: Storage の非公開のバケット analogy-v16 の、7日より前の日付の similar/（候補ファイル）と、前日より前の
  *   similar-display/（候補の表示用の値。展示後の段がその日のうちに1回読むだけ）と pool/（母集団の展示の値。同じ）を消す
- *   （plan「Storage」）
+ *   （plan「Storage」）。龍神ソナーの表示用のファイル（SONAR_KINDS）と STEP4 の元のレースの一覧（BOA-823・833）は
+ *   2年（SONAR_KEEP_DAYS）より前を消す（BOA-807）。消したあと、全バケットの容量の合計を1行出し、
+ *   STORAGE_WARN_BYTES（80GB）を超えたら失敗にして Slack に流す
  * --date YYYY-MM-DD: 数える日（省略時は前日）
  *
  * 使い方: node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js [--date 2026-10-05] [--cleanup]
@@ -20,23 +21,49 @@
 import {
   deadlineOf,
   deleteObjects,
+  BUCKET,
+  listBuckets,
   listObjects,
+  readObject,
   rest,
+  writeObject,
 } from "../../api/_lib/analogyV16.js";
+import { SONAR_KEEP_DAYS } from "../../src/utils/analogyRetention.js";
 
 export const RACECARD_MIN = 0.99;
 export const EXHIBITION_MIN = 0.95;
 export const KEEP_SIMILAR_DAYS = 7;
-/** STEP4 の元のレースの一覧（BOA-823・833）を残す日数。見るのは今日のレースなので、古い日の一覧は消す */
-export const KEEP_RACE_LIST_DAYS = 7;
+/**
+ * 龍神ソナーの表示用のファイルと STEP4 の元のレースの一覧は2年（SONAR_KEEP_DAYS）で消す（BOA-807、2026-10-13 オーナー決定）。
+ * 画面の「この日の龍神ソナーはもう無い」の判定も同じ定数（src/utils/analogyRetention.js）
+ */
+export const SONAR_KINDS = [
+  "facts",
+  "today",
+  "today-exhibition",
+  "scenario",
+  "scenario-boat",
+  "similar-racecard",
+  "similar-exhibition",
+  "layer",
+  "scenario-races",
+  "scenario-boat-races",
+];
 /** 消すフォルダと残す日数 */
 export const CLEANUP = [
   ["similar", KEEP_SIMILAR_DAYS],
   ["similar-display", 1],
   ["pool", 1],
-  ["scenario-races", KEEP_RACE_LIST_DAYS],
-  ["scenario-boat-races", KEEP_RACE_LIST_DAYS],
+  ...SONAR_KINDS.map((kind) => [kind, SONAR_KEEP_DAYS]),
 ];
+/** 毎晩見るのは、残す日数の境目から前のこの日数だけ（消し終えた古い日を毎晩見直さない。休んだ夜があっても拾える長さ） */
+export const CLEANUP_LOOKBACK_DAYS = 30;
+/** Storage の合計がこれを超えたら失敗にして Slack に流す（Supabase Pro の 100GB の手前、BOA-807） */
+export const STORAGE_WARN_BYTES = 80e9;
+/** analogy-v16 の日ごとの大きさの控え（毎晩全部を数え直すと、2年分で数万回の一覧の取得になるため） */
+const USAGE_LEDGER = "_usage/days.json.gz";
+/** 日ごとの大きさは、この日数より新しい日だけ毎晩数え直す（similar・similar-display が消えて小さくなる間） */
+export const USAGE_RECOUNT_DAYS = 9;
 /** 1回の削除の要求に入れるパスの数（scenario-boat-races は1日 1,000個を超える） */
 const DELETE_CHUNK = 500;
 
@@ -100,16 +127,81 @@ export function summarizeDay(races, snaps, exh, entries) {
   return out;
 }
 
-/** 7日より前の日付のフォルダ（`YYYY-MM-DD`）を選ぶ（純粋関数） */
+/** 残す日数を過ぎた日付のフォルダ（`YYYY-MM-DD`）を選ぶ。境目から CLEANUP_LOOKBACK_DAYS 日前までだけ（純粋関数） */
 export function datesToClean(folders, today, keepDays = KEEP_SIMILAR_DAYS) {
   const limit = addDays(today, -keepDays);
-  return folders.filter((f) => /^\d{4}-\d{2}-\d{2}$/.test(f) && f < limit);
+  const from = addDays(limit, -CLEANUP_LOOKBACK_DAYS);
+  return folders.filter(
+    (f) => /^\d{4}-\d{2}-\d{2}$/.test(f) && f < limit && f >= from,
+  );
+}
+
+/** 日ごとの大きさの控えのうち、数え直す日（控えに無い日と、新しい USAGE_RECOUNT_DAYS 日）（純粋関数） */
+export function datesToMeasure(ledger, folders, today) {
+  const recent = addDays(today, -USAGE_RECOUNT_DAYS);
+  return folders.filter(
+    (f) => /^\d{4}-\d{2}-\d{2}$/.test(f) && (!(f in ledger) || f >= recent),
+  );
+}
+
+/** 控えから、もう無い日を外す（純粋関数） */
+export const pruneLedger = (ledger, folders) =>
+  Object.fromEntries(
+    Object.entries(ledger).filter(([d]) => folders.includes(d)),
+  );
+
+/** Storage の容量の1行（純粋関数）。80GB を超えたら警告の文も返す */
+export function usageLine(byBucket, warnBytes = STORAGE_WARN_BYTES) {
+  const gb = (b) => (b / 1e9).toFixed(2);
+  const total = Object.values(byBucket).reduce((a, b) => a + b, 0);
+  const parts = Object.entries(byBucket)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `${k} ${gb(v)}GB`);
+  return {
+    line: `💾 Storage 合計 ${gb(total)}GB（${parts.join("・")}）`,
+    warn:
+      total > warnBytes
+        ? `Storage の合計 ${gb(total)}GB が ${gb(warnBytes)}GB を超えた（Pro の 100GB の手前）。残す日数（SONAR_KEEP_DAYS）か保存の中身を見直す`
+        : null,
+  };
+}
+
+const dateFolders = async () =>
+  (await listObjects("")).filter((r) => r.id === null).map((r) => r.name);
+
+/** prefix の下のファイルの大きさの合計。フォルダは並べて潜る（順に潜ると1日分で約80秒かかった） */
+async function sizeOf(prefix, bucket = BUCKET) {
+  const rows = await listObjects(prefix, bucket);
+  const sizes = await Promise.all(
+    rows.map((r) =>
+      r.id === null
+        ? sizeOf(`${prefix}${r.name}/`, bucket)
+        : Number(r.metadata?.size ?? 0),
+    ),
+  );
+  return sizes.reduce((a, b) => a + b, 0);
+}
+
+/** 全バケットの容量。analogy-v16 は日ごとの控えで数え、それ以外（小さい）は毎晩全部を数える */
+async function storageUsage(today) {
+  const folders = (await dateFolders()).filter((f) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(f),
+  );
+  const ledger = pruneLedger((await readObject(USAGE_LEDGER)) ?? {}, folders);
+  for (const d of datesToMeasure(ledger, folders, today))
+    ledger[d] = await sizeOf(`${d}/`);
+  await writeObject(USAGE_LEDGER, ledger, { upsert: true });
+  const byBucket = {};
+  for (const id of await listBuckets())
+    byBucket[id] =
+      id === BUCKET
+        ? Object.values(ledger).reduce((a, v) => a + v, 0)
+        : await sizeOf("", id);
+  return byBucket;
 }
 
 async function cleanup(today) {
-  const top = (await listObjects(""))
-    .filter((r) => r.id === null)
-    .map((r) => r.name);
+  const top = await dateFolders();
   let n = 0;
   for (const [kind, keep] of CLEANUP) {
     for (const date of datesToClean(top, today, keep)) {
@@ -180,10 +272,17 @@ async function main() {
       process.exitCode = 1;
     }
   }
-  if (argv.includes("--cleanup"))
+  if (argv.includes("--cleanup")) {
     console.log(
-      `🧹 similar/・scenario-races/・scenario-boat-races/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/・pool/（前日より前）を ${await cleanup(today)} 件消した`,
+      `🧹 similar/（${KEEP_SIMILAR_DAYS}日より前）・similar-display/・pool/（前日より前）・龍神ソナーの表示用と元のレースの一覧（${SONAR_KEEP_DAYS}日より前）を ${await cleanup(today)} 件消した`,
     );
+    const { line, warn } = usageLine(await storageUsage(today));
+    console.log(line);
+    if (warn) {
+      console.error(`❌ ${warn}`);
+      process.exitCode = 1;
+    }
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

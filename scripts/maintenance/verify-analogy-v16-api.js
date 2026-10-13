@@ -23,7 +23,20 @@ import { layerStatus } from "../../api/analogy/layer/[raceId].js";
 import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
 import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
 import { boatScopes } from "../../api/analogy/scenario/[raceId].js";
-import { CLEANUP, datesToClean, summarizeDay } from "./verify-analogy-v16.js";
+import {
+  CLEANUP,
+  datesToClean,
+  datesToMeasure,
+  pruneLedger,
+  SONAR_KINDS,
+  summarizeDay,
+  usageLine,
+} from "./verify-analogy-v16.js";
+import {
+  SONAR_KEEP_DAYS,
+  sonarExpired,
+  sonarKeepFrom,
+} from "../../src/utils/analogyRetention.js";
 import {
   runAnalogyV16Exhibition,
   exhibitionNeighbors,
@@ -470,11 +483,77 @@ check(
     1,
   );
   check(
-    "STEP4 の元のレースの一覧（scenario-races・scenario-boat-races）は7日より前を消す（BOA-833）",
-    ["scenario-races", "scenario-boat-races"].map(
-      (k) => CLEANUP.find(([x]) => x === k)?.[1],
+    "龍神ソナーの表示用と STEP4 の元のレースの一覧は2年（730日）より前を消す（BOA-807）",
+    [
+      SONAR_KEEP_DAYS,
+      SONAR_KINDS.map((k) => CLEANUP.find(([x]) => x === k)?.[1]),
+    ],
+    [730, SONAR_KINDS.map(() => 730)],
+  );
+  check(
+    "朝のバッチ・API が書く13種類は全部、夜の掃除の対象にある（BOA-807）",
+    [
+      "facts",
+      "layer",
+      "pool",
+      "scenario",
+      "scenario-boat",
+      "scenario-boat-races",
+      "scenario-races",
+      "similar",
+      "similar-display",
+      "similar-exhibition",
+      "similar-racecard",
+      "today",
+      "today-exhibition",
+    ].filter((k) => !CLEANUP.some(([x]) => x === k)),
+    [],
+  );
+  check(
+    "消すのは残す日数の境目から30日前まで（消し終えた古い日を毎晩見直さない）",
+    datesToClean(
+      ["2024-08-13", "2024-09-12", "2024-09-13", "2024-10-12", "2024-10-13"],
+      "2026-10-13",
+      730,
     ),
-    [7, 7],
+    ["2024-09-13", "2024-10-12"],
+  );
+  check(
+    "容量の控え: 控えに無い日と新しい9日だけ数え直す",
+    datesToMeasure(
+      { "2026-09-01": 1, "2026-10-03": 1, "2026-10-04": 1 },
+      ["2026-09-01", "2026-09-02", "2026-10-03", "2026-10-04", "_usage"],
+      "2026-10-13",
+    ),
+    ["2026-09-02", "2026-10-04"],
+  );
+  check(
+    "容量の控え: もう無い日を外す",
+    pruneLedger({ "2024-01-01": 5, "2026-10-12": 3 }, ["2026-10-12"]),
+    { "2026-10-12": 3 },
+  );
+  check(
+    "容量の1行: 大きい順に並べ、80GB 以下は警告しない",
+    usageLine({ a: 1e9, "analogy-v16": 2.5e9 }),
+    {
+      line: "💾 Storage 合計 3.50GB（analogy-v16 2.50GB・a 1.00GB）",
+      warn: null,
+    },
+  );
+  check(
+    "容量の1行: 80GB を超えたら警告する",
+    usageLine({ "analogy-v16": 80.01e9 }).warn !== null,
+    true,
+  );
+  const keepFrom = sonarKeepFrom(Date.parse("2026-10-13T00:00:00+09:00"));
+  check(
+    "画面の「もう無い」は夜の掃除と同じ境目（JST の今日から730日前より前）",
+    [
+      keepFrom,
+      sonarExpired("2024-10-12-01-01", keepFrom),
+      sonarExpired("2024-10-13-01-01", keepFrom),
+    ],
+    ["2024-10-13", true, false],
   );
 }
 

@@ -916,7 +916,8 @@
         "notSaved": "There is no data to show for this race",
         "error": "Couldn't load this. Please try again later",
         "retry": "Reload",
-        "loading": "Loading…"
+        "loading": "Loading…",
+        "expired": "Ryujin Sonar for this day is no longer available (kept for 2 years)"
       },
       "finishWord": {
         "1": "finished 1st",
@@ -1892,8 +1893,7 @@
           "none": "No such race among the latest {{kept}}",
           "raceNo": "R{{n}}",
           "techPay": "{{tech}} · ¥{{yen}}",
-          "bandLink": "See the races in this band ›",
-          "expired": "The list for this day is no longer kept (lists are kept for 7 days)"
+          "bandLink": "See the races in this band ›"
         }
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
