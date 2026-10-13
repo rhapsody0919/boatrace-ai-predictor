@@ -175,12 +175,12 @@ Cutting just 2 combinations already improves your return rate.
 - Exhib. ST: lane 1 slow
 - Exhib. ST: lane 4 fast
 → May overtake in the race
-→ Go with the lane-4 overtake suji
+→ Lane-4 overtake suji
 
 [Bets]
-4-5-6 (an overtake development)
+4-5-6 (overtake)
 4-5-1 (inside holds on)
-4-3-5 (lane 3 holds for 2nd)
+4-3-5 (lane 3 holds 2nd)
 ```
 
 The start exhibition is only a reference. The approach and start in the actual race can differ from the exhibition, so don't treat the exhibition's lineup or ST as the actual race lineup.
