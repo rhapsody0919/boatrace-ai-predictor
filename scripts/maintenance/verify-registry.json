@@ -1075,7 +1075,7 @@
     {
       "script": "verify-sns-x-adapter.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 17: X API v2 の実 adapter（分割アップロード initialize・append（multipart の segment_index・media）・finalize・STATUS、POST /2/tweets の media・reply、トークンは runner が claim の前に取って渡す、投稿の失敗は再試行しない・X の詳細な本文をエラーに入れない・成功の応答を解釈できなければ理由つきで投げる・媒体の処理の失敗や append の失敗では begin_post に進まない・STATUS の応答に状態が無い・finalize に data が無いときも投稿しない・動画は finalize で省略されても STATUS で完了を確かめる、分割は 4 MiB、posted_at は投稿 ID の snowflake から）と、runXSendJob に実 adapter をつないだ承認から posted まで（SQL137 を PGlite、fetch はモックで外部接続なし）"
+      "guards": "sns-pdca-loop tasks 17: X API v2 の実 adapter（分割アップロード initialize・append（multipart の segment_index・media）・finalize・STATUS、POST /2/tweets の media・reply、トークンは runner が claim の前に取って渡す、投稿の失敗は再試行しない・X の詳細な本文をエラーに入れない・成功の応答を解釈できなければ理由つきで投げる・媒体の処理の失敗や append の失敗では begin_post に進まない・STATUS の応答に状態が無い・finalize に data が無いときも投稿しない・finalize の processing_info はキーが無いときだけ省略とみなし null・false・0・空文字・state の無い値と、data がオブジェクトでない応答は投稿の前に止める・動画は finalize で省略されても STATUS で完了を確かめる、分割は 4 MiB、posted_at は投稿 ID の snowflake から）と、runXSendJob に実 adapter をつないだ承認から posted まで（SQL137 を PGlite、fetch はモックで外部接続なし）"
     },
     {
       "script": "verify-sns-youtube-adapter.js",
