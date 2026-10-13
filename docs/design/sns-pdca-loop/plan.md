@@ -124,8 +124,8 @@ flowchart TD
 - **毎日の基準日**: 既存の契約は、claim に `daily_baseline_date = 当日 JST`（X）と `quota.baseline_day = 当日 PT`・`verified`（YouTube）を求め、オーナーが毎日 SQL で更新する前提になっている。自動送信ではこれを毎日手でやるのは続かない。**決定（2026-10-13 ユーザー、確認B）: `sns-auto-plan` の毎回、JST の日付（X）・太平洋時間の日付（YouTube）が変わっていたら基準日を当日にし、`daily_external_count`・`external_uploads`・`external_general` を0で入れる**（YouTube の日付は JST 16:00〜17:00 に変わるので、朝の1回だけでは夕方以降に古くなる）。DB の関数は `roll_sns_send_baselines()`（153。オーナーが一度も設定していない・YouTube が未確認のときは何もしない）（オーナーが手で出した投稿があれば管理画面から足す）。既存の契約（139・146 の「オーナーが毎日設定する」）を変えるので、contract.md にも追記する
 - **予約額を種類別にする**（153、P0 の指摘）: 既存の claim は、送信の種類に関係なく1回ごとに `attempt_ceiling_microusd` を予約し、YouTube の claim も同じ X の台帳を消費する。1日7回（X 6＋YouTube 1）× URL つきの上限額で、月 $10 は約1週間で尽きる。153 で `sns_x_send_control` に `ceiling_x_url_microusd`（URL つきの親）・`ceiling_x_plain_microusd`（子）を足し、claim はスレッドの位置で使い分け、YouTube は0にする（YouTube Data API は無料。クォータは別の台帳）
 - **日次上限をチャネル別にする**（153）: 既存の `daily_limit` は X・YouTube で1つ。スレッドの子も1回と数えるので、上限1では子が送れず、6では YouTube も6本通る。`daily_limit_x`（スレッドの投稿の数で6）・`daily_limit_youtube`（1）に分ける
-- **L3 の本数と費用**（2026-10-13 オーナー決定）: L3 ではその日の優勝戦・準優勝戦をすべて自動で出す（L2 は1日1レースのまま）。直近30日は月269レース・1日最多16。X の実費は月 約$77、予約の上限額で月 約$111 になるので、153 で月の上限額の CHECK を $200 まで広げ、額（案 $120）はオーナーが本番 SQL で決める（153-runbook.md「L2・L3 の送信の設定」）。日次上限は「その日のレース数」を毎日入れる形にせず、直近30日の最多（X 96・YouTube 16）を天井として置く（item は該当レースにしか作らないので、本数はレース数で決まる）。YouTube の1日16本のアップロードのクォータは L3 の前にオーナーが確認する
-- **費用**: X の予約台帳そのものは既存のまま。153 で `renew_sns_x_send_period(start, end)`（オーナーが本番 SQL で実行。今の期間が終わってからだけ実行でき、`reserved_microusd` を0に戻す）を足す。期間の終わりの3日前から Slack に知らせる。取り込みの読み取りも同じ台帳に予約する（154 の `reserve_sns_x_read`。残りが「月の残り日数×1日の送信の予約額」を下回ったら拒否）
+- **L3 の本数と費用**（2026-10-13 オーナー決定）: L3 ではその日の優勝戦・準優勝戦をすべて自動で出す（L2 は1日1レースのまま）。直近30日は月269レース・1日最多16。X の実費は月 約$77、予約の上限額で月 約$111 になるので、153 で月の上限額の CHECK を $200 まで広げ、額は $130（2026-10-13 オーナー決定。X の Developer Console の spending limit も同額。L2 の間は $10）をオーナーが本番 SQL で入れる（153-runbook.md「L2・L3 の送信の設定」）。日次上限は「その日のレース数」を毎日入れる形にせず、直近30日の最多（X 96・YouTube 16）を天井として置く（item は該当レースにしか作らないので、本数はレース数で決まる）。YouTube の1日16本のアップロードのクォータは L3 の前にオーナーが確認する
+- **費用**: X の予約台帳そのものは既存のまま。153 で `renew_sns_x_send_period(start, end)`（オーナーが本番 SQL で実行。今の期間が終わってからだけ実行でき、`reserved_microusd` を0に戻す）を足した。**月の切り替えは同じ額で自動にする**（2026-10-13 オーナー決定）: 158 で `roll_sns_x_send_period()`（service_role）を足し、`sns-auto-plan` が毎回呼ぶ。`now() >= period_end` のときだけ、期間を `[period_end, period_end + 1 month)` に進め `reserved_microusd` を0にする（額は変えない）。額を変えるときだけオーナーが本番 SQL で `budget_microusd` を変え、Console の spending limit も合わせる。期間の終わりの3日前の Slack は「自動で切り替わる・額は $X」の知らせに変える。取り込みの読み取りも同じ台帳に予約する（154 の `reserve_sns_x_read`。残りが「月の残り日数×1日の送信の予約額」を下回ったら拒否）
 
 ## 5. 取り込み（spec C1〜C4、cron `sns-metrics`・`sns-daily`）
 
@@ -138,7 +138,7 @@ flowchart TD
 - **`sns-daily`**（1日1回、JST 10:00）: YouTube Analytics の日次は確定まで数日かかることがあるので、毎日 D−3〜D−1（太平洋時間の日）を取り直し、値が変わったときだけ UPDATE する。「投稿日＋翌日」は太平洋時間の暦日で数える
   - YouTube Analytics の動画ごとの日次（engagedViews・averageViewPercentage・subscribersGained）を `sns_channel_daily` ではなく観測の表へ、`measurement_kind='period'`・`window` は投稿日〜翌日の2日の値として保存したいが、136 の窓は 48h/168h に固定で暦日の窓を入れられない。**暦日の値は 154 の `sns_channel_daily`（draft_id 任意）に入れる**。版の判定（spec 統計検証）はこの表の「投稿日＋翌日」を使う
   - GA4: 前日の X の UTM（`utm_content=draftId/variantId`）ごとのセッション・ユーザー・ソナーを開いた人、YouTube 経由（プロフィールの UTM＋参照元 youtube）の日次を `sns_channel_daily` へ。クエリは `scripts/analysis/sns-pdca-baseline/ga4-sns-inflow.js` と同じ流入元の完全一致のリスト（共通部分を `scripts/lib/snsGa4.js` に出す）
-- **UTM**: X の親の投稿の URL は送信の承認時に `buildObservationUtm` で作る。136 の `sns_post_tracking` は campaign が `sonar-preview` 固定・`template_variant_id` 必須なので、154 で campaign に `race-full` を許し、`template_variant_id` を任意にする
+- **UTM**: X の親の投稿の URL は送信の承認時に `buildObservationUtm` で作る。136 の `sns_post_tracking` は campaign が `sonar-preview` 固定・`template_variant_id` 必須なので、154 で campaign に `race-full` を許し、`template_variant_id` を任意にした。/today の投稿は `utm_campaign=today_digest`・`utm_content=日付`、通り道 B は既存の `sonar-preview` 等を使う。campaign の許可は 158 で足す（下の §8）
 - **鍵の置き場**: `YOUTUBE_ANALYTICS_*`（3つ）、`GOOGLE_SERVICE_ACCOUNT_KEY`（GA4、Vercel に未登録なら追加）、`SNS_TOKEN_ENC_KEY`、`X_OAUTH_CLIENT_ID`・`X_OAUTH_CLIENT_SECRET` を Vercel の環境変数（Production）に登録する。手順は tasks の段階でオーケストレーターに渡す
 
 ## 6. 改善案（spec B1〜B4、cron `sns-insights`）
@@ -153,6 +153,22 @@ flowchart TD
   - 行の形: `- YYYY-MM-DD 変えた点: <案の要旨>。48h <指標> 中央値 <値>（<本数>本、採用前4週 <値>）・7d <同>。根拠: sns_metric_observations（insight:<id>）`。本数が少ない・欠測があるときもその旨を書いて省かない（読み物の報告原則）
   - 反映: hq が出力の差分で docs だけの PR を作る（docs だけの PR は段階0）。Codex に渡す鍵は使わない
   - 理由: (a) 結果の確定は 7d の観測を待つので、採用の瞬間（cron）では書けない。(b) cron から GitHub に書くには Vercel に書き込みの鍵が要り、鍵を増やす（ADR-0066 の鍵の置き場の外）。(c) 正本の数字は DB にあり、docs は写しにすぎないので、書き出しを何度やり直しても同じ行になる形が安全
+
+## 8. 通り道 A・B（2026-10-13 オーナー方針、hq 経由）
+
+sns-hub は1つのまま、中を2本の通り道に分ける。別の仕組みは作らない。B の再開そのものは別チケット（オーケストレーターが起票）。
+
+| | A（定型・自動） | B（企画・承認） |
+|---|---|---|
+| 中身 | 優勝戦・準優勝戦の全貌（X スレッド＋Shorts）、本日のデータ一覧（/today）の X 投稿 | ネタ提案（sns-topic-gate）→ チャネル別の下書き → 1件ずつ承認 |
+| 文面 | 全貌は素材 v1（Codex）、/today は `morning_digest_rows` から決まった型で組み立てる（AI 生成なし） | 既存の下書きの流れ |
+| 承認 | L1〜L2 は1件ずつ、L3 は事前通知＋止めなければ自動（ADR 0094） | 常に本人の1件ずつ承認（自動にしない） |
+| 送信の経路 | 同じ（`sns_x_send_jobs`・`sns-send`） | 同じ |
+
+- **通り道の記録**: 158 で `sns_drafts.send_lane`（`A`・`B`、既存の行は NULL）を足す。素材 v1 の取り込みと /today の下書きは A、ネタからの下書きは B を入れる。job・観測・UTM は下書きを通して通り道が分かるので、それぞれに列は足さない
+- **X の1日の本数・間隔は A＋B の合計で数える**: `daily_limit_x` は1つのまま（A と B の合計の天井）。**A を先に枠に入れ、B は残り**: 158 の claim で、B の job は「今日まだ送っていない A の予定の本数」（今日の A の item のうち notified まで進んだもののスレッドの本数＋/today の1本で、まだ claim していないもの）を枠から先に引いてから判定する。A は今までどおり。間隔は、B の送る時刻を A の送る時刻の前後30分に入れない（B の下書きの予定時刻を決めるときに避ける。DB では本数だけを守る）
+- **計測は A・B 共通**: 48h・7d の取り込み（`sns_metric_jobs`）・UTM・暦日の値は同じ表に入る。hq のダッシュボードと `weekly-export.js` は `sns_drafts.send_lane` で A・B を並べる
+- **/today の X 投稿**（A）: 7:45 に送り、事前通知は 5:45（2時間前）。毎朝の一覧は JST 5:30 に作られる（6:30・8:00 にやり直し）。`sns-auto-plan` の稼働時間は JST 5:30〜21:00 にする。158 で `sns_auto_send_items` に種類（`kind`: `race`・`digest`）を足し、digest は `bundle_import_id` を持たない（`race_id` は `today:YYYY-MM-DD`）。承認の関数は digest の item を下書きの ID で引く。日次上限は1本ぶん足し、L2 は `daily_limit_x=7`、L3 は 97。費用は月 約$6（予約で 約$7.5）増え、L3 の予約の合計は約$119（上限 $130 に収まる）
 
 ## 7. 画面（screens.md）
 

@@ -84,15 +84,15 @@ L3 では、その日の優勝戦・準優勝戦をすべて自動で出す（20
 見込み（2026-09-13〜10-12 の30日、`race_conditions.race_stage` が優勝戦・準優勝戦系、中止を除く）: 優勝戦 71・準優勝戦系 198 の計269レース。1日平均9.0、最多16（10/8）。準優進出戦・準々優勝戦などを数えているので、上限寄りの数字。
 - X の実費（1レース = URL つきの親 $0.20 ＋ 子5件 × $0.015 ＋ 取り込み 6件 × 2窓 × $0.001 = $0.287）× 269 ≒ **月 $77**。媒体のアップロードの単価は料金表に無く、含めていない
 - 予約の上限額（親 $0.25・子 $0.03 で見積もる場合）では、1レース $0.41 × 269 ≒ 月 $111。月の上限額はこの予約の合計を上回る必要がある
-- 案: 月の上限額は **$120**（X の Developer Console の spending limit も同じ額にする）。L2 の間は $10 のまま
+- 決定（2026-10-13 オーナー）: 月の上限額は **$130**（X の Developer Console の spending limit も同じ額にする）。L2 の間は $10 のまま。/today の X 投稿（158 以降）を足すと、L2 は `daily_limit_x=7`、L3 は 97 にする
 - YouTube: 1日最大16本のアップロードになる。Google Cloud のクォータ（videos.insert の枠）が足りるかを L3 の前にオーナーが確認する
 
 ```sql
 -- L2（1件ずつ承認、1日1レース）
 UPDATE public.sns_x_send_control SET daily_limit_x = 6, daily_limit_youtube = 1 WHERE id = true;
--- L3（優勝戦・準優勝戦をすべて。1日最多16レース × X 6件）。budget はオーナーが決めた額（例は $120）
+-- L3（優勝戦・準優勝戦をすべて。1日最多16レース × X 6件）。budget は $130（2026-10-13 オーナー決定）
 UPDATE public.sns_x_send_control
-  SET budget_microusd = 120000000, ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000,
+  SET budget_microusd = 130000000, ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000,
       daily_limit_x = 96, daily_limit_youtube = 16
   WHERE id = true;
 ```
