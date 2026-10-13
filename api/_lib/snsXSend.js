@@ -1,8 +1,8 @@
 import { buildPostText } from "../../src/pages/admin/sns-hub/utils.js";
 /** X呼び出しは注入のみ。実adapter・鍵・cronは今回提供しない。 */
 export const X_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
-/** YouTube動画はXのmedia upload上限とは無関係の制約（Twitter API由来の32MBをそのまま転用しない）。 */
-export const YOUTUBE_MEDIA_MAX_BYTES = 500 * 1024 * 1024;
+/** YouTube の動画も 32 MiB まで（youtubeQueueAdapter.js は1回の multipart で上げるため。承認と送信の上限をそろえる、2026-10-13）。 */
+export const YOUTUBE_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
 export const X_MAX_POLLS = 10;
 // 媒体の処理の待ちは1回 1〜30 秒に収める（極端な値で関数が時間切れになり、job が sending のまま残るのを防ぐ。2026-10-13 オーケストレーター決定）
 export const X_MAX_WAIT_SECS = 30;
