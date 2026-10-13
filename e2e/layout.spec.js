@@ -1253,6 +1253,7 @@ async function checkHscrollHints(page, label) {
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り20px` })
       .toMatchObject({
         remaining: 20,
+        fadeWidth: 20,
         hasMore: true,
         moreButton: true,
       });
@@ -1262,6 +1263,7 @@ async function checkHscrollHints(page, label) {
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 残り10px` })
       .toMatchObject({
         remaining: 10,
+        fadeWidth: 10,
         hasMore: true,
         moreButton: true,
       });
@@ -1275,7 +1277,11 @@ async function checkHscrollHints(page, label) {
     await readHint(hint, null);
     await expect
       .poll(() => readHint(hint), { timeout: 5000, message: `${at}: 左端` })
-      .toMatchObject({ hasMore: true, moreButton: true });
+      .toMatchObject({
+        hasMore: true,
+        moreButton: true,
+        fadeWidth: Math.min(40, maxScroll),
+      });
     expect(
       (await readHint(hint)).moreWidth,
       `${at}: 「›」の押せる幅`,
@@ -1340,6 +1346,9 @@ async function readHint(hint, fromEnd) {
       remainingRaw: box.scrollWidth - box.clientWidth - box.scrollLeft,
       maxScroll: box.scrollWidth - box.clientWidth,
       hasMore: el.classList.contains("has-more"),
+      fadeWidth: el.classList.contains("has-more")
+        ? Math.round(parseFloat(getComputedStyle(el, "::after").width))
+        : 0,
       moreButton: Boolean(more),
       moreWidth: more ? more.getBoundingClientRect().width : 0,
       // 「›」の記号の中心から箱の右端までの距離
