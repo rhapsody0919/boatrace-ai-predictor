@@ -33,6 +33,22 @@ export function isInMotorGeneration(raceId, generationStart) {
 }
 
 /**
+ * 現行世代のレースに、入れ替え前の会場内順位を付けようとしているか。
+ * 最新の使用開始日より前のレースは、前の世代の順位をそのまま使える。
+ * @param {{raceDate: string|null, scrapedDate: string|null, generationStart: string|null}} dates
+ * 日付は YYYY-MM-DD。使用開始日の当日を現行世代に含める。
+ * @returns {boolean}
+ */
+export function isVenueRankSnapshotBeforeGeneration({
+  raceDate,
+  scrapedDate,
+  generationStart,
+}) {
+  if (!raceDate || !scrapedDate || !generationStart) return false;
+  return raceDate >= generationStart && scrapedDate < generationStart;
+}
+
+/**
  * 使用開始日（YYYY-MM-DD）の画面表示。既定は「2026/8/6」、short で「8/6」。
  * 数字だけの表記なので4言語で共通にする（2026-09-29 ユーザー判断 B で画面に出す）
  * @param {string|null} date

@@ -83,6 +83,8 @@ function buildPrediction(racePrediction, notFoundMessage) {
     volatilityPercentileIsFallback:
       unified?.volatilityPercentileIsFallback ?? null,
     volatilityReasons: unified?.volatilityReasons ?? [],
+    // BOA-822 イン崩れ注意度（transformEdgeResponse がレース直下に通した値）
+    inCaution: racePrediction.inCaution ?? null,
     racerStats: racePrediction.racerStats || null,
     exhibitionData: racePrediction.exhibitionData || null,
     // 直前情報タブの気象カード用（BOA-304）

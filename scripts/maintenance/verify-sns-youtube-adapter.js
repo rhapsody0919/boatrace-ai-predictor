@@ -4,7 +4,7 @@ import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
-import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import { createXSnapshot, sha256 } from "../../api/_lib/snsXSend.js";
 import {
   deadlineSchedule,
   reconcileYoutubeJob,
@@ -555,11 +555,24 @@ test("32 MiB を超える動画は begin_post の前に held にし、何も呼�
         },
       ],
     );
+    // 承認の createXSnapshot は 32 MiB で止める。SQL の外枠（500 MiB）だけを通った承認を想定して、
+    // 小さい動画で作った snapshot の媒体を大きい動画に差し替えて承認する
+    await assert.rejects(
+      createXSnapshot(d, async () => big),
+      /媒体の容量/,
+    );
+    const small = await createXSnapshot(d, async () => new Uint8Array(1024));
+    const snapshot = {
+      ...small,
+      media: [
+        { ...small.media[0], size: big.byteLength, sha256: await sha256(big) },
+      ],
+    };
     return (
       await first("SELECT approve_sns_x_send($1,$2,$3,now()) r", [
         d.id,
         me,
-        await createXSnapshot(d, async () => big),
+        snapshot,
       ])
     ).r;
   })();

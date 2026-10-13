@@ -74,8 +74,10 @@ test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそ�
   await expect(rows).toHaveCount(6);
   // レイアウトだけの再現用。録画のF数に依存せず、FlyingBadgeと同じ構造を
   // 6号艇にだけ置く（本番データ・集計値は変更しない）。
+  // 置き換えと測定は1回の evaluate（同期）の中で行う。await を挟むと、その間に
+  // データの再描画が本物の F バッジを戻し、バッジが2つになって落ちた（BOA-871）
   for (const label of ["", "今節", "this meet", "이번 시리즈", "本節"]) {
-    await rows.evaluateAll((elements, meetLabel) => {
+    const measured = await rows.evaluateAll((elements, meetLabel) => {
       for (const row of elements) {
         row.querySelectorAll(".flying-badge").forEach((badge) => badge.remove());
       }
@@ -89,23 +91,29 @@ test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそ�
         badge.append(meet);
       }
       elements[5].querySelector(".rbit-name-cell").append(badge);
+      return {
+        badges: elements.map((row) => row.querySelectorAll(".flying-badge").length),
+        widths: elements.map(
+          (row) => row.querySelector(".rbit-bar-track").getBoundingClientRect().width,
+        ),
+        overflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      };
     }, label);
-    await expect(rows.locator(".flying-badge")).toHaveCount(1);
-    const widths = await rows.locator(".rbit-bar-track").evaluateAll(
-      (tracks) => tracks.map((track) => track.getBoundingClientRect().width),
-    );
+    expect(measured.badges, `${label}: バッジは6号艇にだけ1つ`).toEqual([
+      0, 0, 0, 0, 0, 1,
+    ]);
+    const { widths } = measured;
     expect(widths).toHaveLength(6);
     expect(Math.min(...widths), `${label}: 空の棒枠`).toBeGreaterThan(0);
     expect(
       Math.max(...widths) - Math.min(...widths),
       `${label}: 6艇の棒枠の幅 ${widths.join(", ")}`,
     ).toBeLessThanOrEqual(1);
-    expect(
-      await page.evaluate(() =>
-        document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      ),
-      `${label}: 横スクロール`,
-    ).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+    expect(measured.overflow, `${label}: 横スクロール`).toBeLessThanOrEqual(
+      OVERFLOW_TOLERANCE_PX,
+    );
   }
 });
 

@@ -18,6 +18,18 @@ export function postedAtFromId(id) {
   ).toISOString();
 }
 
+const isPlainObject = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+
+/** processing_info は state（空でない文字列）を持つオブジェクトだけを認める。それ以外は投げて、投稿の前に保留にする */
+function validProcessingInfo(info, where) {
+  if (!isPlainObject(info) || typeof info.state !== "string" || !info.state)
+    throw new Error(
+      `X の媒体の処理状態が読めません（${where} の processing_info が不正です）`,
+    );
+  return info;
+}
+
 /**
  * accessToken は呼び出し側（runner）が claim の前に getXAccessToken で取って渡す。
  * adapter の中で取ると、テキストだけの投稿では最初の呼び出しが begin_post の後の createPost になり、
@@ -87,24 +99,35 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
           method: "POST",
         },
       );
-      if (!body?.data)
+      if (!isPlainObject(body?.data))
         throw new Error("X の媒体の finalize の応答に data がありません");
-      const info = body.data.processing_info;
-      if (info) return { processing_info: info };
-      return categories.get(id) === "tweet_video"
-        ? { processing_info: { state: "pending", check_after_secs: 1 } }
-        : { processing_info: null };
+      // processing_info のキーが無い（undefined）ときだけ「省略」とみなす（2026-10-13 オーケストレーター決定）。
+      // null・false・0・空文字・状態の無いオブジェクトなど、それ以外の不正な値は投稿の前に止める
+      if (!("processing_info" in body.data))
+        return categories.get(id) === "tweet_video"
+          ? { processing_info: { state: "pending", check_after_secs: 1 } }
+          : { processing_info: null };
+      return {
+        processing_info: validProcessingInfo(
+          body.data.processing_info,
+          "finalize",
+        ),
+      };
     },
     async status(id) {
       const body = await call(
         `/2/media/upload?command=STATUS&media_id=${encodeURIComponent(id)}`,
       );
-      const info = body?.data?.processing_info;
-      if (!info?.state)
+      if (!isPlainObject(body?.data))
         throw new Error(
-          "X の媒体の処理状態が読めません（STATUS の応答に processing_info.state がありません）",
+          "X の媒体の処理状態が読めません（STATUS の応答に data がありません）",
         );
-      return { processing_info: info };
+      return {
+        processing_info: validProcessingInfo(
+          body.data.processing_info,
+          "STATUS",
+        ),
+      };
     },
     async createPost({ text, mediaIds = [], replyTo }) {
       const body = await call("/2/tweets", {

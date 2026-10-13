@@ -1,17 +1,27 @@
 import { isBundlePublicationBlocked } from './snsBundleValidation.js';
 import { createXSnapshot, mobileVersion } from './snsXSend.js';
 
-/** 不足情報を合格と推測しない。v0の恒久保留は維持する。 */
-export function mobileHolds(d) {
+/**
+ * 送る前の保留の理由（個別承認の画面と自動送信の auto-plan で同じ条件。sns-pdca-loop tasks 11）。
+ * 不足情報を合格と推測しない。v0の恒久保留は維持する。
+ * 素材 v1 は、claims を公開 API で照合した結果（source_data.claim_check、tasks 9）と、リンク先の表示の確認（release_evidence、tasks 10）を見る。
+ * どちらも auto-plan が書く。照合の版が deadline_queue.source_revision と違えば保留（書いた後に値が変わった）
+ */
+export function sendHolds(d) {
   const s = d.source_data || {}, claims = s.bundle?.claims, manifest = s.source_manifest;
+  const v1 = s.schema_version === 'ryujin-preview/1';
   const holds = [...(d.publication_hold_reasons || [])];
-  if (isBundlePublicationBlocked(d)) holds.push('公開保留素材');
+  // v1 は bundle 由来でも、検査が通れば DB のトリガーが publish_blocked を外せる（153）。v0 は bundle 由来なら常に保留
+  if (v1 ? d.publish_blocked : isBundlePublicationBlocked(d)) holds.push('公開保留素材');
   if (!['pending_review', 'approved'].includes(d.status)) holds.push('承認対象の状態ではありません');
   if (d.platform === 'youtube' && !d.video_storage_path) holds.push('動画未完成');
   if (s.qa?.pass !== true || s.qa?.numeric_claims_match !== true || s.qa?.L0_hits?.length) holds.push('QA未確認・失敗');
   if (!Array.isArray(d.risk_flags) || d.risk_flags.length) holds.push('risk未確認・要修正');
   if (s.release_evidence?.status !== 'released' || !/^https:\/\//.test(s.release_evidence?.url || '')) holds.push('正式公開証拠なし');
-  if (!Array.isArray(claims) || !claims.length || !Array.isArray(manifest) || !manifest.length || claims.some(c =>
+  if (v1) {
+    if (s.claim_check?.ok !== true || !s.claim_check?.revision ||
+      s.claim_check.revision !== s.deadline_queue?.source_revision) holds.push('数値の照合が未完了・不一致');
+  } else if (!Array.isArray(claims) || !claims.length || !Array.isArray(manifest) || !manifest.length || claims.some(c =>
     !Array.isArray(c.path) || !c.path.length || !Object.hasOwn(c, 'value') ||
     !manifest.some(m => m.name === `${c.source}.json` && m.hash_verified === true && m.sha256 && m.stage && m.source_url && m.fetched_at) ||
     !Number.isInteger(c.count) || c.count < 1 || typeof c.scope !== 'string' || !c.scope.trim())) holds.push('出典・件数・範囲・stage欠落');
@@ -19,6 +29,8 @@ export function mobileHolds(d) {
   else if (Date.parse(s.deadline_queue.expires_at) <= Date.now() || !Number.isFinite(Date.parse(s.deadline_queue.expires_at))) holds.push('期限失効');
   return [...new Set(holds)];
 }
+/** 個別承認の画面の名前（sendHolds と同じ） */
+export const mobileHolds = sendHolds;
 export { mobileVersion } from './snsXSend.js';
 export async function prepareMobileReview(row, loadMedia) {
   const holds = mobileHolds(row.draft);

@@ -50,7 +50,8 @@ Because of this, **the winning boat's lane determines which boats are likely to 
 
 **Key points:**
 - When lane 1 wins wire-to-wire, the outside lanes 5 and 6 generally don't factor in
-- "1-2-6" and "1-5-6" are **against the suji (essentially unlikely combinations)**
+- "1-2-6" and "1-5-6" are **against the suji (combinations that are less likely to come in)**
+- The suji listed here are examples for thinking through race development. Combinations you leave out of your candidates can still come in
 
 ---
 
@@ -167,19 +168,22 @@ Cutting just 2 combinations already improves your return rate.
 
 ### Strategy 2: Choose a suji from your predicted race development
 
-**Watch the start exhibition, predict the development, and pick your suji accordingly**
+**Use the start exhibition as a reference to predict the development, and pick your suji accordingly**
 
 ```
 [Predicted development]
-- Lane 1's start looks slow
-- Lane 4's start looks fast and likely to overtake
-→ Go with the lane-4 overtake suji
+- Exhib. ST: lane 1 slow
+- Exhib. ST: lane 4 fast
+→ May overtake in the race
+→ Lane-4 overtake suji
 
 [Bets]
-4-5-6 (an overtake development)
+4-5-6 (overtake)
 4-5-1 (inside holds on)
-4-3-5 (lane 3 holds for 2nd)
+4-3-5 (lane 3 holds 2nd)
 ```
+
+The start exhibition is only a reference. The approach and start in the actual race can differ from the exhibition, so don't treat the exhibition's lineup or ST as the actual race lineup.
 
 ---
 
@@ -253,7 +257,7 @@ Combining Ryujin Radar's predictions with suji theory sharpens your accuracy eve
 **A. Suji alone won't guarantee a win.**
 
 Suji only represents "the pattern that tends to come up" — not a certainty. What matters just as much:
-- Reading the race development from the start exhibition
+- Reading the race development with the start exhibition as a reference (the actual race's approach and start can differ from the exhibition)
 - Racer ability and motor performance
 - The effects of wind and waves
 

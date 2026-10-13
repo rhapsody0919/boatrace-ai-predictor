@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, fetchRecorded } from "./fixtures.js";
 
 /**
  * 今期の事故率（目安、BOA-327）の固定。承認済みモック: docs/design/racer-accident-rate/mock/。
@@ -220,3 +220,49 @@ test("期の初日のレースは、期間の終わりを書かない（「05-01
     "今期の出走はまだありません",
   );
 });
+
+for (const grade of ["B2", "B1"]) {
+  test(`${grade}級の事故率注記は出走表の級別に合わせ、目印と内訳は変えない`, async ({ page }) => {
+    await page.route(/\/api\/predictions\/2026-09-29(?:\?|$)/, async (route) => {
+      const response = await fetchRecorded(route);
+      const json = await response.json();
+      const race = json.races.find((r) => r.raceId === RACE.slice(6));
+      expect(race).toBeTruthy();
+      const targetId = Math.min(
+        ...race.entries.map((entry) => entry.racerId),
+      );
+      race.entries.find((entry) => entry.racerId === targetId).grade = grade;
+      const headers = { ...response.headers() };
+      delete headers["content-length"];
+      delete headers["content-encoding"];
+      await route.fulfill({ status: response.status(), headers, json });
+    });
+    await mockRpc(page, (route, ids) => route.fulfill({ json: rows(ids) }));
+    await openBasicInfo(page);
+    const row = page.locator(".rbit-bar-row", {
+      has: page.locator(".rbit-accident-badge.is-over"),
+    });
+    await expect(row.locator(".rbit-accident-badge")).toHaveText(
+      "事故率0.78 B2ライン超え",
+    );
+    await row.click();
+    await expect(page.locator(".rbit-accident-breakdown")).toHaveText(
+      "事故点30÷出走38（F1・失格1）",
+    );
+    const note = page.locator(".rbit-accident-note");
+    if (grade === "B2") {
+      await expect(note).toContainText(
+        "0.70はA・B1級からB2級に下がる線です（この選手は今B2級）",
+      );
+      await expect(note).not.toContainText("次の級別審査でB2級になります");
+      await expect(note).toContainText(
+        "当日のこのレースより前のレースは含みません",
+      );
+    } else {
+      await expect(note).toContainText(
+        "0.70を超えると次の級別審査でB2級になります",
+      );
+      await expect(note).not.toContainText("この選手は今B2級");
+    }
+  });
+}

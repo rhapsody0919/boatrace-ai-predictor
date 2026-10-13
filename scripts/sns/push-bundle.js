@@ -19,6 +19,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import {
+  BUNDLE_LIMITS,
   BUNDLE_LIMITS_V1,
   BUNDLE_SCHEMA,
   BUNDLE_SCHEMA_V1,
@@ -108,7 +109,11 @@ export async function prepareBundle(
       form.append("files", new Blob([bytes], { type: mimeOf(name) }), name);
     const validated = await validateBundle(form, riskRules, {
       schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
-      limits: BUNDLE_LIMITS_V1,
+      // 容量の上限は v1 だけ広げる（v0 は管理画面の取り込みと同じ上限のまま）
+      limits:
+        bundle?.schema_version === BUNDLE_SCHEMA_V1
+          ? BUNDLE_LIMITS_V1
+          : BUNDLE_LIMITS,
       derived,
       v1Fields: validateV1Fields,
     });
