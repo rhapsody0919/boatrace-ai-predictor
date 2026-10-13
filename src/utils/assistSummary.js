@@ -420,18 +420,22 @@ export function axisMarks(scenario, f, axis) {
 
 /**
  * スリットの形のときの1着の艇とよく出た3連単（枠なり。承認モック v7 の「もし2コース凹みになったら」）
- * よく出た2連単（上位5つ）は BOA-831 案2（spec D-44 (4)）
+ * よく出た2連単（上位5つ）は BOA-831 案2（spec D-44 (4)）。2連単・3連単とも境目の同数はすべて含める（BOA-838）
  * @returns {null | {form: string, n: number, first: number[], topExacta: Array<[number[], number]>, topTrifecta: Array<[number[], number]>, attacker: number|null, few: boolean}}
  */
 export function formSummary(scenario, form) {
   const cell = scenario?.cells?.waku?.forms?.[form];
   if (!cell?.n) return null;
+  const topWithTies = (rows, limit) => {
+    const cutoff = rows[limit - 1]?.[1];
+    return rows.filter(([, count], i) => i < limit || count === cutoff);
+  };
   return {
     form,
     n: cell.n,
     first: cell.first_boat,
-    topExacta: exactaList(cell.tri).slice(0, 5),
-    topTrifecta: trifectaList(cell.tri).slice(0, 3),
+    topExacta: topWithTies(exactaList(cell.tri), 5),
+    topTrifecta: topWithTies(trifectaList(cell.tri), 3),
     attacker: ATTACK_BOAT[form] ?? null,
     few: cell.n < MIN_SCENARIO,
   };
