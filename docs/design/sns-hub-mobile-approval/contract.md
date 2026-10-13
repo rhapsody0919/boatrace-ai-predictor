@@ -35,3 +35,9 @@ JSDOM試験は実コンポーネントの状態遷移を検証するが、375px�
 npx playwright test --config playwright.mobile-approval.config.js
 
 専用ViteはenvDir=false/publicDir=false。本番/外部通信をrouteで遮断。375px、明暗、QA欠落の保留状態を確認し、out/reports/2026-10-07-task-06-qa/mobile-{light,dark}.pngを出す。macOS sandboxがChromiumを起動拒否した場合は未検証であり、スクリーンショット成功と扱わない。
+
+## 自動送信との関係（SQL153、ADR 0094、2026-10-13）
+
+- v1 素材の下書きは、機械の検査を通った item（`sns_auto_send_items.state` が manual・notifying・notified・sent）があるときだけ、この画面から本人が承認できる。検査に落ちた item（`held_manual`）の下書きは公開保留のまま
+- 自動送信の承認者は、この画面の承認者の選択肢に出さない（`active=false`）。自動で送る経路の条件は x-send の contract の「自動送信の例外」
+- item を止めると、まだ送信が始まっていない下書きは公開保留（`auto_stopped`）に戻り、承認は外れる（148 のガードで queued・held の job は取り消される）

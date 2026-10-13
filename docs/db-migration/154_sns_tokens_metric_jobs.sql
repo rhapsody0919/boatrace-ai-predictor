@@ -1,7 +1,7 @@
 -- 154: X のトークンの保存、計測の取り込みジョブ、日次の値、観測と UTM の制約の調整
 -- 設計: docs/design/sns-pdca-loop/plan.md §4〜§5、ADR 0093
 -- 前提: 136・137・139・146・153。136 の2表は 2026-10-12 時点で0行（本番の読み取りで確認）。適用はオーナーのみ。
--- 状態: 案（/step2）。累積値の時刻の許容差15分は 2026-10-13 にユーザーが決定。
+-- 累積値の時刻の許容差15分は 2026-10-13 にユーザーが決定。手順は 153-runbook.md。検証は scripts/maintenance/verify-sns-auto-send.js（PGlite）。
 BEGIN;
 
 -- 外部サービスの OAuth トークン（X）。値はアプリ側で AES-256-GCM で暗号化して入れる（鍵は Vercel の SNS_TOKEN_ENC_KEY）。
