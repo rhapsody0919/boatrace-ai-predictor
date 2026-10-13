@@ -43,6 +43,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/data-race-table.jpg": { width: 1104, height: 650 },
   "/images/blog/edogawa-course1-win-rate.jpg": { width: 1200, height: 630 },
   "/images/blog/edogawa-nige-technique-share.jpg": { width: 1200, height: 630 },
+  "/images/blog/edogawa-outside-winning-techniques-guide.jpg": { width: 576, height: 391 },
   "/images/blog/exhibition-time-top-chart.jpg": { width: 968, height: 750 },
   "/images/blog/exhibition-time-trend-table.jpg": { width: 968, height: 641 },
   "/images/blog/first-mark-kimarite-donut-en.jpg": { width: 1000, height: 507 },
