@@ -18,6 +18,9 @@ import fs from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
   BUNDLE_SCHEMA,
+  BUNDLE_SCHEMA_V1,
+  BUNDLE_LIMITS_V1,
+  X_VIDEO,
   BUNDLE_LIMITS,
   validateBundle,
   readBundleForm,
@@ -27,6 +30,10 @@ import {
   importValidatedBundle,
   bundleStore,
 } from "../../api/_lib/snsBundleImport.js";
+import {
+  prepareBundle,
+  summarize as summarizeBundle,
+} from "../sns/push-bundle.js";
 
 const root = new URL("../../", import.meta.url);
 const encode = (s) => new TextEncoder().encode(s);
@@ -1371,6 +1378,133 @@ if (sample)
       );
     },
   );
+// v1（sns-pdca-loop tasks 6）: push-bundle だけが受け付ける。v0 の検査・恒久保留は変えない
+const MP4 = new Uint8Array([0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109]);
+const V1_OPTIONS = {
+  schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
+  limits: BUNDLE_LIMITS_V1,
+  derived: [X_VIDEO],
+};
+async function fixtureV1(change = {}, { withXVideo = true } = {}) {
+  const v1 = {
+    schema_version: BUNDLE_SCHEMA_V1,
+    screen_key: "race-sonar",
+    x_thread: [
+      { index: 0, text: "準優勝戦の見どころ https://www.boat-ai.jp/race/202610071110", media: X_VIDEO },
+      { index: 1, text: "観測した件数を確認", media: "scene-1.png" },
+    ],
+    claims: [
+      { id: "c1", text: "類似30件", value: 30, source: { endpoint: "/api/analogy/facts/2026-10-07-11-10", path: ["count"] } },
+    ],
+    local_only: undefined,
+    release_verified: undefined,
+    approval_status: undefined,
+    x_text: undefined,
+    template_variant_id: undefined,
+    ...change,
+  };
+  const files = await fixture(v1);
+  files.delete("x-draft.txt");
+  if (withXVideo) files.set(X_VIDEO, MP4);
+  // integrity.json は Codex の出力（draft-x.mp4 は push-bundle が後で作るので含まない）
+  const integrity = JSON.parse(new TextDecoder().decode(files.get("integrity.json")));
+  delete integrity["x-draft.txt"];
+  files.set("integrity.json", json(integrity));
+  return files;
+}
+await check("v1: 管理画面の手取り込み（既定の v0 だけ）では受け付けない", async () => {
+  await assert.rejects(validateBundle(form(await fixtureV1())), /未対応または重複したファイル名|v0のみ/);
+  const noXVideo = await fixtureV1({}, { withXVideo: false });
+  await assert.rejects(validateBundle(form(noXVideo)), /v0のみ/);
+});
+await check("v1: x_thread・claims・screen_key を検査し、v0 の恒久保留を付けず、スレッドごとの risk を返す", async () => {
+  const result = await validateBundle(form(await fixtureV1()), [], V1_OPTIONS);
+  assert.equal(result.bundle.schema_version, BUNDLE_SCHEMA_V1);
+  assert(!result.holds.some((h) => h.includes("v0素材")));
+  assert(!result.holds.some((h) => h.includes(X_VIDEO)), result.holds.join(" / "));
+  assert.equal(result.manifest.find((m) => m.name === X_VIDEO).verification, "derived");
+  assert.equal(result.riskFlags.x_thread.length, 2);
+  assert.deepEqual(result.missing, []);
+});
+await check("v1: 子の URL・連番の崩れ・親の媒体・文字数・claims の形は拒否する", async () => {
+  const bad = [
+    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 1, text: "子 https://www.boat-ai.jp/race/1" }] }, /URLは親/],
+    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 2, text: "子" }] }, /連番/],
+    [{ x_thread: [{ index: 0, text: "親", media: "scene-1.png" }] }, /draft-x\.mp4/],
+    [{ x_thread: [{ index: 0, text: "あ".repeat(141), media: X_VIDEO }] }, /文字数/],
+    [{ x_thread: Array.from({ length: 7 }, (_, i) => ({ index: i, text: "本文", ...(i === 0 ? { media: X_VIDEO } : {}) })) }, /1〜6件/],
+    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 1, text: "子", media: "nothing.png" }] }, /媒体が添付にありません/],
+    [{ claims: [{ source: "facts", path: ["count"], value: 30 }] }, /v1のclaims/],
+    [{ claims: [{ id: "c", text: "t", value: 1, source: { endpoint: "https://evil.example/api/x", path: ["a"] } }] }, /v1のclaims/],
+    [{ screen_key: undefined }, /screen_key/],
+  ];
+  for (const [change, message] of bad)
+    await assert.rejects(
+      validateBundle(form(await fixtureV1(change)), [], V1_OPTIONS),
+      message,
+      JSON.stringify(change).slice(0, 80),
+    );
+});
+await check("v1: 動画は 32 MiB まで（v0 は 2 MiB のまま）、draft-x.mp4 は v0 では使えない", async () => {
+  const big = new Uint8Array(3 * 1024 * 1024);
+  big.set(MP4);
+  const files = await fixtureV1();
+  files.set(X_VIDEO, big);
+  const result = await validateBundle(form(files), [], V1_OPTIONS);
+  assert.equal(result.files.get(X_VIDEO).bytes.length, big.length);
+  const tooBig = new Uint8Array(32 * 1024 * 1024 + 1);
+  tooBig.set(MP4);
+  files.set(X_VIDEO, tooBig);
+  await assert.rejects(validateBundle(form(files), [], V1_OPTIONS), /容量超過/);
+  const v0 = await fixture();
+  v0.set(X_VIDEO, MP4);
+  await assert.rejects(validateBundle(form(v0), [], V1_OPTIONS), /v1だけ/);
+});
+await check("v1: 取り込みは bundle の版で RPC を呼ぶ（v0 の定数で上書きしない）", async () => {
+  const validated = await validateBundle(form(await fixtureV1()), [], V1_OPTIONS);
+  let payload;
+  await importValidatedBundle(validated, {
+    saveFile: async () => {},
+    register: async (p) => (payload = p),
+  });
+  assert.equal(payload.p_schema_version, BUNDLE_SCHEMA_V1);
+  assert.equal(payload.p_risk_flags.x_thread.length, 2);
+  const v0 = await validateBundle(form(await fixture()));
+  await importValidatedBundle(v0, { saveFile: async () => {}, register: async (p) => (payload = p) });
+  assert.equal(payload.p_schema_version, BUNDLE_SCHEMA);
+});
+await check("v1: push-bundle はフォルダを読み、draft-x.mp4 が無ければ draft.mp4 から書き出して検査する（素材フォルダは変えない）", async () => {
+  const { mkdtemp, writeFile, readdir, rm } = fs;
+  const { tmpdir } = await import("node:os");
+  const dir = await mkdtemp(`${tmpdir()}/sns-v1-`);
+  try {
+    for (const [name, bytes] of await fixtureV1({}, { withXVideo: false }))
+      await writeFile(`${dir}/${name}`, bytes);
+    await writeFile(`${dir}/notes.md`, "無視される");
+    const calls = [];
+    const exec = async (cmd, args) => {
+      calls.push([cmd, args]);
+      await writeFile(args.at(-1), MP4);
+    };
+    const prepared = await prepareBundle(dir, { exec });
+    assert.equal(calls[0][0], "ffmpeg");
+    assert(calls[0][1].join(" ").includes("scale=720:1280"));
+    assert.equal(calls[0][1][calls[0][1].indexOf("-i") + 1], `${dir}/draft.mp4`);
+    assert.deepEqual(prepared.derived, [X_VIDEO]);
+    assert.deepEqual(prepared.ignored, ["notes.md"]);
+    assert(!(await readdir(dir)).includes(X_VIDEO));
+    const summary = summarizeBundle(prepared);
+    assert.equal(summary.schema_version, BUNDLE_SCHEMA_V1);
+    assert.deepEqual(summary.risk_flags.x_thread, [0, 0]);
+    // 既に draft-x.mp4 があれば書き出さない
+    await writeFile(`${dir}/${X_VIDEO}`, MP4);
+    const again = [];
+    await prepareBundle(dir, { exec: async (...a) => again.push(a) });
+    assert.equal(again.length, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
 console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
 );
