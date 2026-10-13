@@ -3469,6 +3469,54 @@ test.describe("レースページ再設計（BOA-168）", () => {
     });
   });
 
+  for (const [tab, selector] of [
+    ["attackdefense", ".ad-section"],
+    ["racecard", ".rcd-table"],
+  ]) {
+    test(`${tab} のディープリンクは当日一覧にない過去レースを維持する（BOA-744）`, async ({ browser }, testInfo) => {
+      // 通常fixtureの録画時計を使わない。通信は録画だけで返し、外部へ出さない。
+      const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+      await applyCookieConsent(context, "rejected");
+      const page = await context.newPage();
+      const dataRequests = [];
+      let venueLists = 0;
+      const raceListVenues = [];
+      await page.route("**/*", async (route) => {
+        const url = new URL(route.request().url());
+        if (url.pathname === "/rest/v1/races" && url.searchParams.has("race_date")) {
+          const venuesOnly = url.searchParams.get("select") === "venue_code";
+          if (venuesOnly) venueLists++;
+          else raceListVenues.push(url.searchParams.get("venue_code"));
+          // 戸田も対象レースも無い一覧。空一覧による偽陽性を避ける。
+          return route.fulfill({ json: venuesOnly ? [{ venue_code: 1 }] : [] });
+        }
+        if (url.pathname.startsWith("/rest/v1/") || url.pathname.startsWith("/api/")) {
+          dataRequests.push(decodeURIComponent(url.href));
+          const response = await fetchRecorded(route);
+          return route.fulfill({ status: response.status(), headers: response.headers(), body: await response.body() });
+        }
+        if (url.origin === new URL(testInfo.project.use.baseURL).origin) return route.fallback();
+        return route.abort();
+      });
+      try {
+        const request = page.waitForRequest((r) => decodeURIComponent(r.url()).includes(ANALYSIS_FIXED_RACE_ID));
+        await page.goto(`/winning-technique?tab=${tab}&venue_code=2&race_id=${ANALYSIS_FIXED_RACE_ID}`);
+        await request;
+        await expect.poll(() => venueLists).toBeGreaterThan(0);
+        await expect.poll(() => raceListVenues.length).toBeGreaterThan(0);
+        await page.waitForLoadState("networkidle");
+        expect(raceListVenues.every((venue) => venue === "eq.2")).toBeTruthy();
+        await expect(page.locator(`${tab === "racecard" ? "#race-card" : "#attack-defense"}-venue-select option`)).toHaveCount(1);
+        // 一覧取得後も表を維持する。初回のID取得だけでは旧実装も成功し得る。
+        await expect(page.locator(selector)).toBeVisible({ timeout: 20000 });
+        if (tab === "racecard") await expect(page.locator(".rcd-table tbody tr")).toHaveCount(6);
+        expect(dataRequests.some((url) => url.includes(ANALYSIS_FIXED_RACE_ID))).toBeTruthy();
+      } finally {
+        await context.close();
+      }
+    });
+  }
+
   test("分析ツールの超展開データタブで固定の過去レースの実データが表示される（レースAI予想からの外出し、固定日の技法はBOA-664）", async ({
     page,
   }) => {
