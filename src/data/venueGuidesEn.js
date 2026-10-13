@@ -1164,7 +1164,7 @@ export const VENUE_GUIDES_EN = [
     tagline: "Wide-open, upset-friendly water next to the famous whirlpools",
     intro: [
       "Boat Race Naruto sits on the Konaruto Strait in Tokushima, close enough to the stands that races feel unusually intense to watch live. A breakwater keeps the seawater course calm despite its coastal setting, but lane 1 is weak here — any lane can win, upsets are common, and payouts run high, making Naruto a favorite for bettors who chase long shots.",
-      "The venue operates up to 360 days a year with tickets on sale from early morning to about 8:30pm, including night racing, so there's almost always a card running.",
+      "The venue operates up to 360 days a year with tickets on sale from early morning to about 8:30pm, so there's almost always a card running.",
     ],
     access: [
       'JR "Naruto" station → about 10 minutes on foot',
@@ -1183,7 +1183,7 @@ export const VENUE_GUIDES_EN = [
         "Seawater, sheltered by a breakwater — calm despite the coastal setting",
       character:
         "Lane 1 is weak — any lane can win; upsets and high payouts are common",
-      nightRace: true,
+      nightRace: false,
     },
     tip: "With lane 1 this weak, our AI weighs every lane's chances more evenly here than at almost any other venue.",
     nearbyAttractions: [

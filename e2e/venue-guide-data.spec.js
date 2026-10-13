@@ -150,6 +150,19 @@ registerVenueGuideQualityTests(VENUE_GUIDES_ZH_TW, "zh-TW");
 registerVenueGuideQualityTests(VENUE_GUIDES_EN, "en");
 registerVenueGuideQualityTests(VENUE_GUIDES_KO, "ko");
 
+test("naruto: 3言語の会場ガイドが本場のナイター開催を案内しない", () => {
+  for (const [label, guides, nightMention] of [
+    ["en", VENUE_GUIDES_EN, /night/i],
+    ["ko", VENUE_GUIDES_KO, /야간/],
+    ["zh-TW", VENUE_GUIDES_ZH_TW, /夜間/],
+  ]) {
+    const naruto = guides.find((venue) => venue.slug === "naruto");
+    expect(naruto, `${label}: narutoが存在する`).toBeDefined();
+    expect.soft(naruto.facts.nightRace, `${label}: naruto.facts.nightRace`).toBe(false);
+    expect.soft(naruto.intro.join(" "), `${label}: naruto.intro`).not.toMatch(nightMention);
+  }
+});
+
 // 地域ハブページ（/venues/region/:regionSlug）が正しく機能するための前提条件を検証する
 function registerRegionGroupTests(guides, label) {
   const validSlugs = VENUE_REGIONS.map((r) => r.slug);
