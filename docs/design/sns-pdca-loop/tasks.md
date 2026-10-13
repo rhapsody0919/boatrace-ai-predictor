@@ -60,7 +60,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-6 取り込み
 
-- [ ] **21. cron `sns-metrics`**（5分ごと）: YouTube の `videos.list` 累積値・X の `GET /2/users/{id}/tweets` を観測の表へ。許容差を超えたら欠測。3回続けて失敗したら Slack
+- [x] **21. cron `sns-metrics`**（5分ごと）: YouTube の `videos.list` 累積値・X の `GET /2/users/{id}/tweets` を観測の表へ。許容差を超えたら欠測。3回続けて失敗したら Slack（実装。下の3行は L2 の実投稿の後に実測する。継続監視は毎回の実行で直近5日の欠測・失敗の割合が2%を超えたら report.alerts → scrape-monitor が Slack へ）
   - [ ] 本番実測: 期待件数（算出根拠: posted の投稿数×2窓、X はスレッドの子を含む）に対し、充足率99%以上であることを実測クエリで確認する
   - [ ] タイミング実測: 土日を含む直近5日で、`posted_at`＋48h／168h から15分以内に取れた割合を実測する（欠落率2%以内）
   - [ ] 継続監視: 上記が日次で自動計測され、閾値超過で Slack 通知されることを確認する

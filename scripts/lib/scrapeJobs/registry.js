@@ -507,6 +507,14 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     activeHoursJst: { start: "08:00", end: "21:00" },
   },
+  // sns-pdca-loop tasks 21 SNS の 48h・7d の取り込み。5分ごと（終日）に、due_at を過ぎた sns_metric_jobs を最大50件処理する。
+  // 累積値は窓の終わりから15分以内だけ保存する（SQL154）ので、終日動かす。X は自分の投稿の読み取り（Owned Reads）だけ。
+  // 実装: scripts/lib/snsMetricsRunner.js、api/cron/sns-metrics.js
+  sns_metrics: {
+    kind: "continuous",
+    leaseSec: 120,
+    maxDurationSec: 120,
+  },
 });
 
 /** JST の HH:MM を、0時からの分にする */
