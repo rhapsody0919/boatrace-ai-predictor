@@ -160,6 +160,14 @@ test("naruto: 3言語の会場ガイドが本場のナイター開催を案内�
     expect(naruto, `${label}: narutoが存在する`).toBeDefined();
     expect.soft(naruto.facts.nightRace, `${label}: naruto.facts.nightRace`).toBe(false);
     expect.soft(naruto.intro.join(" "), `${label}: naruto.intro`).not.toMatch(nightMention);
+    // 開催日程の欄にも夜間開催を書かない。「年間360日」「20時半」は公式で確かめられないので書かない
+    // （オーケストレーター決定 2026-10-13。公式 FAQ には外向発売所の開門 7:00 だけがある）
+    expect
+      .soft(naruto.schedule.typicalRaceDays, `${label}: naruto.schedule.typicalRaceDays`)
+      .not.toMatch(nightMention);
+    expect
+      .soft(`${naruto.intro.join(" ")} ${naruto.schedule.typicalRaceDays}`, `${label}: 360日・20時半`)
+      .not.toMatch(/360|8:30|8시 반|8點半/);
   }
 });
 
