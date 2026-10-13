@@ -31,9 +31,9 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-2 素材 v1 の取り込み
 
-- [ ] **6. `validateBundle` に v1（x_thread・claims[].source・race_id・screen_key、動画32 MiB）を足す**。X 用に 720×1280 の書き出し（`draft-x.mp4`、ffmpeg）を1本足し、`x_thread[0].media` はそれを指す。YouTube は 1080×1920 の `draft.mp4` のまま（2026-10-13 オーケストレーター判断。X の docs の寸法の記述が食い違うため推奨の寸法に合わせる）。v0 の検査は変えない。再現テストは `verify-sns-bundle-import.js`
-- [ ] **7. `scripts/sns/push-bundle.js`**（Node、本体の `.env.local`、Storage へ直接・登録の RPC）。`package.json` に `sns:push-bundle`
-- [ ] **8. hq 向けの手順書** `docs/operation/sns-pdca-loop-runbook.md`: Codex の出力フォルダ → push-bundle → 結果の見方。Codex に鍵を渡さないことを明記。Codex 向けの v1 の形式の説明も同じ文書に置く
+- [x] **6. `validateBundle` に v1（x_thread・claims[].source・race_id・screen_key、動画32 MiB）を足す**。X 用に 720×1280 の書き出し（`draft-x.mp4`、ffmpeg）を1本足し、`x_thread[0].media` はそれを指す。YouTube は 1080×1920 の `draft.mp4` のまま（2026-10-13 オーケストレーター判断。X の docs の寸法の記述が食い違うため推奨の寸法に合わせる）。v0 の検査は変えない。再現テストは `verify-sns-bundle-import.js`
+- [x] **7. `scripts/sns/push-bundle.js`**（Node、本体の `.env.local`、Storage へ直接・登録の RPC）。`package.json` に `sns:push-bundle`
+- [x] **8. hq 向けの手順書** `docs/operation/sns-pdca-loop-runbook.md`: Codex の出力フォルダ → push-bundle → 結果の見方。Codex に鍵を渡さないことを明記。Codex 向けの v1 の形式の説明も同じ文書に置く（X・GA4 の鍵の登録の手順も入れた。`referenced_insight_ids` の取り込み（plan §6 B3）は 153 の取り込み関数に無いので、25 で扱う）
 
 ## PR-3 検査（禁止表現・数値の照合・リンク先の表示）
 
