@@ -6,8 +6,8 @@
 
 | PR | ブランチ | tasks | 状態 |
 |---|---|---|---|
-| #1461（PR-1） | `feat/boa-822-pr1-in-caution-nightly` | 1〜5 | CI は `verify-adr-references`（ADR-0095 が #1440 にしかない）だけ赤。#1440 のマージ後に master を取り込めば緑の見込み。/code-review・data-accuracy-verifier 済み（PR コメント） |
-| #1462（PR-2、draft） | `feat/boa-822-pr2-in-caution-generate`（base は PR-1 のブランチ） | 7〜12 | /code-review 済み（PR コメント）。PR-1 のマージ後に base を master に向け直す |
+| #1461（PR-1） | `feat/boa-822-pr1-in-caution-nightly` | 1〜5 | 2026-10-13 マージ済み |
+| #1462（PR-2、draft） | `feat/boa-822-pr2-in-caution-generate`（base は master） | 7〜12 | /code-review 済み（PR コメント）。表ができてから ready にする |
 
 ## 判断したこと（plan からの変更）
 
@@ -20,11 +20,10 @@
 ## Orchestrate に回したこと・回すこと
 
 - PR-1 は #1440 のマージが先（途中報告済み）
-- data-accuracy-verifier の指摘: 本体の 2025-12-03〜2026-02-02 は `race_conditions.race_stage` が空で、準優（約400件）・優勝戦（約148件）が other に入る。統計検証 r4 も同じ欠け。race_series から補うかは仕様の判断（yusho の率は 30.65% → 約30.8% の見積もり）
+- data-accuracy-verifier の指摘（2025-12-03〜2026-02-02 の race_stage が空）は、検証に使った 10/1 時点の CSV が古かっただけだった。本番では K/B 補完（backfill-phase1-kb-2026-10.md 項目5）で 9,962レース全部が埋まっており、準優 4.02%・優勝戦 1.54%（2026-02-03〜09 は 4.15%・1.52%）。155 の表は本番から作るので対応は要らない（2026-10-13 読み取りで確認）
 
 ## 次にやること
 
-1. #1440 のマージ後: PR-1 に master を取り込み → CI 緑 → Orchestrate に報告（PR 番号・確認すること）。tasks.md の 1〜5 にチェック
-2. PR-1 のマージ後（オーナー）: 155 を SQL Editor で適用 → Actions「In-Caution Nightly」を `full=true`・`force=true` で1回 → `scrape_job_state` の `in_caution_dispatch` を live。確認の SELECT はレーンが読み取りで行う（年ごとの `sum(n)` は PR-1 の本文の表と照合）
-3. 表ができたら PR-2 を ready にして master へ向け直す → CI → Orchestrate。マージ後に `in_caution_health` を live、翌朝 task 13（`verify-in-caution-coverage.js --table --today`、例のレースの値の出し直し、data-accuracy-verifier）
-4. PR-3（task 14〜16、RPC 157）から先は tasks.md のとおり
+1. オーナー: [owner-prod-steps-pr1.sql](./owner-prod-steps-pr1.sql) の手順1〜3（155 の適用 → Actions「In-Caution Nightly」を full・force で1回 → in_caution_dispatch を live）。確認の SELECT はレーンが読み取りで行う（年ごとの `sum(n)` は #1461 の本文の表と照合。2026 の分は本番の値が正）
+2. 表ができたら PR-2 を ready にして master へ向け直す → CI → Orchestrate。マージ後に `in_caution_health` を live、翌朝 task 13（`verify-in-caution-coverage.js --table --today`、例のレースの値の出し直し、data-accuracy-verifier）
+3. PR-3（task 14〜16、RPC 157）から先は tasks.md のとおり
