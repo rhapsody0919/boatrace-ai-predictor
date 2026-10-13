@@ -364,7 +364,9 @@ test.describe("単勝・複勝の人気を締切時オッズから出す（BOA-5
 });
 
 for (const width of [1440, 375]) {
-  test(`${width}px: 払戻は券種・組番・払戻金・人気の順（BOA-707）`, async ({ page }) => {
+  test(`${width}px: 払戻は券種・組番・払戻金・人気の順（BOA-707）`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width, height: 900 });
     const root = await openResult(page, KOJIMA, FINAL_ROW);
     const row = root.locator(".rr-payout-row").filter({ hasText: "¥1,530" });
@@ -377,6 +379,13 @@ for (const width of [1440, 375]) {
     const pop = await row.locator(".rr-pop").boundingBox();
     if (width > 480) {
       expect(amount.x + amount.width).toBeLessThanOrEqual(pop.x);
+      // 人気の文字幅（4人気・1人気※ 等）で払戻金の右端が行ごとにずれない
+      const rights = await root
+        .locator(".rr-payout-row .rr-amount")
+        .evaluateAll((els) =>
+          els.map((el) => el.getBoundingClientRect().right),
+        );
+      expect(Math.max(...rights) - Math.min(...rights)).toBeLessThanOrEqual(1);
     } else {
       expect(pop.y).toBeGreaterThanOrEqual(amount.y + amount.height - 1);
     }
