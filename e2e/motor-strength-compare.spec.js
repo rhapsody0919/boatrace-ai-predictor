@@ -36,9 +36,41 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       timeout: 30000,
     });
     await expect(
-      page.locator(".table-note", { hasText: "金枠の値は" }),
-    ).toContainText("ベージュの地は、その列で一番の値です。");
+      page.locator(".table-note", { hasText: "ベージュの地は" }),
+    ).toHaveText("ベージュの地は、その列で一番の値です。");
+    await expect(page.locator(".table-note", { hasText: "金枠の値は" })).toBeVisible();
+    await page.locator(".motor-ranking-table tbody tr").first().click();
+    await expect(page.locator(".motor-ranking-table")).toHaveCount(0);
+    await expect(
+      page.locator(".table-note", { hasText: "ベージュの地は" }),
+    ).toHaveCount(0);
   });
+
+  for (const value of [null, 0]) {
+    test(`強調3列が全艇${value === null ? "null" : "同値"}ならベージュの注記を出さない`, async ({
+      page,
+    }) => {
+      await page.route("**/rest/v1/venue_motor_stats*", async (route) => {
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        for (const row of Array.isArray(body) ? body : body ? [body] : []) {
+          row.final_count = value;
+          row.championship_count = value;
+          row.first_place_count = value;
+        }
+        await route.fulfill({ response, json: body });
+      });
+      await page.goto(KOJIMA_7R);
+      await expect(page.locator(".motor-venue-rank").first()).toBeVisible({
+        timeout: 30000,
+      });
+      await expect(page.locator(".motor-stat-rank1")).toHaveCount(0);
+      await expect(page.locator(".table-note", { hasText: "金枠の値は" })).toBeVisible();
+      await expect(
+        page.locator(".table-note", { hasText: "ベージュの地は" }),
+      ).toHaveCount(0);
+    });
+  }
 
   test("棒の長さの比が公式2連率の比と一致し、会場内順位が出る", async ({
     page,
@@ -137,6 +169,11 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       timeout: 30000,
     });
     await expect(page.locator(".rate-bar")).toHaveCount(6);
+    await expect(page.locator(".motor-stat-rank1")).toHaveCount(0);
+    await expect(
+      page.locator(".table-note", { hasText: "ベージュの地は" }),
+    ).toHaveCount(0);
+    await expect(page.locator(".table-note", { hasText: "金枠の値は" })).toBeVisible();
     await expect(page.locator(".motor-venue-rank")).toHaveCount(0);
     await expect(
       page.locator(".motor-ranking-table thead th", {
