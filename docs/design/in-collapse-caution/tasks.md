@@ -37,7 +37,7 @@
 
 ## PR-3 RPC（157、plan §3）
 
-#1463 予定（task 14・15）。157 の適用前の md5 は 2026-10-13 に本番で一致を確認（5d0ff6d8…・a5c39f55…・8f6cf80c…）
+#1492（task 14・15）。157 の適用前の md5 は 2026-10-13 に本番で一致を確認（5d0ff6d8…・a5c39f55…・8f6cf80c…）
 
 - [x] **14. `verify-rpc-output-keys.js`** に `MIGRATION_157_IN_CAUTION_KEYS`（3関数のレースの `inCaution`）
 - [x] **15. `transformEdgeResponse`・`transformTodayRaces`** で `inCaution` をレース直下に通す。`RaceDetailPage.jsx:81-85` で prediction に写す
