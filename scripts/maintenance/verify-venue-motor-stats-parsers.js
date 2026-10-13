@@ -15,12 +15,14 @@ import fs from "node:fs";
 import * as cheerio from "cheerio";
 import { parseGenericMotorTable } from "../lib/venueMotorStats/parsers/genericTable.js";
 import { parseGamagoriMotorTable } from "../lib/venueMotorStats/parsers/gamagori.js";
-import { parseMiyajimaMotorPdf } from "../lib/venueMotorStats/parsers/miyajimaPdf.js";
-import { VENUE_MOTOR_STATS_CONFIG } from "../lib/venueMotorStats/venueConfig.js";
+import {
+  VENUE_MOTOR_STATS_CONFIG,
+  EXCLUDED_VENUES,
+} from "../lib/venueMotorStats/venueConfig.js";
 
 // scripts/daily/scrape-venue-motor-stats.js の PARSERS レジストリのキーと一致させる。
 // venueConfig.js側のtypoを、実際にスクレイピングを実行する前に機械的に検知するための重複定義。
-const KNOWN_PARSERS = new Set(["genericTable", "gamagori", "miyajimaPdf"]);
+const KNOWN_PARSERS = new Set(["genericTable", "gamagori"]);
 
 const FIXTURE_DIR = new URL(
   "../lib/venueMotorStats/__fixtures__/",
@@ -205,13 +207,6 @@ function check(label, actual, expected) {
   check("江戸川 30号機 事故率", m30.accidentRate, 0.2);
 }
 {
-  const $ = loadFixture("hamanako");
-  const { data } = parseGenericMotorTable($);
-  const m55 = data.find((d) => d.motorNumber === 55);
-  check("浜名湖 55号機 優出回数", m55.finalCount, 1);
-  check("浜名湖 55号機 2連対率", m55.top2Rate, 50.48);
-}
-{
   const $ = loadFixture("tokuyama");
   const { data } = parseGenericMotorTable($);
   const m68 = data.find((d) => d.motorNumber === 68);
@@ -247,21 +242,22 @@ function check(label, actual, expected) {
   );
 }
 
-// ⑦宮島（PDF配布、座標ベースの専用パーサー）
+// 浜名湖・宮島は会場サイトの利用規約に著作権条項があるため取得しない（ADR-0067、BOA-681）。
+// 戸田・平和島はページが無い。4会場とも取得の対象に入らず、除外の理由が書かれていること
 {
-  const buf = fs.readFileSync(new URL("miyajima-motor.pdf", FIXTURE_DIR));
-  const { data } = await parseMiyajimaMotorPdf(buf);
-  const m11 = data.find((d) => d.motorNumber === 11);
-  check("宮島 011号機 節数", m11.meetCount, 25);
-  check("宮島 011号機 出走回数", m11.raceCount, 236);
-  check("宮島 011号機 優出回数", m11.finalCount, 4);
-  check("宮島 011号機 最高タイム(秒)", m11.bestTime, 108.1);
-  check("宮島 011号機 算出期間開始", m11.statsPeriodStart, "2025-10-19");
   check(
-    "宮島 全モーターがユニーク",
-    new Set(data.map((d) => d.motorNumber)).size,
-    data.length,
+    "取得の対象に戸田・平和島・浜名湖・宮島が無い",
+    VENUE_MOTOR_STATS_CONFIG.filter((v) =>
+      [2, 4, 6, 17].includes(v.venueCode),
+    ).map((v) => v.name),
+    [],
   );
+  check(
+    "除外の理由が4会場にある",
+    Object.keys(EXCLUDED_VENUES).map(Number),
+    [2, 4, 6, 17],
+  );
+  check("取得の対象は20会場", VENUE_MOTOR_STATS_CONFIG.length, 20);
 }
 
 // venueConfig.jsの全エントリがPARSERSレジストリの既知キーを指しているか確認

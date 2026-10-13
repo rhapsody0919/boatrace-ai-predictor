@@ -217,7 +217,7 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: [],
   },
-  // B3 会場別モーター成績。06:00指定（cron: 06:00・08:00 JST）。会場公式サイト（別ドメイン、22会場＋宮島のPDF）を、
+  // B3 会場別モーター成績。06:00指定（cron: 06:00・08:00 JST）。会場公式サイト（別ドメイン、20会場。浜名湖・宮島は BOA-681 で対象外）を、
   // 会場ごとに1ページ。同時4（各ドメインには1日1〜2リクエストのみ）。GitHub Actionsの逐次実行で約29秒。
   // 実装: scripts/lib/venueMotorStatsJob.js（T4b-14）
   venue_motor_stats: {
