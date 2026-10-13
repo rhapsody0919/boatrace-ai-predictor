@@ -1425,6 +1425,23 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
     }
   });
 
+  test("払戻の注記と水面傾向の間に16pxの余白（BOA-707）", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "layout-desktop", "1440pxで確認");
+    await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
+    const card = page.locator(".race-result .vds-card");
+    await expect(card).toBeVisible({ timeout: 30000 });
+    const gap = await card.evaluate((el) => {
+      const prev = el.previousElementSibling;
+      if (!prev) throw new Error("水面傾向カードの直前に払戻表・注記が無い");
+      return (
+        el.getBoundingClientRect().top - prev.getBoundingClientRect().bottom
+      );
+    });
+    expect(gap).toBeGreaterThanOrEqual(16);
+  });
+
   // 今節タブの得点率早見。箱の幅いっぱいに広がり、余りが全部選手名の列に入って、
   // 1440px で選手名の列が 853px、1024px でも 672px あった（BOA-736）。指定は 769px から効く
   // 今節タブの比較表（6艇の今節）。1440px で表が 1174px に広がり、選手名と得点率・節内順位・
