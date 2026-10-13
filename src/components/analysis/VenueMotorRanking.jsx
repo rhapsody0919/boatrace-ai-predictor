@@ -145,13 +145,11 @@ function VenueMotorRanking({ initialVenueCode = null }) {
       >
         {label}
         <span className="vmr-sort-mark" aria-hidden="true">
-          {MOTOR_SORT_KEYS[key].ascending
-            ? sortKey === key
-              ? "▲"
-              : "△"
-            : sortKey === key
-              ? "▼"
-              : "▽"}
+          {
+            (MOTOR_SORT_KEYS[key].ascending ? "▲△" : "▼▽")[
+              sortKey === key ? 0 : 1
+            ]
+          }
         </span>
       </button>
     </th>
