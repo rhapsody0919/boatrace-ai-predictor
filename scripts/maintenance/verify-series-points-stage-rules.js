@@ -35,6 +35,7 @@ import {
   TOKUSEN_SCORE_POINTS,
   officialSeriesScore,
   shouldUseOfficialSeries,
+  prelimOfficialAdjustments,
   parseOfficialPlacements,
   buildMeetRanking,
   listAbsentOnlyRacers,
@@ -78,6 +79,8 @@ const CLASSIFY_CASES = [
   ["優勝戦", "excluded"],
   ["準優勝戦", "excluded"],
   ["準々優勝戦", "excluded"], // 実データ4件
+  ["準々決勝戦", "excluded"], // BOA-771: 2026-01-23 江戸川G1の9〜12R
+  ["準決勝戦", "excluded"],
   ["準優進出戦", "excluded"], // 実データ39件
   ["ツッキー優勝戦", "excluded"],
   ["団体・優勝戦", "excluded"],
@@ -1788,6 +1791,86 @@ check(
     ],
   );
   check("対象外が居なければ空", groupExcludedRacers([], []), []);
+}
+
+// 予選中の今節タブは当社計算のまま、公式の前夜の減点と途中帰郷だけを足す（BOA-782）。
+// 三国G1 10/6: 白井英治（公式14位・減点10）を2位と出し、公式で途中帰郷の選手を順位に残した
+{
+  const officialRows = [
+    { racer_id: 1, remarks: null, penalty_points: 0 },
+    { racer_id: 2, remarks: null, penalty_points: 10 },
+    { racer_id: 3, remarks: "途中帰郷", penalty_points: 0 },
+    // 99 は賞典除外の印。引く点数ではない
+    { racer_id: 4, remarks: "賞典除外", penalty_points: 99 },
+  ];
+  check(
+    "表の時点が表示日より前なら、減点（99以外）と途中帰郷を返す",
+    prelimOfficialAdjustments(officialRows, "2026-10-05", "2026-10-06"),
+    { asOf: "2026-10-05", penaltyByRacer: { 2: 10 }, withdrawnRacerIds: [3] },
+  );
+  check(
+    "表の時点が表示日と同じか後なら使わない（過去のレースへの後出しを防ぐ）",
+    [
+      prelimOfficialAdjustments(officialRows, "2026-10-06", "2026-10-06"),
+      prelimOfficialAdjustments(officialRows, "2026-10-08", "2026-10-06"),
+    ],
+    [null, null],
+  );
+  check(
+    "公式の行・表の時点が無ければ使わない",
+    [
+      prelimOfficialAdjustments([], "2026-10-05", "2026-10-06"),
+      prelimOfficialAdjustments(officialRows, null, "2026-10-06"),
+    ],
+    [null, null],
+  );
+
+  const run = (racerId, raceId, boatNumber, rank1, rank2 = null) => ({
+    racerId,
+    playerName: `選手${racerId}`,
+    raceId,
+    raceStage: "予選",
+    boatNumber,
+    started: true,
+    rank1,
+    rank2,
+    rank3: null,
+    rank4: null,
+    rank5: null,
+    rank6: null,
+  });
+  const board = {
+    prelimEndRaceId: null,
+    entries: [
+      // 選手1: 2着2本 = 16点 / 2走 = 8.00
+      run(1, "2026-10-05-10-01", 2, 9, 2),
+      run(1, "2026-10-06-10-01", 2, 9, 2),
+      // 選手2: 1着・2着 = 18点 / 2走 = 9.00、減点10で 4.00
+      run(2, "2026-10-05-10-02", 1, 1),
+      run(2, "2026-10-06-10-02", 2, 9, 2),
+    ],
+    officialPenaltyByRacer: { 2: 10 },
+  };
+  const ranked = buildMeetRanking(board);
+  check(
+    "当社計算から公式の前夜の減点を引いて並べる（当日の走は当社計算のまま）",
+    ranked.map((r) => [r.racerId, r.rank, r.points, r.runs, r.fromOfficial, r.penaltyFromOfficial]),
+    [
+      [1, 1, 16, 2, false, 0],
+      [2, 2, 8, 2, false, 10],
+    ],
+  );
+  check(
+    "減点が無ければ従来どおり（選手2が 9.00 で1位）",
+    buildMeetRanking({ ...board, officialPenaltyByRacer: null }).map((r) => [
+      r.racerId,
+      r.rank,
+    ]),
+    [
+      [2, 1],
+      [1, 2],
+    ],
+  );
 }
 
 console.log(failures === 0 ? "\n全件パス" : `\n失敗 ${failures} 件`);

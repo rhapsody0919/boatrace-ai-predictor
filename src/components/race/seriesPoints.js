@@ -75,7 +75,7 @@ export function normalizeStage(stage) {
 /**
  * 得点率の配点区分。
  *
- * - `excluded` … 勝ち上がり戦（準優・優勝戦）。得点率に算入しない
+ * - `excluded` … 勝ち上がり戦（準々・準決・準優・優勝戦）。得点率に算入しない
  * - `dream` … ドリーム戦。`SPECIAL_SCORE_POINTS`
  * - `tokusen` … 特選・特賞・選抜。`TOKUSEN_SCORE_POINTS`
  * - `normal` … 予選・一般戦とそれ以外。`SCORE_POINTS`
@@ -88,8 +88,14 @@ export function normalizeStage(stage) {
 export function classifyStage(stage) {
   const s = normalizeStage(stage);
   if (!s) return "normal";
-  // 「準々優勝戦」「準優進出戦」も勝ち上がり戦なので先に落とす
-  if (s.includes("準優") || s.includes("優勝戦")) return "excluded";
+  // 「準々決勝戦」「準々優勝戦」「準決勝戦」「準優進出戦」も先に落とす
+  if (
+    s.includes("準々") ||
+    s.includes("準決") ||
+    s.includes("準優") ||
+    s.includes("優勝戦")
+  )
+    return "excluded";
   // 「優勝戦」「準優」を含まない優勝戦・準優勝戦（決勝戦・準決勝戦・王将位決定戦・〜優 等）。
   // バッジと同じ判定 v2（raceStageConfig.js の getRaceStageKey、BOA-271 T1-1）
   if (getRaceStageKey(stage)) return "excluded";
@@ -891,6 +897,40 @@ export function officialSeriesScore(row) {
 }
 
 /**
+ * 予選中の今節タブに足す、公式の得点率一覧の**減点と途中帰郷だけ**（純関数、BOA-782）。
+ *
+ * 予選中の得点率・順位は当社計算のまま（当日の走を数えるため）。当社は減点と公式の
+ * 備考を持たず、三国G1 10/6 に白井英治（公式14位・減点10）を2位と出し、公式で途中帰郷の
+ * 安河内将を順位に残した。そこで前夜の取得分から、この2つだけを借りる
+ * （オーナー決定 2026-10-13）。
+ *
+ * **表の時点が表示中のレースの日より前のときだけ**使う。公式の行は節に1行で、取得の
+ * たびに上書きされる。過去の日のレースを後から開くと、その日より後の減点・帰郷が
+ * 入った行になる（後出し。児島G1 10/1 の丸野一樹を予選中に外した PR #1149 と同じ型）。
+ *
+ * @param {Array<{racer_id: number, remarks: string|null,
+ *   penalty_points: number|null}>} officialRows 節の公式の行
+ * @param {string|null} asOf 表の時点 YYYY-MM-DD（`officialAsOfDate`）
+ * @param {string} raceDate 表示中のレースの日付 YYYY-MM-DD
+ * @returns {{asOf: string, penaltyByRacer: Record<number, number>,
+ *   withdrawnRacerIds: Array<number>}|null} 使えなければ null
+ */
+export function prelimOfficialAdjustments(officialRows, asOf, raceDate) {
+  const rows = Array.isArray(officialRows) ? officialRows : [];
+  if (rows.length === 0 || !asOf || !raceDate || asOf >= raceDate) return null;
+  const penaltyByRacer = {};
+  for (const r of rows) {
+    const p = r.penalty_points ?? 0;
+    // 99 は賞典除外の印で、引く点数ではない（officialSeriesScore と同じ）
+    if (p > 0 && p !== 99) penaltyByRacer[r.racer_id] = p;
+  }
+  const withdrawnRacerIds = rows
+    .filter((r) => r.remarks?.includes("途中帰郷"))
+    .map((r) => r.racer_id);
+  return { asOf, penaltyByRacer, withdrawnRacerIds };
+}
+
+/**
  * 公式の `placements`（着順の文字列）を着順の配列にする（純関数）。
  *
  * 全角空白は未消化のスロットなので落とす。全角・半角の数字は着順、それ以外
@@ -960,6 +1000,16 @@ export function buildMeetRanking(scoreboard) {
   // 公式の行は「予選終了時点」のスナップショットなので、予選中のレースを
   // 開いているときに使うと**まだ走っていない走を含む値**になってしまう
   const officialByRacer = scoreboard?.officialByRacer ?? null;
+  // 予選中に当社計算へ足す公式の前夜の減点（BOA-782、prelimOfficialAdjustments）
+  const penaltyByRacer = scoreboard?.officialPenaltyByRacer ?? {};
+  const withPenalty = (score, penalty) =>
+    penalty > 0 && score.runs > 0
+      ? {
+          ...score,
+          points: score.points - penalty,
+          rate: (score.points - penalty) / score.runs,
+        }
+      : score;
 
   const rows = [...byRacer.entries()]
     .map(([racerId, { playerName, rows: runs }]) => {
@@ -970,13 +1020,18 @@ export function buildMeetRanking(scoreboard) {
       // 予選を走っていなければ走数0で `rate` が null になり、順位から外れる
       const own = official
         ? null
-        : computeSeriesScore(runs, { prelimEndRaceId });
+        : withPenalty(
+            computeSeriesScore(runs, { prelimEndRaceId }),
+            penaltyByRacer[racerId] ?? 0,
+          );
       return {
         racerId,
         playerName,
         points: official ? official.points : own.points,
         runs: official ? official.runs : own.runs,
         rate: official ? official.rate : own.rate,
+        // 当社計算に公式の前夜の減点を足したか（BOA-782）
+        penaltyFromOfficial: own ? (penaltyByRacer[racerId] ?? 0) : 0,
         finishes: official
           ? official.finishes
           : listSeriesFinishes(runs, { prelimEndRaceId }),

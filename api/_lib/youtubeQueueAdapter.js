@@ -17,12 +17,26 @@ const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 // upload と公開で同じ項目を送るよう、privacyStatus 以外はここにまとめる
 const STATUS_FIELDS = { selfDeclaredMadeForKids: false };
 const TITLE_MAX = 100;
+export const VIDEO_MAX_BYTES = 32 * 1024 * 1024;
 
-/** YouTube が受け付けない題名（空・100文字超・< >）を、送る前に見つける */
+/** 承認の snapshot のハッシュタグを YouTube のタグ（先頭の # を外したキーワード）にする。空と重複は除く */
+export function youtubeTagsOf(snapshot) {
+  const tags = (snapshot?.source?.hashtags ?? [])
+    .filter((tag) => typeof tag === "string")
+    .map((tag) => tag.trim().replace(/^#+/, ""))
+    .filter(Boolean);
+  return [...new Set(tags)];
+}
+
+/** YouTube が受け付けない題名（空・100文字超・< >）と、1回で上げられない大きさの動画を、送る前に見つける */
 export function validateYoutubeSnapshot(snapshot) {
   const title = snapshot?.youtube_title ?? "";
   if (!title.trim() || [...title].length > TITLE_MAX || /[<>]/.test(title))
     throw new Error("youtube_title_invalid");
+  // 1回の multipart で上げるので、動画は 32 MiB まで（ADR 0090 の素材 v1・承認の createXSnapshot と同じ上限）。
+  // 承認の SQL は外枠の 500 MiB のままなので、ここでも送る前に止める（関数の時間・メモリで途中で切れると、上がったか分からない要照合になるため）
+  if (!(snapshot?.media?.[0]?.size <= VIDEO_MAX_BYTES))
+    throw new Error("youtube_video_too_large");
 }
 
 export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
@@ -89,7 +103,9 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
       const metadata = {
         snippet: {
           title: snapshot.youtube_title,
-          description: snapshot.source?.caption_text ?? "",
+          // 承認した版をそのまま送る: 説明は承認の完成文（本文＋タグの行）、タグは承認したハッシュタグ。どちらも承認の hash に入る
+          description: snapshot.text ?? "",
+          tags: youtubeTagsOf(snapshot),
         },
         status: {
           privacyStatus: "private",

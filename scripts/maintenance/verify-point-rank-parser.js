@@ -16,7 +16,11 @@
  */
 import fs from "node:fs";
 import * as cheerio from "cheerio";
-import { parsePointRankTable } from "../lib/pointRankParser.js";
+import {
+  parsePointRankTable,
+  parseHayamiRaceNumber,
+  parseHayamiSeriesDay,
+} from "../lib/pointRankParser.js";
 import { _internal } from "../daily/scrape-point-rank.js";
 
 const FIXTURE_DIR = new URL("../lib/__fixtures__/pointRank/", import.meta.url);
@@ -58,6 +62,11 @@ check("G1 4日目: 1位の行", day4[0], {
   totalPoints: 50,
   penaltyPoints: 0,
   remarks: null,
+  // 2026-09-19 取得のページは見出しが「早見」だけで、セルも空欄（BOA-784）
+  nextRace1: null,
+  nextRace2: null,
+  nextSeriesDay: null,
+  nextRaceUnreadable: false,
 });
 check(
   "G1 4日目: 賞典除外は順位・得点率がnull、減点99を生値のまま保持",
@@ -72,12 +81,54 @@ check(
     totalPoints: 34,
     penaltyPoints: 99,
     remarks: "賞典除外",
+    nextRace1: null,
+    nextRace2: null,
+    nextSeriesDay: null,
+    nextRaceUnreadable: false,
   },
 );
 check(
   "G1 4日目: 途中帰郷は4名",
   day4.filter((r) => r.remarks === "途中帰郷").length,
   4,
+);
+// 早見（翌日の1走目・2走目、BOA-784）。値の入った実物は予選中の夜にしか出ないため、
+// 実物の g1-day4-with-table.html の見出しとセルだけを書き換えた合成のフィクスチャで確かめる
+const hayami = parseFixture("g1-hayami-synthetic");
+check(
+  "早見: 「5R」「11R」・全角「５Ｒ」「１２Ｒ」・出走表へのリンク・空欄・読めない値",
+  hayami
+    .slice(0, 4)
+    .map((r) => [r.nextRace1, r.nextRace2, r.nextRaceUnreadable]),
+  [
+    [5, 11, false],
+    [5, 12, false],
+    [7, null, false],
+    [null, null, true],
+  ],
+);
+check(
+  "早見: 見出し「早見（５日目）」から日目を読み、全行に付ける",
+  [...new Set(hayami.map((r) => r.nextSeriesDay))],
+  [5],
+);
+check(
+  "早見: 書き換えていない行は空欄（null）",
+  [hayami[4].nextRace1, hayami[4].nextRace2, hayami[4].nextRaceUnreadable],
+  [null, null, false],
+);
+check(
+  "早見のレース番号: 1〜12 以外は null",
+  ["0R", "13R", "1R", "12"].map((v) => {
+    const $cell = cheerio.load(`<td>${v}</td>`, null, false);
+    return parseHayamiRaceNumber($cell, $cell("td")[0]);
+  }),
+  [null, null, 1, 12],
+);
+check(
+  "早見の日目: 「４日目」「早見(4日目)」、日目なしは null",
+  ["早見（４日目）", "早見(4日目)", "早見"].map(parseHayamiSeriesDay),
+  [4, 4, null],
 );
 check("G3「データはありません」: null", parseFixture("g3-no-data"), null);
 check(

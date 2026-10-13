@@ -77,6 +77,10 @@ const POINT_RANK_G1 = fs.readFileSync(
   new URL("g1-day4-with-table.html", FIXTURES),
   "utf8",
 );
+const POINT_RANK_HAYAMI = fs.readFileSync(
+  new URL("g1-hayami-synthetic.html", FIXTURES),
+  "utf8",
+);
 const POINT_RANK_NONE = fs.readFileSync(
   new URL("g3-no-data.html", FIXTURES),
   "utf8",
@@ -721,6 +725,74 @@ const pointRankFetch = (overrides = {}) =>
       "得点率: dryRun は解析のみで書かない（rowsParsed=52・count=0）",
       dry.updated === false && dry.count === 0 && dry.rowsParsed === 52,
       show(dry),
+    );
+  }
+  // 早見の列（翌日の1走目・2走目、BOA-784）。マイグレーション159の列を書き、未適用の DB では
+  // その列だけを除いて他の列を書き続ける
+  {
+    const tables = () => ({
+      races: [{ race_id: "2026-09-19-05-01", race_grade: "G1" }],
+      race_conditions: [{ race_id: "2026-09-19-05-01", series_day: 4 }],
+    });
+    const hayamiFetch = async () =>
+      new Response(POINT_RANK_HAYAMI, { status: 200 });
+    const client = createFakeClient({ tables: tables() });
+    const result = await runPointRank("2026-09-19", {
+      client,
+      fetchImpl: hayamiFetch,
+      venueDelayMs: 0,
+    });
+    const first = (client.data.racer_series_points ?? []).find(
+      (r) => r.racer_id === 3897,
+    );
+    check(
+      "得点率: 早見の列（next_race_1・next_race_2・next_series_day）を書き、報告に早見ありの人数と読めない人数を出す",
+      result.count === 52 &&
+        first?.next_race_1 === 5 &&
+        first?.next_race_2 === 11 &&
+        first?.next_series_day === 5 &&
+        result.venues[0]?.nextRaceRows === 3 &&
+        result.venues[0]?.nextRaceUnreadable === 1,
+      show({ first, venues: result.venues }),
+    );
+
+    // 159 が未適用の DB: 早見の列を含む upsert は PGRST204 で拒否される
+    const legacy = createFakeClient({ tables: tables() });
+    const legacyFrom = legacy.from.bind(legacy);
+    let rejected = 0;
+    legacy.from = (table) => {
+      const b = legacyFrom(table);
+      const upsert = b.upsert.bind(b);
+      b.upsert = (rows, opts) => {
+        if (rows.some((r) => "next_race_1" in r)) {
+          rejected += 1;
+          return Promise.resolve({
+            data: null,
+            error: {
+              code: "PGRST204",
+              message:
+                "Could not find the 'next_race_1' column of 'racer_series_points' in the schema cache",
+            },
+          });
+        }
+        return upsert(rows, opts);
+      };
+      return b;
+    };
+    const legacyResult = await runPointRank("2026-09-19", {
+      client: legacy,
+      fetchImpl: hayamiFetch,
+      venueDelayMs: 0,
+    });
+    const legacyRows = legacy.data.racer_series_points ?? [];
+    check(
+      "得点率: 159 が未適用なら早見の列だけを除いて書き直し、他の列（52行）は書く",
+      rejected === 1 &&
+        legacyResult.updated === true &&
+        legacyResult.failures.length === 0 &&
+        legacyRows.length === 52 &&
+        legacyRows.every((r) => !("next_race_1" in r)),
+      show({ rejected, legacyResult, n: legacyRows.length }),
     );
   }
 }

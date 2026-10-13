@@ -4,9 +4,10 @@
  * 過去180日間・同じ艇番で出走したレースでの単勝回収率・複勝回収率を表示する。
  * AI予想モデルの確率は使わず、過去の実績払戻金のみを集計する。
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useVenueRaceSelector } from "../../hooks/useVenueRaceSelector";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { bestOf } from "../../utils/bestOf";
 import "./MotorConditionChart.css";
@@ -44,70 +45,19 @@ function RacerBoatReturnRateChart({
   embedded = false,
 }) {
   const { t } = useTranslation();
-  const [venues, setVenues] = useState([]);
-  const [selectedVenue, setSelectedVenue] = useState(initialVenueCode);
-  const [races, setRaces] = useState([]);
-  const [selectedRace, setSelectedRace] = useState(initialRaceId);
+  const {
+    venues,
+    selectedVenue,
+    setSelectedVenue,
+    races,
+    selectedRace,
+    setSelectedRace,
+    loading,
+    setLoading,
+    error,
+    setError,
+  } = useVenueRaceSelector({ initialVenueCode, initialRaceId, embedded, t });
   const [breakdown, setBreakdown] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const pendingInitialRaceId = useRef(initialRaceId);
-
-  // embedded時は過去日・確定済みレースも対象になり得るため、「本日開催」一覧に無い
-  // 場合のフォールバック選択を行わず、渡されたinitialVenueCode/initialRaceIdを使う
-  useEffect(() => {
-    if (embedded) return;
-    const loadVenues = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list = await supabaseDataService.getVenuesWithTodaysRaces();
-        setVenues(list);
-        const preferred =
-          initialVenueCode !== null && list.includes(initialVenueCode)
-            ? initialVenueCode
-            : (list[0] ?? null);
-        setSelectedVenue(preferred);
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load venues with today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadVenues();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (embedded) return;
-    if (selectedVenue === null) {
-      setRaces([]);
-      return;
-    }
-    const loadRaces = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const list =
-          await supabaseDataService.getTodaysRacesForVenue(selectedVenue);
-        setRaces(list);
-
-        const pending = pendingInitialRaceId.current;
-        const pendingExists =
-          pending !== null && list.some((r) => r.race_id === pending);
-        setSelectedRace(pendingExists ? pending : (list[0]?.race_id ?? null));
-        pendingInitialRaceId.current = null;
-      } catch (err) {
-        setError(err.message || t("analysis.dataLoadError"));
-        console.error("Failed to load today's races:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadRaces();
-  }, [selectedVenue, embedded]);
 
   useEffect(() => {
     if (selectedRace === null) return;

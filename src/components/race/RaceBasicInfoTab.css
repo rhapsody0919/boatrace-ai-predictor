@@ -85,12 +85,16 @@
 }
 
 .rbit-bars {
-  display: flex;
-  flex-direction: column;
+  /* 名前・Fバッジ・数値の列幅を6艇で共有し、棒の比較範囲をそろえる */
+  display: grid;
+  grid-template-columns: auto minmax(3.5em, auto) minmax(0, 1fr) auto auto;
   gap: var(--spacing-2);
 }
 
 .rbit-bar-block {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   background: var(--surface-card);
   border: var(--border-width-1) solid var(--border-hairline);
   border-radius: var(--radius-lg);
@@ -99,7 +103,8 @@
 
 .rbit-bar-row {
   display: grid;
-  grid-template-columns: auto minmax(3.5em, auto) 1fr auto auto;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
   align-items: center;
   gap: var(--spacing-2);
   width: 100%;
@@ -286,6 +291,7 @@
 }
 
 .rbit-expanded {
+  grid-column: 1 / -1;
   padding: var(--spacing-3);
   border-top: var(--border-width-1) solid var(--border-hairline);
   background: var(--surface-page);
@@ -509,14 +515,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 範囲と回数を別の塊にして折り返す。間は margin でなく column-gap で空け、
+   回数が次の行の頭に来たとき余白が残らないようにする（BOA-732） */
 .rbit-period-recent {
+  display: inline-flex;
+  flex-wrap: wrap;
+  column-gap: 0.25em;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
-}
-
-.rbit-period-recent-counts {
-  display: inline-block;
-  margin-left: 0.25em;
 }
 
 /* 前期を取り込む前に前々期を出しているとき。古い期の値が主役に見えないよう、
@@ -661,20 +667,15 @@
   color: var(--text-secondary);
 }
 
-/* 前期の値の横に添える今期との差（BOA-439）。向きは符号（+/−）で示し、色だけに頼らない */
+/* 前期欄の注記（前々期を出している理由・差を出さない理由）。どれも本文と同じ大きさ・色にする。
+   前々期だと気づけるように（ファン評価2周目）、差が無い理由が一番小さい文字に埋もれないように（BOA-732） */
 .rbit-period-note {
   margin: var(--spacing-1) 0 0;
-  font-size: var(--font-size-2xs);
-  color: var(--text-secondary);
-}
-
-/* 前期が公開待ちで前々期を出しているときの注記。値の行は通常と同じ見た目なので、
-   前々期だと気づけるよう本文と同じ大きさ・色にする */
-.rbit-period-note.rbit-period-pending {
   font-size: var(--font-size-xs);
   color: var(--text-primary);
 }
 
+/* 前期の値の横に添える今期との差（BOA-439）。向きは符号（+/−）で示し、色だけに頼らない */
 .rbit-period-diff {
   /* 375pxで2連対率の括弧が「前期から / −12.3pt）」と途中で割れるので、
      inline-block で括弧ごと次の行へ送る。折り返し自体は止めない（nowrap にすると

@@ -1,11 +1,10 @@
 /**
- * BOA-822 イン崩れ注意度の監視（tasks 12、plan §9）。cron（vercel.json）は UTC:
- *   `30 19 * * *` = JST 04:30  夜の表（in_caution_gap_band_daily）の鮮度・最初の日・合計の件数
- *   `45 20 * * *` = JST 05:45  今日の unified で inCaution がある割合・出さない理由の内訳・through の遅れ
- * 本体は scripts/lib/inCautionHealth.js（判定は純関数。手元は scripts/maintenance/verify-in-caution-coverage.js）。
- * 問題があれば実行の失敗にし、レジストリの failureAlertAfter: 1 で scrape-monitor が Slack に出す（JST 07:00〜）。
+ * BOA-822 イン崩れ注意度の監視のうち、夜の表（in_caution_gap_band_daily）の鮮度・最初の日・合計の件数（tasks 12、plan §9）。
+ * cron（vercel.json）は UTC `30 19 * * *` = JST 04:30（夜のジョブ JST 2:30 の後、races-init 05:00 の前）。
+ * 今日の unified の確認は別のジョブ（api/cron/in-caution-today-health.js）。同じジョブに載せると、05:45 の成功が
+ * 04:30 の失敗の記録を消し、scrape-monitor（JST 07:00〜）に届かない。
+ * 本体は scripts/lib/inCautionHealth.js。問題があれば実行の失敗にし、failureAlertAfter: 1 で Slack に出す。
  * モード（scrape_job_state.mode の job='in_caution_health'）が off（または行なし）なら何もしない。
- * 155 の適用と全期間の表を作った後に live にする。
  *
  * maxDuration は、レジストリ（in_caution_health.maxDurationSec）と同じ値をリテラルで書く。
  */
@@ -18,6 +17,6 @@ export const config = {
 
 export default createScrapeCronHandler({
   job: "in_caution_health",
-  run: (ctx) => runInCautionHealth(ctx),
+  run: (ctx) => runInCautionHealth(ctx, "table"),
   modeGated: true,
 });

@@ -9,6 +9,27 @@
   padding: var(--spacing-4, 1rem);
   min-height: 100vh;
   background: var(--color-gray-50);
+  /* この画面は地（ここと .sns-hub-tab-content）を明るい色で固定している。中のパネルが使う
+     意味トークンもこの中ではライトの値に戻す。戻さないと、ダークテーマで意味トークンだけが
+     白文字・紺の地に切り替わり、明るい地に白文字が載って読めなくなる（2026-10-13 オーナー報告。
+     値は design-tokens.css の [data-theme="dark"] が上書きするものの、ライトの値） */
+  color-scheme: light;
+  --surface-page: var(--ryujin-ivory-600);
+  --surface-card: var(--ryujin-ivory-100);
+  --border-hairline: var(--ryujin-ivory-300);
+  --text-primary: var(--color-gray-900);
+  --text-secondary: var(--color-gray-600);
+  --brand-accent-primary: var(--ryujin-gold-800);
+  --brand-accent-secondary: var(--ryujin-silver-700);
+  --podium-bronze-text: #8f5419;
+  --color-success-text: #0b7a55;
+  --color-success-dark-text: #04704f;
+  --color-warning-text: #946006;
+  --color-warning-dark-text: #994e00;
+  --color-error-text: #d51212;
+  --color-error-dark-text: #bf1f1f;
+  --color-info-text: #0a6dbc;
+  --ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, transparent);
 }
 
 .sns-hub-header {

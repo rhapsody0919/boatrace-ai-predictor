@@ -49,18 +49,39 @@ const store = {
         )
       ).rows.map((r) => [r.channel, r]),
     ),
-  dueJobs: async (now, limit) => {
+  // 本番の PostgREST の読み取りと同じく、走査位置（cursor）の後から limit 件だけ読む
+  dueJobs: async (now, limit, cursor = null) => {
     const queued = (
       await db.query(
-        "SELECT * FROM sns_x_send_jobs WHERE state='queued' AND scheduled_at<=$1 ORDER BY scheduled_at, id",
-        [now.toISOString()],
+        `SELECT * FROM sns_x_send_jobs WHERE state='queued' AND scheduled_at<=$1
+           AND ($2::timestamptz IS NULL OR scheduled_at>$2 OR (scheduled_at=$2 AND id>$3::uuid))
+         ORDER BY scheduled_at, id LIMIT $4`,
+        [
+          now.toISOString(),
+          cursor?.scheduled_at ?? null,
+          cursor?.id ?? null,
+          limit,
+        ],
       )
     ).rows;
     const parents = (
       await db.query("SELECT id, state, external_post_id FROM sns_x_send_jobs")
     ).rows;
-    return pickDueJobs(queued, parents, limit);
+    return {
+      jobs: pickDueJobs(queued, parents),
+      nextCursor:
+        queued.length === limit
+          ? { scheduled_at: queued.at(-1).scheduled_at, id: queued.at(-1).id }
+          : null,
+    };
   },
+  expiredSending: async (now) =>
+    (
+      await db.query(
+        "SELECT id, channel FROM sns_x_send_jobs WHERE state='sending' AND lease_until<=$1",
+        [now.toISOString()],
+      )
+    ).rows,
 };
 
 before(async () => {
@@ -269,13 +290,13 @@ test("スレッドの子は親が posted になってから選ぶ", async () => 
     scheduledOffsetMin: -1,
   });
   assert.deepEqual(
-    (await store.dueJobs(new Date(), 5)).map((j) => j.id),
+    (await store.dueJobs(new Date(), 5)).jobs.map((j) => j.id),
     [parent.id],
   );
   await runSnsSend(ctx(), deps({ maxJobs: 1 }));
   assert.equal((await job(parent.id)).state, "posted");
   assert.deepEqual(
-    (await store.dueJobs(new Date(), 5)).map((j) => j.id),
+    (await store.dueJobs(new Date(), 5)).jobs.map((j) => j.id),
     [child.id],
   );
 });
@@ -298,8 +319,9 @@ test("PostgREST の読み取り: 送る時刻を過ぎた queued を古い順に
     x: { channel: "x", mode: "manual", dry_run: true },
   });
   const due = await pg.dueJobs(new Date("2026-10-13T03:00:00Z"), 3);
+  assert.equal(due.nextCursor, null); // 3件の上限に届かない（読み切った）
   assert.deepEqual(
-    due.map((j) => j.id),
+    due.jobs.map((j) => j.id),
     ["c", "a"],
   );
   assert.match(
@@ -307,6 +329,15 @@ test("PostgREST の読み取り: 送る時刻を過ぎた queued を古い順に
     /state=eq\.queued&scheduled_at=lte\.2026-10-13T03:00:00\.000Z&order=scheduled_at\.asc,id\.asc/,
   );
   assert.match(calls[2], /id=in\.\(p\)/);
+  // cursor の後から読む
+  await pg.dueJobs(new Date("2026-10-13T03:00:00Z"), 3, {
+    scheduled_at: "2026-10-13T02:00:00.000Z",
+    id: "a",
+  });
+  assert.match(
+    calls.at(-2),
+    /&or=\(scheduled_at\.gt\.2026-10-13T02:00:00\.000Z,and\(scheduled_at\.eq\.2026-10-13T02:00:00\.000Z,id\.gt\.a\)\)&order=scheduled_at\.asc,id\.asc&limit=3/,
+  );
 });
 
 test("鍵の健全性: refresh の可否と scope だけを返し、トークンの値は返さない", async () => {
@@ -504,4 +535,139 @@ test("鍵の健全性: X は保存値を読むだけで refresh しない", asyn
       new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 }),
   });
   assert.equal(refreshFails.youtube.refresh, false);
+});
+
+test("D1: 検査に落ち続ける job が上限を超えて並んでも、走査位置を進めて後ろの job を送る", async () => {
+  // 落ち続ける6件（古い）と、送れる1件（新しい）。1回に読むのは3件
+  const bad = new Set();
+  for (let i = 0; i < 6; i++)
+    bad.add((await approvedJob("x", { scheduledOffsetMin: -20 + i })).id);
+  const good = await approvedJob("x", { scheduledOffsetMin: -1 });
+  const run = (state) =>
+    runSnsSend(
+      { ...ctx(), state },
+      deps({
+        maxCandidates: 3,
+        preflight: async (job) => {
+          if (bad.has(job.id)) throw new Error("race_unconfirmed_or_withdrawn");
+        },
+      }),
+    );
+  const r1 = await run({});
+  assert.deepEqual(
+    r1.body.jobs.map((r) => r.outcome),
+    ["precheck_failed", "precheck_failed", "precheck_failed"],
+  );
+  assert.ok(r1.cursor, "3件を読み切ったので位置を進める");
+  const r2 = await run({ cursor: r1.cursor });
+  const r3 = await run({ cursor: r2.cursor });
+  assert.equal(r3.body.jobs.find((r) => r.id === good.id)?.outcome, "posted");
+  // 読み切ったら次は先頭から
+  assert.equal(r3.cursor, null);
+});
+
+test("D2: 即時の通知が届かなければ report.alerts に残し、次の実行にも持ち越す。sweep で要照合になった送信も知らせる", async () => {
+  const y = await approvedJob("youtube");
+  const failingNotify = async () => {
+    throw new Error("SLACK_WEBHOOK_URL が未設定です");
+  };
+  const first1 = await runSnsSend(
+    ctx(),
+    deps({
+      notify: failingNotify,
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({ processingStatus: "processing" }),
+      },
+    }),
+  );
+  const undelivered = first1.report.alerts.filter((a) =>
+    a.key.startsWith("undelivered:"),
+  );
+  assert.equal(undelivered.length, 1);
+  assert.match(undelivered[0].key, new RegExp(`undelivered:reconcile:${y.id}`));
+  assert.ok(Date.parse(undelivered[0].until) > Date.now());
+  // 次の実行（対象の job なし）でも持ち越す。期限を過ぎたものは落とす
+  const next = await runSnsSend(
+    { ...ctx(), state: { last_report: first1.report } },
+    deps({ notify: failingNotify }),
+  );
+  assert.deepEqual(
+    next.report.alerts.map((a) => a.key),
+    undelivered.map((a) => a.key),
+  );
+  const expired = await runSnsSend(
+    {
+      ...ctx(),
+      state: {
+        last_report: {
+          alerts: [
+            {
+              ...undelivered[0],
+              until: new Date(Date.now() - 1000).toISOString(),
+            },
+          ],
+        },
+      },
+    },
+    deps({ notify: failingNotify }),
+  );
+  assert.deepEqual(expired.report.alerts, []);
+
+  // sweep でリースの切れた送信が要照合になったら知らせる
+  const x = await approvedJob("x");
+  await store.transition(x.id, "claim");
+  await db.query(
+    "UPDATE sns_x_send_jobs SET lease_until=now()-interval '1 minute' WHERE id=$1",
+    [x.id],
+  );
+  const notices = [];
+  await runSnsSend(ctx(), deps({ notify: async (t) => notices.push(t) }));
+  assert.equal((await job(x.id)).state, "reconcile");
+  assert.ok(notices.some((t) => t.includes(x.id) && t.includes("要照合")));
+});
+
+test("鍵の健全性: ?x_read=1 のときだけ X の自分のアカウントを読み、既定では X を呼ばない", async () => {
+  const { encryptTokens } = await import("../../api/_lib/snsTokenStore.js");
+  const key = Buffer.alloc(32, 9).toString("base64");
+  const row = {
+    ...(await encryptTokens(
+      { access_token: "x-access", refresh_token: "x-refresh" },
+      key,
+    )),
+    key_version: 1,
+    account_id: "1234567890",
+    access_expires_at: new Date(Date.now() + 3600000).toISOString(),
+  };
+  const env = {
+    X_OAUTH_CLIENT_ID: "i",
+    X_OAUTH_CLIENT_SECRET: "s",
+    SNS_TOKEN_ENC_KEY: key,
+  };
+  const calls = [];
+  const fetchImpl = async (url, options = {}) => {
+    calls.push({ url: String(url), auth: options.headers?.Authorization });
+    if (String(url) === "https://api.x.com/2/users/me")
+      return Response.json({ data: { id: "1234567890" } });
+    throw new Error("想定外: " + url);
+  };
+  const xDb = { read: async () => row };
+  const plain = await checkTokenHealth({ env, xDb, fetchImpl });
+  assert.equal(plain.x.read, undefined);
+  assert.equal(calls.length, 0);
+  const withRead = await checkTokenHealth({ env, xDb, fetchImpl, xRead: true });
+  assert.deepEqual(withRead.x.read, { ok: true, sameAccount: true });
+  assert.deepEqual(calls, [
+    { url: "https://api.x.com/2/users/me", auth: "Bearer x-access" },
+  ]);
+  assert.ok(!JSON.stringify(withRead).includes("x-access"));
+  const denied = await checkTokenHealth({
+    env,
+    xDb,
+    xRead: true,
+    fetchImpl: async () =>
+      new Response(JSON.stringify({ title: "Unauthorized" }), { status: 401 }),
+  });
+  assert.equal(denied.x.read.ok, false);
+  assert.match(denied.x.read.error, /HTTP 401/);
 });

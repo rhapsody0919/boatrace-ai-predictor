@@ -345,16 +345,28 @@ export async function getXAccessToken({
         return false;
       });
     if (!saved) {
-      // ロック中にオーナーが連携をやり直していた（upsert でロックが外れ、別のトークンが入った）なら、それを使う
-      const latest = saveError ? null : await db.read();
-      if (latest && latest.ciphertext !== locked.ciphertext)
-        return {
-          accessToken: (await decryptTokens(latest, keyBase64)).access_token,
-          accountId: latest.account_id,
-        };
+      // ロック中にオーナーが連携をやり直していた（upsert でロックが外れ、別のトークンが入った）なら、それを使う。
+      // 読み直し・復号が失敗しても、通知を飛ばさずに下へ進む（保存できたか確かめられないので、やり直しを知らせる。
+      // 開発の補助の点検 D1、2026-10-13）
+      let readError = null;
+      if (!saveError) {
+        try {
+          const latest = await db.read();
+          if (latest && latest.ciphertext !== locked.ciphertext)
+            return {
+              accessToken: (await decryptTokens(latest, keyBase64))
+                .access_token,
+              accountId: latest.account_id,
+            };
+        } catch (error) {
+          readError = error;
+        }
+      }
       const reason = saveError
         ? `DB の保存に失敗: ${saveError.message}`
-        : "ロックが切れて別の呼び出しに取られた";
+        : readError
+          ? `保存できたか確かめるための読み直しに失敗: ${readError.message}`
+          : "ロックが切れて別の呼び出しに取られた";
       await notifyLogged(
         notify,
         `X のトークンを更新したが保存できなかった（${reason}）。X の連携のやり直しが要る（管理画面の「X と連携する」）`,

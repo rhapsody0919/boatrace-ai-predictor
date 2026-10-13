@@ -98,8 +98,8 @@ function check(label, actual, expected) {
   check("http_503が長期間続いても構造変化アラートにはしない", alerts.length, 0);
 }
 
-// ⑥宮島のPDF解析失敗は動的な文字列（pdf_parse_error: <詳細>）だが、前方一致で
-// 構造起因として検知できる
+// PDF解析失敗は動的な文字列（pdf_parse_error: <詳細>）だが、前方一致で
+// 構造起因として検知できる（宮島のPDFは BOA-681 で取得をやめたので、会場コードは取得中の会場で試す）
 {
   let entry;
   for (let i = 0; i < DRIFT_ALERT_THRESHOLD_DAYS; i++) {
@@ -109,11 +109,29 @@ function check(label, actual, expected) {
       date: `day${i}`,
     });
   }
-  const alerts = findDriftAlerts({ 17: entry });
+  const alerts = findDriftAlerts({ 23: entry });
   check(
     "pdf_parse_error(動的文字列)も前方一致でアラート対象になる",
     alerts.length,
     1,
+  );
+}
+
+// 取得の対象から外した会場（浜名湖・宮島、BOA-681）は、外す前の失敗の履歴が残っていても警告しない。
+// 履歴は全会場のキーを持ち越し、外した会場は二度と更新されないため、警告が出続けていた
+{
+  let entry;
+  for (let i = 0; i < DRIFT_ALERT_THRESHOLD_DAYS + 5; i++) {
+    entry = updateVenueHealth(entry, {
+      success: false,
+      reason: "table_not_found",
+      date: `day${i}`,
+    });
+  }
+  check(
+    "取得の対象から外した会場（6・17）の古い失敗は警告しない。取得中の会場は警告する",
+    findDriftAlerts({ 6: entry, 17: entry, 23: entry }).map((a) => a.venueCode),
+    ["23"],
   );
 }
 

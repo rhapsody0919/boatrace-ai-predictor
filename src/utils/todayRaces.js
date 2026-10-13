@@ -24,6 +24,8 @@ export function transformTodayRaces(data, venueWinRateMap = {}) {
         STADIUM_NAMES[venue.place_cd || venue.placeCd],
       races: (venue.races || []).map((race) => ({
         ...race,
+        // BOA-822 イン崩れ注意度（RPC 157）。157 の適用前は無いので null にそろえる
+        inCaution: race.inCaution ?? null,
         volatility: race.volatility
           ? {
               ...race.volatility,

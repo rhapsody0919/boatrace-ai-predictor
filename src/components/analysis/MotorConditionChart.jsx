@@ -27,6 +27,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 import {
   formatGenerationDate,
   isClippedByGeneration,
+  isVenueRankSnapshotBeforeGeneration,
   officialTallyState,
 } from "../../utils/motorGeneration";
 import { motorRateView, motorRate3View } from "../../utils/motorFreshRate";
@@ -441,6 +442,15 @@ function MotorConditionChart({
     if (venueRanks?.state === "error") {
       return t("analysis.motor.venueRankError");
     }
+    if (
+      isVenueRankSnapshotBeforeGeneration({
+        raceDate: selectedRace?.slice(0, 10) ?? null,
+        scrapedDate: venueRanks?.scrapedDate ?? null,
+        generationStart,
+      })
+    ) {
+      return "—";
+    }
     const hit = venueRanks?.ranks.get(motorNumber);
     // スナップショットに載っていないモーター（入れ替え直後の会場で欠けることがある）
     if (!hit) return "-";
@@ -581,6 +591,11 @@ function MotorConditionChart({
           powerIndex?.clipped_by_generation || trendData?.clippedByGeneration,
         );
 
+  // ディープリンク先の会場が「本日開催中」の一覧に無い（過去レースへ飛んだとき）。
+  // 選択肢に足し、見出しから「本日開催中」を外す（BOA-428・BOA-719）
+  const venueOffToday =
+    selectedVenue !== null && !venues.includes(selectedVenue);
+
   return (
     <div className="motor-condition-container">
       {!embedded && (
@@ -598,7 +613,11 @@ function MotorConditionChart({
         ) : (
           <div className="controls-section">
             <label htmlFor="motor-venue-select">
-              {t("analysis.venueSelectTodayLabel")}
+              {t(
+                venueOffToday
+                  ? "analysis.venueSelectLabel"
+                  : "analysis.venueSelectTodayLabel",
+              )}
             </label>
             <select
               id="motor-venue-select"
@@ -609,7 +628,7 @@ function MotorConditionChart({
               {/* ディープリンク先の会場が「本日開催中」の一覧に無いとき（ランキングの機番・
                   機力バッジから過去レースへ飛んだとき）も、選択肢に足す。無いとブラウザが
                   先頭の会場を表示し、別会場の同じ番号のモーターと読み違える（BOA-428 ファン評価） */}
-              {(selectedVenue !== null && !venues.includes(selectedVenue)
+              {(venueOffToday
                 ? [selectedVenue, ...venues]
                 : venues
               ).map((v) => (
