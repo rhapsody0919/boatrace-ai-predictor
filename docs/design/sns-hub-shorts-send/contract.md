@@ -53,3 +53,5 @@ node scripts/maintenance/verify-sns-bundle-import.js
 - `posted_at` は公開を確かめた後の `snippet.publishedAt`。非公開の間の時刻・upload の終了時刻は使わない
 - サムネイルの Content-Type は媒体（jpeg・png）に合わせる。サムネイルが失敗したら公開せず非公開のまま残す（`youtube_retain`）。チャンネルの電話番号の確認が済んでいないと 403 になるので、その間は承認の snapshot に表紙を入れない
 - access token は runner が claim の前に `getYoutubeAccessToken`（`api/_lib/youtubeUpload.js`）で取り、`createYoutubeQueueAdapter({accessToken})` に渡す。公開の切り替えには `youtube` の scope が要る（sns-pdca-loop tasks 26）
+- **説明とタグ**（2026-10-13 修正）: 説明は承認の完成文（`snapshot.text` = 本文＋改行＋タグの行）、タグは承認の `source.hashtags` から先頭の # を外したもの（空・重複は除く）。どちらも承認の hash に入る値なので、承認した版と送る版がずれない。旧来の手動送信（publish-youtube.js）は説明に本文だけ・タグに hashtags を渡していた
+- **動画の大きさ**: 1回の multipart で上げるので 32 MiB まで。承認は 500 MiB まで通るが、超える動画は begin_post の前に `youtube_video_too_large` で保留にする

@@ -170,6 +170,10 @@
   line-height: 1.5;
 }
 
+.venue-details__breakdown-item {
+  white-space: nowrap;
+}
+
 .venue-details__swatch.is-nige {
   background: var(--technique-nige);
 }

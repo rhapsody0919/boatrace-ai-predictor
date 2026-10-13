@@ -54,6 +54,62 @@ async function openRanking(page, url = KOJIMA) {
 }
 
 test.describe("会場モーターランキング（BOA-428 子3）", () => {
+  test("節が終わった会場では、使用者の見出しに直近の節の期間を出す（BOA-783）", async ({
+    page,
+  }) => {
+    // このタブの通信は録画に無く本番へ素通しされるため、時計（録画時刻）と前検日・出走表が
+    // かみ合わない。最新の前検日と出走表を固定し、「前検 9/25 → 9/26〜10/1 に走った節」にする
+    await page.route(
+      /\/rest\/v1\/motor_pretest_stats\?select=race_date/,
+      (route) => route.fulfill({ json: { race_date: "2026-09-25" } }),
+    );
+    await page.route(/\/rest\/v1\/race_entries\?select=race_id/, (route) =>
+      route.fulfill({
+        json: ["09-26", "09-28", "09-29", "09-30", "10-01", "09-27"].map(
+          (day) => ({
+            race_id: `2026-${day}-16-01`,
+            racer_id: 4000,
+            motor_number: 10,
+            motor_2rate: 40,
+            player_name: "テスト選手",
+          }),
+        ),
+      }),
+    );
+    await openRanking(page);
+    await expect(page.locator("th.vmr-user-head")).toHaveText(
+      "直近の節の使用者（9/26〜10/1）",
+    );
+  });
+
+  test("並べ替えの印と aria-sort は列の向きに一致する", async ({ page }) => {
+    await openRanking(page);
+    const active = page.locator(".vmr-sort-btn.is-active .vmr-sort-mark");
+    await expect(active).toHaveText("▼");
+    for (const [name, mark] of [
+      [/^機番/, "△"],
+      [/^前検/, "△"],
+      [/^優勝/, "▽"],
+    ]) {
+      await expect(
+        page.getByRole("button", { name }).locator(".vmr-sort-mark"),
+      ).toHaveText(mark);
+    }
+    for (const [name, mark, direction] of [
+      [/^機番/, "▲", "ascending"],
+      [/^前検/, "▲", "ascending"],
+      [/^優勝/, "▼", "descending"],
+      [/^2連率/, "▼", "descending"],
+    ]) {
+      const button = page.getByRole("button", { name });
+      await button.click();
+      await expect(active).toHaveText(mark);
+      await expect(button.locator("..")).toHaveAttribute(
+        "aria-sort",
+        direction,
+      );
+    }
+  });
   test("タブを押すと URL に tab=motorranking が載り、表が出る", async ({
     page,
   }) => {

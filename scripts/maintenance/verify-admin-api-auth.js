@@ -159,6 +159,13 @@ for (const file of handlerFiles) {
     );
     continue;
   }
+  // 管理 API は Web の Request/Response の形（handler(req) が Response を返す）で書く。Vercel では config.runtime
+  // （edge か nodejs）を指定しないと Node の (req, res) の形として呼ばれ、応答を返さないまま時間切れの 500 になる
+  // （2026-10-13、token-health が本番でこれになった）
+  check(
+    ["edge", "nodejs"].includes(mod.config?.runtime),
+    `${rel}: export const config = { runtime: "edge" }（または "nodejs"）が無い。Web の Request/Response の形のハンドラは runtime の指定が要る`,
+  );
 
   setAuthEnv(USER, PASSWORD);
   for (const method of METHODS) {

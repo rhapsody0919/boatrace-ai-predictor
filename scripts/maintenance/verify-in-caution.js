@@ -7,7 +7,7 @@
  *   (c) レースの値（computeInCaution）: 出さない理由の全分岐、境目、同点、欠場1艇、件数少なめ、例のレース
  *   (d) JS と Python の勝率差・帯が同じ: Python の pytest と同じ固定の入力
  *       （scripts/ml/analogy/tests/fixtures/in_caution_cases.json）を computeInCaution に通す
- *   (e) 監視（scripts/lib/inCautionHealth.js、api/cron/in-caution-health.js）: 表・今日の unified の判定、時刻での切り替え、配線
+ *   (e) 監視（scripts/lib/inCautionHealth.js、api/cron/in-caution-health.js・in-caution-today-health.js）: 表・今日の unified の判定、中止の除外、別のジョブにした配線
  *
  * 使い方: node scripts/maintenance/verify-in-caution.js
  */
@@ -329,8 +329,41 @@ const five = [5.0, 5.0, 5.0, 5.0, 5.0];
     "(e) 監視: 表が読めなかった行が多い・行が0件・through が前日でないは問題",
     JSON.stringify([bad.issues, zero.issues, stale.issues]),
   );
-  // 時刻での切り替えと失敗の返し方（偽の client）
+  // F2（2026-10-13 レビュー）: 中止（confirmed かつ結果が無い）は分子・分母の両方から除く
+  const withCancel = evaluateInCautionToday(
+    [
+      ...rows(98),
+      { race_id: "c1", ic: null, skip: null, cancelled: true },
+      { race_id: "c2", ic, skip: null, cancelled: true },
+    ],
+    PREV,
+  );
+  check(
+    withCancel.ok &&
+      withCancel.summary.cancelled === 2 &&
+      withCancel.summary.coverage === 1 &&
+      withCancel.summary.withValue === 98,
+    "(e) 監視: 中止のレースは値の有無にかかわらず分子・分母から除く（98/98。除かなければ 98/100 で誤報）",
+    JSON.stringify(withCancel.summary),
+  );
+  // 偽の client（表 RPC と、predictions・races・race_results の読み取り）
   const calls = [];
+  const tables = {
+    predictions: [
+      { race_id: "2026-10-13-01-01", ic, skip: null },
+      { race_id: "2026-10-13-01-02", ic: null, skip: null },
+      { race_id: "2026-10-13-02-01", ic: null, skip: null },
+    ],
+    races: [
+      { race_id: "2026-10-13-01-01", cancellation_status: "tentative" }, // 未確定は除かない
+      { race_id: "2026-10-13-01-02", cancellation_status: "confirmed" }, // 中止・結果なし → 除く
+      { race_id: "2026-10-13-02-01", cancellation_status: "confirmed" }, // 中止だが結果あり → 除かない（BOA-512）
+    ],
+    race_results: [
+      { race_id: "2026-10-13-01-02", rank1: null },
+      { race_id: "2026-10-13-02-01", rank1: 3 },
+    ],
+  };
   const fakeClient = {
     rpc: async (name, args) => {
       calls.push(["rpc", name, args]);
@@ -338,20 +371,35 @@ const five = [5.0, 5.0, 5.0, 5.0, 5.0];
     },
     from: (table) => {
       calls.push(["from", table]);
+      // eq・not(is null) は実際に絞り込む（読み取りの条件そのものを検査するため）
+      let rowsOf = tables[table];
       const q = {
         select: () => q,
-        eq: () => q,
+        eq: (c, v) => (
+          (rowsOf = rowsOf.filter((r) => !(c in r) || r[c] === v)),
+          q
+        ),
+        not: (c, op, v) =>
+          op === "is" && v === null
+            ? ((rowsOf = rowsOf.filter((r) => r[c] != null)), q)
+            : q,
         gte: () => q,
         lt: () => q,
         order: () => q,
-        range: async () => ({ data: [], error: null }),
+        range: async () => ({ data: rowsOf, error: null }),
       };
       return q;
     },
   };
   const at = (hhmm) => () => new Date(`2026-10-13T${hhmm}:00+09:00`);
-  const r1 = await runInCautionHealth({ client: fakeClient, now: at("04:30") });
-  const r2 = await runInCautionHealth({ client: fakeClient, now: at("05:45") });
+  const r1 = await runInCautionHealth(
+    { client: fakeClient, now: at("04:30") },
+    "table",
+  );
+  const r2 = await runInCautionHealth(
+    { client: fakeClient, now: at("05:45") },
+    "today",
+  );
   check(
     r1.report?.target === "table" &&
       r1.outcome === undefined &&
@@ -362,31 +410,49 @@ const five = [5.0, 5.0, 5.0, 5.0, 5.0];
           { p_from: null, p_through: "2026-10-12" },
         ]) &&
       r2.report?.target === "today" &&
-      r2.outcome === "error" &&
-      /0件/.test(r2.error) &&
-      calls[1]?.[1] === "predictions",
-    "(e) 監視: JST 04:30 は表（前日まで）、05:45 は今日の unified。問題は実行の失敗にする",
-    JSON.stringify({ r1, r2, calls }),
+      r2.report.summary.cancelled === 1 &&
+      r2.report.summary.withValue === 1 &&
+      r2.outcome === "error",
+    "(e) 監視: 表は前日まで。今日の unified は races の confirmed から結果のあるレースを除いたものを中止として扱う（1件を除き、残り 1/2 で問題）",
+    JSON.stringify({ r1: r1.report, r2: r2.report, calls }),
   );
-  const def = SCRAPE_JOBS.in_caution_health;
-  const src = fs.readFileSync(
-    path.join(ROOT, "api/cron/in-caution-health.js"),
-    "utf8",
-  );
+  // F1（2026-10-13 レビュー）: 表と今日の確認を別のジョブにする（成功の記録が失敗の記録を消すため）
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
   );
-  const crons = vercel.crons
-    .filter((c) => c.path === "/api/cron/in-caution-health")
-    .map((c) => c.schedule);
-  check(
-    def?.kind === "monitor" &&
+  const cronsOf = (p) =>
+    vercel.crons.filter((c) => c.path === p).map((c) => c.schedule);
+  const wiring = [
+    [
+      "in_caution_health",
+      "api/cron/in-caution-health.js",
+      "table",
+      ["30 19 * * *"],
+    ],
+    [
+      "in_caution_today_health",
+      "api/cron/in-caution-today-health.js",
+      "today",
+      ["45 20 * * *"],
+    ],
+  ].map(([job, file, target, crons]) => {
+    const def = SCRAPE_JOBS[job];
+    const src = fs.readFileSync(path.join(ROOT, file), "utf8");
+    return (
+      def?.kind === "monitor" &&
       def.failureAlertAfter === 1 &&
       Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def.maxDurationSec &&
       /modeGated:\s*true/.test(src) &&
-      JSON.stringify(crons) === JSON.stringify(["30 19 * * *", "45 20 * * *"]),
-    "(e) 配線: in_caution_health は monitor・failureAlertAfter 1・モードのゲート、cron は JST 04:30・05:45",
-    JSON.stringify({ def, crons }),
+      src.includes(`job: "${job}"`) &&
+      src.includes(`runInCautionHealth(ctx, "${target}")`) &&
+      JSON.stringify(cronsOf(`/${file.replace(/\.js$/, "")}`)) ===
+        JSON.stringify(crons)
+    );
+  });
+  check(
+    wiring.every(Boolean),
+    "(e) 配線: 夜の表（in_caution_health、JST 04:30）と今日の unified（in_caution_today_health、05:45）は別のジョブ。どちらも monitor・failureAlertAfter 1・モードのゲート、cron は1本ずつ",
+    JSON.stringify(wiring),
   );
 }
 

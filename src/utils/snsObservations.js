@@ -1,5 +1,13 @@
 /** SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 */
 export const OBSERVATION_WINDOWS = { "48h": 48, "7d": 168 };
+// 累積値（snapshot）は窓の終わりから15分以内に取れた値だけ保存する（2026-10-13 ユーザー決定、SQL154 の CHECK と同じ）
+export const SNAPSHOT_TOLERANCE_MS = 15 * 60 * 1000;
+
+/** 累積値の取得時刻が窓の終わりから許容差の中か */
+export const withinSnapshotTolerance = (observedAt, periodEnd) => {
+  const lag = Date.parse(observedAt) - Date.parse(periodEnd);
+  return lag >= 0 && lag <= SNAPSHOT_TOLERANCE_MS;
+};
 // 型比較の対象は運用中のチャネルだけ（hq判断 2026-10-08）。TikTok・blog・noteは「未収集」としても出さない
 export const OBSERVED_PLATFORMS = ["x", "youtube"];
 export const OBSERVATION_SOURCES = [
@@ -14,6 +22,7 @@ export const OBSERVATION_SOURCES = [
 export const OBSERVATION_METRICS = [
   "views",
   "likes",
+  "comments",
   "saves",
   "shares",
   "impressions",
@@ -117,16 +126,22 @@ function validateObservationInput(input, draft, requireWindowMatch) {
       : input.missing_reason !== null
   )
     throw new Error("欠測はnullと理由を記録してください");
+  // 期間の値は窓の終わりまでのデータ、累積値は取得した時点までのデータ（data_through=observed_at、SQL154）
   const complete =
     input.data_through !== null &&
-    Date.parse(input.data_through) === Date.parse(period.period_end);
+    Date.parse(input.data_through) ===
+      Date.parse(
+        input.measurement_kind === "snapshot"
+          ? input.observed_at
+          : period.period_end,
+      );
   if (requireWindowMatch && input.metric_value !== null && !complete)
     throw new Error("遅延・期間不一致は欠測として記録してください");
   if (
     requireWindowMatch &&
     input.measurement_kind === "snapshot" &&
     input.metric_value !== null &&
-    Date.parse(input.observed_at) !== Date.parse(period.period_end)
+    !withinSnapshotTolerance(input.observed_at, period.period_end)
   )
     throw new Error("遅い累積値を過去の窓に代入できません");
   const denominatorName = input.denominator_name ?? null;

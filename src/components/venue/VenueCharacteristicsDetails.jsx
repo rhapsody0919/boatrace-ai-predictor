@@ -112,12 +112,11 @@ export default function VenueCharacteristicsDetails({
                 techniqueData?.data?.[boat],
               );
               if (total === 0) return null;
-              const label = items
-                .map(
-                  (x) =>
-                    `${translateTechnique(t, x.technique)} ${x.share.toFixed(0)}%(${x.count})`,
-                )
-                .join(t("listSeparator"));
+              const itemLabels = items.map(
+                (x) =>
+                  `${translateTechnique(t, x.technique)} ${x.share.toFixed(0)}%(${x.count})`,
+              );
+              const label = itemLabels.join(t("listSeparator"));
               const isSmall = total < SMALL_SAMPLE_THRESHOLD;
               return (
                 <div
@@ -146,7 +145,16 @@ export default function VenueCharacteristicsDetails({
                       count: total,
                     })}
                   </span>
-                  <span className="venue-details__breakdown">{label}</span>
+                  <span className="venue-details__breakdown">
+                    {items.map((x, index) => (
+                      <span key={x.technique}>
+                        {index > 0 ? t("listSeparator") : null}
+                        <span className="venue-details__breakdown-item">
+                          {itemLabels[index]}
+                        </span>
+                      </span>
+                    ))}
+                  </span>
                 </div>
               );
             })}
