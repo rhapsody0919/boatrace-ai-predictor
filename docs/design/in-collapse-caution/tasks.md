@@ -24,12 +24,14 @@
 
 ## PR-2 値の生成（plan §1）
 
-- [ ] **7. `src/utils/inCautionLevel.js`**: `pctOf(nonWin, n)`（`floor((200×nonWin + n) / (2n))`）、`levelOf(pct)`、`bandOf(gapCents)`、`bandLabel(band)`（−3.5未満／+3.0以上／範囲）。`src/utils/volatilityLevel.js` は消さない（掃除の PR で）。`verify-frontend-pure-functions.js` に suite を足し、task 3 の固定の入力 JSON を読んで Python と同じ答えになることを確かめる
-- [ ] **8. `scripts/lib/inCaution.js`** の `computeInCaution({entries, raceStage, rates})` → `{inCaution, skip}`。plan §1 の「出さないレース」の表のとおり（1号艇の欠場・勝率なし（NULL だけ。0.00 は勝率）、2艇以上の欠場、他の艇の勝率が全部なし、表の欠け、セルが無い・件数 100 未満）。最大が同点なら艇番の小さい方。ラウンドは `getRaceStageCategory`
-- [ ] **9. `generate-unified-predictions.js`** に組み込む: RPC を1回（3回まで再試行）、表の欠けのガード（`first_date`・`last_date`・合計の `n`）、`feature_contributions.inCaution`・`inCautionSkip` を書く。旧キーは書き続ける。失敗時は戻り値に `inCautionFailed: true`
-- [ ] **10. やり直し**: `findRacesMissingUnified` が `inCautionSkip = 'rates_unavailable'` の行も欠けとして数える。races-init の後始末（`scripts/lib/racesInit/job.js:138-152`）は `inCautionFailed` のとき `fin.unified` を記録せず、`cursor` の回数で5回まで。`verify-morning-init-jobs.js` に再現テスト「1回目は RPC が失敗し、2回目の起動で inCaution が入る」「5回で打ち切って失敗を記録する」
-- [ ] **11. `scripts/maintenance/verify-in-caution.js`**（ci、registry に登録）: `computeInCaution` の全分岐、境目（帯 −8・6、pct 34/35・54/55）、例のレース（2026-10-11 戸田4R: 4.81 と 6.93 → −212 → 帯 −5）
-- [ ] **12. 監視**: Vercel Cron `api/cron/in-caution-health.js`（JST 04:30 は表の鮮度・最初の日・合計の n、05:45 は今日の unified で inCaution がある割合・`inCautionSkip` の内訳・`through` の遅れ。`registry.js` に `failureAlertAfter: 1`、`vercel.json` に2行）。判定は純関数にして `scripts/maintenance/verify-in-caution-coverage.js`（manual、registry に登録）からも呼ぶ
+#1462（task 7〜12）。マージは 155 の適用と全期間の表を作った後。task 13 はマージの翌朝
+
+- [x] **7. `src/utils/inCautionLevel.js`**: `pctOf(nonWin, n)`（`floor((200×nonWin + n) / (2n))`）、`levelOf(pct)`、`bandOf(gapCents)`、`bandLabel(band)`（−3.5未満／+3.0以上／範囲）。`src/utils/volatilityLevel.js` は消さない（掃除の PR で）。`verify-frontend-pure-functions.js` に suite を足し、task 3 の固定の入力 JSON を読んで Python と同じ答えになることを確かめる
+- [x] **8. `scripts/lib/inCaution.js`** の `computeInCaution({entries, raceStage, rates})` → `{inCaution, skip}`。plan §1 の「出さないレース」の表のとおり（1号艇の欠場・勝率なし（NULL だけ。0.00 は勝率）、2艇以上の欠場、他の艇の勝率が全部なし、表の欠け、セルが無い・件数 100 未満）。最大が同点なら艇番の小さい方。ラウンドは `getRaceStageCategory`
+- [x] **9. `generate-unified-predictions.js`** に組み込む: RPC を1回（3回まで再試行）、表の欠けのガード（`first_date`・`last_date`・合計の `n`）、`feature_contributions.inCaution`・`inCautionSkip` を書く。旧キーは書き続ける。失敗時は戻り値に `inCautionFailed: true`
+- [x] **10. やり直し**: `findRacesMissingUnified` が `inCautionSkip = 'rates_unavailable'` の行も欠けとして数える。races-init の後始末（`scripts/lib/racesInit/job.js:138-152`）は `inCautionFailed` のとき `fin.unified` を記録せず、`cursor` の回数で5回まで。`verify-morning-init-jobs.js` に再現テスト「1回目は RPC が失敗し、2回目の起動で inCaution が入る」「5回で打ち切って失敗を記録する」
+- [x] **11. `scripts/maintenance/verify-in-caution.js`**（ci、registry に登録）: `computeInCaution` の全分岐、境目（帯 −8・6、pct 34/35・54/55）、例のレース（2026-10-11 戸田4R: 4.81 と 6.93 → −212 → 帯 −5）
+- [x] **12. 監視**: Vercel Cron `api/cron/in-caution-health.js`（JST 04:30 は表の鮮度・最初の日・合計の n、05:45 は今日の unified で inCaution がある割合・`inCautionSkip` の内訳・`through` の遅れ。`registry.js` に `failureAlertAfter: 1`、`vercel.json` に2行）。判定は純関数にして `scripts/maintenance/verify-in-caution-coverage.js`（manual、registry に登録）からも呼ぶ
 - [ ] **13. 翌朝の確認**: inCaution のある割合（中止・1号艇の欠場・`sparse_cell` を除いて 99% 以上が目安）、`inCautionSkip` の内訳、`through` が前日、例のレースの値を表から出し直して一致（`data-accuracy-verifier`）。準優・優勝戦の日に、05:0x の生成の時点で `race_stage` が入っているか（2026-10-06〜12 は空0件、`race_conditions` の行は 05:01 に作られる）
 
 ## PR-3 RPC（157、plan §3）
