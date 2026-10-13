@@ -5,6 +5,7 @@
  * - train: 週次の学習（train-analogy.yml）。日曜 JST 4:00
  * - v16_morning: v16 の朝のバッチ（analogy-v16-morning.yml、BOA-271 T2-5b）。JST 7:10・9:40・13:40 に起動し、
  *   7:40 は出走表の段（racecard の snapshot）が無い今日のレースがあるときだけ起動する（拾い直し。plan「朝のバッチ」）
+ * - in_caution_nightly: BOA-822 イン崩れ注意度の夜の表（in-caution-nightly.yml、ADR-0095）。JST 2:30
  * レースごとの寄与度の日次の特徴量ジョブは廃止した（Q2、#1242）ので起動しない。
  *
  * 失敗（トークン未設定・dispatch の HTTP 失敗）は outcome:"error" で返す。レジストリの failureAlertAfter: 1 により、
@@ -16,6 +17,8 @@ export const DISPATCH_WORKFLOWS = Object.freeze({
   // inputs は workflow の on.workflow_dispatch.inputs に無いキーを入れると 422 になる
   train: { workflow: "train-analogy.yml", inputs: {} },
   v16_morning: { workflow: "analogy-v16-morning.yml", inputs: {} },
+  // 毎晩は直近14日だけ（full・force は手動の workflow_dispatch で付ける）
+  in_caution_nightly: { workflow: "in-caution-nightly.yml", inputs: {} },
 });
 
 const MIN_MINUTES_BEFORE_DEADLINE = 10; // v16_morning.py の select_targets と同じ

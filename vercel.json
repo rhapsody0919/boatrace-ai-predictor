@@ -217,6 +217,10 @@
     {
       "path": "/api/cron/analogy-dispatch-morning",
       "schedule": "40 4 * * *"
+    },
+    {
+      "path": "/api/cron/in-caution-dispatch",
+      "schedule": "30 17 * * *"
     }
   ],
   "functions": {
