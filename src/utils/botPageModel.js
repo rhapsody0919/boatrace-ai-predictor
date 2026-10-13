@@ -7,7 +7,11 @@
  * - 整形は人の画面と同じ transformTodayRaces、文字は人の画面と同じ関数（raceListDisplay.js・pageMeta.js）と
  *   i18n のキーで作る。t は表示する言語の i18next の t を渡す（既定は ja。言語版は BOA-848 の第2段）
  * - リンク先・canonical・パンくずは、人の画面と同じく localizePath で言語の接頭辞を付ける（ja は接頭辞なし）
- * - 選手一覧・オッズ・払戻・着順・展開予測・荒れ度は入れない（ADR 0089 決定7）
+ * - トップには、人のトップの説明の本文（HomeAiIntro: 紹介文・龍神ソナーと思考アシストの案内・成績ページへのリンク・
+ *   よくある質問と FAQPage）、ブログ欄（注目・新着の記事）、言語版の案内の帯（IntroBanner）も入れる。
+ *   文言は人の画面と同じ i18n のキー、FAQ と記事の選び方は人の画面と同じ関数（homeAiIntroFaq.js・blogPosts.js）
+ * - 選手一覧・オッズ・払戻・着順・展開予測・荒れ度は入れない（ADR 0089 決定7）。
+ *   トップの「本日のイン崩れ注意度ハイライト」（TodaysVolatilityHighlights）も入れない
  * - 時刻で変わる状態（次のレース・締切間近・発売中・全レース終了）は入れない（同 決定3）
  * - 形が壊れた入力は例外にする。正しく取れて0件のときだけ「開催なし」のモデルを返す（ADR 0069）
  *
@@ -31,6 +35,8 @@ import { isRaceCancelled } from "./raceCancellation.js";
 import { getRaceId } from "./raceId.js";
 import { formatDateShortLocalized, formatCapturedAtJst } from "./formatters.js";
 import { localizePath } from "../config/languages.js";
+import { buildFaqItems, isAssistShown, toFaqPageLd } from "./homeAiIntroFaq.js";
+import { getHomeBlogPosts } from "../data/blogPosts.js";
 
 const DEFAULT_LANG = "ja";
 
@@ -102,6 +108,95 @@ function updatedText(t, scrapedAt) {
   return t("updateStatus.updatedLabel", { dataType: t("home.dataType"), time });
 }
 
+// 人のトップの HomeAiIntro と同じ文言・同じ並び。思考アシストのカードと文は ja だけ（isAssistShown）
+function buildAiIntro(t, lang) {
+  const showAssist = isAssistShown(lang);
+  const faqItems = buildFaqItems(t, showAssist);
+  return {
+    title: t("home.aiIntro.title"),
+    paragraphs: [
+      t("home.aiIntro.lead"),
+      t("home.aiIntro.method"),
+      showAssist
+        ? t("home.aiIntro.toolsIntro")
+        : t("home.aiIntro.toolsIntroSonarOnly"),
+    ],
+    checkTitle: t("home.aiIntro.checkTitle"),
+    tools: [
+      {
+        name: t("raceTabs.sonar"),
+        where: t("home.aiIntro.sonarWhere"),
+        questions: [t("home.aiIntro.sonarQ1"), t("home.aiIntro.sonarQ2")],
+      },
+      ...(showAssist
+        ? [
+            {
+              name: t("raceDetailPage.assistSwitch.assist"),
+              where: t("home.aiIntro.assistWhere"),
+              questions: [
+                t("home.aiIntro.assistQ1"),
+                t("home.aiIntro.assistQ2"),
+              ],
+            },
+          ]
+        : []),
+    ],
+    steps: [
+      t("home.aiIntro.step1"),
+      t("home.aiIntro.step2", { button: t("raceCard.view") }),
+      showAssist ? t("home.aiIntro.step3") : t("home.aiIntro.step3SonarOnly"),
+    ],
+    // 人の画面と同じページ内リンク（本日開催中のレースの欄）
+    venuesLink: { text: t("home.aiIntro.venuesLink"), href: "#today-venues" },
+    note: t("home.aiIntro.disclaimer"),
+    // /accuracy・/hit-races は ja だけのページなので、人の画面と同じく言語の接頭辞を付けない
+    links: [
+      { text: t("home.aiIntro.accuracyLink"), href: "/accuracy" },
+      { text: t("home.aiIntro.hitRacesLink"), href: "/hit-races" },
+    ],
+    faqTitle: t("home.aiIntro.faqTitle"),
+    faqItems,
+    faqPageLd: toFaqPageLd(faqItems),
+  };
+}
+
+// 人のトップのブログ欄（blog-preview-section）と同じ記事・同じ順・同じ項目
+function buildBlog(t, lang) {
+  const { popularPosts, newPosts } = getHomeBlogPosts(lang);
+  const card = (post) => ({
+    href: localizePath(`/blog/${post.id}`, lang),
+    category: post.category,
+    title: post.title,
+    description: post.description,
+    readTime: post.readTime,
+  });
+  return {
+    title: `📝 ${t("home.blogTitle")}`,
+    lead: t("home.blogDesc"),
+    groups: [
+      {
+        heading: `🌟 ${t("home.popularArticles")}`,
+        posts: popularPosts.map(card),
+      },
+      { heading: `🆕 ${t("home.newArticles")}`, posts: newPosts.map(card) },
+    ],
+    allPostsLink: {
+      text: t("home.viewAllPosts"),
+      href: localizePath("/blog", lang),
+    },
+  };
+}
+
+// 案内の帯（IntroBanner）。人の ja のトップは初回訪問なら FirstVisitGuideCard（i18n に無い日本語の固定文）を出し、
+// 帯を出さない。クローラーは毎回初回訪問なので、ja は出さない。言語版は常に帯（閉じるボタンは入れない）
+function buildIntroBanner(t, lang) {
+  if (lang === DEFAULT_LANG) return null;
+  return {
+    text: t("home.introBannerText"),
+    href: localizePath("/about", lang),
+  };
+}
+
 /**
  * トップ（/）のモデル
  *
@@ -141,6 +236,9 @@ export function buildTopModel(todayJson, { t, today, lang = DEFAULT_LANG }) {
     updatedText: updatedText(t, transformed.scrapedAt),
     openVenueCount: venues.filter((v) => v.isOpen).length,
     venues,
+    introBanner: buildIntroBanner(t, lang),
+    aiIntro: buildAiIntro(t, lang),
+    blog: buildBlog(t, lang),
   };
 }
 
