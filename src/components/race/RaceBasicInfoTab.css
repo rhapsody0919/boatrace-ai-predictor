@@ -509,16 +509,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 範囲と回数を別の塊にして折り返す。間は margin でなく column-gap で空け、
+   回数が次の行の頭に来たとき余白が残らないようにする（BOA-732） */
 .rbit-period-recent {
   display: inline-flex;
   flex-wrap: wrap;
   column-gap: 0.25em;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
-}
-
-.rbit-period-recent-counts {
-  display: inline-block;
 }
 
 /* 前期を取り込む前に前々期を出しているとき。古い期の値が主役に見えないよう、
