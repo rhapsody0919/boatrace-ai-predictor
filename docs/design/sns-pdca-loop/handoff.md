@@ -25,6 +25,22 @@ OPEN（10/13 時点）:
 - #1499: X の媒体の処理の応答が欠けたら投稿しない（開発の補助 D1）
 - #1505: X のトークンの保存が成り立たず読み直しも失敗したとき、つなぎ直しを通知する（開発の補助 D1）
 
+### 2本目のセッション（10/13 午後）で出した PR（tasks 21・23・22・6〜8・9・10・11）
+
+どれも /code-review（high）の結果を PR コメントに書いた。CI は E2E のキューが詰まっていて、作った時点では E2E 待ち。
+
+| PR | tasks | 中身 | 依存・注意 |
+|---|---|---|---|
+| #1509 | 21 | cron `sns-metrics`（5分・終日）。YouTube `videos.list`・X `GET /2/users/{id}/tweets`（since_id/until_id で1件、`reserve_sns_x_read`）。15分超は外部を読まず欠測。JS の累積値の許容差も15分に | なし |
+| #1513 | 23 | `buildObservationUtm` に campaign（race-full）、`scripts/lib/snsPostTracking.js`（本文の URL に UTM を差し込む・`sns_post_tracking` に保存）。レースの URL は `?tab=sonar` だけ許す | 呼ぶのは 12 |
+| #1515 | 22 | cron `sns-daily`（JST 10:00・11:30）。YouTube Analytics（チャネル・動画の投稿日＋翌日）と GA4（チャネル・UTM ごと・ソナー）を D−3〜D−1 取り直し、変わった行だけ `sns_channel_daily` に | **オーナー: Vercel に `GOOGLE_SERVICE_ACCOUNT_KEY`・`GA4_PROPERTY_ID`**（無い間は GA4 を飛ばして通知）。実 API（読み取り）で day×video の指標と GA4 が JST であることを確認済み |
+| #1516 | 6〜8 | v1 の検査（`api/_lib/snsBundleV1.js`、push-bundle だけが渡す）、`scripts/sns/push-bundle.js`（`npm run sns:push-bundle`、draft-x.mp4 を ffmpeg で 720×1280）、`docs/operation/sns-pdca-loop-runbook.md` | 親の投稿にレースの URL がちょうど1つ必須。claims の endpoint は `?stage=` を許す |
+| #1517 | 9 | `api/_lib/snsClaimCheck.js`（許可リスト・照合・版）と `createReadCurrent`、sns-send の preflight に接続 | 版は `checkClaims().revision`、締切は `deadlineIso()`。12 が同じ関数で書く |
+| #1518 | 10 | `api/_lib/snsHeadless.js`・`scripts/lib/snsScreenMarkers.js`（race-sonar の印は本番で決めた）・`scripts/lib/launchChromium.js`（AI スナップショットと共用）。checkPublicDisplay は `?tab=sonar` を許す。vercel.json で chromium の bin を同梱 | **L1 の最初の起動で Chromium が起動できるか確かめる**（functions の glob の重なり。個別の設定を先に置いた） |
+| #1519 | 11 | `sendHolds`（＝`mobileHolds`）に v1 の条件（`source_data.claim_check` と `release_evidence`） | 12 が claim_check・release_evidence を書く |
+
+同じファイルを触る PR が多い（`verify-registry.json` の末尾、`tasks.md`、`sns-hub-metrics/contract.md`、`snsObservations.js`、`api/cron/sns-send.js`（#1517・#1518）、`vercel.json`（#1509・#1515・#1518））。先にマージされた分に合わせて後の PR を origin/master に追従させる（衝突は機械的なもの）。
+
 ## 開発の補助（ryujin-dev-assist）の点検の扱い（2026-10-13）
 
 直近マージを読み直した報告3本の P1 は、どれも実在を確かめて直し、修正前に落ちる再現テストで固定した。判定不能（U）の項目は、実投稿・運用の段階の材料か仕様の判断が要るので扱っていない。
@@ -39,10 +55,17 @@ OPEN（10/13 時点）:
 
 ## 次にやること（tasks.md の「実装の順番」）
 
-1. **21 cron `sns-metrics`**（48h/7d の取り込み）: `sns_metric_jobs`（154 のトリガーで posted のときに2件できる）の due を処理。YouTube は `videos.list` の累積値、X は `GET /2/users/{id}/tweets`（読み取りの前に `reserve_sns_x_read`）。累積値は時刻から15分以内なら保存、超えたら欠測（154 の CHECK）。collector の JS 側の「遅い snapshot を欠測にする」処理も15分に合わせる（metrics の contract に記載）。完了の定義の3行（件数・タイミング・継続監視）がある
-2. **23 UTM**、**22 cron `sns-daily`**（YouTube Analytics の暦日と GA4、`sns_channel_daily`。D−3〜D−1 を取り直す）
-3. **20 費用**: `reserve_sns_x_read` は 21 で呼ぶ。「期間の終わりの3日前の Slack」は月の自動切り替え（158）にしたので、12 の auto-plan で「自動で切り替わる・額」を知らせる
-4. **19b /today の X 投稿**（158 の適用後）、**6〜8 素材 v1**（X 用の 720×1280 を含む）、**9〜11 検査**（9・10 が入るまで送る前の検査は必ず `source_check_unconfigured` で止まる＝外部投稿ゼロ）、**12 auto-plan**（`roll_sns_send_baselines`・`roll_sns_x_send_period` を毎回呼ぶ、item は優勝戦・準優勝戦だけ、JST 5:30〜21:00）、**13〜15 止める・管理 API・画面**
+21・23・22・6〜8・9・10・11 は PR を出した（上の表）。20 は読み取りの予約を 21 で入れ、期限前の知らせは 12 に移った（単独の作業は無い）。
+
+1. **12 cron `sns-auto-plan`**（5分、JST 5:30〜21:00）。部品はそろった:
+   - item を作る（`race_conditions.race_stage` が優勝戦・準優勝戦のレースだけ、締切は races から `deadlineIso`）
+   - X の親: `prepareRaceTracking`（#1513）で本文に UTM → `createPostTrackingStore().save` → 禁止表現の検査をやり直す
+   - `checkClaims`（#1517）→ `source_data.claim_check = {ok, revision, observed_at}`、`deadline_queue.source_revision = revision`、`deadline_at = deadlineIso(race)`、`public_url`（UTM つき、`?tab=sonar`）、`screen_key`
+   - 表示の確認: `createChromiumHeadless`（#1518）＋`checkPublicDisplay` → `source_data.release_evidence = {status:'released', url, screen_key, checked_at}`
+   - `sendHolds`（#1519）が空なら notifying → Slack → notified → approve（スレッドは親から順）
+   - 毎回 `roll_sns_send_baselines()`・`roll_sns_x_send_period()`（158 適用後）。期間の終わりの3日前に「自動で切り替わる・額」を知らせる（tasks 20 の残り）
+2. **19b /today の X 投稿**（158 の適用後）
+3. **13〜15** 止めるリンク・管理 API・画面
 
 ## 気をつけること（このセッションで踏んだもの）
 
@@ -53,4 +76,6 @@ OPEN（10/13 時点）:
 - **ハンドラを Request で直接呼ぶテストでは、Vercel の呼ばれ方の違いは見つからない**: 新しい API は本番（または Preview）で一度叩いて確かめる
 - **既存のファイルに整形（prettier）を丸ごとかけない**: 差分が数百行に膨らむ（snsDeadlineQueue.js で一度起きた）
 - **手元のテストは1本ずつ・並列1**（オーケストレーターの負荷対策の指示。`node --test --test-concurrency=1`）
+- **E2E のキュー**: 10/13 午後は E2E Smoke Test が30件以上キューに並び、PR の CI が1時間以上 pending のままになった。手元で全件は流さない（review-fix-cycle の Phase 5）
+- **本番の画面で確かめるとき**: 解析のタグ（GA4）を route で止めてから開く（確認のアクセスを数えないため。`verify-sns-headless.js --live <race_id>` がそうしている）
 - **オーナーに渡すファイル**: `owner-apply-153-154.sql`・`orchestrator-checks-153-154.sql`・`owner-x-keys-setup.md`・`owner-google-oauth-production.md` は前のセッションの scratchpad にあり、次のセッションからは読めない。runbook（`docs/db-migration/153-runbook.md`・`158-runbook.md`）が正本。X の鍵の手順は tasks 8 の `docs/operation/sns-pdca-loop-runbook.md` に入れる（画面は console.x.com の App の右上の Settings）
