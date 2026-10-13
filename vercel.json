@@ -231,7 +231,7 @@
       "schedule": "30 19 * * *"
     },
     {
-      "path": "/api/cron/in-caution-health",
+      "path": "/api/cron/in-caution-today-health",
       "schedule": "45 20 * * *"
     }
   ],
