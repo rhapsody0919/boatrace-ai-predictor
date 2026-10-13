@@ -34,7 +34,8 @@ flowchart LR
 ### 読み取りの量
 - 1レースあたり最大2,000行。gzip 後で最大約50KB（analogy tasks T2-6）。取得は部品を出すときに1回で、AI予想タブと結果タブで同じキャッシュ（`getV16` のメモリ、60秒、最大12件）を使う
 - API の CDN キャッシュは締切前 `s-maxage=60`、締切後 `s-maxage=86400`、`not_saved` とエラーは `no-store`（`api/_lib/analogyV16.js` `cacheControl`）。DB は snapshot の行を読むだけで、行そのものは Storage の静的ファイル
-- `absent` は展示の後に分かることがある（展示後の段の snapshot、`is_absent`）。キャッシュが60秒なので、欠場が分かってから最大約60秒は部品が出たままになりうる。受け入れる（入力して保存されても、結果タブでは `absent` なので振り返りは出ない）
+- v16 の公開前のレースは `not_saved`（`no-store`）で、確定済みのレースは結果タブが既定のタブなので、古いレースのページを開くたびに API と Supabase の4本の読み取りが走る。画面側で race_date が `LAYER_FIRST_DATE`（本番で layer ファイルがある最初の日。T0-3 で確かめて `src/utils/pastRate/` の定数にする）より前なら取得しない（2026-10-13 design-reviewer）
+- `absent` は展示の後に分かることがある（展示後の段の snapshot、`is_absent`）。`useAnalogyResource` は取り直さないので、欠場が分かっても、タブを開き直すまで（開き直してもメモリ60秒・CDN 60秒＋stale 30秒のキャッシュを含めて約2〜3分）部品は出たままになりうる。受け入れる（入力して保存されても、結果タブでは `absent` なので振り返りは出ない）
 
 ## フロントエンド
 
@@ -45,7 +46,7 @@ flowchart LR
 | `src/utils/analogyScenario.js`（既存を拡張） | `slitForms(stByCourse, level = 1)` に段の引数を足す。`SLIT_LEVELS = {1: {dent: 5, kado: 3, out: 5}, 2: {dent: 8, kado: 5, out: 8}}`。既定の1段目は今と同じ答え（龍神ソナー・`verify-analogy-facts.js` を変えない）。Python の `v16_defs.slit_forms_matrix` は変えない（1段目だけで使っている。2段目の検証は T0-2 のスクリプトが自前の式で行い、1段目が一致することを確かめている） |
 | `src/utils/pastRate/count.js` | `countPastRate(rows, type, input)` → `{ n, count, excluded: [{ reason, count }], breakdown }`。型ごとの判定（spec FR-1）。スリットは `slitForms(st, level)` と `stCent` を使う（形の式を二重に持たない）。`st_by_course`・`course_by_boat` が配列ごと null の行は除く行に数える。`orderPoints(input)`（点数）。`isTruncated(layer)`（`n_returned < n_total`）。`incompatibleForms(selected, level)`（定義から同時に起きない形。spec FR-1 の表を定数で持つ） |
 | `src/utils/pastRate/slitRates.js` | 全国の出現率（T0-2 の全期間の値、段ごと、小数1桁）と母数の定数。出典は `analysis/slit-pattern-rates.md` |
-| `src/utils/pastRate/label.js` | `rateLabel(rate)` → `"standard" \| "rare" \| null`。線 x・y は T0-1 で決めた定数。T0-1 が済むまでは `THRESHOLDS = null` で常に null を返し、注記の線の文も出さない |
+| `src/utils/pastRate/label.js` | `rateLabel(rate, type, input)` → `"standard" \| "rare" \| null`。線 x・y と、(型, 小分け, ラベル) ごとに出すかどうかは T0-1 で決めた定数。小分けは `subtypeOf(type, input)`（着順は `nagashi`、スリットは `mode`）。`thresholdNote(type, input)` が注記に出す線の文（出すラベルの分だけ）を返す |
 | `src/utils/pastRate/storage.js` | `loadEntries()`・`saveEntry(entry, { deadline, finished, now })`・`entriesForRace(raceId, { deadline })`。キー `boatai-user:past-rate-check:v1`、30日、上限1,000件、書く直前に読み直す、壊れた値・形の違う Entry を捨てる、例外の吸収（console に出す）、締切以降の Entry を振り返りから外す |
 | `src/services/analogyService.js`（既存を拡張） | `getAnalogyLayer(raceId)` = `getV16("/api/analogy/layer/{raceId}")`。HTTP エラー・`status` の無い応答は `getV16` が投げる |
 | `src/hooks/useAnalogyV16.js`（既存を拡張） | `useAnalogyLayer(raceId, enabled)` = `useAnalogyResource(key, () => getAnalogyLayer(raceId), enabled)` |
@@ -76,7 +77,7 @@ flowchart TD
 
 ### 組み込み
 - `PredictionPanel.jsx`: `RaceAiPredictionTab`（:516）と `RaceResult`（:631）に `raceStartTime={selectedRace?.startTime}` を足す（オッズ一覧タブ `RaceOddsListTab` に既に渡している値、:616。`races.start_time` の先頭5文字）
-- `RaceAiPredictionTab`: `PredictionBlocks` の後ろ（BOA-822 の後はイン崩れ注意度のカード・出現パターンの後）に、layer を取得して `PastRateChecker` を出す小さなラッパー（同じファイル内の関数 `PastRateSlot`）を置く。中止のときは今の早期 return で出ない。`status` が `ok` でない・`rows` が0行・取得中は出さない。取得に失敗したときは `InlineFetchError`（`onRetry` で `retry`）。`deadline = getDeadlineDate(raceId, raceStartTime)`、`finished = Boolean(prediction?.result?.finished)`
+- `RaceAiPredictionTab`: `PredictionBlocks` の後ろ（BOA-822 の後はイン崩れ注意度のカード・出現パターンの後）に、layer を取得して `PastRateChecker` を出す小さなラッパー（同じファイル内の関数 `PastRateSlot`）を置く。中止のときは今の早期 return で出ない。`status` が `ok` でない・`rows` が0行・取得中は出さない。取得に失敗したときは `InlineFetchError`（`onRetry` で `retry`）。`deadline = getDeadlineDate(raceId, raceStartTime)`、`finished = Boolean(prediction?.result?.finished)`。出すのは `status === "ready"` かつ `layer.race_id === raceId` のときだけ（`useAnalogyResource` は読み込み中に前のレースの data を返すので、前後のレースへ移ったときに前の行で数えて今の raceId で保存しない）。`PastRateChecker` に `key={raceId}` を付ける。`RaceResult` 側も同じ照合をする
   - BOA-822 の PR がこのファイルを書き換える（展開予測と `ai-tab-sonar-link` を外し、先頭に `InCautionCard`）。本機能は `PredictionBlocks` の外の末尾に1要素足すだけなので、どちらが先に入っても衝突は末尾の数行に限られる。後に入る側がもう一方の並びに合わせる
 - `RaceResult`: 払戻表の下に `PastRateReview`（`raceId`・決着・`layer`・`deadline`）。layer の取得は `RaceResult` の中で `useAnalogyLayer` を呼ぶ。決着は `buildResultRows` が組み立てた着順（返還艇を外したもの）の position 1〜3 の艇。3着までそろわなければ決着の行を出さない。不成立（`outcome === RACE_OUTCOME.NO_RACE`）と `status` が `ok` でない・`rows` が0行では出さない。取得に失敗したときは `InlineFetchError`
 - 決まり手のキーと DB の日本語の対応は `TECHNIQUE_NAMES`（`src/utils/turnPrediction.js`）を使う（新しい対応表を作らない）

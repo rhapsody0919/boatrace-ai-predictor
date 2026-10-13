@@ -24,7 +24,7 @@
   - `n_total` は D-5 で除いた後の件数。ソナーの {n}（snapshot の `n_layer`）と一致しないことがある
   - 切り詰めの判定は `n_returned < n_total` が安全（上限を下げても壊れない）
 - 行の列（`v16_pool.py` の `layer_row`）: `race_id`・`rank1`〜`rank3`・`winning_technique`・`course_by_boat`・`st_by_course`・`payout_3tan`。設計に要る列はすべてある
-  - 同じコースに2艇いる行は `st_by_course` が null になる。1〜6 の範囲外のコースは `course_by_boat` が null になる。どちらも分母から除く
+  - 同じコースに2艇いる行は `st_by_course` のそのコースと誰もいないコースの要素が null になる。1〜6 の範囲外のコースは `course_by_boat` のその艇の要素が null になる（配列ごと null ではない。2026-10-13 design-reviewer が本番の42レースで確かめた）。どちらも分母から除く
 - 保持期間（BOA-807、PR #1485）: layer を含む龍神ソナーの表示用ファイルは2年（`SONAR_KEEP_DAYS`、`src/utils/analogyRetention.js`）で消える。端末保存の30日には影響しない。v16 の公開（10/6 ごろ）より前のレースと、締切後に作られたレースは `not_saved` で、振り返りは出ない
 - 置き場所
   - 龍神ソナーは AI予想タブから独立したタブになった（`SONAR_RACE_TAB`、`PredictionPanel.jsx`、#1333）。AI予想タブに残っているのは、ソナーのタブへ移るボタンだけ
