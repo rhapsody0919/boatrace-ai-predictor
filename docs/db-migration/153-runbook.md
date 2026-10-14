@@ -78,6 +78,54 @@ SELECT has_function_privilege('anon', 'public.stop_sns_auto_item(uuid,text)', 'E
 ```
 適用後に Supabase の advisor（security）で `rls_disabled_in_public`・`security_definer_view` が0件であることも確かめる。
 
+## L1（試運転）の開始（オーナーが本番 SQL で実行）
+10/16 の L1 は「外部への投稿ゼロ」のまま、item の作成・検査・個別承認・送る直前の検査までを本番で通す。実行は **10/16 の JST 5:00 まで**（sns-auto-plan のその日の最初の起動。前夜 10/15 の実行でよい）。
+
+### live にする job（5本のうち2本）
+| job | L1 | 理由 |
+|---|---|---|
+| `sns_auto_plan` | **live** | item を作り、検査して個別承認に回す（L1 の本体）。live でないと item・下書きへの書き込み・Slack が出ない |
+| `sns_send` | **live** | 承認した job を送る直前の検査（数値の照合・表示の確認・Chromium の起動）まで通す。`sns_auto_send_control.dry_run=true` の間は runner も DB も claim を拒否するので、外部へは送らない |
+| `sns_metrics` | shadow のまま | 投稿（posted）が無いので取り込みの job ができない。X の読み取りの予約には月の期間が要り、期間の設定は L2 の前（下の「L2・L3 の送信の設定」） |
+| `sns_daily` | shadow のまま | 送信とは独立（GA4・YouTube Analytics の日次）。live にするかは取り込みのレーンで決める |
+| `sns_insights` | shadow のまま | cron が未実装（tasks 24） |
+
+### 手順1（実行前の確認・読み取りのみ）
+```sql
+-- 期待値: 5行とも shadow
+SELECT job, mode FROM public.scrape_job_state WHERE job LIKE 'sns\_%' ORDER BY job;
+-- 期待値: x・youtube とも mode=manual、dry_run=true（true の間は外部へ送らない）
+SELECT channel, mode, dry_run FROM public.sns_auto_send_control ORDER BY channel;
+-- 期待値: paused=true（実送信の止め。dry_run と二重に止まる）
+SELECT paused, period_start, period_end FROM public.sns_x_send_control WHERE id = true;
+```
+dry_run が1つでも false なら、ここで止めてオーケストレーターに知らせる。
+
+### 手順2（本体）
+```sql
+UPDATE public.scrape_job_state SET mode = 'live' WHERE job IN ('sns_auto_plan', 'sns_send') AND mode = 'shadow';
+-- 期待値: UPDATE 2
+```
+
+### 手順3（実行後の確認・読み取りのみ）
+```sql
+-- 期待値: sns_auto_plan・sns_send が live、ほか3本は shadow
+SELECT job, mode FROM public.scrape_job_state WHERE job LIKE 'sns\_%' ORDER BY job;
+-- 期待値: dry_run=true のまま（手順1と同じ）
+SELECT channel, mode, dry_run FROM public.sns_auto_send_control ORDER BY channel;
+```
+L1 の間に見るもの（Claude が読み取りで確認する）: `sns_auto_send_items` の state と held_reason（保留の理由を全件）、`sns_x_send_jobs` が queued のまま claim されていないこと、`scrape_job_state` の `sns_send` の `last_report` の precheck・dry_run。
+
+### 前提: v1 素材
+item は素材 v1 からしか作られない。10/16 の優勝戦・準優勝戦の素材を、hq が `npm run sns:push-bundle`（`docs/operation/sns-pdca-loop-runbook.md`）で、対象レースの締切の60分前より前に入れる。素材が無ければ live にしても何も起きない（失敗ではない）。
+
+### 戻し方
+```sql
+UPDATE public.scrape_job_state SET mode = 'shadow' WHERE job IN ('sns_auto_plan', 'sns_send');
+-- 期待値: UPDATE 2。作られた item・承認の job は残る（dry_run の間は送られない）。
+-- 承認の job を消すときは、管理画面から下書きを pending_review に戻す（job は 148 のガードで cancelled になる）
+```
+
 ## L2・L3 の送信の設定（オーナーが本番 SQL で実行。額はオーナーが決める）
 L3 では、その日の優勝戦・準優勝戦をすべて自動で出す（2026-10-13 オーナー決定）。L2（最初の1週間、1件ずつ承認）は1日1レースのまま。
 
