@@ -647,6 +647,11 @@
       "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
     },
     {
+      "script": "verify-ko-meet-f-wording.js",
+      "tier": "ci",
+      "guards": "ko の今節・F まわりの文言（BOA-734）。今節タブの賞典除外・F の6キーと F 凡例の全文が決めた表現で、旧表現（「준결승전·우승전 출전 제외(이번 시리즈 F)」等）が残っていないこと"
+    },
+    {
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
@@ -1097,7 +1102,7 @@
     {
       "script": "verify-sns-send-runner.js",
       "tier": "ci",
-      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は report ではなくその場で通知し届かなければ report.alerts に期限つきで持ち越す・sweep で要照合になった送信も知らせる、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし"
+      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-metrics-runner.js",
@@ -1123,6 +1128,11 @@
       "script": "verify-sns-auto-plan.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 12（前半）: 自動送信の計画（cron sns_auto_plan）。その日の優勝戦・準優勝戦（race_stage の完全一致）の素材 v1 だけから X・YouTube の item を作り、締切は races から（notify_by=−3h・veto_until=−60分・失効=−30分）、合格なら UTM の保存→下書きに UTM つきの本文と claim_check・release_evidence・deadline_queue→item を manual→公開保留を外す（153 のトリガーの順）、本人が承認でき job ができる、数値の不一致・禁止表現（UTM の差し込み後）・表示の印なしは held_manual で下書きと UTM の表を変えない、取得の失敗だけなら checking で3回までやり直す、もう一度走らせても増えない、中止・送る時刻を過ぎたレース・予選・冠つきの優勝戦は作らない、shadow は書かない、公開保留を外せずに落ちたものは次の実行で外す、158 未適用でも計画は続け alerts に出す、新しい素材を使い別の素材の item が生きていれば作らない、PostgREST の条件付き更新、稼働時間 JST 5:30〜21:00 と vercel.json。SQL154 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-daily-runner.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 22: 暦日の値の取り込み（cron sns_daily）。YouTube Analytics はチャネル全体の D−3〜D−1（太平洋時間）を埋め、動画は投稿日＋翌日だけ読み古い動画は読まない・行の無い日は欠測、GA4 はチャネル全体を流入元の完全一致のリストでチャネルに足し行の無い日は0・UTM（race-full・today_digest）は utm_content の下書きの ID に結びつける、取り直しは値が変わった行だけ書く、GA4 の鍵が無い間は飛ばして report.alerts、片方の失敗でももう片方は書いて失敗を返す、shadow は書かない、YouTube Analytics の client・GA4 のサービスアカウントの JWT（RS256）と runReport、PostgREST の読み（1000行ずつ）と upsert の一意制約の列。SQL154 までを PGlite、外部接続なし"
     }
   ]
 }

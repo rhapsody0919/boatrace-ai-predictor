@@ -9,7 +9,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { translateTechnique } from "./raceIndicators";
-import { BOAT_COLORS } from "../../utils/colors";
+import { BOAT_COLORS, getBoatChipBackground } from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { parseRaceId } from "../../utils/raceId";
 import VenueDaySummaryCard from "./VenueDaySummaryCard";
@@ -40,7 +40,7 @@ function BoatChip({ number }) {
   return (
     <span
       className="rr-boat-chip"
-      style={{ background: color.bg, color: color.text }}
+      style={{ background: getBoatChipBackground(number), color: color.text }}
     >
       {number}
     </span>

@@ -533,6 +533,16 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     activeHoursJst: { start: "05:30", end: "21:00" },
   },
+  // sns-pdca-loop tasks 22 SNS の暦日の値（YouTube Analytics・GA4）。10:00指定（cron: 10:00・11:30 JST）。毎日 D−3〜D−1 を取り直し、
+  // 値が変わった行だけ sns_channel_daily に書く。YouTube Analytics は動画ごとに1回（直近の投稿の数だけ、L3 でも約60回）。
+  // 実装: scripts/lib/snsDailyRunner.js、api/cron/sns-daily.js
+  sns_daily: {
+    kind: "daily",
+    targetTimeJst: "10:00",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: [],
+  },
 });
 
 /** JST の HH:MM を、0時からの分にする */

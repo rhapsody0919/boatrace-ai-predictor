@@ -749,3 +749,9 @@
     inset 3px 0 0 0 var(--brand-accent-primary),
     inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
 }
+
+/* 韓国語は語の境目で折り、列幅を超える語だけ途中で折る（BOA-734）。 */
+.race-meet-tab:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

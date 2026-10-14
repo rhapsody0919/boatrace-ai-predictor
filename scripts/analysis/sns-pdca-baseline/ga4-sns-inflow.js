@@ -18,6 +18,14 @@ import { fileURLToPath } from "url";
 import { google } from "googleapis";
 import { getGoogleAuthClient } from "../../lib/googleServiceAuth.js";
 import { summarize } from "./stats.js";
+import {
+  X_SOURCES,
+  YOUTUBE_SOURCES,
+  and,
+  hostFilter as host,
+  inList,
+  sonarTabFilter as sonarTab,
+} from "../../lib/snsGa4.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({
@@ -35,35 +43,6 @@ const PROPERTY_ID = process.env.GA4_PROPERTY_ID;
 if (!FROM || !TO)
   throw new Error("--from と --to（YYYY-MM-DD）を指定してください");
 if (!PROPERTY_ID) throw new Error(".env.local に GA4_PROPERTY_ID がありません");
-
-export const X_SOURCES = ["t.co", "x.com", "twitter.com", "x"];
-export const YOUTUBE_SOURCES = [
-  "youtube.com",
-  "m.youtube.com",
-  "youtube",
-  "youtu.be",
-  "com.google.android.youtube",
-];
-
-const host = {
-  filter: {
-    fieldName: "hostName",
-    stringFilter: { matchType: "EXACT", value: "www.boat-ai.jp" },
-  },
-};
-const inList = (fieldName, values) => ({
-  filter: { fieldName, inListFilter: { values } },
-});
-const and = (...expressions) => ({ andGroup: { expressions } });
-const sonarTab = and(
-  inList("eventName", ["race_tab_select", "race_tab_initial"]),
-  {
-    filter: {
-      fieldName: "customEvent:tab_id",
-      stringFilter: { matchType: "EXACT", value: "sonar" },
-    },
-  },
-);
 
 const analyticsData = google.analyticsdata({
   version: "v1beta",
