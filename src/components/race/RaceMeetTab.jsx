@@ -24,7 +24,11 @@
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
+import {
+  BOAT_COLORS,
+  BOAT_LINE_COLORS,
+  getBoatChipBackground,
+} from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -556,7 +560,10 @@ function RaceMeetTab({
         >
           <span
             className="rmt-boat-chip"
-            style={{ background: color.bg, color: color.text }}
+            style={{
+              background: getBoatChipBackground(p.number),
+              color: color.text,
+            }}
           >
             {p.number}
           </span>
@@ -1068,7 +1075,7 @@ function RaceMeetTab({
                               <span
                                 className="rmt-boat-chip"
                                 style={{
-                                  background: color.bg,
+                                  background: getBoatChipBackground(p.number),
                                   color: color.text,
                                 }}
                               >
@@ -1276,7 +1283,10 @@ function RaceMeetTab({
                     <span className="rmt-trend-label">
                       <span
                         className="rmt-boat-chip"
-                        style={{ background: color.bg, color: color.text }}
+                        style={{
+                          background: getBoatChipBackground(p.number),
+                          color: color.text,
+                        }}
                       >
                         {p.number}
                       </span>
