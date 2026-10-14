@@ -7,7 +7,7 @@
  *   shadow              検査までで止める（item・下書き・UTM の表・Slack に書かない）
  *   live                item を作り、検査の結果を書き、合格した下書きの公開保留を外す（送るのは sns-send。dry_run の間は claim の前で止まる）
  *
- * cron式（vercel.json）は UTC。5分ごと、時は 20〜23・0〜11（UTC）= JST 5:00〜20:55（稼働時間の監視は JST 5:30〜21:00）
+ * cron式（vercel.json）は UTC。5分ごと、時は 20〜23・0〜13（UTC）= JST 5:00〜22:55（稼働時間の監視は JST 5:30〜23:00。ミッドナイトの優勝戦のため、2026-10-14 オーナー決定）
  */
 import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrapper.js";
 import { postSlack } from "../../scripts/lib/scrapeJobs/monitor.js";
