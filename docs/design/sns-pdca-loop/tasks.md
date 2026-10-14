@@ -66,7 +66,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
   - [ ] 本番実測: 期待件数（算出根拠: posted の投稿数×2窓、X はスレッドの子を含む）に対し、充足率99%以上であることを実測クエリで確認する
   - [ ] タイミング実測: 土日を含む直近5日で、`posted_at`＋48h／168h から15分以内に取れた割合を実測する（欠落率2%以内）
   - [ ] 継続監視: 上記が日次で自動計測され、閾値超過で Slack 通知されることを確認する
-- [ ] **22. cron `sns-daily`**（JST 10:00）: YouTube Analytics の動画ごとの暦日の値と、GA4 の UTM・YouTube 経由の日次を `sns_channel_daily` へ。GA4 の流入元のリストは `scripts/lib/snsGa4.js` に出して分析スクリプトと共用
+- [x] **22. cron `sns-daily`**（JST 10:00）: YouTube Analytics の動画ごとの暦日の値と、GA4 の UTM・YouTube 経由の日次を `sns_channel_daily` へ。GA4 の流入元のリストは `scripts/lib/snsGa4.js` に出して分析スクリプトと共用（実装。GA4 は Vercel に `GOOGLE_SERVICE_ACCOUNT_KEY`（サービスアカウントの JSON）・`GA4_PROPERTY_ID` が要る＝オーナー。無い間は GA4 だけ飛ばして report.alerts。下の3行は L2 の実投稿の後に実測する。未実行は日次ジョブの死活、0件はラッパの0件の判定、失敗は outcome=error で監視が Slack へ）
   - [ ] 本番実測: 期待件数（算出根拠: 日数×（動画数×指標数＋UTM の投稿数×指標数＋チャネル全体の指標数））に対し、充足率99%以上
   - [ ] タイミング実測: 直近5日（土日を含む）で、D−3 の値（確定済み）が入っている割合（欠落率2%以内）。YouTube Analytics の確定の遅れを含めるため D−1 では測らない
   - [ ] 継続監視: 未実行・0件を Slack に通知

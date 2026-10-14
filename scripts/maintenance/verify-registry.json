@@ -1123,6 +1123,11 @@
       "script": "verify-sns-auto-plan.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 12（前半）: 自動送信の計画（cron sns_auto_plan）。その日の優勝戦・準優勝戦（race_stage の完全一致）の素材 v1 だけから X・YouTube の item を作り、締切は races から（notify_by=−3h・veto_until=−60分・失効=−30分）、合格なら UTM の保存→下書きに UTM つきの本文と claim_check・release_evidence・deadline_queue→item を manual→公開保留を外す（153 のトリガーの順）、本人が承認でき job ができる、数値の不一致・禁止表現（UTM の差し込み後）・表示の印なしは held_manual で下書きと UTM の表を変えない、取得の失敗だけなら checking で3回までやり直す、もう一度走らせても増えない、中止・送る時刻を過ぎたレース・予選・冠つきの優勝戦は作らない、shadow は書かない、公開保留を外せずに落ちたものは次の実行で外す、158 未適用でも計画は続け alerts に出す、新しい素材を使い別の素材の item が生きていれば作らない、PostgREST の条件付き更新、稼働時間 JST 5:30〜21:00 と vercel.json。SQL154 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-daily-runner.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 22: 暦日の値の取り込み（cron sns_daily）。YouTube Analytics はチャネル全体の D−3〜D−1（太平洋時間）を埋め、動画は投稿日＋翌日だけ読み古い動画は読まない・行の無い日は欠測、GA4 はチャネル全体を流入元の完全一致のリストでチャネルに足し行の無い日は0・UTM（race-full・today_digest）は utm_content の下書きの ID に結びつける、取り直しは値が変わった行だけ書く、GA4 の鍵が無い間は飛ばして report.alerts、片方の失敗でももう片方は書いて失敗を返す、shadow は書かない、YouTube Analytics の client・GA4 のサービスアカウントの JWT（RS256）と runReport、PostgREST の読み（1000行ずつ）と upsert の一意制約の列。SQL154 までを PGlite、外部接続なし"
     }
   ]
 }
