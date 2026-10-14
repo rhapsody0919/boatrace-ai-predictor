@@ -59,6 +59,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 - [ ] **20. 費用**: `reserve_sns_x_read` の呼び出し、期間の終わりの3日前の Slack
 - [x] **19a. DB 158**（番号は着手時に origin/master で確認）: `sns_auto_send_items.kind`（race・digest。digest は bundle_import_id なし、race_id は `today:YYYY-MM-DD`、承認の関数は下書きの ID で引く）、`sns_drafts.send_lane`（A・B）、B の claim は今日まだ送っていない A の予定の本数を先に引く、`roll_sns_x_send_period()`（期間が終わったら同じ額で次の1か月へ。2026-10-13 オーナー決定）、`sns_post_tracking` の campaign に `today_digest` を足す。PGlite の再現テスト: A と B が同じ日に重なったとき B が A の枠を食わない／期間の途中では切り替わらない・終わったら同じ額で切り替わる／digest の item を止められる（このPR。オーナーの適用待ち。期間の終わりの3日前の Slack は、自動の切り替えにしたので sns-auto-plan で「自動で切り替わる・額」を知らせる形にする（tasks 12））
 - [ ] **19b. /today の X 投稿**（通り道 A）: `morning_digest_rows` から決まった型で本文を組み立てる（AI 生成なし、禁止表現の検査は通す）。7:45 送信・5:45 通知・止める操作つき。UTM は `utm_campaign=today_digest`・`utm_content=日付`。L1 から dry_run で回し、L2 はオーナーが毎朝 5:45〜7:45 にスマホで承認、L3 で自動。日次上限は L2 で `daily_limit_x=7`、L3 で 97
+  - **画像を1枚付ける**（2026-10-14 オーナー決定、hq 経由）: 未ログインで開いた本番の /today を、スマホ幅（CSS 390px）の上部だけ 4:5 で撮る（viewport 390×488・deviceScaleFactor 3 → 1170×1464 の PNG）。撮影は `api/_lib/snsHeadless.js`（#1518、未ログイン・解析タグを止める）に screenshot を足して流用。撮るのは一覧ができた後（JST 5:30、6:30・8:00 のやり直しの後も）。Storage に置き下書きの `cover_image_path` にする（送信の部品は png を `tweet_image` で送れる）。5:45 の事前通知（Slack）に画像を載せ、オーナーが見て止められるようにする。承認の後に一覧がやり直されて画像が変わったら、承認を外して撮り直し・通知し直す（承認した画像と違うものを送らない）。再現テスト: 寸法・未ログイン・一覧の前は撮らない・やり直しで承認が外れる
 
 ## PR-6 取り込み
 
