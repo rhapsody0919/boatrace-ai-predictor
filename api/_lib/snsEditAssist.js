@@ -1,4 +1,5 @@
 import twitterText from 'twitter-text';
+import { xPostMax } from './snsXLength.js';
 import { matchRiskRules } from '../../scripts/lib/riskRuleMatcher.js';
 
 export const EDIT_ENGINE = 'deterministic-v1';
@@ -34,7 +35,9 @@ export function inspectDraft(draft, rules, sources) {
   if(draft.platform==='x') {
     const text=[draft.caption_text,...(draft.hashtags || [])].filter(Boolean).join('\n');
     const parsed=twitterText.parseTweet(text);
-    if(parsed.weightedLength>280) add('x-weighted-length','caption_text + hashtags',`X加重文字数 ${parsed.weightedLength}/280`,'日本語・絵文字・URLを含む加重文字数が上限を超えています。','本文とタグを短くしてください。');
+    // 親1件だけのスレッド（素材 v1 の x_thread が1件）は長文の1投稿として25,000まで
+    const max=xPostMax(draft.source_data?.bundle?.x_thread?.length===1);
+    if(parsed.weightedLength>max) add('x-weighted-length','caption_text + hashtags',`X加重文字数 ${parsed.weightedLength}/${max}`,'日本語・絵文字・URLを含む加重文字数が上限を超えています。','本文とタグを短くしてください。');
   }
   const s=draft.source_data || {}, bundle=s.bundle || {}, raw=sources ?? bundle.source_data ?? {};
   for(const [i,c] of (bundle.claims || []).entries()) {

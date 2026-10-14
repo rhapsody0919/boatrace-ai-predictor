@@ -358,6 +358,12 @@ test("準優勝戦の素材 v1 から X・YouTube の item を作り、合格な
     thread[0].source_data.deadline_queue.public_url,
     tracking.tracking_url,
   );
+  // 送る直前の検査が長文の1投稿を許すかの印（子のあるスレッドは 2 なので280まで）
+  assert.equal(thread[0].source_data.deadline_queue.thread_length, 2);
+  assert.equal(
+    (await drafts(group, "youtube"))[0].source_data.deadline_queue.thread_length,
+    undefined,
+  );
   // 本人の承認（個別承認の画面と同じ関数）が通り、job ができる（dry_run の間は送信の側が claim の前で止める）
   const job = (
     await first("SELECT approve_sns_x_send($1,$2,$3,NULL) r", [
