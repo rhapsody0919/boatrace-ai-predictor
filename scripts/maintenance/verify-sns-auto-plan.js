@@ -598,9 +598,9 @@ test("PostgREST の store: URL・条件付きの更新・失敗は投げる", as
   await assert.rejects(store.rpc("fail"), /HTTP 500/);
 });
 
-test("cron の登録: sns_auto_plan は JST 5:30〜21:00 の中だけを死活の監視で見る、vercel.json に5分ごと", async () => {
+test("cron の登録: sns_auto_plan は JST 5:30〜23:00 の中だけを死活の監視で見る、vercel.json に5分ごと", async () => {
   const active = activeMinutesOf(SCRAPE_JOBS.sns_auto_plan);
-  assert.deepEqual(active, { start: 330, end: 1260 });
+  assert.deepEqual(active, { start: 330, end: 1380 });
   assert.equal(SCRAPE_JOBS.sns_auto_plan.maxDurationSec, 300);
   const vercel = JSON.parse(
     await readFile(new URL("../../vercel.json", import.meta.url), "utf8"),
@@ -609,7 +609,7 @@ test("cron の登録: sns_auto_plan は JST 5:30〜21:00 の中だけを死活�
     vercel.crons.some(
       (c) =>
         c.path === "/api/cron/sns-auto-plan" &&
-        c.schedule === "*/5 20-23,0-11 * * *",
+        c.schedule === "*/5 20-23,0-13 * * *",
     ),
   );
   assert.match(

@@ -63,7 +63,7 @@ flowchart TB
 
 ## 2. 自動承認と事前通知（spec A3〜A7・A10、cron `sns-auto-plan`、ADR 0094）
 
-5分ごと（JST 8:00〜21:00）。1回の流れ:
+5分ごと（JST 5:30〜23:00。ミッドナイトの優勝戦のため 2026-10-14 オーナー決定で 23:00 まで）。1回の流れ:
 
 ```mermaid
 flowchart TD
@@ -114,7 +114,7 @@ flowchart TD
 ## 4. 送信（spec A1・A9、cron `sns-send`）
 
 - **5本の cron と共通ラッパ**: `sns_auto_plan`（continuous、5分）・`sns_send`（continuous、2分）・`sns_metrics`（continuous、5分）・`sns_daily`（daily、JST 10:00）・`sns_insights`（daily、月曜 JST 5:00）を `scripts/lib/scrapeJobs/registry.js` に登録し、すべて `createScrapeCronHandler` を通す。`scrape_job_state` の行は mode=off で作られるので、153 で5行を `mode='shadow'` で入れ、L1 でオーナーが `live` にする
-- `sns-send` は2分ごと（JST 8:00〜21:00）。`createScrapeCronHandler`（`scripts/lib/scrapeJobs/cronWrapper.js`）に新しいジョブ `sns_send` を登録する（ADR-0066 改訂1 に、外部サイトを取得しないジョブが乗った先例がある）。`maxDuration=300`、`leaseSec` は300以上。monitor の死活の通知は JST 8:00〜21:30 だけにする（レジストリにジョブごとの稼働時間を足す）
+- `sns-send` は2分ごと（JST 8:00〜23:00。22:00 以降に発走するミッドナイトの優勝戦の送る時刻（締切の60分前）まで動かす。2026-10-14 オーナー決定）。`createScrapeCronHandler`（`scripts/lib/scrapeJobs/cronWrapper.js`）に新しいジョブ `sns_send` を登録する（ADR-0066 改訂1 に、外部サイトを取得しないジョブが乗った先例がある）。`maxDuration=300`、`leaseSec` は300以上。monitor の死活の通知は JST 8:00〜21:30 だけにする（レジストリにジョブごとの稼働時間を足す）
 - 1回の流れ: `xSendStore.sweep()` → `queued` で `scheduled_at` を過ぎた job（子は親が posted のものだけ）を古い順に最大3件 → チャネルごとに既存の `runXSendJob` / `runYoutubeQueueJob` / `runYoutubePublishJob` を呼ぶ
 - **X adapter**（新規 `api/_lib/xApiAdapter.js`）: fetch で X API v2 を直接呼ぶ。`initialize`/`append`/`finalize`/`status` は `/2/media/upload/*`、`createPost` は `POST /2/tweets`（子は `reply.in_reply_to_tweet_id`）。動画は Storage から読み、5 MB ずつ送る
 - **X のトークン**（ADR 0093）: 154 の `sns_oauth_tokens` に AES-256-GCM（IV と認証タグを列に持つ）で暗号化して保存。refresh は X の HTTP をはさむので1つのトランザクションにはできない。`lock_until` と `locked_by` を条件付き UPDATE で取り、保存は `WHERE locked_by=自分` の条件付き UPDATE にする。ロックは HTTP のタイムアウト（30秒）より長い90秒。refresh に成功して保存に失敗したら refresh token を失うので、Slack に「X の連携のやり直しが要る」と通知する

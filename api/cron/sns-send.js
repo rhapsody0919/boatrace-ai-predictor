@@ -12,7 +12,7 @@
  * screen_key の印（scripts/lib/snsScreenMarkers.js）が見えるかで確かめる。Chromium は1回の実行で1回だけ起動し、終わったら閉じる。
  * どれかに落ちたら claim しないので、外部へは何も送られない（fail-closed）
  *
- * cron式（vercel.json）は UTC。分は2分ごと、時は 23・0〜11（UTC）= JST 8:00〜20:58 の2分ごと
+ * cron式（vercel.json）は UTC。分は2分ごと、時は 23・0〜13（UTC）= JST 8:00〜22:58 の2分ごと（ミッドナイトの優勝戦の送る時刻（締切の60分前）まで動かす。2026-10-14 オーナー決定）
  */
 import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrapper.js";
 import { postSlack } from "../../scripts/lib/scrapeJobs/monitor.js";
