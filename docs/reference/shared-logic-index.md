@@ -193,7 +193,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsPostTracking.js` | X の親の投稿の UTM（sns-pdca-loop tasks 23、plan §2・§5、spec C3）。 | insertTrackingUrl, prepareRaceTracking, createPostTrackingStore |
 | `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
-| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか4件 |
+| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか5件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
@@ -343,4 +343,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 308 ファイル / export 1702 件。
+対象 308 ファイル / export 1703 件。
