@@ -87,6 +87,15 @@ L3 では、その日の優勝戦・準優勝戦をすべて自動で出す（20
 - 決定（2026-10-13 オーナー）: 月の上限額は **$130**（X の Developer Console の spending limit も同じ額にする）。L2 の間は $10 のまま。/today の X 投稿（158 以降）を足すと、L2 は `daily_limit_x=7`、L3 は 97 にする
 - YouTube: 1日最大16本のアップロードになる。Google Cloud のクォータ（videos.insert の枠）が足りるかを L3 の前にオーナーが確認する
 
+X の月の期間は、本番に一度も設定されていない（`period_start`・`period_end` が NULL）。L2 で最初に実際に送る前（`sns_auto_send_control.dry_run=false` にする前）に、最初の期間を1回だけ設定する。L1（試運転）の間は claim しないので要らない。期間が未設定の間、`roll_sns_x_send_period()`（158、sns-auto-plan が毎回呼ぶ）は `period_unset` を返すだけで何もしない。2回目以降は同じ額で自動で切り替わる（158）ので、この設定は最初の1回だけ。期間は月の1日始まりにし、時刻は UTC の0時で書く（29〜31日始まりだと `interval '1 month'` の加算で日がずれる。JST の0時（+09:00）で書くと UTC では前の月の末日になり、同じ理由で 11/30 → 12/30 とずれていく）。月の途中から始めても、その月は上限額をいっぱいまで使える。
+
+```sql
+-- 最初の期間（L2 を始める月の1日から翌月1日まで、UTC の0時。例は L2 を10月中に始める場合。11/1 から 158 が自動で切り替える）
+SELECT public.renew_sns_x_send_period('2026-10-01T00:00:00Z', '2026-11-01T00:00:00Z');
+-- 確認: period_start・period_end が入り、reserved_microusd が0
+SELECT period_start, period_end, budget_microusd, reserved_microusd FROM public.sns_x_send_control WHERE id = true;
+```
+
 ```sql
 -- L2（1件ずつ承認、1日1レース）
 UPDATE public.sns_x_send_control SET daily_limit_x = 6, daily_limit_youtube = 1 WHERE id = true;

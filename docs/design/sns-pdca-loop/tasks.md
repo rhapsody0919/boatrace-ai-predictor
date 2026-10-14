@@ -38,12 +38,14 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 ## PR-3 検査（禁止表現・数値の照合・リンク先の表示）
 
 - [x] **9. 数値の照合** `api/_lib/snsClaimCheck.js`: endpoint の許可リスト、公開 API の読み直し、値の照合。preflight の `readCurrent` からも呼ぶ（許可リストは `/api/analogy/{facts,similar,scenario,layer}/{素材と同じレース}` と `?stage=`。`checkClaims` の `revision` を auto-plan（12）が `deadline_queue.source_revision` に、`deadlineIso` を `deadline_at` に入れる。sns-send の preflight に接続済み）
-- [ ] **10. ヘッドレス** `api/_lib/snsHeadless.js`（playwright-core＋@sparticuz/chromium、ADR 0091）と `scripts/lib/snsScreenMarkers.js`（実画面で印を決める）。関数のサイズを測り、250 MB を超えるなら chromium-min に切り替える
+- [x] **10. ヘッドレス** `api/_lib/snsHeadless.js`（playwright-core＋@sparticuz/chromium、ADR 0091）と `scripts/lib/snsScreenMarkers.js`（実画面で印を決める）。関数のサイズを測り、250 MB を超えるなら chromium-min に切り替える（2026-10-13: 印は本番の `/race/{id}?tab=sonar` を未ログインで開いて決めた（`race-sonar`: analogy-stage-chip・analogy-fact-card）。リンクは `?tab=sonar` を許す（#1513 の UTM も同じ）。@sparticuz/chromium 68 MB＋playwright-core 11 MB で 250 MB に届かないので chromium-min にしない。関数のメモリは Fluid compute ではダッシュボードで設定（既定のまま）。Chromium の bin は vercel.json の includeFiles で同梱）
 - [x] **11. 個別承認の画面と同じ条件の検査** を部品にして、mobile-approval と自動の両方から使う（`snsMobileApproval.js` の `sendHolds`（`mobileHolds` は同じ関数）。v1 は `source_data.claim_check`（ok・revision＝`deadline_queue.source_revision`）と `release_evidence`（表示の確認）を見る。どちらも 12 の auto-plan が書く。v1 は bundle 由来でも `publish_blocked=false` なら公開保留にしない）
 
 ## PR-4 自動承認・事前通知・止める
 
 - [ ] **12. cron `sns-auto-plan`**（5分ごと、JST 5:30〜21:00。/today の 5:45 の通知のため）: item 作成（締切は races から）。item を作るのは `race_conditions.race_stage` が優勝戦・準優勝戦のレースだけ（L3 ではその日の該当レースをすべて出す、2026-10-13 オーナー決定。L2 は日次上限で1日1レース）→ 検査 → notifying → Slack → notified → approve（スレッドは親から順に）。JST・太平洋時間の日付が変わるたびに基準日を当日にする（2026-10-13 決定）。`registry.js` に稼働時間つきで登録、`vercel.json` に追加
+  - [x] **12a. 個別承認まで**（L1 に要る最小。`scripts/lib/snsAutoPlanRunner.js`・`api/cron/sns-auto-plan.js`、再現テスト `verify-sns-auto-plan.js`）: その日の素材 v1 のうち `race_stage` が「優勝戦」「準優勝戦」の完全一致のレースだけ、X・YouTube の item を作る（締切は races、送る時刻を過ぎた・中止は作らない）→ 数値の照合（9）・リンク先の表示（10、1素材1回）・UTM（23）を差し込んだ後の禁止表現・承認の条件（11 の sendHolds）→ 合格は UTM を保存し下書きに本文と claim_check・release_evidence・deadline_queue を書いて item を manual、公開保留を外す。不合格は held_manual（理由を Slack）。取得の失敗だけなら checking で3回までやり直す。毎回 `roll_sns_send_baselines`・`roll_sns_x_send_period`（158 未適用の間は report.alerts に出し、計画は続ける）。**X のスレッドの子（thread_index≥1）は公開保留を外さない**（子の job は parent_job_id が無いと親を待たずに claim されるため。12b で親から順につなぐ）。mode=auto でも manual にして alerts に「未実装」を出す
+  - [ ] **12b. 自動（L3）と子のつなぎ**: notifying（token の hash）→ Slack → notified → 自動送信の承認者で approve（親から順、子の deadline_queue.parent_job_id は直前の投稿の job）。個別承認（L2）でも子を親の job につないでから外す。新しい型（checks.new_format）は個別承認へ。直した素材の入れ直しで前の item を stopped（superseded）にする。期間の終わりの3日前の「自動で切り替わる・額」の知らせ（tasks 20 の残り）
 - [ ] **13. 止めるリンク** `api/sns-stop/[token].js`（GET は確認の画面、POST で止める、no-store・no-referrer・noindex）
 - [ ] **14. 管理 API** `api/admin/sns-hub/auto-send.js`（一覧・止める・モード・誤投稿の記録、L3 の条件の計算）
 - [ ] **15. 画面** `AutoSendPanel`（screens #1〜#4・#10）、`MobileApprovalPanel`・`DeadlineQueueList` の拡張（#5・#6）。375px・ライト／ダークを Playwright で確認。受け入れ E2E（`e2e/acceptance/sns-pdca-loop.spec.js`）を通す

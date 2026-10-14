@@ -15,6 +15,10 @@
       "schedule": "*/2 23,0-11 * * *"
     },
     {
+      "path": "/api/cron/sns-auto-plan",
+      "schedule": "*/5 20-23,0-11 * * *"
+    },
+    {
       "path": "/api/cron/sns-metrics",
       "schedule": "*/5 * * * *"
     },
@@ -240,6 +244,14 @@
     }
   ],
   "functions": {
+    "api/cron/sns-send.js": {
+      "regions": ["syd1"],
+      "includeFiles": "node_modules/@sparticuz/chromium/bin/**"
+    },
+    "api/cron/sns-auto-plan.js": {
+      "regions": ["syd1"],
+      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,sns-video-studio/remotion/risk-rules.json}"
+    },
     "api/cron/*.js": {
       "regions": ["syd1"]
     },
