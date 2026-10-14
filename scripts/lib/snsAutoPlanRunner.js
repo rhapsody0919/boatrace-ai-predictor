@@ -412,6 +412,8 @@ export function evaluateChannel(
     source_observed_at: shared.claims.observedAt,
     public_url: publicUrl,
     screen_key: plan.screenKey,
+    // 送る直前の検査（snsDeadlineQueue.js）が長文の1投稿（25,000まで）を許すかの印。承認の snapshot に入る
+    ...(channel === "x" ? { thread_length: drafts.length } : {}),
     ...(channel === "youtube" ? { youtube_mode: "immediate" } : {}),
   };
   const draftUpdates = updates.map(({ draft, captionText }) => {

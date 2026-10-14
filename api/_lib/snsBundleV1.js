@@ -10,6 +10,7 @@ import {
   record,
   text,
 } from "./snsBundleValidation.js";
+import { X_LONG_POST_MAX, xPostValid } from "./snsXLength.js";
 
 export const RACE_URL_PREFIX = "https://www.boat-ai.jp/race/";
 
@@ -32,13 +33,15 @@ export function validateV1Fields(bundle, files) {
       thread.length <= X_THREAD_MAX,
     `v1のx_threadは1〜${X_THREAD_MAX}件です`,
   );
+  // 親1件だけのスレッドは長文の1投稿（Premium、25,000まで）。子があれば各投稿280まで
+  const long = thread.length === 1;
   thread.forEach((post, i) => {
     ensure(
-      record(post) && post.index === i && text(post.text, 20000),
+      record(post) && post.index === i && text(post.text, X_LONG_POST_MAX),
       "x_threadのindexは0からの連番で、本文が必要です",
     );
     ensure(
-      twitterText.parseTweet(post.text).valid,
+      xPostValid(post.text, { long }),
       `x_thread[${i}]: Xの文字数を超えています`,
     );
     // URL を含む投稿は単価が高い（spec の費用の決まり）ので、URL はスレッドの親だけ

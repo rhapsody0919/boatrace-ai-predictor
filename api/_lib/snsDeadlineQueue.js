@@ -1,4 +1,4 @@
-import twitterText from 'twitter-text';
+import { xPostValid } from './snsXLength.js';
 import { SCREEN_TABS } from '../../scripts/lib/snsScreenMarkers.js';
 
 // 推奨値は運用承認ではない。DB timing_approved=falseが初期値。
@@ -33,7 +33,8 @@ export function createDeadlinePreflight({ headless, markers, readCurrent, now = 
     if (!q || !Number.isFinite(Date.parse(q.expires_at)) || now() >= Date.parse(q.expires_at)) throw new Error('deadline_expired');
     if (job.channel === 'x') {
       if (/[{}]|\$\{/.test(snapshot.text)) throw new Error('unresolved_placeholder');
-      if (!twitterText.parseTweet(snapshot.text).valid) throw new Error('weighted_text_invalid');
+      // 長文（25,000まで）は、auto-plan が承認の前に「親1件だけのスレッド」と書いたもの（queue.thread_length=1）だけ。ほかは280まで
+      if (!xPostValid(snapshot.text, { long: q.thread_length === 1 && !q.parent_job_id })) throw new Error('weighted_text_invalid');
     }
     if (!readCurrent) throw new Error('source_check_unconfigured');
     const current = await readCurrent(job.draft_id);
