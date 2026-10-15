@@ -27,6 +27,7 @@ import {
   getSiteJsonLd,
 } from "./botPage.js";
 import { getJSTNow } from "../../src/utils/dateUtils.js";
+import { NIGASHI_LIST_COURSE } from "../../src/utils/digestMetrics.js";
 import { toBreadcrumbListLd } from "../../src/utils/breadcrumbLd.js";
 import {
   GLOSSARY_KEY_VOLATILITY,
@@ -54,9 +55,10 @@ export const NOT_GENERATED_TEXT =
 
 const DAY_SELECT =
   "generated_at,venue_count,race_count,window_start,window_end,window_days,notes";
-// 選手の値（racer_id・racer_name・grade・boat_number・motor_2rate 等）は select しない
+// 選手の値（racer_id・racer_name・grade・boat_number・motor_2rate 等）は select しない。
+// course は逃がしの行を2号艇（一覧）と3号艇（人の画面の折りたたみの中だけ）に分けるために取る（2026-10-15）
 export const ROW_SELECT =
-  "section,rank,race_id,venue_code,race_number,start_time,reason:detail->>reason";
+  "section,rank,race_id,venue_code,race_number,start_time,course,reason:detail->>reason";
 
 const RACE_SECTIONS = ["featured", "nige", "makuri", "nigashi"];
 
@@ -230,7 +232,11 @@ export function buildTodayModel(digest, { date, t }) {
   const { day, rows } = digest;
   const generated = Boolean(day?.generated_at);
   const bySection = {};
-  for (const row of rows) (bySection[row.section] ??= []).push(row);
+  for (const row of rows) {
+    // 逃がしは人の画面の一覧と同じく2号艇だけ。3号艇は折りたたみの中なので出さない（2026-10-15）
+    if (row.section === "nigashi" && row.course !== NIGASHI_LIST_COURSE) continue;
+    (bySection[row.section] ??= []).push(row);
+  }
   const race = (row) => ({
     race: `${t(`venues.${row.venue_code}`)} ${row.race_number}R`,
     deadline: deadlineText(row.start_time),

@@ -55,6 +55,12 @@ export const NATIONAL_BASE_RATES = {
   makuriByCourse: { 2: 3.76, 3: 5.08, 4: 4.92, 5: 1.25, 6: 0.62 },
 };
 
+/**
+ * 逃がしで一覧に出すコース（＝当日の2号艇。過去の2コースの実績）。3号艇は人の画面の折りたたみの中だけに出し、
+ * 4〜6号艇は保存しない（2026-10-15 オーナー承認）。生成・画面・ボット向けがここを読む
+ */
+export const NIGASHI_LIST_COURSE = 2;
+
 /** 抽出の最低母数（地力窓） */
 export const MIN_RUNS = 10;
 
