@@ -86,13 +86,43 @@ export function todayCandidates(rows, sendAt = "07:45") {
  * 区分ごとに上限まで rank の順に選び、全体を締切→会場→R の順に並べる。候補が0件なら null（その日は送らない）
  * 印の意味を1行ずつ、その後に全体を締切の早い順で。1行は「［逃げ］会場R HH:MM締切｜艇番 選手名｜全国N走」（2026-10-15 オーナー回答）
  */
+// 注目レースの割合の言い方（選んだ区分ごと）。逃がしからの注目は、向きの確認が済むまで載せない
+const FEATURED_RATE = {
+  nige: (course) => `${course}コースで逃げ切った割合`,
+  makuri: (course) => `${course}コースでまくりで1着の割合`,
+};
+const pct = (value) => `${Number(value)}%`;
+
+/** /today の注目レース（featured）。逃げ・まくりから選ばれ、送る時刻より後の締切で、数字がそろっているときだけ */
+export function todayFeatured(rows, sendAt = "07:45") {
+  const row = rows.find((r) => r.section === "featured");
+  if (
+    !row ||
+    !FEATURED_RATE[row.from] ||
+    typeof row.start_time !== "string" ||
+    row.start_time.slice(0, 5) <= sendAt ||
+    !Number.isInteger(row.boat_number) ||
+    !Number.isInteger(row.course) ||
+    !Number.isFinite(Number(row.metric_value)) ||
+    !Number.isFinite(Number(row.metric_venue_baseline)) ||
+    !Number.isInteger(row.sample_size)
+  )
+    return null;
+  return row;
+}
+
 export function buildTodayPost(
   digest,
   { date, t, url, sendAt = "07:45", excluded = new Set() },
 ) {
   const model = buildTodayModel(digest, { date, t });
+  const key = (row) => `${row.race_id}:${row.boat_number}`;
+  const found = todayFeatured(digest.rows, sendAt);
+  const featured = found && !excluded.has(key(found)) ? found : null;
+  // 注目レースの選手は一覧に重ねて出さない
   const candidates = todayCandidates(digest.rows, sendAt).filter(
-    (row) => !excluded.has(`${row.race_id}:${row.boat_number}`),
+    (row) =>
+      !excluded.has(key(row)) && (!featured || key(row) !== key(featured)),
   );
   const picks = TODAY_PICK_RULES.flatMap(({ section, limit }) =>
     candidates.filter((row) => row.section === section).slice(0, limit),
@@ -102,7 +132,7 @@ export function buildTodayPost(
       a.venue_code - b.venue_code ||
       a.race_number - b.race_number,
   );
-  if (!picks.length) return null;
+  if (!picks.length && !featured) return null;
   // 印の意味（その日に出る区分だけ）を先に1行ずつ、その後に全体を締切の早い順で（2026-10-15 オーナー「締め切り順が良い」）
   const thresholds = digest.day?.notes?.thresholds ?? {};
   const rules = TODAY_PICK_RULES.filter((rule) =>
@@ -111,23 +141,34 @@ export function buildTodayPost(
   const mark = Object.fromEntries(
     rules.map((rule) => [rule.section, rule.mark]),
   );
-  const lines = [
-    `本日のデータ一覧（${model.dateLine}）`,
-    "",
-    ...rules.map(
-      (rule) =>
-        `［${rule.mark}］${rule.legend(thresholds[rule.section] ?? rule.threshold)}`,
-    ),
-    "",
-  ];
-  for (const row of picks)
+  const head = (row) =>
+    `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}`;
+  const lines = [`本日のデータ一覧（${model.dateLine}）`, ""];
+  // 注目レースを先頭に（2026-10-16 オーナー指示。「イン崩れ指数」「AIが算出」の言い方は使わない）
+  if (featured)
     lines.push(
-      `［${mark[row.section]}］${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}｜全国${row.sample_size}走`,
+      `注目レース：${head(featured)}｜${FEATURED_RATE[featured.from](featured.course)} ${pct(featured.metric_value)}（全国${featured.sample_size}走）・この会場の平均 ${pct(featured.metric_venue_baseline)}`,
+      "",
     );
-  lines.push("", TODAY_NOTICE, url);
+  if (picks.length) {
+    lines.push(
+      ...rules.map(
+        (rule) =>
+          `［${rule.mark}］${rule.legend(thresholds[rule.section] ?? rule.threshold)}`,
+      ),
+      "",
+    );
+    for (const row of picks)
+      lines.push(
+        `［${mark[row.section]}］${head(row)}｜全国${row.sample_size}走`,
+      );
+    lines.push("");
+  }
+  lines.push(TODAY_NOTICE, url);
   return {
     text: lines.join("\n"),
-    picks: picks.map((row) => ({
+    // 送る直前に欠場・中止を読み直す対象（注目レースを含む）
+    picks: [...(featured ? [featured] : []), ...picks].map((row) => ({
       race_id: row.race_id,
       boat_number: row.boat_number,
     })),
@@ -184,7 +225,11 @@ export async function runTodayPlan(
 
   const trackingUrl = todayTrackingUrl(date);
   // 欠場・中止・締切を確かめられない候補は除く（区分の上限までは後ろの rank から補う）
-  const statuses = await pickRaceStatus(raceDb, todayCandidates(digest.rows));
+  const featuredRow = todayFeatured(digest.rows);
+  const statuses = await pickRaceStatus(raceDb, [
+    ...(featuredRow ? [featuredRow] : []),
+    ...todayCandidates(digest.rows),
+  ]);
   const excluded = new Set(
     statuses
       .filter((p) => p.reason)

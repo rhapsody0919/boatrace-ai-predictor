@@ -9,7 +9,8 @@ import { ROW_SELECT, createDigestSource } from "./botToday.js";
 export const TODAY_SCREEN_KEY = "today";
 
 // 投稿の本文に、各区分の上位の選手名・枠番を載せる（2026-10-15 オーナー指示）。人の画面（/today）は同じ表の同じ列を出している
-export const TODAY_ROW_SELECT = `${ROW_SELECT},racer_name,boat_number,sample_size`;
+// 注目レース（featured）の行には、割合・会場の平均（コースは ROW_SELECT にある）・選んだ区分（detail.from）も使う（2026-10-16 オーナー指示）
+export const TODAY_ROW_SELECT = `${ROW_SELECT},racer_name,boat_number,sample_size,metric_value,metric_venue_baseline,from:detail->>from`;
 
 /** 計画（auto-plan）と送る直前の検査で同じ列を読む（版がずれないため）。使い回さず毎回読み直す */
 export const createTodayDigestSource = (options = {}) =>
