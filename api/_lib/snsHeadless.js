@@ -22,49 +22,83 @@ export function createChromiumHeadless({
   let browser = null;
   let launchError = null;
   let inspections = 0;
+  // 未ログインの新しい context で開き、印が見えるのを待ってから after(page) を呼ぶ。開いた回数は inspect・screenshot の合計で数える
+  async function open(
+    { url, viewport, deviceScaleFactor, requiredSelectors },
+    after,
+  ) {
+    if (inspections >= maxInspections) throw new Error("public_check_budget");
+    inspections += 1;
+    if (launchError) throw launchError;
+    try {
+      browser ??= await launch();
+    } catch (error) {
+      launchError = error;
+      throw error;
+    }
+    const context = await browser.newContext({
+      viewport,
+      deviceScaleFactor,
+      storageState: undefined,
+    });
+    try {
+      await context.route(BLOCKED, (route) => route.abort());
+      const page = await context.newPage();
+      await page.goto(url, {
+        waitUntil: "domcontentloaded",
+        timeout: gotoTimeoutMs,
+      });
+      const visible = await Promise.all(
+        requiredSelectors.map((selector) =>
+          page
+            .locator(selector)
+            .first()
+            .waitFor({ state: "visible", timeout: waitMs })
+            .then(
+              () => selector,
+              () => null,
+            ),
+        ),
+      );
+      return {
+        finalUrl: page.url(),
+        visibleSelectors: visible.filter(Boolean),
+        ...(after ? await after(page) : {}),
+      };
+    } finally {
+      await context.close();
+    }
+  }
   return {
     async inspect({ url, context: options = {}, requiredSelectors = [] }) {
       if (options.storageState != null)
         throw new Error("未ログインの context だけで確かめます");
-      if (inspections >= maxInspections) throw new Error("public_check_budget");
-      inspections += 1;
-      if (launchError) throw launchError;
-      try {
-        browser ??= await launch();
-      } catch (error) {
-        launchError = error;
-        throw error;
-      }
-      const context = await browser.newContext({
+      return open({
+        url,
         viewport: { width: 390, height: 844 },
-        storageState: undefined,
+        deviceScaleFactor: 1,
+        requiredSelectors,
       });
-      try {
-        await context.route(BLOCKED, (route) => route.abort());
-        const page = await context.newPage();
-        await page.goto(url, {
-          waitUntil: "domcontentloaded",
-          timeout: gotoTimeoutMs,
-        });
-        const visible = await Promise.all(
-          requiredSelectors.map((selector) =>
-            page
-              .locator(selector)
-              .first()
-              .waitFor({ state: "visible", timeout: waitMs })
-              .then(
-                () => selector,
-                () => null,
-              ),
-          ),
-        );
-        return {
-          finalUrl: page.url(),
-          visibleSelectors: visible.filter(Boolean),
-        };
-      } finally {
-        await context.close();
-      }
+    },
+    /**
+     * 画面の上部を PNG で撮る（/today の X 投稿の画像、tasks 19b）。既定はスマホ幅の上部 4:5（390×488 を3倍で 1170×1464）。
+     * 印が全部見えたときだけ撮る（見えないまま撮った画像を投稿しない）
+     */
+    async screenshot({
+      url,
+      requiredSelectors = [],
+      viewport = { width: 390, height: 488 },
+      deviceScaleFactor = 3,
+    }) {
+      return open(
+        { url, viewport, deviceScaleFactor, requiredSelectors },
+        async (page) => {
+          for (const selector of requiredSelectors)
+            if (!(await page.locator(selector).first().isVisible()))
+              throw new Error("screenshot_component_missing");
+          return { png: await page.screenshot({ type: "png" }) };
+        },
+      );
     },
     async close() {
       if (browser) await browser.close();

@@ -234,3 +234,35 @@ test("preflight: 照合が通れば次のリンク先の表示の確認へ進み
   });
   await assert.rejects(withdrawn(job({})), /race_unconfirmed_or_withdrawn/);
 });
+
+test("readCurrent: /today の投稿（tasks 19b）は一覧を読み直して版を返し、一覧が変われば版も変わる。未公開は投げる", async () => {
+  const { digestRevision } = await import("../../api/_lib/snsTodayDigest.js");
+  const queue = { deadline_at: "2026-10-16T23:45:00.000Z" };
+  const db = async (path) => {
+    assert.match(path, /select=bundle_import_id,source_data,/);
+    return [{ bundle_import_id: null, source_data: { digest: { date: "2026-10-17" }, deadline_queue: queue } }];
+  };
+  const day = { generated_at: "2026-10-16T20:30:00Z" };
+  const rows = [{ section: "nige", rank: 1, race_id: "2026-10-17-01-01" }];
+  const asked = [];
+  const getDigest = async (date) => {
+    asked.push(date);
+    return { day, rows };
+  };
+  const current = await createReadCurrent({ db, getDigest })("d1");
+  assert.deepEqual(current, {
+    withdrawn: false,
+    cancelled: false,
+    deadline_at: queue.deadline_at,
+    source_revision: await digestRevision({ day, rows }),
+  });
+  assert.deepEqual(asked, ["2026-10-17"]);
+  assert.notEqual(
+    await digestRevision({ day, rows: [...rows, { section: "nige", rank: 2 }] }),
+    current.source_revision,
+  );
+  await assert.rejects(
+    createReadCurrent({ db, getDigest: async () => ({ day: { generated_at: null }, rows: [] }) })("d1"),
+    /digest_not_generated/,
+  );
+});

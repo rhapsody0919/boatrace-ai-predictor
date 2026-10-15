@@ -9,6 +9,8 @@
  *   値が変わっていれば版が変わる（送る直前に source_changed で止まる）
  */
 import { SITE_BASE_URL } from "./snsHubHelpers.js";
+import { createDigestSource } from "./botToday.js";
+import { digestRevision, isTodayDraft } from "./snsTodayDigest.js";
 
 const TIMEOUT_MS = 15000;
 const RACE_ID = "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}";
@@ -149,17 +151,29 @@ export function deadlineIso(race) {
 /**
  * 送る直前の preflight（createDeadlinePreflight）に渡す readCurrent。
  * 返り値 {withdrawn, cancelled, deadline_at, source_revision}。素材 v1 でない下書き・照合の不合格は投げる（fail-closed）
- * @param {{db: (path: string) => Promise<any[]>, fetchImpl?: typeof fetch, base?: string}} deps db は PostgREST の読み取り
+ * /today の投稿（tasks 19b）は、その日の一覧を読み直して版を返す（レースではないので欠場・中止は無い。締切は下書きの値）
+ * @param {{db: (path: string) => Promise<any[]>, fetchImpl?: typeof fetch, base?: string, getDigest?: (date: string) => Promise<object>}} deps db は PostgREST の読み取り
  */
 export function createReadCurrent({
   db,
   fetchImpl = fetch,
   base = SITE_BASE_URL,
+  // 送る直前は使い回さずに読み直す（ttlMs: 0）
+  getDigest = createDigestSource({ ttlMs: 0 }),
 }) {
   return async (draftId) => {
     const [draft] = await db(
-      `sns_drafts?id=eq.${draftId}&select=bundle_import_id,sns_bundle_imports(schema_version,bundle)`,
+      `sns_drafts?id=eq.${draftId}&select=bundle_import_id,source_data,sns_bundle_imports(schema_version,bundle)`,
     );
+    if (isTodayDraft(draft))
+      return {
+        withdrawn: false,
+        cancelled: false,
+        deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
+        source_revision: await digestRevision(
+          await getDigest(draft.source_data.digest.date),
+        ),
+      };
     const imported = draft?.sns_bundle_imports;
     if (imported?.schema_version !== "ryujin-preview/1")
       throw new Error("source_check_unsupported");
