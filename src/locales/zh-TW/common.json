@@ -1,4 +1,7 @@
 {
+  "racerLink": {
+    "pageSuffix": "的選手頁面（日文）›"
+  },
   "nav": {
     "predictions": "🏁 AI預測",
     "hits": "✅ 命中紀錄",
@@ -709,7 +712,7 @@
     "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",
     "gridCaveat": "航道指起跑時實際進入的航道，而非艇號。未取得資料的賽事已排除",
     "gridRows": {
-      "current": "本期",
+      "current": "全部期間",
       "last3m": "近3個月",
       "last1m": "近1個月",
       "local": "本場地",
@@ -725,7 +728,7 @@
     "periodHeader": "期間/條件",
     "nHeader": "出賽數",
     "allCoursesFold": "查看全部6條航道的成績",
-    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）。與官方網站的勝率母體不同。",
+    "periodCaveat": "※「全部期間」為本站資料中可確認的全部比賽（2025年12月以後，最多過去2年），並非官方的期別（以5月1日、11月1日劃分的本期）。與官方網站的勝率母體不同。",
     "recentFinishesNoteScoped": "{{scope}}從{{course}}道（實際進入航線）出賽的最近{{n}}場",
     "recentScope": {
       "current": "2025年12月以後",
@@ -1613,6 +1616,8 @@
         "hintVenue": "在{{venue}}",
         "hintVenueAll": "{{venue}}的全部選手（依航道）",
         "hintExh": "今天的展示",
+        "hintStTrend": "選手頁面的ST走勢（日文）",
+        "hintStTrendLink": "{{boat}}號艇選手的ST走勢（選手頁面，日文）",
         "runs": "{{n}}場",
         "hintVenueFoot": "在{{venue}}的平均ST僅供參考（最多最近30場）。",
         "hintFewVenue": "{{boats}}號艇在此賽場的出賽場數少，容易波動。",
@@ -2667,8 +2672,9 @@
       },
       "partsHistoryEmpty": "找不到此馬達的零件交換、螺旋槳交換紀錄",
       "partsHistoryNote": "💡 零件交換、螺旋槳交換單獨來看，可能是機力下滑的徵兆，也可能是剛保養完的好轉徵兆。徽章比較交換前後的平均展示時間僅供參考，不保證結果。",
-      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。金框的數值為本場比賽中官方2連率最高的馬達。米色底色為該欄中最高的值。",
-      "highlightNote": "💡 金框的數值為本場比賽中官方2連率最高的馬達。米色底色為該欄中最高的值。",
+      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。金框的數值為本場比賽中官方2連率最高的馬達。",
+      "highlightNote": "💡 金框的數值為本場比賽中官方2連率最高的馬達。",
+      "bestCellNote": "米色底色為該欄中最高的值。",
       "focusedRowNote": "以線框起的列，是您在其他分頁選擇的艇。",
       "venueRankLabel": "場內排名（場地官方的2連率）",
       "venueRankBadge": "第{{rank}}名／共{{total}}台（{{value}}%）",
@@ -2706,8 +2712,8 @@
       "title": "🏁 馬達排行榜",
       "description": "選擇賽艇場後，將該場所有馬達依2連率排列。點擊欄位標題，也可依馬達編號、優勝次數、前檢時間排序。",
       "rankHeader": "名次",
-      "rateHeader": "2連率",
-      "officialRateHeader": "官方2連率",
+      "rateHeader": "2連率（%）",
+      "officialRateHeader": "官方2連率（%）",
       "finalHeader": "晉級優勝戰",
       "championshipHeader": "優勝",
       "userHeader": "本節使用選手",

@@ -12,6 +12,10 @@
  * - YouTube は同じ実行の中でアップロード→処理の確認→公開まで進める（2026-10-13 ユーザー決定）。処理の確認は1回の試行で3回まで。
  *   3回で終わらなければ非公開のまま残す（youtube_retain）
  * - 保留の理由・要照合は report.alerts に入れ、監視（scrape-monitor）が Slack に流す（同じ key は再通知の間隔ごと）
+ *   - 要照合は、毎回 DB の状態（state='reconcile'）から作る。オーナーが照合して解けるまで出し続ける。
+ *     実行のメモリに置いた通知は、途中で落ちると保存されず、sweep（DB の now()）と runner の時刻のずれでも漏れるため
+ *     （開発の補助の点検 2026-10-13-28 の D2）
+ *   - 送る前の検査・トークンの失敗は、候補を20件ずつ巡回するので、次にその job・チャネルを見直すまで（最長 CONTINUING_ALERT_MINUTES）残す
  */
 import { runXSendJob } from "../../api/_lib/snsXSend.js";
 import {
@@ -31,6 +35,8 @@ export const SNS_SEND_MAX_CANDIDATES = 20;
 /** 届かなかった一度きりの通知を report.alerts に残す時間（監視が再通知の間隔ごとに流す） */
 export const UNDELIVERED_ALERT_HOURS = 24;
 const UNDELIVERED_PREFIX = "undelivered:";
+/** 送る前の検査・トークンの失敗の通知を、見直すまで残す時間（候補の巡回が一周するより長く） */
+export const CONTINUING_ALERT_MINUTES = 30;
 
 /** 走査位置（scrape_job_state.cursor）: 送る時刻と id の組。次の実行はこの位置の後から読む（開発の補助の点検 D1） */
 const positionOf = (job) => ({ scheduled_at: job.scheduled_at, id: job.id });
@@ -59,12 +65,14 @@ export async function runSnsSend(
   const live = ctx.mode === "live";
   const now = ctx.now();
   const results = [];
-  // 前の実行で届かなかった一度きりの通知は、期限まで report.alerts に持ち越す（report は毎回上書きされるため）
-  const alerts = (ctx.state?.last_report?.alerts ?? []).filter(
-    (a) =>
-      String(a?.key).startsWith(UNDELIVERED_PREFIX) &&
-      Date.parse(a.until) > now.getTime(),
+  const previous = (ctx.state?.last_report?.alerts ?? []).filter(
+    (a) => a?.key && Date.parse(a.until) > now.getTime(),
   );
+  // 前の実行で届かなかった一度きりの通知は、期限まで report.alerts に持ち越す（report は毎回上書きされるため）
+  const alerts = previous.filter((a) => a.key.startsWith(UNDELIVERED_PREFIX));
+  const continuingUntil = new Date(
+    now.getTime() + CONTINUING_ALERT_MINUTES * 60000,
+  ).toISOString();
   // 一度きりの事象はその場で Slack に知らせる。届かなければ（Webhook 未設定を含む）report.alerts に残し、監視に流してもらう
   const tell = async (key, text) => {
     try {
@@ -81,16 +89,14 @@ export async function runSnsSend(
         });
     }
   };
-  // shadow では DB の状態を変えない（sweep も行わない）。sweep でリースの切れた送信は要照合になるので、その前に拾って知らせる
-  if (live) {
-    const interrupted = await store.expiredSending(now);
-    await store.sweep();
-    for (const job of interrupted)
-      await tell(
-        `reconcile:${job.id}`,
-        `SNS の送信が要照合（送信の途中で止まった）: ${job.channel} job ${job.id}。管理画面で照合する`,
-      );
-  }
+  // shadow では DB の状態を変えない（sweep も行わない）
+  if (live) await store.sweep();
+  // 要照合は DB の状態から毎回作る（sweep で要照合になったもの・前の実行が保存の前に落ちたものも拾う）
+  for (const job of await store.reconcileJobs())
+    alerts.push({
+      key: `reconcile:${job.id}`,
+      text: `SNS の送信が要照合: ${job.channel} job ${job.id}（${job.youtube_stage ?? job.error_code ?? "結果が不明"}）。管理画面で照合する`,
+    });
   const controls = await store.controls();
   const { jobs: candidates, nextCursor } = await store.dueJobs(
     now,
@@ -99,6 +105,7 @@ export async function runSnsSend(
   );
   // トークンは1回の実行でチャネルごとに1回だけ取る（失敗も覚えて、同じ実行の残りの job では取り直さない）
   const adapterCache = new Map();
+  const tokenChecked = new Set();
   const adapterFor = (channel) => {
     if (!adapterCache.has(channel))
       adapterCache.set(
@@ -133,6 +140,7 @@ export async function runSnsSend(
       alerts.push({
         key: `precheck:${job.id}:${result.reason}`,
         text: `送る前の検査で止めた（claim していない）: ${job.channel} job ${job.id} 理由 ${result.reason}`,
+        until: continuingUntil,
       });
       continue;
     }
@@ -153,12 +161,16 @@ export async function runSnsSend(
     const { adapter, error: tokenError } = await adapterFor(job.channel);
     if (tokenError) {
       result.outcome = "token_failed";
-      alerts.push({
-        key: `token:${job.channel}`,
-        text: `${job.channel} のトークンを取れないので送信していない（claim していない）: ${tokenError.message}`,
-      });
+      if (!tokenChecked.has(job.channel))
+        alerts.push({
+          key: `token:${job.channel}`,
+          text: `${job.channel} のトークンを取れないので送信していない（claim していない）: ${tokenError.message}`,
+          until: continuingUntil,
+        });
+      tokenChecked.add(job.channel);
       continue;
     }
+    tokenChecked.add(job.channel);
     attempted += 1;
     try {
       const done =
@@ -182,11 +194,12 @@ export async function runSnsSend(
       result.outcome = done.state;
       result.error_code = done.error_code ?? null;
       if (done.state === "posted") posted += 1;
+      // 要照合になったら、この実行の report にも出す（次の実行からは DB の状態から作る）
       if (done.state === "reconcile")
-        await tell(
-          `reconcile:${job.id}`,
-          `SNS の送信が要照合: ${job.channel} job ${job.id}（${done.youtube_stage ?? done.error_code ?? "結果が不明"}）。管理画面で照合する`,
-        );
+        alerts.push({
+          key: `reconcile:${job.id}`,
+          text: `SNS の送信が要照合: ${job.channel} job ${job.id}（${done.youtube_stage ?? done.error_code ?? "結果が不明"}）。管理画面で照合する`,
+        });
     } catch (error) {
       // job の状態（held・要照合）は送信の関数が DB に残している。ここでは理由を知らせるだけ
       result.outcome = "error";
@@ -196,6 +209,16 @@ export async function runSnsSend(
         `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
       );
     }
+  }
+  // この実行で見直さなかった job の検査の理由・確かめなかったチャネルのトークンの失敗は、期限まで残す
+  const examined = new Set(results.map((r) => r.id));
+  for (const a of previous) {
+    const [kind, subject] = a.key.split(":");
+    if (
+      (kind === "precheck" && !examined.has(subject)) ||
+      (kind === "token" && !tokenChecked.has(subject))
+    )
+      alerts.push(a);
   }
   return {
     rowsWritten: posted,
@@ -287,10 +310,10 @@ export function createSnsSendStore({ db, xSendStore }) {
         nextCursor: queued.length === limit ? positionOf(queued.at(-1)) : null,
       };
     },
-    // リースの切れた送信中の job（この後の sweep で要照合になる）
-    async expiredSending(now) {
+    // 要照合の job（オーナーが照合するまで残る。件数は少ない）
+    async reconcileJobs() {
       return db(
-        `sns_x_send_jobs?state=eq.sending&lease_until=lte.${encodeURIComponent(now.toISOString())}&select=id,channel`,
+        "sns_x_send_jobs?state=eq.reconcile&order=id.asc&select=id,channel,error_code,youtube_stage",
       );
     },
   };

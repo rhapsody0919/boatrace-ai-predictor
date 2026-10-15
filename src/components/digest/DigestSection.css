@@ -62,3 +62,51 @@
     font-size: var(--font-size-2xl);
   }
 }
+
+/* セクションの下の折りたたみ（逃がしの3号艇、2026-10-15）。押す行は高さ44px以上 */
+.digest-fold {
+  margin-top: 0.6rem;
+  border: 1px solid var(--border-hairline);
+  border-radius: 10px;
+  background: var(--surface-card);
+}
+
+.digest-fold__summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.digest-fold__summary {
+  list-style: none;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.digest-fold__summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 開閉の印。カードの ▼ と同じ向き（閉じているとき ▼、開いているとき ▲） */
+.digest-fold__summary::after {
+  content: "▼";
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.digest-fold[open] > .digest-fold__summary::after {
+  content: "▲";
+}
+
+.digest-fold[open] > .digest-fold__summary {
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.digest-fold > :not(summary) {
+  margin: 0.6rem;
+}

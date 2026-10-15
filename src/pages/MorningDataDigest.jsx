@@ -38,6 +38,7 @@ import {
 } from "../components/digest";
 import { dataService } from "../services/dataService";
 import { getTodayJST } from "../utils/dateUtils";
+import { NIGASHI_LIST_COURSE } from "../utils/digestMetrics";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { useTranslation } from "react-i18next";
 import {
@@ -137,6 +138,31 @@ function MorningDataDigest() {
   const sections = digest?.sections ?? {};
   const day = digest?.day ?? null;
   const featured = sections.featured?.[0] ?? null;
+  const nigashiList = (sections.nigashi ?? []).filter(
+    (r) => r.course === NIGASHI_LIST_COURSE,
+  );
+  const nigashiCourse3 = (sections.nigashi ?? []).filter(
+    (r) => r.course === NIGASHI_LIST_COURSE + 1,
+  );
+  const renderNigashiCard = (row) => (
+    <DigestRaceCard key={`nigashi-${row.rank}`} row={row} collapsible>
+      {(expanded) => (
+        <RateWithBaseline
+          expanded={expanded}
+          label={`${row.course}コースに入ったときに1号艇に逃げ切られた割合`}
+          rate={row.metric_value}
+          skillDelta={row.metric_skill_delta}
+          baselineGrade={row.detail?.baselineGrade ?? null}
+          venueName={t(`venues.${row.venue_code}`)}
+          venueBaseline={row.metric_venue_baseline}
+          sampleSize={row.sample_size}
+          isSmallSample={row.is_small_sample}
+          rate90d={row.rate_90d}
+          sampleSize90d={row.sample_size_90d}
+        />
+      )}
+    </DigestRaceCard>
+  );
 
   return (
     <>
@@ -154,7 +180,9 @@ function MorningDataDigest() {
         />
 
         <header className="morning-digest__header">
-          <h1 className="morning-digest__title">{H1}</h1>
+          <h1 className="morning-digest__title" data-testid="morning-digest-title">
+            {H1}
+          </h1>
           <p className="morning-digest__date">
             {formatJaDate(date)}
             {day && (
@@ -262,35 +290,29 @@ function MorningDataDigest() {
               </DigestCardGrid>
             </DigestSection>
 
+            {/* 逃がしは当日の2号艇を一覧に、3号艇は折りたたみの中に出す。4〜6号艇は出さない（過去日の保存に
+                残っていても出さない。2026-10-15 オーナー承認） */}
             <DigestSection
               title={MORNING_DIGEST_SECTION_BY_KEY.nigashi.title}
               description={MORNING_DIGEST_SECTION_BY_KEY.nigashi.description}
-              count={sections.nigashi?.length ?? 0}
+              count={nigashiList.length}
+              emptyMessage={MORNING_DIGEST_SECTION_BY_KEY.nigashi.emptyMessage}
+              after={
+                nigashiCourse3.length > 0 && (
+                  <details className="digest-fold" data-testid="nigashi-course3">
+                    <summary className="digest-fold__summary">
+                      {MORNING_DIGEST_SECTION_BY_KEY.nigashi.course3Title}（
+                      {nigashiCourse3.length}件）
+                    </summary>
+                    <DigestCardGrid rows={nigashiCourse3}>
+                      {renderNigashiCard}
+                    </DigestCardGrid>
+                  </details>
+                )
+              }
             >
-              <DigestCardGrid rows={sections.nigashi ?? []}>
-                {(row) => (
-                  <DigestRaceCard
-                    key={`nigashi-${row.rank}`}
-                    row={row}
-                    collapsible
-                  >
-                    {(expanded) => (
-                      <RateWithBaseline
-                        expanded={expanded}
-                        label={`${row.course}コースに入ったときに1号艇に逃げ切られた割合`}
-                        rate={row.metric_value}
-                        skillDelta={row.metric_skill_delta}
-                        baselineGrade={row.detail?.baselineGrade ?? null}
-                        venueName={t(`venues.${row.venue_code}`)}
-                        venueBaseline={row.metric_venue_baseline}
-                        sampleSize={row.sample_size}
-                        isSmallSample={row.is_small_sample}
-                        rate90d={row.rate_90d}
-                        sampleSize90d={row.sample_size_90d}
-                      />
-                    )}
-                  </DigestRaceCard>
-                )}
+              <DigestCardGrid rows={nigashiList}>
+                {renderNigashiCard}
               </DigestCardGrid>
             </DigestSection>
 
@@ -320,7 +342,10 @@ function MorningDataDigest() {
               />
             </DigestSection>
 
-            <section className="morning-digest__notes">
+            <section
+              className="morning-digest__notes"
+              data-testid="morning-digest-notes"
+            >
               <h2 className="morning-digest__notes-title">
                 {MORNING_DIGEST_GLOSSARY_TITLE}
               </h2>

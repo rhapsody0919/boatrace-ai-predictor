@@ -211,6 +211,30 @@ test("加重文字数と未解決差し込みを拒否、URLは公式計数", as
   });
   await preflight(j)(j);
 });
+test("長文の1投稿（25,000まで）は queue.thread_length=1 の親だけ。子・印なし・超過は weighted_text_invalid", async () => {
+  const fake = (text, extra = {}) => {
+    const queue = {
+      expires_at: new Date(Date.now() + 3600000).toISOString(),
+      deadline_at: new Date(Date.now() + 7200000).toISOString(),
+      source_revision: "v1",
+      public_url: "https://www.boat-ai.jp/race/x",
+      screen_key: "sonar",
+      ...extra,
+    };
+    const snapshot = { text, queue };
+    return { id: "j", draft_id: "d", channel: "x", snapshot, snapshot_text: JSON.stringify(snapshot) };
+  };
+  const long = "あ".repeat(5000);
+  const ok = fake(long, { thread_length: 1 });
+  await preflight(ok)(ok);
+  for (const [j, why] of [
+    [fake(long), "印なし（auto-plan 以外の下書き）"],
+    [fake(long, { thread_length: 2 }), "子のあるスレッドの親"],
+    [fake(long, { thread_length: 1, parent_job_id: "p" }), "返信"],
+    [fake("あ".repeat(12501), { thread_length: 1 }), "25,000 超え"],
+  ])
+    await assert.rejects(preflight(j)(j), /weighted_text_invalid/, why);
+});
 test("公開検査の待ち時間で失効しても送らない", async () => {
   const j = await job();
   let t = Date.now();

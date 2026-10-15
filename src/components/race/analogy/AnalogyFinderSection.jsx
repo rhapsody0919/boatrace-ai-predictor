@@ -66,7 +66,7 @@ function TabError({ onRetry }) {
   );
 }
 
-export default function AnalogyFinderSection({ raceId }) {
+export default function AnalogyFinderSection({ raceId, players = null }) {
   const { t } = useTranslation();
   const headingId = useId();
   const tabsId = useId();
@@ -319,6 +319,7 @@ export default function AnalogyFinderSection({ raceId }) {
           onScope={setScenarioScope}
           today={facts.data?.today ?? null}
           raceId={raceId}
+          players={players}
           feedback={feedback}
           initialFirst={linkedFirst}
           onInitialFirstUsed={consumeFirst}

@@ -49,7 +49,7 @@ const sendStore = {
         await all("SELECT channel, mode, dry_run FROM sns_auto_send_control")
       ).map((r) => [r.channel, r]),
     ),
-  // runner の store の形（#1520: 走査位置つきの dueJobs と、リース切れの sending の読み取り）に合わせる。
+  // runner の store の形（走査位置つきの dueJobs と、要照合の job の読み取り）に合わせる。
   // このテストは送った後の取り込みを見るので、走査位置は使わない
   dueJobs: async (now, limit) => ({
     jobs: pickDueJobs(
@@ -62,10 +62,9 @@ const sendStore = {
     ),
     nextCursor: null,
   }),
-  expiredSending: async (now) =>
+  reconcileJobs: async () =>
     all(
-      "SELECT id, channel FROM sns_x_send_jobs WHERE state='sending' AND lease_until<=$1",
-      [now.toISOString()],
+      "SELECT id, channel, error_code, youtube_stage FROM sns_x_send_jobs WHERE state='reconcile'",
     ),
 };
 

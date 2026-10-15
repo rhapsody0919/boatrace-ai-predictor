@@ -40,7 +40,7 @@ const SCOPES = ["VC", "NC", "NCR", "VA", "VG", "NA"];
 /**
  * 展開シナリオ（タブ3、spec FR-C、screens S-1c）
  * @param {{data: object, stage: "racecard"|"exhibition", onScope: (key: string) => void, today: object|null,
- *   raceId: string}} props data は scenario の応答、today は facts の today（平均ST・モーター・展示→本番の一致）
+ *   raceId: string, players?: object[]|null}} props data は scenario の応答、today は facts の today（平均ST・モーター・展示→本番の一致）
  */
 export default function ScenarioTab({
   data,
@@ -48,6 +48,7 @@ export default function ScenarioTab({
   onScope,
   today,
   raceId,
+  players = null,
   feedback,
   initialFirst = null,
   onInitialFirstUsed,
@@ -594,6 +595,7 @@ export default function ScenarioTab({
           <>
             <SlitHint
               courseSt={data.course_st}
+              players={players}
               version={version}
               onVersion={pick(setVersion)}
               rows={rows}
