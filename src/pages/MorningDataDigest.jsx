@@ -154,7 +154,9 @@ function MorningDataDigest() {
         />
 
         <header className="morning-digest__header">
-          <h1 className="morning-digest__title">{H1}</h1>
+          <h1 className="morning-digest__title" data-testid="morning-digest-title">
+            {H1}
+          </h1>
           <p className="morning-digest__date">
             {formatJaDate(date)}
             {day && (
@@ -320,7 +322,10 @@ function MorningDataDigest() {
               />
             </DigestSection>
 
-            <section className="morning-digest__notes">
+            <section
+              className="morning-digest__notes"
+              data-testid="morning-digest-notes"
+            >
               <h2 className="morning-digest__notes-title">
                 {MORNING_DIGEST_GLOSSARY_TITLE}
               </h2>

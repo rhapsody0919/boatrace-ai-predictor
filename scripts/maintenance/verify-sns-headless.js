@@ -34,11 +34,16 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
               log.gotos.push(url);
             },
             url: () => current,
+            screenshot: async (options) => {
+              log.screenshots = [...(log.screenshots ?? []), options];
+              return Buffer.from("png");
+            },
             locator: (selector) => ({
               first: () => ({
                 waitFor: async () => {
                   if (!visible.includes(selector)) throw new Error("timeout");
                 },
+                isVisible: async () => visible.includes(selector),
               }),
             }),
           };
@@ -64,13 +69,13 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
 const URL_SONAR =
   "https://www.boat-ai.jp/race/2026-10-16-11-12?tab=sonar&utm_source=x&utm_medium=social&utm_campaign=race-full&utm_content=d1";
 
-test("印の表: race-sonar は2つの data-testid、許すタブは sonar だけ", () => {
-  assert.deepEqual(Object.keys(SCREEN_MARKERS), ["race-sonar"]);
-  assert.ok(
-    SCREEN_MARKERS["race-sonar"].every((s) =>
-      /^\[data-testid="[a-z-]+"\]$/.test(s),
-    ),
-  );
+test("印の表: race-sonar・today は2つずつの data-testid、許すタブは sonar だけ", () => {
+  assert.deepEqual(Object.keys(SCREEN_MARKERS), ["race-sonar", "today"]);
+  for (const key of ["race-sonar", "today"])
+    assert.ok(
+      SCREEN_MARKERS[key].length === 2 &&
+        SCREEN_MARKERS[key].every((s) => /^\[data-testid="[a-z-]+"\]$/.test(s)),
+    );
   assert.deepEqual(SCREEN_TABS, ["sonar"]);
 });
 
@@ -199,3 +204,51 @@ if (process.argv.includes("--live") && liveRace) {
     }
   });
 }
+
+test("screenshot（/today の画像、tasks 19b）: スマホ幅の上部 4:5 を3倍で、未ログインの context で撮る。印が見えなければ撮らない・回数の上限は inspect と共通", async () => {
+  const TODAY = "https://www.boat-ai.jp/today";
+  const fake = fakeBrowser({ visible: SCREEN_MARKERS.today });
+  const headless = createChromiumHeadless({
+    launch: fake.launch,
+    maxInspections: 2,
+  });
+  const shot = await headless.screenshot({
+    url: TODAY,
+    requiredSelectors: SCREEN_MARKERS.today,
+  });
+  assert.equal(String(shot.png), "png");
+  assert.deepEqual(fake.log.contextOptions, {
+    viewport: { width: 390, height: 488 },
+    deviceScaleFactor: 3,
+    storageState: undefined,
+  });
+  assert.deepEqual(fake.log.screenshots, [{ type: "png" }]);
+  assert.ok(fake.log.routes.some((r) => r.includes("google-analytics")));
+  await headless.inspect({
+    url: TODAY,
+    context: { storageState: null },
+    requiredSelectors: SCREEN_MARKERS.today,
+  });
+  assert.deepEqual(fake.log.contextOptions.viewport, {
+    width: 390,
+    height: 844,
+  });
+  await assert.rejects(
+    headless.screenshot({
+      url: TODAY,
+      requiredSelectors: SCREEN_MARKERS.today,
+    }),
+    /public_check_budget/,
+  );
+
+  const missing = fakeBrowser({ visible: [SCREEN_MARKERS.today[0]] });
+  await assert.rejects(
+    createChromiumHeadless({ launch: missing.launch }).screenshot({
+      url: TODAY,
+      requiredSelectors: SCREEN_MARKERS.today,
+    }),
+    /screenshot_component_missing/,
+  );
+  assert.equal(missing.log.screenshots, undefined);
+  assert.equal(missing.log.closedContexts, 1);
+});

@@ -12,6 +12,11 @@ export const SCREEN_MARKERS = {
     '[data-testid="analogy-stage-chip"]',
     '[data-testid="analogy-fact-card"]',
   ],
+  // 本日のデータ一覧（リンクは /today）。見出しと、一覧が公開されたときだけ出る用語の節（未公開の日は出ない）
+  today: [
+    '[data-testid="morning-digest-title"]',
+    '[data-testid="morning-digest-notes"]',
+  ],
 };
 
 // リンク先の URL に付けてよいタブ（?tab=）。UTM 以外で許すクエリはこれだけ
