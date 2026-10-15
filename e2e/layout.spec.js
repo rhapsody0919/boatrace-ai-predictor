@@ -68,6 +68,47 @@ const TRAILING_GAP_THRESHOLD_PX = 40;
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+for (const venue of ["heiwajima", "biwako", "marugame"]) {
+  test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`/blog/${venue}-water-wind-guide`);
+    const tables = page.locator(".blog-post-content table");
+    await expect(tables.first()).toBeVisible();
+    // 1列目の文字が何行になったかを、文字の行の矩形の上端の数で数える（BOA-870）。
+    // セルの高さは2列目以降の折り返しでも伸びるので、1列目の折り返しの判定には使わない
+    const measurements = await tables.evaluateAll((elements) =>
+      elements.map((table) => {
+        const lines = [...table.querySelectorAll("tr > :first-child")]
+          .filter((cell) => cell.textContent.trim())
+          .map((cell) => {
+            const range = document.createRange();
+            range.selectNodeContents(cell);
+            // 太字などで同じ行でも上端が少しずれるので、4px 以内は同じ行とみなす
+            const tops = [...range.getClientRects()]
+              .filter((r) => r.width > 0)
+              .map((r) => r.top)
+              .sort((x, y) => x - y);
+            const lines = tops.filter((t, i) => i === 0 || t - tops[i - 1] > 4).length;
+            return { label: cell.textContent.trim(), lines };
+          });
+        return {
+          lines,
+          laterColumns: [...table.querySelectorAll("th:not(:first-child), td:not(:first-child)")]
+            .map((element) => getComputedStyle(element).whiteSpace),
+          overflowX: getComputedStyle(table).overflowX,
+        };
+      }),
+    );
+    expect(measurements.length).toBeGreaterThan(0);
+    for (const measurement of measurements) {
+      const wrapped = measurement.lines.filter((l) => l.lines > 1);
+      expect(wrapped, `${venue}: 1列目が折り返したセル`).toEqual([]);
+      expect(measurement.laterColumns).not.toContain("nowrap");
+      expect(measurement.overflowX).toBe("auto");
+    }
+  });
+}
+
 test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそろう", async ({
   page,
 }) => {
