@@ -71,6 +71,7 @@ import { trackEvent } from "../../utils/analytics";
 import TermHintButton from "./TermHintButton";
 import RacePitReportSection from "./RacePitReportSection";
 import EntryCourseDistributionCard from "./EntryCourseDistributionCard";
+import MeetFormTrendCard from "./MeetFormTrendCard";
 import InlineFetchError from "../InlineFetchError";
 import "./RaceBeforeInfoTab.css";
 import HorizontalScrollButtons from "../common/HorizontalScrollButtons";
@@ -313,6 +314,35 @@ function RaceBeforeInfoTab({
   // 値が残らないようにする）
   const meetOriginal =
     fetchedMeetOriginal?.raceId === raceId ? fetchedMeetOriginal.data : null;
+
+  // 今節の足の推移と着順（BOA-885）の着順と、その日の会場平均。今節タブと同じ
+  // getMeetScoreboard（節単位のキャッシュを共有するので、今節タブを開いていれば再取得しない）。
+  // 失敗してもカードの線は出し、着順が取れなかったことをカードの中で示して再試行できるようにする
+  const [fetchedBoard, setFetchedBoard] = useState(null);
+  const [boardReloadKey, setBoardReloadKey] = useState(0);
+  useEffect(() => {
+    if (!raceId || venueCode === null || venueCode === undefined)
+      return undefined;
+    let cancelled = false;
+    supabaseDataService
+      .getMeetScoreboard(raceId, venueCode)
+      .then((data) => {
+        if (!cancelled) setFetchedBoard({ raceId, data, failed: false });
+      })
+      .catch((err) => {
+        console.error(
+          "今節の足（着順）の取得エラー:",
+          err?.message ?? String(err),
+        );
+        if (!cancelled) setFetchedBoard({ raceId, data: null, failed: true });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [raceId, venueCode, boardReloadKey]);
+  const boardCurrent = fetchedBoard?.raceId === raceId;
+  const meetBoard = boardCurrent ? fetchedBoard.data : null;
+  const meetBoardFailed = boardCurrent && fetchedBoard.failed;
 
   // 展示前の体重（出走表の体重、BOA-484）。オリジナル展示と同じく raceId とセットで持ち、
   // 失敗も state として残す（取得失敗を「未公開」「値なし」に化けさせない。frontend-data-fetch.md）。
@@ -1031,6 +1061,23 @@ function RaceBeforeInfoTab({
           </div>
         )}
       </section>
+
+      <MeetFormTrendCard
+        players={sortedPlayers}
+        trendByRacer={meetTrendByRacer}
+        originalByKey={
+          meetOriginal?.state === "published" ? meetOriginal.byKey : null
+        }
+        runsByRacer={meetBoard?.meetRunsByRacer ?? null}
+        scopedByRacer={scopedStatsByRacer}
+        venueDailyAvg={meetBoard?.venueDailyExhibitionAvg ?? null}
+        turnTimeDiffers={turnTimeDiffers}
+        finishFailed={meetBoardFailed}
+        onRetryFinish={() => {
+          setFetchedBoard(null);
+          setBoardReloadKey((n) => n + 1);
+        }}
+      />
 
       <EntryCourseDistributionCard
         raceId={raceId}
