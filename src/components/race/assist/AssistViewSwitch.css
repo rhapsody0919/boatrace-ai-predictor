@@ -81,11 +81,11 @@
   text-align: right;
 }
 
-/* PC（1024px 以上）は左寄せにし、レース詳細の本文・思考アシストの PC 表示の左端（24px）にそろえる
-   （BOA-801 5、龍神ソナーの PC 表示と同じ決まり。2026-10-10 ユーザー決定） */
+/* PC（1024px 以上）は左寄せにし、レース詳細の本文・思考アシストの PC 表示の列（最大1200・画面の中央）の
+   左端にそろえる（BOA-801 5・BOA-881。以前は 24px 固定で、1920px で列の左端 x=360 より外に出ていた） */
 @media (min-width: 1024px) {
   .assist-view-switch {
-    padding-inline: var(--spacing-6);
+    padding-inline: max(var(--spacing-6), calc((100% - 1200px) / 2));
   }
 
   .assist-view-switch__seg,

@@ -1459,7 +1459,7 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
         `${width}px: 決まり手の左端から確率の左端まで`,
       ).toBeLessThanOrEqual(700);
       // 以前はページの中央に置いていたが、タブを切り替えるたびに左端が飛ぶので、タブの列にそろえる
-      // （BOA-820、2026-10-10 ユーザー決定）
+      // （BOA-820、2026-10-10 ユーザー決定。BOA-881 で列そのものを画面の中央に置いた後も同じ）
       expect(
         Math.abs(m.tabLeft - m.boxLeft),
         `${width}px: 振り返りの左端`,
@@ -1491,17 +1491,27 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "layout-desktop", "1440pxで確認");
-    await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
-    const card = page.locator(".race-result .vds-card");
-    await expect(card).toBeVisible({ timeout: 30000 });
-    const gap = await card.evaluate((el) => {
-      const prev = el.previousElementSibling;
-      if (!prev) throw new Error("水面傾向カードの直前に払戻表・注記が無い");
-      return (
-        el.getBoundingClientRect().top - prev.getBoundingClientRect().bottom
-      );
-    });
-    expect(gap).toBeGreaterThanOrEqual(16);
+    // 1100px は縦に積む（上下の余白）。1440px は払戻金の右に置く2段（BOA-881、左右の余白）
+    for (const width of [1100, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
+      const card = page.locator(".race-result .vds-card");
+      await expect(card).toBeVisible({ timeout: 30000 });
+      const gap = await card.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const side = el.closest(".race-split__side");
+        if (side && getComputedStyle(side).display !== "contents") {
+          const main = side.previousElementSibling.getBoundingClientRect();
+          return box.left - main.right;
+        }
+        // 囲み（display: contents）を飛ばして、見た目の直前の要素を探す
+        let prev = el.previousElementSibling;
+        if (!prev && side) prev = side.previousElementSibling?.lastElementChild;
+        if (!prev) throw new Error("水面傾向カードの直前に払戻表・注記が無い");
+        return box.top - prev.getBoundingClientRect().bottom;
+      });
+      expect(gap, `${width}px`).toBeGreaterThanOrEqual(16);
+    }
   });
 
   // 今節タブの得点率早見。箱の幅いっぱいに広がり、余りが全部選手名の列に入って、
@@ -1712,8 +1722,11 @@ test.describe("レイアウト: SNSハブの文字が地とかぶらない（ダ
   }
 });
 
-// BOA-826: 今節は2カラムにせず、PCだけカードの外枠を720pxに止める。
-test("今節のカード: PCは720px以下、768px以下は親幅のまま", async ({ page }) => {
+// BOA-826: 769〜1199px はカードの外枠を720pxに止める。
+// BOA-881: 1200px 以上はカードを列いっぱいにし、表（640）の右に注記を置く2段にする（「左に寄る」の解消）。
+test("今節のカード: 1200px以上は列いっぱい、769〜1199pxは720px以下、768px以下は親幅のまま", async ({
+  page,
+}) => {
   await page.goto("/race/2026-09-23-09-12?tab=meet", {
     waitUntil: "domcontentloaded",
   });
@@ -1732,7 +1745,9 @@ test("今節のカード: PCは720px以下、768px以下は親幅のまま", asy
     );
     expect(measurements.length).toBeGreaterThan(0);
     for (const card of measurements) {
-      if (width >= 769) {
+      if (width >= 1200) {
+        expect(Math.abs(card.width - card.parentWidth)).toBeLessThanOrEqual(1);
+      } else if (width >= 769) {
         expect(card.width, `${width}px: カードの幅`).toBeLessThanOrEqual(720);
       } else {
         expect(Math.abs(card.width - card.parentWidth)).toBeLessThanOrEqual(1);
