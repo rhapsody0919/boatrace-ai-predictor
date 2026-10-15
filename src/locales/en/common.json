@@ -1,4 +1,7 @@
 {
+  "racerLink": {
+    "pageSuffix": "'s racer page (JA) ›"
+  },
   "nav": {
     "predictions": "🏁 Predictions",
     "hits": "✅ Hits",
@@ -1619,6 +1622,8 @@
         "hintVenue": "At {{venue}}",
         "hintVenueAll": "All racers at {{venue}} (by course)",
         "hintExh": "Today's exhibition",
+        "hintStTrend": "ST trend (racer page, JA)",
+        "hintStTrendLink": "Boat {{boat}} racer's ST trend (racer page, Japanese)",
         "runs": "{{n}} runs",
         "hintVenueFoot": "The average ST at {{venue}} is for reference (up to the last 30 races). ",
         "hintFewVenue": "Boat {{boats}} has few runs at this venue, so values can swing. ",
