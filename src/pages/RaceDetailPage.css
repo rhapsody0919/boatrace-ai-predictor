@@ -135,9 +135,10 @@
     max-width: none;
   }
 
-  /* 節が1つだけのとき（終わったレースで展開予測だけ等）は 720 のまま。1列にすると決まり手と確率が
-     1200px 離れる（BOA-619） */
-  .race-detail-page-v2 .race-ai-prediction-tab:has(> :only-child) {
+  /* 節が1つだけのとき（展開予測だけ等。発走前・終わったレースとも）は 720 のまま。列いっぱいにすると
+     決まり手と確率が 1200px 離れる（BOA-619） */
+  .race-detail-page-v2
+    :is(.race-ai-prediction-tab, .prediction-result):has(> :only-child) {
     grid-template-columns: minmax(0, 720px);
   }
 
