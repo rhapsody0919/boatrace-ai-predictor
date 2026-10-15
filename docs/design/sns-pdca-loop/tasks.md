@@ -63,6 +63,8 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-6 取り込み
 
+  - [x] **19b-1. 個別承認（L2）まで**（2026-10-15、オーナー依頼で全貌より先に。#1571 の部品＋`scripts/lib/snsTodayPlanner.js`、再現テスト `verify-sns-today-plan.js`）: auto-plan の中で JST 5:30〜7:45 に、一覧が公開されたら /today を未ログインで撮り（4:5）、決まった型の本文（数字・文言は人の画面と同じ buildTodayModel）と UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り、Slack に本文と画像のリンク。送るのは 7:45（下書きの scheduled_at）。一覧がやり直されて版が変われば撮り直して承認を外し知らせる。送る直前は一覧の版を読み直す。本文は加重で280を超えるので長文の1投稿（thread_length=1）。DB は変えない（140 の承認の条件は出典の記録で満たす）
+  - [ ] **19b-2. 自動（L3）**: 事前通知（5:45）・止めるリンク・自動送信の承認者での approve（12b・13 のうち /today に要る分）
 - [x] **21. cron `sns-metrics`**（5分ごと）: YouTube の `videos.list` 累積値・X の `GET /2/users/{id}/tweets` を観測の表へ。許容差を超えたら欠測。3回続けて失敗したら Slack（実装。下の3行は L2 の実投稿の後に実測する。継続監視は毎回の実行で直近5日の欠測・失敗の割合が2%を超えたら report.alerts → scrape-monitor が Slack へ）
   - [ ] 本番実測: 期待件数（算出根拠: posted の投稿数×2窓、X はスレッドの子を含む）に対し、充足率99%以上であることを実測クエリで確認する
   - [ ] タイミング実測: 土日を含む直近5日で、`posted_at`＋48h／168h から15分以内に取れた割合を実測する（欠落率2%以内）
