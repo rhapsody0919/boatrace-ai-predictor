@@ -4,6 +4,7 @@
 
 ## 幅・余白
 - PC のタブの横幅は3段: 6艇を列に並べる表は全幅／図とリストは最大1200／文章と1行1項目は720。どの段も左端はタブの列（1440px で x=24、1920px で x=184）にそろえ、中央寄せにしない（2026-10-11、BOA-820、PR #1382、e2e/race-tab-width.spec.js）
+- 思考アシストの PC（1024px 以上）は、堅い？荒れる？の枠・レンズ・固定フッターを列（最大1200）いっぱいにし、図と右の列は 1:1。枠の中は2段（左に棒、右に級の並びと件数）で、段の境目を図と右の列の境目にそろえる。棒の行は 458px（以前の 480px の枠の中の長さ）を超えない。龍神ソナーの図 480px：残り（BOA-813）とはここが違う（2026-10-15 オーナー決定、BOA-880、e2e/layout.spec.js）
 - 余白はモバイル(480px以下)で margin・padding 0.75〜1rem、gap 0.5〜0.75rem。デスクトップは margin 2〜2.5rem、padding 1.5〜2.5rem、gap 1〜1.5rem（.claude/rules/mobile-ui.md）
 - 内部タブの中身を包む要素にも区切りの余白を付ける。外側の gap は中まで届かない（2026-10-09、龍神ソナーの3タブ、docs/design/analogy-finder/sonar-tab/uiux-review-spacing.md、#1337）
 - 横あふれは表示項目を削らずデザインで解く（ユーザー指摘、memory feedback_dont_remove_info_for_layout）
