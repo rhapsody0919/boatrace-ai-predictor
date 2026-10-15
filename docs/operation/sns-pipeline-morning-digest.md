@@ -27,7 +27,7 @@ select * from morning_digest_rows where digest_date = '{date}' order by section,
 |---|---|---|
 | `nige` | 1号艇の選手が1コースで逃げ切った割合が70%以上 | `metric_value` / `metric_venue_baseline` / `sample_size` |
 | `makuri` | その選手がそのコースでまくりで1着になった割合が25%以上 | 同上（`course` が1ではない） |
-| `nigashi` | 1号艇に逃げ切られる割合が、会場・級別の構成から期待される水準を22pt以上上回る | 同上 |
+| `nigashi` | 1号艇に逃げ切られた割合が、走ってきた会場・レースグレードの構成から期待される水準を22pt以上上回る。1号艇の逃げが決まりやすい側（堅い側）の材料で、荒れる要因ではない | 同上 |
 | `flying` | 前日にフライングがあった選手 | `racer_name` / `venue_code` / `race_number` |
 | `returned` | 前日に節の途中で出走表から外れた選手（帰郷） | `racer_name` / `venue_code` |
 | `featured` | 当日の注目レース1件。`detail.reason` に理由の文が入っている | 上記＋`volatility_percentile` |

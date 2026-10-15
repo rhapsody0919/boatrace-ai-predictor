@@ -56,6 +56,7 @@ import {
   computeSkillDelta,
   computePredicted,
   computeFeaturedScore,
+  IN_FAVORABLE_METRICS,
   isSmallSampleByRuns,
   wilsonLowerPercentFromCount,
   normalizeRacerName,
@@ -610,8 +611,10 @@ export function pickFeatured(sections) {
     makuri: "まくりで1着になった割合",
     nigashi: "1号艇に逃げ切られた割合",
   }[best.row.section];
-  const direction =
-    best.row.section === "nige" ? "イン有利" : "イン不利（1号艇が崩れる）";
+  // 逃がしは「1号艇が逃げ切った割合」が高い材料なので、逃げと同じ「イン有利」側（2026-10-15 修正）
+  const direction = IN_FAVORABLE_METRICS.has(best.row.section)
+    ? "イン有利"
+    : "イン不利（1号艇が崩れる）";
   // 集計した事実だけで書く。推定値（metric_predicted）は文にも出さない
   // （2026-09-24、UIと同じ改訂。予想を提示している体裁を避ける）
   const reason =

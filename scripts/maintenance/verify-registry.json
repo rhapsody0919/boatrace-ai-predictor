@@ -715,6 +715,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-digest-nigashi-direction.js",
+      "tier": "ci",
+      "guards": "「逃がしやすい選手」を逃げと同じイン有利側に扱う（注目レースの方向一致度・理由文・ページの説明）こと、補正しているのはレースグレードで級別ではないと書くこと（2026-10-15）"
+    },
+    {
       "script": "verify-digest-featured-candidates.js",
       "tier": "ci",
       "guards": "注目レースは表示上限で切る前の逃げ候補から選ぶ（BOA-851）"
