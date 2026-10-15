@@ -23,6 +23,7 @@ import {
   venueLabel,
 } from "../../../utils/analogyFormat";
 import {
+  ATTACK_BOAT,
   MIN_SCENARIO,
   boatCells,
   boatCountsDiffer,
@@ -52,6 +53,7 @@ export default function ScenarioTab({
   feedback,
   initialFirst = null,
   onInitialFirstUsed,
+  onOpenMeetForm = null,
 }) {
   const { t } = useTranslation();
   const scopeLbl = useId();
@@ -702,6 +704,16 @@ export default function ScenarioTab({
               </ul>
             </ScenarioFold>
           </>
+        )}
+        {/* 攻める艇の今節の足へ（BOA-885）。攻める艇が決まる形（カド・ダッシュ等）を枠なりで見ているときだけ */}
+        {onOpenMeetForm && waku && ATTACK_BOAT[slit] && (
+          <button
+            type="button"
+            className="af-link af-meetform-link"
+            onClick={() => onOpenMeetForm(ATTACK_BOAT[slit])}
+          >
+            {t(`${k}.meetFormLink`, { b: ATTACK_BOAT[slit] })}
+          </button>
         )}
       </section>
       <section className="af-scn-sec" id="af-scn-s3">

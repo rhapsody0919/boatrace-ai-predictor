@@ -563,6 +563,9 @@ export const ASSIST_COPY = Object.freeze({
   avgNote: "（今日の走は入れない）",
   courseMissing: "進入「—」＝記録なし",
   meetTabLink: "得点率・ST の推移（出走表とタブ › 今節）›",
+  // 直前情報タブ「今節の足の推移と着順」への導線（BOA-885、2026-10-16 オーナー承認の文言）
+  meetFormLinkPower: "今節の足の推移を見る（直前情報タブ）→",
+  meetFormLinkDeep: (boat) => `${boat}号艇の今節の足の推移 →`,
   noRunsData: "表示できるデータがありません",
 
   // v16 の状態（FR-11、v16 screens「状態」にそろえる）

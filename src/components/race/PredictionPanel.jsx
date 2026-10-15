@@ -114,6 +114,7 @@ import RaceBasicInfoTab from "./RaceBasicInfoTab";
 import RaceWakuInfoTab from "./RaceWakuInfoTab";
 import RaceMeetTab from "./RaceMeetTab";
 import RaceBeforeInfoTab from "./RaceBeforeInfoTab";
+import { MEET_FORM_ANCHOR } from "./meetFormTrend";
 import RaceAiPredictionTab from "./RaceAiPredictionTab";
 import RaceOddsListTab from "./RaceOddsListTab";
 import RaceResult from "./RaceResult";
@@ -176,6 +177,19 @@ function PredictionPanel({
     setSearchParams(params, { replace: true });
   };
   const handleFocusBoat = (boat) => setRaceParam(RACE_BOAT_PARAM, boat);
+  // 龍神ソナーの展開シナリオから、攻める艇の今節の足（直前情報タブのカード）へ（BOA-885）。
+  // 艇・タブ・カードの位置（#meet-form-trend）を1回の書き換えで URL に置き、タブを切り替える。
+  // setSearchParams は # を落とすので navigate で書く。カードは出たときに # を見て下がる
+  const openMeetForm = (boat) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set(RACE_TAB_PARAM, "beforeInfo");
+    params.set(RACE_BOAT_PARAM, String(boat));
+    navigate(
+      { search: `?${params.toString()}`, hash: MEET_FORM_ANCHOR },
+      { replace: true },
+    );
+    setTabRequest((r) => ({ id: "beforeInfo", seq: (r?.seq ?? 0) + 1 }));
+  };
   // ほかのタブの中からタブを切り替える依頼（AI予想タブの「龍神ソナーのタブへ」）。
   // RaceTabs は選択を自分で持つので、seq を増やして同じタブへの依頼も届くようにする
   const [tabRequest, setTabRequest] = useState(null);
@@ -503,6 +517,7 @@ function PredictionPanel({
                         key={analysisRaceId}
                         raceId={analysisRaceId}
                         players={prediction.allPlayers}
+                        onOpenMeetForm={openMeetForm}
                       />
                     ),
                   },

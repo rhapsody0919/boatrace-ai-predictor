@@ -79,6 +79,7 @@ import {
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
+import { meetFormSearch } from "../components/race/meetFormTrend";
 import { parseRaceId } from "../utils/raceId";
 import { trueWindDirection, windRelation } from "../utils/windDirection.js";
 import { loadAssistSession, saveAssistSession } from "../utils/assistSession";
@@ -789,6 +790,15 @@ function ThinkingAssistBody() {
                 target={state.target}
                 onTarget={onTarget}
               />
+            )}
+            {/* 機力の差が今日だけか今節ずっとかを確かめる導線（BOA-885）。深掘り中の艇、無ければ1号艇 */}
+            {state.lens === "power" && (
+              <Link
+                className="ta-link ta-meetform-link"
+                to={`/race/${raceId}${meetFormSearch(deepBoat ?? 1)}`}
+              >
+                {ASSIST_COPY.meetFormLinkPower}
+              </Link>
             )}
           </div>
           <div className="ta-split-side">
