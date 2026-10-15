@@ -1566,12 +1566,13 @@ test.describe("思考アシスト: BOA-801（見せ方の残り）", () => {
   });
 });
 
-test.describe("思考アシスト: PC 表示（BOA-801 5、龍神ソナーと同じ決まり）", () => {
+test.describe("思考アシスト: PC 表示（BOA-801 5・BOA-880）", () => {
   test.beforeEach(async ({ page }) => {
     await routeThinkingAssistV16(page);
   });
 
-  test("1440px: 最大 1200px・左端 24px、図は左（480px）、深掘りは右に並ぶ。堅い？荒れる？は 480px", async ({
+  // 2026-10-15 オーナー決定（BOA-880）: 堅い？荒れる？の枠は列いっぱい、図と右の列は 1:1。以前は枠・図とも 480px
+  test("1440px: 最大 1200px・左端 24px、図は左・深掘りは右に 1:1 で並ぶ。堅い？荒れる？は列いっぱい", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -1581,12 +1582,12 @@ test.describe("思考アシスト: PC 表示（BOA-801 5、龍神ソナーと同
     expect(Math.round(main.x)).toBe(24);
     expect(Math.round(main.width)).toBe(1200);
     const rough = await box(".ta-rough");
-    expect(rough.width).toBeLessThanOrEqual(480);
+    expect(rough.width).toBeGreaterThan(1100);
     await page.getByRole("button", { name: /^1号艇\s/ }).click();
     await expect(page.locator(".ta-deep")).toBeVisible();
     const fig = await box(".ta-split-fig");
     const side = await box(".ta-split-side");
-    expect(fig.width).toBeLessThanOrEqual(480);
+    expect(Math.abs(fig.width - side.width)).toBeLessThanOrEqual(1);
     // 横に並ぶ（右の列は図の右）
     expect(side.x).toBeGreaterThan(fig.x + fig.width);
     const over = await page.evaluate(

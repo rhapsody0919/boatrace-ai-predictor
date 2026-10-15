@@ -22,9 +22,14 @@
  * `getRacerScopedRaceStats`（選んだ選手の走、既存キャッシュ）だけで、
  * 節の全選手分の個別履歴は引かない。
  */
+import RacerPageLink from "./RacerPageLink";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { BOAT_COLORS, BOAT_LINE_COLORS } from "../../utils/colors";
+import {
+  BOAT_COLORS,
+  BOAT_LINE_COLORS,
+  getBoatChipBackground,
+} from "../../utils/colors";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { useLocalizedPath } from "../../hooks/useLocalizedPath";
 import { useHorizontalScrollHint } from "../../hooks/useHorizontalScrollHint";
@@ -556,7 +561,10 @@ function RaceMeetTab({
         >
           <span
             className="rmt-boat-chip"
-            style={{ background: color.bg, color: color.text }}
+            style={{
+              background: getBoatChipBackground(p.number),
+              color: color.text,
+            }}
           >
             {p.number}
           </span>
@@ -1068,7 +1076,7 @@ function RaceMeetTab({
                               <span
                                 className="rmt-boat-chip"
                                 style={{
-                                  background: color.bg,
+                                  background: getBoatChipBackground(p.number),
                                   color: color.text,
                                 }}
                               >
@@ -1276,7 +1284,10 @@ function RaceMeetTab({
                     <span className="rmt-trend-label">
                       <span
                         className="rmt-boat-chip"
-                        style={{ background: color.bg, color: color.text }}
+                        style={{
+                          background: getBoatChipBackground(p.number),
+                          color: color.text,
+                        }}
                       >
                         {p.number}
                       </span>
@@ -1385,6 +1396,11 @@ function RaceMeetTab({
       </div>
 
       <div className="rmt-card">
+        {/* 選手ページへ（BOA-879）。表・チップは艇を選ぶボタンのまま、選んだ艇の詳細の一番上に置く */}
+        <RacerPageLink
+          racerId={selectedPlayer?.racerId}
+          name={selectedPlayer?.name}
+        />
         {/* 全走欠場の選手は得点率の見出しが出ない。何も書かないと「取り忘れ」と
             読まれるので、欠場だと書く（BOA-504 ファン評価） */}
         {!mine &&

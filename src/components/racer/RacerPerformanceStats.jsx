@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   LineChart,
@@ -23,6 +23,7 @@ import RecentRunsTable from "../race/RecentRunsTable";
 import { GRADE_LABELS } from "../race/raceGradeLabels";
 import "./RacerPerformanceStats.css";
 import { techniqueColor } from "../../utils/techniqueColors";
+import { ST_TREND_ID } from "../../utils/racerPagePath";
 
 // 会場別/枠番別の一覧テーブル。行クリックでフィルタに反映する形が4箇所
 // （会場別・枠番別の全体一覧、会場/枠番固定時のクロス集計2種）で共通のため
@@ -351,6 +352,18 @@ export default function RacerPerformanceStats({
   // 表示（ADR-0063）だが、履歴ロード中・エラー時はvcDataがまだ無いため、
   // その間は既存props（サーバー側事前集計）をフォールバック表示に使う
   const hasVcData = !!vcData;
+  const showStTrend = hasVcData && vcData.stN > 1;
+
+  // 他の画面の「STの推移 ›」（龍神ソナーの平均STの表、BOA-879）から #st-trend で来たら、描画後に1回だけそこへ移る。
+  // 成績は非同期で届くので、ブラウザ標準のハッシュの移動（読み込み時の1回）では間に合わない
+  const { hash } = useLocation();
+  const stTrendScrolled = useRef(false);
+  useEffect(() => {
+    if (hash !== `#${ST_TREND_ID}` || !showStTrend || stTrendScrolled.current)
+      return;
+    document.getElementById(ST_TREND_ID)?.scrollIntoView({ block: "start" });
+    stTrendScrolled.current = true;
+  }, [hash, showStTrend]);
 
   // 決まり手表示用に、データソースに関わらず同じ形（{technique, count, percentage}[]）
   // へ正規化する。JSXブロックを1つに統一するため（両ブランチの見た目の重複を回避）
@@ -971,8 +984,8 @@ export default function RacerPerformanceStats({
         </div>
       )}
 
-      {hasVcData && vcData.stN > 1 && (
-        <div className="racer-stat-chart">
+      {showStTrend && (
+        <div className="racer-stat-chart racer-st-trend" id={ST_TREND_ID}>
           <h3>
             {/* 本番ST（race_start_timings）は2025-12から。展示ST（2026-03〜）を
                 使っていた頃の「2026年3月以降」のままだと横軸と食い違う（BOA-576） */}

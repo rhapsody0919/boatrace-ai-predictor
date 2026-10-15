@@ -27,6 +27,7 @@
  *    zh-TW は漢字を使う言語なので対象外
  * 6. ko で使わないと決めた訳語が無いこと（BOA-713）。「준우승」（韓国語では2位の意味）・
  *    「상전」（韓国語の単語として通じない）・「이번 절」（今節。タブ名の「이번 시리즈」に揃える、BOA-720）。
+ *    期間の単位「절」も「시리즈」に揃える（BOA-731）。
  *    用語集 docs/reference/i18n-glossary.md の「準優勝戦・賞典除外（ko）」「今節（ko）」行
  *
  * 2026-09-25時点で1〜3とも違反ゼロ（4 は BOA-442 で61件を置き換えてから追加）。この状態を保つための検査であって、
@@ -59,11 +60,15 @@ const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
 
 const PLACEHOLDER = /{{\s*([\w.]+)\s*}}/g;
 
-function flatten(obj, prefix = "", out = {}) {
+function flatten(obj, prefix = "", out = {}, includeArrays = false) {
   for (const [key, value] of Object.entries(obj)) {
     const full = prefix ? `${prefix}.${key}` : key;
-    if (value && typeof value === "object" && !Array.isArray(value)) {
-      flatten(value, full, out);
+    if (
+      value &&
+      typeof value === "object" &&
+      (includeArrays || !Array.isArray(value))
+    ) {
+      flatten(value, full, out, includeArrays);
     } else {
       out[full] = value;
     }
@@ -207,11 +212,27 @@ const KO_RETIRED_TERMS = [
   // 「절」は韓国語で「節（期間）」の意味では一般的でなく、タブ名の「이번 시리즈」と別物に読める（BOA-720）
   { term: "이번 절", use: "이번 시리즈（今節）", row: "今節（ko）" },
   { term: "같은 절", use: "같은 시리즈（同じ節）", row: "今節（ko）" },
+  {
+    term: "절",
+    pattern: /(?<![가-힣])절(?![대반차경벽])/,
+    use: "시리즈",
+    row: "今節（ko）",
+  },
 ];
 checked += 1;
-for (const { term, use, row } of KO_RETIRED_TERMS) {
+for (const { term, pattern, use, row } of KO_RETIRED_TERMS) {
   const keys = Object.entries(locales.ko)
-    .filter(([, value]) => typeof value === "string" && value.includes(term))
+    // 検査6は配列内の説明文も検査する（tips.2.text 等）。
+    .flatMap(([key, value]) =>
+      Array.isArray(value)
+        ? Object.entries(flatten(value, key, {}, true))
+        : [[key, value]],
+    )
+    .filter(
+      ([, value]) =>
+        typeof value === "string" &&
+        (pattern ? pattern.test(value) : value.includes(term)),
+    )
     .map(([key]) => key);
   if (keys.length > 0) {
     failures.push(

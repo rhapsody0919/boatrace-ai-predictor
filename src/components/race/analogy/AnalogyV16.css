@@ -1186,6 +1186,23 @@ button.af-bar {
   opacity: 0.5;
 }
 
+/* 選手ページの「STの推移」へのリンク（BOA-879）。小さい表の中でも押しやすいよう 32px 四方 */
+.af-hint-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-info-text);
+  text-decoration: none;
+}
+
+.af-hint-link:hover {
+  text-decoration: underline;
+}
+
 .af-fst {
   color: var(--color-warning-text);
 }

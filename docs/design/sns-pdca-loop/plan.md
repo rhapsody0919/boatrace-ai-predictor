@@ -63,7 +63,7 @@ flowchart TB
 
 ## 2. 自動承認と事前通知（spec A3〜A7・A10、cron `sns-auto-plan`、ADR 0094）
 
-5分ごと（JST 8:00〜21:00）。1回の流れ:
+5分ごと（JST 5:30〜23:00。ミッドナイトの優勝戦のため 2026-10-14 オーナー決定で 23:00 まで）。1回の流れ:
 
 ```mermaid
 flowchart TD
@@ -114,7 +114,7 @@ flowchart TD
 ## 4. 送信（spec A1・A9、cron `sns-send`）
 
 - **5本の cron と共通ラッパ**: `sns_auto_plan`（continuous、5分）・`sns_send`（continuous、2分）・`sns_metrics`（continuous、5分）・`sns_daily`（daily、JST 10:00）・`sns_insights`（daily、月曜 JST 5:00）を `scripts/lib/scrapeJobs/registry.js` に登録し、すべて `createScrapeCronHandler` を通す。`scrape_job_state` の行は mode=off で作られるので、153 で5行を `mode='shadow'` で入れ、L1 でオーナーが `live` にする
-- `sns-send` は2分ごと（JST 8:00〜21:00）。`createScrapeCronHandler`（`scripts/lib/scrapeJobs/cronWrapper.js`）に新しいジョブ `sns_send` を登録する（ADR-0066 改訂1 に、外部サイトを取得しないジョブが乗った先例がある）。`maxDuration=300`、`leaseSec` は300以上。monitor の死活の通知は JST 8:00〜21:30 だけにする（レジストリにジョブごとの稼働時間を足す）
+- `sns-send` は2分ごと（JST 8:00〜23:00。22:00 以降に発走するミッドナイトの優勝戦の送る時刻（締切の60分前）まで動かす。2026-10-14 オーナー決定）。`createScrapeCronHandler`（`scripts/lib/scrapeJobs/cronWrapper.js`）に新しいジョブ `sns_send` を登録する（ADR-0066 改訂1 に、外部サイトを取得しないジョブが乗った先例がある）。`maxDuration=300`、`leaseSec` は300以上。monitor の死活の通知は JST 8:00〜21:30 だけにする（レジストリにジョブごとの稼働時間を足す）
 - 1回の流れ: `xSendStore.sweep()` → `queued` で `scheduled_at` を過ぎた job（子は親が posted のものだけ）を古い順に最大3件 → チャネルごとに既存の `runXSendJob` / `runYoutubeQueueJob` / `runYoutubePublishJob` を呼ぶ
 - **X adapter**（新規 `api/_lib/xApiAdapter.js`）: fetch で X API v2 を直接呼ぶ。`initialize`/`append`/`finalize`/`status` は `/2/media/upload/*`、`createPost` は `POST /2/tweets`（子は `reply.in_reply_to_tweet_id`）。動画は Storage から読み、5 MB ずつ送る
 - **X のトークン**（ADR 0093）: 154 の `sns_oauth_tokens` に AES-256-GCM（IV と認証タグを列に持つ）で暗号化して保存。refresh は X の HTTP をはさむので1つのトランザクションにはできない。`lock_until` と `locked_by` を条件付き UPDATE で取り、保存は `WHERE locked_by=自分` の条件付き UPDATE にする。ロックは HTTP のタイムアウト（30秒）より長い90秒。refresh に成功して保存に失敗したら refresh token を失うので、Slack に「X の連携のやり直しが要る」と通知する
@@ -171,6 +171,7 @@ sns-hub は1つのまま、中を2本の通り道に分ける。別の仕組み�
 - **X の1日の本数・間隔は A＋B の合計で数える**: `daily_limit_x` は1つのまま（A と B の合計の天井）。**A を先に枠に入れ、B は残り**: 158 の claim で、B の job は「今日まだ送っていない A の予定の本数」（今日の A の item のうち notified まで進んだもののスレッドの本数＋/today の1本で、まだ claim していないもの）を枠から先に引いてから判定する。A は今までどおり。間隔は、B の送る時刻を A の送る時刻の前後30分に入れない（B の下書きの予定時刻を決めるときに避ける。DB では本数だけを守る）
 - **計測は A・B 共通**: 48h・7d の取り込み（`sns_metric_jobs`）・UTM・暦日の値は同じ表に入る。hq のダッシュボードと `weekly-export.js` は `sns_drafts.send_lane` で A・B を並べる
 - **/today の X 投稿**（A）: 7:45 に送り、事前通知は 5:45（2時間前）。毎朝の一覧は JST 5:30 に作られる（6:30・8:00 にやり直し）。`sns-auto-plan` の稼働時間は JST 5:30〜21:00 にする。158 で `sns_auto_send_items` に種類（`kind`: `race`・`digest`）を足し、digest は `bundle_import_id` を持たない（`race_id` は `today:YYYY-MM-DD`）。承認の関数は digest の item を下書きの ID で引く。日次上限は1本ぶん足し、L2 は `daily_limit_x=7`、L3 は 97。費用は月 約$6（予約で 約$7.5）増え、L3 の予約の合計は約$119（上限 $130 に収まる）
+  - **画像**（2026-10-14 オーナー決定）: 未ログインの本番の /today を、スマホ幅の上部 4:5（1170×1464 の PNG）で1枚撮って付ける。範囲を上部にするのは、X のタイムラインで1枚の縦長の画像は縦横比の上限で切られ、全体を撮ると文字が読めないほど縮むため。撮影は送る前の表示の確認と同じ未ログインの Chromium（ADR 0091、#1518）を使い、一覧ができた後（5:30、やり直しの 6:30・8:00 の後も）に撮る。5:45 の事前通知に画像を載せる。一覧がやり直されて画像が変わったら承認を外して撮り直す。費用: X の料金表（docs.x.com、2026-10-14 確認）に媒体のアップロードの単価は無い（課金されるのは代替テキストの Media Metadata $0.005 だけ）。仮にアップロードの3回（INITIALIZE・APPEND・FINALIZE）が1回 $0.015 で数えられても1日 $0.045・月 約$1.4 で、L3 の予約の合計 約$119 に足して $130 に収まる
 
 ## 7. 画面（screens.md）
 

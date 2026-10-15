@@ -351,3 +351,8 @@ tr.racer-vc-row-highlight td:first-child {
 .racer-vc-pager button:not(:disabled):hover {
   border-color: var(--brand-accent-primary);
 }
+
+/* #st-trend で移ったとき、固定のヘッダーに見出しが隠れないようにする（BOA-879） */
+.racer-st-trend {
+  scroll-margin-top: 80px;
+}

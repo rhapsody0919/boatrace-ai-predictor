@@ -55,6 +55,12 @@ export const NATIONAL_BASE_RATES = {
   makuriByCourse: { 2: 3.76, 3: 5.08, 4: 4.92, 5: 1.25, 6: 0.62 },
 };
 
+/**
+ * 逃がしで一覧に出すコース（＝当日の2号艇。過去の2コースの実績）。3号艇は人の画面の折りたたみの中だけに出し、
+ * 4〜6号艇は保存しない（2026-10-15 オーナー承認）。生成・画面・ボット向けがここを読む
+ */
+export const NIGASHI_LIST_COURSE = 2;
+
 /** 抽出の最低母数（地力窓） */
 export const MIN_RUNS = 10;
 
@@ -132,11 +138,18 @@ export function computeZScore({ rate, expected, n }) {
   return round2(rate / 100 / se - p / se);
 }
 
+/** 「イン有利」方向の指標（イン崩れ指数が低いほど当日条件と一致する） */
+export const IN_FAVORABLE_METRICS = new Set(["nige", "nigashi"]);
+
 /**
  * 「今日の注目レース」の方向一致度。
  *
- * 逃げは「イン有利」方向なのでイン崩れ指数が低いほど一致、まくり・逃がしは
+ * 逃げ・逃がしは「イン有利」方向なのでイン崩れ指数が低いほど一致、まくりは
  * 「イン不利」方向なので高いほど一致する。
+ *
+ * 逃がし（nigashi）は「その選手がいたレースで1号艇が逃げ切った割合」が期待より高いという材料で、
+ * 1号艇の逃げが決まりやすい側（堅い側）。以前はまくりと同じ「イン不利」側に入れていた（2026-10-15 修正、
+ * ~/ryujin-marketing/out/reports/2026-10-15-morning-info-discussion.md 第6節）
  *
  * @param {"nige"|"makuri"|"nigashi"} metric
  * @param {number} volatilityPercentile イン崩れ指数（**0〜100**。情報源の
@@ -148,7 +161,7 @@ export function computeConsistency(metric, volatilityPercentile) {
   if (!Number.isFinite(volatilityPercentile)) return null;
   assertPercent(volatilityPercentile, "volatilityPercentile");
   const v = volatilityPercentile / 100;
-  return metric === "nige" ? 1 - v : v;
+  return IN_FAVORABLE_METRICS.has(metric) ? 1 - v : v;
 }
 
 /**

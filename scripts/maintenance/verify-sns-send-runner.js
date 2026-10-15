@@ -75,11 +75,10 @@ const store = {
           : null,
     };
   },
-  expiredSending: async (now) =>
+  reconcileJobs: async () =>
     (
       await db.query(
-        "SELECT id, channel FROM sns_x_send_jobs WHERE state='sending' AND lease_until<=$1",
-        [now.toISOString()],
+        "SELECT id, channel, error_code, youtube_stage FROM sns_x_send_jobs WHERE state='reconcile' ORDER BY id",
       )
     ).rows,
 };
@@ -277,10 +276,14 @@ test("YouTube の処理が3回の確認で終わらなければ、公開せず�
     youtube.calls.some((c) => c.method === "videos.update"),
     false,
   );
-  // 一度きりの事象は report（2分ごとに上書き）ではなく、その場で Slack に知らせる
-  assert.equal(notices.length, 1);
-  assert.match(notices[0], /要照合/);
-  assert.deepEqual(result.report.alerts, []);
+  // 要照合は DB の状態から毎回 report.alerts に作り、監視が Slack に流す（照合で解けるまで再通知の間隔ごと）。
+  // その場の Slack は使わない（実行が保存の前に落ちても、次の実行で必ず拾えるように。点検 2026-10-13-28 の D2）
+  assert.deepEqual(notices, []);
+  assert.deepEqual(
+    result.report.alerts.map((a) => a.key),
+    [`reconcile:${y.id}`],
+  );
+  assert.match(result.report.alerts[0].text, /要照合.*private_retained/);
 });
 
 test("スレッドの子は親が posted になってから選ぶ", async () => {
@@ -337,6 +340,11 @@ test("PostgREST の読み取り: 送る時刻を過ぎた queued を古い順に
   assert.match(
     calls.at(-2),
     /&or=\(scheduled_at\.gt\.2026-10-13T02:00:00\.000Z,and\(scheduled_at\.eq\.2026-10-13T02:00:00\.000Z,id\.gt\.a\)\)&order=scheduled_at\.asc,id\.asc&limit=3/,
+  ); // 要照合の job は状態だけで引く（時刻で絞らない）
+  await pg.reconcileJobs();
+  assert.equal(
+    calls.at(-1),
+    "sns_x_send_jobs?state=eq.reconcile&order=id.asc&select=id,channel,error_code,youtube_stage",
   );
 });
 
@@ -404,13 +412,78 @@ test("鍵の健全性: refresh の可否と scope だけを返し、トークン
   assert.ok(!(await res.text()).includes("secret-value"));
 });
 
-test("死活の監視: sns_send は JST 8:00〜21:00 の中だけを見る", () => {
+test("鍵の健全性: x_read で refresh の後に保存できなかったら、Slack に連携のやり直しを知らせる（点検 2026-10-13-11）", async () => {
+  const { encryptTokens } = await import("../../api/_lib/snsTokenStore.js");
+  const key = Buffer.alloc(32, 9).toString("base64");
+  const row = {
+    ...(await encryptTokens(
+      { access_token: "old-access", refresh_token: "old-refresh" },
+      key,
+    )),
+    key_version: 1,
+    account_id: "1234567890",
+    // 期限の5分前を過ぎている（refresh に進む）
+    access_expires_at: new Date(Date.now() + 60000).toISOString(),
+  };
+  const env = {
+    X_OAUTH_CLIENT_ID: "i",
+    X_OAUTH_CLIENT_SECRET: "s",
+    SNS_TOKEN_ENC_KEY: key,
+    SLACK_WEBHOOK_URL: "https://hooks.slack.test/token-health",
+  };
+  const slack = [];
+  const fetchImpl = async (url, options = {}) => {
+    if (String(url) === "https://api.x.com/2/oauth2/token")
+      return Response.json({
+        access_token: "new-access",
+        refresh_token: "new-refresh",
+        expires_in: 7200,
+      });
+    if (String(url) === env.SLACK_WEBHOOK_URL) {
+      slack.push(JSON.parse(options.body).text);
+      return new Response("ok");
+    }
+    throw new Error("想定外: " + url);
+  };
+  const xDb = {
+    read: async () => row,
+    tryLock: async () => true,
+    release: async () => true,
+    saveLocked: async () => {
+      throw new Error("DB が落ちている");
+    },
+  };
+  process.env.SNS_HUB_BASIC_AUTH_USER = "owner";
+  process.env.SNS_HUB_BASIC_AUTH_PASSWORD = "pw";
+  // 本番と同じ経路（handler は notify を渡さない＝既定の Slack 通知）で確かめる
+  const res = await handleTokenHealth(
+    new Request(
+      "https://www.boat-ai.jp/api/admin/sns-hub/token-health?x_read=1",
+      {
+        headers: {
+          authorization: `Basic ${Buffer.from("owner:pw").toString("base64")}`,
+        },
+      },
+    ),
+    { env, fetchImpl, xDb },
+  );
+  const { data } = await res.json();
+  assert.equal(data.x.read.ok, false);
+  assert.match(data.x.read.error, /保存できません/);
+  assert.equal(slack.length, 1);
+  assert.match(slack[0], /連携のやり直しが要る/);
+  assert.ok(!slack[0].includes("new-refresh"));
+});
+
+test("死活の監視: sns_send は JST 8:00〜23:00 の中だけを見る（ミッドナイトの優勝戦の送る時刻まで）", () => {
   const active = activeMinutesOf(SCRAPE_JOBS.sns_send);
-  assert.deepEqual(active, { start: 480, end: 1260 });
+  assert.deepEqual(active, { start: 480, end: 1380 });
   const at = (hhmm) => new Date(`2026-10-13T${hhmm}:00+09:00`);
   assert.equal(livenessCheckable(at("07:50"), 25, active), false);
   assert.equal(livenessCheckable(at("08:30"), 25, active), true);
-  assert.equal(livenessCheckable(at("21:10"), 25, active), false);
+  // 22:20 発走のミッドナイトの優勝戦は 21:20 に送る。その時間も見る
+  assert.equal(livenessCheckable(at("21:30"), 25, active), true);
+  assert.equal(livenessCheckable(at("23:10"), 25, active), false);
   // 稼働時間の無いジョブは、今までどおり 7:00〜24:00
   assert.equal(livenessCheckable(at("21:10"), 25, null), true);
 });
@@ -566,8 +639,8 @@ test("D1: 検査に落ち続ける job が上限を超えて並んでも、走�
   assert.equal(r3.cursor, null);
 });
 
-test("D2: 即時の通知が届かなければ report.alerts に残し、次の実行にも持ち越す。sweep で要照合になった送信も知らせる", async () => {
-  const y = await approvedJob("youtube");
+test("D2: 即時の通知が届かなければ report.alerts に残し、次の実行にも持ち越す。sweep で要照合になった送信も report.alerts に出す", async () => {
+  const y = await approvedJob("x");
   const failingNotify = async () => {
     throw new Error("SLACK_WEBHOOK_URL が未設定です");
   };
@@ -576,8 +649,7 @@ test("D2: 即時の通知が届かなければ report.alerts に残し、次の�
     deps({
       notify: failingNotify,
       adapters: {
-        youtube: async () =>
-          createMockYoutubeAdapter({ processingStatus: "processing" }),
+        x: async () => createMockXAdapter({ failAt: "initialize" }),
       },
     }),
   );
@@ -585,7 +657,7 @@ test("D2: 即時の通知が届かなければ report.alerts に残し、次の�
     a.key.startsWith("undelivered:"),
   );
   assert.equal(undelivered.length, 1);
-  assert.match(undelivered[0].key, new RegExp(`undelivered:reconcile:${y.id}`));
+  assert.match(undelivered[0].key, new RegExp(`undelivered:send:${y.id}`));
   assert.ok(Date.parse(undelivered[0].until) > Date.now());
   // 次の実行（対象の job なし）でも持ち越す。期限を過ぎたものは落とす
   const next = await runSnsSend(
@@ -614,17 +686,148 @@ test("D2: 即時の通知が届かなければ report.alerts に残し、次の�
   );
   assert.deepEqual(expired.report.alerts, []);
 
-  // sweep でリースの切れた送信が要照合になったら知らせる
+  // sweep でリースの切れた送信が要照合になったら report.alerts に出す（DB の状態から作る）
   const x = await approvedJob("x");
   await store.transition(x.id, "claim");
   await db.query(
     "UPDATE sns_x_send_jobs SET lease_until=now()-interval '1 minute' WHERE id=$1",
     [x.id],
   );
-  const notices = [];
-  await runSnsSend(ctx(), deps({ notify: async (t) => notices.push(t) }));
+  const swept = await runSnsSend(ctx(), deps());
   assert.equal((await job(x.id)).state, "reconcile");
-  assert.ok(notices.some((t) => t.includes(x.id) && t.includes("要照合")));
+  assert.ok(
+    swept.report.alerts.some(
+      (a) => a.key === `reconcile:${x.id}` && a.text.includes("要照合"),
+    ),
+  );
+});
+
+// 開発の補助の点検 2026-10-13-28（D2 の残り）: 通知が実行のメモリにしか無く、正常に終わったときにだけ保存される
+const leaseExpiredX = async (leaseUntilSql) => {
+  const x = await approvedJob("x");
+  await store.transition(x.id, "claim");
+  await db.query(
+    `UPDATE sns_x_send_jobs SET lease_until=${leaseUntilSql} WHERE id=$1`,
+    [x.id],
+  );
+  return x;
+};
+const rejectNotify = async () => {
+  throw new Error("Slack に届かない");
+};
+
+test("D2-1: sweep の後に DB の読み取りが落ちて report が保存されなくても、次の実行で要照合を report.alerts に出す", async () => {
+  const x = await leaseExpiredX("now()-interval '1 minute'");
+  await assert.rejects(
+    runSnsSend(
+      ctx(),
+      deps({
+        notify: rejectNotify,
+        store: {
+          ...store,
+          controls: async () => {
+            throw new Error("送信の DB の読み取りに失敗");
+          },
+        },
+      }),
+    ),
+  );
+  assert.equal((await job(x.id)).state, "reconcile");
+  // 前の report は保存されていない（ctx.state なし）
+  const next = await runSnsSend(ctx(), deps({ notify: rejectNotify }));
+  assert.ok(next.report.alerts.some((a) => a.key === `reconcile:${x.id}`));
+});
+
+test("D2-2: runner の時刻と DB の now() がずれ、sweep だけが要照合にした job も report.alerts に出す", async () => {
+  // DB の now() では切れているが、runner の時刻（1分前）ではまだ切れていない
+  const x = await leaseExpiredX("now()-interval '5 seconds'");
+  const result = await runSnsSend(
+    { ...ctx(), now: () => new Date(Date.now() - 60000) },
+    deps(),
+  );
+  assert.equal((await job(x.id)).state, "reconcile");
+  assert.ok(result.report.alerts.some((a) => a.key === `reconcile:${x.id}`));
+  // 照合で要照合が解けたら出さない（DB の状態から毎回作る）
+  await db.query("UPDATE sns_x_send_jobs SET state='held' WHERE id=$1", [x.id]);
+  const resolved = await runSnsSend(ctx(), deps());
+  assert.ok(
+    !resolved.report.alerts.some((a) => a.key.startsWith("reconcile:")),
+  );
+});
+
+test("D2-3: 候補を巡回しても、まだ見直していない job の検査の理由とトークンの失敗は期限まで残す", async () => {
+  const [a, b, c] = [
+    await approvedJob("x", { scheduledOffsetMin: -3 }),
+    await approvedJob("x", { scheduledOffsetMin: -2 }),
+    await approvedJob("x", { scheduledOffsetMin: -1 }),
+  ];
+  const precheckKeys = (r) =>
+    r.report.alerts
+      .filter((al) => al.key.startsWith("precheck:"))
+      .map((al) => al.key.split(":")[1])
+      .sort();
+  const r1 = await runSnsSend(
+    ctx(),
+    deps({ preflight: failingPreflight, maxCandidates: 2 }),
+  );
+  assert.deepEqual(precheckKeys(r1), [a.id, b.id].sort());
+  const r2 = await runSnsSend(
+    { ...ctx(), state: { cursor: r1.cursor, last_report: r1.report } },
+    deps({ preflight: failingPreflight, maxCandidates: 2 }),
+  );
+  assert.deepEqual(precheckKeys(r2), [a.id, b.id, c.id].sort());
+  // 見直して検査に通った job の理由は消す（dry_run で送らない）
+  await db.query(
+    "UPDATE sns_auto_send_control SET dry_run=true WHERE channel='x'",
+  );
+  const r3 = await runSnsSend(
+    { ...ctx(), state: { cursor: r2.cursor, last_report: r2.report } },
+    deps({ maxCandidates: 2 }),
+  );
+  assert.deepEqual(precheckKeys(r3), [c.id]);
+  // 期限を過ぎた理由は消す
+  const stale = {
+    alerts: r3.report.alerts.map((al) => ({
+      ...al,
+      until: new Date(Date.now() - 1000).toISOString(),
+    })),
+  };
+  await db.query("UPDATE sns_x_send_jobs SET state='cancelled' WHERE id=$1", [
+    c.id,
+  ]);
+  const r4 = await runSnsSend(
+    { ...ctx(), state: { cursor: null, last_report: stale } },
+    deps({ maxCandidates: 2 }),
+  );
+  assert.deepEqual(precheckKeys(r4), []);
+
+  // トークンの失敗: その実行で X を見なくても残し、取れたら消す
+  await db.query(
+    "UPDATE sns_auto_send_control SET dry_run=false WHERE channel='x'",
+  );
+  const noToken = {
+    x: async () => {
+      throw new Error("X と連携していません");
+    },
+    youtube: async () => createMockYoutubeAdapter(),
+  };
+  const t1 = await runSnsSend(
+    ctx(),
+    deps({ adapters: noToken, maxCandidates: 1 }),
+  );
+  assert.ok(t1.report.alerts.some((al) => al.key === "token:x"));
+  await db.query("UPDATE sns_x_send_jobs SET state='cancelled'");
+  const t2 = await runSnsSend(
+    { ...ctx(), state: { last_report: t1.report } },
+    deps({ adapters: noToken }),
+  );
+  assert.ok(t2.report.alerts.some((al) => al.key === "token:x"));
+  await approvedJob("x");
+  const t3 = await runSnsSend(
+    { ...ctx(), state: { last_report: t2.report } },
+    deps(),
+  );
+  assert.ok(!t3.report.alerts.some((al) => al.key === "token:x"));
 });
 
 test("鍵の健全性: ?x_read=1 のときだけ X の自分のアカウントを読み、既定では X を呼ばない", async () => {
@@ -670,4 +873,29 @@ test("鍵の健全性: ?x_read=1 のときだけ X の自分のアカウント�
   });
   assert.equal(denied.x.read.ok, false);
   assert.match(denied.x.read.error, /HTTP 401/);
+});
+
+test("live の sweep: RETURNS void の RPC の空の応答で落ちない（2026-10-14、sns_send が304回連続で Unexpected end of JSON input）", async () => {
+  const { xSendStore } = await import("../../api/_lib/snsXSendStore.js");
+  const original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), method: options?.method });
+    return new Response(null, { status: 204 });
+  };
+  try {
+    assert.equal(await xSendStore.sweep(), null);
+    assert.match(calls[0].url, /rpc\/sweep_sns_deadline_queue$/);
+    // 200 で本文が空のときも同じ
+    globalThis.fetch = async () => new Response("", { status: 200 });
+    assert.equal(await xSendStore.sweep(), null);
+    // 本文がある応答は今までどおり JSON として返す・失敗は投げる
+    globalThis.fetch = async () =>
+      new Response('[{"id":"a"}]', { status: 200 });
+    assert.deepEqual(await xSendStore.sweep(), [{ id: "a" }]);
+    globalThis.fetch = async () => new Response("", { status: 500 });
+    await assert.rejects(xSendStore.sweep(), /DB操作に失敗/);
+  } finally {
+    globalThis.fetch = original;
+  }
 });

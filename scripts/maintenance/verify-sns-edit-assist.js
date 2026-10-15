@@ -43,6 +43,19 @@ test("読みやすさ・加重文字数・日付時刻・数値出典・敬称�
     findings.every((f) => f.location && f.content && f.reason && f.suggestion),
   );
 });
+test("親1件だけのスレッド（長文の1投稿）は25,000まで指摘しない。子のある素材は280で指摘する", () => {
+  const draft = (threads, text) => ({
+    platform: "x",
+    caption_text: text,
+    hashtags: [],
+    source_data: { bundle: { x_thread: Array.from({ length: threads }, (_, index) => ({ index, text: "t" })) } },
+  });
+  const weighted = (findings) => findings.find((f) => f.rule === "x-weighted-length");
+  assert.equal(weighted(inspectDraft(draft(1, "あ".repeat(5000)), [])), undefined);
+  assert.match(weighted(inspectDraft(draft(1, "あ".repeat(12501)), [])).evidence ?? JSON.stringify(weighted(inspectDraft(draft(1, "あ".repeat(12501)), []))), /\/25000/);
+  assert.match(JSON.stringify(weighted(inspectDraft(draft(2, "あ".repeat(141)), []))), /\/280/);
+  assert.match(JSON.stringify(weighted(inspectDraft({ platform: "x", caption_text: "あ".repeat(141), hashtags: [] }, []))), /\/280/);
+});
 test("AI差し込み口は既定無効で、明示設定時だけモックを呼ぶ", async () => {
   let calls = 0;
   const messages = async () => {

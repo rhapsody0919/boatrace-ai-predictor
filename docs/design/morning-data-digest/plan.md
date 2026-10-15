@@ -426,8 +426,9 @@ ADR-0066 が「取得済みデータのDB内集計・統計更新（`aggregate-s
 
    （`rate`・`expected` は0〜1、`n` は地力窓の母数。「平均から何σ離れているか」なのでユーザーにも説明できる）
 3. 各行に**方向一致度**を付ける（`volatility` は0〜1。§2.2の単位に注意）
-   - `nige` は「イン有利」方向。イン崩れ指数が低いほど一致: `consistency = 1 - volatility`
-   - `makuri` / `nigashi` は「イン不利」方向: `consistency = volatility`
+   - `nige` / `nigashi` は「イン有利」方向。イン崩れ指数が低いほど一致: `consistency = 1 - volatility`
+   - `makuri` は「イン不利」方向: `consistency = volatility`
+   - 当初は `nigashi` を「イン不利」に入れていたが、逃がしは「1号艇が逃げ切った割合」が高い材料なので向きが逆だった（2026-10-15 修正）
 4. `score = z × consistency` で並べ、最大の1件を選ぶ
 5. 同点は `race_id` の昇順で決定的に解決する
 6. `volatility_percentile` が NULL（`isFallback`、または `predictions` 未生成）の行は候補から除外する。全候補が NULL なら `featured` を書かない
