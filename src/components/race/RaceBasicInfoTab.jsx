@@ -23,6 +23,7 @@
  * 指摘#3で固定指標(勝率)から選択中指標に連動するよう変更。以前使っていた
  * getRacerVenueStatsは廃止）
  */
+import RacerPageLink from "./RacerPageLink";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { BOAT_COLORS } from "../../utils/colors";
@@ -745,6 +746,11 @@ function RaceBasicInfoTab({
 
               {expandedBoat === boat && (
                 <div className="rbit-expanded">
+                  {/* 選手ページへ（BOA-879）。行は押すと開くボタンのまま、開いた中の一番上に置く */}
+                  <RacerPageLink
+                    racerId={player?.racerId}
+                    name={player?.name}
+                  />
                   {/* 今期の事故率（目安、BOA-327）。どのサブタブでも見えるよう、タブの上に置く */}
                   {accidentRecords === null && (
                     <InlineFetchError
@@ -812,7 +818,11 @@ function RaceBasicInfoTab({
                           </div>
                         )}
                         <p className="rbit-accident-note">
-                          {t("basicInfo.accidentNote")}
+                          {t(
+                            player.grade === "B2"
+                              ? "basicInfo.accidentNoteB2"
+                              : "basicInfo.accidentNote",
+                          )}
                         </p>
                       </div>
                     );

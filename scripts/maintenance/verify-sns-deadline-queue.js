@@ -211,6 +211,30 @@ test("加重文字数と未解決差し込みを拒否、URLは公式計数", as
   });
   await preflight(j)(j);
 });
+test("長文の1投稿（25,000まで）は queue.thread_length=1 の親だけ。子・印なし・超過は weighted_text_invalid", async () => {
+  const fake = (text, extra = {}) => {
+    const queue = {
+      expires_at: new Date(Date.now() + 3600000).toISOString(),
+      deadline_at: new Date(Date.now() + 7200000).toISOString(),
+      source_revision: "v1",
+      public_url: "https://www.boat-ai.jp/race/x",
+      screen_key: "sonar",
+      ...extra,
+    };
+    const snapshot = { text, queue };
+    return { id: "j", draft_id: "d", channel: "x", snapshot, snapshot_text: JSON.stringify(snapshot) };
+  };
+  const long = "あ".repeat(5000);
+  const ok = fake(long, { thread_length: 1 });
+  await preflight(ok)(ok);
+  for (const [j, why] of [
+    [fake(long), "印なし（auto-plan 以外の下書き）"],
+    [fake(long, { thread_length: 2 }), "子のあるスレッドの親"],
+    [fake(long, { thread_length: 1, parent_job_id: "p" }), "返信"],
+    [fake("あ".repeat(12501), { thread_length: 1 }), "25,000 超え"],
+  ])
+    await assert.rejects(preflight(j)(j), /weighted_text_invalid/, why);
+});
 test("公開検査の待ち時間で失効しても送らない", async () => {
   const j = await job();
   let t = Date.now();
@@ -602,27 +626,29 @@ test("媒体変更を伴う再承認でも試行時の媒体の日次枠を保�
   }
 });
 
-test("YouTube動画はXの32MB上限を適用しない、Xは32MB超を拒否したまま", async () => {
+test("YouTube の動画も X と同じ 32 MiB まで。超えると承認の前に止める（送信の上限とそろえる）", async () => {
   await enable();
-  const overX = X_MEDIA_MAX_BYTES + 1024;
-  // YouTubeはXの32MB上限より大きく、かつ500MB上限より十分小さいサイズで検証する（上限ぎりぎりの巨大配列確保を避ける）
-  const overXButUnderYoutubeCap = X_MEDIA_MAX_BYTES + 8 * 1024 * 1024;
-  assert.ok(overXButUnderYoutubeCap < YOUTUBE_MEDIA_MAX_BYTES);
-  const bigMedia = async () => new Uint8Array(overX);
-  const underCapMedia = async () => new Uint8Array(overXButUnderYoutubeCap);
+  assert.equal(YOUTUBE_MEDIA_MAX_BYTES, X_MEDIA_MAX_BYTES);
+  const overCap = async () => new Uint8Array(YOUTUBE_MEDIA_MAX_BYTES + 1);
+  const atCap = async () => new Uint8Array(YOUTUBE_MEDIA_MAX_BYTES);
+  const insertDraft = (platform) =>
+    first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,source_data,title,video_storage_path) VALUES(gen_random_uuid(),'short',$1,'ja',$2,$3,'動画タイトル','demo/a.mp4') RETURNING *",
+      [platform, "ボートレースの発見", { deadline_queue: queue() }],
+    );
 
-  const xDraft = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,source_data,title,video_storage_path) VALUES(gen_random_uuid(),'short','x','ja',$1,$2,'動画タイトル','demo/a.mp4') RETURNING *",
-    ["ボートレースの発見", { deadline_queue: queue() }],
+  await assert.rejects(
+    createXSnapshot(await insertDraft("x"), overCap),
+    /媒体の容量/,
   );
-  await assert.rejects(createXSnapshot(xDraft, bigMedia), /媒体の容量/);
+  await assert.rejects(
+    createXSnapshot(await insertDraft("youtube"), overCap),
+    /媒体の容量/,
+  );
 
-  const ytDraft = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,caption_text,source_data,title,video_storage_path) VALUES(gen_random_uuid(),'short','youtube','ja',$1,$2,'動画タイトル','demo/a.mp4') RETURNING *",
-    ["ボートレースの発見", { deadline_queue: queue() }],
-  );
-  const snapshot = await createXSnapshot(ytDraft, underCapMedia);
-  assert.equal(snapshot.media[0].size, overXButUnderYoutubeCap);
+  const ytDraft = await insertDraft("youtube");
+  const snapshot = await createXSnapshot(ytDraft, atCap);
+  assert.equal(snapshot.media[0].size, YOUTUBE_MEDIA_MAX_BYTES);
   const approved = (
     await first("SELECT approve_sns_x_send($1,$2,$3,now()) result", [
       ytDraft.id,

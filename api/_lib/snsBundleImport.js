@@ -3,7 +3,6 @@ import {
   SUPABASE_SERVICE_KEY,
   SNS_HUB_STORAGE_BUCKET,
 } from "./snsHubHelpers.js";
-import { BUNDLE_SCHEMA } from "./snsBundleValidation.js";
 
 /** 保存インターフェースを注入して、実サービスへ接続せず検証する。 */
 export async function importValidatedBundle(validated, store) {
@@ -19,7 +18,7 @@ export async function importValidatedBundle(validated, store) {
   // 保存に失敗したら下書きを作らない。途中保存は同じパスへ再試行できる。
   return store.register({
     p_version_hash: versionHash,
-    p_schema_version: BUNDLE_SCHEMA,
+    p_schema_version: bundle.schema_version,
     p_bundle: bundle,
     p_qa: qa,
     p_manifest: manifest,

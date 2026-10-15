@@ -27,6 +27,7 @@ import { getTodayJST } from "../../utils/dateUtils";
 import {
   formatGenerationDate,
   isClippedByGeneration,
+  isVenueRankSnapshotBeforeGeneration,
   officialTallyState,
 } from "../../utils/motorGeneration";
 import { motorRateView, motorRate3View } from "../../utils/motorFreshRate";
@@ -441,6 +442,15 @@ function MotorConditionChart({
     if (venueRanks?.state === "error") {
       return t("analysis.motor.venueRankError");
     }
+    if (
+      isVenueRankSnapshotBeforeGeneration({
+        raceDate: selectedRace?.slice(0, 10) ?? null,
+        scrapedDate: venueRanks?.scrapedDate ?? null,
+        generationStart,
+      })
+    ) {
+      return "—";
+    }
     const hit = venueRanks?.ranks.get(motorNumber);
     // スナップショットに載っていないモーター（入れ替え直後の会場で欠けることがある）
     if (!hit) return "-";
@@ -484,12 +494,14 @@ function MotorConditionChart({
   // 1位だけを金で示す（同値は全部、全艇同値なら無し）。以前は2位も薄い金で示していたが、
   // レース詳細の色分けのルール（最良だけ金。docs/design/race-detail-ui-unify R1）にそろえた。
   // 引数は breakdown の行番号
+  const highlightBestSets = [];
   const rankClassFor = (values, digits) => {
     const best = bestOf(
       values.map((value, i) => ({ boat: i, value })),
       "max",
       { digits },
     );
+    highlightBestSets.push(best);
     return (i) => (best.has(i) ? "motor-stat-rank1" : "");
   };
   // 全艇が null（その会場・その節で1着率が取れていない）の列は出さない。
@@ -539,6 +551,7 @@ function MotorConditionChart({
     0,
   );
   const firstPlaceRateRankClass = rankClassFor(firstPlaceRates, 1);
+  const hasHighlightedCell = highlightBestSets.some((best) => best.size > 0);
   const drillPowerIndexTone = powerIndexTone(
     powerIndex?.power_index,
     powerIndex?.sample_count,
@@ -581,6 +594,11 @@ function MotorConditionChart({
           powerIndex?.clipped_by_generation || trendData?.clippedByGeneration,
         );
 
+  // ディープリンク先の会場が「本日開催中」の一覧に無い（過去レースへ飛んだとき）。
+  // 選択肢に足し、見出しから「本日開催中」を外す（BOA-428・BOA-719）
+  const venueOffToday =
+    selectedVenue !== null && !venues.includes(selectedVenue);
+
   return (
     <div className="motor-condition-container">
       {!embedded && (
@@ -598,7 +616,11 @@ function MotorConditionChart({
         ) : (
           <div className="controls-section">
             <label htmlFor="motor-venue-select">
-              {t("analysis.venueSelectTodayLabel")}
+              {t(
+                venueOffToday
+                  ? "analysis.venueSelectLabel"
+                  : "analysis.venueSelectTodayLabel",
+              )}
             </label>
             <select
               id="motor-venue-select"
@@ -609,7 +631,7 @@ function MotorConditionChart({
               {/* ディープリンク先の会場が「本日開催中」の一覧に無いとき（ランキングの機番・
                   機力バッジから過去レースへ飛んだとき）も、選択肢に足す。無いとブラウザが
                   先頭の会場を表示し、別会場の同じ番号のモーターと読み違える（BOA-428 ファン評価） */}
-              {(selectedVenue !== null && !venues.includes(selectedVenue)
+              {(venueOffToday
                 ? [selectedVenue, ...venues]
                 : venues
               ).map((v) => (
@@ -1510,6 +1532,9 @@ function MotorConditionChart({
         ) : (
           <p className="table-note">{t("analysis.motor.note")}</p>
         ))}
+      {drillDownMotor === null && hasHighlightedCell && (
+        <p className="table-note">{t("analysis.motor.bestCellNote")}</p>
+      )}
       {/* 線の意味（BOA-494 ファン評価）。一覧で、他のタブで艇を選んでいるときだけ */}
       {drillDownMotor === null && focusedBoat !== null && (
         <p className="table-note">{t("analysis.motor.focusedRowNote")}</p>

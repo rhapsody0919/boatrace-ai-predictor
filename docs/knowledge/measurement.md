@@ -15,6 +15,9 @@
 - race_id は値の種類が多く「(other)」にまとめられるので登録しない（同 ga4-custom-dimensions.md）
 - イベント範囲のカスタムディメンションは標準プロパティで50件まで（同 ga4-custom-dimensions.md）
 - 値がレポート・Data API に出るまで最大24〜48時間（同 ga4-custom-dimensions.md）
+- ユーザー範囲のカスタムディメンション app_language は登録済み（2026-07-14、memory i18n_project、BOA-128）
+- AdSense Management API はサービスアカウントで使えず、OAuth の refresh token が要る（2026-10-05、memory project_ai_multi_venture_ops_2026_10_05）
+- Search Console のドメインプロパティは SEARCH_CONSOLE_SITE_URL を sc-domain:boat-ai.jp の形にする。GCP で Search Console API を別に有効化しないと権限エラーに見える（2026-07-27、memory venue_guide_expansion_project、docs/operation/search-console-report.md）
 
 ## 公開後の読み方
 - 公開日をまたぐ比較は、登録日より前が欠けていないかを先に確かめる（ga4-custom-dimensions.md の「遡らない」から）
@@ -24,6 +27,17 @@
 - レース詳細の中の動きを前後で比べる基準は 10/11 以降しか使えない（tab_id 登録 10/8、ソナー別タブ化 10/9 09:17、思考アシスト公開 10/11）（2026-10-12、同 measurement.md）
 - 9/28 以前の / の PV にはレース詳細が混ざっている。ページ別の比較は 9/29 以降（2026-10-12、BOA-531、同 measurement.md）
 - 置き場所を比べる機能は、イベントを共通にしてパラメータで置き場所を区別すると、後で動かしても前後がつながる（2026-10-12、同 measurement.md）
+- GA4 の PV は 9/29（page_view の修正）と 10/1（内部トラフィックの除外）で切れる。注記は scripts/lib/ga4MeasurementBreaks.js が出す（2026-10-01、memory seo_keyword_strategy_2026_09_29）
+- PV の絶対値は AdSense の PV とも突き合わせる（2026-09-29 の GA4 日本語 PV 29,270 に対し、同時期の AdSense の PV は 10,573）（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
+- i18n-demand-report.js 等の月別 PV を JST 9時より前に実行すると、期間の始まりが前月の末日になる（2026-10-06、memory project_ai_multi_venture_ops_2026_10_05）
+- AI アシスタント経由の流入は GA4 で30日あたり26→7と小さい。AI 施策の成否は流入でなく、ボットの取得数と引用の定点チェックで見る（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
+- 2026-08 時点で直近30日のアクティブユーザーの約48%がリピーター、新規の翌週の定着率は約13%。リピーターは /hit-races・/accuracy をよく見る（2026-08-19、memory boatai_rebrand_investigation_2026_08_19）
+- 定点観測は戦略文書に書いた本来の KPI と照合する。X の KPI はサイト送客（docs/operation/x-operations-playbook.md）なのに、/x-growth-report が X の中の指標だけを見ていた（2026-09-05、memory x_growth_report_evolution_2026_09、PR #530）
+- sns_strategy_insights に登録するのは型・題材・投稿時間帯のように次の生成に効く知見だけ。操作の手順の改善は入れない（2026-09-06、memory x_growth_report_evolution_2026_09）
+
+## 目標と収益
+- 集客の目標は月間100万PV。基準は 2026-10-01〜12 の13,313PV（月に直して約3.3万、約30倍の差）。集客・SEO・SNS の施策は PV の伸びへの効き方で順位を付ける（2026-10-13 オーナー確認、memory project_pv_goal_1m_2026_10_13）
+- AdSense は月約¥550、ページ RPM ¥52、広告が出るのは広告コードが動いたページの約3割（2026-10-05、memory ai_agent_era_strategy_2026_10_05、docs/proposal/ai-agent-era-strategy.md）
 
 ## 点検での見落としを防ぐ知見
 - 制作完了・投稿承認・実投稿・指標取得は別の状態として記録し、実投稿を承認だけで補わない。（2026-10-13、2026-10-13-plan-1413.md）

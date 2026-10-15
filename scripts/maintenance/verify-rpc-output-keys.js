@@ -201,6 +201,28 @@ const TODAY_RACE_KEYS = [
 // なるまでは欠落を WARN にとどめ、適用済みになった後は失敗にする
 const MIGRATION_110_TODAY_RACE_KEYS = ["result"];
 
+// 157（BOA-822）: レース直下の inCaution（unified の feature_contributions.inCaution をそのまま。無ければ null）。
+// get_predictions_by_date / _light / get_today_races の3関数。台帳で 157 が「適用済み」になるまでは欠落を WARN にとどめる
+const MIGRATION_157_IN_CAUTION_KEYS = ["inCaution"];
+
+/**
+ * 台帳の適用状況で、欠落を失敗にするか WARN にとどめるかを分けるキーの検査。失敗したかを返す。
+ * @param {string} label
+ * @param {unknown[]} items
+ * @param {string[]} keys
+ * @param {number} migration
+ */
+function reportMigrationKeys(label, items, keys, migration) {
+  if (isMigrationApplied(migration)) return reportGroup(label, items, keys);
+  const missing = findMissingKeys(items, keys);
+  console.log(
+    missing.length === 0
+      ? `  [WARN] ${label}: ${migration} のキー（${keys.join("・")}）は出ているが、台帳（APPLIED.md）の${migration}が「適用済み」になっていない。台帳を更新する`
+      : `  [WARN] ${label}: ${migration} は台帳で未適用のため、${keys.join("・")} の欠落は失敗にしない`,
+  );
+  return false;
+}
+
 /**
  * 要素配列のうち、期待キーを持たない要素の件数をキーごとに数える。
  * @param {unknown[]} items
@@ -316,6 +338,13 @@ async function main() {
       continue;
     }
     failed = reportGroup("レース", data.races, PREDICTION_RACE_KEYS) || failed;
+    failed =
+      reportMigrationKeys(
+        "レース（157）",
+        data.races,
+        MIGRATION_157_IN_CAUTION_KEYS,
+        157,
+      ) || failed;
     for (const { path, keys } of PREDICTION_NESTED_CHECKS) {
       const items = collectNested(data.races, path);
       if (items.length === 0) {
@@ -358,6 +387,13 @@ async function main() {
         migration110Applied
           ? [...TODAY_RACE_KEYS, ...MIGRATION_110_TODAY_RACE_KEYS]
           : TODAY_RACE_KEYS,
+      ) || failed;
+    failed =
+      reportMigrationKeys(
+        "レース（157）",
+        todayRaces,
+        MIGRATION_157_IN_CAUTION_KEYS,
+        157,
       ) || failed;
     if (!migration110Applied) {
       const missing110 = findMissingKeys(

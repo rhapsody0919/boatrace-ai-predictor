@@ -429,9 +429,17 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
-  // BOA-822 イン崩れ注意度の監視（api/cron/in-caution-health.js、scripts/lib/inCautionHealth.js）。JST 04:30 に夜の表、
-  // 05:45 に今日の unified を見る。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する
+  // BOA-822 イン崩れ注意度の監視（scripts/lib/inCautionHealth.js）。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する。
+  // 夜の表（JST 04:30、api/cron/in-caution-health.js）と今日の unified（05:45、api/cron/in-caution-today-health.js）を
+  // 別のジョブにする。成功の記録が失敗の記録を消すので、同じジョブだと 04:30 の失敗が 07:00 の通知の前に消える
   in_caution_health: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
+  in_caution_today_health: {
     kind: "monitor",
     leaseSec: 60,
     maxDurationSec: 60,
@@ -497,7 +505,7 @@ export const SCRAPE_JOBS = Object.freeze({
     leaseSec: 120,
     maxDurationSec: 120,
   },
-  // sns-pdca-loop tasks 19 SNS の送信（X・YouTube）。2分ごと（JST 8:00〜21:00）に、送る時刻を過ぎた job を最大3件送る。
+  // sns-pdca-loop tasks 19 SNS の送信（X・YouTube）。2分ごと（JST 8:00〜23:00。ミッドナイトの優勝戦の送る時刻まで、2026-10-14 オーナー決定）に、送る時刻を過ぎた job を最大3件送る。
   // YouTube は1回の実行の中でアップロード→処理の確認→公開まで進める（ADR 0094・plan §3）ので、maxDuration は 300秒。
   // 外部サイトの取得はしない（ADR-0066 改訂1 の先例）。稼働時間の外は、死活の監視が鳴らない（activeHoursJst）。
   // 実装: scripts/lib/snsSendRunner.js、api/cron/sns-send.js
@@ -505,7 +513,35 @@ export const SCRAPE_JOBS = Object.freeze({
     kind: "continuous",
     leaseSec: 300,
     maxDurationSec: 300,
-    activeHoursJst: { start: "08:00", end: "21:00" },
+    activeHoursJst: { start: "08:00", end: "23:00" },
+  },
+  // sns-pdca-loop tasks 21 SNS の 48h・7d の取り込み。5分ごと（終日）に、due_at を過ぎた sns_metric_jobs を最大50件処理する。
+  // 累積値は窓の終わりから15分以内だけ保存する（SQL154）ので、終日動かす。X は自分の投稿の読み取り（Owned Reads）だけ。
+  // 実装: scripts/lib/snsMetricsRunner.js、api/cron/sns-metrics.js
+  sns_metrics: {
+    kind: "continuous",
+    leaseSec: 120,
+    maxDurationSec: 120,
+  },
+  // sns-pdca-loop tasks 12 SNS の自動送信の計画。5分ごと（JST 5:30〜23:00）に、その日の優勝戦・準優勝戦の素材 v1 から
+  // レース×チャネルの item を作り、検査（数値の照合・リンク先の表示・禁止表現・承認の条件）して個別承認に回す。
+  // リンク先の表示の確認で Chromium を起動するので maxDuration は 300秒。龍神の公開 API と公開画面だけを読む（外部サイトは取得しない）。
+  // 実装: scripts/lib/snsAutoPlanRunner.js、api/cron/sns-auto-plan.js
+  sns_auto_plan: {
+    kind: "continuous",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    activeHoursJst: { start: "05:30", end: "23:00" },
+  },
+  // sns-pdca-loop tasks 22 SNS の暦日の値（YouTube Analytics・GA4）。10:00指定（cron: 10:00・11:30 JST）。毎日 D−3〜D−1 を取り直し、
+  // 値が変わった行だけ sns_channel_daily に書く。YouTube Analytics は動画ごとに1回（直近の投稿の数だけ、L3 でも約60回）。
+  // 実装: scripts/lib/snsDailyRunner.js、api/cron/sns-daily.js
+  sns_daily: {
+    kind: "daily",
+    targetTimeJst: "10:00",
+    leaseSec: 300,
+    maxDurationSec: 300,
+    hosts: [],
   },
 });
 

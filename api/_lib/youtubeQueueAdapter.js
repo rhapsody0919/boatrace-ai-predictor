@@ -33,8 +33,8 @@ export function validateYoutubeSnapshot(snapshot) {
   const title = snapshot?.youtube_title ?? "";
   if (!title.trim() || [...title].length > TITLE_MAX || /[<>]/.test(title))
     throw new Error("youtube_title_invalid");
-  // 1回の multipart で上げるので、動画は 32 MiB まで（ADR 0090 の素材 v1 と同じ上限）。承認は 500 MiB まで通るが、
-  // それより大きい動画は送る前に止める（関数の時間・メモリで途中で切れると、上がったか分からない要照合になるため）
+  // 1回の multipart で上げるので、動画は 32 MiB まで（ADR 0090 の素材 v1・承認の createXSnapshot と同じ上限）。
+  // 承認の SQL は外枠の 500 MiB のままなので、ここでも送る前に止める（関数の時間・メモリで途中で切れると、上がったか分からない要照合になるため）
   if (!(snapshot?.media?.[0]?.size <= VIDEO_MAX_BYTES))
     throw new Error("youtube_video_too_large");
 }

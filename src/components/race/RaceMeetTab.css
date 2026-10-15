@@ -479,6 +479,14 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 公式の前夜の減点（BOA-782）。得点率の下に小さく出す */
+.rmt-penalty {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .rmt-needed-runs {
   display: block;
   font-size: var(--font-size-2xs);
@@ -740,4 +748,10 @@
   box-shadow:
     inset 3px 0 0 0 var(--brand-accent-primary),
     inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
+}
+
+/* 韓国語は語の境目で折り、列幅を超える語だけ途中で折る（BOA-734）。 */
+.race-meet-tab:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }

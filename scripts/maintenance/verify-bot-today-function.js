@@ -230,7 +230,8 @@ const links = (html) =>
       `/race/${raceRows[0].race_id}`,
       ...["nige", "makuri", "nigashi"].flatMap((s) =>
         FIXTURE.rows
-          .filter((r) => r.section === s)
+          // 逃がしは2号艇だけ（3号艇は人の画面の折りたたみの中。2026-10-15）
+          .filter((r) => r.section === s && (s !== "nigashi" || r.course === 2))
           .slice(0, 6)
           .map((r) => `/race/${r.race_id}`),
       ),
@@ -300,6 +301,30 @@ check(
     ),
     [],
   );
+}
+
+// ---- 逃がしは2号艇だけ出す（2026-10-15。3号艇は人の画面の折りたたみの中、4〜6号艇は出さない） ----
+{
+  const fx = fresh();
+  const nigashi = fx.rows.filter((r) => r.section === "nigashi");
+  nigashi[0].course = 2;
+  nigashi[1].course = 2;
+  const { res } = await call({ fetchImpl: stubRest(fx) });
+  const b = bodyOf(res.body);
+  const section = b.split(
+    `<h2>${MORNING_DIGEST_SECTION_BY_KEY.nigashi.title}</h2>`,
+  )[1].split("<h2>")[0];
+  check(
+    "逃がしの件数は2号艇の行だけを数える",
+    section.includes("<span>2件</span>"),
+    true,
+  );
+  check(
+    "逃がしのリンクは2号艇の行だけ",
+    [...section.matchAll(/<a href="([^"]*)"/g)].map((m) => m[1]),
+    [`/race/${nigashi[0].race_id}`, `/race/${nigashi[1].race_id}`],
+  );
+  check("select に course がある（逃がしを分けるため）", ROW_SELECT.includes("course"), true);
 }
 
 // ---- 4. 失敗と未生成 ----

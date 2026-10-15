@@ -13,6 +13,7 @@
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import { translateTechnique } from "../race/raceIndicators";
 import InlineFetchError from "../InlineFetchError";
 import "./WeatherInEscapeChart.css";
@@ -137,6 +138,8 @@ function WindDiagram() {
 
 export default function WeatherInEscapeChart({ initialVenueCode = null }) {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [failed, setFailed] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -144,6 +147,14 @@ export default function WeatherInEscapeChart({ initialVenueCode = null }) {
     initialVenueCode != null ? String(Number(initialVenueCode)) : "1",
   );
   const [rankingKey, setRankingKey] = useState("tail_strong");
+
+  // 共有・再読み込みでも選んだ会場を開く。会場の変更では履歴を積まない。
+  const selectVenue = (code) => {
+    setVenue(code);
+    const next = new URLSearchParams(location.search);
+    next.set("venue_code", code);
+    navigate({ search: `?${next.toString()}` }, { replace: true });
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -309,7 +320,7 @@ export default function WeatherInEscapeChart({ initialVenueCode = null }) {
             id="wie-venue"
             className="venue-select"
             value={selectedVenue}
-            onChange={(e) => setVenue(e.target.value)}
+            onChange={(e) => selectVenue(e.target.value)}
           >
             {Object.keys(data.venues).map((code) => (
               <option key={code} value={code}>

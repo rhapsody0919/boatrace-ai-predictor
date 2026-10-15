@@ -10,6 +10,7 @@
 ## モーター
 - 新しいモーターの最初の開催では、公式の出走表のモーター2連率・3連率は全艇0。2節目の初日から入り、節の途中は固定。全会場で同じ（2026-10-11、BOA-830、常滑 2026-10-06 入れ替えで確認）
 - 公式が0の間は艇ごとに自前の値で補う（0走→「まだ走っていません」、2着以内0回→「0%（N走）」、それ以外は自前の2連率に印）。6会場の2〜4節目で公式と自前の値はほぼ一致（2026-10-11、BOA-830 のユーザー決定）
+- 会場サイトのモーター成績（venue_motor_stats）は stats_period_end が節の途中で止まる会場がある（びわこ・唐津・大村）。画面の注記の日付は取得日でなく stats_period_end を出す（2026-10-03、memory boa428_motor_strength_compare_handoff_2026_10_03、BOA-428、docs/design/motor-strength-compare/）
 
 ## 平均ST
 - 定義は5つ。平均ST（公式）=racer_period_stats.avg_st・2桁／平均ST(30走)=v16 st_mean30・前日までの30走・F/L 除外・3走以上・3桁／平均ST（このコース・直近30走）=v16 course_st.course_filled・枠なりでその枠の直近30走・5走未満は直近30走で補う／平均ST（{会場}・直近30走）=v16 course_st.venue／選手ページの直近30走=racer_aggregated_stats.avg_st_last_30（v16 と同じ窓、当日を含むかだけ違う）（2026-10-10、docs/design/avg-st-definition/mock/APPROVED.md「名前と値の正本」）
@@ -26,12 +27,24 @@
 - 得点率は予選終了で確定。着順点 10/8/6/4/2/1、特別戦は 12/10/9/7/6/5。予選は「種別が予選の最後のレース」で切る（2026-09、memory boatrace_series_points_official_rules、公式ガイド guide-7、src/components/race/seriesPoints.js）
 - 必要得点 = ceil(ボーダー ×（今の走数＋残り走数）− 今の得点)。ボーダーは公式が出さないので自社推定（2026-09、src/components/race/seriesPoints.js）
 - フライングは即日帰郷ではない。途中帰郷は「節の最終日に出走が無い」で判定できる（2026-09、memory boatrace_series_points_official_rules）
+- 賞典除外・途中帰郷は racer_series_points.remarks に公式の備考がそのまま入る。penalty_points=99 や placements の「妨」は途中帰郷でも出るので区別に使えない。収録は一部の開催だけで、無い節はこの経路で判定できない（2026-09-27〜28、memory boatrace_series_points_official_rules・project_data_foundation_orchestration_2026_09_19、マイグレーション064。収録の範囲は要確認）
+- 公式の得点率一覧（race/pointrank）は最終日に開いても予選終了の時点で止まる（2026-09-27、memory boatrace_series_points_official_rules）
+- 特別戦の配点の判定は race_stage の名前の部分一致（「ドリーム」「選抜」）なので、「桐生ＤＲ戦女子」等の表記ゆれを拾えない（2026-09-27、memory boatrace_series_points_official_rules、BOA-458。修正済みかは要確認）
+- 自社推定の準優ボーダーは若松G1（推定5.60）で実際と一致、桐生の一般戦では0.83差。一般戦は得点率の順以外の要因で準優が決まる（2026-09-27、memory boatrace_series_points_official_rules、scripts/verification/verify-series-points-border.mjs）
 
 ## 中止・順延
 - 中止・順延は races.cancellation_status（'confirmed'/'tentative'/NULL）で判定する。結果の有無から推定しない。判定は「confirmed かつ結果が無い」にする（confirmed なのに結果がある32本）（2026-09、BOA-512、memory technical_races_cancellation_status_marks_postponed_races）
+- 過去日の開催場一覧（race/index）には中止・順延の会場が半年後も残り、その日の結果・出走表ページは「データがありません」になる。一覧に会場が無ければ順延ではなく開催が無かった（2026-09-28、memory project_data_foundation_orchestration_2026_09_19、BOA-468、scripts/maintenance/audit-missing-results.js）
+- 順延の日は公式の締切時刻が仮の値になる（2026-09-21 戸田・江戸川7〜12R）。締切時刻を突き合わせるときは中止・順延の会場を外す（2026-09-21、memory project_data_foundation_orchestration_2026_09_19）
+- cancellation_status を生の文字列で比べるコードは verify-race-cancellation-usage.js が CI で落とす（2026-09-28、memory feedback_run_verify_ci_last_and_dont_edit_during、BOA-418）
 
 ## 会場
 - 会場の水質・干満差の正本は BOAT RACE 公式の場データ（boatrace.jp/owpc/pc/data/stadium?jcd=01〜24、「2026/06/30現在」、2026-10-12 照合）。写しは src/data/venueWaterProfiles.js、固定は verify-venue-water-profiles.js。venues.water_type の初期データは7会場で誤っていた（152で修正）。海水・汽水でも干満差なしの会場がある（蒲郡・常滑・津）ので、潮の有無を水質から推定しない（2026-10-12）
+- ナイター開催は24場中7場（桐生・蒲郡・住之江・丸亀・下関・若松・大村）。Web 調査で作った会場ガイドは24場中4場で事実を誤った（ナイターの誤記・水質・数値）。会場の事実は公式の場データと照合する（2026-07-27、memory venue_guide_expansion_project）
+- 会場ではクレジットカード・一般の電子マネーが使えず、会場ごとに投票専用のプリペイドカードがある。本場と隣の場外発売所で違う会場もある（平和島は本場が現金のみ、外向発売所でだけ専用カード）。会場ごとに公式サイトで確かめて書く（2026-08-10、memory feedback_venue_guide_quality_upgrade。時点が古いので要確認）
+
+## 選手占い
+- 四柱推命の日柱干支は (ユリウス日+49) mod 60 で、独立した2サイトの4日付で一致を確かめた。六星占術の12年周期の起点は情報源どうしが食い違い、運命星＋陰陽で代えた（2026-08-25、memory feedback_verify_domain_formulas_before_implementing、docs/adr/0021-rokusei-senjutsu-simplification.md）
 
 ## 点検での見落としを防ぐ知見
 - 会場カードの枠番別割合と、風の画面の進入コース別割合は別指標として照合する。（2026-10-12、2026-10-12-task-39-venue-article.md）

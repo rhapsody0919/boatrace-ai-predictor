@@ -27,6 +27,7 @@ import {
   useAnalogySimilar,
 } from "../../../hooks/useAnalogyV16";
 import { venueLabel } from "../../../utils/analogyFormat";
+import { sonarExpired, sonarKeepFrom } from "../../../utils/analogyRetention";
 import { markAnalogySeen, trackEvent } from "../../../utils/analytics";
 import {
   RACE_SONAR_PARAM,
@@ -65,7 +66,7 @@ function TabError({ onRetry }) {
   );
 }
 
-export default function AnalogyFinderSection({ raceId }) {
+export default function AnalogyFinderSection({ raceId, players = null }) {
   const { t } = useTranslation();
   const headingId = useId();
   const tabsId = useId();
@@ -94,6 +95,9 @@ export default function AnalogyFinderSection({ raceId }) {
     ...(linkedTab && { [linkedTab]: true }),
   });
   const [scenarioScope, setScenarioScope] = useState(null);
+  // 保存ファイルは2年分だけ残す（BOA-807）。それより前の日のレースは「準備中」ではなく「もう無い」と出す。
+  // 描画のたびに時刻を読まないよう、最初の描画で1回だけ決める
+  const [keepFrom] = useState(() => sonarKeepFrom(Date.now()));
 
   const facts = useAnalogyFacts(raceId, "exhibition");
   const status = facts.data?.status ?? null;
@@ -235,13 +239,19 @@ export default function AnalogyFinderSection({ raceId }) {
     </section>
   );
 
-  // 節全体の状態は、タブごとの取得の失敗より優先する（screens「細部の約束」）
-  if (status === "absent" || status === "not_saved")
+  // 節全体の状態は、タブごとの取得の失敗より優先する（screens「細部の約束」）。
+  // 2年より前の日は、snapshot の行が残っていても表示用のファイルが夜の掃除で消えているので、状態より先に日付で決める
+  const lineKey = sonarExpired(raceId, keepFrom)
+    ? "expired"
+    : status === "absent" || status === "not_saved"
+      ? status === "absent"
+        ? "absent"
+        : "notSaved"
+      : null;
+  if (lineKey)
     return wrap(
       <p className="af-v16-box af-v16-line">
-        {t(
-          `aiPredictionTab.analogy.states.${status === "absent" ? "absent" : "notSaved"}`,
-        )}
+        {t(`aiPredictionTab.analogy.states.${lineKey}`)}
       </p>,
     );
   if (facts.status === "loading" && !facts.data)
@@ -309,6 +319,7 @@ export default function AnalogyFinderSection({ raceId }) {
           onScope={setScenarioScope}
           today={facts.data?.today ?? null}
           raceId={raceId}
+          players={players}
           feedback={feedback}
           initialFirst={linkedFirst}
           onInitialFirstUsed={consumeFirst}

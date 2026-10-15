@@ -100,7 +100,7 @@ export function livenessCheckable(
   active = null,
 ) {
   const m = jstMinutesOfDay(now);
-  // 稼働時間を持つジョブ（activeHoursJst。例: SNS の送信は JST 8:00〜21:00）は、その時間の中だけを見る
+  // 稼働時間を持つジョブ（activeHoursJst。例: SNS の送信は JST 8:00〜23:00）は、その時間の中だけを見る
   const start = active?.start ?? OPERATING_START_MIN;
   const end = active?.end ?? OPERATING_END_MIN;
   return m >= start + graceMin && m < end;

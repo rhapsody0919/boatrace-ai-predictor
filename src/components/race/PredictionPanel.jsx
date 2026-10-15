@@ -502,6 +502,7 @@ function PredictionPanel({
                       <AnalogyFinderSection
                         key={analysisRaceId}
                         raceId={analysisRaceId}
+                        players={prediction.allPlayers}
                       />
                     ),
                   },

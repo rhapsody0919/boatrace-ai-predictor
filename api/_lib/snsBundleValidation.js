@@ -1,8 +1,10 @@
 import { VENUE_NAMES } from "../../scripts/lib/venueNames.js";
 import { matchRiskRules, bundleRiskFields } from "../../scripts/lib/riskRuleMatcher.js";
 
-/** v0専用。契約1の正式素材は、公開証拠・QA条件を別依頼で決めるまで受け入れない。 */
+/** v0 は恒久の公開保留。管理画面の手取り込み（import-bundle）は v0 だけを受け付ける。 */
 export const BUNDLE_SCHEMA = "ryujin-preview/0";
+/** v1（sns-pdca-loop tasks 6、plan §1）。scripts/sns/push-bundle.js だけが受け付ける（Vercel を通らないので容量の上限が違う） */
+export const BUNDLE_SCHEMA_V1 = "ryujin-preview/1";
 export const BUNDLE_LIMITS = {
   request: 4 * 1024 * 1024,
   json: 1536 * 1024,
@@ -10,7 +12,17 @@ export const BUNDLE_LIMITS = {
   media: 2 * 1024 * 1024,
   files: 18,
 };
+// v1: 動画は送信契約と同じ 32 MiB まで（X 用の 720×1280 と YouTube 用の 1080×1920 の2本）
+export const BUNDLE_LIMITS_V1 = {
+  ...BUNDLE_LIMITS,
+  request: 96 * 1024 * 1024,
+  media: 32 * 1024 * 1024,
+  files: 19,
+};
 const SOURCES = ["facts", "similar", "scenario", "layer"];
+// v1 だけのファイル。X 用の動画（push-bundle が draft.mp4 から ffmpeg で書き出す。tasks 6、2026-10-13 オーケストレーター判断）
+export const X_VIDEO = "draft-x.mp4";
+export const X_THREAD_MAX = 6;
 const REQUIRED = ["bundle.json", "qa.json", "integrity.json"];
 const EXPECTED = [
   ...REQUIRED,
@@ -22,6 +34,8 @@ const EXPECTED = [
   "scene-3.png",
   ...SOURCES.flatMap((s) => [`${s}.json`, `${s}.meta.json`]),
 ];
+/** v0・v1 共通のファイル名（v1 はこれに X_VIDEO を足す） */
+export const BUNDLE_FILE_NAMES = EXPECTED;
 // qa.json・integrity.json・各*.meta.jsonは、manifestの外側でそれ自身のハッシュを
 // 固定する手段が無い自己申告ファイル（integrity.jsonが自分自身を含むことはできず、
 // meta.jsonはraw jsonを固定する側であってmeta.json自身を固定する側ではない）。
@@ -34,8 +48,9 @@ const SELF_ATTESTED = new Set([
   ...SOURCES.map((s) => `${s}.meta.json`),
 ]);
 const SHA = /^[a-f0-9]{64}$/;
-const record = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
-const text = (v, max) =>
+export const record = (v) =>
+  v !== null && typeof v === "object" && !Array.isArray(v);
+export const text = (v, max) =>
   typeof v === "string" && v.trim().length > 0 && v.length <= max;
 
 export class BundleValidationError extends Error {
@@ -44,7 +59,7 @@ export class BundleValidationError extends Error {
     this.status = status;
   }
 }
-function ensure(ok, message, status) {
+export function ensure(ok, message, status) {
   if (!ok) throw new BundleValidationError(message, status);
 }
 export async function sha256(bytes) {
@@ -92,7 +107,26 @@ export async function readBundleForm(req) {
   }
 }
 
-export async function validateBundle(form, riskRules = []) {
+/**
+ * @param {FormData} form
+ * @param {object[]} riskRules
+ * @param {{schemas?: string[], limits?: typeof BUNDLE_LIMITS, derived?: string[], v1Fields?: Function}} [options]
+ *   schemas: 受け付ける版（既定は v0 だけ）。limits: 容量の上限。derived: 取り込み側が元のファイルから作ったファイル
+ *   （integrity.json に無いのが正しいので、ハッシュの保留にしない）。v1Fields: v1 の欄の検査（snsBundleV1.js）。
+ *   twitter-text を使うので、Edge の管理 API（isBundlePublicationBlocked だけを使う）に入れないよう、ここでは import しない
+ */
+export async function validateBundle(
+  form,
+  riskRules = [],
+  {
+    schemas = [BUNDLE_SCHEMA],
+    limits = BUNDLE_LIMITS,
+    derived = [],
+    v1Fields = null,
+  } = {},
+) {
+  const acceptsV1 = schemas.includes(BUNDLE_SCHEMA_V1);
+  const allowedNames = acceptsV1 ? [...EXPECTED, X_VIDEO] : EXPECTED;
   const files = new Map();
   const parsed = new Map();
   const decoded = new Map();
@@ -103,19 +137,19 @@ export async function validateBundle(form, riskRules = []) {
       "filesにファイルだけを添付してください",
     );
     ensure(
-      EXPECTED.includes(file.name) && !files.has(file.name),
+      allowedNames.includes(file.name) && !files.has(file.name),
       "未対応または重複したファイル名です",
     );
-    ensure(files.size < BUNDLE_LIMITS.files, "添付数が上限を超えています");
+    ensure(files.size < limits.files, "添付数が上限を超えています");
     const kind = file.name.endsWith(".json")
       ? "json"
       : file.name.endsWith(".txt")
         ? "text"
         : "media";
     ensure(file.size > 0, `${file.name}: 空のファイルです`);
-    ensure(file.size <= BUNDLE_LIMITS[kind], `${file.name}: 容量超過です`, 413);
+    ensure(file.size <= limits[kind], `${file.name}: 容量超過です`, 413);
     total += file.size;
-    ensure(total <= BUNDLE_LIMITS.request, "添付の合計容量超過です", 413);
+    ensure(total <= limits.request, "添付の合計容量超過です", 413);
     const bytes = new Uint8Array(await file.arrayBuffer());
     let mime;
     if (kind === "json" || kind === "text") {
@@ -156,9 +190,11 @@ export async function validateBundle(form, riskRules = []) {
   const qa = parsed.get("qa.json");
   const integrity = parsed.get("integrity.json");
   ensure(
-    record(bundle) && bundle.schema_version === BUNDLE_SCHEMA,
-    "未対応のschema_versionです（v0のみ）",
+    record(bundle) && schemas.includes(bundle.schema_version),
+    acceptsV1 ? "未対応のschema_versionです" : "未対応のschema_versionです（v0のみ）",
   );
+  const v1 = bundle.schema_version === BUNDLE_SCHEMA_V1;
+  ensure(v1 || !files.has(X_VIDEO), `${X_VIDEO}はv1だけです`);
   ensure(
     typeof bundle.race_id === "string" &&
       /^\d{4}-\d{2}-\d{2}-(0[1-9]|1\d|2[0-4])-(0[1-9]|1[0-2])$/.test(
@@ -167,20 +203,26 @@ export async function validateBundle(form, riskRules = []) {
     "race_idが不正です",
   );
   ensure(["racecard", "exhibition"].includes(bundle.stage), "stageが不正です");
-  ensure(
-    typeof bundle.local_only === "boolean" &&
-      typeof bundle.release_verified === "boolean" &&
-      text(bundle.approval_status, 30),
-    "v0の公開状態が不正です",
-  );
-  ensure(
-    text(bundle.title, 200) &&
-      text(bundle.script, 20000) &&
-      text(bundle.x_text, 20000) &&
-      text(bundle.format, 50) &&
-      text(bundle.template_variant_id, 100),
-    "v0の本文・タイトル・型IDが不正です",
-  );
+  if (v1) {
+    ensure(typeof v1Fields === "function", "v1の検査（v1Fields）が渡されていません", 500);
+    v1Fields(bundle, files);
+  }
+  else {
+    ensure(
+      typeof bundle.local_only === "boolean" &&
+        typeof bundle.release_verified === "boolean" &&
+        text(bundle.approval_status, 30),
+      "v0の公開状態が不正です",
+    );
+    ensure(
+      text(bundle.title, 200) &&
+        text(bundle.script, 20000) &&
+        text(bundle.x_text, 20000) &&
+        text(bundle.format, 50) &&
+        text(bundle.template_variant_id, 100),
+      "v0の本文・タイトル・型IDが不正です",
+    );
+  }
   ensure(
     record(bundle.source_data) &&
       Array.isArray(bundle.scenes) &&
@@ -198,7 +240,8 @@ export async function validateBundle(form, riskRules = []) {
     "scenes/source_dataが不正です",
   );
   ensure(
-    Array.isArray(bundle.claims) &&
+    v1 ||
+    (Array.isArray(bundle.claims) &&
       bundle.claims.length <= 100 &&
       bundle.claims.every(
         (c) =>
@@ -209,7 +252,7 @@ export async function validateBundle(form, riskRules = []) {
           c.path.length <= 30 &&
           c.path.every((p) => typeof p === "string" || Number.isInteger(p)) &&
           Object.hasOwn(c, "value"),
-      ),
+      )),
     "claimsが不正です",
   );
   ensure(
@@ -232,18 +275,23 @@ export async function validateBundle(form, riskRules = []) {
   );
   for (const [name, hash] of Object.entries(integrity)) {
     ensure(
-      EXPECTED.includes(name) && SHA.test(hash),
+      allowedNames.includes(name) && SHA.test(hash),
       "integrityのファイル名・ハッシュが不正です",
     );
     if (files.has(name))
       ensure(files.get(name).hash === hash, `${name}: ハッシュ不一致です`);
   }
-  const missing = EXPECTED.filter((n) => !files.has(n));
-  const holds = [
-    "v0素材はローカル保留専用です",
-    "正式公開の証拠・確認主体・QA合格条件が未確定です",
-    "ローカル型IDと既存の型の対応が未確定です",
-  ];
+  const missing = (v1 ? [...EXPECTED, X_VIDEO] : EXPECTED).filter(
+    (n) => !files.has(n) && !(v1 && n === "x-draft.txt"),
+  );
+  // v0 は恒久の保留。v1 は検査（素材・QA・照合）の結果だけを保留にし、公開の可否は送信の側（auto-plan の検査）で決める
+  const holds = v1
+    ? []
+    : [
+        "v0素材はローカル保留専用です",
+        "正式公開の証拠・確認主体・QA合格条件が未確定です",
+        "ローカル型IDと既存の型の対応が未確定です",
+      ];
   if (missing.length) holds.push(`不足ファイル: ${missing.join(", ")}`);
   if (!qa.pass || qa.numeric_claims_match === false || qa.L0_hits?.length > 0)
     holds.push("QA不合格です");
@@ -303,7 +351,8 @@ export async function validateBundle(form, riskRules = []) {
       verified ||= Boolean(meta?.sha256 === file.hash);
     }
     const selfAttested = SELF_ATTESTED.has(name);
-    if (!verified && !selfAttested)
+    const isDerived = derived.includes(name);
+    if (!verified && !selfAttested && !isDerived)
       holds.push(`${name}: 外部manifestで固定されたハッシュがありません`);
     const sourceMeta = SOURCES.some((s) => name === `${s}.json`)
       ? parsed.get(name.replace(".json", ".meta.json"))
@@ -315,6 +364,7 @@ export async function validateBundle(form, riskRules = []) {
       mime: file.mime,
       hash_verified: verified,
       ...(selfAttested && { verification: "self_attested" }),
+      ...(isDerived && !verified && { verification: "derived" }),
       ...(record(sourceMeta) && {
         source_url: sourceMeta.url,
         fetched_at: sourceMeta.fetched_at,
@@ -326,13 +376,15 @@ export async function validateBundle(form, riskRules = []) {
     ["script.txt", bundle.script],
     ["x-draft.txt", bundle.x_text],
   ]) {
+    ensure(value !== undefined || !decoded.has(name), `${name}: bundle本文がありません`);
     if (decoded.has(name))
       ensure(
         decoded.get(name).trim() === value.trim(),
         `${name}: bundle本文と一致しません`,
       );
   }
-  for (const claim of bundle.claims) {
+  // v1 の claims は公開 API の読み直しで照合する（tasks 9、送信の側）。ここでは原文との照合をしない
+  for (const claim of v1 ? [] : bundle.claims) {
     const raw = parsed.get(`${claim.source}.json`);
     if (!raw) continue;
     const value = claim.path.reduce(
@@ -362,6 +414,22 @@ export async function validateBundle(form, riskRules = []) {
       ...warnings,
     ];
   }
+  // v1 は X のスレッドの投稿ごと（取り込み関数が x_thread[index] を下書きの risk に入れる）
+  if (v1)
+    riskFlags.x_thread = bundle.x_thread.map((post) => [
+      ...matchRiskRules(
+        [
+          // 下書きに付くのは投稿の本文だけでなく、共通のタイトルと添付の動画の場面の文字も（全体の riskFlags.x と同じ欄）
+          { text: bundle.title, field: "body" },
+          ...(bundle.scenes || []).flatMap((scene) => (scene.lines || []).map((line) => ({ text: line, field: "body" }))),
+          { text: post.text, field: "body" },
+          ...(post.index === 0 ? bundle.x_hashtags || [] : []).map((tag) => ({ text: tag, field: "hashtags" })),
+        ],
+        "x",
+        riskRules,
+      ),
+      ...warnings,
+    ]);
   return {
     bundle,
     qa,
