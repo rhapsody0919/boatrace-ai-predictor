@@ -110,6 +110,8 @@ const MEET_ORIGINAL_KINDS = Object.freeze([
 const EMPTY_TREND = Object.freeze({});
 
 function RaceBeforeInfoTab({
+  focusedBoat = null,
+  onFocusBoat,
   raceId,
   venueCode,
   players,
@@ -1063,6 +1065,8 @@ function RaceBeforeInfoTab({
       </section>
 
       <MeetFormTrendCard
+        focusedBoat={focusedBoat}
+        onFocusBoat={onFocusBoat}
         players={sortedPlayers}
         trendByRacer={meetTrendByRacer}
         originalByKey={

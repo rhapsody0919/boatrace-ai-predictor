@@ -49,6 +49,8 @@ const layoutFor = (width) => {
 const ROW_KEYS = ["day", "race", "frame", "course", "value", "finish"];
 
 function MeetFormTrendCard({
+  focusedBoat = null,
+  onFocusBoat,
   players,
   trendByRacer,
   originalByKey,
@@ -63,7 +65,12 @@ function MeetFormTrendCard({
   const wrapRef = useRef(null);
   const [width, setWidth] = useState(0);
   const [metricKey, setMetricKey] = useState("exhibition");
-  const [boat, setBoat] = useState(1);
+  // 選んだ艇はタブをまたいで共有する（?boat=、BOA-492・493）。思考アシスト等から
+  // ?tab=beforeInfo&boat=N で開いたときもその艇を強調する。共有が無いとき（直前情報タブを
+  // 単独で使う場合）は自分で持つ。まだどの艇も選んでいなければ1号艇
+  const [localBoat, setLocalBoat] = useState(null);
+  const boat = focusedBoat ?? localBoat ?? 1;
+  const selectBoat = (b) => (onFocusBoat ? onFocusBoat(b) : setLocalBoat(b));
 
   const model = buildMeetFormTrend({
     players,
@@ -179,7 +186,7 @@ function MeetFormTrendCard({
               background: getBoatChipBackground(b.boat),
               color: BOAT_COLORS[b.boat]?.text,
             }}
-            onClick={() => setBoat(b.boat)}
+            onClick={() => selectBoat(b.boat)}
           >
             {b.boat}
           </button>

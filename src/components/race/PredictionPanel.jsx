@@ -568,6 +568,8 @@ function PredictionPanel({
               label: t("raceTabs.beforeInfo"),
               content: (
                 <RaceBeforeInfoTab
+                  focusedBoat={focusedBoat}
+                  onFocusBoat={handleFocusBoat}
                   raceId={analysisRaceId}
                   venueCode={venueCode}
                   players={prediction.allPlayers}
