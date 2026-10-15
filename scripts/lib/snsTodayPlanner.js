@@ -46,17 +46,18 @@ export const todayTrackingUrl = (date) =>
 export const TODAY_PICK_RULES = [
   {
     section: "nige",
+    mark: "逃げ",
     limit: 3,
     threshold: 70,
-    heading: (pct) =>
-      `逃げが堅い1号艇（全国で1コースに入ったとき逃げ切った割合${pct}%以上）`,
+    legend: (pct) =>
+      `全国で1コースに入ったとき逃げ切った割合${pct}%以上の1号艇`,
   },
   {
     section: "makuri",
+    mark: "まくり",
     limit: 2,
     threshold: 25,
-    heading: (pct) =>
-      `まくりが利く選手（そのコースでまくりで1着の割合${pct}%以上）`,
+    legend: (pct) => `そのコースでまくりで1着の割合${pct}%以上の選手`,
   },
 ];
 export const TODAY_MIN_SAMPLE = 30;
@@ -83,7 +84,7 @@ export function todayCandidates(rows, sendAt = "07:45") {
 /**
  * 決まった型の本文（AI 生成なし）。候補から欠場・中止・締切を確かめられない行（excluded の race_id:艇番）を除き、
  * 区分ごとに上限まで rank の順に選び、全体を締切→会場→R の順に並べる。候補が0件なら null（その日は送らない）
- * 区分ごとに見出し1行と、締切の早い順の行（逃げ→まくり）。1行は「会場R HH:MM締切｜艇番 選手名｜全国N走」（2026-10-15 hq 承認）
+ * 印の意味を1行ずつ、その後に全体を締切の早い順で。1行は「［逃げ］会場R HH:MM締切｜艇番 選手名｜全国N走」（2026-10-15 オーナー回答）
  */
 export function buildTodayPost(
   digest,
@@ -102,19 +103,28 @@ export function buildTodayPost(
       a.race_number - b.race_number,
   );
   if (!picks.length) return null;
-  const lines = [`本日のデータ一覧（${model.dateLine}）`, ""];
+  // 印の意味（その日に出る区分だけ）を先に1行ずつ、その後に全体を締切の早い順で（2026-10-15 オーナー「締め切り順が良い」）
   const thresholds = digest.day?.notes?.thresholds ?? {};
-  for (const rule of TODAY_PICK_RULES) {
-    const rows = picks.filter((row) => row.section === rule.section);
-    if (!rows.length) continue;
-    lines.push(rule.heading(thresholds[rule.section] ?? rule.threshold));
-    for (const row of rows)
-      lines.push(
-        `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}｜全国${row.sample_size}走`,
-      );
-    lines.push("");
-  }
-  lines.push(TODAY_NOTICE, url);
+  const rules = TODAY_PICK_RULES.filter((rule) =>
+    picks.some((row) => row.section === rule.section),
+  );
+  const mark = Object.fromEntries(
+    rules.map((rule) => [rule.section, rule.mark]),
+  );
+  const lines = [
+    `本日のデータ一覧（${model.dateLine}）`,
+    "",
+    ...rules.map(
+      (rule) =>
+        `［${rule.mark}］${rule.legend(thresholds[rule.section] ?? rule.threshold)}`,
+    ),
+    "",
+  ];
+  for (const row of picks)
+    lines.push(
+      `［${mark[row.section]}］${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}｜全国${row.sample_size}走`,
+    );
+  lines.push("", TODAY_NOTICE, url);
   return {
     text: lines.join("\n"),
     picks: picks.map((row) => ({
