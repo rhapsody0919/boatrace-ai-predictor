@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { racerPagePath } from "../../../utils/racerPagePath";
 
 /**
  * 選手名を選手ページ（/racer/{登録番号}）へのリンクにする（BOA-879）。
@@ -7,7 +8,7 @@ import { Link } from "react-router-dom";
 export default function RacerLink({ racerId, className, children }) {
   return racerId ? (
     <Link
-      to={`/racer/${racerId}`}
+      to={racerPagePath(racerId)}
       className={className}
       translate="no"
       data-testid="assist-racer-link"
