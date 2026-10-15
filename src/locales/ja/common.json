@@ -1239,6 +1239,8 @@
         "hintVenue": "{{venue}}で",
         "hintVenueAll": "{{venue}}の全選手（コース別）",
         "hintExh": "今日の展示",
+        "hintStTrend": "選手ページのSTの推移",
+        "hintStTrendLink": "{{boat}}号艇の選手のSTの推移（選手ページ）",
         "runs": "{{n}}走",
         "hintVenueFoot": "{{venue}}での平均STは参考（直近30走まで）。",
         "hintFewVenue": "{{boats}}号艇はこの会場の走数が少なく、ぶれやすい。",

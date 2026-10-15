@@ -1613,6 +1613,8 @@
         "hintVenue": "在{{venue}}",
         "hintVenueAll": "{{venue}}的全部選手（依航道）",
         "hintExh": "今天的展示",
+        "hintStTrend": "選手頁面的ST走勢（日文）",
+        "hintStTrendLink": "{{boat}}號艇選手的ST走勢（選手頁面，日文）",
         "runs": "{{n}}場",
         "hintVenueFoot": "在{{venue}}的平均ST僅供參考（最多最近30場）。",
         "hintFewVenue": "{{boats}}號艇在此賽場的出賽場數少，容易波動。",

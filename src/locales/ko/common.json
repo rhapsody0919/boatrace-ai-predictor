@@ -1613,6 +1613,8 @@
         "hintVenue": "{{venue}}에서",
         "hintVenueAll": "{{venue}}의 전체 선수(코스별)",
         "hintExh": "오늘의 전시",
+        "hintStTrend": "선수 페이지 ST 추이(일본어)",
+        "hintStTrendLink": "{{boat}}번 보트 선수의 ST 추이(선수 페이지, 일본어)",
         "runs": "{{n}}주",
         "hintVenueFoot": "{{venue}}에서의 평균 ST는 참고(최근 30주까지). ",
         "hintFewVenue": "{{boats}}번 보트는 이 경주장 출주 수가 적어 흔들리기 쉽다.",
