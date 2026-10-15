@@ -715,6 +715,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-digest-nigashi-boat2.js",
+      "tier": "ci",
+      "guards": "「逃がしやすい選手」は当日の2・3号艇だけ保存し2号艇を先に並べること（4〜6号艇は保存しない）、22pt の基準、注目レースの候補は2号艇の逃がしだけであること（2026-10-15）"
+    },
+    {
       "script": "verify-digest-nigashi-direction.js",
       "tier": "ci",
       "guards": "「逃がしやすい選手」を逃げと同じイン有利側に扱う（注目レースの方向一致度・理由文・ページの説明）こと、補正しているのはレースグレードで級別ではないと書くこと（2026-10-15）"
