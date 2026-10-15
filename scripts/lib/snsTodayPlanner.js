@@ -19,6 +19,7 @@ import { SITE_BASE_URL } from "../../api/_lib/snsHubHelpers.js";
 import {
   TODAY_SCREEN_KEY,
   digestRevision,
+  pickRaceStatus,
 } from "../../api/_lib/snsTodayDigest.js";
 import { buildTodayModel } from "../../api/_lib/botToday.js";
 
@@ -40,19 +41,97 @@ export function todaySchedule(date) {
 export const todayTrackingUrl = (date) =>
   `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${date}`;
 
-/** 決まった型の本文（AI 生成なし）。数字・文言は人の画面・ボット向け HTML と同じ buildTodayModel から取る */
-export function buildTodayPost(model, url) {
-  const lines = [`本日のデータ一覧（${model.dateLine}）`, ""];
-  if (model.featured)
+// 本文に載せる区分と人数・最低の走数（2026-10-15 オーナー承認の型）。逃がし・注目レースは、選ぶ式の向きを /today 側で直すまで載せない
+// 見出し（2026-10-15 hq 承認の文）。割合は一覧に保存されたしきい値（morning_digest_days.notes.thresholds）を使う
+export const TODAY_PICK_RULES = [
+  {
+    section: "nige",
+    mark: "逃げ",
+    limit: 3,
+    threshold: 70,
+    legend: (pct) =>
+      `全国で1コースに入ったとき逃げ切った割合${pct}%以上の1号艇`,
+  },
+  {
+    section: "makuri",
+    mark: "まくり",
+    limit: 2,
+    threshold: 25,
+    legend: (pct) => `そのコースでまくりで1着の割合${pct}%以上の選手`,
+  },
+];
+export const TODAY_MIN_SAMPLE = 30;
+export const TODAY_NOTICE =
+  "過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。";
+
+/** 載せてよい候補（区分・rank の順）。送る時刻までに締切を過ぎる・走数30未満・締切の無い行は除く。区分の中の同じレースは最初の行だけ */
+export function todayCandidates(rows, sendAt = "07:45") {
+  return TODAY_PICK_RULES.flatMap(({ section }) => {
+    const seen = new Set();
+    return rows
+      .filter(
+        (row) =>
+          row.section === section &&
+          typeof row.start_time === "string" &&
+          row.start_time.slice(0, 5) > sendAt &&
+          Number(row.sample_size) >= TODAY_MIN_SAMPLE,
+      )
+      .sort((a, b) => a.rank - b.rank)
+      .filter((row) => !seen.has(row.race_id) && seen.add(row.race_id));
+  });
+}
+
+/**
+ * 決まった型の本文（AI 生成なし）。候補から欠場・中止・締切を確かめられない行（excluded の race_id:艇番）を除き、
+ * 区分ごとに上限まで rank の順に選び、全体を締切→会場→R の順に並べる。候補が0件なら null（その日は送らない）
+ * 印の意味を1行ずつ、その後に全体を締切の早い順で。1行は「［逃げ］会場R HH:MM締切｜艇番 選手名｜全国N走」（2026-10-15 オーナー回答）
+ */
+export function buildTodayPost(
+  digest,
+  { date, t, url, sendAt = "07:45", excluded = new Set() },
+) {
+  const model = buildTodayModel(digest, { date, t });
+  const candidates = todayCandidates(digest.rows, sendAt).filter(
+    (row) => !excluded.has(`${row.race_id}:${row.boat_number}`),
+  );
+  const picks = TODAY_PICK_RULES.flatMap(({ section, limit }) =>
+    candidates.filter((row) => row.section === section).slice(0, limit),
+  ).sort(
+    (a, b) =>
+      a.start_time.localeCompare(b.start_time) ||
+      a.venue_code - b.venue_code ||
+      a.race_number - b.race_number,
+  );
+  if (!picks.length) return null;
+  // 印の意味（その日に出る区分だけ）を先に1行ずつ、その後に全体を締切の早い順で（2026-10-15 オーナー「締め切り順が良い」）
+  const thresholds = digest.day?.notes?.thresholds ?? {};
+  const rules = TODAY_PICK_RULES.filter((rule) =>
+    picks.some((row) => row.section === rule.section),
+  );
+  const mark = Object.fromEntries(
+    rules.map((rule) => [rule.section, rule.mark]),
+  );
+  const lines = [
+    `本日のデータ一覧（${model.dateLine}）`,
+    "",
+    ...rules.map(
+      (rule) =>
+        `［${rule.mark}］${rule.legend(thresholds[rule.section] ?? rule.threshold)}`,
+    ),
+    "",
+  ];
+  for (const row of picks)
     lines.push(
-      `注目レース：${model.featured.race}（${model.featured.deadline}）`,
-      ...(model.featured.reason ? [model.featured.reason] : []),
-      "",
+      `［${mark[row.section]}］${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}｜全国${row.sample_size}走`,
     );
-  for (const section of model.sections)
-    lines.push(`${section.title}：${section.count}`);
-  lines.push("", url);
-  return lines.join("\n");
+  lines.push("", TODAY_NOTICE, url);
+  return {
+    text: lines.join("\n"),
+    picks: picks.map((row) => ({
+      race_id: row.race_id,
+      boat_number: row.boat_number,
+    })),
+  };
 }
 
 const jstDate = (date) =>
@@ -60,13 +139,14 @@ const jstDate = (date) =>
 
 /**
  * @param {{mode: string, now: () => Date}} ctx
- * @param {{store, getDigest, t, headless, markers, riskRules, trackingStore, saveImage, signImage, notify?}} deps
+ * @param {{store, getDigest, raceDb, t, headless, markers, riskRules, trackingStore, saveImage, signImage, notify?}} deps
  */
 export async function runTodayPlan(
   ctx,
   {
     store,
     getDigest,
+    raceDb,
     t,
     headless,
     markers,
@@ -103,10 +183,17 @@ export async function runTodayPlan(
     return done({ outcome: "skipped", reason: `item_${existing.item.state}` });
 
   const trackingUrl = todayTrackingUrl(date);
-  const caption = buildTodayPost(
-    buildTodayModel(digest, { date, t }),
-    trackingUrl,
+  // 欠場・中止・締切を確かめられない候補は除く（区分の上限までは後ろの rank から補う）
+  const statuses = await pickRaceStatus(raceDb, todayCandidates(digest.rows));
+  const excluded = new Set(
+    statuses
+      .filter((p) => p.reason)
+      .map((p) => `${p.race_id}:${p.boat_number}`),
   );
+  const post = buildTodayPost(digest, { date, t, url: trackingUrl, excluded });
+  if (!post)
+    return done({ outcome: "skipped", reason: "no_candidates", revision });
+  const caption = post.text;
   const risk = matchRiskRules(
     draftRiskFields({ platform: "x", caption_text: caption, hashtags: [] }),
     "x",
@@ -137,7 +224,8 @@ export async function runTodayPlan(
   const sourceData = {
     // 個別承認の画面の一覧は source_data.race_id の「日付-」で今日の下書きを拾う
     race_id: `${date}-today`,
-    digest: { date, revision },
+    // picks は送る直前の検査（readCurrent）が欠場・中止を読み直す対象
+    digest: { date, revision, picks: post.picks },
     deadline_queue: {
       deadline_at: when.deadline_at,
       expires_at: when.expires_at,
