@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import NoteList from "./NoteList";
 import ScenarioFold from "./ScenarioFold";
 import AnalogySplit from "./AnalogySplit";
+import { Link } from "react-router-dom";
 import BoatBadge from "../BoatBadge";
+import { racerPagePath } from "../../../utils/racerPagePath";
 import SlitShapeIcon from "./SlitShapeIcon";
 import {
   fmtCount,
@@ -36,6 +38,7 @@ export default function SlitHint({
   selectedForm,
   onForm,
   waku,
+  players = null,
 }) {
   const { t } = useTranslation();
   const lbl = useId();
@@ -50,6 +53,10 @@ export default function SlitHint({
           c ? exhibition.st_by_course[c - 1] : null,
         )
       : null;
+  // 列は艇番。出走表の選手の登録番号（無い艇は null）
+  const racerIds = [1, 2, 3, 4, 5, 6].map(
+    (b) => players?.find((p) => Number(p.number) === b)?.racerId ?? null,
+  );
   // 行ごとの6艇で一番良い値に金枠（出走表と同じ決まり、BOA-814）
   const best = hintTableBest(courseSt, exhByBoat);
   const tr = (label, cells, dim, bestSet) => (
@@ -236,6 +243,27 @@ export default function SlitHint({
                   null,
                   best.exh,
                 )}
+              {racerIds.some(Boolean) && (
+                // 選手ページの「STの推移」へ直接移る（BOA-879、2026-10-15 オーナー依頼・ファン4人の議論）
+                <tr className="af-hint-link-row">
+                  <th scope="row">{t(`${k}.hintStTrend`)}</th>
+                  {racerIds.map((id, i) => (
+                    <td key={i}>
+                      {id && (
+                        <Link
+                          to={racerPagePath(id, "stTrend")}
+                          className="af-hint-link"
+                          aria-label={t(`${k}.hintStTrendLink`, {
+                            boat: i + 1,
+                          })}
+                        >
+                          ›
+                        </Link>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

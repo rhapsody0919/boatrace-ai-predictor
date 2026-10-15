@@ -688,3 +688,9 @@
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
+
+/* 韓国語は語の境目で折り、列幅を超える語だけ途中で折る（BOA-734）。 */
+.rbit-note:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}

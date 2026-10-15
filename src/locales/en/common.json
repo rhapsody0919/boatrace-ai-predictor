@@ -1,4 +1,7 @@
 {
+  "racerLink": {
+    "pageSuffix": "'s racer page (JA) ›"
+  },
   "nav": {
     "predictions": "🏁 Predictions",
     "hits": "✅ Hits",
@@ -715,7 +718,7 @@
     "gridSubtitle": "Based on the course actually taken. Tap a cell to see the last 10 starts from that course",
     "gridCaveat": "Course means the lane actually taken at the start, not the boat number. Races without this data are excluded",
     "gridRows": {
-      "current": "This term",
+      "current": "All time",
       "last3m": "Last 3 months",
       "last1m": "Last month",
       "local": "This venue",
@@ -731,7 +734,7 @@
     "periodHeader": "Period / condition",
     "nHeader": "Races",
     "allCoursesFold": "Show the record for all six courses",
-    "periodCaveat": "\"This term\" is not the official term division: it covers every race in our data (since Dec 2025, up to the past two years), so the population differs from the win rate on the official site.",
+    "periodCaveat": "\"All time\" covers every race in our data (since Dec 2025, up to the past two years), not the official term (which resets on May 1 and Nov 1), so the population differs from the win rate on the official site.",
     "recentFinishesNoteScoped": "Runs from course {{course}} (the course actually entered) {{scope}}: last {{n}}",
     "recentScope": {
       "current": "since Dec 2025",
@@ -1619,6 +1622,8 @@
         "hintVenue": "At {{venue}}",
         "hintVenueAll": "All racers at {{venue}} (by course)",
         "hintExh": "Today's exhibition",
+        "hintStTrend": "ST trend (racer page, JA)",
+        "hintStTrendLink": "Boat {{boat}} racer's ST trend (racer page, Japanese)",
         "runs": "{{n}} runs",
         "hintVenueFoot": "The average ST at {{venue}} is for reference (up to the last 30 races). ",
         "hintFewVenue": "Boat {{boats}} has few runs at this venue, so values can swing. ",
@@ -2716,8 +2721,8 @@
       "title": "🏁 Motor Ranking",
       "description": "Pick a venue to list all of its motors by top-2 rate. Tap a column header to sort by motor number, championships or trial time.",
       "rankHeader": "Rank",
-      "rateHeader": "Top-2 rate",
-      "officialRateHeader": "Official top-2 rate",
+      "rateHeader": "Top-2 rate (%)",
+      "officialRateHeader": "Official top-2 rate (%)",
       "finalHeader": "Finals",
       "championshipHeader": "Wins",
       "userHeader": "Current racer",

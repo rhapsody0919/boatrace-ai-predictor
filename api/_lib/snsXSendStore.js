@@ -12,7 +12,10 @@ async function db(path, options = {}) {
     },
   });
   if (!response.ok) throw new Error("X送信のDB操作に失敗しました");
-  return response.json();
+  // RETURNS void の RPC（sweep_sns_deadline_queue 等）は本文が空で返る。json() にすると
+  // "Unexpected end of JSON input" で落ち、送信の cron が毎回失敗する（2026-10-14、L1 で sns_send を live にした後に304回連続）
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 async function allRows(path) {
   const rows = [];

@@ -78,6 +78,96 @@ SELECT has_function_privilege('anon', 'public.stop_sns_auto_item(uuid,text)', 'E
 ```
 適用後に Supabase の advisor（security）で `rls_disabled_in_public`・`security_definer_view` が0件であることも確かめる。
 
+## L1（試運転）の開始（オーナーが本番 SQL で実行）
+10/16 の L1 は「外部への投稿ゼロ」のまま、item の作成・検査・個別承認・送る直前の検査までを本番で通す。実行は **10/16 の JST 5:00 まで**（sns-auto-plan のその日の最初の起動。前夜 10/15 の実行でよい）。
+
+### live にする job（5本のうち2本）
+| job | L1 | 理由 |
+|---|---|---|
+| `sns_auto_plan` | **live** | item を作り、検査して個別承認に回す（L1 の本体）。live でないと item・下書きへの書き込み・Slack が出ない |
+| `sns_send` | **live** | 承認した job を送る直前の検査（数値の照合・表示の確認・Chromium の起動）まで通す。`sns_auto_send_control.dry_run=true` の間は runner も DB も claim を拒否するので、外部へは送らない |
+| `sns_metrics` | shadow のまま | 投稿（posted）が無いので取り込みの job ができない。X の読み取りの予約には月の期間が要り、期間の設定は L2 の前（下の「L2・L3 の送信の設定」） |
+| `sns_daily` | shadow のまま | 送信とは独立（GA4・YouTube Analytics の日次）。live にするかは取り込みのレーンで決める |
+| `sns_insights` | shadow のまま | cron が未実装（tasks 24） |
+
+### 手順1（実行前の確認・読み取りのみ）
+```sql
+-- 期待値: 5行とも shadow
+SELECT job, mode FROM public.scrape_job_state WHERE job LIKE 'sns\_%' ORDER BY job;
+-- 期待値: x・youtube とも mode=manual、dry_run=true（true の間は外部へ送らない）
+SELECT channel, mode, dry_run FROM public.sns_auto_send_control ORDER BY channel;
+-- 期待値: paused=true（実送信の止め。dry_run と二重に止まる）
+SELECT paused, period_start, period_end FROM public.sns_x_send_control WHERE id = true;
+```
+dry_run が1つでも false なら、ここで止めてオーケストレーターに知らせる。
+
+### 手順2（本体）
+```sql
+UPDATE public.scrape_job_state SET mode = 'live' WHERE job IN ('sns_auto_plan', 'sns_send') AND mode = 'shadow';
+-- 期待値: UPDATE 2
+```
+
+### 手順3（実行後の確認・読み取りのみ）
+```sql
+-- 期待値: sns_auto_plan・sns_send が live、ほか3本は shadow
+SELECT job, mode FROM public.scrape_job_state WHERE job LIKE 'sns\_%' ORDER BY job;
+-- 期待値: dry_run=true のまま（手順1と同じ）
+SELECT channel, mode, dry_run FROM public.sns_auto_send_control ORDER BY channel;
+```
+L1 の間に見るもの（Claude が読み取りで確認する）: `sns_auto_send_items` の state と held_reason（保留の理由を全件）、`sns_x_send_jobs` が queued のまま claim されていないこと、`scrape_job_state` の `sns_send` の `last_report` の precheck・dry_run。
+
+### 前提: v1 素材
+item は素材 v1 からしか作られない。10/16 の優勝戦・準優勝戦の素材を、hq が `npm run sns:push-bundle`（`docs/operation/sns-pdca-loop-runbook.md`）で、対象レースの締切の60分前より前に入れる。素材が無ければ live にしても何も起きない（失敗ではない）。
+
+### 戻し方
+```sql
+UPDATE public.scrape_job_state SET mode = 'shadow' WHERE job IN ('sns_auto_plan', 'sns_send');
+-- 期待値: UPDATE 2。作られた item・承認の job は残る（dry_run の間は送られない）。
+-- 承認の job を消すときは、管理画面から下書きを pending_review に戻す（job は 148 のガードで cancelled になる）
+```
+
+## /today の X 投稿の L2（毎朝の個別承認）の開始（オーナーが本番 SQL で実行）
+/today の画像つき X 投稿（tasks 19b）を、全貌のレースより先に L2 で始める（2026-10-15 オーナー依頼）。L1（試運転、上の節）は実行済みで、`sns_auto_plan`・`sns_send` は live の前提。
+
+- 毎朝 JST 5:30 に一覧が公開されると、5:35 頃までに Slack に本文と画像のリンクが届く。個別承認の画面で 7:45 までに承認すると、7:45 に送る
+- 費用: 1日1件の URL つきの投稿（$0.20）。上限は今の $10 のまま（X の Developer Console の spending limit も $10）
+- 下の SQL は PGlite で、承認した job が claim まで進むことを確かめてある（`verify-sns-today-plan.js` がこの節の SQL を読んで流す）
+
+### 手順1（送信の設定。1回だけ）
+<!-- l2-today-sql:start -->
+```sql
+-- X の月の期間（UTC の1日始まり。以後は 158 が同じ額で自動で切り替える）
+SELECT public.renew_sns_x_send_period('2026-10-01T00:00:00Z', '2026-11-01T00:00:00Z');
+-- 送信の設定（/today だけ。1日1件）。基準日は今日にし、以後は sns-auto-plan が毎朝進める
+UPDATE public.sns_x_send_control
+  SET paused = false, timing_approved = true, schedule_minutes = 60, expiry_minutes = 30,
+      max_source_age_seconds = 14400,
+      attempt_ceiling_microusd = 250000, ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000,
+      daily_limit = 1, daily_limit_x = 1, daily_limit_youtube = 1,
+      daily_baseline_date = (now() AT TIME ZONE 'Asia/Tokyo')::date, daily_external_count = 0
+  WHERE id = true;
+```
+<!-- l2-today-sql:end -->
+
+### 手順2（試運転の確認の後。X の送信を本当に送るようにする）
+```sql
+UPDATE public.sns_auto_send_control SET dry_run = false WHERE channel = 'x';
+-- 期待値: UPDATE 1。YouTube は dry_run=true のまま（全貌の動画は作り直し中）
+```
+
+### 確認（読み取りのみ）
+```sql
+SELECT paused, timing_approved, period_start, period_end, budget_microusd, daily_limit_x, daily_baseline_date FROM public.sns_x_send_control;
+SELECT channel, mode, dry_run FROM public.sns_auto_send_control ORDER BY channel;
+```
+
+### 戻し方
+```sql
+-- 送るのを止める（承認済みの job は claim の前で止まる）
+UPDATE public.sns_auto_send_control SET dry_run = true WHERE channel = 'x';
+UPDATE public.sns_x_send_control SET paused = true WHERE id = true;
+```
+
 ## L2・L3 の送信の設定（オーナーが本番 SQL で実行。額はオーナーが決める）
 L3 では、その日の優勝戦・準優勝戦をすべて自動で出す（2026-10-13 オーナー決定）。L2（最初の1週間、1件ずつ承認）は1日1レースのまま。
 
@@ -86,6 +176,15 @@ L3 では、その日の優勝戦・準優勝戦をすべて自動で出す（20
 - 予約の上限額（親 $0.25・子 $0.03 で見積もる場合）では、1レース $0.41 × 269 ≒ 月 $111。月の上限額はこの予約の合計を上回る必要がある
 - 決定（2026-10-13 オーナー）: 月の上限額は **$130**（X の Developer Console の spending limit も同じ額にする）。L2 の間は $10 のまま。/today の X 投稿（158 以降）を足すと、L2 は `daily_limit_x=7`、L3 は 97 にする
 - YouTube: 1日最大16本のアップロードになる。Google Cloud のクォータ（videos.insert の枠）が足りるかを L3 の前にオーナーが確認する
+
+X の月の期間は、本番に一度も設定されていない（`period_start`・`period_end` が NULL）。L2 で最初に実際に送る前（`sns_auto_send_control.dry_run=false` にする前）に、最初の期間を1回だけ設定する。L1（試運転）の間は claim しないので要らない。期間が未設定の間、`roll_sns_x_send_period()`（158、sns-auto-plan が毎回呼ぶ）は `period_unset` を返すだけで何もしない。2回目以降は同じ額で自動で切り替わる（158）ので、この設定は最初の1回だけ。期間は月の1日始まりにし、時刻は UTC の0時で書く（29〜31日始まりだと `interval '1 month'` の加算で日がずれる。JST の0時（+09:00）で書くと UTC では前の月の末日になり、同じ理由で 11/30 → 12/30 とずれていく）。月の途中から始めても、その月は上限額をいっぱいまで使える。
+
+```sql
+-- 最初の期間（L2 を始める月の1日から翌月1日まで、UTC の0時。例は L2 を10月中に始める場合。11/1 から 158 が自動で切り替える）
+SELECT public.renew_sns_x_send_period('2026-10-01T00:00:00Z', '2026-11-01T00:00:00Z');
+-- 確認: period_start・period_end が入り、reserved_microusd が0
+SELECT period_start, period_end, budget_microusd, reserved_microusd FROM public.sns_x_send_control WHERE id = true;
+```
 
 ```sql
 -- L2（1件ずつ承認、1日1レース）

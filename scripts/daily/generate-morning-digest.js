@@ -56,6 +56,8 @@ import {
   computeSkillDelta,
   computePredicted,
   computeFeaturedScore,
+  IN_FAVORABLE_METRICS,
+  NIGASHI_LIST_COURSE,
   isSmallSampleByRuns,
   wilsonLowerPercentFromCount,
   normalizeRacerName,
@@ -66,6 +68,8 @@ const PAGE_SIZE = 1000;
 
 /** 逃げセクションの表示上限。実測で32.3件/日出るため常に効く */
 const NIGE_LIMIT = 25;
+/** 逃がしを保存するコース（＝当日の枠）。一覧に出すのは2（NIGASHI_LIST_COURSE）、3は折りたたみの中だけ（2026-10-15） */
+const NIGASHI_COURSES = [2, 3];
 
 /**
  * 帰郷判定の節境界ガード。1会場あたりこの件数を超えたら「節の切り替わり」とみなして
@@ -444,7 +448,7 @@ function buildMetricRow({
   };
 }
 
-function buildSections({
+export function buildSections({
   races,
   entries,
   statMap,
@@ -522,7 +526,9 @@ function buildSections({
       );
     }
 
-    if (course >= 2 && stat.nigashi_rate !== null) {
+    // 逃がしは当日の2号艇（過去の2コースの実績）を一覧に出し、3号艇は画面の折りたたみの中だけに出す。
+    // 4〜6号艇は保存しない（2026-10-15 オーナー承認。22pt の基準は変えない）
+    if (NIGASHI_COURSES.includes(course) && stat.nigashi_rate !== null) {
       const delta = Number(stat.nigashi_rate) - Number(stat.nigashi_expected);
       if (delta >= EXTRACTION_THRESHOLDS.nigashi) {
         const baseline = lookupBaseline(
@@ -570,7 +576,11 @@ function buildSections({
     nigeAll: nigeSorted,
     nigeTotal: nige.length,
     makuri: makuri.sort(bySkill),
-    nigashi: nigashi.sort(bySkill),
+    // 2号艇を先、3号艇を後に並べる（rank はこの順。読み手は course で分ける）
+    nigashi: [
+      ...nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE).sort(bySkill),
+      ...nigashi.filter((r) => r.course !== NIGASHI_LIST_COURSE).sort(bySkill),
+    ],
   };
 }
 
@@ -583,7 +593,8 @@ export function pickFeatured(sections) {
   const candidates = [
     ...(sections.nigeAll ?? sections.nige),
     ...sections.makuri,
-    ...sections.nigashi,
+    // 逃がしは一覧に出す2号艇だけ。折りたたみの中の3号艇から注目レースを選ばない
+    ...sections.nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE),
   ]
     .filter((r) => r.volatility_percentile !== null)
     .map((r) => ({
@@ -610,8 +621,10 @@ export function pickFeatured(sections) {
     makuri: "まくりで1着になった割合",
     nigashi: "1号艇に逃げ切られた割合",
   }[best.row.section];
-  const direction =
-    best.row.section === "nige" ? "イン有利" : "イン不利（1号艇が崩れる）";
+  // 逃がしは「1号艇が逃げ切った割合」が高い材料なので、逃げと同じ「イン有利」側（2026-10-15 修正）
+  const direction = IN_FAVORABLE_METRICS.has(best.row.section)
+    ? "イン有利"
+    : "イン不利（1号艇が崩れる）";
   // 集計した事実だけで書く。推定値（metric_predicted）は文にも出さない
   // （2026-09-24、UIと同じ改訂。予想を提示している体裁を避ける）
   const reason =
@@ -1089,7 +1102,9 @@ export async function runMorningDigest({
 
   console.log(
     `\n注目 ${featured ? 1 : 0} / 逃げ ${sections.nige.length}（候補${sections.nigeTotal}）` +
-      ` / まくり ${sections.makuri.length} / 逃がし ${sections.nigashi.length}` +
+      ` / まくり ${sections.makuri.length}` +
+      ` / 逃がし（2号艇） ${sections.nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE).length}` +
+      `（3号艇 ${sections.nigashi.filter((r) => r.course !== NIGASHI_LIST_COURSE).length}）` +
       ` / フライング ${flying.length} / 帰郷 ${returned.rows.length}` +
       ` / 合計 ${rows.length} 行`,
   );
@@ -1120,7 +1135,13 @@ export async function runMorningDigest({
         nige: sections.nige.length,
         nigeCandidates: sections.nigeTotal,
         makuri: sections.makuri.length,
-        nigashi: sections.nigashi.length,
+        // 一覧に出す2号艇の件数。3号艇（折りたたみの中）は別に数える
+        nigashi: sections.nigashi.filter(
+          (r) => r.course === NIGASHI_LIST_COURSE,
+        ).length,
+        nigashiCourse3: sections.nigashi.filter(
+          (r) => r.course !== NIGASHI_LIST_COURSE,
+        ).length,
         flying: flying.length,
         returned: returned.rows.length,
       },
