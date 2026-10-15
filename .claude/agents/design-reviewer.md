@@ -16,9 +16,10 @@ model: opus
 ## 最初に読む話題ファイル
 一覧と書き方は `docs/knowledge/README.md`。設計がここに書かれた既知の落とし穴を踏んでいないかを確かめる（知見ノートも依頼元と同じく鵜呑みにせず、設計に効く行は出典を開いて裏取りする）
 - `docs/knowledge/data-definitions.md`（公式データの仕様、数値の出典と母集団）
+- `docs/knowledge/data-columns.md`（DB の列・テーブルの読み違い、取得の時点）
 - `docs/knowledge/stat-findings.md`（統計検証の結果。設計が使う指標の効き目）
 - `docs/knowledge/db-operations.md`（ADR と番号、本番 DB の運用、Supabase の読み方）
-- `docs/knowledge/ui-layout.md`（画面の決まり。screens.md があるとき）
+- `docs/knowledge/ui-layout.md`・`docs/knowledge/ui-implementation.md`（画面の決まりと実装の落とし穴。screens.md があるとき）
 - `docs/knowledge/user-insights.md`（オーナーがサイトを使って気づいたこと）
 
 ## 検証する観点

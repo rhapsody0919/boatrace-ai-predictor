@@ -16,6 +16,7 @@ model: opus
 ## 最初に読む話題ファイル
 一覧と書き方は `docs/knowledge/README.md`
 - `docs/knowledge/data-definitions.md`（公式データの仕様、数値の出典と母集団、生データの所在。検証クエリの前提）
+- `docs/knowledge/data-columns.md`（DB の列・テーブルの読み違い、公式ファイル・公式ページの取得の時点）
 - `docs/knowledge/stat-findings.md`（統計検証の結果。既存の集計と突き合わせるとき）
 - `docs/knowledge/number-wording.md`（数字の言い方。表示の母数・範囲が集計と合っているか）
 
