@@ -32,7 +32,7 @@ import {
   createTodayStore,
   runTodayPlan,
 } from "../../scripts/lib/snsTodayPlanner.js";
-import { createDigestSource } from "../_lib/botToday.js";
+import { createTodayDigestSource } from "../_lib/snsTodayDigest.js";
 import { getJaT } from "../_lib/botPage.js";
 import { bundleStore } from "../_lib/snsBundleImport.js";
 
@@ -59,7 +59,7 @@ export default createScrapeCronHandler({
             url: SUPABASE_URL,
             key: SUPABASE_SERVICE_KEY,
           }),
-          getDigest: createDigestSource({ ttlMs: 0 }),
+          getDigest: createTodayDigestSource(),
           t: await getJaT(),
           headless,
           markers: SCREEN_MARKERS,

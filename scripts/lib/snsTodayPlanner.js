@@ -21,6 +21,7 @@ import {
   digestRevision,
 } from "../../api/_lib/snsTodayDigest.js";
 import { buildTodayModel } from "../../api/_lib/botToday.js";
+import { MORNING_DIGEST_SECTION_BY_KEY } from "../../src/data/morningDigestCopy.js";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
@@ -40,8 +41,17 @@ export function todaySchedule(date) {
 export const todayTrackingUrl = (date) =>
   `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${date}`;
 
-/** 決まった型の本文（AI 生成なし）。数字・文言は人の画面・ボット向け HTML と同じ buildTodayModel から取る */
-export function buildTodayPost(model, url) {
+// 本文に載せる区分（/today の画面の並び順）と、各区分の人数
+export const TODAY_PICK_SECTIONS = ["nige", "makuri", "nigashi"];
+export const TODAY_PICKS_PER_SECTION = 3;
+
+/**
+ * 決まった型の本文（AI 生成なし。2026-10-15 オーナー指示の型）。見出し・注目レースは人の画面・ボット向け HTML と同じ buildTodayModel、
+ * 選手は同じ表の行から、区分ごとに /today の表示順（rank）の上位3人を「会場R 締切 名前（n号艇）」で載せる。
+ * 送る時刻（7:45）までに締切を過ぎるレースは載せない。該当が0人の区分は見出しごと出さない。フライング・帰郷の区分は載せない
+ */
+export function buildTodayPost(digest, { date, t, url, sendAt = "07:45" }) {
+  const model = buildTodayModel(digest, { date, t });
   const lines = [`本日のデータ一覧（${model.dateLine}）`, ""];
   if (model.featured)
     lines.push(
@@ -49,9 +59,25 @@ export function buildTodayPost(model, url) {
       ...(model.featured.reason ? [model.featured.reason] : []),
       "",
     );
-  for (const section of model.sections)
-    lines.push(`${section.title}：${section.count}`);
-  lines.push("", url);
+  for (const key of TODAY_PICK_SECTIONS) {
+    const picks = digest.rows
+      .filter(
+        (row) =>
+          row.section === key &&
+          typeof row.start_time === "string" &&
+          row.start_time.slice(0, 5) > sendAt,
+      )
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, TODAY_PICKS_PER_SECTION);
+    if (!picks.length) continue;
+    lines.push(MORNING_DIGEST_SECTION_BY_KEY[key].title);
+    for (const row of picks)
+      lines.push(
+        `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)} ${row.racer_name ?? ""}（${row.boat_number}号艇）`,
+      );
+    lines.push("");
+  }
+  lines.push(url);
   return lines.join("\n");
 }
 
@@ -103,10 +129,7 @@ export async function runTodayPlan(
     return done({ outcome: "skipped", reason: `item_${existing.item.state}` });
 
   const trackingUrl = todayTrackingUrl(date);
-  const caption = buildTodayPost(
-    buildTodayModel(digest, { date, t }),
-    trackingUrl,
-  );
+  const caption = buildTodayPost(digest, { date, t, url: trackingUrl });
   const risk = matchRiskRules(
     draftRiskFields({ platform: "x", caption_text: caption, hashtags: [] }),
     "x",

@@ -9,8 +9,11 @@
  *   値が変わっていれば版が変わる（送る直前に source_changed で止まる）
  */
 import { SITE_BASE_URL } from "./snsHubHelpers.js";
-import { createDigestSource } from "./botToday.js";
-import { digestRevision, isTodayDraft } from "./snsTodayDigest.js";
+import {
+  createTodayDigestSource,
+  digestRevision,
+  isTodayDraft,
+} from "./snsTodayDigest.js";
 
 const TIMEOUT_MS = 15000;
 const RACE_ID = "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}";
@@ -159,7 +162,7 @@ export function createReadCurrent({
   fetchImpl = fetch,
   base = SITE_BASE_URL,
   // 送る直前は使い回さずに読み直す（ttlMs: 0）
-  getDigest = createDigestSource({ ttlMs: 0 }),
+  getDigest = createTodayDigestSource(),
 }) {
   return async (draftId) => {
     const [draft] = await db(
