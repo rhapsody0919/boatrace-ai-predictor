@@ -12,6 +12,10 @@
 import { launchChromium } from "../../scripts/lib/launchChromium.js";
 
 const BLOCKED = /google-analytics\.com|googletagmanager\.com|doubleclick\.net/;
+// Cookie の同意の帯（src/components/CookieConsent.jsx）は、同意の記録が無いと画面の下に出て、画像の下半分を覆う（2026-10-16）。
+// 読み込みの前に「拒否」を記録しておく（解析は上の BLOCKED でも止めている）。キーは src/utils/analytics.js の CONSENT_KEY
+export const CONSENT_KEY = "boatai:cookie-consent";
+const OVERLAYS = [".cookie-consent"];
 
 export function createChromiumHeadless({
   launch = launchChromium,
@@ -43,6 +47,13 @@ export function createChromiumHeadless({
     });
     try {
       await context.route(BLOCKED, (route) => route.abort());
+      await context.addInitScript((key) => {
+        try {
+          window.localStorage.setItem(key, "rejected");
+        } catch {
+          // 保存できない環境でも開く（帯が出れば screenshot が止める）
+        }
+      }, CONSENT_KEY);
       const page = await context.newPage();
       await page.goto(url, {
         waitUntil: "domcontentloaded",
@@ -96,6 +107,12 @@ export function createChromiumHeadless({
           for (const selector of requiredSelectors)
             if (!(await page.locator(selector).first().isVisible()))
               throw new Error("screenshot_component_missing");
+          // 画面を覆う帯が出ていれば撮らない
+          for (const selector of OVERLAYS)
+            if (await page.locator(selector).first().isVisible())
+              throw new Error("screenshot_overlay_visible");
+          // フォントの読み込みを待ってから撮る（文字が空白のまま撮らない）
+          await page.evaluate(() => document.fonts.ready);
           return { png: await page.screenshot({ type: "png" }) };
         },
       );
