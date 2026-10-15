@@ -15,11 +15,7 @@ import {
   BOAT_LINE_COLORS,
   getBoatChipBackground,
 } from "../../utils/colors";
-import {
-  buildMeetFormTrend,
-  domainOf,
-  segmentsOf,
-} from "./meetFormTrend";
+import { buildMeetFormTrend, domainOf, segmentsOf } from "./meetFormTrend";
 import InlineFetchError from "../InlineFetchError";
 import "./MeetFormTrendCard.css";
 

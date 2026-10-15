@@ -74,11 +74,19 @@ assert.deepEqual(b1.runs[0].values, {
 // 3号艇は同じレースの別の艇番（2）の値を使う。1号艇の値（4号艇の行）が混ざらない
 assert.equal(model.boats[1].runs[0].values.lap, 37.33, "文字列の値も数にする");
 assert.equal(model.boats[1].runs[0].course, null, "進入の取得が無ければ null");
-assert.deepEqual(model.metrics, ["exhibition", "lap", "turn"], "直線は値が無いのでタブを出さない");
+assert.deepEqual(
+  model.metrics,
+  ["exhibition", "lap", "turn"],
+  "直線は値が無いのでタブを出さない",
+);
 assert.equal(model.maxRuns, 3);
 
-assert.deepEqual(segmentsOf([6.91, null, 6.92]), [{ from: 0, to: 2, gap: true }]);
-assert.deepEqual(segmentsOf([6.9, 6.8, null]), [{ from: 0, to: 1, gap: false }]);
+assert.deepEqual(segmentsOf([6.91, null, 6.92]), [
+  { from: 0, to: 2, gap: true },
+]);
+assert.deepEqual(segmentsOf([6.9, 6.8, null]), [
+  { from: 0, to: 1, gap: false },
+]);
 assert.deepEqual(segmentsOf([null, 6.8]), []);
 
 const d = domainOf([6.8, 6.9, null, 6.922]);
