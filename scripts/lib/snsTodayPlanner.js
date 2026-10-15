@@ -175,6 +175,11 @@ export function buildTodayPost(
   };
 }
 
+// 画像と本文の作り方の版。変えたら上げる。今日の下書きがこれより古ければ、送る時刻を過ぎていても作り直す
+// （オーナーが見る下書きと画像を新しい作り方にそろえるため。送るのは 7:45 の承認の job だけで、作り直しでは送らない）
+// 2: 日本語フォント・Cookie の帯・注目レース（2026-10-16 オーナー指摘、#1582）
+export const TODAY_SHOT_VERSION = 2;
+
 const jstDate = (date) =>
   new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
 
@@ -206,16 +211,25 @@ export async function runTodayPlan(
     rowsWritten: extra.written ? 1 : 0,
     report: { items: [{ kind: "digest", date, ...extra }], alerts: [] },
   });
-  if (now < new Date(when.plan_from) || now >= new Date(when.veto_until))
+  if (now < new Date(when.plan_from))
+    return done({ outcome: "skipped", reason: "outside_window" });
+  const late = now >= new Date(when.veto_until);
+  const existing = await store.todayState(date);
+  const outdated =
+    Boolean(existing.draft) &&
+    (existing.draft.source_data?.digest?.shot_version ?? 1) <
+      TODAY_SHOT_VERSION;
+  // 7:45 を過ぎたら、作り方の版が古い今日の下書き（manual）を作り直すことだけをする
+  if (late && !(outdated && existing.item?.state === "manual"))
     return done({ outcome: "skipped", reason: "outside_window" });
   const digest = await getDigest(date);
   if (!digest.day?.generated_at)
     return done({ outcome: "skipped", reason: "not_generated" });
   const revision = await digestRevision(digest);
-  const existing = await store.todayState(date);
   // 下書きを作った後に item の作成で落ちた（item が無い）ときは、同じ版でも作り直して item を作る
   if (
     existing.item &&
+    !outdated &&
     existing.draft?.source_data?.digest?.revision === revision
   )
     return done({ outcome: "unchanged", item_id: existing.item?.id ?? null });
@@ -270,7 +284,12 @@ export async function runTodayPlan(
     // 個別承認の画面の一覧は source_data.race_id の「日付-」で今日の下書きを拾う
     race_id: `${date}-today`,
     // picks は送る直前の検査（readCurrent）が欠場・中止を読み直す対象
-    digest: { date, revision, picks: post.picks },
+    digest: {
+      date,
+      revision,
+      picks: post.picks,
+      shot_version: TODAY_SHOT_VERSION,
+    },
     deadline_queue: {
       deadline_at: when.deadline_at,
       expires_at: when.expires_at,
@@ -371,11 +390,15 @@ export async function runTodayPlan(
   const image = await signImage(imagePath).catch(() => null);
   // 承認を外したのは、item があった（＝前に Slack で知らせた）ときだけ
   const rebuilt = Boolean(existing.draft && existing.item);
-  const head = rebuilt
-    ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
-    : state === "manual"
-      ? "今日の投稿の下書きができた。7:45 までに個別承認の画面で承認すると、7:45 に送る"
-      : "今日の投稿の下書きに禁止表現があり、止めた";
+  const head = late
+    ? "画像と本文の作り方を直したので、今日の下書きを作り直した（送る時刻を過ぎているので送らない。確認用）"
+    : rebuilt && outdated
+      ? "画像と本文の作り方を直したので作り直した（前の承認は外れた）。承認し直して"
+      : rebuilt
+        ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
+        : state === "manual"
+          ? "今日の投稿の下書きができた。7:45 までに個別承認の画面で承認すると、7:45 に送る"
+          : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
       `SNS /today（${date}）: ${head}\n${caption}${image ? `\n画像: ${image}` : ""}`,

@@ -829,3 +829,36 @@ test("注目レース: 先頭に置き一覧に重ねない。逃がしからの
     { race_id: `${DATE}-04-12`, boat_number: 1 },
   ]);
 });
+
+test("作り方の版が古い今日の下書きは、7:45 を過ぎていても作り直す（送らない・確認用）。作り直した後と、版が新しい・止めた下書きは何もしない", async () => {
+  await plan({ now: at("05:40") });
+  const [first] = await all("SELECT * FROM sns_drafts");
+  assert.equal(first.source_data.digest.shot_version, 2);
+  // 古い作り方で作った下書き（10/16 朝のもの）にする
+  await db.exec(
+    "ALTER TABLE sns_drafts DISABLE TRIGGER USER; UPDATE sns_drafts SET source_data = jsonb_set(source_data, '{digest}', (source_data->'digest') - 'shot_version'), caption_text='古い本文'; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+  );
+  const notes = [];
+  const headless = shooter();
+  const result = await plan({ now: at("10:00"), notes, headless });
+  assert.equal(result.report.items[0].outcome, "rebuilt");
+  assert.equal(headless.calls.length, 1);
+  const [after] = await all("SELECT * FROM sns_drafts");
+  assert.equal(after.id, first.id);
+  assert.equal(after.source_data.digest.shot_version, 2);
+  assert.match(after.caption_text, /^本日のデータ一覧/);
+  assert.match(notes[0], /送る時刻を過ぎているので送らない。確認用/);
+  // 作り直した後は、7:45 を過ぎたら何もしない
+  assert.equal(
+    (await plan({ now: at("10:05") })).report.items[0].reason,
+    "outside_window",
+  );
+  // 止めた（held_manual）下書きは、版が古くても作り直さない
+  await db.exec(
+    "UPDATE sns_auto_send_items SET state='held_manual'; ALTER TABLE sns_drafts DISABLE TRIGGER USER; UPDATE sns_drafts SET source_data = jsonb_set(source_data, '{digest}', (source_data->'digest') - 'shot_version'); ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+  );
+  assert.equal(
+    (await plan({ now: at("10:10") })).report.items[0].reason,
+    "outside_window",
+  );
+});
