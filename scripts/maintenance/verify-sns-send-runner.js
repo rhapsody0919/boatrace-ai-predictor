@@ -874,3 +874,28 @@ test("鍵の健全性: ?x_read=1 のときだけ X の自分のアカウント�
   assert.equal(denied.x.read.ok, false);
   assert.match(denied.x.read.error, /HTTP 401/);
 });
+
+test("live の sweep: RETURNS void の RPC の空の応答で落ちない（2026-10-14、sns_send が304回連続で Unexpected end of JSON input）", async () => {
+  const { xSendStore } = await import("../../api/_lib/snsXSendStore.js");
+  const original = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), method: options?.method });
+    return new Response(null, { status: 204 });
+  };
+  try {
+    assert.equal(await xSendStore.sweep(), null);
+    assert.match(calls[0].url, /rpc\/sweep_sns_deadline_queue$/);
+    // 200 で本文が空のときも同じ
+    globalThis.fetch = async () => new Response("", { status: 200 });
+    assert.equal(await xSendStore.sweep(), null);
+    // 本文がある応答は今までどおり JSON として返す・失敗は投げる
+    globalThis.fetch = async () =>
+      new Response('[{"id":"a"}]', { status: 200 });
+    assert.deepEqual(await xSendStore.sweep(), [{ id: "a" }]);
+    globalThis.fetch = async () => new Response("", { status: 500 });
+    await assert.rejects(xSendStore.sweep(), /DB操作に失敗/);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
