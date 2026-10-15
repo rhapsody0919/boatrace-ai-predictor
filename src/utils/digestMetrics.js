@@ -132,11 +132,18 @@ export function computeZScore({ rate, expected, n }) {
   return round2(rate / 100 / se - p / se);
 }
 
+/** 「イン有利」方向の指標（イン崩れ指数が低いほど当日条件と一致する） */
+export const IN_FAVORABLE_METRICS = new Set(["nige", "nigashi"]);
+
 /**
  * 「今日の注目レース」の方向一致度。
  *
- * 逃げは「イン有利」方向なのでイン崩れ指数が低いほど一致、まくり・逃がしは
+ * 逃げ・逃がしは「イン有利」方向なのでイン崩れ指数が低いほど一致、まくりは
  * 「イン不利」方向なので高いほど一致する。
+ *
+ * 逃がし（nigashi）は「その選手がいたレースで1号艇が逃げ切った割合」が期待より高いという材料で、
+ * 1号艇の逃げが決まりやすい側（堅い側）。以前はまくりと同じ「イン不利」側に入れていた（2026-10-15 修正、
+ * ~/ryujin-marketing/out/reports/2026-10-15-morning-info-discussion.md 第6節）
  *
  * @param {"nige"|"makuri"|"nigashi"} metric
  * @param {number} volatilityPercentile イン崩れ指数（**0〜100**。情報源の
@@ -148,7 +155,7 @@ export function computeConsistency(metric, volatilityPercentile) {
   if (!Number.isFinite(volatilityPercentile)) return null;
   assertPercent(volatilityPercentile, "volatilityPercentile");
   const v = volatilityPercentile / 100;
-  return metric === "nige" ? 1 - v : v;
+  return IN_FAVORABLE_METRICS.has(metric) ? 1 - v : v;
 }
 
 /**

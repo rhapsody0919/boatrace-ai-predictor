@@ -30,6 +30,9 @@
 - 多言語の図や翻訳記事の訳語（会場名・券種名・機能名）は、その言語の既存の記事を grep して合わせる（2026-08-17、memory overnight_content_expansion_2026_08_16）
 - 新しい語は `docs/reference/i18n-glossary.md` に4言語の対訳を足してから訳す。足さずに訳すと言語間でぶれる。zh-TW の「全期間」（BOA-733 の `gridRows.current`・`periodCaveat`）が、同じ画面の既存の語「全部期間」（`venueRankingNote` 等3か所）と食い違った（2026-10-14、BOA-733 wording-editor）
 
+- 「逃がしやすい選手」（/today の nigashi）は「1号艇が逃げ切った割合」が高い材料で、鉄板寄り（イン有利）の側。まくりが利く選手と並べるときに荒れる側へ入れない（2026-10-15、/today の向きの誤りの修正、src/data/morningDigestCopy.js・scripts/maintenance/verify-digest-nigashi-direction.js）
+- /today で補正しているのはレースのグレード（SG・G1・一般戦）で、選手の級別（A1・A2）ではない。「会場と級別」と書かず「会場とレースグレード」と書く（2026-10-15、同）
+
 ## 誇大・保証・射幸心・SNS の規則
 - 的中・勝利を保証する表現は全プラットフォームで警告。「当たり」「的中」単独は警告しない（risk-rules.json の guaranteed-hit）
 - 配当倍率・金額を主役にする演出、「儲かる」等の射幸心を煽る語は避ける（risk-rules.json の gambling-incitement）
