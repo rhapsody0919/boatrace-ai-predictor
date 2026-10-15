@@ -277,11 +277,14 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
   ],
 });
 const EXPECTED_LINES = [
-  "［まくり］戸田5R 09:00締切｜3号艇 まくり 1｜全国31走",
-  "［逃げ］平和島3R 10:00締切｜1号艇 逃げ 3｜全国40走",
-  "［逃げ］平和島5R 11:00締切｜1号艇 逃げ 5｜全国40走",
-  "［逃げ］平和島2R 12:00締切｜1号艇 逃げ 2｜全国40走",
-  "［まくり］戸田7R 14:00締切｜2号艇 まくり 3｜全国33走",
+  "逃げが堅い1号艇（全国で1コースに入ったとき逃げ切った割合70%以上）",
+  "平和島3R 10:00締切｜1号艇 逃げ 3｜全国40走",
+  "平和島5R 11:00締切｜1号艇 逃げ 5｜全国40走",
+  "平和島2R 12:00締切｜1号艇 逃げ 2｜全国40走",
+  "",
+  "まくりが利く選手（そのコースでまくりで1着の割合25%以上）",
+  "戸田5R 09:00締切｜3号艇 まくり 1｜全国31走",
+  "戸田7R 14:00締切｜2号艇 まくり 3｜全国33走",
 ].join("\n");
 // 出走表・中止の読み取り（PostgREST の形）。absent は "race_id:艇番"、cancelled は race_id
 function raceDbOf({ absent = [], cancelled = [], missing = [] } = {}) {
@@ -715,31 +718,28 @@ test("欠場・中止・締切を確かめられない候補は除き、区分�
     assert.ok(!draft.caption_text.includes(gone), gone);
   // 逃げは 2位・6位・7位（13:00）、まくりは 3位・4位
   assert.ok(
-    draft.caption_text.includes(
-      "［逃げ］平和島6R 13:00締切｜1号艇 逃げ 6｜全国40走",
-    ),
+    draft.caption_text.includes("平和島6R 13:00締切｜1号艇 逃げ 6｜全国40走"),
     draft.caption_text,
   );
   assert.ok(
-    draft.caption_text.includes(
-      "［まくり］戸田8R 15:00締切｜2号艇 まくり 4｜全国40走",
-    ),
+    draft.caption_text.includes("戸田8R 15:00締切｜2号艇 まくり 4｜全国40走"),
   );
   assert.equal(draft.source_data.digest.picks.length, 5);
 });
 
-test("区分が1つだけの日は行の頭に区分を付けない。候補が0件の日は下書きを作らず送らない", async () => {
+test("区分が1つだけの日も見出しを付ける（割合は一覧のしきい値）。候補が0件の日は下書きを作らず送らない", async () => {
   const onlyNige = digestOf();
   onlyNige.rows = onlyNige.rows.filter((r) => r.section !== "makuri");
+  onlyNige.day.notes = { thresholds: { nige: 72, makuri: 25 } };
   await plan({ digest: onlyNige });
   const [draft] = await all("SELECT * FROM sns_drafts");
   assert.ok(
     draft.caption_text.includes(
-      "\n平和島3R 10:00締切｜1号艇 逃げ 3｜全国40走\n",
+      "）\n\n逃げが堅い1号艇（全国で1コースに入ったとき逃げ切った割合72%以上）\n平和島3R 10:00締切｜1号艇 逃げ 3｜全国40走\n平和島5R 11:00締切｜1号艇 逃げ 5｜全国40走\n平和島2R 12:00締切｜1号艇 逃げ 2｜全国40走\n\n過去の実績は",
     ),
     draft.caption_text,
   );
-  assert.ok(!draft.caption_text.includes("［"));
+  assert.ok(!draft.caption_text.includes("まくり"));
 
   await db.exec(
     "DELETE FROM sns_post_tracking; DELETE FROM sns_auto_send_items; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",

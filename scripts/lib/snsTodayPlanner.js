@@ -42,9 +42,22 @@ export const todayTrackingUrl = (date) =>
   `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${date}`;
 
 // 本文に載せる区分と人数・最低の走数（2026-10-15 オーナー承認の型）。逃がし・注目レースは、選ぶ式の向きを /today 側で直すまで載せない
+// 見出し（2026-10-15 hq 承認の文）。割合は一覧に保存されたしきい値（morning_digest_days.notes.thresholds）を使う
 export const TODAY_PICK_RULES = [
-  { section: "nige", label: "逃げ", limit: 3 },
-  { section: "makuri", label: "まくり", limit: 2 },
+  {
+    section: "nige",
+    limit: 3,
+    threshold: 70,
+    heading: (pct) =>
+      `逃げが堅い1号艇（全国で1コースに入ったとき逃げ切った割合${pct}%以上）`,
+  },
+  {
+    section: "makuri",
+    limit: 2,
+    threshold: 25,
+    heading: (pct) =>
+      `まくりが利く選手（そのコースでまくりで1着の割合${pct}%以上）`,
+  },
 ];
 export const TODAY_MIN_SAMPLE = 30;
 export const TODAY_NOTICE =
@@ -52,7 +65,7 @@ export const TODAY_NOTICE =
 
 /** 載せてよい候補（区分・rank の順）。送る時刻までに締切を過ぎる・走数30未満・締切の無い行は除く。区分の中の同じレースは最初の行だけ */
 export function todayCandidates(rows, sendAt = "07:45") {
-  return TODAY_PICK_RULES.flatMap(({ section, label }) => {
+  return TODAY_PICK_RULES.flatMap(({ section }) => {
     const seen = new Set();
     return rows
       .filter(
@@ -63,15 +76,14 @@ export function todayCandidates(rows, sendAt = "07:45") {
           Number(row.sample_size) >= TODAY_MIN_SAMPLE,
       )
       .sort((a, b) => a.rank - b.rank)
-      .filter((row) => !seen.has(row.race_id) && seen.add(row.race_id))
-      .map((row) => ({ ...row, label }));
+      .filter((row) => !seen.has(row.race_id) && seen.add(row.race_id));
   });
 }
 
 /**
  * 決まった型の本文（AI 生成なし）。候補から欠場・中止・締切を確かめられない行（excluded の race_id:艇番）を除き、
  * 区分ごとに上限まで rank の順に選び、全体を締切→会場→R の順に並べる。候補が0件なら null（その日は送らない）
- * 1行は「会場R HH:MM締切｜艇番 選手名｜全国N走」。逃げとまくりが混ざる日だけ、行の頭に［逃げ］［まくり］を付ける（2026-10-15 hq 承認）
+ * 区分ごとに見出し1行と、締切の早い順の行（逃げ→まくり）。1行は「会場R HH:MM締切｜艇番 選手名｜全国N走」（2026-10-15 hq 承認）
  */
 export function buildTodayPost(
   digest,
@@ -90,13 +102,19 @@ export function buildTodayPost(
       a.race_number - b.race_number,
   );
   if (!picks.length) return null;
-  const mixed = new Set(picks.map((row) => row.section)).size > 1;
   const lines = [`本日のデータ一覧（${model.dateLine}）`, ""];
-  for (const row of picks)
-    lines.push(
-      `${mixed ? `［${row.label}］` : ""}${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}｜全国${row.sample_size}走`,
-    );
-  lines.push("", TODAY_NOTICE, url);
+  const thresholds = digest.day?.notes?.thresholds ?? {};
+  for (const rule of TODAY_PICK_RULES) {
+    const rows = picks.filter((row) => row.section === rule.section);
+    if (!rows.length) continue;
+    lines.push(rule.heading(thresholds[rule.section] ?? rule.threshold));
+    for (const row of rows)
+      lines.push(
+        `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}｜全国${row.sample_size}走`,
+      );
+    lines.push("");
+  }
+  lines.push(TODAY_NOTICE, url);
   return {
     text: lines.join("\n"),
     picks: picks.map((row) => ({
