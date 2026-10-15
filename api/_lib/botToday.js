@@ -116,7 +116,8 @@ export function assertDigestShape(dayRows, rows) {
 /**
  * morning_digest_* を読む。日付ごとに ttlMs だけ使い回す
  *
- * @param {{fetchImpl?: typeof fetch, now?: () => number, ttlMs?: number, env?: Record<string, string|undefined>}} [options]
+ * @param {{fetchImpl?: typeof fetch, now?: () => number, ttlMs?: number, env?: Record<string, string|undefined>, rowSelect?: string}} [options]
+ *   rowSelect: 行の列。既定はボット向けの ROW_SELECT（選手の値を取らない）。/today の X 投稿（snsTodayDigest.js）だけが選手名・枠を足す
  * @returns {(date: string) => Promise<{day: object|null, rows: object[]}>}
  */
 export function createDigestSource({
@@ -124,6 +125,7 @@ export function createDigestSource({
   now = Date.now,
   ttlMs = MATERIAL_TTL_MS,
   env = process.env,
+  rowSelect = ROW_SELECT,
 } = {}) {
   let cache = null; // { date, at, value }
   let inflight = null; // { date, promise }
@@ -167,7 +169,7 @@ export function createDigestSource({
         key,
       ),
       getJson(
-        `${rest}/morning_digest_rows?digest_date=eq.${date}&select=${ROW_SELECT}&order=section.asc,rank.asc`,
+        `${rest}/morning_digest_rows?digest_date=eq.${date}&select=${rowSelect}&order=section.asc,rank.asc`,
         key,
       ),
     ]);

@@ -9,8 +9,12 @@
  *   値が変わっていれば版が変わる（送る直前に source_changed で止まる）
  */
 import { SITE_BASE_URL } from "./snsHubHelpers.js";
-import { createDigestSource } from "./botToday.js";
-import { digestRevision, isTodayDraft } from "./snsTodayDigest.js";
+import {
+  createTodayDigestSource,
+  digestRevision,
+  isTodayDraft,
+  pickRaceStatus,
+} from "./snsTodayDigest.js";
 
 const TIMEOUT_MS = 15000;
 const RACE_ID = "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}";
@@ -159,21 +163,27 @@ export function createReadCurrent({
   fetchImpl = fetch,
   base = SITE_BASE_URL,
   // 送る直前は使い回さずに読み直す（ttlMs: 0）
-  getDigest = createDigestSource({ ttlMs: 0 }),
+  getDigest = createTodayDigestSource(),
 }) {
   return async (draftId) => {
     const [draft] = await db(
       `sns_drafts?id=eq.${draftId}&select=bundle_import_id,source_data,sns_bundle_imports(schema_version,bundle)`,
     );
-    if (isTodayDraft(draft))
+    if (isTodayDraft(draft)) {
+      // 載せた候補のどれかが欠場・中止になっていたら、その朝の投稿は送らない（1行だけ消して送る作りにはしない）
+      const statuses = await pickRaceStatus(
+        db,
+        draft.source_data.digest.picks ?? [],
+      );
       return {
-        withdrawn: false,
-        cancelled: false,
+        withdrawn: statuses.some((p) => p.reason === "absent"),
+        cancelled: statuses.some((p) => p.reason && p.reason !== "absent"),
         deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
         source_revision: await digestRevision(
           await getDigest(draft.source_data.digest.date),
         ),
       };
+    }
     const imported = draft?.sns_bundle_imports;
     if (imported?.schema_version !== "ryujin-preview/1")
       throw new Error("source_check_unsupported");
