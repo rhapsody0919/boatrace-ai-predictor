@@ -33,6 +33,7 @@ import {
   runTodayPlan,
 } from "../../scripts/lib/snsTodayPlanner.js";
 import { createTodayDigestSource } from "../_lib/snsTodayDigest.js";
+import { createPostgrestReader } from "../../scripts/lib/snsSendRunner.js";
 import { getJaT } from "../_lib/botPage.js";
 import { bundleStore } from "../_lib/snsBundleImport.js";
 
@@ -60,6 +61,10 @@ export default createScrapeCronHandler({
             key: SUPABASE_SERVICE_KEY,
           }),
           getDigest: createTodayDigestSource(),
+          raceDb: createPostgrestReader({
+            url: SUPABASE_URL,
+            key: SUPABASE_SERVICE_KEY,
+          }),
           t: await getJaT(),
           headless,
           markers: SCREEN_MARKERS,
