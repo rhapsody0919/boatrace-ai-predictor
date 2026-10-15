@@ -92,7 +92,11 @@ export async function runTodayPlan(
     return done({ outcome: "skipped", reason: "not_generated" });
   const revision = await digestRevision(digest);
   const existing = await store.todayState(date);
-  if (existing.draft?.source_data?.digest?.revision === revision)
+  // 下書きを作った後に item の作成で落ちた（item が無い）ときは、同じ版でも作り直して item を作る
+  if (
+    existing.item &&
+    existing.draft?.source_data?.digest?.revision === revision
+  )
     return done({ outcome: "unchanged", item_id: existing.item?.id ?? null });
   // held_manual（禁止表現）・止めた item は、版が変わっても作り直さない（オーナーの判断に回す）
   if (existing.item && existing.item.state !== "manual")
@@ -232,7 +236,9 @@ export async function runTodayPlan(
         held_reason: heldReason,
       });
   const image = await signImage(imagePath).catch(() => null);
-  const head = existing.draft
+  // 承認を外したのは、item があった（＝前に Slack で知らせた）ときだけ
+  const rebuilt = Boolean(existing.draft && existing.item);
+  const head = rebuilt
     ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
     : state === "manual"
       ? "今日の投稿の下書きができた。7:45 までに個別承認の画面で承認すると、7:45 に送る"
@@ -245,7 +251,7 @@ export async function runTodayPlan(
     console.error(`Slack に通知できません: ${error.message}`);
   }
   return done({
-    outcome: existing.draft ? "rebuilt" : state,
+    outcome: rebuilt ? "rebuilt" : state,
     item_id: item.id,
     draft_id: draft.id,
     revision,

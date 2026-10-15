@@ -514,3 +514,19 @@ test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /tod
   const claimed = (await first("SELECT transition_sns_x_send($1,'claim','{}') r", [job.id])).r;
   assert.equal(claimed.state, "sending", JSON.stringify(claimed));
 });
+
+test("下書きを作った後に item の作成で落ちても、次の実行で item を作る（同じ版でも「変化なし」で止まらない）", async () => {
+  const insertItem = sqlStore.insertItem;
+  sqlStore.insertItem = async () => {
+    throw new Error("item を作れない");
+  };
+  await assert.rejects(plan(), /item を作れない/);
+  sqlStore.insertItem = insertItem;
+  assert.equal((await all("SELECT * FROM sns_drafts")).length, 1);
+  assert.equal((await all("SELECT * FROM sns_auto_send_items")).length, 0);
+  const again = await plan({ now: at("05:45") });
+  assert.equal(again.report.items[0].outcome, "manual");
+  const [item] = await all("SELECT * FROM sns_auto_send_items");
+  assert.equal(item.state, "manual");
+  assert.equal((await all("SELECT * FROM sns_drafts")).length, 1);
+});
