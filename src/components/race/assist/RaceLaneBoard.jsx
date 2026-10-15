@@ -5,7 +5,6 @@ import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { METRICS } from "../../../utils/assistModel";
 import { TheoryButton } from "./SheetButtons";
 import TargetSwitch from "./TargetSwitch";
-import RacerLink from "./RacerLink";
 
 const scale = (model, x) =>
   Math.max(0, Math.min(100, ((x - model.lo) / (model.hi - model.lo)) * 100));
@@ -233,24 +232,19 @@ export default function RaceLaneBoard({
             key={row.boat}
             className={`ta-lane${deep && deep !== row.boat ? " ta-lane-faded" : ""}`}
           >
-            {/* 艇の丸は深掘りを開くボタン、苗字は選手ページへのリンク（BOA-879）。<button> の中に <a> は置けないので分ける */}
-            <div
-              className={`ta-boat-col${deep === row.boat ? " ta-boat-col-on" : ""}`}
+            <button
+              type="button"
+              className="ta-boat-btn"
+              aria-label={`${row.boat}号艇 ${r.surname || r.name}`.trim()}
+              aria-current={deep === row.boat ? "true" : undefined}
+              onClick={() => onDeep(row.boat)}
             >
-              <button
-                type="button"
-                className="ta-boat-btn"
-                aria-label={`${row.boat}号艇 ${r.surname || r.name}`.trim()}
-                aria-current={deep === row.boat ? "true" : undefined}
-                onClick={() => onDeep(row.boat)}
-              >
-                <BoatBadge n={row.boat} size="sm" />
-              </button>
-              <RacerLink racerId={r.racerId} className="ta-boat-name">
+              <BoatBadge n={row.boat} size="sm" />
+              <span className="ta-boat-name" translate="no">
                 {r.surname}
-              </RacerLink>
+              </span>
               <span className="ta-boat-cls">{r.cls ?? ""}</span>
-            </div>
+            </button>
             <div>
               <Track model={model} row={row} onMetric={onMetric} />
               <div className="ta-lane-marks">

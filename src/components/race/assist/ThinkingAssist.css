@@ -568,34 +568,24 @@
   opacity: 0.4;
 }
 
-/* 艇の列: 丸（深掘りを開くボタン）・苗字（選手ページへのリンク、BOA-879）・級 */
-.ta-boat-col {
+.ta-boat-btn {
   display: grid;
   justify-items: center;
-  align-content: center;
   gap: 1px;
   min-height: 48px;
   min-width: 44px;
-  padding: var(--spacing-1) 0;
-}
-
-.ta-boat-col-on {
-  outline: 2px solid var(--color-info-text);
-  outline-offset: -2px;
-  border-radius: var(--radius-sm);
-}
-
-.ta-boat-btn {
-  display: grid;
-  place-items: center;
-  min-height: 28px;
-  min-width: 44px;
   border: 0;
   background: transparent;
-  padding: 0;
+  padding: var(--spacing-1) 0;
   font: inherit;
   color: inherit;
   cursor: pointer;
+}
+
+.ta-boat-btn[aria-current="true"] {
+  outline: 2px solid var(--color-info-text);
+  outline-offset: -2px;
+  border-radius: var(--radius-sm);
 }
 
 .ta-boat-name {
@@ -605,18 +595,6 @@
   max-width: 40px;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-/* 出走表（DataRaceTable）の選手リンクと同じ見た目: 文字色はそのまま、hover で下線 */
-a.ta-boat-name,
-a.ta-deep-name {
-  color: inherit;
-  text-decoration: none;
-}
-
-a.ta-boat-name:hover,
-a.ta-deep-name:hover {
-  text-decoration: underline;
 }
 
 .ta-boat-cls {

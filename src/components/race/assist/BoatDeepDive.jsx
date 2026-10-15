@@ -160,8 +160,10 @@ export default function BoatDeepDive({
       <div className="ta-deep-head">
         <BoatBadge n={boat} />
         <h3>
-          <RacerLink racerId={racer.racerId} className="ta-deep-name">
+          {/* フルネームは選手ページへのリンク（BOA-879 案B、2026-10-15 オーナー決定）。艇の行は深掘りを開くボタンのまま */}
+          <RacerLink racerId={racer.racerId} className="ta-link">
             {racer.name}
+            {racer.racerId ? " ›" : ""}
           </RacerLink>{" "}
           <span className="ta-note ta-num">
             {C.deepMeta(racer.cls, racer.age, weight)}
