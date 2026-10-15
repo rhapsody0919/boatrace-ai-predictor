@@ -41,6 +41,9 @@ before(async () => {
     "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
   );
   await db.exec(
+    "CREATE TABLE test_clock(value timestamptz); INSERT INTO test_clock VALUES(NULL); CREATE FUNCTION test_now() RETURNS timestamptz LANGUAGE sql AS 'SELECT coalesce(value,now()) FROM test_clock';",
+  );
+  await db.exec(
     "CREATE TABLE scrape_job_state(job TEXT PRIMARY KEY, mode TEXT NOT NULL DEFAULT 'off' CHECK (mode IN ('off','shadow','live')));",
   );
   for (const file of [
@@ -61,10 +64,12 @@ before(async () => {
     "158_sns_lanes_digest_period.sql",
   ])
     await db.exec(
-      await readFile(
-        new URL("../../docs/db-migration/" + file, import.meta.url),
-        "utf8",
-      ),
+      (
+        await readFile(
+          new URL("../../docs/db-migration/" + file, import.meta.url),
+          "utf8",
+        )
+      ).replaceAll("now()", "test_now()"),
     );
   me = (await first("SELECT id FROM sns_approvers WHERE display_name='本人'"))
     .id;
@@ -72,7 +77,8 @@ before(async () => {
 beforeEach(async () => {
   await db.exec(`
     DELETE FROM sns_post_tracking; DELETE FROM sns_mobile_reviews; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;
-    ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;`);
+    ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
+    UPDATE test_clock SET value=NULL;`);
 });
 after(() => db.close());
 
@@ -481,4 +487,30 @@ test("承認の画面の指摘: /today の本文（加重で280超え）は、�
     inspectDraft(long, []).find((f) => f.rule === "x-weighted-length"),
     undefined,
   );
+});
+
+test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /today の job が 7:45 に claim まで進む。dry_run の間は claim しない", async () => {
+  const runbook = await readFile(new URL("../../docs/db-migration/153-runbook.md", import.meta.url), "utf8");
+  const sql = runbook
+    .split("<!-- l2-today-sql:start -->")[1]
+    .split("<!-- l2-today-sql:end -->")[0]
+    .replace(/```sql|```/g, "");
+  await db.exec("UPDATE sns_x_send_control SET period_start=NULL, period_end=NULL, reserved_microusd=0, paused=true");
+  // 本番の SQL の now() は、この日の 5:40（計画）→ 7:46（送る）の時計で流す
+  await db.query("UPDATE test_clock SET value=$1", [at("05:40")]);
+  await db.exec(sql.replaceAll("now()", "test_now()"));
+  await plan({ now: at("05:40") });
+  const [draft] = await all("SELECT * FROM sns_drafts");
+  const job = await approve(draft);
+  // 試運転（dry_run=true）の間は claim しない
+  await db.exec("UPDATE sns_auto_send_control SET dry_run=true WHERE channel='x'");
+  await assert.rejects(
+    first("SELECT transition_sns_x_send($1,'claim','{}') r", [job.id]),
+    /dry_run/,
+  );
+  // 手順2（dry_run=false）の後は、7:45 を過ぎたら claim できる
+  await db.query("UPDATE test_clock SET value=$1", [at("07:46")]);
+  await db.exec("UPDATE sns_auto_send_control SET dry_run=false WHERE channel='x'");
+  const claimed = (await first("SELECT transition_sns_x_send($1,'claim','{}') r", [job.id])).r;
+  assert.equal(claimed.state, "sending", JSON.stringify(claimed));
 });
