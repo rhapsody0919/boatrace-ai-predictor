@@ -183,22 +183,22 @@
   }
 
   /* 基本情報: 棒｜F・事故率の凡例 */
-  .race-basic-info-tab > .race-split {
+  .race-tabs-panel .race-basic-info-tab > .race-split {
     --race-split-side: 400px;
   }
 
   /* 今節: 得点率の表・得点率早見（640）｜注記 */
-  .rmt-card > .race-split {
+  .race-tabs-panel .rmt-card > .race-split {
     --race-split-main: 640px;
   }
 
   /* 枠別情報: コース別成績（表 720・全コースの比較）｜注意書き */
-  .rwit-card > .race-split {
+  .race-tabs-panel .rwit-card > .race-split {
     --race-split-side: 360px;
   }
 
   /* 結果: スタート隊形（絵 約480）｜着順 */
-  .race-result > .race-split:has(.rr-formation) {
+  .race-tabs-panel .race-result > .race-split:has(.rr-formation) {
     --race-split-main: 480px;
   }
 }
