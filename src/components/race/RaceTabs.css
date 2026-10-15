@@ -144,3 +144,61 @@
   outline: var(--border-width-2) solid var(--brand-accent-primary);
   outline-offset: 2px;
 }
+
+/*
+ * PC の2段（BOA-881、承認モック docs/design/race-detail-pc-width）。列（最大1200）の中で、幅を絞った
+ * 中身（表 640〜720・1行1艇の棒）の右に注記や対になるカードを置き、列の右が空かないようにする。
+ * 1199px 以下は囲みが無いのと同じ（display: contents）で、今の縦並びのまま。
+ * 列の割り振りは各タブで --race-split-main・--race-split-side を決める（既定は 1:1）
+ */
+.race-split,
+.race-split__main,
+.race-split__side {
+  display: contents;
+}
+
+@media (min-width: 1200px) {
+  .race-tabs-panel .race-split {
+    display: grid;
+    grid-template-columns:
+      minmax(0, var(--race-split-main, 1fr))
+      minmax(0, var(--race-split-side, 1fr));
+    column-gap: var(--spacing-8);
+    align-items: start;
+  }
+
+  .race-tabs-panel .race-split__main,
+  .race-tabs-panel .race-split__side {
+    display: block;
+    min-width: 0;
+  }
+
+  /* 片方が空（データが無い・読み込み中）のときは1列にする */
+  .race-tabs-panel .race-split:has(> :empty) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .race-tabs-panel .race-split > :empty {
+    display: none;
+  }
+
+  /* 基本情報: 棒｜F・事故率の凡例 */
+  .race-basic-info-tab > .race-split {
+    --race-split-side: 400px;
+  }
+
+  /* 今節: 得点率の表・得点率早見（640）｜注記 */
+  .rmt-card > .race-split {
+    --race-split-main: 640px;
+  }
+
+  /* 枠別情報: コース別成績（表 720・全コースの比較）｜注意書き */
+  .rwit-card > .race-split {
+    --race-split-side: 360px;
+  }
+
+  /* 結果: スタート隊形（絵 約480）｜着順 */
+  .race-result > .race-split:has(.rr-formation) {
+    --race-split-main: 480px;
+  }
+}

@@ -47,3 +47,11 @@
   outline: 3px solid var(--color-info-text);
   outline-offset: 2px;
 }
+
+/* 列が 1152px 以上になる 1200px からは列いっぱい（BOA-881）。720 のままだと右が空き、上の公式サイトの帯
+   （列いっぱい）と右端がずれた */
+@media (min-width: 1200px) {
+  .assist-entry-row {
+    max-width: none;
+  }
+}
