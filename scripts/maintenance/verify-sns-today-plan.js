@@ -700,7 +700,8 @@ test("一覧の読み取り: /today の投稿は選手名・枠番を足して�
   const rows = urls.filter((u) => u.includes("morning_digest_rows"));
   assert.match(
     rows[0],
-    /select=section,rank,race_id,venue_code,race_number,start_time,reason:detail->>reason,racer_name,boat_number,sample_size&/,
+    // course は逃がしの2号艇・3号艇を分けるためにボット向けの ROW_SELECT に足した（2026-10-15）
+    /select=section,rank,race_id,venue_code,race_number,start_time,course,reason:detail->>reason,racer_name,boat_number,sample_size&/,
   );
   assert.ok(!rows[1].includes("racer_name"));
 });
