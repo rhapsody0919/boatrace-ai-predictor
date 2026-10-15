@@ -110,3 +110,8 @@
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
 }
+
+.mft-card {
+  /* 導線で開いたとき、固定ヘッダーの下に見出しが隠れないように */
+  scroll-margin-top: 120px;
+}

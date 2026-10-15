@@ -9,6 +9,12 @@
  * - その日の会場平均: getMeetScoreboard の venueDailyExhibitionAvg（今節タブの推移と同じ値）
  */
 
+/**
+ * カードの id。思考アシスト・龍神ソナーからの導線は `?tab=beforeInfo&boat=N#meet-form-trend` で開き、
+ * カードが出たところまで下げる（直前情報タブの上には気象・展示・表があり、開いただけでは見えない）
+ */
+export const MEET_FORM_ANCHOR = "meet-form-trend";
+
 /** 指標。並びはタブの順（2026-10-15 承認のモック） */
 export const MEET_FORM_METRICS = Object.freeze([
   { key: "exhibition", originalKind: null },

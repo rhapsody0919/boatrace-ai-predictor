@@ -54,6 +54,20 @@ test("今節の足のグラフが ?boat= の艇を強調し、選び直すと UR
   await card.getByRole("tab", { name: "まわり足" }).click();
   await expect(card.locator("[data-venue-avg]")).toHaveCount(0);
 
+  // 導線（思考アシスト・龍神ソナー）は #meet-form-trend 付きで開き、カードまで下げる
+  await page.goto(
+    "/race/2026-10-14-22-12?tab=beforeInfo&boat=4#meet-form-trend",
+    {
+      waitUntil: "domcontentloaded",
+    },
+  );
+  await expect(card.locator("g.mft-series.is-active")).toHaveAttribute(
+    "data-boat",
+    "4",
+    { timeout: 60000 },
+  );
+  await expect(card).toBeInViewport();
+
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth,
   );

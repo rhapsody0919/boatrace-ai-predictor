@@ -15,7 +15,12 @@ import {
   BOAT_LINE_COLORS,
   getBoatChipBackground,
 } from "../../utils/colors";
-import { buildMeetFormTrend, domainOf, segmentsOf } from "./meetFormTrend";
+import {
+  MEET_FORM_ANCHOR,
+  buildMeetFormTrend,
+  domainOf,
+  segmentsOf,
+} from "./meetFormTrend";
 import InlineFetchError from "../InlineFetchError";
 import "./MeetFormTrendCard.css";
 
@@ -88,6 +93,15 @@ function MeetFormTrendCard({
     ro.observe(el);
     return () => ro.disconnect();
   }, [hasData]);
+  // 導線（#meet-form-trend 付き）で開いたときは、カードが出たら1回だけそこまで下げる
+  const sectionRef = useRef(null);
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!hasData || scrolled.current) return;
+    if (window.location.hash !== `#${MEET_FORM_ANCHOR}`) return;
+    scrolled.current = true;
+    sectionRef.current?.scrollIntoView({ block: "start" });
+  }, [hasData]);
 
   if (!hasData) return null;
 
@@ -153,7 +167,12 @@ function MeetFormTrendCard({
   );
 
   return (
-    <section className="rbi-card mft-card" data-testid="meet-form-trend">
+    <section
+      ref={sectionRef}
+      id={MEET_FORM_ANCHOR}
+      className="rbi-card mft-card"
+      data-testid="meet-form-trend"
+    >
       <h3 className="rbi-heading">{t("beforeInfo.meetFormTitle")}</h3>
       <div className="mft-metrics" role="tablist">
         {model.metrics.map((key) => (
