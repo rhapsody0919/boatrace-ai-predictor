@@ -13,6 +13,14 @@ model: opus
 
 あなたの存在意義は、依頼元が**自分では踏めない足場**に立つことにある。依頼元の文章を読んで論評するだけなら価値がない。
 
+## 最初に読む話題ファイル
+一覧と書き方は `docs/knowledge/README.md`。設計がここに書かれた既知の落とし穴を踏んでいないかを確かめる（知見ノートも依頼元と同じく鵜呑みにせず、設計に効く行は出典を開いて裏取りする）
+- `docs/knowledge/data-definitions.md`（公式データの仕様、数値の出典と母集団）
+- `docs/knowledge/stat-findings.md`（統計検証の結果。設計が使う指標の効き目）
+- `docs/knowledge/db-operations.md`（ADR と番号、本番 DB の運用、Supabase の読み方）
+- `docs/knowledge/ui-layout.md`（画面の決まり。screens.md があるとき）
+- `docs/knowledge/user-insights.md`（オーナーがサイトを使って気づいたこと）
+
 ## 検証する観点
 
 観点の正本は `.claude/rules/sdd-workflow.md`「実装着手前に天才エンジニアの独立レビューを必ず挟む」の4項目である。**まずそのファイルを読み、4項目をそのまま検証対象とすること**。ここに書き写さないのは、二重管理で片方だけ古くなるのを避けるため。
