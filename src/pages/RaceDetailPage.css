@@ -139,6 +139,11 @@
   .race-detail-page-v2 .rr-payout-table {
     max-width: 640px;
   }
+
+  /* 枠別情報の数値4列は表だけ720で止め、カードは1200のまま（BOA-827） */
+  .race-detail-page-v2 .rwit-today-table {
+    max-width: 720px;
+  }
 }
 
 .race-detail-page-v2__container .page-header {

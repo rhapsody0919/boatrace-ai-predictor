@@ -1150,6 +1150,11 @@
       "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-japanese-font.js",
+      "tier": "ci",
+      "guards": "sns-pdca-loop tasks 19b（2026-10-16 画像の不具合）: 本番と同じ @sparticuz/chromium を launchChromium で開き、日本語の文字に画素が描かれる（空白でも同じ箱でもない）。同梱の Noto Sans JP を /tmp/fonts に置く（2回目は置き直さない）。起動のテストは Linux（CI）だけ、撮った見本は tmp/sns-font-check.png（CI の artifact）。外部接続なし"
+    },
+    {
       "script": "verify-meet-form-trend.js",
       "tier": "ci",
       "guards": "直前情報タブ「今節の足の推移と着順」（BOA-885、src/components/race/meetFormTrend.js）。走は今節展示情報の走だけで、着順・進入・オリジナル展示を race_id と艇番で突き合わせる（他の艇・他のレースの値が混ざらない）。F・欠・転を残す、値の無い指標のタブを出さない、展示が無い走を挟む区間は点線、縦軸に会場平均を含める、今節の初戦はカードを出さない"

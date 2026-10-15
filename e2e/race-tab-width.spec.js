@@ -9,6 +9,60 @@ const RACE = "/race/2026-10-09-20-09";
 const left = (locator) =>
   locator.evaluate((el) => Math.round(el.getBoundingClientRect().left));
 
+for (const width of [375, 1024, 1025, 1440, 1920]) {
+  test(`${width}px: 枠別情報の表はPCで最大720、カード内の左端を保つ（BOA-827）`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(RACE);
+    await page
+      .locator(".race-tabs-btn", { hasText: "枠別情報" })
+      .first()
+      .click();
+    const table = page.locator(".rwit-today-table").first();
+    await expect(table).toBeVisible({ timeout: 30000 });
+    const geometry = await table.evaluate((el) => {
+      const card = el.closest(".rwit-card");
+      const style = getComputedStyle(card);
+      const box = card.getBoundingClientRect();
+      const tableBox = el.getBoundingClientRect();
+      // 767px以下は既存の規則で表をカードの枠の内側まで広げる。
+      const mobile = window.innerWidth <= 767;
+      const insetLeft =
+        parseFloat(style.borderLeftWidth) +
+        (mobile ? 0 : parseFloat(style.paddingLeft));
+      const insetRight =
+        parseFloat(style.borderRightWidth) +
+        (mobile ? 0 : parseFloat(style.paddingRight));
+      return {
+        left: tableBox.left,
+        width: tableBox.width,
+        cardLeft: box.left,
+        cardWidth: box.width,
+        contentLeft: box.left + insetLeft,
+        contentWidth: box.width - insetLeft - insetRight,
+      };
+    });
+    expect(Math.abs(geometry.left - geometry.contentLeft)).toBeLessThanOrEqual(
+      1,
+    );
+    const expectedWidth =
+      width >= 1025
+        ? Math.min(720, geometry.contentWidth)
+        : geometry.contentWidth;
+    expect(Math.abs(geometry.width - expectedWidth)).toBeLessThanOrEqual(1);
+    if (width >= 1440) {
+      expect(Math.abs(geometry.cardWidth - 1200)).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(geometry.cardLeft - (width === 1440 ? 24 : 184)),
+      ).toBeLessThanOrEqual(1);
+      expect(
+        Math.abs(geometry.left - (width === 1440 ? 37 : 197)),
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+}
+
 for (const width of [1440, 1920]) {
   test(`${width}px: AI予想の中身・共有ボタンの左端はタブの列にそろい、幅は720まで`, async ({
     page,

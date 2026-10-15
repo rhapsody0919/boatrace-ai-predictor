@@ -15,6 +15,9 @@ model: sonnet
 - `~/.claude/projects/-Users-terukina-boatrace-ai-predictor/memory/` の `feedback_*.md` と `MEMORY.md`（ユーザーの方針・過去の指摘）
 - `.claude/CLAUDE.md` と `.claude/rules/`（用語・表記・確認の規則）
 - 関係する設計書の「ユーザー回答」「ユーザー決定」の記録
+- `docs/knowledge/user-insights.md`（オーナーがサイトを使って気づいたことと、その後の対応）
+- `docs/knowledge/fan-reactions.md`（オーナーが画面・SNS で良し悪しとしたこと）
+- `docs/knowledge/glossary.md`（用語と禁止語）
 推測で補わない。根拠にした記述の場所を必ず示す。
 
 ## 出力

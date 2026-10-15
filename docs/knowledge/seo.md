@@ -40,3 +40,10 @@
 - 「BoatAI」系の名前のサービスが複数ある（com.boatai・boat.ai・boat-ai.site・boating-ai.com）ほか、boatraceai.com（通称ボートアイ）もある。poseidon-boatrace.net は独自指標「海神指数」を持つ（2026-08-19、memory boatai_rebrand_investigation_2026_08_19）
 - search-console-report.js の指名検索の条件「ボートアイ」「boat ai」は競合 boatraceai.com の名前と同じで、指名の比率は実際より高く出る。「ボートアイ」は分けて見る（2026-09-29、memory growth_pdca_2026_09_29）
 - キーワードの需要には「会場名＋観光／周辺」の地域の軸を入れる。会場の近くに来た観光客を会場ガイド（/venues/{slug}）へ連れてくる狙い（2026-08-10 オーナーの発案、memory feedback_growth_pdca_design）
+
+## 点検での見落としを防ぐ知見
+- URL取得の成功とAIの最終回答のFOUND/UNREADABLEは別に記録し、別UAの取得と食い違う場合も取得条件・時刻を残す。（2026-10-12、2026-10-12-task-36-ai-cited-pages.md）
+- AIの引用先が答える期間・区分・条件と質問の条件を照合し、引用の成立だけで適切な回答例としない。（2026-10-12、2026-10-12-task-36-ai-cited-pages.md）
+- FAQPageの構造化データを出す案と検索結果でFAQが表示される期待は分け、表示可否は採用時点の公式仕様で確認する。（2026-10-12、2026-10-12-top-faq.md）
+- 掲載本文が参照稿と一致していても、記事が案内する現在の画面の表示名は別に照合する。（2026-10-13、2026-10-13-audit-20261013-01.md）
+- Search Consoleに実クエリがあることと、新記事を作る露出根拠・既存稿との差があることは別に確認する。（2026-10-13、2026-10-13-plan-1408.md）

@@ -1,0 +1,139 @@
+{
+ "period": [
+  "2026-09-22",
+  "2026-10-14"
+ ],
+ "days": 23,
+ "days_saved": 22,
+ "races": 3268,
+ "wakunari_races": 2731,
+ "need_per_group": 400,
+ "forms": {
+  "flat": {
+   "races": 405,
+   "attack_boat": 1,
+   "mawari": {
+    "top12": 247,
+    "bottom56": 47,
+    "per_day_smaller": 2.14,
+    "days_more": 166,
+    "date": "2027-03-29"
+   },
+   "lap": {
+    "top12": 265,
+    "bottom56": 25,
+    "per_day_smaller": 1.14,
+    "days_more": 330,
+    "date": "2027-09-09"
+   }
+  },
+  "wall": {
+   "races": 426,
+   "attack_boat": 1,
+   "mawari": {
+    "top12": 252,
+    "bottom56": 55,
+    "per_day_smaller": 2.5,
+    "days_more": 138,
+    "date": "2027-03-01"
+   },
+   "lap": {
+    "top12": 278,
+    "bottom56": 23,
+    "per_day_smaller": 1.05,
+    "days_more": 361,
+    "date": "2027-10-10"
+   }
+  },
+  "d2": {
+   "races": 879,
+   "attack_boat": 3,
+   "mawari": {
+    "top12": 228,
+    "bottom56": 260,
+    "per_day_smaller": 10.36,
+    "days_more": 17,
+    "date": "2026-10-31"
+   },
+   "lap": {
+    "top12": 214,
+    "bottom56": 285,
+    "per_day_smaller": 9.73,
+    "days_more": 20,
+    "date": "2026-11-03"
+   }
+  },
+  "d3": {
+   "races": 667,
+   "attack_boat": 4,
+   "mawari": {
+    "top12": 163,
+    "bottom56": 222,
+    "per_day_smaller": 7.41,
+    "days_more": 32,
+    "date": "2026-11-15"
+   },
+   "lap": {
+    "top12": 150,
+    "bottom56": 223,
+    "per_day_smaller": 6.82,
+    "days_more": 37,
+    "date": "2026-11-20"
+   }
+  },
+  "kado": {
+   "races": 397,
+   "attack_boat": 4,
+   "mawari": {
+    "top12": 107,
+    "bottom56": 128,
+    "per_day_smaller": 4.86,
+    "days_more": 61,
+    "date": "2026-12-14"
+   },
+   "lap": {
+    "top12": 103,
+    "bottom56": 110,
+    "per_day_smaller": 4.68,
+    "days_more": 64,
+    "date": "2026-12-17"
+   }
+  },
+  "d1": {
+   "races": 302,
+   "attack_boat": 2,
+   "mawari": {
+    "top12": 102,
+    "bottom56": 74,
+    "per_day_smaller": 3.36,
+    "days_more": 97,
+    "date": "2027-01-19"
+   },
+   "lap": {
+    "top12": 109,
+    "bottom56": 69,
+    "per_day_smaller": 3.14,
+    "days_more": 106,
+    "date": "2027-01-28"
+   }
+  },
+  "dash": {
+   "races": 362,
+   "attack_boat": 4,
+   "mawari": {
+    "top12": 88,
+    "bottom56": 125,
+    "per_day_smaller": 4.0,
+    "days_more": 78,
+    "date": "2026-12-31"
+   },
+   "lap": {
+    "top12": 83,
+    "bottom56": 113,
+    "per_day_smaller": 3.77,
+    "days_more": 85,
+    "date": "2027-01-07"
+   }
+  }
+ }
+}
