@@ -1,6 +1,10 @@
 import { test, expect, e2eTodayJST, fetchRecorded } from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
 import { ANALOGY_V16_RACE, routeAnalogyV16 } from "./analogy-v16-fixture.js";
+import {
+  THINKING_ASSIST_RACE,
+  routeThinkingAssistV16,
+} from "./thinking-assist-fixture.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。
@@ -1665,4 +1669,63 @@ test.describe("レイアウト: SNSハブの文字が地とかぶらない（ダ
       expect(low, JSON.stringify(low.slice(0, 8))).toEqual([]);
     });
   }
+});
+
+test.describe("レイアウト: 思考アシストの PC 表示（BOA-880）", () => {
+  /** 2026-10-10 の「堅い？荒れる？」の枠 480px のときの棒の行の幅。棒はこれより伸ばさない（差が読みにくくなる） */
+  const ROUGH_BAR_ROW_MAX = 458;
+
+  const measure = (page) =>
+    page.evaluate(() => {
+      const box = (sel) => {
+        const e = document.querySelector(sel);
+        if (!e) return null;
+        const r = e.getBoundingClientRect();
+        return { left: r.left, right: r.right, width: r.width };
+      };
+      return {
+        page: box(".ta-page"),
+        header: box(".ta-header"),
+        rough: box(".ta-rough-btn"),
+        roughBar: box(".ta-rough-btn > .ta-minibar"),
+        roughFoot: box(".ta-rough-btn > .ta-rough-foot"),
+        fig: box(".ta-split-fig"),
+        side: box(".ta-split-side"),
+        foot: box(".ta-foot"),
+      };
+    });
+
+  test("堅い？荒れる？の枠・2段組・固定フッターが列の幅にそろい、棒は伸びすぎない", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await page.goto(`/race/${THINKING_ASSIST_RACE}/assist`);
+    await expect(page.locator(".ta-minibar-track").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.locator(".ta-lane").first()).toBeVisible();
+    const m = await measure(page);
+    const near = (a, b, label) =>
+      expect(Math.abs(a - b), `${label}: ${a} と ${b}`).toBeLessThanOrEqual(1);
+
+    // どの幅でも、固定フッターは本文の列と同じ左右の端
+    near(m.foot.left, m.page.left, "固定フッターの左端");
+    near(m.foot.right, m.page.right, "固定フッターの右端");
+    expect(m.roughBar.width).toBeLessThanOrEqual(ROUGH_BAR_ROW_MAX + 1);
+
+    if (page.viewportSize().width < 1024) {
+      // 1列: 枠はヘッダーの幅いっぱい、段は縦に積む（棒の下に級の並び）
+      expect(m.roughFoot.left).toBeLessThan(m.roughBar.right);
+      return;
+    }
+    // 枠はヘッダーの中で列の幅いっぱい（480px で止まらない）
+    const headerPad = m.rough.left - m.header.left;
+    near(m.rough.right, m.header.right - headerPad, "堅い？荒れる？の枠の右端");
+    // 図と右の列は 1:1、2つで列の幅を埋める
+    near(m.fig.width, m.side.width, "図と右の列の幅");
+    near(m.fig.left, m.page.left, "図の左端");
+    near(m.side.right, m.page.right, "右の列の右端");
+    // 枠の右の段（級の並び・件数）は右の列と同じ位置から始まる
+    near(m.roughFoot.left, m.side.left, "枠の右の段の左端");
+  });
 });

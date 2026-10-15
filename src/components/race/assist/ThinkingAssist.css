@@ -1932,8 +1932,9 @@
  * PC 表示（BOA-801 5・BOA-820 の思考アシストの分）。1024px 以上だけ変える。375〜1023px は囲みが無いのと同じ
  * （display: contents）で今の1列のまま。龍神ソナーの PC 表示（BOA-813、sonar-tab/mock-pc-v1）と同じ決まり:
  * - 列は最大 1200px、左端はレース詳細のタブの列（ページの左の余白 24px）にそろえる（今は 480px で中央）
- * - ヘッダー・レンズは横幅いっぱい（堅い？荒れる？の枠は図と同じ 480px）。その下で図（最大 480px）を左、押して変わる結果
- *   （深掘り・レンズの要約）を右。図が画面の高さに収まるときだけ、レンズの下に止める
+ * - ヘッダー・堅い？荒れる？の枠・レンズ・固定フッターは列の幅いっぱい。その下で図を左、押して変わる結果
+ *   （深掘り・レンズの要約）を右に 1:1。図が画面の高さに収まるときだけ、レンズの下に止める
+ *   （BOA-880、2026-10-15 オーナー決定。以前は枠と図が 480px で、広い画面で右が空いていた）
  */
 .ta-split,
 .ta-split-fig,
@@ -1952,7 +1953,7 @@
 
   .ta-split {
     display: grid;
-    grid-template-columns: minmax(0, 480px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 0 var(--spacing-6);
     align-items: start;
   }
@@ -1967,10 +1968,24 @@
     margin-top: var(--spacing-3);
   }
 
-  /* 堅い？荒れる？の枠は左の列（図）と同じ幅。横幅いっぱいだと棒が伸びて58%と55%の差が読みにくい
-     （2026-10-10 ユーザー決定、ファンパネル） */
-  .ta-rough {
-    max-width: 480px;
+  /* 堅い？荒れる？の枠は列の幅いっぱいにし、中を2段（左に棒・凡例、右に級の並びと件数）。段の境目は下の
+     図と右の列の境目にそろえる（BOA-880、2026-10-15 オーナー決定）。棒は以前の 480px の枠の中の長さ（行 458px）
+     を超えない。横に伸びると58%と55%の差が読みにくい（2026-10-10 ユーザー決定、ファンパネル） */
+  .ta-rough-btn {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--spacing-6);
+    align-items: center;
+  }
+
+  .ta-rough-btn > .ta-minibar,
+  .ta-rough-btn > .ta-note {
+    grid-column: 1;
+    max-width: 458px;
+  }
+
+  .ta-rough-btn > .ta-rough-foot {
+    grid-column: 2;
+    grid-row: 1 / span 3;
   }
 }
 
