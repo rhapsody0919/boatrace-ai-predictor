@@ -4,6 +4,7 @@ import ClassLineup from "./ClassLineup";
 import RunsTable from "./RunsTable";
 import FactChips from "./FactChips";
 import Fold from "./Fold";
+import RacerLink from "./RacerLink";
 import {
   METRICS,
   classLineup,
@@ -159,7 +160,9 @@ export default function BoatDeepDive({
       <div className="ta-deep-head">
         <BoatBadge n={boat} />
         <h3>
-          <span translate="no">{racer.name}</span>{" "}
+          <RacerLink racerId={racer.racerId} className="ta-deep-name">
+            {racer.name}
+          </RacerLink>{" "}
           <span className="ta-note ta-num">
             {C.deepMeta(racer.cls, racer.age, weight)}
           </span>
