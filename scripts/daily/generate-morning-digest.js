@@ -1102,7 +1102,9 @@ export async function runMorningDigest({
 
   console.log(
     `\n注目 ${featured ? 1 : 0} / 逃げ ${sections.nige.length}（候補${sections.nigeTotal}）` +
-      ` / まくり ${sections.makuri.length} / 逃がし ${sections.nigashi.length}` +
+      ` / まくり ${sections.makuri.length}` +
+      ` / 逃がし（2号艇） ${sections.nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE).length}` +
+      `（3号艇 ${sections.nigashi.filter((r) => r.course !== NIGASHI_LIST_COURSE).length}）` +
       ` / フライング ${flying.length} / 帰郷 ${returned.rows.length}` +
       ` / 合計 ${rows.length} 行`,
   );
@@ -1134,8 +1136,9 @@ export async function runMorningDigest({
         nigeCandidates: sections.nigeTotal,
         makuri: sections.makuri.length,
         // 一覧に出す2号艇の件数。3号艇（折りたたみの中）は別に数える
-        nigashi: sections.nigashi.filter((r) => r.course === NIGASHI_LIST_COURSE)
-          .length,
+        nigashi: sections.nigashi.filter(
+          (r) => r.course === NIGASHI_LIST_COURSE,
+        ).length,
         nigashiCourse3: sections.nigashi.filter(
           (r) => r.course !== NIGASHI_LIST_COURSE,
         ).length,
