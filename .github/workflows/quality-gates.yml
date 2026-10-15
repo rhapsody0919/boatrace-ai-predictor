@@ -66,6 +66,16 @@ jobs:
       - name: Run CI-tier verifications
         run: npm run verify:ci
 
+      # verify-sns-japanese-font.js が本番と同じ Chromium で撮った日本語の見本（/today の X 投稿の画像の確認用、2026-10-16）
+      - name: Upload Japanese font check image
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sns-font-check
+          path: tmp/sns-font-check.png
+          if-no-files-found: ignore
+          retention-days: 7
+
   # scripts/ml/ の変更があるときだけ、アナロジー・ファインダーの学習の pytest（as-of・リーク防止・
   # ラウンド区分・集計・品質ゲート）を回す。以前は train-analogy.yml の手動実行時にしか走らなかった
   # （データサイエンス体制のレビュー、2026-10-02）

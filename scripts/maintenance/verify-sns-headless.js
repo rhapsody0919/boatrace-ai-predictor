@@ -2,6 +2,7 @@
 // 本番の画面での確認は手で: node scripts/maintenance/verify-sns-headless.js --live <race_id>（未ログインの Chromium で本番を開く）
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { createChromiumHeadless } from "../../api/_lib/snsHeadless.js";
 import {
   checkPublicDisplay,
@@ -23,6 +24,12 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
       log.contexts += 1;
       log.contextOptions = options;
       return {
+        async addInitScript(fn, arg) {
+          log.initScripts = [
+            ...(log.initScripts ?? []),
+            { source: String(fn), arg },
+          ];
+        },
         async route(pattern) {
           log.routes.push(String(pattern));
         },
@@ -34,6 +41,9 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
               log.gotos.push(url);
             },
             url: () => current,
+            evaluate: async (fn) => {
+              log.evaluated = [...(log.evaluated ?? []), String(fn)];
+            },
             screenshot: async (options) => {
               log.screenshots = [...(log.screenshots ?? []), options];
               return Buffer.from("png");
@@ -251,4 +261,42 @@ test("screenshot（/today の画像、tasks 19b）: スマホ幅の上部 4:5 �
   );
   assert.equal(missing.log.screenshots, undefined);
   assert.equal(missing.log.closedContexts, 1);
+});
+
+test("screenshot: 撮る前に Cookie の同意を「拒否」で記録し、帯が出ていれば撮らない。フォントの読み込みを待ってから撮る（2026-10-16 画像の不具合）", async () => {
+  const { CONSENT_KEY } = await import("../../api/_lib/snsHeadless.js");
+  const TODAY = "https://www.boat-ai.jp/today";
+  const fake = fakeBrowser({ visible: SCREEN_MARKERS.today });
+  await createChromiumHeadless({ launch: fake.launch }).screenshot({
+    url: TODAY,
+    requiredSelectors: SCREEN_MARKERS.today,
+  });
+  assert.equal(CONSENT_KEY, "boatai:cookie-consent");
+  assert.deepEqual(
+    fake.log.initScripts.map((s) => s.arg),
+    [CONSENT_KEY],
+  );
+  assert.match(
+    fake.log.initScripts[0].source,
+    /localStorage\.setItem\(key, "rejected"\)/,
+  );
+  assert.ok(fake.log.evaluated.some((f) => f.includes("document.fonts.ready")));
+  // 帯が出ていれば撮らない
+  const covered = fakeBrowser({
+    visible: [...SCREEN_MARKERS.today, ".cookie-consent"],
+  });
+  await assert.rejects(
+    createChromiumHeadless({ launch: covered.launch }).screenshot({
+      url: TODAY,
+      requiredSelectors: SCREEN_MARKERS.today,
+    }),
+    /screenshot_overlay_visible/,
+  );
+  assert.equal(covered.log.screenshots, undefined);
+  // 同意のキーは画面の側（analytics.js）と同じ
+  const analytics = await readFile(
+    new URL("../../src/utils/analytics.js", import.meta.url),
+    "utf8",
+  );
+  assert.match(analytics, new RegExp(`CONSENT_KEY = "${CONSENT_KEY}"`));
 });

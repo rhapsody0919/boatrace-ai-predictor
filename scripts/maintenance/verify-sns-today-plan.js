@@ -204,7 +204,14 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       venue_code: 4,
       race_number: 12,
       start_time: "16:20:00",
-      reason: "注目",
+      reason: "AIが当日条件から算出したイン崩れ指数は…",
+      from: "nige",
+      course: 1,
+      boat_number: 1,
+      racer_name: "注目\u30001",
+      metric_value: "84.13",
+      metric_venue_baseline: "58.40",
+      sample_size: 63,
     },
     ...Array.from({ length: count }, (_, i) => ({
       section: "nige",
@@ -276,6 +283,8 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
     { section: "returned", rank: 1, racer_name: "帰郷1" },
   ],
 });
+const FEATURED_LINE =
+  "注目レース：平和島12R 16:20締切｜1号艇 注目 1｜1コースで逃げ切った割合 84.13%（全国63走）・この会場の平均 58.4%";
 const EXPECTED_LINES = [
   "［逃げ］全国で1コースに入ったとき逃げ切った割合70%以上の1号艇",
   "［まくり］そのコースでまくりで1着の割合25%以上の選手",
@@ -396,12 +405,13 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   assert.ok(
     draft.caption_text.includes(
-      `）\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。\nhttps://`,
+      `）\n\n${FEATURED_LINE}\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。\nhttps://`,
     ),
     draft.caption_text,
   );
   for (const absent of [
-    "注目",
+    "イン崩れ",
+    "AI",
     "逃がし",
     "フライング",
     "帰郷",
@@ -414,6 +424,7 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
   assert.deepEqual(
     draft.source_data.digest.picks.map((p) => p.race_id),
     [
+      `${DATE}-04-12`,
       `${DATE}-02-05`,
       `${DATE}-04-03`,
       `${DATE}-04-05`,
@@ -701,7 +712,7 @@ test("一覧の読み取り: /today の投稿は選手名・枠番を足して�
   assert.match(
     rows[0],
     // course は逃がしの2号艇・3号艇を分けるためにボット向けの ROW_SELECT に足した（2026-10-15）
-    /select=section,rank,race_id,venue_code,race_number,start_time,course,reason:detail->>reason,racer_name,boat_number,sample_size&/,
+    /select=section,rank,race_id,venue_code,race_number,start_time,course,reason:detail->>reason,racer_name,boat_number,sample_size,metric_value,metric_venue_baseline,from:detail->>from&/,
   );
   assert.ok(!rows[1].includes("racer_name"));
 });
@@ -729,12 +740,14 @@ test("欠場・中止・締切を確かめられない候補は除き、区分�
       "［まくり］戸田8R 15:00締切｜2号艇 まくり 4｜全国40走",
     ),
   );
-  assert.equal(draft.source_data.digest.picks.length, 5);
+  assert.equal(draft.source_data.digest.picks.length, 6);
 });
 
 test("区分が1つだけの日も印の意味を書き、印を付ける（割合は一覧のしきい値）。候補が0件の日は下書きを作らず送らない", async () => {
   const onlyNige = digestOf();
-  onlyNige.rows = onlyNige.rows.filter((r) => r.section !== "makuri");
+  onlyNige.rows = onlyNige.rows.filter(
+    (r) => r.section !== "makuri" && r.section !== "featured",
+  );
   onlyNige.day.notes = { thresholds: { nige: 72, makuri: 25 } };
   await plan({ digest: onlyNige });
   const [draft] = await all("SELECT * FROM sns_drafts");
@@ -750,10 +763,69 @@ test("区分が1つだけの日も印の意味を書き、印を付ける（割�
     "DELETE FROM sns_post_tracking; DELETE FROM sns_auto_send_items; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
   );
   const none = digestOf();
-  none.rows = none.rows.map((r) => ({ ...r, sample_size: 29 }));
+  // 一覧の候補が全員30走未満で、注目レースも無い日
+  none.rows = none.rows
+    .filter((r) => r.section !== "featured")
+    .map((r) => ({ ...r, sample_size: 29 }));
   const notes = [];
   const result = await plan({ digest: none, notes });
   assert.equal(result.report.items[0].reason, "no_candidates");
   assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
   assert.equal(notes.length, 0);
+});
+
+test("注目レース: 先頭に置き一覧に重ねない。逃がしからの注目・7:45 より前・欠場の注目は載せない", async () => {
+  const { buildTodayPost } = await import("../lib/snsTodayPlanner.js");
+  const url = "https://www.boat-ai.jp/today";
+  const build = (mutate, excluded = new Set()) => {
+    const digest = digestOf();
+    const featured = digest.rows.find((r) => r.section === "featured");
+    mutate(featured, digest);
+    return buildTodayPost(digest, { date: DATE, t, url, excluded });
+  };
+  // 一覧の逃げ3位と同じ選手が注目なら、一覧からは外して次の順位で補う
+  const same = build((f) =>
+    Object.assign(f, {
+      race_id: `${DATE}-04-03`,
+      race_number: 3,
+      start_time: "10:00:00",
+      racer_name: "逃げ\u30003",
+    }),
+  );
+  assert.match(same.text, /注目レース：平和島3R 10:00締切｜1号艇 逃げ 3｜/);
+  assert.equal(same.text.split("逃げ 3｜").length - 1, 1);
+  assert.match(same.text, /［逃げ］平和島6R 13:00締切｜1号艇 逃げ 6｜/);
+  // まくりからの注目は、まくりの言い方
+  const makuri = build((f) =>
+    Object.assign(f, {
+      from: "makuri",
+      course: 3,
+      boat_number: 3,
+      metric_value: "30.00",
+    }),
+  );
+  assert.match(
+    makuri.text,
+    /｜3号艇 注目 1｜3コースでまくりで1着の割合 30%（全国63走）/,
+  );
+  for (const text of [
+    build((f) => Object.assign(f, { from: "nigashi" })).text,
+    build((f) => Object.assign(f, { start_time: "07:40:00" })).text,
+    build(() => {}, new Set([`${DATE}-04-12:1`])).text,
+    build((f, d) => {
+      d.rows = d.rows.filter((r) => r !== f);
+    }).text,
+  ])
+    assert.ok(!text.includes("注目レース"), text);
+  // 一覧が0件でも、注目レースがあれば送る
+  const onlyFeatured = build((f, d) => {
+    d.rows = d.rows.filter((r) => r === f || r.section === "flying");
+  });
+  assert.match(
+    onlyFeatured.text,
+    /^本日のデータ一覧（[^\n]+）\n\n注目レース：[^\n]+\n\n過去の実績/,
+  );
+  assert.deepEqual(onlyFeatured.picks, [
+    { race_id: `${DATE}-04-12`, boat_number: 1 },
+  ]);
 });
