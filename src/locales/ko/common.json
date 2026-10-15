@@ -1,4 +1,7 @@
 {
+  "racerLink": {
+    "pageSuffix": " 선수 페이지(일본어) ›"
+  },
   "nav": {
     "predictions": "🏁 AI 예측",
     "hits": "✅ 적중 기록",

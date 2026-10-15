@@ -1,4 +1,7 @@
 {
+  "racerLink": {
+    "pageSuffix": "の選手ページ ›"
+  },
   "nav": {
     "predictions": "🏁 予想",
     "hits": "✅ 的中",
