@@ -522,3 +522,22 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
     },
   };
 }
+
+/**
+ * /today の計画の各回の結果を、その日の分だけ残す（scrape_job_state.cursor.today）。report は5分ごとに上書きされ、
+ * 7:45 を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
+ * 時間外の skip は残さない。日付が変わったら空から。最新の30件まで
+ * @param {{date?: string, events?: object[]}|null|undefined} prev 前回の cursor.today
+ * @param {{outcome?: string, reason?: string, item_id?: string}} item この回の report.items の /today の1件
+ */
+export function nextTodayLog(prev, item, now) {
+  const date = jstDate(now);
+  const events = prev?.date === date ? [...(prev.events ?? [])] : [];
+  if (item && item.reason !== "outside_window")
+    events.push({
+      at: now.toISOString(),
+      outcome: item.outcome ?? null,
+      reason: item.reason ? String(item.reason).slice(0, 300) : null,
+    });
+  return { date, events: events.slice(-30) };
+}

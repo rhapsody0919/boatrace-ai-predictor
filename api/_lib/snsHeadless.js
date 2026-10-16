@@ -120,8 +120,12 @@ export function createChromiumHeadless({
           // フォントの読み込みを待ってから撮る（文字が空白のまま撮らない）
           if (element) {
             const target = page.locator(element).first();
-            if (!(await target.isVisible()))
-              throw new Error("screenshot_component_missing");
+            // 図は印（requiredSelectors）より後に描かれることがある（本番の関数は手元より遅い）。印と同じだけ待つ
+            await target
+              .waitFor({ state: "visible", timeout: waitMs })
+              .catch(() => {
+                throw new Error("screenshot_component_missing");
+              });
             if (label)
               await target.evaluate((node, text) => {
                 const head = document.createElement("div");

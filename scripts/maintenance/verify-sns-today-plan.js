@@ -515,7 +515,10 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   assert.equal(notes.length, 1);
   assert.match(notes[0], /7:45 までに個別承認の画面で承認/);
-  assert.match(notes[0], /画像1: https:\/\/signed\/today\/[^\n]+-1\.png\n画像2: [^\n]+\n画像3: [^\n]+\n画像4: [^\n]+-4\.png/);
+  assert.match(
+    notes[0],
+    /画像1: https:\/\/signed\/today\/[^\n]+-1\.png\n画像2: [^\n]+\n画像3: [^\n]+\n画像4: [^\n]+-4\.png/,
+  );
   // 本人の個別承認（140 の DB 側の条件も通る）→ 7:45 の job
   const job = await approve(draft);
   assert.equal(job.state, "queued");
@@ -975,4 +978,45 @@ test("160: X の画像は image_paths の数・順・種類とそろったとき
     ])
   ).r;
   assert.equal(job.state, "queued");
+});
+
+test("各回の結果をその日の分だけ cursor に残す（7:45 を過ぎても朝の経過を読める）。時間外は残さず、日付が変わったら空から、最新30件", async () => {
+  const { nextTodayLog } = await import("../lib/snsTodayPlanner.js");
+  let log = nextTodayLog(
+    null,
+    { outcome: "error", reason: "sonar_not_ready（x）" },
+    at("06:00"),
+  );
+  log = nextTodayLog(log, { outcome: "manual", item_id: "i1" }, at("07:05"));
+  log = nextTodayLog(
+    log,
+    { outcome: "skipped", reason: "outside_window" },
+    at("08:00"),
+  );
+  assert.deepEqual(log, {
+    date: DATE,
+    events: [
+      {
+        at: at("06:00").toISOString(),
+        outcome: "error",
+        reason: "sonar_not_ready（x）",
+      },
+      { at: at("07:05").toISOString(), outcome: "manual", reason: null },
+    ],
+  });
+  const next = nextTodayLog(
+    log,
+    { outcome: "error", reason: "x" },
+    new Date(at("06:00").getTime() + 86400000),
+  );
+  assert.equal(next.events.length, 1);
+  let many = null;
+  for (let i = 0; i < 35; i++)
+    many = nextTodayLog(
+      many,
+      { outcome: "error", reason: String(i) },
+      at("06:00"),
+    );
+  assert.equal(many.events.length, 30);
+  assert.equal(many.events.at(-1).reason, "34");
 });
