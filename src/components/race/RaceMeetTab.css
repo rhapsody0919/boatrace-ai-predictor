@@ -39,8 +39,20 @@
    列に入り、1440px で表が 1174px、選手名と得点率・節内順位・前検の間が約800px 離れた
    （BOA-755）。すぐ下の得点率早見（BOA-736）と同じ 769px〜・640px にそろえる */
 @media (min-width: 769px) {
+  /* BOA-826: 表は640pxのまま、外枠の余白を抑えて左端を維持する。
+     1200px 以上はカードを列いっぱいにし、表の右に注記を置く2段（BOA-881、RaceTabs.css の .race-split） */
+  .rmt-card {
+    max-width: 720px;
+  }
+
   .rmt-compare {
     max-width: 640px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .rmt-card {
+    max-width: none;
   }
 }
 
@@ -479,6 +491,14 @@
   font-weight: var(--font-weight-bold);
 }
 
+/* 公式の前夜の減点（BOA-782）。得点率の下に小さく出す */
+.rmt-penalty {
+  display: block;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-secondary);
+}
+
 .rmt-needed-runs {
   display: block;
   font-size: var(--font-size-2xs);
@@ -740,4 +760,10 @@
   box-shadow:
     inset 3px 0 0 0 var(--brand-accent-primary),
     inset -1px 0 0 var(--hscroll-edge-line, var(--border-hairline));
+}
+
+/* 韓国語は語の境目で折り、列幅を超える語だけ途中で折る（BOA-734）。 */
+.race-meet-tab:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }

@@ -12,11 +12,23 @@
     },
     {
       "path": "/api/cron/sns-send",
-      "schedule": "*/2 23,0-11 * * *"
+      "schedule": "*/2 23,0-13 * * *"
+    },
+    {
+      "path": "/api/cron/sns-auto-plan",
+      "schedule": "*/5 20-23,0-13 * * *"
     },
     {
       "path": "/api/cron/sns-metrics",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/sns-daily",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/sns-daily",
+      "schedule": "30 2 * * *"
     },
     {
       "path": "/api/cron/analogy-exhibition",
@@ -240,6 +252,14 @@
     }
   ],
   "functions": {
+    "api/cron/sns-send.js": {
+      "regions": ["syd1"],
+      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**}"
+    },
+    "api/cron/sns-auto-plan.js": {
+      "regions": ["syd1"],
+      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**,sns-video-studio/remotion/risk-rules.json,src/locales/ja/common.json}"
+    },
     "api/cron/*.js": {
       "regions": ["syd1"]
     },

@@ -1,5 +1,31 @@
 import { test, expect } from "./fixtures.js";
 
+test("会場を選び直すと URL の venue_code も替わり、再読み込み後も残る（BOA-765）", async ({
+  page,
+}) => {
+  await page.goto("/winning-technique?tab=weather&venue_code=1", {
+    waitUntil: "domcontentloaded",
+  });
+  const tab = page.getByTestId("weather-in-escape");
+  const venue = tab.locator("#wie-venue");
+  await expect(venue).toHaveValue("1");
+  const historyLength = await page.evaluate(() => window.history.length);
+  await venue.selectOption("5");
+  await expect(page).toHaveURL(/venue_code=5/);
+  await expect(page).toHaveURL(/tab=weather/);
+  await expect(venue).toHaveValue("5");
+  await expect(
+    tab.locator(".wie-note").filter({ hasText: "多摩川の平均" }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.history.length)).toBe(historyLength);
+
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(venue).toHaveValue("5");
+  await expect(
+    tab.locator(".wie-note").filter({ hasText: "多摩川の平均" }),
+  ).toBeVisible();
+});
+
 /**
  * 分析ツール「風とイン逃げ率」タブ（BOA-211）。
  * 集計はリポジトリの静的な JSON（public/data/weather-in-escape.json）なので、値は固定。

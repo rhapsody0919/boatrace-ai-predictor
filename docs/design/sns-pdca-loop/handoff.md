@@ -31,7 +31,11 @@ OPEN（10/13 時点）:
 
 ### 2本目のセッション（10/13 午後）で出した PR（tasks 21・23・22・6〜8・9・10・11）
 
-どれも /code-review（high）の結果を PR コメントに書いた。CI は E2E のキューが詰まっていて、作った時点では E2E 待ち。
+どれも /code-review（high）の結果を PR コメントに書いた。
+
+状態（10/13 夜）: マージ済み #1509・#1513・#1516・#1519、ほかに #1529（X 送信の contract を 158 に追随、開発の補助 08 の D1）・#1544（#1516 の点検 15 の D1・D2）。OPEN は #1515（GA4 の鍵待ちではない。CI 待ち）・#1517・#1518（見張りが #1517 → #1518 の順にマージ。#1518 は #1517 を取り込み済みで、送信の cron は照合＋表示の確認の両方を使う形）。
+
+10/16 の試運転（L1）の範囲（オーケストレーターと合意）: レースの全貌だけ。/today（digest、19b）は L1 の後。auto-plan（12）が無い間は item も自動の job も作られないので、L1 で確かめられるのは cron の shadow／dry_run と、本人の承認の job が送る前の検査で止まることまで。#1518 の Chromium が Vercel で起動できるか（functions の glob の重なり）は L1 の最初の起動で見る。
 
 | PR | tasks | 中身 | 依存・注意 |
 |---|---|---|---|
@@ -81,6 +85,8 @@ OPEN（10/13 時点）:
 - **ハンドラを Request で直接呼ぶテストでは、Vercel の呼ばれ方の違いは見つからない**: 新しい API は本番（または Preview）で一度叩いて確かめる
 - **既存のファイルに整形（prettier）を丸ごとかけない**: 差分が数百行に膨らむ（snsDeadlineQueue.js で一度起きた）
 - **手元のテストは1本ずつ・並列1**（オーケストレーターの負荷対策の指示。`node --test --test-concurrency=1`）
+- **verify-registry.json の衝突**: 両側の末尾をつなぐだけだと、相手の PR が既存の行（例: verify-sns-send-runner.js の guards）を書き換えていたときに script の無い行ができる。master の版を取り、自分の PR が足した行だけを末尾に足し直す（`npm run verify:registry` で確かめる）
+- **macOS に timeout コマンドは無い**: `timeout 300 node ...` は何も実行せずに空で終わる（テストが全部通ったように見える）
 - **E2E のキュー**: 10/13 午後は E2E Smoke Test が30件以上キューに並び、PR の CI が1時間以上 pending のままになった。手元で全件は流さない（review-fix-cycle の Phase 5）
 - **本番の画面で確かめるとき**: 解析のタグ（GA4）を route で止めてから開く（確認のアクセスを数えないため。`verify-sns-headless.js --live <race_id>` がそうしている）
 - **オーナーに渡すファイル**: `owner-apply-153-154.sql`・`orchestrator-checks-153-154.sql`・`owner-x-keys-setup.md`・`owner-google-oauth-production.md` は前のセッションの scratchpad にあり、次のセッションからは読めない。runbook（`docs/db-migration/153-runbook.md`・`158-runbook.md`）が正本。X の鍵の手順は tasks 8 の `docs/operation/sns-pdca-loop-runbook.md` に入れる（画面は console.x.com の App の右上の Settings）

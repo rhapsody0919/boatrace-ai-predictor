@@ -85,16 +85,28 @@ test.describe("思考アシストの入口（BOA-832）", () => {
     );
   });
 
-  test("1440px: 1行の左端はタブの列にそろい、幅は720まで", async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto(RACE);
-    const row = page.locator(".assist-entry-row");
-    await expect(row).toBeVisible({ timeout: 30000 });
-    const box = await row.boundingBox();
-    const bar = await page.locator(".race-tabs-bar").boundingBox();
-    expect(Math.abs(box.x - bar.x)).toBeLessThanOrEqual(1);
-    expect(box.width).toBeLessThanOrEqual(720);
-  });
+  // 1199px 以下は 720 まで。1200px 以上はタブの列いっぱい（BOA-881、上の公式サイトの帯と右端をそろえる）
+  for (const [width, full] of [
+    [1100, false],
+    [1440, true],
+  ]) {
+    test(`${width}px: 1行の左端はタブの列にそろい、幅は${full ? "タブの列いっぱい" : "720まで"}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(RACE);
+      const row = page.locator(".assist-entry-row");
+      await expect(row).toBeVisible({ timeout: 30000 });
+      const box = await row.boundingBox();
+      const bar = await page.locator(".race-tabs-bar").boundingBox();
+      expect(Math.abs(box.x - bar.x)).toBeLessThanOrEqual(1);
+      if (full) {
+        expect(Math.abs(box.width - bar.width)).toBeLessThanOrEqual(1);
+      } else {
+        expect(box.width).toBeLessThanOrEqual(720);
+      }
+    });
+  }
 
   test("英語のページには出さない", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });

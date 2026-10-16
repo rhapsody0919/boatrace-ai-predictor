@@ -28,6 +28,10 @@
 - ハングル「경정」・繁体字「賽艇」は「競艇」とは別文字列で禁止の外（docs/reference/i18n-glossary.md の方針）
 - 韓国語の競技名は本番 UI（src/locales/ko/common.json）と同じ「경정」を使う。並行で翻訳した ko ブログが「보트레이스」と「경정」に分かれた。置き換えるときは받침の有無に合わせて助詞（는/은 等）も直す（2026-08-17、memory ko_blog_full_expansion_2026_08_17、PR #317）
 - 多言語の図や翻訳記事の訳語（会場名・券種名・機能名）は、その言語の既存の記事を grep して合わせる（2026-08-17、memory overnight_content_expansion_2026_08_16）
+- 新しい語は `docs/reference/i18n-glossary.md` に4言語の対訳を足してから訳す。足さずに訳すと言語間でぶれる。zh-TW の「全期間」（BOA-733 の `gridRows.current`・`periodCaveat`）が、同じ画面の既存の語「全部期間」（`venueRankingNote` 等3か所）と食い違った（2026-10-14、BOA-733 wording-editor）
+
+- 「逃がしやすい選手」（/today の nigashi）は「1号艇が逃げ切った割合」が高い材料で、鉄板寄り（イン有利）の側。まくりが利く選手と並べるときに荒れる側へ入れない（2026-10-15、/today の向きの誤りの修正、src/data/morningDigestCopy.js・scripts/maintenance/verify-digest-nigashi-direction.js）
+- /today で補正しているのはレースのグレード（SG・G1・一般戦）で、選手の級別（A1・A2）ではない。「会場と級別」と書かず「会場とレースグレード」と書く（2026-10-15、同）
 
 ## 誇大・保証・射幸心・SNS の規則
 - 的中・勝利を保証する表現は全プラットフォームで警告。「当たり」「的中」単独は警告しない（risk-rules.json の guaranteed-hit）

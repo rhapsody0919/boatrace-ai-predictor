@@ -192,6 +192,11 @@
   color: var(--text-primary);
 }
 
+.blog-post-content th:first-child,
+.blog-post-content td:first-child {
+  white-space: nowrap;
+}
+
 .blog-post-content tr:hover {
   background: var(--surface-page);
 }

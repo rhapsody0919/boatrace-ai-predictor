@@ -3,7 +3,11 @@
 龍神レーダーのサイトの画面。デザインの正本は `docs/reference/design-system.md`・`.claude/rules/mobile-ui.md`・`.claude/rules/component-reuse.md`。オーナーが使って気づいたことは [user-insights.md](user-insights.md)。書き方は [README.md](README.md)。
 
 ## 幅・余白
-- PC のタブの横幅は3段: 6艇を列に並べる表は全幅／図とリストは最大1200／文章と1行1項目は720。どの段も左端はタブの列（1440px で x=24、1920px で x=184）にそろえ、中央寄せにしない（2026-10-11、BOA-820、PR #1382、e2e/race-tab-width.spec.js）
+- PC のレース詳細は、ヘッダー・見出し・タブ・本文・下の案内・思考アシストを最大1200の1本の列にして画面の中央に置く（列の幅 min(画面幅−48, 1200)、左端 (画面幅−列の幅)/2）。1200px 以上は、幅を絞った中身（表 640〜720・1行1艇の棒）の右に注記や対のカードを置く2段（.race-split、上端をそろえる）。以前の「全幅／1200／720 の3段を左端にそろえる」（BOA-820）は、1920px で右端が 904・1384・1736 と混ざり「PCで左に寄る」と見えたので置き換えた（2026-10-16 オーナー承認の案A、BOA-881、docs/design/race-detail-pc-width、e2e/race-tab-width.spec.js）
+- 狭い部品を列の中で中央に寄せる案は取らない。見出しは左・中身は中央で左端が2本になる（2026-10-15、BOA-881 visual-designer、docs/design/race-detail-pc-width/proposal.md の案C）
+- 6艇を列に並べる表は列 1200・文字 15px で1艇の列が約155〜165px あり、窮屈にならない。150px を下回ったら列の幅を見直す（2026-10-16、BOA-881。BOA-612 の 1600px の判断を見直した、e2e/race-tab-width.spec.js）
+- 数字の列が4つ以下の表（枠別情報のコース別成績など）は 720 を上限にし、右に注記を置く。列いっぱいに広げると数字どうしが約350px離れる（2026-10-15、BOA-881 visual-designer）
+- 思考アシストの PC（1024px 以上）は、レース詳細と同じ列（最大1200・画面の中央、BOA-881）に置き、堅い？荒れる？の枠・レンズ・固定フッターを列いっぱいにし、図と右の列は 1:1。枠の中は2段（左に棒、右に級の並びと件数）で、段の境目を図と右の列の境目にそろえる。棒の行は 458px（以前の 480px の枠の中の長さ）を超えない。龍神ソナーの図 480px：残り（BOA-813）とはここが違う（2026-10-15 オーナー決定、BOA-880、e2e/layout.spec.js）
 - 余白はモバイル(480px以下)で margin・padding 0.75〜1rem、gap 0.5〜0.75rem。デスクトップは margin 2〜2.5rem、padding 1.5〜2.5rem、gap 1〜1.5rem（.claude/rules/mobile-ui.md）
 - 内部タブの中身を包む要素にも区切りの余白を付ける。外側の gap は中まで届かない（2026-10-09、龍神ソナーの3タブ、docs/design/analogy-finder/sonar-tab/uiux-review-spacing.md、#1337）
 - 横あふれは表示項目を削らずデザインで解く（ユーザー指摘、memory feedback_dont_remove_info_for_layout）
@@ -37,3 +41,16 @@
 ## 画面づくりの目標
 - ゴールは2つ。①公式サイト・24会場の公式サイト・ボートレース日和のデータを全部出す ②見せ方を良くしてファンの役に立てる。①は必要条件で、他との違いは②で決まる（2026-09-28 オーナーが明示、memory project_goal_data_coverage_and_ryujin_ux）
 - まだ出していない項目は docs/proposal/competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md で、取得の充足率は docs/design/scraping-vercel-consolidation/data-catalog.md で確かめる。充足率が低い項目は出すと値を誤る（事故率は着欄の充足率4.4%で phase a から外した）（2026-09-28、memory project_goal_data_coverage_and_ryujin_ux）
+
+## 点検での見落としを防ぐ知見
+- 子コンポーネントだけのSSR/JSDOMは親でのクエリ読取・消費済みリンク記録・タブ往復の検証とせず、親からの初回遷移と再入場を分けて確認する。（2026-10-13、2026-10-13-task-62-check-boa-847.md）
+- 録画不足やブラウザ起動制限によるE2E停止を不具合再現・修正成功の根拠にせず、静的確認・補助描画と画面の判定不能を分けて報告する。（2026-10-13、2026-10-13-task-62-check-boa-847.md）
+- 上位N組の境界同数を全件残す変更は集計関数だけでなく表示側の再切り捨ても点検する。（2026-10-13、2026-10-13-task-69-check-codex-patches.md）
+- 一覧外ディープリンクは初回ID取得と表の存在だけで合格にせず、非同期一覧適用後の取得会場・ID・最終表示を確認する。（2026-10-13、2026-10-13-task-70-check-codex-patches.md）
+- 取得IDの保持と選択欄の整合は別に確認し、一覧外IDのoptionが無いまま表示対象だけ保たれる経路を点検する。（2026-10-13、2026-10-13-task-70-check-codex-patches.md）
+- fetchRecordedの独自応答をAPIResponseとしてroute.fulfill({response})へ渡さず、非配列応答もstatus・headers・本文をfixture契約に合わせて明示する。（2026-10-13、2026-10-13-task-71-check-codex-patches.md）
+- レイアウトE2Eは表だけでなく幅を取る補足行の表示と待機条件をそろえ、表の親・ページ横溢れ・最終艇見出しの右端を別々に測る。（2026-10-13、2026-10-13-boa-680.md）
+- 時計を固定しないE2Eの再現条件は録画fixtureの既定時計と区別し、実際に使う時計を確認する。（2026-10-13、2026-10-13-boa-744.md）
+- PCとモバイルでカード内余白の扱いが異なる表は、PCの左端・内容幅の式をそのままモバイルの再現テストに使わない。（2026-10-13、2026-10-13-boa-827.md）
+- accessible nameの前方一致がノードと帯の両方を拾う場合は、件数の末尾まで一致させて対象を特定する。（2026-10-13、2026-10-13-boa-847.md）
+- 共通部品への導線E2Eでは遷移元・先の要求条件を別々に固定し、思考アシスト用scenario helperをソナーのboats=1応答に流用しない。（2026-10-13、2026-10-13-boa-847.md）

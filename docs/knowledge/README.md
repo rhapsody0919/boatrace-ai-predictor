@@ -21,8 +21,8 @@
 | [batch-and-ci.md](batch-and-ci.md) | 定時実行・API のキャッシュ・Vercel・CI と E2E の落とし穴 | system-architect・実装者 |
 | [seo.md](seo.md) | 検索・ボット向け HTML・ブログの SEO（SPA の制約、食い合い） | seo-marketer |
 | [user-insights.md](user-insights.md) | オーナーがサイトを使って気づいたことと、その後の対応 | 全員（画面を変える前） |
-| [x.md](x.md) | X（旧Twitter）固有の投稿・動画の知見 | X 運用（`/x-growth-report`等） |
-| [youtube.md](youtube.md) | YouTube（Shorts 含む）固有のタイトル・構成の知見 | YouTube 運用 |
+| [x.md](x.md) | X（旧Twitter）固有の投稿・動画の知見 | x-channel・X 運用（`/x-growth-report`等） |
+| [youtube.md](youtube.md) | YouTube（Shorts 含む）固有のタイトル・構成の知見 | youtube-channel・YouTube 運用 |
 | [note.md](note.md) | note.com 固有の記事・コンプライアンスの知見 | note 運用（`/note-growth-report`等） |
 
 ## 書き方

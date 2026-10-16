@@ -1438,7 +1438,11 @@ await check("v1: 子の URL・連番の崩れ・親の媒体・文字数・claim
     [{ x_thread: [{ index: 0, text: "親 https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }, { index: 1, text: "子 https://www.boat-ai.jp/race/1" }] }, /URLは親/],
     [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 2, text: "子" }] }, /連番/],
     [{ x_thread: [{ index: 0, text: "親", media: "scene-1.png" }] }, /draft-x\.mp4/],
-    [{ x_thread: [{ index: 0, text: "あ".repeat(141), media: X_VIDEO }] }, /文字数/],
+    // 子のあるスレッドは各投稿280まで（親も子も）
+    [{ x_thread: [{ index: 0, text: "あ".repeat(141), media: X_VIDEO }, { index: 1, text: "子" }] }, /文字数/],
+    [{ x_thread: [{ index: 0, text: "親 https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }, { index: 1, text: "あ".repeat(141) }] }, /文字数/],
+    // 親1件だけ（長文の1投稿）でも25,000（全角は2）を超えれば拒否
+    [{ x_thread: [{ index: 0, text: "あ".repeat(12501) + " https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }] }, /文字数|本文が必要/],
     [{ x_thread: Array.from({ length: 7 }, (_, i) => ({ index: i, text: "本文", ...(i === 0 ? { media: X_VIDEO } : {}) })) }, /1〜6件/],
     [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 1, text: "子", media: "nothing.png" }] }, /媒体が添付にありません/],
     [{ claims: [{ source: "facts", path: ["count"], value: 30 }] }, /v1のclaims/],
@@ -1453,6 +1457,15 @@ await check("v1: 子の URL・連番の崩れ・親の媒体・文字数・claim
       message,
       JSON.stringify(change).slice(0, 80),
     );
+});
+await check("v1: 親1件だけのスレッドは長文の1投稿（Premium）として25,000まで通す（2026-10-14 オーナー決定）", async () => {
+  const long = "あ".repeat(5000) + "\nhttps://www.boat-ai.jp/race/202610071110";
+  const result = await validateBundle(
+    form(await fixtureV1({ x_thread: [{ index: 0, text: long, media: X_VIDEO }] })),
+    [],
+    V1_OPTIONS,
+  );
+  assert.equal(result.bundle.x_thread[0].text, long);
 });
 await check("v1: 動画は 32 MiB まで（v0 は 2 MiB のまま）、draft-x.mp4 は v0 では使えない", async () => {
   const big = new Uint8Array(3 * 1024 * 1024);
@@ -1510,6 +1523,33 @@ await check("v1: push-bundle はフォルダを読み、draft-x.mp4 が無けれ
     const again = [];
     await prepareBundle(dir, { exec: async (...a) => again.push(a) });
     assert.equal(again.length, 0);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+});
+await check("v1: X の投稿ごとの risk に、共通のタイトルと場面の文字の警告も入る（点検 08-15 D1）", async () => {
+  const rules = [{ id: "t", category: "c", description: "d", platforms: "all", patterns: ["必勝"] }];
+  const title = await validateBundle(form(await fixtureV1({ title: "必勝の展望" })), rules, V1_OPTIONS);
+  assert(title.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
+  const scene = await validateBundle(
+    form(await fixtureV1({ scenes: Array.from({ length: 3 }, () => ({ seconds: 6, tab: "差がつく材料", component: "観測件数", lines: ["必勝"] })) })),
+    rules,
+    V1_OPTIONS,
+  );
+  assert(scene.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
+});
+await check("push-bundle: v0 の素材には v0 の容量の上限（2 MiB）をかける（点検 08-15 D2）", async () => {
+  const { mkdtemp, writeFile, rm } = fs;
+  const { tmpdir } = await import("node:os");
+  const dir = await mkdtemp(`${tmpdir()}/sns-v0-`);
+  try {
+    const files = await fixture();
+    const big = new Uint8Array(3 * 1024 * 1024);
+    big.set(MP4);
+    files.set("draft.mp4", big);
+    await refreshHash(files, "draft.mp4");
+    for (const [name, bytes] of files) await writeFile(`${dir}/${name}`, bytes);
+    await assert.rejects(prepareBundle(dir), /容量超過/);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { meetFormSearch } from "../meetFormTrend";
 import BoatBadge from "../BoatBadge";
 import ClassLineup from "./ClassLineup";
 import RunsTable from "./RunsTable";
 import FactChips from "./FactChips";
 import Fold from "./Fold";
+import RacerLink from "./RacerLink";
 import {
   METRICS,
   classLineup,
@@ -159,7 +162,11 @@ export default function BoatDeepDive({
       <div className="ta-deep-head">
         <BoatBadge n={boat} />
         <h3>
-          <span translate="no">{racer.name}</span>{" "}
+          {/* フルネームは選手ページへのリンク（BOA-879 案B、2026-10-15 オーナー決定）。艇の行は深掘りを開くボタンのまま */}
+          <RacerLink racerId={racer.racerId} className="ta-link">
+            {racer.name}
+            {racer.racerId ? " ›" : ""}
+          </RacerLink>{" "}
           <span className="ta-note ta-num">
             {C.deepMeta(racer.cls, racer.age, weight)}
           </span>
@@ -307,6 +314,15 @@ export default function BoatDeepDive({
               C.loading
             )}
           </div>
+          {meet && (
+            // 日別の着順を見たところから、同じ艇の今節の足の推移へ（BOA-885）
+            <Link
+              className="ta-link ta-meetform-link"
+              to={`/race/${raceId}${meetFormSearch(boat)}`}
+            >
+              {C.meetFormLinkDeep(boat)}
+            </Link>
+          )}
           {meet && (
             <button
               type="button"

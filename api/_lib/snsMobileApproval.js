@@ -1,5 +1,6 @@
 import { isBundlePublicationBlocked } from './snsBundleValidation.js';
 import { createXSnapshot, mobileVersion } from './snsXSend.js';
+import { isTodayDraft } from './snsTodayDigest.js';
 
 /**
  * 送る前の保留の理由（個別承認の画面と自動送信の auto-plan で同じ条件。sns-pdca-loop tasks 11）。
@@ -18,7 +19,10 @@ export function sendHolds(d) {
   if (s.qa?.pass !== true || s.qa?.numeric_claims_match !== true || s.qa?.L0_hits?.length) holds.push('QA未確認・失敗');
   if (!Array.isArray(d.risk_flags) || d.risk_flags.length) holds.push('risk未確認・要修正');
   if (s.release_evidence?.status !== 'released' || !/^https:\/\//.test(s.release_evidence?.url || '')) holds.push('正式公開証拠なし');
-  if (v1) {
+  if (isTodayDraft(d)) {
+    // /today の投稿（tasks 19b）: 素材の claims の代わりに、一覧の版（auto-plan が書く）が承認の版と同じことを見る
+    if (!s.digest.revision || s.digest.revision !== s.deadline_queue?.source_revision) holds.push('一覧の版が未確認・不一致');
+  } else if (v1) {
     if (s.claim_check?.ok !== true || !s.claim_check?.revision ||
       s.claim_check.revision !== s.deadline_queue?.source_revision) holds.push('数値の照合が未完了・不一致');
   } else if (!Array.isArray(claims) || !claims.length || !Array.isArray(manifest) || !manifest.length || claims.some(c =>

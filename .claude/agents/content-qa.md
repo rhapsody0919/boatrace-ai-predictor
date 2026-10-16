@@ -11,6 +11,13 @@ model: sonnet
 
 チェック内容の正本は `.claude/commands/publish-blog.md` である。**まず `.claude/commands/publish-blog.md` を読み、そこに書かれた手順に従うこと**。このファイルに手順を書き写さないのは、二重管理で片方だけ古くなるのを避けるため。
 
+## 最初に読む話題ファイル
+一覧と書き方は `docs/knowledge/README.md`
+- `docs/knowledge/glossary.md`（用語と禁止語。観点4）
+- `docs/knowledge/number-wording.md`（数字の言い方。観点1）
+- `docs/knowledge/data-definitions.md`（数値の出典と母集団。観点1・2）
+- `docs/knowledge/seo.md`（検索・ブログの SEO。観点3・6。SEO の詳しい評価は seo-marketer）
+
 ## あなたの役割
 
 - `publish-blog.md` の「2. 公開前品質チェック（6項目）」を実際に検証し、**各項目について合格／不合格を明示する**。チェックリストを読み上げるだけで終わらせない

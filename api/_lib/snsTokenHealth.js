@@ -11,6 +11,26 @@ import {
 } from "./snsTokenStore.js";
 import { getYoutubeAccessToken } from "./youtubeUpload.js";
 
+/**
+ * Slack への通知（SLACK_WEBHOOK_URL）。x_read の refresh の後に保存できなかったとき、getXAccessToken がこれで知らせる。
+ * 送信の cron（api/cron/sns-send.js）と同じ通知先。未設定・失敗は投げる（getXAccessToken がログに残す）。
+ * Edge で動くので、scripts/lib/scrapeJobs/monitor.js の postSlack は読み込まない（依存が Node 向けのため）
+ */
+export function slackNotifier(env, fetchImpl) {
+  return async (text) => {
+    if (!env.SLACK_WEBHOOK_URL)
+      throw new Error("SLACK_WEBHOOK_URL が未設定です");
+    const response = await fetchImpl(env.SLACK_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok)
+      throw new Error(`Slack への通知に失敗: HTTP ${response.status}`);
+  };
+}
+
 const GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo";
 const SCOPE = "https://www.googleapis.com/auth/";
 
@@ -36,7 +56,7 @@ async function googleCheck(keys, fetchImpl) {
   return { configured: true, refresh: true, scopes, accessToken };
 }
 
-async function xCheck(env, xDb, now, xRead, fetchImpl) {
+async function xCheck(env, xDb, now, xRead, fetchImpl, notify) {
   if (
     !env.X_OAUTH_CLIENT_ID ||
     !env.X_OAUTH_CLIENT_SECRET ||
@@ -57,7 +77,9 @@ async function xCheck(env, xDb, now, xRead, fetchImpl) {
         Date.parse(row.access_expires_at) - REFRESH_MARGIN_MS <=
         now().getTime(),
       lastRefreshedAt: row.refreshed_at ?? null,
-      ...(xRead ? { read: await xReadCheck(env, xDb, row, fetchImpl) } : {}),
+      ...(xRead
+        ? { read: await xReadCheck(env, xDb, row, fetchImpl, notify) }
+        : {}),
     };
   } catch (error) {
     return { configured: true, connected: false, error: error.message };
@@ -66,7 +88,8 @@ async function xCheck(env, xDb, now, xRead, fetchImpl) {
 
 // ?x_read=1 のときだけ、実際に X の自分のアカウント（GET /2/users/me）を読む。期限が近ければ送信と同じく refresh して保存する。
 // 1回 $0.001 程度。200 なら tweet.read・users.read が通っている（tweet.write・media.write は最初の実投稿で確かめる）
-async function xReadCheck(env, xDb, row, fetchImpl) {
+// refresh の後に保存できないと refresh token を失うので、送信と同じく Slack に知らせる（開発の補助の点検 2026-10-13-11）
+async function xReadCheck(env, xDb, row, fetchImpl, notify) {
   try {
     const { accessToken } = await getXAccessToken({
       db: xDb,
@@ -74,6 +97,7 @@ async function xReadCheck(env, xDb, row, fetchImpl) {
       clientId: env.X_OAUTH_CLIENT_ID,
       clientSecret: env.X_OAUTH_CLIENT_SECRET,
       fetchImpl,
+      notify,
       maxWaits: 3,
     });
     const accountId = await fetchAccountId(accessToken, fetchImpl);
@@ -89,6 +113,7 @@ export async function checkTokenHealth({
   xDb,
   now = () => new Date(),
   xRead = false,
+  notify = slackNotifier(env, fetchImpl),
 } = {}) {
   const youtube = await googleCheck(
     {
@@ -132,7 +157,7 @@ export async function checkTokenHealth({
   delete analytics.accessToken;
 
   return {
-    x: await xCheck(env, xDb, now, xRead, fetchImpl),
+    x: await xCheck(env, xDb, now, xRead, fetchImpl, notify),
     youtube,
     analytics,
   };

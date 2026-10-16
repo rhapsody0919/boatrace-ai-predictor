@@ -1,0 +1,117 @@
+/* 直前情報タブ「今節の足の推移と着順」（BOA-885） */
+.mft-card {
+  margin-top: var(--spacing-4);
+}
+
+.mft-metrics {
+  display: flex;
+  gap: var(--spacing-1);
+  margin-bottom: var(--spacing-2);
+}
+
+.mft-metric {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 0;
+  border: var(--border-width-1) solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.mft-metric.is-active {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-weight: var(--font-weight-bold);
+}
+
+.mft-boats {
+  display: flex;
+  gap: 6px;
+  margin-bottom: var(--spacing-1);
+}
+
+.mft-boat {
+  width: 32px;
+  height: 28px;
+  border-radius: 5px;
+  border: 2px solid var(--border-hairline);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.mft-boat.is-active {
+  opacity: 1;
+  border-color: var(--brand-accent-primary);
+}
+
+.mft-metric:focus-visible,
+.mft-boat:focus-visible {
+  outline: 2px solid var(--brand-accent-primary);
+  outline-offset: 2px;
+}
+
+.mft-chart {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.mft-chart svg {
+  display: block;
+}
+
+.mft-grid {
+  stroke: var(--border-hairline);
+}
+
+.mft-axis {
+  fill: var(--text-secondary);
+}
+
+.mft-series {
+  opacity: 0.25;
+}
+
+.mft-series.is-active {
+  opacity: 1;
+}
+
+.mft-point-active {
+  fill: var(--surface-card);
+  stroke-width: 2;
+}
+
+.mft-finish,
+.mft-cell {
+  fill: var(--text-primary);
+}
+
+.mft-finish,
+.mft-cell.is-strong {
+  font-weight: var(--font-weight-bold);
+}
+
+.mft-finish.is-win,
+.mft-cell.is-win {
+  fill: var(--brand-accent-primary);
+}
+
+.mft-cell.is-course-off {
+  fill: #e8743b;
+}
+
+.mft-avg {
+  fill: none;
+  stroke: var(--text-secondary);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.mft-card {
+  /* 導線で開いたとき、固定ヘッダーの下に見出しが隠れないように */
+  scroll-margin-top: 120px;
+}

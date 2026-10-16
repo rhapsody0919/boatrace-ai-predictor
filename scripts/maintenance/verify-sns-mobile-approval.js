@@ -451,3 +451,28 @@ test("同じ(draft,revision,engine)への再保存は、下書きが別の値に
   assert.notEqual((await row(d)).revision, r.revision);
   assert.equal((await save(r.revision)).id, i.id);
 });
+
+test("/today の投稿（tasks 19b）は一覧の版が承認の版と同じときだけ保留にしない（素材の claims は見ない）", async () => {
+  const { sendHolds } = await import("../../api/_lib/snsMobileApproval.js");
+  const draft = (revision, queueRevision) => ({
+    platform: "x",
+    status: "pending_review",
+    publish_blocked: false,
+    publication_hold_reasons: [],
+    risk_flags: [],
+    bundle_import_id: null,
+    source_data: {
+      digest: { date: "2026-10-17", revision },
+      qa: { pass: true, numeric_claims_match: true, L0_hits: [] },
+      release_evidence: { status: "released", url: "https://www.boat-ai.jp/today" },
+      deadline_queue: {
+        deadline_at: new Date(Date.now() + 7200000).toISOString(),
+        expires_at: new Date(Date.now() + 3600000).toISOString(),
+        source_revision: queueRevision,
+      },
+    },
+  });
+  assert.deepEqual(sendHolds(draft("r1", "r1")), []);
+  assert.deepEqual(sendHolds(draft("r1", "r2")), ["一覧の版が未確認・不一致"]);
+  assert.deepEqual(sendHolds(draft(null, null)), ["一覧の版が未確認・不一致"]);
+});
