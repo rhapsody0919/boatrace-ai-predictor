@@ -95,11 +95,17 @@ export function createChromiumHeadless({
      * 画面の上部を PNG で撮る（/today の X 投稿の画像、tasks 19b）。既定はスマホ幅の上部 4:5（390×488 を3倍で 1170×1464）。
      * 印が全部見えたときだけ撮る（見えないまま撮った画像を投稿しない）
      */
+    /**
+     * element を渡すと、その要素だけを撮る（/today の X 投稿の龍神ソナーの図、2026-10-16 ユーザー決定）。
+     * label を渡すと、要素の先頭に1行の見出し（例: 会場R 締切）を差し込んでから撮る（どのレースの図か分かるように）
+     */
     async screenshot({
       url,
       requiredSelectors = [],
       viewport = { width: 390, height: 488 },
       deviceScaleFactor = 3,
+      element = null,
+      label = null,
     }) {
       return open(
         { url, viewport, deviceScaleFactor, requiredSelectors },
@@ -112,6 +118,22 @@ export function createChromiumHeadless({
             if (await page.locator(selector).first().isVisible())
               throw new Error("screenshot_overlay_visible");
           // フォントの読み込みを待ってから撮る（文字が空白のまま撮らない）
+          if (element) {
+            const target = page.locator(element).first();
+            if (!(await target.isVisible()))
+              throw new Error("screenshot_component_missing");
+            if (label)
+              await target.evaluate((node, text) => {
+                const head = document.createElement("div");
+                head.textContent = text;
+                head.style.cssText =
+                  "font-size:18px;font-weight:700;color:#fff;padding:12px 16px 0;letter-spacing:0.02em";
+                node.prepend(head);
+              }, label);
+            await target.scrollIntoViewIfNeeded();
+            await page.evaluate(() => document.fonts.ready);
+            return { png: await target.screenshot({ type: "png" }) };
+          }
           await page.evaluate(() => document.fonts.ready);
           return { png: await page.screenshot({ type: "png" }) };
         },

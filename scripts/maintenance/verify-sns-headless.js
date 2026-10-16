@@ -54,6 +54,17 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
                   if (!visible.includes(selector)) throw new Error("timeout");
                 },
                 isVisible: async () => visible.includes(selector),
+                evaluate: async (fn, arg) => {
+                  log.labels = [...(log.labels ?? []), { selector, arg }];
+                },
+                scrollIntoViewIfNeeded: async () => {},
+                screenshot: async (options) => {
+                  log.elementShots = [
+                    ...(log.elementShots ?? []),
+                    { selector, options },
+                  ];
+                  return Buffer.from("element");
+                },
               }),
             }),
           };
@@ -299,4 +310,37 @@ test("screenshot: 撮る前に Cookie の同意を「拒否」で記録し、帯
     "utf8",
   );
   assert.match(analytics, new RegExp(`CONSENT_KEY = "${CONSENT_KEY}"`));
+});
+
+test("screenshot の element・label（龍神ソナーの図、2026-10-16）: 要素の先頭に見出しを差し込み、その要素だけを撮る。要素が見えなければ撮らない", async () => {
+  const URL_RACE = "https://www.boat-ai.jp/race/2026-10-16-19-12?tab=sonar";
+  const fake = fakeBrowser({
+    visible: [...SCREEN_MARKERS["race-sonar"], ".af-hep .af-dark"],
+  });
+  const shot = await createChromiumHeadless({ launch: fake.launch }).screenshot(
+    {
+      url: URL_RACE,
+      requiredSelectors: SCREEN_MARKERS["race-sonar"],
+      viewport: { width: 390, height: 844 },
+      element: ".af-hep .af-dark",
+      label: "下関12R 22:45締切",
+    },
+  );
+  assert.equal(String(shot.png), "element");
+  assert.deepEqual(fake.log.labels, [
+    { selector: ".af-hep .af-dark", arg: "下関12R 22:45締切" },
+  ]);
+  assert.deepEqual(fake.log.elementShots, [
+    { selector: ".af-hep .af-dark", options: { type: "png" } },
+  ]);
+  assert.equal(fake.log.screenshots, undefined);
+  const hidden = fakeBrowser({ visible: SCREEN_MARKERS["race-sonar"] });
+  await assert.rejects(
+    createChromiumHeadless({ launch: hidden.launch }).screenshot({
+      url: URL_RACE,
+      requiredSelectors: SCREEN_MARKERS["race-sonar"],
+      element: ".af-hep .af-dark",
+    }),
+    /screenshot_component_missing/,
+  );
 });

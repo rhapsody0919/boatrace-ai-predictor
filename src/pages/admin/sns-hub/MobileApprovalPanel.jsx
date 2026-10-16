@@ -66,9 +66,20 @@ export function MobileRaceReview({
             ? row.imageUrl
             : null;
         const mediaKey = `${d.id}:${row.versionHash}:${mediaUrl}`;
-        const mediaReady =
-          !(needsVideo || needsImage) ||
-          (mediaUrl && mediaStates[mediaKey] === "ready");
+        // X の画像の複数枚（/today、最大4枚）は、全部が読み込めてから承認できる
+        const imageUrls =
+          needsImage && Array.isArray(row.imageUrls)
+            ? row.imageUrls
+            : needsImage
+              ? [mediaUrl]
+              : [];
+        const imageKey = (i) => `${mediaKey}:${i}`;
+        const mediaReady = needsImage
+          ? imageUrls.length > 0 &&
+            imageUrls.every(
+              (url, i) => url && mediaStates[imageKey(i)] === "ready",
+            )
+          : !needsVideo || (mediaUrl && mediaStates[mediaKey] === "ready");
         const loaded = () =>
           setMediaStates((v) => ({ ...v, [mediaKey]: "ready" }));
         const failed = () =>
@@ -115,20 +126,31 @@ export function MobileRaceReview({
                 <p>動画未完成・プレビューなし</p>
               ))}
             {needsImage &&
-              (mediaUrl ? (
-                <img
-                  key={mediaKey}
-                  src={mediaUrl}
-                  alt="X添付画像"
-                  onLoad={loaded}
-                  onError={failed}
-                />
-              ) : (
-                <p>X添付画像のプレビューなし</p>
-              ))}
+              imageUrls.map((url, i) =>
+                url ? (
+                  <img
+                    key={imageKey(i)}
+                    src={url}
+                    alt={
+                      imageUrls.length > 1
+                        ? `X添付画像 ${i + 1}/${imageUrls.length}`
+                        : "X添付画像"
+                    }
+                    onLoad={() =>
+                      setMediaStates((v) => ({ ...v, [imageKey(i)]: "ready" }))
+                    }
+                    onError={() =>
+                      setMediaStates((v) => ({ ...v, [imageKey(i)]: "failed" }))
+                    }
+                  />
+                ) : (
+                  <p key={imageKey(i)}>X添付画像のプレビューなし</p>
+                ),
+              )}
             {(needsVideo || needsImage) && !mediaReady && (
               <p>
-                {mediaStates[mediaKey] === "failed"
+                {mediaStates[mediaKey] === "failed" ||
+                imageUrls.some((_, i) => mediaStates[imageKey(i)] === "failed")
                   ? "添付を読み込めません。再読込して確認してください。"
                   : "添付プレビューの読込・確認が必要です。"}
               </p>

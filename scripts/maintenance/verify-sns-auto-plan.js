@@ -27,9 +27,9 @@ const riskRules = JSON.parse(
     "utf8",
   ),
 ).rules;
-// JST 2026-10-16 12:00。締切（発走）は JST 15:00、送る時刻（止められる期限）は 14:00、失効は 14:30
-const T0 = new Date("2026-10-16T03:00:00Z");
-const RACE = "2026-10-16-04-12";
+// JST 2037-10-16 12:00。締切（発走）は JST 15:00、送る時刻（止められる期限）は 14:00、失効は 14:30
+const T0 = new Date("2037-10-16T03:00:00Z");
+const RACE = "2037-10-16-04-12";
 const RACE_URL = `https://www.boat-ai.jp/race/${RACE}?tab=sonar`;
 const PRE_153 = [
   "035_sns_marketing_hub_schema.sql",
@@ -317,9 +317,9 @@ test("準優勝戦の素材 v1 から X・YouTube の item を作り、合格な
     ["x", "manual", "youtube", "manual"],
   );
   // 締切は races から（JST 15:00）。事前通知の期限は3時間前、止められる期限は60分前
-  assert.equal(x.deadline_at.toISOString(), "2026-10-16T06:00:00.000Z");
-  assert.equal(x.notify_by.toISOString(), "2026-10-16T03:00:00.000Z");
-  assert.equal(x.veto_until.toISOString(), "2026-10-16T05:00:00.000Z");
+  assert.equal(x.deadline_at.toISOString(), "2037-10-16T06:00:00.000Z");
+  assert.equal(x.notify_by.toISOString(), "2037-10-16T03:00:00.000Z");
+  assert.equal(x.veto_until.toISOString(), "2037-10-16T05:00:00.000Z");
   assert.equal(x.checks.passed, true);
   assert.equal(x.checks.dry_run, true);
   assert.equal(x.checks.new_format, true);
@@ -341,11 +341,11 @@ test("準優勝戦の素材 v1 から X・YouTube の item を作り、合格な
     assert.equal(d.source_data.deadline_queue.source_revision, "rev1");
     assert.equal(
       d.source_data.deadline_queue.deadline_at,
-      "2026-10-16T06:00:00.000Z",
+      "2037-10-16T06:00:00.000Z",
     );
     assert.equal(
       d.source_data.deadline_queue.expires_at,
-      "2026-10-16T05:30:00.000Z",
+      "2037-10-16T05:30:00.000Z",
     );
     assert.equal(d.source_data.release_evidence.status, "released");
     assert.deepEqual(sendHolds(d), child ? ["公開保留素材"] : []);
@@ -400,15 +400,15 @@ test("同じ素材でもう一度走らせても item・下書き・通知は増
 });
 
 test("優勝戦・準優勝戦以外・中止・送る時刻を過ぎたレースは item を作らない", async () => {
-  await addRace("2026-10-16-05-01", "予選");
-  await addRace("2026-10-16-06-12", "優勝戦", { cancelled: "confirmed" });
-  await addRace("2026-10-16-07-12", "優勝戦", { start: "12:59:00" });
-  await addRace("2026-10-16-08-12", "ツッキー優勝戦");
+  await addRace("2037-10-16-05-01", "予選");
+  await addRace("2037-10-16-06-12", "優勝戦", { cancelled: "confirmed" });
+  await addRace("2037-10-16-07-12", "優勝戦", { start: "12:59:00" });
+  await addRace("2037-10-16-08-12", "ツッキー優勝戦");
   for (const raceId of [
-    "2026-10-16-05-01",
-    "2026-10-16-06-12",
-    "2026-10-16-07-12",
-    "2026-10-16-08-12",
+    "2037-10-16-05-01",
+    "2037-10-16-06-12",
+    "2037-10-16-07-12",
+    "2037-10-16-08-12",
   ])
     await importBundle({ raceId });
   const result = await run();
@@ -548,11 +548,11 @@ test("158 が未適用で月の切り替えの関数が無くても、知らせ�
 });
 
 test("同じレースの素材が2つあれば新しい方を使い、別の素材の item が生きていれば作らない", async () => {
-  const older = await importBundle({ createdAt: "2026-10-15T00:00:00Z" });
-  const newer = await importBundle({ createdAt: "2026-10-16T00:00:00Z" });
+  const older = await importBundle({ createdAt: "2037-10-15T00:00:00Z" });
+  const newer = await importBundle({ createdAt: "2037-10-16T00:00:00Z" });
   await run();
   assert.ok((await items()).every((i) => i.bundle_import_id === newer));
-  const rows = await sqlStore.todaysBundles("2026-10-16");
+  const rows = await sqlStore.todaysBundles("2037-10-16");
   const plans = planCandidates(
     { ...rows, bundles: rows.bundles.filter((b) => b.id === older) },
     T0,
@@ -571,13 +571,13 @@ test("PostgREST の store: URL・条件付きの更新・失敗は投げる", as
       return new Response(
         JSON.stringify([
           { id: "b1", bundle: { race_id: RACE }, created_at: "x" },
-          { id: "b2", bundle: { race_id: "2026-10-15-01-01" } },
+          { id: "b2", bundle: { race_id: "2037-10-15-01-01" } },
         ]),
       );
     return new Response(JSON.stringify([{ id: "1" }]));
   };
   const store = createAutoPlanStore({ url: "https://db", key: "k", fetchImpl });
-  const rows = await store.todaysBundles("2026-10-16");
+  const rows = await store.todaysBundles("2037-10-16");
   assert.deepEqual(
     rows.bundles.map((b) => b.id),
     ["b1"],
@@ -585,7 +585,7 @@ test("PostgREST の store: URL・条件付きの更新・失敗は投げる", as
   const urls = calls.map((c) => decodeURIComponent(c.url));
   assert.ok(
     urls[0].includes(
-      "schema_version=eq.ryujin-preview/1&created_at=gte.2026-10-12T15:00:00.000Z",
+      "schema_version=eq.ryujin-preview/1&created_at=gte.2037-10-12T15:00:00.000Z",
     ),
   );
   assert.ok(urls.some((u) => u.includes(`races?race_id=in.("${RACE}")`)));
@@ -632,13 +632,13 @@ const failingFetch = async () => ({
 });
 
 test("やり直し中（checking）の古い素材の item は、新しい素材が入ったら閉じ、次の実行で新しい素材の item を作る", async () => {
-  await importBundle({ createdAt: "2026-10-15T00:00:00Z" });
+  await importBundle({ createdAt: "2037-10-15T00:00:00Z" });
   await run({ checkClaims: failingFetch });
   assert.deepEqual(
     (await items()).map((i) => i.state),
     ["checking", "checking"],
   );
-  const newer = await importBundle({ createdAt: "2026-10-16T00:00:00Z" });
+  const newer = await importBundle({ createdAt: "2037-10-16T00:00:00Z" });
   await run();
   assert.deepEqual((await items()).map((i) => i.state).sort(), [
     "held_manual",
@@ -653,7 +653,7 @@ test("やり直し中（checking）の古い素材の item は、新しい素材
 test("やり直し中（checking）の item は、送る時刻を過ぎたら held_manual に閉じる", async () => {
   await importBundle();
   await run({ checkClaims: failingFetch });
-  const late = new Date("2026-10-16T05:00:00Z");
+  const late = new Date("2037-10-16T05:00:00Z");
   await runSnsAutoPlan(
     { mode: "live", now: () => late, shouldStop: () => false },
     {
@@ -676,8 +676,8 @@ test("やり直し中（checking）の item は、送る時刻を過ぎたら he
 });
 
 test("1つの素材の検査が例外で落ちても、ほかのレースの item は作る", async () => {
-  await addRace("2026-10-16-09-11", "優勝戦");
-  await importBundle({ raceId: "2026-10-16-09-11" });
+  await addRace("2037-10-16-09-11", "優勝戦");
+  await importBundle({ raceId: "2037-10-16-09-11" });
   await importBundle();
   const result = await run({
     checkClaims: async ({ raceId }) => {
@@ -691,7 +691,7 @@ test("1つの素材の検査が例外で落ちても、ほかのレースの ite
       .map((a) => a.key),
     [`plan:${RACE}`],
   );
-  assert.ok((await items()).every((i) => i.race_id === "2026-10-16-09-11"));
+  assert.ok((await items()).every((i) => i.race_id === "2037-10-16-09-11"));
   assert.equal((await items()).length, 2);
 });
 
