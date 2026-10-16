@@ -33,3 +33,42 @@ export function usableLayer(state, raceId) {
     state.data.rows.length > 0
   );
 }
+
+const ROW_COLS = [
+  "race_id",
+  "race_date",
+  "rank1",
+  "rank2",
+  "rank3",
+  "winning_technique",
+  "course_by_boat",
+  "st_by_course",
+  "payout_3tan",
+];
+const COND_KEYS = ["b1_class", "gap_band", "top_boat", "round", "grade_g1plus"];
+
+/** 32bit FNV-1a（16進8桁） */
+function fnv1a(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
+}
+
+/**
+ * layer の中身の印（spec FR-4）。振り返りで「入力したときから比べる相手が変わったか」を見る。
+ * run_id は締切前の作り直しで、行が同じでも変わる（T0-3）ので使わない。行は全行・全列を入れる
+ * （先頭と末尾だけだと、中の行の入れ替わりを見落とす）
+ */
+export function layerKey(layer) {
+  const canon = [
+    COND_KEYS.map((k) => layer.conditions?.[k] ?? null),
+    layer.n_total,
+    layer.n_returned,
+    layer.pool_cutoff,
+    layer.rows.map((r) => ROW_COLS.map((k) => r[k] ?? null)),
+  ];
+  return fnv1a(JSON.stringify(canon));
+}

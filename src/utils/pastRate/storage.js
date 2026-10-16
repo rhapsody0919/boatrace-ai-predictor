@@ -64,6 +64,7 @@ export function isValidEntry(e) {
     typeof e.savedAt === "string" &&
     !Number.isNaN(Date.parse(e.savedAt)) &&
     typeof e.snapshot?.runId === "string" &&
+    typeof e.snapshot.layerKey === "string" &&
     typeof e.result?.truncated === "boolean" &&
     Number.isInteger(e.result.n) &&
     Number.isInteger(e.result.count) &&
@@ -153,6 +154,9 @@ export function entriesForRace(
     .sort((a, b) => TYPES.indexOf(a.type) - TYPES.indexOf(b.type));
 }
 
-/** 入力したときの比べる相手と今の run_id が違うか（どれか1つでも違えば） */
-export const runIdChanged = (entries, runId) =>
-  entries.some((e) => String(e.snapshot.runId) !== String(runId));
+/**
+ * 入力したときの比べる相手と今の layer の中身が違うか（どれか1つでも違えば）。印は layerKey（layer.js）。
+ * run_id では比べない（締切前の作り直しで、行が同じでも変わる。T0-3）
+ */
+export const layerChanged = (entries, key) =>
+  entries.some((e) => e.snapshot.layerKey !== key);

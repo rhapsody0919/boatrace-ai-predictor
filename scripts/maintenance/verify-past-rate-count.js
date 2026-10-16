@@ -457,6 +457,26 @@ const SUITES = {
       true,
     );
     check("raceId が読めなければ取得しない", m.hasLayerDate("bad"), false);
+    // layer の中身の印
+    const base = {
+      run_id: "r1",
+      race_id: "2026-10-14-01-01",
+      conditions: { b1_class: "A1", gap_band: 2, top_boat: 1, round: null, grade_g1plus: false },
+      n_total: 4,
+      n_returned: 4,
+      pool_from: "2019-04-01",
+      pool_cutoff: "2026-10-13",
+      rows: [row({ rank: [1, 2, 3] }), row({ rank: [1, 3, 2] }), row({ rank: [2, 1, 3] }), row({ rank: [3, 1, 2] })],
+    };
+    const k = m.layerKey(base);
+    check("印は16進8桁", /^[0-9a-f]{8}$/.test(k), true);
+    check("run_id が違っても行が同じなら同じ印", m.layerKey({ ...base, run_id: "r2" }), k);
+    const mid = base.rows.map((r, i) => (i === 2 ? { ...r, rank2: 4 } : r));
+    check("先頭と末尾が同じで中の行だけ違えば違う印", m.layerKey({ ...base, rows: mid }) !== k, true);
+    const st = base.rows.map((r, i) => (i === 1 ? { ...r, st_by_course: [0.15, 0.15, 0.15, 0.15, 0.15, 0.16] } : r));
+    check("中の行の ST が1つ違えば違う印", m.layerKey({ ...base, rows: st }) !== k, true);
+    check("条件が違えば違う印", m.layerKey({ ...base, conditions: { ...base.conditions, gap_band: 3 } }) !== k, true);
+    check("n_total が違えば違う印", m.layerKey({ ...base, n_total: 5 }) !== k, true);
   },
 
   label(m, check) {
@@ -571,7 +591,7 @@ const SUITES = {
       type: "boat1",
       input: { outcome: "win" },
       savedAt: NOW.toISOString(),
-      snapshot: { runId: "r1", poolCutoff: "2026-10-13" },
+      snapshot: { runId: "r1", poolCutoff: "2026-10-13", layerKey: "k1" },
       result: { n: 100, count: 50, excluded: [], label: null, truncated: true },
       ...over,
     });
@@ -709,7 +729,8 @@ const SUITES = {
         entries: [
           entry(),
           entry({ type: "x" }),
-          entry({ snapshot: { runId: 1 } }),
+          entry({ snapshot: { runId: 1, layerKey: "k1" } }),
+          entry({ snapshot: { runId: "r1" } }),
           entry({ result: { n: 1, count: 0, excluded: [], label: null } }),
           entry({ savedAt: "きのう" }),
           entry({ type: "order", input: { outcome: "win" } }),
@@ -815,15 +836,17 @@ const SUITES = {
       [],
     );
     check(
-      "runId の照合（どれか1つでも違えば変わった）",
+      "layer の印の照合（どれか1つでも違えば変わった、run_id は見ない）",
       [
-        m.runIdChanged([entry()], "r1"),
-        m.runIdChanged(
-          [entry(), entry({ snapshot: { runId: "r0", poolCutoff: "x" } })],
-          "r1",
+        m.layerChanged([entry()], "k1"),
+        m.layerChanged(
+          [entry(), entry({ snapshot: { runId: "r1", poolCutoff: "x", layerKey: "k0" } })],
+          "k1",
         ),
+        // run_id が違っても中身の印が同じなら「変わった」にしない（締切前の作り直し、T0-3）
+        m.layerChanged([entry({ snapshot: { runId: "r2", poolCutoff: "x", layerKey: "k1" } })], "k1"),
       ],
-      [false, true],
+      [false, true, false],
     );
   },
 };
@@ -865,6 +888,12 @@ const MUTANTS = [
     "layer.n_returned >= 2000",
   ],
   ["layer", "race_id を照合しない", "state.data.race_id === raceId", "true"],
+  [
+    "layer",
+    "印を先頭と末尾の行だけで作る",
+    "layer.rows.map((r) => ROW_COLS.map((k) => r[k] ?? null)),",
+    "[layer.rows[0], layer.rows[layer.rows.length - 1]].map((r) => ROW_COLS.map((k) => r[k] ?? null)),",
+  ],
   [
     "label",
     "線を丸めた後の割合で判定する（15%ちょうどの扱いを変える）",
