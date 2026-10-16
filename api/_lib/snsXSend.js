@@ -1,9 +1,20 @@
 import { buildPostText } from "../../src/pages/admin/sns-hub/utils.js";
 /** X呼び出しは注入のみ。実adapter・鍵・cronは今回提供しない。 */
 export const X_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
-/** YouTube動画はXのmedia upload上限とは無関係の制約（Twitter API由来の32MBをそのまま転用しない）。 */
-export const YOUTUBE_MEDIA_MAX_BYTES = 500 * 1024 * 1024;
+/** YouTube の動画も 32 MiB まで（youtubeQueueAdapter.js は1回の multipart で上げるため。承認と送信の上限をそろえる、2026-10-13）。 */
+export const YOUTUBE_MEDIA_MAX_BYTES = 32 * 1024 * 1024;
 export const X_MAX_POLLS = 10;
+// 媒体の処理の待ちは1回 1〜30 秒に収める（極端な値で関数が時間切れになり、job が sending のまま残るのを防ぐ。2026-10-13 オーケストレーター決定）
+export const X_MAX_WAIT_SECS = 30;
+
+/** check_after_secs を待つ秒数にする。無ければ1秒、数でなければ投げる（begin_post の前なので保留になる） */
+export function waitSecsOf(info) {
+  const secs = info.check_after_secs;
+  if (secs === undefined) return 1;
+  if (typeof secs !== "number" || !Number.isFinite(secs))
+    throw new Error("媒体の処理の待ち時間（check_after_secs）が不正です");
+  return Math.min(X_MAX_WAIT_SECS, Math.max(1, secs));
+}
 // X の分割アップロードは1回 5 MB まで。5 MiB（5,242,880）は十進の 5 MB を超えるので、余裕をとって 4 MiB にする
 export const X_CHUNK_BYTES = 4 * 1024 * 1024;
 
@@ -31,7 +42,9 @@ export async function createXSnapshot(draft, loadMedia) {
   const paths =
     draft.platform === "youtube"
       ? [path, draft.cover_image_path].filter(Boolean)
-      : [path].filter(Boolean);
+      : Array.isArray(draft.source_data?.image_paths)
+        ? draft.source_data.image_paths // X の画像の複数枚（/today、160）。先頭は cover_image_path
+        : [path].filter(Boolean);
   for (const path of paths) {
     const bytes = await loadMedia(path, maxBytes);
     if (!bytes.byteLength || bytes.byteLength > maxBytes)
@@ -131,7 +144,7 @@ export async function runXSendJob(
       ) {
         if (result.processing_info.state === "failed" || poll >= X_MAX_POLLS)
           throw new Error("媒体処理が完了しません");
-        await wait(Math.max(1, result.processing_info.check_after_secs || 1));
+        await wait(waitSecsOf(result.processing_info));
         await check("check");
         result = await x.status(upload.id);
       }

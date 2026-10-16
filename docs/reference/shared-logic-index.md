@@ -88,6 +88,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/kelly-criterion.js` | — | kellyFraction, halfKelly, quarterKelly |
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
 | `scripts/lib/latestByRaceId.js` | 行の配列から、IDフィールド（既定はrace_id）ごとにタイムスタンプフィールド | latestByRaceId |
+| `scripts/lib/launchChromium.js` | Chromium の起動（ビルド時の AI スナップショット scripts/generate-ai-snapshots.js と、 | installJapaneseFont, launchChromium, JAPANESE_FONT |
 | `scripts/lib/liveOdds.js` | オッズのライブ取得（BOA-487）の純粋部分。api/odds/live.js から使う。 | validateLiveOddsQuery, liveOddsUrl, parseLiveOddsPage, badRequestResponse, upstreamErrorResponse ほか10件 |
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
@@ -146,7 +147,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | countsAsStart, computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW ほか1件 |
 | `scripts/lib/racesInit/digest.js` | 朝の初期化（races-init）の shadow で記録する、レースごとのダイジェスト（純粋関数。DB・取得先に接続しない）。 | raceIdOf, digestScrapedRace, digestScrapedVenue, digestDbRace, compareRaceDigests |
 | `scripts/lib/racesInit/ghaSkip.js` | GitHub Actions 側の朝の初期化（morning-init.js）を止める変数 SKIP_MORNING_INIT_ON_GHA の判定（純粋関数）… | decideMorningInitOnGha, FALLBACK_FROM_JST_HOUR |
-| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | backoffMinutes, resolveVenuesLimit, isBreakerOpenError, defaultCheckNoProgram, runRacesInitJob ほか4件 |
+| `scripts/lib/racesInit/job.js` | 朝の初期化（A8、races・race_entries・predictions の初期化）の共通ラッパ向けハンドラー（tasks.md T4b-07-4、 | inCautionAlertUntil, backoffMinutes, resolveVenuesLimit, isBreakerOpenError, defaultCheckNoProgram ほか5件 |
 | `scripts/lib/racesInit/predictCodeCheck.js` | 予測ロジックの変更検知による再生成（WS4b T4b-07-5、plan.md §4.2(d)・設計判断(g)）。 | hashFiles, computePredictCodeHash, checkPredictCodeChange, PREDICT_CODE_HASH_JOB, PREDICT_LOGIC_FILES |
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
@@ -184,10 +185,17 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/seoKeywordKpi.js` | SEOワード戦略のKPI集計（集客レーン、2026-09-29） | classifyQuery, summarizeClusters, weekStartOf, weeklySeries, trackedQueryWeekly ほか3件 |
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups |
+| `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel, createAutoPlanStore, AUTO_PLAN_STAGES ほか7件 |
 | `scripts/lib/snsCampaigns.js` | 企画型（キャンペーン型）SNS投稿パイプライン用 sns_campaigns / sns_campaign_entries | createCampaign, getCampaign, getActiveCampaigns, findQualifyingRaces, getRaceIdsWithResults ほか6件 |
+| `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | runSnsDaily, createYoutubeAnalyticsClient, createSnsDailyStore, SNS_DAILY_LOOKBACK_DAYS, UTM_CAMPAIGNS ほか2件 |
+| `scripts/lib/snsGa4.js` | SNS の流入の GA4 の共通部分（sns-pdca-loop plan §5）。分析スクリプト（scripts/analysis/sns-pdca-base… | getServiceAccountToken, createGa4Client, X_SOURCES, YOUTUBE_SOURCES, SITE_HOST ほか5件 |
+| `scripts/lib/snsMetricsRunner.js` | SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron `sns_metrics`、plan §5）。 | runSnsMetrics, createYoutubeMetricsReader, createXMetricsReader, dailySendMicrousd, createSnsMetricsStore ほか7件 |
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
-| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか3件 |
+| `scripts/lib/snsPostTracking.js` | X の親の投稿の UTM（sns-pdca-loop tasks 23、plan §2・§5、spec C3）。 | insertTrackingUrl, prepareRaceTracking, createPostTrackingStore |
+| `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
+| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか5件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
+| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, todayCandidates, todayFeatured, buildTodayPost, runTodayPlan ほか8件 |
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
 | `scripts/lib/stripNonCode.js` | コメント・文字列・テンプレート・正規表現リテラルの中身を空白に置き換える簡易な字句解析（純関数）。 | stripNonCode |
@@ -247,11 +255,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/botPageModel.js` | ボット向け HTML（ADR 0089）の中身を、/api/races/today の JSON から組む。 | assertTodayRacesJson, buildTopModel, buildVenueModel, TodayRacesShapeError |
 | `src/utils/breadcrumbLd.js` | パンくずの BreadcrumbList（構造化データ）を組む。画面の Breadcrumb と、ボット向け HTML（ADR 0089）が同じ値を出す。 | isValidCrumbs, toBreadcrumbListLd |
 | `src/utils/chartDomain.js` | 展示タイムの推移グラフの縦軸（範囲と目盛り）（BOA-557）。 | exhibitionTimeAxis, exhibitionSparklineY |
-| `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, MODEL_COLORS, BOAT_COLORS, BOAT_LINE_COLORS, HIT_COLORS ほか1件 |
+| `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, MODEL_COLORS, BOAT_COLORS, getBoatChipBackground, BOAT_LINE_COLORS ほか2件 |
 | `src/utils/competitionRank.js` | 同じ値は同じ順位にする順位（競技順位方式: 1, 2, 2, 4 …）（純関数、BOA-529）。 | competitionRank |
 | `src/utils/courseBaseline.js` | ST考察の「同コース・同級別の平均との差」の算出（phase a FR-1） | indexBaseline, getBaselineCell, diffFromBaseline, diffTone, expectedBreakoutCount ほか1件 |
 | `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか8件 |
-| `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
+| `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか13件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatExhibitionSt, formatPercent, formatDate, formatDateLocalized ほか5件 |
 | `src/utils/homeAiIntroFaq.js` | トップの「よくある質問」（HomeAiIntro）の問い・答えと FAQPage の JSON-LD を組む純粋な関数。 | buildFaqItems, toFaqPageLd, isAssistShown |
@@ -260,7 +268,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate, seriesDayByDate, meetDaysFromRows ほか1件 |
 | `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, meetDaysOf, meetPageState, officialAsOfDate, pickMeetAnchor ほか5件 |
 | `src/utils/motorFreshRate.js` | 新しいモーターの最初の開催で、公式の2連率が 0 のときに何を出すか（BOA-830、 | isWithinFreshMotorWindow, motorRateView, motorRate3View, FRESH_MOTOR_WINDOW_DAYS |
-| `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, formatGenerationDate, isClippedByGeneration, officialTallyState |
+| `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, isInMotorGeneration, isVenueRankSnapshotBeforeGeneration, formatGenerationDate, isClippedByGeneration ほか1件 |
 | `src/utils/motorUsage.js` | モーターの使用回数と「未使用（新モーター・実績なし）」の判定（BOA-702）。 | motorUsageCount, isUnusedMotor |
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
 | `src/utils/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
@@ -281,6 +289,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/racerConditionStats.js` | — | tallyWinPlaceShow, aggregateRacerConditionStats, STRONG_WIND_MS, RACER_CONDITION_MIN_RUNS |
 | `src/utils/racerIndexPolicy.js` | 選手ページ（/racer/:racerId）を検索エンジンにインデックスさせるかの判定（集客レーン、2026-10-02）。 | isRacerIndexable, RACER_INDEX_GRADES, RACER_INDEX_ACTIVE_DAYS |
 | `src/utils/racerName.js` | 出走表の選手名（「丹下」「将」の間を全角スペース3つで詰めた表記）を姓と名に分ける。 | splitRacerName |
+| `src/utils/racerPagePath.js` | 選手ページの「STの推移」のアンカー（BOA-879） | ST_TREND_ID, racerPagePath |
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
 | `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generatePredictionShareText ほか2件 |
@@ -289,7 +298,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/snsDraftDiff.js` | 投稿用の値だけ。署名URL・状態変更は本文差分に含めない。 | draftContent, characterDiff, numericDiff, compareDraftSnapshots |
 | `src/utils/snsMonthCalendar.js` | — | calendarDay, calendarState, calendarRowDay, calendarVenue, calendarMonth ほか3件 |
 | `src/utils/snsObservationCsv.js` | — | csvPublicationRange, buildObservationCsvRows, serializeObservationCsv, CSV_COLUMNS |
-| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | observationPeriod, validateObservation, validateProviderObservation, compareObservations, buildObservationUtm ほか5件 |
+| `src/utils/snsObservations.js` | SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 | observationPeriod, validateObservation, validateProviderObservation, compareObservations, buildObservationUtm ほか9件 |
 | `src/utils/stConsideration.js` | ST考察（安定率・出遅率・抜出）の算出（phase a FR-1） | deriveRaceStContext, computeStConsideration, computeStHistogram, getStHistory, STABLE_THRESHOLD ほか3件 |
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
 | `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | techniqueColor |
@@ -298,7 +307,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/trendDateLayout.js` | `MeetSparkline` の viewBox の幅と左右の余白。日付の見出しを点と同じ横位置に置くため共有する | dayTickLabels, sparkLeftPercent, dayCenter, layoutTrendByDate, SPARK_VIEW_W ほか1件 |
 | `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, techniqueDiffers, isAsPredicted, TECHNIQUE_NAMES |
 | `src/utils/turnTimeVenues.js` | オリジナル展示の「まわり足」が会場独自の計測で、他場と値の水準が違う会場（会場コード）。 | hasDistinctTurnTime, DISTINCT_TURN_TIME_VENUE_CODES |
-| `src/utils/venueMotorRanking.js` | 会場のモーターの順位と並べ替え（純関数、BOA-428）。 | rankBy, sortMotorRows, formatMotorRate, formatSlashDate, currentSeriesRiders ほか2件 |
+| `src/utils/venueMotorRanking.js` | 会場のモーターの順位と並べ替え（純関数、BOA-428）。 | rankBy, sortMotorRows, formatMotorRate, formatSlashDate, currentSeriesRiders ほか3件 |
 | `src/utils/venuePlaceRates.js` | 会場特徴カードの「もっと詳しく」（BOA-269）の集計。 | placeRatesByBoat, techniqueBreakdown, TECHNIQUE_ORDER |
 | `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
 | `src/utils/venueUtils.js` | — | VENUE_CODE_TO_BLOG_ID, getVenueBlogId, getVenueGuidePath |
@@ -336,4 +345,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 301 ファイル / export 1647 件。
+対象 310 ファイル / export 1723 件。

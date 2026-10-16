@@ -18,6 +18,7 @@ function DigestSection({
   total = null,
   emptyMessage = "本日、条件に該当するレースはありません",
   notice = null,
+  after = null,
   children,
 }) {
   const isEmpty = count === 0;
@@ -43,6 +44,8 @@ function DigestSection({
       ) : (
         children
       )}
+      {/* 0件でも出す補足（逃がしの3号艇の折りたたみ。2026-10-15） */}
+      {after}
     </section>
   );
 }

@@ -1,6 +1,10 @@
 import { test, expect, e2eTodayJST, fetchRecorded } from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
 import { ANALOGY_V16_RACE, routeAnalogyV16 } from "./analogy-v16-fixture.js";
+import {
+  THINKING_ASSIST_RACE,
+  routeThinkingAssistV16,
+} from "./thinking-assist-fixture.js";
 
 /**
  * 画面幅ごとのレイアウト崩れを機械的に検知する。
@@ -64,6 +68,47 @@ const TRAILING_GAP_THRESHOLD_PX = 40;
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+for (const venue of ["heiwajima", "biwako", "marugame"]) {
+  test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(`/blog/${venue}-water-wind-guide`);
+    const tables = page.locator(".blog-post-content table");
+    await expect(tables.first()).toBeVisible();
+    // 1列目の文字が何行になったかを、文字の行の矩形の上端の数で数える（BOA-870）。
+    // セルの高さは2列目以降の折り返しでも伸びるので、1列目の折り返しの判定には使わない
+    const measurements = await tables.evaluateAll((elements) =>
+      elements.map((table) => {
+        const lines = [...table.querySelectorAll("tr > :first-child")]
+          .filter((cell) => cell.textContent.trim())
+          .map((cell) => {
+            const range = document.createRange();
+            range.selectNodeContents(cell);
+            // 太字などで同じ行でも上端が少しずれるので、4px 以内は同じ行とみなす
+            const tops = [...range.getClientRects()]
+              .filter((r) => r.width > 0)
+              .map((r) => r.top)
+              .sort((x, y) => x - y);
+            const lines = tops.filter((t, i) => i === 0 || t - tops[i - 1] > 4).length;
+            return { label: cell.textContent.trim(), lines };
+          });
+        return {
+          lines,
+          laterColumns: [...table.querySelectorAll("th:not(:first-child), td:not(:first-child)")]
+            .map((element) => getComputedStyle(element).whiteSpace),
+          overflowX: getComputedStyle(table).overflowX,
+        };
+      }),
+    );
+    expect(measurements.length).toBeGreaterThan(0);
+    for (const measurement of measurements) {
+      const wrapped = measurement.lines.filter((l) => l.lines > 1);
+      expect(wrapped, `${venue}: 1列目が折り返したセル`).toEqual([]);
+      expect(measurement.laterColumns).not.toContain("nowrap");
+      expect(measurement.overflowX).toBe("auto");
+    }
+  });
+}
+
 test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそろう", async ({
   page,
 }) => {
@@ -74,8 +119,10 @@ test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそ�
   await expect(rows).toHaveCount(6);
   // レイアウトだけの再現用。録画のF数に依存せず、FlyingBadgeと同じ構造を
   // 6号艇にだけ置く（本番データ・集計値は変更しない）。
+  // 置き換えと測定は1回の evaluate（同期）の中で行う。await を挟むと、その間に
+  // データの再描画が本物の F バッジを戻し、バッジが2つになって落ちた（BOA-871）
   for (const label of ["", "今節", "this meet", "이번 시리즈", "本節"]) {
-    await rows.evaluateAll((elements, meetLabel) => {
+    const measured = await rows.evaluateAll((elements, meetLabel) => {
       for (const row of elements) {
         row.querySelectorAll(".flying-badge").forEach((badge) => badge.remove());
       }
@@ -89,23 +136,29 @@ test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそ�
         badge.append(meet);
       }
       elements[5].querySelector(".rbit-name-cell").append(badge);
+      return {
+        badges: elements.map((row) => row.querySelectorAll(".flying-badge").length),
+        widths: elements.map(
+          (row) => row.querySelector(".rbit-bar-track").getBoundingClientRect().width,
+        ),
+        overflow:
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      };
     }, label);
-    await expect(rows.locator(".flying-badge")).toHaveCount(1);
-    const widths = await rows.locator(".rbit-bar-track").evaluateAll(
-      (tracks) => tracks.map((track) => track.getBoundingClientRect().width),
-    );
+    expect(measured.badges, `${label}: バッジは6号艇にだけ1つ`).toEqual([
+      0, 0, 0, 0, 0, 1,
+    ]);
+    const { widths } = measured;
     expect(widths).toHaveLength(6);
     expect(Math.min(...widths), `${label}: 空の棒枠`).toBeGreaterThan(0);
     expect(
       Math.max(...widths) - Math.min(...widths),
       `${label}: 6艇の棒枠の幅 ${widths.join(", ")}`,
     ).toBeLessThanOrEqual(1);
-    expect(
-      await page.evaluate(() =>
-        document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      ),
-      `${label}: 横スクロール`,
-    ).toBeLessThanOrEqual(OVERFLOW_TOLERANCE_PX);
+    expect(measured.overflow, `${label}: 横スクロール`).toBeLessThanOrEqual(
+      OVERFLOW_TOLERANCE_PX,
+    );
   }
 });
 
@@ -1406,7 +1459,7 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
         `${width}px: 決まり手の左端から確率の左端まで`,
       ).toBeLessThanOrEqual(700);
       // 以前はページの中央に置いていたが、タブを切り替えるたびに左端が飛ぶので、タブの列にそろえる
-      // （BOA-820、2026-10-10 ユーザー決定）
+      // （BOA-820、2026-10-10 ユーザー決定。BOA-881 で列そのものを画面の中央に置いた後も同じ）
       expect(
         Math.abs(m.tabLeft - m.boxLeft),
         `${width}px: 振り返りの左端`,
@@ -1438,17 +1491,27 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== "layout-desktop", "1440pxで確認");
-    await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
-    const card = page.locator(".race-result .vds-card");
-    await expect(card).toBeVisible({ timeout: 30000 });
-    const gap = await card.evaluate((el) => {
-      const prev = el.previousElementSibling;
-      if (!prev) throw new Error("水面傾向カードの直前に払戻表・注記が無い");
-      return (
-        el.getBoundingClientRect().top - prev.getBoundingClientRect().bottom
-      );
-    });
-    expect(gap).toBeGreaterThanOrEqual(16);
+    // 1100px は縦に積む（上下の余白）。1440px は払戻金の右に置く2段（BOA-881、左右の余白）
+    for (const width of [1100, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
+      const card = page.locator(".race-result .vds-card");
+      await expect(card).toBeVisible({ timeout: 30000 });
+      const gap = await card.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const side = el.closest(".race-split__side");
+        if (side && getComputedStyle(side).display !== "contents") {
+          const main = side.previousElementSibling.getBoundingClientRect();
+          return box.left - main.right;
+        }
+        // 囲み（display: contents）を飛ばして、見た目の直前の要素を探す
+        let prev = el.previousElementSibling;
+        if (!prev && side) prev = side.previousElementSibling?.lastElementChild;
+        if (!prev) throw new Error("水面傾向カードの直前に払戻表・注記が無い");
+        return box.top - prev.getBoundingClientRect().bottom;
+      });
+      expect(gap, `${width}px`).toBeGreaterThanOrEqual(16);
+    }
   });
 
   // 今節タブの得点率早見。箱の幅いっぱいに広がり、余りが全部選手名の列に入って、
@@ -1657,4 +1720,105 @@ test.describe("レイアウト: SNSハブの文字が地とかぶらない（ダ
       expect(low, JSON.stringify(low.slice(0, 8))).toEqual([]);
     });
   }
+});
+
+// BOA-826: 769〜1199px はカードの外枠を720pxに止める。
+// BOA-881: 1200px 以上はカードを列いっぱいにし、表（640）の右に注記を置く2段にする（「左に寄る」の解消）。
+test("今節のカード: 1200px以上は列いっぱい、769〜1199pxは720px以下、768px以下は親幅のまま", async ({
+  page,
+}) => {
+  await page.goto("/race/2026-09-23-09-12?tab=meet", {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(page.locator(".rmt-compare tbody tr")).toHaveCount(6, {
+    timeout: 30000,
+  });
+  for (const width of [1440, 1920, 1024, 769, 768, 375]) {
+    await page.setViewportSize({ width, height: 900 });
+    const measurements = await page.locator(".rmt-card").evaluateAll((cards) =>
+      cards.map((card) => ({
+        width: card.getBoundingClientRect().width,
+        left: card.getBoundingClientRect().left,
+        parentLeft: card.parentElement.getBoundingClientRect().left,
+        parentWidth: card.parentElement.clientWidth,
+      })),
+    );
+    expect(measurements.length).toBeGreaterThan(0);
+    for (const card of measurements) {
+      if (width >= 1200) {
+        expect(Math.abs(card.width - card.parentWidth)).toBeLessThanOrEqual(1);
+      } else if (width >= 769) {
+        expect(card.width, `${width}px: カードの幅`).toBeLessThanOrEqual(720);
+      } else {
+        expect(Math.abs(card.width - card.parentWidth)).toBeLessThanOrEqual(1);
+      }
+      expect(Math.abs(card.left - card.parentLeft)).toBeLessThanOrEqual(1);
+    }
+    if (width >= 769) {
+      const table = await page.locator(".rmt-compare").boundingBox();
+      expect(table.width).toBeLessThanOrEqual(640);
+    }
+    expect(await page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )).toBeLessThanOrEqual(2);
+  }
+});
+
+test.describe("レイアウト: 思考アシストの PC 表示（BOA-880）", () => {
+  /** 2026-10-10 の「堅い？荒れる？」の枠 480px のときの棒の行の幅。棒はこれより伸ばさない（差が読みにくくなる） */
+  const ROUGH_BAR_ROW_MAX = 458;
+
+  const measure = (page) =>
+    page.evaluate(() => {
+      const box = (sel) => {
+        const e = document.querySelector(sel);
+        if (!e) return null;
+        const r = e.getBoundingClientRect();
+        return { left: r.left, right: r.right, width: r.width };
+      };
+      return {
+        page: box(".ta-page"),
+        header: box(".ta-header"),
+        rough: box(".ta-rough-btn"),
+        roughBar: box(".ta-rough-btn > .ta-minibar"),
+        roughFoot: box(".ta-rough-btn > .ta-rough-foot"),
+        fig: box(".ta-split-fig"),
+        side: box(".ta-split-side"),
+        foot: box(".ta-foot"),
+      };
+    });
+
+  test("堅い？荒れる？の枠・2段組・固定フッターが列の幅にそろい、棒は伸びすぎない", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await page.goto(`/race/${THINKING_ASSIST_RACE}/assist`);
+    await expect(page.locator(".ta-minibar-track").first()).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.locator(".ta-lane").first()).toBeVisible();
+    const m = await measure(page);
+    const near = (a, b, label) =>
+      expect(Math.abs(a - b), `${label}: ${a} と ${b}`).toBeLessThanOrEqual(1);
+
+    // どの幅でも、固定フッターは本文の列と同じ左右の端
+    near(m.foot.left, m.page.left, "固定フッターの左端");
+    near(m.foot.right, m.page.right, "固定フッターの右端");
+    expect(m.roughBar.width).toBeLessThanOrEqual(ROUGH_BAR_ROW_MAX + 1);
+
+    if (page.viewportSize().width < 1024) {
+      // 1列: 枠はヘッダーの幅いっぱい、段は縦に積む（棒の下に級の並び）
+      expect(m.roughFoot.left).toBeLessThan(m.roughBar.right);
+      return;
+    }
+    // 枠はヘッダーの中で列の幅いっぱい（480px で止まらない）
+    const headerPad = m.rough.left - m.header.left;
+    near(m.rough.right, m.header.right - headerPad, "堅い？荒れる？の枠の右端");
+    // 図と右の列は 1:1、2つで列の幅を埋める
+    near(m.fig.width, m.side.width, "図と右の列の幅");
+    near(m.fig.left, m.page.left, "図の左端");
+    near(m.side.right, m.page.right, "右の列の右端");
+    // 枠の右の段（級の並び・件数）は右の列と同じ位置から始まる
+    near(m.roughFoot.left, m.side.left, "枠の右の段の左端");
+  });
 });

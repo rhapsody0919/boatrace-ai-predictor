@@ -1,4 +1,7 @@
 {
+  "racerLink": {
+    "pageSuffix": "的選手頁面（日文）›"
+  },
   "nav": {
     "predictions": "🏁 AI預測",
     "hits": "✅ 命中紀錄",
@@ -709,7 +712,7 @@
     "gridSubtitle": "以實際進入的航道為準。點擊儲存格可查看該航道最近10次出賽",
     "gridCaveat": "航道指起跑時實際進入的航道，而非艇號。未取得資料的賽事已排除",
     "gridRows": {
-      "current": "本期",
+      "current": "全部期間",
       "last3m": "近3個月",
       "last1m": "近1個月",
       "local": "本場地",
@@ -725,7 +728,7 @@
     "periodHeader": "期間/條件",
     "nHeader": "出賽數",
     "allCoursesFold": "查看全部6條航道的成績",
-    "periodCaveat": "※「本期」並非官方的期別劃分，而是本站資料中可確認的全部期間（2025年12月以後，最多過去2年）。與官方網站的勝率母體不同。",
+    "periodCaveat": "※「全部期間」為本站資料中可確認的全部比賽（2025年12月以後，最多過去2年），並非官方的期別（以5月1日、11月1日劃分的本期）。與官方網站的勝率母體不同。",
     "recentFinishesNoteScoped": "{{scope}}從{{course}}道（實際進入航線）出賽的最近{{n}}場",
     "recentScope": {
       "current": "2025年12月以後",
@@ -1613,6 +1616,8 @@
         "hintVenue": "在{{venue}}",
         "hintVenueAll": "{{venue}}的全部選手（依航道）",
         "hintExh": "今天的展示",
+        "hintStTrend": "選手頁面的ST走勢（日文）",
+        "hintStTrendLink": "{{boat}}號艇選手的ST走勢（選手頁面，日文）",
         "runs": "{{n}}場",
         "hintVenueFoot": "在{{venue}}的平均ST僅供參考（最多最近30場）。",
         "hintFewVenue": "{{boats}}號艇在此賽場的出賽場數少，容易波動。",
@@ -1888,7 +1893,8 @@
           "raceNo": "{{n}}R",
           "techPay": "{{tech}}，{{yen}}日圓",
           "bandLink": "查看此帶的比賽 ›"
-        }
+        },
+        "meetFormLink": "進攻的{{b}}號艇本節狀態 →"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {
@@ -1995,7 +2001,30 @@
     "avgAbbrev": "平均",
     "exhibitionFastestMark": "最快",
     "exhibitionChartNote": "長條越長代表展示越快（與最慢艇的差）。數字為實際展示時間（秒）",
-    "originalExhibitionItemSeparator": "、"
+    "originalExhibitionItemSeparator": "、",
+    "meetFormTitle": "本節狀態走勢與名次",
+    "meetFormMetricExhibition": "展示時間",
+    "meetFormMetricLap": "一周",
+    "meetFormMetricTurn": "迴旋腳",
+    "meetFormMetricStraight": "直線",
+    "meetFormBoatLabel": "選擇{{boat}}號艇",
+    "meetFormChartLabel": "{{metric}}的本節走勢（強調{{boat}}號艇）",
+    "meetFormRunN": "第{{n}}場",
+    "meetFormDay": "{{day}}日",
+    "meetFormRace": "{{no}}R",
+    "meetFormNoValue": "無",
+    "meetFormRow_day": "日",
+    "meetFormRow_race": "R",
+    "meetFormRow_frame": "枠",
+    "meetFormRow_course": "進入",
+    "meetFormRow_finish": "名次",
+    "meetFormRowValue_exhibition": "展示",
+    "meetFormRowValue_lap": "一周",
+    "meetFormRowValue_turn": "迴旋腳",
+    "meetFormRowValue_straight": "直線",
+    "meetFormNote": "越上方越快。點內的數字是實際名次（金色為第1名）。進入與枠不同的場次以不同顏色顯示。沒有展示的場次不畫點，前後以虛線相連。各艇出賽的比賽不同（橫軸為各艇的第1場起）。",
+    "meetFormNoteAvg": "虛線為當日的場地平均。",
+    "meetFormFinishFailed": "無法取得名次"
   },
   "pitReport": {
     "title": "維修區報告（選手留言）",
@@ -2137,8 +2166,11 @@
     "rankSourceNote": "梯次名次為本站計算。排除在名次之外的，是預賽結束前於本梯次偷跑（F）的選手（獎典除外），以及中途歸鄉的選手（前一天之前有出賽，但當天沒有排定任何一場的選手）。",
     "rankSourceNoteAfterPrelim": "預賽結束後的偷跑不會被排除在名次之外，但預賽後中途歸鄉的選手會被排除（兩者皆與官方相同）。因此即使預賽已結束，有選手中途歸鄉時，後面的名次可能會往前遞補。",
     "rankSourceNoteOfficial": "得分率與梯次名次採用官方得分率一覽（預賽結束時點）的數值，扣分、獎典除外、中途歸鄉也依官方呈現。預賽期間官方一覽尚未公布，故為本站統計。",
+    "rankSourceNotePrelimOfficial": "官方得點率一覧（{{date}}結束時）中有扣分的選手已扣除該分數；備註為中途歸鄉的選手，即使仍在今天的賽程中，也排除在名次之外。",
+    "penaltyMark": "扣{{points}}分",
     "sourceOfficial": "官方",
     "sourceOwn": "本站統計",
+    "sourceOwnWithPenalty": "本站統計、官方扣{{points}}分",
     "sparkStTitle": "本梯次的ST",
     "sparkExTitle": "本梯次的展示",
     "sparkBaselineSt": "平常 {{value}}",
@@ -2179,7 +2211,7 @@
     "withdrawn": "不列入",
     "withdrawnTitle": "視為中途歸鄉（前一天之前有出賽，但當天沒有排定任何一場的選手。為本站推定。官方名次表同樣會將中途歸鄉的選手排除在名次之外）",
     "withdrawnOfficialTitle": "依官方得分率一覽的備註為中途歸鄉（與官方名次表相同，排除在名次之外）",
-    "withdrawnOfficial": "不列入",
+    "withdrawnOfficial": "中途歸鄉（官方）",
     "awardExcluded": "獎典除外",
     "awardExcludedTitle": "官方得分率一覽的備註為獎典除外（無法出賽準優勝戰、優勝戰）。與官方相同，排除在名次之外",
     "flyingExcluded": "獎典除外（F）",
@@ -2319,6 +2351,7 @@
     "accidentLineNear": "距B2線（0.70）還差{{need}}分",
     "accidentNoStarts": "本期尚未出賽",
     "accidentNote": "事故分依官方配分（F、出發延遲20分，妨害失格15分，選手責任的失格、缺賽10分。本期第2次以後的F為30分）。不含不良航法、待機行動違規（2分），因此可能低於官方數值。超過0.70時，下次級別審查將降為B2級。不含當天這場比賽之前的比賽",
+    "accidentNoteB2": "事故分依官方配分（F、出發延遲20分，妨害失格15分，選手責任的失格、缺賽10分。本期第2次以後的F為30分）。不含不良航法、待機行動違規（2分），因此可能低於官方數值。0.70是從A、B1級降為B2級的界線（此選手目前為B2級）。不含當天這場比賽之前的比賽",
     "accidentFetchError": "無法取得本期事故率",
     "meetScoreForecastTitle": "今日名次會讓得分率這樣變動",
     "meetScorePrelimOver": "預賽得分率 {{rate}}（{{n}}場、{{source}}、已確定）",
@@ -2558,7 +2591,7 @@
     },
     "exTop": {
       "title": "⏲️ 展示時間最快艇的第1名轉換率",
-      "description": "根據過去90天的比賽結果，分析各賽場「哪個艇號容易創下最快展示時間（繞圈時間）」「展示時間最快時是否實際獲得第1名」。",
+      "description": "根據過去90天的比賽結果，分析各賽場「哪個艇號容易創下最快展示時間」「展示時間最快時是否實際獲得第1名」。",
       "summary": "過去90天的展示時間實績",
       "fastestRate": "展示時間最快率",
       "winWhenFastest": "最快時的第1名率",
@@ -2566,7 +2599,7 @@
       "fastestCountHeader": "展示時間最快次數",
       "fastestRateHeader": "展示時間最快率 (%)",
       "winWhenFastestHeader": "最快時的第1名率 (%)",
-      "note": "💡 展示時間最快是指創下該場比賽中最快的繞圈時間（同時間除外）。最快率高但第1名率低的艇號，可能有「展示快但正式比賽無法取勝」的傾向。",
+      "note": "💡 展示時間最快是指創下該場比賽中最快的展示時間（周回展示第2圈150公尺區間的時間，同時間除外）。最快率高但第1名率低的艇號，可能有「展示快但正式比賽無法取勝」的傾向。",
       "empty": "找不到展示時間資料"
     },
     "topStart": {
@@ -2663,8 +2696,9 @@
       },
       "partsHistoryEmpty": "找不到此馬達的零件交換、螺旋槳交換紀錄",
       "partsHistoryNote": "💡 零件交換、螺旋槳交換單獨來看，可能是機力下滑的徵兆，也可能是剛保養完的好轉徵兆。徽章比較交換前後的平均展示時間僅供參考，不保證結果。",
-      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。金框的數值為本場比賽中官方2連率最高的馬達。米色底色為該欄中最高的值。",
-      "highlightNote": "💡 金框的數值為本場比賽中官方2連率最高的馬達。米色底色為該欄中最高的值。",
+      "note": "💡 點擊表格列可查看該馬達各賽節的走勢。金框的數值為本場比賽中官方2連率最高的馬達。",
+      "highlightNote": "💡 金框的數值為本場比賽中官方2連率最高的馬達。",
+      "bestCellNote": "米色底色為該欄中最高的值。",
       "focusedRowNote": "以線框起的列，是您在其他分頁選擇的艇。",
       "venueRankLabel": "場內排名（場地官方的2連率）",
       "venueRankBadge": "第{{rank}}名／共{{total}}台（{{value}}%）",
@@ -2702,8 +2736,8 @@
       "title": "🏁 馬達排行榜",
       "description": "選擇賽艇場後，將該場所有馬達依2連率排列。點擊欄位標題，也可依馬達編號、優勝次數、前檢時間排序。",
       "rankHeader": "名次",
-      "rateHeader": "2連率",
-      "officialRateHeader": "官方2連率",
+      "rateHeader": "2連率（%）",
+      "officialRateHeader": "官方2連率（%）",
       "finalHeader": "晉級優勝戰",
       "championshipHeader": "優勝",
       "userHeader": "本節使用選手",
@@ -2748,7 +2782,7 @@
     },
     "exTrend": {
       "title": "📈 選手別展示時間走勢",
-      "description": "選擇本日舉辦中的比賽，即可了解各選手的展示時間（繞圈時間）在過去90天的走勢。與以賽場、艇號為單位的「展示時間」分頁不同，這是查看選手個人狀況的功能。",
+      "description": "選擇本日舉辦中的比賽，即可了解各選手的展示時間在過去90天的走勢。與以賽場、艇號為單位的「展示時間」分頁不同，這是查看選手個人狀況的功能。",
       "todayTimeHeader": "本日的展示時間",
       "avgTimeHeader": "過去的平均展示時間",
       "legend": "展示時間",
@@ -2900,7 +2934,7 @@
       },
       "extrend": {
         "name": "選手別展示時間走勢",
-        "description": "分析各選手的展示時間（繞圈時間）在最近90天的走勢"
+        "description": "分析各選手的展示時間在最近90天的走勢"
       },
       "techprofile": {
         "name": "選手別獲勝方式傾向",
@@ -3101,7 +3135,7 @@
       },
       "extime": {
         "title": "關於展示時間最快艇的第1名轉換率",
-        "dataView": "根據過去90天的比賽結果，依艇號分析各賽場「哪個艇號容易創下最快展示時間（繞圈時間）」「展示時間最快時是否實際獲得第1名」。",
+        "dataView": "根據過去90天的比賽結果，依艇號分析各賽場「哪個艇號容易創下最快展示時間」「展示時間最快時是否實際獲得第1名」。",
         "tips": [
           {
             "strong": "展示時間最快率高但第1名率低的艇號",
@@ -3119,7 +3153,7 @@
       },
       "extrend": {
         "title": "關於選手別展示時間走勢",
-        "dataView": "顯示各出賽選手的展示時間（繞圈時間）在過去90天的走勢。與展示時間最快艇的第1名轉換率（賽場、艇號單位）不同，這是查看選手個人狀況的功能。",
+        "dataView": "顯示各出賽選手的展示時間在過去90天的走勢。與展示時間最快艇的第1名轉換率（賽場、艇號單位）不同，這是查看選手個人狀況的功能。",
         "tips": [
           {
             "strong": "展示時間持續變慢的選手",

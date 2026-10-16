@@ -7,6 +7,9 @@
 - ADR の番号は並行セッションで重複しやすい。足したら npm run verify:adr-numbers（次の番号も出る）（2026-09-12 に8組15件を振り直し、memory technical_adr_number_collisions）
 - マイグレーションの番号は並行するレーンで重なりうる。着手時にオーケストレーターに番号を取ってもらい、PR 作成前に origin/master の最新番号と比べる（2026-10-11、オーケストレーター依頼）
 - 新しいマイグレーションの番号は origin/master の最大番号より大きくないと verify-migration-numbers が CI で落とす。予約した番号でも、master が先に進んでいたら使えない（2026-10-13、BOA-822 の 149〜151 を 155〜157 に付け替え）
+- マイグレーションの番号を付け替えるときは、SQL のファイル名・docs/db-migration/APPLIED.md・docs/design の番号の表記・verify-*.js が読むファイル名を全部 grep して直す（2026-10-10、memory sns_hub_intake_paused_2026_10_09）
+- plan.md に新しいテーブル・リレーションを書いたら node scripts/maintenance/generate-er-diagram.js {slug} で DDL から erDiagram を作り、npm run verify:er-diagram で照合する（2026-09-15、memory er_diagram_generation_2026_09_15、PR #665）
+- docs/reference/database-design.md の関係図は自動更新されず、「テーブル一覧と使用状況」等は古い（race_odds を「未使用」と書く等）（2026-09-15、memory er_diagram_generation_2026_09_15。更新されたかは要確認）
 
 ## 本番 DB への書き込み
 - Claude 側から本番に書けない。Supabase MCP は --read-only 固定、service key のスクリプトは auto mode が拒否する。迂回しない（2026-09-25、memory technical_supabase_write_blocked_both_routes）
@@ -21,6 +24,11 @@
 - RPC の本文の md5（`AS $$`〜`$$;` の間）は、ファイルから計算した値と本番の md5(prosrc) が一致する。109 の2関数 5d0ff6d8…・a5c39f55…、110 は 8f6cf80c…（2026-10-13 本番で確認、157 の適用前の確認用）
 - 日ごとの集計表を「直近N日の upsert」で直すと、件数が0になったセルが残る（CHECK n>0 で0の行を書けず、upsert は行を消さない）。computed_at を全行の payload に入れて upsert し、窓の中の古い computed_at の行を後で消す（更新では DEFAULT が効かない）（2026-10-13、system-architect、BOA-822 の 155）
 - races-init の後始末が unified を作り直すのは「unified の行が無いレース」があるときだけ。朝の生成で値を null にして続行すると、一時的な失敗でもその日は戻らない（2026-10-13、scripts/lib/racesInit/job.js:139-150）
+- races を参照する外部キー18本のうち sns_campaign_entries だけ ON DELETE NO ACTION（他17本は CASCADE）。行があると races の削除が失敗し、他の表は黙って消える。「FK 違反で安全に止まる」前提を置かない（2026-09-28、memory technical_pg_constraint_not_information_schema_for_fks・feedback_pk_migration_verify_all_constraints_and_single_row_test）
+- races には UNIQUE(race_date, venue_code, race_number) があり、race_id・日付の修正でぶつかる（BOA-325 で本番の120件が全部失敗。dry-run は INSERT/UPDATE を実行しないので制約違反を検出しない）。race_number を一時退避して直す（2026-09-15、memory race_entries_racer_id_null_bug_2026_09_15、PR #664・#666）
+- 除外するものを DB から読んで集合にするとき、エラーを見ずに (data || []) にすると、読み取りの失敗で除外が空になりガードが外れる（BOA-512 で開催した32レースを中止に一括更新）。失敗は例外にする（ADR-0069、verify-query-errors.js）。一括 UPDATE の跡は updated_at がミリ秒まで同じ行で見分けられる（2026-09-20、memory technical_supabase_read_error_swallowed_flips_guard、PR #743）
+- verify-migration-rls.js は REVOKE/GRANT の1文につき先頭の関数名しか読まない。複数の関数を並べた文は1関数1文に分ける（2026-10-08、memory feedback_codex_patch_intake_checklist）
+- race_entries が別の日の出走表で上書きされる汚染は、race_results が正常に入るので欠損を探す検知では見つからない。日次の data_health_entries_duplicates（マイグレーション100）で検知する（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-423）
 
 ## 画面からの読み取り
 - 画面から Supabase を読むのは src/services/supabaseClient.js の1つの入口だけ。.throwOnError() が既定で、失敗を「データなし」に化けさせない（BOA-359、.claude/rules/frontend-data-fetch.md）
@@ -30,6 +38,8 @@
 - 小数2桁の値（勝率など）の差で帯を切るときは 1/100 の整数で計算する。浮動小数では 6.10−5.60 が 0.4999… で帯が1つずれる（2026-10-12、同 architecture-y.md）
 - 朝の unified の予想は、欠けたレースがあると日全体を作り直すことがある（scripts/lib/racesInit/job.js:25）。予想が読む入力の表は開催時間外に更新する（2026-10-12、同 architecture-y.md）
 - 予想を作るときの「前日まで」はレースの日付で読む（race_date < 対象日）。「最新まで」で読むと過去の日を作り直したときに結果が混ざる（2026-10-12、BOA-628 と同じ系統、同 architecture-y.md）
+- fetchAll の .range() で全件を読むときは .order("race_id") 等の一意の並びを付ける。並びが無いとページの境目で行が重なったり抜けたりする（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-403）
+- Supabase は Small。Nano のときは get_predictions_by_date が2.3〜12秒かかり、anon の statement_timeout（3秒）を超えて「開催なし」と誤って表示した。DB は ap-southeast-2 で、api/cron/* も syd1 に固定している（2026-09-19、memory project_data_foundation_orchestration_2026_09_19、PR #747）
 
 ## SNS の送信
 - SNS の送信を止めるのは許可のリスト（自動送信の job は item が notified かつ mode が自動のときだけ進める）にし、claim・check・begin_post・youtube_publish_begin の全部で見る。拒否のリストや下書きの状態の変更だけでは、送信中・要照合で 148 のガードが RAISE し止まらない（2026-10-12、system-architect、docs/design/sns-pdca-loop/plan.md §3）
@@ -37,3 +47,20 @@
 - 送信の契約は、毎日 daily_baseline_date（JST）と YouTube の baseline_day（PT）を当日にしないと claim できない（2026-10-12、139:144・146:143）
 - PostgREST の upsert は式の一意索引（COALESCE）を on_conflict に使えない。NULL を含むキーは UNIQUE NULLS NOT DISTINCT の制約にする（本番は PG 17.6、2026-10-12）
 - findQualifyingRaces は standard と unified のうち predicted_at の新しい方の1行を使う。unified にしか無いキーを条件にすると黙って0件になる（2026-10-13、system-architect、scripts/lib/snsCampaigns.js:141-158）
+
+## 点検での見落としを防ぐ知見
+- 本番操作待ちの引継ぎと後続PRのマージは時点を分け、マージだけで表生成・公開への切替・データ削除の完了を推定しない。（2026-10-13、2026-10-13-plan-1517.md）
+- 同一jobの後続成功や通知開始前の成功で先行失敗を消すと未通知になるため、未通知alertの保持を点検する。（2026-10-13、2026-10-13-plan-review-incaution-20261013-05.md）
+- 取得対象の削除だけで保存済みhealthが消えるとせず、履歴ファイルとlast_report.healthの両方に旧警告入力が残らないか確認する。（2026-10-13、2026-10-13-plan-review-motorstop-20261013-06.md）
+- queueの先頭N件を毎回切る処理では、失敗や親待ちが候補枠を塞がないか、送信件数・検査件数・走査進捗を別々に確認する。（2026-10-13、2026-10-13-plan-review-snsrunner-20261013-04.md）
+- 監視より短い周期で上書きするreportの一度きり事象は、即時通知だけに依存せず未配達の永続記録と後処理からの要照合の受け渡しを確認する。（2026-10-13、2026-10-13-plan-review-snsrunner-20261013-04.md）
+- 媒体処理STATUSの応答欠落と正規の省略成功を区別し、空応答を完了に正規化して投稿へ進まないか点検する。（2026-10-13、2026-10-13-plan-review-xadapter-20261013-02.md）
+- 分割アップロードのchunkサイズを変えたら、最大媒体のchunk数と1試行の費用上限の積算も照合する。（2026-10-13、2026-10-13-plan-review-xadapter-20261013-02.md）
+- refresh成功後の条件付き保存が不成立のときは、確認用の再読取の失敗も通知対象に含め、再読取例外で元の理由や再連携案内が脱落しないか点検する。（2026-10-13、2026-10-13-plan-review-xoauth-20261013-03.md）
+- 再連携とrefreshの競合は古いrefreshの保存0行と古いrefreshの失敗を分け、新行利用か停止かがspec未定義なら競合全体を解消済みとしない。（2026-10-13、2026-10-13-plan-review-xoauth-20261013-03.md）
+- IDなしlookupの外部通信抑止と読取台帳の消費は別に確認し、外部通信0を台帳消費0としない。（2026-10-13、2026-10-13-plan-review-youtube-20261013-01.md）
+- fetchRecordedという名前だけで録画限定とせず、モードとstrictを確認し、本番接続禁止のレーンでは録画漏れ・live/recordの実通信への遷移を遮断する。（2026-10-13、2026-10-13-task-70-check-codex-patches.md）
+- 同じファイルの同じ文脈へ追加する並行パッチは単独適用成功だけで統合可能とせず、まとめた適用でも両方の検査が残るか確認する。（2026-10-13、2026-10-13-task-72-check-codex-patches.md）
+- 新verifyの台帳登録を取り込み側へ委ねた場合、登録と品質ゲートでの実行確認が済むまで取り込み判定に残作業を明記する。（2026-10-13、2026-10-13-task-72-check-codex-patches.md）
+- 鍵を読まず本番接続を避けるローカル検証ではstrict replay・API_PROXY_TARGET空文字に加えViteのenvDirを空ディレクトリにし、複合npmスクリプトの引数転送先も確認する。（2026-10-13、2026-10-13-boa-744-part2.md）
+- verify実行前にimport先の秘密ファイル読込と実通信を確認し、本番接続禁止のレーンではmanualのDB検証をローカル純関数検査と区別して未実行と報告する。（2026-10-13、2026-10-13-boa-856.md）

@@ -515,14 +515,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 範囲と回数を別の塊にして折り返す。間は margin でなく column-gap で空け、
+   回数が次の行の頭に来たとき余白が残らないようにする（BOA-732） */
 .rbit-period-recent {
+  display: inline-flex;
+  flex-wrap: wrap;
+  column-gap: 0.25em;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
-}
-
-.rbit-period-recent-counts {
-  display: inline-block;
-  margin-left: 0.25em;
 }
 
 /* 前期を取り込む前に前々期を出しているとき。古い期の値が主役に見えないよう、
@@ -667,20 +667,15 @@
   color: var(--text-secondary);
 }
 
-/* 前期の値の横に添える今期との差（BOA-439）。向きは符号（+/−）で示し、色だけに頼らない */
+/* 前期欄の注記（前々期を出している理由・差を出さない理由）。どれも本文と同じ大きさ・色にする。
+   前々期だと気づけるように（ファン評価2周目）、差が無い理由が一番小さい文字に埋もれないように（BOA-732） */
 .rbit-period-note {
   margin: var(--spacing-1) 0 0;
-  font-size: var(--font-size-2xs);
-  color: var(--text-secondary);
-}
-
-/* 前期が公開待ちで前々期を出しているときの注記。値の行は通常と同じ見た目なので、
-   前々期だと気づけるよう本文と同じ大きさ・色にする */
-.rbit-period-note.rbit-period-pending {
   font-size: var(--font-size-xs);
   color: var(--text-primary);
 }
 
+/* 前期の値の横に添える今期との差（BOA-439）。向きは符号（+/−）で示し、色だけに頼らない */
 .rbit-period-diff {
   /* 375pxで2連対率の括弧が「前期から / −12.3pt）」と途中で割れるので、
      inline-block で括弧ごと次の行へ送る。折り返し自体は止めない（nowrap にすると
@@ -692,4 +687,10 @@
   font-size: var(--font-size-2xs);
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
+}
+
+/* 韓国語は語の境目で折り、列幅を超える語だけ途中で折る（BOA-734）。 */
+.rbit-note:lang(ko) {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }

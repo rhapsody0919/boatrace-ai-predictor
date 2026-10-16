@@ -72,7 +72,11 @@ async function main() {
 
   // 3. セクション件数が「実際の行数」と一致する（notes.sectionCounts ではなく行を数え直す）
   const actual = {};
-  for (const r of rows) actual[r.section] = (actual[r.section] ?? 0) + 1;
+  for (const r of rows) {
+    // 逃がしの件数は一覧に出す2号艇だけ（3号艇は画面の折りたたみの中。2026-10-15）
+    if (r.section === "nigashi" && r.course !== 2) continue;
+    actual[r.section] = (actual[r.section] ?? 0) + 1;
+  }
   for (const [section, label] of [
     ["nige", "逃げ"],
     ["makuri", "まくり"],

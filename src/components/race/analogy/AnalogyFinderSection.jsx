@@ -66,7 +66,11 @@ function TabError({ onRetry }) {
   );
 }
 
-export default function AnalogyFinderSection({ raceId }) {
+export default function AnalogyFinderSection({
+  raceId,
+  players = null,
+  onOpenMeetForm = null,
+}) {
   const { t } = useTranslation();
   const headingId = useId();
   const tabsId = useId();
@@ -319,9 +323,11 @@ export default function AnalogyFinderSection({ raceId }) {
           onScope={setScenarioScope}
           today={facts.data?.today ?? null}
           raceId={raceId}
+          players={players}
           feedback={feedback}
           initialFirst={linkedFirst}
           onInitialFirstUsed={consumeFirst}
+          onOpenMeetForm={onOpenMeetForm}
         />
       ) : (
         <p className="af-v16-line">

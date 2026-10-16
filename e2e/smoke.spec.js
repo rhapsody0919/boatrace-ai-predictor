@@ -1757,7 +1757,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rwit-today-assumption")).toContainText(
       "枠なり",
     );
-    // 「今期」の注記は実データの開始月を書く。取得窓（730日）だけを見て
+    // 当サイトの全期間を公式の今期と区別する（BOA-733）。
+    await expect(
+      page.getByRole("button", { name: "全期間" }).first(),
+    ).toBeVisible();
+    await expect(page.locator(".rwit-caveat").first()).toContainText("「全期間」");
+    await expect(page.locator(".rwit-caveat").first()).not.toContainText("「今期」");
+    // 「全期間」の注記は実データの開始月を書く。取得窓（730日）だけを見て
     // 「過去2年分」と言わない（BOA-503。実データは2025年12月以降）
     await expect(page.locator(".rwit-caveat").first()).toContainText(
       "2025年12月以降、最大過去2年",
@@ -1839,6 +1845,19 @@ test.describe("レースページ再設計（BOA-168）", () => {
         document.documentElement.clientWidth,
     );
     expect(docOverflow).toBeLessThanOrEqual(1);
+  });
+
+  test("枠別情報タブの既定ビューは韓国語でも全期間を公式の今期と区別する（BOA-733）", async ({
+    page,
+  }) => {
+    await page.goto("/ko/race/2026-09-29-02-12");
+    await page.locator(".race-tabs-btn", { hasText: "번호별 정보" }).click();
+    await expect(
+      page.getByRole("button", { name: "전체 기간" }).first(),
+    ).toBeVisible();
+    const caveat = page.locator(".rwit-caveat").first();
+    await expect(caveat).toContainText("'전체 기간'");
+    await expect(caveat).not.toContainText("이번 기'");
   });
 
   // 枠別情報タブはデータ出走表を隠すため、上のテストだけでは
@@ -2313,7 +2332,7 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/race/2026-09-29-02-12");
     await page.locator(".race-tabs-btn", { hasText: "枠別情報" }).click();
-    const mBtn = page.getByRole("button", { name: /今期/ }).first();
+    const mBtn = page.getByRole("button", { name: /全期間/ }).first();
     await mBtn.waitFor({ timeout: 30000 });
     await mBtn.click();
     const strip = page.locator(".rrb-strip").first();

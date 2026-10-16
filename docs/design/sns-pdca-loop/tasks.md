@@ -27,7 +27,7 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 - [x] **3. PGlite の検証を足す**
   既存の `scripts/maintenance/verify-sns-*.js` に足す（新しい verify を作るなら `verify-registry.json` に登録）。最低限の再現テスト: v0 は今までどおり公開できない／v1 は検査合格だけ公開できる／スレッド6件を1つの素材で作れる／6件のスレッドが日次上限で途中で切れない／YouTube の claim は X の月の台帳を消費しない／URL つきの親と子で予約額が違う／同じレースの item は2つ作れない／自動送信の承認者は mode=auto・notified でだけ通る／止めた後の claim・check・begin_post が held になり youtube_publish_begin は拒否される／通知前（notifying）は approve できない／dry_run=true は claim しない／veto_until 前の X・YouTube の claim は進まない（YouTube も60分前にアップロードを始める 2026-10-13 決定に合わせた）／子は親が posted でないと claim しない／`renew_sns_x_send_period` は期間の途中で拒否／`reserve_sns_x_read` は残りの送信分を割るとき false／posted で metric_jobs が2件できる／147 のトリガー `sns_diff_approval` と矛盾しない
 - [x] **4. 各 contract.md に ADR 0094 への参照を足す**（x-send・deadline-queue・mobile-approval・shorts-send・metrics）。deadline-queue と shorts-send には「基準日は自動で当日にする」「YouTube は60分前にアップロードし同じ実行で公開」、metrics には「累積値は15分の許容差」も足す
-- [ ] **5. オーナー: 153 → 154 を SQL Editor で適用**。事前・事後の読み取りの確認は Claude（plan の system-architect の手順）。APPLIED.md を更新
+- [x] **5. オーナー: 153 → 154 を SQL Editor で適用**（2026-10-13 適用、事後の確認 OK）。事前・事後の読み取りの確認は Claude（plan の system-architect の手順）。APPLIED.md を更新
 
 ## PR-2 素材 v1 の取り込み
 
@@ -37,13 +37,15 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 
 ## PR-3 検査（禁止表現・数値の照合・リンク先の表示）
 
-- [ ] **9. 数値の照合** `api/_lib/snsClaimCheck.js`: endpoint の許可リスト、公開 API の読み直し、値の照合。preflight の `readCurrent` からも呼ぶ
-- [ ] **10. ヘッドレス** `api/_lib/snsHeadless.js`（playwright-core＋@sparticuz/chromium、ADR 0091）と `scripts/lib/snsScreenMarkers.js`（実画面で印を決める）。関数のサイズを測り、250 MB を超えるなら chromium-min に切り替える
-- [ ] **11. 個別承認の画面と同じ条件の検査** を部品にして、mobile-approval と自動の両方から使う
+- [x] **9. 数値の照合** `api/_lib/snsClaimCheck.js`: endpoint の許可リスト、公開 API の読み直し、値の照合。preflight の `readCurrent` からも呼ぶ（許可リストは `/api/analogy/{facts,similar,scenario,layer}/{素材と同じレース}` と `?stage=`。`checkClaims` の `revision` を auto-plan（12）が `deadline_queue.source_revision` に、`deadlineIso` を `deadline_at` に入れる。sns-send の preflight に接続済み）
+- [x] **10. ヘッドレス** `api/_lib/snsHeadless.js`（playwright-core＋@sparticuz/chromium、ADR 0091）と `scripts/lib/snsScreenMarkers.js`（実画面で印を決める）。関数のサイズを測り、250 MB を超えるなら chromium-min に切り替える（2026-10-13: 印は本番の `/race/{id}?tab=sonar` を未ログインで開いて決めた（`race-sonar`: analogy-stage-chip・analogy-fact-card）。リンクは `?tab=sonar` を許す（#1513 の UTM も同じ）。@sparticuz/chromium 68 MB＋playwright-core 11 MB で 250 MB に届かないので chromium-min にしない。関数のメモリは Fluid compute ではダッシュボードで設定（既定のまま）。Chromium の bin は vercel.json の includeFiles で同梱）
+- [x] **11. 個別承認の画面と同じ条件の検査** を部品にして、mobile-approval と自動の両方から使う（`snsMobileApproval.js` の `sendHolds`（`mobileHolds` は同じ関数）。v1 は `source_data.claim_check`（ok・revision＝`deadline_queue.source_revision`）と `release_evidence`（表示の確認）を見る。どちらも 12 の auto-plan が書く。v1 は bundle 由来でも `publish_blocked=false` なら公開保留にしない）
 
 ## PR-4 自動承認・事前通知・止める
 
-- [ ] **12. cron `sns-auto-plan`**（5分ごと、JST 5:30〜21:00。/today の 5:45 の通知のため）: item 作成（締切は races から）。item を作るのは `race_conditions.race_stage` が優勝戦・準優勝戦のレースだけ（L3 ではその日の該当レースをすべて出す、2026-10-13 オーナー決定。L2 は日次上限で1日1レース）→ 検査 → notifying → Slack → notified → approve（スレッドは親から順に）。JST・太平洋時間の日付が変わるたびに基準日を当日にする（2026-10-13 決定）。`registry.js` に稼働時間つきで登録、`vercel.json` に追加
+- [ ] **12. cron `sns-auto-plan`**（5分ごと、JST 5:30〜23:00。/today の 5:45 の通知と、ミッドナイトの優勝戦のため）: item 作成（締切は races から）。item を作るのは `race_conditions.race_stage` が優勝戦・準優勝戦のレースだけ（L3 ではその日の該当レースをすべて出す、2026-10-13 オーナー決定。L2 は日次上限で1日1レース）→ 検査 → notifying → Slack → notified → approve（スレッドは親から順に）。JST・太平洋時間の日付が変わるたびに基準日を当日にする（2026-10-13 決定）。`registry.js` に稼働時間つきで登録、`vercel.json` に追加
+  - [x] **12a. 個別承認まで**（L1 に要る最小。`scripts/lib/snsAutoPlanRunner.js`・`api/cron/sns-auto-plan.js`、再現テスト `verify-sns-auto-plan.js`）: その日の素材 v1 のうち `race_stage` が「優勝戦」「準優勝戦」の完全一致のレースだけ、X・YouTube の item を作る（締切は races、送る時刻を過ぎた・中止は作らない）→ 数値の照合（9）・リンク先の表示（10、1素材1回）・UTM（23）を差し込んだ後の禁止表現・承認の条件（11 の sendHolds）→ 合格は UTM を保存し下書きに本文と claim_check・release_evidence・deadline_queue を書いて item を manual、公開保留を外す。不合格は held_manual（理由を Slack）。取得の失敗だけなら checking で3回までやり直す。毎回 `roll_sns_send_baselines`・`roll_sns_x_send_period`（158 未適用の間は report.alerts に出し、計画は続ける）。**X のスレッドの子（thread_index≥1）は公開保留を外さない**（子の job は parent_job_id が無いと親を待たずに claim されるため。12b で親から順につなぐ）。mode=auto でも manual にして alerts に「未実装」を出す
+  - [ ] **12b. 自動（L3）と子のつなぎ**: notifying（token の hash）→ Slack → notified → 自動送信の承認者で approve（親から順、子の deadline_queue.parent_job_id は直前の投稿の job）。個別承認（L2）でも子を親の job につないでから外す。新しい型（checks.new_format）は個別承認へ。直した素材の入れ直しで前の item を stopped（superseded）にする。期間の終わりの3日前の「自動で切り替わる・額」の知らせ（tasks 20 の残り）
 - [ ] **13. 止めるリンク** `api/sns-stop/[token].js`（GET は確認の画面、POST で止める、no-store・no-referrer・noindex）
 - [ ] **14. 管理 API** `api/admin/sns-hub/auto-send.js`（一覧・止める・モード・誤投稿の記録、L3 の条件の計算）
 - [ ] **15. 画面** `AutoSendPanel`（screens #1〜#4・#10）、`MobileApprovalPanel`・`DeadlineQueueList` の拡張（#5・#6）。375px・ライト／ダークを Playwright で確認。受け入れ E2E（`e2e/acceptance/sns-pdca-loop.spec.js`）を通す
@@ -53,22 +55,26 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 - [x] **16. X の OAuth（PKCE）** `api/admin/sns-hub/x-oauth/start.js`・`callback.js`、`api/_lib/snsTokenStore.js`（AES-256-GCM、locked_by の条件付き保存、ADR 0093）（PR #1470）
 - [x] **17. X adapter** `api/_lib/xApiAdapter.js`（media upload v2・POST /2/tweets・返信）（PR #1472。分割は 4 MiB、トークンは runner が claim の前に渡す）
 - [x] **18. YouTube adapter** `api/_lib/youtubeQueueAdapter.js`（1回の multipart・private・32 MiB まで、processing・makePublic・lookup、サムネイルの Content-Type）（PR #1473。1回の multipart で上げる、題名の不備は begin_post の前に held）
-- [x] **19. cron `sns-send`**（2分ごと、JST 8:00〜21:00、maxDuration 300）: sweep → 対象の選び方（子は親が posted のもの）→ 既存の run* 関数。dry_run は claim の前で止める（この PR。送る前の検査は claim の前にも通し、落ちたら claim しない。鍵の健全性 API `/api/admin/sns-hub/token-health` も足した。リンク先の表示の確認（10）・元データの読み直し（9）が入るまでは送る前の検査で必ず止まる）
+- [x] **19. cron `sns-send`**（2分ごと、JST 8:00〜23:00（2026-10-14 に 21:00 から延長）、maxDuration 300）: sweep → 対象の選び方（子は親が posted のもの）→ 既存の run* 関数。dry_run は claim の前で止める（この PR。送る前の検査は claim の前にも通し、落ちたら claim しない。鍵の健全性 API `/api/admin/sns-hub/token-health` も足した。リンク先の表示の確認（10）・元データの読み直し（9）が入るまでは送る前の検査で必ず止まる）
 - [ ] **20. 費用**: `reserve_sns_x_read` の呼び出し、期間の終わりの3日前の Slack
 - [x] **19a. DB 158**（番号は着手時に origin/master で確認）: `sns_auto_send_items.kind`（race・digest。digest は bundle_import_id なし、race_id は `today:YYYY-MM-DD`、承認の関数は下書きの ID で引く）、`sns_drafts.send_lane`（A・B）、B の claim は今日まだ送っていない A の予定の本数を先に引く、`roll_sns_x_send_period()`（期間が終わったら同じ額で次の1か月へ。2026-10-13 オーナー決定）、`sns_post_tracking` の campaign に `today_digest` を足す。PGlite の再現テスト: A と B が同じ日に重なったとき B が A の枠を食わない／期間の途中では切り替わらない・終わったら同じ額で切り替わる／digest の item を止められる（このPR。オーナーの適用待ち。期間の終わりの3日前の Slack は、自動の切り替えにしたので sns-auto-plan で「自動で切り替わる・額」を知らせる形にする（tasks 12））
 - [ ] **19b. /today の X 投稿**（通り道 A）: `morning_digest_rows` から決まった型で本文を組み立てる（AI 生成なし、禁止表現の検査は通す）。7:45 送信・5:45 通知・止める操作つき。UTM は `utm_campaign=today_digest`・`utm_content=日付`。L1 から dry_run で回し、L2 はオーナーが毎朝 5:45〜7:45 にスマホで承認、L3 で自動。日次上限は L2 で `daily_limit_x=7`、L3 で 97
+  - **画像を1枚付ける**（2026-10-14 オーナー決定、hq 経由）: 未ログインで開いた本番の /today を、スマホ幅（CSS 390px）の上部だけ 4:5 で撮る（viewport 390×488・deviceScaleFactor 3 → 1170×1464 の PNG）。撮影は `api/_lib/snsHeadless.js`（#1518、未ログイン・解析タグを止める）に screenshot を足して流用。撮るのは一覧ができた後（JST 5:30、6:30・8:00 のやり直しの後も）。Storage に置き下書きの `cover_image_path` にする（送信の部品は png を `tweet_image` で送れる）。5:45 の事前通知（Slack）に画像を載せ、オーナーが見て止められるようにする。承認の後に一覧がやり直されて画像が変わったら、承認を外して撮り直し・通知し直す（承認した画像と違うものを送らない）。再現テスト: 寸法・未ログイン・一覧の前は撮らない・やり直しで承認が外れる
+  - **画像を龍神ソナーの図・最大4枚に変更**（2026-10-16 ユーザー決定。上の /today の画面の画像は、注目レースのカードの途中で切れ・ヘッダーの絵文字が箱になったため置き換える）: 注目レースと一覧の締切の早いレースの龍神ソナーの図（`/race/{id}?tab=sonar` の `.af-hep .af-dark`、先頭に「会場R 締切」の見出しを差し込む）を、別々に最大4枚。図の元データは JST 5:30 から作られるので、7:00 まではそろうまでやり直し、7:00 を過ぎたら撮れた分で作る。/today のリンク先が見えることは inspect で確かめる。承認の関数を DB 160 で変える（`source_data.image_paths` の数・順・型で媒体を照合）。初投稿は 10/18 以降（160 の適用の後）
 
 ## PR-6 取り込み
 
-- [ ] **21. cron `sns-metrics`**（5分ごと）: YouTube の `videos.list` 累積値・X の `GET /2/users/{id}/tweets` を観測の表へ。許容差を超えたら欠測。3回続けて失敗したら Slack
+  - [x] **19b-1. 個別承認（L2）まで**（2026-10-15、オーナー依頼で全貌より先に。#1571 の部品＋`scripts/lib/snsTodayPlanner.js`、再現テスト `verify-sns-today-plan.js`）: auto-plan の中で JST 5:30〜7:45 に、一覧が公開されたら /today を未ログインで撮り（4:5）、決まった型の本文（数字・文言は人の画面と同じ buildTodayModel）と UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り、Slack に本文と画像のリンク。送るのは 7:45（下書きの scheduled_at）。一覧がやり直されて版が変われば撮り直して承認を外し知らせる。送る直前は一覧の版を読み直す。本文は加重で280を超えるので長文の1投稿（thread_length=1）。DB は変えない（140 の承認の条件は出典の記録で満たす）
+  - [ ] **19b-2. 自動（L3）**: 事前通知（5:45）・止めるリンク・自動送信の承認者での approve（12b・13 のうち /today に要る分）
+- [x] **21. cron `sns-metrics`**（5分ごと）: YouTube の `videos.list` 累積値・X の `GET /2/users/{id}/tweets` を観測の表へ。許容差を超えたら欠測。3回続けて失敗したら Slack（実装。下の3行は L2 の実投稿の後に実測する。継続監視は毎回の実行で直近5日の欠測・失敗の割合が2%を超えたら report.alerts → scrape-monitor が Slack へ）
   - [ ] 本番実測: 期待件数（算出根拠: posted の投稿数×2窓、X はスレッドの子を含む）に対し、充足率99%以上であることを実測クエリで確認する
   - [ ] タイミング実測: 土日を含む直近5日で、`posted_at`＋48h／168h から15分以内に取れた割合を実測する（欠落率2%以内）
   - [ ] 継続監視: 上記が日次で自動計測され、閾値超過で Slack 通知されることを確認する
-- [ ] **22. cron `sns-daily`**（JST 10:00）: YouTube Analytics の動画ごとの暦日の値と、GA4 の UTM・YouTube 経由の日次を `sns_channel_daily` へ。GA4 の流入元のリストは `scripts/lib/snsGa4.js` に出して分析スクリプトと共用
+- [x] **22. cron `sns-daily`**（JST 10:00）: YouTube Analytics の動画ごとの暦日の値と、GA4 の UTM・YouTube 経由の日次を `sns_channel_daily` へ。GA4 の流入元のリストは `scripts/lib/snsGa4.js` に出して分析スクリプトと共用（実装。GA4 は Vercel に `GOOGLE_SERVICE_ACCOUNT_KEY`（サービスアカウントの JSON）・`GA4_PROPERTY_ID` が要る＝オーナー。無い間は GA4 だけ飛ばして report.alerts。下の3行は L2 の実投稿の後に実測する。未実行は日次ジョブの死活、0件はラッパの0件の判定、失敗は outcome=error で監視が Slack へ）
   - [ ] 本番実測: 期待件数（算出根拠: 日数×（動画数×指標数＋UTM の投稿数×指標数＋チャネル全体の指標数））に対し、充足率99%以上
   - [ ] タイミング実測: 直近5日（土日を含む）で、D−3 の値（確定済み）が入っている割合（欠落率2%以内）。YouTube Analytics の確定の遅れを含めるため D−1 では測らない
   - [ ] 継続監視: 未実行・0件を Slack に通知
-- [ ] **23. UTM**: X の親の投稿の URL を承認時に `buildObservationUtm`（campaign=race-full）で作り、`sns_post_tracking` に保存
+- [x] **23. UTM**: X の親の投稿の URL を承認時に `buildObservationUtm`（campaign=race-full）で作り、`sns_post_tracking` に保存（部品は `scripts/lib/snsPostTracking.js` の `prepareRaceTracking`・`createPostTrackingStore`。呼ぶのは 12 の auto-plan で、順番は plan §2 の「UTM を本文に差し込む → 禁止表現の検査 → deadline_queue → 承認」。`utm_content` は下書きの ID）
 
 ## PR-7 改善案
 

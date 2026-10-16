@@ -56,6 +56,19 @@ export const BOAT_COLORS = {
 };
 
 /**
+ * 小さな艇番印の背景色。白文字を載せる3・4・6号艇だけ濃いトークンを使う。
+ * 表の見出し等の公式配色には使わない。
+ * @param {number|string} number - 艇番
+ * @returns {string} CSSの背景色
+ */
+export const getBoatChipBackground = (number) => {
+  const color = BOAT_COLORS[number] || BOAT_COLORS[1];
+  return [3, 4, 6].includes(Number(number))
+    ? `var(--boat-${number}-strong, ${color.bg})`
+    : color.bg;
+};
+
+/**
  * 折れ線・スパークラインに使う艇番別の色。
  *
  * 公式の艇色をそのまま線に使うと、**1号艇の白はライト背景に、2号艇の黒は

@@ -23,6 +23,7 @@ import {
   venueLabel,
 } from "../../../utils/analogyFormat";
 import {
+  ATTACK_BOAT,
   MIN_SCENARIO,
   boatCells,
   boatCountsDiffer,
@@ -40,7 +41,7 @@ const SCOPES = ["VC", "NC", "NCR", "VA", "VG", "NA"];
 /**
  * 展開シナリオ（タブ3、spec FR-C、screens S-1c）
  * @param {{data: object, stage: "racecard"|"exhibition", onScope: (key: string) => void, today: object|null,
- *   raceId: string}} props data は scenario の応答、today は facts の today（平均ST・モーター・展示→本番の一致）
+ *   raceId: string, players?: object[]|null}} props data は scenario の応答、today は facts の today（平均ST・モーター・展示→本番の一致）
  */
 export default function ScenarioTab({
   data,
@@ -48,9 +49,11 @@ export default function ScenarioTab({
   onScope,
   today,
   raceId,
+  players = null,
   feedback,
   initialFirst = null,
   onInitialFirstUsed,
+  onOpenMeetForm = null,
 }) {
   const { t } = useTranslation();
   const scopeLbl = useId();
@@ -594,6 +597,7 @@ export default function ScenarioTab({
           <>
             <SlitHint
               courseSt={data.course_st}
+              players={players}
               version={version}
               onVersion={pick(setVersion)}
               rows={rows}
@@ -700,6 +704,16 @@ export default function ScenarioTab({
               </ul>
             </ScenarioFold>
           </>
+        )}
+        {/* 攻める艇の今節の足へ（BOA-885）。攻める艇が決まる形（カド・ダッシュ等）を枠なりで見ているときだけ */}
+        {onOpenMeetForm && waku && ATTACK_BOAT[slit] && (
+          <button
+            type="button"
+            className="af-link af-meetform-link"
+            onClick={() => onOpenMeetForm(ATTACK_BOAT[slit])}
+          >
+            {t(`${k}.meetFormLink`, { b: ATTACK_BOAT[slit] })}
+          </button>
         )}
       </section>
       <section className="af-scn-sec" id="af-scn-s3">

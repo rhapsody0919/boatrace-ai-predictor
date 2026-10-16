@@ -1,0 +1,57 @@
+@media (min-width:1025px){
+ .race-detail-page-v2{max-width:1248px !important}
+ .ta-page{margin-inline:auto !important}
+ .assist-view-switch{padding-inline:max(24px, calc((100% - 1200px) / 2)) !important}
+}
+@media (min-width:1248px){
+ body:has(.race-detail-page-v2, .ta-page) .app-header{padding-inline:24px}
+ body:has(.race-detail-page-v2, .ta-page) .header-content{max-width:1200px}
+}
+@media (min-width:1025px){
+ /* 基本情報: 棒（左）｜注記（右） */
+ .race-basic-info-tab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);column-gap:32px;grid-auto-flow:row dense}
+ .race-basic-info-tab>*{grid-column:1/-1}
+ .race-basic-info-tab>.rbit-bars{grid-column:1;grid-row:span 3}
+ .race-basic-info-tab>.rbit-bars~.rbit-note{grid-column:2}
+ /* 今節: カードは列いっぱい。得点率の表（左）｜注記（右） */
+ .race-detail-page-v2 .rmt-card{max-width:none !important}
+ .rmt-card:has(.rmt-compare){display:grid;grid-template-columns:minmax(0,640px) minmax(0,1fr);column-gap:40px;align-content:start}
+ .rmt-card:has(.rmt-compare)>*{grid-column:2}
+ .rmt-card:has(.rmt-compare)>.rmt-card-title{grid-column:1/-1}
+ .rmt-card:has(.rmt-compare)>.rmt-compare{grid-column:1;grid-row:2/span 7}
+ /* 枠別情報: 表（左）｜注意書き（右） */
+ .rwit-card:has(.rwit-today-table){display:grid;grid-template-columns:minmax(0,720px) minmax(0,1fr);column-gap:40px;grid-auto-flow:row dense;align-content:start}
+ .rwit-card:has(.rwit-today-table)>*{grid-column:1/-1}
+ .rwit-card:has(.rwit-today-table)>.rwit-today-table{grid-column:1;grid-row:span 2}
+ .rwit-card:has(.rwit-today-table)>.rwit-fold{grid-column:1}
+ .rwit-card:has(.rwit-today-table)>.rwit-caveat{grid-column:2}
+ /* 結果: 払戻金（左）｜データ（右） */
+ .race-result{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:32px;align-items:start}
+ .race-result>*{grid-column:1/-1}
+ .race-result>.rr-payout-table{grid-column:1;max-width:none !important}
+ .race-result>.vds-card{grid-column:2;grid-row:span 2}
+}
+@media (min-width:1200px){
+ /* 公式サイトの帯｜思考アシストの入口 を1行の2段 */
+ .prediction-section{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;align-items:stretch}
+ .prediction-section>*{grid-column:1/-1}
+ .prediction-section>div:nth-child(2){grid-column:1;margin-bottom:0}
+ .prediction-section>.assist-entry-row{grid-column:2;max-width:none !important;margin:0 !important;align-self:stretch}
+ /* AI予想: 検証のブロックを2段 */
+ .race-detail-page-v2 .race-ai-prediction-tab{max-width:none !important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 40px;align-items:start}
+ .race-detail-page-v2 .ai-tab-sonar-link{max-width:none !important}
+ /* 枠別情報: 1コースが逃げたとき｜決まり手傾向 を2段 */
+ .race-waku-info-tab{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;align-items:start}
+ .race-waku-info-tab>*{grid-column:1/-1}
+ .race-waku-info-tab>.nsc-card{grid-column:1}
+ .race-waku-info-tab>.nsc-card+.rwit-card{grid-column:2}
+ /* 結果: スタート隊形｜着順、払戻金｜水面傾向 */
+ .race-result{grid-template-columns:minmax(0,480px) minmax(0,1fr) !important}
+ .race-result>.rr-formation{grid-column:1 !important;grid-row:2 / span 2}
+ .race-result>.rr-table{grid-column:2 !important;grid-row:2}
+ .race-result>.rr-st-legend{grid-column:2 !important;grid-row:3}
+ .race-result>.rr-section-title{grid-column:1/-1 !important;grid-row:4}
+ .race-result>.rr-payout-table{grid-column:1 !important;grid-row:5}
+ .race-result>.rr-payout-popularity-note{grid-column:1 !important;grid-row:6}
+ .race-result>.vds-card{grid-column:2 !important;grid-row:5 / span 2 !important}
+}

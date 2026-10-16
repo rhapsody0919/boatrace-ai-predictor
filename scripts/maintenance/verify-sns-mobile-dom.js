@@ -522,3 +522,37 @@ test("MobileApprovalPanel側の操作が割り込んでも、X送信の親一覧
     "epochが割り込んで変わっていても親の一覧更新は呼ばれる",
   );
 });
+
+test("X の画像の複数枚（/today、160）: 4枚とも表示し、全部が読み込めるまで承認できない", async () => {
+  const current = row();
+  current.draft.cover_image_path = "today/d/r-1.png";
+  current.draft.source_data = {
+    ...current.draft.source_data,
+    image_paths: [1, 2, 3, 4].map((i) => `today/d/r-${i}.png`),
+  };
+  current.imageUrl = "http://localhost/1.png";
+  current.imageUrls = [1, 2, 3, 4].map((i) => `http://localhost/${i}.png`);
+  mock(() => current);
+  await mount(React.createElement(Panel, { approvers: [owner] }));
+  await race();
+  const images = [...document.querySelectorAll("img")];
+  assert.deepEqual(
+    images.map((img) => [img.getAttribute("src"), img.getAttribute("alt")]),
+    [1, 2, 3, 4].map((i) => [`http://localhost/${i}.png`, `X添付画像 ${i}/4`]),
+  );
+  for (const img of images.slice(0, 3))
+    await act(async () => img.dispatchEvent(new window.Event("load")));
+  assert.equal(button("この版のXだけ承認").disabled, true, "4枚目が読込前");
+  await act(async () => images[3].dispatchEvent(new window.Event("load")));
+  assert.equal(
+    button("この版のXだけ承認").disabled,
+    false,
+    "4枚とも読込で承認可能",
+  );
+  await act(async () => images[1].dispatchEvent(new window.Event("error")));
+  assert.equal(
+    button("この版のXだけ承認").disabled,
+    true,
+    "1枚でも失敗なら承認不可",
+  );
+});
