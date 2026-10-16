@@ -594,175 +594,189 @@ function RaceResult({ prediction, raceId }) {
         </p>
       )}
 
-      {!isLoadingStartTimings && formationRows && (
-        // スタート隊形（コース順）の絵。結果の表の上（BOA-811、承認モック
-        // docs/design/race-result-start-formation/mock）。進入の並びもこの絵で見る（前の「進入」の1行は外した）
-        <RaceStartFormation rows={formationRows} />
-      )}
-      {isLoadingStartTimings ? (
-        <div className="rr-table-skeleton" aria-busy="true">
-          {boatsInRace.map((boat) => (
-            <div className="rr-skeleton-row" key={boat}>
-              <span className="rr-skeleton-bar" />
-            </div>
-          ))}
+      {/* PC（1200px 以上）はスタート隊形を左、着順の表を右の2段（BOA-881） */}
+      <div className="race-split">
+        <div className="race-split__main">
+          {!isLoadingStartTimings && formationRows && (
+            // スタート隊形（コース順）の絵。結果の表の上（BOA-811、承認モック
+            // docs/design/race-result-start-formation/mock）。進入の並びもこの絵で見る（前の「進入」の1行は外した）
+            <RaceStartFormation rows={formationRows} />
+          )}
         </div>
-      ) : (
-        <div className="rr-table">
-          {/* 列見出し。公式の結果ページと同じ「着・枠・ボートレーサー・レースタイム」に、
-              スタートの図の「ST」を足す。不成立で全行のタイムが「—」になっても、何の列か分かる */}
-          <div className="rr-row-head" aria-hidden="true">
-            <span>{t("result.columns.position")}</span>
-            <span>{t("result.columns.boat")}</span>
-            <span>{t("result.columns.racer")}</span>
-            <span className="rr-head-st">{t("result.columns.start")}</span>
-            {/* 768px 以下は列が 2.4〜2.8rem しか無く、「レースタイム」が 15px はみ出して
-                カードの外で切れた（race-detail-ui-unify PR5 ファン評価1周目）。短い見出しにする */}
-            <span className="rr-head-time">
-              <span className="rr-head-time-full">
-                {t("result.columns.time")}
-              </span>
-              <span className="rr-head-time-short">
-                {t("result.columns.timeShort")}
-              </span>
-            </span>
-          </div>
-          {rows.map((row) => {
-            const { key, position, boat, time } = row;
-            const player = findPlayer(boat);
-            const st = startTimingByBoat.get(boat);
-            const isFastest =
-              Boolean(st) &&
-              !st.isFlying &&
-              fastestStartTiming != null &&
-              st.startTiming === fastestStartTiming;
-            const label = position == null ? markLabel(t, row, isNoRace) : null;
-
-            return (
-              <div className={rowClassName(position)} key={key}>
-                <span className="rr-pos">
-                  {position != null
-                    ? t(`result.rank${position}`)
-                    : markSymbol(row)}
-                </span>
-                <BoatChip number={boat} />
-                <span className="rr-name">
-                  <span className="rr-name-text" translate="no">
-                    {displayName(player?.name)}
-                    {player?.grade && <small>{player.grade}</small>}
+        <div className="race-split__side">
+          {isLoadingStartTimings ? (
+            <div className="rr-table-skeleton" aria-busy="true">
+              {boatsInRace.map((boat) => (
+                <div className="rr-skeleton-row" key={boat}>
+                  <span className="rr-skeleton-bar" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rr-table">
+              {/* 列見出し。公式の結果ページと同じ「着・枠・ボートレーサー・レースタイム」に、
+                  スタートの図の「ST」を足す。不成立で全行のタイムが「—」になっても、何の列か分かる */}
+              <div className="rr-row-head" aria-hidden="true">
+                <span>{t("result.columns.position")}</span>
+                <span>{t("result.columns.boat")}</span>
+                <span>{t("result.columns.racer")}</span>
+                <span className="rr-head-st">{t("result.columns.start")}</span>
+                {/* 768px 以下は列が 2.4〜2.8rem しか無く、「レースタイム」が 15px はみ出して
+                    カードの外で切れた（race-detail-ui-unify PR5 ファン評価1周目）。短い見出しにする */}
+                <span className="rr-head-time">
+                  <span className="rr-head-time-full">
+                    {t("result.columns.time")}
                   </span>
-                  {label && <span className="rr-mark-label">{label}</span>}
-                  {st?.entryCourse != null && (
-                    <span
-                      className={`rr-course${st.entryCourse !== boat ? " is-moved" : ""}`}
-                    >
-                      {t("result.entryCourseLabel", {
-                        course: st.entryCourse,
-                      })}
-                    </span>
-                  )}
+                  <span className="rr-head-time-short">
+                    {t("result.columns.timeShort")}
+                  </span>
                 </span>
-                <span className="rr-st-cell">
-                  {st && st.startTiming != null ? (
-                    <>
-                      {/* ST の矢印は外し、数字と「最速」だけ。並びは上のスタート隊形の絵で見る（BOA-811） */}
-                      <span className="rr-st-value num">
-                        {/* フライングは公式と同じ「F.01」。選手ページ・直近10走とそろえる（BOA-583） */}
-                        {st.isFlying
-                          ? `F${st.startTiming.toFixed(2).replace(/^0/, "")}`
-                          : st.startTiming.toFixed(2)}
+              </div>
+              {rows.map((row) => {
+                const { key, position, boat, time } = row;
+                const player = findPlayer(boat);
+                const st = startTimingByBoat.get(boat);
+                const isFastest =
+                  Boolean(st) &&
+                  !st.isFlying &&
+                  fastestStartTiming != null &&
+                  st.startTiming === fastestStartTiming;
+                const label = position == null ? markLabel(t, row, isNoRace) : null;
+
+                return (
+                  <div className={rowClassName(position)} key={key}>
+                    <span className="rr-pos">
+                      {position != null
+                        ? t(`result.rank${position}`)
+                        : markSymbol(row)}
+                    </span>
+                    <BoatChip number={boat} />
+                    <span className="rr-name">
+                      <span className="rr-name-text" translate="no">
+                        {displayName(player?.name)}
+                        {player?.grade && <small>{player.grade}</small>}
                       </span>
-                      {isFastest && (
-                        <span className="rr-st-fastest-tag">
-                          {t("result.fastestStartTag")}
+                      {label && <span className="rr-mark-label">{label}</span>}
+                      {st?.entryCourse != null && (
+                        <span
+                          className={`rr-course${st.entryCourse !== boat ? " is-moved" : ""}`}
+                        >
+                          {t("result.entryCourseLabel", {
+                            course: st.entryCourse,
+                          })}
                         </span>
                       )}
-                    </>
-                  ) : (
-                    <span className="rr-st-value num">—</span>
-                  )}
-                </span>
-                <span className="rr-time num">{time || "—"}</span>
-              </div>
-            );
-          })}
+                    </span>
+                    <span className="rr-st-cell">
+                      {st && st.startTiming != null ? (
+                        <>
+                          {/* ST の矢印は外し、数字と「最速」だけ。並びは上のスタート隊形の絵で見る（BOA-811） */}
+                          <span className="rr-st-value num">
+                            {/* フライングは公式と同じ「F.01」。選手ページ・直近10走とそろえる（BOA-583） */}
+                            {st.isFlying
+                              ? `F${st.startTiming.toFixed(2).replace(/^0/, "")}`
+                              : st.startTiming.toFixed(2)}
+                          </span>
+                          {isFastest && (
+                            <span className="rr-st-fastest-tag">
+                              {t("result.fastestStartTag")}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="rr-st-value num">—</span>
+                      )}
+                    </span>
+                    <span className="rr-time num">{time || "—"}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {startTimingFailed && (
+            <InlineFetchError onRetry={() => setReloadKey((key) => key + 1)} />
+          )}
+          {/* ST図の読み方。初見では黄線が何か・どちらが早いかが分からない
+              （BOA-559 ファン評価3周目） */}
+          {validStartTimings.length > 0 && (
+            <p className="rr-note rr-st-legend">{t("result.stLegend")}</p>
+          )}
+          {/* 以前は「進入コースは精度確認中のため表示していない」と出していた（BOA-238 の頃は
+              進入の元データが無かった）。今は本番STの進入を出すので、データが無いレースだけ断る（BOA-625） */}
+          {!isLoadingStartTimings && !isNoRace && courseOrder.length === 0 && (
+            <p className="rr-note">{t("result.courseNoData")}</p>
+          )}
+          {!isLoadingStartTimings && !isNoRace && rows.length < 6 && (
+            <p className="rr-note rr-note-missing-ranks">
+              {t("result.missingRanksNote")}
+            </p>
+          )}
         </div>
-      )}
-      {startTimingFailed && (
-        <InlineFetchError onRetry={() => setReloadKey((key) => key + 1)} />
-      )}
-      {/* ST図の読み方。初見では黄線が何か・どちらが早いかが分からない
-          （BOA-559 ファン評価3周目） */}
-      {validStartTimings.length > 0 && (
-        <p className="rr-note rr-st-legend">{t("result.stLegend")}</p>
-      )}
-      {/* 以前は「進入コースは精度確認中のため表示していない」と出していた（BOA-238 の頃は
-          進入の元データが無かった）。今は本番STの進入を出すので、データが無いレースだけ断る（BOA-625） */}
-      {!isLoadingStartTimings && !isNoRace && courseOrder.length === 0 && (
-        <p className="rr-note">{t("result.courseNoData")}</p>
-      )}
-      {!isLoadingStartTimings && !isNoRace && rows.length < 6 && (
-        <p className="rr-note rr-note-missing-ranks">
-          {t("result.missingRanksNote")}
-        </p>
-      )}
+      </div>
 
-      {payoutRowsToShow && (
-        <>
-          <div className="rr-section-title">
-            {t("result.payoutSectionTitle")}
-          </div>
-          <PayoutRowsTable rows={payoutRowsToShow} t={t} />
-          {/* 一部の勝式だけ不成立になった理由を、事実だけ1行で書く。払戻明細の不成立が
-              正常スタート・完走の艇数から決まる表と一致するときだけ出す（BOA-558） */}
-          {partialVoid && (
-            <p className="rr-note rr-payout-void-note">
-              {t(
-                partialVoid.kind === "starters"
-                  ? "result.partialVoidByStarters"
-                  : "result.partialVoidByFinishers",
-                {
-                  count: partialVoid.count,
-                  types: partialVoid.betTypes
-                    .map((betType) =>
-                      t(
-                        `result.payoutType.${PAYOUT_BET_TYPES.find((b) => b.betType === betType).typeKey}`,
-                      ),
-                    )
-                    .join(t("result.noRace.boatSeparator")),
-                },
+      {/* PC（1200px 以上）は払戻金を左、この日の水面傾向を右の2段（BOA-881） */}
+      <div className="race-split">
+        <div className="race-split__main">
+          {payoutRowsToShow && (
+            <>
+              <div className="rr-section-title">
+                {t("result.payoutSectionTitle")}
+              </div>
+              <PayoutRowsTable rows={payoutRowsToShow} t={t} />
+              {/* 一部の勝式だけ不成立になった理由を、事実だけ1行で書く。払戻明細の不成立が
+                  正常スタート・完走の艇数から決まる表と一致するときだけ出す（BOA-558） */}
+              {partialVoid && (
+                <p className="rr-note rr-payout-void-note">
+                  {t(
+                    partialVoid.kind === "starters"
+                      ? "result.partialVoidByStarters"
+                      : "result.partialVoidByFinishers",
+                    {
+                      count: partialVoid.count,
+                      types: partialVoid.betTypes
+                        .map((betType) =>
+                          t(
+                            `result.payoutType.${PAYOUT_BET_TYPES.find((b) => b.betType === betType).typeKey}`,
+                          ),
+                        )
+                        .join(t("result.noRace.boatSeparator")),
+                    },
+                  )}
+                </p>
               )}
-            </p>
+              {/* 単勝・複勝の人気だけは公式の発表でなく締切時オッズから出しているため、その旨を書く */}
+              {hasFinalOddsPopularity && (
+                <p
+                  className="rr-note rr-payout-popularity-note"
+                  data-testid="payout-popularity-note"
+                >
+                  {t("result.popularityFromFinalOddsNote")}
+                </p>
+              )}
+              {/* 「—」の意味は title だけだとスマホで読めないので、表の下にも書く（#1074 ファン評価1周目） */}
+              {payoutRowsToShow.some(
+                (row) => row.status === PAYOUT_STATUS.NO_AMOUNT,
+              ) && (
+                <p className="rr-note rr-payout-no-amount-note">
+                  {t("result.payoutNoAmountNote")}
+                </p>
+              )}
+            </>
           )}
-          {/* 単勝・複勝の人気だけは公式の発表でなく締切時オッズから出しているため、その旨を書く */}
-          {hasFinalOddsPopularity && (
-            <p
-              className="rr-note rr-payout-popularity-note"
-              data-testid="payout-popularity-note"
-            >
-              {t("result.popularityFromFinalOddsNote")}
-            </p>
-          )}
-          {/* 「—」の意味は title だけだとスマホで読めないので、表の下にも書く（#1074 ファン評価1周目） */}
-          {payoutRowsToShow.some(
-            (row) => row.status === PAYOUT_STATUS.NO_AMOUNT,
-          ) && (
-            <p className="rr-note rr-payout-no-amount-note">
-              {t("result.payoutNoAmountNote")}
-            </p>
-          )}
-        </>
-      )}
+        </div>
+        <div className="race-split__side">
 
-      {/* この日の水面傾向（phase a FR-5 / BOA-222）。払戻の下＝結果タブの最下部。
-          払戻が無い過去データでも出すため、払戻の条件ブロックの外に置く */}
-      {parsedRaceId && (
-        <VenueDaySummaryCard
-          venueCode={parsedRaceId.venueCode}
-          date={parsedRaceId.date}
-          raceId={raceId}
-        />
-      )}
+          {/* この日の水面傾向（phase a FR-5 / BOA-222）。払戻の下＝結果タブの最下部。
+              払戻が無い過去データでも出すため、払戻の条件ブロックの外に置く */}
+          {parsedRaceId && (
+            <VenueDaySummaryCard
+              venueCode={parsedRaceId.venueCode}
+              date={parsedRaceId.date}
+              raceId={raceId}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }
