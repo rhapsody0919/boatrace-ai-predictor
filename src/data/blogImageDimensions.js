@@ -70,6 +70,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/kiryu-nige-outcome-123-rate.jpg": { width: 1200, height: 630 },
   "/images/blog/kiryu-outcome-123-rate.jpg": { width: 1200, height: 630 },
   "/images/blog/kiryu-topstart-rate.jpg": { width: 1200, height: 630 },
+  "/images/blog/kojima-water-wind-guide.jpg": { width: 576, height: 391 },
   "/images/blog/language-switcher-guide.jpg": { width: 1200, height: 630 },
   "/images/blog/losing-technique-chart.jpg": { width: 968, height: 750 },
   "/images/blog/marugame-water-wind-guide.jpg": { width: 576, height: 394 },
