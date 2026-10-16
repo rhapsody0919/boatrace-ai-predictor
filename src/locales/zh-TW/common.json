@@ -3654,16 +3654,16 @@
     "reasonDiff": "差",
     "otherMaterial": "其他因素（展示、馬達等）請看龍神聲納的「拉開差距的因素」",
     "disclaimer": "這是過去實績的比例，不保證今天的結果。",
-    "sonarButton": "用{{n}}場相近比賽來看？",
+    "sonarButton": "用{{n}}場相似比賽來看？",
     "sonarGo": "龍神聲納",
-    "assistButton": "從軸心思考",
+    "assistButton": "從主軸思考",
     "assistGo": "思考輔助",
     "accuracyLink": "查看各段實績",
     "empty": "這場比賽沒有提供1號位失守注意度",
     "result": "結果：1號艇第{{rank}}名",
     "resultWinner": "（第1名是{{boat}}號艇）",
     "noteFinal": "準優勝戰、優勝戰中，勝率差不易拉開差距",
-    "noteAbsent": "有缺賽（{{boats}}艇）",
+    "noteAbsent": "有缺賽（{{boats}}艇出賽）",
     "noteLowSample": "場數較少（{{n}}場）"
   }
 }

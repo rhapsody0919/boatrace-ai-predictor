@@ -3673,7 +3673,7 @@
     "result": "Result: Boat 1 finished {{rank}}",
     "resultWinner": " (winner: Boat {{boat}})",
     "noteFinal": "In semifinals and finals, the win-rate gap makes less difference",
-    "noteAbsent": "Scratch ({{boats}} boats)",
+    "noteAbsent": "Scratch ({{boats}} boats racing)",
     "noteLowSample": "Few races ({{n}})"
   }
 }

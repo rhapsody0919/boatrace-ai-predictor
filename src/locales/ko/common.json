@@ -3647,7 +3647,7 @@
     "bandRange": "{{from}}~{{to}}",
     "bandBelow": "{{v}} 미만",
     "bandAbove": "{{v}} 이상",
-    "range": "1번 보트와 다른 보트 중 가장 높은 승률의 차이가 오늘과 비슷한({{band}}) 레이스. 전국 {{n}}건({{from}}~{{through}})",
+    "range": "1번 보트와 다른 보트 중 가장 높은 승률의 차이가 오늘과 같은 정도인({{band}}) 레이스. 전국 {{n}}건({{from}}~{{through}})",
     "reasonHeading": "오늘의 승률차(전국 승률)",
     "reasonBoat1": "1번 보트",
     "reasonTop": "가장 높은 {{boat}}번 보트",
@@ -3661,9 +3661,9 @@
     "accuracyLink": "단계별 실적 보기",
     "empty": "이 레이스는 1코스 이변 주의도를 표시하지 않습니다",
     "result": "결과: 1번 보트는 {{rank}}착",
-    "resultWinner": "(1착은 {{boat}}번 보트)",
+    "resultWinner": " (1착은 {{boat}}번 보트)",
     "noteFinal": "준결승전, 우승전은 승률차에 따른 차이가 잘 나지 않음",
-    "noteAbsent": "결장 있음({{boats}}척)",
+    "noteAbsent": "결장 있음({{boats}}척 출주)",
     "noteLowSample": "건수 적음({{n}}건)"
   }
 }
