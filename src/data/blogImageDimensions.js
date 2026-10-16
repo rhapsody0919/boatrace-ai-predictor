@@ -177,5 +177,6 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/volatility-index-naruto-0908.jpg": { width: 1200, height: 630 },
   "/images/blog/volatility-ranking-0905.jpg": { width: 1200, height: 630 },
   "/images/blog/volatility-top5-0905.jpg": { width: 1200, height: 630 },
+  "/images/blog/wakamatsu-water-wind-guide.jpg": { width: 576, height: 391 },
   "/images/blog/winning-technique-chart.jpg": { width: 968, height: 594 },
 };
