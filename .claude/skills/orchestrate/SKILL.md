@@ -87,7 +87,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - 画面の見せ方（表示項目・配色・並び順・文言の方針）と、表示する数値の判断（集計・算出の定義）を変えない
   - .claude・CI ゲート・permission の変更、本番 DB への書き込みを伴わない
 - F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`・`public/images/blog/`・`src/data/blogImageDimensions.js`・`src/data/blogPostsEn.js` だけの PR。A の条件に加えて次をすべて満たす
-  - content-qa（`.claude/agents/content-qa.md`）の6観点で不合格が0
+  - content-qa（`.claude/agents/content-qa.md`）の7観点で不合格が0
   - wording-editor で P0・P1 が0
   - ファンのレビュー（boatrace-fan-reviewer か discussion-panel）で P0・P1 が0
   - seo-marketer で P0・P1 が0

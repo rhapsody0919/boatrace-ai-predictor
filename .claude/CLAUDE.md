@@ -40,7 +40,7 @@ Claude と Codex に共通する規約（運用前提・ブランチ・用語・
 | `design-reviewer` | SDD設計（spec/screens/plan/tasks）の独立レビュー。実測値の再現とコード前提の裏取りが中心 | `/step3`完了後、`/step4`着手前（省略不可。`.claude/rules/sdd-workflow.md`） |
 | `acceptance-test-writer` | UI機能の受け入れE2Eを spec.md・screens.md だけから書く（plan/tasks/src は読まない） | `/step3`完了後、`/step4`着手前（UI機能のみ。`.claude/rules/sdd-workflow.md`） |
 | `data-accuracy-verifier` | 集計結果が実データと一致するかだけの検証 | 実装完了後の自動レビュー2番（新規の集計・分析機能を含む場合） |
-| `content-qa` | ブログ記事の公開前品質チェック6観点 | 記事の新規公開・改稿前 |
+| `content-qa` | ブログ記事の公開前品質チェック7観点 | 記事の新規公開・改稿前 |
 | `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点でPreview URL上から評価（P0〜P3） | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動（`.claude/rules/review-fix-cycle.md`） |
 | `mock-diff-checker` | 承認済みモックと Preview の実画面を比べ、承認範囲の内外の差分を列挙する | UI PR を段階0で自己マージする前（`.claude/skills/orchestrate/SKILL.md` §4） |
 | `user-proxy-reviewer` | ユーザーの過去の判断（memory・CLAUDE.md・rules）から、提案が通るかを判定する | 段階1の代理判定（同 §4） |
@@ -48,7 +48,7 @@ Claude と Codex に共通する規約（運用前提・ブランチ・用語・
 | `visual-designer` | 画面（UI/UX）と SNS 動画の見た目・動き | モック・Preview・動画ができた後、図と動きを決めるとき |
 | `official-data-spec` | 公式データの定義・桁・切り替わる時点と、サイトの値との照合 | 公式の値と一致させる画面・バッチを作る・直すとき |
 | `measurement-planner` | 仕様の段階の計測設計（イベント・GA4 登録）と公開後の読み方 | spec を書くとき、公開後に反応を読むとき |
-| `wording-editor` | 禁止語・用語の対訳・誇大や射幸心・SNS の表現 | 文を書いた後、ユーザーに見せる前（ブログの公開前6観点は `content-qa`） |
+| `wording-editor` | 禁止語・用語の対訳・誇大や射幸心・SNS の表現 | 文を書いた後、ユーザーに見せる前（ブログの公開前7観点は `content-qa`） |
 | `system-architect` | ADR との整合、本番 DB の変更手順と壊れ方 | plan.md を書くとき、マイグレーション・RPC・本番データを変えるとき |
 | `seo-marketer` | ブログ記事の検索の意図・title と description・見出し・内部リンク・食い合い・構造化データ・SPA とボット向け HTML の制約（P0〜P3） | 記事の新規公開・改稿前（`content-qa`・`wording-editor`・ファンのレビューと並べて） |
 | `x-channel` | X の投稿案（文・スレッド・添付）の評価（P0〜P3）と、48h・7d の数字から次に変える1点 | 投稿案を承認に回す前、48h・7d の観測がそろったとき |

@@ -150,7 +150,7 @@ SNSマーケティングハブ Phase 2（改善案の自律立案ループ、`do
 ## ブログ記事の公開前品質チェック（新規作成・改稿とも必須）
 ビルドとE2Eだけでは記事の中身の質を担保できない。新規記事・既存記事の改稿（画像追加、FAQ追加等）を問わず、公開前に次の4つのレビューを通す。
 
-1. `content-qa`（6観点。手順の正本は `.claude/commands/publish-blog.md` の「2. 公開前品質チェック」）で不合格が0
+1. `content-qa`（7観点。手順の正本は `.claude/commands/publish-blog.md` の「2. 公開前品質チェック」）で不合格が0
 2. `wording-editor` で P0・P1 が0
 3. ファンのレビュー（`boatrace-fan-reviewer` か `discussion-panel`）で P0・P1 が0
 4. `seo-marketer` で P0・P1 が0
