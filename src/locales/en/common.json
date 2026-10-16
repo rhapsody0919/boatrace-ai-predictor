@@ -1899,7 +1899,8 @@
           "raceNo": "R{{n}}",
           "techPay": "{{tech}} · ¥{{yen}}",
           "bandLink": "See the races in this band ›"
-        }
+        },
+        "meetFormLink": "Series form of attacking boat {{b}} →"
       },
       "barLabel": "Boat {{boat}} {{p}} {{n}}",
       "feedback": {

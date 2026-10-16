@@ -1893,7 +1893,8 @@
           "raceNo": "{{n}}R",
           "techPay": "{{tech}}，{{yen}}日圓",
           "bandLink": "查看此帶的比賽 ›"
-        }
+        },
+        "meetFormLink": "進攻的{{b}}號艇本節狀態 →"
       },
       "barLabel": "{{boat}}號艇 {{p}} {{n}}場",
       "feedback": {

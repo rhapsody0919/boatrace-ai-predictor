@@ -15,6 +15,10 @@
  */
 export const MEET_FORM_ANCHOR = "meet-form-trend";
 
+/** 導線の行き先（レース詳細の URL の ? 以降）。boat はその艇を強調して開く */
+export const meetFormSearch = (boat) =>
+  `?tab=beforeInfo&boat=${boat}#${MEET_FORM_ANCHOR}`;
+
 /** 指標。並びはタブの順（2026-10-15 承認のモック） */
 export const MEET_FORM_METRICS = Object.freeze([
   { key: "exhibition", originalKind: null },

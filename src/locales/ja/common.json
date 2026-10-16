@@ -1519,7 +1519,8 @@
           "raceNo": "{{n}}R",
           "techPay": "{{tech}}・{{yen}}円",
           "bandLink": "この帯のレースを見る ›"
-        }
+        },
+        "meetFormLink": "攻める{{b}}号艇の今節の足 →"
       },
       "barLabel": "{{boat}}号艇 {{p}} {{n}}件",
       "feedback": {

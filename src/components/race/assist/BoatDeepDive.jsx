@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { meetFormSearch } from "../meetFormTrend";
 import BoatBadge from "../BoatBadge";
 import ClassLineup from "./ClassLineup";
 import RunsTable from "./RunsTable";
@@ -312,6 +314,15 @@ export default function BoatDeepDive({
               C.loading
             )}
           </div>
+          {meet && (
+            // 日別の着順を見たところから、同じ艇の今節の足の推移へ（BOA-885）
+            <Link
+              className="ta-link ta-meetform-link"
+              to={`/race/${raceId}${meetFormSearch(boat)}`}
+            >
+              {C.meetFormLinkDeep(boat)}
+            </Link>
+          )}
           {meet && (
             <button
               type="button"

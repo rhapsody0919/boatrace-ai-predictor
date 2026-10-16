@@ -1893,7 +1893,8 @@
           "raceNo": "{{n}}R",
           "techPay": "{{tech}}, {{yen}}엔",
           "bandLink": "이 띠의 레이스 보기 ›"
-        }
+        },
+        "meetFormLink": "공격하는 {{b}}번 보트의 이번 시리즈 기력 →"
       },
       "barLabel": "{{boat}}번 보트 {{p}} {{n}}건",
       "feedback": {
