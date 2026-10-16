@@ -99,6 +99,7 @@ const pct = (value) => `${Number(value)}%`;
 export const TODAY_MAX_IMAGES = 4;
 export const SONAR_ELEMENT = ".af-hep .af-dark";
 const SONAR_WAIT_UNTIL = "07:00";
+const SHOT_BUDGET_MS = 120_000;
 
 export function todayFeatured(rows, sendAt = "07:45") {
   const row = rows.find((r) => r.section === "featured");
@@ -213,6 +214,7 @@ export async function runTodayPlan(
     saveImage,
     signImage,
     notify = async () => {},
+    nowMs = Date.now,
   },
 ) {
   const live = ctx.mode === "live";
@@ -223,8 +225,18 @@ export async function runTodayPlan(
     rowsWritten: extra.written ? 1 : 0,
     report: { items: [{ kind: "digest", date, ...extra }], alerts: [] },
   });
-  if (now < new Date(when.plan_from) || now >= new Date(when.veto_until))
+  if (now < new Date(when.plan_from))
     return done({ outcome: "skipped", reason: "outside_window" });
+  if (now >= new Date(when.veto_until)) {
+    // 送る時刻を過ぎて、その日の下書きが無い（作れずに朝が終わった）。cron がその日1回だけ Slack に知らせる
+    const { draft } = await store.todayState(date);
+    return done(
+      draft
+        ? { outcome: "skipped", reason: "outside_window" }
+        : { outcome: "missed", reason: "no_draft_by_send_time" },
+    );
+  }
+  const startedMs = nowMs();
   const digest = await getDigest(date);
   if (!digest.day?.generated_at)
     return done({ outcome: "skipped", reason: "not_generated" });
@@ -279,6 +291,11 @@ export async function runTodayPlan(
   const shots = [];
   const missing = [];
   for (const race of post.races.slice(0, TODAY_MAX_IMAGES)) {
+    // 1枚は最悪 約75秒かかる。関数の時間（300秒）で止められると何も記録されないので、120秒を過ぎたら新しく撮らない
+    if (nowMs() - startedMs > SHOT_BUDGET_MS) {
+      missing.push(`${race.race_id}: time_budget`);
+      continue;
+    }
     try {
       const shot = await headless.screenshot({
         url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar`,
@@ -533,11 +550,47 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
 export function nextTodayLog(prev, item, now) {
   const date = jstDate(now);
   const events = prev?.date === date ? [...(prev.events ?? [])] : [];
-  if (item && item.reason !== "outside_window")
+  if (item && item.reason !== "outside_window" && item.outcome !== "missed")
     events.push({
       at: now.toISOString(),
       outcome: item.outcome ?? null,
       reason: item.reason ? String(item.reason).slice(0, 300) : null,
     });
-  return { date, events: events.slice(-30) };
+  return {
+    date,
+    events: events.slice(-30),
+    ...(prev?.date === date && prev.missed_notified
+      ? { missed_notified: true }
+      : {}),
+  };
+}
+
+/** その日の下書きを作れずに送る時刻を過ぎたときの Slack の文（朝の経過から最後の理由を添える） */
+export function missedTodayText(log) {
+  const last = [...(log?.events ?? [])]
+    .reverse()
+    .find((e) => e.reason || e.outcome);
+  const at = (iso) =>
+    new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
+  return [
+    `SNS /today（${log?.date}）: 送る時刻（7:45）までに下書きを作れなかった。今日は送らない`,
+    last
+      ? `最後の結果（${at(last.at)}）: ${last.outcome}${last.reason ? ` ${last.reason}` : ""}（朝の記録 ${log.events.length}件）`
+      : "朝の実行が一度も最後まで終わっていない（関数の時間切れなど。Vercel のログを確かめる）",
+  ].join("\n");
+}
+
+/**
+ * 1回の実行の後の朝の記録と、Slack に出す「作れなかった」の文（その日まだ知らせていないときだけ。知らせたら呼び出し側が
+ * log.missed_notified=true にして cursor に保存する）
+ */
+export function finishTodayLog(prev, item, now) {
+  const log = nextTodayLog(prev, item, now);
+  return {
+    log,
+    notice:
+      item?.outcome === "missed" && !log.missed_notified
+        ? missedTodayText(log)
+        : null,
+  };
 }
