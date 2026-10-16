@@ -1,9 +1,10 @@
-/* 上限は 1600px（BOA-612）。以前の 1200px だと 1440px 以上の画面で左右が大きく空き、
-   6艇の表（データ出走表・今節・枠別情報・モータ情報・オッズ一覧）が窮屈だった。
-   画面いっぱいまで広げると 1920px で1列が約260pxになり、6艇の見比べが逆に難しくなるので
-   1600px で止める（ユーザー承認の案B。モック: BOA-612） */
+/* 列は最大 1200px で画面の中央（BOA-881、2026-10-16 オーナー承認の案A。モック: docs/design/race-detail-pc-width）。
+   以前は 1600px（BOA-612）の中で、本文を 全幅／1200／720 の3段に分けて左端にそろえていた（BOA-820）。
+   1920px で1画面に右端が 904・1384・1736 と混ざり、「PCで左に寄る」と見えた。
+   見出し・タブ・本文・下の案内・ヘッダー・思考アシストを同じ1本の列にそろえ、狭い中身はカードの中で
+   2段（.race-split、RaceTabs.css）にする。6艇の表も 1200 に入れる（文字 15px で1艇の列 約155〜165px） */
 .race-detail-page-v2 {
-  max-width: 1600px;
+  max-width: calc(1200px + 3rem);
   margin: 0 auto;
   padding: 1rem 1.5rem 5rem;
 }
@@ -56,28 +57,6 @@
     --font-size-xs: 14px;
   }
 
-  /* 1行に1艇を並べるリスト・グラフは、広げると選手名と数値が 1,200px 以上離れ、
-     点が横に潰れた（BOA-612 ファン評価1周目）。6艇を列に並べる表だけを
-     1600px まで使い、こちらは読みやすい幅で止める。
-     カードの中身だけを止めると枠の右側が空いて作りかけに見えるので、カードごと止める（2周目） */
-  .race-detail-page-v2 .rbit-bars,
-  .race-detail-page-v2 .race-meet-tab,
-  .race-detail-page-v2 .race-ai-prediction-tab,
-  .race-detail-page-v2 .race-result,
-  .race-detail-page-v2 .nsc-card,
-  .race-detail-page-v2 .ecd-list,
-  .race-detail-page-v2 .rwit-card:has(.rwit-today-table),
-  .race-detail-page-v2 .rwit-card:has(.rwit-bars),
-  /* 枠別情報のカードの右端をそろえる。ST考察だけ 1552px に広がり、上下のカードと
-     ギザギザに並んでいた（BOA-619） */
-  .race-detail-page-v2 .rsc-card,
-  /* 枠別情報の注記・選手チップの段も、下のカードと右端をそろえる。注記だけ 1392px に広がり、
-     1200px のカードより右へ出ていた（BOA-703） */
-  .race-detail-page-v2 .rwit-note,
-  .race-detail-page-v2 .rwit-chip-row {
-    max-width: 1200px;
-  }
-
   /* 今節タブ・オッズ一覧は 10〜10.4px の文字（--font-size-2xs）が多く、広げても読みにくい
      ままだった（BOA-612 ファン評価2周目）。広い画面では、このタブの中だけ文字サイズの値を一段上げる */
   .race-detail-page-v2 .race-meet-tab,
@@ -102,9 +81,8 @@
 @media (min-width: 1025px) {
   /* 発走前の AI予想（.prediction-result）も同じ 720px に。展開予測の決まり手と確率が
      1440px で約1130px 離れていた（race-detail-ui-unify FR-6、BOA-619 の残り） */
-  /* 左端はタブの列にそろえる（BOA-820）。以前は中央寄せで、1440px で左端が x=360、1920px で x=600 に飛び、
-     タブを切り替えるたびに目が左右に動いた。タブの幅の決まり: 全幅（6艇を列に並べる表）／最大1200（図とリスト）／
-     720（文章と1行1項目）の3段で、どの段も左端はタブの列 */
+  /* 左端は列の左端にそろえる（BOA-820）。中央寄せにすると、タブを切り替えるたびに目が左右に動く。
+     1200px 以上は下の2段にする（BOA-881） */
   .race-detail-page-v2 .race-ai-prediction-tab,
   .race-detail-page-v2 .prediction-result {
     max-width: 720px;
@@ -143,6 +121,29 @@
   /* 枠別情報の数値4列は表だけ720で止め、カードは1200のまま（BOA-827） */
   .race-detail-page-v2 .rwit-today-table {
     max-width: 720px;
+  }
+}
+
+/* AI予想は、列が 1152px 以上になる 1200px から、ブロック（展開予測・イン崩れ注意度・出現パターン、
+   終わったレースは振り返りの各節）を2段に並べる（BOA-881）。720px のままだと列の左 6割にだけ寄って見えた */
+@media (min-width: 1200px) {
+  .race-detail-page-v2 :is(.race-ai-prediction-tab, .prediction-result) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-4) var(--spacing-8);
+    align-items: start;
+    max-width: none;
+  }
+
+  /* 節が1つだけのとき（展開予測だけ等。発走前・終わったレースとも）は 720 のまま。列いっぱいにすると
+     決まり手と確率が 1200px 離れる（BOA-619） */
+  .race-detail-page-v2
+    :is(.race-ai-prediction-tab, .prediction-result):has(> :only-child) {
+    grid-template-columns: minmax(0, 720px);
+  }
+
+  .race-detail-page-v2 :is(.race-ai-prediction-tab, .prediction-result) > * {
+    min-width: 0;
   }
 }
 
@@ -336,8 +337,11 @@
     :is(
       .rmt-card > .rmt-compare,
       .rmt-card > .hscroll-hint,
+      /* PC の2段（BOA-881）の囲みの中。囲みは 1199px 以下では display: contents で見た目は直の子と同じ */
+      .rmt-card > .race-split > .race-split__main > :is(.rmt-compare, .hscroll-hint),
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
+      .rwit-card > .race-split > .race-split__main > .rwit-today-table,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
@@ -353,8 +357,11 @@
     :is(
       .rmt-card > .rmt-compare,
       .rmt-card > .hscroll-hint,
+      /* PC の2段（BOA-881）の囲みの中。囲みは 1199px 以下では display: contents で見た目は直の子と同じ */
+      .rmt-card > .race-split > .race-split__main > :is(.rmt-compare, .hscroll-hint),
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
+      .rwit-card > .race-split > .race-split__main > .rwit-today-table,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper
@@ -368,8 +375,11 @@
     :is(
       .rmt-card > .rmt-compare,
       .rmt-card > .hscroll-hint,
+      /* PC の2段（BOA-881）の囲みの中。囲みは 1199px 以下では display: contents で見た目は直の子と同じ */
+      .rmt-card > .race-split > .race-split__main > :is(.rmt-compare, .hscroll-hint),
       .rmt-card .race-history-hscroll,
       .rwit-card > .rwit-today-table,
+      .rwit-card > .race-split > .race-split__main > .rwit-today-table,
       .rsc-card > .rsc-grid-wrapper,
       .venue-tendency-panel .vtp-table-wrapper,
       .motor-condition-container .table-wrapper

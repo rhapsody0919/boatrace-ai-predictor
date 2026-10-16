@@ -217,6 +217,19 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* レース詳細・思考アシストでは、ヘッダーの左右を本文の列（最大1200・画面の中央）にそろえる（BOA-881、
+   BOA-828 を含む）。全ページ共通の部品なので、ほかのページの幅は変えない */
+@media (min-width: 1025px) {
+  body:has(.race-detail-page-v2, .ta-page) .app-header {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  body:has(.race-detail-page-v2, .ta-page) .header-content {
+    max-width: 1200px;
+  }
+}
+
 /* レスポンシブ対応 */
 @media (max-width: 768px) {
   .app-header {

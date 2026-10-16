@@ -1572,14 +1572,15 @@ test.describe("思考アシスト: PC 表示（BOA-801 5・BOA-880）", () => {
   });
 
   // 2026-10-15 オーナー決定（BOA-880）: 堅い？荒れる？の枠は列いっぱい、図と右の列は 1:1。以前は枠・図とも 480px
-  test("1440px: 最大 1200px・左端 24px、図は左・深掘りは右に 1:1 で並ぶ。堅い？荒れる？は列いっぱい", async ({
+  // BOA-881: 列はレース詳細と同じく画面の中央（1440px で左端 120）。以前は左端 24px
+  test("1440px: 最大 1200px・画面の中央（左端 120px）、図は左・深掘りは右に 1:1 で並ぶ。堅い？荒れる？は列いっぱい", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await open(page);
     const box = (sel) => page.locator(sel).first().boundingBox();
     const main = await box(".ta-page");
-    expect(Math.round(main.x)).toBe(24);
+    expect(Math.round(main.x)).toBe(120);
     expect(Math.round(main.width)).toBe(1200);
     const rough = await box(".ta-rough");
     expect(rough.width).toBeGreaterThan(1100);
