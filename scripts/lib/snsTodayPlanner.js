@@ -94,6 +94,12 @@ const FEATURED_RATE = {
 const pct = (value) => `${Number(value)}%`;
 
 /** /today の注目レース（featured）。逃げ・まくりから選ばれ、送る時刻より後の締切で、数字がそろっているときだけ */
+// 画像は対象レースの龍神ソナーの図を最大4枚（2026-10-16 ユーザー決定。X の1投稿の上限が4枚）。
+// 図の元データ（analogy-v16-morning）は JST 5:30 から作られるので、7:00 まではそろうまでやり直し、7:00 を過ぎたら撮れた分で作る
+export const TODAY_MAX_IMAGES = 4;
+export const SONAR_ELEMENT = ".af-hep .af-dark";
+const SONAR_WAIT_UNTIL = "07:00";
+
 export function todayFeatured(rows, sendAt = "07:45") {
   const row = rows.find((r) => r.section === "featured");
   if (
@@ -167,6 +173,17 @@ export function buildTodayPost(
   lines.push(TODAY_NOTICE, url);
   return {
     text: lines.join("\n"),
+    // 画像（龍神ソナーの図）を撮るレース。注目レースを先頭に、一覧を締切順で、同じレースは1回
+    races: [...(featured ? [featured] : []), ...picks]
+      .filter(
+        (row, i, all) => all.findIndex((r) => r.race_id === row.race_id) === i,
+      )
+      .map(({ race_id, venue_code, race_number, start_time }) => ({
+        race_id,
+        venue_code,
+        race_number,
+        start_time,
+      })),
     // 送る直前に欠場・中止を読み直す対象（注目レースを含む）
     picks: [...(featured ? [featured] : []), ...picks].map((row) => ({
       race_id: row.race_id,
@@ -247,15 +264,47 @@ export async function runTodayPlan(
   if (!live)
     return done({ outcome: risk.length ? "held_manual" : "manual", revision });
 
-  // 撮れないうちは何も書かない（例外で止め、次の実行でやり直す）
-  const shot = await headless.screenshot({
+  // リンク先（/today）が未ログインで見えることを確かめる（送る直前の検査と同じ印）
+  const page = await headless.inspect({
     url: TODAY_URL,
+    context: { storageState: null },
     requiredSelectors: markers[TODAY_SCREEN_KEY],
   });
-  if (shot.finalUrl !== TODAY_URL) throw new Error("screenshot_redirected");
+  if (
+    page.finalUrl !== TODAY_URL ||
+    !markers[TODAY_SCREEN_KEY].every((m) => page.visibleSelectors?.includes(m))
+  )
+    throw new Error("today_page_not_ready");
+  // 画像: 対象レースの龍神ソナーの図。撮れないうちは何も書かない（例外で止め、次の実行でやり直す）
+  const shots = [];
+  const missing = [];
+  for (const race of post.races.slice(0, TODAY_MAX_IMAGES)) {
+    try {
+      const shot = await headless.screenshot({
+        url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar`,
+        requiredSelectors: markers["race-sonar"],
+        viewport: { width: 390, height: 844 },
+        element: SONAR_ELEMENT,
+        label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
+      });
+      // X の画像は1枚 5 MB まで（承認の関数 160 と同じ）。超えたら撮れなかった扱い
+      if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
+      shots.push(shot.png);
+    } catch (error) {
+      missing.push(`${race.race_id}: ${error.message}`);
+    }
+  }
+  if (
+    !shots.length ||
+    (missing.length && now < new Date(`${date}T${SONAR_WAIT_UNTIL}:00+09:00`))
+  )
+    throw new Error(`sonar_not_ready（${missing.join(" / ")}）`);
   const checkedAt = now.toISOString();
-  const imagePath = `today/${date}/${revision}.png`;
-  await saveImage(imagePath, shot.png);
+  const imagePaths = shots.map(
+    (_, i) => `today/${date}/${revision}-${i + 1}.png`,
+  );
+  for (const [i, png] of shots.entries()) await saveImage(imagePaths[i], png);
+  const imagePath = imagePaths[0];
   const releaseEvidence = {
     status: "released",
     url: TODAY_URL,
@@ -269,6 +318,8 @@ export async function runTodayPlan(
   const sourceData = {
     // 個別承認の画面の一覧は source_data.race_id の「日付-」で今日の下書きを拾う
     race_id: `${date}-today`,
+    // 画像の順（先頭は cover_image_path）。承認の関数（160）がこの順で媒体を照合する
+    image_paths: imagePaths,
     // picks は送る直前の検査（readCurrent）が欠場・中止を読み直す対象
     digest: { date, revision, picks: post.picks },
     deadline_queue: {
@@ -368,7 +419,9 @@ export async function runTodayPlan(
         checks,
         held_reason: heldReason,
       });
-  const image = await signImage(imagePath).catch(() => null);
+  const images = await Promise.all(
+    imagePaths.map((path) => signImage(path).catch(() => null)),
+  );
   // 承認を外したのは、item があった（＝前に Slack で知らせた）ときだけ
   const rebuilt = Boolean(existing.draft && existing.item);
   const head = rebuilt
@@ -378,7 +431,10 @@ export async function runTodayPlan(
       : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
-      `SNS /today（${date}）: ${head}\n${caption}${image ? `\n画像: ${image}` : ""}`,
+      `SNS /today（${date}）: ${head}\n${caption}${images
+        .filter(Boolean)
+        .map((url, i) => `\n画像${i + 1}: ${url}`)
+        .join("")}`,
     );
   } catch (error) {
     console.error(`Slack に通知できません: ${error.message}`);

@@ -47,7 +47,8 @@ const notify = async (text) => {
 export default createScrapeCronHandler({
   job: "sns_auto_plan",
   run: async (ctx) => {
-    const headless = createChromiumHeadless();
+    // /today の確認1回＋龍神ソナーの図4枚と、レースの計画の表示の確認（素材ごと1回）
+    const headless = createChromiumHeadless({ maxInspections: 12 });
     const trackingStore = createPostTrackingStore({
       url: SUPABASE_URL,
       key: SUPABASE_SERVICE_KEY,

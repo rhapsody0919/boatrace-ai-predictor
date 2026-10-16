@@ -32,7 +32,7 @@ const riskRules = JSON.parse(
   ),
 ).rules;
 const t = await getJaT();
-const DATE = "2026-10-17";
+const DATE = "2037-10-17";
 const at = (hhmm) => new Date(`${DATE}T${hhmm}:00+09:00`);
 let me;
 
@@ -62,6 +62,7 @@ before(async () => {
     "153_sns_auto_send.sql",
     "154_sns_tokens_metric_jobs.sql",
     "158_sns_lanes_digest_period.sql",
+    "160_sns_x_multiple_images.sql",
   ])
     await db.exec(
       (
@@ -320,16 +321,28 @@ function raceDbOf({ absent = [], cancelled = [], missing = [] } = {}) {
       }));
   };
 }
-function shooter({ fail = false } = {}) {
+// /today の確認（inspect）と、レースの龍神ソナーの図（screenshot）。notReady の race_id は図が無い（元データの作成前）
+function shooter({ fail = false, notReady = [], todayMissing = false } = {}) {
   const calls = [];
+  const inspects = [];
   return {
     calls,
-    async screenshot(request) {
-      calls.push(request);
-      if (fail) throw new Error("screenshot_component_missing");
+    inspects,
+    async inspect(request) {
+      inspects.push(request);
       return {
         finalUrl: request.url,
-        png: PNG,
+        visibleSelectors: todayMissing ? [] : request.requiredSelectors,
+      };
+    },
+    async screenshot(request) {
+      calls.push(request);
+      if (fail || notReady.some((id) => request.url.includes(id)))
+        throw new Error("screenshot_component_missing");
+      // 図ごとに中身の違う画像（hash で区別できるように）
+      return {
+        finalUrl: request.url,
+        png: new Uint8Array([...PNG, calls.length]),
         visibleSelectors: request.requiredSelectors,
       };
     },
@@ -389,12 +402,52 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
   const [draft] = await all("SELECT * FROM sns_drafts");
   const [item] = await all("SELECT * FROM sns_auto_send_items");
   assert.equal(result.report.items[0].outcome, "manual");
-  assert.deepEqual(headless.calls, [
-    { url: TODAY_URL, requiredSelectors: SCREEN_MARKERS.today },
+  assert.deepEqual(headless.inspects, [
+    {
+      url: TODAY_URL,
+      context: { storageState: null },
+      requiredSelectors: SCREEN_MARKERS.today,
+    },
   ]);
-  assert.equal(
-    saved[0].path,
-    `today/${DATE}/${draft.source_data.digest.revision}.png`,
+  // 画像: 注目レース＋一覧の締切順、同じレースは1回、最大4枚の龍神ソナーの図（会場R 締切のラベルつき）
+  assert.deepEqual(
+    headless.calls.map((c) => [c.url, c.element, c.label]),
+    [
+      [
+        `https://www.boat-ai.jp/race/${DATE}-04-12?tab=sonar`,
+        ".af-hep .af-dark",
+        "平和島12R 16:20締切",
+      ],
+      [
+        `https://www.boat-ai.jp/race/${DATE}-02-05?tab=sonar`,
+        ".af-hep .af-dark",
+        "戸田5R 09:00締切",
+      ],
+      [
+        `https://www.boat-ai.jp/race/${DATE}-04-03?tab=sonar`,
+        ".af-hep .af-dark",
+        "平和島3R 10:00締切",
+      ],
+      [
+        `https://www.boat-ai.jp/race/${DATE}-04-05?tab=sonar`,
+        ".af-hep .af-dark",
+        "平和島5R 11:00締切",
+      ],
+    ],
+  );
+  assert.ok(
+    headless.calls.every(
+      (c) => c.requiredSelectors === SCREEN_MARKERS["race-sonar"],
+    ),
+  );
+  const revision = draft.source_data.digest.revision;
+  assert.deepEqual(
+    saved.map((x) => x.path),
+    [1, 2, 3, 4].map((i) => `today/${DATE}/${revision}-${i}.png`),
+  );
+  assert.deepEqual(
+    draft.source_data.image_paths,
+    saved.map((x) => x.path),
   );
   assert.equal(draft.cover_image_path, saved[0].path);
   assert.equal(draft.send_lane, "A");
@@ -462,7 +515,7 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   assert.equal(notes.length, 1);
   assert.match(notes[0], /7:45 までに個別承認の画面で承認/);
-  assert.match(notes[0], /画像: https:\/\/signed\/today\//);
+  assert.match(notes[0], /画像1: https:\/\/signed\/today\/[^\n]+-1\.png\n画像2: [^\n]+\n画像3: [^\n]+\n画像4: [^\n]+-4\.png/);
   // 本人の個別承認（140 の DB 側の条件も通る）→ 7:45 の job
   const job = await approve(draft);
   assert.equal(job.state, "queued");
@@ -555,7 +608,11 @@ test("撮れなければ何も書かずに投げる（次の5分でやり直す�
   const saved = [];
   await assert.rejects(
     plan({ headless: shooter({ fail: true }), saved }),
-    /screenshot_component_missing/,
+    /sonar_not_ready/,
+  );
+  await assert.rejects(
+    plan({ headless: shooter({ todayMissing: true }), saved }),
+    /today_page_not_ready/,
   );
   assert.equal(saved.length, 0);
   assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
@@ -658,6 +715,10 @@ test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /tod
   // 本番の SQL の now() は、この日の 5:40（計画）→ 7:46（送る）の時計で流す
   await db.query("UPDATE test_clock SET value=$1", [at("05:40")]);
   await db.exec(sql.replaceAll("now()", "test_now()"));
+  // runbook の期間（2026-10）は、テストの日付（2037 年。実際の時計で期限を判定する部品があるため未来に置く）に合わせて動かす
+  await db.exec(
+    "UPDATE sns_x_send_control SET period_start = test_now() - interval '1 day', period_end = test_now() + interval '30 days'",
+  );
   await plan({ now: at("05:40") });
   const [draft] = await all("SELECT * FROM sns_drafts");
   const job = await approve(draft);
@@ -711,7 +772,7 @@ test("一覧の読み取り: /today の投稿は選手名・枠番を足して�
   const rows = urls.filter((u) => u.includes("morning_digest_rows"));
   assert.match(
     rows[0],
-    // course は逃がしの2号艇・3号艇を分けるためにボット向けの ROW_SELECT に足した（2026-10-15）
+    // course は逃がしの2号艇・3号艇を分けるためにボット向けの ROW_SELECT に足した（2037-10-15）
     /select=section,rank,race_id,venue_code,race_number,start_time,course,reason:detail->>reason,racer_name,boat_number,sample_size,metric_value,metric_venue_baseline,from:detail->>from&/,
   );
   assert.ok(!rows[1].includes("racer_name"));
@@ -828,4 +889,90 @@ test("注目レース: 先頭に置き一覧に重ねない。逃がしからの
   assert.deepEqual(onlyFeatured.picks, [
     { race_id: `${DATE}-04-12`, boat_number: 1 },
   ]);
+});
+
+test("龍神ソナーの図がそろわないうちは 7:00 までやり直し、7:00 を過ぎたら撮れた分で作る", async () => {
+  const saved = [];
+  const notReady = [`${DATE}-02-05`];
+  await assert.rejects(
+    plan({ now: at("06:30"), headless: shooter({ notReady }), saved }),
+    /sonar_not_ready（2037-10-17-02-05: screenshot_component_missing）/,
+  );
+  assert.equal(saved.length, 0);
+  assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
+  await plan({ now: at("07:05"), headless: shooter({ notReady }), saved });
+  const [draft] = await all("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.image_paths.length, 3);
+  // 本人の承認（160）は3枚の媒体で通る
+  const job = await approve(draft);
+  assert.equal(job.snapshot.media.length, 3);
+  assert.ok(job.snapshot.media.every((m) => m.type === "image/png"));
+});
+
+test("160: X の画像は image_paths の数・順・種類とそろったときだけ承認できる。image_paths の無い下書きは今までどおり1つ", async () => {
+  await plan();
+  const [draft] = await all("SELECT * FROM sns_drafts");
+  const snapshot = await createXSnapshot(draft, loadMedia);
+  assert.equal(snapshot.media.length, 4);
+  const tryApprove = (snap) =>
+    db.query("SELECT approve_sns_x_send($1,$2,$3,NULL)", [draft.id, me, snap]);
+  for (const [bad, why] of [
+    [
+      { ...snapshot, media: snapshot.media.slice(0, 3) },
+      /画像の数・並びが不正です/,
+    ],
+    [
+      {
+        ...snapshot,
+        media: [
+          snapshot.media[1],
+          snapshot.media[0],
+          ...snapshot.media.slice(2),
+        ],
+      },
+      /媒体のhash・サイズが不正です/,
+    ],
+    [
+      {
+        ...snapshot,
+        media: snapshot.media.map((m, i) =>
+          i === 2 ? { ...m, type: "video/mp4" } : m,
+        ),
+      },
+      /媒体のhash・サイズが不正です/,
+    ],
+    [
+      {
+        ...snapshot,
+        media: snapshot.media.map((m, i) =>
+          i === 3 ? { ...m, size: 6_000_000 } : m,
+        ),
+      },
+      /媒体のhash・サイズが不正です/,
+    ],
+  ])
+    await assert.rejects(tryApprove(bad), why);
+  // 5枚は作れない（image_paths が4枚を超える下書きは承認しない）
+  await db.exec(
+    "ALTER TABLE sns_drafts DISABLE TRIGGER USER; UPDATE sns_drafts SET source_data = jsonb_set(source_data, '{image_paths}', (source_data->'image_paths') || '[\"x/5.png\"]'::jsonb) WHERE id=$1; ALTER TABLE sns_drafts ENABLE TRIGGER USER;".replaceAll(
+      "$1",
+      `'${draft.id}'`,
+    ),
+  );
+  await assert.rejects(tryApprove(snapshot), /画像の数・並びが不正です/);
+  // image_paths の無い X の下書き（今までの1枚）は、今までどおり承認できる
+  await db.exec(
+    "ALTER TABLE sns_drafts DISABLE TRIGGER USER; UPDATE sns_drafts SET source_data = source_data - 'image_paths'; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+  );
+  const [single] = await all("SELECT * FROM sns_drafts");
+  const one = await createXSnapshot(single, loadMedia);
+  assert.equal(one.media.length, 1);
+  const job = (
+    await first("SELECT approve_sns_x_send($1,$2,$3,NULL) r", [
+      single.id,
+      me,
+      one,
+    ])
+  ).r;
+  assert.equal(job.state, "queued");
 });

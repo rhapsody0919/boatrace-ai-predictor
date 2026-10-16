@@ -74,9 +74,16 @@ export default async function handler(req) {
     // SQL readの件数上限に加え、hash/署名の同時実行を避ける。
     for (const row of rows) {
       const review = await prepareMobileReview(row, loadXMedia);
+      // X の画像の複数枚（/today、160）は全部を署名して画面に出す（見ていない画像を承認させない）
+      const imagePaths =
+        row.draft.platform === "x" &&
+        Array.isArray(row.draft.source_data?.image_paths)
+          ? row.draft.source_data.image_paths
+          : null;
       const paths = [
         row.draft.video_storage_path,
         row.draft.cover_image_path,
+        ...(imagePaths ?? []),
       ].filter(Boolean);
       const urls = await signStoragePaths(paths);
       let inspection = null,
@@ -105,6 +112,9 @@ export default async function handler(req) {
         holds: review.holds,
         videoUrl: urls[row.draft.video_storage_path] || null,
         imageUrl: urls[row.draft.cover_image_path] || null,
+        ...(imagePaths
+          ? { imageUrls: imagePaths.map((path) => urls[path] || null) }
+          : {}),
       });
     }
     return jsonResponse({ data, connected: false });
