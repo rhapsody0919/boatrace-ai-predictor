@@ -50,6 +50,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/first-mark-kimarite-donut-ja.jpg": { width: 1000, height: 507 },
   "/images/blog/first-mark-kimarite-donut-ko.jpg": { width: 1000, height: 507 },
   "/images/blog/first-mark-kimarite-donut-zh-tw.jpg": { width: 1000, height: 507 },
+  "/images/blog/fukuoka-water-wind-guide.jpg": { width: 576, height: 394 },
   "/images/blog/gamagori-makuri-wind-guide.jpg": { width: 576, height: 394 },
   "/images/blog/heiwajima-course1-winrate.jpg": { width: 1200, height: 630 },
   "/images/blog/heiwajima-topstart-winrate.jpg": { width: 1200, height: 630 },
