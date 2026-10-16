@@ -60,13 +60,24 @@ export function exhibitionForms(stByCourse, hasLate = false) {
 }
 
 /**
+ * スリットの強さの段（1/100秒の整数）。1段目は龍神ソナーと同じ線、2段目は BOA-635 の「約半艇身」
+ * （docs/design/past-rate-check/spec.md「スリットの判定」）。横一線・内3艇そろうは段で変わらない
+ */
+export const SLIT_LEVELS = {
+  1: { dent: 5, kado: 3, out: 5 },
+  2: { dent: 8, kado: 5, out: 8 },
+};
+
+/**
  * コース順の ST（F は負）→ 7形の当否。1艇でも欠ければすべて false。形は重なりうる
  * @param {(number|null)[]} stByCourse
+ * @param {1|2} [level] 強さの段（既定は1段目＝龍神ソナーの線）
  * @returns {Record<string, boolean>}
  */
-export function slitForms(stByCourse) {
+export function slitForms(stByCourse, level = 1) {
   if (stByCourse.length !== 6 || stByCourse.some(isMissing))
     return Object.fromEntries(SLIT_FORMS.map((f) => [f, false]));
+  const { dent, kado, out } = SLIT_LEVELS[level];
   const c = stByCourse.map(stCent);
   const max = (a) => Math.max(...a);
   const min = (a) => Math.min(...a);
@@ -75,12 +86,12 @@ export function slitForms(stByCourse) {
   return {
     flat: max(c) - min(c) <= 6,
     wall: max(inner) - min(inner) <= 2,
-    // 凹み: 両隣より0.05秒以上遅い（2026-10-06 ユーザー決定、BOA-777。Python の v16_defs と同じ）
-    d2: c[1] - Math.max(c[0], c[2]) >= 5,
-    d3: c[2] - Math.max(c[1], c[3]) >= 5,
-    kado: min(inner) - c[3] >= 3,
-    d1: c[0] - c[1] >= 5,
-    dash: sum(inner) - sum(c.slice(3)) >= 15,
+    // 凹み: 両隣より dent 以上遅い（2026-10-06 ユーザー決定、BOA-777。Python の v16_defs と同じ）
+    d2: c[1] - Math.max(c[0], c[2]) >= dent,
+    d3: c[2] - Math.max(c[1], c[3]) >= dent,
+    kado: min(inner) - c[3] >= kado,
+    d1: c[0] - c[1] >= dent,
+    dash: sum(inner) - sum(c.slice(3)) >= 3 * out,
   };
 }
 

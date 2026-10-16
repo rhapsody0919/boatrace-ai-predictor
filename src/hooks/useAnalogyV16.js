@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   getAnalogyFacts,
+  getAnalogyLayer,
   getAnalogyScenario,
   getAnalogyScenarioRaces,
   getAnalogySimilar,
 } from "../services/analogyService";
+import { hasLayerDate } from "../utils/pastRate/layer.js";
 
 /**
  * アナロジー・ファインダー v16 の取得（BOA-271 T6-3。screens「データ取得」）。
@@ -91,4 +93,15 @@ export const useAnalogyScenarioRaces = (
     `scenario-races|${raceId}|${scope ?? ""}|${stage}|${boat}`,
     () => getAnalogyScenarioRaces(raceId, scope, stage, boat),
     enabled && Boolean(scope),
+  );
+
+/**
+ * BOA-635 の比べる相手（layer）。v16 の公開より前のレースは取りに行かない（not_saved は no-store で
+ * キャッシュが効かず、確定済みのレースを開くたびに呼ぶことになるため。hasLayerDate）
+ */
+export const useAnalogyLayer = (raceId, enabled = true) =>
+  useAnalogyResource(
+    `layer|${raceId}`,
+    () => getAnalogyLayer(raceId),
+    enabled && hasLayerDate(raceId),
   );
