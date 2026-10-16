@@ -32,6 +32,7 @@
 
 - 「逃がしやすい選手」（/today の nigashi）は「1号艇が逃げ切った割合」が高い材料で、鉄板寄り（イン有利）の側。まくりが利く選手と並べるときに荒れる側へ入れない（2026-10-15、/today の向きの誤りの修正、src/data/morningDigestCopy.js・scripts/maintenance/verify-digest-nigashi-direction.js）
 - /today で補正しているのはレースのグレード（SG・G1・一般戦）で、選手の級別（A1・A2）ではない。「会場と級別」と書かず「会場とレースグレード」と書く（2026-10-15、同）
+- BOA-822 の新しい用語の訳は、英語・繁体字・韓国語とも既存の「イン崩れ」（Lane-1 upset／1號位失守／1코스 이변）を土台に続け、旧「イン崩れ指数」（index／指數／지수）と語尾（caution level／注意度／주의도）で区別する。「崩れやすい」「堅め」は percentileBarMax／Min の訳を続けて使い、「中くらい」は Medium／中等／중간（2026-10-16、wording-editor、docs/reference/i18n-glossary.md）
 
 ## 誇大・保証・射幸心・SNS の規則
 - 的中・勝利を保証する表現は全プラットフォームで警告。「当たり」「的中」単独は警告しない（risk-rules.json の guaranteed-hit）

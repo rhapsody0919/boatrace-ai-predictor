@@ -33,7 +33,8 @@
 - [x] **10. やり直し**: `findRacesMissingUnified` が `inCautionSkip = 'rates_unavailable'` の行も欠けとして数える。races-init の後始末（`scripts/lib/racesInit/job.js:138-152`）は `inCautionFailed` のとき `fin.unified` を記録せず、`cursor` の回数で5回まで。`verify-morning-init-jobs.js` に再現テスト「1回目は RPC が失敗し、2回目の起動で inCaution が入る」「5回で打ち切って失敗を記録する」
 - [x] **11. `scripts/maintenance/verify-in-caution.js`**（ci、registry に登録）: `computeInCaution` の全分岐、境目（帯 −8・6、pct 34/35・54/55）、例のレース（2026-10-11 戸田4R: 4.81 と 6.93 → −212 → 帯 −5）
 - [x] **12. 監視**: Vercel Cron `api/cron/in-caution-health.js`（JST 04:30 は表の鮮度・最初の日・合計の n、05:45 は今日の unified で inCaution がある割合・`inCautionSkip` の内訳・`through` の遅れ。`registry.js` に `failureAlertAfter: 1`、`vercel.json` に2行）。判定は純関数にして `scripts/maintenance/verify-in-caution-coverage.js`（manual、registry に登録）からも呼ぶ
-- [ ] **13. 翌朝の確認**: inCaution のある割合（中止・1号艇の欠場・`sparse_cell` を除いて 99% 以上が目安）、`inCautionSkip` の内訳、`through` が前日、例のレースの値を表から出し直して一致（`data-accuracy-verifier`）。準優・優勝戦の日に、05:0x の生成の時点で `race_stage` が入っているか（2026-10-06〜12 は空0件、`race_conditions` の行は 05:01 に作られる）
+- [x] **13. 翌朝の確認**: inCaution のある割合（中止・1号艇の欠場・`sparse_cell` を除いて 99% 以上が目安）、`inCautionSkip` の内訳、`through` が前日、例のレースの値を表から出し直して一致（`data-accuracy-verifier`）。準優・優勝戦の日に、05:0x の生成の時点で `race_stage` が入っているか（2026-10-06〜12 は空0件、`race_conditions` の行は 05:01 に作られる）
+  - 結果（2026-10-16）: 10-14〜16 の unified 各156行の全部に inCaution（cancelled 0・skip 0、coverage 1）。準優・優勝戦は生成の時点で race_stage が入っていた（race_conditions の作成は生成より前）。data-accuracy-verifier が468件を出し直し、464件は全項目一致。4件は朝の後の欠場（absentBoats・1件は boat1_absent）で plan §1 の想定どおり。夜の表は 10/14・15・16 とも直近14日を書き直し、2019〜2025 の件数は不変。監視は表・当日とも成功
 
 ## PR-3 RPC（157、plan §3）
 
@@ -45,10 +46,11 @@
 
 ## PR-4 画面（フラグの裏、plan §4。部品ごとに PR を分けてよい）
 
-- [ ] **17. 機能フラグ** `IN_CAUTION_PUBLIC = false`・`IN_CAUTION_PREVIEW_KEY`・`isInCautionEnabled()`（`src/config/featureFlags.js`、`?caution=1`）
-- [ ] **18. i18n の対訳を登録**（実装の前に）: `docs/reference/i18n-glossary.md` のドメイン用語に「イン崩れ注意度」「勝率差」「崩れやすい／中くらい／堅め」「段ごとの実績」「公開前の検証」。訳は `wording-editor` に当てる
+- [x] **17. 機能フラグ** `IN_CAUTION_PUBLIC = false`・`IN_CAUTION_PREVIEW_KEY`・`isInCautionEnabled()`（`src/config/featureFlags.js`、`?caution=1`）
+- [x] **18. i18n の対訳を登録**（実装の前に）: `docs/reference/i18n-glossary.md` のドメイン用語に「イン崩れ注意度」「勝率差」「崩れやすい／中くらい／堅め」「段ごとの実績」「公開前の検証」。訳は `wording-editor` に当てる
   - 今の用語集は「イン崩れ指数」（120 行）・「イン崩れ注意（高）」（121 行）・「荒れ度」（141 行）だけで、「イン崩れ注意度」の行が無い（2026-10-13 Orchestrate の指摘）。新しい行を4言語で足し、既存の3行の補足に「BOA-822 の公開で画面からは外れる（旧指数）」を書く（plan §4 i18n）。公開の PR を待たずに PR-4 の最初に入れる
 - [ ] **19. 共通の部品**: `RateBar`（`RoughCard.jsx` の `MiniBar` を切り出し、`RoughCard` を置き換えても見た目が変わらないことを確かめる）、`InCautionBadge`（3段、意味トークン、真ん中は枠線だけ）、`TECHNIQUE_NAMES` を `src/constants/techniqueNames.js` へ移す
+  - 途中（2026-10-16）: `TECHNIQUE_NAMES` は移した。`RateBar` は既存の `src/components/common/RateBar.jsx`（表のセルの2段の棒、BOA-428）と名前がぶつかり形も違うので、基準の点線つきの棒は `src/components/race/BaselineBar.jsx` にした（RoughCard を置き換え、layout の E2E で見た目が変わらないことを確認）。`InCautionBadge` は未着手
 - [ ] **20. `InCautionCard`** と AI予想タブ（案A）: 先頭にカード、展開予測・答え合わせ・イン崩れの振り返り・`VolatilityDisplay`・`ai-tab-sonar-link` をフラグ true の側で描かない。`OutcomePatternPreview` は残す。確定後の1行、値が無いときの空状態、1号艇が後から欠場したら（直前情報の `is_absent`）カードを出さない、注記（準優・優勝戦・欠場あり・件数少なめ）。4言語
 - [ ] **21. `RaceCard`** の札と割合、展開予測の的中/外れのバッジを外す
 - [ ] **22. ホーム `TodaysVolatilityHighlights`**（`volatilityHighlights.js` の入力を `{pct, level, closed}`）。行全体を押せる、44px
