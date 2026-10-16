@@ -3,30 +3,16 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import InCautionBadge from "./InCautionBadge";
 import { IN_CAUTION_CONFIG } from "../../constants/inCautionConfig";
-import { bandRange } from "../../utils/inCautionLevel";
+import {
+  bandRange,
+  boat1Rank,
+  signedText as signed,
+  slashDate,
+} from "../../utils/inCautionLevel";
 import { DEFAULT_STEP as SONAR_DEFAULT_COUNT } from "../../utils/analogyAggregate";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { normalizeRacerName } from "../../utils/digestMetrics";
 import "./InCautionCard.css";
-
-/** 勝率差・帯の数字。負は全角のマイナス（−）、正は「+」 */
-function signed(v, digits) {
-  if (v === 0) return (0).toFixed(digits);
-  return `${v < 0 ? "−" : "+"}${Math.abs(v).toFixed(digits)}`;
-}
-
-/** "2019-04-01" → "2019/4/1" */
-function slashDate(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-").map(Number);
-  return `${y}/${m}/${d}`;
-}
-
-/** 1号艇の着順（rank1〜rank6 は「その着の艇番」）。取れなければ null */
-function boat1Rank(result) {
-  for (let k = 1; k <= 6; k++) if (result?.[`rank${k}`] === 1) return k;
-  return null;
-}
 
 /**
  * 直前情報で1号艇が欠場になったか（朝の生成の後の欠場。一覧・ホームは朝の値のまま、詳細だけカードを隠す。plan §1）。
@@ -179,7 +165,9 @@ export default function InCautionCard({
           <div>
             <dt>
               {t("inCaution.reasonBoat1")}{" "}
-              <span translate="no">{normalizeRacerName(boat1?.name ?? "")}</span>
+              <span translate="no">
+                {normalizeRacerName(boat1?.name ?? "")}
+              </span>
               {boat1?.grade ? `（${boat1.grade}）` : ""}
             </dt>
             <dd>{ic.boat1WinRate.toFixed(2)}</dd>
