@@ -30,6 +30,7 @@ import {
 } from "../_lib/snsHubHelpers.js";
 import {
   createTodayStore,
+  nextTodayLog,
   runTodayPlan,
 } from "../../scripts/lib/snsTodayPlanner.js";
 import { createTodayDigestSource } from "../_lib/snsTodayDigest.js";
@@ -111,6 +112,15 @@ export default createScrapeCronHandler({
           alerts: [...today.report.alerts, ...race.report.alerts],
         },
         body: { items: [...today.report.items, ...race.body.items] },
+        // /today の各回の結果をその日の分だけ残す（7:45 を過ぎても朝の経過を読めるように）
+        cursor: {
+          ...(ctx.state?.cursor ?? {}),
+          today: nextTodayLog(
+            ctx.state?.cursor?.today,
+            today.report.items.find((i) => i.kind === "digest"),
+            ctx.now(),
+          ),
+        },
       };
     } finally {
       // 閉じるのに失敗しても、計画の結果は消さない
