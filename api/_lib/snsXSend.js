@@ -42,7 +42,9 @@ export async function createXSnapshot(draft, loadMedia) {
   const paths =
     draft.platform === "youtube"
       ? [path, draft.cover_image_path].filter(Boolean)
-      : [path].filter(Boolean);
+      : Array.isArray(draft.source_data?.image_paths)
+        ? draft.source_data.image_paths // X の画像の複数枚（/today、160）。先頭は cover_image_path
+        : [path].filter(Boolean);
   for (const path of paths) {
     const bytes = await loadMedia(path, maxBytes);
     if (!bytes.byteLength || bytes.byteLength > maxBytes)

@@ -29,6 +29,8 @@ store.transitionはSQL137のtransition_sns_x_send。X adapterはinitialize({size
 
 USDの100万分の1単位の整数。上限は最大$10。period_start/endは実際のX請求期間をオーナー側で設定する。全upload（32MiBで最大8chunk。分割は 4 MiB、2026-10-13）・最大10poll・投稿作成・照合等を含む1試行の保守的な費用上限attempt_ceiling_microusdが未設定ならclaimできない。全試行を先に予約、失敗時も返金しない。期間を跨いだjobの継続を拒否する。月更新は自動化していない（SQL158 で同じ額の自動の切り替えを足した。下の「自動送信の例外」）。
 
+**媒体の複数枚（SQL160、2026-10-16）**: /today の X 投稿は画像を最大4枚付ける（source_data.image_paths）。1試行の外部の呼び出しは、上の「媒体1つ」の前提（最大8chunk＋10poll）より増え、画像4枚では最悪 4×（initialize＋append＋finalize＋status 10回）＋投稿作成。X の料金表（2026-10）に媒体のアップロードの単価は無いので、attempt_ceiling_microusd は URL つきの投稿の単価のままにしている。初回の投稿の後に X Console で1試行の実費を確かめ、アップロードが課金されていれば attempt_ceiling を見直す
+
 初期paused=true、請求期間・費用未設定。停止APIはpaused=trueにしかできず、再開APIは提供しない。停止は次の外部呼び出し前に効く。すでに開始した外部通信は取り消せない。停止応答/チェックと外部通信開始の間の競合は残るため「送信中も必ず取消できる」と表示しない。
 
 この枠は本workerだけの予約台帳。別のX分析処理/手動API呼び出しや料金改定は捕捉しない。実接続前にX Consoleの同じ請求期間のspending limitも$10以下に設定し、他経路の費用を共通枠へ集約する。通常読取/owned readを含む総予算は依頼2の接続時にも照合する。外部APIから実請求額を取得する処理は今回ない。
