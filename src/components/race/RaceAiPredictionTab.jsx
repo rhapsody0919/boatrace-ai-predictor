@@ -16,6 +16,10 @@
  * すべての分岐（確定後・予想なし・未確定）で既存ブロックの下に出す。既存ブロックの早期 return に
  * 巻き込まれないよう、既存の表示は PredictionBlocks に分け、節はその外に置く。
  * BOA-635 も同じ場所（PredictionBlocks の外）に部品を置く前提なので、この形を変えるときは知らせる。
+ *
+ * BOA-822（案A、承認モック docs/design/in-collapse-caution/mock/1-ai-tab-375.png）: 機能フラグ isInCautionEnabled() が
+ * true の側では、先頭にイン崩れ注意度のカード、その下に出現パターンだけを出す。展開予測・答え合わせ・旧イン崩れ指数・
+ * 龍神ソナーへの案内ボタンは出さない（カードの中に龍神ソナーへの導線がある）。false の側は今のまま。
  */
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -28,6 +32,8 @@ import { getVolatilityLevel } from "../../utils/volatilityLevel";
 import { isJudgeable } from "../../utils/raceOutcome";
 import VolatilityPercentileBar from "./VolatilityPercentileBar";
 import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
+import InCautionCard from "./InCautionCard";
+import { isInCautionEnabled } from "../../config/featureFlags";
 
 function RaceAiPredictionTab({
   prediction,
@@ -46,6 +52,27 @@ function RaceAiPredictionTab({
     return (
       <div className="race-tabs-empty" data-testid="ai-prediction-cancelled">
         <p>{t("aiPredictionTab.cancelled")}</p>
+      </div>
+    );
+  }
+
+  if (isInCautionEnabled()) {
+    return (
+      <div className="race-ai-prediction-tab">
+        <InCautionCard
+          inCaution={prediction?.inCaution ?? null}
+          players={prediction?.allPlayers ?? []}
+          result={prediction?.result ?? null}
+          raceId={raceId}
+          onOpenSonar={onOpenSonar}
+        />
+        {venueCode && venueName && (
+          <OutcomePatternPreview
+            venueCode={venueCode}
+            venueName={venueName}
+            prediction={prediction}
+          />
+        )}
       </div>
     );
   }

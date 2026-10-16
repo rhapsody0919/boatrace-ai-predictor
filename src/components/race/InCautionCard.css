@@ -1,0 +1,229 @@
+/* イン崩れ注意度のカード（InCautionCard.jsx、BOA-822、承認モック mock/1-ai-tab-375.png）。色は意味トークン */
+.in-caution-card {
+  display: grid;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.in-caution-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.in-caution-card-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.in-caution-card-lead {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.in-caution-card-pct {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.in-caution-card-pct > span {
+  font-size: 2.75rem;
+}
+
+/* 棒（値の塗り・全国の点線）、段の範囲の帯、両端のラベル */
+.in-caution-card-bar {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-1);
+  padding-top: 1.4em;
+}
+
+.in-caution-card-base-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.in-caution-card-track {
+  position: relative;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--border-hairline);
+}
+
+.in-caution-card-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-sm);
+  background: var(--text-secondary);
+}
+
+.in-caution-card-fill--high {
+  background: var(--color-warning-dark-text);
+}
+
+.in-caution-card-fill--low {
+  background: var(--color-success-text);
+}
+
+.in-caution-card-base {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  border-left: 2px solid var(--text-primary);
+}
+
+.in-caution-card-zones {
+  position: relative;
+  height: 3px;
+}
+
+.in-caution-card-zone--low,
+.in-caution-card-zone--high {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+}
+
+.in-caution-card-zone--low {
+  left: 0;
+  background: color-mix(in srgb, var(--color-success-text) 45%, transparent);
+}
+
+.in-caution-card-zone--high {
+  right: 0;
+  background: color-mix(
+    in srgb,
+    var(--color-warning-dark-text) 45%,
+    transparent
+  );
+}
+
+.in-caution-card-edges {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.in-caution-card-range {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.in-caution-card-notes {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.in-caution-card-reason {
+  display: grid;
+  gap: var(--spacing-1-5);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.in-caution-card-reason h4 {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.in-caution-card-reason dl {
+  display: grid;
+  gap: var(--spacing-1);
+  margin: 0;
+}
+
+.in-caution-card-reason dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.in-caution-card-reason dt {
+  font-size: var(--font-size-sm);
+}
+
+.in-caution-card-reason dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.in-caution-card-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.in-caution-card-result {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.in-caution-card-result > span {
+  font-weight: 400;
+}
+
+.in-caution-card-links {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+/* 押せる部品は 44px 以上（mock-reviews-v1.md） */
+.in-caution-card-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.in-caution-card-link-go {
+  color: var(--brand-accent-primary);
+  white-space: nowrap;
+}
+
+.in-caution-card-accuracy {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--font-size-sm);
+}
+
+.in-caution-empty {
+  margin: 0;
+  padding: var(--spacing-3) 0;
+  color: var(--text-secondary);
+}

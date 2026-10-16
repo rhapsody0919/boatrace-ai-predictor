@@ -3642,5 +3642,38 @@
       "dnf": "did not finish"
     },
     "rankingSubOfficialAsOfToday": "Qualifying score rate (as of the end of day {{day}}, from the official score-rate list; today's results included) · {{count}} racers"
+  },
+  "inCaution": {
+    "title": "Lane-1 upset caution level",
+    "level": {
+      "high": "Upset-prone",
+      "mid": "Medium",
+      "low": "Stable"
+    },
+    "lead": "Boat 1 failed to win in",
+    "base": "All venues {{p}}%",
+    "edgeLow": "← Stable (under {{p}}%)",
+    "edgeHigh": "Upset-prone ({{p}}% or more) →",
+    "bandRange": "{{from}} to {{to}}",
+    "bandBelow": "under {{v}}",
+    "bandAbove": "{{v}} or more",
+    "range": "Races where the gap between Boat 1 and the highest win rate among the other boats was about the same as today ({{band}}). {{n}} races nationwide ({{from}}–{{through}})",
+    "reasonHeading": "Today's win-rate gap (national win rate)",
+    "reasonBoat1": "Boat 1",
+    "reasonTop": "Highest: Boat {{boat}}",
+    "reasonDiff": "Gap",
+    "otherMaterial": "For other factors (exhibition, motor, etc.), see “Key differences” in Ryujin Sonar",
+    "disclaimer": "This is a share of past results and does not guarantee today's outcome.",
+    "sonarButton": "See it with {{n}} similar races?",
+    "sonarGo": "Ryujin Sonar",
+    "assistButton": "Think from the axis",
+    "assistGo": "Thinking Assist",
+    "accuracyLink": "See results by tier",
+    "empty": "No Lane-1 upset caution level for this race",
+    "result": "Result: Boat 1 finished {{rank}}",
+    "resultWinner": " (winner: Boat {{boat}})",
+    "noteFinal": "In semifinals and finals, the win-rate gap makes less difference",
+    "noteAbsent": "Scratch ({{boats}} boats)",
+    "noteLowSample": "Few races ({{n}})"
   }
 }

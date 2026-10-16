@@ -3632,5 +3632,38 @@
       "dnf": "미완주"
     },
     "rankingSubOfficialAsOfToday": "예선 득점률({{day}}일째 종료 시점, 공식 득점률 일람의 값. 오늘 결과 반영 완료), 전체 {{count}}명"
+  },
+  "inCaution": {
+    "title": "1코스 이변 주의도",
+    "level": {
+      "high": "이변 주의",
+      "mid": "중간",
+      "low": "안정"
+    },
+    "lead": "1번 보트가 1착을 놓친 비율",
+    "base": "전국 {{p}}%",
+    "edgeLow": "← 안정({{p}}% 미만)",
+    "edgeHigh": "이변 주의({{p}}% 이상) →",
+    "bandRange": "{{from}}~{{to}}",
+    "bandBelow": "{{v}} 미만",
+    "bandAbove": "{{v}} 이상",
+    "range": "1번 보트와 다른 보트 중 가장 높은 승률의 차이가 오늘과 비슷한({{band}}) 레이스. 전국 {{n}}건({{from}}~{{through}})",
+    "reasonHeading": "오늘의 승률차(전국 승률)",
+    "reasonBoat1": "1번 보트",
+    "reasonTop": "가장 높은 {{boat}}번 보트",
+    "reasonDiff": "차이",
+    "otherMaterial": "다른 요소(전시・모터 등)는 용신 소나의 '차이가 나는 요소'에서",
+    "disclaimer": "과거 실적의 비율이며, 오늘의 결과를 보장하지 않습니다.",
+    "sonarButton": "유사 레이스 {{n}}건으로 보면?",
+    "sonarGo": "용신 소나",
+    "assistButton": "축에서 생각하기",
+    "assistGo": "사고 어시스트",
+    "accuracyLink": "단계별 실적 보기",
+    "empty": "이 레이스는 1코스 이변 주의도를 표시하지 않습니다",
+    "result": "결과: 1번 보트는 {{rank}}착",
+    "resultWinner": "(1착은 {{boat}}번 보트)",
+    "noteFinal": "준결승・결승은 승률차에 따른 차이가 잘 나지 않음",
+    "noteAbsent": "결장 있음({{boats}}척)",
+    "noteLowSample": "건수 적음({{n}}건)"
   }
 }
