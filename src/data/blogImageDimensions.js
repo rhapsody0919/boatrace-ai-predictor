@@ -157,6 +157,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/suminoe-water-wind-guide.jpg": { width: 576, height: 394 },
   "/images/blog/toda-course1-winrate-low.jpg": { width: 1200, height: 630 },
   "/images/blog/toda-losing-makuri-share.jpg": { width: 1200, height: 630 },
+  "/images/blog/tokoname-makuri-wind-guide.jpg": { width: 576, height: 394 },
   "/images/blog/tokuyama-water-wind-reference-guide.jpg": { width: 576, height: 394 },
   "/images/blog/top-start-chart.jpg": { width: 968, height: 750 },
   "/images/blog/trifecta-formation-matrix-en.jpg": { width: 1000, height: 677 },
