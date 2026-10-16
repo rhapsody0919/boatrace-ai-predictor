@@ -2324,3 +2324,14 @@
     margin-top: var(--spacing-1-5);
   }
 }
+
+/* 直前情報タブ「今節の足の推移と着順」への導線（BOA-885）。機力レンズは6艇の棒と同じ左右の余白にそろえる */
+.ta-split-fig > .ta-meetform-link {
+  display: inline-block;
+  margin: var(--spacing-1) var(--spacing-3) var(--spacing-3);
+}
+
+.ta-deep .ta-meetform-link {
+  display: inline-block;
+  margin-top: var(--spacing-1);
+}
