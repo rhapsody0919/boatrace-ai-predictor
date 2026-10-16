@@ -19,6 +19,7 @@
 - blogFaqSchema.js の FAQ 見出しの検出は言語ごとの固定の文字列（例: 繁体字の「常見問題」）。新しい言語を足したら見出しの文字列も足す（2026-08-11、memory foreign_audience_growth_strategy_2026_08、PR #279〜281）
 - public/sitemap.xml は日次の cron（.github/workflows/update-sitemap.yml）が作り直す。PR には scripts/generate-sitemap.js の変更だけを入れ、生成物は入れない（2026-08-09、memory i18n_p1_analysis_tools_handoff）
 - 記事の文字数は表と Markdown の記法を除いた日本語の文字で測る。wc -m だと目安（2,000〜3,500字）を大きく超えて見える（2026-09-28、memory phase_a_content_rollout_2026_09_28、PR #884）
+- 開催向けの記事の slug に年号を入れない。開催後に古く見えるため。同型の {会場}-water-wind-guide にそろえる（2026-10-13、#1548 の SEO P2）
 
 ## インデックスと順位
 - 2026-04〜07 の自然検索の減少（平均掲載順位 6.0→7.5）は、日本語ブログの新規記事が4月以降ほぼ0になった時期と一致した。記事の鮮度を順位の先行指標とし、最新記事から2週間空いたら次の記事の種を探す（2026-07-28、memory boa_pv_plateau_diagnosis_2026_07・feedback_content_cadence_proactive_check）
