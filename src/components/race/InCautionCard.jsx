@@ -6,6 +6,7 @@ import { IN_CAUTION_CONFIG } from "../../constants/inCautionConfig";
 import { bandRange } from "../../utils/inCautionLevel";
 import { DEFAULT_STEP as SONAR_DEFAULT_COUNT } from "../../utils/analogyAggregate";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { normalizeRacerName } from "../../utils/digestMetrics";
 import "./InCautionCard.css";
 
 /** 勝率差・帯の数字。負は全角のマイナス（−）、正は「+」 */
@@ -178,7 +179,7 @@ export default function InCautionCard({
           <div>
             <dt>
               {t("inCaution.reasonBoat1")}{" "}
-              <span translate="no">{boat1?.name ?? ""}</span>
+              <span translate="no">{normalizeRacerName(boat1?.name ?? "")}</span>
               {boat1?.grade ? `（${boat1.grade}）` : ""}
             </dt>
             <dd>{ic.boat1WinRate.toFixed(2)}</dd>
@@ -186,7 +187,7 @@ export default function InCautionCard({
           <div>
             <dt>
               {t("inCaution.reasonTop", { boat: ic.topOtherBoat })}{" "}
-              <span translate="no">{top?.name ?? ""}</span>
+              <span translate="no">{normalizeRacerName(top?.name ?? "")}</span>
               {top?.grade ? `（${top.grade}）` : ""}
             </dt>
             <dd>{ic.topOtherWinRate.toFixed(2)}</dd>

@@ -3652,7 +3652,7 @@
     "reasonBoat1": "1번 보트",
     "reasonTop": "가장 높은 {{boat}}번 보트",
     "reasonDiff": "차이",
-    "otherMaterial": "다른 요소(전시・모터 등)는 용신 소나의 '차이가 나는 요소'에서",
+    "otherMaterial": "다른 요소(전시, 모터 등)는 용신 소나의 '차이가 나는 요소'에서",
     "disclaimer": "과거 실적의 비율이며, 오늘의 결과를 보장하지 않습니다.",
     "sonarButton": "유사 레이스 {{n}}건으로 보면?",
     "sonarGo": "용신 소나",
@@ -3662,7 +3662,7 @@
     "empty": "이 레이스는 1코스 이변 주의도를 표시하지 않습니다",
     "result": "결과: 1번 보트는 {{rank}}착",
     "resultWinner": "(1착은 {{boat}}번 보트)",
-    "noteFinal": "준결승・결승은 승률차에 따른 차이가 잘 나지 않음",
+    "noteFinal": "준결승전, 우승전은 승률차에 따른 차이가 잘 나지 않음",
     "noteAbsent": "결장 있음({{boats}}척)",
     "noteLowSample": "건수 적음({{n}}건)"
   }

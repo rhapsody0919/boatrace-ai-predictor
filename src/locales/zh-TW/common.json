@@ -3652,7 +3652,7 @@
     "reasonBoat1": "1號艇",
     "reasonTop": "最高 {{boat}}號艇",
     "reasonDiff": "差",
-    "otherMaterial": "其他因素（展示・馬達等）請看龍神聲納的「拉開差距的因素」",
+    "otherMaterial": "其他因素（展示、馬達等）請看龍神聲納的「拉開差距的因素」",
     "disclaimer": "這是過去實績的比例，不保證今天的結果。",
     "sonarButton": "用{{n}}場相近比賽來看？",
     "sonarGo": "龍神聲納",
@@ -3662,7 +3662,7 @@
     "empty": "這場比賽沒有提供1號位失守注意度",
     "result": "結果：1號艇第{{rank}}名",
     "resultWinner": "（第1名是{{boat}}號艇）",
-    "noteFinal": "準決賽・決賽中，勝率差不易拉開差距",
+    "noteFinal": "準優勝戰、優勝戰中，勝率差不易拉開差距",
     "noteAbsent": "有缺賽（{{boats}}艇）",
     "noteLowSample": "場數較少（{{n}}場）"
   }
