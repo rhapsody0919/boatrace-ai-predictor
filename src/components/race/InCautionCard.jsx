@@ -210,10 +210,16 @@ export default function InCautionCard({
 
         <div className="in-caution-card-links">
           {onOpenSonar && (
-            <button
-              type="button"
+            // 行き先を URL で表せる導線なのでリンクにする（新しいタブでも開ける）。ふつうに押したときは同じ画面の中で切り替える
+            <a
               className="in-caution-card-link"
-              onClick={onOpenSonar}
+              href={`/race/${raceId}?tab=sonar&sonar=similar`}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)
+                  return;
+                e.preventDefault();
+                onOpenSonar();
+              }}
             >
               <span>
                 {t("inCaution.sonarButton", {
@@ -223,7 +229,7 @@ export default function InCautionCard({
               <span className="in-caution-card-link-go">
                 {t("inCaution.sonarGo")} ›
               </span>
-            </button>
+            </a>
           )}
           {i18n.language === "ja" && (
             <Link

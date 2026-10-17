@@ -167,7 +167,7 @@ test.describe("イン崩れ注意度のカード（BOA-822、?caution=1）", () 
   }) => {
     await open(page, 4);
     await page
-      .getByRole("button", { name: /類似レース[\d,]+件で見ると？/ })
+      .getByRole("link", { name: /類似レース[\d,]+件で見ると？/ })
       .click({ timeout: 20000 });
     await expect(
       page.getByRole("tab", { name: "類似レース", selected: true }),
