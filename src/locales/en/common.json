@@ -3654,7 +3654,7 @@
       "low": "Stable"
     },
     "lead": "Boat 1 failed to win in",
-    "base": "All venues {{p}}%",
+    "base": "All races {{p}}%",
     "edgeLow": "← Stable (under {{p}}%)",
     "edgeHigh": "Upset-prone ({{p}}% or more) →",
     "bandRange": "{{from}} to {{to}}",
@@ -3667,7 +3667,7 @@
     "reasonDiff": "Gap",
     "otherMaterial": "For other factors (exhibition, motor, etc.), see “Key differences” in Ryujin Sonar",
     "disclaimer": "This is a share of past results and does not guarantee today's outcome.",
-    "sonarButton": "See it with {{n}} similar races?",
+    "sonarButton": "See it with similar races?",
     "sonarGo": "Ryujin Sonar",
     "assistButton": "Think from the axis",
     "assistGo": "Thinking Assist",
@@ -3675,8 +3675,8 @@
     "empty": "No Lane-1 upset caution level for this race",
     "result": "Result: Boat 1 finished {{rank}}",
     "resultWinner": " (winner: Boat {{boat}})",
-    "noteJunyu": "The count is past semifinals only; the dotted “All venues” line is all races. In semifinals and finals, the win-rate gap makes less difference",
-    "noteYusho": "The count is past finals only; the dotted “All venues” line is all races. In semifinals and finals, the win-rate gap makes less difference",
+    "noteJunyu": "The count is past semifinals only; the dotted line is the share for all races. In semifinals and finals, the share changes little with the win-rate gap",
+    "noteYusho": "The count is past finals only; the dotted line is the share for all races. In semifinals and finals, the share changes little with the win-rate gap",
     "noteAbsent": "Scratch ({{boats}} boats racing)",
     "noteLowSample": "Few races ({{n}})"
   }

@@ -9,7 +9,6 @@ import {
   signedText as signed,
   slashDate,
 } from "../../utils/inCautionLevel";
-import { DEFAULT_STEP as SONAR_DEFAULT_COUNT } from "../../utils/analogyAggregate";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import "./InCautionCard.css";
 
@@ -221,11 +220,7 @@ export default function InCautionCard({
                 onOpenSonar();
               }}
             >
-              <span>
-                {t("inCaution.sonarButton", {
-                  n: SONAR_DEFAULT_COUNT.toLocaleString("ja-JP"),
-                })}
-              </span>
+              <span>{t("inCaution.sonarButton")}</span>
               <span className="in-caution-card-link-go">
                 {t("inCaution.sonarGo")} ›
               </span>

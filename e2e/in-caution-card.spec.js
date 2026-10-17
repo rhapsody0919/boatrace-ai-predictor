@@ -129,7 +129,8 @@ test.describe("イン崩れ注意度のカード（BOA-822、?caution=1）", () 
     await expect(card).toContainText("他の艇で一番高い 3号艇");
     await expect(card).toContainText("+0.24");
     await expect(card).toContainText("件数は準優勝戦だけの全国の実績");
-    await expect(card).toContainText("勝率差による差がつきにくい");
+    await expect(card).toContainText("勝率差が違っても割合があまり変わらない");
+    await expect(card).toContainText("全レース 45%");
     const style = await card
       .locator(".in-caution-card-base")
       .evaluate((e) => getComputedStyle(e).borderLeftStyle);
@@ -167,7 +168,7 @@ test.describe("イン崩れ注意度のカード（BOA-822、?caution=1）", () 
   }) => {
     await open(page, 4);
     await page
-      .getByRole("link", { name: /類似レース[\d,]+件で見ると？/ })
+      .getByRole("link", { name: /類似レースで見ると？/ })
       .click({ timeout: 20000 });
     await expect(
       page.getByRole("tab", { name: "類似レース", selected: true }),

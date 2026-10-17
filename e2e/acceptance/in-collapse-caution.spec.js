@@ -38,7 +38,7 @@ const REASON_ROW_ME = /1号艇\s*\S+?（[^）]+）\s*[\d.]+/;
 const REASON_ROW_MAX = /一番高い\s*\d号艇\s*\S+?（[^）]+）\s*[\d.]+/;
 const REASON_ROW_DIFF = /差\s*[−\-+]?[\d.]+/;
 // screens S-1: 導線の2つのボタン文言（思考アシストは ja のみ）
-const SONAR_BUTTON_TEXT = /類似レース[\d,]+件で見ると？/;
+const SONAR_BUTTON_TEXT = "類似レースで見ると？";
 const ASSIST_BUTTON_TEXT = "軸から考える";
 // spec 用語: 勝率差の帯の端の表記
 const BAND_LOWER_EDGE = "−3.5未満";
@@ -183,7 +183,7 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     expect(p).toBeGreaterThanOrEqual(0);
     expect(p).toBeLessThanOrEqual(100);
     await expect(
-      page.getByText(/全国\s*\d+(?:\.\d+)?\s*%/).first(),
+      page.getByText(/全レース\s*\d+(?:\.\d+)?\s*%/).first(),
     ).toBeVisible();
     await expect(page.getByText(/全国\s*[\d,]+\s*件/).first()).toBeVisible();
     await expect(page.getByText(DISCLAIMER)).toBeVisible();
@@ -316,10 +316,10 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     expect(text).not.toMatch(/的中|外れ/);
   });
 
-  test("[FR-2 注記] 準優・優勝戦のレースに「勝率差による差がつきにくい」の注記が出る", async ({
+  test("[FR-2 注記] 準優・優勝戦のレースに「勝率差が違っても割合があまり変わらない」の注記が出る", async ({
     page,
   }) => {
-    const NOTE = /勝率差による差がつきにくい/;
+    const NOTE = /勝率差が違っても割合があまり変わらない/;
     const href = await findRaceWithCardText(page, NOTE);
     test.skip(!href, "準優・優勝戦で注記が出るレースへ辿れない");
     await expect(page.getByText(NOTE)).toBeVisible();
