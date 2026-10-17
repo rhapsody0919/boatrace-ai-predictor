@@ -300,11 +300,17 @@ export async function runTodayPlan(
     return done({ outcome: risk.length ? "held_manual" : "manual", revision });
 
   // リンク先（/today）が未ログインで見えることを確かめる（送る直前の検査と同じ印）
-  const page = await headless.inspect({
-    url: TODAY_URL,
-    context: { storageState: null },
-    requiredSelectors: markers[TODAY_SCREEN_KEY],
-  });
+  // 失敗の理由に起動の様子（残りの Chromium・空きメモリ）を添える。本番の関数のログを見ずに切り分けるため（2026-10-18）
+  const info = () => (headless.launchInfo ? ` [${headless.launchInfo()}]` : "");
+  const page = await headless
+    .inspect({
+      url: TODAY_URL,
+      context: { storageState: null },
+      requiredSelectors: markers[TODAY_SCREEN_KEY],
+    })
+    .catch((error) => {
+      throw new Error(`${firstLine(error.message)}${info()}`);
+    });
   if (
     page.finalUrl !== TODAY_URL ||
     !markers[TODAY_SCREEN_KEY].every((m) => page.visibleSelectors?.includes(m))
@@ -331,7 +337,7 @@ export async function runTodayPlan(
       if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
       shots.push(shot.png);
     } catch (error) {
-      missing.push(`${race.race_id}: ${firstLine(error.message)}`);
+      missing.push(`${race.race_id}: ${firstLine(error.message)}${info()}`);
     }
   }
   if (

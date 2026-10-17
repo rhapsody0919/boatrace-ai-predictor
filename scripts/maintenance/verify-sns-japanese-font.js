@@ -11,6 +11,7 @@ import {
   JAPANESE_FONT,
   installJapaneseFont,
   launchChromium,
+  reapChromium,
 } from "../lib/launchChromium.js";
 
 test("日本語フォントを fontconfig の読む場所へ置く（2回目は置き直さない）", async () => {
@@ -20,6 +21,34 @@ test("日本語フォントを fontconfig の読む場所へ置く（2回目は�
   assert.equal(size, (await stat(JAPANESE_FONT)).size);
   assert.ok(size > 1_000_000);
   assert.equal(await installJapaneseFont(dir), target);
+});
+
+test("前の起動の Chromium が残っていれば止め、ほかのプロセスは止めない（2026-10-18 朝、実行を重ねるほど撮れなくなった）", async () => {
+  const proc = await mkdtemp(path.join(tmpdir(), "proc-"));
+  const put = async (pid, cmdline) => {
+    await mkdir(path.join(proc, pid));
+    await writeFile(path.join(proc, pid, "cmdline"), cmdline);
+  };
+  await put("101", "/tmp/chromium\0--single-process\0");
+  await put("102", "/tmp/chromium\0--type=renderer\0");
+  await put("103", "node\0/var/task/api/cron/sns-auto-plan.js\0");
+  await put(String(process.pid), "/tmp/chromium\0");
+  await mkdir(path.join(proc, "self"));
+  const killed = [];
+  const reaped = await reapChromium("/tmp/chromium", {
+    procDir: proc,
+    kill: (pid, signal) => killed.push([pid, signal]),
+  });
+  assert.equal(reaped, 2);
+  assert.deepEqual(killed.sort(), [
+    [101, "SIGKILL"],
+    [102, "SIGKILL"],
+  ]);
+  // /proc が無い環境（macOS）では何もしない
+  assert.equal(
+    await reapChromium("/tmp/chromium", { procDir: path.join(proc, "none") }),
+    0,
+  );
 });
 
 // canvas に文字を描き、濃い画素を数える。字形が無ければ0（空白）か、どの文字でも同じ形（豆腐）になる

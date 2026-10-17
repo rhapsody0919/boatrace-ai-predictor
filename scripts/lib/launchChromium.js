@@ -3,8 +3,8 @@
  * SNS の送る前の表示の確認 api/_lib/snsHeadless.js（sns-pdca-loop tasks 10、ADR 0091）で共用）。
  */
 import path from "node:path";
-import { copyFile, mkdir, stat } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { copyFile, mkdir, readdir, readFile, stat } from "node:fs/promises";
+import { freemem, tmpdir } from "node:os";
 
 // @sparticuz/chromium が持つフォントは Open Sans だけで、日本語が描かれない（2026-10-16、/today の X 投稿の画像で
 // 見出し・会場名・選手名が空白になった）。同梱の Noto Sans JP（SIL OFL、scripts/lib/fonts/）を、Chromium の起動の前に
@@ -28,6 +28,38 @@ export async function installJapaneseFont(dir = path.join(tmpdir(), "fonts")) {
   return target;
 }
 
+/**
+ * 前の起動の Chromium が残っていれば止める（Linux の /proc を見る）。返り値は止めた数。
+ * Vercel の関数は同じインスタンスが次の実行にも使われる。--single-process の Chromium がページの途中で落ちると、
+ * プロセスが残ってメモリを持ったままになり、実行を重ねるほど撮れなくなった
+ * （2026-10-18 朝: 1回目は4枚中3枚撮れ、4回目は /today を開く段で ERR_INSUFFICIENT_RESOURCES）
+ */
+export async function reapChromium(
+  executable,
+  { procDir = "/proc", kill = process.kill } = {},
+) {
+  const pids = await readdir(procDir).catch(() => []);
+  let reaped = 0;
+  for (const pid of pids.filter((p) => /^\d+$/.test(p))) {
+    if (Number(pid) === process.pid) continue;
+    const cmdline = await readFile(
+      path.join(procDir, pid, "cmdline"),
+      "utf8",
+    ).catch(() => "");
+    if (!cmdline.startsWith(executable)) continue;
+    try {
+      kill(Number(pid), "SIGKILL");
+      reaped += 1;
+    } catch {
+      // 既に終わっている
+    }
+  }
+  return reaped;
+}
+
+/** 直近の起動の様子（失敗の理由に添える。本番の関数のログを見ずに切り分けるため） */
+export const lastLaunch = { reaped: 0, freeMb: null };
+
 // Vercelのビルドサンドボックスはplaywrightが正式サポートしないLinux環境で、
 // `playwright`パッケージがダウンロードするChromiumバイナリはシステム共有
 // ライブラリ（libnspr4等）が無く起動時に落ちる（2026-09-15判明、PR#652参照）。
@@ -43,6 +75,8 @@ export async function launchChromium() {
       sparticuzChromium.setGraphicsMode(false);
     }
     const executablePath = await sparticuzChromium.executablePath();
+    lastLaunch.reaped = await reapChromium(executablePath);
+    lastLaunch.freeMb = Math.round(freemem() / 1048576);
     // executablePath() が /tmp/fonts に fonts.conf と既定のフォントを展開した後に置く。先に /tmp/fonts を作ると、
     // @sparticuz/chromium は展開済みとみなして fonts.conf を置かない（lambdafs.js の existsSync）
     await installJapaneseFont();
