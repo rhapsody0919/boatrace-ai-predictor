@@ -3,6 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { localizePath, getLanguage } from "../config/languages";
+import { isInCautionEnabled } from "../config/featureFlags";
 import {
   WinningTechniqueChart,
   MotorConditionChart,
@@ -22,6 +23,7 @@ import {
   VenueRankingChart,
   VenueGradeMatrix,
   VolatilityAccuracyChart,
+  InCautionAccuracyChart,
   VenueMotorRanking,
   WeatherInEscapeChart,
 } from "../components/analysis";
@@ -50,6 +52,11 @@ const TAB_KEYS = [
   "volatility",
   "weather",
 ];
+
+// BOA-822（機能フラグの側）: volatility タブのラベルは新しいキー。analysisPage.tabs.volatility を上書きすると
+// ボット向けの静的ページ（generate-ai-snapshots.js）が公開前に変わる（plan「URL」、design-reviewer 指摘9）
+const tabLabelKey = (key) =>
+  key === "volatility" && isInCautionEnabled() ? "volatilityInCaution" : key;
 
 // 詳しい解説記事（ja専用ブログのため、非ja言語では該当info-cardごと非表示にする）
 const BLOG_LINKS = {
@@ -160,7 +167,7 @@ function WinningTechniqueAnalysis() {
                 className={`analysis-tab-btn ${activeTab === key ? "active" : ""}`}
                 onClick={() => setActiveTab(key)}
               >
-                {t(`analysisPage.tabs.${key}`)}
+                {t(`analysisPage.tabs.${tabLabelKey(key)}`)}
               </button>
             ))}
           </div>
@@ -258,13 +265,21 @@ function WinningTechniqueAnalysis() {
           )}
           {activeTab === "venueranking" && <VenueRankingChart />}
           {activeTab === "venuegrade" && <VenueGradeMatrix />}
-          {activeTab === "volatility" && <VolatilityAccuracyChart />}
+          {/* BOA-822（機能フラグの側）: 旧イン崩れ指数の実績をイン崩れ注意度の段ごとの実績に。タブのキーは据え置き（?tab=volatility を壊さない） */}
+          {activeTab === "volatility" &&
+            (isInCautionEnabled() ? (
+              <InCautionAccuracyChart />
+            ) : (
+              <VolatilityAccuracyChart />
+            ))}
           {activeTab === "weather" && (
             <WeatherInEscapeChart initialVenueCode={initialVenueCode} />
           )}
 
           <section className="info-section">
+            {/* BOA-822（機能フラグの側）: 旧指数の説明は出さない。注意度の中身は InCautionAccuracyChart の中に書く */}
             {TAB_KEYS.includes(activeTab) &&
+              !(activeTab === "volatility" && isInCautionEnabled()) &&
               (() => {
                 const info = t(`analysisPage.info.${activeTab}`, {
                   returnObjects: true,
