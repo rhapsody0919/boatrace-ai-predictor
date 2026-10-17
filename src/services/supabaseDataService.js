@@ -6164,6 +6164,27 @@ export const supabaseDataService = {
   },
 
   /**
+   * イン崩れ注意度の段ごとの実績（BOA-822 task 24、plan §6）。夜の in_caution_bands.py が書く
+   * accuracy_cache.in_caution_accuracy（prelaunch・postlaunch）。無ければ null、読み取りの失敗は投げる
+   */
+  getInCautionAccuracy() {
+    return withCache(
+      "in-caution-accuracy",
+      async () => {
+        if (!supabase) throw new Error("Supabase client not initialized");
+        // 失敗は supabaseClient の throwOnError で例外になる（.claude/rules/frontend-data-fetch.md 1）
+        const { data } = await supabase
+          .from("accuracy_cache")
+          .select("data")
+          .eq("key", "in_caution_accuracy")
+          .maybeSingle();
+        return data?.data ?? null;
+      },
+      6 * 60 * 60 * 1000,
+    );
+  },
+
+  /**
    * 指定レースの出走表詳細（race_entriesの全選手データ）を取得する（BOA-168）
    * 分析ツールの「出走表データ」タブで使用する。AIスコアは含めない
    */

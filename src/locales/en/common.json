@@ -2902,7 +2902,8 @@
       "venueranking": "🏟️ Venue Ranking",
       "venuegrade": "📊 Venue × Grade",
       "volatility": "🌪️ Upset Index Track Record",
-      "weather": "🌬️ Wind & Course 1"
+      "weather": "🌬️ Wind & Course 1",
+      "volatilityInCaution": "🌪️ Lane-1 upset caution results"
     },
     "features": {
       "outcome": {
@@ -3691,5 +3692,34 @@
       "accuracyLink": "See results by tier →"
     },
     "listNote": "The share (%) is how often Boat 1 failed to win in past races nationwide (April 2019 to the previous day) where the gap between Boat 1's national win rate and the highest among the other boats (the win-rate gap) was about the same. Semifinals and finals use past semifinals only and past finals only."
+  },
+  "accuracy": {
+    "inCaution": {
+      "title": "Lane-1 upset caution level: results by tier",
+      "lead": "For each tier, the share of races in which Boat 1 actually failed to win. You can check whether the share rises with the tier.",
+      "tabPost": "After launch ({{from}}–)",
+      "tabPostNone": "After launch",
+      "tabPre": "Pre-launch verification ({{from}}–{{to}})",
+      "tabPreNone": "Pre-launch verification",
+      "postNone": "Results after launch appear from the day after launch.",
+      "notePre": "Pre-launch verification: the same method (built only from races up to the previous day) applied to races before launch. {{n}} races",
+      "notePost": "After launch: races from {{from}} to {{through}}, comparing the tier shown that morning with the result. {{n}} races",
+      "barsTitle": "Share of Boat 1 failing to win, by tier",
+      "levelHigh": "{{level}} (caution level {{p}}% or more)",
+      "levelMid": "{{level}} (caution level {{lo}}–{{hi}}%)",
+      "levelLow": "{{level}} (caution level under {{p}}%)",
+      "count": "{{rate}}% of {{n}} races ({{share}}% of all races) · margin {{lo}}–{{hi}}%",
+      "countFew": "{{n}} races (too few to show a share)",
+      "legend": "Light band under each bar = that tier's caution-level range. If the bar ends inside the band, the result matches the tier. Dotted line = all races",
+      "fewNote": "{{days}} days since launch. A share is shown once a tier reaches 30 races.",
+      "aboutTitle": "What the caution level is",
+      "about1": "The gap between Boat 1's national win rate and the highest national win rate among Boats 2–6 is split into 0.5-wide bands, and the level is the share of past races nationwide in the same band (April 1, 2019 to the previous day) in which Boat 1 failed to win. Semifinals and finals use their own past races.",
+      "about2": "The margin assumes each race is independent. Races cluster by day and venue, so the real margin is a little wider.",
+      "loading": "Loading results…",
+      "error": "Could not load the results. Please try again later.",
+      "empty": "No results yet. They appear after the nightly update.",
+      "where": "The caution level appears in the AI Prediction tab of each race, on the badges in each venue's race list, and in \"Today's Lane-1 upset caution level\" on the home page.",
+      "sparseNote": "{{n}} races with too few past races in their win-rate-gap band got no caution level; they are counted in all races but in no tier."
+    }
   }
 }
