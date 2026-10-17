@@ -76,7 +76,7 @@ BOA-271 v16 の朝のバッチ（`scripts/ml/analogy/v16_morning.py`）が作る
 - **D-3** 3連単の払戻は、不成立・特払いのレースで null（不成立の¥100を払戻として入れない）
 - **D-4** `course_by_boat` は、実進入が分からない艇を null にする（艇番で埋めない。BOA-523 の欠落期間で「枠なり」に化けるため）
 - **D-5** `rank1`〜`rank3` に返還艇（F・L・欠）が入るレースと、不成立のレースは、行に入れない（`layer_ok`）。本機能の分母には影響しない。判定は `is_flying`・`is_late_start`、`finish_mark` が F・L・欠、`race_results.refund_boats` のどれか（転・落・妨などの事故は返還ではないので入れない）
-- **D-6** 時点の固定は `analogy_v16_snapshots`（主キー (race_id, stage)）と実行ごとのパスで行う。保存との紐づけは (race_id, run_id)
+- **D-6** 時点の固定は `analogy_v16_snapshots`（主キー (race_id, stage)）と実行ごとのパスで行う。同じ run_id なら行も同じ（T0-3 で確かめた）。逆は成り立たず、run_id が変わっても行が同じことがある。保存との紐づけは (race_id, run_id)、振り返りの照合は layer の印（FR-4）
 
 ## 統計検証
 
@@ -237,7 +237,7 @@ CLAUDE.md「UI/UX に要る統計検証」。画面に出す材料ごとの状�
 - 最後の行: 「決着 {1着-2着-3着} は、過去{N}レース中 {r}回（{p}%）」（前置きは今の layer ファイルの `n_returned < n_total` で FR-2 の主文と同じ規則で決める）。決着は `RaceResult` の `buildResultRows` が結果表のために組み立てた着順（返還艇を外したもの）の1〜3着を使う。1〜3着がそろわない、または同着で順位が 1・2・3 にならない（例 1,1,3）ときは決着の行を出さない。数え方は着順の型（1点）と同じで、今の layer ファイルの行から数える。ラベルは付けない（着順1点の小分けと同じ。FR-3）
 - 保存した予想が無い（別の端末・30日経過・入力しなかった）ときは、決着の行だけ出す
 - 当たり／外れの表示は付けない
-- 保存した `snapshot.runId` が今の layer ファイルの `run_id` と違うときは、振り返りのリストの下に「入力したときから、同じ条件の過去レースが変わっています」を1つだけ出す（Entry のどれか1つでも違えば出す。文字列として比べる）。run_id が変わるのは、締切前に出走表の内容が変わって racecard の段が作り直されたとき
+- 保存した `snapshot.layerKey` が今の layer ファイルの印と違うときは、振り返りのリストの下に「入力したときから、同じ条件の過去レースが変わっています」を1つだけ出す（Entry のどれか1つでも違えば出す）。印は layer の `conditions`・`n_total`・`n_returned`・`pool_cutoff`・`rows`（全行の全列）から作るハッシュ（`layerKey`、`src/utils/pastRate/layer.js`）で、行の中身が1つでも入れ替われば変わる。run_id では照合しない: racecard の段は締切の10〜50分前にも作り直され、そのとき run_id は変わるが行は同じだった（T0-3、10/06〜10/15 で137レース。2026-10-16 オーケストレーター判断）
 
 受入基準: 締切前に保存した予想が結果タブに型の順で出る。締切後に入れた予想は出ない。保存が無いとき決着の行だけ出る。当たり／外れの文言が無い。`not_saved`・`empty_layer`・`absent` で両タブとも出ない。
 
@@ -253,7 +253,7 @@ CLAUDE.md「UI/UX に要る統計検証」。画面に出す材料ごとの状�
 | `type` | string | `order`／`boat1`／`tenkai`／`slit`／`entry`／`payout` |
 | `input` | object | 型ごとの入力（下の表）。表示用の要約文は保存しない（言語を切り替えても再生成できるように） |
 | `savedAt` | string | 入力した時刻（ボタンを押した時刻、ISO 8601、端末の時計） |
-| `snapshot` | object | `{ runId, poolCutoff }`（layer の `run_id`・`pool_cutoff` をそのまま保存する）。BOA-627 のスナップショットは (raceId, runId) で指す。照合に使うのは `runId` だけ（FR-4）。`poolCutoff` は記録用 |
+| `snapshot` | object | `{ runId, poolCutoff, layerKey }`（layer の `run_id`・`pool_cutoff` と、入力したときの layer の印）。BOA-627 のスナップショットは (raceId, runId) で指す。振り返りの照合に使うのは `layerKey` だけ（FR-4）。`runId`・`poolCutoff` は記録用 |
 | `result` | object | `{ n, count, excluded: [{ reason: "technique" \| "st" \| "course" \| "payout", count }], label: "standard" \| "rare" \| null, truncated: boolean }`（入力したときに見せた数字・ラベル・前置き） |
 
 | type | input |
@@ -271,7 +271,7 @@ CLAUDE.md「UI/UX に要る統計検証」。画面に出す材料ごとの状�
 - 30日で消す: `savedAt` から30日を過ぎた Entry を、読み込み（AI予想タブの部品の表示時・結果タブの振り返りの表示時）と書き込みのたびに取り除く
 - 書き込みの直前に読み直してから、置き換えて書く（別のタブで保存した分を上書きで消さないため。同時に押した場合は後に書いた方が勝つ。それは受け入れる）
 - 件数の上限: 1,000件。超えたら `savedAt` の古いものから消す
-- 失敗の扱い: localStorage が使えない（プライベートモード・容量超過・無効化）、または中身が壊れている（JSON として読めない・`v` が違う・`entries` が配列でない）ときは、機能そのもの（判定・表示）は動かし、保存と振り返りだけをしない。壊れた値は読み込み時に捨てて作り直す。Entry 単位で形が違うもの（必須項目の欠け・`snapshot.runId` が文字列でない・`result.truncated` が boolean でない・`type` が6つ以外・`input` の形が型と合わない・`savedAt` が時刻として読めない）は、その Entry だけ捨てる。実装前の版の保存は無いので、移行の読み替えはしない。エラーは console に出し、画面には出さない
+- 失敗の扱い: localStorage が使えない（プライベートモード・容量超過・無効化）、または中身が壊れている（JSON として読めない・`v` が違う・`entries` が配列でない）ときは、機能そのもの（判定・表示）は動かし、保存と振り返りだけをしない。壊れた値は読み込み時に捨てて作り直す。Entry 単位で形が違うもの（必須項目の欠け・`snapshot.runId`・`snapshot.layerKey` が文字列でない・`result.truncated` が boolean でない・`type` が6つ以外・`input` の形が型と合わない・`savedAt` が時刻として読めない）は、その Entry だけ捨てる。実装前の版の保存は無いので、移行の読み替えはしない。エラーは console に出し、画面には出さない
 - 会員登録・サーバー送信はしない
 
 受入基準: 押すたびに同じキーへ保存され、同じレース・型は1件に置き換わる。30日を過ぎた Entry が次の読み込みで消える。締切後に押しても保存されない。localStorage が例外を投げても結果は出る。更新ボタン（`clearCache()`）の後も保存が残る。
@@ -319,7 +319,7 @@ CLAUDE.md「UI/UX に要る統計検証」。画面に出す材料ごとの状�
 | 発走後の AI予想タブ | 入力は使えるが保存しない | 結果を見てからの入力を「あなたの予想」として振り返りに出さないため |
 | 保存のタイミング | 結果を出したとき | 入力途中の状態を予想として残さない |
 | 30日の起点 | 入力時刻 | レース日より単純で、端末の時計だけで決まる |
-| スナップショットとの紐づけ | (runId, poolCutoff) を保存し、runId で照合 | 実行ごとのパスで上書きしないので、run_id が同じなら行の集合も同じ |
+| スナップショットとの紐づけ | (runId, poolCutoff, layerKey) を保存し、layerKey で照合 | run_id は行が同じでも締切前の作り直しで変わる（T0-3）。行の中身の印で比べれば、本当に変わったときだけ注記が出る |
 | 保存キー | `boatai-user:past-rate-check:v1` | ユーザーの保存の接頭辞の慣習 |
 | 振り返りのラベル | 入力したときのラベルを保存して出す。決着の行は今の線 | 「入力したときに見せたもの」を再現する（設計レビュー指摘11(d)） |
 | 取得失敗の表示 | 両タブとも `InlineFetchError`（再試行つき）。0行・取得中・`not_saved`・`empty_layer`・`absent` は出さない | `frontend-data-fetch.md` の3 |
