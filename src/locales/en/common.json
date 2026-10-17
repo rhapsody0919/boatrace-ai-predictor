@@ -3689,6 +3689,6 @@
       "lowEmptyClosed": "No races were stable (under 35%) today.",
       "accuracyLink": "See results by tier →"
     },
-    "listNote": "The share on each badge is how often Boat 1 failed to win in past races nationwide where the gap between Boat 1's national win rate and the highest among the other boats (the win-rate gap) was about the same."
+    "listNote": "The share on each badge is how often Boat 1 failed to win in past races nationwide (April 2019 to the previous day) where the gap between Boat 1's national win rate and the highest among the other boats (the win-rate gap) was about the same."
   }
 }

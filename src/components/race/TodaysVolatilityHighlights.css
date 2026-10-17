@@ -154,3 +154,10 @@
   min-height: 44px;
   justify-content: center;
 }
+
+/* 「段ごとの実績を見る」も押せる高さ 44px 以上（#1602 ファン評価2周目。旧表示の AccuracyLink は変えない） */
+.volatility-highlights--in-caution .volatility-highlights__accuracy-link a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

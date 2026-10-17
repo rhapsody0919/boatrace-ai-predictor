@@ -183,6 +183,12 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
       .first()
       .boundingBox();
     expect(link.height).toBeGreaterThanOrEqual(44);
+    // 「段ごとの実績を見る」も 44px 以上、定義の1行に期間（#1602 ファン評価2周目）
+    const accuracy = await section
+      .locator(".volatility-highlights__accuracy-link a")
+      .boundingBox();
+    expect(accuracy.height).toBeGreaterThanOrEqual(44);
+    await expect(section).toContainText("全国の過去レース（2019年4月〜前日）");
   });
 
   test("会場のレース一覧: 札は段と割合（中くらいは枠線だけ）、値の無いレースは札を出さない", async ({
