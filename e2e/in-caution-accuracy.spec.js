@@ -137,3 +137,26 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
     await expect(page.locator(".ica")).toHaveCount(0);
   });
 });
+
+// BOA-822 task 27: 段ごとの実績が画面に入ったら、ページごとに1回 caution_visible（race_id・段なし）
+test("計測: /accuracy の段ごとの実績が見えたら1回 caution_visible", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__events = [];
+    window.gtag = (...args) => window.__events.push(args);
+  });
+  await routeAccuracy(page, accuracy(null));
+  await page.goto("/accuracy?caution=1");
+  await expect(page.locator(".ica .ica-row")).toHaveCount(3, {
+    timeout: 20000,
+  });
+  const visible = () =>
+    page.evaluate(() =>
+      window.__events
+        .filter((e) => e[0] === "event" && e[1] === "caution_visible")
+        .map((e) => e[2]),
+    );
+  await expect.poll(async () => (await visible()).length).toBe(1);
+  expect((await visible())[0]).toEqual({ caution_surface: "accuracy" });
+});

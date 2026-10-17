@@ -193,3 +193,60 @@ test.describe("イン崩れ注意度のカード（BOA-822、?caution=1）", () 
     await expect(page.getByText("イン崩れ狙い")).toHaveCount(0);
   });
 });
+
+// BOA-822 task 27: 計測（measurement.md）。カードが画面に入ったらレースごとに1回 caution_visible、導線で caution_click
+test.describe("イン崩れ注意度の計測（BOA-822 task 27、?caution=1）", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("boatai-language", "ja");
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+    await page.route("**/api/predictions/**", (route) =>
+      route.fulfill({ json: edgeData }),
+    );
+    await page.route("**/api/analogy/**", (route) =>
+      route.fulfill({ status: 200, json: {} }),
+    );
+    await page.route("**/rest/v1/**", (route) =>
+      route.fulfill({ status: 200, json: [] }),
+    );
+  });
+
+  const named = (page, name) =>
+    page.evaluate(
+      (n) =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === n)
+          .map((e) => e[2]),
+      name,
+    );
+
+  test("カードが見えたら1回 caution_visible（段・置き場所、% は送らない）、実績のリンクで caution_click", async ({
+    page,
+  }) => {
+    await open(page, 4);
+    const card = page.locator(".in-caution-card");
+    await expect(card).toBeVisible({ timeout: 20000 });
+    await expect
+      .poll(async () => (await named(page, "caution_visible")).length)
+      .toBe(1);
+    const [visible] = await named(page, "caution_visible");
+    expect(visible).toEqual({
+      caution_surface: "race_detail",
+      race_id: `${DATE}-02-04`,
+      caution_band: "high",
+      caution_placement: "ai_tab",
+    });
+    await page.locator(".in-caution-card-accuracy").click();
+    await expect
+      .poll(async () => (await named(page, "caution_click")).length)
+      .toBe(1);
+    const [click] = await named(page, "caution_click");
+    expect(click).toMatchObject({
+      caution_target: "accuracy",
+      caution_band: "high",
+      race_id: `${DATE}-02-04`,
+    });
+  });
+});

@@ -118,3 +118,31 @@ test.describe("思考アシストの1着のバー（BOA-822、?caution=1）", ()
     await expect(page.getByTestId("rough-in-caution-flip")).toHaveCount(0);
   });
 });
+
+// BOA-822 task 27: 注意度の裏返しの1着のバーが画面に入ったら、レースごとに1回 caution_visible（assist_rough、段つき）
+test("計測: 思考アシストの枠が見えたら1回 caution_visible（assist_rough）", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__events = [];
+    window.gtag = (...args) => window.__events.push(args);
+  });
+  await routeThinkingAssistV16(page);
+  await routeInCaution(page);
+  await page.goto(`${URL_}?caution=1`);
+  await expect(roughCard(page)).toContainText("勝率差が同じくらい", {
+    timeout: 20000,
+  });
+  const visible = () =>
+    page.evaluate(() =>
+      window.__events
+        .filter((e) => e[0] === "event" && e[1] === "caution_visible")
+        .map((e) => e[2]),
+    );
+  await expect.poll(async () => (await visible()).length).toBe(1);
+  expect((await visible())[0]).toEqual({
+    caution_surface: "assist_rough",
+    race_id: THINKING_ASSIST_RACE,
+    caution_band: "mid",
+  });
+});

@@ -28,6 +28,8 @@ import RaceCardDataTable from "./RaceCardDataTable";
 import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
 import InCautionBadge from "./InCautionBadge";
 import { isInCautionEnabled } from "../../config/featureFlags";
+import { trackEvent } from "../../utils/analytics";
+import { cautionClickEvent } from "../../utils/cautionEvents";
 
 /** 注意度の札から押したときは AI予想タブ（注意度のカード）を開く（2026-10-18 オーナー決定） */
 const aiTabHref = (href) =>
@@ -220,6 +222,20 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
       <Link
         className="predict-btn"
         to={inCaution ? aiTabHref(raceHref) : raceHref}
+        onClick={
+          inCaution
+            ? () => {
+                // 注意度の札のあるカードからレースへ（BOA-822 task 27、Q4 の帯別件数）
+                const ev = cautionClickEvent({
+                  surface: "race_list",
+                  target: "race",
+                  raceId: race.id,
+                  inCaution,
+                });
+                if (ev) trackEvent(ev.name, ev.params);
+              }
+            : undefined
+        }
       >
         {t("raceCard.view")}
       </Link>

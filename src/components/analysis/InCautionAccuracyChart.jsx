@@ -10,6 +10,9 @@ import { supabaseDataService } from "../../services/supabaseDataService";
 import { IN_CAUTION_CONFIG } from "../../constants/inCautionConfig";
 import { inCautionAccuracyView, pct1 } from "../../utils/inCautionAccuracy";
 import { errorMessageOf } from "../../utils/errorMessage.js";
+import { trackEvent } from "../../utils/analytics";
+import { useVisibleOnce } from "../../hooks/useVisibleOnce";
+import { cautionVisibleEvent } from "../../utils/cautionEvents";
 import "./InCautionAccuracyChart.css";
 
 const [LOW, HIGH] = IN_CAUTION_CONFIG.thresholds;
@@ -98,6 +101,14 @@ function InCautionAccuracyChart() {
     };
   }, []);
 
+  // 段ごとの実績が画面に入ったら、ページごとに1回 caution_visible（BOA-822 task 27。/accuracy・/winning-technique 共通）
+  const visibleRef = useVisibleOnce(
+    status === "ready" ? `accuracy|${window.location.pathname}` : null,
+    () => {
+      const ev = cautionVisibleEvent({ surface: "accuracy" });
+      if (ev) trackEvent(ev.name, ev.params);
+    },
+  );
   const post = data?.postlaunch ?? null;
   const pre = data?.prelaunch ?? null;
   // 既定は公開後（あれば）。公開前は公開前の検証だけ
@@ -106,7 +117,7 @@ function InCautionAccuracyChart() {
   const view = inCautionAccuracyView(section);
 
   return (
-    <section className="ica" aria-labelledby="ica-title">
+    <section className="ica" aria-labelledby="ica-title" ref={visibleRef}>
       <h2 id="ica-title" className="ica-title">
         {t("accuracy.inCaution.title")}
       </h2>

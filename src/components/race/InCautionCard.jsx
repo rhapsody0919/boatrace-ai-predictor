@@ -10,6 +10,12 @@ import {
   slashDate,
 } from "../../utils/inCautionLevel";
 import { supabaseDataService } from "../../services/supabaseDataService";
+import { trackEvent } from "../../utils/analytics";
+import { useVisibleOnce } from "../../hooks/useVisibleOnce";
+import {
+  cautionClickEvent,
+  cautionVisibleEvent,
+} from "../../utils/cautionEvents";
 import "./InCautionCard.css";
 
 /** 姓だけ（承認モックの「1号艇 澤崎（B1）」の形。全角・半角の空白の前） */
@@ -63,10 +69,33 @@ export default function InCautionCard({
   const { t, i18n } = useTranslation();
   const titleId = useId();
   const boat1Absent = useBoat1Absent(inCaution ? raceId : null);
+  const shown = inCaution && !boat1Absent ? inCaution : null;
+  // 注意度（値が無い空の表示も）が画面に入ったら、レースごとに1回 caution_visible（BOA-822 task 27）
+  const visibleRef = useVisibleOnce(
+    raceId ? `race_detail|${raceId}` : null,
+    () => {
+      const ev = cautionVisibleEvent({
+        surface: "race_detail",
+        raceId,
+        inCaution: shown,
+      });
+      if (ev) trackEvent(ev.name, ev.params);
+    },
+  );
+  /** 注意度から次へ（ソナー・思考アシスト・/accuracy）。押した時点の段で送る */
+  const sendClick = (target) => {
+    const ev = cautionClickEvent({
+      surface: "race_detail",
+      target,
+      raceId,
+      inCaution: shown,
+    });
+    if (ev) trackEvent(ev.name, ev.params);
+  };
 
-  if (!inCaution || boat1Absent) {
+  if (!shown) {
     return (
-      <p className="in-caution-empty" role="status">
+      <p className="in-caution-empty" role="status" ref={visibleRef}>
         {t("inCaution.empty")}
       </p>
     );
@@ -99,7 +128,11 @@ export default function InCautionCard({
   ].filter(Boolean);
 
   return (
-    <section className="in-caution-card" aria-labelledby={titleId}>
+    <section
+      className="in-caution-card"
+      aria-labelledby={titleId}
+      ref={visibleRef}
+    >
       {/* 左（数字・棒・範囲）と右（理由・導線・免責）。1200px 以上で左右に並べる（承認モック 1-ai-tab-1440.png） */}
       <div className="in-caution-card-main">
         <div className="in-caution-card-head">
@@ -214,6 +247,7 @@ export default function InCautionCard({
               className="in-caution-card-link"
               href={`/race/${raceId}?tab=sonar&sonar=similar`}
               onClick={(e) => {
+                sendClick("sonar");
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)
                   return;
                 e.preventDefault();
@@ -230,6 +264,7 @@ export default function InCautionCard({
             <Link
               className="in-caution-card-link"
               to={`/race/${raceId}/assist`}
+              onClick={() => sendClick("assist")}
             >
               <span>{t("inCaution.assistButton")}</span>
               <span className="in-caution-card-link-go">
@@ -238,7 +273,11 @@ export default function InCautionCard({
             </Link>
           )}
         </div>
-        <Link className="in-caution-card-accuracy" to="/accuracy">
+        <Link
+          className="in-caution-card-accuracy"
+          to="/accuracy"
+          onClick={() => sendClick("accuracy")}
+        >
           {t("inCaution.accuracyLink")} ›
         </Link>
       </div>

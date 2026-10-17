@@ -13,6 +13,9 @@ import {
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { isInCautionEnabled } from "../config/featureFlags";
+import { useVisibleOnce } from "../hooks/useVisibleOnce";
+import { trackEvent } from "../utils/analytics";
+import { cautionVisibleEvent } from "../utils/cautionEvents";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
@@ -109,6 +112,14 @@ function VenueRaceListPage() {
     : NaN;
 
   const { races: allRaces, loading, error } = useDatePredictions(date);
+  // 注意度の定義の1行（一覧の札の上）が画面に入ったら、会場・日付ごとに1回 caution_visible（BOA-822 task 27）
+  const cautionNoteRef = useVisibleOnce(
+    isInCautionEnabled() ? `race_list|${date}|${venueCodeParam}` : null,
+    () => {
+      const ev = cautionVisibleEvent({ surface: "race_list" });
+      if (ev) trackEvent(ev.name, ev.params);
+    },
+  );
   // Hooksはearly returnより前で無条件に呼ぶ必要があるため、venueCode不正時のNavigateより前に置く
   const nowHHMM = useNowHHMM(isToday);
   // 次の発走レースの位置は、開いた時点の時刻で決めて固定する（読んでいる途中でカードが動いたり
@@ -357,7 +368,10 @@ function VenueRaceListPage() {
               {/* BOA-822（機能フラグの側）: 札の割合が何か（全国の勝率差の帯）を一覧の上に1行。会場の「この会場の特徴」と
                   並ぶので、当地の割合と読み違えない（#1602 ファン評価1周目 指摘1） */}
               {isInCautionEnabled() && (
-                <p className="venue-race-list__in-caution-note">
+                <p
+                  className="venue-race-list__in-caution-note"
+                  ref={cautionNoteRef}
+                >
                   {t("inCaution.listNote")}
                 </p>
               )}

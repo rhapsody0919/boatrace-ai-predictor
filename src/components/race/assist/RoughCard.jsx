@@ -3,6 +3,9 @@ import ClassLineup from "./ClassLineup";
 import BaselineBar from "../BaselineBar";
 import { ROUND_LABEL, restClassCounts } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
+import { trackEvent } from "../../../utils/analytics";
+import { useVisibleOnce } from "../../../hooks/useVisibleOnce";
+import { cautionVisibleEvent } from "../../../utils/cautionEvents";
 
 /** 小さいバー1本（値・全国の全レースの線・矢印） */
 function MiniBar({ label, row }) {
@@ -42,6 +45,7 @@ export default function RoughCard({
   status,
   onOpen,
   inCautionMode = false,
+  raceId = null,
 }) {
   const counts = restClassCounts(classes);
   const titleId = useId();
@@ -51,11 +55,28 @@ export default function RoughCard({
     rough &&
     `${rough.few ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeClass(scope.cell.n, round)}`;
   const ic = rough?.inCaution ?? null;
+  // 注意度の裏返しの1着のバーが画面に入ったら、レースごとに1回 caution_visible（BOA-822 task 27、assist_rough）
+  const visibleRef = useVisibleOnce(
+    inCautionMode && ic && raceId ? `assist_rough|${raceId}` : null,
+    () => {
+      const ev = cautionVisibleEvent({
+        surface: "assist_rough",
+        raceId,
+        inCaution: ic,
+      });
+      if (ev) trackEvent(ev.name, ev.params);
+    },
+  );
   const b1Scope = ic
     ? `${ic.lowSample ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeInCaution(ic.n, ic.round)}`
     : classScope;
   return (
-    <section className="ta-rough" aria-labelledby={titleId} data-guide="rough">
+    <section
+      className="ta-rough"
+      aria-labelledby={titleId}
+      data-guide="rough"
+      ref={visibleRef}
+    >
       <h2 className="ta-rough-title" id={titleId}>
         {ASSIST_COPY.roughTitle}
       </h2>

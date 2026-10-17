@@ -259,3 +259,78 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
     );
   });
 });
+
+// BOA-822 task 27: 計測（measurement.md）。欄・一覧の定義が画面に入ったらページごとに1回 caution_visible（race_id・段なし）、
+// レースへ移ったら押したレースの race_id・段つきの caution_click
+test.describe("イン崩れ注意度の計測（ホーム・会場の一覧、BOA-822 task 27）", () => {
+  const named = (page, name) =>
+    page.evaluate(
+      (n) =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === n)
+          .map((e) => e[2]),
+      name,
+    );
+  const stubGtag = (page) =>
+    page.addInitScript(() => {
+      window.__events = [];
+      window.gtag = (...args) => window.__events.push(args);
+    });
+
+  test("ホーム: 欄が見えたら1回、行を押したらそのレースの段つき", async ({
+    page,
+  }) => {
+    await stubGtag(page);
+    await setup(page);
+    await page.goto("/?caution=1");
+    const section = page.locator(".volatility-highlights--in-caution");
+    await expect(section).toBeVisible({ timeout: 30000 });
+    await section.scrollIntoViewIfNeeded();
+    await expect
+      .poll(async () => (await named(page, "caution_visible")).length)
+      .toBe(1);
+    expect((await named(page, "caution_visible"))[0]).toEqual({
+      caution_surface: "home_highlight",
+    });
+    await section.locator(".volatility-highlights__race-link").first().click();
+    await expect
+      .poll(async () => (await named(page, "caution_click")).length)
+      .toBe(1);
+    expect((await named(page, "caution_click"))[0]).toEqual({
+      caution_surface: "home_highlight",
+      race_id: raceIdOf(2),
+      caution_band: "high",
+      caution_target: "race",
+    });
+  });
+
+  test("会場の一覧: 定義の1行が見えたら1回、札のあるカードからレースへ移ったら段つき", async ({
+    page,
+  }) => {
+    await stubGtag(page);
+    await setup(page);
+    await page.goto(`/venue/${VENUE_CODE}?caution=1`);
+    await expect(page.locator(".venue-race-list__in-caution-note")).toBeVisible(
+      { timeout: 30000 },
+    );
+    await expect
+      .poll(async () => (await named(page, "caution_visible")).length)
+      .toBe(1);
+    expect((await named(page, "caution_visible"))[0]).toEqual({
+      caution_surface: "race_list",
+    });
+    await page
+      .locator(".race-card", { hasText: "堅め 26%" })
+      .locator(".predict-btn")
+      .click();
+    await expect
+      .poll(async () => (await named(page, "caution_click")).length)
+      .toBe(1);
+    expect((await named(page, "caution_click"))[0]).toEqual({
+      caution_surface: "race_list",
+      race_id: raceIdOf(4),
+      caution_band: "low",
+      caution_target: "race",
+    });
+  });
+});

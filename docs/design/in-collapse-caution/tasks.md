@@ -63,7 +63,8 @@
 - [x] **25. `/races`**: 展開予測の的中率を外し、meta description とページの説明を書き直す（フラグの側）
 - [x] **26. 確定後のシェア文・AIコピー** の展開予測の節を外す（フラグの側）。AIコピーの「イン崩れ狙い」の選択肢は `inCaution.level === "high"`
   - AIコピーの分は #1595 で入れた（ファン評価1周目 P1）。「イン崩れ狙い」は段が崩れやすいときだけ、展開予測の節と言葉を外した（`promptInCautionTrifecta`）。確定後のシェア文は未着手
-- [ ] **27. 計測** `caution_visible`・`caution_click`（measurement.md）。送るかは純関数、`verify-frontend-pure-functions.js` と e2e に再現テスト
+- [x] **27. 計測** `caution_visible`・`caution_click`（measurement.md）。送るかは純関数、`verify-frontend-pure-functions.js` と e2e に再現テスト
+  - 2026-10-18（#1611）: `src/utils/cautionEvents.js`・`src/hooks/useVisibleOnce.js`。レース詳細・ホーム・会場の一覧・/accuracy（/winning-technique 共通）・思考アシストの枠。/today（surface `today`）は PR-6 の task 35 で入れる。GA4 のカスタムディメンション4件の登録は公開の前日まで（オーナー）
 - [ ] **28. 確認**: Playwright で 375・768・1440px、ライト／ダーク（段の札の 3:1）、`?caution=1` の有無で旧・新が切り替わる。受け入れ E2E（`e2e/acceptance/in-collapse-caution.spec.js`）を通す。`wording-editor` で文言（禁止語・単位）
 
 ## PR-5 /accuracy の実績（plan §6）
