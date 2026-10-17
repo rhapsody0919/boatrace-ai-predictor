@@ -254,6 +254,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
 | `src/utils/botPageModel.js` | ボット向け HTML（ADR 0089）の中身を、/api/races/today の JSON から組む。 | assertTodayRacesJson, buildTopModel, buildVenueModel, TodayRacesShapeError |
 | `src/utils/breadcrumbLd.js` | パンくずの BreadcrumbList（構造化データ）を組む。画面の Breadcrumb と、ボット向け HTML（ADR 0089）が同じ値を出す。 | isValidCrumbs, toBreadcrumbListLd |
+| `src/utils/cautionEvents.js` | イン崩れ注意度（BOA-822 task 27）の GA4 のイベント。送る中身を決める純関数（assistEvents.js と同じ形）。 | cautionBandOf, cautionVisibleEvent, cautionClickEvent, CAUTION_SURFACES, CAUTION_TARGETS |
 | `src/utils/chartDomain.js` | 展示タイムの推移グラフの縦軸（範囲と目盛り）（BOA-557）。 | exhibitionTimeAxis, exhibitionSparklineY |
 | `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, MODEL_COLORS, BOAT_COLORS, getBoatChipBackground, BOAT_LINE_COLORS ほか2件 |
 | `src/utils/competitionRank.js` | 同じ値は同じ順位にする順位（競技順位方式: 1, 2, 2, 4 …）（純関数、BOA-529）。 | competitionRank |
@@ -351,4 +352,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 316 ファイル / export 1769 件。
+対象 317 ファイル / export 1774 件。
