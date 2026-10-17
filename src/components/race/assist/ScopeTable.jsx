@@ -12,7 +12,8 @@ const no = "—";
  * NCR を使っているときは「予選も含めると」の1行を足す（D-37）
  * 「2〜6号艇の級」の行の横に級の並びの絵を小さく置く（2026-10-08 ユーザー決定）
  * G1・SG の日は類似レースだけグレード（G1以上）もそろえる（D-20。similar の conditions.grade_g1plus）
- * @param {{scope: object|null, similarN: number|null, similarConditions?: {grade_g1plus?: boolean}|null, classes: string[]|null, lineup: object[]|null}} props
+ * hideB1: 1着を別の集め方（イン崩れ注意度の裏返し、BOA-822）で出しているとき、級の並びの1着の割合（「予選も含めると」）を出さない
+ * @param {{scope: object|null, similarN: number|null, similarConditions?: {grade_g1plus?: boolean}|null, classes: string[]|null, lineup: object[]|null, hideB1?: boolean}} props
  *   scope は assistModel.sameClassScope の戻り値
  */
 export default function ScopeTable({
@@ -21,6 +22,7 @@ export default function ScopeTable({
   similarConditions = null,
   classes,
   lineup,
+  hideB1 = false,
 }) {
   const [open, setOpen] = useState(false);
   const round = scope?.round ?? null;
@@ -80,7 +82,7 @@ export default function ScopeTable({
               </tr>
             </tbody>
           </table>
-          {ncr && scope.withoutRound && (
+          {ncr && scope.withoutRound && !hideB1 && (
             <p className="ta-note ta-num">
               {ASSIST_COPY.withoutRound(
                 Math.round(

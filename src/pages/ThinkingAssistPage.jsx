@@ -34,6 +34,7 @@ import { AssistSheetContext } from "../components/race/assist/assistSheetContext
 import {
   THINKING_ASSIST_PUBLIC,
   isAnalogyFinderEnabled,
+  isInCautionEnabled,
   isThinkingAssistEnabled,
 } from "../config/featureFlags";
 import AssistViewSwitch from "../components/race/assist/AssistViewSwitch";
@@ -49,6 +50,7 @@ import {
   exhRanks,
   restClassCounts,
   roughCard,
+  roughWithInCaution,
   roughState,
   sameClassScope,
   similarSummary,
@@ -458,7 +460,12 @@ function ThinkingAssistBody() {
   const placeAxis = state.placeAxis ?? (placeAuto ? firstPicks[0] : 1);
   const placeF = winFollowers(vaScenario, placeAxis);
   const venueAll = anyCell(data.scenario.va.data);
-  const rough = roughCard(scope, national);
+  // BOA-822（機能フラグの側）: 1着のバーはイン崩れ注意度の裏返し。案内（guideSteps）・カード・シートで同じ値を使う
+  const inCautionMode = isInCautionEnabled();
+  const inCaution = inCautionMode ? (race?.inCaution ?? null) : null;
+  const rough = inCautionMode
+    ? roughWithInCaution(roughCard(scope, national), inCaution)
+    : roughCard(scope, national);
   const lineup = classLineup(today?.classes, 1);
   const similar = v16Off ? null : similarSummary(data.similar.data?.similar);
   const similarFailed = !v16Off && data.similar.status === "error";
@@ -542,6 +549,7 @@ function ThinkingAssistBody() {
           chips: boatFacts[0].chips,
           venue: venueName,
           headerScope: scope,
+          headerInCaution: rough?.inCaution ?? null,
           vaFacts: vaKey ? factsAll[vaKey] : null,
           vaCell: venueAll,
           classes: today?.classes ?? null,
@@ -752,6 +760,7 @@ function ThinkingAssistBody() {
               classes={today?.classes ?? null}
               status={roughStatus}
               onOpen={() => act({ type: "sheet", sheet: "rough" })}
+              inCautionMode={inCautionMode}
             />
           )}
         </AssistHeader>
@@ -943,6 +952,7 @@ function ThinkingAssistBody() {
           similarConditions={data.similar.data?.similar?.conditions ?? null}
           lineup={lineup}
           classes={today?.classes ?? null}
+          inCaution={inCaution}
           onClose={closeSheet}
         />
       )}

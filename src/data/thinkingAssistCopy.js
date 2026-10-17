@@ -57,6 +57,20 @@ export const ASSIST_COPY = Object.freeze({
     `${round ? `${round} ` : ""}${n.toLocaleString("ja-JP")}件 ›`,
   verdict: { high: "↑ 高め", low: "↓ 低め", unclear: "差ははっきりしない" },
   verdictArrow: { high: "↑", low: "↓", unclear: "→" },
+  // BOA-822（FR-4）: 1着と万舟で数えた範囲が違うので、行ごとに範囲の名前と件数を書く
+  roughScopeInCaution: (n, round) =>
+    `勝率差が同じくらい${round ? `の${round}` : ""} ${n.toLocaleString("ja-JP")}件`,
+  roughManshuScope: "万舟の範囲",
+  // 材料のシートと軸レンズ: 1着だけ集め方が違う（#1604 ファン評価1周目 P1・P2）
+  roughInCautionScopeNote: (n, round) =>
+    `1号艇の1着は、勝率差（1号艇と、他の艇で一番高い全国勝率の差）が同じくらいの全国の過去レース${round ? `（${round}だけ）` : ""} ${n.toLocaleString("ja-JP")}件で出している。下の表の2通り（級の並び・類似レース）とは別の集め方`,
+  whyHeaderInCaution: (n, round) =>
+    `上の枠の1号艇の1着は、勝率差が同じくらいの全国のレース${round ? `（${round}だけ）` : ""} ${n.toLocaleString("ja-JP")}件で集めた。ここは級の並びで集めた`,
+  roughScopeClass: (n, round) =>
+    `級の並びが同じ${round ?? ""} ${n.toLocaleString("ja-JP")}件`,
+  roughFlip: (b1, p) =>
+    `1号艇の1着 ${b1}% は、イン崩れ注意度 ${p}%（1着を逃した割合）の裏返し`,
+  roughOpen: "材料を見る ›",
   roughSheetLead: "全国の全レースと比べる",
   baseLegend: "太い点線＝全国の全レース",
   baseInline: (p) => `（全国 ${p}%）`,
