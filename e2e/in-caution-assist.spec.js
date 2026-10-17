@@ -96,6 +96,11 @@ test.describe("思考アシストの1着のバー（BOA-822、?caution=1）", ()
     await expect(
       page.getByTestId("rough-sheet-in-caution-scope"),
     ).toContainText("1号艇の1着の1本目は");
+    // シートにも級の並びの絵の名前と準優勝戦の注記（3周目 P2）
+    await expect(page.getByRole("dialog")).toContainText("万舟の範囲");
+    await expect(
+      page.getByTestId("rough-sheet-in-caution-round"),
+    ).toContainText("準優勝戦は、勝率差が違っても割合があまり変わらない");
     await page.getByRole("button", { name: /集めたレースは/ }).click();
     await expect(page.getByText(/予選も含めると/)).toHaveCount(0);
   });

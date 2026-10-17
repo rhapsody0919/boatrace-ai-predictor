@@ -53,6 +53,10 @@ export default function RoughSheet({
         {/* 棒の中の2本の細い縦線（ぶれ幅）の説明（BOA-801 4。セオリーカードと同じ文） */}
         、{ASSIST_COPY.theoryBarLegend}
       </p>
+      {/* BOA-822: 級の並びの絵は万舟の範囲（1着は勝率差で集める）。枠と同じ名前を付ける（#1604 ファン評価3周目 P2） */}
+      {ic && (
+        <span className="ta-rough-scope">{ASSIST_COPY.roughManshuScope}</span>
+      )}
       <ClassLineup lineup={lineup} />
       {restClassCounts(classes) && (
         <p className="ta-note">
@@ -99,6 +103,11 @@ export default function RoughSheet({
           showBase
           few={scope.few}
         />
+      )}
+      {ic?.round && ROUND_LABEL[ic.round] && (
+        <p className="ta-note" data-testid="rough-sheet-in-caution-round">
+          {ASSIST_COPY.roughRoundBaseNote(ROUND_LABEL[ic.round])}
+        </p>
       )}
       {similar && (
         <BaseBar

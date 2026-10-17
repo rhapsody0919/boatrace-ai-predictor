@@ -67,7 +67,7 @@ export const ASSIST_COPY = Object.freeze({
   // 準優・優勝戦の矢印は全レースの割合との比べ（AI予想タブの inCaution.noteJunyu と同じ趣旨。#1604 ファン評価2周目 P2）
   roughRoundBaseNote: (round) =>
     `${round}は、勝率差が違っても割合があまり変わらない。点線（全国）は全レースの割合なので、↑は${round}の1号艇がもともと強いことも含む`,
-  whyToggleCount: "返還・会場の全レースの数え方",
+  whyToggleCount: "返還のあったレースの含め方",
   whyHeaderInCaution: (n, round) =>
     `上の枠の1号艇の1着は、勝率差が同じくらいの全国のレース${round ? `（${round}だけ）` : ""} ${n.toLocaleString("ja-JP")}件で集めた。ここは級の並びで集めた`,
   roughScopeClass: (n, round) =>
