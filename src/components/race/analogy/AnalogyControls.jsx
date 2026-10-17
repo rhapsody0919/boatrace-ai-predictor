@@ -61,7 +61,7 @@ export default function AnalogyControls({
   const targetLabel = useId();
   const k = "aiPredictionTab.analogy";
   return (
-    <div className="af-ctl-box">
+    <div className="af-ctl-box" data-testid="analogy-controls">
       {showTarget && (
         <div className="af-ctl-row">
           <span className="af-lbl" id={targetLabel}>
