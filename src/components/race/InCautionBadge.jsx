@@ -13,7 +13,7 @@ export default function InCautionBadge({ level, pct = null }) {
   if (!["low", "mid", "high"].includes(level)) return null;
   return (
     <span className={`in-caution-badge in-caution-badge--${level}`}>
-      {level === "high" && <span aria-hidden="true">▲ </span>}
+      {level === "high" && <span aria-hidden="true">▲</span>}
       {t(`inCaution.level.${level}`)}
       {pct !== null && <span className="in-caution-badge-pct"> {pct}%</span>}
     </span>

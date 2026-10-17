@@ -1,4 +1,9 @@
 /* イン崩れ注意度のカード（InCautionCard.jsx、BOA-822、承認モック mock/1-ai-tab-375.png）。色は意味トークン */
+.in-caution-tab {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
 .in-caution-card {
   display: grid;
   gap: var(--spacing-3);
@@ -22,14 +27,51 @@
   font-weight: 700;
 }
 
-.in-caution-card-lead {
+.in-caution-card-main,
+.in-caution-card-side {
+  display: grid;
+  gap: var(--spacing-3);
+  align-content: start;
+  min-width: 0;
+}
+
+/* 375px は上から 理由 → 免責 → 導線 → 段ごとの実績（承認モック 1-ai-tab-375.png） */
+.in-caution-card-side {
+  grid-template-areas:
+    "reason"
+    "disc"
+    "links"
+    "acc";
+}
+
+.in-caution-card-reason {
+  grid-area: reason;
+}
+
+.in-caution-card-disclaimer {
+  grid-area: disc;
+}
+
+.in-caution-card-links {
+  grid-area: links;
+}
+
+.in-caution-card-accuracy {
+  grid-area: acc;
+}
+
+.in-caution-card-figure {
+  display: grid;
+  gap: var(--spacing-1);
   margin: 0;
+}
+
+.in-caution-card-lead {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
 }
 
 .in-caution-card-pct {
-  margin: 0;
   font-size: var(--font-size-lg);
   font-weight: 700;
   line-height: 1;
@@ -220,6 +262,47 @@
   align-items: center;
   min-height: 44px;
   font-size: var(--font-size-sm);
+}
+
+/* 1200px 以上: カードの中を左右に（左 数字・棒・範囲／右 理由・導線）。導線は横に2つ、免責と段ごとの実績は同じ行 */
+@media (min-width: 1200px) {
+  .in-caution-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-6);
+    padding: var(--spacing-5) var(--spacing-6);
+  }
+
+  .in-caution-card-head {
+    justify-content: flex-start;
+  }
+
+  .in-caution-card-figure {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-3);
+  }
+
+  .in-caution-card-side {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "reason reason"
+      "links links"
+      "disc acc";
+    align-items: center;
+  }
+
+  .in-caution-card-reason {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .in-caution-card-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .in-caution-card-accuracy {
+    min-height: 0;
+  }
 }
 
 .in-caution-empty {

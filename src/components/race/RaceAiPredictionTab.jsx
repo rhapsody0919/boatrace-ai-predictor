@@ -57,8 +57,10 @@ function RaceAiPredictionTab({
   }
 
   if (isInCautionEnabled()) {
+    // 既存の .race-ai-prediction-tab の2段（BOA-881）に入れない。カードは列いっぱいで中を左右に分け、
+    // 出現パターンはその下（承認モック 1-ai-tab-1440.png）
     return (
-      <div className="race-ai-prediction-tab">
+      <div className="in-caution-tab">
         <InCautionCard
           inCaution={prediction?.inCaution ?? null}
           players={prediction?.allPlayers ?? []}
