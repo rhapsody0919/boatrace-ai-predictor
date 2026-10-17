@@ -594,7 +594,10 @@ test.describe("S-5 /accuracy イン崩れ注意度の段ごとの実績", () => 
     }
     await expect(page.getByText(/ぶれ幅/).first()).toBeVisible();
     await expect(page.getByText(/[\d,]+レース/).first()).toBeVisible();
-    await expect(page.getByText(/全国\s*\d+(?:\.\d+)?%/).first()).toBeVisible();
+    // 点線のラベルは「全レース」（2026-10-17 オーナー決定、Orchestrate 経由。カードと /accuracy でそろえる）
+    await expect(
+      page.getByText(/全レース\s*\d+(?:\.\d+)?%/).first(),
+    ).toBeVisible();
   });
 
   test("[FR-6] 公開後タブで件数30未満の段は割合を出さず、件数だけにする", async ({
