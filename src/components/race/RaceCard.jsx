@@ -26,6 +26,8 @@ import {
 import RaceCardBadge from "./RaceCardBadge";
 import RaceCardDataTable from "./RaceCardDataTable";
 import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
+import InCautionBadge from "./InCautionBadge";
+import { isInCautionEnabled } from "../../config/featureFlags";
 
 function RaceCard({ race, raceHref, nowHHMM = null }) {
   const { t } = useTranslation();
@@ -54,7 +56,21 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
     !volatility?.isFallback && volatility?.level === "high";
   const isLowVolatility =
     !volatility?.isFallback && volatility?.level === "low";
-  const showBadge = isHighVolatility || isLowVolatility;
+  // BOA-822（機能フラグの側）: 旧指数の札と展開予測の的中/外れをやめ、イン崩れ注意度の段の札と割合にする。
+  // 左の色線は崩れやすい・堅めだけ（真ん中の段は札の枠線だけ。承認モック mock/2-lists-375.png）
+  const inCautionEnabled = isInCautionEnabled();
+  // 中止確定のレースは段の札・色線を出さない（ホームの上位と同じく外す。PR #1602 レビュー）
+  const inCaution =
+    inCautionEnabled && !isCancelled
+      ? (racePrediction?.inCaution ?? null)
+      : null;
+  const inCautionLine =
+    inCaution?.level === "high"
+      ? "var(--color-warning-dark-text)"
+      : inCaution?.level === "low"
+        ? "var(--color-success-text)"
+        : null;
+  const showBadge = !inCautionEnabled && (isHighVolatility || isLowVolatility);
   const badgeColor = isHighVolatility ? "#c62828" : "#2e7d32";
   const badgeLabel = isHighVolatility
     ? `🌪️ ${t("volatility.levelHigh")}`
@@ -77,7 +93,8 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
       ? judgeTurnPrediction(unified.turnPrediction?.patterns, result).status
       : null;
   // 予想パターンが無いレースは従来どおり「外れ」（isTurnHit=false と同じ扱い）
-  const showHitMissBadge = isFinished && Boolean(unified) && !isNoRace;
+  const showHitMissBadge =
+    !inCautionEnabled && isFinished && Boolean(unified) && !isNoRace;
   const isTurnHit = turnJudgement === TURN_JUDGEMENT.HIT;
 
   return (
@@ -85,7 +102,13 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
       className={
         isPastDeadline ? "race-card race-card--deadline-passed" : "race-card"
       }
-      style={showBadge ? { borderLeft: `4px solid ${badgeColor}` } : undefined}
+      style={
+        showBadge
+          ? { borderLeft: `4px solid ${badgeColor}` }
+          : inCautionLine
+            ? { borderLeft: `4px solid ${inCautionLine}` }
+            : undefined
+      }
     >
       <div className="race-card-header">
         <h3>{race.venue}</h3>
@@ -100,6 +123,9 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
         >
           {showBadge && (
             <RaceCardBadge color={badgeColor}>{badgeLabel}</RaceCardBadge>
+          )}
+          {inCaution && (
+            <InCautionBadge level={inCaution.level} pct={inCaution.pct} />
           )}
           {showHitMissBadge && (
             <RaceCardBadge

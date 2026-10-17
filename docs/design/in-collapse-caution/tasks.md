@@ -53,8 +53,8 @@
   - 途中（2026-10-16）: `TECHNIQUE_NAMES` は移した。`RateBar` は既存の `src/components/common/RateBar.jsx`（表のセルの2段の棒、BOA-428）と名前がぶつかり形も違うので、基準の点線つきの棒は `src/components/race/BaselineBar.jsx` にした（RoughCard を置き換え、layout の E2E で見た目が変わらないことを確認）。`InCautionBadge` は 2026-10-17 に作った（task 19 は完了）
 - [x] **20. `InCautionCard`** と AI予想タブ（案A）: 先頭にカード、展開予測・答え合わせ・イン崩れの振り返り・`VolatilityDisplay`・`ai-tab-sonar-link` をフラグ true の側で描かない。`OutcomePatternPreview` は残す。確定後の1行、値が無いときの空状態、1号艇が後から欠場したら（直前情報の `is_absent`）カードを出さない、注記（準優・優勝戦・欠場あり・件数少なめ）。4言語
   - 2026-10-17: `src/components/race/InCautionCard.jsx`・`InCautionBadge.jsx`、`RaceAiPredictionTab` のフラグ true の側。「類似レース◯件」はソナーの既定の件数（`analogyAggregate.js` の `DEFAULT_STEP` = 400）。カードの大きい棒は段の範囲の帯と両端のラベルが付くので、`BaselineBar` ではなくカードの中で描いた。1号艇の後からの欠場は `getRaceExhibitionBasics` で見る。過去の日付の `/api/predictions/{date}` は CDN に1日残るので、157 の適用前（〜2026-10-17）の日付は翌日まで inCaution が無い。受け入れ E2E の S-1 は補助関数が描画を待たずに `isVisible()` を見ていて、ライブのデータではカードの前に判定してスキップ・取り違えになる（報告済み）
-- [ ] **21. `RaceCard`** の札と割合、展開予測の的中/外れのバッジを外す
-- [ ] **22. ホーム `TodaysVolatilityHighlights`**（`volatilityHighlights.js` の入力を `{pct, level, closed}`）。行全体を押せる、44px
+- [x] **21. `RaceCard`** の札と割合、展開予測の的中/外れのバッジを外す
+- [x] **22. ホーム `TodaysVolatilityHighlights`**（`volatilityHighlights.js` の入力を `{pct, level, closed}`）。行全体を押せる、44px
 - [ ] **23. 思考アシスト `RoughCard`・`RoughSheet`**: 1着のバー = `100 − pct`、行ごとの範囲の名前と件数、裏返しの説明の1行（ja のみ）
   - ファン評価（#1595 1周目 P2）: カードの「軸から考える」の先の思考アシストは、今は1号艇の1着が 36%（全国・級の並び）・30.5%（会場）で、カードの 100−71=29% と食い違う。このタスクで「1着のバー = 100 − pct」にそろえる。公開の前に必ず入れる
 - [ ] **24. `/accuracy`** の作り替え（`InCautionAccuracyChart`、公開後／公開前の検証の切り替え、Wilson の区間は純関数、30件未満は件数だけ）と `/winning-technique?tab=volatility` の中身の置き換え（タブのラベルは新しいキーをフラグで切り替える。`analysisPage.tabs.volatility` は上書きしない）。`getInCautionAccuracy()`（`accuracy_cache.in_caution_accuracy`）
@@ -68,7 +68,7 @@
 
 ## PR-5 /accuracy の実績（plan §6）
 
-- [ ] **29. `in_caution_bands.py` に実績の集計を足す**: 公開前の検証（表だけで作る。full のとき・無いとき・`def` が違うときだけ）、公開後（`launchDate` 以降、同じ `def` の unified の行の `level` と完全レースの1号艇の1着の有無）。`accuracy_cache.in_caution_accuracy` に upsert。pytest に再現テスト
+- [x] **29. `in_caution_bands.py` に実績の集計を足す**: 公開前の検証（表だけで作る。full のとき・無いとき・`def` が違うときだけ）、公開後（`launchDate` 以降、同じ `def` の unified の行の `level` と完全レースの1号艇の1着の有無）。`accuracy_cache.in_caution_accuracy` に upsert。pytest に再現テスト
 - [ ] **30. 確認**: 公開前の検証の段ごとの率・件数が、ラウンドで分けた率で出した値 21,030・27.2%／32,178・43.4%／22,087・65.7%（design-reviewer が races.pkl で再現）と合うか。round4 の L（ラウンドで分けない、26.7／42.6／65.5%）との差も PR に書く。`sparse_cell` のレースを除くので件数は少し減る。`data-accuracy-verifier`
 
 ## PR-6 /today・SNS 企画（plan §5・§7 の 6）
