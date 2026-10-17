@@ -76,6 +76,7 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
     },
     async close() {
       log.closed = true;
+      log.browserCloses = (log.browserCloses ?? 0) + 1;
     },
   };
   return {
@@ -100,7 +101,7 @@ test("印の表: race-sonar・today は2つずつの data-testid、許すタブ�
   assert.deepEqual(SCREEN_TABS, ["sonar"]);
 });
 
-test("Chromium は1回だけ起動し、毎回新しい context で開いて閉じ、解析のタグを止め、見えた印だけを返す", async () => {
+test("Chromium は開くたびに起動して閉じ、新しい context で開き、解析のタグを止め、見えた印だけを返す（--single-process は context を閉じるとブラウザごと終わる、2026-10-17）", async () => {
   const fake = fakeBrowser({ visible: [SCREEN_MARKERS["race-sonar"][0]] });
   const headless = createChromiumHeadless({ launch: fake.launch });
   for (let i = 0; i < 2; i++) {
@@ -114,13 +115,12 @@ test("Chromium は1回だけ起動し、毎回新しい context で開いて閉�
       SCREEN_MARKERS["race-sonar"][0],
     ]);
   }
-  assert.equal(fake.log.launches, 1);
+  assert.equal(fake.log.launches, 2);
   assert.equal(fake.log.contexts, 2);
-  assert.equal(fake.log.closedContexts, 2);
+  assert.equal(fake.log.browserCloses, 2);
   assert.equal(fake.log.contextOptions.storageState, undefined);
   assert.match(fake.log.routes[0], /google-analytics/);
   await headless.close();
-  assert.equal(fake.log.closed, true);
   // ログイン状態を持ち込む呼び出しは断る
   await assert.rejects(
     headless.inspect({
@@ -130,6 +130,45 @@ test("Chromium は1回だけ起動し、毎回新しい context で開いて閉�
     }),
     /未ログイン/,
   );
+});
+
+test("前のブラウザが落ちても、次は新しいブラウザで開く（2026-10-17 本番: /today の後の図が4枚とも browser has been closed）", async () => {
+  // @sparticuz/chromium（--single-process）と同じく、context を閉じるとブラウザが終わる偽物
+  let launches = 0;
+  const launch = async () => {
+    launches += 1;
+    const fake = fakeBrowser({ visible: SCREEN_MARKERS.today });
+    const browser = await fake.launch();
+    let dead = false;
+    return {
+      async newContext(options) {
+        if (dead)
+          throw new Error(
+            "browser.newContext: Target page, context or browser has been closed",
+          );
+        const context = await browser.newContext(options);
+        return {
+          ...context,
+          close: async () => {
+            dead = true;
+          },
+        };
+      },
+      async close() {
+        if (dead) throw new Error("Target closed");
+      },
+    };
+  };
+  const headless = createChromiumHeadless({ launch });
+  for (let i = 0; i < 3; i++) {
+    const result = await headless.inspect({
+      url: "https://www.boat-ai.jp/today",
+      context: { storageState: null },
+      requiredSelectors: SCREEN_MARKERS.today,
+    });
+    assert.deepEqual(result.visibleSelectors, SCREEN_MARKERS.today);
+  }
+  assert.equal(launches, 3);
 });
 
 test("1回の実行で開く回数に上限があり、起動の失敗は同じ実行の中で繰り返さない", async () => {
@@ -271,7 +310,8 @@ test("screenshot（/today の画像、tasks 19b）: スマホ幅の上部 4:5 �
     /screenshot_component_missing/,
   );
   assert.equal(missing.log.screenshots, undefined);
-  assert.equal(missing.log.closedContexts, 1);
+  // 撮れなくてもブラウザは閉じる（次は新しいブラウザで開く）
+  assert.equal(missing.log.browserCloses, 1);
 });
 
 test("screenshot: 撮る前に Cookie の同意を「拒否」で記録し、帯が出ていれば撮らない。フォントの読み込みを待ってから撮る（2026-10-16 画像の不具合）", async () => {

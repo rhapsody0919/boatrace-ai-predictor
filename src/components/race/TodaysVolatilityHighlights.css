@@ -148,3 +148,16 @@
   color: var(--text-secondary);
   font-size: 0.8rem;
 }
+
+/* BOA-822 イン崩れ注意度の行は行全体を押せる。押せる部品は 44px 以上（mock-reviews-v1.md） */
+.volatility-highlights--in-caution .volatility-highlights__race-link {
+  min-height: 44px;
+  justify-content: center;
+}
+
+/* 「段ごとの実績を見る」も押せる高さ 44px 以上（#1602 ファン評価2周目。旧表示の AccuracyLink は変えない） */
+.volatility-highlights--in-caution .volatility-highlights__accuracy-link a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

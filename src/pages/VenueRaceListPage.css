@@ -101,3 +101,11 @@
     font-size: 1.2rem;
   }
 }
+
+/* BOA-822: イン崩れ注意度の札の割合の定義（機能フラグの側） */
+.venue-race-list__in-caution-note {
+  margin: 0 0 var(--spacing-3);
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
