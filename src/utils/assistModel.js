@@ -124,6 +124,30 @@ export function roughCard(scope, nationalCell) {
   return { b1: few(b1), manshu: few(manshu), few: scope.few };
 }
 
+/**
+ * BOA-822（FR-4、承認 (a)）: 堅い？荒れる？の1着のバーを、イン崩れ注意度の裏返し（100 − pct）にする。
+ * AI予想タブの注意度と和が 100% になるよう、割合は pct から作る（nonWin / n を丸め直さない）。
+ * 基準の点線は注意度の基準（全国の全レースで1着を逃した basePct）の裏返し。件数少なめ（lowSample）は矢印を出さない。
+ * 万舟は今の級の並びのまま。inCaution が無いときは rough をそのまま返す
+ * @param {ReturnType<typeof roughCard>} rough
+ * @param {{pct: number, n: number, nonWin: number, basePct: number, lowSample: boolean}|null} inCaution
+ */
+export function roughWithInCaution(rough, inCaution) {
+  if (!rough || typeof inCaution?.pct !== "number" || !inCaution.n)
+    return rough;
+  const { pct, n, nonWin, basePct, lowSample } = inCaution;
+  const row = baseVerdict(n - nonWin, n, (100 - basePct) / 100);
+  return {
+    ...rough,
+    b1: {
+      ...row,
+      rate: (100 - pct) / 100,
+      verdict: lowSample ? null : row.verdict,
+    },
+    inCaution: { pct, n, lowSample: Boolean(lowSample) },
+  };
+}
+
 // ---- 類似レース（D-35・D-36 (3)、ADR 0087）----
 
 /** 龍神ソナーと同じ「今日に近い順の上位 400件」 */
@@ -440,8 +464,7 @@ export const exhRanks = (racers) =>
     r.exhTime == null
       ? null
       : 1 +
-        racers.filter((o) => o.exhTime != null && o.exhTime < r.exhTime)
-          .length,
+        racers.filter((o) => o.exhTime != null && o.exhTime < r.exhTime).length,
   );
 
 /**
@@ -515,8 +538,7 @@ export function boardModel({
       back:
         metric === "exh_st" && lens === "flow"
           ? ASSIST_COPY.backTo(
-              METRICS[stBasis === "overall" ? "st_mean30" : "st_course"]
-                .label,
+              METRICS[stBasis === "overall" ? "st_mean30" : "st_course"].label,
             )
           : null,
       left: st ? ".00" : (def.tick ?? def.text)(s.lo),

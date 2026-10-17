@@ -9,7 +9,8 @@ import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
  * 堅い？荒れる？の材料のシート（TC-R1、FW-22）。1号艇の1着と万舟を、全国・級の並びが同じと類似レースで、
  * 全国の全レースと比べる（基準つきバー、D-21）。決めつけない
  * 会場の全レースは参考の細い点線と末尾の1行（FR-2、承認モック v7 の rough()）
- * @param {{scope: object, national: object, similar: object|null, similarFailed: boolean, venueAll: object|null, venueName: string|null, racecardStage: boolean, lineup: object[]|null, classes: string[]|null, onClose: () => void}} props
+ * BOA-822: inCaution（機能フラグの側だけ渡す）があれば、1号艇の1着の1本目を勝率差が同じくらいのレースにする
+ * @param {{scope: object, national: object, similar: object|null, similarFailed: boolean, venueAll: object|null, venueName: string|null, racecardStage: boolean, lineup: object[]|null, classes: string[]|null, inCaution?: object|null, onClose: () => void}} props
  */
 export default function RoughSheet({
   scope,
@@ -22,10 +23,15 @@ export default function RoughSheet({
   lineup,
   classes,
   similarConditions = null,
+  inCaution = null,
   onClose,
 }) {
   const c = scope.cell;
-  const baseB1 = national.b1_win / national.n;
+  // BOA-822（機能フラグの側、FR-4）: 1着の1本目は勝率差が同じくらいのレース（注意度の裏返し）。
+  // 基準の点線も注意度の基準の裏返しにし、カードの1着のバーと同じ物差しにする
+  const ic =
+    typeof inCaution?.pct === "number" && inCaution.n ? inCaution : null;
+  const baseB1 = ic ? (100 - ic.basePct) / 100 : national.b1_win / national.n;
   const baseM = national.manshu / national.payout_known;
   const venue =
     venueAll?.n && venueAll.payout_known && venueName ? venueName : null;
@@ -57,15 +63,27 @@ export default function RoughSheet({
         lineup={lineup}
       />
       <h3 className="ta-sheet-sub">{ASSIST_COPY.roughB1}</h3>
-      <BaseBar
-        label={scopeLabel}
-        k={c.b1_win}
-        n={c.n}
-        base={baseB1}
-        refRate={refB1}
-        showBase
-        few={scope.few}
-      />
+      {ic ? (
+        <BaseBar
+          label={`${ASSIST_COPY.roughScopeInCaution(ic.n)}${ic.lowSample ? `・${ASSIST_COPY.roughFew}` : ""}`}
+          k={ic.n - ic.nonWin}
+          n={ic.n}
+          base={baseB1}
+          refRate={refB1}
+          showBase
+          few={Boolean(ic.lowSample)}
+        />
+      ) : (
+        <BaseBar
+          label={scopeLabel}
+          k={c.b1_win}
+          n={c.n}
+          base={baseB1}
+          refRate={refB1}
+          showBase
+          few={scope.few}
+        />
+      )}
       {similar && (
         <BaseBar
           label={simLabel}

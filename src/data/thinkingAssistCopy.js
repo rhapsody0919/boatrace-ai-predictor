@@ -57,6 +57,14 @@ export const ASSIST_COPY = Object.freeze({
     `${round ? `${round} ` : ""}${n.toLocaleString("ja-JP")}件 ›`,
   verdict: { high: "↑ 高め", low: "↓ 低め", unclear: "差ははっきりしない" },
   verdictArrow: { high: "↑", low: "↓", unclear: "→" },
+  // BOA-822（FR-4）: 1着と万舟で数えた範囲が違うので、行ごとに範囲の名前と件数を書く
+  roughScopeInCaution: (n) =>
+    `勝率差が同じくらい ${n.toLocaleString("ja-JP")}件`,
+  roughScopeClass: (n, round) =>
+    `級の並びが同じ${round ?? ""} ${n.toLocaleString("ja-JP")}件`,
+  roughFlip: (b1, p) =>
+    `1号艇の1着 ${b1}% は、イン崩れ注意度 ${p}%（1着を逃した割合）の裏返し`,
+  roughOpen: "材料を見る ›",
   roughSheetLead: "全国の全レースと比べる",
   baseLegend: "太い点線＝全国の全レース",
   baseInline: (p) => `（全国 ${p}%）`,
