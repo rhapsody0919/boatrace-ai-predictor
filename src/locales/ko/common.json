@@ -352,6 +352,12 @@
       "absent": "{{boat}}번 보트 결장",
       "absentLabel": "결장",
       "scale": "1정신(약 0.13초)"
+    },
+    "pastRate": {
+      "title": "되돌아보기",
+      "entry": "나의 예상 {{summary}}: {{main}}",
+      "decision": "결과 {{combo}}: {{main}}",
+      "changed": "입력한 뒤로 같은 조건의 과거 레이스가 바뀌었습니다"
     }
   },
   "raceHistoryTable": {
@@ -1921,7 +1927,149 @@
       }
     },
     "sonarLink": "유사 레이스와 전개 시나리오는 용신 소나 탭에서 볼 수 있습니다",
-    "sonarLinkGo": "열기"
+    "sonarLinkGo": "열기",
+    "pastRate": {
+      "title": "나의 예상",
+      "typesLabel": "예상 유형",
+      "types": {
+        "order": "착순",
+        "boat1": "1번 보트",
+        "tenkai": "전개",
+        "slit": "슬릿",
+        "entry": "진입",
+        "payout": "배당 구간"
+      },
+      "boat": "{{n}}번 보트",
+      "submit": "과거에 일어난 비율 보기",
+      "order": {
+        "rows": {
+          "1": "1착",
+          "2": "2착",
+          "3": "3착"
+        },
+        "nagashi": "나가시(2착·3착을 여러 척)",
+        "clear": "다시 하기",
+        "points": "{{combo}}({{points}}개 조합)"
+      },
+      "boat1": {
+        "win": "1번 보트가 1착",
+        "top3": "1번 보트가 남음(3착 이내)",
+        "out": "1번 보트가 밀려남(4착 이하)"
+      },
+      "tenkai": {
+        "start": "기점",
+        "note": "결과에는 그때 2착으로 들어온 보트의 내역(스지)도 나옵니다."
+      },
+      "entry": {
+        "boatLabel": "이 보트가",
+        "within3": "3코스 이내로 진입",
+        "within4": "4코스 이내로 진입",
+        "waku": "정번대로"
+      },
+      "payout": {
+        "low": "안정(삼쌍승 ¥1,000 미만)",
+        "mid": "중간 배당(¥1,000~¥10,000 미만)",
+        "high": "만슈(¥10,000 이상)"
+      },
+      "slit": {
+        "lede": "슬릿 형태를 고르세요(2개까지 조합 가능). 그림은 옆에서 본 배열이며, 축척은 실제 정신에 맞췄습니다",
+        "rateSource": "전국 출현율은 {{from}}~{{to}}의 {{races}}만 레이스(플라잉·출발 지연·결장이 있는 레이스 제외)",
+        "rate": "전국 {{p}}%",
+        "forms": {
+          "flat": "일직선",
+          "wall": "안쪽 3척 정렬(벽)",
+          "d2": "2코스 함몰",
+          "d3": "카도받이 함몰(3코스)",
+          "kado": "카도 일격(4코스)",
+          "d1": "인 함몰(1코스 지연)",
+          "dash": "대시 그룹 선행(바깥 3척)"
+        },
+        "formsShort": {
+          "flat": "일직선",
+          "wall": "안쪽 3척 정렬",
+          "d2": "2코스 함몰",
+          "d3": "카도받이 함몰",
+          "kado": "카도 일격",
+          "d1": "인 함몰",
+          "dash": "대시 그룹 선행"
+        },
+        "incompatible": "동시에 일어날 수 없는 형태입니다",
+        "levelTitle": "차이의 크기",
+        "levels": {
+          "1": {
+            "main": "약 1/3정신",
+            "sub": "0.05초 차",
+            "summary": "약 1/3정신 이상"
+          },
+          "2": {
+            "main": "약 반 정신",
+            "sub": "0.08초 차",
+            "summary": "약 반 정신 이상"
+          }
+        },
+        "kadoNote": "카도 일격은 약 1/4정신(0.03초) / 약 1/3정신(0.05초)",
+        "boatLengthNote": "1정신은 약 0.13초(공식 보트 전장 289.5cm ÷ 시속 약 80km). 슬릿 부근은 아직 가속 중이라 실제 1정신은 이보다 조금 긴 시간이 됩니다",
+        "custom": "직접 만들기(1척씩)",
+        "backToForms": "형태에서 고르기로 돌아가기",
+        "customNote": "코스 버튼을 누를 때마다 '지정 없음→앞섬→함몰'로 바뀝니다. 앞섬·함몰은 6척 평균보다 0.05초 이상",
+        "courseState": "{{course}}코스: {{state}}",
+        "states": {
+          "0": "지정 없음",
+          "1": "앞섬",
+          "-1": "함몰"
+        },
+        "customSummary": "{{course}}코스가 {{state}}",
+        "summarySep": " + ",
+        "customSep": ", "
+      },
+      "summary": {
+        "order": "삼쌍승 {{combo}}({{points}}개 조합)",
+        "boat1": {
+          "win": "1번 보트가 1착",
+          "top3": "1번 보트가 3착 이내에 남음",
+          "out": "1번 보트가 4착 이하로 밀려남"
+        },
+        "tenkai": "{{boat}}번 보트의 {{technique}}",
+        "slitLevel": "{{forms}}({{level}})",
+        "entry": {
+          "within3": "{{boat}}번 보트가 3코스 이내로 진입",
+          "within4": "{{boat}}번 보트가 4코스 이내로 진입",
+          "waku": "{{boat}}번 보트가 정번대로"
+        },
+        "payout": {
+          "low": "삼쌍승이 안정(¥1,000 미만)",
+          "mid": "삼쌍승이 중간 배당(¥1,000~¥10,000 미만)",
+          "high": "삼쌍승이 만슈(¥10,000 이상)"
+        }
+      },
+      "main": "{{prefix}}{{n}}레이스 중 {{count}}회({{pct}}%)",
+      "prefixAll": "과거 ",
+      "prefixNewest": "같은 조건의 최근 ",
+      "labels": {
+        "standard": "흔함",
+        "rare": "드묾"
+      },
+      "empty": "같은 조건의 과거 레이스 중 이 유형을 판정할 수 있는 레이스가 없습니다",
+      "excluded": {
+        "technique": "결정 기술을 알 수 없는 {{count}}레이스 제외",
+        "st": "스타트 타이밍이 모두 있지 않은 {{count}}레이스 제외",
+        "course": "진입을 알 수 없는 {{count}}레이스 제외",
+        "payout": "환급이 없는 {{count}}레이스 제외"
+      },
+      "breakdownOrder": "내역: {{items}}",
+      "breakdownOrderMore": "내역: {{items}} 외",
+      "breakdownTenkai": "그때 2착으로 들어온 보트: {{items}}",
+      "breakdownItem": "{{key}} {{count}}회",
+      "breakdownBoat": "{{boat}}번 보트 {{count}}회",
+      "listSep": ", ",
+      "note": "비교 대상: {{layer}}(전국, {{period}})",
+      "noteTruncated": "비교 대상: {{layer}} 중 최근 {{n}}건(전국, {{period}})",
+      "lines": {
+        "both": "흔함은 {{standard}}% 이상, 드묾은 {{rare}}% 미만",
+        "standard": "흔함은 {{standard}}% 이상",
+        "rare": "드묾은 {{rare}}% 미만"
+      }
+    }
   },
   "beforeInfo": {
     "subtitle": "발주 시간이 가까워지면 갱신되는 당일 한정 정보입니다. 발주 30/15/10분 전까지 확정되지 않는 항목이 있습니다",
