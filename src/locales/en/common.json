@@ -421,7 +421,8 @@
         "v4": "Turn prediction hit on Ryujin Radar 🎉\nThe AI prediction hit again!",
         "v5": "Turn prediction hit on Ryujin Radar 🎉\nReally happy with the hit rate!"
       }
-    }
+    },
+    "shareInCaution": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nLane-1 upset caution level {{pct}}% ({{level}})\nShare of {{n}} past races nationwide with about the same win-rate gap in which Boat 1 failed to win\n{{disclaimer}}"
   },
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | Data analyzed, including turn predictions and the Upset Index. Learn more →",
