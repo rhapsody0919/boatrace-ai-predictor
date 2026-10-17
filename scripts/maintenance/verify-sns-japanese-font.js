@@ -11,6 +11,7 @@ import {
   JAPANESE_FONT,
   installJapaneseFont,
   launchChromium,
+  cleanTmpLeftovers,
   reapChromium,
 } from "../lib/launchChromium.js";
 
@@ -49,6 +50,27 @@ test("前の起動の Chromium が残っていれば止め、ほかのプロセ�
     await reapChromium("/tmp/chromium", { procDir: path.join(proc, "none") }),
     0,
   );
+});
+
+test("前の起動が /tmp に残したもの（プロファイル・共有メモリ・ダンプ）だけを消す。Chromium の本体とフォントは残す（2026-10-18）", async () => {
+  const dir = await mkdtemp(path.join(tmpdir(), "tmp-"));
+  for (const name of [
+    "playwright_chromiumdev_profile-AbC123",
+    ".org.chromium.Chromium.XyZ",
+    "core.1234",
+  ])
+    await mkdir(path.join(dir, name));
+  for (const name of ["chromium", "fonts", "al2023", "other.png"])
+    await writeFile(path.join(dir, name), "x");
+  assert.equal(await cleanTmpLeftovers(dir), 3);
+  const { readdir } = await import("node:fs/promises");
+  assert.deepEqual((await readdir(dir)).sort(), [
+    "al2023",
+    "chromium",
+    "fonts",
+    "other.png",
+  ]);
+  assert.equal(await cleanTmpLeftovers(path.join(dir, "none")), 0);
 });
 
 // canvas に文字を描き、濃い画素を数える。字形が無ければ0（空白）か、どの文字でも同じ形（豆腐）になる

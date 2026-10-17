@@ -3,7 +3,15 @@
  * SNS の送る前の表示の確認 api/_lib/snsHeadless.js（sns-pdca-loop tasks 10、ADR 0091）で共用）。
  */
 import path from "node:path";
-import { copyFile, mkdir, readdir, readFile, stat } from "node:fs/promises";
+import {
+  copyFile,
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  stat,
+  statfs,
+} from "node:fs/promises";
 import { freemem, tmpdir } from "node:os";
 
 // @sparticuz/chromium が持つフォントは Open Sans だけで、日本語が描かれない（2026-10-16、/today の X 投稿の画像で
@@ -57,8 +65,37 @@ export async function reapChromium(
   return reaped;
 }
 
+// 前の起動が /tmp に残すもの（プロファイル・--disable-dev-shm-usage の共有メモリのファイル・クラッシュのダンプ）
+const TMP_LEFTOVER =
+  /^(playwright_chromiumdev_profile-|\.org\.chromium\.Chromium\.|core\.)/;
+
+/**
+ * 前の起動の残りを /tmp から消す。返り値は消した数。Vercel の /tmp は容量に上限があり、Chromium の本体（約 220 MB）も
+ * そこに置かれる。落ちた起動の残りが溜まると、共有メモリを /tmp に作れず ERR_INSUFFICIENT_RESOURCES になる（推定、2026-10-18）。
+ * 残った Chromium を止めた後に呼ぶ
+ */
+export async function cleanTmpLeftovers(dir = tmpdir()) {
+  const names = (await readdir(dir).catch(() => [])).filter((n) =>
+    TMP_LEFTOVER.test(n),
+  );
+  for (const name of names)
+    await rm(path.join(dir, name), { recursive: true, force: true });
+  return names.length;
+}
+
+const tmpFreeMb = (dir = tmpdir()) =>
+  statfs(dir).then(
+    (s) => Math.round((s.bavail * s.bsize) / 1048576),
+    () => null,
+  );
+
 /** 直近の起動の様子（失敗の理由に添える。本番の関数のログを見ずに切り分けるため） */
-export const lastLaunch = { reaped: 0, freeMb: null };
+export const lastLaunch = {
+  reaped: 0,
+  cleaned: 0,
+  freeMb: null,
+  tmpFreeMb: null,
+};
 
 // Vercelのビルドサンドボックスはplaywrightが正式サポートしないLinux環境で、
 // `playwright`パッケージがダウンロードするChromiumバイナリはシステム共有
@@ -76,7 +113,9 @@ export async function launchChromium() {
     }
     const executablePath = await sparticuzChromium.executablePath();
     lastLaunch.reaped = await reapChromium(executablePath);
+    lastLaunch.cleaned = await cleanTmpLeftovers();
     lastLaunch.freeMb = Math.round(freemem() / 1048576);
+    lastLaunch.tmpFreeMb = await tmpFreeMb();
     // executablePath() が /tmp/fonts に fonts.conf と既定のフォントを展開した後に置く。先に /tmp/fonts を作ると、
     // @sparticuz/chromium は展開済みとみなして fonts.conf を置かない（lambdafs.js の existsSync）
     await installJapaneseFont();

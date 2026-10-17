@@ -151,9 +151,9 @@ export function createChromiumHeadless({
       );
     },
     async close() {},
-    /** 直近の起動の様子（起動の前に止めた残りの Chromium の数・空きメモリ）。/today の失敗の理由に添える（2026-10-18） */
+    /** 直近の起動の様子（起動の前に止めた残りの Chromium の数・/tmp から消した残りの数・空きメモリ・/tmp の空き）。/today の失敗の理由に添える（2026-10-18） */
     launchInfo() {
-      return `残り${lastLaunch.reaped}・空き${lastLaunch.freeMb ?? "?"}MB`;
+      return `残り${lastLaunch.reaped}・掃除${lastLaunch.cleaned}・空き${lastLaunch.freeMb ?? "?"}MB・/tmp空き${lastLaunch.tmpFreeMb ?? "?"}MB`;
     },
   };
 }
