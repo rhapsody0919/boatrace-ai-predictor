@@ -30,6 +30,19 @@ const EXPIRED_SAVED_AT = new Date(
   NOW.getTime() - 31 * 24 * 60 * 60 * 1000,
 ).toISOString();
 
+// FINISHED_RACE_ID の締切時刻は spec.md・screens.md からは決まらない
+// （固定レースの予想・結果の応答の前提は tasks T5-2 に未解決として記載されている）。
+// FR-4・FR-5 の timing テスト（保存は締切前・結果の確認は締切後）に使う仮の締切を
+// ここ1か所にまとめる。実際のレースIDへ置き換える際は、この値も実際の締切に
+// 合わせて調整が必要（仕様の曖昧点として報告）。
+const ASSUMED_DEADLINE = new Date("2026-10-08T12:00:00+09:00");
+const BEFORE_ASSUMED_DEADLINE = new Date(
+  ASSUMED_DEADLINE.getTime() - 60 * 60 * 1000,
+); // 仮の締切の1時間前（保存できる時刻）
+const AFTER_ASSUMED_DEADLINE = new Date(
+  ASSUMED_DEADLINE.getTime() + 60 * 60 * 1000,
+); // 仮の締切の1時間後（保存から30日以内・結果タブを開く時刻）
+
 const BASE_CONDITIONS = {
   b1_class: "A1",
   gap_band: "0.21-0.40",
@@ -970,7 +983,7 @@ test.describe("FR-5 端末内保存", () => {
               type: "boat1",
               input: { outcome: "win" },
               savedAt,
-              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12" },
+              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12", layerKey: "test-layer-key" },
               result: {
                 n: 5,
                 count: 2,
@@ -1021,7 +1034,7 @@ test.describe("FR-5 端末内保存", () => {
               type: "boat1",
               input: { outcome: "win" },
               savedAt: recentSavedAt,
-              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12" },
+              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12", layerKey: "test-layer-key" },
               result: {
                 n: 5,
                 count: 2,
@@ -1035,7 +1048,7 @@ test.describe("FR-5 端末内保存", () => {
               type: "payout",
               input: { band: "high" },
               savedAt: expiredSavedAt,
-              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12" },
+              snapshot: { runId: "run-xyz", poolCutoff: "2026-10-12", layerKey: "test-layer-key" },
               result: {
                 n: 5,
                 count: 1,
@@ -1090,48 +1103,88 @@ test.describe("FR-5 端末内保存", () => {
     ).toBeVisible();
   });
 
-  test("[spec FR-4] 保存時と今の run_id が異なると、同じ条件の過去レースが変わった旨の注記が出る", async ({
+  test("[spec FR-4] layer の run_id だけが変わっても（行・n_total・n_returned・pool_cutoff は同じ）変わった旨の注記は出ない", async ({
     page,
   }) => {
-    await mockLayer(
-      page,
-      okBody({
-        rows: GENERIC_ROWS,
-        run_id: "run-now",
-        pool_cutoff: "2026-10-12",
-      }),
+    // snapshot.layerKey は実装（src/utils/pastRate/layer.js）が計算する値で
+    // テストからは算出できないため、localStorage への直接書き込みではなく、
+    // 画面の操作で保存させてから layer の応答を差し替える形にする（FR-5「保存する
+    // とき: ボタンを押して結果を出したとき」）。
+    //
+    // FR-5「締切後は保存しない」の判定は端末の時計で行う（既定値表）ため、確定済みの
+    // FINISHED_RACE_ID でも、クロックを締切の前後に動かせば UI 操作で保存・振り返りの
+    // 両方を再現できる（spec FR-5「時計が遅れている端末では締切後の入力が保存されうる」
+    // を利用）。保存は ASSUMED_DEADLINE の1時間前、結果タブを開くのは1時間後にする
+    // （savedAt から30日以内なので FR-5 の30日パージには掛からない）
+    const layerBefore = okBody({
+      rows: GENERIC_ROWS,
+      run_id: "run-before",
+      pool_cutoff: "2026-10-12",
+    });
+    await mockLayer(page, layerBefore);
+    await page.context().clock.setFixedTime(BEFORE_ASSUMED_DEADLINE);
+    await openAiPredictionTab(page, FINISHED_RACE_ID);
+    await pickOrder134(page);
+    await judgeButton(page).click();
+    await expect(page.getByText(/回（/)).toBeVisible();
+    const saved = await page.evaluate(() =>
+      localStorage.getItem("boatai-user:past-rate-check:v1"),
     );
-    await page.goto(`/race/${FINISHED_RACE_ID}`);
-    await page.evaluate(
-      ({ raceId, savedAt }) => {
-        const value = {
-          v: 1,
-          entries: [
-            {
-              raceId,
-              type: "boat1",
-              input: { outcome: "win" },
-              savedAt,
-              snapshot: { runId: "run-old", poolCutoff: "2026-09-01" },
-              result: {
-                n: 5,
-                count: 2,
-                excluded: [],
-                label: null,
-                truncated: false,
-              },
-            },
-          ],
-        };
-        localStorage.setItem(
-          "boatai-user:past-rate-check:v1",
-          JSON.stringify(value),
-        );
-      },
-      { raceId: FINISHED_RACE_ID, savedAt: RECENT_SAVED_AT },
-    );
+    const entries = saved ? JSON.parse(saved).entries : [];
+    expect(entries.some((e) => e.raceId === FINISHED_RACE_ID)).toBe(true);
+
+    // クロックを締切の1時間後へ進め、racecard の段が作り直されたときと同じく
+    // run_id だけが変わった応答に差し替える（行・n_total・n_returned・pool_cutoff は
+    // 同じ。spec FR-4「racecard の段は締切の10〜50分前にも作り直され、そのとき
+    // run_id は変わるが行は同じだった」）
+    await page.context().clock.setFixedTime(AFTER_ASSUMED_DEADLINE);
+    await mockLayer(page, { ...layerBefore, run_id: "run-after" });
     await page.reload();
     await page.getByRole("tab", { name: "結果" }).click();
+    await expect(reviewHeading(page)).toBeVisible();
+    // 保存した Entry が30日パージ等で消えていないことを確かめる（消えていれば
+    // 注記が出ない理由が「layer が同じだから」ではなく「Entry が無いから」になり、
+    // このテストの検証対象がすり替わってしまうため）
+    await expect(
+      page.getByText(/^あなたの予想 3連単 1-3-4（1点） は、/),
+    ).toBeVisible();
+    await expect(
+      page.getByText("入力したときから、同じ条件の過去レースが変わっています"),
+    ).toHaveCount(0);
+  });
+
+  test("[spec FR-4] 保存後に layer の行が1行（先頭・末尾以外）差し替わると、変わった旨の注記が出る", async ({
+    page,
+  }) => {
+    const layerBefore = okBody({
+      rows: GENERIC_ROWS,
+      run_id: "run-same",
+      pool_cutoff: "2026-10-12",
+    });
+    await mockLayer(page, layerBefore);
+    await page.context().clock.setFixedTime(BEFORE_ASSUMED_DEADLINE);
+    await openAiPredictionTab(page, FINISHED_RACE_ID);
+    await pickOrder134(page);
+    await judgeButton(page).click();
+    await expect(page.getByText(/回（/)).toBeVisible();
+
+    await page.context().clock.setFixedTime(AFTER_ASSUMED_DEADLINE);
+    // GENERIC_ROWS（5件）のうち先頭(0)・末尾(4)以外の1行（idx 2）だけ内容を変える。
+    // run_id・n_total・n_returned・pool_cutoff は同じにし、行の中身の違いだけで
+    // layerKey が変わることを確かめる
+    const changedRows = GENERIC_ROWS.map((row, i) =>
+      i === 2 ? { ...row, payout_3tan: row.payout_3tan + 1 } : row,
+    );
+    await mockLayer(page, { ...layerBefore, rows: changedRows });
+    await page.reload();
+    await page.getByRole("tab", { name: "結果" }).click();
+    await expect(reviewHeading(page)).toBeVisible();
+    // 保存した Entry が30日パージ等で消えていないことを確かめる（消えていれば
+    // 注記が「layer の行が変わったから」ではなく「Entry が無いから」出ない
+    // 誤判定を、見た目だけでは区別できないため）
+    await expect(
+      page.getByText(/^あなたの予想 3連単 1-3-4（1点） は、/),
+    ).toBeVisible();
     await expect(
       page.getByText("入力したときから、同じ条件の過去レースが変わっています"),
     ).toBeVisible();

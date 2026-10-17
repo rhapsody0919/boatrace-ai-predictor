@@ -175,6 +175,13 @@ export async function getRaceSt30(raceId) {
     .filter((r) => typeof r.st30 === "number" && Number.isFinite(r.st30));
 }
 
+/**
+ * 同じ条件の過去レース（層の新しい順最大2,000件、BOA-635「過去に発生した割合を見る」）。
+ * status は ok／not_saved／empty_layer／absent（ok 以外は rows なし。docs/design/past-rate-check/spec.md）
+ */
+export const getAnalogyLayer = (raceId) =>
+  getV16(`/api/analogy/layer/${encodeURIComponent(raceId)}`);
+
 /** タブ2（似ている順の上位・層・比べる相手） */
 export const getAnalogySimilar = (raceId, stage) =>
   getV16(
