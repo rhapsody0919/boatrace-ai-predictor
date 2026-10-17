@@ -9,7 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mem: ["1024m", "2048m", "4096m"]
+        mem: ["2048m"]
+        variant: ["old", "new"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +18,9 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: run in container (memory ${{ matrix.mem }})
         run: |
-          docker run --rm --memory=${{ matrix.mem }} --memory-swap=${{ matrix.mem }} -e DEBUG=pw:browser -v "$PWD":/w -w /w node:22 node tmp/diag/sonar.mjs 2>&1 | grep -v "^\s*$" | cut -c1-400 | tail -150
+          OLD=""; [ "${{ matrix.variant }}" = old ] && OLD=1
+          docker run --rm --memory=${{ matrix.mem }} --memory-swap=${{ matrix.mem }} -e OLD=$OLD -v "$PWD":/w -w /w node:22 bash -c 'for i in 1 2 3 4 5 6; do echo "=== run $i"; node tmp/diag/sonar.mjs 2>&1 | grep -E "^(today|shot|done|close)" | cut -c1-400; done'
+
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: "shots-${{ matrix.mem }}", path: tmp/diag/*.png }
+        with: { name: "shots-${{ matrix.variant }}", path: tmp/diag/*.png }

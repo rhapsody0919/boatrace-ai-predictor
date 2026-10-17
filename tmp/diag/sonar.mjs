@@ -1,7 +1,7 @@
 // 一時的な診断（マージしない）: 本番と同じ @sparticuz/chromium で /today と龍神ソナーの図4枚を撮る
 import { execSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
-import { createChromiumHeadless } from "../../api/_lib/snsHeadless.js";
+const { createChromiumHeadless } = await import(process.env.OLD ? "../../api/_lib/snsHeadlessOld.js" : "../../api/_lib/snsHeadless.js");
 import { SCREEN_MARKERS as markers } from "../../scripts/lib/snsScreenMarkers.js";
 process.env.VERCEL = "1";
 const rss = () => {
@@ -24,4 +24,4 @@ for (const id of races) {
   } catch (e) { console.log("shot error", id, e.message.slice(0, 300), rss(), mem()); }
 }
 await h.close().catch((e) => console.log("close error", e.message));
-console.log("done", rss(), mem());
+console.log("done", rss(), mem(), execSync("du -sh /tmp 2>/dev/null; ls /tmp | head -30; ls /proc | grep -c ^[0-9]").toString().replace(/\n/g," | "));
