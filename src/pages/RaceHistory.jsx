@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { isInCautionEnabled } from "../config/featureFlags";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
@@ -90,12 +91,19 @@ function RaceHistory() {
     return { totalRaces, avgTurnHitRate, days: dates.length };
   };
 
+  // BOA-822（機能フラグの側、task 25・screens S-6）: 展開予測の的中率を外し、開催日ごとのレース一覧への入口にする
+  const inCaution = isInCautionEnabled();
+
   return (
     <>
       <title>過去のAI予想データ - 龍神レーダー</title>
       <meta
         name="description"
-        content="龍神レーダーの過去のレース予想データと的中実績を確認できます。日別の展開予測的中率をチェックして、AIの精度を検証してください。"
+        content={
+          inCaution
+            ? "龍神レーダーの過去のレースを開催日ごとに確認できます。日付を選ぶと、その日の会場ごとのレース一覧と結果を見られます。"
+            : "龍神レーダーの過去のレース予想データと的中実績を確認できます。日別の展開予測的中率をチェックして、AIの精度を検証してください。"
+        }
       />
       <link rel="canonical" href="https://www.boat-ai.jp/races" />
 
@@ -108,7 +116,9 @@ function RaceHistory() {
           <header className="page-header">
             <h1>📅 過去の予想データ</h1>
             <p className="page-description">
-              過去のレース予想と展開予測の的中実績を日付別に確認できます。
+              {inCaution
+                ? "過去のレースを開催日ごとに確認できます。日付を選ぶと、その日のレース一覧と結果を見られます。"
+                : "過去のレース予想と展開予測の的中実績を日付別に確認できます。"}
             </p>
           </header>
 
@@ -149,7 +159,7 @@ function RaceHistory() {
                           </div>
                           <div className="month-summary">
                             {summary.days}日分
-                            {summary.avgTurnHitRate != null
+                            {!inCaution && summary.avgTurnHitRate != null
                               ? ` | 展開予測的中率 ${summary.avgTurnHitRate}%`
                               : ""}
                           </div>
@@ -173,23 +183,24 @@ function RaceHistory() {
                                   </span>
                                 </div>
 
-                                {dateInfo.turnHitRate != null ? (
-                                  <div className="date-card-turn-stat">
-                                    <span className="date-card-turn-stat-label">
-                                      🌊 展開予測的中率
-                                    </span>
-                                    <span className="date-card-turn-stat-value">
-                                      {dateInfo.turnHitRate}%
-                                    </span>
-                                    <span className="date-card-turn-stat-count">
-                                      （{dateInfo.turnRaces}レース）
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div className="date-card-turn-stat date-card-turn-stat-empty">
-                                    この日のデータはまだありません
-                                  </div>
-                                )}
+                                {!inCaution &&
+                                  (dateInfo.turnHitRate != null ? (
+                                    <div className="date-card-turn-stat">
+                                      <span className="date-card-turn-stat-label">
+                                        🌊 展開予測的中率
+                                      </span>
+                                      <span className="date-card-turn-stat-value">
+                                        {dateInfo.turnHitRate}%
+                                      </span>
+                                      <span className="date-card-turn-stat-count">
+                                        （{dateInfo.turnRaces}レース）
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div className="date-card-turn-stat date-card-turn-stat-empty">
+                                      この日のデータはまだありません
+                                    </div>
+                                  ))}
 
                                 <div className="date-card-footer">
                                   <span className="view-detail">
