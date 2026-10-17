@@ -264,6 +264,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatExhibitionSt, formatPercent, formatDate, formatDateLocalized ほか5件 |
 | `src/utils/homeAiIntroFaq.js` | トップの「よくある質問」（HomeAiIntro）の問い・答えと FAQPage の JSON-LD を組む純粋な関数。 | buildFaqItems, toFaqPageLd, isAssistShown |
 | `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれを超えたら「溢れている」とみなす（px）。「›」を出す、右に余白を足す、 | hscrollFadeWidth, horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor ほか3件 |
+| `src/utils/inCautionAccuracy.js` | /accuracy のイン崩れ注意度の段ごとの実績（BOA-822 task 24、screens S-5、plan §6）の表示用の値（純関数）。 | inCautionAccuracyView, MIN_RATE_N, pct1 |
 | `src/utils/inCautionLevel.js` | BOA-822 イン崩れ注意度の段・帯の判定（生成 scripts/lib/inCaution.js と画面で同じ関数を使う）。 | pctOf, levelOf, rateCents, bandOf, bandRange ほか4件 |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate, seriesDayByDate, meetDaysFromRows ほか1件 |
 | `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, meetDaysOf, meetPageState, officialAsOfDate, pickMeetAnchor ほか5件 |
@@ -350,4 +351,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 315 ファイル / export 1763 件。
+対象 316 ファイル / export 1766 件。
