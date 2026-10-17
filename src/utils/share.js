@@ -270,7 +270,7 @@ const shareLabel = (race) => {
 /**
  * 発走前の共有文のイン崩れ注意度の版（BOA-822、機能フラグの側。2026-10-17 オーナー決定の案A）。
  * 画面（AI予想タブ）に展開予測・本命・推奨が出ないので、注意度の割合と段だけを書く。当たりを約束する言葉は書かない
- * @param {{venue?: string, raceNo?: number|string, date?: string, isCancelled?: boolean, inCaution?: {pct?: number, level?: string}|null}} race
+ * @param {{venue?: string, raceNo?: number|string, date?: string, isCancelled?: boolean, inCaution?: {pct?: number, level?: string, n?: number}|null}} race
  * @param {(key: string, options?: object) => string} t
  */
 export const generateInCautionShareText = (race, t) => {
@@ -283,6 +283,9 @@ export const generateInCautionShareText = (race, t) => {
     ...label,
     pct: ic.pct,
     level: t(`inCaution.level.${ic.level}`),
+    // 件数（spec「件数を添える」）と免責（カードと同じ文。段の言葉は免責の併記が前提、#1610 wording-editor P1）
+    n: Number.isFinite(ic.n) ? ic.n.toLocaleString() : "—",
+    disclaimer: t("inCaution.disclaimer"),
   });
 };
 

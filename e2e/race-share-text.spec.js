@@ -325,14 +325,18 @@ test.describe("レース詳細のSNSシェアの GA4 イベント", () => {
 // BOA-822（機能フラグの側、?caution=1。2026-10-17 オーナー決定の案A）: 発走前は注意度の文面。本命・推奨・展開予測は書かない
 test.describe("レース詳細のSNSシェア文面（イン崩れ注意度、?caution=1）", () => {
   for (const [lang, head, level] of [
-    ["ja", "イン崩れ注意度 65%（崩れやすい）", "1号艇が1着を逃した割合"],
+    [
+      "ja",
+      "イン崩れ注意度 65%（崩れやすい）",
+      "過去レース34,842件で、1号艇が1着を逃した割合",
+    ],
     [
       "en",
       "Lane-1 upset caution level 65% (Upset-prone)",
-      "Boat 1 failed to win",
+      "Share of 34,842 past races",
     ],
-    ["ko", "1코스 이변 주의도 65%(이변 주의)", "1번 보트가 1착을 놓친 비율"],
-    ["zh-TW", "1號位失守注意度 65%（容易爆冷）", "1號艇未拿下第1名的比例"],
+    ["ko", "1코스 이변 주의도 65%(이변 주의)", "과거 레이스 34,842건에서"],
+    ["zh-TW", "1號位失守注意度 65%（容易爆冷）", "全國過去比賽34,842場中"],
   ]) {
     test(`${lang}: 注意度の割合と段、本命・推奨なし、「AI予想」のタグなし`, async ({
       page,
@@ -346,6 +350,10 @@ test.describe("レース詳細のSNSシェア文面（イン崩れ注意度、?c
       expect(text).toContain(head);
       expect(text).toContain(level);
       expect(text).not.toMatch(/本命|推奨|展開予測|Top pick/);
+      // 免責はカードと同じ文（inCaution.disclaimer、#1610 wording-editor P1）
+      expect(text).toMatch(
+        /保証するものではありません|does not guarantee|보장하지 않습니다|不保證/,
+      );
       expect(hashtags).not.toContain("AI予想");
     });
   }
