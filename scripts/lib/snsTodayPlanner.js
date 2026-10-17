@@ -215,6 +215,8 @@ export async function runTodayPlan(
     signImage,
     notify = async () => {},
     nowMs = Date.now,
+    // 確認用に、送る時刻を過ぎた日の下書きを1回だけ作る日付（scrape_job_state.cursor.today_rebuild。オーナーが本番 SQL で入れる）
+    reviewDate = null,
   },
 ) {
   const live = ctx.mode === "live";
@@ -227,7 +229,9 @@ export async function runTodayPlan(
   });
   if (now < new Date(when.plan_from))
     return done({ outcome: "skipped", reason: "outside_window" });
-  if (now >= new Date(when.veto_until)) {
+  // 確認用の作り直し（送る時刻を過ぎていても作る。期限は過ぎているので承認・送信はできない）
+  const review = reviewDate === date && now >= new Date(when.veto_until);
+  if (now >= new Date(when.veto_until) && !review) {
     // 送る時刻を過ぎて、その日の下書きが無い（作れずに朝が終わった）。cron がその日1回だけ Slack に知らせる
     const { draft } = await store.todayState(date);
     return done(
@@ -441,11 +445,13 @@ export async function runTodayPlan(
   );
   // 承認を外したのは、item があった（＝前に Slack で知らせた）ときだけ
   const rebuilt = Boolean(existing.draft && existing.item);
-  const head = rebuilt
-    ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
-    : state === "manual"
-      ? "今日の投稿の下書きができた。7:45 までに個別承認の画面で承認すると、7:45 に送る"
-      : "今日の投稿の下書きに禁止表現があり、止めた";
+  const head = review
+    ? "確認用に今日の下書きを作り直した（送る時刻を過ぎているので、承認・送信はできない）"
+    : rebuilt
+      ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
+      : state === "manual"
+        ? "今日の投稿の下書きができた。7:45 までに個別承認の画面で承認すると、7:45 に送る"
+        : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
       `SNS /today（${date}）: ${head}\n${caption}${images
@@ -458,6 +464,7 @@ export async function runTodayPlan(
   }
   return done({
     outcome: rebuilt ? "rebuilt" : state,
+    ...(review ? { review: true } : {}),
     item_id: item.id,
     draft_id: draft.id,
     revision,

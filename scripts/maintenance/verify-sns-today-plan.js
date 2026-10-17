@@ -357,6 +357,7 @@ async function plan({
   saved = [],
   raceDb = raceDbOf(),
   nowMs,
+  reviewDate,
 } = {}) {
   return runTodayPlan(
     { mode, now: () => now },
@@ -376,6 +377,7 @@ async function plan({
       signImage: async (path) => `https://signed/${path}`,
       notify: async (text) => notes.push(text),
       ...(nowMs ? { nowMs } : {}),
+      ...(reviewDate ? { reviewDate } : {}),
     },
   );
 }
@@ -1095,4 +1097,27 @@ test("撮影は開始から120秒を過ぎたら新しく撮らない（関数�
   await plan({ now: at("07:05"), headless: slow, nowMs: () => ms });
   const [draft] = await all("SELECT * FROM sns_drafts");
   assert.equal(draft.source_data.image_paths.length, 2);
+});
+
+test("確認用の作り直し（cursor.today_rebuild）: 送る時刻を過ぎても、その日の下書きと図を1回作る。承認はできない。別の日付なら作らない", async () => {
+  const notes = [];
+  const other = await plan({ now: at("09:30"), reviewDate: "2037-10-16" });
+  assert.equal(other.report.items[0].outcome, "missed");
+  const result = await plan({ now: at("09:30"), reviewDate: DATE, notes });
+  const item = result.report.items[0];
+  assert.deepEqual(
+    [item.outcome, item.review, item.written],
+    ["manual", true, true],
+  );
+  const [draft] = await all("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.image_paths.length, 4);
+  assert.match(
+    notes[0],
+    /確認用に今日の下書きを作り直した（送る時刻を過ぎているので、承認・送信はできない）/,
+  );
+  // 期限（8:15）を過ぎているので、承認の条件で止まる（送られない）
+  assert.ok(
+    sendHolds(draft).includes("期限失効") ||
+      Date.now() < Date.parse(draft.source_data.deadline_queue.expires_at),
+  );
 });

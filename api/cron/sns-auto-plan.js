@@ -76,6 +76,7 @@ export default createScrapeCronHandler({
             bundleStore.saveFile(path, { mime: "image/png", bytes }),
           signImage: (path) => signStoragePath(path, 6 * 3600),
           notify,
+          reviewDate: ctx.state?.cursor?.today_rebuild ?? null,
         });
       } catch (error) {
         today = {
@@ -132,7 +133,14 @@ export default createScrapeCronHandler({
         },
         body: { items: [...today.report.items, ...race.body.items] },
         // /today の各回の結果をその日の分だけ残す（7:45 を過ぎても朝の経過を読めるように）
-        cursor: { ...(ctx.state?.cursor ?? {}), today: todayLog },
+        cursor: {
+          ...(ctx.state?.cursor ?? {}),
+          today: todayLog,
+          // 確認用の作り直しは1回だけ。下書きを作れたら消す（作れなければ残して次の5分でやり直す）
+          ...(todayItem?.review && todayItem.written
+            ? { today_rebuild: null }
+            : {}),
+        },
       };
     } finally {
       // 閉じるのに失敗しても、計画の結果は消さない
