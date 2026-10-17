@@ -12,6 +12,7 @@ import {
   useNavigationType,
 } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { isInCautionEnabled } from "../config/featureFlags";
 import Header from "../components/Header";
 import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
@@ -353,6 +354,13 @@ function VenueRaceListPage() {
             </div>
           ) : (
             <section className="race-list-section">
+              {/* BOA-822（機能フラグの側）: 札の割合が何か（全国の勝率差の帯）を一覧の上に1行。会場の「この会場の特徴」と
+                  並ぶので、当地の割合と読み違えない（#1602 ファン評価1周目 指摘1） */}
+              {isInCautionEnabled() && (
+                <p className="venue-race-list__in-caution-note">
+                  {t("inCaution.listNote")}
+                </p>
+              )}
               <div className="race-grid" ref={gridRef}>
                 {venueRaces.map((race, index) => [
                   showCardsInGrid && index === cardsBeforeIndex && (
