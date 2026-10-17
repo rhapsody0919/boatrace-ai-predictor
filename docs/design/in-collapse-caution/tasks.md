@@ -68,7 +68,7 @@
 
 ## PR-5 /accuracy の実績（plan §6）
 
-- [ ] **29. `in_caution_bands.py` に実績の集計を足す**: 公開前の検証（表だけで作る。full のとき・無いとき・`def` が違うときだけ）、公開後（`launchDate` 以降、同じ `def` の unified の行の `level` と完全レースの1号艇の1着の有無）。`accuracy_cache.in_caution_accuracy` に upsert。pytest に再現テスト
+- [x] **29. `in_caution_bands.py` に実績の集計を足す**: 公開前の検証（表だけで作る。full のとき・無いとき・`def` が違うときだけ）、公開後（`launchDate` 以降、同じ `def` の unified の行の `level` と完全レースの1号艇の1着の有無）。`accuracy_cache.in_caution_accuracy` に upsert。pytest に再現テスト
 - [ ] **30. 確認**: 公開前の検証の段ごとの率・件数が、ラウンドで分けた率で出した値 21,030・27.2%／32,178・43.4%／22,087・65.7%（design-reviewer が races.pkl で再現）と合うか。round4 の L（ラウンドで分けない、26.7／42.6／65.5%）との差も PR に書く。`sparse_cell` のレースを除くので件数は少し減る。`data-accuracy-verifier`
 
 ## PR-6 /today・SNS 企画（plan §5・§7 の 6）
