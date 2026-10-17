@@ -18,6 +18,7 @@ import { fileURLToPath } from "node:url";
 import { aiCopyPageUrl, buildAiCopyText } from "../../src/utils/aiCopyText.js";
 import {
   AI_COPY_PROMPT_TYPES,
+  aiCopyFollowUpKeys,
   getAiCopyPromptOptions,
   getAiCopyPromptText,
 } from "../../src/utils/aiCopyPrompts.js";
@@ -354,6 +355,29 @@ if (
   )
 )
   failures.push("[ja] promptInCautionTrifecta に展開予測の言葉がある");
+
+{
+  // ファン評価3周目: 展開を聞くの締めの文と「貼ったあとの質問の例」も展開予測に触れない（フラグの側）
+  const ja = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "src/locales/ja/common.json"), "utf8"),
+  );
+  const t = makeT(ja);
+  const turn = getAiCopyPromptText(t, AI_COPY_PROMPT_TYPES.TURN, {
+    inCautionEnabled: true,
+  });
+  const follow = aiCopyFollowUpKeys(true).map((k) => t(k));
+  check(
+    "[ja] フラグの側の「展開を聞く」の文と質問の例に「展開予測」が無い",
+    !/展開予測/.test(turn) && follow.every((f) => !/展開予測/.test(f)),
+    [turn, ...follow].join(" / "),
+  );
+  check(
+    "[ja] フラグの外は今のまま（展開を聞くは展開予測の文、質問の例は followUp1）",
+    getAiCopyPromptText(t, AI_COPY_PROMPT_TYPES.TURN) ===
+      ja.aiCopy.promptTurn &&
+      aiCopyFollowUpKeys(false)[0] === "aiCopy.followUp1",
+  );
+}
 
 if (failures.length > 0) {
   console.error(`❌ verify-ai-copy-text: ${failures.length}件失敗`);

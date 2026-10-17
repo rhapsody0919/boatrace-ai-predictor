@@ -83,11 +83,13 @@ export function getAiCopyPromptText(
   promptType,
   { inCautionEnabled = false } = {},
 ) {
-  if (
-    inCautionEnabled &&
-    promptType === AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA
-  )
-    return t("aiCopy.promptInCautionTrifecta");
+  if (inCautionEnabled) {
+    // 展開予測の節をコピーに入れないので、展開予測に触れない文にする（ファン評価3周目）
+    if (promptType === AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA)
+      return t("aiCopy.promptInCautionTrifecta");
+    if (promptType === AI_COPY_PROMPT_TYPES.TURN)
+      return t("aiCopy.promptTurnInCaution");
+  }
   const entry =
     PROMPT_KEY_MAP[promptType] ?? PROMPT_KEY_MAP[AI_COPY_PROMPT_TYPES.WIN];
   return t(entry.promptKey);
@@ -98,4 +100,16 @@ export function getAiCopyPromptLabel(t, promptType) {
   const entry =
     PROMPT_KEY_MAP[promptType] ?? PROMPT_KEY_MAP[AI_COPY_PROMPT_TYPES.WIN];
   return t(entry.labelKey);
+}
+
+/**
+ * 「貼ったあとの質問の例」のキー。inCautionEnabled（BOA-822 の機能フラグ）が true なら、展開予測に触れない例にする
+ * @param {boolean} inCautionEnabled
+ */
+export function aiCopyFollowUpKeys(inCautionEnabled = false) {
+  return [
+    inCautionEnabled ? "aiCopy.followUp1InCaution" : "aiCopy.followUp1",
+    "aiCopy.followUp2",
+    "aiCopy.followUp3",
+  ];
 }
