@@ -1,0 +1,23 @@
+name: diag-sns-chromium
+on:
+  push:
+    branches: [diag/sns-chromium-crash]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mem: ["1024m", "2048m", "4096m"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci --ignore-scripts
+      - name: run in container (memory ${{ matrix.mem }})
+        run: |
+          docker run --rm --memory=${{ matrix.mem }} --memory-swap=${{ matrix.mem }} -e DEBUG=pw:browser -v "$PWD":/w -w /w node:22 node tmp/diag/sonar.mjs 2>&1 | grep -v "^\s*$" | cut -c1-400 | tail -150
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "shots-${{ matrix.mem }}", path: tmp/diag/*.png }
