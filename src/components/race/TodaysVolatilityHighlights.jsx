@@ -24,6 +24,20 @@ import { getRaceStatus, RACE_STATUS } from "../../utils/raceStatus";
 import { pickVolatilityHighlights } from "../../utils/volatilityHighlights";
 import { isInCautionEnabled } from "../../config/featureFlags";
 import InCautionBadge from "./InCautionBadge";
+import { trackEvent } from "../../utils/analytics";
+import { useVisibleOnce } from "../../hooks/useVisibleOnce";
+import {
+  cautionClickEvent,
+  cautionVisibleEvent,
+} from "../../utils/cautionEvents";
+
+/** ホームの注意度の欄から送る（BOA-822 task 27、measurement.md の home_highlight） */
+const sendHomeCaution = (input) => {
+  const ev = input.target
+    ? cautionClickEvent({ surface: "home_highlight", ...input })
+    : cautionVisibleEvent({ surface: "home_highlight" });
+  if (ev) trackEvent(ev.name, ev.params);
+};
 import "./TodaysVolatilityHighlights.css";
 
 const HIGHLIGHT_COUNT = 5;
@@ -92,7 +106,7 @@ function flattenRaces(venuesData, nowHHMM) {
 
 // 列が空でも見出しと「該当なし」を出す。列ごと消すと、崩れ注意のレースが無いのか読み込めていないのかが
 // 分からず、1440px では残った列が全幅に伸びた（PR #1248 ファン評価2周目）
-function HighlightList({ title, races, emptyText, t }) {
+function HighlightList({ title, races, emptyText, t, onRaceClick = null }) {
   return (
     <div className="volatility-highlights__column">
       <h3 className="volatility-highlights__column-title">{title}</h3>
@@ -102,7 +116,7 @@ function HighlightList({ title, races, emptyText, t }) {
         <ul className="volatility-highlights__list">
           {races.map((race) => (
             <li key={race.raceId}>
-              <RaceLink race={race} t={t} />
+              <RaceLink race={race} t={t} onRaceClick={onRaceClick} />
             </li>
           ))}
         </ul>
@@ -111,12 +125,13 @@ function HighlightList({ title, races, emptyText, t }) {
   );
 }
 
-function RaceLink({ race, t }) {
+function RaceLink({ race, t, onRaceClick = null }) {
   const localize = useLocalizedPath();
   return (
     <Link
       to={localize(`/race/${race.raceId}`)}
       className="volatility-highlights__race-link"
+      onClick={onRaceClick ? () => onRaceClick(race) : undefined}
     >
       <div className="volatility-highlights__race-main">
         <span translate="no">
@@ -231,10 +246,24 @@ function InCautionHighlights({ venuesData, nowHHMM }) {
     HIGHLIGHT_COUNT,
     "pct",
   );
+  // 欄が画面に入ったらページごとに1回（race_id・段なし）。行を押したらそのレースの段つき（BOA-822 task 27）
+  const visibleRef = useVisibleOnce(
+    poolSize > 0 ? "home_highlight" : null,
+    () => sendHomeCaution({}),
+  );
+  const onRaceClick = (race) =>
+    sendHomeCaution({
+      target: "race",
+      raceId: race.raceId,
+      inCaution: { level: race.level },
+    });
   if (poolSize === 0) return null;
   const emptyKey = allClosed ? "Closed" : "Open";
   return (
-    <section className="volatility-highlights volatility-highlights--in-caution">
+    <section
+      className="volatility-highlights volatility-highlights--in-caution"
+      ref={visibleRef}
+    >
       <h2 className="volatility-highlights__title">
         {t("inCaution.home.title")}
       </h2>
@@ -252,26 +281,33 @@ function InCautionHighlights({ venuesData, nowHHMM }) {
           races={highRaces}
           emptyText={t(`inCaution.home.highEmpty${emptyKey}`)}
           t={t}
+          onRaceClick={onRaceClick}
         />
         <HighlightList
           title={t("inCaution.home.lowTitle")}
           races={lowRaces}
           emptyText={t(`inCaution.home.lowEmpty${emptyKey}`)}
           t={t}
+          onRaceClick={onRaceClick}
         />
       </div>
-      <AccuracyLink label={t("inCaution.home.accuracyLink")} />
+      <AccuracyLink
+        label={t("inCaution.home.accuracyLink")}
+        onClick={() => sendHomeCaution({ target: "accuracy" })}
+      />
     </section>
   );
 }
 
 // BOA-248: イン崩れ指数を根拠にレースを選んだユーザーが、その指数自体の
 // 実測精度をすぐ確認できるよう、ハイライト直後に導線を置く
-function AccuracyLink({ label }) {
+function AccuracyLink({ label, onClick }) {
   const localize = useLocalizedPath();
   return (
     <p className="volatility-highlights__accuracy-link">
-      <Link to={localize("/accuracy")}>{label}</Link>
+      <Link to={localize("/accuracy")} onClick={onClick}>
+        {label}
+      </Link>
     </p>
   );
 }

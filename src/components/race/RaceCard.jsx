@@ -28,6 +28,8 @@ import RaceCardDataTable from "./RaceCardDataTable";
 import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
 import InCautionBadge from "./InCautionBadge";
 import { isInCautionEnabled } from "../../config/featureFlags";
+import { trackEvent } from "../../utils/analytics";
+import { cautionClickEvent } from "../../utils/cautionEvents";
 
 function RaceCard({ race, raceHref, nowHHMM = null }) {
   const { t } = useTranslation();
@@ -213,7 +215,24 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
       )}
       <RaceCardDataTable raceId={race.id} players={racePrediction?.players} />
       {/* 遷移先の URL を持つリンクにする。button の onClick だと検索エンジンがレース詳細へのリンクを辿れない（SEO 点検 F3） */}
-      <Link className="predict-btn" to={raceHref}>
+      <Link
+        className="predict-btn"
+        to={raceHref}
+        onClick={
+          inCaution
+            ? () => {
+                // 注意度の札のあるカードからレースへ（BOA-822 task 27、Q4 の帯別件数）
+                const ev = cautionClickEvent({
+                  surface: "race_list",
+                  target: "race",
+                  raceId: race.id,
+                  inCaution,
+                });
+                if (ev) trackEvent(ev.name, ev.params);
+              }
+            : undefined
+        }
+      >
         {t("raceCard.view")}
       </Link>
     </div>

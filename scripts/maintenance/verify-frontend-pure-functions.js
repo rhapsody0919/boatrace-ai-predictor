@@ -2099,6 +2099,30 @@ function suiteCautionEvents(m, check) {
     "insufficient",
   );
   check(
+    "cautionEvents: ホーム・一覧から押したレースは race_id・段つき、/accuracy への導線は付けない。一覧の visible はページごと",
+    [
+      m.cautionClickEvent({
+        surface: "home_highlight",
+        target: "race",
+        raceId: rid,
+        inCaution: { level: "high" },
+      }).params,
+      m.cautionClickEvent({ surface: "home_highlight", target: "accuracy" })
+        .params,
+      m.cautionVisibleEvent({ surface: "race_list", raceId: rid }).params,
+    ],
+    [
+      {
+        caution_surface: "home_highlight",
+        race_id: rid,
+        caution_band: "high",
+        caution_target: "race",
+      },
+      { caution_surface: "home_highlight", caution_target: "accuracy" },
+      { caution_surface: "race_list" },
+    ],
+  );
+  check(
     "cautionEvents: ホーム・/accuracy は race_id・段・置き場所なし",
     m.cautionVisibleEvent({ surface: "accuracy" }),
     { name: "caution_visible", params: { caution_surface: "accuracy" } },
@@ -2114,7 +2138,7 @@ function suiteCautionEvents(m, check) {
       }).params,
       m.cautionClickEvent({ surface: "race_detail", target: "x", raceId: rid }),
       m.cautionClickEvent({ surface: "nowhere", target: "race" }),
-      m.cautionVisibleEvent({ surface: "race_list", raceId: null }),
+      m.cautionClickEvent({ surface: "home_highlight", target: "race" }),
     ],
     [
       {

@@ -19,8 +19,11 @@ export const CAUTION_TARGETS = Object.freeze([
   "race",
 ]);
 
-/** レースごとの面（race_id・段を付ける）。ほかはページごとに1回で race_id・段なし */
-const RACE_SURFACES = new Set(["race_detail", "race_list", "assist_rough"]);
+/**
+ * visible をレースごとに送る面（race_id・段を付ける）。ほかの面（ホーム・会場の一覧・/today・/accuracy）は
+ * 欄が画面に入ったときにページごとに1回で race_id・段なし（measurement.md）
+ */
+const RACE_VISIBLE_SURFACES = new Set(["race_detail", "assist_rough"]);
 
 /**
  * 段のキー。保存した level をそのまま使う（画面で閾値をかけ直さない）。値が無い（出していない）レースは insufficient
@@ -34,10 +37,13 @@ export function cautionBandOf(inCaution) {
     : "insufficient";
 }
 
-function baseParams({ surface, raceId, inCaution }) {
+/**
+ * @param {boolean} withRace race_id・段を付けるか。付けるのに race_id が無ければ送らない
+ */
+function baseParams({ surface, raceId, inCaution }, withRace) {
   if (!CAUTION_SURFACES.includes(surface)) return null;
   const params = { caution_surface: surface };
-  if (RACE_SURFACES.has(surface)) {
+  if (withRace) {
     if (!raceId) return null;
     params.race_id = raceId;
     params.caution_band = cautionBandOf(inCaution);
@@ -53,18 +59,23 @@ function baseParams({ surface, raceId, inCaution }) {
  * @returns {{name: "caution_visible", params: Record<string, string>} | null} 送らないときは null
  */
 export function cautionVisibleEvent(input) {
-  const params = baseParams(input);
+  const params = baseParams(input, RACE_VISIBLE_SURFACES.has(input.surface));
   return params ? { name: "caution_visible", params } : null;
 }
 
 /**
  * 注意度の表示から次へ移ったとき
  * @param {{surface: string, target: string, raceId?: string|null, inCaution?: object|null}} input
+ *   行き先 race と、race_detail・assist_rough からの click は raceId が要る
  * @returns {{name: "caution_click", params: Record<string, string>} | null}
  */
 export function cautionClickEvent(input) {
   if (!CAUTION_TARGETS.includes(input.target)) return null;
-  const params = baseParams(input);
+  // レースへ移ったとき（行き先 race）と、レース単位の面からの click は、押したレースの race_id・段を付ける
+  // （Q4: ホーム・一覧・/today からの click の帯別件数）。/accuracy への導線など、レースの無い click は付けない
+  const withRace =
+    input.target === "race" || RACE_VISIBLE_SURFACES.has(input.surface);
+  const params = baseParams(input, withRace);
   return params
     ? {
         name: "caution_click",

@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import InCautionBadge from "./InCautionBadge";
@@ -11,6 +11,7 @@ import {
 } from "../../utils/inCautionLevel";
 import { supabaseDataService } from "../../services/supabaseDataService";
 import { trackEvent } from "../../utils/analytics";
+import { useVisibleOnce } from "../../hooks/useVisibleOnce";
 import {
   cautionClickEvent,
   cautionVisibleEvent,
@@ -51,34 +52,6 @@ function useBoat1Absent(raceId) {
   return state.raceId === raceId && state.absent;
 }
 
-/** caution_visible を送ったレース（タブの切り替えで同じレースを何度も数えない。BOA-822 task 27） */
-const visibleRaces = new Set();
-
-/** 注意度（値が無い空の表示も含む）が画面に入ったら、レースごとに1回 caution_visible を送る */
-function useCautionVisible(raceId, inCaution) {
-  const ref = useRef(null);
-  const band = inCaution?.level ?? null;
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !raceId || visibleRaces.has(raceId)) return undefined;
-    if (typeof IntersectionObserver === "undefined") return undefined;
-    const io = new IntersectionObserver((entries) => {
-      if (!entries.some((e) => e.isIntersecting)) return;
-      io.disconnect();
-      visibleRaces.add(raceId);
-      const ev = cautionVisibleEvent({
-        surface: "race_detail",
-        raceId,
-        inCaution: band ? { level: band } : null,
-      });
-      if (ev) trackEvent(ev.name, ev.params);
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [raceId, band]);
-  return ref;
-}
-
 /**
  * イン崩れ注意度のカード（BOA-822、screens S-1、承認モック mock/1-ai-tab-375.png）。AI予想タブの先頭に置く。
  * 値（inCaution）は朝の生成が保存した値をそのまま出す（段・%を画面でかけ直さない）。
@@ -97,7 +70,18 @@ export default function InCautionCard({
   const titleId = useId();
   const boat1Absent = useBoat1Absent(inCaution ? raceId : null);
   const shown = inCaution && !boat1Absent ? inCaution : null;
-  const visibleRef = useCautionVisible(raceId, shown);
+  // 注意度（値が無い空の表示も）が画面に入ったら、レースごとに1回 caution_visible（BOA-822 task 27）
+  const visibleRef = useVisibleOnce(
+    raceId ? `race_detail|${raceId}` : null,
+    () => {
+      const ev = cautionVisibleEvent({
+        surface: "race_detail",
+        raceId,
+        inCaution: shown,
+      });
+      if (ev) trackEvent(ev.name, ev.params);
+    },
+  );
   /** 注意度から次へ（ソナー・思考アシスト・/accuracy）。押した時点の段で送る */
   const sendClick = (target) => {
     const ev = cautionClickEvent({
