@@ -30,7 +30,7 @@ import {
 } from "../_lib/snsHubHelpers.js";
 import {
   createTodayStore,
-  nextTodayLog,
+  finishTodayLog,
   runTodayPlan,
 } from "../../scripts/lib/snsTodayPlanner.js";
 import { createTodayDigestSource } from "../_lib/snsTodayDigest.js";
@@ -93,6 +93,25 @@ export default createScrapeCronHandler({
           },
         };
       }
+      const todayItem = today.report.items.find((i) => i.kind === "digest");
+      const { log: todayLog, notice } = finishTodayLog(
+        ctx.state?.cursor?.today,
+        todayItem,
+        ctx.now(),
+      );
+      // その日の下書きを作れずに送る時刻を過ぎたら、理由つきで1回だけ Slack に知らせる（監視は 7:00 前を見ず、
+      // 関数の時間切れは何も記録されないため、黙って終わる経路があった。2026-10-17）
+      if (ctx.mode === "live" && notice) {
+        try {
+          await notify(notice);
+          todayLog.missed_notified = true;
+        } catch (error) {
+          today.report.alerts.push({
+            key: "today_missed",
+            text: `SNS /today の「下書きを作れなかった」の通知に失敗: ${error.message}`,
+          });
+        }
+      }
       const race = await runSnsAutoPlan(ctx, {
         store: createAutoPlanStore({
           url: SUPABASE_URL,
@@ -113,14 +132,7 @@ export default createScrapeCronHandler({
         },
         body: { items: [...today.report.items, ...race.body.items] },
         // /today の各回の結果をその日の分だけ残す（7:45 を過ぎても朝の経過を読めるように）
-        cursor: {
-          ...(ctx.state?.cursor ?? {}),
-          today: nextTodayLog(
-            ctx.state?.cursor?.today,
-            today.report.items.find((i) => i.kind === "digest"),
-            ctx.now(),
-          ),
-        },
+        cursor: { ...(ctx.state?.cursor ?? {}), today: todayLog },
       };
     } finally {
       // 閉じるのに失敗しても、計画の結果は消さない

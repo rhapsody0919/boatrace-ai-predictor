@@ -356,6 +356,7 @@ async function plan({
   notes = [],
   saved = [],
   raceDb = raceDbOf(),
+  nowMs,
 } = {}) {
   return runTodayPlan(
     { mode, now: () => now },
@@ -374,6 +375,7 @@ async function plan({
       saveImage: async (path, bytes) => saved.push({ path, bytes }),
       signImage: async (path) => `https://signed/${path}`,
       notify: async (text) => notes.push(text),
+      ...(nowMs ? { nowMs } : {}),
     },
   );
 }
@@ -587,12 +589,17 @@ test("同じ一覧でもう一度走らせても何も書かない。一覧が�
   );
 });
 
-test("5:30 より前・7:45 以降・一覧が未公開は何もしない。shadow は撮らず書かない", async () => {
-  for (const now of [at("05:29"), at("07:45")])
-    assert.equal(
-      (await plan({ now })).report.items[0].reason,
-      "outside_window",
-    );
+test("5:30 より前・一覧が未公開は何もしない。7:45 以降に下書きが無ければ missed。shadow は撮らず書かない", async () => {
+  assert.equal(
+    (await plan({ now: at("05:29") })).report.items[0].reason,
+    "outside_window",
+  );
+  assert.deepEqual(
+    (({ outcome, reason }) => ({ outcome, reason }))(
+      (await plan({ now: at("07:45") })).report.items[0],
+    ),
+    { outcome: "missed", reason: "no_draft_by_send_time" },
+  );
   assert.equal(
     (await plan({ digest: { day: { generated_at: null }, rows: [] } })).report
       .items[0].reason,
@@ -1019,4 +1026,73 @@ test("各回の結果をその日の分だけ cursor に残す（7:45 を過ぎ�
     );
   assert.equal(many.events.length, 30);
   assert.equal(many.events.at(-1).reason, "34");
+});
+
+test("下書きを作れずに 7:45 を過ぎたら、理由つきで Slack に1回だけ知らせる文を出す。下書きがあれば出さない（2026-10-17 黙って終わった件）", async () => {
+  const { finishTodayLog, nextTodayLog } =
+    await import("../lib/snsTodayPlanner.js");
+  // 朝は図がそろわずやり直し続け、7:45 を過ぎた
+  let log = nextTodayLog(
+    null,
+    {
+      outcome: "error",
+      reason:
+        "sonar_not_ready（2037-10-17-04-07: screenshot_component_missing）",
+    },
+    at("06:55"),
+  );
+  const late = (await plan({ now: at("07:50") })).report.items[0];
+  assert.equal(late.outcome, "missed");
+  const first = finishTodayLog(log, late, at("07:50"));
+  assert.match(
+    first.notice,
+    /SNS \/today（2037-10-17）: 送る時刻（7:45）までに下書きを作れなかった。今日は送らない/,
+  );
+  assert.match(
+    first.notice,
+    /最後の結果（06:55）: error sonar_not_ready（2037-10-17-04-07: screenshot_component_missing）（朝の記録 1件）/,
+  );
+  // 知らせた後（missed_notified を保存）は、その日はもう出さない。次の日は改めて出す
+  first.log.missed_notified = true;
+  const again = finishTodayLog(first.log, late, at("08:00"));
+  assert.equal(again.notice, null);
+  assert.equal(again.log.missed_notified, true);
+  const nextDay = finishTodayLog(
+    again.log,
+    late,
+    new Date(at("07:50").getTime() + 86400000),
+  );
+  assert.match(nextDay.notice, /朝の実行が一度も最後まで終わっていない/);
+  // 朝の記録が無い（関数の時間切れで何も残らない）日も、その旨を出す
+  assert.match(
+    finishTodayLog(null, late, at("07:50")).notice,
+    /関数の時間切れなど/,
+  );
+  // 下書きがあれば missed にならず、何も出さない
+  await plan({ now: at("06:00") });
+  const ok = (await plan({ now: at("07:50") })).report.items[0];
+  assert.equal(ok.reason, "outside_window");
+  assert.equal(finishTodayLog(null, ok, at("07:50")).notice, null);
+});
+
+test("撮影は開始から120秒を過ぎたら新しく撮らない（関数の時間切れで何も残らないのを避ける）", async () => {
+  let ms = 0;
+  const headless = shooter();
+  const slow = {
+    ...headless,
+    screenshot: async (r) => {
+      ms += 70_000;
+      return headless.screenshot(r);
+    },
+  };
+  await assert.rejects(
+    plan({ now: at("06:30"), headless: slow, nowMs: () => ms }),
+    /sonar_not_ready（2037-10-17-04-03: time_budget \/ 2037-10-17-04-05: time_budget）/,
+  );
+  assert.equal(headless.calls.length, 2);
+  // 7:00 を過ぎていれば、撮れた2枚で作る
+  ms = 0;
+  await plan({ now: at("07:05"), headless: slow, nowMs: () => ms });
+  const [draft] = await all("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.image_paths.length, 2);
 });
