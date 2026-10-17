@@ -42,6 +42,7 @@ function RaceAiPredictionTab({
   raceId,
   isCancelled = false,
   onOpenSonar = null,
+  onOpenSonarSimilar = null,
 }) {
   const { t } = useTranslation();
 
@@ -66,7 +67,7 @@ function RaceAiPredictionTab({
           players={prediction?.allPlayers ?? []}
           result={prediction?.result ?? null}
           raceId={raceId}
-          onOpenSonar={onOpenSonar}
+          onOpenSonar={onOpenSonarSimilar}
         />
         {venueCode && venueName && (
           <OutcomePatternPreview

@@ -190,9 +190,11 @@
   font-weight: 700;
 }
 
+/* ラベルと数字を離しすぎない（1024・1440px で約900px・540px 離れて行を追えなかった。ファン評価1周目） */
 .in-caution-card-reason dl {
   display: grid;
   gap: var(--spacing-1);
+  max-width: 420px;
   margin: 0;
 }
 
@@ -262,6 +264,8 @@
   align-items: center;
   min-height: 44px;
   font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--brand-accent-primary);
 }
 
 /* 1200px 以上: カードの中を左右に（左 数字・棒・範囲／右 理由・導線）。導線は横に2つ、免責と段ごとの実績は同じ行 */

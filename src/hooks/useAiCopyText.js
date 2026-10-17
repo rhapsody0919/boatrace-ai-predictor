@@ -20,6 +20,7 @@ import {
 } from "../components/race/raceIndicators";
 import { formatExhibitionSt } from "../utils/formatters";
 import { getAiCopyPromptText } from "../utils/aiCopyPrompts";
+import { isInCautionEnabled } from "../config/featureFlags";
 import { aiCopyPageUrl, buildAiCopyText } from "../utils/aiCopyText";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { meetPrevRunState, meetPrevRunWhenParams } from "../utils/prevResult";
@@ -353,6 +354,7 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
       ? t(`venues.${venueCode}`, race?.venue ?? "")
       : (race?.venue ?? "");
 
+    const inCautionEnabled = isInCautionEnabled();
     return buildAiCopyText({
       t,
       heading: t("aiCopy.markdownHeading", {
@@ -377,8 +379,9 @@ export function useAiCopyText({ raceId, prediction, race, venueCode }) {
         { rows: flyingRows, currentMeet: currentMeetFlying },
         raceId,
       ),
-      turnPrediction: prediction?.turnPrediction,
-      prompt: getAiCopyPromptText(t, promptType),
+      // BOA-822: 機能フラグの側では展開予測を画面から外すので、コピーにも入れない
+      turnPrediction: inCautionEnabled ? null : prediction?.turnPrediction,
+      prompt: getAiCopyPromptText(t, promptType, { inCautionEnabled }),
       pageUrl: aiCopyPageUrl(raceId, lang),
       now: new Date(),
       exhibitionPublished: isExhibitionPublished(analysis),

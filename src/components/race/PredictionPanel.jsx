@@ -471,7 +471,9 @@ function PredictionPanel({
           入るのは4つのままで、可視数が1つも増えないのに、統合後のタブが縦に
           長くなる（タブを跨ぐのは1タップだが、縦スクロールは何回もスワイプする）。 */}
       {/* タブ列のすぐ上の思考アシストの入口（BOA-832） */}
-      {venueCode && analysisRaceId && <AssistEntryRow raceId={analysisRaceId} />}
+      {venueCode && analysisRaceId && (
+        <AssistEntryRow raceId={analysisRaceId} />
+      )}
       {venueCode && analysisRaceId && (
         <RaceTabs
           key={analysisRaceId}
@@ -553,6 +555,19 @@ function PredictionPanel({
                             id: SONAR_RACE_TAB,
                             seq: (r?.seq ?? 0) + 1,
                           }))
+                      : null
+                  }
+                  // イン崩れ注意度のカード（BOA-822）の「類似レース400件で見ると？」は類似レースの副タブで開く。
+                  // ソナーの節は開いたときに ?sonar= を1回だけ読む（非表示のタブはアンマウントされる）
+                  onOpenSonarSimilar={
+                    isAnalogyFinderEnabled()
+                      ? () => {
+                          setRaceParam(RACE_SONAR_PARAM, "similar");
+                          setTabRequest((r) => ({
+                            id: SONAR_RACE_TAB,
+                            seq: (r?.seq ?? 0) + 1,
+                          }));
+                        }
                       : null
                   }
                 />

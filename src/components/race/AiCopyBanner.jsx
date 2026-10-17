@@ -10,7 +10,11 @@ import { useAiCopyText } from "../../hooks/useAiCopyText";
 const PING_RINGS = [0, 0.7];
 const PING_REPEAT = 2;
 
-const FOLLOW_UP_KEYS = ["aiCopy.followUp1", "aiCopy.followUp2", "aiCopy.followUp3"];
+const FOLLOW_UP_KEYS = [
+  "aiCopy.followUp1",
+  "aiCopy.followUp2",
+  "aiCopy.followUp3",
+];
 
 export default function AiCopyBanner({
   raceId,
@@ -127,6 +131,7 @@ export default function AiCopyBanner({
         value={promptType}
         onChange={onPromptTypeChange}
         volatilityPercentile={prediction?.volatilityPercentile}
+        inCautionLevel={prediction?.inCaution?.level ?? null}
       />
 
       <button

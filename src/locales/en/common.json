@@ -2462,6 +2462,7 @@
     "turnPredictionColThird": "Likely 3rd",
     "turnPredictionDistributionLabel": "Overall move tendency",
     "promptVolatilityTrifecta": "The above is entry data for a race flagged as high \"upset risk\" (Boat 1 may be less likely than usual to hold the lead), plus a first-mark move forecast (win probability by winning move, with likely 2nd/3rd place boats). Using this forecast data, judge which boat is actually most likely to finish 1st and by which move, and suggest 3 combinations to target for a Trifecta bet, with your reasoning. If Boat 1's lead-off probability is still high, include it as a candidate rather than ruling it out.",
+    "promptInCautionTrifecta": "The above is race-card data for a race in the “upset-prone” tier of the Lane-1 upset caution level (in past races nationwide with about the same win-rate gap, Boat 1 failed to win 55% of the time or more). Using the race-card data, reason about how the race could unfold if a boat other than Boat 1 wins, and suggest three trifecta combinations to target. Boat 1 can still win, so keep it in the candidates if the data supports it.",
     "previewToggleLabel": "Show the full text that will be copied",
     "promptSelectorTurn": "Race flow",
     "promptSelectorDataOnly": "Data only",
@@ -3672,7 +3673,7 @@
     "empty": "No Lane-1 upset caution level for this race",
     "result": "Result: Boat 1 finished {{rank}}",
     "resultWinner": " (winner: Boat {{boat}})",
-    "noteFinal": "In semifinals and finals, the win-rate gap makes less difference",
+    "noteFinal": "The count is past semifinals and finals only; the dotted “All venues” line is all races. In semifinals and finals, the win-rate gap makes less difference",
     "noteAbsent": "Scratch ({{boats}} boats racing)",
     "noteLowSample": "Few races ({{n}})"
   }

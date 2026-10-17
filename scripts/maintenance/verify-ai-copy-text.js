@@ -16,6 +16,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { aiCopyPageUrl, buildAiCopyText } from "../../src/utils/aiCopyText.js";
+import {
+  AI_COPY_PROMPT_TYPES,
+  getAiCopyPromptOptions,
+  getAiCopyPromptText,
+} from "../../src/utils/aiCopyPrompts.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
@@ -303,6 +308,52 @@ for (const lang of LANGS) {
     );
   }
 }
+
+// BOA-822（機能フラグの側）: 「イン崩れ狙い」はイン崩れ注意度の段が崩れやすい（high）ときだけ出し、質問の文は
+// 展開予測に触れない（ファン評価1周目: 堅めのレースで「イン崩れ注意度が高い」と書いた・展開予測の確率が残った）
+for (const lang of LANGS) {
+  const dict = JSON.parse(
+    fs.readFileSync(
+      path.join(ROOT, "src", "locales", lang, "common.json"),
+      "utf8",
+    ),
+  );
+  const t = makeT(dict);
+  const types = (opts) => getAiCopyPromptOptions(t, opts).map((o) => o.type);
+  const V = AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA;
+  check(
+    `[${lang}] フラグの側は段で出し分ける（崩れやすいだけ。旧指数が高くても堅めなら出さない）`,
+    types({ inCautionEnabled: true, inCautionLevel: "high" }).includes(V) &&
+      !types({
+        inCautionEnabled: true,
+        inCautionLevel: "low",
+        volatilityPercentile: 0.95,
+      }).includes(V) &&
+      !types({ inCautionEnabled: true, inCautionLevel: "mid" }).includes(V) &&
+      !types({ inCautionEnabled: true, inCautionLevel: null }).includes(V),
+  );
+  check(
+    `[${lang}] フラグの外は今のまま（旧指数で出し分ける）`,
+    types({ volatilityPercentile: 0.95 }).includes(V) &&
+      !types({ volatilityPercentile: 0.1, inCautionLevel: "high" }).includes(V),
+  );
+  const prompt = getAiCopyPromptText(t, V, { inCautionEnabled: true });
+  check(
+    `[${lang}] フラグの側のイン崩れ狙いの質問は新しい文で、展開予測に触れない`,
+    prompt === dict.aiCopy.promptInCautionTrifecta &&
+      prompt !== dict.aiCopy.promptVolatilityTrifecta &&
+      !prompt.includes(dict.aiCopy.turnPredictionHeading ?? "\u0000"),
+    prompt,
+  );
+}
+if (
+  /展開予測|決まり手別/.test(
+    JSON.parse(
+      fs.readFileSync(path.join(ROOT, "src/locales/ja/common.json"), "utf8"),
+    ).aiCopy.promptInCautionTrifecta,
+  )
+)
+  failures.push("[ja] promptInCautionTrifecta に展開予測の言葉がある");
 
 if (failures.length > 0) {
   console.error(`❌ verify-ai-copy-text: ${failures.length}件失敗`);
