@@ -55,7 +55,7 @@
   - 2026-10-17: `src/components/race/InCautionCard.jsx`・`InCautionBadge.jsx`、`RaceAiPredictionTab` のフラグ true の側。「類似レース◯件」はソナーの既定の件数（`analogyAggregate.js` の `DEFAULT_STEP` = 400）。カードの大きい棒は段の範囲の帯と両端のラベルが付くので、`BaselineBar` ではなくカードの中で描いた。1号艇の後からの欠場は `getRaceExhibitionBasics` で見る。過去の日付の `/api/predictions/{date}` は CDN に1日残るので、157 の適用前（〜2026-10-17）の日付は翌日まで inCaution が無い。受け入れ E2E の S-1 は補助関数が描画を待たずに `isVisible()` を見ていて、ライブのデータではカードの前に判定してスキップ・取り違えになる（報告済み）
 - [x] **21. `RaceCard`** の札と割合、展開予測の的中/外れのバッジを外す
 - [x] **22. ホーム `TodaysVolatilityHighlights`**（`volatilityHighlights.js` の入力を `{pct, level, closed}`）。行全体を押せる、44px
-- [ ] **23. 思考アシスト `RoughCard`・`RoughSheet`**: 1着のバー = `100 − pct`、行ごとの範囲の名前と件数、裏返しの説明の1行（ja のみ）
+- [x] **23. 思考アシスト `RoughCard`・`RoughSheet`**: 1着のバー = `100 − pct`、行ごとの範囲の名前と件数、裏返しの説明の1行（ja のみ）
   - ファン評価（#1595 1周目 P2）: カードの「軸から考える」の先の思考アシストは、今は1号艇の1着が 36%（全国・級の並び）・30.5%（会場）で、カードの 100−71=29% と食い違う。このタスクで「1着のバー = 100 − pct」にそろえる。公開の前に必ず入れる
 - [ ] **24. `/accuracy`** の作り替え（`InCautionAccuracyChart`、公開後／公開前の検証の切り替え、Wilson の区間は純関数、30件未満は件数だけ）と `/winning-technique?tab=volatility` の中身の置き換え（タブのラベルは新しいキーをフラグで切り替える。`analysisPage.tabs.volatility` は上書きしない）。`getInCautionAccuracy()`（`accuracy_cache.in_caution_accuracy`）
   - 段ごとの実績の点線のラベルも、カードと同じく「全レース」にそろえる（2026-10-17 オーナー決定。受け入れ E2E の S-5 は「全国」の文字で探しているので合わせて直す）
