@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         mem: ["2048m"]
-        variant: ["old", "new"]
+        variant: ["new"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -19,7 +19,7 @@ jobs:
       - name: run in container (memory ${{ matrix.mem }})
         run: |
           OLD=""; [ "${{ matrix.variant }}" = old ] && OLD=1
-          docker run --rm --memory=${{ matrix.mem }} --memory-swap=${{ matrix.mem }} -e OLD=$OLD -v "$PWD":/w -w /w node:22 bash -c 'for i in 1 2 3 4 5 6; do echo "=== run $i"; node tmp/diag/sonar.mjs 2>&1 | grep -E "^(today|shot|done|close)" | cut -c1-400; done'
+          docker run --rm --memory=${{ matrix.mem }} --memory-swap=${{ matrix.mem }} -e OLD=$OLD -v "$PWD":/w -w /w node:22 bash -c 'for i in 1 2; do echo "=== run $i"; node tmp/diag/sonar.mjs 2>&1 | grep -E "^(today|shot|done|close)" | cut -c1-400; done'
 
       - uses: actions/upload-artifact@v4
         if: always()

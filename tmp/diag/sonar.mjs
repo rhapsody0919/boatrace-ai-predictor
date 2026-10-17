@@ -18,7 +18,7 @@ try {
 } catch (e) { console.log("today error", e.message.split("\n")[0]); }
 for (const id of races) {
   try {
-    const s = await h.screenshot({ url: `https://www.boat-ai.jp/race/${id}?tab=sonar`, requiredSelectors: markers["race-sonar"], viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf, element: ".af-hep .af-dark", label: id });
+    const s = await h.screenshot({ url: `https://www.boat-ai.jp/race/${id}?tab=sonar`, requiredSelectors: ['[data-testid="analogy-fact-card"]'], viewport: { width: 390, height: 844 }, deviceScaleFactor: dsf, element: ".af-hep .af-dark", label: id });
     writeFileSync(`tmp/diag/${id}.png`, s.png);
     console.log("shot", id, s.png.byteLength, rss(), mem(), Date.now() - t0);
   } catch (e) { console.log("shot error", id, e.message.slice(0, 300), rss(), mem()); }
