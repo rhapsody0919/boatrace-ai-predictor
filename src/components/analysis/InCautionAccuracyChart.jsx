@@ -64,6 +64,7 @@ function LevelRow({ row, baseRate, t }) {
             })
           : t("accuracy.inCaution.count", {
               n: row.n.toLocaleString(),
+              rate: pct1(row.rate),
               share: Math.round(row.share * 100),
               lo: pct1(row.lo),
               hi: pct1(row.hi),
@@ -189,6 +190,14 @@ function InCautionAccuracyChart() {
                   ))}
                 </ul>
                 <p className="ica-note">{t("accuracy.inCaution.legend")}</p>
+                {/* 段の件数の合計が全体と合わない理由（#1606 ファン評価2周目 P2、1周目 P3 の再発） */}
+                {section.sparse?.n > 0 && (
+                  <p className="ica-note" data-testid="ica-sparse">
+                    {t("accuracy.inCaution.sparseNote", {
+                      n: section.sparse.n.toLocaleString(),
+                    })}
+                  </p>
+                )}
                 {tab === "post" && view.rows.some((r) => r.rate === null) && (
                   <p className="ica-note">
                     {t("accuracy.inCaution.fewNote", {

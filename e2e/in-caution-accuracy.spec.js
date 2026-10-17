@@ -73,7 +73,13 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
     const rows = await rowTexts(page);
     expect(rows[0]).toContain("崩れやすい（注意度55%以上）");
     expect(rows[0]).toContain("65.7%");
-    expect(rows[0]).toContain("22,071レース（全体の29%）・ぶれ幅 65.1〜66.3%");
+    expect(rows[0]).toContain(
+      "22,071レース中 65.7%（全体の29%のレース）・ぶれ幅 65.1〜66.3%",
+    );
+    // 段に入らなかったレースの説明（2周目 P2）
+    await expect(page.getByTestId("ica-sparse")).toContainText(
+      "注意度を出さなかった28レース",
+    );
     expect(rows[1]).toContain("中くらい（注意度35〜55%）");
     expect(rows[2]).toContain("堅め（注意度35%未満）");
     expect(rows[2]).toContain("27.2%");
