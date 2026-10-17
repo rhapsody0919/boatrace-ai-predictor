@@ -151,7 +151,8 @@ test.describe("イン崩れ注意度のカード（BOA-822、?caution=1）", () 
     const main = await card.locator(".in-caution-card-main").boundingBox();
     const side = await card.locator(".in-caution-card-side").boundingBox();
     expect(side.x).toBeGreaterThan(main.x + main.width - 1);
-    expect(Math.abs(side.y - main.y)).toBeLessThan(8);
+    // 同じ行に並ぶ（上端の差は数 px。CI と手元でフォントが違うので、行の高さに比べて小さいことだけを見る）
+    expect(Math.abs(side.y - main.y)).toBeLessThan(main.height / 4);
     const cardBox = await card.boundingBox();
     const pattern = await page
       .locator(".in-caution-tab > :nth-child(2)")
