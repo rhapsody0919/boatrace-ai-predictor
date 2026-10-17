@@ -71,17 +71,19 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
     await expect(chart).toContainText("75,295レース");
     await expect(chart).toContainText("全レース 45.4%");
     const rows = await rowTexts(page);
-    expect(rows[0]).toContain("崩れやすい（55%以上）");
+    expect(rows[0]).toContain("崩れやすい（注意度55%以上）");
     expect(rows[0]).toContain("65.7%");
     expect(rows[0]).toContain("22,071レース（全体の29%）・ぶれ幅 65.1〜66.3%");
-    expect(rows[1]).toContain("中くらい（35〜55%）");
-    expect(rows[2]).toContain("堅め（35%未満）");
+    expect(rows[1]).toContain("中くらい（注意度35〜55%）");
+    expect(rows[2]).toContain("堅め（注意度35%未満）");
     expect(rows[2]).toContain("27.2%");
     // 旧の展開予測の的中率は出さない
     await expect(page.locator(".turn-accuracy-hero")).toHaveCount(0);
     await expect(
       page.getByText("旧モデルの月別成績アーカイブを見る"),
     ).toBeVisible();
+    // 段の%は注意度の範囲、注意度が出る場所を書く（#1606 ファン評価1周目 P2）
+    await expect(chart).toContainText("レース詳細の「AI予想」タブ");
   });
 
   test("公開直後: 既定は公開後、30件未満の段は件数だけ。公開前の検証に切り替えられる", async ({
@@ -117,7 +119,7 @@ test.describe("イン崩れ注意度の段ごとの実績（BOA-822、?caution=1
       timeout: 20000,
     });
     await expect(page.locator(".analysis-tab-btn.active")).toHaveText(
-      "段ごとの実績",
+      "🌪️ イン崩れ注意度の実績",
     );
     await expect(page.getByText("イン崩れ指数の実績について")).toHaveCount(0);
 

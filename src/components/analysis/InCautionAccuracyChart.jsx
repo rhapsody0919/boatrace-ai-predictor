@@ -205,6 +205,8 @@ function InCautionAccuracyChart() {
             </h3>
             <p>{t("accuracy.inCaution.about1")}</p>
             <p>{t("accuracy.inCaution.about2")}</p>
+            {/* 注意度が画面のどこに出るか（#1606 ファン評価1周目 P2） */}
+            <p>{t("accuracy.inCaution.where")}</p>
             <p className="ica-note">{t("inCaution.disclaimer")}</p>
           </div>
         </>
