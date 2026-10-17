@@ -123,6 +123,11 @@ export default function RoughCard({
           {ASSIST_COPY.roughFlip(100 - ic.pct, ic.pct)}
         </p>
       )}
+      {inCautionMode && ic?.round && (
+        <p className="ta-note" data-testid="rough-in-caution-round">
+          {ASSIST_COPY.roughRoundBaseNote(ic.round)}
+        </p>
+      )}
       {rough && counts && (
         <p className="ta-note">
           {ASSIST_COPY.classNote(1, classes[0], counts)}

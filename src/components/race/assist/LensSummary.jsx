@@ -121,8 +121,9 @@ function AxisSummary({ m }) {
             )}
           </p>
         )}
+        {/* 上の枠の1着が注意度の裏返しのときは、違う理由を上の1行に書いたので、畳んだ中は数え方の話だけ（#1604 ファン評価2周目 P2） */}
         {why.length > 0 && (
-          <Fold title={C.whyToggle}>
+          <Fold title={headerInCaution ? C.whyToggleCount : C.whyToggle}>
             <ul className="ta-list">
               {why.includes("venueScope") && !headerInCaution && (
                 <li>{C.whyVenueScope(venue)}</li>

@@ -75,6 +75,12 @@ test.describe("思考アシストの1着のバー（BOA-822、?caution=1）", ()
     await expect(page.getByTestId("rough-in-caution-flip")).toHaveText(
       "1号艇の1着 59% は、イン崩れ注意度 41%（1着を逃した割合）の裏返し",
     );
+    // 準優勝戦の矢印は全レースとの比べであることを書く（2周目 P2）
+    await expect(page.getByTestId("rough-in-caution-round")).toContainText(
+      "準優勝戦は、勝率差が違っても割合があまり変わらない",
+    );
+    // 軸レンズの畳んだ中は数え方の話だけなので、見出しも合わせる（2周目 P2）
+    await expect(page.getByText("件数が上の枠と違う理由")).toHaveCount(0);
     // 級の並びの絵は万舟の範囲と名前を付ける（同 P2）
     await expect(card.locator(".ta-rough-lineup")).toContainText("万舟の範囲");
     // 軸レンズの「上の枠と違う理由」は集め方の違いを書く（同 P1）
@@ -86,6 +92,10 @@ test.describe("思考アシストの1着のバー（BOA-822、?caution=1）", ()
     await expect(
       page.getByTestId("rough-sheet-in-caution-scope"),
     ).toContainText("勝率差（1号艇と、他の艇で一番高い全国勝率の差）");
+    // シートの文は下の表と食い違わない（2周目 P2: 「下の表の2通りとは別」と書いていた）
+    await expect(
+      page.getByTestId("rough-sheet-in-caution-scope"),
+    ).toContainText("1号艇の1着の1本目は");
     await page.getByRole("button", { name: /集めたレースは/ }).click();
     await expect(page.getByText(/予選も含めると/)).toHaveCount(0);
   });
