@@ -29,6 +29,7 @@ import {
   raceRound,
   roughCard,
   roughState,
+  roughWithInCaution,
   sameClassLabel,
   sameClassScope,
   similarSummary,
@@ -99,6 +100,41 @@ check(
     pct(card.b1.base) === 55 &&
     card.b1.verdict === "unclear",
   JSON.stringify(card.b1),
+);
+
+// BOA-822（FR-4）: 1着のバーはイン崩れ注意度の裏返し。AI予想タブの注意度と足して 100%（丸め直さない）
+// 2026-10-11 戸田4R の値（pct 64.8% → 65、35,181件）。nonWin/n の丸めと pct がずれる .5 の境目も見る
+const icToda = { pct: 65, n: 35181, nonWin: 22797, basePct: 45, lowSample: false };
+const icCard = roughWithInCaution(card, icToda);
+check(
+  "注意度 65% の1着のバーは 35%（和が 100%）、基準は 100 − 45 = 55%、万舟は級の並びのまま",
+  pct(icCard.b1.rate) === 35 &&
+    pct(icCard.b1.base) === 55 &&
+    icCard.b1.verdict === "low" &&
+    icCard.manshu === card.manshu &&
+    icCard.inCaution.n === 35181 &&
+    icCard.inCaution.round === null,
+  JSON.stringify(icCard.b1),
+);
+// nonWin/n = 50.5%（pct は四捨五入で 51）。1着を k/n で丸めると 50 になり、和が 101 になる
+const icHalf = roughWithInCaution(card, { pct: 51, n: 200, nonWin: 101, basePct: 45, lowSample: true });
+check(
+  "pct 51（nonWin 50.5%）の1着は 49%（k/n を丸め直すと 50 で和が 101）。件数少なめは矢印なし",
+  pct(icHalf.b1.rate) === 49 &&
+    icHalf.b1.verdict === null &&
+    icHalf.inCaution.lowSample === true,
+  JSON.stringify(icHalf.b1),
+);
+check(
+  "準優勝戦の注意度はラウンドの名前を持つ（1着の行に「勝率差が同じくらいの準優勝戦」）",
+  roughWithInCaution(card, { ...icToda, round: "junyu" }).inCaution.round ===
+    "準優勝戦",
+);
+check(
+  "注意度が無い（null・pct なし）か rough が無ければ、今の値のまま",
+  roughWithInCaution(card, null) === card &&
+    roughWithInCaution(card, { pct: null, n: 0 }) === card &&
+    roughWithInCaution(null, icToda) === null,
 );
 
 // NCR が30件未満なら NC に戻して few（矢印・言葉なし。D-37）

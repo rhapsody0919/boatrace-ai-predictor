@@ -7,8 +7,51 @@ import { ReliabilityWarning, VolatilityAccuracySection } from "./accuracy";
 import LoadingScreen from "./LoadingScreen";
 import "./AccuracyDashboard.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
+import { isInCautionEnabled } from "../config/featureFlags";
+import InCautionAccuracyChart from "./analysis/InCautionAccuracyChart";
 
-function AccuracyDashboard({ onRefresh, isRefreshing }) {
+const PAGE_TITLE = "成績 | 龍神レーダー";
+const HISTORY_LINK = (
+  <div className="history-link-container">
+    <Link to="/accuracy/history" className="history-link">
+      📅 旧モデルの月別成績アーカイブを見る
+    </Link>
+  </div>
+);
+
+/**
+ * BOA-822（機能フラグの側、task 24・screens S-5）: 展開予測の的中率・会場別の表・旧イン崩れ指数の実績を外し、
+ * イン崩れ注意度の段ごとの実績だけにする。旧3モデルの月別アーカイブへのリンクは残す（plan「URL」）
+ */
+function InCautionAccuracyDashboard() {
+  return (
+    <>
+      <title>{PAGE_TITLE}</title>
+      <meta
+        name="description"
+        content="龍神レーダーのイン崩れ注意度を、段ごとに実際の結果（1号艇が1着を逃した割合）と照らし合わせた実績を公開中。"
+      />
+      <link rel="canonical" href="https://www.boat-ai.jp/accuracy" />
+      <div className="accuracy-dashboard">
+        <div className="dashboard-header">
+          <h2>📊 成績</h2>
+        </div>
+        <InCautionAccuracyChart />
+        {HISTORY_LINK}
+      </div>
+    </>
+  );
+}
+
+function AccuracyDashboard(props) {
+  return isInCautionEnabled() ? (
+    <InCautionAccuracyDashboard />
+  ) : (
+    <LegacyAccuracyDashboard {...props} />
+  );
+}
+
+function LegacyAccuracyDashboard({ onRefresh, isRefreshing }) {
   const [modelAccuracy, setModelAccuracy] = useState(null);
   const [volatilityStats, setVolatilityStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -45,7 +88,7 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
   // メタタグは loading / error 分岐でも出力する（React 19 が <head> にホイスティング）
   const pageMeta = (
     <>
-      <title>成績 | 龍神レーダー</title>
+      <title>{PAGE_TITLE}</title>
       <meta
         name="description"
         content="龍神レーダーのAI予想（展開予測・イン崩れ指数）の実測精度を公開中。過去のレース結果と機械的に照合した実績データです。"
@@ -174,11 +217,7 @@ function AccuracyDashboard({ onRefresh, isRefreshing }) {
           <VolatilityAccuracySection stats={volatilityStats} />
         )}
 
-        <div className="history-link-container">
-          <Link to="/accuracy/history" className="history-link">
-            📅 旧モデルの月別成績アーカイブを見る
-          </Link>
-        </div>
+        {HISTORY_LINK}
 
         <div className="accuracy-info">
           <h4>💡 展開予測の的中率について</h4>
