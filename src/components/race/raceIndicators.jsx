@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
 import { bestOf } from "../../utils/bestOf";
 import { formatExhibitionSt } from "../../utils/formatters";
 import { isUnusedMotor, motorUsageCount } from "../../utils/motorUsage";
-import { TECHNIQUE_NAMES } from "../../utils/turnPrediction";
+import { TECHNIQUE_NAMES } from "../../constants/techniqueNames";
 import {
   meetPrevRunState,
   meetPrevRunWhenParams,

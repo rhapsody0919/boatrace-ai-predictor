@@ -1,0 +1,38 @@
+/* 割合の小さい棒（BaselineBar.jsx）。思考アシストの .ta-minibar から切り出した（BOA-822） */
+.baseline-bar {
+  display: grid;
+  grid-template-columns: 6.5em minmax(0, 1fr) auto;
+  gap: var(--spacing-1-5);
+  align-items: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.baseline-bar-track {
+  position: relative;
+  height: 7px;
+  border-radius: var(--radius-sm);
+  background: var(--border-hairline);
+}
+
+.baseline-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-sm);
+  background: var(--brand-accent-primary);
+}
+
+.baseline-bar-base {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  border-left: 2px dashed var(--text-primary);
+}
+
+.baseline-bar b {
+  color: var(--text-primary);
+}
+
+.baseline-bar-num {
+  font-variant-numeric: tabular-nums;
+}

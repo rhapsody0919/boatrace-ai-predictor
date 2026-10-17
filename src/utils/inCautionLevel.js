@@ -84,3 +84,30 @@ export function roundOf(raceStage) {
   if (key === "final") return "yusho";
   return "other";
 }
+
+/**
+ * 勝率差・帯の数字の書き方。負は全角のマイナス（−）、正は「+」、0 は符号なし（例 −2.12、+3.0、0.0）
+ * @param {number} v
+ * @param {number} digits 小数の桁
+ */
+export function signedText(v, digits) {
+  if (v === 0) return (0).toFixed(digits);
+  return `${v < 0 ? "−" : "+"}${Math.abs(v).toFixed(digits)}`;
+}
+
+/** "2019-04-01" → "2019/4/1"（空なら空） */
+export function slashDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${y}/${m}/${d}`;
+}
+
+/**
+ * 1号艇の着順（result の rank1〜rank6 は「その着の艇番」）。1〜6着に1号艇がいなければ null（欠場・失格など）
+ * @param {object|null} result
+ * @returns {number|null}
+ */
+export function boat1Rank(result) {
+  for (let k = 1; k <= 6; k++) if (result?.[`rank${k}`] === 1) return k;
+  return null;
+}
