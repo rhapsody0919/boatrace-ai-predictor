@@ -151,6 +151,11 @@
       "guards": "ブログ記事メタデータ src/data/blog-posts/{id}.json（BOA-247）の形。id とファイル名の一致・必須項目・本文 .md の存在・featuredRank の有無と重複・blogPosts.js が全件を新しい順で返すこと"
     },
     {
+      "script": "verify-past-rate-count.js",
+      "tier": "ci",
+      "guards": "BOA-635「過去に発生した割合を見る」の純関数（6型の数え方・スリットの強さの段・同時に起きない形・切り詰めと layer の使える条件・定番／レアの線と小分け・端末内保存の30日・上限・締切・壊れた値）と変異検証"
+    },
+    {
       "script": "verify-frontend-pure-functions.js",
       "tier": "ci",
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"

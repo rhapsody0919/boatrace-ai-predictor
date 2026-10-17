@@ -21,18 +21,18 @@
 
 ## T0 準備（分析のみ、画面なし）
 - [x] T0-1 定番／レアの線の検証（2026-10-13、線 (15, 5)。[analysis/label-threshold-result.md](./analysis/label-threshold-result.md)）（spec FR-3 の手順1〜8）。(1) FR-3 の検証方法の節を単独コミットで push し、`second-opinion-reviewer` で方法論を1パス見る、(2) v16 の列がそろう export を `export_pool.js` で作り直す（読み取りだけ）、(3) `scripts/analysis/past-rate-check/label-threshold.py` で実行。結果を `analysis/label-threshold-result.md` に書き、spec FR-3・`label.js` に x・y を書き戻し、`docs/knowledge/stat-findings.md` に1行足す。手順7に当たる型はオーケストレーター経由でユーザーに戻す
-- [ ] T0-1a 判定式の二重実装の検査: 固定データ10件で、Python の判定と `src/utils/pastRate/count.js`（T1-2）の件数が一致することを確かめる小さな検査を同じディレクトリに置く（T1-2 の後に実行）
+- [x] T0-1a 判定式の二重実装の検査: 固定データ10件で、Python の判定と `src/utils/pastRate/count.js`（T1-2）の件数が一致することを確かめる小さな検査を同じディレクトリに置く（T1-2 の後に実行）
 - [x] T0-2 形に添える全国の出現率（1段目・2段目）と2形 AND の件数（2026-10-13、[analysis/slit-pattern-rates.md](./analysis/slit-pattern-rates.md)）
-- [ ] T0-3 本番の値の約束の実測: 数レースの layer ファイルで、(a) `payout_3tan` が本体の `race_results.payout_trio` と一致し `payout_trifecta`（3連複）と一致しないこと（無作為100R）、(b) F・出遅れのあるレースで該当コースの `st_by_course` が null、(c) 不成立のレースが行に無い、(d) 実進入不明の期間で `course_by_boat` が艇番で埋まっていないこと、(e) rank1〜3 に返還艇が入るレースが行に無い（`race_start_timings.finish_mark` と `race_results.refund_boats` を独立の正解として照合）、(f) 同じ run_id なら発走前と発走後で同じ行が返る（D-6）、(g) 応答の gzip 後の大きさ、(h) 層が2,000件を超えるレース（`n_returned < n_total`）の割合、(i) 本番で layer ファイルがある最初の日（`LAYER_FIRST_DATE`）。結果を `analysis/pool-contract-check.md` に残す。違えば BOA-271 側に戻す
+- [x] T0-3（2026-10-16、[analysis/pool-contract-check.md](./analysis/pool-contract-check.md)。9項目合格、LAYER_FIRST_DATE=2026-10-06）本番の値の約束の実測: 数レースの layer ファイルで、(a) `payout_3tan` が本体の `race_results.payout_trio` と一致し `payout_trifecta`（3連複）と一致しないこと（無作為100R）、(b) F・出遅れのあるレースで該当コースの `st_by_course` が null、(c) 不成立のレースが行に無い、(d) 実進入不明の期間で `course_by_boat` が艇番で埋まっていないこと、(e) rank1〜3 に返還艇が入るレースが行に無い（`race_start_timings.finish_mark` と `race_results.refund_boats` を独立の正解として照合）、(f) 同じ run_id なら発走前と発走後で同じ行が返る（D-6）、(g) 応答の gzip 後の大きさ、(h) 層が2,000件を超えるレース（`n_returned < n_total`）の割合、(i) 本番で layer ファイルがある最初の日（`LAYER_FIRST_DATE`）。結果を `analysis/pool-contract-check.md` に残す。違えば BOA-271 側に戻す
 
 ## T1 判定の純粋関数とデータ取得（画面より先）
-- [ ] T1-1 `scripts/maintenance/verify-past-rate-count.js` を先に書き、落ちることを確かめる（固定の行データ20件程度。各形で差が線ちょうどの行（1段目・2段目、0.15/0.10、0.21/0.16 等の浮動小数で割れる組を含む）、`st_by_course`・`course_by_boat` が要素の null（同じコースに2艇で2要素、範囲外のコースでその艇だけ）の行と、守りとして配列ごと null の行、除いた件数の理由の混在、6型の一致件数・分母・除いた件数・着順の点数・流しの内訳・展開の2着の内訳・スリット2形の AND・3形目で最古が外れる・同時に起きない形・自分で作るの判定・配当の境界 1,000／10,000 ちょうど・N=0・`n_returned < n_total` の切り詰めの判定）。`verify-registry.json` に ci で登録
-- [ ] T1-2 `slitForms(stByCourse, level = 1)` に段の引数と `SLIT_LEVELS` を足し（`verify-analogy-facts.js` が通ることを確かめる）、`src/utils/pastRate/count.js`（`countPastRate`・`orderPoints`・`isTruncated`・`incompatibleForms`）と `slitRates.js` を書いて T1-1 を通す。決まり手は `TECHNIQUE_NAMES` で DB の日本語と対応させる
-- [ ] T1-3 `src/utils/pastRate/label.js`（`rateLabel(rate, type, input)`・`subtypeOf`・`thresholdNote`。T0-1 の線と、小分けごとに出すラベル）。境界値（x ちょうどで定番、y ちょうどは無印）と、出さない小分けでラベルと線の文が出ないことを T1-1 に足す
-- [ ] T1-4 `LAYER_FIRST_DATE`（T0-3 で確かめた日）より前のレースでは取得しない。`getAnalogyLayer(raceId)`（`analogyService.js`、`getV16`）と `useAnalogyLayer(raceId, enabled)`（`useAnalogyV16.js`、`useAnalogyResource`）。失敗を state に持つ（`frontend-data-fetch.md` の3）
+- [x] T1-1 `scripts/maintenance/verify-past-rate-count.js` を先に書き、落ちることを確かめる（固定の行データ20件程度。各形で差が線ちょうどの行（1段目・2段目、0.15/0.10、0.21/0.16 等の浮動小数で割れる組を含む）、`st_by_course`・`course_by_boat` が要素の null（同じコースに2艇で2要素、範囲外のコースでその艇だけ）の行と、守りとして配列ごと null の行、除いた件数の理由の混在、6型の一致件数・分母・除いた件数・着順の点数・流しの内訳・展開の2着の内訳・スリット2形の AND・3形目で最古が外れる・同時に起きない形・自分で作るの判定・配当の境界 1,000／10,000 ちょうど・N=0・`n_returned < n_total` の切り詰めの判定）。`verify-registry.json` に ci で登録
+- [x] T1-2 `slitForms(stByCourse, level = 1)` に段の引数と `SLIT_LEVELS` を足し（`verify-analogy-facts.js` が通ることを確かめる）、`src/utils/pastRate/count.js`（`countPastRate`・`orderPoints`・`isTruncated`・`incompatibleForms`）と `slitRates.js` を書いて T1-1 を通す。決まり手は `TECHNIQUE_NAMES` で DB の日本語と対応させる
+- [x] T1-3 `src/utils/pastRate/label.js`（`rateLabel(rate, type, input)`・`subtypeOf`・`thresholdNote`。T0-1 の線と、小分けごとに出すラベル）。境界値（x ちょうどで定番、y ちょうどは無印）と、出さない小分けでラベルと線の文が出ないことを T1-1 に足す
+- [x] T1-4 `LAYER_FIRST_DATE`（T0-3 で確かめた日）より前のレースでは取得しない。`getAnalogyLayer(raceId)`（`analogyService.js`、`getV16`）と `useAnalogyLayer(raceId, enabled)`（`useAnalogyV16.js`、`useAnalogyResource`）。失敗を state に持つ（`frontend-data-fetch.md` の3）
 
 ## T2 端末内保存
-- [ ] T2-1 `src/utils/pastRate/storage.js`（キー `boatai-user:past-rate-check:v1`、1レース×1型で置き換え、入力時刻から30日、上限1,000件、締切以降は保存しない、締切不明は未確定なら保存、壊れた値は捨てて作り直す、形の違う Entry だけ捨てる、書く直前に読み直す、締切以降の Entry は振り返りに出さない、例外は吸収して console）。T1-1 の verify に保存の節を足す（メモリ実装の localStorage を差し込み、`getItem`／`setItem` が例外を投げる場合、`clearCache()` の後も残ること、照合は `snapshot.runId` だけで行うことを含める）
+- [x] T2-1 `src/utils/pastRate/storage.js`（キー `boatai-user:past-rate-check:v1`、1レース×1型で置き換え、入力時刻から30日、上限1,000件、締切以降は保存しない、締切不明は未確定なら保存、壊れた値は捨てて作り直す、形の違う Entry だけ捨てる、書く直前に読み直す、締切以降の Entry は振り返りに出さない、例外は吸収して console）。T1-1 の verify に保存の節を足す（メモリ実装の localStorage を差し込み、`getItem`／`setItem` が例外を投げる場合、`clearCache()` の後も残ること、照合は `snapshot.layerKey`（layer の中身の印）で行い、先頭と末尾の行が同じで中だけ違う layer でも「変わった」になることを含める）
 
 ## T3 入力と結果の部品
 - [ ] T3-1 `BoatToggle`・`PastRate.css`（`prc-` 接頭辞、トークン、ダークモード）
@@ -45,7 +45,7 @@
 
 ## T4 組み込み
 - [ ] T4-1 `PredictionPanel` → `RaceAiPredictionTab`・`RaceResult` に `raceStartTime` を渡す。`RaceAiPredictionTab` の `PredictionBlocks` の後ろに `PastRateSlot`（layer の取得、`ok` 以外・0行・取得中は出さない、取得失敗は `InlineFetchError`）。BOA-822 の PR と並びを合わせる
-- [ ] T4-2 `PastRateReview` を書き、`RaceResult` の払戻表の下に置く（保存した型を型の順に保存した数字とラベルで、無ければ決着の行だけ、決着は `buildResultRows` の着順で1〜3着がそろわなければ決着の行なし、不成立・`ok` 以外・0行では出さない、取得失敗は `InlineFetchError`、`runId` が違えば注記）
+- [ ] T4-2 `PastRateReview` を書き、`RaceResult` の払戻表の下に置く（保存した型を型の順に保存した数字とラベルで、無ければ決着の行だけ、決着は `buildResultRows` の着順で1〜3着がそろわなければ決着の行なし、不成立・`ok` 以外・0行では出さない、取得失敗は `InlineFetchError`、`layerKey`（layer の中身の印）が違えば注記）
 - [ ] T4-3 barrel export（`PastRateChecker`・`PastRateReview`）
 - [ ] T4-4 i18n（`aiPredictionTab.pastRate.*`・`result.pastRate.*`、4言語）。先に `docs/reference/i18n-glossary.md` に「同じ条件の過去レース」「定番」「レア」「艇身」とスリット7形の名前を登録する（`.claude/rules/i18n-new-pages.md`。7形の名前は龍神ソナーのキーがあれば共用）。決まり手は既存キー、層の説明文は `aiPredictionTab.analogy.layer.*`。画面に「競艇」を出さない。「AI がやらないこと」の文言を足さない。新しい文は `wording-editor` を通す
 

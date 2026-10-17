@@ -680,7 +680,9 @@ test.describe("思考アシスト: レンズの要約と深掘り（PR4）", () 
       .first()
       .click();
     await expect(
-      page.getByRole("button", { name: /平均ST（このコース・直近30走）に戻す/ }),
+      page.getByRole("button", {
+        name: /平均ST（このコース・直近30走）に戻す/,
+      }),
     ).toBeVisible();
   });
 
@@ -1937,7 +1939,9 @@ test.describe("思考アシスト: 1号艇を軸にしたときの2着・3着（
     await expect(row(2)).toContainText("38%");
     // 1号艇を軸にしたときは印が付かない（q_nw 基準。比べる数字は出さない）
     await expect(box).not.toContainText("問わず");
-    await expect(box.locator(".ta-follow-m-up, .ta-follow-m-down")).toHaveCount(0);
+    await expect(box.locator(".ta-follow-m-up, .ta-follow-m-down")).toHaveCount(
+      0,
+    );
     await expect(row(1)).toContainText("軸（1着）");
     // 3着の列は出さない（spec D-48 (3)）
     await expect(box.getByRole("columnheader")).toHaveCount(0);
@@ -1993,7 +1997,8 @@ test.describe("思考アシスト: 買い目を同じタブの中に残す（202
       .first()
       .click();
     await expect(page).toHaveURL(
-      new RegExp(`/race/${RACE_ID}\\?tab=aiPrediction`),
+      // 龍神ソナーは別のタブ（2026-10-17、以前は ?tab=aiPrediction で AI予想タブに移っていた）
+      new RegExp(`/race/${RACE_ID}\\?tab=sonar`),
     );
     await page.goBack();
     await expect(page).toHaveURL(/\/assist$/);
@@ -2142,9 +2147,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     const ranks = await page
       .locator(".ta-lane")
       .evaluateAll((lanes) =>
-        lanes.map(
-          (l) => l.querySelector(".ta-tag-exh")?.textContent ?? null,
-        ),
+        lanes.map((l) => l.querySelector(".ta-tag-exh")?.textContent ?? null),
       );
     // 展示ST の順位と読まれないよう「展示タイム」と書く（ファン評価 1周目 指摘1）
     expect(ranks).toEqual([
@@ -2190,9 +2193,7 @@ test.describe("思考アシスト: 展開レンズの図と結論（spec D-47、
     });
     await open(page);
     await lensTab(page, "展開").click();
-    await expect(
-      page.locator(".ta-flow-today"),
-    ).toHaveText(
+    await expect(page.locator(".ta-flow-today")).toHaveText(
       "今日の展示: 攻め手の3号艇は展示タイム4位。2コース凹みで攻め手が展示タイム3〜4位のときは4件だけ（少ないので割合は出さない）",
     );
   });
@@ -2278,8 +2279,13 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     ).toBeVisible();
     await expect(page.getByText(/^よく出た3連単:/)).toHaveCount(0);
     // 押すと買い目レンズへ（PR-2 ファン評価 1周目 指摘8）
-    await page.getByRole("button", { name: "よく出た3連単は買い目レンズ ›" }).click();
-    await expect(lensTab(page, "買い目")).toHaveAttribute("aria-selected", "true");
+    await page
+      .getByRole("button", { name: "よく出た3連単は買い目レンズ ›" })
+      .click();
+    await expect(lensTab(page, "買い目")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   test("今日の展示を入れると: 区分ごとの割合、今日の区分に札、全国の値と3〜4位の注記", async ({
@@ -2289,7 +2295,9 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByText("攻め手の3号艇（展示タイム4位）: 展示タイムの順位ごとの1着"),
+      page.getByText(
+        "攻め手の3号艇（展示タイム4位）: 展示タイムの順位ごとの1着",
+      ),
     ).toBeVisible();
     const today = page.locator(".ta-band-today");
     await expect(today).toHaveCount(2);
@@ -2351,14 +2359,21 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     await open(page);
     await lensTab(page, "展開").click();
     await expect(
-      page.getByRole("heading", { name: "オリジナル展示（徳山）: 一周・まわり足の一番" }),
+      page.getByRole("heading", {
+        name: "オリジナル展示（徳山）: 一周・まわり足の一番",
+      }),
     ).toBeVisible();
     await expect(
       page.getByText("1号艇: 一周・まわり足とも6艇で一番"),
     ).toBeVisible();
-    await expect(page.locator(".ta-org-best", { hasText: "直線" })).toHaveCount(0);
+    await expect(page.locator(".ta-org-best", { hasText: "直線" })).toHaveCount(
+      0,
+    );
     await page.getByRole("button", { name: /^秒数は機力レンズ/ }).click();
-    await expect(lensTab(page, "機力")).toHaveAttribute("aria-selected", "true");
+    await expect(lensTab(page, "機力")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
   });
 
   test("形が2つ当てはまるとき（カド一撃・2コース凹み）は選べ、選んだ形で「もし」と今日の展示が変わる", async ({
@@ -2379,7 +2394,9 @@ test.describe("思考アシスト: 展開レンズの中身（spec D-47 PR-2、�
     const d2 = pick.getByRole("button", { name: /^2コース凹み/ });
     await expect(kado).toHaveAttribute("aria-pressed", "true");
     // 押せると分かる1行（PR-2 ファン評価 1周目 指摘7）
-    await expect(page.getByText("当てはまる形が2つ。押すと下が変わる")).toBeVisible();
+    await expect(
+      page.getByText("当てはまる形が2つ。押すと下が変わる"),
+    ).toBeVisible();
     await expect(kado).toContainText("25%（158/634）");
     await expect(page.getByText("もしカド一撃になったら")).toBeVisible();
     await expect(page.locator(".ta-flow-today")).toHaveText(
@@ -2427,7 +2444,9 @@ test.describe("思考アシスト: 2〜6号艇を軸にしたときの2着（BOA
       has: page.getByRole("heading", { name: "4号艇を軸にしたときの2着" }),
     });
     const mark = (b) =>
-      box4.getByRole("row", { name: new RegExp(`^${b}号艇`) }).locator(".ta-follow-u");
+      box4
+        .getByRole("row", { name: new RegExp(`^${b}号艇`) })
+        .locator(".ta-follow-u");
     await expect(mark(1)).toHaveText("");
     await expect(mark(2)).toHaveText("↓少なめ");
     await expect(mark(3)).toHaveText("↓少なめ");
@@ -2445,7 +2464,9 @@ test.describe("思考アシスト: 2〜6号艇を軸にしたときの2着（BOA
     await expect(page.locator(".ta-sum")).toContainText(
       "3着は軸の艇でほとんど変わらないので出さない。3着以内は図の ○ を見る",
     );
-    const link = page.getByRole("link", { name: /着順の流れを見る（龍神ソナー）/ });
+    const link = page.getByRole("link", {
+      name: /着順の流れを見る（龍神ソナー）/,
+    });
     await expect(link).toContainText("1着に4号艇を選んだ状態で開く");
     // 軸の艇を1着に選んだ状態で開く（BOA-847）
     await expect(link).toHaveAttribute(
