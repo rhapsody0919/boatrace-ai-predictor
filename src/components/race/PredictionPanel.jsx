@@ -193,6 +193,9 @@ function PredictionPanel({
   // ほかのタブの中からタブを切り替える依頼（AI予想タブの「龍神ソナーのタブへ」）。
   // RaceTabs は選択を自分で持つので、seq を増やして同じタブへの依頼も届くようにする
   const [tabRequest, setTabRequest] = useState(null);
+  // イン崩れ注意度のカードから龍神ソナーの類似レースへ（BOA-822）。ソナーの節は ?sonar= を最初の描画で読むが、
+  // URL の更新はタブの切り替えより遅れて届くので、最初に開く副タブは prop で渡す（ファン評価1周目）
+  const [sonarInitialTab, setSonarInitialTab] = useState(null);
   const {
     toast: aiCopyToast,
     showToast: showAiCopyToast,
@@ -520,6 +523,7 @@ function PredictionPanel({
                         raceId={analysisRaceId}
                         players={prediction.allPlayers}
                         onOpenMeetForm={openMeetForm}
+                        initialTab={sonarInitialTab}
                       />
                     ),
                   },
@@ -562,6 +566,7 @@ function PredictionPanel({
                   onOpenSonarSimilar={
                     isAnalogyFinderEnabled()
                       ? () => {
+                          setSonarInitialTab("similar");
                           setRaceParam(RACE_SONAR_PARAM, "similar");
                           setTabRequest((r) => ({
                             id: SONAR_RACE_TAB,
