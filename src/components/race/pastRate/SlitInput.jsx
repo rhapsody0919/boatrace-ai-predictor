@@ -28,7 +28,7 @@ const hidesLevel = (patterns) =>
   patterns.length > 0 && patterns.every((p) => LEVEL_FREE.has(p));
 
 export default function SlitInput({ value, onChange }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   if (value.mode === "custom") {
     // 絵: 凹むは0.06秒遅く、出るは0.04秒早く（モックの見せ方）
@@ -94,7 +94,10 @@ export default function SlitInput({ value, onChange }) {
         {t(`${K}.rateSource`, {
           from: SLIT_RATE_SOURCE.from,
           to: SLIT_RATE_SOURCE.to,
-          races: (SLIT_RATE_SOURCE.races / 10000).toFixed(1),
+          // 「万」で数える言語（ja・zh-TW・ko）は万の単位、en はそのままの件数
+          races: i18n.language?.startsWith("en")
+            ? SLIT_RATE_SOURCE.races.toLocaleString("en-US")
+            : (SLIT_RATE_SOURCE.races / 10000).toFixed(1),
         })}
       </p>
       <div className="prc-forms">

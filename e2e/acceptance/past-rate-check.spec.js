@@ -500,7 +500,7 @@ test.describe("画面の構造・操作要素", () => {
       page.getByRole("button", { name: "堅い（3連単 1,000円未満）" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "中穴（1,000〜10,000円）" }),
+      page.getByRole("button", { name: "中穴（1,000〜10,000円未満）" }),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: "万舟（10,000円以上）" }),

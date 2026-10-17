@@ -17,8 +17,9 @@
   color: var(--text-primary);
 }
 
-.prc-title {
+.prc .prc-title {
   margin: 0;
+  line-height: 1.4;
   font-size: var(--font-size-base);
   font-weight: 700;
   color: var(--prc-mine);
@@ -230,6 +231,10 @@
   gap: 6px;
 }
 
+.prc-result[hidden] {
+  display: none;
+}
+
 .prc-summary,
 .prc-breakdown {
   margin: 0;
@@ -287,7 +292,7 @@
   color: var(--text-primary);
 }
 
-.prc-review-title {
+.prc-review .prc-review-title {
   margin: 0 0 6px;
   font-size: var(--font-size-base);
 }

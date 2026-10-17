@@ -37,3 +37,5 @@ export { default as NigeSimulationCard } from "./NigeSimulationCard";
 export { default as RecentRunsBar } from "./RecentRunsBar";
 export { default as SgNowBanner } from "./SgNowBanner";
 export { default as MeetFormTrendCard } from "./MeetFormTrendCard";
+export { default as PastRateChecker } from "./pastRate/PastRateChecker";
+export { default as PastRateReview } from "./pastRate/PastRateReview";

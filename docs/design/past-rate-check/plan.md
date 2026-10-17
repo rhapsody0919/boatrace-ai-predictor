@@ -57,6 +57,8 @@ flowchart LR
 | `src/components/race/pastRate/PastRateReview.jsx` | 結果タブの振り返り |
 | `src/components/race/pastRate/PastRate.css` | `prc-` 接頭辞のクラス |
 
+実装で決めた置き場所（2026-10-17）: 1号艇・展開・進入・配当の帯の入力は1つのファイル `ChoiceInputs.jsx` にまとめた（それぞれ数十行のため）。表示の文（要約・主文・注記・内訳）は `pastRate/format.js`（結果と振り返りで共用）。layer の取得と「使えるときだけ出す・失敗は InlineFetchError」は `pastRate/PastRateLayerGate.jsx`（AI予想タブと結果タブで共用）。
+
 スリットの絵は龍神ソナーの `SlitShapeIcon`（`src/components/race/analogy/`）をそのまま使う（新しい SVG の部品は作らない）。7形の1段目の例は `SLIT_EXAMPLE`、2段目の例は `analogyScenario.js` に `SLIT_EXAMPLE_L2` を足す（2段目の線を満たす差）。
 
 ```mermaid

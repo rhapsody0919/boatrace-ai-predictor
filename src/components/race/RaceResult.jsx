@@ -16,6 +16,9 @@ import VenueDaySummaryCard from "./VenueDaySummaryCard";
 import RaceStartFormation from "./RaceStartFormation";
 import { startFormationRows } from "./startFormation";
 import InlineFetchError from "../InlineFetchError";
+import PastRateLayerGate from "./pastRate/PastRateLayerGate";
+import PastRateReview from "./pastRate/PastRateReview";
+import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
 import {
   FINISH_MARKS,
   PAYOUT_BET_TYPES,
@@ -404,7 +407,7 @@ function legacyPayoutRows(payouts, outcome) {
   });
 }
 
-function RaceResult({ prediction, raceId }) {
+function RaceResult({ prediction, raceId, raceStartTime = null }) {
   // 会場コードと開催日は raceId から導出する（propsを増やさない）
   const parsedRaceId = parseRaceId(raceId);
   const { t } = useTranslation();
@@ -510,6 +513,12 @@ function RaceResult({ prediction, raceId }) {
     ? players.map((p) => p.number).sort((a, b) => a - b)
     : [1, 2, 3, 4, 5, 6];
   const rows = buildResultRows(result, startTimings, boatsInRace);
+  // 振り返りの決着（BOA-635）: 結果表の着順（返還艇を外したもの）の1〜3着。同着などで1・2・3着が
+  // 1艇ずつそろわなければ決着の行を出さない
+  const podium = [1, 2, 3].map((p) => rows.filter((r) => r.position === p));
+  const decision = podium.every((xs) => xs.length === 1)
+    ? podium.map((xs) => xs[0].boat)
+    : null;
   const noRaceReasonText = isNoRace ? noRaceReason(t, rows) : null;
 
   const startTimingByBoat = new Map(
@@ -762,6 +771,19 @@ function RaceResult({ prediction, raceId }) {
                 </p>
               )}
             </>
+          )}
+          {/* 過去に発生した割合を見る の振り返り（BOA-635 spec FR-4）。不成立のレースでは出さない */}
+          {raceId && !isNoRace && (
+            <PastRateLayerGate raceId={raceId}>
+              {(layer) => (
+                <PastRateReview
+                  layer={layer}
+                  raceId={raceId}
+                  deadline={getDeadlineDate(raceId, raceStartTime)}
+                  decision={decision}
+                />
+              )}
+            </PastRateLayerGate>
           )}
         </div>
         <div className="race-split__side">

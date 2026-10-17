@@ -534,6 +534,7 @@ function PredictionPanel({
                   venueCode={venueCode}
                   venueName={venueName}
                   raceId={analysisRaceId}
+                  raceStartTime={selectedRace?.startTime}
                   raceGrade={
                     prediction?.raceGrade ??
                     selectedRace?.rawData?.raceGrade ??
@@ -649,6 +650,7 @@ function PredictionPanel({
                       <RaceResult
                         prediction={prediction}
                         raceId={analysisRaceId}
+                        raceStartTime={selectedRace?.startTime}
                       />
                     ),
                   },
