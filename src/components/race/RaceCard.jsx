@@ -59,9 +59,11 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
   // BOA-822（機能フラグの側）: 旧指数の札と展開予測の的中/外れをやめ、イン崩れ注意度の段の札と割合にする。
   // 左の色線は崩れやすい・堅めだけ（真ん中の段は札の枠線だけ。承認モック mock/2-lists-375.png）
   const inCautionEnabled = isInCautionEnabled();
-  const inCaution = inCautionEnabled
-    ? (racePrediction?.inCaution ?? null)
-    : null;
+  // 中止確定のレースは段の札・色線を出さない（ホームの上位と同じく外す。PR #1602 レビュー）
+  const inCaution =
+    inCautionEnabled && !isCancelled
+      ? (racePrediction?.inCaution ?? null)
+      : null;
   const inCautionLine =
     inCaution?.level === "high"
       ? "var(--color-warning-dark-text)"

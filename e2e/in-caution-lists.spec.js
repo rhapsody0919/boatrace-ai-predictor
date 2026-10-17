@@ -8,6 +8,7 @@ import { test, expect } from "./fixtures.js";
  *   - ホーム: 見出し「今日のイン崩れ注意度」、崩れやすい順・堅めの順の2列、値は割合と段の札。中くらいはどちらにも入れない。
  *     旧の「/ 100」の物差しは出さない
  *   - 会場のレース一覧: 札は「崩れやすい 65%」「中くらい 43%」「堅め 26%」。展開予測の的中/外れの札は出さない
+ *   - 中止確定のレースは札・左の色線を出さない（ホームの上位からも外す）
  *   - フラグの外は今のまま（旧指数の「/ 100」）
  */
 
@@ -42,7 +43,10 @@ const RACES = [
   { raceNo: 3, inCaution: ic(43, "mid"), percentile: 0.95 },
   { raceNo: 4, inCaution: ic(26, "low"), percentile: 0.9 },
   { raceNo: 5, inCaution: null, percentile: 0.1 },
+  // 中止確定。朝の生成で値は入っているが、札・色線は出さない（PR #1602 レビュー）
+  { raceNo: 6, inCaution: ic(75, "high"), percentile: 0.5, cancelled: true },
 ];
+const cancellationOf = (r) => (r.cancelled ? "confirmed" : null);
 
 function todayResponse() {
   return {
@@ -58,7 +62,7 @@ function todayResponse() {
           date: DATE,
           placeCd: VENUE_CODE,
           raceGrade: null,
-          cancellationStatus: null,
+          cancellationStatus: cancellationOf(r),
           seriesDay: null,
           isFinalDay: null,
           raceTitle: null,
@@ -101,7 +105,7 @@ function predictionsResponse() {
       venue: "戸田",
       raceNumber: r.raceNo,
       startTime: `1${r.raceNo}:00`,
-      cancellationStatus: null,
+      cancellationStatus: cancellationOf(r),
       entries,
       predictions: {
         unified: {
@@ -198,6 +202,19 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
       "solid",
     );
     await expect(page.locator(".race-card", { hasText: "🌪️" })).toHaveCount(0);
+  });
+
+  test("中止確定のレースは札と左の色線を出さない（PR #1602 レビュー）", async ({
+    page,
+  }) => {
+    await setup(page);
+    await page.goto(`/venue/${VENUE_CODE}?caution=1`);
+    const cancelled = page.locator(".race-card", { hasText: "中止" });
+    await expect(cancelled).toHaveCount(1, { timeout: 30000 });
+    await expect(cancelled.locator(".in-caution-badge")).toHaveCount(0);
+    expect(
+      await cancelled.evaluate((e) => getComputedStyle(e).borderLeftWidth),
+    ).not.toBe("4px");
   });
 
   test("フラグの外は今のまま（旧指数の「/ 100」）", async ({ page }) => {

@@ -1965,6 +1965,31 @@ function suiteVolatilityHighlights(m, check) {
     ),
     { high: ["q", "p"], low: ["s", "t"], allClosed: false },
   );
+  // PR #1602 レビュー: pct は整数で同値が多い。同じ値は締切の早い順（入力の順＝会場の順で5本目の境を決めない）
+  const ict = (id, pct, level, startTime) => ({
+    id,
+    pct,
+    level,
+    startTime,
+    closed: false,
+  });
+  check(
+    "volatilityHighlights: 同じ割合のレースは締切の早い順に並べる",
+    ids(
+      m.pickVolatilityHighlights(
+        [
+          ict("u", 75, "high", "16:40"),
+          ict("v", 75, "high", "15:10"),
+          ict("w", 75, "high", null),
+          ict("x", 21, "low", "20:30"),
+          ict("y", 21, "low", "11:05"),
+        ],
+        2,
+        "pct",
+      ),
+    ),
+    { high: ["v", "u"], low: ["y", "x"], allClosed: false },
+  );
   // PR #1248 ファン評価1周目: 夕方の残り数本で、崩れやすさ28〜33の「標準」が「高」の列に入った
   check(
     "volatilityHighlights: 「標準」（31〜69）のレースはどちらの列にも入れない",
@@ -2172,8 +2197,14 @@ const MUTANTS = [
   [
     "volatilityHighlights",
     "並べる値の名前を見ずに percentile で並べる（BOA-822 の pct が並ばない）",
+    ".sort((a, b) => b[key] - a[key] || byStartTime(a, b))",
+    ".sort((a, b) => b.percentile - a.percentile || byStartTime(a, b))",
+  ],
+  [
+    "volatilityHighlights",
+    "同じ割合のレースを締切の順で並べない（PR #1602 レビュー、入力の順で5本目が決まる）",
+    ".sort((a, b) => b[key] - a[key] || byStartTime(a, b))",
     ".sort((a, b) => b[key] - a[key])",
-    ".sort((a, b) => b.percentile - a.percentile)",
   ],
   [
     "volatilityHighlights",

@@ -211,7 +211,9 @@ function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
           t={t}
         />
       </div>
-      <AccuracyLink t={t} />
+      <AccuracyLink
+        label={`📈 ${t("home.volatilityHighlightsAccuracyLink")}`}
+      />
     </section>
   );
 }
@@ -219,7 +221,6 @@ function TodaysVolatilityHighlights({ venuesData, nowHHMM = null }) {
 /** BOA-822: 今日のイン崩れ注意度（崩れやすい順・堅めの順の2列。行全体を押せる） */
 function InCautionHighlights({ venuesData, nowHHMM }) {
   const { t } = useTranslation();
-  const localize = useLocalizedPath();
   const {
     high: highRaces,
     low: lowRaces,
@@ -259,24 +260,18 @@ function InCautionHighlights({ venuesData, nowHHMM }) {
           t={t}
         />
       </div>
-      <p className="volatility-highlights__accuracy-link">
-        <Link to={localize("/accuracy")}>
-          {t("inCaution.home.accuracyLink")}
-        </Link>
-      </p>
+      <AccuracyLink label={t("inCaution.home.accuracyLink")} />
     </section>
   );
 }
 
 // BOA-248: イン崩れ指数を根拠にレースを選んだユーザーが、その指数自体の
 // 実測精度をすぐ確認できるよう、ハイライト直後に導線を置く
-function AccuracyLink({ t }) {
+function AccuracyLink({ label }) {
   const localize = useLocalizedPath();
   return (
     <p className="volatility-highlights__accuracy-link">
-      <Link to={localize("/accuracy")}>
-        📈 {t("home.volatilityHighlightsAccuracyLink")}
-      </Link>
+      <Link to={localize("/accuracy")}>{label}</Link>
     </p>
   );
 }
