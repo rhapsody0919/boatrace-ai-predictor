@@ -45,13 +45,14 @@ export default function RoughCard({
 }) {
   const counts = restClassCounts(classes);
   const titleId = useId();
+  // 「件数少なめ」は件数の前（フラグの外の「件数少なめ・3,276件 ›」と同じ順。#1604 wording-editor P3）
   const round = scope?.kind === "NCR" ? ROUND_LABEL[scope.round] : null;
   const classScope =
     rough &&
-    `${ASSIST_COPY.roughScopeClass(scope.cell.n, round)}${rough.few ? `・${ASSIST_COPY.roughFew}` : ""}`;
+    `${rough.few ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeClass(scope.cell.n, round)}`;
   const ic = rough?.inCaution ?? null;
   const b1Scope = ic
-    ? `${ASSIST_COPY.roughScopeInCaution(ic.n)}${ic.lowSample ? `・${ASSIST_COPY.roughFew}` : ""}`
+    ? `${ic.lowSample ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeInCaution(ic.n)}`
     : classScope;
   return (
     <section className="ta-rough" aria-labelledby={titleId} data-guide="rough">
