@@ -464,7 +464,8 @@ export const exhRanks = (racers) =>
     r.exhTime == null
       ? null
       : 1 +
-        racers.filter((o) => o.exhTime != null && o.exhTime < r.exhTime).length,
+        racers.filter((o) => o.exhTime != null && o.exhTime < r.exhTime)
+          .length,
   );
 
 /**
@@ -538,7 +539,8 @@ export function boardModel({
       back:
         metric === "exh_st" && lens === "flow"
           ? ASSIST_COPY.backTo(
-              METRICS[stBasis === "overall" ? "st_mean30" : "st_course"].label,
+              METRICS[stBasis === "overall" ? "st_mean30" : "st_course"]
+                .label,
             )
           : null,
       left: st ? ".00" : (def.tick ?? def.text)(s.lo),
