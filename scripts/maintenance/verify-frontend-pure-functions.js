@@ -45,6 +45,7 @@ const TARGETS = {
   hscrollHint: "src/utils/horizontalScrollHint.js",
   volatilityHighlights: "src/utils/volatilityHighlights.js",
   inCautionLevel: "src/utils/inCautionLevel.js",
+  inCautionAccuracy: "src/utils/inCautionAccuracy.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -2024,6 +2025,50 @@ const IN_CAUTION_CASES = JSON.parse(
   ),
 ).gapCases;
 
+// --- inCautionAccuracyView（BOA-822 task 24）: /accuracy の段ごとの実績。夜のジョブが書いた件数を並べ、
+// 件数30未満の段は割合を出さない（公開直後に1〜2件で 0% や 100% を出さない）
+function suiteInCautionAccuracy(m, check) {
+  // 公開前の検証（2026-10-17 本番の表から再計算した値、#1605）
+  const pre = m.inCautionAccuracyView({
+    base: { n: 75295, nonWin: 34194 },
+    byLevel: {
+      low: { n: 21027, nonWin: 5716 },
+      mid: { n: 32169, nonWin: 13962 },
+      high: { n: 22071, nonWin: 14503 },
+    },
+  });
+  check(
+    "inCautionAccuracy: 並びは崩れやすい→堅め、割合・全体に占める割合・全国",
+    pre.rows.map((r) => [r.level, m.pct1(r.rate), Math.round(r.share * 100)]),
+    [
+      ["high", "65.7", 29],
+      ["mid", "43.4", 43],
+      ["low", "27.2", 28],
+    ],
+  );
+  check("inCautionAccuracy: 全国は base の割合", m.pct1(pre.base.rate), "45.4");
+  check(
+    "inCautionAccuracy: ぶれ幅は Wilson の95%（崩れやすい 65.1〜66.3）",
+    [m.pct1(pre.rows[0].lo), m.pct1(pre.rows[0].hi)],
+    ["65.1", "66.3"],
+  );
+  // 公開直後: 29件の段は割合を出さない。30件から出す。段が無いキーは0件
+  const post = m.inCautionAccuracyView({
+    base: { n: 59, nonWin: 30 },
+    byLevel: { high: { n: 29, nonWin: 29 }, mid: { n: 30, nonWin: 12 } },
+  });
+  check(
+    "inCautionAccuracy: 30件未満は割合・ぶれ幅なし、30件から出す、無い段は0件",
+    post.rows.map((r) => [r.level, r.n, r.rate, r.lo === null]),
+    [
+      ["high", 29, null, true],
+      ["mid", 30, 0.4, false],
+      ["low", 0, null, true],
+    ],
+  );
+  check("inCautionAccuracy: 無いときは null", m.inCautionAccuracyView(null), null);
+}
+
 function suiteInCautionLevel(m, check) {
   for (const c of IN_CAUTION_CASES) {
     const [b1, ...others] = c.rates.map(m.rateCents);
@@ -2113,6 +2158,7 @@ const SUITES = {
   hscrollHint: suiteHscrollHint,
   volatilityHighlights: suiteVolatilityHighlights,
   inCautionLevel: suiteInCautionLevel,
+  inCautionAccuracy: suiteInCautionAccuracy,
 };
 
 // ---------------------------------------------------------------------------
@@ -2120,6 +2166,12 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "inCautionAccuracy",
+    "件数の少ない段にも割合を出す（公開直後に 1件で 100% が出る）",
+    "n >= MIN_RATE_N ? wilsonInterval(nonWin, n) : null",
+    "n > 0 ? wilsonInterval(nonWin, n) : null",
+  ],
   [
     "inCautionLevel",
     "浮動小数で % を丸める（system-architect L5 の退行）",
