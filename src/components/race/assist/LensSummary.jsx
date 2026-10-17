@@ -52,6 +52,7 @@ function AxisSummary({ m }) {
     chips,
     venue,
     headerScope,
+    headerInCaution = null,
     vaFacts,
     vaCell,
     classes,
@@ -104,7 +105,13 @@ function AxisSummary({ m }) {
           <BaseBar label={C.venueAllN(venue, va.n)} k={va.k} n={va.n} />
         )}
         {/* 上の枠と数字が違う理由は畳まずに出す（同じ「1号艇の1着」が 58% と 54.6% に見える。デザイナーのレビュー P1-3） */}
-        {hc && headerScope.kind === scope.kind && (
+        {/* BOA-822: 上の枠の1着が注意度の裏返しのときは、集め方の違いをそのまま書く（返還の違いの行は同じ集め方のときだけ） */}
+        {headerInCaution && (
+          <p className="ta-note ta-num" data-testid="axis-why-in-caution">
+            {C.whyHeaderInCaution(headerInCaution.n, headerInCaution.round)}
+          </p>
+        )}
+        {!headerInCaution && hc && headerScope.kind === scope.kind && (
           <p className="ta-note ta-num">
             {C.whyRefund(
               comma(u.n),
@@ -117,7 +124,9 @@ function AxisSummary({ m }) {
         {why.length > 0 && (
           <Fold title={C.whyToggle}>
             <ul className="ta-list">
-              {why.includes("venueScope") && <li>{C.whyVenueScope(venue)}</li>}
+              {why.includes("venueScope") && !headerInCaution && (
+                <li>{C.whyVenueScope(venue)}</li>
+              )}
               {why.includes("venueRefund") && (
                 <li className="ta-num">
                   {C.whyVenueRefund(

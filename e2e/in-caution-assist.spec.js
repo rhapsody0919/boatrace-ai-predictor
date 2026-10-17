@@ -63,7 +63,8 @@ test.describe("思考アシストの1着のバー（BOA-822、?caution=1）", ()
   }) => {
     await page.goto(`${URL_}?caution=1`);
     const card = roughCard(page);
-    await expect(card).toContainText("勝率差が同じくらい 2,967件", {
+    // 準優勝戦は1着の行にもラウンドを書く（#1604 ファン評価1周目 P2）
+    await expect(card).toContainText("勝率差が同じくらいの準優勝戦 2,967件", {
       timeout: 20000,
     });
     // 準優勝戦に絞った級の並びの件数（NCR 112件）は万舟の行に
@@ -74,6 +75,19 @@ test.describe("思考アシストの1着のバー（BOA-822、?caution=1）", ()
     await expect(page.getByTestId("rough-in-caution-flip")).toHaveText(
       "1号艇の1着 59% は、イン崩れ注意度 41%（1着を逃した割合）の裏返し",
     );
+    // 級の並びの絵は万舟の範囲と名前を付ける（同 P2）
+    await expect(card.locator(".ta-rough-lineup")).toContainText("万舟の範囲");
+    // 軸レンズの「上の枠と違う理由」は集め方の違いを書く（同 P1）
+    await expect(page.getByTestId("axis-why-in-caution")).toContainText(
+      "上の枠の1号艇の1着は、勝率差が同じくらいの全国のレース（準優勝戦だけ） 2,967件で集めた",
+    );
+    // 材料のシート: 1着の集め方と勝率差の定義、級の並びの1着の割合（予選も含めると）は出さない（同 P2）
+    await page.getByRole("button", { name: "堅い？荒れる？の材料" }).click();
+    await expect(
+      page.getByTestId("rough-sheet-in-caution-scope"),
+    ).toContainText("勝率差（1号艇と、他の艇で一番高い全国勝率の差）");
+    await page.getByRole("button", { name: /集めたレースは/ }).click();
+    await expect(page.getByText(/予選も含めると/)).toHaveCount(0);
   });
 
   test("フラグの外は今のまま（級の並びの1着 58%、裏返しの1行は出さない）", async ({

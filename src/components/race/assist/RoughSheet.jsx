@@ -2,7 +2,11 @@ import BottomSheet from "./BottomSheet";
 import BaseBar from "./BaseBar";
 import ScopeTable from "./ScopeTable";
 import ClassLineup from "./ClassLineup";
-import { restClassCounts, sameClassLabel } from "../../../utils/assistModel";
+import {
+  ROUND_LABEL,
+  restClassCounts,
+  sameClassLabel,
+} from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 /**
@@ -55,8 +59,20 @@ export default function RoughSheet({
           {ASSIST_COPY.classNote(1, classes[0], restClassCounts(classes))}
         </p>
       )}
+      {ic && (
+        <p
+          className="ta-note ta-num"
+          data-testid="rough-sheet-in-caution-scope"
+        >
+          {ASSIST_COPY.roughInCautionScopeNote(
+            ic.n,
+            ROUND_LABEL[ic.round] ?? null,
+          )}
+        </p>
+      )}
       <ScopeTable
         scope={scope}
+        hideB1={Boolean(ic)}
         similarN={similar?.n ?? null}
         similarConditions={similarConditions}
         classes={classes}
@@ -65,7 +81,7 @@ export default function RoughSheet({
       <h3 className="ta-sheet-sub">{ASSIST_COPY.roughB1}</h3>
       {ic ? (
         <BaseBar
-          label={`${ASSIST_COPY.roughScopeInCaution(ic.n)}${ic.lowSample ? `・${ASSIST_COPY.roughFew}` : ""}`}
+          label={`${ASSIST_COPY.roughScopeInCaution(ic.n, ROUND_LABEL[ic.round] ?? null)}${ic.lowSample ? `・${ASSIST_COPY.roughFew}` : ""}`}
           k={ic.n - ic.nonWin}
           n={ic.n}
           base={baseB1}

@@ -52,7 +52,7 @@ export default function RoughCard({
     `${rough.few ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeClass(scope.cell.n, round)}`;
   const ic = rough?.inCaution ?? null;
   const b1Scope = ic
-    ? `${ic.lowSample ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeInCaution(ic.n)}`
+    ? `${ic.lowSample ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeInCaution(ic.n, ic.round)}`
     : classScope;
   return (
     <section className="ta-rough" aria-labelledby={titleId} data-guide="rough">
@@ -94,7 +94,17 @@ export default function RoughCard({
           {/* 矢印を単独で読めるようにする（BOA-808 の4） */}
           <span className="ta-note">{ASSIST_COPY.roughLegend}</span>
           <span className="ta-rough-foot">
-            <ClassLineup lineup={lineup} />
+            {/* 級の並びの絵は万舟の範囲。1着の根拠に見えないよう名前を付ける（#1604 ファン評価1周目 P2） */}
+            {inCautionMode ? (
+              <span className="ta-rough-lineup">
+                <span className="ta-rough-scope">
+                  {ASSIST_COPY.roughManshuScope}
+                </span>
+                <ClassLineup lineup={lineup} />
+              </span>
+            ) : (
+              <ClassLineup lineup={lineup} />
+            )}
             <span className="ta-note ta-num">
               {inCautionMode ? (
                 ASSIST_COPY.roughOpen

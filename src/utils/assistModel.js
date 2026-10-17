@@ -144,7 +144,12 @@ export function roughWithInCaution(rough, inCaution) {
       rate: (100 - pct) / 100,
       verdict: lowSample ? null : row.verdict,
     },
-    inCaution: { pct, n, lowSample: Boolean(lowSample) },
+    inCaution: {
+      pct,
+      n,
+      lowSample: Boolean(lowSample),
+      round: ROUND_LABEL[inCaution.round] ?? null,
+    },
   };
 }
 

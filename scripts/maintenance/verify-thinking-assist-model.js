@@ -112,7 +112,8 @@ check(
     pct(icCard.b1.base) === 55 &&
     icCard.b1.verdict === "low" &&
     icCard.manshu === card.manshu &&
-    icCard.inCaution.n === 35181,
+    icCard.inCaution.n === 35181 &&
+    icCard.inCaution.round === null,
   JSON.stringify(icCard.b1),
 );
 // nonWin/n = 50.5%（pct は四捨五入で 51）。1着を k/n で丸めると 50 になり、和が 101 になる
@@ -123,6 +124,11 @@ check(
     icHalf.b1.verdict === null &&
     icHalf.inCaution.lowSample === true,
   JSON.stringify(icHalf.b1),
+);
+check(
+  "準優勝戦の注意度はラウンドの名前を持つ（1着の行に「勝率差が同じくらいの準優勝戦」）",
+  roughWithInCaution(card, { ...icToda, round: "junyu" }).inCaution.round ===
+    "準優勝戦",
 );
 check(
   "注意度が無い（null・pct なし）か rough が無ければ、今の値のまま",

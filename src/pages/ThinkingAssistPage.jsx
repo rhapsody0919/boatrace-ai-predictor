@@ -549,6 +549,7 @@ function ThinkingAssistBody() {
           chips: boatFacts[0].chips,
           venue: venueName,
           headerScope: scope,
+          headerInCaution: rough?.inCaution ?? null,
           vaFacts: vaKey ? factsAll[vaKey] : null,
           vaCell: venueAll,
           classes: today?.classes ?? null,

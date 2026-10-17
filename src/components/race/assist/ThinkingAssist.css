@@ -174,12 +174,24 @@
 
 /* BOA-822: 行の名前の下の範囲の名前と件数。3行に折れないよう、名前の列を広げて小さめの字にする（承認モック 4-assist-375.png） */
 .ta-rough-btn--scoped > .baseline-bar {
-  grid-template-columns: 8.5em minmax(0, 1fr) auto;
+  grid-template-columns: 9em minmax(0, 1fr) auto;
+}
+
+/* PC は名前の列を広げ、範囲の名前を途中で折らない（#1604 ファン評価1周目 P2） */
+@media (min-width: 1024px) {
+  .ta-rough-btn--scoped > .baseline-bar {
+    grid-template-columns: 16em minmax(0, 1fr) auto;
+  }
+}
+
+.ta-rough-lineup {
+  display: grid;
+  gap: 2px;
 }
 
 .ta-rough-scope {
   display: block;
-  font-size: var(--font-size-2xs);
+  font-size: var(--font-size-xs);
   line-height: 1.4;
   color: var(--text-secondary);
 }
