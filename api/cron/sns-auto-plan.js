@@ -7,7 +7,7 @@
  *   shadow              検査までで止める（item・下書き・UTM の表・Slack に書かない）
  *   live                item を作り、検査の結果を書き、合格した下書きの公開保留を外す（送るのは sns-send。dry_run の間は claim の前で止まる）
  *
- * /today の画像つき X 投稿（tasks 19b）も同じ実行で計画する（JST 5:30〜7:45 だけ。scripts/lib/snsTodayPlanner.js）。
+ * /today の画像つき X 投稿（tasks 19b）も同じ実行で計画する（JST 7:30〜12:00 だけ。scripts/lib/snsTodayPlanner.js）。
  * /today の計画が落ちてもレースの計画は続け、理由を report.alerts に出す（次の5分でやり直す）
  *
  * cron式（vercel.json）は UTC。5分ごと、時は 20〜23・0〜13（UTC）= JST 5:00〜22:55（稼働時間の監視は JST 5:30〜23:00。ミッドナイトの優勝戦のため、2026-10-14 オーナー決定）
@@ -31,6 +31,7 @@ import {
 import {
   createTodayStore,
   finishTodayLog,
+  isTodayRebuild,
   runTodayPlan,
 } from "../../scripts/lib/snsTodayPlanner.js";
 import { createTodayDigestSource } from "../_lib/snsTodayDigest.js";
@@ -79,33 +80,39 @@ export default createScrapeCronHandler({
           reviewDate: ctx.state?.cursor?.today_rebuild ?? null,
         });
       } catch (error) {
+        // 記録と警告には最初の1行だけ（Playwright の例外はブラウザのログ全文を含む）
+        const reason = error.message.split("\n")[0];
         today = {
           rowsWritten: 0,
           report: {
-            items: [
-              { kind: "digest", outcome: "error", reason: error.message },
-            ],
+            items: [{ kind: "digest", outcome: "error", reason }],
             alerts: [
               {
                 key: "today",
-                text: `SNS /today の計画に失敗（次の5分でやり直す）: ${error.message}`,
+                text: `SNS /today の計画に失敗（次の5分でやり直す）: ${reason.slice(0, 500)}`,
               },
             ],
           },
         };
       }
       const todayItem = today.report.items.find((i) => i.kind === "digest");
-      const { log: todayLog, notice } = finishTodayLog(
-        ctx.state?.cursor?.today,
-        todayItem,
-        ctx.now(),
-      );
+      const {
+        log: todayLog,
+        notice,
+        giveUp,
+      } = finishTodayLog(ctx.state?.cursor?.today, todayItem, ctx.now(), {
+        rebuilding: isTodayRebuild(
+          ctx.state?.cursor?.today_rebuild ?? null,
+          ctx.now(),
+        ),
+      });
       // その日の下書きを作れずに送る時刻を過ぎたら、理由つきで1回だけ Slack に知らせる（監視は 7:00 前を見ず、
-      // 関数の時間切れは何も記録されないため、黙って終わる経路があった。2026-10-17）
+      // 関数の時間切れは何も記録されないため、黙って終わる経路があった。2026-10-17）。
+      // 確認用の作り直しが続けて失敗したときも1回知らせる（監視は同じ警告を6時間まとめるので、夜の失敗が届かなかった。2026-10-17）
       if (ctx.mode === "live" && notice) {
         try {
           await notify(notice);
-          todayLog.missed_notified = true;
+          if (!giveUp) todayLog.missed_notified = true;
         } catch (error) {
           today.report.alerts.push({
             key: "today_missed",
@@ -132,12 +139,12 @@ export default createScrapeCronHandler({
           alerts: [...today.report.alerts, ...race.report.alerts],
         },
         body: { items: [...today.report.items, ...race.body.items] },
-        // /today の各回の結果をその日の分だけ残す（7:45 を過ぎても朝の経過を読めるように）
+        // /today の各回の結果をその日の分だけ残す（12:00 を過ぎても朝の経過を読めるように）
         cursor: {
           ...(ctx.state?.cursor ?? {}),
           today: todayLog,
-          // 確認用の作り直しは1回だけ。下書きを作れたら消す（作れなければ残して次の5分でやり直す）
-          ...(todayItem?.review && todayItem.written
+          // 確認用の作り直しは1回だけ。下書きを作れたら消す。作れなければ残して次の5分でやり直し、続けて失敗したら消す
+          ...((todayItem?.review && todayItem.written) || giveUp
             ? { today_rebuild: null }
             : {}),
         },

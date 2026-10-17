@@ -421,7 +421,8 @@
         "v4": "Turn prediction hit on Ryujin Radar 🎉\nThe AI prediction hit again!",
         "v5": "Turn prediction hit on Ryujin Radar 🎉\nReally happy with the hit rate!"
       }
-    }
+    },
+    "shareInCaution": "🏁 Ryujin Radar [{{date}}{{venue}} R{{raceNo}}]\n\nLane-1 upset caution level {{pct}}% ({{level}})\nShare of {{n}} past races nationwide with about the same win-rate gap in which Boat 1 failed to win\n{{disclaimer}}"
   },
   "home": {
     "introBannerText": "Ryujin Radar - Visualize boat racing. When in doubt, trust the data. | Data analyzed, including turn predictions and the Upset Index. Learn more →",
@@ -3678,6 +3679,17 @@
     "noteJunyu": "The count is past semifinals only; the dotted line is the share for all races. In semifinals and finals, the share changes little with the win-rate gap",
     "noteYusho": "The count is past finals only; the dotted line is the share for all races. In semifinals and finals, the share changes little with the win-rate gap",
     "noteAbsent": "Scratch ({{boats}} boats racing)",
-    "noteLowSample": "Few races ({{n}})"
+    "noteLowSample": "Few races ({{n}})",
+    "home": {
+      "title": "Today's Lane-1 upset caution level",
+      "highTitle": "Highest share of Boat 1 failing to win (upset-prone)",
+      "lowTitle": "Lowest (stable)",
+      "highEmptyOpen": "No upcoming races are upset-prone (55% or more).",
+      "lowEmptyOpen": "No upcoming races are stable (under 35%).",
+      "highEmptyClosed": "No races were upset-prone (55% or more) today.",
+      "lowEmptyClosed": "No races were stable (under 35%) today.",
+      "accuracyLink": "See results by tier →"
+    },
+    "listNote": "The share (%) is how often Boat 1 failed to win in past races nationwide (April 2019 to the previous day) where the gap between Boat 1's national win rate and the highest among the other boats (the win-rate gap) was about the same. Semifinals and finals use past semifinals only and past finals only."
   }
 }
