@@ -3681,7 +3681,6 @@
     "noteLowSample": "Few races ({{n}})",
     "home": {
       "title": "Today's Lane-1 upset caution level",
-      "note": "The share is how often Boat 1 failed to win in past nationwide races with about the same win-rate gap as today.",
       "highTitle": "Highest share of Boat 1 failing to win (upset-prone)",
       "lowTitle": "Lowest (stable)",
       "highEmptyOpen": "No upcoming races are upset-prone (55% or more).",
@@ -3689,6 +3688,7 @@
       "highEmptyClosed": "No races were upset-prone (55% or more) today.",
       "lowEmptyClosed": "No races were stable (under 35%) today.",
       "accuracyLink": "See results by tier →"
-    }
+    },
+    "listNote": "The share on each badge is how often Boat 1 failed to win in past races nationwide where the gap between Boat 1's national win rate and the highest among the other boats (the win-rate gap) was about the same."
   }
 }

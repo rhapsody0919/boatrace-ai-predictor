@@ -239,7 +239,7 @@ function InCautionHighlights({ venuesData, nowHHMM }) {
         {t("inCaution.home.title")}
       </h2>
       <p className="volatility-highlights__scale-note">
-        {t("inCaution.home.note")}
+        {t("inCaution.listNote")}
       </p>
       {allClosed && (
         <p className="volatility-highlights__closed-note">

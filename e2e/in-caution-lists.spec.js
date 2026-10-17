@@ -159,6 +159,10 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
     const section = page.locator(".volatility-highlights");
     await expect(section).toBeVisible({ timeout: 30000 });
     await expect(section).toContainText("今日のイン崩れ注意度");
+    // 勝率差が誰と誰の差かを書く（#1602 ファン評価1周目 指摘2）
+    await expect(section).toContainText(
+      "1号艇と、他の艇で一番高い全国勝率の差（勝率差）",
+    );
     const columns = await section
       .locator(".volatility-highlights__column")
       .evaluateAll((cols) =>
@@ -202,6 +206,12 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
       "solid",
     );
     await expect(page.locator(".race-card", { hasText: "🌪️" })).toHaveCount(0);
+    // 札の割合が何か（全国の勝率差の帯）を一覧の上に書く（#1602 ファン評価1周目 指摘1）
+    await expect(
+      page.locator(".venue-race-list__in-caution-note"),
+    ).toContainText(
+      "他の艇で一番高い全国勝率の差（勝率差）が同じくらいの全国の過去レース",
+    );
   });
 
   test("中止確定のレースは札と左の色線を出さない（PR #1602 レビュー）", async ({
@@ -224,5 +234,8 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
     await expect(section).toBeVisible({ timeout: 30000 });
     await expect(section).toContainText("/ 100");
     await expect(section).not.toContainText("今日のイン崩れ注意度");
+    await expect(page.locator(".venue-race-list__in-caution-note")).toHaveCount(
+      0,
+    );
   });
 });
