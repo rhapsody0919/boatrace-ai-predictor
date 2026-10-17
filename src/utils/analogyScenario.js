@@ -205,7 +205,11 @@ export function hintToday(id, avgStByCourse) {
     case "dash03":
       return pair(sumOf([3, 4, 5]), sumOf([0, 1, 2]), "fast");
     case "flat03":
-      return pair(slowest([0, 1, 2, 3, 4, 5]), fastest([0, 1, 2, 3, 4, 5]), "spread");
+      return pair(
+        slowest([0, 1, 2, 3, 4, 5]),
+        fastest([0, 1, 2, 3, 4, 5]),
+        "spread",
+      );
     default:
       return null;
   }
@@ -286,6 +290,29 @@ export function hintRows(scenarioHints, todayHits, version, interval) {
     }
     return { id, form, hit, miss, ph, pm, pall, kind };
   });
+}
+
+const HINT_KIND_ORDER = { up: 0, unclear: 1, down: 2 };
+
+/**
+ * STEP2 のカード（形ごとに1枚、同じ形の条件はまとめる）と並び順（BOA-890、2026-10-17 オーナー決定 案A）。
+ * 「なりやすい」→「はっきりしない」→「むしろなりにくい」の順、同じ区分の中は当てはまったときの率の高い順。
+ * カードの区分は、形の中で一番「なりやすい」側の条件の区分。以前は条件の定義の順（HINTS）のままで、1号艇が6艇で
+ * 最速の日に「むしろなりにくい」イン凹み（in_fastest）が先頭に来ていた
+ * @param {ReturnType<typeof hintRows>} rows
+ * @returns {Array<{form: string, rows: object[]}>}
+ */
+export function hintCardGroups(rows) {
+  const kind = (rs) => Math.min(...rs.map((r) => HINT_KIND_ORDER[r.kind] ?? 1));
+  const ph = (rs) => Math.max(...rs.map((r) => r.ph ?? 0));
+  return rows
+    .reduce((gs, r) => {
+      const g = gs.find((x) => x.form === r.form);
+      if (g) g.rows.push(r);
+      else gs.push({ form: r.form, rows: [r] });
+      return gs;
+    }, [])
+    .sort((a, b) => kind(a.rows) - kind(b.rows) || ph(b.rows) - ph(a.rows));
 }
 
 /** ②の札: 形ごとに1つ（当てはまったときの率が一番高い "up" の条件。screens「細部の約束」） */

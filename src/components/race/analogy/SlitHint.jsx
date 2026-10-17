@@ -15,16 +15,13 @@ import {
   venueLabel,
 } from "../../../utils/analogyFormat";
 import { VENUE_FEW_RUNS, hintTableBest } from "../../../utils/analogyAggregate";
-import { SLIT_EXAMPLE, hintToday } from "../../../utils/analogyScenario";
+import {
+  SLIT_EXAMPLE,
+  hintCardGroups,
+  hintToday,
+} from "../../../utils/analogyScenario";
 
 const k = "aiPredictionTab.analogy.scenario";
-
-const KIND_ORDER = { up: 0, unclear: 1, down: 2 };
-/** カードの区分（形の中で一番「なりやすい」側の手がかりの区分） */
-const groupKindOrder = (rows) =>
-  Math.min(...rows.map((r) => KIND_ORDER[r.kind] ?? 1));
-/** カードの率（形の中で当てはまったときの率が一番高いもの） */
-const groupPh = (rows) => Math.max(...rows.map((r) => r.ph ?? 0));
 
 /**
  * 今日のスタートの手がかり（spec C-2、承認モック mock-scenario-v1）。①が枠なり（かどの進入でも）のときの手がかり。
@@ -83,21 +80,9 @@ export default function SlitHint({
       ))}
     </tr>
   );
-  // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: 1〜3コースより早い／0.02秒以上早い。承認モック）
-  const groups = rows
-    .reduce((gs, r) => {
-      const g = gs.find((x) => x.form === r.form);
-      if (g) g.rows.push(r);
-      else gs.push({ form: r.form, rows: [r] });
-      return gs;
-    }, [])
-    // 「なりやすい」→「はっきりしない」→「むしろなりにくい」の順、同じ区分は当てはまったときの率の高い順。
-    // 定義の順のままだと、1号艇が最速の日に「むしろなりにくい」イン凹みが先頭に来ていた（2026-10-17）
-    .sort(
-      (a, b) =>
-        groupKindOrder(a.rows) - groupKindOrder(b.rows) ||
-        groupPh(b.rows) - groupPh(a.rows),
-    );
+  // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: 1〜3コースより早い／0.02秒以上早い。承認モック）。
+  // 並びは「なりやすい」→「はっきりしない」→「むしろなりにくい」（BOA-890）
+  const groups = hintCardGroups(rows);
   return (
     <div className="af-hint">
       <div className="af-hint-h">
