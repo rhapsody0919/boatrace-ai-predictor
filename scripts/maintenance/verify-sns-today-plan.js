@@ -439,9 +439,12 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
       ],
     ],
   );
+  // 図の前に待つのは条件のカードだけ（段の表示は展示の後に消える、2026-10-17 夜）
   assert.ok(
     headless.calls.every(
-      (c) => c.requiredSelectors === SCREEN_MARKERS["race-sonar"],
+      (c) =>
+        JSON.stringify(c.requiredSelectors) ===
+        JSON.stringify(['[data-testid="analogy-fact-card"]']),
     ),
   );
   const revision = draft.source_data.digest.revision;
@@ -1028,6 +1031,53 @@ test("各回の結果をその日の分だけ cursor に残す（12:00 を過ぎ
     );
   assert.equal(many.events.length, 30);
   assert.equal(many.events.at(-1).reason, "34");
+});
+
+test("確認用の作り直しが3回続けて失敗したら、Slack に1回知らせてやめる。理由はブラウザのログを除いた1行ずつ（2026-10-17 夜、届かずに5分ごとに失敗し続けた）", async () => {
+  const { finishTodayLog, isTodayRebuild, REBUILD_MAX_FAILURES } =
+    await import("../lib/snsTodayPlanner.js");
+  assert.equal(REBUILD_MAX_FAILURES, 3);
+  // 作り直しは、その日の分で送る時刻を過ぎた後だけ
+  assert.equal(isTodayRebuild(DATE, at("20:25")), true);
+  assert.equal(isTodayRebuild(DATE, at("07:40")), false);
+  assert.equal(isTodayRebuild("2037-10-16", at("20:25")), false);
+  assert.equal(isTodayRebuild(null, at("20:25")), false);
+  const crash = {
+    outcome: "error",
+    reason: `sonar_not_ready（${DATE}-04-07: browserContext.newPage: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /tmp/chromium ${"--flag ".repeat(80)} / ${DATE}-10-04: browser.newContext: Target page, context or browser has been closed）`,
+  };
+  let log = { date: DATE, events: [], missed_notified: true };
+  const results = [];
+  for (const hhmm of ["20:25", "20:30", "20:35"]) {
+    const r = finishTodayLog(log, crash, at(hhmm), { rebuilding: true });
+    results.push(r);
+    log = r.log;
+  }
+  assert.deepEqual(
+    results.map((r) => [r.giveUp, r.notice === null]),
+    [
+      [false, true],
+      [false, true],
+      [true, false],
+    ],
+  );
+  assert.match(
+    results[2].notice,
+    /確認用の作り直しが3回続けて失敗したので、やめた/,
+  );
+  // 理由はブラウザのログを含まず、2レース分が残る
+  const reason = log.events.at(-1).reason;
+  assert.doesNotMatch(reason, /Browser logs|launching/);
+  assert.match(reason, new RegExp(`${DATE}-10-04: browser.newContext`));
+  assert.ok(reason.length < 400, reason.length);
+  // 知らせた後は数え直し、朝の「作れなかった」の印は残す
+  assert.equal(log.rebuild_failures, undefined);
+  assert.equal(log.missed_notified, true);
+  // 作り直しでない回の失敗は数えない
+  assert.equal(
+    finishTodayLog(null, crash, at("07:40")).log.rebuild_failures,
+    undefined,
+  );
 });
 
 test("下書きを作れずに 12:00 を過ぎたら、理由つきで Slack に1回だけ知らせる文を出す。下書きがあれば出さない（2026-10-17 黙って終わった件）", async () => {
