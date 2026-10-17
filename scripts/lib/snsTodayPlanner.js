@@ -1,6 +1,6 @@
 /**
  * /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。
- * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 5:30〜7:45 だけ動く。
+ * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 7:30〜12:00 だけ動く（2026-10-17 時刻の組み直し）。
  *
  * 1回の流れ:
  *   その日の一覧（morning_digest_*、5:30 に公開）を読む → 版（snsTodayDigest.js）
@@ -9,8 +9,10 @@
  *   → 下書きがあり、一覧がやり直されて版が変わっていれば（6:30・8:00）: 撮り直して下書きを書き換える。148 のトリガーが承認を外すので、
  *     Slack で承認のし直しを頼む（承認した画像と違うものを送らない）
  *
- * - 送る時刻は 7:45、事前通知の期限は 5:45（−2h）。締切は持たないので、送る時刻＋60分（8:45）を締切として item に入れる
- *   （notify_by=締切−3h=5:45、veto_until=締切−60分=7:45、失効=締切−30分=8:15。レースの全貌と同じ計算）
+ * - 時刻（2026-10-17 オーナー回答「承認の締め切りは昼頃までずらしても構わない」で組み直し）: 龍神ソナーの図のデータは
+ *   朝のバッチ（7:10 起動）で 7:24〜7:26 に書かれるので、撮るのは 7:30 から。送る時刻（＝承認の締め切り）は 12:00。
+ *   締切は持たないので、送る時刻＋60分（13:00）を締切として item に入れる（notify_by=締切−3h=10:00、veto_until=締切−60分=12:00、
+ *   失効=締切−30分=12:30。レースの全貌と同じ計算）。載せるのは締切が 12:00 より後のレース
  * - この版は個別承認（L2）まで。自動（L3）の事前通知・止めるリンクは tasks 12b・13
  * - shadow では読むだけで、撮影・Storage・DB・Slack には書かない
  */
@@ -25,16 +27,20 @@ import { buildTodayModel } from "../../api/_lib/botToday.js";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
-/** その日の時刻（ISO）。送る 7:45、締切に見立てる 8:45 から、レースと同じ −3h・−60分・−30分 */
+/** その日の時刻（ISO）。送る 12:00、締切に見立てる 13:00 から、レースと同じ −3h・−60分・−30分 */
+// 撮影の開始（龍神ソナーの図のデータが書かれた後）と、送る時刻（承認の締め切り）。載せるレースは締切がこれより後のものだけ
+export const TODAY_PLAN_FROM = "07:30";
+export const TODAY_SEND_AT = "12:00";
+
 export function todaySchedule(date) {
   const at = (hhmm) => new Date(`${date}T${hhmm}:00+09:00`).toISOString();
   return {
-    plan_from: at("05:30"),
-    scheduled_at: at("07:45"),
-    deadline_at: at("08:45"),
-    notify_by: at("05:45"),
-    veto_until: at("07:45"),
-    expires_at: at("08:15"),
+    plan_from: at(TODAY_PLAN_FROM),
+    scheduled_at: at(TODAY_SEND_AT),
+    deadline_at: at("13:00"),
+    notify_by: at("10:00"),
+    veto_until: at(TODAY_SEND_AT),
+    expires_at: at("12:30"),
   };
 }
 
@@ -65,7 +71,7 @@ export const TODAY_NOTICE =
   "過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。";
 
 /** 載せてよい候補（区分・rank の順）。送る時刻までに締切を過ぎる・走数30未満・締切の無い行は除く。区分の中の同じレースは最初の行だけ */
-export function todayCandidates(rows, sendAt = "07:45") {
+export function todayCandidates(rows, sendAt = TODAY_SEND_AT) {
   return TODAY_PICK_RULES.flatMap(({ section }) => {
     const seen = new Set();
     return rows
@@ -95,13 +101,14 @@ const pct = (value) => `${Number(value)}%`;
 
 /** /today の注目レース（featured）。逃げ・まくりから選ばれ、送る時刻より後の締切で、数字がそろっているときだけ */
 // 画像は対象レースの龍神ソナーの図を最大4枚（2026-10-16 ユーザー決定。X の1投稿の上限が4枚）。
-// 図の元データ（analogy-v16-morning）は JST 5:30 から作られるので、7:00 まではそろうまでやり直し、7:00 を過ぎたら撮れた分で作る
+// 図の元データ（analogy-v16-morning）は 7:24〜7:26 に書かれる（10/14〜10/17 の実測）。遅れる日のために 8:30 まではそろうまでやり直し、
+// 8:30 を過ぎたら撮れた分で作る
 export const TODAY_MAX_IMAGES = 4;
 export const SONAR_ELEMENT = ".af-hep .af-dark";
-const SONAR_WAIT_UNTIL = "07:00";
+const SONAR_WAIT_UNTIL = "08:30";
 const SHOT_BUDGET_MS = 120_000;
 
-export function todayFeatured(rows, sendAt = "07:45") {
+export function todayFeatured(rows, sendAt = TODAY_SEND_AT) {
   const row = rows.find((r) => r.section === "featured");
   if (
     !row ||
@@ -120,7 +127,7 @@ export function todayFeatured(rows, sendAt = "07:45") {
 
 export function buildTodayPost(
   digest,
-  { date, t, url, sendAt = "07:45", excluded = new Set() },
+  { date, t, url, sendAt = TODAY_SEND_AT, excluded = new Set() },
 ) {
   const model = buildTodayModel(digest, { date, t });
   const key = (row) => `${row.race_id}:${row.boat_number}`;
@@ -450,7 +457,7 @@ export async function runTodayPlan(
     : rebuilt
       ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
       : state === "manual"
-        ? "今日の投稿の下書きができた。7:45 までに個別承認の画面で承認すると、7:45 に送る"
+        ? "今日の投稿の下書きができた。12:00 までに個別承認の画面で承認すると、12:00 に送る"
         : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
@@ -549,7 +556,7 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
 
 /**
  * /today の計画の各回の結果を、その日の分だけ残す（scrape_job_state.cursor.today）。report は5分ごとに上書きされ、
- * 7:45 を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
+ * 12:00 を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
  * 時間外の skip は残さない。日付が変わったら空から。最新の30件まで
  * @param {{date?: string, events?: object[]}|null|undefined} prev 前回の cursor.today
  * @param {{outcome?: string, reason?: string, item_id?: string}} item この回の report.items の /today の1件
@@ -580,7 +587,7 @@ export function missedTodayText(log) {
   const at = (iso) =>
     new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
   return [
-    `SNS /today（${log?.date}）: 送る時刻（7:45）までに下書きを作れなかった。今日は送らない`,
+    `SNS /today（${log?.date}）: 送る時刻（12:00）までに下書きを作れなかった。今日は送らない`,
     last
       ? `最後の結果（${at(last.at)}）: ${last.outcome}${last.reason ? ` ${last.reason}` : ""}（朝の記録 ${log.events.length}件）`
       : "朝の実行が一度も最後まで終わっていない（関数の時間切れなど。Vercel のログを確かめる）",

@@ -7,7 +7,7 @@
  *   shadow              検査までで止める（item・下書き・UTM の表・Slack に書かない）
  *   live                item を作り、検査の結果を書き、合格した下書きの公開保留を外す（送るのは sns-send。dry_run の間は claim の前で止まる）
  *
- * /today の画像つき X 投稿（tasks 19b）も同じ実行で計画する（JST 5:30〜7:45 だけ。scripts/lib/snsTodayPlanner.js）。
+ * /today の画像つき X 投稿（tasks 19b）も同じ実行で計画する（JST 7:30〜12:00 だけ。scripts/lib/snsTodayPlanner.js）。
  * /today の計画が落ちてもレースの計画は続け、理由を report.alerts に出す（次の5分でやり直す）
  *
  * cron式（vercel.json）は UTC。5分ごと、時は 20〜23・0〜13（UTC）= JST 5:00〜22:55（稼働時間の監視は JST 5:30〜23:00。ミッドナイトの優勝戦のため、2026-10-14 オーナー決定）
@@ -132,7 +132,7 @@ export default createScrapeCronHandler({
           alerts: [...today.report.alerts, ...race.report.alerts],
         },
         body: { items: [...today.report.items, ...race.body.items] },
-        // /today の各回の結果をその日の分だけ残す（7:45 を過ぎても朝の経過を読めるように）
+        // /today の各回の結果をその日の分だけ残す（12:00 を過ぎても朝の経過を読めるように）
         cursor: {
           ...(ctx.state?.cursor ?? {}),
           today: todayLog,
