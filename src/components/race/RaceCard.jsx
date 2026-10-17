@@ -29,6 +29,10 @@ import RaceDeadlineCountdown from "./RaceDeadlineCountdown";
 import InCautionBadge from "./InCautionBadge";
 import { isInCautionEnabled } from "../../config/featureFlags";
 
+/** 注意度の札から押したときは AI予想タブ（注意度のカード）を開く（2026-10-18 オーナー決定） */
+const aiTabHref = (href) =>
+  `${href}${href.includes("?") ? "&" : "?"}tab=aiPrediction`;
+
 function RaceCard({ race, raceHref, nowHHMM = null }) {
   const { t } = useTranslation();
   const racePrediction = race.rawData;
@@ -213,7 +217,10 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
       )}
       <RaceCardDataTable raceId={race.id} players={racePrediction?.players} />
       {/* 遷移先の URL を持つリンクにする。button の onClick だと検索エンジンがレース詳細へのリンクを辿れない（SEO 点検 F3） */}
-      <Link className="predict-btn" to={raceHref}>
+      <Link
+        className="predict-btn"
+        to={inCaution ? aiTabHref(raceHref) : raceHref}
+      >
         {t("raceCard.view")}
       </Link>
     </div>

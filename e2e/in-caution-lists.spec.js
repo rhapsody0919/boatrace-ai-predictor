@@ -170,9 +170,13 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
           [...col.querySelectorAll("a")].map((a) => a.getAttribute("href")),
         ),
       );
+    // 行は AI予想タブを開く（2026-10-18 オーナー決定）
     expect(columns).toEqual([
-      [`/race/${raceIdOf(2)}`, `/race/${raceIdOf(1)}`],
-      [`/race/${raceIdOf(4)}`],
+      [
+        `/race/${raceIdOf(2)}?tab=aiPrediction`,
+        `/race/${raceIdOf(1)}?tab=aiPrediction`,
+      ],
+      [`/race/${raceIdOf(4)}?tab=aiPrediction`],
     ]);
     await expect(section).toContainText("82%");
     await expect(section).toContainText("崩れやすい");
@@ -206,11 +210,17 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
       .locator(".race-card .in-caution-badge")
       .allInnerTexts();
     expect(badges.map((b) => b.replace(/\s+/g, " ").trim())).toEqual([
-      "▲ 崩れやすい 65%",
-      "▲ 崩れやすい 82%",
+      "! 崩れやすい 65%",
+      "! 崩れやすい 82%",
       "中くらい 43%",
       "堅め 26%",
     ]);
+    // 札のあるカードの「詳細を見る」は AI予想タブを開く（2026-10-18 オーナー決定）
+    await expect(
+      page
+        .locator(".race-card", { hasText: "堅め 26%" })
+        .locator(".predict-btn"),
+    ).toHaveAttribute("href", `/race/${raceIdOf(4)}?tab=aiPrediction`);
     const mid = page.locator(".race-card .in-caution-badge--mid");
     expect(await mid.evaluate((e) => getComputedStyle(e).borderTopStyle)).toBe(
       "solid",

@@ -115,7 +115,10 @@ function RaceLink({ race, t }) {
   const localize = useLocalizedPath();
   return (
     <Link
-      to={localize(`/race/${race.raceId}`)}
+      // 注意度の行は AI予想タブ（注意度のカード）を開く（2026-10-18 オーナー決定）。旧指数の行は今のまま
+      to={localize(
+        `/race/${race.raceId}${race.pct != null ? "?tab=aiPrediction" : ""}`,
+      )}
       className="volatility-highlights__race-link"
     >
       <div className="volatility-highlights__race-main">
