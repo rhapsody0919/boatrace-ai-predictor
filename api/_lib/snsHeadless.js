@@ -3,7 +3,10 @@
  * createDeadlinePreflight（snsDeadlineQueue.js）の headless.inspect の契約:
  *   inspect({url, context: {storageState: null}, requiredSelectors}) -> {finalUrl, visibleSelectors}
  *
- * - Chromium は最初の inspect で1回だけ起動し、同じ実行の中で使い回す。終わったら close() する（呼び出し側の責任）
+ * - Chromium は開くたびに起動し、開き終わったら閉じる。@sparticuz/chromium は --single-process で動き、開いた context を閉じると
+ *   ブラウザごと終わる（2026-10-17 本番で /today の後の龍神ソナーの図が4枚とも「browser has been closed」。
+ *   GitHub Actions の Docker で 1〜4 GB のどれでも再現し、メモリ不足ではなかった）。1枚で落ちても次は新しいブラウザで開く。
+ *   close() は互換のために残す（呼び出し側の後始末、開いたままのブラウザは無い）
  * - 毎回新しい context（Cookie・Storage なし）で開く。解析のタグ（GA4）は読み込ませない（確認のアクセスを数えないため）
  * - 印は要素が実際に見えている（visible）ものだけを返す。待つのは1つの印につき最大 waitMs
  * - 1回の実行で開くのは maxInspections 回まで（1回 最大 約45秒。関数の300秒を超えないため）。超えたら public_check_budget で止める
@@ -23,7 +26,6 @@ export function createChromiumHeadless({
   waitMs = 15000,
   maxInspections = 6,
 } = {}) {
-  let browser = null;
   let launchError = null;
   let inspections = 0;
   // 未ログインの新しい context で開き、印が見えるのを待ってから after(page) を呼ぶ。開いた回数は inspect・screenshot の合計で数える
@@ -34,18 +36,19 @@ export function createChromiumHeadless({
     if (inspections >= maxInspections) throw new Error("public_check_budget");
     inspections += 1;
     if (launchError) throw launchError;
+    let browser;
     try {
-      browser ??= await launch();
+      browser = await launch();
     } catch (error) {
       launchError = error;
       throw error;
     }
-    const context = await browser.newContext({
-      viewport,
-      deviceScaleFactor,
-      storageState: undefined,
-    });
     try {
+      const context = await browser.newContext({
+        viewport,
+        deviceScaleFactor,
+        storageState: undefined,
+      });
       await context.route(BLOCKED, (route) => route.abort());
       await context.addInitScript((key) => {
         try {
@@ -77,7 +80,8 @@ export function createChromiumHeadless({
         ...(after ? await after(page) : {}),
       };
     } finally {
-      await context.close();
+      // context を閉じるとブラウザが終わるので、ブラウザを閉じる（context もまとめて閉じる）。落ちた後は閉じる失敗を無視する
+      await browser.close().catch(() => {});
     }
   }
   return {
@@ -143,9 +147,6 @@ export function createChromiumHeadless({
         },
       );
     },
-    async close() {
-      if (browser) await browser.close();
-      browser = null;
-    },
+    async close() {},
   };
 }

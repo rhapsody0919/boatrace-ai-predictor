@@ -98,6 +98,9 @@ const pct = (value) => `${Number(value)}%`;
 // 図の元データ（analogy-v16-morning）は JST 5:30 から作られるので、7:00 まではそろうまでやり直し、7:00 を過ぎたら撮れた分で作る
 export const TODAY_MAX_IMAGES = 4;
 export const SONAR_ELEMENT = ".af-hep .af-dark";
+// 図を撮る前に待つ印は条件のカードだけ。段の表示（analogy-stage-chip）は展示のデータが入ると切り替えのボタンに変わり、
+// 展示の後に撮ると見えない（2026-10-17 夜の作り直しで4枚とも screenshot_component_missing）
+export const SONAR_READY = ['[data-testid="analogy-fact-card"]'];
 const SONAR_WAIT_UNTIL = "07:00";
 const SHOT_BUDGET_MS = 120_000;
 
@@ -196,6 +199,15 @@ export function buildTodayPost(
 const jstDate = (date) =>
   new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
 
+/** 確認用の作り直し（cursor.today_rebuild）が今の実行で効くか。送る時刻を過ぎた、その日の分だけ */
+export function isTodayRebuild(reviewDate, now) {
+  const date = jstDate(now);
+  return reviewDate === date && now >= new Date(todaySchedule(date).veto_until);
+}
+
+// 理由の文字列は1件につき最初の1行だけ残す（Playwright の例外はブラウザのログ全文を含み、cursor の記録が切れた。2026-10-17）
+const firstLine = (message) => String(message).split("\n")[0].slice(0, 160);
+
 /**
  * @param {{mode: string, now: () => Date}} ctx
  * @param {{store, getDigest, raceDb, t, headless, markers, riskRules, trackingStore, saveImage, signImage, notify?}} deps
@@ -230,7 +242,7 @@ export async function runTodayPlan(
   if (now < new Date(when.plan_from))
     return done({ outcome: "skipped", reason: "outside_window" });
   // 確認用の作り直し（送る時刻を過ぎていても作る。期限は過ぎているので承認・送信はできない）
-  const review = reviewDate === date && now >= new Date(when.veto_until);
+  const review = isTodayRebuild(reviewDate, now);
   if (now >= new Date(when.veto_until) && !review) {
     // 送る時刻を過ぎて、その日の下書きが無い（作れずに朝が終わった）。cron がその日1回だけ Slack に知らせる
     const { draft } = await store.todayState(date);
@@ -303,7 +315,7 @@ export async function runTodayPlan(
     try {
       const shot = await headless.screenshot({
         url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar`,
-        requiredSelectors: markers["race-sonar"],
+        requiredSelectors: SONAR_READY,
         viewport: { width: 390, height: 844 },
         element: SONAR_ELEMENT,
         label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
@@ -312,7 +324,7 @@ export async function runTodayPlan(
       if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
       shots.push(shot.png);
     } catch (error) {
-      missing.push(`${race.race_id}: ${error.message}`);
+      missing.push(`${race.race_id}: ${firstLine(error.message)}`);
     }
   }
   if (
@@ -561,16 +573,27 @@ export function nextTodayLog(prev, item, now) {
     events.push({
       at: now.toISOString(),
       outcome: item.outcome ?? null,
-      reason: item.reason ? String(item.reason).slice(0, 300) : null,
+      reason: item.reason
+        ? String(item.reason)
+            .split(" / ")
+            .map(firstLine)
+            .join(" / ")
+            .slice(0, 600)
+        : null,
     });
+  const same = prev?.date === date;
   return {
     date,
     events: events.slice(-30),
-    ...(prev?.date === date && prev.missed_notified
-      ? { missed_notified: true }
+    ...(same && prev.missed_notified ? { missed_notified: true } : {}),
+    ...(same && prev.rebuild_failures
+      ? { rebuild_failures: prev.rebuild_failures }
       : {}),
   };
 }
+
+// 確認用の作り直しが続けて失敗したら、この回数で Slack に知らせてやめる（5分ごとに夜まで繰り返さない）
+export const REBUILD_MAX_FAILURES = 3;
 
 /** その日の下書きを作れずに送る時刻を過ぎたときの Slack の文（朝の経過から最後の理由を添える） */
 export function missedTodayText(log) {
@@ -591,12 +614,23 @@ export function missedTodayText(log) {
  * 1回の実行の後の朝の記録と、Slack に出す「作れなかった」の文（その日まだ知らせていないときだけ。知らせたら呼び出し側が
  * log.missed_notified=true にして cursor に保存する）
  */
-export function finishTodayLog(prev, item, now) {
+export function finishTodayLog(prev, item, now, { rebuilding = false } = {}) {
   const log = nextTodayLog(prev, item, now);
+  if (rebuilding && item?.outcome === "error")
+    log.rebuild_failures = (log.rebuild_failures ?? 0) + 1;
+  // 作り直しをやめる（呼び出し側が cursor.today_rebuild を消す）。知らせるのはこのときの1回だけ
+  const giveUp =
+    rebuilding && (log.rebuild_failures ?? 0) >= REBUILD_MAX_FAILURES;
+  if (giveUp) delete log.rebuild_failures;
   return {
     log,
-    notice:
-      item?.outcome === "missed" && !log.missed_notified
+    giveUp,
+    notice: giveUp
+      ? [
+          `SNS /today（${log.date}）: 確認用の作り直しが${REBUILD_MAX_FAILURES}回続けて失敗したので、やめた（もう一度は today_rebuild を入れ直す）`,
+          `最後の理由: ${log.events.at(-1)?.reason ?? "なし"}`,
+        ].join("\n")
+      : item?.outcome === "missed" && !log.missed_notified
         ? missedTodayText(log)
         : null,
   };
