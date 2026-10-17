@@ -12,7 +12,10 @@
  * - 1回の実行で開くのは maxInspections 回まで（1回 最大 約45秒。関数の300秒を超えないため）。超えたら public_check_budget で止める
  * - 起動に失敗したら、同じ実行の中では起動し直さない（同じ失敗を候補の数だけ繰り返さない）
  */
-import { launchChromium } from "../../scripts/lib/launchChromium.js";
+import {
+  lastLaunch,
+  launchChromium,
+} from "../../scripts/lib/launchChromium.js";
 
 const BLOCKED = /google-analytics\.com|googletagmanager\.com|doubleclick\.net/;
 // Cookie の同意の帯（src/components/CookieConsent.jsx）は、同意の記録が無いと画面の下に出て、画像の下半分を覆う（2026-10-16）。
@@ -148,5 +151,9 @@ export function createChromiumHeadless({
       );
     },
     async close() {},
+    /** 直近の起動の様子（起動の前に止めた残りの Chromium の数・/tmp から消した残りの数・空きメモリ・/tmp の空き）。/today の失敗の理由に添える（2026-10-18） */
+    launchInfo() {
+      return `残り${lastLaunch.reaped}・掃除${lastLaunch.cleaned}・空き${lastLaunch.freeMb ?? "?"}MB・/tmp空き${lastLaunch.tmpFreeMb ?? "?"}MB`;
+    },
   };
 }
