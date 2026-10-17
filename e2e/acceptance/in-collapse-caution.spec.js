@@ -38,7 +38,7 @@ const REASON_ROW_ME = /1号艇\s*\S+?（[^）]+）\s*[\d.]+/;
 const REASON_ROW_MAX = /一番高い\s*\d号艇\s*\S+?（[^）]+）\s*[\d.]+/;
 const REASON_ROW_DIFF = /差\s*[−\-+]?[\d.]+/;
 // screens S-1: 導線の2つのボタン文言（思考アシストは ja のみ）
-const SONAR_BUTTON_TEXT = /類似レース[\d,]+件で見ると？/;
+const SONAR_BUTTON_TEXT = "類似レースで見ると？";
 const ASSIST_BUTTON_TEXT = "軸から考える";
 // spec 用語: 勝率差の帯の端の表記
 const BAND_LOWER_EDGE = "−3.5未満";
@@ -93,16 +93,28 @@ const aiTabCautionHeading = (page) =>
     .or(page.getByText(CAUTION_TITLE, { exact: true }))
     .first();
 
+/**
+ * カードが出ているか。描画を待たずに isVisible() を見ると、データの読み込み中に「カードが無い」と判定する
+ * （2026-10-17 ライブのデータで S-1 が1件失敗・17件スキップ）。カードの見出しか空状態の1行のどちらかが出るまで
+ * 待ってから、見出しが出ているかを返す。判定の中身は変えない（オーナー承認 2026-10-17、オーケストレーター経由）
+ */
+async function cautionCardShown(page, timeout = 10_000) {
+  await aiTabCautionHeading(page)
+    .or(page.getByText(EMPTY_STATE_TEXT))
+    .first()
+    .waitFor({ state: "visible", timeout })
+    .catch(() => {});
+  return aiTabCautionHeading(page)
+    .isVisible()
+    .catch(() => false);
+}
+
 /** イン崩れ注意度カードが出ているレースを、トップのリンクから探す。見つかった href に留まる */
 async function openAnyRaceCautionCard(page, { limit = 12 } = {}) {
   const hrefs = await findRaceHrefs(page);
   for (const href of hrefs.slice(0, limit)) {
     await openAiTab(page, href);
-    if (
-      await aiTabCautionHeading(page)
-        .isVisible()
-        .catch(() => false)
-    ) {
+    if (await cautionCardShown(page)) {
       return href;
     }
   }
@@ -118,12 +130,7 @@ async function findRaceWithCardText(page, pattern, { limit = 15 } = {}) {
   const hrefs = await findRaceHrefs(page);
   for (const href of hrefs.slice(0, limit)) {
     await openAiTab(page, href);
-    if (
-      !(await aiTabCautionHeading(page)
-        .isVisible()
-        .catch(() => false))
-    )
-      continue;
+    if (!(await cautionCardShown(page))) continue;
     const text = await page.evaluate(() => document.body.innerText);
     if (pattern.test(text)) return href;
   }
@@ -176,7 +183,7 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     expect(p).toBeGreaterThanOrEqual(0);
     expect(p).toBeLessThanOrEqual(100);
     await expect(
-      page.getByText(/全国\s*\d+(?:\.\d+)?\s*%/).first(),
+      page.getByText(/全レース\s*\d+(?:\.\d+)?\s*%/).first(),
     ).toBeVisible();
     await expect(page.getByText(/全国\s*[\d,]+\s*件/).first()).toBeVisible();
     await expect(page.getByText(DISCLAIMER)).toBeVisible();
@@ -309,10 +316,10 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     expect(text).not.toMatch(/的中|外れ/);
   });
 
-  test("[FR-2 注記] 準優・優勝戦のレースに「勝率差による差がつきにくい」の注記が出る", async ({
+  test("[FR-2 注記] 準優・優勝戦のレースに「勝率差が違っても割合があまり変わらない」の注記が出る", async ({
     page,
   }) => {
-    const NOTE = /勝率差による差がつきにくい/;
+    const NOTE = /勝率差が違っても割合があまり変わらない/;
     const href = await findRaceWithCardText(page, NOTE);
     test.skip(!href, "準優・優勝戦で注記が出るレースへ辿れない");
     await expect(page.getByText(NOTE)).toBeVisible();
@@ -343,11 +350,7 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     let found = null;
     for (const href of hrefs.slice(0, 15)) {
       await openAiTab(page, href);
-      if (
-        !(await aiTabCautionHeading(page)
-          .isVisible()
-          .catch(() => false))
-      ) {
+      if (!(await cautionCardShown(page))) {
         found = href;
         break;
       }

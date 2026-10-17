@@ -15,7 +15,11 @@ import {
   venueLabel,
 } from "../../../utils/analogyFormat";
 import { VENUE_FEW_RUNS, hintTableBest } from "../../../utils/analogyAggregate";
-import { SLIT_EXAMPLE, hintToday } from "../../../utils/analogyScenario";
+import {
+  SLIT_EXAMPLE,
+  hintCardGroups,
+  hintToday,
+} from "../../../utils/analogyScenario";
 
 const k = "aiPredictionTab.analogy.scenario";
 
@@ -76,13 +80,9 @@ export default function SlitHint({
       ))}
     </tr>
   );
-  // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: 1〜3コースより早い／0.02秒以上早い。承認モック）
-  const groups = rows.reduce((gs, r) => {
-    const g = gs.find((x) => x.form === r.form);
-    if (g) g.rows.push(r);
-    else gs.push({ form: r.form, rows: [r] });
-    return gs;
-  }, []);
+  // 同じ形の条件は1枚にまとめ、段階ごとの棒にする（カド一撃: 1〜3コースより早い／0.02秒以上早い。承認モック）。
+  // 並びは「なりやすい」→「はっきりしない」→「むしろなりにくい」（BOA-890）
+  const groups = hintCardGroups(rows);
   return (
     <div className="af-hint">
       <div className="af-hint-h">

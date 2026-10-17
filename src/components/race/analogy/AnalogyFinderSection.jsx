@@ -70,6 +70,7 @@ export default function AnalogyFinderSection({
   raceId,
   players = null,
   onOpenMeetForm = null,
+  initialTab = null,
 }) {
   const { t } = useTranslation();
   const headingId = useId();
@@ -81,10 +82,14 @@ export default function AnalogyFinderSection({
   // 別の軸から来たリンクは同じレースでも新しい初期値として読む
   const linkKey = `${raceId}:${firstParam ?? ""}`;
   // 1回目の描画で決める（使い終えた印は描画の後に付ける）
-  const [linkedTab] = useState(() =>
-    linkUsedRaces.has(linkKey)
-      ? null
-      : parseSonarParam(searchParams.get(RACE_SONAR_PARAM)),
+  // initialTab: 同じ画面の導線から開く副タブ（イン崩れ注意度のカードの「類似レース」、BOA-822）。URL の更新は
+  // タブの切り替えより遅れて届くので、?sonar= ではなく prop で受け取る
+  const [linkedTab] = useState(
+    () =>
+      parseSonarParam(initialTab) ??
+      (linkUsedRaces.has(linkKey)
+        ? null
+        : parseSonarParam(searchParams.get(RACE_SONAR_PARAM))),
   );
   useEffect(() => {
     if (linkedTab) linkUsedRaces.add(linkKey);

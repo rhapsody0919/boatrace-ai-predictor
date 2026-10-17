@@ -2063,6 +2063,35 @@ function suiteInCautionLevel(m, check) {
     ],
   );
   check(
+    "inCaution: 符号の書き方（負は全角のマイナス、正は +、0 は符号なし）",
+    [
+      m.signedText(-2.12, 2),
+      m.signedText(3, 1),
+      m.signedText(0, 1),
+      m.signedText(-0.5, 1),
+    ],
+    ["−2.12", "+3.0", "0.0", "−0.5"],
+  );
+  check(
+    "inCaution: 1号艇の着順（rank1〜6 はその着の艇番、いなければ null）、日付の書き方",
+    [
+      m.boat1Rank({ rank1: 2, rank2: 1 }),
+      m.boat1Rank({ rank1: 1 }),
+      m.boat1Rank({
+        rank1: 2,
+        rank2: 3,
+        rank3: 4,
+        rank4: 5,
+        rank5: 6,
+        rank6: null,
+      }),
+      m.boat1Rank(null),
+      m.slashDate("2019-04-01"),
+      m.slashDate(null),
+    ],
+    [2, 1, null, null, "2019/4/1", ""],
+  );
+  check(
     "inCaution: ラウンド（準々・準優進出は other、空も other）",
     ["準優勝戦", "優勝戦", "予選", "準優進出戦", "", null].map(m.roundOf),
     ["junyu", "yusho", "other", "other", "other", "other"],
@@ -2108,6 +2137,12 @@ const MUTANTS = [
     "帯の下限で丸めない",
     "Math.max(Math.floor(gapCents / bandWidthCents), bandMin)",
     "Math.floor(gapCents / bandWidthCents)",
+  ],
+  [
+    "inCautionLevel",
+    "正の数に + を付けない（帯の端「+3.0以上」が「3.0以上」になる）",
+    '${v < 0 ? "−" : "+"}',
+    '${v < 0 ? "−" : ""}',
   ],
   [
     "inCautionLevel",

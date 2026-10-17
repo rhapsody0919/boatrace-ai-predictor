@@ -3,15 +3,9 @@
  * アニメーションコンポーネントで使用
  */
 
-// 英語キー→日本語マッピング
-export const TECHNIQUE_NAMES = {
-  nige: "逃げ",
-  sashi: "差し",
-  makuri: "まくり",
-  makurizashi: "まくり差し",
-  nuki: "抜き",
-  megumare: "恵まれ",
-};
+// 英語キー→日本語マッピング。展開予測をやめた後も決まり手の表示で使うので src/constants/techniqueNames.js に移した（BOA-822）
+import { TECHNIQUE_NAMES } from "../constants/techniqueNames.js";
+export { TECHNIQUE_NAMES };
 
 /**
  * 展開予測が的中したレースで、「当たった候補」として見せるパターンを選ぶ。

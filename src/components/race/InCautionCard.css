@@ -1,0 +1,317 @@
+/* イン崩れ注意度のカード（InCautionCard.jsx、BOA-822、承認モック mock/1-ai-tab-375.png）。色は意味トークン */
+.in-caution-tab {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.in-caution-card {
+  display: grid;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--surface-card);
+  color: var(--text-primary);
+}
+
+.in-caution-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.in-caution-card-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.in-caution-card-main,
+.in-caution-card-side {
+  display: grid;
+  gap: var(--spacing-3);
+  align-content: start;
+  min-width: 0;
+}
+
+/* 375px は上から 理由 → 免責 → 導線 → 段ごとの実績（承認モック 1-ai-tab-375.png） */
+.in-caution-card-side {
+  grid-template-areas:
+    "reason"
+    "disc"
+    "links"
+    "acc";
+}
+
+.in-caution-card-reason {
+  grid-area: reason;
+}
+
+.in-caution-card-disclaimer {
+  grid-area: disc;
+}
+
+.in-caution-card-links {
+  grid-area: links;
+}
+
+.in-caution-card-accuracy {
+  grid-area: acc;
+}
+
+.in-caution-card-figure {
+  display: grid;
+  gap: var(--spacing-1);
+  margin: 0;
+}
+
+.in-caution-card-lead {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.in-caution-card-pct {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.in-caution-card-pct > span {
+  font-size: 2.75rem;
+}
+
+/* 棒（値の塗り・全国の点線）、段の範囲の帯、両端のラベル */
+.in-caution-card-bar {
+  position: relative;
+  display: grid;
+  gap: var(--spacing-1);
+  padding-top: 1.4em;
+}
+
+.in-caution-card-base-label {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.in-caution-card-track {
+  position: relative;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--border-hairline);
+}
+
+.in-caution-card-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--radius-sm);
+  background: var(--text-secondary);
+}
+
+.in-caution-card-fill--high {
+  background: var(--color-warning-dark-text);
+}
+
+.in-caution-card-fill--low {
+  background: var(--color-success-text);
+}
+
+/* 全国の印は点線（screens S-1「点線の上に『全国 {basePct}%』」、注記も「点線の『全国』」と書く） */
+.in-caution-card-base {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  border-left: 2px dashed var(--text-primary);
+}
+
+.in-caution-card-zones {
+  position: relative;
+  height: 3px;
+}
+
+.in-caution-card-zone--low,
+.in-caution-card-zone--high {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+}
+
+.in-caution-card-zone--low {
+  left: 0;
+  background: color-mix(in srgb, var(--color-success-text) 45%, transparent);
+}
+
+.in-caution-card-zone--high {
+  right: 0;
+  background: color-mix(
+    in srgb,
+    var(--color-warning-dark-text) 45%,
+    transparent
+  );
+}
+
+.in-caution-card-edges {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.in-caution-card-range {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.in-caution-card-notes {
+  margin: 0;
+  padding-left: 1.2em;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.in-caution-card-reason {
+  display: grid;
+  gap: var(--spacing-1-5);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-hairline);
+}
+
+.in-caution-card-reason h4 {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+/* ラベルと数字を離しすぎない（1024・1440px で約900px・540px 離れて行を追えなかった。ファン評価1周目） */
+.in-caution-card-reason dl {
+  display: grid;
+  gap: var(--spacing-1);
+  max-width: 420px;
+  margin: 0;
+}
+
+.in-caution-card-reason dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+}
+
+.in-caution-card-reason dt {
+  font-size: var(--font-size-sm);
+}
+
+.in-caution-card-reason dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.in-caution-card-note {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.in-caution-card-result {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+}
+
+.in-caution-card-result > span {
+  font-weight: 400;
+}
+
+.in-caution-card-links {
+  display: grid;
+  gap: var(--spacing-2);
+}
+
+/* 押せる部品は 44px 以上（mock-reviews-v1.md） */
+.in-caution-card-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  min-height: 44px;
+  padding: 0 var(--spacing-3);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.in-caution-card-link-go {
+  color: var(--brand-accent-primary);
+  white-space: nowrap;
+}
+
+.in-caution-card-accuracy {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  color: var(--brand-accent-primary);
+}
+
+/* 1200px 以上: カードの中を左右に（左 数字・棒・範囲／右 理由・導線）。導線は横に2つ、免責と段ごとの実績は同じ行 */
+@media (min-width: 1200px) {
+  .in-caution-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--spacing-6);
+    padding: var(--spacing-5) var(--spacing-6);
+  }
+
+  .in-caution-card-head {
+    justify-content: flex-start;
+  }
+
+  .in-caution-card-figure {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-3);
+  }
+
+  .in-caution-card-side {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "reason reason"
+      "links links"
+      "disc acc";
+    align-items: center;
+  }
+
+  .in-caution-card-reason {
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .in-caution-card-links {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .in-caution-card-accuracy {
+    min-height: 0;
+  }
+}
+
+.in-caution-empty {
+  margin: 0;
+  padding: var(--spacing-3) 0;
+  color: var(--text-secondary);
+}

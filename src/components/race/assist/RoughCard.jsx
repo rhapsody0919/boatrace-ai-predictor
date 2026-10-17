@@ -1,5 +1,6 @@
 import { useId } from "react";
 import ClassLineup from "./ClassLineup";
+import BaselineBar from "../BaselineBar";
 import { ROUND_LABEL, restClassCounts } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
@@ -8,20 +9,10 @@ function MiniBar({ label, row }) {
   if (!row) return null;
   const pct = Math.round(row.rate * 100);
   return (
-    <span className="ta-minibar">
-      <span>{label}</span>
-      <span className="ta-minibar-track" aria-hidden="true">
-        <span
-          className="ta-minibar-fill"
-          style={{ width: `${row.rate * 100}%` }}
-        />
-        <span className="ta-baseline" style={{ left: `${row.base * 100}%` }} />
-      </span>
-      <span className="ta-num">
-        <b>{pct}%</b> {row.verdict ? ASSIST_COPY.verdictArrow[row.verdict] : ""}{" "}
-        {ASSIST_COPY.roughBase(Math.round(row.base * 100))}
-      </span>
-    </span>
+    <BaselineBar label={label} rate={row.rate} base={row.base}>
+      <b>{pct}%</b> {row.verdict ? ASSIST_COPY.verdictArrow[row.verdict] : ""}{" "}
+      {ASSIST_COPY.roughBase(Math.round(row.base * 100))}
+    </BaselineBar>
   );
 }
 
