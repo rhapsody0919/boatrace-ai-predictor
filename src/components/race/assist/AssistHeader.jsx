@@ -3,6 +3,7 @@ import { GRADE_CONFIG } from "../../../constants/gradeConfig";
 import { formatObservedTime } from "../weatherInfo";
 import { trueWindDirection } from "../../../utils/windDirection.js";
 import { ROUND_LABEL } from "../../../utils/assistModel";
+import { SONAR_RACE_TAB } from "../../../utils/raceUrlState";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { TheoryButton } from "./SheetButtons";
 
@@ -149,8 +150,13 @@ export default function AssistHeader({
         <span className="ta-num">
           {oddsAt ? ASSIST_COPY.oddsAt(oddsAt) : ""}
         </span>
+        {/* 龍神ソナーは別のタブ（BOA-271）。内部タブは指定せず、ソナーの既定（差がつく材料）で開く。
+            以前は ?tab=aiPrediction のままで AI予想タブに移っていた（2026-10-17 オーナー指摘） */}
         {showSonar && (
-          <Link className="ta-link" to={`/race/${raceId}?tab=aiPrediction`}>
+          <Link
+            className="ta-link"
+            to={`/race/${raceId}?tab=${SONAR_RACE_TAB}`}
+          >
             {ASSIST_COPY.sonarLink}
           </Link>
         )}
