@@ -238,7 +238,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogyRaceContribution.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: 6艇の TreeSHAP をテーマ… | aggregateRaceContribution, boatMostRaisedBy |
 | `src/utils/analogyRaceFeatures.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: DB の行からモデルの入力を作る純… | toFloat32, meanFloat32, rankMinAscending, windOffsetFor, windComponents ほか3件 |
 | `src/utils/analogyRetention.js` | 龍神ソナーの保存ファイル（表示用と、STEP4 の元のレースの一覧）を残す日数（BOA-807、2026-10-13 オーナー決定: 2年）。 | SONAR_KEEP_DAYS, sonarKeepFrom, sonarExpired |
-| `src/utils/analogyScenario.js` | アナロジー・ファインダー v16 の展開シナリオの定義（BOA-271。plan「定義」）。純粋関数。 | exhibitionForms, slitForms, maedukeBoats, entryType, waveBand ほか24件 |
+| `src/utils/analogyScenario.js` | アナロジー・ファインダー v16 の展開シナリオの定義（BOA-271。plan「定義」）。純粋関数。 | exhibitionForms, slitForms, maedukeBoats, entryType, waveBand ほか25件 |
 | `src/utils/analogySimilarDisplay.js` | 類似レースの33項目の表示（spec B-6・B-7「今日: …」と1件ずつの値）。純粋関数。 | similarRaceLink, gapOf, b1Rank, topBoat, itemValue ほか2件 |
 | `src/utils/analogySimilarRerank.js` | アナロジー・ファインダー v16 の類似レースを、展示の後に並べ直す（BOA-271 tasks T4-1。plan「展示後の段」）。純粋関数。 | exhibitionVector, exhibitionBoats, candidateValues, rerankSimilar, exhibitionItemLevels ほか4件 |
 | `src/utils/analogySonar.js` | 龍神ソナーの図の輪（承認モック sonar-tab v3）。外周＝今の件数で、内側の輪は決まった番目（5・10・25・50・100・200・400 のうち間が空… | sonarRings |
@@ -273,6 +273,11 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
 | `src/utils/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
 | `src/utils/pageMeta.js` | トップ（/）と会場ページ（本日分、/venue/:code）の title・meta description・canonical を作る。 | getTopPageMeta, getTodayVenuePageMeta, getTodayVenueBreadcrumbItems |
+| `src/utils/pastRate/count.js` | BOA-635「過去に発生した割合を見る」の数え方（docs/design/past-rate-check/spec.md FR-1・共通の数え方）。純粋関数。 | orderCombos, countPastRate, incompatibleForms, TYPES, TENKAI_TECHNIQUES ほか3件 |
+| `src/utils/pastRate/label.js` | BOA-635 の定番／レアのラベル（docs/design/past-rate-check/spec.md FR-3）。純粋関数。 | subtypeOf, rateLabel, thresholdNote |
+| `src/utils/pastRate/layer.js` | BOA-635 で layer API の応答を使えるかの判定（docs/design/past-rate-check/spec.md「データ（土台）」・pla… | hasLayerDate, usableLayer, layerKey, LAYER_FIRST_DATE, isTruncated |
+| `src/utils/pastRate/slitRates.js` | スリット7形の全国の出現率（%、小数1桁）。BOA-635 の形の一覧に添える（spec FR-1）。 | SLIT_RATE_SOURCE, SLIT_RATES |
+| `src/utils/pastRate/storage.js` | BOA-635 の端末内保存（docs/design/past-rate-check/spec.md FR-5）。純粋関数（storage は引数で受ける）。 | isValidEntry, loadEntries, saveEntry, entriesForRace, STORAGE_KEY ほか1件 |
 | `src/utils/pitReportUrl.js` | ピットレポート（選手コメント）の公式URL導出と、取得対象レースの判定（BOA-379） | buildPitReportUrl, isPitReportCandidate, PIT_REPORT_GRADES, PIT_REPORT_MIN_RACE_NUMBER_NON_SG |
 | `src/utils/pretestRows.js` | 前検タイム（`motor_pretest_stats`）の行の選び方（BOA-451 / phase a FR-4a） | shiftDate, pickFirstPretestByRacer, pickMeetPretestByRacer, pickLatestPretestByRacer, PRETEST_LOOKBACK_DAYS |
 | `src/utils/prevResult.js` | 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と | finishMarkKeyOf, meetPrevRunState, meetPrevRunWhenParams |
@@ -328,7 +333,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/adminRulePerformance.js` | 管理画面（/admin/rules）の運用成績（全体・ルール別・週別）の取得と整形（BOA-567） | shapeRulePerformance, fetchRulePerformance, RULE_PERFORMANCE_START_DATE |
 | `src/services/adminRuleService.js` | 管理者向けルール分析サービス | getRuleApplicationHistory |
 | `src/services/analogyFeedback.js` | 龍神ソナー（BOA-271）の「画面の中の声」を analogy_feedback に送る（docs/db-migration/143_analogy_feed… | sendAnalogyFeedback |
-| `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogySimilar, getAnalogyScenarioRaces ほか1件 |
+| `src/services/analogyService.js` | アナロジー・ファインダー（BOA-271）のデータ取得。 | getAnalogyContribution, getRaceSt30, getAnalogyFacts, getAnalogyLayer, getAnalogySimilar ほか2件 |
 | `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
@@ -345,4 +350,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 310 ファイル / export 1724 件。
+対象 315 ファイル / export 1750 件。
