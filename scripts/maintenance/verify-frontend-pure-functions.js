@@ -45,6 +45,7 @@ const TARGETS = {
   hscrollHint: "src/utils/horizontalScrollHint.js",
   volatilityHighlights: "src/utils/volatilityHighlights.js",
   inCautionLevel: "src/utils/inCautionLevel.js",
+  cautionEvents: "src/utils/cautionEvents.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -2024,6 +2025,68 @@ const IN_CAUTION_CASES = JSON.parse(
   ),
 ).gapCases;
 
+// --- cautionEvents（BOA-822 task 27）: 注意度の GA4 イベント。生の % を送らず段のキーだけ、レース単位の面だけ race_id
+function suiteCautionEvents(m, check) {
+  const rid = "2026-10-11-02-04";
+  check(
+    "cautionEvents: レース詳細の visible は race_id・段・置き場所（ai_tab）。% は送らない",
+    m.cautionVisibleEvent({
+      surface: "race_detail",
+      raceId: rid,
+      inCaution: { level: "high", pct: 65 },
+    }),
+    {
+      name: "caution_visible",
+      params: {
+        caution_surface: "race_detail",
+        race_id: rid,
+        caution_band: "high",
+        caution_placement: "ai_tab",
+      },
+    },
+  );
+  check(
+    "cautionEvents: 値の無いレースは段 insufficient",
+    m.cautionVisibleEvent({
+      surface: "race_detail",
+      raceId: rid,
+      inCaution: null,
+    }).params.caution_band,
+    "insufficient",
+  );
+  check(
+    "cautionEvents: ホーム・/accuracy は race_id・段・置き場所なし",
+    m.cautionVisibleEvent({ surface: "accuracy" }),
+    { name: "caution_visible", params: { caution_surface: "accuracy" } },
+  );
+  check(
+    "cautionEvents: click は行き先つき。知らない面・行き先、race_id の無いレース単位の面は送らない",
+    [
+      m.cautionClickEvent({
+        surface: "race_detail",
+        target: "sonar",
+        raceId: rid,
+        inCaution: { level: "low" },
+      }).params,
+      m.cautionClickEvent({ surface: "race_detail", target: "x", raceId: rid }),
+      m.cautionClickEvent({ surface: "nowhere", target: "race" }),
+      m.cautionVisibleEvent({ surface: "race_list", raceId: null }),
+    ],
+    [
+      {
+        caution_surface: "race_detail",
+        race_id: rid,
+        caution_band: "low",
+        caution_placement: "ai_tab",
+        caution_target: "sonar",
+      },
+      null,
+      null,
+      null,
+    ],
+  );
+}
+
 function suiteInCautionLevel(m, check) {
   for (const c of IN_CAUTION_CASES) {
     const [b1, ...others] = c.rates.map(m.rateCents);
@@ -2113,6 +2176,7 @@ const SUITES = {
   hscrollHint: suiteHscrollHint,
   volatilityHighlights: suiteVolatilityHighlights,
   inCautionLevel: suiteInCautionLevel,
+  cautionEvents: suiteCautionEvents,
 };
 
 // ---------------------------------------------------------------------------
