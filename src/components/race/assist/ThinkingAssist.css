@@ -172,6 +172,18 @@
   cursor: pointer;
 }
 
+/* BOA-822: 行の名前の下の範囲の名前と件数。3行に折れないよう、名前の列を広げて小さめの字にする（承認モック 4-assist-375.png） */
+.ta-rough-btn--scoped > .baseline-bar {
+  grid-template-columns: 8.5em minmax(0, 1fr) auto;
+}
+
+.ta-rough-scope {
+  display: block;
+  font-size: var(--font-size-2xs);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
 .ta-rough-foot {
   display: flex;
   align-items: flex-end;

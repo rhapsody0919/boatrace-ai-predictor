@@ -21,8 +21,7 @@ function RowLabel({ name, scopeText }) {
   return (
     <>
       {name}
-      <br />
-      <span className="ta-note ta-num">{scopeText}</span>
+      <span className="ta-rough-scope ta-num">{scopeText}</span>
     </>
   );
 }
@@ -62,7 +61,9 @@ export default function RoughCard({
       {rough && (
         <button
           type="button"
-          className="ta-rough-btn"
+          className={
+            inCautionMode ? "ta-rough-btn ta-rough-btn--scoped" : "ta-rough-btn"
+          }
           aria-label={ASSIST_COPY.roughButton}
           onClick={onOpen}
         >
