@@ -7,6 +7,8 @@ import { test, expect } from "./fixtures.js";
  *   - 1440px: カードの中を左右2列（承認モック 1-ai-tab-1440.png）、出現パターンはカードの下、理由の表は 420px まで
  *   - 「類似レース400件で見ると？」で龍神ソナーの類似レースの副タブが開く（「差がつく材料」で開いていた）
  *   - AI用にコピーの「イン崩れ狙い」は段が崩れやすいときだけ（堅めでも旧指数で出ていた）
+ *   - ファン評価2周目: 1号艇の方が勝率が高いレースで、表の「一番高い」が真上の数字と矛盾して見えた（「他の艇で」を付ける）。
+ *     準優・優勝戦の注記は「準優勝戦だけ」「優勝戦だけ」を分けて書く。全国の印は点線
  */
 
 const DATE = "2026-09-22";
@@ -22,7 +24,7 @@ const entries = [1, 2, 3, 4, 5, 6].map((i) => ({
   boatNumber: i,
   boat2Rate: 35,
 }));
-const inCaution = (level, pct) => ({
+const inCaution = (level, pct, extra = {}) => ({
   pct,
   n: 34842,
   nonWin: 22634,
@@ -38,6 +40,7 @@ const inCaution = (level, pct) => ({
   lowSample: false,
   through: "2026-09-21",
   def: "gapband-r-v1",
+  ...extra,
 });
 const unified = {
   topPick: 1,
@@ -66,7 +69,22 @@ const race = (n, ic) => ({
 const edgeData = {
   generatedAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
-  races: [race(4, inCaution("high", 65)), race(5, inCaution("low", 26))],
+  races: [
+    race(4, inCaution("high", 65)),
+    race(5, inCaution("low", 26)),
+    race(
+      11,
+      inCaution("low", 32, {
+        round: "junyu",
+        n: 2967,
+        gapCents: 24,
+        band: 0,
+        boat1WinRate: 6.81,
+        topOtherWinRate: 6.57,
+      }),
+    ),
+    race(12, inCaution("low", 32, { round: "yusho", n: 1347 })),
+  ],
 };
 
 const open = (page, n, query = "tab=aiPrediction&caution=1") =>
@@ -97,9 +115,30 @@ test.describe("イン崩れ注意度のカード（BOA-822、?caution=1）", () 
     await expect(card).toContainText("崩れやすい");
     await expect(card.locator(".in-caution-card-pct")).toContainText("65");
     await expect(card).toContainText("1号艇 試験1（B1）");
-    await expect(card).toContainText("一番高い 3号艇 試験3（A1）");
+    await expect(card).toContainText("他の艇で一番高い 3号艇 試験3（A1）");
     await expect(card).toContainText("−2.12");
     await expect(page.getByTestId("ai-tab-sonar-link")).toHaveCount(0);
+  });
+
+  test("理由の表は「他の艇で一番高い」（1号艇の方が高いレースでも矛盾して見えない）、準優・優勝戦の注記は範囲を分け、全国の印は点線", async ({
+    page,
+  }) => {
+    await open(page, 11);
+    const card = page.locator(".in-caution-card");
+    await expect(card).toBeVisible({ timeout: 20000 });
+    await expect(card).toContainText("他の艇で一番高い 3号艇");
+    await expect(card).toContainText("+0.24");
+    await expect(card).toContainText("件数は準優勝戦だけの全国の実績");
+    await expect(card).toContainText("勝率差による差がつきにくい");
+    const style = await card
+      .locator(".in-caution-card-base")
+      .evaluate((e) => getComputedStyle(e).borderLeftStyle);
+    expect(style).toBe("dashed");
+    await open(page, 12);
+    await expect(page.locator(".in-caution-card")).toContainText(
+      "件数は優勝戦だけの全国の実績",
+      { timeout: 20000 },
+    );
   });
 
   test("1440px: カードの中は左右2列、出現パターンはカードの下、理由の表は 420px まで", async ({

@@ -83,12 +83,14 @@
 
 - [ ] **37. 待ち: 公開の日をユーザーが決める**（計測の基準 10/11〜 を7日以上、できれば14日。GA4 の4ディメンションの登録が済んでいること）
 - [ ] **38. 説明の書き直し**: About・FAQ・HowToUse・HomeAiIntro（フラグの側）、ブログ上位2記事（rough-race-signals・first-mark-prediction-guide）と翻訳版、`morningDigestCopy.js`（用語集・説明）。`content-qa`・`wording-editor`・`seo-marketer`
+  - レース詳細の title（「AI予想・展開予測」）・meta も、展開予測を外す公開の PR で書き直す（#1595 ファン評価2周目 P3）
   - rough-race-signals（GSC 623表示・21クリック・平均7.6位の入口記事、2026-10-13 Orchestrate）: 直すのは表示名「イン崩れ指数」→「イン崩れ注意度」（63・148・152・154・156・162・210・211・218 行の現在の画面を案内する箇所。192 行の当時の実践例の名前は変えない）と、トップへの案内文の短文3つ（見出し・現行の案内文・本文末の CTA）だけ。案内文は公開後の中身（勝率差の帯の全国実績の割合、3段）で書く。過去の実践例・率・倍率は触らない（BOA-617）。修正案と照合表: `~/ryujin-marketing/out/reports/2026-10-13-audit-20261013-01.md`・`~/ryujin-marketing/out/text-audit/20261013-01/comparison.md`（「本日のイン崩れ注意度ハイライト」「同じ会場のレースと比べた相対値」は今の画面の説明なので、そのままは使わない）
   - 同記事の実践例のリンク `/race/2025-12-15-04-10` は今「レースが見つかりませんでした」。リンクを外し、日付・会場・レース番号の文字だけ残す（推奨。注記で「今の画面では開けない」と書くより短い）。同じ PR で
   - 名前が変わらないので先行もできるが、案内文の中身が公開で変わるため公開の PR で一緒に直す（2026-10-13 判断、二度書き直さないため）
   - volatility-index-fukuoka-0913（#1511、イン崩れ指数100%の実例、9/13 福岡3R。2026-10-13 Orchestrate）: rough-race-signals と同じく、公開の PR で名称（イン崩れ指数→イン崩れ注意度）と今の画面への案内文だけを直す。中身の不一致4件はブログのレーンが先に直す。当時の値（100%）や実例の記述は当時の指数として残し、今の画面の値と混ぜない。src/data/blog-posts/volatility-index-fukuoka-0913.json の title・description も確かめる
 - [ ] **38b. Orchestrate に Preview の URL（`?caution=1`）と見るところを渡す**（公開の1行 PR はユーザーの判断。2026-10-13 Orchestrate）
 - [ ] **39. 公開の PR**: `IN_CAUTION_PUBLIC = true`、`MORNING_DIGEST_IN_CAUTION = true`、`inCautionConfig.json` の `launchDate`、`/hit-races` の 307（`vercel.json` の `permanent: false`・`AppRouter.jsx`）・ナビ・`App.jsx`・リンク・sitemap、`verify-hit-verification-guidance.js` ほか既存の verify と e2e の期待を新しい画面に（plan §9 の一覧）、ブログ・`morningDigestCopy.js`
+  - 前提（2026-10-17、#1595 のファン評価で2周続けて出た指摘の原因分析）: カードだけを先にフラグの裏に入れたので、カードの導線の先（/accuracy＝task 24、思考アシスト＝task 23）と、一覧・ホームの札（task 21・22）が旧指数のまま食い違う。公開の PR は tasks 21〜24 がすべてマージされてからにする。ファン評価・mock-diff-checker はそろった状態の Preview で回し直す
 - [ ] **40. ファン評価ループ**（`.claude/rules/review-fix-cycle.md`、Preview で `?caution=1`）と `mock-diff-checker`（承認したモックとの差）を公開の PR の前に通す
 - [ ] **41a. ロールバックの手順を PR に書く**: 公開の PR の revert（フラグの1行だけ戻さない）
 - [ ] **41. 公開の後**: 翌々日に GA4 の4ディメンション、/accuracy の公開後の件数、`verify-in-caution-coverage.js --today`

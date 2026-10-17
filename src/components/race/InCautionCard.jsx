@@ -91,7 +91,8 @@ export default function InCautionCard({
   const finished = Boolean(result?.finished);
   const rank = finished ? boat1Rank(result) : null;
   const notes = [
-    ic.round !== "other" && t("inCaution.noteFinal"),
+    ic.round === "junyu" && t("inCaution.noteJunyu"),
+    ic.round === "yusho" && t("inCaution.noteYusho"),
     ic.absentBoats?.length > 0 &&
       t("inCaution.noteAbsent", { boats: 6 - ic.absentBoats.length }),
     ic.lowSample &&

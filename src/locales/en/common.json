@@ -3661,7 +3661,7 @@
     "range": "Races where the gap between Boat 1 and the highest win rate among the other boats was about the same as today ({{band}}). {{n}} races nationwide ({{from}}–{{through}})",
     "reasonHeading": "Today's win-rate gap (national win rate)",
     "reasonBoat1": "Boat 1",
-    "reasonTop": "Highest: Boat {{boat}}",
+    "reasonTop": "Highest among the others: Boat {{boat}}",
     "reasonDiff": "Gap",
     "otherMaterial": "For other factors (exhibition, motor, etc.), see “Key differences” in Ryujin Sonar",
     "disclaimer": "This is a share of past results and does not guarantee today's outcome.",
@@ -3673,7 +3673,8 @@
     "empty": "No Lane-1 upset caution level for this race",
     "result": "Result: Boat 1 finished {{rank}}",
     "resultWinner": " (winner: Boat {{boat}})",
-    "noteFinal": "The count is past semifinals and finals only; the dotted “All venues” line is all races. In semifinals and finals, the win-rate gap makes less difference",
+    "noteJunyu": "The count is past semifinals only; the dotted “All venues” line is all races. In semifinals and finals, the win-rate gap makes less difference",
+    "noteYusho": "The count is past finals only; the dotted “All venues” line is all races. In semifinals and finals, the win-rate gap makes less difference",
     "noteAbsent": "Scratch ({{boats}} boats racing)",
     "noteLowSample": "Few races ({{n}})"
   }

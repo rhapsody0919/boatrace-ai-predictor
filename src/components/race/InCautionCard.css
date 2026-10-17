@@ -121,11 +121,12 @@
   background: var(--color-success-text);
 }
 
+/* 全国の印は点線（screens S-1「点線の上に『全国 {basePct}%』」、注記も「点線の『全国』」と書く） */
 .in-caution-card-base {
   position: absolute;
   top: -4px;
   bottom: -4px;
-  border-left: 2px solid var(--text-primary);
+  border-left: 2px dashed var(--text-primary);
 }
 
 .in-caution-card-zones {
