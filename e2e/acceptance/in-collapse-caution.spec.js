@@ -93,16 +93,28 @@ const aiTabCautionHeading = (page) =>
     .or(page.getByText(CAUTION_TITLE, { exact: true }))
     .first();
 
+/**
+ * カードが出ているか。描画を待たずに isVisible() を見ると、データの読み込み中に「カードが無い」と判定する
+ * （2026-10-17 ライブのデータで S-1 が1件失敗・17件スキップ）。カードの見出しか空状態の1行のどちらかが出るまで
+ * 待ってから、見出しが出ているかを返す。判定の中身は変えない（オーナー承認 2026-10-17、オーケストレーター経由）
+ */
+async function cautionCardShown(page, timeout = 10_000) {
+  await aiTabCautionHeading(page)
+    .or(page.getByText(EMPTY_STATE_TEXT))
+    .first()
+    .waitFor({ state: "visible", timeout })
+    .catch(() => {});
+  return aiTabCautionHeading(page)
+    .isVisible()
+    .catch(() => false);
+}
+
 /** イン崩れ注意度カードが出ているレースを、トップのリンクから探す。見つかった href に留まる */
 async function openAnyRaceCautionCard(page, { limit = 12 } = {}) {
   const hrefs = await findRaceHrefs(page);
   for (const href of hrefs.slice(0, limit)) {
     await openAiTab(page, href);
-    if (
-      await aiTabCautionHeading(page)
-        .isVisible()
-        .catch(() => false)
-    ) {
+    if (await cautionCardShown(page)) {
       return href;
     }
   }
@@ -118,12 +130,7 @@ async function findRaceWithCardText(page, pattern, { limit = 15 } = {}) {
   const hrefs = await findRaceHrefs(page);
   for (const href of hrefs.slice(0, limit)) {
     await openAiTab(page, href);
-    if (
-      !(await aiTabCautionHeading(page)
-        .isVisible()
-        .catch(() => false))
-    )
-      continue;
+    if (!(await cautionCardShown(page))) continue;
     const text = await page.evaluate(() => document.body.innerText);
     if (pattern.test(text)) return href;
   }
@@ -343,11 +350,7 @@ test.describe("S-1 レース詳細 AI予想タブのイン崩れ注意度カー�
     let found = null;
     for (const href of hrefs.slice(0, 15)) {
       await openAiTab(page, href);
-      if (
-        !(await aiTabCautionHeading(page)
-          .isVisible()
-          .catch(() => false))
-      ) {
+      if (!(await cautionCardShown(page))) {
         found = href;
         break;
       }
