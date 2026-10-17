@@ -60,7 +60,7 @@
 - [ ] **24. `/accuracy`** の作り替え（`InCautionAccuracyChart`、公開後／公開前の検証の切り替え、Wilson の区間は純関数、30件未満は件数だけ）と `/winning-technique?tab=volatility` の中身の置き換え（タブのラベルは新しいキーをフラグで切り替える。`analysisPage.tabs.volatility` は上書きしない）。`getInCautionAccuracy()`（`accuracy_cache.in_caution_accuracy`）
   - 段ごとの実績の点線のラベルも、カードと同じく「全レース」にそろえる（2026-10-17 オーナー決定。受け入れ E2E の S-5 は「全国」の文字で探しているので合わせて直す）
   - ファン評価（#1595 1周目 P2）: カードの「段ごとの実績を見る」の先は、今は旧ラベルと展開予測の的中率のページ。公開の前に必ず入れる
-- [ ] **25. `/races`**: 展開予測の的中率を外し、meta description とページの説明を書き直す（フラグの側）
+- [x] **25. `/races`**: 展開予測の的中率を外し、meta description とページの説明を書き直す（フラグの側）
 - [ ] **26. 確定後のシェア文・AIコピー** の展開予測の節を外す（フラグの側）。AIコピーの「イン崩れ狙い」の選択肢は `inCaution.level === "high"`
   - AIコピーの分は #1595 で入れた（ファン評価1周目 P1）。「イン崩れ狙い」は段が崩れやすいときだけ、展開予測の節と言葉を外した（`promptInCautionTrifecta`）。確定後のシェア文は未着手
 - [ ] **27. 計測** `caution_visible`・`caution_click`（measurement.md）。送るかは純関数、`verify-frontend-pure-functions.js` と e2e に再現テスト
