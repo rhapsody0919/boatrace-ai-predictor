@@ -761,6 +761,7 @@ function ThinkingAssistBody() {
               status={roughStatus}
               onOpen={() => act({ type: "sheet", sheet: "rough" })}
               inCautionMode={inCautionMode}
+              raceId={raceId}
             />
           )}
         </AssistHeader>

@@ -149,6 +149,7 @@ export function roughWithInCaution(rough, inCaution) {
       n,
       lowSample: Boolean(lowSample),
       round: ROUND_LABEL[inCaution.round] ?? null,
+      level: inCaution.level ?? null,
     },
   };
 }
