@@ -52,3 +52,4 @@
 - content-qa はブログ記事の公開前6観点（.claude/commands/publish-blog.md）の合否判定。wording-editor は画面・モック・SNS・spec を含む全ての文の言葉の相談と、禁止語・誇大・対訳の判定。ブログの公開前は content-qa、言い換え案は wording-editor（2026-10-11、オーケストレーター依頼）
 - 「崩れやすい」「堅め」は旧指数のラベルの語（percentileBarMax 等）の継続で、保証・射幸心の表現に当たらない（直下に免責の併記が前提）（2026-10-12、BOA-822 wording-editor、docs/design/in-collapse-caution/mock-reviews-v1.md）
 - 新しい用語は実装の前に docs/reference/i18n-glossary.md に4言語の対訳を登録する（BOA-822 では イン崩れ注意度・勝率差・崩れやすい／中くらい／堅め・段ごとの実績）（2026-10-12、同）
+- 「似ている」系の回避は `inCaution.range` だけでなく `inCaution.home.note` でも4言語でそろえた（ja「同じくらいの」・en "about the same"・ko「같은 정도인」・zh-TW「差不多」。「비슷한」「相似」は使わない）（2026-10-17、BOA-822 #1602 wording-editor）
