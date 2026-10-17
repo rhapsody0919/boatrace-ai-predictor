@@ -35,7 +35,7 @@ const unified = {
     patterns: [{ technique: "逃げ", winnerCourse: 1, probability: 0.6 }],
   },
 };
-const race = (n, cancellationStatus, predictions) => ({
+const race = (n, cancellationStatus, predictions, inCaution = null) => ({
   raceId: `${DATE}-09-${String(n).padStart(2, "0")}`,
   venueCode: 9,
   venue: "津",
@@ -46,6 +46,7 @@ const race = (n, cancellationStatus, predictions) => ({
   predictions,
   exhibitionData: [],
   result: null,
+  inCaution,
 });
 const edgeData = {
   generatedAt: new Date().toISOString(),
@@ -54,7 +55,12 @@ const edgeData = {
     // 1R: 中止確定・結果なし・選手と予想は残っている
     race(1, "confirmed", { unified }),
     // 2R: 通常の未確定レース
-    race(2, null, { unified }),
+    race(
+      2,
+      null,
+      { unified },
+      { pct: 65, level: "high", n: 34842, nonWin: 22634, basePct: 45 },
+    ),
     // 3R: 中止ではないが予想データが無い
     race(3, null, {}),
   ],
@@ -313,5 +319,43 @@ test.describe("レース詳細のSNSシェアの GA4 イベント", () => {
         },
       ],
     ]);
+  });
+});
+
+// BOA-822（機能フラグの側、?caution=1。2026-10-17 オーナー決定の案A）: 発走前は注意度の文面。本命・推奨・展開予測は書かない
+test.describe("レース詳細のSNSシェア文面（イン崩れ注意度、?caution=1）", () => {
+  for (const [lang, head, level] of [
+    ["ja", "イン崩れ注意度 65%（崩れやすい）", "1号艇が1着を逃した割合"],
+    [
+      "en",
+      "Lane-1 upset caution level 65% (Upset-prone)",
+      "Boat 1 failed to win",
+    ],
+    ["ko", "1코스 이변 주의도 65%(이변 주의)", "1번 보트가 1착을 놓친 비율"],
+    ["zh-TW", "1號位失守注意度 65%（容易爆冷）", "1號艇未拿下第1名的比例"],
+  ]) {
+    test(`${lang}: 注意度の割合と段、本命・推奨なし、「AI予想」のタグなし`, async ({
+      page,
+    }) => {
+      await setup(page, lang, 0);
+      const prefix = lang === "ja" ? "" : `/${lang}`;
+      const { text, hashtags } = await shareOnX(
+        page,
+        `${prefix}/race/${DATE}-09-02?caution=1`,
+      );
+      expect(text).toContain(head);
+      expect(text).toContain(level);
+      expect(text).not.toMatch(/本命|推奨|展開予測|Top pick/);
+      expect(hashtags).not.toContain("AI予想");
+    });
+  }
+
+  test("注意度の値が無いレース: 本命を出さない無料公開の文面", async ({
+    page,
+  }) => {
+    await setup(page, "ja", 0);
+    const text = await shareTextOnX(page, `/race/${DATE}-09-03?caution=1`);
+    expect(text).toContain("出走表とデータ分析を無料で公開中");
+    expect(text).not.toContain("本命");
   });
 });
