@@ -100,6 +100,22 @@ test("印の表: race-sonar・today は2つずつの data-testid、許すタブ�
   assert.deepEqual(SCREEN_TABS, ["sonar"]);
 });
 
+test("race-sonar の印は展示の前後どちらでも出る要素だけ（段の表示 analogy-stage-chip は展示の後に消える、2026-10-17）", async () => {
+  assert.ok(
+    !SCREEN_MARKERS["race-sonar"].some((s) => s.includes("analogy-stage-chip")),
+  );
+  const controls = await readFile(
+    new URL(
+      "../../src/components/race/analogy/AnalogyControls.jsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  // 箱は展示の有無で分かれる前の外側にある（段の表示とボタンはその中で入れ替わる）
+  const box = controls.indexOf('data-testid="analogy-controls"');
+  assert.ok(box > 0 && box < controls.indexOf("exhibitionReady ?"));
+});
+
 test("Chromium は1回だけ起動し、毎回新しい context で開いて閉じ、解析のタグを止め、見えた印だけを返す", async () => {
   const fake = fakeBrowser({ visible: [SCREEN_MARKERS["race-sonar"][0]] });
   const headless = createChromiumHeadless({ launch: fake.launch });
