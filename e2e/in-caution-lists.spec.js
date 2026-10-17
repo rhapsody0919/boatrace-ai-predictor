@@ -189,6 +189,10 @@ test.describe("イン崩れ注意度の一覧の札とホーム（BOA-822、?cau
       .boundingBox();
     expect(accuracy.height).toBeGreaterThanOrEqual(44);
     await expect(section).toContainText("全国の過去レース（2019年4月〜前日）");
+    // 準優勝戦・優勝戦はラウンドで分けた値（#1602 ファン評価3周目、1周目 P3 の再発）
+    await expect(section).toContainText(
+      "準優勝戦・優勝戦は、それぞれ準優勝戦だけ・優勝戦だけ",
+    );
   });
 
   test("会場のレース一覧: 札は段と割合（中くらいは枠線だけ）、値の無いレースは札を出さない", async ({
