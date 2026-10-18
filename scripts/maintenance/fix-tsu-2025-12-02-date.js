@@ -4,7 +4,7 @@
  * 背景: BOA-325（Done、PR #664/666）は、自社データ初日(2025-12-03)の120レース
  * （10会場×12レース）について、race_idの日付部分(2025-12-02)をrace_date列
  * （2025-12-03）に合わせて訂正した。これは「race_date側が正しい」という前提に
- * 立っていたが、BOA-413（docs/issues/opening-day-race-date-premise-reverification.md）
+ * 立っていたが、BOA-413（docs/archive/issues/opening-day-race-date-premise-reverification.md）
  * の再検証で、津(09)のみこの前提が誤りだったと判明した：公式K-file 2025-12-03分に
  * 津のブロック自体が存在せず、2025-12-02分の出走表（racer_id）と6艇×12レース=72値
  * が完全一致する。つまり津は実際には2025-12-02に開催されており、BOA-325の訂正

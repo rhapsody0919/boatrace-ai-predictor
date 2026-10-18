@@ -170,5 +170,5 @@ Bファイルは節の開始前に公開される。DBの値は発走60分前の
 ## 7. 参考
 
 - [BOA-414の調査](./phantom-race-days-2026-04-onward-and-pipeline-review.md)（カテゴリA/B/Cの分類、現行パイプラインでの再現性）
-- [BOA-407の調査](./venue-not-in-k-phantom-race-days.md)（幻の開催日）
+- [BOA-407の調査](../archive/issues/venue-not-in-k-phantom-race-days.md)（幻の開催日）
 - [races-opening-day-missing.md](./races-opening-day-missing.md)（取りこぼし方向の再発防止策）

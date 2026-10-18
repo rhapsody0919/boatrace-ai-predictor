@@ -1,7 +1,7 @@
 # ADR 0090: SNS 素材を v1 にして、手元のスクリプトから Storage に直接上げる
 
 ## ステータス
-提案中（docs/design/sns-pdca-loop/plan.md §1）
+採用（docs/design/sns-pdca-loop/plan.md §1。`scripts/sns/push-bundle.js`、153 は適用済み）
 
 ## 背景
 自動送信（docs/design/sns-pdca-loop/spec.md A8）には、Codex が毎日作る動画と X スレッドを人の操作なしで取り込む口が要る。今のプレビューバンドル v0 は、(1) 設計上いつも公開保留（135 のトリガー `guard_sns_preview_bundle_draft`）、(2) 管理画面でファイルを手で選び Vercel の関数を経由するのでリクエスト全体が 4 MiB まで（Vercel のボディ上限 4.5 MB）、(3) 動画1本 2 MiB まで、のため使えない。Codex には鍵を渡さない（ユーザー決定）。

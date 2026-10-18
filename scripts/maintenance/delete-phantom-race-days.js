@@ -6,7 +6,7 @@
  * 背景: BOA-403 の調査で判明した race_results 欠損のうち venue_not_in_k 分類（該当日の
  * K-fileにその会場のブロックが無い）について、BOA-407 で全件を調査した結果、race_id の
  * 日付ズレではなく「過去の実在日の出走表がそのまま複製され、別日付の下に誤保存された」
- * ことが判明した（docs/issues/venue-not-in-k-phantom-race-days.md、PR #818）。
+ * ことが判明した（docs/archive/issues/venue-not-in-k-phantom-race-days.md、PR #818）。
  *
  * 判定方法（PR #818 §2.3 と同じロジック）: 対象会場日の各レース番号（1〜12）について、
  * 艇1〜6の racer_id を、過去14日以内でその会場のデータが最初に存在する日（データが無い

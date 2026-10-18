@@ -109,7 +109,7 @@ export function buildArchiveRows(day) {
       has_k: Boolean(kv),
       has_b: Boolean(bv),
       // race_grade は書かない（K/B にグレードの項目は無い）。race_series の kind から別に補完する
-      // （BOA-651、docs/issues/boa-651-kb-archive-grade.md）。ここで null を送ると、load の再実行
+      // （BOA-651、docs/archive/issues/boa-651-kb-archive-grade.md）。ここで null を送ると、load の再実行
       // （upsertChangedRows）が補完した値を NULL で上書きする
       // is_final_day も書かない（BOA-696）。K/B は最終日も「第N日」と書き、「最終日」と書かないため、K/B からは
       // 常に false になる。race_series の終了日から別に補完する（docs/issues/boa-696-kb-archive-final-day.md）。

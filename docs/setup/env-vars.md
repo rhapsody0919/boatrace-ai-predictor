@@ -9,8 +9,7 @@
 | `VITE_GA_MEASUREMENT_ID` | Google Analytics |
 | `LINEAR_API_KEY` | Linear連携 |
 | `LINEAR_TEAM_ID` | LinearチームID |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Google のサービスアカウント（GA4 のレポート等） |
-| `GOOGLE_PRIVATE_KEY` | Google のサービスアカウントの鍵 |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | Google のサービスアカウントの鍵ファイルのパス（GA4・Search Console のレポート。既定は `credentials/google-service-account.json`。`scripts/lib/googleServiceAuth.js`） |
 | `GITHUB_MERGE_TOKEN` | ブログ記事Draft PRの自動マージ（sns-hub admin、Fine-grained PAT、ADR 0034） |
 | `YOUTUBE_CLIENT_ID` | YouTube Data API v3連携（ADR 0035） |
 | `YOUTUBE_CLIENT_SECRET` | YouTube Data API v3連携（ADR 0035） |

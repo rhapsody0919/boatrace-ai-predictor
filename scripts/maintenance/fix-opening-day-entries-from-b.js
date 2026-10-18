@@ -4,11 +4,11 @@
  *
  * 背景: 2025-12-03 の9会場（108レース・648行）は、race_entries の選手の列と races.start_time が前日 12-02 の番組だった
  * （名前 647/648・締切 102/108 が 12-02 と一致）。racer_id と race_results は 12-03 の正しい値（BOA-325 の付け替えの後、
- * K から補完・作り直し）。詳細: docs/issues/boa-580-opening-day-entries.md
+ * K から補完・作り直し）。詳細: docs/archive/issues/boa-580-opening-day-entries.md
  *
  * DB には読み取りだけ行い、書き込みはしない。出力する SQL はユーザーが実行する。
- *   書き込み:   docs/issues/boa-580-opening-day-entries.sql（BEGIN〜COMMIT、件数の保護つき）
- *   取り消し:   docs/issues/boa-580-opening-day-entries-rollback.sql（現在の値に戻す）
+ *   書き込み:   docs/archive/issues/boa-580-opening-day-entries.sql（BEGIN〜COMMIT、件数の保護つき）
+ *   取り消し:   docs/archive/issues/boa-580-opening-day-entries-rollback.sql（現在の値に戻す）
  *
  * 直す列（B と racer_profiles から）:
  *   race_entries: player_name（racer_profiles.name。B の名前は4文字で切り詰めのため）、grade、age、branch、weight_kg、
@@ -31,10 +31,10 @@ import { readParsedDay, DEFAULT_ARCHIVE_DIR } from "./backfill-kb-gaps.js";
 
 const DATE = "2025-12-03";
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const SQL_PATH = path.join(ROOT, "docs/issues/boa-580-opening-day-entries.sql");
+const SQL_PATH = path.join(ROOT, "docs/archive/issues/boa-580-opening-day-entries.sql");
 const ROLLBACK_PATH = path.join(
   ROOT,
-  "docs/issues/boa-580-opening-day-entries-rollback.sql",
+  "docs/archive/issues/boa-580-opening-day-entries-rollback.sql",
 );
 
 export const ENTRY_COLUMNS = [
