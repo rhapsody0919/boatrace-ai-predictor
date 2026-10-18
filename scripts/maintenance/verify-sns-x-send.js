@@ -351,6 +351,14 @@ test("保留の理由は「段階_種類」で残す（API の本文・鍵は入
     holdReasonOf(new Error("何か"), "media_load"),
     "media_load_error",
   );
+  // DB（RPC）が拒否したものは、媒体・X の失敗と区別する
+  const rejected = Object.assign(
+    new Error("自動送信の条件を満たしていません"),
+    {
+      dbRejected: true,
+    },
+  );
+  assert.equal(holdReasonOf(rejected, "x_append"), "x_append_db_rejected");
   // 実行の経路: initialize が 403 で落ちたら、DB の保留の理由と例外の holdReason に x_initialize_forbidden が入る
   const bytes = new Uint8Array([1, 2, 3]);
   const digest = async (b) =>
