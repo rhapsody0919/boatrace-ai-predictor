@@ -437,7 +437,7 @@ Linearへの起票は行っていない。以下は、起票できる粒度で�
 | G12 | 監視の抜け: オッズ・結果・レース情報・買い目オッズ・朝の初期化・得点率・選手ニュース・期別成績に、件数・窓内取得・0件・未実行の検知が無い。取得ステップの`continue-on-error: true`で、失敗が成功に見える | 確認済み | 全て | 完了の定義C |
 | G13 | DB障害が、空の結果に化ける。A5は、`getRaceSchedule`がDBエラー時に空配列を返し、200で終わる。9/19 10:50 JSTのログで確認。9/16の障害時は、A8以降が「スケジュール未登録」で早期終了した | 確認済み | A5、全ジョブ | BOA-359（「失敗が空に化ける」問題の横展開）と同型 |
 
-## 8. 対象外のワークフロー（26ファイル）
+## 8. 対象外のワークフロー（23ファイル）
 
 取得系ではないため対象外。取得ジョブのタイミングに影響しうる「DBを読む・書くバッチ」は、名前を示した。
 
@@ -450,14 +450,11 @@ Linearへの起票は行っていない。以下は、起票できる粒度で�
 | `generate-poirot.yml`、`train-poirot.yml`、`train-sherlock.yml` | schedule | 予測モデルの生成・学習。外部取得なし |
 | `campaign-pipeline.yml` | schedule（30分ごと、21:45 JSTに日次のまとめ） | 企画型SNS投稿の対象レース検出・結果書き戻し（DBのみ） |
 | `content-ops-nightly-check.yml` | schedule | コンテンツ運用の夜間チェック |
-| `post-x-animation.yml` | 手動のみ（scheduleは無効化中） | X（旧Twitter）への投稿（外部への書き込み） |
 | `update-sitemap.yml` | schedule | サイトマップ・llms.txtの生成とSearch Consoleへの送信 |
-| `update-google-sheets.yml` | `workflow_run`（"Scrape Race Data"の完了後）、手動 | 参照する"Scrape Race Data"は、2026-04-09に統合・削除済み（[外部Cronのセットアップ](../../operation/external-cron-setup.md)）。現行のワークフロー名に該当が無く、自動起動は発火しない（手動のみ有効） |
 | `exhibition-gap-monitor.yml` | schedule（00:30 JST指定） | 展示の欠落率の監視（DBを読む）。完了の定義C（[§6.2](#62-監視cの有無)） |
 | `race-notices-drift-monitor.yml` | schedule（00:30 JST指定） | 特記事項の構造変化の監視（DBを読む）。完了の定義C |
 | `slack-notify-pr.yml` | PR | Slackへの通知 |
 | `e2e-smoke-test.yml`、`verify-cache-config.yml` | PR | CI |
-| `deploy.yml.disabled` | 無効化済み | 旧GitHub Pagesデプロイ |
 
 ## 9. 未確認の項目
 
