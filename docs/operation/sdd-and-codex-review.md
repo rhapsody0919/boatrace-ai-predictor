@@ -34,7 +34,8 @@
 | Codex の PR（`codex/*`） | Codex | Claude | 鍵を持つ側で `claude -p` を Bash なしで実行する。Codex の自己検証の結果は合否の根拠にしない |
 
 - Claude のセルフレビュー（`/code-review`）は、Codex の審査の前に行う
-- `second-opinion-reviewer`（`.claude/agents/`）は、Codex が止まっているときの代わりとしてだけ使う
+- 合否は Codex の指摘を優先する。ただし指摘は、ほかのレビューと同じく実在を確かめてから扱う（`.claude/rules/review-fix-cycle.md`）
+- Codex が止まっているとき（connector がアカウント未接続を返す等、審査が返ってこない）は、PR の審査は設計に関わっていないサブエージェントで代わりにする。意思決定・分析の検証の代わりは `second-opinion-reviewer`（`.claude/agents/`）
 - Codex には `src/` の画面の作業を回さない（`codex/*` には Vercel Preview が無く、画面を確かめられないため）
 - マージは、機械と審査役が CI の見張り・再実行（1回まで）・審査を済ませた PR を、オーケストレーターが「マージ可」の束としてまとめて行う。手順と段階は `.claude/skills/orchestrate/SKILL.md` に従う
 - 手元で Codex に diff を審査させる `/codex-review`・`scripts/codex-review.sh` は使わない
