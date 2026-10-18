@@ -136,7 +136,7 @@ export async function runSnsSend(
       await preflight(job);
     } catch (error) {
       result.outcome = "precheck_failed";
-      result.reason = slug(error.message);
+      result.reason = error.holdReason ?? slug(error.message);
       alerts.push({
         key: `precheck:${job.id}:${result.reason}`,
         text: `送る前の検査で止めた（claim していない）: ${job.channel} job ${job.id} 理由 ${result.reason}`,
@@ -203,7 +203,7 @@ export async function runSnsSend(
     } catch (error) {
       // job の状態（held・要照合）は送信の関数が DB に残している。ここでは理由を知らせるだけ
       result.outcome = "error";
-      result.reason = slug(error.message);
+      result.reason = error.holdReason ?? slug(error.message);
       await tell(
         `send:${job.id}`,
         `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,

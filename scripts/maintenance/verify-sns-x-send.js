@@ -66,7 +66,14 @@ async function enable(ceiling = 300000) {
   );
 }
 const run = (j, x, extra = {}) =>
-  runXSendJob(j.id, { store, x, loadMedia, wait, preflight: async () => {}, ...extra });
+  runXSendJob(j.id, {
+    store,
+    x,
+    loadMedia,
+    wait,
+    preflight: async () => {},
+    ...extra,
+  });
 
 test("初期停止・未承認・本人以外は送らない", async () => {
   const d = await draft(),
@@ -309,4 +316,83 @@ test("タグのみ・空タグ混在でも既存コピーの本文と一致", as
   );
   const edited = await first("SELECT * FROM sns_drafts WHERE id=$1", [d.id]);
   assert.equal((await approve(edited)).snapshot.text, "#龍神レーダー");
+});
+
+test("保留の理由は「段階_種類」で残す（API の本文・鍵は入れない）。2026-10-18 /today が preflight_or_media_failed だけを残した件", async () => {
+  const { holdReasonOf, runXSendJob } =
+    await import("../../api/_lib/snsXSend.js");
+  assert.equal(
+    holdReasonOf(new Error("deadline_expired"), "preflight"),
+    "deadline_expired",
+  );
+  assert.equal(
+    holdReasonOf(
+      new Error(
+        "X API POST /2/media/upload/initialize が失敗: HTTP 403 client-forbidden",
+      ),
+      "x_initialize",
+    ),
+    "x_initialize_forbidden",
+  );
+  assert.equal(
+    holdReasonOf(new Error("X API が失敗: HTTP 503"), "x_append"),
+    "x_append_server_error",
+  );
+  assert.equal(
+    holdReasonOf(
+      new Error(
+        "browserContext.newPage: Target page, context or browser has been closed",
+      ),
+      "preflight",
+    ),
+    "preflight_browser_closed",
+  );
+  assert.equal(
+    holdReasonOf(new Error("何か"), "media_load"),
+    "media_load_error",
+  );
+  // 実行の経路: initialize が 403 で落ちたら、DB の保留の理由と例外の holdReason に x_initialize_forbidden が入る
+  const bytes = new Uint8Array([1, 2, 3]);
+  const digest = async (b) =>
+    Buffer.from(await crypto.subtle.digest("SHA-256", b)).toString("hex");
+  const snapshot = {
+    text: "t",
+    media: [
+      {
+        path: "a.png",
+        size: 3,
+        sha256: await digest(bytes),
+        type: "image/png",
+      },
+    ],
+  };
+  const snapshotText = JSON.stringify(snapshot);
+  const holds = [];
+  const store = {
+    transition: async (id, action, result) => {
+      if (action === "hold") holds.push(result.reason);
+      return {
+        id,
+        state: "sending",
+        channel: "x",
+        snapshot_text: snapshotText,
+        approved_hash: await digest(new TextEncoder().encode(snapshotText)),
+      };
+    },
+  };
+  const error = await runXSendJob("j1", {
+    store,
+    x: {
+      initialize: async () => {
+        throw new Error(
+          "X API POST /2/media/upload/initialize が失敗: HTTP 403",
+        );
+      },
+    },
+    loadMedia: async () => bytes,
+    wait: async () => {},
+    preflight: async () => {},
+  }).catch((e) => e);
+  assert.equal(error.holdReason, "x_initialize_forbidden");
+  assert.deepEqual(holds, ["x_initialize_forbidden"]);
 });
