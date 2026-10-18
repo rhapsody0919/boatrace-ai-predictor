@@ -1087,7 +1087,11 @@
   }
 }
 
+/* 区切りの無い長いファイル名（noteVideoShared.jsx（Fade/Pop/…）等）が375pxで画面からはみ出すので、どこでも折る
+   （2026-10-19、資料のページを本番で確かめて判明） */
 .doc-reference-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-weight: 700;
   font-size: 0.85rem;
   color: var(--color-gray-800);

@@ -200,6 +200,12 @@ for (const width of [375, 1440]) {
     await expect(
       page.getByRole("heading", { name: "展望素材の取り込み" }),
     ).toBeVisible();
+    // カタログの長いファイル名で横にはみ出さない（2026-10-19、本番の 375px で 27px はみ出していた）
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
     await page.screenshot({
       path: `${dir}/library-${width}.png`,
       fullPage: true,
