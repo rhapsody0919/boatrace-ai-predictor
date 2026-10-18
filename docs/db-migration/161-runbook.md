@@ -20,7 +20,7 @@ WHERE conrelid = 'public.sns_auto_send_items'::regclass
 
 1 と同じ SELECT を実行し、kind_check に `full_picture`、kind_source に `kind = 'full_picture'` の枝があることを確かめる。
 
-## 4. 送信設定（#1616・#161 の PR のデプロイの後）
+## 4. 送信設定（#1616 のデプロイの後）
 
 ```sql
 UPDATE public.sns_auto_send_control SET mode = 'auto', dry_run = false WHERE channel IN ('x', 'youtube');
