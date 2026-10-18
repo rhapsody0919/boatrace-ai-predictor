@@ -81,11 +81,13 @@ import {
 } from "../../utils/raceUrlState";
 import {
   isAnalogyFinderEnabled,
+  isInCautionEnabled,
   isThinkingAssistEnabled,
 } from "../../config/featureFlags";
 import AnalogyFinderSection from "./analogy/AnalogyFinderSection";
 import { SocialShareButtons } from "../SocialShareButtons";
 import {
+  generateInCautionShareText,
   generatePredictionShareText,
   generateResultShareText,
   shareUrlFor,
@@ -193,6 +195,9 @@ function PredictionPanel({
   // ほかのタブの中からタブを切り替える依頼（AI予想タブの「龍神ソナーのタブへ」）。
   // RaceTabs は選択を自分で持つので、seq を増やして同じタブへの依頼も届くようにする
   const [tabRequest, setTabRequest] = useState(null);
+  // イン崩れ注意度のカードから龍神ソナーの類似レースへ（BOA-822）。ソナーの節は ?sonar= を最初の描画で読むが、
+  // URL の更新はタブの切り替えより遅れて届くので、最初に開く副タブは prop で渡す（ファン評価1周目）
+  const [sonarInitialTab, setSonarInitialTab] = useState(null);
   const {
     toast: aiCopyToast,
     showToast: showAiCopyToast,
@@ -274,32 +279,48 @@ function PredictionPanel({
 
   // 共有文（BOA-754）。結果確定後は、発走前の予想の文面（推奨の買い目・「的中率が上がって嬉しい」）を
   // 共有させない。展開予測の候補のどれかが1着なら的中の文面、どれも1着でなければボタンを出さない
+  const inCautionShare = isInCautionEnabled();
+  // BOA-822（機能フラグの側、task 26）: 確定後の共有文は展開予測の的中の文面だけなので、展開予測を外す側では出さない
   const shareTitle = isFinished
-    ? generateResultShareText(
-        {
-          venue: venueName || t("panel.unknownVenue"),
-          raceNo: selectedRace?.raceNumber || "?",
-          date: raceDate,
-          patterns: prediction?.turnPrediction?.patterns,
-          result: prediction?.result,
-          winnerEntryCourse: winnerCourse?.course ?? null,
-        },
-        t,
-      )
-    : generatePredictionShareText(
-        {
-          venue: venueName || t("panel.unknownVenue"),
-          raceNo: selectedRace?.raceNumber || "?",
-          date: raceDate,
-          isCancelled,
-          prediction: {
-            topPick: prediction.topPick?.number,
-            top3: prediction.top3 || [],
+    ? inCautionShare
+      ? null
+      : generateResultShareText(
+          {
+            venue: venueName || t("panel.unknownVenue"),
+            raceNo: selectedRace?.raceNumber || "?",
+            date: raceDate,
+            patterns: prediction?.turnPrediction?.patterns,
+            result: prediction?.result,
+            winnerEntryCourse: winnerCourse?.course ?? null,
           },
-        },
-        "unified",
-        t,
-      );
+          t,
+        )
+    : // BOA-822（機能フラグの側）: 発走前は注意度の文面（AI予想タブに本命・推奨・展開予測が出ないため）
+      inCautionShare
+      ? generateInCautionShareText(
+          {
+            venue: venueName || t("panel.unknownVenue"),
+            raceNo: selectedRace?.raceNumber || "?",
+            date: raceDate,
+            isCancelled,
+            inCaution: prediction?.inCaution ?? null,
+          },
+          t,
+        )
+      : generatePredictionShareText(
+          {
+            venue: venueName || t("panel.unknownVenue"),
+            raceNo: selectedRace?.raceNumber || "?",
+            date: raceDate,
+            isCancelled,
+            prediction: {
+              topPick: prediction.topPick?.number,
+              top3: prediction.top3 || [],
+            },
+          },
+          "unified",
+          t,
+        );
 
   // データ出走表・枠番傾向・分析ツール群（レース前の予想材料）を表示するか。
   // 結果/直前情報/モータ情報/AI予想の各タブは、それぞれのタブ内で同種の情報を
@@ -471,7 +492,9 @@ function PredictionPanel({
           入るのは4つのままで、可視数が1つも増えないのに、統合後のタブが縦に
           長くなる（タブを跨ぐのは1タップだが、縦スクロールは何回もスワイプする）。 */}
       {/* タブ列のすぐ上の思考アシストの入口（BOA-832） */}
-      {venueCode && analysisRaceId && <AssistEntryRow raceId={analysisRaceId} />}
+      {venueCode && analysisRaceId && (
+        <AssistEntryRow raceId={analysisRaceId} />
+      )}
       {venueCode && analysisRaceId && (
         <RaceTabs
           key={analysisRaceId}
@@ -518,6 +541,7 @@ function PredictionPanel({
                         raceId={analysisRaceId}
                         players={prediction.allPlayers}
                         onOpenMeetForm={openMeetForm}
+                        initialTab={sonarInitialTab}
                       />
                     ),
                   },
@@ -554,6 +578,20 @@ function PredictionPanel({
                             id: SONAR_RACE_TAB,
                             seq: (r?.seq ?? 0) + 1,
                           }))
+                      : null
+                  }
+                  // イン崩れ注意度のカード（BOA-822）の「類似レース400件で見ると？」は類似レースの副タブで開く。
+                  // ソナーの節は開いたときに ?sonar= を1回だけ読む（非表示のタブはアンマウントされる）
+                  onOpenSonarSimilar={
+                    isAnalogyFinderEnabled()
+                      ? () => {
+                          setSonarInitialTab("similar");
+                          setRaceParam(RACE_SONAR_PARAM, "similar");
+                          setTabRequest((r) => ({
+                            id: SONAR_RACE_TAB,
+                            seq: (r?.seq ?? 0) + 1,
+                          }));
+                        }
                       : null
                   }
                 />
@@ -787,8 +825,8 @@ function PredictionPanel({
             hashtags={
               isFinished
                 ? ["ボートレース", "展開予測", "龍神レーダー"]
-                : // 中止のレースは予想を出さないので「AI予想」のタグを外す
-                  isCancelled
+                : // 中止のレースは予想を出さないので「AI予想」のタグを外す。注意度の文面も本命・推奨を書かないので外す
+                  isCancelled || inCautionShare
                   ? ["ボートレース", "龍神レーダー"]
                   : ["ボートレース", "AI予想", "龍神レーダー"]
             }

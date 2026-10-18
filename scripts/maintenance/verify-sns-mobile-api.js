@@ -52,7 +52,7 @@ test("F04/F05 API: 媒体hash取得は直列、X動画・画像の署名プレ�
       .replace(/import riskRules from [^;]+;/, `const riskRules={rules:[]};`);
     const handler = (
       await import("data:text/javascript," + encodeURIComponent(text))
-    ).default;
+    ).GET;
     const response = await handler(
       new Request("http://localhost/mobile?group=group"),
     );
@@ -106,7 +106,7 @@ test("編集指摘の判断で「本人」以外の承認者を選んだ場合�
       .replace(/import riskRules from [^;]+;/, `const riskRules={rules:[]};`);
     const handler = (
       await import("data:text/javascript," + encodeURIComponent(text))
-    ).default;
+    ).GET;
     const response = await handler(
       new Request("http://localhost/mobile?group=group", {
         method: "POST",

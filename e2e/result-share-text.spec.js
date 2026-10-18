@@ -80,3 +80,22 @@ test("展開予測の候補がどれも1着でないレースは、共有ボタ�
   });
   await expect(page.locator(".social-share-wrapper")).toHaveCount(0);
 });
+
+// BOA-822 task 26（機能フラグの側、?caution=1）: 確定後の共有文は展開予測の的中の文面だけなので出さない
+test("イン崩れ注意度のフラグの側は、確定後のレースに共有ボタンを出さない", async ({
+  page,
+}) => {
+  test.slow();
+  // 上と同じ戸田 9/27 11R（フラグの外では「展開予測的中」で共有ボタンが出る）
+  await page.goto("/race/2026-09-27-02-11?caution=1", {
+    waitUntil: "domcontentloaded",
+  });
+  await page
+    .locator(".race-tabs-btn", { hasText: /^AI予想$/ })
+    .click({ timeout: 60000 });
+  await expect(page.locator(".in-caution-tab")).toBeVisible({
+    timeout: 60000,
+  });
+  await page.waitForTimeout(2000);
+  await expect(page.locator(".social-share-wrapper")).toHaveCount(0);
+});

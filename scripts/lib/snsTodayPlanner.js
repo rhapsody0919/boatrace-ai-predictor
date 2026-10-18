@@ -1,6 +1,6 @@
 /**
  * /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。
- * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 5:30〜7:45 だけ動く。
+ * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 7:30〜12:00 だけ動く（2026-10-17 時刻の組み直し）。
  *
  * 1回の流れ:
  *   その日の一覧（morning_digest_*、5:30 に公開）を読む → 版（snsTodayDigest.js）
@@ -9,8 +9,10 @@
  *   → 下書きがあり、一覧がやり直されて版が変わっていれば（6:30・8:00）: 撮り直して下書きを書き換える。148 のトリガーが承認を外すので、
  *     Slack で承認のし直しを頼む（承認した画像と違うものを送らない）
  *
- * - 送る時刻は 7:45、事前通知の期限は 5:45（−2h）。締切は持たないので、送る時刻＋60分（8:45）を締切として item に入れる
- *   （notify_by=締切−3h=5:45、veto_until=締切−60分=7:45、失効=締切−30分=8:15。レースの全貌と同じ計算）
+ * - 時刻（2026-10-17 オーナー回答「承認の締め切りは昼頃までずらしても構わない」で組み直し）: 龍神ソナーの図のデータは
+ *   朝のバッチ（7:10 起動）で 7:24〜7:26 に書かれるので、撮るのは 7:30 から。送る時刻（＝承認の締め切り）は 12:00。
+ *   締切は持たないので、送る時刻＋60分（13:00）を締切として item に入れる（notify_by=締切−3h=10:00、veto_until=締切−60分=12:00、
+ *   失効=締切−30分=12:30。レースの全貌と同じ計算）。載せるのは締切が 12:00 より後のレース
  * - この版は個別承認（L2）まで。自動（L3）の事前通知・止めるリンクは tasks 12b・13
  * - shadow では読むだけで、撮影・Storage・DB・Slack には書かない
  */
@@ -25,16 +27,20 @@ import { buildTodayModel } from "../../api/_lib/botToday.js";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
-/** その日の時刻（ISO）。送る 7:45、締切に見立てる 8:45 から、レースと同じ −3h・−60分・−30分 */
+/** その日の時刻（ISO）。送る 12:00、締切に見立てる 13:00 から、レースと同じ −3h・−60分・−30分 */
+// 撮影の開始（龍神ソナーの図のデータが書かれた後）と、送る時刻（承認の締め切り）。載せるレースは締切がこれより後のものだけ
+export const TODAY_PLAN_FROM = "07:30";
+export const TODAY_SEND_AT = "12:00";
+
 export function todaySchedule(date) {
   const at = (hhmm) => new Date(`${date}T${hhmm}:00+09:00`).toISOString();
   return {
-    plan_from: at("05:30"),
-    scheduled_at: at("07:45"),
-    deadline_at: at("08:45"),
-    notify_by: at("05:45"),
-    veto_until: at("07:45"),
-    expires_at: at("08:15"),
+    plan_from: at(TODAY_PLAN_FROM),
+    scheduled_at: at(TODAY_SEND_AT),
+    deadline_at: at("13:00"),
+    notify_by: at("10:00"),
+    veto_until: at(TODAY_SEND_AT),
+    expires_at: at("12:30"),
   };
 }
 
@@ -65,7 +71,7 @@ export const TODAY_NOTICE =
   "過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。";
 
 /** 載せてよい候補（区分・rank の順）。送る時刻までに締切を過ぎる・走数30未満・締切の無い行は除く。区分の中の同じレースは最初の行だけ */
-export function todayCandidates(rows, sendAt = "07:45") {
+export function todayCandidates(rows, sendAt = TODAY_SEND_AT) {
   return TODAY_PICK_RULES.flatMap(({ section }) => {
     const seen = new Set();
     return rows
@@ -95,12 +101,17 @@ const pct = (value) => `${Number(value)}%`;
 
 /** /today の注目レース（featured）。逃げ・まくりから選ばれ、送る時刻より後の締切で、数字がそろっているときだけ */
 // 画像は対象レースの龍神ソナーの図を最大4枚（2026-10-16 ユーザー決定。X の1投稿の上限が4枚）。
-// 図の元データ（analogy-v16-morning）は JST 5:30 から作られるので、7:00 まではそろうまでやり直し、7:00 を過ぎたら撮れた分で作る
+// 図の元データ（analogy-v16-morning）は 7:24〜7:26 に書かれる（10/14〜10/17 の実測）。遅れる日のために 8:30 まではそろうまでやり直し、
+// 8:30 を過ぎたら撮れた分で作る
 export const TODAY_MAX_IMAGES = 4;
 export const SONAR_ELEMENT = ".af-hep .af-dark";
-const SONAR_WAIT_UNTIL = "07:00";
+// 図を撮る前に待つ印は条件のカードだけ。段の表示（analogy-stage-chip）は展示のデータが入ると切り替えのボタンに変わり、
+// 展示の後に撮ると見えない（2026-10-17 夜の作り直しで4枚とも screenshot_component_missing）
+export const SONAR_READY = ['[data-testid="analogy-fact-card"]'];
+const SONAR_WAIT_UNTIL = "08:30";
+const SHOT_BUDGET_MS = 120_000;
 
-export function todayFeatured(rows, sendAt = "07:45") {
+export function todayFeatured(rows, sendAt = TODAY_SEND_AT) {
   const row = rows.find((r) => r.section === "featured");
   if (
     !row ||
@@ -119,7 +130,7 @@ export function todayFeatured(rows, sendAt = "07:45") {
 
 export function buildTodayPost(
   digest,
-  { date, t, url, sendAt = "07:45", excluded = new Set() },
+  { date, t, url, sendAt = TODAY_SEND_AT, excluded = new Set() },
 ) {
   const model = buildTodayModel(digest, { date, t });
   const key = (row) => `${row.race_id}:${row.boat_number}`;
@@ -195,6 +206,15 @@ export function buildTodayPost(
 const jstDate = (date) =>
   new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
 
+/** 確認用の作り直し（cursor.today_rebuild）が今の実行で効くか。送る時刻を過ぎた、その日の分だけ */
+export function isTodayRebuild(reviewDate, now) {
+  const date = jstDate(now);
+  return reviewDate === date && now >= new Date(todaySchedule(date).veto_until);
+}
+
+// 理由の文字列は1件につき最初の1行だけ残す（Playwright の例外はブラウザのログ全文を含み、cursor の記録が切れた。2026-10-17）
+const firstLine = (message) => String(message).split("\n")[0].slice(0, 160);
+
 /**
  * @param {{mode: string, now: () => Date}} ctx
  * @param {{store, getDigest, raceDb, t, headless, markers, riskRules, trackingStore, saveImage, signImage, notify?}} deps
@@ -213,6 +233,9 @@ export async function runTodayPlan(
     saveImage,
     signImage,
     notify = async () => {},
+    nowMs = Date.now,
+    // 確認用に、送る時刻を過ぎた日の下書きを1回だけ作る日付（scrape_job_state.cursor.today_rebuild。オーナーが本番 SQL で入れる）
+    reviewDate = null,
   },
 ) {
   const live = ctx.mode === "live";
@@ -223,8 +246,20 @@ export async function runTodayPlan(
     rowsWritten: extra.written ? 1 : 0,
     report: { items: [{ kind: "digest", date, ...extra }], alerts: [] },
   });
-  if (now < new Date(when.plan_from) || now >= new Date(when.veto_until))
+  if (now < new Date(when.plan_from))
     return done({ outcome: "skipped", reason: "outside_window" });
+  // 確認用の作り直し（送る時刻を過ぎていても作る。期限は過ぎているので承認・送信はできない）
+  const review = isTodayRebuild(reviewDate, now);
+  if (now >= new Date(when.veto_until) && !review) {
+    // 送る時刻を過ぎて、その日の下書きが無い（作れずに朝が終わった）。cron がその日1回だけ Slack に知らせる
+    const { draft } = await store.todayState(date);
+    return done(
+      draft
+        ? { outcome: "skipped", reason: "outside_window" }
+        : { outcome: "missed", reason: "no_draft_by_send_time" },
+    );
+  }
+  const startedMs = nowMs();
   const digest = await getDigest(date);
   if (!digest.day?.generated_at)
     return done({ outcome: "skipped", reason: "not_generated" });
@@ -265,11 +300,17 @@ export async function runTodayPlan(
     return done({ outcome: risk.length ? "held_manual" : "manual", revision });
 
   // リンク先（/today）が未ログインで見えることを確かめる（送る直前の検査と同じ印）
-  const page = await headless.inspect({
-    url: TODAY_URL,
-    context: { storageState: null },
-    requiredSelectors: markers[TODAY_SCREEN_KEY],
-  });
+  // 失敗の理由に起動の様子（残りの Chromium・空きメモリ）を添える。本番の関数のログを見ずに切り分けるため（2026-10-18）
+  const info = () => (headless.launchInfo ? ` [${headless.launchInfo()}]` : "");
+  const page = await headless
+    .inspect({
+      url: TODAY_URL,
+      context: { storageState: null },
+      requiredSelectors: markers[TODAY_SCREEN_KEY],
+    })
+    .catch((error) => {
+      throw new Error(`${firstLine(error.message)}${info()}`);
+    });
   if (
     page.finalUrl !== TODAY_URL ||
     !markers[TODAY_SCREEN_KEY].every((m) => page.visibleSelectors?.includes(m))
@@ -279,10 +320,15 @@ export async function runTodayPlan(
   const shots = [];
   const missing = [];
   for (const race of post.races.slice(0, TODAY_MAX_IMAGES)) {
+    // 1枚は最悪 約75秒かかる。関数の時間（300秒）で止められると何も記録されないので、120秒を過ぎたら新しく撮らない
+    if (nowMs() - startedMs > SHOT_BUDGET_MS) {
+      missing.push(`${race.race_id}: time_budget`);
+      continue;
+    }
     try {
       const shot = await headless.screenshot({
         url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar`,
-        requiredSelectors: markers["race-sonar"],
+        requiredSelectors: SONAR_READY,
         viewport: { width: 390, height: 844 },
         element: SONAR_ELEMENT,
         label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
@@ -291,7 +337,7 @@ export async function runTodayPlan(
       if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
       shots.push(shot.png);
     } catch (error) {
-      missing.push(`${race.race_id}: ${error.message}`);
+      missing.push(`${race.race_id}: ${firstLine(error.message)}${info()}`);
     }
   }
   if (
@@ -424,11 +470,13 @@ export async function runTodayPlan(
   );
   // 承認を外したのは、item があった（＝前に Slack で知らせた）ときだけ
   const rebuilt = Boolean(existing.draft && existing.item);
-  const head = rebuilt
-    ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
-    : state === "manual"
-      ? "今日の投稿の下書きができた。7:45 までに個別承認の画面で承認すると、7:45 に送る"
-      : "今日の投稿の下書きに禁止表現があり、止めた";
+  const head = review
+    ? "確認用に今日の下書きを作り直した（送る時刻を過ぎているので、承認・送信はできない）"
+    : rebuilt
+      ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
+      : state === "manual"
+        ? "今日の投稿の下書きができた。12:00 までに個別承認の画面で承認すると、12:00 に送る"
+        : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
       `SNS /today（${date}）: ${head}\n${caption}${images
@@ -441,6 +489,7 @@ export async function runTodayPlan(
   }
   return done({
     outcome: rebuilt ? "rebuilt" : state,
+    ...(review ? { review: true } : {}),
     item_id: item.id,
     draft_id: draft.id,
     revision,
@@ -525,7 +574,7 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
 
 /**
  * /today の計画の各回の結果を、その日の分だけ残す（scrape_job_state.cursor.today）。report は5分ごとに上書きされ、
- * 7:45 を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
+ * 12:00 を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
  * 時間外の skip は残さない。日付が変わったら空から。最新の30件まで
  * @param {{date?: string, events?: object[]}|null|undefined} prev 前回の cursor.today
  * @param {{outcome?: string, reason?: string, item_id?: string}} item この回の report.items の /today の1件
@@ -533,11 +582,69 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
 export function nextTodayLog(prev, item, now) {
   const date = jstDate(now);
   const events = prev?.date === date ? [...(prev.events ?? [])] : [];
-  if (item && item.reason !== "outside_window")
+  if (item && item.reason !== "outside_window" && item.outcome !== "missed")
     events.push({
       at: now.toISOString(),
       outcome: item.outcome ?? null,
-      reason: item.reason ? String(item.reason).slice(0, 300) : null,
+      reason: item.reason
+        ? String(item.reason)
+            .split(" / ")
+            .map(firstLine)
+            .join(" / ")
+            .slice(0, 600)
+        : null,
     });
-  return { date, events: events.slice(-30) };
+  const same = prev?.date === date;
+  return {
+    date,
+    events: events.slice(-30),
+    ...(same && prev.missed_notified ? { missed_notified: true } : {}),
+    ...(same && prev.rebuild_failures
+      ? { rebuild_failures: prev.rebuild_failures }
+      : {}),
+  };
+}
+
+// 確認用の作り直しが続けて失敗したら、この回数で Slack に知らせてやめる（5分ごとに夜まで繰り返さない）
+export const REBUILD_MAX_FAILURES = 3;
+
+/** その日の下書きを作れずに送る時刻を過ぎたときの Slack の文（朝の経過から最後の理由を添える） */
+export function missedTodayText(log) {
+  const last = [...(log?.events ?? [])]
+    .reverse()
+    .find((e) => e.reason || e.outcome);
+  const at = (iso) =>
+    new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
+  return [
+    `SNS /today（${log?.date}）: 送る時刻（12:00）までに下書きを作れなかった。今日は送らない`,
+    last
+      ? `最後の結果（${at(last.at)}）: ${last.outcome}${last.reason ? ` ${last.reason}` : ""}（朝の記録 ${log.events.length}件）`
+      : "朝の実行が一度も最後まで終わっていない（関数の時間切れなど。Vercel のログを確かめる）",
+  ].join("\n");
+}
+
+/**
+ * 1回の実行の後の朝の記録と、Slack に出す「作れなかった」の文（その日まだ知らせていないときだけ。知らせたら呼び出し側が
+ * log.missed_notified=true にして cursor に保存する）
+ */
+export function finishTodayLog(prev, item, now, { rebuilding = false } = {}) {
+  const log = nextTodayLog(prev, item, now);
+  if (rebuilding && item?.outcome === "error")
+    log.rebuild_failures = (log.rebuild_failures ?? 0) + 1;
+  // 作り直しをやめる（呼び出し側が cursor.today_rebuild を消す）。知らせるのはこのときの1回だけ
+  const giveUp =
+    rebuilding && (log.rebuild_failures ?? 0) >= REBUILD_MAX_FAILURES;
+  if (giveUp) delete log.rebuild_failures;
+  return {
+    log,
+    giveUp,
+    notice: giveUp
+      ? [
+          `SNS /today（${log.date}）: 確認用の作り直しが${REBUILD_MAX_FAILURES}回続けて失敗したので、やめた（もう一度は today_rebuild を入れ直す）`,
+          `最後の理由: ${log.events.at(-1)?.reason ?? "なし"}`,
+        ].join("\n")
+      : item?.outcome === "missed" && !log.missed_notified
+        ? missedTodayText(log)
+        : null,
+  };
 }

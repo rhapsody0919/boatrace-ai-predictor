@@ -4,6 +4,8 @@
  * アナロジー・ファインダー（BOA-271）の寄与度の節は、master に入れたうえで公開までは隠す
  * （2026-10-02 ユーザー判断）。公開するときは ANALOGY_FINDER_PUBLIC を true にするだけでよい。
  * 思考アシスト（BOA-430）のページも同じ仕組み。2026-10-10 に公開した（THINKING_ASSIST_PUBLIC = true）。
+ * イン崩れ注意度（BOA-822）も同じ仕組み。公開までは今の画面（展開予測・旧イン崩れ指数）のままで、?caution=1 で新しい画面に
+ * 切り替わる。公開は IN_CAUTION_PUBLIC を true にする PR で、全画面を同時に切り替える（ユーザーの判断）。
  * 隠している間も、本番で内部確認できるように次のどちらかで表示できる:
  *   - URL にクエリ（?analogy=1 ／ ?assist=1）を付けて開く（端末に覚える。=0 で忘れる）
  *   - localStorage のキー（*_PREVIEW_KEY）を "1" にする
@@ -16,6 +18,9 @@ export const ANALOGY_FINDER_PREVIEW_KEY = "boatai-user:analogy-finder-preview";
 export const THINKING_ASSIST_PUBLIC = true;
 export const THINKING_ASSIST_PREVIEW_KEY =
   "boatai-user:thinking-assist-preview";
+
+export const IN_CAUTION_PUBLIC = false;
+export const IN_CAUTION_PREVIEW_KEY = "boatai-user:in-caution-preview";
 
 /** URL のクエリ queryName（"1" で覚える・"0" で忘れる）と localStorage の storageKey で、内部確認の印を読む */
 function readPreviewFlag(queryName, storageKey) {
@@ -44,5 +49,11 @@ export function isThinkingAssistEnabled() {
   return (
     THINKING_ASSIST_PUBLIC ||
     readPreviewFlag("assist", THINKING_ASSIST_PREVIEW_KEY)
+  );
+}
+
+export function isInCautionEnabled() {
+  return (
+    IN_CAUTION_PUBLIC || readPreviewFlag("caution", IN_CAUTION_PREVIEW_KEY)
   );
 }

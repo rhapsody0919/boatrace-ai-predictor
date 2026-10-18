@@ -1,7 +1,7 @@
 /**
  * race-ai-copy機能の分析依頼プロンプト種別定義
  */
-import { getVolatilityLevel } from "./volatilityLevel";
+import { getVolatilityLevel } from "./volatilityLevel.js";
 
 export const AI_COPY_PROMPT_TYPES = {
   WIN: "win",
@@ -43,7 +43,8 @@ const PROMPT_KEY_MAP = {
 
 /**
  * @param {function} t - i18nの翻訳関数
- * @param {{volatilityPercentile?: number|null}} [options]
+ * @param {{volatilityPercentile?: number|null, inCautionLevel?: string|null, inCautionEnabled?: boolean}} [options]
+ *   inCautionEnabled（BOA-822 の機能フラグ）が true なら、旧指数ではなくイン崩れ注意度の段（崩れやすい = "high"）で決める
  * @returns {{type:string, label:string}[]}
  *
  * volatilityTrifecta（イン崩れ狙い）は、実際にイン崩れ注意度が高い
@@ -51,8 +52,17 @@ const PROMPT_KEY_MAP = {
  * 前提が成立しないため、該当しないレースでは選択肢自体を出さない
  * （堅いレースで「1号艇が崩れる前提」のプロンプトを出すのは実態と矛盾するため）
  */
-export function getAiCopyPromptOptions(t, { volatilityPercentile } = {}) {
-  const isVolatile = getVolatilityLevel(volatilityPercentile) === "high";
+export function getAiCopyPromptOptions(
+  t,
+  {
+    volatilityPercentile,
+    inCautionLevel = null,
+    inCautionEnabled = false,
+  } = {},
+) {
+  const isVolatile = inCautionEnabled
+    ? inCautionLevel === "high"
+    : getVolatilityLevel(volatilityPercentile) === "high";
   return Object.entries(PROMPT_KEY_MAP)
     .filter(
       ([type]) =>
@@ -64,7 +74,22 @@ export function getAiCopyPromptOptions(t, { volatilityPercentile } = {}) {
     }));
 }
 
-export function getAiCopyPromptText(t, promptType) {
+/**
+ * @param {{inCautionEnabled?: boolean}} [options] true（BOA-822 の機能フラグ）なら、イン崩れ狙いの質問は展開予測に
+ *   触れない文にする（展開予測の節をコピーに入れないため）
+ */
+export function getAiCopyPromptText(
+  t,
+  promptType,
+  { inCautionEnabled = false } = {},
+) {
+  if (inCautionEnabled) {
+    // 展開予測の節をコピーに入れないので、展開予測に触れない文にする（ファン評価3周目）
+    if (promptType === AI_COPY_PROMPT_TYPES.VOLATILITY_TRIFECTA)
+      return t("aiCopy.promptInCautionTrifecta");
+    if (promptType === AI_COPY_PROMPT_TYPES.TURN)
+      return t("aiCopy.promptTurnInCaution");
+  }
   const entry =
     PROMPT_KEY_MAP[promptType] ?? PROMPT_KEY_MAP[AI_COPY_PROMPT_TYPES.WIN];
   return t(entry.promptKey);
@@ -75,4 +100,16 @@ export function getAiCopyPromptLabel(t, promptType) {
   const entry =
     PROMPT_KEY_MAP[promptType] ?? PROMPT_KEY_MAP[AI_COPY_PROMPT_TYPES.WIN];
   return t(entry.labelKey);
+}
+
+/**
+ * 「貼ったあとの質問の例」のキー。inCautionEnabled（BOA-822 の機能フラグ）が true なら、展開予測に触れない例にする
+ * @param {boolean} inCautionEnabled
+ */
+export function aiCopyFollowUpKeys(inCautionEnabled = false) {
+  return [
+    inCautionEnabled ? "aiCopy.followUp1InCaution" : "aiCopy.followUp1",
+    "aiCopy.followUp2",
+    "aiCopy.followUp3",
+  ];
 }

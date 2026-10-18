@@ -15,7 +15,11 @@ import { saveDraftInspection } from "../../_lib/snsEditAssist.js";
 import riskRules from "../../_lib/snsRiskRulesFile.js";
 // twitter-text（依存のpunycode）はVercel Edge Functionで未サポートのため、nodejs runtimeを使う。
 export const config = { runtime: "nodejs" };
-export default async function handler(req) {
+// nodejs の関数では、既定の書き出し（default）は Node の (req, res) で呼ばれ、req.headers.get が無くて毎回 500 になる
+// （2026-10-18、「今日のレースを取得できません」で承認できなかった）。Web の Request を受けて Response を返す形は、
+// HTTP メソッドの名前の書き出し（GET・POST）で受ける
+export { handler as GET, handler as POST };
+async function handler(req) {
   const denied = await requireAdminAuth(req);
   if (denied) return denied;
   if (!["GET", "POST"].includes(req.method))

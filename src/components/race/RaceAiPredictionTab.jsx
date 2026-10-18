@@ -15,7 +15,11 @@
  * アナロジー・ファインダー節（BOA-271）は、予想（predictions）の有無と切り離して、中止以外の
  * すべての分岐（確定後・予想なし・未確定）で既存ブロックの下に出す。既存ブロックの早期 return に
  * 巻き込まれないよう、既存の表示は PredictionBlocks に分け、節はその外に置く。
- * BOA-635（過去に発生した割合を見る）の部品も PredictionBlocks の外、タブの末尾に置いている。
+ * BOA-635（過去に発生した割合を見る）の部品も PredictionBlocks の外、タブの末尾に置いている（両方の分岐）。
+ *
+ * BOA-822（案A、承認モック docs/design/in-collapse-caution/mock/1-ai-tab-375.png）: 機能フラグ isInCautionEnabled() が
+ * true の側では、先頭にイン崩れ注意度のカード、その下に出現パターンだけを出す。展開予測・答え合わせ・旧イン崩れ指数・
+ * 龍神ソナーへの案内ボタンは出さない（カードの中に龍神ソナーへの導線がある）。false の側は今のまま。
  */
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -31,6 +35,8 @@ import { useRaceWinnerCourse } from "../../hooks/useRaceWinnerCourse";
 import PastRateLayerGate from "./pastRate/PastRateLayerGate";
 import PastRateChecker from "./pastRate/PastRateChecker";
 import { getDeadlineDate } from "../../utils/raceDeadlineStatus";
+import InCautionCard from "./InCautionCard";
+import { isInCautionEnabled } from "../../config/featureFlags";
 
 function RaceAiPredictionTab({
   prediction,
@@ -39,6 +45,7 @@ function RaceAiPredictionTab({
   raceId,
   isCancelled = false,
   onOpenSonar = null,
+  onOpenSonarSimilar = null,
   raceStartTime = null,
 }) {
   const { t } = useTranslation();
@@ -50,6 +57,46 @@ function RaceAiPredictionTab({
     return (
       <div className="race-tabs-empty" data-testid="ai-prediction-cancelled">
         <p>{t("aiPredictionTab.cancelled")}</p>
+      </div>
+    );
+  }
+
+  // 過去に発生した割合を見る（BOA-635）。予想の有無と切り離し、PredictionBlocks の早期 return の外の
+  // タブの末尾に置く（spec FR-4。BOA-822 のイン崩れ注意度のカード・出現パターンの後）
+  const pastRate = raceId ? (
+    <PastRateLayerGate raceId={raceId}>
+      {(layer) => (
+        <PastRateChecker
+          key={raceId}
+          layer={layer}
+          raceId={raceId}
+          deadline={getDeadlineDate(raceId, raceStartTime)}
+          finished={Boolean(prediction?.result?.finished)}
+        />
+      )}
+    </PastRateLayerGate>
+  ) : null;
+
+  if (isInCautionEnabled()) {
+    // 既存の .race-ai-prediction-tab の2段（BOA-881）に入れない。カードは列いっぱいで中を左右に分け、
+    // 出現パターンはその下（承認モック 1-ai-tab-1440.png）
+    return (
+      <div className="in-caution-tab">
+        <InCautionCard
+          inCaution={prediction?.inCaution ?? null}
+          players={prediction?.allPlayers ?? []}
+          result={prediction?.result ?? null}
+          raceId={raceId}
+          onOpenSonar={onOpenSonarSimilar}
+        />
+        {venueCode && venueName && (
+          <OutcomePatternPreview
+            venueCode={venueCode}
+            venueName={venueName}
+            prediction={prediction}
+          />
+        )}
+        {pastRate}
       </div>
     );
   }
@@ -76,21 +123,7 @@ function RaceAiPredictionTab({
           </span>
         </button>
       )}
-      {/* 過去に発生した割合を見る（BOA-635）。予想の有無と切り離し、PredictionBlocks の早期 return の外の
-          タブの末尾に置く（spec FR-4。BOA-822 のイン崩れ注意度のカード・出現パターンの後） */}
-      {raceId && (
-        <PastRateLayerGate raceId={raceId}>
-          {(layer) => (
-            <PastRateChecker
-              key={raceId}
-              layer={layer}
-              raceId={raceId}
-              deadline={getDeadlineDate(raceId, raceStartTime)}
-              finished={Boolean(prediction?.result?.finished)}
-            />
-          )}
-        </PastRateLayerGate>
-      )}
+      {pastRate}
     </>
   );
 }

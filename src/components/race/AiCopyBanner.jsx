@@ -4,13 +4,13 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import AiCopyPromptSelector from "./AiCopyPromptSelector";
 import AiCopyButton from "./AiCopyButton";
 import { useAiCopyText } from "../../hooks/useAiCopyText";
+import { aiCopyFollowUpKeys } from "../../utils/aiCopyPrompts";
+import { isInCautionEnabled } from "../../config/featureFlags";
 
 // 脈動リングを時間差で2重に描画し、ping通知のような目立つ演出にする。
 // 常時脈動はうるさいので、表示直後に数回だけ鳴らして止める（BOA-770 推奨11）
 const PING_RINGS = [0, 0.7];
 const PING_REPEAT = 2;
-
-const FOLLOW_UP_KEYS = ["aiCopy.followUp1", "aiCopy.followUp2", "aiCopy.followUp3"];
 
 export default function AiCopyBanner({
   raceId,
@@ -127,6 +127,7 @@ export default function AiCopyBanner({
         value={promptType}
         onChange={onPromptTypeChange}
         volatilityPercentile={prediction?.volatilityPercentile}
+        inCautionLevel={prediction?.inCaution?.level ?? null}
       />
 
       <button
@@ -222,7 +223,7 @@ export default function AiCopyBanner({
                 lineHeight: 1.6,
               }}
             >
-              {FOLLOW_UP_KEYS.map((key) => (
+              {aiCopyFollowUpKeys(isInCautionEnabled()).map((key) => (
                 <li key={key}>{t(key)}</li>
               ))}
             </ul>

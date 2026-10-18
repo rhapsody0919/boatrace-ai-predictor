@@ -13,6 +13,12 @@
   （件数が0になったセルを消す。CHECK n > 0 で0の行は書けない。full も先に全部消さない。plan §2・M1）
 - 窓: 既定は対象日の14日前〜前日（結果の訂正・遅れて入った結果を拾う）。--full は inCautionConfig.json の from〜前日
 - JST 04:30〜23:00 は --force が無ければ書かずに失敗する（日中に表を書き換えると、朝の生成と /today が食い違う）
+- 表を書いた後に /accuracy の実績（accuracy_cache の in_caution_accuracy、plan §6）を書く
+  - 公開前の検証（prelaunch）: 期間（inCautionConfig.json の prelaunch）の各日のレースを、前日までの累積の率で段に分ける
+    （朝の生成と同じ。表の最初の日から、ラウンド×帯、件数 minCellN 未満のセルは出さない）。full のときと、
+    まだ無い・def が違うときだけ作る（期間が固定なので毎晩は作らない）
+  - 公開後（postlaunch）: launchDate 以降、同じ def の unified の行に保存した段と、完全レースの1号艇の1着の有無。
+    launchDate が null の間は null
 
 使い方（export_pool.js の後）:
   python in_caution_bands.py                 # 直近14日（本体の CSV だけ読む）
@@ -37,6 +43,8 @@ import features as F
 
 CONFIG_PATH = F.ROOT / "src" / "data" / "inCautionConfig.json"
 TABLE = "in_caution_gap_band_daily"
+ACCURACY_KEY = "in_caution_accuracy"
+LEVELS = ("low", "mid", "high")
 WINDOW_DAYS = 14
 JST = ZoneInfo("Asia/Tokyo")
 QUIET_FROM = time(4, 30)   # この時刻〜QUIET_TO（JST）は書かない
@@ -127,6 +135,103 @@ def write_table(counts: pd.DataFrame, lo: date, hi: date, computed_at: str, requ
     return {"rows": len(rows), "n": int(counts["n"].sum()), "non_win": int(counts["non_win"].sum())}
 
 
+def pct_of(non_win: int, n: int) -> int:
+    """src/utils/inCautionLevel.js の pctOf と同じ（1着を逃した割合の %、四捨五入。整数だけで計算する）"""
+    return (200 * int(non_win) + int(n)) // (2 * int(n))
+
+
+def level_of(pct: int, cfg: dict) -> str:
+    """src/utils/inCautionLevel.js の levelOf と同じ（35 未満は堅め、55 以上は崩れやすい）"""
+    low, high = cfg["thresholds"]
+    return "low" if pct < low else "mid" if pct < high else "high"
+
+
+def _sums(df: pd.DataFrame) -> dict:
+    return {"n": int(df["n"].sum()), "nonWin": int(df["non_win"].sum())}
+
+
+def prelaunch_accuracy(counts: pd.DataFrame, cfg: dict) -> dict:
+    """公開前の検証。counts は表と同じ日×ラウンド×帯（表の最初の日〜期間の終わりを含むこと）。
+    各日・セルの段は、その日より前の累積（朝の生成の RPC と同じく p_from=NULL・前日まで）の率で決める。
+    件数 minCellN 未満のセルのレースは段に入れず sparse に数える。base は期間の全レース（全国の点線）"""
+    lo, hi = (date.fromisoformat(cfg["prelaunch"][k]) for k in ("from", "to"))
+    c = counts[counts["race_date"] <= hi].sort_values(["round_grp", "gap_band", "race_date"]).copy()
+    g = c.groupby(["round_grp", "gap_band"], sort=False)
+    c["cum_n"] = g["n"].cumsum() - c["n"]
+    c["cum_k"] = g["non_win"].cumsum() - c["non_win"]
+    p = c[c["race_date"] >= lo]
+    shown = p[p["cum_n"] >= cfg["minCellN"]]
+    level = pd.Series([level_of(pct_of(k, n), cfg) for k, n in zip(shown["cum_k"], shown["cum_n"])],
+                      index=shown.index, dtype="object")
+    return {"from": lo.isoformat(), "to": hi.isoformat(), "base": _sums(p),
+            "byLevel": {lv: _sums(shown[level == lv]) for lv in LEVELS},
+            "sparse": _sums(p[p["cum_n"] < cfg["minCellN"]])}
+
+
+def postlaunch_accuracy(rows: pd.DataFrame, levels: dict[int, str], launch: date, hi: date) -> dict:
+    """公開後。rows は boat1_rows（完全レースの1号艇）、levels は race_id（int）→ 保存した段。
+    段の無いレース（出さなかったレース）は base だけに数える"""
+    r = rows[(rows["race_date"] >= launch) & (rows["race_date"] <= hi)].assign(n=1)
+    level = r["race_id"].map(levels)
+    return {"from": launch.isoformat(), "through": hi.isoformat(), "base": _sums(r),
+            "byLevel": {lv: _sums(r[level == lv]) for lv in LEVELS}}
+
+
+def fetch_all(path: str, request=db.request, page: int = db.BATCH) -> list[dict]:
+    """PostgREST の1000行の上限を越えて全部読む（order を付けた path を渡す）"""
+    out: list[dict] = []
+    while True:
+        data, _ = request("GET", f"{path}&limit={page}&offset={len(out)}")
+        out.extend(data or [])
+        if len(data or []) < page:
+            return out
+
+
+def fetch_counts(hi: date, request=db.request) -> pd.DataFrame:
+    """表（in_caution_gap_band_daily）の最初の日〜hi。公開前の検証を full 以外で作るときに使う"""
+    rows = fetch_all(f"{TABLE}?select=race_date,round_grp,gap_band,n,non_win"
+                     f"&race_date=lte.{hi.isoformat()}&order=race_date,round_grp,gap_band", request)
+    if not rows:
+        raise db.PostgrestError(f"{TABLE} が空（〜{hi}）")
+    df = pd.DataFrame(rows)
+    df["race_date"] = pd.to_datetime(df["race_date"]).dt.date
+    return df
+
+
+def fetch_levels(launch: date, hi: date, cfg: dict, request=db.request) -> dict[int, str]:
+    """launch〜hi の unified の行に保存した段（同じ def だけ）。race_id は features と同じ int"""
+    end = (hi + timedelta(days=1)).isoformat()
+    rows = fetch_all("predictions?select=race_id,level:feature_contributions->inCaution->>level"
+                     f"&model_id=eq.unified&race_id=gte.{launch.isoformat()}&race_id=lt.{end}"
+                     f"&feature_contributions->inCaution->>def=eq.{db.q(cfg['def'])}&order=race_id", request)
+    return {int(x["race_id"].replace("-", "")): x["level"] for x in rows if x.get("level") in LEVELS}
+
+
+def read_accuracy(request=db.request) -> dict | None:
+    data, _ = request("GET", f"accuracy_cache?select=data&key=eq.{ACCURACY_KEY}")
+    return data[0]["data"] if data else None
+
+
+def build_accuracy(prev: dict | None, counts: pd.DataFrame, rows: pd.DataFrame, hi: date, full: bool,
+                   cfg: dict, request=db.request, now: str | None = None) -> dict:
+    """書く中身。公開前の検証は full か、前回が無い・def が違うときだけ作り直し、ほかは前回のまま"""
+    keep = not full and prev is not None and prev.get("def") == cfg["def"] and prev.get("prelaunch")
+    pre = prev["prelaunch"] if keep else prelaunch_accuracy(counts if full else fetch_counts(
+        date.fromisoformat(cfg["prelaunch"]["to"]), request), cfg)
+    post = None
+    if cfg.get("launchDate"):
+        launch = date.fromisoformat(cfg["launchDate"])
+        post = postlaunch_accuracy(rows, fetch_levels(launch, hi, cfg, request), launch, hi) if hi >= launch else None
+    return {"calculatedAt": now or datetime.now(timezone.utc).isoformat(), "def": cfg["def"],
+            "prelaunch": pre, "postlaunch": post}
+
+
+def write_accuracy(data: dict, request=db.request) -> None:
+    request("POST", "accuracy_cache?on_conflict=key",
+            [{"key": ACCURACY_KEY, "data": data, "updated_at": data["calculatedAt"]}],
+            prefer="resolution=merge-duplicates,return=minimal")
+
+
 def load(full: bool, src: Path = F.D) -> pd.DataFrame:
     parts = ([F.load_kb(src)] if full else []) + [F.load_main(src)]
     return F.add_labels(pd.concat(parts, ignore_index=True))
@@ -150,8 +255,8 @@ def main(argv: list[str] | None = None) -> None:
     refuse_in_quiet_hours(a, started)
     target = date.fromisoformat(a.date) if a.date else started.astimezone(JST).date()
     lo, hi = window(target, a.full, cfg)
-    rows = boat1_rows(load(a.full), cfg)
-    rows = rows[(rows["race_date"] >= lo) & (rows["race_date"] <= hi)]
+    all_rows = boat1_rows(load(a.full), cfg)
+    rows = all_rows[(all_rows["race_date"] >= lo) & (all_rows["race_date"] <= hi)]
     counts = count_bands(rows)
     summary = {"window": [lo.isoformat(), hi.isoformat()], "full": a.full, "rows": int(len(counts)),
                "n": int(counts["n"].sum()), "non_win": int(counts["non_win"].sum()),
@@ -162,6 +267,11 @@ def main(argv: list[str] | None = None) -> None:
         refuse_in_quiet_hours(a, datetime.now(timezone.utc))
         try:
             summary["written"] = write_table(counts, lo, hi, started.isoformat())
+            # 表を書いた後（公開前の検証を表から読むときに今回の値を読む）。失敗はジョブの失敗にする（Slack に出る）
+            acc = build_accuracy(read_accuracy(), counts, all_rows, hi, a.full, cfg)
+            write_accuracy(acc)
+            summary["accuracy"] = {"prelaunch": acc["prelaunch"]["byLevel"],
+                                   "postlaunch": acc["postlaunch"] and acc["postlaunch"]["byLevel"]}
         except db.PostgrestError as e:
             sys.exit(f"書き込み失敗: {e}")
     print(json.dumps(summary, ensure_ascii=False))

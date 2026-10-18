@@ -279,7 +279,7 @@ test("管理APIは指摘を保存し、保存障害を表示し、判断の認�
     .replace(/import riskRules from [^;]+;/, `const riskRules={rules:[]};`);
   const handler = (
     await import("data:text/javascript," + encodeURIComponent(text))
-  ).default;
+  ).GET;
   const get = () => handler(new Request("http://local/mobile?group=group"));
   const post = (body) =>
     handler(

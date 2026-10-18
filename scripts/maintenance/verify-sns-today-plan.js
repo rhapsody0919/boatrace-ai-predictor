@@ -184,11 +184,11 @@ const trackingStore = {
 // 逃げ: 1位は 7:30 締切（送る 7:45 より前）、4位は全国29走（30走未満）で載せない。2・3・5位を載せる。
 // まくり: 1位と2位は同じレース（区分の中は最初の行だけ）、3位を載せて2人まで。逃がし・注目・フライング・帰郷は載せない
 const NIGE_TIME = {
-  1: "07:30:00",
-  2: "12:00:00",
-  3: "10:00:00",
-  4: "09:30:00",
-  5: "11:00:00",
+  1: "11:45:00",
+  2: "16:15:00",
+  3: "14:15:00",
+  4: "13:45:00",
+  5: "15:15:00",
 };
 const digestOf = (count = 25, prefix = "逃げ") => ({
   day: {
@@ -204,7 +204,7 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       race_id: `${DATE}-04-12`,
       venue_code: 4,
       race_number: 12,
-      start_time: "16:20:00",
+      start_time: "20:35:00",
       reason: "AIが当日条件から算出したイン崩れ指数は…",
       from: "nige",
       course: 1,
@@ -220,7 +220,7 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       race_id: `${DATE}-04-${String(i + 1).padStart(2, "0")}`,
       venue_code: 4,
       race_number: i + 1,
-      start_time: NIGE_TIME[i + 1] ?? "13:00:00",
+      start_time: NIGE_TIME[i + 1] ?? "17:15:00",
       racer_name: `${prefix}\u3000${i + 1}`,
       boat_number: 1,
       sample_size: i === 3 ? 29 : 40,
@@ -231,7 +231,7 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       race_id: `${DATE}-02-05`,
       venue_code: 2,
       race_number: 5,
-      start_time: "09:00:00",
+      start_time: "13:15:00",
       racer_name: "まくり\u30001",
       boat_number: 3,
       sample_size: 31,
@@ -242,7 +242,7 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       race_id: `${DATE}-02-05`,
       venue_code: 2,
       race_number: 5,
-      start_time: "09:00:00",
+      start_time: "13:15:00",
       racer_name: "まくり\u30002",
       boat_number: 4,
       sample_size: 35,
@@ -253,7 +253,7 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       race_id: `${DATE}-02-07`,
       venue_code: 2,
       race_number: 7,
-      start_time: "14:00:00",
+      start_time: "18:15:00",
       racer_name: "まくり\u30003",
       boat_number: 2,
       sample_size: 33,
@@ -264,7 +264,7 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       race_id: `${DATE}-02-08`,
       venue_code: 2,
       race_number: 8,
-      start_time: "15:00:00",
+      start_time: "19:15:00",
       racer_name: "まくり\u30004",
       boat_number: 2,
       sample_size: 40,
@@ -275,7 +275,7 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
       race_id: `${DATE}-12-03`,
       venue_code: 12,
       race_number: 3,
-      start_time: "16:10:00",
+      start_time: "20:25:00",
       racer_name: "逃がし\u30001",
       boat_number: 5,
       sample_size: 50,
@@ -285,16 +285,16 @@ const digestOf = (count = 25, prefix = "逃げ") => ({
   ],
 });
 const FEATURED_LINE =
-  "注目レース：平和島12R 16:20締切｜1号艇 注目 1｜1コースで逃げ切った割合 84.13%（全国63走）・この会場の平均 58.4%";
+  "注目レース：平和島12R 20:35締切｜1号艇 注目 1｜1コースで逃げ切った割合 84.13%（全国63走）・この会場の平均 58.4%";
 const EXPECTED_LINES = [
   "［逃げ］全国で1コースに入ったとき逃げ切った割合70%以上の1号艇",
   "［まくり］そのコースでまくりで1着の割合25%以上の選手",
   "",
-  "［まくり］戸田5R 09:00締切｜3号艇 まくり 1｜全国31走",
-  "［逃げ］平和島3R 10:00締切｜1号艇 逃げ 3｜全国40走",
-  "［逃げ］平和島5R 11:00締切｜1号艇 逃げ 5｜全国40走",
-  "［逃げ］平和島2R 12:00締切｜1号艇 逃げ 2｜全国40走",
-  "［まくり］戸田7R 14:00締切｜2号艇 まくり 3｜全国33走",
+  "［まくり］戸田5R 13:15締切｜3号艇 まくり 1｜全国31走",
+  "［逃げ］平和島3R 14:15締切｜1号艇 逃げ 3｜全国40走",
+  "［逃げ］平和島5R 15:15締切｜1号艇 逃げ 5｜全国40走",
+  "［逃げ］平和島2R 16:15締切｜1号艇 逃げ 2｜全国40走",
+  "［まくり］戸田7R 18:15締切｜2号艇 まくり 3｜全国33走",
 ].join("\n");
 // 出走表・中止の読み取り（PostgREST の形）。absent は "race_id:艇番"、cancelled は race_id
 function raceDbOf({ absent = [], cancelled = [], missing = [] } = {}) {
@@ -308,7 +308,7 @@ function raceDbOf({ absent = [], cancelled = [], missing = [] } = {}) {
         .filter((id) => !missing.includes(id))
         .map((race_id) => ({
           race_id,
-          start_time: "10:00:00",
+          start_time: "14:15:00",
           cancellation_status: cancelled.includes(race_id) ? "confirmed" : null,
         }));
     return absent
@@ -349,13 +349,15 @@ function shooter({ fail = false, notReady = [], todayMissing = false } = {}) {
   };
 }
 async function plan({
-  now = at("05:40"),
+  now = at("07:40"),
   mode = "live",
   digest = digestOf(),
   headless = shooter(),
   notes = [],
   saved = [],
   raceDb = raceDbOf(),
+  nowMs,
+  reviewDate,
 } = {}) {
   return runTodayPlan(
     { mode, now: () => now },
@@ -374,6 +376,8 @@ async function plan({
       saveImage: async (path, bytes) => saved.push({ path, bytes }),
       signImage: async (path) => `https://signed/${path}`,
       notify: async (text) => notes.push(text),
+      ...(nowMs ? { nowMs } : {}),
+      ...(reviewDate ? { reviewDate } : {}),
     },
   );
 }
@@ -394,7 +398,7 @@ async function approve(draft) {
   ).r;
 }
 
-test("5:40 に一覧を撮って下書き・item（digest）を作り、本人が承認でき、7:45 に送る job ができる。送る直前の検査も通る", async () => {
+test("7:40 に一覧を撮って下書き・item（digest）を作り、本人が承認でき、12:00 に送る job ができる。送る直前の検査も通る", async () => {
   const notes = [];
   const saved = [];
   const headless = shooter();
@@ -416,28 +420,31 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
       [
         `https://www.boat-ai.jp/race/${DATE}-04-12?tab=sonar`,
         ".af-hep .af-dark",
-        "平和島12R 16:20締切",
+        "平和島12R 20:35締切",
       ],
       [
         `https://www.boat-ai.jp/race/${DATE}-02-05?tab=sonar`,
         ".af-hep .af-dark",
-        "戸田5R 09:00締切",
+        "戸田5R 13:15締切",
       ],
       [
         `https://www.boat-ai.jp/race/${DATE}-04-03?tab=sonar`,
         ".af-hep .af-dark",
-        "平和島3R 10:00締切",
+        "平和島3R 14:15締切",
       ],
       [
         `https://www.boat-ai.jp/race/${DATE}-04-05?tab=sonar`,
         ".af-hep .af-dark",
-        "平和島5R 11:00締切",
+        "平和島5R 15:15締切",
       ],
     ],
   );
+  // 図の前に待つのは条件のカードだけ（段の表示は展示の後に消える、2026-10-17 夜）
   assert.ok(
     headless.calls.every(
-      (c) => c.requiredSelectors === SCREEN_MARKERS["race-sonar"],
+      (c) =>
+        JSON.stringify(c.requiredSelectors) ===
+        JSON.stringify(['[data-testid="analogy-fact-card"]']),
     ),
   );
   const revision = draft.source_data.digest.revision;
@@ -514,7 +521,7 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
     ["today_digest", DATE],
   );
   assert.equal(notes.length, 1);
-  assert.match(notes[0], /7:45 までに個別承認の画面で承認/);
+  assert.match(notes[0], /12:00 までに個別承認の画面で承認/);
   assert.match(
     notes[0],
     /画像1: https:\/\/signed\/today\/[^\n]+-1\.png\n画像2: [^\n]+\n画像3: [^\n]+\n画像4: [^\n]+-4\.png/,
@@ -538,7 +545,7 @@ test("5:40 に一覧を撮って下書き・item（digest）を作り、本人�
       headless: createMockHeadless({ visibleSelectors: SCREEN_MARKERS.today }),
       markers: SCREEN_MARKERS,
       readCurrent: readCurrent(digest, races),
-      now: () => at("07:46").getTime(),
+      now: () => at("12:01").getTime(),
     });
   const sent = { ...job, snapshot_text: JSON.stringify(job.snapshot) };
   await preflight(digestOf())(sent);
@@ -559,10 +566,10 @@ test("同じ一覧でもう一度走らせても何も書かない。一覧が�
   const [before] = await all("SELECT * FROM sns_drafts");
   const job = await approve(before);
   const notes = [];
-  const again = await plan({ now: at("06:00"), notes });
+  const again = await plan({ now: at("07:50"), notes });
   assert.equal(again.report.items[0].outcome, "unchanged");
   assert.equal(notes.length, 0);
-  const rebuilt = await plan({ now: at("06:35"), digest: digestOf(24), notes });
+  const rebuilt = await plan({ now: at("08:10"), digest: digestOf(24), notes });
   assert.equal(rebuilt.report.items[0].outcome, "rebuilt");
   const [after] = await all("SELECT * FROM sns_drafts");
   assert.equal(after.id, before.id);
@@ -587,12 +594,17 @@ test("同じ一覧でもう一度走らせても何も書かない。一覧が�
   );
 });
 
-test("5:30 より前・7:45 以降・一覧が未公開は何もしない。shadow は撮らず書かない", async () => {
-  for (const now of [at("05:29"), at("07:45")])
-    assert.equal(
-      (await plan({ now })).report.items[0].reason,
-      "outside_window",
-    );
+test("7:30 より前・一覧が未公開は何もしない。12:00 以降に下書きが無ければ missed。shadow は撮らず書かない", async () => {
+  assert.equal(
+    (await plan({ now: at("07:29") })).report.items[0].reason,
+    "outside_window",
+  );
+  assert.deepEqual(
+    (({ outcome, reason }) => ({ outcome, reason }))(
+      (await plan({ now: at("12:00") })).report.items[0],
+    ),
+    { outcome: "missed", reason: "no_draft_by_send_time" },
+  );
   assert.equal(
     (await plan({ digest: { day: { generated_at: null }, rows: [] } })).report
       .items[0].reason,
@@ -630,7 +642,7 @@ test("本文に禁止表現があれば held_manual。その後に一覧が変�
   assert.match(item.held_reason, /禁止表現/);
   assert.match(notes[0], /禁止表現があり、止めた/);
   const again = await plan({
-    now: at("06:35"),
+    now: at("08:10"),
     digest: digestOf(24, "競艇"),
   });
   assert.equal(again.report.items[0].reason, "item_held_manual");
@@ -703,7 +715,7 @@ test("承認の画面の指摘: /today の本文（加重で280超え）は、�
   );
 });
 
-test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /today の job が 7:45 に claim まで進む。dry_run の間は claim しない", async () => {
+test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /today の job が 12:00 に claim まで進む。dry_run の間は claim しない", async () => {
   const runbook = await readFile(
     new URL("../../docs/db-migration/153-runbook.md", import.meta.url),
     "utf8",
@@ -716,13 +728,13 @@ test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /tod
     "UPDATE sns_x_send_control SET period_start=NULL, period_end=NULL, reserved_microusd=0, paused=true",
   );
   // 本番の SQL の now() は、この日の 5:40（計画）→ 7:46（送る）の時計で流す
-  await db.query("UPDATE test_clock SET value=$1", [at("05:40")]);
+  await db.query("UPDATE test_clock SET value=$1", [at("07:40")]);
   await db.exec(sql.replaceAll("now()", "test_now()"));
   // runbook の期間（2026-10）は、テストの日付（2037 年。実際の時計で期限を判定する部品があるため未来に置く）に合わせて動かす
   await db.exec(
     "UPDATE sns_x_send_control SET period_start = test_now() - interval '1 day', period_end = test_now() + interval '30 days'",
   );
-  await plan({ now: at("05:40") });
+  await plan({ now: at("07:40") });
   const [draft] = await all("SELECT * FROM sns_drafts");
   const job = await approve(draft);
   // 試運転（dry_run=true）の間は claim しない
@@ -734,7 +746,7 @@ test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /tod
     /dry_run/,
   );
   // 手順2（dry_run=false）の後は、7:45 を過ぎたら claim できる
-  await db.query("UPDATE test_clock SET value=$1", [at("07:46")]);
+  await db.query("UPDATE test_clock SET value=$1", [at("12:01")]);
   await db.exec(
     "UPDATE sns_auto_send_control SET dry_run=false WHERE channel='x'",
   );
@@ -753,7 +765,7 @@ test("下書きを作った後に item の作成で落ちても、次の実行�
   sqlStore.insertItem = insertItem;
   assert.equal((await all("SELECT * FROM sns_drafts")).length, 1);
   assert.equal((await all("SELECT * FROM sns_auto_send_items")).length, 0);
-  const again = await plan({ now: at("05:45") });
+  const again = await plan({ now: at("07:45") });
   assert.equal(again.report.items[0].outcome, "manual");
   const [item] = await all("SELECT * FROM sns_auto_send_items");
   assert.equal(item.state, "manual");
@@ -795,13 +807,13 @@ test("欠場・中止・締切を確かめられない候補は除き、区分�
   // 逃げは 2位・6位・7位（13:00）、まくりは 3位・4位
   assert.ok(
     draft.caption_text.includes(
-      "［逃げ］平和島6R 13:00締切｜1号艇 逃げ 6｜全国40走",
+      "［逃げ］平和島6R 17:15締切｜1号艇 逃げ 6｜全国40走",
     ),
     draft.caption_text,
   );
   assert.ok(
     draft.caption_text.includes(
-      "［まくり］戸田8R 15:00締切｜2号艇 まくり 4｜全国40走",
+      "［まくり］戸田8R 19:15締切｜2号艇 まくり 4｜全国40走",
     ),
   );
   assert.equal(draft.source_data.digest.picks.length, 6);
@@ -817,7 +829,7 @@ test("区分が1つだけの日も印の意味を書き、印を付ける（割�
   const [draft] = await all("SELECT * FROM sns_drafts");
   assert.ok(
     draft.caption_text.includes(
-      "）\n\n［逃げ］全国で1コースに入ったとき逃げ切った割合72%以上の1号艇\n\n［逃げ］平和島3R 10:00締切｜1号艇 逃げ 3｜全国40走\n［逃げ］平和島5R 11:00締切｜1号艇 逃げ 5｜全国40走\n［逃げ］平和島2R 12:00締切｜1号艇 逃げ 2｜全国40走\n\n過去の実績は",
+      "）\n\n［逃げ］全国で1コースに入ったとき逃げ切った割合72%以上の1号艇\n\n［逃げ］平和島3R 14:15締切｜1号艇 逃げ 3｜全国40走\n［逃げ］平和島5R 15:15締切｜1号艇 逃げ 5｜全国40走\n［逃げ］平和島2R 16:15締切｜1号艇 逃げ 2｜全国40走\n\n過去の実績は",
     ),
     draft.caption_text,
   );
@@ -838,7 +850,7 @@ test("区分が1つだけの日も印の意味を書き、印を付ける（割�
   assert.equal(notes.length, 0);
 });
 
-test("注目レース: 先頭に置き一覧に重ねない。逃がしからの注目・7:45 より前・欠場の注目は載せない", async () => {
+test("注目レース: 先頭に置き一覧に重ねない。逃がしからの注目・12:00 より前・欠場の注目は載せない", async () => {
   const { buildTodayPost } = await import("../lib/snsTodayPlanner.js");
   const url = "https://www.boat-ai.jp/today";
   const build = (mutate, excluded = new Set()) => {
@@ -852,13 +864,13 @@ test("注目レース: 先頭に置き一覧に重ねない。逃がしからの
     Object.assign(f, {
       race_id: `${DATE}-04-03`,
       race_number: 3,
-      start_time: "10:00:00",
+      start_time: "14:15:00",
       racer_name: "逃げ\u30003",
     }),
   );
-  assert.match(same.text, /注目レース：平和島3R 10:00締切｜1号艇 逃げ 3｜/);
+  assert.match(same.text, /注目レース：平和島3R 14:15締切｜1号艇 逃げ 3｜/);
   assert.equal(same.text.split("逃げ 3｜").length - 1, 1);
-  assert.match(same.text, /［逃げ］平和島6R 13:00締切｜1号艇 逃げ 6｜/);
+  assert.match(same.text, /［逃げ］平和島6R 17:15締切｜1号艇 逃げ 6｜/);
   // まくりからの注目は、まくりの言い方
   const makuri = build((f) =>
     Object.assign(f, {
@@ -874,7 +886,7 @@ test("注目レース: 先頭に置き一覧に重ねない。逃がしからの
   );
   for (const text of [
     build((f) => Object.assign(f, { from: "nigashi" })).text,
-    build((f) => Object.assign(f, { start_time: "07:40:00" })).text,
+    build((f) => Object.assign(f, { start_time: "11:55:00" })).text,
     build(() => {}, new Set([`${DATE}-04-12:1`])).text,
     build((f, d) => {
       d.rows = d.rows.filter((r) => r !== f);
@@ -894,16 +906,16 @@ test("注目レース: 先頭に置き一覧に重ねない。逃がしからの
   ]);
 });
 
-test("龍神ソナーの図がそろわないうちは 7:00 までやり直し、7:00 を過ぎたら撮れた分で作る", async () => {
+test("龍神ソナーの図がそろわないうちは 8:30 までやり直し、8:30 を過ぎたら撮れた分で作る", async () => {
   const saved = [];
   const notReady = [`${DATE}-02-05`];
   await assert.rejects(
-    plan({ now: at("06:30"), headless: shooter({ notReady }), saved }),
+    plan({ now: at("08:00"), headless: shooter({ notReady }), saved }),
     /sonar_not_ready（2037-10-17-02-05: screenshot_component_missing）/,
   );
   assert.equal(saved.length, 0);
   assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
-  await plan({ now: at("07:05"), headless: shooter({ notReady }), saved });
+  await plan({ now: at("08:35"), headless: shooter({ notReady }), saved });
   const [draft] = await all("SELECT * FROM sns_drafts");
   assert.equal(draft.source_data.image_paths.length, 3);
   // 本人の承認（160）は3枚の媒体で通る
@@ -980,34 +992,34 @@ test("160: X の画像は image_paths の数・順・種類とそろったとき
   assert.equal(job.state, "queued");
 });
 
-test("各回の結果をその日の分だけ cursor に残す（7:45 を過ぎても朝の経過を読める）。時間外は残さず、日付が変わったら空から、最新30件", async () => {
+test("各回の結果をその日の分だけ cursor に残す（12:00 を過ぎても朝の経過を読める）。時間外は残さず、日付が変わったら空から、最新30件", async () => {
   const { nextTodayLog } = await import("../lib/snsTodayPlanner.js");
   let log = nextTodayLog(
     null,
     { outcome: "error", reason: "sonar_not_ready（x）" },
-    at("06:00"),
+    at("07:50"),
   );
-  log = nextTodayLog(log, { outcome: "manual", item_id: "i1" }, at("07:05"));
+  log = nextTodayLog(log, { outcome: "manual", item_id: "i1" }, at("08:35"));
   log = nextTodayLog(
     log,
     { outcome: "skipped", reason: "outside_window" },
-    at("08:00"),
+    at("12:10"),
   );
   assert.deepEqual(log, {
     date: DATE,
     events: [
       {
-        at: at("06:00").toISOString(),
+        at: at("07:50").toISOString(),
         outcome: "error",
         reason: "sonar_not_ready（x）",
       },
-      { at: at("07:05").toISOString(), outcome: "manual", reason: null },
+      { at: at("08:35").toISOString(), outcome: "manual", reason: null },
     ],
   });
   const next = nextTodayLog(
     log,
     { outcome: "error", reason: "x" },
-    new Date(at("06:00").getTime() + 86400000),
+    new Date(at("07:50").getTime() + 86400000),
   );
   assert.equal(next.events.length, 1);
   let many = null;
@@ -1015,8 +1027,147 @@ test("各回の結果をその日の分だけ cursor に残す（7:45 を過ぎ�
     many = nextTodayLog(
       many,
       { outcome: "error", reason: String(i) },
-      at("06:00"),
+      at("07:50"),
     );
   assert.equal(many.events.length, 30);
   assert.equal(many.events.at(-1).reason, "34");
+});
+
+test("確認用の作り直しが3回続けて失敗したら、Slack に1回知らせてやめる。理由はブラウザのログを除いた1行ずつ（2026-10-17 夜、届かずに5分ごとに失敗し続けた）", async () => {
+  const { finishTodayLog, isTodayRebuild, REBUILD_MAX_FAILURES } =
+    await import("../lib/snsTodayPlanner.js");
+  assert.equal(REBUILD_MAX_FAILURES, 3);
+  // 作り直しは、その日の分で送る時刻を過ぎた後だけ
+  assert.equal(isTodayRebuild(DATE, at("20:25")), true);
+  assert.equal(isTodayRebuild(DATE, at("07:40")), false);
+  assert.equal(isTodayRebuild("2037-10-16", at("20:25")), false);
+  assert.equal(isTodayRebuild(null, at("20:25")), false);
+  const crash = {
+    outcome: "error",
+    reason: `sonar_not_ready（${DATE}-04-07: browserContext.newPage: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /tmp/chromium ${"--flag ".repeat(80)} / ${DATE}-10-04: browser.newContext: Target page, context or browser has been closed）`,
+  };
+  let log = { date: DATE, events: [], missed_notified: true };
+  const results = [];
+  for (const hhmm of ["20:25", "20:30", "20:35"]) {
+    const r = finishTodayLog(log, crash, at(hhmm), { rebuilding: true });
+    results.push(r);
+    log = r.log;
+  }
+  assert.deepEqual(
+    results.map((r) => [r.giveUp, r.notice === null]),
+    [
+      [false, true],
+      [false, true],
+      [true, false],
+    ],
+  );
+  assert.match(
+    results[2].notice,
+    /確認用の作り直しが3回続けて失敗したので、やめた/,
+  );
+  // 理由はブラウザのログを含まず、2レース分が残る
+  const reason = log.events.at(-1).reason;
+  assert.doesNotMatch(reason, /Browser logs|launching/);
+  assert.match(reason, new RegExp(`${DATE}-10-04: browser.newContext`));
+  assert.ok(reason.length < 400, reason.length);
+  // 知らせた後は数え直し、朝の「作れなかった」の印は残す
+  assert.equal(log.rebuild_failures, undefined);
+  assert.equal(log.missed_notified, true);
+  // 作り直しでない回の失敗は数えない
+  assert.equal(
+    finishTodayLog(null, crash, at("07:40")).log.rebuild_failures,
+    undefined,
+  );
+});
+
+test("下書きを作れずに 12:00 を過ぎたら、理由つきで Slack に1回だけ知らせる文を出す。下書きがあれば出さない（2026-10-17 黙って終わった件）", async () => {
+  const { finishTodayLog, nextTodayLog } =
+    await import("../lib/snsTodayPlanner.js");
+  // 朝は図がそろわずやり直し続け、7:45 を過ぎた
+  let log = nextTodayLog(
+    null,
+    {
+      outcome: "error",
+      reason:
+        "sonar_not_ready（2037-10-17-04-07: screenshot_component_missing）",
+    },
+    at("08:20"),
+  );
+  const late = (await plan({ now: at("12:05") })).report.items[0];
+  assert.equal(late.outcome, "missed");
+  const first = finishTodayLog(log, late, at("12:05"));
+  assert.match(
+    first.notice,
+    /SNS \/today（2037-10-17）: 送る時刻（12:00）までに下書きを作れなかった。今日は送らない/,
+  );
+  assert.match(
+    first.notice,
+    /最後の結果（08:20）: error sonar_not_ready（2037-10-17-04-07: screenshot_component_missing）（朝の記録 1件）/,
+  );
+  // 知らせた後（missed_notified を保存）は、その日はもう出さない。次の日は改めて出す
+  first.log.missed_notified = true;
+  const again = finishTodayLog(first.log, late, at("12:10"));
+  assert.equal(again.notice, null);
+  assert.equal(again.log.missed_notified, true);
+  const nextDay = finishTodayLog(
+    again.log,
+    late,
+    new Date(at("12:05").getTime() + 86400000),
+  );
+  assert.match(nextDay.notice, /朝の実行が一度も最後まで終わっていない/);
+  // 朝の記録が無い（関数の時間切れで何も残らない）日も、その旨を出す
+  assert.match(
+    finishTodayLog(null, late, at("12:05")).notice,
+    /関数の時間切れなど/,
+  );
+  // 下書きがあれば missed にならず、何も出さない
+  await plan({ now: at("07:50") });
+  const ok = (await plan({ now: at("12:05") })).report.items[0];
+  assert.equal(ok.reason, "outside_window");
+  assert.equal(finishTodayLog(null, ok, at("12:05")).notice, null);
+});
+
+test("撮影は開始から120秒を過ぎたら新しく撮らない（関数の時間切れで何も残らないのを避ける）", async () => {
+  let ms = 0;
+  const headless = shooter();
+  const slow = {
+    ...headless,
+    screenshot: async (r) => {
+      ms += 70_000;
+      return headless.screenshot(r);
+    },
+  };
+  await assert.rejects(
+    plan({ now: at("08:00"), headless: slow, nowMs: () => ms }),
+    /sonar_not_ready（2037-10-17-04-03: time_budget \/ 2037-10-17-04-05: time_budget）/,
+  );
+  assert.equal(headless.calls.length, 2);
+  // 7:00 を過ぎていれば、撮れた2枚で作る
+  ms = 0;
+  await plan({ now: at("08:35"), headless: slow, nowMs: () => ms });
+  const [draft] = await all("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.image_paths.length, 2);
+});
+
+test("確認用の作り直し（cursor.today_rebuild）: 送る時刻を過ぎても、その日の下書きと図を1回作る。承認はできない。別の日付なら作らない", async () => {
+  const notes = [];
+  const other = await plan({ now: at("13:30"), reviewDate: "2037-10-16" });
+  assert.equal(other.report.items[0].outcome, "missed");
+  const result = await plan({ now: at("13:30"), reviewDate: DATE, notes });
+  const item = result.report.items[0];
+  assert.deepEqual(
+    [item.outcome, item.review, item.written],
+    ["manual", true, true],
+  );
+  const [draft] = await all("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.image_paths.length, 4);
+  assert.match(
+    notes[0],
+    /確認用に今日の下書きを作り直した（送る時刻を過ぎているので、承認・送信はできない）/,
+  );
+  // 期限（8:15）を過ぎているので、承認の条件で止まる（送られない）
+  assert.ok(
+    sendHolds(draft).includes("期限失効") ||
+      Date.now() < Date.parse(draft.source_data.deadline_queue.expires_at),
+  );
 });

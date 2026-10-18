@@ -258,6 +258,7 @@
     },
     "api/cron/sns-auto-plan.js": {
       "regions": ["syd1"],
+      "memory": 3009,
       "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**,sns-video-studio/remotion/risk-rules.json,src/locales/ja/common.json}"
     },
     "api/cron/*.js": {

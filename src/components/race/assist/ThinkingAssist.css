@@ -172,6 +172,30 @@
   cursor: pointer;
 }
 
+/* BOA-822: 行の名前の下の範囲の名前と件数。3行に折れないよう、名前の列を広げて小さめの字にする（承認モック 4-assist-375.png） */
+.ta-rough-btn--scoped > .baseline-bar {
+  grid-template-columns: 9em minmax(0, 1fr) auto;
+}
+
+/* PC は名前の列を広げ、範囲の名前を途中で折らない（#1604 ファン評価1周目 P2） */
+@media (min-width: 1024px) {
+  .ta-rough-btn--scoped > .baseline-bar {
+    grid-template-columns: 16em minmax(0, 1fr) auto;
+  }
+}
+
+.ta-rough-lineup {
+  display: grid;
+  gap: 2px;
+}
+
+.ta-rough-scope {
+  display: block;
+  font-size: var(--font-size-xs);
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
 .ta-rough-foot {
   display: flex;
   align-items: flex-end;
@@ -179,38 +203,11 @@
   gap: var(--spacing-2);
 }
 
-.ta-minibar {
-  display: grid;
-  grid-template-columns: 6.5em minmax(0, 1fr) auto;
-  gap: var(--spacing-1-5);
-  align-items: center;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-}
-
-.ta-minibar-track {
-  position: relative;
-  height: 7px;
-  border-radius: var(--radius-sm);
-  background: var(--border-hairline);
-}
-
-.ta-minibar-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: var(--radius-sm);
-  background: var(--brand-accent-primary);
-}
-
 .ta-baseline {
   position: absolute;
   top: -3px;
   bottom: -3px;
   border-left: 2px dashed var(--text-primary);
-}
-
-.ta-minibar b {
-  color: var(--text-primary);
 }
 
 /* ---- 基準つきバー・普通のバー（BaseBar） ---- */
@@ -1976,7 +1973,7 @@
     align-items: center;
   }
 
-  .ta-rough-btn > .ta-minibar,
+  .ta-rough-btn > .baseline-bar,
   .ta-rough-btn > .ta-note {
     grid-column: 1;
     max-width: 458px;

@@ -257,20 +257,41 @@ export const shareDailyStatsToX = (stats) => {
  * @param {string} model
  * @param {(key: string, options?: object) => string} t - i18next の t
  */
+/** 共有文の見出し（日付・会場・R）。予想・注意度・中止の文面で同じ形 */
+const shareLabel = (race) => {
+  const parts = race.date ? race.date.split("-") : [];
+  return {
+    date: parts.length === 3 ? `${parts[1]}/${parts[2]} ` : "",
+    venue: race.venue || "不明",
+    raceNo: race.raceNo || "?",
+  };
+};
+
+/**
+ * 発走前の共有文のイン崩れ注意度の版（BOA-822、機能フラグの側。2026-10-17 オーナー決定の案A）。
+ * 画面（AI予想タブ）に展開予測・本命・推奨が出ないので、注意度の割合と段だけを書く。当たりを約束する言葉は書かない
+ * @param {{venue?: string, raceNo?: number|string, date?: string, isCancelled?: boolean, inCaution?: {pct?: number, level?: string, n?: number}|null}} race
+ * @param {(key: string, options?: object) => string} t
+ */
+export const generateInCautionShareText = (race, t) => {
+  const label = shareLabel(race);
+  if (race.isCancelled) return t("panel.shareCancelled", label);
+  const ic = race.inCaution;
+  if (typeof ic?.pct !== "number" || !["low", "mid", "high"].includes(ic.level))
+    return t("panel.shareNoPrediction", label);
+  return t("panel.shareInCaution", {
+    ...label,
+    pct: ic.pct,
+    level: t(`inCaution.level.${ic.level}`),
+    // 件数（spec「件数を添える」）と免責（カードと同じ文。段の言葉は免責の併記が前提、#1610 wording-editor P1）
+    n: Number.isFinite(ic.n) ? ic.n.toLocaleString() : "—",
+    disclaimer: t("inCaution.disclaimer"),
+  });
+};
+
 export const generatePredictionShareText = (race, model = "standard", t) => {
-  const venue = race.venue || "不明";
-  const raceNo = race.raceNo || "?";
-
-  let dateStr = "";
-  if (race.date) {
-    const parts = race.date.split("-");
-    if (parts.length === 3) {
-      dateStr = `${parts[1]}/${parts[2]} `;
-    }
-  }
-
   // 見出し（日付・会場・R）は予想の文面と同じ形で残す
-  const label = { date: dateStr, venue, raceNo };
+  const label = shareLabel(race);
   if (race.isCancelled) return t("panel.shareCancelled", label);
   if (race.prediction?.topPick == null) {
     return t("panel.shareNoPrediction", label);

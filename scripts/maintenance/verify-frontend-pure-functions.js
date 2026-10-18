@@ -45,6 +45,8 @@ const TARGETS = {
   hscrollHint: "src/utils/horizontalScrollHint.js",
   volatilityHighlights: "src/utils/volatilityHighlights.js",
   inCautionLevel: "src/utils/inCautionLevel.js",
+  cautionEvents: "src/utils/cautionEvents.js",
+  inCautionAccuracy: "src/utils/inCautionAccuracy.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -1946,6 +1948,50 @@ function suiteVolatilityHighlights(m, check) {
     ids(m.pickVolatilityHighlights(races, 5)),
     { high: ["b", "c"], low: ["e"], allClosed: false },
   );
+  // BOA-822: イン崩れ注意度（pct 0〜100、段は保存した level）で並べる。中くらい（mid）はどちらの列にも入れない
+  const ic = (id, pct, level, closed = false) => ({ id, pct, level, closed });
+  check(
+    "volatilityHighlights: イン崩れ注意度は pct の高い順・低い順、中くらいは入れない",
+    ids(
+      m.pickVolatilityHighlights(
+        [
+          ic("p", 65, "high"),
+          ic("q", 82, "high"),
+          ic("r", 43, "mid"),
+          ic("s", 26, "low"),
+          ic("t", 31, "low"),
+        ],
+        5,
+        "pct",
+      ),
+    ),
+    { high: ["q", "p"], low: ["s", "t"], allClosed: false },
+  );
+  // PR #1602 レビュー: pct は整数で同値が多い。同じ値は締切の早い順（入力の順＝会場の順で5本目の境を決めない）
+  const ict = (id, pct, level, startTime) => ({
+    id,
+    pct,
+    level,
+    startTime,
+    closed: false,
+  });
+  check(
+    "volatilityHighlights: 同じ割合のレースは締切の早い順に並べる",
+    ids(
+      m.pickVolatilityHighlights(
+        [
+          ict("u", 75, "high", "16:40"),
+          ict("v", 75, "high", "15:10"),
+          ict("w", 75, "high", null),
+          ict("x", 21, "low", "20:30"),
+          ict("y", 21, "low", "11:05"),
+        ],
+        2,
+        "pct",
+      ),
+    ),
+    { high: ["v", "u"], low: ["y", "x"], allClosed: false },
+  );
   // PR #1248 ファン評価1周目: 夕方の残り数本で、崩れやすさ28〜33の「標準」が「高」の列に入った
   check(
     "volatilityHighlights: 「標準」（31〜69）のレースはどちらの列にも入れない",
@@ -2024,6 +2070,136 @@ const IN_CAUTION_CASES = JSON.parse(
   ),
 ).gapCases;
 
+// --- cautionEvents（BOA-822 task 27）: 注意度の GA4 イベント。生の % を送らず段のキーだけ、レース単位の面だけ race_id
+function suiteCautionEvents(m, check) {
+  const rid = "2026-10-11-02-04";
+  check(
+    "cautionEvents: レース詳細の visible は race_id・段・置き場所（ai_tab）。% は送らない",
+    m.cautionVisibleEvent({
+      surface: "race_detail",
+      raceId: rid,
+      inCaution: { level: "high", pct: 65 },
+    }),
+    {
+      name: "caution_visible",
+      params: {
+        caution_surface: "race_detail",
+        race_id: rid,
+        caution_band: "high",
+        caution_placement: "ai_tab",
+      },
+    },
+  );
+  check(
+    "cautionEvents: 値の無いレースは段 insufficient",
+    m.cautionVisibleEvent({
+      surface: "race_detail",
+      raceId: rid,
+      inCaution: null,
+    }).params.caution_band,
+    "insufficient",
+  );
+  check(
+    "cautionEvents: ホーム・一覧から押したレースは race_id・段つき、/accuracy への導線は付けない。一覧の visible はページごと",
+    [
+      m.cautionClickEvent({
+        surface: "home_highlight",
+        target: "race",
+        raceId: rid,
+        inCaution: { level: "high" },
+      }).params,
+      m.cautionClickEvent({ surface: "home_highlight", target: "accuracy" })
+        .params,
+      m.cautionVisibleEvent({ surface: "race_list", raceId: rid }).params,
+    ],
+    [
+      {
+        caution_surface: "home_highlight",
+        race_id: rid,
+        caution_band: "high",
+        caution_target: "race",
+      },
+      { caution_surface: "home_highlight", caution_target: "accuracy" },
+      { caution_surface: "race_list" },
+    ],
+  );
+  check(
+    "cautionEvents: ホーム・/accuracy は race_id・段・置き場所なし",
+    m.cautionVisibleEvent({ surface: "accuracy" }),
+    { name: "caution_visible", params: { caution_surface: "accuracy" } },
+  );
+  check(
+    "cautionEvents: click は行き先つき。知らない面・行き先、race_id の無いレース単位の面は送らない",
+    [
+      m.cautionClickEvent({
+        surface: "race_detail",
+        target: "sonar",
+        raceId: rid,
+        inCaution: { level: "low" },
+      }).params,
+      m.cautionClickEvent({ surface: "race_detail", target: "x", raceId: rid }),
+      m.cautionClickEvent({ surface: "nowhere", target: "race" }),
+      m.cautionClickEvent({ surface: "home_highlight", target: "race" }),
+    ],
+    [
+      {
+        caution_surface: "race_detail",
+        race_id: rid,
+        caution_band: "low",
+        caution_placement: "ai_tab",
+        caution_target: "sonar",
+      },
+      null,
+      null,
+      null,
+    ],
+  );
+}
+
+// --- inCautionAccuracyView（BOA-822 task 24）: /accuracy の段ごとの実績。夜のジョブが書いた件数を並べ、
+// 件数30未満の段は割合を出さない（公開直後に1〜2件で 0% や 100% を出さない）
+function suiteInCautionAccuracy(m, check) {
+  // 公開前の検証（2026-10-17 本番の表から再計算した値、#1605）
+  const pre = m.inCautionAccuracyView({
+    base: { n: 75295, nonWin: 34194 },
+    byLevel: {
+      low: { n: 21027, nonWin: 5716 },
+      mid: { n: 32169, nonWin: 13962 },
+      high: { n: 22071, nonWin: 14503 },
+    },
+  });
+  check(
+    "inCautionAccuracy: 並びは崩れやすい→堅め、割合・全体に占める割合・全国",
+    pre.rows.map((r) => [r.level, m.pct1(r.rate), Math.round(r.share * 100)]),
+    [
+      ["high", "65.7", 29],
+      ["mid", "43.4", 43],
+      ["low", "27.2", 28],
+    ],
+  );
+  check("inCautionAccuracy: 全国は base の割合", m.pct1(pre.base.rate), "45.4");
+  check(
+    "inCautionAccuracy: ぶれ幅は Wilson の95%（崩れやすい 65.1〜66.3）",
+    [m.pct1(pre.rows[0].lo), m.pct1(pre.rows[0].hi)],
+    ["65.1", "66.3"],
+  );
+  // 公開直後: 29件の段は割合を出さない。30件から出す。段が無いキーは0件
+  const post = m.inCautionAccuracyView({
+    base: { n: 59, nonWin: 30 },
+    byLevel: { high: { n: 29, nonWin: 29 }, mid: { n: 30, nonWin: 12 } },
+  });
+  check(
+    "inCautionAccuracy: 30件未満は割合・ぶれ幅なし、30件から出す、無い段は0件",
+    post.rows.map((r) => [r.level, r.n, r.rate, r.lo === null]),
+    [
+      ["high", 29, null, true],
+      ["mid", 30, 0.4, false],
+      ["low", 0, null, true],
+    ],
+  );
+  check("inCautionAccuracy: 無いときは null", m.inCautionAccuracyView(null), null);
+}
+
 function suiteInCautionLevel(m, check) {
   for (const c of IN_CAUTION_CASES) {
     const [b1, ...others] = c.rates.map(m.rateCents);
@@ -2063,6 +2239,35 @@ function suiteInCautionLevel(m, check) {
     ],
   );
   check(
+    "inCaution: 符号の書き方（負は全角のマイナス、正は +、0 は符号なし）",
+    [
+      m.signedText(-2.12, 2),
+      m.signedText(3, 1),
+      m.signedText(0, 1),
+      m.signedText(-0.5, 1),
+    ],
+    ["−2.12", "+3.0", "0.0", "−0.5"],
+  );
+  check(
+    "inCaution: 1号艇の着順（rank1〜6 はその着の艇番、いなければ null）、日付の書き方",
+    [
+      m.boat1Rank({ rank1: 2, rank2: 1 }),
+      m.boat1Rank({ rank1: 1 }),
+      m.boat1Rank({
+        rank1: 2,
+        rank2: 3,
+        rank3: 4,
+        rank4: 5,
+        rank5: 6,
+        rank6: null,
+      }),
+      m.boat1Rank(null),
+      m.slashDate("2019-04-01"),
+      m.slashDate(null),
+    ],
+    [2, 1, null, null, "2019/4/1", ""],
+  );
+  check(
     "inCaution: ラウンド（準々・準優進出は other、空も other）",
     ["準優勝戦", "優勝戦", "予選", "準優進出戦", "", null].map(m.roundOf),
     ["junyu", "yusho", "other", "other", "other", "other"],
@@ -2084,6 +2289,8 @@ const SUITES = {
   hscrollHint: suiteHscrollHint,
   volatilityHighlights: suiteVolatilityHighlights,
   inCautionLevel: suiteInCautionLevel,
+  cautionEvents: suiteCautionEvents,
+  inCautionAccuracy: suiteInCautionAccuracy,
 };
 
 // ---------------------------------------------------------------------------
@@ -2091,6 +2298,12 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 // [対象, 名前, 置換元, 置換先]。置換元が見つからなければ（元ファイルが変わった）失敗にする
 const MUTANTS = [
+  [
+    "inCautionAccuracy",
+    "件数の少ない段にも割合を出す（公開直後に 1件で 100% が出る）",
+    "n >= MIN_RATE_N ? wilsonInterval(nonWin, n) : null",
+    "n > 0 ? wilsonInterval(nonWin, n) : null",
+  ],
   [
     "inCautionLevel",
     "浮動小数で % を丸める（system-architect L5 の退行）",
@@ -2111,9 +2324,27 @@ const MUTANTS = [
   ],
   [
     "inCautionLevel",
+    "正の数に + を付けない（帯の端「+3.0以上」が「3.0以上」になる）",
+    '${v < 0 ? "−" : "+"}',
+    '${v < 0 ? "−" : ""}',
+  ],
+  [
+    "inCautionLevel",
     "段の境目を以下にする（35% を堅めに入れる）",
     'if (pct < low) return "low";',
     'if (pct <= low) return "low";',
+  ],
+  [
+    "volatilityHighlights",
+    "並べる値の名前を見ずに percentile で並べる（BOA-822 の pct が並ばない）",
+    ".sort((a, b) => b[key] - a[key] || byStartTime(a, b))",
+    ".sort((a, b) => b.percentile - a.percentile || byStartTime(a, b))",
+  ],
+  [
+    "volatilityHighlights",
+    "同じ割合のレースを締切の順で並べない（PR #1602 レビュー、入力の順で5本目が決まる）",
+    ".sort((a, b) => b[key] - a[key] || byStartTime(a, b))",
+    ".sort((a, b) => b[key] - a[key])",
   ],
   [
     "volatilityHighlights",

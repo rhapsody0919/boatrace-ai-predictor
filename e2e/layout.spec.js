@@ -1780,7 +1780,7 @@ test.describe("レイアウト: 思考アシストの PC 表示（BOA-880）", (
         page: box(".ta-page"),
         header: box(".ta-header"),
         rough: box(".ta-rough-btn"),
-        roughBar: box(".ta-rough-btn > .ta-minibar"),
+        roughBar: box(".ta-rough-btn > .baseline-bar"),
         roughFoot: box(".ta-rough-btn > .ta-rough-foot"),
         fig: box(".ta-split-fig"),
         side: box(".ta-split-side"),
@@ -1793,7 +1793,7 @@ test.describe("レイアウト: 思考アシストの PC 表示（BOA-880）", (
   }) => {
     await routeThinkingAssistV16(page);
     await page.goto(`/race/${THINKING_ASSIST_RACE}/assist`);
-    await expect(page.locator(".ta-minibar-track").first()).toBeVisible({
+    await expect(page.locator(".baseline-bar-track").first()).toBeVisible({
       timeout: 30000,
     });
     await expect(page.locator(".ta-lane").first()).toBeVisible();

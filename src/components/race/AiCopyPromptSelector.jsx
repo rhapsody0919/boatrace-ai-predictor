@@ -1,13 +1,19 @@
 import { useTranslation } from "react-i18next";
 import { getAiCopyPromptOptions } from "../../utils/aiCopyPrompts";
+import { isInCautionEnabled } from "../../config/featureFlags";
 
 export default function AiCopyPromptSelector({
   value,
   onChange,
   volatilityPercentile,
+  inCautionLevel = null,
 }) {
   const { t } = useTranslation();
-  const options = getAiCopyPromptOptions(t, { volatilityPercentile });
+  const options = getAiCopyPromptOptions(t, {
+    volatilityPercentile,
+    inCautionLevel,
+    inCautionEnabled: isInCautionEnabled(),
+  });
 
   return (
     <div
