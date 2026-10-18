@@ -88,8 +88,8 @@ L0（実装、paused=true のまま）→ L1（試運転）→ L2（1件ずつ�
 - [ ] **26. オーナー: 鍵を Vercel に登録**（Google の OAuth 同意画面を「本番」にし、投稿用の `YOUTUBE_REFRESH_TOKEN` を `youtube.upload`＋`youtube` の scope で取り直す（今の `youtube.upload` だけでは `videos.update` で公開に切り替えられない。tasks 2b の権限の確認はこれで代える）。Analytics の読み取りトークンもテスト中に取ったものなら取り直し、Vercel にも登録する。`YOUTUBE_ANALYTICS_*`、`GOOGLE_SERVICE_ACCOUNT_KEY`、`SNS_TOKEN_ENC_KEY`、`X_OAUTH_CLIENT_ID`・`X_OAUTH_CLIENT_SECRET`）と、X の Developer Console のコールバック URL・spending limit（月額上限は $10、2026-10-12 決定）。手順は Claude がオーケストレーターに渡す
 - [ ] **27. オーナー: 本番 SQL で送信の設定**（L2・L3 の日次上限と月の上限額は 153-runbook.md「L2・L3 の送信の設定」。L3 の月の上限額は $130 に決定（2026-10-13 オーナー。見込みは実費で月 $77＋/today $6、予約で $119）。月の切り替えは 19a 以降は自動。`renew_sns_x_send_period`、`attempt_ceiling_microusd`、`daily_limit`、`schedule_minutes=60`・`timing_approved=true`、`max_source_age_seconds=14400`、YouTube のクォータの上限・verified）。管理画面から「X と連携する」
 - [ ] **28. L1 試運転**（1〜2日、dry_run=true）: 保留の理由を全件確認。`sns_auto_send_control.dry_run=false` はオーナー
-- [ ] **29. L2**（7日）: paused=false。機械の検査とオーナーの判断の一致を記録
+- [ ] **29. L2**（7日）: paused=false。機械の検査とオーナーの判断の一致を記録（全貌動画は 2026-10-18 ユーザー決定で L2 を経ない。/today の X 投稿は1件ずつ承認のまま）
 - [ ] **29b. 受け入れ E2E**（`e2e/acceptance/sns-pdca-loop.spec.js`）を、直した spec・screens で書き直させる（acceptance-test-writer）
-- [ ] **30. オーナー: `.claude/CLAUDE.md` の変更**（[rule-change-proposal.md](rule-change-proposal.md)、自動モード以外のセッション）
-- [ ] **31. L3**: 条件（止める操作の本番の試験を除く）を満たしたらオーナーが「自動にする」。初日の最初の1件で、止めるリンクと「自動を切る」を本番で試して `stop_tested_at` を記録する（L2 は個別承認なので、止める操作は L3 に入るまで試せない）
+- [x] **30. オーナー: `.claude/CLAUDE.md` の変更**（2026-10-18 ユーザー決定。全貌動画は機械の検査と評価役の検査で P0 が0件なら承認なしで自動で送る。段階を踏まない＝29 の L2 の7日間と spec の実送信5件の条件は置かない。/today の X 投稿・ブログ等は今までどおり1件ごとに承認）
+- [ ] **31. L3**（全貌動画は 2026-10-18 ユーザー決定で下の条件を置かず、機械の検査と評価役の検査で P0 が0件なら自動。事前通知と止めるフラグは最小限）: 条件（止める操作の本番の試験を除く）を満たしたらオーナーが「自動にする」。初日の最初の1件で、止めるリンクと「自動を切る」を本番で試して `stop_tested_at` を記録する（L2 は個別承認なので、止める操作は L3 に入るまで試せない）
 - [ ] **32. 統計検証のやり直し**: 再開から4週後に X の48h の指標のばらつきで必要件数を出し直す（`scripts/analysis/sns-pdca-baseline/`）。ソナー利用の基準値も4週分で出し直す
