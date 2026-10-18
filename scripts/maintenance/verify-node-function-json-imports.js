@@ -10,7 +10,7 @@
  *
  * 1. api/ の中で `.json` を import してよいのは、自分の config で runtime: "edge" を宣言した関数だけ
  *    （api/_lib/ は nodejs の関数からも読まれるので、JSON の import を置かない）
- * 2. mobile-approval.js を実際に Node で import でき、既定の書き出しが関数であること
+ * 2. mobile-approval.js を実際に Node で import でき、GET・POST を書き出し、既定の書き出しが無いこと
  *
  *   node scripts/maintenance/verify-node-function-json-imports.js
  *   node scripts/maintenance/verify-node-function-json-imports.js --baseline=origin/master  # 修正前に落ちることの確認（1だけ）
@@ -78,9 +78,22 @@ if (!baseline) {
     const mod = await import(
       new URL("../../api/admin/sns-hub/mobile-approval.js", import.meta.url)
     );
-    if (typeof mod.default !== "function")
-      throw new Error("既定の書き出しが関数でない");
-    console.log("[OK] mobile-approval.js を Node で読み込める");
+    // nodejs の関数の既定の書き出しは Node の (req, res) で呼ばれる。Web の Request を受ける形は GET・POST で書き出す（2026-10-18）
+    if (mod.default !== undefined)
+      throw new Error(
+        "既定の書き出しがある（nodejs では (req, res) で呼ばれる）",
+      );
+    if (typeof mod.GET !== "function" || mod.POST !== mod.GET)
+      throw new Error("GET・POST の書き出しが無い");
+    // Web の Request で呼べる（本番の 500 は req.headers.get が無いことで起きた）。認証が無ければ 401
+    const res = await mod.GET(
+      new Request("https://www.boat-ai.jp/api/admin/sns-hub/mobile-approval"),
+    );
+    if (res.status !== 401)
+      throw new Error(`認証の無い GET が 401 でない（${res.status}）`);
+    console.log(
+      "[OK] mobile-approval.js を Node で読み込め、GET が Request を受けて 401 を返す",
+    );
   } catch (e) {
     failed += 1;
     console.error(
