@@ -1,6 +1,11 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "git": {
+    "deploymentEnabled": {
+      "codex/**": false
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/race-notices",
