@@ -1,7 +1,7 @@
 # ADR 0091: 送信直前のリンク先の表示確認を、Vercel の関数で未認証の Chromium を使って行う
 
 ## ステータス
-提案中（docs/design/sns-pdca-loop/plan.md §2）
+採用（docs/design/sns-pdca-loop/plan.md §2。`api/_lib/snsHeadless.js`、cron `sns-auto-plan`）
 
 ## 背景
 既存の `createDeadlinePreflight`（api/_lib/snsDeadlineQueue.js）は `headless.inspect({url, context:{storageState:null}, requiredSelectors})` を注入する契約だけがあり、実体はモック。自動送信では人の確認が外れるので、リンク先で対象の画面が未ログインで実際に見えることを機械で確かめる必要がある。新しい定期処理は Vercel Functions + Vercel Cron（ADR-0066）。

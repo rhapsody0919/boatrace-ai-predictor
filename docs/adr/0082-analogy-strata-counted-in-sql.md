@@ -1,7 +1,9 @@
 # ADR 0082: 類似レース（層別 S*）は、条件の列を持つ母集団を SQL の RPC で数える
 
 ## ステータス
-提案中（BOA-271 FR-2 の作り直し）。[ADR-0080](./0080-analogy-neighbors-precomputed-in-batch.md) の FR-2 の部分（近傍のバッチ・Storage の行列・近傍の起動）を置き換える。ADR-0080 のうち、寄与度（FR-1）の週次学習を Vercel Cron から workflow_dispatch で起動する部分（決定3の学習分）はそのまま残る。
+置き換え済み（[ADR-0085](./0085-analogy-v16-daily-batch-to-storage.md)）。以下は置き換え前の記述。
+
+提案時: BOA-271 FR-2 の作り直し。[ADR-0080](./0080-analogy-neighbors-precomputed-in-batch.md) の FR-2 の部分（近傍のバッチ・Storage の行列・近傍の起動）を置き換える。ADR-0080 のうち、寄与度（FR-1）の週次学習を Vercel Cron から workflow_dispatch で起動する部分（決定3の学習分）はそのまま残る。
 
 採用に変える条件は次の3つ:
 - BOA-635 の BOA-635 の ADR 案（PR #1093）（近傍800行を画面で数える）の改訂、または置き換え。下の「影響」を参照

@@ -1,7 +1,7 @@
 # ADR 0093: X の OAuth トークンは DB に暗号化して保存し、refresh を行ロックで1本にする
 
 ## ステータス
-提案中（docs/design/sns-pdca-loop/plan.md §4）
+採用（docs/design/sns-pdca-loop/plan.md §4。`api/_lib/snsTokenStore.js`、154 は適用済み）
 
 ## 背景
 X の投稿・自分の投稿の指標の読み取りには OAuth 2.0（PKCE）のユーザー文脈のトークンが要る。access token は2時間で切れる。refresh token は `offline.access` を付けたときだけ出て、使うと新しいものが返り古いものは無効になる（公式ドキュメントに明記は無く、開発者フォーラムの報告。使い切り前提で設計する）。Vercel の環境変数は実行中に書き換えられない。DB に秘密を暗号化して保存している既存例は無い。
