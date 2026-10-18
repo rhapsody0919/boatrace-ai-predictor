@@ -23,7 +23,7 @@ export function getGoogleAuthClient(scopes) {
   if (!fs.existsSync(keyPath)) {
     console.error(`❌ サービスアカウントのキーファイルが見つかりません: ${keyPath}
 
-Google Sheets 連携と同じ credentials/google-service-account.json を配置するか、
+credentials/google-service-account.json を配置するか、
 GOOGLE_SERVICE_ACCOUNT_KEY_PATH でパスを指定してください。`);
     process.exit(1);
   }
