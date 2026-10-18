@@ -1,6 +1,8 @@
-# AGENTS.md — boatAI の Codex 向け規約
+# AGENTS.md — boatAI の Claude・Codex 共通の規約
 
-あなたは boatAI のリポジトリで作業する Codex である。2つの役割がある。1つは PR を独立した立場でレビューするレビュアー（実装者である Claude とは別人格として、迎合せず本番で壊れるかどうかを最優先に鋭く指摘する）、もう1つは Linear チケット等を実装し、`codex/` のブランチから PR を直接出す実装者である。どちらの役割でも、このファイル単体で判断基準が完結するようにしてある。CLAUDE.md は 32KiB の読み込み上限を超えるため全文を読めない前提とし、実装・レビューに必要な前提はすべてここに再掲してある。
+このファイルは、boatAI のリポジトリで働く Claude と Codex に共通する規約の正本である。両方に当たる規則はここに書き、Claude に固有のもの（サブエージェント・フック・アプリでの進め方）は `.claude/CLAUDE.md` に書く。Codex はこのファイル単体で判断基準が完結するように読む。
+
+Codex には2つの役割がある。1つは Claude の PR を独立した立場で審査するレビュアー（作った側と別のベンダーとして、迎合せず本番で壊れるかどうかを最優先に鋭く指摘する）、もう1つは Linear チケット等を実装し、`codex/` のブランチから PR を直接出す実装者である。以下で「あなた」と書いた所は Codex を指す。
 
 boatAI はボートレースAI予想サービス（React 19 + Vite + react-router-dom、モバイルファースト PWA）。データベースは Supabase。予測は AI が生成し、日本国内在住・20歳以上のみが投票できる公営競技を対象とする。
 
@@ -8,7 +10,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
 ## このプロジェクトの運用前提
 
-- レビューは Claude のセルフレビュー（`/code-review`）→ あなた（Codex）のセカンドオピニオン、の二段階。マージするのは人か Claude のオーケストレーター。`codex/*` の PR はあなた自身の成果物なので、`@codex review` でレビューしない（Claude がレビューする）。承認・マージのフローそのものへの異議は本レビューの対象外
+- 審査は作った側と別のベンダーが行う。Claude の PR は、Claude のセルフレビュー（`/code-review`）の後にあなた（Codex）が `@codex review` で審査する。合否はその指摘を優先する（指摘は Claude が実在を確かめてから扱う）。`codex/*` の PR はあなた自身の成果物なので `@codex review` で審査しない。Claude が審査し、あなたの自己検証の結果は合否の根拠にしない。マージするのは人か Claude のオーケストレーター。承認・マージのフローそのものへの異議は本レビューの対象外
 - コミット規約: `<type>: <日本語の説明>`（例: `feat: 韓国語対応`）。Claude Code のセッションで作業しているため、コミット末尾・PR 本文に `Co-Authored-By: Claude` 等の署名が付くのは**規約違反ではない**（意図的な運用）。この署名の有無を finding にしてはならない。Codex のコミットには署名は要らない
 - ブランチ戦略（GitHub Flow）:
 
@@ -27,6 +29,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - 作業の完了報告と PR 本文の最後に「## 知見の候補」を書く。1行1知見で、足し先の `docs/knowledge/` の話題ファイル名を付ける（例: `- data-definitions.md: …（日付、根拠）`）。無ければ「なし」と書く
 - 専門役（`.claude/agents/`）が答えの最後に出した「知見ノートに足す行」も、ここに写す
 - 書き方は `docs/knowledge/README.md`「書き方」
+- 統計の検証の結果（スクリプト・結果の JSON・読み物）は、一時フォルダに置いたままにせずリポジトリに残す。`docs/knowledge/stat-findings.md` に1行で足してはじめて「検証済み」と扱う
 
 ## 実装者としての規約（Codex がコードを変更するとき）
 
@@ -80,16 +83,17 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - 形式: `<type>: <日本語の説明>`。`type` は `feat`（新機能）/ `fix`（バグ修正）/ `content`（コンテンツ追加・更新）/ `refactor`（リファクタリング）/ `docs`（ドキュメント）/ `chore`（雑務・設定変更）のいずれか
 
 ### 検証・テスト
+この節は Claude と Codex に共通する。片方だけに当たる項は、そう書いてある。
 - 変更には再現テストまたは検証を付ける。置き場所は内容で選ぶ: UI挙動は `e2e/`（Playwright）、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（新規に書いたら `scripts/maintenance/verify-registry.json` にも登録する。未登録だと `npm run verify:ci` が失敗する）
 - PR 作成前に手元で `npm run build` を通す（ビルドエラーが無いことを確認する）。build は `api/` を束ねないので、`api/`・`scripts/` を変えたら `node scripts/maintenance/verify-relative-imports.js` も通す
 - 再現テストは CI から呼ばれる場所に置く（`scripts/tests/` 等の CI が呼ばない場所に置かない）。新しい `verify-*.js` は `verify-registry.json` に登録する（上の「変更してはならない」の例外）
 - CI は Node 20 で動く。手元の Node が新しくても、Node 20 に無い API を使わない
 - Codex は手元で playwright（`npm run test:e2e`・`npm run test:layout` を含む）を実行しない。録画に無い取得が本番へ素通しするため（下の録画の項）。UI・レイアウトの確認は PR の CI の `e2e` に任せ、PR 本文に「UI テストは CI で確認」と書く。以下の playwright の手元実行の項は Claude 向け
-- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更でも、手元で全件 `npm run test:e2e` は実行しない（BOA-769 D、2026-10-12〜）。CIのE2E（3shardに分割、所要約20分、`.github/workflows/e2e-smoke-test.yml`）が全部のテストを検証し、`scripts/maintenance/guard-pr-merge.js` が e2e の結果が出るまでマージを止める。手元の全件実行は、複数のworktree・セッションが同じMacで並行稼働する運用（スワップ15GB・load 28〜67に達した実績）とCPU・メモリを取り合うため避ける。関係する一部だけ素早く確認したい場合は `bash scripts/maintenance/run-heavy.sh playwright test --workers=1 e2e/<対象ファイル>.spec.js` のように対象を絞って実行してよい
-- 手元で `playwright`・`vite build` を直接実行する場合（`npm run` のスクリプト経由以外）は、必ず `bash scripts/maintenance/run-heavy.sh <コマンド>` 経由にし、playwrightには `--workers=1` を付ける（BOA-769、2026-10-13〜。同じMacで複数worktree・Codexが同時に重い処理を走らせ、load averageが15分平均44（8コア）に達した実績がある。`npm run` 経由のスクリプトは既にrun-heavy.sh経由になっている）。ロックの既定配置先は `$HOME/.cache/ryujin-local-heavy/`。サンドボックス（例: Codexのworkspace-write）等でそこに書けない環境は、`RYUJIN_HEAVY_LOCK_DIR` を書き込める場所に向ける（Claude側とロックディレクトリが分かれるため、枠数の合計は各ロックの `RYUJIN_HEAVY_MAX_SLOTS` の合算になる）
+- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更でも、手元で全件 `npm run test:e2e` は実行しない。CIのE2E（3shardに分割、所要約20分、`.github/workflows/e2e-smoke-test.yml`）が全部のテストを検証し、`scripts/maintenance/guard-pr-merge.js` が e2e の結果が出るまでマージを止める。手元の全件実行は、複数のworktree・セッションが同じMacで並行稼働する運用とCPU・メモリを取り合うため避ける。関係する一部だけ素早く確認したい場合は `bash scripts/maintenance/run-heavy.sh playwright test --workers=1 e2e/<対象ファイル>.spec.js` のように対象を絞って実行してよい
+- 手元で `playwright`・`vite build` を直接実行する場合（`npm run` のスクリプト経由以外）は、必ず `bash scripts/maintenance/run-heavy.sh <コマンド>` 経由にし、playwrightには `--workers=1` を付ける（同じMacで複数のworktree・Codexが同時に重い処理を走らせるため。`npm run` 経由のスクリプトは既にrun-heavy.sh経由になっている）。ロックの既定配置先は `$HOME/.cache/ryujin-local-heavy/`。サンドボックス（例: Codexのworkspace-write）等でそこに書けない環境は、`RYUJIN_HEAVY_LOCK_DIR` を書き込める場所に向ける（Claude側とロックディレクトリが分かれるため、枠数の合計は各ロックの `RYUJIN_HEAVY_MAX_SLOTS` の合算になる）
 - CSS・レイアウトを変更した場合は `npm run test:layout`（375/768/1024/1440/1920px の5軸）も実行し、横スクロール・グリッドの崩れが無いことを確認する
-- `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない。全件は手元で実行しない（BOA-769 D、2026-10-12〜。複数セッションが同じMacで同時に`npm run verify:ci`全件を走らせ、load averageが100前後に達した実績がある）。手元で先に確かめたい場合は、変更に関係する個別の `npm run verify:*` だけを実行する
-- `CREATE OR REPLACE FUNCTION` で既存 RPC のキーを削除していないかは `npm run verify:rpc-key-regression`（SQLファイル同士の比較、本番接続不要）がPR時にCIで検知する。あなたは本番Supabaseに接続できないため、本番の実物との最終照合（`verify-rpc-output-keys.js`、本番接続が要る）はユーザー・Claude側が本番適用後に行う
+- `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない。全件は手元で実行しない（複数のセッションが同じMacで同時に走らせると負荷が大きすぎるため）。手元で先に確かめたい場合は、変更に関係する個別の `npm run verify:*` だけを実行する
+- `CREATE OR REPLACE FUNCTION` で既存 RPC のキーを削除していないかは `npm run verify:rpc-key-regression`（SQLファイル同士の比較、本番接続不要）がPR時にCIで検知する。本番の実物との最終照合（`verify-rpc-output-keys.js`、本番接続が要る）は、本番に適用した直後に Claude が行う（Codex は本番に接続しない）
 - 新しいページ・分析タブ・主要機能を実装した場合は、対応する `docs/design/{slug}/content-index.json` を作成する（または `not_applicable: true` で対象外を明記する）。`docs/db-migration/` に新規マイグレーションを追加した場合は `docs/db-migration/APPLIED.md`（適用状況の台帳）に行を追加する（適用自体はユーザーが行うが、台帳への追記はマイグレーションファイルと同じPRに含める）
 - `npm run test:e2e` は既定で録画を再生し、時計を録画時刻に固定する。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PRコメントとstep summaryに一覧が出る（新しいクエリを足したPRで素通しが出るのは想定どおりで、撮り直しは不要）。録画の撮り直し（`npm run test:e2e:record`）は通常不要（`e2e-rerecord.yml` が毎日自動で行う）
 
@@ -114,7 +118,7 @@ e2e が落ちた・止まったまま終わらない（shard が50分を超え�
 - **知見の候補**（上の「知見を残す」）
 
 ### 自動マージ
-- CI が緑の PR を人の承認なしでマージするかどうか・その範囲・条件は、オーケストレーター側（hq）が決める。AGENTS.md では定めない。判定はオーケストレーターが PR の差分で行い、PR 本文の記述には頼らない
+- CI が緑の PR をどの条件でマージするかは、Claude のオーケストレーターが `.claude/skills/orchestrate/SKILL.md` の「承認の3段階」と「Codex の PR」に従って決める。判定は PR の差分で行い、PR 本文の記述には頼らない
 - あなたの側で自動マージを有効にする操作（`gh pr merge --auto` 等）はしない
 
 ### 前提にしないこと
@@ -180,7 +184,7 @@ Codex の GitHub レビューで P0/P1 として見る観点。投稿の範囲�
 
 - **数値の範囲・母数・条件の食い違い**: 件数と割合の母数がそろっているか（同じ画面の「N件」と「x%」が別の範囲・期間・条件で出ていないか）。札・見出しの範囲の呼び名と、実際に使った範囲が一致しているか
 - **後出しの統計**: そのレースの時点では分からない情報（結果・確定後の値・未来の日付のデータ）を、事前の傾向・判定に使っていないか
-- **言い方の規則**（画面・UI 文言・SNS 本文）: 禁止語「数える・似た・似ている・ふつう・いつも」、「似たレース」（「類似レース」と書く）、「競艇」（本文・UI 不可。例外は上の「4.」）、誇大・保証の表現（「必ず当たる」「的中保証」「鉄板」等。`sns-video-studio/remotion/risk-rules.json`）。「集計・算出・対象」は禁止語ではない（2026-10-12）。龍神ソナー・思考アシストで「数える」を言い換えるときに限り、この3語も使わない
+- **言い方の規則**（画面・UI 文言・SNS 本文）: 禁止語「数える・似た・似ている・ふつう・いつも」、「似たレース」（「類似レース」と書く）、「競艇」（本文・UI 不可。例外は上の「4.」）、誇大・保証の表現（「必ず当たる」「的中保証」「鉄板」等。`sns-video-studio/remotion/risk-rules.json`）。「集計・算出・対象」は禁止語ではない。龍神ソナー・思考アシストで「数える」を言い換えるときに限り、この3語も使わない
 - **verify の登録漏れ**: 新しい `scripts/maintenance/verify-*.js` が `scripts/maintenance/verify-registry.json` に登録されているか（未登録だと `npm run verify:ci` が落ちる）
 - **読み取りエラーの握りつぶし**: 本番 DB の取得失敗を `return []`・`.catch(() => [])`・`data || []` で空にし、「データなし」と同じ表示にしていないか（`.claude/rules/frontend-data-fetch.md`。除外集合が空になると除外が反転する）
 - **1000行上限**: 件数が1000行を超えうる取得に `.range()` のページングがあるか
