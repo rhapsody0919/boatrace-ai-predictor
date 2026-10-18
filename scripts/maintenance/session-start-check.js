@@ -2,16 +2,12 @@
 /**
  * セッション開始時チェックの統合スクリプト。
  *
- * これまでCLAUDE.mdに散在していた5つの「セッション開始時確認」ルール
- * （Xツイート下書き・X動画・選手ニュース・集客調査スキル。TikTok は 2026-10-05 にアカウントが
- * バンされたため外した）と、
- * 新設した2項目（トレーサビリティ索引カバレッジ・品質バックログ）を
- * 1回の実行で集約する。CLAUDE.md側は「このスクリプトを実行し結果を
+ * セッション開始時の確認（X動画・選手ニュース・集客調査スキル・トレーサビリティ索引・
+ * 品質バックログなど）を1回の実行で集約する。CLAUDE.md側は「このスクリプトを実行し結果を
  * 報告する」の1行に統合する（詳細ロジックの説明はこのファイルのコメント
  * が正本）。
  *
  * 各項目の判定ロジック・出典:
- * 1) tweetDrafts   … note-articles/tweet-drafts.md の `- [ ] 投稿済み` 件数
  * 2) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
  * 4) racerNews     … 要確認リストの pending件数（DBの表 racer_news_pending＋移行期間の
  *                    data/analysis/racer-news-pending-review/pending.json を id で統合。DBが優先）
@@ -73,39 +69,6 @@ async function readJsonSafe(relPath, fallback) {
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
-}
-
-async function checkTweetDrafts() {
-  let raw;
-  try {
-    raw = await fs.readFile(
-      path.join(REPO_ROOT, "note-articles/tweet-drafts.md"),
-      "utf-8",
-    );
-  } catch {
-    return { pendingCount: 0, oldestDate: null };
-  }
-
-  const lines = raw.split("\n");
-  let currentDate = null;
-  let pendingCount = 0;
-  let oldestDate = null;
-
-  for (const line of lines) {
-    const headingMatch = line.match(/^##\s+(\d{4}-\d{2}-\d{2})/);
-    if (headingMatch) {
-      currentDate = headingMatch[1];
-      continue;
-    }
-    if (/^- \[ \] 投稿済み/.test(line)) {
-      pendingCount += 1;
-      if (currentDate && (!oldestDate || currentDate < oldestDate)) {
-        oldestDate = currentDate;
-      }
-    }
-  }
-
-  return { pendingCount, oldestDate };
 }
 
 async function checkDailyPostStatus(relPath) {
@@ -195,7 +158,6 @@ async function checkGrowthSkillsFreshness() {
 
 async function main() {
   const [
-    tweetDrafts,
     xVideo,
     racerNews,
     growthSkills,
@@ -209,7 +171,6 @@ async function main() {
     pendingInsights,
     campaignDraftLag,
   ] = await Promise.all([
-    checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
     checkRacerNewsPending(),
     checkGrowthSkillsFreshness(),
@@ -241,7 +202,6 @@ async function main() {
   );
 
   const result = {
-    tweetDrafts,
     xVideo,
     racerNews,
     growthSkills,

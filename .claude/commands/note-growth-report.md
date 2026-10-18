@@ -2,9 +2,7 @@
 
 note.com自体のパフォーマンス（記事ごとのPV・スキ・コメント）を定点観測し、次の記事制作・タイトル/タグ設計の施策につなげます。
 
-`/growth-report`・`/growth-pdca`がSearch Console/GA4（検索流入・ブログ側）を、`/x-growth-report`・`/tiktok-growth-report`がX/TikTokを扱うのに対し、このスキルは**noteというプラットフォーム自体のパフォーマンス**を扱う。note APIは無いため、Chrome in Claudeで実際のダッシュボード画面を開いて数値を読み取る方式を取る（X/TikTokと同じ制約・同じ方式）。
-
-**2026-09-05新設の経緯**: 4チャネルアルゴリズム調査監査で、noteだけが投稿実績を確認する手段が一切無い（X/TikTokのようなhistory.json、growth-reportスキルのどちらも無い）と判明した。実際にダッシュボード（`https://note.com/dashboard`）を確認したところ、複数記事が既に公開済みで実データ（全体ビュー105・スキ3等）が存在していた。「投稿実績が無いはず」という前提は誤りだったため、本スキルで既存の公開実績を可視化する。
+`/growth-report`・`/growth-pdca`がSearch Console/GA4（検索流入・ブログ側）を、`/x-growth-report`がXを扱うのに対し、このスキルは**noteというプラットフォーム自体のパフォーマンス**を扱う。note APIは無いため、Chrome in Claudeで実際のダッシュボード画面を開いて数値を読み取る方式を取る（Xと同じ制約・同じ方式）。
 
 ## 実行手順
 
@@ -30,7 +28,7 @@ PDCAの「C→A」を閉じるための最重要ステップ。**新しいデー
 
 ### 2. 判断基準（しきい値）— 分析を「なんとなく」で終わらせないために
 
-- **母数が少ない段階（記事10件未満）の警告**: この段階での「タイトルの型ごとの優劣」比較は統計的に意味のある結論を出すには早すぎる。傾向として言及してよいが、断定はしない（`/x-growth-report`・`/tiktok-growth-report`と同じ考え方）
+- **母数が少ない段階（記事10件未満）の警告**: この段階での「タイトルの型ごとの優劣」比較は統計的に意味のある結論を出すには早すぎる。傾向として言及してよいが、断定はしない（`/x-growth-report`と同じ考え方）
 - **noteのレコメンド構造を踏まえる**（`note-algorithm-and-growth-notes.md`より）: 2026年2月の刷新以降、SNSシェア経由の流入は8%程度まで低下し、note内回遊・検索が中心。フォロワー数よりも「一次情報性」「カテゴリ分類の正確さ」がPVに効くとされているため、フォロワー数だけで評価しない
 - **内部基準（自アカウントの推移が十分に貯まってから）**: 直近5〜10記事の中央値をベースラインとし、そこから明確に外れた記事（2倍以上／半分以下）を「なぜそうなったか」の分析対象にする
 
@@ -51,7 +49,7 @@ PDCAの「C→A」を閉じるための最重要ステップ。**新しいデー
 
 ### 5. 提案した小施策をinsightとしてDBに登録する（Phase 2）
 
-SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）の入力として、ステップ4で挙げた「小施策（即実行）」を`sns_strategy_insights`テーブルに構造化して登録する（`/x-growth-report`・`/tiktok-growth-report`と同じADR 0027パターン）。
+SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）の入力として、ステップ4で挙げた「小施策（即実行）」を`sns_strategy_insights`テーブルに構造化して登録する（`/x-growth-report`と同じADR 0027パターン）。
 
 - 各「小施策」1件につき1レコードを`createInsight`（`scripts/lib/snsStrategyInsights.js`）で登録する
   - `platform`: `'note'`
@@ -66,7 +64,7 @@ SNSマーケティングハブPhase 2（改善案の自律立案ループ、`doc
 
 ## 解釈の注意点
 
-- noteのPVは公開直後よりも、note内検索・関連記事経由での緩やかな流入が中心のため、X/TikTokほど短期間で数値が確定しない。公開直後だけでなく1〜2週間後の数値も追う
+- noteのPVは公開直後よりも、note内検索・関連記事経由での緩やかな流入が中心のため、Xほど短期間で数値が確定しない。公開直後だけでなく1〜2週間後の数値も追う
 - フォロワー数が少ない段階は母数が小さく、1本の記事が全体ビューを大きく左右するため、中央値や個別記事の傾向も併記する
 - ダッシュボードの記事一覧は「全期間」で見た場合、`sns-pipeline-note.md`経由で生成された記事と、それ以前の`note-articles/`手動下書き由来の記事が混在する可能性がある。どちらの制作経路かを可能な範囲で区別する
 
@@ -75,5 +73,4 @@ SNSマーケティングハブPhase 2（改善案の自律立案ループ、`doc
 - 制作パイプライン: `docs/operation/sns-pipeline-note.md`
 - アルゴリズム調査: `docs/reference/note-algorithm-and-growth-notes.md`
 - X側の集客PDCA: `/x-growth-report`（同じ設計思想、プラットフォーム別に分離）
-- TikTok側の集客PDCA: `/tiktok-growth-report`
 - ブログ側の集客PDCA: `/growth-report`・`/growth-pdca`
