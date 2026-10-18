@@ -8,7 +8,7 @@
  * 確認すること:
  *   (a) git.deploymentEnabled.["codex/**"] が false（"codex/*" だと codex/a/b を取りこぼすため ** を使う）
  *   (b) deploymentEnabled が真偽値の false ではない（全ブランチ・本番デプロイまで止めない）
- *   (c) codex/ に当たりうる true の規則が無い（Vercel はどれか1つでも true なら デプロイする）
+ *   (c) codex/ に当たりうる true の規則が無い（Vercel はどれか1つでも true ならデプロイする）。true の規則は glob の記号を含まない名前だけ許す
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -18,8 +18,9 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const config = JSON.parse(fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"));
 const enabled = config.git?.deploymentEnabled;
 
-// codex/ のブランチ名に当たりうる glob か。先頭が codex か、ワイルドカード・括弧で始まるものを当たりうると見る
-const mayMatchCodex = (pattern) => /^(codex|[*?[{!])/.test(pattern);
+// codex/ のブランチ名に当たりうる glob か。glob の記号を1つでも含むか、codex で始まるものは当たりうると見る
+// （"c*/**" のように途中の記号でも当たるため、記号の位置では絞らない。true の規則は記号なしの名前だけ許す）
+const mayMatchCodex = (pattern) => /^codex/.test(pattern) || /[*?[\]{}!+@()]/.test(pattern);
 
 const failures = [
   typeof enabled === "object" && enabled !== null
