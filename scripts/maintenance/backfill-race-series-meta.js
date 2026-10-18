@@ -35,7 +35,7 @@
  *   - is_final_day = (race_date = race_series.end_date)
  *   既存値がある列は触らない。根拠: 2025-12 以降で両方が入っている3,142会場日では、race_series の title・end_date
  *   からの導出と全件一致した（2026-10-04 実測）。K ファイルの is_final_day は常に false のため使えない。
- *   手順書: docs/issues/boa-695-race-conditions-title-final-backfill.md
+ *   手順書: docs/archive/issues/boa-695-race-conditions-title-final-backfill.md
  */
 
 import {

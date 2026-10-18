@@ -91,6 +91,6 @@ BOA-525 で `isRaceCancelled` を「確定 かつ 着順つきの結果（rank1�
 
 1. ~~結果が入ったら `confirmed` を消す経路~~ → BOA-524 で実装（上の結論の1つ目）
 2. ~~画面で「結果があるなら中止扱いしない」~~ → BOA-525 で実装（上の「画面」）
-3. ~~型Bの被害を減らす~~ → BOA-526 で、日次の再取得が確定中止のレースも取り直すようにした（2026-09-12 の三国 1R・2R が型Bの実例。`docs/issues/mikuni-2026-09-12-missed-results.md`）。当日中に結果が公開されない場合は、日次の照合（daily_reconcile、現在 off）の `cancelled_but_in_k` が検知の役を担う
+3. ~~型Bの被害を減らす~~ → BOA-526 で、日次の再取得が確定中止のレースも取り直すようにした（2026-09-12 の三国 1R・2R が型Bの実例。`docs/archive/issues/mikuni-2026-09-12-missed-results.md`）。当日中に結果が公開されない場合は、日次の照合（daily_reconcile、現在 off）の `cancelled_but_in_k` が検知の役を担う
 
 いずれも挙動が変わるため、着手の判断は別に行う。

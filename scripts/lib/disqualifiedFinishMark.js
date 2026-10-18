@@ -51,7 +51,7 @@ export function buildDisqualifiedMarkRows(raceId, parsedBoats, targets) {
 /**
  * BOA-667: 公式の着順表の行の順（official_row）を、取り直した結果ページから既存の行へ写す。
  * DB の着・着欄から導けないレース（非完走の記号が2種類以上・着欄が NULL の艇がいる）だけが対象
- * （導けるレースは docs/issues/boa-667-official-row-backfill.md の SQL が埋める）。
+ * （導けるレースは docs/archive/issues/boa-667-official-row-backfill.md の SQL が埋める）。
  * 着順表に無い艇（既存の行はあるのにページに無い）は書かずに異常とする。
  *
  * @param {string} raceId

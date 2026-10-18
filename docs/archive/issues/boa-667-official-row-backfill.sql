@@ -1,5 +1,5 @@
 -- BOA-667: race_start_timings.official_row（公式の着順表の行の順）の過去分を、DB の着・着欄から導いて埋める（手順 A）。
--- 手順書: docs/issues/boa-667-official-row-backfill.md（実行順・事前事後の確認・戻し方はそちら）。
+-- 手順書: docs/archive/issues/boa-667-official-row-backfill.md（実行順・事前事後の確認・戻し方はそちら）。
 --
 -- 導出の規則: 完走した艇（finish_rank あり）を着の昇順、同着は艇番の昇順。その後に、完走しなかった艇を艇番の昇順。
 --   完走しなかった艇の記号が1種類以下のレースだけを対象にする（記号の種類の間の順は公式で確定できていないため、
