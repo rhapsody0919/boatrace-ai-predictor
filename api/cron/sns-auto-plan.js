@@ -5,7 +5,8 @@
  * モード（scrape_job_state の job='sns_auto_plan'。153 で shadow の行を入れた）:
  *   off（または行なし）  何もしない
  *   shadow              検査までで止める（item・下書き・UTM の表・Slack に書かない）
- *   live                item を作り、検査の結果を書き、合格した下書きの公開保留を外す（送るのは sns-send。dry_run の間は claim の前で止まる）
+ *   live                item を作り、検査の結果を書き、合格した下書きの公開保留を外す（送るのは sns-send。dry_run の間は claim の前で止まる）。
+ *                       チャネルが mode=auto なら、評価役の P0 が0件の全貌動画を事前通知のあと自動送信の承認者で承認する（2026-10-18 ユーザー決定）
  *
  * /today の画像つき X 投稿（tasks 19b）も同じ実行で計画する（JST 7:30〜12:00 だけ。scripts/lib/snsTodayPlanner.js）。
  * /today の計画が落ちてもレースの計画は続け、理由を report.alerts に出す（次の5分でやり直す）
@@ -38,6 +39,8 @@ import { createTodayDigestSource } from "../_lib/snsTodayDigest.js";
 import { createPostgrestReader } from "../../scripts/lib/snsSendRunner.js";
 import { getJaT } from "../_lib/botPage.js";
 import { bundleStore } from "../_lib/snsBundleImport.js";
+import { createXSnapshot } from "../_lib/snsXSend.js";
+import { loadXMedia, xSendStore } from "../_lib/snsXSendStore.js";
 
 export const config = { maxDuration: 300 };
 
@@ -131,6 +134,14 @@ export default createScrapeCronHandler({
         riskRules: riskRules.rules,
         trackingStore,
         notify,
+        // 自動（全貌動画）の承認: 管理画面の承認と同じ snapshot を作って approve_sns_x_send を呼ぶ
+        approve: async (draft, approverId, scheduledAt) =>
+          xSendStore.approve(
+            draft.id,
+            approverId,
+            await createXSnapshot(draft, loadXMedia),
+            scheduledAt,
+          ),
       });
       return {
         rowsWritten: race.rowsWritten + today.rowsWritten,

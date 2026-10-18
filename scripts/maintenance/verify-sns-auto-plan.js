@@ -1,6 +1,7 @@
 // SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron sns_auto_plan）の再現テスト。
 // SQL154 までを PGlite に入れ（本番と同じ。158 は未適用の前提でも動くことを確かめる）、153 のトリガー・制約の上で
 // item の作成 → 検査 → manual・held_manual → 公開保留の解除 → 本人の承認までを通す。数値の照合・表示の確認はモック。外部接続なし。
+// 自動（mode=auto、全貌動画、2026-10-18 ユーザー決定）: 評価役の P0 が0件なら notified にして自動送信の承認者で承認する（X は親から順）。
 import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -13,6 +14,7 @@ import { SCREEN_MARKERS } from "../lib/snsScreenMarkers.js";
 import {
   createAutoPlanStore,
   planCandidates,
+  reviewGate,
   runSnsAutoPlan,
 } from "../lib/snsAutoPlanRunner.js";
 import { SCRAPE_JOBS, activeMinutesOf } from "../lib/scrapeJobs/registry.js";
@@ -120,7 +122,12 @@ const CLAIMS = [
     },
   },
 ];
-async function importBundle({ raceId = RACE, parent, createdAt } = {}) {
+async function importBundle({
+  raceId = RACE,
+  parent,
+  createdAt,
+  qa = { pass: true, numeric_claims_match: true, L0_hits: [] },
+} = {}) {
   const bundle = {
     schema_version: "ryujin-preview/1",
     format: "race_full",
@@ -144,12 +151,7 @@ async function importBundle({ raceId = RACE, parent, createdAt } = {}) {
   const r = (
     await first(
       "SELECT import_sns_preview_bundle($1,'ryujin-preview/1',$2,$3,$4,'[]'::jsonb,'[]'::jsonb,'{}'::jsonb) r",
-      [
-        hash(),
-        bundle,
-        { pass: true, numeric_claims_match: true, L0_hits: [] },
-        manifest,
-      ],
+      [hash(), bundle, qa, manifest],
     )
   ).r;
   if (createdAt)
@@ -170,13 +172,15 @@ const sqlStore = {
   controls: async () =>
     Object.fromEntries(
       (
-        await all("SELECT channel, mode, dry_run FROM sns_auto_send_control")
+        await all(
+          "SELECT channel, mode, dry_run, auto_approver_id FROM sns_auto_send_control",
+        )
       ).map((r) => [r.channel, r]),
     ),
   async todaysBundles(today) {
     const bundles = (
       await all(
-        "SELECT id, bundle, created_at FROM sns_bundle_imports WHERE schema_version='ryujin-preview/1' ORDER BY created_at DESC",
+        "SELECT id, bundle, qa, created_at FROM sns_bundle_imports WHERE schema_version='ryujin-preview/1' ORDER BY created_at DESC",
       )
     )
       .map((b) => ({ ...b, created_at: b.created_at.toISOString() }))
@@ -209,6 +213,11 @@ const sqlStore = {
         [format, variant],
       ),
     ),
+  jobsFor: (ids) =>
+    all(
+      "SELECT id, draft_id, state FROM sns_x_send_jobs WHERE draft_id = ANY($1)",
+      [ids],
+    ),
   insertItem: async (row) =>
     first(
       `INSERT INTO sns_auto_send_items(bundle_import_id,channel,race_id,deadline_at,notify_by,veto_until,state)
@@ -225,7 +234,8 @@ const sqlStore = {
     ),
   async updateItem(id, fromState, patch) {
     const row = await first(
-      `UPDATE sns_auto_send_items SET state=coalesce($3,state), checks=coalesce($4,checks), held_reason=coalesce($5,held_reason), updated_at=test_now()
+      `UPDATE sns_auto_send_items SET state=coalesce($3,state), checks=coalesce($4,checks), held_reason=coalesce($5,held_reason),
+         stop_token_hash=coalesce($6,stop_token_hash), notified_at=coalesce($7,notified_at), updated_at=test_now()
        WHERE id=$1 AND state=$2 RETURNING *`,
       [
         id,
@@ -233,6 +243,8 @@ const sqlStore = {
         patch.state ?? null,
         patch.checks ?? null,
         patch.held_reason ?? null,
+        patch.stop_token_hash ?? null,
+        patch.notified_at ?? null,
       ],
     );
     if (!row) throw new Error(`item ${id} を更新できない`);
@@ -287,6 +299,7 @@ async function run({
   checkClaims = okClaims,
   headless,
   notes = [],
+  notify,
 } = {}) {
   return runSnsAutoPlan(ctx(mode), {
     store: sqlStore,
@@ -297,7 +310,16 @@ async function run({
     markers: SCREEN_MARKERS,
     riskRules,
     trackingStore,
-    notify: async (text) => notes.push(text),
+    notify: notify ?? (async (text) => notes.push(text)),
+    approve: async (draft, approverId, scheduledAt) =>
+      (
+        await first("SELECT approve_sns_x_send($1,$2,$3,$4) r", [
+          draft.id,
+          approverId,
+          await createXSnapshot(draft, loadMedia),
+          scheduledAt,
+        ])
+      ).r,
   });
 }
 const items = () => all("SELECT * FROM sns_auto_send_items ORDER BY channel");
@@ -361,7 +383,8 @@ test("準優勝戦の素材 v1 から X・YouTube の item を作り、合格な
   // 送る直前の検査が長文の1投稿を許すかの印（子のあるスレッドは 2 なので280まで）
   assert.equal(thread[0].source_data.deadline_queue.thread_length, 2);
   assert.equal(
-    (await drafts(group, "youtube"))[0].source_data.deadline_queue.thread_length,
+    (await drafts(group, "youtube"))[0].source_data.deadline_queue
+      .thread_length,
     undefined,
   );
   // 本人の承認（個別承認の画面と同じ関数）が通り、job ができる（dry_run の間は送信の側が claim の前で止める）
@@ -695,15 +718,132 @@ test("1つの素材の検査が例外で落ちても、ほかのレースの ite
   assert.equal((await items()).length, 2);
 });
 
-test("YouTube だけ mode=auto でも、自動は未実装と知らせる", async () => {
+const jobsOf = (groupId) =>
+  all(
+    `SELECT j.*, d.platform, d.thread_index FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id
+     WHERE d.bundle_import_id=$1 ORDER BY d.platform, d.thread_index`,
+    [groupId],
+  );
+const autoApprover = async () =>
+  (
+    await first(
+      "SELECT auto_approver_id a FROM sns_auto_send_control WHERE channel='x'",
+    )
+  ).a;
+
+test("mode=auto で評価役の P0 が0件なら、事前通知のあと自動送信の承認者で承認する（X は親から順、送る時刻は締切の60分前）", async () => {
+  await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
+  const group = await importBundle({
+    qa: {
+      pass: true,
+      numeric_claims_match: true,
+      L0_hits: [],
+      review: { p0: 0, p1: 1 },
+    },
+  });
+  const notes = [];
+  const result = await run({ notes });
+  const [x, yt] = await items();
+  assert.deepEqual([x.state, yt.state], ["notified", "notified"]);
+  assert.ok(x.notified_at && x.stop_token_hash);
+  const jobs = await jobsOf(group);
+  const auto = await autoApprover();
+  assert.deepEqual(
+    jobs.map((j) => [j.platform, j.thread_index, j.state]),
+    [
+      ["x", 0, "queued"],
+      ["x", 1, "queued"],
+      ["youtube", 0, "queued"],
+    ],
+  );
+  assert.ok(jobs.every((j) => j.approver_id === auto));
+  // 子は1つ前の job につなぐ（親が posted になるまで claim されない）
+  assert.equal(jobs[1].parent_job_id, jobs[0].id);
+  assert.equal(jobs[0].parent_job_id, null);
+  for (const j of jobs)
+    assert.equal(j.scheduled_at.toISOString(), "2037-10-16T05:00:00.000Z");
+  assert.ok(
+    result.report.items.filter((i) => i.outcome === "auto_approved").length ===
+      2,
+  );
+  assert.equal(notes.filter((n) => n.includes("JST 14:00 に送る")).length, 2);
+  // もう一度走らせても承認・通知は増えない
+  const again = [];
+  await run({ notes: again });
+  assert.equal((await jobsOf(group)).length, 3);
+  assert.equal(again.length, 0);
+});
+
+test("評価役の P0 があれば自動では送らず manual のまま知らせる", async () => {
+  await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
+  const group = await importBundle({
+    qa: {
+      pass: true,
+      numeric_claims_match: true,
+      L0_hits: [],
+      review: { p0: 2 },
+    },
+  });
+  const notes = [];
+  await run({ notes });
+  assert.deepEqual(
+    (await items()).map((i) => i.state),
+    ["manual", "manual"],
+  );
+  assert.equal((await jobsOf(group)).length, 0);
+  assert.equal(notes.filter((n) => n.includes("P0 が2件")).length, 2);
+});
+
+test("事前通知に失敗したら notifying のまま承認せず、次の実行で通知してから承認する", async () => {
   await db.exec(
-    "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='youtube'",
+    "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='x'",
   );
-  const result = await run();
-  assert.ok(
-    result.report.alerts.some((a) => a.key === "auto_unimplemented:youtube"),
+  const group = await importBundle();
+  const failed = await run({
+    notify: async (text) => {
+      if (text.includes("自動送信（全貌動画）")) throw new Error("slack down");
+    },
+  });
+  const [x, yt] = await items();
+  assert.deepEqual([x.state, yt.state], ["notifying", "manual"]);
+  assert.equal((await jobsOf(group)).length, 0);
+  assert.ok(failed.report.alerts.some((a) => a.key.startsWith("plan:")));
+  const notes = [];
+  await run({ notes });
+  assert.equal((await items())[0].state, "notified");
+  assert.deepEqual(
+    (await jobsOf(group)).map((j) => [j.platform, j.thread_index]),
+    [
+      ["x", 0],
+      ["x", 1],
+    ],
   );
-  assert.ok(
-    !result.report.alerts.some((a) => a.key === "auto_unimplemented:x"),
+  assert.equal(notes.length, 1);
+});
+
+test("mode=manual なら今までどおり個別承認（自動の承認者の job は作らない）", async () => {
+  const group = await importBundle({
+    qa: {
+      pass: true,
+      numeric_claims_match: true,
+      L0_hits: [],
+      review: { p0: 0 },
+    },
+  });
+  await run();
+  assert.deepEqual(
+    (await items()).map((i) => i.state),
+    ["manual", "manual"],
   );
+  assert.equal((await jobsOf(group)).length, 0);
+});
+
+test("評価役の判定: review.p0 があればそれ、無ければ qa.pass", () => {
+  assert.equal(reviewGate({ pass: true }).ok, true);
+  assert.equal(reviewGate({ pass: false }).ok, false);
+  assert.equal(reviewGate(null).ok, false);
+  assert.equal(reviewGate({ pass: true, review: { p0: 0 } }).ok, true);
+  assert.equal(reviewGate({ pass: true, review: { p0: 1 } }).ok, false);
+  assert.equal(reviewGate({ pass: true, review: { p0: "0" } }).ok, false);
+  assert.equal(reviewGate({ pass: true, review: {} }).ok, false);
 });
