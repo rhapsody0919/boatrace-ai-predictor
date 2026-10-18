@@ -184,6 +184,28 @@ export function createReadCurrent({
         ),
       };
     }
+    // 全貌動画（161、scripts/sns/push-full-picture.js）: 数値の照合は作り手の検査（review.p0_count=0）に任せ、送る直前は
+    // レースの中止・欠場・締切だけを読み直す。版は取り込んだ時の値（下書きの source_data.full_picture.revision）
+    if (draft?.source_data?.full_picture?.race_id) {
+      const { race_id: raceId, revision } = draft.source_data.full_picture;
+      const id = encodeURIComponent(raceId);
+      const [[race], entries, exhibition] = await Promise.all([
+        db(
+          `races?race_id=eq.${id}&select=race_date,start_time,cancellation_status`,
+        ),
+        db(`race_entries?race_id=eq.${id}&select=is_absent`),
+        db(`exhibition_data?race_id=eq.${id}&select=is_absent`),
+      ]);
+      if (!race) throw new Error("race_not_found");
+      return {
+        withdrawn: [...entries, ...exhibition].some(
+          (r) => r.is_absent === true,
+        ),
+        cancelled: race.cancellation_status != null,
+        deadline_at: deadlineIso(race),
+        source_revision: revision,
+      };
+    }
     const imported = draft?.sns_bundle_imports;
     if (imported?.schema_version !== "ryujin-preview/1")
       throw new Error("source_check_unsupported");
