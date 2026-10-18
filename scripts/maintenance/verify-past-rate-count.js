@@ -26,6 +26,7 @@ const TARGETS = {
   layer: "src/utils/pastRate/layer.js",
   label: "src/utils/pastRate/label.js",
   storage: "src/utils/pastRate/storage.js",
+  format: "src/components/race/pastRate/format.js",
 };
 
 const show = (v) => JSON.stringify(v);
@@ -849,6 +850,22 @@ const SUITES = {
       [false, true, false],
     );
   },
+  format(m, check) {
+    // t は「キー|変数」を返す仮の関数（文言ではなく、どのキーを使ったかを見る）
+    const t = (k, o) => (o ? `${k}|${JSON.stringify(o)}` : k);
+    check(
+      "振り返り: 分母0は空の文（null% にしない）",
+      m.savedMainText({ n: 0, count: 0, excluded: [], label: null, truncated: true }, t),
+      "aiPredictionTab.pastRate.empty",
+    );
+    check(
+      "振り返り: 分母があれば主文（保存した truncated で前置きを決める）",
+      m.savedMainText({ n: 1234, count: 30, excluded: [], label: null, truncated: false }, t),
+      'aiPredictionTab.pastRate.main|{"prefix":"aiPredictionTab.pastRate.prefixAll","n":"1,234","count":"30","pct":"2.4"}',
+    );
+    check("割合は四捨五入で小数1桁", [m.pctText({ n: 2000, count: 412 }), m.pctText({ n: 8, count: 1 }), m.pctText({ n: 0, count: 0 })], ["20.6", "12.5", null]);
+    check("着順の組の書き方", m.orderComboText({ first: 1, second: [4, 3], third: [4, 2, 3] }), "1-3,4-2,3,4");
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -901,6 +918,7 @@ const MUTANTS = [
     "count * 100 > LINES.standard * n",
   ],
   ["label", "1号艇にもラベルを出す", "boat1: NONE,", "boat1: BOTH,"],
+  ["format", "分母0でも主文を出す", "result.n > 0 ?", "true ?"],
   ["storage", "30日を過ぎても消さない", "KEEP_DAYS = 30", "KEEP_DAYS = 3000"],
   [
     "storage",

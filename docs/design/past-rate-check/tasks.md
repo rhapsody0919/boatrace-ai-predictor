@@ -35,22 +35,22 @@
 - [x] T2-1 `src/utils/pastRate/storage.js`（キー `boatai-user:past-rate-check:v1`、1レース×1型で置き換え、入力時刻から30日、上限1,000件、締切以降は保存しない、締切不明は未確定なら保存、壊れた値は捨てて作り直す、形の違う Entry だけ捨てる、書く直前に読み直す、締切以降の Entry は振り返りに出さない、例外は吸収して console）。T1-1 の verify に保存の節を足す（メモリ実装の localStorage を差し込み、`getItem`／`setItem` が例外を投げる場合、`clearCache()` の後も残ること、照合は `snapshot.layerKey`（layer の中身の印）で行い、先頭と末尾の行が同じで中だけ違う layer でも「変わった」になることを含める）
 
 ## T3 入力と結果の部品
-- [ ] T3-1 `BoatToggle`・`PastRate.css`（`prc-` 接頭辞、トークン、ダークモード）
-- [ ] T3-2 `OrderInput`（3行×6艇、流す、やり直す、点数の要約）
-- [ ] T3-3 `Boat1Input`・`TenkaiInput`・`EntryInput`・`PayoutBandInput`
-- [ ] T3-4 `SLIT_EXAMPLE_L2`（2段目の形の絵の例）を `analogyScenario.js` に足す。絵は `SlitShapeIcon` を使う
-- [ ] T3-5 `SlitInput`（7形の一覧と全国の出現率・母数の注記、強さ2段（横一線・内3艇だけのときは隠す、カド一撃の注記）、同時に起きない形を押せなくする、自分で作る（指定なし→出る→凹む）、最大2形）
-- [ ] T3-6 `PastRateResult`（主文・ラベル・メーター・内訳・除いた件数・比べた相手の注記（`describeAnalogyLayer`）、N=0 の文言）
-- [ ] T3-7 `PastRateChecker`（型の切り替え、型ごとの入力の保持、入力が変わったら結果を隠す、ボタンで数えて保存）
+- [x] T3-1 `BoatToggle`・`PastRate.css`（`prc-` 接頭辞、トークン、ダークモード）
+- [x] T3-2 `OrderInput`（3行×6艇、流す、やり直す、点数の要約）
+- [x] T3-3 `Boat1Input`・`TenkaiInput`・`EntryInput`・`PayoutBandInput`
+- [x] T3-4 `PAST_RATE_SLIT_EXAMPLE`（段ごとの形の絵の例。カド受け凹みは新定義を満たす差。龍神ソナーの `SLIT_EXAMPLE.d3` は新定義を満たさないので別タスクに切り出した）を `analogyScenario.js` に足す。絵は `SlitShapeIcon` を使う
+- [x] T3-5 `SlitInput`（7形の一覧と全国の出現率・母数の注記、強さ2段（横一線・内3艇だけのときは隠す、カド一撃の注記）、同時に起きない形を押せなくする、自分で作る（指定なし→出る→凹む）、最大2形）
+- [x] T3-6 `PastRateResult`（主文・ラベル・メーター・内訳・除いた件数・比べた相手の注記（`describeAnalogyLayer`）、N=0 の文言）
+- [x] T3-7 `PastRateChecker`（型の切り替え、型ごとの入力の保持、入力が変わったら結果を隠す、ボタンで数えて保存）
 
 ## T4 組み込み
-- [ ] T4-1 `PredictionPanel` → `RaceAiPredictionTab`・`RaceResult` に `raceStartTime` を渡す。`RaceAiPredictionTab` の `PredictionBlocks` の後ろに `PastRateSlot`（layer の取得、`ok` 以外・0行・取得中は出さない、取得失敗は `InlineFetchError`）。BOA-822 の PR と並びを合わせる
-- [ ] T4-2 `PastRateReview` を書き、`RaceResult` の払戻表の下に置く（保存した型を型の順に保存した数字とラベルで、無ければ決着の行だけ、決着は `buildResultRows` の着順で1〜3着がそろわなければ決着の行なし、不成立・`ok` 以外・0行では出さない、取得失敗は `InlineFetchError`、`layerKey`（layer の中身の印）が違えば注記）
-- [ ] T4-3 barrel export（`PastRateChecker`・`PastRateReview`）
-- [ ] T4-4 i18n（`aiPredictionTab.pastRate.*`・`result.pastRate.*`、4言語）。先に `docs/reference/i18n-glossary.md` に「同じ条件の過去レース」「定番」「レア」「艇身」とスリット7形の名前を登録する（`.claude/rules/i18n-new-pages.md`。7形の名前は龍神ソナーのキーがあれば共用）。決まり手は既存キー、層の説明文は `aiPredictionTab.analogy.layer.*`。画面に「競艇」を出さない。「AI がやらないこと」の文言を足さない。新しい文は `wording-editor` を通す
+- [x] T4-1 `PredictionPanel` → `RaceAiPredictionTab`・`RaceResult` に `raceStartTime` を渡す。`RaceAiPredictionTab` の `PredictionBlocks` の後ろに `PastRateSlot`（layer の取得、`ok` 以外・0行・取得中は出さない、取得失敗は `InlineFetchError`）。BOA-822 の PR と並びを合わせる
+- [x] T4-2 `PastRateReview` を書き、`RaceResult` の払戻表の下に置く（保存した型を型の順に保存した数字とラベルで、無ければ決着の行だけ、決着は `buildResultRows` の着順で1〜3着がそろわなければ決着の行なし、不成立・`ok` 以外・0行では出さない、取得失敗は `InlineFetchError`、`layerKey`（layer の中身の印）が違えば注記）
+- [x] T4-3 barrel export（`PastRateChecker`・`PastRateReview`）
+- [x] T4-4 i18n（`aiPredictionTab.pastRate.*`・`result.pastRate.*`、4言語）。先に `docs/reference/i18n-glossary.md` に「同じ条件の過去レース」「定番」「レア」「艇身」とスリット7形の名前を登録する（`.claude/rules/i18n-new-pages.md`。7形の名前は龍神ソナーのキーがあれば共用）。決まり手は既存キー、層の説明文は `aiPredictionTab.analogy.layer.*`。画面に「競艇」を出さない。「AI がやらないこと」の文言を足さない。新しい文は `wording-editor` を通す
 
 ## T5 検証と仕上げ
-- [ ] T5-1 `npm run test:layout` に AI予想タブの部品と結果タブの振り返りを足す（375/768/1024/1440/1920px）。スリットの7形の一覧が375px で横にはみ出さないこと。ダークモードの目視（Playwright のスクリーンショット）
+- [x] T5-1 `npm run test:layout` に AI予想タブの部品と結果タブの振り返りを足す（375/768/1024/1440/1920px）。スリットの7形の一覧が375px で横にはみ出さないこと。ダークモードの目視（Playwright のスクリーンショット）
 - [ ] T5-2 受け入れ E2E（`e2e/acceptance/past-rate-check.spec.js`）をローカルで1本ずつ・`--workers=1` で実行する。書き換えない。実行は `npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/past-rate-check.spec.js`（本体の config では走らない）
   - 実行の前提で未解決のもの（2026-10-13 の外部点検 U3。テストの書き換えではなく前提のそろえ方の問題なので、実装時に確かめる）: テストの固定レース `2099-12-31-01-01` は日付の予想一覧に無いと詳細が描画されない（`RaceDetailPage.jsx`）ので、layer 以外の応答（予想・結果・締切）の固定が要る。確定済みに使う `2026-10-08-01-01` は録画の時刻（2026-10-02）より後。どちらも直すときは acceptance-test-writer に直させる
 - [ ] T5-3 データ精度の検証（`data-accuracy-verifier`）: 本番の数レースで、layer の行を Python で数えた件数（6型、分母・除いた件数）と画面の数字が一致すること、結果タブの決着の行が一致すること

@@ -163,3 +163,11 @@ boatAI 多言語化における対訳の基準表。翻訳キー追加時はこ�
 | 龍神ソナー | Ryujin Sonar | 龍神聲納 | 용신 소나 | BOA-271 の龍神ソナー（レース詳細のタブ `raceTabs.sonar`）の名前。トップの説明（`home.aiIntro.*`）でも同じ訳を使う |
 | 思考アシスト | Thinking Assist | 思考輔助 | 사고 어시스트 | BOA-430 の思考アシスト（ja 専用のページ）の名前。レース詳細の上部の切り替え（`raceDetailPage.assistSwitch.*`）で使う。切り替え自体は ja だけで出すが、レース詳細が4言語に訳すページなのでキーは4言語で持つ |
 | 出走表とタブ | Race card & tabs | 出走表與分頁 | 출주표와 탭 | 上部の切り替えで、従来のレース詳細（出走表と各タブ）を指す呼び名（BOA-430 PR6） |
+| 同じ条件の過去レース | Past races under the same conditions | 相同條件的過去比賽 | 같은 조건의 과거 레이스 | BOA-635 過去に発生した割合（`aiPredictionTab.pastRate`・`result.pastRate`）。龍神ソナーの「類似レース」（Similar races／相似比賽／유사 레이스）とは別の語にする |
+| 定番（ラベル） | Common | 常見 | 흔함 | BOA-635 `pastRate.labels.standard`。ko は「정석」（定石＝買い方の意味に読まれる）を使わない |
+| レア（ラベル） | Rare | 罕見 | 드묾 | BOA-635 `pastRate.labels.rare` |
+| 艇身 | Boat length | 艇身 | 정신 | 既存 `result.startFormation.scale` に合わせる。1艇身≒0.13秒 |
+| 中穴（配当の帯） | Mid-range | 中冷門 | 중간 배당 | BOA-635 配当の帯。3連単 1,000〜10,000円未満。堅い＝Solid／穩健／안정（`percentileBarMin` に合わせる）、万舟＝Big payout／萬舟／만슈 |
+| 流す | Nagashi (multiple boats for 2nd and 3rd) | 流（第2名、第3名複選） | 나가시 | 2着・3着に複数の艇を選ぶ買い方 |
+| スジ | Suji | Suji | 스지 | 1着の艇に対して、そのとき2着に来た艇の組 |
+| スリットの形（7形） | Level line／Inside 3 level (wall)／Course 2 dent／Dent beside the kado／Kado strike／Inside dent／Dash boats ahead | 一字排開／內側3艇齊平／2道凹陷／角位內側凹陷／角位一擊／內道凹陷／助跑組領先 | 일직선／안쪽 3척 정렬／2코스 함몰／카도받이 함몰／카도 일격／인 함몰／대시 그룹 선행 | 横一線／内3艇そろう（壁）／2コース凹み／カド受け凹み／カド一撃／イン凹み／ダッシュ勢先行。正本は `aiPredictionTab.analogy.scenario.forms.*.name`。`pastRate.slit.forms` はこれに ja のかっこ書き（3コース等）の訳を足したもの |

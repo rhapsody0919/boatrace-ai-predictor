@@ -352,6 +352,12 @@
       "absent": "{{boat}}号艇は欠場",
       "absentLabel": "欠場",
       "scale": "1艇身（約0.13秒）"
+    },
+    "pastRate": {
+      "title": "振り返り",
+      "entry": "あなたの予想 {{summary}} は、{{main}}",
+      "decision": "決着 {{combo}} は、{{main}}",
+      "changed": "入力したときから、同じ条件の過去レースが変わっています"
     }
   },
   "raceTabs": {
@@ -1547,7 +1553,149 @@
       }
     },
     "sonarLink": "類似レース・展開シナリオは龍神ソナーのタブへ",
-    "sonarLinkGo": "開く"
+    "sonarLinkGo": "開く",
+    "pastRate": {
+      "title": "あなたの予想",
+      "typesLabel": "予想の型",
+      "types": {
+        "order": "着順",
+        "boat1": "1号艇",
+        "tenkai": "展開",
+        "slit": "スリット",
+        "entry": "進入",
+        "payout": "配当の帯"
+      },
+      "boat": "{{n}}号艇",
+      "submit": "過去に発生した割合を見る",
+      "order": {
+        "rows": {
+          "1": "1着",
+          "2": "2着",
+          "3": "3着"
+        },
+        "nagashi": "流す（2着・3着を複数）",
+        "clear": "やり直す",
+        "points": "{{combo}}（{{points}}点）"
+      },
+      "boat1": {
+        "win": "1号艇が 1着",
+        "top3": "1号艇が 残る（3着以内）",
+        "out": "1号艇が 飛ぶ（4着以下）"
+      },
+      "tenkai": {
+        "start": "起点",
+        "note": "結果に、そのとき2着に来た艇の内訳（スジ）も出ます。"
+      },
+      "entry": {
+        "boatLabel": "この艇が",
+        "within3": "3コース以内に入る",
+        "within4": "4コース以内に入る",
+        "waku": "枠なりのまま"
+      },
+      "payout": {
+        "low": "堅い（3連単 1,000円未満）",
+        "mid": "中穴（1,000〜10,000円未満）",
+        "high": "万舟（10,000円以上）"
+      },
+      "slit": {
+        "lede": "スリットの形を選ぶ（2つまで組み合わせ可）。絵は横から見た並びで、縮尺は実際の艇身に合わせています",
+        "rateSource": "全国の出現率は{{from}}〜{{to}}の{{races}}万レース（F・出遅れ・欠場のあるレースを除く）",
+        "rate": "全国{{p}}%",
+        "forms": {
+          "flat": "横一線",
+          "wall": "内3艇そろう（壁）",
+          "d2": "2コース凹み",
+          "d3": "カド受け凹み（3コース）",
+          "kado": "カド一撃（4コース）",
+          "d1": "イン凹み（1コース遅れ）",
+          "dash": "ダッシュ勢先行（外3艇）"
+        },
+        "formsShort": {
+          "flat": "横一線",
+          "wall": "内3艇そろう",
+          "d2": "2コース凹み",
+          "d3": "カド受け凹み",
+          "kado": "カド一撃",
+          "d1": "イン凹み",
+          "dash": "ダッシュ勢先行"
+        },
+        "incompatible": "同時には起きない形です",
+        "levelTitle": "差の大きさ",
+        "levels": {
+          "1": {
+            "main": "約1/3艇身",
+            "sub": "0.05秒差",
+            "summary": "約1/3艇身以上"
+          },
+          "2": {
+            "main": "約半艇身",
+            "sub": "0.08秒差",
+            "summary": "約半艇身以上"
+          }
+        },
+        "kadoNote": "カド一撃は約1/4艇身（0.03秒）／約1/3艇身（0.05秒）",
+        "boatLengthNote": "1艇身は約0.13秒（公式の艇の全長289.5cm÷時速約80km）。スリット付近はまだ加速中なので、実際の1艇身はこれより少し長い秒数になります",
+        "custom": "自分で作る（1艇ずつ）",
+        "backToForms": "形から選ぶに戻る",
+        "customNote": "コースのボタンをタップするたびに「指定なし→出る→凹む」。出る・凹むは6艇の平均より0.05秒以上",
+        "courseState": "{{course}}コース: {{state}}",
+        "states": {
+          "0": "指定なし",
+          "1": "出る",
+          "-1": "凹む"
+        },
+        "customSummary": "{{course}}コースが{{state}}",
+        "summarySep": "＋",
+        "customSep": "・"
+      },
+      "summary": {
+        "order": "3連単 {{combo}}（{{points}}点）",
+        "boat1": {
+          "win": "1号艇が1着",
+          "top3": "1号艇が3着以内に残る",
+          "out": "1号艇が4着以下に飛ぶ"
+        },
+        "tenkai": "{{boat}}号艇の{{technique}}",
+        "slitLevel": "{{forms}}（{{level}}）",
+        "entry": {
+          "within3": "{{boat}}号艇が3コース以内に入る",
+          "within4": "{{boat}}号艇が4コース以内に入る",
+          "waku": "{{boat}}号艇が枠なりのまま"
+        },
+        "payout": {
+          "low": "3連単が堅い（1,000円未満）",
+          "mid": "3連単が中穴（1,000〜10,000円未満）",
+          "high": "3連単が万舟（10,000円以上）"
+        }
+      },
+      "main": "{{prefix}}{{n}}レース中 {{count}}回（{{pct}}%）",
+      "prefixAll": "過去",
+      "prefixNewest": "同じ条件の新しい",
+      "labels": {
+        "standard": "定番",
+        "rare": "レア"
+      },
+      "empty": "同じ条件の過去レースに、この型を判定できるレースがありません",
+      "excluded": {
+        "technique": "決まり手が分からない{{count}}レースを除く",
+        "st": "スタートタイミングがそろわない{{count}}レースを除く",
+        "course": "進入が分からない{{count}}レースを除く",
+        "payout": "払戻が無い{{count}}レースを除く"
+      },
+      "breakdownOrder": "内訳: {{items}}",
+      "breakdownOrderMore": "内訳: {{items}} ほか",
+      "breakdownTenkai": "そのとき2着に来た艇: {{items}}",
+      "breakdownItem": "{{key}} {{count}}回",
+      "breakdownBoat": "{{boat}}号艇 {{count}}回",
+      "listSep": "、",
+      "note": "比べた相手: {{layer}}（全国、{{period}}）",
+      "noteTruncated": "比べた相手: {{layer}}のうち、新しい{{n}}件（全国、{{period}}）",
+      "lines": {
+        "both": "定番は{{standard}}%以上、レアは{{rare}}%未満",
+        "standard": "定番は{{standard}}%以上",
+        "rare": "レアは{{rare}}%未満"
+      }
+    }
   },
   "beforeInfo": {
     "subtitle": "発走が近づくと更新される当日限りの情報です。発走30/15/10分前まで確定しない項目があります",

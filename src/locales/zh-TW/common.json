@@ -352,6 +352,12 @@
       "absent": "{{boat}}號艇缺賽",
       "absentLabel": "缺賽",
       "scale": "1艇身（約0.13秒）"
+    },
+    "pastRate": {
+      "title": "回顧",
+      "entry": "你的預測 {{summary}}：{{main}}",
+      "decision": "結果 {{combo}}：{{main}}",
+      "changed": "自你輸入以來，相同條件的過去比賽已有變動"
     }
   },
   "raceHistoryTable": {
@@ -1922,7 +1928,149 @@
       }
     },
     "sonarLink": "相似比賽與展開情境請見龍神聲納分頁",
-    "sonarLinkGo": "開啟"
+    "sonarLinkGo": "開啟",
+    "pastRate": {
+      "title": "你的預測",
+      "typesLabel": "預測類型",
+      "types": {
+        "order": "名次",
+        "boat1": "1號艇",
+        "tenkai": "展開",
+        "slit": "起跑線",
+        "entry": "進場",
+        "payout": "派彩區間"
+      },
+      "boat": "{{n}}號艇",
+      "submit": "查看過去發生的比例",
+      "order": {
+        "rows": {
+          "1": "第1名",
+          "2": "第2名",
+          "3": "第3名"
+        },
+        "nagashi": "流（第2名、第3名複選）",
+        "clear": "重新選擇",
+        "points": "{{combo}}（{{points}}注）"
+      },
+      "boat1": {
+        "win": "1號艇 第1名",
+        "top3": "1號艇 留下（前3名）",
+        "out": "1號艇 落敗（第4名以後）"
+      },
+      "tenkai": {
+        "start": "起點",
+        "note": "結果中也會顯示當時獲得第2名的艇的明細（Suji）。"
+      },
+      "entry": {
+        "boatLabel": "此艇",
+        "within3": "進入3道以內",
+        "within4": "進入4道以內",
+        "waku": "依艇號進場"
+      },
+      "payout": {
+        "low": "穩健（3連單 未滿1,000日圓）",
+        "mid": "中冷門（1,000〜未滿10,000日圓）",
+        "high": "萬舟（10,000日圓以上）"
+      },
+      "slit": {
+        "lede": "選擇起跑隊形（最多可組合2種）。圖為側面看的排列，比例尺依實際艇身繪製",
+        "rateSource": "全國出現率為{{from}}〜{{to}}的{{races}}萬場比賽（排除有偷跑、出發延遲、缺席的比賽）",
+        "rate": "全國{{p}}%",
+        "forms": {
+          "flat": "一字排開",
+          "wall": "內側3艇齊平（牆）",
+          "d2": "2道凹陷",
+          "d3": "角位內側凹陷（3道）",
+          "kado": "角位一擊（4道）",
+          "d1": "內道凹陷（1道落後）",
+          "dash": "助跑組領先（外側3艇）"
+        },
+        "formsShort": {
+          "flat": "一字排開",
+          "wall": "內側3艇齊平",
+          "d2": "2道凹陷",
+          "d3": "角位內側凹陷",
+          "kado": "角位一擊",
+          "d1": "內道凹陷",
+          "dash": "助跑組領先"
+        },
+        "incompatible": "這兩種隊形不會同時發生",
+        "levelTitle": "差距大小",
+        "levels": {
+          "1": {
+            "main": "約1/3艇身",
+            "sub": "0.05秒差",
+            "summary": "約1/3艇身以上"
+          },
+          "2": {
+            "main": "約半艇身",
+            "sub": "0.08秒差",
+            "summary": "約半艇身以上"
+          }
+        },
+        "kadoNote": "角位一擊為約1/4艇身（0.03秒）／約1/3艇身（0.05秒）",
+        "boatLengthNote": "1艇身約0.13秒（官方艇長289.5cm÷時速約80km）。起跑線附近仍在加速，因此實際的1艇身會比這個秒數稍長",
+        "custom": "自行設定（逐艇）",
+        "backToForms": "返回從隊形選擇",
+        "customNote": "每點一次水道按鈕，會依「不指定→領先→凹陷」切換。領先、凹陷指與6艇平均相差0.05秒以上",
+        "courseState": "{{course}}道：{{state}}",
+        "states": {
+          "0": "不指定",
+          "1": "領先",
+          "-1": "凹陷"
+        },
+        "customSummary": "{{course}}道{{state}}",
+        "summarySep": "＋",
+        "customSep": "、"
+      },
+      "summary": {
+        "order": "3連單 {{combo}}（{{points}}注）",
+        "boat1": {
+          "win": "1號艇獲得第1名",
+          "top3": "1號艇留在前3名",
+          "out": "1號艇落到第4名以後"
+        },
+        "tenkai": "{{boat}}號艇的{{technique}}",
+        "slitLevel": "{{forms}}（{{level}}）",
+        "entry": {
+          "within3": "{{boat}}號艇進入3道以內",
+          "within4": "{{boat}}號艇進入4道以內",
+          "waku": "{{boat}}號艇依艇號進場"
+        },
+        "payout": {
+          "low": "3連單為穩健（未滿1,000日圓）",
+          "mid": "3連單為中冷門（1,000〜未滿10,000日圓）",
+          "high": "3連單為萬舟（10,000日圓以上）"
+        }
+      },
+      "main": "{{prefix}}{{n}}場中 {{count}}次（{{pct}}%）",
+      "prefixAll": "過去",
+      "prefixNewest": "相同條件的最近",
+      "labels": {
+        "standard": "常見",
+        "rare": "罕見"
+      },
+      "empty": "相同條件的過去比賽中，沒有能判定此類型的比賽",
+      "excluded": {
+        "technique": "排除致勝招式不明的{{count}}場比賽",
+        "st": "排除起跑時間不齊全的{{count}}場比賽",
+        "course": "排除進場不明的{{count}}場比賽",
+        "payout": "排除沒有派彩的{{count}}場比賽"
+      },
+      "breakdownOrder": "明細：{{items}}",
+      "breakdownOrderMore": "明細：{{items}} 等",
+      "breakdownTenkai": "當時獲得第2名的艇：{{items}}",
+      "breakdownItem": "{{key}} {{count}}次",
+      "breakdownBoat": "{{boat}}號艇 {{count}}次",
+      "listSep": "、",
+      "note": "比較對象：{{layer}}（全國，{{period}}）",
+      "noteTruncated": "比較對象：{{layer}}中最新的{{n}}場（全國，{{period}}）",
+      "lines": {
+        "both": "常見為{{standard}}%以上，罕見為未滿{{rare}}%",
+        "standard": "常見為{{standard}}%以上",
+        "rare": "罕見為未滿{{rare}}%"
+      }
+    }
   },
   "beforeInfo": {
     "subtitle": "隨著發走時間接近才會更新的當日限定資訊。部分項目要到發走前30/15/10分鐘才會確定",
