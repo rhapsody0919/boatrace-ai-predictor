@@ -52,6 +52,9 @@ import KoVenueGuide, {
 } from "./pages/KoVenueGuide";
 import AdminRules from "./pages/admin/AdminRules";
 import SnsHubAdmin from "./pages/admin/SnsHubAdmin";
+import SnsHubAutoSendPage from "./pages/admin/sns-hub/AutoSendPage";
+import SnsHubMetricsPage from "./pages/admin/sns-hub/MetricsPage";
+import SnsHubLibraryPage from "./pages/admin/sns-hub/LibraryPage";
 import ResponsibleGambling from "./pages/ResponsibleGambling";
 import Poirot from "./pages/Poirot";
 import CookieConsent from "./components/CookieConsent";
@@ -267,6 +270,20 @@ function LocalizedRoutes({ lng = "ja" }) {
           </AdminRouteGuard>
         }
       />
+      {/* SNS ハブは用途ごとに4ページ（2026-10-18）。Basic認証は middleware の /admin/sns-hub/:path* */}
+      {[
+        ["auto", <SnsHubAutoSendPage />],
+        ["metrics", <SnsHubMetricsPage />],
+        ["library", <SnsHubLibraryPage />],
+      ].map(([sub, page]) => (
+        <Route
+          key={sub}
+          path={`admin/sns-hub/${sub}`}
+          element={
+            <AdminRouteGuard path={`/admin/sns-hub/${sub}`}>{page}</AdminRouteGuard>
+          }
+        />
+      ))}
 
       {/* α版・動線非公開ページ（Watson/Mycroft等の実験モデルが継続開発中のため維持） */}
       <Route path="holmes" element={<Holmes />} />

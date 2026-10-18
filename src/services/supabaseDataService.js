@@ -9,10 +9,7 @@ import { supabase } from "./supabaseClient";
 import { venueWaterProfile } from "../data/venueWaterProfiles.js";
 import { stDeviation } from "../utils/stDeviation.js";
 import { isPlaceHit, isShowHit } from "../../scripts/lib/hitCalculator.js";
-import {
-  extractVenueCodeFromRaceId,
-  addDaysToDateString,
-} from "../../scripts/lib/dateUtils.js";
+import { addDaysToDateString } from "../../scripts/lib/dateUtils.js";
 import {
   // getCurrentMeetFlyingBoats（今節F）が使う。#1002（BOA-591）でこの import を
   // groupIntoMeetBeforeRace に置き換えたあとに #999（BOA-440）が入り、本番で
@@ -5721,147 +5718,6 @@ export const supabaseDataService = {
   },
 
   /**
-   * 指定選手の今節成績（節内の日別進入・着順・ST推移）を取得する
-   * （BOA-291/BOA-220、FR-3、docs/adr/0053参照）
-   *
-   * 進入コース・着順・STは自社race_results/race_entries/race_start_timingsから
-   * 導出する（ADR-0053: 自社データとの二重管理を避けるため、racelistページの
-   * 「今節成績」表示を直接スクレイピングしない）。
-   * 得点率（SG/G1等の記念競走のみ存在）はracer_series_points（pointrankページの
-   * 直接スクレイピング、ADR-0053追記2026-09-16）から取得する。
-   *
-   * @param {number} racerId
-   * @param {number} venueCode
-   * @param {string} meetStartDate - 開催初日 YYYY-MM-DD（race_conditions.series_dayから逆算した値）
-   * @returns {Promise<{racer_id: number, venue_code: number, meet_start_date: string, days: Array, series_points: object|null}>}
-   *   series_pointsはracer_series_pointsの1行（rank/score_rate/placements/total_points/penalty_points/remarks）
-   *   をそのまま返す。得点率という単一の値ではなく行全体を保持するため`score_rate`ではなくこの名前にしている
-   */
-  async getSeriesResultsByRacer(racerId, venueCode, meetStartDate) {
-    return withCache(
-      `series-results-${racerId}-${venueCode}-${meetStartDate}`,
-      async () => {
-        const empty = {
-          racer_id: racerId,
-          venue_code: venueCode,
-          meet_start_date: meetStartDate,
-          days: [],
-          series_points: null,
-        };
-        if (!supabase) {
-          console.error("Supabase client not initialized");
-          return empty;
-        }
-
-        // race_idは"YYYY-MM-DD-VV-RR"形式のため、venue_codeのLIKE部分一致
-        // （"%-VV-%"）は日付側の月日部分と衝突しうる（例: 4月のレースが
-        // venue_code=4に誤マッチする）。venue_codeの絞り込みはJS側で正確に行う。
-        // 上限日付はSG/G1でも最長6日程度の開催に対する安全マージンで、同一
-        // 会場での次開催のデータが誤って混入しないようにする
-        const upperBoundDate = addDaysToDateString(meetStartDate, 10);
-        const { data: rawEntries } = await supabase
-          .from("race_entries")
-          .select("race_id, boat_number")
-          .eq("racer_id", racerId)
-          .gte("race_id", meetStartDate)
-          .lte("race_id", upperBoundDate)
-          .order("race_id");
-
-        const entries = (rawEntries || []).filter(
-          (e) => extractVenueCodeFromRaceId(e.race_id) === venueCode,
-        );
-        if (entries.length === 0) return empty;
-
-        const raceIds = entries.map((e) => e.race_id);
-        const boatByRaceId = new Map(
-          entries.map((e) => [e.race_id, e.boat_number]),
-        );
-
-        const [resultsRows, conditionsRows, startTimingRows, seriesPointsRes] =
-          await Promise.all([
-            fetchAllByIn(
-              "race_results",
-              "race_id, rank1, rank2, rank3, rank4, rank5, rank6, actual_course_1, actual_course_2, actual_course_3, actual_course_4, actual_course_5, actual_course_6, winning_technique",
-              "race_id",
-              raceIds,
-            ),
-            fetchAllByIn(
-              "race_conditions",
-              "race_id, series_day, is_final_day",
-              "race_id",
-              raceIds,
-            ),
-            fetchAllByIn(
-              "race_start_timings",
-              "race_id, boat_number, start_timing, is_flying, is_late_start",
-              "race_id",
-              raceIds,
-            ),
-            supabase
-              .from("racer_series_points")
-              .select(
-                "rank, score_rate, placements, total_points, penalty_points, remarks",
-              )
-              .eq("racer_id", racerId)
-              .eq("venue_code", venueCode)
-              .eq("meet_start_date", meetStartDate)
-              .maybeSingle(),
-          ]);
-
-        const seriesPoints = seriesPointsRes.data ?? null;
-
-        const resultsByRaceId = new Map(resultsRows.map((r) => [r.race_id, r]));
-        const conditionsByRaceId = new Map(
-          conditionsRows.map((r) => [r.race_id, r]),
-        );
-        const startTimingByKey = new Map(
-          startTimingRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
-        );
-
-        const days = raceIds.map((raceId) => {
-          const boatNumber = boatByRaceId.get(raceId);
-          const result = resultsByRaceId.get(raceId);
-          const conditions = conditionsByRaceId.get(raceId);
-          const startTiming = startTimingByKey.get(`${raceId}-${boatNumber}`);
-
-          const finishRank = findBoatColumnIndex(result, "rank", boatNumber);
-          // actual_course_Nは艇番でインデックスされた列（N号艇の進入コース）
-          // であり、rank1..6とは列の向きが逆のためfindBoatColumnIndexは使えない
-          const entryCourse = courseOfBoat(result, boatNumber);
-
-          return {
-            race_id: raceId,
-            race_date: raceId.slice(0, 10),
-            boat_number: boatNumber,
-            series_day: conditions?.series_day ?? null,
-            is_final_day: conditions?.is_final_day ?? null,
-            entry_course: entryCourse,
-            finish_rank: finishRank,
-            start_timing: startTiming?.start_timing ?? null,
-            is_flying: startTiming?.is_flying ?? null,
-            is_late_start: startTiming?.is_late_start ?? null,
-            winning_technique: result?.winning_technique ?? null,
-          };
-        });
-
-        // is_final_dayの日以降は次開催のデータの可能性があるため切り捨てる
-        // （upperBoundDateは安全マージンに過ぎず、確実な境界はis_final_dayのみ）
-        const finalDayIndex = days.findIndex((d) => d.is_final_day);
-        const trimmedDays =
-          finalDayIndex === -1 ? days : days.slice(0, finalDayIndex + 1);
-
-        return {
-          racer_id: racerId,
-          venue_code: venueCode,
-          meet_start_date: meetStartDate,
-          days: trimmedDays,
-          series_points: seriesPoints,
-        };
-      },
-    );
-  },
-
-  /**
    * 指定レースの選手の枠番別統計（racerStats）を取得する（BOA-168）
    * predictions.feature_contributions.racerStats に日次バッチで保存済みの
    * 平均ST・枠番別勝敗・攻め手/守り手分布を返す。
@@ -5941,37 +5797,6 @@ export const supabaseDataService = {
             avgSt: byRacer.get(e.racer_id),
           })),
       };
-    });
-  },
-
-  /**
-   * 指定レースの複勝オッズ（最新スクレイプ分）を取得する（AI予想モデル大規模改修、複勝予想バッジ用）
-   * 複勝オッズは下限-上限のレンジで提供される（race_odds.odds_place_{n}_low/high、マイグレーション032）。
-   * 未適用環境・スクレイピング未実施のレースではlow/highともnullを返す
-   */
-  getRacePlaceOdds(raceId) {
-    return withCache(`race-place-odds-${raceId}`, async () => {
-      if (!supabase) {
-        console.error("Supabase client not initialized");
-        return null;
-      }
-
-      const { data } = await supabase
-        .from("race_odds")
-        .select(
-          "odds_place_1_low, odds_place_1_high, odds_place_2_low, odds_place_2_high, odds_place_3_low, odds_place_3_high, odds_place_4_low, odds_place_4_high, odds_place_5_low, odds_place_5_high, odds_place_6_low, odds_place_6_high",
-        )
-        .eq("race_id", raceId)
-        .order("captured_at", { ascending: false })
-        .limit(1);
-
-      const row = data?.[0];
-      if (!row) return null;
-      return [1, 2, 3, 4, 5, 6].map((n) => ({
-        boat_number: n,
-        odds_place_low: row[`odds_place_${n}_low`] ?? null,
-        odds_place_high: row[`odds_place_${n}_high`] ?? null,
-      }));
     });
   },
 

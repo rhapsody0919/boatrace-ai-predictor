@@ -108,6 +108,8 @@ try {
         (t) => document.documentElement.setAttribute("data-theme", t),
         theme,
       );
+      // 自動送信ページではカレンダーは畳んである（2026-10-18）
+      await page.getByText("全月カレンダー（JST）を開く", { exact: true }).click();
       await page.getByLabel("表示月", { exact: true }).fill("2099-10");
       await page
         .getByRole("button", { name: "2099-10-08の投稿 2件", exact: true })
@@ -151,7 +153,8 @@ try {
         .getByRole("button", { name: "2099-10-01の投稿 1件", exact: true })
         .click();
       assert.equal(await page.getByRole("listitem").count(), 1);
-      assert((await page.getByRole("listitem").innerText()).includes("未収集"));
+      // 観測履歴は数字のページ（PostObservationList）に移した。ここでは状態だけ
+      assert((await page.getByRole("listitem").innerText()).includes("公開済み"));
       await page.getByLabel("表示月", { exact: true }).fill("2099-02");
       assert.equal(
         await page.locator(".sns-month-calendar-grid button").count(),

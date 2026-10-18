@@ -774,7 +774,7 @@ Disk IO予算が逼迫している（Small、ベースライン174Mbps。orchest
 | 「切り戻し条件・切り戻し手順」（`SKIP_EXHIBITION_ON_GHA`のトグル） | **有効・踏襲**（本文書の§4.7が、同じ方式を全ジョブへ） |
 | 「未確定事項」1（cron-job.orgの間隔）・2（`run()`の一括upsert）・3（並走の長さ） | 1は**解消**（純正Cronの毎分＋予定表）。2・3は本文書で再検討（§4.6の並走期間） |
 
-### `docs/proposal/scraping-serverless-migration/investigation.md`
+### `docs/design/scraping-serverless-migration/investigation.md`
 
 調査記録として**有効のまま**（Vercelの制約調査。Hobby前提の記述は、追記のとおりProへ移行済み）。
 

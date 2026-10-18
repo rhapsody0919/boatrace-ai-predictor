@@ -48,6 +48,6 @@ export default function MonthCalendar({ rows, now, selection, onSelection }) {
         </button>;
       })}
     </div>
-    {selection.day && <p>{selection.day}の期限順一覧 <button type="button" onClick={() => update({})}>全期間の一覧に戻る</button></p>}
+    {selection.day && <p>{selection.day}を選んでいます <button type="button" onClick={() => update({})}>日の選択を解除</button></p>}
   </section>;
 }

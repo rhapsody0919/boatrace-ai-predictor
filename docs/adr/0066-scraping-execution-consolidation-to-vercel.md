@@ -20,7 +20,7 @@
 - 基盤ごとに監視が分断され、次の状態が見逃された（本番DBの実測）。
   - `scrape-point-rank.yml`は2026-09-16〜18に3回`success`だが、`racer_series_points`は0件
   - `scrape-racer-season-stats.yml`は月次で一度も実行されておらず、`racer_profiles.ability_index`は0/1,627件
-- Vercelは既にProプランで、Vercel Cronは1分間隔・分単位精度で使える（[investigation.md](../proposal/scraping-serverless-migration/investigation.md)の2026-09-15追記、公式ドキュメントで確認済み）。純正Cronが直接Functionを呼ぶ場合、cron-job.orgの30秒タイムアウト制約は無くなる
+- Vercelは既にProプランで、Vercel Cronは1分間隔・分単位精度で使える（[investigation.md](../design/scraping-serverless-migration/investigation.md)の2026-09-15追記、公式ドキュメントで確認済み）。純正Cronが直接Functionを呼ぶ場合、cron-job.orgの30秒タイムアウト制約は無くなる
 - レビュー（2026-09-19、Vercel公式ドキュメントで確認）の事実: Cron登録数は1プロジェクトあたり100個、Proは1分精度、関数の最大実行時間は800秒
 
 ## 決定

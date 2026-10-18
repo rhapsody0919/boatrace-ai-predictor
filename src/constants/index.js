@@ -48,17 +48,3 @@ export const MODEL_NAMES = {
 
 // 曜日名（日本語）
 export const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-
-// モデルのAPI形式からUI形式へのマッピング
-export const MODEL_KEY_MAP = {
-  "safe-bet": "safeBet",
-  "upset-focus": "upsetFocus",
-  standard: "standard",
-};
-
-// UI形式からAPI形式へのマッピング
-export const MODEL_KEY_REVERSE_MAP = {
-  safeBet: "safe-bet",
-  upsetFocus: "upset-focus",
-  standard: "standard",
-};

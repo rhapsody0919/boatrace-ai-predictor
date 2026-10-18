@@ -2,7 +2,7 @@
 
 種別: データ・分析機能（画面・UIは対象外、スクレイピング基盤・データ取得ロジックのみ）
 対応チケット: なし（本specは複数の個別Linearチケットの親として機能する）
-対応調査: [docs/proposal/scraping-full-coverage/data-inventory-2026-09-15.md](../../proposal/scraping-full-coverage/data-inventory-2026-09-15.md)（棚卸しマップ、本specの一次情報源）
+対応調査: [docs/archive/scraping-data-inventory-2026-09-15.md](../../archive/scraping-data-inventory-2026-09-15.md)（棚卸しマップ、本specの一次情報源）
 
 ## 背景・目的
 
@@ -16,7 +16,7 @@
 
 ## 機能要件
 
-各要件は「タイミング分類」（[data-inventory-2026-09-15.md](../../proposal/scraping-full-coverage/data-inventory-2026-09-15.md)のT1〜T5）を明記する。
+各要件は「タイミング分類」（[data-inventory-2026-09-15.md](../../archive/scraping-data-inventory-2026-09-15.md)のT1〜T5）を明記する。
 
 ### FR-1: レース特記事項ページの取得（優先度: 高）
 

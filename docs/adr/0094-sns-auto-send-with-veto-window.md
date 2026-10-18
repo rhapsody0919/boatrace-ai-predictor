@@ -1,7 +1,7 @@
 # ADR 0094: SNS の全貌 Shorts と X スレッドを、事前通知と止められる期限つきで自動送信する
 
 ## ステータス
-提案中（ユーザー決定 2026-10-12 を実装に落とすもの。docs/design/sns-pdca-loop/spec.md A、plan.md §2〜§4）
+採用（ユーザー決定 2026-10-12・2026-10-18。docs/design/sns-pdca-loop/spec.md A、plan.md §2〜§4。153 は適用済み、cron `sns-auto-plan`）
 
 ## 背景
 既存の送信契約（docs/design/sns-hub-x-send・sns-hub-deadline-queue・sns-hub-mobile-approval の contract.md）は、送信を「本人の個別承認」に限り、「過去の承認から自動で queue に入れない」「親子は個別承認」と定めている。`.claude/CLAUDE.md` も SNS 投稿の最終送信を1件ずつのユーザー承認としている。ユーザーは 2026-10-12 に「最初の1週間は1件ずつ承認、その後は機械の検査を通ったものを事前通知し、締切の1時間前までに止められなければ自動で出す」と決めた。

@@ -1,4 +1,10 @@
-import { test, expect, e2eTodayJST, fetchRecorded } from "./fixtures.js";
+import {
+  test,
+  expect,
+  e2eNow,
+  e2eTodayJST,
+  fetchRecorded,
+} from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
 import { ANALOGY_V16_RACE, routeAnalogyV16 } from "./analogy-v16-fixture.js";
 import {
@@ -1653,31 +1659,75 @@ test.describe("レイアウト: SNSハブの文字が地とかぶらない（ダ
     ".sns-month-calendar-x",
     ".sns-month-calendar-youtube",
     ".sns-month-calendar-grid button",
-    ".sns-mobile-approval h2",
-    ".sns-mobile-approval p",
+    // 自動送信ページ（2026-10-18 にページを分け、レース単位の確認は撤去した）
+    ".sns-hub-page-link",
+    ".sns-queue-title",
+    ".sns-queue-empty",
+    ".sns-queue-time",
+    ".sns-queue-name",
+    ".sns-queue-state",
+    ".sns-send-control-grid dt",
+    ".sns-send-control-grid dd",
   ];
   for (const width of [375, 1440]) {
-    test(`${width}px: 全月カレンダーとレース単位の確認の文字が 4.5:1 以上`, async ({
+    test(`${width}px: 自動送信ページ（全月カレンダー・要対応・今日）の文字が 4.5:1 以上`, async ({
       page,
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.addInitScript(() =>
         localStorage.setItem("ryujin-radar-theme", "dark"),
       );
-      // dev サーバーには Edge Function が無いので管理APIはスタブにする（上の BOA-570 と同じ）
+      // dev サーバーには Edge Function が無いので管理APIはスタブにする（上の BOA-570 と同じ）。
+      // 状態の色をすべて測れるよう、今日の行を状態ごとに1件ずつ置く
+      const now = e2eNow().toISOString();
+      const rows = ["failed", "held", "queued", "posted", "cancelled"].map(
+        (state) => ({
+          id: state,
+          title: `${state} の投稿`,
+          channel: state === "posted" ? "youtube" : "x",
+          state,
+          scheduled_at: now,
+          posted_at: now,
+          expires_at: new Date(Date.parse(now) + 2 * 3600 * 1000).toISOString(),
+        }),
+      );
       await page.route(/\/api\/admin\/sns-hub\//, (route) =>
         route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ data: [], date: "2026-10-13" }),
+          body: JSON.stringify(
+            route.request().url().includes("/deadline-queue")
+              ? {
+                  data: rows,
+                  control: {
+                    paused: false,
+                    channels: [
+                      { channel: "x", mode: "auto", dry_run: false },
+                      { channel: "youtube", mode: "auto", dry_run: true },
+                    ],
+                  },
+                }
+              : { data: [] },
+          ),
         }),
       );
-      await page.goto("/admin/sns-hub");
+      await page.goto("/admin/sns-hub/auto");
+      await page.getByText("全月カレンダー（JST）を開く").click();
       await expect(
         page.locator(".sns-month-calendar-weekday").first(),
       ).toBeVisible();
+      await expect(page.locator(".sns-queue-state").first()).toBeVisible();
       const measured = await page.evaluate((selectors) => {
         const rgba = (s) => {
+          // color-mix() の計算値は color(srgb 0〜1 …) で返る（要対応・今日の状態の地）
+          const srgb = s.match(/color\(srgb ([^)]+)\)/);
+          if (srgb) {
+            const [r, g, b, a = 1] = srgb[1]
+              .split(/[ /]+/)
+              .filter(Boolean)
+              .map(Number);
+            return { r: r * 255, g: g * 255, b: b * 255, a };
+          }
           const m = s.match(/rgba?\(([^)]+)\)/);
           if (!m) return null;
           const [r, g, b, a = 1] = m[1]

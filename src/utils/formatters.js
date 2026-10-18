@@ -129,12 +129,6 @@ export const formatDateObject = (dateStr) => {
  * @param {string} isoString - ISO 8601形式の日時
  * @returns {string} YYYY/M/D HH:MM 形式
  */
-/**
- * 回収率フォーマット
- * @param {number} rate - 回収率 (1.0 = 100%)
- * @returns {string} パーセント文字列 (例: "125.5%")
- */
-export const formatRecoveryRate = (rate) => (rate * 100).toFixed(1) + "%";
 
 // ロケールによる並び順・桁揃えの差を受けないよう、部品で取り出してから組み立てる
 // （month/dayに"numeric"を指定しても、hourと組み合わせると2桁に揃うロケールがある）

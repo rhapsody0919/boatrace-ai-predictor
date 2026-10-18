@@ -311,30 +311,10 @@ export async function cancelXSend(draftId) {
   });
 }
 
+/** 待ち行列の行と、送信の状態（モード・試運転・停止。取得できなければ null） */
 export async function getDeadlineQueue() {
-  const { data } = await request("/deadline-queue");
-  return data || [];
-}
-
-export async function getMobileApprovalGroups() {
-  return request("/mobile-approval");
-}
-export async function getMobileApprovalRace(group) {
-  return request(`/mobile-approval?group=${encodeURIComponent(group)}`);
-}
-export async function approveMobileChannel(group, body) {
-  return request(`/mobile-approval?group=${encodeURIComponent(group)}`, {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-}
-
-/** 指摘の採用/無視だけを記録。本文修正や承認は行わない。 */
-export function decideMobileFinding(group, body) {
-  return request(`/mobile-approval?group=${encodeURIComponent(group)}`, {
-    method: "POST",
-    body: JSON.stringify({ ...body, action: "edit-decision" }),
-  });
+  const { data, control } = await request("/deadline-queue");
+  return { rows: data || [], control: control ?? null };
 }
 
 /** SPAフォールバックのHTMLをCSVとして保存しない。 */

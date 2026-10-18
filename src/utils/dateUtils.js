@@ -108,26 +108,6 @@ export const isToday = (dateStr) => {
 };
 
 /**
- * 日付が昨日かどうかを判定
- * @param {string} dateStr - YYYY-MM-DD形式
- * @returns {boolean}
- */
-export const isYesterday = (dateStr) => {
-  return dateStr === getYesterdayJST();
-};
-
-/**
- * 日付文字列を日本語形式にフォーマット
- * @param {string} dateStr - YYYY-MM-DD形式
- * @returns {string} YYYY年M月D日形式
- */
-export const formatDateJP = (dateStr) => {
-  if (!dateStr) return "";
-  const [year, month, day] = dateStr.split("-").map(Number);
-  return `${year}年${month}月${day}日`;
-};
-
-/**
  * 日付が指定日数以内かどうかを判定
  * JSTの今日を含む直近 days 日（days=7 なら今日と6日前まで）なら true。未来の日付は false。
  * new Date("YYYY-MM-DD") は UTC 0時として解釈され、getJSTNow() も UTC に9時間足した値なので、

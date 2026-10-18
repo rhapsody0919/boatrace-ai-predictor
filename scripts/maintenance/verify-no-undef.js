@@ -37,6 +37,9 @@ import { fileURLToPath } from "node:url";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
 const ALLOWLIST_PATH = path.join(HERE, "verify-no-undef-allowlist.json");
+// ルートの *.mjs は、あるときだけ対象に入れる。無いのに渡すと ESLint が「対象なし」で失敗する。
+// 他の対象は必ずあるので、消えたら（改名・ignore への追加）その失敗で気づけるよう既定のままにする
+const ROOT_HAS_MJS = (await fs.readdir(ROOT)).some((f) => f.endsWith(".mjs"));
 const TARGETS = [
   "src",
   "api",
@@ -44,7 +47,7 @@ const TARGETS = [
   "scripts",
   "e2e",
   "*.config.js",
-  "*.mjs",
+  ...(ROOT_HAS_MJS ? ["*.mjs"] : []),
 ];
 
 // #1020（今節Fの import 抜けの修正）の直前の master。この版の supabaseDataService.js は

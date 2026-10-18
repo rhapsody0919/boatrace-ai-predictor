@@ -205,7 +205,7 @@ export async function runSnsAutoPlan(
         const review = reviewGate(plan.bundle.qa);
         if (outcome.state === "held_manual")
           await tell(
-            `SNS の自動送信: ${plan.raceId} ${channel} を個別承認の画面で止めた（検査の不合格）: ${outcome.reasons.join("・")}`,
+            `SNS の自動送信: ${plan.raceId} ${channel} を止めた（検査の不合格のため送らない）: ${outcome.reasons.join("・")}`,
           );
         else if (
           outcome.state === "manual" &&
@@ -213,7 +213,7 @@ export async function runSnsAutoPlan(
         ) {
           if (!review.ok)
             await tell(
-              `SNS の自動送信: ${plan.raceId} ${channel} は評価役の検査で P0 があるので自動では送らない（${review.reason}）。送るなら個別承認の画面で承認する`,
+              `SNS の自動送信: ${plan.raceId} ${channel} は評価役の検査で P0 があるので送らない（${review.reason}）。直すなら素材を直して入れ直す`,
             );
           else {
             await sendAutomatically(
@@ -225,7 +225,7 @@ export async function runSnsAutoPlan(
           }
         } else if (outcome.state === "manual")
           await tell(
-            `SNS の自動送信: ${plan.raceId} ${channel} の検査が通った。個別承認の画面で承認できる（${controls[channel]?.dry_run !== false ? "試運転中: 承認しても claim の前で止まる" : "承認すると送る"}）`,
+            `SNS の自動送信: ${plan.raceId} ${channel} の検査が通ったが、このチャネルは個別承認（mode=manual）なので送らない。自動で送るなら sns_auto_send_control の mode を auto にする`,
           );
       } catch (error) {
         result.outcome = "error";

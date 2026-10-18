@@ -144,7 +144,7 @@ SNSマーケティングハブ Phase 2（改善案の自律立案ループ、`do
 `sns_strategy_insights`の`status='proposed'`（要判断）は、sns-hub「戦略メモ」タブの手動採用ボタンで人間が個別に承認する。件数は`session-start-check.js`の`pendingInsights`で取得できる。
 
 - `pendingInsights.pendingCount`が1件以上あれば、**このセッションの最初の応答で**最も古い1件（`oldest`）の内容を自発的に提示し、「戦略メモの承認画面で確認しますか？」と一言確認する
-- 承認・却下の判断自体はsns-hub管理画面（`/admin/sns-hub`「戦略メモ」タブ）で行う（Claude Code側から代理で採用・却下しない）
+- 承認・却下の判断自体はsns-hub管理画面（`/admin/sns-hub/metrics`「戦略メモ」タブ）で行う（Claude Code側から代理で採用・却下しない）
 - 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
 ## ブログ記事の公開前品質チェック（新規作成・改稿とも必須）

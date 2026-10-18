@@ -21,11 +21,7 @@
  *   一方 wilson.js は分数（0〜1）を扱うので、境界で変換する。
  */
 
-import {
-  wilsonLowerBound,
-  wilsonLowerBoundFromRate,
-  isSmallSample,
-} from "./wilson.js";
+import { wilsonLowerBound, isSmallSample } from "./wilson.js";
 
 /**
  * 各指標の抽出閾値（パーセント）。小標本フラグの比較対象でもある。
@@ -42,17 +38,6 @@ export const EXTRACTION_THRESHOLDS = {
   //   +23pt→8.1件 / +25pt→4.6件（0件の日あり）
   // 目標は5〜15件/日。+22pt が最小5件で空の日が無く、平均も目標帯に収まる
   nigashi: 22,
-};
-
-/**
- * 各指標の全国ベースレート（パーセント、2026-09-24 本番実測）。
- * 表示の文脈（「全国平均は◯%」）に使う。**小標本フラグの判定には使わない**
- * （まくりで逆に働くため。wilson.js のコメント参照）。
- */
-export const NATIONAL_BASE_RATES = {
-  nige: 52.98, // 1コース進入走のうち逃げ決着（n=43,643）
-  nigashi: 52.98, // 定義上、逃げ率と同値（各レースに各コースが1艇ずつ存在するため）
-  makuriByCourse: { 2: 3.76, 3: 5.08, 4: 4.92, 5: 1.25, 6: 0.62 },
 };
 
 /**
@@ -208,12 +193,6 @@ export function clearsThresholdWithConfidence(metric, rate, n) {
   // 率を整数の成功数に丸め戻さない。n=8・率70% を round(5.6)=6 にすると
   // p̂ が 0.75 にずれて下限が0.409（正しくは0.366）になる
   return !isSmallSample((rate / 100) * n, n, threshold / 100);
-}
-
-/** Wilson下限をパーセントで返す（表示用） */
-export function wilsonLowerPercent(rate, n) {
-  const lower = wilsonLowerBoundFromRate(rate / 100, n);
-  return lower === null ? null : round1(lower * 100);
 }
 
 /** 成功数の整数が手元にある場合のWilson下限（パーセント）。バッチ側はこちらを使う */

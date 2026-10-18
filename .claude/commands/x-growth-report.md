@@ -241,5 +241,5 @@ SNSマーケティングハブPhase 2（改善案の自律立案ループ、`doc
 - サイト送客効果測定: `scripts/analysis/x-referral-report.js`
 - 複数時点トレンド判定: `scripts/analysis/x-trend-summary.js`
 - 他チャネルとの資源配分（月次）: `/growth-monthly-summary`
-- 戦略メモ管理画面: `/admin/sns-hub`「戦略メモ」タブ
+- 戦略メモ管理画面: `/admin/sns-hub/metrics`「戦略メモ」タブ
 - ブログ側の集客PDCA: `/growth-report`・`/growth-pdca`

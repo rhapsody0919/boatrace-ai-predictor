@@ -230,7 +230,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/aiCopyPrompts.js` | race-ai-copy機能の分析依頼プロンプト種別定義 | getAiCopyPromptOptions, getAiCopyPromptText, getAiCopyPromptLabel, aiCopyFollowUpKeys, AI_COPY_PROMPT_TYPES |
 | `src/utils/aiCopyText.js` | 「AI用にコピー」（BOA-194）の文面を組み立てる純関数（BOA-770）。 | formatJstDateTime, toMarkdownTable, buildTurnPredictionSection, buildPremiseLines, buildNotes ほか3件 |
 | `src/utils/analogyAggregate.js` | アナロジー・ファインダー v16 の類似レース・展開シナリオの集計（BOA-271 spec FR-B・FR-C）。純粋関数。 | sliderSteps, defaultStepIndex, normalizeNeighbor, aggregateNeighbors, layerItemKeys ほか21件 |
-| `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | roundFromStageCategory, sliceCandidates, resolveContributionSlice, themeEntries, roundToTotal ほか7件 |
+| `src/utils/analogyContribution.js` | アナロジー・ファインダーの寄与度（BOA-271 FR-1）の純粋関数。 | sliceCandidates, resolveContributionSlice, themeEntries, roundToTotal, MIN_RACES ほか6件 |
 | `src/utils/analogyFacts.js` | アナロジー・ファインダー v16「差がつく材料」（タブ1、BOA-271 spec FR-A）の純粋関数。 | rankPositions, todayPosition, todayValueRank, judgeGap, agreementVerdict ほか29件 |
 | `src/utils/analogyFormat.js` | アナロジー・ファインダー v16 の表記（BOA-271 screens「純粋関数」）。 | fmtEntry, comboLabel, scopeName, fmtFactValue, splitSentences ほか8件 |
 | `src/utils/analogyLayer.js` | 類似レースの層（そろえる条件）の説明文（BOA-271 spec B-3 の前半。plan「層の説明文の共用の関数」）。 | describeAnalogyLayer, layerKind |
@@ -256,13 +256,13 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/breadcrumbLd.js` | パンくずの BreadcrumbList（構造化データ）を組む。画面の Breadcrumb と、ボット向け HTML（ADR 0089）が同じ値を出す。 | isValidCrumbs, toBreadcrumbListLd |
 | `src/utils/cautionEvents.js` | イン崩れ注意度（BOA-822 task 27）の GA4 のイベント。送る中身を決める純関数（assistEvents.js と同じ形）。 | cautionBandOf, cautionVisibleEvent, cautionClickEvent, CAUTION_SURFACES, CAUTION_TARGETS |
 | `src/utils/chartDomain.js` | 展示タイムの推移グラフの縦軸（範囲と目盛り）（BOA-557）。 | exhibitionTimeAxis, exhibitionSparklineY |
-| `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, MODEL_COLORS, BOAT_COLORS, getBoatChipBackground, BOAT_LINE_COLORS ほか2件 |
+| `src/utils/colors.js` | カラーユーティリティ | getRecoveryColorClass, BOAT_COLORS, getBoatChipBackground, BOAT_LINE_COLORS, COLORS |
 | `src/utils/competitionRank.js` | 同じ値は同じ順位にする順位（競技順位方式: 1, 2, 2, 4 …）（純関数、BOA-529）。 | competitionRank |
 | `src/utils/courseBaseline.js` | ST考察の「同コース・同級別の平均との差」の算出（phase a FR-1） | indexBaseline, getBaselineCell, diffFromBaseline, diffTone, expectedBreakoutCount ほか1件 |
-| `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか8件 |
-| `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか13件 |
+| `src/utils/dateUtils.js` | 日付ユーティリティ（フロントエンド用） | getJSTNow, getNowHHMMJST, getTodayJST, getYesterdayJST, getDaysAgoJST ほか6件 |
+| `src/utils/digestMetrics.js` | digestMetrics - 「本日のデータ一覧」（BOA-402）の指標計算（純関数） | computeSkillDelta, computePredicted, computeZScore, computeConsistency, computeFeaturedScore ほか11件 |
 | `src/utils/errorMessage.js` | 例外から、画面のエラー状態に入れる文言を取り出す（BOA-668）。 | errorMessageOf |
-| `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatExhibitionSt, formatPercent, formatDate, formatDateLocalized ほか5件 |
+| `src/utils/formatters.js` | フォーマット関数 | formatCapturedAtJst, formatExhibitionSt, formatPercent, formatDate, formatDateLocalized ほか4件 |
 | `src/utils/homeAiIntroFaq.js` | トップの「よくある質問」（HomeAiIntro）の問い・答えと FAQPage の JSON-LD を組む純粋な関数。 | buildFaqItems, toFaqPageLd, isAssistShown |
 | `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれを超えたら「溢れている」とみなす（px）。「›」を出す、右に余白を足す、 | hscrollFadeWidth, horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor ほか3件 |
 | `src/utils/inCautionAccuracy.js` | /accuracy のイン崩れ注意度の段ごとの実績（BOA-822 task 24、screens S-5、plan §6）の表示用の値（純関数）。 | inCautionAccuracyView, MIN_RATE_N, pct1 |
@@ -281,7 +281,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/pastRate/slitRates.js` | スリット7形の全国の出現率（%、小数1桁）。BOA-635 の形の一覧に添える（spec FR-1）。 | SLIT_RATE_SOURCE, SLIT_RATES |
 | `src/utils/pastRate/storage.js` | BOA-635 の端末内保存（docs/design/past-rate-check/spec.md FR-5）。純粋関数（storage は引数で受ける）。 | isValidEntry, loadEntries, saveEntry, entriesForRace, STORAGE_KEY ほか1件 |
 | `src/utils/pitReportUrl.js` | ピットレポート（選手コメント）の公式URL導出と、取得対象レースの判定（BOA-379） | buildPitReportUrl, isPitReportCandidate, PIT_REPORT_GRADES, PIT_REPORT_MIN_RACE_NUMBER_NON_SG |
-| `src/utils/pretestRows.js` | 前検タイム（`motor_pretest_stats`）の行の選び方（BOA-451 / phase a FR-4a） | shiftDate, pickFirstPretestByRacer, pickMeetPretestByRacer, pickLatestPretestByRacer, PRETEST_LOOKBACK_DAYS |
+| `src/utils/pretestRows.js` | 前検タイム（`motor_pretest_stats`）の行の選び方（BOA-451 / phase a FR-4a） | shiftDate, pickMeetPretestByRacer, pickLatestPretestByRacer, PRETEST_LOOKBACK_DAYS |
 | `src/utils/prevResult.js` | 前走（今節）の1マスの読み方（BOA-569 → BOA-610）。データ出走表（raceIndicators.jsx）と | finishMarkKeyOf, meetPrevRunState, meetPrevRunWhenParams |
 | `src/utils/raceCancellation.js` | 開催中止・順延の判定を1箇所に集める。 | hasRaceResult, isRaceCancelled, isCancellationSuspected, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `src/utils/raceDeadlineStatus.js` | — | getDeadlineDate, getDeadlineStatus, DEADLINE_STATUS |
@@ -299,9 +299,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/racerPagePath.js` | 選手ページの「STの推移」のアンカー（BOA-879） | ST_TREND_ID, racerPagePath |
 | `src/utils/racerStats.js` | 予想バッチが保存する racerStats（predictions.feature_contributions.racerStats）を、 | toWakuRacerStats |
 | `src/utils/sgNowVenues.js` | トップの「SG開催中」帯に出す会場を決める（集客レーン、2026-10-02）。 | getSgNowVenues |
-| `src/utils/share.js` | SNSシェア関数 | shareUrlFor, shareRacePredictionToX, shareHitRaceToX, shareDailyStatsToX, generateInCautionShareText ほか3件 |
+| `src/utils/share.js` | SNSシェア関数 | shareUrlFor, generateInCautionShareText, generatePredictionShareText, generateTurnHitShareText, generateResultShareText |
 | `src/utils/shareEvents.js` | AI用にコピー・SNS シェアの GA4 のイベント（BOA-822 の計測、docs/design/in-collapse-caution/measureme… | aiCopyEventOf, raceShareEventOf, SHARE_CHANNELS, SHARE_KINDS |
 | `src/utils/smallSampleRate.js` | 出走数が少ないときの率の出し方（BOA-513、2026-09-29 ファン4人のパネルで決定）。 | formatRateOrCount, powerIndexTone, formatPowerIndex |
+| `src/utils/snsAutoSendStatus.js` | — | todayDay, rowTime, needsAttention, attentionRows, rowsOfDay ほか1件 |
 | `src/utils/snsDraftDiff.js` | 投稿用の値だけ。署名URL・状態変更は本文差分に含めない。 | draftContent, characterDiff, numericDiff, compareDraftSnapshots |
 | `src/utils/snsMonthCalendar.js` | — | calendarDay, calendarState, calendarRowDay, calendarVenue, calendarMonth ほか3件 |
 | `src/utils/snsObservationCsv.js` | — | csvPublicationRange, buildObservationCsvRows, serializeObservationCsv, CSV_COLUMNS |
@@ -342,14 +343,14 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
 | `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerStats |
-| `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, hasRulesForVenue, getRulesForVenue ほか3件 |
+| `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
-| `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか33件 |
+| `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか29件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
 | `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 317 ファイル / export 1776 件。
+対象 318 ファイル / export 1764 件。
