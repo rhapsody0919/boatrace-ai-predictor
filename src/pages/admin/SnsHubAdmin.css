@@ -1863,9 +1863,10 @@
   color: var(--color-success-dark-text);
 }
 
+/* 情報色の文字は薄い地の上で 4.5:1 に届かない（4.18）ので、文字を地の文字色へ寄せて濃くする */
 .sns-queue-state-plan {
   background: color-mix(in srgb, var(--color-info-text) 14%, var(--surface-card));
-  color: var(--color-info-text);
+  color: color-mix(in srgb, var(--color-info-text) 75%, var(--text-primary));
 }
 
 .sns-queue-state-bad {

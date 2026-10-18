@@ -126,13 +126,14 @@ for (const theme of ["light", "dark"])
 test("状態が取得できないときは止める手順を出し、停止中は「全部止める」を押せない", async ({
   page,
 }) => {
-  await route(page, [], { control: null });
+  // ルートは外さず、返す値だけを途中で切り替える（ルートを0件にする書き方は禁止。ADR-0077 決定4）
+  const extra = { control: null };
+  await route(page, [], extra);
   await page.goto("/__queue_test");
   await expect(section(page, "いまの状態")).toContainText(
     "送信の状態を取得できません",
   );
-  await page.unrouteAll({ behavior: "ignoreErrors" });
-  await route(page, [], { control: { ...control, paused: true } });
+  extra.control = { ...control, paused: true };
   await page.reload();
   await expect(section(page, "いまの状態")).toContainText("止まっている");
   await expect(page.getByRole("button", { name: "全部止める" })).toBeDisabled();
@@ -236,7 +237,7 @@ for (const [label, setup] of [
         title: "予定",
         channel: "x",
         state: "queued",
-        scheduled_at: iso(now + H),
+        scheduled_at: iso(now), // 夜でも「今日」に入るよう今の時刻にする（全部の状態の色を必ず測る）
         expires_at: iso(now + 2 * H),
       },
       {
