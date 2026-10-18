@@ -140,17 +140,6 @@ export async function archiveDraft(draftId) {
   });
 }
 
-/** TikTok等のエンゲージメント指標を手動入力する */
-export async function addDraftMetric(
-  draftId,
-  { metricName, metricValue, source = "manual" },
-) {
-  return request(`/drafts/${draftId}/metrics`, {
-    method: "POST",
-    body: JSON.stringify({ metricName, metricValue, source }),
-  });
-}
-
 /**
  * 「戦略メモ」insight一覧を取得する
  * @param {string} [status] - 'proposed' | 'active' | 'retired' | undefined(全件)

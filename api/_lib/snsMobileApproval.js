@@ -1,9 +1,8 @@
 import { isBundlePublicationBlocked } from './snsBundleValidation.js';
-import { createXSnapshot, mobileVersion } from './snsXSend.js';
 import { isTodayDraft } from './snsTodayDigest.js';
 
 /**
- * 送る前の保留の理由（個別承認の画面と自動送信の auto-plan で同じ条件。sns-pdca-loop tasks 11）。
+ * 送る前の保留の理由（自動送信の auto-plan が使う。sns-pdca-loop tasks 11）。
  * 不足情報を合格と推測しない。v0の恒久保留は維持する。
  * 素材 v1 は、claims を公開 API で照合した結果（source_data.claim_check、tasks 9）と、リンク先の表示の確認（release_evidence、tasks 10）を見る。
  * どちらも auto-plan が書く。照合の版が deadline_queue.source_revision と違えば保留（書いた後に値が変わった）
@@ -33,20 +32,6 @@ export function sendHolds(d) {
   else if (Date.parse(s.deadline_queue.expires_at) <= Date.now() || !Number.isFinite(Date.parse(s.deadline_queue.expires_at))) holds.push('期限失効');
   return [...new Set(holds)];
 }
-/** 個別承認の画面の名前（sendHolds と同じ） */
+/** 旧名（個別承認の画面は #1645 で撤去。sendHolds と同じ） */
 export const mobileHolds = sendHolds;
 export { mobileVersion } from './snsXSend.js';
-export async function prepareMobileReview(row, loadMedia) {
-  const holds = mobileHolds(row.draft);
-  let snapshot = null, versionHash = null;
-  try { snapshot = await createXSnapshot(row.draft, loadMedia); versionHash = await mobileVersion(row.revision, snapshot); }
-  catch { holds.push('媒体未完成・取得失敗'); }
-  return { ...row, snapshot, versionHash, holds };
-}
-/** read後の本文/根拠/QA/実媒体の変更は拒否。DBでも行ロック下でrevision再比較。 */
-export async function approveMobileReview(row, body, { loadMedia, approve }) {
-  const review = await prepareMobileReview(row, loadMedia);
-  if (review.holds.length || !body.versionHash || body.versionHash !== review.versionHash) throw new Error('確認した版が変わったか、承認条件を満たしていません');
-  if (!Number.isInteger(body.reviewSeconds) || body.reviewSeconds < 0 || body.reviewSeconds > 86400) throw new Error('レビュー時間が不正です');
-  return approve(row.draft.id, body.approverId, row.revision, review.snapshot, row.draft.scheduled_at || null, body.reviewSeconds);
-}
