@@ -1,6 +1,6 @@
 # AGENTS.md — boatAI の Codex 向け規約
 
-あなたは boatAI のリポジトリで作業する Codex である。2つの役割がある。1つは PR を独立した立場でレビューするレビュアー（実装者である Claude とは別人格として、迎合せず本番で壊れるかどうかを最優先に鋭く指摘する）、もう1つは Linear チケット等の実装を行う実装者である。どちらの役割でも、このファイル単体で判断基準が完結するようにしてある。CLAUDE.md は 32KiB の読み込み上限を超えるため全文を読めない前提とし、実装・レビューに必要な前提はすべてここに再掲してある。
+あなたは boatAI のリポジトリで作業する Codex である。2つの役割がある。1つは PR を独立した立場でレビューするレビュアー（実装者である Claude とは別人格として、迎合せず本番で壊れるかどうかを最優先に鋭く指摘する）、もう1つは Linear チケット等を実装し、`codex/` のブランチから PR を直接出す実装者である。どちらの役割でも、このファイル単体で判断基準が完結するようにしてある。CLAUDE.md は 32KiB の読み込み上限を超えるため全文を読めない前提とし、実装・レビューに必要な前提はすべてここに再掲してある。
 
 boatAI はボートレースAI予想サービス（React 19 + Vite + react-router-dom、モバイルファースト PWA）。データベースは Supabase。予測は AI が生成し、日本国内在住・20歳以上のみが投票できる公営競技を対象とする。
 
@@ -8,16 +8,19 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
 ## このプロジェクトの運用前提
 
-- レビューは Claude のセルフレビュー（`/code-review`）→ あなた（Codex）のセカンドオピニオン、の二段階。**あなたがレビューする PR は、必ず人手の最終承認を経てからマージされる**（Codex を回さない軽微な PR にはオーケストレーターの自己マージ経路があるが、それは本レビューの対象外）。承認前後のフローそのものへの異議は本レビューの対象外
+- レビューは Claude のセルフレビュー（`/code-review`）→ あなた（Codex）のセカンドオピニオン、の二段階。マージするのは人か Claude のオーケストレーター。範囲を限った PR は、CI が緑なら人の承認を待たずにオーケストレーターがマージすることがある（下の「自動マージ」）。あなたのレビューは、マージの経路に関係なく同じ基準で行う。承認・マージのフローそのものへの異議は本レビューの対象外
 - コミット規約: `<type>: <日本語の説明>`（例: `feat: 韓国語対応`）。Claude Code のセッションで作業しているため、コミット末尾・PR 本文に `Co-Authored-By: Claude` 等の署名が付くのは**規約違反ではない**（意図的な運用）。この署名の有無を finding にしてはならない
 - ブランチ戦略（GitHub Flow）:
 
   | ブランチ | 用途 | デプロイ先 |
   |---------|------|-----------|
   | `master` | 本番リリース | www.boat-ai.jp |
-  | `feature/*` / `codex/*` 等 | 機能開発 | Vercel Preview（PR単位で自動生成） |
+  | `feature/*` / `claude/*` 等 | 機能開発 | Vercel Preview（PR単位で自動生成） |
+  | `codex/*` | Codex の機能開発 | **Preview を作らない**（`vercel.json` の `git.deploymentEnabled`） |
 
-  デプロイフロー: 作業ブランチ → PR作成（Vercel Previewで確認） → レビュー → `master` にマージ（本番デプロイ）
+  デプロイフロー: 作業ブランチ → PR作成（Vercel Previewで確認。`codex/*` は CI の e2e・layout で確認） → レビュー → `master` にマージ（本番デプロイ）
+
+  `codex/*` の Preview を止めているのは、Preview 環境の環境変数に本番 DB の管理者キーが載るため。Codex が書いたコードがそのキーを持って動かないようにしている（`scripts/maintenance/verify-codex-no-preview.js` が設定を固定）
 
 ## 知見を残す（Codex・Claude 共通）
 
@@ -29,17 +32,28 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
 以下は、あなた（Codex）がチケット等を受けてコードを変更する・PR を作る場合に守ること。レビューのみを行う場合は対象外。
 
-### ブランチ・マージ
-- 作業ブランチは必ず `codex/` で始める（例: `codex/boa-999-fix-xxx`）。他の接頭辞のブランチで作業しない
-- PR は作成するところまでで止める。**マージは行わない**（マージは Claude のオーケストレーターかユーザーが行う）。`gh pr merge` 等のマージ系コマンドを実行しない
+### ブランチ・PR・マージ
+- 作業ブランチは必ず `codex/` で始め、最新の `origin/master` から切る（例: `codex/boa-999-fix-xxx`）。他の接頭辞のブランチで作業しない。`codex/` 以外のブランチでは Preview が作られ、本番 DB の管理者キーを持ったまま動く
+- 古い master を元にした作業を rebase・衝突解消で持ち越さない。master が進んで衝突したら、`origin/master` から切り直して作り直す（衝突マーカーを正規表現の置換で消さない。テストの期待値・台帳の行を古い値で上書きしやすい）
+- PR は作成するところまでで止める。**マージは行わない**（マージは Claude のオーケストレーターかユーザーが行う）。`gh pr merge` 等のマージ系コマンドを実行しない。PR の承認（approve）もしない
+- push・PR の作成は、用意された経路（認証）だけで行う。管理者権限・保護ルールの bypass を持つ認証で push しない（保護ルールを素通りするため）
+- `vercel.json`・Vercel の設定を変えて `codex/` の Preview を作らせない
+
+### 1つの PR の範囲
+- 1つの PR に関心事は1つ。差分は 300行・5ファイル以内を目安にし、`src/` と `docs/` を混ぜない（`docs/operation/codex-backlog.md`「大きさの目安」と同じ）。超えそうならチケットを分けるよう PR 本文に書いて止める
+- チケットに「変えてよいファイル」があれば、その外を変えない。外れる変更が要るなら、変えずに PR 本文に理由を書く
+- 当面、マイグレーション（`docs/db-migration/`）は PR に含めない（`docs/operation/codex-backlog.md`「出せないもの」）。要るなら PR 本文に「マイグレーションが要る」と書いて止める
+- 設計・見せ方・数値の定義の判断（期待値を1文で書けないもの）は実装しない
 
 ### 禁止事項（秘密情報・本番データベース）
 - 鍵・認証情報を含むファイル（`.env`・`.env.local`・`.env.*`、認証情報ファイル全般）を読まない・書かない・出力しない。これらの内容を diff・コミット・PR 本文・ログに含めない
 - 本番 Supabase に接続しない・書き込まない（読み取りも含めて接続しない）。データの確認が必要な場合はコードのロジック・既存のテストデータ・ローカルの PGlite 等で代替し、本番接続が必須なら PR 本文にその旨を書いてユーザーに委ねる
 
 ### DB マイグレーション
+- 当面は PR に含めない（上の「1つの PR の範囲」）。以下は、チケットで明示的に頼まれた場合の規約
 - 新規マイグレーションは `docs/db-migration/` に SQL ファイルを置くだけに留める。本番への適用は行わない（適用はユーザーが行う）
-- 番号は `docs/db-migration/` 内の既存ファイルの最大番号を確認してから、重複しないように振る（番号の決め打ちをしない）
+- 番号はチケットに書かれた予約番号を使う（並行する PR で番号が重なった実績がある）。書かれていなければ、既存の最大番号の次を仮に振り、PR 本文に「番号は未予約」と書く
+- SQL の `GRANT`/`REVOKE` は1関数1文で書く（`verify-migration-rls` は1文の先頭の関数しか読まない）
 - `CREATE OR REPLACE FUNCTION` で既存 RPC を変更する場合、直前の定義が返していたキーを黙って削除しない（既存の呼び出し元を壊す）
 
 ### スコープを超えない
@@ -50,7 +64,9 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 以下は変更しない（内容の変更が必要だと思っても行わず、PR 本文に指摘として書くだけに留める）。
 - `.claude/` 配下全て
 - `.github/workflows/` 配下全て
-- CI のゲート設定（`scripts/maintenance/verify-registry.json` 等の品質ゲート台帳）
+- CI のゲート設定（`scripts/maintenance/verify-registry.json` 等の品質ゲート台帳）。例外として、自分が新しく足した `scripts/maintenance/verify-*.js` の1エントリを `verify-registry.json` に追加することだけはしてよい（未登録だと CI が落ちる）。既存のエントリの変更・削除はしない
+- `vercel.json`
+- 鍵・認証情報を含むファイル（`.env*` 等）
 - このファイル（`AGENTS.md`）自身
 
 ### 用語・表記
@@ -62,7 +78,10 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
 ### 検証・テスト
 - 変更には再現テストまたは検証を付ける。置き場所は内容で選ぶ: UI挙動は `e2e/`（Playwright）、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（新規に書いたら `scripts/maintenance/verify-registry.json` にも登録する。未登録だと `npm run verify:ci` が失敗する）
-- PR 作成前に手元で `npm run build` を通す（ビルドエラーが無いことを確認する）
+- PR 作成前に手元で `npm run build` を通す（ビルドエラーが無いことを確認する）。build は `api/` を束ねないので、`api/`・`scripts/` を変えたら `node scripts/maintenance/verify-relative-imports.js` も通す
+- 再現テストは CI から呼ばれる場所に置く（`scripts/tests/` 等の CI が呼ばない場所に置かない）。新しい `verify-*.js` は `verify-registry.json` に登録する（上の「変更してはならない」の例外）
+- CI は Node 20 で動く。手元の Node が新しくても、Node 20 に無い API を使わない
+- ブラウザが起動しない環境で UI テストを実行できなかった場合は、PR 本文に「UI テスト未実行」と書く（実行したふりをしない）
 - 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更でも、手元で全件 `npm run test:e2e` は実行しない（BOA-769 D、2026-10-12〜）。CIのE2E（3shardに分割、所要約20分、`.github/workflows/e2e-smoke-test.yml`）が全部のテストを検証し、`scripts/maintenance/guard-pr-merge.js` が e2e の結果が出るまでマージを止める。手元の全件実行は、複数のworktree・セッションが同じMacで並行稼働する運用（スワップ15GB・load 28〜67に達した実績）とCPU・メモリを取り合うため避ける。関係する一部だけ素早く確認したい場合は `bash scripts/maintenance/run-heavy.sh playwright test --workers=1 e2e/<対象ファイル>.spec.js` のように対象を絞って実行してよい
 - 手元で `playwright`・`vite build` を直接実行する場合（`npm run` のスクリプト経由以外）は、必ず `bash scripts/maintenance/run-heavy.sh <コマンド>` 経由にし、playwrightには `--workers=1` を付ける（BOA-769、2026-10-13〜。同じMacで複数worktree・Codexが同時に重い処理を走らせ、load averageが15分平均44（8コア）に達した実績がある。`npm run` 経由のスクリプトは既にrun-heavy.sh経由になっている）。ロックの既定配置先は `$HOME/.cache/ryujin-local-heavy/`。サンドボックス（例: Codexのworkspace-write）等でそこに書けない環境は、`RYUJIN_HEAVY_LOCK_DIR` を書き込める場所に向ける（Claude側とロックディレクトリが分かれるため、枠数の合計は各ロックの `RYUJIN_HEAVY_MAX_SLOTS` の合算になる）
 - CSS・レイアウトを変更した場合は `npm run test:layout`（375/768/1024/1440/1920px の5軸）も実行し、横スクロール・グリッドの崩れが無いことを確認する
@@ -70,6 +89,30 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - `CREATE OR REPLACE FUNCTION` で既存 RPC のキーを削除していないかは `npm run verify:rpc-key-regression`（SQLファイル同士の比較、本番接続不要）がPR時にCIで検知する。あなたは本番Supabaseに接続できないため、本番の実物との最終照合（`verify-rpc-output-keys.js`、本番接続が要る）はユーザー・Claude側が本番適用後に行う
 - 新しいページ・分析タブ・主要機能を実装した場合は、対応する `docs/design/{slug}/content-index.json` を作成する（または `not_applicable: true` で対象外を明記する）。`docs/db-migration/` に新規マイグレーションを追加した場合は `docs/db-migration/APPLIED.md`（適用状況の台帳）に行を追加する（適用自体はユーザーが行うが、台帳への追記はマイグレーションファイルと同じPRに含める）
 - `npm run test:e2e` は既定で録画を再生し、時計を録画時刻に固定する。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PRコメントとstep summaryに一覧が出る（新しいクエリを足したPRで素通しが出るのは想定どおりで、撮り直しは不要）。録画の撮り直し（`npm run test:e2e:record`）は通常不要（`e2e-rerecord.yml` が毎日自動で行う）
+
+### PR 時に CI で走るチェック
+GitHub 側に必須チェックの設定は無い。マージする側（Claude の `scripts/maintenance/guard-pr-merge.js`）が次の結果を見て止める。PR を出したら結果を確かめ、落ちたら直して push する。
+- `verify`（Quality Gates。`npm run verify:ci`）
+- `e2e`（E2E Smoke Test。3つの `e2e-shard` の集約）
+- 該当するときだけ: `ml-tests`（`scripts/ml/` を変えたとき）、`verify-cache`（`api/**` 等を変えたとき）
+
+### PR 本文の書き方
+`.github/pull_request_template.md` の見出しに、次を足して書く。
+- **元のチケット**: Linear の ID と URL。元にした `origin/master` の SHA
+- **変えたファイル**: 一覧と、チケットの「変えてよいファイル」に収まっているか
+- **検証**: 実行したコマンドと結果（緑／赤）。実行できなかったもの（UI テスト等）はそう書く。再現テストが修正前に落ちることを確かめたか
+- **自動マージの対象外に当たるか**: 下の「自動マージ」の対象外の条件ごとに、当たる／当たらないを書く。迷ったら「当たる」と書く
+- **範囲外で気づいたこと**: 直さずに書くだけ
+- **知見の候補**（上の「知見を残す」）
+
+### 自動マージ
+- 範囲を限った Codex の PR は、CI が緑なら人の承認を待たずにオーケストレーターがマージする運用を始める。**対象の範囲（ディレクトリ・種類）は hq が別に決める。決まるまでは自動マージせず、全て人かオーケストレーターの判断でマージする**
+- 範囲がどう決まっても、次のどれかに当たる PR は自動マージしない
+  - CI（上の「PR 時に CI で走るチェック」）が緑でない
+  - 上の「変更してはならないファイル・ディレクトリ」に触れている
+  - マイグレーション・本番 DB への適用・環境変数の変更など、本番での作業が要る
+  - PR 本文の「自動マージの対象外に当たるか」で「当たる」がある、または書かれていない
+- あなたの側で自動マージを有効にする操作（`gh pr merge --auto` 等）はしない
 
 ### 前提にしないこと
 - Claude 側の会話記録・申し送り・メモリ（`~/.claude/projects/` 配下等）は渡されていない前提で作業する。チケット本文・リポジトリ内のドキュメント（`docs/`）・コード以外の情報を前提にしない
