@@ -136,7 +136,7 @@ Indexing APIが必要だが、求人情報・ライブ配信ページ専用で�
    - `credentials/google-service-account.json`の`client_email`のアクセスレベルを「制限付き」→「フル」に変更
    - この操作はGoogleアカウント側の設定のため、必ず対話ターミナル（人間）が実施する
 2. **GitHub Secretsに以下を追加**（リポジトリの Settings → Secrets and variables → Actions）
-   - `GOOGLE_SERVICE_ACCOUNT_KEY`（`update-google-sheets.yml`と共用、未設定なら追加）
+   - `GOOGLE_SERVICE_ACCOUNT_KEY`（未設定なら追加）
    - `SEARCH_CONSOLE_SITE_URL`（`.env.local`と同じ値）
 
 権限変更前は`scripts/submit-sitemap.js`が権限エラーで失敗するが、CI上は`update-sitemap.yml`の

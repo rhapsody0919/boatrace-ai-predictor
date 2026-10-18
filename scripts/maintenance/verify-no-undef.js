@@ -54,6 +54,8 @@ const BROKEN_FILE = "src/services/supabaseDataService.js";
 
 const eslint = new ESLint({
   cwd: ROOT,
+  // ルートの *.mjs は今は無い。無いときも失敗させず、置かれたら検査する
+  errorOnUnmatchedPattern: false,
   ruleFilter: ({ ruleId }) => ruleId === "no-undef",
 });
 

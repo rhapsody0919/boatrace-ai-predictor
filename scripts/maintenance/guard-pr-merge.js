@@ -1,17 +1,25 @@
 #!/usr/bin/env node
 /**
- * PreToolUse(Bash): `gh pr merge` を2つの観点で検査する。
+ * PreToolUse(Bash): `gh pr merge` を3つの観点で検査する。
  *
- * 1. 品質ゲート（Quality Gates の verify ジョブ）が緑でないPRのマージを止める。
+ * 1. 必須チェック（verify・ml-tests・e2e の集約）が緑でないPRのマージを止める。
+ *    集合は GitHub の ruleset「master-checks」の必須チェックと同じにしてある（REQUIRED_CHECKS）。
  *
- *    本来はGitHubのブランチ保護で止めたいが、このリポジトリでは使えない。
- *    必須ステータスチェックはPRのマージだけでなくブランチへの直接pushにも効き、
+ *    `gh pr merge N --auto` は、ruleset が3つの必須チェックを全部持っているときだけチェックの結果を見ない。
+ *    判定は GitHub 側が行い、チェックが緑になった時点でマージされるため（2026-10-18 オーナー判断）。
+ *    ruleset が無い・足りない・読めないときは、--auto でも従来どおり検査する。必須チェックの無い
+ *    リポジトリでは、--auto がその場のマージになりうるため（ruleset が入る前の運用を壊さない）。
+ *
+ *    ruleset が無かったころの経緯（このフックで止めている理由）: 必須ステータスチェックはPRのマージだけでなくブランチへの直接pushにも効き、
  *    scrape系・train系・update-sitemap の8ワークフローが GITHUB_TOKEN で master へ
  *    直接 push しているため、全部落ちる。GitHub Actions をバイパス対象に指定できるのは
  *    Organization 所有のリポジトリだけで、個人リポジトリでは
  *    "Actor GitHub Actions integration must be part of the ruleset source or owner organization"
  *    で拒否される（2026-09-25実測）。
  *    そこでマージを実行する側（＝このリポジトリでは実質すべてClaude）をローカルで止める。
+ *    2026-10-18 に、master への定期 push をアプリ ryujin-bot に寄せた上で、ryujin-bot だけを bypass にした
+ *    ruleset を入れる判断になった。入った後も、--auto 以外のマージはこのフックが同じ集合を先に見る
+ *    （GitHub の拒否より前に、理由つきで止めるため）。
  *
  * 2. `--delete-branch` で worktree ごと消える、取り直しの効かないデータを守る。
  *
@@ -51,7 +59,40 @@ import {
   readLedger,
 } from "../lib/mergeOrder.js";
 
-const REQUIRED_CHECK = "verify";
+/**
+ * 必須チェック。ruleset「master-checks」の必須チェックと同じ集合（どちらかを変えたらもう片方も変える）。
+ * onFailure: 終わって成功以外のときの判定。e2e は録画に無い通信を本番へ素通しするため DB の状態で
+ * 落ちることがあり（ADR-0077）、止めずに確認を挟む。
+ */
+const REQUIRED_CHECKS = [
+  {
+    name: "verify",
+    onFailure: "deny",
+    duration: "実測で1分半程度",
+    failureNote:
+      "verify は verify-registry.json の tier=ci をまとめて実行しており、マイグレーション番号の重複・" +
+      "ADR番号の重複・sitemap登録漏れ等を検知します。内容を確認して直してからマージしてください",
+  },
+  {
+    name: "ml-tests",
+    onFailure: "deny",
+    duration: "scripts/ml/ を変えていなければ数十秒",
+    failureNote:
+      "ml-tests は scripts/ml/analogy/tests の pytest です。内容を確認して直してからマージしてください",
+  },
+  {
+    name: "e2e",
+    onFailure: "ask",
+    duration:
+      "3つに分けたshardが並行で走り、実測で約20〜37分。止まって終わらないときは " +
+      "node scripts/maintenance/e2e-rerun.js で再実行を判定できます",
+    failureNote:
+      "e2eは録画（HAR）の再生で決定的に実行するが、録画に無い通信は本番へ素通しするため、" +
+      "DBの状態で落ちることがあります（ADR-0077）。自動では止めませんが、コードの退行でないことを確認してから" +
+      "マージしてください（再実行の判定: node scripts/maintenance/e2e-rerun.js）",
+  },
+];
+export const REQUIRED_CHECK_NAMES = REQUIRED_CHECKS.map((c) => c.name);
 /** まだ結果が出ていない状態。落ちたのではないので「待て」に倒す。 */
 const RUNNING_STATES = new Set([
   "PENDING",
@@ -127,6 +168,7 @@ const gitIn = (args, cwd) => run("git", args, cwd);
  *   { kind: "branch", name } ブランチ名（gh でそのブランチのPRに解決する）
  *   { kind: "current" }      位置引数なし（現在のブランチのPR）
  *   { kind: "unresolved" }   番号がシェルの展開で決まる等、フックの時点では確定できない
+ * --auto / --disable-auto があれば、上に auto: true が付く。
  *
  * gh は位置引数の位置を問わないので `gh pr merge --merge 123` も有効。先頭だけ見ると
  * 番号を取り逃がし、カレントブランチの別のPRのチェック結果で判定してしまう。
@@ -147,25 +189,37 @@ function parseMergeArgs(args, currentUnknown) {
     .trim()
     .split(/\s+/)
     .filter(Boolean);
+  // --auto（自動マージの予約）・--disable-auto（予約の取り消し）は、その場ではマージしない
+  let auto = false;
+  let target = null;
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i];
     if (token.startsWith("-")) {
       const [name] = token.split("=");
+      if (name === "--auto" || name === "--disable-auto") auto = true;
       // `-b text` のように値が次のトークンに来る場合、その値を位置引数と読まない
       if (VALUE_OPTIONS.has(name) && !token.includes("=")) i += 1;
       continue;
     }
-    if (SHELL_EXPANSION.test(token)) return { kind: "unresolved" };
-    const byNumber = token.match(/^(\d+)$/);
-    if (byNumber) return { kind: "number", pr: byNumber[1] };
-    const byUrl = token.match(/^https?:\/\/\S*?\/pull\/(\d+)\/?$/);
-    if (byUrl) return { kind: "number", pr: byUrl[1] };
-    if (BRANCH_NAME.test(token)) return { kind: "branch", name: token };
-    return { kind: "unresolved" };
+    // 位置引数は最初の1つだけ読む。後ろのオプション（--auto 等）は読み続ける
+    if (target) continue;
+    target = readPositional(token);
   }
   // 位置引数なしは「現在のブランチのPR」だが、ループの本体の中や cd・git switch の後では、
   // フックが見る現在のブランチと実際に merge が走るブランチが一致しない
-  return currentUnknown ? { kind: "unresolved" } : { kind: "current" };
+  target ??= currentUnknown ? { kind: "unresolved" } : { kind: "current" };
+  return auto ? { ...target, auto } : target;
+}
+
+/** 位置引数1つをマージ対象として読む（形は parseMergeArgs）。 */
+function readPositional(token) {
+  if (SHELL_EXPANSION.test(token)) return { kind: "unresolved" };
+  const byNumber = token.match(/^(\d+)$/);
+  if (byNumber) return { kind: "number", pr: byNumber[1] };
+  const byUrl = token.match(/^https?:\/\/\S*?\/pull\/(\d+)\/?$/);
+  if (byUrl) return { kind: "number", pr: byUrl[1] };
+  if (BRANCH_NAME.test(token)) return { kind: "branch", name: token };
+  return { kind: "unresolved" };
 }
 
 /** コマンド中のすべての `gh pr merge` について、マージ対象を読む（形は parseMergeArgs）。 */
@@ -222,65 +276,68 @@ function respond(decision, reason) {
   process.exit(0);
 }
 
-/**
- * チェック一覧から判定する。止まる側も検証できるよう、ghの呼び出しとは分けてある
- * （「素通しだけ確かめて、止まることを一度も確かめていない」ゲートにしないため）。
- * 止める必要が無ければ null。
- */
-export function judgeChecks(pr, checks) {
-  if (!Array.isArray(checks)) return null;
-
-  const verify = checks.find((c) => c.name === REQUIRED_CHECK);
-  if (!verify) {
+/** 1つの必須チェックの判定。問題が無ければ null。 */
+function judgeOneCheck(pr, spec, check) {
+  if (!check) {
     return {
       decision: "ask",
       reason:
-        `PR #${pr} に品質ゲート（${REQUIRED_CHECK}）の結果がまだありません。` +
-        `Quality Gates が走り終わるのを待つか、待たない理由を述べてからマージしてください。`,
+        `PR #${pr} に必須チェック（${spec.name}）の結果がまだありません。` +
+        `ワークフローが走り終わるのを待つか、待たない理由を述べてからマージしてください（gh pr checks ${pr}）。`,
     };
   }
-  if (RUNNING_STATES.has(verify.state)) {
+  // BOA-769 D（2026-10-12〜）: e2e の実行中も待たせる。以前は素通しにしていたため、走り終わる前に
+  // マージできてしまった。手元のE2E全件実行をやめ、CIとこのガードだけでデグレを検知する運用のため
+  if (RUNNING_STATES.has(check.state)) {
     return {
       decision: "ask",
       reason:
-        `PR #${pr} の品質ゲート（${REQUIRED_CHECK}）はまだ実行中です（${verify.state}）。` +
-        `結果が出てからマージしてください（実測で1分半程度）。`,
+        `PR #${pr} の ${spec.name} はまだ実行中です（${check.state}）。` +
+        `結果が出てからマージしてください（${spec.duration}）。`,
     };
   }
-  if (verify.state !== "SUCCESS") {
+  if (check.state !== "SUCCESS") {
     return {
-      decision: "deny",
+      decision: spec.onFailure,
       reason:
-        `PR #${pr} の品質ゲート（${REQUIRED_CHECK}）が ${verify.state} です。` +
-        `verify は verify-registry.json の tier=ci をまとめて実行しており、マイグレーション番号の重複・` +
-        `ADR番号の重複・sitemap登録漏れ等を検知します。内容を確認して直してからマージしてください` +
+        `PR #${pr} の ${spec.name} が ${check.state} です。${spec.failureNote}` +
         `（gh pr checks ${pr}）。`,
     };
   }
-  const e2e = checks.find((c) => c.name === "e2e");
-  // BOA-769 D（2026-10-12〜）: 以前はRUNNING_STATESを素通し（何もしない）にしていたが、
-  // それだと走り終わる前にマージできてしまう。実際のPR #843（2026-09-25）でIN_PROGRESSを
-  // 「赤い」と誤判定した問題はverifyと同じ「ask」で両立する（待たせるだけで止めない）。
-  // 手元でのE2E全件実行をやめ、CIのshard実行（約20分）と、このガードだけでデグレを
-  // 検知する運用に変えたため、ここで待たせる意味が増した（AGENTS.md「検証・テスト」）。
-  if (e2e && RUNNING_STATES.has(e2e.state)) {
-    return {
-      decision: "ask",
-      reason:
-        `PR #${pr} の e2e はまだ実行中です（${e2e.state}）。3つに分けたshardが並行で走り、` +
-        `実測で約20分かかります（BOA-769）。結果が出てからマージしてください（gh pr checks ${pr}）。`,
-    };
-  }
-  if (e2e && e2e.state !== "SUCCESS") {
-    return {
-      decision: "ask",
-      reason:
-        `PR #${pr} の e2e が ${e2e.state} です。e2eは録画（HAR）の再生で決定的に実行するが、` +
-        `録画に無い通信は本番へ素通しするため、DBの状態で落ちることがあります（ADR-0077）。` +
-        `自動では止めませんが、コードの退行でないことを確認してからマージしてください。`,
-    };
-  }
   return null;
+}
+
+/**
+ * チェック一覧から判定する。止まる側も検証できるよう、ghの呼び出しとは分けてある
+ * （「素通しだけ確かめて、止まることを一度も確かめていない」ゲートにしないため）。
+ * 必須チェックを全部見て、deny が1つでもあれば deny、無ければ最初の ask を返す。止める必要が無ければ null。
+ */
+export function judgeChecks(pr, checks) {
+  if (!Array.isArray(checks)) return null;
+  const results = REQUIRED_CHECKS.map((spec) =>
+    judgeOneCheck(
+      pr,
+      spec,
+      checks.find((c) => c.name === spec.name),
+    ),
+  ).filter(Boolean);
+  return results.find((r) => r.decision === "deny") ?? results[0] ?? null;
+}
+
+/**
+ * `gh api repos/{owner}/{repo}/rules/branches/master` の結果に、REQUIRED_CHECKS が全部
+ * 必須チェックとして入っているか。入っていれば --auto のマージは GitHub がチェックを待つ。
+ * 配列でない（API の失敗等）・足りないときは false（ローカルで検査する側に倒す）。
+ */
+export function rulesetEnforcesChecks(rules) {
+  if (!Array.isArray(rules)) return false;
+  const contexts = new Set(
+    rules
+      .filter((r) => r?.type === "required_status_checks")
+      .flatMap((r) => r.parameters?.required_status_checks ?? [])
+      .map((c) => c?.context),
+  );
+  return REQUIRED_CHECK_NAMES.every((name) => contexts.has(name));
 }
 
 /** 台帳を読む。無い・壊れている場合は空の台帳（台帳の不調で作業は止めない。CLIの list で気づける）。 */
@@ -333,6 +390,17 @@ function checkMergeOrder(pr, ledger) {
     if (state) states[n] = state;
   }
   return judgeMergeOrder(pr, prerequisites, states);
+}
+
+/** master に効いている ruleset の規則。読めなければ null。 */
+function fetchMasterRules() {
+  const raw = gh(["api", "repos/{owner}/{repo}/rules/branches/master"]);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 }
 
 function checkQualityGate(pr) {
@@ -423,20 +491,29 @@ function main() {
     typeof payload.cwd === "string" && existsSync(payload.cwd)
       ? payload.cwd
       : repoRoot;
-  const resolved = extractMergeTargets(command).map((t) =>
-    resolveTarget(t, cwd),
-  );
+  const targets = extractMergeTargets(command);
+  const resolved = targets.map((t) => resolveTarget(t, cwd));
   const ledger = loadLedger();
   const unresolved = judgeUnresolved(resolved, ledger);
   if (unresolved) respond(unresolved.decision, unresolved.reason);
 
+  // --auto でチェックを GitHub に任せてよいのは、ruleset が必須チェックを全部持っているときだけ。
+  // ruleset の読み込みは --auto があるときだけ行う（ふだんのマージに gh の呼び出しを足さない）
+  const prs = [...new Set(resolved.filter(Boolean))];
+  const autoOnly = (pr) =>
+    targets.every((t, i) => resolved[i] !== pr || t.auto === true);
+  const rulesEnforce =
+    prs.some(autoOnly) && rulesetEnforcesChecks(fetchMasterRules());
+
   // 台帳に制約が無ければ、確定できなかったものは従来どおり検査せずに通す
-  for (const pr of new Set(resolved.filter(Boolean))) {
+  for (const pr of prs) {
     const order = checkMergeOrder(pr, ledger);
     if (order) respond(order.decision, order.reason);
 
-    const gate = checkQualityGate(pr);
-    if (gate) respond(gate.decision, gate.reason);
+    if (!(rulesEnforce && autoOnly(pr))) {
+      const gate = checkQualityGate(pr);
+      if (gate) respond(gate.decision, gate.reason);
+    }
 
     const data = checkWorktreeData(pr, command);
     if (data) respond(data.decision, data.reason);

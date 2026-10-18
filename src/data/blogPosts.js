@@ -93,10 +93,6 @@ export const getPostsForLang = (lang) => {
     .map((post) => ({ ...post, ...config.getOverride(post.id) }));
 };
 
-// Get posts by category
-export const getPostsByCategory = (category) =>
-  blogPosts.filter((post) => post.category === category);
-
 // Get post by ID
 export const getPostById = (id) => blogPosts.find((post) => post.id === id);
 
