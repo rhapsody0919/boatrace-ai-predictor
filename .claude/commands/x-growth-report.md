@@ -162,7 +162,7 @@ node scripts/analysis/x-trend-summary.js
 
 ### 5. 下書き・投稿キューの消化状況
 
-動画投稿用のキャプション下書きファイル（`sns-video-studio/captions/x-*-video-captions.md`等、プロジェクトによってファイル名は変わる）があれば同様に未消化件数を確認する。未消化が多い場合は他の施策より優先度を上げて報告する（`/growth-pdca`と同じ方針）。
+動画投稿用のキャプション下書きファイル（`sns-video-studio/captions/x-*-video-captions.md`等、プロジェクトによってファイル名は変わる）があれば、未消化の件数を確認する。sns-hub の X の下書きのうち、承認・送信されずに溜まっているものも数える。未消化が多い場合は他の施策より優先度を上げて報告する（`/growth-pdca`と同じ方針）。
 
 **リプライ・引用リツイート戦略の実行率**: `sns-video-studio/x-reply-sent-log.md`があれば、直近7〜30日の送信件数を確認し、`x-operations-playbook.md`の目標（1日10〜20件）に対する実行率を算出する。この施策は4週間ごとに継続/縮小/拡大を判断する設計のため、前回判定から4週間以上経過している場合は必ずこの判断を行い、結果を`docs/operation/sns-marketing-strategy.md`の意思決定ログに追記する。
 

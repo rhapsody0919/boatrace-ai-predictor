@@ -64,7 +64,7 @@ export async function getProposedInsights() {
 }
 
 /**
- * 新規insightを提案する（/x-growth-report・/tiktok-growth-reportからの登録用）
+ * 新規insightを提案する（/x-growth-report・/note-growth-report からの登録用）
  * @param {{platform?: string, language?: string, format?: string, insightText: string, evidence?: string, source: string, researchMethod?: string}} payload
  */
 export async function createInsight({
