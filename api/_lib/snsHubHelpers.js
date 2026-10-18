@@ -461,21 +461,45 @@ export async function fireRoutine(envPrefix, payload) {
   return { fired: true, sessionUrl: result.claude_code_session_url };
 }
 
-const LINEAR_API_URL = "https://api.linear.app/graphql";
+// 検証（verify-sns-spec-change-linear-failure.js）で模擬サーバーへ向けるため、環境変数で差し替えられる
+const LINEAR_API_URL =
+  process.env.LINEAR_API_URL || "https://api.linear.app/graphql";
 const CONTENT_QUALITY_LABEL = "content-quality";
 
+/**
+ * HTTP のエラー・GraphQL の errors はどちらも例外にする。例外の linearCode に
+ * Linear のエラーコード（extensions.code、例 USAGE_LIMIT_EXCEEDED）を入れ、
+ * 呼び出し側が無料枠の上限を見分けられるようにする。以前は HTTP 400 で本文を読まずに
+ * 捨て、message だけを拾っていたため、上限が原因だと分からなかった（2026-10-18 調査）
+ */
 async function linearGraphqlRequest(apiKey, query, variables) {
   const response = await fetch(LINEAR_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: apiKey },
     body: JSON.stringify({ query, variables }),
   });
-  if (!response.ok) {
-    throw new Error(`Linear API error: ${response.status}`);
+  const body = await response.text();
+  let json;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    throw new Error(
+      `Linear API error: HTTP ${response.status}: JSON でない応答`,
+    );
   }
-  const json = await response.json();
-  if (json.errors) {
-    throw new Error(json.errors.map((e) => e.message).join(", "));
+  if (json.errors?.length) {
+    const summary = json.errors
+      .map((e) => [e.extensions?.code, e.message].filter(Boolean).join(": "))
+      .join(" / ");
+    const error = new Error(
+      `Linear API error（HTTP ${response.status}）: ${summary}`,
+    );
+    error.linearCode =
+      json.errors.find((e) => e.extensions?.code)?.extensions.code ?? null;
+    throw error;
+  }
+  if (!response.ok) {
+    throw new Error(`Linear API error: HTTP ${response.status}`);
   }
   return json.data;
 }

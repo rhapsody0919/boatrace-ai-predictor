@@ -231,13 +231,15 @@ export default function DraftCard({
                         : REVISION_REASONS
                     }
                     onCancel={() => setOpenPanel(null)}
-                    onSubmit={(payload) => {
+                    onSubmit={async (payload) => {
                       if (payload.category === "spec") {
-                        onRequestSpecChange({
+                        // 起票できなかったときは閉じない（入力した本文を欄に残す）
+                        const closePanel = await onRequestSpecChange({
                           approverId: selectedApproverId,
                           platform: draft.platform,
                           message: payload.freeText,
                         });
+                        if (closePanel) setOpenPanel(null);
                       } else {
                         onRevise({
                           approverId: selectedApproverId,
@@ -246,8 +248,8 @@ export default function DraftCard({
                           saveAsInsight: payload.permanent,
                           scope: payload.scope,
                         });
+                        setOpenPanel(null);
                       }
-                      setOpenPanel(null);
                     }}
                   />
                 )}
@@ -496,6 +498,8 @@ export function RevisionPanel({
   const [saveAsInsight, setSaveAsInsight] = useState(false); // topic-reject用
   const [permanent, setPermanent] = useState(false); // draft-feedback用（旧saveAsInsight相当）
   const [scope, setScope] = useState("channel"); // "channel" | "all"
+  // 送信の応答を待つ間の二重送信を防ぐ（制作仕様の変更要望は応答を待ってから閉じるため）
+  const [submitting, setSubmitting] = useState(false);
 
   function toggleReason(code) {
     setReasonCodes((prev) =>
@@ -642,9 +646,11 @@ export function RevisionPanel({
         </button>
         <button
           className="revision-submit"
-          disabled={!canSubmit}
-          onClick={() =>
-            onSubmit({
+          disabled={!canSubmit || submitting}
+          onClick={async () => {
+            setSubmitting(true);
+            try {
+              await onSubmit({
               category: isDraftFeedback ? category : undefined,
               reasonCodes,
               freeText,
@@ -655,8 +661,11 @@ export function RevisionPanel({
               saveAsInsight: saveAsInsight && hasFreeText,
               permanent: permanent && hasFreeText,
               scope,
-            })
-          }
+              });
+            } finally {
+              setSubmitting(false);
+            }
+          }}
         >
           送信
         </button>
