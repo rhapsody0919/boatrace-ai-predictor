@@ -232,11 +232,14 @@ test("hq のフォルダを受け取り、X・YouTube を自動送信の承認�
       ["youtube", "queued", true],
     ],
   );
-  // 締切 20:36 の60分前は 19:36。今（19:20）から5分後の 19:25 より遅い
-  assert.ok(
-    jobs.every(
-      (j) => j.scheduled_at.toISOString() === "2037-10-18T10:36:00.000Z",
-    ),
+  // 締切 20:36 の60分前は 19:36。今（19:20）から5分後の 19:25 より遅い。YouTube は X の4分後の 19:40
+  // （送信の cron の1回の実行で両方を送ると、Chromium の確認の上限6回を超えるため。2026-10-18 レビューの指摘）
+  assert.deepEqual(
+    jobs.map((j) => [j.platform, j.scheduled_at.toISOString()]),
+    [
+      ["x", "2037-10-18T10:36:00.000Z"],
+      ["youtube", "2037-10-18T10:40:00.000Z"],
+    ],
   );
   // 失効は締切の30分前（expiry_minutes=30 と同じ）
   assert.ok(
@@ -319,17 +322,17 @@ test("P0 がある・機械の検査が通っていない・URL が別のレー�
   assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
 });
 
-test("締切の40分前を過ぎた・中止のレースは受け取らない。--dry-run は書かない", async () => {
+test("締切の45分前を過ぎた・中止のレースは受け取らない。--dry-run は書かない", async () => {
   const late = await push(bundle(), {
     now: new Date("2037-10-18T19:57:00+09:00"),
   });
-  assert.match(late.reasons.join(), /40分前/);
+  assert.match(late.reasons.join(), /45分前/);
   const dry = await push(bundle(), { dryRun: true });
   assert.equal(dry.dryRun, true);
   assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
   await db.query("UPDATE races SET cancellation_status='confirmed'");
   assert.match((await push()).reasons.join(), /中止/);
-  // 60分前を過ぎて40分前より前なら、送るのは今から5分後
+  // 60分前を過ぎて45分前より前なら、送るのは今から5分後
   assert.equal(
     schedule("2037-10-18T11:36:00.000Z", new Date("2037-10-18T19:45:00+09:00"))
       .send_at,

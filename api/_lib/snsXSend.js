@@ -105,6 +105,7 @@ const HTTP_KINDS = {
 export function holdReasonOf(error, stage) {
   const message = String(error?.message ?? "");
   if (/^[a-z_]{1,64}$/.test(message)) return message;
+  if (error?.dbRejected) return `${stage}_db_rejected`.slice(0, 64);
   const status = Number(message.match(/HTTP (\d{3})/)?.[1]);
   const kind = status
     ? (HTTP_KINDS[status] ?? (status >= 500 ? "server_error" : "http_error"))
@@ -131,7 +132,14 @@ export async function runXSendJob(
   // どの段階で落ちたか（保留の理由に入れる）
   let stage = "precheck";
   const check = async (action) => {
-    const current = await store.transition(id, action);
+    let current;
+    try {
+      current = await store.transition(id, action);
+    } catch (error) {
+      // DB（RPC）が拒否した。媒体・X の失敗と区別する（「段階_db_rejected」）
+      error.dbRejected = true;
+      throw error;
+    }
     if (current.state === "held") throw new Error(current.error_code);
     return current;
   };

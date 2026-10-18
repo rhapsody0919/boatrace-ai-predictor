@@ -29,13 +29,18 @@ import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
 
 export const FULL_PICTURE_FORMAT = "full_picture";
 export const FILES = { x: "full-x.mp4", youtube: "full-youtube.mp4" };
-// X の動画は送信の契約（snsXSend.js）と同じ 32 MiB まで。YouTube は 500 MB まで
-export const MAX_BYTES = { x: 32 * 1024 * 1024, youtube: 500 * 1024 * 1024 };
+// 動画は送信の契約（snsXSend.js の X_MEDIA_MAX_BYTES・YOUTUBE_MEDIA_MAX_BYTES、youtubeQueueAdapter）と同じ 32 MiB まで
+export const MAX_BYTES = { x: 32 * 1024 * 1024, youtube: 32 * 1024 * 1024 };
 export const NOTIFY_BEFORE_MIN = 180;
 export const VETO_BEFORE_MIN = 60;
 export const EXPIRES_BEFORE_MIN = 30;
-export const LATEST_BEFORE_MIN = 40;
+export const LATEST_BEFORE_MIN = 45;
 export const SEND_GRACE_MIN = 5;
+/**
+ * YouTube は X の4分後に送る。送信の cron（2分ごと）の1回の実行で X と YouTube を両方送ると、送る前の表示の確認（Chromium）が
+ * 上限の6回を超え（X 3回・YouTube 6回）、YouTube が public_check_budget で非公開のまま残る（2026-10-18 レビューの指摘）
+ */
+export const YOUTUBE_OFFSET_MIN = 4;
 const RACE_URL =
   /https:\/\/www\.boat-ai\.jp\/race\/([0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2})/;
 const STOP_SQL =
@@ -113,6 +118,14 @@ export function schedule(deadlineAt, now) {
   };
 }
 
+/** チャネルごとの送る時刻（YouTube は X の4分後） */
+export const sendAtOf = (when, channel) =>
+  channel === "youtube"
+    ? new Date(
+        Date.parse(when.send_at) + YOUTUBE_OFFSET_MIN * 60000,
+      ).toISOString()
+    : when.send_at;
+
 /** 下書きの行（純粋関数）。public_url は送る直前の表示の確認に使う（UTM・タブ以外の query を付けない） */
 export function draftRows(bundle, { revision, paths, when, observedAt }) {
   const raceUrl = `https://www.boat-ai.jp/race/${bundle.race_id}?tab=sonar`;
@@ -126,7 +139,6 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
     publish_blocked: false,
     publication_hold_reasons: [],
     send_lane: "A",
-    scheduled_at: when.send_at,
   };
   const queue = (channel) => ({
     deadline_at: when.deadline_at,
@@ -159,6 +171,7 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
   return {
     x: {
       ...common,
+      scheduled_at: sendAtOf(when, "x"),
       platform: "x",
       title: bundle.youtube_full.title,
       caption_text: bundle.x_text,
@@ -167,6 +180,7 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
     },
     youtube: {
       ...common,
+      scheduled_at: sendAtOf(when, "youtube"),
       platform: "youtube",
       title: bundle.youtube_full.title,
       caption_text: bundle.youtube_full.description,
@@ -279,9 +293,9 @@ export async function pushFullPicture(
         p_draft_id: draft.id,
         p_approver_id: control.auto_approver_id,
         p_snapshot: snapshot,
-        p_scheduled_at: when.send_at,
+        p_scheduled_at: sendAtOf(when, channel),
       });
-      out[channel].send_at = when.send_at;
+      out[channel].send_at = sendAtOf(when, channel);
     } catch (error) {
       await store
         .updateItem(item.id, "notified", { state: "manual" })
