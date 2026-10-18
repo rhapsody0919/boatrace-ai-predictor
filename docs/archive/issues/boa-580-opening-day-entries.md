@@ -86,7 +86,7 @@ FROM race_entries WHERE race_id LIKE '2025-12-03-%';
 
 ### 2. 書き込み
 
-`docs/issues/boa-580-opening-day-entries.sql` を、Supabase の SQL エディタで丸ごと実行する（BEGIN〜COMMIT の1ブロック。件数が 648・108 でなければ RAISE で全体を取り消す）。
+`docs/archive/issues/boa-580-opening-day-entries.sql` を、Supabase の SQL エディタで丸ごと実行する（BEGIN〜COMMIT の1ブロック。件数が 648・108 でなければ RAISE で全体を取り消す）。
 
 ### 3. 事後の確認（読み取り）
 
@@ -106,4 +106,4 @@ FROM race_entries WHERE race_id LIKE '2025-12-03-%';
 
 ## 元に戻す
 
-`docs/issues/boa-580-opening-day-entries-rollback.sql` を実行する。生成時点の値に戻る。updated_at は戻らず、実行時刻になる。
+`docs/archive/issues/boa-580-opening-day-entries-rollback.sql` を実行する。生成時点の値に戻る。updated_at は戻らず、実行時刻になる。

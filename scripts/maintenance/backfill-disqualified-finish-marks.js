@@ -247,7 +247,7 @@ async function main() {
     : DEFAULT_MAX_TARGET_RACES;
   if (raceCount > maxTargetRaces) {
     throw new Error(
-      `対象が ${raceCount}レースで、上限 ${maxTargetRaces} を超えます。導けるレースの official_row を SQL で埋める前に実行していないか確かめる（docs/issues/boa-667-official-row-backfill.md）。意図した件数なら --max-target-races で上限を上げる`,
+      `対象が ${raceCount}レースで、上限 ${maxTargetRaces} を超えます。導けるレースの official_row を SQL で埋める前に実行していないか確かめる（docs/archive/issues/boa-667-official-row-backfill.md）。意図した件数なら --max-target-races で上限を上げる`,
     );
   }
   console.log(

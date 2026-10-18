@@ -114,7 +114,7 @@ node --env-file=.env.local scripts/maintenance/backfill-kb-recent-results.js pla
 
 ### 3.2 races.created_atのばらつき
 
-比較のため、対象34会場日の`races.created_at`（JST換算）を確認したところ、07時台〜17時台まで分散しており、特定の時刻帯（例: 深夜0〜4時台）に集中していなかった。[`docs/issues/races-opening-day-missing.md`](./races-opening-day-missing.md)が特定した「日付未ロールオーバーの`race/index`を深夜に取得してしまう」バグ（`getTodayVenues()`、PR #625で対応済み）とは**発生タイミングの特徴が異なる**。両者は「その会場の開催状況を当日基準で正しく判定できていない」という点で似ているが、同一のコードパスと断定はできない。
+比較のため、対象34会場日の`races.created_at`（JST換算）を確認したところ、07時台〜17時台まで分散しており、特定の時刻帯（例: 深夜0〜4時台）に集中していなかった。[`docs/issues/races-opening-day-missing.md`](../../issues/races-opening-day-missing.md)が特定した「日付未ロールオーバーの`race/index`を深夜に取得してしまう」バグ（`getTodayVenues()`、PR #625で対応済み）とは**発生タイミングの特徴が異なる**。両者は「その会場の開催状況を当日基準で正しく判定できていない」という点で似ているが、同一のコードパスと断定はできない。
 
 ## 4. 自社DB内で複製元を確認できない唯一のケース
 
@@ -155,7 +155,7 @@ node --env-file=.env.local scripts/maintenance/backfill-kb-recent-results.js pla
 | sns_campaign_entries | 0 | ON DELETE無し（RESTRICT相当） |
 | mycroft_predictions / poirot_predictions / watson_predictions | 0 | racesへのFK無し |
 
-**全ての子テーブルで実データは0件、またはCASCADE設定済み**。`sns_campaign_entries`（RESTRICT相当）・`mycroft/poirot/watson_predictions`（FK無し、孤児化リスクあり）のいずれも該当0件であることを確認済みのため、`races`からの単純DELETEで安全に連鎖削除でき、[`fix-opening-day-race-id-date.js`](../../scripts/maintenance/fix-opening-day-race-id-date.js)のような退避手順（UNIQUE制約回避等）は不要（新規行のINSERTがそもそも発生しないため）。
+**全ての子テーブルで実データは0件、またはCASCADE設定済み**。`sns_campaign_entries`（RESTRICT相当）・`mycroft/poirot/watson_predictions`（FK無し、孤児化リスクあり）のいずれも該当0件であることを確認済みのため、`races`からの単純DELETEで安全に連鎖削除でき、[`fix-opening-day-race-id-date.js`](../../../scripts/maintenance/fix-opening-day-race-id-date.js)のような退避手順（UNIQUE制約回避等）は不要（新規行のINSERTがそもそも発生しないため）。
 
 `predictions`は408レース全てに`standard`モデルの予測が生成されていた（`is_shadow`等の値は未確認、削除で連動して消える）。**`race_results`が無いため`is_hit_*`列は当然NULLのままであり、的中率集計（`race_results!inner`で結合する設計）には現状も混入していない**と推定されるが、断定するには`calculate-accuracy.js`系のクエリを個別に確認する必要がある（本調査では未実施）。
 

@@ -1,6 +1,6 @@
 # 「幻の開催日」パターンの範囲拡大確認と現行パイプラインでの再現性調査（BOA-414）
 
-調査日: 2026-09-25。読み取り専用調査（本番DBへの書き込みは無し）。K/Bアーカイブへの新規アクセスは、既存アーカイブに無かった2026-09-21〜23の3日分（K/B計6リクエスト、夜間窓外のため`--window=any`で明示許可）のみ行った。BOA-407（[`venue-not-in-k-phantom-race-days.md`](./venue-not-in-k-phantom-race-days.md)、PR #818）の残課題（同doc §6.3）を引き継ぐ。
+調査日: 2026-09-25。読み取り専用調査（本番DBへの書き込みは無し）。K/Bアーカイブへの新規アクセスは、既存アーカイブに無かった2026-09-21〜23の3日分（K/B計6リクエスト、夜間窓外のため`--window=any`で明示許可）のみ行った。BOA-407（[`venue-not-in-k-phantom-race-days.md`](../archive/issues/venue-not-in-k-phantom-race-days.md)、PR #818）の残課題（同doc §6.3）を引き継ぐ。
 
 ## 1. 結論
 
@@ -39,7 +39,7 @@ ORDER BY a.race_date, a.venue_code;
 
 境界チェックとして、`fp`の集計開始日を2026-03-18（14日分のバッファ）まで広げ、`day`側だけ2026-04-01〜04-14に絞った再実行も行い、結果が変わらないことを確認した（3月末のデータを起点に4月頭で発覚するケースの見落としが無いことの確認）。
 
-この方法は「12レース×6艇=72値の完全一致は偶然では起こらない」という前提（[`venue-not-in-k-phantom-race-days.md`](./venue-not-in-k-phantom-race-days.md) §3と同じ）に立つ。ヒットした全件について、K-fileと突き合わせて「本当に複製か」「複製の方向（どちらが本物でどちらが偽物か）」を個別に確認した。K-fileアーカイブ（`data/kb-archive/parsed/`、[`venue-not-in-k-phantom-race-days.md`](./venue-not-in-k-phantom-race-days.md)と同じ中間形式）は2026-09-20までパース済みのものが既存だったため、9月分のヒット（2026-09-21〜23）だけ新規にK/Bをダウンロード・パースした（新規の公式サイトアクセス6件、逐次3秒以上間隔、403/429/503は0回）。
+この方法は「12レース×6艇=72値の完全一致は偶然では起こらない」という前提（[`venue-not-in-k-phantom-race-days.md`](../archive/issues/venue-not-in-k-phantom-race-days.md) §3と同じ）に立つ。ヒットした全件について、K-fileと突き合わせて「本当に複製か」「複製の方向（どちらが本物でどちらが偽物か）」を個別に確認した。K-fileアーカイブ（`data/kb-archive/parsed/`、[`venue-not-in-k-phantom-race-days.md`](../archive/issues/venue-not-in-k-phantom-race-days.md)と同じ中間形式）は2026-09-20までパース済みのものが既存だったため、9月分のヒット（2026-09-21〜23）だけ新規にK/Bをダウンロード・パースした（新規の公式サイトアクセス6件、逐次3秒以上間隔、403/429/503は0回）。
 
 ### 2.2 「現行パイプラインでの再現性確認」（やること2）: コードの通時的比較
 
@@ -161,7 +161,7 @@ ORDER BY a.race_date, a.venue_code;
 
 ## 7. 参考
 
-- BOA-407 / [`venue-not-in-k-phantom-race-days.md`](./venue-not-in-k-phantom-race-days.md)（PR #818、未マージ）
+- BOA-407 / [`venue-not-in-k-phantom-race-days.md`](../archive/issues/venue-not-in-k-phantom-race-days.md)（PR #818、未マージ）
 - BOA-407削除実装: [`delete-phantom-race-days.js`](../../scripts/maintenance/delete-phantom-race-days.js)（PR #819、マージ済み）
 - [`races-opening-day-missing.md`](./races-opening-day-missing.md)（PR #625による`hd=`修正の経緯、順延パターンの初出）
 - `scripts/scrape-to-json.js`（現行の`getTodayVenues`・`scrapeVenue`）、`scripts/lib/racesInit/job.js`（現行の朝の初期化ジョブ）、`scripts/daily/update-race-info.js`（`runForRaces`・`fetchRaceInfoDetailed`）
