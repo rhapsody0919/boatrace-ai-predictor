@@ -1,6 +1,6 @@
 # スクレイピング仕様と既知の課題
 
-> **関連ドキュメント**: [DATA_ACQUISITION_STRATEGY.md](../proposal/DATA_ACQUISITION_STRATEGY.md)
+> **関連ドキュメント**: [DATA_ACQUISITION_STRATEGY.md](../archive/data-acquisition-strategy.md)
 
 ---
 

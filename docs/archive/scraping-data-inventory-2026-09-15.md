@@ -6,7 +6,7 @@
 
 ## 分類の観点
 
-各データ項目を3つの軸で評価する（[data-readiness-and-scraping-optimization-2026-09-15.md](../competitor-kyoteibiyori/data-readiness-and-scraping-optimization-2026-09-15.md)で定義した軸を踏襲）:
+各データ項目を3つの軸で評価する（[data-readiness-and-scraping-optimization-2026-09-15.md](data-readiness-and-scraping-optimization-2026-09-15.md)で定義した軸を踏襲）:
 
 - **①網羅性**: 取得しているか（✅取得済み/⚠️部分的/❌未取得）
 - **③正確性**: 取れた値が合っているか（既知バグの有無）
@@ -112,7 +112,7 @@
 | 体重履歴一覧表（PDF） | 宮島のみ確認 | ❌未取得 | T5 | BOA-288関連 |
 | 兵庫支部選手プロフィール（出身地・生年月日・血液型・インタビュー） | 尼崎 | 中央の`racer_profiles`と重複、インタビュー本文のみ新規性あり | T5 | 新規性低い、優先度低 |
 
-**技術的制約**: 24会場は複数のCMSベンダーに分かれる（`/modules/`パス構成の共通CMS群と、レガシーな静的HTML/ASP構成群）。単一スクレイパーでは対応できず、CMSベンダー単位でのテンプレート共通化を検討する余地がある（[data-coverage-comparison-2026-09-14.md](../competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md)参照）。
+**技術的制約**: 24会場は複数のCMSベンダーに分かれる（`/modules/`パス構成の共通CMS群と、レガシーな静的HTML/ASP構成群）。単一スクレイパーでは対応できず、CMSベンダー単位でのテンプレート共通化を検討する余地がある（[data-coverage-comparison-2026-09-14.md](../proposal/competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md)参照）。
 
 ## D. 現在の実行基盤の全体像（タイミング要件とのクロス集計）
 
@@ -138,7 +138,7 @@
 | モーター一覧（`motor/`） | 検索フォームのみ、レース詳細ページのモータ情報タブ調査（BOA-308関連）と同種のデータと判断、新規性なし |
 | まとめニュース（`news/`） | 外部スポーツ紙の選手コメント記事の集約。構造化データではなく、[BOA-273](https://linear.app/boat-ai/issue/BOA-273)（選手コメントのAI言語化検討）で既に扱っているテキスト系情報と同種 |
 | 開催予定（`schedule/`） | 未確認（低価値と判断しスキップ。自社の開催スケジュール取得と重複する可能性が高いため） |
-| 出目分析（`tools/tools.php`） | 未確認（低価値と判断しスキップ。出目ランキングは派生指標であり[data-coverage-comparison-2026-09-14.md](../competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md)で「独自加工指標」として既に整理済み） |
+| 出目分析（`tools/tools.php`） | 未確認（低価値と判断しスキップ。出目ランキングは派生指標であり[data-coverage-comparison-2026-09-14.md](../proposal/competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md)で「独自加工指標」として既に整理済み） |
 
 **結論**: 選手関連ページ（選手個別・F休み期間）に新規性の高い生データ（能力指数・フライング回数・出遅れ回数）が集中していた。場情報・モーター一覧・まとめニュース・データ分析の大部分は、既存の`race_results`等から算出できる派生指標か、既にBOA-294/BOA-273等で捕捉済みの内容だった。
 

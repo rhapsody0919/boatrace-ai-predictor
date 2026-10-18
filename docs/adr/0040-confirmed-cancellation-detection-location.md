@@ -4,7 +4,7 @@
 採用
 
 ## 背景
-BOA-254 FR2（発走後の確定検知）をどこに実装するか。調査の結果、`scripts/daily/scrape-results.js`の`run()`は`getRacesAfterStart(schedule, 5)`で「発走5分後〜90分後（`maxMinutesAfter`のデフォルト値）」のレースだけを結果取得対象にしており、90分を過ぎると対象から外れ、結果が来ないレースは誰にも気づかれず`race_results`未作成のまま放置される実装になっていることが判明した（`docs/proposal/DATA_FLOW_COMPARISON.md`が指摘していた「永遠に未取得のまま残る」という既知の課題の直接の原因）。
+BOA-254 FR2（発走後の確定検知）をどこに実装するか。調査の結果、`scripts/daily/scrape-results.js`の`run()`は`getRacesAfterStart(schedule, 5)`で「発走5分後〜90分後（`maxMinutesAfter`のデフォルト値）」のレースだけを結果取得対象にしており、90分を過ぎると対象から外れ、結果が来ないレースは誰にも気づかれず`race_results`未作成のまま放置される実装になっていることが判明した（`docs/archive/data-flow-comparison.md`が指摘していた「永遠に未取得のまま残る」という既知の課題の直接の原因）。
 
 ## 決定
 新規バッチスクリプトを作らず、既存`scripts/daily/scrape-results.js`の`run()`を拡張する。具体的には、同じ`schedule`（`getRaceSchedule()`の返り値）を使って「発走90分超・`race_results`行が存在しない・`cancellation_status`がまだ`confirmed`でない」レースを抽出し、`races.cancellation_status = 'confirmed'`を書き込む処理を追加する。90分という閾値は、既存の`getRacesAfterStart`のデフォルト`maxMinutesAfter`とそのまま一致させる。

@@ -7,7 +7,7 @@
 関連: [BOA-222](https://linear.app/boat-ai/issue/BOA-222)（本日の成績サマリーの移設を統合）/ [BOA-263](https://linear.app/boat-ai/issue/BOA-263)・[BOA-268](https://linear.app/boat-ai/issue/BOA-268)（既存のテーブル実装。クロス集計なのは前者のみ、FR-0参照）/ [ADR-0067](../../adr/0067-official-site-content-redisplay-policy.md)（公式コンテンツの再表示）/ [ADR-0066](../../adr/0066-scraping-execution-consolidation-to-vercel.md)
 
 入力資料（新規調査は不要。既存の棚卸しを実装仕様に落とすのが本specの役割）:
-- [race-detail-page-tab-comparison-2026-09-15.md](../../proposal/competitor-kyoteibiyori/race-detail-page-tab-comparison-2026-09-15.md) — 日和8タブ×龍神レーダーのタブ別差分（データ欠落／表示欠落／UI改善余地の3区分）
+- [race-detail-page-tab-comparison-2026-09-15.md](../../archive/race-detail-page-tab-comparison-2026-09-15.md) — 日和8タブ×龍神レーダーのタブ別差分（データ欠落／表示欠落／UI改善余地の3区分）
 - [data-coverage-comparison-2026-09-14.md](../../proposal/competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md) — 日和163項目カタログ×公式×龍神レーダーの3方向比較
 - [data-catalog.md](../scraping-vercel-consolidation/data-catalog.md) — 公式サイトの全項目と現状の充足率（N1〜N31）
 

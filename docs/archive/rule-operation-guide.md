@@ -3,8 +3,8 @@
 会場別ルールの追加・削除・監視に関する運用ルール。
 
 > **関連ドキュメント:**
-> - [system-specification.md](../reference/system-specification.md) - 技術仕様
-> - [analysis-guide.md](../reference/analysis-guide.md) - 分析ガイド（ルール発掘手順）
+> - [system-specification.md](system-specification.md) - 技術仕様
+> - [analysis-guide.md](analysis-guide.md) - 分析ガイド（ルール発掘手順）
 
 ---
 
@@ -232,7 +232,7 @@ const TOKUYAMA_RULES = [
 - ルール適用数: 3  ← これが「レース数」として表示される
 ```
 
-詳細は [system-specification.md](../reference/system-specification.md) の「指標の計算仕様」を参照。
+詳細は [system-specification.md](system-specification.md) の「指標の計算仕様」を参照。
 
 ---
 

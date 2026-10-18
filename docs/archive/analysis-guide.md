@@ -344,5 +344,5 @@ git push origin master
 ## 関連ドキュメント
 
 - [system-specification.md](./system-specification.md) - システム仕様書
-- [database-design.md](./database-design.md) - データベース設計書
-- [RULE_OPERATION_GUIDE.md](../operation/RULE_OPERATION_GUIDE.md) - ルール運用ガイド
+- [database-design.md](../reference/database-design.md) - データベース設計書
+- [RULE_OPERATION_GUIDE.md](rule-operation-guide.md) - ルール運用ガイド

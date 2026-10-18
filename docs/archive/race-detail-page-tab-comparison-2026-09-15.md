@@ -2,13 +2,13 @@
 
 ## 目的・背景
 
-レース詳細ページ（`RaceDetailPage.jsx`）のUI/UXを、ユーザーが使い慣れているボートレース日和の出走表ページ（`race_shusso.php`）のタブ構成に寄せて再設計する。日和のUIをそのまま模倣するのではなく、分かりにくい箇所は龍神レーダーの強み（グラフ・時系列可視化、ドリルダウン）で昇華する方針（過去の日和比較調査と同じ方針、[data-coverage-comparison-2026-09-14.md](./data-coverage-comparison-2026-09-14.md)参照）。
+レース詳細ページ（`RaceDetailPage.jsx`）のUI/UXを、ユーザーが使い慣れているボートレース日和の出走表ページ（`race_shusso.php`）のタブ構成に寄せて再設計する。日和のUIをそのまま模倣するのではなく、分かりにくい箇所は龍神レーダーの強み（グラフ・時系列可視化、ドリルダウン）で昇華する方針（過去の日和比較調査と同じ方針、[data-coverage-comparison-2026-09-14.md](../proposal/competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md)参照）。
 
 対象タブ（ユーザー指定）: **基本情報 / 枠別情報 / モータ情報 / 今節成績 / 直前情報 / オッズ検索 / オッズ一覧 / 結果**
 
 「データで振り返る」セクション（`RaceReview.jsx`）は不要と明示指示あり、廃止方向で扱う（詳細は後述）。
 
-本ドキュメントは`docs/proposal/competitor-kyoteibiyori/`配下の既存調査（[BOA-282](https://linear.app/boat-ai/issue/BOA-282)横断調査タスク、[data-coverage-comparison-2026-09-14.md](./data-coverage-comparison-2026-09-14.md)、[01-race-card.md](./01-race-card.md)）を踏まえた上で、**レース詳細ページ1画面に絞って**日和の実ページを本セッションで再実機確認し、タブ単位で差分を整理したもの。[01-race-card.md](./01-race-card.md)は2026-08-20時点の調査で9タブ（基本情報/枠別情報/今節成績/直前情報/モーター比較/ボート比較/出目ランク/オッズ/MyData）構成として記録されているが、日和は月2〜5回機能更新されており、2026-09-15時点の実ページは本ドキュメント記載の8タブ構成（結果タブが追加され、モーター比較・ボート比較は統合、出目ランクは独立タブとして残る）に変わっている。**古い資料の9タブ構成は参考にせず、本ドキュメントを最新版として扱う。**
+本ドキュメントは`docs/proposal/competitor-kyoteibiyori/`配下の既存調査（[BOA-282](https://linear.app/boat-ai/issue/BOA-282)横断調査タスク、[data-coverage-comparison-2026-09-14.md](../proposal/competitor-kyoteibiyori/data-coverage-comparison-2026-09-14.md)、[01-race-card.md](../proposal/competitor-kyoteibiyori/01-race-card.md)）を踏まえた上で、**レース詳細ページ1画面に絞って**日和の実ページを本セッションで再実機確認し、タブ単位で差分を整理したもの。[01-race-card.md](../proposal/competitor-kyoteibiyori/01-race-card.md)は2026-08-20時点の調査で9タブ（基本情報/枠別情報/今節成績/直前情報/モーター比較/ボート比較/出目ランク/オッズ/MyData）構成として記録されているが、日和は月2〜5回機能更新されており、2026-09-15時点の実ページは本ドキュメント記載の8タブ構成（結果タブが追加され、モーター比較・ボート比較は統合、出目ランクは独立タブとして残る）に変わっている。**古い資料の9タブ構成は参考にせず、本ドキュメントを最新版として扱う。**
 
 ## 調査方法
 
