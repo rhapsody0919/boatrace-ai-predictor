@@ -21,4 +21,4 @@ argument-hint: "<機能slug（kebab-case）>"
 
 UI機能では、完了監査で受け入れE2Eをローカル実行する: `npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/{slug}.spec.js`。全件 pass を完了の条件とする。fail は実装の不足か、テストの仕様誤読かを判定し、後者はユーザー承認を得てから直す。結果（件数・pass/fail・各failの判定）をPR本文に書く。CIでは走らない（PRゲートへの組み込みはBOA-466の後）。
 
-完了監査を終えたら `/create-pr` で PR を作成し、プロジェクト CLAUDE.md の既存フロー（`/code-review` セルフレビュー → 大規模・高リスクな変更は `/codex-review` → PRコメント・チャット本文への報告 → ユーザー承認後マージ）に進む。
+完了監査を終えたら `/create-pr` で PR を作成し、プロジェクト CLAUDE.md の既存フロー（`/code-review` セルフレビュー → Codex の審査（`@codex review`） → PRコメント・チャット本文への報告 → ユーザー承認後マージ）に進む。

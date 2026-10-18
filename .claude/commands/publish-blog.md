@@ -5,11 +5,7 @@ argument-hint: "<記事slug>（例: new-feature-analysis）"
 
 # ブログ記事公開パイプライン
 
-新規ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックを1コマンドで実行します。CLAUDE.mdの「新機能リリース時のブログ記事ルール」「ブログ記事の公開前品質チェック」の実務手順です。note/Xチャネルへの展開はsns-hubパイプライン（ネタ→チャネル別下書き自動生成→admin承認）が別途担うため、このコマンドの対象外（2026-09-05〜）。
-
-過去に以下の抜け漏れが実際に起きているため、各ステップは省略せず全て実行してください:
-- sitemap登録漏れ（`/winning-technique`が長期未インデックス）
-- featured記事に旧モデル廃止済み機能への言及が残ったまま公開
+ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックを1コマンドで実行します。`.claude/rules/content-ops.md` の「新機能リリース時のブログ記事ルール」「ブログ記事の公開前品質チェック」の実務手順で、下の2（6観点）は `content-qa` が読む正本です。note/Xチャネルへの展開はsns-hubパイプラインが別途担うため、このコマンドの対象外。各ステップは省略せず全て実行してください。
 
 ## 引数
 - `$ARGUMENTS`: 記事slug（例: `new-feature-analysis`）。`public/blog/{slug}.md` が存在すること
@@ -27,14 +23,14 @@ cat src/data/blog-posts/$ARGUMENTS.json
 
 ### 2. 公開前品質チェック（6項目、パス/フェイルを明示）
 
-CLAUDE.mdの基準に従い、以下を実際に検証する。チェックリストで済ませず、フェイルがあれば必ず修正してから次に進む。
+`.claude/rules/content-ops.md` の基準に従い、以下を実際に検証する。チェックリストで済ませず、フェイルがあれば必ず修正してから次に進む。
 
 1. **数値・データ整合性**: 本文中の数値と表・図解の数値が一致するか、期待値計算式等を再計算する。他記事で言及済みの数値（控除率25%等）と矛盾しないか横断確認する
 2. **現行仕様との整合性**: 言及する機能・UI要素・モデル名が現在も実在するか
    ```bash
-   grep -rn "3モデル\|本命モデル\|穴モデル" public/blog/$ARGUMENTS.md src/data/blog-posts/$ARGUMENTS.json
+   node scripts/maintenance/check-deprecated-terms.js
    ```
-   廃止済み用語が残っていないか確認する（過去実例: unified化前の3モデル切替言及）
+   出力のうち、この記事のファイルの行に廃止済み用語（`docs/reference/deprecated-terms.json`）が無いか確認する
 3. **検索意図の網羅性**: 対象キーワードに対して読者の疑問に答えられているか
 4. **用語・表記ルール遵守**:
    ```bash
@@ -47,6 +43,17 @@ CLAUDE.mdの基準に従い、以下を実際に検証する。チェックリ�
    wc -m public/blog/$ARGUMENTS.md
    grep -n "## よくある質問\|!\[" public/blog/$ARGUMENTS.md
    ```
+
+### 2.5 4つのレビュー（段階0 F の条件）
+
+次の4つを通し、結果を PR コメントに書く。どれかで不合格・P0・P1 が出たら直して、そのレビューを回し直す。
+
+1. `content-qa`（上の6観点）で不合格が0
+2. `wording-editor` で P0・P1 が0
+3. ファンのレビュー（`boatrace-fan-reviewer` か `discussion-panel`）で P0・P1 が0
+4. `seo-marketer` で P0・P1 が0
+
+4つとも通れば、オーケストレーターがユーザーの承認なしでマージしてよい（`.claude/skills/orchestrate/SKILL.md` 4節の段階0 F）。事業・法務・ブランドの表記、「競艇」の例外、誇大・的中率・回収率の表現、原稿の主張を変える改稿はユーザーに回す。
 
 ### 3. featured記事の場合: 英語版作成
 
@@ -68,4 +75,5 @@ npm run verify:sitemap
 
 チャット本文に必ず含める:
 - 品質チェック6項目の結果（パス/フェイル、フェイルへの対応）
+- 4つのレビューの結果（P0・P1 の件数と対応）
 - featured記事の場合は英語版の有無

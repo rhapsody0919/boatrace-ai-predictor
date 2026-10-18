@@ -37,7 +37,7 @@
 - `second-opinion-reviewer`（`.claude/agents/`）は、Codex が止まっているときの代わりとしてだけ使う
 - Codex には `src/` の画面の作業を回さない（`codex/*` には Vercel Preview が無く、画面を確かめられないため）
 - マージは、機械と審査役が CI の見張り・再実行（1回まで）・審査を済ませた PR を、オーケストレーターが「マージ可」の束としてまとめて行う。手順と段階は `.claude/skills/orchestrate/SKILL.md` に従う
-- 手元で Codex に diff を審査させる `/codex-review`・`scripts/codex-review.sh` は使わない
+- 手元で Codex に diff を審査させる旧方式（`/codex-review`）は削除した
 
 ## レビュー系コマンドの使い分け
 
@@ -45,7 +45,6 @@
 |---------|------|------|
 | `/code-review` | 自分の作業ブランチの diff | Claude のセルフレビュー（必須） |
 | `@codex review`（GitHub の PR コメント） | Claude の PR | Codex による別ベンダーの審査 |
-| `/review-pr {PR番号}` | 他者が作成した任意の PR | ルール準拠チェックしつつ GitHub にレビューコメントを投稿 |
 
 ## 既知の制約
 

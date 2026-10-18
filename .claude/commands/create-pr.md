@@ -21,15 +21,14 @@ git diff --stat
 git log --oneline -5
 ```
 
-### 2. featureブランチを作成
+### 2. 作業ブランチを確かめる
 
 ```bash
-# 引数があればそれを使用、なければコミット内容から命名
-git checkout -b feature/$ARGUMENTS
+git branch --show-current
 ```
 
-- ブランチ名は `feature/` + kebab-case
-- 既にfeatureブランチにいる場合はそのまま使用
+- master にいたら、`git worktree` で最新の `origin/master` から作業ツリーとブランチ（`claude/` + kebab-case。引数があればそれを使う）を用意してから続ける。`codex/` は Codex 専用
+- 既に作業ブランチにいる場合はそのまま使う。想定と違うブランチなら、他のセッションの割り込みを疑い `git reflog` で確かめる
 
 ### 3. 変更をコミット（未コミットがある場合）
 
@@ -43,7 +42,7 @@ CLAUDE.mdのコミットメッセージ規約に従い、コミットを作成:
 npm run build
 ```
 
-**エラーがあれば、push・PR作成に進む前にここで直す**（2026-09-16、天才Grok活用法との照合で発見した穴を修正: このステップは元々「実装完了後の自動レビュー」という別セクションのチェックリストとしてのみ存在し、`/create-pr`を単独で呼んだ場合に強制されていなかった）。既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更なら`npm run test:e2e`も合わせて実行する。プロジェクトCLAUDE.md「実装完了後の自動レビュー」に該当する追加検証（`verify:sitemap`・`verify:content-index`・`verify:adr-numbers`・`verify:er-diagram`等）が必要な変更なら、ここで併せて実行する。
+**エラーがあれば、push・PR作成に進む前にここで直す**。E2E と verify の全件は CI に任せ、手元では変更に関係するもの（`verify:sitemap`・`verify:content-index`・`verify:adr-numbers`・`verify:er-diagram` や対象の spec）だけを実行する（AGENTS.md「検証・テスト」）。
 
 ### 4. リモートにpush
 
@@ -74,4 +73,4 @@ PR URLをユーザーに報告してください。
 
 ### 7. 完了後
 
-PR番号を報告し、`/review-pr {番号}` でレビューできることを案内してください。
+PR番号を報告し、`.claude/CLAUDE.md`「実装完了後の自動レビュー」（`/code-review` と Codex の審査）に進む。

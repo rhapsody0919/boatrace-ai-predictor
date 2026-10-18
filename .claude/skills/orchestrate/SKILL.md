@@ -168,8 +168,8 @@ Codex が実装して `codex/` のブランチから出した PR は、次のと
 - 1件ずつ、PR 番号を文字で書いて実行する（`gh pr merge 946 --squash` のように）。for ループ・変数・`$(...)`・xargs で PR 番号を渡すと、台帳に制約がある場合に guard-pr-merge.js が止める（#929）
 - マージ順の台帳は `node scripts/maintenance/merge-order.js list`。順序を決めたら `add <PR> --after <PR>...` で登録し、解消したら `remove <PR>`
 - squash が必要な PR は、依頼文と報告に明記させる（レーンの報告に書かれていなければ、マージ前に確かめる）
-- master の ruleset（`master-guard`、承認1件必須）を入れた後は、承認の無い PR の mergeStateStatus が BLOCKED になる。`mergeable` が MERGEABLE で、`reviewDecision` が REVIEW_REQUIRED、CI が全部緑なら、承認待ちだけが理由なので CLEAN と同じに扱う。それ以外の理由の BLOCKED はマージしない
-- 段階0の自己マージと、ユーザー承認済みのマージは `gh pr merge 946 --squash --admin`（管理者の bypass）で行う。`--admin` は失敗しているチェックも素通りするので、実行の前に `gh pr checks <PR>` が全部緑であることを確かめる。PR 番号は従来どおり文字で書く（guard-pr-merge.js は `--admin` を値の無いフラグとして読み飛ばすので、そのまま動く）
+- マージの可否の確認・`gh pr merge <PR> --squash --admin`・本番ビルドの完了待ち・報告は `/merge-pr`（`.claude/commands/merge-pr.md`）の手順に従う。承認待ちだけが理由の BLOCKED の扱いも同じ所にある
+- `--admin` は失敗しているチェックも素通りするので、実行の前に `gh pr checks <PR>` が全部緑であることを確かめる。PR 番号は文字で書く（guard-pr-merge.js は `--admin` を値の無いフラグとして読み飛ばすので、そのまま動く）
 
 ## 7. ピアのメッセージの扱い
 

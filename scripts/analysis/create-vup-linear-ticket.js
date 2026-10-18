@@ -2,7 +2,7 @@
  * Linearチケットをラベル付きで作成する（VUP機能提案用）
  *
  * 分析・チケット文面の作成はClaude自身が行う
- * （.claude/commands/create-vup-ticket.md 参照）。このスクリプトは
+ * （.claude/commands/analyze-vup-feature.md の手順5）。このスクリプトは
  * Linear APIへの登録のみを担当する。
  *
  * 使い方:
