@@ -3,7 +3,8 @@
  *   1. X の媒体のアップロード（initialize → append → finalize → status）。画像1枚（今日の /today の図）と動画1本（最新の YouTube の下書きの動画）
  *   2. 送る前の表示の確認（未ログインの Chromium）: /today と、今日の優勝戦の龍神ソナーのタブ
  * 投稿（createPost）は呼ばない。結果は段階ごとの ok と「段階_種類」（#1620 と同じ）。API の本文・鍵は返さない。
- * ?media=a.png,b.mp4 で媒体の path（sns-hub-media の中）を、?race=2026-10-18-20-12 で表示を見るレースを選べる
+ * ?media=a.png,b.mp4 で媒体の path（sns-hub-media の中）を、?race=2026-10-18-20-12 で表示を見るレースを選べる。
+ * ?youtube=path は YouTube の試験だけを行う: 送信と同じ adapter で非公開のまま上げ、処理の完了を待って、削除する（公開しない）
  */
 import { requireAdminAuth } from "../../_lib/adminAuth.js";
 import {
@@ -20,7 +21,13 @@ import {
 import { createXApiAdapter } from "../../_lib/xApiAdapter.js";
 import { createChromiumHeadless } from "../../_lib/snsHeadless.js";
 import { SCREEN_MARKERS } from "../../../scripts/lib/snsScreenMarkers.js";
-import { probeDisplay, probeMedia } from "../../_lib/snsSendProbe.js";
+import {
+  probeDisplay,
+  probeMedia,
+  probeYoutube,
+} from "../../_lib/snsSendProbe.js";
+import { createYoutubeQueueAdapter } from "../../_lib/youtubeQueueAdapter.js";
+import { getYoutubeAccessToken } from "../../_lib/youtubeUpload.js";
 
 // Chromium を使うので nodejs（GET・POST の名前で書き出す。既定の書き出しは Node の (req, res) で呼ばれる、#1614）
 export const config = { runtime: "nodejs", maxDuration: 300 };
@@ -73,6 +80,31 @@ async function handler(req) {
     return jsonResponse({ error: "Method not allowed" }, 405);
   if (!isConfigured()) return jsonResponse({ error: "DB未設定です" }, 503);
   const params = new URL(req.url).searchParams;
+  if (params.get("youtube")) {
+    const accessToken = await getYoutubeAccessToken({
+      clientId: process.env.YOUTUBE_CLIENT_ID,
+      clientSecret: process.env.YOUTUBE_CLIENT_SECRET,
+      refreshToken: process.env.YOUTUBE_REFRESH_TOKEN,
+    });
+    const youtube = await probeYoutube(params.get("youtube"), {
+      adapter: createYoutubeQueueAdapter({ accessToken }),
+      loadMedia: (p) => loadXMedia(p),
+      wait: (secs) => new Promise((r) => setTimeout(r, secs * 1000)),
+      deleteVideo: async (id) => {
+        const response = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?id=${encodeURIComponent(id)}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      },
+    });
+    const response = jsonResponse({ data: { youtube } });
+    response.headers.set("Cache-Control", "no-store");
+    return response;
+  }
   const media = params.get("media")
     ? params.get("media").split(",").filter(Boolean).slice(0, 2)
     : await defaultMedia();

@@ -96,3 +96,47 @@ test("表示の試験: 印が見えれば ok、欠ければ public_component_mis
   );
   assert.equal(crashed.reason, "preflight_browser_closed");
 });
+
+test("YouTube の試験: 非公開で上げ、処理の完了を待ち、削除する。公開（makePublic）は呼ばない", async () => {
+  const { probeYoutube } = await import("../../api/_lib/snsSendProbe.js");
+  const calls = [];
+  const states = ["processing", "processing", "succeeded"];
+  const adapter = {
+    upload: async (a) => {
+      calls.push(["upload", a.privacyStatus]);
+      return a.uploaded("abcdefghijk");
+    },
+    processing: async () => ({
+      processingStatus: states.shift(),
+      privacyStatus: "private",
+    }),
+    makePublic: async () => calls.push(["makePublic"]),
+  };
+  const deleted = [];
+  const r = await probeYoutube("p/v.mp4", {
+    adapter,
+    loadMedia: async () => new Uint8Array(10),
+    wait: async () => {},
+    deleteVideo: async (id) => deleted.push(id),
+  });
+  assert.equal(r.ok, true);
+  assert.equal(r.processing, "succeeded");
+  assert.deepEqual(calls, [["upload", "private"]]);
+  assert.deepEqual(deleted, ["abcdefghijk"]);
+  // 上げた後に落ちても削除する
+  const failing = await probeYoutube("p/v.mp4", {
+    adapter: {
+      ...adapter,
+      processing: async () => {
+        throw new Error(
+          "YouTube API GET /youtube/v3/videos が失敗: HTTP 403 forbidden",
+        );
+      },
+    },
+    loadMedia: async () => new Uint8Array(10),
+    wait: async () => {},
+    deleteVideo: async (id) => deleted.push(id),
+  });
+  assert.equal(failing.reason, "youtube_processing_forbidden");
+  assert.equal(failing.deleted, true);
+});
