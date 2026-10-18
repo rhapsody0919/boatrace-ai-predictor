@@ -24,6 +24,8 @@ import {
   pickRaceStatus,
 } from "../../api/_lib/snsTodayDigest.js";
 import { buildTodayModel } from "../../api/_lib/botToday.js";
+import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import { randomBytes } from "node:crypto";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
@@ -271,8 +273,9 @@ export async function runTodayPlan(
     existing.draft?.source_data?.digest?.revision === revision
   )
     return done({ outcome: "unchanged", item_id: existing.item?.id ?? null });
-  // held_manual（禁止表現）・止めた item は、版が変わっても作り直さない（オーナーの判断に回す）
-  if (existing.item && existing.item.state !== "manual")
+  // held_manual（禁止表現）・止めた item は、版が変わっても作り直さない（オーナーの判断に回す）。
+  // 自動で承認した（notified）ものは作り直す（版が変わると送る直前の読み直しで止まるため。2026-10-18）
+  if (existing.item && !["manual", "notified"].includes(existing.item.state))
     return done({ outcome: "skipped", reason: `item_${existing.item.state}` });
 
   const trackingUrl = todayTrackingUrl(date);
@@ -447,8 +450,8 @@ export async function runTodayPlan(
     checked_at: checkedAt,
   };
   const heldReason = risk.length ? `禁止表現: ${checks.risk.join(",")}` : null;
-  const item = existing.item
-    ? await store.updateItem(existing.item.id, "manual", {
+  let item = existing.item
+    ? await store.updateItem(existing.item.id, existing.item.state, {
         state,
         checks,
         held_reason: heldReason,
@@ -465,6 +468,39 @@ export async function runTodayPlan(
         checks,
         held_reason: heldReason,
       });
+  // 自動（mode=auto、2026-10-18 オーナー決定: /today も承認なし）: item を notified にして自動送信の承認者で承認する。
+  // 送る時刻は 12:00（veto_until と同じ）。確認用の作り直し（review）は送る時刻を過ぎているので自動にしない
+  let autoError = null;
+  const control =
+    state === "manual" && !review && store.control
+      ? await store.control()
+      : null;
+  const auto = control?.mode === "auto" && control?.auto_approver_id;
+  if (auto) {
+    try {
+      item = await store.updateItem(item.id, "manual", {
+        state: "notified",
+        notified_at: checkedAt,
+        // 止めるリンクは作らない（オーナー決定）。153 の CHECK が notified に要求するので、使わない乱数のハッシュを入れる
+        stop_token_hash: randomBytes(32).toString("hex"),
+      });
+      const bytes = new Map(imagePaths.map((p, i) => [p, shots[i]]));
+      await store.approve({
+        p_draft_id: draft.id,
+        p_approver_id: control.auto_approver_id,
+        p_snapshot: await createXSnapshot(draft, async (p) => {
+          if (!bytes.has(p)) throw new Error(`媒体が無い: ${p}`);
+          return bytes.get(p);
+        }),
+        p_scheduled_at: when.scheduled_at,
+      });
+    } catch (error) {
+      autoError = error.message;
+      await store
+        .updateItem(item.id, "notified", { state: "manual" })
+        .catch(() => {});
+    }
+  }
   const images = await Promise.all(
     imagePaths.map((path) => signImage(path).catch(() => null)),
   );
@@ -474,9 +510,13 @@ export async function runTodayPlan(
     ? "確認用に今日の下書きを作り直した（送る時刻を過ぎているので、承認・送信はできない）"
     : rebuilt
       ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
-      : state === "manual"
-        ? "今日の投稿の下書きができた。12:00 までに個別承認の画面で承認すると、12:00 に送る"
-        : "今日の投稿の下書きに禁止表現があり、止めた";
+      : auto && !autoError
+        ? `今日の投稿を ${TODAY_SEND_AT} に自動で送る（承認なし${control.dry_run !== false ? "。ただし試運転中なので claim の前で止まる" : ""}）。止めるには: UPDATE public.sns_x_send_control SET paused = true WHERE id = true;`
+        : autoError
+          ? `今日の投稿の自動の承認に失敗した（個別承認に回した）: ${autoError}`
+          : state === "manual"
+            ? "今日の投稿の下書きができた。12:00 までに個別承認の画面で承認すると、12:00 に送る"
+            : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
       `SNS /today（${date}）: ${head}\n${caption}${images
@@ -488,7 +528,8 @@ export async function runTodayPlan(
     console.error(`Slack に通知できません: ${error.message}`);
   }
   return done({
-    outcome: rebuilt ? "rebuilt" : state,
+    outcome: rebuilt ? "rebuilt" : auto && !autoError ? "notified" : state,
+    ...(autoError ? { reason: `auto_failed: ${autoError}` } : {}),
     ...(review ? { review: true } : {}),
     item_id: item.id,
     draft_id: draft.id,
@@ -560,6 +601,14 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
         await call("sns_auto_send_items", { method: "POST", body: row }),
         "item を作れない",
       ),
+    control: async () =>
+      (
+        await call(
+          "sns_auto_send_control?channel=eq.x&select=mode,dry_run,auto_approver_id",
+        )
+      )[0] ?? null,
+    approve: (args) =>
+      call("rpc/approve_sns_x_send", { method: "POST", body: args }),
     async updateItem(id, fromState, patch) {
       return one(
         await call(`sns_auto_send_items?id=eq.${id}&state=eq.${fromState}`, {
