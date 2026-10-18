@@ -5,7 +5,7 @@ argument-hint: "[PR番号]（省略時は現在のブランチのPRを検索）"
 
 # Vercel Preview 確認
 
-PRのVercel Preview URLを確認します。
+PRのVercel Preview URLを確認します。Codex の PR（`codex/*`）には Preview が作られないので対象外（画面の確認は CI の e2e・layout で行う。AGENTS.md）。
 
 ## 引数
 - `$ARGUMENTS`: PR番号（例: 123）。省略時は現在のブランチのPRを検索

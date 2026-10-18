@@ -64,9 +64,7 @@ claude
 | `/analyze-venue` | 指定会場の詳細分析 | `/analyze-venue 03`（江戸川） |
 | `/daily-report` | 本日の予測結果レポート | `/daily-report` |
 | `/deploy-preview` | Vercel Previewへデプロイ | `/deploy-preview` |
-| `/onboarding` | 環境設定の対話式チェック | `/onboarding` |
 | `/check-env` | 環境変数の確認 | `/check-env` |
-| `/review-pr` | PRのレビュー | `/review-pr 123` |
 
 ## 開発サーバー
 

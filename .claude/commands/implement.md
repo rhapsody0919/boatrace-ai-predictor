@@ -1,25 +1,25 @@
 ---
 description: Linear チケット自動実装
-argument-hint: "<Linear チケットID>（例: BOAT-123）"
+argument-hint: "<Linear チケットID>（例: BOA-123）"
 ---
 
 # Linear チケット自動実装
 
-引数: $ARGUMENTS (Linear チケットID。例: BOAT-123)
+引数: $ARGUMENTS (Linear チケットID。例: BOA-123)
 
 ## 手順
 
 ### 1. チケット情報の取得
-Linear MCP を使って、チケット `$ARGUMENTS` の詳細情報を取得してください：
+Linear MCP を使って、チケット `$ARGUMENTS` の詳細情報を取得してください（認証が切れていたら `scripts/linear-cli.js` に切り替える。`.claude/CLAUDE.md`）：
 - タイトル
 - 説明（実装要件）
 - 優先度
 - ラベル
 - 関連チケット
 
-### 2. ブランチ作成
-チケットのタイトルから適切なブランチ名を生成し、`feature/` プレフィックスでブランチを作成してください。
-- 例: `feature/BOAT-123-add-prediction-filter`
+### 2. 要件の確認と作業場所
+- 影響範囲が1ファイルに閉じない、または挙動が変わるチケットは、実装方針を考える前に `spec-ambiguity-detector` にチケット本文をそのまま渡し、決まっていない点を列挙させる（`.claude/CLAUDE.md`「実装前の要件確認」）。確認が要る点が2つ以上あれば分割を提案する
+- `git worktree` で最新の `origin/master` から作業ツリーとブランチを用意する。ブランチ名は `claude/boa-123-<要約>` の形にする（`codex/` は Codex 専用）
 
 ### 3. 並列調査（サブエージェント）
 以下の2つのサブエージェントを**並列で**起動してください（Agent tool。Agent Teams機能はこのプロジェクトでは使わない。理由は`.claude/CLAUDE.md`「サブエージェントの使い分け」参照）：
@@ -67,12 +67,12 @@ Linear MCP を使って、チケット `$ARGUMENTS` の詳細情報を取得し�
 
 ### 7. コミット & Linear 更新
 - 変更をコミット（コミットメッセージに `$ARGUMENTS` を含める）
-- Linear MCP でチケットのステータスを「進行中」→「レビュー待ち」に更新
+- Linear でチケットの状態を `In Progress` にする（BOA チームの状態は `Backlog`/`Todo`/`In Progress`/`Done`/`Canceled`/`Duplicate`。「レビュー待ち」は無い。マージしたら `Done`）
 - チケットにコメントで実装内容のサマリーを追加
 
 ### 8. PR 作成
 `/create-pr` コマンドの要領で PR を作成してください。
-PR の説明に Linear チケットへのリンクを含めてください。
+PR の説明に Linear チケットへのリンクを含めてください。その後は `.claude/CLAUDE.md`「実装完了後の自動レビュー」に従う。
 
 ## 注意事項
 - 実装が大きすぎる場合は、ユーザーに分割を提案してください
