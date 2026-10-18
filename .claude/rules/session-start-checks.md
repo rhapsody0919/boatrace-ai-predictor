@@ -10,7 +10,7 @@ node scripts/maintenance/session-start-check.js
 
 | 項目 | 何を見るか |
 |---|---|
-| `xVideo` | 本日の投稿本数が目標に達しているか（TikTok は 2026-10-05 にアカウントがバンされたため外した） |
+| `xVideo` | X の本日の投稿本数が目標に達しているか |
 | `racerNews` | 選手ニュースの要確認（自動投入されなかった候補） |
 | `growthSkills` | `/x-growth-report`・`/note-growth-report` の最新レポートが1週間以上前か |
 | `pendingInsights` | 戦略メモ（`sns_strategy_insights`）の承認待ち |
@@ -18,7 +18,6 @@ node scripts/maintenance/session-start-check.js
 | `visualAssetAge` | 90日以上更新されていない視覚素材 |
 | `deprecatedTerms` | 廃止済み用語の残存件数 |
 | `contentIndexCoverage` / `missingContentIndex` | トレーサビリティ索引の欠落・形式エラー |
-| `tweetDrafts` | 滞留している下書き（旧フロー、残置） |
 
 **該当が1件以上あれば、ユーザーから話しかけられるのを待たずに最初の応答で提示する。**
 「いいえ」または反応が無ければその日はスキップし、催促しない。
@@ -29,7 +28,5 @@ node scripts/maintenance/session-start-check.js
 
 ---
 
-このファイルだけを常時読み込みに残しているのは、上の確認が**特定のファイルを編集する前に
-発火する必要がある**ため。運用フローの本体（フローA〜C）は、該当する領域を触るときだけ
-読めばよいので条件付きに移した（2026-09-25、常時読み込みが613行・84.5KBに膨らみ、
-Anthropicの公式ガイダンス（目安200行）を大きく超えていたため）。
+このファイルだけを常時読み込みにしているのは、上の確認が**特定のファイルを編集する前に
+発火する必要がある**ため。運用フローの本体（フローA〜C）は、該当する領域を触るときだけ読む。

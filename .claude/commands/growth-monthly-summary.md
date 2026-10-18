@@ -1,6 +1,6 @@
 # 集客PDCA月次統合サマリー
 
-Search Console/GA4（SEO）・X・TikTokの集客PDCAスキルがそれぞれ独立して実行されており、事業ゴール（役所広告受注に向けたPV・認知度実績づくり）への進捗を横断的に確認する仕組みが無かった（2026-08-26、8人パネル議論で発覚）。月1回、各スキルの直近レポートを集約し、主要KPIの推移と中期目標への進捗を1枚にまとめる。
+Search Console/GA4（SEO）・X・note の集客PDCAスキルは別々に実行されるので、事業ゴール（役所広告受注に向けたPV・認知度実績づくり）への進捗を横断して確認する。月1回、各スキルの直近レポートを集約し、主要KPIの推移と中期目標への進捗を1枚にまとめる。
 
 「集客の月次まとめを見せて」「今月の集客どうだった？」等の自然言語依頼でも起動する。
 
@@ -13,11 +13,10 @@ Search Console/GA4（SEO）・X・TikTokの集客PDCAスキルがそれぞれ独
 - `data/analysis/search-console/report-*.json`（直近と約1ヶ月前の2時点）
 - `data/analysis/i18n-demand/report-*.json`（直近と約1ヶ月前の2時点）
 - `data/analysis/x-growth/report-*.json`（直近と約1ヶ月前、無ければ`/x-growth-report`未実施と明記）
-- `data/analysis/tiktok-growth/report-*.json`（直近と約1ヶ月前、無ければ`/tiktok-growth-report`未実施と明記）
-- `note-articles/tweet-drafts.md`の消化率（`- [x] 投稿済み`件数 / 全件数）
-- `data/analysis/x-posts/history.json`・`data/analysis/tiktok-posts/history.json`の投稿実施率（`status: posted`と`status: skipped`の比率。セッションが開かれず確認自体が無かった日はどちらの母数にも含めない）
+- `data/analysis/note-growth/report-*.json`（直近と約1ヶ月前、無ければ`/note-growth-report`未実施と明記）
+- `data/analysis/x-posts/history.json`の投稿実施率（`status: posted`と`status: skipped`の比率。セッションが開かれず確認自体が無かった日はどちらの母数にも含めない）
 
-各データが1ヶ月以上古い場合は、その時点で該当スキル（`/growth-pdca`・`/x-growth-report`・`/tiktok-growth-report`）を先に実行してから本サマリーを作成する（データが古いまま集約すると実態と乖離したサマリーになるため）。
+各データが1ヶ月以上古い場合は、その時点で該当スキル（`/growth-pdca`・`/x-growth-report`・`/note-growth-report`）を先に実行してから本サマリーを作成する（データが古いまま集約すると実態と乖離したサマリーになるため）。
 
 ### 2. KPIサマリー表を作成
 
@@ -27,9 +26,8 @@ Search Console/GA4（SEO）・X・TikTokの集客PDCAスキルがそれぞれ独
 - Search Console クリック/日・表示回数/日
 - 多言語PV（English/繁體中文/한국어）— 動きが無くても必ず記載する（`.claude/CLAUDE.md`の「調査・分析結果の報告原則」に従う）
 - Xフォロワー数・直近投稿の平均インプレッション
-- TikTokフォロワー数・直近投稿の平均視聴数
-- note/Xツイート下書き消化率
-- TikTok/X動画投稿の実施率（history.jsonのposted/skipped比率）
+- note の直近記事の PV・スキ
+- X動画投稿の実施率（history.jsonのposted/skipped比率）
 
 ### 3. 中期目標への進捗確認
 
@@ -39,9 +37,9 @@ Search Console/GA4（SEO）・X・TikTokの集客PDCAスキルがそれぞれ独
 
 `data/analysis/growth-pdca-major-initiatives.json`から、進行中（`in_progress`）・保留（`deferred`）・見送り（`rejected`）・未判断（`proposed`）の件数を集計し、未判断のまま長期間（2ヶ月以上目安）放置されている候補が無いか確認する。
 
-### 5. Search Console手動確認項目のリマインド（2026-08-26追加）
+### 5. Search Console手動確認項目のリマインド
 
-Search Console APIでは取得できず、Web UI限定でしか確認できない項目がある（2026-08-25判明）。これらはAPI経由で自動化できずClaude側からは見えないため、月次サマリー提示のたびに以下をユーザーに確認依頼する。
+Search Console APIでは取得できず、Web UI限定でしか確認できない項目がある。これらはAPI経由で自動化できずClaude側からは見えないため、月次サマリー提示のたびに以下をユーザーに確認依頼する。
 
 - **「リンク」レポート**: 自サイトへの被リンク元ドメイン一覧。Ahrefs等の有料ツールが無い中で被リンク状況を把握できる唯一の無料手段。ステップ4の大施策（被リンク獲得施策）の判断材料になる
 - **「セキュリティと手動対策」**: Googleからのペナルティ・手動対策の有無。問題が無ければ一瞬で終わる確認だが、入っていれば検索順位への影響が大きい
@@ -65,5 +63,5 @@ Search Console APIでは取得できず、Web UI限定でしか確認できな�
 
 - `/growth-pdca`: SEO/GA4側の定点観測・施策立案
 - `/x-growth-report`: X自体のパフォーマンス
-- `/tiktok-growth-report`: TikTok自体のパフォーマンス
+- `/note-growth-report`: note自体のパフォーマンス
 - 会場ガイド拡充の中期目標: memory `venue_guide_expansion_project`

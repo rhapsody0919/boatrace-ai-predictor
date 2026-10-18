@@ -1,13 +1,13 @@
 ---
-description: プラットフォーム（YouTube/TikTok/note）のアルゴリズム・成長戦術を深堀り調査し、docs/reference/{platform}-algorithm-and-growth-notes.mdにまとめる
-argument-hint: "<youtube|tiktok|note>"
+description: プラットフォーム（YouTube/note）のアルゴリズム・成長戦術を深堀り調査し、docs/reference/{platform}-algorithm-and-growth-notes.mdにまとめる
+argument-hint: "<youtube|note>"
 ---
 
-引数 `$ARGUMENTS` は調査対象プラットフォーム（`youtube`・`tiktok`・`note`のいずれか）を受け取る。以降このコマンド内で `{platform}` と表記する。
+引数 `$ARGUMENTS` は調査対象プラットフォーム（`youtube`・`note`のいずれか）を受け取る。以降このコマンド内で `{platform}` と表記する。
 
-`docs/reference/x-algorithm-and-growth-notes.md`と同じ水準・同じ形式で、`docs/reference/{platform}-algorithm-and-growth-notes.md` を新規作成する。既に同ファイルが存在する場合は追加調査として末尾に追記する（`x-algorithm-and-growth-notes.md`の「2026-09-01追加調査②」のような日付見出しの追記パターンを踏襲する）。
+`docs/reference/x-algorithm-and-growth-notes.md`と同じ水準・同じ形式で、`docs/reference/{platform}-algorithm-and-growth-notes.md` を新規作成する。既に同ファイルが存在する場合は、追加調査として末尾に追記する（調べた日付を見出しに付ける）。
 
-`/growth-report`・`/x-growth-report`・`/tiktok-growth-report`が**自アカウントの投稿実績**を定点観測するのに対し、このスキルは**プラットフォーム側の仕組み・アルゴリズムそのもの**を調査する点で役割が異なる。既存の運用ドキュメント（`docs/operation/sns-video-producer-prompt.md`・`docs/operation/tiktok-posting-operations.md`等）に部分的な知見がある場合は、それを一次情報として読み込んだ上で「不足している観点」に絞って深掘りする。
+`/growth-report`・`/x-growth-report`・`/note-growth-report`が**自アカウントの投稿実績**を定点観測するのに対し、このスキルは**プラットフォーム側の仕組み・アルゴリズムそのもの**を調査する点で役割が異なる。既存の運用ドキュメント（`docs/operation/sns-video-producer-prompt.md`等）に部分的な知見がある場合は、それを一次情報として読み込んだ上で「不足している観点」に絞って深掘りする。
 
 ## 情報源と確度の明示（必須）
 
@@ -32,7 +32,7 @@ argument-hint: "<youtube|tiktok|note>"
 6. コンテンツ本人が反応（コメント返信等）した場合の追加効果の有無
 
 ### コンテンツ形式・メタデータの影響
-7. 尺・フォーマット別の優遇有無（{platform}固有のフォーマット特性を踏まえる。YouTubeならShorts vs 通常動画、TikTokなら音源・トレンド、noteならマガジン・ハッシュタグ等）
+7. 尺・フォーマット別の優遇有無（{platform}固有のフォーマット特性を踏まえる。YouTubeならShorts vs 通常動画、noteならマガジン・ハッシュタグ等）
 8. タイトル・説明文・ハッシュタグ・タグ等メタデータの実際の影響度
 9. 音源・BGM・字幕の有無が配信に影響するか
 10. 投稿頻度・投稿タイミング・投稿間隔（共食いのリスク）の目安
@@ -40,7 +40,7 @@ argument-hint: "<youtube|tiktok|note>"
 ### 外部要因・制約
 11. 外部リンク（自サイト誘導）へのペナルティの有無・変遷
 12. 収益化・広告出稿状況（課金プラン等）による優遇の有無
-13. **ギャンブル関連コンテンツに対するポリシー・アルゴリズム上の制約**（TikTokで実際に発生した「対決煽り型」削除・会場攻略型の配信制限を踏まえ、{platform}で同様の制約・グレーゾーンが無いか重点的に調査する）
+13. **ギャンブル関連コンテンツに対するポリシー・アルゴリズム上の制約**（他のプラットフォームで「対決煽り型」の削除・会場攻略型の配信制限、最後はアカウント停止まで起きた。{platform}で同様の制約・グレーゾーンが無いか重点的に調査する）
 14. シャドウバン・配信制限が実際に発生する条件と、解除・回復の方法
 
 ### 実例・競合分析

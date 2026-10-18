@@ -2,37 +2,33 @@
 /**
  * セッション開始時チェックの統合スクリプト。
  *
- * これまでCLAUDE.mdに散在していた5つの「セッション開始時確認」ルール
- * （Xツイート下書き・X動画・選手ニュース・集客調査スキル。TikTok は 2026-10-05 にアカウントが
- * バンされたため外した）と、
- * 新設した2項目（トレーサビリティ索引カバレッジ・品質バックログ）を
- * 1回の実行で集約する。CLAUDE.md側は「このスクリプトを実行し結果を
+ * セッション開始時の確認（X動画・選手ニュース・集客調査スキル・トレーサビリティ索引・
+ * 品質バックログなど）を1回の実行で集約する。CLAUDE.md側は「このスクリプトを実行し結果を
  * 報告する」の1行に統合する（詳細ロジックの説明はこのファイルのコメント
  * が正本）。
  *
  * 各項目の判定ロジック・出典:
- * 1) tweetDrafts   … note-articles/tweet-drafts.md の `- [ ] 投稿済み` 件数
- * 2) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
- * 4) racerNews     … 要確認リストの pending件数（DBの表 racer_news_pending＋移行期間の
+ * 1) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
+ * 2) racerNews     … 要確認リストの pending件数（DBの表 racer_news_pending＋移行期間の
  *                    data/analysis/racer-news-pending-review/pending.json を id で統合。DBが優先）
- * 5) growthSkills  … data/analysis/{x,note}-growth/ の最新レポート鮮度
- * 6) contentIndex  … docs/design/content-ops-flow/spec.md C5
- * 7) qualityBacklog… docs/design/content-ops-flow/spec.md C6
- * 8) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub型選定ロジックへの素材提示）
- * 9) deprecatedTerms… docs/reference/deprecated-terms.json に対する grep 検知（フローC-7）
- * 10) missingContentIndex… AppRouter.jsxの新規ルートのうちcontent-index.json
- *     未カバーのものを検知（フローA-1、2026-09-01追加）。「PRマージを単一
+ * 3) growthSkills  … data/analysis/{x,note}-growth/ の最新レポート鮮度
+ * 4) contentIndex  … docs/design/content-ops-flow/spec.md C5
+ * 5) qualityBacklog… docs/design/content-ops-flow/spec.md C6
+ * 6) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub型選定ロジックへの素材提示）
+ * 7) deprecatedTerms… docs/reference/deprecated-terms.json に対する grep 検知（content-ops.md フローC-10）
+ * 8) missingContentIndex… AppRouter.jsxの新規ルートのうちcontent-index.json
+ *     未カバーのものを検知（content-ops.md フローA-1）。「PRマージを単一
  *     トリガーとする」という運用ルール自体には検知機構が無かった穴を埋める。
  *     新ルート＝ブログが要る新機能とは限らないため強制はせず提示のみ
- * 11) contentQualityAudit… 直近公開ブログ/note記事のスポットチェック対象を
+ * 9) contentQualityAudit… 直近公開ブログ/note記事のスポットチェック対象を
  *     ローテーション提示（FR4b、content-multi-channel-pipeline/spec.md）。
  *     生成時の自己採点だけでは気づけない盲点を人間の目で拾う
- * 12) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
- *     （フローC-8、2026-09-05追加）。戦略メモの手動採用ボタン（PR #514）が
+ * 10) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
+ *     （content-ops.md フローC-11）。戦略メモの手動採用ボタン（PR #514）が
  *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
- * 13) campaignDraftLag… 稼働中企画のネタ（sns_topics）のうち、承認済みなのに
+ * 11) campaignDraftLag… 稼働中企画のネタ（sns_topics）のうち、承認済みなのに
  *     チャネル別生成Routineが下書きをまだ作っていないもの（sns_topic_targets.status
- *     が'pending'のまま3時間以上経過）の件数（2026-09-09追加）。下書き生成は
+ *     が'pending'のまま3時間以上経過）の件数。下書き生成は
  *     このリポジトリ外の生成Routineに依存しており、その稼働状況を直接監視する
  *     手段が無いため、症状（承認済みなのに下書きが作られない）で間接的に検知する
  *
@@ -73,39 +69,6 @@ async function readJsonSafe(relPath, fallback) {
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
-}
-
-async function checkTweetDrafts() {
-  let raw;
-  try {
-    raw = await fs.readFile(
-      path.join(REPO_ROOT, "note-articles/tweet-drafts.md"),
-      "utf-8",
-    );
-  } catch {
-    return { pendingCount: 0, oldestDate: null };
-  }
-
-  const lines = raw.split("\n");
-  let currentDate = null;
-  let pendingCount = 0;
-  let oldestDate = null;
-
-  for (const line of lines) {
-    const headingMatch = line.match(/^##\s+(\d{4}-\d{2}-\d{2})/);
-    if (headingMatch) {
-      currentDate = headingMatch[1];
-      continue;
-    }
-    if (/^- \[ \] 投稿済み/.test(line)) {
-      pendingCount += 1;
-      if (currentDate && (!oldestDate || currentDate < oldestDate)) {
-        oldestDate = currentDate;
-      }
-    }
-  }
-
-  return { pendingCount, oldestDate };
 }
 
 async function checkDailyPostStatus(relPath) {
@@ -195,7 +158,6 @@ async function checkGrowthSkillsFreshness() {
 
 async function main() {
   const [
-    tweetDrafts,
     xVideo,
     racerNews,
     growthSkills,
@@ -209,7 +171,6 @@ async function main() {
     pendingInsights,
     campaignDraftLag,
   ] = await Promise.all([
-    checkTweetDrafts(),
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
     checkRacerNewsPending(),
     checkGrowthSkillsFreshness(),
@@ -241,7 +202,6 @@ async function main() {
   );
 
   const result = {
-    tweetDrafts,
     xVideo,
     racerNews,
     growthSkills,
