@@ -52,9 +52,11 @@ model: opus
 - **読み取り専用**。コード・ドキュメント・データを変更しない。本番DBへの書き込みはしない
 - 画面の取得は Playwright で行う。確認用の一時スクリプトは**スクラッチパッド（無ければ `/tmp` 配下の専用ディレクトリ）に置き、リポジトリに残さない**。スクリーンショットも同じ場所に保存する
   - スクラッチパッドからは `import 'playwright'` が解決できないので、リポジトリの依存を明示して読み込む: `const { chromium } = createRequire('<リポジトリ>/package.json')('playwright')`（`import { createRequire } from 'node:module'`）。`node_modules` が空なら先に `npm ci` を実行する
+  - Preview は Vercel 認証がかかっている。開き方は `docs/operation/vercel-preview-access.md` に従う（本体の `.env.local` の `VERCEL_AUTOMATION_BYPASS_SECRET` を Preview の origin にだけヘッダーで送る）
+  - 秘密の値は表示しない（ログ・報告・スクショに出さない）。秘密を Codex の作業場所に写さない
   - 各幅でスクリーンショットを撮り、Read で読み込んで**実際に目で見る**。DOMの値（テキスト・件数・`scrollWidth` と `clientWidth` の差等）も取得して根拠にする
   - 実際に目にする縮尺で文字・数値が読めるかを見る。「表示されている」と「読める」は別物として扱う
-- Preview URL が認証（401・Vercelログイン画面）で開けない、データが無い等で見られなかった観点は、推測で埋めず「確認できなかった観点」に書く
+- 秘密が無い・Preview URL が認証（401・302 で Vercel ログイン画面）で開けない、データが無い等で見られなかった観点は、推測で埋めず「確認できなかった観点」に書く
 - 公式・日和の見せ方と比べる場合、確認できた範囲だけを根拠にする。記憶に頼った主張は「推測」と明記する
 - **好みの問題は P3 と明記する**。ファン一般に読み違いを生むかどうかで P2 以上と区別する
 
