@@ -292,7 +292,7 @@
     {
       "script": "verify-node-function-json-imports.js",
       "tier": "ci",
-      "guards": "nodejs の関数が JSON を import して読み込みで落ちないこと（2026-10-13、/api/admin/sns-hub/mobile-approval が毎回失敗し「今日のレースを取得できません」になった）。api/ で .json を import してよいのは runtime: edge の関数だけ（api/_lib は不可）、mobile-approval.js を実際に Node で import できること"
+      "guards": "nodejs の関数が JSON を import して読み込みで落ちないこと（2026-10-13、/api/admin/sns-hub/mobile-approval が毎回失敗し「今日のレースを取得できません」になった）。api/ で .json を import してよいのは runtime: edge の関数だけ（api/_lib は不可）、nodejs の関数（send-probe.js）を実際に Node で import できること（mobile-approval.js は 2026-10-18 に撤去）"
     },
     {
       "script": "verify-no-undef.js",
@@ -1055,24 +1055,19 @@
       "guards": "承認の媒体の上限は X・YouTube とも 32 MiB（送信の上限とそろえる）。依頼5: 発走期限つき待ち行列・送信前検査（headless/public_url）・日次枠の再承認後保持・媒体変更後の枠保持・begin_postの日付またぎ保留（139をPGlite、モックadapter、外部接続なし）"
     },
     {
+      "script": "verify-sns-auto-send-status.js",
+      "tier": "ci",
+      "guards": "SNS ハブの自動送信ページ（2026-10-18）の振り分け: 要対応は失敗・保留・送れずに失効したものを直近3日（JST）だけ、要照合は日付に関係なく。承認の失効と予定・公開済みは要対応にしない。今日の一覧は JST の日付で、端末の時差に左右されない。deadline-queue API は状態（モード・停止）が読めなくても待ち行列を返す"
+    },
+    {
       "script": "verify-sns-mobile-approval.js",
       "tier": "ci",
       "guards": "依頼6: レース単位スマホ確認・版固定の個別承認・媒体hash（140をPGlite、外部接続なし）"
     },
     {
-      "script": "verify-sns-mobile-api.js",
-      "tier": "ci",
-      "guards": "依頼6: mobile-approval APIの媒体hash取得が直列（並行上限1）であることと、X動画・画像の署名プレビュー返却"
-    },
-    {
       "script": "verify-sns-mobile-groups.js",
       "tier": "ci",
       "guards": "依頼6: 当日レース単位のグループ化・ページング・対象日検証（xSendStore.mobileRace、DBクエリの限定）"
-    },
-    {
-      "script": "verify-sns-mobile-dom.js",
-      "tier": "ci",
-      "guards": "依頼6: JSDOM上でMobileApprovalPanel/SnsHubAdminの状態連携を検証（Chromium起動不可環境向け、レイアウト・動画再生は対象外）"
     },
     {
       "script": "verify-wind-direction-display.js",

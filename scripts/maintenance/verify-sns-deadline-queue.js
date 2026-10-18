@@ -436,8 +436,12 @@ test("非公開残置の候補IDと手動削除の案内を期限一覧で表示
       "const calendarMonth=()=>[],calendarRowDay=()=>null,calendarObservations=()=>[];",
     )
     .replace(
-      /import \{ getDeadlineQueue \} from [^;]+;/,
-      "const getDeadlineQueue=async()=>[];",
+      /import \{[\s\S]*?\} from ["'][^"'\n]*snsAutoSendStatus\.js["'];/,
+      "const attentionRows=()=>[],rowsOfDay=()=>[],todayDay=()=>'';",
+    )
+    .replace(
+      /import \{[\s\S]*?\} from ["'][^"'\n]*snsHubService\.js["'];/,
+      "const getDeadlineQueue=async()=>({rows:[],control:null}),stopXSend=async()=>{};",
     );
   const code = (await transform(source, { loader: "jsx", format: "esm" })).code;
   const { DeadlineQueueList } = await import(

@@ -231,6 +231,14 @@ export const xSendStore = {
       connected: false,
     };
   },
+  /** 自動送信ページの「いまの状態」。チャネルごとのモード・試運転と、全体の停止（読み取りだけ） */
+  async sendControl() {
+    const [x] = await db("sns_x_send_control?id=eq.true&select=paused");
+    const channels = await db(
+      "sns_auto_send_control?select=channel,mode,dry_run&order=channel",
+    );
+    return { paused: Boolean(x?.paused), channels };
+  },
   async stop() {
     await db("sns_x_send_control?id=eq.true", {
       method: "PATCH",
