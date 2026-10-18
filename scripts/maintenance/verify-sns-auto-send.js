@@ -57,6 +57,7 @@ before(async () => {
     "153_sns_auto_send.sql",
     "154_sns_tokens_metric_jobs.sql",
     "158_sns_lanes_digest_period.sql",
+    "163_drop_sns_mobile_approval.sql",
   ]) {
     await db.exec(
       (
@@ -78,7 +79,6 @@ before(async () => {
 beforeEach(async () => {
   await db.exec(`
     DELETE FROM sns_metric_jobs; DELETE FROM sns_metric_observations; DELETE FROM sns_post_tracking; DELETE FROM sns_channel_daily; DELETE FROM sns_youtube_quota_reads; DELETE FROM sns_youtube_quota_attempts;
-    DELETE FROM sns_mobile_reviews;
     UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_incidents;
     DELETE FROM sns_auto_send_items;
     -- 138 の外部操作の途中の下書きは sns_guard_external が削除を拒否するので、後片付けの間だけトリガーを止める

@@ -5,7 +5,7 @@
  * 1回の流れ（item ごと）:
  *   item を作る（checking。締切は races から。notify_by=締切−3h、veto_until=締切−60分）
  *   → 検査: 数値の照合（claims を公開 API で読み直す）・リンク先の表示（未ログインの Chromium）・禁止表現（UTM を差し込んだ後の本文）・
- *     個別承認の画面と同じ条件（sendHolds）
+ *     送る前の保留の条件（sendHolds）
  *   → 合格: UTM を sns_post_tracking に保存 → 下書きに UTM つきの本文と source_data（claim_check・release_evidence・deadline_queue）を書く
  *     → item を manual → 下書きの公開保留を外す（153 のトリガーは item が manual になってからだけ外せる）。
  *     X のスレッドの子（thread_index≥1）は外さない: 子の job は deadline_queue.parent_job_id が無いと親を待たずに claim される（153 の claim は

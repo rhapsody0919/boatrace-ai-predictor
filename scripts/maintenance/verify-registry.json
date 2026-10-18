@@ -1072,12 +1072,7 @@
     {
       "script": "verify-sns-mobile-approval.js",
       "tier": "ci",
-      "guards": "依頼6: レース単位スマホ確認・版固定の個別承認・媒体hash（140をPGlite、外部接続なし）"
-    },
-    {
-      "script": "verify-sns-mobile-groups.js",
-      "tier": "ci",
-      "guards": "依頼6: 当日レース単位のグループ化・ページング・対象日検証（xSendStore.mobileRace、DBクエリの限定）"
+      "guards": "送る前の保留の条件（sendHolds: 素材 v0/v1・/today）、版hash（140 sns_mobile_revision）の TimeZone 非依存、承認後の変更で承認・job を外すトリガー、編集指摘（145）の保存・判断。163 で個別承認の RPC・表が無いこと（PGlite、外部接続なし）"
     },
     {
       "script": "verify-wind-direction-display.js",

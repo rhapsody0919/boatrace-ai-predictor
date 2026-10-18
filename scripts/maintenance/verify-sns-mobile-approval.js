@@ -2,12 +2,8 @@ import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
-import {
-  mobileHolds,
-  sendHolds,
-  prepareMobileReview,
-  approveMobileReview,
-} from "../../api/_lib/snsMobileApproval.js";
+import { mobileHolds, sendHolds } from "../../api/_lib/snsMobileApproval.js";
+import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import { inspectDraft } from "../../api/_lib/snsEditAssist.js";
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -56,6 +52,7 @@ before(async () => {
     "139_sns_deadline_queue.sql",
     "140_sns_mobile_approval.sql",
     "145_sns_edit_assist.sql",
+    "163_drop_sns_mobile_approval.sql",
   ])
     await db.exec(
       await readFile(
@@ -74,103 +71,23 @@ async function draft(platform = "x", group = null) {
     [group, platform, source()],
   );
 }
+// 版（140 sns_mobile_revision）は 145 の編集指摘・147 の差分が使うので、163 の後も残る
 async function row(d) {
-  return (
-    await first("SELECT read_sns_mobile_race($1) AS result", [
-      d.content_group_id,
-    ])
-  ).result.find((r) => r.draft.id === d.id);
+  const { revision } = await first(
+    "SELECT sns_mobile_revision(d) revision FROM sns_drafts d WHERE id=$1",
+    [d.id],
+  );
+  return { draft: d, revision };
 }
-const approve = async (id, a, revision, snapshot, scheduled, seconds) =>
+// 個別承認の RPC（approve_sns_mobile_channel）は 163 で削除。承認は approve_sns_x_send で行う
+const approve = async (d) =>
   (
-    await first("SELECT approve_sns_mobile_channel($1,$2,$3,$4,$5,$6) result", [
-      id,
-      a,
-      revision,
-      snapshot,
-      scheduled,
-      seconds,
+    await first("SELECT approve_sns_x_send($1,$2,$3,NULL) result", [
+      d.id,
+      approver,
+      await createXSnapshot(d, media),
     ])
   ).result;
-test("1レース2チャネルを返し、個別承認・版・レビュー時間を保存、初期停止を維持", async () => {
-  const x = await draft(),
-    y = await draft("youtube", x.content_group_id),
-    r = await row(x),
-    review = await prepareMobileReview(r, media);
-  assert.deepEqual(review.holds, []);
-  assert.equal(
-    (await first("SELECT read_sns_mobile_race($1) r", [x.content_group_id])).r
-      .length,
-    2,
-  );
-  const j = await approveMobileReview(
-    r,
-    {
-      approverId: approver,
-      versionHash: review.versionHash,
-      reviewSeconds: 12,
-    },
-    { loadMedia: media, approve },
-  );
-  assert.equal(j.channel, "x");
-  assert.equal(
-    (await first("SELECT status FROM sns_drafts WHERE id=$1", [y.id])).status,
-    "pending_review",
-  );
-  assert.equal(
-    (
-      await first(
-        "SELECT review_seconds FROM sns_mobile_reviews WHERE draft_id=$1",
-        [x.id],
-      )
-    ).review_seconds,
-    12,
-  );
-  assert.equal(
-    (await first("SELECT paused FROM sns_x_send_control")).paused,
-    true,
-  );
-});
-test("本文/QA/根拠の変更とDBロックまでの変更は409用の拒否、古い版に承認しない", async () => {
-  const d = await draft(),
-    r = await row(d),
-    v = await prepareMobileReview(r, media);
-  await db.query("UPDATE sns_drafts SET caption_text='変更版' WHERE id=$1", [
-    d.id,
-  ]);
-  await assert.rejects(
-    () => approve(d.id, approver, r.revision, v.snapshot, null, 1),
-    /版が変わりました/,
-  );
-  const current = await row(d);
-  await assert.rejects(() =>
-    approveMobileReview(
-      current,
-      { versionHash: v.versionHash, approverId: approver, reviewSeconds: 1 },
-      { loadMedia: media, approve },
-    ),
-  );
-  assert.equal(
-    (
-      await first(
-        "SELECT count(*) n FROM sns_mobile_reviews WHERE draft_id=$1",
-        [d.id],
-      )
-    ).n,
-    0,
-  );
-});
-test("同じパスの動画上書きは版hash不一致で拒否", async () => {
-  const r = await row(await draft("youtube")),
-    v = await prepareMobileReview(r, media);
-  await assert.rejects(() =>
-    approveMobileReview(
-      r,
-      { versionHash: v.versionHash, approverId: approver, reviewSeconds: 1 },
-      { loadMedia: async () => new Uint8Array([9]), approve },
-    ),
-  );
-});
 test("動画未完成、QA失敗、出典/件数/範囲/公開証拠欠落、v0は保留", async () => {
   const d = await draft("youtube");
   for (const change of [
@@ -185,7 +102,7 @@ test("動画未完成、QA失敗、出典/件数/範囲/公開証拠欠落、v0�
   ]) {
     const v = structuredClone(d);
     change(v);
-    assert.ok(mobileHolds(v).length > 0);
+    assert.ok(sendHolds(v).length > 0);
   }
 });
 test("素材 v1: 照合の結果と表示の確認がそろえば保留なし、照合の未完了・版の不一致・公開保留は保留（tasks 11）", () => {
@@ -228,20 +145,29 @@ test("素材 v1: 照合の結果と表示の確認がそろえば保留なし、
   v0.source_data.schema_version = "ryujin-preview/0";
   assert.ok(sendHolds(v0).includes("公開保留素材"));
 });
-test("テーブル/RPCは一般ロールに公開しない", async () => {
+test("163: 個別承認の表・RPC は無く、版の関数は残って一般ロールに公開しない", async () => {
+  assert.equal(
+    (await first("SELECT to_regclass('public.sns_mobile_reviews') r")).r,
+    null,
+  );
+  for (const sig of [
+    "public.read_sns_mobile_race(uuid)",
+    "public.approve_sns_mobile_channel(uuid,uuid,text,jsonb,timestamptz,integer)",
+  ])
+    assert.equal((await first("SELECT to_regprocedure($1) r", [sig])).r, null);
+  assert.ok(
+    (await first("SELECT to_regprocedure('public.sns_mobile_revision(sns_drafts)') r")).r,
+  );
   await db.exec("SET ROLE authenticated");
-  await assert.rejects(() => db.query("SELECT * FROM sns_mobile_reviews"));
   await assert.rejects(() =>
-    db.query("SELECT read_sns_mobile_race(gen_random_uuid())"),
+    db.query("SELECT sns_mobile_revision(d) FROM sns_drafts d LIMIT 1"),
   );
   await db.exec("RESET ROLE");
 });
 
-test("承認後のrisk変更で承認を消しjobを取消、QA変更中の承認も拒否", async () => {
-  const d = await draft(),
-    r = await row(d),
-    v = await prepareMobileReview(r, media);
-  await approve(d.id, approver, r.revision, v.snapshot, null, 1);
+test("承認後のrisk変更で承認を消しjobを取消", async () => {
+  const d = await draft();
+  await approve(d);
   await db.query("UPDATE sns_drafts SET risk_flags=$2 WHERE id=$1", [
     d.id,
     [{ id: "L0" }],
@@ -256,32 +182,6 @@ test("承認後のrisk変更で承認を消しjobを取消、QA変更中の承�
       .state,
     "cancelled",
   );
-  const y = await draft("youtube"),
-    yr = await row(y),
-    yv = await prepareMobileReview(yr, media);
-  await db.query(
-    "UPDATE sns_drafts SET source_data=jsonb_set(source_data,'{qa,pass}','false') WHERE id=$1",
-    [y.id],
-  );
-  await assert.rejects(
-    () => approve(y.id, approver, yr.revision, yv.snapshot, null, 1),
-    /版が変わりました/,
-  );
-});
-
-test("F04: 1groupの上限を超えた下書きは媒体取得前のSQL readで拒否する", async () => {
-  const d = await draft();
-  for (let i = 0; i < 19; i++) await draft("x", d.content_group_id);
-  assert.equal(
-    (
-      await first("SELECT read_sns_mobile_race($1) result", [
-        d.content_group_id,
-      ])
-    ).result.length,
-    20,
-  );
-  await draft("x", d.content_group_id);
-  await assert.rejects(() => row(d), /取得上限/);
 });
 
 test("版hash（sns_mobile_revision）は接続のTimeZone設定に依存しない", async () => {
@@ -310,8 +210,7 @@ test("版hash（sns_mobile_revision）は接続のTimeZone設定に依存しな�
 
 test("編集指摘の冪等保存・採用/無視の追記履歴は本文と承認版を変えない", async () => {
   const d = await draft(),
-    r = await row(d),
-    v = await prepareMobileReview(r, media);
+    r = await row(d);
   const findings = inspectDraft(d, []);
   assert.ok(findings.length > 0);
   const save = async () =>
@@ -348,11 +247,7 @@ test("編集指摘の冪等保存・採用/無視の追記履歴は本文と承�
     2,
   );
   assert.equal((await row(d)).revision, r.revision);
-  await approveMobileReview(
-    await row(d),
-    { approverId: approver, versionHash: v.versionHash, reviewSeconds: 1 },
-    { loadMedia: media, approve },
-  );
+  await approve(d);
   assert.equal(
     (await first("SELECT status FROM sns_drafts WHERE id=$1", [d.id])).status,
     "approved",
@@ -453,7 +348,6 @@ test("同じ(draft,revision,engine)への再保存は、下書きが別の値に
 });
 
 test("/today の投稿（tasks 19b）は一覧の版が承認の版と同じときだけ保留にしない（素材の claims は見ない）", async () => {
-  const { sendHolds } = await import("../../api/_lib/snsMobileApproval.js");
   const draft = (revision, queueRevision) => ({
     platform: "x",
     status: "pending_review",

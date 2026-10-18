@@ -25,4 +25,4 @@
 ## 撤去したもの
 
 - 今日のレースを確認・個別承認（`MobileApprovalPanel`・`EditAssistFindings`・`/api/admin/sns-hub/mobile-approval`）
-- 送信の仕組みが使う `api/_lib/snsMobileApproval.js` の `sendHolds`・`mobileVersion` と、マイグレーション 140 の表・関数は残した（sns-auto-plan・draft-diff が使う）
+- 送信の仕組みが使う `api/_lib/snsMobileApproval.js` の `sendHolds`・`mobileVersion` と、版の関数 `sns_mobile_revision`（140、編集指摘・draft-diff が使う）は残した。140 の表 `sns_mobile_reviews` と RPC 2つ（`read_sns_mobile_race`・`approve_sns_mobile_channel`）は 163 で削除

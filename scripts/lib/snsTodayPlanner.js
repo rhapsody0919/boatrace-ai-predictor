@@ -383,7 +383,7 @@ export async function runTodayPlan(
     // 数字は一覧の表そのもの。数値の照合は、送る直前に版（行の hash）を読み直して一致を見ることで代える
     qa: { pass: true, numeric_claims_match: true, L0_hits: [] },
     release_evidence: releaseEvidence,
-    // 個別承認の DB 側の条件（140 approve_sns_mobile_channel: 出典と claims が空でないこと）を満たす出典の記録。
+    // 出典の記録（旧個別承認 140 approve_sns_mobile_channel の条件に合わせて入れていたもの。版の照合の材料として残す）。
     // 値は一覧の日の行（レース数）、sha256 は版
     source_manifest: [
       {

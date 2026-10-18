@@ -63,6 +63,7 @@ before(async () => {
     "154_sns_tokens_metric_jobs.sql",
     "158_sns_lanes_digest_period.sql",
     "160_sns_x_multiple_images.sql",
+    "163_drop_sns_mobile_approval.sql",
   ])
     await db.exec(
       (
@@ -77,7 +78,7 @@ before(async () => {
 });
 beforeEach(async () => {
   await db.exec(`
-    DELETE FROM sns_post_tracking; DELETE FROM sns_mobile_reviews; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;
+    DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;
     ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
     UPDATE test_clock SET value=NULL;`);
 });
@@ -402,16 +403,12 @@ async function plan({
   );
 }
 const loadMedia = async () => PNG;
+// 本人の承認（個別承認の RPC は 163 で削除。承認そのものの approve_sns_x_send を使う）
 async function approve(draft) {
-  const { r: revision } = await first(
-    "SELECT sns_mobile_revision(d) r FROM sns_drafts d WHERE id=$1",
-    [draft.id],
-  );
   return (
-    await first("SELECT approve_sns_mobile_channel($1,$2,$3,$4,$5,30) r", [
+    await first("SELECT approve_sns_x_send($1,$2,$3,$4) r", [
       draft.id,
       me,
-      revision,
       await createXSnapshot(draft, loadMedia),
       draft.scheduled_at,
     ])
@@ -547,7 +544,7 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
     notes[0],
     /画像1: https:\/\/signed\/today\/[^\n]+-1\.png\n画像2: [^\n]+\n画像3: [^\n]+\n画像4: [^\n]+-4\.png/,
   );
-  // 本人の個別承認（140 の DB 側の条件も通る）→ 7:45 の job
+  // 本人の承認 → 7:45 の job
   const job = await approve(draft);
   assert.equal(job.state, "queued");
   assert.equal(new Date(job.scheduled_at).toISOString(), when.scheduled_at);
