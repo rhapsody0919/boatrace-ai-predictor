@@ -104,3 +104,79 @@ export async function probeDisplay(
     };
   }
 }
+
+/**
+ * YouTube の試験（公開しない）: 送信と同じ adapter で非公開のまま上げ、処理の完了を待ってから削除する（2026-10-18、新しい経路の初回の前）。
+ * 返り値: { path, ok, reason?, video_id?, processing?, deleted?, seconds }
+ */
+export async function probeYoutube(
+  path,
+  {
+    adapter,
+    loadMedia,
+    deleteVideo,
+    wait,
+    maxPolls = 18,
+    pollSecs = 10,
+    now = Date.now,
+  },
+) {
+  const started = now();
+  let stage = "media_load";
+  let id = null;
+  const out = { path };
+  try {
+    const bytes = await loadMedia(path);
+    out.bytes = bytes.byteLength;
+    stage = "youtube_upload";
+    const title = "送信の試験（削除する）";
+    await adapter.upload({
+      snapshot: { youtube_title: title, text: "送信の試験。公開しない" },
+      media: [{ bytes, type: "video/mp4" }],
+      privacyStatus: "private",
+      publishAt: null,
+      beforeCall: async () => {},
+      uploaded: async (videoId) => {
+        id = videoId;
+        return {
+          external_post_id: videoId,
+          snapshot: { youtube_title: title },
+        };
+      },
+    });
+    out.video_id = id;
+    out.upload_seconds = Math.round((now() - started) / 1000);
+    stage = "youtube_processing";
+    const job = { external_post_id: id, snapshot: { youtube_title: title } };
+    for (let poll = 0; poll < maxPolls; poll++) {
+      const state = await adapter.processing(job);
+      out.processing = state.processingStatus;
+      out.privacy = state.privacyStatus;
+      if (
+        state.processingStatus === "succeeded" ||
+        state.processingStatus === "failed"
+      )
+        break;
+      await wait(pollSecs);
+    }
+    out.ok = out.processing === "succeeded";
+    if (!out.ok)
+      out.reason = `youtube_processing_${out.processing ?? "unknown"}`;
+  } catch (error) {
+    console.error(`送信の試験 YouTube ${path}: ${stage}: ${error.message}`);
+    out.ok = false;
+    out.reason = holdReasonOf(error, stage);
+  }
+  out.seconds = Math.round((now() - started) / 1000);
+  if (id)
+    try {
+      await deleteVideo(id);
+      out.deleted = true;
+    } catch (error) {
+      console.error(
+        `送信の試験 YouTube ${id} を削除できない: ${error.message}`,
+      );
+      out.deleted = false;
+    }
+  return out;
+}
