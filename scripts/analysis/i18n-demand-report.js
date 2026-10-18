@@ -57,7 +57,7 @@ if (!PROPERTY_ID) {
   process.exit(1);
 }
 
-// サービスアカウント認証（update-google-sheets.js と同じ方式、BOA-139で共通化）
+// サービスアカウント認証
 const auth = getGoogleAuthClient([
   "https://www.googleapis.com/auth/analytics.readonly",
 ]);

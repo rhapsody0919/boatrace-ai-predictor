@@ -46,15 +46,6 @@ export function shiftDate(date, days) {
 }
 
 /**
- * 節の**最初**の行（＝前検日のもの）を選手ごとに採る。今節タブが使う。
- * @param {Array<{racer_id: number, race_date: string}>} rows
- * @returns {Map<number, object>}
- */
-export function pickFirstPretestByRacer(rows) {
-  return pickByRacer(rows, "asc");
-}
-
-/**
  * 今節タブ用: 選手ごとに、**今節のモーター番号と一致する行**のうち最も古い行を採る
  * （BOA-674）。過去のレースを開いたときは表示日より後の行も渡すので、別の節の行を
  * 掴まないようモーター番号で絞る（前検は節の中で変わらないので、後の日付の行でも

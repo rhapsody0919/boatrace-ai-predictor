@@ -17,33 +17,6 @@ export const getRecoveryColorClass = (rate) => {
 };
 
 /**
- * モデル別カラーテーマ
- */
-export const MODEL_COLORS = {
-  standard: {
-    primary: "#0ea5e9",
-    secondary: "#0284c7",
-    gradient: "linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)",
-    shadow: "rgba(14, 165, 233, 0.3)",
-    light: "#e0f2fe",
-  },
-  safeBet: {
-    primary: "#4caf50",
-    secondary: "#2e7d32",
-    gradient: "linear-gradient(135deg, #4caf50 0%, #2e7d32 100%)",
-    shadow: "rgba(76, 175, 80, 0.3)",
-    light: "#e8f5e9",
-  },
-  upsetFocus: {
-    primary: "#ff9800",
-    secondary: "#f57c00",
-    gradient: "linear-gradient(135deg, #ff9800 0%, #f57c00 100%)",
-    shadow: "rgba(255, 152, 0, 0.3)",
-    light: "#fff3e0",
-  },
-};
-
-/**
  * 艇番別カラー（公式カラー）
  */
 export const BOAT_COLORS = {
@@ -87,14 +60,6 @@ export const BOAT_LINE_COLORS = {
   4: "#1e88e5",
   5: "#c9a227",
   6: "#43a047",
-};
-
-/**
- * 的中/外れバッジカラー
- */
-export const HIT_COLORS = {
-  hit: "#10b981", // green
-  miss: "#ef4444", // red
 };
 
 /**
