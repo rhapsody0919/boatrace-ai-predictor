@@ -87,6 +87,39 @@ export async function createXSnapshot(draft, loadMedia) {
  * createPost({text,mediaIds}) -> {id,posted_at}。POSTはadapter内部でも自動再試行禁止。
  * wait(seconds)は実adapter側でcheck_after_secsを尊重。DB失敗時は決して再送しない。
  */
+// HTTP の状態の種類（DB の error_code は英小文字と _ だけ。数字を入れられない）
+const HTTP_KINDS = {
+  400: "bad_request",
+  401: "unauthorized",
+  402: "payment_required",
+  403: "forbidden",
+  404: "not_found",
+  409: "conflict",
+  413: "too_large",
+  429: "rate_limited",
+};
+/**
+ * 保留の理由（純粋関数）。英小文字と _ の理由はそのまま。それ以外は「段階_種類」にする（API の本文・鍵は入れない）。
+ * 2026-10-18、/today の初めての実送信が preflight_or_media_failed だけを残し、どこで落ちたか分からなかった
+ */
+export function holdReasonOf(error, stage) {
+  const message = String(error?.message ?? "");
+  if (/^[a-z_]{1,64}$/.test(message)) return message;
+  const status = Number(message.match(/HTTP (\d{3})/)?.[1]);
+  const kind = status
+    ? (HTTP_KINDS[status] ?? (status >= 500 ? "server_error" : "http_error"))
+    : /browser has been closed|Target page/.test(message)
+      ? "browser_closed"
+      : /timeout|Timeout/.test(message)
+        ? "timeout"
+        : /媒体が変更/.test(message)
+          ? "media_changed"
+          : /媒体処理が完了しません/.test(message)
+            ? "processing_failed"
+            : "error";
+  return `${stage}_${kind}`.slice(0, 64);
+}
+
 export async function runXSendJob(
   id,
   { store, x, loadMedia, wait, preflight },
@@ -95,6 +128,8 @@ export async function runXSendJob(
   const job = await store.transition(id, "claim");
   if (job.state !== "sending") return job;
   let postStarted = false;
+  // どの段階で落ちたか（保留の理由に入れる）
+  let stage = "precheck";
   const check = async (action) => {
     const current = await store.transition(id, action);
     if (current.state === "held") throw new Error(current.error_code);
@@ -110,14 +145,17 @@ export async function runXSendJob(
     if (job.channel && job.channel !== "x")
       throw new Error("チャネルが違います");
     if (!preflight) throw new Error("送信前検査は未接続です");
+    stage = "preflight";
     await preflight(job);
     const snapshot = JSON.parse(job.snapshot_text);
     const mediaIds = [];
     for (const m of snapshot.media) {
+      stage = "media_load";
       const bytes = await loadMedia(m.path);
       if (bytes.byteLength !== m.size || (await sha256(bytes)) !== m.sha256)
         throw new Error("媒体が変更されています");
       await check("check");
+      stage = "x_initialize";
       const upload = await x.initialize({
         size: m.size,
         type: m.type,
@@ -129,6 +167,7 @@ export async function runXSendJob(
         offset += X_CHUNK_BYTES, index++
       ) {
         await check("check");
+        stage = "x_append";
         await x.append({
           id: upload.id,
           index,
@@ -136,6 +175,7 @@ export async function runXSendJob(
         });
       }
       await check("check");
+      stage = "x_finalize";
       let result = await x.finalize(upload.id);
       for (
         let poll = 0;
@@ -146,6 +186,7 @@ export async function runXSendJob(
           throw new Error("媒体処理が完了しません");
         await wait(waitSecsOf(result.processing_info));
         await check("check");
+        stage = "x_status";
         result = await x.status(upload.id);
       }
       mediaIds.push(upload.id);
@@ -155,6 +196,7 @@ export async function runXSendJob(
       : null;
     if (snapshot.queue?.parent_job_id && !replyTo)
       throw new Error("parent_not_posted");
+    stage = "preflight_before_post";
     await preflight(job);
     await check("begin_post");
     postStarted = true;
@@ -166,16 +208,17 @@ export async function runXSendJob(
     return await store.transition(id, "complete", result);
   } catch (error) {
     if (!postStarted) {
+      const reason = holdReasonOf(error, stage);
+      // API本文や認証情報をDB・ログに保存しない（adapter の例外は「X API … が失敗: HTTP 403 種類」の形で、本文を含まない）
+      console.error(`X 送信 ${id} を保留: ${reason}: ${error.message}`);
       // begin_postの応答喪失でもDB側reconcileをfailで戻せない。
       try {
-        await store.transition(id, "hold", {
-          reason: /^[a-z_]{1,64}$/.test(error.message)
-            ? error.message
-            : "preflight_or_media_failed",
-        });
+        await store.transition(id, "hold", { reason });
       } catch {
         /* 永続状態を優先 */
       }
+      // 送信の側（snsSendRunner）の report にも同じ理由を残す
+      error.holdReason = reason;
     }
     // API本文や認証情報をDB・ログに保存しない。
     throw error;
