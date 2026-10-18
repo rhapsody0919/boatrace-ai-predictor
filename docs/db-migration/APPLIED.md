@@ -37,9 +37,9 @@
 
 ### 注目すべきもの
 
-- **048_add_cancellation_status_to_predictions_rpc.sql は現行DBに反映されていない。** `get_predictions_by_date` / `get_predictions_by_date_light` / `get_today_races` のいずれの `prosrc` にも `cancellation` を含まない。後続の 051・062・066 が 048 より前の定義を土台に `CREATE OR REPLACE` したため上書きされたとみられる（048 自体が一度も適用されなかった可能性も残る）。フロント（`RaceDetailPage.jsx` 等）は `cancellationStatus` を参照しているため、RPC 経由の経路では値が届かない可能性がある。修正する場合は、最新定義（066）に `'cancellationStatus'` を追加する新しいマイグレーションを作る
+- 048_add_cancellation_status_to_predictions_rpc.sql は未適用のまま、後続の 051・062・066 の再定義で上書きされた。`cancellationStatus` は 068（3関数）と 102（`get_today_races`）で入れ直し、どちらも適用済み
 - 索引 `idx_race_entries_racer_id`（050）・`idx_race_entries_racer_id_race_id`（055）は `CREATE INDEX CONCURRENTLY` で作る索引だが、どちらも存在し有効（`indisvalid = true`）
-- 番号の重複は 15 番号ある（008・009・020・021・022・029・030・035・039・047・048・050・054・059・064）。これらは `verify-migration-numbers.js` の `ALLOWED_DUPLICATES` で凍結している。欠番は 024 のみ（002〜006 は番号付きの設計資料 `.md` で、SQL ではない）
+- 番号の重複は 15 番号ある（008・009・020・021・022・029・030・035・039・047・048・050・054・059・064）。これらは `verify-migration-numbers.js` の `ALLOWED_DUPLICATES` で凍結している。番号の付いた SQL が無い番号は 024・072・073・087・088・112・114・115・123・124・129・130・141・142・144・149・150・151（120・127・128 は廃止として台帳に行を残している）。002〜006 は番号付きの設計資料 `.md` で、SQL ではない
 
 ### 台帳に載らない実スキーマ
 
