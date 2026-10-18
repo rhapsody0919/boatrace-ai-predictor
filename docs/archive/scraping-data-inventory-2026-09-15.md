@@ -69,7 +69,7 @@
 | 各艇ST | ✅ | `race_start_timings` | 同上 | - |
 | 配当（単勝/複勝/3連複/3連単/2連単/2連複/拡連複） | ✅ | `race_results.payout_*` | 同上 | - |
 | 事故・失格等の備考 | ❌ | - | 未実装（「着」列のテキストを読んでいない） | [BOA-279](https://linear.app/boat-ai/issue/BOA-279) |
-| 確定天候（結果取得時の再取得） | ❌ | - | 未実装、朝の1回取得のみ | `DATA_ACQUISITION_STRATEGY.md`のPhase2候補 |
+| 確定天候（結果取得時の再取得） | ❌ | - | 未実装、朝の1回取得のみ | `docs/archive/data-acquisition-strategy.md`のPhase2候補 |
 
 ### A-4. オッズ（oddstf/odds3t/odds3f等）— T1（発走直前ウィンドウ、券種ごとに複数スナップショット）
 
