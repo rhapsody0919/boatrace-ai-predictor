@@ -219,11 +219,11 @@ const statusRule = (...contexts) => ({
     strict_required_status_checks_policy: false,
   },
 });
-check(
-  "必須チェックの集合は ruleset と同じ3つ",
-  REQUIRED_CHECK_NAMES,
-  ["verify", "ml-tests", "e2e"],
-);
+check("必須チェックの集合は ruleset と同じ3つ", REQUIRED_CHECK_NAMES, [
+  "verify",
+  "ml-tests",
+  "e2e",
+]);
 check(
   "ruleset が3つとも持てば GitHub に任せる",
   rulesetEnforcesChecks([
@@ -243,7 +243,10 @@ check(
   rulesetEnforcesChecks([
     { type: "deletion" },
     { type: "non_fast_forward" },
-    { type: "pull_request", parameters: { required_approving_review_count: 1 } },
+    {
+      type: "pull_request",
+      parameters: { required_approving_review_count: 1 },
+    },
   ]),
   false,
 );
@@ -419,7 +422,9 @@ check(
 );
 check(
   "e2eだけ赤の理由に e2e が入る（ml-tests の欠けと取り違えない）",
-  judgeChecks("1", greenWith("e2e", "FAILURE")).reason.includes("e2e が FAILURE"),
+  judgeChecks("1", greenWith("e2e", "FAILURE")).reason.includes(
+    "e2e が FAILURE",
+  ),
   true,
 );
 // 実際のPR #843 が e2e=IN_PROGRESS で、当時はPENDINGしか除外していなかったため

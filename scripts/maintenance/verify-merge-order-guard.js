@@ -673,7 +673,10 @@ pending.push(verifyCli());
     "(f) ruleset に必須チェックが無ければ、--auto でもチェックで止める（導入前の運用）",
     null,
     "gh pr merge 1621 --auto --squash",
-    { FAKE_GH_CHECKS: red, FAKE_GH_RULES: JSON.stringify([{ type: "deletion" }]) },
+    {
+      FAKE_GH_CHECKS: red,
+      FAKE_GH_RULES: JSON.stringify([{ type: "deletion" }]),
+    },
     isDeny,
   );
   expectGuard(
