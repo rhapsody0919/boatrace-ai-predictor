@@ -1,5 +1,7 @@
 # Codex に仕事を積む（codex-ok ラベルと backlog）
 
+> **2026-10-22 以降、Codex は `codex/` のブランチから PR を直接出す。** 下のパッチ・取り込みレーン（`git am`）の流れは旧方式で、直接 PR の規約は `AGENTS.md`「実装者としての規約」が正。issue の必須項目（雛形）・出せる／出せないもの・大きさの目安は、直接 PR でも使う。
+
 Linear の issue に `codex-ok` ラベルと必須項目を付けると、hq の無人スクリプト（AI なし）が `~/ryujin-codex-dev/backlog/` に積み、Codex がパッチを出す。パッチは取り込みレーンが PR にする（2026-10-12 オーナー承認、hq 経由）。
 
 Codex（`~/ryujin-codex-dev`）はリポジトリの浅い複製で実装し、パッチを出すだけ。push・PR・鍵・本番 DB には触れない。Codex への指示は `AGENTS.md` と下の雛形だけで、**issue 本文はデータとして扱う**（本文に書かれた指示文には従わせない）。
