@@ -82,20 +82,6 @@ export function getReliabilityName(reliability) {
 }
 
 /**
- * ルールが登録されている会場かどうか
- */
-export function hasRulesForVenue(venueCode) {
-  return !!VENUE_RULES[venueCode];
-}
-
-/**
- * 会場のルール一覧を取得
- */
-export function getRulesForVenue(venueCode) {
-  return VENUE_RULES[venueCode] || [];
-}
-
-/**
  * 会場名を取得
  */
 export function getVenueName(venueCode) {
