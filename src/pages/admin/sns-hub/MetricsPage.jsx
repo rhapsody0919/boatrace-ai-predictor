@@ -5,6 +5,7 @@ import MetricsTab from "./MetricsTab.jsx";
 import PostObservationList from "./PostObservationList.jsx";
 import InsightTab from "./InsightTab.jsx";
 import Toast, { useToast } from "../../../components/Toast";
+import { actionFeedback } from "./actionFeedback";
 import {
   getInsights,
   getRecentRevisions,
@@ -22,6 +23,7 @@ export default function MetricsPage() {
   const [insights, setInsights] = useState([]);
   const [revisions, setRevisions] = useState([]);
   const [error, setError] = useState("");
+  const [actionMessages, setActionMessages] = useState([]);
   const { toast, showToast } = useToast();
   // 操作のあとに読み直すときは reload を進める
   const [reload, setReload] = useState(0);
@@ -45,11 +47,20 @@ export default function MetricsPage() {
   }, [reload]);
   const load = () => setReload((n) => n + 1);
   async function act(actionFn, args) {
+    // 採用の応答にはリスク警告（riskWarnings）が載る。トーストは2秒で消えるので、消えない通知に残す
     try {
-      await actionFn(...args);
-      showToast("操作を反映しました", "success");
+      const messages = actionFeedback(await actionFn(...args));
+      setActionMessages((previous) => [...previous, ...messages]);
+      showToast(
+        messages.length ? "操作結果に警告があります" : "操作を反映しました",
+        messages.length ? "error" : "success",
+      );
     } catch (err) {
       console.error("戦略メモの操作エラー:", err);
+      setActionMessages((previous) => [
+        ...previous,
+        "操作に失敗しました。最新状態を確認してください。",
+      ]);
       showToast("操作に失敗しました。最新状態を確認してください。", "error");
     }
     load();
@@ -57,6 +68,14 @@ export default function MetricsPage() {
   const proposedCount = insights.filter((i) => i.status === "proposed").length;
   return (
     <SnsHubLayout>
+      {actionMessages.length > 0 && (
+        <div className="sns-hub-error-state" role="alert">
+          {actionMessages.map((message, index) => (
+            <p key={index}>{message}</p>
+          ))}
+          <button onClick={() => setActionMessages([])}>通知を閉じる</button>
+        </div>
+      )}
       <div className="tab-navigation-row">
         <div className="sns-hub-tab-navigation">
           {TABS.map((tab) => (

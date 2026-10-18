@@ -541,7 +541,8 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
     ["today_digest", DATE],
   );
   assert.equal(notes.length, 1);
-  assert.match(notes[0], /12:00 までに個別承認の画面で承認/);
+  // 個別承認の画面は 2026-10-18 に撤去した。manual のときは送らないと知らせる
+  assert.match(notes[0], /個別承認（mode=manual）なので送らない/);
   assert.match(
     notes[0],
     /画像1: https:\/\/signed\/today\/[^\n]+-1\.png\n画像2: [^\n]+\n画像3: [^\n]+\n画像4: [^\n]+-4\.png/,

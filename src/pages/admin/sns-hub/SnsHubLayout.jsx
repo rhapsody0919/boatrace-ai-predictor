@@ -16,48 +16,54 @@ const PAGES = [
   { to: "/admin/sns-hub/library", label: "資料" },
 ];
 
-// ナビの数字。手動承認は承認待ちの下書き、自動送信は要対応の件数。取れなければ数字を出さない
-function useNavCounts() {
-  const [counts, setCounts] = useState({});
+// ナビの数字。手動承認は承認待ちの下書き、自動送信は要対応の件数。取れなければ数字を出さない。
+// 一覧を持つページ（手動承認・自動送信）は最新の件数を provided で渡す。渡された分は取りに行かない
+// （一度だけ取った数字が操作のあとも古いまま残る・同じ一覧を二重に読むのを避ける）
+function useNavCounts(provided) {
+  const [fetched, setFetched] = useState({});
+  const needManual = provided.manual === undefined;
+  const needAuto = provided.auto === undefined;
   useEffect(() => {
     let active = true;
-    getDrafts()
-      .then((drafts) => {
-        if (active)
-          setCounts((c) => ({
-            ...c,
-            manual: drafts.filter(
-              (d) =>
-                MANUAL_PLATFORMS.includes(d.platform) &&
-                REVIEW_STATUSES.includes(d.status),
-            ).length,
-          }));
-      })
-      .catch((err) => console.error("承認待ちの件数を取得できません:", err));
-    getDeadlineQueue()
-      .then(({ rows }) => {
-        if (active)
-          setCounts((c) => ({
-            ...c,
-            auto: attentionRows(rows, Date.now()).length,
-          }));
-      })
-      .catch((err) => console.error("要対応の件数を取得できません:", err));
+    if (needManual)
+      getDrafts()
+        .then((drafts) => {
+          if (active)
+            setFetched((c) => ({
+              ...c,
+              manual: drafts.filter(
+                (d) =>
+                  MANUAL_PLATFORMS.includes(d.platform) &&
+                  REVIEW_STATUSES.includes(d.status),
+              ).length,
+            }));
+        })
+        .catch((err) => console.error("承認待ちの件数を取得できません:", err));
+    if (needAuto)
+      getDeadlineQueue()
+        .then(({ rows }) => {
+          if (active)
+            setFetched((c) => ({
+              ...c,
+              auto: attentionRows(rows, Date.now()).length,
+            }));
+        })
+        .catch((err) => console.error("要対応の件数を取得できません:", err));
     return () => {
       active = false;
     };
-  }, []);
-  return counts;
+  }, [needManual, needAuto]);
+  return { ...fetched, ...provided };
 }
 
 function navCountText(kind, value) {
-  if (value === undefined) return null;
+  if (value === undefined || value === null) return null;
   if (kind === "auto") return value > 0 ? `要対応 ${value}` : null;
   return String(value);
 }
 
-export default function SnsHubLayout({ children }) {
-  const counts = useNavCounts();
+export default function SnsHubLayout({ children, counts: provided = {} }) {
+  const counts = useNavCounts(provided);
   return (
     <div className="sns-hub-admin-page">
       <div className="sns-hub-header">

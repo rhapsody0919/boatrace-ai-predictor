@@ -222,3 +222,169 @@ test("各ページの URL を直接開ける", async ({ page }) => {
     await expect(page).toHaveURL(new RegExp(`${path}$`));
   }
 });
+
+// レビューで見つけた退行の再現テスト（PR #1645）
+test("後から届いた古い下書きの一覧で新しい一覧を上書きせず、ナビの件数も操作に追従する", async ({
+  page,
+}) => {
+  const now = e2eNow().getTime();
+  const draft = (id, title) => ({
+    id,
+    platform: "blog",
+    status: "pending_review",
+    title,
+    caption_text: "本文",
+    created_at: iso(now),
+    updated_at: iso(now),
+  });
+  const d1 = draft("55555555-5555-5555-5555-555555555555", "1本目の記事");
+  const d2 = draft("66666666-6666-6666-6666-666666666666", "2本目の記事");
+  // サーバー側の状態。1本目を非表示にした直後の一覧の読み込みだけ 1.5 秒遅らせる
+  // （dev の StrictMode で初回の読み込みが2回走るので、呼び出しの回数ではなく状態で返す）
+  let current = [d1, d2];
+  let delayNextRead = false;
+  let delayedReadDone = false;
+  await page.route(/\/api\/admin\/sns-hub\//, async (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/admin/sns-hub",
+      "",
+    );
+    if (path.endsWith("/archive")) {
+      const id = path.split("/")[2];
+      current = current.filter((d) => d.id !== id);
+      if (id === d1.id) delayNextRead = true;
+      return route.fulfill({ json: { data: {} } });
+    }
+    if (path === "/drafts") {
+      const snapshot = current;
+      if (delayNextRead) {
+        delayNextRead = false;
+        await new Promise((r) => setTimeout(r, 1500));
+        delayedReadDone = true;
+      }
+      return route.fulfill({ json: { data: snapshot } });
+    }
+    if (path === "/approvers")
+      return route.fulfill({
+        json: {
+          data: [
+            {
+              id: "44444444-4444-4444-4444-444444444444",
+              display_name: "本人",
+            },
+          ],
+        },
+      });
+    if (path === "/deadline-queue")
+      return route.fulfill({ json: { data: [], control: null } });
+    return route.fulfill({ json: { data: [] } });
+  });
+  await page.goto("/admin/sns-hub");
+  await expect(nav(page).getByRole("link", { name: /手動承認/ })).toContainText(
+    "2",
+  );
+  for (const title of ["1本目の記事", "2本目の記事"]) {
+    const card = page.locator(".draft-card", { hasText: title });
+    await card.getByRole("button", { name: "🗂️ 非表示にする" }).click();
+    await card
+      .getByRole("button", { name: "非表示にする", exact: true })
+      .click();
+  }
+  // 1回目の読み直し（1.5秒遅れて [2本目] を返す）が、2回目（[] を返す）より後に届く
+  await expect.poll(() => delayedReadDone, { timeout: 10000 }).toBe(true);
+  await page.waitForTimeout(2000);
+  await expect(page.getByText("該当する下書きはありません。")).toBeVisible();
+  await expect(page.locator(".draft-card")).toHaveCount(0);
+  await expect(nav(page).getByRole("link", { name: /手動承認/ })).toContainText(
+    "0",
+  );
+});
+
+test("戦略メモの採用で返ったリスク警告を、消えない通知に残す", async ({
+  page,
+}) => {
+  await page.route(/\/api\/admin\/sns-hub\//, (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/admin/sns-hub",
+      "",
+    );
+    if (path === "/insights/i1/approve")
+      return route.fulfill({
+        json: { data: {}, riskWarnings: [{ description: "断定的な表現" }] },
+      });
+    if (path === "/insights")
+      return route.fulfill({
+        json: {
+          data: [
+            {
+              id: "i1",
+              status: "proposed",
+              insight_text: "数字の比較を冒頭に置く",
+              source: "own-metrics",
+              created_at: iso(e2eNow().getTime()),
+            },
+          ],
+        },
+      });
+    if (path === "/deadline-queue")
+      return route.fulfill({ json: { data: [], control: null } });
+    if (path === "/observations")
+      return route.fulfill({
+        json: { data: { drafts: [], observations: [] } },
+      });
+    return route.fulfill({ json: { data: [] } });
+  });
+  await page.goto("/admin/sns-hub/metrics");
+  await page.getByRole("button", { name: /^戦略メモ \(1\)$/ }).click();
+  await page.getByRole("button", { name: "採用", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "リスク警告: 断定的な表現" }),
+  ).toBeVisible();
+  await page.waitForTimeout(2500); // トースト（2秒）が消えても残る
+  await expect(
+    page.getByRole("alert").filter({ hasText: "リスク警告: 断定的な表現" }),
+  ).toBeVisible();
+});
+
+test("自動送信のナビの件数は 10 秒ごとの読み直しに追従する", async ({
+  page,
+}) => {
+  const now = e2eNow().getTime();
+  let failed = false;
+  await page.route(/\/api\/admin\/sns-hub\//, (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/admin/sns-hub",
+      "",
+    );
+    if (path === "/deadline-queue")
+      return route.fulfill({
+        json: {
+          data: failed
+            ? [
+                {
+                  id: "f",
+                  title: "失敗",
+                  channel: "x",
+                  state: "failed",
+                  scheduled_at: iso(now),
+                },
+              ]
+            : [],
+          control: null,
+        },
+      });
+    return route.fulfill({ json: { data: [] } });
+  });
+  await page.goto("/admin/sns-hub/auto");
+  await expect(page.getByRole("region", { name: "要対応" })).toContainText(
+    "0件",
+  );
+  await expect(
+    nav(page).getByRole("link", { name: /自動送信/ }),
+  ).not.toContainText("要対応");
+  failed = true;
+  await expect(nav(page).getByRole("link", { name: /自動送信/ })).toContainText(
+    "要対応 1",
+    { timeout: 15000 },
+  );
+});

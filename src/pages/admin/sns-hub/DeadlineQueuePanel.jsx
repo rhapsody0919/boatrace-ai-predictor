@@ -212,7 +212,8 @@ export function SendControlBand({ control, busy, onStop }) {
   );
 }
 
-export default function DeadlineQueuePanel() {
+// onAttentionCount: 要対応の件数を親（ページのナビ）へ知らせる。10秒ごとの読み直しに追従させる
+export default function DeadlineQueuePanel({ onAttentionCount }) {
   const [rows, setRows] = useState([]);
   const [control, setControl] = useState(null);
   const [error, setError] = useState("");
@@ -273,6 +274,11 @@ export default function DeadlineQueuePanel() {
       setBusy(false);
     }
   }
+  const attention = attentionRows(rows, now);
+  const attentionCount = loaded ? attention.length : null;
+  useEffect(() => {
+    if (attentionCount !== null) onAttentionCount?.(attentionCount);
+  }, [attentionCount, onAttentionCount]);
   const today = todayDay(now);
   const dayRows = selection.day
     ? calendarMonth(rows, selection.month, selection).filter(
@@ -289,7 +295,7 @@ export default function DeadlineQueuePanel() {
           {stopError && <p role="alert">{stopError}</p>}
           <DeadlineQueueList
             title="要対応"
-            rows={attentionRows(rows, now)}
+            rows={attention}
             now={now}
             emptyText="要対応の投稿はありません（失敗・保留・失効は直近3日、要照合は日付に関係なく出します）。"
           />

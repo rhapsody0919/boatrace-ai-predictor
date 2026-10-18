@@ -8,7 +8,7 @@
  * /today の個別承認の区画は、検査が通れば自動で送る決定に合わせて撤去した。
  */
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   getDrafts,
   getApprovers,
@@ -76,6 +76,9 @@ function SnsHubAdmin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { toast, showToast } = useToast();
+  // 下書きの読み込みの番号。操作の後の読み直しと「更新」等が重なったとき、後から届いた古い応答で
+  // 新しい一覧を上書きしない（最後に始めた読み込みの結果だけを使う）
+  const draftReadEpoch = useRef(0);
 
   // 下書きのcontent_group_id → ネタの型、の逆引き。ネタ駆動で生成された下書きに
   // ContentTypeBadgeを表示するために使う（単発投稿にはネタが無いため何も表示しない）
@@ -113,9 +116,14 @@ function SnsHubAdmin() {
         setLoading(true);
         setError(null);
       }
+      const readEpoch = fetchScope.drafts ? ++draftReadEpoch.current : null;
       try {
         await Promise.all([
-          fetchScope.drafts ? getDrafts().then(setDrafts) : null,
+          fetchScope.drafts
+            ? getDrafts().then((data) => {
+                if (readEpoch === draftReadEpoch.current) setDrafts(data);
+              })
+            : null,
           fetchScope.approvers ? getApprovers().then(setApprovers) : null,
           fetchScope.topics ? getTopics().then(setTopics) : null,
           fetchScope.topicCategories
@@ -233,7 +241,7 @@ function SnsHubAdmin() {
 
   if (loading) {
     return (
-      <SnsHubLayout>
+      <SnsHubLayout counts={{ manual: null }}>
         <div className="sns-hub-loading-state">
           <div className="spinner" />
           <p>データを読み込み中...</p>
@@ -244,7 +252,7 @@ function SnsHubAdmin() {
 
   if (error) {
     return (
-      <SnsHubLayout>
+      <SnsHubLayout counts={{ manual: null }}>
         <div className="sns-hub-error-state">
           <p>エラーが発生しました: {error}</p>
           <button onClick={() => loadDrafts()}>再読み込み</button>
@@ -261,8 +269,15 @@ function SnsHubAdmin() {
       d.platform === activeTab && activeStatusDef.statuses.includes(d.status),
   );
 
+  // ナビの「手動承認」の件数は、この画面が持つ最新の一覧から出す（操作のたびに追従させる）
+  const manualCount = drafts.filter(
+    (d) =>
+      PLATFORM_TABS.some((tab) => tab.id === d.platform) &&
+      STATUS_FILTERS[0].statuses.includes(d.status),
+  ).length;
+
   return (
-    <SnsHubLayout>
+    <SnsHubLayout counts={{ manual: manualCount }}>
       {actionMessages.length > 0 && (
         <div className="sns-hub-error-state" role="alert">
           {actionMessages.map((message, index) => (

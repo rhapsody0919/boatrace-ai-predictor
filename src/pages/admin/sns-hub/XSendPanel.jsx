@@ -80,16 +80,15 @@ export default function XSendPanel({
       setBusy(false);
     }
   }
-  const stateUnknown = unknown;
   const locked =
-    stateUnknown ||
+    unknown ||
     ["queued", "sending", "reconcile", "posted"].includes(status?.job?.state);
   const canApprove = ["pending_review", "approved"].includes(draft.status);
   return (
     <section className="draft-background-details" aria-label="X送信">
       <p>
         X送信:{" "}
-        {stateUnknown
+        {unknown
           ? "要照合（状態未確定）"
           : LABELS[status?.job?.state] || "未登録"}
       </p>
@@ -167,7 +166,7 @@ export default function XSendPanel({
       {status?.job?.state === "queued" && (
         <button
           className="draft-action-btn revise"
-          disabled={busy || stateUnknown}
+          disabled={busy || unknown}
           onClick={() => act(() => cancelXSend(draft.id))}
         >
           X予約・待機を取消
@@ -180,7 +179,7 @@ export default function XSendPanel({
       >
         X送信を停止
       </button>
-      {(stateUnknown ||
+      {(unknown ||
         ["sending", "reconcile"].includes(status?.job?.state)) && (
         <p>手動投稿も照合が済むまで停止してください。</p>
       )}

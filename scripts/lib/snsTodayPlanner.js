@@ -513,9 +513,9 @@ export async function runTodayPlan(
       : auto && !autoError
         ? `今日の投稿を ${TODAY_SEND_AT} に自動で送る（承認なし${control.dry_run !== false ? "。ただし試運転中なので claim の前で止まる" : ""}）。止めるには: UPDATE public.sns_x_send_control SET paused = true WHERE id = true;`
         : autoError
-          ? `今日の投稿の自動の承認に失敗した（個別承認に回した）: ${autoError}`
+          ? `今日の投稿の自動の承認に失敗したので送らない: ${autoError}`
           : state === "manual"
-            ? "今日の投稿の下書きができた。12:00 までに個別承認の画面で承認すると、12:00 に送る"
+            ? "今日の投稿の下書きができたが、X は個別承認（mode=manual）なので送らない。自動で送るなら sns_auto_send_control の mode を auto にする"
             : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
