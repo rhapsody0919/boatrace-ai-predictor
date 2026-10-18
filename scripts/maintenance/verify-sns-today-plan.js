@@ -156,12 +156,32 @@ const sqlStore = {
     ),
   async updateItem(id, from, p) {
     const row = await first(
-      "UPDATE sns_auto_send_items SET state=$3,checks=$4,held_reason=$5 WHERE id=$1 AND state=$2 RETURNING *",
-      [id, from, p.state, p.checks, p.held_reason],
+      `UPDATE sns_auto_send_items SET state=$3,checks=coalesce($4,checks),held_reason=$5,
+         notified_at=coalesce($6,notified_at),stop_token_hash=coalesce($7,stop_token_hash) WHERE id=$1 AND state=$2 RETURNING *`,
+      [
+        id,
+        from,
+        p.state,
+        p.checks ?? null,
+        p.held_reason ?? null,
+        p.notified_at ?? null,
+        p.stop_token_hash ?? null,
+      ],
     );
     if (!row) throw new Error("item を更新できない");
     return row;
   },
+  control: () =>
+    first(
+      "SELECT mode, dry_run, auto_approver_id FROM sns_auto_send_control WHERE channel='x'",
+    ),
+  approve: (a) =>
+    first("SELECT public.approve_sns_x_send($1,$2,$3,$4) r", [
+      a.p_draft_id,
+      a.p_approver_id,
+      a.p_snapshot,
+      a.p_scheduled_at,
+    ]),
 };
 const trackingStore = {
   save: (t) =>
@@ -1170,4 +1190,44 @@ test("確認用の作り直し（cursor.today_rebuild）: 送る時刻を過ぎ�
     sendHolds(draft).includes("期限失効") ||
       Date.now() < Date.parse(draft.source_data.deadline_queue.expires_at),
   );
+});
+
+test("mode=auto（2026-10-18 オーナー決定: /today も承認なし）: 下書きを作ったら item を notified にし、自動送信の承認者で 12:00 の job を作る。一覧がやり直されたら作り直して承認し直す", async () => {
+  await db.exec(
+    "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='x'",
+  );
+  try {
+    const notes = [];
+    const first1 = await plan({ notes });
+    assert.equal(first1.report.items[0].outcome, "notified");
+    const item = await first("SELECT * FROM sns_auto_send_items");
+    assert.equal(item.state, "notified");
+    assert.ok(item.notified_at && /^[a-f0-9]{64}$/.test(item.stop_token_hash));
+    const auto = (
+      await first(
+        "SELECT auto_approver_id FROM sns_auto_send_control WHERE channel='x'",
+      )
+    ).auto_approver_id;
+    const job = await first("SELECT * FROM sns_x_send_jobs");
+    assert.equal(job.state, "queued");
+    assert.equal(job.approver_id, auto);
+    assert.equal(job.auto_item_id, item.id);
+    assert.equal(job.scheduled_at.toISOString(), at("12:00").toISOString());
+    assert.ok(notes.some((n) => /12:00 に自動で送る/.test(n)));
+    assert.ok(notes.some((n) => /paused = true/.test(n)));
+    // 一覧がやり直されたら（版が変わる）、notified でも作り直して承認し直す
+    const again = await plan({
+      now: at("07:45"),
+      digest: digestOf(24),
+    });
+    assert.equal(again.report.items[0].outcome, "rebuilt");
+    const after = await first("SELECT * FROM sns_auto_send_items");
+    assert.equal(after.state, "notified");
+    const job2 = await first("SELECT * FROM sns_x_send_jobs");
+    assert.equal(job2.state, "queued");
+  } finally {
+    await db.exec(
+      "UPDATE sns_auto_send_control SET mode='manual' WHERE channel='x'",
+    );
+  }
 });
