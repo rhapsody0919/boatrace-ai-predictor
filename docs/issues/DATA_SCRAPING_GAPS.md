@@ -1,6 +1,6 @@
 # スクレイピング仕様と既知の課題
 
-> **関連ドキュメント**: [DATA_ACQUISITION_STRATEGY.md](../proposal/DATA_ACQUISITION_STRATEGY.md)
+> **関連ドキュメント**: [data-acquisition-strategy.md](../archive/data-acquisition-strategy.md)
 
 ---
 
@@ -287,7 +287,7 @@ beforeinfo ページの HTML は展示前後でテーブル構造が同一。セ
 | 進入コース | ⚠️ | race_results.course_1〜6（スクレイピングバグで艇番と100%一致、実質機能せず。[BOA-257](https://linear.app/boat-ai/issue/BOA-257)） |
 | 各艇ST | ✅ | race_start_timings |
 | 備考（事故・失格等） | ❌ | 未取得（[BOA-279](https://linear.app/boat-ai/issue/BOA-279)） |
-| 単勝オッズ・複勝オッズ・3連単人気上位 | ✅ | **訂正（2026-09-14）**: このドキュメントの記載は古かった。BOA-49（2026-04-08）で`scripts/daily/scrape-odds.js`が実装済み・稼働中。発走60/30/15/10/5分前（各±3分）のウィンドウで`oddstf`/`odds3t`ページを取得し`race_odds`に時系列保存（`captured_at`を主キーに含む）。詳細な設計は`DATA_ACQUISITION_STRATEGY.md`参照（同ドキュメントも要訂正） |
+| 単勝オッズ・複勝オッズ・3連単人気上位 | ✅ | **訂正（2026-09-14）**: このドキュメントの記載は古かった。BOA-49（2026-04-08）で`scripts/daily/scrape-odds.js`が実装済み・稼働中。発走60/30/15/10/5分前（各±3分）のウィンドウで`oddstf`/`odds3t`ページを取得し`race_odds`に時系列保存（`captured_at`を主キーに含む）。詳細な設計は`docs/archive/data-acquisition-strategy.md`参照（同ドキュメントも要訂正） |
 
 ### SG/G1限定ページ（pitreport等）
 

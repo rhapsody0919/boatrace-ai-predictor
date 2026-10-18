@@ -69,7 +69,7 @@ node scripts/maintenance/test-workflow-dispatch.js
 ### 注意事項
 
 - **GitHub PAT の有効期限**: 90日ごとに更新が必要。期限切れ前に cron-job.org の設定も更新する
-- **concurrency 制御**: `scrape-scheduled`グループは`cancel-in-progress: false`（先勝ち、後はキュー待ち）。高頻度トリガー時にキューが詰まりデータ欠落を起こした実績があり（[investigation.md](../proposal/scraping-serverless-migration/investigation.md)参照）、これが時間に厳しい処理をパターンBへ移行する動機になっている
+- **concurrency 制御**: `scrape-scheduled`グループは`cancel-in-progress: false`（先勝ち、後はキュー待ち）。高頻度トリガー時にキューが詰まりデータ欠落を起こした実績があり（[investigation.md](../design/scraping-serverless-migration/investigation.md)参照）、これが時間に厳しい処理をパターンBへ移行する動機になっている
 
 ## パターンB: Vercel Function直接呼び出し
 

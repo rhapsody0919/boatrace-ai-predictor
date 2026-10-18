@@ -3,9 +3,9 @@
 龍神レーダー予測システムの詳細仕様。3つのAIモデルによる順位予測と、1マーク展開予測を組み合わせたシステム。
 
 > **関連ドキュメント:**
-> - [database-design.md](./database-design.md) - データベース設計書
+> - [database-design.md](../reference/database-design.md) - データベース設計書
 > - [analysis-guide.md](./analysis-guide.md) - 分析ガイド
-> - [design-system.md](./design-system.md) - デザインシステム
+> - [design-system.md](../reference/design-system.md) - デザインシステム
 
 ---
 
@@ -160,7 +160,7 @@ AIスコア = 全国勝率 × 重み
 
 ## データモデル
 
-> **詳細は [database-design.md](./database-design.md) を参照**
+> **詳細は [database-design.md](../reference/database-design.md) を参照**
 
 ### predictions テーブル
 

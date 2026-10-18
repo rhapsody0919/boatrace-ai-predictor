@@ -2,7 +2,7 @@
 
 種別: インフラ改善
 対応Linearチケット: [BOA-313](https://linear.app/boat-ai/issue/BOA-313)（2026-09-15、実装・並走検証が進んだ後に遡って起票）
-対応調査: [docs/proposal/scraping-serverless-migration/investigation.md](../../proposal/scraping-serverless-migration/investigation.md)（背景・根本原因・Vercel/cron-job.org制約調査・Active CPU実測結果はこちらを参照）
+対応調査: [docs/design/scraping-serverless-migration/investigation.md](investigation.md)（背景・根本原因・Vercel/cron-job.org制約調査・Active CPU実測結果はこちらを参照）
 
 ## 背景・目的
 
@@ -13,7 +13,7 @@
 ## 非目標
 
 - ML学習・日次集計・選手プロフィール取得等、分単位の即時性が不要なバッチ処理はGitHub Actionsに残す（対象外）
-- AWS等への移行は対象外（[investigation.md](../../proposal/scraping-serverless-migration/investigation.md)の通り、具体的な制約にぶつかるまで不要と判断済み）
+- AWS等への移行は対象外（[investigation.md](investigation.md)の通り、具体的な制約にぶつかるまで不要と判断済み）
 
 ## 移行対象と優先順位
 
@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
 ### タイムアウト設計（30秒制約への対応）
 
-cron-job.org側のタイムアウトは30秒（[investigation.md](../../proposal/scraping-serverless-migration/investigation.md)で確認済み）。Vercel Function自体は最大300秒（Hobby、Fluid Compute）まで動けるが、**cron-job.orgへの応答は30秒以内に返す必要がある**。実測ベース（展示データ8レースで約55秒、これは複数レースをまとめて処理した場合の数値）を踏まえ検討した結果、**案B（`waitUntil`でバックグラウンド継続）を採用した**（2026-09-14決定・実機検証済み、詳細は上記「決定事項」参照）。
+cron-job.org側のタイムアウトは30秒（[investigation.md](investigation.md)で確認済み）。Vercel Function自体は最大300秒（Hobby、Fluid Compute）まで動けるが、**cron-job.orgへの応答は30秒以内に返す必要がある**。実測ベース（展示データ8レースで約55秒、これは複数レースをまとめて処理した場合の数値）を踏まえ検討した結果、**案B（`waitUntil`でバックグラウンド継続）を採用した**（2026-09-14決定・実機検証済み、詳細は上記「決定事項」参照）。
 
 案A（1回の呼び出しで処理するレース数を絞る）は不採用: 上限を超えた分のレースが次のtickまで待たされる、というアプリケーション層のキューを新たに作ってしまい、GitHub Actionsのconcurrencyキューで起きた問題を小さいスケールで再現するだけで根本解決にならないため。
 

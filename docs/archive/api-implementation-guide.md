@@ -371,8 +371,8 @@ node scripts/daily/generate-predictions.js
 
 ## 参考
 
-- `docs/operation/api-architecture-analysis.md` - API・RPC アーキテクチャ分析
-- `docs/reference/race-conditions-table-design.md` - race_conditions テーブル設計
+- `docs/archive/api-architecture-analysis.md` - API・RPC アーキテクチャ分析
+- `docs/archive/race-conditions-table-design.md` - race_conditions テーブル設計
 - `scripts/daily/generate-predictions.js` - バッチスクリプト
 - `api/races/today.js` - Edge Function 実装
 - `api/predictions/[date].js` - Edge Function 実装

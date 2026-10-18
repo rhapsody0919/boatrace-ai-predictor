@@ -455,7 +455,7 @@ type: feat|fix|refactor|docs|chore|content
 |------|------|
 | `README.md` | プロジェクト概要 |
 | `docs/reference/database-design.md` | DBスキーマ詳細 |
-| `docs/operation/RULE_OPERATION_GUIDE.md` | ルール運用ガイド |
+| `docs/archive/rule-operation-guide.md` | ルール運用ガイド |
 | `docs/issues/DATA_SCRAPING_GAPS.md` | スクレイピング仕様・課題 |
 | `docs/design/turn-prediction-v3-design.md` | ターン予測v3設計 |
 

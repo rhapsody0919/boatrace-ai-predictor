@@ -2,7 +2,7 @@
 
 ## 背景
 
-[BOA-305](https://linear.app/boat-ai/issue/BOA-305)（レース詳細ページのUI/UX改善）を進める前提として、ユーザーから「まずデータ整備が必要」「現状のスクレイピング設計全体の最適化問題も絡む」という指摘があった。既存の関連ドキュメント（`docs/issues/DATA_SCRAPING_GAPS.md`、`docs/proposal/DATA_ACQUISITION_STRATEGY.md`、`docs/proposal/scraping-serverless-migration/investigation.md`、`docs/design/scraping-serverless-migration/spec.md`）とレース詳細ページ側の調査（[race-detail-page-tab-comparison-2026-09-15.md](./race-detail-page-tab-comparison-2026-09-15.md)）を横断して、問題を整理する。
+[BOA-305](https://linear.app/boat-ai/issue/BOA-305)（レース詳細ページのUI/UX改善）を進める前提として、ユーザーから「まずデータ整備が必要」「現状のスクレイピング設計全体の最適化問題も絡む」という指摘があった。既存の関連ドキュメント（`docs/issues/DATA_SCRAPING_GAPS.md`、`docs/archive/data-acquisition-strategy.md`、`docs/design/scraping-serverless-migration/investigation.md`、`docs/design/scraping-serverless-migration/spec.md`）とレース詳細ページ側の調査（[race-detail-page-tab-comparison-2026-09-15.md](./race-detail-page-tab-comparison-2026-09-15.md)）を横断して、問題を整理する。
 
 **状況更新（2026-09-15夕方）**: 軸②（サーバーレス移行）は他セッションが設計・実装・Linearチケット起票（[BOA-313](https://linear.app/boat-ai/issue/BOA-313)）まで一貫して担当している。本ドキュメントは進捗を参照するのみで、当該作業には関与しない。
 

@@ -41,7 +41,7 @@
 | 8 | 出目ランク |
 | 9 | MyData |
 
-**タブは8つではなく10ある。** [race-detail-page-tab-comparison-2026-09-15.md](./race-detail-page-tab-comparison-2026-09-15.md)
+**タブは8つではなく10ある。** [race-detail-page-tab-comparison-2026-09-15.md](../../archive/race-detail-page-tab-comparison-2026-09-15.md)
 は8タブ（出目ランク・MyData を含まない）として調査しているが、2週間で2つ増えていた。
 日和は月2〜5回機能を追加するため、**この一覧も同じ速さで古くなる**前提で扱う。
 

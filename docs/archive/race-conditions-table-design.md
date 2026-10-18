@@ -167,6 +167,6 @@ ALTER TABLE race_conditions DROP COLUMN IF EXISTS race_grade;
 
 ## 参考
 
-- `docs/operation/api-architecture-analysis.md` - API・RPC アーキテクチャ分析
+- `docs/archive/api-architecture-analysis.md` - API・RPC アーキテクチャ分析
 - `scripts/daily/generate-predictions.js` - バッチスクリプト実装
 - `scripts/daily/update-race-info.js` - 発走60分前スクリプト実装
