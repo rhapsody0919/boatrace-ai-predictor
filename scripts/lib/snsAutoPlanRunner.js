@@ -13,8 +13,9 @@
  *     子を親の job につないで外すのは tasks 12 の後半（親から順の承認）
  *   → 不合格: item を held_manual（理由を held_reason に）。取得の失敗だけのときは checking のまま次の実行でやり直す（3回まで）
  *
- * - この版は個別承認（mode=manual）まで。自動（mode=auto）の事前通知・止めるリンク・自動送信の承認者での approve は tasks 12 の後半で足す。
- *   それまでは mode=auto でも manual にして知らせる（自動では送らない）
+ * - 自動（mode=auto）: 検査に合格したら、item を notified にして自動送信の承認者で承認し、Slack に「送る時刻・止める SQL」を知らせる
+ *   （2026-10-18 オーナー決定: 承認なし・事前通知と止めるリンクは最小。止めるのは sns_x_send_control.paused）。
+ *   送る時刻は veto_until（締切の60分前）と「今から5分後」の遅い方。X はスレッドの子があると自動では送らない（親1件の長文だけ）
  * - 試運転（dry_run）は送信の側（sns-send）が claim の前で止める。ここでは checks.dry_run に記録するだけ
  * - shadow では検査だけを行い、DB・UTM の表・Slack には書かない
  * - 毎回、基準日（X は JST・YouTube は太平洋時間）と X の月の期間を進める（153 roll_sns_send_baselines・158 roll_sns_x_send_period）
@@ -26,12 +27,18 @@ import { prepareRaceTracking } from "./snsPostTracking.js";
 import { sendHolds } from "../../api/_lib/snsMobileApproval.js";
 import { checkPublicDisplay } from "../../api/_lib/snsDeadlineQueue.js";
 import { deadlineIso } from "../../api/_lib/snsClaimCheck.js";
+import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import { randomBytes } from "node:crypto";
 
 /** item を作るレースの種別（race_conditions.race_stage の完全一致。冠の付いた「ツッキー優勝戦」等は対象外） */
 export const AUTO_PLAN_STAGES = ["優勝戦", "準優勝戦"];
 export const NOTIFY_BEFORE_MIN = 180;
 export const VETO_BEFORE_MIN = 60;
 export const EXPIRES_BEFORE_MIN = 30;
+/** 素材から item を作る最後の時刻（締切の40分前）。60分前を過ぎた素材も、失効（30分前）までに送れるうちは作る（2026-10-18） */
+export const LATEST_PLAN_BEFORE_MIN = 40;
+/** 自動送信で、Slack に知らせてから送るまでの最短の間（止める余地） */
+export const AUTO_SEND_GRACE_MIN = 5;
 /** 取得の失敗（数値の API・Chromium）だけで落ちたときに、checking のままやり直す回数 */
 export const AUTO_PLAN_MAX_ATTEMPTS = 3;
 /** 1回の実行で検査する素材の上限（表示の確認は1回 最大 約45秒。関数の300秒に収める） */
@@ -66,6 +73,8 @@ export async function runSnsAutoPlan(
     trackingStore,
     notify = async () => {},
     maxBundles = AUTO_PLAN_MAX_BUNDLES,
+    loadMedia,
+    createSnapshot = createXSnapshot,
   },
 ) {
   const live = ctx.mode === "live";
@@ -176,6 +185,29 @@ export async function runSnsAutoPlan(
           trackingStore,
         });
         written += 1;
+        // 自動: 検査に合格したら、そのまま自動送信の承認者で承認する
+        if (outcome.state === "manual" && controls[channel]?.mode === "auto") {
+          const auto = await autoSend(item, target.drafts, channel, {
+            store,
+            control: controls[channel],
+            loadMedia,
+            createSnapshot,
+            now,
+          });
+          if (auto.sendAt) {
+            result.outcome = "notified";
+            result.send_at = auto.sendAt;
+            await tell(
+              `SNS の自動送信: ${plan.raceId} ${channel} を ${jstTime(auto.sendAt)} に自動で送る（承認なし${controls[channel]?.dry_run !== false ? "。ただし試運転中なので claim の前で止まる" : ""}）。止めるには: UPDATE public.sns_x_send_control SET paused = true WHERE id = true;`,
+            );
+            continue;
+          }
+          result.auto_skipped = auto.skipped;
+          await tell(
+            `SNS の自動送信: ${plan.raceId} ${channel} は自動では送らない（${auto.skipped}）。個別承認の画面で承認できる`,
+          );
+          continue;
+        }
         if (outcome.state === "held_manual")
           await tell(
             `SNS の自動送信: ${plan.raceId} ${channel} を個別承認の画面で止めた（検査の不合格）: ${outcome.reasons.join("・")}`,
@@ -195,10 +227,14 @@ export async function runSnsAutoPlan(
     }
   }
   for (const channel of CHANNELS)
-    if (live && controls[channel]?.mode === "auto")
+    if (
+      live &&
+      controls[channel]?.mode === "auto" &&
+      !controls[channel]?.auto_approver_id
+    )
       alerts.push({
-        key: `auto_unimplemented:${channel}`,
-        text: `SNS の ${channel} が mode=auto だが、事前通知・自動の承認は未実装（tasks 12 の後半）。個別承認に回している`,
+        key: `auto_approver_missing:${channel}`,
+        text: `SNS の ${channel} が mode=auto だが、自動送信の承認者（auto_approver_id）が無い。自動では送れない`,
       });
   return {
     rowsWritten: written,
@@ -256,9 +292,10 @@ export function planCandidates({ bundles, races, stages, drafts, items }, now) {
       skip(bundle, "race_cancelled");
       continue;
     }
-    // 送る時刻（締切の60分前）を過ぎたら作らない
+    // 締切の40分前を過ぎたら作らない（失効は30分前。検査と送信の時間を残す）
     if (
-      now.getTime() >= Date.parse(minutesBefore(deadlineAt, VETO_BEFORE_MIN))
+      now.getTime() >=
+      Date.parse(minutesBefore(deadlineAt, LATEST_PLAN_BEFORE_MIN))
     ) {
       skip(bundle, "too_late");
       continue;
@@ -529,6 +566,56 @@ async function applyOutcome(item, drafts, outcome, { store, trackingStore }) {
   await unblockDrafts(drafts, store);
 }
 
+const jstTime = (iso) =>
+  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
+
+/**
+ * 自動送信: item を notified にして、自動送信の承認者で下書きを承認する（153 の approve_sns_x_send は mode=auto かつ
+ * item.state=notified のときだけ自動送信の承認者を通す）。承認に失敗したら item を manual に戻し、個別承認で送れるようにする。
+ * 返り値: { sendAt } か { skipped: 理由 }
+ */
+async function autoSend(
+  item,
+  drafts,
+  channel,
+  { store, control, loadMedia, createSnapshot, now },
+) {
+  if (!control?.auto_approver_id)
+    return { skipped: "自動送信の承認者が未設定" };
+  if (!loadMedia) return { skipped: "媒体を読む部品が無い" };
+  if (channel === "x" && drafts.length !== 1)
+    return { skipped: "X のスレッド（子あり）は自動では送らない" };
+  const sendAt = new Date(
+    Math.max(
+      Date.parse(item.veto_until),
+      now.getTime() + AUTO_SEND_GRACE_MIN * 60000,
+    ),
+  ).toISOString();
+  await store.updateItem(item.id, "manual", {
+    state: "notified",
+    notified_at: now.toISOString(),
+    // 止めるリンクは作らない（2026-10-18 オーナー決定）。153 の CHECK が notified に要求するので、使わない乱数のハッシュを入れる
+    stop_token_hash: randomBytes(32).toString("hex"),
+  });
+  try {
+    for (const { id } of drafts) {
+      const draft = await store.getDraft(id);
+      await store.approve({
+        p_draft_id: draft.id,
+        p_approver_id: control.auto_approver_id,
+        p_snapshot: await createSnapshot(draft, loadMedia),
+        p_scheduled_at: sendAt,
+      });
+    }
+  } catch (error) {
+    await store
+      .updateItem(item.id, "notified", { state: "manual" })
+      .catch(() => {});
+    throw new Error(`自動の承認に失敗（個別承認に戻した）: ${error.message}`);
+  }
+  return { sendAt };
+}
+
 /** スレッドの子は外さない（上の説明） */
 export const unblockable = (draft) =>
   draft.platform !== "x" || (draft.thread_index ?? 0) === 0;
@@ -576,7 +663,7 @@ export function createAutoPlanStore({ url, key, fetchImpl = fetch }) {
     rpc: (name) => call(`rpc/${name}`, { method: "POST", body: {} }),
     async controls() {
       const rows = await call(
-        "sns_auto_send_control?select=channel,mode,dry_run",
+        "sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id",
       );
       return Object.fromEntries(rows.map((row) => [row.channel, row]));
     },
@@ -624,6 +711,10 @@ export function createAutoPlanStore({ url, key, fetchImpl = fetch }) {
         await call("sns_auto_send_items", { method: "POST", body: row }),
         "item を作れない",
       ),
+    getDraft: async (id) =>
+      one(await call(`sns_drafts?id=eq.${id}&select=*`), `下書き ${id} が無い`),
+    approve: (args) =>
+      call("rpc/approve_sns_x_send", { method: "POST", body: args }),
     async updateItem(id, fromState, patch) {
       return one(
         await call(`sns_auto_send_items?id=eq.${id}&state=eq.${fromState}`, {

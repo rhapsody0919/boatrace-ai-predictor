@@ -120,7 +120,12 @@ const CLAIMS = [
     },
   },
 ];
-async function importBundle({ raceId = RACE, parent, createdAt } = {}) {
+async function importBundle({
+  raceId = RACE,
+  parent,
+  createdAt,
+  single = false,
+} = {}) {
   const bundle = {
     schema_version: "ryujin-preview/1",
     format: "race_full",
@@ -138,7 +143,7 @@ async function importBundle({ raceId = RACE, parent, createdAt } = {}) {
           `準優勝戦の全貌。\nhttps://www.boat-ai.jp/race/${raceId}?tab=sonar`,
         media: "draft-x.mp4",
       },
-      { index: 1, text: "1号艇は今節の勝率が高い" },
+      ...(single ? [] : [{ index: 1, text: "1号艇は今節の勝率が高い" }]),
     ],
   };
   const r = (
@@ -170,7 +175,9 @@ const sqlStore = {
   controls: async () =>
     Object.fromEntries(
       (
-        await all("SELECT channel, mode, dry_run FROM sns_auto_send_control")
+        await all(
+          "SELECT channel, mode, dry_run, auto_approver_id FROM sns_auto_send_control",
+        )
       ).map((r) => [r.channel, r]),
     ),
   async todaysBundles(today) {
@@ -225,7 +232,8 @@ const sqlStore = {
     ),
   async updateItem(id, fromState, patch) {
     const row = await first(
-      `UPDATE sns_auto_send_items SET state=coalesce($3,state), checks=coalesce($4,checks), held_reason=coalesce($5,held_reason), updated_at=test_now()
+      `UPDATE sns_auto_send_items SET state=coalesce($3,state), checks=coalesce($4,checks), held_reason=coalesce($5,held_reason),
+         notified_at=coalesce($6,notified_at), stop_token_hash=coalesce($7,stop_token_hash), updated_at=test_now()
        WHERE id=$1 AND state=$2 RETURNING *`,
       [
         id,
@@ -233,10 +241,22 @@ const sqlStore = {
         patch.state ?? null,
         patch.checks ?? null,
         patch.held_reason ?? null,
+        patch.notified_at ?? null,
+        patch.stop_token_hash ?? null,
       ],
     );
     if (!row) throw new Error(`item ${id} を更新できない`);
     return row;
+  },
+  getDraft: (id) => first("SELECT * FROM sns_drafts WHERE id=$1", [id]),
+  approve: async (a) => {
+    if (sqlStore.failApprove) throw new Error("approve_failed");
+    return first("SELECT public.approve_sns_x_send($1,$2,$3,$4) r", [
+      a.p_draft_id,
+      a.p_approver_id,
+      a.p_snapshot,
+      a.p_scheduled_at,
+    ]);
   },
   async updateDraft(id, patch) {
     const sets = Object.keys(patch).map((k, i) => `${k}=$${i + 2}`);
@@ -298,6 +318,7 @@ async function run({
     riskRules,
     trackingStore,
     notify: async (text) => notes.push(text),
+    loadMedia,
   });
 }
 const items = () => all("SELECT * FROM sns_auto_send_items ORDER BY channel");
@@ -361,7 +382,8 @@ test("準優勝戦の素材 v1 から X・YouTube の item を作り、合格な
   // 送る直前の検査が長文の1投稿を許すかの印（子のあるスレッドは 2 なので280まで）
   assert.equal(thread[0].source_data.deadline_queue.thread_length, 2);
   assert.equal(
-    (await drafts(group, "youtube"))[0].source_data.deadline_queue.thread_length,
+    (await drafts(group, "youtube"))[0].source_data.deadline_queue
+      .thread_length,
     undefined,
   );
   // 本人の承認（個別承認の画面と同じ関数）が通り、job ができる（dry_run の間は送信の側が claim の前で止める）
@@ -402,7 +424,8 @@ test("同じ素材でもう一度走らせても item・下書き・通知は増
 test("優勝戦・準優勝戦以外・中止・送る時刻を過ぎたレースは item を作らない", async () => {
   await addRace("2037-10-16-05-01", "予選");
   await addRace("2037-10-16-06-12", "優勝戦", { cancelled: "confirmed" });
-  await addRace("2037-10-16-07-12", "優勝戦", { start: "12:59:00" });
+  // 締切の40分前（11:59）を過ぎている
+  await addRace("2037-10-16-07-12", "優勝戦", { start: "12:39:00" });
   await addRace("2037-10-16-08-12", "ツッキー優勝戦");
   for (const raceId of [
     "2037-10-16-05-01",
@@ -650,10 +673,10 @@ test("やり直し中（checking）の古い素材の item は、新しい素材
   assert.ok(live.every((i) => i.bundle_import_id === newer));
 });
 
-test("やり直し中（checking）の item は、送る時刻を過ぎたら held_manual に閉じる", async () => {
+test("やり直し中（checking）の item は、締切の40分前を過ぎたら held_manual に閉じる", async () => {
   await importBundle();
   await run({ checkClaims: failingFetch });
-  const late = new Date("2037-10-16T05:00:00Z");
+  const late = new Date("2037-10-16T05:20:00Z");
   await runSnsAutoPlan(
     { mode: "live", now: () => late, shouldStop: () => false },
     {
@@ -695,15 +718,110 @@ test("1つの素材の検査が例外で落ちても、ほかのレースの ite
   assert.equal((await items()).length, 2);
 });
 
-test("YouTube だけ mode=auto でも、自動は未実装と知らせる", async () => {
-  await db.exec(
-    "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='youtube'",
+test("mode=auto: 検査に合格したら item を notified にし、自動送信の承認者で承認して job を作る。送る時刻は締切の60分前。X のスレッド（子あり）は自動で送らない（2026-10-18）", async () => {
+  await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
+  await importBundle();
+  const notes = [];
+  const result = await run({ notes });
+  const [x, yt] = await items();
+  assert.equal(x.state, "manual");
+  assert.equal(yt.state, "notified");
+  assert.ok(yt.notified_at && /^[a-f0-9]{64}$/.test(yt.stop_token_hash));
+  const job = await first(
+    "SELECT j.* FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id WHERE d.platform='youtube'",
   );
-  const result = await run();
+  const auto = (
+    await first(
+      "SELECT auto_approver_id FROM sns_auto_send_control WHERE channel='youtube'",
+    )
+  ).auto_approver_id;
+  assert.equal(job.state, "queued");
+  assert.equal(job.approver_id, auto);
+  assert.equal(job.auto_item_id, yt.id);
+  // 送る時刻は veto_until（締切 15:00 の60分前）。今（12:00）から5分後より遅い
+  assert.equal(job.scheduled_at.toISOString(), "2037-10-16T05:00:00.000Z");
+  assert.equal(
+    result.report.items.find((i) => i.channel === "youtube").outcome,
+    "notified",
+  );
+  assert.ok(notes.some((n) => /youtube を 14:00 に自動で送る/.test(n)));
+  assert.ok(notes.some((n) => /paused = true/.test(n)));
+  assert.ok(notes.some((n) => /x は自動では送らない（X のスレッド/.test(n)));
+  assert.equal(
+    (await first("SELECT count(*)::int n FROM sns_x_send_jobs")).n,
+    1,
+  );
   assert.ok(
-    result.report.alerts.some((a) => a.key === "auto_unimplemented:youtube"),
+    !result.report.alerts.some((a) =>
+      a.key.startsWith("auto_approver_missing"),
+    ),
   );
-  assert.ok(
-    !result.report.alerts.some((a) => a.key === "auto_unimplemented:x"),
+});
+
+test("mode=auto: X の親1件の長文は自動で承認する。締切の60分前を過ぎた素材も、40分前までなら作り、5分後に送る", async () => {
+  await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
+  // 締切 12:50（60分前は過ぎ、40分前の 12:10 より前）
+  await addRace("2037-10-16-09-12", "優勝戦", { start: "12:50:00" });
+  const raceId = "2037-10-16-09-12";
+  const bundle = await importBundle({ raceId, single: true });
+  await run();
+  const own = (await items()).filter((i) => i.race_id === raceId);
+  assert.deepEqual(
+    own.map((i) => [i.channel, i.state]),
+    [
+      ["x", "notified"],
+      ["youtube", "notified"],
+    ],
   );
+  const xJob = await first(
+    "SELECT j.* FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id WHERE d.bundle_import_id=$1 AND d.platform='x'",
+    [bundle],
+  );
+  assert.equal(xJob.state, "queued");
+  assert.equal(xJob.scheduled_at.toISOString(), "2037-10-16T03:05:00.000Z");
+});
+
+test("mode=auto: 承認に失敗したら item を manual に戻して個別承認に回す。自動送信の承認者が無ければ知らせて自動では送らない", async () => {
+  await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
+  await importBundle();
+  sqlStore.failApprove = true;
+  try {
+    const result = await run();
+    const yt = (await items()).find((i) => i.channel === "youtube");
+    assert.equal(yt.state, "manual");
+    assert.ok(
+      result.report.alerts.some((a) =>
+        /自動の承認に失敗（個別承認に戻した）: approve_failed/.test(a.text),
+      ),
+    );
+  } finally {
+    sqlStore.failApprove = false;
+  }
+  const saved = await all(
+    "SELECT channel, auto_approver_id FROM sns_auto_send_control",
+  );
+  await db.exec("DELETE FROM sns_auto_send_items");
+  await db.exec("UPDATE sns_auto_send_control SET auto_approver_id=NULL");
+  try {
+    await db.exec(
+      "DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER; DELETE FROM sns_bundle_imports;",
+    );
+    await importBundle();
+    const result = await run();
+    assert.ok(
+      result.report.alerts.some(
+        (a) => a.key === "auto_approver_missing:youtube",
+      ),
+    );
+    assert.equal(
+      (await items()).find((i) => i.channel === "youtube").state,
+      "manual",
+    );
+  } finally {
+    for (const r of saved)
+      await db.query(
+        "UPDATE sns_auto_send_control SET auto_approver_id=$2 WHERE channel=$1",
+        [r.channel, r.auto_approver_id],
+      );
+  }
 });

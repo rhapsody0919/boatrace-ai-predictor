@@ -38,6 +38,7 @@ import { createTodayDigestSource } from "../_lib/snsTodayDigest.js";
 import { createPostgrestReader } from "../../scripts/lib/snsSendRunner.js";
 import { getJaT } from "../_lib/botPage.js";
 import { bundleStore } from "../_lib/snsBundleImport.js";
+import { loadXMedia } from "../_lib/snsXSendStore.js";
 
 export const config = { maxDuration: 300 };
 
@@ -131,6 +132,8 @@ export default createScrapeCronHandler({
         riskRules: riskRules.rules,
         trackingStore,
         notify,
+        // 自動送信の承認の snapshot（媒体の hash・サイズ）を作るために Storage から読む
+        loadMedia: loadXMedia,
       });
       return {
         rowsWritten: race.rowsWritten + today.rowsWritten,
