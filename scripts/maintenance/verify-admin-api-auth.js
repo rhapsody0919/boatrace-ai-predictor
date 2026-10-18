@@ -142,6 +142,7 @@ const PASSWORD = "correct-password";
 const COLON_PASSWORD = "pa:ss:word";
 const METHODS = ["GET", "POST", "PATCH", "DELETE"];
 
+const NAMED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 const handlerFiles = listHandlers(ADMIN_DIR);
 check(handlerFiles.length > 0, "api/admin/ にハンドラが1本も見つからない");
 
@@ -152,13 +153,26 @@ for (const file of handlerFiles) {
     .replace(/\/index$/, "")
     .replace(/\[[^\]]+\]/g, "1")}`;
   const mod = await import(pathToFileURL(file).href);
-  const handler = mod.default;
-  if (typeof handler !== "function") {
+  // 書き出しは既定（default）か、HTTP メソッドの名前（GET・POST 等）。名前付きはそれぞれを検証する
+  const handlers =
+    typeof mod.default === "function"
+      ? [["", mod.default]]
+      : NAMED_METHODS.filter((m) => typeof mod[m] === "function").map((m) => [
+          ` [${m}]`,
+          mod[m],
+        ]);
+  if (handlers.length === 0) {
     failures.push(
-      `${rel}: default export の handler が無い（名前付き export 形式ならこの検証を拡張すること）`,
+      `${rel}: default export の handler も、GET・POST 等の名前付きの書き出しも無い`,
     );
     continue;
   }
+  // nodejs の関数の既定の書き出しは Node の (req, res) で呼ばれ、Web の Request を前提にした中身は毎回 500 になる
+  // （2026-10-18、mobile-approval で「今日のレースを取得できません」）。nodejs では GET・POST 等の名前で書き出す
+  check(
+    !(mod.config?.runtime === "nodejs" && typeof mod.default === "function"),
+    `${rel}: runtime が nodejs なのに既定の書き出し（default）がある。export { handler as GET, handler as POST } の形にする`,
+  );
   // 管理 API は Web の Request/Response の形（handler(req) が Response を返す）で書く。Vercel では config.runtime
   // （edge か nodejs）を指定しないと Node の (req, res) の形として呼ばれ、応答を返さないまま時間切れの 500 になる
   // （2026-10-13、token-health が本番でこれになった）
@@ -167,66 +181,68 @@ for (const file of handlerFiles) {
     `${rel}: export const config = { runtime: "edge" }（または "nodejs"）が無い。Web の Request/Response の形のハンドラは runtime の指定が要る`,
   );
 
-  setAuthEnv(USER, PASSWORD);
-  for (const method of METHODS) {
-    expect401(
-      `${rel} ${method} 認証なし`,
-      await call(handler, urlPath, method),
-    );
-    expect401(
-      `${rel} ${method} 誤ったパスワード`,
-      await call(handler, urlPath, method, basic(USER, "wrong")),
-    );
-    expect401(
-      `${rel} ${method} 誤ったユーザー`,
-      await call(handler, urlPath, method, basic("other", PASSWORD)),
-    );
-    expect401(
-      `${rel} ${method} Basic以外`,
-      await call(handler, urlPath, method, `Bearer ${PASSWORD}`),
-    );
-    expect401(
-      `${rel} ${method} 壊れたbase64`,
-      await call(handler, urlPath, method, "Basic !!!"),
-    );
+  for (const [tag, handler] of handlers) {
+    setAuthEnv(USER, PASSWORD);
+    for (const method of METHODS) {
+      expect401(
+        `${rel}${tag} ${method} 認証なし`,
+        await call(handler, urlPath, method),
+      );
+      expect401(
+        `${rel}${tag} ${method} 誤ったパスワード`,
+        await call(handler, urlPath, method, basic(USER, "wrong")),
+      );
+      expect401(
+        `${rel}${tag} ${method} 誤ったユーザー`,
+        await call(handler, urlPath, method, basic("other", PASSWORD)),
+      );
+      expect401(
+        `${rel}${tag} ${method} Basic以外`,
+        await call(handler, urlPath, method, `Bearer ${PASSWORD}`),
+      );
+      expect401(
+        `${rel}${tag} ${method} 壊れたbase64`,
+        await call(handler, urlPath, method, "Basic !!!"),
+      );
+      expectPassed(
+        `${rel}${tag} ${method} 正しい認証`,
+        await call(handler, urlPath, method, basic(USER, PASSWORD)),
+      );
+    }
+
+    // 環境変数が未設定・空なら、どんな認証でも拒否する（fail-closed）
+    for (const [envUser, envPassword, label] of [
+      [undefined, undefined, "両方未設定"],
+      [USER, undefined, "パスワード未設定"],
+      [undefined, PASSWORD, "ユーザー未設定"],
+      ["", "", "両方空"],
+    ]) {
+      setAuthEnv(envUser, envPassword);
+      expect401(
+        `${rel}${tag} env${label}`,
+        await call(handler, urlPath, "POST", basic(USER, PASSWORD)),
+      );
+      expect401(
+        `${rel}${tag} env${label} 空の認証`,
+        await call(handler, urlPath, "POST", basic("", "")),
+      );
+    }
+
+    // パスワードに ":" を含む場合、最初の ":" だけで分割する
+    setAuthEnv(USER, COLON_PASSWORD);
     expectPassed(
-      `${rel} ${method} 正しい認証`,
-      await call(handler, urlPath, method, basic(USER, PASSWORD)),
-    );
-  }
-
-  // 環境変数が未設定・空なら、どんな認証でも拒否する（fail-closed）
-  for (const [envUser, envPassword, label] of [
-    [undefined, undefined, "両方未設定"],
-    [USER, undefined, "パスワード未設定"],
-    [undefined, PASSWORD, "ユーザー未設定"],
-    ["", "", "両方空"],
-  ]) {
-    setAuthEnv(envUser, envPassword);
-    expect401(
-      `${rel} env${label}`,
-      await call(handler, urlPath, "POST", basic(USER, PASSWORD)),
+      `${rel}${tag} ':'入りパスワード 正`,
+      await call(handler, urlPath, "POST", basic(USER, COLON_PASSWORD)),
     );
     expect401(
-      `${rel} env${label} 空の認証`,
-      await call(handler, urlPath, "POST", basic("", "")),
+      `${rel}${tag} ':'入りパスワード 途中まで`,
+      await call(handler, urlPath, "POST", basic(USER, "pa")),
+    );
+    expect401(
+      `${rel}${tag} ':'入りパスワード 途中まで2`,
+      await call(handler, urlPath, "POST", basic(USER, "pa:ss")),
     );
   }
-
-  // パスワードに ":" を含む場合、最初の ":" だけで分割する
-  setAuthEnv(USER, COLON_PASSWORD);
-  expectPassed(
-    `${rel} ':'入りパスワード 正`,
-    await call(handler, urlPath, "POST", basic(USER, COLON_PASSWORD)),
-  );
-  expect401(
-    `${rel} ':'入りパスワード 途中まで`,
-    await call(handler, urlPath, "POST", basic(USER, "pa")),
-  );
-  expect401(
-    `${rel} ':'入りパスワード 途中まで2`,
-    await call(handler, urlPath, "POST", basic(USER, "pa:ss")),
-  );
 }
 
 setAuthEnv(undefined, undefined);
