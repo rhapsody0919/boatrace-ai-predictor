@@ -8,7 +8,12 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { LabelTag } from "./PastRateResult";
-import { mainText, orderComboText, summaryOf } from "./format.js";
+import {
+  mainText,
+  orderComboText,
+  savedMainText,
+  summaryOf,
+} from "./format.js";
 import { decisionCount } from "../../../utils/pastRate/count.js";
 import { isTruncated, layerKey } from "../../../utils/pastRate/layer.js";
 import {
@@ -50,7 +55,7 @@ export default function PastRateReview({ layer, raceId, deadline, decision }) {
           <li key={e.type}>
             {t(`${K}.entry`, {
               summary: summaryOf(e.type, e.input, t),
-              main: mainText(e.result, e.result.truncated, t),
+              main: savedMainText(e.result, t),
             })}
             <LabelTag label={e.result.label} />
           </li>

@@ -76,6 +76,10 @@ export function mainText({ n, count }, truncated, t) {
   });
 }
 
+/** 振り返りの行の後半（保存した数字）。分母0なら AI予想タブの結果と同じ空の文 */
+export const savedMainText = (result, t) =>
+  result.n > 0 ? mainText(result, result.truncated, t) : t(`${K}.empty`);
+
 /** 期間「2019-04〜2025-11」（同じ月なら1つ） */
 function periodText(from, to) {
   const a = String(from).slice(0, 7);
