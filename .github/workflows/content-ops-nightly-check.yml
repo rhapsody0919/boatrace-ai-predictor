@@ -49,10 +49,29 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
-        run: node scripts/maintenance/content-ops-checks/check-revision-escalation.js
+        id: escalation
+        # 失敗の理由（最後の「❌ エラー:」の1行。Linear のエラーコードを含む）を出力に残し、
+        # 下の Slack 通知で送る。終了コードはそのまま返し、ジョブは赤にする
+        run: |
+          set +e
+          node scripts/maintenance/content-ops-checks/check-revision-escalation.js 2> escalation-stderr.txt
+          EXIT_CODE=$?
+          cat escalation-stderr.txt >&2
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            reason=$(grep '❌ エラー:' escalation-stderr.txt | tail -n 1 | cut -c1-500)
+            delim="EOF_$(openssl rand -hex 16)"
+            {
+              echo "error<<$delim"
+              echo "${reason:-（エラーの行なし。終了コード $EXIT_CODE）}"
+              echo "$delim"
+            } >> "$GITHUB_OUTPUT"
+          fi
+          exit $EXIT_CODE
 
+      # 以下の通知は always() を付ける。付けないと暗黙の success() で、上のステップが
+      # 失敗した晩は滞留の通知ごとスキップされる（2026-09-11〜19 の 401 は9晩とも Slack に出なかった）
       - name: Notify Slack (閾値超過時のみ)
-        if: steps.checks.outputs.exit_code == '1'
+        if: always() && steps.checks.outputs.exit_code == '1'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.checks.outputs.summary }}
@@ -74,4 +93,29 @@ jobs:
                   }]
                 }]
               }')
+          curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
+
+      - name: Notify Slack (エスカレーションの失敗時)
+        if: always() && steps.escalation.outcome == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          ERROR: ${{ steps.escalation.outputs.error }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        # 送るのはエラーの1行だけ（鍵・起票の本文は送らない）
+        run: |
+          payload=$(jq -n --arg error "$ERROR" --arg url "$RUN_URL" '
+            {
+              attachments: [{
+                color: "#d32f2f",
+                blocks: [{
+                  type: "section",
+                  text: {
+                    type: "mrkdwn",
+                    text: (":x: *却下フィードバックの閾値エスカレーション（Linear 起票）が失敗*\n"
+                      + "```" + ($error | .[0:2000]) + "```\n"
+                      + "USAGE_LIMIT_EXCEEDED なら Linear の無料枠の上限。ログ: " + $url)
+                  }
+                }]
+              }]
+            }')
           curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"
