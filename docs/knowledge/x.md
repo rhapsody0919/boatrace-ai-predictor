@@ -9,6 +9,8 @@ X の投稿・返信・動画に固有の知見。複数チャネルに共通す
 - #ボートレース 上位約20件（2026-08-23）では推し活（選手への感情移入）と観戦・遠征の体験談が強く（約300〜1,200表示）、公式会場の告知は中位、買い目の数字だけの投稿が最下位、自社の新機能告知は13表示で最弱。機能告知はブログ等に任せる（2026-08-23、memory sns_marketing_phased_strategy_2026_08_22、BOA-210）
 - AI予想を前に出す X アカウントは複数あるが、どれも1投稿数十表示・いいね0〜数件。AI の訴求が強いとは言えない（2026-08-23、memory sns_marketing_phased_strategy_2026_08_22）
 - 投稿ごとの詳細アナリティクスは Premium の課金表示になり無料では見られない。無料で見えるのはプロフィールの直近7日の表示回数の合計（2026-09-05、memory x_tiktok_note_growth_2026_09_05、要確認）
+- 全貌動画の X 本文は数字（1着率57.6%）に母数も全国の比較も付けていない。正規表現は全国の値（group(2)）を捕まえているが本文で使っていない（2026-10-18、x-channel、~/ryujin-marketing/out/full-picture-template/split/render/full-picture-bundle.py 35-39行）
+- 全貌動画の型には「作り終わる時刻＜締切」を保証する仕組みが無い。見本の三国4Rは締切10:09に対し作り終わりが10:31（builtAt 01:31 UTC）だった（2026-10-18、x-channel、~/ryujin-marketing/out/full-picture-template/split/render/full-picture-bundle.py 75-76行、out/full-picture-daily/2026-10-18-10-04/bundle.json）
 
 ## 返信
 - 返信の候補探しは「観戦」「初めて」「行ってきた」等の体験談の語を掛け合わせる。「ボートレース」単体や「買い目」「舟券」は予想 bot・公式メディアに埋もれる。-filter:replies で他人の会話への割り込みを避ける（2026-09-06、memory x_reply_drafts_batch_workflow_2026_09_06・sns_marketing_phased_strategy_2026_08_22）

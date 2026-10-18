@@ -7,7 +7,7 @@
       "platforms": "all",
       "description": "「競艇」表記は禁止。「ボートレース」で統一する（役所広告の出稿対象から外れるため）。SEOメタ情報のみ例外だが、SNS投稿本文・動画内テキストは例外対象外",
       "patterns": ["競艇"],
-      "hashtag_exception": {"enabled": true, "owner_decision_date": "2026-10-08", "disable_condition": "GA4 月間ユーザー（直近28日のアクティブユーザー）1000", "value": "#競艇", "fields": {"x": ["hashtags"], "youtube": ["hashtags", "description"]}},
+      "hashtag_exception": {"enabled": true, "owner_decision_date": "2026-10-08", "disable_condition": "GA4 月間ユーザー（直近28日のアクティブユーザー）1000", "value": "#競艇", "fields": {"x": ["hashtags"], "youtube": ["hashtags", "description"]}, "fields_note": "description は全体ではなく、末尾のハッシュタグの並びの中の #競艇 だけを外す。本文・途中の行・#競艇場 等は検査する（scripts/lib/riskRuleMatcher.js、verify-sns-bundle-import.js のハッシュタグ例外の検査）"},
       "source": ".claude/rules/code-style.md"
     },
     {

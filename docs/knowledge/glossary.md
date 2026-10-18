@@ -13,6 +13,7 @@
 - 「集計前」の印は禁止語ではない（2026-10-12）。2026-10-11・BOA-830 時点では禁止語を含むとして言い換えを検討していたが、「集計」が禁止語から外れたため前提が変わった
 - 廃止済みのモデル名（本命狙いモデル・スタンダードモデル・穴狙いモデル・今日のおすすめ）は使わない（sns-video-studio/remotion/risk-rules.json の deprecated-model-names、scripts/maintenance/check-deprecated-terms.js）
 - 禁止語の一覧に足すのはオーナーが指摘した語だけ。出典にオーナーの原文と範囲（画面・チャネル）を書く。ファン役・wording-editor の言い換え案で避けた語は、オーナーが認めるまで入れない（2026-10-12、memory feedback_dont_generalize_wording_bans、BOA-835 を取り消した）
+- SNS の生成スクリプトの禁止語の検査は risk-rules.json を正本として使う（scripts/lib/riskRuleMatcher.js の matchRiskRules・draftRiskFields）。~/ryujin-marketing/out/full-picture-template/split/render/full-picture-bundle.py の独自の BANNED（23行目、8語）のような手書きの一覧は食い違いの元になる。例: BANNED は「的中」単独を止めるが risk-rules.json は止めない、「似たレース」は使わず「類似レース」の決まりはどちらの一覧にも無く、10/18 三国4R の YouTube 説明文に「似た過去レース」が載った（2026-10-18、wording-editor・x-channel、out/full-picture-daily/2026-10-18-10-04/bundle.json）
 
 ## 呼び方
 - 「展示前版」「展示後版」の「版」はファンに分かりにくい。「直前予想」「展示前の予想」と言う（2026-10-12、オーナー）
@@ -41,7 +42,7 @@
 - 配当倍率・金額を主役にする演出、「儲かる」等の射幸心を煽る語は避ける（risk-rules.json の gambling-incitement）
 - 予想・賭け事を直接連想させる語・構図の警告は TikTok だけ。X と YouTube は対象外で同じ規則（2026-10-10 ユーザー判断で YouTube を X にそろえた、risk-rules.json の gambling-connotation-words）
 - X・YouTube では「本命寄り」・過去の万舟率くらいは可（2026-10-11、オーナー）
-- risk-rules.json の検出は警告だけで承認は止めない。生成の指示と自動チェックの両方がこのファイルを読む。食い違う判定をしたら片方だけ直さない（risk-rules.json の _comment）
+- risk-rules.json の検出は、人が承認する下書きでは警告だけで承認は止めない。ただし承認なしで自動で送る全貌動画と /today の X 投稿は、検出が1件でもあれば自動では送らず保留にする（2026-10-18 オーナー決定、scripts/sns/push-full-picture.js の禁止表現、scripts/lib/snsTodayPlanner.js の held_manual）。生成の指示と自動チェックの両方がこのファイルを読む。食い違う判定をしたら片方だけ直さない（risk-rules.json の _comment）
 - note 固有の知見は [note.md](note.md) へ移動（2026-10-13）
 - 過去の「回収率1343%」「高精度」等を単独で先に直す提案はしない。AI予想の作り直し（BOA-617）の中でだけ扱う（2026-10-01 ユーザー判断、memory feedback_no_proposals_on_past_accuracy_claims）
 - AdSense の表現の決まりはリポジトリに正本が無い。答えるときは Google の公式ポリシーを確かめて出典を付け、決まりができたらここに足す（2026-10-11、オーケストレーター依頼への確認結果）
