@@ -123,7 +123,7 @@ WebSearch等で以下2軸を調査する。
 即実行の場合も`.claude/CLAUDE.md`の開発フロー（ブランチ作成→実装→セルフレビュー→PR作成）は省略しない。「即実行」は着手前のユーザー承認を待たないという意味であり、レビュー・マージ確認プロセスをスキップする意味ではない。マージ確認はサマリー+確認観点を添えて都度提示する（`feedback_merge_confirmation_summary`参照）。
 
 **大施策（提案のみ）の例**:
-- 新機能開発 → `/analyze-vup-feature`→`/create-vup-ticket`のVUPループに乗せる
+- 新機能開発 → `/analyze-vup-feature`（分析と起票）のVUPループに乗せる
 - 新規ブログ記事の執筆
 - 会場ガイドへの大規模な観光コンテンツ拡充
 - 被リンク獲得施策（ステップ1のCTRギャップ分析で「権威・被リンク不足の可能性」に挙がったページ、ステップ4の簡易チェックで規模差が裏付けられたページ向け。具体的な獲得手段の検討はユーザー判断を仰ぐ）
@@ -171,5 +171,5 @@ Search Consoleデータの反映ラグ（2〜3日）を踏まえると、**前�
 - `/growth-report`: Search Console単体の定点観測（このスキルは内包しつつ施策立案まで踏み込む）
 - `/i18n-growth-report`: GA4多言語需要の定点観測（同上）
 - `/growth-monthly-summary`: SEO/X/note 集客PDCAの月次統合サマリー
-- `/analyze-vup-feature`, `/create-vup-ticket`: 大施策（新機能）の分析・チケット化
+- `/analyze-vup-feature`: 大施策（新機能）の分析・チケット化
 - 会場ガイド拡充の経緯: memory `venue_guide_expansion_project`
