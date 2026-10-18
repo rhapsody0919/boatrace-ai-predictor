@@ -3,7 +3,7 @@
 分析期間: 過去180日（2025-11-01〜2026-04-30）
 対象レース: 20,154件
 
-分析スクリプト:
+分析スクリプト（どちらも削除済み。中身は git の履歴にある）:
 - `scripts/analysis/redesign-volatility-threshold.js` — 全体閾値分析（90日）
 - `scripts/analysis/redesign-volatility-by-venue.js` — 会場別分析（180日）
 
