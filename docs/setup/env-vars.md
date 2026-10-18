@@ -9,9 +9,8 @@
 | `VITE_GA_MEASUREMENT_ID` | Google Analytics |
 | `LINEAR_API_KEY` | Linear連携 |
 | `LINEAR_TEAM_ID` | LinearチームID |
-| `SENDGRID_API_KEY` | メール送信 |
-| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Google Sheets連携 |
-| `GOOGLE_PRIVATE_KEY` | Google Sheets認証 |
+| `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Google のサービスアカウント（GA4 のレポート等） |
+| `GOOGLE_PRIVATE_KEY` | Google のサービスアカウントの鍵 |
 | `GITHUB_MERGE_TOKEN` | ブログ記事Draft PRの自動マージ（sns-hub admin、Fine-grained PAT、ADR 0034） |
 | `YOUTUBE_CLIENT_ID` | YouTube Data API v3連携（ADR 0035） |
 | `YOUTUBE_CLIENT_SECRET` | YouTube Data API v3連携（ADR 0035） |
