@@ -24,7 +24,7 @@ Claude と Codex に共通する規約（運用前提・ブランチ・用語・
 
 **手順**:
 1. 一次情報（コード・ドキュメント・実データ）に基づき結論・推奨案をまとめる
-2. 別ベンダーの Codex に、結論・根拠・使用したデータをそのまま渡して批判的検証を依頼する。Codex が止まっているときだけ、代わりに `second-opinion-reviewer` サブエージェントに依頼する
+2. 別ベンダーの Codex に、結論・根拠・使用したデータをそのまま渡して批判的検証を依頼する（codex プラグインの `codex:rescue` で渡す。鍵・会話記録は渡さない）。Codex が止まっているとき（プラグインが使えない、Codex の接続が切れている）だけ、代わりに `second-opinion-reviewer` サブエージェントに依頼する
 3. 指摘のうち妥当なものは結論に反映し、妥当でないものは反論を明示した上で残す
 4. 最終報告には「自分の結論」「セカンドレビューでの指摘」「指摘への対応（採用/反論）」の3点を必ず含める
 
@@ -36,7 +36,7 @@ Claude と Codex に共通する規約（運用前提・ブランチ・用語・
 | 定義 | 用途 | 呼ぶタイミング |
 |------|------|---------------|
 | `spec-ambiguity-detector` | 依頼文だけを見て「決まっていない点」を列挙する | **実装方針を考える前**（下記「実装前の要件確認」） |
-| `second-opinion-reviewer` | 後戻りが困難な意思決定・分析結論の批判的検証。Codex が止まっているときの代わり | 上記「セカンドオピニオン検証」の手順2 |
+| `second-opinion-reviewer` | 後戻りが困難な意思決定・分析結論の批判的検証。Codex が止まっているときの代わり（PR の審査には使わない） | 上記「セカンドオピニオン検証」の手順2 |
 | `design-reviewer` | SDD設計（spec/screens/plan/tasks）の独立レビュー。実測値の再現とコード前提の裏取りが中心 | `/step3`完了後、`/step4`着手前（省略不可。`.claude/rules/sdd-workflow.md`） |
 | `acceptance-test-writer` | UI機能の受け入れE2Eを spec.md・screens.md だけから書く（plan/tasks/src は読まない） | `/step3`完了後、`/step4`着手前（UI機能のみ。`.claude/rules/sdd-workflow.md`） |
 | `data-accuracy-verifier` | 集計結果が実データと一致するかだけの検証 | 実装完了後の自動レビュー2番（新規の集計・分析機能を含む場合） |
@@ -89,7 +89,7 @@ node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
 ### フロントエンド変更の確認は自己完結させる（絶対ルール、例外なし）
 **「`npm run dev`」という文字列をユーザー向けの文章に書くこと自体を禁止**する。
 
-- **ユーザーに`npm run dev`を打たせる・打つよう示唆する文言は一切書かない**（「ローカルで`npm run dev`後〜」のような一文も禁止）。UI変更が発生したら、頼まれる前にClaude自身がdevサーバーを起動し、確認後は停止する
+- **ユーザーに`npm run dev`を打たせる・打つよう示唆する文言は一切書かない**（「ローカルで`npm run dev`後〜」のような一文も禁止）。UI変更が発生したら、頼まれる前にClaude自身がdevサーバーを（`run_in_background` で）起動し、確認後は停止する
 - ブラウザでの確認はPlaywright（プロジェクト依存関係）で自己検証する
   - DOM出力（`document.title` / `meta[name="description"]` / `link[rel="canonical"]` 等）をスクリプトで取得して照合する
   - スクリーンショットを撮り、Read toolで読み込んで視覚的にも確認する
@@ -154,8 +154,8 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 1. `/code-review` でセルフレビューを実行
 2. **新規のデータ集計・分析機能（新しい統計・ランキング・傾向表示等）を含む場合は、データの正確性を複数の視点で検証する**（詳細は `.claude/rules/analysis.md` の「データ精度の検証」）。コードレビューとは別に「集計結果が実データと一致しているか」だけを見る検証を必ず行う
 3. 指摘事項を修正してコミット・push（判断が分かれる指摘は修正せず報告に含める）。**修正する指摘は先に実在を検証し、同じPRで再現テストを追加して固定する。同じ指摘が再発したら修正をやめて原因分析する**。新しいページ・分析タブ・主要コンポーネントの追加では、洗い出し（独立サブエージェント・修正禁止）→検証→振り分け→修正→回帰確認の5段階で行う。詳細・例外・終了条件は `.claude/rules/review-fix-cycle.md`
-4. ビルド・テストを実行する（AGENTS.md「検証・テスト」）。新しい主要導線を追加した場合はスモークテストにも追記する。RPC（`CREATE OR REPLACE FUNCTION`）を変えるマイグレーションを本番に適用したら、すぐに `node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` を実行する（本番の実物とフロントの参照の最終照合。Codex は本番に接続しないので Claude の役目）
-5. **別ベンダーの審査を受ける**。Claude の PR は Codex が審査する（GitHub の `@codex review`。Codex の指摘を正とする）。P0・P1 は直してから先へ進む。Codex が止まっているときは、`second-opinion-reviewer` か、設計に関わっていないサブエージェントで代わりに審査する。手段の詳細は `docs/operation/sdd-and-codex-review.md`
+4. ビルド・テストを実行する（AGENTS.md「検証・テスト」）。新しい主要導線を追加した場合はスモークテストにも追記する。RPC（`CREATE OR REPLACE FUNCTION`）を変えるマイグレーションを本番に適用したら、すぐに `node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js` を実行する（本番の実物とフロントの参照の最終照合。Codex は本番に接続しないので Claude の役目）。新しい `verify-*.js` を書いたら `scripts/maintenance/verify-registry.json` に分類（`ci` / `manual`）と「何を守るか」を登録する（未登録だと CI が落ちる）
+5. **別ベンダーの審査を受ける**。Claude の PR は Codex が審査する（GitHub の `@codex review`）。合否は Codex の指摘を優先する。ただし指摘は、ほかのレビューと同じく実在を確かめてから扱う（`.claude/rules/review-fix-cycle.md`）。実在する P0・P1 は直してから先へ進む。Codex が止まっているとき（connector がアカウント未接続を返す等、審査が返ってこない）は、設計に関わっていないサブエージェントで代わりに審査する。手段の詳細は `docs/operation/sdd-and-codex-review.md`
 6. **レビュー結果を PR にコメントで記載する**。内容: 指摘一覧（ファイル・行・内容）、各指摘の対応（修正コミット / スキップ理由）、修正後の検証結果（データ精度検証の結果を含む）
 7. **ユーザーへの完了報告（チャット本文）には以下を必ず全て含める**。PR コメントへのリンクや「詳細は PR 参照」で省略しない：
    - 実装内容（何をどう変えたか。ファイル・機能単位で具体的に）
@@ -175,7 +175,7 @@ DB設計時のER図生成規律・長時間実装時の再開規律は`.claude/r
 
 - 判断が割れない軽微な確認（レビュー指摘のスキップ理由、低リスクカテゴリの実装完了等）は都度ブロックせず、テキストで提示するだけに留めて次のタスクに進む。確認事項が複数溜まったら1回のメッセージにまとめて提示する
 - **以下は個別に明示的なyesを得るまで実行しない（バッチ化・省略の対象外）**: マージの実行そのもの、破壊的なgit操作（force push・reset --hard等）、他プロジェクトへの書き込み変更、事業判断・プロダクト判断が絡むもの（以上はグローバル設定の「自律進行モード」除外リストと共通。グローバル側を更新する際はこちらも見直す）、加えて**SNS/ブログ等への投稿の最終送信・購入決済**。これらは1件ごとに明示的な承認を得てから実行する（複数件を1つのメッセージにまとめて確認を求めるのは可、実行の省略は不可）
-  - **例外**: 次の2つは承認なしで自動で送ってよい。(1) 全貌動画（レースの全貌の動画。X の投稿・YouTube 完全版・YouTube Shorts）は、機械の検査と評価役の検査で P0 が0件のとき。P0 があれば送らずオーナーに知らせる。(2) /today の X 投稿は、機械の検査が通ったとき。新しい型も対象。事前通知（送る前の Slack 通知）は最小限で置き、止めるのはフラグだけ（`sns_auto_send_control.mode` を manual、全体は `sns_x_send_control.paused=true`）。ほかの投稿（ブログ等）は今までどおり（ブログの掲載は `.claude/skills/orchestrate/SKILL.md` 4節の段階0 F）。設計: `docs/design/sns-pdca-loop/spec.md`、ADR-0094
+  - **例外**: 次の2つは承認なしで自動で送ってよい。(1) 全貌動画（レースの全貌の動画。X の投稿・YouTube 完全版・YouTube Shorts）は、機械の検査と評価役の検査で P0 が0件のとき。P0 があれば送らずオーナーに知らせる。(2) /today の X 投稿は、機械の検査が通ったとき。新しい型も対象。事前通知（送る前の Slack 通知）は最小限で置き、止めるのはフラグだけ（`sns_auto_send_control.mode` を manual、全体は `sns_x_send_control.paused=true`）。段階は踏まない（承認つきの期間・実送信5件の条件を置かない）。ほかの投稿（ブログ等）は今までどおり（ブログの掲載は `.claude/skills/orchestrate/SKILL.md` 4節の段階0 F）。設計: `docs/design/sns-pdca-loop/spec.md`、ADR-0094
 
 ---
 

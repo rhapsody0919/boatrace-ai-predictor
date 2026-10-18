@@ -10,7 +10,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
 ## このプロジェクトの運用前提
 
-- 審査は作った側と別のベンダーが行う。Claude の PR は、Claude のセルフレビュー（`/code-review`）の後にあなた（Codex）が `@codex review` で審査し、その指摘を正とする。`codex/*` の PR はあなた自身の成果物なので `@codex review` で審査しない。Claude が審査し、あなたの自己検証の結果は合否の根拠にしない。マージするのは人か Claude のオーケストレーター。承認・マージのフローそのものへの異議は本レビューの対象外
+- 審査は作った側と別のベンダーが行う。Claude の PR は、Claude のセルフレビュー（`/code-review`）の後にあなた（Codex）が `@codex review` で審査する。合否はその指摘を優先する（指摘は Claude が実在を確かめてから扱う）。`codex/*` の PR はあなた自身の成果物なので `@codex review` で審査しない。Claude が審査し、あなたの自己検証の結果は合否の根拠にしない。マージするのは人か Claude のオーケストレーター。承認・マージのフローそのものへの異議は本レビューの対象外
 - コミット規約: `<type>: <日本語の説明>`（例: `feat: 韓国語対応`）。Claude Code のセッションで作業しているため、コミット末尾・PR 本文に `Co-Authored-By: Claude` 等の署名が付くのは**規約違反ではない**（意図的な運用）。この署名の有無を finding にしてはならない。Codex のコミットには署名は要らない
 - ブランチ戦略（GitHub Flow）:
 
@@ -83,6 +83,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - 形式: `<type>: <日本語の説明>`。`type` は `feat`（新機能）/ `fix`（バグ修正）/ `content`（コンテンツ追加・更新）/ `refactor`（リファクタリング）/ `docs`（ドキュメント）/ `chore`（雑務・設定変更）のいずれか
 
 ### 検証・テスト
+この節は Claude と Codex に共通する。片方だけに当たる項は、そう書いてある。
 - 変更には再現テストまたは検証を付ける。置き場所は内容で選ぶ: UI挙動は `e2e/`（Playwright）、レイアウトは `e2e/layout.spec.js`、パーサー・集計・スクリプトは `scripts/maintenance/verify-*.js`（新規に書いたら `scripts/maintenance/verify-registry.json` にも登録する。未登録だと `npm run verify:ci` が失敗する）
 - PR 作成前に手元で `npm run build` を通す（ビルドエラーが無いことを確認する）。build は `api/` を束ねないので、`api/`・`scripts/` を変えたら `node scripts/maintenance/verify-relative-imports.js` も通す
 - 再現テストは CI から呼ばれる場所に置く（`scripts/tests/` 等の CI が呼ばない場所に置かない）。新しい `verify-*.js` は `verify-registry.json` に登録する（上の「変更してはならない」の例外）
