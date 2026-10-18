@@ -407,7 +407,8 @@ test("準優勝戦の素材 v1 から X・YouTube の item を作り、合格な
   );
   assert.equal(result.rowsWritten, 2);
   assert.equal(notes.length, 2);
-  assert.ok(notes.every((n) => n.includes("試運転中")));
+  // 個別承認の画面は 2026-10-18 に撤去した。manual のチャネルは送らないと知らせる
+  assert.ok(notes.every((n) => n.includes("個別承認（mode=manual）なので送らない")));
 });
 
 test("同じ素材でもう一度走らせても item・下書き・通知は増えない", async () => {

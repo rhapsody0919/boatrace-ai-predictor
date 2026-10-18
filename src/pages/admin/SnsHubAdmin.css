@@ -854,57 +854,6 @@
   color: var(--color-gray-600);
 }
 
-/* TikTok指標の手動入力フォーム */
-.tiktok-metrics-form {
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: var(--color-gray-50);
-  border: 1px solid var(--color-gray-200);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.tiktok-metrics-title {
-  margin: 0;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--color-gray-600);
-}
-
-.tiktok-metrics-fields {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.5rem;
-}
-
-.tiktok-metrics-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.75rem;
-  color: var(--color-gray-600);
-}
-
-.tiktok-metrics-field input {
-  padding: 0.4rem;
-  border: 1px solid var(--color-gray-200);
-  border-radius: 6px;
-  font-size: 0.85rem;
-}
-
-.tiktok-metrics-submit {
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid var(--color-primary-500);
-  background: var(--color-primary-500);
-  color: white;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 /* 「戦略メモ」タブ（要判断・履歴の2区分、2026-08-29追加） */
 .insight-tab {
   display: flex;
@@ -1741,4 +1690,244 @@
 .topic-category-channel-toggle.off {
   background: var(--color-gray-100);
   color: var(--color-gray-500);
+}
+
+/* ページの切り替え（4ページ共通、2026-10-18）。ページの中のタブ（.sns-hub-tab-btn）より上の階層なので、
+   下線で今のページを示す軽い見た目にする */
+.sns-hub-page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.sns-hub-page-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.1rem;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -1px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.sns-hub-page-link:hover,
+.sns-hub-page-link.active {
+  color: var(--text-primary);
+}
+
+.sns-hub-page-link.active {
+  border-bottom-color: var(--color-primary-500);
+}
+
+.sns-hub-page-link:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+}
+
+.sns-hub-page-count {
+  padding: 0 0.45rem;
+  border-radius: 9999px;
+  background: var(--color-gray-200);
+  color: var(--text-primary);
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sns-hub-page-count.alert {
+  background: color-mix(in srgb, var(--color-error-text) 14%, var(--surface-card));
+  color: var(--color-error-dark-text);
+}
+
+/* 自動送信ページ: いまの状態・要対応・今日・全月カレンダー */
+.sns-auto-send {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sns-send-control,
+.sns-queue {
+  padding: 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  color: var(--text-primary);
+}
+
+.sns-queue-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.sns-queue-count {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.sns-queue-empty {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.sns-send-control-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+}
+
+.sns-send-control-grid div {
+  padding: 0.5rem 0.75rem;
+  background: var(--surface-page);
+  border-radius: 6px;
+}
+
+.sns-send-control-grid dt {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.sns-send-control-grid dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.sns-send-control-paused {
+  color: var(--color-error-dark-text);
+}
+
+.sns-send-control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sns-queue-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sns-queue-row {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.sns-queue-row:last-child {
+  border-bottom: 0;
+}
+
+.sns-queue-row-main {
+  display: grid;
+  grid-template-columns: 6.5rem 4.5rem minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.sns-queue-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.sns-queue-channel {
+  font-weight: 700;
+}
+
+.sns-queue-channel-youtube {
+  color: var(--color-error-text);
+}
+
+.sns-queue-name {
+  overflow-wrap: anywhere;
+}
+
+.sns-queue-state {
+  padding: 0.05rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sns-queue-state-ok {
+  background: color-mix(in srgb, var(--color-success-text) 14%, var(--surface-card));
+  color: var(--color-success-dark-text);
+}
+
+/* 情報色の文字は薄い地の上で 4.5:1 に届かない（4.18）ので、文字を地の文字色へ寄せて濃くする */
+.sns-queue-state-plan {
+  background: color-mix(in srgb, var(--color-info-text) 14%, var(--surface-card));
+  color: color-mix(in srgb, var(--color-info-text) 75%, var(--text-primary));
+}
+
+.sns-queue-state-bad {
+  background: color-mix(in srgb, var(--color-error-text) 14%, var(--surface-card));
+  color: var(--color-error-dark-text);
+}
+
+.sns-queue-state-hold {
+  background: color-mix(in srgb, var(--color-warning-text) 14%, var(--surface-card));
+  color: var(--color-warning-dark-text);
+}
+
+.sns-queue-state-muted {
+  background: var(--color-gray-100);
+  color: var(--text-secondary);
+}
+
+.sns-queue-detail {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.sns-queue-detail summary {
+  cursor: pointer;
+  width: fit-content;
+}
+
+.sns-queue-detail p,
+.sns-queue-detail ul {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.sns-auto-calendar {
+  padding: 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+}
+
+.sns-auto-calendar > summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.sns-post-observations {
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .sns-queue-row-main {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .sns-queue-name {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .sns-queue-state {
+    justify-self: end;
+  }
 }

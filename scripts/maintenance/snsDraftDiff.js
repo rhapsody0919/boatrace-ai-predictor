@@ -580,17 +580,6 @@ try {
   );
   assert(document.querySelector("select"));
   assert(!document.querySelector('[role="alert"]'));
-  const mobileSource = await readFile(
-    new URL(
-      "../../src/pages/admin/sns-hub/MobileApprovalPanel.jsx",
-      import.meta.url,
-    ),
-    "utf8",
-  );
-  assert(
-    mobileSource.includes("versionHash={row.versionHash || null}"),
-    "承認画面で取得したhashを渡す",
-  );
   console.log(
     "[OK] draft diff DOM: inline changes / baseline select / fixed failure / retry",
   );

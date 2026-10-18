@@ -520,7 +520,10 @@ test("親画面の成功・例外通知は関数型更新で蓄積し、閉じ�
   );
   assert.equal(updates.length, 3);
   assert.ok(
-    updates.every((update) => update.startsWith("previous => [...previous,")),
+    // 整形（prettier）で `(previous) => [` と改行が入っても同じ関数型更新として扱う
+    updates.every((update) =>
+      /^\(?previous\)? => \[\s*\.\.\.previous,/.test(update),
+    ),
   );
   assert.match(source, /onClick=\{\(\) => setActionMessages\(\[\]\)\}/);
   // 実画面に接続された各updaterを順に実行し、Reactの連続更新を再現する。

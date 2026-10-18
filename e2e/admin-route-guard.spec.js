@@ -50,6 +50,10 @@ test.describe("管理画面の綴り違いURL", () => {
     "/%61dmin/rules",
     "/admin/SNS-HUB",
     "/admin/sns-h%75b",
+    // SNS ハブのページ（2026-10-18 に4ページへ分けた）も綴り違いは描画しない
+    "/admin/SNS-HUB/auto",
+    "/admin/sns-hub/%61uto",
+    "/admin/sns-hub/Metrics",
   ]) {
     test(`${path} は管理画面を描画せずトップへ戻す`, async ({
       page,
