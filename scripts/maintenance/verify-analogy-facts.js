@@ -43,6 +43,8 @@ import {
   minRanks,
   rankBand,
   maedukeBoats,
+  SLIT_EXAMPLE,
+  SLIT_FORMS,
   slitForms,
   waveBand,
   windBand,
@@ -258,6 +260,13 @@ const defs = JSON.parse(
 );
 for (const c of defs.slit_forms)
   check(`スリットの形 ${c.st.join(",")}`, slitForms(c.st), c.forms);
+// 龍神ソナーの形の絵の例は、その形の定義を満たす（差に 0.10 を足して ST にする。d3 が凹みの新定義 BOA-777 を満たさなかった）
+for (const f of SLIT_FORMS)
+  check(
+    `形の絵の例 ${f}`,
+    slitForms(SLIT_EXAMPLE[f].map((v) => v + 0.1))[f],
+    true,
+  );
 for (const c of defs.entry_types) {
   check(`進入の型 ${c.course.join(",")}`, entryType(c.course), c.type);
   check(`前付け ${c.course.join(",")}`, maedukeBoats(c.course), c.maeduke);
