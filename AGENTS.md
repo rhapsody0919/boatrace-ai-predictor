@@ -94,12 +94,15 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - `npm run test:e2e` は既定で録画を再生し、時計を録画時刻に固定する。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PRコメントとstep summaryに一覧が出る（新しいクエリを足したPRで素通しが出るのは想定どおりで、撮り直しは不要）。録画の撮り直し（`npm run test:e2e:record`）は通常不要（`e2e-rerecord.yml` が毎日自動で行う）
 
 ### PR 時に CI で走るチェック
-GitHub 側に必須チェックの設定は無い。PR を出したら次の結果を確かめ、落ちたら直して push する。
+必須チェックは `verify`・`ml-tests`・`e2e` の3つ（GitHub の ruleset「master-checks」。bypass は ryujin-bot だけで、admin も CI が緑でなければマージできない。ruleset はオーナーが入れる。入るまでは GitHub 側では止まらない）。PR を出したら次の結果を確かめ、落ちたら直して push する。
 - `verify`（Quality Gates。`npm run verify:ci`）
 - `e2e`（E2E Smoke Test。3つの `e2e-shard` の集約）
-- 該当するときだけ走る: `ml-tests`（`scripts/ml/` を変えたとき）、`verify-cache`（`api/**` 等を変えたとき）
+- `ml-tests`（Quality Gates。ジョブは毎回走り、`scripts/ml/` を変えたときだけ pytest を実行する）
+- 該当するときだけ走る: `verify-cache`（`api/**` 等を変えたとき。必須ではない）
 
-マージする側の Claude のフック（`scripts/maintenance/guard-pr-merge.js`）が止めるのは `verify` の非成功と、`e2e` の実行中・失敗だけ。`ml-tests`・`verify-cache` はフックの対象外
+マージする側の Claude のフック（`scripts/maintenance/guard-pr-merge.js`）は、必須チェックの3つを見る。`verify`・`ml-tests` の失敗は止め、`e2e` の失敗は確認を挟む。3つのどれかが実行中・結果が無い（e2e の集約が作られていない等）なら待たせる。`gh pr merge N --auto` は、ruleset が3つを必須にしているときだけチェックを GitHub に任せて通す（台帳のマージ順と、PR 番号を変数で渡す書き方の禁止はそのまま効く）。ruleset が無いときは `--auto` でも同じ検査をする。`verify-cache` はフックの対象外
+
+e2e が落ちた・止まったまま終わらない（shard が50分を超えて実行中）ときは `node scripts/maintenance/e2e-rerun.js [PR番号] --apply` で落ちたジョブだけ再実行する（止まったものは cancel してから）。再実行は1回まで。2回目も落ちたら再実行せずオーケストレーターに上げる（スクリプトが「上げる」と出す）。`--apply` を付けなければ判定だけ出す
 
 ### PR 本文の書き方
 `.github/pull_request_template.md` の見出しに、次を足して書く。

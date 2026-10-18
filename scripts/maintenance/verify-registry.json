@@ -627,6 +627,11 @@
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
     },
     {
+      "script": "verify-e2e-rerun.js",
+      "tier": "ci",
+      "guards": "PR の E2E Smoke Test の再実行の判定（e2e-rerun.js）。落ちた・50分を超えて止まった実行は1回目だけ再実行（止まったものは cancel してから）、2回目以降は再実行せずオーケストレーターに上げる"
+    },
+    {
       "script": "verify-merge-order-guard.js",
       "tier": "ci",
       "guards": "並行セッションのオーケストレーションが決めたマージ順（台帳で先行とされたPRが未マージなら gh pr merge を止める。台帳に制約があるのに for ループ・変数・$(...)・xargs 等でPR番号を確定できない場合も止める。guard-pr-merge.js・scripts/lib/mergeOrder.js・merge-order.js）"
