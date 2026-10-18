@@ -44,6 +44,9 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
             evaluate: async (fn) => {
               log.evaluated = [...(log.evaluated ?? []), String(fn)];
             },
+            waitForTimeout: async (ms) => {
+              log.waits = [...(log.waits ?? []), ms];
+            },
             screenshot: async (options) => {
               log.screenshots = [...(log.screenshots ?? []), options];
               return Buffer.from("png");
@@ -58,6 +61,12 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
                   log.labels = [...(log.labels ?? []), { selector, arg }];
                 },
                 scrollIntoViewIfNeeded: async () => {},
+                boundingBox: async () => ({
+                  x: 0,
+                  y: 10,
+                  width: 375,
+                  height: 300,
+                }),
                 screenshot: async (options) => {
                   log.elementShots = [
                     ...(log.elementShots ?? []),
@@ -398,5 +407,31 @@ test("screenshot の element・label（龍神ソナーの図、2026-10-16）: �
       element: ".af-hep .af-dark",
     }),
     /screenshot_component_missing/,
+  );
+});
+
+test("screenshot の element: 位置と大きさが落ち着くまで待ってから撮る。落ち着かなければ screenshot_unstable（2026-10-19 /today の4枚目の帯と切れ）", async () => {
+  const { waitForStableBox } = await import("../../api/_lib/snsHeadless.js");
+  const boxes = [
+    { x: 0, y: 120, width: 375, height: 300 },
+    { x: 0, y: 60, width: 375, height: 300 },
+    { x: 0, y: 10, width: 375, height: 300 },
+    { x: 0, y: 10, width: 375, height: 300 },
+  ];
+  const waits = [];
+  const page = { waitForTimeout: async (ms) => waits.push(ms) };
+  const box = await waitForStableBox(page, {
+    boundingBox: async () => boxes.shift(),
+  });
+  assert.equal(box.y, 10);
+  assert.equal(waits.length, 3);
+  let y = 0;
+  await assert.rejects(
+    waitForStableBox(
+      page,
+      { boundingBox: async () => ({ x: 0, y: (y += 5), width: 1, height: 1 }) },
+      { tries: 4, gapMs: 1 },
+    ),
+    /screenshot_unstable/,
   );
 });
