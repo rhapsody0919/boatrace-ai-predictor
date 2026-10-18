@@ -97,7 +97,7 @@ for (const width of [375, 1440]) {
         title: "住之江 12R 全貌",
         channel: "youtube",
         state: "failed",
-        scheduled_at: iso(now - H),
+        scheduled_at: iso(now), // 日付をまたぐ時刻でも「今日」に入るよう今の時刻にする
         expires_at: iso(now),
         error_code: "upload_failed",
       },
@@ -106,7 +106,7 @@ for (const width of [375, 1440]) {
         title: "/today 朝のまとめ",
         channel: "x",
         state: "posted",
-        posted_at: iso(now - 30 * 60 * 1000),
+        posted_at: iso(now),
       },
       {
         id: "q",

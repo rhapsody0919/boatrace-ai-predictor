@@ -56,7 +56,7 @@ for (const theme of ["light", "dark"])
         title: "今日公開した投稿",
         channel: "x",
         state: "posted",
-        posted_at: iso(now - 60 * 1000),
+        posted_at: iso(now), // 日付をまたぐ時刻でも「今日」に入る
       },
     ]);
     await page.goto("/__queue_test");
