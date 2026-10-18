@@ -31,7 +31,9 @@ const ESCALATIONS_PATH = path.join(
   REPO_ROOT,
   "data/analysis/content-quality-audit/escalations.json",
 );
-const LINEAR_API_URL = "https://api.linear.app/graphql";
+// 検証（verify-revision-escalation-linear-errors.js）で模擬サーバーへ向けるため、環境変数で差し替えられる
+const LINEAR_API_URL =
+  process.env.LINEAR_API_URL || "https://api.linear.app/graphql";
 const THRESHOLD = 3;
 const WINDOW_DAYS = 30;
 const CONTENT_QUALITY_LABEL = "content-quality";
@@ -50,18 +52,36 @@ async function writeEscalations(data) {
   await fs.writeFile(ESCALATIONS_PATH, JSON.stringify(data, null, 2) + "\n");
 }
 
-async function graphqlRequest(apiKey, query, variables) {
+/**
+ * HTTP のエラー・GraphQL の errors はどちらも例外にする。例外のメッセージには
+ * Linear のエラーコード（extensions.code、例 USAGE_LIMIT_EXCEEDED）を含める。
+ * 以前は message だけを拾い、HTTP 400 では本文を読まずに捨てていたため、
+ * 無料枠の上限で起票が失敗しても理由が分からなかった（2026-10-18 調査）。
+ * 書き方は scripts/linear-cli.js の graphqlRequest に揃える
+ */
+export async function graphqlRequest(apiKey, query, variables) {
   const response = await fetch(LINEAR_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: apiKey },
     body: JSON.stringify({ query, variables }),
   });
-  if (!response.ok) {
-    throw new Error(`Linear API error: ${response.status}`);
+  const body = await response.text();
+  let json;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    throw new Error(
+      `Linear API error: HTTP ${response.status}: JSON でない応答: ${body.substring(0, 200)}`,
+    );
   }
-  const json = await response.json();
-  if (json.errors) {
-    throw new Error(json.errors.map((e) => e.message).join(", "));
+  if (json.errors?.length) {
+    const summary = json.errors
+      .map((e) => [e.extensions?.code, e.message].filter(Boolean).join(": "))
+      .join(" / ");
+    throw new Error(`Linear API error（HTTP ${response.status}）: ${summary}`);
+  }
+  if (!response.ok) {
+    throw new Error(`Linear API error: HTTP ${response.status}`);
   }
   return json.data;
 }

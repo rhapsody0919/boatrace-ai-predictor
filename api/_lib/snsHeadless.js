@@ -23,6 +23,31 @@ const BLOCKED = /google-analytics\.com|googletagmanager\.com|doubleclick\.net/;
 export const CONSENT_KEY = "boatai:cookie-consent";
 const OVERLAYS = [".cookie-consent"];
 
+/**
+ * 要素の位置と大きさが、gapMs おいて2回続けて同じになるまで待つ（最大 tries 回）。落ち着かなければ screenshot_unstable
+ */
+export async function waitForStableBox(
+  page,
+  target,
+  { tries = 15, gapMs = 200 } = {},
+) {
+  let previous = null;
+  for (let i = 0; i < tries; i++) {
+    const box = await target.boundingBox();
+    if (
+      box &&
+      previous &&
+      ["x", "y", "width", "height"].every(
+        (k) => Math.abs(box[k] - previous[k]) < 0.5,
+      )
+    )
+      return box;
+    previous = box;
+    await page.waitForTimeout(gapMs);
+  }
+  throw new Error("screenshot_unstable");
+}
+
 export function createChromiumHeadless({
   launch = launchChromium,
   gotoTimeoutMs = 30000,
@@ -143,6 +168,9 @@ export function createChromiumHeadless({
               }, label);
             await target.scrollIntoViewIfNeeded();
             await page.evaluate(() => document.fonts.ready);
+            // 位置と大きさが落ち着いてから撮る。後から読み込まれる部品で表示がずれると、上に背景の帯が入り、
+            // 下が切れた図になる（2026-10-19 の /today の4枚目、桐生6R）
+            await waitForStableBox(page, target);
             return { png: await target.screenshot({ type: "png" }) };
           }
           await page.evaluate(() => document.fonts.ready);
