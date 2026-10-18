@@ -13,6 +13,8 @@
  *   (e) 台帳に制約があるのに、PR番号がシェルの展開で決まる書き方（for ループの $n・"$PR"・$(...)・xargs 等）
  *       ならフックが止める。番号を確定できる書き方と、台帳が空の場合は従来どおり
  *       （番号不明を素通ししていた版では、止める側の13件が落ちることを確認済み）
+ *   (f) `gh pr merge N --auto` は、ruleset が必須チェック3つを全部持つときだけチェックの結果を見ない。
+ *       ruleset が無い・足りない・読めないときは従来どおり検査する。台帳の順序は --auto でも守る
  *
  * 隔離（BOA-634）: 子プロセス（フック・CLI・偽の gh）は次の条件でだけ動かす。
  *   - 環境変数は process.env を引き継がず、ここで組み立てたものだけを渡す。PATH は偽の gh を置いた
@@ -67,7 +69,8 @@ const work = realpathSync(
 );
 process.on("exit", () => rmSync(work, { recursive: true, force: true }));
 
-// 偽の gh: pr checks は品質ゲート緑、pr view --json state は FAKE_GH_STATES（"902=OPEN,903=MERGED"）から返す。
+// 偽の gh: pr checks は FAKE_GH_CHECKS（無ければ必須チェック3つとも緑）、api は FAKE_GH_RULES（無ければ失敗）、
+// pr view --json state は FAKE_GH_STATES（"902=OPEN,903=MERGED"）から返す。
 // PATH に他のコマンドが無いので、bash は絶対パスで起動し、組み込みコマンドだけを使う
 const bin = path.join(work, "bin");
 mkdirSync(bin);
@@ -75,8 +78,13 @@ writeFileSync(
   path.join(bin, "gh"),
   `#!/bin/bash
 if [ "$1 $2" = "pr checks" ]; then
-  echo '[{"name":"verify","state":"SUCCESS"},{"name":"e2e","state":"SUCCESS"}]'
+  [ -n "$FAKE_GH_CHECKS" ] && { echo "$FAKE_GH_CHECKS"; exit 0; }
+  echo '[{"name":"verify","state":"SUCCESS"},{"name":"ml-tests","state":"SUCCESS"},{"name":"e2e","state":"SUCCESS"}]'
   exit 0
+fi
+if [ "$1" = "api" ]; then
+  [ -n "$FAKE_GH_RULES" ] && { echo "$FAKE_GH_RULES"; exit 0; }
+  exit 1
 fi
 if [ "$1 $2 $3" = "pr view --json" ] && [ "$4" = "number" ]; then
   # FAKE_GH_CURRENT_DIR があれば、そのディレクトリで起動されたときだけ現在のブランチのPRがある
@@ -138,6 +146,8 @@ const isolatedEnv = (extra = {}) => ({
   FAKE_GH_CURRENT: "",
   FAKE_GH_CURRENT_DIR: "",
   FAKE_GH_BRANCHES: "",
+  FAKE_GH_CHECKS: "",
+  FAKE_GH_RULES: "",
   ...extra,
 });
 
@@ -624,6 +634,97 @@ async function verifyCli() {
   );
 }
 pending.push(verifyCli());
+
+// ---------------------------------------------------------------------------
+// (f) --auto（2026-10-18、ruleset「master-checks」の導入に合わせて追加）
+// ---------------------------------------------------------------------------
+{
+  const red = JSON.stringify([
+    { name: "verify", state: "SUCCESS" },
+    { name: "ml-tests", state: "FAILURE" },
+    { name: "e2e", state: "IN_PROGRESS" },
+  ]);
+  const statusRule = (contexts) =>
+    JSON.stringify([
+      { type: "deletion" },
+      {
+        type: "required_status_checks",
+        parameters: {
+          required_status_checks: contexts.map((context) => ({ context })),
+        },
+      },
+    ]);
+  const enforced = statusRule(["verify", "e2e", "ml-tests"]);
+  expectGuard(
+    "(f) ruleset が必須チェックを持てば、--auto はチェックが赤でも通す",
+    null,
+    "gh pr merge 1621 --auto --squash",
+    { FAKE_GH_CHECKS: red, FAKE_GH_RULES: enforced },
+    isAllow,
+  );
+  expectGuard(
+    "(f) --auto の無いマージは、ruleset があってもチェックで止める",
+    null,
+    "gh pr merge 1621 --squash",
+    { FAKE_GH_CHECKS: red, FAKE_GH_RULES: enforced },
+    (r) => isDeny(r) && r.includes("ml-tests"),
+  );
+  expectGuard(
+    "(f) ruleset に必須チェックが無ければ、--auto でもチェックで止める（導入前の運用）",
+    null,
+    "gh pr merge 1621 --auto --squash",
+    { FAKE_GH_CHECKS: red, FAKE_GH_RULES: JSON.stringify([{ type: "deletion" }]) },
+    isDeny,
+  );
+  expectGuard(
+    "(f) ruleset に ml-tests が欠けていれば、--auto でもチェックで止める",
+    null,
+    "gh pr merge 1621 --auto",
+    { FAKE_GH_CHECKS: red, FAKE_GH_RULES: statusRule(["verify", "e2e"]) },
+    isDeny,
+  );
+  expectGuard(
+    "(f) ruleset を読めなければ、--auto でもチェックで止める",
+    null,
+    "gh pr merge 1621 --auto",
+    { FAKE_GH_CHECKS: red },
+    isDeny,
+  );
+  expectGuard(
+    "(f) 同じPRを --auto なしでもマージするコマンドならチェックで止める",
+    null,
+    "gh pr merge 1621 --auto; gh pr merge 1621 --squash",
+    { FAKE_GH_CHECKS: red, FAKE_GH_RULES: enforced },
+    isDeny,
+  );
+  expectGuard(
+    "(f) --auto でも、台帳で先行のPRが未マージなら止める",
+    [{ pr: 901, after: [902] }],
+    "gh pr merge 901 --auto",
+    { FAKE_GH_STATES: "902=OPEN", FAKE_GH_RULES: enforced },
+    (r) => isDeny(r) && r.includes("#902"),
+  );
+  expectGuard(
+    "(f) --auto でも、台帳に制約があれば変数の番号は止める",
+    [{ pr: 901, after: [902] }],
+    "gh pr merge $n --auto",
+    { FAKE_GH_STATES: "902=MERGED", FAKE_GH_RULES: enforced },
+    (r) => isDeny(r) && r.includes("リテラル"),
+  );
+  // 以前は e2e が無い PR を素通りさせていた
+  expectGuard(
+    "(f) e2e の集約が無いPRは確認を挟む",
+    null,
+    "gh pr merge 1621 --squash",
+    {
+      FAKE_GH_CHECKS: JSON.stringify([
+        { name: "verify", state: "SUCCESS" },
+        { name: "ml-tests", state: "SUCCESS" },
+      ]),
+    },
+    (r) => typeof r === "string" && r.startsWith("ask:") && r.includes("e2e"),
+  );
+}
 
 await Promise.all(pending);
 
