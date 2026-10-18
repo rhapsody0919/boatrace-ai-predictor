@@ -252,6 +252,10 @@
     }
   ],
   "functions": {
+    "api/admin/sns-hub/send-probe.js": {
+      "regions": ["syd1"],
+      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**}"
+    },
     "api/cron/sns-send.js": {
       "regions": ["syd1"],
       "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**}"

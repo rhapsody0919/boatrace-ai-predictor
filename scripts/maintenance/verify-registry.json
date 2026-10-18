@@ -1155,6 +1155,11 @@
       "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-send-probe.js",
+      "tier": "ci",
+      "guards": "送信の試験（投稿しない、/api/admin/sns-hub/send-probe、2026-10-18 /today の初送信が原因不明で止まった件）: 媒体は initialize→append（4 MiB ずつ）→finalize→status まで行い createPost を呼ばない、落ちた段階を「段階_種類」で返す、表示の確認は印の有無と Chromium の落ちを区別する。外部接続なし"
+    },
+    {
       "script": "verify-sns-daily-runner.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 22: 暦日の値の取り込み（cron sns_daily）。YouTube Analytics はチャネル全体の D−3〜D−1（太平洋時間）を埋め、動画は投稿日＋翌日だけ読み古い動画は読まない・行の無い日は欠測、GA4 はチャネル全体を流入元の完全一致のリストでチャネルに足し行の無い日は0・UTM（race-full・today_digest）は utm_content の下書きの ID に結びつける、取り直しは値が変わった行だけ書く、GA4 の鍵が無い間は飛ばして report.alerts、片方の失敗でももう片方は書いて失敗を返す、shadow は書かない、YouTube Analytics の client・GA4 のサービスアカウントの JWT（RS256）と runReport、PostgREST の読み（1000行ずつ）と upsert の一意制約の列。SQL154 までを PGlite、外部接続なし"
