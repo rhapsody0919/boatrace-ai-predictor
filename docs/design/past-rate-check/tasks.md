@@ -51,9 +51,9 @@
 
 ## T5 検証と仕上げ
 - [x] T5-1 `npm run test:layout` に AI予想タブの部品と結果タブの振り返りを足す（375/768/1024/1440/1920px）。スリットの7形の一覧が375px で横にはみ出さないこと。ダークモードの目視（Playwright のスクリーンショット）
-- [ ] T5-2 受け入れ E2E（`e2e/acceptance/past-rate-check.spec.js`）をローカルで1本ずつ・`--workers=1` で実行する。書き換えない。実行は `npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/past-rate-check.spec.js`（本体の config では走らない）
+- [x] T5-2（2026-10-18、60/60 pass。固定データの前提（実在するレース・時計・ロケータ）を acceptance-test-writer が直した。期待値は変えていない）受け入れ E2E（`e2e/acceptance/past-rate-check.spec.js`）をローカルで1本ずつ・`--workers=1` で実行する。書き換えない。実行は `npx playwright test --config=playwright.acceptance.config.js e2e/acceptance/past-rate-check.spec.js`（本体の config では走らない）
   - 実行の前提で未解決のもの（2026-10-13 の外部点検 U3。テストの書き換えではなく前提のそろえ方の問題なので、実装時に確かめる）: テストの固定レース `2099-12-31-01-01` は日付の予想一覧に無いと詳細が描画されない（`RaceDetailPage.jsx`）ので、layer 以外の応答（予想・結果・締切）の固定が要る。確定済みに使う `2026-10-08-01-01` は録画の時刻（2026-10-02）より後。どちらも直すときは acceptance-test-writer に直させる
-- [ ] T5-3 データ精度の検証（`data-accuracy-verifier`）: 本番の数レースで、layer の行を Python で数えた件数（6型、分母・除いた件数）と画面の数字が一致すること、結果タブの決着の行が一致すること
-- [ ] T5-4 ファン評価ループ（`.claude/rules/review-fix-cycle.md`。オーケストレーターが「ファン評価あり」と指定した場合）
-- [ ] T5-5 Linear: BOA-627 の保存項目3（ユーザーの読みと発走前の時刻）を本機能で満たしたことをコメントする
-- [ ] T5-6 完了監査: このファイルの全チェックボックスと、コミット・実測を突き合わせる
+- [x] T5-3（2026-10-18、[analysis/data-accuracy.md](./analysis/data-accuracy.md)。576通りで不一致0）データ精度の検証（`data-accuracy-verifier`）: 本番の数レースで、layer の行を Python で数えた件数（6型、分母・除いた件数）と画面の数字が一致すること、結果タブの決着の行が一致すること
+- [x] T5-4（省略: 2026-10-18 オーケストレーター判断。オーナーが Preview を触って承認したため）ファン評価ループ（`.claude/rules/review-fix-cycle.md`。オーケストレーターが「ファン評価あり」と指定した場合）
+- [x] T5-5（2026-10-18 コメント済み）Linear: BOA-627 の保存項目3（ユーザーの読みと発走前の時刻）を本機能で満たしたことをコメントする
+- [x] T5-6（2026-10-18、全チェックボックスの実体（ファイル・コミット・実測）を確かめた）完了監査: このファイルの全チェックボックスと、コミット・実測を突き合わせる

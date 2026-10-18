@@ -5,15 +5,26 @@
 // すべて page.route で固定データに差し替える。
 //
 // 固定のレースID: spec.md・screens.md には「レース一覧→詳細」の導線が書かれておらず
-// （本機能はレース詳細ページの拡張のみを記述する）、辿れる導線が無いため固定値を使う。
-// 実際に存在するレースIDへの置き換えが必要になる可能性がある（仕様の曖昧点として報告）。
-// 発走後・確定済みのレースIDは v16 公開（2026-10-06ごろ）より後の日付にする必要がある
-// （spec「データ（土台）」: 公開より前のレースは layer API を呼ばず not_saved 扱い）。
+// （本機能はレース詳細ページの拡張のみを記述する）、辿れる導線が無いため、本番
+// Supabase に実在するレースIDを直接指定する（2026-10-18、初版の固定値
+// 2099-12-31-01-01 等は実在しないためレース詳細ページ自体が描画されず、
+// 「AI予想」タブ待ちが60秒タイムアウトしていた）。
+//
+// PENDING_RACE_ID・FINISHED_RACE_ID は同じ実在レース（確定済み・v16公開後）を指す。
+// spec FR-4「発走後（確定後）もAI予想タブで使える」ため、確定済みレースでも
+// AI予想タブ・結果タブの両方を検証できる。名前は検証対象のタブで呼び分けている
+// だけで、値をあえて分ける意味は無い。
+//   2026-10-10-01-04（桐生、race_number=4）: race_results に rank1=3,rank2=1,
+//   rank3=6・is_cancelled=false・is_no_race=false（2026-10-18 本番で確認）、
+//   races.start_time="16:53:00"（JST）。race_date 2026-10-10 は v16 公開
+//   （2026-10-06ごろ）より後
 import { test, expect, e2eNow } from "../fixtures.js";
 
-const PENDING_RACE_ID = "2099-12-31-01-01"; // 発走前（締切前）を想定
-const FINISHED_RACE_ID = "2026-10-08-01-01"; // 発走後・確定済み（v16公開後）を想定
-const PRE_PUBLISH_RACE_ID = "2020-01-01-01-01"; // v16公開より前の日付（not_savedと同じ扱い）
+const PENDING_RACE_ID = "2026-10-10-01-04";
+const FINISHED_RACE_ID = "2026-10-10-01-04";
+// v16公開より前の日付（not_savedと同じ扱い）の実在レース。race_results に
+// rank1=3,rank2=2,rank3=6・is_cancelled=false・is_no_race=false（2026-10-18 本番で確認）
+const PRE_PUBLISH_RACE_ID = "2026-09-15-04-01";
 
 // FR-5「savedAt から30日を過ぎた Entry を読み込みのたびに取り除く」との整合用。
 // テストの「今」は e2eNow()（録画の再生ではHAR録画時刻、E2E_LIVEでは実時刻）に
@@ -30,12 +41,13 @@ const EXPIRED_SAVED_AT = new Date(
   NOW.getTime() - 31 * 24 * 60 * 60 * 1000,
 ).toISOString();
 
-// FINISHED_RACE_ID の締切時刻は spec.md・screens.md からは決まらない
-// （固定レースの予想・結果の応答の前提は tasks T5-2 に未解決として記載されている）。
-// FR-4・FR-5 の timing テスト（保存は締切前・結果の確認は締切後）に使う仮の締切を
-// ここ1か所にまとめる。実際のレースIDへ置き換える際は、この値も実際の締切に
-// 合わせて調整が必要（仕様の曖昧点として報告）。
-const ASSUMED_DEADLINE = new Date("2026-10-08T12:00:00+09:00");
+// FINISHED_RACE_ID（2026-10-10-01-04）の締切時刻は spec.md・screens.md からは
+// 決まらない（FR-4「締切: getDeadlineDate(raceId, raceStartTime)」はレース発走時刻
+// から求めると書かれているが、締切そのものの計算式は仕様に無い）。races.start_time
+// （16:53:00 JST、本番で確認）をそのまま締切とみなす仮定をここ1か所にまとめる。
+// 既定の e2eNow()（録画時刻 2026-10-02）はこの締切より前なので、clock を明示的に
+// 動かさないテストは「締切前」の挙動を検証していることになる。
+const ASSUMED_DEADLINE = new Date("2026-10-10T16:53:00+09:00");
 const BEFORE_ASSUMED_DEADLINE = new Date(
   ASSUMED_DEADLINE.getTime() - 60 * 60 * 1000,
 ); // 仮の締切の1時間前（保存できる時刻）
@@ -514,7 +526,7 @@ test.describe("画面の構造・操作要素", () => {
     await openAiPredictionTab(page, PENDING_RACE_ID);
     await page.getByRole("tab", { name: "展開" }).click();
     await page.getByRole("button", { name: "3号艇", exact: true }).click();
-    await page.getByRole("button", { name: "まくり" }).click();
+    await page.getByRole("button", { name: "まくり", exact: true }).click();
     await judgeButton(page).click();
     await expect(
       page.getByText("決まり手が分からない2レースを除く"),
@@ -550,7 +562,12 @@ test.describe("画面の構造・操作要素", () => {
     await page.getByRole("button", { name: /^内3艇そろう/ }).click();
     const d2 = page.getByRole("button", { name: /^2コース凹み/ });
     await expect(d2).toBeDisabled();
-    await expect(page.getByText("同時には起きない形です")).toBeVisible();
+    // 内3艇そろうと同時に起きない形は2コース凹み・カド受け凹み・イン凹みの3つ
+    // あり、disabled になった全てのボタンに同じ注記が付く（spec FR-1「スリットの判定」
+    // 「定義から同時に起きない2形」）。複数ヒットするため .first() で存在だけ確かめる
+    await expect(
+      page.getByText("同時には起きない形です").first(),
+    ).toBeVisible();
   });
 
   test("[spec FR-1] 内3艇そろう→カド一撃の順に選んだ後は、2コース凹みを押せる（押すと最も古い内3艇そろうが外れるため）", async ({
@@ -855,7 +872,7 @@ test.describe("FR-3 定番／レア（線 x=15, y=5）", () => {
     await openAiPredictionTab(page, PENDING_RACE_ID);
     await page.getByRole("tab", { name: "展開" }).click();
     await page.getByRole("button", { name: "3号艇", exact: true }).click();
-    await page.getByRole("button", { name: "まくり" }).click();
+    await page.getByRole("button", { name: "まくり", exact: true }).click();
     await judgeButton(page).click();
     await expect(page.getByText("定番", { exact: true })).toBeVisible();
   });
@@ -950,6 +967,9 @@ test.describe("FR-5 端末内保存", () => {
     page,
   }) => {
     await mockLayer(page, okBody({ rows: GENERIC_ROWS }));
+    // 既定の e2eNow()（2026-10-02）は ASSUMED_DEADLINE（2026-10-10T16:53+09:00）より
+    // 前なので、締切後の挙動を検証するには clock を明示的に進める必要がある
+    await page.context().clock.setFixedTime(AFTER_ASSUMED_DEADLINE);
     await openAiPredictionTab(page, FINISHED_RACE_ID);
     await pickOrder134(page);
     await judgeButton(page).click();
