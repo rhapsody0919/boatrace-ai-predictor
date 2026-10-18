@@ -64,3 +64,6 @@
 - 新verifyの台帳登録を取り込み側へ委ねた場合、登録と品質ゲートでの実行確認が済むまで取り込み判定に残作業を明記する。（2026-10-13、2026-10-13-task-72-check-codex-patches.md）
 - 鍵を読まず本番接続を避けるローカル検証ではstrict replay・API_PROXY_TARGET空文字に加えViteのenvDirを空ディレクトリにし、複合npmスクリプトの引数転送先も確認する。（2026-10-13、2026-10-13-boa-744-part2.md）
 - verify実行前にimport先の秘密ファイル読込と実通信を確認し、本番接続禁止のレーンではmanualのDB検証をローカル純関数検査と区別して未実行と報告する。（2026-10-13、2026-10-13-boa-856.md）
+- 表・関数を DROP する前の参照確認は、本番の pg_depend（deptype<>'i'）・prosrc の ILIKE・pg_views・pg_constraint の confrelid の4つで行う。plpgsql の本文は pg_depend に出ないので prosrc の検索が要る（2026-10-19、system-architect、163）
+- DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちる。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
+- 本番に pg_cron は入っていない（cron.job が無い）。DB の DROP で cron の依存を気にしなくてよい（2026-10-19、system-architect の本番読み取り）

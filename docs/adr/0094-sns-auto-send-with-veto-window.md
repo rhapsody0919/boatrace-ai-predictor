@@ -21,4 +21,5 @@
 ## 影響
 - 投稿前の人の目視が外れる。新しい型の投稿だけは個別承認を残す（phase2 で新しい型の自律生成を許した理由が人の承認だったため）
 - 誤投稿1件、または1週間に「止めた」が3件以上なら個別承認に戻す（spec の運用の段取り）
+  - 個別承認の画面は #1645 で撤去し、140 の RPC と表は 163 で削除した。個別承認に戻すときは mode=manual と、drafts の x-send・queue-send（`approve_sns_x_send`）を使う。DB 側の QA・公開証拠の検査（旧 `approve_sns_mobile_channel`）は無くなり、JS の `sendHolds` が担う
 - 送信の関数に許可のリストの検査が加わり、transition の分岐が増える。PGlite の verify-sns-* で全経路を固定する
