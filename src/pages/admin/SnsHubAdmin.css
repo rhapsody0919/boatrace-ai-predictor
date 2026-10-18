@@ -30,6 +30,10 @@
   --color-error-dark-text: #bf1f1f;
   --color-info-text: #0a6dbc;
   --ind-best-bg: color-mix(in srgb, var(--ryujin-gold-500) 20%, transparent);
+  /* 上のトークンを戻しても、:root（index.css）の color: var(--text-primary) はダークの値で計算済みのまま
+     継承される。color を書かないパネル（期限順の一覧等）が明るい地に白文字になるため、ここで計算し直す
+     （2026-10-18 オーナー報告） */
+  color: var(--text-primary);
 }
 
 .sns-hub-header {
