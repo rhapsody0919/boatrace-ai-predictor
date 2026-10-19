@@ -274,7 +274,11 @@ jobs:
 
   notify:
     needs: [reconcile, judge, apply-auto, apply-gated, record]
-    if: ${{ !cancelled() && needs.reconcile.result == 'success' }}
+    # 知らせることがありうるときだけ動かす（毎時 Environment prod-jobs の deployment を作らない）
+    if: >-
+      ${{ !cancelled() && needs.reconcile.result == 'success' &&
+      (needs.reconcile.outputs.status == 'selected' || needs.reconcile.outputs.status == 'blocked' ||
+      needs.reconcile.outputs.stale != '[]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # 元の PR へのコメントだけに使う（承認はできない。「Allow GitHub Actions to create and approve pull requests」は OFF）

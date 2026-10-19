@@ -243,8 +243,11 @@ const LABEL_JA = { light: "軽い", heavy: "重い", stop: "止める" };
 export function buildNotifyMessage({ dryRun, status, file, pr, addedAt, label, reasons, applyResult, stale, now }) {
   const lines = [];
   const name = file ? file.split("/").pop() : "";
+  // 自動では当てずに止まっている SQL（blocked・止める）は、以後の番号も止める。足した直後の1回に加え、毎朝（UTC 0時台の
+  // 起動、JST 9時台）にも念を押す
+  const remind = now.getUTCHours() === 0;
   const prRef = pr ? `（PR #${pr}）` : "";
-  if (status === "blocked" && isRecent(addedAt, now)) {
+  if (status === "blocked" && (isRecent(addedAt, now) || remind)) {
     lines.push(`本番 SQL の自動の適用: ${name}${prRef} は自動では当てない（5点の検査を通らない）`);
     for (const r of reasons) lines.push(`- ${r}`);
   }
@@ -253,7 +256,7 @@ export function buildNotifyMessage({ dryRun, status, file, pr, addedAt, label, r
     if (dryRun && isRecent(addedAt, now)) {
       lines.push(`本番 SQL の自動の適用（試運転、当てていない）: ${name}${prRef} は「${ja}」。本番なら${label === "light" ? "承認なしで当てた" : label === "heavy" ? "オーナーの1タップを待った" : "当てずに止めた"}`);
       for (const r of reasons) lines.push(`- ${r}`);
-    } else if (!dryRun && label === "stop" && isRecent(addedAt, now)) {
+    } else if (!dryRun && label === "stop" && (isRecent(addedAt, now) || remind)) {
       lines.push(`本番 SQL の自動の適用: ${name}${prRef} は「止める」。当てていない`);
       for (const r of reasons) lines.push(`- ${r}`);
     } else if (!dryRun && (applyResult === "success" || applyResult === "failure")) {

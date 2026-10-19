@@ -19,6 +19,8 @@
  *  11. 軽い／重い／止めるの判定（ADR-0097 の許可のリスト。列挙の外は全部重い、控えの無い削除・個人情報らしい列は止める）
  *  12. 実ファイルのラベルの一覧（scripts/lib/__fixtures__/db-apply-labels.json）と一致する。判定を変えたら一覧も同じ PR で直す
  */
+import { createHash } from "node:crypto";
+import { spawnSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -575,6 +577,18 @@ check(
       /needs\.apply-gated\.result == 'success'/.test(body("record")),
   );
   check("notify は Environment prod-jobs（Slack の鍵）", /^ {4}environment: prod-jobs$/m.test(body("notify")));
+  check(
+    "notify は知らせることがありうるときだけ動く（selected・blocked・承認待ち）",
+    /status == 'selected'/.test(body("notify")) && /status == 'blocked'/.test(body("notify")) && /stale != '\[\]'/.test(body("notify")),
+  );
+  // 当てる直前の判定（apply-auto）: 重い・止めるのファイルは、DB の接続より前に落ちる
+  for (const f of ["163_drop_sns_mobile_approval.sql", "166_claude_ro_readonly_role.sql"]) {
+    const rel = `docs/db-migration/${f}`;
+    const sha = createHash("sha256").update(readFileSync(path.join(ROOT, rel))).digest("hex");
+    const env = { ...process.env, SUPABASE_DB_URL: "" };
+    const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/db/db-apply.js"), "apply-auto", rel, sha], { cwd: ROOT, env, encoding: "utf8" });
+    check(`apply-auto は軽いでない ${f} を当てずに落とす`, r.status === 1 && /軽い」でない/.test(r.stderr), r.stderr.slice(0, 200));
+  }
   const dir = path.join(ROOT, ".github/workflows");
   const autoUsers = readdirSync(dir)
     .filter((f) => /\.ya?ml$/.test(f))

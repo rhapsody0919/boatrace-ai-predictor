@@ -304,6 +304,15 @@ const base = () => ({
   check("本番: 重いの承認待ち（apply が動いていない）は出さない", buildNotifyMessage({ ...base, dryRun: false, label: "heavy", applyResult: "skipped", addedAt: old }) === null);
   check("承認待ちの6時間は出す", /6時間/.test(buildNotifyMessage({ ...base, status: "busy", file: "", stale: ["https://x/run/1"] }) ?? ""));
   check("何も無ければ null", buildNotifyMessage({ ...base, status: "none", file: "" }) === null);
+  const morning = new Date("2026-10-21T00:17:00Z");
+  check(
+    "止まったままの blocked は毎朝（UTC 0時台）念を押す",
+    /5点の検査/.test(buildNotifyMessage({ ...base, status: "blocked", addedAt: old, now: morning }) ?? ""),
+  );
+  check(
+    "本番の「止める」も毎朝念を押す",
+    /止める/.test(buildNotifyMessage({ ...base, dryRun: false, label: "stop", applyResult: "skipped", addedAt: old, now: morning }) ?? ""),
+  );
 }
 
 if (failures > 0) {
