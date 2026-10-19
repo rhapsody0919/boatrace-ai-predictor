@@ -48,3 +48,4 @@
 - FAQPageの構造化データを出す案と検索結果でFAQが表示される期待は分け、表示可否は採用時点の公式仕様で確認する。（2026-10-12、2026-10-12-top-faq.md）
 - 掲載本文が参照稿と一致していても、記事が案内する現在の画面の表示名は別に照合する。（2026-10-13、2026-10-13-audit-20261013-01.md）
 - Search Consoleに実クエリがあることと、新記事を作る露出根拠・既存稿との差があることは別に確認する。（2026-10-13、2026-10-13-plan-1408.md）
+- ブログの metaTitle・metaDescription は <title>・meta description・OGP/Twitter にだけ効く。AI 向けスナップショットは描画後の HTML を保存するのでビルドで自動的に反映されるが、llms.txt（generate-llms-txt.js）・トップのブログ欄の bot 向け HTML（api/_lib/botPage.js）・BlogPosting の JSON-LD は画面用の title・description を使い、「競艇」を入れない（2026-10-19、PR #1673 の seo-marketer 調査）
