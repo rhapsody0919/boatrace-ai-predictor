@@ -1,6 +1,6 @@
 /**
  * /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。
- * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 7:30〜12:00 だけ動く（2026-10-17 時刻の組み直し）。
+ * cron `sns_auto_plan` が毎回呼ぶ（api/cron/sns-auto-plan.js）。JST 7:30〜9:00 だけ動く（2026-10-19 時刻の組み直し）。
  *
  * 1回の流れ:
  *   その日の一覧（morning_digest_*、5:30 に公開）を読む → 版（snsTodayDigest.js）
@@ -9,10 +9,10 @@
  *   → 下書きがあり、一覧がやり直されて版が変わっていれば（6:30・8:00）: 撮り直して下書きを書き換える。148 のトリガーが承認を外すので、
  *     Slack で承認のし直しを頼む（承認した画像と違うものを送らない）
  *
- * - 時刻（2026-10-17 オーナー回答「承認の締め切りは昼頃までずらしても構わない」で組み直し）: 龍神ソナーの図のデータは
- *   朝のバッチ（7:10 起動）で 7:24〜7:26 に書かれるので、撮るのは 7:30 から。送る時刻（＝承認の締め切り）は 12:00。
- *   締切は持たないので、送る時刻＋60分（13:00）を締切として item に入れる（notify_by=締切−3h=10:00、veto_until=締切−60分=12:00、
- *   失効=締切−30分=12:30。レースの全貌と同じ計算）。載せるのは締切が 12:00 より後のレース
+ * - 時刻（2026-10-19 オーナー決定「毎朝 8:00 ごろに送る」で組み直し）: 龍神ソナーの図のデータは朝のバッチ（7:10 起動）で
+ *   7:24〜7:26 に書かれるので、撮るのは 7:30 から。送る時刻は 8:00 と「下書きができた時刻」の遅い方（図を 8:30 まで待つ日もある）。
+ *   下書きを作れるのは 9:00 まで（過ぎたら「作れなかった」を Slack に1回）。item の締切は 10:00（失効 9:30、expiry_minutes=30 と一致）、
+ *   notify_by は撮影の開始（7:30）、veto_until は送る時刻。載せるのは締切が 8:00 より後のレース
  * - この版は個別承認（L2）まで。自動（L3）の事前通知・止めるリンクは tasks 12b・13
  * - shadow では読むだけで、撮影・Storage・DB・Slack には書かない
  */
@@ -29,20 +29,29 @@ import { randomBytes } from "node:crypto";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
-/** その日の時刻（ISO）。送る 12:00、締切に見立てる 13:00 から、レースと同じ −3h・−60分・−30分 */
-// 撮影の開始（龍神ソナーの図のデータが書かれた後）と、送る時刻（承認の締め切り）。載せるレースは締切がこれより後のものだけ
+// 撮影の開始（龍神ソナーの図のデータが書かれた後）と、送る時刻（早くてこの時刻）。載せるレースは締切がこれより後のものだけ
 export const TODAY_PLAN_FROM = "07:30";
-export const TODAY_SEND_AT = "12:00";
+export const TODAY_SEND_AT = "08:00";
+// 下書きを作れる最後の時刻。過ぎて下書きが無ければ「作れなかった」を知らせる（図を 8:30 まで待つので、その後の撮影に余裕を残す）
+export const TODAY_LATEST = "09:00";
 
-export function todaySchedule(date) {
+/**
+ * その日の時刻（ISO）。送る時刻は 8:00 と now（下書きを作る時刻）の遅い方。now を渡さなければ 8:00
+ * 締切に見立てる 10:00（失効 9:30）。notify_by は撮影の開始、veto_until は送る時刻（153 の CHECK: notify_by < veto_until < deadline_at）
+ */
+export function todaySchedule(date, now = null) {
   const at = (hhmm) => new Date(`${date}T${hhmm}:00+09:00`).toISOString();
+  const sendAt = new Date(
+    Math.max(Date.parse(at(TODAY_SEND_AT)), now ? now.getTime() : 0),
+  ).toISOString();
   return {
     plan_from: at(TODAY_PLAN_FROM),
-    scheduled_at: at(TODAY_SEND_AT),
-    deadline_at: at("13:00"),
-    notify_by: at("10:00"),
-    veto_until: at(TODAY_SEND_AT),
-    expires_at: at("12:30"),
+    latest: at(TODAY_LATEST),
+    scheduled_at: sendAt,
+    deadline_at: at("10:00"),
+    notify_by: at(TODAY_PLAN_FROM),
+    veto_until: sendAt,
+    expires_at: at("09:30"),
   };
 }
 
@@ -205,13 +214,15 @@ export function buildTodayPost(
   };
 }
 
+const jstHm = (iso) =>
+  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
 const jstDate = (date) =>
   new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
 
 /** 確認用の作り直し（cursor.today_rebuild）が今の実行で効くか。送る時刻を過ぎた、その日の分だけ */
 export function isTodayRebuild(reviewDate, now) {
   const date = jstDate(now);
-  return reviewDate === date && now >= new Date(todaySchedule(date).veto_until);
+  return reviewDate === date && now >= new Date(todaySchedule(date).latest);
 }
 
 // 理由の文字列は1件につき最初の1行だけ残す（Playwright の例外はブラウザのログ全文を含み、cursor の記録が切れた。2026-10-17）
@@ -243,7 +254,8 @@ export async function runTodayPlan(
   const live = ctx.mode === "live";
   const now = ctx.now();
   const date = jstDate(now);
-  const when = todaySchedule(date);
+  // 確認用の作り直し（送る時刻を過ぎた後）は、送る時刻を今にしない（item の veto_until が締切を越えないように）
+  const when = todaySchedule(date, isTodayRebuild(reviewDate, now) ? null : now);
   const done = (extra) => ({
     rowsWritten: extra.written ? 1 : 0,
     report: { items: [{ kind: "digest", date, ...extra }], alerts: [] },
@@ -252,7 +264,7 @@ export async function runTodayPlan(
     return done({ outcome: "skipped", reason: "outside_window" });
   // 確認用の作り直し（送る時刻を過ぎていても作る。期限は過ぎているので承認・送信はできない）
   const review = isTodayRebuild(reviewDate, now);
-  if (now >= new Date(when.veto_until) && !review) {
+  if (now >= new Date(when.latest) && !review) {
     // 送る時刻を過ぎて、その日の下書きが無い（作れずに朝が終わった）。cron がその日1回だけ Slack に知らせる
     const { draft } = await store.todayState(date);
     return done(
@@ -280,17 +292,25 @@ export async function runTodayPlan(
 
   const trackingUrl = todayTrackingUrl(date);
   // 欠場・中止・締切を確かめられない候補は除く（区分の上限までは後ろの rank から補う）
-  const featuredRow = todayFeatured(digest.rows);
+  // 載せるのは、締切が送る時刻（8:00、遅れた日はその時刻）より後のレースだけ
+  const sendAt = jstHm(when.scheduled_at);
+  const featuredRow = todayFeatured(digest.rows, sendAt);
   const statuses = await pickRaceStatus(raceDb, [
     ...(featuredRow ? [featuredRow] : []),
-    ...todayCandidates(digest.rows),
+    ...todayCandidates(digest.rows, sendAt),
   ]);
   const excluded = new Set(
     statuses
       .filter((p) => p.reason)
       .map((p) => `${p.race_id}:${p.boat_number}`),
   );
-  const post = buildTodayPost(digest, { date, t, url: trackingUrl, excluded });
+  const post = buildTodayPost(digest, {
+    date,
+    t,
+    url: trackingUrl,
+    sendAt,
+    excluded,
+  });
   if (!post)
     return done({ outcome: "skipped", reason: "no_candidates", revision });
   const caption = post.text;
@@ -469,7 +489,7 @@ export async function runTodayPlan(
         held_reason: heldReason,
       });
   // 自動（mode=auto、2026-10-18 オーナー決定: /today も承認なし）: item を notified にして自動送信の承認者で承認する。
-  // 送る時刻は 12:00（veto_until と同じ）。確認用の作り直し（review）は送る時刻を過ぎているので自動にしない
+  // 送る時刻は 8:00 と下書きを作った時刻の遅い方（veto_until と同じ）。確認用の作り直し（review）は自動にしない
   let autoError = null;
   const control =
     state === "manual" && !review && store.control
@@ -511,7 +531,7 @@ export async function runTodayPlan(
     : rebuilt
       ? "一覧がやり直されたので、画像と本文を作り直した（前の承認は外れた）。承認し直して"
       : auto && !autoError
-        ? `今日の投稿を ${TODAY_SEND_AT} に自動で送る（承認なし${control.dry_run !== false ? "。ただし試運転中なので claim の前で止まる" : ""}）。止めるには: UPDATE public.sns_x_send_control SET paused = true WHERE id = true;`
+        ? `今日の投稿を ${jstHm(when.scheduled_at)} に自動で送る（承認なし${control.dry_run !== false ? "。ただし試運転中なので claim の前で止まる" : ""}）。止めるには: UPDATE public.sns_x_send_control SET paused = true WHERE id = true;`
         : autoError
           ? `今日の投稿の自動の承認に失敗したので送らない: ${autoError}`
           : state === "manual"
@@ -623,7 +643,7 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
 
 /**
  * /today の計画の各回の結果を、その日の分だけ残す（scrape_job_state.cursor.today）。report は5分ごとに上書きされ、
- * 12:00 を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
+ * 送る時刻を過ぎると「時間外」だけになって朝の経過が読めなくなるため（2026-10-17、下書きができなかった朝に原因を追えなかった）。
  * 時間外の skip は残さない。日付が変わったら空から。最新の30件まで
  * @param {{date?: string, events?: object[]}|null|undefined} prev 前回の cursor.today
  * @param {{outcome?: string, reason?: string, item_id?: string}} item この回の report.items の /today の1件
@@ -665,7 +685,7 @@ export function missedTodayText(log) {
   const at = (iso) =>
     new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
   return [
-    `SNS /today（${log?.date}）: 送る時刻（12:00）までに下書きを作れなかった。今日は送らない`,
+    `SNS /today（${log?.date}）: ${TODAY_LATEST} までに下書きを作れなかった。今日は送らない`,
     last
       ? `最後の結果（${at(last.at)}）: ${last.outcome}${last.reason ? ` ${last.reason}` : ""}（朝の記録 ${log.events.length}件）`
       : "朝の実行が一度も最後まで終わっていない（関数の時間切れなど。Vercel のログを確かめる）",
