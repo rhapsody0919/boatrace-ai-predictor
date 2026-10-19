@@ -15,6 +15,7 @@ export const BLOG_IMAGE_DIMENSIONS = {
   "/images/blog/ai-accuracy-comparison-ja.jpg": { width: 1000, height: 352 },
   "/images/blog/ai-accuracy-comparison-ko.jpg": { width: 1000, height: 332 },
   "/images/blog/ai-accuracy-comparison-zh-tw.jpg": { width: 1000, height: 343 },
+  "/images/blog/ai-index-reading-guide.jpg": { width: 1200, height: 630 },
   "/images/blog/ai-vs-human-comparison-en.jpg": { width: 1000, height: 411 },
   "/images/blog/ai-vs-human-comparison-ja.jpg": { width: 1000, height: 431 },
   "/images/blog/ai-vs-human-comparison-ko.jpg": { width: 1000, height: 416 },
