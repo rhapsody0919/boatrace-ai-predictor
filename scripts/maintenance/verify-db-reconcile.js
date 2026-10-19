@@ -224,6 +224,15 @@ const base = () => ({
     "台帳に行が無い新しいファイルも止める（黙って飛ばさない）",
     nullState.status === "blocked",
   );
+  const gone = { file: d("170_a"), ledgerState: null, existsAtHead: false, evaluation: null };
+  const afterGone = pickNext([gone, ok(d("171_b"))]);
+  check(
+    "後で master から消したファイルは飛ばし、後ろの番号を止めない",
+    afterGone.status === "selected" && afterGone.file === d("171_b"),
+    JSON.stringify(afterGone),
+  );
+  check("飛ばした消したファイルは removed に出す", afterGone.removed?.includes(d("170_a")));
+  check("消したファイルだけなら none", pickNext([gone]).status === "none");
   check(
     "013b は 013 と 014 の間",
     ["014_x.sql", "013b_x.sql", "013_x.sql"]

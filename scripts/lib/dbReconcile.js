@@ -150,26 +150,33 @@ export function evaluateCandidate(facts) {
 
 /**
  * 切り替えより後に足されたファイルを番号の順に見て、次に当てる1本を決める。
- * 台帳で適用済み・不明・廃止のものは飛ばす。最初に見つかった未処理のファイルが検査を通らなければ、
- * そこで止める（番号の順を飛ばして後ろのファイルを当てない。後ろが前に依存しうるため）。
+ * 台帳で適用済み・不明・廃止のものと、今の master に無いもの（後で消した・改名した）は飛ばす。
+ * 消したものを飛ばさないと、以後の番号が永久に当たらなくなる。飛ばしたものは removed に出す。
+ * 最初に見つかった未処理のファイルが検査を通らなければ、そこで止める（番号の順を飛ばして後ろのファイルを当てない。
+ * 後ろが前に依存しうるため）。
  *
- * @param {{ file: string, ledgerState: string | null, evaluation: ReturnType<typeof evaluateCandidate> }[]} candidates
- * @returns {{ status: "none" } | { status: "selected" | "blocked", file: string, pr: number | null, headSha: string | null, reasons: string[] }}
+ * @param {{ file: string, ledgerState: string | null, existsAtHead?: boolean, evaluation: ReturnType<typeof evaluateCandidate> | null }[]} candidates
+ * @returns {{ status: "none", removed: string[] } | { status: "selected" | "blocked", file: string, pr: number | null, headSha: string | null, reasons: string[], removed: string[] }}
  */
 export function pickNext(candidates) {
+  const removed = candidates
+    .filter((c) => c.existsAtHead === false)
+    .map((c) => c.file);
   const pending = [...candidates]
     .sort((a, b) =>
       byMigrationNumber(a.file.split("/").pop(), b.file.split("/").pop()),
     )
+    .filter((c) => c.existsAtHead !== false)
     .filter((c) => c.ledgerState === null || c.ledgerState === "未適用");
   const first = pending[0];
-  if (!first) return { status: "none" };
+  if (!first) return { status: "none", removed };
   return {
     status: first.evaluation.ok ? "selected" : "blocked",
     file: first.file,
     pr: first.evaluation.pr,
     headSha: first.evaluation.headSha,
     reasons: first.evaluation.reasons,
+    removed,
   };
 }
 

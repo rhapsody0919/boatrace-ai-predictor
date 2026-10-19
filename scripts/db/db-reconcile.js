@@ -146,6 +146,10 @@ async function main() {
       candidates.push({ file, ledgerState: state, evaluation: null });
       continue;
     }
+    if (!existsSync(path.join(ROOT, file))) {
+      candidates.push({ file, ledgerState: state, existsAtHead: false, evaluation: null });
+      continue;
+    }
     const commit = addCommits[0];
     const masterBlob = existsSync(path.join(ROOT, file))
       ? git("rev-parse", `HEAD:${file}`)
