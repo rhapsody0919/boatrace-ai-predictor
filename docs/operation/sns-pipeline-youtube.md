@@ -61,5 +61,5 @@ YouTube向けは `section='featured'` の1レースに絞り、「この選手�
 - **1つのclaim済みターゲットにつき、`sns_drafts`行は必ず1件だけ作る**。生成後に内容の誤りに自分で気づいた場合も、同一セッション内で2件目を作り直さない。6.の完了処理（`markTopicTargetGenerated`）を済ませたら、その回の生成物が最終版であり、修正は人間の下書き承認画面からの修正指摘操作に委ねる（2026-09-03、Blogパイプラインで同種の不具合が発生し判明。本パイプラインにも同じ制約を横展開）
 - claim対象が0件、または実データの裏付けが取れない場合は生成せず終了する
 - 「競艇」表記禁止、射幸心を煽らない、実データ以外は使わない
-- **非認証ギャンブルサイトへの誘導が無いか・的中率表現が利益保証と誤解されないかを自己点検する**（2026-09-05追加、`docs/reference/youtube-algorithm-and-growth-notes.md`の反映候補を実装。TikTokの`sns-pipeline-tiktok.md`と同種のポリシーチェックをYouTube側にも明記）
+- **非認証ギャンブルサイトへの誘導が無いか・的中率表現が利益保証と誤解されないかを自己点検する**（`docs/reference/youtube-algorithm-and-growth-notes.md`）
 - **このRoutineはYouTubeへの実際の投稿・公開は一切行わない**（承認時に`publish-youtube.js`が自動で行う）

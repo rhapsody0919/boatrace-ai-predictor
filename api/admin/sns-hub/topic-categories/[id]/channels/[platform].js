@@ -19,7 +19,7 @@ export const config = {
   runtime: "edge",
 };
 
-const VALID_PLATFORMS = ["blog", "note", "x", "tiktok", "youtube"];
+const VALID_PLATFORMS = ["blog", "note", "x", "youtube"];
 
 export default async function handler(req) {
   // middleware はエンコードしたパスで迂回できるため、関数側でも必ず認証する（api/_lib/adminAuth.js）

@@ -83,7 +83,7 @@ export const SITE_BASE_URL = "https://www.boat-ai.jp";
  * blog/noteチャネルは`docs/operation/sns-pipeline-blog.md`/`sns-pipeline-note.md`の
  * 設計により、Supabase Storageにアップロードせず`public/images/blog/{slug}.jpg`
  * （リポジトリにコミット済みの静的アセット、本番では`{SITE_BASE_URL}/images/blog/{slug}.jpg`
- * として配信される）をそのまま`cover_image_path`に記録する。X/TikTok/YouTubeは
+ * として配信される）をそのまま`cover_image_path`に記録する。X/YouTubeは
  * `{content_group_id}/x-ja.jpg`のようなsns-hub-media（Storage）内の生パスを使う。
  * 両者は同じ列に異なる種類のパスが混在するため、形状で判定して分岐する
  * （2026-09-05発覚: この分岐が無く全パスをStorage署名対象として扱っていたため、
@@ -230,7 +230,6 @@ export const PLATFORM_ROUTINE_ENV_PREFIX = {
   blog: "SNS_BLOG_ROUTINE",
   note: "SNS_NOTE_ROUTINE",
   x: "SNS_X_ROUTINE",
-  tiktok: "SNS_TIKTOK_ROUTINE",
   youtube: "SNS_YOUTUBE_ROUTINE",
 };
 
@@ -241,6 +240,15 @@ const FALLBACK_ROUTINE_ENV_PREFIX = "SNS_HUB_ROUTINE";
  * 対応するチャネル別パイプラインが未展開（環境変数未設定）の場合は、
  * fireRoutine側で自動的にnot_configured判定になりフォールバックの挙動になる。
  */
+// 運用をやめたプラットフォーム。過去の下書き・ターゲットが DB に残っていても、
+// 作り直し・今すぐ生成で Routine を起こさない（フォールバックの汎用 Routine に
+// 届くと、やめたプラットフォームの下書きを作り直してしまうため）
+export const RETIRED_PLATFORMS = ["tiktok"];
+
+export function isRetiredPlatform(platform) {
+  return RETIRED_PLATFORMS.includes(platform);
+}
+
 export function resolveRoutineEnvPrefix(platform) {
   return PLATFORM_ROUTINE_ENV_PREFIX[platform] || FALLBACK_ROUTINE_ENV_PREFIX;
 }

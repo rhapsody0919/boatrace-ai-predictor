@@ -20,6 +20,7 @@ import {
   fireRoutine,
   createInsight,
   resolveRoutineEnvPrefix,
+  isRetiredPlatform,
 } from "../../../../_lib/snsHubHelpers.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
@@ -97,6 +98,12 @@ export default async function handler(req) {
     }
     if (isBundlePublicationBlocked(draft)) {
       return jsonResponse({ error: "v0素材はローカルで修正して再取り込みしてください" }, 409);
+    }
+    if (isRetiredPlatform(draft.platform)) {
+      return jsonResponse(
+        { error: `platform='${draft.platform}'は運用をやめたので作り直せません` },
+        410,
+      );
     }
     if (draft.status !== "pending_review") {
       return jsonResponse(

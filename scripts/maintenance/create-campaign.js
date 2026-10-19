@@ -32,8 +32,6 @@ async function main() {
     startDate: today,
     durationDays: 7,
     targetChannels: ["x", "blog"],
-    tiktokDecisionNote:
-      "ギャンブル結果を扱う内容のためTikTokは対象外とする（人間判断、要件9）",
     selectionCriteria: {
       metric: "volatilityPercentile",
       operator: ">=",
