@@ -119,8 +119,10 @@ jobs:
   # 素通しの一覧と skip の検査は、ここで全組分をまとめて1回だけ出す
   e2e:
     needs: e2e-shard
-    # 組が落ちても集約して失敗を報告する。新しい push で止められた実行（cancelled）では走らせない
-    if: ${{ !cancelled() }}
+    # 組が落ちても、取り消されても、必ず走って結果を報告する（ADR-0097）。e2e は master の必須の check で、
+    # job が skipped になると GitHub は通過として扱う。以前の `!cancelled()` では、取り消した run で
+    # この job が skipped になり、e2e を通らずに自動マージされえた。取り消しは最後の段で失敗にする
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

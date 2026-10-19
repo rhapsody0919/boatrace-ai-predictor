@@ -97,6 +97,7 @@
     "verify:race-outcome": "node scripts/maintenance/verify-race-outcome.js",
     "verify:actionlint": "node scripts/maintenance/verify-actionlint.js",
     "verify:db-apply": "node scripts/maintenance/verify-db-apply.js",
+    "verify:review-workflow": "node scripts/maintenance/verify-review-workflow.js",
     "verify:workflow-secrets": "node scripts/maintenance/verify-workflow-secrets.js",
     "verify:db-reconcile": "node scripts/maintenance/verify-db-reconcile.js",
     "setup:actionlint": "node scripts/maintenance/install-actionlint.js",
