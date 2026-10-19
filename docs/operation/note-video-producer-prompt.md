@@ -1,14 +1,14 @@
 # 龍神レーダー note埋め込み動画 制作ガイド
 
-note下書き（`note-articles/{slug}.md`）に埋め込む機能解説動画（横型 1920x1080、20〜30秒）の制作ルール。X/TikTok向けの縦型ショート動画（`sns-video-producer-prompt.md`）とは目的・トーンが異なるため別ドキュメントとして分離している（2026-08-31新設）。
+note下書き（`note-articles/{slug}.md`）に埋め込む機能解説動画（横型 1920x1080、20〜30秒）の制作ルール。X・YouTube Shorts 向けの縦型ショート動画（`sns-video-producer-prompt.md`）とは目的・トーンが異なるため別ドキュメントとして分離している（2026-08-31新設）。
 
-**着手前に必ず [`docs/reference/brand-kit.md`](../reference/brand-kit.md) のギャラリーを確認すること**（2026-09-01〜）。ゼロから発想せず、既存の採用実例（ロゴ・カラー・フォント使用ルール）を出発点にする。承認を得たら、その場で`brand-kit.md`に実例を追記する。
+**着手前に必ず [`docs/reference/brand-kit.md`](../reference/brand-kit.md) のギャラリーを確認すること**。ゼロから発想せず、既存の採用実例（ロゴ・カラー・フォント使用ルール）を出発点にする。承認を得たら、その場で`brand-kit.md`に実例を追記する。
 
 ## 目的とトーンの違い
 
-note読者は既に興味を持って記事を読みに来ている層。TikTok/Xの「知らない人を3秒で止める」フックは不要で、実画面をじっくり見せる「プロダクトデモ」調が適切。派手な演出・煽り文句は避け、実データの可読性を優先する。
+note読者は既に興味を持って記事を読みに来ている層。ショート動画の「知らない人を3秒で止める」フックは不要で、実画面をじっくり見せる「プロダクトデモ」調が適切。派手な演出・煽り文句は避け、実データの可読性を優先する。
 
-## 構成（8人パネル議論、2026-08-31決定）
+## 構成
 
 1. **Hook（2.5〜3秒）**: 機能名のタイトル + 一言サブタイトル
 2. **特徴解説（15〜18秒）**: 実画面（表・カード等）を全体表示したまま、2〜4個の注目ポイントに順番にハイライト枠を当てて視線誘導し、各ポイントの価値を**機能説明ではなくベネフィットで言い切る字幕**を添える
@@ -34,12 +34,12 @@ for (const row of rows) {
 
 ## BGMルール
 
-- **`sns-video-studio/remotion/public/soundtrack.wav`を使わない**（2026-08-31〜）。X/TikTok用の縦型動画で既に使い回されている楽曲で、note用に流用したところ「使い回し感がある」と却下された
+- **`sns-video-studio/remotion/public/soundtrack.wav`を使わない**。X・YouTube Shorts 用の縦型動画で既に使い回されている楽曲で、note用に流用したところ「使い回し感がある」と却下された
 - note用動画には毎回、または一定期間ごとに新規の著作権フリー楽曲（Pixabay Content License等）を選定する。曲調は「落ち着いた・穏やか・プレゼンテーション向け」（corporate, calm等のタグ）を選ぶ
 - 採用済み: 「Calm Corporate Relax」（331music、[pixabay.com/music/corporate-calm-corporate-relax-591992](https://pixabay.com/music/corporate-calm-corporate-relax-591992/)）。`note-bgm-calm-corporate-relax.wav`として`sns-video-studio/remotion/public/`に配置済み（動画尺に合わせて25秒に切り出し・末尾2秒フェードアウト済み）
 - 新しい曲を探す際はWebSearchで`Pixabay royalty free corporate calm explainer background music`等を検索し、WebFetchで候補ページのライセンス条件（Pixabay Content License = 商用利用可・著作権表示不要）を確認してから選ぶ
 
-### Pixabayからのダウンロード手順（2026-08-31確立）
+### Pixabayからのダウンロード手順
 
 Claude Browser（`mcp__Claude_Browser__*`）は`pixabay.com`がポリシーでブロックされているため使えない。claude-in-chromeで以下の手順を踏む。
 
