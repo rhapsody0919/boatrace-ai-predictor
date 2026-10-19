@@ -602,6 +602,24 @@ test.describe("その他の主要ページ", () => {
     await expect(page.locator(".app-header")).toBeVisible();
   });
 
+  test("ブログ記事の metaTitle・metaDescription は <title>・meta・OGP にだけ使い、h1 は title のまま（「競艇」は画面に出さない）", async ({
+    page,
+  }) => {
+    await page.goto("/blog/ai-index-reading-guide");
+    const h1 = page.locator(".blog-post-header h1");
+    await expect(h1).toContainText("ボートレースのAI指数の見方");
+    await expect(page).toHaveTitle(/^競艇・ボートレースのAI指数の見方/);
+    expect(await h1.innerText()).not.toContain("競艇");
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      "content",
+      /^競艇（ボートレース）のAI指数/,
+    );
+    await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+      "content",
+      /^競艇・ボートレースのAI指数の見方/,
+    );
+  });
+
   test("存在しないパスはトップページにリダイレクトされる", async ({ page }) => {
     await page.goto("/this-path-does-not-exist");
     await expect(page).toHaveURL("/");
@@ -797,21 +815,33 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
 
   // BOA-744: 録画fixtureの時計を使わず、実時刻＋合成応答で一覧外リンクを再現する。
   for (const tab of ["techprofile", "returnrate"]) {
-    test(`${tab} のディープリンクは当日一覧にない会場・レースも保持する（BOA-744）`, async ({ browser, baseURL }) => {
+    test(`${tab} のディープリンクは当日一覧にない会場・レースも保持する（BOA-744）`, async ({
+      browser,
+      baseURL,
+    }) => {
       const context = await browser.newContext({ baseURL });
       try {
         await applyCookieConsent(context);
         const page = await context.newPage();
         const requests = [];
-        const today = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+        const today = new Date(Date.now() + 9 * 3600000)
+          .toISOString()
+          .slice(0, 10);
         const otherRace = `${today}-01-01`;
         const rows = Array.from({ length: 6 }, (_, i) => ({
-          boat_number: i + 1, racer_id: 4000 + i, player_name: `リンク先選手${i + 1}`,
-          win_count: 1, techniques: [{ technique: "逃げ", percentage: 100 }],
-          sample_count: 10, win_return_rate: 100, place_return_rate: 100,
+          boat_number: i + 1,
+          racer_id: 4000 + i,
+          player_name: `リンク先選手${i + 1}`,
+          win_count: 1,
+          techniques: [{ technique: "逃げ", percentage: 100 }],
+          sample_count: 10,
+          win_return_rate: 100,
+          place_return_rate: 100,
         }));
         let releaseVenues;
-        const venuesReady = new Promise((resolve) => { releaseVenues = resolve; });
+        const venuesReady = new Promise((resolve) => {
+          releaseVenues = resolve;
+        });
         await context.route("**/*", async (route) => {
           const url = new URL(route.request().url());
           if (url.pathname.includes("/rest/v1/")) {
@@ -821,9 +851,16 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
                 await venuesReady;
                 data = [{ venue_code: 1 }]; // 戸田を含めない
               } else {
-                data = url.searchParams.get("venue_code") === "eq.1"
-                  ? [{ race_id: otherRace, race_number: 1, start_time: "12:00" }]
-                  : [];
+                data =
+                  url.searchParams.get("venue_code") === "eq.1"
+                    ? [
+                        {
+                          race_id: otherRace,
+                          race_number: 1,
+                          start_time: "12:00",
+                        },
+                      ]
+                    : [];
               }
             } else if (url.pathname.includes("/rpc/get_race_")) {
               const id = route.request().postDataJSON()?.p_race_id;
@@ -832,25 +869,38 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
             }
             return route.fulfill({ json: data });
           }
-          if (url.pathname.startsWith("/api/")) return route.fulfill({ json: [] });
+          if (url.pathname.startsWith("/api/"))
+            return route.fulfill({ json: [] });
           if (url.origin !== new URL(baseURL).origin) return route.abort();
           return route.fallback();
         });
-        const targetRequest = page.waitForRequest((request) =>
-          request.url().includes(`/rpc/${tab === "techprofile" ? "get_race_technique_profile" : "get_race_return_rate"}`) &&
-          request.postDataJSON()?.p_race_id === ANALYSIS_FIXED_RACE_ID,
+        const targetRequest = page.waitForRequest(
+          (request) =>
+            request
+              .url()
+              .includes(
+                `/rpc/${tab === "techprofile" ? "get_race_technique_profile" : "get_race_return_rate"}`,
+              ) && request.postDataJSON()?.p_race_id === ANALYSIS_FIXED_RACE_ID,
         );
-        await page.goto(`/winning-technique?tab=${tab}&venue_code=2&race_id=${ANALYSIS_FIXED_RACE_ID}`);
+        await page.goto(
+          `/winning-technique?tab=${tab}&venue_code=2&race_id=${ANALYSIS_FIXED_RACE_ID}`,
+        );
         await targetRequest; // RPCのレースIDはURLではなくPOST本文に入る
         releaseVenues();
-        await expect(page.locator(".controls-section select").first().locator("option")).toHaveCount(1);
+        await expect(
+          page.locator(".controls-section select").first().locator("option"),
+        ).toHaveCount(1);
         await expect(page.locator(".controls-section select")).toHaveCount(1);
         // 一覧の適用後まで待つ。初回の正しい取得だけで修正前を通さない。
         await page.waitForTimeout(300);
         expect(requests.length).toBeGreaterThan(0);
-        expect(requests.every((id) => id === ANALYSIS_FIXED_RACE_ID)).toBe(true);
+        expect(requests.every((id) => id === ANALYSIS_FIXED_RACE_ID)).toBe(
+          true,
+        );
         await expect(page.locator(".motor-ranking-row")).toHaveCount(6);
-        await expect(page.locator(".motor-ranking-row").first()).toContainText("リンク先選手1");
+        await expect(page.locator(".motor-ranking-row").first()).toContainText(
+          "リンク先選手1",
+        );
       } finally {
         await context.close();
       }
@@ -1761,8 +1811,12 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(
       page.getByRole("button", { name: "全期間" }).first(),
     ).toBeVisible();
-    await expect(page.locator(".rwit-caveat").first()).toContainText("「全期間」");
-    await expect(page.locator(".rwit-caveat").first()).not.toContainText("「今期」");
+    await expect(page.locator(".rwit-caveat").first()).toContainText(
+      "「全期間」",
+    );
+    await expect(page.locator(".rwit-caveat").first()).not.toContainText(
+      "「今期」",
+    );
     // 「全期間」の注記は実データの開始月を書く。取得窓（730日）だけを見て
     // 「過去2年分」と言わない（BOA-503。実データは2025年12月以降）
     await expect(page.locator(".rwit-caveat").first()).toContainText(
@@ -2177,7 +2231,9 @@ test.describe("レースページ再設計（BOA-168）", () => {
     await expect(page.locator(".rbit-period-values")).toContainText(
       /Win rate \d+\.\d{2}/,
     );
-    await expect(page.locator(".rbit-period-values")).not.toContainText("Win pts");
+    await expect(page.locator(".rbit-period-values")).not.toContainText(
+      "Win pts",
+    );
     const overflow = await page.evaluate(() => {
       const box = document
         .querySelector(".rbit-period")
@@ -3561,9 +3617,13 @@ test.describe("レースページ再設計（BOA-168）", () => {
     ["attackdefense", ".ad-section"],
     ["racecard", ".rcd-table"],
   ]) {
-    test(`${tab} のディープリンクは当日一覧にない過去レースを維持する（BOA-744）`, async ({ browser }, testInfo) => {
+    test(`${tab} のディープリンクは当日一覧にない過去レースを維持する（BOA-744）`, async ({
+      browser,
+    }, testInfo) => {
       // 通常fixtureの録画時計を使わない。通信は録画だけで返し、外部へ出さない。
-      const context = await browser.newContext({ baseURL: testInfo.project.use.baseURL });
+      const context = await browser.newContext({
+        baseURL: testInfo.project.use.baseURL,
+      });
       await applyCookieConsent(context, "rejected");
       const page = await context.newPage();
       const dataRequests = [];
@@ -3571,34 +3631,56 @@ test.describe("レースページ再設計（BOA-168）", () => {
       const raceListVenues = [];
       await page.route("**/*", async (route) => {
         const url = new URL(route.request().url());
-        if (url.pathname === "/rest/v1/races" && url.searchParams.has("race_date")) {
+        if (
+          url.pathname === "/rest/v1/races" &&
+          url.searchParams.has("race_date")
+        ) {
           const venuesOnly = url.searchParams.get("select") === "venue_code";
           if (venuesOnly) venueLists++;
           else raceListVenues.push(url.searchParams.get("venue_code"));
           // 戸田も対象レースも無い一覧。空一覧による偽陽性を避ける。
           return route.fulfill({ json: venuesOnly ? [{ venue_code: 1 }] : [] });
         }
-        if (url.pathname.startsWith("/rest/v1/") || url.pathname.startsWith("/api/")) {
+        if (
+          url.pathname.startsWith("/rest/v1/") ||
+          url.pathname.startsWith("/api/")
+        ) {
           dataRequests.push(decodeURIComponent(url.href));
           const response = await fetchRecorded(route);
-          return route.fulfill({ status: response.status(), headers: response.headers(), body: await response.body() });
+          return route.fulfill({
+            status: response.status(),
+            headers: response.headers(),
+            body: await response.body(),
+          });
         }
-        if (url.origin === new URL(testInfo.project.use.baseURL).origin) return route.fallback();
+        if (url.origin === new URL(testInfo.project.use.baseURL).origin)
+          return route.fallback();
         return route.abort();
       });
       try {
-        const request = page.waitForRequest((r) => decodeURIComponent(r.url()).includes(ANALYSIS_FIXED_RACE_ID));
-        await page.goto(`/winning-technique?tab=${tab}&venue_code=2&race_id=${ANALYSIS_FIXED_RACE_ID}`);
+        const request = page.waitForRequest((r) =>
+          decodeURIComponent(r.url()).includes(ANALYSIS_FIXED_RACE_ID),
+        );
+        await page.goto(
+          `/winning-technique?tab=${tab}&venue_code=2&race_id=${ANALYSIS_FIXED_RACE_ID}`,
+        );
         await request;
         await expect.poll(() => venueLists).toBeGreaterThan(0);
         await expect.poll(() => raceListVenues.length).toBeGreaterThan(0);
         await page.waitForLoadState("networkidle");
         expect(raceListVenues.every((venue) => venue === "eq.2")).toBeTruthy();
-        await expect(page.locator(`${tab === "racecard" ? "#race-card" : "#attack-defense"}-venue-select option`)).toHaveCount(1);
+        await expect(
+          page.locator(
+            `${tab === "racecard" ? "#race-card" : "#attack-defense"}-venue-select option`,
+          ),
+        ).toHaveCount(1);
         // 一覧取得後も表を維持する。初回のID取得だけでは旧実装も成功し得る。
         await expect(page.locator(selector)).toBeVisible({ timeout: 20000 });
-        if (tab === "racecard") await expect(page.locator(".rcd-table tbody tr")).toHaveCount(6);
-        expect(dataRequests.some((url) => url.includes(ANALYSIS_FIXED_RACE_ID))).toBeTruthy();
+        if (tab === "racecard")
+          await expect(page.locator(".rcd-table tbody tr")).toHaveCount(6);
+        expect(
+          dataRequests.some((url) => url.includes(ANALYSIS_FIXED_RACE_ID)),
+        ).toBeTruthy();
       } finally {
         await context.close();
       }

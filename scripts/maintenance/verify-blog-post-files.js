@@ -11,6 +11,8 @@
  *   3. public/blog/{id}.md が存在する（URL だけあって本文が無い記事を作らない）
  *   4. featured の記事は featuredRank（正の整数）を持ち、重複しない。featured でない記事は持たない
  *   5. blogPosts.js（Node 側の読み込み）が全ファイルを読み、日付の新しい順・同日は id 順で返す
+ *   6. 画面に出る title・description（h1・一覧カード・関連記事）に「競艇」が無い。「競艇」は画面に出ない
+ *      metaTitle・metaDescription（<title>・meta description・OGP）にだけ入れてよい（code-style.md 例外1）
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -50,6 +52,16 @@ for (const file of files) {
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(post.date ?? ""))
     fail(`${file}: date が YYYY-MM-DD でない（${post.date}）`);
+  for (const key of ["metaTitle", "metaDescription"]) {
+    if (key in post && (typeof post[key] !== "string" || post[key] === ""))
+      fail(`${file}: ${key} があるのに空か文字列でない`);
+  }
+  for (const key of ["title", "description"]) {
+    if (String(post[key] ?? "").includes("競艇"))
+      fail(
+        `${file}: ${key} は画面に出るので「競艇」を入れない（入れるなら meta${key[0].toUpperCase()}${key.slice(1)} に）`,
+      );
+  }
   if (!Array.isArray(post.tags)) fail(`${file}: tags が配列でない`);
   if (typeof post.featured !== "boolean")
     fail(`${file}: featured が真偽値でない`);

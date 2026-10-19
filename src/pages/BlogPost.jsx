@@ -254,9 +254,14 @@ export default function BlogPost() {
     [content],
   );
 
+  // 画面に出ない所（<title>・meta description・OGP/Twitter）だけ metaTitle・metaDescription を優先する。
+  // h1・一覧カードは title・description のまま（「競艇」は画面に出さない。code-style.md 例外1）
+  const metaTitle = post?.metaTitle ?? post?.title;
+  const metaDescription = post?.metaDescription ?? post?.description;
+
   useSocialMeta({
-    title: post?.title,
-    description: post?.description,
+    title: metaTitle,
+    description: metaDescription,
     url: postUrl,
     image: postImageUrl,
     keywords: post?.tags.join(", "),
@@ -297,8 +302,8 @@ export default function BlogPost() {
     <>
       {/* Basic Meta Tags */}
       {/* keywords/OGP/Twitterカードはindex.htmlの静的タグをuseSocialMetaで直接書き換えている */}
-      <title>{`${post.title} | ${t.brandName}`}</title>
-      <meta name="description" content={post.description} />
+      <title>{`${metaTitle} | ${t.brandName}`}</title>
+      <meta name="description" content={metaDescription} />
       <link rel="canonical" href={url} />
 
       <meta property="article:published_time" content={post.date} />
