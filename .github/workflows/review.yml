@@ -1,0 +1,167 @@
+name: AI Review
+
+# AI（作成の App）の PR を別ベンダーの LLM で審査し、P0 が無ければ審査の App の名義で承認する（ADR-0097 段取り E）。
+# 承認はこの workflow の審査の App だけが数えられる。人は見ない。
+#
+#   gate       鍵なし。差分を API で取り、symlink・submodule・LFS・バイナリ・.gitattributes・上限超え・月の上限を機械で落とす
+#   materials  Environment db-readonly。SQL の PR のときだけ、claude_ro で触る表の定義と行数の目安を取る（行の中身は取らない）
+#   llm        Environment pr-review の API キーだけ。claude/ の PR は OpenAI、codex/ の PR は Anthropic で審査し、判定を出す
+#   approve    Environment pr-review の審査の App の鍵だけ。head が審査した SHA のままで P0 が0件なら、その SHA に APPROVE。
+#              承認しないときは REQUEST_CHANGES（審査の App の最新の状態でマージを止める）
+#
+# pull_request_target は master にある定義で動く（PR がこのファイルを書き換えても、その PR の審査には効かない）。
+# そのかわり鍵に届くので、次を守る。配線は scripts/maintenance/verify-review-workflow.js が検査する。
+#   - PR の head を checkout しない・実行しない。checkout は master（github.sha）だけ、persist-credentials: false
+#   - npm ci・npm install・cache を使わない（scripts/review/*.js は Node の組み込みだけを使う）
+#   - PR のタイトル・本文・ブランチ名を run に直接書かない（env 経由）。PR の本文・コメントは審査の材料に入れない
+#   - 作者は数値の user.id（repo の変数 REVIEW_MAKER_BOT_ID）で決める。同じリポジトリの head、base は master だけ
+#   - 外部の action は SHA で固定する
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+# 同じ PR の新しい push が来たら古い審査を止める（approve は head を取り直すので、古い SHA には承認しない）
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    if: >-
+      github.repository == 'rhapsody0919/boatrace-ai-predictor' &&
+      vars.REVIEW_MAKER_BOT_ID != '' &&
+      format('{0}', github.event.pull_request.user.id) == vars.REVIEW_MAKER_BOT_ID &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.base.ref == 'master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      actions: read
+    outputs:
+      ok: ${{ steps.gate.outputs.ok }}
+      reason: ${{ steps.gate.outputs.reason }}
+      vendor: ${{ steps.gate.outputs.vendor }}
+      sql_tables: ${{ steps.gate.outputs.sql_tables }}
+      head_sha: ${{ steps.gate.outputs.head_sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Node の版
+        run: node -e 'if (Number(process.versions.node.split(".")[0]) < 20) { console.error("Node 20 以上が要る"); process.exit(1) }'
+
+      - name: 関門
+        id: gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          MONTHLY_LIMIT: ${{ vars.REVIEW_MONTHLY_LIMIT }}
+        run: node scripts/review/gate.js
+
+  materials:
+    needs: gate
+    if: needs.gate.outputs.ok == 'true' && needs.gate.outputs.sql_tables != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: db-readonly
+    permissions:
+      contents: read
+    outputs:
+      materials: ${{ steps.materials.outputs.materials }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: psql の用意
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q postgresql-client
+          fi
+
+      - name: 本番の表の定義と件数（claude_ro）
+        id: materials
+        env:
+          CLAUDE_RO_DB_URL: ${{ secrets.CLAUDE_RO_DB_URL }}
+          TABLES: ${{ needs.gate.outputs.sql_tables }}
+        run: node scripts/review/materials.js
+
+  llm:
+    needs: [gate, materials]
+    # 材料が要る PR で材料の job が失敗・取り消しになったら、材料の無いまま審査しない
+    if: >-
+      !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.ok == 'true' &&
+      (needs.materials.result == 'success' || needs.materials.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: pr-review
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      verdict: ${{ steps.llm.outputs.verdict }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: 審査
+        id: llm
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
+          VENDOR: ${{ needs.gate.outputs.vendor }}
+          MATERIALS: ${{ needs.materials.outputs.materials }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          REVIEW_OPENAI_MODEL: ${{ vars.REVIEW_OPENAI_MODEL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REVIEW_ANTHROPIC_MODEL: ${{ vars.REVIEW_ANTHROPIC_MODEL }}
+        run: node scripts/review/llm.js
+
+  approve:
+    needs: [gate, materials, llm]
+    # 取り消された run（新しい push）では動かさない。新しい run が審査する
+    if: ${{ !cancelled() && needs.gate.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: pr-review
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: 審査の App のトークン
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.REVIEWER_APP_ID }}
+          private-key: ${{ secrets.REVIEWER_APP_PRIVATE_KEY }}
+          permission-pull-requests: write
+
+      - name: 承認かコメント
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REVIEWED_SHA: ${{ needs.gate.outputs.head_sha }}
+          GATE_OK: ${{ needs.gate.outputs.ok }}
+          GATE_REASON: ${{ needs.gate.outputs.reason }}
+          LLM_RESULT: ${{ needs.llm.result }}
+          VERDICT: ${{ needs.llm.outputs.verdict }}
+        run: node scripts/review/approve.js
