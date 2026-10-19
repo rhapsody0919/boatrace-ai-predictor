@@ -134,7 +134,8 @@ Settings → Environments → New environment。4つとも「Deployment branches
 2. 既にある Environment `ryujin-bot` にも、次の6つを同じ値で入れる。master に自動でコミットする11の job（scrape・train・sitemap 等）は Environment `ryujin-bot` を使っていて、job に置ける Environment は1つだけのため
    - `SUPABASE_URL`・`SUPABASE_SERVICE_KEY`・`SLACK_WEBHOOK_URL`・`VERCEL_DEPLOY_HOOK`・`GOOGLE_SERVICE_ACCOUNT_KEY`・`SEARCH_CONSOLE_SITE_URL`
    - あわせて `ryujin-bot` の「Deployment branches and tags」が Ref type: Branch・`master` だけになっていることを見る
-3. repo の secret は **まだ消さない**（7 で消す。先に消すと定期実行が止まる）
+3. PR の通知専用の Slack webhook を作り（Slack の Incoming Webhooks で、PR の通知を流すチャンネル宛てに新しく作る。本番の通知の webhook とは別のもの）、**repo の secret**（Repository secrets）に `SLACK_PR_WEBHOOK_URL` として入れる。PR が作られたときの通知（slack-notify-pr）は pull_request で動き、Environment を使えないため。漏れても、そのチャンネルに投稿されるだけ
+4. repo の secret は **まだ消さない**（7 で消す。先に消すと定期実行が止まる）
 - 鍵を回すときは、repo の secret が消えた後は `prod-jobs` と `ryujin-bot` の2か所（DB の接続文字列は `production-db` と `production-db-auto` の2か所）を直す
 
 ### 確かめ方
@@ -182,7 +183,7 @@ OpenAI のプロジェクトの上限は、通知だけで止まらないこと�
 
 1. S の PR（鍵を使う job に `environment: prod-jobs` を足すもの）がマージされ、次の定期実行が緑で動いたことを Claude が確かめる
 2. Settings → Secrets and variables → Actions → Repository secrets から、4-4 で移した8つを消す。残すのは `VITE_SUPABASE_URL`・`VITE_SUPABASE_ANON_KEY`（anon、公開してよい値）だけ
-   - PR の Slack 通知（slack-notify-pr）の扱いが決まるまでは `SLACK_WEBHOOK_URL` を消さない（pull_request で動くため Environment を使えない）
+   - 残す repo の secret は、ほかに `SLACK_PR_WEBHOOK_URL`（PR の通知専用）
 3. Claude が翌朝、定期実行が全部緑かを確かめる。落ちたものがあれば、その job の environment の付け忘れ
 - 戻し方: 消した secret を repo に入れ直す
 
