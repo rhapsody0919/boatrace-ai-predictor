@@ -227,10 +227,13 @@ export function checkMigrationSql(sql, { number = Infinity } = {}) {
     const noStrings = body.replace(/'(?:[^']|'')*'/g, "''"); // DEFAULT '(' 等で括弧の対応がずれないように
     const revoked = new Set();
     const revokeRe =
-      /REVOKE\s+[^;]*?\bON\s+(?:TABLE\s+)?([^;]*?)\s+FROM\s+([^;]+);/gi;
+      /REVOKE\s+([^;]*?)\s+ON\s+(?:TABLE\s+)?([^;]*?)\s+FROM\s+([^;]+);/gi;
     while ((m = revokeRe.exec(noStrings))) {
-      if (!/\bclaude_ro\b/i.test(m[2])) continue;
-      for (const t of m[1].split(",")) revoked.add(norm(t.trim()));
+      // SELECT か ALL を外す REVOKE だけを数える（REVOKE INSERT 等では読めるまま）
+      if (!/\b(SELECT|ALL)\b/i.test(m[1])) continue;
+      if (/\bGRANT\s+OPTION\s+FOR\b/i.test(m[1])) continue; // 権限そのものは残る
+      if (!/\bclaude_ro\b/i.test(m[3])) continue;
+      for (const t of m[2].split(",")) revoked.add(norm(t.trim()));
     }
     const tableRe =
       /CREATE\s+(?:UNLOGGED\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?((?:"?[\w]+"?\.)?"?[\w]+"?)\s*\(/gi;
@@ -438,6 +441,22 @@ REVOKE ALL ON TABLE public.foo, public.bar FROM anon, authenticated, claude_ro;`
       sql: `CREATE TABLE public.foo (id int, client_secret text);
 ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.foo FROM anon, authenticated;`,
+      number: 167,
+      errors: 1,
+    },
+    {
+      name: "167番以降: SELECT を外さない REVOKE（INSERT のみ）では足りない",
+      sql: `CREATE TABLE public.foo (id int, api_key text);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;
+REVOKE INSERT ON public.foo FROM claude_ro;`,
+      number: 167,
+      errors: 1,
+    },
+    {
+      name: "167番以降: REVOKE GRANT OPTION FOR SELECT では足りない",
+      sql: `CREATE TABLE public.foo (id int, api_key text);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;
+REVOKE GRANT OPTION FOR SELECT ON public.foo FROM claude_ro;`,
       number: 167,
       errors: 1,
     },
