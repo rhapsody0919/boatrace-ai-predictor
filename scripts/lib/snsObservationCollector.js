@@ -1,5 +1,7 @@
 import {
+  isObservationTimestamp,
   observationPeriod,
+  windowsFor,
   validateObservation,
   validateProviderObservation,
   withinSnapshotTolerance,
@@ -19,7 +21,7 @@ export async function collectDueObservations({
   const results = [];
   for (const draft of drafts) {
     if (draft.status !== "posted" || !draft.posted_at) continue;
-    for (const window of ["48h", "7d"]) {
+    for (const window of windowsFor(draft)) {
       const period = observationPeriod(draft.posted_at, window);
       if (
         Date.parse(period.period_end) > Date.parse(now) ||
@@ -61,9 +63,13 @@ export async function collectDueObservations({
 function normalizeProviderObservation(row, window, period, draft) {
   // 欠測変換で値・曲線・理由等の入力違反を消す前に拒否する。
   validateProviderObservation({ ...row, window }, draft);
-  // 不正な日時を有効な要求日時で補完しない。
-  observationPeriod(row.period_start, window);
-  observationPeriod(row.period_end, window);
+  // 不正な日時を有効な要求日時で補完しない。窓との一致は下の mismatch で見る
+  // （day_end の行の period_end を起点に窓を計算すると、その日の 23:00 と同じになり常に投げてしまうので、時刻の形だけを見る）
+  if (
+    !isObservationTimestamp(row.period_start) ||
+    !isObservationTimestamp(row.period_end)
+  )
+    throw new Error("投稿日時・観測窓が不正です");
   const mismatch =
     Date.parse(row.period_start) !== Date.parse(period.period_start) ||
     Date.parse(row.period_end) !== Date.parse(period.period_end);

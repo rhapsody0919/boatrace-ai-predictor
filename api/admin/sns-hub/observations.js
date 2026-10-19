@@ -151,7 +151,8 @@ export default async function handler(req) {
           "sns_metric_observations",
           {
             select: "*",
-            window: `eq.${window}`,
+            // 既定の 48h で開いたときは、全貌の当日（day_end）の値も読む（下書きごとの窓は compareObservations が選ぶ）
+            window: window === "48h" ? "in.(48h,day_end)" : `eq.${window}`,
             metric_name: `eq.${metric}`,
           },
           cutoff,
