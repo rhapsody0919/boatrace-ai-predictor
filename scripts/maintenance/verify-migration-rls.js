@@ -22,6 +22,9 @@
  *      匿名に呼ばせるかどうかを関数ごとに明示させる。BOA-575）
  *   7. 【114番以降】SECURITY DEFINER の関数の EXECUTE を anon / authenticated / PUBLIC に付与している
  *      （所有者権限でRLSを迂回する関数を匿名に公開しない）
+ *   8. 【167番以降】CREATE TABLE（publicスキーマ）の列名に token・secret・ciphertext・credential・
+ *      password・api_key を含む表に、同じファイル内で REVOKE ... ON <表> FROM claude_ro が無い
+ *      （166 の既定権限で postgres が作る表は claude_ro から読める。秘密の値は読ませない。ADR-0096）
  * 警告のみ:
  *   5. RLS有効＋SELECTポリシーがあるのに GRANT SELECT が無い（076で既定権限を剥奪済みのため、
  *      匿名からは読めない。読ませたいなら GRANT SELECT ON ... TO anon, authenticated を書く）
@@ -31,6 +34,7 @@
  *   -- grant-exempt: <理由>                  （2・3: 書き込み権限・書き込みポリシー）
  *   -- view-exempt: <ビュー名> <理由>        （4）
  *   -- function-exempt: <関数名> <理由>      （6・7）
+ *   -- ro-exempt: <テーブル名> <理由>        （8: 列名は当たるが秘密の値を入れない表）
  * 除外マーカーはレビューで理由を確認すること。
  */
 import { promises as fs } from "fs";
@@ -43,6 +47,30 @@ const MIGRATION_DIR = path.join(__dirname, "../../docs/db-migration");
 export const MIN_CHECKED_NUMBER = 76;
 /** 関数の権限の明示（6・7）を検査する番号（113=関数の既定EXECUTEの剥奪。114以降が対象） */
 export const FUNCTION_GRANT_MIN_NUMBER = 114;
+/** 秘密の列を持つ表の claude_ro からの REVOKE（8）を検査する番号（166=claude_ro の既定権限。167以降が対象） */
+export const CLAUDE_RO_REVOKE_MIN_NUMBER = 167;
+const SECRET_COLUMN_RE = /token|secret|ciphertext|credential|password|api_key/i;
+const TABLE_CONSTRAINT_RE =
+  /^(CONSTRAINT|PRIMARY|UNIQUE|CHECK|FOREIGN|EXCLUDE|LIKE)\b/i;
+
+/** CREATE TABLE の "(" の位置から、対応する ")" までを最上位の "," で分けた列・制約の定義を返す */
+function tableElements(body, openIdx) {
+  const items = [];
+  let depth = 0;
+  let start = openIdx + 1;
+  for (let i = openIdx; i < body.length; i++) {
+    const c = body[i];
+    if (c === "(") depth++;
+    else if (c === ")" && --depth === 0) {
+      items.push(body.slice(start, i));
+      break;
+    } else if (c === "," && depth === 1) {
+      items.push(body.slice(start, i));
+      start = i + 1;
+    }
+  }
+  return items.map((s) => s.trim()).filter(Boolean);
+}
 
 const stripComments = (sql) =>
   sql.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/--[^\n]*/g, " ");
@@ -193,6 +221,37 @@ export function checkMigrationSql(sql, { number = Infinity } = {}) {
     }
   }
 
+  // 8. 秘密の列を持つ表を claude_ro から外す
+  if (number >= CLAUDE_RO_REVOKE_MIN_NUMBER) {
+    const roExempt = exemptions(sql, "ro-exempt");
+    const noStrings = body.replace(/'(?:[^']|'')*'/g, "''"); // DEFAULT '(' 等で括弧の対応がずれないように
+    const revoked = new Set();
+    const revokeRe =
+      /REVOKE\s+[^;]*?\bON\s+(?:TABLE\s+)?([^;]*?)\s+FROM\s+([^;]+);/gi;
+    while ((m = revokeRe.exec(noStrings))) {
+      if (!/\bclaude_ro\b/i.test(m[2])) continue;
+      for (const t of m[1].split(",")) revoked.add(norm(t.trim()));
+    }
+    const tableRe =
+      /CREATE\s+(?:UNLOGGED\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?((?:"?[\w]+"?\.)?"?[\w]+"?)\s*\(/gi;
+    while ((m = tableRe.exec(noStrings))) {
+      const raw = m[1];
+      if (/^"?(?!public\b)[\w]+"?\./i.test(raw)) continue; // public以外のスキーマ
+      const t = norm(raw);
+      if (revoked.has(t) || roExempt.set.has(t)) continue;
+      const secretCols = tableElements(noStrings, m.index + m[0].length - 1)
+        .filter((el) => !TABLE_CONSTRAINT_RE.test(el))
+        .map((el) => el.split(/\s+/)[0].replace(/"/g, ""))
+        .filter((col) => SECRET_COLUMN_RE.test(col));
+      if (secretCols.length === 0) continue;
+      errors.push(
+        `テーブル ${t}: 秘密らしい列（${secretCols.join(", ")}）があるのに REVOKE ... ON ${t} FROM claude_ro が無い` +
+          `（166 の既定権限で claude_ro から読める。ADR-0096）。REVOKE ALL ON public.${t} FROM claude_ro; を書く。` +
+          `秘密の値を入れないなら "-- ro-exempt: ${t} <理由>" を書く`,
+      );
+    }
+  }
+
   // 5. GRANT SELECT の付け忘れ（警告）
   // 076のようにDOブロックで動的にGRANT SELECTするマイグレーションは、文面で判定できないため対象外
   const dynamicGrant = /GRANT\s+SELECT\s+ON\s+TABLE\s+public\.%I/i.test(body);
@@ -340,6 +399,61 @@ GRANT EXECUTE ON FUNCTION public.f() TO anon;`,
       sql: `-- function-exempt: f 既存関数の本文だけの差し替え。権限は既存のまま
 CREATE OR REPLACE FUNCTION public.f() RETURNS int LANGUAGE sql AS $$ SELECT 1 $$;`,
       number: 114,
+      errors: 0,
+    },
+    {
+      name: "167番以降: 秘密の列があり claude_ro からの REVOKE が無い",
+      sql: `CREATE TABLE public.foo (id int, ciphertext text NOT NULL);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;`,
+      number: 167,
+      errors: 1,
+    },
+    {
+      name: "166番以前は claude_ro の REVOKE を検査しない",
+      sql: `CREATE TABLE public.foo (id int, ciphertext text NOT NULL);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;`,
+      number: 166,
+      errors: 0,
+    },
+    {
+      name: "167番以降: REVOKE ALL ... FROM claude_ro あり",
+      sql: `CREATE TABLE public.foo (id int, refresh_token text);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.foo FROM claude_ro;`,
+      number: 167,
+      errors: 0,
+    },
+    {
+      name: "167番以降: 複数の表をまとめた REVOKE（154 と同じ形）",
+      sql: `CREATE TABLE public.foo (id int, api_key text);
+CREATE TABLE public.bar (id int, "Password" text);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bar ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.foo, public.bar FROM anon, authenticated, claude_ro;`,
+      number: 167,
+      errors: 0,
+    },
+    {
+      name: "167番以降: anon からの REVOKE だけでは足りない",
+      sql: `CREATE TABLE public.foo (id int, client_secret text);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON public.foo FROM anon, authenticated;`,
+      number: 167,
+      errors: 1,
+    },
+    {
+      name: "167番以降: 秘密の列が無い表は対象外（制約名・既定値の文字列は列名として数えない）",
+      sql: `CREATE TABLE public.foo (id int, note text DEFAULT 'token(', CONSTRAINT foo_secret_ck CHECK (id > 0));
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;`,
+      number: 167,
+      errors: 0,
+    },
+    {
+      name: "167番以降: 除外の印付き",
+      sql: `-- ro-exempt: foo token_count は件数で、秘密の値ではない
+CREATE TABLE public.foo (id int, token_count int);
+ALTER TABLE public.foo ENABLE ROW LEVEL SECURITY;`,
+      number: 167,
       errors: 0,
     },
   ];
