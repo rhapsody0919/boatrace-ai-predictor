@@ -254,7 +254,9 @@ function judgeAll() {
 
 /** 当てる直前に、今の master の台帳でまだ「未適用」かを確かめる（同じファイルを2回当てない） */
 function requireUnappliedOnMaster(migrationPath) {
-  execFileSync("git", ["fetch", "--quiet", "--depth=1", "origin", "master"], { cwd: ROOT });
+  // --depth を付けない。付けると手元の完全な clone が shallow になり、共有の .git を使う他の worktree の
+  // マージが「unrelated histories」で失敗する（2026-10-19 に検査の実行で一度起きた）
+  execFileSync("git", ["fetch", "--quiet", "origin", "master"], { cwd: ROOT });
   const ledger = execFileSync("git", ["show", `FETCH_HEAD:docs/db-migration/APPLIED.md`], {
     cwd: ROOT,
     encoding: "utf8",

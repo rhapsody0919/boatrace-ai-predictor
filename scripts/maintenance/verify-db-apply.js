@@ -576,6 +576,10 @@ check(
       /needs\.apply-auto\.result == 'success'/.test(body("record")) &&
       /needs\.apply-gated\.result == 'success'/.test(body("record")),
   );
+  check(
+    "台帳の確認の fetch に --depth を付けない（手元の clone を shallow にしない）",
+    !/--depth/.test(readFileSync(path.join(ROOT, "scripts/db/db-apply.js"), "utf8")),
+  );
   check("notify は Environment prod-jobs（Slack の鍵）", /^ {4}environment: prod-jobs$/m.test(body("notify")));
   check(
     "notify は知らせることがありうるときだけ動く（selected・blocked・承認待ち）",
