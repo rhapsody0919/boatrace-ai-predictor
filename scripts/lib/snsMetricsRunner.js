@@ -474,7 +474,7 @@ export function createSnsMetricsStore({ url, key, fetchImpl = fetch }) {
       if (!jobs.length) return [];
       const ids = [...new Set(jobs.map((j) => j.draft_id))].join(",");
       const [drafts, sends] = await Promise.all([
-        call(`sns_drafts?id=in.(${ids})&select=id,status,posted_at,platform`),
+        call(`sns_drafts?id=in.(${ids})&select=id,status,posted_at,platform,format`),
         call(
           `sns_x_send_jobs?draft_id=in.(${ids})&state=eq.posted&select=draft_id,channel,external_post_id`,
         ),

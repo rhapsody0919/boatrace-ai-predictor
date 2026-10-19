@@ -60,3 +60,11 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 - 取り込みの cron `sns_metrics`（`scripts/lib/snsMetricsRunner.js`）: YouTube は `videos.list(statistics)` の views・likes・comments、X は `GET /2/users/{id}/tweets`（since_id・until_id で対象の1件に絞る。Owned Reads）の impressions・url_link_clicks（non_public_metrics）と likes・shares（retweet_count、引用は含まない）・saves（bookmark_count）。読み取りの前に `reserve_sns_x_read` で1件分（$0.001）を予約する。窓の終わりから15分を過ぎて処理する job は外部を読まずに欠測で閉じる。値を保存した後に閉じるのが失敗した job は、次の実行で欠測に上書きせず done で閉じる
 - YouTube の `videos.list`（1回1ユニット、50件ずつ）は送信のクォータの台帳（146 の `sns_youtube_quota_reads`）に載せない。台帳は送信の job と試行の番号が必須で、取り込みの読み取りを入れられない。1日の読み取りは多くても L3 の YouTube 16本×2窓＝32ユニット程度（上限 10,000）
 - X の親の投稿の UTM（sns-pdca-loop tasks 23）: `buildObservationUtm` に `campaign`（`sonar-preview`・`race-full`）を足した。`race-full` は型の版が任意で、`utm_content` は下書きの ID（型の版があれば `下書き/版`）。レースの URL にクエリ・fragment があれば作らない。本文への差し込みと `sns_post_tracking` への保存は `scripts/lib/snsPostTracking.js`（auto-plan が承認の前に呼ぶ）
+
+## 全貌動画の測り時（SQL164、2026-10-19 オーナー決定）
+
+- 全貌動画（`format=full_picture`）は 48h・7d をやめ、当日の全レース終了後（投稿日の JST 23:00、窓 `day_end`）と投稿の24時間後（窓 `24h`）の2点で測る。理由（オーナー）: 過去のレースの全貌にはユーザーは基本的に興味を持たない。全貌以外（ブログなど残り続ける投稿・/today）は今までどおり 48h・7d
+- `day_end` の窓は posted_at から投稿日（JST）の 23:00 まで（長さは投稿ごとに違う）。23:00 を過ぎてから投稿されたものは `day_end` を持たず `24h` だけ。累積値の15分の許容差は新しい窓にもそのまま当てる
+- 観測の画面は、既定の 48h で開くと全貌は当日（`day_end`）の値を出し、7d には全貌を出さない（測っていないので「未収集」と数えない）。選択肢に「当日23時」「24h」（全貌だけ）を足した。全貌は型の版の仕組みを持たないので、版の確認（「型の版未確認」）をしない
+- CSV と collector も下書きの型で窓を選ぶ（`windowsFor`）
+

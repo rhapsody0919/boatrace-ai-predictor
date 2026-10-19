@@ -1,5 +1,44 @@
 /** SNS観測の共通契約。ネットワーク・認証・環境変数に依存しない。 */
-export const OBSERVATION_WINDOWS = { "48h": 48, "7d": 168 };
+// 窓の長さ（時間）。day_end は「投稿日の JST 23:00 まで」で長さが投稿ごとに違う（null）
+export const OBSERVATION_WINDOWS = {
+  "48h": 48,
+  "7d": 168,
+  "24h": 24,
+  day_end: null,
+};
+// 全貌動画（format=full_picture）は当日の全レース終了後（JST 23:00）と投稿の24時間後で測る（2026-10-19 オーナー決定。
+// 過去のレースの全貌にはユーザーは興味を持たないので 48h・7d は測らない）。それ以外は今までどおり 48h・7d（SQL164）
+export const FULL_PICTURE_FORMAT = "full_picture";
+export const FULL_PICTURE_WINDOWS = ["day_end", "24h"];
+export const DEFAULT_WINDOWS = ["48h", "7d"];
+/** その下書きを測る窓。全貌で JST 23:00 を過ぎてから投稿されたものは day_end を持たない（24h だけ） */
+export function windowsFor(draft) {
+  if (draft?.format !== FULL_PICTURE_FORMAT) return DEFAULT_WINDOWS;
+  return FULL_PICTURE_WINDOWS.filter(
+    (w) =>
+      w !== "day_end" ||
+      Date.parse(draft.posted_at) < dayEndOf(draft.posted_at),
+  );
+}
+/**
+ * 画面で選んだ窓から、その下書きで読む窓。既定の 48h で開いたとき、全貌は当日（day_end）の値を出す。
+ * 7d には全貌を出さない（測っていないので「未収集」と数えない）。day_end・24h は全貌だけ。無ければ null
+ */
+export function displayWindowFor(draft, selected) {
+  const own = windowsFor(draft);
+  const w =
+    draft?.format === FULL_PICTURE_FORMAT && selected === "48h"
+      ? "day_end"
+      : selected;
+  return own.includes(w) ? w : null;
+}
+/** 投稿日（JST）の 23:00 の時刻（ミリ秒） */
+function dayEndOf(postedAt) {
+  const jstDate = new Date(Date.parse(postedAt) + 9 * 3600000)
+    .toISOString()
+    .slice(0, 10);
+  return Date.parse(`${jstDate}T23:00:00+09:00`);
+}
 // 累積値（snapshot）は窓の終わりから15分以内に取れた値だけ保存する（2026-10-13 ユーザー決定、SQL154 の CHECK と同じ）
 export const SNAPSHOT_TOLERANCE_MS = 15 * 60 * 1000;
 
@@ -46,11 +85,15 @@ const timestamp = (value) =>
 export function observationPeriod(postedAt, window) {
   if (!timestamp(postedAt) || !Object.hasOwn(OBSERVATION_WINDOWS, window))
     throw new Error("投稿日時・観測窓が不正です");
+  const end =
+    window === "day_end"
+      ? dayEndOf(postedAt)
+      : Date.parse(postedAt) + OBSERVATION_WINDOWS[window] * 3600000;
+  if (end <= Date.parse(postedAt))
+    throw new Error("当日の23時を過ぎた投稿には当日の窓がありません");
   return {
     period_start: new Date(postedAt).toISOString(),
-    period_end: new Date(
-      Date.parse(postedAt) + OBSERVATION_WINDOWS[window] * 3600000,
-    ).toISOString(),
+    period_end: new Date(end).toISOString(),
   };
 }
 
@@ -67,6 +110,8 @@ function validateObservationInput(input, draft, requireWindowMatch) {
   if (!input || typeof input !== "object" || Array.isArray(input))
     throw new Error("観測データが不正です");
   if (draft.status !== "posted") throw new Error("投稿済みのみ観測できます");
+  if (!windowsFor(draft).includes(input.window))
+    throw new Error("この投稿の型では測らない観測窓です");
   const period = observationPeriod(draft.posted_at, input.window);
   if (
     !OBSERVATION_METRICS.includes(input.metric_name) ||
@@ -218,16 +263,19 @@ function validateObservationInput(input, draft, requireWindowMatch) {
   };
 }
 
-/** 最新版のみ。同じ取得元・定義・尺で分離し、欠測を分母と中央値から除く。 */
+/** 最新版のみ。同じ取得元・定義・尺で分離し、欠測を分母と中央値から除く。
+ * window は画面で選んだ窓。下書きごとに読む窓は displayWindowFor で決まる（既定の 48h では全貌は当日の値）
+ */
 export function compareObservations(
   drafts,
   observations,
   { window, metric, now = Date.now() },
 ) {
+  const draftById = new Map(drafts.map((d) => [d.id, d]));
   const latest = new Map();
   for (const row of observations) {
     if (
-      row.window !== window ||
+      row.window !== displayWindowFor(draftById.get(row.draft_id), window) ||
       row.metric_name !== metric ||
       row.source === "mock"
     )
@@ -248,10 +296,14 @@ export function compareObservations(
   }
   const groups = new Map();
   for (const draft of drafts) {
+    const draftWindow = draft.posted_at
+      ? displayWindowFor(draft, window)
+      : null;
     if (
       !OBSERVED_PLATFORMS.includes(draft.platform) ||
-      !draft.posted_at ||
-      Date.parse(observationPeriod(draft.posted_at, window).period_end) > now
+      !draftWindow ||
+      Date.parse(observationPeriod(draft.posted_at, draftWindow).period_end) >
+        now
     )
       continue;
     const requiresDuration =
@@ -271,6 +323,7 @@ export function compareObservations(
           },
         ]) {
       const key = JSON.stringify([
+        draftWindow,
         draft.platform,
         draft.language,
         draft.format,
@@ -284,6 +337,7 @@ export function compareObservations(
       if (!groups.has(key))
         groups.set(key, {
           key,
+          window: draftWindow,
           platform: draft.platform,
           language: draft.language,
           format: draft.format,
@@ -313,7 +367,8 @@ export function compareObservations(
         row.missing_reason ||
         (requiresDuration && row.duration_seconds === null
           ? "尺未確認"
-          : !draft.template_variant_id
+          : // 全貌（format=full_picture）は型の版の仕組みを持たない（1つの決まった型）ので、版の確認をしない
+            !draft.template_variant_id && draft.format !== FULL_PICTURE_FORMAT
             ? "型の版未確認"
             : null);
       if (reason || row.metric_value === null)

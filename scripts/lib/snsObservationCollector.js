@@ -1,5 +1,6 @@
 import {
   observationPeriod,
+  windowsFor,
   validateObservation,
   validateProviderObservation,
   withinSnapshotTolerance,
@@ -19,7 +20,7 @@ export async function collectDueObservations({
   const results = [];
   for (const draft of drafts) {
     if (draft.status !== "posted" || !draft.posted_at) continue;
-    for (const window of ["48h", "7d"]) {
+    for (const window of windowsFor(draft)) {
       const period = observationPeriod(draft.posted_at, window);
       if (
         Date.parse(period.period_end) > Date.parse(now) ||
