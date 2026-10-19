@@ -242,6 +242,9 @@ const REJECT_RULES = [
 // apply の上限。ロック待ちは早めに諦め（再実行すればよい）、1文の実行は job の timeout（15分）より前に打ち切る
 export const LOCK_TIMEOUT = "10s";
 export const STATEMENT_TIMEOUT = "10min";
+// 自動の経路（承認なし、ADR-0097）は短くする。判定は表の大きさを見られないので、大きい表のロック待ちや長い索引の作成は
+// ここで失敗として止める（待ち続けない）。ファイルの SET LOCAL は判定がこの上限以内のものだけを軽いにしている
+export const AUTO_TIMEOUTS = { lock: "5s", statement: "120s" };
 // これを超える行には注意を出す（本文の枠の外に隠れる）
 const LONG_LINE_CHARS = 200;
 
@@ -585,11 +588,15 @@ export function renderSummary({
  * @param {"single-transaction" | "file-transaction"} mode
  * @param {string} migrationPath
  */
-export function psqlArgs(mode, migrationPath) {
+export function psqlArgs(
+  mode,
+  migrationPath,
+  timeouts = { lock: LOCK_TIMEOUT, statement: STATEMENT_TIMEOUT },
+) {
   const args = ["-X", "-v", "ON_ERROR_STOP=1", "--echo-errors"];
   if (mode === "single-transaction") args.push("--single-transaction");
-  args.push("-c", `SET lock_timeout = '${LOCK_TIMEOUT}'`);
-  args.push("-c", `SET statement_timeout = '${STATEMENT_TIMEOUT}'`);
+  args.push("-c", `SET lock_timeout = '${timeouts.lock}'`);
+  args.push("-c", `SET statement_timeout = '${timeouts.statement}'`);
   args.push("-f", migrationPath);
   return args;
 }

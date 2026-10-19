@@ -7,7 +7,17 @@ name: DB Apply (production)
 #   apply    Environment production-db（required reviewer の承認が要る）。sha256 を再照合してから psql で適用する
 #   record   適用の後。APPLIED.md の行を「適用済み」にして master に直接コミットする（アプリ ryujin-bot の名義）
 #
-# 起動・承認はユーザー本人が Actions 画面で行う。Claude からの起動・承認はフック（.claude/hooks/guard-deploy-approval.sh）で止めている。
+# 手での起動（workflow_dispatch）は inspect → apply → record。起動・承認はユーザー本人が Actions 画面で行う。
+# Claude からの起動・承認はフック（.claude/hooks/guard-deploy-approval.sh）で止めている。
+#
+# 定期の起動（schedule、ADR-0097）は reconcile → judge → apply-auto か apply-gated → record → notify。
+#   reconcile    鍵なし。切り替えのコミットより後に、審査の App が承認した PR で足された未適用の SQL を番号の順に1本選ぶ
+#                （scripts/db/db-reconcile.js の5点の検査）。db-apply の他の run が動いている・承認待ちなら何もしない
+#   judge        鍵なし。軽い／重い／止めるを、当てる時点の master のファイルで判定し直す（PR のコメントは使わない）
+#   apply-auto   軽いもの。Environment production-db-auto（承認なし）。判定と台帳をもう一度確かめ、短いタイムアウトで当てる
+#   apply-gated  重いもの。Environment production-db（オーナーの1タップ）
+#   notify       Environment prod-jobs の Slack と、元の PR へのコメントに1回だけ出す
+# 試運転の間（DB_APPLY_DRY_RUN が "true"）は当てずに、「当てるはずだった」を notify で出すだけ。
 # データの一括投入（数万行の upsert スクリプト）は対象外。必要になったら別のワークフローにする。
 
 on:
@@ -17,19 +27,26 @@ on:
         description: "適用するファイル（例: docs/db-migration/122_venues_first_win_rate_race_count.sql）"
         required: true
         type: string
+  # 毎時17分（JST も毎時17分）。突き合わせだけで、DB に触るのは選んだ1本だけ
+  schedule:
+    - cron: "17 * * * *"
 
 permissions:
   contents: read
 
-# 同時に2本走らせない（2本目は1本目の終了を待つ）
-concurrency:
-  group: db-apply
-  cancel-in-progress: false
+env:
+  # 試運転の印（ADR-0097 段取り D）。"false" にするまで、定期の起動は当てずに知らせるだけ（D' で外す）
+  DB_APPLY_DRY_RUN: "true"
+  # 切り替えのコミット。これより後に足された SQL だけを自動の対象にする（それより前の「未適用」は手で当てる）
+  DB_APPLY_SWITCH_SHA: aeb745fa2fab1aaae4cd21840f9360d44973b695
+
+# DB に当てる job は同時に2本走らせない（job ごとに同じ group。2本目は1本目の終了を待つ）。
+# workflow 全体には掛けない: 掛けると、重いものの承認待ちの間、定期の起動が待ち行列に入り、6時間の通知が出せない
 
 jobs:
   inspect:
     # fork では動かさない（fork の Actions にはこのリポジトリの secret・Environment は無いが、念のため）
-    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor' && github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -61,6 +78,9 @@ jobs:
     needs: inspect
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: db-apply-db
+      cancel-in-progress: false
     # required reviewer の承認を待つ。承認するまで、この job は secret を読めない
     environment: production-db
     steps:
@@ -85,8 +105,130 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: node scripts/db/db-apply.js apply "$MIGRATION" "$EXPECTED_SHA256"
 
+  reconcile:
+    # 審査の App の ID（repo の変数）が入るまでは動かさない（それまでは承認の付いた PR が無く、毎時の失敗になるだけ）
+    if: >-
+      github.repository == 'rhapsody0919/boatrace-ai-predictor' && github.event_name == 'schedule' &&
+      vars.REVIEWER_BOT_USER_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    outputs:
+      status: ${{ steps.reconcile.outputs.status }}
+      file: ${{ steps.reconcile.outputs.file }}
+      pr: ${{ steps.reconcile.outputs.pr }}
+      added_at: ${{ steps.reconcile.outputs.added_at }}
+      reasons: ${{ steps.reconcile.outputs.reasons }}
+      stale: ${{ steps.reconcile.outputs.stale }}
+    steps:
+      # 切り替えのコミットから今の master までの履歴が要るので、全部取り出す
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: 突き合わせ
+        id: reconcile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REVIEWER_BOT_USER_ID: ${{ vars.REVIEWER_BOT_USER_ID }}
+        run: node scripts/db/db-reconcile.js
+
+  judge:
+    needs: reconcile
+    if: needs.reconcile.outputs.status == 'selected'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      file: ${{ needs.reconcile.outputs.file }}
+      label: ${{ steps.judge.outputs.label }}
+      mode: ${{ steps.judge.outputs.mode }}
+      sha256: ${{ steps.judge.outputs.sha256 }}
+      reasons: ${{ steps.judge.outputs.reasons }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: 判定（当てる時点の master のファイルで）
+        id: judge
+        env:
+          MIGRATION: ${{ needs.reconcile.outputs.file }}
+        run: node scripts/db/db-apply.js judge "$MIGRATION"
+
+  apply-auto:
+    needs: judge
+    if: needs.judge.outputs.mode == 'auto'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: db-apply-db
+      cancel-in-progress: false
+    # 承認なし。判定の job が軽いと決めたものだけ。master だけの Environment
+    environment: production-db-auto
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: psql の用意
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q postgresql-client
+          fi
+          psql --version
+
+      - name: 適用（判定と台帳を確かめ直し、短いタイムアウトで1つのトランザクションとして）
+        env:
+          MIGRATION: ${{ needs.judge.outputs.file }}
+          EXPECTED_SHA256: ${{ needs.judge.outputs.sha256 }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: node scripts/db/db-apply.js apply-auto "$MIGRATION" "$EXPECTED_SHA256"
+
+  apply-gated:
+    needs: judge
+    if: needs.judge.outputs.mode == 'gated'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: db-apply-db
+      cancel-in-progress: false
+    # required reviewer（オーナー）の承認を待つ。承認するまで、この job は secret を読めない
+    environment: production-db
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: psql の用意
+        run: |
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q postgresql-client
+          fi
+          psql --version
+
+      - name: 適用（台帳を確かめ直し、1つのトランザクションとして）
+        env:
+          MIGRATION: ${{ needs.judge.outputs.file }}
+          EXPECTED_SHA256: ${{ needs.judge.outputs.sha256 }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: node scripts/db/db-apply.js apply-gated "$MIGRATION" "$EXPECTED_SHA256"
+
   record:
-    needs: [inspect, apply]
+    needs: [inspect, apply, judge, apply-auto, apply-gated]
+    # 手での起動の apply か、定期の起動の apply-auto・apply-gated のどれかが成功したときだけ
+    if: >-
+      ${{ !cancelled() && (needs.apply.result == 'success' ||
+      needs.apply-auto.result == 'success' || needs.apply-gated.result == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # 台帳の更新は master へ直接コミットする（他の自動コミットと同じく、アプリ ryujin-bot の名義で ruleset を bypass する）。
@@ -103,8 +245,8 @@ jobs:
 
       - name: APPLIED.md を更新する
         env:
-          MIGRATION: ${{ inputs.migration }}
-          SHA256: ${{ needs.inspect.outputs.sha256 }}
+          MIGRATION: ${{ inputs.migration || needs.judge.outputs.file }}
+          SHA256: ${{ needs.inspect.outputs.sha256 || needs.judge.outputs.sha256 }}
         run: node scripts/db/db-apply.js mark-applied "$MIGRATION" "$SHA256"
 
       # トークンの有効期限は1時間なので push の直前に作る
@@ -119,7 +261,7 @@ jobs:
 
       - name: master にコミットする
         env:
-          MIGRATION: ${{ inputs.migration }}
+          MIGRATION: ${{ inputs.migration || needs.judge.outputs.file }}
           PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           file=$(basename "$MIGRATION")
@@ -129,3 +271,33 @@ jobs:
           git commit -m "docs: ${file} を本番に適用済みとして台帳に記録する [automated]"
           # master の更新と競合しても失敗しないよう rebase+リトライで push する（BOA-360）
           bash scripts/maintenance/push-with-retry.sh
+
+  notify:
+    needs: [reconcile, judge, apply-auto, apply-gated, record]
+    if: ${{ !cancelled() && needs.reconcile.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # 元の PR へのコメントだけに使う（承認はできない。「Allow GitHub Actions to create and approve pull requests」は OFF）
+    permissions:
+      contents: read
+      pull-requests: write
+    environment: prod-jobs
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Slack と元の PR に知らせる
+        env:
+          STATUS: ${{ needs.reconcile.outputs.status }}
+          FILE: ${{ needs.reconcile.outputs.file }}
+          PR: ${{ needs.reconcile.outputs.pr }}
+          ADDED_AT: ${{ needs.reconcile.outputs.added_at }}
+          LABEL: ${{ needs.judge.outputs.label }}
+          REASONS: ${{ needs.judge.outputs.reasons || needs.reconcile.outputs.reasons }}
+          APPLY_RESULT: ${{ needs.apply-auto.result == 'skipped' && needs.apply-gated.result || needs.apply-auto.result }}
+          STALE: ${{ needs.reconcile.outputs.stale }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/db/db-apply-notify.js

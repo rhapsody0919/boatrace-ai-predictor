@@ -9,9 +9,14 @@
  *      merge_commit_sha が違う・blob が違う・審査の App の承認が無い／別人／古い head・台帳・runbook）
  *   4. 次の1本の選び方（番号の順、適用済み・不明・廃止は飛ばす、通らなければそこで止めて後ろを当てない）
  *   5. db-apply の他の run が動いている・待っているときは何もしない（自分の run は除く）
+ *   6. 当て方（試運転は当てない、止めるは止める）、6時間の承認待ち、通知を1回だけにする時刻の窓、通知の文
  */
 import {
+  buildNotifyMessage,
   byMigrationNumber,
+  decideMode,
+  isRecent,
+  staleWaitingRuns,
   evaluateCandidate,
   isBusy,
   ledgerRowAddedAsUnapplied,
@@ -267,6 +272,38 @@ const base = () => ({
     "終わった run は busy にしない",
     !isBusy([{ id: 2, status: "completed" }], 1),
   );
+}
+
+// 6. 当て方・承認待ち・通知
+{
+  check("試運転は軽くても当てない", decideMode({ dryRun: true, label: "light" }) === "dry-run");
+  check("試運転でも止めるは止める", decideMode({ dryRun: true, label: "stop" }) === "stop");
+  check("本番の軽いは auto", decideMode({ dryRun: false, label: "light" }) === "auto");
+  check("本番の重いは gated", decideMode({ dryRun: false, label: "heavy" }) === "gated");
+  check("知らないラベルは止める", decideMode({ dryRun: false, label: "x" }) === "stop");
+
+  const now = new Date("2026-10-20T12:00:00Z");
+  const run = (h, status = "waiting") => ({ id: h, status, run_started_at: new Date(now.getTime() - h * 3_600_000).toISOString(), created_at: "", html_url: `u${h}` });
+  const stale = staleWaitingRuns([run(5.9), run(6), run(6.5), run(7), run(6.5, "in_progress")], now);
+  check("承認待ちは6〜7時間の窓だけ（1時間ごとの起動で1回）", JSON.stringify(stale) === JSON.stringify(["u6", "u6.5"]), JSON.stringify(stale));
+
+  check("64分前は新しい", isRecent(new Date(now.getTime() - 64 * 60_000).toISOString(), now));
+  check("66分前は新しくない（前回の起動で知らせ済み）", !isRecent(new Date(now.getTime() - 66 * 60_000).toISOString(), now));
+  check("時刻が無ければ新しくない", !isRecent(null, now));
+
+  const recent = new Date(now.getTime() - 10 * 60_000).toISOString();
+  const old = new Date(now.getTime() - 5 * 3_600_000).toISOString();
+  const base = { dryRun: true, status: "selected", file: "docs/db-migration/170_a.sql", pr: "1700", addedAt: recent, label: "light", reasons: [], applyResult: "skipped", stale: [], now };
+  const dry = buildNotifyMessage(base);
+  check("試運転: 新しく足された SQL の「当てるはずだった」を出す", /試運転、当てていない/.test(dry ?? "") && /170_a\.sql/.test(dry ?? "") && /承認なしで当てた/.test(dry ?? ""), dry);
+  check("試運転: 前回の起動で知らせたものは出さない", buildNotifyMessage({ ...base, addedAt: old }) === null);
+  check("試運転: 重いは「オーナーの1タップを待った」", /1タップ/.test(buildNotifyMessage({ ...base, label: "heavy" }) ?? ""));
+  check("blocked は新しいときだけ理由つきで出す", /5点の検査/.test(buildNotifyMessage({ ...base, status: "blocked", reasons: ["承認が無い"] }) ?? "") && buildNotifyMessage({ ...base, status: "blocked", addedAt: old }) === null);
+  check("本番: 当てたら出す（時刻の窓に関係なく）", /を当てた/.test(buildNotifyMessage({ ...base, dryRun: false, applyResult: "success", addedAt: old }) ?? ""));
+  check("本番: 失敗も出す", /失敗/.test(buildNotifyMessage({ ...base, dryRun: false, applyResult: "failure", addedAt: old }) ?? ""));
+  check("本番: 重いの承認待ち（apply が動いていない）は出さない", buildNotifyMessage({ ...base, dryRun: false, label: "heavy", applyResult: "skipped", addedAt: old }) === null);
+  check("承認待ちの6時間は出す", /6時間/.test(buildNotifyMessage({ ...base, status: "busy", file: "", stale: ["https://x/run/1"] }) ?? ""));
+  check("何も無ければ null", buildNotifyMessage({ ...base, status: "none", file: "" }) === null);
 }
 
 if (failures > 0) {

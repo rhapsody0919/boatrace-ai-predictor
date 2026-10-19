@@ -193,3 +193,77 @@ export function isBusy(runs, currentRunId) {
     (r) => String(r.id) !== String(currentRunId) && active.has(r.status),
   );
 }
+
+/**
+ * 判定のラベルから、当て方を決める。試運転の間は当てない
+ * @param {{ dryRun: boolean, label: "light" | "heavy" | "stop" }} args
+ * @returns {"dry-run" | "auto" | "gated" | "stop"}
+ */
+export function decideMode({ dryRun, label }) {
+  if (label === "stop") return "stop";
+  if (dryRun) return "dry-run";
+  if (label === "light") return "auto";
+  if (label === "heavy") return "gated";
+  return "stop";
+}
+
+/**
+ * 重いものの承認待ちが6時間を超えた run。定期の起動（1時間ごと）で1回だけ知らせるため、6〜7時間の窓に入ったものだけを返す
+ * @param {{ id: number, status: string, run_started_at?: string, created_at: string, html_url: string }[]} runs
+ * @param {Date} now
+ */
+export function staleWaitingRuns(runs, now, { minHours = 6, maxHours = 7 } = {}) {
+  return runs
+    .filter((r) => r.status === "waiting")
+    .filter((r) => {
+      const hours = (now.getTime() - Date.parse(r.run_started_at ?? r.created_at)) / 3_600_000;
+      return hours >= minHours && hours < maxHours;
+    })
+    .map((r) => r.html_url);
+}
+
+/**
+ * 前回の定期の起動より後に起きたことか（通知を1回だけにするため。状態を持たずに、時刻の窓で重複を避ける）
+ * @param {string | null} iso
+ * @param {Date} now
+ */
+export function isRecent(iso, now, minutes = 65) {
+  if (!iso) return false;
+  const age = now.getTime() - Date.parse(iso);
+  return age >= 0 && age < minutes * 60_000;
+}
+
+const LABEL_JA = { light: "軽い", heavy: "重い", stop: "止める" };
+
+/**
+ * 定期の起動の結果を、Slack と元の PR に出す1つの文にする。出すものが無ければ null
+ * @param {{ dryRun: boolean, status: string, file: string, pr: string, addedAt: string | null, label: string,
+ *           reasons: string[], applyResult: string, stale: string[], now: Date }} args
+ */
+export function buildNotifyMessage({ dryRun, status, file, pr, addedAt, label, reasons, applyResult, stale, now }) {
+  const lines = [];
+  const name = file ? file.split("/").pop() : "";
+  const prRef = pr ? `（PR #${pr}）` : "";
+  if (status === "blocked" && isRecent(addedAt, now)) {
+    lines.push(`本番 SQL の自動の適用: ${name}${prRef} は自動では当てない（5点の検査を通らない）`);
+    for (const r of reasons) lines.push(`- ${r}`);
+  }
+  if (status === "selected") {
+    const ja = LABEL_JA[label] ?? label;
+    if (dryRun && isRecent(addedAt, now)) {
+      lines.push(`本番 SQL の自動の適用（試運転、当てていない）: ${name}${prRef} は「${ja}」。本番なら${label === "light" ? "承認なしで当てた" : label === "heavy" ? "オーナーの1タップを待った" : "当てずに止めた"}`);
+      for (const r of reasons) lines.push(`- ${r}`);
+    } else if (!dryRun && label === "stop" && isRecent(addedAt, now)) {
+      lines.push(`本番 SQL の自動の適用: ${name}${prRef} は「止める」。当てていない`);
+      for (const r of reasons) lines.push(`- ${r}`);
+    } else if (!dryRun && (applyResult === "success" || applyResult === "failure")) {
+      lines.push(
+        applyResult === "success"
+          ? `本番 SQL の自動の適用: ${name}${prRef} を当てた（${ja}）`
+          : `本番 SQL の自動の適用: ${name}${prRef} の適用に失敗した（${ja}）。変更は全て戻っている。以後の番号は当てずに止まる`,
+      );
+    }
+  }
+  for (const url of stale) lines.push(`本番 SQL の重い適用が、6時間以上オーナーの承認を待っている: ${url}`);
+  return lines.length > 0 ? lines.join("\n") : null;
+}

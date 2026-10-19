@@ -7,6 +7,7 @@
  *   status=none      当てるものが無い
  *   status=selected  file を当ててよい（判定 classifyMigration は呼び出し側が当てる時点で行う）
  *   status=blocked   番号の順で次のファイルが5点の検査を通らない（当てずに通知する）
+ * ほかに出すもの: added_at（選んだファイルを足したコミットの時刻）・reasons（JSON）・stale（6時間以上承認を待つ run の URL、JSON）
  *
  * env:
  *   GITHUB_TOKEN           読み取りだけ（actions・contents・pull-requests）
@@ -28,6 +29,7 @@ import {
   ledgerRowAddedAsUnapplied,
   ledgerState,
   pickNext,
+  staleWaitingRuns,
 } from "../lib/dbReconcile.js";
 
 const ROOT = path.resolve(
@@ -105,7 +107,9 @@ async function main() {
     );
     runs.push(...res.workflow_runs);
   }
-  if (isBusy(runs, runId)) return output({ status: "busy" });
+  // 重いものの承認待ちが6時間を超えたら知らせる（busy でも数える。承認待ちの run があると busy になるため）
+  const stale = staleWaitingRuns(runs, new Date());
+  if (isBusy(runs, runId)) return output({ status: "busy", stale });
 
   const head = git("rev-parse", "HEAD");
   try {
@@ -205,7 +209,12 @@ async function main() {
       }),
     });
   }
-  return output(pickNext(candidates));
+  const next = pickNext(candidates);
+  // 通知を1回だけにするため、そのファイルを足したコミットの時刻も出す（db-apply-notify.js が窓で絞る）
+  const addedAt = next.file
+    ? git("log", "-1", "--format=%cI", addCommitsByFile.get(next.file)[0])
+    : null;
+  return output({ ...next, addedAt, stale });
 }
 
 function output(result) {
@@ -214,7 +223,15 @@ function output(result) {
   if (file) {
     appendFileSync(
       file,
-      `status=${result.status}\nfile=${result.file ?? ""}\npr=${result.pr ?? ""}\n`,
+      [
+        `status=${result.status}`,
+        `file=${result.file ?? ""}`,
+        `pr=${result.pr ?? ""}`,
+        `added_at=${result.addedAt ?? ""}`,
+        `reasons=${JSON.stringify(result.reasons ?? [])}`,
+        `stale=${JSON.stringify(result.stale ?? [])}`,
+        "",
+      ].join("\n"),
     );
   }
 }

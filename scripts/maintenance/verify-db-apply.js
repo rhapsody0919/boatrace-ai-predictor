@@ -23,6 +23,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  AUTO_TIMEOUTS,
   classifyMigration,
   extractConfirmationSections,
   extractTables,
@@ -412,13 +413,14 @@ check(
   }
   const body = (job) => (jobs[job] ?? []).join("\n");
   check(
-    "job は inspect・apply・record",
-    eq(Object.keys(jobs), ["inspect", "apply", "record"]),
+    "job は inspect・apply（手での起動）、reconcile・judge・apply-auto・apply-gated（定期の起動）、record・notify",
+    eq(Object.keys(jobs), ["inspect", "apply", "reconcile", "judge", "apply-auto", "apply-gated", "record", "notify"]),
   );
   check(
-    "起動は workflow_dispatch だけ",
+    "起動は workflow_dispatch と schedule だけ（push では動かさない。bot の push で適用が走らない）",
     /^on:\n {2}workflow_dispatch:/m.test(yml) &&
-      !/^ {2}(push|pull_request|pull_request_target|schedule|workflow_run|issue_comment):/m.test(
+      /^ {2}schedule:/m.test(yml) &&
+      !/^ {2}(push|pull_request|pull_request_target|workflow_run|issue_comment):/m.test(
         yml,
       ),
   );
@@ -427,10 +429,12 @@ check(
     /^permissions:\n {2}contents: read\s*$/m.test(yml),
   );
   check(
-    "DB の secret を読むのは apply だけ・inspect は secret を読まない",
-    !/secrets\./.test(body("inspect")) &&
-      !/SUPABASE_DB_URL/.test(body("record")) &&
-      /secrets\.SUPABASE_DB_URL/.test(body("apply")),
+    "DB の secret を読むのは apply・apply-auto・apply-gated だけ・inspect・reconcile・judge は secret を読まない",
+    ["inspect", "reconcile", "judge"].every((j) => !/secrets\./.test(body(j))) &&
+      ["record", "notify"].every((j) => !/SUPABASE_DB_URL/.test(body(j))) &&
+      ["apply", "apply-auto", "apply-gated"].every((j) =>
+        /secrets\.SUPABASE_DB_URL/.test(body(j)),
+      ),
   );
   check(
     "record が読む secret は ryujin-bot の App の鍵だけ",
@@ -451,8 +455,16 @@ check(
   // 「Allow GitHub Actions to create and approve pull requests」を ON にさせない（ON にすると pull_request の
   // ワークフローが bot として PR を承認でき、master の承認1件の要件が実質なくなる）
   check(
-    "GITHUB_TOKEN に書き込み権限を渡さない・PR を作らない",
-    !/: write/.test(yml.replace(/permission-contents: write/g, "")) &&
+    "GITHUB_TOKEN の書き込み権限は notify の pull-requests（元の PR へのコメント）だけ・PR を作らない",
+    !/: write/.test(
+      yml
+        .replace(/permission-contents: write/g, "")
+        .replace(body("notify"), ""),
+    ) &&
+      eq(
+        [...body("notify").matchAll(/^ {6}([a-z-]+): write$/gm)].map((m) => m[1]),
+        ["pull-requests"],
+      ) &&
       !/gh pr create/.test(yml),
   );
   check(
@@ -510,6 +522,69 @@ check(
   check(
     "apply は承認前の sha256 を受け取る",
     /needs\.inspect\.outputs\.sha256/.test(body("apply")),
+  );
+}
+
+// 8a. 定期の起動（ADR-0097 段取り D）の配線
+{
+  const yml = readFileSync(path.join(ROOT, ".github/workflows/db-apply.yml"), "utf8");
+  const jobs = {};
+  let current = null;
+  let inJobs = false;
+  for (const l of yml.split("\n")) {
+    if (/^jobs:/.test(l)) inJobs = true;
+    const m = inJobs && /^ {2}([a-z-]+):\s*$/.exec(l);
+    if (m) {
+      current = m[1];
+      jobs[current] = [];
+    } else if (current) {
+      jobs[current].push(l);
+    }
+  }
+  const body = (job) => (jobs[job] ?? []).join("\n");
+  check("試運転の印 DB_APPLY_DRY_RUN は \"true\" か \"false\" の文字", /^ {2}DB_APPLY_DRY_RUN: "(true|false)"$/m.test(yml));
+  check("切り替えのコミットは40桁の SHA で固定", /^ {2}DB_APPLY_SWITCH_SHA: [0-9a-f]{40}$/m.test(yml));
+  check("workflow 全体に concurrency を掛けない（承認待ちの間も定期の起動が動き、6時間の通知を出せる）", !/^concurrency:/m.test(yml));
+  check(
+    "DB に当てる job は同じ group の job ごとの concurrency",
+    ["apply", "apply-auto", "apply-gated"].every((j) => /concurrency:\n {6}group: db-apply-db\n {6}cancel-in-progress: false/.test(body(j))),
+  );
+  check("手での起動の inspect は workflow_dispatch だけ", /github\.event_name == 'workflow_dispatch'/.test(body("inspect")));
+  check(
+    "reconcile は schedule だけ・審査の App の ID が入るまで動かない",
+    /github\.event_name == 'schedule'/.test(body("reconcile")) && /vars\.REVIEWER_BOT_USER_ID != ''/.test(body("reconcile")),
+  );
+  check("judge は reconcile が選んだときだけ", /if: needs\.reconcile\.outputs\.status == 'selected'/.test(body("judge")));
+  check(
+    "apply-auto は mode auto・Environment production-db-auto・apply-auto コマンド",
+    /if: needs\.judge\.outputs\.mode == 'auto'/.test(body("apply-auto")) &&
+      /^ {4}environment: production-db-auto$/m.test(body("apply-auto")) &&
+      /db-apply\.js apply-auto /.test(body("apply-auto")),
+  );
+  check(
+    "apply-gated は mode gated・Environment production-db・apply-gated コマンド",
+    /if: needs\.judge\.outputs\.mode == 'gated'/.test(body("apply-gated")) &&
+      /^ {4}environment: production-db$/m.test(body("apply-gated")) &&
+      /db-apply\.js apply-gated /.test(body("apply-gated")),
+  );
+  check("reconcile・judge は Environment を持たない", ["reconcile", "judge"].every((j) => !/environment:/.test(body(j))));
+  check(
+    "record は手での起動か定期の起動の適用が成功したときだけ",
+    /needs\.apply\.result == 'success'/.test(body("record")) &&
+      /needs\.apply-auto\.result == 'success'/.test(body("record")) &&
+      /needs\.apply-gated\.result == 'success'/.test(body("record")),
+  );
+  check("notify は Environment prod-jobs（Slack の鍵）", /^ {4}environment: prod-jobs$/m.test(body("notify")));
+  const dir = path.join(ROOT, ".github/workflows");
+  const autoUsers = readdirSync(dir)
+    .filter((f) => /\.ya?ml$/.test(f))
+    .filter((f) => /environment:\s*(?:\n\s*name:\s*)?["']?production-db-auto\b/.test(readFileSync(path.join(dir, f), "utf8")));
+  check("Environment production-db-auto を使うのは db-apply.yml だけ", eq(autoUsers, ["db-apply.yml"]), autoUsers.join(", "));
+  const auto = psqlArgs("single-transaction", "docs/db-migration/999_x.sql", AUTO_TIMEOUTS);
+  check(
+    "自動の経路は短いタイムアウト（lock 5s・statement 120s）",
+    auto.includes("SET lock_timeout = '5s'") && auto.includes("SET statement_timeout = '120s'"),
+    auto.join(" "),
   );
 }
 

@@ -135,9 +135,13 @@ Claude の役割は、マイグレーションを書いて PR にすることと
 `.claude/hooks/guard-deploy-approval.sh`（PreToolUse）と `.claude/settings.json` の deny は、よく使う書き方を文字列で止めているだけで、言い換え（workflow の表示名や数値の ID での起動、GraphQL での承認、ブラウザ操作）は通る。
 根本的に塞ぐには、Claude 用の `gh` を Environment の reviewer でない別アカウント（または権限を絞ったトークン）にする必要がある。ADR-0097 の切替（Claude の `gh` を作成の App にする）がこれに当たる。それまでは「Claude は起動・承認しない」という規律が主な防御になる。
 
-## 自動の適用（ADR-0097。段取り B〜D で入る）
+## 自動の適用（ADR-0097）
 
-[ADR-0097](../adr/0097-identity-separation-auto-review-and-db-apply.md) で、手での起動に加えて、定期の突き合わせが未適用のマイグレーションを当てる形にする。入るまでは上の「毎回の手順」のまま。
+[ADR-0097](../adr/0097-identity-separation-auto-review-and-db-apply.md) で、手での起動に加えて、定期の起動（毎時17分）が未適用のマイグレーションを当てる。同じ `db-apply.yml` の中にあり、手での起動の流れは変わらない。
+
+- 今は試運転（`db-apply.yml` の `DB_APPLY_DRY_RUN: "true"`）。当てずに「当てるはずだった（軽い／重い／止める、理由）」を Slack と元の PR に1回だけ出す。当てるのは今までどおり上の「毎回の手順」
+- 対象は、`DB_APPLY_SWITCH_SHA`（切り替えのコミット）より後に、審査の App が承認した PR で足されたファイルだけ。それより前の「未適用」は手で当てる
+- repo の変数 `REVIEWER_BOT_USER_ID` が入るまでは、定期の起動は何もしない
 
 ```mermaid
 flowchart TD
