@@ -52,7 +52,7 @@ before(async () => {
     "140_sns_mobile_approval.sql",
     "145_sns_edit_assist.sql",
     "163_drop_sns_mobile_approval.sql",
-    "165_drop_sns_edit_assist.sql",
+    "168_drop_sns_edit_assist.sql",
   ])
     await db.exec(
       await readFile(
@@ -200,7 +200,7 @@ test("版hash（sns_mobile_revision）は接続のTimeZone設定に依存しな�
   assert.equal(jst, pst, "TimeZoneが違う接続でも同じ下書きは同じ版hashになる");
 });
 
-test("165: 編集指摘（145）の表・RPC は無く、版の関数は 147 の差分のために残る", async () => {
+test("168: 編集指摘（145）の表・RPC は無く、版の関数は 147 の差分のために残る", async () => {
   for (const t of ["public.sns_edit_inspections", "public.sns_edit_decisions"])
     assert.equal((await first("SELECT to_regclass($1) r", [t])).r, null);
   for (const sig of [

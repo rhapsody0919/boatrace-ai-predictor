@@ -90,6 +90,7 @@
     "verify:rpc-key-regression": "node scripts/maintenance/verify-rpc-key-regression.js",
     "verify:rls-migration": "node scripts/maintenance/verify-rls-migration.js",
     "verify:function-grants-migration": "node scripts/maintenance/verify-function-grants-migration.js",
+    "verify:ro-query": "node scripts/maintenance/verify-ro-query.js",
     "verify:migration-rls": "node scripts/maintenance/verify-migration-rls.js",
     "verify:query-errors": "node scripts/maintenance/verify-query-errors.js",
     "verify:race-cancellation": "node scripts/maintenance/verify-race-cancellation-usage.js",
@@ -165,6 +166,7 @@
     "gh-pages": "^6.3.0",
     "globals": "^16.5.0",
     "jsdom": "^26.1.0",
+    "pg": "^8.23.1",
     "postcss": "^8.5.6",
     "vite": "^7.2.4"
   }

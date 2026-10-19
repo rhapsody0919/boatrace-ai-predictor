@@ -662,6 +662,11 @@
       "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
     },
     {
+      "script": "verify-sns-spec-change-linear-failure.js",
+      "tier": "ci",
+      "guards": "SNS ハブの「制作仕様の変更要望」で Linear の起票が失敗したとき（無料枠の上限 USAGE_LIMIT_EXCEEDED は HTTP 400・200 の両方）、request-spec-change.js が汎用の 500 でなく 502 と理由のコードを返すこと、画面の判定（specChangeFeedback）が失敗では入力欄を閉じないこと。fetch を差し替え、実 env・ネットワークを使わない"
+    },
+    {
       "script": "verify-revision-escalation-linear-errors.js",
       "tier": "ci",
       "guards": "夜の content-ops-nightly-check で Linear の起票の失敗が理由つきで Slack に届くこと。check-revision-escalation.js が HTTP 400・200 の USAGE_LIMIT_EXCEEDED でエラーコードを例外に入れること（模擬サーバー、実 Linear に触れない）と、ワークフローの Slack 通知が always() 付きでエスカレーションの失敗も送ること"
@@ -1072,7 +1077,7 @@
     {
       "script": "verify-sns-mobile-approval.js",
       "tier": "ci",
-      "guards": "送る前の保留の条件（sendHolds: 素材 v0/v1・/today）、版hash（140 sns_mobile_revision）の TimeZone 非依存、承認後の変更で承認・job を外すトリガー。163 で個別承認の RPC・表が無いこと、165 で編集指摘（145）の RPC・表が無いこと（PGlite、外部接続なし）"
+      "guards": "送る前の保留の条件（sendHolds: 素材 v0/v1・/today）、版hash（140 sns_mobile_revision）の TimeZone 非依存、承認後の変更で承認・job を外すトリガー。163 で個別承認の RPC・表が無いこと、168 で編集指摘（145）の RPC・表が無いこと（PGlite、外部接続なし）"
     },
     {
       "script": "verify-wind-direction-display.js",
@@ -1162,7 +1167,7 @@
     {
       "script": "verify-sns-daily-runner.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 22: 暦日の値の取り込み（cron sns_daily）。YouTube Analytics はチャネル全体の D−3〜D−1（太平洋時間）を埋め、動画は投稿日＋翌日だけ読み古い動画は読まない・行の無い日は欠測、GA4 はチャネル全体を流入元の完全一致のリストでチャネルに足し行の無い日は0・UTM（race-full・today_digest）は utm_content の下書きの ID に結びつける、取り直しは値が変わった行だけ書く、GA4 の鍵が無い間は飛ばして report.alerts、片方の失敗でももう片方は書いて失敗を返す、shadow は書かない、YouTube Analytics の client・GA4 のサービスアカウントの JWT（RS256）と runReport、PostgREST の読み（1000行ずつ）と upsert の一意制約の列。SQL154 までを PGlite、外部接続なし"
+      "guards": "sns-pdca-loop tasks 22: 暦日の値の取り込み（cron sns_daily）。YouTube Analytics はチャネル全体の D−3〜D−1（太平洋時間）を埋め、動画は投稿日＋翌日だけ読み古い動画は読まない・行の無い日は欠測、GA4 はチャネル全体を流入元の完全一致のリストでチャネルに足し行の無い日は0・UTM（race-full・today_digest）は utm_content の下書きの ID に結びつける、取り直しは値が変わった行だけ書く、GA4 の鍵が無い間は飛ばして report.alerts、片方の失敗でももう片方は書いて失敗を返す、shadow は書かない、YouTube Analytics の client・GA4 のサービスアカウントの JWT（RS256）と runReport、PostgREST の読み（1000行ずつ）と upsert の一意制約の列、全貌の UTM（utm_content=race_id）は X・YouTube を utm_term ごとに分け下書きの投稿日（JST）と翌日だけ残す・下書きの無いレースは数えない・下書きの ID の UTM は X だけ、全貌の下書きを race_id で引く PostgREST の条件。SQL154 までを PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-today-plan.js",
@@ -1178,6 +1183,11 @@
       "script": "verify-meet-form-trend.js",
       "tier": "ci",
       "guards": "直前情報タブ「今節の足の推移と着順」（BOA-885、src/components/race/meetFormTrend.js）。走は今節展示情報の走だけで、着順・進入・オリジナル展示を race_id と艇番で突き合わせる（他の艇・他のレースの値が混ざらない）。F・欠・転を残す、値の無い指標のタブを出さない、展示が無い走を挟む区間は点線、縦軸に会場平均を含める、今節の初戦はカードを出さない"
+    },
+    {
+      "script": "verify-ro-query.js",
+      "tier": "ci",
+      "guards": "本番の読み取り専用ロール claude_ro（マイグレーション 166、ADR-0096）と scripts/db/ro-query.js。PGlite で 166 を適用し、RLS の表が0行に化けず全行読めること、READ ONLY を外しても表・SECURITY DEFINER の書き込み関数・public への CREATE で書けないこと、sns_oauth_tokens を読めないこと、PUBLIC が呼べる書き込みの SECURITY DEFINER 関数があれば 166 が例外で全体を戻すこと。ro-query の1文だけ・上限＋1行の打ち切り・必ず ROLLBACK・ロールの確認、SCRAM の検証子を pg のクライアントの証明で検証"
     }
   ]
 }

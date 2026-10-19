@@ -65,15 +65,32 @@ export default async function handler(req) {
       return jsonResponse({ error: "下書きが見つかりません" }, 404);
     }
 
-    const issueResult = await createLinearIssue({
-      // タイトルは[production-spec]（コンテンツ品質FBの[content-quality]と
-      // 意図的に区別、コードレビューで指摘: 同じ接頭辞だと「BGMを変えて」の
-      // ような制作仕様要望が誤って品質不具合として誤解されるトリアージリスク
-      // があった）。Linearラベル自体はcheck-quality-backlog.jsが拾う既存の
-      // content-qualityラベルをそのまま流用する（新規ラベル運用を増やさない）
-      title: `[production-spec] ${draft.platform}向け制作仕様の変更要望`,
-      description: `sns-hub管理画面からの制作仕様変更要望（request-spec-change.js）。承認者: ${approverId}\n\n**要望内容**:\n${trimmedMessage}\n\n**対象**: platform=${draft.platform}, content_group_id=${draft.content_group_id}, draft_id=${id}\n\n人間が内容を精査し、該当するdocs/operation/sns-pipeline-*.md等のルールファイルへの反映を検討してください。複数案を比較しながら作り込みが必要な場合は/refine-creativeスキルの利用を検討してください。`,
-    });
+    let issueResult;
+    try {
+      issueResult = await createLinearIssue({
+        // タイトルは[production-spec]（コンテンツ品質FBの[content-quality]と
+        // 意図的に区別、コードレビューで指摘: 同じ接頭辞だと「BGMを変えて」の
+        // ような制作仕様要望が誤って品質不具合として誤解されるトリアージリスク
+        // があった）。Linearラベル自体はcheck-quality-backlog.jsが拾う既存の
+        // content-qualityラベルをそのまま流用する（新規ラベル運用を増やさない）
+        title: `[production-spec] ${draft.platform}向け制作仕様の変更要望`,
+        description: `sns-hub管理画面からの制作仕様変更要望（request-spec-change.js）。承認者: ${approverId}\n\n**要望内容**:\n${trimmedMessage}\n\n**対象**: platform=${draft.platform}, content_group_id=${draft.content_group_id}, draft_id=${id}\n\n人間が内容を精査し、該当するdocs/operation/sns-pipeline-*.md等のルールファイルへの反映を検討してください。複数案を比較しながら作り込みが必要な場合は/refine-creativeスキルの利用を検討してください。`,
+      });
+    } catch (error) {
+      // Linear の失敗は、汎用の 500 にせず理由（コード）を返す。画面は入力欄を閉じずに本文を残す
+      // （以前は無料枠の上限でも「処理を完了できませんでした」だけで、本文も消えた。2026-10-18 調査）
+      console.error("SNS Hub request-spec-change Linear起票エラー:", error);
+      const usageLimit = error.linearCode === "USAGE_LIMIT_EXCEEDED";
+      return jsonResponse(
+        {
+          error: usageLimit
+            ? "Linear の無料枠の上限で起票できませんでした"
+            : `Linear に起票できませんでした（${error.linearCode ?? "理由不明"}）`,
+          code: usageLimit ? "LINEAR_USAGE_LIMIT_EXCEEDED" : "LINEAR_ERROR",
+        },
+        502,
+      );
+    }
 
     if (!issueResult.created) {
       return jsonResponse(
@@ -89,6 +106,12 @@ export default async function handler(req) {
     return jsonResponse({ data: { draftId: id }, issue: issueResult });
   } catch (error) {
     console.error("SNS Hub request-spec-change Edge function error:", error);
-    return jsonResponse({ error: "処理を完了できませんでした。最新の状態を再読み込みして確認してください。" }, 500);
+    return jsonResponse(
+      {
+        error:
+          "処理を完了できませんでした。最新の状態を再読み込みして確認してください。",
+      },
+      500,
+    );
   }
 }

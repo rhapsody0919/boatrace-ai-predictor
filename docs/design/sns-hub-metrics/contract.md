@@ -60,3 +60,10 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 - 取り込みの cron `sns_metrics`（`scripts/lib/snsMetricsRunner.js`）: YouTube は `videos.list(statistics)` の views・likes・comments、X は `GET /2/users/{id}/tweets`（since_id・until_id で対象の1件に絞る。Owned Reads）の impressions・url_link_clicks（non_public_metrics）と likes・shares（retweet_count、引用は含まない）・saves（bookmark_count）。読み取りの前に `reserve_sns_x_read` で1件分（$0.001）を予約する。窓の終わりから15分を過ぎて処理する job は外部を読まずに欠測で閉じる。値を保存した後に閉じるのが失敗した job は、次の実行で欠測に上書きせず done で閉じる
 - YouTube の `videos.list`（1回1ユニット、50件ずつ）は送信のクォータの台帳（146 の `sns_youtube_quota_reads`）に載せない。台帳は送信の job と試行の番号が必須で、取り込みの読み取りを入れられない。1日の読み取りは多くても L3 の YouTube 16本×2窓＝32ユニット程度（上限 10,000）
 - X の親の投稿の UTM（sns-pdca-loop tasks 23）: `buildObservationUtm` に `campaign`（`sonar-preview`・`race-full`）を足した。`race-full` は型の版が任意で、`utm_content` は下書きの ID（型の版があれば `下書き/版`）。レースの URL にクエリ・fragment があれば作らない。本文への差し込みと `sns_post_tracking` への保存は `scripts/lib/snsPostTracking.js`（auto-plan が承認の前に呼ぶ）
+
+## 全貌動画の GA4 の来訪（2026-10-19 オーナー決定・hq と合意）
+
+- 全貌の X の本文と YouTube の概要欄のリンクは、hq の作り手が `utm_source=x|youtube`・`utm_medium=social`・`utm_campaign=race-full`・`utm_content=<race_id>`・`utm_term=full|shorts` で組み立てる。push-full-picture は本文をそのまま使う（URL を書き換えない）。下書きの ID は使わない（全貌は1レースにチャネルごとに1下書き）
+- sns-daily（`sns_channel_daily`）は、utm_content がレース ID の行を、X・YouTube と utm_term ごとに分けて入れる。下書きは `source_data.full_picture.race_id` で引き、**その下書きの実際の投稿日（posted_at の JST の日付）と翌日の2日分だけ**を残す。投稿された下書きが無いレースは数えない
+- GA4 の反映は最大48時間遅れるが、sns-daily は毎日 D−3〜D−1 を取り直すので、投稿日と翌日の値は両方とも58時間後まで読み直される。2日分の合計を画面に出す変更はまだ入れない（データが溜まってからオーナーに見せて決める）
+

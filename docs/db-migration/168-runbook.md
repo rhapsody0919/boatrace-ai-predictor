@@ -1,4 +1,4 @@
-# 165 の適用手順（編集指摘の RPC と表の削除）
+# 168 の適用手順（編集指摘の RPC と表の削除）
 
 コードの PR（このマイグレーションを含む PR）が Vercel の本番デプロイに入ったことを確かめてから適用する。
 163 と順番の決まりは無い（触る関数・表が重ならない）。
@@ -29,12 +29,12 @@ SELECT (SELECT count(*) FROM public.sns_edit_inspections) n_inspections,
 期待: `other_callers` が NULL、`views` が 0、`outside_fks` が 0、`outside_depends` が 0、`revision_md5` が `de924e8953e175677495feb450f1d675`（163-runbook.md と同じ値）。
 
 - 最後の時刻（`last_inspection`・`last_decision`）が #1645 のマージ（2026-10-18 15:45:51Z）の本番デプロイより後なら、まだ書いている経路がある。適用せず調べる。読むだけの `read_sns_edit_inspection` はこの判定では見えず、コードの grep だけが根拠になる
-- 件数・最後の時刻・退避の有無は APPLIED.md の 165 の行に残す（表を消すと行は戻らない）
+- 件数・最後の時刻・退避の有無は APPLIED.md の 168 の行に残す（表を消すと行は戻らない）
 - 件数が数十行を超えるときは、適用前にオーナーが Table Editor で2表を CSV に書き出し、リポジトリの外に置く（鍵は含まないが、リポジトリには入れない）。数十行以下なら記録だけでよい（今のコードに2表を読む分析・学習の経路は無い）
 
 ## 2. 適用（オーナー）
 
-`165_drop_sns_edit_assist.sql` を SQL Editor でそのまま1回実行する。
+`168_drop_sns_edit_assist.sql` を SQL Editor でそのまま1回実行する。
 
 ## 3. 適用後の確認（読み取り、Claude が実行）
 
@@ -47,7 +47,7 @@ SELECT to_regclass('public.sns_edit_inspections') i,
  (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.sns_mobile_revision(public.sns_drafts)'::regprocedure) keep_md5;
 ```
 
-期待: 先の5つが `NULL`、`keep_md5` が `de924e8953e175677495feb450f1d675`。確かめたら APPLIED.md の 165 を「適用済み」にする。
+期待: 先の5つが `NULL`、`keep_md5` が `de924e8953e175677495feb450f1d675`。確かめたら APPLIED.md の 168 を「適用済み」にする。
 
 ## 戻し方
 
