@@ -121,7 +121,9 @@ export default function MetricsTab() {
                     {WINDOW_LABELS[group.window] ?? group.window}
                   </h4>
                   <p>
-                    版: {group.variant || "未確認"}
+                    版:{" "}
+                    {group.variant ||
+                      (group.format === "full_picture" ? "版なし（全貌）" : "未確認")}
                     {platform !== "x" && (
                       <> / 尺: {group.duration ?? "未確認"}秒</>
                     )}
