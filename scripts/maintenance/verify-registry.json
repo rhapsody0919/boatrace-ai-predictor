@@ -662,6 +662,11 @@
       "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
     },
     {
+      "script": "verify-sns-spec-change-linear-failure.js",
+      "tier": "ci",
+      "guards": "SNS ハブの「制作仕様の変更要望」で Linear の起票が失敗したとき（無料枠の上限 USAGE_LIMIT_EXCEEDED は HTTP 400・200 の両方）、request-spec-change.js が汎用の 500 でなく 502 と理由のコードを返すこと、画面の判定（specChangeFeedback）が失敗では入力欄を閉じないこと。fetch を差し替え、実 env・ネットワークを使わない"
+    },
+    {
       "script": "verify-revision-escalation-linear-errors.js",
       "tier": "ci",
       "guards": "夜の content-ops-nightly-check で Linear の起票の失敗が理由つきで Slack に届くこと。check-revision-escalation.js が HTTP 400・200 の USAGE_LIMIT_EXCEEDED でエラーコードを例外に入れること（模擬サーバー、実 Linear に触れない）と、ワークフローの Slack 通知が always() 付きでエスカレーションの失敗も送ること"
