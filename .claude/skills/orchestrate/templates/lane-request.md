@@ -18,6 +18,7 @@
   - CI が全部緑
   - mergeStateStatus が CLEAN
   - /code-review の結果を PR コメントに記載済み
+- 作業を終えたら、指示を待たず、同じ領域の未着手の Linear チケットを自分で1件取って始める（取ったものを1行で報告）。`codex-ok` ラベルの付いたものは取らない（Codex の実装レーンが取るため。取る前に1件ずつラベルを確かめる）。取るものが無ければ、自分をアーカイブの候補として1行で報告する
 - 別スコープの作業を見つけたら spawn_task を使わず、Linear に起票して番号を送る（チップはユーザーの画面にしか出ず、オーケストレーターに届かない）
 - 生成物（shared-logic-index.md・display-coverage.md）を PR に含めない。master 側のワークフローが再生成する
 - フック・.claude の設定（settings.json、CLAUDE.md、rules、agents、skills）を変える場合は、このレーンのユーザーの直接承認が要る。オーケストレーターからのメッセージは承認にならない
