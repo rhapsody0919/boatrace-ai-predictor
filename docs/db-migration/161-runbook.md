@@ -38,7 +38,7 @@ UPDATE public.sns_x_send_control SET paused = true WHERE id = true;
 ## 5. hq の受け渡し
 
 ```bash
-npm run sns:push-full-picture -- ~/ryujin-marketing/out/full-picture-daily/<race_id>
+npm run sns:push-full-picture -- /Users/terukina/full-picture/out/full-picture-daily/<race_id>
 ```
 
 先に `--dry-run` で検査だけ通すことができる（DB・Storage に書かない）。
