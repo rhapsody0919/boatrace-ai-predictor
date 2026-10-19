@@ -118,7 +118,7 @@
     {
       "script": "verify-workflow-secrets.js",
       "tier": "ci",
-      "guards": "本番の書き込みの鍵（SUPABASE_SERVICE_KEY・SLACK_WEBHOOK_URL・VERCEL_DEPLOY_HOOK・LINEAR_*・GOOGLE_SERVICE_ACCOUNT_KEY 等）を参照する job が master だけの Environment（prod-jobs・ryujin-bot・production-db）を宣言していること、pull_request の workflow が anon 以外の secret を参照しないこと（ADR-0097 段取り S。repo の secret は workflow を書ける身元ならどのブランチからも読めるため）"
+      "guards": "本番の書き込みの鍵（SUPABASE_SERVICE_KEY・SLACK_WEBHOOK_URL・VERCEL_DEPLOY_HOOK・LINEAR_*・GOOGLE_SERVICE_ACCOUNT_KEY 等）を参照する job が master だけの Environment（prod-jobs・ryujin-bot・production-db・production-db-auto）を宣言していること、pull_request の workflow が anon 以外の secret を参照しないこと（ADR-0097 段取り S。repo の secret は workflow を書ける身元ならどのブランチからも読めるため）"
     },
     {
       "script": "verify-db-reconcile.js",
