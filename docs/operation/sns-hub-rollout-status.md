@@ -22,7 +22,7 @@ Codex パッチ由来の sns-hub 改修が、どこまで本番で動いてい�
 | 145 | YouTube プロフィールの UTM・観測の CSV 書き出し（Codex 依頼13、`rebased/08-utm-profile-csv/`、05 の上） | 未作成 | — | 145（hq 予約済み） | — |
 
 - 138〜144 のパッチは Codex のチェーン（#1302・#1316 の Codex 版を前半に含む累積）で作られていた。マージ済みの修正を巻き戻さないよう、hq が最新 master 基準で「新しい部分だけ」を作り直し中（Codex 依頼12、`~/ryujin-codex-dev/out/patches/rebased/` に 01〜07 の順）。届いた順に取り込む
-- 番号は hq が予約・管理する。新しい番号は hq に確かめてから使う
+- 番号は予約しない。PR を作るときに `origin/master` の最大＋1 を使い、CI の `verify:migration-numbers` で落ちたら、その時の最大＋1 に付け直す（AGENTS.md「検証・テスト」）
 - 本番 SQL の適用はユーザー。マージはオーケストレーターかユーザー。このレーンは SQL・runbook・PR を用意するだけ
 
 ## 送信・承認まわりの未決事項

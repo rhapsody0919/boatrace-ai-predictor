@@ -7,6 +7,7 @@
 - ADR の番号は並行セッションで重複しやすい。足したら npm run verify:adr-numbers（次の番号も出る）（2026-09-12 に8組15件を振り直し、memory technical_adr_number_collisions）
 - マイグレーションの番号は並行するレーンで重なりうる。着手時にオーケストレーターに番号を取ってもらい、PR 作成前に origin/master の最新番号と比べる（2026-10-11、オーケストレーター依頼）
 - 新しいマイグレーションの番号は origin/master の最大番号より大きくないと verify-migration-numbers が CI で落とす。予約した番号でも、master が先に進んでいたら使えない（2026-10-13、BOA-822 の 149〜151 を 155〜157 に付け替え）
+- マイグレーションと ADR の番号は予約しない。PR を作るときに origin/master の最大＋1 を使い、CI で落ちたらその時の最大＋1 に付け直す（2026-10-19 hq の決定で予約を廃止。予約した 164・162 が、後の番号の先のマージで使えなくなったため）
 - マイグレーションの番号を付け替えるときは、SQL のファイル名・docs/db-migration/APPLIED.md・docs/design の番号の表記・verify-*.js が読むファイル名を全部 grep して直す（2026-10-10、memory sns_hub_intake_paused_2026_10_09）
 - plan.md に新しいテーブル・リレーションを書いたら node scripts/maintenance/generate-er-diagram.js {slug} で DDL から erDiagram を作り、npm run verify:er-diagram で照合する（2026-09-15、memory er_diagram_generation_2026_09_15、PR #665）
 - docs/reference/database-design.md の関係図は自動更新されず、「テーブル一覧と使用状況」等は古い（race_odds を「未使用」と書く等）（2026-09-15、memory er_diagram_generation_2026_09_15。更新されたかは要確認）
