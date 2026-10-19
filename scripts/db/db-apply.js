@@ -6,6 +6,7 @@
  *   apply <path> <sha256>         承認の後: sha256 の再照合・再検査のあと psql で適用（接続は env SUPABASE_DB_URL）
  *   mark-applied <path> <sha256>  適用の後: docs/db-migration/APPLIED.md の行を「適用済み」にする
  *   judge <path>                  定期の起動（ADR-0097）: 軽い／重い／止めるの判定と当て方（鍵なし）
+ *   judge-all                     試運転: 未処理のファイルを全部判定する（env PENDING、当てない）
  *   apply-auto <path> <sha256>    軽いものを承認なしで当てる（当てる直前に判定と台帳を確かめ、短いタイムアウト）
  *   apply-gated <path> <sha256>   重いものをオーナーの承認の後に当てる（台帳を確かめてから）
  *
@@ -225,6 +226,32 @@ function judge(migrationPath) {
   console.log(`判定: ${migrationPath} label=${result.label} mode=${mode}`);
 }
 
+/**
+ * 試運転の評価（ADR-0097）。5点の検査を通った未処理のファイルを全部判定する（当てない、鍵なし）。
+ * env PENDING は reconcile の pending（JSON）。出力: judged（[{ file, label, sha256, reasons }]、JSON）
+ */
+function judgeAll() {
+  let pending;
+  try {
+    pending = JSON.parse(process.env.PENDING ?? "[]");
+  } catch {
+    fail("PENDING が JSON として読めない");
+  }
+  const judged = pending
+    .filter((p) => p && p.ok === true && typeof p.file === "string")
+    .map((p) => {
+      const { sql, sha256 } = readMigration(p.file);
+      const result = classifyMigration(sql, path.basename(p.file));
+      const reasons = [
+        ...result.stops,
+        ...result.statements.filter((x) => x.kind === "heavy").map((x) => `${x.line}行目: ${x.reason}`),
+      ].slice(0, 20);
+      return { file: p.file, label: result.label, sha256, reasons };
+    });
+  writeGithubFile("GITHUB_OUTPUT", `judged=${JSON.stringify(judged)}\n`);
+  console.log(`試運転の判定: ${judged.map((j) => `${path.basename(j.file)}=${j.label}`).join(", ") || "なし"}`);
+}
+
 /** 当てる直前に、今の master の台帳でまだ「未適用」かを確かめる（同じファイルを2回当てない） */
 function requireUnappliedOnMaster(migrationPath) {
   execFileSync("git", ["fetch", "--quiet", "--depth=1", "origin", "master"], { cwd: ROOT });
@@ -238,6 +265,8 @@ function requireUnappliedOnMaster(migrationPath) {
 
 /** 自動の経路（承認なし）。軽いことを当てる直前にもう一度確かめ、短いタイムアウトで当てる */
 function applyAuto(migrationPath, expectedSha256) {
+  // 試運転の間は、判定の job の mode に加えてここでも止める（2段）
+  if (process.env.DB_APPLY_DRY_RUN !== "false") fail("試運転の間（DB_APPLY_DRY_RUN が \"false\" でない）は当てない");
   const { sql } = readMigration(migrationPath);
   const { label } = classifyMigration(sql, path.basename(migrationPath));
   if (label !== "light") fail(`当てる直前の判定が「軽い」でない（${label}）。自動では当てない`);
@@ -261,6 +290,9 @@ switch (command) {
     break;
   case "judge":
     judge(migrationPath);
+    break;
+  case "judge-all":
+    judgeAll();
     break;
   case "apply-auto":
     applyAuto(migrationPath, sha256);

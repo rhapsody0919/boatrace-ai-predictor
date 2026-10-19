@@ -9,13 +9,13 @@
  *      merge_commit_sha が違う・blob が違う・審査の App の承認が無い／別人／古い head・台帳・runbook）
  *   4. 次の1本の選び方（番号の順、適用済み・不明・廃止は飛ばす、通らなければそこで止めて後ろを当てない）
  *   5. db-apply の他の run が動いている・待っているときは何もしない（自分の run は除く）
- *   6. 当て方（試運転は当てない、止めるは止める）、6時間の承認待ち、通知を1回だけにする時刻の窓、通知の文
+ *   6. 当て方（試運転は当てない、止めるは止める）、6時間の承認待ち、試運転で評価する未処理のファイル、通知の項目と印
  */
 import {
-  buildNotifyMessage,
+  buildNotifications,
   byMigrationNumber,
   decideMode,
-  isRecent,
+  pendingCandidates,
   staleWaitingRuns,
   evaluateCandidate,
   isBusy,
@@ -287,32 +287,33 @@ const base = () => ({
   const stale = staleWaitingRuns([run(5.9), run(6), run(6.5), run(7), run(6.5, "in_progress")], now);
   check("承認待ちは6〜7時間の窓だけ（1時間ごとの起動で1回）", JSON.stringify(stale) === JSON.stringify(["u6", "u6.5"]), JSON.stringify(stale));
 
-  check("64分前は新しい", isRecent(new Date(now.getTime() - 64 * 60_000).toISOString(), now));
-  check("66分前は新しくない（前回の起動で知らせ済み）", !isRecent(new Date(now.getTime() - 66 * 60_000).toISOString(), now));
-  check("時刻が無ければ新しくない", !isRecent(null, now));
+  // 試運転の評価は先頭の1本だけでなく、未処理のファイルを全部見る（独立レビュー P2-4）
+  const d = (n) => `docs/db-migration/${n}.sql`;
+  const ev = (file, ok) => ({ file, ledgerState: "未適用", evaluation: { ok, reasons: ok ? [] : ["承認が無い"], pr: 1, headSha: "h" } });
+  const pend = pendingCandidates([ev(d("172_c"), true), { file: d("170_a"), ledgerState: "適用済み", evaluation: null }, ev(d("171_b"), false), { file: d("169_x"), ledgerState: null, existsAtHead: false, evaluation: null }]);
+  check("未処理のファイルを番号の順に全部出す（適用済み・消したものは除く）", JSON.stringify(pend.map((p) => [p.file, p.ok])) === JSON.stringify([[d("171_b"), false], [d("172_c"), true]]), JSON.stringify(pend));
 
-  const recent = new Date(now.getTime() - 10 * 60_000).toISOString();
-  const old = new Date(now.getTime() - 5 * 3_600_000).toISOString();
-  const base = { dryRun: true, status: "selected", file: "docs/db-migration/170_a.sql", pr: "1700", addedAt: recent, label: "light", reasons: [], applyResult: "skipped", stale: [], now };
-  const dry = buildNotifyMessage(base);
-  check("試運転: 新しく足された SQL の「当てるはずだった」を出す", /試運転、当てていない/.test(dry ?? "") && /170_a\.sql/.test(dry ?? "") && /承認なしで当てた/.test(dry ?? ""), dry);
-  check("試運転: 前回の起動で知らせたものは出さない", buildNotifyMessage({ ...base, addedAt: old }) === null);
-  check("試運転: 重いは「オーナーの1タップを待った」", /1タップ/.test(buildNotifyMessage({ ...base, label: "heavy" }) ?? ""));
-  check("blocked は新しいときだけ理由つきで出す", /5点の検査/.test(buildNotifyMessage({ ...base, status: "blocked", reasons: ["承認が無い"] }) ?? "") && buildNotifyMessage({ ...base, status: "blocked", addedAt: old }) === null);
-  check("本番: 当てたら出す（時刻の窓に関係なく）", /を当てた/.test(buildNotifyMessage({ ...base, dryRun: false, applyResult: "success", addedAt: old }) ?? ""));
-  check("本番: 失敗も出す", /失敗/.test(buildNotifyMessage({ ...base, dryRun: false, applyResult: "failure", addedAt: old }) ?? ""));
-  check("本番: 重いの承認待ち（apply が動いていない）は出さない", buildNotifyMessage({ ...base, dryRun: false, label: "heavy", applyResult: "skipped", addedAt: old }) === null);
-  check("承認待ちの6時間は出す", /6時間/.test(buildNotifyMessage({ ...base, status: "busy", file: "", stale: ["https://x/run/1"] }) ?? ""));
-  check("何も無ければ null", buildNotifyMessage({ ...base, status: "none", file: "" }) === null);
-  const morning = new Date("2026-10-21T00:17:00Z");
-  check(
-    "止まったままの blocked は毎朝（UTC 0時台）念を押す",
-    /5点の検査/.test(buildNotifyMessage({ ...base, status: "blocked", addedAt: old, now: morning }) ?? ""),
-  );
-  check(
-    "本番の「止める」も毎朝念を押す",
-    /止める/.test(buildNotifyMessage({ ...base, dryRun: false, label: "stop", applyResult: "skipped", addedAt: old, now: morning }) ?? ""),
-  );
+  const res = (o = {}) => ({ reconcile: "success", judge: "success", applyAuto: "skipped", applyGated: "skipped", record: "skipped", ...o });
+  const base = { dryRun: true, status: "selected", file: d("171_b"), pr: "1700", label: "", sha256: "", reasons: [], pending: pend, judged: [{ file: d("172_c"), label: "light", sha256: "s1", reasons: [] }], results: res(), stale: [], runUrl: "https://x/run/9", now };
+  const dry = buildNotifications(base);
+  check("試運転: 未処理の各ファイルを1項目ずつ（通らないものも、判定したものも）", dry.length === 2 && /5点の検査/.test(dry[0].text) && /「軽い」。本番なら承認なしで当てた/.test(dry[1].text), JSON.stringify(dry));
+  check("試運転: 印は file と sha256 で決まる（同じ中身なら2回目は出ない）", dry[1].key === `db-apply:dry-run:${d("172_c")}:s1` && dry.every((x) => x.pr === 1));
+  const real = { ...base, dryRun: false, pending: [], judged: [], label: "light", sha256: "s2", file: d("173_d") };
+  const applied = buildNotifications({ ...real, results: res({ applyAuto: "success", record: "success" }) });
+  check("本番: 当てたら印つきで1回", applied.length === 1 && /を当てた/.test(applied[0].text) && applied[0].key === `db-apply:applied:${d("173_d")}:s2`);
+  const unrec = buildNotifications({ ...real, results: res({ applyAuto: "success", record: "failure" }) });
+  check("本番: 当てたが台帳の記録が失敗したら、当て直しのおそれを毎回知らせる（独立レビュー P1-1）", unrec.some((x) => x.key === null && /台帳.*failure.*当て直す/.test(x.text)), JSON.stringify(unrec));
+  const failed = buildNotifications({ ...real, label: "heavy", results: res({ applyGated: "failure" }) });
+  check("本番: 適用の失敗・却下は毎回知らせる", failed.some((x) => x.key === null && /apply-gated が failure/.test(x.text)));
+  const blockedToday = buildNotifications({ ...real, status: "blocked", reasons: ["承認が無い"] });
+  check("本番: blocked は日付つきの印（毎日1回念を押す）", blockedToday.length === 1 && blockedToday[0].key === `db-apply:blocked:${d("173_d")}:2026-10-20`);
+  const stop = buildNotifications({ ...real, label: "stop", results: res() });
+  check("本番: 止めるも日付つきの印", stop.length === 1 && stop[0].key.startsWith("db-apply:stop:") && stop[0].key.endsWith(":2026-10-20"));
+  const jobFail = buildNotifications({ ...base, pending: [], status: "", results: res({ reconcile: "failure" }) });
+  check("突き合わせの失敗は印なしで毎回知らせる（独立レビュー P2-5）", jobFail.length === 1 && jobFail[0].key === null && /reconcile が failure/.test(jobFail[0].text));
+  check("判定の失敗も知らせる", buildNotifications({ ...base, pending: [], status: "", results: res({ judge: "failure" }) }).some((x) => /judge が failure/.test(x.text)));
+  check("承認待ちの6時間は印なしで知らせる", buildNotifications({ ...base, pending: [], status: "busy", stale: ["https://x/run/1"] }).some((x) => x.key === null && /6時間/.test(x.text)));
+  check("何も無ければ空", buildNotifications({ ...base, pending: [], judged: [], status: "none" }).length === 0);
 }
 
 if (failures > 0) {

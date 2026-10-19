@@ -122,6 +122,9 @@ Settings → Environments → New environment。4つとも「Deployment branches
 どれも秘密ではない。ただし変えられるのは admin だけにしておく（作成の App には Variables の権限を付けない）
 
 ### 4-2. production-db-auto（軽い SQL の自動の適用）
+
+**先に Environments の一覧に `production-db-auto` が既に無いかを見る。** GitHub は、workflow が参照した名前の Environment が無いと、保護なし（どのブランチからも使える）で自動で作る。既にあれば、「Deployment branches and tags」が Ref type: Branch・`master` だけになっているかを必ず見て、なっていなければ消して作り直してから鍵を入れる（他の Environment も同じ）
+
 | 種類 | 名前 | 値 |
 |---|---|---|
 | Secret | `SUPABASE_DB_URL` | 既存の Environment production-db と同じ接続文字列。Environment の secret は後から読めないので、Supabase の画面（Project Settings → Database → Connection string）から取り直す |

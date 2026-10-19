@@ -585,9 +585,34 @@ check(
   for (const f of ["163_drop_sns_mobile_approval.sql", "166_claude_ro_readonly_role.sql"]) {
     const rel = `docs/db-migration/${f}`;
     const sha = createHash("sha256").update(readFileSync(path.join(ROOT, rel))).digest("hex");
-    const env = { ...process.env, SUPABASE_DB_URL: "" };
+    const env = { ...process.env, SUPABASE_DB_URL: "", DB_APPLY_DRY_RUN: "false" };
     const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/db/db-apply.js"), "apply-auto", rel, sha], { cwd: ROOT, env, encoding: "utf8" });
     check(`apply-auto は軽いでない ${f} を当てずに落とす`, r.status === 1 && /軽い」でない/.test(r.stderr), r.stderr.slice(0, 200));
+  }
+  {
+    // 試運転の間は、軽いファイルでも apply-auto の中で止める（judge の mode と合わせて2段）
+    const rel = "docs/db-migration/125_raw_snapshots.sql";
+    const sha = createHash("sha256").update(readFileSync(path.join(ROOT, rel))).digest("hex");
+    const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/db/db-apply.js"), "apply-auto", rel, sha], {
+      cwd: ROOT,
+      env: { ...process.env, SUPABASE_DB_URL: "", DB_APPLY_DRY_RUN: "" },
+      encoding: "utf8",
+    });
+    check("apply-auto は試運転の間は軽いファイルでも当てない", r.status === 1 && /試運転/.test(r.stderr), r.stderr.slice(0, 200));
+    const j = spawnSync(process.execPath, [path.join(ROOT, "scripts/db/db-apply.js"), "judge-all"], {
+      cwd: ROOT,
+      env: {
+        ...process.env,
+        GITHUB_OUTPUT: "",
+        PENDING: JSON.stringify([
+          { file: rel, ok: true, reasons: [], pr: 1 },
+          { file: "docs/db-migration/163_drop_sns_mobile_approval.sql", ok: true, reasons: [], pr: 2 },
+          { file: "docs/db-migration/166_claude_ro_readonly_role.sql", ok: false, reasons: ["x"], pr: 3 },
+        ]),
+      },
+      encoding: "utf8",
+    });
+    check("judge-all は5点の検査を通ったものだけを判定する", j.status === 0 && /125_raw_snapshots\.sql=light, 163_drop_sns_mobile_approval\.sql=stop$/m.test(j.stdout), j.stdout + j.stderr);
   }
   const dir = path.join(ROOT, ".github/workflows");
   const autoUsers = readdirSync(dir)
@@ -596,8 +621,8 @@ check(
   check("Environment production-db-auto を使うのは db-apply.yml だけ", eq(autoUsers, ["db-apply.yml"]), autoUsers.join(", "));
   const auto = psqlArgs("single-transaction", "docs/db-migration/999_x.sql", AUTO_TIMEOUTS);
   check(
-    "自動の経路は短いタイムアウト（lock 5s・statement 120s）",
-    auto.includes("SET lock_timeout = '5s'") && auto.includes("SET statement_timeout = '120s'"),
+    "自動の経路は statement を短く（120s）、lock はファイルの SET LOCAL の上限と同じ10s",
+    auto.includes("SET lock_timeout = '10s'") && auto.includes("SET statement_timeout = '120s'"),
     auto.join(" "),
   );
 }

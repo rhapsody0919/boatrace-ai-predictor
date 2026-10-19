@@ -7,7 +7,7 @@
  *   status=none      当てるものが無い
  *   status=selected  file を当ててよい（判定 classifyMigration は呼び出し側が当てる時点で行う）
  *   status=blocked   番号の順で次のファイルが5点の検査を通らない（当てずに通知する）
- * ほかに出すもの: added_at（選んだファイルを足したコミットの時刻）・reasons（JSON）・stale（6時間以上承認を待つ run の URL、JSON）
+ * ほかに出すもの: reasons（JSON）・pending（未処理のファイルを最大10本、試運転の評価用、JSON）・stale（6時間以上承認を待つ run の URL、JSON）
  *
  * env:
  *   GITHUB_TOKEN           読み取りだけ（actions・contents・pull-requests）
@@ -28,6 +28,7 @@ import {
   isBusy,
   ledgerRowAddedAsUnapplied,
   ledgerState,
+  pendingCandidates,
   pickNext,
   staleWaitingRuns,
 } from "../lib/dbReconcile.js";
@@ -209,12 +210,8 @@ async function main() {
       }),
     });
   }
-  const next = pickNext(candidates);
-  // 通知を1回だけにするため、そのファイルを足したコミットの時刻も出す（db-apply-notify.js が窓で絞る）
-  const addedAt = next.file
-    ? git("log", "-1", "--format=%cI", addCommitsByFile.get(next.file)[0])
-    : null;
-  return output({ ...next, addedAt, stale });
+  // pending は試運転の評価用（先頭の1本だけでなく、未処理のファイルを最大10本）
+  return output({ ...pickNext(candidates), pending: pendingCandidates(candidates), stale });
 }
 
 function output(result) {
@@ -227,7 +224,7 @@ function output(result) {
         `status=${result.status}`,
         `file=${result.file ?? ""}`,
         `pr=${result.pr ?? ""}`,
-        `added_at=${result.addedAt ?? ""}`,
+        `pending=${JSON.stringify(result.pending ?? [])}`,
         `reasons=${JSON.stringify(result.reasons ?? [])}`,
         `stale=${JSON.stringify(result.stale ?? [])}`,
         "",

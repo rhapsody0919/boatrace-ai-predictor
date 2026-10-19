@@ -242,9 +242,10 @@ const REJECT_RULES = [
 // apply の上限。ロック待ちは早めに諦め（再実行すればよい）、1文の実行は job の timeout（15分）より前に打ち切る
 export const LOCK_TIMEOUT = "10s";
 export const STATEMENT_TIMEOUT = "10min";
-// 自動の経路（承認なし、ADR-0097）は短くする。判定は表の大きさを見られないので、大きい表のロック待ちや長い索引の作成は
-// ここで失敗として止める（待ち続けない）。ファイルの SET LOCAL は判定がこの上限以内のものだけを軽いにしている
-export const AUTO_TIMEOUTS = { lock: "5s", statement: "120s" };
+// 自動の経路（承認なし、ADR-0097）。判定は表の大きさを見られないので、長い索引の作成等は statement の上限で失敗として止める。
+// lock は手での適用と同じ10秒（このリポジトリのマイグレーションは SET LOCAL lock_timeout = '10s' と書く決まりで、
+// ファイルの SET LOCAL は -c の SET より後に効く。判定は SET LOCAL を SET_LOCAL_MAX_MS 以内のものだけ軽いにしている）
+export const AUTO_TIMEOUTS = { lock: "10s", statement: "120s" };
 // これを超える行には注意を出す（本文の枠の外に隠れる）
 const LONG_LINE_CHARS = 200;
 
@@ -794,6 +795,7 @@ const REVOKE_RE = new RegExp(
 const SET_LOCAL_RE =
   /^SET\s+LOCAL\s+(lock_timeout|statement_timeout)\s*(?:=|TO)\s*'?(\d+)\s*(ms|s|min)?'?$/i;
 // 自動の経路で SET LOCAL に許す上限（これを超えて待たせる・走らせるのは重い）
+// 自動の経路の上限（AUTO_TIMEOUTS）と同じにする。ファイルの SET LOCAL は psql の -c の SET より後に効くので、これより長いと上限が延びる
 const SET_LOCAL_MAX_MS = { lock_timeout: 10_000, statement_timeout: 120_000 };
 const EXEMPT_MARKER_RE = /--\s*(rls|grant|view|function)-exempt:/;
 const NO_BACKUP_MARKER_RE = /--\s*db-apply:\s*no-backup\s+(\S+)\s+\S/g;
