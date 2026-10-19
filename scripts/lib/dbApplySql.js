@@ -652,3 +652,356 @@ export function markAppliedInLedger(
   rows.splice(insertAt, 0, newRow);
   return { text: rows.join("\n"), action: "inserted" };
 }
+
+// ---------------------------------------------------------------------------
+// 軽い／重いの判定（ADR-0097）。許可のリスト方式: ファイルの全部の文が下の形に丸ごと当てはまるときだけ「軽い」
+// （Environment production-db-auto で承認なしに当てる）。1文でも外れたら「重い」（production-db、オーナーの1タップ）。
+// 個人情報らしい列を足すもの・削除の前の控えが無いもの・inspectMigration が拒否するものは「止める」（当てずに通知）。
+// 判定は文の code（コメントを消し、文字列と $$ の中身を空にしたもの）で行う。DO・関数の本体は見えないが、どちらも重い。
+// ---------------------------------------------------------------------------
+
+/** 削除の前の控えを置くスキーマ（API に出さない） */
+export const BACKUP_SCHEMA = "db_backup";
+
+// 識別子1つ（"…" か英字始まり）と、スキーマつきの名前
+const ONE_ID = String.raw`(?:"(?:[^"]|"")+"|[A-Za-z_][A-Za-z0-9_$]*)`;
+
+/** 名前の比較用: public. を外し、"…" は中身をそのまま、裸の名前は小文字にする */
+export function canonName(name) {
+  return name
+    .replace(/\s*\.\s*/g, ".")
+    .trim()
+    .split(".")
+    .map((part) =>
+      part.startsWith('"') ? part.slice(1, -1).replace(/""/g, '"') : part.toLowerCase(),
+    )
+    .filter((part, idx, all) => !(idx === 0 && all.length === 2 && part === "public"))
+    .join(".");
+}
+
+/** 括弧の深さ0の `,` で分ける（文字列・$$ の中身は code で空になっている） */
+function splitTopLevel(text) {
+  const parts = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of text) {
+    if (ch === "(") depth += 1;
+    if (ch === ")") depth -= 1;
+    if (ch === "," && depth === 0) {
+      parts.push(cur.trim());
+      cur = "";
+      continue;
+    }
+    cur += ch;
+  }
+  if (cur.trim() !== "") parts.push(cur.trim());
+  return parts;
+}
+
+// 名前の直後に ( が来てよいもの: 型の修飾子・制約の構文・副作用の無い組み込み関数
+const PAREN_KEYWORDS = new Set([
+  // 型
+  "numeric", "decimal", "varchar", "char", "character", "varying", "bit", "varbit",
+  "timestamp", "timestamptz", "time", "timetz", "interval", "float",
+  // 構文
+  "check", "key", "unique", "in", "and", "or", "not", "as", "identity", "where", "include",
+  "any", "all", "is", "between", "then", "else", "when", "case",
+  // 副作用の無い組み込み関数
+  "now", "clock_timestamp", "gen_random_uuid", "timezone", "char_length", "length", "lower", "upper",
+  "btrim", "trim", "jsonb_typeof", "array_length", "cardinality", "coalesce", "nullif",
+  "greatest", "least", "abs",
+]);
+
+/**
+ * 許されない関数の呼び出し（名前の直後の `(`）を返す。REFERENCES 表(列) と、`(` の前が名前でないもの（括弧のまとまり）は除く
+ * @param {string} text
+ * @param {Set<string>} [allowed]
+ */
+function disallowedCalls(text, allowed = PAREN_KEYWORDS) {
+  const calls = [];
+  const re = new RegExp(String.raw`(REFERENCES\s+)?(${ONE_ID}(?:\s*\.\s*${ONE_ID})?)\s*\(`, "gi");
+  for (const m of text.matchAll(re)) {
+    if (m[1]) continue;
+    // public. を外さずに比べる（public.lower のような同名の関数は組み込みではない）
+    const name = m[2]
+      .replace(/\s*\.\s*/g, ".")
+      .split(".")
+      .map((part) => (part.startsWith('"') ? part.slice(1, -1).replace(/""/g, '"') : part.toLowerCase()))
+      .join(".");
+    if (!allowed.has(name)) calls.push(name);
+  }
+  return calls;
+}
+
+// 個人情報らしい列の名前（_ で区切った語のどれかが当たれば止める）
+const PII_WORDS = new Set([
+  "email", "mail", "phone", "tel", "telephone", "mobile", "address", "addr",
+  "birth", "birthday", "birthdate", "dob", "fullname", "realname", "kana", "zip", "postal",
+]);
+export function isPiiColumn(name) {
+  const lower = canonName(name).toLowerCase();
+  return lower.split(/[^a-z0-9]+/).some((word) => PII_WORDS.has(word)) || /氏名|住所|電話|生年月日/.test(lower);
+}
+
+const CONSTRAINT_HEADS = /^(CONSTRAINT|PRIMARY|UNIQUE|CHECK|FOREIGN|EXCLUDE|LIKE)\b/i;
+
+/** CREATE TABLE の本文（括弧の中）から列の名前を取り出す */
+function columnsOfCreateTable(body) {
+  return splitTopLevel(body)
+    .filter((part) => !CONSTRAINT_HEADS.test(part))
+    .map((part) => new RegExp(`^(${ONE_ID})`).exec(part)?.[1])
+    .filter(Boolean);
+}
+
+const CREATE_TABLE_RE = new RegExp(
+  String.raw`^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(${ID})\s*\(([\s\S]*)\)$`,
+  "i",
+);
+const CREATE_INDEX_RE = new RegExp(
+  String.raw`^CREATE\s+(?:UNIQUE\s+)?INDEX\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:${ONE_ID}\s+)?ON\s+(?:ONLY\s+)?(${ID})(?:\s+USING\s+(?:BTREE|GIN|GIST|HASH|BRIN))?\s*\(([^()]*)\)(?:\s+INCLUDE\s*\(([^()]*)\))?(?:\s+WHERE\s+([\s\S]+))?$`,
+  "i",
+);
+const INDEX_COLUMN_RE = new RegExp(
+  String.raw`^${ONE_ID}(?:\s+${ONE_ID})?(?:\s+(?:ASC|DESC))?(?:\s+NULLS\s+(?:FIRST|LAST))?$`,
+  "i",
+);
+const ALTER_TABLE_RE = new RegExp(
+  String.raw`^ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?(${ID})\s+([\s\S]+)$`,
+  "i",
+);
+const ADD_COLUMN_RE = new RegExp(
+  String.raw`^ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(${ONE_ID})\s+([\s\S]+)$`,
+  "i",
+);
+// serial 型は暗黙の DEFAULT nextval と NOT NULL を伴い、既存の行を全部書き直す
+const ADD_COLUMN_FORBIDDEN =
+  /\b(DEFAULT|NOT\s+NULL|GENERATED|PRIMARY|UNIQUE|CHECK|COLLATE|CONSTRAINT|AS|USING|SMALLSERIAL|SERIAL[248]?|BIGSERIAL)\b/i;
+const CREATE_POLICY_RE = new RegExp(
+  String.raw`^CREATE\s+POLICY\s+${ONE_ID}\s+ON\s+(${ID})(?:\s+AS\s+(?:PERMISSIVE|RESTRICTIVE))?\s+FOR\s+SELECT(?:\s+TO\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*)*)?(?:\s+USING\s*\(([\s\S]*)\))?$`,
+  "i",
+);
+const REVOKE_RE = new RegExp(
+  String.raw`^REVOKE\s+(?:ALL(?:\s+PRIVILEGES)?|(?:SELECT|INSERT|UPDATE|DELETE|TRUNCATE|REFERENCES|TRIGGER)(?:\s*,\s*(?:SELECT|INSERT|UPDATE|DELETE|TRUNCATE|REFERENCES|TRIGGER))*)\s+ON\s+(?:TABLE\s+)?(${ID}(?:\s*,\s*${ID})*)\s+FROM\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*)*(?:\s+CASCADE)?$`,
+  "i",
+);
+const SET_LOCAL_RE =
+  /^SET\s+LOCAL\s+(lock_timeout|statement_timeout)\s*(?:=|TO)\s*'?(\d+)\s*(ms|s|min)?'?$/i;
+// 自動の経路で SET LOCAL に許す上限（これを超えて待たせる・走らせるのは重い）
+const SET_LOCAL_MAX_MS = { lock_timeout: 10_000, statement_timeout: 120_000 };
+const EXEMPT_MARKER_RE = /--\s*(rls|grant|view|function)-exempt:/;
+const NO_BACKUP_MARKER_RE = /--\s*db-apply:\s*no-backup\s+(\S+)\s+\S/g;
+
+/**
+ * 1文の判定。ctx.createdTables は同じファイルでこの文より前に CREATE TABLE した表（canonName）
+ * @returns {{ kind: "light" | "heavy", reason: string }}
+ */
+function classifyStatement(code, text, ctx) {
+  const flat = code.replace(/\s+/g, " ").trim();
+  const heavy = (reason) => ({ kind: "heavy", reason });
+  const light = (reason) => ({ kind: "light", reason });
+  if (flat.includes("$")) return heavy("$$ の本体（DO・関数）を含む");
+
+  const ct = CREATE_TABLE_RE.exec(flat);
+  if (ct) {
+    const table = canonName(ct[1]);
+    if (table.includes(".")) return heavy(`public 以外のスキーマの表（${table}）`);
+    // 重い CREATE TABLE でも、同じファイルで作った表であることは変わらない（後ろの RLS・policy・REVOKE の判定に使う）
+    ctx.createdTables.add(table);
+    const body = ct[2];
+    if (/\bLIKE\b|\bEXCLUDE\b/i.test(body)) return heavy("CREATE TABLE の LIKE・EXCLUDE");
+    const calls = disallowedCalls(body);
+    if (calls.length > 0) return heavy(`CREATE TABLE の中で関数を呼ぶ（${calls.join(", ")}）`);
+    return light("CREATE TABLE");
+  }
+
+  const ci = CREATE_INDEX_RE.exec(flat);
+  if (ci) {
+    const columns = [...splitTopLevel(ci[2]), ...(ci[3] ? splitTopLevel(ci[3]) : [])];
+    if (!columns.every((c) => INDEX_COLUMN_RE.test(c))) return heavy("式の索引");
+    if (ci[4] !== undefined) {
+      const calls = disallowedCalls(ci[4]);
+      if (calls.length > 0 || /\bSELECT\b/i.test(ci[4]))
+        return heavy(`索引の WHERE で関数・副問い合わせを使う（${calls.join(", ")}）`);
+    }
+    return light("CREATE INDEX");
+  }
+
+  const at = ALTER_TABLE_RE.exec(flat);
+  if (at) {
+    const table = canonName(at[1]);
+    for (const action of splitTopLevel(at[2])) {
+      const add = ADD_COLUMN_RE.exec(action);
+      if (add) {
+        if (ADD_COLUMN_FORBIDDEN.test(add[2]))
+          return heavy("ADD COLUMN に既定値・NOT NULL・制約・生成列がある");
+        const calls = disallowedCalls(add[2]);
+        if (calls.length > 0) return heavy(`ADD COLUMN の中で関数を呼ぶ（${calls.join(", ")}）`);
+        continue;
+      }
+      if (/^(ENABLE|FORCE)\s+ROW\s+LEVEL\s+SECURITY$/i.test(action)) {
+        if (!ctx.createdTables.has(table))
+          return heavy(`同じファイルで作っていない表（${table}）の RLS の変更`);
+        continue;
+      }
+      return heavy(`ALTER TABLE の ${action.split(/\s+/).slice(0, 3).join(" ")}`);
+    }
+    return light("ALTER TABLE（ADD COLUMN・RLS の有効化）");
+  }
+
+  if (/^COMMENT\s+ON\s+[\s\S]+\s+IS\s+(?:''|NULL)$/i.test(flat)) return light("COMMENT");
+
+  const cp = CREATE_POLICY_RE.exec(flat);
+  if (cp) {
+    const table = canonName(cp[1]);
+    if (!ctx.createdTables.has(table))
+      return heavy(`同じファイルで作っていない表（${table}）の policy`);
+    const calls = cp[2] === undefined ? [] : disallowedCalls(cp[2], new Set([...PAREN_KEYWORDS, "auth.uid", "auth.role"]));
+    if (calls.length > 0 || /\bSELECT\b/i.test(cp[2] ?? ""))
+      return heavy(`policy の USING で関数・副問い合わせを使う（${calls.join(", ")}）`);
+    return light("CREATE POLICY（SELECT だけ）");
+  }
+
+  const rv = REVOKE_RE.exec(flat);
+  if (rv) {
+    const tables = splitTopLevel(rv[1]).map(canonName);
+    const others = tables.filter((t) => !ctx.createdTables.has(t));
+    if (others.length > 0) return heavy(`同じファイルで作っていない表（${others.join(", ")}）の REVOKE`);
+    return light("REVOKE（同じファイルの表）");
+  }
+
+  if (/^NOTIFY\s+pgrst(?:\s*,\s*'')?$/i.test(flat)) return light("NOTIFY pgrst");
+
+  const sl = SET_LOCAL_RE.exec(text.replace(/\s+/g, " ").trim().replace(/;$/, ""));
+  if (sl && /^SET\s+LOCAL\b/i.test(flat)) {
+    const unit = (sl[3] ?? "ms").toLowerCase();
+    const ms = Number(sl[2]) * (unit === "min" ? 60_000 : unit === "s" ? 1000 : 1);
+    // 0 は PostgreSQL では無制限なので軽いにしない
+    if (ms > 0 && ms <= SET_LOCAL_MAX_MS[sl[1].toLowerCase()]) return light(`SET LOCAL ${sl[1]}`);
+    return heavy(`SET LOCAL ${sl[1]} が自動の上限を超える`);
+  }
+
+  return heavy(flat.split(" ").slice(0, 4).join(" "));
+}
+
+/**
+ * データを消す文と、その表（ALTER TABLE … DROP COLUMN は列も）を返す
+ * @returns {{ table: string, column?: string, what: string }[]}
+ */
+function destructiveTargets(code) {
+  const flat = code.replace(/\s+/g, " ").trim();
+  const targets = [];
+  for (const { table, op } of extractTables(code)) {
+    if (op === "DROP" || op === "TRUNCATE" || op === "DELETE")
+      targets.push({ table: canonName(table), what: op });
+  }
+  const at = ALTER_TABLE_RE.exec(flat);
+  if (at) {
+    for (const action of splitTopLevel(at[2])) {
+      const dc = new RegExp(String.raw`^DROP\s+(?:COLUMN\s+)?(?:IF\s+EXISTS\s+)?(${ONE_ID})`, "i").exec(action);
+      if (dc && !/^DROP\s+(CONSTRAINT|DEFAULT|NOT|EXPRESSION|IDENTITY)\b/i.test(action))
+        targets.push({ table: canonName(at[1]), column: canonName(dc[1]), what: "DROP COLUMN" });
+    }
+  }
+  return targets;
+}
+
+// 依存する表・列ごと消すが、どの表かを文からは決められない削除。控えで守れないので止める
+const UNBACKUPABLE_DROP_RE =
+  /^(DROP\s+(SCHEMA|TYPE|DOMAIN|EXTENSION)\b[\s\S]*\bCASCADE\b|DROP\s+OWNED\b)/i;
+
+const BACKUP_RE = new RegExp(
+  String.raw`^CREATE\s+TABLE\s+(${ID})\s+AS\s+(?:TABLE\s+(${ID})|SELECT\s+([\s\S]+?)\s+FROM\s+(${ID}))$`,
+  "i",
+);
+
+/**
+ * マイグレーションを軽い／重い／止めるに分ける（ADR-0097）。
+ *
+ * @param {string} sql
+ * @param {string} fileName 例 "167_x.sql"（控えの表の名前 db_backup._bak_<番号>_<表> に使う）
+ * @returns {{ label: "light" | "heavy" | "stop",
+ *            statements: { line: number, kind: "light" | "heavy" | "backup" | "tx", reason: string }[],
+ *            stops: string[], backups: { table: string, line: number }[] }}
+ */
+export function classifyMigration(sql, fileName) {
+  const inspection = inspectMigration(sql);
+  const stops = inspection.rejections.map((r) => `適用できない: ${r}`);
+  const { statements } = splitStatements(sql);
+  const number = migrationNumber(fileName);
+  const ctx = { createdTables: new Set() };
+  const backups = [];
+  const results = [];
+  const noBackup = new Set(
+    [...sql.matchAll(NO_BACKUP_MARKER_RE)].map((m) => canonName(m[1])),
+  );
+
+  for (const s of statements) {
+    const flat = s.code.replace(/\s+/g, " ").trim();
+    if (TX_CONTROL_RE.test(bare(s.code)) && inspection.mode === "file-transaction") {
+      results.push({ line: s.line, kind: "tx", reason: "BEGIN / COMMIT" });
+      continue;
+    }
+
+    const bk = BACKUP_RE.exec(flat);
+    if (bk) {
+      const target = canonName(bk[1]);
+      const source = canonName(bk[2] ?? bk[4]);
+      const expected = `${BACKUP_SCHEMA}._bak_${number}_${source.replace(/\./g, "_")}`.toLowerCase();
+      if (target === expected) {
+        backups.push({
+          table: source,
+          line: s.line,
+          columns: bk[3] === undefined || bk[3].trim() === "*" ? null : splitTopLevel(bk[3]).map(canonName),
+        });
+        results.push({ line: s.line, kind: "backup", reason: `削除の前の控え（${source}）` });
+        continue;
+      }
+    }
+
+    for (const t of destructiveTargets(s.code)) {
+      const copied = backups.some(
+        (b) => b.table === t.table && (b.columns === null || (t.column !== undefined && b.columns.includes(t.column))),
+      );
+      const isBackup = t.table.startsWith(`${BACKUP_SCHEMA}.`);
+      if (!copied && !noBackup.has(t.table) && !isBackup) {
+        stops.push(
+          `${s.line}行目: ${t.what}（${t.table}${t.column ? `.${t.column}` : ""}）の前に控えが無い。` +
+            `同じファイルの前の文で CREATE TABLE ${BACKUP_SCHEMA}._bak_${number}_${t.table} AS TABLE ${t.table} を書く`,
+        );
+      }
+    }
+
+    if (UNBACKUPABLE_DROP_RE.test(flat)) {
+      stops.push(`${s.line}行目: 依存する表・列ごと消しうる削除（${flat.split(" ").slice(0, 3).join(" ")} … CASCADE / DROP OWNED）は控えで守れない`);
+    }
+
+    for (const col of piiColumns(flat)) {
+      stops.push(`${s.line}行目: 個人情報らしい列（${col}）を足す`);
+    }
+
+    const r = classifyStatement(s.code, s.text, ctx);
+    results.push({ line: s.line, ...r });
+  }
+
+  if (EXEMPT_MARKER_RE.test(sql)) {
+    results.push({ line: 0, kind: "heavy", reason: "verify-migration-rls の除外マーカーがある" });
+  }
+
+  const label =
+    stops.length > 0 ? "stop" : results.some((r) => r.kind !== "light" && r.kind !== "tx") ? "heavy" : "light";
+  return { label, statements: results, stops, backups };
+}
+
+/** 文が足す列のうち、個人情報らしい名前のもの */
+function piiColumns(flat) {
+  const ct = CREATE_TABLE_RE.exec(flat);
+  const names = ct ? columnsOfCreateTable(ct[2]) : [];
+  const at = ALTER_TABLE_RE.exec(flat);
+  if (at) {
+    for (const action of splitTopLevel(at[2])) {
+      const add = new RegExp(String.raw`^ADD\s+(?:COLUMN\s+)?(?:IF\s+NOT\s+EXISTS\s+)?(${ONE_ID})`, "i").exec(action);
+      if (add && !/^ADD\s+(CONSTRAINT|PRIMARY|UNIQUE|CHECK|FOREIGN|EXCLUDE)\b/i.test(action)) names.push(add[1]);
+    }
+  }
+  return names.filter(isPiiColumn).map(canonName);
+}

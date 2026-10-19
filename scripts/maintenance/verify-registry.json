@@ -121,6 +121,11 @@
       "guards": "本番の書き込みの鍵（SUPABASE_SERVICE_KEY・SLACK_WEBHOOK_URL・VERCEL_DEPLOY_HOOK・LINEAR_*・GOOGLE_SERVICE_ACCOUNT_KEY 等）を参照する job が master だけの Environment（prod-jobs・ryujin-bot・production-db）を宣言していること、pull_request の workflow が anon 以外の secret を参照しないこと（ADR-0097 段取り S。repo の secret は workflow を書ける身元ならどのブランチからも読めるため）"
     },
     {
+      "script": "verify-db-reconcile.js",
+      "tier": "ci",
+      "guards": "本番 DB の自動の適用の突き合わせ（scripts/lib/dbReconcile.js・scripts/db/db-reconcile.js、ADR-0097）。台帳の状態を先頭の語で読む、5点の検査（切り替えより後に squash で足された・merge_commit_sha の一致・blob が PR の head と今の master で同じ・審査の App の head SHA への承認・同じコミットで足した「未適用」の行・runbook が無い）がそれぞれ単独で落とす、番号の順に1本だけ選び通らなければ止めて後ろを当てない、db-apply の他の run が動いている・待っているときは何もしない"
+    },
+    {
       "script": "verify-db-apply.js",
       "tier": "ci",
       "guards": "本番 DB 適用ワークフロー（.github/workflows/db-apply.yml、scripts/lib/dbApplySql.js）。パスの検証（ディレクトリの外・大文字・別拡張子を通さない）、文の分割（文字列・$$・コメントの中の ; を区切りにしない）、拒否する SQL（先頭 BEGIN・末尾 COMMIT 以外のトランザクション制御、CONCURRENTLY・VACUUM・ALTER SYSTEM・psql のメタコマンド 等）、触るテーブルの抽出、台帳の更新、実ファイルで拒否されるのが 050・055 だけであること、ワークフローの配線（secret は承認後の job だけ、run に ${{ }} を直接書かない、書き込み権限は台帳の job だけ）"
