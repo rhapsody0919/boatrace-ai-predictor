@@ -82,6 +82,12 @@ export function checkRoUrl(url) {
   }
   // pg は URL の sslmode を ssl の設定より優先するため外し、呼び出し側の ssl を使う
   parsed.searchParams.delete("sslmode");
+  // ?user= や options=-c role=… は URL のユーザー名より優先されるので、他のクエリは受け付けない
+  if ([...parsed.searchParams.keys()].length > 0) {
+    throw new Error(
+      `SUPABASE_RO_DB_URL に sslmode 以外のクエリがある（${[...parsed.searchParams.keys()].join(", ")}）。外す`,
+    );
+  }
   return parsed.toString();
 }
 
@@ -100,6 +106,7 @@ export async function runReadOnlyQuery(
   if (!checked.ok) throw new Error(checked.reason);
 
   await client.query("BEGIN TRANSACTION READ ONLY");
+  let result;
   try {
     await client.query(`SET LOCAL statement_timeout = '${STATEMENT_TIMEOUT}'`);
     const who = await client.query(
@@ -129,15 +136,23 @@ export async function runReadOnlyQuery(
       res = await client.query(checked.text);
     }
     const truncated = res.rows.length > limit;
-    return {
+    result = {
       fields: (res.fields ?? []).map((f) => f.name),
       rows: truncated ? res.rows.slice(0, limit) : res.rows,
       truncated,
       limit,
     };
-  } finally {
-    await client.query("ROLLBACK");
+  } catch (e) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      // 接続が切れた等で ROLLBACK も失敗したとき、元のエラーを上書きしない
+      console.error(`ro-query: ROLLBACK も失敗した: ${rollbackError.message}`);
+    }
+    throw e;
   }
+  await client.query("ROLLBACK");
+  return result;
 }
 
 const MAX_CELL_CHARS = 120;

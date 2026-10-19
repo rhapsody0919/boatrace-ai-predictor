@@ -17,7 +17,7 @@ Management API のトークンも MCP も、権限としては書き込みがで
   - `BYPASSRLS` を付ける。付けないと RLS の付いた表がエラーでなく0行で返る（ADR-0069 と同じ型）
   - `sns_oauth_tokens`（X のトークンの暗号文）は読ませない
   - 接続は2本まで。ロールの既定で `statement_timeout=30s`・`default_transaction_read_only=on`。ただしこれらは本人が SET で戻せるので、守りの本体にしない
-  - 書けないことは権限だけで保証する。166 の末尾の DO ブロックが、SELECT 以外の表の権限・`claude_ro` が呼べる VOLATILE な SECURITY DEFINER 関数（PostgreSQL は既定で EXECUTE を PUBLIC に渡す）・`public` への CREATE・他のロールのメンバー・想定外の属性を調べ、1つでもあれば全体を戻す
+  - 書けないことは権限だけで保証する。166 の末尾の DO ブロックが、`claude_ro` が USAGE を持つ全スキーマについて、SELECT 以外の表の権限（列単位の GRANT を含む）・シーケンスの権限・`claude_ro` が呼べる SECURITY DEFINER 関数（PostgreSQL は既定で EXECUTE を PUBLIC に渡す。STABLE でも中で VOLATILE な関数を呼べば所有者の権限で書け、auth・vault も読めるので volatility を問わない）・CREATE できるスキーマ・データベース単位の設定の秘密らしい名前（`app.settings.jwt_secret` 等。誰でも `current_setting` で読める）・他のロールのメンバー・想定外の属性を調べ、1つでもあれば全体を戻す
   - パスワードはマイグレーションに書かない。`scripts/db/ro-setup.js` が乱数で作り、`.env.local` に書き、SQL Editor には SCRAM の検証子だけを渡す（平文が SQL Editor の履歴・ログに残らない）
 - 鍵の置き場は本体の `.env.local` の `SUPABASE_RO_DB_URL`（Session pooler、ユーザー名 `claude_ro.<project-ref>`）。CI・Vercel には置かない
 - 読むのは `scripts/db/ro-query.js` だけにする
@@ -35,7 +35,7 @@ Management API のトークンも MCP も、権限としては書き込みがで
 | BYPASSRLS を付けず、表ごとに claude_ro 用の SELECT のポリシーを置く | 表を足すたびにポリシーが要り、書き忘れると0行に化ける（黙って間違う）。BYPASSRLS が付けられない版のときだけ使う（下の「付けられない場合」） |
 | Management API のトークン・Supabase MCP のまま、判定の allow を広げる | トークン・MCP は書き込みができる経路で、判定の allow を広げると書き込みも通りうる。安全が判定の挙動に依存する |
 | ロールの `default_transaction_read_only` だけで守る | 本人が `SET default_transaction_read_only = off` で戻せる |
-| PUBLIC の EXECUTE を関数ごとに外して claude_ro を締め出す（166 の中で） | PUBLIC から外すと anon・authenticated が呼べなくなりうる。166 では検査だけをし、該当があれば止めて別のマイグレーションで影響を確かめて外す |
+| PUBLIC の EXECUTE を関数ごとに外して claude_ro を締め出す（166 の中で）。特定のロールからの REVOKE は PUBLIC 経由の EXECUTE を消さない | PUBLIC から外すと anon・authenticated が呼べなくなりうる。166 では検査だけをし、該当があれば止めて別のマイグレーションで影響を確かめて外す |
 | psql を使う | 行数の上限が無く、メタコマンド（`\!` でシェル）を通しうる。手元に psql が無い |
 
 ## 付けられない場合
@@ -46,6 +46,9 @@ Supabase の `postgres` は `rolbypassrls=true`・`rolcreaterole=true`（2026-10
 
 - オーナーに渡す SQL から確認の SELECT が減る。書き込みは今までどおりオーナー（db-apply か SQL Editor）
 - postgres が今後 `public` に作る表は、既定権限で自動で claude_ro から読める。秘密の値を入れる表を足すときは、同じマイグレーションで `REVOKE ALL ON <表> FROM claude_ro` を書く
-- 113 より前に作られ PUBLIC が EXECUTE できる関数のうち、VOLATILE な SECURITY DEFINER は 166 が止める。今後 SECURITY DEFINER の関数は verify-migration-rls（規則7）で PUBLIC に付けられない
+- 113 より前に作られ PUBLIC が EXECUTE できる SECURITY DEFINER の関数は 166 が止める。今後 SECURITY DEFINER の関数は verify-migration-rls（規則7）で PUBLIC に付けられない。Supabase が作った関数（所有者 supabase_admin）が引っかかったときは postgres から REVOKE できないので、その関数のスキーマの USAGE を外せるか等を別に設計する
+- `claude_ro` は直接接続なら自分のロールの設定（`ALTER ROLE claude_ro SET …`）とパスワードを変えられる（PostgreSQL の仕様）。アプリのデータは変わらない。ro-query.js は先頭の語で拒否する
+- `analogy_feedback` の `comment`（利用者が書いた最大200字）と `client_key`（仮名の ID）は読める。秘密ではないが利用者の入力を含む
+- 秘密の表を足すときの `REVOKE ... FROM claude_ro` は、今は機械で検査していない（verify-migration-rls に規則を足すのは別の作業）
 - `claude_ro` は一時表・ラージオブジェクト・advisory lock を作れる（PostgreSQL の既定で PUBLIC に許される）。どれもアプリのデータを変えない。ro-query.js は READ ONLY のトランザクションなのでラージオブジェクトも作らない
 - 証明書は検証しない（libpq の `sslmode=require` と同じ）。Supabase の CA は公開の CA でない

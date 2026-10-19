@@ -13,9 +13,10 @@
  * project-ref は env SUPABASE_URL から取る。--pooler-host は Dashboard の Connect > Session pooler のホスト名。
  */
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { RO_ROLE } from "../lib/roQuery.js";
 import { scramSha256Verifier } from "../lib/scramVerifier.js";
 
@@ -82,19 +83,27 @@ function main() {
     }
     return { file, after };
   });
-  for (const { file, after } of updates)
-    writeFileSync(file, after, { mode: 0o600 });
+  const verifier = scramSha256Verifier(password);
+  for (const [i, { file, after }] of updates.entries()) {
+    try {
+      writeFileSync(file, after, { mode: 0o600 });
+    } catch (e) {
+      throw new Error(
+        `${file} に書けない（${e.message}）。${i > 0 ? "前のファイルは書き換え済みなので --force で" : ""}やり直す`,
+      );
+    }
+  }
 
   console.log(`${KEY} を書いた: ${files.join(", ")}`);
   console.log(
     "次の1文を Supabase の SQL Editor で実行する（平文のパスワードは含まない）:\n",
   );
   console.log(
-    `ALTER ROLE ${RO_ROLE} PASSWORD '${scramSha256Verifier(password)}';`,
+    `ALTER ROLE ${RO_ROLE} PASSWORD '${verifier}';`,
   );
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   try {
     main();
   } catch (e) {

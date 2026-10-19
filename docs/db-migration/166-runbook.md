@@ -8,7 +8,9 @@
 
 - 適用前の確認は SQL の末尾の DO ブロックが行う。書き込みの経路が見つかれば、例外で全体が戻り、何も変わらない。
   そのときはエラーの文（`166: …`）をそのまま Claude に渡す
-  - `claude_ro が書き込みうる SECURITY DEFINER 関数を呼べる: …` → 並んだ関数の PUBLIC の EXECUTE を外すマイグレーションを先に作る
+  - `claude_ro が SECURITY DEFINER 関数を呼べる: …` → 並んだ関数の PUBLIC の EXECUTE を外すマイグレーションを先に作る（anon・authenticated が使っていないかを src/・api/ で確かめる）。所有者が supabase_admin の関数は postgres から外せないので、ADR-0096 を見直す
+  - `claude_ro が表に書き込める` / `シーケンスを進められる` / `CREATE できるスキーマがある` → 並んだものの PUBLIC の権限を外すかを別に決める
+  - `設定に秘密らしい名前がある` → その設定（値は出ない）を ALTER DATABASE … RESET で消せるかを先に決める。入ったままだと、接続できるロールなら誰でも値を読める
   - `CREATE ROLE` が `permission denied to … BYPASSRLS` で失敗 → BYPASSRLS の代わりに表ごとの SELECT のポリシーにする（ADR-0096「付けられない場合」）
 - パスワードはまだ無いので、この時点では誰もログインできない
 
@@ -27,10 +29,18 @@
 
 パスワードを入れ替えるときは `--force` を付けて 2 をやり直す（古い接続文字列は使えなくなる）。
 
+ログインできないとき
+
+| エラー | 原因 |
+|---|---|
+| `Tenant or user not found` | ユーザー名の形が違う（`claude_ro.<project-ref>` になっているか） |
+| `password authentication failed` | 手順 2 の ALTER ROLE がまだ。実行済みなら少し待って再試行（pooler が古い認証情報を持っている可能性。未確認） |
+| `too many connections for role` | 接続が2本を超えた。前の接続が残っている |
+
 ## 3. 適用後の確認（Claude が ro-query.js で実行）
 
 ```bash
-node --env-file=.env.local scripts/db/ro-query.js "SELECT current_user, current_setting('transaction_read_only') ro, (SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user) bypassrls, (SELECT rolconnlimit FROM pg_roles WHERE rolname = current_user) connlimit, has_table_privilege('public.sns_oauth_tokens', 'SELECT') tokens, (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m') AND NOT has_table_privilege(c.oid, 'SELECT')) unreadable"
+node --env-file=.env.local scripts/db/ro-query.js "SELECT current_user, current_setting('transaction_read_only') ro, (SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user) bypassrls, (SELECT rolconnlimit FROM pg_roles WHERE rolname = current_user) connlimit, has_any_column_privilege('public.sns_oauth_tokens', 'SELECT') tokens, (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace WHERE n.nspname = 'public' AND c.relkind IN ('r','p','v','m') AND NOT has_table_privilege(c.oid, 'SELECT')) unreadable"
 ```
 
 期待: `claude_ro` / `on` / `true` / `2` / `false` / `1`（読めないのは sns_oauth_tokens の1つだけ）。
@@ -42,7 +52,13 @@ RLS が効いていないこと（0行に化けないこと）は、RLS の付�
 node --env-file=.env.local scripts/db/ro-query.js "SELECT (SELECT count(*) FROM races) races, (SELECT count(*) FROM race_entries) race_entries, (SELECT count(*) FROM sns_drafts) sns_drafts"
 ```
 
-同じ3つを service_role（`SUPABASE_SERVICE_KEY` の PostgREST、`Prefer: count=exact`）で数え、一致すること。確かめたら APPLIED.md の 166 を「適用済み」にする。
+同じ3つを service_role（`SUPABASE_SERVICE_KEY` の PostgREST、`Prefer: count=exact`）で数え、一致すること。races・race_entries は開催中に増えるので、ずれたら前日までの `race_date` で絞って数え直す。
+
+```bash
+node --env-file=.env.local scripts/db/ro-query.js "SELECT current_setting('app.settings.jwt_secret', true) IS NULL jwt_absent, (SELECT count(*) FROM pg_auth_members WHERE member = 'claude_ro'::regrole) memberships"
+```
+
+期待: `true` / `0`。確かめたら APPLIED.md の 166 を「適用済み」にする。
 
 ## 戻し方
 
@@ -54,3 +70,5 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE SELECT ON TAB
 REVOKE USAGE ON SCHEMA public FROM claude_ro;
 DROP ROLE claude_ro;
 ```
+
+DROP ROLE が「owner of large object」で失敗したら、先に `SELECT lo_unlink(oid) FROM pg_largeobject_metadata WHERE lomowner = 'claude_ro'::regrole;` を実行する。

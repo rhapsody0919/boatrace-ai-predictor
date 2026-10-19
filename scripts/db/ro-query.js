@@ -48,7 +48,11 @@ async function main() {
   });
   await client.connect();
   try {
-    const result = await runReadOnlyQuery(client, sql, { limit });
+    // 拡張問い合わせのプロトコルにすると、サーバーの側でも1つの問い合わせに1文しか通らない
+    const extended = {
+      query: (text) => client.query({ text, queryMode: "extended" }),
+    };
+    const result = await runReadOnlyQuery(extended, sql, { limit });
     console.log(
       opts.json ? JSON.stringify(result, null, 2) : formatResult(result),
     );

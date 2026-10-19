@@ -10,7 +10,8 @@
  *   (e) sns_oauth_tokens は読めない。166 の後に postgres が作る表は読める（既定権限）
  *   (f) runReadOnlyQuery: 上限＋1行で打ち切りを判定、失敗しても必ず ROLLBACK、ロールが違えば実行しない、
  *       書き込みの CTE・READ ONLY を外す set_config は失敗する
- *   (g) 166 の末尾の検査: PUBLIC が EXECUTE できる VOLATILE な SECURITY DEFINER 関数があれば例外で全体を戻す
+ *   (g) 166 の末尾の検査: claude_ro が呼べる SECURITY DEFINER 関数（STABLE でも）・列単位の書き込みの GRANT・
+ *       public 以外のスキーマの書き込みと CREATE・秘密らしい名前のデータベースの設定があれば例外で全体を戻す
  *   (h) SCRAM の検証子: pg のクライアント（lib/crypto/sasl.js）の証明を、検証子だけで検証できる
  *   (i) ro-setup.js の .env.local の書き換え: 既にあれば --force なしで止まる
  *
@@ -100,6 +101,8 @@ check(
 for (const bad of [
   "postgresql://postgres.abcdefghijklmnopqrst:pw@h:5432/postgres",
   "postgresql://claude_rox:pw@h:5432/postgres",
+  "postgresql://claude_ro.abcdefghijklmnopqrst:pw@h:5432/postgres?user=postgres",
+  "postgresql://claude_ro.abcdefghijklmnopqrst:pw@h:5432/postgres?options=-c%20role%3Dpostgres",
   "not a url",
   undefined,
 ]) {
@@ -143,10 +146,6 @@ CREATE FUNCTION public.writer() RETURNS void LANGUAGE sql SECURITY DEFINER
   AS $$ INSERT INTO public.races VALUES ('W', 'w') $$;
 REVOKE ALL ON FUNCTION public.writer() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.writer() TO service_role;
--- 読み取りだけの SECURITY DEFINER 関数（STABLE。PUBLIC が呼べても書けない）
-CREATE FUNCTION public.reader() RETURNS bigint LANGUAGE sql STABLE SECURITY DEFINER
-  AS $$ SELECT count(*) FROM public.races $$;
-GRANT EXECUTE ON FUNCTION public.reader() TO PUBLIC;
 `;
 
 async function freshDb(extraSql = "") {
@@ -198,10 +197,6 @@ async function asRole(db, role, fn) {
     runReadOnlyQuery(db, "SELECT count(*)::int AS n FROM races_view"),
   );
   check("security_invoker のビューも全行読める", viaView.rows[0]?.n === 3);
-  const reader = await asRole(db, "claude_ro", () =>
-    runReadOnlyQuery(db, "SELECT reader()::int AS n"),
-  );
-  check("STABLE な SECURITY DEFINER 関数は呼べる", reader.rows[0]?.n === 3);
 
   // (d) READ ONLY を外しても書けない（ro-query.js を通さない直の接続を想定）
   const direct = (sql) =>
@@ -298,26 +293,80 @@ async function asRole(db, role, fn) {
   await db.close();
 }
 
-// (g) 166 の末尾の検査
+// (f2) ROLLBACK も失敗したとき、元のエラーを返す
 {
-  const db = await freshDb(`
-CREATE FUNCTION public.legacy_writer() RETURNS void LANGUAGE sql SECURITY DEFINER
-  AS $$ DELETE FROM public.races $$;
-GRANT EXECUTE ON FUNCTION public.legacy_writer() TO PUBLIC;
-`);
+  const fake = {
+    query: async (text) => {
+      if (text.startsWith("SELECT current_user")) return { rows: [{ role: "claude_ro", ro: "on" }] };
+      if (text.startsWith("DECLARE")) throw new Error("canceling statement due to statement timeout");
+      if (text === "ROLLBACK") throw new Error("Client was closed and is not queryable");
+      return { rows: [] };
+    },
+  };
+  const origError = console.error;
+  console.error = () => {};
+  const r = await rejects(() => runReadOnlyQuery(fake, "SELECT 1"));
+  console.error = origError;
+  check("ROLLBACK の失敗で元のエラーを上書きしない", /statement timeout/.test(r.message ?? ""), r.message);
+}
+
+// (g) 166 の末尾の検査。どれも例外になり、claude_ro は作られない（全体が戻る）
+for (const [label, extraSql, pattern] of [
+  [
+    "PUBLIC が呼べる VOLATILE な SECURITY DEFINER 関数",
+    `CREATE FUNCTION public.legacy_writer() RETURNS void LANGUAGE sql SECURITY DEFINER
+       AS $$ DELETE FROM public.races $$;
+     GRANT EXECUTE ON FUNCTION public.legacy_writer() TO PUBLIC;`,
+    /legacy_writer/,
+  ],
+  [
+    "STABLE な SECURITY DEFINER 関数（中で VOLATILE な関数を呼べば書ける）",
+    `CREATE FUNCTION public.vw() RETURNS int LANGUAGE sql VOLATILE
+       AS $$ INSERT INTO public.races VALUES ('LEAK', 'x') RETURNING 1 $$;
+     REVOKE ALL ON FUNCTION public.vw() FROM PUBLIC;
+     CREATE FUNCTION public.st() RETURNS int LANGUAGE sql STABLE SECURITY DEFINER
+       AS $$ SELECT public.vw() $$;
+     GRANT EXECUTE ON FUNCTION public.st() TO PUBLIC;`,
+    /public\.st\(\)|st\(\)/,
+  ],
+  [
+    "列単位の UPDATE の GRANT",
+    "GRANT UPDATE (note) ON public.races TO PUBLIC;",
+    /races\(UPDATE\)/,
+  ],
+  [
+    "public 以外のスキーマの表への書き込み",
+    `CREATE SCHEMA ext; GRANT USAGE ON SCHEMA ext TO PUBLIC;
+     CREATE TABLE ext.t (x int); GRANT INSERT ON ext.t TO PUBLIC;`,
+    /ext\.t\(INSERT\)/,
+  ],
+  [
+    "public 以外のスキーマへの CREATE",
+    "CREATE SCHEMA ext2; GRANT USAGE, CREATE ON SCHEMA ext2 TO PUBLIC;",
+    /CREATE できるスキーマがある: ext2/,
+  ],
+  [
+    "シーケンスの USAGE",
+    "CREATE SEQUENCE public.s1; GRANT USAGE ON SEQUENCE public.s1 TO PUBLIC;",
+    /シーケンス/,
+  ],
+  [
+    "データベースの設定の秘密（値は出さない）",
+    "ALTER DATABASE postgres SET app.settings.jwt_secret = 'super-secret-value';",
+    /app\.settings\.jwt_secret/,
+  ],
+]) {
+  const db = await freshDb(extraSql);
   const r = await rejects(() => db.exec(MIGRATION));
-  check(
-    "166: PUBLIC が呼べる書き込みの SECURITY DEFINER 関数があれば例外",
-    r.rejected && /legacy_writer/.test(r.message),
-    r.message,
-  );
+  check(`166: 例外になる: ${label}`, r.rejected && pattern.test(r.message), r.message ?? "通った");
+  if (/jwt_secret/.test(extraSql)) {
+    check("166: 秘密の設定の値はエラーの文に出さない", !/super-secret-value/.test(r.message ?? ""));
+  }
   await db.exec("ROLLBACK").catch(() => {});
   const exists = (
-    await db.query(
-      "SELECT count(*)::int AS n FROM pg_roles WHERE rolname='claude_ro'",
-    )
+    await db.query("SELECT count(*)::int AS n FROM pg_roles WHERE rolname='claude_ro'")
   ).rows[0].n;
-  check("166: 例外のとき claude_ro は作られない（全体が戻る）", exists === 0);
+  check(`166: 例外のとき claude_ro は作られない: ${label}`, exists === 0);
   await db.close();
 }
 {
