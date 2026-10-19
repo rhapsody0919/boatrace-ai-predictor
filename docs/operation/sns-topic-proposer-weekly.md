@@ -41,7 +41,7 @@
 
 先頭から順に候補を1件ずつ検証し、2〜5の手順（本文作成→チャネル判定→登録→使用履歴更新）を最後まで実施できた候補を「登録成功」としてカウントする。目標件数に達するまで、または全ソースの候補が尽きるまで次の候補に進む。実データの裏付けが取れない・射幸心を煽る等で不適格と判断した候補は登録せず、使用履歴も更新せずに次点候補へ切り替える（1で失敗した候補を消費したことにしない）。目標件数に届かず候補が尽きた場合は、そこまでの登録成功分だけを結果として報告する（不足分を無理に埋めない）。
 
-- `venueCode`の表示名は`VENUE_NAMES[venueCode]`（`scripts/lib/supabaseClient.js`）から取得する。手打ち禁止（`sns-video-producer-prompt.md`絶対厳守12と同じ理由）
+- `venueCode`の表示名は`VENUE_NAMES[venueCode]`（`scripts/lib/supabaseClient.js`）から取得する。手打ち禁止（`sns-video-producer-prompt.md`絶対厳守9と同じ理由）
 - `venue-characteristic`の`angle`別データ確認方法は「2-A. 会場特性ネタの本文作成」を参照
 - `data-insight`の`tabId`別データ確認方法は「2-B. 機能紹介ネタの本文作成」を参照
 - `trivia`の`angle`別データ確認方法・フォロー獲得のための訴求の型は「2-C. 豆知識ネタの本文作成」を参照

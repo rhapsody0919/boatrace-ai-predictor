@@ -14,7 +14,7 @@
  * 3) growthSkills  … data/analysis/{x,note}-growth/ の最新レポート鮮度
  * 4) contentIndex  … docs/design/content-ops-flow/spec.md C5
  * 5) qualityBacklog… docs/design/content-ops-flow/spec.md C6
- * 6) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub型選定ロジックへの素材提示）
+ * 6) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub の型・題材の選び方への素材提示）
  * 7) deprecatedTerms… docs/reference/deprecated-terms.json に対する grep 検知（content-ops.md フローC-10）
  * 8) missingContentIndex… AppRouter.jsxの新規ルートのうちcontent-index.json
  *     未カバーのものを検知（content-ops.md フローA-1）。「PRマージを単一
