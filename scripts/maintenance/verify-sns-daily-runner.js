@@ -58,15 +58,21 @@ const store = {
         [from, to],
       )
     ).map((r) => ({ ...r, day: r.day.toISOString().slice(0, 10) })),
+  // 本番の PostgREST の一括 upsert と同じく1文で入れる（同じキーの行が2つあると Postgres が文ごと拒む）
   async upsert(rows) {
     upserts.push(rows.length);
-    for (const r of rows)
-      await db.query(
-        `INSERT INTO sns_channel_daily(${COLS.join(",")}) VALUES(${COLS.map((_, i) => `$${i + 1}`).join(",")})
-         ON CONFLICT ON CONSTRAINT sns_channel_daily_key DO UPDATE SET metric_value=EXCLUDED.metric_value,
-           missing_reason=EXCLUDED.missing_reason, observed_at=EXCLUDED.observed_at`,
-        COLS.map((c) => r[c]),
-      );
+    const values = rows
+      .map(
+        (_, i) =>
+          `(${COLS.map((__, j) => `$${i * COLS.length + j + 1}`).join(",")})`,
+      )
+      .join(",");
+    await db.query(
+      `INSERT INTO sns_channel_daily(${COLS.join(",")}) VALUES ${values}
+       ON CONFLICT ON CONSTRAINT sns_channel_daily_key DO UPDATE SET metric_value=EXCLUDED.metric_value,
+         missing_reason=EXCLUDED.missing_reason, observed_at=EXCLUDED.observed_at`,
+      rows.flatMap((r) => COLS.map((c) => r[c])),
+    );
   },
 };
 let videos = [];
@@ -560,5 +566,68 @@ test("PostgREST の store: 全貌の下書きは race_id で引き、投稿の�
   assert.match(
     urls[0],
     /sns_drafts\?format=eq\.full_picture&source_data->full_picture->>race_id=in\.\(2026-10-13-04-12,2026-10-13-05-01\)&select=id,platform,posted_at,race_id:source_data->full_picture->>race_id/,
+  );
+});
+
+test("下書きの ID の UTM に utm_term の違う行が2つ来ても、足して1行にし一括 upsert が落ちない（審査 P2）", async () => {
+  const result = await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4([], {
+      utm: [["20261014", "x", "race-full", draftId, "manual-test", 3, 4]],
+    }),
+  });
+  assert.equal(result.outcome, undefined);
+  const got = await all(
+    "SELECT metric_name, metric_value::float v FROM sns_channel_daily WHERE day='2026-10-14' AND utm_content=$1 ORDER BY metric_name",
+    [draftId],
+  );
+  assert.deepEqual(
+    got.map((r) => [r.metric_name, r.v]),
+    [
+      ["sessions", 6],
+      ["sonar_users", 1],
+      ["users", 5],
+    ],
+  );
+});
+
+test("全貌: JST で翌日になる投稿（UTC 15:00 以降）は JST の日付で数え、投稿済みが2つなら早い方、流入元の大文字・知らない term もそろえる", async () => {
+  const race = "2026-10-13-05-02";
+  const ins = (platform, postedAt) =>
+    first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at,source_data) VALUES(gen_random_uuid(),'full_picture',$1,'ja','全貌','本文','posted',$2,$3) RETURNING id",
+      [platform, postedAt, { full_picture: { race_id: race } }],
+    );
+  // UTC 10/12 15:30 = JST 10/13 00:30 に投稿（JST の投稿日は 10/13、翌日は 10/14）
+  const early = (await ins("x", "2026-10-12T15:30:00Z")).id;
+  await ins("x", "2026-10-13T05:00:00Z");
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4([], {
+      utm: [
+        ["20261013", "X", "race-full", race, "FULL", 2, 2],
+        ["20261014", "x", "race-full", race, "abc", 1, 1],
+        ["20261015", "x", "race-full", race, "full", 9, 9],
+      ],
+    }),
+  });
+  const got = await all(
+    "SELECT day::text, channel, draft_id, metric_value::float v, definition FROM sns_channel_daily WHERE utm_content=$1 AND metric_name='users' ORDER BY day",
+    [race],
+  );
+  assert.deepEqual(
+    got.map((r) => [
+      r.day,
+      r.channel,
+      r.draft_id === early,
+      r.v,
+      /utm_term=([^・]+)/.exec(r.definition)[1],
+    ]),
+    [
+      ["2026-10-13", "x", true, 2, "full"],
+      ["2026-10-14", "x", true, 1, "その他"],
+    ],
   );
 });

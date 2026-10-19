@@ -3,7 +3,8 @@
  *
  * - YouTube Analytics（太平洋時間の暦日）: チャネル全体の日次と、動画ごとの「投稿日＋翌日」の日次（版の判定に使う）。
  *   確定まで数日かかるので、毎日 D−3〜D−1（太平洋時間）を取り直す
- * - GA4（JST の暦日）: X・YouTube から来た人のチャネル全体の日次と、X の投稿の UTM（race-full・today_digest）ごとの日次。
+ * - GA4（JST の暦日）: X・YouTube から来た人のチャネル全体の日次と、投稿の UTM ごとの日次（X の下書きの ID の race-full・
+ *   today_digest、全貌動画の utm_content=race_id は X・YouTube と utm_term ごとに投稿日と翌日だけ）。
  *   それぞれ「龍神ソナーのタブを開いた人」も。毎日 D−3〜D−1（JST）を取り直す。流入元のリストは scripts/lib/snsGa4.js
  * - 値が変わった行だけ書く（読み直して比べる。取得のたびに全行を UPDATE しない）
  * - チャネル全体の日次は行が無い日も埋める（YouTube は「行を返さない」の欠測、GA4 は0）。UTM ごとの日次は行がある分だけ
@@ -125,6 +126,11 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
     }
   }
 
+  // 同じキーの行が2つあると、本番の一括 upsert（1文の INSERT … ON CONFLICT）が「同じ行を2回更新」で文ごと拒まれる。
+  // GA4 の次元を足したことで同じキーに複数の行が来うる（例: 下書きの ID の UTM に utm_term を付けた来訪）ので、値を足して1行にする
+  const merged = mergeSameKey(rows);
+  rows.length = 0;
+  rows.push(...merged);
   const from = [...jstDays, ...ptDays].sort()[0];
   const to = [...jstDays, ...ptDays].sort().at(-1);
   const existing = new Map(
@@ -332,8 +338,25 @@ async function collectGa4({ runReport, store, jstDays, push }) {
     )
       fpDraft.set(key, d);
   }
-  const utmRow = (date, source, campaign, content, term, metric, value) => {
+  const utmRow = (
+    date,
+    rawSource,
+    campaign,
+    content,
+    rawTerm,
+    metric,
+    value,
+  ) => {
     const day = ga4Day(date);
+    // GA4 の inList は大文字小文字を区別しないので、比べる前にそろえる
+    const source = String(rawSource).toLowerCase();
+    // 合意している utm_term は full・shorts だけ。未設定は空、それ以外は「その他」に寄せる
+    const term =
+      rawTerm === "(not set)" || !rawTerm
+        ? ""
+        : ["full", "shorts"].includes(String(rawTerm).toLowerCase())
+          ? String(rawTerm).toLowerCase()
+          : "その他";
     if (RACE_ID_RE.test(content)) {
       if (campaign !== "race-full") return;
       const channel = source === "youtube" ? "youtube" : "x";
@@ -351,11 +374,7 @@ async function collectGa4({ runReport, store, jstDays, push }) {
         metric_name: metric,
         metric_value: value,
         missing_reason: null,
-        definition: def.ga4FullPicture(
-          metric,
-          source,
-          term === "(not set)" ? "" : term,
-        ),
+        definition: def.ga4FullPicture(metric, source, term),
       });
       return;
     }
@@ -388,6 +407,23 @@ async function collectGa4({ runReport, store, jstDays, push }) {
   }
   for (const [date, source, campaign, content, term, users] of utmSonar)
     utmRow(date, source, campaign, String(content), term, "sonar_users", users);
+}
+
+/** 一意キーが同じ行を1行にする（値は足す。欠測の行は値のある行に負ける）。GA4 の値はどれも人数・回数なので足せる */
+export function mergeSameKey(rows) {
+  const byKey = new Map();
+  for (const row of rows) {
+    const key = rowKey(row);
+    const prev = byKey.get(key);
+    if (!prev) byKey.set(key, { ...row });
+    else if (row.metric_value !== null)
+      byKey.set(key, {
+        ...prev,
+        metric_value: (prev.metric_value ?? 0) + row.metric_value,
+        missing_reason: null,
+      });
+  }
+  return [...byKey.values()];
 }
 
 /** YouTube Analytics の reports（channel==MINE）。行を {day, 指標...} にする */
