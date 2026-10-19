@@ -4,7 +4,7 @@
 
 ## 保存・読み取り
 
-136を適用後、管理用 `POST /api/admin/sns-hub/observations` に次のJSONを渡す。CSVからの補完もこの契約へ変換し、`source=csv` と定義・分母を明記する。CSVファイルのパーサー・一括インポート画面は含まない。旧 `/drafts/:id/metrics` は互換性維持のため変更せず、窓のない旧値を比較へ混ぜない。
+136を適用後、管理用 `POST /api/admin/sns-hub/observations` に次のJSONを渡す。CSVからの補完もこの契約へ変換し、`source=csv` と定義・分母を明記する。CSVファイルのパーサー・一括インポート画面は含まない。旧 `/drafts/:id/metrics` は互換性維持のため変更せず、窓のない旧値を比較へ混ぜない（旧 API は呼び出し元が無くなったため 2026-10-19 に削除。表 `sns_draft_metrics` は旧値の記録として残す）。
 
 ```json
 {
