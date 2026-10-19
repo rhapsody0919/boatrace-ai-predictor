@@ -5,7 +5,7 @@
  * （全体ルール、Tier1）、docs/operation/sns-pipeline-{platform}.md
  * （チャネル別ルール、Tier2）、docs/operation/sns-video-producer-prompt.md・
  * x-operations-playbook.md・docs/reference/sns-brand-guideline.md
- * （X/TikTok動画制作の実装詳細）の内容を要約し、元ドキュメントへの
+ * （X・YouTube Shorts の動画制作の実装詳細）の内容を要約し、元ドキュメントへの
  * GitHubリンクを添えたもの（ADR 0031参照）。
  *
  * 元ドキュメントが更新されても自動追従しない。ドキュメント更新時は
@@ -69,12 +69,6 @@ export const CHANNEL_RULES = [
     docLabel: "sns-pipeline-x.md",
   },
   {
-    platform: "tiktok",
-    label: "TikTok",
-    docPath: "docs/operation/sns-pipeline-tiktok.md",
-    docLabel: "sns-pipeline-tiktok.md",
-  },
-  {
     platform: "youtube",
     label: "YouTube",
     docPath: "docs/operation/sns-pipeline-youtube.md",
@@ -87,7 +81,7 @@ export const FORMAT_LIBRARY = [
     name: "予想数値フック型",
     status: "実装済み",
     summary:
-      "AIの逃げ確率等をフックにする型。本日開催中・結果未確定のレースが前提。TikTok向けは実画面スクショ不要版（LivePredictionHookCM.jsx）があり、展開予測TOP3・イン崩れ注意度カードをRemotionで再現している。",
+      "AIの逃げ確率等をフックにする型。本日開催中・結果未確定のレースが前提。実画面スクショ不要版（LivePredictionHookCM.jsx）があり、展開予測TOP3・イン崩れ注意度カードをRemotionで再現している。",
     docPath: "docs/operation/sns-video-producer-prompt.md",
     docLabel: "sns-video-producer-prompt.md",
   },
@@ -165,7 +159,7 @@ export const SHARED_COMPONENTS = [
   {
     name: "SceneHook（会場攻略・データ一覧型、案Aデザイン）",
     summary:
-      "巨大な順位数字を画面左端からはみ出させる、意図的な非対称配置。TikTokプロフィールグリッドの縮小表示（横幅120px程度）でも視認できるよう、2026-08-24に複数回のレビューを経て採用した設計。新しい非対称配置を検討する際はこの前例を踏襲する",
+      "巨大な順位数字を画面左端からはみ出させる、意図的な非対称配置。プロフィールのグリッドの縮小表示（横幅120px程度）でも視認できるよう、複数回のレビューを経て採用した設計。新しい非対称配置を検討する際はこの前例を踏襲する",
     docPath: "sns-video-studio/remotion/src/VenueRankingCM.jsx",
     docLabel: "VenueRankingCM.jsx",
     imagePath: "/sns-hub-catalog/scene-hook.png",
@@ -202,7 +196,7 @@ export const SHARED_COMPONENTS = [
   },
   {
     name: "snsVideoShared.jsx: SceneCTA",
-    summary: "X/TikTok向け動画の共通CTAシーン",
+    summary: "X・YouTube Shorts 向け動画の共通CTAシーン",
     docPath: "sns-video-studio/remotion/src/snsVideoShared.jsx",
     docLabel: "snsVideoShared.jsx",
   },

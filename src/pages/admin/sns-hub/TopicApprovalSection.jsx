@@ -6,7 +6,7 @@ import {
 } from "../../../services/snsHubService";
 import {
   TOPIC_REJECTION_REASONS,
-  TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS,
+  PERMANENTLY_EXCLUDED_CATEGORY_KEYS,
   PLATFORM_LABELS,
 } from "./constants.js";
 import { formatDateTime, isTodayJST } from "./utils";
@@ -20,18 +20,16 @@ import {
 } from "./DraftCard.jsx";
 
 // PLATFORM_TABSと同じ表示順・ラベルを使う（sns_target_accounts.platformの語彙と一致）
-const CATEGORY_CHANNEL_PLATFORMS = ["blog", "note", "x", "tiktok", "youtube"];
+const CATEGORY_CHANNEL_PLATFORMS = ["blog", "note", "x", "youtube"];
 const CATEGORY_CHANNEL_LABELS = {
   blog: "Blog",
   note: "Note",
   x: "X",
-  tiktok: "TikTok",
   youtube: "YouTube",
 };
 
-// ネタの型（会場特性・選手調子・イン崩れ注意度等）×チャネルのON/OFF設定画面
-// （2026-09-03新設）。TikTokはガイドライン上センシティブなため、型ごとに
-// チャネル可否を人間が直接編集できるようにする（channelMatrix.js・各Routineの
+// ネタの型（会場特性・選手調子・イン崩れ注意度等）×チャネルのON/OFF設定画面。
+// 型ごとにチャネル可否を人間が直接編集できるようにする（各Routineの
 // プロンプト文言に散在していた判断をデータに寄せる）
 function TopicCategorySettingsTab({ categories, onToggleChannel }) {
   if (categories.length === 0) {
@@ -45,11 +43,11 @@ function TopicCategorySettingsTab({ categories, onToggleChannel }) {
   return (
     <div className="topic-category-settings">
       <p className="topic-category-settings-hint">
-        ネタの型ごとに、各チャネルへの生成対象可否を設定できます。特にTikTokはガイドライン上センシティブなため、実績を見ながら個別に調整してください。廃止済みの型は行がグレーアウトします。
+        ネタの型ごとに、各チャネルへの生成対象可否を設定できます。プラットフォームのガイドライン上センシティブな型は、実績を見ながら個別に調整してください。廃止済みの型は行がグレーアウトします。
       </p>
       <p className="topic-category-settings-hint">
-        例1: 「イン崩れ注意度」でTikTokの投稿が制限を受けた
-        →「イン崩れ注意度」行のTikTok列をOFFにする（他チャネルはそのまま）。
+        例1: 「イン崩れ注意度」でYouTubeの投稿が制限を受けた
+        →「イン崩れ注意度」行のYouTube列をOFFにする（他チャネルはそのまま）。
         例2: 「豆知識型」は成績・確率と無関係
         →全チャネルONのままでよい。ℹ️アイコンがある行は除外理由をホバーで確認できる。
       </p>
@@ -571,7 +569,7 @@ export default function TopicApprovalSection({
       ["daily-auto", "race-time-critical"].includes(
         c.sns_content_types?.type_key,
       ) &&
-      !TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
+      !PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
   );
   // 週次ネタ提案の型（カテゴリ）を人間が優先指定できるようにする（2026-09-06、
   // ユーザー要望。日次ネタ自動提案の型指定と同じ仕組みをvenue-feature型にも
@@ -582,7 +580,7 @@ export default function TopicApprovalSection({
     (c) =>
       c.active &&
       c.sns_content_types?.type_key === "venue-feature" &&
-      !TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
+      !PERMANENTLY_EXCLUDED_CATEGORY_KEYS.includes(c.category_key),
   );
 
   const weeklyProposer = useTopicProposerTrigger({

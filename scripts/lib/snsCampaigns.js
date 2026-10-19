@@ -36,7 +36,6 @@ function assertSupabaseEnabled() {
  * @param {string} params.startDate - 'YYYY-MM-DD'
  * @param {number} params.durationDays
  * @param {string[]} params.targetChannels
- * @param {string} [params.tiktokDecisionNote]
  * @param {object} params.selectionCriteria - 例: {metric:'volatilityPercentile', operator:'>=', value:0.99}
  * @param {number} params.purchaseAmountYen
  */
@@ -48,7 +47,6 @@ export async function createCampaign({
   startDate,
   durationDays,
   targetChannels,
-  tiktokDecisionNote,
   selectionCriteria,
   purchaseAmountYen,
 }) {
@@ -63,7 +61,6 @@ export async function createCampaign({
       start_date: startDate,
       duration_days: durationDays,
       target_channels: targetChannels,
-      tiktok_decision_note: tiktokDecisionNote,
       selection_criteria: selectionCriteria,
       purchase_amount_yen: purchaseAmountYen,
     })

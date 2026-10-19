@@ -39,7 +39,6 @@ claude.ai UI（`claude.ai/code/routines`）と`RemoteTrigger get`で全15件を�
 | `sns-topic-proposer-weekly` | `trig_01NNE7jviPWqqgjctimGzJF5` | `0 18 * * *` | 毎日3:00（月曜のみ実行） | false | `TOPIC_PROPOSER_WEEKLY_ROUTINE` |
 | `sns-topic-proposer-daily-auto` | `trig_01B155yYLeutCbMzhMAh8n5j` | `0 18 * * *` | 毎日3:00 | false | `TOPIC_PROPOSER_DAILY_AUTO_ROUTINE` |
 | `sns-pipeline-x` | `trig_01F33qUruzoQnTmyu2mySqvq` | `38 * * * *` | 毎時38分 | false | `SNS_X_ROUTINE` |
-| `sns-pipeline-tiktok` | `trig_01JHCnHuuVYWgRUNh1tw4m7H` | `15 * * * *` | 毎時15分 | false | `SNS_TIKTOK_ROUTINE` |
 | `sns-pipeline-blog` | `trig_01MBJ5YYkkULbsDTgesTJ9tc` | `55 * * * *` | 毎時55分 | false | `SNS_BLOG_ROUTINE` |
 | `sns-pipeline-note` | `trig_01YRpmbVvnoMXA4qkVciyQov` | `10 * * * *` | 毎時10分 | false | `SNS_NOTE_ROUTINE` |
 | `sns-pipeline-youtube` | `trig_01SaVkryqNWbxNAHxZ11LK9t` | `1 * * * *` | 毎時1分 | false | `SNS_YOUTUBE_ROUTINE` |

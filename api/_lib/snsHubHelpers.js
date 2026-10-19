@@ -83,7 +83,7 @@ export const SITE_BASE_URL = "https://www.boat-ai.jp";
  * blog/noteチャネルは`docs/operation/sns-pipeline-blog.md`/`sns-pipeline-note.md`の
  * 設計により、Supabase Storageにアップロードせず`public/images/blog/{slug}.jpg`
  * （リポジトリにコミット済みの静的アセット、本番では`{SITE_BASE_URL}/images/blog/{slug}.jpg`
- * として配信される）をそのまま`cover_image_path`に記録する。X/TikTok/YouTubeは
+ * として配信される）をそのまま`cover_image_path`に記録する。X/YouTubeは
  * `{content_group_id}/x-ja.jpg`のようなsns-hub-media（Storage）内の生パスを使う。
  * 両者は同じ列に異なる種類のパスが混在するため、形状で判定して分岐する
  * （2026-09-05発覚: この分岐が無く全パスをStorage署名対象として扱っていたため、
@@ -230,7 +230,6 @@ export const PLATFORM_ROUTINE_ENV_PREFIX = {
   blog: "SNS_BLOG_ROUTINE",
   note: "SNS_NOTE_ROUTINE",
   x: "SNS_X_ROUTINE",
-  tiktok: "SNS_TIKTOK_ROUTINE",
   youtube: "SNS_YOUTUBE_ROUTINE",
 };
 

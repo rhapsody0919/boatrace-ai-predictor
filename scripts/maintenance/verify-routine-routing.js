@@ -14,10 +14,11 @@ const CASES = [
   { platform: "blog", expected: "SNS_BLOG_ROUTINE" },
   { platform: "note", expected: "SNS_NOTE_ROUTINE" },
   { platform: "x", expected: "SNS_X_ROUTINE" },
-  { platform: "tiktok", expected: "SNS_TIKTOK_ROUTINE" },
   { platform: "youtube", expected: "SNS_YOUTUBE_ROUTINE" },
   // 未展開・不明なplatformはフォールバック（ADR 0037の段階展開中の暫定措置）
   { platform: "instagram", expected: "SNS_HUB_ROUTINE" },
+  // TikTok は運用をやめたので専用の Routine は無い（過去の tiktok の下書きはフォールバック）
+  { platform: "tiktok", expected: "SNS_HUB_ROUTINE" },
   { platform: undefined, expected: "SNS_HUB_ROUTINE" },
 ];
 

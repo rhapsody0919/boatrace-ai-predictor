@@ -139,7 +139,7 @@
 
 `getEnabledChannelsForCategory(categoryKey)`（`scripts/lib/snsTopics.js`）を、1.で選んだ候補の`sourceId`に対応する`categoryKey`（`sourceId: "venue-characteristic"`→`categoryKey: "venue-characteristic"`、`sourceId: "data-insight"`→`categoryKey: "feature-intro"`、`sourceId: "trivia"`→`categoryKey: "trivia"`）で呼び、有効なプラットフォーム一覧を取得する（2026-09-03更新、以前のchannelMatrix.js + isGamblingRelevantフラグから、`sns_topic_categories`/`sns_topic_category_channels`テーブルによるデータ駆動の判定に変更した）。
 
-**現在の方針（ユーザー設定、sns-hub「ネタ型設定」画面でいつでも変更可能）**: 3カテゴリとも角度・タブに関わらずTikTokを含める全面許容運用。「TikTokで削除・アカウント制限（コミュニティガイドライン違反）に至らない限り、配信制限（『おすすめ対象外』）は許容する」というリスク許容方針（`docs/operation/tiktok-posting-operations.md`D・F節参照）。**新たに違反判定・削除を受けた場合は、都度sns-hub「ネタ型設定」画面でTikTokをOFFに切り替え、`docs/operation/tiktok-posting-operations.md`に該当するカテゴリ・角度/タブ・投稿内容を記録する**（推測で先回り除外しない。実際に違反判定を受けた実績が出てから対応する運用）。このRoutine自身はチャネル可否をハードコードせず、テーブルの設定値をそのまま使う。
+**現在の方針（ユーザー設定、sns-hub「ネタ型設定」画面でいつでも変更可能）**: チャネル可否はテーブルの設定値をそのまま使う。プラットフォームから違反判定・削除を受けた場合は、都度sns-hub「ネタ型設定」画面でそのチャネルをOFFに切り替える（推測で先回り除外しない。実際に違反判定を受けた実績が出てから対応する）。このRoutine自身はチャネル可否をハードコードしない。
 
 **除外したチャネルもsns_topic_targets行自体は作られる**（4.参照）。sns-hub「ネタ承認」画面のチャネルトグルで、人間が個別にpending⇔skippedを変更できる。
 
