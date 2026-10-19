@@ -95,6 +95,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない。全件は手元で実行しない（複数のセッションが同じMacで同時に走らせると負荷が大きすぎるため）。手元で先に確かめたい場合は、変更に関係する個別の `npm run verify:*` だけを実行する
 - `CREATE OR REPLACE FUNCTION` で既存 RPC のキーを削除していないかは `npm run verify:rpc-key-regression`（SQLファイル同士の比較、本番接続不要）がPR時にCIで検知する。本番の実物との最終照合（`verify-rpc-output-keys.js`、本番接続が要る）は、本番に適用した直後に Claude が行う（Codex は本番に接続しない）
 - 新しいページ・分析タブ・主要機能を実装した場合は、対応する `docs/design/{slug}/content-index.json` を作成する（または `not_applicable: true` で対象外を明記する）。`docs/db-migration/` に新規マイグレーションを追加した場合は `docs/db-migration/APPLIED.md`（適用状況の台帳）に行を追加する（適用自体はユーザーが行うが、台帳への追記はマイグレーションファイルと同じPRに含める）
+- マイグレーションと ADR の番号は予約しない。PR を作るときに `origin/master` の最大＋1 を使う。CI の `verify:migration-numbers`（ADR は `verify:adr-numbers`）で落ちたら、その時の最大＋1 に自分で付け直す（SQL のファイル名・runbook・`APPLIED.md`・設計の docs の番号・それを読むテスト）。番号は master が正本で、問い合わせは要らない
 - `npm run test:e2e` は既定で録画を再生し、時計を録画時刻に固定する。録画に無い `/rest/v1/*`・`/api/*` は本番へ素通しし、PRコメントとstep summaryに一覧が出る（新しいクエリを足したPRで素通しが出るのは想定どおりで、撮り直しは不要）。録画の撮り直し（`npm run test:e2e:record`）は通常不要（`e2e-rerecord.yml` が毎日自動で行う）
 
 ### PR 時に CI で走るチェック
