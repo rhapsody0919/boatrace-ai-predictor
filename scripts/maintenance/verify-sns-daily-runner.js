@@ -479,6 +479,8 @@ test("全貌の UTM（utm_content=race_id）: X・YouTube を term ごとに分�
   // JST 10/13 17:00 に投稿（posted_at の JST の日付で数える。UTC では同じ日）
   const x = (await ins("x", "2026-10-13T08:00:00Z")).id;
   const yt = (await ins("youtube", "2026-10-13T08:05:00Z")).id;
+  // 作り直して push した未投稿の下書き（同じレース・チャネル）があっても、投稿された方を使う
+  await ins("x", null);
   await runSnsDaily(ctx(), {
     store,
     youtube: mockYoutube(),

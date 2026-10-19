@@ -322,9 +322,16 @@ async function collectGa4({ runReport, store, jstDays, push }) {
     raceIds.length ? store.fullPictureDrafts(raceIds) : [],
   ]);
   const knownIds = new Set(known);
-  const fpDraft = new Map(
-    fullPicture.map((d) => [`${d.race_id}|${d.platform}`, d]),
-  );
+  // 同じレース・チャネルに下書きが複数ある（作り直して push した等）ときは、投稿された中で最初のものを使う
+  const fpDraft = new Map();
+  for (const d of fullPicture.filter((d) => d.posted_at)) {
+    const key = `${d.race_id}|${d.platform}`;
+    if (
+      !fpDraft.has(key) ||
+      Date.parse(d.posted_at) < Date.parse(fpDraft.get(key).posted_at)
+    )
+      fpDraft.set(key, d);
+  }
   const utmRow = (date, source, campaign, content, term, metric, value) => {
     const day = ga4Day(date);
     if (RACE_ID_RE.test(content)) {
