@@ -578,7 +578,7 @@ check(
   );
   check(
     "台帳の確認の fetch に --depth を付けない（手元の clone を shallow にしない）",
-    !/--depth/.test(readFileSync(path.join(ROOT, "scripts/db/db-apply.js"), "utf8")),
+    !/["']--depth/.test(readFileSync(path.join(ROOT, "scripts/db/db-apply.js"), "utf8")),
   );
   check("notify は Environment prod-jobs（Slack の鍵）", /^ {4}environment: prod-jobs$/m.test(body("notify")));
   check(
