@@ -1190,6 +1190,11 @@
       "guards": "直前情報タブ「今節の足の推移と着順」（BOA-885、src/components/race/meetFormTrend.js）。走は今節展示情報の走だけで、着順・進入・オリジナル展示を race_id と艇番で突き合わせる（他の艇・他のレースの値が混ざらない）。F・欠・転を残す、値の無い指標のタブを出さない、展示が無い走を挟む区間は点線、縦軸に会場平均を含める、今節の初戦はカードを出さない"
     },
     {
+      "script": "verify-ro-query.js",
+      "tier": "ci",
+      "guards": "本番の読み取り専用ロール claude_ro（マイグレーション 166、ADR-0096）と scripts/db/ro-query.js。PGlite で 166 を適用し、RLS の表が0行に化けず全行読めること、READ ONLY を外しても表・SECURITY DEFINER の書き込み関数・public への CREATE で書けないこと、sns_oauth_tokens を読めないこと、PUBLIC が呼べる書き込みの SECURITY DEFINER 関数があれば 166 が例外で全体を戻すこと。ro-query の1文だけ・上限＋1行の打ち切り・必ず ROLLBACK・ロールの確認、SCRAM の検証子を pg のクライアントの証明で検証"
+    },
+    {
       "script": "verify-sns-full-picture-windows.js",
       "tier": "ci",
       "guards": "全貌動画の測り時（SQL167、2026-10-19 オーナー決定）: 全貌は day_end（投稿日の JST 23:00）と 24h の job・JST 23:00 を過ぎた投稿は 24h だけ・日付は JST、それ以外は 48h・7d のまま、観測の表の CHECK（day_end は投稿日の JST 23:00 だけ・窓の名前は4つ）、JS の窓（windowsFor・observationPeriod・全貌に 48h を入れない）、画面は既定の 48h で全貌を当日の値・7d に全貌を出さない・全貌は型の版の確認をしない、CSV と collector の窓、167-runbook.md の1回で貼る SQL が154の状態から通り確認が全部 true・2回目は止まる。PGlite、外部接続なし"
