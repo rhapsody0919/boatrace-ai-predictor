@@ -5,7 +5,7 @@ argument-hint: "<記事slug>（例: new-feature-analysis）"
 
 # ブログ記事公開パイプライン
 
-ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックを1コマンドで実行します。`.claude/rules/content-ops.md` の「新機能リリース時のブログ記事ルール」「ブログ記事の公開前品質チェック」の実務手順で、下の2（6観点）は `content-qa` が読む正本です。note/Xチャネルへの展開はsns-hubパイプラインが別途担うため、このコマンドの対象外。各ステップは省略せず全て実行してください。
+ブログ記事（`public/blog/{slug}.md`）の公開前品質チェックを1コマンドで実行します。`.claude/rules/content-ops.md` の「新機能リリース時のブログ記事ルール」「ブログ記事の公開前品質チェック」の実務手順で、下の2（7観点）は `content-qa` が読む正本です。note/Xチャネルへの展開はsns-hubパイプラインが別途担うため、このコマンドの対象外。各ステップは省略せず全て実行してください。
 
 ## 引数
 - `$ARGUMENTS`: 記事slug（例: `new-feature-analysis`）。`public/blog/{slug}.md` が存在すること
@@ -21,7 +21,7 @@ cat src/data/blog-posts/$ARGUMENTS.json
 
 - `src/data/blog-posts/$ARGUMENTS.json` があるか、`featured: true` かを確認する（形は `node scripts/maintenance/verify-blog-post-files.js`）
 
-### 2. 公開前品質チェック（6項目、パス/フェイルを明示）
+### 2. 公開前品質チェック（7項目、パス/フェイルを明示）
 
 `.claude/rules/content-ops.md` の基準に従い、以下を実際に検証する。チェックリストで済ませず、フェイルがあれば必ず修正してから次に進む。
 
@@ -43,12 +43,13 @@ cat src/data/blog-posts/$ARGUMENTS.json
    wc -m public/blog/$ARGUMENTS.md
    grep -n "## よくある質問\|!\[" public/blog/$ARGUMENTS.md
    ```
+7. **実装との照合**: 記事に書いた指標の定義・集計の期間・名称・確かめる先のタブ名を、今のコード（`src/`・`api/`・`scripts/`）と画面に1つずつ照らす。過去の時点の値・実例は「当時の値」と明記されているかを見る（2026-10-13 追加。#1511 の記事が4つのレビューを通ったのに、定義・期間・因子・タブ名が実装と食い違っていたため）
 
 ### 2.5 4つのレビュー（段階0 F の条件）
 
 次の4つを通し、結果を PR コメントに書く。どれかで不合格・P0・P1 が出たら直して、そのレビューを回し直す。
 
-1. `content-qa`（上の6観点）で不合格が0
+1. `content-qa`（上の7観点）で不合格が0
 2. `wording-editor` で P0・P1 が0
 3. ファンのレビュー（`boatrace-fan-reviewer` か `discussion-panel`）で P0・P1 が0
 4. `seo-marketer` で P0・P1 が0
@@ -74,6 +75,6 @@ npm run verify:sitemap
 ### 5. 完了報告（省略不可）
 
 チャット本文に必ず含める:
-- 品質チェック6項目の結果（パス/フェイル、フェイルへの対応）
+- 品質チェック7項目の結果（パス/フェイル、フェイルへの対応）
 - 4つのレビューの結果（P0・P1 の件数と対応）
 - featured記事の場合は英語版の有無

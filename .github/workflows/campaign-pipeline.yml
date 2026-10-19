@@ -35,6 +35,7 @@ env:
 
 jobs:
   campaign-pipeline:
+    environment: prod-jobs
     runs-on: ubuntu-latest
 
     steps:

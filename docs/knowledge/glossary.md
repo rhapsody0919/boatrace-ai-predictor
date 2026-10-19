@@ -5,6 +5,7 @@
 ## 禁止語
 - 画面・ブログ本文・見出し・SNS の本文/ナレーション/焼き込み文字で「競艇」は使わず「ボートレース」。役所広告の出稿対象から外れるため（2026-09-29、.claude/rules/code-style.md、memory kyoutei_terminology_ban_rationale）
 - 例外は2つだけ。①画面に出ないメタ情報（title・meta description・keywords・OGP/Twitter カード）②SNS のハッシュタグ #競艇。どちらも暫定で、①は役所へ営業する前に外す、②は GA4 の月間ユーザー（直近28日）が1000人になったら止める（2026-09-29・2026-10-08 ユーザー判断、code-style.md）
+- ブログの title・meta には「競艇」を入れてよい。入れるのは記事 JSON の metaTitle・metaDescription（<title>・meta description・OGP/Twitter にだけ使う）で、画面に出る title・description（h1・一覧カード・関連記事）と本文は「ボートレース」のまま。verify-blog-post-files.js が title・description の「競艇」を止める（2026-10-19 オーナー決定、code-style.md 例外1の運用、ai-index-reading-guide）
 - ブログの title・description は一覧の h3・本文として画面に出るので、メタの例外に入らない（2026-10-11、ファン役のブログ新記事の評価）
 - 「数える」「似た」「似ている」「ふつう」「いつも」は使わない（2026-10-08 ユーザー指摘は「数える」のみ。BOA-271・BOA-815 等のオーケストレーターの指示）
 - 「集計」「算出」「対象」は禁止語ではない（2026-10-12 ユーザー確認）。10/8 にユーザーが指摘したのは「数える」で、「集計・算出・対象」は龍神ソナー・思考アシストの言い換え一覧で使わない語として採用しただけであり、全画面の禁止語に広げたのはClaude側の拡大解釈だった。龍神ソナー・思考アシストで「数える」を言い換えるときに限り、この3語も使わない

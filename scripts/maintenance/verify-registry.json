@@ -121,6 +121,11 @@
       "guards": "AI の PR の審査（.github/workflows/review.yml・scripts/review/*・scripts/lib/reviewPr.js、ADR-0097）。審査の相手の振り分け、機械で落とす形（symlink・submodule・LFS・バイナリ・.gitattributes・上限）、材料に渡す表の名前、LLM の答えの検査、承認の判定（head が進んだら何もしない・P0 では承認しない）、配線（pull_request_target・作者の user.id・head を checkout しない・persist-credentials: false・npm ci と cache なし・run に ${{ }} なし・action の SHA 固定・鍵は決めた job だけ・pr-review と db-readonly は review.yml だけ）、e2e の集約の job が always() で走ること"
     },
     {
+      "script": "verify-workflow-secrets.js",
+      "tier": "ci",
+      "guards": "本番の書き込みの鍵（SUPABASE_SERVICE_KEY・SLACK_WEBHOOK_URL・VERCEL_DEPLOY_HOOK・LINEAR_*・GOOGLE_SERVICE_ACCOUNT_KEY 等）を参照する job が master だけの Environment（prod-jobs・ryujin-bot・production-db）を宣言していること、pull_request の workflow が anon 以外の secret を参照しないこと（ADR-0097 段取り S。repo の secret は workflow を書ける身元ならどのブランチからも読めるため）"
+    },
+    {
       "script": "verify-db-reconcile.js",
       "tier": "ci",
       "guards": "本番 DB の自動の適用の突き合わせ（scripts/lib/dbReconcile.js・scripts/db/db-reconcile.js、ADR-0097）。台帳の状態を先頭の語で読む、5点の検査（切り替えより後に squash で足された・merge_commit_sha の一致・blob が PR の head と今の master で同じ・審査の App の head SHA への承認・同じコミットで足した「未適用」の行・runbook が無い）がそれぞれ単独で落とす、番号の順に1本だけ選び通らなければ止めて後ろを当てない、db-apply の他の run が動いている・待っているときは何もしない"

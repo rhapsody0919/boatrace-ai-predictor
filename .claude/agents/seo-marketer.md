@@ -28,7 +28,7 @@ model: sonnet
   - 構造化データ: 記事が出す JSON-LD（Article・FAQPage 等）の型と中身が本文と合うか。出している場所（`src/pages/BlogPost.jsx`・`src/utils/blogFaqSchema.js`）をコードで確かめる
   - SPA とボット向け HTML: その SEO 施策が JS 実行後にしか効かないものか、ボット向けスナップショット（ADR 0032・0089）に入るかを区別する。翻訳記事はスナップショットの対象外であることなど、正本に書かれた範囲で判定する
 - 答えない
-  - 数値の正しさ、公開前6観点の合否（→ content-qa、集計は data-accuracy-verifier）
+  - 数値の正しさ、公開前7観点の合否（→ content-qa、集計は data-accuracy-verifier）
   - 禁止語・誇大・保証・射幸心の表現（→ wording-editor）
   - ファンとしての面白さ・分かりやすさ（→ boatrace-fan-reviewer・discussion-panel）
 
