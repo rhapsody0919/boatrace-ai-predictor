@@ -7,6 +7,7 @@ import {
   compareObservations,
   buildObservationUtm,
   buildYoutubeProfileUtm,
+  WINDOW_LABELS,
 } from "../../src/utils/snsObservations.js";
 import {
   collectDueObservations,
@@ -223,7 +224,8 @@ assert.equal(compare([row({ duration_seconds: null })],
     .replace(/import \{ getMetricObservations \} from [^;]+;/,
       "const getMetricObservations = () => { throw new Error('取得禁止'); };")
     .replace(/import \{[\s\S]*?\} from [^;]*snsObservations\.js";/,
-      `const OBSERVATION_METRICS = ["${metric}"];`)
+      `const OBSERVATION_METRICS = ["${metric}"]; const FULL_PICTURE_FORMAT = "full_picture";
+       const WINDOW_LABELS = ${JSON.stringify(WINDOW_LABELS)};`)
     .replace(/import "\.\/MetricsTab\.css";/, "")
     .replace(/import ObservationCsvPanel from [^;]+;/,
       "const ObservationCsvPanel = () => null;");

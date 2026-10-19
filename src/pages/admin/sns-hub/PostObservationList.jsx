@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { getDeadlineQueue } from "../../../services/snsHubService.js";
 import { calendarObservations } from "../../../utils/snsMonthCalendar.js";
+import { WINDOW_LABELS } from "../../../utils/snsObservations.js";
 
 const RECENT_DAYS = 14;
 const format = (value) =>
@@ -85,7 +86,7 @@ export default function PostObservationList() {
                   <ul>
                     {observations.map((o) => (
                       <li key={o.id}>
-                        {o.window} {o.metric_name}:{" "}
+                        {WINDOW_LABELS[o.window] ?? o.window} {o.metric_name}:{" "}
                         {o.metric_value == null
                           ? o.missing_reason || "欠測"
                           : o.metric_value}{" "}
