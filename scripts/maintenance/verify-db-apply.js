@@ -747,6 +747,12 @@ COMMIT;`,
     "SECURITY DEFINER": "CREATE FUNCTION f() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ SELECT 1 $$;",
     "ALTER FUNCTION": "ALTER FUNCTION f() SECURITY DEFINER;",
     "CREATE SCHEMA": "CREATE SCHEMA db_backup;",
+    "SET LOCAL の 0（無制限）": "SET LOCAL statement_timeout = '0';",
+    "SET LOCAL lock_timeout の 0": "SET LOCAL lock_timeout = 0;",
+    "ADD COLUMN の serial": "ALTER TABLE t ADD COLUMN seq bigserial;",
+    "ADD COLUMN の serial4": "ALTER TABLE t ADD COLUMN seq serial4;",
+    "public. を付けた同名の関数": "CREATE TABLE t (a text CHECK (public.lower(a) = a));",
+    "DROP TYPE（CASCADE なし）": "DROP TYPE IF EXISTS race_grade;",
   };
   for (const [name, sql] of Object.entries(heavies)) {
     check(`重い: ${name}`, label(sql) === "heavy", label(sql));
@@ -767,6 +773,9 @@ COMMIT;`,
     "個人情報らしい列（生年月日）": "ALTER TABLE t ADD COLUMN birth_date date;",
     "適用できない文（CONCURRENTLY）": "CREATE INDEX CONCURRENTLY i ON t (a);",
     "途中の BEGIN": "SELECT 1;\nBEGIN;\nCOMMIT;",
+    "DROP TYPE … CASCADE（列ごと消える）": "DROP TYPE race_grade CASCADE;",
+    "DROP SCHEMA … CASCADE": "DROP SCHEMA old CASCADE;",
+    "DROP OWNED": "DROP OWNED BY someone;",
   };
   for (const [name, sql] of Object.entries(stops)) {
     check(`止める: ${name}`, label(sql) === "stop", label(sql));

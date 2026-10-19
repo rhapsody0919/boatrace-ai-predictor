@@ -722,7 +722,12 @@ function disallowedCalls(text, allowed = PAREN_KEYWORDS) {
   const re = new RegExp(String.raw`(REFERENCES\s+)?(${ONE_ID}(?:\s*\.\s*${ONE_ID})?)\s*\(`, "gi");
   for (const m of text.matchAll(re)) {
     if (m[1]) continue;
-    const name = canonName(m[2]);
+    // public. を外さずに比べる（public.lower のような同名の関数は組み込みではない）
+    const name = m[2]
+      .replace(/\s*\.\s*/g, ".")
+      .split(".")
+      .map((part) => (part.startsWith('"') ? part.slice(1, -1).replace(/""/g, '"') : part.toLowerCase()))
+      .join(".");
     if (!allowed.has(name)) calls.push(name);
   }
   return calls;
@@ -768,8 +773,9 @@ const ADD_COLUMN_RE = new RegExp(
   String.raw`^ADD\s+COLUMN\s+(?:IF\s+NOT\s+EXISTS\s+)?(${ONE_ID})\s+([\s\S]+)$`,
   "i",
 );
+// serial 型は暗黙の DEFAULT nextval と NOT NULL を伴い、既存の行を全部書き直す
 const ADD_COLUMN_FORBIDDEN =
-  /\b(DEFAULT|NOT\s+NULL|GENERATED|PRIMARY|UNIQUE|CHECK|COLLATE|CONSTRAINT|AS|USING)\b/i;
+  /\b(DEFAULT|NOT\s+NULL|GENERATED|PRIMARY|UNIQUE|CHECK|COLLATE|CONSTRAINT|AS|USING|SMALLSERIAL|SERIAL[248]?|BIGSERIAL)\b/i;
 const CREATE_POLICY_RE = new RegExp(
   String.raw`^CREATE\s+POLICY\s+${ONE_ID}\s+ON\s+(${ID})(?:\s+AS\s+(?:PERMISSIVE|RESTRICTIVE))?\s+FOR\s+SELECT(?:\s+TO\s+[A-Za-z_][A-Za-z0-9_]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*)*)?(?:\s+USING\s*\(([\s\S]*)\))?$`,
   "i",
@@ -869,7 +875,8 @@ function classifyStatement(code, text, ctx) {
   if (sl && /^SET\s+LOCAL\b/i.test(flat)) {
     const unit = (sl[3] ?? "ms").toLowerCase();
     const ms = Number(sl[2]) * (unit === "min" ? 60_000 : unit === "s" ? 1000 : 1);
-    if (ms <= SET_LOCAL_MAX_MS[sl[1].toLowerCase()]) return light(`SET LOCAL ${sl[1]}`);
+    // 0 は PostgreSQL では無制限なので軽いにしない
+    if (ms > 0 && ms <= SET_LOCAL_MAX_MS[sl[1].toLowerCase()]) return light(`SET LOCAL ${sl[1]}`);
     return heavy(`SET LOCAL ${sl[1]} が自動の上限を超える`);
   }
 
@@ -897,6 +904,10 @@ function destructiveTargets(code) {
   }
   return targets;
 }
+
+// 依存する表・列ごと消すが、どの表かを文からは決められない削除。控えで守れないので止める
+const UNBACKUPABLE_DROP_RE =
+  /^(DROP\s+(SCHEMA|TYPE|DOMAIN|EXTENSION)\b[\s\S]*\bCASCADE\b|DROP\s+OWNED\b)/i;
 
 const BACKUP_RE = new RegExp(
   String.raw`^CREATE\s+TABLE\s+(${ID})\s+AS\s+(?:TABLE\s+(${ID})|SELECT\s+([\s\S]+?)\s+FROM\s+(${ID}))$`,
@@ -958,6 +969,10 @@ export function classifyMigration(sql, fileName) {
             `同じファイルの前の文で CREATE TABLE ${BACKUP_SCHEMA}._bak_${number}_${t.table} AS TABLE ${t.table} を書く`,
         );
       }
+    }
+
+    if (UNBACKUPABLE_DROP_RE.test(flat)) {
+      stops.push(`${s.line}行目: 依存する表・列ごと消しうる削除（${flat.split(" ").slice(0, 3).join(" ")} … CASCADE / DROP OWNED）は控えで守れない`);
     }
 
     for (const col of piiColumns(flat)) {
