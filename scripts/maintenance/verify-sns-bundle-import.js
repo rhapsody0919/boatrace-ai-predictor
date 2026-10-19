@@ -5,12 +5,6 @@ import {
 } from "../../api/_lib/snsDeadlineQueue.js";
 /** 本番接続なし。検査・保存モック・実SQL(PGlite)・公開APIガードを検証する。 */
 import "./snsRawErrors.js";
-import {
-  inspectDraft,
-  inspectWithAi,
-  readInspectionSources,
-  saveDraftInspection,
-} from "../../api/_lib/snsEditAssist.js";
 import { matchRiskRules } from "../lib/riskRuleMatcher.js";
 import { checkRiskRules } from "../lib/riskRules.js";
 import assert from "node:assert/strict";
@@ -66,9 +60,24 @@ async function fixture(change = {}) {
     })),
     claims: [{ source: "facts", path: ["count"], value: 30 }],
     source_data: {},
-    video: {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true},
-    video_probe: {tool:"ffprobe",width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true,
-      sha256:await sha256(new Uint8Array([0,0,0,20,102,116,121,112,105,115,111,109]))},
+    video: {
+      width: 1080,
+      height: 1920,
+      duration_seconds: 18,
+      fps: 30,
+      has_audio: true,
+    },
+    video_probe: {
+      tool: "ffprobe",
+      width: 1080,
+      height: 1920,
+      duration_seconds: 18,
+      fps: 30,
+      has_audio: true,
+      sha256: await sha256(
+        new Uint8Array([0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109]),
+      ),
+    },
     ...change,
   };
   const files = new Map([
@@ -133,68 +142,177 @@ async function refreshHash(files, name) {
   integrity[name] = await sha256(files.get(name));
   files.set("integrity.json", json(integrity));
 }
-await check("会場18の戸田誤表記・原文レース違いは拒否せず警告を保存", async () => {
-  const files = await fixture({race_id:"2026-10-07-18-10", venueName:"戸田", script:"戸田の10R", source_data:{venueCode:18}});
-  files.set("facts.json", json({today:{race_id:"2026-10-07-18-09",venue_code:18}, similar:[{race_id:"2026-10-06-02-01"}]}));
-  const meta = JSON.parse(new TextDecoder().decode(files.get("facts.meta.json")));
-  meta.sha256 = await sha256(files.get("facts.json"));
-  files.set("facts.meta.json", json(meta));
-  await refreshHash(files, "facts.json");
-  const result = await validateBundle(form(files));
-  assert(result.riskFlags.x.some(w => w.id === "bundle-venue-mismatch"));
-  assert(result.riskFlags.youtube.some(w => w.id === "bundle-body-venue-2"));
-  assert(result.riskFlags.x.some(w => w.id === "bundle-race-mismatch"));
-  assert(!result.riskFlags.x.some(w => w.matchedPattern.includes("similar")));
-  let saved;
-  await importValidatedBundle(result, {saveFile:async()=>{}, register:async payload => {saved=payload;}});
-  assert.deepEqual(saved.p_risk_flags, result.riskFlags);
-  assert(saved.p_hold_reasons.some(h => h.includes("QA保留")));
-});
+await check(
+  "会場18の戸田誤表記・原文レース違いは拒否せず警告を保存",
+  async () => {
+    const files = await fixture({
+      race_id: "2026-10-07-18-10",
+      venueName: "戸田",
+      script: "戸田の10R",
+      source_data: { venueCode: 18 },
+    });
+    files.set(
+      "facts.json",
+      json({
+        today: { race_id: "2026-10-07-18-09", venue_code: 18 },
+        similar: [{ race_id: "2026-10-06-02-01" }],
+      }),
+    );
+    const meta = JSON.parse(
+      new TextDecoder().decode(files.get("facts.meta.json")),
+    );
+    meta.sha256 = await sha256(files.get("facts.json"));
+    files.set("facts.meta.json", json(meta));
+    await refreshHash(files, "facts.json");
+    const result = await validateBundle(form(files));
+    assert(result.riskFlags.x.some((w) => w.id === "bundle-venue-mismatch"));
+    assert(
+      result.riskFlags.youtube.some((w) => w.id === "bundle-body-venue-2"),
+    );
+    assert(result.riskFlags.x.some((w) => w.id === "bundle-race-mismatch"));
+    assert(
+      !result.riskFlags.x.some((w) => w.matchedPattern.includes("similar")),
+    );
+    let saved;
+    await importValidatedBundle(result, {
+      saveFile: async () => {},
+      register: async (payload) => {
+        saved = payload;
+      },
+    });
+    assert.deepEqual(saved.p_risk_flags, result.riskFlags);
+    assert(saved.p_hold_reasons.some((h) => h.includes("QA保留")));
+  },
+);
 await check("source_dataのコード・scope不一致と唐津の名称境界", async () => {
-  const bad = await validateBundle(form(await fixture({source_data:{race_code:"2026-10-07-11-09",venueCode:18,scope_key:"VC:18:test"}})));
-  assert(bad.riskFlags.x.some(w => w.id === "bundle-race-mismatch"));
-  assert(bad.riskFlags.x.some(w => w.matchedPattern === "source_data.venueCode"));
-  assert(bad.riskFlags.x.some(w => w.matchedPattern === "source_data.scope_key"));
-  const good = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title:"唐津の展望"})));
-  assert(!good.riskFlags.x.some(w => w.id.startsWith("bundle-body-venue")));
+  const bad = await validateBundle(
+    form(
+      await fixture({
+        source_data: {
+          race_code: "2026-10-07-11-09",
+          venueCode: 18,
+          scope_key: "VC:18:test",
+        },
+      }),
+    ),
+  );
+  assert(bad.riskFlags.x.some((w) => w.id === "bundle-race-mismatch"));
+  assert(
+    bad.riskFlags.x.some((w) => w.matchedPattern === "source_data.venueCode"),
+  );
+  assert(
+    bad.riskFlags.x.some((w) => w.matchedPattern === "source_data.scope_key"),
+  );
+  const good = await validateBundle(
+    form(await fixture({ race_id: "2026-10-07-23-10", title: "唐津の展望" })),
+  );
+  assert(!good.riskFlags.x.some((w) => w.id.startsWith("bundle-body-venue")));
 });
 for (const title of ["唐 津の展望", "唐　津の展望"]) {
-  await check(`対象会場の空白入り表記「${title}」は津の警告を付けない`, async () => {
-    const result = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title})));
-    for (const platform of ["x", "youtube"]) {
-      assert(!result.riskFlags[platform].some(w => w.id === "bundle-body-venue-9"));
-    }
-    const other = await validateBundle(form(await fixture({race_id:"2026-10-07-23-10",title:`${title}と津の比較`})));
-    for (const platform of ["x", "youtube"]) {
-      assert(other.riskFlags[platform].some(w => w.id === "bundle-body-venue-9"));
-    }
-  });
+  await check(
+    `対象会場の空白入り表記「${title}」は津の警告を付けない`,
+    async () => {
+      const result = await validateBundle(
+        form(await fixture({ race_id: "2026-10-07-23-10", title })),
+      );
+      for (const platform of ["x", "youtube"]) {
+        assert(
+          !result.riskFlags[platform].some(
+            (w) => w.id === "bundle-body-venue-9",
+          ),
+        );
+      }
+      const other = await validateBundle(
+        form(
+          await fixture({
+            race_id: "2026-10-07-23-10",
+            title: `${title}と津の比較`,
+          }),
+        ),
+      );
+      for (const platform of ["x", "youtube"]) {
+        assert(
+          other.riskFlags[platform].some((w) => w.id === "bundle-body-venue-9"),
+        );
+      }
+    },
+  );
 }
-await check("動画の宣言・scene合計・実hashの不一致と不足は警告のみ", async () => {
-  const mp4 = (await fixture()).get("draft.mp4");
-  const video = {width:1080,height:1920,duration_seconds:18,fps:30,has_audio:true};
-  const video_probe = {...video,tool:"ffprobe",sha256:await sha256(mp4)};
-  const ok = await validateBundle(form(await fixture({video,video_probe})));
-  assert(!ok.riskFlags.x.some(w => w.id.startsWith("bundle-video")));
-  const bad = await validateBundle(form(await fixture({video:{...video,width:720,has_audio:false}, video_probe:{...video_probe,duration_seconds:19,sha256:"0".repeat(64)}})));
-  for (const id of ["bundle-video-mismatch","bundle-video-scenes-mismatch","bundle-video-hash-mismatch"])
-    assert(bad.riskFlags.youtube.some(w => w.id === id), id);
-  const missing = await validateBundle(form(await fixture({video_probe:{}})));
-  assert(missing.riskFlags.x.some(w => w.id === "bundle-video-probe-missing"));
-});
-await check("正準表を副作用なしで共有し、類似レースの識別子は照合しない", async () => {
-  const {VENUE_NAMES} = await import("../lib/venueNames.js");
-  assert.equal(Object.keys(VENUE_NAMES).length,24);
-  assert.equal(VENUE_NAMES[18],"徳山");
-  const files = await fixture({venue_name:"びわこ",source_data:{race_code:"2026-10-07-11-10",venue_code:11}});
-  files.set("similar.json", json({neighbors:[{race_id:"2026-10-06-18-01",venue_code:18}]}));
-  const meta = JSON.parse(new TextDecoder().decode(files.get("similar.meta.json")));
-  meta.sha256=await sha256(files.get("similar.json"));
-  files.set("similar.meta.json",json(meta));
-  await refreshHash(files,"similar.json");
-  const result=await validateBundle(form(files));
-  assert(!result.riskFlags.x.some(w => /bundle-(race|venue|body)/.test(w.id)));
-});
+await check(
+  "動画の宣言・scene合計・実hashの不一致と不足は警告のみ",
+  async () => {
+    const mp4 = (await fixture()).get("draft.mp4");
+    const video = {
+      width: 1080,
+      height: 1920,
+      duration_seconds: 18,
+      fps: 30,
+      has_audio: true,
+    };
+    const video_probe = {
+      ...video,
+      tool: "ffprobe",
+      sha256: await sha256(mp4),
+    };
+    const ok = await validateBundle(
+      form(await fixture({ video, video_probe })),
+    );
+    assert(!ok.riskFlags.x.some((w) => w.id.startsWith("bundle-video")));
+    const bad = await validateBundle(
+      form(
+        await fixture({
+          video: { ...video, width: 720, has_audio: false },
+          video_probe: {
+            ...video_probe,
+            duration_seconds: 19,
+            sha256: "0".repeat(64),
+          },
+        }),
+      ),
+    );
+    for (const id of [
+      "bundle-video-mismatch",
+      "bundle-video-scenes-mismatch",
+      "bundle-video-hash-mismatch",
+    ])
+      assert(
+        bad.riskFlags.youtube.some((w) => w.id === id),
+        id,
+      );
+    const missing = await validateBundle(
+      form(await fixture({ video_probe: {} })),
+    );
+    assert(
+      missing.riskFlags.x.some((w) => w.id === "bundle-video-probe-missing"),
+    );
+  },
+);
+await check(
+  "正準表を副作用なしで共有し、類似レースの識別子は照合しない",
+  async () => {
+    const { VENUE_NAMES } = await import("../lib/venueNames.js");
+    assert.equal(Object.keys(VENUE_NAMES).length, 24);
+    assert.equal(VENUE_NAMES[18], "徳山");
+    const files = await fixture({
+      venue_name: "びわこ",
+      source_data: { race_code: "2026-10-07-11-10", venue_code: 11 },
+    });
+    files.set(
+      "similar.json",
+      json({ neighbors: [{ race_id: "2026-10-06-18-01", venue_code: 18 }] }),
+    );
+    const meta = JSON.parse(
+      new TextDecoder().decode(files.get("similar.meta.json")),
+    );
+    meta.sha256 = await sha256(files.get("similar.json"));
+    files.set("similar.meta.json", json(meta));
+    await refreshHash(files, "similar.json");
+    const result = await validateBundle(form(files));
+    assert(
+      !result.riskFlags.x.some((w) => /bundle-(race|venue|body)/.test(w.id)),
+    );
+  },
+);
 const files = await fixture();
 const validated = await validateBundle(form(files));
 const riskRules = JSON.parse(
@@ -757,94 +875,6 @@ await check(
       assert.equal(draft.template_variant_id, null);
       assert.equal(draft.publish_blocked, true);
       assert.equal(draft.bundle_import_id, draft.content_group_id);
-    }
-    const imported = (await db.query("SELECT * FROM sns_bundle_imports"))
-      .rows[0];
-    assert.equal(imported.release_evidence.release_status, null);
-    assert(imported.release_evidence.missing_reason);
-  },
-);
-await check("API経路の敬称・数値を固定期待と比較する", async () => {
-  const bytes = json({ count: 30 });
-  const cases = [
-    ["田中太郎の展示を確認", 30, ["racer-honorific"]],
-    ["田中太郎選手の展示を確認", 30, []],
-    ["件数：99", 30, ["claim-text-mismatch"]],
-    ["件数：30", 31, ["claim-source-mismatch", "claim-text-mismatch"]],
-    ["件数：30", 30, []],
-  ];
-  const comparison = [];
-  for (const [caption_text, value, expected] of cases) {
-    const draft = {
-      id: "synthetic",
-      platform: "x",
-      caption_text,
-      source_data: {
-        bundle: {
-          claims: [
-            {
-              source: "facts",
-              path: ["count"],
-              label: "件数",
-              value,
-              count: 30,
-              scope: "当日",
-            },
-          ],
-          source_data: { racers: [{ name: "田中太郎" }] },
-        },
-        source_manifest: [
-          {
-            name: "facts.json",
-            storage_path: "local/facts.json",
-            sha256: await sha256(bytes),
-          },
-        ],
-      },
-    };
-    const store = {
-      saveInspection: async (id, revision, engine, findings) => ({ findings }),
-    };
-    const result = await saveDraftInspection(
-      { draft, revision: "r" },
-      riskRules,
-      store,
-      async (path) => {
-        assert.equal(path, "local/facts.json");
-        return bytes;
-      },
-    );
-    assert.deepEqual(
-      result.findings.map((f) => f.rule),
-      expected,
-    );
-    assert.equal(draft.caption_text, caption_text);
-    comparison.push({
-      text: caption_text,
-      claim: value,
-      expected: expected.join(",") || "なし",
-      actual: result.findings.map((f) => f.rule).join(",") || "なし",
-    });
-  }
-  console.table(comparison);
-});
-await check(
-  "固定bundleから登録した下書きで編集指摘を取得し本文・公開保留を維持",
-  async () => {
-    const examples = [];
-    for (const draft of (await db.query("SELECT * FROM sns_drafts")).rows) {
-      const sources = await readInspectionSources(
-        draft,
-        async (path) => saved.get(path).bytes,
-      );
-      const findings = inspectDraft(draft, riskRules, sources);
-      for (const rule of ["claim-label", "claim-count", "claim-scope"])
-        assert.ok(findings.some((f) => f.rule === rule));
-      assert.ok(!findings.some((f) => f.rule === "claim-source-unavailable"));
-      examples.push(
-        ...findings.map((f) => ({ platform: draft.platform, ...f })),
-      );
-      assert.equal(draft.publish_blocked, true);
       assert.equal(
         draft.caption_text,
         draft.platform === "x"
@@ -852,25 +882,10 @@ await check(
           : validated.bundle.script,
       );
     }
-    assert.ok(examples.length >= 5);
-    if (process.env.SNS_EDIT_EXAMPLES_PATH)
-      await fs.writeFile(
-        process.env.SNS_EDIT_EXAMPLES_PATH,
-        JSON.stringify(examples, null, 2),
-      );
-    let calls = 0;
-    assert.deepEqual(
-      await inspectWithAi(
-        {},
-        {
-          messages: async () => {
-            calls++;
-          },
-        },
-      ),
-      [],
-    );
-    assert.equal(calls, 0);
+    const imported = (await db.query("SELECT * FROM sns_bundle_imports"))
+      .rows[0];
+    assert.equal(imported.release_evidence.release_status, null);
+    assert(imported.release_evidence.missing_reason);
   },
 );
 await check(
@@ -1112,9 +1127,6 @@ await check(
         const api = (await response.json()).riskWarnings.some(
           (r) => r.id === "banned-term-kyoutei",
         );
-        const edit = inspectDraft(draft, rules).some(
-          (r) => r.rule === "banned-term-kyoutei",
-        );
         // v0 bundleはX/YouTubeのみ。他媒体は汎用matcherの保守的判定を確認する。
         const result = await validateBundle(form(await fixture(bundle)), rules);
         const bundleHit =
@@ -1125,7 +1137,6 @@ await check(
               );
         assert.equal(node, expected, name);
         assert.equal(api, expected, name);
-        assert.equal(edit, expected, name);
         if (bundleHit !== null) assert.equal(bundleHit, expected, name);
         rows.push({
           enabled,
@@ -1134,7 +1145,6 @@ await check(
           Node: node,
           API: api,
           bundle: bundleHit,
-          edit,
         });
       }
     }
@@ -1380,7 +1390,9 @@ if (sample)
     },
   );
 // v1（sns-pdca-loop tasks 6）: push-bundle だけが受け付ける。v0 の検査・恒久保留は変えない
-const MP4 = new Uint8Array([0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109]);
+const MP4 = new Uint8Array([
+  0, 0, 0, 20, 102, 116, 121, 112, 105, 115, 111, 109,
+]);
 const V1_OPTIONS = {
   schemas: [BUNDLE_SCHEMA, BUNDLE_SCHEMA_V1],
   limits: BUNDLE_LIMITS_V1,
@@ -1392,11 +1404,23 @@ async function fixtureV1(change = {}, { withXVideo = true } = {}) {
     schema_version: BUNDLE_SCHEMA_V1,
     screen_key: "race-sonar",
     x_thread: [
-      { index: 0, text: "準優勝戦の見どころ https://www.boat-ai.jp/race/202610071110", media: X_VIDEO },
+      {
+        index: 0,
+        text: "準優勝戦の見どころ https://www.boat-ai.jp/race/202610071110",
+        media: X_VIDEO,
+      },
       { index: 1, text: "観測した件数を確認", media: "scene-1.png" },
     ],
     claims: [
-      { id: "c1", text: "類似30件", value: 30, source: { endpoint: "/api/analogy/facts/2026-10-07-11-10?stage=racecard", path: ["count"] } },
+      {
+        id: "c1",
+        text: "類似30件",
+        value: 30,
+        source: {
+          endpoint: "/api/analogy/facts/2026-10-07-11-10?stage=racecard",
+          path: ["count"],
+        },
+      },
     ],
     local_only: undefined,
     release_verified: undefined,
@@ -1409,151 +1433,342 @@ async function fixtureV1(change = {}, { withXVideo = true } = {}) {
   files.delete("x-draft.txt");
   if (withXVideo) files.set(X_VIDEO, MP4);
   // integrity.json は Codex の出力（draft-x.mp4 は push-bundle が後で作るので含まない）
-  const integrity = JSON.parse(new TextDecoder().decode(files.get("integrity.json")));
+  const integrity = JSON.parse(
+    new TextDecoder().decode(files.get("integrity.json")),
+  );
   delete integrity["x-draft.txt"];
   files.set("integrity.json", json(integrity));
   return files;
 }
-await check("v1: 管理画面の手取り込み（既定の v0 だけ）では受け付けない", async () => {
-  await assert.rejects(validateBundle(form(await fixtureV1())), /未対応または重複したファイル名|v0のみ/);
-  // v1 を受け付けても、v1 の欄の検査（twitter-text）を渡さなければ通さない
-  await assert.rejects(
-    validateBundle(form(await fixtureV1()), [], { ...V1_OPTIONS, v1Fields: null }),
-    /v1Fields/,
-  );
-  const noXVideo = await fixtureV1({}, { withXVideo: false });
-  await assert.rejects(validateBundle(form(noXVideo)), /v0のみ/);
-});
-await check("v1: x_thread・claims・screen_key を検査し、v0 の恒久保留を付けず、スレッドごとの risk を返す", async () => {
-  const result = await validateBundle(form(await fixtureV1()), [], V1_OPTIONS);
-  assert.equal(result.bundle.schema_version, BUNDLE_SCHEMA_V1);
-  assert(!result.holds.some((h) => h.includes("v0素材")));
-  assert(!result.holds.some((h) => h.includes(X_VIDEO)), result.holds.join(" / "));
-  assert.equal(result.manifest.find((m) => m.name === X_VIDEO).verification, "derived");
-  assert.equal(result.riskFlags.x_thread.length, 2);
-  assert.deepEqual(result.missing, []);
-});
-await check("v1: 子の URL・連番の崩れ・親の媒体・文字数・claims の形は拒否する", async () => {
-  const bad = [
-    [{ x_thread: [{ index: 0, text: "親 https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }, { index: 1, text: "子 https://www.boat-ai.jp/race/1" }] }, /URLは親/],
-    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 2, text: "子" }] }, /連番/],
-    [{ x_thread: [{ index: 0, text: "親", media: "scene-1.png" }] }, /draft-x\.mp4/],
-    // 子のあるスレッドは各投稿280まで（親も子も）
-    [{ x_thread: [{ index: 0, text: "あ".repeat(141), media: X_VIDEO }, { index: 1, text: "子" }] }, /文字数/],
-    [{ x_thread: [{ index: 0, text: "親 https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }, { index: 1, text: "あ".repeat(141) }] }, /文字数/],
-    // 親1件だけ（長文の1投稿）でも25,000（全角は2）を超えれば拒否
-    [{ x_thread: [{ index: 0, text: "あ".repeat(12501) + " https://www.boat-ai.jp/race/202610071110", media: X_VIDEO }] }, /文字数|本文が必要/],
-    [{ x_thread: Array.from({ length: 7 }, (_, i) => ({ index: i, text: "本文", ...(i === 0 ? { media: X_VIDEO } : {}) })) }, /1〜6件/],
-    [{ x_thread: [{ index: 0, text: "親", media: X_VIDEO }, { index: 1, text: "子", media: "nothing.png" }] }, /媒体が添付にありません/],
-    [{ claims: [{ source: "facts", path: ["count"], value: 30 }] }, /v1のclaims/],
-    [{ claims: [{ id: "c", text: "t", value: 1, source: { endpoint: "https://evil.example/api/x", path: ["a"] } }] }, /v1のclaims/],
-    [{ screen_key: undefined }, /screen_key/],
-    [{ x_thread: [{ index: 0, text: "URL なしの親", media: X_VIDEO }] }, /レースのURL/],
-    [{ x_thread: [{ index: 0, text: "https://example.com/race/1", media: X_VIDEO }] }, /レースのURL/],
-  ];
-  for (const [change, message] of bad)
+await check(
+  "v1: 管理画面の手取り込み（既定の v0 だけ）では受け付けない",
+  async () => {
     await assert.rejects(
-      validateBundle(form(await fixtureV1(change)), [], V1_OPTIONS),
-      message,
-      JSON.stringify(change).slice(0, 80),
+      validateBundle(form(await fixtureV1())),
+      /未対応または重複したファイル名|v0のみ/,
     );
-});
-await check("v1: 親1件だけのスレッドは長文の1投稿（Premium）として25,000まで通す（2026-10-14 オーナー決定）", async () => {
-  const long = "あ".repeat(5000) + "\nhttps://www.boat-ai.jp/race/202610071110";
-  const result = await validateBundle(
-    form(await fixtureV1({ x_thread: [{ index: 0, text: long, media: X_VIDEO }] })),
-    [],
-    V1_OPTIONS,
-  );
-  assert.equal(result.bundle.x_thread[0].text, long);
-});
-await check("v1: 動画は 32 MiB まで（v0 は 2 MiB のまま）、draft-x.mp4 は v0 では使えない", async () => {
-  const big = new Uint8Array(3 * 1024 * 1024);
-  big.set(MP4);
-  const files = await fixtureV1();
-  files.set(X_VIDEO, big);
-  const result = await validateBundle(form(files), [], V1_OPTIONS);
-  assert.equal(result.files.get(X_VIDEO).bytes.length, big.length);
-  const tooBig = new Uint8Array(32 * 1024 * 1024 + 1);
-  tooBig.set(MP4);
-  files.set(X_VIDEO, tooBig);
-  await assert.rejects(validateBundle(form(files), [], V1_OPTIONS), /容量超過/);
-  const v0 = await fixture();
-  v0.set(X_VIDEO, MP4);
-  await assert.rejects(validateBundle(form(v0), [], V1_OPTIONS), /v1だけ/);
-});
-await check("v1: 取り込みは bundle の版で RPC を呼ぶ（v0 の定数で上書きしない）", async () => {
-  const validated = await validateBundle(form(await fixtureV1()), [], V1_OPTIONS);
-  let payload;
-  await importValidatedBundle(validated, {
-    saveFile: async () => {},
-    register: async (p) => (payload = p),
-  });
-  assert.equal(payload.p_schema_version, BUNDLE_SCHEMA_V1);
-  assert.equal(payload.p_risk_flags.x_thread.length, 2);
-  const v0 = await validateBundle(form(await fixture()));
-  await importValidatedBundle(v0, { saveFile: async () => {}, register: async (p) => (payload = p) });
-  assert.equal(payload.p_schema_version, BUNDLE_SCHEMA);
-});
-await check("v1: push-bundle はフォルダを読み、draft-x.mp4 が無ければ draft.mp4 から書き出して検査する（素材フォルダは変えない）", async () => {
-  const { mkdtemp, writeFile, readdir, rm } = fs;
-  const { tmpdir } = await import("node:os");
-  const dir = await mkdtemp(`${tmpdir()}/sns-v1-`);
-  try {
-    for (const [name, bytes] of await fixtureV1({}, { withXVideo: false }))
-      await writeFile(`${dir}/${name}`, bytes);
-    await writeFile(`${dir}/notes.md`, "無視される");
-    const calls = [];
-    const exec = async (cmd, args) => {
-      calls.push([cmd, args]);
-      await writeFile(args.at(-1), MP4);
-    };
-    const prepared = await prepareBundle(dir, { exec });
-    assert.equal(calls[0][0], "ffmpeg");
-    assert(calls[0][1].join(" ").includes("scale=720:1280"));
-    assert.equal(calls[0][1][calls[0][1].indexOf("-i") + 1], `${dir}/draft.mp4`);
-    assert.deepEqual(prepared.derived, [X_VIDEO]);
-    assert.deepEqual(prepared.ignored, ["notes.md"]);
-    assert(!(await readdir(dir)).includes(X_VIDEO));
-    const summary = summarizeBundle(prepared);
-    assert.equal(summary.schema_version, BUNDLE_SCHEMA_V1);
-    assert.deepEqual(summary.risk_flags.x_thread, [0, 0]);
-    // 既に draft-x.mp4 があれば書き出さない
-    await writeFile(`${dir}/${X_VIDEO}`, MP4);
-    const again = [];
-    await prepareBundle(dir, { exec: async (...a) => again.push(a) });
-    assert.equal(again.length, 0);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-});
-await check("v1: X の投稿ごとの risk に、共通のタイトルと場面の文字の警告も入る（点検 08-15 D1）", async () => {
-  const rules = [{ id: "t", category: "c", description: "d", platforms: "all", patterns: ["必勝"] }];
-  const title = await validateBundle(form(await fixtureV1({ title: "必勝の展望" })), rules, V1_OPTIONS);
-  assert(title.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
-  const scene = await validateBundle(
-    form(await fixtureV1({ scenes: Array.from({ length: 3 }, () => ({ seconds: 6, tab: "差がつく材料", component: "観測件数", lines: ["必勝"] })) })),
-    rules,
-    V1_OPTIONS,
-  );
-  assert(scene.riskFlags.x_thread.every((flags) => flags.some((f) => f.id === "t")));
-});
-await check("push-bundle: v0 の素材には v0 の容量の上限（2 MiB）をかける（点検 08-15 D2）", async () => {
-  const { mkdtemp, writeFile, rm } = fs;
-  const { tmpdir } = await import("node:os");
-  const dir = await mkdtemp(`${tmpdir()}/sns-v0-`);
-  try {
-    const files = await fixture();
+    // v1 を受け付けても、v1 の欄の検査（twitter-text）を渡さなければ通さない
+    await assert.rejects(
+      validateBundle(form(await fixtureV1()), [], {
+        ...V1_OPTIONS,
+        v1Fields: null,
+      }),
+      /v1Fields/,
+    );
+    const noXVideo = await fixtureV1({}, { withXVideo: false });
+    await assert.rejects(validateBundle(form(noXVideo)), /v0のみ/);
+  },
+);
+await check(
+  "v1: x_thread・claims・screen_key を検査し、v0 の恒久保留を付けず、スレッドごとの risk を返す",
+  async () => {
+    const result = await validateBundle(
+      form(await fixtureV1()),
+      [],
+      V1_OPTIONS,
+    );
+    assert.equal(result.bundle.schema_version, BUNDLE_SCHEMA_V1);
+    assert(!result.holds.some((h) => h.includes("v0素材")));
+    assert(
+      !result.holds.some((h) => h.includes(X_VIDEO)),
+      result.holds.join(" / "),
+    );
+    assert.equal(
+      result.manifest.find((m) => m.name === X_VIDEO).verification,
+      "derived",
+    );
+    assert.equal(result.riskFlags.x_thread.length, 2);
+    assert.deepEqual(result.missing, []);
+  },
+);
+await check(
+  "v1: 子の URL・連番の崩れ・親の媒体・文字数・claims の形は拒否する",
+  async () => {
+    const bad = [
+      [
+        {
+          x_thread: [
+            {
+              index: 0,
+              text: "親 https://www.boat-ai.jp/race/202610071110",
+              media: X_VIDEO,
+            },
+            { index: 1, text: "子 https://www.boat-ai.jp/race/1" },
+          ],
+        },
+        /URLは親/,
+      ],
+      [
+        {
+          x_thread: [
+            { index: 0, text: "親", media: X_VIDEO },
+            { index: 2, text: "子" },
+          ],
+        },
+        /連番/,
+      ],
+      [
+        { x_thread: [{ index: 0, text: "親", media: "scene-1.png" }] },
+        /draft-x\.mp4/,
+      ],
+      // 子のあるスレッドは各投稿280まで（親も子も）
+      [
+        {
+          x_thread: [
+            { index: 0, text: "あ".repeat(141), media: X_VIDEO },
+            { index: 1, text: "子" },
+          ],
+        },
+        /文字数/,
+      ],
+      [
+        {
+          x_thread: [
+            {
+              index: 0,
+              text: "親 https://www.boat-ai.jp/race/202610071110",
+              media: X_VIDEO,
+            },
+            { index: 1, text: "あ".repeat(141) },
+          ],
+        },
+        /文字数/,
+      ],
+      // 親1件だけ（長文の1投稿）でも25,000（全角は2）を超えれば拒否
+      [
+        {
+          x_thread: [
+            {
+              index: 0,
+              text:
+                "あ".repeat(12501) +
+                " https://www.boat-ai.jp/race/202610071110",
+              media: X_VIDEO,
+            },
+          ],
+        },
+        /文字数|本文が必要/,
+      ],
+      [
+        {
+          x_thread: Array.from({ length: 7 }, (_, i) => ({
+            index: i,
+            text: "本文",
+            ...(i === 0 ? { media: X_VIDEO } : {}),
+          })),
+        },
+        /1〜6件/,
+      ],
+      [
+        {
+          x_thread: [
+            { index: 0, text: "親", media: X_VIDEO },
+            { index: 1, text: "子", media: "nothing.png" },
+          ],
+        },
+        /媒体が添付にありません/,
+      ],
+      [
+        { claims: [{ source: "facts", path: ["count"], value: 30 }] },
+        /v1のclaims/,
+      ],
+      [
+        {
+          claims: [
+            {
+              id: "c",
+              text: "t",
+              value: 1,
+              source: { endpoint: "https://evil.example/api/x", path: ["a"] },
+            },
+          ],
+        },
+        /v1のclaims/,
+      ],
+      [{ screen_key: undefined }, /screen_key/],
+      [
+        { x_thread: [{ index: 0, text: "URL なしの親", media: X_VIDEO }] },
+        /レースのURL/,
+      ],
+      [
+        {
+          x_thread: [
+            { index: 0, text: "https://example.com/race/1", media: X_VIDEO },
+          ],
+        },
+        /レースのURL/,
+      ],
+    ];
+    for (const [change, message] of bad)
+      await assert.rejects(
+        validateBundle(form(await fixtureV1(change)), [], V1_OPTIONS),
+        message,
+        JSON.stringify(change).slice(0, 80),
+      );
+  },
+);
+await check(
+  "v1: 親1件だけのスレッドは長文の1投稿（Premium）として25,000まで通す（2026-10-14 オーナー決定）",
+  async () => {
+    const long =
+      "あ".repeat(5000) + "\nhttps://www.boat-ai.jp/race/202610071110";
+    const result = await validateBundle(
+      form(
+        await fixtureV1({
+          x_thread: [{ index: 0, text: long, media: X_VIDEO }],
+        }),
+      ),
+      [],
+      V1_OPTIONS,
+    );
+    assert.equal(result.bundle.x_thread[0].text, long);
+  },
+);
+await check(
+  "v1: 動画は 32 MiB まで（v0 は 2 MiB のまま）、draft-x.mp4 は v0 では使えない",
+  async () => {
     const big = new Uint8Array(3 * 1024 * 1024);
     big.set(MP4);
-    files.set("draft.mp4", big);
-    await refreshHash(files, "draft.mp4");
-    for (const [name, bytes] of files) await writeFile(`${dir}/${name}`, bytes);
-    await assert.rejects(prepareBundle(dir), /容量超過/);
-  } finally {
-    await rm(dir, { recursive: true, force: true });
-  }
-});
+    const files = await fixtureV1();
+    files.set(X_VIDEO, big);
+    const result = await validateBundle(form(files), [], V1_OPTIONS);
+    assert.equal(result.files.get(X_VIDEO).bytes.length, big.length);
+    const tooBig = new Uint8Array(32 * 1024 * 1024 + 1);
+    tooBig.set(MP4);
+    files.set(X_VIDEO, tooBig);
+    await assert.rejects(
+      validateBundle(form(files), [], V1_OPTIONS),
+      /容量超過/,
+    );
+    const v0 = await fixture();
+    v0.set(X_VIDEO, MP4);
+    await assert.rejects(validateBundle(form(v0), [], V1_OPTIONS), /v1だけ/);
+  },
+);
+await check(
+  "v1: 取り込みは bundle の版で RPC を呼ぶ（v0 の定数で上書きしない）",
+  async () => {
+    const validated = await validateBundle(
+      form(await fixtureV1()),
+      [],
+      V1_OPTIONS,
+    );
+    let payload;
+    await importValidatedBundle(validated, {
+      saveFile: async () => {},
+      register: async (p) => (payload = p),
+    });
+    assert.equal(payload.p_schema_version, BUNDLE_SCHEMA_V1);
+    assert.equal(payload.p_risk_flags.x_thread.length, 2);
+    const v0 = await validateBundle(form(await fixture()));
+    await importValidatedBundle(v0, {
+      saveFile: async () => {},
+      register: async (p) => (payload = p),
+    });
+    assert.equal(payload.p_schema_version, BUNDLE_SCHEMA);
+  },
+);
+await check(
+  "v1: push-bundle はフォルダを読み、draft-x.mp4 が無ければ draft.mp4 から書き出して検査する（素材フォルダは変えない）",
+  async () => {
+    const { mkdtemp, writeFile, readdir, rm } = fs;
+    const { tmpdir } = await import("node:os");
+    const dir = await mkdtemp(`${tmpdir()}/sns-v1-`);
+    try {
+      for (const [name, bytes] of await fixtureV1({}, { withXVideo: false }))
+        await writeFile(`${dir}/${name}`, bytes);
+      await writeFile(`${dir}/notes.md`, "無視される");
+      const calls = [];
+      const exec = async (cmd, args) => {
+        calls.push([cmd, args]);
+        await writeFile(args.at(-1), MP4);
+      };
+      const prepared = await prepareBundle(dir, { exec });
+      assert.equal(calls[0][0], "ffmpeg");
+      assert(calls[0][1].join(" ").includes("scale=720:1280"));
+      assert.equal(
+        calls[0][1][calls[0][1].indexOf("-i") + 1],
+        `${dir}/draft.mp4`,
+      );
+      assert.deepEqual(prepared.derived, [X_VIDEO]);
+      assert.deepEqual(prepared.ignored, ["notes.md"]);
+      assert(!(await readdir(dir)).includes(X_VIDEO));
+      const summary = summarizeBundle(prepared);
+      assert.equal(summary.schema_version, BUNDLE_SCHEMA_V1);
+      assert.deepEqual(summary.risk_flags.x_thread, [0, 0]);
+      // 既に draft-x.mp4 があれば書き出さない
+      await writeFile(`${dir}/${X_VIDEO}`, MP4);
+      const again = [];
+      await prepareBundle(dir, { exec: async (...a) => again.push(a) });
+      assert.equal(again.length, 0);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);
+await check(
+  "v1: X の投稿ごとの risk に、共通のタイトルと場面の文字の警告も入る（点検 08-15 D1）",
+  async () => {
+    const rules = [
+      {
+        id: "t",
+        category: "c",
+        description: "d",
+        platforms: "all",
+        patterns: ["必勝"],
+      },
+    ];
+    const title = await validateBundle(
+      form(await fixtureV1({ title: "必勝の展望" })),
+      rules,
+      V1_OPTIONS,
+    );
+    assert(
+      title.riskFlags.x_thread.every((flags) =>
+        flags.some((f) => f.id === "t"),
+      ),
+    );
+    const scene = await validateBundle(
+      form(
+        await fixtureV1({
+          scenes: Array.from({ length: 3 }, () => ({
+            seconds: 6,
+            tab: "差がつく材料",
+            component: "観測件数",
+            lines: ["必勝"],
+          })),
+        }),
+      ),
+      rules,
+      V1_OPTIONS,
+    );
+    assert(
+      scene.riskFlags.x_thread.every((flags) =>
+        flags.some((f) => f.id === "t"),
+      ),
+    );
+  },
+);
+await check(
+  "push-bundle: v0 の素材には v0 の容量の上限（2 MiB）をかける（点検 08-15 D2）",
+  async () => {
+    const { mkdtemp, writeFile, rm } = fs;
+    const { tmpdir } = await import("node:os");
+    const dir = await mkdtemp(`${tmpdir()}/sns-v0-`);
+    try {
+      const files = await fixture();
+      const big = new Uint8Array(3 * 1024 * 1024);
+      big.set(MP4);
+      files.set("draft.mp4", big);
+      await refreshHash(files, "draft.mp4");
+      for (const [name, bytes] of files)
+        await writeFile(`${dir}/${name}`, bytes);
+      await assert.rejects(prepareBundle(dir), /容量超過/);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  },
+);
 console.log(
   `${count} checks passed (PGliteの同時リクエストは同一接続内で直列化。本番並行接続は未検証)`,
 );

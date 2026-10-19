@@ -1072,7 +1072,7 @@
     {
       "script": "verify-sns-mobile-approval.js",
       "tier": "ci",
-      "guards": "送る前の保留の条件（sendHolds: 素材 v0/v1・/today）、版hash（140 sns_mobile_revision）の TimeZone 非依存、承認後の変更で承認・job を外すトリガー、編集指摘（145）の保存・判断。163 で個別承認の RPC・表が無いこと（PGlite、外部接続なし）"
+      "guards": "送る前の保留の条件（sendHolds: 素材 v0/v1・/today）、版hash（140 sns_mobile_revision）の TimeZone 非依存、承認後の変更で承認・job を外すトリガー。163 で個別承認の RPC・表が無いこと、165 で編集指摘（145）の RPC・表が無いこと（PGlite、外部接続なし）"
     },
     {
       "script": "verify-wind-direction-display.js",
@@ -1083,11 +1083,6 @@
       "script": "verify-race-start-formation.js",
       "tier": "ci",
       "guards": "レース結果のスタート隊形の並び（BOA-811、src/components/race/startFormation.js）。進入コースの順・前付けは枠なりより内側に入った艇だけ（欠場で繰り上がった艇は付けない）・欠場は一番下に残す・最速は F を除いて2艇以上のとき・出遅れは ST なし・ST は結果の表と同じ形（0.15、F.04）。例は本番の戸田 9/11 3R・江戸川 9/26 11R・津 9/25 6R・若松 9/27 10R"
-    },
-    {
-      "script": "verify-sns-edit-assist.js",
-      "tier": "ci",
-      "guards": "依頼7: 読みやすさ・加重文字数・日付時刻・数値出典・敬称の場所付き指摘、AI差し込み口は既定無効、正常文は誤検知しない（141は別途PGliteで検証）"
     },
     {
       "script": "verify-sns-month-calendar.js",
