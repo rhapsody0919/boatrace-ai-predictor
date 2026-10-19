@@ -71,7 +71,10 @@ repo の secret（Environment の外）は、同じリポジトリのどのブ�
 
 ### 削除の前の控え
 
-- データを消す文（DROP TABLE・TRUNCATE・DELETE・DROP COLUMN）は、同じトランザクションの中で、API に出ない別のスキーマの `_bak_NNN_<表>` に写してから消す。表全体を写す（DROP COLUMN は主キーとその列）。判定はこの形があることを検査し、無ければ止める
+- データを消す文（DROP TABLE・TRUNCATE・DELETE・DROP COLUMN）は、同じファイル（＝同じトランザクション）の前の文で、API に出ないスキーマ `db_backup` に `CREATE TABLE db_backup._bak_<番号>_<表> AS TABLE <表>` と写してから消す。DELETE も表全体を写す（WHERE の一致を文で照合するのは壊れやすいため）。DROP COLUMN は主キーとその列を含む `AS SELECT … FROM <表>` でもよい。判定はこの形があることを検査し、無ければ止める
+- 秘密を含む表は `-- db-apply: no-backup <表> <理由>` で控えの要求を外す（外しても重いので、オーナーの1タップは残る）
+- DROP SCHEMA・TYPE・DOMAIN・EXTENSION の CASCADE と DROP OWNED は、どの表・列が消えるかを文から決められず、控えで守れないので止める
+- `db_backup` スキーマは最初の削除のマイグレーションで作る（CREATE SCHEMA は重い）
 - 大きい表（行数の上限を超える）は写さず止める（オーナーへ）。秘密を含む表は控えを作らない
 - 期限切れの控えは一覧にして通知し、まとめて1タップで消す（消すのも重い）
 - PITR は入れない（オーナー判断）。戻しは日次のバックアップ7日分と控え
