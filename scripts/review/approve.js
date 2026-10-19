@@ -21,9 +21,11 @@ async function main() {
   if (process.env.VERDICT) {
     try {
       const v = JSON.parse(process.env.VERDICT);
-      verdict = v.ok
+      // 数え直した P0 と llm の段の P0 の多い方を採る（切った後で数え直すと減ることがあるため）
+      const again = v.ok
         ? parseVerdict(JSON.stringify({ findings: v.findings }))
         : v;
+      verdict = { ...again, p0: Math.max(again.p0, Number(v.p0) || 0) };
     } catch {
       verdict = {
         ok: false,

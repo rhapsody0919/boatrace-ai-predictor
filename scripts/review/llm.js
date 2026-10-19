@@ -8,6 +8,7 @@
  *      OPENAI_API_KEY と REVIEW_OPENAI_MODEL、または ANTHROPIC_API_KEY と REVIEW_ANTHROPIC_MODEL（既定 claude-opus-5）
  * 出力: verdict（parseVerdict の結果、JSON 1行）
  */
+import { randomBytes } from "node:crypto";
 import {
   buildReviewPrompt,
   mechanicalRejections,
@@ -112,7 +113,7 @@ async function main() {
   if (rejections.length > 0)
     fail(`機械の検査で止めた: ${rejections.join(" / ")}`);
 
-  const { system, user } = buildReviewPrompt(files, materials, headSha);
+  const { system, user } = buildReviewPrompt(files, materials, headSha, randomBytes(16).toString("hex"));
   const text =
     vendor === "openai"
       ? await callOpenAI(system, user)

@@ -6,7 +6,8 @@ name: AI Review
 #   gate       鍵なし。差分を API で取り、symlink・submodule・LFS・バイナリ・.gitattributes・上限超え・月の上限を機械で落とす
 #   materials  Environment db-readonly。SQL の PR のときだけ、claude_ro で触る表の定義と行数の目安を取る（行の中身は取らない）
 #   llm        Environment pr-review の API キーだけ。claude/ の PR は OpenAI、codex/ の PR は Anthropic で審査し、判定を出す
-#   approve    Environment pr-review の審査の App の鍵だけ。head が審査した SHA のままで P0 が0件なら、その SHA に APPROVE
+#   approve    Environment pr-review の審査の App の鍵だけ。head が審査した SHA のままで P0 が0件なら、その SHA に APPROVE。
+#              承認しないときは REQUEST_CHANGES（審査の App の最新の状態でマージを止める）
 #
 # pull_request_target は master にある定義で動く（PR がこのファイルを書き換えても、その PR の審査には効かない）。
 # そのかわり鍵に届くので、次を守る。配線は scripts/maintenance/verify-review-workflow.js が検査する。
@@ -101,7 +102,7 @@ jobs:
     needs: [gate, materials]
     # 材料が要る PR で材料の job が失敗・取り消しになったら、材料の無いまま審査しない
     if: >-
-      always() && needs.gate.result == 'success' && needs.gate.outputs.ok == 'true' &&
+      !cancelled() && needs.gate.result == 'success' && needs.gate.outputs.ok == 'true' &&
       (needs.materials.result == 'success' || needs.materials.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -133,7 +134,8 @@ jobs:
 
   approve:
     needs: [gate, materials, llm]
-    if: always() && needs.gate.result == 'success'
+    # 取り消された run（新しい push）では動かさない。新しい run が審査する
+    if: ${{ !cancelled() && needs.gate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     environment: pr-review

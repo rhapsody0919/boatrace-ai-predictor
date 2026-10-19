@@ -16,7 +16,11 @@ const SAFE_TABLE = /^[a-z_][a-z0-9_]{0,62}$/;
 
 const QUERY = `\\set ON_ERROR_STOP on
 BEGIN TRANSACTION READ ONLY;
-SELECT CASE WHEN current_user <> 'claude_ro' THEN (1/0)::text END AS role_check \\gset
+SELECT current_user = 'claude_ro' AS is_ro \\gset
+\\if :is_ro
+\\else
+SELECT 1/0;
+\\endif
 SELECT json_build_object(
   'table', :'tbl',
   'exists', to_regclass('public.' || quote_ident(:'tbl')) IS NOT NULL,
@@ -42,7 +46,8 @@ function pgEnv(raw) {
   const password = decodeURIComponent(url.password);
   if (!/^claude_ro(\.|$)/.test(user))
     fail("CLAUDE_RO_DB_URL のユーザーが claude_ro でない");
-  for (const secret of new Set([password, url.hostname]))
+  // psql の stderr に出るユーザー名（claude_ro.<project-ref>）も隠す
+  for (const secret of new Set([password, url.hostname, user]))
     console.log(`::add-mask::${secret}`);
   return {
     PGHOST: url.hostname,
