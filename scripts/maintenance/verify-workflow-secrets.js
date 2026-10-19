@@ -97,6 +97,12 @@ const triggers = (yamlText) => {
 export function checkWorkflow(file, yamlText) {
   const problems = [];
   const onPullRequest = triggers(yamlText).has("pull_request");
+  // jobs: より前（最上位の env 等）の secret は、どの job でも Environment の外（repo の secret）から読まれる
+  const head = yamlText.split(/^jobs:\s*$/m)[0];
+  const topLevel = secretsIn(head).filter((s) => !PUBLIC_SECRETS.has(s) && s !== "GITHUB_TOKEN");
+  if (topLevel.length > 0) {
+    problems.push(`${file}: workflow の最上位で ${topLevel.join(", ")} を参照する（job の Environment が効かない）`);
+  }
   for (const job of splitJobs(yamlText)) {
     const used = secretsIn(job.text);
     const key = `${file}:${job.id}`;
@@ -168,6 +174,10 @@ function main() {
       "x.yml",
       pr.replace("VITE_SUPABASE_ANON_KEY", "OPENAI_API_KEY"),
     ).length === 1,
+  );
+  check(
+    "最上位の env の secret は落とす",
+    checkWorkflow("x.yml", good.replace("jobs:\n", "env:\n  K: ${{ secrets.SUPABASE_SERVICE_KEY }}\njobs:\n")).length === 1,
   );
   check(
     "job を2字下げで分ける",
