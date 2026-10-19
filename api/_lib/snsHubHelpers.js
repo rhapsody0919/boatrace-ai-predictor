@@ -240,6 +240,15 @@ const FALLBACK_ROUTINE_ENV_PREFIX = "SNS_HUB_ROUTINE";
  * 対応するチャネル別パイプラインが未展開（環境変数未設定）の場合は、
  * fireRoutine側で自動的にnot_configured判定になりフォールバックの挙動になる。
  */
+// 運用をやめたプラットフォーム。過去の下書き・ターゲットが DB に残っていても、
+// 作り直し・今すぐ生成で Routine を起こさない（フォールバックの汎用 Routine に
+// 届くと、やめたプラットフォームの下書きを作り直してしまうため）
+export const RETIRED_PLATFORMS = ["tiktok"];
+
+export function isRetiredPlatform(platform) {
+  return RETIRED_PLATFORMS.includes(platform);
+}
+
 export function resolveRoutineEnvPrefix(platform) {
   return PLATFORM_ROUTINE_ENV_PREFIX[platform] || FALLBACK_ROUTINE_ENV_PREFIX;
 }
