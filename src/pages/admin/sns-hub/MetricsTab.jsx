@@ -4,6 +4,7 @@ import {
   compareObservations,
   FULL_PICTURE_FORMAT,
   OBSERVATION_METRICS,
+  WINDOW_LABELS,
 } from "../../../utils/snsObservations.js";
 import "./MetricsTab.css";
 import ObservationCsvPanel from "./ObservationCsvPanel.jsx";
@@ -16,13 +17,6 @@ function curvePolyline(points) {
     .join(" ");
 }
 
-// 全貌（format=full_picture）は当日23時と24時間後で測る（2026-10-19 オーナー決定、SQL164）
-const WINDOW_LABELS = {
-  "48h": "48h",
-  "7d": "7d",
-  day_end: "当日23時",
-  "24h": "24h",
-};
 
 export default function MetricsTab() {
   const [window, setWindow] = useState("48h");
@@ -66,7 +60,7 @@ export default function MetricsTab() {
         同じチャネル・言語・型の版・取得元・定義で比較します。動画は尺もそろえます。Xのリンククリック・impressionsは尺を使いません。10本未満は暫定です。欠測は0にしません。
       </p>
       <p>
-        全貌動画は、当日の全レース終了後（23時）と投稿の24時間後で測ります（48h・7dでは測りません）。48hで開くと、全貌は当日23時の値を出します。
+        全貌動画は、当日の全レース終了後（23時）と投稿の24時間後で測ります（48h・7dでは測りません）。48hで開くと、全貌は当日23時の値（23時を過ぎて投稿したものは24hの値）を出します。
       </p>
       <label>
         観測窓{" "}

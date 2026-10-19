@@ -26,12 +26,18 @@ export function windowsFor(draft) {
  */
 export function displayWindowFor(draft, selected) {
   const own = windowsFor(draft);
+  // 23:00 を過ぎて投稿された全貌は day_end を持たないので、既定の 48h では 24h の値を出す（画面から消さない）
   const w =
-    draft?.format === FULL_PICTURE_FORMAT && selected === "48h"
-      ? "day_end"
-      : selected;
+    draft?.format === FULL_PICTURE_FORMAT && selected === "48h" ? own[0] : selected;
   return own.includes(w) ? w : null;
 }
+/** 画面に出す窓の名前（観測の比較・投稿ごとの一覧で共用） */
+export const WINDOW_LABELS = {
+  "48h": "48h",
+  "7d": "7d",
+  day_end: "当日23時",
+  "24h": "24h",
+};
 /** 投稿日（JST）の 23:00 の時刻（ミリ秒） */
 function dayEndOf(postedAt) {
   const jstDate = new Date(Date.parse(postedAt) + 9 * 3600000)
@@ -75,6 +81,8 @@ export const OBSERVATION_METRICS = [
   "new_users",
   "returning_users",
 ];
+/** ISO 8601 の時刻の文字列か（オフセットつき） */
+export const isObservationTimestamp = (value) => timestamp(value);
 const timestamp = (value) =>
   typeof value === "string" &&
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(

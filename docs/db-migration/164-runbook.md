@@ -12,10 +12,15 @@
 - `sns_metric_observations` は0行
 - 置き換える前の `enqueue_sns_metric_jobs` の md5 は `b635b35552120b7704ee08ae146c8e69`（154 の定義を PGlite に入れた値と一致）
 
-## 順序
+## 順序（適用とマージは続けて行う）
+全貌は 161 から自動で送っている（X は1日3本まで）。適用とマージの間が空くと、どちらの順でも全貌の数字が欠ける:
+- 適用 → マージ: 適用の後は、トリガーが全貌に day_end・24h の job を作る。マージ前の取り込みの runner はこの2つの窓を知らないので、期限（投稿日の JST 23:00・投稿の24時間後）が来ると `unknown_window` で閉じてしまう
+- マージ → 適用: マージの後、古いトリガーが全貌に作った 48h・7d の job は、新しい runner が `window_not_measured` で閉じる（その投稿は数字が取れない）
+
+なので次の順にする。
 1. ユーザー: SQL Editor で下のブロックを1回で実行する（最初の確認で前提が違えば例外で止まり、何も変えない）
-2. Claude: 最後の SELECT の結果を読み取りで確かめ、APPLIED.md の 164 を「適用済み」に直す
-3. コード（このPR）は新しい窓を使うので、**適用の後にマージする**（先にマージしても全貌の投稿が無い間は壊れないが、全貌が posted になると古いトリガーが 48h・7d を作る）
+2. オーケストレーター: **すぐに**この PR をマージする。その日に全貌を投稿済みなら、**JST 23:00（最初の day_end の期限）より前に**マージと本番のデプロイを終える
+3. Claude: 最後の SELECT の結果を読み取りで確かめ、APPLIED.md の 164 を「適用済み」に直す。`old_windows_on_full_picture` が0でなければ（適用前に投稿された全貌の 48h・7d の job）、それらはマージ後に `window_not_measured` で閉じて1件ずつ Slack に出る。その投稿の day_end・24h を足し直すかはオーナーに聞く（期限が過ぎていれば、足しても欠測になる）
 
 ## 実行する SQL（1回で貼る）
 ```sql
@@ -28,6 +33,11 @@ BEGIN
   IF (SELECT count(*) FROM pg_constraint WHERE conname IN
       ('sns_metric_jobs_window_check', 'sns_metric_observations_window_check', 'sns_metric_observations_check2')) <> 3 THEN
     RAISE EXCEPTION '164: DROP する制約が見つからないので適用しない';
+  END IF;
+  -- check2 は自動で付いた名前なので、中身が窓の終わりの式（48h・168h）であることも確かめる（別の CHECK を消さないため）
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sns_metric_observations_check2'
+      AND pg_get_constraintdef(oid) LIKE '%48:00:00%168:00:00%') THEN
+    RAISE EXCEPTION '164: sns_metric_observations_check2 が窓の終わりの式ではないので適用しない';
   END IF;
 END $$;
 
@@ -83,14 +93,16 @@ REVOKE ALL ON FUNCTION public.enqueue_sns_metric_jobs() FROM PUBLIC, anon, authe
 
 COMMIT;
 
--- 実行後の確認（1行。期待値: 全部 true、jobs は2）
+-- 実行後の確認（1行。期待値: 全部 true、jobs は今ある件数、old_windows_on_full_picture は0が望ましい（手順3））
 SELECT
   md5(pg_get_functiondef('public.enqueue_sns_metric_jobs()'::regprocedure)) = '5966815e7ae376e0377a0df15b027157' AS trigger_fn_ok,
   (SELECT pg_get_constraintdef(oid) LIKE '%day_end%' FROM pg_constraint WHERE conname = 'sns_metric_jobs_window_check') AS jobs_window_ok,
   (SELECT pg_get_constraintdef(oid) LIKE '%day_end%' FROM pg_constraint WHERE conname = 'sns_metric_observations_window_check') AS obs_window_ok,
   EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sns_metric_observations_period_end') AS period_end_ok,
   NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sns_metric_observations_check2') AS old_check_dropped,
-  (SELECT count(*) FROM public.sns_metric_jobs) AS jobs;
+  (SELECT count(*) FROM public.sns_metric_jobs) AS jobs,
+  (SELECT count(*) FROM public.sns_metric_jobs j JOIN public.sns_drafts d ON d.id = j.draft_id
+    WHERE d.format = 'full_picture' AND j."window" IN ('48h', '7d') AND j.state = 'pending') AS old_windows_on_full_picture;
 ```
 
 ## 戻し方

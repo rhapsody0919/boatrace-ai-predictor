@@ -234,6 +234,11 @@ test("画面: 既定の 48h で開くと全貌は当日の値、7d には全貌�
   assert.equal(displayWindowFor(fpDraft, "24h"), "24h");
   assert.equal(displayWindowFor(otherDraft, "48h"), "48h");
   assert.equal(displayWindowFor(otherDraft, "day_end"), null);
+  // 23:00 を過ぎて投稿された全貌は day_end を持たないので、既定の 48h では 24h を出す（審査 P3-2）
+  assert.equal(
+    displayWindowFor({ ...fpDraft, posted_at: "2026-10-19T14:10:00Z" }, "48h"),
+    "24h",
+  );
   const rows = [
     {
       draft_id: fpDraft.id,
@@ -298,19 +303,45 @@ test("CSV と collector: 全貌は day_end・24h の行、それ以外は 48h・
     csvRows.filter((r) => r.draft_id === id).map((r) => r.window);
   assert.deepEqual(windowsOf(fpDraft.id), ["day_end", "24h"]);
   assert.deepEqual(windowsOf(otherDraft.id), ["48h", "7d"]);
-  const asked = [];
-  await collectDueObservations({
+  // provider が窓どおりの累積値を返せば、day_end も 24h も保存できる（審査 P2-1: day_end が必ず failed になっていた）
+  const saved = [];
+  const results = await collectDueObservations({
     drafts: [fpDraft],
     provider: {
-      collect: async ({ window }) => {
-        asked.push(window);
-        return [];
-      },
+      collect: async ({ period }) => [
+        {
+          ...period,
+          observed_at: period.period_end,
+          data_through: period.period_end,
+          source: "x-api",
+          metric_name: "impressions",
+          metric_value: 12,
+          missing_reason: null,
+          definition: "累積",
+          measurement_kind: "snapshot",
+          duration_seconds: null,
+          external_post_id: "1",
+          curve: [],
+        },
+      ],
     },
-    store: { append: async () => {} },
+    store: { append: async (id, row) => saved.push(row) },
     now: "2026-10-30T00:00:00Z",
   });
-  assert.deepEqual(asked, ["day_end", "24h"]);
+  assert.deepEqual(
+    results.map((r) => [r.window, r.status]),
+    [
+      ["day_end", "saved"],
+      ["24h", "saved"],
+    ],
+  );
+  assert.deepEqual(
+    saved.map((r) => [r.window, r.metric_value]),
+    [
+      ["day_end", 12],
+      ["24h", 12],
+    ],
+  );
 });
 
 test("164-runbook.md の1回で貼る SQL: 154 の状態から通り、実行後の確認が全部 true", async () => {
@@ -357,6 +388,7 @@ test("164-runbook.md の1回で貼る SQL: 154 の状態から通り、実行後
       period_end_ok: true,
       old_check_dropped: true,
       jobs: 0,
+      old_windows_on_full_picture: 0,
     });
     // 2回目は実行前の確認で止まる（関数が置き換わっているので）
     await assert.rejects(fresh.exec(sql), /154 の定義と違う/);
