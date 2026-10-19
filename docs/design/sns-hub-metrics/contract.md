@@ -61,7 +61,7 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 - YouTube の `videos.list`（1回1ユニット、50件ずつ）は送信のクォータの台帳（146 の `sns_youtube_quota_reads`）に載せない。台帳は送信の job と試行の番号が必須で、取り込みの読み取りを入れられない。1日の読み取りは多くても L3 の YouTube 16本×2窓＝32ユニット程度（上限 10,000）
 - X の親の投稿の UTM（sns-pdca-loop tasks 23）: `buildObservationUtm` に `campaign`（`sonar-preview`・`race-full`）を足した。`race-full` は型の版が任意で、`utm_content` は下書きの ID（型の版があれば `下書き/版`）。レースの URL にクエリ・fragment があれば作らない。本文への差し込みと `sns_post_tracking` への保存は `scripts/lib/snsPostTracking.js`（auto-plan が承認の前に呼ぶ）
 
-## 全貌動画の測り時（SQL164、2026-10-19 オーナー決定）
+## 全貌動画の測り時（SQL167、2026-10-19 オーナー決定）
 
 - 全貌動画（`format=full_picture`）は 48h・7d をやめ、当日の全レース終了後（投稿日の JST 23:00、窓 `day_end`）と投稿の24時間後（窓 `24h`）の2点で測る。理由（オーナー）: 過去のレースの全貌にはユーザーは基本的に興味を持たない。全貌以外（ブログなど残り続ける投稿・/today）は今までどおり 48h・7d
 - `day_end` の窓は posted_at から投稿日（JST）の 23:00 まで（長さは投稿ごとに違う）。23:00 を過ぎてから投稿されたものは `day_end` を持たず `24h` だけ。累積値の15分の許容差は新しい窓にもそのまま当てる
