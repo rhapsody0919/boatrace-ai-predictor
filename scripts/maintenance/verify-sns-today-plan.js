@@ -205,7 +205,7 @@ const trackingStore = {
 // 逃げ: 1位は 7:30 締切（送る 7:45 より前）、4位は全国29走（30走未満）で載せない。2・3・5位を載せる。
 // まくり: 1位と2位は同じレース（区分の中は最初の行だけ）、3位を載せて2人まで。逃がし・注目・フライング・帰郷は載せない
 const NIGE_TIME = {
-  1: "11:45:00",
+  1: "07:45:00",
   2: "16:15:00",
   3: "14:15:00",
   4: "13:45:00",
@@ -415,7 +415,7 @@ async function approve(draft) {
   ).r;
 }
 
-test("7:40 に一覧を撮って下書き・item（digest）を作り、本人が承認でき、12:00 に送る job ができる。送る直前の検査も通る", async () => {
+test("7:40 に一覧を撮って下書き・item（digest）を作り、本人が承認でき、8:00 に送る job ができる。送る直前の検査も通る", async () => {
   const notes = [];
   const saved = [];
   const headless = shooter();
@@ -563,7 +563,7 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
       headless: createMockHeadless({ visibleSelectors: SCREEN_MARKERS.today }),
       markers: SCREEN_MARKERS,
       readCurrent: readCurrent(digest, races),
-      now: () => at("12:01").getTime(),
+      now: () => at("08:01").getTime(),
     });
   const sent = { ...job, snapshot_text: JSON.stringify(job.snapshot) };
   await preflight(digestOf())(sent);
@@ -612,14 +612,14 @@ test("同じ一覧でもう一度走らせても何も書かない。一覧が�
   );
 });
 
-test("7:30 より前・一覧が未公開は何もしない。12:00 以降に下書きが無ければ missed。shadow は撮らず書かない", async () => {
+test("7:30 より前・一覧が未公開は何もしない。9:00 以降に下書きが無ければ missed。shadow は撮らず書かない", async () => {
   assert.equal(
     (await plan({ now: at("07:29") })).report.items[0].reason,
     "outside_window",
   );
   assert.deepEqual(
     (({ outcome, reason }) => ({ outcome, reason }))(
-      (await plan({ now: at("12:00") })).report.items[0],
+      (await plan({ now: at("09:00") })).report.items[0],
     ),
     { outcome: "missed", reason: "no_draft_by_send_time" },
   );
@@ -719,7 +719,7 @@ test("vercel.json: sns-auto-plan の関数に /today の文言（ja の common.j
   );
 });
 
-test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /today の job が 12:00 に claim まで進む。dry_run の間は claim しない", async () => {
+test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /today の job が 8:01 に claim まで進む。dry_run の間は claim しない", async () => {
   const runbook = await readFile(
     new URL("../../docs/db-migration/153-runbook.md", import.meta.url),
     "utf8",
@@ -750,7 +750,7 @@ test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /tod
     /dry_run/,
   );
   // 手順2（dry_run=false）の後は、7:45 を過ぎたら claim できる
-  await db.query("UPDATE test_clock SET value=$1", [at("12:01")]);
+  await db.query("UPDATE test_clock SET value=$1", [at("08:01")]);
   await db.exec(
     "UPDATE sns_auto_send_control SET dry_run=false WHERE channel='x'",
   );
@@ -854,7 +854,7 @@ test("区分が1つだけの日も印の意味を書き、印を付ける（割�
   assert.equal(notes.length, 0);
 });
 
-test("注目レース: 先頭に置き一覧に重ねない。逃がしからの注目・12:00 より前・欠場の注目は載せない", async () => {
+test("注目レース: 先頭に置き一覧に重ねない。逃がしからの注目・8:00 より前・欠場の注目は載せない", async () => {
   const { buildTodayPost } = await import("../lib/snsTodayPlanner.js");
   const url = "https://www.boat-ai.jp/today";
   const build = (mutate, excluded = new Set()) => {
@@ -890,7 +890,7 @@ test("注目レース: 先頭に置き一覧に重ねない。逃がしからの
   );
   for (const text of [
     build((f) => Object.assign(f, { from: "nigashi" })).text,
-    build((f) => Object.assign(f, { start_time: "11:55:00" })).text,
+    build((f) => Object.assign(f, { start_time: "07:55:00" })).text,
     build(() => {}, new Set([`${DATE}-04-12:1`])).text,
     build((f, d) => {
       d.rows = d.rows.filter((r) => r !== f);
@@ -996,7 +996,7 @@ test("160: X の画像は image_paths の数・順・種類とそろったとき
   assert.equal(job.state, "queued");
 });
 
-test("各回の結果をその日の分だけ cursor に残す（12:00 を過ぎても朝の経過を読める）。時間外は残さず、日付が変わったら空から、最新30件", async () => {
+test("各回の結果をその日の分だけ cursor に残す（送る時刻を過ぎても朝の経過を読める）。時間外は残さず、日付が変わったら空から、最新30件", async () => {
   const { nextTodayLog } = await import("../lib/snsTodayPlanner.js");
   let log = nextTodayLog(
     null,
@@ -1007,7 +1007,7 @@ test("各回の結果をその日の分だけ cursor に残す（12:00 を過ぎ
   log = nextTodayLog(
     log,
     { outcome: "skipped", reason: "outside_window" },
-    at("12:10"),
+    at("09:10"),
   );
   assert.deepEqual(log, {
     date: DATE,
@@ -1084,7 +1084,7 @@ test("確認用の作り直しが3回続けて失敗したら、Slack に1回知
   );
 });
 
-test("下書きを作れずに 12:00 を過ぎたら、理由つきで Slack に1回だけ知らせる文を出す。下書きがあれば出さない（2026-10-17 黙って終わった件）", async () => {
+test("下書きを作れずに 9:00 を過ぎたら、理由つきで Slack に1回だけ知らせる文を出す。下書きがあれば出さない（2026-10-17 黙って終わった件）", async () => {
   const { finishTodayLog, nextTodayLog } =
     await import("../lib/snsTodayPlanner.js");
   // 朝は図がそろわずやり直し続け、7:45 を過ぎた
@@ -1097,12 +1097,12 @@ test("下書きを作れずに 12:00 を過ぎたら、理由つきで Slack に
     },
     at("08:20"),
   );
-  const late = (await plan({ now: at("12:05") })).report.items[0];
+  const late = (await plan({ now: at("09:05") })).report.items[0];
   assert.equal(late.outcome, "missed");
-  const first = finishTodayLog(log, late, at("12:05"));
+  const first = finishTodayLog(log, late, at("09:05"));
   assert.match(
     first.notice,
-    /SNS \/today（2037-10-17）: 送る時刻（12:00）までに下書きを作れなかった。今日は送らない/,
+    /SNS \/today（2037-10-17）: 09:00 までに下書きを作れなかった。今日は送らない/,
   );
   assert.match(
     first.notice,
@@ -1110,25 +1110,25 @@ test("下書きを作れずに 12:00 を過ぎたら、理由つきで Slack に
   );
   // 知らせた後（missed_notified を保存）は、その日はもう出さない。次の日は改めて出す
   first.log.missed_notified = true;
-  const again = finishTodayLog(first.log, late, at("12:10"));
+  const again = finishTodayLog(first.log, late, at("09:10"));
   assert.equal(again.notice, null);
   assert.equal(again.log.missed_notified, true);
   const nextDay = finishTodayLog(
     again.log,
     late,
-    new Date(at("12:05").getTime() + 86400000),
+    new Date(at("09:05").getTime() + 86400000),
   );
   assert.match(nextDay.notice, /朝の実行が一度も最後まで終わっていない/);
   // 朝の記録が無い（関数の時間切れで何も残らない）日も、その旨を出す
   assert.match(
-    finishTodayLog(null, late, at("12:05")).notice,
+    finishTodayLog(null, late, at("09:05")).notice,
     /関数の時間切れなど/,
   );
   // 下書きがあれば missed にならず、何も出さない
   await plan({ now: at("07:50") });
-  const ok = (await plan({ now: at("12:05") })).report.items[0];
+  const ok = (await plan({ now: at("09:05") })).report.items[0];
   assert.equal(ok.reason, "outside_window");
-  assert.equal(finishTodayLog(null, ok, at("12:05")).notice, null);
+  assert.equal(finishTodayLog(null, ok, at("09:05")).notice, null);
 });
 
 test("撮影は開始から120秒を過ぎたら新しく撮らない（関数の時間切れで何も残らないのを避ける）", async () => {
@@ -1176,7 +1176,7 @@ test("確認用の作り直し（cursor.today_rebuild）: 送る時刻を過ぎ�
   );
 });
 
-test("mode=auto（2026-10-18 オーナー決定: /today も承認なし）: 下書きを作ったら item を notified にし、自動送信の承認者で 12:00 の job を作る。一覧がやり直されたら作り直して承認し直す", async () => {
+test("mode=auto（2026-10-18 オーナー決定: /today も承認なし）: 下書きを作ったら item を notified にし、自動送信の承認者で 8:00 の job を作る。一覧がやり直されたら作り直して承認し直す", async () => {
   await db.exec(
     "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='x'",
   );
@@ -1196,8 +1196,8 @@ test("mode=auto（2026-10-18 オーナー決定: /today も承認なし）: 下�
     assert.equal(job.state, "queued");
     assert.equal(job.approver_id, auto);
     assert.equal(job.auto_item_id, item.id);
-    assert.equal(job.scheduled_at.toISOString(), at("12:00").toISOString());
-    assert.ok(notes.some((n) => /12:00 に自動で送る/.test(n)));
+    assert.equal(job.scheduled_at.toISOString(), at("08:00").toISOString());
+    assert.ok(notes.some((n) => /08:00 に自動で送る/.test(n)));
     assert.ok(notes.some((n) => /paused = true/.test(n)));
     // 一覧がやり直されたら（版が変わる）、notified でも作り直して承認し直す
     const again = await plan({
@@ -1214,4 +1214,29 @@ test("mode=auto（2026-10-18 オーナー決定: /today も承認なし）: 下�
       "UPDATE sns_auto_send_control SET mode='manual' WHERE channel='x'",
     );
   }
+});
+
+test("送る時刻（2026-10-19 オーナー決定: 毎朝 8:00 ごろ）: 8:00 より前に作れば 8:00、遅れて作れば作った時刻。失効は 9:30、締切は 10:00", async () => {
+  const { todaySchedule } = await import("../lib/snsTodayPlanner.js");
+  assert.deepEqual(todaySchedule(DATE, at("07:40")), {
+    plan_from: at("07:30").toISOString(),
+    latest: at("09:00").toISOString(),
+    scheduled_at: at("08:00").toISOString(),
+    deadline_at: at("10:00").toISOString(),
+    notify_by: at("07:30").toISOString(),
+    veto_until: at("08:00").toISOString(),
+    expires_at: at("09:30").toISOString(),
+  });
+  // 図を 8:30 まで待って 8:40 に作った日は、8:40 に送る
+  await plan({ now: at("08:40") });
+  const draft = await first("SELECT * FROM sns_drafts");
+  const item = await first("SELECT * FROM sns_auto_send_items");
+  assert.equal(draft.scheduled_at.toISOString(), at("08:40").toISOString());
+  assert.equal(item.veto_until.toISOString(), at("08:40").toISOString());
+  assert.equal(item.notify_by.toISOString(), at("07:30").toISOString());
+  assert.equal(item.deadline_at.toISOString(), at("10:00").toISOString());
+  assert.equal(
+    draft.source_data.deadline_queue.expires_at,
+    at("09:30").toISOString(),
+  );
 });
