@@ -28,6 +28,7 @@
             "mcp__claude-in-chrome__find",
             "mcp__claude-in-chrome__get_page_text",
             "Bash(gh run watch *)",
+            "Bash(node --env-file=.env.local scripts/db/ro-query.js *)",
             "mcp__aws-knowledge__aws___search_documentation",
             "mcp__aws-knowledge__aws___read_documentation",
             "mcp__34bf5277-1acd-4c0b-a358-72580d08586c__list_issues"

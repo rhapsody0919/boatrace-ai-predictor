@@ -310,6 +310,18 @@ async function asRole(db, role, fn) {
   check("ROLLBACK の失敗で元のエラーを上書きしない", /statement timeout/.test(r.message ?? ""), r.message);
 }
 
+// (g0) 秘密でないと確かめた app.settings.jwt_exp（本番の古い Supabase にある）だけなら 166 は通る
+{
+  const db = await freshDb("ALTER DATABASE postgres SET app.settings.jwt_exp = '3600';");
+  const r = await rejects(() => db.exec(MIGRATION));
+  check("166: app.settings.jwt_exp だけなら通る（許可リスト）", !r.rejected, r.message);
+  const n = (
+    await db.query("SELECT count(*)::int AS n FROM pg_roles WHERE rolname='claude_ro'")
+  ).rows[0].n;
+  check("166: app.settings.jwt_exp があっても claude_ro を作る", n === 1);
+  await db.close();
+}
+
 // (g) 166 の末尾の検査。どれも例外になり、claude_ro は作られない（全体が戻る）
 for (const [label, extraSql, pattern] of [
   [
@@ -354,6 +366,22 @@ for (const [label, extraSql, pattern] of [
     "データベースの設定の秘密（値は出さない）",
     "ALTER DATABASE postgres SET app.settings.jwt_secret = 'super-secret-value';",
     /app\.settings\.jwt_secret/,
+  ],
+  [
+    "許可リストの jwt_exp と並んでいても jwt_secret は止まる",
+    `ALTER DATABASE postgres SET app.settings.jwt_exp = '3600';
+     ALTER DATABASE postgres SET app.settings.jwt_secret = 'super-secret-value';`,
+    /: app\.settings\.jwt_secret$/,
+  ],
+  [
+    "許可リストは完全一致（jwt_exp で始まる別の名前は止まる）",
+    "ALTER DATABASE postgres SET app.settings.jwt_exp_secret = 'x';",
+    /app\.settings\.jwt_exp_secret/,
+  ],
+  [
+    "全ロール向けの設定の秘密も止まる",
+    "ALTER ROLE ALL SET app.settings.service_key = 'x';",
+    /app\.settings\.service_key/,
   ],
 ]) {
   const db = await freshDb(extraSql);

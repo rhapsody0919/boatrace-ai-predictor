@@ -81,3 +81,4 @@
 - pg_depend（deptype<>'i'）で外からの依存を数えるときは、対象の表自身の制約（pg_constraint）・既定値（pg_attrdef）・索引（pg_index の indexrelid）を除く。索引を除き忘れると、外の依存が無くても 0 にならない（2026-10-19、168-runbook の PGlite での再現）
 - 消した表は元のマイグレーションをもう一度流せば作り直せるが、行は戻らない。後で読む経路が無く件数が小さければ APPLIED.md に要点を書き、そうでなければ適用前にオーナーが CSV で退避してリポジトリの外に置く。本番に退避用の表は作らない（2026-10-19、system-architect、168）
 - 手元の既定の node は v16 で `node:test` 等が無く verify-*.js が落ちる。`~/.nvm/versions/node/v22.20.0/bin` を PATH に足して実行する。worktree の node_modules が古いと `twitter-text` 等が見つからないので `npm ci` する（2026-10-19）
+- pg_db_role_setting の名前で秘密を判定すると、古い Supabase の app.settings.jwt_exp（JWT の有効期限の秒数）で誤検知する。正規表現はゆるめず、秘密でないと確かめた名前だけを完全一致の許可リストで除く（2026-10-19、本番で 166 を実行して検出、ADR-0096）

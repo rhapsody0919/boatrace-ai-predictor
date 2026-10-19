@@ -26,7 +26,7 @@ export default function ObservationCsvPanel() {
     <form onSubmit={download}>
       <h3>週次観測CSV</h3>
       <p>
-        公開日（JST・両端を含む）で選び、48hと7dを出力します。欠測は空欄と理由、指標ごとの来歴を残します。
+        公開日（JST・両端を含む）で選び、48hと7d（全貌動画は当日23時と24h）を出力します。欠測は空欄と理由、指標ごとの来歴を残します。
       </p>
       <label>
         公開開始日{" "}
