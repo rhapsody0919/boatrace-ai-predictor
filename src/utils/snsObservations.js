@@ -7,7 +7,7 @@ export const OBSERVATION_WINDOWS = {
   day_end: null,
 };
 // 全貌動画（format=full_picture）は当日の全レース終了後（JST 23:00）と投稿の24時間後で測る（2026-10-19 オーナー決定。
-// 過去のレースの全貌にはユーザーは興味を持たないので 48h・7d は測らない）。それ以外は今までどおり 48h・7d（SQL167）
+// 過去のレースの全貌にはユーザーは興味を持たないので 48h・7d は測らない）。それ以外は今までどおり 48h・7d（SQL169）
 export const FULL_PICTURE_FORMAT = "full_picture";
 export const FULL_PICTURE_WINDOWS = ["day_end", "24h"];
 export const DEFAULT_WINDOWS = ["48h", "7d"];

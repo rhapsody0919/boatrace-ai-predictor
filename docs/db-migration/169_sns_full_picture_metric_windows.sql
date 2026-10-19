@@ -1,8 +1,8 @@
--- 167: 全貌動画（format=full_picture）の数字の測り時を「当日の全レース終了後（JST 23:00）」と「投稿の24時間後」にする
+-- 169: 全貌動画（format=full_picture）の数字の測り時を「当日の全レース終了後（JST 23:00）」と「投稿の24時間後」にする
 -- 2026-10-19 オーナー決定（hq 経由）: 過去のレースの全貌にはユーザーは基本的に興味を持たないので、48h・7d で測っても意味がない。
 -- 全貌以外（ブログなど残り続ける投稿・/today）は今までどおり 48h・7d。
 -- 設計: docs/design/sns-pdca-loop/plan.md §5、docs/design/sns-hub-metrics/contract.md。前提: 136・154（本番に適用済み）。適用はオーナーのみ。
--- 番号は hq が予約（2026-10-19。164 から付け直し）。手順・確認の SELECT は 167-runbook.md。
+-- 番号は hq が予約（2026-10-19。164・167 から付け直し）。手順・確認の SELECT は 169-runbook.md。
 -- 制約名は本番の pg_constraint で確認済み（2026-10-19、読み取り）:
 --   sns_metric_jobs_window_check、sns_metric_observations_window_check、sns_metric_observations_check2（period_end = period_start + 48h/168h）
 -- 本番の sns_metric_jobs は2行（/today の 48h・7d、pending）、sns_metric_observations は0行（2026-10-19）。どちらも新しい CHECK に違反しない。

@@ -1,5 +1,5 @@
-// 全貌動画（format=full_picture）の測り時（当日 JST 23:00・投稿の24時間後、2026-10-19 オーナー決定、SQL167）の再現テスト。
-// SQL154・167 を PGlite に入れる。外部接続なし。
+// 全貌動画（format=full_picture）の測り時（当日 JST 23:00・投稿の24時間後、2026-10-19 オーナー決定、SQL169）の再現テスト。
+// SQL154・169 を PGlite に入れる。外部接続なし。
 import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -44,7 +44,7 @@ before(async () => {
     "148_sns_posted_approval_guard.sql",
     "153_sns_auto_send.sql",
     "154_sns_tokens_metric_jobs.sql",
-    "167_sns_full_picture_metric_windows.sql",
+    "169_sns_full_picture_metric_windows.sql",
   ])
     await db.exec(
       await readFile(
@@ -344,7 +344,7 @@ test("CSV と collector: 全貌は day_end・24h の行、それ以外は 48h・
   );
 });
 
-test("167-runbook.md の1回で貼る SQL: 154 の状態から通り、実行後の確認が全部 true", async () => {
+test("169-runbook.md の1回で貼る SQL: 154 の状態から通り、実行後の確認が全部 true", async () => {
   const fresh = new PGlite();
   try {
     await fresh.exec(
@@ -373,7 +373,7 @@ test("167-runbook.md の1回で貼る SQL: 154 の状態から通り、実行後
         ),
       );
     const md = await readFile(
-      new URL("../../docs/db-migration/167-runbook.md", import.meta.url),
+      new URL("../../docs/db-migration/169-runbook.md", import.meta.url),
       "utf8",
     );
     const sql = md.slice(
@@ -397,7 +397,7 @@ test("167-runbook.md の1回で貼る SQL: 154 の状態から通り、実行後
   }
 });
 
-test("取り込みの runner: 全貌の day_end の job は当日 23:00 の値を保存し、167 の前に作られた全貌の 48h の job は閉じる", async () => {
+test("取り込みの runner: 全貌の day_end の job は当日 23:00 の値を保存し、169 の前に作られた全貌の 48h の job は閉じる", async () => {
   const draft = { ...fpDraft, status: "posted" };
   const jobs = [
     {

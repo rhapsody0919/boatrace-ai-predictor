@@ -256,7 +256,7 @@ function brokenReason(job) {
   if (!job.external_post_id) return "external_post_id_missing";
   if (!METRICS_BY_CHANNEL[job.channel]) return "unknown_channel";
   if (!Object.hasOwn(OBSERVATION_WINDOWS, job.window)) return "unknown_window";
-  // 型が測らない窓（SQL167 の前に古いトリガーが全貌に作った 48h・7d など）は、やり直しても入れられないので閉じる
+  // 型が測らない窓（SQL169 の前に古いトリガーが全貌に作った 48h・7d など）は、やり直しても入れられないので閉じる
   if (!windowsFor(job.draft).includes(job.window)) return "window_not_measured";
   return null;
 }

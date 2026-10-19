@@ -7,6 +7,7 @@
 - ADR の番号は並行セッションで重複しやすい。足したら npm run verify:adr-numbers（次の番号も出る）（2026-09-12 に8組15件を振り直し、memory technical_adr_number_collisions）
 - マイグレーションの番号は並行するレーンで重なりうる。着手時にオーケストレーターに番号を取ってもらい、PR 作成前に origin/master の最新番号と比べる（2026-10-11、オーケストレーター依頼）
 - 新しいマイグレーションの番号は origin/master の最大番号より大きくないと verify-migration-numbers が CI で落とす。予約した番号でも、master が先に進んでいたら使えない（2026-10-13、BOA-822 の 149〜151 を 155〜157 に付け替え）
+- マイグレーションと ADR の番号は予約しない。PR を作るときに origin/master の最大＋1 を使い、CI で落ちたらその時の最大＋1 に付け直す（2026-10-19 hq の決定で予約を廃止。予約した 164・162 が、後の番号の先のマージで使えなくなったため）
 - マイグレーションの番号を付け替えるときは、SQL のファイル名・docs/db-migration/APPLIED.md・docs/design の番号の表記・verify-*.js が読むファイル名を全部 grep して直す（2026-10-10、memory sns_hub_intake_paused_2026_10_09）
 - plan.md に新しいテーブル・リレーションを書いたら node scripts/maintenance/generate-er-diagram.js {slug} で DDL から erDiagram を作り、npm run verify:er-diagram で照合する（2026-09-15、memory er_diagram_generation_2026_09_15、PR #665）
 - docs/reference/database-design.md の関係図は自動更新されず、「テーブル一覧と使用状況」等は古い（race_odds を「未使用」と書く等）（2026-09-15、memory er_diagram_generation_2026_09_15。更新されたかは要確認）
@@ -76,3 +77,7 @@
 - PUBLIC に付いた権限は、擬似ロール名 'public' を has_*_privilege に渡すと、ロールを作る前に読み取りで確かめられる（2026-10-19、system-architect）
 - pg-connection-string は接続文字列のクエリ（?user= や options=-c role=…）を URL のユーザー名より優先する。接続の前の URL の確認ではクエリも検査する（2026-10-19、pg 8.23.1、roQuery.js の checkRoUrl）
 - ALTER DATABASE … SET で入れた設定（古い Supabase の app.settings.jwt_secret 等）は、接続できるロールなら誰でも current_setting で読める。読み取りのロールを足す前に確かめる（2026-10-19、system-architect、166 の検査）
+- DROP だけのマイグレーションの runbook では、「最後に書かれた時刻」の判定の基準を、呼び出し元を消した PR の本番デプロイ時刻にする（DROP の PR の時刻では、その間の想定外の書き込みを見逃す）。読むだけの RPC はこの判定では見えず、コードの grep だけが根拠になる（2026-10-19、system-architect、168。呼び出し元を消したのは #1645）
+- pg_depend（deptype<>'i'）で外からの依存を数えるときは、対象の表自身の制約（pg_constraint）・既定値（pg_attrdef）・索引（pg_index の indexrelid）を除く。索引を除き忘れると、外の依存が無くても 0 にならない（2026-10-19、168-runbook の PGlite での再現）
+- 消した表は元のマイグレーションをもう一度流せば作り直せるが、行は戻らない。後で読む経路が無く件数が小さければ APPLIED.md に要点を書き、そうでなければ適用前にオーナーが CSV で退避してリポジトリの外に置く。本番に退避用の表は作らない（2026-10-19、system-architect、168）
+- 手元の既定の node は v16 で `node:test` 等が無く verify-*.js が落ちる。`~/.nvm/versions/node/v22.20.0/bin` を PATH に足して実行する。worktree の node_modules が古いと `twitter-text` 等が見つからないので `npm ci` する（2026-10-19）

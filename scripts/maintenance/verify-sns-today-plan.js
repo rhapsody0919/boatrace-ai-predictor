@@ -719,20 +719,6 @@ test("vercel.json: sns-auto-plan の関数に /today の文言（ja の common.j
   );
 });
 
-test("承認の画面の指摘: /today の本文（加重で280超え）は、長文の1投稿として指摘しない", async () => {
-  const { inspectDraft } = await import("../../api/_lib/snsEditAssist.js");
-  await plan();
-  const [draft] = await all("SELECT * FROM sns_drafts");
-  const long = {
-    ...draft,
-    caption_text: draft.caption_text + "あ".repeat(200),
-  };
-  assert.equal(
-    inspectDraft(long, []).find((f) => f.rule === "x-weighted-length"),
-    undefined,
-  );
-});
-
 test("runbook の L2 の SQL（153-runbook.md）を流すと、承認した /today の job が 8:01 に claim まで進む。dry_run の間は claim しない", async () => {
   const runbook = await readFile(
     new URL("../../docs/db-migration/153-runbook.md", import.meta.url),

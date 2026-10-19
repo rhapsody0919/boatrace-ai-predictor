@@ -1,6 +1,6 @@
-# 167 の適用手順（全貌動画の測り時: 当日 JST 23:00・投稿の24時間後）
+# 169 の適用手順（全貌動画の測り時: 当日 JST 23:00・投稿の24時間後）
 
-マイグレーション167（`167_sns_full_picture_metric_windows.sql`）の本番適用の手順。決定は 2026-10-19 オーナー（hq 経由）: 全貌動画（`format=full_picture`）は 48h・7d をやめ、当日の全レース終了後（JST 23:00）と投稿の24時間後で測る。全貌以外（ブログ・/today など）は今までどおり 48h・7d。
+マイグレーション169（`169_sns_full_picture_metric_windows.sql`）の本番適用の手順。決定は 2026-10-19 オーナー（hq 経由）: 全貌動画（`format=full_picture`）は 48h・7d をやめ、当日の全レース終了後（JST 23:00）と投稿の24時間後で測る。全貌以外（ブログ・/today など）は今までどおり 48h・7d。
 
 ## 変えるもの
 - `sns_metric_jobs`・`sns_metric_observations` の窓の CHECK に `day_end`・`24h` を足す
@@ -20,7 +20,7 @@
 なので次の順にする。
 1. ユーザー: SQL Editor で下のブロックを1回で実行する（最初の確認で前提が違えば例外で止まり、何も変えない）
 2. オーケストレーター: **すぐに**この PR をマージする。その日に全貌を投稿済みなら、**JST 23:00（最初の day_end の期限）より前に**マージと本番のデプロイを終える
-3. Claude: 最後の SELECT の結果を読み取りで確かめ、APPLIED.md の 167 を「適用済み」に直す。`old_windows_on_full_picture` が0でなければ（適用前に投稿された全貌の 48h・7d の job）、それらはマージ後に `window_not_measured` で閉じて1件ずつ Slack に出る。その投稿の day_end・24h を足し直すかはオーナーに聞く（期限が過ぎていれば、足しても欠測になる）
+3. Claude: 最後の SELECT の結果を読み取りで確かめ、APPLIED.md の 169 を「適用済み」に直す。`old_windows_on_full_picture` が0でなければ（適用前に投稿された全貌の 48h・7d の job）、それらはマージ後に `window_not_measured` で閉じて1件ずつ Slack に出る。その投稿の day_end・24h を足し直すかはオーナーに聞く（期限が過ぎていれば、足しても欠測になる）
 
 ## 実行する SQL（1回で貼る）
 ```sql
@@ -28,16 +28,16 @@
 DO $$
 BEGIN
   IF md5(pg_get_functiondef('public.enqueue_sns_metric_jobs()'::regprocedure)) <> 'b635b35552120b7704ee08ae146c8e69' THEN
-    RAISE EXCEPTION '167: enqueue_sns_metric_jobs が 154 の定義と違うので適用しない';
+    RAISE EXCEPTION '169: enqueue_sns_metric_jobs が 154 の定義と違うので適用しない';
   END IF;
   IF (SELECT count(*) FROM pg_constraint WHERE conname IN
       ('sns_metric_jobs_window_check', 'sns_metric_observations_window_check', 'sns_metric_observations_check2')) <> 3 THEN
-    RAISE EXCEPTION '167: DROP する制約が見つからないので適用しない';
+    RAISE EXCEPTION '169: DROP する制約が見つからないので適用しない';
   END IF;
   -- check2 は自動で付いた名前なので、中身が窓の終わりの式（48h・168h）であることも確かめる（別の CHECK を消さないため）
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'sns_metric_observations_check2'
       AND pg_get_constraintdef(oid) LIKE '%48:00:00%168:00:00%') THEN
-    RAISE EXCEPTION '167: sns_metric_observations_check2 が窓の終わりの式ではないので適用しない';
+    RAISE EXCEPTION '169: sns_metric_observations_check2 が窓の終わりの式ではないので適用しない';
   END IF;
 END $$;
 
