@@ -98,6 +98,7 @@
     "verify:actionlint": "node scripts/maintenance/verify-actionlint.js",
     "verify:db-apply": "node scripts/maintenance/verify-db-apply.js",
     "verify:review-workflow": "node scripts/maintenance/verify-review-workflow.js",
+    "verify:db-reconcile": "node scripts/maintenance/verify-db-reconcile.js",
     "setup:actionlint": "node scripts/maintenance/install-actionlint.js",
     "sns:push-bundle": "node --env-file=.env.local scripts/sns/push-bundle.js",
     "sns:push-full-picture": "node --env-file=.env.local scripts/sns/push-full-picture.js",
