@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getMetricObservations } from "../../../services/snsHubService.js";
 import {
   compareObservations,
+  FULL_PICTURE_FORMAT,
   OBSERVATION_METRICS,
 } from "../../../utils/snsObservations.js";
 import "./MetricsTab.css";
@@ -123,7 +124,7 @@ export default function MetricsTab() {
                   <p>
                     版:{" "}
                     {group.variant ||
-                      (group.format === "full_picture" ? "版なし（全貌）" : "未確認")}
+                      (group.format === FULL_PICTURE_FORMAT ? "版なし（全貌）" : "未確認")}
                     {platform !== "x" && (
                       <> / 尺: {group.duration ?? "未確認"}秒</>
                     )}

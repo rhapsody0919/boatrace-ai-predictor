@@ -14,6 +14,7 @@ import {
 } from "../../src/utils/snsObservations.js";
 import { buildObservationCsvRows } from "../../src/utils/snsObservationCsv.js";
 import { collectDueObservations } from "../lib/snsObservationCollector.js";
+import { runSnsMetrics } from "../lib/snsMetricsRunner.js";
 
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -362,4 +363,84 @@ test("164-runbook.md の1回で貼る SQL: 154 の状態から通り、実行後
   } finally {
     await fresh.close();
   }
+});
+
+test("取り込みの runner: 全貌の day_end の job は当日 23:00 の値を保存し、164 の前に作られた全貌の 48h の job は閉じる", async () => {
+  const draft = { ...fpDraft, status: "posted" };
+  const jobs = [
+    {
+      id: "j1",
+      draft_id: draft.id,
+      window: "day_end",
+      source: "x-api",
+      attempts: 0,
+      channel: "x",
+      draft,
+      external_post_id: "100",
+    },
+    {
+      id: "j2",
+      draft_id: draft.id,
+      window: "48h",
+      source: "x-api",
+      attempts: 0,
+      channel: "x",
+      draft,
+      external_post_id: "100",
+    },
+  ];
+  const appended = [];
+  const finished = [];
+  const notices = [];
+  const now = new Date("2026-10-19T14:05:00Z");
+  await runSnsMetrics(
+    { mode: "live", now: () => now, shouldStop: () => false },
+    {
+      store: {
+        dueJobs: async () => jobs,
+        append: async (id, row) => appended.push(row),
+        finish: async (id, state, reason) => finished.push([id, state, reason]),
+        retry: async () => assert.fail("やり直さない"),
+        reserveXRead: async () => true,
+        hasValues: async () => false,
+        recentOutcomes: async () => ({ done: 0, missing: 0, failed: 0 }),
+      },
+      readers: {
+        x: async () => ({
+          read: async () =>
+            new Map([
+              [
+                "100",
+                {
+                  observedAt: now.toISOString(),
+                  values: {
+                    impressions: 50,
+                    url_link_clicks: 1,
+                    likes: 2,
+                    shares: 0,
+                    saves: 0,
+                  },
+                },
+              ],
+            ]),
+        }),
+      },
+      notify: async (t) => notices.push(t),
+    },
+  );
+  assert.deepEqual(finished, [
+    ["j2", "failed", "window_not_measured"],
+    ["j1", "done", null],
+  ]);
+  assert.ok(
+    appended.every(
+      (r) =>
+        r.window === "day_end" && r.period_end === "2026-10-19T14:00:00.000Z",
+    ),
+  );
+  assert.equal(
+    appended.find((r) => r.metric_name === "impressions").metric_value,
+    50,
+  );
+  assert.equal(notices.length, 1);
 });
