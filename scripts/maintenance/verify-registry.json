@@ -116,6 +116,11 @@
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
     },
     {
+      "script": "verify-review-workflow.js",
+      "tier": "ci",
+      "guards": "AI の PR の審査（.github/workflows/review.yml・scripts/review/*・scripts/lib/reviewPr.js、ADR-0097）。審査の相手の振り分け、機械で落とす形（symlink・submodule・LFS・バイナリ・.gitattributes・上限）、材料に渡す表の名前、LLM の答えの検査、承認の判定（head が進んだら何もしない・P0 では承認しない）、配線（pull_request_target・作者の user.id・head を checkout しない・persist-credentials: false・npm ci と cache なし・run に ${{ }} なし・action の SHA 固定・鍵は決めた job だけ・pr-review と db-readonly は review.yml だけ）、e2e の集約の job が always() で走ること"
+    },
+    {
       "script": "verify-db-apply.js",
       "tier": "ci",
       "guards": "本番 DB 適用ワークフロー（.github/workflows/db-apply.yml、scripts/lib/dbApplySql.js）。パスの検証（ディレクトリの外・大文字・別拡張子を通さない）、文の分割（文字列・$$・コメントの中の ; を区切りにしない）、拒否する SQL（先頭 BEGIN・末尾 COMMIT 以外のトランザクション制御、CONCURRENTLY・VACUUM・ALTER SYSTEM・psql のメタコマンド 等）、触るテーブルの抽出、台帳の更新、実ファイルで拒否されるのが 050・055 だけであること、ワークフローの配線（secret は承認後の job だけ、run に ${{ }} を直接書かない、書き込み権限は台帳の job だけ）"
