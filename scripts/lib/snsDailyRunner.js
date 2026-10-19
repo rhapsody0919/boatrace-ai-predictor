@@ -31,6 +31,10 @@ const VIDEO_METRICS = [
   "averageViewPercentage",
   "subscribersGained",
 ];
+const RACE_ID_RE = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
+/** 時刻を JST の YYYY-MM-DD にする */
+const toJstDay = (iso) =>
+  new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(0, 10);
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const UPSERT_CHUNK = 500;
@@ -43,6 +47,9 @@ const def = {
     `YouTube Analytics reports dimensions=day filters=video・${m}・太平洋時間の暦日・v1`,
   ga4Channel: (m) =>
     `GA4 ${m}・hostName=${SITE_HOST}・sessionSource は X・YouTube の完全一致のリスト・流入元ごとの和・JST の暦日・Cookie 同意者のみ・v1`,
+  // 全貌（utm_content=race_id）は X・YouTube と utm_term（full・shorts）で分ける
+  ga4FullPicture: (m, source, term) =>
+    `GA4 ${m}・utm_source=${source}・utm_medium=social・utm_campaign=race-full・utm_content=race_id・utm_term=${term || "(なし)"}・JST の暦日・投稿日と翌日だけ・Cookie 同意者のみ・v1`,
   ga4Utm: (m, campaign) =>
     `GA4 ${m}・utm_source=x・utm_medium=social・utm_campaign=${campaign}・JST の暦日・Cookie 同意者のみ・v1`,
 };
@@ -269,17 +276,23 @@ async function collectGa4({ runReport, store, jstDays, push }) {
           definition: def.ga4Channel(metric),
         });
 
-  // X の投稿の UTM ごと（行がある分だけ）。utm_content の先頭が下書きの ID なら draft_id に結びつける
+  // 投稿の UTM ごと（行がある分だけ）。
+  // - utm_content の先頭が下書きの ID（auto-plan の race-full・today_digest、X だけ）: draft_id に結びつける
+  // - utm_content がレース ID（全貌動画。hq の作り手が X の本文と YouTube の概要欄に付ける、2026-10-19 合意）:
+  //   X・YouTube を utm_term（full・shorts）ごとに分け、その全貌の下書きの実際の投稿日（JST）と翌日の2日分だけを残す
+  //   （GA4 の反映は最大48時間遅れるが、毎日 D−3〜D−1 を取り直すので両日とも58時間後まで読み直す。2026-10-19 オーナー決定）
   const utmFilter = and(
     hostFilter,
-    exact("sessionSource", "x"),
+    inList("sessionSource", ["x", "youtube"]),
     exact("sessionMedium", "social"),
     inList("sessionCampaignName", UTM_CAMPAIGNS),
   );
   const utmDims = [
     { name: "date" },
+    { name: "sessionSource" },
     { name: "sessionCampaignName" },
     { name: "sessionManualAdContent" },
+    { name: "sessionManualTerm" },
   ];
   const [utmVisits, utmSonar] = await Promise.all([
     runReport({
@@ -295,22 +308,57 @@ async function collectGa4({ runReport, store, jstDays, push }) {
       dimensionFilter: and(utmFilter, sonarTabFilter),
     }),
   ]);
+  const contents = [...utmVisits, ...utmSonar].map(([, , , content]) =>
+    String(content),
+  );
   const candidates = [
     ...new Set(
-      [...utmVisits, ...utmSonar]
-        .map(([, , content]) => String(content).split("/")[0])
-        .filter((id) => UUID_RE.test(id)),
+      contents.map((c) => c.split("/")[0]).filter((id) => UUID_RE.test(id)),
     ),
   ];
-  const known = new Set(
-    candidates.length ? await store.existingDrafts(candidates) : [],
+  const raceIds = [...new Set(contents.filter((c) => RACE_ID_RE.test(c)))];
+  const [known, fullPicture] = await Promise.all([
+    candidates.length ? store.existingDrafts(candidates) : [],
+    raceIds.length ? store.fullPictureDrafts(raceIds) : [],
+  ]);
+  const knownIds = new Set(known);
+  const fpDraft = new Map(
+    fullPicture.map((d) => [`${d.race_id}|${d.platform}`, d]),
   );
-  const utmRow = (date, campaign, content, metric, value) => {
-    const id = String(content).split("/")[0];
+  const utmRow = (date, source, campaign, content, term, metric, value) => {
+    const day = ga4Day(date);
+    if (RACE_ID_RE.test(content)) {
+      if (campaign !== "race-full") return;
+      const channel = source === "youtube" ? "youtube" : "x";
+      const draft = fpDraft.get(`${content}|${channel}`);
+      // 投稿された全貌の下書きが無い（まだ送っていない・手で出した）ときは、投稿日が分からないので数えない
+      if (!draft?.posted_at) return;
+      const postedDay = toJstDay(draft.posted_at);
+      if (day !== postedDay && day !== addDays(postedDay, 1)) return;
+      push({
+        day,
+        channel,
+        draft_id: draft.id,
+        utm_content: content,
+        source: "site-analytics",
+        metric_name: metric,
+        metric_value: value,
+        missing_reason: null,
+        definition: def.ga4FullPicture(
+          metric,
+          source,
+          term === "(not set)" ? "" : term,
+        ),
+      });
+      return;
+    }
+    // 下書きの ID の UTM は X だけ（今までどおり）
+    if (source !== "x") return;
+    const id = content.split("/")[0];
     push({
-      day: ga4Day(date),
+      day,
       channel: "x",
-      draft_id: known.has(id) ? id : null,
+      draft_id: knownIds.has(id) ? id : null,
       utm_content: content,
       source: "site-analytics",
       metric_name: metric,
@@ -319,12 +367,20 @@ async function collectGa4({ runReport, store, jstDays, push }) {
       definition: def.ga4Utm(metric, campaign),
     });
   };
-  for (const [date, campaign, content, users, sessions] of utmVisits) {
-    utmRow(date, campaign, content, "users", users);
-    utmRow(date, campaign, content, "sessions", sessions);
+  for (const [
+    date,
+    source,
+    campaign,
+    content,
+    term,
+    users,
+    sessions,
+  ] of utmVisits) {
+    utmRow(date, source, campaign, String(content), term, "users", users);
+    utmRow(date, source, campaign, String(content), term, "sessions", sessions);
   }
-  for (const [date, campaign, content, users] of utmSonar)
-    utmRow(date, campaign, content, "sonar_users", users);
+  for (const [date, source, campaign, content, term, users] of utmSonar)
+    utmRow(date, source, campaign, String(content), term, "sonar_users", users);
 }
 
 /** YouTube Analytics の reports（channel==MINE）。行を {day, 指標...} にする */
@@ -375,6 +431,11 @@ export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
     youtubeVideos: (since) =>
       get(
         `sns_x_send_jobs?channel=eq.youtube&state=eq.posted&posted_at=gte.${encodeURIComponent(since)}&select=draft_id,external_post_id,posted_at`,
+      ),
+    // 全貌（format=full_picture）の下書きを race_id から引く（push-full-picture が source_data.full_picture.race_id に入れる）
+    fullPictureDrafts: (raceIds) =>
+      get(
+        `sns_drafts?format=eq.full_picture&source_data->full_picture->>race_id=in.(${raceIds.join(",")})&select=id,platform,posted_at,race_id:source_data->full_picture->>race_id`,
       ),
     async existingDrafts(ids) {
       return (await get(`sns_drafts?id=in.(${ids.join(",")})&select=id`)).map(

@@ -40,6 +40,13 @@ const COLS = [
 
 const store = {
   youtubeVideos: async () => videos,
+  fullPictureDrafts: async (raceIds) =>
+    (
+      await all(
+        "SELECT id, platform, posted_at, source_data->'full_picture'->>'race_id' AS race_id FROM sns_drafts WHERE format='full_picture' AND source_data->'full_picture'->>'race_id' = ANY($1)",
+        [raceIds],
+      )
+    ).map((d) => ({ ...d, posted_at: d.posted_at?.toISOString() ?? null })),
   existingDrafts: async (ids) =>
     (await all("SELECT id FROM sns_drafts WHERE id = ANY($1)", [ids])).map(
       (r) => r.id,
@@ -142,7 +149,8 @@ function mockYoutube(calls = [], { channelDays } = {}) {
   });
 }
 
-function mockGa4(calls = []) {
+// UTM の行: [日付, 流入元, campaign, content, term, 指標...]
+function mockGa4(calls = [], { utm = [], utmSonar = [] } = {}) {
   return async () => async (body) => {
     calls.push(body);
     const dims = body.dimensions.map((d) => d.name).join(",");
@@ -156,10 +164,11 @@ function mockGa4(calls = []) {
             ["20261014", "youtube.com", 4, 4],
           ];
     return sonar
-      ? [["20261014", "race-full", draftId, 1]]
+      ? [["20261014", "x", "race-full", draftId, "(not set)", 1], ...utmSonar]
       : [
-          ["20261014", "race-full", draftId, 2, 2],
-          ["20261015", "today_digest", "2026-10-15", 7, 8],
+          ["20261014", "x", "race-full", draftId, "(not set)", 2, 2],
+          ["20261015", "x", "today_digest", "2026-10-15", "(not set)", 7, 8],
+          ...utm,
         ];
   };
 }
@@ -458,4 +467,96 @@ test("PostgREST の store: 既存の行は1000行ずつ読み、upsert は一意
     /on_conflict=day,channel,draft_id,utm_content,source,metric_name,definition/,
   );
   assert.equal(calls.at(-1)[2], "resolution=merge-duplicates,return=minimal");
+});
+
+test("全貌の UTM（utm_content=race_id）: X・YouTube を term ごとに分け、下書きの投稿日（JST）と翌日だけ残す", async () => {
+  const race = "2026-10-13-04-12";
+  const ins = (platform, postedAt) =>
+    first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at,source_data) VALUES(gen_random_uuid(),'full_picture',$1,'ja','全貌','本文','posted',$2,$3) RETURNING id",
+      [platform, postedAt, { full_picture: { race_id: race } }],
+    );
+  // JST 10/13 17:00 に投稿（posted_at の JST の日付で数える。UTC では同じ日）
+  const x = (await ins("x", "2026-10-13T08:00:00Z")).id;
+  const yt = (await ins("youtube", "2026-10-13T08:05:00Z")).id;
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4([], {
+      utm: [
+        ["20261013", "x", "race-full", race, "full", 5, 6], // 投稿日
+        ["20261014", "x", "race-full", race, "full", 2, 2], // 翌日
+        ["20261015", "x", "race-full", race, "full", 9, 9], // 翌々日は数えない
+        ["20261014", "youtube", "race-full", race, "shorts", 3, 3],
+        ["20261014", "youtube", "race-full", race, "full", 1, 1],
+        ["20261014", "x", "race-full", "2026-10-14-05-01", "full", 4, 4], // 下書きの無いレースは数えない
+        ["20261014", "youtube", "race-full", draftId, "(not set)", 8, 8], // 下書きの ID の UTM は X だけ
+      ],
+      utmSonar: [["20261013", "x", "race-full", race, "full", 1]],
+    }),
+  });
+  const got = await all(
+    "SELECT day::text, channel, draft_id, metric_name, metric_value::float v, definition FROM sns_channel_daily WHERE utm_content=$1 ORDER BY day, channel, definition, metric_name",
+    [race],
+  );
+  const summary = got.map((r) => [
+    r.day,
+    r.channel,
+    r.draft_id === x ? "x" : r.draft_id === yt ? "yt" : r.draft_id,
+    r.metric_name,
+    r.v,
+    /utm_term=(\w+)/.exec(r.definition)?.[1],
+  ]);
+  const sorted = (list) =>
+    [...list].sort((p, q) =>
+      JSON.stringify(p).localeCompare(JSON.stringify(q)),
+    );
+  assert.deepEqual(
+    sorted(summary),
+    sorted([
+      ["2026-10-13", "x", "x", "sessions", 6, "full"],
+      ["2026-10-13", "x", "x", "sonar_users", 1, "full"],
+      ["2026-10-13", "x", "x", "users", 5, "full"],
+      ["2026-10-14", "x", "x", "sessions", 2, "full"],
+      ["2026-10-14", "x", "x", "users", 2, "full"],
+      ["2026-10-14", "youtube", "yt", "sessions", 1, "full"],
+      ["2026-10-14", "youtube", "yt", "users", 1, "full"],
+      ["2026-10-14", "youtube", "yt", "sessions", 3, "shorts"],
+      ["2026-10-14", "youtube", "yt", "users", 3, "shorts"],
+    ]),
+  );
+  assert.equal(
+    (
+      await all(
+        "SELECT 1 FROM sns_channel_daily WHERE utm_content='2026-10-14-05-01'",
+      )
+    ).length,
+    0,
+  );
+  assert.equal(
+    (
+      await all(
+        "SELECT 1 FROM sns_channel_daily WHERE channel='youtube' AND utm_content=$1",
+        [draftId],
+      )
+    ).length,
+    0,
+  );
+});
+
+test("PostgREST の store: 全貌の下書きは race_id で引き、投稿の時刻を読む", async () => {
+  const urls = [];
+  const pg = createSnsDailyStore({
+    url: "https://db",
+    key: "k",
+    fetchImpl: async (url) => {
+      urls.push(decodeURIComponent(String(url)));
+      return Response.json([]);
+    },
+  });
+  await pg.fullPictureDrafts(["2026-10-13-04-12", "2026-10-13-05-01"]);
+  assert.match(
+    urls[0],
+    /sns_drafts\?format=eq\.full_picture&source_data->full_picture->>race_id=in\.\(2026-10-13-04-12,2026-10-13-05-01\)&select=id,platform,posted_at,race_id:source_data->full_picture->>race_id/,
+  );
 });
