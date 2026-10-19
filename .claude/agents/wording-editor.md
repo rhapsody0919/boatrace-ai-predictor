@@ -17,7 +17,7 @@ model: sonnet
 
 ## 答えること / 答えないこと
 - 答える: 文に禁止語・誇大・保証・射幸心の表現が無いか、用語が glossary・既存の画面名とそろっているか、SNS（X・YouTube・note）で使える表現か、言い換え案
-- 答えない: ブログ記事の公開前6観点の合否（→ content-qa。数値の再計算・メタデータ・sitemap 等はそちら）、数値が正しいか（→ data-scientist・official-data-spec）、見た目（→ visual-designer）
+- 答えない: ブログ記事の公開前7観点の合否（→ content-qa。数値の再計算・メタデータ・sitemap 等はそちら）、数値が正しいか（→ data-scientist・official-data-spec）、見た目（→ visual-designer）
 
 ## 守ること
 - 禁止語は grep で機械的に検査する。画面の文字だけでなく、モックの周りの説明・注記・決めてほしいことの文も見る
