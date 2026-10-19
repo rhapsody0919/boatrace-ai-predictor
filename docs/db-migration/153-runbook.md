@@ -129,7 +129,7 @@ UPDATE public.scrape_job_state SET mode = 'shadow' WHERE job IN ('sns_auto_plan'
 ## /today の X 投稿の L2（毎朝の個別承認）の開始（オーナーが本番 SQL で実行）
 /today の画像つき X 投稿（tasks 19b）を、全貌のレースより先に L2 で始める（2026-10-15 オーナー依頼）。L1（試運転、上の節）は実行済みで、`sns_auto_plan`・`sns_send` は live の前提。
 
-- 毎朝 JST 7:30 以降（龍神ソナーの図のデータが 7:24〜7:26 に書かれた後）に、Slack に本文と龍神ソナーの図（最大4枚）のリンクが届く。個別承認の画面で 12:00 までに承認すると、12:00 に送る（2026-10-17 の時刻の組み直し）
+- 毎朝 JST 7:30 以降（龍神ソナーの図のデータが 7:24〜7:26 に書かれた後）に、Slack に本文と龍神ソナーの図（最大4枚）のリンクが届く。2026-10-19 から承認なしで自動で送る。送るのは 8:00 と下書きができた時刻の遅い方、9:00 までに作れなければ Slack に知らせる（2026-10-19 オーナー決定）
 - 費用: 1日1件の URL つきの投稿（$0.20）。上限は今の $10 のまま（X の Developer Console の spending limit も $10）
 - 下の SQL は PGlite で、承認した job が claim まで進むことを確かめてある（`verify-sns-today-plan.js` がこの節の SQL を読んで流す）
 
@@ -141,7 +141,7 @@ SELECT public.renew_sns_x_send_period('2026-10-01T00:00:00Z', '2026-11-01T00:00:
 -- 送信の設定（/today だけ。1日1件）。基準日は今日にし、以後は sns-auto-plan が毎朝進める
 UPDATE public.sns_x_send_control
   SET paused = false, timing_approved = true, schedule_minutes = 60, expiry_minutes = 30,
-      -- 下書きは 7:30 ごろ、送るのは 12:00（2026-10-17 の時刻の組み直し）。元データの鮮度の上限を6時間にする
+      -- 下書きは 7:30 ごろ、送るのは 8:00 ごろ（2026-10-19）。元データの鮮度の上限は6時間
       max_source_age_seconds = 21600,
       attempt_ceiling_microusd = 250000, ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000,
       daily_limit = 1, daily_limit_x = 1, daily_limit_youtube = 1,
