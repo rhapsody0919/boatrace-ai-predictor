@@ -85,3 +85,7 @@ cp .env.example .env.local
 
 - 予想は結果を保証しない。舟券の購入は、日本国内に住む20歳以上の人に限られる
 - 画面の本文・見出しでは「ボートレース」と書く（`.claude/rules/code-style.md`）
+
+## ライセンス
+
+MIT License

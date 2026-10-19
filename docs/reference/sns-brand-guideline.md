@@ -22,12 +22,12 @@ Remotion側（`sns-video-studio/remotion/`配下）では`src/utils/colors.js`�
 ## ロゴ・キャラクター
 
 - **ロゴ**: `public/logo.png`（金の龍のロゴ）。X・TikTokのプロフィール画像として現行使用中（2026-08-23リブランド時に統一）
-- **マスコットキャラクター**: 龍神をモチーフにした複数候補（A'/B'/C'等）が動画内に登場する。プロフィール画像自体はロゴで統一し、マスコットは動画出演のみに使う方針（`docs/operation/sns-marketing-strategy.md`「マスコットキャラクター施策」参照）
+- **マスコットキャラクター**: 比較テストは終了し、掛け合い型の部品は削除済み（`docs/operation/sns-marketing-strategy.md`「やめた施策・やらないこと」、`docs/reference/brand-kit.md`）。プロフィール画像はロゴで統一する
 - 新規コンポジションでキャラクターを使う場合、既存のマスコット素材（`sns-video-studio/remotion/public/mascot-*.png`等）を流用する。新しいキャラクターデザインを勝手に作らない
 
 ## トーン・配色の統一方針
 
-- **GOLD統一のトーン**: 会場攻略型で確立した「非対称配置・実データ背景・ベタ塗り帯・GOLD統一」のデザイン思想（`docs/operation/sns-marketing-strategy.md`「動画カバー画像（frame=0）デザイン」参照）を、新規フォーマットでも基調として踏襲する
+- **GOLD統一のトーン**: 会場攻略型で確立した「非対称配置・実データ背景・ベタ塗り帯・GOLD統一」のデザイン思想（`docs/operation/sns-marketing-strategy.md`「コンテンツの軸」、`docs/operation/sns-video-producer-prompt.md` 絶対厳守8）を、新規フォーマットでも基調として踏襲する
 - 動画のカバー画像（frame=0）は、投稿一覧のサムネイルとしてそのまま使われる（X標準UIにカバー編集機能が無いため）。frame=0で主要な情報・ブランド要素が視認できる状態にする
 
 ## 用語・表記ルール（`risk-rules.json`と連動）
@@ -44,5 +44,5 @@ Remotion側（`sns-video-studio/remotion/`配下）では`src/utils/colors.js`�
 ## 関連ドキュメント
 
 - `docs/reference/design-system.md`: Webアプリ全体のデザイントークン（本ドキュメントはSNS動画向けの抜粋・補足）
-- `docs/operation/sns-marketing-strategy.md`: ブランド関連の意思決定ログ（リブランド経緯、マスコット施策、カバー画像デザイン等）
+- `docs/operation/sns-marketing-strategy.md`: SNS 全体の方針（カバー画像の基準、やめた施策）
 - `sns-video-studio/remotion/risk-rules.json`: 用語・表現ルールの機械可読な正

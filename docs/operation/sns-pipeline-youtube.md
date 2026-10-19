@@ -42,7 +42,7 @@ YouTube向けは `section='featured'` の1レースに絞り、「この選手�
 
 ## 4. カバー画像の生成
 
-**Shorts化に伴い、専用サムネイル（Remotion別コンポジション）の生成ステップを廃止する**（2026-09-05）。TikTok/Xと同様、`ffmpeg -vf "select='eq(n\,0)'" -vframes 1`で動画のframe=0を書き出し、それを`cover_image_path`として使う（`sns-video-producer-prompt.md`セルフレビューチェックリスト「frame=0で主要テキスト・マスコットが完全に見えているか」を参照、3.の映像設計時点で確認済みであること）。旧`COMPOSITION_IDS.youtubeThumbnail`（1280×720、16:9）は新しいShorts比率と合わなくなったため、このRoutineでは使用しない。
+**Shorts化に伴い、専用サムネイル（Remotion別コンポジション）の生成ステップを廃止する**（2026-09-05）。Xと同様、`ffmpeg -vf "select='eq(n\,0)'" -vframes 1`で動画のframe=0を書き出し、それを`cover_image_path`として使う（`sns-video-producer-prompt.md`セルフレビューチェックリスト「frame=0（サムネイル）で主要テキストが完全に見えているか」を参照、3.の映像設計時点で確認済みであること）。旧`COMPOSITION_IDS.youtubeThumbnail`（1280×720、16:9）は新しいShorts比率と合わなくなったため、このRoutineでは使用しない。
 
 ## 5. アップロード・永続化
 
