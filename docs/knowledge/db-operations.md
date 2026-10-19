@@ -67,3 +67,7 @@
 - 表・関数を DROP する前の参照確認は、本番の pg_depend（deptype<>'i'）・prosrc の ILIKE・pg_views・pg_constraint の confrelid の4つで行う。plpgsql の本文は pg_depend に出ないので prosrc の検索が要る（2026-10-19、system-architect、163）
 - DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちる。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
 - 本番に pg_cron は入っていない（cron.job が無い）。DB の DROP で cron の依存を気にしなくてよい（2026-10-19、system-architect の本番読み取り）
+- Claude のセッションからの本番の読み取りは scripts/db/ro-query.js（ロール claude_ro、SELECT のみ・BYPASSRLS・READ ONLY で ROLLBACK）。Management API の database/query は自動モードの判定（[Production Reads]）で止まる（2026-10-19、ADR-0096、マイグレーション 166）
+- ロールに付けた default_transaction_read_only は本人が SET で戻せるので守りにならない。書けないことは権限で保証する。PostgreSQL は関数の EXECUTE を既定で PUBLIC に渡すので、特定のロールから REVOKE しても PUBLIC 経由で呼べる（2026-10-19、ADR-0096）
+- BYPASSRLS の無い読み取りロールは、RLS の付いた表をエラーでなく0行で返す。読み取り専用のロールを作ったら service_role と件数を比べる（2026-10-19、ADR-0096、166-runbook.md）
+- Supabase の postgres は rolbypassrls=true・rolcreaterole=true・rolsuper=false（2026-10-19 本番の pg_roles）

@@ -4,6 +4,7 @@
 |------|------|
 | `SUPABASE_URL` | Supabase接続 |
 | `SUPABASE_SERVICE_KEY` | Supabase管理者操作（`SUPABASE_SERVICE_ROLE_KEY`ではない。2026-09-12訂正、`scripts/lib/supabaseClient.js`が正） |
+| `SUPABASE_RO_DB_URL` | 本番を読み取り専用ロール `claude_ro` で読む（`scripts/db/ro-query.js`、ADR-0096）。Session pooler・ユーザー名 `claude_ro.<project-ref>`。`.env.local` だけに置き、CI・Vercel には置かない。作り方は `docs/db-migration/166-runbook.md` |
 | `VITE_SUPABASE_URL` | フロントエンド用Supabase |
 | `VITE_SUPABASE_ANON_KEY` | フロントエンド用Supabaseキー |
 | `VITE_GA_MEASUREMENT_ID` | Google Analytics |
