@@ -215,7 +215,7 @@
     {
       "script": "verify-migration-rls.js",
       "tier": "ci",
-      "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）"
+      "guards": "新規マイグレーションが公開スキーマのテーブルをRLSなし・匿名書き込み可のまま作っていないか（BOA-370の再発防止）。167番以降は秘密らしい列を持つ表を claude_ro から REVOKE しているか（ADR-0096）"
     },
     {
       "script": "verify-meet-start-date.js",

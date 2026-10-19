@@ -49,6 +49,6 @@ Supabase の `postgres` は `rolbypassrls=true`・`rolcreaterole=true`（2026-10
 - 113 より前に作られ PUBLIC が EXECUTE できる SECURITY DEFINER の関数は 166 が止める。今後 SECURITY DEFINER の関数は verify-migration-rls（規則7）で PUBLIC に付けられない。Supabase が作った関数（所有者 supabase_admin）が引っかかったときは postgres から REVOKE できないので、その関数のスキーマの USAGE を外せるか等を別に設計する
 - `claude_ro` は直接接続なら自分のロールの設定（`ALTER ROLE claude_ro SET …`）とパスワードを変えられる（PostgreSQL の仕様）。アプリのデータは変わらない。ro-query.js は先頭の語で拒否する
 - `analogy_feedback` の `comment`（利用者が書いた最大200字）と `client_key`（仮名の ID）は読める。秘密ではないが利用者の入力を含む
-- 秘密の表を足すときの `REVOKE ... FROM claude_ro` は、今は機械で検査していない（verify-migration-rls に規則を足すのは別の作業）
+- 秘密の表を足すときの `REVOKE ... FROM claude_ro` は、verify-migration-rls（規則8）が 167 番以降のマイグレーションで検査する。`CREATE TABLE` と `ALTER TABLE ... ADD COLUMN`（public）の列名に token・secret・ciphertext・credential・password・passphrase・api_key（apikey）・private_key を含む表は、同じファイルに SELECT か ALL を表単位で外す `REVOKE ... ON <表> FROM claude_ro` か `-- ro-exempt: <表> <理由>` が無いと CI が落ちる。列単位の `REVOKE SELECT (列)` は数えない（表単位で付いた SELECT は外れない）。列名で拾うので、当たらない名前の列と、`CREATE TABLE ... AS`・`LIKE`・`PARTITION OF` で作る表、REVOKE の後の GRANT し直しは検査されない。166 より前の `sns_drafts.external_operation_token`（138、外部送信の排他用の uuid）と `sns_auto_send_items.stop_token_hash`（153、止めるリンクの token の SHA-256）は規則8に当たる名前だが、秘密の値ではないので claude_ro から読めるままにしている
 - `claude_ro` は一時表・ラージオブジェクト・advisory lock を作れる（PostgreSQL の既定で PUBLIC に許される）。どれもアプリのデータを変えない。ro-query.js は READ ONLY のトランザクションなのでラージオブジェクトも作らない
 - 証明書は検証しない（libpq の `sslmode=require` と同じ）。Supabase の CA は公開の CA でない
