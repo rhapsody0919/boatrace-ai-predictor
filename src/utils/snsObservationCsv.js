@@ -2,6 +2,7 @@ import {
   OBSERVATION_METRICS,
   OBSERVED_PLATFORMS,
   observationPeriod,
+  windowsFor,
 } from "./snsObservations.js";
 
 const metricColumns = {
@@ -122,7 +123,8 @@ export function buildObservationCsvRows(
     )
     .sort((a, b) => a.id.localeCompare(b.id))
     .flatMap((d) =>
-      ["48h", "7d"]
+      // 全貌は day_end・24h、それ以外は 48h・7d（windowsFor）
+      windowsFor(d)
         .map((window) => {
           let period;
           try {

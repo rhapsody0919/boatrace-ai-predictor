@@ -16,6 +16,7 @@
 import {
   OBSERVATION_WINDOWS,
   observationPeriod,
+  windowsFor,
   validateObservation,
   withinSnapshotTolerance,
 } from "../../src/utils/snsObservations.js";
@@ -255,6 +256,8 @@ function brokenReason(job) {
   if (!job.external_post_id) return "external_post_id_missing";
   if (!METRICS_BY_CHANNEL[job.channel]) return "unknown_channel";
   if (!Object.hasOwn(OBSERVATION_WINDOWS, job.window)) return "unknown_window";
+  // 型が測らない窓（SQL169 の前に古いトリガーが全貌に作った 48h・7d など）は、やり直しても入れられないので閉じる
+  if (!windowsFor(job.draft).includes(job.window)) return "window_not_measured";
   return null;
 }
 
@@ -474,7 +477,7 @@ export function createSnsMetricsStore({ url, key, fetchImpl = fetch }) {
       if (!jobs.length) return [];
       const ids = [...new Set(jobs.map((j) => j.draft_id))].join(",");
       const [drafts, sends] = await Promise.all([
-        call(`sns_drafts?id=in.(${ids})&select=id,status,posted_at,platform`),
+        call(`sns_drafts?id=in.(${ids})&select=id,status,posted_at,platform,format`),
         call(
           `sns_x_send_jobs?draft_id=in.(${ids})&state=eq.posted&select=draft_id,channel,external_post_id`,
         ),
