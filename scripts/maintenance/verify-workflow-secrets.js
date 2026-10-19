@@ -39,11 +39,13 @@ const MASTER_ONLY_ENVIRONMENTS = new Set([
   "ryujin-bot",
   "production-db",
 ]);
-const PUBLIC_SECRETS = new Set(["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"]);
+// pull_request の workflow が参照してよいもの: anon と、PR の通知専用の webhook（漏れても PR 通知のチャンネルに投稿されるだけ）
+const PUBLIC_SECRETS = new Set([
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_ANON_KEY",
+  "SLACK_PR_WEBHOOK_URL",
+]);
 
-// オーナーの判断待ち: slack-notify-pr は pull_request で動くため master だけの Environment を使えない。
-// pull_request_target に変えるか、PR の通知専用の webhook を repo に置くかを決めるまで、ここに残す
-const PENDING_EXCEPTIONS = new Set(["slack-notify-pr.yml:notify"]);
 
 /** @returns {{ id: string, text: string }[]} */
 export function splitJobs(yamlText) {
@@ -98,7 +100,6 @@ export function checkWorkflow(file, yamlText) {
   for (const job of splitJobs(yamlText)) {
     const used = secretsIn(job.text);
     const key = `${file}:${job.id}`;
-    if (PENDING_EXCEPTIONS.has(key)) continue;
     const protectedUsed = used.filter((s) => PROTECTED_SECRETS.includes(s));
     const env = jobEnvironment(job.text);
     if (protectedUsed.length > 0 && !MASTER_ONLY_ENVIRONMENTS.has(env)) {
