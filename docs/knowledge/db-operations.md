@@ -67,3 +67,7 @@
 - 表・関数を DROP する前の参照確認は、本番の pg_depend（deptype<>'i'）・prosrc の ILIKE・pg_views・pg_constraint の confrelid の4つで行う。plpgsql の本文は pg_depend に出ないので prosrc の検索が要る（2026-10-19、system-architect、163）
 - DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちる。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
 - 本番に pg_cron は入っていない（cron.job が無い）。DB の DROP で cron の依存を気にしなくてよい（2026-10-19、system-architect の本番読み取り）
+- DROP だけのマイグレーションの runbook では、「最後に書かれた時刻」の判定の基準を、呼び出し元を消した PR の本番デプロイ時刻にする（DROP の PR の時刻では、その間の想定外の書き込みを見逃す）。読むだけの RPC はこの判定では見えず、コードの grep だけが根拠になる（2026-10-19、system-architect、165。呼び出し元を消したのは #1645）
+- pg_depend（deptype<>'i'）で外からの依存を数えるときは、対象の表自身の制約（pg_constraint）・既定値（pg_attrdef）・索引（pg_index の indexrelid）を除く。索引を除き忘れると、外の依存が無くても 0 にならない（2026-10-19、165-runbook の PGlite での再現）
+- 消した表は元のマイグレーションをもう一度流せば作り直せるが、行は戻らない。後で読む経路が無く件数が小さければ APPLIED.md に要点を書き、そうでなければ適用前にオーナーが CSV で退避してリポジトリの外に置く。本番に退避用の表は作らない（2026-10-19、system-architect、165）
+- 手元の既定の node は v16 で `node:test` 等が無く verify-*.js が落ちる。`~/.nvm/versions/node/v22.20.0/bin` を PATH に足して実行する。worktree の node_modules が古いと `twitter-text` 等が見つからないので `npm ci` する（2026-10-19）

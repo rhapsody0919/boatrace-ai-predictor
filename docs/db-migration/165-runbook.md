@@ -15,11 +15,22 @@ SELECT (SELECT count(*) FROM public.sns_edit_inspections) n_inspections,
    AND (p.prosrc ILIKE '%sns_edit_inspection%' OR p.prosrc ILIKE '%decide_sns_edit_finding%' OR p.prosrc ILIKE '%sns_edit_decisions%')) other_callers,
  (SELECT count(*) FROM pg_views WHERE definition ILIKE '%sns_edit_%') views,
  (SELECT count(*) FROM pg_constraint WHERE confrelid IN ('public.sns_edit_inspections'::regclass,'public.sns_edit_decisions'::regclass)
-   AND conrelid NOT IN ('public.sns_edit_inspections'::regclass,'public.sns_edit_decisions'::regclass)) outside_fks;
+   AND conrelid NOT IN ('public.sns_edit_inspections'::regclass,'public.sns_edit_decisions'::regclass)) outside_fks,
+ (SELECT count(*) FROM pg_depend WHERE refobjid IN ('public.sns_edit_inspections'::regclass,'public.sns_edit_decisions'::regclass)
+   AND deptype<>'i' AND NOT (classid='pg_constraint'::regclass AND objid IN (SELECT oid FROM pg_constraint
+   WHERE conrelid IN ('public.sns_edit_inspections'::regclass,'public.sns_edit_decisions'::regclass)))
+   AND NOT (classid='pg_attrdef'::regclass AND objid IN (SELECT oid FROM pg_attrdef
+   WHERE adrelid IN ('public.sns_edit_inspections'::regclass,'public.sns_edit_decisions'::regclass)))
+   AND NOT (classid='pg_class'::regclass AND objid IN (SELECT indexrelid FROM pg_index
+   WHERE indrelid IN ('public.sns_edit_inspections'::regclass,'public.sns_edit_decisions'::regclass)))) outside_depends,
+ (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.sns_mobile_revision(public.sns_drafts)'::regprocedure) revision_md5;
 ```
 
-期待: `other_callers` が NULL、`views` が 0、`outside_fks` が 0。
-件数と最後の時刻は APPLIED.md の 165 の行に残す（表を消すと戻らないため）。最後の時刻がこの PR の本番デプロイより後なら、まだ書いている経路がある。適用せず調べる。
+期待: `other_callers` が NULL、`views` が 0、`outside_fks` が 0、`outside_depends` が 0、`revision_md5` が `de924e8953e175677495feb450f1d675`（163-runbook.md と同じ値）。
+
+- 最後の時刻（`last_inspection`・`last_decision`）が #1645 のマージ（2026-10-18 15:45:51Z）の本番デプロイより後なら、まだ書いている経路がある。適用せず調べる。読むだけの `read_sns_edit_inspection` はこの判定では見えず、コードの grep だけが根拠になる
+- 件数・最後の時刻・退避の有無は APPLIED.md の 165 の行に残す（表を消すと行は戻らない）
+- 件数が数十行を超えるときは、適用前にオーナーが Table Editor で2表を CSV に書き出し、リポジトリの外に置く（鍵は含まないが、リポジトリには入れない）。数十行以下なら記録だけでよい（今のコードに2表を読む分析・学習の経路は無い）
 
 ## 2. 適用（オーナー）
 
@@ -33,14 +44,15 @@ SELECT to_regclass('public.sns_edit_inspections') i,
  to_regprocedure('public.read_sns_edit_inspection(uuid)') r,
  to_regprocedure('public.save_sns_edit_inspection(uuid,text,text,jsonb)') s,
  to_regprocedure('public.decide_sns_edit_finding(uuid,text,uuid,text,uuid,text)') f,
- to_regprocedure('public.sns_mobile_revision(public.sns_drafts)') keep;
+ (SELECT md5(prosrc) FROM pg_proc WHERE oid='public.sns_mobile_revision(public.sns_drafts)'::regprocedure) keep_md5;
 ```
 
-期待: 先の5つが `NULL`、`keep` が NULL でない。確かめたら APPLIED.md の 165 を「適用済み」にする。
+期待: 先の5つが `NULL`、`keep_md5` が `de924e8953e175677495feb450f1d675`。確かめたら APPLIED.md の 165 を「適用済み」にする。
 
 ## 戻し方
 
 コードの revert とセットで、`145_sns_edit_assist.sql` をそのまま再実行する（表・3関数・REVOKE/GRANT だけを作り、他の定義は上書きしない）。
-消した行は戻らない。
+消した行は戻らない（退避した CSV があれば手で入れ直す）。
 
-Vercel の Instant Rollback でこの PR より前に戻しても、旧コードで 3 関数を呼ぶ経路は #1649 で無くなっているので影響は無い。
+Vercel の Instant Rollback で戻す先が #1645 以降なら、3 関数を呼ぶ経路は無いので影響は無い。
+#1645 より前に戻すと、旧画面が消えた RPC を呼んでエラーになる（失敗する側に倒れるだけで、データは壊れない）。
