@@ -109,6 +109,17 @@ Settings → Environments → New environment。4つとも「Deployment branches
 | Secret | `REVIEWER_APP_PRIVATE_KEY` | 2 の .pem の中身全体（`-----BEGIN` から `END … -----` まで）。登録したら .pem を消す |
 | Secret | `OPENAI_API_KEY` | 5 で作るキー |
 | Secret | `ANTHROPIC_API_KEY` | 5 で作るキー |
+| Variable | `REVIEW_OPENAI_MODEL` | Claude の PR の審査に使う OpenAI のモデル名（5-1 で使えるものを選ぶ。空だと審査が失敗して承認されない） |
+| Variable | `REVIEW_ANTHROPIC_MODEL` | 任意。空なら `claude-opus-5` |
+
+### 4-1b. repo の変数（Environment の外。Settings → Secrets and variables → Actions → Variables → Repository variables）
+| 名前 | 値 |
+|---|---|
+| `REVIEW_MAKER_BOT_ID` | 作成の App の bot ユーザーの数値の ID。ブラウザで `https://api.github.com/users/ryujin-maker%5Bbot%5D` を開き、`"id"` の数字（App の名前を変えたら、その名前に読み替える）。審査の workflow は、この ID の PR だけを見る |
+| `REVIEWER_BOT_USER_ID` | 審査の App の bot ユーザーの数値の ID（同じく `https://api.github.com/users/ryujin-reviewer%5Bbot%5D`）。本番 SQL の突き合わせが、この ID の承認だけを数える |
+| `REVIEW_MONTHLY_LIMIT` | 任意。月に審査する上限の回数（既定300） |
+
+どれも秘密ではない。ただし変えられるのは admin だけにしておく（作成の App には Variables の権限を付けない）
 
 ### 4-2. production-db-auto（軽い SQL の自動の適用）
 | 種類 | 名前 | 値 |
