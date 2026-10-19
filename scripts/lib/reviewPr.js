@@ -282,3 +282,23 @@ export function monthlyRunsPath(repo, actorLogin, date) {
   const created = encodeURIComponent(`>=${monthStart(date)}`);
   return `/repos/${repo}/actions/workflows/review.yml/runs?actor=${encodeURIComponent(actorLogin)}&created=${created}&per_page=1`;
 }
+
+/**
+ * LLM の API の失敗の要約（種類と code と短い文）。429 が回数の上限か残高・上限（insufficient_quota）かを見分けるため。
+ * 本文は API が返したエラーで、鍵は含まない。長さを切り、改行を外す
+ */
+export function apiErrorSummary(vendor, status, bodyText) {
+  let detail = "";
+  try {
+    const e = JSON.parse(bodyText)?.error ?? {};
+    detail = [e.type, e.code, e.message].filter((x) => typeof x === "string" && x !== "").join(" / ");
+  } catch {
+    detail = String(bodyText ?? "");
+  }
+  // 鍵の誤りのとき、OpenAI は伏せ字つきの鍵の一部（sk-…abcd）を文に入れるので、鍵らしい語は丸ごと伏せる
+  detail = detail
+    .replace(/\b(sk|sk-ant|sk-proj)-[\w*.-]+/g, "（鍵を伏せた）")
+    .replace(/\s+/g, " ")
+    .slice(0, 300);
+  return `${vendor} API が ${status} を返した${detail ? `（${detail}）` : ""}`;
+}

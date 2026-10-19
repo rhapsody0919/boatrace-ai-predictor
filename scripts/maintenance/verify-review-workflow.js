@@ -18,6 +18,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  apiErrorSummary,
   buildReviewPrompt,
   decideAction,
   LIMITS,
@@ -305,6 +306,17 @@ check("ブランチ名が無ければ審査しない", vendorForBranch(undefined
     "P0 があれば承認しない",
     decideAction({ ...base, verdict: p0 }).event === "REQUEST_CHANGES",
   );
+}
+
+// 5b. API の失敗の要約（429 の種類を見分ける）
+{
+  const quota = apiErrorSummary("OpenAI", 429, JSON.stringify({ error: { message: "You exceeded your current quota", type: "insufficient_quota", code: "insufficient_quota" } }));
+  check("429 の種類（insufficient_quota）をログに出す", /429/.test(quota) && /insufficient_quota/.test(quota), quota);
+  const anth = apiErrorSummary("Anthropic", 529, JSON.stringify({ type: "error", error: { type: "overloaded_error", message: "Overloaded\n" } }));
+  check("Anthropic のエラーの種類も出し、改行を外す", /overloaded_error/.test(anth) && !/\n/.test(anth), anth);
+  const bad = apiErrorSummary("OpenAI", 401, JSON.stringify({ error: { message: "Incorrect API key provided: sk-proj-****abcd. You can find", type: "invalid_request_error", code: "invalid_api_key" } }));
+  check("鍵の一部を含む文は鍵を伏せる", !/abcd/.test(bad) && /invalid_api_key/.test(bad), bad);
+  check("JSON でない本文も切って出す", apiErrorSummary("OpenAI", 502, "x".repeat(1000)).length < 400);
 }
 
 // 6. 配線

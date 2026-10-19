@@ -10,6 +10,7 @@
  */
 import { randomBytes } from "node:crypto";
 import {
+  apiErrorSummary,
   buildReviewPrompt,
   mechanicalRejections,
   parseVerdict,
@@ -45,7 +46,7 @@ async function callOpenAI(system, user) {
     }),
     signal: AbortSignal.timeout(600_000),
   });
-  if (!res.ok) fail(`OpenAI API が ${res.status} を返した`);
+  if (!res.ok) fail(apiErrorSummary("OpenAI", res.status, await res.text()));
   const data = await res.json();
   const choice = data.choices?.[0];
   if (choice?.finish_reason !== "stop")
@@ -77,7 +78,7 @@ async function callAnthropic(system, user) {
     }),
     signal: AbortSignal.timeout(600_000),
   });
-  if (!res.ok) fail(`Anthropic API が ${res.status} を返した`);
+  if (!res.ok) fail(apiErrorSummary("Anthropic", res.status, await res.text()));
   const data = await res.json();
   if (data.stop_reason !== "end_turn")
     fail(`Anthropic の答えが完了していない（${data.stop_reason}）`);
