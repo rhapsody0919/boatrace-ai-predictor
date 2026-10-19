@@ -63,6 +63,7 @@ jobs:
   # ときは、実行する（自動フェイルオーバー）。判定の定義: scripts/lib/ghaSkipGate.js、
   # docs/design/scraping-vercel-consolidation/verification-runbook.md P。--wait は、指定時刻の直後に Vercel の完了を最大10分待つ
   gate:
+    environment: prod-jobs
     if: ${{ vars.SKIP_RACER_SEASON_ON_GHA == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15

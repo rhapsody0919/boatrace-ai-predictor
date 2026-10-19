@@ -116,6 +116,11 @@
       "guards": "data-health-report.js の存在充足率の分母の定義（BOA-381）"
     },
     {
+      "script": "verify-workflow-secrets.js",
+      "tier": "ci",
+      "guards": "本番の書き込みの鍵（SUPABASE_SERVICE_KEY・SLACK_WEBHOOK_URL・VERCEL_DEPLOY_HOOK・LINEAR_*・GOOGLE_SERVICE_ACCOUNT_KEY 等）を参照する job が master だけの Environment（prod-jobs・ryujin-bot・production-db）を宣言していること、pull_request の workflow が anon 以外の secret を参照しないこと（ADR-0097 段取り S。repo の secret は workflow を書ける身元ならどのブランチからも読めるため）"
+    },
+    {
       "script": "verify-db-reconcile.js",
       "tier": "ci",
       "guards": "本番 DB の自動の適用の突き合わせ（scripts/lib/dbReconcile.js・scripts/db/db-reconcile.js、ADR-0097）。台帳の状態を先頭の語で読む、5点の検査（切り替えより後に squash で足された・merge_commit_sha の一致・blob が PR の head と今の master で同じ・審査の App の head SHA への承認・同じコミットで足した「未適用」の行・runbook が無い）がそれぞれ単独で落とす、番号の順に1本だけ選び通らなければ止めて後ろを当てない、db-apply の他の run が動いている・待っているときは何もしない"

@@ -28,6 +28,7 @@ concurrency:
 
 jobs:
   nightly:
+    environment: prod-jobs
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:

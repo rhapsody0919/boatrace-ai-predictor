@@ -23,6 +23,7 @@ concurrency:
 
 jobs:
   morning:
+    environment: prod-jobs
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
