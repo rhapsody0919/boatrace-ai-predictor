@@ -13,9 +13,7 @@ jobs:
     steps:
       - name: Notify Slack
         env:
-          # PR の通知専用の webhook（ADR-0097 段取り S）。pull_request の run は master だけの Environment を使えないので
-          # repo の secret に置く。本番の通知の SLACK_WEBHOOK_URL とは別のもので、漏れても PR 通知のチャンネルに投稿されるだけ
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_PR_WEBHOOK_URL }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
           PR_USER: ${{ github.event.pull_request.user.login }}

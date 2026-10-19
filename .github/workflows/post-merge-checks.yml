@@ -45,7 +45,6 @@ permissions:
 
 jobs:
   check:
-    environment: prod-jobs
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:

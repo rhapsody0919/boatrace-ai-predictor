@@ -31,7 +31,6 @@ concurrency:
 
 jobs:
   train:
-    environment: prod-jobs
     runs-on: ubuntu-latest
     timeout-minutes: 240
     env:

@@ -19,7 +19,6 @@ env:
 
 jobs:
   scrape:
-    environment: prod-jobs
     runs-on: ubuntu-latest
 
     steps:

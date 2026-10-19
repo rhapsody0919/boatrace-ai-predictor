@@ -30,7 +30,6 @@ concurrency:
 
 jobs:
   verify:
-    environment: prod-jobs
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
