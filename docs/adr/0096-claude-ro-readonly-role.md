@@ -19,7 +19,7 @@ Management API のトークンも MCP も、権限としては書き込みがで
   - 接続は2本まで。ロールの既定で `statement_timeout=30s`・`default_transaction_read_only=on`。ただしこれらは本人が SET で戻せるので、守りの本体にしない
   - 書けないことは権限だけで保証する。166 の末尾の DO ブロックが、`claude_ro` が USAGE を持つ全スキーマについて、SELECT 以外の表の権限（列単位の GRANT を含む）・シーケンスの権限・`claude_ro` が呼べる SECURITY DEFINER 関数（PostgreSQL は既定で EXECUTE を PUBLIC に渡す。STABLE でも中で VOLATILE な関数を呼べば所有者の権限で書け、auth・vault も読めるので volatility を問わない）・CREATE できるスキーマ・データベース単位の設定の秘密らしい名前（`app.settings.jwt_secret` 等。誰でも `current_setting` で読める）・他のロールのメンバー・想定外の属性を調べ、1つでもあれば全体を戻す
   - パスワードはマイグレーションに書かない。`scripts/db/ro-setup.js` が乱数で作り、`.env.local` に書き、SQL Editor には SCRAM の検証子だけを渡す（平文が SQL Editor の履歴・ログに残らない）
-- 鍵の置き場は本体の `.env.local` の `SUPABASE_RO_DB_URL`（Session pooler、ユーザー名 `claude_ro.<project-ref>`）。CI・Vercel には置かない
+- 鍵の置き場は本体の `.env.local` の `SUPABASE_RO_DB_URL`（Session pooler、ユーザー名 `claude_ro.<project-ref>`）。Vercel には置かない。CI は下の「追記: GitHub Actions の審査の材料」の1か所だけ
 - 読むのは `scripts/db/ro-query.js` だけにする
   - 1文だけ・先頭は SELECT / WITH / TABLE / VALUES / EXPLAIN / SHOW
   - `BEGIN TRANSACTION READ ONLY` で開き、最後は必ず ROLLBACK
@@ -60,3 +60,14 @@ Supabase の `postgres` は `rolbypassrls=true`・`rolcreaterole=true`（2026-10
 - 秘密の表を足すときの `REVOKE ... FROM claude_ro` は、verify-migration-rls（規則8）が 167 番以降のマイグレーションで検査する。`CREATE TABLE` と `ALTER TABLE ... ADD COLUMN`（public）の列名に token・secret・ciphertext・credential・password・passphrase・api_key（apikey）・private_key を含む表は、同じファイルに SELECT か ALL を表単位で外す `REVOKE ... ON <表> FROM claude_ro` か `-- ro-exempt: <表> <理由>` が無いと CI が落ちる。列単位の `REVOKE SELECT (列)` は数えない（表単位で付いた SELECT は外れない）。列名で拾うので、当たらない名前の列と、`CREATE TABLE ... AS`・`LIKE`・`PARTITION OF` で作る表、REVOKE の後の GRANT し直しは検査されない。166 より前の `sns_drafts.external_operation_token`（138、外部送信の排他用の uuid）と `sns_auto_send_items.stop_token_hash`（153、止めるリンクの token の SHA-256）は規則8に当たる名前だが、秘密の値ではないので claude_ro から読めるままにしている
 - `claude_ro` は一時表・ラージオブジェクト・advisory lock を作れる（PostgreSQL の既定で PUBLIC に許される）。どれもアプリのデータを変えない。ro-query.js は READ ONLY のトランザクションなのでラージオブジェクトも作らない
 - 証明書は検証しない（libpq の `sslmode=require` と同じ）。Supabase の CA は公開の CA でない
+
+## 追記: GitHub Actions の審査の材料（ADR-0097）
+
+[ADR-0097](./0097-identity-separation-auto-review-and-db-apply.md) の審査（`review.yml`、`pull_request_target`）が、SQL の審査の材料として本番の状態を claude_ro で読む。CI で claude_ro を使うのはこの1か所だけにする。
+
+- 読むのは材料の job だけ。PR の差分を扱う job・LLM を呼ぶ job・承認の job とは分ける
+- 表の名前は PR の SQL から取り出し、引数（識別子の形を検査した値）で渡す。SQL の本文を組み立てて渡さない
+- 返すのは件数と定義（列・型・索引・policy の一覧）だけ。行の中身は返さない（LLM に本番のデータを渡さないため）
+- 接続文字列は Environment `db-readonly`（Deployment branches は master だけ）の `CLAUDE_RO_DB_URL`。repo の secret には置かない（どのブランチの workflow からも読めるため）
+- 接続の上限2本は、手元の ro-query.js と取り合う。材料の job は1本だけ使い、接続できなければ材料なしで審査を続けず、審査を失敗にする（材料が無いまま承認しない）
+- 読み方は ro-query.js と同じ（`BEGIN TRANSACTION READ ONLY`、最後は ROLLBACK、接続したロールが `claude_ro` か確かめる）
