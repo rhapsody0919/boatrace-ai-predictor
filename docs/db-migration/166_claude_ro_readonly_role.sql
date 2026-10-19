@@ -17,7 +17,8 @@
 --     113 で postgres の新規関数の既定は外したが、113 より前の関数は残る。STABLE でも中で VOLATILE な関数を呼べば
 --     所有者の権限で書け、auth・vault も読めるので volatility を問わない）
 --   * どのスキーマにも CREATE できない、他のロールのメンバーでない、superuser でない
---   * データベース・全ロール向けの設定（pg_db_role_setting。誰でも current_setting で読める）に jwt・secret・key・password を含む名前が無い
+--   * データベース・全ロール向けの設定（pg_db_role_setting。誰でも current_setting で読める）に jwt・secret・key・password・token を含む名前が無い
+--     （秘密でないと確かめた名前だけを完全一致の許可リストで除く。今は app.settings.jwt_exp だけ）
 --   * sns_oauth_tokens はどの列も読めない
 -- 検証: npm run verify:ro-query（PGlite 上で適用し、書き込みの経路が無いことと末尾の検査を確かめる）
 -- 戻し方: REVOKE ALL ON ALL TABLES IN SCHEMA public FROM claude_ro;
@@ -89,7 +90,10 @@ BEGIN
   CROSS JOIN unnest(s.setconfig) AS cfg
   WHERE (s.setdatabase = 0 OR s.setdatabase = (SELECT oid FROM pg_database WHERE datname = current_database()))
     AND (s.setrole = 0 OR s.setrole = 'claude_ro'::regrole)
-    AND split_part(cfg, '=', 1) ~* '(jwt|secret|key|password|token)';
+    AND lower(split_part(cfg, '=', 1)) ~ '(jwt|secret|key|password|token)'
+    -- 秘密でないと確かめた名前だけを、完全一致で除く（正規表現はゆるめない）
+    --   app.settings.jwt_exp: 古い Supabase が入れる JWT の有効期限の秒数（2026-10-19 本番の適用で検出）
+    AND lower(split_part(cfg, '=', 1)) <> ALL (ARRAY['app.settings.jwt_exp']);
   IF bad IS NOT NULL THEN
     RAISE EXCEPTION '166: claude_ro が current_setting で読める設定に秘密らしい名前がある（名前だけを出す）: %', bad;
   END IF;

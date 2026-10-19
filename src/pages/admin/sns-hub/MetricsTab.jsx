@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { getMetricObservations } from "../../../services/snsHubService.js";
 import {
   compareObservations,
+  FULL_PICTURE_FORMAT,
   OBSERVATION_METRICS,
+  WINDOW_LABELS,
 } from "../../../utils/snsObservations.js";
 import "./MetricsTab.css";
 import ObservationCsvPanel from "./ObservationCsvPanel.jsx";
@@ -14,6 +16,7 @@ function curvePolyline(points) {
     .map((p) => `${10 + p.elapsed_ratio * 280},${110 - (p.value / max) * 100}`)
     .join(" ");
 }
+
 
 export default function MetricsTab() {
   const [window, setWindow] = useState("48h");
@@ -56,14 +59,19 @@ export default function MetricsTab() {
       <p>
         同じチャネル・言語・型の版・取得元・定義で比較します。動画は尺もそろえます。Xのリンククリック・impressionsは尺を使いません。10本未満は暫定です。欠測は0にしません。
       </p>
+      <p>
+        全貌動画は、当日の全レース終了後（23時）と投稿の24時間後で測ります（48h・7dでは測りません）。48hで開くと、全貌は当日23時の値（23時を過ぎて投稿したものは24hの値）を出します。
+      </p>
       <label>
         観測窓{" "}
         <select
           value={window}
           onChange={(e) => change(setWindow, e.target.value)}
         >
-          <option value="48h">48h</option>
-          <option value="7d">7d</option>
+          <option value="48h">48h（全貌は当日23時）</option>
+          <option value="7d">7d（全貌は出さない）</option>
+          <option value="day_end">当日23時（全貌だけ）</option>
+          <option value="24h">24h（全貌だけ）</option>
         </select>
       </label>
       <label>
@@ -104,10 +112,13 @@ export default function MetricsTab() {
               {groups.map((group) => (
                 <article className="sns-observation-card" key={group.key}>
                   <h4>
-                    {group.platform} / {group.language} / {group.format}
+                    {group.platform} / {group.language} / {group.format} / 窓:{" "}
+                    {WINDOW_LABELS[group.window] ?? group.window}
                   </h4>
                   <p>
-                    版: {group.variant || "未確認"}
+                    版:{" "}
+                    {group.variant ||
+                      (group.format === FULL_PICTURE_FORMAT ? "版なし（全貌）" : "未確認")}
                     {platform !== "x" && (
                       <> / 尺: {group.duration ?? "未確認"}秒</>
                     )}

@@ -11,6 +11,7 @@
   - `claude_ro が SECURITY DEFINER 関数を呼べる: …` → 並んだ関数の PUBLIC の EXECUTE を外すマイグレーションを先に作る（anon・authenticated が使っていないかを src/・api/ で確かめる）。所有者が supabase_admin の関数は postgres から外せないので、ADR-0096 を見直す
   - `claude_ro が表に書き込める` / `シーケンスを進められる` / `CREATE できるスキーマがある` → 並んだものの PUBLIC の権限を外すかを別に決める
   - `設定に秘密らしい名前がある` → その設定（値は出ない）を ALTER DATABASE … RESET で消せるかを先に決める。入ったままだと、接続できるロールなら誰でも値を読める
+    - 秘密でないと確かめた名前（今は `app.settings.jwt_exp`）は許可リストで除いてある。出た名前が秘密でないなら、166 の許可リストに完全一致で足す（ADR-0096「設定に秘密らしい名前がある」）
   - `CREATE ROLE` が `permission denied to … BYPASSRLS` で失敗 → BYPASSRLS の代わりに表ごとの SELECT のポリシーにする（ADR-0096「付けられない場合」）
 - パスワードはまだ無いので、この時点では誰もログインできない
 
