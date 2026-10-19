@@ -63,6 +63,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           MONTHLY_LIMIT: ${{ vars.REVIEW_MONTHLY_LIMIT }}
         run: node scripts/review/gate.js
 

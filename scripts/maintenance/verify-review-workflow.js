@@ -21,6 +21,7 @@ import {
   decideAction,
   LIMITS,
   mechanicalRejections,
+  monthlyRunsPath,
   parseVerdict,
   sqlTablesFromFiles,
   vendorForBranch,
@@ -53,6 +54,19 @@ check(
     vendorForBranch("claudex/x") === null,
 );
 check("ブランチ名が無ければ審査しない", vendorForBranch(undefined) === null);
+
+// 1b. 月の上限は、作成の App が起動した run だけを数える
+{
+  const p = monthlyRunsPath("o/r", "ryujin-maker[bot]", new Date("2026-10-19T00:00:00Z"));
+  check("月の上限は actor（作成の App）で絞って数える", p.includes("actor=ryujin-maker%5Bbot%5D") && p.includes("created=%3E%3D2026-10-01"), p);
+  let threw = false;
+  try {
+    monthlyRunsPath("o/r", "a&b=c", new Date());
+  } catch {
+    threw = true;
+  }
+  check("actor の形が違えば止める", threw);
+}
 
 // 2. 機械で落とす形
 {

@@ -261,3 +261,13 @@ export function decideAction({
 
 /** 月の件数の上限を数える起点（UTC の月初、YYYY-MM-DD） */
 export const monthStart = (date) => `${date.toISOString().slice(0, 7)}-01`;
+
+/**
+ * 今月の審査の件数を数える API のパス。pull_request_target は作者を問わず全部の PR で run を作る（gate が skipped でも
+ * 数に入る）ので、起動した身元（actor＝作成の App）で絞る。絞らないと審査していない PR の run で上限に達する
+ */
+export function monthlyRunsPath(repo, actorLogin, date) {
+  if (!/^[\w.-]+(\[bot\])?$/.test(actorLogin ?? "")) throw new Error(`actor の形が違う: ${actorLogin}`);
+  const created = encodeURIComponent(`>=${monthStart(date)}`);
+  return `/repos/${repo}/actions/workflows/review.yml/runs?actor=${encodeURIComponent(actorLogin)}&created=${created}&per_page=1`;
+}

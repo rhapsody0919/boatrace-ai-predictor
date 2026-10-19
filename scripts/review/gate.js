@@ -3,12 +3,13 @@
  * gate.js - AI の PR の審査の1段目（鍵なし）。差分を API で取り、機械で落とす形・月の上限・審査の相手を決める。
  * PR のコードは checkout も実行もしない（この script は master の定義から動く）。
  *
- * env: GITHUB_TOKEN（読み取り）・GITHUB_REPOSITORY・BASE_SHA・HEAD_SHA・HEAD_REF・MONTHLY_LIMIT（任意、既定300）
+ * env: GITHUB_TOKEN（読み取り）・GITHUB_REPOSITORY・BASE_SHA・HEAD_SHA・HEAD_REF・PR_AUTHOR（作者の login）・
+ *      MONTHLY_LIMIT（任意、既定300）
  * 出力: ok（true/false）・reason・vendor・sql_tables（JSON の配列）・head_sha
  */
 import {
   mechanicalRejections,
-  monthStart,
+  monthlyRunsPath,
   sqlTablesFromFiles,
   vendorForBranch,
 } from "../lib/reviewPr.js";
@@ -28,11 +29,7 @@ async function main() {
   const vendor = vendorForBranch(headRef);
   if (!vendor) reasons.push("ブランチの接頭辞が claude/ でも codex/ でもない");
 
-  const runs = await gh(
-    token,
-    "GET",
-    `/repos/${repo}/actions/workflows/review.yml/runs?created=%3E%3D${monthStart(new Date())}&per_page=1`,
-  );
+  const runs = await gh(token, "GET", monthlyRunsPath(repo, requireEnv("PR_AUTHOR"), new Date()));
   if (!Number.isFinite(limit) || runs.total_count > limit) {
     reasons.push(
       `今月の審査が上限を超えた（${runs.total_count}件、上限 ${limit}）。上限は repo の変数 REVIEW_MONTHLY_LIMIT`,
