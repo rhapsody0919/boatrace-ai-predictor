@@ -17,6 +17,7 @@ import {
   getTopicTargetById,
   fireRoutine,
   resolveRoutineEnvPrefix,
+  isRetiredPlatform,
 } from "../../../../../../_lib/snsHubHelpers.js";
 
 import { requireAdminAuth } from "../../../../../../_lib/adminAuth.js";
@@ -68,6 +69,12 @@ export default async function handler(req) {
       );
     }
 
+    if (isRetiredPlatform(platform)) {
+      return jsonResponse(
+        { error: `platform='${platform}'は運用をやめたので生成できません` },
+        410,
+      );
+    }
     const routineResult = await fireRoutine(resolveRoutineEnvPrefix(platform), {
       action: "generate_now",
       targetId,

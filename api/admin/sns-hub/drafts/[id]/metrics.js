@@ -4,8 +4,8 @@
  * body: { metricName: string, metricValue: number, source?: 'manual'|'api' }
  *
  * 手動入力もPhase2のAPI自動取得も同じ共通フォーマットで保存する（spec.md要件9）。
- * Phase1では管理画面からの入力はTikTok投稿のみを想定するが、sourceを持たせておくことで
- * Phase2のAPI取得値とも同じテーブルで扱える。
+ * sourceを持たせておくことで、管理画面からの手入力と
+ * Phase2のAPI取得値を同じテーブルで扱える。
  */
 
 import {

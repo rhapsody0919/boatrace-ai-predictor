@@ -68,3 +68,9 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 - 観測の画面は、既定の 48h で開くと全貌は当日（`day_end`）の値を出し、7d には全貌を出さない（測っていないので「未収集」と数えない）。選択肢に「当日23時」「24h」（全貌だけ）を足した。全貌は型の版の仕組みを持たないので、版の確認（「型の版未確認」）をしない
 - CSV と collector も下書きの型で窓を選ぶ（`windowsFor`）
 
+## 全貌動画の GA4 の来訪（2026-10-19 オーナー決定・hq と合意）
+
+- 全貌の X の本文と YouTube の概要欄のリンクは、hq の作り手が `utm_source=x|youtube`・`utm_medium=social`・`utm_campaign=race-full`・`utm_content=<race_id>`・`utm_term=full|shorts` で組み立てる。push-full-picture は本文をそのまま使う（URL を書き換えない）。下書きの ID は使わない（全貌は1レースにチャネルごとに1下書き）
+- sns-daily（`sns_channel_daily`）は、utm_content がレース ID の行を、X・YouTube と utm_term ごとに分けて入れる。下書きは `source_data.full_picture.race_id` で引き、**その下書きの実際の投稿日（posted_at の JST の日付）と翌日の2日分だけ**を残す。投稿された下書きが無いレースは数えない
+- GA4 の反映は最大48時間遅れるが、sns-daily は毎日 D−3〜D−1 を取り直すので、投稿日と翌日の値は両方とも58時間後まで読み直される。2日分の合計を画面に出す変更はまだ入れない（データが溜まってからオーナーに見せて決める）
+

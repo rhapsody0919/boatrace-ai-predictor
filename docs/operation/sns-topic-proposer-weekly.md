@@ -41,7 +41,7 @@
 
 先頭から順に候補を1件ずつ検証し、2〜5の手順（本文作成→チャネル判定→登録→使用履歴更新）を最後まで実施できた候補を「登録成功」としてカウントする。目標件数に達するまで、または全ソースの候補が尽きるまで次の候補に進む。実データの裏付けが取れない・射幸心を煽る等で不適格と判断した候補は登録せず、使用履歴も更新せずに次点候補へ切り替える（1で失敗した候補を消費したことにしない）。目標件数に届かず候補が尽きた場合は、そこまでの登録成功分だけを結果として報告する（不足分を無理に埋めない）。
 
-- `venueCode`の表示名は`VENUE_NAMES[venueCode]`（`scripts/lib/supabaseClient.js`）から取得する。手打ち禁止（`sns-video-producer-prompt.md`絶対厳守12と同じ理由）
+- `venueCode`の表示名は`VENUE_NAMES[venueCode]`（`scripts/lib/supabaseClient.js`）から取得する。手打ち禁止（`sns-video-producer-prompt.md`絶対厳守9と同じ理由）
 - `venue-characteristic`の`angle`別データ確認方法は「2-A. 会場特性ネタの本文作成」を参照
 - `data-insight`の`tabId`別データ確認方法は「2-B. 機能紹介ネタの本文作成」を参照
 - `trivia`の`angle`別データ確認方法・フォロー獲得のための訴求の型は「2-C. 豆知識ネタの本文作成」を参照
@@ -139,7 +139,7 @@
 
 `getEnabledChannelsForCategory(categoryKey)`（`scripts/lib/snsTopics.js`）を、1.で選んだ候補の`sourceId`に対応する`categoryKey`（`sourceId: "venue-characteristic"`→`categoryKey: "venue-characteristic"`、`sourceId: "data-insight"`→`categoryKey: "feature-intro"`、`sourceId: "trivia"`→`categoryKey: "trivia"`）で呼び、有効なプラットフォーム一覧を取得する（2026-09-03更新、以前のchannelMatrix.js + isGamblingRelevantフラグから、`sns_topic_categories`/`sns_topic_category_channels`テーブルによるデータ駆動の判定に変更した）。
 
-**現在の方針（ユーザー設定、sns-hub「ネタ型設定」画面でいつでも変更可能）**: 3カテゴリとも角度・タブに関わらずTikTokを含める全面許容運用。「TikTokで削除・アカウント制限（コミュニティガイドライン違反）に至らない限り、配信制限（『おすすめ対象外』）は許容する」というリスク許容方針（`docs/operation/tiktok-posting-operations.md`D・F節参照）。**新たに違反判定・削除を受けた場合は、都度sns-hub「ネタ型設定」画面でTikTokをOFFに切り替え、`docs/operation/tiktok-posting-operations.md`に該当するカテゴリ・角度/タブ・投稿内容を記録する**（推測で先回り除外しない。実際に違反判定を受けた実績が出てから対応する運用）。このRoutine自身はチャネル可否をハードコードせず、テーブルの設定値をそのまま使う。
+**現在の方針（ユーザー設定、sns-hub「ネタ型設定」画面でいつでも変更可能）**: チャネル可否はテーブルの設定値をそのまま使う。プラットフォームから違反判定・削除を受けた場合は、都度sns-hub「ネタ型設定」画面でそのチャネルをOFFに切り替える（推測で先回り除外しない。実際に違反判定を受けた実績が出てから対応する）。このRoutine自身はチャネル可否をハードコードしない。
 
 **除外したチャネルもsns_topic_targets行自体は作られる**（4.参照）。sns-hub「ネタ承認」画面のチャネルトグルで、人間が個別にpending⇔skippedを変更できる。
 

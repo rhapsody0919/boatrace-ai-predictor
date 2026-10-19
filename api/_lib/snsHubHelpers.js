@@ -83,7 +83,7 @@ export const SITE_BASE_URL = "https://www.boat-ai.jp";
  * blog/noteチャネルは`docs/operation/sns-pipeline-blog.md`/`sns-pipeline-note.md`の
  * 設計により、Supabase Storageにアップロードせず`public/images/blog/{slug}.jpg`
  * （リポジトリにコミット済みの静的アセット、本番では`{SITE_BASE_URL}/images/blog/{slug}.jpg`
- * として配信される）をそのまま`cover_image_path`に記録する。X/TikTok/YouTubeは
+ * として配信される）をそのまま`cover_image_path`に記録する。X/YouTubeは
  * `{content_group_id}/x-ja.jpg`のようなsns-hub-media（Storage）内の生パスを使う。
  * 両者は同じ列に異なる種類のパスが混在するため、形状で判定して分岐する
  * （2026-09-05発覚: この分岐が無く全パスをStorage署名対象として扱っていたため、
@@ -230,7 +230,6 @@ export const PLATFORM_ROUTINE_ENV_PREFIX = {
   blog: "SNS_BLOG_ROUTINE",
   note: "SNS_NOTE_ROUTINE",
   x: "SNS_X_ROUTINE",
-  tiktok: "SNS_TIKTOK_ROUTINE",
   youtube: "SNS_YOUTUBE_ROUTINE",
 };
 
@@ -241,6 +240,15 @@ const FALLBACK_ROUTINE_ENV_PREFIX = "SNS_HUB_ROUTINE";
  * 対応するチャネル別パイプラインが未展開（環境変数未設定）の場合は、
  * fireRoutine側で自動的にnot_configured判定になりフォールバックの挙動になる。
  */
+// 運用をやめたプラットフォーム。過去の下書き・ターゲットが DB に残っていても、
+// 作り直し・今すぐ生成で Routine を起こさない（フォールバックの汎用 Routine に
+// 届くと、やめたプラットフォームの下書きを作り直してしまうため）
+export const RETIRED_PLATFORMS = ["tiktok"];
+
+export function isRetiredPlatform(platform) {
+  return RETIRED_PLATFORMS.includes(platform);
+}
+
 export function resolveRoutineEnvPrefix(platform) {
   return PLATFORM_ROUTINE_ENV_PREFIX[platform] || FALLBACK_ROUTINE_ENV_PREFIX;
 }
@@ -461,21 +469,45 @@ export async function fireRoutine(envPrefix, payload) {
   return { fired: true, sessionUrl: result.claude_code_session_url };
 }
 
-const LINEAR_API_URL = "https://api.linear.app/graphql";
+// 検証（verify-sns-spec-change-linear-failure.js）で模擬サーバーへ向けるため、環境変数で差し替えられる
+const LINEAR_API_URL =
+  process.env.LINEAR_API_URL || "https://api.linear.app/graphql";
 const CONTENT_QUALITY_LABEL = "content-quality";
 
+/**
+ * HTTP のエラー・GraphQL の errors はどちらも例外にする。例外の linearCode に
+ * Linear のエラーコード（extensions.code、例 USAGE_LIMIT_EXCEEDED）を入れ、
+ * 呼び出し側が無料枠の上限を見分けられるようにする。以前は HTTP 400 で本文を読まずに
+ * 捨て、message だけを拾っていたため、上限が原因だと分からなかった（2026-10-18 調査）
+ */
 async function linearGraphqlRequest(apiKey, query, variables) {
   const response = await fetch(LINEAR_API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: apiKey },
     body: JSON.stringify({ query, variables }),
   });
-  if (!response.ok) {
-    throw new Error(`Linear API error: ${response.status}`);
+  const body = await response.text();
+  let json;
+  try {
+    json = JSON.parse(body);
+  } catch {
+    throw new Error(
+      `Linear API error: HTTP ${response.status}: JSON でない応答`,
+    );
   }
-  const json = await response.json();
-  if (json.errors) {
-    throw new Error(json.errors.map((e) => e.message).join(", "));
+  if (json.errors?.length) {
+    const summary = json.errors
+      .map((e) => [e.extensions?.code, e.message].filter(Boolean).join(": "))
+      .join(" / ");
+    const error = new Error(
+      `Linear API error（HTTP ${response.status}）: ${summary}`,
+    );
+    error.linearCode =
+      json.errors.find((e) => e.extensions?.code)?.extensions.code ?? null;
+    throw error;
+  }
+  if (!response.ok) {
+    throw new Error(`Linear API error: HTTP ${response.status}`);
   }
   return json.data;
 }

@@ -221,6 +221,6 @@ param.rsの重み表に`QuoteWeight: 5.0`が載っていたが、リプライ戦
 
 ## 関連
 
-- `docs/operation/sns-marketing-strategy.md`: 意思決定ログ（本ファイルの知見をどう戦略に反映したかはこちらに記録）
+- `docs/operation/sns-marketing-strategy.md`: SNS 全体の方針（本ファイルの知見を反映した結果。やめた施策もここ）
 - memory: `sns_marketing_phased_strategy_2026_08_22`（BOA-210のX実地調査結果、実際の投稿エンゲージメント実測データ）
 - `data/analysis/x-growth/report-2026-09-01.json`: 本追加調査のきっかけになった実測データ（フォロワー停滞・投稿本数急増・動画視聴維持率0%の詳細）

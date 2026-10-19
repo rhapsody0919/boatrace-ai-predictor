@@ -28,6 +28,7 @@ import {
   updateTopicCategoryChannel,
 } from "../../services/snsHubService";
 import { actionFeedback } from "./sns-hub/actionFeedback";
+import { specChangeFeedback } from "./sns-hub/specChangeFeedback";
 import Toast, { useToast } from "../../components/Toast";
 import SnsHubLayout from "./sns-hub/SnsHubLayout.jsx";
 import DraftCard from "./sns-hub/DraftCard.jsx";
@@ -192,23 +193,19 @@ function SnsHubAdmin() {
     }
   }
 
-  // 「制作仕様の変更要望」。LINEAR_API_KEY未設定でissueResult.created===falseの場合に
-  // 成功と誤解させないよう、個別にメッセージを出す
+  // 「制作仕様の変更要望」。起票できなかったときは入力欄を閉じさせない（specChangeFeedback.js）。
+  // 戻り値は「入力欄を閉じてよいか」
   async function handleRequestSpecChange(draftId, payload) {
+    let feedback;
     try {
       const result = await requestSpecChange(draftId, payload);
-      if (result?.issue?.created === false) {
-        showToast(
-          `Linear起票がスキップされました（${result.issue.reason}）。要望内容は記録されていません`,
-          "error",
-        );
-      } else {
-        showToast("Linearに起票しました", "success");
-      }
+      feedback = specChangeFeedback({ result });
     } catch (err) {
       console.error("制作仕様変更要望エラー:", err);
-      showToast(err.message || "起票に失敗しました", "error");
+      feedback = specChangeFeedback({ error: err });
     }
+    showToast(feedback.message, feedback.type);
+    return feedback.closePanel;
   }
 
   // ブログ「承認してPR」後の反映確認（要件82）。GitHubのマージレスポンス

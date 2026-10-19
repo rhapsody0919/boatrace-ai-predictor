@@ -41,19 +41,18 @@ export const TOPIC_REJECTION_REASONS = [
   { code: "duplicate-topic", label: "既出のネタと重複" },
   { code: "weak-appeal", label: "訴求が弱い" },
   { code: "overhyped-wording", label: "表現が誇大・煽り気味" },
-  { code: "policy-risk", label: "TikTok等ガイドライン抵触の懸念" },
+  { code: "policy-risk", label: "プラットフォームのガイドライン抵触の懸念" },
   { code: "wrong-data-selection", label: "会場・データの選定ミス" },
   { code: "unnatural-japanese", label: "不自然な日本語（中国語的な言い回し）" },
 ];
 
 // payout-rate（選手×艇番回収率型）・outcome-distribution（出目分布型）は
-// TikTokガイドライン上新規制作を全面停止中で、DB上はactive=trueのまま
+// 新規制作を止めていて、DB上はactive=trueのまま
 // daily-auto Routineの候補選定から恒久的に除外されている
 // （docs/db-migration/046_sns_topic_categories_exclusion_notes.sql、
 // sns-topic-proposer-daily-auto.md参照）。日次ネタ型選択ドロップダウンでも
-// 同じ理由で選択肢から外す（2026-09-04、レビューで指摘: active判定だけの
-// フィルタだとこの2型が選択可能になってしまっていた）
-export const TIKTOK_PERMANENTLY_EXCLUDED_CATEGORY_KEYS = [
+// 同じ理由で選択肢から外す（active判定だけのフィルタだとこの2型が選択できてしまう）
+export const PERMANENTLY_EXCLUDED_CATEGORY_KEYS = [
   "payout-rate",
   "outcome-distribution",
 ];

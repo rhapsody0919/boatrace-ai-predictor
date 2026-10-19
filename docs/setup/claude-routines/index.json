@@ -86,19 +86,6 @@
       "prompt_file": "sns-pipeline-x.prompt.md"
     },
     {
-      "name": "sns-pipeline-tiktok",
-      "trigger_id": "trig_01JHCnHuuVYWgRUNh1tw4m7H",
-      "migrate": true,
-      "enabled": false,
-      "cron_expression_utc": "15 * * * *",
-      "schedule_jst": "毎時15分",
-      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
-      "connectors": ["Linear", "Claude_Code_Remote"],
-      "api_trigger": true,
-      "fire_env_prefix": "SNS_TIKTOK_ROUTINE",
-      "prompt_file": "sns-pipeline-tiktok.prompt.md"
-    },
-    {
       "name": "sns-pipeline-blog",
       "trigger_id": "trig_01MBJ5YYkkULbsDTgesTJ9tc",
       "migrate": true,
