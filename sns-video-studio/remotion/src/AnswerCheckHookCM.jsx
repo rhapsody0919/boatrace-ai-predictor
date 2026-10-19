@@ -17,7 +17,7 @@ import { fitHeadline } from "./textFit.js";
  * 「AIが○○と予想してたレース」→「結果は？」→CTAという答え合わせ型自体は
  * `docs/operation/sns-video-producer-prompt.md`で「実装済み」と記載されていたが、
  * 2026-08-31のレビューで**props駆動の再利用可能なテンプレートとしては存在しなかった**
- * ことが判明した。既存の`LivePredictionCM_TikTok.jsx`は答え合わせ型として実在するが、
+ * ことが判明した。旧 `LivePredictionCM_TikTok.jsx`（削除済み）は答え合わせ型として実在したが、
  * 2026-08-24に江戸川12Rの実データをハードコードした1回限りの実装で、別レースを扱うには
  * ファイルごと複製・書き換えが必要だった。加えて`sns_template_variants`に登録されていた
  * 過去2本（gamagori-1r-0829・karatsu-5r-0831-native）はRoutine実行環境内でその場限りに

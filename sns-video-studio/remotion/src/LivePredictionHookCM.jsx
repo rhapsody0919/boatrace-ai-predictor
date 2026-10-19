@@ -12,9 +12,9 @@ import { FONT } from "./fonts.js";
 import { SceneCTA } from "./snsVideoShared.jsx";
 
 /**
- * 予想数値フック型（TikTok向け・マスコット無し・実画面スクショ不要）
+ * 予想数値フック型（マスコット無し・実画面スクショ不要）
  *
- * LivePredictionCM_TikTok.jsx（答え合わせ型）と同じ「イン崩れ注意度カードを
+ * 旧 LivePredictionCM_TikTok.jsx（答え合わせ型、削除済み）と同じ「イン崩れ注意度カードを
  * テキストベースで再現する」設計を、結果未確定の予想フック型に転用したもの。
  * Chromiumサンドボックスの制約でPlaywrightからの外部サイト到達が
  * ブロックされる問題（2026-08-28調査で判明、プロキシ設定では解決不可）を

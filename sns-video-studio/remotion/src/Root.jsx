@@ -32,7 +32,6 @@ import {
 } from "./VenueRankingCM.jsx";
 import { KimariteCM_B } from "./KimariteCM.jsx";
 import { LivePredictionCM_B } from "./LivePredictionCM2.jsx";
-import { LivePredictionCM_TikTok } from "./LivePredictionCM_TikTok.jsx";
 import { LivePredictionHookCM_Demo } from "./LivePredictionHookCM.jsx";
 import { AnswerCheckHookCM_Demo } from "./AnswerCheckHookCM.jsx";
 import { AccuracyProofCM_C } from "./AccuracyProofCM.jsx";
@@ -320,14 +319,6 @@ export function RemotionRoot() {
         id="LivePredictionCM-B"
         component={LivePredictionCM_B}
         durationInFrames={425}
-        fps={30}
-        width={1080}
-        height={1920}
-      />
-      <Composition
-        id="LivePredictionCM-TikTok"
-        component={LivePredictionCM_TikTok}
-        durationInFrames={475}
         fps={30}
         width={1080}
         height={1920}
