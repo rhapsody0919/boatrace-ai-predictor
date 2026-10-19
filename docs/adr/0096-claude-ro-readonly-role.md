@@ -42,6 +42,14 @@ Management API のトークンも MCP も、権限としては書き込みがで
 
 Supabase の `postgres` は `rolbypassrls=true`・`rolcreaterole=true`（2026-10-19 本番で確認）。PostgreSQL 16 以降は、BYPASSRLS を持つ CREATEROLE のロールが BYPASSRLS のロールを作れる。15 以前は superuser が要り、166 の CREATE ROLE が失敗して全体が戻る。そのときは、RLS の付いた表ごとに `CREATE POLICY … FOR SELECT TO claude_ro USING (true)` を置くマイグレーションに替え、作った後に service_role と件数を比べる。
 
+## 設定に秘密らしい名前がある
+
+データベース・全ロール向けの設定（`pg_db_role_setting`）は、接続できるロールなら誰でも `current_setting` で値を読める。166 は名前に jwt・secret・key・password・token を含む設定があれば止める（エラーには名前だけを出し、値は出さない）。
+
+- 2026-10-19、オーナーが 166 を SQL Editor で実行したところ、`app.settings.jwt_exp` で止まった（全体が戻り、何も変わっていない）。これは古い Supabase が入れる JWT の有効期限の秒数で、秘密ではない。名前の正規表現による誤検知
+- 対処は、秘密でないと確かめた名前だけを**完全一致の許可リスト**で除く形にした（今は `app.settings.jwt_exp` だけ）。正規表現はゆるめない。`app.settings.jwt_secret` や、`jwt_exp` で始まる別の名前は今までどおり止まる（verify-ro-query.js で固定）
+- 許可リストに足すのは、値が秘密でないことを確かめた名前だけにする。値を読んで確かめる必要があるときは、オーナーが SQL Editor で確かめる（Claude には値を渡さない）
+
 ## 影響
 
 - オーナーに渡す SQL から確認の SELECT が減る。書き込みは今までどおりオーナー（db-apply か SQL Editor）
