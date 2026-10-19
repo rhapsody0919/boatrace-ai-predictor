@@ -30,7 +30,8 @@
 - 動かす条件: 作者の `user.id`（数値）が作成の App、head のリポジトリが同じ、`base.ref == 'master'`
 - PR の head を checkout しない・実行しない。`persist-credentials: false`、`npm ci`・cache を使わない。差分は API で取り、全部取れなければ落とす（fail closed）。symlink・submodule・LFS・バイナリ・`.gitattributes` の変更は機械で落とす
 - PR の本文・タイトル・コメントは審査の材料に入れない
-- 別ベンダーで審査する（`claude/` は OpenAI、`codex/` は Anthropic）。P0 が0件なら、審査した head SHA に APPROVE を付ける（承認の直前に head を取り直し、違えば付けない）
+- 別ベンダーで審査する（`claude/` は OpenAI、`codex/` は Anthropic）。P0 が0件なら、審査した head SHA に APPROVE を付ける（承認の直前に head を取り直し、違えば付けない）。承認しないときは REQUEST_CHANGES を付け、審査の App の最新の状態でマージを止める
+- 本文の無い差分（バイナリ。NUL を1つ含む JS も git はバイナリと扱う。中身を変えない改名・複製）は、消したファイル以外は機械で落とす。そうした変更はオーナーが行う
 - LLM を呼ぶ job と、審査の App の鍵で承認する job を分ける。承認の job は判定の JSON だけを受け取る
 - 本番の状態（表の定義・行数・索引）を claude_ro で取る job は、PR を扱う job と分ける。表の名前は引数で渡し、件数と定義だけを返す（ADR-0096 の追記）
 - 鍵は Environment `pr-review`（master だけ）に置く。この Environment を使える workflow は review.yml だけ、という検査を verify に足す
@@ -99,6 +100,8 @@ D はまず1〜2週間、当てずに「当てるはずだった」を通知す�
 
 - 審査が指示の注入で騙されると、仕組みの変更（判定・審査の workflow を含む）が通る。その場合、重い SQL の1タップの関門も後から外せ、本番の鍵を持ち出されうる
 - 必須の check は守りにならない（上記）
+- 審査の相手はブランチの接頭辞で決まり、作成の App が選べる（作成の App は1つで、作り手を見分ける別の手段が無い）。「作った側と別のベンダー」は守りでなく既定
+- 外の設定に頼る: 「Allow GitHub Actions to create and approve pull requests」は OFF のまま（ON だと作成の App が足した workflow の github-actions[bot] が承認できる）。作成の App に Variables・Administration を付けない（付くと REVIEW_MAKER_BOT_ID 等を書き換えられる）。ruleset の承認は書き込み権限のある身元なら誰でも数えるので、書き込み権限を他の App・人に配らない
 - 別ベンダーの API の従量の課金
 
 ## 影響
