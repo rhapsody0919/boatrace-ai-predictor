@@ -70,3 +70,6 @@
 - 読取専用ロール・権限検査・読取CLIの知見は [db-readonly.md](db-readonly.md) を参照（2026-10-19、依頼77の分割案）。
 - 列控えは削除列の包含だけでなく主キーとの対応と、削除時点まで控えが残ることを確認する。過去のCREATEの存在だけでは復元可能性を示せない。（2026-10-19、2026-10-19-review-20261019-13.md）
 - db-apply は毎時17分の自動適用になる予定（ADR-0097、今は DB_APPLY_DRY_RUN）。本番の反映をまとめる（master の自動デプロイを止める）と SQL がコードより先に当たるので、本番のデプロイの SHA にそのマイグレーションが入っているかを確かめる関門が要る（2026-10-20、system-architect、db-apply.yml、BOA-908。反映をまとめる案は保留）
+- `INSERT ... ON CONFLICT DO NOTHING`（対象を書かない形）は PK にも UNIQUE にも効くので、中身の違う既存行があっても黙って成功する。固定 uuid でマスタの行を入れるときは、COMMIT の前に DO ブロックで「入ったはずの行がそろっているか」を検査して落とす（2026-10-20、system-architect、171・PR #1695）
+- sns_template_variants を外部キーで参照するのは sns_drafts.template_variant_id（035）と sns_post_tracking.template_variant_id（136、154 で NULL 可）の2つだけ。行を消す前の参照の数は、この2表を足して数える（2026-10-20、system-architect、PR #1695）
+- db-apply の確認の節の見出しを拾う処理（scripts/lib/dbApplySql.js の extractConfirmationSections）は、最初の「:」/「：」で見出しを切る。見出しの括弧の中に「:」を書くと、job summary で SQL の1行目にはみ出す（2026-10-20、system-architect、171）
