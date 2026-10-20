@@ -6,7 +6,9 @@
 - 選び方: 日の番号（1970-01-01 からの日数）の偶奇。1週は7日（奇数）なので、週ごとに順が逆になり、同じ曜日に同じ案が続かない（`scripts/lib/snsTodayVariants.js`）
 - 札: 下書きの `source_data.today_variant`（`{id, uuid}`）に必ず残す。`uuid` が入っている案は `sns_post_tracking.template_variant_id` にも入る（`sns_template_variants(id)` への外部キー）
 - 設定が無い・壊れている（2案でない・同じ id・改行・uuid の形が違う）ときは `default`（それも壊れていれば「本日のデータ一覧（{date}）」）に戻し、札は `default`
-- 案の中身は hq が機械の検査（禁止語・risk-rules）を通して渡す。入れ替えは `config/today-variants.json` だけを変える小さな PR で行う
+- `heading` は1行・80字まで・`{date}` を必ず含む（含まない案は使わず、既定の文に戻る）。日付が消えると、投稿のどこにも「いつのデータか」が出ないため
+- 案の中身は hq が機械の検査（禁止語・risk-rules）を通して渡す。入れ替えは `config/today-variants.json` だけを変える小さな PR で行う。/today の X 投稿の型を変える PR なので、x-channel の評価が要る
+- 2案が同じ文のあいだ（2026-10-20 の導入時は両方とも既定の文）は配線だけで、比較の実験ではない。その期間の a・b の札の数字は、案の比較に使わない。実際の2案を入れた日を、入れ替えの PR に書く
 
 ## 案の札を tracking に入れる（本番の2行。オーナーが実行）
 

@@ -56,6 +56,22 @@ test("案の札: uuid が入っていればそのまま、空・null なら null
   assert.ok(empty.variants.every((v) => v.uuid === null));
 });
 
+test("見出しに {date} が無い案は使わない（日付が消えるため。x-channel の指摘）", () => {
+  const noDate = {
+    default: "既定（{date}）",
+    variants: [
+      config.variants[0],
+      { ...config.variants[1], heading: "日付なしの見出し" },
+    ],
+  };
+  assert.equal(pickTodayHeading(noDate, "2026-10-20").variant.id, "default");
+  assert.equal(
+    pickTodayHeading({ default: "日付なし", variants: [] }, "2026-10-20")
+      .heading,
+    TODAY_HEADING_BUILTIN,
+  );
+});
+
 test("設定が無い・壊れているときは既定の文（id default）に戻す", () => {
   const def = {
     heading: "本日のデータ一覧（{date}）",

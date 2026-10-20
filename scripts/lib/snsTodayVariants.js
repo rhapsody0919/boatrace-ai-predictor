@@ -12,11 +12,13 @@ import { readFileSync } from "node:fs";
 export const TODAY_HEADING_BUILTIN = "本日のデータ一覧（{date}）";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VARIANT_ID = /^[a-z0-9_-]{1,32}$/;
+// 見出しは1行・80字まで・日付の差し込み（{date}）が必須。日付が消えると、投稿のどこにも「いつのデータか」が出ない（x-channel の指摘、2026-10-20）
 const headingOk = (v) =>
   typeof v === "string" &&
   v.trim().length > 0 &&
   v.length <= 80 &&
-  !/[\r\n]/.test(v);
+  !/[\r\n]/.test(v) &&
+  v.includes("{date}");
 
 /** 設定を検査して使える形にする（純粋関数）。壊れた部分は捨てる */
 export function normalizeTodayVariants(config) {
