@@ -264,6 +264,14 @@ export function StatsPage({ title, sub, rows }) {
                 </span>
               )}
             </div>
+            {r.bar && (
+              <div style={{ position: "absolute", left: 360, top: 78, width: 480, height: 40, background: "rgba(255,255,255,0.08)", borderRadius: 8 }}>
+                <div style={{ width: `${Math.min(100, r.bar.value * 100)}%`, height: "100%", background: "#e9cf86", borderRadius: 8 }} />
+                {r.bar.mark !== null && r.bar.mark !== undefined && (
+                  <div style={{ position: "absolute", left: `${Math.min(100, r.bar.mark * 100)}%`, top: -10, width: 6, height: 60, marginLeft: -3, background: "#2dd4bf", borderRadius: 3 }} />
+                )}
+              </div>
+            )}
           </div>
         );
       })}

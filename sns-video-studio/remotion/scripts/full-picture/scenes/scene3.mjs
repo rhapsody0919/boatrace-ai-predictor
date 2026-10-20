@@ -18,7 +18,7 @@ const d1 = (v) => (v === null || v === undefined ? "—" : v.toFixed(1));
 /** 着欄の記号が数字でない（着順が付かない走）か（画面の isUnrankedFinishMark と同じ） */
 const unranked = (mark) => typeof mark === "string" && mark !== "" && !/^[1-6]$/.test(mark);
 /** 選手名（全角・半角の空白を除く） */
-const nameOf = (s) => (s ?? "").replace(/[\s　]+/g, "");
+const nameOf = (s) => (s ?? "").replace(/[\s\u3000]+/g, "");
 
 /** 選手ページの履歴の行（getRacerRaceHistory と同じ: 会場があり、不成立でなく1着がある結果だけ） */
 function history(rows, date, days) {
@@ -81,7 +81,7 @@ export function buildScene3(m) {
         kind: "stats",
         title: "このレースは堅い？荒れる？",
         sub: `${label} ${b.n.toLocaleString("ja-JP")}件`,
-        rows: [{ label: "1号艇の1着", value: `${d1(x)}%`, note: `全国 ${d1(y)}%` }],
+        rows: [{ label: "1号艇の1着", value: `${d1(x)}%`, note: `全国 ${d1(y)}%`, bar: { value: b.rate, mark: b.base } }],
       },
       press: null,
       frames: [statsRow(0)],
