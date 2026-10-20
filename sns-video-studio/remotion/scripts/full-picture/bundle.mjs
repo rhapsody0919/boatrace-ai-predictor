@@ -1,6 +1,6 @@
 /**
  * 送信の道（scripts/sns/push-full-picture.js）に渡す bundle.json の中身（純粋関数）。
- * 2026-10-21 オーケストレーターの分担（a・b・c の文型）と、送信レーンとの Shorts の契約（bundle_version 2）:
+ * 2026-10-20 オーケストレーターの分担（a・b・c の文型）と、送信レーンとの Shorts の契約（bundle_version 2）:
  * - x_text: 入口版の本文＋このレースの URL をちょうど1つ（X には入口版 full-x.mp4）
  * - youtube_full: 完全版（通常の動画、full-youtube.mp4）の題名・説明文（要点・URL・章・免責）
  * - youtube_shorts: 入口版を Shorts に出す題名・説明文。説明文に完全版の URL の置き場所 `{full_url}` をちょうど1つ（送信側が置き換える）
@@ -8,7 +8,7 @@
  * review（評価役の P0）は入れない（hq の側。機械の検査だけにするかはオーナーの判断）。
  * 文は文型で固定（LLM を使わない）。数値は場面の facts（字幕と同じ値）から取り、動画に出る数字だけを書く。
  * 題名・説明文は wording-editor・youtube-channel（2026-10-20）を通した。Shorts の題名の「同じ並び」は、入口版の結論の問い
- * 「同じ並びの過去は、どう決まった？」（2026-10-21 オーナー決定）にそろえている。
+ * 「同じ並びの過去は、どう決まった？」（2026-10-20 オーナー決定）にそろえている。
  */
 export const BUNDLE_VERSION = 2;
 export const SITE = "https://www.boat-ai.jp";

@@ -17,7 +17,7 @@ X・Shorts は59秒以内の入口版（条件＋6艇の重ね図＋結論1拍�
 
 ## 毎日の実行（daily.mjs）の契約と鍵の分け方
 
-hq の全貌の切替案 v2（`~/hq/drafts/full-picture-switch-20261020.md` §9、2026-10-21）の依頼に合わせた。hq の集客部署は次の2つの使い方だけを呼ぶ。
+hq の全貌の切替案 v2（`~/hq/drafts/full-picture-switch-20261020.md` §9、2026-10-20）の依頼に合わせた。hq の集客部署は次の2つの使い方だけを呼ぶ。
 
 | 使い方 | コマンド（sns-video-studio/remotion で） | 標準出力（JSON 1つ） |
 |---|---|---|

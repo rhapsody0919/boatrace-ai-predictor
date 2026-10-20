@@ -501,12 +501,12 @@ for (const f of fixtures) {
       }
     }
   }
-  // s3-rough: 「全国・」を省かず、範囲と件数を1行目に（2026-10-21 オーナー決定 3。省くと母数が分からない）
+  // s3-rough: 「全国・」を省かず、範囲と件数を1行目に（2026-10-20 オーナー決定 3。省くと母数が分からない）
   const rough = scenes.find((x) => x.id === "scene3").data.steps.find((st) => st.id === "s3-rough");
   if (rough) {
     assert.ok(rough.lines[0].startsWith("全国・") && /\d件$/.test(rough.lines[0]), `${f}: s3-rough の1行目は「全国・…N件」: ${rough.lines[0]}`);
     assert.ok(rough.lines[1].startsWith("1着"), `${f}: s3-rough の2行目は1着率と全国の比較: ${rough.lines[1]}`);
-    // 答えの行（1着率）を大きく、範囲の行を小さく（範囲の行が答えより目立っていた。2026-10-21 オーケストレーター段階1）
+    // 答えの行（1着率）を大きく、範囲の行を小さく（範囲の行が答えより目立っていた。2026-10-20 オーケストレーター段階1）
     assert.equal(rough.lead, 1, `${f}: s3-rough は2行目が答えの行`);
     // 縮めた後の大きさで比べる（長い答えの行は 46px から縮み、範囲の行とほぼ同じ大きさになっていた）
     const [s0, s1] = [0, 1].map((i) => bubbleFitSize(rough.lines[i], i, rough.lead));
@@ -697,7 +697,7 @@ for (const f of fixtures) {
   }
 }
 
-// ---- 送信の道に渡す bundle（2026-10-21 オーケストレーターの分担 a・b・c、送信レーンとの Shorts の契約 bundle_version 2）----
+// ---- 送信の道に渡す bundle（2026-10-20 オーケストレーターの分担 a・b・c、送信レーンとの Shorts の契約 bundle_version 2）----
 {
   const { buildBundle, checkBundle, chaptersOk, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
   const { checkFullPicture } = await import("../sns/push-full-picture.js");

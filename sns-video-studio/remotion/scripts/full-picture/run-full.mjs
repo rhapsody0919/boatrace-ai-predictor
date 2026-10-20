@@ -78,7 +78,7 @@ const scenes = buildAll(m);
 const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scene: x.id, ...o })));
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
 for (const o of omitted) console.warn(`[省いた要素] ${JSON.stringify(o)}`);
-// 省略禁止の場面（場面4 展開）の材料が無ければ止める（2026-10-21 オーケストレーター）
+// 省略禁止の場面（場面4 展開）の材料が無ければ止める（2026-10-20 オーケストレーター）
 {
   const must = omitted.filter((x) => x.mustReport);
   if (must.length) {
@@ -302,7 +302,7 @@ if (!noVideo && fullMp4 && existsSync(entryMp4)) {
   copyFileSync(entryMp4, join(dir, "full-x.mp4"));
   copyFileSync(fullMp4, join(dir, "full-youtube.mp4"));
   copyFileSync(entryMp4, join(dir, "shorts.mp4"));
-  // X と Shorts は同じ入口版（同じバイト列）。送信側は中身を解析しないので、作り手が確かめる（送信レーン 2026-10-21、x-channel P2）
+  // X と Shorts は同じ入口版（同じバイト列）。送信側は中身を解析しないので、作り手が確かめる（送信レーン 2026-10-20、x-channel P2）
   const sha = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
   if (sha(join(dir, "full-x.mp4")) !== sha(join(dir, "shorts.mp4"))) stop("bundle", ["full-x.mp4 と shorts.mp4 の中身が違う"]);
   console.log(`${dir}: bundle.json と動画3本（完全版 ${(f.bytes / 1048576).toFixed(1)}MiB・入口版 ${(e.bytes / 1048576).toFixed(1)}MiB）`);
