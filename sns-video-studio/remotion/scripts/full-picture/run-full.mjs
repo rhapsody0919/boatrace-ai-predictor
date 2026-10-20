@@ -132,6 +132,8 @@ function render(list, answers, dir, name) {
   const props = { scenes: list, answers, ...(bgm ? { bgm: bgmName } : {}) };
   const propsPath = join(dir, `props-${name}.json`);
   writeJson(propsPath, props);
+  // 前の書き出しの静止画を残さない（拍の長さが変わるとフレーム番号が変わり、古い静止画が混ざっていた）
+  rmSync(join(dir, "stills"), { recursive: true, force: true });
   mkdirSync(join(dir, "stills"), { recursive: true });
   const t0 = Date.now();
   const mp4 = join(dir, `${name}.mp4`);
