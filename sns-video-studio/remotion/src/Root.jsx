@@ -1,4 +1,8 @@
 import { Composition } from "remotion";
+import {
+  FullPictureScene2,
+  scene2Duration,
+} from "./fullPicture/Scene2Compare.jsx";
 import { AshiyaCM, AmagasakiCM } from "./AshiyaCM.jsx";
 import { YoungPersonaCM } from "./YoungPersonaCM.jsx";
 import { HitCheckCM } from "./HitCheckCM.jsx";
@@ -573,6 +577,19 @@ export function RemotionRoot() {
         fps={30}
         width={1600}
         height={976}
+      />
+      {/* 全貌動画 場面2（試作）。材料は --props で渡す（scripts/full-picture/render-scene2.mjs） */}
+      <Composition
+        id="FullPictureScene2"
+        component={FullPictureScene2}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: props?.radar ? scene2Duration(props) : 300,
+        })}
       />
       <Composition
         id="AboutHeroMobile"
