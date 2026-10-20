@@ -193,3 +193,152 @@ export function isBusy(runs, currentRunId) {
     (r) => String(r.id) !== String(currentRunId) && active.has(r.status),
   );
 }
+
+/**
+ * 判定のラベルから、当て方を決める。試運転の間は当てない
+ * @param {{ dryRun: boolean, label: "light" | "heavy" | "stop" }} args
+ * @returns {"dry-run" | "auto" | "gated" | "stop"}
+ */
+export function decideMode({ dryRun, label }) {
+  if (label === "stop") return "stop";
+  if (dryRun) return "dry-run";
+  if (label === "light") return "auto";
+  if (label === "heavy") return "gated";
+  return "stop";
+}
+
+/**
+ * 重いものの承認待ちが6時間を超えた run。定期の起動（1時間ごと）で1回だけ知らせるため、6〜7時間の窓に入ったものだけを返す
+ * @param {{ id: number, status: string, run_started_at?: string, created_at: string, html_url: string }[]} runs
+ * @param {Date} now
+ */
+export function staleWaitingRuns(runs, now, { minHours = 6, maxHours = 7 } = {}) {
+  return runs
+    .filter((r) => r.status === "waiting")
+    .filter((r) => {
+      const hours = (now.getTime() - Date.parse(r.run_started_at ?? r.created_at)) / 3_600_000;
+      return hours >= minHours && hours < maxHours;
+    })
+    .map((r) => r.html_url);
+}
+
+const LABEL_JA = { light: "軽い", heavy: "重い", stop: "止める" };
+const LABEL_OUTCOME = {
+  light: "承認なしで当てた",
+  heavy: "オーナーの1タップを待った",
+  stop: "当てずに止めた",
+};
+const MAX_PENDING = 10;
+
+/** 試運転の評価に使う、未処理のファイルの一覧（番号の順、先頭から最大10本）。pickNext は先頭の1本しか見ないため */
+export function pendingCandidates(candidates) {
+  return [...candidates]
+    .sort((a, b) => byMigrationNumber(a.file.split("/").pop(), b.file.split("/").pop()))
+    .filter((c) => c.existsAtHead !== false)
+    .filter((c) => c.ledgerState === null || c.ledgerState === "未適用")
+    .slice(0, MAX_PENDING)
+    .map((c) => ({
+      file: c.file,
+      pr: c.evaluation?.pr ?? null,
+      ok: c.evaluation?.ok === true,
+      reasons: c.evaluation?.reasons ?? [],
+    }));
+}
+
+/**
+ * 定期の起動の結果を、知らせる項目の一覧にする。key のある項目は、元の PR のコメントに <!-- key --> の印を入れ、
+ * 同じ印が既にあれば出さない（状態を持たない時刻の窓は、schedule の遅れで重複・取りこぼしが起きるためやめた）。
+ * key の無い項目（job の失敗・承認待ちの6時間）は毎回 Slack に出す
+ *
+ * @returns {{ key: string | null, pr: string | null, text: string }[]}
+ */
+export function buildNotifications({
+  dryRun,
+  status,
+  file,
+  pr,
+  label,
+  sha256,
+  reasons,
+  pending,
+  judged,
+  results,
+  stale,
+  runUrl,
+  now,
+}) {
+  const items = [];
+  const name = (f) => (f ? f.split("/").pop() : "");
+  const prRef = (n) => (n ? `（PR #${n}）` : "");
+  const list = (rs) => rs.map((r) => `\n- ${r}`).join("");
+  const today = now.toISOString().slice(0, 10);
+
+  if (dryRun) {
+    for (const p of pending) {
+      if (!p.ok) {
+        items.push({
+          key: `db-apply:dry-run:blocked:${p.file}`,
+          pr: p.pr,
+          text: `本番 SQL の自動の適用（試運転、当てていない）: ${name(p.file)}${prRef(p.pr)} は自動では当てない（5点の検査を通らない）${list(p.reasons)}`,
+        });
+        continue;
+      }
+      const j = judged.find((x) => x.file === p.file);
+      if (!j) continue;
+      items.push({
+        key: `db-apply:dry-run:${p.file}:${j.sha256}`,
+        pr: p.pr,
+        text: `本番 SQL の自動の適用（試運転、当てていない）: ${name(p.file)}${prRef(p.pr)} は「${LABEL_JA[j.label] ?? j.label}」。本番なら${LABEL_OUTCOME[j.label] ?? "当てずに止めた"}${list(j.reasons)}`,
+      });
+    }
+  } else {
+    if (status === "blocked") {
+      // 以後の番号も止めるので、毎日1回念を押す（印に日付を入れる）
+      items.push({
+        key: `db-apply:blocked:${file}:${today}`,
+        pr,
+        text: `本番 SQL の自動の適用: ${name(file)}${prRef(pr)} は自動では当てない（5点の検査を通らない）。以後の番号も止まっている${list(reasons)}`,
+      });
+    }
+    if (status === "selected" && label === "stop") {
+      items.push({
+        key: `db-apply:stop:${file}:${sha256}:${today}`,
+        pr,
+        text: `本番 SQL の自動の適用: ${name(file)}${prRef(pr)} は「止める」。当てていない。以後の番号も止まっている${list(reasons)}`,
+      });
+    }
+    const applied = results.applyAuto === "success" || results.applyGated === "success";
+    if (status === "selected" && applied) {
+      items.push({
+        key: `db-apply:applied:${file}:${sha256}`,
+        pr,
+        text: `本番 SQL の自動の適用: ${name(file)}${prRef(pr)} を当てた（${LABEL_JA[label] ?? label}）`,
+      });
+      if (results.record !== "success") {
+        items.push({
+          key: null,
+          pr: null,
+          text: `本番 SQL の自動の適用: ${name(file)} は当てたが、台帳（APPLIED.md）の記録が ${results.record}。台帳を直すまで、次の起動が同じ SQL を当て直すおそれがある: ${runUrl}`,
+        });
+      }
+    }
+    for (const [job, result] of [["apply-auto", results.applyAuto], ["apply-gated", results.applyGated]]) {
+      if (status === "selected" && (result === "failure" || result === "cancelled")) {
+        items.push({
+          key: null,
+          pr: null,
+          text: `本番 SQL の自動の適用: ${name(file)} の ${job} が ${result}（却下を含む）。次の起動でまた選ばれる: ${runUrl}`,
+        });
+      }
+    }
+  }
+  for (const [job, result] of [["reconcile", results.reconcile], ["judge", results.judge]]) {
+    if (result === "failure" || result === "cancelled") {
+      items.push({ key: null, pr: null, text: `本番 SQL の自動の適用: 定期の起動の ${job} が ${result}: ${runUrl}` });
+    }
+  }
+  for (const url of stale) {
+    items.push({ key: null, pr: null, text: `本番 SQL の重い適用が、6時間以上オーナーの承認を待っている: ${url}` });
+  }
+  return items;
+}

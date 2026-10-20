@@ -4,10 +4,10 @@
  *
  * repo の secret（Environment の外）は、同じリポジトリのどのブランチの workflow からも読める。workflow を書ける身元
  * （作成の App は Workflows: write を持つ）なら、ブランチを push するだけで審査を通らずに本番へ書ける。
- * そこで、下の鍵を参照する job は必ず master だけの Environment（prod-jobs・ryujin-bot・production-db）を宣言する。
+ * そこで、下の鍵を参照する job は必ず master だけの Environment（prod-jobs・ryujin-bot・production-db・production-db-auto）を宣言する。
  *
  * 確認する観点:
- *   1. 下の鍵を参照する job は environment に prod-jobs・ryujin-bot・production-db のどれかを持つ
+ *   1. 下の鍵を参照する job は environment に prod-jobs・ryujin-bot・production-db・production-db-auto のどれかを持つ
  *   2. pull_request で動く workflow は、anon（VITE_SUPABASE_*）以外の secret を参照しない
  *
  * YAML は字句で読む（job は2字下げの `名前:`、environment は4字下げ）。
@@ -38,6 +38,8 @@ const MASTER_ONLY_ENVIRONMENTS = new Set([
   "prod-jobs",
   "ryujin-bot",
   "production-db",
+  // 軽い SQL の自動の適用（db-apply.yml の apply-auto、ADR-0097 段取り D）。承認者なし・master だけ
+  "production-db-auto",
 ]);
 // pull_request の workflow が参照してよいもの: anon と、PR の通知専用の webhook（漏れても PR 通知のチャンネルに投稿されるだけ）
 const PUBLIC_SECRETS = new Set([

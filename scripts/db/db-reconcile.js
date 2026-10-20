@@ -7,6 +7,7 @@
  *   status=none      当てるものが無い
  *   status=selected  file を当ててよい（判定 classifyMigration は呼び出し側が当てる時点で行う）
  *   status=blocked   番号の順で次のファイルが5点の検査を通らない（当てずに通知する）
+ * ほかに出すもの: reasons（JSON）・pending（未処理のファイルを最大10本、試運転の評価用、JSON）・stale（6時間以上承認を待つ run の URL、JSON）
  *
  * env:
  *   GITHUB_TOKEN           読み取りだけ（actions・contents・pull-requests）
@@ -27,7 +28,9 @@ import {
   isBusy,
   ledgerRowAddedAsUnapplied,
   ledgerState,
+  pendingCandidates,
   pickNext,
+  staleWaitingRuns,
 } from "../lib/dbReconcile.js";
 
 const ROOT = path.resolve(
@@ -105,7 +108,9 @@ async function main() {
     );
     runs.push(...res.workflow_runs);
   }
-  if (isBusy(runs, runId)) return output({ status: "busy" });
+  // 重いものの承認待ちが6時間を超えたら知らせる（busy でも数える。承認待ちの run があると busy になるため）
+  const stale = staleWaitingRuns(runs, new Date());
+  if (isBusy(runs, runId)) return output({ status: "busy", stale });
 
   const head = git("rev-parse", "HEAD");
   try {
@@ -205,7 +210,8 @@ async function main() {
       }),
     });
   }
-  return output(pickNext(candidates));
+  // pending は試運転の評価用（先頭の1本だけでなく、未処理のファイルを最大10本）
+  return output({ ...pickNext(candidates), pending: pendingCandidates(candidates), stale });
 }
 
 function output(result) {
@@ -214,7 +220,15 @@ function output(result) {
   if (file) {
     appendFileSync(
       file,
-      `status=${result.status}\nfile=${result.file ?? ""}\npr=${result.pr ?? ""}\n`,
+      [
+        `status=${result.status}`,
+        `file=${result.file ?? ""}`,
+        `pr=${result.pr ?? ""}`,
+        `pending=${JSON.stringify(result.pending ?? [])}`,
+        `reasons=${JSON.stringify(result.reasons ?? [])}`,
+        `stale=${JSON.stringify(result.stale ?? [])}`,
+        "",
+      ].join("\n"),
     );
   }
 }

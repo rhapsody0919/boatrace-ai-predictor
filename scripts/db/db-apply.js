@@ -5,6 +5,10 @@
  *   inspect <path>                承認の前: パスの検証・SQL の検査・job summary の出力。適用できなければ終了コード1
  *   apply <path> <sha256>         承認の後: sha256 の再照合・再検査のあと psql で適用（接続は env SUPABASE_DB_URL）
  *   mark-applied <path> <sha256>  適用の後: docs/db-migration/APPLIED.md の行を「適用済み」にする
+ *   judge <path>                  定期の起動（ADR-0097）: 軽い／重い／止めるの判定と当て方（鍵なし）
+ *   judge-all                     試運転: 未処理のファイルを全部判定する（env PENDING、当てない）
+ *   apply-auto <path> <sha256>    軽いものを承認なしで当てる（当てる直前に判定と台帳を確かめ、短いタイムアウト）
+ *   apply-gated <path> <sha256>   重いものをオーナーの承認の後に当てる（台帳を確かめてから）
  *
  * 引数のパスは呼び出し側（ワークフロー）が env 経由で渡す。ここで正規表現と git の木（HEAD に通常ファイルとして
  * あること）を検証してから読む。接続文字列は引数に出さず、libpq の環境変数（PGHOST 等）に分けて psql に渡す。
@@ -15,6 +19,8 @@ import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  AUTO_TIMEOUTS,
+  classifyMigration,
   inspectMigration,
   isAppliedInLedger,
   markAppliedInLedger,
@@ -22,6 +28,7 @@ import {
   renderSummary,
   validateMigrationPath,
 } from "../lib/dbApplySql.js";
+import { decideMode, ledgerState } from "../lib/dbReconcile.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -130,7 +137,7 @@ function pgEnvFromUrl(raw) {
   };
 }
 
-function apply(migrationPath, expectedSha256) {
+function apply(migrationPath, expectedSha256, { timeouts } = {}) {
   const { sql, sha256 } = readMigration(migrationPath);
   if (
     !/^[0-9a-f]{64}$/.test(expectedSha256 ?? "") ||
@@ -150,7 +157,7 @@ function apply(migrationPath, expectedSha256) {
     );
   const pgEnv = pgEnvFromUrl(raw);
 
-  const args = psqlArgs(inspection.mode, migrationPath);
+  const args = psqlArgs(inspection.mode, migrationPath, timeouts);
   console.log(`psql ${args.join(" ")}（mode=${inspection.mode}）`);
   const env = { ...process.env, ...pgEnv };
   delete env.SUPABASE_DB_URL;
@@ -191,6 +198,90 @@ function markApplied(migrationPath, sha256) {
   console.log(`APPLIED.md: ${action}（${path.basename(migrationPath)}）`);
 }
 
+/**
+ * 定期の起動（ADR-0097）の判定。鍵を持たない job で動く。PR のコメントは使わず、ここで判定し直す。
+ * 出力: label（light/heavy/stop）・mode（dry-run/auto/gated/stop）・sha256・reasons（JSON）
+ */
+function judge(migrationPath) {
+  const { sql, sha256 } = readMigration(migrationPath);
+  const result = classifyMigration(sql, path.basename(migrationPath));
+  const dryRun = process.env.DB_APPLY_DRY_RUN !== "false";
+  const mode = decideMode({ dryRun, label: result.label });
+  const reasons = [
+    ...result.stops,
+    ...result.statements
+      .filter((x) => x.kind === "heavy")
+      .map((x) => `${x.line}行目: ${x.reason}`),
+  ].slice(0, 20);
+  writeGithubFile(
+    "GITHUB_STEP_SUMMARY",
+    `## 判定: \`${migrationPath}\`\n\n- ラベル: ${result.label}\n- 当て方: ${mode}${dryRun ? "（試運転）" : ""}\n` +
+      reasons.map((r) => `- ${r.replace(/[\r\n|`]/g, " ")}`).join("\n") +
+      "\n",
+  );
+  writeGithubFile(
+    "GITHUB_OUTPUT",
+    `label=${result.label}\nmode=${mode}\nsha256=${sha256}\nreasons=${JSON.stringify(reasons)}\n`,
+  );
+  console.log(`判定: ${migrationPath} label=${result.label} mode=${mode}`);
+}
+
+/**
+ * 試運転の評価（ADR-0097）。5点の検査を通った未処理のファイルを全部判定する（当てない、鍵なし）。
+ * env PENDING は reconcile の pending（JSON）。出力: judged（[{ file, label, sha256, reasons }]、JSON）
+ */
+function judgeAll() {
+  let pending;
+  try {
+    pending = JSON.parse(process.env.PENDING ?? "[]");
+  } catch {
+    fail("PENDING が JSON として読めない");
+  }
+  const judged = pending
+    .filter((p) => p && p.ok === true && typeof p.file === "string")
+    .map((p) => {
+      const { sql, sha256 } = readMigration(p.file);
+      const result = classifyMigration(sql, path.basename(p.file));
+      const reasons = [
+        ...result.stops,
+        ...result.statements.filter((x) => x.kind === "heavy").map((x) => `${x.line}行目: ${x.reason}`),
+      ].slice(0, 20);
+      return { file: p.file, label: result.label, sha256, reasons };
+    });
+  writeGithubFile("GITHUB_OUTPUT", `judged=${JSON.stringify(judged)}\n`);
+  console.log(`試運転の判定: ${judged.map((j) => `${path.basename(j.file)}=${j.label}`).join(", ") || "なし"}`);
+}
+
+/** 当てる直前に、今の master の台帳でまだ「未適用」かを確かめる（同じファイルを2回当てない） */
+function requireUnappliedOnMaster(migrationPath) {
+  // 取り出しの深さ（depth）を付けない。付けると手元の完全な clone が shallow になり、共有の .git を使う他の worktree の
+  // マージが「unrelated histories」で失敗する（2026-10-19 に検査の実行で一度起きた）
+  execFileSync("git", ["fetch", "--quiet", "origin", "master"], { cwd: ROOT });
+  const ledger = execFileSync("git", ["show", `FETCH_HEAD:docs/db-migration/APPLIED.md`], {
+    cwd: ROOT,
+    encoding: "utf8",
+  });
+  const state = ledgerState(ledger, path.basename(migrationPath));
+  if (state !== "未適用") fail(`今の master の台帳で ${path.basename(migrationPath)} は「${state ?? "行が無い"}」。当てない`);
+}
+
+/** 自動の経路（承認なし）。軽いことを当てる直前にもう一度確かめ、短いタイムアウトで当てる */
+function applyAuto(migrationPath, expectedSha256) {
+  // 試運転の間は、判定の job の mode に加えてここでも止める（2段）
+  if (process.env.DB_APPLY_DRY_RUN !== "false") fail("試運転の間（DB_APPLY_DRY_RUN が \"false\" でない）は当てない");
+  const { sql } = readMigration(migrationPath);
+  const { label } = classifyMigration(sql, path.basename(migrationPath));
+  if (label !== "light") fail(`当てる直前の判定が「軽い」でない（${label}）。自動では当てない`);
+  requireUnappliedOnMaster(migrationPath);
+  apply(migrationPath, expectedSha256, { timeouts: AUTO_TIMEOUTS });
+}
+
+/** 承認つきの経路（重い）。承認の後に、台帳でまだ未適用かを確かめてから当てる */
+function applyGated(migrationPath, expectedSha256) {
+  requireUnappliedOnMaster(migrationPath);
+  apply(migrationPath, expectedSha256);
+}
+
 const [command, migrationPath, sha256] = process.argv.slice(2);
 switch (command) {
   case "inspect":
@@ -199,11 +290,23 @@ switch (command) {
   case "apply":
     apply(migrationPath, sha256);
     break;
+  case "judge":
+    judge(migrationPath);
+    break;
+  case "judge-all":
+    judgeAll();
+    break;
+  case "apply-auto":
+    applyAuto(migrationPath, sha256);
+    break;
+  case "apply-gated":
+    applyGated(migrationPath, sha256);
+    break;
   case "mark-applied":
     markApplied(migrationPath, sha256);
     break;
   default:
     fail(
-      "使い方: db-apply.js inspect <path> | apply <path> <sha256> | mark-applied <path> <sha256>",
+      "使い方: db-apply.js inspect <path> | apply <path> <sha256> | judge <path> | apply-auto <path> <sha256> | apply-gated <path> <sha256> | mark-applied <path> <sha256>",
     );
 }
