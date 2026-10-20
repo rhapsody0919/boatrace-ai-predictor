@@ -4,7 +4,7 @@ Codex の調査 `/Users/Shared/codex-lanes/ryujin-marketing/out/reports/2026-10-
 
 ## 共通の条件
 
-- GSC: プロパティ `SEARCH_CONSOLE_SITE_URL`（https://www.boat-ai.jp/）、`searchType=web`、国・端末のフィルタなし（全世界・全端末）、`dataState=final`（`gsc-daily-16m-all` だけ `all`）。日付は太平洋時間（PT）。行の上限: 1回 25,000 行でページングし、全ファイル1ページで終わった（打ち切りなし。各 `{dims}.json` の `meta.possiblyTruncated=false`）
+- GSC: プロパティ `SEARCH_CONSOLE_SITE_URL`（https://www.boat-ai.jp/）、`searchType=web`、国・端末のフィルタなし（全世界・全端末）、`dataState=final`（`gsc-daily-16m-all` だけ `all`）。日付は太平洋時間（PT）。行の上限: 1回 25,000 行でページングし、全ファイル1ページで終わった（最大は query+date の 20,460 行・197日。API の上限は1日あたりの行数なので、`meta.possiblyTruncated` は日をまたぐ集計では目安にならないが、1日平均で約100行と上限の 50,000 に遠い）
 - GSC の合計の違い: `date`・`device`・`country` はサイト合計（byProperty）。`query` を含む集計は匿名化クエリを除くので小さい。`page` を含む集計は byPage で、表示回数がサイト合計と一致しない
 - GSC プロパティのデータは **2025-12-21 から**（`gsc-daily-16m-final/date.json#meta.firstDate`）。前年の同条件は存在しない
 - GA4: プロパティ `GA4_PROPERTY_ID`、Data API v1beta。週は ISO 週（月曜始まり、`202641` = 10/5〜10/11）。計測の切れ目 2026-09-29（page_view 一本化）と 2026-10-01（内部トラフィック除外）をまたぐ（各 JSON の `notes.measurementBreaks`）
@@ -80,7 +80,7 @@ Codex の調査 `/Users/Shared/codex-lanes/ryujin-marketing/out/reports/2026-10-
 | サイト合計クリック／表示 | 2,817 ／ 46,101 | 2,591 ／ 51,094 |
 | 名前の出るクエリ数／そのクリック | 353 ／ 2,360 | 718 ／ 1,590 |
 | 匿名化クエリのクリック比率 | 16.2% | 38.6% |
-| 表示のあったページ数 | 46 | 581 |
+| 表示のあった page の行数（# 付きの行を含む） | 46（# 付き0、URL 46） | 581（# 付き31、URL 550） |
 | トップ `/` のクリック（page 行合計に対する比率） | 2,674（94.9%） | 2,345（88.4%） |
 | ブログ記事のクリック／表示 | 139 ／ 4,953 | 145 ／ 5,652 |
 | `/venue/N` のクリック／表示 | 0 ／ 0 | 11 ／ 291 |
@@ -89,3 +89,23 @@ Codex の調査 `/Users/Shared/codex-lanes/ryujin-marketing/out/reports/2026-10-
 
 - 最新期間の会場名を含むクエリは 143 語・157 クリック・3,235 表示。最大は「桐生競艇予想 ai」67 クリック・851 表示・順位 5.6、「平和島 競艇 得点率ランキング」等の得点率系は表示 90〜176・クリック 0〜1（`gsc-latest-0919-1017/query.json`）
 - 最新の完全週のサイト合計（`gsc-daily-16m-all/date.json` を月曜始まりで合算、10/18 は未確定を含む）: 9/28 週 571 → 10/5 週 553 → 10/12 週 955 クリック
+
+## 開催データの取り方（再現用）
+
+読み取り専用の接続（`SUPABASE_RO_DB_URL`）で次を CSV に書き出した。
+
+```sql
+-- db-race-series-2025-12_2026-12.csv
+select venue_code,start_date,end_date,total_days,class_code,grade,kind,title
+from race_series where end_date>='2025-12-01' and start_date<='2026-12-31'
+order by start_date,venue_code;
+
+-- db-monthly-venue-days.csv
+with vd as (select distinct race_date, venue_code from races
+  where race_date between '2025-12-01' and '2026-10-31' and coalesce(cancellation_status,'')='')
+select to_char(vd.race_date,'YYYY-MM') as month, count(*) as venue_days, count(distinct vd.race_date) as days_with_races,
+  count(*) filter (where s.class_code='SG') as sg_venue_days, count(*) filter (where s.class_code='G1') as g1_venue_days,
+  count(*) filter (where s.class_code is null) as no_series_match
+from vd left join race_series s on s.venue_code=vd.venue_code and vd.race_date between s.start_date and s.end_date
+group by 1 order by 1;
+```

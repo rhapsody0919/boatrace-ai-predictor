@@ -8,6 +8,8 @@
  *      AI ボットには middleware が静的スナップショット・/api/bot-page を返す（ADR 0032・0089）
  *   3. Playwright で描画した後の title・canonical・robots・h1・本文の先頭
  * 確認だけで、再クロールの依頼や index の範囲の変更はしない。
+ * 注意: 本番に通常のブラウザと GPTBot の UA でアクセスするので、実行1回で GA4（Direct）と
+ * Vercel の AI ボットの取得数に URL の数ずつ混ざる。
  *
  * 使い方:
  *   node scripts/analysis/url-index-render-check.js --out=data/analysis/xxx/url-index-render.json https://www.boat-ai.jp/ ...
