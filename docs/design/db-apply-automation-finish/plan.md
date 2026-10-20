@@ -57,7 +57,7 @@ flowchart LR
 ### トークン
 
 - 今の Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN` をそのまま使う。fine-grained PAT、boatrace-ai-predictor だけ、Actions: Read and write だけ（[analogy-weekly-train-dispatch.md](../../operation/analogy-weekly-train-dispatch.md) 49行目）。Vercel では Encrypted・Production だけ（審査の実測。Preview のデプロイからは読めない）。新しい鍵は作らない
-- 今のトークンでも db-apply は dispatch できる（Actions: write は workflow を選べない）ので、PR-A で今より**できることは増えない**。手での起動（mode=manual）は production-db の承認で止まり、reconcile は審査の App が承認した PR のファイルしか選ばない
+- 今のトークンでも db-apply は dispatch できる（Actions: write は workflow を選べない）ので、PR-A で当てられる対象は増えない。手での起動（mode=manual）は production-db の承認で止まり、reconcile は審査の App が承認した PR のファイルしか選ばない。**増えるのは、承認なしの経路（reconcile → apply-auto）を任意の時刻に起動できること**（今までは schedule だけ。PR #1722 の審査、P2）。D' の後は、この PAT に届いた者が、審査済みの軽いファイルを当てる時刻を選べる。ADR-0097 の「残る弱み」に足す（判断5）
 - ただし**切替の後の目標の状態と比べると、残る弱み**になる。このトークンは Actions: write を持つ（ADR-0097 は作成の App に Actions: write を付けない、と決めている）。Claude は Vercel CLI の認証（hq の drafts/identity-separation §54）と Vercel MCP に届き、値を読む関数をデプロイすれば読める（Sensitive は画面の表示を止めるだけ）。届いたときにできること: master の任意の workflow を inputs つきで dispatch、prod-jobs の run の rerun、review.yml の無効化。同じ経路で Vercel の SUPABASE_SERVICE_KEY 等にも届く
   - 塞ぐのは切替のとき（§6 の表）: Claude の動くユーザーから Vercel CLI の認証を外す（または書き込みの無いトークンにする）・Vercel MCP を切る。塞がないなら ADR-0097 の「残る弱み」に書いてオーナーが受け入れる（判断5）
 - オーナーに設定の画面で確かめてもらうこと（値ではなく）:
@@ -292,7 +292,7 @@ flowchart TD
 
 | # | 点 | 推奨 |
 |---|---|---|
-| 1 | 起動を Vercel Cron の dispatch にする（PR-A）。今の PAT を流用する | はい。今よりできることは増えない（切替の後の弱みは判断5で扱う） |
+| 1 | 起動を Vercel Cron の dispatch にする（PR-A）。今の PAT を流用する | はい。当てられる対象は増えない。承認なしの経路を任意の時刻に起動できる点だけ増える（§2「トークン」、切替の後の弱みは判断5で扱う） |
 | 2 | PAT の権限が Actions だけか、Environment 4つの Deployment branches が master だけかを、設定の画面で確かめる | 確かめる（PAT に承認の権限があると production-db を承認でき、Deployment branches が広いと dispatch の ref で鍵に届く） |
 | 3 | D' の前の3点を §4 の形で作る（印は DB の主キー、止め印は台帳の `保留`） | はい |
 | 4 | 自動の経路を JST 1:00〜4:59 に限る（§4.3 案 A） | 案 A |
@@ -504,10 +504,11 @@ flowchart TD
 - 出し方（最小）: モジュールの変数を呼び出しの関数が埋め、`process.on("exit")` で `fs.writeSync(1, line)` を1回書く（`fail()` の `process.exit` も通る）
 - 取り消された job（cancel-in-progress）は行が出ない。課金はされうるので、hq は llm の job の `conclusion=cancelled` を「usage 不明」として別に数える
 
-**変更の範囲（PR-U、deny のクラス: オーナーが直接承認・マージ）**: `scripts/review/llm.js`（呼び出しの2関数で usage・model・HTTP の状態を記録、exit で1行）と、`review.yml` の llm の step の env に `PR_NUMBER: ${{ github.event.pull_request.number }}` の1行（approve と同じ書き方）。gate.js・approve.js・common.js・reviewPr.js は触らない。行を作る純関数を llm.js に置き、`verify-review-workflow.js` で「自由文が入らない・改行と `%` が無い・null の扱い」を固定する
+**変更の範囲（PR-U、deny のクラス: オーナーが直接承認・マージ）**: `scripts/review/llm.js`（呼び出しの2関数で usage・model・HTTP の状態を記録、exit で1行）・`scripts/review/usage.js`（行を作る純関数）と、`review.yml` の llm の step の env に `PR_NUMBER: ${{ github.event.pull_request.number }}` の1行（approve と同じ書き方）。gate.js・approve.js・common.js・reviewPr.js は触らない。行を作る純関数は `scripts/review/usage.js` に置き（llm.js は読み込むと main が走るため、検証から import できる別のファイルにした。PR-U）、`verify-review-workflow.js` で「自由文が入らない・改行と `%` が無い・null の扱い」を固定する
 
 **hq の読み方**（偽の記録を拾わないため、`/commits/{sha}/check-runs` の job 名では引かない。作成の App は自分のブランチの workflow で同じ名前の job と notice を出せる）:
 1. `gh api --paginate 'repos/rhapsody0919/boatrace-ai-predictor/actions/workflows/review.yml/runs?event=pull_request_target&created=<JST の1日>&per_page=100'`、`path == ".github/workflows/review.yml"` を確かめる（1日は 2500 の頭打ちより十分少ない）
+   - 加えて、行の `pr` の base が master であること・run の head SHA が行と同じことを確かめる（作成の App が自分のブランチを base にした PR では、そのブランチの review.yml が `pull_request_target` で動き、1 の条件を全部通る偽の行を出せる。PR-U の審査の指摘。手順の正本は `docs/operation/identity-separation-owner-steps.md` 5節）
 2. `gh api 'repos/…/actions/runs/{run_id}/jobs?filter=all'`（再実行の前の試行も数える）で `name=="llm"` の job id
 3. `gh api 'repos/…/check-runs/{job_id}/annotations'` の `title=="review-usage"` の message を JSON として読み、`v` を確かめる
 4. 単価を掛けて日ごとに合計し、hq の手元に JSONL で貯める（1日約110 run で API 約220回）
