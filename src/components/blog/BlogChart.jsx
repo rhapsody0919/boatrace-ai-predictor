@@ -139,6 +139,7 @@ function BlogChart({ src, result, lang = "ja" }) {
     chart.views.find((v) => v.key === defaultKey);
   const Body = BODIES[chart.kind];
   const title = localize(chart.title, lang);
+  // 切り替えのある図は view ごとの答えが必須（契約3節）。切り替えると答えの1文もその view のものに替わる
   const answer = localize(view.description ?? chart.description, lang);
   const { badge } = view;
   // 同じ図を1記事に2回置いても id が重ならないよう useId を使う
