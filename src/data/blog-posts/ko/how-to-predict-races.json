@@ -1,0 +1,15 @@
+{
+  "id": "how-to-predict-races",
+  "title": "경정 예상법 완전 가이드 — 데이터와 AI로 적중률을 높이는 방법",
+  "description": "1만 건 이상의 레이스 데이터로 알아보는 경정 예상의 6가지 핵심 요소. 선수 승률・모터・코스・ST・전시 항주・날씨를 읽는 법부터 AI 예상 활용법까지 초보자도 쉽게 배우는 가이드.",
+  "category": "초보자용",
+  "tags": [
+    "예상법",
+    "적중률",
+    "초보자",
+    "AI예상",
+    "데이터분석"
+  ],
+  "readTime": "12분",
+  "image": "/images/blog/predict-steps-flow-ko.jpg"
+}

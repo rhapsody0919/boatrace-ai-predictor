@@ -1,0 +1,15 @@
+{
+  "id": "ai-prediction-accuracy-review",
+  "title": "賽艇AI預測真的準嗎？3個月15,000場比賽的驗證結果",
+  "description": "以15,000場比賽驗證AI預測的命中率・回收率。誠實公開優缺點、與其他服務的差異、AI預測的極限。",
+  "category": "數據分析",
+  "tags": [
+    "AI預測",
+    "命中率",
+    "回收率",
+    "驗證",
+    "透明度"
+  ],
+  "readTime": "10分鐘",
+  "image": "/images/blog/ai-accuracy-comparison-zh-tw.jpg"
+}

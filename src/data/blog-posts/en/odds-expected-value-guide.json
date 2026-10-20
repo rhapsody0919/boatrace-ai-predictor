@@ -1,0 +1,15 @@
+{
+  "id": "odds-expected-value-guide",
+  "title": "How Odds Work in Boat Racing — Choosing Bets by Expected Value",
+  "description": "How boat racing odds work and how to think in expected value, explained with data — the overpopularity trap, targeting odds distortions, and break-even odds by bet type.",
+  "category": "Data Analysis",
+  "tags": [
+    "Odds",
+    "ExpectedValue",
+    "Overpopularity",
+    "BettingStrategy",
+    "DataAnalysis"
+  ],
+  "readTime": "9 min",
+  "image": "/images/blog/odds-expected-value-matrix-en.jpg"
+}

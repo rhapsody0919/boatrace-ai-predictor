@@ -1,0 +1,15 @@
+{
+  "id": "odds-expected-value-guide",
+  "title": "경정 배당률 보는 법 — 기대값으로 마권을 고르는 방법",
+  "description": "경정 배당률의 구조와 기대값 사고법을 데이터로 해설. 과잉 인기의 함정, 배당률 왜곡을 노리는 법, 마권 종류별 손익분기 배당률까지 다룹니다.",
+  "category": "데이터 분석",
+  "tags": [
+    "배당률",
+    "기대값",
+    "과잉인기",
+    "마권전략",
+    "데이터분석"
+  ],
+  "readTime": "9분",
+  "image": "/images/blog/odds-expected-value-matrix-ko.jpg"
+}

@@ -14,7 +14,8 @@ import { parseLangFromPath, localizePath } from "../config/languages";
 import Header from "../components/Header";
 import { useSocialMeta } from "../hooks/useSocialMeta";
 import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
-import { BLOG_IMAGE_DIMENSIONS } from "../data/blogImageDimensions";
+// ビルドの時に画像のヘッダーから作る実寸の表（vite.config.js の仮想モジュール、BOA-908）
+import BLOG_IMAGE_DIMENSIONS from "virtual:blog-image-dimensions";
 import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
 import { blogRehypePlugins } from "../utils/blogMarkdownSanitize.js";

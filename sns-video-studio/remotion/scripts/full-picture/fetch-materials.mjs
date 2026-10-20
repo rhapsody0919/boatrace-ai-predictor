@@ -7,7 +7,8 @@
  *   --from-case: 撮影済みの全貌の case（~/full-picture/cases/{raceId}）の analysis/source から facts・similar・scenario を使う
  *   （試作で、撮影した画面と同じ時点の材料にそろえるため）
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import process from "node:process";
 
@@ -18,13 +19,15 @@ const VENUES = Array.from({ length: 24 }, (_, i) => i + 1);
 export const NO_DATA = ["not_saved", "absent", "empty_layer"];
 
 // Supabase の匿名読み取り（画面と同じ公開キー。書き込みはしない）。画面が API を通さずに読む場面（3 軸・6 機力）の材料
-const SB_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
-const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+// 環境変数は呼ぶときに読む（daily.mjs は読み込んだ後に .env.local の匿名キーを入れる）
 async function sbGet(table, query) {
+  const SB_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
   if (!SB_URL || !SB_KEY) throw new Error("Supabase の URL・匿名キーが無い（VITE_SUPABASE_URL・VITE_SUPABASE_ANON_KEY）");
   const out = [];
   for (let from = 0; ; from += 1000) {
     const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
+      signal: AbortSignal.timeout(30000),
       headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Range: `${from}-${from + 999}` },
     });
     if (!res.ok) throw new Error(`${table}: HTTP ${res.status}`);
@@ -66,7 +69,7 @@ async function racerRows(racerId, raceId, date) {
 }
 
 async function getJson(path) {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return res.json();
 }
@@ -166,7 +169,7 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, api, db, missing };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   const args = process.argv.slice(2);
   const opt = (name) => {
     const i = args.indexOf(name);

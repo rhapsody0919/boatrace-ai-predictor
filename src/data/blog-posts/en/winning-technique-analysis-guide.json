@@ -1,0 +1,14 @@
+{
+  "id": "winning-technique-analysis-guide",
+  "title": "What Is Winning-Technique Analysis? A New Way to See Win Patterns by Venue and Lane",
+  "description": "A new feature analyzing which winning technique (wire-to-wire, inside pass, outside overtake, etc.) led to 1st place, broken down by venue and lane, using 90 days of race data. Learn how to use it as evidence for picks or exclusions.",
+  "category": "Data Analysis",
+  "tags": [
+    "WinningTechnique",
+    "NewFeature",
+    "DataAnalysis",
+    "Evidence",
+    "ByVenue"
+  ],
+  "readTime": "7 min"
+}

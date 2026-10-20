@@ -221,3 +221,124 @@
   margin: 0;
   line-height: 1.6;
 }
+
+/* ===== PNG の書き出し（ADR 0099、scripts/lib/blogChartPng.js がビルドで付ける。画面には出ない） =====
+   大きさは src/utils/blogChartPng.js の BLOG_CHART_PNG_PRESETS と同じ CSS の値にする。
+   ビューポートの左上に固定して撮る。字は縮めない（はみ出したらその大きさは作らない）。
+   承認したモック（mock/APPROVED.md）の外の形。docs/design/blog-charts/fan-panel-png-v1.md・mock/png-review.md */
+.blog-chart[data-chart-export] {
+  --blog-chart-row-height: 26px;
+  --blog-chart-row-gap: 4px;
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 2147483647;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-chart[data-chart-export="portrait"] {
+  width: 400px;
+  height: 500px;
+}
+
+/* 行が4つまでの図は、記事と同じ行の高さに戻す（下に大きな空白を残さない） */
+.blog-chart[data-chart-export]:not(:has(.blog-chart__row:nth-child(5))) {
+  --blog-chart-row-height: 32px;
+  --blog-chart-row-gap: 8px;
+}
+
+/* 押せない画像に切り替えを写さない。何を選んだ図かは、札の1つ目（範囲）の前に切り替えの名前を足して示す
+   （「会場 福岡」。範囲に条件が書いてあっても消さない） */
+.blog-chart[data-chart-export] .blog-chart__control {
+  display: none;
+}
+
+.blog-chart[data-chart-export]
+  .blog-chart__badges
+  > span[data-chart-switch]::before {
+  content: attr(data-chart-switch) " ";
+}
+
+.blog-chart[data-chart-export] .blog-chart__track {
+  height: 18px;
+}
+
+/* 注記・出典・出所の行は下端に寄せる */
+.blog-chart[data-chart-export] .blog-chart__caption {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+
+.blog-chart[data-chart-export] .blog-chart__caption p {
+  flex-basis: 100%;
+}
+
+/* 出所の1行: 細い線の下に、左に名前、右にドメイン（ロゴの絵は入れない。fan-panel-png-v1.md） */
+.blog-chart[data-chart-export] .blog-chart__caption::before,
+.blog-chart[data-chart-export] .blog-chart__caption::after {
+  order: 1;
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid var(--border-hairline);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.blog-chart[data-chart-export] .blog-chart__caption::before {
+  content: attr(data-chart-credit-name);
+  flex: 1;
+  font-weight: 700;
+  color: var(--ryujin-gold-700);
+}
+
+.blog-chart[data-chart-export] .blog-chart__caption::after {
+  content: attr(data-chart-credit-site);
+  color: var(--text-secondary);
+}
+
+/* landscape: 見出しと答えは全幅、その下を2段にする。左に横棒、右に札・注記・出典・出所 */
+.blog-chart[data-chart-export="landscape"] {
+  width: 640px;
+  height: 360px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-rows: auto auto auto 1fr;
+  grid-template-areas:
+    "title title"
+    "answer answer"
+    "rows badges"
+    "rows caption";
+  column-gap: 20px;
+}
+
+.blog-chart[data-chart-export="landscape"] .blog-chart__title {
+  grid-area: title;
+}
+
+.blog-chart[data-chart-export="landscape"] .blog-chart__answer {
+  grid-area: answer;
+  margin-bottom: 8px;
+}
+
+.blog-chart[data-chart-export="landscape"] .blog-chart__badges {
+  grid-area: badges;
+  margin-bottom: 0;
+}
+
+.blog-chart[data-chart-export="landscape"] .blog-chart__rows {
+  grid-area: rows;
+  align-self: center;
+}
+
+.blog-chart[data-chart-export="landscape"] .blog-chart__caption {
+  grid-area: caption;
+  align-self: end;
+}

@@ -13,6 +13,7 @@ import {
   getKoreanOverride,
   isKoreanAvailable,
 } from "./blogPostsKo.js";
+import { readJsonDirInNode } from "./blogPostFiles.js";
 
 // 言語別ブログ翻訳データの設定。新言語追加時はここに1エントリ足すだけで良い
 // （BlogPost.jsx/Blog.jsxはこのマップ経由でのみ言語別データにアクセスする）
@@ -41,31 +42,13 @@ const BLOG_LANG_CONFIG = {
 // 1つの配列に追記する方式だと、記事を足すPRが同時に開くたびに同じ行でコンフリクトしたため。
 // 新しい記事は JSON を1つ足すだけでよく、このファイルは触らない。
 // 読み込みは Vite（画面）では import.meta.glob、Node のスクリプト（sitemap・llms.txt 等）では fs。
-// Node 側は process.getBuiltinModule（同期）を使い、画面のバンドルに fs やトップレベル await を持ち込まない
-function readPostFilesInNode() {
-  const getBuiltin = globalThis.process?.getBuiltinModule;
-  if (!getBuiltin) {
-    throw new Error(
-      "blogPosts.js: Node で読むには process.getBuiltinModule（Node 20.16+ / 22.3+）が必要です",
-    );
-  }
-  const fs = getBuiltin("node:fs");
-  // 画面のバンドルでは通らない分岐（Vite が実行時解決の警告を出さないよう無視させる）
-  const dir = new URL(/* @vite-ignore */ "./blog-posts/", import.meta.url);
-  return Object.fromEntries(
-    fs
-      .readdirSync(dir)
-      .filter((name) => name.endsWith(".json"))
-      .map((name) => [
-        name,
-        JSON.parse(fs.readFileSync(new URL(name, dir), "utf8")),
-      ]),
-  );
-}
-
+// Node 側の読み込みは blogPostFiles.js（翻訳版の JSON と共通）
 const postFiles = import.meta.env
   ? import.meta.glob("./blog-posts/*.json", { eager: true, import: "default" })
-  : readPostFilesInNode();
+  : // 画面のバンドルでは通らない分岐（Vite が実行時解決の警告を出さないよう無視させる）
+    readJsonDirInNode(
+      new URL(/* @vite-ignore */ "./blog-posts/", import.meta.url),
+    );
 
 // 新しい順。同じ日付は id 順（ファイルの並びに依存させない）
 export const blogPosts = Object.values(postFiles).sort(
