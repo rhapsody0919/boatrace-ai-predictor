@@ -1,0 +1,249 @@
+/* ブログの図（BlogChart.jsx）。承認したモック: docs/design/blog-charts/mock/APPROVED.md
+   記事の本文の h3・p・ol・li の書式（.blog-post-content の子孫セレクタ）が当たらないよう、
+   図の中は .blog-chart .blog-chart__… の2クラス（記事の要素セレクタより強い）で上書きする。クラス名は blog-chart__ に閉じる */
+
+.blog-chart {
+  --blog-chart-row-height: 32px;
+  --blog-chart-row-gap: 8px;
+  /* 見出し・答え・切り替え・札・注記・出典・余白の高さ（行を除く）。2026-10-20 の実測（契約の例、答え68字・注記63字）:
+     320px 457・375px 413・768px 330・1024px 以上 292。これを下回らないように幅ごとに取る。
+     実物が短いときは出典が下に寄り、長いときだけ下が動く */
+  --blog-chart-chrome: 440px;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+  min-height: calc(
+    var(--blog-chart-chrome) + var(--blog-chart-rows) *
+      var(--blog-chart-row-height) + (var(--blog-chart-rows) - 1) *
+      var(--blog-chart-row-gap)
+  );
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 360px) {
+  .blog-chart {
+    --blog-chart-chrome: 470px;
+  }
+}
+
+@media (min-width: 401px) {
+  .blog-chart {
+    --blog-chart-chrome: 380px;
+  }
+}
+
+@media (min-width: 769px) {
+  .blog-chart {
+    --blog-chart-chrome: 300px;
+  }
+}
+
+.blog-chart__placeholder {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.blog-chart .blog-chart__title {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  scroll-margin-top: 160px;
+}
+
+.blog-chart .blog-chart__answer {
+  margin: 0.25rem 0 0.75rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.blog-chart__control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 44px;
+}
+
+.blog-chart__control label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.blog-chart__control select {
+  font: inherit;
+  font-size: 0.95rem;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+
+.blog-chart__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.blog-chart__buttons button {
+  font: inherit;
+  font-size: 0.9rem;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.blog-chart__buttons button[aria-pressed="true"] {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-weight: 700;
+}
+
+.blog-chart__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: var(--font-size-xs);
+}
+
+.blog-chart__badges span {
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: var(--surface-page);
+  border: 1px solid var(--border-hairline);
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.blog-chart .blog-chart__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--blog-chart-row-gap);
+}
+
+.blog-chart .blog-chart__row {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 4.8em minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  height: var(--blog-chart-row-height);
+}
+
+.blog-chart__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* 枠番（艇番）の行だけに付く艇の色の印。進入コースの行には付けない（契約3節） */
+.blog-chart__boat {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: inline-grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border-hairline);
+}
+.blog-chart__boat[data-boat="1"] {
+  background: #ffffff;
+  color: #000000;
+}
+.blog-chart__boat[data-boat="2"] {
+  background: #000000;
+  color: #ffffff;
+}
+.blog-chart__boat[data-boat="3"] {
+  background: var(--boat-3-strong);
+  color: #ffffff;
+}
+.blog-chart__boat[data-boat="4"] {
+  background: var(--boat-4-strong);
+  color: #ffffff;
+}
+.blog-chart__boat[data-boat="5"] {
+  background: #fdd835;
+  color: #000000;
+}
+.blog-chart__boat[data-boat="6"] {
+  background: var(--boat-6-strong);
+  color: #ffffff;
+}
+
+.blog-chart__track {
+  position: relative;
+  height: 22px;
+  /* 値の文字（「59.2%」）が右端からはみ出さない余白。回数を添えるのは1着30回未満の短い棒なので、その分は取らない */
+  margin-right: 4em;
+  background: color-mix(in srgb, var(--border-hairline) 55%, transparent);
+  border-radius: 3px;
+}
+
+.blog-chart__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ryujin-gold-700);
+  border-radius: 3px;
+}
+
+:root[data-theme="dark"] .blog-chart__fill {
+  background: var(--ryujin-gold-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .blog-chart__fill {
+    background: var(--ryujin-gold-500);
+  }
+}
+
+.blog-chart__value {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-left: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.blog-chart__value small {
+  font-weight: 400;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.blog-chart__caption {
+  margin-top: auto;
+  padding-top: 12px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.blog-chart .blog-chart__caption p {
+  margin: 0;
+  line-height: 1.6;
+}

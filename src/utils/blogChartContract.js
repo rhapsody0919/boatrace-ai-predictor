@@ -402,19 +402,13 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
           ),
         ),
     );
-  const defaultView =
-    chart.switch === null
-      ? views[0]
-      : views.find((v) => v?.key === chart.switch?.default);
-  if (isObj(defaultView)) {
-    const ok = allowedNumbers(defaultView);
-    for (const n of numbersIn(chart.description)) {
-      if (!ok.has(n))
-        err(
-          "description",
-          `数字は既定の view（${defaultView.key}）か all の値だけ / 実際: ${n}%`,
-        );
-    }
+  // 最上位の答えは、図の中の値（会場どうしの比べを含む）だけ。数字の写し間違いを拾う
+  const everyNumber = new Set(
+    views.filter(isObj).flatMap((v) => [...allowedNumbers(v)]),
+  );
+  for (const n of numbersIn(chart.description)) {
+    if (!everyNumber.has(n))
+      err("description", `数字は views のどれかの値だけ / 実際: ${n}%`);
   }
   views.forEach((v, vi) => {
     if (!isObj(v) || v.description === undefined) return;
@@ -429,20 +423,4 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
   });
 
   return errors;
-}
-
-/** タグの rows 属性から、読み込み前に取る高さ（px）。部品の CSS と同じ寸法で計算する */
-export const CHART_LAYOUT = {
-  rowHeight: 32,
-  rowGap: 8,
-  // 見出し・答え（最大3行）・切り替え・札・注記と出典（最大4行）・余白の合計
-  chrome: 312,
-};
-export function reservedHeight(rows) {
-  const n = Math.max(1, Number(rows) || 6);
-  return (
-    CHART_LAYOUT.chrome +
-    n * CHART_LAYOUT.rowHeight +
-    (n - 1) * CHART_LAYOUT.rowGap
-  );
 }

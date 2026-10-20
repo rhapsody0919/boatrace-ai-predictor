@@ -253,12 +253,14 @@ test("予約の種類・切り替え2つ・既定の不一致・数の key を�
   );
 });
 
-test("答えの数字は既定の view か全国の値だけ", () => {
+test("答えの数字は図の中の値だけ（会場どうしの比べは通す）", () => {
   const c = example();
-  c.description = "福岡は1コースの1着率が61.6%。";
+  c.description = "福岡は1コースの1着率が61.7%。";
   assert.ok(
-    messages(c).some((x) => x.startsWith("description: 数字は既定の view")),
+    messages(c).some((x) => x.startsWith("description: 数字は views のどれか")),
   );
+  c.description = "1コースの1着率は、戸田が42.6%、福岡が59.2%、徳山が61.6%。";
+  assert.deepEqual(messages(c), []);
 });
 
 test("期間の終わりは集計日より後にできない", () => {
