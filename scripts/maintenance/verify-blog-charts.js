@@ -277,6 +277,8 @@ test("答えの数字は図の中の値だけ（会場どうしの比べは通�
     messages(c).some((x) => x.startsWith("description: 数字は views のどれか")),
   );
   c.description = "1コースの1着率は、戸田が42.6%、福岡が59.2%、徳山が61.6%。";
+  // 切り替えのある図は既定の view（福岡）の答えも同じ文にする
+  c.views.find((v) => v.key === "22").description = c.description;
   assert.deepEqual(messages(c), []);
 });
 
@@ -383,7 +385,11 @@ test("切り替えのある図は、全 view に答えの文（description）が
   const c = example();
   delete c.views[3].description;
   assert.ok(
-    messages(c).some((x) => x.startsWith("views[3].description: 文字列か")),
+    messages(c).some((x) =>
+      x.startsWith(
+        "views[3].description: 切り替え（switch）のある図は、全 view に答えの1文が要る",
+      ),
+    ),
     messages(c).join("\n"),
   );
   const single = { ...example(), switch: null, views: [example().views[0]] };
@@ -391,6 +397,33 @@ test("切り替えのある図は、全 view に答えの文（description）が
   single.description =
     "全国の1コースの1着率は55.5%（55,414レース中30,732回）。";
   assert.deepEqual(messages(single), []);
+  // 最上位の答えは既定の view の答えと同じ（片方だけ直すと画面と本文がずれる）
+  const drift = example();
+  drift.views.find((v) => v.key === "22").description =
+    "福岡は1コースの1着率が59.2%（2,363レース中1,400回）。";
+  assert.ok(
+    messages(drift).some((x) =>
+      x.startsWith(
+        "description: 既定の view（22）の description と同じ文にする",
+      ),
+    ),
+  );
+});
+
+test("答えの文の「N レース中 M 回」は、その view か全国の母数と件数の組だけ", () => {
+  const c = example();
+  const toda = c.views.find((v) => v.key === "02");
+  toda.description = toda.description.replace(
+    "2,256レース中960回",
+    "2,265レース中690回",
+  );
+  const i = c.views.indexOf(toda);
+  assert.ok(
+    messages(c).some((x) =>
+      x.startsWith(`views[${i}].description: 「2,265…中690回」`),
+    ),
+    messages(c).join("\n"),
+  );
 });
 
 test("参照と JSON の突き合わせ: rows・article・本文に無い答えの数字・書かない言い方", () => {

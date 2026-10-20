@@ -278,10 +278,14 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
     text(v.label, `${p}.label`, { max: 12 });
     // 切り替えのある図は、どの view を選んでも答えの1文がその view の数字になるよう、全 view で必須
     // （2026-10-20 オーナー決定。札と棒だけ替わり答えが既定の会場のままだと食い違う）
-    text(v.description, `${p}.description`, {
-      max: 90,
-      required: isObj(chart.switch),
-    });
+    if (isObj(chart.switch) && v.description === undefined) {
+      err(
+        `${p}.description`,
+        "切り替え（switch）のある図は、全 view に答えの1文が要る（この view を選んだときに出す文）",
+      );
+    } else {
+      text(v.description, `${p}.description`, { max: 90, required: false });
+    }
 
     const b = v.badge;
     let sample = null;
@@ -421,6 +425,74 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
           ),
         ),
     );
+  // 切り替えのある図は、最上位の答え（本文との照合・画像の代替テキストに使う）を既定の view の答えと同じにする。
+  // 片方だけ直すと、画面の文と本文・画像の文が食い違う
+  if (isObj(chart.switch)) {
+    const dv = views.find((v) => v?.key === chart.switch.default);
+    if (
+      isObj(dv) &&
+      dv.description !== undefined &&
+      JSON.stringify(dv.description) !== JSON.stringify(chart.description)
+    ) {
+      err(
+        "description",
+        `既定の view（${chart.switch.default}）の description と同じ文にする / 実際: ${show(chart.description)}`,
+      );
+    }
+  }
+  // 答えの文の「N（単位）中 M 回」は、その view か全国の母数（badge.sample）と件数（counts）の組だけ。
+  // % だけを照合すると、母数・回数の写し間違い（2,256→2,265 等）が通る
+  const pairsIn = (t) =>
+    [
+      ...localize(t, "ja")
+        .replace(/[０-９，]/g, (ch) =>
+          String.fromCharCode(ch.charCodeAt(0) - 0xfee0),
+        )
+        .matchAll(/([\d,]+)[^\d（）()、。]{0,6}中([\d,]+)回/g),
+    ].map((m) => [
+      Number(m[1].replaceAll(",", "")),
+      Number(m[2].replaceAll(",", "")),
+    ]);
+  const allowedPairs = (view) =>
+    new Set(
+      [view, views.find((v) => v?.key === "all")].filter(isObj).flatMap((v) =>
+        (Array.isArray(v.series) ? v.series : []).flatMap((s) =>
+          (Array.isArray(s?.counts) ? s.counts : []).map((c, i) => {
+            const total = Array.isArray(s.totals)
+              ? s.totals[i]
+              : v.badge?.sample?.value;
+            return `${total}:${c}`;
+          }),
+        ),
+      ),
+    );
+  // 会場どうしを比べる答えも書けるよう、どの view の組でもよい（数字の写し間違いを拾うのが目的）
+  const everyPair = new Set(
+    views.filter(isObj).flatMap((v) => [...allowedPairs(v)]),
+  );
+  views.forEach((v, vi) => {
+    if (!isObj(v) || v.description === undefined) return;
+    const ok = everyPair;
+    for (const [n, m] of pairsIn(v.description)) {
+      if (!ok.has(`${n}:${m}`))
+        err(
+          `views[${vi}].description`,
+          `「${n.toLocaleString("ja-JP")}…中${m.toLocaleString("ja-JP")}回」は図の中の母数と counts の組だけ`,
+        );
+    }
+  });
+  {
+    const ok = everyPair;
+    {
+      for (const [n, m] of pairsIn(chart.description)) {
+        if (!ok.has(`${n}:${m}`))
+          err(
+            "description",
+            `「${n.toLocaleString("ja-JP")}…中${m.toLocaleString("ja-JP")}回」は図の中の母数と counts の組だけ`,
+          );
+      }
+    }
+  }
   // 最上位の答えは、図の中の値（会場どうしの比べを含む）だけ。数字の写し間違いを拾う
   const everyNumber = new Set(
     views.filter(isObj).flatMap((v) => [...allowedNumbers(v)]),
@@ -431,12 +503,12 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
   }
   views.forEach((v, vi) => {
     if (!isObj(v) || v.description === undefined) return;
-    const ok = allowedNumbers(v);
+    const ok = everyNumber;
     for (const n of numbersIn(v.description)) {
       if (!ok.has(n))
         err(
           `views[${vi}].description`,
-          `数字はこの view（${v.key}）か all の値だけ / 実際: ${n}%`,
+          `数字は views のどれかの値だけ / 実際: ${n}%`,
         );
     }
   });

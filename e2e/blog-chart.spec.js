@@ -124,8 +124,8 @@ test.describe("ブログの図", () => {
   test("選択肢が6つまでならボタンで切り替える", async ({ page }) => {
     const small = {
       ...example,
-      description:
-        "直近1年の1コースの1着率は、戸田が42.6%、福岡が59.2%、徳山が61.6%。",
+      // 最上位の答えは既定の view（戸田）の答えと同じにする（契約3節）
+      description: "戸田の1コースの1着率は42.6%。",
       switch: { label: "会場", default: "02" },
       // 全国の view を外すので、答えの文はその view の数字だけにする（検査が全国の数字を許さない）
       views: example.views
@@ -144,12 +144,25 @@ test.describe("ブログの図", () => {
     const tokuyama = buttons.filter({ hasText: "徳山" });
     await tokuyama.click();
     await expect(tokuyama).toHaveAttribute("aria-pressed", "true");
+    // ボタンで切り替えても、答えの1文がその会場の文に替わる
+    await expect(chart.locator(".blog-chart__answer")).toHaveText(
+      "徳山の1コースの1着率は61.6%。",
+    );
     await expect(chart.locator(".blog-chart__value").first()).toHaveText(
       "61.6%",
     );
   });
 
   // 契約の字数の上限（題40字・答え90字・注記70字）と、6つのボタン。最悪の高さでも下の段落を動かさない
+  const LONGEST_ANSWER =
+    "福岡は1コースの1着率が59.2%（2,363レース中1,400回）で、全国の55.5%（55,414レース中30,732回）より高い。2コースは15.0%。"
+      .padEnd(90, "あ")
+      .slice(0, 90);
+  // 部品が描くのは選んだ view の答えなので、既定の view（福岡）の答えも上限の長さにする
+  const withLongestDefault = (views) =>
+    views.map((v) =>
+      v.key === "22" ? { ...v, description: LONGEST_ANSWER } : v,
+    );
   const longest = {
     ...example,
     title:
@@ -157,19 +170,19 @@ test.describe("ブログの図", () => {
         0,
         40,
       ),
-    description:
-      "福岡は1コースの1着率が59.2%（2,363レース中1,400回）で、全国の55.5%（55,414レース中30,732回）より高い。2コースは15.0%。"
-        .padEnd(90, "あ")
-        .slice(0, 90),
+    description: LONGEST_ANSWER,
+    views: withLongestDefault(example.views),
     note: "進入コース別（枠番ではない）。中止・不成立のレースを除く。4〜6コースは1着の件数が少なく、会場の順位は年によって変わりうる。"
       .padEnd(70, "い")
       .slice(0, 70),
   };
   const longestButtons = {
     ...longest,
-    views: example.views
-      .filter((v) => ["all", "01", "02", "03", "04", "22"].includes(v.key))
-      .map((v) => ({ ...v, label: "あいう" })),
+    views: withLongestDefault(
+      example.views
+        .filter((v) => ["all", "01", "02", "03", "04", "22"].includes(v.key))
+        .map((v) => ({ ...v, label: "あいう" })),
+    ),
   };
   // 1件で10幅を順に開くと60秒の上限に当たり、他の PR の CI を落とした（2026-10-20 #1699）。
   // 幅ごとに1件に分ける。幅は CSS の境目（360・480・600・768/769・1024）の前後とよく使う幅（375・1440・1920）
