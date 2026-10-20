@@ -76,6 +76,152 @@ const coverageChecks = COVERAGE_METRICS.map((metric) => {
   };
 });
 
+/**
+ * 鮮度の項目（classification: freshness）。関数（functions.js の data_health_nightly_freshness・
+ * data_health_morning_freshness）が返す項目（items）のうち、applicable のものが1つでも ok でなければ未達。
+ * 2026-10-20 朝、prod-jobs の鍵の誤りで夜の集計15本が落ち、画面が前日のままだったのに誰も気づかなかった
+ * （~/hq/drafts/site-freshness-watch-20261020.md v2 の項目2）。job の失敗の見張りとは別に、表の側から見る。
+ *
+ * workflow は、その表を書く workflow（scripts/lib/dataHealth/workflowCoverage.js と verify-data-health-workflow-coverage.js が、
+ * prod-jobs を使う workflow の登録の漏れを検査する）。
+ * in-caution-nightly（in_caution_gap_band_daily）は api/cron/in-caution-health.js が見るので、ここに重ねない。
+ *
+ * @typedef {Object} FreshnessCheck
+ * @property {string} id
+ * @property {string} label
+ * @property {"freshness"} classification
+ * @property {"alert"|"info"} severity
+ * @property {string} fn
+ * @property {ReadonlyArray<string>} items 関数の項目のキー
+ * @property {string} workflow .github/workflows のファイル名
+ * @property {string} [note]
+ */
+
+const nightly = (id, label, workflow, items) => ({
+  id: `nightly.${id}`,
+  label: `夜の集計: ${label}`,
+  classification: "freshness",
+  severity: "alert",
+  fn: "data_health_nightly_freshness",
+  items,
+  workflow,
+});
+
+/** 夜の集計の鮮度（締め 06:30。data_health の 06:35 の実行で、前日の分を見る） @type {ReadonlyArray<FreshnessCheck>} */
+export const NIGHTLY_FRESHNESS_CHECKS = Object.freeze([
+  nightly(
+    "outcome_distribution",
+    "3連単の出目分布",
+    "update-outcome-distribution.yml",
+    ["outcome_distribution"],
+  ),
+  nightly(
+    "course_baseline",
+    "コース別の基準（ST・逃げの2着）",
+    "aggregate-course-baseline-stats.yml",
+    ["st_course_baseline", "nige_second_by_course"],
+  ),
+  nightly(
+    "exhibition_time_top",
+    "展示タイム1位の成績",
+    "update-exhibition-time-top-stats.yml",
+    ["exhibition_time_top_stats"],
+  ),
+  nightly(
+    "losing_technique",
+    "負けた決まり手",
+    "update-losing-technique-stats.yml",
+    ["losing_technique_stats"],
+  ),
+  nightly(
+    "nige_outcome",
+    "逃げの出目分布",
+    "update-nige-outcome-distribution.yml",
+    ["nige_outcome_distribution"],
+  ),
+  nightly(
+    "winning_technique",
+    "決まり手",
+    "update-winning-technique-stats.yml",
+    ["winning_technique_stats", "venue_technique_period_stats"],
+  ),
+  nightly("top_start", "トップスタートの成績", "update-top-start-stats.yml", [
+    "top_start_stats",
+  ]),
+  nightly(
+    "accuracy",
+    "的中率・レース履歴・級別のキャッシュ",
+    "calculate-accuracy.yml",
+    [
+      "accuracy_summary",
+      "race_history_cache",
+      "unified_model_accuracy",
+      "unified_volatility_accuracy",
+      "racer_grade_cache",
+    ],
+  ),
+  nightly(
+    "moriarty_outcomes",
+    "モリアーティの日別成績",
+    "update-moriarty.yml",
+    ["model_performance_daily"],
+  ),
+  nightly(
+    "point_rank",
+    "得点率（SG・G1の4日目以降）",
+    "scrape-point-rank.yml",
+    ["racer_series_points"],
+  ),
+  nightly("aggregate_stats", "選手・会場の集計", "aggregate-stats.yml", [
+    "racer_aggregated_stats",
+    "venues",
+    "venue_grade_boat_stats",
+  ]),
+]);
+
+/**
+ * 朝の生成（締め 07:50。別のジョブ data_health_morning の 07:55 の実行で、当日の分を見る）。
+ * data_health は対象日を 06:30 で決め、live では 06:35 の成功で対象日を済みにする（07:35・08:35 は何もしない）。
+ * 07:50 の締めを見るため、状態の行が別のジョブにする（scripts/lib/scrapeJobs/registry.js の data_health_morning）。
+ *
+ * ポアロ・モリアーティは画面（/poirot・/holmes）に出るので入れる。締めは本来「その日の1Rの締切の60分前」だが、
+ * 起動は GitHub の schedule（ポアロ 08:00・モリアーティ 09:00 JST）で、2026-10-14〜20 の実測では最初の生成が
+ * ポアロ 10時台・モリアーティ 11時台（1Rの締切は 08:35）と、毎日締めより後。通知にすると毎日鳴るので、
+ * 起動を直すまで info（last_report に載せるだけ）にする。
+ * @type {ReadonlyArray<FreshnessCheck>}
+ */
+export const MORNING_FRESHNESS_CHECKS = Object.freeze([
+  {
+    id: "morning.sonar",
+    label: "朝の生成: 龍神ソナー(出走表の段、当日)",
+    classification: "freshness",
+    severity: "alert",
+    fn: "data_health_morning_freshness",
+    items: ["sonar_racecard"],
+    workflow: "analogy-v16-morning.yml",
+  },
+  {
+    id: "morning.poirot",
+    label: "朝の生成: ポアロの予想(当日)",
+    classification: "freshness",
+    severity: "info",
+    fn: "data_health_morning_freshness",
+    items: ["poirot_predictions"],
+    workflow: "generate-poirot.yml",
+    note: "生成の起動（GitHub の schedule 08:00 JST）が1Rの締切の60分前より後のため、起動を直すまで info",
+  },
+  {
+    id: "morning.moriarty",
+    label: "朝の生成: モリアーティの推奨(当日)",
+    classification: "freshness",
+    severity: "info",
+    fn: "data_health_morning_freshness",
+    items: ["moriarty_recommendations"],
+    workflow: "generate-moriarty.yml",
+    note: "生成の起動（GitHub の schedule 09:00 JST）が1Rの締切の60分前より後のため、起動を直すまで info",
+  },
+]);
+
 /** @type {ReadonlyArray<CountCheck>} */
 export const COUNT_CHECKS = Object.freeze([
   ...coverageChecks,
@@ -229,6 +375,9 @@ export const COUNT_CHECKS = Object.freeze([
     cadence: { weeklyOn: 1 },
     note: "全期間の集計のため週次（月曜）。2026-09-28に全10か月100.00%を達成し、通知を有効にした（BOA-468）",
   },
+
+  // 夜の集計の鮮度（下の NIGHTLY_FRESHNESS_CHECKS）
+  ...NIGHTLY_FRESHNESS_CHECKS,
 ]);
 
 /**
@@ -279,6 +428,24 @@ export function validateChecks({
     if (!fnNames.has(c.fn)) problems.push(`${c.id}: 未登録の関数です: ${c.fn}`);
     if (!["alert", "info"].includes(c.severity))
       problems.push(`${c.id}: severity が不正です: ${c.severity}`);
+    if (c.classification === "freshness") {
+      const fn = functions.find((f) => f.name === c.fn);
+      const keys = new Set((fn?.items ?? []).map((i) => i.key));
+      if (!Array.isArray(c.items) || c.items.length === 0)
+        problems.push(`${c.id}: items（関数の項目のキー）が空です`);
+      for (const key of c.items ?? [])
+        if (!keys.has(key))
+          problems.push(`${c.id}: 関数 ${c.fn} に無い項目です: ${key}`);
+      if (!/^[a-z0-9-]+\.yml$/.test(c.workflow ?? ""))
+        problems.push(
+          `${c.id}: workflow（.github/workflows のファイル名）が不正です`,
+        );
+      if (c.severity === "info" && !c.note)
+        problems.push(
+          `${c.id}: info（通知しない）にする理由を note に書いてください`,
+        );
+      continue;
+    }
     if (c.classification !== "count")
       problems.push(`${c.id}: classification が不正です`);
     const threshold = c.threshold ?? DEFAULT_THRESHOLD;
