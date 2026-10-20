@@ -187,7 +187,6 @@ test.describe("ブログの図", () => {
           Math.abs(after.y - before.y),
           `${width}px: 下の段落の移動`,
         ).toBeLessThanOrEqual(1);
-        await page.unrouteAll({ behavior: "ignoreErrors" });
       }
     });
   }
@@ -233,7 +232,6 @@ test.describe("ブログの図", () => {
     await expect(chart).toContainText(
       "図のデータを読み込めませんでした。ページを読み込み直してください。",
     );
-    await page.unrouteAll({ behavior: "ignoreErrors" });
     await stubArticle(page, { chart: { ...example, kind: "pie" } });
     await page.goto(`/blog/${ARTICLE}`);
     await expect(chartLocator(page)).toHaveAttribute(
@@ -265,7 +263,6 @@ test.describe("ブログの図", () => {
           `${width}px: 値「${await v.textContent()}」がカードの右端を越える`,
         ).toBeLessThanOrEqual(box.x + box.width);
       }
-      await page.unrouteAll({ behavior: "ignoreErrors" });
     }
   });
 
