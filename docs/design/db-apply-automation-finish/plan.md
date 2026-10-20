@@ -283,7 +283,7 @@ flowchart TD
 | 8 | ④ 審査の関門の画像の例外を §9.1 の条件で入れ、ADR-0097 に追記する（段階2） | はい |
 | 9 | ② で寸法の表がビルドで作られる形になったときの関門の条件 | ② のレーンと合わせて決める。それまでは PR の head の表で照合 |
 | 10 | 画像の中身が LLM の審査に渡らないことを受け入れるか | 受け入れて ADR-0097 の残る弱みに書く（グラフ・表の画像で、記事の本文は審査に入る） |
-| 11 | ⑥ SKILL.md の段階0 F・案Z の4点の書き直し（§9.3） | はい。PR-D とは別の PR |
+| 11 | ⑥ SKILL.md の段階0 F・案Z の5点の書き直し（§9.3。5点目の P0/P1 の扱いはオーナー決定済み、文案の承認が要る） | はい。PR-D とは別の PR |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
@@ -322,7 +322,7 @@ flowchart TD
 
 ### 9.3 ⑥ orchestrate の段階0 F と案Z の書き直し（段階2、.claude）
 
-`.claude/skills/orchestrate/SKILL.md` を次の4点で直す。
+`.claude/skills/orchestrate/SKILL.md` を次の5点で直す（表の4点と、下の5点目）。
 
 | 行 | 今 | 直した後 |
 |---|---|---|
@@ -330,6 +330,17 @@ flowchart TD
 | 90（F のパス） | `public/blog/`・`src/data/blog-posts/`・`public/images/blog/`・`src/data/blogImageDimensions.js`・`src/data/blogPostsEn.js` | `src/data/blogPostsKo.js`・`src/data/blogPostsZhTw.js` を足す（記事の翻訳のメタ。② で JSON に移るなら、移った先のパスに置き換える） |
 | 116（案Z の束） | 束に入れてよいのは段階0（A〜E） | A〜F。F の中身の束は、9.2 の P1（マージの時点の判定し直し）と P2（空のコミットで1回だけ再実行）に従う |
 | 118 | 「自動マージをどの名義で行うかは未決」 | 消す。ADR-0097（v5）で決着: 切替の後は作成の App の PR を審査の App が承認し、auto-merge でマージする。切替までは、オーケストレーターが束を 9.2 の P1 で判定し直してからマージする |
+
+- 5点目（オーナー決定、10/20 19:3x、オーケストレーター経由）: F の「4つのレビューで P0・P1 が0」（91〜96行目）を変える。文案（PR-G で書く。.claude なのでオーナーが文案を直接承認してから書く）:
+
+```
+  - content-qa（`.claude/agents/content-qa.md`）・wording-editor・ファンのレビュー（boatrace-fan-reviewer か discussion-panel）・seo-marketer の4つの観点で審査する
+  - P0 は4つの観点のどれで出ても止める
+  - P1 は content-qa と wording-editor の分だけ止める。ファン・seo-marketer の P1 は助言として扱い、件数を PR コメントとダイジェストに記録する
+  - 4つの役を別々に呼ばず、1回の審査が観点ごとに分けて結果を出す形でもよい。役と観点の表の対応は契約に固定する（どの文書に置くかは ③ のレーンと hq で決める）
+  - 本文の数値を出典（DB・分析結果・公式）と照合済み
+  - 止まる指摘が出たら直して、その観点の審査を回し直す
+```
 
 - 同じ PR で、merge-pr の `--admin` → `--auto`（§3 の PR-D）と合わせるかは、切替の作業の日程で決める（9.3 は切替の前にも効く書き直し、PR-D は切替の作業の中でマージ）。別の PR にする
 
