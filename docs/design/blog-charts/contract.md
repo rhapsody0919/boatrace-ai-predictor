@@ -42,7 +42,7 @@
   "article": "example",
   "kind": "hbar",                                  // 図の種類（判別子）。4 節
   "title": "進入コース別の1着率",
-  "description": "福岡は1コースの1着率が59.2%で、全国（55.5%）より高い。",
+  "description": "福岡は1コースの1着率が59.2%（2,363レース中1,400回）で、全国の55.5%（55,414レース中30,732回）より高い。",
   "axes": {
     "category": { "label": "進入コース" },          // 行の軸
     "value": { "label": "1着率", "unit": "%", "decimals": 1 }  // 値の軸。最小は0、最大は部品が全 view から決める
@@ -68,7 +68,7 @@
     "dataVersion": "2026-10-20",
     "resultPath": "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
   },
-  "note": "進入コース別（枠番ではない）。中止・不成立のレースを除く。"
+  "note": "進入コース別（枠番ではない）。中止・不成立のレースを除く。4〜6コースは1着の件数が少なく、会場の順位は年によって変わりうる。"
 }
 ```
 
@@ -81,13 +81,13 @@
 | | `article` | 必 | 記事 id（`src/data/blog-posts` にある） |
 | | `kind` | 必 | 4 節の種類 |
 | | `title` | 必 | 1〜40字。図の見出し |
-| | `description` | 必 | 1〜120字。既定の view の答えを1文で（「〜を示す図」でなく「〜は〜」）。数字は既定の view か key `all` の値だけ |
+| | `description` | 必 | 1〜120字。既定の view の答えを1文で（「〜を示す図」でなく「〜は〜」）。数字は既定の view か key `all` の値だけ。割合には母数を添え（「2,363レース中1,400回」）、全国と比べるときは全国の母数も書く（札に出るのは選んだ view の母数だけ） |
 | | `axes` | 必 | 4 節の種類ごとの軸 |
 | | `rows` | 必 | 行。`key`（文字列、重複なし）・`label`・`boat`（任、1〜6。行が枠番（艇番）で key が "1"〜"6" のときだけ。進入コースの行には付けない。枠番と誤読されるため） |
 | | `switch` | 必 | `null` か `{ label, default }`。`default` は views の key のどれか |
 | | `views` | 必 | `switch` が `null` なら1つ、あれば2つ以上。key は文字列で重複なし |
 | | `source` | 必 | `name`・`dataVersion`（YYYY-MM-DD）必、`resultPath` 任 |
-| | `note` | 任 | 注記。1〜80字 |
+| | `note` | 任 | 注記。1〜80字。定義（何を数えたか）と、言える範囲の限り（例「4〜6コースは1着の件数が少なく、会場の順位は年によって変わりうる」） |
 | view | `key`・`label` | 必 | 切り替えの選択肢 |
 | | `description` | 任 | この view を選んだときに最上位の `description` の代わりに出す答え。数字はこの view か `all` の値だけ |
 | | `badge` | 必 | `scope`（範囲）・`period`（`from` ≦ `to` ≦ `source.dataVersion`）・`sample`（`value` 正の整数・`unit`） |
@@ -106,6 +106,18 @@
 - 進入コース別の1着率の定義・言える範囲は `docs/reference/venue-course-win-rate.md`（直近1年なら全会場で1,959レース以上。4〜6コースの会場の順位は言わない）
 - 値の表示の桁は部品が `decimals` でそろえる（`16` は `16.0%` と出る）。作り手は 0 を書き足さなくてよい
 
+### 書かない言い方
+
+図は画面に出るので、次は書かない。CI は「競艇」・廃止語・`sns-video-studio/remotion/risk-rules.json` の語（保証・射幸心など）を落とす。それ以外は作り手と審査（`wording-editor`）で守る。
+
+- 「競艇」（meta の例外は図には使えない）
+- 保証・射幸心・予測の言い方（必ず・確実・儲かる・狙い目・「◯コースが来る」など）
+- 母数の無い割合（「59.2%」だけ）
+- 進入コース別の 4〜6コースの会場の順位（年によって入れ替わる。`docs/reference/venue-course-win-rate.md`）
+- 「差は小さい」などの言い切り。言えるのは件数と区間の範囲まで
+
+同じ会場の別の画面と値が違うとき（例: 会場ページの枠番別は直近90日・枠番で数える）は、本文の1文で定義と期間の違いを書く。
+
 ### CI のエラーの形
 
 全件を1回で出す。`{ファイル}: {JSONのパス}: {期待} / 実際: {値}`
@@ -117,7 +129,7 @@ public/blog-charts/x.json: views[0].series[0].count: 契約に無いキー（cou
 
 ### 文字の検査
 
-文字の項目に「競艇」と、`scripts/maintenance/check-deprecated-terms.js` の廃止語を書かない（図は画面に出るので meta の例外は使えない）。
+文字の項目は CI が「競艇」・廃止語（`docs/reference/deprecated-terms.json`）・risk-rules.json の語で検査する。書かない言い方の全体は上の節。
 
 ## 4. 図の種類（判別つきの union）
 
@@ -156,7 +168,7 @@ public/blog-charts/x.json: views[0].series[0].count: 契約に無いキー（cou
 | スマホでは横棒 | `hbar` は常に横棒。縦棒の種類（`vbar`）は 768px 未満で横棒にする |
 | CLS を防ぐ | タグの `rows` から読み込み前の高さを決め、読み込み後も同じ高さで描く。見出し・答え・注記は行数の上限つきの固定の高さ。アニメーションをしない |
 
-ほかに部品が出すもの: 札（範囲・期間・母数）、出典の行（出典名・集計日）、注記。図は `<figure>` で、札と出典は `<figcaption>` に文字で入る。読み込み中・失敗は `data-chart-state="loading|ready|error"` で外に示し、AI 向けのスナップショット（`scripts/generate-ai-snapshots.js`）は loading が無くなるまで待ち、error の記事は失敗として数える。失敗は握りつぶさず、図の場所に「図のデータを読み込めませんでした」を出す。
+ほかに部品が出すもの: 札（範囲・期間・母数。母数は「全2,363レース」の形）、1着などの件数が30回に満たない行の値の横の回数（例「0.8%（19回）」、`counts` から）、出典の行（出典名・集計日）、注記。図は `<figure>` で、札と出典は `<figcaption>` に文字で入る。読み込み中・失敗は `data-chart-state="loading|ready|error"` で外に示し、AI 向けのスナップショット（`scripts/generate-ai-snapshots.js`）は loading が無くなるまで待ち、error の記事は失敗として数える。失敗は握りつぶさず、図の場所に「図のデータを読み込めませんでした」を出す。
 
 ## 7. 変更の手順
 
