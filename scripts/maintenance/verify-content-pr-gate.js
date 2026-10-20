@@ -224,9 +224,34 @@ const cases = [
     /\[kyotei\] .* title/,
   ],
   [
-    "JSON の metaTitle の「競艇」は本文の関門は通るが、判断が要る語として落ちる",
+    "JSON の description の「競艇」は落ちる",
+    { json: { ...baseJson, description: "競艇の説明" } },
+    /\[kyotei\].* description/,
+  ],
+  [
+    "入れ子の metaTitle の「競艇」は落ちる（例外は最上位の文字列だけ）",
+    { json: { ...baseJson, x: { metaTitle: "競艇" } } },
+    /\[kyotei\].* x\.metaTitle/,
+  ],
+  [
+    "metaTitle の下の入れ子の「競艇」は落ちる",
+    { json: { ...baseJson, metaTitle: { title: "競艇" } } },
+    /\[kyotei\].* metaTitle\.title/,
+  ],
+  [
+    "metaTitle が配列の「競艇」は落ちる",
+    { json: { ...baseJson, metaTitle: ["競艇"] } },
+    /\[kyotei\].* metaTitle\.0/,
+  ],
+  [
+    "meta で始まる別のキー（metaKeywords）の「競艇」は落ちる",
+    { json: { ...baseJson, metaKeywords: "競艇" } },
+    /\[kyotei\].* metaKeywords/,
+  ],
+  [
+    "JSON の metaTitle の「競艇」は通る（オーナー決定 10/20、code-style.md 例外1。暫定）",
     { json: { ...baseJson, metaTitle: "競艇の記事" } },
-    /\[judgement\].*競艇/,
+    "ok",
   ],
   // 判断が要る句（決定 (a): 変えた行・足した行だけ、誤解を生む句と正規表現、免責の決まり文の例外）
   [
@@ -322,12 +347,12 @@ const cases = [
     "ok",
   ],
   [
-    "改稿で変えた metaTitle の「競艇」は判断が要るとして落ちる",
+    "改稿で変えた metaTitle の「競艇」も通る（暫定の例外）",
     revision({
       baseJsonObj: { ...baseJson, metaTitle: "記事" },
       headJsonObj: { ...baseJson, metaTitle: "競艇の記事" },
     }),
-    /\[judgement\].*metaTitle.*競艇/,
+    "ok",
   ],
   // ---- 8271c413a の審査 P1-1: 免責の決まり文は、その部分だけを消して残りを照合する
   [
@@ -1093,6 +1118,49 @@ for (const [name, over, expect] of cases) {
     failures.push(`${name}: 期待 ${expect}、結果 ${JSON.stringify(result)}`);
 }
 
+// メタ情報の「競艇」の一覧（暫定の例外を後で一括で外すため。オーナー決定 10/20）
+{
+  const withMeta = evaluateContentPr(
+    makePr({
+      json: {
+        ...baseJson,
+        metaTitle: "競艇の記事",
+        metaDescription: "競艇（ボートレース）の説明",
+      },
+    }),
+  );
+  if (!withMeta.ok)
+    failures.push(
+      `meta の「競艇」は通るはず: ${JSON.stringify(withMeta.errors)}`,
+    );
+  const entry = (withMeta.metaKyotei ?? []).find((m) => m.id === ID);
+  if (
+    !entry ||
+    JSON.stringify([...entry.keys].sort()) !==
+      JSON.stringify(["metaDescription", "metaTitle"])
+  )
+    failures.push(
+      `metaKyotei に ${ID} の metaTitle・metaDescription が出るはず: ${JSON.stringify(withMeta.metaKyotei)}`,
+    );
+  if (withMeta.judgementWordsFound.includes("競艇"))
+    failures.push("meta の「競艇」を判断が要る語に数えない");
+  const without = evaluateContentPr(makePr());
+  if ((without.metaKyotei ?? []).length !== 0)
+    failures.push(
+      `meta に「競艇」が無ければ metaKyotei は空: ${JSON.stringify(without.metaKyotei)}`,
+    );
+  const titleKyotei = evaluateContentPr(
+    makePr({
+      json: { ...baseJson, title: "競艇の記事", metaTitle: "競艇の記事" },
+    }),
+  );
+  if (
+    titleKyotei.ok ||
+    !titleKyotei.errors.some((e) => /\[kyotei\].* title/.test(e))
+  )
+    failures.push("title の「競艇」は、meta にあっても落ちる");
+}
+
 // p1 の記録
 {
   const r = evaluateContentPr(
@@ -1158,8 +1226,8 @@ const jsonFiles = readdirSync(postsDir, { recursive: true }).filter((f) =>
 for (const f of jsonFiles) {
   const path = `src/data/blog-posts/${f}`;
   const obj = JSON.parse(readFileSync(join(postsDir, f), "utf8"));
-  // 変えていない JSON とみなす（base = HEAD）。メタ情報の「競艇」は変えた値だけが判断の対象
-  masterErrors.push(...checkKyoteiJson(path, obj, obj));
+  // メタ情報の「競艇」は通す（暫定の例外）。それ以外の値の「競艇」は error
+  masterErrors.push(...checkKyoteiJson(path, obj, config).errors);
   const strings = changedJsonStrings(obj, undefined).map((s) => s.value);
   phraseHits.push(
     ...findJudgementPhrases(strings, config).map((h) => ({ path, ...h })),
