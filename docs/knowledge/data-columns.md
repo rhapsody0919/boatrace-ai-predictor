@@ -22,6 +22,8 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - 公式の直前情報（beforeinfo）と結果（raceresult）のページは HTML の作りが別。beforeinfo は .table1 の2番目→tbody 6つ→各4行で .table1_boatImage1 が無い。raceresult は .table1_boatImage1 で艇の情報を取れる（memory technical_supabase_scraping_turnpred_notes）
 - 公式の過去ページは今のテンプレートで返るので、過去に HTML が一時的に変わったことによる取りこぼしは後から再現できない（2026-09-15、memory race_entries_racer_id_null_bug_2026_09_15、scripts/daily/update-race-info.js）
 - 同じ節の別の日に、同じ6人が同じ枠で組まれることがある（2026-01-22 常滑6R、公式の B ファイルでも一致）。出走表が他のレースと1レースだけ一致しても複製と判定しない（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-423）
+- st_course_baseline・nige_second_by_course の window_end は、00:50 JST の集計の時点では前々日になる。材料の race_results.actual_course_* は Kファイルの同期（kfile_sync、07:00 JST）が翌朝に書くため。鮮度を見るなら前々日まで進んだかで見る（2026-10-20、data-accuracy-verifier、aggregate-course-baseline-stats の実行ログ26回）
+- 夜の集計（GitHub の schedule）が 06:30 JST より後に終わる夜は、2026-08-21〜10-20 の60回で4回（約7%。起動遅れ）。06:30 の締めの鮮度の通知はその夜に出る（2026-10-20、data-accuracy-verifier）
 
 ## オッズ
 - 公式は票が0の艇の単勝を「0.0」、複勝を「0.0-0.0」と出す。0 を欠損として扱うと単勝の解析が失敗扱いになり、解析済みの3連単も捨てる。scrape_slots.outcome="no_values" は「単勝の値が無い」だけを表し、「何も発売されていない」と区別できない（2026-09-28、memory feedback_verify_status_label_branch_before_using_as_evidence・project_data_foundation_orchestration_2026_09_19、BOA-486、scrape-odds.js の scrapeWinOdds。今も同じ実装かは要確認）
