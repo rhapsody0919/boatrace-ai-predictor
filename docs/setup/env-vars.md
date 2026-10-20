@@ -11,7 +11,7 @@
 | `LINEAR_API_KEY` | Linear連携 |
 | `LINEAR_TEAM_ID` | LinearチームID |
 | `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | Google のサービスアカウントの鍵ファイルのパス（GA4・Search Console のレポート。既定は `credentials/google-service-account.json`。`scripts/lib/googleServiceAuth.js`） |
-| `GITHUB_MERGE_TOKEN` | ブログ記事Draft PRの自動マージ（sns-hub admin、Fine-grained PAT、ADR 0034） |
+| `GITHUB_MERGE_TOKEN` | **廃止（2026-10-20、ADR-0097）**。以前はブログ記事 Draft PR の自動マージ（sns-hub admin、Fine-grained PAT、ADR 0034）。失効と削除はオーナー（ADR-0034 の追記） |
 | `YOUTUBE_CLIENT_ID` | YouTube Data API v3連携（ADR 0035） |
 | `YOUTUBE_CLIENT_SECRET` | YouTube Data API v3連携（ADR 0035） |
 | `YOUTUBE_REFRESH_TOKEN` | YouTube Data API v3連携、ユーザー自身のOAuth同意で取得（ADR 0035）。自動送信の公開の切り替え（`videos.update`）に `youtube` の scope が要る（sns-pdca-loop tasks 26） |

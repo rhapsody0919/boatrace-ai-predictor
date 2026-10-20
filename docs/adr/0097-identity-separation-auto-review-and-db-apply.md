@@ -134,3 +134,7 @@ D はまず1〜2週間、当てずに「当てるはずだった」を通知す�
 ## 追記: 自動の適用の仕上げ（2026-10-20）
 
 2026-10-20 の実測で、定期の起動（schedule）が #1674 の後に一度も来ず、審査も PR の作者が rhapsody0919 のため全部 skipped だった。起動を Vercel Cron からの dispatch に移す形・作成の App の名義への配線・D' の前に要る3点（DB の側の印・止め印・時間の窓）・順番と戻し方の設計は [docs/design/db-apply-automation-finish/plan.md](../design/db-apply-automation-finish/plan.md)。オーナーの判断の後に PR を分けて実装する。
+
+## 追記: ADR-0034 の置き換え（2026-10-20）
+
+記事の PR を管理画面の承認で PAT（Vercel の `GITHUB_MERGE_TOKEN`）を使ってマージする道（ADR-0034）は、書き込みの身元を増やすのでこの ADR の方針と合わない。BOA-908（オーナー yes 10/20 夕）で止め、記事の PR も他の PR と同じ道（CI・4つのレビュー・マージの承認、段階0 F）でマージする。経緯と止めたものは ADR-0034 の追記。
