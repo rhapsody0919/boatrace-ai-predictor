@@ -13,8 +13,12 @@
  *      persist-credentials: false、npm ci・cache なし、run に ${{ }} を書かない、action は SHA で固定、
  *      鍵は決めた job だけ、Environment pr-review・db-readonly を使うのは review.yml だけ）
  *   7. e2e の集約の job は always() で走り、組の結果が success 以外なら落とす（skipped の必須 check は通過扱いになるため）
+ *   8. usage の1行（plan.md §10.7）: 形を確かめた値だけを出す（自由文・改行・% が入らない、形の違う値は null）。
+ *      llm.js を偽の fetch で動かし、成功・429・timeout・機械の検査で1行ずつ出て、鍵・差分・指摘の文が出ないこと
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -28,6 +32,7 @@ import {
   sqlTablesFromFiles,
   vendorForBranch,
 } from "../lib/reviewPr.js";
+import { anthropicUsage, openaiUsage, usageLine } from "../review/usage.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -462,6 +467,10 @@ const jobBlocks = Object.fromEntries(
     ),
   );
   check(
+    "llm は usage の行のために PR 番号を env で受ける",
+    /^ {10}PR_NUMBER: \$\{\{ github\.event\.pull_request\.number \}\}$/m.test(jobBlocks.llm),
+  );
+  check(
     "llm は材料の失敗・取り消しで走らない",
     /needs\.materials\.result == 'success' \|\| needs\.materials\.result == 'skipped'/.test(
       jobBlocks.llm,
@@ -516,6 +525,134 @@ const jobBlocks = Object.fromEntries(
       agg,
     ),
   );
+}
+
+// 8. usage の1行
+{
+  const SHA40 = "a".repeat(40);
+  const parse = (line) => JSON.parse(line.replace(/^::notice title=review-usage::/, ""));
+  const keys = ["v", "run_id", "attempt", "pr", "head_sha", "vendor", "model_req", "model", "at", "in", "out", "cached_in", "cache_write", "reasoning", "http", "outcome", "p0", "p1"];
+  const ok = usageLine({
+    runId: "123",
+    attempt: "2",
+    pr: "1700",
+    headSha: SHA40,
+    vendor: "openai",
+    modelReq: "gpt-5.5",
+    model: "gpt-5.5-2026-09-01",
+    at: new Date("2026-10-20T12:00:00Z"),
+    usage: openaiUsage({ prompt_tokens: 15000, completion_tokens: 900, prompt_tokens_details: { cached_tokens: 100 }, completion_tokens_details: { reasoning_tokens: 600 } }),
+    http: 200,
+    outcome: "ok",
+    p0: 0,
+    p1: 2,
+  });
+  check("usage の行は ::notice title=review-usage:: で始まる1行", /^::notice title=review-usage::\{.*\}$/.test(ok) && !/[\r\n%]/.test(ok), ok);
+  const d = parse(ok);
+  check("usage の行のキーは plan.md §10.7 の順のとおり", JSON.stringify(Object.keys(d)) === JSON.stringify(keys), Object.keys(d).join(","));
+  check(
+    "OpenAI の usage を in・out・cached_in・reasoning に写す",
+    d.in === 15000 && d.out === 900 && d.cached_in === 100 && d.reasoning === 600 && d.cache_write === null && d.run_id === 123 && d.pr === 1700 && d.at === "2026-10-20T12:00:00.000Z",
+  );
+  const a = anthropicUsage({ input_tokens: 20000, output_tokens: 1200, cache_read_input_tokens: 5, cache_creation_input_tokens: 7 });
+  check("Anthropic の usage を in・out・cached_in・cache_write に写す", a.in === 20000 && a.out === 1200 && a.cached_in === 5 && a.cache_write === 7 && a.reasoning === null);
+
+  const bad = parse(
+    usageLine({
+      runId: "1; rm",
+      attempt: -1,
+      pr: "12\n::error::x",
+      headSha: "deadbeef",
+      vendor: "evil",
+      modelReq: "gpt%0A::error::x",
+      model: "m\n::warning::y",
+      at: new Date("x"),
+      usage: { in: 1.5, out: -3, cached_in: "9", cache_write: Number.MAX_SAFE_INTEGER + 2, reasoning: null },
+      http: 9999,
+      outcome: "rate limited: sk-proj-abc",
+      p0: "1",
+      p1: NaN,
+      body: "PR の本文",
+      key: "sk-proj-SECRET",
+    }),
+  );
+  check(
+    "形の違う値は null（model は invalid、outcome は error）で、余計なキーは出さない",
+    bad.run_id === null && bad.attempt === null && bad.pr === null && bad.head_sha === null && bad.vendor === null &&
+      bad.model_req === "invalid" && bad.model === "invalid" && bad.at === null &&
+      [bad.in, bad.out, bad.cached_in, bad.cache_write, bad.reasoning, bad.http, bad.p0, bad.p1].every((x) => x === null) &&
+      bad.outcome === "error" && JSON.stringify(Object.keys(bad)) === JSON.stringify(keys),
+    JSON.stringify(bad),
+  );
+  const empty = parse(usageLine({ at: new Date(0), usage: null }));
+  check("usage が無い（応答が来ない）ときはトークンが全部 null", [empty.in, empty.out, empty.cached_in, empty.cache_write, empty.reasoning].every((x) => x === null) && empty.model === null);
+
+  // llm.js を偽の fetch で動かす（ネットワークに出ない）
+  const dir = mkdtempSync(path.join(os.tmpdir(), "review-usage-"));
+  try {
+    const stub = path.join(dir, "fetch-stub.mjs");
+    writeFileSync(
+      stub,
+      `const scenario = process.env.FAKE_SCENARIO;
+const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+globalThis.fetch = async (url, init) => {
+  const u = String(url);
+  if (u.includes("/compare/")) {
+    const filename = scenario === "mechanical" ? ".gitattributes" : "src/a.js";
+    return json(200, { files: [{ filename, status: "modified", patch: "@@ -1 +1 @@\\n-a\\n+DIFF_BODY_MARKER", changes: 2 }] });
+  }
+  if (u.includes("/git/trees/")) return json(200, { tree: [{ path: "src/a.js", mode: "100644" }, { path: ".gitattributes", mode: "100644" }], truncated: false });
+  if (scenario === "timeout") { const e = new Error("timed out"); e.name = "TimeoutError"; throw e; }
+  if (scenario === "429") return json(429, { error: { type: "rate_limit", message: "Incorrect API key sk-proj-SECRETKEY123 ERROR_BODY_MARKER" } });
+  const verdict = JSON.stringify({ findings: [{ severity: "P1", file: "src/a.js", line: 1, summary: "FINDING_TEXT_MARKER" }] });
+  if (u.includes("openai")) return json(200, { model: "gpt-test-1", choices: [{ finish_reason: "stop", message: { content: verdict } }], usage: { prompt_tokens: 1234, completion_tokens: 56, prompt_tokens_details: { cached_tokens: 0 }, completion_tokens_details: { reasoning_tokens: 40 } } });
+  return json(200, { model: "claude-test-1", stop_reason: "end_turn", content: [{ type: "text", text: verdict }], usage: { input_tokens: 2345, output_tokens: 67, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } });
+};
+`,
+    );
+    const runLlm = (scenario, vendor) => {
+      const r = spawnSync(process.execPath, ["--import", stub, path.join(ROOT, "scripts/review/llm.js")], {
+        encoding: "utf8",
+        env: {
+          PATH: process.env.PATH,
+          FAKE_SCENARIO: scenario,
+          GITHUB_TOKEN: "ghs_GITHUBTOKENSECRET",
+          GITHUB_REPOSITORY: "o/r",
+          GITHUB_RUN_ID: "999",
+          GITHUB_RUN_ATTEMPT: "1",
+          GITHUB_OUTPUT: path.join(dir, `out-${scenario}-${vendor}`),
+          PR_NUMBER: "1700",
+          BASE_SHA: "b".repeat(40),
+          HEAD_SHA: SHA40,
+          VENDOR: vendor,
+          OPENAI_API_KEY: "sk-proj-SECRETKEY123",
+          REVIEW_OPENAI_MODEL: "gpt-test",
+          ANTHROPIC_API_KEY: "sk-ant-SECRETKEY456",
+          REVIEW_ANTHROPIC_MODEL: "claude-test",
+        },
+      });
+      const lines = r.stdout.split("\n").filter((l) => l.startsWith("::notice title=review-usage::"));
+      return { status: r.status, lines, rec: lines.length === 1 ? parse(lines[0]) : null, all: r.stdout + r.stderr, usageText: lines.join("\n") };
+    };
+    const noLeak = (r) => !/SECRETKEY|GITHUBTOKENSECRET|DIFF_BODY_MARKER|FINDING_TEXT_MARKER|ERROR_BODY_MARKER/.test(r.usageText);
+
+    const o = runLlm("ok", "openai");
+    check("llm.js（OpenAI・成功）は usage を1行出す", o.status === 0 && o.rec?.outcome === "ok" && o.rec.in === 1234 && o.rec.out === 56 && o.rec.reasoning === 40 && o.rec.model === "gpt-test-1" && o.rec.model_req === "gpt-test" && o.rec.http === 200 && o.rec.p0 === 0 && o.rec.p1 === 1 && o.rec.pr === 1700 && o.rec.run_id === 999 && o.rec.head_sha === SHA40, o.all);
+    check("llm.js（OpenAI・成功）の usage の行に鍵・差分・指摘の文が無い", noLeak(o));
+    check("llm.js は鍵をログのどこにも出さない（成功）", !/SECRETKEY|GITHUBTOKENSECRET/.test(o.all));
+    const an = runLlm("ok", "anthropic");
+    check("llm.js（Anthropic・成功）は usage を1行出す", an.status === 0 && an.rec?.outcome === "ok" && an.rec.in === 2345 && an.rec.out === 67 && an.rec.cache_write === 0 && an.rec.vendor === "anthropic" && an.rec.model === "claude-test-1", an.all);
+    check("llm.js（Anthropic・成功）の usage の行に鍵・差分・指摘の文が無い", noLeak(an));
+    const r429 = runLlm("429", "openai");
+    check("llm.js（429）は失敗しても usage を1行出す（http・usage は null）", r429.status === 1 && r429.rec?.outcome === "http" && r429.rec.http === 429 && r429.rec.in === null && r429.rec.model === null, r429.all);
+    check("llm.js（429）の usage の行にエラーの本文・鍵が無い", noLeak(r429));
+    const to = runLlm("timeout", "anthropic");
+    check("llm.js（timeout）は usage を1行出す", to.status === 1 && to.rec?.outcome === "timeout" && to.rec.http === null, to.all);
+    const mech = runLlm("mechanical", "openai");
+    check("llm.js（機械の検査で止めた）は LLM を呼ばず usage を1行出す", mech.status === 1 && mech.rec?.outcome === "mechanical" && mech.rec.model_req === null && mech.rec.in === null, mech.all);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 }
 
 if (failures > 0) {

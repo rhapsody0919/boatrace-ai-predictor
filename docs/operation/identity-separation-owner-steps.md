@@ -177,6 +177,18 @@ Claude に「4 が済んだ。名前は〜」と返す。Claude は Environment 
 OpenAI のプロジェクトの上限は、通知だけで止まらないことがある（未確認）。本当の上限は、審査の側で月の件数を数えて止める仕組み（E で入れる）。
 審査の Actions は API の失敗で承認を出さない（自動マージされず待ちになる）。審査の側でも月の件数を数え、超えたら止めて通知する（E で入れる）。上限を上げるか待つかはオーナーが決める。
 
+### 1 run の usage の読み方（hq、plan.md §10.7）
+review.yml の llm の job は、終わるとき（失敗も含む）にログへ `::notice title=review-usage::{JSON}` を1行出す（`scripts/review/usage.js`）。check run の annotation として残る。JSON のキーは `v`・`run_id`・`attempt`・`pr`・`head_sha`・`vendor`・`model_req`・`model`・`at`・`in`・`out`・`cached_in`・`cache_write`・`reasoning`・`http`・`outcome`・`p0`・`p1`。トークンは形が違えば null、`outcome` は `ok`・`unreadable`・`incomplete`・`refused`・`http`・`timeout`・`mechanical`・`error` のどれか。
+
+作成の App は自分のブランチの workflow で同じ名前の job と notice を出せるので、`/commits/{sha}/check-runs` を job 名で引かない。master の review.yml の run から辿る。
+
+1. `gh api --paginate 'repos/rhapsody0919/boatrace-ai-predictor/actions/workflows/review.yml/runs?event=pull_request_target&created=<JST の1日の範囲>&per_page=100'` で run を集め、各 run の `path == ".github/workflows/review.yml"` を確かめる（1日ずつ引く。runs の API は 2500 件で頭打ち、§10.2）
+2. `gh api 'repos/rhapsody0919/boatrace-ai-predictor/actions/runs/{run_id}/jobs?filter=all'` で `name == "llm"` の job の id を取る（`filter=all` で再実行の前の試行も入る）
+3. `gh api 'repos/rhapsody0919/boatrace-ai-predictor/check-runs/{job_id}/annotations'` の `title == "review-usage"` の `message` を JSON として読み、`v == 1` を確かめる
+4. 単価を掛けて日ごとに合計し、hq の手元（`ledger/costs.jsonl`）に貯める。annotation の保持は run と同じ（既定90日）
+- llm の job が `conclusion == "cancelled"`（新しい push で取り消し）のときは行が出ない。課金はされうるので「usage 不明」として別に数える
+- llm が skipped（関門で落ちた）の run は LLM を呼んでいない
+
 ---
 
 ## 6. 作成の App の鍵とテスト PR（E のマージの後、hq と）
