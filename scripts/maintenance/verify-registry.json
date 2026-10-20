@@ -1228,6 +1228,11 @@
       "script": "verify-blog-charts.js",
       "tier": "ci",
       "guards": "ブログの図の契約（docs/design/blog-charts/contract.md、src/utils/blogChartContract.js）。記事の <ryujin-chart> の書き方（小文字・閉じタグ・1行・前後空行・src は /blog-charts/ の実在する JSON・rows は行の数）、JSON の形（未知のキー・counts と値の整数での照合・切り替え1つ・予約の種類・翻訳の文字）、id・article、答えの割合が本文にもあること、「競艇」・廃止語・risk-rules の語、参照されない JSON"
+    },
+    {
+      "script": "verify-blog-markdown-sanitize.js",
+      "tier": "ci",
+      "guards": "ブログ記事の HTML の許可リスト（src/utils/blogMarkdownSanitize.js、rehype-sanitize）。記事に紛れた script・iframe・form・base・meta refresh・embed・object・style 属性・on* 属性・javascript: の URL が描いた HTML に残らないこと、ブログの図のタグ ryujin-chart（src・rows）が残ること、既存の全記事の描画が許可リストを入れる前と同じこと"
     }
   ]
 }
