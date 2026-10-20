@@ -26,6 +26,8 @@ const TRANSLATION_SUFFIX_RE = /-(en|ko|zh-tw)$/;
 const MANIFEST_RE = /^docs\/content-manifests\/([^/]+)\.json$/;
 const JA_JSON_RE = /^src\/data\/blog-posts\/([^/]+)\.json$/;
 const TR_JSON_RE = /^src\/data\/blog-posts\/(?:en|ko|zh-TW)\/([^/]+)\.json$/;
+// 図の JSON（docs/design/blog-charts/contract.md）。名前は {記事id}-{図id}.json。形は verify-blog-charts.js（CI）が見る
+const CHART_JSON_RE = /^public\/blog-charts\/([^/]+)\.json$/;
 const MD_RE = /^public\/blog\/([^/]+)\.md$/;
 const IMAGE_RE = /^public\/images\/blog\/[^/]+$/;
 const IMAGE_REF_RE = /\/images\/blog\/[^\s)"'\]>]+/g;
@@ -545,7 +547,9 @@ function checkManifest({
   manifest,
   diffPaths,
   head,
+  base,
   basePaths,
+  headPaths,
   config,
 }) {
   const errors = [];
@@ -628,6 +632,59 @@ function checkManifest({
   if (otherIds.length > 0)
     errors.push(
       `[manifest] 1つの PR に1記事。manifest.id "${manifest.id}" 以外の記事 ${otherIds.join("・")} が入っている`,
+    );
+  // 図の JSON も manifest.id の記事のもの。名前が「{記事id}-{図id}」、article が記事 id（HEAD も、M なら base も）。
+  // manifest.id を接頭辞に持つ別の記事（a と a-b）の図は、名前が長いほうの記事 id で始まるので落とす
+  const chartDiffs = diffPaths.filter((x) => CHART_JSON_RE.test(x.path));
+  const longerIds = [...basePaths, ...headPaths]
+    .map((p) => p.match(JA_JSON_RE)?.[1])
+    .filter((id) => id && id.startsWith(`${manifest.id}-`));
+  const articleOf = (raw) => {
+    try {
+      const j = JSON.parse(toText(raw));
+      return isPlainObject(j) ? j.article : undefined;
+    } catch {
+      return undefined; // 読めない JSON は [json] で出している
+    }
+  };
+  for (const d of chartDiffs) {
+    const name = d.path.match(CHART_JSON_RE)[1];
+    if (
+      !name.startsWith(`${manifest.id}-`) ||
+      name.length === manifest.id.length + 1
+    )
+      errors.push(
+        `[chart] ${d.path} の名前が「${manifest.id}-{図id}」の形でない（図の名前は {記事id}-{図id}.json）`,
+      );
+    const owner = longerIds.find((id) => name.startsWith(`${id}-`));
+    if (owner)
+      errors.push(
+        `[chart] ${d.path} は記事 ${owner} の図（manifest.id は "${manifest.id}"）`,
+      );
+    if (head[d.path] !== undefined) {
+      const article = articleOf(head[d.path]);
+      if (article !== manifest.id)
+        errors.push(
+          `[chart] ${d.path} の article ${JSON.stringify(article)} が manifest.id "${manifest.id}" と違う`,
+        );
+    }
+    if (d.status === "M" && base[d.path] !== undefined) {
+      const baseArticle = articleOf(base[d.path]);
+      if (baseArticle !== manifest.id)
+        errors.push(
+          `[chart] ${d.path} の base の article ${JSON.stringify(baseArticle)} が manifest.id "${manifest.id}" と違う（別の記事の図は変えない）`,
+        );
+    }
+  }
+  // 図だけ日々更新しない。図を変えたら同じ記事の本文（.md）も同じ PR で直す（docs/design/blog-charts/contract.md 2節）
+  if (
+    chartDiffs.length > 0 &&
+    !diffPaths.some(
+      (d) => MD_RE.test(d.path) && articleIdOf(d.path) === manifest.id,
+    )
+  )
+    errors.push(
+      `[chart] 図の JSON を変えたのに、記事の本文（public/blog/${manifest.id}.md か翻訳）の差分が無い（本文と表も同じ PR で直す）`,
     );
 
   // kind: new は日本語版 JSON の追加がある、revision は無い
@@ -722,7 +779,10 @@ export function evaluateContentPr({
   const textFiles = [];
   for (const e of live) {
     const isMd = MD_RE.test(e.path);
-    const isJson = JA_JSON_RE.test(e.path) || TR_JSON_RE.test(e.path);
+    const isJson =
+      JA_JSON_RE.test(e.path) ||
+      TR_JSON_RE.test(e.path) ||
+      CHART_JSON_RE.test(e.path);
     if (!isMd && !isJson) continue;
     if (head[e.path] === undefined) {
       errors.push(`[path] ${e.path} が HEAD に無い`);
@@ -750,7 +810,14 @@ export function evaluateContentPr({
         ...checkInternalLinks(f.path, f.text, f.status, config),
       );
     } else {
-      const kyotei = checkKyoteiJson(f.path, f.json, config);
+      // 図の JSON は画面に出る文字だけなので、meta の例外を効かせない
+      const kyotei = checkKyoteiJson(
+        f.path,
+        f.json,
+        CHART_JSON_RE.test(f.path)
+          ? { ...config, kyoteiMetaAllowedKeys: [] }
+          : config,
+      );
       errors.push(...kyotei.errors);
       if (kyotei.metaKeys.length > 0)
         metaKyotei.push({
@@ -761,8 +828,8 @@ export function evaluateContentPr({
     }
   }
 
-  // .md と JSON の対応
-  for (const f of textFiles) {
+  // .md と JSON の対応（図の JSON は記事の .md と対にならない）
+  for (const f of textFiles.filter((t) => !CHART_JSON_RE.test(t.path))) {
     const id = articleIdOf(f.path);
     const jaJson = `src/data/blog-posts/${id}.json`;
     const jaMd = `public/blog/${id}.md`;
@@ -838,7 +905,10 @@ export function evaluateContentPr({
   }
 
   // 画像: 参照先が HEAD にあり寸法が読める。足した画像はどれかが参照している
-  const refs = referencedImagePaths(textFiles.map((f) => f.text));
+  // 図の JSON の文字列は画像の参照に数えない（図は画像を持たない）
+  const refs = referencedImagePaths(
+    textFiles.filter((f) => !CHART_JSON_RE.test(f.path)).map((f) => f.text),
+  );
   for (const p of refs) {
     if (head[p] === undefined)
       errors.push(`[image] 参照している ${p} が HEAD に無い`);
@@ -902,7 +972,9 @@ export function evaluateContentPr({
         manifest,
         diffPaths,
         head,
+        base,
         basePaths,
+        headPaths,
         config,
       });
       errors.push(...r.errors);

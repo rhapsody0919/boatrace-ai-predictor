@@ -45,12 +45,12 @@ node scripts/content/check-content-pr.js [--base origin/master]
 | `src/data/blog-posts/<id>.json` | 日本語版のメタデータ |
 | `src/data/blog-posts/{en,ko,zh-TW}/<id>.json` | 翻訳版のメタデータ |
 | `public/images/blog/<name>.jpg` / `.jpeg` | 画像。JPEG だけ（寸法はビルドの時に JPEG のヘッダーから作るため）。拡張子は小文字 |
+| `public/blog-charts/<id>-<図id>.json` | 図の JSON（`docs/design/blog-charts/contract.md`）。名前は manifest の記事 id＋`-`＋空でない図 id で、manifest.id を接頭辞に持つ別の記事 id（`a` に対する `a-b`）で始まらない。`article` が記事 id（変更なら base の `article` も）。図を変える PR は同じ記事の本文（.md）の差分も要る（図だけ更新しない）。「競艇」と判断が要る句は記事の JSON と同じに見るが、meta の例外は効かない。図の中の `/images/blog/` は画像の参照に数えない。形・参照・孤立・廃止語は `npm run verify:blog-charts`（CI）が見る |
 | `docs/content-manifests/<id>.json` | manifest。PR にちょうど1つ |
 
 - 追加（A）と変更（M）だけ。**削除は許さない**（削除は別の道、通常の PR で行う）。種類の変更（T）も error
 - ファイルの型は通常のファイル（mode `100644`）だけ。symlink（`120000`）・実行ビット（`100755`）・gitlink（`160000`）は error
 - サブディレクトリ・大文字違い・`.` や `..` を含むパスは error
-- 図の JSON（`public/blog-charts/`）はまだ入れられない（図の部品が master に入ってから足す）
 - 1つの PR に1記事。変えた .md・JSON はすべて manifest の `id` の記事（日本語版と翻訳版）
 
 ## manifest
@@ -172,7 +172,7 @@ computeContentSha256(files);
 - 前後が空行の1行で、行がタグだけ（mdast では html ノードだけの段落、またはブロックの html ノードで、その1行全体）。1行目や、末尾の改行が無い最後の行は、前や後の行が無いことを空行と同じに扱う
 - 属性は `src`（`^/blog-charts/[a-z0-9-]+\.json$`）→ `rows`（1〜12 の整数）の順で、この2つだけ。二重引用符
 - 閉じタグ `></ryujin-chart>` が必須（`/>` は不可）
-- `src` の JSON（`public/blog-charts/<name>.json`）が HEAD か base（master）に実在する。図の JSON はまだ PR に入れられないので、今は master に実在するものだけが通る
+- `src` の JSON（`public/blog-charts/<name>.json`）が HEAD か base（master）に実在する。同じ PR で足した図の JSON も HEAD にあるので通る
 - コードの中の `<ryujin-chart …>` は数えない（上と同じ）
 
 ### 内部リンクの免除

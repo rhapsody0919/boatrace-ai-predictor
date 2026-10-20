@@ -7,7 +7,7 @@ import { FONT } from "../fonts.js";
 import { fitHeadline } from "../textFit.js";
 import { RADAR_LINE, RADAR_TEXT } from "../../../../src/components/race/analogy/analogyColors.js";
 import { BEAT, FRAME_AT, PRESS_AT } from "./scene2Timeline.js";
-import { BAND, BUBBLE, BUBBLE_INNER, FRAME_PAD, MIN_TEXT, W } from "./scene2Layout.js";
+import { BAND, BUBBLE, BUBBLE_ACCENT, BUBBLE_INNER, FRAME_PAD, MIN_TEXT, W, bubbleLine } from "./scene2Layout.js";
 import { MUTED, ORANGE, clamp, ease, fit1 } from "./parts.js";
 
 /** オレンジの四角枠（出るときに少し縮みながら現れる） */
@@ -97,7 +97,7 @@ export function Finger({ x, y, t, from }) {
 }
 
 /** 答えの白い吹き出し（1〜2行、各行1行に収める）。tail は尖りの x（押した札の中心） */
-export function Bubble({ lines, t, out = 1, tail = BUBBLE.x + 90, y = BUBBLE.y }) {
+export function Bubble({ lines, t, out = 1, tail = BUBBLE.x + 90, y = BUBBLE.y, lead = 0, accent = null }) {
   if (!lines?.length || t < 0 || out <= 0) return null;
   const p = interpolate(t, [0, 8], [0, 1], { ...clamp, easing: ease });
   const tailX = Math.min(Math.max(tail - BUBBLE.x - 22, 30), BUBBLE.w - 74);
@@ -130,19 +130,22 @@ export function Bubble({ lines, t, out = 1, tail = BUBBLE.x + 90, y = BUBBLE.y }
         }}
       />
       {lines.map((l, i) => {
-        const f = fit1(l, BUBBLE_INNER, i === 0 ? 46 : 40, i === 0 ? 800 : 700);
+        const st = bubbleLine(i, lead);
+        const f = fit1(l, BUBBLE_INNER, st.size, st.weight);
         return (
           <div
             key={i}
             style={{
               fontSize: f.fontSize,
-              fontWeight: i === 0 ? 800 : 700,
+              fontWeight: st.weight,
               lineHeight: 1.3,
-              color: i === 0 ? "#0d1b2e" : "#33465f",
+              color: st.color,
               whiteSpace: "nowrap",
             }}
           >
-            {f.lines[0]}
+            {accent && i === lead && f.lines[0].includes(accent)
+              ? f.lines[0].split(accent).flatMap((part, k) => (k === 0 ? [part] : [<span key={k} style={{ color: BUBBLE_ACCENT }}>{accent}</span>, part]))
+              : f.lines[0]}
           </div>
         );
       })}
