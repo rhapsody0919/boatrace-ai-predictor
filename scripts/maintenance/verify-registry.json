@@ -71,7 +71,7 @@
     {
       "script": "verify-blog-draft-quality.js",
       "tier": "ci",
-      "guards": "ブログ下書きDraft PRを人手承認なしで自動マージしてよいかの品質判定"
+      "guards": "ブログ下書きDraft PRの機械的な品質チェック（PR を作る前の自己点検。自動マージは 2026-10-20 に停止、ADR-0034 の追記）"
     },
     {
       "script": "verify-boatcast-job.js",
@@ -82,6 +82,11 @@
       "script": "verify-content-index-coverage.js",
       "tier": "ci",
       "guards": "docs/design/{slug}/content-index.json の形式（フローA-2のトレーサビリティ索引）"
+    },
+    {
+      "script": "verify-content-pr-gate.js",
+      "tier": "ci",
+      "guards": "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js、契約 docs/operation/content-pr-contract.md）: 許可のパス（すり抜け・削除・status T・mode 100644 以外）・生 HTML（mdast の html ノード、図のタグ ryujin-chart の例外）・「競艇」・判断が要る語・slug・.md と JSON の対応・画像の寸法と参照・featured・内部リンク（画像と // を除く）・manifest（非オブジェクト・paths・files・content_sha256・1記事・kind・4つの役のレビュー・P0/P1・時刻の形）を表で検査。CLI の差分（--raw -z）の読み取りも。今の public/blog の全 .md・blog-posts の全 JSON・images/blog の全 JPEG で本文の関門が errors 0 であること"
     },
     {
       "script": "verify-css-class-collisions.js",
@@ -138,7 +143,7 @@
     {
       "script": "verify-storage-mirror.js",
       "tier": "ci",
-      "guards": "Supabase Storage → Cloudflare R2 の写し（.github/workflows/storage-mirror.yml・scripts/storage-mirror/・scripts/lib/storageMirror.js・scripts/lib/awsSigV4.js、ADR-0098）。SigV4 が AWS の試験値と一致、書き足すだけ（If-None-Match: *、変わったら versions/、消えても残す）、大量の削除・一覧0件の run を基準にしない（鍵の取り違えで success にしない）、1回の取り寄せの上限、412 からの復旧、失敗の文にパスを入れない（ログは公開）、R2 の一覧の 401・403 だけ鍵の誤り、anon の鍵を拒む、写しの側に Supabase への書き込み・R2 の削除が無い、workflow の権限・SHA 固定・npm ci 無し、key-canary の r2 の job。復元の試験（storage-mirror-restore-drill.yml・scripts/storage-mirror/restore.js・scripts/lib/storageMirrorDrill.js）: 戻す先は storage-mirror-drill の定数だけで写す元を拒む、消す呼び出しが無い、R2 と戻した後の sha256・Content-Type の照合、見本の選び方"
+      "guards": "Supabase Storage → Cloudflare R2 の写し（.github/workflows/storage-mirror.yml・scripts/storage-mirror/・scripts/lib/storageMirror.js・scripts/lib/awsSigV4.js、ADR-0099）。SigV4 が AWS の試験値と一致、書き足すだけ（If-None-Match: *、変わったら versions/、消えても残す）、大量の削除・一覧0件の run を基準にしない（鍵の取り違えで success にしない）、1回の取り寄せの上限、412 からの復旧、失敗の文にパスを入れない（ログは公開）、R2 の一覧の 401・403 だけ鍵の誤り、anon の鍵を拒む、写しの側に Supabase への書き込み・R2 の削除が無い、workflow の権限・SHA 固定・npm ci 無し、key-canary の r2 の job。復元の試験（storage-mirror-restore-drill.yml・scripts/storage-mirror/restore.js・scripts/lib/storageMirrorDrill.js）: 戻す先は storage-mirror-drill の定数だけで写す元を拒む、消す呼び出しが無い、R2 と戻した後の sha256・Content-Type の照合、見本の選び方"
     },
     {
       "script": "verify-job-watch.js",
@@ -1092,7 +1097,7 @@
     {
       "script": "verify-sns-existing-fixes.js",
       "tier": "ci",
-      "guards": "依頼4: 既存YouTube公開・ブログPRマージ・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
+      "guards": "依頼4: 既存YouTube公開・停止したブログPRマージ（410・GitHub と DB に触れない、BOA-908）・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
     },
     {
       "script": "verify-sns-deadline-queue.js",
@@ -1195,6 +1200,11 @@
       "guards": "送信の試験（投稿しない、/api/admin/sns-hub/send-probe、2026-10-18 /today の初送信が原因不明で止まった件）: 媒体は initialize→append（4 MiB ずつ）→finalize→status まで行い createPost を呼ばない、落ちた段階を「段階_種類」で返す、表示の確認は印の有無と Chromium の落ちを区別する。外部接続なし"
     },
     {
+      "script": "verify-sns-today-variants.js",
+      "tier": "ci",
+      "guards": "/today の X 投稿の見出しの日替わり（config/today-variants.json、2026-10-20）: 日替わりに交互・週ごとに順を逆、uuid が空・null なら札は null、設定が無い・壊れている（1案・同じ id・改行・uuid の形）ときは既定の文、リポジトリの設定が読める、日付の差し込み。外部接続なし"
+    },
+    {
       "script": "verify-sns-daily-runner.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 22: 暦日の値の取り込み（cron sns_daily）。YouTube Analytics はチャネル全体の D−3〜D−1（太平洋時間）を埋め、動画は投稿日＋翌日だけ読み古い動画は読まない・行の無い日は欠測、GA4 はチャネル全体を流入元の完全一致のリストでチャネルに足し行の無い日は0・UTM（race-full・today_digest）は utm_content の下書きの ID に結びつける、取り直しは値が変わった行だけ書く、GA4 の鍵が無い間は飛ばして report.alerts、片方の失敗でももう片方は書いて失敗を返す、shadow は書かない、YouTube Analytics の client・GA4 のサービスアカウントの JWT（RS256）と runReport、PostgREST の読み（1000行ずつ）と upsert の一意制約の列、全貌の UTM（utm_content=race_id）は X・YouTube を utm_term ごとに分け下書きの投稿日（JST）と翌日だけ残す・下書きの無いレースは数えない・下書きの ID の UTM は X だけ、全貌の下書きを race_id で引く PostgREST の条件。SQL154 までを PGlite、外部接続なし"
@@ -1223,6 +1233,26 @@
       "script": "verify-sns-full-picture-windows.js",
       "tier": "ci",
       "guards": "全貌動画の測り時（SQL169、2026-10-19 オーナー決定）: 全貌は day_end（投稿日の JST 23:00）と 24h の job・JST 23:00 を過ぎた投稿は 24h だけ・日付は JST、それ以外は 48h・7d のまま、観測の表の CHECK（day_end は投稿日の JST 23:00 だけ・窓の名前は4つ）、JS の窓（windowsFor・observationPeriod・全貌に 48h を入れない）、画面は既定の 48h で全貌を当日の値・7d に全貌を出さない・全貌は型の版の確認をしない、CSV と collector の窓、169-runbook.md の1回で貼る SQL が154の状態から通り確認が全部 true・2回目は止まる。PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-full-picture-scene2.js",
+      "tier": "ci",
+      "guards": "全貌動画（sns-video-studio/remotion/scripts/full-picture/）: 文型の版が facts から決まった文を作り検査を通る、検査が facts に無い数値・艇番・材料名・順位、禁止表現、ぼかし語、行の幅、段の最初のつなぐ語・材料の違う「同じく」・差1ポイント未満の向きを落とす、つないだ版（LLM はつなぐ語だけ、2026-10-20 オーナー決定）は文型の文を変えず落ちた拍・LLM の失敗はつなぐ語なし、配置（枠・カード x960 まで・まとめカードの CTA y1420 まで・s3 の棒と字が重ならない・形の札は枠と同時に選ぶ）、拍の並びと答えを毎秒8字で読める長さ、固定の材料4レース（fixtures、最小の写し）が材料の契約 materials.schema.json に合い取得の出力も合う・版が一致、全場面の文が検査を通り読める、入口版（条件＋重ね図＋結論1拍）が59秒以内で越えたら止まる。LLM・API・Supabase は偽物、外部接続なし"
+    },
+    {
+      "script": "verify-blog-charts.js",
+      "tier": "ci",
+      "guards": "ブログの図の契約（docs/design/blog-charts/contract.md、src/utils/blogChartContract.js）。記事の <ryujin-chart> の書き方（小文字・閉じタグ・1行・前後空行・src は /blog-charts/ の実在する JSON・rows は行の数）、JSON の形（未知のキー・counts と値の整数での照合・切り替え1つ・予約の種類・翻訳の文字）、id・article、答えの割合が本文にもあること、「競艇」・廃止語・risk-rules の語、参照されない JSON"
+    },
+    {
+      "script": "verify-vercel-ignore-build.js",
+      "tier": "ci",
+      "guards": "vercel.json の ignoreCommand（scripts/lib/vercelIgnoreBuild.js、BOA-908）。docs・台帳・機械の再生成・ワークフローだけの変更ではビルドせず、public/blog/*.md・run-heavy.sh・src・api・ルートの data/*・risk-rules.json・作り直し（差分なし）ではビルドすること"
+    },
+    {
+      "script": "verify-blog-markdown-sanitize.js",
+      "tier": "ci",
+      "guards": "ブログ記事の HTML の許可リスト（src/utils/blogMarkdownSanitize.js、rehype-sanitize）。記事に紛れた script・iframe・form・base・meta refresh・embed・object・style 属性・on* 属性・javascript: の URL が描いた HTML に残らないこと、ブログの図のタグ ryujin-chart（src・rows）が残ること、既存の全記事の描画が許可リストを入れる前と同じこと"
     }
   ]
 }

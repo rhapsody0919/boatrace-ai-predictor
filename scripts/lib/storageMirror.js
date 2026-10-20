@@ -1,5 +1,5 @@
 /**
- * Supabase Storage → Cloudflare R2 の写し（ADR-0098）の純粋関数と、run の本体（取得・書き込みは引数で受け取る）。
+ * Supabase Storage → Cloudflare R2 の写し（ADR-0099）の純粋関数と、run の本体（取得・書き込みは引数で受け取る）。
  * 実際の Supabase・R2 の呼び出しは scripts/storage-mirror/ にある。verify-storage-mirror.js が偽の口で通しで検査する。
  *
  * R2 の中の置き方:
@@ -14,7 +14,7 @@
 import { createHash } from "node:crypto";
 import { amzDate, sha256Hex } from "./awsSigV4.js";
 
-/** 写す元のバケット。analogy-v16 は作り直せて量が大きいので写さない（ADR-0098） */
+/** 写す元のバケット。analogy-v16 は作り直せて量が大きいので写さない（ADR-0099） */
 export const SOURCE_BUCKETS = Object.freeze([
   "sns-hub-media",
   "raw-pages",
@@ -244,7 +244,7 @@ export async function runMirror({
 }) {
   for (const b of buckets)
     if (EXCLUDED_BUCKETS.includes(b))
-      throw new Error(`${b} は写さない（ADR-0098）`);
+      throw new Error(`${b} は写さない（ADR-0099）`);
   const stamp = runStamp(now);
   const keys = manifestKeysNewestFirst(
     (await r2.list(MANIFEST_PREFIX)).map((o) => o.key),

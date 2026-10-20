@@ -1,5 +1,5 @@
 /**
- * 写す元の Supabase Storage（ADR-0098）。service key で一覧と読み取りだけをする。書く・消す呼び出しは持たない
+ * 写す元の Supabase Storage（ADR-0099）。service key で一覧と読み取りだけをする。書く・消す呼び出しは持たない
  * （verify-storage-mirror.js が検査する）。一覧は api/_lib/analogyV16.js の listObjects（夜の確認と同じ口）を使う。
  * 失敗の文にファイルのパスを入れない（リポジトリは PUBLIC で、Actions のログは外から見える）。
  */

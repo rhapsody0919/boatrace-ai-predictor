@@ -1,5 +1,5 @@
 /**
- * Cloudflare R2 の S3 互換の口（ADR-0098）。使う呼び出しは一覧・PUT（If-None-Match: *）・GET・HEAD だけ。消す呼び出しは持たない。
+ * Cloudflare R2 の S3 互換の口（ADR-0099）。使う呼び出しは一覧・PUT（If-None-Match: *）・GET・HEAD だけ。消す呼び出しは持たない。
  */
 import zlib from "node:zlib";
 import {

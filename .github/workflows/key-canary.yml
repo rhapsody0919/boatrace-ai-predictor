@@ -6,7 +6,7 @@ name: Key Canary
 # 同じ日の失敗分を rerun し、Issue を閉じる。secret の更新時刻は値の正しさを示さないので使わない。
 #
 # 書き込み・送信はしない（Slack の webhook は投稿しないと確かめられないので見ない）。鍵の値はログに出さない。
-# R2（Storage の写し、ADR-0098）は別の job にする。R2 の鍵の誤りで開いた Issue が、Supabase だけの成功で閉じないように。
+# R2（Storage の写し、ADR-0099）は別の job にする。R2 の鍵の誤りで開いた Issue が、Supabase だけの成功で閉じないように。
 
 on:
   schedule:

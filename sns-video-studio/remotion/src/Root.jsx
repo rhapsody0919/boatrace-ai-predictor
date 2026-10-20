@@ -1,4 +1,10 @@
 import { Composition } from "remotion";
+import { FullPictureScene2 } from "./fullPicture/Scene2Compare.jsx";
+import { scene2Duration } from "./fullPicture/scene2Timeline.js";
+import { FullPictureStep } from "./fullPicture/FullPictureStep.jsx";
+import { FullPicture } from "./fullPicture/FullPicture.jsx";
+import { fullPictureTimeline } from "./fullPicture/fullPictureTimeline.js";
+import { stepTimeline } from "./fullPicture/stepTimeline.js";
 import { AshiyaCM, AmagasakiCM } from "./AshiyaCM.jsx";
 import { YoungPersonaCM } from "./YoungPersonaCM.jsx";
 import { HitCheckCM } from "./HitCheckCM.jsx";
@@ -573,6 +579,45 @@ export function RemotionRoot() {
         fps={30}
         width={1600}
         height={976}
+      />
+      {/* 全貌動画 場面2（試作）。材料は --props で渡す（scripts/full-picture/render-scene2.mjs） */}
+      <Composition
+        id="FullPictureScene2"
+        component={FullPictureScene2}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: props?.radar ? scene2Duration(props) : 300,
+        })}
+      />
+      {/* 全貌動画（全場面を1本に）。props: { scenes, answers, bgm }（scripts/full-picture/run-full.mjs） */}
+      <Composition
+        id="FullPicture"
+        component={FullPicture}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: props?.scenes?.length ? Math.max(30, fullPictureTimeline(props.scenes, props.answers).total) : 300,
+        })}
+      />
+      {/* 全貌動画の段の場面を1つ（場面ごとの確認用）。props: { scene, answers } */}
+      <Composition
+        id="FullPictureStep"
+        component={FullPictureStep}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: props?.scene?.steps?.length ? stepTimeline({ ...props.scene, answers: props.answers }).total : 300,
+        })}
       />
       <Composition
         id="AboutHeroMobile"

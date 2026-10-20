@@ -23,6 +23,8 @@
 - サービス名は「龍神レーダー」（Ryujin Radar）、サブタイトルは「無料のボートレースAI予想＆データ分析」。ドメイン boat-ai.jp は維持し、表示の名前だけを変えた。「龍神杯」は蒲郡の公式大会名と重なる（2026-08-19 ユーザー決定、memory boatai_rebrand_investigation_2026_08_19）
 - 類似レースの機能名は「龍神ソナー」（旧名アナロジー・ファインダー。docs/design/analogy-finder/ 等のパスには旧名が残る）（2026-10-06、memory feedback_boa271_ui_details_user_decides、BOA-271）
 - ボートレースの「勝率」は着順点の平均で、1着の割合ではない。1着の割合は「1着率」と書く（2026-09-25、memory morning_data_digest_2026_09_25、BOA-402）
+- 本編で「1着割合」を使っていても、関連記事の表示ラベルへ旧タイトルの「勝率」をコピーすると区別が崩れる。リンクの表示文も確認する（2026-10-13、2026-10-13-plan-review-20261013-30.md）
+- 用語集の「統一済み」追記は、文書としての本文一致とコードへの反映確認を別条件にする（2026-10-13、2026-10-13-task-74-check-codex-patches.md・2026-10-16-codex-direct-pr-design.md）
 
 ## 用語の対訳
 - 4言語の用語は docs/reference/i18n-glossary.md が正本。新しい用語は glossary に足してから訳す（.claude/rules/i18n-new-pages.md）
@@ -55,3 +57,4 @@
 - 「崩れやすい」「堅め」は旧指数のラベルの語（percentileBarMax 等）の継続で、保証・射幸心の表現に当たらない（直下に免責の併記が前提）（2026-10-12、BOA-822 wording-editor、docs/design/in-collapse-caution/mock-reviews-v1.md）
 - 新しい用語は実装の前に docs/reference/i18n-glossary.md に4言語の対訳を登録する（BOA-822 では イン崩れ注意度・勝率差・崩れやすい／中くらい／堅め・段ごとの実績）（2026-10-12、同）
 - 「似ている」系の回避は `inCaution.range` だけでなく `inCaution.home.note` でも4言語でそろえた（ja「同じくらいの」・en "about the same"・ko「같은 정도인」・zh-TW「差不多」。「비슷한」「相似」は使わない）（2026-10-17、BOA-822 #1602 wording-editor）
+- 全貌動画の字幕の禁止表現の検査は risk-rules.json から読む（scene2-text.mjs の bannedIn。手書きの一覧は投稿本文の判定と食い違う）。型の規則（字幕で「この選手」と言わない）だけを別に置く。部分一致なので、承認済みの「鉄板寄り」と同じ語を禁止語に足すときは除外を考える（2026-10-20、wording-editor、sns-video-studio/remotion/scripts/full-picture/scene2-text.mjs）

@@ -30,6 +30,7 @@
 - 除外するものを DB から読んで集合にするとき、エラーを見ずに (data || []) にすると、読み取りの失敗で除外が空になりガードが外れる（BOA-512 で開催した32レースを中止に一括更新）。失敗は例外にする（ADR-0069、verify-query-errors.js）。一括 UPDATE の跡は updated_at がミリ秒まで同じ行で見分けられる（2026-09-20、memory technical_supabase_read_error_swallowed_flips_guard、PR #743）
 - verify-migration-rls.js は REVOKE/GRANT の1文につき先頭の関数名しか読まない。複数の関数を並べた文は1関数1文に分ける（2026-10-08、memory feedback_codex_patch_intake_checklist）
 - race_entries が別の日の出走表で上書きされる汚染は、race_results が正常に入るので欠損を探す検知では見つからない。日次の data_health_entries_duplicates（マイグレーション100）で検知する（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-423）
+- 適用待ちキーを WARN にする RPC 検査は、終了コード0でも当該マイグレーションの成功証拠にならない。台帳・途中の WARN・対象日と同一 raceId の保存値/応答を併せて確認する（2026-10-13、2026-10-13-plan-review-20261013-22.md）
 
 ## 画面からの読み取り
 - 画面から Supabase を読むのは src/services/supabaseClient.js の1つの入口だけ。.throwOnError() が既定で、失敗を「データなし」に化けさせない（BOA-359、.claude/rules/frontend-data-fetch.md）
@@ -42,24 +43,12 @@
 - fetchAll の .range() で全件を読むときは .order("race_id") 等の一意の並びを付ける。並びが無いとページの境目で行が重なったり抜けたりする（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-403）
 - Supabase は Small。Nano のときは get_predictions_by_date が2.3〜12秒かかり、anon の statement_timeout（3秒）を超えて「開催なし」と誤って表示した。DB は ap-southeast-2 で、api/cron/* も syd1 に固定している（2026-09-19、memory project_data_foundation_orchestration_2026_09_19、PR #747）
 
-## SNS の送信
-- SNS の送信を止めるのは許可のリスト（自動送信の job は item が notified かつ mode が自動のときだけ進める）にし、claim・check・begin_post・youtube_publish_begin の全部で見る。拒否のリストや下書きの状態の変更だけでは、送信中・要照合で 148 のガードが RAISE し止まらない（2026-10-12、system-architect、docs/design/sns-pdca-loop/plan.md §3）
-- v0 素材の公開保留は5か所にある: sns_bundle_imports の CHECK、取り込みの関数、版×媒体×言語の一意索引、approve の bundle_import_id、transition_sns_send_139・youtube_call_guard の bundle_import_id。外すなら全部を変える（2026-10-12、135:8,26,89・139:137・146:174）
-- 送信の契約は、毎日 daily_baseline_date（JST）と YouTube の baseline_day（PT）を当日にしないと claim できない（2026-10-12、139:144・146:143）
-- PostgREST の upsert は式の一意索引（COALESCE）を on_conflict に使えない。NULL を含むキーは UNIQUE NULLS NOT DISTINCT の制約にする（本番は PG 17.6、2026-10-12）
-- findQualifyingRaces は standard と unified のうち predicted_at の新しい方の1行を使う。unified にしか無いキーを条件にすると黙って0件になる（2026-10-13、system-architect、scripts/lib/snsCampaigns.js:141-158）
+- SNS の送信（承認・claim・runner・通知・容量）に関する知見は [sns-send-ops.md](sns-send-ops.md) へ移動（2026-10-18）
+- 複数 bundle の下書きを limit だけでまとめて読むと、取得の打切りが素材の本数不備に化ける。対象日の抽出前の上限と下書き集合の完全性を別に確認し、超過を不合格素材として確定しない（2026-10-14、2026-10-14-plan-review-20261014-01.md）
 
 ## 点検での見落としを防ぐ知見
 - 本番操作待ちの引継ぎと後続PRのマージは時点を分け、マージだけで表生成・公開への切替・データ削除の完了を推定しない。（2026-10-13、2026-10-13-plan-1517.md）
-- 同一jobの後続成功や通知開始前の成功で先行失敗を消すと未通知になるため、未通知alertの保持を点検する。（2026-10-13、2026-10-13-plan-review-incaution-20261013-05.md）
 - 取得対象の削除だけで保存済みhealthが消えるとせず、履歴ファイルとlast_report.healthの両方に旧警告入力が残らないか確認する。（2026-10-13、2026-10-13-plan-review-motorstop-20261013-06.md）
-- queueの先頭N件を毎回切る処理では、失敗や親待ちが候補枠を塞がないか、送信件数・検査件数・走査進捗を別々に確認する。（2026-10-13、2026-10-13-plan-review-snsrunner-20261013-04.md）
-- 監視より短い周期で上書きするreportの一度きり事象は、即時通知だけに依存せず未配達の永続記録と後処理からの要照合の受け渡しを確認する。（2026-10-13、2026-10-13-plan-review-snsrunner-20261013-04.md）
-- 媒体処理STATUSの応答欠落と正規の省略成功を区別し、空応答を完了に正規化して投稿へ進まないか点検する。（2026-10-13、2026-10-13-plan-review-xadapter-20261013-02.md）
-- 分割アップロードのchunkサイズを変えたら、最大媒体のchunk数と1試行の費用上限の積算も照合する。（2026-10-13、2026-10-13-plan-review-xadapter-20261013-02.md）
-- refresh成功後の条件付き保存が不成立のときは、確認用の再読取の失敗も通知対象に含め、再読取例外で元の理由や再連携案内が脱落しないか点検する。（2026-10-13、2026-10-13-plan-review-xoauth-20261013-03.md）
-- 再連携とrefreshの競合は古いrefreshの保存0行と古いrefreshの失敗を分け、新行利用か停止かがspec未定義なら競合全体を解消済みとしない。（2026-10-13、2026-10-13-plan-review-xoauth-20261013-03.md）
-- IDなしlookupの外部通信抑止と読取台帳の消費は別に確認し、外部通信0を台帳消費0としない。（2026-10-13、2026-10-13-plan-review-youtube-20261013-01.md）
 - fetchRecordedという名前だけで録画限定とせず、モードとstrictを確認し、本番接続禁止のレーンでは録画漏れ・live/recordの実通信への遷移を遮断する。（2026-10-13、2026-10-13-task-70-check-codex-patches.md）
 - 同じファイルの同じ文脈へ追加する並行パッチは単独適用成功だけで統合可能とせず、まとめた適用でも両方の検査が残るか確認する。（2026-10-13、2026-10-13-task-72-check-codex-patches.md）
 - 新verifyの台帳登録を取り込み側へ委ねた場合、登録と品質ゲートでの実行確認が済むまで取り込み判定に残作業を明記する。（2026-10-13、2026-10-13-task-72-check-codex-patches.md）
@@ -68,22 +57,19 @@
 - 表・関数を DROP する前の参照確認は、本番の pg_depend（deptype<>'i'）・prosrc の ILIKE・pg_views・pg_constraint の confrelid の4つで行う。plpgsql の本文は pg_depend に出ないので prosrc の検索が要る（2026-10-19、system-architect、163）
 - DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちる。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
 - 本番に pg_cron は入っていない（cron.job が無い）。DB の DROP で cron の依存を気にしなくてよい（2026-10-19、system-architect の本番読み取り）
-- Claude のセッションからの本番の読み取りは scripts/db/ro-query.js（ロール claude_ro、SELECT のみ・BYPASSRLS・READ ONLY で ROLLBACK）。Management API の database/query は自動モードの判定（[Production Reads]）で止まる（2026-10-19、ADR-0096、マイグレーション 166）
-- ロールに付けた default_transaction_read_only は本人が SET で戻せるので守りにならない。書けないことは権限で保証する。PostgreSQL は関数の EXECUTE を既定で PUBLIC に渡すので、特定のロールから REVOKE しても PUBLIC 経由で呼べる（2026-10-19、ADR-0096）
-- BYPASSRLS の無い読み取りロールは、RLS の付いた表をエラーでなく0行で返す。読み取り専用のロールを作ったら service_role と件数を比べる（2026-10-19、ADR-0096、166-runbook.md）
-- Supabase の postgres は rolbypassrls=true・rolcreaterole=true・rolsuper=false（2026-10-19 本番の pg_roles）
-- STABLE な SECURITY DEFINER の関数でも、中で VOLATILE な関数を呼べば所有者の権限で書ける。権限の検査で volatility を条件にしない（2026-10-19、system-architect、PGlite 18.3 で実証、166 の末尾の検査）
-- has_table_privilege は列単位の GRANT を見ない。INSERT・UPDATE・REFERENCES・SELECT の権限の検査は has_any_column_privilege で行う（2026-10-19、PGlite で GRANT UPDATE (b) ... TO PUBLIC が見逃されるのを実証）
-- PUBLIC に付いた権限は、擬似ロール名 'public' を has_*_privilege に渡すと、ロールを作る前に読み取りで確かめられる（2026-10-19、system-architect）
-- pg-connection-string は接続文字列のクエリ（?user= や options=-c role=…）を URL のユーザー名より優先する。接続の前の URL の確認ではクエリも検査する（2026-10-19、pg 8.23.1、roQuery.js の checkRoUrl）
-- ALTER DATABASE … SET で入れた設定（古い Supabase の app.settings.jwt_secret 等）は、接続できるロールなら誰でも current_setting で読める。読み取りのロールを足す前に確かめる（2026-10-19、system-architect、166 の検査）
 - DROP だけのマイグレーションの runbook では、「最後に書かれた時刻」の判定の基準を、呼び出し元を消した PR の本番デプロイ時刻にする（DROP の PR の時刻では、その間の想定外の書き込みを見逃す）。読むだけの RPC はこの判定では見えず、コードの grep だけが根拠になる（2026-10-19、system-architect、168。呼び出し元を消したのは #1645）
 - pg_depend（deptype<>'i'）で外からの依存を数えるときは、対象の表自身の制約（pg_constraint）・既定値（pg_attrdef）・索引（pg_index の indexrelid）を除く。索引を除き忘れると、外の依存が無くても 0 にならない（2026-10-19、168-runbook の PGlite での再現）
 - 消した表は元のマイグレーションをもう一度流せば作り直せるが、行は戻らない。後で読む経路が無く件数が小さければ APPLIED.md に要点を書き、そうでなければ適用前にオーナーが CSV で退避してリポジトリの外に置く。本番に退避用の表は作らない（2026-10-19、system-architect、168）
 - 手元の既定の node は v16 で `node:test` 等が無く verify-*.js が落ちる。`~/.nvm/versions/node/v22.20.0/bin` を PATH に足して実行する。worktree の node_modules が古いと `twitter-text` 等が見つからないので `npm ci` する（2026-10-19）
-- pg_db_role_setting の名前で秘密を判定すると、古い Supabase の app.settings.jwt_exp（JWT の有効期限の秒数）で誤検知する。正規表現はゆるめず、秘密でないと確かめた名前だけを完全一致の許可リストで除く（2026-10-19、本番で 166 を実行して検出、ADR-0096）
 - middleware から DB で数を足す設計は、anon で実行できる口・UA の偽装による水増し・パスの種類の増加・upsert で足し算できない（RPC が要る）が重なるので避ける（2026-10-20、system-architect、ADR-0089 決定6）
 - db-apply は master の HEAD の SQL しか当てないので、コードのデプロイが必ず先になる。マイグレーションに「コードが先でも壊れない」と書くときは、その間に cron が動く前提で確かめる（2026-10-20、system-architect、170）
 - 共通ラッパは、行の無いジョブの初回の起動で scrape_job_state に mode='off' の行を作る（cronWrapper.js の ensureRow）。後から入れる `INSERT … ON CONFLICT DO NOTHING` は空振りして off のまま残るので、条件つきの DO UPDATE（mode='off' かつ last_success_at・last_tick_at が NULL）にする（2026-10-20、system-architect、170）
 - data_health の reconcileAlerts は「同じキーで欠損数が増えない未達」を7日間通知しない。日ごとの事故である鮮度の未達には everyDay を付けて毎日通知する（2026-10-20、system-architect・/code-review、170）
 - db-apply の classifyMigration は関数の `$$`・REVOKE・GRANT・`INSERT … ON CONFLICT` のどれでも heavy と判定する。scrape_job_state の行をマイグレーションで入れると自動の経路には乗らない（2026-10-20、system-architect、170）
+
+- 読取専用ロール・権限検査・読取CLIの知見は [db-readonly.md](db-readonly.md) を参照（2026-10-19、依頼77の分割案）。
+- 列控えは削除列の包含だけでなく主キーとの対応と、削除時点まで控えが残ることを確認する。過去のCREATEの存在だけでは復元可能性を示せない。（2026-10-19、2026-10-19-review-20261019-13.md）
+- db-apply は毎時17分の自動適用になる予定（ADR-0097、今は DB_APPLY_DRY_RUN）。本番の反映をまとめる（master の自動デプロイを止める）と SQL がコードより先に当たるので、本番のデプロイの SHA にそのマイグレーションが入っているかを確かめる関門が要る（2026-10-20、system-architect、db-apply.yml、BOA-908。反映をまとめる案は保留）
+- `INSERT ... ON CONFLICT DO NOTHING`（対象を書かない形）は PK にも UNIQUE にも効くので、中身の違う既存行があっても黙って成功する。固定 uuid でマスタの行を入れるときは、COMMIT の前に DO ブロックで「入ったはずの行がそろっているか」を検査して落とす（2026-10-20、system-architect、171・PR #1695）
+- sns_template_variants を外部キーで参照するのは sns_drafts.template_variant_id（035）と sns_post_tracking.template_variant_id（136、154 で NULL 可）の2つだけ。行を消す前の参照の数は、この2表を足して数える（2026-10-20、system-architect、PR #1695）
+- db-apply の確認の節の見出しを拾う処理（scripts/lib/dbApplySql.js の extractConfirmationSections）は、最初の「:」/「：」で見出しを切る。見出しの括弧の中に「:」を書くと、job summary で SQL の1行目にはみ出す（2026-10-20、system-architect、171）

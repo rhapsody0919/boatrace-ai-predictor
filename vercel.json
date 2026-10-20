@@ -1,6 +1,7 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "ignoreCommand": "node scripts/vercel-ignore-build.js",
   "git": {
     "deploymentEnabled": {
       "codex/**": false
@@ -272,7 +273,7 @@
     "api/cron/sns-auto-plan.js": {
       "regions": ["syd1"],
       "memory": 3009,
-      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**,sns-video-studio/remotion/risk-rules.json,src/locales/ja/common.json}"
+      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**,sns-video-studio/remotion/risk-rules.json,src/locales/ja/common.json,config/today-variants.json}"
     },
     "api/cron/*.js": {
       "regions": ["syd1"]
@@ -299,6 +300,12 @@
     }
   ],
   "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
     {
       "source": "/api/(.*)",
       "headers": [
