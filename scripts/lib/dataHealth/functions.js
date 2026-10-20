@@ -244,13 +244,14 @@ order by 1`;
  *     since     更新時刻が、評価の終端（前日）の 21:00 JST 以降（夜の集計は前日 22:00〜当日 01:00 JST に動く。
  *               前日の朝や日中に手で流した分は数えない）
  *     date_end  日付の列が、評価の終端（前日）以降（その日のレースまで集計した）
+ *     date_prev 日付の列が、評価の終端の前日（前々日）以降（材料が翌朝に確定するため、夜の集計の時点では前日分が入らない表）
  *     date_next 日付の列が、評価の終端の翌日（当日）以降（当日の 0 時台に動いた集計が書く日付）
  *     count     件数が1以上
  *   observed   観測値の式（スカラーの副問い合わせ。表は必ず1つ）
  *   applicable 書かれるはずかの式（既定 true）。y.* は前日の開催の有無（nightlyFreshnessSql の y）
  *   table      読む表（PGlite の検証で最小のスキーマを作るため・説明用）
  *
- * @typedef {{key: string, table: string, kind: "since"|"date_end"|"date_next"|"count", observed: string, applicable?: string}} FreshnessItem
+ * @typedef {{key: string, table: string, kind: "since"|"date_end"|"date_prev"|"date_next"|"count", observed: string, applicable?: string}} FreshnessItem
  */
 
 /** 夜の集計（前日 22:00〜当日 01:00 JST）が書く表。締めは 06:30（data_health の 06:35 の実行で見る） */
@@ -276,11 +277,14 @@ export const NIGHTLY_FRESHNESS_ITEMS = Object.freeze([
     kind: "date_next",
     observed: "(select max(last_updated) from venue_technique_period_stats)",
   },
-  // 差分だけ upsert（値の変わらない日は updated_at が動かない）。window_end（集計した最後のレースの日）で見る
+  // 差分だけ upsert（値の変わらない日は updated_at が動かない）。window_end（集計した最後のレースの日）で見る。
+  // 材料の race_results.actual_course_* は Kファイルの同期（kfile_sync、07:00 JST）が翌朝に書くため、00:50 JST の集計の
+  // 時点では前日の分が無く、window_end は前々日になる（aggregate-course-baseline-stats の実行ログ: 03:17〜05:50 JST に
+  // 動いた夜は全て前々日、2026-10-20 の data-accuracy-verifier）。前々日まで進んだかで見る
   ...["st_course_baseline", "nige_second_by_course"].map((t) => ({
     key: t,
     table: t,
-    kind: "date_end",
+    kind: "date_prev",
     observed: `(select max(window_end) from ${t})`,
     applicable: "y.had_results",
   })),
@@ -374,6 +378,7 @@ const okExpr = (item, toDate) => {
   const o = item.observed;
   if (item.kind === "since") return `${o} >= (select since from w)`;
   if (item.kind === "date_end") return `${o} >= ${toDate}::date`;
+  if (item.kind === "date_prev") return `${o} >= ${toDate}::date - 1`;
   if (item.kind === "date_next") return `${o} >= ${toDate}::date + 1`;
   return `${o} > 0`;
 };

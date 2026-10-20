@@ -194,6 +194,7 @@ export function formatObserved(observed) {
 const FRESHNESS_CRITERIA = {
   since: "前日21:00 JST 以降の更新が無い",
   date_end: "前日の分まで進んでいない",
+  date_prev: "前々日の分まで進んでいない",
   date_next: "当日の日付で書かれていない",
   count: "0件",
 };

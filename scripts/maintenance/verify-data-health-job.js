@@ -622,8 +622,8 @@ INSERT INTO outcome_distribution (created_at) VALUES ('2026-09-18 22:00+09');
 INSERT INTO top_start_stats (created_at) VALUES ('2026-09-18 21:00+09');
 INSERT INTO exhibition_time_top_stats (created_at) VALUES ('2026-09-18 20:59+09');
 INSERT INTO venue_technique_period_stats VALUES (1, '2026-09-19');
-INSERT INTO st_course_baseline VALUES (1, '2026-09-17');
-INSERT INTO nige_second_by_course VALUES (1, '2026-09-18');
+INSERT INTO st_course_baseline VALUES (1, '2026-09-16');
+INSERT INTO nige_second_by_course VALUES (1, '2026-09-17');
 INSERT INTO accuracy_cache VALUES ('accuracy_summary', '2026-09-19 00:30+09'), ('in_caution_accuracy', '2026-09-19 02:00+09');
 INSERT INTO model_performance_daily VALUES ('moriarty', '2026-09-17'), ('unified', '2026-09-18');
 INSERT INTO bet_recommendations (race_id, model_id, recommendation) VALUES ('2026-09-18-01-01', 'moriarty', 'bet');
@@ -659,7 +659,7 @@ INSERT INTO analogy_v16_snapshots VALUES ('2026-09-18-02-01', 'racecard'), ('202
     show([night.accuracy_summary, night.unified_model_accuracy]),
   );
   check(
-    "鮮度の関数（夜）: date_end は前日まで進んだら ok（window_end 09-17 は未達・09-18 は ok）、date_next は当日の日付で ok",
+    "鮮度の関数（夜）: コース基準は前々日まで進んだら ok（Kファイルの同期が翌朝のため。window_end 09-16 は未達・09-17 は ok）、date_next は当日の日付で ok",
     okOf(night, "st_course_baseline") === false &&
       okOf(night, "nige_second_by_course") === true &&
       okOf(night, "venue_technique_period_stats") === true,
@@ -807,7 +807,7 @@ ${insert}`);
   check(
     "鮮度の判定: 通知の文に、項目・条件・最終の観測値（JST）を出す",
     formatBreach(stale).includes("st_course_baseline") &&
-      formatBreach(stale).includes("前日の分まで進んでいない") &&
+      formatBreach(stale).includes("前々日の分まで進んでいない") &&
       formatBreach(stale).includes("09-19") &&
       formatObserved("2026-09-18T15:32:00+00:00") === "09-19 00:32 JST" &&
       formatObserved(null) === "記録なし" &&
