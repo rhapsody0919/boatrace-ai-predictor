@@ -85,6 +85,9 @@ async function materials(raceId) {
       const m = await fetchMaterials(raceId, { stage: "racecard" });
       const errs = validate(m);
       const lacking = ["facts", "scenario"].filter((k) => !m.api[k]);
+      // 鍵の設定の誤り（匿名キーが無い）は取り直しても直らず、場面3・6が黙って欠けるので止める
+      const config = m.missing.filter((x) => /匿名キーが無い/.test(x.reason)).map((x) => `${x.source}: ${x.reason}`);
+      if (config.length) return { m: null, reasons: config };
       if (!errs.length && !lacking.length) return { m, attempts: attempt };
       last = [...errs.slice(0, 5), ...lacking.map((k) => `材料 ${k} が無い`)];
     } catch (e) {

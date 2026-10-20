@@ -18,9 +18,10 @@ const VENUES = Array.from({ length: 24 }, (_, i) => i + 1);
 export const NO_DATA = ["not_saved", "absent", "empty_layer"];
 
 // Supabase の匿名読み取り（画面と同じ公開キー。書き込みはしない）。画面が API を通さずに読む場面（3 軸・6 機力）の材料
-const SB_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
-const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+// 環境変数は呼ぶときに読む（daily.mjs は読み込んだ後に .env.local の匿名キーを入れる）
 async function sbGet(table, query) {
+  const SB_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
   if (!SB_URL || !SB_KEY) throw new Error("Supabase の URL・匿名キーが無い（VITE_SUPABASE_URL・VITE_SUPABASE_ANON_KEY）");
   const out = [];
   for (let from = 0; ; from += 1000) {

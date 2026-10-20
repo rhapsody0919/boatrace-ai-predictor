@@ -557,6 +557,9 @@ for (const f of fixtures) {
   const keys = m.api.facts.today.scope_keys["1"];
   const scopeOf = { [keys.NC]: "scenarioNC", [keys.NCR]: "scenarioNCR", [keys.NA]: "scenarioNA", [keys.VA]: "scenarioVA" };
   const realFetch = globalThis.fetch;
+  // 読み込んだ後に匿名キーを入れても効く（daily.mjs がそうする。読み込むときに読んでいて、場面3・6の材料が黙って欠けた）
+  const { fetchMaterials: fm0 } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
+  void fm0;
   process.env.VITE_SUPABASE_URL = "https://sb.invalid";
   process.env.VITE_SUPABASE_ANON_KEY = "x";
   const json = (v) => ({ ok: true, status: 200, json: async () => v });
@@ -579,6 +582,9 @@ for (const f of fixtures) {
     const { fetchMaterials } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
     const got = await fetchMaterials(m.raceId);
     assert.deepEqual(validate(got), [], "取得の出力が材料の契約に合う");
+    // 固定の材料は選手の ID を写していないので db.racer1 は「選手が無い」で欠ける。匿名キーの欠けで落ちないこと・モーターが取れることを見る
+    assert.deepEqual(got.missing.filter((x) => /匿名キー/.test(x.reason)), [], "匿名キーを読み込みの後に入れても Supabase を読める");
+    assert.ok(got.db.motor, "モーターの材料が取れる");
     assert.equal(got.schemaVersion, MATERIALS_VERSION);
   } finally {
     globalThis.fetch = realFetch;
