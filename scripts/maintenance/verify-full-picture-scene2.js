@@ -750,6 +750,12 @@ for (const f of fixtures) {
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, description: "x" } }), "ちょうど1つ無い");
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, description: `${FULL_URL_SLOT} ${FULL_URL_SLOT}` } }), "ちょうど1つ無い");
   has(checkBundle({ ...b0, x_text: "URL なし" }), "URL がちょうど1つ無い");
+  // 全国との差が出せない日は、題名に「差は1ポイント未満」と書かず既定の文にする
+  {
+    const m = load(fixtures[0]);
+    const b = buildBundle({ raceId: m.raceId, venue: "桐生", raceNo: 12, month: 10, day: 12, facts: { venue90: { venue: "桐生", rate: 51.3, national: null, races: 600, diffPt: null, direction: null }, overview: null, conclusion: null }, entryFirstQuestion: "桐生12R（10/12） 1号艇は堅い？", chapters: CH, fullSeconds: 211, qa: qaAll });
+    assert.ok(!b.youtube_full.title.includes("1ポイント未満"), b.youtube_full.title);
+  }
   has(checkBundle(bundleOf(fixtures[0], { ...qaAll, full_size: false })), "機械の検査");
   has(checkBundle(bundleOf(fixtures[0], { ...qaAll, full_min185s: false })), "機械の検査");
   // 自動チャプターの条件: 0:00 から・3つ以上・各章10秒以上（実ファイルの尺で）
@@ -792,8 +798,9 @@ for (const f of fixtures) {
   assert.deepEqual(selectRaces(day, "2026-10-19", 2).map((x) => x.race_id), ["2026-10-19-19-10"], "規則に合うのが1つなら1つ");
   assert.equal(SELECT_RULE.deadlineBefore, "21:58");
   // 鍵の分け方: 子のプロセス（run-full と claude）に service key・Webhook を渡さない。claude の認証は残す
-  const env = childEnv({ PATH: "/bin", HOME: "/h", SUPABASE_SERVICE_KEY: "s", VITE_SUPABASE_ANON_KEY: "a", SLACK_WEBHOOK_URL: "w", LINEAR_API_KEY: "l", CLAUDE_CODE_OAUTH_TOKEN: "c", ANTHROPIC_API_KEY: "k" });
-  assert.deepEqual(Object.keys(env).sort(), ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HOME", "PATH"]);
+  // 通す名前を並べる方式（DATABASE_URL のような名前も渡らない）
+  const env = childEnv({ PATH: "/bin", HOME: "/h", SUPABASE_SERVICE_KEY: "s", VITE_SUPABASE_ANON_KEY: "a", SLACK_WEBHOOK_URL: "w", LINEAR_API_KEY: "l", DATABASE_URL: "d", CLAUDE_CODE_OAUTH_TOKEN: "c", ANTHROPIC_API_KEY: "k", NODE_OPTIONS: "n" });
+  assert.deepEqual(Object.keys(env).sort(), ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HOME", "NODE_OPTIONS", "PATH"]);
   // .env.local からは材料の取得の匿名の2つだけを読む
   const { mkdtempSync, writeFileSync: wf2 } = await import("node:fs");
   const { tmpdir: td } = await import("node:os");
@@ -803,17 +810,50 @@ for (const f of fixtures) {
   // 使い方の誤りは exit 2、標準出力は JSON 1つ
   const { spawnSync } = await import("node:child_process");
   const daily = new URL(`${R}/scripts/full-picture/daily.mjs`, import.meta.url).pathname;
+  const cleanEnv = { PATH: process.env.PATH, HOME: process.env.HOME };
+  const runDaily = (file, args, env = cleanEnv) => spawnSync(process.execPath, [file, ...args, "--anon-env", envFile], { encoding: "utf8", env });
   for (const args of [["--select", "--date", "2026/10/19", "--plan-only"], ["--select", "--date", "2026-10-19"], ["2026-10-19-19-10"], ["bad-id", "--out", "/tmp/x", "--bgm", "/tmp/x.mp3"]]) {
-    const r = spawnSync(process.execPath, [daily, ...args, "--anon-env", envFile], { encoding: "utf8" });
+    const r = runDaily(daily, args);
     assert.equal(r.status, 2, `使い方の誤りは exit 2: ${args.join(" ")}`);
     assert.equal(JSON.parse(r.stdout).status, "usage");
   }
+  // 送信の鍵と一緒に起動されたら止める（--env-file=.env.local で起動した等）
+  {
+    const r = runDaily(daily, ["--select", "--date", "2026-10-19", "--plan-only"], { ...cleanEnv, SUPABASE_SERVICE_KEY: "s" });
+    assert.equal(r.status, 2, "送信の鍵があれば exit 2");
+    assert.match(JSON.parse(r.stdout).reasons[0], /送信の鍵/);
+  }
+  // シンボリックリンク・空白を含むパスから起動しても動く（何もせず exit 0 になっていた。代わりの審査 P2）
+  {
+    const { symlinkSync, mkdtempSync: mk } = await import("node:fs");
+    const dir = mk(`${td()}/fp link `);
+    symlinkSync(daily, `${dir}/daily.mjs`);
+    const r = runDaily(`${dir}/daily.mjs`, ["--select", "--date", "bad", "--plan-only"]);
+    assert.equal(r.status, 2, "リンクから起動しても使い方の誤りは exit 2");
+    assert.equal(JSON.parse(r.stdout).status, "usage");
+  }
+  // 予期しない例外でも標準出力に JSON 1つ（止まった段を残す）
+  {
+    const r = runDaily(daily, ["2026-10-19-19-10", "--out", "/dev/null/x", "--bgm", envFile]);
+    assert.equal(r.status, 1);
+    const j = JSON.parse(r.stdout);
+    assert.equal(j.status, "stopped");
+    assert.equal(j.stage, "materials");
+    assert.ok(j.reasons.length > 0);
+  }
+  // 欠けたら止める材料（「全国」の値・場面3・6が黙って変わらないように）
+  const { REQUIRED_SOURCES } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  for (const src of ["outcome.7", "races", "db.motor", "scenarioNA", "facts"]) assert.ok(REQUIRED_SOURCES.test(src), `${src} が欠けたら止める`);
+  assert.ok(!REQUIRED_SOURCES.test("db.racer1"), "1号艇の選手の成績は欠けても省いて続ける（選手が無い日がある）");
   // LLM の usage を残す（claudeCli は { text, usage } を返す）
   const { llmUsage } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
   const withUsage = connectedText(scene, () => ({ text: fake(), usage: { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 50 } }));
   assert.deepEqual(withUsage.llm, { calls: 1, tokens_in: 1110, tokens_out: 50 });
   assert.deepEqual(connectedText(scene, fake).llm, { calls: 1, tokens_in: null, tokens_out: null }, "usage の無い返り値はトークン不明");
   assert.deepEqual(llmUsage(null), { calls: 1, tokens_in: null, tokens_out: null });
+  // LLM が失敗した文の JSON は印を付け、使い回さない
+  assert.ok(connectedText(scene, () => { throw new Error("x"); }).llmError, "LLM の失敗に印");
+  assert.equal(connectedText(scene, fake).llmError, undefined);
 }
 
 console.log("verify-full-picture-scene2: OK");

@@ -17,10 +17,10 @@
  * 送信は今までどおり push-full-picture.js（node --env-file=.env.local）が受け持つ。
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchMaterials } from "./fetch-materials.mjs";
 import { validate } from "./materials-contract.mjs";
 
@@ -49,14 +49,15 @@ export function selectRaces(races, date, count = 1) {
 }
 
 /**
- * 子のプロセスに渡す環境変数（鍵らしい名前を外す。材料の取得の公開キーも子には要らない）。
- * claude の認証（CLAUDE_*・ANTHROPIC_*）だけは残す（つないだ版の LLM がログイン済みの claude で動くため）
+ * 子のプロセスに渡す環境変数。通す名前を並べる（禁止の名前を並べると DATABASE_URL 等が素通りする。代わりの審査 P3）。
+ * claude の認証（CLAUDE_*・ANTHROPIC_*）は残す（つないだ版の LLM がログイン済みの claude で動くため）
  */
+const PASS_ENV = /^(PATH|HOME|USER|LOGNAME|LANG|LC_[A-Z]+|TMPDIR|SHELL|TERM|NODE_[A-Z_]+|NVM_[A-Z_]+|CLAUDE_[A-Z_]+|ANTHROPIC_[A-Z_]+|FULL_PICTURE_API_BASE)$/;
 export function childEnv(env) {
-  return Object.fromEntries(
-    Object.entries(env).filter(([k]) => /^(CLAUDE_|ANTHROPIC_)/.test(k) || !/KEY|SECRET|TOKEN|PASSWORD|SERVICE|WEBHOOK|SUPABASE/i.test(k)),
-  );
+  return Object.fromEntries(Object.entries(env).filter(([k]) => PASS_ENV.test(k)));
 }
+/** このコマンドが送信の鍵と一緒に起動されていないか（--env-file=.env.local で起動された等） */
+export const SERVICE_ENV = /SERVICE_KEY|SERVICE_ROLE|SLACK_WEBHOOK|X_API|YOUTUBE_(CLIENT|REFRESH)/i;
 
 /** .env.local から読む名前（材料の取得の匿名の読み取りだけ） */
 export const ANON_ENV = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"];
@@ -77,19 +78,21 @@ function finish(result, code) {
   process.exit(code);
 }
 
-/** 材料を取る（失敗＝例外・契約に合わない・facts か展開が無い、なら1回だけ取り直す） */
+/** 欠けたら止める材料（一時的な失敗で黙って欠けると「全国」の値や場面3・6が変わる。代わりの審査 P2） */
+export const REQUIRED_SOURCES = /^(facts|similar|scenario|scenarioNC|scenarioNA|scenarioVA|races|outcome\.\d+|db\.motor)$/;
+/** 材料を取る（失敗＝例外・契約に合わない・欠けてはいけない材料の欠け、なら1回だけ取り直す） */
 async function materials(raceId) {
   let last = null;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const m = await fetchMaterials(raceId, { stage: "racecard" });
       const errs = validate(m);
-      const lacking = ["facts", "scenario"].filter((k) => !m.api[k]);
+      const lacking = [...["facts", "scenario"].filter((k) => !m.api[k]), ...m.missing.filter((x) => REQUIRED_SOURCES.test(x.source)).map((x) => `${x.source}（${x.reason}）`)];
       // 鍵の設定の誤り（匿名キーが無い）は取り直しても直らず、場面3・6が黙って欠けるので止める
       const config = m.missing.filter((x) => /匿名キーが無い/.test(x.reason)).map((x) => `${x.source}: ${x.reason}`);
       if (config.length) return { m: null, reasons: config };
       if (!errs.length && !lacking.length) return { m, attempts: attempt };
-      last = [...errs.slice(0, 5), ...lacking.map((k) => `材料 ${k} が無い`)];
+      last = [...errs.slice(0, 5), ...[...new Set(lacking)].map((k) => `材料 ${k} が無い`)];
     } catch (e) {
       last = [e instanceof Error ? e.message : String(e)];
     }
@@ -98,8 +101,18 @@ async function materials(raceId) {
   return { m: null, reasons: last };
 }
 
-async function make(raceId, { out, bgm, concurrency, text }) {
-  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: text, missing: [], ref_commit: null };
+async function make(raceId, opts) {
+  // 予期しない例外でも、標準出力に JSON 1つを出して止める（止まった段を残す。代わりの審査 P2）
+  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null };
+  try {
+    return await makeSteps(raceId, opts, result);
+  } catch (e) {
+    return finish({ ...result, reasons: [e instanceof Error ? e.message : String(e)] }, 1);
+  }
+}
+
+async function makeSteps(raceId, { out, bgm, concurrency, text }, result0) {
+  const result = result0;
   try {
     result.ref_commit = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   } catch {
@@ -114,7 +127,8 @@ async function make(raceId, { out, bgm, concurrency, text }) {
 
   result.stage = "run-full";
   const args = [join(HERE, "run-full.mjs"), matPath, out, "--text", text, "--bgm", bgm, ...(concurrency ? ["--concurrency", String(concurrency)] : [])];
-  const r = spawnSync(process.execPath, args, { cwd: REMOTION, env: childEnv(process.env), encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  const r = spawnSync(process.execPath, args, { cwd: REMOTION, env: childEnv(process.env), encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 45 * 60 * 1000 });
+  if (r.error) return finish({ ...result, reasons: [`run-full が終わらない・起動できない: ${r.error.message}`] }, 1);
   process.stderr.write(r.stderr ?? "");
   if (r.status !== 0) {
     const lines = (r.stderr ?? "").split("\n").filter((l) => l && !l.startsWith("[省いた要素]"));
@@ -144,11 +158,12 @@ async function make(raceId, { out, bgm, concurrency, text }) {
     stills_entry: join(out, "entry", "stills"),
   };
 
-  // 送信の道の受け取りの検査（DB・Storage に書かない範囲）。評価役の P0 は hq の側なので、その理由だけは止める理由に数えない
+  // 送信の道の受け取りの検査（DB・Storage に書かない範囲）。2026-10-20 オーナー決定で評価役の P0 は使わず機械の検査だけで
+  // 判定するので、bundle は review を出さない。受け取り側の p0_count の検査は別のレーンが外すので、ここでは 0 を入れて当てる
   result.stage = "push-check";
   const { checkFullPicture, MAX_BYTES } = await import(join(ROOT, "scripts/sns/push-full-picture.js"));
   const riskRules = JSON.parse(readFileSync(join(REMOTION, "risk-rules.json"), "utf8")).rules;
-  const reasons = checkFullPicture(bundle, riskRules).filter((x) => !x.includes("評価役の P0"));
+  const reasons = checkFullPicture({ ...bundle, review: { p0_count: 0 } }, riskRules);
   for (const [k, file] of [["x", result.files.x], ["youtube", result.files.youtube]])
     if (statSync(file).size > MAX_BYTES[k]) reasons.push(`${file} が上限 ${MAX_BYTES[k]} バイトを越える`);
   if (reasons.length) return finish({ ...result, reasons }, 1);
@@ -167,6 +182,9 @@ async function main(argv) {
     return i >= 0;
   };
   const usage = (msg) => finish({ status: "usage", reasons: [msg] }, 2);
+  // 送信の鍵と一緒に起動されたら止める（このコマンドは送信をしない。node --env-file=.env.local で起動しない）
+  const leaked = Object.keys(process.env).filter((k) => SERVICE_ENV.test(k));
+  if (leaked.length) return usage(`送信の鍵が環境にある（${leaked.join(", ")}）。--env-file を付けずに起動する`);
   // 材料の取得の匿名キー（.env.local からこの2つだけ。--env-file は使わない）
   Object.assign(process.env, { ...readAnonEnv(opt("--anon-env") ?? join(ROOT, ".env.local")), ...Object.fromEntries(ANON_ENV.filter((k) => process.env[k]).map((k) => [k, process.env[k]])) });
 
@@ -177,7 +195,7 @@ async function main(argv) {
     if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isInteger(count) || count < 1 || !planOnly)
       return usage("使い方: daily.mjs --select --date YYYY-MM-DD [--count N] --plan-only");
     try {
-      const res = await fetch(`${BASE}/api/predictions/${date}`);
+      const res = await fetch(`${BASE}/api/predictions/${date}`, { signal: AbortSignal.timeout(30000) });
       if (!res.ok) throw new Error(`/api/predictions/${date}: HTTP ${res.status}`);
       const plan = selectRaces((await res.json()).races, date, count);
       return finish({ status: plan.length ? "ok" : "stopped", stage: "select", reasons: plan.length ? [] : ["規則に合うレースが無い"], plan, rule: SELECT_RULE }, plan.length ? 0 : 1);
@@ -196,4 +214,5 @@ async function main(argv) {
   return make(raceId, { out: resolve(out), bgm: resolve(bgm), concurrency, text });
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) await main(process.argv.slice(2));
+// シンボリックリンクや空白を含むパスから起動しても動く（file:// の文字列で比べると何もせず exit 0 になった。代わりの審査 P2）
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) await main(process.argv.slice(2));

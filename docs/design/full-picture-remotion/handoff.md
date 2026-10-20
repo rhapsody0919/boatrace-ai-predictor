@@ -52,7 +52,7 @@
 | 完全版の URL | Shorts の description に `{full_url}` をちょうど1つ。送信側が、完全版の公開を確かめてから `https://youtu.be/<id>` に置き換える。置き換えた後も5000字以内（こちらは「置き場所を消した長さ＋40字」で検査） |
 | 必須 | v2 では `youtube_shorts` と `shorts.mp4` を必ず出す。出せないときは run-full が終了コード1で止まり、bundle を出さない |
 | qa.machine | `contract`・`text`・`post`・`entry_max59s`・`full_size`・`full_min185s`（完全版が3分以下だと Shorts 扱いになる）・`chapters`（自動チャプターの条件）・`shorts_vertical`・`shorts_max_60s`・`shorts_size`。全部 true のときだけ出す。送信側は `shorts_vertical`・`shorts_max_60s` が無いか false なら受け取りで不合格 |
-| review | `p0_count` は出さない（評価役は hq の側）。機械の検査だけにするかはオーナーの判断 |
+| review | 出さない。2026-10-20 オーナー決定で、評価役の P0 は使わず機械の検査だけで判定する。受け取り側の `review.p0_count` の検査は別のレーン（全貌の自動送信を機械の検査だけにする）と #1714 が外す。daily.mjs の受け取りの検査は `p0_count: 0` を入れて当てる |
 
 送る順は X → 完全版（X の4分後）→ Shorts（完全版の公開の後、早くて完全版の4分後）。締切の50分前を過ぎて届いた bundle は、送信側が Shorts だけ作らずに X・完全版を送る（完全版の公開を待つ時間が無いため。送信レーンの決まり）。
 

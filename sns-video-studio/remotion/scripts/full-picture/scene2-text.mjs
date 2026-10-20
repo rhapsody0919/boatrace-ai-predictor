@@ -7,6 +7,8 @@
  * 文は描画の前に1度だけ作って JSON に保存し、描画はその JSON から行う（同じ JSON なら同じ MP4）。評価役の LLM は関門にしない。
  */
 import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { FACT_ITEMS } from "../../../../src/utils/analogyFacts.js";
 import { t } from "./scene2-data.mjs";
 import { checkRiskRules } from "../../../../scripts/lib/riskRules.js";
@@ -231,11 +233,21 @@ ${JSON.stringify(beats.map(({ id, step, question, facts, template }) => ({ id, s
  * 返り値 { text, usage }（usage は claude の JSON の usage。トークンの記録に使う）
  */
 export function claudeCli(prompt, { model = "sonnet" } = {}) {
-  const out = execFileSync("claude", ["-p", "--model", model, "--output-format", "json"], {
-    input: prompt,
-    encoding: "utf8",
-    maxBuffer: 16 * 1024 * 1024,
-  });
+  // 道具・設定・CLAUDE.md・MCP を使わせず、空の一時ディレクトリで動かす（リポジトリの .env.local を読めないように。
+  // 代わりの審査 2026-10-20 P2。入力のトークンも約8万→約2千に減る）
+  const cwd = mkdtempSync(`${tmpdir()}/fp-llm-`);
+  let out;
+  try {
+    out = execFileSync("claude", ["-p", "--model", model, "--output-format", "json", "--tools", "", "--safe-mode", "--strict-mcp-config"], {
+      input: prompt,
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 16 * 1024 * 1024,
+      timeout: 5 * 60 * 1000,
+    });
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
   const res = JSON.parse(out);
   if (res.is_error) throw new Error(`LLM の呼び出しが失敗: ${res.result}`);
   return { text: res.result, usage: res.usage ?? null };
@@ -343,5 +355,6 @@ export function connectedText(sceneOrBeats, llm = claudeCli) {
     if (reasons.length) return { id: b.id, source: "template", lines: b.template, rejected: c, reasons };
     return { id: b.id, source: c ? "connected" : "template", connector: c, lines: connectedLines(c, b.template) };
   });
-  return { mode: "connected", answers: Object.fromEntries(rows.map((r) => [r.id, r.lines])), beats: rows, llm: llmUsage(usage) };
+  // LLM が失敗した文の JSON は、次の実行で使い回さない（llmError）
+  return { mode: "connected", answers: Object.fromEntries(rows.map((r) => [r.id, r.lines])), beats: rows, llm: llmUsage(usage), ...(callError ? { llmError: callError } : {}) };
 }

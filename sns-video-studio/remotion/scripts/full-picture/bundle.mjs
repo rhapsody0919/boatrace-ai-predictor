@@ -53,7 +53,10 @@ function lines({ venue90, overview, conclusion }) {
       ? `${venue90.venue}の1号艇の1着率は過去90日の${venue90.races.toLocaleString("ja-JP")}レースで${d1(venue90.rate)}%${diff(venue90, `全国の同じ期間の${d1(venue90.national)}%`)}`
       : null,
     // 題名の後半（その日の向き）
-    venueHead: venue90 ? `${venue90.venue}の1着率は全国${venue90.diffPt < 1 ? "との差は1ポイント未満" : `より${venue90.direction}`}` : null,
+    venueHead:
+      venue90 && venue90.diffPt !== null && venue90.diffPt !== undefined
+        ? `${venue90.venue}の1着率は全国${venue90.diffPt < 1 ? "との差は1ポイント未満" : `より${venue90.direction}`}`
+        : null,
     overview: overview
       ? `6艇比較の${overview.axesCount}項目で2位以内に入った数は、${overview.leaders.join("・")}号艇の${overview.maxTop2}が最多${overview.runner ? `、次は${overview.runner.boats.join("・")}号艇の${overview.runner.count}` : ""}`
       : null,

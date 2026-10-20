@@ -7,7 +7,8 @@
  *   --from-case: 撮影済みの全貌の case（~/full-picture/cases/{raceId}）の analysis/source から facts・similar・scenario を使う
  *   （試作で、撮影した画面と同じ時点の材料にそろえるため）
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import process from "node:process";
 
@@ -26,6 +27,7 @@ async function sbGet(table, query) {
   const out = [];
   for (let from = 0; ; from += 1000) {
     const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
+      signal: AbortSignal.timeout(30000),
       headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Range: `${from}-${from + 999}` },
     });
     if (!res.ok) throw new Error(`${table}: HTTP ${res.status}`);
@@ -67,7 +69,7 @@ async function racerRows(racerId, raceId, date) {
 }
 
 async function getJson(path) {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${BASE}${path}`, { signal: AbortSignal.timeout(30000) });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return res.json();
 }
@@ -167,7 +169,7 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, api, db, missing };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   const args = process.argv.slice(2);
   const opt = (name) => {
     const i = args.indexOf(name);

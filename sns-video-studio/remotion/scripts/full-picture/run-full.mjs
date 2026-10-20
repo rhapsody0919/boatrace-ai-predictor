@@ -29,6 +29,7 @@ import { entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
 import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle } from "./bundle.mjs";
+import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
 import { scene2Timeline, ANSWER_AT, OVERVIEW_ANSWER_AT, cardAnswerAt } from "../../src/fullPicture/scene2Timeline.js";
@@ -124,8 +125,8 @@ function stillFrames(list, answers) {
 }
 
 /** MP4 と拍ごとの静止画を書き出す。かかった秒（描画・静止画） */
-/** 送信の上限（scripts/sns/push-full-picture.js の MAX_BYTES と同じ 32MiB） */
-const MAX_BYTES = 32 * 1024 * 1024;
+/** 送信の上限（送信の道の決まりをそのまま使う） */
+const MAX_BYTES = Math.min(PUSH_MAX_BYTES.x, PUSH_MAX_BYTES.youtube);
 const probe = (file) => {
   const j = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration,size", "-of", "json", file], { encoding: "utf8" }));
   return { width: j.streams?.[0]?.width, height: j.streams?.[0]?.height, seconds: Number(j.format?.duration), bytes: Number(j.format?.size) };
@@ -195,7 +196,7 @@ function chapters(answers) {
 }
 
 // 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）。描く前に文を確かめる
-const entryAnswers = templateText(beats).answers;
+const entryAnswers = templateAnswers;
 const entry = entryScenes(scenes, entryAnswers, { race: raceLabel });
 const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entryAnswers[s.id] ?? s.lines]) : [])));
 /** 送信の道に渡す文（題名・説明文・X の本文）。数値は場面の facts（字幕と同じ値）から */
@@ -217,9 +218,10 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     fullSeconds,
     qa,
   });
-const postEntry = `${bundleText({}).x_text}\n`;
+const preBundle = bundleText({});
+const postEntry = `${preBundle.x_text}\n`;
 {
-  const b = bundleText({});
+  const b = preBundle;
   const why = [...checkPost(postEntry), ...checkAnswers(entryStepAnswers), ...[b.youtube_full.title, b.youtube_full.description, b.youtube_shorts.title, b.youtube_shorts.description].flatMap(checkPost)];
   if (why.length) stop("入口版の文・本文・題名・説明文", why);
 }
@@ -232,7 +234,7 @@ for (const mode of modes) {
   let llmCalls = 0;
   // 文の JSON は同じレース・同じ文型のときだけ使い回す（別のレースの答えを重ねない）
   const saved = existsSync(textPath) && !regenText ? JSON.parse(readFileSync(textPath, "utf8")) : null;
-  const reusable = saved && saved.raceId === m.raceId && beats.every((b) => sameAsTemplate(saved.answers?.[b.id], b.template));
+  const reusable = saved && saved.raceId === m.raceId && !saved.llmError && beats.every((b) => sameAsTemplate(saved.answers?.[b.id], b.template));
   if (saved && !reusable) console.warn(`[文の JSON を作り直す] ${textPath} はこの材料（${m.raceId}）の文と合わない`);
   const text = reusable
     ? saved
@@ -272,9 +274,10 @@ if (!noVideo && !bundleOnly) {
 }
 
 // 送信の道に渡すフォルダ（完全版と入口版の両方があるときだけ）。機械の検査が全部通ったときだけ作る
-const fullMp4 = ["connected", "template"].map((md) => join(out, md, "full-picture.mp4")).find((p) => existsSync(p));
+// 完全版はこの実行の版のもの（古い版の MP4 を入れない。代わりの審査 P2）
+const fullMp4 = join(out, textMode === "both" ? "connected" : textMode, "full-picture.mp4");
 const entryMp4 = join(out, "entry", "entry.mp4");
-if (!noVideo && fullMp4 && existsSync(entryMp4)) {
+if (!noVideo && existsSync(fullMp4) && existsSync(entryMp4)) {
   const f = probe(fullMp4);
   const e = probe(entryMp4);
   const qa = {

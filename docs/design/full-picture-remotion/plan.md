@@ -30,13 +30,19 @@ hq の全貌の切替案 v2（`~/hq/drafts/full-picture-switch-20261020.md` §9�
   文・本文・尺・大きさ・章・省略禁止の場面の機械の検査に落ちたら止める）→ 送信の道の受け取りの検査（`push-full-picture.js` の `checkFullPicture`
   と動画の大きさ。DB・Storage に書かない。評価役の P0 は hq の側なので数えない）。**送信は含めない**
 - `stage` は止まった段（`select`・`materials`・`run-full`・`bundle`・`push-check`）。合格なら `done`
+- 材料は、facts・類似レース・展開（4つの範囲）・出走表・24会場の過去90日・モーターのどれかが欠けたら1回取り直し、それでも欠けたら止める
+  （一時的な失敗で「全国」の値や場面6が黙って変わらないように）。1号艇の選手の成績は、選手が無い日があるので省いて続ける
+- 予期しない例外でも、標準出力に JSON 1つ（止まった段と理由）を出して exit 1。待ち時間の上限は、API 30秒・LLM 5分・run-full 45分
+- 選ぶ（--select）は今の時刻を見ない。送信の道は締切の45分前を過ぎると受け取らず、作るのに約11分かかるので、起動の時刻は hq の運用で決める
 
 ### 鍵の分け方
 
 - daily.mjs は送信をしないので、service key（`SUPABASE_SERVICE_KEY`）を読まない。材料の取得に要るのは Supabase の匿名の読み取り
   （`VITE_SUPABASE_URL`・`VITE_SUPABASE_ANON_KEY`、画面の配信物と同じ公開キー）だけで、`--env-file` を使わず `.env.local` からこの2つだけを読む
-- 子のプロセス（run-full と、その中で呼ぶ claude）には、鍵らしい名前の環境変数（KEY・SECRET・TOKEN・SERVICE・WEBHOOK・SUPABASE）を渡さない。
-  claude の認証（`CLAUDE_*`・`ANTHROPIC_*`）だけは残す
+- 子のプロセス（run-full と、その中で呼ぶ claude）には、通す名前を並べた環境変数（PATH・HOME・LANG・TMPDIR・NODE_*・CLAUDE_*・ANTHROPIC_* 等）
+  だけを渡す。送信の鍵（service key・Slack・X・YouTube）と一緒に起動されたら、使い方の誤り（exit 2）で止める
+- claude（つなぐ語の LLM）は、道具・設定・CLAUDE.md・MCP を使わせず（`--tools "" --safe-mode --strict-mcp-config`）、空の一時ディレクトリで動かす。
+  リポジトリの `.env.local` を読めない
 - 送信は今までどおり `node --env-file=.env.local scripts/sns/push-full-picture.js <bundle_dir>` が受け持つ（service key はこの node だけが読む）
 
 ### 落ちた日
