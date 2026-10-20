@@ -9,8 +9,6 @@ X の投稿・返信・動画に固有の知見。複数チャネルに共通す
 - #ボートレース 上位約20件（2026-08-23）では推し活（選手への感情移入）と観戦・遠征の体験談が強く（約300〜1,200表示）、公式会場の告知は中位、買い目の数字だけの投稿が最下位、自社の新機能告知は13表示で最弱。機能告知はブログ等に任せる（2026-08-23、memory sns_marketing_phased_strategy_2026_08_22、BOA-210）
 - AI予想を前に出す X アカウントは複数あるが、どれも1投稿数十表示・いいね0〜数件。AI の訴求が強いとは言えない（2026-08-23、memory sns_marketing_phased_strategy_2026_08_22）
 - 投稿ごとの詳細アナリティクスは Premium の課金表示になり無料では見られない。無料で見えるのはプロフィールの直近7日の表示回数の合計（2026-09-05、memory x_tiktok_note_growth_2026_09_05、要確認）
-- 全貌動画の X 本文は数字（1着率57.6%）に母数も全国の比較も付けていない。正規表現は全国の値（group(2)）を捕まえているが本文で使っていない（2026-10-18、x-channel、~/ryujin-marketing/out/full-picture-template/split/render/full-picture-bundle.py 35-39行）
-- 全貌動画の型には「作り終わる時刻＜締切」を保証する仕組みが無い。見本の三国4Rは締切10:09に対し作り終わりが10:31（builtAt 01:31 UTC）だった（2026-10-18、x-channel、~/ryujin-marketing/out/full-picture-template/split/render/full-picture-bundle.py 75-76行、out/full-picture-daily/2026-10-18-10-04/bundle.json）
 
 ## 返信
 - 返信の候補探しは「観戦」「初めて」「行ってきた」等の体験談の語を掛け合わせる。「ボートレース」単体や「買い目」「舟券」は予想 bot・公式メディアに埋もれる。-filter:replies で他人の会話への割り込みを避ける（2026-09-06、memory x_reply_drafts_batch_workflow_2026_09_06・sns_marketing_phased_strategy_2026_08_22）
@@ -24,3 +22,6 @@ X の投稿・返信・動画に固有の知見。複数チャネルに共通す
 ## 点検での見落としを防ぐ知見
 - UTM付きURLを含む投稿の文字数は、生文字数・全角換算・XのURL換算を分けて記録する。（2026-10-12、2026-10-12-task-37-x-thread-12R.md）
 - 添付静止画像内でも問いの答え・範囲・期間・条件・母数を示し、条件別の過去の割合を今日の時間変化のような矢印で表さない。（2026-10-13、2026-10-13-plan142204-ximage.md）
+- /today の X 投稿は thread_length=1 の長文1投稿で、上限は280ではなく加重25,000字。見出しの字数の制約を考えるときはこの上限を使う（2026-10-20、x-channel、PR #1687、api/_lib/snsXLength.js・scripts/lib/snsTodayPlanner.js）
+- 見出しなどの日替わりの案を検査するときは、字数・改行・id の重複に加えて、必須の差し込み（{date} など）の有無も検査する。見落とすと1行目から日付が消える（2026-10-20、x-channel、PR #1687、scripts/lib/snsTodayVariants.js）
+- 競合の公式リンクの特定と通常投稿の反応の確認を分け、取得拒否・本文欠落をフォロワー数や別媒体の登録者数で補わない。（2026-10-19、2026-10-19-competitor-discovery.md）

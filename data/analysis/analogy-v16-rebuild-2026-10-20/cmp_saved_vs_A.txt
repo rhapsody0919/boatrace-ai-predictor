@@ -1,0 +1,45 @@
+== facts: files 1253 missing 0 identical 1253 leaf_match 100.0000% (only_saved 0 only_rebuilt 0) num n=2395228 nonzero=0 mean=0 mean_nz=0 max=0
+   * n_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 1253, 'n_nonzero': 0}
+== layer: files 156 missing 0 identical 156 leaf_match 100.0000% (only_saved 0 only_rebuilt 0) num n=4473728 nonzero=0 mean=0 mean_nz=0 max=0
+   * n_total_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 156, 'n_nonzero': 0}
+   * rows_set_jaccard {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * only_saved_ids {'n': 0, 'dates': {}}
+   * only_rebuilt_ids {'n': 0, 'dates': {}}
+== scenario: files 217 missing 0 identical 217 leaf_match 100.0000% (only_saved 0 only_rebuilt 0) num n=2246405 nonzero=0 mean=0 mean_nz=0 max=0
+   * n_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 217, 'n_nonzero': 0}
+== scenario-boat: files 1038 missing 0 identical 1038 leaf_match 100.0000% (only_saved 0 only_rebuilt 0) num n=623964 nonzero=0 mean=0 mean_nz=0 max=0
+   * n_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 1038, 'n_nonzero': 0}
+== scenario-boat-races: files 1038 missing 0 identical 1020 leaf_match 99.9997% (only_saved 0 only_rebuilt 0) num n=2899935 nonzero=0 mean=nan mean_nz=nan max=0
+    18 /rows[][]
+   * n_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 1038, 'n_nonzero': 0}
+== scenario-races: files 217 missing 0 identical 211 leaf_match 99.9996% (only_saved 0 only_rebuilt 0) num n=705609 nonzero=0 mean=nan mean_nz=nan max=0
+    6 /rows[][]
+   * n_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 217, 'n_nonzero': 0}
+== similar: files 156 missing 0 identical 0 leaf_match 99.9979% (only_saved 936 only_rebuilt 0) num n=80385856 nonzero=1872 mean=1.94e-05 mean_nz=0.833 max=1
+    780 /exhibition/columns[]/cat
+    780 /exhibition/categories/weather_code[]
+    156 /exhibition/lambda
+    156 /exhibition/L
+   * top100_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * top1000_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * top10000_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * top30000_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * candidates_set_jaccard {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * n_layer_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 156, 'n_nonzero': 0}
+== similar-racecard: files 156 missing 0 identical 0 leaf_match 96.5666% (only_saved 0 only_rebuilt 0) num n=16305526 nonzero=590360 mean=0.0734 mean_nz=2.03 max=3
+    117916 /neighbors[]/items/exh_time_diff_6
+    117916 /neighbors[]/items/wave_bin
+    117916 /neighbors[]/items/wind_vector
+    117916 /neighbors[]/items/weather
+    117916 /neighbors[]/items/wind_bin
+    935 /today_display/exh_diff[]
+    156 /today_display/wy
+    156 /pool_rate/wind_bin
+   * top10_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * top50_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * top100_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * top800_overlap {'mean': 1.0, 'min': 1.0, 'max': 1.0, 'n': 156, 'n_nonzero': 156}
+   * exact_order_top10 1.0
+   * dist_absdiff_same_race {'mean': 0.0, 'min': 0.0, 'max': 0.0, 'n': 117916, 'n_nonzero': 0}
+   * n_layer_diff {'mean': 0.0, 'min': 0, 'max': 0, 'n': 156, 'n_nonzero': 0}
+== today: files 156 missing 0 identical 156 leaf_match 100.0000% (only_saved 0 only_rebuilt 0) num n=28460 nonzero=0 mean=0 mean_nz=0 max=0

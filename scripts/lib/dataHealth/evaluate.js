@@ -51,7 +51,7 @@ export function periodFor(targetDate, days) {
  * @typedef {Object} CheckResult
  * @property {string} id
  * @property {string} label
- * @property {"ok"|"breach"|"not_applicable"|"not_introduced"|"insufficient"|"no_target"} status
+ * @property {"ok"|"breach"|"not_applicable"|"not_introduced"|"insufficient"|"no_target"|"error"} status
  * @property {"alert"|"info"} severity
  * @property {number|null} [rate]
  * @property {number} [numerator]
@@ -63,6 +63,7 @@ export function periodFor(targetDate, days) {
  * @property {{key: string, rate: number, missing: number}|null} [worst]
  * @property {Array<{key: string, rate: number, missing: number}>} [belowRows]
  * @property {string} [detail]
+ * @property {Array<string>} [staleItems] 鮮度の項目で、締めまでに更新されていなかった項目のキー
  */
 
 /**
@@ -177,6 +178,81 @@ export function evaluateCountCheck(check, rows, { end, tableRows = null }) {
   return { ...common, status: rate < threshold ? "breach" : "ok" };
 }
 
+/** 観測値（更新時刻の ISO 文字列・日付・件数）を通知の文にする。時刻は JST の MM-DD HH:MM */
+export function formatObserved(observed) {
+  if (observed === null || observed === undefined) return "記録なし";
+  if (typeof observed === "number") return `${observed}件`;
+  const s = String(observed);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(5);
+  const t = Date.parse(s);
+  if (Number.isNaN(t)) return s;
+  const jst = new Date(t + 9 * 3600 * 1000).toISOString();
+  return `${jst.slice(5, 10)} ${jst.slice(11, 16)} JST`;
+}
+
+/** 項目の種類ごとの、締めまでに満たすべき条件（通知の文） */
+const FRESHNESS_CRITERIA = {
+  since: "前日21:00 JST 以降の更新が無い",
+  date_end: "前日の分まで進んでいない",
+  date_prev: "前々日の分まで進んでいない",
+  date_next: "当日の日付で書かれていない",
+  count: "0件",
+};
+
+/**
+ * 鮮度の項目（classification: freshness）を、関数の結果（{ 項目のキー: { applicable, ok, observed } }）から判定する。
+ * applicable の項目が1つも無ければ not_applicable、1つでも ok でなければ breach。
+ *
+ * @param {import("./checks.js").FreshnessCheck} check
+ * @param {Record<string, {applicable?: boolean, ok?: boolean, observed?: unknown}>|null} result
+ * @param {ReadonlyArray<{key: string, table: string, kind: string}>} items 関数の項目の定義（functions.js）
+ * @returns {CheckResult}
+ */
+export function evaluateFreshnessCheck(check, result, items) {
+  const base = { id: check.id, label: check.label, severity: check.severity };
+  const byKey = new Map(items.map((i) => [i.key, i]));
+  const missingKeys = check.items.filter(
+    (k) => !result || typeof result[k] !== "object" || result[k] === null,
+  );
+  if (missingKeys.length > 0) {
+    // 関数が項目を返さない（関数の版が古い等）。黙って ok にしない（job.js が通知にする）
+    return {
+      ...base,
+      status: "error",
+      alertOnError: true,
+      detail: `関数の結果に項目がありません: ${missingKeys.join("、")}`,
+    };
+  }
+  const applicable = check.items.filter((k) => result[k].applicable !== false);
+  if (applicable.length === 0) {
+    return {
+      ...base,
+      status: "not_applicable",
+      alertOnError: true,
+      detail: "この日は書かれないのが正常（前日にレース・対象の開催が無い）",
+    };
+  }
+  const stale = applicable.filter((k) => result[k].ok !== true);
+  const describe = (k) => {
+    const item = byKey.get(k);
+    return `${k}（${FRESHNESS_CRITERIA[item?.kind] ?? "未達"}。最終 ${formatObserved(result[k].observed)}）`;
+  };
+  return {
+    ...base,
+    status: stale.length > 0 ? "breach" : "ok",
+    alertOnError: true,
+    missing: stale.length,
+    staleItems: stale,
+    detail: (stale.length > 0 ? stale : applicable)
+      .map((k) =>
+        stale.length > 0
+          ? describe(k)
+          : `${k} ${formatObserved(result[k].observed)}`,
+      )
+      .join("、"),
+  };
+}
+
 /**
  * 0件のテーブルの判定。
  * @param {Record<string, {policy: string, note?: string}>} policies
@@ -202,6 +278,9 @@ export function evaluateEmptyTables(policies, tableRows) {
 
 /** 未達の項目の通知文（絵文字なし） */
 export function formatBreach(result) {
+  if (result.staleItems) {
+    return `${result.label}: 締めの時点で更新されていません: ${result.detail}`;
+  }
   if (result.belowRows) {
     const rows = result.belowRows
       .slice(0, 6)
@@ -234,12 +313,13 @@ const daysBetween = (fromDate, toDate) =>
  *   - 未達で、前日に出した通知が、scrape-monitor の通知済みの記録（deliveredKeys）に無い → 通知（未配信の再通知。
  *     scrape-monitor の停止・Slack送信の失敗で、通知の有効期限（ALERT_VALID_HOURS）内に届かなかった場合に、
  *     REMIND_DAYS 日黙り込まないため。記録を読めない（deliveredKeys が null）ときは判定しない）
+ *   - 未達で、毎日通知する未達（everyDay。鮮度）で、最後の通知が別の対象日 → 通知（鮮度の未達は日ごとに別の事故）
  *   - 未達で上のいずれでもない → 通知しない（欠損数の観測値だけ更新する）
  *   - 未達でない（回復・対象外・未導入）→ 状態を消す（再発したら、初回として通知する）
  *   - 実行できなかった項目（errorKeys）→ 状態を変えない
  *
  * @param {Object} input
- * @param {Array<{key: string, text: string, missing: number}>} input.breaches 今回の未達（通知の候補）
+ * @param {Array<{key: string, text: string, missing: number, everyDay?: boolean}>} input.breaches 今回の未達（通知の候補）
  * @param {Set<string>} input.okKeys 今回、未達でないと確認できた項目のkey
  * @param {Record<string, {firstAt: string, lastAt: string, missing: number, alertKey?: string}>} input.previous
  * @param {string} input.targetDate
@@ -277,7 +357,10 @@ export function reconcileAlerts({
       deliveredKeys instanceof Set &&
       daysBetween(prev.lastAt, targetDate) === 1 &&
       !deliveredKeys.has(prev.alertKey);
-    if (prev === undefined || worsened || remind || undelivered) {
+    // 毎日通知する未達（鮮度）: 前回の通知が別の対象日なら、欠損数が同じでも通知する
+    const nextDay =
+      b.everyDay === true && prev !== undefined && prev.lastAt !== targetDate;
+    if (prev === undefined || worsened || remind || undelivered || nextDay) {
       const reason =
         prev === undefined
           ? ""

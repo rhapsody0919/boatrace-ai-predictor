@@ -1,0 +1,6740 @@
+{
+ "generatedAt": "2026-10-20T02:57:28.019Z",
+ "propertyId": "516647674",
+ "startDate": "2026-09-28",
+ "endDate": "2026-10-19",
+ "notes": {
+  "week": "isoYearIsoWeek は月曜始まりの ISO 週（例 202641 = 2026-10-05〜10-11）。daysByWeek が7未満の週は期間の端で欠けている",
+  "dates": "日付はプロパティのタイムゾーン（settings.property.timeZone）",
+  "measurementBreaks": [
+   {
+    "date": "2026-09-29",
+    "ref": "PR#935（BOA-531）・拡張計測「ブラウザの履歴イベントに基づくページの変更」OFF",
+    "description": "page_view を1経路に統一した。以前は会場・レース詳細等の閲覧が \"/\" に誤帰属していたため、以後は \"/\" の PV が下がり、会場・レース詳細の PV が上がって見える。需要の変化ではない"
+   },
+   {
+    "date": "2026-10-01",
+    "ref": "GA4 管理画面の内部トラフィック除外（ユーザー設定）",
+    "description": "運営者の内部トラフィックを除外した。以後は PV・ユーザー数が運営者の閲覧分だけ下がって見える。需要の変化ではない"
+   }
+  ],
+  "internalTraffic": "内部トラフィック除外のフィルタ（データフィルタ）は Admin API v1alpha で読めないため settings に含まない。設定日は scripts/lib/ga4MeasurementBreaks.js の記録（2026-10-01）"
+ },
+ "settings": {
+  "property": {
+   "error": "Google Analytics Admin API has not been used in project 421844420612 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/analyticsadmin.googleapis.com/overview?project=421844420612 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+  },
+  "dataStreams": {
+   "error": "Google Analytics Admin API has not been used in project 421844420612 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/analyticsadmin.googleapis.com/overview?project=421844420612 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+  },
+  "customDimensions": {
+   "error": "Google Analytics Admin API has not been used in project 421844420612 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/analyticsadmin.googleapis.com/overview?project=421844420612 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+  },
+  "keyEvents": {
+   "error": "Google Analytics Admin API has not been used in project 421844420612 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/analyticsadmin.googleapis.com/overview?project=421844420612 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+  },
+  "dataRetention": {
+   "error": "Google Analytics Admin API has not been used in project 421844420612 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/analyticsadmin.googleapis.com/overview?project=421844420612 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."
+  }
+ },
+ "daysByWeek": {
+  "202640": 7,
+  "202641": 7,
+  "202642": 7,
+  "202643": 1
+ },
+ "weeklyByChannel": {
+  "rowCount": 19,
+  "rows": [
+   {
+    "isoYearIsoWeek": "202642",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 1012,
+    "engagedSessions": 861,
+    "engagementRate": 0.8507905138339921,
+    "newUsers": 173,
+    "activeUsers": 230,
+    "totalUsers": 230,
+    "screenPageViews": 10147,
+    "userEngagementDuration": 235105,
+    "averageSessionDuration": 1068.0938579466401,
+    "eventCount": 22835
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 663,
+    "engagedSessions": 568,
+    "engagementRate": 0.8567119155354449,
+    "newUsers": 93,
+    "activeUsers": 127,
+    "totalUsers": 130,
+    "screenPageViews": 6912,
+    "userEngagementDuration": 168811,
+    "averageSessionDuration": 1092.3819777300153,
+    "eventCount": 14574
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 571,
+    "engagedSessions": 514,
+    "engagementRate": 0.9001751313485113,
+    "newUsers": 87,
+    "activeUsers": 128,
+    "totalUsers": 128,
+    "screenPageViews": 6232,
+    "userEngagementDuration": 108534,
+    "averageSessionDuration": 929.0501220577934,
+    "eventCount": 9734
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 308,
+    "engagedSessions": 261,
+    "engagementRate": 0.8474025974025974,
+    "newUsers": 41,
+    "activeUsers": 61,
+    "totalUsers": 66,
+    "screenPageViews": 2623,
+    "userEngagementDuration": 72197,
+    "averageSessionDuration": 1097.159455814935,
+    "eventCount": 6012
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 247,
+    "engagedSessions": 201,
+    "engagementRate": 0.8137651821862348,
+    "newUsers": 43,
+    "activeUsers": 70,
+    "totalUsers": 75,
+    "screenPageViews": 1770,
+    "userEngagementDuration": 30415,
+    "averageSessionDuration": 670.1320642469635,
+    "eventCount": 3488
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 185,
+    "engagedSessions": 158,
+    "engagementRate": 0.8540540540540541,
+    "newUsers": 18,
+    "activeUsers": 37,
+    "totalUsers": 41,
+    "screenPageViews": 1211,
+    "userEngagementDuration": 23742,
+    "averageSessionDuration": 645.2076475945945,
+    "eventCount": 1952
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 64,
+    "engagedSessions": 60,
+    "engagementRate": 0.9375,
+    "newUsers": 1,
+    "activeUsers": 10,
+    "totalUsers": 10,
+    "screenPageViews": 747,
+    "userEngagementDuration": 11633,
+    "averageSessionDuration": 1898.051002109375,
+    "eventCount": 2100
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 46,
+    "engagedSessions": 33,
+    "engagementRate": 0.717391304347826,
+    "newUsers": 0,
+    "activeUsers": 13,
+    "totalUsers": 13,
+    "screenPageViews": 384,
+    "userEngagementDuration": 7139,
+    "averageSessionDuration": 973.5071938478261,
+    "eventCount": 906
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 45,
+    "engagedSessions": 41,
+    "engagementRate": 0.9111111111111111,
+    "newUsers": 0,
+    "activeUsers": 9,
+    "totalUsers": 9,
+    "screenPageViews": 261,
+    "userEngagementDuration": 4748,
+    "averageSessionDuration": 756.0444544222222,
+    "eventCount": 471
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 37,
+    "engagedSessions": 21,
+    "engagementRate": 0.5675675675675675,
+    "newUsers": 2,
+    "activeUsers": 2,
+    "totalUsers": 2,
+    "screenPageViews": 100,
+    "userEngagementDuration": 653,
+    "averageSessionDuration": 321.39708216216223,
+    "eventCount": 252
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 15,
+    "engagedSessions": 12,
+    "engagementRate": 0.8,
+    "newUsers": 2,
+    "activeUsers": 7,
+    "totalUsers": 9,
+    "screenPageViews": 98,
+    "userEngagementDuration": 3472,
+    "averageSessionDuration": 472.53943580000004,
+    "eventCount": 186
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 7,
+    "engagedSessions": 6,
+    "engagementRate": 0.8571428571428571,
+    "newUsers": 3,
+    "activeUsers": 4,
+    "totalUsers": 4,
+    "screenPageViews": 58,
+    "userEngagementDuration": 970,
+    "averageSessionDuration": 415.2501321428572,
+    "eventCount": 142
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 5,
+    "engagedSessions": 4,
+    "engagementRate": 0.8,
+    "newUsers": 2,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 14,
+    "userEngagementDuration": 281,
+    "averageSessionDuration": 65.3633826,
+    "eventCount": 35
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 6,
+    "userEngagementDuration": 288,
+    "averageSessionDuration": 315.55233,
+    "eventCount": 13
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 1,
+    "userEngagementDuration": 22,
+    "averageSessionDuration": 23.419453,
+    "eventCount": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "sessionDefaultChannelGroup": "Referral",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 3,
+    "userEngagementDuration": 78,
+    "averageSessionDuration": 93.677289,
+    "eventCount": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 6,
+    "userEngagementDuration": 1,
+    "averageSessionDuration": 60.146106,
+    "eventCount": 9
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "sessionDefaultChannelGroup": "Referral",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 3,
+    "userEngagementDuration": 39,
+    "averageSessionDuration": 61.506895,
+    "eventCount": 7
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "engagementRate": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 1,
+    "userEngagementDuration": 0,
+    "averageSessionDuration": 4.947392,
+    "eventCount": 3
+   }
+  ]
+ },
+ "weeklyTotal": {
+  "rowCount": 4,
+  "rows": [
+   {
+    "isoYearIsoWeek": "202642",
+    "sessions": 1395,
+    "engagedSessions": 1191,
+    "engagementRate": 0.853763440860215,
+    "newUsers": 220,
+    "activeUsers": 303,
+    "totalUsers": 308,
+    "screenPageViews": 13584,
+    "userEngagementDuration": 319945,
+    "averageSessionDuration": 1106.336748884588,
+    "eventCount": 31105
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "sessions": 998,
+    "engagedSessions": 828,
+    "engagementRate": 0.8296593186372746,
+    "newUsers": 140,
+    "activeUsers": 210,
+    "totalUsers": 218,
+    "screenPageViews": 9180,
+    "userEngagementDuration": 207299,
+    "averageSessionDuration": 948.6690490721442,
+    "eventCount": 19255
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "sessions": 804,
+    "engagedSessions": 716,
+    "engagementRate": 0.8905472636815921,
+    "newUsers": 108,
+    "activeUsers": 175,
+    "totalUsers": 178,
+    "screenPageViews": 7714,
+    "userEngagementDuration": 137412,
+    "averageSessionDuration": 851.1264726629354,
+    "eventCount": 12181
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "sessions": 16,
+    "engagedSessions": 12,
+    "engagementRate": 0.75,
+    "newUsers": 2,
+    "activeUsers": 8,
+    "totalUsers": 10,
+    "screenPageViews": 99,
+    "userEngagementDuration": 3472,
+    "averageSessionDuration": 443.3149330625,
+    "eventCount": 189
+   }
+  ]
+ },
+ "organicWeeklyLanding": {
+  "rowCount": 561,
+  "rows": [
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/",
+    "sessions": 615,
+    "engagedSessions": 558,
+    "newUsers": 107,
+    "activeUsers": 168,
+    "screenPageViews": 6215
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/",
+    "sessions": 406,
+    "engagedSessions": 358,
+    "newUsers": 62,
+    "activeUsers": 97,
+    "screenPageViews": 4140
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/",
+    "sessions": 355,
+    "engagedSessions": 330,
+    "newUsers": 62,
+    "activeUsers": 103,
+    "screenPageViews": 4257
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "(not set)",
+    "sessions": 38,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 22,
+    "screenPageViews": 0
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "(not set)",
+    "sessions": 23,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 13,
+    "screenPageViews": 0
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/winning-technique",
+    "sessions": 11,
+    "engagedSessions": 6,
+    "newUsers": 1,
+    "activeUsers": 5,
+    "screenPageViews": 39
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "landingPage": "/",
+    "sessions": 10,
+    "engagedSessions": 10,
+    "newUsers": 2,
+    "activeUsers": 6,
+    "screenPageViews": 78
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-19-12",
+    "sessions": 9,
+    "engagedSessions": 5,
+    "newUsers": 0,
+    "activeUsers": 4,
+    "screenPageViews": 48
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "(not set)",
+    "sessions": 8,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 5,
+    "screenPageViews": 0
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-03-04",
+    "sessions": 8,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/today",
+    "sessions": 8,
+    "engagedSessions": 8,
+    "newUsers": 1,
+    "activeUsers": 4,
+    "screenPageViews": 98
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/winning-technique",
+    "sessions": 7,
+    "engagedSessions": 5,
+    "newUsers": 2,
+    "activeUsers": 6,
+    "screenPageViews": 39
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/20",
+    "sessions": 7,
+    "engagedSessions": 3,
+    "newUsers": 2,
+    "activeUsers": 4,
+    "screenPageViews": 35
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/accuracy",
+    "sessions": 6,
+    "engagedSessions": 6,
+    "newUsers": 1,
+    "activeUsers": 5,
+    "screenPageViews": 82
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/14",
+    "sessions": 6,
+    "engagedSessions": 6,
+    "newUsers": 0,
+    "activeUsers": 4,
+    "screenPageViews": 82
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/about",
+    "sessions": 6,
+    "engagedSessions": 3,
+    "newUsers": 1,
+    "activeUsers": 3,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/20",
+    "sessions": 6,
+    "engagedSessions": 6,
+    "newUsers": 3,
+    "activeUsers": 6,
+    "screenPageViews": 30
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/ai-prediction-accuracy-review",
+    "sessions": 6,
+    "engagedSessions": 4,
+    "newUsers": 2,
+    "activeUsers": 5,
+    "screenPageViews": 46
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/22",
+    "sessions": 5,
+    "engagedSessions": 4,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 144
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/winning-technique",
+    "sessions": 5,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-10-08",
+    "sessions": 5,
+    "engagedSessions": 4,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/1",
+    "sessions": 5,
+    "engagedSessions": 5,
+    "newUsers": 2,
+    "activeUsers": 5,
+    "screenPageViews": 80
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/en",
+    "sessions": 5,
+    "engagedSessions": 5,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 58
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/1",
+    "sessions": 5,
+    "engagedSessions": 5,
+    "newUsers": 1,
+    "activeUsers": 4,
+    "screenPageViews": 49
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/19",
+    "sessions": 5,
+    "engagedSessions": 5,
+    "newUsers": 2,
+    "activeUsers": 5,
+    "screenPageViews": 44
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/4",
+    "sessions": 5,
+    "engagedSessions": 5,
+    "newUsers": 3,
+    "activeUsers": 5,
+    "screenPageViews": 59
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-24-12",
+    "sessions": 4,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-24-12",
+    "sessions": 4,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 22
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/16",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "newUsers": 1,
+    "activeUsers": 4,
+    "screenPageViews": 54
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/24",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "newUsers": 2,
+    "activeUsers": 4,
+    "screenPageViews": 28
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/7",
+    "sessions": 4,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/races",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "newUsers": 1,
+    "activeUsers": 4,
+    "screenPageViews": 36
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/12",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "newUsers": 3,
+    "activeUsers": 4,
+    "screenPageViews": 59
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-20-04",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "newUsers": 1,
+    "activeUsers": 4,
+    "screenPageViews": 56
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-13-10",
+    "sessions": 4,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-11",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "newUsers": 1,
+    "activeUsers": 4,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/suji-funaken-guide",
+    "sessions": 3,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-16-12",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "screenPageViews": 27
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/accuracy",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 2,
+    "activeUsers": 3,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-20-04",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 1,
+    "activeUsers": 3,
+    "screenPageViews": 40
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-12",
+    "sessions": 3,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-01-12",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "screenPageViews": 33
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-07-04",
+    "sessions": 3,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-03-06",
+    "sessions": 3,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-09-10-08",
+    "sessions": 3,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-11-19-10",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-23-02",
+    "sessions": 3,
+    "engagedSessions": 0,
+    "newUsers": 3,
+    "activeUsers": 3,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-04-03",
+    "sessions": 3,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-04-10",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 3,
+    "activeUsers": 3,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-19-10",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "screenPageViews": 115
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-19-11",
+    "sessions": 3,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 23
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-19-12",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "screenPageViews": 98
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-09",
+    "sessions": 3,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-12",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/races",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "screenPageViews": 29
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/21",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 48
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/23",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 1,
+    "activeUsers": 3,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/3",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 3,
+    "activeUsers": 3,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/9",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "newUsers": 2,
+    "activeUsers": 3,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/about",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/rough-race-signals",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 2,
+    "activeUsers": 2,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/hit-races",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-24-09",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 34
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-14-06",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-16-10",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-24-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-24-11",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-16-02",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-18-02",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-24-10",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-07-11",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-16-01",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/today",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/15",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/19",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/23",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 25
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/st-timing-gap-guide",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/suji-funaken-guide",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/venue-hamanako",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/hit-races",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 297
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-20-01",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 38
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-20-10",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-20-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-20-07",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-20-11",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-24-11",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-10-08",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-01",
+    "sessions": 2,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-10",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-01-09",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 43
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-20-10",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-20-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 65
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-24-10",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-01-02",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 107
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-06-01",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-06-05",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 28
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/today",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/2",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/3",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 19
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/hit-races",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 30
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/how-to-use",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 29
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-11-09-02",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-11-19-09",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-11-19-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-01-06",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-01-09",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 2,
+    "activeUsers": 2,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-06-09",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-06-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-09-04",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 23
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-15-08",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-19-09",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-19-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-04-11",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 20
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-19-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-20-07",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-04-09",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-04-04",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 29
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-04-10",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-04-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-19-09",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-19-10",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-19-12",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-04-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 2,
+    "activeUsers": 2,
+    "screenPageViews": 29
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-08-11",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-09-06",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-13-06",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-05",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "screenPageViews": 68
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-08-02",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-23-12",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/races/2026-08-17",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 113
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/8",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "landingPage": "/race/2026-10-15-13-10",
+    "sessions": 2,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 0,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "landingPage": "/venue/4",
+    "sessions": 2,
+    "engagedSessions": 2,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/ai-prediction-accuracy-review",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/first-mark-prediction-guide",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/odds-expected-value-guide",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/race-review-guide",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/win-place-comparison",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/blog/winning-technique-analysis-guide",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-17-14-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-18-24-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-20-10-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-27-14-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-27-14-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-27-20-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-02-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 23
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-04-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-09-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-13-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-13-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-13-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-14-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 63
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-15-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-15-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-16-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-16-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-16-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-16-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-16-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-16-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-16-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-19-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-19-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-24-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-28-24-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-03-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-05-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-05-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-05-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-05-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-07-09",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-13-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-13-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-13-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-14-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 51
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-15-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 19
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-16-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-21-04",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-29-24-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-02-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-05-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 19
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-07-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-14-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-15-02",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 0,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-15-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 48
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-16-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-16-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-16-09",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-16-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-23-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-24-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 13
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-24-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-24-09",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-09-30-24-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-03-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-06-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-07-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 74
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-12-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-13-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-16-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 47
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-16-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-22-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-23-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 27
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-24-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-01-24-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-09-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-13-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 31
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-14-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-15-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-16-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-16-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-16-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-16-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-16-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-16-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-18-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-19-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-19-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-22-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-24-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-24-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-24-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 21
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-02-24-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-02-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-02-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 44
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-07-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-07-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-12-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-16-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-16-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-16-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-16-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-16-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-18-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-19-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-03-23-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 23
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-06-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-06-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 32
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-07-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-07-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-07-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-10-05",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-10-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 26
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-12-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-12-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-18-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-22-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-23-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-23-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/race/2026-10-04-23-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/races",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/races/2026-08-01/10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 36
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/races/2026-09-29/16",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 59
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/1",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/2",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/21",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "landingPage": "/venue/3",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 19
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/ai-prediction-accuracy-review",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/picks-guide",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/rough-race-signals",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/st-consideration-guide",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/blog/win-place-comparison",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-09-22-20-11",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 0,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-04-07-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-04-12-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-04-19-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-09-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 23
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-10-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-10-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-10-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-10-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-10-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-10-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-11-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-12-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-18-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-18-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-18-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 31
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-19-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-20-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-20-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-20-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-23-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 30
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-05-23-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-11-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 19
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-11-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 32
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-11-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-12-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-13-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-14-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-18-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-19-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-20-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-20-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-22-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-22-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-22-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-06-24-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-01-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-01-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-01-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-08-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-10-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-11-01",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 0,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-11-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-14-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-14-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-14-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 25
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-14-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-14-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-14-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 26
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-16-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-18-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-20-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-20-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-20-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-20-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-20-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-07-24-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-10-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-10-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 13
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-10-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-10-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-10-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-11-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-14-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 13
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-14-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 38
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-14-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-16-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 19
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-04",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-08-20-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-01-06",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-02-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 50
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-02-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-05-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 116
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-05-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 44
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-08-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-10-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-14-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-14-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 41
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-16-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-16-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-16-10",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-23-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-09-24-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-01-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-03-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-03-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 26
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-03-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-06-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-07-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 31
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-07-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-08-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-08-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 21
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-12-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 34
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-10-12-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 27
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-01-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-02-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-06-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-08-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-08-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-09-02",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-12-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-12-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-12-10/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 41
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-12-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 16
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-15-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 29
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-15-09/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-18-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-18-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-18-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-19-10/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 35
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-19-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-22-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 35
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-23-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-23-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-23-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 51
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/race/2026-10-11-23-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/races/2026-10-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 64
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 29
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/19",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/6",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/7",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/8",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "landingPage": "/venue/9",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/accuracy",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/first-mark-prediction-guide",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/motor-condition-guide",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/motor-performance",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/omura-wind-direction-guide",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/rough-race-signals",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 91
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/suji-funaken-guide",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/venue-ashiya",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 26
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/blog/venue-suminoe",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/profile",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-08-04-17-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-09-20-10-11",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-11-01-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-11-09-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-11-19-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-01-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-06-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 45
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-06-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 270
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-09-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-11-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-12-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-12-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-15-09",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-15-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-18-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 97
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-18-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 27
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-19-03/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-19-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 14
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-19-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 20
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-19-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-22-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-23-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-23-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-12-23-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-04-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-04-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-06-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-06-10/assist",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-11-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 69
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-13-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-13-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-14-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 25
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-14-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 35
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-14-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-15-05/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-18-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 21
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-18-09",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-19-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-19-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-19-07",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-19-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 86
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-13-19-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-04-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-04-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-04-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-04-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-04-12/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-06-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-11-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-12-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-12-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-12-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-12-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-12-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 13
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-12-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-13-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-13-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-14-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 28
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-14-02",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-14-02/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-14-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-15-10/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-19-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-19-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-19-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-20-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-20-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-20-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-20-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-21-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-21-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-22-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-14-24-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 57
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-02-06/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 27
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-02-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-04-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-04-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-04-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 10
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-04-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-06-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-06-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 22
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-11-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 19
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-12-04/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 18
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-12-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-14-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-14-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-14-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 11
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-15-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-20-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-20-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-22-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-22-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-24-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-15-24-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 47
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-01-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-04-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-04-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-04-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-04-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-08-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-19-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-19-12/assist",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-20-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-20-10",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 0,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-20-12",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-21-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-16-24-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 9
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-01-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-01-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 39
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-02-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 8
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-02-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-04-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-08-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-08-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-08-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-09-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-13-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-14-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-16-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-19-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-19-04",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-19-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-19-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-20-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-21-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 26
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-24-05",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-24-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 13
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-17-24-08",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-01-09",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 44
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-01-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 13
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-02",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-04-09/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-10-06",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 74
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-16-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 53
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-19-07",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-19-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 52
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-19-09",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-19-11",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-20-04",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-20-08",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-20-08/assist",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 7
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-20-10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-20-12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-21-01",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-21-03",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 17
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/race/2026-10-18-21-12",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 1
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/racer/4538",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 24
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/races/2026-08-17/9",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 15
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/races/2026-10-11/9",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 101
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/races/2026-10-14/19",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 13
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/10",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 4
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/12",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 12
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/13",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 3
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/15",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 6
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/16",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 2
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/18",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "screenPageViews": 96
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/2",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 22
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "landingPage": "/venue/24",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "screenPageViews": 5
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "landingPage": "/race/2026-10-18-19-02",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "newUsers": 0,
+    "activeUsers": 0,
+    "screenPageViews": 1
+   }
+  ]
+ },
+ "organicWeeklyDevice": {
+  "rowCount": 10,
+  "rows": [
+   {
+    "isoYearIsoWeek": "202642",
+    "deviceCategory": "mobile",
+    "sessions": 937,
+    "engagedSessions": 794,
+    "engagementRate": 0.847385272145144,
+    "newUsers": 166,
+    "activeUsers": 214,
+    "totalUsers": 214,
+    "screenPageViews": 8844,
+    "userEngagementDuration": 196336,
+    "averageSessionDuration": 1041.2478169658486,
+    "eventCount": 20350
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "deviceCategory": "mobile",
+    "sessions": 595,
+    "engagedSessions": 513,
+    "engagementRate": 0.8621848739495799,
+    "newUsers": 85,
+    "activeUsers": 114,
+    "totalUsers": 117,
+    "screenPageViews": 5914,
+    "userEngagementDuration": 144572,
+    "averageSessionDuration": 1097.1334497226892,
+    "eventCount": 12824
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "deviceCategory": "mobile",
+    "sessions": 524,
+    "engagedSessions": 473,
+    "engagementRate": 0.9026717557251909,
+    "newUsers": 86,
+    "activeUsers": 123,
+    "totalUsers": 123,
+    "screenPageViews": 5564,
+    "userEngagementDuration": 101719,
+    "averageSessionDuration": 923.7944341927481,
+    "eventCount": 8939
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "deviceCategory": "desktop",
+    "sessions": 43,
+    "engagedSessions": 37,
+    "engagementRate": 0.8604651162790697,
+    "newUsers": 1,
+    "activeUsers": 5,
+    "totalUsers": 5,
+    "screenPageViews": 636,
+    "userEngagementDuration": 6300,
+    "averageSessionDuration": 951.8253433255815,
+    "eventCount": 745
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "deviceCategory": "tablet",
+    "sessions": 38,
+    "engagedSessions": 36,
+    "engagementRate": 0.9473684210526315,
+    "newUsers": 1,
+    "activeUsers": 5,
+    "totalUsers": 5,
+    "screenPageViews": 270,
+    "userEngagementDuration": 9977,
+    "averageSessionDuration": 619.3220932894737,
+    "eventCount": 565
+   },
+   {
+    "isoYearIsoWeek": "202642",
+    "deviceCategory": "desktop",
+    "sessions": 37,
+    "engagedSessions": 31,
+    "engagementRate": 0.8378378378378378,
+    "newUsers": 6,
+    "activeUsers": 11,
+    "totalUsers": 11,
+    "screenPageViews": 1033,
+    "userEngagementDuration": 28792,
+    "averageSessionDuration": 2208.852437837838,
+    "eventCount": 1920
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "deviceCategory": "desktop",
+    "sessions": 35,
+    "engagedSessions": 27,
+    "engagementRate": 0.7714285714285715,
+    "newUsers": 3,
+    "activeUsers": 7,
+    "totalUsers": 7,
+    "screenPageViews": 696,
+    "userEngagementDuration": 7275,
+    "averageSessionDuration": 985.4175683714285,
+    "eventCount": 1120
+   },
+   {
+    "isoYearIsoWeek": "202641",
+    "deviceCategory": "tablet",
+    "sessions": 32,
+    "engagedSessions": 28,
+    "engagementRate": 0.875,
+    "newUsers": 5,
+    "activeUsers": 7,
+    "totalUsers": 7,
+    "screenPageViews": 302,
+    "userEngagementDuration": 16964,
+    "averageSessionDuration": 1155.16355490625,
+    "eventCount": 630
+   },
+   {
+    "isoYearIsoWeek": "202643",
+    "deviceCategory": "mobile",
+    "sessions": 15,
+    "engagedSessions": 12,
+    "engagementRate": 0.8,
+    "newUsers": 2,
+    "activeUsers": 7,
+    "totalUsers": 9,
+    "screenPageViews": 98,
+    "userEngagementDuration": 3472,
+    "averageSessionDuration": 472.53943580000004,
+    "eventCount": 186
+   },
+   {
+    "isoYearIsoWeek": "202640",
+    "deviceCategory": "tablet",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 32,
+    "userEngagementDuration": 515,
+    "averageSessionDuration": 1372.71160375,
+    "eventCount": 50
+   }
+  ]
+ },
+ "dailyByChannel": {
+  "rowCount": 83,
+  "rows": [
+   {
+    "date": "20261018",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 173,
+    "engagedSessions": 145,
+    "engagementRate": 0.838150289017341,
+    "newUsers": 38,
+    "activeUsers": 73,
+    "totalUsers": 74,
+    "screenPageViews": 1532,
+    "userEngagementDuration": 45606,
+    "averageSessionDuration": 962.1542996647399,
+    "eventCount": 3722
+   },
+   {
+    "date": "20261012",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 162,
+    "engagedSessions": 142,
+    "engagementRate": 0.8765432098765432,
+    "newUsers": 31,
+    "activeUsers": 61,
+    "totalUsers": 61,
+    "screenPageViews": 2004,
+    "userEngagementDuration": 46182,
+    "averageSessionDuration": 1391.9280262839507,
+    "eventCount": 4454
+   },
+   {
+    "date": "20261011",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 149,
+    "engagedSessions": 130,
+    "engagementRate": 0.87248322147651,
+    "newUsers": 12,
+    "activeUsers": 48,
+    "totalUsers": 48,
+    "screenPageViews": 1890,
+    "userEngagementDuration": 39455,
+    "averageSessionDuration": 1353.7835288322149,
+    "eventCount": 4207
+   },
+   {
+    "date": "20261014",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 147,
+    "engagedSessions": 133,
+    "engagementRate": 0.9047619047619048,
+    "newUsers": 23,
+    "activeUsers": 60,
+    "totalUsers": 62,
+    "screenPageViews": 1576,
+    "userEngagementDuration": 34795,
+    "averageSessionDuration": 1051.089239517007,
+    "eventCount": 3351
+   },
+   {
+    "date": "20261017",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 142,
+    "engagedSessions": 119,
+    "engagementRate": 0.8380281690140845,
+    "newUsers": 27,
+    "activeUsers": 62,
+    "totalUsers": 64,
+    "screenPageViews": 1268,
+    "userEngagementDuration": 31010,
+    "averageSessionDuration": 1202.7453075985916,
+    "eventCount": 3011
+   },
+   {
+    "date": "20261013",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 136,
+    "engagedSessions": 115,
+    "engagementRate": 0.8455882352941176,
+    "newUsers": 24,
+    "activeUsers": 59,
+    "totalUsers": 60,
+    "screenPageViews": 1807,
+    "userEngagementDuration": 35879,
+    "averageSessionDuration": 1131.978975602941,
+    "eventCount": 3682
+   },
+   {
+    "date": "20261015",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 133,
+    "engagedSessions": 113,
+    "engagementRate": 0.849624060150376,
+    "newUsers": 15,
+    "activeUsers": 52,
+    "totalUsers": 53,
+    "screenPageViews": 1131,
+    "userEngagementDuration": 22237,
+    "averageSessionDuration": 831.0643136917294,
+    "eventCount": 2533
+   },
+   {
+    "date": "20261016",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 125,
+    "engagedSessions": 100,
+    "engagementRate": 0.8,
+    "newUsers": 15,
+    "activeUsers": 47,
+    "totalUsers": 49,
+    "screenPageViews": 829,
+    "userEngagementDuration": 19396,
+    "averageSessionDuration": 793.482430808,
+    "eventCount": 2082
+   },
+   {
+    "date": "20260930",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 107,
+    "engagedSessions": 99,
+    "engagementRate": 0.9252336448598131,
+    "newUsers": 20,
+    "activeUsers": 44,
+    "totalUsers": 45,
+    "screenPageViews": 1131,
+    "userEngagementDuration": 18617,
+    "averageSessionDuration": 975.0527286635513,
+    "eventCount": 1805
+   },
+   {
+    "date": "20260928",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 96,
+    "engagedSessions": 90,
+    "engagementRate": 0.9375,
+    "newUsers": 16,
+    "activeUsers": 40,
+    "totalUsers": 40,
+    "screenPageViews": 1322,
+    "userEngagementDuration": 18449,
+    "averageSessionDuration": 1066.03492234375,
+    "eventCount": 1875
+   },
+   {
+    "date": "20261002",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 95,
+    "engagedSessions": 86,
+    "engagementRate": 0.9052631578947369,
+    "newUsers": 14,
+    "activeUsers": 38,
+    "totalUsers": 39,
+    "screenPageViews": 887,
+    "userEngagementDuration": 22123,
+    "averageSessionDuration": 649.5929007368421,
+    "eventCount": 1435
+   },
+   {
+    "date": "20261010",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 93,
+    "engagedSessions": 77,
+    "engagementRate": 0.8279569892473119,
+    "newUsers": 21,
+    "activeUsers": 43,
+    "totalUsers": 43,
+    "screenPageViews": 1114,
+    "userEngagementDuration": 40782,
+    "averageSessionDuration": 1394.3266993870968,
+    "eventCount": 3164
+   },
+   {
+    "date": "20260929",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 91,
+    "engagedSessions": 82,
+    "engagementRate": 0.9010989010989011,
+    "newUsers": 18,
+    "activeUsers": 41,
+    "totalUsers": 41,
+    "screenPageViews": 1271,
+    "userEngagementDuration": 17977,
+    "averageSessionDuration": 1241.880093120879,
+    "eventCount": 1860
+   },
+   {
+    "date": "20261008",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 91,
+    "engagedSessions": 73,
+    "engagementRate": 0.8021978021978022,
+    "newUsers": 7,
+    "activeUsers": 29,
+    "totalUsers": 31,
+    "screenPageViews": 759,
+    "userEngagementDuration": 16854,
+    "averageSessionDuration": 783.8662284945055,
+    "eventCount": 1489
+   },
+   {
+    "date": "20261007",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 89,
+    "engagedSessions": 79,
+    "engagementRate": 0.8876404494382022,
+    "newUsers": 17,
+    "activeUsers": 35,
+    "totalUsers": 36,
+    "screenPageViews": 732,
+    "userEngagementDuration": 16554,
+    "averageSessionDuration": 854.2663922584269,
+    "eventCount": 1251
+   },
+   {
+    "date": "20261005",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 84,
+    "engagedSessions": 71,
+    "engagementRate": 0.8452380952380952,
+    "newUsers": 16,
+    "activeUsers": 32,
+    "totalUsers": 36,
+    "screenPageViews": 789,
+    "userEngagementDuration": 14643,
+    "averageSessionDuration": 1040.3852045595238,
+    "eventCount": 1313
+   },
+   {
+    "date": "20261009",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 81,
+    "engagedSessions": 69,
+    "engagementRate": 0.8518518518518519,
+    "newUsers": 8,
+    "activeUsers": 30,
+    "totalUsers": 30,
+    "screenPageViews": 667,
+    "userEngagementDuration": 18952,
+    "averageSessionDuration": 821.604665851852,
+    "eventCount": 1590
+   },
+   {
+    "date": "20261006",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 80,
+    "engagedSessions": 73,
+    "engagementRate": 0.9125,
+    "newUsers": 12,
+    "activeUsers": 32,
+    "totalUsers": 33,
+    "screenPageViews": 961,
+    "userEngagementDuration": 21571,
+    "averageSessionDuration": 1144.4906446875,
+    "eventCount": 1560
+   },
+   {
+    "date": "20261003",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 66,
+    "engagedSessions": 60,
+    "engagementRate": 0.9090909090909091,
+    "newUsers": 4,
+    "activeUsers": 22,
+    "totalUsers": 23,
+    "screenPageViews": 516,
+    "userEngagementDuration": 9474,
+    "averageSessionDuration": 786.0482848939395,
+    "eventCount": 900
+   },
+   {
+    "date": "20261001",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 61,
+    "engagedSessions": 45,
+    "engagementRate": 0.7377049180327869,
+    "newUsers": 13,
+    "activeUsers": 34,
+    "totalUsers": 37,
+    "screenPageViews": 445,
+    "userEngagementDuration": 5685,
+    "averageSessionDuration": 655.4925820655737,
+    "eventCount": 750
+   },
+   {
+    "date": "20261014",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 60,
+    "engagedSessions": 56,
+    "engagementRate": 0.9333333333333333,
+    "newUsers": 9,
+    "activeUsers": 19,
+    "totalUsers": 20,
+    "screenPageViews": 613,
+    "userEngagementDuration": 19895,
+    "averageSessionDuration": 1195.7660134666667,
+    "eventCount": 1409
+   },
+   {
+    "date": "20261012",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 59,
+    "engagedSessions": 47,
+    "engagementRate": 0.7966101694915254,
+    "newUsers": 10,
+    "activeUsers": 21,
+    "totalUsers": 22,
+    "screenPageViews": 558,
+    "userEngagementDuration": 11578,
+    "averageSessionDuration": 1346.1877273220339,
+    "eventCount": 1159
+   },
+   {
+    "date": "20261004",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 54,
+    "engagedSessions": 51,
+    "engagementRate": 0.9444444444444444,
+    "newUsers": 2,
+    "activeUsers": 18,
+    "totalUsers": 19,
+    "screenPageViews": 660,
+    "userEngagementDuration": 16209,
+    "averageSessionDuration": 1059.8329042592593,
+    "eventCount": 1109
+   },
+   {
+    "date": "20261011",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 52,
+    "engagedSessions": 47,
+    "engagementRate": 0.9038461538461539,
+    "newUsers": 8,
+    "activeUsers": 20,
+    "totalUsers": 20,
+    "screenPageViews": 536,
+    "userEngagementDuration": 8087,
+    "averageSessionDuration": 1007.4040925,
+    "eventCount": 1097
+   },
+   {
+    "date": "20261018",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 51,
+    "engagedSessions": 40,
+    "engagementRate": 0.7843137254901961,
+    "newUsers": 9,
+    "activeUsers": 19,
+    "totalUsers": 20,
+    "screenPageViews": 410,
+    "userEngagementDuration": 8775,
+    "averageSessionDuration": 945.8178117450981,
+    "eventCount": 799
+   },
+   {
+    "date": "20261013",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 44,
+    "engagedSessions": 39,
+    "engagementRate": 0.8863636363636364,
+    "newUsers": 4,
+    "activeUsers": 18,
+    "totalUsers": 20,
+    "screenPageViews": 337,
+    "userEngagementDuration": 15695,
+    "averageSessionDuration": 1191.0475377727273,
+    "eventCount": 926
+   },
+   {
+    "date": "20261009",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 41,
+    "engagedSessions": 34,
+    "engagementRate": 0.8292682926829268,
+    "newUsers": 12,
+    "activeUsers": 20,
+    "totalUsers": 22,
+    "screenPageViews": 249,
+    "userEngagementDuration": 6371,
+    "averageSessionDuration": 824.3858326341464,
+    "eventCount": 597
+   },
+   {
+    "date": "20261017",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 39,
+    "engagedSessions": 31,
+    "engagementRate": 0.7948717948717948,
+    "newUsers": 4,
+    "activeUsers": 17,
+    "totalUsers": 18,
+    "screenPageViews": 305,
+    "userEngagementDuration": 5294,
+    "averageSessionDuration": 1177.2526144871795,
+    "eventCount": 676
+   },
+   {
+    "date": "20260930",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 37,
+    "engagedSessions": 34,
+    "engagementRate": 0.918918918918919,
+    "newUsers": 5,
+    "activeUsers": 13,
+    "totalUsers": 13,
+    "screenPageViews": 172,
+    "userEngagementDuration": 2981,
+    "averageSessionDuration": 317.54498916216215,
+    "eventCount": 300
+   },
+   {
+    "date": "20260928",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 35,
+    "engagedSessions": 27,
+    "engagementRate": 0.7714285714285715,
+    "newUsers": 4,
+    "activeUsers": 11,
+    "totalUsers": 13,
+    "screenPageViews": 242,
+    "userEngagementDuration": 9115,
+    "averageSessionDuration": 637.2290647428571,
+    "eventCount": 365
+   },
+   {
+    "date": "20261010",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 35,
+    "engagedSessions": 25,
+    "engagementRate": 0.7142857142857143,
+    "newUsers": 6,
+    "activeUsers": 14,
+    "totalUsers": 16,
+    "screenPageViews": 367,
+    "userEngagementDuration": 5809,
+    "averageSessionDuration": 904.3057828857144,
+    "eventCount": 723
+   },
+   {
+    "date": "20261002",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 34,
+    "engagedSessions": 31,
+    "engagementRate": 0.9117647058823529,
+    "newUsers": 2,
+    "activeUsers": 12,
+    "totalUsers": 12,
+    "screenPageViews": 256,
+    "userEngagementDuration": 3092,
+    "averageSessionDuration": 762.4276982352941,
+    "eventCount": 447
+   },
+   {
+    "date": "20261005",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 34,
+    "engagedSessions": 27,
+    "engagementRate": 0.7941176470588235,
+    "newUsers": 6,
+    "activeUsers": 15,
+    "totalUsers": 17,
+    "screenPageViews": 161,
+    "userEngagementDuration": 2563,
+    "averageSessionDuration": 422.2487752352941,
+    "eventCount": 295
+   },
+   {
+    "date": "20261006",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 34,
+    "engagedSessions": 23,
+    "engagementRate": 0.6764705882352942,
+    "newUsers": 2,
+    "activeUsers": 10,
+    "totalUsers": 14,
+    "screenPageViews": 175,
+    "userEngagementDuration": 2711,
+    "averageSessionDuration": 358.95964726470584,
+    "eventCount": 292
+   },
+   {
+    "date": "20261015",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 33,
+    "engagedSessions": 31,
+    "engagementRate": 0.9393939393939394,
+    "newUsers": 3,
+    "activeUsers": 15,
+    "totalUsers": 17,
+    "screenPageViews": 220,
+    "userEngagementDuration": 7932,
+    "averageSessionDuration": 616.5223333030303,
+    "eventCount": 689
+   },
+   {
+    "date": "20260929",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 29,
+    "engagedSessions": 25,
+    "engagementRate": 0.8620689655172413,
+    "newUsers": 3,
+    "activeUsers": 11,
+    "totalUsers": 13,
+    "screenPageViews": 147,
+    "userEngagementDuration": 2059,
+    "averageSessionDuration": 267.01996296551727,
+    "eventCount": 230
+   },
+   {
+    "date": "20261007",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 27,
+    "engagedSessions": 24,
+    "engagementRate": 0.8888888888888888,
+    "newUsers": 2,
+    "activeUsers": 15,
+    "totalUsers": 16,
+    "screenPageViews": 133,
+    "userEngagementDuration": 2044,
+    "averageSessionDuration": 231.43214548148148,
+    "eventCount": 234
+   },
+   {
+    "date": "20261016",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 26,
+    "engagedSessions": 21,
+    "engagementRate": 0.8076923076923077,
+    "newUsers": 2,
+    "activeUsers": 11,
+    "totalUsers": 12,
+    "screenPageViews": 180,
+    "userEngagementDuration": 3028,
+    "averageSessionDuration": 763.5841017692308,
+    "eventCount": 354
+   },
+   {
+    "date": "20261008",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 24,
+    "engagedSessions": 21,
+    "engagementRate": 0.875,
+    "newUsers": 7,
+    "activeUsers": 15,
+    "totalUsers": 15,
+    "screenPageViews": 149,
+    "userEngagementDuration": 2830,
+    "averageSessionDuration": 619.888801125,
+    "eventCount": 250
+   },
+   {
+    "date": "20261001",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 19,
+    "engagedSessions": 18,
+    "engagementRate": 0.9473684210526315,
+    "newUsers": 3,
+    "activeUsers": 12,
+    "totalUsers": 12,
+    "screenPageViews": 221,
+    "userEngagementDuration": 3334,
+    "averageSessionDuration": 1902.7306092105264,
+    "eventCount": 322
+   },
+   {
+    "date": "20261004",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 18,
+    "engagedSessions": 13,
+    "engagementRate": 0.7222222222222222,
+    "newUsers": 0,
+    "activeUsers": 10,
+    "totalUsers": 12,
+    "screenPageViews": 118,
+    "userEngagementDuration": 2067,
+    "averageSessionDuration": 683.546197,
+    "eventCount": 187
+   },
+   {
+    "date": "20261019",
+    "sessionDefaultChannelGroup": "Organic Search",
+    "sessions": 15,
+    "engagedSessions": 12,
+    "engagementRate": 0.8,
+    "newUsers": 2,
+    "activeUsers": 7,
+    "totalUsers": 9,
+    "screenPageViews": 98,
+    "userEngagementDuration": 3472,
+    "averageSessionDuration": 472.53943580000004,
+    "eventCount": 186
+   },
+   {
+    "date": "20261014",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 14,
+    "engagedSessions": 13,
+    "engagementRate": 0.9285714285714286,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 134,
+    "userEngagementDuration": 1630,
+    "averageSessionDuration": 2040.083958,
+    "eventCount": 429
+   },
+   {
+    "date": "20261003",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 13,
+    "engagedSessions": 10,
+    "engagementRate": 0.7692307692307693,
+    "newUsers": 1,
+    "activeUsers": 6,
+    "totalUsers": 8,
+    "screenPageViews": 55,
+    "userEngagementDuration": 1094,
+    "averageSessionDuration": 245.33839638461538,
+    "eventCount": 101
+   },
+   {
+    "date": "20261018",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 13,
+    "engagedSessions": 13,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 4,
+    "totalUsers": 4,
+    "screenPageViews": 90,
+    "userEngagementDuration": 704,
+    "averageSessionDuration": 932.6470578461539,
+    "eventCount": 178
+   },
+   {
+    "date": "20261013",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 12,
+    "engagedSessions": 11,
+    "engagementRate": 0.9166666666666666,
+    "newUsers": 1,
+    "activeUsers": 6,
+    "totalUsers": 6,
+    "screenPageViews": 371,
+    "userEngagementDuration": 7539,
+    "averageSessionDuration": 4789.902208583333,
+    "eventCount": 1032
+   },
+   {
+    "date": "20261009",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 11,
+    "engagedSessions": 4,
+    "engagementRate": 0.36363636363636365,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 2,
+    "screenPageViews": 19,
+    "userEngagementDuration": 16,
+    "averageSessionDuration": 452.752995,
+    "eventCount": 62
+   },
+   {
+    "date": "20261001",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 10,
+    "engagedSessions": 9,
+    "engagementRate": 0.9,
+    "newUsers": 0,
+    "activeUsers": 4,
+    "totalUsers": 4,
+    "screenPageViews": 34,
+    "userEngagementDuration": 271,
+    "averageSessionDuration": 1348.4585978999999,
+    "eventCount": 57
+   },
+   {
+    "date": "20261007",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 10,
+    "engagedSessions": 4,
+    "engagementRate": 0.4,
+    "newUsers": 1,
+    "activeUsers": 2,
+    "totalUsers": 2,
+    "screenPageViews": 17,
+    "userEngagementDuration": 71,
+    "averageSessionDuration": 163.855365,
+    "eventCount": 38
+   },
+   {
+    "date": "20261011",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 10,
+    "engagedSessions": 7,
+    "engagementRate": 0.7,
+    "newUsers": 0,
+    "activeUsers": 5,
+    "totalUsers": 5,
+    "screenPageViews": 61,
+    "userEngagementDuration": 4037,
+    "averageSessionDuration": 705.2577596,
+    "eventCount": 271
+   },
+   {
+    "date": "20260929",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 9,
+    "engagedSessions": 8,
+    "engagementRate": 0.8888888888888888,
+    "newUsers": 0,
+    "activeUsers": 5,
+    "totalUsers": 5,
+    "screenPageViews": 43,
+    "userEngagementDuration": 869,
+    "averageSessionDuration": 242.56383477777777,
+    "eventCount": 80
+   },
+   {
+    "date": "20260928",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 8,
+    "engagedSessions": 7,
+    "engagementRate": 0.875,
+    "newUsers": 0,
+    "activeUsers": 5,
+    "totalUsers": 5,
+    "screenPageViews": 47,
+    "userEngagementDuration": 735,
+    "averageSessionDuration": 402.1733435,
+    "eventCount": 74
+   },
+   {
+    "date": "20261005",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 8,
+    "engagedSessions": 5,
+    "engagementRate": 0.625,
+    "newUsers": 0,
+    "activeUsers": 6,
+    "totalUsers": 6,
+    "screenPageViews": 47,
+    "userEngagementDuration": 388,
+    "averageSessionDuration": 381.17536025000004,
+    "eventCount": 78
+   },
+   {
+    "date": "20261009",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 7,
+    "engagedSessions": 5,
+    "engagementRate": 0.7142857142857143,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 24,
+    "userEngagementDuration": 132,
+    "averageSessionDuration": 416.3424042857142,
+    "eventCount": 38
+   },
+   {
+    "date": "20261011",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 7,
+    "engagedSessions": 7,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 32,
+    "userEngagementDuration": 144,
+    "averageSessionDuration": 181.5421542857143,
+    "eventCount": 61
+   },
+   {
+    "date": "20261012",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 7,
+    "engagedSessions": 7,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 65,
+    "userEngagementDuration": 846,
+    "averageSessionDuration": 1869.3297605714286,
+    "eventCount": 191
+   },
+   {
+    "date": "20261016",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 7,
+    "engagedSessions": 5,
+    "engagementRate": 0.7142857142857143,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 42,
+    "userEngagementDuration": 591,
+    "averageSessionDuration": 980.2462581428572,
+    "eventCount": 145
+   },
+   {
+    "date": "20261004",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 6,
+    "engagedSessions": 6,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 4,
+    "totalUsers": 4,
+    "screenPageViews": 51,
+    "userEngagementDuration": 2012,
+    "averageSessionDuration": 939.4330795,
+    "eventCount": 114
+   },
+   {
+    "date": "20261010",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 6,
+    "engagedSessions": 4,
+    "engagementRate": 0.6666666666666666,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 79,
+    "userEngagementDuration": 1413,
+    "averageSessionDuration": 997.598637,
+    "eventCount": 205
+   },
+   {
+    "date": "20261017",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 6,
+    "engagedSessions": 6,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 20,
+    "userEngagementDuration": 106,
+    "averageSessionDuration": 27.107727333333333,
+    "eventCount": 40
+   },
+   {
+    "date": "20261002",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 5,
+    "engagedSessions": 4,
+    "engagementRate": 0.8,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "totalUsers": 2,
+    "screenPageViews": 34,
+    "userEngagementDuration": 145,
+    "averageSessionDuration": 888.0199243999999,
+    "eventCount": 47
+   },
+   {
+    "date": "20261006",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 5,
+    "engagedSessions": 4,
+    "engagementRate": 0.8,
+    "newUsers": 0,
+    "activeUsers": 4,
+    "totalUsers": 4,
+    "screenPageViews": 19,
+    "userEngagementDuration": 117,
+    "averageSessionDuration": 662.4459664,
+    "eventCount": 31
+   },
+   {
+    "date": "20261007",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 5,
+    "engagedSessions": 4,
+    "engagementRate": 0.8,
+    "newUsers": 0,
+    "activeUsers": 2,
+    "totalUsers": 2,
+    "screenPageViews": 129,
+    "userEngagementDuration": 966,
+    "averageSessionDuration": 3781.1894808000006,
+    "eventCount": 243
+   },
+   {
+    "date": "20261008",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 5,
+    "engagedSessions": 5,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 21,
+    "userEngagementDuration": 342,
+    "averageSessionDuration": 433.72085159999995,
+    "eventCount": 61
+   },
+   {
+    "date": "20261008",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 5,
+    "engagedSessions": 4,
+    "engagementRate": 0.8,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 4,
+    "screenPageViews": 25,
+    "userEngagementDuration": 86,
+    "averageSessionDuration": 712.2369102,
+    "eventCount": 40
+   },
+   {
+    "date": "20261015",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 5,
+    "engagedSessions": 5,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 25,
+    "userEngagementDuration": 217,
+    "averageSessionDuration": 640.2343946,
+    "eventCount": 85
+   },
+   {
+    "date": "20261003",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 4,
+    "engagedSessions": 4,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 4,
+    "totalUsers": 4,
+    "screenPageViews": 43,
+    "userEngagementDuration": 695,
+    "averageSessionDuration": 1248.875516,
+    "eventCount": 84
+   },
+   {
+    "date": "20260930",
+    "sessionDefaultChannelGroup": "Unassigned",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 3,
+    "totalUsers": 3,
+    "screenPageViews": 9,
+    "userEngagementDuration": 21,
+    "averageSessionDuration": 21.584348666666667,
+    "eventCount": 15
+   },
+   {
+    "date": "20261010",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 3,
+    "engagedSessions": 1,
+    "engagementRate": 0.3333333333333333,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 10,
+    "userEngagementDuration": 80,
+    "averageSessionDuration": 611.1520356666666,
+    "eventCount": 27
+   },
+   {
+    "date": "20261012",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 3,
+    "engagedSessions": 2,
+    "engagementRate": 0.6666666666666666,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 7,
+    "userEngagementDuration": 39,
+    "averageSessionDuration": 107.84083833333334,
+    "eventCount": 25
+   },
+   {
+    "date": "20261017",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 3,
+    "engagedSessions": 3,
+    "engagementRate": 1,
+    "newUsers": 2,
+    "activeUsers": 2,
+    "totalUsers": 2,
+    "screenPageViews": 26,
+    "userEngagementDuration": 435,
+    "averageSessionDuration": 654.5098316666666,
+    "eventCount": 78
+   },
+   {
+    "date": "20261008",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 2,
+    "engagedSessions": 1,
+    "engagementRate": 0.5,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 1,
+    "userEngagementDuration": 93,
+    "averageSessionDuration": 49.3857875,
+    "eventCount": 7
+   },
+   {
+    "date": "20260928",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 6,
+    "userEngagementDuration": 288,
+    "averageSessionDuration": 315.55233,
+    "eventCount": 13
+   },
+   {
+    "date": "20260929",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 1,
+    "userEngagementDuration": 22,
+    "averageSessionDuration": 23.419453,
+    "eventCount": 5
+   },
+   {
+    "date": "20261002",
+    "sessionDefaultChannelGroup": "Referral",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 3,
+    "userEngagementDuration": 78,
+    "averageSessionDuration": 93.677289,
+    "eventCount": 6
+   },
+   {
+    "date": "20261005",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 9,
+    "userEngagementDuration": 159,
+    "averageSessionDuration": 170.64807,
+    "eventCount": 12
+   },
+   {
+    "date": "20261006",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "engagementRate": 0,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 1,
+    "userEngagementDuration": 0,
+    "averageSessionDuration": 0,
+    "eventCount": 3
+   },
+   {
+    "date": "20261010",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 2,
+    "userEngagementDuration": 14,
+    "averageSessionDuration": 19.520142,
+    "eventCount": 5
+   },
+   {
+    "date": "20261011",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 2,
+    "userEngagementDuration": 15,
+    "averageSessionDuration": 37.877126,
+    "eventCount": 11
+   },
+   {
+    "date": "20261013",
+    "sessionDefaultChannelGroup": "Organic Social",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 6,
+    "userEngagementDuration": 1,
+    "averageSessionDuration": 60.146106,
+    "eventCount": 9
+   },
+   {
+    "date": "20261016",
+    "sessionDefaultChannelGroup": "AI Assistant",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 25,
+    "userEngagementDuration": 496,
+    "averageSessionDuration": 619.698915,
+    "eventCount": 39
+   },
+   {
+    "date": "20261018",
+    "sessionDefaultChannelGroup": "Referral",
+    "sessions": 1,
+    "engagedSessions": 1,
+    "engagementRate": 1,
+    "newUsers": 1,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 3,
+    "userEngagementDuration": 39,
+    "averageSessionDuration": 61.506895,
+    "eventCount": 7
+   },
+   {
+    "date": "20261019",
+    "sessionDefaultChannelGroup": "Direct",
+    "sessions": 1,
+    "engagedSessions": 0,
+    "engagementRate": 0,
+    "newUsers": 0,
+    "activeUsers": 1,
+    "totalUsers": 1,
+    "screenPageViews": 1,
+    "userEngagementDuration": 0,
+    "averageSessionDuration": 4.947392,
+    "eventCount": 3
+   }
+  ]
+ }
+}

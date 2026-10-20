@@ -1,0 +1,101 @@
+{
+  "generatedAt": "2026-10-20T02:41:12.193Z",
+  "siteUrl": "sc-domain:boat-ai.jp",
+  "startDate": "2026-09-19",
+  "endDate": "2026-10-17",
+  "searchType": "web",
+  "dataState": "final",
+  "filters": "なし（全世界・全端末）",
+  "timezone": "Search Console の日付は太平洋時間（PT）",
+  "note": "query を含む集計は匿名化クエリを除くため、date のみの合計より小さい。page を含む集計は byPage 集計で、サイト合計（byProperty）と表示回数が一致しない",
+  "files": [
+    {
+      "file": "date.json",
+      "dimensions": [
+        "date"
+      ],
+      "rowCount": 29,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byProperty",
+      "totalClicks": 2591,
+      "totalImpressions": 51094,
+      "firstDate": "2026-09-19",
+      "lastDate": "2026-10-17",
+      "dayCount": 29
+    },
+    {
+      "file": "query.json",
+      "dimensions": [
+        "query"
+      ],
+      "rowCount": 718,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byProperty",
+      "totalClicks": 1590,
+      "totalImpressions": 38232
+    },
+    {
+      "file": "page.json",
+      "dimensions": [
+        "page"
+      ],
+      "rowCount": 581,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byPage",
+      "totalClicks": 2653,
+      "totalImpressions": 55604
+    },
+    {
+      "file": "query+page.json",
+      "dimensions": [
+        "query",
+        "page"
+      ],
+      "rowCount": 876,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byPage",
+      "totalClicks": 1602,
+      "totalImpressions": 40229
+    },
+    {
+      "file": "device.json",
+      "dimensions": [
+        "device"
+      ],
+      "rowCount": 3,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byProperty",
+      "totalClicks": 2591,
+      "totalImpressions": 51094
+    },
+    {
+      "file": "country.json",
+      "dimensions": [
+        "country"
+      ],
+      "rowCount": 68,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byProperty",
+      "totalClicks": 2591,
+      "totalImpressions": 51094
+    },
+    {
+      "file": "searchAppearance.json",
+      "dimensions": [
+        "searchAppearance"
+      ],
+      "rowCount": 0,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byPage",
+      "totalClicks": 0,
+      "totalImpressions": 0
+    }
+  ]
+}

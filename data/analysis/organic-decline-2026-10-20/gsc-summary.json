@@ -1,0 +1,176 @@
+{
+  "rule": "page の分類: / → top、/en|/ko|/zh-TW 配下 → i18n、/venue/N/meet/* → meet、/venue/N → venue、/racer/* → racer、/today → today、/blog/記事 → blog-article、/race・/races 配下 → races、残り → other。# 以降は除いて分類（行は別のまま）",
+  "periods": {
+    "gsc-latest-0919-1017": {
+      "start": "2026-09-19",
+      "site": {
+        "clicks": 2591,
+        "impressions": 51094,
+        "days": 29,
+        "firstDate": "2026-09-19",
+        "lastDate": "2026-10-17"
+      },
+      "queryRows": {
+        "rows": 718,
+        "clicks": 1590,
+        "impressions": 38232,
+        "anonymizedClicksShare": 0.3863
+      },
+      "pageRows": {
+        "rows": 581,
+        "clicks": 2653,
+        "impressions": 55604
+      },
+      "queryPageRows": 876,
+      "topShareOfPageRowClicks": 0.8839,
+      "topShareOfSiteClicks": 0.9051,
+      "pageClasses": {
+        "top": {
+          "pages": 1,
+          "clicks": 2345,
+          "impressions": 44112
+        },
+        "other": {
+          "pages": 12,
+          "clicks": 74,
+          "impressions": 1852
+        },
+        "blog-article": {
+          "pages": 117,
+          "clicks": 145,
+          "impressions": 5652
+        },
+        "races": {
+          "pages": 231,
+          "clicks": 43,
+          "impressions": 1465
+        },
+        "i18n": {
+          "pages": 108,
+          "clicks": 34,
+          "impressions": 1240
+        },
+        "venue": {
+          "pages": 11,
+          "clicks": 11,
+          "impressions": 291
+        },
+        "meet": {
+          "pages": 8,
+          "clicks": 1,
+          "impressions": 762
+        },
+        "racer": {
+          "pages": 92,
+          "clicks": 0,
+          "impressions": 225
+        },
+        "today": {
+          "pages": 1,
+          "clicks": 0,
+          "impressions": 5
+        }
+      },
+      "queryPositionBuckets": {
+        "pos<3.5": {
+          "queries": 71,
+          "clicks": 259,
+          "impressions": 530
+        },
+        "3.5<=pos<5.5": {
+          "queries": 66,
+          "clicks": 173,
+          "impressions": 2757
+        },
+        "5.5<=pos<10.5": {
+          "queries": 254,
+          "clicks": 1088,
+          "impressions": 33147
+        },
+        "10.5<=pos<20.5": {
+          "queries": 110,
+          "clicks": 34,
+          "impressions": 889
+        },
+        "pos>=20.5": {
+          "queries": 217,
+          "clicks": 36,
+          "impressions": 909
+        }
+      }
+    },
+    "gsc-baseline-0501-0529": {
+      "start": "2026-05-01",
+      "site": {
+        "clicks": 2817,
+        "impressions": 46101,
+        "days": 29,
+        "firstDate": "2026-05-01",
+        "lastDate": "2026-05-29"
+      },
+      "queryRows": {
+        "rows": 353,
+        "clicks": 2360,
+        "impressions": 35946,
+        "anonymizedClicksShare": 0.1622
+      },
+      "pageRows": {
+        "rows": 46,
+        "clicks": 2818,
+        "impressions": 46549
+      },
+      "queryPageRows": 377,
+      "topShareOfPageRowClicks": 0.9489,
+      "topShareOfSiteClicks": 0.9492,
+      "pageClasses": {
+        "top": {
+          "pages": 1,
+          "clicks": 2674,
+          "impressions": 41254
+        },
+        "blog-article": {
+          "pages": 23,
+          "clicks": 139,
+          "impressions": 4953
+        },
+        "races": {
+          "pages": 17,
+          "clicks": 3,
+          "impressions": 65
+        },
+        "other": {
+          "pages": 5,
+          "clicks": 2,
+          "impressions": 277
+        }
+      },
+      "queryPositionBuckets": {
+        "pos<3.5": {
+          "queries": 16,
+          "clicks": 127,
+          "impressions": 1442
+        },
+        "3.5<=pos<5.5": {
+          "queries": 36,
+          "clicks": 824,
+          "impressions": 11349
+        },
+        "5.5<=pos<10.5": {
+          "queries": 103,
+          "clicks": 1194,
+          "impressions": 20212
+        },
+        "10.5<=pos<20.5": {
+          "queries": 62,
+          "clicks": 199,
+          "impressions": 2334
+        },
+        "pos>=20.5": {
+          "queries": 136,
+          "clicks": 16,
+          "impressions": 609
+        }
+      }
+    }
+  }
+}

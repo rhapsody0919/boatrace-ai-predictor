@@ -24,20 +24,30 @@
  *   - 一部の関数だけ失敗 → 成功した項目は判定・通知し、失敗した関数は「検査を実行できなかった」通知にする
  */
 import { addDaysToDateString } from "../dateUtils.js";
-import { COUNT_CHECKS, DEFAULT_DAYS, EMPTY_TABLE_POLICIES } from "./checks.js";
+import {
+  COUNT_CHECKS,
+  DEFAULT_DAYS,
+  EMPTY_TABLE_POLICIES,
+  MORNING_FRESHNESS_CHECKS,
+} from "./checks.js";
 import {
   COMMON_CAUSE_MIN_BREACHES,
   commonCauseAlert,
   evaluateCountCheck,
   evaluateEmptyTables,
+  evaluateFreshnessCheck,
   formatBreach,
   isDueToday,
-  periodFor,
   reconcileAlerts,
 } from "./evaluate.js";
 import { DATA_HEALTH_FUNCTIONS } from "./functions.js";
 
 export const DATA_HEALTH_JOB = "data_health";
+/**
+ * 朝の生成（龍神ソナー等、締め 07:50）を見るジョブ。data_health は live では 06:35 の成功で対象日を済みにするため、
+ * 07:50 の締めは別の状態の行で見る（checks.js の MORNING_FRESHNESS_CHECKS）。評価の終端は当日。空テーブルは見ない
+ */
+export const DATA_HEALTH_MORNING_JOB = "data_health_morning";
 const TABLE_ROWS_FN = "data_health_table_rows";
 
 /** PostgREST が「関数が無い」と返すエラー（マイグレーション089の未適用） */
@@ -70,16 +80,15 @@ export function createRpcCaller(client) {
   };
 }
 
-/** scrape-monitor の通知済みの記録の、この監視の通知の key の接頭辞（monitor.js: `report:${job}:${alert.key}`） */
-const MONITOR_KEY_PREFIX = `report:${DATA_HEALTH_JOB}:`;
-
 /**
  * scrape-monitor が「通知済み」として記録している、この監視の通知の key（dh:項目:対象日）を読む（読み取りのみ）。
  * 前日の通知が届いたかの確認に使う。記録を読めない（行が無い・DBエラー）ときは null（判定しない）。
  * @param {import("@supabase/supabase-js").SupabaseClient} client
  * @returns {Promise<Set<string>|null>}
  */
-export async function readDeliveredKeys(client) {
+export async function readDeliveredKeys(client, job = DATA_HEALTH_JOB) {
+  // scrape-monitor の通知済みの記録の、この監視の通知の key の接頭辞（monitor.js: `report:${job}:${alert.key}`）
+  const prefix = `report:${job}:`;
   try {
     const { data, error } = await client
       .from("scrape_job_state")
@@ -90,8 +99,8 @@ export async function readDeliveredKeys(client) {
     const notified = data.last_report?.notified ?? {};
     return new Set(
       Object.keys(notified)
-        .filter((k) => k.startsWith(MONITOR_KEY_PREFIX))
-        .map((k) => k.slice(MONITOR_KEY_PREFIX.length)),
+        .filter((k) => k.startsWith(prefix))
+        .map((k) => k.slice(prefix.length)),
     );
   } catch {
     return null;
@@ -117,6 +126,7 @@ function argsFor(fn, { start, end }) {
  * @param {ReadonlyArray<import("./checks.js").CountCheck>} [input.checks]
  * @param {Record<string, {policy: string}>} [input.policies]
  * @param {ReadonlyArray<import("./functions.js").DataHealthFunction>} [input.functions]
+ * @param {number} [input.endOffsetDays] 評価の終端 = 対象日 − この日数（既定1=前日。朝のジョブは0=当日）
  */
 export async function runDataHealthChecks({
   targetDate,
@@ -128,10 +138,11 @@ export async function runDataHealthChecks({
   checks = COUNT_CHECKS,
   policies = EMPTY_TABLE_POLICIES,
   functions = DATA_HEALTH_FUNCTIONS,
+  endOffsetDays = 1,
 }) {
   const findFn = (name) => functions.find((f) => f.name === name);
   const dueChecks = checks.filter((c) => isDueToday(c, targetDate));
-  const end = periodFor(targetDate, 1).end;
+  const end = addDaysToDateString(targetDate, -endOffsetDays);
 
   // 関数ごとの呼び出しの期間: その関数を使う項目のうち、最も長い days
   const rangeByFn = new Map();
@@ -140,7 +151,13 @@ export async function runDataHealthChecks({
     const cur = rangeByFn.get(c.fn) ?? 0;
     rangeByFn.set(c.fn, Math.max(cur, days));
   }
-  rangeByFn.set(TABLE_ROWS_FN, rangeByFn.get(TABLE_ROWS_FN) ?? 1);
+  // 空テーブルの検査（data_health_table_rows）は、空テーブルの扱いか requiresTable があるときだけ呼ぶ
+  if (
+    Object.keys(policies).length > 0 ||
+    dueChecks.some((c) => c.requiresTable)
+  ) {
+    rangeByFn.set(TABLE_ROWS_FN, rangeByFn.get(TABLE_ROWS_FN) ?? 1);
+  }
 
   // 逐次実行（並列にしない。Disk IO予算への配慮）。失敗した関数は errors に残し、他の関数は続ける
   const results = new Map();
@@ -191,6 +208,13 @@ export async function runDataHealthChecks({
         detail: `${TABLE_ROWS_FN} が失敗したため、未導入かを判定できません`,
       };
     }
+    if (check.classification === "freshness") {
+      return evaluateFreshnessCheck(
+        check,
+        results.get(check.fn) ?? null,
+        findFn(check.fn)?.items ?? [],
+      );
+    }
     return evaluateCountCheck(check, results.get(check.fn) ?? [], {
       end,
       tableRows,
@@ -209,9 +233,24 @@ export async function runDataHealthChecks({
         key: r.id,
         text: `データ健全性 ${formatBreach(r)}`,
         missing: r.missing ?? 0,
+        // 鮮度の未達は日ごとに別の事故（2晩続けて落ちたら2晩目も知らせる）。件数の充足率と違い、毎日通知する
+        ...(r.staleItems ? { everyDay: true } : {}),
       });
     } else if (r.status !== "error") {
       okKeys.add(r.id);
+    }
+    // 鮮度の項目を判定できなかった（関数の結果に項目が無い＝本番の関数の版が古い等）。last_report に載せるだけだと
+    // 見張りが黙って止まるので、「検査を実行できなかった」として通知する
+    if (r.alertOnError && r.severity === "alert") {
+      if (r.status === "error") {
+        breaches.push({
+          key: `error.${r.id}`,
+          text: `データ健全性の検査を実行できませんでした: ${r.label}: ${r.detail}`,
+          missing: 1,
+        });
+      } else {
+        okKeys.add(`error.${r.id}`);
+      }
     }
   }
   for (const r of emptyResults) {
@@ -299,38 +338,57 @@ export async function runDataHealthChecks({
 }
 
 /**
- * 共通ラッパの run(ctx)。
- * @param {Object} ctx cronWrapper.js の ctx（client・mode・targetDate・now・state）
- * @param {{callFunction?: Function}} [deps]
+ * 共通ラッパの run(ctx) を作る（data_health・data_health_morning が共有する）。
+ * @param {{job: string, options?: Object}} spec options は runDataHealthChecks に渡す（checks・policies・endOffsetDays）
  */
-export async function runDataHealthJob(ctx, deps = {}) {
-  const targetDate = ctx.targetDate;
-  if (!targetDate)
-    throw new Error("対象日を解決できません（ctx.targetDate がありません）");
-  const callFunction = deps.callFunction ?? createRpcCaller(ctx.client);
-  const previousEmitted = ctx.state?.last_report?.emitted ?? {};
-  // 前日に通知した項目があるときだけ、その通知が scrape-monitor に届いたかを確認する（読み取り1回）
-  const deliveredKeys =
-    ctx.mode === "live" && Object.keys(previousEmitted).length > 0
-      ? await (deps.readDeliveredKeys ?? readDeliveredKeys)(ctx.client)
-      : null;
-  const { report, breaches, alerts, errors } = await runDataHealthChecks({
-    targetDate,
-    now: ctx.now(),
-    mode: ctx.mode,
-    callFunction,
-    previousEmitted,
-    deliveredKeys,
-  });
-  return {
-    rowsWritten: 0,
-    report,
-    body: {
-      period: report.period,
-      summary: report.summary,
-      breaches: breaches.length,
-      alerts: alerts.length,
-      errors: Object.keys(errors),
-    },
+function createDataHealthRun({ job, options = {} }) {
+  /**
+   * @param {Object} ctx cronWrapper.js の ctx（client・mode・targetDate・now・state）
+   * @param {{callFunction?: Function, readDeliveredKeys?: Function}} [deps]
+   */
+  return async (ctx, deps = {}) => {
+    const targetDate = ctx.targetDate;
+    if (!targetDate)
+      throw new Error("対象日を解決できません（ctx.targetDate がありません）");
+    const callFunction = deps.callFunction ?? createRpcCaller(ctx.client);
+    const previousEmitted = ctx.state?.last_report?.emitted ?? {};
+    // 前日に通知した項目があるときだけ、その通知が scrape-monitor に届いたかを確認する（読み取り1回）
+    const deliveredKeys =
+      ctx.mode === "live" && Object.keys(previousEmitted).length > 0
+        ? await (deps.readDeliveredKeys ?? readDeliveredKeys)(ctx.client, job)
+        : null;
+    const { report, breaches, alerts, errors } = await runDataHealthChecks({
+      targetDate,
+      now: ctx.now(),
+      mode: ctx.mode,
+      callFunction,
+      previousEmitted,
+      deliveredKeys,
+      ...options,
+    });
+    return {
+      rowsWritten: 0,
+      report,
+      body: {
+        period: report.period,
+        summary: report.summary,
+        breaches: breaches.length,
+        alerts: alerts.length,
+        errors: Object.keys(errors),
+      },
+    };
   };
 }
+
+/** data_health（06:30指定）の run(ctx)。api/cron/data-health.js */
+export const runDataHealthJob = createDataHealthRun({ job: DATA_HEALTH_JOB });
+
+/** data_health_morning（07:50指定）の run(ctx)。api/cron/data-health-morning.js。評価の終端は当日、空テーブルは見ない */
+export const runDataHealthMorningJob = createDataHealthRun({
+  job: DATA_HEALTH_MORNING_JOB,
+  options: {
+    checks: MORNING_FRESHNESS_CHECKS,
+    policies: {},
+    endOffsetDays: 0,
+  },
+});

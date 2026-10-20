@@ -188,6 +188,10 @@
       "schedule": "35 21-23 * * *"
     },
     {
+      "path": "/api/cron/data-health-morning",
+      "schedule": "55 22,23 * * *"
+    },
+    {
       "path": "/api/cron/race-series",
       "schedule": "0 19 * * *"
     },
@@ -268,7 +272,7 @@
     "api/cron/sns-auto-plan.js": {
       "regions": ["syd1"],
       "memory": 3009,
-      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**,sns-video-studio/remotion/risk-rules.json,src/locales/ja/common.json}"
+      "includeFiles": "{node_modules/@sparticuz/chromium/bin/**,scripts/lib/fonts/**,sns-video-studio/remotion/risk-rules.json,src/locales/ja/common.json,config/today-variants.json}"
     },
     "api/cron/*.js": {
       "regions": ["syd1"]
