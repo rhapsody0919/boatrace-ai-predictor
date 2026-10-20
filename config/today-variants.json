@@ -1,0 +1,7 @@
+{
+  "default": "本日のデータ一覧（{date}）",
+  "variants": [
+    { "id": "a", "uuid": null, "heading": "本日のデータ一覧（{date}）" },
+    { "id": "b", "uuid": null, "heading": "本日のデータ一覧（{date}）" }
+  ]
+}

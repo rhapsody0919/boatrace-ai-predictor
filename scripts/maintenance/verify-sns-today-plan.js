@@ -379,6 +379,7 @@ async function plan({
   raceDb = raceDbOf(),
   nowMs,
   reviewDate,
+  loadVariants,
 } = {}) {
   return runTodayPlan(
     { mode, now: () => now },
@@ -399,6 +400,7 @@ async function plan({
       notify: async (text) => notes.push(text),
       ...(nowMs ? { nowMs } : {}),
       ...(reviewDate ? { reviewDate } : {}),
+      ...(loadVariants ? { loadVariants } : {}),
     },
   );
 }
@@ -1239,4 +1241,49 @@ test("送る時刻（2026-10-19 オーナー決定: 毎朝 8:00 ごろ）: 8:00 
     draft.source_data.deadline_queue.expires_at,
     at("09:30").toISOString(),
   );
+});
+
+test("見出しの日替わり（2026-10-20）: 1行目だけが案の文になり、札は source_data.today_variant と tracking に残る（uuid が無い間は null）", async () => {
+  const variants = {
+    default: "本日のデータ一覧（{date}）",
+    variants: [
+      { id: "a", uuid: null, heading: "今日のデータ（{date}）" },
+      { id: "b", uuid: null, heading: "今日のデータ（{date}）" },
+    ],
+  };
+  await plan({ loadVariants: () => variants });
+  const draft = await first("SELECT * FROM sns_drafts");
+  const lines = draft.caption_text.split("\n");
+  assert.match(lines[0], /^今日のデータ（/);
+  // 2行目以降は今までどおり（注目レース・印・一覧・注意書き・URL）
+  assert.match(draft.caption_text, /注目レース：/);
+  assert.equal(draft.source_data.today_variant.uuid, null);
+  assert.ok(["a", "b"].includes(draft.source_data.today_variant.id));
+  const tracking = await first(
+    "SELECT template_variant_id FROM sns_post_tracking WHERE draft_id=$1",
+    [draft.id],
+  );
+  assert.equal(tracking.template_variant_id, null);
+});
+
+test("見出しの日替わり: 案の uuid が入っていれば（sns_template_variants の行がある）tracking の template_variant_id にも入る", async () => {
+  const id = "0f88824e-c630-4f94-8c15-475297e4b242";
+  await db.query(
+    "INSERT INTO sns_template_variants(id, format, variant_name, composition_name) VALUES($1,'today_digest','today-heading-a','TodayDigestX') ON CONFLICT DO NOTHING",
+    [id],
+  );
+  const same = { id: "a", uuid: id, heading: "今日のデータ（{date}）" };
+  await plan({
+    loadVariants: () => ({
+      default: "本日のデータ一覧（{date}）",
+      variants: [same, { ...same, id: "b" }],
+    }),
+  });
+  const draft = await first("SELECT * FROM sns_drafts");
+  const tracking = await first(
+    "SELECT template_variant_id FROM sns_post_tracking WHERE draft_id=$1",
+    [draft.id],
+  );
+  assert.equal(tracking.template_variant_id, id);
+  assert.equal(draft.source_data.today_variant.uuid, id);
 });

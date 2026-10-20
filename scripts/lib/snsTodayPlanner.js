@@ -25,6 +25,12 @@ import {
 } from "../../api/_lib/snsTodayDigest.js";
 import { buildTodayModel } from "../../api/_lib/botToday.js";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import {
+  TODAY_HEADING_BUILTIN,
+  loadTodayVariants,
+  pickTodayHeading,
+  renderTodayHeading,
+} from "./snsTodayVariants.js";
 import { randomBytes } from "node:crypto";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
@@ -141,7 +147,14 @@ export function todayFeatured(rows, sendAt = TODAY_SEND_AT) {
 
 export function buildTodayPost(
   digest,
-  { date, t, url, sendAt = TODAY_SEND_AT, excluded = new Set() },
+  {
+    date,
+    t,
+    url,
+    sendAt = TODAY_SEND_AT,
+    excluded = new Set(),
+    heading = TODAY_HEADING_BUILTIN,
+  },
 ) {
   const model = buildTodayModel(digest, { date, t });
   const key = (row) => `${row.race_id}:${row.boat_number}`;
@@ -171,7 +184,8 @@ export function buildTodayPost(
   );
   const head = (row) =>
     `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}`;
-  const lines = [`本日のデータ一覧（${model.dateLine}）`, ""];
+  // 見出し（1行目）だけは日替わりの案（config/today-variants.json）。ほかは機械が作る
+  const lines = [renderTodayHeading(heading, model.dateLine), ""];
   // 注目レースを先頭に（2026-10-16 オーナー指示。「イン崩れ指数」「AIが算出」の言い方は使わない）
   if (featured)
     lines.push(
@@ -249,13 +263,18 @@ export async function runTodayPlan(
     nowMs = Date.now,
     // 確認用に、送る時刻を過ぎた日の下書きを1回だけ作る日付（scrape_job_state.cursor.today_rebuild。オーナーが本番 SQL で入れる）
     reviewDate = null,
+    // 見出しの案の設定（config/today-variants.json）。テストから差し替える
+    loadVariants = loadTodayVariants,
   },
 ) {
   const live = ctx.mode === "live";
   const now = ctx.now();
   const date = jstDate(now);
   // 確認用の作り直し（送る時刻を過ぎた後）は、送る時刻を今にしない（item の veto_until が締切を越えないように）
-  const when = todaySchedule(date, isTodayRebuild(reviewDate, now) ? null : now);
+  const when = todaySchedule(
+    date,
+    isTodayRebuild(reviewDate, now) ? null : now,
+  );
   const done = (extra) => ({
     rowsWritten: extra.written ? 1 : 0,
     report: { items: [{ kind: "digest", date, ...extra }], alerts: [] },
@@ -304,12 +323,14 @@ export async function runTodayPlan(
       .filter((p) => p.reason)
       .map((p) => `${p.race_id}:${p.boat_number}`),
   );
+  const { heading, variant } = pickTodayHeading(loadVariants(), date);
   const post = buildTodayPost(digest, {
     date,
     t,
     url: trackingUrl,
     sendAt,
     excluded,
+    heading,
   });
   if (!post)
     return done({ outcome: "skipped", reason: "no_candidates", revision });
@@ -391,6 +412,8 @@ export async function runTodayPlan(
     image_paths: imagePaths,
     // picks は送る直前の検査（readCurrent）が欠場・中止を読み直す対象
     digest: { date, revision, picks: post.picks },
+    // 見出しの案の札（uuid は sns_template_variants の行。入るまでは null）
+    today_variant: variant,
     deadline_queue: {
       deadline_at: when.deadline_at,
       expires_at: when.expires_at,
@@ -452,7 +475,7 @@ export async function runTodayPlan(
       });
   await trackingStore.save({
     draft_id: draft.id,
-    template_variant_id: null,
+    template_variant_id: variant.uuid,
     race_url: TODAY_URL,
     tracking_url: trackingUrl,
     utm_source: "x",
