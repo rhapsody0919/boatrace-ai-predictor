@@ -156,3 +156,20 @@ export function buildScene4(m) {
   if (r2.same) omitted.push({ where: "scene4.overall", reason: "全体でも同じ形なので、2回目は形の一致まで（型どおり）" });
   return { id: "scene4", steps, omitted };
 }
+
+/** 攻める艇（画面の「役」: カド一撃・カド受け凹み・ダッシュ勢先行は4コース、イン凹みは2コース、2コース凹みは3コース） */
+const ROLE_BOAT = { kado: 4, d3: 4, dash: 4, d1: 2, d2: 3 };
+
+/**
+ * 場面4の展開の鍵の艇（場面6・8 が使う）。「このコース」の形の攻める艇と1号艇。攻める艇の無い形は1号艇だけ
+ * @returns {{form: string, boats: number[]}}
+ */
+export function keyBoatsOf(m) {
+  const data = m.api.scenario;
+  const sc = data?.scenario;
+  if (!sc?.cells) return { form: null, boats: [1] };
+  const rows = hintRows(sc.hints, data.hints?.course, "course", wilsonInterval);
+  const form = hintCardGroups(rows)[0]?.form ?? "flat";
+  const role = ROLE_BOAT[form];
+  return { form, boats: role ? [role, 1] : [1] };
+}

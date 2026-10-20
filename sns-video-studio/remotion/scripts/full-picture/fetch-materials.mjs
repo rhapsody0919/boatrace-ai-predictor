@@ -139,6 +139,23 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
     db.racer1 = null;
     missing.push({ source: "db.racer1", reason: e instanceof Error ? e.message : String(e) });
   }
+  // モーター（場面6）: 前検（この節）・会場のモーター成績（このレースの日より前の最新）・今節の展示タイム（6選手、このレースより前）
+  try {
+    const motors = (race?.entries ?? []).map((e) => e.motorNumber).filter((x) => x != null);
+    const meetStart = api.facts?.racers?.meet_start ?? date;
+    const racerIds = (race?.entries ?? []).map((e) => e.racerId).filter((x) => x != null);
+    const [pretest, stats, meetEntries] = await Promise.all([
+      sbGet("motor_pretest_stats", `select=race_date,motor_number,pretest_time,pretest_rank&venue_code=eq.${Number(venue)}&and=(race_date.gte.${daysBefore(meetStart, 1)},race_date.lte.${date})&motor_number=in.(${motors.join(",")})`),
+      sbGet("venue_motor_stats", `select=motor_number,scraped_date,race_count,final_count,championship_count,first_place_count,top2_rate&venue_code=eq.${Number(venue)}&scraped_date=lte.${date}&motor_number=in.(${motors.join(",")})&order=scraped_date.desc`),
+      sbGet("race_entries", `select=race_id,boat_number,racer_id&racer_id=in.(${racerIds.join(",")})&and=(race_id.gte.${meetStart},race_id.lt.${raceId})`),
+    ]);
+    const exIds = [...new Set(meetEntries.map((e) => e.race_id))];
+    const ex = exIds.length ? await sbIn("exhibition_data", "race_id,boat_number,exhibition_time", "race_id", exIds) : [];
+    db.motor = { meetStart, pretest, stats, meetEntries, exhibition: ex.filter((x) => meetEntries.some((e) => e.race_id === x.race_id && e.boat_number === x.boat_number)) };
+  } catch (e) {
+    db.motor = null;
+    missing.push({ source: "db.motor", reason: e instanceof Error ? e.message : String(e) });
+  }
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, api, db, missing };
 }
 

@@ -25,12 +25,12 @@ export function stepTimes(step, first) {
   // 表を縦に伸ばす段は、伸び切ってから 0.5秒で枠
   const grow = step.page?.grow ?? 0;
   const frame0 = changed + grow + BEAT.pause;
-  const nFrames = Math.max(1, step.frames?.length ?? 0);
-  const frames = Array.from(
-    { length: nFrames },
-    (_, i) => frame0 + i * FRAME_STEP,
+  // framesTogether: 複数の枠を同時に出す（金枠が複数の艇など）。無ければ順に移す
+  const nFrames = step.framesTogether ? 1 : Math.max(1, step.frames?.length ?? 0);
+  const frames = Array.from({ length: Math.max(1, step.frames?.length ?? 0) }, (_, i) =>
+    step.framesTogether ? frame0 : frame0 + i * FRAME_STEP,
   );
-  const answer = frames[nFrames - 1] + BEAT.frameIn + BEAT.answerGap;
+  const answer = frames[frames.length - 1] + BEAT.frameIn + BEAT.answerGap;
   // 短い段（重点でない艇、約2秒）は step.len で決める
   const len = step.len ?? STEP_LEN + (nFrames - 1) * FRAME_STEP + grow;
   return { scroll, press, changed, frames, answer, len };

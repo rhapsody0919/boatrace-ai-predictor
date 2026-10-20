@@ -6,7 +6,7 @@
 import { interpolate, useCurrentFrame } from "remotion";
 import { PAGE, answerOf, clamp, ease } from "./parts.js";
 import { Bubble, Finger, Frame, Note, QuestionBand } from "./parts.jsx";
-import { BarsPage, FollowersPage, SankeyPage, SlitPage, SonarPage, StatsPage, TablePage, TrifectaPage } from "./pages.jsx";
+import { BarsPage, DeepPage, FollowersPage, SankeyPage, SlitPage, SonarPage, StatsPage, TablePage, TrifectaPage } from "./pages.jsx";
 import { BAND, H, W } from "./scene2Layout.js";
 import {
   scrollPages,
@@ -15,7 +15,7 @@ import {
   stepTimeline,
 } from "./stepTimeline.js";
 
-const PAGES = { bars: BarsPage, table: TablePage, stats: StatsPage, sonar: SonarPage, sankey: SankeyPage, trifecta: TrifectaPage, slit: SlitPage, followers: FollowersPage };
+const PAGES = { bars: BarsPage, table: TablePage, stats: StatsPage, sonar: SonarPage, sankey: SankeyPage, trifecta: TrifectaPage, slit: SlitPage, followers: FollowersPage, deep: DeepPage };
 const BG_TOP = "#12233a";
 
 /** その段の頁（押す段は、押した後に中身が出る） */
@@ -99,7 +99,7 @@ export function StepScene({ scene, frameOffset = 0 }) {
                   // 枠を順に移す: 次の枠が出たら前の枠は消す
                   const at = s.times.frames[k];
                   const next = s.times.frames[k + 1];
-                  if (next !== undefined && t >= next) return null;
+                  if (next !== undefined && next > at && t >= next) return null;
                   return <Frame key={k} box={box} t={t - at} />;
                 })}
               {windows

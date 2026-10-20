@@ -74,3 +74,7 @@ export const slitFormBox = (i) => ({ x: LEFT + (i % 3) * 300, y: SLIT.top + 6 * 
 export const AXIS = { y: BODY_Y, h: 84, w: 135, step: 153 };
 export const axisButtonBox = (b) => ({ x: LEFT + (b - 1) * AXIS.step, y: AXIS.y, w: AXIS.w, h: AXIS.h });
 export const followerRow = (i) => ({ x: LEFT, y: BODY_Y + 120 + i * 112, w: RIGHT - LEFT, h: 100 });
+
+/** 深掘り: 先頭のカード（材料名・今日の位置と率）と、その下の札 */
+export const DEEP = { cardY: BODY_Y, cardH: 300, chipY: BODY_Y + 330, chipH: 80 };
+export const deepBox = (nChipRows) => ({ x: LEFT, y: DEEP.cardY, w: RIGHT - LEFT, h: DEEP.cardH + (nChipRows ? 30 + nChipRows * (DEEP.chipH + 16) - 16 : 0) });

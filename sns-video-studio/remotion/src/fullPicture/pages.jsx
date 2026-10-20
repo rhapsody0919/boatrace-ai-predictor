@@ -24,6 +24,7 @@ import {
   tableRowH,
   tableRowY,
   SLIT,
+  DEEP,
   axisButtonBox,
   followerRow,
   slitFormBox,
@@ -478,6 +479,31 @@ export function FollowersPage({ title, sub, axis, rows, max }) {
           </div>
         );
       })}
+    </>
+  );
+}
+
+/** 思考アシストの深掘り: 差がつく材料の先頭カード＋札。card: {name, text, level}、chips: [文字] */
+export function DeepPage({ title, sub, card, chips }) {
+  return (
+    <>
+      <Panel title={title} sub={sub} />
+      {card ? (
+        <div style={{ position: "absolute", left: LEFT, top: DEEP.cardY, width: RIGHT - LEFT, height: DEEP.cardH, background: "#0c1a2c", borderRadius: 20, border: `3px solid ${GOLD}`, boxSizing: "border-box", padding: "26px 30px" }}>
+          <div style={{ fontSize: 46, fontWeight: 900, color: "#ffffff" }}>{card.name}</div>
+          <div style={{ fontSize: 40, fontWeight: 700, color: "#ffffff", marginTop: 18, lineHeight: 1.35 }}>{card.text}</div>
+          {card.level && <div style={{ fontSize: MIN_TEXT, fontWeight: 800, color: GOLD, marginTop: 14 }}>{card.level}</div>}
+        </div>
+      ) : (
+        <div style={{ position: "absolute", left: LEFT, top: DEEP.cardY + 20, fontSize: 40, color: MUTED }}>▲の付いた材料なし</div>
+      )}
+      <div style={{ position: "absolute", left: LEFT, top: DEEP.chipY, width: RIGHT - LEFT, display: "flex", flexWrap: "wrap", gap: 16 }}>
+        {chips.map((c, i) => (
+          <span key={i} style={{ height: DEEP.chipH, display: "inline-flex", alignItems: "center", padding: "0 26px", borderRadius: 40, background: "rgba(226,185,59,0.18)", border: `2px solid ${GOLD}`, color: "#ffffff", fontSize: 40, fontWeight: 800, boxSizing: "border-box", whiteSpace: "nowrap" }}>
+            {c}
+          </span>
+        ))}
+      </div>
     </>
   );
 }
