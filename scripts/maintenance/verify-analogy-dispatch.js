@@ -376,6 +376,7 @@ const run = (f, env = ENV) =>
       workflow: "e2e-rerecord.yml",
       inputs: { gate: "true" },
       crons: ["23 1 * * *", "47 3 * * *", "37 5 * * *", "13 7 * * *"],
+      alertAfter: 1,
     },
     {
       target: "key_canary",
@@ -384,6 +385,8 @@ const run = (f, env = ENV) =>
       workflow: "key-canary.yml",
       inputs: {},
       crons: ["7,37 * * * *"],
+      // 1日48回なので一時的な失敗の1回では通知しない
+      alertAfter: 3,
     },
   ];
   const vercel = JSON.parse(
@@ -411,8 +414,8 @@ const run = (f, env = ENV) =>
 
     const def = SCRAPE_JOBS[c.job];
     check(
-      def?.kind === "monitor" && def?.failureAlertAfter === 1,
-      `(g) ${c.job}: monitor・failureAlertAfter 1`,
+      def?.kind === "monitor" && def?.failureAlertAfter === c.alertAfter,
+      `(g) ${c.job}: monitor・failureAlertAfter ${c.alertAfter}`,
       JSON.stringify(def),
     );
     const src = fs.readFileSync(

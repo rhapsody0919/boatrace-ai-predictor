@@ -443,7 +443,7 @@ export const SCRAPE_JOBS = Object.freeze({
   },
   // E2E の録画の撮り直し（e2e-rerecord.yml、BOA-929）と鍵のカナリア（key-canary.yml、BOA-917）の起動
   // （scripts/lib/analogyDispatch.js）。GitHub の schedule が来ないための迂回で、schedule は予備に残す。
-  // 学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける。dispatch の失敗は1回目から通知する
+  // 学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける。e2e の dispatch の失敗は1回目から通知する
   e2e_rerecord_dispatch: {
     kind: "monitor",
     leaseSec: 60,
@@ -451,12 +451,13 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
+  // カナリアは1日48回起動する。GitHub API の一時的な 5xx の1回で通知しないよう、3回連続（1.5時間）で通知する
   key_canary_dispatch: {
     kind: "monitor",
     leaseSec: 60,
     maxDurationSec: 60,
     hosts: [],
-    failureAlertAfter: 1,
+    failureAlertAfter: 3,
   },
   // BOA-822 イン崩れ注意度の監視（scripts/lib/inCautionHealth.js）。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する。
   // 夜の表（JST 04:30、api/cron/in-caution-health.js）と今日の unified（05:45、api/cron/in-caution-today-health.js）を

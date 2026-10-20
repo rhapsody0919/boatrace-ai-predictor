@@ -81,9 +81,11 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 毎日4回（JST 10:23 / 12:47 / 14:37 / 16:13。UTC 01:23 / 03:47 / 05:37 / 07:13）と `workflow_dispatch` で、master で全件を録画する。その日の録画を採用したら、後の起動は空振りする。
 
+- 起動の主は Vercel Cron（`api/cron/e2e-rerecord-dispatch.js`）からの `workflow_dispatch`（`inputs.gate=true`）。2026-10-02 を最後に schedule が JST19時以降にしか来ず18日撮れなかったため（BOA-929、PR-A2）。schedule は同じ時刻の予備に残す。以下の「定期実行」は schedule と gate=true の dispatch の両方を指す
+
 - 当初は JST11:00（`'0 2 * * *'`）の1回だけだったが、2026-09-30 は JST17:15 に起動した。GitHub の schedule は負荷で遅れ、取りこぼされることもあり、毎時0分に負荷が集中する（[公式](https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#schedule)）。このリポジトリの他の定期実行も1〜4時間の遅れが常態のため、0分を避けたうえで予備の起動を置いた（JST10:23・12:47の2回）
 - 2回でも足りなかった。2026-10-01 は 10:23 の予定が JST16:15 に、12:47 の予定が JST19:27 に起動し、16:15 の回は不採用（テスト3件の失敗）、19:27 の回は打ち切りで撮らずに終わった。1回でも不採用・大幅遅延になると、その日は撮り直せない。起動を JST10〜17時に4回置き、同じ日のうちに再挑戦できるようにした
-- 定期実行は、録画の前に `scripts/maintenance/e2e-recording.js gate` で撮るかを決める。その日（JST）の録画を採用済みなら撮らない（後の起動の空振り。通知しない）。JST19時以降に起動したら撮らない（発走前のレースが夜間開催の数場だけになる。通知する）。`workflow_dispatch` は判定せずに撮る
+- 定期実行は、録画の前に `scripts/maintenance/e2e-recording.js gate` で撮るかを決める。その日（JST）の録画を採用済みなら撮らない（後の起動の空振り。通知しない）。JST19時以降に起動したら撮らない（発走前のレースが夜間開催の数場だけになる。通知する）。人が起こす `workflow_dispatch`（gate=false、既定）は判定せずに撮る
 - 起動が遅れて重なっても、`concurrency`（`cancel-in-progress: false`）で直列になる。後の起動は前の起動の終了後に checkout した master のポインタで判定する（二重に撮らない）。起動時刻・直列化・権限は `verify-e2e-har-merge.js` が機械検査する
 
 1. 本番に繋いで全件を録画する
@@ -92,7 +94,7 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
    - 2 が全件通る（失敗・flaky・テスト外のエラーが0）
    - skip が現行の録画（ポインタに記録した件数）より増えていない。発走前のレースが少ない日に撮ると skip が増えるため
 4. 採用したら Release に添付してポインタを master に直接 push する（`push-with-retry.sh`。push はアプリ ryujin-bot のトークンで行い、この push で起動しうるワークフローは `[automated]` で終わるコミットでは動かない条件を持つか、paths で `e2e/recording.json` を対象にしていない。当初は GITHUB_TOKEN で push し、他のワークフローを起動しないことに頼っていた）。直近14件を残して古い Release を消す
-5. 採用しなかった・失敗したときは Slack に通知する。PRゲートは現行の録画のまま動き続ける。定期実行の「採用しなかった・撮らなかった」通知は1日1回まで（`e2e-recording.js notify-dedupe`。同じ日に別の定期実行の通知ステップが動いていれば出さない。確かめられないときは通知する）。2回目以降の結果は各実行の step summary に残る。ワークフロー自体の失敗（push の失敗等、ステップが失敗したとき）と `workflow_dispatch` は毎回通知する
+5. 採用しなかった・失敗したときは Slack に通知する。PRゲートは現行の録画のまま動き続ける。定期実行の「採用しなかった・撮らなかった」通知は1日1回まで（`e2e-recording.js notify-dedupe`。同じ日に master の別の実行の通知ステップが動いていれば出さない。runs の API は inputs を返さないので、人の起動の通知も数える。確かめられないときは通知する）。2回目以降の結果は各実行の step summary に残る。ワークフロー自体の失敗（push の失敗・record ジョブの失敗等）と、人が起こす `workflow_dispatch`（gate=false）は毎回通知する
 
 撮り直しで初めて落ちるテストは、録画の日時か本番データに暗黙に依存している。PRゲートは録画（時計は録画時刻）で再生するので通るが、翌日の撮り直し（時計は撮影時刻・本番の最新データ）で落ちる。2026-10-01 の不採用の3件はいずれもこの型だった。
 

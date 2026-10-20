@@ -265,6 +265,22 @@ check(
   ],
   [true, false],
 );
+// 通知の重複判定は event で絞らない（schedule だけを見ると、Vercel Cron の dispatch の通知を数えず1日最大4回に戻る）。
+// PR のブランチを ref にした手の起動は数えない
+{
+  const src = readFileSync(
+    path.join(repoRoot, "scripts", "maintenance", "e2e-recording.js"),
+    "utf8",
+  );
+  check(
+    "notify-dedupe の runs の取得は event で絞らず、master だけを見る",
+    [
+      /e2e-rerecord\.yml\/runs\?[^`]*event=/.test(src),
+      /e2e-rerecord\.yml\/runs\?branch=master&/.test(src),
+    ],
+    [false, true],
+  );
+}
 // 状態関数（failure() / success() / cancelled() / always()）は if: の中でしか使えない。
 // env や with の ${{ }} に書くと、GitHub はワークフロー全体を無効と判定し、schedule も
 // 起動しなくなる。#1080 で JOB_FAILED: ${{ failure() }} を入れ、この検証自体がその

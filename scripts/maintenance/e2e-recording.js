@@ -248,7 +248,7 @@ export function notifiedInJobs(jobs) {
  * 1日の最初の通知だけ出し、2回目以降は各実行の step summary に残す。
  * runs: このワークフローの実行 [{ id, createdAt, notified }]。定期実行は schedule と、Vercel Cron の
  *   dispatch（inputs.gate=true、BOA-929）の2経路。runs の API は inputs を返さず gate の有無で絞れないので、
- *   event で絞らず全件を見る（人が起こした dispatch の通知も「その日は通知済み」に数える）
+ *   event で絞らず master の全件を見る（人が起こした dispatch の通知も「その日は通知済み」に数える。PR のブランチの run は除く）
  */
 export function notifyDedupe(now, currentRunId, runs) {
   const today = jstDate(now).slice(0, 10);
@@ -278,7 +278,7 @@ function collectTodayRuns(now) {
   const gh = (endpoint) =>
     JSON.parse(execFileSync("gh", ["api", endpoint], { encoding: "utf8" }));
   const { workflow_runs: runs = [] } = gh(
-    `repos/${repo}/actions/workflows/e2e-rerecord.yml/runs?per_page=30&created=${encodeURIComponent(`>=${since}`)}`,
+    `repos/${repo}/actions/workflows/e2e-rerecord.yml/runs?branch=master&per_page=30&created=${encodeURIComponent(`>=${since}`)}`,
   );
   return runs.map((run) => ({
     id: run.id,
