@@ -140,6 +140,8 @@ export function checkFullPicture(bundle, riskRules = []) {
       if (bundle?.qa?.machine?.[key] !== true)
         reasons.push(`Shorts の機械の検査 ${key} が通っていない`);
   }
+  // review.p0_count の検査は、2026-10-20 オーナー決定（全貌は機械の検査だけで送る）に合わせて、別の PR（全貌の自動送信を
+  // 機械の検査だけにする、#1714 の後）が外して review を任意にする。この PR では元の検査のまま残す
   if (bundle?.review?.p0_count !== 0)
     reasons.push(`評価役の P0 が0件でない（${bundle?.review?.p0_count}）`);
   const machine = bundle?.qa?.machine;
