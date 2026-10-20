@@ -61,3 +61,6 @@
 - 番号順に先頭1件を処理する選定では、後続全件の外部事実取得を先行させると後続の取得失敗で先頭の結果も失われる。先頭の選定と必要事実の取得の順を点検する。（2026-10-19、2026-10-19-review-20261019-14.md）
 - 新しい本番の鍵を Actions に置くときは、repo の secret ではなく master だけの Environment（prod-jobs）に置き、job-watch.json に載せる（載せないと verify-job-watch.js が落ちる）。key-canary にも読み取りを1回足す（こちらは verify では検査しない）（2026-10-20、system-architect、ADR-0097:48-49,128）
 - master への自動コミットは1回ごとに本番デプロイが走る（vercel.json の除外は codex/** だけ。デプロイフックも叩くと2回）。日次のデータの置き場所にするなら費用として数える（2026-10-20、system-architect、ADR-0032 追記）
+- 2026-10-20 時点の審査の関門は、本文の無い差分を削除以外すべて落とす。画像を足す PR は、ADR-0097 の追記なしでは承認されない（2026-10-20、system-architect の content-publish の審査、scripts/lib/reviewPr.js:57-60・ADR-0097:34）
+- 段取り D の「鍵側の機械」（git apply・push・PR）は設計だけで、hq/scripts に実装は無い。あるのは app-token.sh だけ（2026-10-20、system-architect の content-publish の審査、hq/drafts/identity-separation-20261019.md:65・hq/scripts/app-token.sh）
+- ブログの古い道（finalize-blog-draft.js の自動マージ、merge-blog-pr.js の GITHUB_MERGE_TOKEN の PAT、ADR-0034）は書き込みの身元を増やす道で、ADR-0097:109 と矛盾し、切替の後は失敗する。#1701 で止めた（2026-10-20、system-architect の content-publish の審査、BOA-908 ⑤）
