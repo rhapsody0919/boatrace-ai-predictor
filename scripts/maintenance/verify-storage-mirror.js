@@ -36,7 +36,9 @@ import {
 } from "../storage-mirror/r2.js";
 import { keyRole } from "../storage-mirror/supabase-source.js";
 import {
+  assertDrillEntry,
   assertDrillTarget,
+  createDrillTarget,
   DRILL_BUCKET,
   pickDrillSample,
   runDrill,
@@ -796,11 +798,76 @@ const SECRET_PATH = "未投稿の企画/秘密 name(1)!+$'*.mp4";
   const rot = await runDrill({ r2, drill: fakeDrill(), all: true });
   check("復元の試験: R2 の写しが壊れていれば失敗", rot.failures.some((f) => /R2 から読んだ/.test(f)));
 
+  // R2 の Content-Type が manifest と違う
+  store.get("objects/raw-pages/pit/1.gz").contentType = "text/html";
+  const badR2Type = await runDrill({ r2, drill: fakeDrill(), all: true });
+  check("復元の試験: R2 の Content-Type が manifest と違えば失敗", badR2Type.failures.some((f) => /R2 の Content-Type/.test(f)), badR2Type.failures.join(" / "));
+
+  // 偽の manifest（R2 の token の漏れ）でも、試験用のバケットの外へ書かない
+  const good1 = { bucket: "raw-pages", path: "p/a.gz", r2Key: "objects/raw-pages/p/a.gz" };
+  const ok1 = (() => { try { assertDrillEntry("raw-pages/p/a.gz", good1); return true; } catch { return false; } })();
+  const bad = [
+    ["storage-mirror-drill/../raw-pages/x", { bucket: "raw-pages", path: "../raw-pages/x", r2Key: "objects/x" }],
+    ["raw-pages/../../analogy/y", { bucket: "raw-pages", path: "../../analogy/y", r2Key: "objects/y" }],
+    ["raw-pages/a/./b", { bucket: "raw-pages", path: "a/./b", r2Key: "objects/z" }],
+    ["raw-pages/a//b", { bucket: "raw-pages", path: "a//b", r2Key: "objects/z" }],
+    ["analogy/x", { bucket: "raw-pages", path: "x", r2Key: "objects/z" }],
+    ["analogy-v16/x", { bucket: "analogy-v16", path: "x", r2Key: "objects/z" }],
+    ["raw-pages/x", { bucket: "raw-pages", path: "x", r2Key: "manifests/z" }],
+  ];
+  const rejected = bad.filter(([k, e]) => { try { assertDrillEntry(k, e); return false; } catch { return true; } }).length;
+  check("復元の試験: manifest の行の形（.. ・空の区切り・キーの不一致・写す元以外・R2 のキー）を拒む", ok1 && rejected === bad.length, `${rejected}/${bad.length}`);
+
+  const sent = [];
+  const fakeFetch = async (u, opt = {}) => {
+    sent.push({ path: new URL(u).pathname, method: opt.method ?? "GET", headers: opt.headers ?? {} });
+    if ((opt.method ?? "GET") === "POST") return new Response("{}", { status: 200 });
+    return new Response(Buffer.from("x"), { status: 200, headers: { "content-type": "image/png" } });
+  };
+  const tgt = createDrillTarget({ url: "https://abc.supabase.co/", key: "k", fetchImpl: fakeFetch });
+  await tgt.upload("raw-pages/秘 (1).gz", Buffer.from("x"), "application/gzip");
+  await tgt.download("raw-pages/秘 (1).gz");
+  check("復元の口: 上げると読み直しは同じ試験用のバケットのパス、x-upsert と no-cache",
+    sent.length === 2 && sent.every((x) => x.path.startsWith("/storage/v1/object/storage-mirror-drill/raw-pages/")) &&
+      sent[0].method === "POST" && sent[0].headers["x-upsert"] === "true" && sent[0].headers["cache-control"] === "no-cache" &&
+      sent[0].path === sent[1].path);
+  let escErr = null;
+  await tgt.upload("../raw-pages/x", Buffer.from("x"), "application/gzip").catch((e) => (escErr = e));
+  check("復元の口: 正規化で試験用のバケットの外になる URL は送らない", /外/.test(escErr?.message ?? "") && sent.length === 2);
+
+  const forged = fakeR2();
+  forged.store.set("manifests/20261021T194000Z.json.gz", {
+    body: zlib.gzipSync(Buffer.from(JSON.stringify({ version: 1, baseline: true, entries: {
+      "raw-pages/../../raw-pages/x": { bucket: "raw-pages", path: "../../raw-pages/x", r2Key: "objects/x", sha256: sha256(Buffer.from("x")), contentType: "image/png", size: 1, goneAt: null },
+    } }))),
+    contentType: "application/gzip",
+  });
+  forged.store.set("objects/x", { body: Buffer.from("x"), contentType: "image/png", sha: sha256(Buffer.from("x")) });
+  sent.length = 0;
+  const fr = await runDrill({ r2: forged.r2, drill: tgt, all: true });
+  check("復元の試験: 偽の manifest の .. の行は失敗にし、Supabase に何も送らない", fr.failures.length === 1 && sent.length === 0, fr.failures.join(" / "));
+
+  // URL は試験用のバケットの中に収まるが、行の形が正しくない（キーとバケットの不一致）
+  const forged2 = fakeR2();
+  forged2.store.set("manifests/20261021T194000Z.json.gz", {
+    body: zlib.gzipSync(Buffer.from(JSON.stringify({ version: 1, baseline: true, entries: {
+      "analogy/x": { bucket: "raw-pages", path: "x", r2Key: "objects/x", sha256: sha256(Buffer.from("x")), contentType: "image/png", size: 1, goneAt: null },
+    } }))),
+    contentType: "application/gzip",
+  });
+  forged2.store.set("objects/x", { body: Buffer.from("x"), contentType: "image/png", sha: sha256(Buffer.from("x")) });
+  sent.length = 0;
+  const fr2 = await runDrill({ r2: forged2.r2, drill: tgt, all: true });
+  check("復元の試験: 行の形の検査は runDrill の中で効く（キーとバケットが合わない行は送らない）", fr2.failures.length === 1 && sent.length === 0, fr2.failures.join(" / "));
+
   const rs = read("scripts/storage-mirror/restore.js");
-  check("restore.js: 消す呼び出しが無く、戻す先は定数だけ（引数・環境変数で変えない）",
-    !/DELETE|\.remove\(|createBucket|deleteBucket|emptyBucket/.test(rs) &&
+  check("restore.js: 消す呼び出し・自前の fetch が無く、戻す先は createDrillTarget（定数）だけ、失敗で exit 1",
+    !/DELETE|\.remove\(|createBucket|deleteBucket|emptyBucket|fetch\(/.test(rs) &&
       !/process\.env\.\w*BUCKET|argv\[/.test(rs.replace(/process\.env\.GITHUB_STEP_SUMMARY/g, "")) &&
-      /\/storage\/v1\/object\/\$\{DRILL_BUCKET\}\//.test(rs));
+      /createDrillTarget\(supabaseEnv\(\)\)/.test(rs) &&
+      /if \(result\.failures\.length\) \{[\s\S]{0,120}process\.exit\(1\)/.test(rs));
+  const dl = read("scripts/lib/storageMirrorDrill.js");
+  check("storageMirrorDrill.js: 消す呼び出しが無い", !/DELETE|\.remove\(|createBucket|deleteBucket|emptyBucket/.test(dl));
 }
 
 // ---- 6. 配線 ----
@@ -822,7 +889,7 @@ const SECRET_PATH = "未投稿の企画/秘密 name(1)!+$'*.mp4";
       .filter(
         (f) =>
           f.endsWith(".js") &&
-          !["supabase-source.js", "restore.js"].includes(f),
+          f !== "supabase-source.js",
       )
       .every((f) => !/SUPABASE_/.test(read(`${dir}/${f}`))),
   );

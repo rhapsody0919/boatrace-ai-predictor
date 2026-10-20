@@ -60,7 +60,7 @@ anon の鍵だと、非公開のバケットの一覧は 200 で空の配列を�
 - 落ちたら: job-watch（ADR-0097 の追記）が Issue にする。`scripts/watch/job-watch.json` の watched と `job-watch.yml` に載せる。rerun の許可の一覧には入れない（翌日の run が取りこぼしを拾う）
 - 鍵の誤り: R2 の一覧の 401・403 は `R2 HTTP 403` の形でログに出し、job-watch が「鍵・設定の誤り」に分ける。key-canary に別の job `r2`（prod-jobs）を足し、`manifests/` を1件だけ一覧する（30分ごと、Class A で月約1,440回）。足さないと、R2 の鍵の誤りで開いた Issue が Supabase だけのカナリアの成功で閉じる
 - オブジェクト単位の失敗（一覧が通った後の PUT・HEAD・GET）は `R2 object error {状態} {コード}` の形にし、`HTTP 403` の文字を含めない。キーの符号化の誤りを鍵の誤りに分けると、カナリアの成功で閉じては翌日開くを繰り返すため
-- 最後に成功した時刻: `storage-mirror.yml` の master の run のうち、最後に conclusion が success のものの時刻。hq の dashboard-alerts は `gh run list -R rhapsody0919/boatrace-ai-predictor -w storage-mirror.yml -b master -s success -L 1 --json updatedAt` で読み、2日より前なら知らせる（結果が空でも知らせる）。1件でも写し損ねたら run は失敗にするので、success は「その時点の全部を写した」を意味する。Supabase に状態を書く案は、この job が Supabase に書かない前提を崩し、Supabase が落ちているときに書けないので退ける
+- 最後に成功した時刻: `storage-mirror.yml` の master の run のうち、最後に conclusion が success のものの時刻。hq の dashboard-alerts は `gh run list -R rhapsody0919/boatrace-ai-predictor -w storage-mirror.yml -b master -s success -L 1 --json updatedAt` で読み、2日より前なら知らせる（結果が空でも知らせる。hq 側の見張りは hq の作業で、龍神の PR には無い）。1件でも写し損ねたら run は失敗にするので、success は「その時点の全部を写した」を意味する。Supabase に状態を書く案は、この job が Supabase に書かない前提を崩し、Supabase が落ちているときに書けないので退ける
 - 件数・容量は run の Step Summary に出す。リポジトリは PUBLIC で Actions のログは外から見えるので、ログ・Step Summary・失敗の文にはバケット名・件数・容量・状態の番号だけを出し、ファイルのパス・R2 のアカウント ID を出さない
 - data_health: 画面が読む表を書かないので、`scripts/lib/dataHealth/workflowCoverage.js` の除外（no_table）に載せる
 
@@ -69,8 +69,8 @@ anon の鍵だと、非公開のバケットの一覧は 200 で空の配列を�
 - `.github/workflows/storage-mirror-restore-drill.yml`（prod-jobs、毎月2日 05:20 JST と手での起動）で `scripts/storage-mirror/restore.js` を動かす。採用時に1回 `all`（全部）、以後は月1回の見本（バケットごとに一番大きいファイルと20件）
 - 最後の基準の manifest の行を R2 から GET し、sha256 と Content-Type を manifest と照合してから、Supabase の試験用のバケット `storage-mirror-drill` の `{元のバケット}/{元のパス}` へ戻す（x-upsert）。Supabase から読み直し、もう一度 sha256 と Content-Type を照合する
 - 戻す先は Supabase にする（runner の手元に戻すだけの案は、Supabase の容量・mimetype の制限・パスの文字・upload の口を試さず、本当の事故で初めて戻すコードを動かすことになるので退ける）
-- 「Supabase は読むだけ」の例外は restore.js と試験用のバケットに限る。戻す先は `scripts/lib/storageMirrorDrill.js` の定数1つで、写す元の3バケット・analogy-v16 は拒む。バケットはオーナーが Dashboard で作る（コードに作る呼び出しを置かない）。消す処理も置かない。毎回同じパスへ上書きするので、試験用のバケットの容量は写しの本体（約406MB）を超えない
-- 見張り: job-watch の watched、data_health の除外（not_daily）。hq は master の run の最後の success が40日より前なら知らせる
+- 「Supabase は読むだけ」の例外は restore.js と試験用のバケットに限る。戻す先は `scripts/lib/storageMirrorDrill.js` の定数1つ。送る直前に、正規化した後の URL が試験用のバケットの下かを確かめる。manifest の行も、キーが「元のバケット/元のパス」と一致し、元のバケットが写す元の3つで、パスに空・`.`・`..` の区切りが無く、R2 のキーが `objects/`・`versions/` の下かを確かめる（R2 の token が漏れて偽の manifest を置かれても、試験用のバケットの外へ書かせない。`..` は fetch の URL の正規化で上の階層へ抜ける）。バケットはオーナーが Dashboard で作る（コードに作る呼び出しを置かない）。消す処理も置かない。毎回同じパスへ上書きするので、試験用のバケットの容量は R2 の objects/ のパスの集合（約406MB から1日約3MB ずつ増える）を超えない。元で消えたものも試験用のバケットには残る
+- 見張り: job-watch の watched、data_health の除外（not_daily）。hq は master の run の最後の success が40日より前なら知らせる（hq の作業）
 - 本当の事故で元のバケットへ戻すときは、restore.js の戻す先を変える PR を出し、審査を通す（いつでも書ける口を置かない）
 
 ### 受け入れる損失
@@ -86,6 +86,7 @@ anon の鍵だと、非公開のバケットの一覧は 200 で空の配列を�
 - manifest: 毎回全部を書くので、1本の大きさは件数に比例し、合計は日数の2乗で増える。2,051件で gzip 後 約150KB（1件約75B、合成した manifest での試算）、件数は1日約34件増える（棚卸しの増え方）。1年で約0.1GB、3年で約1.7GB（試算）
 - 本体と manifest の合計が R2 の無料枠（10GB）を超えるのは6〜7年後の見込み（試算）。超えた分も $0.015/GB-month。5年目までに、manifest を差分の形に変えるかを見直す
 - lock は Indefinite なので、写しは減らない
+- 復元の試験: 試験用のバケットに最大で写しの本体と同じ量（今は約406MB）。all の試験は R2 からの取り出し（無料）と Supabase への上げ・読み直し（取り出し約406MB）。月1回の見本は約60件。Supabase Pro の込みの容量 100GB・取り出し 250GB の内
 
 ## 退けた案
 

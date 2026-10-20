@@ -126,7 +126,7 @@ Actions → **Storage Mirror (R2)** → Run workflow → `initial` に**チェ�
 
 - 翌日 04:40 JST の定期の run が緑で、「取り寄せ」が数十件以内（全部を取り寄せ直していない）
 - Key Canary の job `r2` が緑
-- hq の dashboard-alerts の「Storage の写しの最後の成功」が1日以内
+- hq の dashboard-alerts の「Storage の写しの最後の成功」が1日以内（hq 側の見張りが入った後）
 
 ## 10. Supabase に復元の試験用のバケットを作る
 
@@ -139,7 +139,7 @@ Actions → **Storage Mirror (R2)** → Run workflow → `initial` に**チェ�
 | Restrict file upload size | オフ、または 50MB 以上（今の最大は 15.3MB） |
 | Allowed MIME types | 空（制限しない。写す元に image/png・image/jpeg・video/mp4・application/json・text/plain・application/gzip がある） |
 
-- 試験は毎回同じパスへ上書きするだけで、消さない。容量は写しの本体（約406MB）を超えない
+- 試験は毎回同じパスへ上書きするだけで、消さない。容量は写しの本体（今は約406MB）を超えない
 - RLS のポリシーは足さない（service key だけが読み書きする）
 
 ## 11. 復元の試験を全部で1回動かす（採用時）
@@ -148,7 +148,7 @@ Actions → **Storage Mirror (R2)** → Run workflow → `initial` に**チェ�
 
 確かめること（run の Summary の表）:
 - 失敗が0件で、run が緑
-- 「試した」と「一致」が同じで、合計が 8 の「書いた」の件数と同じ
+- 「試した」と「一致」が同じで、合計が写しの直近の run の Summary の「元の件数」の合計に近い（試すのは基準の manifest にある、元で消えていないもの。その後に増えた分だけずれる）
 
 以後は毎月2日 05:20 JST に見本（バケットごとに一番大きいファイルと20件）で自動で動く。
 

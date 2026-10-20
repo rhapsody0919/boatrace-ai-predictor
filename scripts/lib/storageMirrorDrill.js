@@ -3,19 +3,90 @@
  * Supabase から読み直して、sha256 と Content-Type を manifest と照合する。取得・書き込みは引数で受け取る。
  *
  * 戻す先は DRILL_BUCKET の定数1つだけ（写す元の3バケット・analogy-v16 は拒む）。バケットはオーナーが作る（コードに作る呼び出しを
- * 置かない）。消す処理も置かない。毎回同じパス（{元のバケット}/{元のパス}）へ上書き（x-upsert）するので、容量は写しの本体を超えない。
+ * 置かない）。消す処理も置かない。毎回同じパス（{元のバケット}/{元のパス}）へ上書き（x-upsert）するので、容量は R2 の objects/ のパスの集合を超えない。
  */
+import { encodeKeyPath } from "./awsSigV4.js";
 import {
   EXCLUDED_BUCKETS,
   findBaseline,
   MANIFEST_PREFIX,
   manifestKeysNewestFirst,
   mapPool,
+  scrubPath,
   sha256,
   SOURCE_BUCKETS,
 } from "./storageMirror.js";
 
 export const DRILL_BUCKET = "storage-mirror-drill";
+
+/**
+ * manifest の行を戻してよいか（R2 の token が漏れて偽の manifest を置かれても、試験用のバケットの外へ書かせない）。
+ * キーは「元のバケット/元のパス」と一致し、元のバケットは写す元の3つのどれかで、パスの区切りに空・.・.. が無く、
+ * R2 のキーは objects/ か versions/ の下。fetch の URL の正規化で .. が上の階層へ抜けるのを防ぐ
+ */
+export function assertDrillEntry(key, e) {
+  const segs = String(e?.path ?? "").split("/");
+  if (
+    !SOURCE_BUCKETS.includes(e?.bucket) ||
+    key !== `${e.bucket}/${e.path}` ||
+    segs.some((x) => x === "" || x === "." || x === "..") ||
+    !/^(?:objects|versions)\//.test(String(e.r2Key ?? ""))
+  )
+    throw new Error("manifest の行の形が正しくない（戻さない）");
+}
+
+/**
+ * 試験用のバケットの口（Supabase の service key）。送る直前に、正規化した後の URL が試験用のバケットの下かを確かめる
+ * @param {{url: string, key: string, fetchImpl?: typeof fetch}} cfg
+ */
+export function createDrillTarget({ url, key, fetchImpl = fetch }) {
+  const base = `${url.replace(/\/$/, "")}/storage/v1/object/${DRILL_BUCKET}/`;
+  const prefix = new URL(base).pathname;
+  const target = (path) => {
+    const u = `${base}${encodeKeyPath(path)}`;
+    if (!new URL(u).pathname.startsWith(prefix) || new URL(u).pathname === prefix)
+      throw new Error(`戻す先が ${DRILL_BUCKET} の外になる（戻さない）`);
+    return u;
+  };
+  const auth = { apikey: key, Authorization: `Bearer ${key}` };
+  return {
+    bucket: DRILL_BUCKET,
+    async upload(path, body, contentType) {
+      const res = await fetchImpl(target(path), {
+        method: "POST",
+        headers: {
+          ...auth,
+          "Content-Type": contentType,
+          "cache-control": "no-cache",
+          "x-upsert": "true",
+        },
+        body,
+        signal: AbortSignal.timeout(300_000),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        const hint = /Bucket not found/i.test(text)
+          ? `（バケット ${DRILL_BUCKET} が無い。手順書の 10）`
+          : "";
+        // HTTP 403 の形にしない（鍵の Issue に分けない。カナリアの成功で閉じて見えなくなるため）
+        throw new Error(`Supabase storage object error ${res.status}（drill upload）${hint}`);
+      }
+      await res.arrayBuffer().catch(() => null);
+    },
+    async download(path) {
+      const res = await fetchImpl(target(path), {
+        headers: { ...auth, "cache-control": "no-cache" },
+        signal: AbortSignal.timeout(300_000),
+      });
+      if (!res.ok)
+        throw new Error(`Supabase storage object error ${res.status}（試験用のバケットから読み直し）`);
+      return {
+        body: Buffer.from(await res.arrayBuffer()),
+        contentType: res.headers.get("content-type"),
+      };
+    },
+  };
+}
 
 /** 月1回の見本: バケットごとに一番大きいファイルと、ほかから最大 n 件 */
 export const DRILL_SAMPLE_PER_BUCKET = 20;
@@ -70,6 +141,7 @@ export const sameType = (a, b) =>
  * @returns {Promise<{bytes: number}>}
  */
 export async function drillOne(key, entry, { r2, drill }) {
+  assertDrillEntry(key, entry);
   const got = await r2.get(entry.r2Key);
   if (sha256(got.body) !== entry.sha256)
     throw new Error("R2 から読んだ中身の sha256 が manifest と違う");
@@ -127,7 +199,7 @@ export async function runDrill({
       s.bytes += r.value.bytes;
     } else {
       s.failed += 1;
-      const msg = `${b}: ${r.error.message}`;
+      const msg = `${b}: ${scrubPath(r.error.message, sample[i][0])}`;
       errs[msg] = (errs[msg] ?? 0) + 1;
     }
   });

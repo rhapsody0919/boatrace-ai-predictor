@@ -5,7 +5,7 @@ name: Storage Mirror Restore Drill
 # （バケットごとに一番大きいファイルと20件）。戻す先は scripts/lib/storageMirrorDrill.js の定数1つで、写す元のバケットは拒む。消す処理は無い。
 #
 # 落ちたら job-watch（scripts/watch/job-watch.json の watched）が Issue にする。最後に成功した時刻は、この workflow の master の run の
-# success（hq の dashboard-alerts が40日より前なら知らせる）。ログにはバケット名・件数・容量だけを出す（repo は PUBLIC）。
+# success（hq の dashboard-alerts が40日より前なら知らせる。hq 側の見張りは hq の作業で、この PR には無い）。ログにはバケット名・件数・容量だけを出す（repo は PUBLIC）。
 
 on:
   schedule:

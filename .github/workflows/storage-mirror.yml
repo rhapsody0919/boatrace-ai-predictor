@@ -6,7 +6,7 @@ name: Storage Mirror (R2)
 #
 # 見張り:
 #   落ちたら job-watch（scripts/watch/job-watch.json の watched）が Issue にする
-#   最後に成功した時刻は、この workflow の master の run の success（hq の dashboard-alerts が gh run list で読み、2日より前なら知らせる）。
+#   最後に成功した時刻は、この workflow の master の run の success（hq の dashboard-alerts が gh run list で読み、2日より前なら知らせる。hq 側の見張りは hq の作業で、この PR には無い）。
 #   1件でも写し損ねたら run を失敗にするので、success は「その時点の全部を写した」
 #
 # リポジトリは PUBLIC で、ログと Step Summary は外から見える。出すのは件数・容量・バケット名だけ（パス・R2 のアカウント ID は出さない）。
