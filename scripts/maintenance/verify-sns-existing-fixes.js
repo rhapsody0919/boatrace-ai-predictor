@@ -256,14 +256,14 @@ test("通常承認とredoは条件付き更新で片方のみ成功する", asyn
   }
 });
 
-for (const platform of ["youtube", "blog"]) {
+// blog（merge-blog-pr）は 2026-10-20 に停止した（ADR-0097、BOA-908）。停止の検査は下の「停止した merge-blog-pr」
+for (const platform of ["youtube"]) {
   for (const failRpc of ["sns_record_external", "sns_finish_external"]) {
     test(`${platform}: 外部成功後${failRpc}失敗でも再送しない`, async () => {
       const f = await fixture(platform, { failRpc });
       try {
-        const handler = platform === "youtube" ? youtube : blog;
-        const action =
-          platform === "youtube" ? "publish-youtube" : "merge-blog-pr";
+        const handler = youtube;
+        const action = "publish-youtube";
         assert.equal((await handler(request(action, { headSha }))).status, 500);
         const row = await f.row();
         assert.equal(
@@ -277,10 +277,7 @@ for (const platform of ["youtube", "blog"]) {
           retry.status,
           failRpc === "sns_record_external" ? 409 : 200,
         );
-        assert.equal(
-          platform === "youtube" ? f.counts().uploads : f.counts().merges,
-          1,
-        );
+        assert.equal(f.counts().uploads, 1);
         if (retry.status === 200)
           assert.equal((await f.row()).status, "posted");
       } finally {
@@ -303,36 +300,37 @@ test("YouTube応答消失とclaim応答消失は再送しない", async () => {
   }
 });
 
-test("画面確認SHAの不一致はReady化前に拒否、GETは固定版を返す", async () => {
+test("ブログの PR のプレビュー（GET）は固定版を返す", async () => {
   const f = await fixture("blog", { headSha: "c".repeat(40) });
   try {
     const result = await preview(request("blog-pr-preview"));
     assert.equal(result.headers.get("cache-control"), "no-store");
     const body = await result.json();
     assert.ok(body.previewUrl.endsWith(body.headSha));
-    assert.equal(
-      (await blog(request("merge-blog-pr", { headSha }))).status,
-      409,
-    );
     assert.deepEqual(f.counts(), { uploads: 0, merges: 0, ready: 0 });
-    assert.equal((await blog(request("merge-blog-pr"))).status, 400);
   } finally {
     await f.close();
   }
 });
 
-test("PR取得後のSHA変更もmergeのsha条件で拒否し、再実行を停止", async () => {
-  const f = await fixture("blog", { shaChangedAtMerge: true });
+// 管理画面からの記事の PR のマージは停止した（ADR-0034 → ADR-0097、BOA-908）。
+// GITHUB_MERGE_TOKEN があっても読まず、GitHub（Ready 化・マージ）にも DB にも触れずに 410 を返す
+test("停止した merge-blog-pr は鍵があっても GitHub と DB に触れず 410", async () => {
+  const f = await fixture("blog");
   try {
+    const before = await f.row();
+    for (const body of [{ headSha }, {}]) {
+      const res = await blog(request("merge-blog-pr", body));
+      assert.equal(res.status, 410);
+      assert.match((await res.json()).error, /停止/);
+    }
+    assert.deepEqual(f.counts(), { uploads: 0, merges: 0, ready: 0 });
+    assert.deepEqual(await f.row(), before);
     assert.equal(
-      (await blog(request("merge-blog-pr", { headSha }))).status,
-      502,
+      (await blog(request("merge-blog-pr", { headSha }, false))).status,
+      401,
+      "未認証は停止の前に 401",
     );
-    assert.equal(
-      (await blog(request("merge-blog-pr", { headSha }))).status,
-      409,
-    );
-    assert.equal(f.counts().merges, 1);
   } finally {
     await f.close();
   }
