@@ -58,7 +58,7 @@ jobs:
           INPUT_ACCEPT_GONE: ${{ inputs.accept_gone }}
         run: |
           node --version
-          args=""
-          if [ "$INPUT_INITIAL" = "true" ]; then args="$args --initial"; fi
-          if [ "$INPUT_ACCEPT_GONE" = "true" ]; then args="$args --accept-gone"; fi
-          node scripts/storage-mirror/mirror.js $args
+          args=()
+          if [ "$INPUT_INITIAL" = "true" ]; then args+=(--initial); fi
+          if [ "$INPUT_ACCEPT_GONE" = "true" ]; then args+=(--accept-gone); fi
+          node scripts/storage-mirror/mirror.js "${args[@]}"
