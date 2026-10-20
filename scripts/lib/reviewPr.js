@@ -285,19 +285,28 @@ export function monthlyRunsPath(repo, actorLogin, date) {
 
 /**
  * LLM の API の失敗の要約（種類と code と短い文）。429 が回数の上限か残高・上限（insufficient_quota）かを見分けるため。
- * 本文は API が返したエラーで、鍵は含まない。長さを切り、改行を外す
+ * 本文は API が返したエラー。鍵の誤りのときは鍵の一部（伏せ字つき）を含みうるので、鍵らしい語は伏せる。長さを切り、改行を外す
  */
 export function apiErrorSummary(vendor, status, bodyText) {
   let detail = "";
   try {
     const e = JSON.parse(bodyText)?.error ?? {};
-    detail = [e.type, e.code, e.message].filter((x) => typeof x === "string" && x !== "").join(" / ");
+    detail =
+      typeof e === "string"
+        ? e
+        : [e.type, e.code, e.message].filter((x) => typeof x === "string" && x !== "").join(" / ");
   } catch {
-    detail = String(bodyText ?? "");
+    // JSON でない本文は下で生のまま使う
   }
+  // 形の分からない JSON（{"error":{}} 等）で何も取れなければ、生の本文に戻す（429 の種類を見分けるのが目的）
+  if (detail === "") detail = String(bodyText ?? "");
   // 鍵の誤りのとき、OpenAI は伏せ字つきの鍵の一部（sk-…abcd）を文に入れるので、鍵らしい語は丸ごと伏せる
   detail = detail
-    .replace(/\b(sk|sk-ant|sk-proj)-[\w*.-]+/g, "（鍵を伏せた）")
+    // 語の文字の直後（xsk-…）や三点リーダの伏せ字（sk-…abcd）にも当てる。伏せすぎは許す
+    // 生の本文に戻したときは JSON のエスケープ（\u2026 等）のままなので、伏せる前に元の文字に戻す
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(Number.parseInt(h, 16)))
+    // sk- から、次の空白・引用符・区切りまでを丸ごと伏せる
+    .replace(/(?:sk|sk-ant|sk-proj)-[^\s"',)]+/g, "（鍵を伏せた）")
     .replace(/\s+/g, " ")
     .slice(0, 300);
   return `${vendor} API が ${status} を返した${detail ? `（${detail}）` : ""}`;

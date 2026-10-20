@@ -81,6 +81,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/inCautionHealth.js` | BOA-822 イン崩れ注意度の監視（tasks 12、plan §9。完了の定義C）。DB は読み取りだけ。 | evaluateInCautionTable, evaluateInCautionToday, readInCautionTable, readInCautionToday, runInCautionHealth ほか1件 |
 | `scripts/lib/isDirectRun.js` | そのモジュールが `node <path>` で直接実行されたかを判定する。 | isDirectRun |
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
+| `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, decideRun, rerunBlockers, recoveryReruns, handledMarkers ほか2件 |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
 | `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか9件 |
 | `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildMissingBoatRows, buildExhibitionRows, normalizeKStage ほか7件 |
@@ -152,7 +153,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/rawHtmlArchive.js` | 取得した生HTMLの保管（optimal-scraping-design.md §2.2・承認済みQ1）の最小実装。 | rawHtmlPath, archiveRawHtml, RAW_HTML_BUCKET |
 | `scripts/lib/renderWithFreshPage.js` | 新しいページを開く関数を作る。ブラウザが落ちていたら起動し直してから開く。 | createPageOpener, renderWithFreshPage |
 | `scripts/lib/reportComparison.js` | 定点観測レポート（search-console-report.js / i18n-demand-report.js）の | findPreviousReport, findRecentReports, detectTrend, perDay, formatDelta |
-| `scripts/lib/reviewPr.js` | AI の PR の審査（.github/workflows/review.yml、ADR-0097）の純粋関数。 | vendorForBranch, mechanicalRejections, sqlTablesFromFiles, buildReviewPrompt, parseVerdict ほか5件 |
+| `scripts/lib/reviewPr.js` | AI の PR の審査（.github/workflows/review.yml、ADR-0097）の純粋関数。 | vendorForBranch, mechanicalRejections, sqlTablesFromFiles, buildReviewPrompt, parseVerdict ほか6件 |
 | `scripts/lib/riskRuleMatcher.js` | SNSリスクルールの部分一致判定（Node・Edge共通の純粋関数）。 | matchRiskRules, draftRiskFields, bundleRiskFields |
 | `scripts/lib/riskRules.js` | SNSマーケティングハブ Phase 2用 risk-rules.json 決定的照合ユーティリティ | checkRiskRules |
 | `scripts/lib/roQuery.js` | 本番の読み取り専用ロール claude_ro で1文を実行する（scripts/db/ro-query.js の本体、ADR-0096）。 | checkReadStatement, parseRowLimit, checkRoUrl, runReadOnlyQuery, formatResult ほか4件 |
@@ -356,4 +357,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 321 ファイル / export 1807 件。
+対象 322 ファイル / export 1815 件。

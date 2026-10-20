@@ -316,6 +316,14 @@ check("ブランチ名が無ければ審査しない", vendorForBranch(undefined
   check("Anthropic のエラーの種類も出し、改行を外す", /overloaded_error/.test(anth) && !/\n/.test(anth), anth);
   const bad = apiErrorSummary("OpenAI", 401, JSON.stringify({ error: { message: "Incorrect API key provided: sk-proj-****abcd. You can find", type: "invalid_request_error", code: "invalid_api_key" } }));
   check("鍵の一部を含む文は鍵を伏せる", !/abcd/.test(bad) && /invalid_api_key/.test(bad), bad);
+  const strErr = apiErrorSummary("OpenAI", 429, JSON.stringify({ error: "insufficient_quota: add credits" }));
+  check("{\"error\":\"文字列\"} の本文でも種類を出す", /insufficient_quota/.test(strErr), strErr);
+  const emptyErr = apiErrorSummary("OpenAI", 429, JSON.stringify({ error: {}, detail: "rate_limit_exceeded" }));
+  check("形の分からない JSON は生の本文に戻す", /rate_limit_exceeded/.test(emptyErr), emptyErr);
+  const ellipsis = apiErrorSummary("OpenAI", 401, JSON.stringify({ error: { message: "key: sk-…wxyz and Xsk-proj-abcd1234", code: "invalid_api_key" } }));
+  check("三点リーダの伏せ字と語の直後の鍵も伏せる", !/wxyz/.test(ellipsis) && !/abcd1234/.test(ellipsis), ellipsis);
+  const escaped = apiErrorSummary("OpenAI", 400, '{"error":{},"m":"sk-\\u2026abcd"}');
+  check("生の本文に戻したとき、JSON のエスケープのままの鍵（sk-\\u2026abcd）も伏せる", !/abcd/.test(escaped), escaped);
   check("JSON でない本文も切って出す", apiErrorSummary("OpenAI", 502, "x".repeat(1000)).length < 400);
 }
 
