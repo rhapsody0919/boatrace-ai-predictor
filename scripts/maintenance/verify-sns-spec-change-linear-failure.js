@@ -172,13 +172,29 @@ test("未アーカイブが閾値の200件なら起票せず、503 と LINEAR_IS
   );
 });
 
-test("specChangeFeedback: 閾値で止めたら閉じず、件数の文と本文を残したことを伝える", () => {
-  const f = specChangeFeedback({
-    error: {
-      code: "LINEAR_ISSUE_GATE_BLOCKED",
-      message: "Linear の起票を止めました: 未アーカイブ 200 件",
-    },
-  });
+test("specChangeFeedback: 閾値で止めたら閉じず、件数の文と本文を残したことを伝える（取得の経路 request() を通す。代わりの審査の P1）", async () => {
+  const { requestSpecChange } = await import("../../src/services/snsHubService.js");
+  const saved = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        error:
+          "Linear の起票を止めました: 未アーカイブ 200 件が閾値 200 件以上です（無料枠の上限 250 件）。完了・取り消しのチケットをアーカイブしてから起票し直してください",
+        code: "LINEAR_ISSUE_GATE_BLOCKED",
+      }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    );
+  let error;
+  try {
+    await requestSpecChange("d1", { approverId: "a1", message: "本文" });
+  } catch (e) {
+    error = e;
+  } finally {
+    globalThis.fetch = saved;
+  }
+  const f = specChangeFeedback({ error });
+  assert.doesNotMatch(f.message, /。。/);
+  assert.doesNotMatch(f.message, /再読み込み/);
   assert.equal(f.closePanel, false);
   assert.equal(f.type, "error");
   assert.match(f.message, /未アーカイブ 200 件/);
