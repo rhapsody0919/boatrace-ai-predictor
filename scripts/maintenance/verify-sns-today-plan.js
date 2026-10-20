@@ -1287,3 +1287,23 @@ test("見出しの日替わり: 案の uuid が入っていれば（sns_template
   assert.equal(tracking.template_variant_id, id);
   assert.equal(draft.source_data.today_variant.uuid, id);
 });
+
+test("見出しの日替わり: 案の uuid の行が sns_template_variants に無いときは、札なしで tracking を保存し、下書き・item は作る（/code-review の指摘）", async () => {
+  const missing = "99999999-9999-4999-8999-999999999999";
+  const same = { id: "a", uuid: missing, heading: "今日のデータ（{date}）" };
+  const result = await plan({
+    loadVariants: () => ({
+      default: "本日のデータ一覧（{date}）",
+      variants: [same, { ...same, id: "b" }],
+    }),
+  });
+  assert.equal(result.report.items[0].outcome, "manual");
+  const draft = await first("SELECT * FROM sns_drafts");
+  const tracking = await first(
+    "SELECT template_variant_id FROM sns_post_tracking WHERE draft_id=$1",
+    [draft.id],
+  );
+  assert.equal(tracking.template_variant_id, null);
+  assert.equal(draft.source_data.today_variant.uuid, missing);
+  assert.ok(await first("SELECT id FROM sns_auto_send_items"));
+});

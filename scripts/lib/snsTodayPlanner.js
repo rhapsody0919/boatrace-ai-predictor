@@ -473,7 +473,7 @@ export async function runTodayPlan(
         scheduled_at: when.scheduled_at,
         ...fields,
       });
-  await trackingStore.save({
+  const trackingRow = {
     draft_id: draft.id,
     template_variant_id: variant.uuid,
     race_url: TODAY_URL,
@@ -483,7 +483,18 @@ export async function runTodayPlan(
     utm_campaign: "today_digest",
     utm_content: date,
     release_evidence: releaseEvidence,
-  });
+  };
+  try {
+    await trackingStore.save(trackingRow);
+  } catch (error) {
+    // 案の uuid の行が sns_template_variants にまだ無い（設定の uuid を先に入れた）ときは、札なしで保存して投稿は止めない。
+    // 札は source_data.today_variant に残っている
+    if (!variant.uuid) throw error;
+    console.error(
+      `/today の tracking に案の札（${variant.uuid}）を入れられない。札なしで保存する: ${error.message}`,
+    );
+    await trackingStore.save({ ...trackingRow, template_variant_id: null });
+  }
   const state = risk.length ? "held_manual" : "manual";
   const checks = {
     passed: risk.length === 0,
