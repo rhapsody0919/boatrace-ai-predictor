@@ -111,6 +111,18 @@ export const isMassGone = (prevPresent, gone) =>
   prevPresent > 0 &&
   gone / prevPresent >= MASS_GONE_RATIO;
 
+/** 一覧に出たのに GET が 404 のものが、写している最中の削除で説明できる数（2件か1%）を超えたか */
+export const tooManyNotFound = (notFound, listed) =>
+  notFound > Math.max(2, Math.floor(listed * 0.01));
+
+/** 例外の文からファイルのパス（そのままと URL の符号化）を消す */
+export function scrubPath(message, path) {
+  let m = String(message);
+  for (const p of [path, encodeURI(path), encodeURIComponent(path)])
+    if (p) m = m.split(p).join("…");
+  return m;
+}
+
 /** 並べて動かす（同時に n 個まで）。各要素の失敗は結果に入れ、全体は止めない */
 export async function mapPool(items, n, fn) {
   const out = new Array(items.length);
@@ -266,6 +278,7 @@ export async function runMirror({
       gone: 0,
       failed: 0,
       massGone: false,
+      notFound: 0,
     };
     perBucket[bucket] = stat;
     let files;
@@ -284,9 +297,13 @@ export async function runMirror({
       stat.failed += 1;
       continue;
     }
-    if (files.length === 0 && presentCount(bucket, prevEntries) > 0) {
+    if (
+      files.length === 0 &&
+      presentCount(bucket, prevEntries) > 0 &&
+      !acceptGone
+    ) {
       failures.push(
-        `${bucket}: 一覧が0件（基準では ${presentCount(bucket, prevEntries)}件）。鍵の取り違え（anon の鍵）か、元が全部消えた。消えた扱いにしない`,
+        `${bucket}: 一覧が0件（基準では ${presentCount(bucket, prevEntries)}件）。鍵の取り違え（anon の鍵）か、元が全部消えた。消えた扱いにしない。本当に空にしたのなら accept_gone を付ける`,
       );
       stat.failed += 1;
       baseline = false;
@@ -334,11 +351,14 @@ export async function runMirror({
       stat.fetched += 1;
       if (!r.ok) {
         stat.failed += 1;
-        errs[r.error.message] = (errs[r.error.message] ?? 0) + 1;
+        // URL の解析の失敗などで例外の文にパスが混ざっても、公開のログに出さない
+        const msg = scrubPath(r.error.message, l.fetch[i].file.path);
+        errs[msg] = (errs[msg] ?? 0) + 1;
         return;
       }
       if (r.value.gone) {
         gotGone.add(key);
+        stat.notFound += 1;
         return;
       }
       entries[key] = r.value.entry;
@@ -349,6 +369,10 @@ export async function runMirror({
     });
     for (const [msg, n] of Object.entries(errs))
       failures.push(`${bucket}: ${n}件: ${msg}`);
+    if (tooManyNotFound(stat.notFound, l.files.length))
+      failures.push(
+        `${bucket}: 一覧に出たのに GET が 404 のものが ${stat.notFound}件（写している最中の削除にしては多い。キーの符号化の誤りを疑う）`,
+      );
     const listedKeys = l.files
       .map((f) => sourceKey(bucket, f.path))
       .filter((k) => !gotGone.has(k));
