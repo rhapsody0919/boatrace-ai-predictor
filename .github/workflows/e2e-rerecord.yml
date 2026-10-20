@@ -407,6 +407,9 @@ jobs:
           # failure() は if: の中でしか使えない（env に書くとワークフロー全体が無効になる）。
           # env では job.status で同じ判定をする
           JOB_FAILED: ${{ job.status == 'failure' }}
+          # record ジョブ自体の失敗・取り消しも「ワークフロー自体の失敗」として毎回通知する
+          # （judge の job.status には出ない。dedupe で黙らせない）
+          RECORD_RESULT: ${{ needs.record.result }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
@@ -416,7 +419,7 @@ jobs:
           # 定期実行の「採用しなかった・撮らなかった」は1日1回だけ通知する（同じ日に別の
           # 定期実行が通知済みなら出さない）。ワークフロー自体の失敗（push の失敗等）は
           # 理由が別なので必ず通知する。checkout 前に落ちてスクリプトが無いときも通知する
-          if [ "$SCHEDULED" = "true" ] && [ "$JOB_FAILED" != "true" ]; then
+          if [ "$SCHEDULED" = "true" ] && [ "$JOB_FAILED" != "true" ] && [ "$RECORD_RESULT" = "success" ]; then
             DEDUPE=$(node scripts/maintenance/e2e-recording.js notify-dedupe 2>/dev/null || echo '{"notify":true}')
             echo "$DEDUPE"
             if [ "$(printf '%s' "$DEDUPE" | jq -r '.notify')" = "false" ]; then

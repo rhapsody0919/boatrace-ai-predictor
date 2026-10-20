@@ -228,10 +228,11 @@ check(
   true,
 );
 check(
-  "ワークフロー自体の失敗は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
+  "ワークフロー自体の失敗（judge・record ジョブの失敗）は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
   [
-    workflow.includes("JOB_FAILED: ${{ job.status == 'failure' }}"),
-    /if \[ "\$SCHEDULED" = "true" \] && \[ "\$JOB_FAILED" != "true" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
+    workflow.includes("JOB_FAILED: ${{ job.status == 'failure' }}") &&
+      workflow.includes("RECORD_RESULT: ${{ needs.record.result }}"),
+    /if \[ "\$SCHEDULED" = "true" \] && \[ "\$JOB_FAILED" != "true" \] && \[ "\$RECORD_RESULT" = "success" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
       workflow,
     ),
   ],

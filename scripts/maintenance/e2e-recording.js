@@ -16,7 +16,7 @@
  *   skips <results>     Playwright の JSON レポートから件数を数えて JSON で出す
  *   judge <results>     撮り直した録画を採用してよいか判定する（全件通過・skip が増えていない）
  *   gate                定期実行で撮り直しを始めてよいか（今日の採用済み・遅すぎる起動は撮らない）
- *   notify-dedupe       定期実行の Slack 通知を出すか（同じ日に別の定期実行が通知済みなら出さない）。
+ *   notify-dedupe       定期実行の Slack 通知を出すか（同じ日に別の実行が通知済みなら出さない。人の起動も数える）。
  *                       GITHUB_RUN_ID・GH_TOKEN（actions: read）が要る
  *
  * 環境変数:
