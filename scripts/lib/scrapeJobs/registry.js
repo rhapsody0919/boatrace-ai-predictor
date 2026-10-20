@@ -441,6 +441,16 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
+  // ADR-0097 db-apply の定期の突き合わせの起動（db-apply.yml の mode=reconcile。scripts/lib/dbApplyDispatch.js）。毎時17分。
+  // 学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける。dispatch の失敗と、見張り（直近3時間に
+  // reconcile の job が success で終わっていない）は1回目から通知する
+  db_apply_dispatch: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
   // E2E の録画の撮り直し（e2e-rerecord.yml、BOA-929）と鍵のカナリア（key-canary.yml、BOA-917）の起動
   // （scripts/lib/analogyDispatch.js）。GitHub の schedule が来ないための迂回で、schedule は予備に残す。
   // 学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける。e2e の dispatch の失敗は1回目から通知する

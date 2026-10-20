@@ -73,3 +73,7 @@
 - `INSERT ... ON CONFLICT DO NOTHING`（対象を書かない形）は PK にも UNIQUE にも効くので、中身の違う既存行があっても黙って成功する。固定 uuid でマスタの行を入れるときは、COMMIT の前に DO ブロックで「入ったはずの行がそろっているか」を検査して落とす（2026-10-20、system-architect、171・PR #1695）
 - sns_template_variants を外部キーで参照するのは sns_drafts.template_variant_id（035）と sns_post_tracking.template_variant_id（136、154 で NULL 可）の2つだけ。行を消す前の参照の数は、この2表を足して数える（2026-10-20、system-architect、PR #1695）
 - db-apply の確認の節の見出しを拾う処理（scripts/lib/dbApplySql.js の extractConfirmationSections）は、最初の「:」/「：」で見出しを切る。見出しの括弧の中に「:」を書くと、job summary で SQL の1行目にはみ出す（2026-10-20、system-architect、171）
+- workflow_dispatch に mode を足して schedule の経路を共有させると、Actions: write の PAT で承認なしの経路（db-apply の reconcile → apply-auto）を任意の時刻に起動できるようになる。「できることは増えない」と書く前に、承認の無い job まで届くかを確かめる（2026-10-20、PR #1722 の審査、db-apply.yml の reconcile の if）
+- scrape_job_state.last_report は recordSuccess が丸ごと置き換え、recordFailure は触らない。off の間は起動の記録（last_tick_at）も更新されない。失敗が続く間も持ち越したい状態は last_report に置き、off から戻したかは last_tick_at の空きで見る（2026-10-20、scripts/lib/scrapeJobs/store.js・cronWrapper.js、scripts/lib/dbApplyDispatch.js）
+- kind:"monitor" の job は mode を問わず通知の対象になる（scrapeJobs/monitor.js の active）。off にしても consecutive_failures が残る間は通知が止まらない。止めるときは失敗の回数も 0 に戻す（2026-10-20、PR #1722 の審査）
+- AbortSignal.timeout のタイマーは unref なので、偽の fetch が返らない Promise だけを返すテストでは、打ち切りの前に Node のプロセスが終わる（unsettled top-level await）。偽物の側で ref のタイマーを持つ（2026-10-20、verify-analogy-dispatch.js (g)）

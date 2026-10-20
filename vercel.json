@@ -253,6 +253,10 @@
       "schedule": "30 17 * * *"
     },
     {
+      "path": "/api/cron/db-apply-dispatch",
+      "schedule": "17 * * * *"
+    },
+    {
       "path": "/api/cron/e2e-rerecord-dispatch",
       "schedule": "23 1 * * *"
     },

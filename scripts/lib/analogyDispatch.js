@@ -6,6 +6,7 @@
  * - v16_morning: v16 の朝のバッチ（analogy-v16-morning.yml、BOA-271 T2-5b）。JST 7:10・9:40・13:40 に起動し、
  *   7:40 は出走表の段（racecard の snapshot）が無い今日のレースがあるときだけ起動する（拾い直し。plan「朝のバッチ」）
  * - in_caution_nightly: BOA-822 イン崩れ注意度の夜の表（in-caution-nightly.yml、ADR-0095）。JST 2:30
+ * - db_apply_reconcile: ADR-0097 db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile）。毎時17分
  * - e2e_rerecord: E2E の録画の撮り直し（e2e-rerecord.yml、BOA-929）。JST 10:23・12:47・14:37・16:13。gate=true で、
  *   その日に採用済み・JST19時以降なら撮らない（schedule と同じ判定。e2e-recording.js gate）
  * - key_canary: 定期の job の鍵のカナリア（key-canary.yml、BOA-917）。30分ごと（7・37分）
@@ -22,6 +23,11 @@ export const DISPATCH_WORKFLOWS = Object.freeze({
   v16_morning: { workflow: "analogy-v16-morning.yml", inputs: {} },
   // 毎晩は直近14日だけ（full・force は手動の workflow_dispatch で付ける）
   in_caution_nightly: { workflow: "in-caution-nightly.yml", inputs: {} },
+  // ADR-0097 db-apply の定期の突き合わせ（scripts/lib/dbApplyDispatch.js が見張りを足して使う）
+  db_apply_reconcile: {
+    workflow: "db-apply.yml",
+    inputs: { mode: "reconcile" },
+  },
   // gate は boolean の入力。dispatch の API には文字列で渡す（workflow 側は github.event.inputs.gate == 'true' で見る）
   e2e_rerecord: { workflow: "e2e-rerecord.yml", inputs: { gate: "true" } },
   key_canary: { workflow: "key-canary.yml", inputs: {} },
@@ -87,17 +93,19 @@ export async function morningShouldDispatch(ctx) {
   };
 }
 
+/** GitHub の REST API の共通のヘッダー（dispatch と、scripts/lib/dbApplyDispatch.js の runs・jobs の読み取り） */
+export const githubHeaders = (token) => ({
+  Accept: "application/vnd.github+json",
+  Authorization: `Bearer ${token}`,
+  "X-GitHub-Api-Version": "2022-11-28",
+});
+
 export async function dispatchWorkflow({ fetchImpl, token, workflow, inputs }) {
   const res = await fetchImpl(
     `https://api.github.com/repos/${GITHUB_REPO}/actions/workflows/${workflow}/dispatches`,
     {
       method: "POST",
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${token}`,
-        "X-GitHub-Api-Version": "2022-11-28",
-        "Content-Type": "application/json",
-      },
+      headers: { ...githubHeaders(token), "Content-Type": "application/json" },
       body: JSON.stringify({ ref: "master", inputs }),
     },
   );
