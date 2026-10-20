@@ -228,15 +228,59 @@ check(
   true,
 );
 check(
-  "ワークフロー自体の失敗は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
+  "ワークフロー自体の失敗（judge・record ジョブの失敗）は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
   [
-    workflow.includes("JOB_FAILED: ${{ job.status == 'failure' }}"),
-    /if \[ "\$EVENT_NAME" = "schedule" \] && \[ "\$JOB_FAILED" != "true" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
+    workflow.includes("JOB_FAILED: ${{ job.status == 'failure' }}") &&
+      workflow.includes("RECORD_RESULT: ${{ needs.record.result }}"),
+    /if \[ "\$SCHEDULED" = "true" \] && \[ "\$JOB_FAILED" != "true" \] && \[ "\$RECORD_RESULT" = "success" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
       workflow,
     ),
   ],
   [true, true],
 );
+// Vercel Cron の dispatch（inputs.gate=true、BOA-929）は schedule と同じ扱い: gate の判定と通知の1日1回。
+// 人が起こす dispatch（gate=false、既定）は判定せずに撮り、毎回通知する。
+// github.event.inputs は文字列（inputs.gate は boolean）なので 'true' と比べる。schedule では空で false になる
+const SCHEDULED_EXPR =
+  "SCHEDULED: ${{ github.event_name == 'schedule' || github.event.inputs.gate == 'true' }}";
+check(
+  "dispatch の入力 gate（boolean・既定 false）がある",
+  /workflow_dispatch:\s*\n\s+inputs:\s*\n\s+gate:\s*\n(?:\s+description: .*\n)?\s+type: boolean\s*\n\s+default: false/.test(
+    workflow,
+  ),
+  true,
+);
+check(
+  "gate の判定と通知の重複判定は、schedule と gate=true の dispatch で同じ式を使う（2か所）",
+  workflow.split(SCHEDULED_EXPR).length - 1,
+  2,
+);
+check(
+  "gate の step は SCHEDULED が true のときだけ判定する（EVENT_NAME で schedule だけを見ない）",
+  [
+    /if \[ "\$SCHEDULED" != "true" \]; then\s*\n\s*echo "run=true"/.test(
+      workflow,
+    ),
+    /EVENT_NAME/.test(workflow),
+  ],
+  [true, false],
+);
+// 通知の重複判定は event で絞らない（schedule だけを見ると、Vercel Cron の dispatch の通知を数えず1日最大4回に戻る）。
+// PR のブランチを ref にした手の起動は数えない
+{
+  const src = readFileSync(
+    path.join(repoRoot, "scripts", "maintenance", "e2e-recording.js"),
+    "utf8",
+  );
+  check(
+    "notify-dedupe の runs の取得は event で絞らず、master だけを見る",
+    [
+      /e2e-rerecord\.yml\/runs\?[^`]*event=/.test(src),
+      /e2e-rerecord\.yml\/runs\?branch=master&/.test(src),
+    ],
+    [false, true],
+  );
+}
 // 状態関数（failure() / success() / cancelled() / always()）は if: の中でしか使えない。
 // env や with の ${{ }} に書くと、GitHub はワークフロー全体を無効と判定し、schedule も
 // 起動しなくなる。#1080 で JOB_FAILED: ${{ failure() }} を入れ、この検証自体がその
@@ -257,9 +301,11 @@ function findStatusFuncOutsideIf(text) {
 check(
   "状態関数の検出: if: 以外の ${{ failure() }} を見つける（検出器の自己検査）",
   [
-    findStatusFuncOutsideIf("        env:\n          X: ${{ failure() }}\n").length,
+    findStatusFuncOutsideIf("        env:\n          X: ${{ failure() }}\n")
+      .length,
     findStatusFuncOutsideIf("        if: ${{ failure() }}\n").length,
-    findStatusFuncOutsideIf("          X: ${{ job.status == 'failure' }}\n").length,
+    findStatusFuncOutsideIf("          X: ${{ job.status == 'failure' }}\n")
+      .length,
   ],
   [1, 0, 0],
 );
