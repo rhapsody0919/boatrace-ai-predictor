@@ -687,7 +687,7 @@ for (const f of fixtures) {
   assert.ok(riskRules.length > 0, "禁止表現の規則を読めた");
   const load = (f) => JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"));
   const VENUE = { "01": "桐生", 15: "丸亀", 24: "大村", 19: "下関" };
-  const qaAll = { contract: true, text: true, post: true, entry_max59s: true, full_size: true, shorts_vertical: true, shorts_max60s: true, shorts_size: true, full_min185s: true, chapters: true };
+  const qaAll = { contract: true, text: true, post: true, entry_max59s: true, full_size: true, shorts_vertical: true, shorts_max_60s: true, shorts_size: true, full_min185s: true, chapters: true };
   const CH = "0:00 条件\n0:22 6艇比較\n1:07 類似レース\n1:43 展開";
   const bundleOf = (f, qa = qaAll) => {
     const m = load(f);

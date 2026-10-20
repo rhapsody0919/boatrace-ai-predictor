@@ -278,7 +278,7 @@ if (!noVideo && fullMp4 && existsSync(entryMp4)) {
     entry_max59s: entry.total <= 59 * 30,
     full_size: f.bytes <= MAX_BYTES,
     shorts_vertical: e.width === 1080 && e.height === 1920,
-    shorts_max60s: e.seconds <= 60,
+    shorts_max_60s: e.seconds <= 60,
     shorts_size: e.bytes <= MAX_BYTES,
     // 縦で3分以下は Shorts になる。完全版は通常の動画で出す（youtube-channel 2026-10-20 P1）
     full_min185s: f.seconds >= FULL_MIN_SECONDS,
