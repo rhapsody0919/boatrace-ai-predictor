@@ -589,6 +589,7 @@ test("bundle の版2: 完全版の自動の承認に失敗したら、Shorts も
       result.channels.shorts.error,
       /完全版が自動で承認されなかった/,
     );
+    assert.match(result.notes[0], /Shorts は個別承認では送れない/);
     assert.ok(result.channels.x.send_at);
   } finally {
     store.failApprove = false;
@@ -616,4 +617,32 @@ test("bundle の版2: Shorts の item を作れなくても（172 が未適用�
     store.failInsertItem = null;
   }
   assert.equal((await all("SELECT * FROM sns_x_send_jobs")).length, 2);
+});
+
+test("版1の bundle の版（revision）は、Shorts 対応の前と同じ式（bundle・X の動画・完全版の動画の順の sha256）", async () => {
+  const { createHash } = await import("node:crypto");
+  const b = bundle();
+  const expected = createHash("sha256")
+    .update(JSON.stringify(b))
+    .update(VIDEO)
+    .update(VIDEO)
+    .digest("hex")
+    .slice(0, 32);
+  assert.equal((await push(b, { dryRun: true })).revision, expected);
+});
+
+test("完全版の URL の置き場所は Shorts の説明文だけ。X の本文・完全版に入っていたら受け取らない", async () => {
+  const reasonsOf = (b) => checkFullPicture(b, riskRules).join();
+  assert.match(
+    reasonsOf(
+      bundleV2({
+        youtube_full: { title: "完全版", description: "続きは {full_url}" },
+      }),
+    ),
+    /youtube_full.description に \{full_url\} がある/,
+  );
+  assert.match(
+    reasonsOf(bundle({ x_text: bundle().x_text + " {full_url}" })),
+    /x_text に \{full_url\} がある/,
+  );
 });

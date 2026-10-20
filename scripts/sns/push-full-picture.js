@@ -83,6 +83,9 @@ const channelsOf = (bundle) =>
   withShorts(bundle) ? ["x", "youtube", "shorts"] : ["x", "youtube"];
 const dbChannel = (channel) => (channel === "shorts" ? "youtube" : channel);
 // 置き換えで増える字数（送る時の fillFullUrl と同じ書式から求める）
+// 個別承認の道では親（完全版の job）が下書きに入らないので、承認しても送る前の検査（unresolved_placeholder）で止まる
+const SHORTS_MANUAL_NOTE =
+  "。ただし Shorts は個別承認では送れない（完全版の URL が入らない）。完全版を送った後に作り直す";
 const FILLED_URL_EXTRA =
   fillFullUrl(FULL_URL_PLACEHOLDER, "x".repeat(11)).length -
   FULL_URL_PLACEHOLDER.length;
@@ -95,13 +98,24 @@ export function checkFullPicture(bundle, riskRules = []) {
   if (!/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(bundle?.race_id ?? ""))
     reasons.push("race_id が不正");
   if (!nonEmpty(bundle?.x_text, 25000)) reasons.push("x_text が無い・長すぎる");
-  else {
-    if (!xPostValid(bundle.x_text, { long: true }))
-      reasons.push("x_text が X の長文の上限を超える");
-    const urls = twitterText.extractUrls(bundle.x_text);
-    if (urls.length !== 1 || urls[0].match(RACE_URL)?.[1] !== bundle.race_id)
-      reasons.push("x_text にこのレースの URL がちょうど1つ無い");
-  }
+  // 完全版の URL の置き場所は Shorts の説明文だけ（ほかに入っていると、送る前の検査で初めて止まる）
+  for (const [field, text] of [
+    ["x_text", bundle?.x_text],
+    ["youtube_full.title", bundle?.youtube_full?.title],
+    ["youtube_full.description", bundle?.youtube_full?.description],
+    ["youtube_shorts.title", bundle?.youtube_shorts?.title],
+  ])
+    if (typeof text === "string" && text.includes(FULL_URL_PLACEHOLDER))
+      reasons.push(
+        `${field} に ${FULL_URL_PLACEHOLDER} がある（Shorts の説明文だけに置く）`,
+      );
+    else {
+      if (!xPostValid(bundle.x_text, { long: true }))
+        reasons.push("x_text が X の長文の上限を超える");
+      const urls = twitterText.extractUrls(bundle.x_text);
+      if (urls.length !== 1 || urls[0].match(RACE_URL)?.[1] !== bundle.race_id)
+        reasons.push("x_text にこのレースの URL がちょうど1つ無い");
+    }
   if (!nonEmpty(bundle?.youtube_full?.title, 100))
     reasons.push("youtube_full.title が無い・100字を超える");
   if (!nonEmpty(bundle?.youtube_full?.description, 5000))
@@ -433,8 +447,8 @@ export async function pushFullPicture(
     r.send_at
       ? `${label[channel]}: ${jstTime(r.send_at)} に自動で送る${channel === "shorts" ? "（完全版の公開の後。説明文に完全版の URL を入れる）" : ""}${controls[dbChannel(channel)]?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
       : r.error
-        ? `${label[channel]}: 自動の承認に失敗（個別承認に回した）: ${r.error}`
-        : `${label[channel]}: 自動モードでないので個別承認の画面で承認する`,
+        ? `${label[channel]}: 自動の承認に失敗（個別承認に回した）: ${r.error}${channel === "shorts" ? SHORTS_MANUAL_NOTE : ""}`
+        : `${label[channel]}: 自動モードでないので個別承認の画面で承認する${channel === "shorts" ? SHORTS_MANUAL_NOTE : ""}`,
   );
   if (shortsError)
     lines.push(

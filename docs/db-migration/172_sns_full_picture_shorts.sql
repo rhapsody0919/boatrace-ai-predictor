@@ -17,15 +17,17 @@
 --   SELECT variant, count(*) FROM public.sns_auto_send_items GROUP BY 1;  期待: main だけ
 --   SELECT conname FROM pg_constraint WHERE conrelid = 'public.sns_auto_send_items'::regclass AND conname = 'sns_auto_send_items_variant_scope';  期待: 1行
 --
--- 戻し方（shorts の item が生きていないことを確かめてから）:
---   SELECT count(*) FROM public.sns_auto_send_items WHERE variant = 'shorts' AND state NOT IN ('stopped', 'held_manual');  期待: 0（あれば先に stopped にする）
---   BEGIN;
---   DROP INDEX public.sns_auto_send_items_race_channel;
---   CREATE UNIQUE INDEX sns_auto_send_items_race_channel ON public.sns_auto_send_items (race_id, channel) WHERE state NOT IN ('stopped', 'held_manual');
---   ALTER TABLE public.sns_auto_send_items DROP CONSTRAINT sns_auto_send_items_variant_scope;
---   ALTER TABLE public.sns_auto_send_items DROP COLUMN variant;
---   COMMIT;
---   （stopped・held_manual の shorts の行が残っていても、旧索引はその行を対象にしないので作り直せる。DROP COLUMN の前に shorts の行を消すかは、そのときに判断する）
+-- 戻し方:
+--   1. まずコードを戻す（push-full-picture.js が版2の bundle で Shorts を作らないようにする PR）。列・索引・CHECK は残してよい
+--      （variant は既定 main で、版1の動きは 172 の前と同じ。一意の索引も main の行には前と同じ意味）
+--   2. 列まで消すのは、Shorts の行が1件も無いときだけ（送った Shorts の item は sent で残り、記録を書き換えないため消さない）:
+--      SELECT count(*) FROM public.sns_auto_send_items WHERE variant = 'shorts';  期待: 0。1件以上なら 1 で止める
+--      BEGIN;
+--      DROP INDEX public.sns_auto_send_items_race_channel;
+--      CREATE UNIQUE INDEX sns_auto_send_items_race_channel ON public.sns_auto_send_items (race_id, channel) WHERE state NOT IN ('stopped', 'held_manual');
+--      ALTER TABLE public.sns_auto_send_items DROP CONSTRAINT sns_auto_send_items_variant_scope;
+--      ALTER TABLE public.sns_auto_send_items DROP COLUMN variant;
+--      COMMIT;
 BEGIN;
 
 ALTER TABLE public.sns_auto_send_items
