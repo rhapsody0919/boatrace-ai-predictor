@@ -3,7 +3,10 @@
  * 本文は public/blog/{id}-ko.md、日本語版メタデータは src/data/blog-posts/{id}.json の同じ id と対応する。
  * 翻訳不要なフィールド（date 等）は日本語版の値を使うので持たない。image は図の文言が言語ごとに違う記事だけ持つ。
  * 新しい翻訳は JSON を1つ足すだけでよく、このファイルは触らない（記事の PR が .md・.json・画像だけで済むように）。
- * 詳細: docs/design/blog-i18n/spec.md、docs/adr/0006-blog-english-metadata-storage.md
+ * 競技名は src/locales/ko/common.json の実際のUI表記（경정）と docs/reference/i18n-glossary.md の
+ * 韓国語方針に合わせて「경정」で統一している。
+ * 詳細: docs/design/blog-i18n/spec.md、docs/adr/0006-blog-english-metadata-storage.md、
+ * docs/adr/0008-blog-multilingual-partial-translation.md
  */
 import { byId, readJsonDirInNode } from "./blogPostFiles.js";
 
