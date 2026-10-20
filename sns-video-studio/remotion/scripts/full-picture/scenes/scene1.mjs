@@ -12,6 +12,7 @@ import { usualOf, windWaveView } from "../../../../../src/utils/analogyFacts.js"
 import { windBand } from "../../../../../src/utils/analogyScenario.js";
 import { BUTTON, barsRow, statsRow, tableColsBox } from "../../../src/fullPicture/pageLayout.js";
 import { BOATS, diffOf, diffText, pct1, venueName } from "./common.mjs";
+import { fitFirst } from "../fit.mjs";
 
 const fmt1 = (v) => (v === null ? "—" : `${v.toFixed(1)}%`);
 /** 小数1桁の文字（72 → "72.0"）。画面の表と同じ桁で文に出す */
@@ -77,7 +78,8 @@ export function buildScene1(m) {
       press: null,
       frames: [barsRow(0)],
       facts: f,
-      lines: [`${venue}の1号艇の1着率${d1(v1)}%`, diffText(`全国の${d1(n1)}%`, f)].filter(Boolean),
+      // 会場（全選手）の集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
+      lines: fitFirst([`${venue}の1号艇（全選手）の1着率${d1(v1)}%`, diffText(`全国の${d1(n1)}%`, f)], [`${venue}の1号艇の1着率${d1(v1)}%`, diffText(`全国の${d1(n1)}%`, f)]),
     });
     // ② 枠番別の連対率（3列を一斉に囲う）
     const t2 = round1(rateOf(1, "top2Rate"));
@@ -97,7 +99,10 @@ export function buildScene1(m) {
       press: null,
       frames: [tableColsBox([1, 2, 3], 3)],
       facts: f2,
-      lines: [`1号艇は2連率${d1(t2)}%・3連率${d1(t3)}%`, diffText(`全国の2連率${d1(n2)}%`, f2)].filter(Boolean),
+      lines: fitFirst(
+        [`${venue}の1号艇（全選手）は2連率${d1(t2)}%・3連率${d1(t3)}%`, diffText(`全国の2連率${d1(n2)}%`, f2)],
+        [`全選手の1号艇は2連率${d1(t2)}%・3連率${d1(t3)}%`, diffText(`全国の2連率${d1(n2)}%`, f2)],
+      ),
     });
   } else omitted.push({ where: "scene1.venue90", reason: "会場の過去90日の集計が無い" });
 
@@ -124,7 +129,12 @@ export function buildScene1(m) {
       press: null,
       frames: [statsRow(2)],
       facts: f3,
-      lines: [`今日の1号艇の逃げ率${d1(nige)}%（${day.nigeCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)].filter(Boolean),
+      lines: fitFirst(
+        // 今日の数を件数で言う（逃げ率と1着率を比べていると分かるように。wording-editor P2）
+        [`今日の${venue}の1号艇は${day.raceCount}R中${day.nigeCount}R逃げ（${d1(nige)}%）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
+        [`今日の${venue}の1号艇（全選手）の逃げ率${d1(nige)}%（${day.nigeCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
+        [`今日のレースの1号艇の逃げ率${d1(nige)}%（${day.nigeCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
+      ),
     });
   } else omitted.push({ where: "scene1.day", reason: "このレースより前に確定したレースが無い" });
 
@@ -161,7 +171,7 @@ export function buildScene1(m) {
       revealOnPress: true,
       frames: [tableColsBox([1], 2), tableColsBox([2], 2)],
       facts: f4,
-      lines: [`この風の1号艇の1着率${d1(p1)}%`, diffText(`風を問わず${d1(b1)}%`, f4)].filter(Boolean),
+      lines: [`この風の1号艇（全選手）の1着率${d1(p1)}%`, diffText(`風を問わず${d1(b1)}%`, f4)].filter(Boolean),
     });
   } else omitted.push({ where: "scene1.wind", reason: post ? "風・会場の集計が無い" : "展示前（風の傾向が出ていない）" });
 
