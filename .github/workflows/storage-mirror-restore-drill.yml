@@ -1,6 +1,6 @@
 name: Storage Mirror Restore Drill
 
-# Storage の写し（ADR-0099）の復元の試験。R2 の写しを Supabase の試験用のバケット storage-mirror-drill（オーナーが作る、非公開）へ
+# Storage の写し（ADR-0100）の復元の試験。R2 の写しを Supabase の試験用のバケット storage-mirror-drill（オーナーが作る、非公開）へ
 # 戻し、読み直して sha256 と Content-Type を manifest と照合する。採用時に1回 all で全部、以後は月1回の見本
 # （バケットごとに一番大きいファイルと20件）。戻す先は scripts/lib/storageMirrorDrill.js の定数1つで、写す元のバケットは拒む。消す処理は無い。
 #

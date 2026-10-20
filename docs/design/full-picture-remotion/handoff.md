@@ -15,7 +15,7 @@
 - 全貌（Remotion の型・文型）の型を変える PR は、x-channel と youtube-channel の評価を必須にする。P0 は直してからマージ、P1 は PR 本文に残す。毎日の投稿そのものは審査しない（関門は機械の検査だけ）
 - `.claude/CLAUDE.md` の全貌の自動送信の例外（評価役の検査）は、本番の送信に移るときにオーナーの直接承認で変える。今は触らない
 
-## オーナーが決めたこと（2026-10-21 1時台、決定待ち 1〜6 と入口版の言葉）
+## オーナーが決めたこと（2026-10-20、決定待ち 1〜6 と入口版の言葉）
 
 1. 場面1③「この日の水面傾向」は「このレースより前に確定したレース」で数える（画面は見た時点までの確定レース）。案のまま
 2. 場面3②③の選手の730日・180日は、レースの日から数え、このレースより前の走だけ（画面は見た日から）。案のまま
@@ -38,6 +38,25 @@
 8. 文: 整えた版（LLM が文を整える）はやめる。比べる文は文型で固定し、LLM には文と文をつなぐ語だけを任せる（wording-editor の推奨）
    → 実装: `connectedText`（scene2-text.mjs）。LLM は決まったつなぐ語（一方・さらに 等）を選ぶだけ。文型の文は変えず、
    検査に落ちた拍はつなぐ語なし。入口版は文型の版（つなぐ語は完全版の拍の並びに合わせたものなので使わない）
+
+## 送信の道への受け渡し（bundle の契約、bundle_version 2）
+
+送信レーン（push-full-picture.js）の提案（2026-10-20）に、全貌レーンが合意した形。run-full が `出力/bundle/` に出す。
+
+| 項目 | 決まり |
+|---|---|
+| 版 | `bundle_version: 2`。版の欄が無い bundle は、送信側で今までどおり X 1件・YouTube 1件として受ける |
+| ファイル | `full-x.mp4`（入口版、X）・`full-youtube.mp4`（完全版、YouTube の通常の動画）・`shorts.mp4`（入口版と同じバイト列、Shorts）。shorts は縦 1080×1920・60秒以下・32MiB 以下。送信側は中身を解析しないので、縦・秒数・大きさ・full-x.mp4 と同じバイト列（sha256）は run-full が確かめる |
+| 欄 | `format`・`race_id`・`x_text`（入口版の本文＋このレースの URL ちょうど1つ）・`youtube_full{title,description}`・`youtube_shorts{title,description}`・`qa{machine,bannedWords}` |
+| 題名 | 1行・100字以下。完全版と Shorts は別の文 |
+| 完全版の URL | Shorts の description に `{full_url}` をちょうど1つ。送信側が、完全版の公開を確かめてから `https://youtu.be/<id>` に置き換える。置き換えた後も5000字以内（こちらは「置き場所を消した長さ＋40字」で検査） |
+| 必須 | v2 では `youtube_shorts` と `shorts.mp4` を必ず出す。出せないときは run-full が終了コード1で止まり、bundle を出さない |
+| qa.machine | `contract`・`text`・`post`・`entry_max59s`・`full_size`・`full_min185s`（完全版が3分以下だと Shorts 扱いになる）・`chapters`（自動チャプターの条件）・`shorts_vertical`・`shorts_max_60s`・`shorts_size`。全部 true のときだけ出す。送信側は `shorts_vertical`・`shorts_max_60s` が無いか false なら受け取りで不合格 |
+| review | 出さない。2026-10-20 オーナー決定で、評価役の P0 は使わず機械の検査だけで判定する。受け取り側の `review.p0_count` の検査は別のレーン（全貌の自動送信を機械の検査だけにする）と #1714 が外す。daily.mjs の受け取りの検査は `p0_count: 0` を入れて当てる |
+
+送る順は X → 完全版（X の4分後）→ Shorts（完全版の公開の後、早くて完全版の4分後）。締切の50分前を過ぎて届いた bundle は、送信側が Shorts だけ作らずに X・完全版を送る（完全版の公開を待つ時間が無いため。送信レーンの決まり）。
+
+`verify-full-picture-scene2.js` で、この bundle（`p0_count: 0` を足したもの）が push-full-picture.js の `checkFullPicture` を通ることを固定している。
 
 ## 作り（sns-video-studio/remotion）
 

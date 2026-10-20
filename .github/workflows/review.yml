@@ -125,6 +125,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ needs.gate.outputs.head_sha }}
           VENDOR: ${{ needs.gate.outputs.vendor }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           MATERIALS: ${{ needs.materials.outputs.materials }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           REVIEW_OPENAI_MODEL: ${{ vars.REVIEW_OPENAI_MODEL }}

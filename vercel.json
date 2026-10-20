@@ -253,6 +253,10 @@
       "schedule": "30 17 * * *"
     },
     {
+      "path": "/api/cron/db-apply-dispatch",
+      "schedule": "17 * * * *"
+    },
+    {
       "path": "/api/cron/in-caution-health",
       "schedule": "30 19 * * *"
     },
@@ -283,7 +287,7 @@
     },
     "api/bot-page/**/*.js": {
       "regions": ["syd1"],
-      "includeFiles": "{src/locales/ja/common.json,src/locales/en/common.json,src/locales/zh-TW/common.json,src/locales/ko/common.json,index.html,src/data/blog-posts/*.json}"
+      "includeFiles": "{src/locales/ja/common.json,src/locales/en/common.json,src/locales/zh-TW/common.json,src/locales/ko/common.json,index.html,src/data/blog-posts/**/*.json}"
     }
   },
   "redirects": [

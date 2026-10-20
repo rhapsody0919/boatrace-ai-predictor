@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Storage の写しの復元の試験（ADR-0099、.github/workflows/storage-mirror-restore-drill.yml が月1回動かす）。
+ * Storage の写しの復元の試験（ADR-0100、.github/workflows/storage-mirror-restore-drill.yml が月1回動かす）。
  * R2 の写しを Supabase の試験用のバケット storage-mirror-drill（オーナーが作る）へ戻し、読み直して sha256 と Content-Type を照合する。
  *
  *   node scripts/storage-mirror/restore.js          バケットごとに一番大きいファイルと20件（月1回）

@@ -65,9 +65,15 @@ const BROWSER_ONLY = [
   { re: /\bdocument\./, name: "document" },
   { re: /from\s+["']react/, name: "react" },
 ];
-// 例外: blogPosts.js は import.meta.env の有無で読み方を分ける（Vite では import.meta.glob、Node では fs）。
-// Node では import.meta.env が undefined なので fs の分岐を通る（トップのブログ欄、BOA-848 の後続）
-const ALLOWED = { "src/data/blogPosts.js": ["import.meta.env"] };
+// 例外: blogPosts.js と翻訳版の blogPostsEn/Ko/ZhTw.js は import.meta.env の有無で読み方を分ける
+// （Vite では import.meta.glob、Node では fs）。Node では import.meta.env が undefined なので fs の分岐を通る
+// （トップのブログ欄、BOA-848 の後続。翻訳版は BOA-908 で JSON に移した）
+const ALLOWED = {
+  "src/data/blogPosts.js": ["import.meta.env"],
+  "src/data/blogPostsEn.js": ["import.meta.env"],
+  "src/data/blogPostsKo.js": ["import.meta.env"],
+  "src/data/blogPostsZhTw.js": ["import.meta.env"],
+};
 const stripComments = (src) =>
   src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const visited = new Set();

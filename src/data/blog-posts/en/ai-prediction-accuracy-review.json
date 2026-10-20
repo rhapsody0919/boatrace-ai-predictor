@@ -1,0 +1,15 @@
+{
+  "id": "ai-prediction-accuracy-review",
+  "title": "Does Boat Racing AI Prediction Really Hit? — Results from 3 Months and 15,000 Races",
+  "description": "We audited AI prediction hit rate and return rate across 15,000 races. An honest look at its strengths and weaknesses, how Ryujin Radar differs from other services, and where AI prediction falls short.",
+  "category": "Data Analysis",
+  "tags": [
+    "AIPrediction",
+    "HitRate",
+    "ReturnRate",
+    "Verification",
+    "Transparency"
+  ],
+  "readTime": "10 min",
+  "image": "/images/blog/ai-accuracy-comparison-en.jpg"
+}

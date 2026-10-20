@@ -13,7 +13,7 @@
  * 次のファイルに、数字か `{{...}}` の直後の「호정」「번 정」「번정」が無いこと。
  * - src/locales/ko/ 配下の .json
  * - ko 専用ページ（src/pages/Ko*.jsx）
- * - ko ブログのメタデータ（src/data/blogPostsKo.js）
+ * - ko ブログのメタデータ（src/data/blog-posts/ko/*.json、BOA-908 で blogPostsKo.js から移した）
  *
  * ## 検査しないこと（意図的）
  *
@@ -74,6 +74,7 @@ if (selfTestFailures.length > 0) {
 
 const localeDir = path.join(repoRoot, "src/locales/ko");
 const pagesDir = path.join(repoRoot, "src/pages");
+const koBlogDir = path.join(repoRoot, "src/data/blog-posts/ko");
 const targets = [
   ...readdirSync(localeDir)
     .filter((f) => f.endsWith(".json"))
@@ -81,7 +82,9 @@ const targets = [
   ...readdirSync(pagesDir)
     .filter((f) => /^Ko.*\.jsx$/.test(f))
     .map((f) => path.join(pagesDir, f)),
-  path.join(repoRoot, "src/data/blogPostsKo.js"),
+  ...readdirSync(koBlogDir)
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => path.join(koBlogDir, f)),
 ];
 
 const hits = targets.flatMap((file) =>

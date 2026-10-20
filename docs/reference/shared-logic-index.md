@@ -18,11 +18,12 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 
 | ファイル | 役割 | 主なexport |
 | --- | --- | --- |
-| `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか1件 |
+| `scripts/lib/analogyDispatch.js` | BOA-271 アナロジー・ファインダー: GitHub Actions の workflow_dispatch を Vercel Cron から起動する（学習… | morningRetryNeeded, morningShouldDispatch, dispatchWorkflow, createAnalogyDispatchRun, GITHUB_REPO ほか2件 |
 | `scripts/lib/analogyV16Exhibition.js` | アナロジー・ファインダー v16 の展示後の段（BOA-271 tasks T4-2・T4-3。plan「展示後の段」）。 | selectExhibitionTargets, todayExhibition, exhibitionNeighbors, displayRow, runAnalogyV16Exhibition ほか1件 |
 | `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | readJsonl, fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS ほか4件 |
 | `scripts/lib/beforeInfoParser.js` | 公式の直前情報ページ（boatrace.jp beforeinfo）の全項目パーサー（純関数。DB・取得先に接続しない） | parseStartExhibitionCell, parseBeforeInfoDocument, parseBeforeInfoPage, BEFOREINFO_PARSER_VERSION |
 | `scripts/lib/beforeinfoWeather.js` | 公式ページの「水面気象情報」の解析（BOA-358） | convertWindDirection, scrapeObservedPoint, scrapeConditions, hasAnyWeather, resolveObservedAt ほか5件 |
+| `scripts/lib/blogImageDimensions.js` | ブログ画像（public/images/blog/）の実寸を、画像のヘッダーから読む（BOA-908）。 | readJpegSize, buildImageDimensions |
 | `scripts/lib/boatcast/boatcastClient.js` | BOATCAST（race.boatcast.jp）への取得の共通部品: URL・間隔の制御・カナリア・403の解釈。 | buildOritenUrl, buildMotorStartUrl, createPacer, fetchBoatcast, checkCanary ほか6件 |
 | `scripts/lib/boatcast/motorStartJob.js` | BOATCASTのモーター使用開始日（bc_mst。N26）の日次取得ジョブ（docs/design/boatcast-original-exhibition/… | fetchMotorStartDates, nextHistory, createMotorStartRun, MOTOR_START_JOB, ABORT_AFTER_CONSECUTIVE_FAILURES ほか1件 |
 | `scripts/lib/boatcast/oritenJob.js` | BOATCASTのオリジナル展示（bc_oriten。N25）の取得ジョブ（docs/design/boatcast-original-exhibition/）… | processOritenRace, tickOf, takeTick, clearTicks, mergeReport ほか6件 |
@@ -59,6 +60,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/dataHealth/job.js` | 汎用の日次監視 data_health（完了の定義C）の実行。api/cron/data-health.js が、共通ラッパ | createRpcCaller, readDeliveredKeys, runDataHealthChecks, DATA_HEALTH_JOB, DATA_HEALTH_MORNING_JOB ほか3件 |
 | `scripts/lib/dataHealth/workflowCoverage.js` | Environment prod-jobs を使う workflow（.github/workflows）の、data_health への登録の一覧。 | usesProdJobs, findCoverageProblems, WORKFLOW_EXCLUSIONS |
 | `scripts/lib/dateUtils.js` | 日付ユーティリティ（バックエンド用） | getTodayDateJST, getYesterdayDateJST, getDateDaysAgo, formatDateForUrl, parseDateArg ほか5件 |
+| `scripts/lib/dbApplyDispatch.js` | db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile）を Vercel Cron から起動する（ADR-0097、 | findRecentReconcileSuccess, createDbApplyDispatchRun, DB_APPLY_WORKFLOW, STALE_AFTER_MS, RESTART_AFTER_MS ほか1件 |
 | `scripts/lib/dbApplySql.js` | 本番 DB 適用ワークフロー（.github/workflows/db-apply.yml）が、承認の前にマイグレーションを検査するための純粋関数。 | validateMigrationPath, splitStatements, extractTables, inspectMigration, extractConfirmationSections ほか15件 |
 | `scripts/lib/dbReconcile.js` | 本番 DB の自動の適用（ADR-0097）で、次に当てるマイグレーションを選ぶための純粋関数。 | ledgerState, ledgerRowAddedAsUnapplied, evaluateCandidate, pickNext, isBusy ほか6件 |
 | `scripts/lib/deployHookPolicy.js` | Vercel Deploy Hook を叩くかどうかの判定（BOA-361）。 | decideDeployHook, DEPLOY_HOOK_WINDOW_MINUTES |
@@ -365,4 +367,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 330 ファイル / export 1867 件。
+対象 332 ファイル / export 1876 件。

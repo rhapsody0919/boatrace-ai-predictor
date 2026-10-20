@@ -15,6 +15,40 @@ X・Shorts は59秒以内の入口版（条件＋6艇の重ね図＋結論1拍�
 毎日の実行は「材料 JSON 1つ → 文の JSON・完全版と入口版の MP4・本文」の1本のコマンド（`sns-video-studio/remotion/scripts/full-picture/run-full.mjs`）。
 龍神の鍵が要るのは材料の取得だけ。文は描画の前に1度だけ作って保存し、同じ文の JSON なら同じ MP4 になる。
 
+## 毎日の実行（daily.mjs）の契約と鍵の分け方
+
+hq の全貌の切替案 v2（`~/hq/drafts/full-picture-switch-20261020.md` §9、2026-10-20）の依頼に合わせた。hq の集客部署は次の2つの使い方だけを呼ぶ。
+
+| 使い方 | コマンド（sns-video-studio/remotion で） | 標準出力（JSON 1つ） |
+|---|---|---|
+| 選ぶ | `node scripts/full-picture/daily.mjs --select --date YYYY-MM-DD [--count N] --plan-only` | `{status, stage, reasons, plan: [{race_id, deadline}], rule}` |
+| 作る | `node scripts/full-picture/daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected\|template]` | `{status, stage, reasons, files, video{full_s, entry_s, full_mib}, llm{calls, tokens_in, tokens_out}, text_mode, missing, ref_commit}` |
+
+- exit: 0 合格、1 止める、2 使い方の誤り。ログは標準エラー
+- 選び方の規則は龍神が持つ（`SELECT_RULE`）: 締切 21:58 前・中止でない優勝戦か準優勝戦のうち締切の一番遅いもの。無ければ 12R の一番遅いもの
+- 作る中身: 材料（`--stage racecard`。例外・契約に合わない・facts か展開が無いなら1回だけ取り直す）→ `run-full.mjs`（完全版・入口版・bundle。
+  文・本文・尺・大きさ・章・省略禁止の場面の機械の検査に落ちたら止める）→ 送信の道の受け取りの検査（`push-full-picture.js` の `checkFullPicture`
+  と動画の大きさ。DB・Storage に書かない。評価役の P0 は hq の側なので数えない）。**送信は含めない**
+- `stage` は止まった段（`select`・`materials`・`run-full`・`bundle`・`push-check`）。合格なら `done`
+- 材料は、facts・類似レース・展開（4つの範囲）・出走表・24会場の過去90日・モーターのどれかが欠けたら1回取り直し、それでも欠けたら止める
+  （一時的な失敗で「全国」の値や場面6が黙って変わらないように）。1号艇の選手の成績は、選手が無い日があるので省いて続ける
+- 予期しない例外でも、標準出力に JSON 1つ（止まった段と理由）を出して exit 1。待ち時間の上限は、API 30秒・LLM 5分・run-full 45分
+- 選ぶ（--select）は今の時刻を見ない。送信の道は締切の45分前を過ぎると受け取らず、作るのに約11分かかるので、起動の時刻は hq の運用で決める
+
+### 鍵の分け方
+
+- daily.mjs は送信をしないので、service key（`SUPABASE_SERVICE_KEY`）を読まない。材料の取得に要るのは Supabase の匿名の読み取り
+  （`VITE_SUPABASE_URL`・`VITE_SUPABASE_ANON_KEY`、画面の配信物と同じ公開キー）だけで、`--env-file` を使わず `.env.local` からこの2つだけを読む
+- 子のプロセス（run-full と、その中で呼ぶ claude）には、通す名前を並べた環境変数（PATH・HOME・LANG・TMPDIR・NODE_*・CLAUDE_*・ANTHROPIC_* 等）
+  だけを渡す。送信の鍵（service key・Slack・X・YouTube）と一緒に起動されたら、使い方の誤り（exit 2）で止める
+- claude（つなぐ語の LLM）は、道具・設定・CLAUDE.md・MCP を使わせず（`--tools "" --safe-mode --strict-mcp-config`）、空の一時ディレクトリで動かす。
+  リポジトリの `.env.local` を読めない
+- 送信は今までどおり `node --env-file=.env.local scripts/sns/push-full-picture.js <bundle_dir>` が受け持つ（service key はこの node だけが読む）
+
+### 落ちた日
+
+hq の包みが「全貌: <stage> で落ちる」を起票する。全貌レーン（龍神の開発）が拾い、`reasons` と `missing` から直す。
+
 ## 材料 JSON の契約
 
 - 形: `full-picture-materials/{版}` の JSON。公開 API の応答と Supabase の匿名読み取りの行を、計算せずに1つにまとめたもの

@@ -441,6 +441,16 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: [],
     failureAlertAfter: 1,
   },
+  // ADR-0097 db-apply の定期の突き合わせの起動（db-apply.yml の mode=reconcile。scripts/lib/dbApplyDispatch.js）。毎時17分。
+  // 学習の起動と同じく monitor でモードのゲートを api/cron 側で掛ける。dispatch の失敗と、見張り（直近3時間に
+  // reconcile の job が success で終わっていない）は1回目から通知する
+  db_apply_dispatch: {
+    kind: "monitor",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+    failureAlertAfter: 1,
+  },
   // BOA-822 イン崩れ注意度の監視（scripts/lib/inCautionHealth.js）。DB は読み取りだけ。問題は実行の失敗にして1回目から通知する。
   // 夜の表（JST 04:30、api/cron/in-caution-health.js）と今日の unified（05:45、api/cron/in-caution-today-health.js）を
   // 別のジョブにする。成功の記録が失敗の記録を消すので、同じジョブだと 04:30 の失敗が 07:00 の通知の前に消える

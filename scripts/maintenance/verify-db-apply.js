@@ -21,7 +21,8 @@
  */
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -551,11 +552,57 @@ check(
     "DB に当てる job は同じ group の job ごとの concurrency",
     ["apply", "apply-auto", "apply-gated"].every((j) => /concurrency:\n {6}group: db-apply-db\n {6}cancel-in-progress: false/.test(body(j))),
   );
-  check("手での起動の inspect は workflow_dispatch だけ", /github\.event_name == 'workflow_dispatch'/.test(body("inspect")));
   check(
-    "reconcile は schedule だけ・審査の App の ID が入るまで動かない",
-    /github\.event_name == 'schedule'/.test(body("reconcile")) && /vars\.REVIEWER_BOT_USER_ID != ''/.test(body("reconcile")),
+    "手での起動の inspect は workflow_dispatch の mode=manual だけ（mode=reconcile では動かさない）",
+    /github\.event_name == 'workflow_dispatch' &&\s+inputs\.mode != 'reconcile'/.test(body("inspect")),
   );
+  // 定期の起動の条件（schedule か dispatch の mode=reconcile。docs/design/db-apply-automation-finish/plan.md §2）
+  const periodic = /\(github\.event_name == 'schedule' \|\| \(github\.event_name == 'workflow_dispatch' && inputs\.mode == 'reconcile'\)\)/;
+  check(
+    "reconcile は定期の起動（schedule か dispatch の mode=reconcile）だけ・審査の App の ID が入るまで動かない",
+    periodic.test(body("reconcile")) && /vars\.REVIEWER_BOT_USER_ID != ''/.test(body("reconcile")),
+  );
+  check(
+    "reconcile の入口で、master 以外の ref と、ファイルの付いた mode=reconcile を落とす",
+    /REF: \$\{\{ github\.ref \}\}/.test(body("reconcile")) &&
+      /"\$REF" != "refs\/heads\/master"/.test(body("reconcile")) &&
+      /MIGRATION: \$\{\{ inputs\.migration \}\}/.test(body("reconcile")) &&
+      /if \[ -n "\$MIGRATION" \]; then\n\s+echo "::error::[^\n]*\n\s+exit 1/.test(body("reconcile")),
+  );
+  check(
+    "notify も定期の起動（schedule か dispatch の mode=reconcile）だけ",
+    periodic.test(body("notify")) && !/github\.event_name == 'schedule' && needs/.test(body("notify")),
+  );
+  check(
+    "record は台帳に書くファイルと sha256 を起動の種類で分ける（`a || b` で混ぜない）",
+    !/inputs\.migration \|\|/.test(body("record")) &&
+      !/needs\.inspect\.outputs\.sha256 \|\|/.test(body("record")) &&
+      /MANUAL: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.mode != 'reconcile' \}\}/.test(body("record")) &&
+      (body("record").match(/steps\.target\.outputs\.migration/g) ?? []).length === 2,
+  );
+  {
+    // 台帳に書くファイルを決める step を実際に bash で動かす（手での起動は inputs・inspect、定期の起動は judge）
+    const script = /id: target\n[\s\S]*?run: \|\n((?: {10}.*\n)+)/.exec(body("record") + "\n")?.[1]?.replace(/^ {10}/gm, "") ?? "";
+    const pick = (env) => {
+      const out = path.join(tmpdir(), `db-apply-target-${process.pid}-${Math.random().toString(36).slice(2)}`);
+      const r = spawnSync("bash", ["-c", script], { env: { PATH: process.env.PATH, GITHUB_OUTPUT: out, ...env }, encoding: "utf8" });
+      const text = r.status === 0 && existsSync(out) ? readFileSync(out, "utf8") : "";
+      rmSync(out, { force: true });
+      return { status: r.status, text };
+    };
+    const both = { INPUT_MIGRATION: "docs/db-migration/1_a.sql", INSPECT_SHA256: "aaa", JUDGE_FILE: "docs/db-migration/2_b.sql", JUDGE_SHA256: "bbb" };
+    const manual = pick({ MANUAL: "true", ...both });
+    const periodic = pick({ MANUAL: "false", ...both });
+    const empty = pick({ MANUAL: "false", INPUT_MIGRATION: "docs/db-migration/1_a.sql", INSPECT_SHA256: "aaa", JUDGE_FILE: "", JUDGE_SHA256: "" });
+    check(
+      "record: 手での起動は inputs と inspect、定期の起動は judge のファイルを台帳に書き、空なら落とす（片方に寄せない）",
+      script !== "" &&
+        manual.text === "migration=docs/db-migration/1_a.sql\nsha256=aaa\n" &&
+        periodic.text === "migration=docs/db-migration/2_b.sql\nsha256=bbb\n" &&
+        empty.status !== 0,
+      JSON.stringify({ manual, periodic, empty }),
+    );
+  }
   check("judge は reconcile が選んだときだけ", /if: needs\.reconcile\.outputs\.status == 'selected'/.test(body("judge")));
   check(
     "apply-auto は mode auto・Environment production-db-auto・apply-auto コマンド",
