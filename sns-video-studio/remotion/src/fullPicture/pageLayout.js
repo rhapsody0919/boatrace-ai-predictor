@@ -69,3 +69,8 @@ export const BUTTON = { x: 700, y: PAGE_TOP + 10, w: 240, h: 84 };
 export const SLIT = { top: BODY_Y + 40, laneH: 60, line: 740, scale: 6000, lead: 40 };
 export const slitX = (st, fastest) => SLIT.line - SLIT.lead - (st - fastest) * SLIT.scale;
 export const slitFormBox = (i) => ({ x: LEFT + (i % 3) * 300, y: SLIT.top + 6 * SLIT.laneH + 30 + Math.floor(i / 3) * 90, w: 280, h: 80 });
+
+/** 軸の艇のボタン（6つ）と、その下の2着の棒（5行） */
+export const AXIS = { y: BODY_Y, h: 84, w: 135, step: 153 };
+export const axisButtonBox = (b) => ({ x: LEFT + (b - 1) * AXIS.step, y: AXIS.y, w: AXIS.w, h: AXIS.h });
+export const followerRow = (i) => ({ x: LEFT, y: BODY_Y + 120 + i * 112, w: RIGHT - LEFT, h: 100 });

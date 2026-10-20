@@ -18,7 +18,8 @@ export const STEP_LEN = 135;
  * @param {boolean} first 場面の最初の段か（頁を送らない）
  */
 export function stepTimes(step, first) {
-  const scroll = first ? 0 : SCROLL;
+  // 同じ頁の続き（軸のボタンを順に押す等）は頁を送らない
+  const scroll = first || step.samePage ? 0 : SCROLL;
   const press = step.press ? scroll + BEAT.press : null;
   const changed = step.press ? press + BEAT.change : scroll;
   // 表を縦に伸ばす段は、伸び切ってから 0.5秒で枠
@@ -30,7 +31,8 @@ export function stepTimes(step, first) {
     (_, i) => frame0 + i * FRAME_STEP,
   );
   const answer = frames[nFrames - 1] + BEAT.frameIn + BEAT.answerGap;
-  const len = STEP_LEN + (nFrames - 1) * FRAME_STEP + grow;
+  // 短い段（重点でない艇、約2秒）は step.len で決める
+  const len = step.len ?? STEP_LEN + (nFrames - 1) * FRAME_STEP + grow;
   return { scroll, press, changed, frames, answer, len };
 }
 

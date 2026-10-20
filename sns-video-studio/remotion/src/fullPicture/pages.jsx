@@ -24,6 +24,8 @@ import {
   tableRowH,
   tableRowY,
   SLIT,
+  axisButtonBox,
+  followerRow,
   slitFormBox,
   slitX,
 } from "./pageLayout.js";
@@ -442,6 +444,37 @@ export function SlitPage({ title, sub, st, boats, button, forms, shown = 1, t = 
         return (
           <div key={i} style={{ position: "absolute", left: box.x, top: box.y, width: box.w, height: box.h, borderRadius: 16, boxSizing: "border-box", border: `3px solid ${f.on ? GOLD : "rgba(255,255,255,0.15)"}`, background: f.on ? "rgba(226,185,59,0.15)" : "transparent", color: f.on ? "#ffffff" : MUTED, fontSize: MIN_TEXT, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap" }}>
             {f.name}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/** 軸の艇のボタン＋2着の棒。axis: 押した軸の艇、rows: [{boat, value(0〜1), text}] */
+export function FollowersPage({ title, sub, axis, rows, max }) {
+  return (
+    <>
+      <Panel title={title} sub={sub} />
+      {[1, 2, 3, 4, 5, 6].map((b) => {
+        const box = axisButtonBox(b);
+        const on = b === axis;
+        return (
+          <div key={b} style={{ position: "absolute", left: box.x, top: box.y, width: box.w, height: box.h, borderRadius: 16, boxSizing: "border-box", border: `3px solid ${on ? GOLD : "rgba(255,255,255,0.15)"}`, background: on ? "rgba(226,185,59,0.18)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <BoatBadge b={b} size={50} />
+            <span style={{ fontSize: MIN_TEXT, color: on ? "#ffffff" : MUTED, fontWeight: 800 }}>軸</span>
+          </div>
+        );
+      })}
+      {rows.map((r, i) => {
+        const box = followerRow(i);
+        return (
+          <div key={r.boat}>
+            <div style={{ position: "absolute", left: box.x, top: box.y + 22 }}>
+              <BoatBadge b={r.boat} size={52} />
+            </div>
+            <div style={{ position: "absolute", left: BARS.barX - 80, top: box.y + 22, width: Math.max(4, (r.value / max) * (BARS.barW + 80)), height: 56, background: "#b3a77a", borderRadius: "0 10px 10px 0" }} />
+            <div style={{ position: "absolute", left: BARS.valueX, top: box.y + 24, fontSize: 40, fontWeight: 800, color: "#ffffff", whiteSpace: "nowrap" }}>{r.text}</div>
           </div>
         );
       })}

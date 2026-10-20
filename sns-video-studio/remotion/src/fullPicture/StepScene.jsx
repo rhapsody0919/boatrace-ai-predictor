@@ -6,7 +6,7 @@
 import { interpolate, useCurrentFrame } from "remotion";
 import { PAGE, answerOf, clamp, ease } from "./parts.js";
 import { Bubble, Finger, Frame, Note, QuestionBand } from "./parts.jsx";
-import { BarsPage, SankeyPage, SlitPage, SonarPage, StatsPage, TablePage, TrifectaPage } from "./pages.jsx";
+import { BarsPage, FollowersPage, SankeyPage, SlitPage, SonarPage, StatsPage, TablePage, TrifectaPage } from "./pages.jsx";
 import { BAND, H, W } from "./scene2Layout.js";
 import {
   scrollPages,
@@ -15,7 +15,7 @@ import {
   stepTimeline,
 } from "./stepTimeline.js";
 
-const PAGES = { bars: BarsPage, table: TablePage, stats: StatsPage, sonar: SonarPage, sankey: SankeyPage, trifecta: TrifectaPage, slit: SlitPage };
+const PAGES = { bars: BarsPage, table: TablePage, stats: StatsPage, sonar: SonarPage, sankey: SankeyPage, trifecta: TrifectaPage, slit: SlitPage, followers: FollowersPage };
 const BG_TOP = "#12233a";
 
 /** その段の頁（押す段は、押した後に中身が出る） */
