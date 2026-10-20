@@ -95,3 +95,6 @@ export function answerWindows(beats) {
   });
   return out;
 }
+
+/** 場面2の長さ（フレーム） */
+export const scene2Duration = (scene) => scene2Timeline(scene).total;

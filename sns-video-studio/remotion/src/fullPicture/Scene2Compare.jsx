@@ -286,7 +286,6 @@ function radarState(scene, beats, frame) {
 }
 
 /** 項目名の文字と、その艇の順位の行 */
-const axisName = (label) => `${label} ▼`;
 const axisSub = (boat, rank) => `${boat}号艇 ${rank ?? "—"}`;
 function axisBox(scene, i, boat) {
   const n = scene.radar.axes.length;
@@ -834,8 +833,6 @@ function Note({ lines }) {
  * 無ければ文型の版を使う。同じ JSON なら同じ絵になる
  */
 const answerOf = (scene, id, template) => scene.answers?.[id] ?? template;
-
-export const scene2Duration = (scene) => scene2Timeline(scene).total;
 
 export function FullPictureScene2(scene) {
   const frame = useCurrentFrame();

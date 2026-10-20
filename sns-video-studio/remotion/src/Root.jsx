@@ -1,8 +1,6 @@
 import { Composition } from "remotion";
-import {
-  FullPictureScene2,
-  scene2Duration,
-} from "./fullPicture/Scene2Compare.jsx";
+import { FullPictureScene2 } from "./fullPicture/Scene2Compare.jsx";
+import { scene2Duration } from "./fullPicture/scene2Timeline.js";
 import { AshiyaCM, AmagasakiCM } from "./AshiyaCM.jsx";
 import { YoungPersonaCM } from "./YoungPersonaCM.jsx";
 import { HitCheckCM } from "./HitCheckCM.jsx";

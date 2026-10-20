@@ -13,6 +13,7 @@
  * 文の JSON は既にあれば作り直さない（--regen-text で作り直す）。同じ文の JSON なら同じ MP4 になる。
  */
 import { execFileSync } from "node:child_process";
+import process from "node:process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { buildScene2, t } from "./scene2-data.mjs";
