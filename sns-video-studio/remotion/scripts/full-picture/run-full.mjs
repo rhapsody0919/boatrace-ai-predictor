@@ -21,7 +21,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import process from "node:process";
-import { allBeats, checkAnswers, checkPost, connectedText, templateText } from "./scene2-text.mjs";
+import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, templateText } from "./scene2-text.mjs";
 import { entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
@@ -169,7 +169,7 @@ for (const mode of modes) {
   let llmCalls = 0;
   // 文の JSON は同じレース・同じ文型のときだけ使い回す（別のレースの答えを重ねない）
   const saved = existsSync(textPath) && !regenText ? JSON.parse(readFileSync(textPath, "utf8")) : null;
-  const reusable = saved && saved.raceId === m.raceId && beats.every((b) => saved.answers?.[b.id]?.at(-1) === b.template.at(-1));
+  const reusable = saved && saved.raceId === m.raceId && beats.every((b) => sameAsTemplate(saved.answers?.[b.id], b.template));
   if (saved && !reusable) console.warn(`[文の JSON を作り直す] ${textPath} はこの材料（${m.raceId}）の文と合わない`);
   const text = reusable
     ? saved

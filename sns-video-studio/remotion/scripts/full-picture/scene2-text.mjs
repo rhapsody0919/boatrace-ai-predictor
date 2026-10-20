@@ -297,6 +297,9 @@ export function checkConnected(connector, template, facts, prev) {
   const lines = connectedLines(connector, template);
   return checkLines(lines, facts, prev);
 }
+/** 保存した答えがその文型の文か（つないだ版は1行目の頭につなぐ語が付くので、1行目は文型の文で終わり、2行目以降は同じ） */
+export const sameAsTemplate = (got, tpl) =>
+  Array.isArray(got) && got.length === tpl.length && got[0].endsWith(tpl[0]) && got.slice(1).every((l, i) => l === tpl[i + 1]);
 export const connectedLines = (connector, template) =>
   connector ? [`${connector}、${template[0]}`, ...template.slice(1)] : template;
 

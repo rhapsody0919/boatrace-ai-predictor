@@ -640,6 +640,12 @@ for (const f of fixtures) {
     true,
     "1位が3艇で並んでも1行に入る",
   );
+  // F6: 文の JSON は同じ文型のときだけ使い回す（つないだ版の1行の答えを別物と見て、LLM を呼び直していた）
+  const { sameAsTemplate } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
+  assert.ok(sameAsTemplate(["続いて、3・4号艇が1着なら2着は1号艇"], ["3・4号艇が1着なら2着は1号艇"]), "つなぐ語つきの1行の答えは同じ文型");
+  assert.ok(sameAsTemplate(["続いて、a", "b"], ["a", "b"]));
+  assert.ok(!sameAsTemplate(["a", "c"], ["a", "b"]), "2行目が違えば別の文");
+  assert.ok(!sameAsTemplate(["x"], ["a", "b"]), "行の数が違えば別の文");
   // F10: 「逆に」は前の拍と向きが逆のときだけ
   has(checkLines(["逆に、1号艇は2連率50.0%"], { kind: "place", direction: "高い" }, { kind: "venue90", direction: "高い" }), "「逆に」だが");
   assert.deepEqual(checkLines(["逆に、全国の72.0%より6.1ポイント低い"], { kind: "place", direction: "低い", diffPt: 6.1 }, { kind: "venue90", direction: "高い" }).filter((w) => w.includes("逆に")), []);
