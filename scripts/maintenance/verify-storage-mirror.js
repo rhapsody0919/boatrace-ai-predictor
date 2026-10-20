@@ -580,6 +580,18 @@ const SECRET_PATH = "未投稿の企画/秘密 name(1)!+$'*.mp4";
   const b = await runMirror({ source: src, r2, now: t(23) });
   const c = await runMirror({ source: src, r2, now: t(24), acceptGone: true });
   check("一覧0件も accept_gone で基準を進められる", b.failures.some((f) => /0件/.test(f)) && c.failures.length === 0 && c.baseline === true, c.failures.join(" / "));
+  // 取り寄せの途中で上書きされた（大きさが同じ）もの
+  const { r2: r2e } = fakeR2();
+  const raced = fakeSource({ "sns-hub-media": {}, "raw-pages": many("p", 1), analogy: {} });
+  const realDl = raced.download.bind(raced);
+  raced.download = async (b, p) => ({ ...(await realDl(b, p)), etag: '"ffffffff"' });
+  const e1 = await runMirror({ source: raced, r2: r2e, now: t(21), initial: true });
+  check("取り寄せた eTag が一覧と違えば写し損ね（古い中身を新しい指紋で記録しない）", e1.failures.some((f) => /eTag/.test(f)) && e1.perBucket["raw-pages"].written === 0);
+  raced.download = async (b, p) => ({ ...(await realDl(b, p)), etag: `W/"${sha256(raced.files[b][p].body).slice(0, 8)}"` });
+  const { r2: r2f } = fakeR2();
+  const e2 = await runMirror({ source: raced, r2: r2f, now: t(21), initial: true });
+  check("eTag の W/ と引用符の違いは同じとみなす", e2.failures.length === 0, e2.failures.join(" / "));
+  check("Supabase のオブジェクト単位の 403 は鍵の誤りにしない、5xx は一時的な失敗", classifyLog("::error::raw-pages: 1件: Supabase storage object error 403（get）") !== "config" && classifyLog("::error::raw-pages: 1件: Supabase storage object error 503（get）") === "transient");
   check("例外の文からパス（そのまま・符号化）を消す", scrubPath("Failed to parse URL from https://x/a%20b/%E7%A7%98.png", "a b/秘.png") === "Failed to parse URL from https://x/…");
 }
 

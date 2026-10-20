@@ -81,12 +81,15 @@ export async function download(bucket, path) {
     const text = await res.text().catch(() => "");
     if (res.status === 404 || /"statusCode"\s*:\s*"?404|not_found|Object not found/i.test(text))
       throw new SourceNotFound("元で見つからない");
-    throw new Error(`Supabase storage HTTP ${res.status}（get）`);
+    throw new Error(`Supabase storage object error ${res.status}（get）`);
   }
-  if (!res.ok) throw new Error(`Supabase storage HTTP ${res.status}（get）`);
+  // 一覧が通った後のオブジェクト単位の失敗なので `HTTP 403` の形にしない（鍵の誤りに分けると、カナリアの成功で
+  // 鍵の Issue が閉じては開くを繰り返す）。5xx は「supabase … 503」で一時的な失敗に分かれる
+  if (!res.ok) throw new Error(`Supabase storage object error ${res.status}（get）`);
   return {
     body: Buffer.from(await res.arrayBuffer()),
     contentType: res.headers.get("content-type"),
+    etag: res.headers.get("etag"),
   };
 }
 

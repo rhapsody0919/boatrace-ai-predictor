@@ -111,6 +111,9 @@ export const isMassGone = (prevPresent, gone) =>
   prevPresent > 0 &&
   gone / prevPresent >= MASS_GONE_RATIO;
 
+/** eTag の比べ方（W/ と引用符を外す） */
+export const normEtag = (e) => String(e).replace(/^W\//, "").replace(/"/g, "");
+
 /** 一覧に出たのに GET が 404 のものが、写している最中の削除で説明できる数（2件か1%）を超えたか */
 export const tooManyNotFound = (notFound, listed) =>
   notFound > Math.max(2, Math.floor(listed * 0.01));
@@ -165,6 +168,9 @@ export async function mirrorOne({
     throw e;
   }
   const { body, contentType } = got;
+  // 一覧の後・取り寄せの前に上書きされた（大きさが同じ）ものを、新しい指紋で古い中身として記録しない
+  if (got.etag && file.etag && normEtag(got.etag) !== normEtag(file.etag))
+    throw new Error("取り寄せた eTag が一覧と違う（途中で上書きされた。翌日の run で取り直す）");
   if (typeof file.size === "number" && body.length !== file.size)
     throw new Error(
       "取り寄せた大きさが一覧と違う（途中で上書きされたか、壊れている）",
