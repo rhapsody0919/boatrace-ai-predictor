@@ -302,10 +302,10 @@ flowchart TD
 | 19 | dev-gate を全員に効かせるか社員だけか | 全員 |
 | 20 | 審査の仕組み（dev-gate.json・review.yml・scripts/review・reviewPr.js）を変える PR を機械で落とすか（§10.4） | 落とす（deny）。オーナーは ruleset を一時 Disabled にして入れる |
 | 21 | ブランチの接頭辞を `claude/`・`codex/` に機械で揃える（§10.0。今は 970 本中 85 本だけ） | PR-D の check-gh-identity で push と PR の前に検査する |
-| 22 | verify-registry.json と docs/knowledge を「足すだけ」なら employee にする（§10.4 v2） | はい（JSON は上位集合、md は - の行が0） |
-| 23 | docs/db-migration を deny から外し、新しい SQL の追加と APPLIED.md の行の追加だけを employee にする（§10.4 v2） | はい。deny のままだと db-apply の自動の経路が0本になる |
+| 22 | verify-registry.json と docs/knowledge を「足すだけ」なら employee にする（§10.4 v2） | はい（v3: verify の台帳は既存の完全一致＋足す項目のキーを制限、knowledge は - の行が0・行の形を検査、README は owner） |
+| 23 | docs/db-migration を deny から外し、新しい SQL の追加と APPLIED.md の行の追加だけを employee にする（§10.4 v2） | はい（v3: 台帳の行は4条件、外れたら owner）。deny のままだと db-apply の自動の経路が0本になる |
 | 24 | employee の大きさの上限（30ファイル・2000行・削除3ファイル・削除500行、超えたら owner） | この初期値で入れ、hq の分布で直す |
-| 25 | frontendSmall を src/・public/ のファイルだけで 8/300 で数える。prodWrite も prodWrite のファイルだけで数える | はい |
+| 25 | 大きさの上限の数え方 | v3: 種類ごとの束（prodWrite 10/300・frontendSmall 8/300・employee 30/2000）を全部同時に検査、閉包は master と head の和 |
 | 26 | docs/adr を deny から owner に移す | はい |
 | 27 | scripts/maintenance/verify-*.js の変更・削除（追加は除く）を owner にするか | hq に本数を数え直してもらって決める。多くなければ owner |
 | 28 | 日ごとの自動マージの本数の上限を置くか（小分けの迂回） | 判断14 の測定と合わせて決める |
