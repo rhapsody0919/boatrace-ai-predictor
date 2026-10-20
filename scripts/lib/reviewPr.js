@@ -291,13 +291,19 @@ export function apiErrorSummary(vendor, status, bodyText) {
   let detail = "";
   try {
     const e = JSON.parse(bodyText)?.error ?? {};
-    detail = [e.type, e.code, e.message].filter((x) => typeof x === "string" && x !== "").join(" / ");
+    detail =
+      typeof e === "string"
+        ? e
+        : [e.type, e.code, e.message].filter((x) => typeof x === "string" && x !== "").join(" / ");
   } catch {
-    detail = String(bodyText ?? "");
+    // JSON でない本文は下で生のまま使う
   }
+  // 形の分からない JSON（{"error":{}} 等）で何も取れなければ、生の本文に戻す（429 の種類を見分けるのが目的）
+  if (detail === "") detail = String(bodyText ?? "");
   // 鍵の誤りのとき、OpenAI は伏せ字つきの鍵の一部（sk-…abcd）を文に入れるので、鍵らしい語は丸ごと伏せる
   detail = detail
-    .replace(/\b(sk|sk-ant|sk-proj)-[\w*.-]+/g, "（鍵を伏せた）")
+    // 語の文字の直後（xsk-…）や三点リーダの伏せ字（sk-…abcd）にも当てる。伏せすぎは許す
+    .replace(/(?:sk|sk-ant|sk-proj)-[\w*.…-]+/g, "（鍵を伏せた）")
     .replace(/\s+/g, " ")
     .slice(0, 300);
   return `${vendor} API が ${status} を返した${detail ? `（${detail}）` : ""}`;
