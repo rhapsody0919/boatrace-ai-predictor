@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * R2 の鍵のカナリア（.github/workflows/key-canary.yml の r2 の job、ADR-0098）。manifests/ を1件だけ一覧する読み取り。
+ * R2 の鍵のカナリア（.github/workflows/key-canary.yml の r2 の job、ADR-0099）。manifests/ を1件だけ一覧する読み取り。
  * 書き込みはしない。失敗は `R2 HTTP 401・403` の形で出し、job-watch が「鍵・設定の誤り」に分ける。
  */
 import { MANIFEST_PREFIX } from "../lib/storageMirror.js";

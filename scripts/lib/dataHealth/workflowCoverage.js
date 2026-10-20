@@ -107,7 +107,7 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
   "storage-mirror.yml": {
     kind: "no_table",
     reason:
-      "Supabase Storage を R2 に写す（ADR-0098）。表を書かない。最後の成功は hq の dashboard-alerts が gh run list で見る",
+      "Supabase Storage を R2 に写す（ADR-0099）。表を書かない。最後の成功は hq の dashboard-alerts が gh run list で見る",
   },
   "train-analogy.yml": {
     kind: "not_daily",

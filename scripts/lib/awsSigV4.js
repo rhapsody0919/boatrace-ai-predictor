@@ -1,5 +1,5 @@
 /**
- * AWS Signature Version 4（S3 互換の口の署名）。Cloudflare R2 を呼ぶ scripts/storage-mirror/r2.js が使う（ADR-0098）。
+ * AWS Signature Version 4（S3 互換の口の署名）。Cloudflare R2 を呼ぶ scripts/storage-mirror/r2.js が使う（ADR-0099）。
  * 依存を増やさないために自前で持つ。正しさは AWS の公開の試験値で verify-storage-mirror.js が固定する。
  */
 import { createHash, createHmac } from "node:crypto";
