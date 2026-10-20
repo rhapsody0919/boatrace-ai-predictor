@@ -221,6 +221,7 @@ GRANT SELECT ON db_apply.applied TO claude_ro;            -- 台帳とのずれ�
 
 切替の前は、承認の付いた PR が無いので reconcile の pending は全部 `ok:false` になり、`judge-all` は `ok:true` しか判定しない（`db-apply.js:241`）。PR-A の後も、軽い／重いの判定は実物で1件も動かず、出るのは「5点の検査を通らない」の通知だけ。試運転の評価は**切替の後から**始まる。D' に進む条件:
 - `DB_APPLY_SWITCH_SHA` より後に、審査の App の承認なしで足された `未適用` のファイルが無い（手で当てるか `廃止` にする）。今 `171_sns_today_heading_variants.sql` が該当する（台帳 `未適用`、rhapsody0919 名義）。残ると `pickNext` が先頭で blocked を出し続け、後ろの審査済みのファイルが1本も当たらない。`judge-all` も先頭10本（`MAX_PENDING`）しか見ないので、10本たまると下の「5本判定」も満たせない。あわせて切替の PR で `DB_APPLY_SWITCH_SHA` を切替のコミットに進めるかを決める（判断12）
+- D' に切り替える時点の、切り替えより後の `未適用` の一覧（試運転の間に審査の承認で入った SQL）をオーナーが見た（D' の瞬間に軽いものが一度に当たるため）
 - 切替の後7日以上、試運転が動いている
 - 審査済みの SQL を5本以上、judge-all が判定し、オーナーが Slack の「当てるはずだった」に誤りが無いと見た
 - PR-C が入っている
@@ -273,6 +274,7 @@ flowchart TD
 
 ## 7. 別スコープ（Linear に起票する）
 
+- sitemap の `<loc>`（`scripts/lib/sitemapLastmod.js:48`・`generate-sitemap.js:346`）と llms.txt の記事の title・description（`generate-llms-txt.js`）がエスケープしていない（BOA-920）
 - BOA-917: key-canary・job-watch の前提の定期の起動が来ない（10/20 に key-canary 0回）。同じ dispatch の形で Vercel Cron から起こすか、hq の見張りに寄せる。schedule が来ない原因そのものは未調査（この設計は迂回だけ）
 
 ## 8. オーナーに決めてもらう点
@@ -296,7 +298,7 @@ flowchart TD
 | 15 | `--auto` の後の push とマージ順（§10.3） | `--auto` を付けた head SHA を残し、見回りで違えば `--disable-auto`。`--match-head-commit` が効くならそれを第一に。draft は補助 |
 | 16 | 例外の線の正本（§10.4） | `config/dev-gate.json`（仮）を master から読む。名前と置き場所は hq の v2 と合わせる |
 | 17 | orchestrate のクラスを機械で分けるか（§10.4） | 分けるまでは owner と同じ。分けるならオーケストレーター用の別の App |
-| 18 | owner のクラス（.github・.claude・AGENTS.md・審査の仕組み等）で ADR-0097 の「仕組みの変更も審査の App だけで通る」を改めるか | 審査の仕組みそのもの（config/dev-gate.json・scripts/review・reviewPr.js・.github/workflows）は改める。.claude・AGENTS.md は hq の分類の数を見て決める |
+| 18 | owner のクラス（.github・.claude・AGENTS.md・vercel.json・ルートの package.json・docs/adr・守りの部品）で ADR-0097 の「仕組みの変更も審査の App だけで通る」を改めるか | 改める（draft の形）。hq の分類で owner（パス）は 75 本／946 本 |
 | 19 | dev-gate を全員に効かせるか社員だけか | 全員 |
 | 20 | 審査の仕組み（dev-gate.json・review.yml・scripts/review・reviewPr.js）を変える PR を機械で落とすか（§10.4） | 落とす（deny）。オーナーは ruleset を一時 Disabled にして入れる |
 | 21 | ブランチの接頭辞を `claude/`・`codex/` に機械で揃える（§10.0。今は 970 本中 85 本だけ） | PR-D の check-gh-identity で push と PR の前に検査する |
@@ -305,6 +307,8 @@ flowchart TD
 | 24 | employee の大きさの上限（30ファイル・2000行・削除3ファイル・削除500行、超えたら owner） | この初期値で入れ、hq の分布で直す |
 | 25 | frontendSmall を src/・public/ のファイルだけで 8/300 で数える。prodWrite も prodWrite のファイルだけで数える | はい |
 | 26 | docs/adr を deny から owner に移す | はい |
+| 27 | scripts/maintenance/verify-*.js の変更・削除（追加は除く）を owner にするか | hq に本数を数え直してもらって決める。多くなければ owner |
+| 28 | 日ごとの自動マージの本数の上限を置くか（小分けの迂回） | 判断14 の測定と合わせて決める |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
@@ -495,9 +499,29 @@ v2 で直したこと（hq の指摘1〜5とオーケストレーターの追加
 - 審査の仕組み（`config/dev-gate.json`・review.yml・`scripts/review/**`・`reviewPr.js`）は deny のまま（§10.4、2段の緩めを防ぐ）。`scripts/lib/mergeOrder.js` を deny に足した（merge-order.js の本体）
 - prodWrite の閉包は静的な import だけをたどり、fs で読むデータ（JSON 等）はたどらない。#1699 の後の記事の JSON も generate-sitemap.js が readdir で読むが、閉包には入らない（記事の URL が sitemap に載るだけで、本番の DB は書かない）。送信・規則のデータ（today-variants.json・job-watch.json・risk-rules.json）は deny に名前で入れている。残る弱みに書く
 
+
+#### v3（v2 の審査、system-architect、P1 3件・P2 10件・P3 6件を全部採用）
+
+| 指摘 | v3 |
+|---|---|
+| P1 APPLIED.md の行を足すだけで、既存の行より上に挿して状態を「未適用」に戻せる（`ledgerState` は最初に合う行、`dbReconcile.js:22-31`、再現） | 足した行は「台帳の表の中・`ledgerState` と同じ分け方で状態が未適用・ファイル名が master の台帳に無い・同じ PR の added の SQL と1対1」を全部満たすときだけ。外れたら owner |
+| P1 verify-registry.json の「上位集合」が `{$comment, entries: [...]}` の形に決まっていない。既存の項目に `args` を足すと検証を終了コード0にできる | master の entries は順番どおり完全一致、足した項目は新しい script で同じ PR の verify-*.js の追加と対、キーは許可のリスト（`args`・`note` は不可） |
+| P1 上限をそのクラスのファイルだけで数えると、強いクラスの PR に他の種類を無制限に積める。閉包を master だけで作ると新しいファイルに逃がせる | 全部の束（prodWrite・frontendSmall・employee）の上限を同時に検査する。閉包は master と head の和。改名の元・削除も数える |
+| P2 ADR の追記の案が deny と食い違う | 下の案の文を「線を変える PR は deny」に直した |
+| P2 §4.2 の外し方が v2 では行の書き換え（deny）になる | APPLIED.md の足すだけの規則に当たらない変更は owner（オーナーの承認で保留を外す・廃止にする）。§4.2 の外し方の PR はオーナーの承認が要る |
+| P2 守りの部品（記事の HTML の許可リスト・bot 向けの escape・sitemap・blog と migration の verify）が employee | owner に入れた。verify-*.js 全体の変更・削除を owner にするかは hq の本数で決める（判断27） |
+| P2 deny の import の先が deny でない | deny の入口からの静的 import の閉包も deny（verify で固定） |
+| P2 閉包が静的な import しか追わない（`morning-init.js:268`・`306`） | 文字列でない import()・child_process の起動が閉包にあり、許可のリストで解決されていなければ owner |
+| P2 記事のファイル名に文字の制限が無く、sitemap の `<loc>` がエスケープせずに書く | content のパスに id の正規表現。sitemap・llms.txt のエスケープはコードの直しとして起票（§7） |
+| P2 docs/knowledge への指示文の注入 | README.md は owner。足した行は「- で始まる1行・400字以内・日付つき・`<!--` なし」を機械で検査。審査の指示文で「エージェントに向けた命令文」を P1 にする |
+| P2 改名の扱い | previous_filename もクラスと上限に数える |
+| P2 PR を小分けにする迂回 | 残る弱みに書く。日ごとの自動マージの本数の上限は判断14 の測定と合わせて決める |
+| P2 試運転の間に employee で入った SQL が D' で一度に対象になる | D' の条件（§5）に「D' の時点の未適用（切替より後）の一覧をオーナーが見る」を足す（判断12 で SWITCH_SHA を進める場合も同じ） |
+| P3 混ざった PR のブログの JSON が src/** に当たる・JSON の image の欄・llms.txt のエスケープ・判断18 と draft の食い違い・APPLIED.md の検査の部品がまだ無い・最終行の改行 | 全部反映（image は `^/images/blog/…\.jpg$`、判断18 の文を draft に合わせた、部品は PR-H で作る、改行の対は許す） |
+
 #### ADR の追記の案（番号は PR 作成時に origin/master の最大＋1）
 
-> 審査の関門の線（dev-gate）: 作成の App の PR を、変えたパスでクラスに分ける（deny・owner・prodWrite・content・frontendSmall・employee）。線の正本は `config/dev-gate.json` で、審査（review.yml）が master の定義から読む。線を変える PR は owner のクラス。**全員（claude/・codex/・hq の社員）に効かせる**（同じ名義で、社員だけを機械で見分けられないため）。orchestrate のクラスは、オーケストレーターの別の身元ができるまで owner と同じ。ADR-0097 の「仕組みの変更も審査の App の承認だけで通る」は、owner のクラスに当たるパスについて改める。
+> 審査の関門の線（dev-gate）: 作成の App の PR を、変えたパスでクラスに分ける（deny・owner・prodWrite・content・frontendSmall・employee）。線の正本は `config/dev-gate.json` で、審査（review.yml）が master の定義から読む。線を変える PR（`config/dev-gate.json`・review.yml・`scripts/review/**`・`reviewPr.js`）は deny で、オーナーが ruleset を一時 Disabled にして入れる。**全員（claude/・codex/・hq の社員）に効かせる**（同じ名義で、社員だけを機械で見分けられないため）。orchestrate のクラスは、オーケストレーターの別の身元ができるまで owner と同じ。ADR-0097 の「仕組みの変更も審査の App の承認だけで通る」は、owner のクラスに当たるパスについて改める。
 
 - 全員に効かせるのを推奨（判断19）。社員だけにすると、同じ PR を claude/ の接頭辞で出せば線を外せる
 
