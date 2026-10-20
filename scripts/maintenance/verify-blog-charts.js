@@ -379,6 +379,20 @@ test("よくある質問の節の図・全角の ％ の写し間違い・言語
   );
 });
 
+test("切り替えのある図は、全 view に答えの文（description）が要る。切り替えの無い図は要らない", () => {
+  const c = example();
+  delete c.views[3].description;
+  assert.ok(
+    messages(c).some((x) => x.startsWith("views[3].description: 文字列か")),
+    messages(c).join("\n"),
+  );
+  const single = { ...example(), switch: null, views: [example().views[0]] };
+  delete single.views[0].description;
+  single.description =
+    "全国の1コースの1着率は55.5%（55,414レース中30,732回）。";
+  assert.deepEqual(messages(single), []);
+});
+
 test("参照と JSON の突き合わせ: rows・article・本文に無い答えの数字・書かない言い方", () => {
   const c = example();
   const deps = {

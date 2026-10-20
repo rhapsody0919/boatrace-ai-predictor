@@ -100,7 +100,7 @@ test.describe("ブログの図", () => {
     ).toHaveCount(0);
   });
 
-  test("会場を切り替えると、棒・値・札が替わる（25の選択肢は選ぶ箱）", async ({
+  test("会場を切り替えると、棒・値・札・答えの文が替わる（25の選択肢は選ぶ箱）", async ({
     page,
   }) => {
     await stubArticle(page);
@@ -111,6 +111,10 @@ test.describe("ブログの図", () => {
     await select.selectOption("02");
     await expect(chart.locator(".blog-chart__badges")).toHaveText(
       /戸田.*全2,256レース/,
+    );
+    // 答えの1文も切り替えた会場のものに替わる（2026-10-20 オーナー決定、契約3節）
+    await expect(chart.locator(".blog-chart__answer")).toHaveText(
+      "戸田は1コースの1着率が42.6%（2,256レース中960回）で、全国の55.5%（55,414レース中30,732回）より低い。",
     );
     await expect(chart.locator(".blog-chart__value").first()).toHaveText(
       "42.6%",
@@ -123,7 +127,13 @@ test.describe("ブログの図", () => {
       description:
         "直近1年の1コースの1着率は、戸田が42.6%、福岡が59.2%、徳山が61.6%。",
       switch: { label: "会場", default: "02" },
-      views: example.views.filter((v) => ["02", "22", "18"].includes(v.key)),
+      // 全国の view を外すので、答えの文はその view の数字だけにする（検査が全国の数字を許さない）
+      views: example.views
+        .filter((v) => ["02", "22", "18"].includes(v.key))
+        .map((v) => ({
+          ...v,
+          description: `${v.label}の1コースの1着率は${v.series[0].values[0]}%。`,
+        })),
     };
     await stubArticle(page, { chart: small });
     await page.goto(`/blog/${ARTICLE}`);

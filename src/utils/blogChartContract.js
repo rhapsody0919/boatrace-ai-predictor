@@ -276,7 +276,12 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
     if (viewKeys.has(v.key)) err(`${p}.key`, `key の重複: ${show(v.key)}`);
     viewKeys.add(v.key);
     text(v.label, `${p}.label`, { max: 12 });
-    text(v.description, `${p}.description`, { max: 90, required: false });
+    // 切り替えのある図は、どの view を選んでも答えの1文がその view の数字になるよう、全 view で必須
+    // （2026-10-20 オーナー決定。札と棒だけ替わり答えが既定の会場のままだと食い違う）
+    text(v.description, `${p}.description`, {
+      max: 90,
+      required: isObj(chart.switch),
+    });
 
     const b = v.badge;
     let sample = null;
