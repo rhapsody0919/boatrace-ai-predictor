@@ -2,7 +2,7 @@
 
 [ADR-0097](../../adr/0097-identity-separation-auto-review-and-db-apply.md) の「レーンの PR → 審査の App の承認 → db-apply の定期の起動が軽い SQL を当てる」経路を、実際に動く形にする設計。ADR-0097 の決定（身元・審査・当てる対象の5点・軽い／重いの判定）は変えない。変えるのは、起動の出元・PR を作る身元の配線・D' の前に要る3点・その順番。
 
-オーナーの手順の正本は [identity-separation-owner-steps.md](../../operation/identity-separation-owner-steps.md)、適用の手順の正本は [db-apply.md](../../operation/db-apply.md)。この文書は、それらへの変更の設計を1か所にまとめたもの。実装は、オーナーの判断の後に PR を分けて行う（§5）。system-architect の審査（2026-10-20）の指摘を反映済み（§10）。
+オーナーの手順の正本は [identity-separation-owner-steps.md](../../operation/identity-separation-owner-steps.md)、適用の手順の正本は [db-apply.md](../../operation/db-apply.md)。この文書は、それらへの変更の設計を1か所にまとめたもの。実装は、オーナーの判断の後に PR を分けて行う（§5）。system-architect の審査（2026-10-20）の指摘を反映済み（§12）。
 
 ## 1. 今、動いていない理由（2026-10-20 15:30 JST の実測）
 
@@ -213,6 +213,7 @@ GRANT SELECT ON db_apply.applied TO claude_ro;            -- 台帳とのずれ�
 | PR-C | 印・止め印・時間の窓のコード（§4）。最初に psql の実機確認 | scripts/db・scripts/lib・.github・verify | オーナー（.github） | PR-B の適用 |
 | PR-D | 名義の切替の龍神の側（§3） | .claude・scripts/maintenance | オーナー。切替の作業の中で、8.2 の前にマージ | hq の道具 |
 | PR-F | ④ 審査の関門の画像の例外（§9.1）と再現テスト、ADR-0097 の追記 | scripts/lib/reviewPr.js・scripts/review・verify・docs/adr | オーナー（審査の仕組みの変更、段階2） | 判断8 |
+| PR-H | §11 の機械化（`decideAction` の P1・観点、月の上限、draft の検査、`config/dev-gate.json`） | scripts/lib/reviewPr.js・scripts/review・scripts/maintenance・config・.github | オーナー（段階2） | 判断13〜16。切替の前 |
 | PR-G | ⑥ orchestrate の段階0 F・案Z の書き直し（§9.3） | .claude/skills/orchestrate/SKILL.md | オーナー（.claude） | 判断11 |
 | PR-E | `DB_APPLY_DRY_RUN: "false"`（D'）と、急ぎの止め方の repo の変数 `DB_APPLY_AUTO_ENABLED`（apply-auto の `if` とコードの両方で見る。`== 'true'` のときだけ当てる。未設定・消したときは当てない） | .github | オーナー | 下の「D' の条件」 |
 
@@ -290,10 +291,14 @@ flowchart TD
 | 10 | 画像の中身が LLM の審査に渡らないこと・polyglot を防ぎきれないこと・作成の App が自分で `--auto` を付けられることを受け入れるか | 受け入れて ADR-0097 の残る弱みに書く（グラフ・表の画像で、記事の本文は審査に入る。`nosniff` を足す） |
 | 11 | ⑥ SKILL.md の段階0 F・案Z の5点の書き直し（§9.3。5点目の P0/P1 の扱いはオーナー決定済み、文案の承認が要る） | はい。PR-D とは別の PR |
 | 12 | 切替の PR で `DB_APPLY_SWITCH_SHA` を切替のコミットに進めるか（切替の前に足した未承認の `未適用` を自動の対象から外す） | 進める。外れたものは手で当てる（今の手順のまま） |
+| 13 | P1 を機械で止めるか（§11.1） | 案 A: コードの PR は P1 も止める、記事の PR は content-qa・wording の P1 だけ止める（(a)）。同じ P1 が2回出たら上げる |
+| 14 | 審査の月の上限（§11.2） | 1500 に上げ、80% で知らせる。費用の守りはベンダーの月の上限 |
+| 15 | auto-merge でのマージ順（§11.3） | 後ろ側の PR を draft にし、前が入ったら ready にする。up to date の要求は付けない |
+| 16 | 例外の線の正本（§11.4） | `config/dev-gate.json`（仮）を master から読む。名前と置き場所は hq の v2 と合わせる |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
-オーナーの yes（10/20 夕、hq 経由「記事を集客だけで出す道を作ってよい」、オーケストレーター経由）で、記事の PR も「作成の App → 審査の App → auto-merge」に乗せる。この節は ④ 審査の関門の画像の例外と ⑥ orchestrate の段階0 F・案Z の書き直し。② 翻訳のメタの JSON 化・寸法をビルドで作る、③ `scripts/content/check-content-pr.js`（manifest の形を含む）、⑤ ADR-0034（`GITHUB_MERGE_TOKEN` の PAT で記事の PR をマージする古い道）の廃止と PAT の失効は、別のレーンが受け持つ。§9 は system-architect の2回目の審査（P1 6件・P2 10件・P3 5件）を反映済み（§10）。
+オーナーの yes（10/20 夕、hq 経由「記事を集客だけで出す道を作ってよい」、オーケストレーター経由）で、記事の PR も「作成の App → 審査の App → auto-merge」に乗せる。この節は ④ 審査の関門の画像の例外と ⑥ orchestrate の段階0 F・案Z の書き直し。② 翻訳のメタの JSON 化・寸法をビルドで作る、③ `scripts/content/check-content-pr.js`（manifest の形を含む）、⑤ ADR-0034（`GITHUB_MERGE_TOKEN` の PAT で記事の PR をマージする古い道）の廃止と PAT の失効は、別のレーンが受け持つ。§9 は system-architect の2回目の審査（P1 6件・P2 10件・P3 5件）を反映済み（§12）。
 
 **時期**: 記事の PR が作成の App の名義で出るのは、切替（§6 の一連の作業）の後。切替までは PR の作者が rhapsody0919 で review.yml は skipped になるので（§1）、9.1 の例外も 9.2 の判定も効く PR が無い。**切替までは F の記事を案Z の束に入れない**（今の F のまま、オーケストレーターが4つのレビューを見てマージする）。
 
@@ -301,7 +306,7 @@ flowchart TD
 
 今は `scripts/lib/reviewPr.js:57-60` が、本文の無い差分（バイナリ）を消したファイル以外は全部落とす。記事の画像はバイナリなので、記事の PR は全部落ちる。
 
-**例外を効かせる PR**: PR の変更したファイルが**全部** F の許可のパス（9.3 の 90 行目の一覧）の中にあるときだけ。コードを含む PR では、画像も今どおり落とす（claude/ の PR を全部審査するので、例外を全 PR に効かせない）。許可のパスの正本は `reviewPr.js` に1か所置き、③ の機械（push の前の照合）はそれを読む。
+**例外を効かせる PR**: PR の変更したファイルが**全部** F の許可のパス（9.3 の 90 行目の一覧）の中にあるときだけ。コードを含む PR では、画像も今どおり落とす（claude/ の PR を全部審査するので、例外を全 PR に効かせない）。許可のパスの正本は1か所（§11.4 の `config/dev-gate.json`、master から読む）に置き、③ の機械（push の前の照合）も同じものを読む。
 
 **例外にする画像の条件**（全部を満たすファイルだけ、本文の無い差分の理由から外す）:
 
@@ -359,7 +364,45 @@ flowchart TD
 
 - PR-G（9.3）は切替の前にマージしてよい（F を束に入れるのは切替の後、と文に書くため）。PR-D（merge-pr の `--auto` 等）は切替の作業の中でマージする。別の PR
 
-## 10. 審査（system-architect、2026-10-20）の指摘と対応
+## 11. auto-merge に移る前に決めること（2026-10-20 夜の追加、オーケストレーター経由の system-architect の別の審査）
+
+切替（手順8の3）で auto-merge を ON にすると、今はオーケストレーターのマージと Claude のフックが受け持っている判定が、効かなくなる。切替の前に、どれを機械に移すかを決める。
+
+### 11.1 P1 が残った PR がそのまま本番に出る
+
+- `decideAction`（`scripts/lib/reviewPr.js:254-270`）は P0 が1件以上なら REQUEST_CHANGES、それ以外は P1 が残っていても APPROVE を返す。段階0 A の「実在する P0・P1 が0件」は、今はオーケストレーターが手でマージするときにしか効いていない
+- 案:
+
+| 案 | 中身 | 良い点 | 悪い点 |
+|---|---|---|---|
+| **A（推奨）** | `decideAction` を「P0 は全部の PR で止める。P1 は、コードの PR では止める。F の許可のパスだけの PR（記事）では、観点が content-qa・wording の P1 だけ止める（オーナー決定 (a)）」にする。記事の PR では審査の指示文に content-qa・wording の観点を足し、指摘に観点（`viewpoint`）を付けさせる（`VERDICT_SCHEMA` に足す） | 段階0 A と F の (a) が、オーケストレーターの手を通らずに機械で効く。判定は鍵を持つ側（review.yml）にあり、作成の App が書き換えられない（master の定義で動く） | LLM が P1 を出しすぎると、レーンが止まる。同じ P1 が2回出たら直すのをやめてオーケストレーターに上げる（review-fix-cycle.md の「同じ指摘が2回」と同じ）。費用は同じ（呼ぶ回数は変わらない） |
+| B | P1 は止めない（今のまま）。オーケストレーターだけが `--auto` を付ける | 変更が無い | 作成の App は自分で `--auto` を付けられる（§9.2）。P1 の残った PR が機械では止まらない |
+| C | ③ の `check-content-pr.js` の結果を gate が読む | 記事の観点を Claude 側の4役で見られる | ③ の結果は作成の App の名義で書かれる（Claude が動く身元と同じ）ので、偽れる。守りにならない |
+
+- A の場合、F の (a) の「ファン・seo-marketer の P1 は助言で件数を記録」は、審査の承認の本文に観点ごとの件数を出す形で記録する
+
+### 11.2 審査の月の上限
+
+- `scripts/review/gate.js:26`: `REVIEW_MONTHLY_LIMIT`（既定 300）。数えるのは作成の App が起こした review.yml の run の数で、**PR ごとではなく push ごと**に1回数える（`monthlyRunsPath`）。超えると fail closed で、全レーンの PR が承認されなくなる
+- 過去30日の PR は 223 本（オーケストレーター経由の実測）。1本の PR は審査の指摘の修正等で複数回 push するので、切替の後に全レーンが乗ると run は 300 を超えうる
+- 案（推奨）: 費用の守りは別ベンダーの月の上限（OpenAI 60ドル・Anthropic 30ドル、owner-steps 5）が受け持つので、run の上限は暴走の止め役に下げて扱う。`REVIEW_MONTHLY_LIMIT` を 1500 にし、80%（1200）で Slack に知らせる（gate の job に足す。鍵なしで出せる通知が無ければ approve の job で）。切替の後1か月の実測で見直す
+- 上限に当たったときの手順（owner-steps の「上限に当たったとき」）に、「repo の変数を上げる（オーナー。作成の App は Variables を書けない）」を足す
+
+### 11.3 マージ順の台帳が効かなくなる
+
+- マージ順の台帳（`scripts/maintenance/merge-order.js`）を守っているのは、Claude の PreToolUse のフック（`guard-pr-merge.js`）だけ。auto-merge は GitHub がマージするので、フックを通らない
+- 「Require branches to be up to date before merging」は、owner-steps 1-1 の手順2で意図して付けていない（PR を1本ずつ作り直す待ちになる）。付けても順番は守れない（先に up to date になった方が先に入る）
+- 案（推奨）: **後に入るべき PR は draft にしておく**。auto-merge は draft をマージしない。前の PR が master に入ったら、オーケストレーター（または台帳を読む機械）が `gh pr ready` にする。`merge-order.js` に「制約の後ろ側の PR が draft でなければ知らせる」検査を足す（定期の見回り `patrol.sh` で）
+- 台帳に制約がある PR は少ない（多くは制約なし）。制約の無い PR は今までどおり auto-merge
+
+### 11.4 例外の線の正本（`config/dev-gate.json`、hq の開発の社員化 v2 の案）
+
+- §9.1 の「許可のパス」「画像の条件」と §11.1 の「どの観点の P1 を止めるか」は、どれも審査の関門の例外の線。案は `config/dev-gate.json`（仮）に置き、gate.js・llm.js が **master の checkout（`github.sha`）から**読む。PR が書き換えても、その PR の審査には効かない（review.yml の今の守りと同じ）
+- この設計と合わせる: §9.1 で「許可のパスの正本は `reviewPr.js` に1か所」と書いた所を、`config/dev-gate.json` に置き換える。`reviewPr.js` は値を引数で受ける純粋関数のままにする。③ の機械（push の前の照合）も同じファイルを読む
+- `config/dev-gate.json` を変える PR は、仕組みの変更として段階2（オーナー）。verify で形（JSON Schema）を固定する
+- 置き場所・名前は hq の v2 の審査と合わせて決める（判断16）
+
+## 12. 審査（system-architect、2026-10-20）の指摘と対応
 
 | 指摘 | 重大度 | 対応 |
 |---|---|---|
