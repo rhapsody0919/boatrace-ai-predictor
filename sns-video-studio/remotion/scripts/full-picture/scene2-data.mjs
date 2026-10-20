@@ -163,7 +163,7 @@ export function templateLines(f) {
           ? `1位${f.rate1}%・6位${f.rate6}%`
           : f.usualDiffPt < 1
             ? `全体の${f.usual}%との差は1ポイント未満`
-            : `全体の${f.usual}%より${f.usualDiffPt}ポイント${f.direction}`,
+            : `全体の${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`,
       ];
     const l1 = `${f.item} 1位${f.rate1}%・6位${f.rate6}%`;
     if (f.roundDay)

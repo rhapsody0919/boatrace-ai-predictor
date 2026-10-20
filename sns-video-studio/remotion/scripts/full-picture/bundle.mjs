@@ -47,7 +47,7 @@ export function chaptersOk(text, durationSec) {
  * 数値は場面の facts（字幕と同じ値）から
  */
 function lines({ venue90, overview, conclusion }) {
-  const diff = (f, base) => (f.diffPt === null || f.diffPt === undefined ? "" : f.diffPt < 1 ? `、${base}との差は1ポイント未満` : `、${base}より${f.diffPt}ポイント${f.direction}`);
+  const diff = (f, base) => (f.diffPt === null || f.diffPt === undefined ? "" : f.diffPt < 1 ? `、${base}との差は1ポイント未満` : `、${base}より${f.diffPt.toFixed(1)}ポイント${f.direction}`);
   return {
     venue: venue90
       ? `${venue90.venue}の1号艇の1着率は過去90日の${venue90.races.toLocaleString("ja-JP")}レースで${d1(venue90.rate)}%${diff(venue90, `全国の同じ期間の${d1(venue90.national)}%`)}`

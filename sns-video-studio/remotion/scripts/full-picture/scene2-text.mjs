@@ -163,7 +163,8 @@ export function checkLines(lines, facts, prev) {
   const why = [];
   if (!Array.isArray(lines) || lines.length < 1 || lines.length > MAX_LINES || lines.some((l) => typeof l !== "string" || !l.trim()))
     return [`行の数・形が不正（1〜${MAX_LINES}行の文字列）`];
-  const text = lines.join("\n");
+  // 桁区切りは外して照合する（「9,961件」→ 9961）。区切りの「、」は外さない
+  const text = lines.join("\n").replace(/(\d),(?=\d{3}(?!\d))/g, "$1");
   lines.forEach((l, i) => {
     const w = Math.round(lineWidth(l) * 10) / 10;
     if (w > MAX_WIDTH) why.push(`${i + 1}行目の幅が全角${w}字分（上限${MAX_WIDTH}字分）`);
@@ -221,6 +222,7 @@ const PROMPT = (beats) => `あなたはボートレースのデータ動画の�
 - step が前の拍と違う拍（場面・段の最初）は null
 - 「同じく」「こちらも」は前の拍と同じ材料（facts の item、無ければ kind）のときだけ
 - 「逆に」は前の拍と向きが逆のときだけ。迷ったら null
+- つなぐ語は、前の拍との関係（対比・追加・同じ材料）があるときだけ付ける。並べるだけなら null。同じ語を近くで繰り返さない
 - つなぐ語を付けると1行目が全角${MAX_WIDTH}字分を越える拍は null
 
 出力は JSON だけ（前後に説明を書かない）: {"beats":[{"id":"…","connector":"一方"|null}]}
@@ -259,14 +261,20 @@ function parseJson(text) {
   return JSON.parse(m[0]);
 }
 
+/**
+ * 字幕の件数・走・レースの数の桁区切り（頁の表・見出しの「9,961件」とそろえる。BOA-913）。小数・ポイント・%は触らない
+ */
+export const groupDigits = (line) => line.replace(/(?<![\d.,])(\d{4,})(?=件|走|レース)/g, (n) => Number(n).toLocaleString("ja-JP"));
+export const groupLines = (lines) => (lines ?? []).map(groupDigits);
+
 /** 全場面の拍（場面2 は beatsOf、段の場面は段ごと。答えの無い段＝場面8 のまとめカードは除く） */
 export function allBeats(scenes) {
   return scenes.flatMap((x) =>
     !x.data
       ? []
       : x.kind === "scene2"
-      ? beatsOf(x.data).map((b) => ({ ...b, step: `scene2-${b.step}` }))
-      : (x.data?.steps ?? []).filter((s) => s.lines?.length).map((s) => ({ id: s.id, step: x.id, question: s.question, facts: s.facts, template: s.lines })),
+      ? beatsOf(x.data).map((b) => ({ ...b, step: `scene2-${b.step}`, template: groupLines(b.template) }))
+      : (x.data?.steps ?? []).filter((s) => s.lines?.length).map((s) => ({ id: s.id, step: x.id, question: s.question, facts: s.facts, template: groupLines(s.lines) })),
   );
 }
 
@@ -300,6 +308,23 @@ export function templateText(sceneOrBeats) {
     answers: Object.fromEntries(beats.map((b) => [b.id, b.template])),
     beats: beats.map((b) => ({ id: b.id, source: "template", lines: b.template })),
   };
+}
+
+/** 同じつなぐ語を近くで繰り返さない（10/19 は「続いて」20回・同じ語の連続9回で単調だった。BOA-913、wording-editor） */
+export const CONNECTOR_GAP = 3;
+export const TSUZUITE_MAX_PER_SCENE = 2;
+/**
+ * つなぐ語の並びの検査（前の拍までに付けた語 used: [{step, connector}]）
+ * - 直前の3拍の中で使った語は使わない
+ * - 「続いて」は1つの場面（step）で2回まで
+ */
+export function repeatReasons(c, step, used) {
+  if (!c) return [];
+  const why = [];
+  if (used.slice(-CONNECTOR_GAP).some((u) => u.connector === c)) why.push(`直前の${CONNECTOR_GAP}拍で使ったつなぐ語「${c}」`);
+  if (c === "続いて" && used.filter((u) => u.step === step && u.connector === "続いて").length >= TSUZUITE_MAX_PER_SCENE)
+    why.push(`「続いて」は1つの場面で${TSUZUITE_MAX_PER_SCENE}回まで`);
+  return why;
 }
 
 /** claude の usage → { calls, tokens_in, tokens_out }。入力はキャッシュの読み書きを含めた合計 */
@@ -348,10 +373,12 @@ export function connectedText(sceneOrBeats, llm = claudeCli) {
   } catch (e) {
     callError = e instanceof Error ? e.message : String(e);
   }
+  const used = [];
   const rows = beats.map((b, i) => {
     const prev = i > 0 && beats[i - 1].step === b.step ? beats[i - 1].facts : null;
     const c = got[b.id] ?? null;
-    const reasons = callError ? [callError] : checkConnected(c, b.template, b.facts, prev);
+    const reasons = callError ? [callError] : [...checkConnected(c, b.template, b.facts, prev), ...repeatReasons(c, b.step, used)];
+    used.push({ step: b.step, connector: reasons.length ? null : c });
     if (reasons.length) return { id: b.id, source: "template", lines: b.template, rejected: c, reasons };
     return { id: b.id, source: c ? "connected" : "template", connector: c, lines: connectedLines(c, b.template) };
   });

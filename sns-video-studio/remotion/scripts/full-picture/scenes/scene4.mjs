@@ -111,7 +111,7 @@ function roundSteps(sc, data, version, prevForm) {
           page: { ...flow.page, sub: `枠なりで${formName(form)}だったレース（${cell.n.toLocaleString("ja-JP")}件）` },
           facts: f,
           // 過去の集計と分かるように「過去」を入れる（今日の結果と読まれない。2026-10-20 x-channel・youtube-channel P1）
-          lines: [`${formName(form)}の過去${f.n}件で1着最多は${f.boat}号艇`, `${f.count}件（${f.pct}%）`],
+          lines: [`${formName(form)}の過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇`, `${f.count.toLocaleString("ja-JP")}件（${f.pct}%）`],
         },
       };
     }

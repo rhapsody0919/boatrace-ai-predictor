@@ -167,7 +167,7 @@ function postText(answers) {
   let cardLine = null;
   if (card) {
     const f = card.facts;
-    const diff = f.usualDiffPt === null ? "" : f.usualDiffPt < 1 ? "との差は1ポイント未満" : `より${f.usualDiffPt}ポイント${f.direction}`;
+    const diff = f.usualDiffPt === null ? "" : f.usualDiffPt < 1 ? "との差は1ポイント未満" : `より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
     cardLine = `1号艇の材料: ${f.item}が今日${f.todayRank}位のときの1着率${f.todayRate}%（${fmtCount(f.todayN)}件）、全体${f.usual}%（${fmtCount(f.usualN)}件）${diff}`;
   }
   return [head, ov, cardLine, "データは龍神レーダーで。", "#ボートレース"].filter(Boolean).join("\n") + "\n";

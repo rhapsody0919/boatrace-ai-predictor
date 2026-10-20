@@ -875,6 +875,42 @@ for (const f of fixtures) {
     ],
   };
   assert.deepEqual(returnRateByBoat(rows, "2026-10-19", 180).get(1), { n: 2, win: 250, place: 130 }, "不成立と180日より前だけを除く");
+
+  // つなぐ語を近くで繰り返さない（10/19 は「続いて」20回・同じ語の連続9回だった）
+  const { repeatReasons, groupDigits } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
+  const u = [{ step: "s", connector: "さらに" }, { step: "s", connector: null }, { step: "s", connector: "続いて" }];
+  has(repeatReasons("さらに", "s", u), "直前の3拍");
+  assert.deepEqual(repeatReasons("さらに", "s", [...u, { step: "s", connector: null }]), [], "4拍離れれば使える");
+  const gap = Array(3).fill({ step: "s", connector: null });
+  has(repeatReasons("続いて", "s", [{ step: "s", connector: "続いて" }, ...gap, { step: "s", connector: "続いて" }, ...gap]), "2回まで");
+  assert.deepEqual(repeatReasons(null, "s", u), []);
+  // 偽物の LLM が全拍に「続いて」を付けても、付くのは間を空けた場面ごとに2回まで
+  const allBeats4 = allBeats(buildAll(JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"))));
+  const allTsuzuite = connectedText(allBeats4, () => JSON.stringify({ beats: allBeats4.map((b) => ({ id: b.id, connector: "続いて" })) }));
+  const perScene = {};
+  allTsuzuite.beats.forEach((b, i) => {
+    if (b.connector !== "続いて") return;
+    perScene[allBeats4[i].step] = (perScene[allBeats4[i].step] ?? 0) + 1;
+  });
+  assert.ok(Object.values(perScene).every((n) => n <= 2), `「続いて」は場面ごとに2回まで: ${JSON.stringify(perScene)}`);
+  allTsuzuite.beats.forEach((b, i) => {
+    if (b.connector) for (let k = Math.max(0, i - 3); k < i; k++) assert.notEqual(allTsuzuite.beats[k].connector, b.connector, `${b.id}: 直前の3拍と同じ語`);
+  });
+
+  // 件数の桁区切り（頁とそろえる）と、差のポイントは小数1桁
+  assert.equal(groupDigits("1号艇が1着なら2着は2号艇 / 9961件の33.8%（3367件）"), "1号艇が1着なら2着は2号艇 / 9,961件の33.8%（3,367件）");
+  assert.equal(groupDigits("類似レース400件で1着最多は1号艇"), "類似レース400件で1着最多は1号艇");
+  assert.equal(groupDigits("篠崎元志の1号艇は1044走、過去90日の1234レース、21.3ポイント"), "篠崎元志の1号艇は1,044走、過去90日の1,234レース、21.3ポイント");
+  assert.deepEqual(checkLines(["9,961件の33.8%（3,367件）"], { kind: "followers", n: 9961, second: { rate: "33.8", k: 3367 } }, null), [], "桁区切りの数は facts と照合できる");
+  for (const f of fixtures) {
+    const sc = buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8")));
+    const ans = templateText(allBeats(sc)).answers;
+    for (const [id, ls] of Object.entries(ans))
+      for (const l of ls) {
+        assert.ok(!/(?<![\d.,])\d{4,}(件|走|レース)/.test(l), `${f} ${id}: 4桁以上の件数は桁区切り「${l}」`);
+        assert.ok(!/より\d+ポイント/.test(l), `${f} ${id}: 差のポイントは小数1桁「${l}」`);
+      }
+  }
 }
 
 console.log("verify-full-picture-scene2: OK");
