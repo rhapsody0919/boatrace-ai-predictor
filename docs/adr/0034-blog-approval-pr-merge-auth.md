@@ -1,7 +1,7 @@
 # ADR 0034: Blog承認→PRマージの認証方式
 
 ## ステータス
-採用
+置き換え済み（ADR-0097 で置き換え、2026-10-20）
 
 ## 背景
 管理画面の「承認」ボタン押下で、Routineが作成したブログ記事のDraft PRを実際にGitHub API経由でマージする（spec.md FR6）。GitHubへの書き込み権限を持つトークンをVercel側のサーバー関数（`api/admin/sns-hub/merge-blog-pr.js`）に持たせる必要がある。
@@ -20,3 +20,21 @@ Personal Access Token（Fine-grained PAT）を使う。対象リポジトリ（`
 - Fine-grained PATは有効期限を設定できるため、定期的なローテーションが運用上必要になる（`docs/operation/`に手順を残す）
 - トークン漏洩時の影響範囲は当該リポジトリのcontents/pull requests権限に限定される（fine-grainedのため、他リポジトリやアカウント全体には影響しない）
 - 既存の環境変数管理表（`.claude/CLAUDE.md`）に`GITHUB_MERGE_TOKEN`を追記する
+
+## 追記（2026-10-20）: ADR-0097 で置き換え、PAT の道を止めた
+
+ADR-0097（本番の鍵と自動審査・自動適用の分け方）で、記事の PR も他の PR と同じ道（CI・4つのレビュー・マージの承認、`.claude/skills/orchestrate/SKILL.md` 段階0 F）でマージすることにした。強い書き込みの鍵（PAT）を Vercel の関数に置き、管理画面の操作でマージする道は使わない（BOA-908、オーナー yes 10/20 夕）。
+
+止めたもの:
+- `api/admin/sns-hub/drafts/[id]/merge-blog-pr.js`: `GITHUB_MERGE_TOKEN` を読まず、GitHub にも DB にも触れずに 410 を返す（検査: `scripts/maintenance/verify-sns-existing-fixes.js`）
+- `scripts/maintenance/finalize-blog-draft.js`（機械チェック合格で記事の PR を自動マージしていた）: 削除。`docs/operation/sns-pipeline-blog.md` の 6.5 を停止と書き換えた
+
+残っているもの（2026-10-20 に名前だけ確認、値は読んでいない）:
+- Vercel の Production に `GITHUB_MERGE_TOKEN` がある（48日前に設定）。Preview・Development には無い
+- GitHub Actions の secret（リポジトリ・Environment）には、この PAT に当たる名前は無い
+- `api/admin/sns-hub/drafts/[id]/blog-pr-preview.js`（管理画面の記事の PR のプレビュー、読み取り）が同じ鍵を読む。PAT を失効すると、このプレビューは「接続設定がありません」等のエラーになる。管理画面の記事の承認まわりの片付けは別の作業
+
+オーナーの操作（この順で）:
+1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens で、このリポジトリ用に作った PAT（`docs/operation/content-pipeline-token-setup-guide.md` の手順で作ったもの）を Revoke する
+2. Vercel のプロジェクト boatrace-ai-predictor → Settings → Environment Variables で、`GITHUB_MERGE_TOKEN`（Production）を削除する
+3. 次の本番デプロイの後、管理画面の記事の承認を押すと「停止しました」が出ることを確かめる（GitHub には何も起きない）
