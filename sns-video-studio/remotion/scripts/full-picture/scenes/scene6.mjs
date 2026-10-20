@@ -52,13 +52,16 @@ export function buildScene6(m) {
     for (const r of rows) if (r.pretest === null) omitted.push({ where: "scene6.motor", boat: r.boat, reason: "前検タイムが無い" });
     const k0 = rows[keys[0] - 1];
     const k1 = keys[1] ? rows[keys[1] - 1] : null;
-    const rank2 = (b) => 1 + rows.filter((x) => x.rate2 !== null && x.rate2 > rows[b - 1].rate2).length;
+    // 2連率の無い艇には順位を付けない（null を 0 と比べない）
+    const rank2 = (b) => (rows[b - 1].rate2 === null ? null : 1 + rows.filter((x) => x.rate2 !== null && x.rate2 > rows[b - 1].rate2).length);
+    const ok = (r) => r && r.motor !== null && r.rate2 !== null;
+    for (const r of [k0, k1].filter(Boolean)) if (!ok(r)) omitted.push({ where: "scene6.motor", boat: r.boat, reason: "機番か公式2連率が無い（答えから外した）" });
     const f = {
       kind: "motor",
       boats: keys,
       form: form ? C.factNames?.[form] ?? null : null,
-      a: { boat: k0.boat, motor: k0.motor, rate2: k0.rate2?.toFixed(1) ?? null, rank: `${rank2(k0.boat)}位` },
-      b: k1 ? { boat: k1.boat, motor: k1.motor, rate2: k1.rate2?.toFixed(1) ?? null, rank: `${rank2(k1.boat)}位` } : null,
+      a: ok(k0) ? { boat: k0.boat, motor: k0.motor, rate2: k0.rate2.toFixed(1), rank: `${rank2(k0.boat)}位` } : null,
+      b: ok(k1) ? { boat: k1.boat, motor: k1.motor, rate2: k1.rate2.toFixed(1), rank: `${rank2(k1.boat)}位` } : null,
     };
     steps.push({
       id: "s6-motor",
@@ -77,8 +80,8 @@ export function buildScene6(m) {
       frames: keys.map((b) => tableRowBox(b - 1)),
       facts: f,
       lines: [
-        `${k0.boat}号艇の${k0.motor}号機は2連率${f.a.rate2}%で${f.a.rank}`,
-        k1 ? `${k1.boat}号艇の${k1.motor}号機は${f.b.rate2}%で${f.b.rank}` : null,
+        f.a ? `${f.a.boat}号艇の${f.a.motor}号機は2連率${f.a.rate2}%で${f.a.rank}` : null,
+        f.b ? `${f.b.boat}号艇の${f.b.motor}号機は${f.a ? "" : "2連率"}${f.b.rate2}%で${f.b.rank}` : null,
       ].filter(Boolean),
     });
   } else omitted.push({ where: "scene6.motor", reason: "モーターの材料が無い" });
@@ -101,6 +104,9 @@ export function buildScene6(m) {
     };
     const gold = [...new Set([...best("last"), ...best("avg")])].sort((a, c) => a - c);
     const bl = best("last");
+    if (!bl.length || !best("avg").length) {
+      omitted.push({ where: "scene6.exhibit", reason: "今節の展示タイムの値が無い（取り込み前など）" });
+    } else {
     const f = { kind: "exhibit", boats: gold, last: { boats: bl, time: f2(rows[bl[0] - 1].last) }, avg: { boats: best("avg"), time: f2(rows[best("avg")[0] - 1].avg) } };
     steps.push({
       id: "s6-exhibit",
@@ -118,6 +124,7 @@ export function buildScene6(m) {
       facts: f,
       lines: [`前走の展示が最速は${bl.join("・")}号艇の${f.last.time}`, `今節の平均の最速は${f.avg.boats.join("・")}号艇の${f.avg.time}`],
     });
+    }
   } else omitted.push({ where: "scene6.exhibit", reason: "今節の展示タイムの材料が無い（節の初日など）" });
 
   // ③ 深掘り（2〜6号艇）
@@ -129,7 +136,8 @@ export function buildScene6(m) {
     const chips = factChips({ scope, today, boat: b, post: false, finalRound: Boolean(round) });
     const top = chips.find((c) => c.hit) ?? null;
     const u = b1Usual(scope, b, 1);
-    const base = u ? ((u.k / u.n) * 100).toFixed(1) : "0.0";
+    // 集計が無ければ比べる値を出さない（「全体0.0%」と書かない）
+    const base = u?.n ? ((u.k / u.n) * 100).toFixed(1) : null;
     const feats = featChips({ boat: b, today, finalRound: Boolean(round) }).map((x) => (x.id === "locTop" ? C.feat.locTop(venue) : C.feat[x.id])).filter((x) => typeof x === "string");
     const word = top ? C.factWords[top.bucket === 6 ? top.bad : top.good] : null;
     const f = {
@@ -149,18 +157,17 @@ export function buildScene6(m) {
         kind: "deep",
         title: C.factsHeading(b),
         sub: "▲＝今日6艇で一番上か一番下",
-        card: top ? { name: C.factNames[top.key], text: C.factHit(word, f.rate, top.pair[1], base, 1), level: C.factLevel[top.level] ?? null } : null,
+        card: top ? { name: C.factNames[top.key], text: C.factHit(word, f.rate, top.pair[1], base ?? "—", 1), level: C.factLevel[top.level] ?? null } : null,
         chips: feats,
       },
       press: null,
       frames: [deepBox(feats.length ? 1 : 0)],
       facts: f,
       lines: top
-        ? fitFirst(
-            [`${b}号艇は${f.item}が6艇で一番${word}`, `そのとき1着${f.rate}%、全体${base}%`],
-            [`${f.item}が6艇で一番${word}${b}号艇`, `そのとき1着${f.rate}%、全体${base}%`],
-            [`${f.item}が一番${word}${b}号艇`, `そのとき1着${f.rate}%、全体${base}%`],
-          )
+        ? (() => {
+            const l2 = base === null ? `そのとき1着${f.rate}%` : `そのとき1着${f.rate}%、全体${base}%`;
+            return fitFirst([`${b}号艇は${f.item}が6艇で一番${word}`, l2], [`${f.item}が6艇で一番${word}${b}号艇`, l2], [`${f.item}が一番${word}${b}号艇`, l2]);
+          })()
         : [`${b}号艇は▲の付いた材料が無い`, feats.length ? `札は${feats.join("・")}` : "札も無い"],
     });
     if (!top) omitted.push({ where: "scene6.deep", boat: b, reason: "▲の付いた材料が無い（カードを出さず札だけ）" });

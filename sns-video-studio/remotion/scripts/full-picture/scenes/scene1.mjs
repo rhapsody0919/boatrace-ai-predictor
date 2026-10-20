@@ -16,6 +16,8 @@ import { BOATS, diffOf, diffText, pct1, venueName } from "./common.mjs";
 const fmt1 = (v) => (v === null ? "—" : `${v.toFixed(1)}%`);
 /** 小数1桁の文字（72 → "72.0"）。画面の表と同じ桁で文に出す */
 const d1 = (v) => (v === null || v === undefined ? null : v.toFixed(1));
+/** 表・棒と同じ丸め（toFixed(1)）で数にする。丸めは1回だけ（Math.round の後に toFixed すると表と答えがずれる） */
+const round1 = (v) => (v === null || v === undefined ? null : Number(v.toFixed(1)));
 
 /** 24会場の過去90日の合計 → 枠番ごとの全国の割合（画面の getNationalAverageOutcomeDistribution と同じ: 件数の合計で割る） */
 function nationalRates(outcomeByVenue) {
@@ -58,8 +60,8 @@ export function buildScene1(m) {
 
   if (rates) {
     // ① 枠番別の1着率と全国平均
-    const v1 = Math.round(rateOf(1, "winRate") * 10) / 10;
-    const n1 = Math.round(natOf(1, "winRate") * 10) / 10;
+    const v1 = round1(rateOf(1, "winRate"));
+    const n1 = round1(natOf(1, "winRate"));
     const f = { kind: "venue90", boat: 1, venue, rate: v1, national: n1, races: total, ...diffOf(v1, n1) };
     steps.push({
       id: "s1-venue90",
@@ -78,9 +80,9 @@ export function buildScene1(m) {
       lines: [`${venue}の1号艇の1着率${d1(v1)}%`, diffText(`全国の${d1(n1)}%`, f)].filter(Boolean),
     });
     // ② 枠番別の連対率（3列を一斉に囲う）
-    const t2 = Math.round(rateOf(1, "top2Rate") * 10) / 10;
-    const t3 = Math.round(rateOf(1, "top3Rate") * 10) / 10;
-    const n2 = Math.round(natOf(1, "top2Rate") * 10) / 10;
+    const t2 = round1(rateOf(1, "top2Rate"));
+    const t3 = round1(rateOf(1, "top3Rate"));
+    const n2 = round1(natOf(1, "top2Rate"));
     const f2 = { kind: "place", boat: 1, venue, top2: t2, top3: t3, national2: n2, ...diffOf(t2, n2) };
     steps.push({
       id: "s1-place",
@@ -104,7 +106,7 @@ export function buildScene1(m) {
   const day = daySummary(m.api.races, race?.raceNumber ?? 0);
   if (day.raceCount > 0) {
     const nige = pct1(day.nigeCount / day.raceCount);
-    const v1 = rates ? Math.round(rateOf(1, "winRate") * 10) / 10 : null;
+    const v1 = rates ? round1(rateOf(1, "winRate")) : null;
     const f3 = { kind: "day", boat: 1, venue, races: day.raceCount, nigeCount: day.nigeCount, nigeRate: nige, venueRate: v1, ...diffOf(nige, v1) };
     steps.push({
       id: "s1-day",
@@ -140,8 +142,8 @@ export function buildScene1(m) {
       return { boat: b, p: x?.[1] ? (x[0] / x[1]) * 100 : null, base: u?.[1] ? (u[0] / u[1]) * 100 : null };
     });
     const r1 = rows[0];
-    const p1 = r1.p === null ? null : Math.round(r1.p * 10) / 10;
-    const b1 = r1.base === null ? null : Math.round(r1.base * 10) / 10;
+    const p1 = r1.p === null ? null : round1(r1.p);
+    const b1 = r1.base === null ? null : round1(r1.base);
     const band = view.wind ?? windBand(w.windSpeed);
     const f4 = { kind: "wind", boat: 1, venue, wind: `${w.windSpeed}m`, band, rate: p1, base: b1, races: view.n, ...diffOf(p1, b1) };
     steps.push({

@@ -14,6 +14,8 @@ import process from "node:process";
 export const MATERIALS_VERSION = "full-picture-materials/1";
 const BASE = process.env.FULL_PICTURE_API_BASE ?? "https://www.boat-ai.jp";
 const VENUES = Array.from({ length: 24 }, (_, i) => i + 1);
+/** 材料の無い応答の status（api/_lib/analogyV16.js の resolveStatus・similar の empty_layer） */
+export const NO_DATA = ["not_saved", "absent", "empty_layer"];
 
 // Supabase の匿名読み取り（画面と同じ公開キー。書き込みはしない）。画面が API を通さずに読む場面（3 軸・6 機力）の材料
 const SB_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -89,7 +91,12 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
   const take = async (key, path, caseName = null) => {
     try {
       const seeded = caseDir && caseName ? fromCase(caseDir, caseName) : null;
-      api[key] = seeded ?? (await getJson(path));
+      const got = seeded ?? (await getJson(path));
+      // 材料の無い応答（保存前・対象外・類似レースの層が空）は null にして missing に記録する（契約の形にしない）
+      if (NO_DATA.includes(got?.status)) {
+        api[key] = null;
+        missing.push({ source: key, reason: `応答の status が ${got.status}` });
+      } else api[key] = got;
     } catch (e) {
       api[key] = null;
       missing.push({ source: key, reason: e instanceof Error ? e.message : String(e) });

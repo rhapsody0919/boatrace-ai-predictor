@@ -202,6 +202,9 @@ export function checkLines(lines, facts, prev) {
   const head = lines[0];
   const conn = CONNECTORS.find((c) => head.startsWith(c));
   if (conn && !prev) why.push(`段の最初の拍でつなぐ語「${conn}」`);
+  // 「逆に」は前の拍と向き（高い・低い）が逆のときだけ
+  if (conn === "逆に" && !(prev?.direction && facts.direction && prev.direction !== facts.direction))
+    why.push("「逆に」だが前の拍と向きが逆でない");
   // 同じ材料か: 場面2は材料名（item）、段の場面は facts の種類（kind）で見る
   const topic = (f) => f?.item ?? f?.kind ?? null;
   if (conn && prev && SAME_ITEM_CONNECTORS.includes(conn) && (topic(prev) === null || topic(prev) !== topic(facts)))
@@ -244,11 +247,35 @@ function parseJson(text) {
 /** 全場面の拍（場面2 は beatsOf、段の場面は段ごと。答えの無い段＝場面8 のまとめカードは除く） */
 export function allBeats(scenes) {
   return scenes.flatMap((x) =>
-    x.kind === "scene2"
+    !x.data
+      ? []
+      : x.kind === "scene2"
       ? beatsOf(x.data).map((b) => ({ ...b, step: `scene2-${b.step}` }))
       : (x.data?.steps ?? []).filter((s) => s.lines?.length).map((s) => ({ id: s.id, step: x.id, question: s.question, facts: s.facts, template: s.lines })),
   );
 }
+
+/** 文に出てはいけない値の書き方（材料の欠けがそのまま文字になったもの） */
+const BROKEN = /null|undefined|NaN|Infinity/;
+/**
+ * 描く前に必ず通す文の検査（毎日の実行。CI の固定の材料だけでなく、その日の材料で）。幅・行の数・禁止表現・欠けた値
+ * @param {Record<string, string[]>} answers
+ * @returns {string[]} 落ちた理由（空なら合格）
+ */
+export function checkAnswers(answers) {
+  const why = [];
+  for (const [id, lines] of Object.entries(answers)) {
+    if (!Array.isArray(lines) || lines.length > MAX_LINES) why.push(`${id}: 行の数が不正`);
+    for (const l of lines ?? []) {
+      if (lineWidth(l) > MAX_WIDTH) why.push(`${id}: 幅が全角${lineWidth(l).toFixed(1)}字分「${l}」`);
+      if (BROKEN.test(l)) why.push(`${id}: 欠けた値「${l}」`);
+    }
+    why.push(...bannedIn((lines ?? []).join("\n")).map((w) => `${id}: ${w}`));
+  }
+  return why;
+}
+/** 本文の検査（禁止表現・欠けた値） */
+export const checkPost = (text) => [...bannedIn(text), ...(BROKEN.test(text) ? ["欠けた値（null 等）"] : [])];
 
 /** 文型の版の文の JSON（scene は場面2の材料、または allBeats の拍の並び） */
 export function templateText(sceneOrBeats) {

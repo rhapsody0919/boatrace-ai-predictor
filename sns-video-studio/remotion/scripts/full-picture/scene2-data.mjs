@@ -150,7 +150,10 @@ export function templateLines(f) {
           ? `1位は${f.compare.boats.map(cmp).join("・")}`
           : null;
     // 1行目が入らない（平均ST（直近30走）の値など）ときは、値を2行目の頭へ移す
-    return fitFirst([l1, l2], [`${f.boat}号艇は${f.item}で${f.rank}`, l2 ? `${f.value}、${l2}` : f.value]);
+    // 1位が並ぶ（同じ値）なら艇番をまとめて書く
+    const tie = f.compare?.role === "1位" && f.compare.boats.length > 1 && new Set(f.compare.boats.map((c) => c.value)).size === 1;
+    const l2tie = tie ? `1位は${f.compare.boats.map((c) => c.boat).join("・")}号艇の${f.compare.boats[0].value}` : null;
+    return fitFirst([l1, l2], [`${f.boat}号艇は${f.item}で${f.rank}`, l2 ? `${f.value}、${l2}` : f.value], ...(tie ? [[l1, l2tie], [`${f.boat}号艇は${f.item}で${f.rank}`, `${f.value}、${l2tie}`]] : []));
   }
   if (f.kind === "card") {
     if (f.todayRank !== null)

@@ -21,7 +21,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import process from "node:process";
-import { allBeats, bannedIn, connectedText, templateText } from "./scene2-text.mjs";
+import { allBeats, checkAnswers, checkPost, connectedText, templateText } from "./scene2-text.mjs";
 import { entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
@@ -70,10 +70,17 @@ const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scen
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
 for (const o of omitted) console.warn(`[省いた要素] ${JSON.stringify(o)}`);
 for (const o of omitted.filter((x) => x.mustReport)) console.error(`[要報告] ${o.scene}: ${o.reason}`);
+// BGM はレースごとの名前で置く（並行して回しても別のレースの BGM が入らない）
+const bgmName = `full-picture/bgm-${m.raceId}.mp3`;
 if (bgm) {
   mkdirSync("public/full-picture", { recursive: true });
-  copyFileSync(bgm, "public/full-picture/bgm.mp3");
+  copyFileSync(bgm, join("public", bgmName));
 }
+/** 止める（終了コード1）。文・本文が検査に落ちたら描かない・本文を出さない */
+const stop = (what, why) => {
+  console.error(`${what}が検査に落ちたので止める:\n${why.slice(0, 20).join("\n")}`);
+  process.exit(1);
+};
 const beats = allBeats(scenes);
 
 /** 拍ごとの静止画のフレーム（答えが出て1秒後） */
@@ -102,7 +109,7 @@ function stillFrames(list, answers) {
 
 /** MP4 と拍ごとの静止画を書き出す。かかった秒（描画・静止画） */
 function render(list, answers, dir, name) {
-  const props = { scenes: list, answers, ...(bgm ? { bgm: "full-picture/bgm.mp3" } : {}) };
+  const props = { scenes: list, answers, ...(bgm ? { bgm: bgmName } : {}) };
   const propsPath = join(dir, `props-${name}.json`);
   writeJson(propsPath, props);
   mkdirSync(join(dir, "stills"), { recursive: true });
@@ -136,10 +143,14 @@ function postText(answers) {
 const [, mo, da, venueCode, raceNo] = m.raceId.split("-");
 /** レース名（例「下関10R（10/19）」）。入口版の最初の問いと本文に入れる */
 const raceLabel = `${venueLabel(Number(venueCode), t)}${Number(raceNo)}R（${Number(mo)}/${Number(da)}）`;
-const post = postText(templateText(beats).answers);
+const templateAnswers = templateText(beats).answers;
+{
+  const why = checkAnswers(templateAnswers);
+  if (why.length) stop("文型の文", why);
+}
+const post = postText(templateAnswers);
+if (checkPost(post).length) stop("本文", checkPost(post));
 writeFileSync(join(out, "post.txt"), post);
-const flags = bannedIn(post);
-if (flags.length) console.warn(`[本文の禁止表現] ${flags.join(" / ")}`);
 
 /** 完全版の章（YouTube の自動チャプターは 0:00 から、各章10秒以上） */
 const CHAPTER = { scene1: "条件", scene2: "6艇比較", scene2b: "類似レース", scene3: "軸", scene4: "展開", scene5: "相手", scene6: "機力と調子", scene8: "展示後に見るところ" };
@@ -156,12 +167,17 @@ for (const mode of modes) {
   const t0 = Date.now();
   const textPath = join(out, `text-${mode}.json`);
   let llmCalls = 0;
-  const text =
-    existsSync(textPath) && !regenText
-      ? JSON.parse(readFileSync(textPath, "utf8"))
-      : mode === "template"
-        ? templateText(beats)
-        : (llmCalls++, connectedText(beats));
+  // 文の JSON は同じレース・同じ文型のときだけ使い回す（別のレースの答えを重ねない）
+  const saved = existsSync(textPath) && !regenText ? JSON.parse(readFileSync(textPath, "utf8")) : null;
+  const reusable = saved && saved.raceId === m.raceId && beats.every((b) => saved.answers?.[b.id]?.at(-1) === b.template.at(-1));
+  if (saved && !reusable) console.warn(`[文の JSON を作り直す] ${textPath} はこの材料（${m.raceId}）の文と合わない`);
+  const text = reusable
+    ? saved
+    : { raceId: m.raceId, ...(mode === "template" ? templateText(beats) : (llmCalls++, connectedText(beats))) };
+  {
+    const why = checkAnswers(text.answers);
+    if (why.length) stop(`文（${mode}）`, why);
+  }
   writeJson(textPath, text);
   const seconds = { text: (Date.now() - t0) / 1000 };
   if (mode === "connected") {
@@ -187,9 +203,11 @@ const entry = entryScenes(scenes, entryAnswers, { race: raceLabel });
 const stepsOf = (id) => entry.scenes.find((x) => x.id === id)?.data?.steps ?? [];
 const lineOf = (s) => (s ? (entryAnswers[s.id] ?? s.lines).join("、") : null);
 const postEntry = [entry.scenes[0].data.steps[0]?.question ?? raceLabel, lineOf(stepsOf("scene1")[0]), lineOf(stepsOf("conclusion")[0]), "データは龍神レーダーで。", "#ボートレース"].filter(Boolean).join("\n") + "\n";
+{
+  const why = [...checkPost(postEntry), ...checkAnswers(Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entryAnswers[s.id] ?? s.lines]) : []))))];
+  if (why.length) stop("入口版の文・本文", why);
+}
 writeFileSync(join(out, "post-entry.txt"), postEntry);
-const flagsEntry = bannedIn(postEntry);
-if (flagsEntry.length) console.warn(`[入口版の本文の禁止表現] ${flagsEntry.join(" / ")}`);
 for (const o of entry.omitted) console.warn(`[入口版で省いた要素] ${JSON.stringify(o)}`);
 writeJson(join(out, "entry.json"), { seconds: entry.total / 30, omitted: entry.omitted, scenes: entry.scenes.map((x) => ({ id: x.id, steps: x.kind === "scene2" ? ["overview", ...(x.data?.radar?.focus ?? []).map((f) => f.id)] : x.data.steps.map((s) => s.id) })) });
 if (!noVideo) {

@@ -29,6 +29,8 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
   const b = maxBoat(win);
   const { nodes } = sankeyLayout(links, n);
   const node0 = nodes.find((x) => x.col === 0 && x.boat === b);
+  // 着順の材料が無い（件数0）なら段を作らない（呼び出し側が omitted に書く）
+  if (!n || !win[b - 1] || !node0) return [];
   const f1 = { kind: "flow1", boat: b, count: win[b - 1], n, pct: p1(win[b - 1], n) };
   steps.push({
     id: `${prefix}-flow`,
@@ -49,6 +51,7 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
   const s3 = maxBoat(third);
   const nodesB = sankeyLayout(linksB, nB).nodes;
   const node2 = nodesB.find((x) => x.col === 1 && x.boat === s2);
+  if (node2) {
   const f2 = { kind: "flow2", boat: b, count: nB, second: { boat: s2, count: second[s2 - 1] }, third: { boat: s3, count: third[s3 - 1] } };
   steps.push({
     id: `${prefix}-flow-${b}`,
@@ -63,6 +66,7 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
       [`${b}号艇が1着の${nB}件で2着最多は${s2}号艇`, `${second[s2 - 1]}件、3着は${s3}号艇の${third[s3 - 1]}件が最多`],
     ),
   });
+  }
   // よく出た3連単（上位3つ）
   const top = trifectaList(tri).slice(0, TOP_TRIFECTA);
   if (top.length) {
@@ -108,6 +112,7 @@ export function buildScene2b(m) {
     },
     ...sonarSteps("s2b", ag.tri, ag.n, Q, {}),
   ];
+  if (steps.length === 1) omitted.push({ where: "scene2b.flow", reason: "類似レースの着順の材料が無い" });
   if (ag.n !== N) omitted.push({ where: "scene2b", reason: `結果の無い類似レースを除いた（${N}件中${ag.n}件）` });
   return { id: "scene2b", steps, omitted };
 }
