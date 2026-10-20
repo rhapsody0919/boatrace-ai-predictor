@@ -38,7 +38,7 @@ export function classifyLog(text) {
     return "config";
   }
   if (
-    /(?:supabase|github|vercel|linear)[^\n]{0,40}\b50[0234]\b|ECONNRESET|ETIMEDOUT|ECONNREFUSED|EAI_AGAIN|ENOTFOUND|socket hang up|fetch failed|upstream connect error|\b50[0234]\b.{0,80}(?:supabase|github|vercel|Bad Gateway|Service Unavailable|Gateway Time-?out|Internal Server Error)|(?:Bad Gateway|Service Unavailable|Gateway Time-?out)|exceeded the maximum execution time|canceling statement due to statement timeout|The operation was canceled/i.test(
+    /(?:supabase|github|vercel|linear)[^\n]{0,40}\b50[0234]\b|ECONNRESET|ETIMEDOUT|ECONNREFUSED|EAI_AGAIN|ENOTFOUND|socket hang up|fetch failed|upstream connect error|\b50[0234]\b.{0,80}(?:supabase|github|vercel|Bad Gateway|Service Unavailable|Gateway Time-?out|Internal Server Error)|exceeded the maximum execution time|canceling statement due to statement timeout|The operation was canceled/i.test(
       t,
     )
   ) {

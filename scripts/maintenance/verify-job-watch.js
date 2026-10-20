@@ -63,7 +63,9 @@ function check(label, pass, detail = "") {
       "The job running on runner GitHub Actions 3 has exceeded the maximum execution time of 15 minutes.",
       "transient",
     ],
-    ["502 Bad Gateway", "transient"],
+    ["Supabase の取得で 502 Bad Gateway", "transient"],
+    // 数字も相手も無い「Service Unavailable」は、公式サイトかもしれないので rerun しない（ADR-0067）
+    ["Error: Service Unavailable", "other"],
     ["TypeError: Cannot read properties of undefined (reading 'map')", "other"],
     ["", "other"],
   ];
@@ -271,6 +273,13 @@ const nameOf = (f) =>
       jw,
     ),
   );
+  const js = readFileSync(path.join(ROOT, "scripts/watch/job-watch.js"), "utf8");
+  check(
+    "見回りは push で動く見張りの対象（Post-merge Checks 等）も数える",
+    /r\.event === "push"/.test(js) && /github\.event\.workflow_run\.event == 'push'/.test(jobs.scan),
+  );
+  check("見回りは master の run だけを一覧で取る（PR の CI を取らない）", /actions\/runs\?branch=master&created=/.test(js));
+  check("既に書いた run のログは読み直さない", /if \(alreadyNoted\) \{[\s\S]{0,400}?continue;\s*\}\s*const category = classifyLog/.test(js));
   check(
     "同じリポジトリの run だけ",
     /workflow_run\.head_repository\.full_name == github\.repository/.test(

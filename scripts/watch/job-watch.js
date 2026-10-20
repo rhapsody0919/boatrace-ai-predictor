@@ -86,7 +86,9 @@ const isProductionRun = (r) =>
   CONFIG.watched.includes(r.path) &&
   r.head_branch === "master" &&
   r.head_repository?.full_name === repo &&
-  (r.event === "schedule" || r.event === "workflow_dispatch");
+  // push は master へのマージ・自動コミットで動くもの（Post-merge Checks・Regenerate Generated Docs 等）。
+  // rerun の許可の一覧には入っていないので、知らせるだけになる
+  (r.event === "schedule" || r.event === "workflow_dispatch" || r.event === "push");
 
 async function failedJobLog(runId) {
   const jobs = await listAll(
@@ -150,7 +152,8 @@ async function scan() {
   const rerunAllowed = new Set(CONFIG.rerunAllowed);
   const runs = (
     await listAll(
-      `/repos/${repo}/actions/runs?created=%3E%3D${since}`,
+      // master だけに絞る（PR の CI の run を取らない）
+      `/repos/${repo}/actions/runs?branch=master&created=%3E%3D${since}`,
       "workflow_runs",
     )
   )
@@ -187,12 +190,16 @@ async function scan() {
       runMarker(r.id, r.attempt, k),
     );
     const alreadyNoted = kinds.some((m) => done.has(m));
-    // 分類は鍵の後の追い上げにも使うので、印のある run もログを読む（ただし鍵の Issue が開いているときだけ）
-    if (alreadyNoted && !keyIssue) continue;
+    if (alreadyNoted) {
+      // 既に書いた run のログは読み直さない。鍵の Issue に書いたものは、鍵が直った後の追い上げの候補にだけ入れる
+      if (done.has(runMarker(r.id, r.attempt, "key"))) {
+        classified.push({ ...r, category: "config", newerRun: newerRun(r) });
+      }
+      continue;
+    }
     const category = classifyLog(await failedJobLog(r.id));
     const run = { ...r, category, newerRun: newerRun(r) };
     classified.push(run);
-    if (alreadyNoted) continue;
     const d = decideRun(run, { rerunAllowed, now });
     if (d.action === "key-issue") {
       keyItems.push({
