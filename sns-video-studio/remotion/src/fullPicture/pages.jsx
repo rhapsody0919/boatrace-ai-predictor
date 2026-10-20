@@ -507,3 +507,46 @@ export function DeepPage({ title, sub, card, chips }) {
     </>
   );
 }
+
+/**
+ * 展示後に見るところのまとめカード（型: 場面8、オーナー 10/16・10/17）。群ごとに左の色の線と見出しの札（インが残る＝青、外が来る＝橙）、
+ * 各行は見る所を太字、意味は「→」付きで小さく薄く。行の頭に関係する艇番（橙は鍵の艇、それ以外は白）。右下に「スクショで保存」
+ */
+export function SummaryPage({ groups, footer }) {
+  let y = PAGE_TOP - 10;
+  const out = [];
+  groups.forEach((g, gi) => {
+    out.push(
+      <div key={`h${gi}`} style={{ position: "absolute", left: LEFT, top: y, padding: "6px 22px", borderRadius: 30, background: g.color, color: "#0d1b2e", fontSize: 40, fontWeight: 900 }}>
+        {g.title}
+      </div>,
+    );
+    y += 74;
+    const top = y;
+    g.rows.forEach((r, ri) => {
+      out.push(
+        <div key={`r${gi}-${ri}`} style={{ position: "absolute", left: LEFT + 30, top: y, width: RIGHT - LEFT - 30 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {r.boats.map((b) => (
+              <span key={b} style={{ minWidth: 44, height: 44, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: MIN_TEXT, fontWeight: 900, background: r.keys.includes(b) ? "#ff8a1f" : "#ffffff", color: "#0d1b2e" }}>
+                {b}
+              </span>
+            ))}
+            <span style={{ fontSize: 38, fontWeight: 800, color: "#ffffff", whiteSpace: "nowrap" }}>{r.look}</span>
+          </div>
+          <div style={{ fontSize: MIN_TEXT, color: MUTED, marginTop: 2, whiteSpace: "nowrap" }}>→ {r.mean}</div>
+        </div>,
+      );
+      y += 106;
+    });
+    out.push(<div key={`l${gi}`} style={{ position: "absolute", left: LEFT, top: top, width: 8, height: y - top - 14, borderRadius: 4, background: g.color }} />);
+    y += 16;
+  });
+  return (
+    <>
+      {out}
+      <div style={{ position: "absolute", left: LEFT, top: y + 6, fontSize: 38, fontWeight: 800, color: GOLD, whiteSpace: "nowrap" }}>{footer}</div>
+      <div style={{ position: "absolute", left: RIGHT - 300, top: y + 70, width: 300, textAlign: "right", fontSize: MIN_TEXT, color: MUTED }}>スクショで保存</div>
+    </>
+  );
+}
