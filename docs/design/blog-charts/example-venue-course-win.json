@@ -18,33 +18,27 @@
   "rows": [
     {
       "key": "1",
-      "label": "1コース",
-      "boat": 1
+      "label": "1コース"
     },
     {
       "key": "2",
-      "label": "2コース",
-      "boat": 2
+      "label": "2コース"
     },
     {
       "key": "3",
-      "label": "3コース",
-      "boat": 3
+      "label": "3コース"
     },
     {
       "key": "4",
-      "label": "4コース",
-      "boat": 4
+      "label": "4コース"
     },
     {
       "key": "5",
-      "label": "5コース",
-      "boat": 5
+      "label": "5コース"
     },
     {
       "key": "6",
-      "label": "6コース",
-      "boat": 6
+      "label": "6コース"
     }
   ],
   "switch": {

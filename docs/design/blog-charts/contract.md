@@ -47,7 +47,7 @@
     "category": { "label": "進入コース" },          // 行の軸
     "value": { "label": "1着率", "unit": "%", "decimals": 1 }  // 値の軸。最小は0、最大は部品が全 view から決める
   },
-  "rows": [ { "key": "1", "label": "1コース", "boat": 1 } ],
+  "rows": [ { "key": "1", "label": "1コース" } ],               // 枠番（艇番）を行にするときだけ "boat": 1〜6 で艇の色の印を付ける
   "switch": { "label": "会場", "default": "22" },   // 切り替えが無ければ null と書く（キーは省かない）
   "views": [
     {
@@ -83,7 +83,7 @@
 | | `title` | 必 | 1〜40字。図の見出し |
 | | `description` | 必 | 1〜120字。既定の view の答えを1文で（「〜を示す図」でなく「〜は〜」）。数字は既定の view か key `all` の値だけ |
 | | `axes` | 必 | 4 節の種類ごとの軸 |
-| | `rows` | 必 | 行。`key`（文字列、重複なし）・`label`・`boat`（任、1〜6。行の key が "1"〜"6" のときだけ） |
+| | `rows` | 必 | 行。`key`（文字列、重複なし）・`label`・`boat`（任、1〜6。行が枠番（艇番）で key が "1"〜"6" のときだけ。進入コースの行には付けない。枠番と誤読されるため） |
 | | `switch` | 必 | `null` か `{ label, default }`。`default` は views の key のどれか |
 | | `views` | 必 | `switch` が `null` なら1つ、あれば2つ以上。key は文字列で重複なし |
 | | `source` | 必 | `name`・`dataVersion`（YYYY-MM-DD）必、`resultPath` 任 |
