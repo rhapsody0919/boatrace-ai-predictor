@@ -261,6 +261,7 @@ flowchart TD
 | ブラウザ（Claude in Chrome・アプリのブラウザ）の GitHub のログイン | オーナーとして操作できる | Claude が操作できるブラウザで GitHub からログアウトする。オーナーの作業は別のプロファイルで行う（手順書の「全体の決まり」と同じ） |
 | Vercel CLI の認証・Vercel MCP → Vercel の環境変数（dispatch の PAT・SUPABASE_SERVICE_KEY 等） | 届く（Sensitive でもデプロイしたコードからは読める） | Vercel CLI をログアウトするか書き込みの無いトークンにする、Vercel MCP を切る（§2） |
 | `.env.local` の SUPABASE_ACCESS_TOKEN（管理 API）・VERCEL_OIDC_TOKEN 等。**全 worktree の写し（`.claude/worktrees/*/.env.local`）を含む** | 届く | Claude の届く所から外す（印を偽れるため。D' の条件） |
+| Vercel の環境変数 `GITHUB_MERGE_TOKEN`（ADR-0034、PR の書き込み権限の PAT、オーナーの名義） | ある | **失効させる（手順8の前提）**。ruleset は書き込み権限のある身元の承認を数えるので、この PAT で作成の App の PR を承認でき、審査の App を迂回できる（§9.2） |
 
 - どこまで外すかはオーナーの判断（判断5）。全部は外せない（terukina は macOS の admin で、sudo のパスワードを入れた後の操作には届く。hq の drafts §128）
 
@@ -281,62 +282,71 @@ flowchart TD
 | 2 | PAT の権限が Actions だけか、Environment 4つの Deployment branches が master だけかを、設定の画面で確かめる | 確かめる（PAT に承認の権限があると production-db を承認でき、Deployment branches が広いと dispatch の ref で鍵に届く） |
 | 3 | D' の前の3点を §4 の形で作る（印は DB の主キー、止め印は台帳の `保留`） | はい |
 | 4 | 自動の経路を JST 1:00〜4:59 に限る（§4.3 案 A） | 案 A |
-| 5 | 切替で、§6 の表の経路をどこまで外すか | gh・git の credential・ブラウザの GitHub のログイン・Vercel CLI と MCP・`.env.local` の管理の鍵は外す。SSH の鍵は登録先を確かめてから。外さないものは ADR-0097 の「残る弱み」に書く |
+| 5 | 切替で、§6 の表の経路をどこまで外すか | gh・git の credential・ブラウザの GitHub のログイン・Vercel CLI と MCP・全 worktree の `.env.local` の管理の鍵は外す。`GITHUB_MERGE_TOKEN` は失効させる（手順8の前提）。SSH の鍵は登録先を確かめてから。外さないものは ADR-0097 の「残る弱み」に書く |
 | 6 | 名義の差し替えを環境の側（hq の shim・credential helper）で行い、切替の前の暫定は置かない（§3） | はい |
 | 7 | D' の条件（§5: 切替の後7日・審査済みの SQL を5本判定 等） | この条件 |
-| 8 | ④ 審査の関門の画像の例外を §9.1 の条件で入れ、ADR-0097 に追記する（段階2） | はい |
+| 8 | ④ 審査の関門の画像の例外を §9.1 の条件（jpg だけ・印の欄の許可のリスト・EOI まで歩く・縦横の上限・F のパスだけの PR に限る）で入れ、同じ PR で ADR-0097 に追記する（段階2） | はい |
 | 9 | ② で寸法の表がビルドで作られる形になったときの関門の条件 | ② のレーンと合わせて決める。それまでは PR の head の表で照合 |
-| 10 | 画像の中身が LLM の審査に渡らないことを受け入れるか | 受け入れて ADR-0097 の残る弱みに書く（グラフ・表の画像で、記事の本文は審査に入る） |
+| 10 | 画像の中身が LLM の審査に渡らないこと・polyglot を防ぎきれないこと・作成の App が自分で `--auto` を付けられることを受け入れるか | 受け入れて ADR-0097 の残る弱みに書く（グラフ・表の画像で、記事の本文は審査に入る。`nosniff` を足す） |
 | 11 | ⑥ SKILL.md の段階0 F・案Z の5点の書き直し（§9.3。5点目の P0/P1 の扱いはオーナー決定済み、文案の承認が要る） | はい。PR-D とは別の PR |
 | 12 | 切替の PR で `DB_APPLY_SWITCH_SHA` を切替のコミットに進めるか（切替の前に足した未承認の `未適用` を自動の対象から外す） | 進める。外れたものは手で当てる（今の手順のまま） |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
-オーナーの yes（10/20 夕、hq 経由「記事を集客だけで出す道を作ってよい」、オーケストレーター経由）で、記事の PR も「作成の App → 審査の App → auto-merge」に乗せる。この節は ④ 審査の関門の画像の例外と ⑥ orchestrate の段階0 F・案Z の書き直し。② 翻訳のメタの JSON 化・寸法をビルドで作る、③ `scripts/content/check-content-pr.js`（manifest の形を含む）、⑤ ADR-0034（`GITHUB_MERGE_TOKEN` の PAT で記事の PR をマージする古い道）の廃止と PAT の失効は、別のレーンが受け持つ。
+オーナーの yes（10/20 夕、hq 経由「記事を集客だけで出す道を作ってよい」、オーケストレーター経由）で、記事の PR も「作成の App → 審査の App → auto-merge」に乗せる。この節は ④ 審査の関門の画像の例外と ⑥ orchestrate の段階0 F・案Z の書き直し。② 翻訳のメタの JSON 化・寸法をビルドで作る、③ `scripts/content/check-content-pr.js`（manifest の形を含む）、⑤ ADR-0034（`GITHUB_MERGE_TOKEN` の PAT で記事の PR をマージする古い道）の廃止と PAT の失効は、別のレーンが受け持つ。§9 は system-architect の2回目の審査（P1 6件・P2 10件・P3 5件）を反映済み（§10）。
+
+**時期**: 記事の PR が作成の App の名義で出るのは、切替（§6 の一連の作業）の後。切替までは PR の作者が rhapsody0919 で review.yml は skipped になるので（§1）、9.1 の例外も 9.2 の判定も効く PR が無い。**切替までは F の記事を案Z の束に入れない**（今の F のまま、オーケストレーターが4つのレビューを見てマージする）。
 
 ### 9.1 ④ 審査の関門に画像の狭い例外を入れる（段階2、オーナーが直接承認）
 
 今は `scripts/lib/reviewPr.js:57-60` が、本文の無い差分（バイナリ）を消したファイル以外は全部落とす。記事の画像はバイナリなので、記事の PR は全部落ちる。
 
-例外にする条件（全部を満たすファイルだけ、本文の無い差分の理由から外す）:
+**例外を効かせる PR**: PR の変更したファイルが**全部** F の許可のパス（9.3 の 90 行目の一覧）の中にあるときだけ。コードを含む PR では、画像も今どおり落とす（claude/ の PR を全部審査するので、例外を全 PR に効かせない）。許可のパスの正本は `reviewPr.js` に1か所置き、③ の機械（push の前の照合）はそれを読む。
 
-| 条件 | 確かめ方（gate の job。鍵なし、PR の head は checkout しない） |
+**例外にする画像の条件**（全部を満たすファイルだけ、本文の無い差分の理由から外す）:
+
+| 条件 | 確かめ方（PR の head は checkout しない。API で取って読むだけ） |
 |---|---|
 | `status === "added"`（変更・改名・複製は対象外。`previous_filename` があれば対象外） | compare の files |
-| パスが `^public/images/blog/[a-z0-9-]+\.(jpg\|webp)$` | 正規表現。大文字・`..`・入れ子のディレクトリは当たらない |
+| パスが `^public/images/blog/[a-z0-9-]{1,100}\.jpg$`（webp は既存0枚なので入れない） | 正規表現。大文字・`..`・入れ子は当たらない。既存 183 枚は全部小文字の jpg |
 | mode が `100644` | 今の `headModes`（head の木） |
-| 大きさが 400KB（409,600 バイト）以下 | `GET /git/blobs/{sha}` の `size`（中身は base64 で取る。実行しない） |
-| magic bytes が拡張子と一致 | jpg: 先頭 `FF D8 FF`・末尾 `FF D9`。webp: 先頭 `RIFF`・8〜11 バイト目 `WEBP` |
-| EXIF・XMP が無い | jpg: APP1（`FF E1`）と COM（`FF FE`）の segment が1つも無い（EXIF も XMP も APP1 に入る）。APP2 の ICC は許す。SOS より前の segment だけを読む。webp: `EXIF`・`XMP ` の chunk が無い |
-| 縦横が寸法の表と一致 | jpg は SOF0・SOF2 から、webp は VP8・VP8L・VP8X から縦横を読む。表は PR の head の `src/data/blogImageDimensions.js` を API で取り（実行しない）、`"/images/blog/<name>": { width: N, height: M }` の1行を正規表現で読む。行が無い・形が違えば落とす |
-| 同じ PR で表の行を足している | 表の差分（patch）の `+` の行にその画像の行がある（既存の行に頼らない） |
+| 大きさが 400KB（409,600 バイト）以下 | head の木の項目の `size` で先に判定し、blob は sha を木の項目から取って compare の `sha` と一致を確かめる。`GET /git/blobs/{sha}` は `encoding === "base64"`・復号した長さが `size` と同じ |
+| **JPEG の印の欄（marker segment）が許可のリストだけ** | SOI から**1つ目の EOI まで全部を歩く**（プログレッシブはスキャンの間に APPn・COM を置けるので、SOS の前だけでは足りない）。スキャンの中は `FF 00` と RST0〜7 を飛ばす。埋め草の `FF` の連続は飛ばす。印の欄の長さは2以上でファイルの中に収まること。通すのは SOI、APP0（`JFIF\0` で、サムネイルが 0×0。JFXX は拒否）、APP2（`ICC_PROFILE\0` だけ）、DQT・DHT・DRI、SOF（C0・C1・C2 のどれか**1つだけ**）、SOS、RST0〜7、EOI。他（APP1 の EXIF・XMP、APP13 の Photoshop・IPTC、APP3〜15、COM、DNL・DHP・EXP、他の SOF）は全部落とす。C4（DHT）・C8・CC（DAC）を SOF と取り違えない |
+| EOI がファイルのちょうど終わり、SOI と EOI が1つずつ | 1つ目の EOI の後ろに2枚目の JPEG・任意のデータを付けたものを落とす |
+| 縦横の上限 | SOF の縦横が 幅 2000 以下・高さ 4000 以下、高さ 0（DNL の形）は拒否。既存の最大は幅 1200・高さ 2439 |
+| 縦横が寸法の表と一致 | PR の head の `src/data/blogImageDimensions.js` を API で取り（実行しない）、画像名をエスケープして完全一致で探す。一致する行が**ちょうど1つ**で、`"/images/blog/<name>": { width: N, height: M },` の形 |
+| 同じ PR で表の行を足している | 表の patch の `+` の行が、上の1行と同じ文であること（コメントに足した `+` の行で騙されない）。表の patch が省かれた（大きすぎる）ときは既存の規則で落ちる |
 
-- 純粋関数 `imageException(file, blob, headMode, dimensionsSource)` を `reviewPr.js` に足し、`mechanicalRejections` の本文の無い差分の分岐で使う。画像の読み取りは Node の組み込みだけ（review.yml の「npm ci・cache を使わない」）
-- 再現テスト（`scripts/maintenance/verify-review-workflow.js` か新しい verify）: 通るもの（jpg・webp、ICC つき）、落ちるもの（EXIF つき・XMP つき・400KB 超・拡張子と中身の不一致・改名・modified・入れ子のパス・大文字・寸法の不一致・表の行が無い・symlink）
-- **既存の画像183枚のうち99枚に EXIF がある**（実測）。記事の画像を作る側（③ のレーン、または画像の生成の道具）で、コミットの前に EXIF・XMP を外す。外さないと関門で落ちる
-- ② で寸法の表がビルドで作られる形に変わると、PR の head に表が無くなる。そのときの条件（例: 縦横がそれぞれ 4000px 以下）は ② と合わせて決める（判断9）
-- 画像の中身（写っているもの・文字）は、LLM の審査に渡らない（差分の本文に出ないため）。受け入れるか、画像を審査の LLM に画像の入力として渡すかを決める（判断10。推奨は、ブログの画像はグラフ・表の画像で、記事の本文が審査に入るので受け入れる。ただし ADR-0097 の「残る弱み」に書く）
-- ADR-0097:34（「本文の無い差分は…機械で落とす」）に、この例外の追記をする（決まった後）
+- 実装: 純粋関数 `jpegCheck(bytes)`・`imageException(...)` を `reviewPr.js` に足す。Node の組み込みだけ。解析の例外は落とす理由として返し、プロセスを止めない（gate が exit 1 で終わると approve の job が skipped になり、REQUEST_CHANGES も理由も残らない。review.yml:138）
+- **`mechanicalRejections` は `scripts/review/gate.js:45` と `scripts/review/llm.js:113` の2か所から呼ばれる**。引数（blob・寸法の表）を足すなら両方で同じものを取って渡す。引数を省略したときは画像を落とす側（今と同じ）にする。verify に「2か所が同じ引数で呼ぶ」の検査を足す。`llm.js` の job は Environment pr-review（API キーあり）で動くので、そこで PR の画像のバイト列を解析することになる（純粋な解析で許容。ADR の追記に書く）
+- `buildReviewPrompt`（`reviewPr.js:147`）で、画像は「機械で検査済みのバイナリ、本文なし」と注記する
+- 再現テスト（`verify-review-workflow.js` か新しい verify）: 通るもの（ベースライン・ICC つき・プログレッシブ）、落ちるもの（EXIF・XMP・APP13・COM・JFXX のサムネイル・MPF の APP2・スキャンの間の APPn・EOI の後ろのデータ・SOF が2つ・SOF3・高さ0・長さ0/1 の印の欄・400KB 超・上限超えの縦横・拡張子と中身の不一致・改名・modified・入れ子のパス・大文字・寸法の不一致・表の行が無い／2つある・コメントの `+` だけ・symlink・コードを含む PR の画像）
+- **既存の画像183枚のうち、APP1（EXIF）と APP13 が各 99 枚、APP2 の ICC が 41 枚、プログレッシブが 27 枚**（実測）。記事の画像を作る側（③ のレーン、または画像の生成の道具）で、コミットの前に許可のリストの外の印の欄を全部外す（EXIF だけを外す道具では APP13 が残って落ちる）
+- 改稿で画像を差し替えると、GitHub が改名（renamed）や modified として扱い、落ちる。F の文に「画像は別の名前で足す（差し替えはオーナー）」と書く（8月以降の画像の変更は3件）
+- ② で寸法の表がビルドで作られる形に変わると、PR の head に表が無くなる。そのときの照合は ② と合わせて決める（判断9）。縦横の上限はそれまでも効く
+- 画像の中身（写っているもの・文字）は、LLM の審査に渡らない（判断10）。画像と他の形式を兼ねたファイル（polyglot）は ICC・DQT・スキャンの中に任意のバイトを置けるので防ぎきれない。配信は `image/jpeg` で、ブラウザは画像をスクリプトとして実行せず、使うにはコードの側に参照が要り、それは審査の LLM が見る。念のため `vercel.json` の `/images/*` に `X-Content-Type-Options: nosniff` を足す（今は無い）
+- ADR-0097:31・34（バイナリは機械で落とす）への追記は、**コードと同じ PR（PR-F）**で入れる（食い違う期間を作らない）
 
-### 9.2 中身の PR を流すときの守り（system-architect、10/20 の審査の P0〜P2）
+### 9.2 中身の PR を流すときの守り
 
-- **P0: 手順7の前に中身の PR を流すなら、push の前に、変えたパスの全部（改名の元・mode・削除を含む）を許可のリストと照合する**。作成の App は Workflows の書き込みを持ち、手順7の前は repo の secret がどのブランチの workflow からも読めるため。照合は PR を作る機械（③ の担当）が push の前に行い、関門（review.yml）でも同じ許可のリストで落とす（二重）
-- **P1: 束のマージは、マージする時点で判定し直す**。見るのは、PR の作者の bot の ID（`REVIEW_MAKER_BOT_ID`）、今の head SHA に審査の App の APPROVE があること、変えたパスが許可のリストの中、CI が全部緑。束を作った時点の判定を使わない
-- **P2: CI が赤でもすぐ閉じない**。空のコミットで1回だけ再実行してから決める（切替の後は Actions: write が無いので、再実行は空のコミット。ADR-0097「影響」）
-- 古い道（`finalize-blog-draft.js` → `merge-blog-pr.js`、`GITHUB_MERGE_TOKEN` の PAT、ADR-0034）は、ADR-0097:109（書き込みの権限を他の App・人に配らない）と食い違う。廃止は ⑤ のレーン
+- **前提: 切替の作業より前に、作成の App の名義で中身の PR を出さない**。手順7の前は repo の secret がどのブランチの workflow からも読め、作成の App は Workflows の書き込みを持つため（system-architect の審査の P0）。§6 の順番（手順7 → 切替の一連の作業）ならこれは起きない。順番を変えて手順7の前に流すなら、PR を作る機械（③）が push の前に、変えたパスの全部（改名の元・mode・削除を含む）を 9.1 の許可のパスと照合する。関門（review.yml）での照合は push の時点の workflow を止められないので、この守りにはならない
+- **束のマージは、マージする時点で判定し直す**。見るのは、PR の作者の bot の ID（`REVIEW_MAKER_BOT_ID`）、今の head SHA に審査の App の APPROVE があること、変えたパスが許可のパスの中、CI が全部緑。束を作った時点の判定を使わない
+- **CI が赤でもすぐ閉じない**。空のコミットで1回だけ再実行してから決める（切替の後は Actions: write が無い。ADR-0097「影響」）
+- **`--auto` を付けるのは、F の確認（下の5点目）が済んだ後のオーケストレーターだけ**。ただし作成の App は自分で `--auto` を付けられ、審査の LLM の指示文は禁止語・誇大表現を見ないので、機械では守れない。ADR-0097 の残る弱みに足す
+- **古い道の `GITHUB_MERGE_TOKEN`**（ADR-0034、PR の書き込み権限のある PAT、オーナーの名義、Vercel の環境変数）は、ruleset が書き込み権限のある身元の承認を誰のものでも数えるので（ADR-0097:109）、切替の後も作成の App の PR を承認でき、審査の App を迂回できる。Claude は Vercel に届く（§6 の表）。**PAT の失効を手順8の前提条件にする**（§6 の表と判断5に入れた。ADR-0034 の状態を「廃止」にするのは ⑤ のレーン）
 
 ### 9.3 ⑥ orchestrate の段階0 F と案Z の書き直し（段階2、.claude）
 
-`.claude/skills/orchestrate/SKILL.md` を次の5点で直す（表の4点と、下の5点目）。
+`.claude/skills/orchestrate/SKILL.md` を次の5点で直す（表の4点と、下の5点目）。文案は .claude なので、オーナーが直接承認してから書く。
 
 | 行 | 今 | 直した後 |
 |---|---|---|
-| 69（A） | 「別ベンダーの審査（Claude の PR は Codex。止まっているときは代わりの審査）」 | review.yml の審査（作成の App の PR を別ベンダーの LLM が審査し、審査の App が承認）も「別ベンダーの審査」に含める。review.yml の APPROVE がある PR は、それで A のこの条件を満たす |
-| 90（F のパス） | `public/blog/`・`src/data/blog-posts/`・`public/images/blog/`・`src/data/blogImageDimensions.js`・`src/data/blogPostsEn.js` | `src/data/blogPostsKo.js`・`src/data/blogPostsZhTw.js` を足す（記事の翻訳のメタ。② で JSON に移るなら、移った先のパスに置き換える） |
-| 116（案Z の束） | 束に入れてよいのは段階0（A〜E） | A〜F。F の中身の束は、9.2 の P1（マージの時点の判定し直し）と P2（空のコミットで1回だけ再実行）に従う |
-| 118 | 「自動マージをどの名義で行うかは未決」 | 消す。ADR-0097（v5）で決着: 切替の後は作成の App の PR を審査の App が承認し、auto-merge でマージする。切替までは、オーケストレーターが束を 9.2 の P1 で判定し直してからマージする |
+| 69（A） | 「別ベンダーの審査（Claude の PR は Codex。止まっているときは代わりの審査）」 | review.yml の審査も「別ベンダーの審査」に含める。ただし review.yml は **P0 が0件なら P1 が残っていても APPROVE する**（`reviewPr.js:261-270`）。A の条件は「APPROVE があり、承認の本文の指摘に P1 が無い。P1 があれば実在を確かめて直す」 |
+| 90（F のパス） | `public/blog/`・`src/data/blog-posts/`・`public/images/blog/`・`src/data/blogImageDimensions.js`・`src/data/blogPostsEn.js` | `src/data/blogPostsKo.js`・`src/data/blogPostsZhTw.js` を足す（記事の翻訳のメタ。② で JSON に移るなら、移った先のパスに置き換える）。「画像は別の名前で足す（差し替えはオーナー）」を足す |
+| 116（案Z の束） | 束に入れてよいのは段階0（A〜E） | A〜F。ただし F は切替の後だけ。F の束は 9.2（マージの時点の判定し直し・空のコミットで1回だけ再実行）に従う。`codex/*` には Vercel Preview が無いので（115 行目）、Codex の記事の PR のファンのレビューは discussion-panel だけ |
+| 118 | 「自動マージをどの名義で行うかは未決」 | 消す（ADR-0097 v5 で決着）。書き直しは **PR-D に一本化**する（§3 の表の 118・176 行目と同じ行のため）。PR-G は 118 行目を触らない |
 
-- 5点目（オーナー決定、10/20 19:3x、オーケストレーター経由）: F の「4つのレビューで P0・P1 が0」（91〜96行目）を変える。文案（PR-G で書く。.claude なのでオーナーが文案を直接承認してから書く）:
+- 5点目（オーナー決定、10/20 19:3x、オーケストレーター経由）: F の「4つのレビューで P0・P1 が0」（91〜96行目）を変える。文案:
 
 ```
   - content-qa（`.claude/agents/content-qa.md`）・wording-editor・ファンのレビュー（boatrace-fan-reviewer か discussion-panel）・seo-marketer の4つの観点で審査する
@@ -347,7 +357,7 @@ flowchart TD
   - 止まる指摘が出たら直して、その観点の審査を回し直す
 ```
 
-- 同じ PR で、merge-pr の `--admin` → `--auto`（§3 の PR-D）と合わせるかは、切替の作業の日程で決める（9.3 は切替の前にも効く書き直し、PR-D は切替の作業の中でマージ）。別の PR にする
+- PR-G（9.3）は切替の前にマージしてよい（F を束に入れるのは切替の後、と文に書くため）。PR-D（merge-pr の `--auto` 等）は切替の作業の中でマージする。別の PR
 
 ## 10. 審査（system-architect、2026-10-20）の指摘と対応
 
@@ -371,4 +381,5 @@ flowchart TD
 | ADR の追記 | P2 | 採用。決まった後に追記（§6） |
 | （/code-review）hold が当てる前の止まり（窓の外等）も保留にする・notify が hold を拾わない・見張りが run と job を区別しない・file-transaction の代わりの案が無い・PR-A' を番号つきにすると列を塞ぐ・窓の境界が曖昧 | P1〜P3 | 採用。`attempted` の出力、notify の needs、job の結果で数える、single-transaction だけにする代わりの案、owner-prod-steps の形、FROM/UNTIL |
 | （代わりの審査、Codex は未接続）切替の前の未承認の 171 が D' の後の列を止める・PR-D に e2e-rerun（Actions: write）が漏れ・cancelled を保留にしない・PR-B の例外は要らない・PR-A' の SQL の形・notify の wait と hold・BEGIN のオプション・`DB_APPLY_AUTO_ENABLED` の未設定・shim の `-R` とトークンの期限・git の credential の空のリセット行・全 worktree の `.env.local`・record の MIGRATION の書き分け | P2〜P3 | 採用（171・e2e-rerun はコードと台帳で再現）。D' の条件・判断12・PR-D の表・§6 の表に反映。「Encrypted と Sensitive の揺れ」は別の概念（Encrypted は Vercel の保存の形、Sensitive は表示の可否）なので直さない。「§6 の図で PR-B が PR-A の後」は推奨の順で、前提ではないので直さない |
+| （§9 の2回目の審査）JPEG を禁止のリストで見ている（APP13 等が通る）・SOS の前だけ／末尾 FF D9 では足りない・`llm.js` の2か所目の呼び出し・review.yml の APPROVE は P1 を残しうる・切替の前は F の PR が存在しない・`GITHUB_MERGE_TOKEN` で審査を迂回できる・SOF の扱い・webp・縦横の上限・表の読み方・関門の許可のリストがどの PR に効くか・差し替えの画像・118 行目の二重・`--auto` は機械で守れない・codex の Preview・ADR の追記の時期・blob の sha・解析の例外・指示文の注記・polyglot と nosniff・ファイル名の長さ | P1〜P3 | 全部採用（APPROVE の条件 `reviewPr.js:261-270`、2か所の呼び出し `gate.js:45`・`llm.js:113`、APP13 99枚を再現）。§9 を書き直した |
 | §1 の 1' の言い過ぎ、git_protocol、useHttpPath、細部（mode=wait の notify、already_applied の文、REVOKE service_role、SET LOCAL ROLE、erDiagram） | P3 | 採用（該当箇所を直した。SET LOCAL ROLE は印を先に入れることで解消） |
