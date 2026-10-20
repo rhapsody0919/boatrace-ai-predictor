@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import {
   getPostById,
   getRelatedPosts,
@@ -19,6 +18,7 @@ import { extractFaqItems, buildFaqPageSchema } from "../utils/blogFaqSchema";
 import BLOG_IMAGE_DIMENSIONS from "virtual:blog-image-dimensions";
 import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
+import { blogRehypePlugins } from "../utils/blogMarkdownSanitize.js";
 
 const UI_TEXT = {
   ja: {
@@ -219,7 +219,8 @@ export default function BlogPost() {
     () => (
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw]}
+        // 生の HTML を許可リストで削ってから描く（script・iframe・on*・javascript: を通さない）
+        rehypePlugins={blogRehypePlugins}
         components={{
           // Custom link renderer to open external links in new tab
           a: ({ node, ...props }) => {

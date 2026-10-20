@@ -1228,6 +1228,11 @@
       "script": "verify-blog-image-dimensions.js",
       "tier": "ci",
       "guards": "ブログ画像の実寸の表（BOA-908）。JPEG のヘッダーから幅と高さを読む処理（SOF0・SOF2、DHT を取り違えない）、public/images/blog の全画像が読めること、以前の手書きの表と同じ値（抜き取り）、記事の本文と JSON の image が参照する画像がすべて表にあること、vite.config.js の仮想モジュールと BlogPost.jsx の読み込み"
+    },
+    {
+      "script": "verify-blog-markdown-sanitize.js",
+      "tier": "ci",
+      "guards": "ブログ記事の HTML の許可リスト（src/utils/blogMarkdownSanitize.js、rehype-sanitize）。記事に紛れた script・iframe・form・base・meta refresh・embed・object・style 属性・on* 属性・javascript: の URL が描いた HTML に残らないこと、ブログの図のタグ ryujin-chart（src・rows）が残ること、既存の全記事の描画が許可リストを入れる前と同じこと"
     }
   ]
 }
