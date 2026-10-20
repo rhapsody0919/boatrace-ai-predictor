@@ -81,6 +81,7 @@
     "verify:morning-init-jobs": "node scripts/maintenance/verify-morning-init-jobs.js",
     "verify:scrape-slots-sql": "node scripts/maintenance/verify-scrape-slots-sql.js",
     "verify:deploy-hook-policy": "node scripts/maintenance/verify-deploy-hook-policy.js",
+    "verify:vercel-ignore-build": "node scripts/maintenance/verify-vercel-ignore-build.js",
     "verify:prediction-refresh": "node scripts/maintenance/verify-prediction-refresh.js",
     "verify:gha-skip-gate": "node scripts/maintenance/verify-gha-skip-gate.js",
     "verify:weather": "node scripts/maintenance/verify-weather-parsing.js",
