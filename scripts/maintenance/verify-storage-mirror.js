@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * verify-storage-mirror.js - Supabase Storage → Cloudflare R2 の写し（ADR-0099）の検証。外部に繋がない。
+ * verify-storage-mirror.js - Supabase Storage → Cloudflare R2 の写し（ADR-0100）の検証。外部に繋がない。
  *
  * 確認する観点:
  *   1. SigV4 の署名が AWS の公開の試験値と一致する。日本語・空白・+ を含むキーの符号化

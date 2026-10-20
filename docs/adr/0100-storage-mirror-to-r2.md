@@ -1,4 +1,4 @@
-# ADR-0099: Supabase Storage の3バケットを、日次の突き合わせで Cloudflare R2 に書き足す
+# ADR-0100: Supabase Storage の3バケットを、日次の突き合わせで Cloudflare R2 に書き足す
 
 - 状態: 採用（2026-10-20 オーナー「Storage yes」、hq 経由。R2 の準備と鍵の登録はオーナー）
 - 設計の正本: hq の drafts/storage-mirror-20261020.md の v4 と末尾。棚卸しは hq の drafts/storage-inventory-2026-10.md

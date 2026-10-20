@@ -143,7 +143,7 @@
     {
       "script": "verify-storage-mirror.js",
       "tier": "ci",
-      "guards": "Supabase Storage → Cloudflare R2 の写し（.github/workflows/storage-mirror.yml・scripts/storage-mirror/・scripts/lib/storageMirror.js・scripts/lib/awsSigV4.js、ADR-0099）。SigV4 が AWS の試験値と一致、書き足すだけ（If-None-Match: *、変わったら versions/、消えても残す）、大量の削除・一覧0件の run を基準にしない（鍵の取り違えで success にしない）、1回の取り寄せの上限、412 からの復旧、失敗の文にパスを入れない（ログは公開）、R2 の一覧の 401・403 だけ鍵の誤り、anon の鍵を拒む、写しの側に Supabase への書き込み・R2 の削除が無い、workflow の権限・SHA 固定・npm ci 無し、key-canary の r2 の job"
+      "guards": "Supabase Storage → Cloudflare R2 の写し（.github/workflows/storage-mirror.yml・scripts/storage-mirror/・scripts/lib/storageMirror.js・scripts/lib/awsSigV4.js、ADR-0100）。SigV4 が AWS の試験値と一致、書き足すだけ（If-None-Match: *、変わったら versions/、消えても残す）、大量の削除・一覧0件の run を基準にしない（鍵の取り違えで success にしない）、1回の取り寄せの上限、412 からの復旧、失敗の文にパスを入れない（ログは公開）、R2 の一覧の 401・403 だけ鍵の誤り、anon の鍵を拒む、写しの側に Supabase への書き込み・R2 の削除が無い、workflow の権限・SHA 固定・npm ci 無し、key-canary の r2 の job"
     },
     {
       "script": "verify-job-watch.js",
