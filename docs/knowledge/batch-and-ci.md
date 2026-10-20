@@ -27,3 +27,5 @@
 - dev サーバーと e2e は本番と別の経路を通る。EDGE_API_BASE="" で /api/predictions/{date} が index.html を返し、Supabase 直のフォールバックになる。本番は Edge API→RPC。両者の差（BOA-304 の weather、BOA-254 の cancellationStatus）は e2e で検知できない（2026-09-19、memory technical_e2e_depends_on_live_supabase_flakiness_2026_09_19。録画の導入後の扱いは要確認）
 - e2e が無関係な多数のページで落ちたら、①worktree に .env.local が無い（build は無くても通る）②Supabase の障害（REST だけ止まることがある）③マシンの負荷、の順に疑う。再実行で落ちる顔ぶれが変われば揺らぎ、同じなら環境かコード（2026-09-24、memory technical_e2e_false_failures_supabase_incident_and_load）
 - 「本日のレース」を前提にしたテストは、日付が変わってから朝の morning-init までの間に落ちる。まず当日の races があるか確かめる（2026-09-20、memory project_data_foundation_orchestration_2026_09_19）
+- 新しい本番の鍵を Actions に置くときは、repo の secret ではなく master だけの Environment（prod-jobs）に置き、job-watch.json に載せる（載せないと verify-job-watch.js が落ちる）。key-canary にも読み取りを1回足す（こちらは verify では検査しない）（2026-10-20、system-architect、ADR-0097:48-49,128）
+- master への自動コミットは1回ごとに本番デプロイが走る（vercel.json の除外は codex/** だけ。デプロイフックも叩くと2回）。日次のデータの置き場所にするなら費用として数える（2026-10-20、system-architect、ADR-0032 追記）
