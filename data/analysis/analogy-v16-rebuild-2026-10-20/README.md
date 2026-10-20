@@ -39,9 +39,9 @@ A は今のデータのまま作り直したもの。B は当日（10-14）の e
 
 1. 保存済みの値を読み取りだけで落とす（`guard.mjs` は GET・HEAD・Storage の一覧以外の通信を例外にする）
    ```bash
-   node --env-file=.env.local --import ./scripts/analysis/analogy-v16-rebuild/guard.mjs scripts/analysis/analogy-v16-rebuild/download.mjs
+   node --env-file=.env.local --import ./scripts/analysis/analogy-v16-rebuild/guard.mjs scripts/analysis/analogy-v16-rebuild/download.mjs <日付/run_id> <出力先>
    ```
-   中の日付・run_id・出力先を、作り直す日に合わせて書き換える（`snaps.mjs` でその日の snapshot から run_id を読む）。similar/ は7日、similar-display/・pool/ は1日で消える
+   引数は `<日付/run_id の接頭辞> <出力先>`（例 `2026-10-14/071224-38475987022 <出力先>`）。run_id は `snaps.mjs <出力.json> <YYYY-MM-DD>` でその日の snapshot から読む。similar/ は7日、similar-display/・pool/ は1日で消える
 2. 母集団を書き出し、モデルを取る（`ANALOGY_DATA_DIR` を手元の作業用のディレクトリにする。`--refresh-kb` は付けない）
    ```bash
    ANALOGY_DATA_DIR=<作業用> node --env-file=.env.local --import ./scripts/analysis/analogy-v16-rebuild/guard.mjs scripts/ml/analogy/export_pool.js --daily

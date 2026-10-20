@@ -1,5 +1,5 @@
 import fs from "fs"; import path from "path";
-import { createClient } from "/Users/terukina/boatrace-ai-predictor/node_modules/@supabase/supabase-js/dist/index.mjs";
+import { createClient } from "@supabase/supabase-js";
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 const [prefix, outDir] = process.argv.slice(2);
 const { data: dirs, error } = await sb.storage.from("analogy-v16").list(prefix, { limit: 1000 });

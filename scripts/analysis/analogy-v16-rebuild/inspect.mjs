@@ -1,4 +1,4 @@
-import { createClient } from "/Users/terukina/boatrace-ai-predictor/node_modules/@supabase/supabase-js/dist/index.mjs";
+import { createClient } from "@supabase/supabase-js";
 const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, { auth: { persistSession: false } });
 const date = process.argv[2] || "2026-10-14";
 const { data: snaps, error: e1 } = await sb.from("analogy_v16_snapshots").select("race_id,stage,run_id,computed_at,pool_cutoff,model_version,n_layer,status").like("race_id", `${date}%`).limit(5000);
