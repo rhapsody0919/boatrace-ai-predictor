@@ -1,0 +1,98 @@
+{
+  "$comment": "全貌動画の材料 JSON の契約（龍神の取得 fetch-materials.mjs → 毎日の実行 run-full.mjs）。形を変えたら schemaVersion を上げ、この Schema・fetch-materials.mjs の MATERIALS_VERSION・場面の build を同じ PR で直す（verify-full-picture-scene2.js が落とす）。build が読む所だけを required にする。",
+  "$id": "full-picture-materials/1",
+  "type": "object",
+  "required": ["schemaVersion", "raceId", "date", "venueCode", "stage", "api", "db", "missing"],
+  "properties": {
+    "schemaVersion": { "const": "full-picture-materials/1" },
+    "raceId": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}$" },
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "venueCode": { "type": "integer", "minimum": 1, "maximum": 24 },
+    "stage": { "enum": ["racecard", "exhibition"] },
+    "api": {
+      "type": "object",
+      "required": ["facts", "similar", "scenario", "races", "outcome"],
+      "properties": {
+        "facts": {
+          "type": ["object", "null"],
+          "required": ["today", "facts"],
+          "properties": {
+            "today": { "type": "object", "required": ["scope_keys"], "properties": { "scope_keys": { "type": "object" } } },
+            "facts": { "type": "object" }
+          }
+        },
+        "similar": {
+          "type": ["object", "null"],
+          "required": ["similar"],
+          "properties": {
+            "similar": {
+              "type": ["object", "null"],
+              "required": ["neighbors"],
+              "properties": {
+                "neighbors": { "type": "array", "items": { "type": "object", "required": ["race_id", "finish"], "properties": { "race_id": { "type": "string" }, "finish": { "type": ["array", "null"] } } } }
+              }
+            }
+          }
+        },
+        "scenario": { "$ref": "#/definitions/scenario" },
+        "scenarioNC": { "$ref": "#/definitions/scenario" },
+        "scenarioNCR": { "$ref": "#/definitions/scenario" },
+        "scenarioNA": { "$ref": "#/definitions/scenario" },
+        "scenarioVA": { "$ref": "#/definitions/scenario" },
+        "races": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "required": ["raceId", "raceNumber", "entries"],
+            "properties": {
+              "raceId": { "type": "string" },
+              "raceNumber": { "type": "integer" },
+              "entries": { "type": ["array", "null"] },
+              "weather": { "type": ["object", "null"] },
+              "exhibitionData": { "type": ["array", "null"] },
+              "result": { "type": ["object", "null"] }
+            }
+          }
+        },
+        "outcome": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["object", "null"],
+            "required": ["total_races", "data"],
+            "properties": { "total_races": { "type": "integer" }, "data": { "type": "object" } }
+          }
+        }
+      }
+    },
+    "db": {
+      "type": "object",
+      "required": ["racer1", "motor"],
+      "properties": {
+        "racer1": {
+          "type": ["object", "null"],
+          "required": ["entries", "races", "results", "st"],
+          "properties": { "entries": { "type": "array" }, "races": { "type": "array" }, "results": { "type": "array" }, "st": { "type": "array" } }
+        },
+        "motor": {
+          "type": ["object", "null"],
+          "required": ["meetStart", "pretest", "stats", "meetEntries", "exhibition"],
+          "properties": { "pretest": { "type": "array" }, "stats": { "type": "array" }, "meetEntries": { "type": "array" }, "exhibition": { "type": "array" } }
+        }
+      }
+    },
+    "missing": { "type": "array", "items": { "type": "object", "required": ["source", "reason"], "properties": { "source": { "type": "string" }, "reason": { "type": "string" } } } }
+  },
+  "definitions": {
+    "scenario": {
+      "type": ["object", "null"],
+      "required": ["scenario"],
+      "properties": {
+        "scenario": {
+          "type": ["object", "null"],
+          "required": ["cells"],
+          "properties": { "cells": { "type": "object" }, "hints": { "type": ["object", "array", "null"] }, "attack": { "type": ["object", "null"] } }
+        }
+      }
+    }
+  }
+}

@@ -24,13 +24,15 @@ node scripts/content/check-content-pr.js [--base origin/master]
   "ok": true,
   "errors": [],
   "judgementWordsFound": [],
+  "metaKyotei": [],
   "p1Recorded": { "fan": 0, "seo-marketer": 0 },
   "manifest": "docs/content-manifests/<id>.json"
 }
 ```
 
 - `ok`: errors が0のとき true
-- `judgementWordsFound`: 変えた行・値で見つかった判断が要る句（回収率の主張は正規化した後の当たった文字列。メタ情報の「競艇」は `競艇`）
+- `judgementWordsFound`: 変えた行・値で見つかった判断が要る句（回収率の主張は正規化した後の当たった文字列）
+- `metaKyotei`: meta（最上位の `metaTitle`・`metaDescription`）に「競艇」がある記事の一覧。その PR で変えた JSON についての記録で、全記事の台帳ではない
 - `p1Recorded`: fan と seo-marketer の P1 の件数（関門は通す。記録のため）
 
 ## PR に入れてよいもの
@@ -142,7 +144,7 @@ computeContentSha256(files);
 |---|---|---|
 | 生の HTML | .md | Markdown（GFM。記事の描画と同じ）として読み、`html` のノードが0件。例外は下の「図のタグ」だけ |
 | 「競艇」 | .md | 本文に0件。例外は設定の `kyoteiExceptions`（`public/blog/venue-visit-guide-ko.md` の今ある1行。行の中身の完全一致） |
-| 「競艇」 | JSON | `metaTitle`・`metaDescription` 以外のすべての文字列値（`title`・`description`・`tags`・`category` 等）に0件。`metaTitle`・`metaDescription` の「競艇」は、変えた値にあれば判断が要るとして error（下の「判断が要る語」） |
+| 「競艇」 | JSON | `metaTitle`・`metaDescription`（設定 `kyoteiMetaAllowedKeys`）以外のすべての文字列値（`title`・`description`・`tags`・`category` 等）に0件。`metaTitle`・`metaDescription` の「競艇」は通す（暫定の例外。下の「競艇」） |
 | 判断が要る句 | .md の変えた行・足した行を含む段落、JSON の変えた値 | 0件（下の「判断が要る語」） |
 | slug | 足した日本語版 JSON | `id` が `^[a-z0-9]+(-[a-z0-9]+)*$`、末尾が `-en`・`-ko`・`-zh-tw` でない、ファイル名と一致、base に同じ id の JSON も .md も無い |
 | .md と JSON の対応 | .md・JSON | 足した日本語版 .md には同じ id の日本語版 JSON（base か HEAD）がある。逆も同じ。翻訳の .md は `<id>-en|-ko|-zh-tw.md` の形で `<id>` の日本語版 JSON がある。翻訳の JSON は id がファイル名と一致し、日本語版 JSON がある |
@@ -225,7 +227,8 @@ computeContentSha256(files);
 ### 「競艇」
 
 - 本文（.md）と、JSON の `metaTitle`・`metaDescription` 以外の値の「競艇」は、上の「本文の関門」の `[kyotei]` の error（差分の行に限らず全部）
-- JSON の `metaTitle`・`metaDescription` の「競艇」は、変えた値にあれば判断が要るとして `[judgement]` の error（メタ情報の例外を使うかはオーナーの判断）。句の一覧ではなく「競艇」の関門の側で見る
+- JSON の最上位の `metaTitle`・`metaDescription`（設定 `kyoteiMetaAllowedKeys`）の文字列値の「競艇」は通す。入れ子（`x.metaTitle`）や `metaTitle` の下の値（`metaTitle.title`・配列）は通さない。オーナー決定（2026-10-20）と `.claude/rules/code-style.md` の例外1に合わせた、役所への営業の前に外す暫定の措置
+- 後で一括で外せるように、結果の JSON の `metaKyotei`（`[{ "id": "<記事 id>", "path": "…", "keys": ["metaTitle"] }]`）に出す。PR の本文に「meta に競艇あり: <記事 id>」と書き写すとよい
 
 ### manifest
 
