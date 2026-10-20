@@ -60,7 +60,7 @@ cat src/data/blog-posts/$ARGUMENTS.json
 
 `src/data/blog-posts/$ARGUMENTS.json`が`featured: true`なら、同一PRまたは近接PRで英語版を作成する:
 - `public/blog/$ARGUMENTS-en.md`
-- `src/data/blogPostsEn.js` にエントリ追加
+- `src/data/blog-posts/en/$ARGUMENTS.json`（英語版のメタデータ。1記事1ファイル）
 
 対象言語は英語のみ（zh-TW/koは需要確認前のため対象外）。
 

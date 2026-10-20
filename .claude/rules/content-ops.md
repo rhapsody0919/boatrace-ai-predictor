@@ -49,7 +49,7 @@ paths:
 - **タイトル・メタディスクリプションの文字数**: `src/data/blog-posts/{slug}.json`の`title`は30〜60字、`description`は120〜160字に収める（検索結果で途中で切れるのを防ぐ）
 - **画像alt属性**: カバー画像の`![alt](path)`は空文字にせず、内容を要約した説明を入れる
 - **内部リンク**: 本文中に、関連する過去記事や分析ツール（`/winning-technique`等）へのリンクを最低1本含める
-- **featured記事は英訳も同時作成する**: featured記事（`src/data/blog-posts/{slug}.json`の`featured: true`。並び順は`featuredRank`）を新規公開する際は、英語版（`public/blog/{slug}-en.md` + `src/data/blogPostsEn.js`へのエントリ追加）も同一PRまたは近接PRで作成する。対象言語は英語のみ（zh-TW/koは需要が確認できるまで見送り）。実装パターンは`docs/design/blog-i18n/`・`docs/adr/0005〜0007`
+- **featured記事は英訳も同時作成する**: featured記事（`src/data/blog-posts/{slug}.json`の`featured: true`。並び順は`featuredRank`）を新規公開する際は、英語版（`public/blog/{slug}-en.md` + `src/data/blog-posts/en/{slug}.json`）も同一PRまたは近接PRで作成する。対象言語は英語のみ（zh-TW/koは需要が確認できるまで見送り）。実装パターンは`docs/design/blog-i18n/`・`docs/adr/0005〜0007`
 
 ### フローA-4: 新規ページ追加時のsitemap登録（必須）
 新しい静的ページ・ルート（`AppRouter.jsx`に`<Route>`を追加するもの）を実装したら、**同じPRで**`scripts/generate-sitemap.js`の`staticPages`（多言語対応ページは`LOCALIZED_PAGES`/`LANGUAGE_ONLY_PAGES`）にも追記する。sitemap反映まで含めて1タスクとして扱う。

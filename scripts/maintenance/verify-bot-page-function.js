@@ -585,7 +585,7 @@ for (const code of [1, 24]) {
   check(
     "vercel.json: 4言語の文言のファイルと index.html（共通の JSON-LD）とブログ記事のメタデータ（トップのブログ欄）を同梱",
     fn?.includeFiles,
-    "{src/locales/ja/common.json,src/locales/en/common.json,src/locales/zh-TW/common.json,src/locales/ko/common.json,index.html,src/data/blog-posts/*.json}",
+    "{src/locales/ja/common.json,src/locales/en/common.json,src/locales/zh-TW/common.json,src/locales/ko/common.json,index.html,src/data/blog-posts/**/*.json}",
   );
   check(
     "vercel.json: 同梱する文言のファイルが言語版の言語と ja をすべて含む",
