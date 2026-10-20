@@ -6,6 +6,7 @@
 export const BLOG_CHART_TAG = "ryujin-chart";
 export const BLOG_CHART_SRC_RE = /^\/blog-charts\/[a-z0-9-]+\.json$/;
 export const BLOG_CHART_ROWS_RE = /^\d{1,2}$/;
+// #1703 の契約の予約の table（rows 1〜24）を実装するときは、ここを kind ごとの上限に変える
 export const BLOG_CHART_ROWS_MAX = 12;
 
 const LINE_RE = new RegExp(
@@ -25,7 +26,8 @@ export function parseBlogChartLine(line) {
   const keys = attrs.map(([k]) => k);
   if (keys.length !== 2 || keys[0] !== "src" || keys[1] !== "rows") return null;
   const { src, rows } = Object.fromEntries(attrs);
-  if (!BLOG_CHART_SRC_RE.test(src) || !BLOG_CHART_ROWS_RE.test(rows)) return null;
+  if (!BLOG_CHART_SRC_RE.test(src) || !BLOG_CHART_ROWS_RE.test(rows))
+    return null;
   const n = Number(rows);
   if (n < 1 || n > BLOG_CHART_ROWS_MAX) return null;
   return { src, rows: n };

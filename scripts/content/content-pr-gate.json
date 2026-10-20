@@ -2,7 +2,7 @@
   "$comment": [
     "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js）の設定。契約は docs/operation/content-pr-contract.md。",
     "allowedPathPatterns: これ以外のパスが差分に1つでもあれば error。",
-    "judgementWords: 変えた .md と JSON の文字列に見つかれば hold。「競艇」は JSON の metaTitle・metaDescription では許すが、判断の対象にする。",
+    "judgementWords: 変えた .md と JSON の文字列に見つかれば error（PR を作らずオーナーの判断へ回す）。この一覧が先に効くので、JSON の metaTitle・metaDescription の「競艇」も今は error（判断の道へ）。",
     "kyoteiExceptions: .md 本文の「競艇」を許す行（パスと行の中身の完全一致）。",
     "internalLinkGrandfathered: 内部リンク（/ で始まるリンク。画像と // は数えない）が無いまま master にある記事。改稿（変更）のときだけ内部リンクの関門を免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは verify-content-pr-gate.js が落とす）。",
     "allowedReviewAgents: 役ごとに許す agent の名前。hq の観点表の名前（hq-review:<名前>）はここに足すだけで通る。"

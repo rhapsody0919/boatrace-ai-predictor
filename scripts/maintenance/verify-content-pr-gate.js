@@ -64,6 +64,7 @@ function makePr(over = {}) {
     ...Object.fromEntries(
       Object.entries(over.extraFiles ?? {}).map(([k, v]) => [k, enc(v)]),
     ),
+    ...(over.headExtra ?? {}),
   };
   const diff = [
     ...(over.diff ?? [
@@ -794,6 +795,60 @@ const cases = [
     "kind=revision なのに日本語版 JSON の追加があると落ちる",
     { manifest: (m) => ({ ...m, kind: "revision" }) },
     /\[manifest\] kind が revision/,
+  ],
+  // ---- 回帰の審査 P2: 画像の差し替え・実在しない id の revision・manifest だけ
+  [
+    "別の記事の画像だけを M で差し替えると落ちる",
+    {
+      diff: [{ status: "M", path: "public/images/blog/other-article.jpg" }],
+      headExtra: { "public/images/blog/other-article.jpg": JPEG },
+      basePaths: [MD, JSON_JA, "public/images/blog/other-article.jpg"],
+      manifest: (m) => ({ ...m, kind: "revision" }),
+    },
+    /\[image\] 変えた public\/images\/blog\/other-article\.jpg をどの/,
+  ],
+  [
+    "実在しない id の revision は落ちる",
+    {
+      diff: [{ status: "M", path: MD }],
+      manifest: (m) => ({ ...m, kind: "revision" }),
+    },
+    /\[manifest\] kind が revision なのに base に src\/data\/blog-posts\/sample-guide\.json が無い/,
+  ],
+  [
+    "manifest だけの PR は落ちる",
+    {
+      diff: [],
+      basePaths: [MD, JSON_JA],
+      manifest: (m) => ({ ...m, kind: "revision" }),
+    },
+    /\[manifest\] paths が空/,
+  ],
+  // ---- 回帰の審査 P3
+  [
+    "存在しない日付（2026-02-30）の content_at は落ちる",
+    { manifest: (m) => ({ ...m, content_at: "2026-02-30T00:00:00Z" }) },
+    /content_at が ISO の時刻でない/,
+  ],
+  [
+    "T24:00 の at は落ちる",
+    { manifest: withReview("fan", { at: "2026-10-20T24:00:00Z" }) },
+    /at が ISO の時刻でない/,
+  ],
+  [
+    "/\\ で始まるリンクは内部リンクにならない",
+    { mdEn: "# Sample\n\nSee [x](/\\evil.example.com).\n" },
+    /\[link\].*sample-guide-en\.md/,
+  ],
+  [
+    "図のタグが1行目でも通る",
+    { md: `${CHART}\n\n${baseMd}`, basePaths: CHART_BASE },
+    "ok",
+  ],
+  [
+    "図のタグが最後の行（末尾の改行なし）でも通る",
+    { md: `${baseMd}\n${CHART}`, basePaths: CHART_BASE },
+    "ok",
   ],
 ];
 

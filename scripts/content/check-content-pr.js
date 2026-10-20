@@ -131,10 +131,8 @@ if (isDirectRun(import.meta.url)) {
   try {
     main();
   } catch (err) {
-    const detail = err.stderr ? String(err.stderr).trim() : "";
-    console.error(
-      `check-content-pr: 判定できない: ${err.message}${detail ? `\n${detail}` : ""}`,
-    );
+    // execFileSync の失敗は err.message に stderr が既に入っているので、message だけを出す
+    console.error(`check-content-pr: 判定できない: ${err.message.trim()}`);
     process.exitCode = 2;
   }
 }

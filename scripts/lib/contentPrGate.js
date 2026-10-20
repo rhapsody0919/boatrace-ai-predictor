@@ -101,7 +101,8 @@ const walk = (node, fn) => {
   for (const c of node.children ?? []) walk(c, fn);
 };
 
-const isBlankLine = (line) => line !== undefined && line.trim() === "";
+// 前後の行が無い（図のタグが1行目、または末尾の改行なしの最後の行）ときも空行と同じに扱う
+const isBlankOrEdge = (line) => line === undefined || line.trim() === "";
 
 /**
  * 図のタグだけの1行（前後が空行）なら、そのブロックの html ノードを返す。違えば null。
@@ -121,7 +122,10 @@ function chartLineOf(block, lines) {
   if (start.column !== 1 || end.column !== line.length + 1) return null;
   const chart = parseBlogChartLine(line);
   if (!chart) return null;
-  if (!isBlankLine(lines[start.line - 2]) || !isBlankLine(lines[start.line]))
+  if (
+    !isBlankOrEdge(lines[start.line - 2]) ||
+    !isBlankOrEdge(lines[start.line])
+  )
     return null;
   return {
     chart,
@@ -195,7 +199,11 @@ const collectKeyedStrings = (v, keyPath = []) =>
           )
         : [];
 
-/** 「競艇」: JSON の metaTitle・metaDescription 以外のすべての文字列値（tags・category を含む）に0件 */
+/**
+ * 「競艇」: JSON の metaTitle・metaDescription 以外のすべての文字列値（tags・category を含む）に0件。
+ * ただし判断が要る語（config.judgementWords の「競艇」）が先に効くので、今は metaTitle・metaDescription の
+ * 「競艇」も [judgement] の error になる（判断の道へ回す）。この例外が実際に効くのは、判断が要る語の扱いが決まってから。
+ */
 export function checkKyoteiJson(path, obj) {
   return collectKeyedStrings(obj)
     .filter(
@@ -209,8 +217,12 @@ export function checkKyoteiJson(path, obj) {
     );
 }
 
+// `//` と `/\`（ブラウザが // と同じに扱う）はプロトコル相対で、外へ出るので数えない
 const isInternalUrl = (url) =>
-  typeof url === "string" && url.startsWith("/") && !url.startsWith("//");
+  typeof url === "string" &&
+  url.startsWith("/") &&
+  !url.startsWith("//") &&
+  !url.startsWith("/\\");
 
 /** 内部リンクの本数。link と、定義が内部の linkReference を数える。画像・プロトコル相対（//）は数えない */
 export function countInternalLinks(text) {
@@ -276,8 +288,22 @@ export function referencedImagePaths(texts) {
   return [...refs].sort();
 }
 
-const isIso = (v) =>
-  typeof v === "string" && ISO_RE.test(v) && !Number.isNaN(Date.parse(v));
+/**
+ * ISO 8601（末尾が Z か ±hh:mm）で、実在する日時か。Date に直して書いた時差の壁時計の時刻に戻し、
+ * 元の文字列と一致することで、2026-02-30 や T24:00 のような繰り上がりを弾く（小数秒は3桁まで）
+ */
+const isIso = (v) => {
+  if (typeof v !== "string" || !ISO_RE.test(v)) return false;
+  const t = Date.parse(v);
+  if (Number.isNaN(t)) return false;
+  const zone = v.match(/(Z|([+-])(\d{2}):(\d{2}))$/);
+  const offsetMin =
+    zone[1] === "Z"
+      ? 0
+      : (zone[2] === "-" ? -1 : 1) * (Number(zone[3]) * 60 + Number(zone[4]));
+  const wall = new Date(t + offsetMin * 60000).toISOString();
+  return wall.startsWith(v.slice(0, v.length - zone[1].length));
+};
 const isCount = (v) => Number.isInteger(v) && v >= 0;
 
 /** パスが属する記事の id（.md は翻訳の接尾辞を外す、JSON はファイル名）。記事のファイルでなければ null */
@@ -346,7 +372,14 @@ function checkReviews(manifest, config, contentSha) {
   return { errors, p1Recorded };
 }
 
-function checkManifest({ manifestPath, manifest, diffPaths, head, config }) {
+function checkManifest({
+  manifestPath,
+  manifest,
+  diffPaths,
+  head,
+  basePaths,
+  config,
+}) {
   const errors = [];
   const fileId = manifestPath.match(MANIFEST_RE)[1];
   if (manifest.schema !== MANIFEST_SCHEMA)
@@ -381,6 +414,8 @@ function checkManifest({ manifestPath, manifest, diffPaths, head, config }) {
   const declared = Array.isArray(manifest.paths) ? manifest.paths : [];
   if (!Array.isArray(manifest.paths))
     errors.push("[manifest] paths が配列でない");
+  if (Array.isArray(manifest.paths) && declared.length === 0)
+    errors.push("[manifest] paths が空（記事のファイルの変更が無い）");
   if (new Set(declared).size !== declared.length)
     errors.push("[manifest] paths に重複がある");
   if (declared.some((p) => typeof p !== "string" || p.startsWith("-")))
@@ -435,6 +470,11 @@ function checkManifest({ manifestPath, manifest, diffPaths, head, config }) {
     errors.push("[manifest] kind が new なのに日本語版 JSON の追加が無い");
   if (manifest.kind === "revision" && addsJaJson)
     errors.push("[manifest] kind が revision なのに日本語版 JSON の追加がある");
+  const baseJaJson = `src/data/blog-posts/${manifest.id}.json`;
+  if (manifest.kind === "revision" && !basePaths.includes(baseJaJson))
+    errors.push(
+      `[manifest] kind が revision なのに base に ${baseJaJson} が無い（実在しない記事の改稿）`,
+    );
 
   const reviewResult = checkReviews(manifest, config, manifest.content_sha256);
   return {
@@ -634,8 +674,12 @@ export function evaluateContentPr({
     if (head[e.path] !== undefined && !readJpegSize(head[e.path])) {
       errors.push(`[image] ${e.path} の JPEG ヘッダーから幅と高さを読めない`);
     }
-    if (e.status === "A" && !refSet.has(e.path))
-      errors.push(`[image] 足した ${e.path} をどの .md・JSON も参照していない`);
+    // 足した画像も差し替えた画像も、この PR で変えた .md・JSON のどれかが参照していること
+    // （別の記事の画像だけを差し替える PR を通さない）
+    if (!refSet.has(e.path))
+      errors.push(
+        `[image] 変えた ${e.path} をどの .md・JSON（この PR で変えたもの）も参照していない`,
+      );
   }
 
   // 判断が要る語。実行役は、判断が要る語があれば PR を作らずオーナーへ回す（2026-10-20 オーケストレーター決定）。
@@ -676,6 +720,7 @@ export function evaluateContentPr({
         manifest,
         diffPaths,
         head,
+        basePaths,
         config,
       });
       errors.push(...r.errors);
