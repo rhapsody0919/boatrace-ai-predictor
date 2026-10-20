@@ -62,8 +62,7 @@
 - 新しい本番の鍵を Actions に置くときは、repo の secret ではなく master だけの Environment（prod-jobs）に置き、job-watch.json に載せる（載せないと verify-job-watch.js が落ちる）。key-canary にも読み取りを1回足す（こちらは verify では検査しない）（2026-10-20、system-architect、ADR-0097:48-49,128）
 - master への自動コミットは1回ごとに本番デプロイが走る（vercel.json の除外は codex/** だけ。デプロイフックも叩くと2回）。日次のデータの置き場所にするなら費用として数える（2026-10-20、system-architect、ADR-0032 追記）
 - 2026-10-20 時点の審査の関門は、本文の無い差分を削除以外すべて落とす。画像を足す PR は、ADR-0097 の追記なしでは承認されない（2026-10-20、system-architect の content-publish の審査、scripts/lib/reviewPr.js:57-60・ADR-0097:34）
-- 段取り D の「鍵側の機械」（git apply・push・PR）は設計だけで、hq/scripts に実装は無い。あるのは app-token.sh だけ（2026-10-20、system-architect の content-publish の審査、hq/drafts/identity-separation-20261019.md:65・hq/scripts/app-token.sh）
-- ブログの古い道（finalize-blog-draft.js の自動マージ、merge-blog-pr.js の GITHUB_MERGE_TOKEN の PAT、ADR-0034）は書き込みの身元を増やす道で、ADR-0097:109 と矛盾し、切替の後は失敗する。#1701 で止めた（2026-10-20、system-architect の content-publish の審査、BOA-908 ⑤）
+- ブログの古い道（finalize-blog-draft.js の自動マージ、merge-blog-pr.js の GITHUB_MERGE_TOKEN の PAT、ADR-0034）は書き込みの身元を増やす道で、ADR-0097:109 と矛盾し、切替の後は失敗する。#1701 で止める（対応中、2026-10-20、system-architect の content-publish の審査、BOA-908 ⑤）
 - AI 審査の承認は P0 だけで決まり、P1 が残っていても APPROVE になる。段階0 A の「P0・P1 が0件」は、オーケストレーターがマージするときにしか効いていない（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:254-270・.claude/skills/orchestrate/SKILL.md:69）
 - review.yml の gate は、パス・PR の大きさ・テストの弱めを見ない。見るのは symlink・submodule・LFS・バイナリ・.gitattributes・299ファイル・20万字・月の上限だけ（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:8-67・scripts/review/gate.js）
 - 審査の月の上限（既定300）は作成の App の run の数で、push のたびに1回数える。全レーンと全社員で共有なので、1日7本の PR の流れでは上限に当たりうる（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:277-284・ADR-0097:96）
