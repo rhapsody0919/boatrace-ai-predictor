@@ -1,0 +1,78 @@
+name: Key Canary
+
+# 定期の job の鍵が正しいかを、Environment prod-jobs・ryujin-bot の中で読み取りを1回して確かめる（ADR-0097 の追記
+# 「定期の job の見張り」）。2026-10-20、prod-jobs の SUPABASE の鍵の値の誤りで定期の job 15本が落ちた件の再発防止。
+# 失敗は見張り（job-watch.yml）が「鍵・設定の誤り」の Issue に集め、成功すると見張りが「鍵が直った」と判定して
+# 同じ日の失敗分を rerun し、Issue を閉じる。secret の更新時刻は値の正しさを示さないので使わない。
+#
+# 書き込み・送信はしない（Slack の webhook は投稿しないと確かめられないので見ない）。鍵の値はログに出さない。
+
+on:
+  schedule:
+    # 30分ごと（JST も同じ）
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  prod-jobs:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod-jobs
+    steps:
+      - name: Supabase（service key で1行読む）
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::error::SUPABASE_URL か SUPABASE_SERVICE_KEY が無い（Environment prod-jobs の secret 未設定）"
+            exit 1
+          fi
+          code=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' \
+            -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            "$SUPABASE_URL/rest/v1/races?limit=1") || code=000
+          if [ "$code" = "401" ]; then echo "::error::Supabase が HTTP 401 を返した（Invalid API key）"; exit 1; fi
+          if [ "$code" != "200" ]; then echo "::error::Supabase が HTTP $code を返した"; exit 1; fi
+          echo "Supabase OK"
+
+      - name: Linear（viewer を読む）
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: |
+          if [ -z "$LINEAR_API_KEY" ]; then
+            echo "::error::LINEAR_API_KEY が無い（Environment prod-jobs の secret 未設定）"
+            exit 1
+          fi
+          body=$(curl -sS -m 20 -w '\n%{http_code}' -H "Authorization: $LINEAR_API_KEY" -H 'Content-Type: application/json' \
+            -d '{"query":"{ viewer { id } }"}' https://api.linear.app/graphql) || body=$'\n000'
+          code=$(printf '%s' "$body" | tail -n1)
+          if [ "$code" = "401" ] || printf '%s' "$body" | grep -q '"errors"'; then
+            echo "::error::Linear が HTTP $code・errors を返した（Invalid API key）"; exit 1
+          fi
+          if [ "$code" != "200" ]; then echo "::error::Linear が HTTP $code を返した"; exit 1; fi
+          echo "Linear OK"
+
+  ryujin-bot:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: ryujin-bot
+    steps:
+      - name: Supabase（service key で1行読む）
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_KEY" ]; then
+            echo "::error::SUPABASE_URL か SUPABASE_SERVICE_KEY が無い（Environment ryujin-bot の secret 未設定）"
+            exit 1
+          fi
+          code=$(curl -sS -m 20 -o /dev/null -w '%{http_code}' \
+            -H "apikey: $SUPABASE_SERVICE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \
+            "$SUPABASE_URL/rest/v1/races?limit=1") || code=000
+          if [ "$code" = "401" ]; then echo "::error::Supabase が HTTP 401 を返した（Invalid API key）"; exit 1; fi
+          if [ "$code" != "200" ]; then echo "::error::Supabase が HTTP $code を返した"; exit 1; fi
+          echo "Supabase OK"
