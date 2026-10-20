@@ -384,6 +384,18 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 120,
     hosts: [],
   },
+  // 朝の生成の監視（龍神ソナーの出走表の段の当日の件数 > 0、締め 07:50。ポアロ・モリアーティは info）。07:50指定
+  // （cron: 07:55・08:55 JST。08:55 は補足で、処理済みなら last_target_date で何もしない）。data_health は live では
+  // 06:35 の成功で対象日を済みにし、07:35 以降は何もしないため、07:50 の締めは別のジョブ（状態の行）で見る。
+  // DB読み取りのみ。通知は data_health と同じく last_report.alerts → scrape-monitor。
+  // 実装: scripts/lib/dataHealth/job.js の runDataHealthMorningJob、api/cron/data-health-morning.js
+  data_health_morning: {
+    kind: "daily",
+    targetTimeJst: "07:50",
+    leaseSec: 60,
+    maxDurationSec: 60,
+    hosts: [],
+  },
 
   // 監視・保守（plan.md §7・§3.9）。モードのゲートなし
   "scrape-monitor": {
