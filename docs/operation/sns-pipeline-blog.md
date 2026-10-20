@@ -1,5 +1,7 @@
 # Blogチャネル別パイプライン 制作ガイド
 
+> **停止。記事は hq の実行役が③の manifest つきの PR で出す（BOA-908）。この手順で下書きを作らない。** 記事の PR を posted にする道（merge-blog-pr・finalize-blog-draft）を止めたので、この Routine を動かすと 0.5 の `hasOpenBlogDraft()` で1本目の後に止まる。2026-10-20 時点で動いている Routine は無い
+
 承認済みネタ（`sns_topics.status='approved'`）のうち、blog向けに割り当てられた`sns_topic_targets`をポーリングして記事下書き（Draft PR）を生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにしている。
 
 **このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`が作った承認済みネタを拾って生成するだけの、疎結合な下流工程。
@@ -114,16 +116,9 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 - 2日目以降（追記）は**新規ファイル作成ではなく既存ファイルの変更**にする: `git checkout -b`→`public/blog/{blogSlug}.md`を3'.の内容で上書き保存（新規作成ではなく既存ファイルへの追記編集）→コミット→push→`gh pr create --draft`。`src/data/blog-posts/{blogSlug}.json`は新規作成せず、既存ファイルの`description`/日付のみ変更する
 - `sns_drafts.content_group_id`は**1日目に作成したものと同じ`sns_topics.id`を使わず、その日のネタ（`sns_topics.id`）を使う**（企画の各エントリは別々の`sns_topics`行のため）。同一記事ファイルへの複数回の変更が、別々の`content_group_id`から行われる状態になる（通常の1ネタ1記事の前提と異なる点に注意）
 
-## 6.5. 機械的な品質チェック→合格時のみ自動マージ
+## 6.5. （停止）機械的な品質チェック→自動マージ
 
-`node scripts/maintenance/finalize-blog-draft.js <draftId>`を実行する（2026-09-07追加、ユーザー要望: ブログの承認ステップを、自動チェック合格時のみ省略できるようにしたい）。6.でINSERTした`sns_drafts`のidをそのまま渡す。**このRoutine自身が実行する**（別セッション・GitHub Actions等を待たない）。
-
-- `scripts/maintenance/verify-blog-draft-quality.js`が、文字数・サムネ画像の位置・旧モデル廃止済み機能への言及・禁止用語（「競艇」）・メタディスクリプションの文字長・タイトルの文字長・画像alt属性・内部リンクの有無・よくある質問セクションの9項目を機械的にチェックする
-- **全項目合格の場合のみ**、このスクリプトがPRを自動マージ（`gh pr merge --squash`）し、`sns_drafts.status`を`'posted'`・`approver_id`を`sns_approvers`の「自動承認（品質チェック合格）」行に更新する。これで7.に進んでよい
-- **1項目でも不合格の場合は何もしない**。`sns_drafts`は`status='pending_review'`のまま残り、これまで通りsns-hub管理画面で人間が確認・承認する（本節が無かった場合と同じ状態）
-- ここでチェックできるのは文字列・構造として機械的に判定できる項目のみ。`.claude/CLAUDE.md`「ブログ記事の公開前品質チェック」6項目のうち、数値・データ整合性／検索意図の網羅性／多言語間の内容一貫性は意味理解が要るため対象外（この3項目に問題がある記事も、他の9項目さえ揃っていれば自動マージされうる、という残存リスクを認識しておく）
-- **企画由来のネタは自動マージされない**（`scripts/maintenance/finalize-blog-draft.js`が`sns_topics.campaign_id`の有無で判定し、機械チェックの結果に関わらず常に人間承認待ちのままにする、`docs/design/sns-hub-campaign-pipeline/spec.md`要件8）。このスクリプト自体は呼び出してよい（企画由来なら何もせず終了するだけで害はない）
-- **既知の運用上の注意**: 0.5の重複防止チェック（`hasOpenBlogDraft()`）はplatform全体で1件のみという判定のため、企画由来のPRが人間承認待ちで長時間open状態のままだと、その間は他の非企画ブログネタの生成も止まる。企画は自動マージされないため、この滞留が起きやすい。人間はsns-hub管理画面で企画由来の下書きを優先的に確認・承認することが望ましい
+**2026-10-20 に停止した**（ADR-0034 を ADR-0097 で置き換え、BOA-908）。`finalize-blog-draft.js`（機械チェック合格で PR を自動マージしていた）と、sns-hub 管理画面の承認で PR をマージする `merge-blog-pr`（Vercel の `GITHUB_MERGE_TOKEN`）は、どちらも使わない。記事の PR は他の PR と同じ道（CI・4つのレビュー・マージの承認、`.claude/skills/orchestrate/SKILL.md` 段階0 F）でマージする。`verify-blog-draft-quality.js` は、PR を作る前の自己点検として使ってよい。
 
 ## 7. claimしたターゲットの完了処理
 
