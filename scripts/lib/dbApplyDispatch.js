@@ -24,9 +24,10 @@ export const STALE_AFTER_MS = 3 * 3600 * 1000;
 export const RESTART_AFTER_MS = 2.5 * 3600 * 1000;
 // 3時間の run は dispatch 3本＋予備の schedule 3本＋手での起動で、普段は10本に届かない
 const RUNS_PER_PAGE = 30;
+export const WATCH_TIMEOUT_MS = 15 * 1000;
 
-const ghGet = async ({ fetchImpl, token, url }) => {
-  const res = await fetchImpl(url, { headers: githubHeaders(token) });
+const ghGet = async ({ fetchImpl, token, url, signal }) => {
+  const res = await fetchImpl(url, { headers: githubHeaders(token), signal });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`GET ${url} が HTTP ${res.status}: ${text.slice(0, 200)}`);
@@ -38,12 +39,18 @@ const ghGet = async ({ fetchImpl, token, url }) => {
  * 直近の窓（since 以降）に、reconcile の job が success で終わった db-apply の run があるか
  * @returns {Promise<{found: boolean, runsChecked: number}>}
  */
-export async function findRecentReconcileSuccess({ fetchImpl, token, since }) {
+export async function findRecentReconcileSuccess({
+  fetchImpl,
+  token,
+  since,
+  signal,
+}) {
   const base = `https://api.github.com/repos/${GITHUB_REPO}/actions`;
   const sinceIso = since.toISOString();
   const { workflow_runs: runs = [] } = await ghGet({
     fetchImpl,
     token,
+    signal,
     url: `${base}/workflows/${DB_APPLY_WORKFLOW}/runs?created=${encodeURIComponent(`>=${sinceIso}`)}&per_page=${RUNS_PER_PAGE}`,
   });
   let runsChecked = 0;
@@ -52,6 +59,7 @@ export async function findRecentReconcileSuccess({ fetchImpl, token, since }) {
     const { jobs = [] } = await ghGet({
       fetchImpl,
       token,
+      signal,
       url: `${base}/runs/${run.id}/jobs?per_page=100`,
     });
     const ok = jobs.some(
@@ -67,11 +75,12 @@ export async function findRecentReconcileSuccess({ fetchImpl, token, since }) {
 }
 
 /**
- * @param {{fetchImpl?: typeof fetch, env?: Record<string, string|undefined>}} [deps]
+ * @param {{fetchImpl?: typeof fetch, env?: Record<string, string|undefined>, watchTimeoutMs?: number}} [deps]
  */
 export function createDbApplyDispatchRun({
   fetchImpl = fetch,
   env = process.env,
+  watchTimeoutMs = WATCH_TIMEOUT_MS,
 } = {}) {
   const dispatch = createAnalogyDispatchRun("db_apply_reconcile", {
     fetchImpl,
@@ -101,6 +110,8 @@ export function createDbApplyDispatchRun({
           fetchImpl,
           token: env.GITHUB_ACTIONS_DISPATCH_TOKEN,
           since: new Date(now.getTime() - STALE_AFTER_MS),
+          // 見張りの読み取り全体の期限。GitHub が返らないまま関数の上限（60秒）に達すると、起動も失敗の記録もされずに黙る
+          signal: AbortSignal.timeout(watchTimeoutMs),
         });
         watch = { checked: true, ...r };
       } catch (error) {

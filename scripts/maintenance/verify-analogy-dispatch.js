@@ -376,12 +376,30 @@ const run = (f, env = ENV) =>
   const hoursAgo = (h) =>
     new Date(now.getTime() - h * 3600 * 1000).toISOString();
   // GitHub の偽物: POST は dispatch、GET は runs・jobs を返す
-  const fakeGh = ({ runs = [], jobsOf = {}, getStatus = 200 } = {}) => {
+  const fakeGh = ({
+    runs = [],
+    jobsOf = {},
+    getStatus = 200,
+    hang = false,
+  } = {}) => {
     const calls = [];
     const f = async (url, init = {}) => {
       calls.push({ url, init });
       if (init.method === "POST")
         return { ok: true, status: 204, text: async () => "" };
+      // GitHub が返らない: 期限（signal）で打ち切られるまで待つ。本物のソケットの代わりに、プロセスを生かすタイマーを置く
+      // （AbortSignal.timeout のタイマーは unref なので、これが無いと打ち切りの前にプロセスが終わる）。打ち切られなければ5秒で失敗
+      if (hang)
+        return new Promise((_, reject) => {
+          const keep = setTimeout(
+            () => reject(new Error("打ち切られなかった")),
+            5000,
+          );
+          init.signal?.addEventListener("abort", () => {
+            clearTimeout(keep);
+            reject(new Error("timeout"));
+          });
+        });
       const jobsOfRun = /\/runs\/(\d+)\/jobs/.exec(url);
       const body = jobsOfRun
         ? { jobs: jobsOf[jobsOfRun[1]] ?? [] }
@@ -507,6 +525,20 @@ const run = (f, env = ENV) =>
       /HTTP 403/.test(r.error) &&
       f.posts().length === 1,
     "(g) run を読めないときも起動はし、失敗にする（黙らない）",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({ hang: true });
+  r = await createDbApplyDispatchRun({
+    fetchImpl: f,
+    env: ENV,
+    watchTimeoutMs: 50,
+  })(ctxG("live", hoursAgo(5)));
+  check(
+    r.outcome === "error" &&
+      /見張れなかった/.test(r.error) &&
+      f.posts().length === 1,
+    "(g) GitHub の読み取りが返らないときは期限で打ち切り、起動した上で失敗にする（関数の上限で黙らない）",
     JSON.stringify(r),
   );
 
