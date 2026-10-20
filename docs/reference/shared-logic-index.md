@@ -259,6 +259,8 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/assistSummary.js` | 思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル。純粋関数だけ（取得・描画はしない）。 | factsScope, factChips, factsEntry, axisWhyKinds, b1Usual ほか30件 |
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
+| `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | localize, valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS ほか1件 |
+| `src/utils/blogChartLoader.js` | 記事の Markdown にある図（<ryujin-chart src>）の JSON を、本文を描く前にまとめて取る。 | loadBlogCharts |
 | `src/utils/blogChartTag.js` | ブログの図のタグ <ryujin-chart src="/blog-charts/<name>.json" rows="N"></ryujin-chart> の… | parseBlogChartLine, BLOG_CHART_TAG, BLOG_CHART_SRC_RE, BLOG_CHART_ROWS_RE, BLOG_CHART_ROWS_MAX |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
 | `src/utils/blogMarkdownSanitize.js` | ブログ記事（public/blog/*.md）を描く rehype のプラグインと、HTML の許可リスト。 | blogSanitizeSchema, blogRehypePlugins |
@@ -363,4 +365,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 328 ファイル / export 1860 件。
+対象 330 ファイル / export 1867 件。
