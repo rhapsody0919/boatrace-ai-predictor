@@ -1,0 +1,74 @@
+{
+  "$comment": [
+    "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js）の設定。契約は docs/operation/content-pr-contract.md。",
+    "allowedPathPatterns: これ以外のパスが差分に1つでもあれば error。",
+    "judgementWords: 変えた .md と JSON の文字列に見つかれば hold。「競艇」は JSON の metaTitle・metaDescription では許すが、判断の対象にする。",
+    "kyoteiExceptions: .md 本文の「競艇」を許す行（パスと行の中身の完全一致）。",
+    "internalLinkGrandfathered: 内部リンク（](/ で始まるリンク）が無いまま master にある記事。改稿（変更）のときだけ内部リンクの関門を免除する。新規には効かない。内部リンクを足したら一覧から外す。",
+    "allowedReviewAgents: 役ごとに許す agent の名前。hq の観点表の名前（hq-review:<名前>）はここに足すだけで通る。"
+  ],
+  "allowedPathPatterns": [
+    "^public/blog/[^/]+\\.md$",
+    "^src/data/blog-posts/[^/]+\\.json$",
+    "^src/data/blog-posts/(en|ko|zh-TW)/[^/]+\\.json$",
+    "^public/images/blog/[^/]+\\.(jpg|jpeg)$",
+    "^docs/content-manifests/[^/]+\\.json$"
+  ],
+  "judgementWords": [
+    "的中率",
+    "回収率",
+    "必ず",
+    "絶対",
+    "儲か",
+    "稼げ",
+    "勝てる",
+    "保証",
+    "利益",
+    "競艇"
+  ],
+  "kyoteiExceptions": [
+    {
+      "path": "public/blog/venue-visit-guide-ko.md",
+      "line": "경정(競艇, 일본어로는 ボートレース)은 3가지 개최 형태로 운영됩니다."
+    }
+  ],
+  "internalLinkGrandfathered": [
+    "public/blog/bankruptcy-prevention.md",
+    "public/blog/beginner-basics.md",
+    "public/blog/betting-strategy.md",
+    "public/blog/course-prediction-tips.md",
+    "public/blog/exhibition-run-guide.md",
+    "public/blog/flying-late-start-strategy.md",
+    "public/blog/motor-performance-deep-dive.md",
+    "public/blog/motor-performance.md",
+    "public/blog/odds-expected-value-guide-zh-tw.md",
+    "public/blog/player-data-analysis.md",
+    "public/blog/popular-patterns-analysis.md",
+    "public/blog/start-exhibition-guide.md",
+    "public/blog/trifecta-betting-guide-zh-tw.md",
+    "public/blog/venue-visit-guide-zh-tw.md",
+    "public/blog/weather-wind-impact.md",
+    "public/blog/weekly-report-1210-1214.md",
+    "public/blog/weekly-report-1210.md",
+    "public/blog/weekly-report-1215-1221.md",
+    "public/blog/weekly-report-1222-1228.md",
+    "public/blog/what-pros-avoid.md",
+    "public/blog/win-place-comparison.md",
+    "public/blog/womens-race-strategy.md"
+  ],
+  "allowedReviewAgents": {
+    "content-qa": [
+      "content-qa"
+    ],
+    "wording-editor": [
+      "wording-editor"
+    ],
+    "fan": [
+      "boatrace-fan-reviewer",
+      "discussion-panel"
+    ],
+    "seo-marketer": [
+      "seo-marketer"
+    ]
+  }
+}

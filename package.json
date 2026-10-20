@@ -124,7 +124,9 @@
     "linear:list": "node scripts/linear-cli.js list",
     "linear:get": "node scripts/linear-cli.js get",
     "verify:sns-bundle-import": "node scripts/maintenance/verify-sns-bundle-import.js",
-    "verify:sns-observations": "node scripts/maintenance/verify-sns-observations.js"
+    "verify:sns-observations": "node scripts/maintenance/verify-sns-observations.js",
+    "verify:content-pr-gate": "node scripts/maintenance/verify-content-pr-gate.js",
+    "content:check-pr": "node scripts/content/check-content-pr.js"
   },
   "dependencies": {
     "@kirinsaninc/lhats": "^0.1.0",
