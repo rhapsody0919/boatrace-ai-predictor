@@ -8,6 +8,8 @@ import {
   fetchRecorded,
   e2eTodayJST,
 } from "./fixtures.js";
+import fs from "node:fs";
+import { buildImageDimensions } from "../scripts/lib/blogImageDimensions.js";
 
 /**
  * 分析ツール（/winning-technique）の一部タブは「本日開催中のレース」を基準に
@@ -585,6 +587,52 @@ test.describe("ブログ英語版（部分翻訳、blog-i18n）", () => {
     await expect(page.locator(".blog-post-header h1")).toContainText(
       "How Odds Work",
     );
+  });
+
+  // BOA-908: 翻訳版のメタデータを 1記事1つの JSON（src/data/blog-posts/{lang}/{id}.json）に移した。
+  // 画面の h1 と一覧のカードが、その JSON の title のままであること
+  for (const lang of ["en", "ko", "zh-TW"]) {
+    test(`${lang} の記事と一覧の title は src/data/blog-posts/${lang}/{id}.json のまま`, async ({
+      page,
+    }) => {
+      const id = "odds-expected-value-guide";
+      const { title } = JSON.parse(
+        fs.readFileSync(`src/data/blog-posts/${lang}/${id}.json`, "utf8"),
+      );
+      await page.goto(`/${lang}/blog/${id}`);
+      await expect(page.locator(".blog-post-header h1")).toHaveText(title);
+      await page.goto(`/${lang}/blog`);
+      await expect(
+        page.locator(`a.blog-card[href$="/blog/${id}"]`).first(),
+      ).toContainText(title);
+    });
+  }
+
+  // BOA-908: ブログ画像の width/height はビルドの時に画像のヘッダーから作る。手書きの表に無かった
+  // 画像（st-consideration-*）にも付き、値は実寸と同じであること
+  test("記事の画像に実寸の width/height が付く（手書きの表に無かった画像も）", async ({
+    page,
+  }) => {
+    const dims = buildImageDimensions("public/images/blog", "/images/blog/");
+    await page.goto("/blog/st-consideration-guide");
+    const imgs = page.locator(".blog-post-content img");
+    await expect(imgs.first()).toBeAttached();
+    const attrs = await imgs.evaluateAll((els) =>
+      els.map((el) => ({
+        src: el.getAttribute("src"),
+        width: el.getAttribute("width"),
+        height: el.getAttribute("height"),
+      })),
+    );
+    expect(attrs.length).toBeGreaterThan(0);
+    for (const { src, width, height } of attrs) {
+      expect(dims[src], `${src} は寸法の表にある`).toBeTruthy();
+      expect({ src, width, height }).toEqual({
+        src,
+        width: String(dims[src].width),
+        height: String(dims[src].height),
+      });
+    }
   });
 
   test("英語版が無い記事は/en/blog/{id}でja版へリダイレクトされる", async ({

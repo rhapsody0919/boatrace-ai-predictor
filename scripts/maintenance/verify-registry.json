@@ -223,7 +223,7 @@
     {
       "script": "verify-ko-boat-counter.js",
       "tier": "ci",
-      "guards": "ko の「N号艇」が「N번 보트」にそろっていること（src/locales/ko・src/pages/Ko*.jsx・src/data/blogPostsKo.js に「호정」「번 정」「번정」が無い。BOA-615）"
+      "guards": "ko の「N号艇」が「N번 보트」にそろっていること（src/locales/ko・src/pages/Ko*.jsx・src/data/blog-posts/ko/*.json に「호정」「번 정」「번정」が無い。BOA-615）"
     },
     {
       "script": "verify-migration-numbers.js",
@@ -1223,6 +1223,11 @@
       "script": "verify-sns-full-picture-windows.js",
       "tier": "ci",
       "guards": "全貌動画の測り時（SQL169、2026-10-19 オーナー決定）: 全貌は day_end（投稿日の JST 23:00）と 24h の job・JST 23:00 を過ぎた投稿は 24h だけ・日付は JST、それ以外は 48h・7d のまま、観測の表の CHECK（day_end は投稿日の JST 23:00 だけ・窓の名前は4つ）、JS の窓（windowsFor・observationPeriod・全貌に 48h を入れない）、画面は既定の 48h で全貌を当日の値・7d に全貌を出さない・全貌は型の版の確認をしない、CSV と collector の窓、169-runbook.md の1回で貼る SQL が154の状態から通り確認が全部 true・2回目は止まる。PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-blog-image-dimensions.js",
+      "tier": "ci",
+      "guards": "ブログ画像の実寸の表（BOA-908）。JPEG のヘッダーから幅と高さを読む処理（SOF0・SOF2、DHT を取り違えない）、public/images/blog の全画像が読めること、以前の手書きの表と同じ値（抜き取り）、記事の本文と JSON の image が参照する画像がすべて表にあること、vite.config.js の仮想モジュールと BlogPost.jsx の読み込み"
     }
   ]
 }

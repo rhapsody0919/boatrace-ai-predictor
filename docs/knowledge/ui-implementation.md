@@ -9,7 +9,7 @@
 
 ## CLS
 - 読み込み中に高さの違う画面へ丸ごと差し替えない。本物と同じ CSS クラスのスケルトン（VenueGridSkeleton）で場所を取る（2026-09-01、memory cls_mobile_fix_2026_09_01、PR #467）
-- 画像は実寸の width/height で場所を取る（src/data/venueImageDimensions.js・blogImageDimensions.js）。一律の aspect-ratio: 16/9 はブログ画像121枚中57枚で文字が切れて撤回した。blogImageDimensions.js は画像を足すたびに手で更新し、漏れの機械検知は無い（2026-09-09、memory cls_mobile_followup_2026_09_09、PR #614）
+- 画像は実寸の width/height で場所を取る（src/data/venueImageDimensions.js・blogImageDimensions.js）。一律の aspect-ratio: 16/9 はブログ画像121枚中57枚で文字が切れて撤回した。ブログ画像の表は 2026-10-20 からビルドの時に画像のヘッダーから作る（vite.config.js の仮想モジュール、scripts/lib/blogImageDimensions.js、BOA-908）ので、手で直さない（2026-09-09、memory cls_mobile_followup_2026_09_09、PR #614）
 - preload="none" の video は height か aspect-ratio を指定する（poster の読み込みで高さが変わる）。CLS を調べるときは先に git log で過去の対策が撤回されていないか見る（2026-09-09、memory cls_mobile_followup_2026_09_09、PR #614）
 
 ## 機能を変えたときに古くなるもの
