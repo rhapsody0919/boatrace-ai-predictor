@@ -6,7 +6,7 @@
     "runner    : 省略時は node。bash スクリプトは \"bash\" を指定する。",
     "timeoutSec: 省略時は180秒（run-verify-registry.js の TIMEOUT_MS）。単独では通るが、負荷の高い開発機で並列実行すると上限を超えるものだけに付ける。",
     "新しい verify-* を追加したら、ここに1エントリ足すこと。未登録だと `npm run verify:ci` が失敗する（.js / .mjs / .cjs / .sh を検知する）。",
-    "entries は script の名前の順（コードポイント順）。新しい項目は名前の位置に挿し、末尾に足さない（並行する PR の末尾の衝突を避ける。BOA-938）。順が崩れると --check が落ちる。`node scripts/maintenance/run-verify-registry.js --sort` で並べ直せる。",
+    "entries は script の名前の順（文字列の < の比較）。新しい項目は名前の位置に挿し、末尾に足さない（並行する PR の末尾の衝突を避ける。BOA-938）。順が崩れると --check が落ちる。`node scripts/maintenance/run-verify-registry.js --sort` で並べ直せる。",
     "対象外: サブディレクトリ（content-ops-checks/ の check-*.js）、scripts/analysis/verify-*.js、scripts/verification/（verify-cache-config.js は専用ワークフローで既にPRゲートとして動いている）。"
   ],
   "entries": [

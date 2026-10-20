@@ -72,6 +72,14 @@ test("prettier の形でない entries は並べ替えずに例外", () => {
   );
 });
 
+test("閉じの行末に空白があると、その行の次で例外（黙って項目を落とさない）", () => {
+  const text = registry(["verify-b.js", "verify-a.js"]).replace(
+    "\n    },\n",
+    "\n    }, \n",
+  );
+  assert.throws(() => sortRegistryText(text), /9 行目.*閉じる前に次の項目/);
+});
+
 /** base から ours・theirs を git merge-file で合わせ、{ clean, text } を返す */
 function merge(base, ours, theirs) {
   const dir = mkdtempSync(path.join(tmpdir(), "registry-merge-"));

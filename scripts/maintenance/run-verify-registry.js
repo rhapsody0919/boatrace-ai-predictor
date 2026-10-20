@@ -224,8 +224,23 @@ async function runAll(entries) {
 
 // 末尾に足すと並行する PR が衝突するので、entries は script の名前の順に置く（BOA-938）
 if (args.includes("--sort")) {
+  // 並べ替えだけをする。ほかの引数と一緒だと検査を飛ばして 0 で終わるので断る
+  if (args.length > 1) {
+    console.error(
+      "NG: --sort はほかの引数と一緒に使えない（並べた後に --check を別に実行する）",
+    );
+    process.exit(2);
+  }
   const text = await fs.readFile(REGISTRY_PATH, "utf8");
-  const sorted = sortRegistryText(text);
+  let sorted;
+  try {
+    sorted = sortRegistryText(text);
+  } catch (err) {
+    console.error(
+      `NG: 並べ替えられない（書き換えていない）: ${err.message}。行末の空白・CRLF・衝突の印が残っていないか確かめる`,
+    );
+    process.exit(2);
+  }
   if (sorted !== text) await fs.writeFile(REGISTRY_PATH, sorted);
   console.log(
     sorted === text

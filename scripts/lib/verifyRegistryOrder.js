@@ -5,7 +5,7 @@
  * 名前の順に挿せば、足す位置が散らばり、離れた位置への追加は git が自動で合わせる。
  * 同じ隙間（名前が隣り合う2本）への追加だけは、今後も衝突しうる。
  *
- * 順はコードポイントの比較（ロケールに依存させない）。
+ * 順は JavaScript の文字列の < の比較（UTF-16 のコード単位。ロケールに依存させない。今の名前は ASCII だけ）。
  */
 
 const byScript = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
@@ -41,14 +41,22 @@ export function sortRegistryText(text) {
     );
   const blocks = [];
   let current = null;
-  for (const line of lines.slice(start + 1, end)) {
-    if (line === "    {") current = [line];
-    else if (current && (line === "    }" || line === "    },")) {
+  for (const [i, line] of lines.slice(start + 1, end).entries()) {
+    if (line === "    {") {
+      if (current)
+        throw new Error(
+          `${start + 2 + i} 行目で、前の項目が閉じる前に次の項目が始まる（前の項目の閉じの行末の空白などを確かめる）`,
+        );
+      current = [line];
+    } else if (current && (line === "    }" || line === "    },")) {
       current.push("    }");
       blocks.push(current.join("\n"));
       current = null;
     } else if (current) current.push(line);
-    else throw new Error(`entries の項目の外に行がある: ${line}`);
+    else
+      throw new Error(
+        `${start + 2 + i} 行目が entries の項目の外にある: ${line}`,
+      );
   }
   if (current) throw new Error("entries の最後の項目が閉じていない");
   const keyed = blocks.map((b) => ({ b, script: JSON.parse(b).script }));
