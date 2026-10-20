@@ -46,3 +46,6 @@
 - fakeのpublishedAt切替は実公開時刻の外部仕様の検証とせず、認可チャンネル・候補ID・承認版・実公開後の読取証跡で計測起点を確認する。（2026-10-13、2026-10-13-plan-review-youtube-20261013-01.md）
 - 読取専用の初期選択クエリもpage_viewのURLへの混入を点検し、レース詳細で除く範囲と他ページで保持する範囲を確認する。（2026-10-13、2026-10-13-task-62-check-boa-847.md）
 - sns-hubのX型比較のurl_link_clicks/impressionsは尺NULLや尺の違いを比較条件に使わず、その他のX指標・YouTubeの尺条件を維持し、サイト流入へ合算しない。（2026-10-13、2026-10-13-task-69-check-codex-patches.md）
+- Vercel のボット取得数は Observability のクエリ（`vercel.request.count`、`incoming_request` を `bot_name` で集計）で CDN 段まで数えられ、静的ファイル・robots.txt・CDN HIT も入る。開始は36日以内、生の UA の次元は無い。middleware・関数のログでは静的・CDN HIT が漏れる（2026-10-20、Vercel API で実測、docs/proposal/ai-crawler-daily-count.md §1）
+- GSC プロパティのデータは 2025-12-21 から。前年同期の比較はできない（2026-10-20、data/analysis/organic-decline-2026-10-20/README.md）
+- GA4 の Admin API は Google Cloud プロジェクトで無効。タイムゾーン・カスタムディメンション・キーイベントは API で読めない（有効化はプロジェクト設定の変更）（2026-10-20、ga4-organic-weekly-export.js の settings.*.error）
