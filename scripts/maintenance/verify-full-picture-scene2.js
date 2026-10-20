@@ -856,4 +856,25 @@ for (const f of fixtures) {
   assert.equal(connectedText(scene, fake).llmError, undefined);
 }
 
+// ---- BOA-913 ----
+{
+  // 場面3③の回収率の母数は画面（getRacerBoatReturnRate）と同じ: 不成立だけを除く（1着の無い走・会場の無い走も数える。代わりの審査 F9）
+  const { returnRateByBoat } = await import(`${R}/scripts/full-picture/scenes/scene3.mjs`);
+  const rows = {
+    entries: [
+      { race_id: "2026-10-01-19-01", boat_number: 1 },
+      { race_id: "2026-10-02-19-01", boat_number: 1 },
+      { race_id: "2026-10-03-19-01", boat_number: 1 },
+      { race_id: "2025-01-01-19-01", boat_number: 1 },
+    ],
+    results: [
+      { race_id: "2026-10-01-19-01", rank1: 1, rank2: 2, payout_win: 250, payout_place_1: 130, race_status: null },
+      { race_id: "2026-10-02-19-01", rank1: null, rank2: null, payout_win: null, race_status: null },
+      { race_id: "2026-10-03-19-01", rank1: 3, rank2: 1, payout_place_2: 210, race_status: "no_race" },
+      { race_id: "2025-01-01-19-01", rank1: 1, payout_win: 900, race_status: null },
+    ],
+  };
+  assert.deepEqual(returnRateByBoat(rows, "2026-10-19", 180).get(1), { n: 2, win: 250, place: 130 }, "不成立と180日より前だけを除く");
+}
+
 console.log("verify-full-picture-scene2: OK");

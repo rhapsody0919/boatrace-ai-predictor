@@ -53,6 +53,30 @@ function history(rows, date, days) {
     .filter(Boolean);
 }
 
+/**
+ * 枠番ごとの払戻の合計と走の数（画面の getRacerBoatReturnRate と同じ: レースの日から days 日・このレースより前・不成立だけを除く）
+ * @returns {Map<number, {n:number, win:number, place:number}>}
+ */
+export function returnRateByBoat(rows, date, days) {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - days);
+  const cutoff = d.toISOString().slice(0, 10);
+  const result = new Map(rows.results.map((r) => [r.race_id, r]));
+  const byBoat = new Map();
+  for (const e of rows.entries.filter((x) => x.race_id >= cutoff)) {
+    const r = result.get(e.race_id);
+    if (!r || isNoRaceResult(r)) continue;
+    const s = byBoat.get(e.boat_number) ?? { n: 0, win: 0, place: 0 };
+    s.n += 1;
+    if (r.rank1 === e.boat_number) {
+      s.win += r.payout_win ?? 0;
+      s.place += r.payout_place_1 ?? 0;
+    } else if (r.rank2 === e.boat_number) s.place += r.payout_place_2 ?? 0;
+    byBoat.set(e.boat_number, s);
+  }
+  return byBoat;
+}
+
 /** @param {object} m 材料 JSON */
 export function buildScene3(m) {
   const omitted = [];
@@ -155,18 +179,9 @@ export function buildScene3(m) {
     });
   } else omitted.push({ where: "scene3.venue", reason: `${venue}で1号艇の走が730日に無い` });
 
-  // ③ 枠番別回収率（180日）
-  const h180 = history(rows, m.date, 180);
-  const byBoat = new Map();
-  for (const r of h180) {
-    const s = byBoat.get(r.boatNumber) ?? { n: 0, win: 0, place: 0 };
-    s.n += 1;
-    if (r.rank1 === r.boatNumber) {
-      s.win += r.payoutWin ?? 0;
-      s.place += r.payoutPlace1 ?? 0;
-    } else if (r.rank2 === r.boatNumber) s.place += r.payoutPlace2 ?? 0;
-    byBoat.set(r.boatNumber, s);
-  }
+  // ③ 枠番別回収率（180日）。画面の getRacerBoatReturnRate と同じ数え方: 不成立だけを除く
+  // （会場別成績の history は1着の無い走・会場の無い走も除くので、ここでは使わない。代わりの審査 F9）
+  const byBoat = returnRateByBoat(rows, m.date, 180);
   const rr = (sum, n) => (n ? Math.round((sum / (n * 100)) * 1000) / 10 : null);
   const b1 = byBoat.get(1);
   if (b1) {
