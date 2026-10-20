@@ -5,8 +5,16 @@
   "kind": "hbar",
   "title": "進入コース別の1着率",
   "description": "福岡は1コースの1着率が59.2%で、全国（55.5%）より高い。",
-  "unit": "%",
-  "decimals": 1,
+  "axes": {
+    "category": {
+      "label": "進入コース"
+    },
+    "value": {
+      "label": "1着率",
+      "unit": "%",
+      "decimals": 1
+    }
+  },
   "rows": [
     {
       "key": "1",
