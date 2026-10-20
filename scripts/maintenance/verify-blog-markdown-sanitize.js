@@ -5,7 +5,8 @@
  *    （許可リストの無い rehype-raw だけでは残ることも確かめ、テストが空振りしていないことを示す）。
  *    on* 属性・javascript: の URL も残らないこと（修正前から React と react-markdown が落としていた）
  * 2. ブログの図のタグ <ryujin-chart src rows> は残る
- * 3. 既存の全記事（public/blog/*.md）の描画が、許可リストを入れる前と同じ（見た目を変えない）
+ * 3. BlogPost.jsx がこの許可リストを使っている
+ * 4. 既存の全記事（public/blog/*.md）の描画が、許可リストを入れる前と同じ（見た目を変えない）
  *
  * 使い方: node scripts/maintenance/verify-blog-markdown-sanitize.js
  */
@@ -116,6 +117,25 @@ test("ブログの図のタグは src・rows とともに残り、ほかの属�
   assert.match(html, /<ryujin-chart[^>]*src="\/blog-charts\/a.json"/);
   assert.match(html, /<ryujin-chart[^>]*rows="6"/);
   assert.doesNotMatch(html, /onclick/);
+});
+
+test("ブログの図のタグの src は /blog-charts/ の JSON だけ残る（外の JSON を読む口にしない）", () => {
+  const html = render(
+    '<ryujin-chart src="https://example.com/c.json" rows="9999999"></ryujin-chart>\n',
+    blogRehypePlugins,
+  );
+  assert.doesNotMatch(html, /src=/);
+  assert.match(html, /<ryujin-chart/);
+});
+
+test("BlogPost.jsx はこの許可リストで描いている（rehype-raw だけに戻していない）", async () => {
+  const source = await readFile(
+    new URL("../../src/pages/BlogPost.jsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(source, /rehypePlugins=\{blogRehypePlugins\}/);
+  assert.doesNotMatch(source, /from "rehype-raw"/);
+  assert.equal((source.match(/rehypePlugins=/g) ?? []).length, 1);
 });
 
 test("既存の全記事の描画は、許可リストを入れる前と同じ", async () => {

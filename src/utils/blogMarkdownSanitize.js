@@ -7,7 +7,8 @@
  * AI 向けのスナップショット（scripts/generate-ai-snapshots.js）もこの描画の結果を保存するので同じく塞がる。
  *
  * 許可リストは GitHub と同じ既定（hast-util-sanitize の defaultSchema）に、
- * ブログの図のタグ（docs/design/blog-charts/contract.md）だけを足したもの。
+ * ブログの図のタグ ryujin-chart（契約は docs/design/blog-charts/contract.md、図の部品の PR で入る）だけを足したもの。
+ * 図の src は /blog-charts/ の下の JSON に限る（外の JSON を読む口にしない）。rows は数として扱われ値の制限が効かないので、範囲は図の部品と CI で絞る。
  * 再現テスト: scripts/maintenance/verify-blog-markdown-sanitize.js
  */
 import rehypeRaw from "rehype-raw";
@@ -18,7 +19,7 @@ export const blogSanitizeSchema = {
   tagNames: [...defaultSchema.tagNames, "ryujin-chart"],
   attributes: {
     ...defaultSchema.attributes,
-    "ryujin-chart": ["src", "rows"],
+    "ryujin-chart": [["src", /^\/blog-charts\/[a-z0-9-]+\.json$/], "rows"],
   },
 };
 
