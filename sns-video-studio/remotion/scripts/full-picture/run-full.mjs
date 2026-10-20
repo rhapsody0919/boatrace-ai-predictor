@@ -12,19 +12,22 @@
  *   {版}/full-picture.mp4      完全版（全場面）の MP4。{版}/stills/*.png は拍ごとの静止画（答えが出て1秒後のコマ）
  *   entry/entry.mp4            入口版の MP4（文型の版。つなぐ語は完全版の拍の並びに合わせたものなので使わない）。entry/stills/*.png
  *   entry.json                 入口版の場面の並び・省いた要素・尺
- *   post.txt                   完全版（YouTube）の本文。post-entry.txt は入口版（X・Shorts）の本文（動画に出る数字だけ）
+ *   post.txt                   完全版（YouTube）の本文。post-entry.txt は入口版（X・Shorts）の本文（動画に出る数字だけ＋このレースの URL）
+ *   bundle/                    送信の道（scripts/sns/push-full-picture.js）に渡すフォルダ: bundle.json（bundle.mjs）・full-x.mp4（入口版）・
+ *                              full-youtube.mp4（完全版）・shorts.mp4（入口版）。完全版と入口版の両方を描いたときだけ作る
  *   chapters.txt               完全版の章（YouTube の説明文に貼る「0:00 条件」の行。10秒未満の場面は前の章に含める）
  *   run-{版}.json・run-entry.json  かかった時間・LLM の回数・尺
  * 文の JSON は既にあれば作り直さない（--regen-text で作り直す）。同じ文の JSON なら同じ MP4。
  */
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, templateText } from "./scene2-text.mjs";
 import { entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
+import { buildBundle, checkBundle } from "./bundle.mjs";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
 import { scene2Timeline, ANSWER_AT, OVERVIEW_ANSWER_AT, cardAnswerAt } from "../../src/fullPicture/scene2Timeline.js";
@@ -48,6 +51,8 @@ const noVideo = has("--no-video");
 // 入口版だけ描き直す（完全版の MP4 はそのまま）
 const entryOnly = has("--entry-only");
 // 描画の並列数（既定はコア数−1。ほかの作業と同時に回すときは小さくする）
+// 完全版の画質（h264 の crf。大きいほど小さいファイル）。送信の上限 32MiB に収める（Remotion の既定 18 では 31〜35MB だった）
+const crf = Number(opt("--crf", "23"));
 const concurrency = opt("--concurrency", String(Math.max(1, (await import("node:os")).cpus().length - 1)));
 const [input, outDir] = args;
 if (!input || !outDir || !["template", "connected", "both"].includes(textMode)) {
@@ -69,7 +74,14 @@ const scenes = buildAll(m);
 const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scene: x.id, ...o })));
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
 for (const o of omitted) console.warn(`[省いた要素] ${JSON.stringify(o)}`);
-for (const o of omitted.filter((x) => x.mustReport)) console.error(`[要報告] ${o.scene}: ${o.reason}`);
+// 省略禁止の場面（場面4 展開）の材料が無ければ止める（2026-10-21 オーケストレーター）
+{
+  const must = omitted.filter((x) => x.mustReport);
+  if (must.length) {
+    console.error(`省略禁止の場面の材料が無いので止める:\n${must.map((o) => `${o.scene}: ${o.reason}`).join("\n")}`);
+    process.exit(1);
+  }
+}
 // BGM はレースごとの名前で置く（並行して回しても別のレースの BGM が入らない）
 const bgmName = `full-picture/bgm-${m.raceId}.mp3`;
 if (bgm) {
@@ -108,6 +120,12 @@ function stillFrames(list, answers) {
 }
 
 /** MP4 と拍ごとの静止画を書き出す。かかった秒（描画・静止画） */
+/** 送信の上限（scripts/sns/push-full-picture.js の MAX_BYTES と同じ 32MiB） */
+const MAX_BYTES = 32 * 1024 * 1024;
+const probe = (file) => {
+  const j = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration,size", "-of", "json", file], { encoding: "utf8" }));
+  return { width: j.streams?.[0]?.width, height: j.streams?.[0]?.height, seconds: Number(j.format?.duration), bytes: Number(j.format?.size) };
+};
 function render(list, answers, dir, name) {
   const props = { scenes: list, answers, ...(bgm ? { bgm: bgmName } : {}) };
   const propsPath = join(dir, `props-${name}.json`);
@@ -115,7 +133,15 @@ function render(list, answers, dir, name) {
   mkdirSync(join(dir, "stills"), { recursive: true });
   const t0 = Date.now();
   const mp4 = join(dir, `${name}.mp4`);
-  execFileSync("npx", ["remotion", "render", "src/index.jsx", "FullPicture", mp4, "--codec=h264", `--concurrency=${concurrency}`, `--props=${propsPath}`, "--log=error"], { stdio: ["ignore", "inherit", "pipe"] });
+  execFileSync("npx", ["remotion", "render", "src/index.jsx", "FullPicture", mp4, "--codec=h264", `--crf=${crf}`, `--concurrency=${concurrency}`, `--props=${propsPath}`, "--log=error"], { stdio: ["ignore", "inherit", "pipe"] });
+  // 上限を越えたら画質を1段下げて作り直す（映像だけ。音はそのまま）。それでも越えたら止める
+  if (probe(mp4).bytes > MAX_BYTES) {
+    const tmp = join(dir, `${name}.reencode.mp4`);
+    execFileSync("ffmpeg", ["-loglevel", "error", "-y", "-i", mp4, "-c:v", "libx264", "-crf", String(crf + 5), "-preset", "medium", "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", tmp]);
+    copyFileSync(tmp, mp4);
+    rmSync(tmp);
+    if (probe(mp4).bytes > MAX_BYTES) stop(`${name}.mp4 の大きさ`, [`${probe(mp4).bytes} バイトが上限 ${MAX_BYTES} を越える`]);
+  }
   const t1 = Date.now();
   // 拍ごとの静止画は MP4 から抜く（同じ MP4 なら同じ絵。描画をやり直さない）
   for (const s of stillFrames(list, answers))
@@ -162,6 +188,31 @@ function chapters(answers) {
     .join("\n") + "\n";
 }
 
+// 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）。描く前に文を確かめる
+const entryAnswers = templateText(beats).answers;
+const entry = entryScenes(scenes, entryAnswers, { race: raceLabel });
+const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entryAnswers[s.id] ?? s.lines]) : [])));
+/** 送信の道に渡す文（題名・説明文・X の本文）。数値は文型の答えから（動画に出る数字だけ） */
+const bundleText = (qa, chaptersText = chapters(entryAnswers)) =>
+  buildBundle({
+    raceId: m.raceId,
+    venue: venueLabel(Number(venueCode), t),
+    raceNo: Number(raceNo),
+    month: Number(mo),
+    day: Number(da),
+    answers: { ...entryAnswers, ...entryStepAnswers },
+    entryFirstQuestion: entry.scenes[0].data.steps[0]?.question ?? raceLabel,
+    chapters: chaptersText,
+    qa,
+  });
+const postEntry = `${bundleText({}).x_text}\n`;
+{
+  const b = bundleText({});
+  const why = [...checkPost(postEntry), ...checkAnswers(entryStepAnswers), ...[b.youtube_full.title, b.youtube_full.description, b.youtube_shorts.title, b.youtube_shorts.description].flatMap(checkPost)];
+  if (why.length) stop("入口版の文・本文・題名・説明文", why);
+}
+writeFileSync(join(out, "post-entry.txt"), postEntry);
+
 const modes = entryOnly ? [] : textMode === "both" ? ["template", "connected"] : [textMode];
 for (const mode of modes) {
   const t0 = Date.now();
@@ -196,18 +247,6 @@ for (const mode of modes) {
   if (mode === "connected" || textMode === "template") writeFileSync(join(out, "chapters.txt"), chapters(text.answers));
 }
 
-// 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）
-const entryAnswers = templateText(beats).answers;
-const entry = entryScenes(scenes, entryAnswers, { race: raceLabel });
-// 入口版の本文: 動画に出る数字だけ（最初の答えと結論。x-channel 2026-10-20 P1）
-const stepsOf = (id) => entry.scenes.find((x) => x.id === id)?.data?.steps ?? [];
-const lineOf = (s) => (s ? (entryAnswers[s.id] ?? s.lines).join("、") : null);
-const postEntry = [entry.scenes[0].data.steps[0]?.question ?? raceLabel, lineOf(stepsOf("scene1")[0]), lineOf(stepsOf("conclusion")[0]), "データは龍神レーダーで。", "#ボートレース"].filter(Boolean).join("\n") + "\n";
-{
-  const why = [...checkPost(postEntry), ...checkAnswers(Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entryAnswers[s.id] ?? s.lines]) : []))))];
-  if (why.length) stop("入口版の文・本文", why);
-}
-writeFileSync(join(out, "post-entry.txt"), postEntry);
 for (const o of entry.omitted) console.warn(`[入口版で省いた要素] ${JSON.stringify(o)}`);
 writeJson(join(out, "entry.json"), { seconds: entry.total / 30, omitted: entry.omitted, scenes: entry.scenes.map((x) => ({ id: x.id, steps: x.kind === "scene2" ? ["overview", ...(x.data?.radar?.focus ?? []).map((f) => f.id)] : x.data.steps.map((s) => s.id) })) });
 if (!noVideo) {
@@ -216,4 +255,34 @@ if (!noVideo) {
   const seconds = render(entry.scenes, entryAnswers, dir, "entry");
   writeJson(join(out, "run-entry.json"), { seconds, llmCalls: 0, videoSeconds: entry.total / 30 });
   console.log(`${dir}: 入口版 ${(entry.total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
+}
+
+// 送信の道に渡すフォルダ（完全版と入口版の両方があるときだけ）。機械の検査が全部通ったときだけ作る
+const fullMp4 = ["connected", "template"].map((md) => join(out, md, "full-picture.mp4")).find((p) => existsSync(p));
+const entryMp4 = join(out, "entry", "entry.mp4");
+if (!noVideo && fullMp4 && existsSync(entryMp4)) {
+  const f = probe(fullMp4);
+  const e = probe(entryMp4);
+  const qa = {
+    contract: true,
+    text: true,
+    post: true,
+    entry_max59s: entry.total <= 59 * 30,
+    full_size: f.bytes <= MAX_BYTES,
+    shorts_vertical: e.width === 1080 && e.height === 1920,
+    shorts_max60s: e.seconds <= 60,
+    shorts_size: e.bytes <= MAX_BYTES,
+  };
+  // 章は描いた完全版の拍の並びのもの（つないだ版はつなぐ語の分だけ長さが変わる）
+  const chaptersPath = join(out, "chapters.txt");
+  const b = bundleText(qa, existsSync(chaptersPath) ? readFileSync(chaptersPath, "utf8") : undefined);
+  const why = checkBundle(b);
+  if (why.length) stop("bundle", why);
+  const dir = join(out, "bundle");
+  mkdirSync(dir, { recursive: true });
+  writeJson(join(dir, "bundle.json"), b);
+  copyFileSync(entryMp4, join(dir, "full-x.mp4"));
+  copyFileSync(fullMp4, join(dir, "full-youtube.mp4"));
+  copyFileSync(entryMp4, join(dir, "shorts.mp4"));
+  console.log(`${dir}: bundle.json と動画3本（完全版 ${(f.bytes / 1048576).toFixed(1)}MiB・入口版 ${(e.bytes / 1048576).toFixed(1)}MiB）`);
 }

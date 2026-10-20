@@ -14,6 +14,7 @@ import { templateLines } from "../../sns-video-studio/remotion/scripts/full-pict
 import {
   MAX_WIDTH,
   allBeats,
+  bannedIn,
   checkLines,
   connectedText,
   lineWidth,
@@ -676,6 +677,64 @@ for (const f of fixtures) {
     assert.equal(hit.scenes[0].data.steps.length, 1, "条件の2つ目を外した");
     assert.ok(hit.total <= ENTRY_MAX_FRAMES, "外して59秒以内");
   }
+}
+
+// ---- 送信の道に渡す bundle（2026-10-21 オーケストレーターの分担 a・b・c、送信レーンとの Shorts の契約 bundle_version 2）----
+{
+  const { buildBundle, checkBundle, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
+  const { checkFullPicture } = await import("../sns/push-full-picture.js");
+  const riskRules = JSON.parse(readFileSync(new URL(`${R}/risk-rules.json`, import.meta.url), "utf8")).rules;
+  assert.ok(riskRules.length > 0, "禁止表現の規則を読めた");
+  const load = (f) => JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"));
+  const VENUE = { "01": "桐生", 15: "丸亀", 24: "大村", 19: "下関" };
+  const qaAll = { contract: true, text: true, post: true, entry_max59s: true, full_size: true, shorts_vertical: true, shorts_max60s: true, shorts_size: true };
+  const bundleOf = (f, qa = qaAll) => {
+    const m = load(f);
+    const [, mo, da, vc, rn] = m.raceId.split("-");
+    const scenes = buildAll(m);
+    const ans = templateText(allBeats(scenes)).answers;
+    const e = entryScenes(scenes, ans, { race: `${VENUE[vc]}${Number(rn)}R（${Number(mo)}/${Number(da)}）` });
+    const steps = Object.fromEntries(e.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((st) => [st.id, ans[st.id] ?? st.lines]) : [])));
+    return buildBundle({ raceId: m.raceId, venue: VENUE[vc], raceNo: Number(rn), month: Number(mo), day: Number(da), answers: { ...ans, ...steps }, entryFirstQuestion: e.scenes[0].data.steps[0].question, chapters: "0:00 条件\n0:22 6艇比較\n1:07 類似レース", qa });
+  };
+  for (const f of fixtures) {
+    const b = bundleOf(f);
+    assert.deepEqual(checkBundle(b), [], `${f}: bundle の形`);
+    // 送信の道の受け取りの検査をそのまま通る（評価役の P0 は hq が足す。ここでは 0 を入れて確かめる）
+    assert.deepEqual(checkFullPicture({ ...b, review: { p0_count: 0 } }, riskRules), [], `${f}: push-full-picture の検査を通る`);
+    assert.equal(b.bundle_version, BUNDLE_VERSION);
+    assert.equal(b.youtube_shorts.description.split(FULL_URL_SLOT).length - 1, 1, `${f}: Shorts の説明文に完全版の URL の置き場所が1つ`);
+    assert.notEqual(b.youtube_full.title, b.youtube_shorts.title, `${f}: 完全版と Shorts の題名は別の文`);
+    assert.ok(b.youtube_full.description.includes("結果を保証するものではありません"), `${f}: 説明文に免責`);
+    assert.ok(/^0:00 /m.test(b.youtube_full.description), `${f}: 説明文に章（0:00 から）`);
+    for (const txt of [b.x_text, b.youtube_full.title, b.youtube_full.description, b.youtube_shorts.title, b.youtube_shorts.description])
+      assert.deepEqual(bannedIn(txt), [], `${f}: 禁止表現が無い`);
+  }
+  const b0 = bundleOf(fixtures[0]);
+  has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, title: b0.youtube_full.title } }), "題名が同じ");
+  has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, description: "x" } }), "ちょうど1つ無い");
+  has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, description: `${FULL_URL_SLOT} ${FULL_URL_SLOT}` } }), "ちょうど1つ無い");
+  has(checkBundle({ ...b0, x_text: "URL なし" }), "URL がちょうど1つ無い");
+  has(checkBundle(bundleOf(fixtures[0], { ...qaAll, full_size: false })), "機械の検査");
+
+  // run-full: 省略禁止の場面4の材料が無い・材料が契約に合わないときは終了コード1で止める（文だけの実行で確かめる）
+  const { execFileSync } = await import("node:child_process");
+  const { mkdtempSync, writeFileSync: wf } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const tmp = mkdtempSync(`${tmpdir()}/fp-`);
+  const runFull = (m) => {
+    wf(`${tmp}/m.json`, JSON.stringify(m));
+    try {
+      execFileSync(process.execPath, [new URL(`${R}/scripts/full-picture/run-full.mjs`, import.meta.url).pathname, `${tmp}/m.json`, `${tmp}/out`, "--text", "template", "--no-video"], { stdio: "pipe" });
+      return 0;
+    } catch (err) {
+      return err.status;
+    }
+  };
+  const mOk = load(fixtures[0]);
+  assert.equal(runFull(mOk), 0, "固定の材料なら文だけの実行は通る");
+  assert.equal(runFull({ ...mOk, api: { ...mOk.api, scenario: null } }), 1, "場面4の材料が無ければ止める");
+  assert.equal(runFull({ ...mOk, schemaVersion: "full-picture-materials/0" }), 1, "契約に合わなければ止める");
 }
 
 console.log("verify-full-picture-scene2: OK");
