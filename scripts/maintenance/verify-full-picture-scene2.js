@@ -150,13 +150,14 @@ assert.deepEqual(templateLines(focusSt), [
   "1号艇は平均ST（直近30走）0.12秒で1位",
   "2番手は2号艇の同じ0.12秒、ほか1項目も1位",
 ]);
+// 過去のレースの集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
 assert.deepEqual(templateLines(card), [
-  "当地勝率3位の1着率69%",
+  "当地勝率3位の過去のレースで1着率69%",
   "全体の71.1%より2.1ポイント低い",
 ]);
 // 「今日の順位を当てはめない」だけでは、カードの「今日 6艇中1位」と食い違って見えた（2026-10-20 オーケストレーター指摘）
 assert.deepEqual(templateLines(cardFinal), [
-  "今節の着順点 1位77%・6位64%",
+  "今節の着順点1位のレースは1着77%・6位64%",
   "1号艇は1位、準優勝戦の日は枠順に近く参考",
 ]);
 for (const f of [overview, focus1, focus3, focusSt, card, cardFinal]) {
@@ -611,10 +612,10 @@ for (const f of fixtures) {
   const raceOf = (m) => m.api.races.find((r) => r.raceId === m.raceId);
   // 各レースの段の並び（正解の写し）。build の退行で段が消えたら落ちる
   const GOLDEN = {
-    "2026-10-12-01-12": "scene1:venue90,place,day,wind scene2:6/4 scene2b:sonar,flow,flow-1,tri scene3:rough,venue,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
-    "2026-10-15-15-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-4,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
-    "2026-10-16-24-11": "scene1:venue90,place,day,wind scene2:6/5 scene2b:sonar,flow,flow-1,tri scene3:rough,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
-    "2026-10-19-19-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-12-01-12": "scene1:venue90,place,day,wind scene2:6/4 scene2b:sonar,flow,flow-1,tri scene3:rough,venue scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-15-15-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-4,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-16-24-11": "scene1:venue90,place,day,wind scene2:6/5 scene2b:sonar,flow,flow-1,tri scene3:rough scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-19-19-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
   };
   const shape = (scenes) => scenes.map((x) => (x.kind === "scene2" ? `${x.id}:${x.data.radar.focus.length}/${x.data.cards.items.length}` : `${x.id}:${x.data.steps.map((st) => st.id.replace(/^s\d+b?-/, "")).join(",")}`)).join(" ");
   for (const f of fixtures) assert.equal(shape(buildAll(load(f))), GOLDEN[f.replace(".json.gz", "")], `${f}: 段の並びが正解の写しと同じ`);
@@ -858,24 +859,12 @@ for (const f of fixtures) {
 
 // ---- BOA-913 ----
 {
-  // 場面3③の回収率の母数は画面（getRacerBoatReturnRate）と同じ: 不成立だけを除く（1着の無い走・会場の無い走も数える。代わりの審査 F9）
-  const { returnRateByBoat } = await import(`${R}/scripts/full-picture/scenes/scene3.mjs`);
-  const rows = {
-    entries: [
-      { race_id: "2026-10-01-19-01", boat_number: 1 },
-      { race_id: "2026-10-02-19-01", boat_number: 1 },
-      { race_id: "2026-10-03-19-01", boat_number: 1 },
-      { race_id: "2025-01-01-19-01", boat_number: 1 },
-    ],
-    results: [
-      { race_id: "2026-10-01-19-01", rank1: 1, rank2: 2, payout_win: 250, payout_place_1: 130, race_status: null },
-      { race_id: "2026-10-02-19-01", rank1: null, rank2: null, payout_win: null, race_status: null },
-      { race_id: "2026-10-03-19-01", rank1: 3, rank2: 1, payout_place_2: 210, race_status: "no_race" },
-      { race_id: "2025-01-01-19-01", rank1: 1, payout_win: 900, race_status: null },
-    ],
-  };
-  assert.deepEqual(returnRateByBoat(rows, "2026-10-19", 180).get(1), { n: 2, win: 250, place: 130 }, "不成立と180日より前だけを除く");
-
+  // 場面3③の回収率の拍は出さない（2026-10-20 オーナー決定。20〜45走では選手の差を示さず、収益を連想させる）
+  for (const f of fixtures) {
+    const sc = buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8")));
+    assert.ok(!sc.find((x) => x.id === "scene3").data.steps.some((st) => st.id === "s3-return"), `${f}: 回収率の拍が無い`);
+    assert.ok(!/回収率/.test(Object.values(templateText(allBeats(sc)).answers).flat().join("\n")), `${f}: 字幕に回収率が無い`);
+  }
   // つなぐ語を近くで繰り返さない（10/19 は「続いて」20回・同じ語の連続9回だった）
   const { repeatReasons, groupDigits } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
   const u = [{ step: "s", connector: "さらに" }, { step: "s", connector: null }, { step: "s", connector: "続いて" }];
@@ -910,6 +899,36 @@ for (const f of fixtures) {
         assert.ok(!/(?<![\d.,])\d{4,}(件|走|レース)/.test(l), `${f} ${id}: 4桁以上の件数は桁区切り「${l}」`);
         assert.ok(!/より\d+ポイント/.test(l), `${f} ${id}: 差のポイントは小数1桁「${l}」`);
       }
+  }
+}
+
+// ---- 個人の成績か、会場（全選手）・過去のレースの集計かが、答えを読んで分かる（2026-10-20 オーナー、BOA-913）----
+{
+  const SCOPE = [
+    [/^s1-(venue90|place|wind)$/, /全選手/],
+    [/^s1-day$/, /全選手|今日のレース/],
+    [/^card-/, /レース/],
+    [/^s3-rough$/, /全国・/],
+    [/^s3-venue$/, /本人/],
+    [/^s4-entry$/, /過去/],
+    [/^s4-slit-/, /今日の6艇|並び/],
+    [/^s5-place$/, /過去のレース/],
+    [/^s5-axis-/, null],
+    [/^s6-deep-/, /過去のレース|そのとき/],
+  ];
+  for (const f of fixtures) {
+    const m = JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"));
+    const venue = { "01": "桐生", 15: "丸亀", 24: "大村", 19: "下関" }[m.raceId.split("-")[3]];
+    const ans = templateText(allBeats(buildAll(m))).answers;
+    for (const [id, ls] of Object.entries(ans)) {
+      const rule = SCOPE.find(([re]) => re.test(id));
+      if (!rule) continue;
+      const text = ls.join("\n");
+      // 割合の無い答え（「▲の付いた材料が無い」等）は対象外
+      if (!/%/.test(text)) continue;
+      const want = rule[1] ?? new RegExp(venue);
+      assert.match(text, want, `${f} ${id}: 範囲の語（${want}）で個人か集計かが分かる「${text}」`);
+    }
   }
 }
 

@@ -13,6 +13,7 @@ import { wilsonInterval } from "../../../../../src/utils/wilson.js";
 import { BUTTON, barsRow, slitFormBox, statsRow } from "../../../src/fullPicture/pageLayout.js";
 import { sonarSteps } from "./scene2b.mjs";
 import { t } from "./common.mjs";
+import { fitFirst } from "../fit.mjs";
 
 const sk = "aiPredictionTab.analogy.scenario";
 const formName = (f) => t(`${sk}.forms.${f}.name`);
@@ -63,8 +64,12 @@ function roundSteps(sc, data, version, prevForm) {
     frames: [slitFormBox(formIdx)],
     facts: f2,
     lines: fallback
-      ? [`${label}の並びは一致する形が無い`, `横一線を参考に`]
-      : [`${label}の並びは${formName(form)}に一致`, candidates.length > 1 ? `候補は${candidates.map(formName).join("・")}` : null].filter(Boolean),
+      ? fitFirst([`今日の6艇（${label}）は一致する形が無い`, `横一線を参考に`], [`${label}の並びは一致する形が無い`, `横一線を参考に`])
+      : fitFirst(
+          // 今日の6艇（選手）の平均ST と分かるように（2026-10-20 オーナー）
+          [`今日の6艇（${label}）は${formName(form)}に一致`, candidates.length > 1 ? `候補は${candidates.map(formName).join("・")}` : null],
+          [`${label}の並びは${formName(form)}に一致`, candidates.length > 1 ? `候補は${candidates.map(formName).join("・")}` : null],
+        ),
   });
   // 同じ形なら2回目は形の一致まで
   if (prevForm === form) return { steps, form, same: true, conclusion: null };
@@ -145,7 +150,11 @@ export function buildScene4(m) {
     press: null,
     frames: [barsRow(1)],
     facts: f1,
-    lines: [`前付けあり（1号艇イン）は${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
+    lines: fitFirst(
+      [`過去${all.toLocaleString("ja-JP")}件で前付けあり（1号艇イン）は${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
+      [`過去のレースで前付けあり（1号艇イン）は${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
+      [`過去の前付けあり（1号艇イン）は${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
+    ),
   });
   const subs = MAE_SUB.map((e) => ({ e, n: nOf(e) }));
   const top = [...subs].sort((a, b) => b.n - a.n)[0];

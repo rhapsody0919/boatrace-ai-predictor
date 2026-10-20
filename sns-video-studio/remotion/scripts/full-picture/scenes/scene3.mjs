@@ -3,9 +3,10 @@
  * ① 思考アシスト「このレースは堅い？荒れる？」: 「1号艇の1着」の「全国・級の並びが同じ {n}件 {x}%（全国 {y}%）」と棒をまとめて囲う
  *    （sameClassScope・roughCard。優勝戦・準優勝戦の日は同じラウンド、30件未満なら NC に戻す）
  * ② 1号艇の選手ページ「会場別成績 — 1号艇」: その日の会場の行を囲う。表を縦に伸ばし、約6秒
- * ③ 同じ選手ページ「枠番別回収率（過去180日）」: 枠番1の行を囲う（回収率として扱い、1着率と言わない）
- * 選手ページの集計は画面の aggregateRacerCrossStats・getRacerBoatReturnRate と同じ数え方（取得関数の中にあるので写した）。
- * 画面は見た日から730日・180日を数えるが、ここはレースの日から数え、このレースより前の走だけ（同じ材料なら同じ値）。
+ * ③ 枠番別回収率は出さない（2026-10-20 オーナー決定 BOA-913。20〜45走の回収率は選手の差を示さず、収益を連想させる。
+ *   docs/design/full-picture-remotion/analysis/boat1-return-rate-noise.md）
+ * 選手ページの集計は画面の aggregateRacerCrossStats と同じ数え方（取得関数の中にあるので写した）。
+ * 画面は見た日から730日を数えるが、ここはレースの日から数え、このレースより前の走だけ（同じ材料なら同じ値）。
  */
 import { roughCard, sameClassLabel, sameClassScope, anyCell } from "../../../../../src/utils/assistModel.js";
 import { tallyWinPlaceShow } from "../../../../../src/utils/racerConditionStats.js";
@@ -51,30 +52,6 @@ function history(rows, date, days) {
       };
     })
     .filter(Boolean);
-}
-
-/**
- * 枠番ごとの払戻の合計と走の数（画面の getRacerBoatReturnRate と同じ: レースの日から days 日・このレースより前・不成立だけを除く）
- * @returns {Map<number, {n:number, win:number, place:number}>}
- */
-export function returnRateByBoat(rows, date, days) {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - days);
-  const cutoff = d.toISOString().slice(0, 10);
-  const result = new Map(rows.results.map((r) => [r.race_id, r]));
-  const byBoat = new Map();
-  for (const e of rows.entries.filter((x) => x.race_id >= cutoff)) {
-    const r = result.get(e.race_id);
-    if (!r || isNoRaceResult(r)) continue;
-    const s = byBoat.get(e.boat_number) ?? { n: 0, win: 0, place: 0 };
-    s.n += 1;
-    if (r.rank1 === e.boat_number) {
-      s.win += r.payout_win ?? 0;
-      s.place += r.payout_place_1 ?? 0;
-    } else if (r.rank2 === e.boat_number) s.place += r.payout_place_2 ?? 0;
-    byBoat.set(e.boat_number, s);
-  }
-  return byBoat;
 }
 
 /** @param {object} m 材料 JSON */
@@ -172,38 +149,13 @@ export function buildScene3(m) {
       facts: f,
       // 選手名・会場名が長いと1行に入らないので、入らなければ走数と1着率を分ける
       lines: fitFirst(
-        [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`全会場の${d1(aw)}%`, f)],
-        [`${name}の${venue}1号艇${here.n}走で1着率${d1(hw)}%`, diffText(`全会場の${d1(aw)}%`, f)],
-        [`${name}の${venue}1号艇は${here.n}走`, `1着率${d1(hw)}%、全会場は${d1(aw)}%`],
+        // 2行目の比べる相手も本人の成績（全会場の1号艇）。会場の集計と読まれないよう「本人の」と書く（2026-10-20 オーナー）
+        [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場の${d1(aw)}%`, f)],
+        [`${name}の${venue}1号艇${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場の${d1(aw)}%`, f)],
+        [`${name}の${venue}1号艇は${here.n}走`, `1着率${d1(hw)}%、本人の全会場は${d1(aw)}%`],
       ),
     });
   } else omitted.push({ where: "scene3.venue", reason: `${venue}で1号艇の走が730日に無い` });
 
-  // ③ 枠番別回収率（180日）。画面の getRacerBoatReturnRate と同じ数え方: 不成立だけを除く
-  // （会場別成績の history は1着の無い走・会場の無い走も除くので、ここでは使わない。代わりの審査 F9）
-  const byBoat = returnRateByBoat(rows, m.date, 180);
-  const rr = (sum, n) => (n ? Math.round((sum / (n * 100)) * 1000) / 10 : null);
-  const b1 = byBoat.get(1);
-  if (b1) {
-    const f = { kind: "returnRate", boat: 1, name, runs: b1.n, win: rr(b1.win, b1.n), place: rr(b1.place, b1.n) };
-    steps.push({
-      id: "s3-return",
-      question: Q,
-      page: {
-        kind: "table",
-        title: `${name} 枠番別回収率`,
-        sub: "過去180日",
-        cols: ["走", "単勝", "複勝"],
-        rows: BOATS.map((b) => {
-          const s = byBoat.get(b);
-          return { boat: b, cells: s ? [String(s.n), `${d1(rr(s.win, s.n))}%`, `${d1(rr(s.place, s.n))}%`] : ["0", "—", "—"] };
-        }),
-      },
-      press: null,
-      frames: [tableRowBox(0)],
-      facts: f,
-      lines: [`${name}の1号艇は${b1.n}走`, `単勝回収率${d1(f.win)}%・複勝回収率${d1(f.place)}%`],
-    });
-  } else omitted.push({ where: "scene3.return", reason: "180日に1号艇の走が無い" });
   return { id: "scene3", steps, omitted };
 }

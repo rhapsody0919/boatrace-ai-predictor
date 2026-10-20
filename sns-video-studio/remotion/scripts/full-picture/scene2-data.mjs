@@ -156,16 +156,21 @@ export function templateLines(f) {
     return fitFirst([l1, l2], [`${f.boat}号艇は${f.item}で${f.rank}`, l2 ? `${f.value}、${l2}` : f.value], ...(tie ? [[l1, l2tie], [`${f.boat}号艇は${f.item}で${f.rank}`, `${f.value}、${l2tie}`]] : []));
   }
   if (f.kind === "card") {
-    if (f.todayRank !== null)
-      return [
-        `${f.item}${f.todayRank}位の1着率${f.todayRate}%`,
+    // 過去のレースの集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
+    if (f.todayRank !== null) {
+      const l2 =
         f.usualDiffPt === null
           ? `1位${f.rate1}%・6位${f.rate6}%`
           : f.usualDiffPt < 1
             ? `全体の${f.usual}%との差は1ポイント未満`
-            : `全体の${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`,
-      ];
-    const l1 = `${f.item} 1位${f.rate1}%・6位${f.rate6}%`;
+            : `全体の${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
+      return fitFirst(
+        [`${f.item}${f.todayRank}位の過去のレースで1着率${f.todayRate}%`, l2],
+        [`${f.item}${f.todayRank}位の過去のレースで1着${f.todayRate}%`, l2],
+        [`${f.item}${f.todayRank}位の1着率${f.todayRate}%`, l2],
+      );
+    }
+    const l1 = fitFirst([`${f.item}1位のレースは1着${f.rate1}%・6位${f.rate6}%`], [`${f.item} 1位${f.rate1}%・6位${f.rate6}%`])[0];
     if (f.roundDay)
       return [l1, f.todayRankRef ? `${f.boat}号艇は${f.todayRankRef}位、${f.roundDay}は枠順に近く参考` : `${f.roundDay}は点の順が枠順に近く参考`];
     return [l1, "今日の値が無く、今日の順位では比べられない"];

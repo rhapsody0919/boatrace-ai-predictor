@@ -165,7 +165,11 @@ export function buildScene6(m) {
       facts: f,
       lines: top
         ? (() => {
-            const l2 = base === null ? `そのとき1着${f.rate}%` : `そのとき1着${f.rate}%、全体${base}%`;
+            // 2行目は過去のレースの集計（その艇がそう並んだレース）と分かるように（2026-10-20 オーナー）
+            const l2 = fitFirst(
+              [base === null ? `そう並んだ過去のレースで1着${f.rate}%` : `そう並んだ過去のレースで1着${f.rate}%（全体${base}%）`],
+              [base === null ? `そのとき1着${f.rate}%` : `そのとき1着${f.rate}%、全体${base}%`],
+            )[0];
             return fitFirst([`${b}号艇は${f.item}が6艇で一番${word}`, l2], [`${f.item}が6艇で一番${word}${b}号艇`, l2], [`${f.item}が一番${word}${b}号艇`, l2]);
           })()
         : [`${b}号艇は▲の付いた材料が無い`, feats.length ? `札は${feats.join("・")}` : "札も無い"],

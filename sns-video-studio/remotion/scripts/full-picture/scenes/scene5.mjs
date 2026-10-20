@@ -8,6 +8,7 @@ import { b1Usual, factsScope, winFollowers } from "../../../../../src/utils/assi
 import { defaultStepIndex, normalizeNeighbor, sliderSteps } from "../../../../../src/utils/analogyAggregate.js";
 import { axisButtonBox, barsRow, followerRow } from "../../../src/fullPicture/pageLayout.js";
 import { BOATS, venueName } from "./common.mjs";
+import { fitFirst } from "../fit.mjs";
 
 const p1 = (k, n) => (n ? ((k / n) * 100).toFixed(1) : "0.0");
 const SHORT = 66;
@@ -28,15 +29,16 @@ function keyBoats(m) {
  * 重点でない艇の「1着なら2着の最多」をまとめた答え。2着の艇が同じ艇ごとにまとめ、2行に収まらなければ「1着→2着」の矢印で並べる
  * @param {{axis:number, second:number}[]} rest
  */
-export function restLines(rest) {
+export function restLines(rest, venue = null) {
+  const at = venue ? `${venue}で` : "";
   const groups = [];
   for (const r of rest) {
     const g = groups.find((x) => x.second === r.second);
     if (g) g.axes.push(r.axis);
     else groups.push({ second: r.second, axes: [r.axis] });
   }
-  if (groups.length <= 2) return groups.map((g) => `${g.axes.join("・")}号艇が1着なら2着は${g.second}号艇`);
-  return ["1着→2着の最多（号艇）", rest.map((r) => `${r.axis}→${r.second}`).join("・")];
+  if (groups.length <= 2) return groups.map((g, i) => `${i === 0 ? at : ""}${g.axes.join("・")}号艇が1着なら2着は${g.second}号艇`);
+  return [`${at}1着→2着の最多（号艇）`, rest.map((r) => `${r.axis}→${r.second}`).join("・")];
 }
 
 /** @param {object} m 材料 JSON */
@@ -70,7 +72,11 @@ export function buildScene5(m) {
       press: null,
       frames: [barsRow(top2.indexOf(best))],
       facts: f,
-      lines: [`2〜6号艇で2着以内が最高は${best.boat}号艇`, next ? `${f.rate}%、次は${next.boat}号艇の${f.next.rate}%` : `${f.rate}%`],
+      // 過去のレース（その艇の級別がそろうレース）の集計と分かるように（2026-10-20 オーナー）
+      lines: fitFirst(
+        [`同じ級別の過去のレースで2着以内の最高は${best.boat}号艇`, next ? `${f.rate}%、次は${next.boat}号艇の${f.next.rate}%` : `${f.rate}%`],
+        [`過去のレースで2着以内の最高は${best.boat}号艇`, next ? `${f.rate}%、次は${next.boat}号艇の${f.next.rate}%` : `${f.rate}%`],
+      ),
     });
     for (const x of top2) if (x.rate === null) omitted.push({ where: "scene5.place", boat: x.boat, reason: "その艇の2着以内の集計が無い" });
   } else omitted.push({ where: "scene5.place", reason: "2着以内の集計が無い" });
@@ -91,7 +97,7 @@ export function buildScene5(m) {
     const rows = BOATS.filter((b) => b !== axis).map((b) => ({ boat: b, value: f.second[b - 1] / f.n, text: `${p1(f.second[b - 1], f.n)}%` }));
     const best = rows.reduce((a, x) => (x.value > a.value ? x : a));
     const key = keys.includes(axis);
-    const fx = { kind: "followers", boat: axis, second: { boat: best.boat, rate: best.text.replace("%", ""), k: f.second[best.boat - 1] }, n: f.n, key };
+    const fx = { kind: "followers", venue, boat: axis, second: { boat: best.boat, rate: best.text.replace("%", ""), k: f.second[best.boat - 1] }, n: f.n, key };
     steps.push({
       id: `s5-axis-${axis}`,
       question: `${axis}号艇が勝ったら2着は？`,
@@ -103,14 +109,15 @@ export function buildScene5(m) {
       frames: [followerRow(rows.indexOf(best))],
       facts: fx,
       // 重点でない艇（約2秒）は答えを出さず枠だけ移す。答えは最後にまとめて1枚（読む時間が足りないため。visual-designer 2026-10-20 P1）
-      lines: key ? [`${axis}号艇が1着なら2着は${best.boat}号艇`, `${f.n}件の${fx.second.rate}%（${fx.second.k}件）`] : [],
+      // 会場の過去のレースの集計と分かるように会場名を書く（2026-10-20 オーナー）
+      lines: key ? fitFirst([`${venue}で${axis}号艇が1着なら2着は${best.boat}号艇`, `${f.n}件の${fx.second.rate}%（${fx.second.k}件）`], [`${axis}号艇が1着なら2着は${best.boat}号艇`, `${venue}の${f.n}件の${fx.second.rate}%（${fx.second.k}件）`]) : [],
     });
     if (!key) rest.push({ axis, second: best.boat, rate: fx.second.rate });
     last = steps[steps.length - 1];
     first = false;
   }
   if (rest.length) {
-    const fr = { kind: "followersRest", boats: [...new Set(rest.flatMap((r) => [r.axis, r.second]))], pairs: rest.map((r) => ({ axis: r.axis, second: r.second, rate: r.rate })) };
+    const fr = { kind: "followersRest", venue, boats: [...new Set(rest.flatMap((r) => [r.axis, r.second]))], pairs: rest.map((r) => ({ axis: r.axis, second: r.second, rate: r.rate })) };
     steps.push({
       ...last,
       id: "s5-axis-rest",
@@ -120,7 +127,7 @@ export function buildScene5(m) {
       press: null,
       frames: [],
       facts: fr,
-      lines: restLines(rest),
+      lines: restLines(rest, venue),
     });
   }
   if (!race) omitted.push({ where: "scene5", reason: "出走表にこのレースが無い" });
