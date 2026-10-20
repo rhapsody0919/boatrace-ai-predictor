@@ -3,12 +3,12 @@
 -- 仕組みは docs/operation/sns-today-heading-variants.md。データの2行だけで、表・関数は変えない。db-apply で当てる。
 -- この行が入った後に、config/today-variants.json の案 a・b の uuid に下の2つを入れる PR を別に出す（入る前に uuid を入れると札なしになる）。
 --
--- 適用前の確認（期待値: 0行）:
+-- 適用前の確認（期待値 0行）:
 --   SELECT id, format, variant_name FROM public.sns_template_variants
 --   WHERE id IN ('0f88824e-c630-4f94-8c15-475297e4b242', 'be74c247-fa8f-442e-a29f-4d1d7866919a')
 --      OR (format = 'today_digest' AND variant_name IN ('today-heading-a', 'today-heading-b'));
 --
--- 適用後の確認（期待値: 2行。today-heading-a・today-heading-b、active=true）:
+-- 適用後の確認（期待値 2行。today-heading-a・today-heading-b、active=true）:
 --   SELECT id, format, variant_name, active FROM public.sns_template_variants
 --   WHERE id IN ('0f88824e-c630-4f94-8c15-475297e4b242', 'be74c247-fa8f-442e-a29f-4d1d7866919a')
 --   ORDER BY variant_name;
@@ -29,5 +29,16 @@ VALUES
   ('be74c247-fa8f-442e-a29f-4d1d7866919a', 'today_digest', 'today-heading-b', 'TodayDigestX', true,
    '/today の X 投稿の見出しの案 b（config/today-variants.json の id "b"）', 'human')
 ON CONFLICT DO NOTHING;
+
+-- 中身の違う行（同じ id か同じ名前）が先にあると、上の INSERT は黙って何もしない。2行がそろっていなければ全体を戻す
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM public.sns_template_variants
+      WHERE (id, format, variant_name) IN (
+        ('0f88824e-c630-4f94-8c15-475297e4b242'::uuid, 'today_digest', 'today-heading-a'),
+        ('be74c247-fa8f-442e-a29f-4d1d7866919a'::uuid, 'today_digest', 'today-heading-b'))) <> 2 THEN
+    RAISE EXCEPTION '171: sns_template_variants の既存の行が食い違う（id か (format, variant_name) が別の行で使われている）';
+  END IF;
+END $$;
 
 COMMIT;

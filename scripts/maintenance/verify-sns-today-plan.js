@@ -1363,6 +1363,16 @@ test("171: /today の見出しの2案の行を入れる。もう一度当てて�
   await db.exec(
     "DELETE FROM sns_post_tracking; DELETE FROM sns_template_variants WHERE format='today_digest'",
   );
+  // 同じ名前で別の id の行が先にあると、黙って成功せず全体を戻す（代わりの審査の P3）
+  await db.exec(
+    "INSERT INTO sns_template_variants(id, format, variant_name, composition_name) VALUES('11111111-1111-4111-8111-111111111111','today_digest','today-heading-a','X')",
+  );
+  await assert.rejects(db.exec(sql), /既存の行が食い違う/);
+  // ファイルの BEGIN の中で落ちたので、psql と同じく戻す（db-apply は接続を閉じてトランザクション全体が戻る）
+  await db.exec("ROLLBACK");
+  await db.exec(
+    "DELETE FROM sns_template_variants WHERE format='today_digest'",
+  );
   await db.exec(sql);
   await db.exec(sql);
   const rows = await all(
