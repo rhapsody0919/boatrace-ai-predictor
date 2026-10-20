@@ -20,6 +20,7 @@
  * 文の JSON は既にあれば作り直さない（--regen-text で作り直す）。同じ文の JSON なら同じ MP4。
  */
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import process from "node:process";
@@ -300,5 +301,8 @@ if (!noVideo && fullMp4 && existsSync(entryMp4)) {
   copyFileSync(entryMp4, join(dir, "full-x.mp4"));
   copyFileSync(fullMp4, join(dir, "full-youtube.mp4"));
   copyFileSync(entryMp4, join(dir, "shorts.mp4"));
+  // X と Shorts は同じ入口版（同じバイト列）。送信側は中身を解析しないので、作り手が確かめる（送信レーン 2026-10-21、x-channel P2）
+  const sha = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");
+  if (sha(join(dir, "full-x.mp4")) !== sha(join(dir, "shorts.mp4"))) stop("bundle", ["full-x.mp4 と shorts.mp4 の中身が違う"]);
   console.log(`${dir}: bundle.json と動画3本（完全版 ${(f.bytes / 1048576).toFixed(1)}MiB・入口版 ${(e.bytes / 1048576).toFixed(1)}MiB）`);
 }

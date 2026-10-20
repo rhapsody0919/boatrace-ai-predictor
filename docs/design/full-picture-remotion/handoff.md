@@ -46,7 +46,7 @@
 | 項目 | 決まり |
 |---|---|
 | 版 | `bundle_version: 2`。版の欄が無い bundle は、送信側で今までどおり X 1件・YouTube 1件として受ける |
-| ファイル | `full-x.mp4`（入口版、X）・`full-youtube.mp4`（完全版、YouTube の通常の動画）・`shorts.mp4`（入口版と同じバイト列、Shorts）。shorts は縦 1080×1920・60秒以下・32MiB 以下 |
+| ファイル | `full-x.mp4`（入口版、X）・`full-youtube.mp4`（完全版、YouTube の通常の動画）・`shorts.mp4`（入口版と同じバイト列、Shorts）。shorts は縦 1080×1920・60秒以下・32MiB 以下。送信側は中身を解析しないので、縦・秒数・大きさ・full-x.mp4 と同じバイト列（sha256）は run-full が確かめる |
 | 欄 | `format`・`race_id`・`x_text`（入口版の本文＋このレースの URL ちょうど1つ）・`youtube_full{title,description}`・`youtube_shorts{title,description}`・`qa{machine,bannedWords}` |
 | 題名 | 1行・100字以下。完全版と Shorts は別の文 |
 | 完全版の URL | Shorts の description に `{full_url}` をちょうど1つ。送信側が、完全版の公開を確かめてから `https://youtu.be/<id>` に置き換える。置き換えた後も5000字以内（こちらは「置き場所を消した長さ＋40字」で検査） |
@@ -54,7 +54,7 @@
 | qa.machine | `contract`・`text`・`post`・`entry_max59s`・`full_size`・`full_min185s`（完全版が3分以下だと Shorts 扱いになる）・`chapters`（自動チャプターの条件）・`shorts_vertical`・`shorts_max_60s`・`shorts_size`。全部 true のときだけ出す。送信側は `shorts_vertical`・`shorts_max_60s` が無いか false なら受け取りで不合格 |
 | review | `p0_count` は出さない（評価役は hq の側）。機械の検査だけにするかはオーナーの判断 |
 
-締切の50分前を過ぎて届いた bundle は、送信側が Shorts だけ作らずに X・完全版を送る（完全版の公開を待つ時間が無いため。送信レーンの決まり）。
+送る順は X → 完全版（X の4分後）→ Shorts（完全版の公開の後、早くて完全版の4分後）。締切の50分前を過ぎて届いた bundle は、送信側が Shorts だけ作らずに X・完全版を送る（完全版の公開を待つ時間が無いため。送信レーンの決まり）。
 
 `verify-full-picture-scene2.js` で、この bundle（`p0_count: 0` を足したもの）が push-full-picture.js の `checkFullPicture` を通ることを固定している。
 
