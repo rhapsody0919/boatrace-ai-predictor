@@ -134,7 +134,7 @@ const withReview = (role, extra) => (m) => ({
   reviews: m.reviews.map((r) => (r.role === role ? { ...r, ...extra } : r)),
 });
 
-// expect: "ok" | "hold"（ok かつ hold）| RegExp（errors のどれかに当たる）
+// expect: "ok" | RegExp（errors のどれかに当たる）
 const cases = [
   ["正しい新規記事は通る", {}, "ok"],
   // 許可のパス
@@ -180,31 +180,28 @@ const cases = [
     /\[kyotei\] .* title/,
   ],
   [
-    "JSON の metaTitle の「競艇」は通るが hold（申告あり）",
-    {
-      json: { ...baseJson, metaTitle: "競艇の記事" },
-      manifest: (m) => ({ ...m, judgement_words: ["競艇"] }),
-    },
-    "hold",
+    "JSON の metaTitle の「競艇」は本文の関門は通るが、判断が要る語として落ちる",
+    { json: { ...baseJson, metaTitle: "競艇の記事" } },
+    /\[judgement\].*競艇/,
   ],
   // 判断が要る語
   [
-    "判断が要る語を申告していなければ落ちる",
+    "判断が要る語があれば落ちる（PR を作らずオーナーへ回す）",
     { md: `${baseMd}\n的中率の話\n` },
     /\[judgement\].*的中率/,
   ],
   [
-    "判断が要る語を申告していれば hold で通る",
+    "判断が要る語を申告していても落ちる",
     {
       md: `${baseMd}\n的中率の話\n`,
       manifest: (m) => ({ ...m, judgement_words: ["的中率"] }),
     },
-    "hold",
+    /\[judgement\].*judgement_words が空でない/,
   ],
   [
-    "語が無くても申告が空でなければ hold",
+    "語が無くても judgement_words が空でなければ落ちる",
     { manifest: (m) => ({ ...m, judgement_words: ["保証"] }) },
-    "hold",
+    /\[judgement\].*judgement_words が空でない/,
   ],
   // slug
   [
@@ -462,10 +459,8 @@ for (const [name, over, expect] of cases) {
   }
   const pass =
     expect === "ok"
-      ? result.ok && !result.hold
-      : expect === "hold"
-        ? result.ok && result.hold
-        : !result.ok && result.errors.some((e) => expect.test(e));
+      ? result.ok
+      : !result.ok && result.errors.some((e) => expect.test(e));
   if (!pass)
     failures.push(`${name}: 期待 ${expect}、結果 ${JSON.stringify(result)}`);
 }

@@ -2,7 +2,7 @@
  * 記事の中身だけの PR の関門（CLI）。
  * 使い方: node scripts/content/check-content-pr.js [--base origin/master]
  * git から差分・HEAD の中身・base のファイル一覧を集め、scripts/lib/contentPrGate.js に渡す。
- * 結果の JSON を標準出力に出す。errors があれば終了コード1、hold だけなら0、git 等の失敗は2。
+ * 結果の JSON を標準出力に出す。errors があれば終了コード1、無ければ0、git 等の失敗は2。
  * 契約: docs/operation/content-pr-contract.md
  */
 import { execFileSync } from "node:child_process";

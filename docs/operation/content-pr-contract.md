@@ -11,7 +11,7 @@ node scripts/content/check-content-pr.js [--base origin/master]
 
 | 終了コード | 意味 |
 |---|---|
-| 0 | errors が0（hold が true のことがある） |
+| 0 | errors が0 |
 | 1 | errors が1件以上 |
 | 2 | 判定できない（git の失敗等） |
 
@@ -20,7 +20,6 @@ node scripts/content/check-content-pr.js [--base origin/master]
 ```json
 {
   "ok": true,
-  "hold": false,
   "errors": [],
   "judgementWordsFound": [],
   "p1Recorded": { "fan": 0, "seo-marketer": 0 },
@@ -29,7 +28,6 @@ node scripts/content/check-content-pr.js [--base origin/master]
 ```
 
 - `ok`: errors が0のとき true
-- `hold`: 機械では通るが、人（オーナー）の判断を待つ印。errors とは別。下の「hold の意味」
 - `judgementWordsFound`: 変えたファイルで見つかった判断が要る語
 - `p1Recorded`: fan と seo-marketer の P1 の件数（関門は通す。記録のため）
 
@@ -83,7 +81,7 @@ node scripts/content/check-content-pr.js [--base origin/master]
 | `files` | `paths` のうち削除以外の各パス → HEAD の中身の sha256（16進小文字） | キーが `paths` の削除以外と一致し、値が HEAD の中身と一致 |
 | `content_sha256` | 中身全体の指紋（下の計算） | `files` からの計算と一致 |
 | `content_at` | 中身ができた時刻（ISO 8601） | 時刻として読める |
-| `judgement_words` | 作り手が申告する判断が要る語 | 見つかった語が全部入っている。空でなければ hold |
+| `judgement_words` | 判断が要る語の一覧。PR の中では常に空 | 空の配列（空でなければ error） |
 | `reviews` | 4つの役のレビュー（下） | 下の表 |
 | `author.model` / `author.lane` | 作り手の型番・実行役の名前 | 空でない |
 | `created_at` | manifest を作った時刻（ISO 8601） | 時刻として読める |
@@ -132,7 +130,7 @@ computeContentSha256(files);
 | 生の HTML | .md | 本文に `<` の直後が英字・`/`・`!` のものが0件。フェンスのコードブロックとインラインコードの中は数えない |
 | 「競艇」 | .md | 本文に0件。例外は設定の `kyoteiExceptions`（`public/blog/venue-visit-guide-ko.md` の今ある1行。行の中身の完全一致） |
 | 「競艇」 | JSON | `title`・`description` に0件（`metaTitle`・`metaDescription` は許す） |
-| 判断が要る語 | .md・JSON の文字列 | 下の「hold の意味」 |
+| 判断が要る語 | .md・JSON の文字列 | 0件（下の「判断が要る語」） |
 | slug | 足した日本語版 JSON | `id` が `^[a-z0-9]+(-[a-z0-9]+)*$`、末尾が `-en`・`-ko`・`-zh-tw` でない、ファイル名と一致、base に同じ id の JSON も .md も無い |
 | 画像 | .md・JSON が参照する `/images/blog/...` | HEAD に実在し、JPEG のヘッダーから幅と高さが読める。足した画像は、変えた .md か JSON のどれかが参照している |
 | featured | 日本語版 JSON | 新規は `featured: false` で `featuredRank` を置かない。改稿は `featured`・`featuredRank` を base から変えない |
@@ -140,15 +138,12 @@ computeContentSha256(files);
 
 内部リンクの関門は、今 master にある内部リンクの無い記事（設定の `internalLinkGrandfathered`）の改稿だけ免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは `verify-content-pr-gate.js` が落とす）。
 
-## hold の意味
+## 判断が要る語
 
-hold は「機械の関門は通ったが、マージの前に人（オーナー）の判断が要る」の印。errors とは別で、hold だけなら終了コードは0。
+実行役は、判断が要る語がある記事は PR にせず、オーナーの判断へ回す（2026-10-20 オーケストレーター決定）。PR に来た時点で道を外れているので、関門は error にする。
 
-- 変えた .md と JSON の文字列に、設定の `judgementWords`（初期値: 的中率・回収率・必ず・絶対・儲か・稼げ・勝てる・保証・利益・メタの「競艇」）があれば hold
-- 見つけた語が `judgement_words` に全部入っていなければ error（作り手が申告しているかを見る）
-- `judgement_words` が空でなければ（見つかった語が無くても）hold
-
-hold の PR は自動ではマージしない。見つけた語と使い方をオーナーに見せて判断を仰ぐ。
+- 変えた .md と JSON の文字列に、設定の `judgementWords`（初期値: 的中率・回収率・必ず・絶対・儲か・稼げ・勝てる・保証・利益・メタの「競艇」）が1つでもあれば error
+- `judgement_words` が空でなければ error
 
 ## 検査
 

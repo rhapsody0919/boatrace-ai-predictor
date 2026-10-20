@@ -463,12 +463,17 @@ export function evaluateContentPr({ diff, head, base, basePaths, config }) {
       errors.push(`[image] 足した ${e.path} をどの .md・JSON も参照していない`);
   }
 
-  // 判断が要る語
+  // 判断が要る語。実行役は、判断が要る語があれば PR を作らずオーナーへ回す（2026-10-20 オーケストレーター決定）。
+  // PR に来た時点で道を外れているので、見つかれば error にする
   const judgementWordsFound = findJudgementWords(textFiles, config);
+  if (judgementWordsFound.length > 0) {
+    errors.push(
+      `[judgement] 判断が要る語 ${judgementWordsFound.join("・")} が入っている（PR を作らずオーナーの判断へ回す）`,
+    );
+  }
 
   // manifest
   let p1Recorded = { fan: 0, "seo-marketer": 0 };
-  let declaredWords = [];
   if (manifestPath) {
     const raw = head[manifestPath];
     let manifest = null;
@@ -494,24 +499,19 @@ export function evaluateContentPr({ diff, head, base, basePaths, config }) {
       });
       errors.push(...r.errors);
       p1Recorded = r.p1Recorded;
-      declaredWords = Array.isArray(manifest.judgement_words)
-        ? manifest.judgement_words
-        : [];
-      const missing = judgementWordsFound.filter(
-        (w) => !declaredWords.includes(w),
-      );
-      if (missing.length > 0) {
+      if (
+        Array.isArray(manifest.judgement_words) &&
+        manifest.judgement_words.length > 0
+      ) {
         errors.push(
-          `[judgement] manifest.judgement_words に見つかった語 ${missing.join("・")} が無い`,
+          `[judgement] manifest.judgement_words が空でない（${manifest.judgement_words.join("・")}）。判断が要る記事は PR にしない`,
         );
       }
     }
   }
 
-  const hold = judgementWordsFound.length > 0 || declaredWords.length > 0;
   return {
     ok: errors.length === 0,
-    hold,
     errors,
     judgementWordsFound,
     p1Recorded,
