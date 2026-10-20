@@ -18,6 +18,16 @@ import { BLOG_IMAGE_DIMENSIONS } from "../data/blogImageDimensions";
 import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
 import { blogRehypePlugins } from "../utils/blogMarkdownSanitize.js";
+import BlogChart from "../components/blog/BlogChart";
+import { loadBlogCharts } from "../utils/blogChartLoader.js";
+
+/** 段落の中身が図のタグ1つだけ（前後の空白を除く）か */
+const isChartOnlyParagraph = (node) => {
+  const kids = (node?.children ?? []).filter(
+    (c) => !(c.type === "text" && c.value.trim() === ""),
+  );
+  return kids.length === 1 && kids[0].tagName === "ryujin-chart";
+};
 
 const UI_TEXT = {
   ja: {
@@ -102,6 +112,8 @@ export default function BlogPost() {
   const { id } = useParams();
   const { pathname } = useLocation();
   const [content, setContent] = useState("");
+  // 記事の図の JSON（src ごと）。本文と同じ時点でそろえる（src/utils/blogChartLoader.js）
+  const [charts, setCharts] = useState(() => new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [readProgress, setReadProgress] = useState(0);
@@ -112,6 +124,7 @@ export default function BlogPost() {
   const { lng } = parseLangFromPath(pathname);
   const isTranslated = lng !== "ja" && isBlogLangAvailable(id, lng);
   const t = UI_TEXT[isTranslated ? lng : "ja"];
+  const chartLang = isTranslated ? lng : "ja";
 
   const basePost = getPostById(id);
   const post =
@@ -141,6 +154,11 @@ export default function BlogPost() {
       return;
     }
 
+    // 記事を移ったら、前の記事の本文を出したままにしない。前の記事の取得が後から返っても捨てる
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
     // Load markdown content
     fetch(mdPath)
       .then((response) => {
@@ -149,18 +167,27 @@ export default function BlogPost() {
         }
         return response.text();
       })
-      .then((text) => {
-        setContent(text);
-        setLoading(false);
-      })
+      // 図の JSON も取ってから本文と一緒に描く（後から図が伸びて下の段落が動かないように）
+      .then((text) =>
+        loadBlogCharts(text).then((loadedCharts) => {
+          if (cancelled) return;
+          setCharts(loadedCharts);
+          setContent(text);
+          setLoading(false);
+        }),
+      )
       .catch((err) => {
         console.error("Error loading blog post:", err);
+        if (cancelled) return;
         setError(errorMessageOf(err));
         setLoading(false);
       });
 
     // Scroll to top
     window.scrollTo(0, 0);
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isTranslated から導出される
   }, [id, basePost, mdPath]);
 
@@ -221,6 +248,13 @@ export default function BlogPost() {
         // 生の HTML を許可リストで削ってから描く（script・iframe・on*・javascript: を通さない）
         rehypePlugins={blogRehypePlugins}
         components={{
+          // ブログの図（docs/design/blog-charts/contract.md）。1行のタグは段落に包まれるので、
+          // タグだけの段落は p を外して図をそのまま置く（p の中に figure を入れない）
+          "ryujin-chart": ({ src }) => (
+            <BlogChart src={src} result={charts.get(src)} lang={chartLang} />
+          ),
+          p: ({ node, ...props }) =>
+            isChartOnlyParagraph(node) ? props.children : <p {...props} />,
           // Custom link renderer to open external links in new tab
           a: ({ node, ...props }) => {
             const isExternal = props.href?.startsWith("http");
@@ -252,7 +286,7 @@ export default function BlogPost() {
     ),
     // contentが変わらない限りReactMarkdown要素を再生成しない。読了進捗バーの
     // scroll起因の再レンダーのたびに記事全文を再パースしていた問題への対処
-    [content],
+    [content, charts, chartLang],
   );
 
   // 画面に出ない所（<title>・meta description・OGP/Twitter）だけ metaTitle・metaDescription を優先する。
