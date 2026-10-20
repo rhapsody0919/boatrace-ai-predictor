@@ -45,7 +45,7 @@ node scripts/content/check-content-pr.js [--base origin/master]
 | `src/data/blog-posts/<id>.json` | 日本語版のメタデータ |
 | `src/data/blog-posts/{en,ko,zh-TW}/<id>.json` | 翻訳版のメタデータ |
 | `public/images/blog/<name>.jpg` / `.jpeg` | 画像。JPEG だけ（寸法はビルドの時に JPEG のヘッダーから作るため）。拡張子は小文字 |
-| `public/blog-charts/<id>-<図id>.json` | 図の JSON（`docs/design/blog-charts/contract.md`）。名前は manifest の記事 id で始まり、`article` が記事 id。「競艇」と判断が要る句は記事の JSON と同じに見る。形・参照・廃止語は `npm run verify:blog-charts`（CI）が見る |
+| `public/blog-charts/<id>-<図id>.json` | 図の JSON（`docs/design/blog-charts/contract.md`）。名前は manifest の記事 id＋`-`＋空でない図 id で、manifest.id を接頭辞に持つ別の記事 id（`a` に対する `a-b`）で始まらない。`article` が記事 id（変更なら base の `article` も）。図を変える PR は同じ記事の本文（.md）の差分も要る（図だけ更新しない）。「競艇」と判断が要る句は記事の JSON と同じに見るが、meta の例外は効かない。図の中の `/images/blog/` は画像の参照に数えない。形・参照・孤立・廃止語は `npm run verify:blog-charts`（CI）が見る |
 | `docs/content-manifests/<id>.json` | manifest。PR にちょうど1つ |
 
 - 追加（A）と変更（M）だけ。**削除は許さない**（削除は別の道、通常の PR で行う）。種類の変更（T）も error
