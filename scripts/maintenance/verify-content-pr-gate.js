@@ -565,12 +565,12 @@ const cases = [
     "ok",
   ],
   [
-    "属性が rows → src の順でも通る",
+    "属性が rows → src の順は落ちる（src → rows だけ）",
     {
       md: `${baseMd}\n<ryujin-chart rows="12" src="/blog-charts/sample-chart.json"></ryujin-chart>\n`,
       basePaths: CHART_BASE,
     },
-    "ok",
+    /\[html\]/,
   ],
   [
     "図の JSON が HEAD にあれば通る（headPaths）",

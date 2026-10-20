@@ -15,14 +15,15 @@ const ATTR_RE = /\s+([a-z]+)="([^"]*)"/g;
 
 /**
  * 図のタグだけの1行を読む。形に合えば { src, rows }、違えば null。
- * 属性は src と rows がちょうど1つずつ（順不同、二重引用符）。閉じタグ必須（/> は不可）。rows は 1〜12。
+ * 属性は src → rows の順でちょうど1つずつ（二重引用符）。閉じタグ必須（/> は不可）。rows は 1〜12。
+ * 順を1つに決めるのは、書き手の形を1つに寄せ、hq の検査（platform/blog_post.py）・図の CI とそろえるため（2026-10-20）
  */
 export function parseBlogChartLine(line) {
   const m = typeof line === "string" ? line.match(LINE_RE) : null;
   if (!m) return null;
   const attrs = [...m[1].matchAll(ATTR_RE)].map(([, k, v]) => [k, v]);
-  const keys = attrs.map(([k]) => k).sort();
-  if (keys.length !== 2 || keys[0] !== "rows" || keys[1] !== "src") return null;
+  const keys = attrs.map(([k]) => k);
+  if (keys.length !== 2 || keys[0] !== "src" || keys[1] !== "rows") return null;
   const { src, rows } = Object.fromEntries(attrs);
   if (!BLOG_CHART_SRC_RE.test(src) || !BLOG_CHART_ROWS_RE.test(rows)) return null;
   const n = Number(rows);
