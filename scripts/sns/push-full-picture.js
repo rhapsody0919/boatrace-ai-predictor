@@ -6,8 +6,10 @@
  * 使い方:
  *   node --env-file=.env.local scripts/sns/push-full-picture.js <フォルダ> [--dry-run]
  *
- * フォルダ: bundle.json（format・race_id・x_text・youtube_full{title,description}・shorts・review{p0_count}・qa）、
- *   full-x.mp4（X、全編）、full-youtube.mp4（YouTube、全編）。shorts.mp4 は今は使わない（162 の後）
+ * フォルダ: bundle.json（format・race_id・x_text・youtube_full{title,description}・review{p0_count}・qa）、
+ *   full-x.mp4（X）、full-youtube.mp4（YouTube の完全版）。
+ *   bundle_version: 2 のときだけ、youtube_shorts{title,description} と shorts.mp4（入口版、縦）を受け、YouTube の Shorts の下書きを足す
+ *   （マイグレーション 172、BOA-912）。Shorts は完全版の公開の後に送り、説明文の {full_url} を完全版の URL に置き換える（parent_job_id）
  *
  * 1. 検査: 欄・P0 が0件・機械の検査が全部通った・禁止表現・動画の大きさ・レースが今日あり中止でない・締切の40分前より前
  *    --dry-run はここまで（DB・Storage に書かない）
@@ -24,13 +26,33 @@ import { pathToFileURL } from "node:url";
 import twitterText from "twitter-text";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import { deadlineIso } from "../../api/_lib/snsClaimCheck.js";
+import { FULL_URL_PLACEHOLDER } from "../../api/_lib/snsDeadlineQueue.js";
 import { xPostValid } from "../../api/_lib/snsXLength.js";
 import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
 
 export const FULL_PICTURE_FORMAT = "full_picture";
-export const FILES = { x: "full-x.mp4", youtube: "full-youtube.mp4" };
+export const FILES = {
+  x: "full-x.mp4",
+  youtube: "full-youtube.mp4",
+  shorts: "shorts.mp4",
+};
 // 動画は送信の契約（snsXSend.js の X_MEDIA_MAX_BYTES・YOUTUBE_MEDIA_MAX_BYTES、youtubeQueueAdapter）と同じ 32 MiB まで
-export const MAX_BYTES = { x: 32 * 1024 * 1024, youtube: 32 * 1024 * 1024 };
+export const MAX_BYTES = {
+  x: 32 * 1024 * 1024,
+  youtube: 32 * 1024 * 1024,
+  shorts: 32 * 1024 * 1024,
+};
+/** Shorts を受ける bundle の版。版の欄が無い bundle は今までどおり X・YouTube（完全版）の2件 */
+export const SHORTS_BUNDLE_VERSION = 2;
+/** Shorts（入口版）の機械の検査として、qa.machine に true で入っていなければならない項目（全貌レーンとの契約） */
+export const SHORTS_MACHINE_CHECKS = ["shorts_vertical", "shorts_max_60s"];
+/** Shorts は完全版の4分後に送る（YouTube の job は1回の実行で Chromium の上限6回を使い切るので、同じ実行に重ねない） */
+export const SHORTS_OFFSET_MIN = 4;
+/**
+ * Shorts を作る受付の上限（締切の何分前まで）。X の送る時刻は今から5分後以降、Shorts はその8分後で、期限（締切の30分前）の前に
+ * 完全版の公開を待つ余裕（送信の実行2回分）を残す。過ぎたら Shorts だけ作らず、Slack に書く
+ */
+export const SHORTS_LATEST_BEFORE_MIN = 50;
 export const NOTIFY_BEFORE_MIN = 180;
 export const VETO_BEFORE_MIN = 60;
 export const EXPIRES_BEFORE_MIN = 30;
@@ -52,6 +74,13 @@ const jstTime = (iso) =>
   new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
 const nonEmpty = (v, max) =>
   typeof v === "string" && v.trim().length > 0 && v.length <= max;
+const withShorts = (bundle) => bundle?.bundle_version === SHORTS_BUNDLE_VERSION;
+/** 下書きを作るチャネル（shorts は DB では channel=youtube・variant=shorts） */
+const channelsOf = (bundle) =>
+  withShorts(bundle) ? ["x", "youtube", "shorts"] : ["x", "youtube"];
+const dbChannel = (channel) => (channel === "shorts" ? "youtube" : channel);
+// 置き換えた後の長さ（"{full_url}" 10字 → "https://youtu.be/" + 11字 = 28字）
+const FILLED_URL_EXTRA = 28 - FULL_URL_PLACEHOLDER.length;
 
 /** bundle.json の検査（純粋関数）。不合格は理由の配列を返す */
 export function checkFullPicture(bundle, riskRules = []) {
@@ -72,6 +101,26 @@ export function checkFullPicture(bundle, riskRules = []) {
     reasons.push("youtube_full.title が無い・100字を超える");
   if (!nonEmpty(bundle?.youtube_full?.description, 5000))
     reasons.push("youtube_full.description が無い・5000字を超える");
+  if (bundle?.bundle_version != null && !withShorts(bundle))
+    reasons.push(`bundle_version が不正（${bundle.bundle_version}）`);
+  if (withShorts(bundle)) {
+    const shorts = bundle.youtube_shorts;
+    if (!nonEmpty(shorts?.title, 100) || /[\r\n]/.test(shorts.title))
+      reasons.push("youtube_shorts.title が無い・100字を超える・改行がある");
+    else if (shorts.title === bundle?.youtube_full?.title)
+      reasons.push("youtube_shorts.title が youtube_full.title と同じ");
+    if (!nonEmpty(shorts?.description, 5000 - FILLED_URL_EXTRA))
+      reasons.push(
+        "youtube_shorts.description が無い・完全版の URL を入れると5000字を超える",
+      );
+    else if (shorts.description.split(FULL_URL_PLACEHOLDER).length !== 2)
+      reasons.push(
+        `youtube_shorts.description に ${FULL_URL_PLACEHOLDER} がちょうど1つ無い`,
+      );
+    for (const key of SHORTS_MACHINE_CHECKS)
+      if (bundle?.qa?.machine?.[key] !== true)
+        reasons.push(`Shorts の機械の検査 ${key} が通っていない`);
+  }
   if (bundle?.review?.p0_count !== 0)
     reasons.push(`評価役の P0 が0件でない（${bundle?.review?.p0_count}）`);
   const machine = bundle?.qa?.machine;
@@ -84,7 +133,11 @@ export function checkFullPicture(bundle, riskRules = []) {
   if (Array.isArray(bundle?.qa?.bannedWords) && bundle.qa.bannedWords.length)
     reasons.push(`禁止語: ${bundle.qa.bannedWords.join(",")}`);
   for (const [channel, draft] of Object.entries(draftTexts(bundle))) {
-    const hits = matchRiskRules(draftRiskFields(draft), channel, riskRules);
+    const hits = matchRiskRules(
+      draftRiskFields(draft),
+      draft.platform,
+      riskRules,
+    );
     if (hits.length)
       reasons.push(
         `禁止表現（${channel}）: ${hits.map((h) => h.id).join(",")}`,
@@ -101,6 +154,16 @@ const draftTexts = (bundle) => ({
     caption_text: bundle?.youtube_full?.description ?? "",
     hashtags: [],
   },
+  ...(withShorts(bundle)
+    ? {
+        youtube_shorts: {
+          platform: "youtube",
+          title: bundle.youtube_shorts?.title ?? "",
+          caption_text: bundle.youtube_shorts?.description ?? "",
+          hashtags: [],
+        },
+      }
+    : {}),
 });
 
 /** 締切まわりの時刻（純粋関数）。送る時刻は veto_until と「今から5分後」の遅い方 */
@@ -118,13 +181,16 @@ export function schedule(deadlineAt, now) {
   };
 }
 
-/** チャネルごとの送る時刻（YouTube は X の4分後） */
+const OFFSET_MIN = {
+  x: 0,
+  youtube: YOUTUBE_OFFSET_MIN,
+  shorts: YOUTUBE_OFFSET_MIN + SHORTS_OFFSET_MIN,
+};
+/** チャネルごとの送る時刻（YouTube の完全版は X の4分後、Shorts は完全版のさらに4分後。Shorts は完全版の公開まで待つ） */
 export const sendAtOf = (when, channel) =>
-  channel === "youtube"
-    ? new Date(
-        Date.parse(when.send_at) + YOUTUBE_OFFSET_MIN * 60000,
-      ).toISOString()
-    : when.send_at;
+  new Date(
+    Date.parse(when.send_at) + OFFSET_MIN[channel] * 60000,
+  ).toISOString();
 
 /** 下書きの行（純粋関数）。public_url は送る直前の表示の確認に使う（UTM・タブ以外の query を付けない） */
 export function draftRows(bundle, { revision, paths, when, observedAt }) {
@@ -187,6 +253,20 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
       video_storage_path: paths.youtube,
       source_data: sourceData("youtube"),
     },
+    ...(paths.shorts
+      ? {
+          // 親（完全版の job）の id は、完全版を承認した後に deadline_queue.parent_job_id へ入れる（承認は queue の一致を照合する）
+          shorts: {
+            ...common,
+            scheduled_at: sendAtOf(when, "shorts"),
+            platform: "youtube",
+            title: bundle.youtube_shorts.title,
+            caption_text: bundle.youtube_shorts.description,
+            video_storage_path: paths.shorts,
+            source_data: sourceData("shorts"),
+          },
+        }
+      : {}),
   };
 }
 
@@ -210,7 +290,8 @@ export async function pushFullPicture(
   );
   const reasons = checkFullPicture(bundle, riskRules);
   const files = {};
-  for (const [channel, name] of Object.entries(FILES)) {
+  for (const channel of channelsOf(bundle)) {
+    const name = FILES[channel];
     try {
       files[channel] = await readBytes(path.join(folder, name));
       if (
@@ -232,32 +313,43 @@ export async function pushFullPicture(
   const when = schedule(deadlineAt, now);
   if (now.getTime() >= Date.parse(when.latest))
     return { reasons: [`締切の${LATEST_BEFORE_MIN}分前を過ぎた`] };
-  const revision = createHash("sha256")
-    .update(JSON.stringify(bundle))
-    .update(files.x)
-    .update(files.youtube)
-    .digest("hex")
-    .slice(0, 32);
-  if (dryRun) return { dryRun: true, revision, when };
+  // Shorts は、期限までに完全版の公開を待てる時刻に届いたときだけ作る
+  const shortsLate =
+    withShorts(bundle) &&
+    now.getTime() >=
+      Date.parse(minutesBefore(deadlineAt, SHORTS_LATEST_BEFORE_MIN));
+  const channels = channelsOf(bundle).filter(
+    (c) => c !== "shorts" || !shortsLate,
+  );
+  const hash = createHash("sha256").update(JSON.stringify(bundle));
+  // 版には受け取った動画を全部入れる（shorts.mp4 だけを直して入れ直しても、前の版の承認と同じ path を上書きしない）
+  for (const channel of channelsOf(bundle)) hash.update(files[channel]);
+  const revision = hash.digest("hex").slice(0, 32);
+  if (dryRun) return { dryRun: true, revision, when, shortsLate };
 
-  const paths = {
-    x: `full-picture/${bundle.race_id}/${revision}/${FILES.x}`,
-    youtube: `full-picture/${bundle.race_id}/${revision}/${FILES.youtube}`,
-  };
-  for (const channel of Object.keys(FILES))
+  const paths = Object.fromEntries(
+    channels.map((c) => [
+      c,
+      `full-picture/${bundle.race_id}/${revision}/${FILES[c]}`,
+    ]),
+  );
+  for (const channel of channels)
     await store.saveFile(paths[channel], files[channel]);
   const observedAt = now.toISOString();
   const rows = draftRows(bundle, { revision, paths, when, observedAt });
   const controls = await store.controls();
   const out = {};
-  for (const channel of Object.keys(FILES)) {
-    const control = controls[channel];
+  // 下書きと item を全部入れてから承認する（途中の item で落ちたとき、先に承認した分だけが送られて残らないように）
+  const made = {};
+  for (const channel of channels) {
+    const control = controls[dbChannel(channel)];
     const auto = control?.mode === "auto" && control?.auto_approver_id;
     const draft = await store.insertDraft(rows[channel]);
     const item = await store.insertItem({
       kind: FULL_PICTURE_FORMAT,
       draft_id: draft.id,
-      channel,
+      channel: dbChannel(channel),
+      ...(channel === "shorts" ? { variant: "shorts" } : {}),
       race_id: bundle.race_id,
       deadline_at: when.deadline_at,
       notify_by: when.notify_by,
@@ -277,24 +369,39 @@ export async function pushFullPicture(
           }
         : {}),
     });
+    made[channel] = { draft, item, control, auto: Boolean(auto) };
     out[channel] = {
       draft_id: draft.id,
       item_id: item.id,
       auto: Boolean(auto),
     };
+  }
+  for (const channel of channels) {
+    const { item, control, auto } = made[channel];
+    let { draft } = made[channel];
     if (!auto) continue;
     try {
+      if (channel === "shorts") {
+        // 完全版が自動で承認されていなければ、Shorts も自動では承認しない（親の無い {full_url} は送る前の検査でも止まる）
+        const parentJobId = out.youtube?.job_id;
+        if (!parentJobId)
+          throw new Error(
+            "完全版が自動で承認されなかったので、Shorts も個別承認に回した",
+          );
+        draft = await store.setParentJob(draft, parentJobId);
+      }
       const snapshot = await createXSnapshot(draft, async (p) =>
         p === paths[channel]
           ? files[channel]
           : Promise.reject(new Error("媒体の path が違う")),
       );
-      await store.approve({
+      const job = await store.approve({
         p_draft_id: draft.id,
         p_approver_id: control.auto_approver_id,
         p_snapshot: snapshot,
         p_scheduled_at: sendAtOf(when, channel),
       });
+      out[channel].job_id = job?.id ?? null;
       out[channel].send_at = sendAtOf(when, channel);
     } catch (error) {
       await store
@@ -303,17 +410,26 @@ export async function pushFullPicture(
       out[channel].error = error.message;
     }
   }
+  const label = {
+    x: "x",
+    youtube: "youtube（完全版）",
+    shorts: "youtube（Shorts）",
+  };
   const lines = Object.entries(out).map(([channel, r]) =>
     r.send_at
-      ? `${channel}: ${jstTime(r.send_at)} に自動で送る${controls[channel]?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
+      ? `${label[channel]}: ${jstTime(r.send_at)} に自動で送る${channel === "shorts" ? "（完全版の公開の後。説明文に完全版の URL を入れる）" : ""}${controls[dbChannel(channel)]?.dry_run !== false ? "（試運転中: claim の前で止まる）" : ""}`
       : r.error
-        ? `${channel}: 自動の承認に失敗（個別承認に回した）: ${r.error}`
-        : `${channel}: 自動モードでないので個別承認の画面で承認する`,
+        ? `${label[channel]}: 自動の承認に失敗（個別承認に回した）: ${r.error}`
+        : `${label[channel]}: 自動モードでないので個別承認の画面で承認する`,
   );
+  if (shortsLate)
+    lines.push(
+      `youtube（Shorts）: 締切の${SHORTS_LATEST_BEFORE_MIN}分前を過ぎて届いたので作らなかった（完全版の公開を待つ時間が無い）`,
+    );
   await notify(
     `SNS 全貌動画 ${bundle.race_id}（締切 ${jstTime(deadlineAt)}）\n${lines.join("\n")}\n止めるには: ${STOP_SQL}`,
   ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
-  return { channels: out, revision, when };
+  return { channels: out, revision, when, shortsLate };
 }
 
 /** PostgREST・Storage の読み書き（service_role）。失敗は投げる */
@@ -395,6 +511,23 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       ),
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
+    // 下書きの deadline_queue に親（完全版の job）を入れる。承認の前に入れないと、承認の queue の照合に通らない
+    setParentJob: async (draft, parentJobId) =>
+      one(
+        await call(`sns_drafts?id=eq.${draft.id}&status=eq.pending_review`, {
+          method: "PATCH",
+          body: {
+            source_data: {
+              ...draft.source_data,
+              deadline_queue: {
+                ...draft.source_data.deadline_queue,
+                parent_job_id: parentJobId,
+              },
+            },
+          },
+        }),
+        `下書き ${draft.id} に親の job を入れられない`,
+      ),
   };
 }
 
