@@ -6,7 +6,7 @@
 
 | 種類 | 送り方 | 正本 |
 |---|---|---|
-| 全貌動画（X の投稿・YouTube 完全版・YouTube Shorts）、/today の X 投稿 | 機械の検査（全貌動画は評価役の検査も）が通れば、承認なしで自動で送る。止めるのはフラグだけ（`sns_auto_send_control.mode` を manual、全体は `sns_x_send_control.paused=true`） | `.claude/CLAUDE.md`「確認のバッチ化を標準運用にする」、ADR-0094、`docs/operation/sns-pdca-loop-runbook.md` |
+| 全貌動画（X の投稿・YouTube 完全版・YouTube Shorts）、/today の X 投稿 | 機械の検査が通れば（全貌動画の評価役の検査は 2026-10-20 オーナー決定で外した）、承認なしで自動で送る。止めるのはフラグだけ（`sns_auto_send_control.mode` を manual、全体は `sns_x_send_control.paused=true`） | `.claude/CLAUDE.md`「確認のバッチ化を標準運用にする」、ADR-0094、`docs/operation/sns-pdca-loop-runbook.md` |
 | それ以外の投稿 | sns-hub 管理画面（`/admin/sns-hub`）で1件ずつユーザーが承認してから送る。手で投稿するときは下の B | このファイル |
 
 ## 前提となる制約
