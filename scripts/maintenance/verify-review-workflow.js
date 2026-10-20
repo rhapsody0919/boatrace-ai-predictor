@@ -603,6 +603,10 @@ globalThis.fetch = async (url, init) => {
   }
   if (u.includes("/git/trees/")) return json(200, { tree: [{ path: "src/a.js", mode: "100644" }, { path: ".gitattributes", mode: "100644" }], truncated: false });
   if (scenario === "timeout") { const e = new Error("timed out"); e.name = "TimeoutError"; throw e; }
+  if (scenario === "bodytimeout") return new Response(new ReadableStream({ start(c) { const e = new Error("timed out"); e.name = "TimeoutError"; c.error(e); } }), { status: 200 });
+  if (scenario === "incomplete") return json(200, { model: "gpt-test-1", choices: [{ finish_reason: "length", message: { content: "" } }], usage: { prompt_tokens: 10, completion_tokens: 20 } });
+  if (scenario === "refused") return json(200, { model: "claude-test-1", stop_reason: "refusal", content: [], usage: { input_tokens: 30, output_tokens: 1 } });
+  if (scenario === "nullbody") return json(200, null);
   if (scenario === "429") return json(429, { error: { type: "rate_limit", message: "Incorrect API key sk-proj-SECRETKEY123 ERROR_BODY_MARKER" } });
   const verdict = JSON.stringify({ findings: [{ severity: "P1", file: "src/a.js", line: 1, summary: "FINDING_TEXT_MARKER" }] });
   if (u.includes("openai")) return json(200, { model: "gpt-test-1", choices: [{ finish_reason: "stop", message: { content: verdict } }], usage: { prompt_tokens: 1234, completion_tokens: 56, prompt_tokens_details: { cached_tokens: 0 }, completion_tokens_details: { reasoning_tokens: 40 } } });
@@ -646,8 +650,17 @@ globalThis.fetch = async (url, init) => {
     const r429 = runLlm("429", "openai");
     check("llm.js（429）は失敗しても usage を1行出す（http・usage は null）", r429.status === 1 && r429.rec?.outcome === "http" && r429.rec.http === 429 && r429.rec.in === null && r429.rec.model === null, r429.all);
     check("llm.js（429）の usage の行にエラーの本文・鍵が無い", noLeak(r429));
+    check("llm.js は鍵をログのどこにも出さない（429。エラーの要約も伏せる）", !/SECRETKEY|GITHUBTOKENSECRET/.test(r429.all), r429.all);
     const to = runLlm("timeout", "anthropic");
     check("llm.js（timeout）は usage を1行出す", to.status === 1 && to.rec?.outcome === "timeout" && to.rec.http === null, to.all);
+    const bto = runLlm("bodytimeout", "openai");
+    check("llm.js（本文の途中で時間切れ）は timeout として usage を1行出す", bto.status === 1 && bto.rec?.outcome === "timeout" && bto.rec.http === 200, bto.all);
+    const inc = runLlm("incomplete", "openai");
+    check("llm.js（途中で終わった）は incomplete として usage つきで1行出す", inc.status === 1 && inc.rec?.outcome === "incomplete" && inc.rec.in === 10 && inc.rec.out === 20, inc.all);
+    const ref = runLlm("refused", "anthropic");
+    check("llm.js（断った）は refused として usage つきで1行出す", ref.status === 1 && ref.rec?.outcome === "refused" && ref.rec.in === 30, ref.all);
+    const nb = runLlm("nullbody", "anthropic");
+    check("llm.js（本文が null）は unreadable として1行出す", nb.status === 1 && nb.rec?.outcome === "unreadable" && nb.rec.http === 200, nb.all);
     const mech = runLlm("mechanical", "openai");
     check("llm.js（機械の検査で止めた）は LLM を呼ばず usage を1行出す", mech.status === 1 && mech.rec?.outcome === "mechanical" && mech.rec.model_req === null && mech.rec.in === null, mech.all);
   } finally {

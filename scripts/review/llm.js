@@ -39,7 +39,12 @@ const usage = {
   p1: null,
 };
 process.on("exit", () => {
-  writeSync(1, `${usageLine({ ...usage, at: new Date() })}\n`);
+  try {
+    writeSync(1, `${usageLine({ ...usage, at: new Date() })}\n`);
+  } catch (err) {
+    // 書けなくても終了コードは変えない（承認の判定は verdict の出力で決まる）
+    console.error(`usage の行を書けなかった: ${err.message}`);
+  }
 });
 
 /** 応答が来ない失敗（timeout）を記録してから投げ直す */
@@ -52,14 +57,24 @@ async function post(url, init) {
   }
 }
 
-/** 応答の本文を JSON で読む。読めなければ課金済みで判定なし */
+/** 応答の本文を JSON で読む。読めなければ課金済みで判定なし（本文の途中で時間切れなら timeout） */
 async function readJson(res, vendor) {
+  let data;
   try {
-    return await res.json();
-  } catch {
+    data = await res.json();
+  } catch (err) {
+    if (err?.name === "TimeoutError") {
+      usage.outcome = "timeout";
+      fail(`${vendor} の応答の本文が時間内に届かなかった`);
+    }
     usage.outcome = "unreadable";
     fail(`${vendor} の応答が JSON として読めない`);
   }
+  if (!data || typeof data !== "object") {
+    usage.outcome = "unreadable";
+    fail(`${vendor} の応答がオブジェクトでない`);
+  }
+  return data;
 }
 
 async function callOpenAI(system, user) {

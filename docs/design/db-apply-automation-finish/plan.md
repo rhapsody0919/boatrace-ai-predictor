@@ -507,6 +507,7 @@ flowchart TD
 
 **hq の読み方**（偽の記録を拾わないため、`/commits/{sha}/check-runs` の job 名では引かない。作成の App は自分のブランチの workflow で同じ名前の job と notice を出せる）:
 1. `gh api --paginate 'repos/rhapsody0919/boatrace-ai-predictor/actions/workflows/review.yml/runs?event=pull_request_target&created=<JST の1日>&per_page=100'`、`path == ".github/workflows/review.yml"` を確かめる（1日は 2500 の頭打ちより十分少ない）
+   - 加えて、行の `pr` の base が master であること・run の head SHA が行と同じことを確かめる（作成の App が自分のブランチを base にした PR では、そのブランチの review.yml が `pull_request_target` で動き、1 の条件を全部通る偽の行を出せる。PR-U の審査の指摘。手順の正本は `docs/operation/identity-separation-owner-steps.md` 5節）
 2. `gh api 'repos/…/actions/runs/{run_id}/jobs?filter=all'`（再実行の前の試行も数える）で `name=="llm"` の job id
 3. `gh api 'repos/…/check-runs/{job_id}/annotations'` の `title=="review-usage"` の message を JSON として読み、`v` を確かめる
 4. 単価を掛けて日ごとに合計し、hq の手元に JSONL で貯める（1日約110 run で API 約220回）
