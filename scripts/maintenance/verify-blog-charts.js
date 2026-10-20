@@ -58,6 +58,9 @@ export function scanArticle(file, markdown) {
   lines.forEach((line, i) => {
     if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
     if (inFence || !/ryujin-?chart/i.test(line)) return;
+    // 4字下げのコードブロックと、インラインのコード（`<ryujin-chart>` と説明に書いたもの）は数えない
+    if (/^( {4}|\t)/.test(line) || /`[^`]*ryujin-?chart[^`]*`/i.test(line))
+      return;
     const at = `${file}:${i + 1}`;
     const m = line.match(TAG_RE);
     if (!m) {
@@ -284,6 +287,39 @@ test("「競艇」は図の文字に書けない", () => {
   );
 });
 
+test("分母0・無い日付・横棒の単位が % 以外を落とす", () => {
+  const c = example();
+  c.views[1].series[0].totals = [0, 0, 0, 0, 0, 0];
+  c.views[1].series[0].counts = [0, 0, 0, 0, 0, 0];
+  assert.ok(messages(c).some((x) => x.includes("totals[0]: 分母は1以上")));
+  const d = example();
+  d.source.dataVersion = "2026-02-30";
+  assert.ok(
+    messages(d).some((x) => x.startsWith("source.dataVersion: YYYY-MM-DD")),
+  );
+  const u = example();
+  u.axes.value.unit = "レース";
+  assert.ok(
+    messages(u).some((x) => x.startsWith('axes.value.unit: hbar は "%" だけ')),
+  );
+});
+
+test("字数の上限: 答え90字・注記70字・行のラベル8字", () => {
+  assert.ok(
+    messages({ ...example(), description: "あ".repeat(91) }).some((x) =>
+      x.startsWith("description: 1〜90字"),
+    ),
+  );
+  assert.ok(
+    messages({ ...example(), note: "あ".repeat(71) }).some((x) =>
+      x.startsWith("note: 1〜70字"),
+    ),
+  );
+  const c = example();
+  c.rows[0].label = "あ".repeat(9);
+  assert.ok(messages(c).some((x) => x.startsWith("rows[0].label: 1〜8字")));
+});
+
 test("記事のタグの書き方: 大文字・自己終了・段落の中・外の src を落とし、正しい1行を拾う", () => {
   const ok =
     'a\n\n<ryujin-chart src="/blog-charts/x-y.json" rows="6"></ryujin-chart>\n\nb';
@@ -302,6 +338,11 @@ test("記事のタグの書き方: 大文字・自己終了・段落の中・外
   for (const md of bad)
     assert.ok(scanArticle("t.md", md).errors.length > 0, md);
   assert.deepEqual(scanArticle("t.md", "```\n<ryujin-chart>\n```").errors, []);
+  assert.deepEqual(
+    scanArticle("t.md", "説明: `<ryujin-chart src=…>` と書く").errors,
+    [],
+  );
+  assert.deepEqual(scanArticle("t.md", "    <ryujin-chart>").errors, []);
 });
 
 test("参照と JSON の突き合わせ: rows・article・本文に無い答えの数字・書かない言い方", () => {

@@ -5,10 +5,11 @@
 .blog-chart {
   --blog-chart-row-height: 32px;
   --blog-chart-row-gap: 8px;
-  /* 見出し・答え・切り替え・札・注記・出典・余白の高さ（行を除く）。2026-10-20 の実測（契約の例、答え68字・注記63字）:
-     320px 457・375px 413・768px 330・1024px 以上 292。これを下回らないように幅ごとに取る。
-     実物が短いときは出典が下に寄り、長いときだけ下が動く */
-  --blog-chart-chrome: 440px;
+  /* 見出し・答え・切り替え・札・注記・出典・余白の高さ（行を除く）。契約の字数の上限（題40字・答え90字・
+     注記70字）で 2026-10-20 に実測した最悪の値: 320px 553・361px 502・375px 483・481px 400・
+     600〜768px 378・769px 315・1024px 以上 298。これを下回らないように幅ごとに取り、読み込みの前後で
+     下の段落を動かさない。実物が短いときはカードの下が空く */
+  --blog-chart-chrome: 490px;
   margin: 1.5rem 0;
   padding: 1rem;
   background: var(--surface-card);
@@ -26,19 +27,37 @@
 
 @media (max-width: 360px) {
   .blog-chart {
-    --blog-chart-chrome: 470px;
+    --blog-chart-chrome: 560px;
   }
 }
 
-@media (min-width: 401px) {
+@media (min-width: 361px) and (max-width: 374px) {
   .blog-chart {
-    --blog-chart-chrome: 380px;
+    --blog-chart-chrome: 510px;
+  }
+}
+
+@media (min-width: 481px) {
+  .blog-chart {
+    --blog-chart-chrome: 410px;
+  }
+}
+
+@media (min-width: 601px) {
+  .blog-chart {
+    --blog-chart-chrome: 385px;
   }
 }
 
 @media (min-width: 769px) {
   .blog-chart {
-    --blog-chart-chrome: 300px;
+    --blog-chart-chrome: 320px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .blog-chart {
+    --blog-chart-chrome: 305px;
   }
 }
 
@@ -79,7 +98,8 @@
 
 .blog-chart__control select {
   font: inherit;
-  font-size: 0.95rem;
+  /* 16px 未満だと iOS Safari が押したときに画面を拡大する */
+  font-size: 16px;
   min-height: 44px;
   padding: 4px 8px;
   border-radius: 6px;
@@ -88,13 +108,18 @@
   color: var(--text-primary);
 }
 
+/* ボタンは1段で、収まらなければ横にスクロールする（折り返すと高さが段の数だけ増えて下の段落が動く） */
 .blog-chart__buttons {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .blog-chart__buttons button {
+  flex: none;
+  white-space: nowrap;
   font: inherit;
   font-size: 0.9rem;
   min-height: 44px;
@@ -124,27 +149,30 @@
 .blog-chart__badges span {
   padding: 2px 10px;
   border-radius: 4px;
-  background: var(--surface-page);
-  border: 1px solid var(--border-hairline);
+  background: color-mix(
+    in srgb,
+    var(--border-hairline) 45%,
+    var(--surface-card)
+  );
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
 }
 
+/* ラベルの列は一番長いラベルの幅（契約で8字まで）。行（li）は display: contents にして、全行で列をそろえる */
 .blog-chart .blog-chart__rows {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--blog-chart-row-gap);
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-auto-rows: var(--blog-chart-row-height);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: var(--blog-chart-row-gap);
 }
 
 .blog-chart .blog-chart__row {
-  margin: 0;
-  display: grid;
-  grid-template-columns: 4.8em minmax(0, 1fr);
-  align-items: center;
-  gap: 8px;
-  height: var(--blog-chart-row-height);
+  display: contents;
 }
 
 .blog-chart__label {
@@ -200,6 +228,10 @@
   border-radius: 3px;
 }
 
+.blog-chart__rows--with-count .blog-chart__track {
+  margin-right: 7.5em;
+}
+
 .blog-chart__fill {
   position: absolute;
   inset: 0 auto 0 0;
@@ -236,7 +268,6 @@
 }
 
 .blog-chart__caption {
-  margin-top: auto;
   padding-top: 12px;
   font-size: var(--font-size-xs);
   color: var(--text-secondary);

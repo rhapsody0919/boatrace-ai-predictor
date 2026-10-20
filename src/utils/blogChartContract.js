@@ -14,6 +14,8 @@ export const KINDS = {
     axes: ["category", "value"],
     rows: [2, 12],
     series: [1, 1],
+    // 値は棒の右の決まった幅に出すので、単位は「%」だけ（長い単位・大きい整数は収まらない）
+    units: ["%"],
   },
   vbar: { implemented: false },
   stacked: { implemented: false },
@@ -103,12 +105,13 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
       err(path, `文字列の key / 実際: ${show(v)}`);
   };
   const date = (v, path) => {
-    if (
-      typeof v !== "string" ||
-      !DATE_RE.test(v) ||
-      Number.isNaN(Date.parse(v))
-    )
-      err(path, `YYYY-MM-DD / 実際: ${show(v)}`);
+    // 2026-02-30 のような無い日付は Date.parse が通すので、往復して同じ日付に戻るかで見る
+    const ok =
+      typeof v === "string" &&
+      DATE_RE.test(v) &&
+      !Number.isNaN(Date.parse(v)) &&
+      new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
+    if (!ok) err(path, `YYYY-MM-DD（ある日付） / 実際: ${show(v)}`);
   };
 
   if (!isObj(chart))
@@ -155,8 +158,8 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
   }
 
   text(chart.title, "title", { max: 40 });
-  text(chart.description, "description", { max: 120 });
-  text(chart.note, "note", { max: 80, required: false });
+  text(chart.description, "description", { max: 90 });
+  text(chart.note, "note", { max: 70, required: false });
 
   // 軸
   let decimals = 0;
@@ -175,10 +178,10 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
     else {
       keysOnly(va, "axes.value", ["label", "unit", "decimals"]);
       text(va.label, "axes.value.label", { max: 20 });
-      if (typeof va.unit !== "string")
+      if (kind.units && !kind.units.includes(va.unit))
         err(
           "axes.value.unit",
-          `文字列（例 "%"、単位が無ければ ""） / 実際: ${show(va.unit)}`,
+          `${chart.kind} は ${kind.units.map((u) => `"${u}"`).join("・")} だけ / 実際: ${show(va.unit)}`,
         );
       if (!Number.isInteger(va.decimals) || va.decimals < 0 || va.decimals > 2)
         err("axes.value.decimals", `0〜2 の整数 / 実際: ${show(va.decimals)}`);
@@ -207,7 +210,7 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
     key(r.key, `${p}.key`);
     if (rowKeys.has(r.key)) err(`${p}.key`, `key の重複: ${show(r.key)}`);
     rowKeys.add(r.key);
-    text(r.label, `${p}.label`, { max: 12 });
+    text(r.label, `${p}.label`, { max: 8 });
     if (
       r.boat !== undefined &&
       !(
@@ -269,7 +272,7 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
     if (viewKeys.has(v.key)) err(`${p}.key`, `key の重複: ${show(v.key)}`);
     viewKeys.add(v.key);
     text(v.label, `${p}.label`, { max: 12 });
-    text(v.description, `${p}.description`, { max: 120, required: false });
+    text(v.description, `${p}.description`, { max: 90, required: false });
 
     const b = v.badge;
     let sample = null;
@@ -369,7 +372,9 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
       if (counts && unit === "%") {
         counts.forEach((c, i) => {
           const denom = totals ? totals[i] : sample;
-          if (!denom) return;
+          if (denom === null) return; // 札の母数の誤りは札の検査で出している
+          if (denom === 0)
+            return err(`${sp}.totals[${i}]`, `分母は1以上 / 実際: 0`);
           if (c > denom)
             return err(`${sp}.counts[${i}]`, `分母 ${denom} 以下 / 実際: ${c}`);
           const expected = Math.round((c * 100 * scale) / denom);

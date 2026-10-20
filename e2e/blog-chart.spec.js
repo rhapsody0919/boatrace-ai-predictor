@@ -5,7 +5,7 @@
  * 図を使う記事はまだ無いので、既存の記事の .md と図の JSON を route で差し替えて描く。
  * JSON は契約の例（docs/design/blog-charts/example-venue-course-win.json、24会場＋全国・直近1年の実データ）。
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures.js";
 import { readFileSync } from "node:fs";
 
 const ARTICLE = "fukuoka-water-wind-guide";
@@ -139,27 +139,88 @@ test.describe("ブログの図", () => {
     );
   });
 
-  test("読み込み中から描き終わるまで、図の高さで下の段落が動かない（CLS）", async ({
+  // 契約の字数の上限（題40字・答え90字・注記70字）と、6つのボタン。最悪の高さでも下の段落を動かさない
+  const longest = {
+    ...example,
+    title:
+      "進入コース別の1着率と全国との比べ方、会場ごとの直近1年の進入コース別の1着".slice(
+        0,
+        40,
+      ),
+    description:
+      "福岡は1コースの1着率が59.2%（2,363レース中1,400回）で、全国の55.5%（55,414レース中30,732回）より高い。2コースは15.0%。"
+        .padEnd(90, "あ")
+        .slice(0, 90),
+    note: "進入コース別（枠番ではない）。中止・不成立のレースを除く。4〜6コースは1着の件数が少なく、会場の順位は年によって変わりうる。"
+      .padEnd(70, "い")
+      .slice(0, 70),
+  };
+  const longestButtons = {
+    ...longest,
+    views: example.views
+      .filter((v) => ["all", "01", "02", "03", "04", "22"].includes(v.key))
+      .map((v) => ({ ...v, label: "あいう" })),
+  };
+  for (const [name, chart] of [
+    ["契約の例", example],
+    ["字数の上限・選ぶ箱", longest],
+    ["字数の上限・ボタン6つ", longestButtons],
+  ]) {
+    test(`読み込み中から描き終わるまで、下の段落が動かない（CLS、${name}）`, async ({
+      page,
+    }) => {
+      for (const width of [
+        320, 360, 375, 481, 600, 768, 769, 1024, 1440, 1920,
+      ]) {
+        await page.setViewportSize({ width, height: 900 });
+        await stubArticle(page, { chart, chartDelay: 500 });
+        await page.goto(`/blog/${ARTICLE}`);
+        const figure = chartLocator(page);
+        await expect(figure).toHaveAttribute("data-chart-state", "loading");
+        const below = page.locator(".blog-post-content p", {
+          hasText: "図の下の段落。",
+        });
+        const before = await below.boundingBox();
+        await expect(figure).toHaveAttribute("data-chart-state", "ready");
+        const after = await below.boundingBox();
+        expect(
+          Math.abs(after.y - before.y),
+          `${width}px: 下の段落の移動`,
+        ).toBeLessThanOrEqual(1);
+        await page.unrouteAll({ behavior: "ignoreErrors" });
+      }
+    });
+  }
+
+  test("8字の行のラベルも棒に隠れず、全行で棒の始まりがそろう", async ({
     page,
   }) => {
-    for (const width of [375, 1440]) {
-      await page.setViewportSize({ width, height: 900 });
-      await stubArticle(page, { chartDelay: 800 });
-      await page.goto(`/blog/${ARTICLE}`);
-      const chart = chartLocator(page);
-      await expect(chart).toHaveAttribute("data-chart-state", "loading");
-      const below = page.locator(".blog-post-content p", {
-        hasText: "図の下の段落。",
-      });
-      const before = await below.boundingBox();
-      await expect(chart).toHaveAttribute("data-chart-state", "ready");
-      const after = await below.boundingBox();
-      expect(
-        Math.abs(after.y - before.y),
-        `${width}px: 下の段落の移動`,
-      ).toBeLessThanOrEqual(1);
-      await page.unrouteAll({ behavior: "ignoreErrors" });
-    }
+    const chart = {
+      ...example,
+      rows: example.rows.map((r, i) => ({
+        ...r,
+        label: i === 0 ? "あいうえおかきく" : r.label,
+      })),
+    };
+    await page.setViewportSize({ width: 375, height: 900 });
+    await stubArticle(page, { chart });
+    await page.goto(`/blog/${ARTICLE}`);
+    const figure = chartLocator(page);
+    await expect(figure).toHaveAttribute("data-chart-state", "ready");
+    const boxes = await figure.evaluate((el) =>
+      [...el.querySelectorAll(".blog-chart__row")].map((row) => {
+        const label = row
+          .querySelector(".blog-chart__label")
+          .getBoundingClientRect();
+        const track = row
+          .querySelector(".blog-chart__track")
+          .getBoundingClientRect();
+        return { labelRight: label.right, trackLeft: track.left };
+      }),
+    );
+    for (const b of boxes)
+      expect(b.labelRight).toBeLessThanOrEqual(b.trackLeft);
+    expect(new Set(boxes.map((b) => Math.round(b.trackLeft))).size).toBe(1);
   });
 
   test("JSON が取れない・契約に合わないときは、同じ場所に失敗を出す（データなしにしない）", async ({

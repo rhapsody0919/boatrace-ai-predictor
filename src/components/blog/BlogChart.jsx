@@ -35,7 +35,7 @@ const UI_TEXT = {
     error: "Could not load the chart data. Please reload the page.",
     sample: (n, unit) => `${n} ${unit} in total`,
     source: (name, date) => `Source: ${name} (compiled ${date} JST)`,
-    count: (n) => ` (${n})`,
+    count: (n) => ` (n=${n})`,
   },
   "zh-TW": {
     loading: "正在載入圖表",
@@ -55,8 +55,9 @@ const UI_TEXT = {
 
 /** 件数がこれより少ない行は、値の横に回数を添える（承認したモック、言葉の審査） */
 const FEW_COUNT = 30;
-/** 選択肢がこの数までならボタン、超えたら選ぶ箱 */
+/** 選択肢がこの数まで、かつ名前の字数の合計がこれまでならボタン、超えたら選ぶ箱（ボタンは1段。多いと横のスクロールが長くなる） */
 const MAX_BUTTONS = 6;
+const MAX_BUTTON_CHARS = 18;
 
 const formatDate = (iso) => iso.replaceAll("-", "/");
 
@@ -65,8 +66,15 @@ function HBarRows({ chart, view, lang, ui }) {
   const { decimals } = chart.axes.value;
   const unit = chart.axes.value.unit;
   const series = view.series[0];
+  // 回数を添える行の棒が長い（目盛りの半分を超える）ときだけ、値の右の余白を広げる。
+  // 短い棒なら「（19回）」は余白の手前に収まるので、ふだんは棒を短くしない
+  const hasLongFew = (series.counts ?? []).some(
+    (c, i) => c < FEW_COUNT && series.values[i] / max > 0.5,
+  );
   return (
-    <ol className="blog-chart__rows">
+    <ol
+      className={`blog-chart__rows${hasLongFew ? " blog-chart__rows--with-count" : ""}`}
+    >
       {chart.rows.map((row, i) => {
         const value = series.values[i];
         const count = series.counts?.[i];
@@ -88,7 +96,10 @@ function HBarRows({ chart, view, lang, ui }) {
             <span className="blog-chart__track">
               <span className="blog-chart__fill" style={{ width }} />
               <span className="blog-chart__value" style={{ left: width }}>
-                {value.toFixed(decimals)}
+                {value.toLocaleString("ja-JP", {
+                  minimumFractionDigits: decimals,
+                  maximumFractionDigits: decimals,
+                })}
                 {unit}
                 {count !== undefined && count < FEW_COUNT && (
                   <small>{ui.count(count)}</small>
@@ -155,7 +166,12 @@ function BlogChart({ src, rows, lang = "ja" }) {
 
   if (state !== "ready") {
     return (
-      <figure className="blog-chart" data-chart-state={state} style={style}>
+      <figure
+        className="blog-chart"
+        data-chart-state={state}
+        aria-busy={state === "loading"}
+        style={style}
+      >
         <div className="blog-chart__placeholder">
           {state === "loading" ? (
             ui.loading
@@ -178,6 +194,10 @@ function BlogChart({ src, rows, lang = "ja" }) {
   const answer = localize(view.description ?? chart.description, lang);
   const { badge } = view;
   // 同じ図を1記事に2回置いても id が重ならないよう useId を使う
+  const useButtons =
+    chart.views.length <= MAX_BUTTONS &&
+    chart.views.reduce((n, v) => n + [...localize(v.label, lang)].length, 0) <=
+      MAX_BUTTON_CHARS;
   const controlId = `blog-chart-${baseId.replaceAll(":", "")}`;
 
   return (
@@ -191,10 +211,12 @@ function BlogChart({ src, rows, lang = "ja" }) {
       <p className="blog-chart__title" id={`${controlId}-title`}>
         {title}
       </p>
-      <p className="blog-chart__answer">{answer}</p>
+      <p className="blog-chart__answer" aria-live="polite">
+        {answer}
+      </p>
       {chart.switch && (
         <div className="blog-chart__control">
-          {chart.views.length <= MAX_BUTTONS ? (
+          {useButtons ? (
             <span
               className="blog-chart__buttons"
               role="group"
@@ -231,7 +253,7 @@ function BlogChart({ src, rows, lang = "ja" }) {
           )}
         </div>
       )}
-      <div className="blog-chart__badges" aria-live="polite">
+      <div className="blog-chart__badges" aria-live="polite" aria-atomic="true">
         <span>{localize(badge.scope, lang)}</span>
         <span>
           {formatDate(badge.period.from)}〜{formatDate(badge.period.to)}
