@@ -3,17 +3,19 @@
 記事を作って PR を出す側（hq の実行役）と、PR を機械で判定する関門の間の約束。
 関門は `scripts/content/check-content-pr.js`（判定の本体は `scripts/lib/contentPrGate.js`、設定は `scripts/content/content-pr-gate.json`）。
 
+**位置づけ**: 今は必須チェック（ブランチ保護の必須の CI）ではなく、判定の道具。必須にするのは④のレーンで行う。
+
 ```bash
 node scripts/content/check-content-pr.js [--base origin/master]
 ```
 
-`git diff --name-status --no-renames <base>...HEAD` の差分・HEAD の中身・base のファイル一覧から判定し、結果の JSON を標準出力に出す。
+`git diff --raw -z --no-renames <base>...HEAD` の差分（変更後のファイルの型 mode つき）・HEAD の中身・base と HEAD のファイル一覧から判定し、結果の JSON を標準出力に出す。
 
 | 終了コード | 意味 |
 |---|---|
 | 0 | errors が0 |
 | 1 | errors が1件以上 |
-| 2 | 判定できない（git の失敗等） |
+| 2 | 判定できない（git の失敗、HEAD にあるはずのファイルを読めない等） |
 
 ## 結果の JSON
 
@@ -31,7 +33,7 @@ node scripts/content/check-content-pr.js [--base origin/master]
 - `judgementWordsFound`: 変えたファイルで見つかった判断が要る語
 - `p1Recorded`: fan と seo-marketer の P1 の件数（関門は通す。記録のため）
 
-## PR に入れてよいパス
+## PR に入れてよいもの
 
 これ以外の変更が1つでもあれば error。
 
@@ -40,14 +42,18 @@ node scripts/content/check-content-pr.js [--base origin/master]
 | `public/blog/<name>.md` | 記事の本文（1階層。翻訳の `<id>-en.md`・`-ko.md`・`-zh-tw.md` を含む） |
 | `src/data/blog-posts/<id>.json` | 日本語版のメタデータ |
 | `src/data/blog-posts/{en,ko,zh-TW}/<id>.json` | 翻訳版のメタデータ |
-| `public/images/blog/<name>.jpg` / `.jpeg` | 画像。JPEG だけ（寸法はビルドの時に JPEG のヘッダーから作るため） |
+| `public/images/blog/<name>.jpg` / `.jpeg` | 画像。JPEG だけ（寸法はビルドの時に JPEG のヘッダーから作るため）。拡張子は小文字 |
 | `docs/content-manifests/<id>.json` | manifest。PR にちょうど1つ |
 
-図の JSON は対象外（部品が master に入ってから足す）。
+- 追加（A）と変更（M）だけ。**削除は許さない**（削除は別の道、通常の PR で行う）。種類の変更（T）も error
+- ファイルの型は通常のファイル（mode `100644`）だけ。symlink（`120000`）・実行ビット（`100755`）・gitlink（`160000`）は error
+- サブディレクトリ・大文字違い・`.` や `..` を含むパスは error
+- 図の JSON（`public/blog-charts/`）はまだ入れられない（図の部品が master に入ってから足す）
+- 1つの PR に1記事。変えた .md・JSON はすべて manifest の `id` の記事（日本語版と翻訳版）
 
 ## manifest
 
-`docs/content-manifests/<id>.json`。PR に必ず1つ（新規は追加、改稿は変更）。
+`docs/content-manifests/<id>.json`。PR に必ず1つ（新規は追加、改稿は変更）。JSON のオブジェクトであること。
 
 ```json
 {
@@ -55,11 +61,11 @@ node scripts/content/check-content-pr.js [--base origin/master]
   "id": "<記事の slug>",
   "kind": "new",
   "ticket": "BOA-123",
-  "paths": ["public/blog/<id>.md", "src/data/blog-posts/<id>.json", "-public/images/blog/old.jpg"],
-  "files": { "public/blog/<id>.md": "<sha256>", "src/data/blog-posts/<id>.json": "<sha256>" },
+  "paths": ["public/blog/<id>.md", "src/data/blog-posts/<id>.json", "public/images/blog/<id>-ja.jpg"],
+  "files": { "public/blog/<id>.md": "<sha256>", "src/data/blog-posts/<id>.json": "<sha256>", "public/images/blog/<id>-ja.jpg": "<sha256>" },
   "content_sha256": "<sha256>",
   "content_at": "2026-10-20T00:00:00Z",
-  "judgement_words": ["的中率"],
+  "judgement_words": [],
   "reviews": [
     { "role": "content-qa", "agent": "content-qa", "result": "pass", "p0": 0, "p1": 0, "reviewed_sha256": "<content_sha256>", "model": "<型番>", "at": "2026-10-20T01:00:00Z" },
     { "role": "wording-editor", "agent": "wording-editor", "result": "pass", "p0": 0, "p1": 0, "reviewed_sha256": "<content_sha256>", "model": "<型番>", "at": "..." },
@@ -74,17 +80,17 @@ node scripts/content/check-content-pr.js [--base origin/master]
 | 項目 | 意味 | 関門 |
 |---|---|---|
 | `schema` | 契約の版 | `content-pr-manifest/v1` と一致 |
-| `id` | 記事の slug | manifest のファイル名（拡張子なし）と一致 |
-| `kind` | `new`（新規）か `revision`（改稿） | どちらか |
+| `id` | 記事の slug | manifest のファイル名（拡張子なし）と一致。変えた記事の id もすべてこれ |
+| `kind` | `new`（新規）か `revision`（改稿） | `new` なら日本語版 JSON の追加がある。`revision` なら日本語版 JSON の追加が無い |
 | `ticket` | 起票の番号（Linear の `BOA-123` か hq の台帳の番号） | 空でない文字列 |
-| `paths` | PR で変えたパス（manifest 自身を除く）。追加・変更はそのまま、削除は先頭に `-` | 差分のパスと集合として完全に一致。重複なし |
-| `files` | `paths` のうち削除以外の各パス → HEAD の中身の sha256（16進小文字） | キーが `paths` の削除以外と一致し、値が HEAD の中身と一致 |
+| `paths` | PR で変えたパス（manifest 自身を除く） | 差分のパスと集合として完全に一致。重複なし。先頭の `-`（削除）は error |
+| `files` | `paths` の各パス → HEAD の中身の sha256（16進小文字） | キーが `paths` と一致し、値が HEAD の中身と一致 |
 | `content_sha256` | 中身全体の指紋（下の計算） | `files` からの計算と一致 |
-| `content_at` | 中身ができた時刻（ISO 8601） | 時刻として読める |
+| `content_at` | 中身ができた時刻 | ISO 8601 で、末尾が `Z` か `±hh:mm` |
 | `judgement_words` | 判断が要る語の一覧。PR の中では常に空 | 空の配列（空でなければ error） |
 | `reviews` | 4つの役のレビュー（下） | 下の表 |
 | `author.model` / `author.lane` | 作り手の型番・実行役の名前 | 空でない |
-| `created_at` | manifest を作った時刻（ISO 8601） | 時刻として読める |
+| `created_at` | manifest を作った時刻 | ISO 8601 で、末尾が `Z` か `±hh:mm` |
 
 ### reviews の関門
 
@@ -102,41 +108,74 @@ node scripts/content/check-content-pr.js [--base origin/master]
 - 4行の `reviewed_sha256` が `content_sha256` と同じ（レビューした中身と出す中身が同じ）
 - `result` が `pass`
 - `p0` が4つの役すべてで0。`p1` は content-qa と wording-editor で0。fan と seo-marketer の `p1` は件数を `p1Recorded` に記録するだけで通す
-- `at` が `content_at` 以後、`created_at` 以前。`model` が空でない
+- `at` が ISO 8601（末尾が `Z` か `±hh:mm`）で、`content_at` 以後、`created_at` 以前。`model` が空でない
 - 同じモデルの自己レビューは禁じない
+
+**reviews と時刻は自己申告**。関門は形と整合（役・agent の名前・指紋・件数・時刻の順）だけを見て、実際に審査が行われたことは確かめない。審査の独立性は運用で担保する。
 
 中身を直したら `files`・`content_sha256` が変わるので、4つのレビューをやり直して `reviewed_sha256` をそろえる。
 
 ### content_sha256 の計算
 
-1. `files` のキー（パス）を昇順（文字コード順。パスは ASCII）に並べる
-2. 各パスについて `<path>\t<sha256>\n`（タブ区切り、末尾に改行）の行を作り、そのままつなぐ
-3. つないだ文字列を UTF-8 にして sha256 を取り、16進小文字で書く
+1. `files` の各値は、コミットした（HEAD の）ファイルのバイト列そのものの sha256（16進小文字）。作業ツリーのファイルではなく、`git show HEAD:<path>` で取り出した中身で計算する
+2. `files` のキー（パス）を昇順（文字コード順。パスは ASCII）に並べる
+3. 各パスについて `<path>\t<sha256>\n`（タブ区切り、末尾に改行）の行を作り、そのままつなぐ
+4. つないだ文字列を UTF-8 にして sha256 を取り、16進小文字で書く
+
+```bash
+git show HEAD:public/blog/<id>.md | shasum -a 256   # files の値
+```
 
 ```js
+import { execFileSync } from "node:child_process";
 import { computeContentSha256, sha256Hex } from "./scripts/lib/contentPrGate.js";
-const files = { "public/blog/x.md": sha256Hex(readFileSync("public/blog/x.md")) };
+const blob = (p) => execFileSync("git", ["show", `HEAD:${p}`]);
+const files = Object.fromEntries(paths.map((p) => [p, sha256Hex(blob(p))]));
 computeContentSha256(files);
 ```
 
-`files` の各値は、コミットした（HEAD の）ファイルのバイト列そのものの sha256。改行の変換等をかける前の中身ではない。
-
 ## 本文の関門
 
-追加・変更したファイルだけに当てる。削除には当てない。
+追加・変更したファイルに当てる。
 
 | 関門 | 対象 | 通る条件 |
 |---|---|---|
-| 生の HTML | .md | 本文に `<` の直後が英字・`/`・`!` のものが0件。フェンスのコードブロックとインラインコードの中は数えない |
+| 生の HTML | .md | Markdown（GFM。記事の描画と同じ）として読み、`html` のノードが0件。例外は下の「図のタグ」だけ |
 | 「競艇」 | .md | 本文に0件。例外は設定の `kyoteiExceptions`（`public/blog/venue-visit-guide-ko.md` の今ある1行。行の中身の完全一致） |
-| 「競艇」 | JSON | `title`・`description` に0件（`metaTitle`・`metaDescription` は許す） |
+| 「競艇」 | JSON | `metaTitle`・`metaDescription` 以外のすべての文字列値（`title`・`description`・`tags`・`category` 等）に0件 |
 | 判断が要る語 | .md・JSON の文字列 | 0件（下の「判断が要る語」） |
 | slug | 足した日本語版 JSON | `id` が `^[a-z0-9]+(-[a-z0-9]+)*$`、末尾が `-en`・`-ko`・`-zh-tw` でない、ファイル名と一致、base に同じ id の JSON も .md も無い |
+| .md と JSON の対応 | .md・JSON | 足した日本語版 .md には同じ id の日本語版 JSON（base か HEAD）がある。逆も同じ。翻訳の .md は `<id>-en|-ko|-zh-tw.md` の形で `<id>` の日本語版 JSON がある。翻訳の JSON は id がファイル名と一致し、日本語版 JSON がある |
 | 画像 | .md・JSON が参照する `/images/blog/...` | HEAD に実在し、JPEG のヘッダーから幅と高さが読める。足した画像は、変えた .md か JSON のどれかが参照している |
 | featured | 日本語版 JSON | 新規は `featured: false` で `featuredRank` を置かない。改稿は `featured`・`featuredRank` を base から変えない |
-| 内部リンク | .md（日本語版と翻訳版） | `](/` で始まるリンクが1本以上 |
+| 内部リンク | .md（日本語版と翻訳版） | `/` で始まるリンクが1本以上。画像（`![..](/..)`）とプロトコル相対（`//`）は数えない。参照リンク（`[x][r]` と `[r]: /..`）は数える |
 
-内部リンクの関門は、今 master にある内部リンクの無い記事（設定の `internalLinkGrandfathered`）の改稿だけ免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは `verify-content-pr-gate.js` が落とす）。
+### 生の HTML の数え方
+
+- フェンスのコードブロック・4字下げのコードブロック・インラインコードの中は `code`・`inlineCode` なので数えない
+- 自動リンク `<https://…>` は `link` なので数えない
+- HTML のコメント `<!-- -->` は `html` なので数える
+- フェンスに見えても CommonMark でフェンスにならないもの（タブの字下げ、情報文字列に `` ` `` を含む等）は、その後の HTML を数える
+
+### 図のタグ（生の HTML の唯一の例外）
+
+次をすべて満たす行だけを許す。形の正本は `src/utils/blogChartTag.js` の `parseBlogChartLine`。
+
+```markdown
+
+<ryujin-chart src="/blog-charts/<name>.json" rows="3"></ryujin-chart>
+
+```
+
+- 前後が空行の1行で、行がタグだけ（mdast では html ノードだけの段落、またはブロックの html ノードで、その1行全体）
+- 属性は `src`（`^/blog-charts/[a-z0-9-]+\.json$`）と `rows`（1〜12 の整数）だけ。順不同、二重引用符
+- 閉じタグ `></ryujin-chart>` が必須（`/>` は不可）
+- `src` の JSON（`public/blog-charts/<name>.json`）が HEAD か base（master）に実在する。図の JSON はまだ PR に入れられないので、今は master に実在するものだけが通る
+- コードの中の `<ryujin-chart …>` は数えない（上と同じ）
+
+### 内部リンクの免除
+
+今 master にある内部リンクの無い記事（設定の `internalLinkGrandfathered`、89本。画像のリンクしか無い記事を含む）の改稿だけ免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは `verify-content-pr-gate.js` が落とす）。
 
 ## 判断が要る語
 

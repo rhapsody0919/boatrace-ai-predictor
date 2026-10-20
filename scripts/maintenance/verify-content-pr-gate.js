@@ -18,6 +18,7 @@ import {
   checkKyoteiJson,
   checkInternalLinks,
 } from "../lib/contentPrGate.js";
+import { parseRawDiff } from "../content/check-content-pr.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const config = JSON.parse(
@@ -75,7 +76,7 @@ function makePr(over = {}) {
       status: "A",
       path,
     })),
-  ];
+  ].map((d) => ({ mode: "100644", ...d }));
   const live = diff.filter((d) => d.status !== "D").map((d) => d.path);
   const fileShas = Object.fromEntries(
     live.filter((p) => head[p]).map((p) => [p, sha256Hex(head[p])]),
@@ -97,7 +98,7 @@ function makePr(over = {}) {
     id: ID,
     kind: "new",
     ticket: "BOA-999",
-    paths: diff.map((d) => (d.status === "D" ? `-${d.path}` : d.path)),
+    paths: diff.map((d) => d.path),
     files: fileShas,
     content_sha256: contentSha,
     content_at: "2026-10-20T00:00:00Z",
@@ -112,22 +113,42 @@ function makePr(over = {}) {
     created_at: "2026-10-20T02:00:00Z",
   };
   const finalManifest = over.manifest ? over.manifest(manifest) : manifest;
-  head[MANIFEST] = enc(JSON.stringify(finalManifest));
+  head[MANIFEST] = enc(
+    over.rawManifest !== undefined
+      ? over.rawManifest
+      : JSON.stringify(finalManifest),
+  );
+  const basePaths = over.basePaths ?? [
+    "public/blog/existing.md",
+    "src/data/blog-posts/existing.json",
+  ];
+  const fullDiff = [
+    ...diff,
+    { status: over.manifestStatus ?? "A", path: MANIFEST, mode: "100644" },
+    ...(over.extraDiff ?? []).map((d) => ({ mode: "100644", ...d })),
+  ];
   return {
-    diff: [
-      ...diff,
-      { status: over.manifestStatus ?? "A", path: MANIFEST },
-      ...(over.extraDiff ?? []),
-    ],
+    diff: fullDiff,
     head: over.head ? over.head(head) : head,
     base: over.base ?? {},
-    basePaths: over.basePaths ?? [
-      "public/blog/existing.md",
-      "src/data/blog-posts/existing.json",
+    basePaths,
+    headPaths: over.headPaths ?? [
+      ...new Set([
+        ...basePaths,
+        ...fullDiff.filter((d) => d.status !== "D").map((d) => d.path),
+      ]),
     ],
     config: over.config ?? config,
   };
 }
+
+const CHART =
+  '<ryujin-chart src="/blog-charts/sample-chart.json" rows="3"></ryujin-chart>';
+const CHART_BASE = [
+  "public/blog/existing.md",
+  "src/data/blog-posts/existing.json",
+  "public/blog-charts/sample-chart.json",
+];
 
 const withReview = (role, extra) => (m) => ({
   ...m,
@@ -261,6 +282,7 @@ const cases = [
           featuredRank: 5,
         }),
       },
+      basePaths: [MD, JSON_JA, MANIFEST],
       manifestStatus: "M",
       manifest: (m) => ({ ...m, kind: "revision" }),
     },
@@ -281,6 +303,7 @@ const cases = [
           featuredRank: 5,
         }),
       },
+      basePaths: [MD, JSON_JA, MANIFEST],
       manifestStatus: "M",
       manifest: (m) => ({ ...m, kind: "revision" }),
     },
@@ -329,7 +352,7 @@ const cases = [
     /\[manifest\] paths の public\/blog\/x\.md が差分に無い/,
   ],
   [
-    "削除は「-」つきで通る",
+    "削除は落ちる（記事の PR では削除を許さない）",
     {
       extraDiff: [{ status: "D", path: "public/images/blog/old.jpg" }],
       manifest: (m) => ({
@@ -337,18 +360,17 @@ const cases = [
         paths: [...m.paths, "-public/images/blog/old.jpg"],
       }),
     },
-    "ok",
+    /\[delete\] public\/images\/blog\/old\.jpg/,
   ],
   [
-    "削除を「-」なしで書くと落ちる",
+    "manifest.paths に「-」があると落ちる",
     {
-      extraDiff: [{ status: "D", path: "public/images/blog/old.jpg" }],
       manifest: (m) => ({
         ...m,
-        paths: [...m.paths, "public/images/blog/old.jpg"],
+        paths: [...m.paths, "-public/images/blog/old.jpg"],
       }),
     },
-    /\[manifest\] paths に差分の -public\/images\/blog\/old\.jpg が無い/,
+    /\[delete\].*manifest\.paths/,
   ],
   [
     "files の sha256 が中身と違うと落ちる",
@@ -446,6 +468,333 @@ const cases = [
     { manifest: withReview("fan", { model: "" }) },
     /model が空/,
   ],
+  // ---- 指摘 P0-1: manifest が JSON の非オブジェクト
+  ...["null", "1", '"s"', "true", "[]"].map((raw) => [
+    `manifest が ${raw} だと落ちる`,
+    { rawManifest: raw },
+    /\[manifest\].*オブジェクトでない/,
+  ]),
+  // ---- 指摘 P1-1: ファイルの型（mode）と status T
+  [
+    "symlink（120000）は落ちる",
+    {
+      diff: [
+        { status: "A", path: MD, mode: "120000" },
+        { status: "A", path: MD_EN },
+        { status: "A", path: JSON_JA },
+        { status: "A", path: IMG },
+      ],
+    },
+    /\[mode\] public\/blog\/sample-guide\.md.*120000/,
+  ],
+  [
+    "実行ビット（100755）は落ちる",
+    {
+      diff: [
+        { status: "A", path: MD },
+        { status: "A", path: MD_EN },
+        { status: "A", path: JSON_JA },
+        { status: "A", path: IMG, mode: "100755" },
+      ],
+    },
+    /\[mode\].*100755/,
+  ],
+  [
+    "gitlink（160000）は落ちる",
+    {
+      extraDiff: [{ status: "A", path: "public/blog/sub.md", mode: "160000" }],
+      manifest: (m) => ({ ...m, paths: [...m.paths, "public/blog/sub.md"] }),
+    },
+    /\[mode\].*160000/,
+  ],
+  [
+    "status T（種類の変更）は落ちる",
+    {
+      diff: [
+        { status: "T", path: MD },
+        { status: "A", path: MD_EN },
+        { status: "A", path: JSON_JA },
+        { status: "A", path: IMG },
+      ],
+    },
+    /\[path\].*状態 T/,
+  ],
+  [
+    "mode が無い行は落ちる",
+    {
+      diff: [
+        { status: "A", path: MD, mode: undefined },
+        { status: "A", path: MD_EN },
+        { status: "A", path: JSON_JA },
+        { status: "A", path: IMG },
+      ],
+    },
+    /\[mode\] public\/blog\/sample-guide\.md/,
+  ],
+  // ---- 指摘 P1-2: 生 HTML の抜け道（Markdown のパーサーで判定）
+  [
+    "タブ＋```（実はインデントのコード）の後の HTML は落ちる",
+    { md: `${baseMd}\n\t\`\`\`\n\n<div>x</div>\n` },
+    /\[html\]/,
+  ],
+  [
+    "エスケープしたバッククォートの間の HTML は落ちる",
+    { md: `${baseMd}\n本文 \\\`<b>x</b>\\\` です\n` },
+    /\[html\]/,
+  ],
+  [
+    "情報文字列に ` を含むフェンス（フェンスにならない）の後の HTML は落ちる",
+    { md: `${baseMd}\n\`\`\`a\`b\n<div>x</div>\n\`\`\`\n` },
+    /\[html\]/,
+  ],
+  ["HTML コメントは落ちる", { md: `${baseMd}\n<!-- x -->\n` }, /\[html\]/],
+  [
+    "自動リンク <https://…> は html ではない",
+    { md: `${baseMd}\n<https://www.boatrace.jp/>\n` },
+    "ok",
+  ],
+  [
+    "インデントのコードの中の HTML は数えない",
+    { md: `${baseMd}\n    <div>x</div>\n` },
+    "ok",
+  ],
+  // ---- 図のタグ（src/utils/blogChartTag.js の形だけ、前後が空行、JSON が実在）
+  [
+    "正しい図の行は通る（JSON が base にある）",
+    { md: `${baseMd}\n${CHART}\n`, basePaths: CHART_BASE },
+    "ok",
+  ],
+  [
+    "属性が rows → src の順でも通る",
+    {
+      md: `${baseMd}\n<ryujin-chart rows="12" src="/blog-charts/sample-chart.json"></ryujin-chart>\n`,
+      basePaths: CHART_BASE,
+    },
+    "ok",
+  ],
+  [
+    "図の JSON が HEAD にあれば通る（headPaths）",
+    {
+      md: `${baseMd}\n${CHART}\n`,
+      headPaths: [
+        MD,
+        MD_EN,
+        JSON_JA,
+        IMG,
+        MANIFEST,
+        "public/blog-charts/sample-chart.json",
+      ],
+    },
+    "ok",
+  ],
+  [
+    "図の行の前が空行でないと落ちる",
+    { md: `${baseMd}本文\n${CHART}\n`, basePaths: CHART_BASE },
+    /\[html\].*図のタグ/,
+  ],
+  [
+    "図の行の後が空行でないと落ちる",
+    { md: `${baseMd}\n${CHART}\n本文\n`, basePaths: CHART_BASE },
+    /\[html\]/,
+  ],
+  [
+    "図の属性が多い（onload）と落ちる",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/blog-charts/sample-chart.json" rows="3" onload="x"></ryujin-chart>\n`,
+      basePaths: CHART_BASE,
+    },
+    /\[html\]/,
+  ],
+  [
+    "図を /> で閉じると落ちる",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/blog-charts/sample-chart.json" rows="3" />\n`,
+      basePaths: CHART_BASE,
+    },
+    /\[html\]/,
+  ],
+  [
+    "図の src が /blog-charts/ の外だと落ちる",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/data/sample-chart.json" rows="3"></ryujin-chart>\n`,
+      basePaths: [...CHART_BASE, "public/data/sample-chart.json"],
+    },
+    /\[html\]/,
+  ],
+  [
+    "図の src に .. があると落ちる",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/blog-charts/../x.json" rows="3"></ryujin-chart>\n`,
+      basePaths: CHART_BASE,
+    },
+    /\[html\]/,
+  ],
+  [
+    "図の rows が数字でないと落ちる",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/blog-charts/sample-chart.json" rows="a"></ryujin-chart>\n`,
+      basePaths: CHART_BASE,
+    },
+    /\[html\]/,
+  ],
+  [
+    "図の rows が 13 だと落ちる（1〜12）",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/blog-charts/sample-chart.json" rows="13"></ryujin-chart>\n`,
+      basePaths: CHART_BASE,
+    },
+    /\[html\]/,
+  ],
+  [
+    "図の JSON が base にも HEAD にも無いと落ちる",
+    { md: `${baseMd}\n${CHART}\n` },
+    /\[chart\].*sample-chart\.json/,
+  ],
+  [
+    "図の行と同じ段落のほかのタグ（<div>）は今までどおり落ちる",
+    { md: `${baseMd}\n<div>x</div>\n`, basePaths: CHART_BASE },
+    /\[html\]/,
+  ],
+  [
+    "インデントのコード・インラインコードの中の図のタグは数えない",
+    {
+      md: `${baseMd}\n    ${CHART}\n\n本文 \`<ryujin-chart src="/x" rows="1"></ryujin-chart>\`\n`,
+    },
+    "ok",
+  ],
+  // ---- 指摘 P2-1: 削除（上の2例）
+  // ---- 指摘 P2-2: 内部リンクに画像・プロトコル相対を数えない
+  [
+    "画像だけ（![..](/..)）では内部リンクにならない",
+    { mdEn: "# Sample\n\n![x](/images/blog/sample-guide-ja.jpg)\n" },
+    /\[link\].*sample-guide-en\.md/,
+  ],
+  [
+    "プロトコル相対（](//）は内部リンクにならない",
+    { mdEn: "# Sample\n\nSee [x](//evil.example.com/).\n" },
+    /\[link\].*sample-guide-en\.md/,
+  ],
+  [
+    "参照リンク [x][r] + [r]: /venues は内部リンクとして数える",
+    { mdEn: "# Sample\n\nSee [venues][r].\n\n[r]: /en/venues\n" },
+    "ok",
+  ],
+  // ---- 指摘 P2-3: JSON の「競艇」は metaTitle・metaDescription 以外すべて
+  [
+    "JSON の tags の「競艇」は落ちる",
+    { json: { ...baseJson, tags: ["競艇", "入門"] } },
+    /\[kyotei\].*tags/,
+  ],
+  [
+    "JSON の category の「競艇」は落ちる",
+    { json: { ...baseJson, category: "競艇入門" } },
+    /\[kyotei\].*category/,
+  ],
+  // ---- 指摘 P2-4: 許可のパスのすり抜け
+  ...[
+    "public/blog/sub/x.md",
+    "public/Blog/x.md",
+    "public/images/blog/x.JPG",
+    "public/blog/../x.md",
+    "src/data/blog-posts/en/../x.json",
+    ".github/workflows/x.yml",
+  ].map((p) => [
+    `許可外のパス ${p} は落ちる`,
+    {
+      extraDiff: [{ status: "A", path: p }],
+      manifest: (m) => ({ ...m, paths: [...m.paths, p] }),
+    },
+    new RegExp(`\\[path\\] ${p.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")} `),
+  ]),
+  // ---- 指摘 P3: 時刻の形
+  [
+    "タイムゾーンの無い at は落ちる",
+    { manifest: withReview("fan", { at: "2026-10-20T01:00:00" }) },
+    /at が ISO の時刻でない/,
+  ],
+  [
+    "日付だけの content_at は落ちる",
+    { manifest: (m) => ({ ...m, content_at: "2026-10-20" }) },
+    /content_at が ISO の時刻でない/,
+  ],
+  [
+    "±hh:mm の時刻は通る",
+    {
+      manifest: (m) => ({
+        ...withReview("fan", { at: "2026-10-20T10:00:00+09:00" })(m),
+      }),
+    },
+    "ok",
+  ],
+  // ---- 指摘 P3: .md と JSON の対応
+  [
+    "足した日本語版 .md に日本語版 JSON が無いと落ちる",
+    {
+      diff: [
+        { status: "A", path: MD },
+        { status: "A", path: IMG },
+      ],
+      manifest: (m) => ({ ...m, kind: "revision" }),
+    },
+    /\[pair\] public\/blog\/sample-guide\.md/,
+  ],
+  [
+    "足した日本語版 JSON に日本語版 .md が無いと落ちる",
+    {
+      md: baseMd,
+      diff: [
+        { status: "A", path: JSON_JA },
+        { status: "A", path: IMG },
+      ],
+    },
+    /\[pair\] src\/data\/blog-posts\/sample-guide\.json/,
+  ],
+  [
+    "翻訳 .md に日本語版が無いと落ちる",
+    {
+      extraFiles: { "public/blog/nojp-en.md": "# x\n\n[a](/en)\n" },
+      manifest: (m) => ({ ...m, paths: m.paths }),
+    },
+    /\[pair\] public\/blog\/nojp-en\.md/,
+  ],
+  [
+    "翻訳 JSON の id がファイル名と違うと落ちる",
+    {
+      extraFiles: {
+        [`src/data/blog-posts/en/${ID}.json`]: JSON.stringify({
+          id: "other",
+          title: "Sample",
+          description: "d",
+        }),
+      },
+    },
+    /\[slug\] src\/data\/blog-posts\/en\/sample-guide\.json/,
+  ],
+  // ---- 指摘 P3: 1つの PR に1記事、kind
+  [
+    "別の記事の .md が混ざると落ちる",
+    {
+      extraFiles: { "public/blog/existing-en.md": "# x\n\n[a](/en)\n" },
+      basePaths: [
+        "public/blog/existing.md",
+        "src/data/blog-posts/existing.json",
+      ],
+    },
+    /\[manifest\].*1つの PR に1記事/,
+  ],
+  [
+    "kind=new なのに日本語版 JSON の追加が無いと落ちる",
+    {
+      diff: [{ status: "M", path: MD }],
+      basePaths: [MD, JSON_JA],
+    },
+    /\[manifest\] kind が new/,
+  ],
+  [
+    "kind=revision なのに日本語版 JSON の追加があると落ちる",
+    { manifest: (m) => ({ ...m, kind: "revision" }) },
+    /\[manifest\] kind が revision/,
+  ],
 ];
 
 const failures = [];
@@ -479,6 +828,24 @@ for (const [name, over, expect] of cases) {
   const size = readJpegSize(JPEG);
   if (size?.width !== 200 || size?.height !== 100)
     failures.push(`readJpegSize が ${JSON.stringify(size)}`);
+}
+
+// 単体: CLI の差分（--raw -z）の読み取り（mode・ASCII 以外のパス）
+{
+  const out =
+    ":000000 120000 0000000 abcdef0 A\0public/blog/記事.md\0" +
+    ":100644 100644 1111111 2222222 M\0public/blog/x.md\0" +
+    ":100644 000000 3333333 0000000 D\0public/images/blog/old.jpg\0";
+  const want = [
+    { status: "A", path: "public/blog/記事.md", mode: "120000" },
+    { status: "M", path: "public/blog/x.md", mode: "100644" },
+    { status: "D", path: "public/images/blog/old.jpg", mode: "000000" },
+  ];
+  const rows = parseRawDiff(out);
+  if (JSON.stringify(rows) !== JSON.stringify(want))
+    failures.push(`parseRawDiff が ${JSON.stringify(rows)}`);
+  if (parseRawDiff("").length !== 0)
+    failures.push("parseRawDiff('') が空でない");
 }
 
 // 今の記事を壊さない: 全 .md・全 JSON を「変えたファイル」（status M）とみなして本文の関門を当てる
@@ -518,7 +885,7 @@ failures.push(...masterErrors.map((e) => `今の記事: ${e}`));
 // 免除一覧が古くならないこと（内部リンクを足した記事は一覧から外す）
 for (const p of config.internalLinkGrandfathered) {
   const text = readFileSync(join(ROOT, p), "utf8");
-  if (text.includes("](/"))
+  if (checkInternalLinks(p, text, "A", config).length === 0)
     failures.push(
       `internalLinkGrandfathered の ${p} には内部リンクがある。一覧から外す`,
     );

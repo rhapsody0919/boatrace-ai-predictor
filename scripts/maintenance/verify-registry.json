@@ -86,7 +86,7 @@
     {
       "script": "verify-content-pr-gate.js",
       "tier": "ci",
-      "guards": "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js、契約 docs/operation/content-pr-contract.md）: 許可のパス・生 HTML・「競艇」・判断が要る語と hold・slug・画像の寸法と参照・featured・内部リンク・manifest（paths・files・content_sha256・4つの役のレビュー・P0/P1・時刻）を表で検査。今の public/blog の全 .md・blog-posts の全 JSON・images/blog の全 JPEG で本文の関門が errors 0 であること"
+      "guards": "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js、契約 docs/operation/content-pr-contract.md）: 許可のパス（すり抜け・削除・status T・mode 100644 以外）・生 HTML（mdast の html ノード、図のタグ ryujin-chart の例外）・「競艇」・判断が要る語・slug・.md と JSON の対応・画像の寸法と参照・featured・内部リンク（画像と // を除く）・manifest（非オブジェクト・paths・files・content_sha256・1記事・kind・4つの役のレビュー・P0/P1・時刻の形）を表で検査。CLI の差分（--raw -z）の読み取りも。今の public/blog の全 .md・blog-posts の全 JSON・images/blog の全 JPEG で本文の関門が errors 0 であること"
     },
     {
       "script": "verify-css-class-collisions.js",
