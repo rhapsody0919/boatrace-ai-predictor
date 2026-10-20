@@ -6,6 +6,10 @@
     "deny": {
       "$comment": "審査の App は承認しない（REQUEST_CHANGES、理由に一致したパターン）。オーナーが自分で書くか、オーナーが ruleset を一時 Disabled にして入れる",
       "paths": [
+        "scripts/lib/reviewPr.js",
+        "scripts/review/**",
+        ".github/workflows/review.yml",
+        "config/dev-gate.json",
         "docs/db-migration/**",
         "scripts/db/**",
         "scripts/maintenance/verify-registry.json",
@@ -50,7 +54,6 @@
     "owner": {
       "$comment": "審査は動くが承認しない（COMMENT で『オーナーの承認が要る』）。オーナーの APPROVE（スマホ）で入る。審査の仕組みそのもの・仕組みの変更",
       "paths": [
-        "config/dev-gate.json",
         ".github/**",
         ".claude/**",
         "AGENTS.md",
@@ -59,8 +62,6 @@
         "package.json",
         "package-lock.json",
         ".gitattributes",
-        "scripts/review/**",
-        "scripts/lib/reviewPr.js",
         "scripts/lib/dbApplySql.js",
         "scripts/lib/dbReconcile.js",
         "middleware.js"
@@ -81,12 +82,15 @@
         "closure": "入口から静的な import（JS の import/require の相対パス、Python のリポジトリ内の import）をたどった全部。実行しない",
         "where": "gate が master の checkout の上で毎回作る（生成物をコミットしない。ADR-0078 と同じ理由）"
       },
-      "limits": { "maxFiles": 10, "maxChangedLines": 300 },
+      "limits": {
+        "maxFiles": 10,
+        "maxChangedLines": 300
+      },
       "p1Blocks": true,
       "overLimit": "owner"
     },
     "content": {
-      "$comment": "記事の PR（段階0 F）。PR の変更が全部ここに収まるときだけ。§9.1 の画像の例外はこのクラスだけで効く",
+      "$comment": "記事の PR（段階0 F）。PR の変更が全部ここに収まるときだけ。§9.1 の画像の例外はこのクラスだけで効く。P1 は fan・seo の観点だけ止めない（許可のリスト）。他の観点・観点の無い P1 は止める",
       "paths": [
         "public/blog/**",
         "src/data/blog-posts/**",
@@ -98,23 +102,54 @@
       ],
       "image": {
         "pathRegex": "^public/images/blog/[a-z0-9-]{1,100}\\.jpg$",
-        "status": ["added"],
+        "status": [
+          "added"
+        ],
         "mode": "100644",
         "maxBytes": 409600,
         "maxWidth": 2000,
         "maxHeight": 4000,
-        "jpegAllowedMarkers": ["SOI", "APP0:JFIF(thumbnail 0x0)", "APP2:ICC_PROFILE", "DQT", "DHT", "DRI", "SOF0|SOF1|SOF2 (1つだけ)", "SOS", "RST0-7", "EOI (ファイルの終わり)"],
+        "jpegAllowedMarkers": [
+          "SOI",
+          "APP0:JFIF(thumbnail 0x0)",
+          "APP2:ICC_PROFILE",
+          "DQT",
+          "DHT",
+          "DRI",
+          "SOF0|SOF1|SOF2 (1つだけ)",
+          "SOS",
+          "RST0-7",
+          "EOI (ファイルの終わり)"
+        ],
         "dimensionsTable": "src/data/blogImageDimensions.js（同じ PR で行を足す）"
       },
-      "p1BlocksViewpoints": ["content-qa", "wording"],
-      "p1AdvisoryViewpoints": ["fan", "seo"]
+      "p1AdvisoryViewpoints": [
+        "fan",
+        "seo"
+      ],
+      "p1NonBlockingViewpoints": [
+        "fan",
+        "seo"
+      ]
     },
     "frontendSmall": {
       "$comment": "画面の小さな直し。上限を超えたら employee ではなく orchestrate（＝今は owner）",
-      "paths": ["src/**", "public/**"],
-      "excludePaths": ["src/pages/admin/**", "public/images/blog/**", "public/blog/**"],
-      "limits": { "maxFiles": 5, "maxChangedLines": 150 },
-      "limitsExclude": ["e2e/**/*.spec.js"],
+      "paths": [
+        "src/**",
+        "public/**"
+      ],
+      "excludePaths": [
+        "src/pages/admin/**",
+        "public/images/blog/**",
+        "public/blog/**"
+      ],
+      "limits": {
+        "maxFiles": 5,
+        "maxChangedLines": 150
+      },
+      "limitsExclude": [
+        "e2e/**/*.spec.js"
+      ],
       "overLimit": "orchestrate",
       "p1Blocks": true
     },
@@ -126,5 +161,19 @@
   "p1": {
     "$comment": "§11.1 案 A。P0 は全クラスで止める。同じ P1 が2回目に出たら、レーンは直すのをやめてオーケストレーターに上げる"
   },
-  "monthlyLimit": { "runs": 1500, "notifyAtRatio": 0.8 }
+  "monthlyLimit": {
+    "$comment": "1 run の実費と runs の API の頭打ちを測ってから決める（§11.2、判断14）",
+    "runs": null,
+    "notifyAtRatio": 0.8
+  },
+  "bannedWords": {
+    "$comment": "本文に出たら機械で落とす決まった文字列（§11.1 の4）。メタ情報の例外（title・meta・OGP）は code-style.md に従う",
+    "words": [
+      "競艇"
+    ]
+  },
+  "branchPrefixes": [
+    "claude/",
+    "codex/"
+  ]
 }
