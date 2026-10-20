@@ -61,3 +61,4 @@
 - 番号順に先頭1件を処理する選定では、後続全件の外部事実取得を先行させると後続の取得失敗で先頭の結果も失われる。先頭の選定と必要事実の取得の順を点検する。（2026-10-19、2026-10-19-review-20261019-14.md）
 - 新しい本番の鍵を Actions に置くときは、repo の secret ではなく master だけの Environment（prod-jobs）に置き、job-watch.json に載せる（載せないと verify-job-watch.js が落ちる）。key-canary にも読み取りを1回足す（こちらは verify では検査しない）（2026-10-20、system-architect、ADR-0097:48-49,128）
 - master への自動コミットは1回ごとに本番デプロイが走る（vercel.json の除外は codex/** だけ。デプロイフックも叩くと2回）。日次のデータの置き場所にするなら費用として数える（2026-10-20、system-architect、ADR-0032 追記）
+- Linear の起票はすべて scripts/lib/linearIssueGate.js の assertCanCreateIssue を通す。未アーカイブ（issues を includeArchived なし・チームで絞らず数えた数、hq の count_unarchived と同じ）が200件以上、または数えられないときは起票せず Slack に件数と閾値を送る。新しい起票の経路は verify-linear-issue-gate.js が CI で検知する（2026-10-20、hq 台帳 PL48・docs/operation/linear-cli.md）

@@ -18,6 +18,24 @@ Linear の無料枠の上限は**アーカイブしていないチケットの�
 - 状態の**名前では判定しない**（名前はチームで変えられる）
 - アーカイブ済みのチケットも `get` で引ける。`list` は既定でアーカイブ済みを含めない
 
+## 起票は未アーカイブ200件で止まる（2026-10-20〜）
+
+オーナーは無料プランに留まると決めた（hq 台帳 PL48）。上限250件に当たる手前で止めるため、このリポジトリで Linear に起票する経路は、すべて起票の直前に `scripts/lib/linearIssueGate.js` の `assertCanCreateIssue` を通る。
+
+| 起票の経路 | 止まったときの出方 |
+|---|---|
+| `scripts/linear-cli.js create` | 終了コード1。標準エラーに件数と閾値 |
+| `scripts/analysis/create-vup-linear-ticket.js`（`/analyze-vup-feature`） | 終了コード1。`❌ エラー:` の行に件数と閾値 |
+| `scripts/maintenance/content-ops-checks/check-revision-escalation.js`（夜の content-ops-nightly-check） | 終了コード1。ワークフローが `❌ エラー:` の行を Slack に送る |
+| `api/_lib/snsHubHelpers.js` の `createLinearIssue`（SNS ハブの「制作仕様の変更要望」） | HTTP 503・`code=LINEAR_ISSUE_GATE_BLOCKED`。画面は件数の文を出し、入力欄を閉じない |
+
+- **数え方**: `issues`（アーカイブ済みを含めない既定のまま）をチームで絞らずにページ送りで全件数える。hq の `platform/ticket.py` の `count_unarchived` と同じ数え方で、hq の心拍・ダッシュボードと同じ数字になる。Linear が上限に使う値（エラーでは `activeIssueCount`）を直接返す欄は、公開のスキーマで確かめられなかったので使わない。API キーの持ち主に見えないチーム（非公開チーム）のチケットは数に入らない
+- **閾値**: 200件以上で止める（hq の `config/platform.json` の `heartbeat.linear_warn` と同じ）
+- **数えられないとき**: 止める（fail closed）。数えずに起票して上限に当たると、起票したつもりで進むことになるため
+- **通知**: 止めたら、件数と閾値の入った文を `SLACK_WEBHOOK_URL`（無ければ `SLACK_DIGEST_WEBHOOK_URL`）に送り、標準エラーにも出す。どちらも無ければログだけ。通知に失敗しても起票は止めたまま
+- **止まったら**: 完了・取り消しのチケットをアーカイブして200件未満にしてから起票し直す。起票できなかった調査結果は捨てず、PR 本文かコメントに全文を残す
+- 新しい起票の経路を足すときも `assertCanCreateIssue` を通す。`scripts/maintenance/verify-linear-issue-gate.js` が、`issueCreate` を送るファイルがすべて関所を読み込んでいるかを CI で見る
+
 ## 失敗は終了コード1で返る
 
 `create`・`update`（状態変更・コメント・アーカイブ）・`comment` の失敗は、すべて終了コード1で返し、標準エラーに Linear のエラーコード（例 `USAGE_LIMIT_EXCEEDED`）を出す。

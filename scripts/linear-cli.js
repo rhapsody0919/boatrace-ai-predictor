@@ -20,7 +20,15 @@
  * 失敗はすべて終了コード1で返す（握りつぶさない）。以前は create の失敗に気づけず
  * （USAGE_LIMIT_EXCEEDED、2026-09-28）、起票したつもりで進みかけた。
  * docs/operation/linear-cli.md
+ *
+ * create は起票の前に scripts/lib/linearIssueGate.js で未アーカイブ件数を数え、閾値（200件）
+ * 以上なら Slack に知らせて終了コード1で止める（無料枠250件の手前で止める。hq 台帳 PL48）。
  */
+
+import {
+  assertCanCreateIssue,
+  slackNotifierFromEnv,
+} from "./lib/linearIssueGate.js";
 
 const LINEAR_API_KEY = process.env.LINEAR_API_KEY;
 // 検査（verify-linear-cli.js）で模擬サーバーに向けるため、環境変数で差し替えられる
@@ -210,6 +218,13 @@ async function createIssue(title, description = "", teamId, stateId = null) {
     description,
     ...(stateId && { stateId }),
   };
+
+  // 起票の前に未アーカイブ件数を確かめる。閾値以上・数えられないときは例外で止まる
+  await assertCanCreateIssue({
+    request: graphqlRequest,
+    notify: slackNotifierFromEnv(process.env),
+    source: "linear-cli.js create",
+  });
 
   try {
     const result = await graphqlRequest(mutation, { input });

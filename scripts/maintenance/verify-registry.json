@@ -697,6 +697,11 @@
       "guards": "夜の content-ops-nightly-check で Linear の起票の失敗が理由つきで Slack に届くこと。check-revision-escalation.js が HTTP 400・200 の USAGE_LIMIT_EXCEEDED でエラーコードを例外に入れること（模擬サーバー、実 Linear に触れない）と、ワークフローの Slack 通知が always() 付きでエスカレーションの失敗も送ること"
     },
     {
+      "script": "verify-linear-issue-gate.js",
+      "tier": "ci",
+      "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値200件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48）。check-revision-escalation.js・create-vup-linear-ticket.js・api/_lib/snsHubHelpers.js が数えてから issueCreate を送り、200件では送らないこと、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
+    },
+    {
       "script": "verify-ko-meet-f-wording.js",
       "tier": "ci",
       "guards": "ko の今節・F まわりの文言（BOA-734）。今節タブの賞典除外・F の6キーと F 凡例の全文が決めた表現で、旧表現（「준결승전·우승전 출전 제외(이번 시리즈 F)」等）が残っていないこと"

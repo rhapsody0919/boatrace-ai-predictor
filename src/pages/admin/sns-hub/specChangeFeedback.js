@@ -9,6 +9,14 @@
 export function specChangeFeedback({ result, error }) {
   const keep = "入力した本文は欄に残しています。";
   if (error) {
+    // 未アーカイブ件数が閾値以上で、起票の前に止めた（文に件数と閾値が入っている）
+    if (error.code === "LINEAR_ISSUE_GATE_BLOCKED") {
+      return {
+        type: "error",
+        message: `${error.message ?? "Linear の起票を止めました"}。${keep}`,
+        closePanel: false,
+      };
+    }
     if (error.code === "LINEAR_USAGE_LIMIT_EXCEEDED") {
       return {
         type: "error",

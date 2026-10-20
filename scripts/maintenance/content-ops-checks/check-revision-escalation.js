@@ -24,6 +24,10 @@ import {
   getRecentRevisions,
   countReasonCodes,
 } from "../../lib/contentRevisionHistory.js";
+import {
+  assertCanCreateIssue,
+  slackNotifierFromEnv,
+} from "../../lib/linearIssueGate.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../../..");
@@ -148,10 +152,19 @@ async function findOpenEscalation(apiKey, teamId, platform, reasonCode) {
   return data.issues.nodes.find((i) => i.title.startsWith(prefix)) ?? null;
 }
 
-async function createEscalationIssue(
+/**
+ * 起票の前に未アーカイブ件数を確かめる（scripts/lib/linearIssueGate.js）。閾値以上・数えられない
+ * ときは例外で止まり、夜のワークフローが「❌ エラー:」の行を Slack に送る
+ */
+export async function createEscalationIssue(
   apiKey,
   { teamId, labelId, title, description },
 ) {
+  await assertCanCreateIssue({
+    request: (query, variables) => graphqlRequest(apiKey, query, variables),
+    notify: slackNotifierFromEnv(process.env),
+    source: "check-revision-escalation.js",
+  });
   const data = await graphqlRequest(
     apiKey,
     `mutation CreateIssue($input: IssueCreateInput!) {
