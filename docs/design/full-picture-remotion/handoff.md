@@ -39,6 +39,23 @@
    → 実装: `connectedText`（scene2-text.mjs）。LLM は決まったつなぐ語（一方・さらに 等）を選ぶだけ。文型の文は変えず、
    検査に落ちた拍はつなぐ語なし。入口版は文型の版（つなぐ語は完全版の拍の並びに合わせたものなので使わない）
 
+## 送信の道への受け渡し（bundle の契約、bundle_version 2）
+
+送信レーン（push-full-picture.js）の提案（2026-10-21）に、全貌レーンが合意した形。run-full が `出力/bundle/` に出す。
+
+| 項目 | 決まり |
+|---|---|
+| 版 | `bundle_version: 2`。版の欄が無い bundle は、送信側で今までどおり X 1件・YouTube 1件として受ける |
+| ファイル | `full-x.mp4`（入口版、X）・`full-youtube.mp4`（完全版、YouTube の通常の動画）・`shorts.mp4`（入口版と同じバイト列、Shorts）。shorts は縦 1080×1920・60秒以下・32MiB 以下 |
+| 欄 | `format`・`race_id`・`x_text`（入口版の本文＋このレースの URL ちょうど1つ）・`youtube_full{title,description}`・`youtube_shorts{title,description}`・`qa{machine,bannedWords}` |
+| 題名 | 1行・100字以下。完全版と Shorts は別の文 |
+| 完全版の URL | Shorts の description に `{full_url}` をちょうど1つ。送信側が、完全版の公開を確かめてから `https://youtu.be/<id>` に置き換える。置き換えた後も5000字以内（こちらは「置き場所を消した長さ＋40字」で検査） |
+| 必須 | v2 では `youtube_shorts` と `shorts.mp4` を必ず出す。出せないときは run-full が終了コード1で止まり、bundle を出さない |
+| qa.machine | `contract`・`text`・`post`・`entry_max59s`・`full_size`・`shorts_vertical`・`shorts_max60s`・`shorts_size`。全部 true のときだけ出す |
+| review | `p0_count` は出さない（評価役は hq の側）。機械の検査だけにするかはオーナーの判断 |
+
+`verify-full-picture-scene2.js` で、この bundle（`p0_count: 0` を足したもの）が push-full-picture.js の `checkFullPicture` を通ることを固定している。
+
 ## 作り（sns-video-studio/remotion）
 
 | 段 | ファイル | 役目 |
