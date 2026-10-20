@@ -1,6 +1,6 @@
 {
-  "$comment": "案 v3（2026-10-20 夜、v2 の審査の P1 3件・P2 10件を反映。hq の分類 ~/hq/drafts/dev-gate-classify-20261020.md を反映）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js・approve.js が master の checkout（github.sha）から読み、実行のときに形を検査する（読めなければ全部止める側）。分類: (1) PR の全ファイルが content のパスに収まり #1699 の後の形なら content。(2) それ以外は、ファイルごとに deny / owner / appendOnly / prodWrite / frontendSmall / employee を決め、強い順 deny > owner > prodWrite > frontendSmall > employee で一番強いものにする（appendOnly は条件を満たせば employee、外れれば deny）。content のパスのファイルが混ざった PR は (2) で、content のファイルは employee として数え、画像の例外は効かない",
-  "version": 3,
+  "$comment": "案 v4（2026-10-21、hq の v3 の数え直しを反映。v2 の審査の P1 3件・P2 10件を反映。hq の分類 ~/hq/drafts/dev-gate-classify-20261020.md を反映）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js・approve.js が master の checkout（github.sha）から読み、実行のときに形を検査する（読めなければ全部止める側）。分類: (1) PR の全ファイルが content のパスに収まり #1699 の後の形なら content。(2) それ以外は、ファイルごとに deny / owner / appendOnly / prodWrite / frontendSmall / employee を決め、強い順 deny > owner > prodWrite > frontendSmall > employee で一番強いものにする（appendOnly は条件を満たせば employee、外れれば deny）。content のパスのファイルが混ざった PR は (2) で、content のファイルは employee として数え、画像の例外は効かない",
+  "version": 4,
   "appliesTo": "作成の App の PR 全部（claude/・codex/・hq の社員）。名義が同じなので、社員だけに効かせることは機械ではできない",
   "branchPrefixes": [
     "claude/",
@@ -51,13 +51,11 @@
         "api/_lib/adminAuth.js",
         "api/admin/**",
         "src/pages/admin/**",
-        "api/cron/**",
         "*/**/package.json",
         "*/**/package-lock.json",
         "**/requirements*.txt",
         "**/.npmrc",
         ".mcp.json",
-        "docs/design/*/mock/**",
         "**/APPROVED.md",
         "@generated-docs"
       ],
@@ -65,7 +63,7 @@
         "@generated-docs": "scripts/maintenance/generated-docs.js の GENERATED_DOCS の output と public/sitemap.xml・public/llms.txt（ADR-0078）。この JSON に展開して書き、verify で generated-docs.js と一致を固定する（gate は JS を実行しない）",
         "docs/db-migration": "deny から外した（appendOnly を参照）。deny にすると、審査の App の承認つきの PR で足した SQL を当てる db-apply の自動の経路（ADR-0097）の対象が0本になる"
       },
-      "denyClosure": "deny の入口のファイル（scripts/** の JS）から静的 import をたどった先も deny（例: scripts/lib/preciousPaths.js・roQuery.js・scramVerifier.js）。verify で一覧を固定する"
+      "denyClosure": "deny の入口のファイル（scripts/** の JS）から静的 import をたどった先は owner（v3 の deny から下げた。名前で書いたパスが優先。例: dbApplySql.js・dbReconcile.js は owner のまま、check-e2e-skips.js は owner）。verify で一覧を固定する"
     },
     "owner": {
       "$comment": "審査は動くが承認しない（COMMENT で『オーナーの承認が要る』）。オーナーの APPROVE で入る",
@@ -89,7 +87,11 @@
         "scripts/maintenance/verify-blog-*.js",
         "scripts/maintenance/verify-migration-rls.js",
         "scripts/maintenance/verify-migration-numbers.js",
-        "docs/db-migration/APPLIED.md (足すだけの規則に当たらない変更)"
+        "docs/db-migration/APPLIED.md (足すだけの規則に当たらない変更)",
+        "docs/design/*/mock/**",
+        "api/cron/** (下の cronSmall に当たらないもの)",
+        "scripts/lib/scrapeJobs/cronWrapper.js",
+        "docs/knowledge/** (knowledgeAppend に当たらないもの・新しいファイル)"
       ],
       "verifyScripts": "scripts/maintenance/verify-*.js の変更・削除（追加は除く）を owner にするかは hq の本数で決める（判断27）。今は employee"
     },
@@ -102,11 +104,11 @@
       "files": {
         "scripts/maintenance/verify-registry.json": {
           "rule": "registryAppend",
-          "detail": "$comment が深く一致。master の entries が順番どおり、キーを足さずに深く一致。足した項目は script が新しく、同じ PR でその verify-*.js を added している。足した項目のキーは script・tier・guards・reason・command・timeoutSec・runner だけ（args・note は不可。args で既存の検証を終了コード0にできるため。verify-jsx-japanese.js の --print）。外れたら deny"
+          "detail": "$comment が深く一致。master の entries が、head の entries の中に**同じ順で（部分列として）**残り、各項目はキーを足さずに深く一致する（新しい項目は途中に挿してよい。hq の v3 で外れた157本のうち127本がこの形）。足した項目は script が新しく、同じ PR でその verify-*.js を added している。足した項目のキーは script・tier・guards・reason・command・timeoutSec・runner だけ（args・note は不可）。外れたら deny"
         },
         "docs/knowledge/**": {
           "rule": "knowledgeAppend",
-          "detail": "README.md を除く。status が modified か added、patch の - の行が0（最終行に改行が無いファイルへの追記で出る - の1行は、同じ内容の + の行と対なら許す）。足した行は '- ' で始まる1行で400字以内、日付（YYYY-MM-DD）を含み、<!-- を含まない。外れたら deny"
+          "detail": "README.md を除く。status が modified か added、patch の - の行が0（最終行に改行が無いファイルへの追記で出る - の1行は、同じ内容の + の行と対なら許す）。足した行は '- ' で始まる1行で400字以内、日付（YYYY-MM-DD）を含み、<!-- を含まない。外れたら owner（v4。新しいファイル・見出しつきの整理もここ）"
         },
         "docs/db-migration/[0-9][0-9][0-9]_*.sql": {
           "rule": "addedFileOnly",
@@ -217,10 +219,26 @@
         "maxDeletedLines": 500
       },
       "overLimit": "owner"
+    },
+    "cronSmall": {
+      "$comment": "api/cron/** の小さな直しを prodWrite として扱う（v4）。条件を全部満たすファイルだけ。外れたら owner",
+      "conditions": [
+        "status が modified（新しい Cron の追加・削除・改名は owner。vercel.json の crons も owner）",
+        "patch の + と - の行に、次のどれも含まない: CRON_SECRET・authorization（大小文字を問わず）・adminAuth・cronWrapper・createScrapeCronHandler・modeGated・export const config",
+        "prodWrite の束の上限（10ファイル・300行）の中"
+      ],
+      "class": "prodWrite"
+    },
+    "verifyScripts": {
+      "$comment": "scripts/**/verify-*.js（判断27、v4 の推奨は (ii)）",
+      "added": "employee（今と同じ）",
+      "removed": "owner",
+      "modified": "(ii) patch の - の行が0（既存の行の削除・書き換えが無く、足すだけ）で、足した行が次を含まない: process.exit(0)・トップレベルの return・if (process.argv の分岐・.skip(・SKIP → employee。それ以外は owner",
+      "residual": "足すだけでも、早い終了や条件の分岐を書き方を変えて足せば検証は弱められる。審査の指示文で『検証を弱める変更』を P1 にする（機械では守り切れない）"
     }
   },
   "monthlyLimit": {
-    "$comment": "1 run の実費と runs の API の頭打ちを測ってから決める（§10.2、判断14）。hq の見込みは月約 3,400 run（1PR 平均 3.64 コミット）",
+    "$comment": "runs の API の total_count は actor・created で絞ると 2500 で頭打ち（2026-10-20 の実測、plan.md §10.2）。月の上限は 2400 以下にするか、日ごとに数えて足す。実費の測定の後に決める（判断14）",
     "runs": null,
     "notifyAtRatio": 0.8
   },
@@ -228,5 +246,11 @@
     "$comment": "v3。大きさの上限は、ファイルを種類ごとの束（prodWrite・frontendSmall・employee。content のファイルが混ざった PR では employee）に分け、全部の束の上限を同時に検査する。どれか1つでも超えたら、その束の行き先へ上げる。改名は previous_filename も数える。削除も数える",
     "renames": "previous_filename もクラスの判定と上限に数える",
     "allBucketsAtOnce": true
+  },
+  "precedence": "名前で書いたパス（deny・owner の paths）は、閉包（deny の閉包・prodWrite の閉包）より優先する。閉包から決まるクラスは、名前で書いたクラスが無いファイルにだけ付く",
+  "dailyAutoMergeCap": {
+    "$comment": "判断28（v4 の推奨）。小分けの迂回と暴走の止め役。マージ済み 946 本 / 31 日 ≈ 30 本/日、社員で回る 46% ≈ 14 本/日。作成の App の PR の auto-merge の本数を JST の日ごとに数え、40 本で以後の承認を止める（翌日まで REQUEST_CHANGES ではなく COMMENT で待たせる）。30 本で知らせる。判断14 の実費の測定の後に見直す",
+    "perDay": 40,
+    "notifyAt": 30
   }
 }
