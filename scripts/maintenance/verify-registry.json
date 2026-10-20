@@ -1228,6 +1228,11 @@
       "script": "verify-vercel-ignore-build.js",
       "tier": "ci",
       "guards": "vercel.json の ignoreCommand（scripts/lib/vercelIgnoreBuild.js、BOA-908）。docs・台帳・機械の再生成・ワークフローだけの変更ではビルドせず、public/blog/*.md・run-heavy.sh・src・api・ルートの data/*・risk-rules.json・作り直し（差分なし）ではビルドすること"
+    },
+    {
+      "script": "verify-blog-markdown-sanitize.js",
+      "tier": "ci",
+      "guards": "ブログ記事の HTML の許可リスト（src/utils/blogMarkdownSanitize.js、rehype-sanitize）。記事に紛れた script・iframe・form・base・meta refresh・embed・object・style 属性・on* 属性・javascript: の URL が描いた HTML に残らないこと、ブログの図のタグ ryujin-chart（src・rows）が残ること、既存の全記事の描画が許可リストを入れる前と同じこと"
     }
   ]
 }
