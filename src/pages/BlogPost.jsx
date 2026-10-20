@@ -154,6 +154,11 @@ export default function BlogPost() {
       return;
     }
 
+    // 記事を移ったら、前の記事の本文を出したままにしない。前の記事の取得が後から返っても捨てる
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
     // Load markdown content
     fetch(mdPath)
       .then((response) => {
@@ -165,6 +170,7 @@ export default function BlogPost() {
       // 図の JSON も取ってから本文と一緒に描く（後から図が伸びて下の段落が動かないように）
       .then((text) =>
         loadBlogCharts(text).then((loadedCharts) => {
+          if (cancelled) return;
           setCharts(loadedCharts);
           setContent(text);
           setLoading(false);
@@ -172,12 +178,16 @@ export default function BlogPost() {
       )
       .catch((err) => {
         console.error("Error loading blog post:", err);
+        if (cancelled) return;
         setError(errorMessageOf(err));
         setLoading(false);
       });
 
     // Scroll to top
     window.scrollTo(0, 0);
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mdPath/t は id/isTranslated から導出される
   }, [id, basePost, mdPath]);
 

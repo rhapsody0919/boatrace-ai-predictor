@@ -371,3 +371,53 @@ test.describe("ブログの図（ブラウザの言語がドイツ語）", () =>
     ).toContainText("全2,363レース");
   });
 });
+
+test.describe("ブログの図（記事を移るとき）", () => {
+  test("図の取得が遅い記事から別の記事へ移っても、前の記事の本文で上書きされない", async ({
+    page,
+  }) => {
+    const OTHER = "10000-races-analysis";
+    await stubArticle(page, { chartDelay: 3000 });
+    await page.route(`**/blog/${OTHER}.md`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/markdown; charset=utf-8",
+        body: "# 移った先の記事\n\n移った先の本文。\n",
+      }),
+    );
+    await page.goto(`/blog/${ARTICLE}`);
+    await page.waitForTimeout(300);
+    await page.evaluate((other) => {
+      window.history.pushState({}, "", `/blog/${other}`);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    }, OTHER);
+    await expect(page.locator(".blog-post-content")).toContainText(
+      "移った先の本文。",
+    );
+    // 前の記事の図の JSON が返った後（3秒後）も、移った先の本文のまま
+    await page.waitForTimeout(3500);
+    await expect(page.locator(".blog-post-content")).toContainText(
+      "移った先の本文。",
+    );
+    await expect(page.locator(".blog-post-content")).not.toContainText(
+      "図の下の段落。",
+    );
+  });
+
+  test("コードブロックの中に書いたタグの JSON は取りに行かない", async ({
+    page,
+  }) => {
+    await page.route(`**/blog/${ARTICLE}.md`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/markdown; charset=utf-8",
+        body: '# t\n\n```\n<ryujin-chart src="/blog-charts/in-code.json" rows="6"></ryujin-chart>\n```\n\n本文\n',
+      }),
+    );
+    const requested = [];
+    page.on("request", (r) => requested.push(r.url()));
+    await page.goto(`/blog/${ARTICLE}`);
+    await expect(page.locator(".blog-post-content")).toContainText("本文");
+    expect(requested.filter((u) => u.includes("in-code.json"))).toEqual([]);
+  });
+});

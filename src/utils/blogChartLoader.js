@@ -8,11 +8,28 @@
  */
 import { validateBlogChart } from "./blogChartContract";
 
-const SRC_RE = /<ryujin-chart\s[^>]*\bsrc="(\/blog-charts\/[a-z0-9-]+\.json)"/g;
+/** 図の行（scripts/maintenance/verify-blog-charts.js と同じ形。行頭から1行で書いたものだけ） */
+const LINE_RE =
+  /^<ryujin-chart src="(\/blog-charts\/[a-z0-9-]+\.json)" rows="\d{1,2}"><\/ryujin-chart>$/;
+/** 図の JSON を待つ上限。返らないときに記事の本文まで出なくなるのを防ぐ */
+const TIMEOUT_MS = 8000;
+
+/** コードブロック（``` ・~~~・4字下げ）の中を除いた、図の行の src */
+function chartSrcs(markdown) {
+  const srcs = new Set();
+  let inFence = false;
+  for (const line of markdown.split("\n")) {
+    if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    if (inFence) continue;
+    const m = line.match(LINE_RE);
+    if (m) srcs.add(m[1]);
+  }
+  return [...srcs];
+}
 
 async function loadOne(src) {
   try {
-    const res = await fetch(src);
+    const res = await fetch(src, { signal: AbortSignal.timeout(TIMEOUT_MS) });
     if (!res.ok)
       throw new Error(`図のデータの取得に失敗（${res.status}）: ${src}`);
     const chart = await res.json();
@@ -34,7 +51,7 @@ async function loadOne(src) {
  * @returns {Promise<Map<string, { chart: object } | { error: Error }>>} src ごとの結果（図が無ければ空）
  */
 export async function loadBlogCharts(markdown) {
-  const srcs = [...new Set([...markdown.matchAll(SRC_RE)].map((m) => m[1]))];
+  const srcs = chartSrcs(markdown);
   const results = await Promise.all(srcs.map(loadOne));
   return new Map(srcs.map((src, i) => [src, results[i]]));
 }
