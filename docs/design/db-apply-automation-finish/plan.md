@@ -209,6 +209,8 @@ GRANT SELECT ON db_apply.applied TO claude_ro;            -- 台帳とのずれ�
 | PR-0 | この設計（docs だけ） | docs | オーナー | ― |
 | PR-A | 起動の移し替え（§2） | .github・api・scripts・vercel.json | オーナー（.github） | 判断1・2 |
 | PR-A' | `scrape_job_state` の mode を shadow → 1日後に live（UPDATE） | 本番 DB | オーナーが SQL エディタで当てる。docs/db-migration の番号つきファイルにはしない（in-caution と同じく `docs/design/…/owner-prod-steps` の形。番号つきにすると、切り替えより後に審査なしで足されたファイルとして reconcile の列の先頭で blocked になり、後ろの番号を止める） | PR-A のデプロイの後（ラッパが off の行を作った後） |
+| PR-A2 | e2e-rerecord.yml（BOA-929、inputs.gate=true）と key-canary.yml（BOA-917）の起動を、PR-A と同じ dispatch の形で Vercel Cron へ。schedule は予備に残す。job は `e2e_rerecord_dispatch`（JST 10:23・12:47・14:37・16:13）・`key_canary_dispatch`（7・37分）。Cron の登録は 63→68本（Pro の上限 100本） | .github・api・scripts・vercel.json | オーナー（.github） | ― |
+| PR-A2' | PR-A2 の2つの job の mode を live に（`INSERT INTO scrape_job_state (job, mode) VALUES ('e2e_rerecord_dispatch', 'live'), ('key_canary_dispatch', 'live') ON CONFLICT (job) DO UPDATE SET mode = excluded.mode`）。どちらも予備の schedule と同じ動きで、二重の起動は gate・読み取りのみで無害なので shadow を挟まない | 本番 DB | オーナーが SQL エディタで当てる（PR-A' と同じ形） | PR-A2 のデプロイの後 |
 | PR-B | 印の表のマイグレーション（§4.1 の SQL） | docs/db-migration | オーナー（手で当てる、重い） | 判断3 |
 | PR-C | 印・止め印・時間の窓のコード（§4）。最初に psql の実機確認 | scripts/db・scripts/lib・.github・verify | オーナー（.github） | PR-B の適用 |
 | PR-D | 名義の切替の龍神の側（§3） | .claude・scripts/maintenance | オーナー。切替の作業の中で、8.2 の前にマージ | hq の道具 |
@@ -276,7 +278,7 @@ flowchart TD
 ## 7. 別スコープ（Linear に起票する）
 
 - sitemap の `<loc>`（`scripts/lib/sitemapLastmod.js:48`・`generate-sitemap.js:346`）と llms.txt の記事の title・description（`generate-llms-txt.js`）がエスケープしていない（BOA-920）
-- BOA-917: key-canary・job-watch の前提の定期の起動が来ない（10/20 に key-canary 0回）。同じ dispatch の形で Vercel Cron から起こすか、hq の見張りに寄せる。schedule が来ない原因そのものは未調査（この設計は迂回だけ）
+- BOA-917: key-canary・job-watch の前提の定期の起動が来ない（10/20 に key-canary 0回）。key-canary は PR-A2 で Vercel Cron の dispatch に寄せた。job-watch は workflow_run で起動するので対象外。schedule が来ない原因そのものは未調査（この設計は迂回だけ）
 
 ## 8. オーナーに決めてもらう点
 

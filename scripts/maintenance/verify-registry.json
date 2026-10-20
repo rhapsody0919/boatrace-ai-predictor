@@ -735,7 +735,7 @@
     {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
-      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化、素通し一覧の集計（ADR-0077）"
+      "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化・Vercel Cron の dispatch（inputs.gate=true）を schedule と同じ扱いにすること（BOA-929）、素通し一覧の集計（ADR-0077）"
     },
     {
       "script": "verify-e2e-no-unroute.js",
@@ -1060,7 +1060,7 @@
     {
       "script": "verify-analogy-dispatch.js",
       "tier": "ci",
-      "guards": "BOA-271 アナロジーの週次の学習・v16 の朝のバッチ、BOA-822 イン崩れ注意度の夜の表の workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線）"
+      "guards": "BOA-271 アナロジーの週次の学習・v16 の朝のバッチ、BOA-822 イン崩れ注意度の夜の表、BOA-929 E2E の録画の撮り直し（inputs.gate=true）・BOA-917 鍵のカナリアの workflow_dispatch（失敗の即時通知・shadow で起動しない・cron の配線・予備の schedule と同じ時刻）"
     },
     {
       "script": "verify-in-caution-coverage.js",

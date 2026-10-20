@@ -253,6 +253,26 @@
       "schedule": "30 17 * * *"
     },
     {
+      "path": "/api/cron/e2e-rerecord-dispatch",
+      "schedule": "23 1 * * *"
+    },
+    {
+      "path": "/api/cron/e2e-rerecord-dispatch",
+      "schedule": "47 3 * * *"
+    },
+    {
+      "path": "/api/cron/e2e-rerecord-dispatch",
+      "schedule": "37 5 * * *"
+    },
+    {
+      "path": "/api/cron/e2e-rerecord-dispatch",
+      "schedule": "13 7 * * *"
+    },
+    {
+      "path": "/api/cron/key-canary-dispatch",
+      "schedule": "7,37 * * * *"
+    },
+    {
       "path": "/api/cron/in-caution-health",
       "schedule": "30 19 * * *"
     },

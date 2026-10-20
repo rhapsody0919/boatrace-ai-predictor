@@ -231,11 +231,38 @@ check(
   "ワークフロー自体の失敗は、通知済みでも必ず通知する（重複判定は不採用の通知だけ）",
   [
     workflow.includes("JOB_FAILED: ${{ job.status == 'failure' }}"),
-    /if \[ "\$EVENT_NAME" = "schedule" \] && \[ "\$JOB_FAILED" != "true" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
+    /if \[ "\$SCHEDULED" = "true" \] && \[ "\$JOB_FAILED" != "true" \]; then\s*\n\s*DEDUPE=\$\(node scripts\/maintenance\/e2e-recording\.js notify-dedupe/.test(
       workflow,
     ),
   ],
   [true, true],
+);
+// Vercel Cron の dispatch（inputs.gate=true、BOA-929）は schedule と同じ扱い: gate の判定と通知の1日1回。
+// 人が起こす dispatch（gate=false、既定）は判定せずに撮り、毎回通知する。
+// github.event.inputs は文字列（inputs.gate は boolean）なので 'true' と比べる。schedule では空で false になる
+const SCHEDULED_EXPR =
+  "SCHEDULED: ${{ github.event_name == 'schedule' || github.event.inputs.gate == 'true' }}";
+check(
+  "dispatch の入力 gate（boolean・既定 false）がある",
+  /workflow_dispatch:\s*\n\s+inputs:\s*\n\s+gate:\s*\n(?:\s+description: .*\n)?\s+type: boolean\s*\n\s+default: false/.test(
+    workflow,
+  ),
+  true,
+);
+check(
+  "gate の判定と通知の重複判定は、schedule と gate=true の dispatch で同じ式を使う（2か所）",
+  workflow.split(SCHEDULED_EXPR).length - 1,
+  2,
+);
+check(
+  "gate の step は SCHEDULED が true のときだけ判定する（EVENT_NAME で schedule だけを見ない）",
+  [
+    /if \[ "\$SCHEDULED" != "true" \]; then\s*\n\s*echo "run=true"/.test(
+      workflow,
+    ),
+    /EVENT_NAME/.test(workflow),
+  ],
+  [true, false],
 );
 // 状態関数（failure() / success() / cancelled() / always()）は if: の中でしか使えない。
 // env や with の ${{ }} に書くと、GitHub はワークフロー全体を無効と判定し、schedule も
@@ -257,9 +284,11 @@ function findStatusFuncOutsideIf(text) {
 check(
   "状態関数の検出: if: 以外の ${{ failure() }} を見つける（検出器の自己検査）",
   [
-    findStatusFuncOutsideIf("        env:\n          X: ${{ failure() }}\n").length,
+    findStatusFuncOutsideIf("        env:\n          X: ${{ failure() }}\n")
+      .length,
     findStatusFuncOutsideIf("        if: ${{ failure() }}\n").length,
-    findStatusFuncOutsideIf("          X: ${{ job.status == 'failure' }}\n").length,
+    findStatusFuncOutsideIf("          X: ${{ job.status == 'failure' }}\n")
+      .length,
   ],
   [1, 0, 0],
 );
