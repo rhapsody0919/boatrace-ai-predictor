@@ -53,3 +53,6 @@
 - 公開の規模一覧では閲覧日と出典側のデータ取得時点を別に残し、古い表示を現在の実数として扱わない。（2026-10-19、2026-10-19-competitor-discovery.md）
 - 報告冒頭の合格表示と本文の未修正の重大指摘が食い違うときは、合格表示だけを次の制作計画の品質根拠にしない。（2026-10-19、2026-10-19-plan-1450.md）
 - GA4の人数指標の要求に次元を足してから、その次元を落としてtotalUsersを加算すると同じ人を重複する。既存キーの人数は元の粒度で要求し、分割値の和を重複排除人数として保存しない。（2026-10-19、2026-10-19-review-20261019-04.md）
+- Vercel のボット取得数は Observability のクエリ（`vercel.request.count`、`incoming_request` を `bot_name` で集計）で CDN 段まで数えられ、静的ファイル・robots.txt・CDN HIT も入る。開始は36日以内、生の UA の次元は無い。関数のログは CDN HIT が漏れ、middleware は matcher に無いパスが漏れる（2026-10-20、Vercel API で実測、docs/proposal/ai-crawler-daily-count.md §1）
+- GSC プロパティのデータは 2025-12-21 から。前年同期の比較はできない（2026-10-20、data/analysis/organic-decline-2026-10-20/README.md）
+- GA4 の Admin API は Google Cloud プロジェクトで無効。タイムゾーン・カスタムディメンション・キーイベントは API で読めない（有効化はプロジェクト設定の変更）（2026-10-20、ga4-organic-weekly-export.js の settings.*.error）
