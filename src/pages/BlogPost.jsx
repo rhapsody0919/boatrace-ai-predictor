@@ -19,6 +19,7 @@ import "./BlogPost.css";
 import { errorMessageOf } from "../utils/errorMessage.js";
 import { blogRehypePlugins } from "../utils/blogMarkdownSanitize.js";
 import BlogChart from "../components/blog/BlogChart";
+import { loadBlogCharts } from "../utils/blogChartLoader.js";
 
 /** 段落の中身が図のタグ1つだけ（前後の空白を除く）か */
 const isChartOnlyParagraph = (node) => {
@@ -111,6 +112,8 @@ export default function BlogPost() {
   const { id } = useParams();
   const { pathname } = useLocation();
   const [content, setContent] = useState("");
+  // 記事の図の JSON（src ごと）。本文と同じ時点でそろえる（src/utils/blogChartLoader.js）
+  const [charts, setCharts] = useState(() => new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [readProgress, setReadProgress] = useState(0);
@@ -159,10 +162,14 @@ export default function BlogPost() {
         }
         return response.text();
       })
-      .then((text) => {
-        setContent(text);
-        setLoading(false);
-      })
+      // 図の JSON も取ってから本文と一緒に描く（後から図が伸びて下の段落が動かないように）
+      .then((text) =>
+        loadBlogCharts(text).then((loadedCharts) => {
+          setCharts(loadedCharts);
+          setContent(text);
+          setLoading(false);
+        }),
+      )
       .catch((err) => {
         console.error("Error loading blog post:", err);
         setError(errorMessageOf(err));
@@ -233,8 +240,8 @@ export default function BlogPost() {
         components={{
           // ブログの図（docs/design/blog-charts/contract.md）。1行のタグは段落に包まれるので、
           // タグだけの段落は p を外して図をそのまま置く（p の中に figure を入れない）
-          "ryujin-chart": ({ src, rows }) => (
-            <BlogChart src={src} rows={rows} lang={chartLang} />
+          "ryujin-chart": ({ src }) => (
+            <BlogChart src={src} result={charts.get(src)} lang={chartLang} />
           ),
           p: ({ node, ...props }) =>
             isChartOnlyParagraph(node) ? props.children : <p {...props} />,
@@ -269,7 +276,7 @@ export default function BlogPost() {
     ),
     // contentが変わらない限りReactMarkdown要素を再生成しない。読了進捗バーの
     // scroll起因の再レンダーのたびに記事全文を再パースしていた問題への対処
-    [content, chartLang],
+    [content, charts, chartLang],
   );
 
   // 画面に出ない所（<title>・meta description・OGP/Twitter）だけ metaTitle・metaDescription を優先する。

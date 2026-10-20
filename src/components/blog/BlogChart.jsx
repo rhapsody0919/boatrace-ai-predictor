@@ -8,44 +8,37 @@
  * - 開いた時点で答えが出ている: 既定の view を最初の描画で出す。遅延描画しない
  * - 値を常に出す: 値は HTML の文字（ホバーに頼らない。AI 向けのスナップショットにも文字で載る）
  * - 切り替えは1つまで: 契約の形で1つ。6つまでボタン、7つ以上は選ぶ箱
- * - CLS を防ぐ: タグの rows から読み込み前の高さを CSS で確保し、アニメーションしない
- * 読み込みの状態は data-chart-state（loading・ready・error）で外に示す。
- * scripts/generate-ai-snapshots.js は loading が無くなるまで待ち、error の記事は失敗として数える。
+ * - CLS を防ぐ: JSON は記事の本文と一緒に取ってある（src/utils/blogChartLoader.js）ので、
+ *   本文と同じ描画で図が出る。読み込み中の状態が無く、アニメーションもしない
+ * 状態は data-chart-state（ready・error）で外に示す。
+ * scripts/generate-ai-snapshots.js は error の記事を失敗として数える。
  */
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import InlineFetchError from "../InlineFetchError";
-import {
-  localize,
-  validateBlogChart,
-  valueAxisMax,
-} from "../../utils/blogChartContract";
+import { localize, valueAxisMax } from "../../utils/blogChartContract";
 import "./BlogChart.css";
 
 /** 部品が持つ言葉。図の中身の文字は JSON（契約 5 節） */
 const UI_TEXT = {
   ja: {
-    loading: "図を読み込んでいます",
     error: "図のデータを読み込めませんでした。ページを読み込み直してください。",
     sample: (n, unit) => `全${n}${unit}`,
     source: (name, date) => `出典: ${name}（集計日 ${date}）`,
     count: (n) => `（${n}回）`,
   },
   en: {
-    loading: "Loading the chart",
     error: "Could not load the chart data. Please reload the page.",
     sample: (n, unit) => `${n} ${unit} in total`,
     source: (name, date) => `Source: ${name} (compiled ${date} JST)`,
     count: (n) => ` (n=${n})`,
   },
   "zh-TW": {
-    loading: "正在載入圖表",
     error: "無法載入圖表資料。請重新整理頁面。",
     sample: (n, unit) => `共${n}${unit}`,
     source: (name, date) => `資料來源：${name}（統計日 ${date}）`,
     count: (n) => `（${n}次）`,
   },
   ko: {
-    loading: "차트를 불러오는 중",
     error: "차트 데이터를 불러오지 못했습니다. 페이지를 새로고침해 주세요.",
     sample: (n, unit) => `총 ${n}${unit}`,
     source: (name, date) => `출처: ${name}(집계일 ${date})`,
@@ -115,75 +108,30 @@ function HBarRows({ chart, view, lang, ui }) {
 
 const BODIES = { hbar: HBarRows };
 
-function BlogChart({ src, rows, lang = "ja" }) {
+/**
+ * @param {{ src?: string, result?: { chart: object } | { error: Error }, lang?: string }} props
+ *   result は記事の本文と一緒に取った結果（blogChartLoader.js）。無いときは src が許可リストで落ちたか取れていない
+ */
+function BlogChart({ src, result, lang = "ja" }) {
   const ui = UI_TEXT[lang] ?? UI_TEXT.ja;
-  // 取得結果は src とセットで持つ（src だけ変わったときに前の図が混ざらない）
-  const [loaded, setLoaded] = useState(null);
   const [selected, setSelected] = useState(null);
-
   const baseId = useId();
 
-  useEffect(() => {
-    let cancelled = false;
-    // 許可リスト（blogMarkdownSanitize.js）が /blog-charts/ 以外の src を落とすと undefined で来る
-    if (!src) {
+  if (!result?.chart) {
+    if (!result)
       console.error(
-        new Error("図の src が無い（/blog-charts/{名前}.json だけ使える）"),
+        new Error(
+          `図のデータが無い（/blog-charts/{名前}.json だけ使える）: ${src}`,
+        ),
       );
-      setLoaded({ src, error: true });
-      return undefined;
-    }
-    fetch(src)
-      .then((res) => {
-        if (!res.ok)
-          throw new Error(`図のデータの取得に失敗（${res.status}）: ${src}`);
-        return res.json();
-      })
-      .then((chart) => {
-        const errors = validateBlogChart(chart);
-        if (errors.length > 0) {
-          throw new Error(
-            `図のデータが契約に合わない: ${src}\n${errors.map((e) => `${e.path}: ${e.message}`).join("\n")}`,
-          );
-        }
-        if (!cancelled) setLoaded({ src, chart });
-      })
-      .catch((err) => {
-        console.error(err);
-        if (!cancelled) setLoaded({ src, error: err });
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [src]);
-
-  const current = loaded?.src === src ? loaded : null;
-  const state =
-    current === null ? "loading" : current.error ? "error" : "ready";
-  const style = {
-    "--blog-chart-rows": Math.min(Math.max(Number(rows) || 6, 1), 12),
-  };
-
-  if (state !== "ready") {
     return (
-      <figure
-        className="blog-chart"
-        data-chart-state={state}
-        aria-busy={state === "loading"}
-        style={style}
-      >
-        <div className="blog-chart__placeholder">
-          {state === "loading" ? (
-            ui.loading
-          ) : (
-            <InlineFetchError message={ui.error} />
-          )}
-        </div>
+      <figure className="blog-chart" data-chart-state="error">
+        <InlineFetchError message={ui.error} />
       </figure>
     );
   }
 
-  const { chart } = current;
+  const { chart } = result;
   const defaultKey = chart.switch ? chart.switch.default : chart.views[0].key;
   // 選んだ key が今の図に無い（src が替わった等）ときは既定の view に戻す
   const view =
@@ -204,7 +152,6 @@ function BlogChart({ src, rows, lang = "ja" }) {
     <figure
       className="blog-chart"
       data-chart-state="ready"
-      style={style}
       aria-labelledby={`${controlId}-title`}
     >
       {/* 見出し（h3）にしない。記事の目次（BlogPost.jsx が h2・h3 を集める）に図の名前を入れないため */}

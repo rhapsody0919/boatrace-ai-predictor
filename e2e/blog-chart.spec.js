@@ -30,7 +30,7 @@ const markdown = [
   "",
 ].join("\n");
 
-/** 記事の .md と図の JSON を差し替える。chartDelay で JSON の返事を遅らせる */
+/** 記事の .md と図の JSON を差し替える。chartDelay で JSON の返事を遅らせる（遅れても本文と図が同時に出ることを見る） */
 async function stubArticle(
   page,
   { chart = example, chartStatus = 200, chartDelay = 0 } = {},
@@ -166,25 +166,48 @@ test.describe("ブログの図", () => {
     ["字数の上限・選ぶ箱", longest],
     ["字数の上限・ボタン6つ", longestButtons],
   ]) {
-    test(`読み込み中から描き終わるまで、下の段落が動かない（CLS、${name}）`, async ({
+    test(`本文が出た最初の描画で図も出ていて、後から下の段落が動かない（CLS、${name}）`, async ({
       page,
     }) => {
+      // 本文（.blog-post-content）が DOM に入った瞬間の、図の状態と下の段落の位置を記録する
+      await page.addInitScript(() => {
+        const observer = new MutationObserver(() => {
+          const content = document.querySelector(".blog-post-content");
+          if (!content || window.__firstPaint) return;
+          const below = [...content.querySelectorAll("p")].find((p) =>
+            p.textContent.includes("図の下の段落。"),
+          );
+          window.__firstPaint = {
+            chartState:
+              content.querySelector("figure.blog-chart")?.dataset.chartState ??
+              null,
+            belowY: below
+              ? below.getBoundingClientRect().top + window.scrollY
+              : null,
+          };
+        });
+        observer.observe(document, { childList: true, subtree: true });
+      });
       for (const width of [
         320, 360, 375, 481, 600, 768, 769, 1024, 1440, 1920,
       ]) {
         await page.setViewportSize({ width, height: 900 });
         await stubArticle(page, { chart, chartDelay: 500 });
         await page.goto(`/blog/${ARTICLE}`);
-        const figure = chartLocator(page);
-        await expect(figure).toHaveAttribute("data-chart-state", "loading");
+        await expect(chartLocator(page)).toHaveAttribute(
+          "data-chart-state",
+          "ready",
+        );
+        const first = await page.evaluate(() => window.__firstPaint);
+        expect(first.chartState, `${width}px: 最初の描画の図`).toBe("ready");
         const below = page.locator(".blog-post-content p", {
           hasText: "図の下の段落。",
         });
-        const before = await below.boundingBox();
-        await expect(figure).toHaveAttribute("data-chart-state", "ready");
-        const after = await below.boundingBox();
+        const afterY = await below.evaluate(
+          (el) => el.getBoundingClientRect().top + window.scrollY,
+        );
         expect(
-          Math.abs(after.y - before.y),
+          Math.abs(afterY - first.belowY),
           `${width}px: 下の段落の移動`,
         ).toBeLessThanOrEqual(1);
       }

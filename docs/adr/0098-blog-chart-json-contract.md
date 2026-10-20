@@ -12,7 +12,8 @@
 1. **契約**: 図は `public/blog-charts/{記事id}-{図id}.json` の固定の JSON（`docs/design/blog-charts/contract.md`、schemaVersion 1）。記事にはタグを1行 `<ryujin-chart src="/blog-charts/…json" rows="6"></ryujin-chart>` と書く。図の種類は `kind` で分ける union（実装は `hbar` だけ、ほかは予約）。新しい種類を足すのは版を上げず、既存の項目の意味・必須・型を変えるときだけ版を上げて同じ PR で全 JSON を書き換える
 2. **描き方**: 部品 `src/components/blog/BlogChart.jsx` が JSON を取り、`src/utils/blogChartContract.js` で検査してから描く。横棒は recharts ではなく HTML/CSS で描く（値が HTML の文字になりスナップショットに確実に載る・アニメーションが無い・幅を測るまで描かない問題が無い）。見た目はサイトのトークンに合わせる
 3. **条件の強制**: 条件は部品と CI（`scripts/maintenance/verify-blog-charts.js`、tier ci）で強制し、JSON からは変えられない。CI は未知のキー・件数と値の整数での照合・本文に無い答えの数字・記事のタグの書き方・「競艇」・廃止語・risk-rules の語を落とす
-4. **スナップショット**: `scripts/generate-ai-snapshots.js` は `.blog-post-content` の後に `[data-chart-state="loading"]` が無くなるまで待ち、図が `error` の記事は保存せず失敗として数える
+4. **CLS とスナップショット**: 記事の .md を取ったときに中の図の JSON もまとめて取り（`src/utils/blogChartLoader.js`）、本文と図を同じ描画で出す。読み込み中の状態が無いので CLS が起きず、スナップショットも `.blog-post-content` が出た時点で図が入っている。図が `error` の記事は保存せず失敗として数える（`scripts/generate-ai-snapshots.js`）
+   - 最初は本文の後に部品が JSON を取り、タグの `rows` と字数の上限から高さを見積もった。2回のレビュー（Phase1・代わりの審査）で、見積もりから漏れた項目（全角だけの文・出典名・札・選択肢の名前）による CLS が2回とも見つかったので、見積もりをやめて取る時点を前に寄せた（`.claude/rules/review-fix-cycle.md`「同じ指摘が2回目に出たら原因分析」）
 5. **置き場**: JSON は `/blog/` の下に置かない。middleware の対象で、1段（`/blog/x.json`）だと AI ボットにだけ別のファイルへ書き換えられる（`src/config/aiCrawlerBots.js` の `^\/blog\/([^/]+)$`）
 6. **sanitize**: 記事の HTML の許可リスト（`src/utils/blogMarkdownSanitize.js`）に `ryujin-chart` の `src`（`/blog-charts/*.json` だけ）と `rows` を入れる
 
@@ -23,7 +24,7 @@
 
 ## 影響
 - 記事の作り手は JSON とタグ1行を書き、同じ数字を本文の1行と表にも書く
-- 図のある記事のスナップショットは、図の JSON の取得を待つ分だけ遅くなる
+- 図のある記事は、本文が出るのが図の JSON の取得の分（同じ origin の小さい JSON を並行で1往復）だけ遅れる。図の無い記事は変わらない
 - 図の PNG の書き出し（note・X 用）は別の ADR で決める（ビルドで同じ部品を撮る案）
 
 ## 関連

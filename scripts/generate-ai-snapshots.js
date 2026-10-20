@@ -142,16 +142,11 @@ function startStaticServer() {
 }
 
 /**
- * 記事の図（src/components/blog/BlogChart.jsx）は本文を描いた後に JSON を取りに行くので、
- * .blog-post-content が出た時点ではまだ読み込み中のことがある。loading が無くなるまで待ち、
- * 図が error の記事は保存せず失敗として数える（図の無い HTML を配らない。docs/design/blog-charts/contract.md 6節）
+ * 記事の図（src/components/blog/BlogChart.jsx）は、JSON を本文と一緒に取ってから描く（src/utils/blogChartLoader.js）ので、
+ * .blog-post-content が出た時点で図も出ている。図が error の記事は保存せず失敗として数える
+ * （図の無い HTML を配らず、ボットには SPA を返す。ADR 0089 の「失敗したら SPA」と同じ。docs/design/blog-charts/contract.md 6節）
  */
 async function waitForBlogCharts(page) {
-  await page.waitForFunction(
-    () => !document.querySelector('[data-chart-state="loading"]'),
-    null,
-    { timeout: 10000 },
-  );
   const failed = await page.$$eval(
     '[data-chart-state="error"]',
     (els) => els.length,

@@ -55,13 +55,23 @@ export function scanArticle(file, markdown) {
   const refs = [];
   const lines = markdown.split("\n");
   let inFence = false;
+  let inFaq = false;
   lines.forEach((line, i) => {
     if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
+    // よくある質問の節（src/utils/blogFaqSchema.js が FAQPage の構造化データにする）
+    if (!inFence && /^##\s/.test(line))
+      inFaq = /^##\s*(よくある質問|FAQ|常見問題|자주 묻는 질문)\s*$/.test(line);
     if (inFence || !/ryujin-?chart/i.test(line)) return;
     // 4字下げのコードブロックと、インラインのコード（`<ryujin-chart>` と説明に書いたもの）は数えない
     if (/^( {4}|\t)/.test(line) || /`[^`]*ryujin-?chart[^`]*`/i.test(line))
       return;
     const at = `${file}:${i + 1}`;
+    if (inFaq) {
+      errors.push(
+        `${file}:${i + 1}: よくある質問の節には図を置かない（構造化データの答えに生のタグが入る）`,
+      );
+      return;
+    }
     const m = line.match(TAG_RE);
     if (!m) {
       errors.push(
@@ -343,6 +353,26 @@ test("記事のタグの書き方: 大文字・自己終了・段落の中・外
     [],
   );
   assert.deepEqual(scanArticle("t.md", "    <ryujin-chart>").errors, []);
+});
+
+test("よくある質問の節の図・全角の ％ の写し間違い・言語ごとの値の型を落とす", () => {
+  const md =
+    '## よくある質問\n\n### 問い\n\n<ryujin-chart src="/blog-charts/x.json" rows="6"></ryujin-chart>\n';
+  assert.ok(
+    scanArticle("t.md", md).errors.some((e) =>
+      e.includes("よくある質問の節には図を置かない"),
+    ),
+  );
+  assert.ok(
+    messages({ ...example(), description: "福岡は６１．７％。" }).some((x) =>
+      x.startsWith("description: 数字は views"),
+    ),
+  );
+  assert.ok(
+    messages({ ...example(), title: { ja: "題", en: {} } }).some((x) =>
+      x.startsWith("title.en: 文字列"),
+    ),
+  );
 });
 
 test("参照と JSON の突き合わせ: rows・article・本文に無い答えの数字・書かない言い方", () => {

@@ -74,6 +74,10 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
       return;
     }
     keysOnly(variants, path, LANGS);
+    for (const [lang, value] of Object.entries(variants)) {
+      if (typeof value !== "string")
+        err(`${path}.${lang}`, `文字列 / 実際: ${show(value)}`);
+    }
     if (typeof v !== "string") {
       for (const lang of langs.filter((l) => l !== "ja")) {
         if (typeof variants[lang] !== "string")
@@ -394,9 +398,14 @@ export function validateBlogChart(chart, { langs = ["ja"] } = {}) {
 
   // 答えの数字は、その view か全国（all）の値だけ
   const numbersIn = (t) =>
-    [...localize(t, "ja").matchAll(/(\d+(?:\.\d+)?)%/g)].map((m) =>
-      Number(m[1]),
-    );
+    // 全角の数字・％も拾う（半角だけ見ると全角で書いた写し間違いが通る）
+    [
+      ...localize(t, "ja")
+        .replace(/[０-９．]/g, (c) =>
+          String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+        )
+        .matchAll(/(\d+(?:\.\d+)?)[%％]/g),
+    ].map((m) => Number(m[1]));
   const allowedNumbers = (view) =>
     new Set(
       [view, views.find((v) => v?.key === "all")]
