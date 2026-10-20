@@ -12,7 +12,8 @@
     "^src/data/blog-posts/[^/]+\\.json$",
     "^src/data/blog-posts/(en|ko|zh-TW)/[^/]+\\.json$",
     "^public/images/blog/[^/]+\\.(jpg|jpeg)$",
-    "^docs/content-manifests/[^/]+\\.json$"
+    "^docs/content-manifests/[^/]+\\.json$",
+    "^public/blog-charts/[^/]+\\.json$"
   ],
   "judgementPhrases": [
     "必ず当たる",

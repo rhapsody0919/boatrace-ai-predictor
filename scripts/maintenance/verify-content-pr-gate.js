@@ -810,6 +810,67 @@ const cases = [
   ],
   // ---- 図のタグ（src/utils/blogChartTag.js の形だけ、前後が空行、JSON が実在）
   [
+    "記事の PR で図の JSON（public/blog-charts/{記事id}-*.json）を足せる",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/blog-charts/sample-guide-course-win.json" rows="3"></ryujin-chart>\n`,
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    "ok",
+  ],
+  [
+    "図の JSON の名前が manifest.id で始まらないと落ちる（1つの PR に1記事）",
+    {
+      extraFiles: {
+        "public/blog-charts/other-article-x.json":
+          '{"schemaVersion":1,"id":"other-article-x","article":"sample-guide","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[chart\].*other-article-x\.json の名前/,
+  ],
+  [
+    "図の JSON の article が manifest.id と違うと落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"other-article","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[chart\].*article "other-article"/,
+  ],
+  [
+    "図の JSON の「競艇」は落ちる（画面に出る文字）",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"競艇の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[kyotei\].*sample-guide-course-win\.json の title/,
+  ],
+  [
+    "図の JSON の判断が要る句は落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"進入コース別の1着率","description":"1コースを買えば儲かる。"}',
+      },
+    },
+    /\[judgement\].*儲かる/,
+  ],
+  [
+    "public/blog-charts の下の入れ子のパスは落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sub/sample-guide-x.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[path\].*blog-charts\/sub/,
+  ],
+  [
     "正しい図の行は通る（JSON が base にある）",
     { md: `${baseMd}\n${CHART}\n`, basePaths: CHART_BASE },
     "ok",

@@ -26,6 +26,8 @@ const TRANSLATION_SUFFIX_RE = /-(en|ko|zh-tw)$/;
 const MANIFEST_RE = /^docs\/content-manifests\/([^/]+)\.json$/;
 const JA_JSON_RE = /^src\/data\/blog-posts\/([^/]+)\.json$/;
 const TR_JSON_RE = /^src\/data\/blog-posts\/(?:en|ko|zh-TW)\/([^/]+)\.json$/;
+// 図の JSON（docs/design/blog-charts/contract.md）。名前は {記事id}-{図id}.json。形は verify-blog-charts.js（CI）が見る
+const CHART_JSON_RE = /^public\/blog-charts\/([^/]+)\.json$/;
 const MD_RE = /^public\/blog\/([^/]+)\.md$/;
 const IMAGE_RE = /^public\/images\/blog\/[^/]+$/;
 const IMAGE_REF_RE = /\/images\/blog\/[^\s)"'\]>]+/g;
@@ -629,6 +631,27 @@ function checkManifest({
     errors.push(
       `[manifest] 1つの PR に1記事。manifest.id "${manifest.id}" 以外の記事 ${otherIds.join("・")} が入っている`,
     );
+  // 図の JSON も manifest.id の記事のもの（名前が「{記事id}-」で始まり、article が記事 id）
+  for (const d of diffPaths.filter((x) => CHART_JSON_RE.test(x.path))) {
+    const name = d.path.match(CHART_JSON_RE)[1];
+    if (!name.startsWith(`${manifest.id}-`))
+      errors.push(
+        `[chart] ${d.path} の名前が「${manifest.id}-」で始まらない（図の名前は {記事id}-{図id}.json）`,
+      );
+    let article;
+    try {
+      article =
+        head[d.path] === undefined
+          ? undefined
+          : JSON.parse(toText(head[d.path]))?.article;
+    } catch {
+      continue; // 読めない JSON は [json] で出している
+    }
+    if (article !== manifest.id)
+      errors.push(
+        `[chart] ${d.path} の article "${article}" が manifest.id "${manifest.id}" と違う`,
+      );
+  }
 
   // kind: new は日本語版 JSON の追加がある、revision は無い
   const addsJaJson = diffPaths.some(
@@ -722,7 +745,10 @@ export function evaluateContentPr({
   const textFiles = [];
   for (const e of live) {
     const isMd = MD_RE.test(e.path);
-    const isJson = JA_JSON_RE.test(e.path) || TR_JSON_RE.test(e.path);
+    const isJson =
+      JA_JSON_RE.test(e.path) ||
+      TR_JSON_RE.test(e.path) ||
+      CHART_JSON_RE.test(e.path);
     if (!isMd && !isJson) continue;
     if (head[e.path] === undefined) {
       errors.push(`[path] ${e.path} が HEAD に無い`);
@@ -761,8 +787,8 @@ export function evaluateContentPr({
     }
   }
 
-  // .md と JSON の対応
-  for (const f of textFiles) {
+  // .md と JSON の対応（図の JSON は記事の .md と対にならない）
+  for (const f of textFiles.filter((t) => !CHART_JSON_RE.test(t.path))) {
     const id = articleIdOf(f.path);
     const jaJson = `src/data/blog-posts/${id}.json`;
     const jaMd = `public/blog/${id}.md`;
