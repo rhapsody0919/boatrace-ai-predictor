@@ -54,7 +54,8 @@ const entryOnly = has("--entry-only");
 // 描かずに、今ある MP4 から送信の道に渡すフォルダ（bundle/）だけを作り直す
 const bundleOnly = has("--bundle-only");
 // 描画の並列数（既定はコア数−1。ほかの作業と同時に回すときは小さくする）
-// 完全版の画質（h264 の crf。大きいほど小さいファイル）。送信の上限 32MiB に収める（Remotion の既定 18 では 31〜35MB だった）
+// 完全版の画質（h264 の crf。大きいほど小さいファイル）。送信の上限 32MiB に収める（Remotion の既定 18 では 31〜35MB だった）。
+// 音声は BGM だけなので 160kbps（既定の約317kbps だと容量の約36%を占めていた。visual-designer 2026-10-20 P2）
 const crf = Number(opt("--crf", "23"));
 const concurrency = opt("--concurrency", String(Math.max(1, (await import("node:os")).cpus().length - 1)));
 const [input, outDir] = args;
@@ -138,7 +139,7 @@ function render(list, answers, dir, name) {
   mkdirSync(join(dir, "stills"), { recursive: true });
   const t0 = Date.now();
   const mp4 = join(dir, `${name}.mp4`);
-  execFileSync("npx", ["remotion", "render", "src/index.jsx", "FullPicture", mp4, "--codec=h264", `--crf=${crf}`, `--concurrency=${concurrency}`, `--props=${propsPath}`, "--log=error"], { stdio: ["ignore", "inherit", "pipe"] });
+  execFileSync("npx", ["remotion", "render", "src/index.jsx", "FullPicture", mp4, "--codec=h264", `--crf=${crf}`, "--audio-bitrate=160k", `--concurrency=${concurrency}`, `--props=${propsPath}`, "--log=error"], { stdio: ["ignore", "inherit", "pipe"] });
   // 上限を越えたら画質を1段下げて作り直す（映像だけ。音はそのまま）。それでも越えたら止める
   if (probe(mp4).bytes > MAX_BYTES) {
     const tmp = join(dir, `${name}.reencode.mp4`);
