@@ -646,3 +646,18 @@ test("完全版の URL の置き場所は Shorts の説明文だけ。X の本�
     /x_text に \{full_url\} がある/,
   );
 });
+
+test("x_text の検査は1回だけ（{full_url} の欄のループに入れない）。x_text が無い bundle でも例外にせず理由を返す", async () => {
+  const reasons = checkFullPicture(
+    bundle({
+      x_text: "https://www.boat-ai.jp/race/2037-10-18-01-01?tab=sonar",
+    }),
+    riskRules,
+  );
+  assert.equal(reasons.filter((r) => /このレースの URL/.test(r)).length, 1);
+  const noText = checkFullPicture(bundle({ x_text: undefined }), riskRules);
+  assert.deepEqual(
+    noText.filter((r) => /x_text/.test(r)),
+    ["x_text が無い・長すぎる"],
+  );
+});

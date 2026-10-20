@@ -98,6 +98,13 @@ export function checkFullPicture(bundle, riskRules = []) {
   if (!/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(bundle?.race_id ?? ""))
     reasons.push("race_id が不正");
   if (!nonEmpty(bundle?.x_text, 25000)) reasons.push("x_text が無い・長すぎる");
+  else {
+    if (!xPostValid(bundle.x_text, { long: true }))
+      reasons.push("x_text が X の長文の上限を超える");
+    const urls = twitterText.extractUrls(bundle.x_text);
+    if (urls.length !== 1 || urls[0].match(RACE_URL)?.[1] !== bundle.race_id)
+      reasons.push("x_text にこのレースの URL がちょうど1つ無い");
+  }
   // 完全版の URL の置き場所は Shorts の説明文だけ（ほかに入っていると、送る前の検査で初めて止まる）
   for (const [field, text] of [
     ["x_text", bundle?.x_text],
@@ -109,13 +116,6 @@ export function checkFullPicture(bundle, riskRules = []) {
       reasons.push(
         `${field} に ${FULL_URL_PLACEHOLDER} がある（Shorts の説明文だけに置く）`,
       );
-    else {
-      if (!xPostValid(bundle.x_text, { long: true }))
-        reasons.push("x_text が X の長文の上限を超える");
-      const urls = twitterText.extractUrls(bundle.x_text);
-      if (urls.length !== 1 || urls[0].match(RACE_URL)?.[1] !== bundle.race_id)
-        reasons.push("x_text にこのレースの URL がちょうど1つ無い");
-    }
   if (!nonEmpty(bundle?.youtube_full?.title, 100))
     reasons.push("youtube_full.title が無い・100字を超える");
   if (!nonEmpty(bundle?.youtube_full?.description, 5000))
