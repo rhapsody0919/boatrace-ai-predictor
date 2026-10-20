@@ -1,0 +1,28 @@
+[    25s] features 2506920
+[    35s] series
+[    42s] races 411601 pool 411445 today 156
+[    88s] facts 1253
+[   192s] scenario 217
+[   269s] scenario-boat 1038 76.6s
+[   304s] distance (411601, 308) L 0.3768
+[   316s] exhibition columns 27 L 0.5821
+[   757s] races done 156 failed 0
+      759.30 real       661.94 user        25.77 sys
+          3439951872  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+             3074851  page reclaims
+                1697  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                1163  voluntary context switches
+             1578009  involuntary context switches
+       4744683638673  instructions retired
+       1264760683101  cycles elapsed
+          8395611240  peak memory footprint
+exit 0
