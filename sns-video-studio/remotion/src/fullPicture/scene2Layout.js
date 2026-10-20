@@ -3,6 +3,8 @@
  * （描画では Chromium の canvas、検査では近似）。型: 上帯 y0〜330／図 y340〜1420／吹き出しは図の直下・y1420 より上・
  * x960 より左。Shorts の右のボタン列（x960 より右・y900〜1700）に、押す所・枠・項目名を入れない。
  */
+import { lineWidth } from "./scene2Timeline.js";
+
 export const W = 1080;
 export const H = 1920;
 export const BAND = 330;
@@ -41,10 +43,8 @@ export const bubbleLine = (i, lead = 0) =>
 /** 吹き出しの中で、図の目印と同じ系統の色で塗る語の色（白地で読める濃さ。全国平均の目印 #2dd4bf の系統） */
 export const BUBBLE_ACCENT = "#0f8a7c";
 /** 1行に収めるために縮めた後の字の大きさの目安（全角1字＝字の大きさ、半角0.55。描画の fit1 と同じ考え） */
-export const bubbleFitSize = (line, i, lead = 0) => {
-  const w = [...line].reduce((a, c) => a + (/[\x20-\x7e]/.test(c) ? 0.55 : 1), 0);
-  return Math.min(bubbleLine(i, lead).size, Math.floor(BUBBLE_INNER / Math.max(1, w)));
-};
+export const bubbleFitSize = (line, i, lead = 0) =>
+  Math.min(bubbleLine(i, lead).size, Math.floor(BUBBLE_INNER / Math.max(1, lineWidth(line))));
 export const bubbleBottom = (sizes) =>
   BUBBLE.y + BUBBLE.padY * 2 + sizes.reduce((h, s) => h + s * 1.3, 0);
 
