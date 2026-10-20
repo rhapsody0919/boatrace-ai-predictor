@@ -27,7 +27,7 @@ import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, templ
 import { entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
-import { buildBundle, checkBundle } from "./bundle.mjs";
+import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle } from "./bundle.mjs";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
 import { scene2Timeline, ANSWER_AT, OVERVIEW_ANSWER_AT, cardAnswerAt } from "../../src/fullPicture/scene2Timeline.js";
@@ -50,6 +50,8 @@ const regenText = has("--regen-text");
 const noVideo = has("--no-video");
 // 入口版だけ描き直す（完全版の MP4 はそのまま）
 const entryOnly = has("--entry-only");
+// 描かずに、今ある MP4 から送信の道に渡すフォルダ（bundle/）だけを作り直す
+const bundleOnly = has("--bundle-only");
 // 描画の並列数（既定はコア数−1。ほかの作業と同時に回すときは小さくする）
 // 完全版の画質（h264 の crf。大きいほど小さいファイル）。送信の上限 32MiB に収める（Remotion の既定 18 では 31〜35MB だった）
 const crf = Number(opt("--crf", "23"));
@@ -192,17 +194,23 @@ function chapters(answers) {
 const entryAnswers = templateText(beats).answers;
 const entry = entryScenes(scenes, entryAnswers, { race: raceLabel });
 const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entryAnswers[s.id] ?? s.lines]) : [])));
-/** 送信の道に渡す文（題名・説明文・X の本文）。数値は文型の答えから（動画に出る数字だけ） */
-const bundleText = (qa, chaptersText = chapters(entryAnswers)) =>
+/** 送信の道に渡す文（題名・説明文・X の本文）。数値は場面の facts（字幕と同じ値）から */
+const factsOf = (sceneId, stepId) => scenes.find((x) => x.id === sceneId)?.data?.steps?.find((st) => st.id === stepId)?.facts ?? null;
+const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = fullPictureTimeline(scenes, entryAnswers).total / 30) =>
   buildBundle({
     raceId: m.raceId,
     venue: venueLabel(Number(venueCode), t),
     raceNo: Number(raceNo),
     month: Number(mo),
     day: Number(da),
-    answers: { ...entryAnswers, ...entryStepAnswers },
+    facts: {
+      venue90: factsOf("scene1", "s1-venue90"),
+      overview: scenes.find((x) => x.id === "scene2")?.data?.radar?.overview?.facts ?? null,
+      conclusion: scenes.find((x) => x.id === "scene4")?.data?.conclusion?.facts ?? null,
+    },
     entryFirstQuestion: entry.scenes[0].data.steps[0]?.question ?? raceLabel,
     chapters: chaptersText,
+    fullSeconds,
     qa,
   });
 const postEntry = `${bundleText({}).x_text}\n`;
@@ -213,7 +221,7 @@ const postEntry = `${bundleText({}).x_text}\n`;
 }
 writeFileSync(join(out, "post-entry.txt"), postEntry);
 
-const modes = entryOnly ? [] : textMode === "both" ? ["template", "connected"] : [textMode];
+const modes = entryOnly || bundleOnly ? [] : textMode === "both" ? ["template", "connected"] : [textMode];
 for (const mode of modes) {
   const t0 = Date.now();
   const textPath = join(out, `text-${mode}.json`);
@@ -249,7 +257,7 @@ for (const mode of modes) {
 
 for (const o of entry.omitted) console.warn(`[入口版で省いた要素] ${JSON.stringify(o)}`);
 writeJson(join(out, "entry.json"), { seconds: entry.total / 30, omitted: entry.omitted, scenes: entry.scenes.map((x) => ({ id: x.id, steps: x.kind === "scene2" ? ["overview", ...(x.data?.radar?.focus ?? []).map((f) => f.id)] : x.data.steps.map((s) => s.id) })) });
-if (!noVideo) {
+if (!noVideo && !bundleOnly) {
   const dir = join(out, "entry");
   mkdirSync(dir, { recursive: true });
   const seconds = render(entry.scenes, entryAnswers, dir, "entry");
@@ -272,10 +280,14 @@ if (!noVideo && fullMp4 && existsSync(entryMp4)) {
     shorts_vertical: e.width === 1080 && e.height === 1920,
     shorts_max60s: e.seconds <= 60,
     shorts_size: e.bytes <= MAX_BYTES,
+    // 縦で3分以下は Shorts になる。完全版は通常の動画で出す（youtube-channel 2026-10-20 P1）
+    full_min185s: f.seconds >= FULL_MIN_SECONDS,
   };
-  // 章は描いた完全版の拍の並びのもの（つないだ版はつなぐ語の分だけ長さが変わる）
+  // 章は描いた完全版の拍の並びのもの（つないだ版はつなぐ語の分だけ長さが変わる）。実ファイルの尺で自動チャプターの条件を見る
   const chaptersPath = join(out, "chapters.txt");
-  const b = bundleText(qa, existsSync(chaptersPath) ? readFileSync(chaptersPath, "utf8") : undefined);
+  const chaptersText = existsSync(chaptersPath) ? readFileSync(chaptersPath, "utf8") : chapters(entryAnswers);
+  qa.chapters = chaptersOk(chaptersText, f.seconds);
+  const b = bundleText(qa, chaptersText, f.seconds);
   const why = checkBundle(b);
   if (why.length) stop("bundle", why);
   const dir = join(out, "bundle");

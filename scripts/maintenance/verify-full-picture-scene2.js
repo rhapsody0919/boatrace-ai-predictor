@@ -681,21 +681,26 @@ for (const f of fixtures) {
 
 // ---- 送信の道に渡す bundle（2026-10-21 オーケストレーターの分担 a・b・c、送信レーンとの Shorts の契約 bundle_version 2）----
 {
-  const { buildBundle, checkBundle, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
+  const { buildBundle, checkBundle, chaptersOk, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
   const { checkFullPicture } = await import("../sns/push-full-picture.js");
   const riskRules = JSON.parse(readFileSync(new URL(`${R}/risk-rules.json`, import.meta.url), "utf8")).rules;
   assert.ok(riskRules.length > 0, "禁止表現の規則を読めた");
   const load = (f) => JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"));
   const VENUE = { "01": "桐生", 15: "丸亀", 24: "大村", 19: "下関" };
-  const qaAll = { contract: true, text: true, post: true, entry_max59s: true, full_size: true, shorts_vertical: true, shorts_max60s: true, shorts_size: true };
+  const qaAll = { contract: true, text: true, post: true, entry_max59s: true, full_size: true, shorts_vertical: true, shorts_max60s: true, shorts_size: true, full_min185s: true, chapters: true };
+  const CH = "0:00 条件\n0:22 6艇比較\n1:07 類似レース\n1:43 展開";
   const bundleOf = (f, qa = qaAll) => {
     const m = load(f);
     const [, mo, da, vc, rn] = m.raceId.split("-");
     const scenes = buildAll(m);
     const ans = templateText(allBeats(scenes)).answers;
     const e = entryScenes(scenes, ans, { race: `${VENUE[vc]}${Number(rn)}R（${Number(mo)}/${Number(da)}）` });
-    const steps = Object.fromEntries(e.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((st) => [st.id, ans[st.id] ?? st.lines]) : [])));
-    return buildBundle({ raceId: m.raceId, venue: VENUE[vc], raceNo: Number(rn), month: Number(mo), day: Number(da), answers: { ...ans, ...steps }, entryFirstQuestion: e.scenes[0].data.steps[0].question, chapters: "0:00 条件\n0:22 6艇比較\n1:07 類似レース", qa });
+    const facts = {
+      venue90: scenes.find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-venue90")?.facts ?? null,
+      overview: scenes.find((x) => x.id === "scene2").data.radar.overview.facts,
+      conclusion: scenes.find((x) => x.id === "scene4").data.conclusion?.facts ?? null,
+    };
+    return buildBundle({ raceId: m.raceId, venue: VENUE[vc], raceNo: Number(rn), month: Number(mo), day: Number(da), facts, entryFirstQuestion: e.scenes[0].data.steps[0].question, chapters: CH, fullSeconds: 211, qa });
   };
   for (const f of fixtures) {
     const b = bundleOf(f);
@@ -707,8 +712,20 @@ for (const f of fixtures) {
     assert.notEqual(b.youtube_full.title, b.youtube_shorts.title, `${f}: 完全版と Shorts の題名は別の文`);
     assert.ok(b.youtube_full.description.includes("結果を保証するものではありません"), `${f}: 説明文に免責`);
     assert.ok(/^0:00 /m.test(b.youtube_full.description), `${f}: 説明文に章（0:00 から）`);
-    for (const txt of [b.x_text, b.youtube_full.title, b.youtube_full.description, b.youtube_shorts.title, b.youtube_shorts.description])
+    for (const txt of [b.x_text, b.youtube_full.title, b.youtube_full.description, b.youtube_shorts.title, b.youtube_shorts.description]) {
       assert.deepEqual(bannedIn(txt), [], `${f}: 禁止表現が無い`);
+      assert.ok(!/null|undefined|NaN/.test(txt), `${f}: 欠けた値が無い`);
+      assert.ok(!/ほぼ|多い|少ない/.test(txt), `${f}: ぼかし語が無い`);
+    }
+    // wording-editor P1: 会場の1着率に期間と件数。P2: 結論に条件と「N件中」。X にも免責
+    assert.match(b.x_text, /過去90日の[\d,]+レースで/, `${f}: 会場の1着率に期間と件数`);
+    assert.match(b.x_text, /スタートの形が.+だった過去[\d,]+件中、1着最多は/, `${f}: 結論に条件と N件中`);
+    assert.ok(b.x_text.includes("結果を保証するものではありません"), `${f}: X にも免責`);
+    // youtube-channel P2: 題名・説明文の1行目に「ボートレース」とその日の向き、章の名前は実際の章から
+    assert.match(b.youtube_full.title, /^【.+ボートレース】1号艇は堅い？ /, `${f}: 完全版の題名`);
+    assert.ok(b.youtube_full.description.startsWith("ボートレース "), `${f}: 説明文の1行目`);
+    assert.ok(b.youtube_full.description.includes("条件・6艇比較・類似レース・展開の順に見る動画です。"), `${f}: 章の名前から作った順`);
+    assert.ok(b.youtube_shorts.description.includes("完全版の動画（約3分半）"), `${f}: 完全版の長さ`);
   }
   const b0 = bundleOf(fixtures[0]);
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, title: b0.youtube_full.title } }), "題名が同じ");
@@ -716,6 +733,12 @@ for (const f of fixtures) {
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, description: `${FULL_URL_SLOT} ${FULL_URL_SLOT}` } }), "ちょうど1つ無い");
   has(checkBundle({ ...b0, x_text: "URL なし" }), "URL がちょうど1つ無い");
   has(checkBundle(bundleOf(fixtures[0], { ...qaAll, full_size: false })), "機械の検査");
+  has(checkBundle(bundleOf(fixtures[0], { ...qaAll, full_min185s: false })), "機械の検査");
+  // 自動チャプターの条件: 0:00 から・3つ以上・各章10秒以上（実ファイルの尺で）
+  assert.equal(chaptersOk(CH, 211), true);
+  assert.equal(chaptersOk(CH, 110), false, "最後の章が10秒未満");
+  assert.equal(chaptersOk("0:00 条件\n0:22 6艇比較", 211), false, "章が3つ未満");
+  assert.equal(chaptersOk("0:05 条件\n0:22 6艇比較\n1:07 類似レース", 211), false, "0:00 から始まらない");
 
   // run-full: 省略禁止の場面4の材料が無い・材料が契約に合わないときは終了コード1で止める（文だけの実行で確かめる）
   const { execFileSync } = await import("node:child_process");
