@@ -11,6 +11,7 @@
     "verify:css-collisions": "node scripts/maintenance/verify-css-class-collisions.js",
     "verify:sitemap": "node scripts/maintenance/verify-sitemap-coverage.js",
     "verify:adr-numbers": "node scripts/maintenance/verify-adr-numbers.js",
+    "verify:blog-charts": "node scripts/maintenance/verify-blog-charts.js",
     "verify:migration-numbers": "node scripts/maintenance/verify-migration-numbers.js --base=origin/master",
     "verify:content-index": "node scripts/maintenance/verify-content-index-coverage.js",
     "verify:hit-guidance": "node scripts/maintenance/verify-hit-verification-guidance.js",
