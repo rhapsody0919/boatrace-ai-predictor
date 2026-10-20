@@ -251,7 +251,9 @@ for (const mode of modes) {
     Object.assign(seconds, render(scenes, text.answers, dir, "full-picture"));
     console.log(`${dir}: 完全版 ${(total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
   }
-  writeJson(join(out, `run-${mode}.json`), { seconds, llmCalls, beats: text.beats.length, videoSeconds: total / 30 });
+  // LLM のトークン（呼んだときだけ。使い回した文の JSON なら0回）
+  const llm = llmCalls ? (text.llm ?? { calls: 1, tokens_in: null, tokens_out: null }) : { calls: 0, tokens_in: 0, tokens_out: 0 };
+  writeJson(join(out, `run-${mode}.json`), { seconds, llmCalls, llm, beats: text.beats.length, videoSeconds: total / 30 });
   if (mode === "connected" || textMode === "template") writeFileSync(join(out, "chapters.txt"), chapters(text.answers));
 }
 

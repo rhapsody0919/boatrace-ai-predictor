@@ -226,7 +226,10 @@ const PROMPT = (beats) => `あなたはボートレースのデータ動画の�
 拍:
 ${JSON.stringify(beats.map(({ id, step, question, facts, template }) => ({ id, step, question, facts, lines: template })), null, 1)}`;
 
-/** 既定の LLM 呼び出し: Claude Code の非対話モード（API キー不要、ログイン済みの claude で動く） */
+/**
+ * 既定の LLM 呼び出し: Claude Code の非対話モード（API キー不要、ログイン済みの claude で動く）。
+ * 返り値 { text, usage }（usage は claude の JSON の usage。トークンの記録に使う）
+ */
 export function claudeCli(prompt, { model = "sonnet" } = {}) {
   const out = execFileSync("claude", ["-p", "--model", model, "--output-format", "json"], {
     input: prompt,
@@ -235,7 +238,7 @@ export function claudeCli(prompt, { model = "sonnet" } = {}) {
   });
   const res = JSON.parse(out);
   if (res.is_error) throw new Error(`LLM の呼び出しが失敗: ${res.result}`);
-  return res.result;
+  return { text: res.result, usage: res.usage ?? null };
 }
 
 function parseJson(text) {
@@ -287,6 +290,17 @@ export function templateText(sceneOrBeats) {
   };
 }
 
+/** claude の usage → { calls, tokens_in, tokens_out }。入力はキャッシュの読み書きを含めた合計 */
+export function llmUsage(usage) {
+  if (!usage) return { calls: 1, tokens_in: null, tokens_out: null };
+  const n = (v) => (typeof v === "number" ? v : 0);
+  return {
+    calls: 1,
+    tokens_in: n(usage.input_tokens) + n(usage.cache_creation_input_tokens) + n(usage.cache_read_input_tokens),
+    tokens_out: n(usage.output_tokens),
+  };
+}
+
 /**
  * つないだ版の1拍の検査。文型の文は変えず、1行目の頭に決まったつなぐ語＋「、」を足しただけで、検査（checkLines）を通ること
  * @returns {string[]} 落ちた理由（空なら合格）
@@ -312,8 +326,12 @@ export function connectedText(sceneOrBeats, llm = claudeCli) {
   const beats = Array.isArray(sceneOrBeats) ? sceneOrBeats : beatsOf(sceneOrBeats);
   let got = {};
   let callError = null;
+  let usage = null;
   try {
-    const parsed = parseJson(llm(PROMPT(beats)));
+    // llm は文字列か { text, usage } を返す（テストの偽物は文字列）
+    const res = llm(PROMPT(beats));
+    usage = typeof res === "object" && res !== null ? (res.usage ?? null) : null;
+    const parsed = parseJson(typeof res === "object" && res !== null ? res.text : res);
     got = Object.fromEntries((parsed.beats ?? []).map((b) => [b.id, b.connector ?? null]));
   } catch (e) {
     callError = e instanceof Error ? e.message : String(e);
@@ -325,5 +343,5 @@ export function connectedText(sceneOrBeats, llm = claudeCli) {
     if (reasons.length) return { id: b.id, source: "template", lines: b.template, rejected: c, reasons };
     return { id: b.id, source: c ? "connected" : "template", connector: c, lines: connectedLines(c, b.template) };
   });
-  return { mode: "connected", answers: Object.fromEntries(rows.map((r) => [r.id, r.lines])), beats: rows };
+  return { mode: "connected", answers: Object.fromEntries(rows.map((r) => [r.id, r.lines])), beats: rows, llm: llmUsage(usage) };
 }

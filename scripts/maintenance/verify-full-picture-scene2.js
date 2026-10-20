@@ -760,4 +760,42 @@ for (const f of fixtures) {
   assert.equal(runFull({ ...mOk, schemaVersion: "full-picture-materials/0" }), 1, "契約に合わなければ止める");
 }
 
+// ---- 毎日の実行（daily.mjs、hq の切替案 v2 §9）と LLM の usage ----
+{
+  const { selectRaces, childEnv, readAnonEnv, SELECT_RULE } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  const race = (n, t, stage, cancel = null) => ({ raceId: `2026-10-19-19-${String(n).padStart(2, "0")}`, raceNumber: n, startTime: t, raceStage: stage, cancellationStatus: cancel });
+  const day = [race(9, "21:23", "一般"), race(10, "21:51", "準優勝戦"), race(11, "22:20", "準優勝戦"), race(12, "22:45", "一般")];
+  // 締切 21:58 前の優勝戦・準優勝戦のうち一番遅いもの（22:20 の11R は締切を過ぎるので外す）
+  assert.deepEqual(selectRaces(day, "2026-10-19"), [{ race_id: "2026-10-19-19-10", deadline: "2026-10-19T12:51:00.000Z" }]);
+  // 中止なら外す。優勝戦・準優勝戦が無ければ 12R の一番遅いもの
+  const other = [race(12, "16:40", "一般"), { ...race(12, "17:10", "一般"), raceId: "2026-10-19-01-12" }, race(10, "15:50", "一般")];
+  assert.deepEqual(selectRaces(other, "2026-10-19").map((x) => x.race_id), ["2026-10-19-01-12"]);
+  assert.deepEqual(selectRaces([race(10, "21:51", "準優勝戦", "confirmed"), race(12, "21:30", "一般")], "2026-10-19").map((x) => x.race_id), ["2026-10-19-19-12"], "中止は外す");
+  assert.deepEqual(selectRaces(day, "2026-10-19", 2).map((x) => x.race_id), ["2026-10-19-19-10"], "規則に合うのが1つなら1つ");
+  assert.equal(SELECT_RULE.deadlineBefore, "21:58");
+  // 鍵の分け方: 子のプロセス（run-full と claude）に service key・Webhook を渡さない。claude の認証は残す
+  const env = childEnv({ PATH: "/bin", HOME: "/h", SUPABASE_SERVICE_KEY: "s", VITE_SUPABASE_ANON_KEY: "a", SLACK_WEBHOOK_URL: "w", LINEAR_API_KEY: "l", CLAUDE_CODE_OAUTH_TOKEN: "c", ANTHROPIC_API_KEY: "k" });
+  assert.deepEqual(Object.keys(env).sort(), ["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "HOME", "PATH"]);
+  // .env.local からは材料の取得の匿名の2つだけを読む
+  const { mkdtempSync, writeFileSync: wf2 } = await import("node:fs");
+  const { tmpdir: td } = await import("node:os");
+  const envFile = `${mkdtempSync(`${td()}/fp-env-`)}/.env.local`;
+  wf2(envFile, 'SUPABASE_SERVICE_KEY=secret\nVITE_SUPABASE_URL="https://x.supabase.co"\nVITE_SUPABASE_ANON_KEY=anon\nSLACK_WEBHOOK_URL=w\n');
+  assert.deepEqual(readAnonEnv(envFile), { VITE_SUPABASE_URL: "https://x.supabase.co", VITE_SUPABASE_ANON_KEY: "anon" });
+  // 使い方の誤りは exit 2、標準出力は JSON 1つ
+  const { spawnSync } = await import("node:child_process");
+  const daily = new URL(`${R}/scripts/full-picture/daily.mjs`, import.meta.url).pathname;
+  for (const args of [["--select", "--date", "2026/10/19", "--plan-only"], ["--select", "--date", "2026-10-19"], ["2026-10-19-19-10"], ["bad-id", "--out", "/tmp/x", "--bgm", "/tmp/x.mp3"]]) {
+    const r = spawnSync(process.execPath, [daily, ...args, "--anon-env", envFile], { encoding: "utf8" });
+    assert.equal(r.status, 2, `使い方の誤りは exit 2: ${args.join(" ")}`);
+    assert.equal(JSON.parse(r.stdout).status, "usage");
+  }
+  // LLM の usage を残す（claudeCli は { text, usage } を返す）
+  const { llmUsage } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
+  const withUsage = connectedText(scene, () => ({ text: fake(), usage: { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 50 } }));
+  assert.deepEqual(withUsage.llm, { calls: 1, tokens_in: 1110, tokens_out: 50 });
+  assert.deepEqual(connectedText(scene, fake).llm, { calls: 1, tokens_in: null, tokens_out: null }, "usage の無い返り値はトークン不明");
+  assert.deepEqual(llmUsage(null), { calls: 1, tokens_in: null, tokens_out: null });
+}
+
 console.log("verify-full-picture-scene2: OK");
