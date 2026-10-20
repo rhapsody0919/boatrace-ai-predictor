@@ -82,6 +82,7 @@
 - 消した表は元のマイグレーションをもう一度流せば作り直せるが、行は戻らない。後で読む経路が無く件数が小さければ APPLIED.md に要点を書き、そうでなければ適用前にオーナーが CSV で退避してリポジトリの外に置く。本番に退避用の表は作らない（2026-10-19、system-architect、168）
 - 手元の既定の node は v16 で `node:test` 等が無く verify-*.js が落ちる。`~/.nvm/versions/node/v22.20.0/bin` を PATH に足して実行する。worktree の node_modules が古いと `twitter-text` 等が見つからないので `npm ci` する（2026-10-19）
 - pg_db_role_setting の名前で秘密を判定すると、古い Supabase の app.settings.jwt_exp（JWT の有効期限の秒数）で誤検知する。正規表現はゆるめず、秘密でないと確かめた名前だけを完全一致の許可リストで除く（2026-10-19、本番で 166 を実行して検出、ADR-0096）
+- middleware から DB で数を足す設計は、anon で実行できる口・UA の偽装による水増し・パスの種類の増加・upsert で足し算できない（RPC が要る）が重なるので避ける（2026-10-20、system-architect、ADR-0089 決定6）
 - db-apply は master の HEAD の SQL しか当てないので、コードのデプロイが必ず先になる。マイグレーションに「コードが先でも壊れない」と書くときは、その間に cron が動く前提で確かめる（2026-10-20、system-architect、170）
 - 共通ラッパは、行の無いジョブの初回の起動で scrape_job_state に mode='off' の行を作る（cronWrapper.js の ensureRow）。後から入れる `INSERT … ON CONFLICT DO NOTHING` は空振りして off のまま残るので、条件つきの DO UPDATE（mode='off' かつ last_success_at・last_tick_at が NULL）にする（2026-10-20、system-architect、170）
 - data_health の reconcileAlerts は「同じキーで欠損数が増えない未達」を7日間通知しない。日ごとの事故である鮮度の未達には everyDay を付けて毎日通知する（2026-10-20、system-architect・/code-review、170）
