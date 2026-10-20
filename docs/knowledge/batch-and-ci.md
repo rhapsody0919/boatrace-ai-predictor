@@ -64,3 +64,8 @@
 - 2026-10-20 時点の審査の関門は、本文の無い差分を削除以外すべて落とす。画像を足す PR は、ADR-0097 の追記なしでは承認されない（2026-10-20、system-architect の content-publish の審査、scripts/lib/reviewPr.js:57-60・ADR-0097:34）
 - 段取り D の「鍵側の機械」（git apply・push・PR）は設計だけで、hq/scripts に実装は無い。あるのは app-token.sh だけ（2026-10-20、system-architect の content-publish の審査、hq/drafts/identity-separation-20261019.md:65・hq/scripts/app-token.sh）
 - ブログの古い道（finalize-blog-draft.js の自動マージ、merge-blog-pr.js の GITHUB_MERGE_TOKEN の PAT、ADR-0034）は書き込みの身元を増やす道で、ADR-0097:109 と矛盾し、切替の後は失敗する。#1701 で止めた（2026-10-20、system-architect の content-publish の審査、BOA-908 ⑤）
+- AI 審査の承認は P0 だけで決まり、P1 が残っていても APPROVE になる。段階0 A の「P0・P1 が0件」は、オーケストレーターがマージするときにしか効いていない（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:254-270・.claude/skills/orchestrate/SKILL.md:69）
+- review.yml の gate は、パス・PR の大きさ・テストの弱めを見ない。見るのは symlink・submodule・LFS・バイナリ・.gitattributes・299ファイル・20万字・月の上限だけ（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:8-67・scripts/review/gate.js）
+- 審査の月の上限（既定300）は作成の App の run の数で、push のたびに1回数える。全レーンと全社員で共有なので、1日7本の PR の流れでは上限に当たりうる（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:277-284・ADR-0097:96）
+- 例外の線を機械で効かせる置き場は、master から読まれる龍神の config に限る。pull_request_target は master の定義で動くので、PR がこのファイルを書き換えても、その PR の審査には効かない（2026-10-20、system-architect の開発の社員化 v2 の審査、.github/workflows/review.yml:12・54-56）
+- codex/* には Preview が無い。それ以外の接頭辞の Preview は本番の管理者キーを持つ。画面の作業を社員に回すと、段階0 B（mock-diff-checker・ファン評価）を満たす手段が無い（2026-10-20、system-architect の開発の社員化 v2 の審査、vercel.json:5-6・AGENTS.md:25・SKILL.md:115）
