@@ -1,0 +1,130 @@
+{
+  "$comment": "案（2026-10-20）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §11.4。gate.js・llm.js が master の checkout（github.sha）から読む。PR の分類は、変えたファイル（改名の元・削除を含む）のうち一番強いクラスに合わせる。強い順: deny > owner > orchestrate > prodWrite > content > frontendSmall > employee",
+  "version": 1,
+  "appliesTo": "作成の App の PR 全部（claude/・codex/・hq の社員）。名義が同じなので、社員だけに効かせることは機械ではできない",
+  "classes": {
+    "deny": {
+      "$comment": "審査の App は承認しない（REQUEST_CHANGES、理由に一致したパターン）。オーナーが自分で書くか、オーナーが ruleset を一時 Disabled にして入れる",
+      "paths": [
+        "docs/db-migration/**",
+        "scripts/db/**",
+        "scripts/maintenance/verify-registry.json",
+        "scripts/maintenance/run-verify-registry.js",
+        "scripts/maintenance/guard-pr-merge.js",
+        "scripts/maintenance/merge-order.js",
+        "scripts/maintenance/verify-codex-no-preview.js",
+        "e2e/fixtures.js",
+        "e2e/*fixture*",
+        "e2e/support/**",
+        "e2e/global-setup.js",
+        "e2e/global-teardown.js",
+        "e2e/har-merge.js",
+        "e2e/recording.json",
+        "scripts/maintenance/e2e-recording.js",
+        "playwright.*.config.js",
+        "playwright.config.js",
+        "**/risk-rules.json",
+        "scripts/lib/riskRuleMatcher.js",
+        "api/_lib/snsRiskRulesFile.js",
+        "config/today-variants.json",
+        "scripts/watch/job-watch.json",
+        "api/_lib/adminAuth.js",
+        "api/admin/**",
+        "src/pages/admin/**",
+        "api/cron/**",
+        "*/**/package.json",
+        "*/**/package-lock.json",
+        "**/requirements*.txt",
+        "**/.npmrc",
+        ".mcp.json",
+        "docs/adr/**",
+        "docs/knowledge/**",
+        "docs/design/*/mock/**",
+        "**/APPROVED.md",
+        "@generated-docs"
+      ],
+      "notes": {
+        "@generated-docs": "scripts/maintenance/generated-docs.js の GENERATED_DOCS の output と public/sitemap.xml・public/llms.txt（ADR-0078、機械が作る文書）。gate は master の generated-docs.js を実行せずに読む（output の文字列を正規表現で取る）か、この JSON に展開して verify で一致を固定する"
+      }
+    },
+    "owner": {
+      "$comment": "審査は動くが承認しない（COMMENT で『オーナーの承認が要る』）。オーナーの APPROVE（スマホ）で入る。審査の仕組みそのもの・仕組みの変更",
+      "paths": [
+        "config/dev-gate.json",
+        ".github/**",
+        ".claude/**",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "vercel.json",
+        "package.json",
+        "package-lock.json",
+        ".gitattributes",
+        "scripts/review/**",
+        "scripts/lib/reviewPr.js",
+        "scripts/lib/dbApplySql.js",
+        "scripts/lib/dbReconcile.js",
+        "middleware.js"
+      ]
+    },
+    "orchestrate": {
+      "$comment": "オーケストレーターが確かめてから入れる線。ただしオーケストレーターと社員は同じ作成の App の名義なので、機械では社員と区別できない。区別する身元ができるまでは owner と同じ扱いにする（判断17）",
+      "paths": [],
+      "fallback": "owner"
+    },
+    "prodWrite": {
+      "$comment": "本番を書く経路。審査は承認できるが、P1 も止め、大きさの上限を超えたら owner。一覧は手で書かず、master から機械で作る",
+      "derive": {
+        "entries": [
+          "Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある scripts/**・api/** のファイル（2026-10-20 の実測で63本）",
+          "vercel.json の crons の path に当たる api/cron/*.js（deny に入っているが、そこから import される先を数えるための入口）"
+        ],
+        "closure": "入口から静的な import（JS の import/require の相対パス、Python のリポジトリ内の import）をたどった全部。実行しない",
+        "where": "gate が master の checkout の上で毎回作る（生成物をコミットしない。ADR-0078 と同じ理由）"
+      },
+      "limits": { "maxFiles": 10, "maxChangedLines": 300 },
+      "p1Blocks": true,
+      "overLimit": "owner"
+    },
+    "content": {
+      "$comment": "記事の PR（段階0 F）。PR の変更が全部ここに収まるときだけ。§9.1 の画像の例外はこのクラスだけで効く",
+      "paths": [
+        "public/blog/**",
+        "src/data/blog-posts/**",
+        "public/images/blog/*.jpg",
+        "src/data/blogImageDimensions.js",
+        "src/data/blogPostsEn.js",
+        "src/data/blogPostsKo.js",
+        "src/data/blogPostsZhTw.js"
+      ],
+      "image": {
+        "pathRegex": "^public/images/blog/[a-z0-9-]{1,100}\\.jpg$",
+        "status": ["added"],
+        "mode": "100644",
+        "maxBytes": 409600,
+        "maxWidth": 2000,
+        "maxHeight": 4000,
+        "jpegAllowedMarkers": ["SOI", "APP0:JFIF(thumbnail 0x0)", "APP2:ICC_PROFILE", "DQT", "DHT", "DRI", "SOF0|SOF1|SOF2 (1つだけ)", "SOS", "RST0-7", "EOI (ファイルの終わり)"],
+        "dimensionsTable": "src/data/blogImageDimensions.js（同じ PR で行を足す）"
+      },
+      "p1BlocksViewpoints": ["content-qa", "wording"],
+      "p1AdvisoryViewpoints": ["fan", "seo"]
+    },
+    "frontendSmall": {
+      "$comment": "画面の小さな直し。上限を超えたら employee ではなく orchestrate（＝今は owner）",
+      "paths": ["src/**", "public/**"],
+      "excludePaths": ["src/pages/admin/**", "public/images/blog/**", "public/blog/**"],
+      "limits": { "maxFiles": 5, "maxChangedLines": 150 },
+      "limitsExclude": ["e2e/**/*.spec.js"],
+      "overLimit": "orchestrate",
+      "p1Blocks": true
+    },
+    "employee": {
+      "$comment": "上のどれにも当たらない。審査の App の承認だけで auto-merge",
+      "p1Blocks": true
+    }
+  },
+  "p1": {
+    "$comment": "§11.1 案 A。P0 は全クラスで止める。同じ P1 が2回目に出たら、レーンは直すのをやめてオーケストレーターに上げる"
+  },
+  "monthlyLimit": { "runs": 1500, "notifyAtRatio": 0.8 }
+}

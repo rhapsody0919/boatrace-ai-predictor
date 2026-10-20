@@ -295,6 +295,9 @@ flowchart TD
 | 14 | 審査の月の上限（§11.2） | 1500 に上げ、80% で知らせる。費用の守りはベンダーの月の上限 |
 | 15 | auto-merge でのマージ順（§11.3） | 後ろ側の PR を draft にし、前が入ったら ready にする。up to date の要求は付けない |
 | 16 | 例外の線の正本（§11.4） | `config/dev-gate.json`（仮）を master から読む。名前と置き場所は hq の v2 と合わせる |
+| 17 | orchestrate のクラスを機械で分けるか（§11.4） | 分けるまでは owner と同じ。分けるならオーケストレーター用の別の App |
+| 18 | owner のクラス（.github・.claude・AGENTS.md・審査の仕組み等）で ADR-0097 の「仕組みの変更も審査の App だけで通る」を改めるか | 審査の仕組みそのもの（config/dev-gate.json・scripts/review・reviewPr.js・.github/workflows）は改める。.claude・AGENTS.md は hq の分類の数を見て決める |
+| 19 | dev-gate を全員に効かせるか社員だけか | 全員 |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
@@ -401,6 +404,22 @@ flowchart TD
 - この設計と合わせる: §9.1 で「許可のパスの正本は `reviewPr.js` に1か所」と書いた所を、`config/dev-gate.json` に置き換える。`reviewPr.js` は値を引数で受ける純粋関数のままにする。③ の機械（push の前の照合）も同じファイルを読む
 - `config/dev-gate.json` を変える PR は、仕組みの変更として段階2（オーナー）。verify で形（JSON Schema）を固定する
 - 置き場所・名前は hq の v2 の審査と合わせて決める（判断16）
+
+#### 中身の案（[dev-gate.draft.json](./dev-gate.draft.json)、2026-10-20 夜。hq が過去30日の PR を分類して数を出す）
+
+- クラスは強い順に deny（承認しない・オーナーが入れる）> owner（審査は動くが承認せず、オーナーの APPROVE で入る）> orchestrate > prodWrite > content（記事、§9.1）> frontendSmall > employee。PR は、変えたファイル（改名の元・削除を含む）のうち一番強いクラスになる
+- deny には、審査で出た抜けを全部入れた（DB の適用・マージ順とフック・verify の台帳・e2e の録画と fixtures・リスクの規則・送信の設定・管理画面と認証・Cron の入口・下の階層の依存の宣言・ADR と知見・承認済みのモック・機械が作る文書）。パスは全部実在を確かめた
+- owner には、審査の仕組みそのもの（`config/dev-gate.json`・`scripts/review/**`・`reviewPr.js`・`.github/**`）と仕組みの変更（`.claude/**`・AGENTS.md・vercel.json・ルートの package.json 等）を入れた。**これは ADR-0097 の「CODEOWNERS は置かない。仕組みの変更も審査の App の承認だけで通る（オーナー判断）」を一部覆す**。仕組みの変更は直近30日で223本中の多数（ADR-0097 の却下した選択肢の表）なので、オーナーの承認の数が増える（判断18）
+- **orchestrate のクラスは機械では区別できない**。オーケストレーターも社員も同じ作成の App の名義で、ブランチの接頭辞は作成の App が選べる。区別する身元（オーケストレーター用の別の App）を作るまでは owner と同じ扱いにする（判断17）
+- prodWrite（本番を書く経路）は、手の一覧にせず、gate が master の上で毎回作る: Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある `scripts/**`・`api/**`（実測63本）と、vercel.json の crons の `api/cron/*.js` を入口にし、静的な import をたどった全部。審査は承認できるが、P1 も止め、10ファイル・300行を超えたら owner。PR が prod の入口のファイルに新しい import を足すと、入口のファイル自身が変わるので prodWrite に当たる（新しいファイルが閉包の外でも見逃さない）
+- frontendSmall（`src/**`・`public/**`、管理画面と記事を除く）は 5ファイル・150行（テストの spec を除く）まで。超えたら orchestrate（＝今は owner）。数は hq の分類の結果で直す
+- P1 はクラスを問わず止める（§11.1 案 A）。content だけは content-qa・wording の観点の P1 だけ止める
+
+#### ADR の追記の案（番号は PR 作成時に origin/master の最大＋1）
+
+> 審査の関門の線（dev-gate）: 作成の App の PR を、変えたパスでクラスに分ける（deny・owner・prodWrite・content・frontendSmall・employee）。線の正本は `config/dev-gate.json` で、審査（review.yml）が master の定義から読む。線を変える PR は owner のクラス。**全員（claude/・codex/・hq の社員）に効かせる**（同じ名義で、社員だけを機械で見分けられないため）。orchestrate のクラスは、オーケストレーターの別の身元ができるまで owner と同じ。ADR-0097 の「仕組みの変更も審査の App の承認だけで通る」は、owner のクラスに当たるパスについて改める。
+
+- 全員に効かせるのを推奨（判断19）。社員だけにすると、同じ PR を claude/ の接頭辞で出せば線を外せる
 
 ## 12. 審査（system-architect、2026-10-20）の指摘と対応
 
