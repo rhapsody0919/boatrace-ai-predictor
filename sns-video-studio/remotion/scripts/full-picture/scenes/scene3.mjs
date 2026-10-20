@@ -96,8 +96,9 @@ export function buildScene3(m) {
       // 2行目が答えの行（lead）で大きい字にするので、全国の値（棒の目印の下に出ている）は書かず差だけにして縮めずに収める。
       // 問いが1号艇なので「1号艇の」は省く
       lines: fitFirst(
-        [`${label}${b.n}件`, `1着${d1(x)}%、${diffText("全国", f)}`],
-        [`${label}${b.n}件`, `1着${d1(x)}%（全国${d1(y)}%）`],
+        // 1行目は過去のレースの範囲、2行目は主語（1号艇）と比べる先（全国の1号艇）を書く（wording-editor P1）
+        // 2行目は答えの行（大きい字）なので短く。主語の1号艇は上帯の問い「1号艇は信頼できる？」にある。比べる先は「全国の1号艇」と書く
+        [`${label}${label.endsWith("同じ") ? "" : "の"}過去${b.n.toLocaleString("ja-JP")}件`, `1着${d1(x)}%（全国の1号艇${d1(y)}%）`],
       ),
     });
     if (scope.few) omitted.push({ where: "scene3.rough", reason: `同じラウンドが30件未満なので級の並びが同じ（NC）に戻した` });
@@ -131,7 +132,7 @@ export function buildScene3(m) {
     const rate = (g, k) => (g.n ? Math.round((g[k] / g.n) * 1000) / 10 : null);
     const hw = rate(here, "win");
     const aw = all.n ? Math.round((all.win / all.n) * 1000) / 10 : null;
-    const f = { kind: "venueRecord", boat: 1, name, venue, runs: here.n, rate: hw, top2: rate(here, "top2"), allRuns: all.n, allRate: aw, ...diffOf(hw, aw) };
+    const f = { kind: "venueRecord", boat: 1, name, venue, runs: here.n, wins: here.win, rate: hw, top2: rate(here, "top2"), allRuns: all.n, allWins: all.win, allRate: aw, ...diffOf(hw, aw) };
     steps.push({
       id: "s3-venue",
       question: Q,
@@ -150,9 +151,14 @@ export function buildScene3(m) {
       // 選手名・会場名が長いと1行に入らないので、入らなければ走数と1着率を分ける
       lines: fitFirst(
         // 2行目の比べる相手も本人の成績（全会場の1号艇）。会場の集計と読まれないよう「本人の」と書く（2026-10-20 オーナー）
-        [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場の${d1(aw)}%`, f)],
-        [`${name}の${venue}1号艇${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場の${d1(aw)}%`, f)],
-        [`${name}の${venue}1号艇は${here.n}走`, `1着率${d1(hw)}%、本人の全会場は${d1(aw)}%`],
+        // 30走未満は割合を出さず走と勝ちの数で言う（number-wording.md、1〜3走の100%を比べていた。wording-editor P2）
+        ...(here.n < 30
+          ? [[`${name}の${venue}1号艇は${here.n}走${here.win}勝`, all.n < 30 ? `本人の全会場では${all.n}走${all.win}勝` : `本人の全会場では${all.n}走で1着率${d1(aw)}%`]]
+          : [
+              [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場（${d1(aw)}%）`, f)],
+              [`${name}の${venue}1号艇${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場（${d1(aw)}%）`, f)],
+            ]),
+        [`${name}の${venue}1号艇は${here.n}走`, `1着率${d1(hw)}%、本人の全会場では${d1(aw)}%`],
       ),
     });
   } else omitted.push({ where: "scene3.venue", reason: `${venue}で1号艇の走が730日に無い` });

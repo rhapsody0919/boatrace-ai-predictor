@@ -60,8 +60,8 @@ export function buildScene6(m) {
       kind: "motor",
       boats: keys,
       form: form ? C.factNames?.[form] ?? null : null,
-      a: ok(k0) ? { boat: k0.boat, motor: k0.motor, rate2: k0.rate2.toFixed(1), rank: `${rank2(k0.boat)}位` } : null,
-      b: ok(k1) ? { boat: k1.boat, motor: k1.motor, rate2: k1.rate2.toFixed(1), rank: `${rank2(k1.boat)}位` } : null,
+      a: ok(k0) ? { boat: k0.boat, motor: k0.motor, rate2: k0.rate2.toFixed(1), rank: `6艇中${rank2(k0.boat)}位` } : null,
+      b: ok(k1) ? { boat: k1.boat, motor: k1.motor, rate2: k1.rate2.toFixed(1), rank: `6艇中${rank2(k1.boat)}位` } : null,
     };
     steps.push({
       id: "s6-motor",
@@ -107,7 +107,7 @@ export function buildScene6(m) {
     if (!bl.length || !best("avg").length) {
       omitted.push({ where: "scene6.exhibit", reason: "今節の展示タイムの値が無い（取り込み前など）" });
     } else {
-    const f = { kind: "exhibit", boats: gold, last: { boats: bl, time: f2(rows[bl[0] - 1].last) }, avg: { boats: best("avg"), time: f2(rows[best("avg")[0] - 1].avg) } };
+    const f = { kind: "exhibit", item: "展示タイム", boats: gold, last: { boats: bl, time: f2(rows[bl[0] - 1].last) }, avg: { boats: best("avg"), time: f2(rows[best("avg")[0] - 1].avg) } };
     steps.push({
       id: "s6-exhibit",
       question: Q,
@@ -122,7 +122,10 @@ export function buildScene6(m) {
       frames: gold.map((b) => tableRowBox(b - 1)),
       framesTogether: true,
       facts: f,
-      lines: [`前走の展示が最速は${bl.join("・")}号艇の${f.last.time}`, `今節の平均の最速は${f.avg.boats.join("・")}号艇の${f.avg.time}`],
+      lines: fitFirst(
+        [`前走の展示タイムが最速は${bl.join("・")}号艇の${f.last.time}`, `今節の平均の最速は${f.avg.boats.join("・")}号艇の${f.avg.time}`],
+        [`前走の展示が最速は${bl.join("・")}号艇の${f.last.time}`, `今節の平均の最速は${f.avg.boats.join("・")}号艇の${f.avg.time}`],
+      ),
     });
     }
   } else omitted.push({ where: "scene6.exhibit", reason: "今節の展示タイムの材料が無い（節の初日など）" });
@@ -167,10 +170,15 @@ export function buildScene6(m) {
         ? (() => {
             // 2行目は過去のレースの集計（その艇がそう並んだレース）と分かるように（2026-10-20 オーナー）
             const l2 = fitFirst(
+              // 誰の率か（過去にそうだった艇）と「全体」が何か（その艇番の全体）を書く（wording-editor P2）
+              [base === null ? `過去にそうだった${b}号艇は1着${f.rate}%` : `過去にそうだった${b}号艇は1着${f.rate}%（${b}号艇全体${base}%）`],
+              [base === null ? `そうだった過去の${b}号艇は1着${f.rate}%` : `そうだった過去の${b}号艇は1着${f.rate}%（全体${base}%）`],
               [base === null ? `そう並んだ過去のレースで1着${f.rate}%` : `そう並んだ過去のレースで1着${f.rate}%（全体${base}%）`],
               [base === null ? `そのとき1着${f.rate}%` : `そのとき1着${f.rate}%、全体${base}%`],
             )[0];
-            return fitFirst([`${b}号艇は${f.item}が6艇で一番${word}`, l2], [`${f.item}が6艇で一番${word}${b}号艇`, l2], [`${f.item}が一番${word}${b}号艇`, l2]);
+            // 1行目は個人（選手）か機械（モーター・ボート）の数字かが分かるように主語を書く（wording-editor P1）
+            const head = /モーター|ボート/.test(f.item) ? `${b}号艇の${f.item}が6艇で一番${word}` : `${b}号艇の選手は${f.item}が6人中一番${word}`;
+            return fitFirst([head, l2], [`${b}号艇は${f.item}が6艇で一番${word}`, l2], [`${f.item}が6艇で一番${word}${b}号艇`, l2], [`${f.item}が一番${word}${b}号艇`, l2]);
           })()
         : [`${b}号艇は▲の付いた材料が無い`, feats.length ? `札は${feats.join("・")}` : "札も無い"],
     });

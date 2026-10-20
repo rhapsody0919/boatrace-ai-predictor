@@ -50,7 +50,7 @@ export const VOCAB = [
   "なら", "最高", "相手",
   // 場面4（展開）
   "前付けあり（1号艇イン）", "前付けあり", "割合", "並び", "前付けがあっても", "インを守った", "内訳", "うち", "平均ST", "このコース", "一致", "一致する形が無い", "横一線", "候補", "を参考に", "逃げ", "結果", "内3艇そろう", "2コース凹み", "カド受け凹み", "カド一撃", "イン凹み", "ダッシュ",
-  "過去", "全選手", "本人", "レース", "そう並んだ", "同じ級別", "今日の6艇", "6艇", "最高", "6号艇だけ前付け", "5号艇だけ前付け", "5・6号艇が前付け", "その他の前付け",
+  "過去", "全選手", "本人", "レース", "そう並んだ", "同じ級別", "今日の6艇", "6艇", "6艇中", "6人中", "選手", "進入コース別", "全コース", "号艇全体", "そうだった", "だった", "勝", "最高", "6号艇だけ前付け", "5号艇だけ前付け", "5・6号艇が前付け", "その他の前付け",
   // 場面3（軸）
   "全国・級の並びが同じ", "級の並びが同じ", "準優勝戦", "優勝戦", "走", "1着率", "全会場",
   // 場面2b（類似レース）
@@ -84,7 +84,7 @@ export function uncovered(text, words) {
 }
 
 /** 数字を含む決まった言い回し（facts の数として数えない） */
-const FIXED_NUMBER_PHRASES = /6艇|1着率|2番手|2連率|3連率|90日|1ポイント未満|[1-3]着/g;
+const FIXED_NUMBER_PHRASES = /6人中|6艇|1着率|2番手|2連率|3連率|90日|1ポイント未満|[1-3]着/g;
 
 /** 前の拍とつなぐ語。場面の各段の最初の拍では使えない。「同じく」「こちらも」は前の拍と同じ材料のときだけ */
 const CONNECTORS = ["一方", "さらに", "同じく", "また", "ただ", "逆に", "それに", "こちらも", "続いて"];
@@ -154,6 +154,23 @@ function stringsOf(facts) {
 }
 
 /**
+ * 数字の範囲（hq の型の正本、2026-10-20 オーナー決定 BOA-913）: 割合を出す答えは、範囲の語で、選手個人の成績か、会場・全国（全選手）・
+ * 過去のレースの集計かが分かること。facts の種類で、集計か個人かを決めている
+ */
+export const AGGREGATE_KINDS = new Set(["venue90", "place", "day", "wind", "card", "rough", "sonar", "flow1", "flow2", "trifecta", "entry", "entryMae", "attack", "followers", "followersRest", "deep"]);
+export const INDIVIDUAL_KINDS = new Set(["venueRecord"]);
+const AGGREGATE_WORDS = /全選手|全国|過去|件|レース|全体|そのとき/;
+export function scopeReasons(lines, facts) {
+  const text = (lines ?? []).join("\n");
+  if (!/%/.test(text) || !facts) return [];
+  if (AGGREGATE_KINDS.has(facts.kind) && !AGGREGATE_WORDS.test(text) && !(facts.venue && text.includes(facts.venue)))
+    return ["範囲の語が無い（会場・全国・過去のレースの集計と分からない）"];
+  if (INDIVIDUAL_KINDS.has(facts.kind) && !(facts.name && text.includes(facts.name)) && !text.includes("本人"))
+    return ["範囲の語が無い（選手個人の成績と分からない）"];
+  return [];
+}
+
+/**
  * 整えた版の1拍の検査。落ちた理由の一覧を返す（空なら合格）
  * @param {string[]} lines
  * @param {object} facts その拍の facts
@@ -170,6 +187,7 @@ export function checkLines(lines, facts, prev) {
     if (w > MAX_WIDTH) why.push(`${i + 1}行目の幅が全角${w}字分（上限${MAX_WIDTH}字分）`);
   });
   why.push(...bannedIn(text));
+  why.push(...scopeReasons(lines, facts));
   for (const w of VAGUE) if (text.includes(w)) why.push(`ぼかし語「${w}」`);
   const { nums, boats, items, ranks } = allowedOf(facts);
   // 材料名: 文に出る材料は facts の材料だけ

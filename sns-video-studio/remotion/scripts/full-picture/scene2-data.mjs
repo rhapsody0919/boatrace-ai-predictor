@@ -134,7 +134,8 @@ function focusFacts(b, radar, axes, values) {
 export function templateLines(f) {
   if (f.kind === "overview")
     return [
-      `2位以内の項目が最多は${f.leaders.join("・")}号艇`,
+      // 今日の6艇（選手・機械）の比較と分かるように
+      `今日の6艇で2位以内の項目が最多は${f.leaders.join("・")}号艇`,
       f.runner
         ? `${f.axesCount}項目中${f.maxTop2}、次は${f.runner.boats.join("・")}号艇の${f.runner.count}`
         : `6艇とも${f.axesCount}項目中${f.maxTop2}`,
@@ -142,7 +143,12 @@ export function templateLines(f) {
   if (f.kind === "focus") {
     if (!f.item) return [`${f.boat}号艇は比べられる値が無い`];
     const cmp = (c) => `${c.boat}号艇の${c.sameDisplay ? "同じ" : ""}${c.value}`;
-    const l1 = `${f.boat}号艇は${f.item}${f.value}で${f.rank}`;
+    // 選手の成績か、機械（モーター・ボート）の数字かが分かるように主語を書き、何艇中の順位かを付ける（2026-10-20 オーナー、wording-editor P1）
+    const machine = /モーター|ボート/.test(f.item);
+    const who = machine ? `${f.boat}号艇の` : `${f.boat}号艇の選手は`;
+    const of = machine ? "6艇中" : "6人中";
+    const l1 = machine ? `${who}${f.item}${f.value}は${of}${f.rank}` : `${who}${f.item}${f.value}で${of}${f.rank}`;
+    const l1short = machine ? `${who}${f.item}は${of}${f.rank}` : `${who}${f.item}で${of}${f.rank}`;
     const l2 =
       f.compare?.role === "2番手"
         ? `2番手は${cmp(f.compare.boats[0])}${f.otherFirstCount ? `、ほか${f.otherFirstCount}項目も1位` : ""}`
@@ -153,24 +159,38 @@ export function templateLines(f) {
     // 1位が並ぶ（同じ値）なら艇番をまとめて書く
     const tie = f.compare?.role === "1位" && f.compare.boats.length > 1 && new Set(f.compare.boats.map((c) => c.value)).size === 1;
     const l2tie = tie ? `1位は${f.compare.boats.map((c) => c.boat).join("・")}号艇の${f.compare.boats[0].value}` : null;
-    return fitFirst([l1, l2], [`${f.boat}号艇は${f.item}で${f.rank}`, l2 ? `${f.value}、${l2}` : f.value], ...(tie ? [[l1, l2tie], [`${f.boat}号艇は${f.item}で${f.rank}`, `${f.value}、${l2tie}`]] : []));
+    return fitFirst(
+      [l1, l2],
+      [l1short, l2 ? `${f.value}、${l2}` : f.value],
+      ...(tie ? [[l1, l2tie], [l1short, `${f.value}、${l2tie}`]] : []),
+      // 入らなければ「ほか N項目も1位」を外す（6艇全体の拍で項目の数は出している）
+      ...(f.compare?.role === "2番手" ? [[l1short, `${f.value}、2番手は${cmp(f.compare.boats[0])}`]] : []),
+      ...(tie ? [[`${f.boat}号艇の選手は${f.item}で${f.rank}`, `${f.value}、${l2tie}`], [`${f.boat}号艇は${f.item}で${f.rank}`, `${f.value}、${l2tie}`]] : []),
+      [`${f.boat}号艇は${f.item}で${f.rank}`, l2 ? `${f.value}、${l2}` : f.value],
+    );
   }
   if (f.kind === "card") {
     // 過去のレースの集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
     if (f.todayRank !== null) {
+      // 誰の率か（その順位だった過去の1号艇）と、比べる「全体」が何か（過去の1号艇全体）を書く（wording-editor P1）
+      const all = `${f.boat}号艇全体`;
       const l2 =
         f.usualDiffPt === null
           ? `1位${f.rate1}%・6位${f.rate6}%`
           : f.usualDiffPt < 1
-            ? `全体の${f.usual}%との差は1ポイント未満`
-            : `全体の${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
+            ? `${all}の${f.usual}%との差は1ポイント未満`
+            : `${all}の${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
       return fitFirst(
-        [`${f.item}${f.todayRank}位の過去のレースで1着率${f.todayRate}%`, l2],
+        [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇は1着${f.todayRate}%`, l2],
+        [`${f.item}${f.todayRank}位の過去の${f.boat}号艇は1着${f.todayRate}%`, l2],
         [`${f.item}${f.todayRank}位の過去のレースで1着${f.todayRate}%`, l2],
-        [`${f.item}${f.todayRank}位の1着率${f.todayRate}%`, l2],
       );
     }
-    const l1 = fitFirst([`${f.item}1位のレースは1着${f.rate1}%・6位${f.rate6}%`], [`${f.item} 1位${f.rate1}%・6位${f.rate6}%`])[0];
+    const l1 = fitFirst(
+      [`過去の${f.boat}号艇は${f.item}1位で1着${f.rate1}%・6位で${f.rate6}%`],
+      [`過去の${f.boat}号艇は${f.item}1位${f.rate1}%・6位${f.rate6}%`],
+      [`${f.item}1位のレースは1着${f.rate1}%・6位${f.rate6}%`],
+    )[0];
     if (f.roundDay)
       return [l1, f.todayRankRef ? `${f.boat}号艇は${f.todayRankRef}位、${f.roundDay}は枠順に近く参考` : `${f.roundDay}は点の順が枠順に近く参考`];
     return [l1, "今日の値が無く、今日の順位では比べられない"];

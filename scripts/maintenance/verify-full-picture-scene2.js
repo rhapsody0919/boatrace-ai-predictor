@@ -133,31 +133,31 @@ const cardFinal = {
   usualN: 4294,
 };
 
-// 文型の版（項目＋値＋順位を1文に。2行目で比べる相手）
+// 文型の版（項目＋値＋順位を1文に。2行目で比べる相手）。選手の成績か、機械の数字か、過去のレースの集計かが分かる主語（2026-10-20 オーナー）
 assert.deepEqual(templateLines(overview), [
-  "2位以内の項目が最多は2号艇",
+  "今日の6艇で2位以内の項目が最多は2号艇",
   "5項目中4、次は1号艇の3",
 ]);
 assert.deepEqual(templateLines(focus1), [
-  "1号艇は全国勝率8.06で1位",
+  "1号艇の選手は全国勝率8.06で6人中1位",
   "2番手は2号艇の7.61、ほか2項目も1位",
 ]);
 assert.deepEqual(templateLines(focus3), [
-  "3号艇は当地勝率7.78で2位",
+  "3号艇の選手は当地勝率7.78で6人中2位",
   "1位は2号艇の8.28",
 ]);
 assert.deepEqual(templateLines(focusSt), [
-  "1号艇は平均ST（直近30走）0.12秒で1位",
-  "2番手は2号艇の同じ0.12秒、ほか1項目も1位",
+  "1号艇の選手は平均ST（直近30走）で6人中1位",
+  "0.12秒、2番手は2号艇の同じ0.12秒",
 ]);
 // 過去のレースの集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
 assert.deepEqual(templateLines(card), [
-  "当地勝率3位の過去のレースで1着率69%",
-  "全体の71.1%より2.1ポイント低い",
+  "当地勝率3位だった過去の1号艇は1着69%",
+  "1号艇全体の71.1%より2.1ポイント低い",
 ]);
 // 「今日の順位を当てはめない」だけでは、カードの「今日 6艇中1位」と食い違って見えた（2026-10-20 オーケストレーター指摘）
 assert.deepEqual(templateLines(cardFinal), [
-  "今節の着順点1位のレースは1着77%・6位64%",
+  "過去の1号艇は今節の着順点1位77%・6位64%",
   "1号艇は1位、準優勝戦の日は枠順に近く参考",
 ]);
 for (const f of [overview, focus1, focus3, focusSt, card, cardFinal]) {
@@ -506,7 +506,7 @@ for (const f of fixtures) {
   const rough = scenes.find((x) => x.id === "scene3").data.steps.find((st) => st.id === "s3-rough");
   if (rough) {
     assert.ok(rough.lines[0].startsWith("全国・") && /\d件$/.test(rough.lines[0]), `${f}: s3-rough の1行目は「全国・…N件」: ${rough.lines[0]}`);
-    assert.ok(rough.lines[1].startsWith("1着"), `${f}: s3-rough の2行目は1着率と全国の比較: ${rough.lines[1]}`);
+    assert.ok(rough.lines[1].startsWith("1着") && rough.lines[1].includes("全国の1号艇"), `${f}: s3-rough の2行目は1着率と全国の比較: ${rough.lines[1]}`);
     // 答えの行（1着率）を大きく、範囲の行を小さく（範囲の行が答えより目立っていた。2026-10-20 オーケストレーター段階1）
     assert.equal(rough.lead, 1, `${f}: s3-rough は2行目が答えの行`);
     // 縮めた後の大きさで比べる（長い答えの行は 46px から縮み、範囲の行とほぼ同じ大きさになっていた）
@@ -906,15 +906,17 @@ for (const f of fixtures) {
 {
   const SCOPE = [
     [/^s1-(venue90|place|wind)$/, /全選手/],
-    [/^s1-day$/, /全選手|今日のレース/],
-    [/^card-/, /レース/],
+    [/^s1-day$/, /全選手|今日のレース|R中/],
+    [/^card-/, /過去|レース/],
     [/^s3-rough$/, /全国・/],
     [/^s3-venue$/, /本人/],
+    [/^focus-/, /選手|モーター|ボート/],
+    [/^s6-motor$/, /号機/],
     [/^s4-entry$/, /過去/],
     [/^s4-slit-/, /今日の6艇|並び/],
     [/^s5-place$/, /過去のレース/],
     [/^s5-axis-/, null],
-    [/^s6-deep-/, /過去のレース|そのとき/],
+    [/^s6-deep-/, /過去/],
   ];
   for (const f of fixtures) {
     const m = JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"));
@@ -930,6 +932,13 @@ for (const f of fixtures) {
       assert.match(text, want, `${f} ${id}: 範囲の語（${want}）で個人か集計かが分かる「${text}」`);
     }
   }
+  // 文の検査が、範囲の語の無い答えを止める
+  const { scopeReasons } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
+  has(checkLines(["1号艇の1着率62.1%"], { kind: "venue90", venue: "下関", rate: 62.1 }, null), "範囲の語が無い（会場");
+  assert.deepEqual(scopeReasons(["下関の1号艇（全選手）の1着率62.1%"], { kind: "venue90", venue: "下関" }), []);
+  has(scopeReasons(["下関1号艇は7走で1着率100.0%"], { kind: "venueRecord", name: "篠崎元志" }), "選手個人の成績");
+  assert.deepEqual(scopeReasons(["篠崎元志の下関1号艇は7走で1着率100.0%"], { kind: "venueRecord", name: "篠崎元志" }), []);
+  assert.deepEqual(scopeReasons(["1号艇は全国勝率8.06で1位"], { kind: "focus" }), [], "割合でない・個人の比較は対象外");
 }
 
 console.log("verify-full-picture-scene2: OK");

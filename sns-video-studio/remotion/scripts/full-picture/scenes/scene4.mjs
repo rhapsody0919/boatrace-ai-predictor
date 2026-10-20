@@ -32,6 +32,8 @@ function unionBox(a, b) {
 function roundSteps(sc, data, version, prevForm) {
   const steps = [];
   const label = version === "course" ? "このコース" : "全体";
+  // 字幕では、会場のコースと取り違えないよう「進入コース別」「全コース」と言う（wording-editor P2）
+  const say = version === "course" ? "進入コース別" : "全コース";
   const rows = hintRows(sc.hints, data.hints?.[version], version, wilsonInterval);
   const groups = hintCardGroups(rows);
   const candidates = groups.map((g) => g.form);
@@ -64,10 +66,10 @@ function roundSteps(sc, data, version, prevForm) {
     frames: [slitFormBox(formIdx)],
     facts: f2,
     lines: fallback
-      ? fitFirst([`今日の6艇（${label}）は一致する形が無い`, `横一線を参考に`], [`${label}の並びは一致する形が無い`, `横一線を参考に`])
+      ? fitFirst([`今日の6艇（${say}）は一致する形が無い`, `横一線を参考に`], [`${label}の並びは一致する形が無い`, `横一線を参考に`])
       : fitFirst(
           // 今日の6艇（選手）の平均ST と分かるように（2026-10-20 オーナー）
-          [`今日の6艇（${label}）は${formName(form)}に一致`, candidates.length > 1 ? `候補は${candidates.map(formName).join("・")}` : null],
+          [`今日の6艇（${say}）は${formName(form)}に一致`, candidates.length > 1 ? `候補は${candidates.map(formName).join("・")}` : null],
           [`${label}の並びは${formName(form)}に一致`, candidates.length > 1 ? `候補は${candidates.map(formName).join("・")}` : null],
         ),
   });
@@ -152,6 +154,8 @@ export function buildScene4(m) {
     facts: f1,
     lines: fitFirst(
       [`過去${all.toLocaleString("ja-JP")}件で前付けあり（1号艇イン）は${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
+      [`過去${all.toLocaleString("ja-JP")}件中、前付けあり（1号艇イン）${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
+      [`過去${all.toLocaleString("ja-JP")}件中、前付けあり${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
       [`過去のレースで前付けあり（1号艇イン）は${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
       [`過去の前付けあり（1号艇イン）は${f1.mae}%`, `前付けがあっても1号艇がインを守った割合`],
     ),

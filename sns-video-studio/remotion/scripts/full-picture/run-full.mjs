@@ -24,7 +24,7 @@ import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import process from "node:process";
-import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, templateText } from "./scene2-text.mjs";
+import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, scopeReasons, templateText } from "./scene2-text.mjs";
 import { entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
@@ -178,7 +178,8 @@ const [, mo, da, venueCode, raceNo] = m.raceId.split("-");
 const raceLabel = `${venueLabel(Number(venueCode), t)}${Number(raceNo)}R（${Number(mo)}/${Number(da)}）`;
 const templateAnswers = templateText(beats).answers;
 {
-  const why = checkAnswers(templateAnswers);
+  // 数字の範囲（個人か集計か）が分からない答えは止める（hq の型の正本 2026-10-20）
+  const why = [...checkAnswers(templateAnswers), ...beats.flatMap((b) => scopeReasons(b.template, b.facts).map((w) => `${b.id}: ${w}`))];
   if (why.length) stop("文型の文", why);
 }
 const post = postText(templateAnswers);

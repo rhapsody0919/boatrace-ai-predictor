@@ -130,6 +130,8 @@ export function buildScene1(m) {
       frames: [statsRow(2)],
       facts: f3,
       lines: fitFirst(
+        // 今日の数を件数で言う（逃げ率と1着率を比べていると分かるように。wording-editor P2）
+        [`今日の${venue}の1号艇は${day.raceCount}R中${day.nigeCount}R逃げ（${d1(nige)}%）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
         [`今日の${venue}の1号艇（全選手）の逃げ率${d1(nige)}%（${day.nigeCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
         [`今日のレースの1号艇の逃げ率${d1(nige)}%（${day.nigeCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
       ),
