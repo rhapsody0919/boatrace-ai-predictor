@@ -227,4 +227,66 @@ test.describe("ブログの図", () => {
     expect(colors.fill).toBe("rgb(201, 162, 39)");
     expect(colors.value).not.toBe(colors.card);
   });
+  test("同じ図を2回置いても id が重ならず、図の名前は目次に入らない", async ({
+    page,
+  }) => {
+    await page.route(`**/blog/${ARTICLE}.md`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/markdown; charset=utf-8",
+        body: `# t\n\n## 見出し\n\n<ryujin-chart src="${CHART_URL}" rows="6"></ryujin-chart>\n\n<ryujin-chart src="${CHART_URL}" rows="6"></ryujin-chart>\n\n本文\n`,
+      }),
+    );
+    await page.route(`**${CHART_URL}`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(example),
+      }),
+    );
+    await page.goto(`/blog/${ARTICLE}`);
+    await expect(
+      page.locator('figure.blog-chart[data-chart-state="ready"]'),
+    ).toHaveCount(2);
+    const ids = await page
+      .locator("figure.blog-chart [id]")
+      .evaluateAll((els) => els.map((e) => e.id));
+    expect(new Set(ids).size).toBe(ids.length);
+    await expect(page.locator(".blog-post-content h3")).toHaveCount(0);
+  });
+
+  test("src が無い（許可リストで落ちた）タグは、取りに行かずに失敗を出す", async ({
+    page,
+  }) => {
+    await page.route(`**/blog/${ARTICLE}.md`, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "text/markdown; charset=utf-8",
+        body: '# t\n\n<ryujin-chart src="https://example.com/x.json" rows="6"></ryujin-chart>\n\n本文\n',
+      }),
+    );
+    const requested = [];
+    page.on("request", (r) => requested.push(r.url()));
+    await page.goto(`/blog/${ARTICLE}`);
+    await expect(chartLocator(page)).toHaveAttribute(
+      "data-chart-state",
+      "error",
+    );
+    expect(
+      requested.filter(
+        (u) => u.includes("example.com") || u.endsWith("/undefined"),
+      ),
+    ).toEqual([]);
+  });
+});
+
+test.describe("ブログの図（ブラウザの言語がドイツ語）", () => {
+  test.use({ locale: "de-DE" });
+  test("札の母数の桁区切りはブラウザの言語に左右されない", async ({ page }) => {
+    await stubArticle(page);
+    await page.goto(`/blog/${ARTICLE}`);
+    await expect(
+      chartLocator(page).locator(".blog-chart__badges"),
+    ).toContainText("全2,363レース");
+  });
 });

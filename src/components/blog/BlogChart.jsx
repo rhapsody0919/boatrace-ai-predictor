@@ -12,7 +12,7 @@
  * 読み込みの状態は data-chart-state（loading・ready・error）で外に示す。
  * scripts/generate-ai-snapshots.js は loading が無くなるまで待ち、error の記事は失敗として数える。
  */
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import InlineFetchError from "../InlineFetchError";
 import {
   localize,
@@ -110,8 +110,18 @@ function BlogChart({ src, rows, lang = "ja" }) {
   const [loaded, setLoaded] = useState(null);
   const [selected, setSelected] = useState(null);
 
+  const baseId = useId();
+
   useEffect(() => {
     let cancelled = false;
+    // 許可リスト（blogMarkdownSanitize.js）が /blog-charts/ 以外の src を落とすと undefined で来る
+    if (!src) {
+      console.error(
+        new Error("図の src が無い（/blog-charts/{名前}.json だけ使える）"),
+      );
+      setLoaded({ src, error: true });
+      return undefined;
+    }
     fetch(src)
       .then((res) => {
         if (!res.ok)
@@ -159,14 +169,16 @@ function BlogChart({ src, rows, lang = "ja" }) {
 
   const { chart } = current;
   const defaultKey = chart.switch ? chart.switch.default : chart.views[0].key;
+  // 選んだ key が今の図に無い（src が替わった等）ときは既定の view に戻す
   const view =
-    chart.views.find((v) => v.key === (selected ?? defaultKey)) ??
-    chart.views[0];
+    chart.views.find((v) => v.key === selected) ??
+    chart.views.find((v) => v.key === defaultKey);
   const Body = BODIES[chart.kind];
   const title = localize(chart.title, lang);
   const answer = localize(view.description ?? chart.description, lang);
   const { badge } = view;
-  const controlId = `blog-chart-${chart.id}`;
+  // 同じ図を1記事に2回置いても id が重ならないよう useId を使う
+  const controlId = `blog-chart-${baseId.replaceAll(":", "")}`;
 
   return (
     <figure
@@ -175,9 +187,10 @@ function BlogChart({ src, rows, lang = "ja" }) {
       style={style}
       aria-labelledby={`${controlId}-title`}
     >
-      <h3 className="blog-chart__title" id={`${controlId}-title`}>
+      {/* 見出し（h3）にしない。記事の目次（BlogPost.jsx が h2・h3 を集める）に図の名前を入れないため */}
+      <p className="blog-chart__title" id={`${controlId}-title`}>
         {title}
-      </h3>
+      </p>
       <p className="blog-chart__answer">{answer}</p>
       {chart.switch && (
         <div className="blog-chart__control">
@@ -225,7 +238,7 @@ function BlogChart({ src, rows, lang = "ja" }) {
         </span>
         <span>
           {ui.sample(
-            badge.sample.value.toLocaleString(),
+            badge.sample.value.toLocaleString("ja-JP"),
             localize(badge.sample.unit, lang),
           )}
         </span>

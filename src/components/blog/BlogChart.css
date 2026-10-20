@@ -1,5 +1,5 @@
 /* ブログの図（BlogChart.jsx）。承認したモック: docs/design/blog-charts/mock/APPROVED.md
-   記事の本文の h3・p・ol・li の書式（.blog-post-content の子孫セレクタ）が当たらないよう、
+   記事の本文の p・ol・li の書式（.blog-post-content の子孫セレクタ）が当たらないよう、
    図の中は .blog-chart .blog-chart__… の2クラス（記事の要素セレクタより強い）で上書きする。クラス名は blog-chart__ に閉じる */
 
 .blog-chart {
@@ -53,8 +53,8 @@
 .blog-chart .blog-chart__title {
   margin: 0;
   font-size: 1.05rem;
+  font-weight: 700;
   line-height: 1.5;
-  scroll-margin-top: 160px;
 }
 
 .blog-chart .blog-chart__answer {
