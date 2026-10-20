@@ -13,13 +13,14 @@
  */
 import rehypeRaw from "rehype-raw";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import { BLOG_CHART_TAG, BLOG_CHART_SRC_RE } from "./blogChartTag.js";
 
 export const blogSanitizeSchema = {
   ...defaultSchema,
-  tagNames: [...defaultSchema.tagNames, "ryujin-chart"],
+  tagNames: [...defaultSchema.tagNames, BLOG_CHART_TAG],
   attributes: {
     ...defaultSchema.attributes,
-    "ryujin-chart": [["src", /^\/blog-charts\/[a-z0-9-]+\.json$/], "rows"],
+    [BLOG_CHART_TAG]: [["src", BLOG_CHART_SRC_RE], "rows"],
   },
 };
 

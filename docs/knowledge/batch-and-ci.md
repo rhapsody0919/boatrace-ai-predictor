@@ -60,4 +60,8 @@
 - 実行ごとに予定を動的にする変更では、初回insertだけでなく再生成した既存itemのveto_untilと再承認jobのscheduled_atも同じ時刻へ更新されるか確認する。（2026-10-19、2026-10-19-review-20261019-03.md）
 - 番号順に先頭1件を処理する選定では、後続全件の外部事実取得を先行させると後続の取得失敗で先頭の結果も失われる。先頭の選定と必要事実の取得の順を点検する。（2026-10-19、2026-10-19-review-20261019-14.md）
 - 新しい本番の鍵を Actions に置くときは、repo の secret ではなく master だけの Environment（prod-jobs）に置き、job-watch.json に載せる（載せないと verify-job-watch.js が落ちる）。key-canary にも読み取りを1回足す（こちらは verify では検査しない）（2026-10-20、system-architect、ADR-0097:48-49,128）
-- master への自動コミットは1回ごとに本番デプロイが走る（vercel.json の除外は codex/** だけ。デプロイフックも叩くと2回）。日次のデータの置き場所にするなら費用として数える（2026-10-20、system-architect、ADR-0032 追記）
+- master への自動コミットは、サイトの出力に関わるファイル（public/・src・api・ルートの data/* 等）を変えるなら1回ごとに本番デプロイが走る。docs/・data/analysis/ 等だけなら ignoreCommand でビルドしない（#1690、scripts/lib/vercelIgnoreBuild.js）。日次のデータの置き場所にするなら費用として数える（2026-10-20、system-architect、ADR-0032 の追記「選手ページ（BOA-848）」の「ビルド時間」。BOA-908 で更新）
+- Vercel の本番ビルドの所要は 10/10 以前の約1.9分から、10/13 以降は6〜7分に延びた（選手約320件などのスナップショット）。選手を作らない Preview も1本の費用が約7倍になったので、Elastic のビルドマシンが大きい機種に上がったと見る。1本あたり本番 約$0.79・Preview 約$0.26（2026-10-20、system-architect、`vercel ls --prod` 600件・請求 API・racerSnapshotPlan.js:22、BOA-908）
+- Vercel の ignoreCommand の除外に `*.md` を全体で書くと、public/blog/*.md だけのブログ修正（1週に6本）が本番に出ない。除外はディレクトリと名前で書く。build は scripts/maintenance/run-heavy.sh を通るので除外しない（2026-10-20、system-architect、package.json の build、BOA-908、scripts/lib/vercelIgnoreBuild.js）
+- update-sitemap は master への push と Deploy Hook の両方で、同じ内容の本番ビルドを2回走らせていた（10/17 の 7e42db1 で2本）。Deploy Hook のビルドは GitHub の Deployments に載らない（2026-10-20、system-architect、update-sitemap.yml、BOA-908）
+- ビルドマシンを下げたときは、ビルドの成否ではなくスナップショットを作れた件数で確かめる。generate-ai-snapshots.js は失敗を受け止めて exit 0 にしうる。並列4は固定値（2026-10-20、system-architect、generate-ai-snapshots.js:49,51、BOA-908）
