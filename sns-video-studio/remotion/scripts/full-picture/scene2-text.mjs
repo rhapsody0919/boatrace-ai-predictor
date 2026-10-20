@@ -212,13 +212,13 @@ const PROMPT = (beats) => `あなたはボートレースのデータ動画の�
 - ぼかし語（半分・多い・少ない・かなり・やや・ほぼ 等）を使わない。予想の断定・保証（必ず・絶対・稼げる 等）、「競艇」「この選手」を使わない
 - 言葉は facts・template にある語と、比べる語（${VOCAB.join("・")}）と助詞だけ。facts に無い評価・主張の言葉（差がつく・有利・狙い目・注目 等）を足さない。足した拍は使われない
 - 前の拍の答えと自然につなぐ。step が変わった最初の拍は、つなぐ語（一方・さらに・同じく・また 等）で始めない。「同じく」「こちらも」は前の拍と同じ材料のときだけ
-- 拍の種類: overview＝6艇全体で2位以内の項目の数、focus＝その艇が何で上位か、card＝1号艇の材料のカード（今日の順位のときの1着率、全体との差）、empty＝差が大きいカードが無い
+- 各拍は上帯の問い（question。無ければ場面2の6艇比較）への答え。kind は facts の種類（overview＝6艇全体で2位以内の項目の数、focus＝その艇が何で上位か、card＝1号艇の材料のカード、ほかは場面1〜8の各段）
 - 文型の版（template）は参考。同じでもよい
 
 出力は JSON だけ（前後に説明を書かない）: {"beats":[{"id":"…","lines":["…","…"]}]}
 
 拍:
-${JSON.stringify(beats.map(({ id, step, facts, template }) => ({ id, step, facts, template })), null, 1)}`;
+${JSON.stringify(beats.map(({ id, step, question, facts, template }) => ({ id, step, question, facts, template })), null, 1)}`;
 
 /** 既定の LLM 呼び出し: Claude Code の非対話モード（API キー不要、ログイン済みの claude で動く） */
 export function claudeCli(prompt, { model = "sonnet" } = {}) {
@@ -238,9 +238,18 @@ function parseJson(text) {
   return JSON.parse(m[0]);
 }
 
-/** 文型の版の文の JSON */
-export function templateText(scene) {
-  const beats = beatsOf(scene);
+/** 全場面の拍（場面2 は beatsOf、段の場面は段ごと。答えの無い段＝場面8 のまとめカードは除く） */
+export function allBeats(scenes) {
+  return scenes.flatMap((x) =>
+    x.kind === "scene2"
+      ? beatsOf(x.data).map((b) => ({ ...b, step: `scene2-${b.step}` }))
+      : (x.data?.steps ?? []).filter((s) => s.lines?.length).map((s) => ({ id: s.id, step: x.id, question: s.question, facts: s.facts, template: s.lines })),
+  );
+}
+
+/** 文型の版の文の JSON（scene は場面2の材料、または allBeats の拍の並び） */
+export function templateText(sceneOrBeats) {
+  const beats = Array.isArray(sceneOrBeats) ? sceneOrBeats : beatsOf(sceneOrBeats);
   return {
     mode: "template",
     answers: Object.fromEntries(beats.map((b) => [b.id, b.template])),
@@ -253,8 +262,8 @@ export function templateText(scene) {
  * @param {object} scene
  * @param {(prompt: string) => string} llm
  */
-export function polishedText(scene, llm = claudeCli) {
-  const beats = beatsOf(scene);
+export function polishedText(sceneOrBeats, llm = claudeCli) {
+  const beats = Array.isArray(sceneOrBeats) ? sceneOrBeats : beatsOf(sceneOrBeats);
   let got = {};
   let callError = null;
   try {
