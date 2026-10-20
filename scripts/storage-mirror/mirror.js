@@ -34,11 +34,11 @@ function summaryLines({ stamp, manifestKey, baseline, perBucket, failures }) {
       ? `manifest: \`${manifestKey}\`${baseline ? "" : "（基準にしない）"}`
       : "manifest: 変化なし（書いていない）",
     "",
-    "| バケット | 元の件数 | 元の容量MB | 変わらず | 取り寄せ | 書いた | 書いたMB | 元で消えた | 失敗 |",
-    "|---|---|---|---|---|---|---|---|---|",
+    "| バケット | 元の件数 | 元の容量MB | 変わらず | 取り寄せ | 書いた | 書いたMB | 元で消えた | GET が 404 | 失敗 |",
+    "|---|---|---|---|---|---|---|---|---|---|",
     ...Object.entries(perBucket).map(
       ([b, s]) =>
-        `| ${b} | ${s.listed} | ${MB(s.bytes)} | ${s.unchanged} | ${s.fetched} | ${s.written} | ${MB(s.writtenBytes)} | ${s.gone}${s.massGone ? "（大量）" : ""} | ${s.failed} |`,
+        `| ${b} | ${s.listed} | ${MB(s.bytes)} | ${s.unchanged} | ${s.fetched} | ${s.written} | ${MB(s.writtenBytes)} | ${s.gone}${s.massGone ? "（大量）" : ""} | ${s.notFound} | ${s.failed} |`,
     ),
     "",
   ];

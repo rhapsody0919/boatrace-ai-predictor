@@ -23,7 +23,7 @@ on:
         type: boolean
         default: false
       accept_gone:
-        description: "元の大量の削除を正しいと認め、この run を基準にする"
+        description: "元の大量の削除・一覧0件を正しいと認め、この run を基準にする（取り寄せの上限も外す）"
         type: boolean
         default: false
 

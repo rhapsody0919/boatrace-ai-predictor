@@ -25,6 +25,9 @@ import {
   SOURCE_BUCKETS,
   SourceNotFound,
   sha256,
+  md5Base64,
+  scrubPath,
+  tooManyNotFound,
 } from "../lib/storageMirror.js";
 import {
   createR2Client,
@@ -87,6 +90,23 @@ const EMPTY =
     ),
     list.authorization,
   );
+  const put = signRequest({
+    ...AWS,
+    method: "PUT",
+    path: `/${encodeKeyPath("test$file.text")}`,
+    headers: {
+      date: "Fri, 24 May 2013 00:00:00 GMT",
+      "x-amz-storage-class": "REDUCED_REDUNDANCY",
+    },
+    payloadHash: sha256(Buffer.from("Welcome to Amazon S3.")),
+  });
+  check(
+    "SigV4: AWS の PutObject の試験値と一致（$ の符号化・署名するヘッダ）",
+    put.authorization.endsWith(
+      "Signature=98ad721746da40c64f1a55b78f14c238d841ea1380cd77a1b5971af0ece108bd",
+    ),
+    put.authorization,
+  );
   check(
     "キーの符号化: / は残し、日本語・空白・+ は %XX",
     encodeKeyPath("a b/日本+(1).png") ===
@@ -116,18 +136,39 @@ function fakeR2() {
   const fetchImpl = async (url, { method, headers, body }) => {
     const u = new URL(url);
     calls.push({ method, path: u.pathname, query: u.search, headers });
-    if (!headers.authorization?.startsWith("AWS4-HMAC-SHA256 Credential="))
-      return new Response("", { status: 403 });
+    // 受け取った URL（WHATWG URL の正規化の後）とヘッダから署名を作り直し、送られた署名と比べる
+    const signedNames = headers.authorization?.match(/SignedHeaders=([^,]+)/)?.[1].split(";") ?? [];
+    const d = headers["x-amz-date"] ?? "";
+    const expect = signRequest({
+      method,
+      host: u.host,
+      // S3 と同じく、受け取ったパスを区切りごとに戻して符号化し直したものを正規の形とする
+      path: u.pathname.split("/").map((x) => encodeKeyPath(decodeURIComponent(x))).join("/"),
+      query: Object.fromEntries(u.searchParams),
+      headers: Object.fromEntries(
+        signedNames
+          .filter((n) => !["host", "x-amz-content-sha256", "x-amz-date"].includes(n))
+          .map((n) => [n, headers[n]]),
+      ),
+      payloadHash: headers["x-amz-content-sha256"],
+      accessKeyId: "k",
+      secretAccessKey: "s",
+      region: "auto",
+      date: new Date(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T${d.slice(9, 11)}:${d.slice(11, 13)}:${d.slice(13, 15)}Z`),
+    });
+    if (!headers.authorization || headers.authorization !== expect.authorization)
+      return new Response("<Error><Code>SignatureDoesNotMatch</Code></Error>", { status: 403 });
     const [, , ...rest] = u.pathname.split("/");
     const key = rest.map(decodeURIComponent).join("/");
     if (method === "GET" && key === "") {
       const prefix = u.searchParams.get("prefix") ?? "";
-      const max = Number(u.searchParams.get("max-keys") ?? 1000);
-      const start = Number(u.searchParams.get("continuation-token") ?? 0);
+      const max = Math.min(2, Number(u.searchParams.get("max-keys") ?? 1000));
+      // 続きの token は空白・/・+・= を含む形にし、1ページは2件までにする（続きの読み取りと、クエリの符号化と署名の一致を通す）
+      const start = Number((u.searchParams.get("continuation-token") ?? "t 0/+=").slice(2, -3));
       const keys = [...store.keys()].filter((k) => k.startsWith(prefix)).sort();
       const page = keys.slice(start, start + max);
       const more = start + max < keys.length;
-      const xml = `<ListBucketResult><IsTruncated>${more}</IsTruncated>${page.map((k) => `<Contents><Key>${xmlEsc(k)}</Key><Size>${store.get(k).body.length}</Size></Contents>`).join("")}${more ? `<NextContinuationToken>${start + max}</NextContinuationToken>` : ""}</ListBucketResult>`;
+      const xml = `<ListBucketResult><IsTruncated>${more}</IsTruncated>${page.map((k) => `<Contents><Key>${xmlEsc(k)}</Key><Size>${store.get(k).body.length}</Size></Contents>`).join("")}${more ? `<NextContinuationToken>t ${start + max}/+=</NextContinuationToken>` : ""}</ListBucketResult>`;
       return new Response(xml, { status: 200 });
     }
     if (method === "PUT") {
@@ -138,6 +179,8 @@ function fakeR2() {
           status: 412,
         });
       const buf = Buffer.from(body);
+      if (headers["content-md5"] !== md5Base64(buf))
+        return new Response("<Error><Code>BadDigest</Code></Error>", { status: 400 });
       if (sha256(buf) !== headers["x-amz-content-sha256"])
         return new Response("<Error><Code>BadDigest</Code></Error>", {
           status: 400,
@@ -217,7 +260,7 @@ const many = (prefix, n, type = "application/gzip") =>
 const t = (d) => new Date(`2026-10-${d}T19:40:00Z`);
 const manifestOf = (store, key) =>
   JSON.parse(zlib.gunzipSync(store.get(key).body).toString("utf8"));
-const SECRET_PATH = "未投稿の企画/秘密 name.mp4";
+const SECRET_PATH = "未投稿の企画/秘密 name(1)!+$'*.mp4";
 
 {
   const { r2, store } = fakeR2();
@@ -520,6 +563,24 @@ const SECRET_PATH = "未投稿の企画/秘密 name.mp4";
     "mirror.js は起動の判定を置かず main を呼ぶ（外れて何もせず success にならない）",
     /^main\(\)\.catch/m.test(m) && !/import\.meta\.url/.test(m),
   );
+}
+
+// 独立審査の指摘の再現テスト（GET の 404 の数・一覧0件と accept_gone・例外の文のパス）
+{
+  check("404 は2件か1%までなら削除の最中とみなす", !tooManyNotFound(2, 10) && tooManyNotFound(3, 10) && !tooManyNotFound(10, 1000) && tooManyNotFound(11, 1000));
+  const { r2 } = fakeR2();
+  const src = fakeSource({ "sns-hub-media": {}, "raw-pages": many("p", 10), analogy: many("a", 2) });
+  await runMirror({ source: src, r2, now: t(21), initial: true });
+  src.files["raw-pages"] = { ...src.files["raw-pages"], ...many("q", 5) };
+  for (let i = 0; i < 5; i++) src.missing.add(`raw-pages/q/${i}.gz`);
+  const a = await runMirror({ source: src, r2, now: t(22) });
+  check("一覧に出たのに GET が 404 のものが多ければ失敗にする（黙って success にしない）", a.failures.some((f) => /404/.test(f)) && a.perBucket["raw-pages"].notFound === 5);
+  src.missing.clear();
+  src.files.analogy = {};
+  const b = await runMirror({ source: src, r2, now: t(23) });
+  const c = await runMirror({ source: src, r2, now: t(24), acceptGone: true });
+  check("一覧0件も accept_gone で基準を進められる", b.failures.some((f) => /0件/.test(f)) && c.failures.length === 0 && c.baseline === true, c.failures.join(" / "));
+  check("例外の文からパス（そのまま・符号化）を消す", scrubPath("Failed to parse URL from https://x/a%20b/%E7%A7%98.png", "a b/秘.png") === "Failed to parse URL from https://x/…");
 }
 
 // 412 からの復旧（前の run が manifest を書く前に落ちた）
