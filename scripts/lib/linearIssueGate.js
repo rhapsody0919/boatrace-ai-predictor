@@ -67,10 +67,21 @@ export function issueGateDecision({
   threshold = LINEAR_ISSUE_GATE_THRESHOLD,
 }) {
   if (count < threshold) return { allowed: true, message: null };
-  return {
-    allowed: false,
-    message: `Linear の起票を止めました: 未アーカイブ ${count} 件が閾値 ${threshold} 件以上です（無料枠の上限 ${LINEAR_FREE_ISSUE_LIMIT} 件）。完了・取り消しのチケットをアーカイブしてから起票し直してください`,
-  };
+  return { allowed: false, message: gateBlockedMessage({ count, threshold }) };
+}
+
+/**
+ * 起票を止めた理由の文（純粋関数）。件数を数えられなかったとき（count が null）は、その旨の文。
+ * API が画面に返す文もこれで作る（例外の文をそのまま返さない。snsRawErrors の検査）
+ * @param {{count?: number | null, threshold?: number}} params
+ */
+export function gateBlockedMessage({
+  count = null,
+  threshold = LINEAR_ISSUE_GATE_THRESHOLD,
+}) {
+  if (count == null)
+    return `Linear の起票を止めました: 未アーカイブ件数を数えられないため、閾値 ${threshold} 件を確かめられません`;
+  return `Linear の起票を止めました: 未アーカイブ ${count} 件が閾値 ${threshold} 件以上です（無料枠の上限 ${LINEAR_FREE_ISSUE_LIMIT} 件）。完了・取り消しのチケットをアーカイブしてから起票し直してください`;
 }
 
 export class LinearIssueGateError extends Error {

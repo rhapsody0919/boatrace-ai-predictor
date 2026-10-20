@@ -21,7 +21,10 @@ import {
 } from "../../../../_lib/snsHubHelpers.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
-import { LINEAR_ISSUE_GATE_CODE } from "../../../../../scripts/lib/linearIssueGate.js";
+import {
+  LINEAR_ISSUE_GATE_CODE,
+  gateBlockedMessage,
+} from "../../../../../scripts/lib/linearIssueGate.js";
 
 export const config = {
   runtime: "edge",
@@ -83,8 +86,15 @@ export default async function handler(req) {
       console.error("SNS Hub request-spec-change Linear起票エラー:", error);
       // 未アーカイブ件数が閾値以上で起票を止めた（scripts/lib/linearIssueGate.js。Slack には通知済み）
       if (error.code === LINEAR_ISSUE_GATE_CODE) {
+        // 例外の文は返さず、件数と閾値から組み立てた文を返す（snsRawErrors の検査）
         return jsonResponse(
-          { error: error.message, code: LINEAR_ISSUE_GATE_CODE },
+          {
+            error: gateBlockedMessage({
+              count: error.count,
+              threshold: error.threshold,
+            }),
+            code: LINEAR_ISSUE_GATE_CODE,
+          },
           503,
         );
       }
