@@ -1347,3 +1347,61 @@ test("見出しの日替わり: tracking の保存が一時的な失敗（HTTP 5
   );
   assert.equal(tracking.template_variant_id, id);
 });
+
+test("171: /today の見出しの2案の行を入れる。もう一度当てても増えない。入れた後は案の uuid で tracking・下書きに札が入る", async () => {
+  const sql = await readFile(
+    new URL(
+      "../../docs/db-migration/171_sns_today_heading_variants.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  // 本番の sns_template_variants は 039 で created_by を足している（この試験の土台は 039 を当てていない）
+  await db.exec(
+    "ALTER TABLE sns_template_variants ADD COLUMN IF NOT EXISTS created_by VARCHAR(10) NOT NULL DEFAULT 'human'",
+  );
+  await db.exec(
+    "DELETE FROM sns_post_tracking; DELETE FROM sns_template_variants WHERE format='today_digest'",
+  );
+  // 同じ名前で別の id の行が先にあると、黙って成功せず全体を戻す（代わりの審査の P3）
+  await db.exec(
+    "INSERT INTO sns_template_variants(id, format, variant_name, composition_name) VALUES('11111111-1111-4111-8111-111111111111','today_digest','today-heading-a','X')",
+  );
+  await assert.rejects(db.exec(sql), /既存の行が食い違う/);
+  // ファイルの BEGIN の中で落ちたので、psql と同じく戻す（db-apply は接続を閉じてトランザクション全体が戻る）
+  await db.exec("ROLLBACK");
+  await db.exec(
+    "DELETE FROM sns_template_variants WHERE format='today_digest'",
+  );
+  await db.exec(sql);
+  await db.exec(sql);
+  const rows = await all(
+    "SELECT id, variant_name, active FROM sns_template_variants WHERE format='today_digest' ORDER BY variant_name",
+  );
+  assert.deepEqual(
+    rows.map((r) => [r.id, r.variant_name, r.active]),
+    [
+      ["0f88824e-c630-4f94-8c15-475297e4b242", "today-heading-a", true],
+      ["be74c247-fa8f-442e-a29f-4d1d7866919a", "today-heading-b", true],
+    ],
+  );
+  // 入れた後に config の uuid を入れると、札が tracking・下書きに入る
+  const variants = {
+    default: "本日のデータ一覧（{date}）",
+    variants: [
+      { id: "a", uuid: rows[0].id, heading: "本日のデータ一覧（{date}）" },
+      { id: "b", uuid: rows[1].id, heading: "本日のデータ一覧（{date}）" },
+    ],
+  };
+  await plan({ loadVariants: () => variants });
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.ok(rows.some((r) => r.id === draft.template_variant_id));
+  // リポジトリの config は、当てる前にマージされても札なしで動くよう uuid が null のまま
+  const config = JSON.parse(
+    await readFile(
+      new URL("../../config/today-variants.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  assert.ok(config.variants.every((v) => v.uuid == null));
+});
