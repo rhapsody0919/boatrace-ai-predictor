@@ -1,12 +1,15 @@
 /**
  * 朝夜のまとめ（Slack）に流す「新しいブログの図の PNG」の行を作る（ADR 0099、docs/design/blog-charts/contract.md 8節）。
  *
- * 新しい = 指定の時刻より後に origin/master で足された・変わった図の JSON（public/blog-charts/*.json）。
+ * 新しい = 前回のまとめから、本番に配られている版（status.json の blogChartPng.commit）までに足された・変わった
+ * 図の JSON（public/blog-charts/*.json）。上限を配られた版にするのは、マージ直後（ビルド中）の図を「まだ無い」と出して
+ * 次のまとめの窓から落とさないため。出力の最後の行に、次に渡す --since（配られた版）を出す。
  * 図ごとに本番の URL（/blog-charts/{id}.{preset}.png）を取り、PNG が配られているかを content-type と先頭8バイトで確かめる
  * （無い PNG は rewrite で 200 の index.html が返るので、status では判定できない）。作らなかった・失敗した理由は
  * 本番の /ai-snapshots/status.json の blogChartPng から添える。
  *
- * 使い方（オーケストレーターが朝夜のまとめを作るとき。前回のまとめの時刻を渡す）:
+ * 使い方（オーケストレーターが朝夜のまとめを作るとき）。--since は前回の出力の最後の行のコミット。初回だけ時刻でよい:
+ *   git fetch origin master && node scripts/content/blog-chart-png-digest.js --since 3255c4a51
  *   git fetch origin master && node scripts/content/blog-chart-png-digest.js --since 2026-10-20T21:00+09:00
  * 出力: Slack にそのまま貼れる行。新しい図が無ければ「なし」の1行
  */
@@ -20,7 +23,27 @@ import {
 
 const SITE = "https://www.boat-ai.jp";
 
-/** 指定の時刻より後に足された・変わった図の JSON の id（ファイル名）。消えたものは除く */
+/**
+ * git log の引数。since がコミットなら since..upTo、時刻なら --since で upTo まで
+ * @param {string} since 前回のまとめのコミット（7〜40桁の16進）か時刻
+ * @param {string} upTo 本番に配られている版のコミット
+ */
+export function gitLogArgs(since, upTo) {
+  const range = /^[0-9a-f]{7,40}$/.test(since)
+    ? [`${since}..${upTo}`]
+    : [upTo, `--since=${since}`];
+  return [
+    "log",
+    ...range,
+    "--diff-filter=AM",
+    "--name-only",
+    "--format=",
+    "--",
+    "public/blog-charts/",
+  ];
+}
+
+/** 足された・変わった図の JSON の id（ファイル名）。消えたものは除く */
 export function changedChartIds(gitLogOutput) {
   const ids = new Set();
   for (const line of gitLogOutput.split("\n")) {
@@ -39,12 +62,14 @@ async function checkPng(url) {
 
 async function readStatus() {
   const res = await fetch(`${SITE}/ai-snapshots/status.json`);
-  if (!res.ok) return null;
-  try {
-    return (await res.json()).blogChartPng ?? null;
-  } catch {
-    return null;
+  if (!res.ok) throw new Error(`status.json が HTTP ${res.status}`);
+  const png = (await res.json())?.blogChartPng;
+  if (!png?.commit) {
+    throw new Error(
+      "status.json に blogChartPng.commit が無い（書き出す版がまだ本番に無い）",
+    );
   }
+  return png;
 }
 
 /**
@@ -66,7 +91,7 @@ export function digestLines(checks, status) {
     const reason =
       status?.skipped?.[key] ??
       status?.errors?.[key] ??
-      "本番にまだ無い（デプロイ前か、ビルドで撮れなかった。/ai-snapshots/status.json を確認）";
+      "本番に無い（ビルドで撮れなかった。/ai-snapshots/status.json を確認）";
     lines.push(`- ${id}（${size}）: 作られていない。${reason}`);
   }
   return lines;
@@ -77,23 +102,13 @@ async function main() {
   const since = i > 0 ? process.argv[i + 1] : null;
   if (!since) {
     throw new Error(
-      "--since に前回のまとめの時刻を渡す（例 --since 2026-10-20T21:00+09:00）",
+      "--since に前回の出力の最後の行のコミット（初回は時刻 2026-10-20T21:00+09:00 の形）を渡す",
     );
   }
-  const log = execFileSync(
-    "git",
-    [
-      "log",
-      "origin/master",
-      `--since=${since}`,
-      "--diff-filter=AM",
-      "--name-only",
-      "--format=",
-      "--",
-      "public/blog-charts/",
-    ],
-    { encoding: "utf8" },
-  );
+  const status = await readStatus();
+  const log = execFileSync("git", gitLogArgs(since, status.commit), {
+    encoding: "utf8",
+  });
   const ids = changedChartIds(log);
   const checks = [];
   for (const id of ids) {
@@ -102,8 +117,12 @@ async function main() {
       checks.push({ id, preset, ok });
     }
   }
-  const status = ids.length > 0 ? await readStatus() : null;
-  console.log(digestLines(checks, status).join("\n"));
+  console.log(
+    [
+      ...digestLines(checks, status),
+      `（次のまとめは --since ${status.commit.slice(0, 9)}）`,
+    ].join("\n"),
+  );
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

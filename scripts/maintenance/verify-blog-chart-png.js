@@ -7,12 +7,14 @@
  * 3. 撮る図の一覧（planBlogChartPngs）: 記事ごとにまとめる・置き場が無ければ空・id か article が無い JSON は止める
  * 4. 朝夜のまとめの行（blog-chart-png-digest.js）: 足された・変わった JSON だけ・配られていない理由を status.json から添える
  * 5. status.json の照合（failedSnapshotGroups）が図の PNG の失敗を拾う
+ * 6. まとめの窓の上限は本番に配られた版（マージ直後のビルド中の図を「無い」と出して次の窓から落とさない。/code-review 指摘1）
+ * 7. 記事の途中で落ちたら、その記事の PNG を1枚も書かない（status と配信物を食い違わせない。/code-review 指摘2）
  *
  * 使い方: node scripts/maintenance/verify-blog-chart-png.js
  */
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -22,10 +24,11 @@ import {
   blogChartPngSize,
   isPngResponse,
 } from "../../src/utils/blogChartPng.js";
-import { planBlogChartPngs } from "../lib/blogChartPng.js";
+import { exportBlogChartPngs, planBlogChartPngs } from "../lib/blogChartPng.js";
 import {
   changedChartIds,
   digestLines,
+  gitLogArgs,
 } from "../content/blog-chart-png-digest.js";
 import { failedSnapshotGroups } from "../lib/snapshotStatus.js";
 
@@ -130,7 +133,7 @@ test("まとめ: 配られた URL と、作られていない理由（status.jso
     "- a-x（portrait 1080×1350）: https://www.boat-ai.jp/blog-charts/a-x.portrait.png",
   );
   assert.match(lines[2], /landscape 1280×720.*枠からはみ出す/);
-  assert.match(lines[3], /本番にまだ無い/);
+  assert.match(lines[3], /本番に無い/);
 });
 
 test("status.json の照合が図の PNG の失敗を拾う", () => {
@@ -145,4 +148,64 @@ test("status.json の照合が図の PNG の失敗を拾う", () => {
     }),
     ["blogChartPng: 3/4 件。失敗: a-x.portrait"],
   );
+});
+
+test("まとめの窓: 前回のコミットから本番に配られた版まで。時刻のときも上限は配られた版", () => {
+  assert.deepEqual(gitLogArgs("3255c4a51", "abcdef1234").slice(0, 2), [
+    "log",
+    "3255c4a51..abcdef1234",
+  ]);
+  assert.deepEqual(
+    gitLogArgs("2026-10-20T21:00+09:00", "abcdef1234").slice(0, 3),
+    ["log", "abcdef1234", "--since=2026-10-20T21:00+09:00"],
+  );
+});
+
+/** 偽のページ。failOn の図で撮影の形に入るときに落ちる */
+function fakePage(failOn) {
+  return {
+    setViewportSize: async () => {},
+    goto: async () => {},
+    waitForSelector: async () => {},
+    screenshot: async () => Buffer.from(PNG_HEAD),
+    evaluate: async (fn, arg) => {
+      if (fn.name === "enterExportMode") {
+        if (arg?.id === failOn) throw new Error("Target page closed");
+        return { found: true, state: "ready", overflowY: 0, overflowX: 0 };
+      }
+      if (fn.name === "leaveExportMode") return undefined;
+      return true;
+    },
+  };
+}
+
+test("記事の途中で落ちたら、その記事の PNG を書かず失敗に数える", async () => {
+  const outDir = mkdtempSync(path.join(tmpdir(), "blog-chart-png-"));
+  const r = await exportBlogChartPngs({
+    openPage: async () => fakePage("a-y"),
+    baseUrl: "http://localhost",
+    plan: [
+      { article: "a", ids: ["a-x", "a-y"] },
+      { article: "b", ids: ["b-z"] },
+    ],
+    outDir,
+  });
+  assert.equal(
+    existsSync(path.join(outDir, "blog-charts/a-x.portrait.png")),
+    false,
+  );
+  assert.equal(
+    existsSync(path.join(outDir, "blog-charts/b-z.portrait.png")),
+    true,
+  );
+  assert.deepEqual(r.files.sort(), [
+    "/blog-charts/b-z.landscape.png",
+    "/blog-charts/b-z.portrait.png",
+  ]);
+  assert.deepEqual(r.failed.map((f) => f.id).sort(), [
+    "a-x.landscape",
+    "a-x.portrait",
+    "a-y.landscape",
+    "a-y.portrait",
+  ]);
 });

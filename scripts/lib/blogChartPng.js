@@ -89,7 +89,7 @@ async function shootArticle(page, { baseUrl, outDir, article, ids, preset }) {
   });
   await page.waitForSelector(".blog-post-content", { timeout: 10000 });
   // 日本語のフォント（Vercel では launchChromium.js が置く Noto Sans JP）を読み終えてから測る。折り返しが変わるため
-  await page.evaluate(() => document.fonts.ready);
+  await page.evaluate(() => document.fonts.ready.then(() => true));
   for (const id of ids) {
     const key = `${id}.${preset}`;
     const m = await page.evaluate(enterExportMode, {
@@ -114,14 +114,16 @@ async function shootArticle(page, { baseUrl, outDir, article, ids, preset }) {
           clip: { x: 0, y: 0, width: cssWidth, height: cssHeight },
           animations: "disabled",
         });
-        writeFileSync(path.join(outDir, urlPath), png);
-        done.push(urlPath);
+        // 書くのは記事の全部を撮り終えてから（途中で落ちたら1枚も書かない。status と配信物を食い違わせない）
+        done.push({ urlPath, png });
       }
     } finally {
       await page.evaluate(leaveExportMode, id);
     }
   }
-  return { done, bad, skip };
+  for (const { urlPath, png } of done)
+    writeFileSync(path.join(outDir, urlPath), png);
+  return { done: done.map((d) => d.urlPath), bad, skip };
 }
 
 /**

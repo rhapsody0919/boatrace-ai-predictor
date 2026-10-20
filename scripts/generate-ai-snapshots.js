@@ -604,21 +604,29 @@ async function main() {
     }
   }
   if (listResult) addSnapshotGroup(status, lines, "blogList", listResult);
-  // 図の PNG（ADR 0099）。失敗の理由と書いた URL も残す（作り手・朝夜のまとめが読む）
+  // 図の PNG（ADR 0099）。失敗の理由と書いた URL も残す（作り手・朝夜のまとめが読む）。
+  // 枠に収まらず作らなかったもの（skipped）は撮る対象から外して数える（失敗にも成功にも入れない）
   if (chartPngResult) {
-    addSnapshotGroup(status, lines, "blogChartPng", chartPngResult);
-    // 作らなかった（枠に収まらない）ものは成功に数えない。書いた枚数にする
-    if (!chartPngResult.fatalError)
-      status.blogChartPng.succeeded = chartPngResult.files.length;
-    status.blogChartPng.files = chartPngResult.files ?? [];
-    status.blogChartPng.errors = Object.fromEntries(
-      chartPngResult.failed.map((f) => [f.id, f.error]),
-    );
-    status.blogChartPng.skipped = Object.fromEntries(
-      chartPngResult.skipped.map((f) => [f.id, f.error]),
-    );
-    status.blogChartPng.seconds = chartPngResult.seconds ?? null;
+    const skipped = chartPngResult.skipped ?? [];
+    addSnapshotGroup(status, lines, "blogChartPng", {
+      ...chartPngResult,
+      total:
+        chartPngResult.total == null
+          ? null
+          : chartPngResult.total - skipped.length,
+    });
+    Object.assign(status.blogChartPng, {
+      // 朝夜のまとめ（scripts/content/blog-chart-png-digest.js）が、配られた版までの JSON の変更を数えるのに使う
+      commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      files: chartPngResult.files ?? [],
+      errors: Object.fromEntries(
+        chartPngResult.failed.map((f) => [f.id, f.error]),
+      ),
+      skipped: Object.fromEntries(skipped.map((f) => [f.id, f.error])),
+      seconds: chartPngResult.seconds ?? null,
+    });
   }
+
   writeFileSync(
     path.join(SNAPSHOT_DIR, "status.json"),
     `${JSON.stringify(status, null, 2)}\n`,

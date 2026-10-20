@@ -195,4 +195,4 @@ public/blog-charts/x.json: views[0].series[0].count: 契約に無いキー（cou
 
 - 撮るのは既定の view（`switch.default`）、日本語だけ、ライトの色。切り替えは写さず、札の1つ目を「{切り替えの名前} {選んだ名前}」（例「会場 福岡」）にする。注記は外さない。下端に「龍神レーダー」と「boat-ai.jp」を文字で入れる（ロゴの絵は入れない）。形の確認: `mock/png-review.md`
 - 字は縮めない。枠からはみ出す大きさは作らず、`/ai-snapshots/status.json` の `blogChartPng.skipped` に理由を残す（目安: portrait は注記つきで6行、landscape は7行まで。本番のフォントで測って決まる）。図が描けない等の失敗は `blogChartPng.errors` に残り、`ok` が false になる
-- 取り方: 本番の URL から取る。新しい図の PNG の URL は、オーケストレーターが朝夜のまとめに `node scripts/content/blog-chart-png-digest.js --since {前回のまとめの時刻}` の出力を貼って流す。無い PNG は rewrite で 200 の index.html が返るので、この検査は content-type と先頭8バイトで見る
+- 取り方: 本番の URL から取る。新しい図の PNG の URL は、オーケストレーターが朝夜のまとめに `node scripts/content/blog-chart-png-digest.js --since {前回の出力の最後の行のコミット}` の出力を貼って流す（初回は時刻でよい）。窓の上限は本番に配られた版（`status.json` の `blogChartPng.commit`）なので、ビルド中の図は次のまとめに回る。無い PNG は rewrite で 200 の index.html が返るので、この検査は content-type と先頭8バイトで見る
