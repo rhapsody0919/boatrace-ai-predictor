@@ -15,6 +15,54 @@ export const MATERIALS_VERSION = "full-picture-materials/1";
 const BASE = process.env.FULL_PICTURE_API_BASE ?? "https://www.boat-ai.jp";
 const VENUES = Array.from({ length: 24 }, (_, i) => i + 1);
 
+// Supabase の匿名読み取り（画面と同じ公開キー。書き込みはしない）。画面が API を通さずに読む場面（3 軸・6 機力）の材料
+const SB_URL = process.env.VITE_SUPABASE_URL ?? process.env.SUPABASE_URL;
+const SB_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+async function sbGet(table, query) {
+  if (!SB_URL || !SB_KEY) throw new Error("Supabase の URL・匿名キーが無い（VITE_SUPABASE_URL・VITE_SUPABASE_ANON_KEY）");
+  const out = [];
+  for (let from = 0; ; from += 1000) {
+    const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
+      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}`, Range: `${from}-${from + 999}` },
+    });
+    if (!res.ok) throw new Error(`${table}: HTTP ${res.status}`);
+    const rows = await res.json();
+    out.push(...rows);
+    if (rows.length < 1000) return out;
+  }
+}
+async function sbIn(table, select, col, ids) {
+  const out = [];
+  for (let i = 0; i < ids.length; i += 100) {
+    const list = ids.slice(i, i + 100).map((x) => `"${x}"`).join(",");
+    out.push(...(await sbGet(table, `select=${select}&${col}=in.(${encodeURIComponent(list)})`)));
+  }
+  return out;
+}
+const daysBefore = (date, n) => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - n);
+  return d.toISOString().slice(0, 10);
+};
+
+/**
+ * 1号艇の選手の成績の元（選手ページ「会場別成績」730日・「枠番別回収率」180日と同じ表・列）。
+ * 画面は見た日から数えるが、ここはレースの日から数え、このレースより前の走だけにする（同じ材料なら同じ値）
+ */
+async function racerRows(racerId, raceId, date) {
+  const entries = await sbGet(
+    "race_entries",
+    `select=race_id,boat_number&racer_id=eq.${racerId}&and=(race_id.gte.${daysBefore(date, 730)},race_id.lt.${raceId})`,
+  );
+  const ids = [...new Set(entries.map((e) => e.race_id))];
+  const [races, results, st] = await Promise.all([
+    sbIn("races", "race_id,venue_code,race_grade", "race_id", ids),
+    sbIn("race_results", "race_id,rank1,rank2,rank3,payout_win,payout_place_1,payout_place_2,race_status", "race_id", ids),
+    sbIn("race_start_timings", "race_id,boat_number,finish_mark", "race_id", ids),
+  ]);
+  return { racerId, entries, races, results, st: st.filter((r) => entries.some((e) => e.race_id === r.race_id && e.boat_number === r.boat_number)) };
+}
+
 async function getJson(path) {
   const res = await fetch(`${BASE}${path}`);
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
@@ -80,7 +128,18 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
       missing.push({ source: `outcome.${v}`, reason: e instanceof Error ? e.message : String(e) });
     }
   }
-  return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, api, missing };
+  // Supabase（匿名読み取り）
+  const db = {};
+  const race = api.races?.find((r) => r.raceId === raceId);
+  const racer1 = race?.entries?.find((e) => e.number === 1)?.racerId;
+  try {
+    db.racer1 = racer1 ? await racerRows(racer1, raceId, date) : null;
+    if (!racer1) missing.push({ source: "db.racer1", reason: "出走表に1号艇の選手が無い" });
+  } catch (e) {
+    db.racer1 = null;
+    missing.push({ source: "db.racer1", reason: e instanceof Error ? e.message : String(e) });
+  }
+  return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, api, db, missing };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -27,33 +27,30 @@ export const barsRow = (i) => ({
 });
 
 /** 表: 見出しの行＋6行。列 j（0 が艇の列）の箱 */
-export const TABLE = { headH: 80, rowH: 92, firstW: 150 };
+export const TABLE = { headH: 80, rowH: 92, firstW: 150, labelW: 230 };
 export function tableCol(j, ncols) {
   const w = (RIGHT - LEFT - TABLE.firstW) / ncols;
   return j === 0
     ? { x: LEFT, w: TABLE.firstW }
     : { x: LEFT + TABLE.firstW + (j - 1) * w, w };
 }
-export const tableRowY = (i) => BODY_Y + TABLE.headH + i * TABLE.rowH;
+/** 左の列の幅を変えた表の列（会場名など、文字の左の列） */
+export function tableColW(j, ncols, firstW) {
+  const w = (RIGHT - LEFT - firstW) / ncols;
+  return j === 0 ? { x: LEFT, w: firstW } : { x: LEFT + firstW + (j - 1) * w, w };
+}
+export const tableRowY = (i, rowH = TABLE.rowH) => BODY_Y + TABLE.headH + i * rowH;
 /** 列 j（1〜）を見出しから最後の行まで囲う箱。複数の列なら1つにまとめる */
-export function tableColsBox(cols, ncols, nrows = 6) {
+export function tableColsBox(cols, ncols, nrows = 6, rowH = TABLE.rowH) {
   const xs = cols.map((j) => tableCol(j, ncols));
   const x = Math.min(...xs.map((c) => c.x));
   const r = Math.max(...xs.map((c) => c.x + c.w));
-  return {
-    x: x + 6,
-    y: BODY_Y + 6,
-    w: r - x - 12,
-    h: TABLE.headH + nrows * TABLE.rowH - 12,
-  };
+  return { x: x + 6, y: BODY_Y + 6, w: r - x - 12, h: TABLE.headH + nrows * rowH - 12 };
 }
-export const tableRowBox = (i, ncols) => ({
-  x: LEFT + 6,
-  y: tableRowY(i) + 4,
-  w: RIGHT - LEFT - 12,
-  h: TABLE.rowH - 8,
-  ncols,
-});
+/** 行 i を囲う箱 */
+export const tableRowBox = (i, rowH = TABLE.rowH) => ({ x: LEFT + 6, y: tableRowY(i, rowH) + 4, w: RIGHT - LEFT - 12, h: rowH - 8 });
+/** 行の数に合わせた行の高さ（頁に収める。最大 92） */
+export const tableRowH = (nrows) => Math.min(TABLE.rowH, Math.floor((PAGE_BOTTOM - 20 - BODY_Y - TABLE.headH) / Math.max(1, nrows)));
 
 /** 数値の欄（縦に3〜4つ） */
 export const STATS = { rowH: 150, gap: 20 };

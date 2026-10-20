@@ -28,7 +28,7 @@ function StepPage({ step, t, active }) {
         ? interpolate(t, [step.times.press, step.times.changed], [0, 1], clamp)
         : 1
       : 1;
-  return <Page {...step.page} shown={shown} />;
+  return <Page {...step.page} shown={shown} t={t - step.times.changed} />;
 }
 
 export function StepScene({ scene, frameOffset = 0 }) {

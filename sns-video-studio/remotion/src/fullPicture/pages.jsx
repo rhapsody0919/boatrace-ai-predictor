@@ -20,6 +20,8 @@ import {
   barsRow,
   statsRow,
   tableCol,
+  tableColW,
+  tableRowH,
   tableRowY,
 } from "./pageLayout.js";
 
@@ -157,9 +159,15 @@ export function BarsPage({ title, sub, rows, max, markLabel }) {
   );
 }
 
-/** 表（見出し＋6行）。cols: 見出しの文字（艇の列を除く）。rows: [{boat, cells: [文字]}]。button があれば見出しの右に置く */
-export function TablePage({ title, sub, cols, rows, button, shown = 1 }) {
+/**
+ * 表（見出し＋行）。cols: 見出しの文字（左の列を除く）。rows: [{boat, label, cells: [文字]}]（boat があれば艇番の札、無ければ label の文字）。
+ * button があれば見出しの右に置く。grow があれば、段の頭から grow フレームかけて行を上から順に出す（表を縦に伸ばす）
+ */
+export function TablePage({ title, sub, cols, rows, button, shown = 1, grow = 0, t = 0, firstW = null }) {
   const n = cols.length;
+  const rowH = tableRowH(rows.length);
+  const col = (j) => (firstW ? tableColW(j, n, firstW) : tableCol(j, n));
+  const visible = grow ? Math.min(rows.length, Math.floor((t / grow) * rows.length) + 1) : rows.length;
   return (
     <>
       <Panel title={title} sub={sub} />
@@ -187,64 +195,29 @@ export function TablePage({ title, sub, cols, rows, button, shown = 1 }) {
       )}
       <div style={{ opacity: shown }}>
         {cols.map((c, j) => {
-          const col = tableCol(j + 1, n);
+          const cc = col(j + 1);
           return (
-            <div
-              key={j}
-              style={{
-                position: "absolute",
-                left: col.x,
-                top: BODY_Y + 16,
-                width: col.w,
-                textAlign: "center",
-                fontSize: MIN_TEXT,
-                color: MUTED,
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-              }}
-            >
+            <div key={j} style={{ position: "absolute", left: cc.x, top: BODY_Y + 16, width: cc.w, textAlign: "center", fontSize: MIN_TEXT, color: MUTED, fontWeight: 700, whiteSpace: "nowrap" }}>
               {c}
             </div>
           );
         })}
-        {rows.map((r, i) => (
+        {rows.slice(0, visible).map((r, i) => (
           <div key={i}>
-            <div
-              style={{
-                position: "absolute",
-                left: LEFT,
-                top: tableRowY(i),
-                width: RIGHT - LEFT,
-                height: TABLE.rowH,
-                borderTop: "2px solid rgba(255,255,255,0.08)",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                left: tableCol(0, n).x + 20,
-                top: tableRowY(i) + 18,
-              }}
-            >
-              <BoatBadge b={r.boat} size={54} />
-            </div>
+            <div style={{ position: "absolute", left: LEFT, top: tableRowY(i, rowH), width: RIGHT - LEFT, height: rowH, borderTop: "2px solid rgba(255,255,255,0.08)" }} />
+            {r.boat ? (
+              <div style={{ position: "absolute", left: col(0).x + 20, top: tableRowY(i, rowH) + (rowH - 54) / 2 }}>
+                <BoatBadge b={r.boat} size={54} />
+              </div>
+            ) : (
+              <div style={{ position: "absolute", left: col(0).x + 10, top: tableRowY(i, rowH) + (rowH - 46) / 2, fontSize: 38, fontWeight: 800, color: TEXT, whiteSpace: "nowrap" }}>
+                {r.label}
+              </div>
+            )}
             {r.cells.map((c, j) => {
-              const col = tableCol(j + 1, n);
+              const cc = col(j + 1);
               return (
-                <div
-                  key={j}
-                  style={{
-                    position: "absolute",
-                    left: col.x,
-                    top: tableRowY(i) + 22,
-                    width: col.w,
-                    textAlign: "center",
-                    fontSize: 40,
-                    fontWeight: 700,
-                    color: "#ffffff",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+                <div key={j} style={{ position: "absolute", left: cc.x, top: tableRowY(i, rowH) + (rowH - 48) / 2, width: cc.w, textAlign: "center", fontSize: 40, fontWeight: 700, color: "#ffffff", whiteSpace: "nowrap" }}>
                   {c}
                 </div>
               );

@@ -21,14 +21,16 @@ export function stepTimes(step, first) {
   const scroll = first ? 0 : SCROLL;
   const press = step.press ? scroll + BEAT.press : null;
   const changed = step.press ? press + BEAT.change : scroll;
-  const frame0 = changed + BEAT.pause;
+  // 表を縦に伸ばす段は、伸び切ってから 0.5秒で枠
+  const grow = step.page?.grow ?? 0;
+  const frame0 = changed + grow + BEAT.pause;
   const nFrames = Math.max(1, step.frames?.length ?? 0);
   const frames = Array.from(
     { length: nFrames },
     (_, i) => frame0 + i * FRAME_STEP,
   );
   const answer = frames[nFrames - 1] + BEAT.frameIn + BEAT.answerGap;
-  const len = STEP_LEN + (nFrames - 1) * FRAME_STEP;
+  const len = STEP_LEN + (nFrames - 1) * FRAME_STEP + grow;
   return { scroll, press, changed, frames, answer, len };
 }
 
