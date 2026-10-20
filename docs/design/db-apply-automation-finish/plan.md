@@ -2,7 +2,7 @@
 
 [ADR-0097](../../adr/0097-identity-separation-auto-review-and-db-apply.md) の「レーンの PR → 審査の App の承認 → db-apply の定期の起動が軽い SQL を当てる」経路を、実際に動く形にする設計。ADR-0097 の決定（身元・審査・当てる対象の5点・軽い／重いの判定）は変えない。変えるのは、起動の出元・PR を作る身元の配線・D' の前に要る3点・その順番。
 
-オーナーの手順の正本は [identity-separation-owner-steps.md](../../operation/identity-separation-owner-steps.md)、適用の手順の正本は [db-apply.md](../../operation/db-apply.md)。この文書は、それらへの変更の設計を1か所にまとめたもの。実装は、オーナーの判断の後に PR を分けて行う（§5）。system-architect の審査（2026-10-20）の指摘を反映済み（§9）。
+オーナーの手順の正本は [identity-separation-owner-steps.md](../../operation/identity-separation-owner-steps.md)、適用の手順の正本は [db-apply.md](../../operation/db-apply.md)。この文書は、それらへの変更の設計を1か所にまとめたもの。実装は、オーナーの判断の後に PR を分けて行う（§5）。system-architect の審査（2026-10-20）の指摘を反映済み（§10）。
 
 ## 1. 今、動いていない理由（2026-10-20 15:30 JST の実測）
 
@@ -209,6 +209,8 @@ GRANT SELECT ON db_apply.applied TO claude_ro;            -- 台帳とのずれ�
 | PR-B | 印の表のマイグレーション（§4.1 の SQL） | docs/db-migration | オーナー（手で当てる、重い） | 判断3 |
 | PR-C | 印・止め印・時間の窓のコード（§4）。最初に psql の実機確認 | scripts/db・scripts/lib・.github・verify | オーナー（.github） | PR-B の適用 |
 | PR-D | 名義の切替の龍神の側（§3） | .claude・scripts/maintenance | オーナー。切替の作業の中で、8.2 の前にマージ | hq の道具 |
+| PR-F | ④ 審査の関門の画像の例外（§9.1）と再現テスト、ADR-0097 の追記 | scripts/lib/reviewPr.js・scripts/review・verify・docs/adr | オーナー（審査の仕組みの変更、段階2） | 判断8 |
+| PR-G | ⑥ orchestrate の段階0 F・案Z の書き直し（§9.3） | .claude/skills/orchestrate/SKILL.md | オーナー（.claude） | 判断11 |
 | PR-E | `DB_APPLY_DRY_RUN: "false"`（D'）と、急ぎの止め方の repo の変数 `DB_APPLY_AUTO_ENABLED`（apply-auto の `if` とコードの両方で見る） | .github | オーナー | 下の「D' の条件」 |
 
 ### D' の条件（審査の P1-2）
@@ -278,8 +280,60 @@ flowchart TD
 | 5 | 切替で、§6 の表の経路をどこまで外すか | gh・git の credential・ブラウザの GitHub のログイン・Vercel CLI と MCP・`.env.local` の管理の鍵は外す。SSH の鍵は登録先を確かめてから。外さないものは ADR-0097 の「残る弱み」に書く |
 | 6 | 名義の差し替えを環境の側（hq の shim・credential helper）で行い、切替の前の暫定は置かない（§3） | はい |
 | 7 | D' の条件（§5: 切替の後7日・審査済みの SQL を5本判定 等） | この条件 |
+| 8 | ④ 審査の関門の画像の例外を §9.1 の条件で入れ、ADR-0097 に追記する（段階2） | はい |
+| 9 | ② で寸法の表がビルドで作られる形になったときの関門の条件 | ② のレーンと合わせて決める。それまでは PR の head の表で照合 |
+| 10 | 画像の中身が LLM の審査に渡らないことを受け入れるか | 受け入れて ADR-0097 の残る弱みに書く（グラフ・表の画像で、記事の本文は審査に入る） |
+| 11 | ⑥ SKILL.md の段階0 F・案Z の4点の書き直し（§9.3） | はい。PR-D とは別の PR |
 
-## 9. 審査（system-architect、2026-10-20）の指摘と対応
+## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
+
+オーナーの yes（10/20 夕、hq 経由「記事を集客だけで出す道を作ってよい」、オーケストレーター経由）で、記事の PR も「作成の App → 審査の App → auto-merge」に乗せる。この節は ④ 審査の関門の画像の例外と ⑥ orchestrate の段階0 F・案Z の書き直し。② 翻訳のメタの JSON 化・寸法をビルドで作る、③ `scripts/content/check-content-pr.js`（manifest の形を含む）、⑤ ADR-0034（`GITHUB_MERGE_TOKEN` の PAT で記事の PR をマージする古い道）の廃止と PAT の失効は、別のレーンが受け持つ。
+
+### 9.1 ④ 審査の関門に画像の狭い例外を入れる（段階2、オーナーが直接承認）
+
+今は `scripts/lib/reviewPr.js:57-60` が、本文の無い差分（バイナリ）を消したファイル以外は全部落とす。記事の画像はバイナリなので、記事の PR は全部落ちる。
+
+例外にする条件（全部を満たすファイルだけ、本文の無い差分の理由から外す）:
+
+| 条件 | 確かめ方（gate の job。鍵なし、PR の head は checkout しない） |
+|---|---|
+| `status === "added"`（変更・改名・複製は対象外。`previous_filename` があれば対象外） | compare の files |
+| パスが `^public/images/blog/[a-z0-9-]+\.(jpg\|webp)$` | 正規表現。大文字・`..`・入れ子のディレクトリは当たらない |
+| mode が `100644` | 今の `headModes`（head の木） |
+| 大きさが 400KB（409,600 バイト）以下 | `GET /git/blobs/{sha}` の `size`（中身は base64 で取る。実行しない） |
+| magic bytes が拡張子と一致 | jpg: 先頭 `FF D8 FF`・末尾 `FF D9`。webp: 先頭 `RIFF`・8〜11 バイト目 `WEBP` |
+| EXIF・XMP が無い | jpg: APP1（`FF E1`）と COM（`FF FE`）の segment が1つも無い（EXIF も XMP も APP1 に入る）。APP2 の ICC は許す。SOS より前の segment だけを読む。webp: `EXIF`・`XMP ` の chunk が無い |
+| 縦横が寸法の表と一致 | jpg は SOF0・SOF2 から、webp は VP8・VP8L・VP8X から縦横を読む。表は PR の head の `src/data/blogImageDimensions.js` を API で取り（実行しない）、`"/images/blog/<name>": { width: N, height: M }` の1行を正規表現で読む。行が無い・形が違えば落とす |
+| 同じ PR で表の行を足している | 表の差分（patch）の `+` の行にその画像の行がある（既存の行に頼らない） |
+
+- 純粋関数 `imageException(file, blob, headMode, dimensionsSource)` を `reviewPr.js` に足し、`mechanicalRejections` の本文の無い差分の分岐で使う。画像の読み取りは Node の組み込みだけ（review.yml の「npm ci・cache を使わない」）
+- 再現テスト（`scripts/maintenance/verify-review-workflow.js` か新しい verify）: 通るもの（jpg・webp、ICC つき）、落ちるもの（EXIF つき・XMP つき・400KB 超・拡張子と中身の不一致・改名・modified・入れ子のパス・大文字・寸法の不一致・表の行が無い・symlink）
+- **既存の画像183枚のうち99枚に EXIF がある**（実測）。記事の画像を作る側（③ のレーン、または画像の生成の道具）で、コミットの前に EXIF・XMP を外す。外さないと関門で落ちる
+- ② で寸法の表がビルドで作られる形に変わると、PR の head に表が無くなる。そのときの条件（例: 縦横がそれぞれ 4000px 以下）は ② と合わせて決める（判断9）
+- 画像の中身（写っているもの・文字）は、LLM の審査に渡らない（差分の本文に出ないため）。受け入れるか、画像を審査の LLM に画像の入力として渡すかを決める（判断10。推奨は、ブログの画像はグラフ・表の画像で、記事の本文が審査に入るので受け入れる。ただし ADR-0097 の「残る弱み」に書く）
+- ADR-0097:34（「本文の無い差分は…機械で落とす」）に、この例外の追記をする（決まった後）
+
+### 9.2 中身の PR を流すときの守り（system-architect、10/20 の審査の P0〜P2）
+
+- **P0: 手順7の前に中身の PR を流すなら、push の前に、変えたパスの全部（改名の元・mode・削除を含む）を許可のリストと照合する**。作成の App は Workflows の書き込みを持ち、手順7の前は repo の secret がどのブランチの workflow からも読めるため。照合は PR を作る機械（③ の担当）が push の前に行い、関門（review.yml）でも同じ許可のリストで落とす（二重）
+- **P1: 束のマージは、マージする時点で判定し直す**。見るのは、PR の作者の bot の ID（`REVIEW_MAKER_BOT_ID`）、今の head SHA に審査の App の APPROVE があること、変えたパスが許可のリストの中、CI が全部緑。束を作った時点の判定を使わない
+- **P2: CI が赤でもすぐ閉じない**。空のコミットで1回だけ再実行してから決める（切替の後は Actions: write が無いので、再実行は空のコミット。ADR-0097「影響」）
+- 古い道（`finalize-blog-draft.js` → `merge-blog-pr.js`、`GITHUB_MERGE_TOKEN` の PAT、ADR-0034）は、ADR-0097:109（書き込みの権限を他の App・人に配らない）と食い違う。廃止は ⑤ のレーン
+
+### 9.3 ⑥ orchestrate の段階0 F と案Z の書き直し（段階2、.claude）
+
+`.claude/skills/orchestrate/SKILL.md` を次の4点で直す。
+
+| 行 | 今 | 直した後 |
+|---|---|---|
+| 69（A） | 「別ベンダーの審査（Claude の PR は Codex。止まっているときは代わりの審査）」 | review.yml の審査（作成の App の PR を別ベンダーの LLM が審査し、審査の App が承認）も「別ベンダーの審査」に含める。review.yml の APPROVE がある PR は、それで A のこの条件を満たす |
+| 90（F のパス） | `public/blog/`・`src/data/blog-posts/`・`public/images/blog/`・`src/data/blogImageDimensions.js`・`src/data/blogPostsEn.js` | `src/data/blogPostsKo.js`・`src/data/blogPostsZhTw.js` を足す（記事の翻訳のメタ。② で JSON に移るなら、移った先のパスに置き換える） |
+| 116（案Z の束） | 束に入れてよいのは段階0（A〜E） | A〜F。F の中身の束は、9.2 の P1（マージの時点の判定し直し）と P2（空のコミットで1回だけ再実行）に従う |
+| 118 | 「自動マージをどの名義で行うかは未決」 | 消す。ADR-0097（v5）で決着: 切替の後は作成の App の PR を審査の App が承認し、auto-merge でマージする。切替までは、オーケストレーターが束を 9.2 の P1 で判定し直してからマージする |
+
+- 同じ PR で、merge-pr の `--admin` → `--auto`（§3 の PR-D）と合わせるかは、切替の作業の日程で決める（9.3 は切替の前にも効く書き直し、PR-D は切替の作業の中でマージ）。別の PR にする
+
+## 10. 審査（system-architect、2026-10-20）の指摘と対応
 
 | 指摘 | 重大度 | 対応 |
 |---|---|---|
