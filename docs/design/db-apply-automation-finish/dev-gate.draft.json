@@ -1,6 +1,6 @@
 {
-  "$comment": "案 v4（2026-10-21、hq の v3 の数え直しを反映。v2 の審査の P1 3件・P2 10件を反映。hq の分類 ~/hq/drafts/dev-gate-classify-20261020.md を反映）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js・approve.js が master の checkout（github.sha）から読み、実行のときに形を検査する（読めなければ全部止める側）。分類: (1) PR の全ファイルが content のパスに収まり #1699 の後の形なら content。(2) それ以外は、ファイルごとに deny / owner / appendOnly / prodWrite / frontendSmall / employee を決め、強い順 deny > owner > prodWrite > frontendSmall > employee で一番強いものにする（appendOnly は条件を満たせば employee、外れれば deny）。content のパスのファイルが混ざった PR は (2) で、content のファイルは employee として数え、画像の例外は効かない",
-  "version": 4,
+  "$comment": "案 v5（2026-10-21、v4 の審査（P1 1件・P2 6件）を反映。hq の v3 の数え直しを反映。v2 の審査の P1 3件・P2 10件を反映。hq の分類 ~/hq/drafts/dev-gate-classify-20261020.md を反映）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js・approve.js が master の checkout（github.sha）から読み、実行のときに形を検査する（読めなければ全部止める側）。分類: (1) PR の全ファイルが content のパスに収まり #1699 の後の形なら content。(2) それ以外は、ファイルごとに deny / owner / appendOnly / prodWrite / frontendSmall / employee を決め、強い順 deny > owner > prodWrite > frontendSmall > employee で一番強いものにする（appendOnly は条件を満たせば employee、外れれば deny）。content のパスのファイルが混ざった PR は (2) で、content のファイルは employee として数え、画像の例外は効かない",
+  "version": 5,
   "appliesTo": "作成の App の PR 全部（claude/・codex/・hq の社員）。名義が同じなので、社員だけに効かせることは機械ではできない",
   "branchPrefixes": [
     "claude/",
@@ -57,11 +57,14 @@
         "**/.npmrc",
         ".mcp.json",
         "**/APPROVED.md",
-        "@generated-docs"
+        "@generated-docs",
+        "scripts/lib/dbApplySql.js",
+        "scripts/lib/dbReconcile.js"
       ],
       "notes": {
         "@generated-docs": "scripts/maintenance/generated-docs.js の GENERATED_DOCS の output と public/sitemap.xml・public/llms.txt（ADR-0078）。この JSON に展開して書き、verify で generated-docs.js と一致を固定する（gate は JS を実行しない）",
-        "docs/db-migration": "deny から外した（appendOnly を参照）。deny にすると、審査の App の承認つきの PR で足した SQL を当てる db-apply の自動の経路（ADR-0097）の対象が0本になる"
+        "docs/db-migration": "deny から外した（appendOnly を参照）。deny にすると、審査の App の承認つきの PR で足した SQL を当てる db-apply の自動の経路（ADR-0097）の対象が0本になる",
+        "dbLib": "自動の適用の判定の本体（dbReconcile.js の evaluateCandidate・pickNext、dbApplySql.js の inspectMigration・AUTO_TIMEOUTS）。scripts/db/** は薄い入口なので、本体も deny に名前で書く（v4 の審査 P2-3）"
       },
       "denyClosure": "deny の入口のファイル（scripts/** の JS）から静的 import をたどった先は owner（v3 の deny から下げた。名前で書いたパスが優先。例: dbApplySql.js・dbReconcile.js は owner のまま、check-e2e-skips.js は owner）。verify で一覧を固定する"
     },
@@ -76,8 +79,6 @@
         "package.json",
         "package-lock.json",
         ".gitattributes",
-        "scripts/lib/dbApplySql.js",
-        "scripts/lib/dbReconcile.js",
         "middleware.js",
         "docs/adr/**",
         "docs/knowledge/README.md",
@@ -91,9 +92,21 @@
         "docs/design/*/mock/**",
         "api/cron/** (下の cronSmall に当たらないもの)",
         "scripts/lib/scrapeJobs/cronWrapper.js",
-        "docs/knowledge/** (knowledgeAppend に当たらないもの・新しいファイル)"
+        "docs/knowledge/** (knowledgeAppend に当たらないもの・新しいファイル)",
+        "scripts/lib/scrapeJobs/registry.js",
+        "scripts/lib/scrapeJobs/preRaceHandlers.js",
+        "scripts/lib/scrapeJobs/predictionOddsHandlers.js",
+        "scripts/lib/boatcast/probe.js",
+        "scripts/maintenance/*-allowlist.json",
+        "scripts/maintenance/jsx-japanese-baseline.json",
+        "scripts/maintenance/verify-registry.json (registryAppend に当たらないもの)",
+        "docs/db-migration/** (appendOnly に当たらないもの。runbook 等)"
       ],
-      "verifyScripts": "scripts/maintenance/verify-*.js の変更・削除（追加は除く）を owner にするかは hq の本数で決める（判断27）。今は employee"
+      "notes": {
+        "auth": "Cron の認証（isAuthorized の呼び出し）は cronWrapper.js の外の3ファイルにもある（preRaceHandlers.js:268・452、predictionOddsHandlers.js:294、boatcast/probe.js:65）ので名前で書く",
+        "registry": "mode のゲートの既定は registry.js の kind で決まる（cronWrapper.js:588、monitor 以外はゲート）。kind を変えると mode が off でも動くので owner",
+        "allowlists": "検証を緩める台帳（*-allowlist.json 5つ・jsx-japanese-baseline.json）は、足すと検証が緩むので変更は全部 owner"
+      }
     },
     "orchestrate": {
       "$comment": "オーケストレーターと社員は同じ作成の App の名義で、機械では区別できない。別の身元ができるまで owner と同じ（判断17）",
@@ -104,7 +117,7 @@
       "files": {
         "scripts/maintenance/verify-registry.json": {
           "rule": "registryAppend",
-          "detail": "$comment が深く一致。master の entries が、head の entries の中に**同じ順で（部分列として）**残り、各項目はキーを足さずに深く一致する（新しい項目は途中に挿してよい。hq の v3 で外れた157本のうち127本がこの形）。足した項目は script が新しく、同じ PR でその verify-*.js を added している。足した項目のキーは script・tier・guards・reason・command・timeoutSec・runner だけ（args・note は不可）。外れたら deny"
+          "detail": "一番上の階層のキーは $comment・entries だけで、$comment が深く一致。master の entries が head の entries の中に同じ順で（部分列として）残り、各項目はキーを足さずに深く一致（新しい項目は途中に挿してよい）。足した項目は script が scripts/maintenance/ の直下の新しいファイルで、同じ PR でそれを added している。足した項目のキーは script・tier・guards・reason・command・timeoutSec・runner だけ（args・note は不可）。外れたら owner（v5。審査の関門そのものではないので deny から下げた）"
         },
         "docs/knowledge/**": {
           "rule": "knowledgeAppend",
@@ -119,8 +132,8 @@
           "detail": "足した行は全部: (1) 『## 台帳』の表の中、(2) ledgerState と同じ分け方（split('|')[2] がファイル名、[3] が状態）で読み、状態が『未適用』で始まる、(3) ファイル名が master の台帳に無い、(4) 同じ PR で status=added の NNN_*.sql と1対1。既存の行の書き換え・挿し込みでの上書き（同じファイル名の行が2つ）は外れ。外れたら owner（§4.2 の保留の外し・廃止はオーナーの承認で行う）"
         },
         "docs/db-migration/**": {
-          "rule": "deny",
-          "detail": "上の2つに当たらない docs/db-migration の変更（runbook 等）"
+          "rule": "owner",
+          "detail": "上の2つに当たらない docs/db-migration の変更（runbook 等）は owner（v5）"
         }
       }
     },
@@ -221,24 +234,26 @@
       "overLimit": "owner"
     },
     "cronSmall": {
-      "$comment": "api/cron/** の小さな直しを prodWrite として扱う（v4）。条件を全部満たすファイルだけ。外れたら owner",
+      "$comment": "api/cron/** の小さな直しを prodWrite として扱う（v4）。条件を全部満たすファイルだけ。外れたら owner。exhibition・odds・race-info の3本は createScrapeCronHandler を使わず export default createXxxCronHandler() なので、export default・Handler( の行の変更も owner にする（v4 の審査 P1-1）",
       "conditions": [
         "status が modified（新しい Cron の追加・削除・改名は owner。vercel.json の crons も owner）",
-        "patch の + と - の行に、次のどれも含まない: CRON_SECRET・authorization（大小文字を問わず）・adminAuth・cronWrapper・createScrapeCronHandler・modeGated・export const config",
+        "patch が省かれていない（大きすぎるファイルは owner）",
+        "patch の + と - の行に、次のどれも含まない（大小文字を問わず）: CRON_SECRET・authorization・isAuthorized・adminAuth・cronWrapper・createScrapeCronHandler・modeGated・export default・export const config・config・maxDuration・job:・Handler(",
         "prodWrite の束の上限（10ファイル・300行）の中"
       ],
       "class": "prodWrite"
     },
     "verifyScripts": {
-      "$comment": "scripts/**/verify-*.js（判断27、v4 の推奨は (ii)）",
+      "$comment": "scripts/maintenance/verify-*.js・verify-*.sh（scripts/analysis 等の CI 外の verify は対象外。判断27、推奨は (ii)）",
       "added": "employee（今と同じ）",
       "removed": "owner",
-      "modified": "(ii) patch の - の行が0（既存の行の削除・書き換えが無く、足すだけ）で、足した行が次を含まない: process.exit(0)・トップレベルの return・if (process.argv の分岐・.skip(・SKIP → employee。それ以外は owner",
-      "residual": "足すだけでも、早い終了や条件の分岐を書き方を変えて足せば検証は弱められる。審査の指示文で『検証を弱める変更』を P1 にする（機械では守り切れない）"
+      "modified": "(ii) patch の - の行が0（既存の行の削除・書き換えが無い）で、足した行が次のどれも含まない: process.exit・exitCode・process.on(・/*・*/・if (false・`（テンプレートリテラル）・.skip(・SKIP・process.argv・インデントの無い return → employee。それ以外は owner",
+      "residual": "足すだけで検証を消す書き方は列挙し切れない（審査の実測で、/* */ で囲む・テンプレートリテラルで囲む・if (false) で囲む・process.exit を差し替える等）。(ii) が確実に止めるのは『既存の行の書き換え』（期待値を書き換えて通す手抜き）。足す側は禁止の文字列と、審査の指示文の『検証を弱める変更は P1』で補う。残る弱みに書く"
     }
   },
   "monthlyLimit": {
-    "$comment": "runs の API の total_count は actor・created で絞ると 2500 で頭打ち（2026-10-20 の実測、plan.md §10.2）。月の上限は 2400 以下にするか、日ごとに数えて足す。実費の測定の後に決める（判断14）",
+    "$comment": "runs の API の total_count は actor・created で絞ると 2500 で頭打ち（plan.md §10.2）。見込みの月約 3,400 run（hq）を数えるため、月を10日ごとの3区間に分けて数えて足す（1区間は約 1,100 で 2500 に届かない）。上限の数は、判断14 の実費の測定の後に、日の承認の上限 40（最大で月約 4,400 run）と食い違わない値で決める",
+    "countBy": "10日ごとに数えて足す",
     "runs": null,
     "notifyAtRatio": 0.8
   },
@@ -247,9 +262,10 @@
     "renames": "previous_filename もクラスの判定と上限に数える",
     "allBucketsAtOnce": true
   },
-  "precedence": "名前で書いたパス（deny・owner の paths）は、閉包（deny の閉包・prodWrite の閉包）より優先する。閉包から決まるクラスは、名前で書いたクラスが無いファイルにだけ付く",
+  "precedence": "名前で書いたパス（deny・owner の paths）は、閉包（deny の閉包・prodWrite の閉包）より優先する。名前で書いたパスどうしが重なれば強い方（例: docs/design/*/mock/APPROVED.md は deny）。閉包から決まるクラスは、名前で書いたクラスが無いファイルにだけ付く",
   "dailyAutoMergeCap": {
-    "$comment": "判断28（v4 の推奨）。小分けの迂回と暴走の止め役。マージ済み 946 本 / 31 日 ≈ 30 本/日、社員で回る 46% ≈ 14 本/日。作成の App の PR の auto-merge の本数を JST の日ごとに数え、40 本で以後の承認を止める（翌日まで REQUEST_CHANGES ではなく COMMENT で待たせる）。30 本で知らせる。判断14 の実費の測定の後に見直す",
+    "$comment": "判断28（v5）。数えるのは auto-merge ではなく、作成の App の PR への審査の App の APPROVE の数（承認済みでマージ待ちのものを含めるため）。JST の日ごとに 40 で以後の APPROVE を止め（COMMENT）、30 で知らせる。止めた PR は翌日に、オーケストレーターかレーンが空のコミットで審査を起こし直す（GitHub の schedule は来ないので、自動の再起動には頼らない、BOA-917）。木の SHA での判定の持ち越し（§10.1-1）は、上限による COMMENT を持ち越さない",
+    "countWhat": "approvals",
     "perDay": 40,
     "notifyAt": 30
   }

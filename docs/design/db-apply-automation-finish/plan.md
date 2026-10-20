@@ -317,8 +317,8 @@ flowchart TD
 | 25 | 大きさの上限の数え方 | v3: 種類ごとの束（prodWrite 10/300・frontendSmall 8/300・employee 30/2000）を全部同時に検査、閉包は master と head の和 |
 | 26 | docs/adr を deny から owner に移す | はい |
 | 27 | scripts/**/verify-*.js の変更・削除を owner にするか（§10.4 v4 の比較） | (ii): 削除は owner、変更は「足すだけ・典型の早い終了を含まない」なら employee、他は owner。hq の数え直しで大きく下がるなら再検討 |
-| 28 | 日ごとの自動マージの本数の上限（小分けの迂回・暴走の止め役） | 40 本/日で以後の承認を止め、30 本で知らせる。月の run は 2400 以下か日ごとに数える。判断14 の実費の測定の後に見直す |
-| 29 | v4 の4点（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・api/cron の小さな直しを prodWrite・knowledge と mock の外れは owner） | はい |
+| 28 | 日ごとの自動マージの本数の上限（小分けの迂回・暴走の止め役） | 数えるのは審査の APPROVE。40/日で以後の承認を止め（COMMENT、翌日に空のコミットで起こし直す）、30 で知らせる。月の run は10日ごとに数えて足す。数は判断14 の実費の測定の後に、日と月が食い違わない値で決める |
+| 29 | v4・v5 の変更（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・判定の本体は deny・api/cron の小さな直しを prodWrite（認証・ゲート・config の文字列は owner）・knowledge と mock と規則外れは owner・検証を緩める台帳は owner）。元の文:（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・api/cron の小さな直しを prodWrite・knowledge と mock の外れは owner） | はい |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
@@ -556,6 +556,29 @@ v3 の数え直しの結果（946 本）: 社員で回るのは **437 本（46.2
 - 推奨は (ii)。テストを弱める道（既存の期待値の書き換え）は、オーナーの1タップで止める価値がある。hq に「verify の変更で - の行が0の PR の本数」を数え直してもらい、社員で回る割合が大きく下がる場合は (i) との間を再検討する
 
 **判断28（1日の自動マージの本数の上限）の推奨**: マージ済み 946 本 / 31 日 ≈ 30 本/日、社員で回る 46% ≈ 14 本/日。作成の App の PR の auto-merge を JST の日ごとに数え、**40 本**で以後の承認を止め（COMMENT で翌日まで待たせる）、30 本で知らせる。月の run の上限は、runs の API の頭打ち（2500）より下の **2400 以下**にするか日ごとに数えて足す。どちらも判断14 の実費の測定の後に見直す
+
+
+#### v5（v4 の審査、system-architect、2026-10-21。P1 1件・P2 6件・P3 3件を全部採用）
+
+| 指摘 | v5 |
+|---|---|
+| P1 cronSmall の「認証に触れる変更は owner」が成り立たない。exhibition・odds・race-info は `export default createXxxCronHandler();` で禁止の文字列に当たらない。認証の呼び出しは cronWrapper.js の外に4か所（`preRaceHandlers.js:268`・`452`、`predictionOddsHandlers.js:294`、`boatcast/probe.js:65`）あり、prodWrite になっていた（再現） | 3ファイルを owner に名前で書く。禁止の文字列に `isAuthorized`・`export default`・`Handler(` を足す |
+| P2 mode のゲートの既定は registry.js の kind（`cronWrapper.js:588`、再現）。kind を monitor に変えると mode が off でも動く。`job:` の付け替えも同じ | registry.js を owner。禁止の文字列に `job:` |
+| P2 api/cron の41本のうち37本は config が複数行で、maxDuration が別の行 | 禁止の文字列に `maxDuration`・`config`。patch が省かれたファイルは owner |
+| P2 deny の閉包を owner に下げると、自動の適用の判定の本体（`dbReconcile.js`・`dbApplySql.js`）が owner になり、2段で緩められる | 2つを deny に名前で書く |
+| P2 判断27 の (ii) の表が強く書きすぎ（`/* */`・テンプレートリテラル・`if (false)`・`process.exit` の差し替えで、足すだけでも検査を消せる） | 表を直した（下）。禁止の文字列に `process.exit`・`exitCode`・`process.on(`・`/*`・`*/`・`if (false`・バッククォートを足す。インデントの無い `return` で「トップレベルの return」を判定 |
+| P2 verify の範囲の抜け（draft の中の食い違い、検証を緩める台帳の JSON が6つ employee、`verify-push-with-retry.sh`、scripts/analysis の verify） | 食い違いを消した。`*-allowlist.json` 5つと `jsx-japanese-baseline.json` は変更を全部 owner。範囲は `scripts/maintenance/verify-*.{js,sh}` |
+| P2 判断28 の数の扱い（月 2400 が見込み 3,400 を下回る・日 40 本は最大で月約 4,400 run・数えるのはマージでなく承認・翌日の起こし直しが要る・持ち越しとの関係） | 数えるのは APPROVE。月は10日ごとに数えて足す。止めた PR は翌日に空のコミットで起こし直す（自動の再起動に頼らない）。上限による COMMENT は持ち越さない。数は実費の測定の後に、日と月が食い違わない値で決める |
+| P3 registry の一番上のキーの固定・新しい script の置き場所・名前で書いたパスどうしの強さ・registry と docs/db-migration のその他の規則外れ | 全部反映（規則外れは deny から owner に下げた） |
+
+**判断27 の比較（v5 で直した）**:
+
+| 案 | 確実に止めるもの | 止め切れないもの |
+|---|---|---|
+| (i) 削除だけ owner | 削除 | 既存の期待値の書き換え（閾値を緩める・比較の向きを変える・検査の行を消す）と、足すだけで検査を消す書き方の全部 |
+| **(ii)（推奨）** 削除は owner、変更は「- の行が0で、足した行に禁止の文字列が無い」なら employee | 削除・**既存の行の書き換え**（期待値を書き換えて通す手抜き）・典型の足し方（`process.exit` の差し替え、`/* */`、`if (false)`、テンプレートリテラル） | 列挙していない書き方で足して検査を消すもの。審査の指示文の「検証を弱める変更は P1」で補う（残る弱み） |
+
+- hq に数え直しを頼むもの: cronSmall の強化後の本数、(ii) の「- の行が0で禁止の文字列なし」の本数、registry の部分列の後の本数
 
 #### ADR の追記の案（番号は PR 作成時に origin/master の最大＋1）
 
