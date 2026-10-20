@@ -427,6 +427,10 @@ flowchart TD
   1. 切替の手順6のテスト PR で 1 run の実費を測る
   2. runs の API の頭打ちを、件数の多い別の workflow で読み取りで確かめる（頭打ちなら日ごとに分けて数える）
   3. 1 と 10.1 の木の SHA の持ち越しを入れた上で、run の上限とベンダーの上限の金額を決め直す（オーナー、費用の判断）。それまでは切替をしない
+- **測定の結果（2026-10-20 夜、判断14 の前提）**:
+  - **runs の API の頭打ちは 1000 件ではなく 2500 件**。`quality-gates.yml` の runs で、絞り込みなしの `total_count` は 3027、`actor=rhapsody0919` か `created=>=2026-09-20` で絞ると **2500 ちょうど**、期間を2つに分けると 1541＋1467＝3008（`gh api repos/…/actions/workflows/quality-gates.yml/runs?per_page=1&…` の `total_count`）。gate の数え方（`actor`＋`created`、`gate.js:32-33`）では、月 2500 を超える数を数えられない。見込みの月 2,000〜3,500 run と重なるので、上限を 2500 未満にするか、日ごとに分けて数えて足す
+  - **1 run の実費はまだ測れない**。`scripts/review/llm.js` は API の応答の usage を記録しておらず、審査が実際に動いたのはテスト PR の4 run（10/19、差分が小さく代表にならない）だけ。代わりに入力の大きさを測った: 直近にマージした 60 本の PR の差分（patch の文字数の合計）は 中央値 18,378 字・p90 86,239 字・最大 418,946 字、上限 20 万字で切った平均 37,559 字（`gh api repos/…/pulls/N/files` の patch の長さ）。1 run の入力は、平均でこの差分＋指示文。トークンへの換算（日本語とコードの混ざりで 1 トークン 2.5〜3 字と仮定）で平均 1.3〜1.5 万トークンの見込み（推測）。月 3,400 run なら入力で約 4,400〜5,100 万トークン
+  - 実費を確かめる手段は2つ: (1) オーナーが OpenAI の project `ryujin-review`・Anthropic の workspace の 10/19 の使用量（4 run 分）を見て、上の文字数と比べる、(2) `llm.js` に usage（入力・出力のトークン）を run の summary に出す変更を入れ、切替の前のテスト PR で実物の大きさの差分を流す。モデル名（`REVIEW_OPENAI_MODEL`）は Environment pr-review の変数で、Claude からは読めない（フックが Environments の API を止める）。単価はオーナーが確かめる
 - 通知: pr-review（審査の鍵）に Slack の鍵を足さない。数えて知らせるのは Slack を持つ側（hq の見張りか Vercel Cron の関数。GitHub の schedule は来ないので使わない、BOA-917）。見る数は run の数と、「審査が完了しなかった」の REQUEST_CHANGES の数（ベンダーの上限・429 の検知）
 
 ### 10.3 マージ順と、`--auto` を付けた後の push
