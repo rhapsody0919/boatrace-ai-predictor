@@ -1,6 +1,6 @@
 # 図の PNG の書き出しの形（承認待ち）
 
-承認したモック（`APPROVED.md`）の外の形なので、オーナーの確認を待つ。画像はビルドと同じ処理（`scripts/lib/blogChartPng.js`）で契約の例（`../example-venue-course-win.json`）を撮ったもの（手元の Mac の Chromium。本番のフォントは Noto Sans JP）。
+承認したモック（`APPROVED.md`）の外の形なので、オーナーの確認を待つ。画像はビルドと同じ処理（`scripts/lib/blogChartPng.js`）で契約の例（`../example-venue-course-win.json`）を撮ったもの（Vercel の Preview のビルドが撮った実物。フォントは本番と同じ Noto Sans JP、計測用ブランチ claude/blog-chart-png-measure）。
 
 | 大きさ | 画像 | 使う先 |
 |---|---|---|
