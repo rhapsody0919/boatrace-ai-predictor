@@ -1,0 +1,5244 @@
+{
+ "meta": {
+  "dimensions": [
+   "page"
+  ],
+  "rowCount": 581,
+  "apiPages": 1,
+  "possiblyTruncated": false,
+  "responseAggregationType": "byPage",
+  "totalClicks": 2653,
+  "totalImpressions": 55604
+ },
+ "rows": [
+  {
+   "keys": [
+    "https://www.boat-ai.jp/"
+   ],
+   "clicks": 2345,
+   "impressions": 44112,
+   "ctr": 0.0531601378309757,
+   "position": 7.15313293434893
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/about"
+   ],
+   "clicks": 41,
+   "impressions": 764,
+   "ctr": 0.05366492146596859,
+   "position": 5.031413612565445
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review"
+   ],
+   "clicks": 29,
+   "impressions": 347,
+   "ctr": 0.08357348703170028,
+   "position": 11.657060518731988
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/rough-race-signals"
+   ],
+   "clicks": 26,
+   "impressions": 649,
+   "ctr": 0.040061633281972264,
+   "position": 7.0323574730354395
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races"
+   ],
+   "clicks": 22,
+   "impressions": 541,
+   "ctr": 0.04066543438077634,
+   "position": 2.9556377079482443
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suji-funaken-guide"
+   ],
+   "clicks": 19,
+   "impressions": 497,
+   "ctr": 0.03822937625754527,
+   "position": 7.7002012072434605
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/first-mark-prediction-guide"
+   ],
+   "clicks": 17,
+   "impressions": 285,
+   "ctr": 0.05964912280701754,
+   "position": 7.849122807017544
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/winning-technique"
+   ],
+   "clicks": 15,
+   "impressions": 105,
+   "ctr": 0.14285714285714285,
+   "position": 6.571428571428571
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/win-place-comparison"
+   ],
+   "clicks": 13,
+   "impressions": 785,
+   "ctr": 0.016560509554140127,
+   "position": 8.726114649681529
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/"
+   ],
+   "clicks": 13,
+   "impressions": 280,
+   "ctr": 0.04642857142857143,
+   "position": 5.860714285714286
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog"
+   ],
+   "clicks": 8,
+   "impressions": 382,
+   "ctr": 0.020942408376963352,
+   "position": 9.19109947643979
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide"
+   ],
+   "clicks": 6,
+   "impressions": 163,
+   "ctr": 0.03680981595092025,
+   "position": 11.0920245398773
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/faq"
+   ],
+   "clicks": 6,
+   "impressions": 284,
+   "ctr": 0.02112676056338028,
+   "position": 1.8309859154929577
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/sg-g1-race-strategy"
+   ],
+   "clicks": 5,
+   "impressions": 68,
+   "ctr": 0.07352941176470588,
+   "position": 6.705882352941177
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/20"
+   ],
+   "clicks": 5,
+   "impressions": 84,
+   "ctr": 0.05952380952380952,
+   "position": 10.571428571428571
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/exhibition-run-guide"
+   ],
+   "clicks": 4,
+   "impressions": 367,
+   "ctr": 0.010899182561307902,
+   "position": 8.46866485013624
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/picks-guide"
+   ],
+   "clicks": 3,
+   "impressions": 14,
+   "ctr": 0.21428571428571427,
+   "position": 5.142857142857143
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/st-timing-gap-guide"
+   ],
+   "clicks": 3,
+   "impressions": 19,
+   "ctr": 0.15789473684210525,
+   "position": 4.7368421052631575
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/guide"
+   ],
+   "clicks": 3,
+   "impressions": 138,
+   "ctr": 0.021739130434782608,
+   "position": 26.6231884057971
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/8"
+   ],
+   "clicks": 3,
+   "impressions": 27,
+   "ctr": 0.1111111111111111,
+   "position": 5.37037037037037
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/accuracy"
+   ],
+   "clicks": 2,
+   "impressions": 95,
+   "ctr": 0.021052631578947368,
+   "position": 2.557894736842105
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/improve-recovery-rate"
+   ],
+   "clicks": 2,
+   "impressions": 40,
+   "ctr": 0.05,
+   "position": 8.375
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/motor-performance"
+   ],
+   "clicks": 2,
+   "impressions": 140,
+   "ctr": 0.014285714285714285,
+   "position": 8.335714285714285
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/odds-expected-value-guide"
+   ],
+   "clicks": 2,
+   "impressions": 139,
+   "ctr": 0.014388489208633094,
+   "position": 23.52517985611511
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/race-review-guide"
+   ],
+   "clicks": 2,
+   "impressions": 10,
+   "ctr": 0.2,
+   "position": 14.7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/winning-technique-analysis-guide"
+   ],
+   "clicks": 2,
+   "impressions": 46,
+   "ctr": 0.043478260869565216,
+   "position": 9.41304347826087
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/profile"
+   ],
+   "clicks": 2,
+   "impressions": 53,
+   "ctr": 0.03773584905660377,
+   "position": 6.886792452830188
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-19-11"
+   ],
+   "clicks": 2,
+   "impressions": 9,
+   "ctr": 0.2222222222222222,
+   "position": 4.555555555555555
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-16-04-12"
+   ],
+   "clicks": 2,
+   "impressions": 4,
+   "ctr": 0.5,
+   "position": 3.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-08-22"
+   ],
+   "clicks": 2,
+   "impressions": 264,
+   "ctr": 0.007575757575757576,
+   "position": 1.0303030303030303
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/23"
+   ],
+   "clicks": 2,
+   "impressions": 104,
+   "ctr": 0.019230769230769232,
+   "position": 9.057692307692308
+  },
+  {
+   "keys": [
+    "https://boat-ai.jp/"
+   ],
+   "clicks": 1,
+   "impressions": 4,
+   "ctr": 0.25,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/accuracy/history"
+   ],
+   "clicks": 1,
+   "impressions": 129,
+   "ctr": 0.007751937984496124,
+   "position": 2.7364341085271318
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/heiwajima-water-wind-guide"
+   ],
+   "clicks": 1,
+   "impressions": 37,
+   "ctr": 0.02702702702702703,
+   "position": 8.513513513513512
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/meet-score-rate-guide"
+   ],
+   "clicks": 1,
+   "impressions": 54,
+   "ctr": 0.018518518518518517,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/motor-condition-guide"
+   ],
+   "clicks": 1,
+   "impressions": 111,
+   "ctr": 0.009009009009009009,
+   "position": 8.423423423423422
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/nige-simulation-guide"
+   ],
+   "clicks": 1,
+   "impressions": 79,
+   "ctr": 0.012658227848101266,
+   "position": 5.253164556962025
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/omura-wind-direction-guide"
+   ],
+   "clicks": 1,
+   "impressions": 9,
+   "ctr": 0.1111111111111111,
+   "position": 3.4444444444444446
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/picks-performance-report"
+   ],
+   "clicks": 1,
+   "impressions": 6,
+   "ctr": 0.16666666666666666,
+   "position": 6.333333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/popular-patterns-analysis"
+   ],
+   "clicks": 1,
+   "impressions": 23,
+   "ctr": 0.043478260869565216,
+   "position": 8.217391304347826
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-experience-win-rate-gap"
+   ],
+   "clicks": 1,
+   "impressions": 1,
+   "ctr": 1,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-grade-flying-rate-gap"
+   ],
+   "clicks": 1,
+   "impressions": 12,
+   "ctr": 0.08333333333333333,
+   "position": 5.333333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/st-consideration-guide"
+   ],
+   "clicks": 1,
+   "impressions": 59,
+   "ctr": 0.01694915254237288,
+   "position": 7.711864406779661
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/trifecta-betting-guide"
+   ],
+   "clicks": 1,
+   "impressions": 24,
+   "ctr": 0.041666666666666664,
+   "position": 14.208333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-heiwajima"
+   ],
+   "clicks": 1,
+   "impressions": 28,
+   "ctr": 0.03571428571428571,
+   "position": 6.714285714285714
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-suminoe"
+   ],
+   "clicks": 1,
+   "impressions": 2,
+   "ctr": 0.5,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/what-pros-avoid"
+   ],
+   "clicks": 1,
+   "impressions": 49,
+   "ctr": 0.02040816326530612,
+   "position": 7.857142857142857
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/why-you-lose"
+   ],
+   "clicks": 1,
+   "impressions": 82,
+   "ctr": 0.012195121951219513,
+   "position": 10.475609756097562
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog"
+   ],
+   "clicks": 1,
+   "impressions": 28,
+   "ctr": 0.03571428571428571,
+   "position": 5.142857142857143
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/ai-prediction-accuracy-review"
+   ],
+   "clicks": 1,
+   "impressions": 24,
+   "ctr": 0.041666666666666664,
+   "position": 5.208333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/guide"
+   ],
+   "clicks": 1,
+   "impressions": 30,
+   "ctr": 0.03333333333333333,
+   "position": 6.9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/16"
+   ],
+   "clicks": 1,
+   "impressions": 1,
+   "ctr": 1,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues"
+   ],
+   "clicks": 1,
+   "impressions": 21,
+   "ctr": 0.047619047619047616,
+   "position": 6.238095238095238
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/amagasaki"
+   ],
+   "clicks": 1,
+   "impressions": 5,
+   "ctr": 0.2,
+   "position": 5.6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/toda"
+   ],
+   "clicks": 1,
+   "impressions": 14,
+   "ctr": 0.07142857142857142,
+   "position": 6.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/meet-score-rate-guide"
+   ],
+   "clicks": 1,
+   "impressions": 17,
+   "ctr": 0.058823529411764705,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/heiwajima"
+   ],
+   "clicks": 1,
+   "impressions": 2,
+   "ctr": 0.5,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-20-10-12"
+   ],
+   "clicks": 1,
+   "impressions": 23,
+   "ctr": 0.043478260869565216,
+   "position": 1.2608695652173914
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-23-20-03"
+   ],
+   "clicks": 1,
+   "impressions": 18,
+   "ctr": 0.05555555555555555,
+   "position": 3.0555555555555554
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-15-03"
+   ],
+   "clicks": 1,
+   "impressions": 1,
+   "ctr": 1,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-19-12"
+   ],
+   "clicks": 1,
+   "impressions": 3,
+   "ctr": 0.3333333333333333,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-22-05"
+   ],
+   "clicks": 1,
+   "impressions": 1,
+   "ctr": 1,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-04-10"
+   ],
+   "clicks": 1,
+   "impressions": 4,
+   "ctr": 0.25,
+   "position": 4.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-21-11"
+   ],
+   "clicks": 1,
+   "impressions": 2,
+   "ctr": 0.5,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-04-12"
+   ],
+   "clicks": 1,
+   "impressions": 5,
+   "ctr": 0.2,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-06-01"
+   ],
+   "clicks": 1,
+   "impressions": 1,
+   "ctr": 1,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-16-20-01"
+   ],
+   "clicks": 1,
+   "impressions": 7,
+   "ctr": 0.14285714285714285,
+   "position": 2.7142857142857144
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-04-03"
+   ],
+   "clicks": 1,
+   "impressions": 6,
+   "ctr": 0.16666666666666666,
+   "position": 6.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-04-12"
+   ],
+   "clicks": 1,
+   "impressions": 9,
+   "ctr": 0.1111111111111111,
+   "position": 17.88888888888889
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-08-30/7"
+   ],
+   "clicks": 1,
+   "impressions": 1,
+   "ctr": 1,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-21/6"
+   ],
+   "clicks": 1,
+   "impressions": 5,
+   "ctr": 0.2,
+   "position": 8.6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/1"
+   ],
+   "clicks": 1,
+   "impressions": 3,
+   "ctr": 0.3333333333333333,
+   "position": 5.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/responsible-gambling"
+   ],
+   "clicks": 1,
+   "impressions": 137,
+   "ctr": 0.0072992700729927005,
+   "position": 1.562043795620438
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/18"
+   ],
+   "clicks": 1,
+   "impressions": 35,
+   "ctr": 0.02857142857142857,
+   "position": 11.17142857142857
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/4/meet/2026-10-13"
+   ],
+   "clicks": 1,
+   "impressions": 689,
+   "ctr": 0.001451378809869376,
+   "position": 8.500725689404934
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues/gamagori"
+   ],
+   "clicks": 1,
+   "impressions": 6,
+   "ctr": 0.16666666666666666,
+   "position": 24.833333333333332
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review#toc-heading-0"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.875
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review#toc-heading-2"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.875
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review#toc-heading-3"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.875
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review#toc-heading-4"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.875
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review#toc-heading-7"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.875
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review#toc-heading-8"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.875
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/amagasaki-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 7.416666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/assist-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/beginner-basics"
+   ],
+   "clicks": 0,
+   "impressions": 16,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/beginners-start-guide"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 9.583333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/biwako-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 12.083333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/course-prediction-tips"
+   ],
+   "clicks": 0,
+   "impressions": 155,
+   "ctr": 0,
+   "position": 7.754838709677419
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/data-race-table-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 30
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/edogawa-course1-win-rate"
+   ],
+   "clicks": 0,
+   "impressions": 19,
+   "ctr": 0,
+   "position": 7.684210526315789
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/edogawa-nige-technique-share"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/edogawa-outside-winning-techniques-guide"
+   ],
+   "clicks": 0,
+   "impressions": 11,
+   "ctr": 0,
+   "position": 7.7272727272727275
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/exhibition-time-top-guide"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 5.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/exhibition-time-trend-guide"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/first-mark-prediction-guide#toc-heading-1"
+   ],
+   "clicks": 0,
+   "impressions": 21,
+   "ctr": 0,
+   "position": 7.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/first-mark-prediction-guide#toc-heading-10"
+   ],
+   "clicks": 0,
+   "impressions": 20,
+   "ctr": 0,
+   "position": 7.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/first-mark-prediction-guide#toc-heading-12"
+   ],
+   "clicks": 0,
+   "impressions": 20,
+   "ctr": 0,
+   "position": 7.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/first-mark-prediction-guide#toc-heading-3"
+   ],
+   "clicks": 0,
+   "impressions": 21,
+   "ctr": 0,
+   "position": 7.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/first-mark-prediction-guide#toc-heading-8"
+   ],
+   "clicks": 0,
+   "impressions": 20,
+   "ctr": 0,
+   "position": 7.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/first-mark-prediction-guide#toc-heading-9"
+   ],
+   "clicks": 0,
+   "impressions": 21,
+   "ctr": 0,
+   "position": 7.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/fukuoka-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/gamagori-makuri-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 22.666666666666668
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/heiwajima-course1-winrate"
+   ],
+   "clicks": 0,
+   "impressions": 18,
+   "ctr": 0,
+   "position": 7.944444444444445
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/heiwajima-topstart-winrate"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/how-we-measure-accuracy"
+   ],
+   "clicks": 0,
+   "impressions": 9,
+   "ctr": 0,
+   "position": 5.777777777777778
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/karatsu-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 31,
+   "ctr": 0,
+   "position": 10.935483870967742
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/kiryu-freshwater-nige-rate"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 7.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/kiryu-outcome-123-rate"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/kiryu-topstart-rate"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/kojima-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/language-switcher-guide"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/losing-technique-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/marugame-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/mikuni-outcome-124-rate"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 6.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/monthly-report-202604"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 10.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/night-race-strategy"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/race-ai-copy-guide"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 6.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-age-win-rate-30s-peak"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-boat-return-rate-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-branch-win-rate-gap"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-grade-start-timing-gap"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 3.6666666666666665
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-grade-win-rate-gap"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-height-win-rate-gap"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-local-win-rate-gap"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.625
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/racer-profile-page-guide"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/rough-race-signals#toc-heading-0"
+   ],
+   "clicks": 0,
+   "impressions": 347,
+   "ctr": 0,
+   "position": 5.752161383285302
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/rough-race-signals#toc-heading-17"
+   ],
+   "clicks": 0,
+   "impressions": 347,
+   "ctr": 0,
+   "position": 5.752161383285302
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/sg-race-guide-2026"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/shimonoseki-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 10,
+   "ctr": 0,
+   "position": 5.8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/sonar-assist-intro"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/sonar-guide"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 4.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suji-funaken-guide#toc-heading-0"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 10.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suji-funaken-guide#toc-heading-14"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 10.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suji-funaken-guide#toc-heading-5"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 10.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suji-funaken-guide#toc-heading-6"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 10.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suji-funaken-guide#toc-heading-7"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 10.8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suji-funaken-guide#toc-heading-8"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 10.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/suminoe-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 17,
+   "ctr": 0,
+   "position": 7.764705882352941
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/toda-course1-winrate-low"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/toda-losing-makuri-share"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/tokoname-makuri-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 9.666666666666666
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/tokuyama-water-wind-reference-guide"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 6.714285714285714
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/top-start-guide"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 6.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-amagasaki"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-ashiya"
+   ],
+   "clicks": 0,
+   "impressions": 40,
+   "ctr": 0,
+   "position": 10.975
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-biwako"
+   ],
+   "clicks": 0,
+   "impressions": 10,
+   "ctr": 0,
+   "position": 17.3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-miyajima"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-tokuyama"
+   ],
+   "clicks": 0,
+   "impressions": 10,
+   "ctr": 0,
+   "position": 16.1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-0"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 10.083333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-10"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 10.083333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-13"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 10.083333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-14"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 10.285714285714286
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-17"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 9.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-19"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-3"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 10.083333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-31"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 10.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/venue-visit-guide#toc-heading-6"
+   ],
+   "clicks": 0,
+   "impressions": 12,
+   "ctr": 0,
+   "position": 10.083333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/volatility-index-biwako-0909"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/volatility-index-naruto-0908"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 7.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/wakamatsu-water-wind-guide"
+   ],
+   "clicks": 0,
+   "impressions": 10,
+   "ctr": 0,
+   "position": 8.1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/weather-wind-impact"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 9.375
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/win-place-comparison#toc-heading-1"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 10.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/win-place-comparison#toc-heading-5"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 10.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/blog/womens-race-strategy"
+   ],
+   "clicks": 0,
+   "impressions": 57,
+   "ctr": 0,
+   "position": 9.56140350877193
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/contact"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 9.166666666666666
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/10000-races-analysis"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/beginners-start-guide"
+   ],
+   "clicks": 0,
+   "impressions": 17,
+   "ctr": 0,
+   "position": 10.764705882352942
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/night-race-strategy"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/odds-expected-value-guide"
+   ],
+   "clicks": 0,
+   "impressions": 17,
+   "ctr": 0,
+   "position": 17.88235294117647
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/rough-race-signals"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 8.333333333333332
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/special-planned-races"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/stadium-strategy-guide"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 6.571428571428571
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/suji-funaken-guide"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/trifecta-betting-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/venue-ashiya"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 5.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/blog/venue-omura"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-05-20-04"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-05-20-06"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-08-24-11"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 1.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-09-08-04"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-12-19-11"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 1.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-12-23-08"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-13-19-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 12
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-14-21-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/race/2026-10-16-20-09"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/17"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/18"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/20"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/22"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/4"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/5"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/6"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venue/8"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/ashiya"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/biwako"
+   ],
+   "clicks": 0,
+   "impressions": 9,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/edogawa"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 8.666666666666668
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/fukuoka"
+   ],
+   "clicks": 0,
+   "impressions": 13,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/gamagori"
+   ],
+   "clicks": 0,
+   "impressions": 18,
+   "ctr": 0,
+   "position": 6.888888888888889
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/hamanako"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/heiwajima"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 5.625
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/karatsu"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/kiryu"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 6.4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/kojima"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 6.4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/marugame"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 7.833333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/mikuni"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/miyajima"
+   ],
+   "clicks": 0,
+   "impressions": 14,
+   "ctr": 0,
+   "position": 8.642857142857142
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/naruto"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/omura"
+   ],
+   "clicks": 0,
+   "impressions": 13,
+   "ctr": 0,
+   "position": 6.384615384615385
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/region/kanto"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 9.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/shimonoseki"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 6.166666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/suminoe"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/tamagawa"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 6.285714285714286
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/tokoname"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 10.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/tokuyama"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/tsu"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/venues/wakamatsu"
+   ],
+   "clicks": 0,
+   "impressions": 13,
+   "ctr": 0,
+   "position": 5.3076923076923075
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/en/winning-technique"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 5.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/hit-races"
+   ],
+   "clicks": 0,
+   "impressions": 37,
+   "ctr": 0,
+   "position": 4.594594594594595
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 1.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog"
+   ],
+   "clicks": 0,
+   "impressions": 40,
+   "ctr": 0,
+   "position": 8.1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/ai-prediction-accuracy-review"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 10.875
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/beginners-start-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/motor-condition-guide"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 6.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/nige-simulation-guide"
+   ],
+   "clicks": 0,
+   "impressions": 58,
+   "ctr": 0,
+   "position": 3.0172413793103448
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/picks-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/st-consideration-guide"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 7.833333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/blog/winning-technique-analysis-guide"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/race/2026-10-03-16-03"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/race/2026-10-08-20-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/race/2026-10-13-06-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 15
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/race/2026-10-13-19-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venue/14"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venue/7"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venue/9"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/edogawa"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/hamanako"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/miyajima"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/omura"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/region/chubu-tokai"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 45
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/region/kinki"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/suminoe"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/venues/toda"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/ko/winning-technique"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 5.333333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-11-24-08"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 16
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-12-21-01"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-13-12-06"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-13-18-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-14-18-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-14-21-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-15-04-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-17-08-03"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-17-08-08"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-18-05-11"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 7.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-18-12-12"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 6.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-18-24-02"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-19-02-07"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-19-05-08"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-19-05-11"
+   ],
+   "clicks": 0,
+   "impressions": 41,
+   "ctr": 0,
+   "position": 3.4878048780487805
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-19-15-12"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 14.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-20-01-01"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-20-01-04"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-20-10-01"
+   ],
+   "clicks": 0,
+   "impressions": 21,
+   "ctr": 0,
+   "position": 1.2857142857142856
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-20-13-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-20-17-10"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-21-05-11"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-21-12-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-22-02-10"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-22-02-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-22-06-02"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 10.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-23-01-02"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-23-10-03"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-23-10-12"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 12.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-23-17-09"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-23-20-04"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-24-02-01"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4.666666666666666
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-24-18-06"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-24-20-08"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 19.666666666666668
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-24-20-12"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 12
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-25-01-02"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 74
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-25-01-08"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-25-11-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-25-20-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-25-21-12"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-09-25-22-02"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 2.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-05-18-06"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 8.333333333333332
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-07-14-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-09-07-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-09-10-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-09-10-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-10-03-01"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-10-23-06"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-11-03-10"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 6.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-11-06-01"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-11-08-12"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 4.166666666666666
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-11-19-05"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 4.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-11-22-07"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-03-06"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-06-01"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 9.666666666666666
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-12-06"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 4.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-14-09"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-15-01"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-19-09"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 7.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-19-11"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 2.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-12-23-12"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 6.166666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-04-02"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 5.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-04-08"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-19-04"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 6.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-19-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-19-11"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-13-20-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-04-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-14-02"
+   ],
+   "clicks": 0,
+   "impressions": 9,
+   "ctr": 0,
+   "position": 6.111111111111111
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-19-10"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 6.4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-19-12"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 9.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-20-02"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 5.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-14-22-05"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-04-08"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-06-12"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-11-09"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-14-07"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-14-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-15-20-01"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 9.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-16-02-09"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-16-04-11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-16-13-03"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-16-19-12"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 6.375
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-16-20-09"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-09-07"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 77
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-19-01"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 2.6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-19-03"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-19-11"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-19-12"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 29
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-20-01"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-20-03"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-17-21-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-18-04-06"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 9.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/race/2026-10-18-23-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3304"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3439"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3554"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 17.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3574"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3590"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 32.16666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3612"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 30
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3716"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 50
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3737"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 3.3333333333333335
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3743"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 17.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3783"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 28
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3811"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3854"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3876"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 96
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3940"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3941"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 18.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3961"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3983"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 22
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/3997"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4025"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4028"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 12
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4036"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4058"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 21.666666666666668
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4072"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 16.8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4074"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 6.285714285714286
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4096"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 31
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4166"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4189"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 16
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4238"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 51.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4262"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 39
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4305"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 41
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4308"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4320"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 16.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4324"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 26.333333333333332
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4337"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4370"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4397"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4398"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 23
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4415"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 22.666666666666668
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4446"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 13.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4456"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4471"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 13.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4477"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 21
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4494"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4497"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 13
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4502"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4530"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4532"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 8.8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4538"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 9.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4547"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 10.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4566"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 17.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4587"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4600"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4604"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4644"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 30
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4654"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4685"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 7.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4734"
+   ],
+   "clicks": 0,
+   "impressions": 39,
+   "ctr": 0,
+   "position": 25.71794871794872
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4736"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4743"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 31
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4762"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4769"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4772"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 21.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4797"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 18
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4804"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4826"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 3.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4832"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4845"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 28.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4847"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4857"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4903"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4907"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4910"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4931"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4938"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4967"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 12
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/4983"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 14
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5015"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5016"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5029"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 18
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5051"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5068"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 27.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5089"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 36.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5121"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5141"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5142"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5163"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 47
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5193"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5196"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 20
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5218"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 22.333333333333332
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5221"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 13
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5255"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 3.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/racer/5280"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 6.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-05-14/8"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-07-03/4"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-07-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-08-29"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-04/10"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-05/10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-11/17"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-12/17"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-12/21"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-13/12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 15
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-13/19"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-13/22"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-14/21"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 6.571428571428571
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-14/8"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-15/8"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-16"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-16/13"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-16/7"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-17/19"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-17/8"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-18/12"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-18/15"
+   ],
+   "clicks": 0,
+   "impressions": 9,
+   "ctr": 0,
+   "position": 7.555555555555555
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-18/5"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-18/7"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-19/17"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-19/24"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-19/4"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-20"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-20/10"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 2.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-20/13"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-20/15"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-20/16"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-20/5"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-21/1"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-21/10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-21/12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-21/13"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-21/18"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 8.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-21/5"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/10"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 6.285714285714286
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/11"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4.666666666666666
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/17"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/20"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/22"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 6.166666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/8"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 6.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-22/9"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-23/1"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 5.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-23/10"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 2.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-23/11"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 5.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-23/17"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-23/20"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-23/9"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-24/10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-24/13"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-24/20"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-24/21"
+   ],
+   "clicks": 0,
+   "impressions": 17,
+   "ctr": 0,
+   "position": 5.588235294117647
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-24/22"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-24/8"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-25/18"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-25/19"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-25/20"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 3.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-25/21"
+   ],
+   "clicks": 0,
+   "impressions": 18,
+   "ctr": 0,
+   "position": 5.333333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-25/5"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-26"
+   ],
+   "clicks": 0,
+   "impressions": 17,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-26/11"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 10.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-26/15"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-26/21"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 15
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-26/8"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-26/9"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-27/11"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 6.8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-27/14"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-27/15"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 8.75
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-27/2"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-27/3"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 19
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-27/5"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-27/8"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-28/15"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-28/16"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 2.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-28/19"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-28/24"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-29/14"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-29/15"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-29/16"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-29/4"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-30/16"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-09-30/6"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-01/12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-01/15"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-01/19"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-01/24"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-01/6"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02/12"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02/14"
+   ],
+   "clicks": 0,
+   "impressions": 7,
+   "ctr": 0,
+   "position": 3.7142857142857144
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02/15"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 9.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02/16"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02/18"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02/19"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-02/7"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-04"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-06/14"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-06/20"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-06/24"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-07/1"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-07/11"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-07/3"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 7.8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-07/8"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-08/23"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-09/1"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-09/16"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-10/18"
+   ],
+   "clicks": 0,
+   "impressions": 6,
+   "ctr": 0,
+   "position": 6.333333333333333
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-10/9"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-11/18"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-11/6"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-12/15"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-13/13"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-13/20"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/races/2026-10-15/4"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/terms"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 4.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/today"
+   ],
+   "clicks": 0,
+   "impressions": 5,
+   "ctr": 0,
+   "position": 5.8
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 7
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/13"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 4
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/13/meet/2026-10-27"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/15"
+   ],
+   "clicks": 0,
+   "impressions": 25,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/16/meet/2026-09-28"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 5.666666666666667
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/19"
+   ],
+   "clicks": 0,
+   "impressions": 8,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/19/meet/2025-12-07"
+   ],
+   "clicks": 0,
+   "impressions": 10,
+   "ctr": 0,
+   "position": 4.6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/21"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/23/meet/2026-10-18"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/3"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 4.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/6/meet/2026-05-26"
+   ],
+   "clicks": 0,
+   "impressions": 34,
+   "ctr": 0,
+   "position": 6.470588235294118
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/9/meet/2026-04-02"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 9
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/venue/9/meet/2026-09-03"
+   ],
+   "clicks": 0,
+   "impressions": 20,
+   "ctr": 0,
+   "position": 7.2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/blog/trifecta-betting-guide"
+   ],
+   "clicks": 0,
+   "impressions": 2,
+   "ctr": 0,
+   "position": 61.5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/guide"
+   ],
+   "clicks": 0,
+   "impressions": 20,
+   "ctr": 0,
+   "position": 10.1
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/race/2026-09-25-01-08"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/race/2026-10-09-24-07"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 9.333333333333334
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/race/2026-10-12-16-08"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/race/2026-10-14-21-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 5
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/race/2026-10-15-14-10"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/race/2026-10-16-24-12"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 3
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venue/5/meet/2026-09-16"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 2
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues"
+   ],
+   "clicks": 0,
+   "impressions": 27,
+   "ctr": 0,
+   "position": 9.222222222222221
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues/heiwajima"
+   ],
+   "clicks": 0,
+   "impressions": 4,
+   "ctr": 0,
+   "position": 7.25
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues/miyajima"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 11
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues/region/chugoku"
+   ],
+   "clicks": 0,
+   "impressions": 1,
+   "ctr": 0,
+   "position": 10
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues/region/kanto"
+   ],
+   "clicks": 0,
+   "impressions": 14,
+   "ctr": 0,
+   "position": 8.785714285714285
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues/region/kinki"
+   ],
+   "clicks": 0,
+   "impressions": 10,
+   "ctr": 0,
+   "position": 16.6
+  },
+  {
+   "keys": [
+    "https://www.boat-ai.jp/zh-TW/venues/region/kyushu"
+   ],
+   "clicks": 0,
+   "impressions": 3,
+   "ctr": 0,
+   "position": 8
+  }
+ ]
+}
