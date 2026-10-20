@@ -1,7 +1,7 @@
 # ADR 0099: ブログの図の PNG を、Vercel のビルドで部品を撮って配る
 
 ## ステータス
-採用（2026-10-20。構成は system-architect の審査済み、オーケストレーター経由。撮影の形は `docs/design/blog-charts/mock/png-review.md` でオーナーの確認待ち）
+採用（2026-10-20。構成は system-architect の審査済み、オーケストレーター経由。撮影の形とロゴ・URL の扱いは 2026-10-21 にオーナーが承認、`docs/design/blog-charts/mock/png-review.md`）
 
 ## 背景
 - ブログの図（ADR 0098）を note・X の投稿にも添えたい。オーナーが画像を取りに行く先が要る

@@ -1,6 +1,11 @@
-# 図の PNG の書き出しの形（承認待ち）
+# 図の PNG の書き出しの形（承認済み）
 
-承認したモック（`APPROVED.md`）の外の形なので、オーナーの確認を待つ。画像はビルドと同じ処理（`scripts/lib/blogChartPng.js`）で契約の例（`../example-venue-course-win.json`）を撮ったもの（Vercel の Preview のビルドが撮った実物。フォントは本番と同じ Noto Sans JP、計測用ブランチ claude/blog-chart-png-measure）。
+- 承認日: 2026-10-21（2時台）
+- 承認のメッセージ（要旨）:「PNG は承認」（オーナー、オーケストレーター経由でこのレーンへ）。ロゴ・URL は推奨の (c)（ロゴの絵なし、下端に「龍神レーダー」と「boat-ai.jp」の文字）で確定
+- 承認範囲: 下の2枚（`png-portrait.png`・`png-landscape.png`）の撮影の形。大きさ（portrait 1080×1350・landscape 1280×720）、切り替えを写さず札の範囲の前に切り替えの名前を足す、行を詰める、注記を残す、下端のサイト名とドメイン、landscape の2段組み。記事の画面の図（`APPROVED.md`）は変えない
+- 承認範囲外: 翻訳記事・既定以外の view の画像（撮らない）、ほかの大きさ
+
+記事の図のモック（`APPROVED.md`）の外の形なので、別に承認を取った。画像はビルドと同じ処理（`scripts/lib/blogChartPng.js`）で契約の例（`../example-venue-course-win.json`）を撮ったもの（Vercel の Preview のビルドが撮った実物。フォントは本番と同じ Noto Sans JP、計測用ブランチ claude/blog-chart-png-measure）。
 
 | 大きさ | 画像 | 使う先 |
 |---|---|---|
