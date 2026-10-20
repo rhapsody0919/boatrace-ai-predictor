@@ -28,6 +28,45 @@ export function bannedIn(text, platform = "x") {
 }
 /** ぼかし語（数値で比べずに量を言う語） */
 const VAGUE = ["半分", "多い", "少ない", "多め", "少なめ", "かなり", "やや", "ほぼ", "結構", "わりと", "圧倒的", "大差", "僅差", "わずか", "少し", "ちょっと", "大きく", "大幅"];
+/**
+ * 文に使ってよい語（facts の値・材料名・艇番・順位・数を除いた残り）。比べる語・向き・場面の決まった言い回しだけ。
+ * LLM の文の残りがこの語と助詞・記号で区切り切れなければ「facts に無い言い回し」として文型の版に戻す
+ * （「6艇で差がつく」のような、facts に無い主張・評価を止める。2026-10-20 オーケストレーター指摘）
+ */
+export const VOCAB = [
+  // 比べる・並べる
+  "2位以内", "項目", "最多", "最少", "次", "次いで", "2番手", "番手", "一番上", "最上位", "上位", "下位", "同じ", "同値", "並ぶ", "並び",
+  "ほか", "すべて", "全て", "差", "ポイント", "未満", "以上", "以下", "上回る", "下回る", "上回り", "下回り", "高い", "低い", "高く", "低く",
+  "より", "まで", "中", "全体", "今日", "1着率", "順位", "当てはめない", "当てはめず", "参考", "枠順", "近く", "点の順",
+  "比べられない", "値が無い", "値が無く", "材料", "差が大きい", "差が小さい", "重なる", "記録", "無い", "なし",
+  "とき", "場合", "次点", "各", "3つ", "以内",
+  // 単位
+  "秒", "%", "％", "点", "艇", "件",
+];
+/** 1字でよい語（助詞・記号）。これ以外の1字は語にしない（「差がつく」の「つ」「く」を通さない） */
+const PARTICLES = new Set([..."はがのでともにをへや、。・，,（）()／/ 　→〜~-"]);
+
+/** text を語と助詞で区切り切れるか（区切り切れない最初の部分を返す。切れれば null） */
+export function uncovered(text, words) {
+  const ws = [...new Set(words)].filter(Boolean).sort((a, b) => b.length - a.length);
+  const chars = [...text];
+  const ok = new Array(chars.length + 1).fill(false);
+  ok[0] = true;
+  for (let i = 0; i < chars.length; i++) {
+    if (!ok[i]) continue;
+    if (PARTICLES.has(chars[i]) || chars[i] === "＿") ok[i + 1] = true;
+    const restText = chars.slice(i).join("");
+    for (const w of ws) if (restText.startsWith(w)) ok[i + [...w].length] = true;
+  }
+  if (ok[chars.length]) return null;
+  // 届いた一番先から、次に届く所までを返す
+  let last = 0;
+  for (let i = 0; i <= chars.length; i++) if (ok[i]) last = i;
+  let end = last + 1;
+  while (end < chars.length && !ok[end]) end++;
+  return chars.slice(last, end).join("");
+}
+
 /** 前の拍とつなぐ語。場面の各段の最初の拍では使えない。「同じく」「こちらも」は前の拍と同じ材料のときだけ */
 const CONNECTORS = ["一方", "さらに", "同じく", "また", "ただ", "逆に", "それに", "こちらも", "続いて"];
 const SAME_ITEM_CONNECTORS = ["同じく", "こちらも"];
@@ -81,6 +120,18 @@ function allowedOf(facts) {
   return { nums, boats, items, ranks };
 }
 
+/** facts の中の文字の値（数を除く。例 「準優勝戦の日」「0.12秒」の「秒」は単位の語で通る） */
+function stringsOf(facts) {
+  const out = [];
+  const walk = (v) => {
+    if (Array.isArray(v)) return v.forEach(walk);
+    if (v && typeof v === "object") return Object.values(v).forEach(walk);
+    if (typeof v === "string" && !/^\d/.test(v)) out.push(v);
+  };
+  walk(facts);
+  return out;
+}
+
 /**
  * 整えた版の1拍の検査。落ちた理由の一覧を返す（空なら合格）
  * @param {string[]} lines
@@ -116,6 +167,13 @@ export function checkLines(lines, facts, prev) {
   // 言い回しに入る決まった数（6艇・1着率・2位以内・2番手・N項目中）は facts の数として数えない
   rest = rest.replace(/6艇|1着率|2番手/g, "＿");
   for (const m of rest.match(/\d+(?:\.\d+)?/g) ?? []) if (!nums.has(m)) why.push(`facts に無い数値「${m}」`);
+  // 言い回し: facts の文字の値（例 準優勝戦の日）と決まった語・助詞だけで区切り切れること
+  const masked = rest.replace(/\d+(?:\.\d+)?/g, "＿");
+  const left = masked
+    .split("\n")
+    .map((l) => uncovered(l, [...VOCAB, ...CONNECTORS, ...stringsOf(facts)].map((w) => w.replace(/\d+(?:\.\d+)?/g, "＿"))))
+    .filter(Boolean);
+  for (const u of left) why.push(`facts に無い言い回し「${u}」`);
   // 向き（高い・低い）は facts の向きと合う
   if (facts.direction && /高い|低い/.test(text) && !text.includes(facts.direction)) why.push(`向きが facts（${facts.direction}）と逆`);
   // つなぐ語
@@ -134,6 +192,7 @@ const PROMPT = (beats) => `あなたはボートレースのデータ動画の�
 - 数値・艇番・材料名は facts にあるものだけ。計算し直さない、丸め直さない、足さない
 - 「問いへの答え」と「このレースにとっての意味（向き）」を数値で比べて書く。書き写しだけにしない
 - ぼかし語（半分・多い・少ない・かなり・やや・ほぼ 等）を使わない。予想の断定・保証（必ず・絶対・稼げる 等）、「競艇」「この選手」を使わない
+- 言葉は facts・template にある語と、比べる語（${VOCAB.join("・")}）と助詞だけ。facts に無い評価・主張の言葉（差がつく・有利・狙い目・注目 等）を足さない。足した拍は使われない
 - 前の拍の答えと自然につなぐ。step が変わった最初の拍は、つなぐ語（一方・さらに・同じく・また 等）で始めない。「同じく」「こちらも」は前の拍と同じ材料のときだけ
 - 拍の種類: overview＝6艇全体で2位以内の項目の数、focus＝その艇が何で上位か、card＝1号艇の材料のカード（今日の順位のときの1着率、全体との差）、empty＝差が大きいカードが無い
 - 文型の版（template）は参考。同じでもよい
