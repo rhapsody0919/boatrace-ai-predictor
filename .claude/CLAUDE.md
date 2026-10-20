@@ -55,8 +55,9 @@ Claude と Codex に共通する規約（運用前提・ブランチ・用語・
 | `seo-marketer` | ブログ記事の検索の意図・title と description・見出し・内部リンク・食い合い・構造化データ・SPA とボット向け HTML の制約（P0〜P3） | 記事の新規公開・改稿前（`content-qa`・`wording-editor`・ファンのレビューと並べて） |
 | `x-channel` | X の投稿案（文・スレッド・添付）の評価（P0〜P3）と、48h・7d の数字から次に変える1点 | 投稿案を承認に回す前、48h・7d の観測がそろったとき |
 | `youtube-channel` | YouTube（主に Shorts）の投稿案（台本・動画の構成・タイトル・説明文）の評価（P0〜P3）と、48h・7d の数字から次に変える1点 | 投稿案を承認に回す前、48h・7d の観測がそろったとき |
+| `qa` | マージ済みの変更の照合と読み直し（実データ・画面・コード・文書の食い違い）と、head-product への起票の案（P0〜P3・再現手順・根拠）。hq の社員 qa（Codex、試用）の役の定義の正本 | hq が毎朝（試用）。Claude からはマージ後の変更を独立に照合したいとき（新規集計の検証は `data-accuracy-verifier`） |
 
-上の9つ（`data-scientist` 以下）は、定義に書いた `docs/knowledge/` の話題ファイル（一覧は `docs/knowledge/README.md`）を最初に読み、答えの最後に「知見ノートに足す行」を出す。呼んだ側が話題に合うファイルへ書き写す（1行1知見、日付と根拠つき、鍵・個人情報は書かない）。知見の正本は `docs/knowledge/` の1か所で、写しを作らない。ファンの知見は `docs/knowledge/fan-reactions.md` を `discussion-panel` が読む。note は当面ノート（`docs/knowledge/note.md`）だけで担当を置かない。`boatrace-fan-reviewer`・`content-qa`・`design-reviewer`・`data-accuracy-verifier`・`user-proxy-reviewer`・`mock-diff-checker` も、定義に書いた話題ファイルを最初に読む。`spec-ambiguity-detector`・`acceptance-test-writer`・`second-opinion-reviewer` は独立性のために読む範囲をわざと絞っているので、話題ファイルを足さない。
+上の10（`data-scientist` 以下）は、定義に書いた `docs/knowledge/` の話題ファイル（一覧は `docs/knowledge/README.md`）を最初に読み、答えの最後に「知見ノートに足す行」を出す。呼んだ側が話題に合うファイルへ書き写す（1行1知見、日付と根拠つき、鍵・個人情報は書かない）。知見の正本は `docs/knowledge/` の1か所で、写しを作らない。ファンの知見は `docs/knowledge/fan-reactions.md` を `discussion-panel` が読む。note は当面ノート（`docs/knowledge/note.md`）だけで担当を置かない。`boatrace-fan-reviewer`・`content-qa`・`design-reviewer`・`data-accuracy-verifier`・`user-proxy-reviewer`・`mock-diff-checker` も、定義に書いた話題ファイルを最初に読む。`spec-ambiguity-detector`・`acceptance-test-writer`・`second-opinion-reviewer` は独立性のために読む範囲をわざと絞っているので、話題ファイルを足さない。
 
 いずれも読み取り専用（`acceptance-test-writer` のみ `e2e/acceptance/` に書く）で、修正は親セッションが行う。定義に無い一回限りの調査は、Agent tool へ直接プロンプトを渡す。
 
