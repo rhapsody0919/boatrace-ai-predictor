@@ -1,0 +1,118 @@
+name: Job Watch
+
+# 定期の job の見張り（ADR-0097 の追記「定期の job の見張り」）。2026-10-20、Environment prod-jobs の鍵の値の誤りで
+# 定期の job 15本が落ち、失敗の知らせの手順が無かったため誰も気づかなかった件の再発防止。
+#
+#   scan   見張る workflow の直近24時間の失敗を全部見回し、規則で分類（scripts/lib/jobWatch.js、LLM は使わない）して Issue に書く
+#            鍵・設定の誤り → Issue「job-watch-key」に集める。カナリア（key-canary.yml）が成功したら閉じ、同じ日の失敗分を rerun
+#            一時的な失敗（Supabase・GitHub の 5xx・時間切れ・通信）→ 許可の一覧の workflow だけ1回 rerun
+#            外部の 403・429・503（ADR-0067）・コード・その他・2回目の失敗 → Issue「job-watch-failure」に書くだけ
+#   rerun  actions: write はこの job だけ。当てる直前に run を確かめ直す。試運転（job-watch.json の dryRun）の間は動かない
+#
+# 見張る workflow と許可の一覧の正本は scripts/watch/job-watch.json。下の workflows との一致は verify-job-watch.js が検査する。
+# workflow_run は master にある定義で動き、名前で一致を取る（ブランチを問わない）ので、branches と job の if で
+# master・同じリポジトリ・定期か手での起動に絞る（scan の中でも絞り直す）。値は env 経由で渡し、run に ${{ }} を書かない。
+# 見張り自身が止まったことは内側からは分からない。外側（hq の鮮度の見張り・data_health）が頼り。
+
+on:
+  workflow_run:
+    types: [completed]
+    branches: [master]
+    workflows:
+      - Aggregate Course Baseline Stats
+      - Aggregate Racer Course Technique Stats
+      - Aggregate Racer Stats
+      - Analogy v16 Morning
+      - Bot HTML Parity (日中の照合)
+      - Calculate Accuracy Daily
+      - Campaign Pipeline
+      - Collect Racer News
+      - Content Ops Nightly Check
+      - DB Apply (production)
+      - E2E Live (本番データ)
+      - E2E Re-record (録画の自動撮り直し)
+      - Exhibition Gap Monitor
+      - Generate Moriarty Recommendations
+      - Generate Morning Digest
+      - Generate Poirot Predictions
+      - In-Caution Nightly
+      - Key Canary
+      - Nightly DB Verify
+      - Post-merge Checks
+      - Race Notices Drift Monitor
+      - Regenerate Generated Docs
+      - Scrape Monitor Liveness
+      - Scrape Point Rank
+      - Scrape Racer Season Stats
+      - Scrape Scheduled
+      - Scrape Venue Entry Course Stats
+      - Scrape Venue Motor Stats
+      - Train Analogy Finder
+      - Train Moriarty Calibration
+      - Train Poirot Models
+      - Train Sherlock Model
+      - Update Exhibition Time Top Stats
+      - Update Losing Technique Stats
+      - Update Moriarty Outcomes
+      - Update Nige Outcome Distribution
+      - Update Outcome Distribution
+      - Update Sitemap
+      - Update Top Start Stats
+      - Update Winning Technique Stats
+  workflow_dispatch:
+
+permissions: {}
+
+# 見回りは毎回全部を見るので、待ちの間に来たイベントを落としても次の見回りで拾う。同時に2本は走らせない
+# （Issue を2件作らないため）
+concurrency:
+  group: job-watch
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    if: >-
+      github.repository == 'rhapsody0919/boatrace-ai-predictor' &&
+      (github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.head_repository.full_name == github.repository &&
+      (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'workflow_dispatch' ||
+      github.event.workflow_run.event == 'push')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    outputs:
+      reruns: ${{ steps.scan.outputs.reruns }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: 見回り
+        id: scan
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/watch/job-watch.js scan
+
+  rerun:
+    needs: scan
+    if: needs.scan.outputs.reruns != '' && needs.scan.outputs.reruns != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: rerun（当てる直前に確かめ直す）
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RERUNS: ${{ needs.scan.outputs.reruns }}
+        run: node scripts/watch/job-watch.js rerun

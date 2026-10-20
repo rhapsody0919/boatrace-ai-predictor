@@ -115,3 +115,18 @@ D はまず1〜2週間、当てずに「当てるはずだった」を通知す�
 - 新しいコードが新しい列に頼るときは、SQL を先の PR で入れる（Vercel はマージで即デプロイし、適用は定期の突き合わせを待つため）
 - 切替の後、オーナーが自分で書いた PR は審査が見ないので、ruleset を一時 Disabled にしてマージする
 - 切替の後、CI のやり直しは空のコミットで行う（作成の App に Actions: write を付けない）
+
+## 追記: 定期の job の見張り（2026-10-20）
+
+2026-10-20、Environment prod-jobs の SUPABASE の鍵の値の誤りで、定期の job 15本が Invalid API key で落ちた。失敗を知らせる手順が無く、オーナーの指摘まで誰も気づかなかった。再発防止に、見張りを龍神の Actions に置く（設計は hq の drafts/site-freshness-watch-20261020.md の v2。形はオーナーがこのセッションで承認）。
+
+- `.github/workflows/job-watch.yml`: Environment prod-jobs・ryujin-bot を使う workflow の完了（workflow_run）で起き、直近24時間の失敗を全部見回して規則で分類する（`scripts/lib/jobWatch.js`、LLM は使わない）。見張る workflow と許可の一覧の正本は `scripts/watch/job-watch.json`
+  - 鍵・設定の誤り（Invalid API key・401・403・secret 未設定）: rerun せず、GitHub Issue（ラベル job-watch-key）を1件開いて集める。Slack の webhook も prod-jobs の鍵も通らないので、鍵の誤りと独立に届く
+  - 一時的な失敗（Supabase・GitHub 等の 5xx・時間切れ・通信）: 許可の一覧の workflow だけ、1回目の失敗・同じ JST の日・後の run が無いときに1回 rerun する
+  - 外部の 403・429・503（ADR-0067、取得を止める決まり）・コード・その他・2回目の失敗: rerun せず Issue（job-watch-failure）に書く
+  - 許可の一覧: 冪等な日次・夜の集計の upsert 9本（オーナー判断）。送信・master への push（ryujin-bot）・db-apply・審査・10分ごとの job は入れない（verify-job-watch.js が検査する）
+- `.github/workflows/key-canary.yml`: 30分ごとに prod-jobs・ryujin-bot の中で読み取りを1回する。鍵が直ったかは secret の更新時刻ではなく、これの成功で判定する（更新時刻は GITHUB_TOKEN では読めず、誤った値を入れても新しくなる）。鍵の Issue より後にカナリアが成功したら、同じ日の失敗分を許可の一覧の範囲で1回ずつ rerun し、Issue を閉じる
+- `actions: write` は rerun の job だけに付ける。actions: write の GITHUB_TOKEN は rerun のほか workflow_dispatch の起動・workflow の無効化・run とログの削除もできるので、job を分け、当てる直前に run を確かめ直す。作成の App に Actions: write を付けなかった線を、master の定義の workflow の中に限って広げる
+- rerun は元の run の SHA・ref のまま動く（途中のマージは効かない）。日をまたいだ rerun はしない
+- 最初の1週間は試運転（job-watch.json の dryRun: true）で、rerun せず「rerun するはずだった」を Issue に書くだけ
+- 残る弱み: 見張り自身が止まったことは内側からは分からない。外側（hq の鮮度の見張り・data_health）が頼り
