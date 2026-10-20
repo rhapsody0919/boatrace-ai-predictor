@@ -16,5 +16,5 @@
 
 - 行を入れるのはマイグレーション [`docs/db-migration/171_sns_today_heading_variants.sql`](../db-migration/171_sns_today_heading_variants.sql)。db-apply のワークフローで当てる（オーナーの操作は Run workflow と Approve だけ。手順は [db-apply.md](./db-apply.md)）。適用前・適用後の確認の SQL と戻し方は、ファイルの冒頭のコメント
 - id は固定: 案 a `0f88824e-c630-4f94-8c15-475297e4b242`、案 b `be74c247-fa8f-442e-a29f-4d1d7866919a`
-- 行が入るまでは、`config/today-variants.json` の `uuid` は `null` のまま動く（札は `source_data.today_variant` にだけ残る）
+- 171 は 2026-10-20 に本番へ適用済み（db-apply）。同じ日に `config/today-variants.json` の案 a・b の `uuid` を入れた。行が無い間は `null` で動く作り（札は `source_data.today_variant` にだけ残る）
 - 適用を確かめてから、`config/today-variants.json` の案 a・b の `uuid` に上の2つを入れる PR を別に出す。同じ PR で入れない（当てる前にマージされると、外部キー違反で札なしになる）。入れた次の朝の /today から、tracking と下書きに札が入る。その PR では、verify-sns-today-plan の「リポジトリの config の uuid は null のまま」の確認（171 の試験の最後）を消す（当てる前の番人なので）

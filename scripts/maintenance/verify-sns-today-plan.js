@@ -1396,12 +1396,18 @@ test("171: /today の見出しの2案の行を入れる。もう一度当てて�
   await plan({ loadVariants: () => variants });
   const draft = await first("SELECT * FROM sns_drafts");
   assert.ok(rows.some((r) => r.id === draft.template_variant_id));
-  // リポジトリの config は、当てる前にマージされても札なしで動くよう uuid が null のまま
+  // リポジトリの config の案 a・b の uuid は、171 が入れた行の id と同じ（2026-10-20 に本番へ適用済み）
   const config = JSON.parse(
     await readFile(
       new URL("../../config/today-variants.json", import.meta.url),
       "utf8",
     ),
   );
-  assert.ok(config.variants.every((v) => v.uuid == null));
+  assert.deepEqual(
+    config.variants.map((v) => [v.id, v.uuid]),
+    [
+      ["a", rows[0].id],
+      ["b", rows[1].id],
+    ],
+  );
 });
