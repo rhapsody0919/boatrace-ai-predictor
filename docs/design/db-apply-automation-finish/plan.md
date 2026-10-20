@@ -57,7 +57,7 @@ flowchart LR
 ### トークン
 
 - 今の Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN` をそのまま使う。fine-grained PAT、boatrace-ai-predictor だけ、Actions: Read and write だけ（[analogy-weekly-train-dispatch.md](../../operation/analogy-weekly-train-dispatch.md) 49行目）。Vercel では Encrypted・Production だけ（審査の実測。Preview のデプロイからは読めない）。新しい鍵は作らない
-- 今のトークンでも db-apply は dispatch できる（Actions: write は workflow を選べない）ので、PR-A で今より**できることは増えない**。手での起動（mode=manual）は production-db の承認で止まり、reconcile は審査の App が承認した PR のファイルしか選ばない
+- 今のトークンでも db-apply は dispatch できる（Actions: write は workflow を選べない）ので、PR-A で当てられる対象は増えない。手での起動（mode=manual）は production-db の承認で止まり、reconcile は審査の App が承認した PR のファイルしか選ばない。**増えるのは、承認なしの経路（reconcile → apply-auto）を任意の時刻に起動できること**（今までは schedule だけ。PR #1722 の審査、P2）。D' の後は、この PAT に届いた者が、審査済みの軽いファイルを当てる時刻を選べる。ADR-0097 の「残る弱み」に足す（判断5）
 - ただし**切替の後の目標の状態と比べると、残る弱み**になる。このトークンは Actions: write を持つ（ADR-0097 は作成の App に Actions: write を付けない、と決めている）。Claude は Vercel CLI の認証（hq の drafts/identity-separation §54）と Vercel MCP に届き、値を読む関数をデプロイすれば読める（Sensitive は画面の表示を止めるだけ）。届いたときにできること: master の任意の workflow を inputs つきで dispatch、prod-jobs の run の rerun、review.yml の無効化。同じ経路で Vercel の SUPABASE_SERVICE_KEY 等にも届く
   - 塞ぐのは切替のとき（§6 の表）: Claude の動くユーザーから Vercel CLI の認証を外す（または書き込みの無いトークンにする）・Vercel MCP を切る。塞がないなら ADR-0097 の「残る弱み」に書いてオーナーが受け入れる（判断5）
 - オーナーに設定の画面で確かめてもらうこと（値ではなく）:
@@ -209,6 +209,8 @@ GRANT SELECT ON db_apply.applied TO claude_ro;            -- 台帳とのずれ�
 | PR-0 | この設計（docs だけ） | docs | オーナー | ― |
 | PR-A | 起動の移し替え（§2） | .github・api・scripts・vercel.json | オーナー（.github） | 判断1・2 |
 | PR-A' | `scrape_job_state` の mode を shadow → 1日後に live（UPDATE） | 本番 DB | オーナーが SQL エディタで当てる。docs/db-migration の番号つきファイルにはしない（in-caution と同じく `docs/design/…/owner-prod-steps` の形。番号つきにすると、切り替えより後に審査なしで足されたファイルとして reconcile の列の先頭で blocked になり、後ろの番号を止める） | PR-A のデプロイの後（ラッパが off の行を作った後） |
+| PR-A2 | e2e-rerecord.yml（BOA-929、inputs.gate=true）と key-canary.yml（BOA-917）の起動を、PR-A と同じ dispatch の形で Vercel Cron へ。schedule は予備に残す。job は `e2e_rerecord_dispatch`（JST 10:23・12:47・14:37・16:13）・`key_canary_dispatch`（7・37分）。Cron の登録は 63→68本（Pro の上限 100本） | .github・api・scripts・vercel.json | オーナー（.github） | ― |
+| PR-A2' | PR-A2 の2つの job の mode を live に（`INSERT INTO scrape_job_state (job, mode) VALUES ('e2e_rerecord_dispatch', 'live'), ('key_canary_dispatch', 'live') ON CONFLICT (job) DO UPDATE SET mode = excluded.mode`）。どちらも予備の schedule と同じ動きで、二重の起動は gate・読み取りのみで無害なので shadow を挟まない | 本番 DB | オーナーが SQL エディタで当てる（PR-A' と同じ形） | PR-A2 のデプロイの後 |
 | PR-B | 印の表のマイグレーション（§4.1 の SQL） | docs/db-migration | オーナー（手で当てる、重い） | 判断3 |
 | PR-C | 印・止め印・時間の窓のコード（§4）。最初に psql の実機確認 | scripts/db・scripts/lib・.github・verify | オーナー（.github） | PR-B の適用 |
 | PR-D | 名義の切替の龍神の側（§3） | .claude・scripts/maintenance | オーナー。切替の作業の中で、8.2 の前にマージ | hq の道具 |
@@ -276,12 +278,13 @@ flowchart TD
 ## 7. 別スコープ（Linear に起票する）
 
 - sitemap の `<loc>`（`scripts/lib/sitemapLastmod.js:48`・`generate-sitemap.js:346`）と llms.txt の記事の title・description（`generate-llms-txt.js`）がエスケープしていない（BOA-920）
-- BOA-917: key-canary・job-watch の前提の定期の起動が来ない（10/20 に key-canary 0回）。同じ dispatch の形で Vercel Cron から起こすか、hq の見張りに寄せる。schedule が来ない原因そのものは未調査（この設計は迂回だけ）
+- BOA-917: key-canary・job-watch の前提の定期の起動が来ない（10/20 に key-canary 0回）。key-canary は PR-A2 で Vercel Cron の dispatch に寄せた。job-watch は workflow_run で起動するので対象外。schedule が来ない原因そのものは未調査（この設計は迂回だけ）
 
 ## 8. オーナーに決めてもらう点
 
 **決定（2026-10-20 23:5x、オーナー、オーケストレーター経由）**: 判断1〜26 を推奨どおり一括で承認（「一括で yes」）。
-- 27・28・29 は未承認（hq の数え直しが届いてから決める。29 は v4・v5 の変更で、一括承認の後に足したもの）
+- 27・29 は未承認（hq の数え直しが届いてから決める。29 は v4・v5 の変更で、一括承認の後に足したもの）
+- 28 は「30 本で知らせ、60 本で止める」で決定（2026-10-20 夜、オーナー、オーケストレーター経由）
 - 2（PAT の範囲と Environment の Deployment branches）は、オーナーが設定の画面で確かめた（2026-10-21 0時台、オーケストレーター経由）:
   - dispatch の PAT（`GITHUB_ACTIONS_DISPATCH_TOKEN`、fine-grained）: 対象は boatrace-ai-predictor だけ。権限は Actions の Read and write と Metadata の Read だけ（deployment の承認の権限は無い）。有効期限は無い（期限を付けるかは判断5の鍵の整理のときに決める）
   - Environment の4つ（production-db・production-db-auto・prod-jobs・ryujin-bot）の Deployment branches は、どれも master だけ
@@ -291,7 +294,7 @@ flowchart TD
 
 | # | 点 | 推奨 |
 |---|---|---|
-| 1 | 起動を Vercel Cron の dispatch にする（PR-A）。今の PAT を流用する | はい。今よりできることは増えない（切替の後の弱みは判断5で扱う） |
+| 1 | 起動を Vercel Cron の dispatch にする（PR-A）。今の PAT を流用する | はい。当てられる対象は増えない。承認なしの経路を任意の時刻に起動できる点だけ増える（§2「トークン」、切替の後の弱みは判断5で扱う） |
 | 2 | PAT の権限が Actions だけか、Environment 4つの Deployment branches が master だけかを、設定の画面で確かめる | 確かめる（PAT に承認の権限があると production-db を承認でき、Deployment branches が広いと dispatch の ref で鍵に届く） |
 | 3 | D' の前の3点を §4 の形で作る（印は DB の主キー、止め印は台帳の `保留`） | はい |
 | 4 | 自動の経路を JST 1:00〜4:59 に限る（§4.3 案 A） | 案 A |
@@ -317,8 +320,8 @@ flowchart TD
 | 24 | employee の大きさの上限（30ファイル・2000行・削除3ファイル・削除500行、超えたら owner） | この初期値で入れ、hq の分布で直す |
 | 25 | 大きさの上限の数え方 | v3: 種類ごとの束（prodWrite 10/300・frontendSmall 8/300・employee 30/2000）を全部同時に検査、閉包は master と head の和 |
 | 26 | docs/adr を deny から owner に移す | はい |
-| 27 | scripts/maintenance/verify-*.{js,sh} の変更・削除を owner にするか（§10.4 v6・v6.1） | (ii) v6: 削除は owner、変更は「字句の比較で既存の文が全部残り増えたのは丸ごとの文だけ、または import の書き換え（読み込み先が同じ・束縛が残る）だけ」で禁止の文字列が無ければ employee、他は owner。v6.1 で配列の末尾への追加も許す（skip 等の名前の一覧は除く）。社員で回るのは v6 で 388 本（41.0%）、v6.1 の分は hq の数え直し待ち |
-| 28 | 1日の自動マージの上限（小分けの迂回・暴走の止め役、§10.4 v6.1） | その日に APPROVE した PR の数（重複を除く）で、30 で知らせ、60 で以後の承認を止める（実測、0本の日を含む: 中央値8・平均12.5・90%点24・最大59、60以上は0日）。月の run は10日ごとに数える。判断14 の実費の後に見直す |
+| 27 | scripts/maintenance/verify-*.{js,sh} の変更・削除を owner にするか（§10.4 v6・v6.1・v6.2） | (ii) v6.2: 削除は owner、変更は「字句の比較で既存の文が全部残り増えたのは丸ごとの文だけ」「import の書き換え（読み込み先が同じ・束縛が残る）」「反復の元にしか使わない表の配列（for…of の対象、または参照が全部 for…of・`.entries`・`.forEach`・`.map`・`.filter`・`.length` の読み取りだけの宣言）の直接の要素の追加（途中・先頭も可）」の組み合わせだけで、禁止の文字列（`.length` への代入・`.splice(` を足した）が無ければ employee、他は owner。export・freeze・引数・プロパティ・入れ子の配列、`.includes` 等に使う宣言、名前に skip 等・expect を含む宣言への追加は owner。nightly-verify-db.yml が prod-jobs で変数のパスで動かす5つの verify（本番の Storage を消す verify-analogy-v16.js を含む）は名前で owner。社員で回るのは 394 本（41.6%、自分の見積り、hq の確認待ち）。v6.1 は 389、全部 owner の下限は 334 |
+| 28 | 1日の自動マージの上限（小分けの迂回・暴走の止め役、§10.4 v6.1・v6.2） | **決定（2026-10-20 夜、オーナー、オーケストレーター経由）: 30 本で知らせ、60 本で止める**。数えるのはその日に APPROVE した PR の数（重複を除く）で、30 本目で知らせ、60 本に達した後（61 本目から）を止める。残る弱み: v6.2 の分類の実測（0本の日を含む31日、マージの日で代えた）で 30 以上は3日（10/1 45・10/2 40・10/13 60）、最大 60 で、上限に余裕0本。マージの日は承認を少なく数える側。上げる案は 75（目安、根拠なし）。月の run は日ごとに数えて足す。判断14 の実費の後と切替の後の実測で見直す |
 | 29 | v4・v5 の変更（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・判定の本体は deny・api/cron の小さな直しを prodWrite（認証・ゲート・config の文字列は owner）・knowledge と mock と規則外れは owner・検証を緩める台帳は owner） | はい（v6 の直し: cronSmall は語の境で照合、既存の SQL の変更は owner、verify の範囲は maintenance に揃える）|
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
@@ -503,10 +506,11 @@ flowchart TD
 - 出し方（最小）: モジュールの変数を呼び出しの関数が埋め、`process.on("exit")` で `fs.writeSync(1, line)` を1回書く（`fail()` の `process.exit` も通る）
 - 取り消された job（cancel-in-progress）は行が出ない。課金はされうるので、hq は llm の job の `conclusion=cancelled` を「usage 不明」として別に数える
 
-**変更の範囲（PR-U、deny のクラス: オーナーが直接承認・マージ）**: `scripts/review/llm.js`（呼び出しの2関数で usage・model・HTTP の状態を記録、exit で1行）と、`review.yml` の llm の step の env に `PR_NUMBER: ${{ github.event.pull_request.number }}` の1行（approve と同じ書き方）。gate.js・approve.js・common.js・reviewPr.js は触らない。行を作る純関数を llm.js に置き、`verify-review-workflow.js` で「自由文が入らない・改行と `%` が無い・null の扱い」を固定する
+**変更の範囲（PR-U、deny のクラス: オーナーが直接承認・マージ）**: `scripts/review/llm.js`（呼び出しの2関数で usage・model・HTTP の状態を記録、exit で1行）・`scripts/review/usage.js`（行を作る純関数）と、`review.yml` の llm の step の env に `PR_NUMBER: ${{ github.event.pull_request.number }}` の1行（approve と同じ書き方）。gate.js・approve.js・common.js・reviewPr.js は触らない。行を作る純関数は `scripts/review/usage.js` に置き（llm.js は読み込むと main が走るため、検証から import できる別のファイルにした。PR-U）、`verify-review-workflow.js` で「自由文が入らない・改行と `%` が無い・null の扱い」を固定する
 
 **hq の読み方**（偽の記録を拾わないため、`/commits/{sha}/check-runs` の job 名では引かない。作成の App は自分のブランチの workflow で同じ名前の job と notice を出せる）:
 1. `gh api --paginate 'repos/rhapsody0919/boatrace-ai-predictor/actions/workflows/review.yml/runs?event=pull_request_target&created=<JST の1日>&per_page=100'`、`path == ".github/workflows/review.yml"` を確かめる（1日は 2500 の頭打ちより十分少ない）
+   - 加えて、行の `pr` の base が master であること・run の head SHA が行と同じことを確かめる（作成の App が自分のブランチを base にした PR では、そのブランチの review.yml が `pull_request_target` で動き、1 の条件を全部通る偽の行を出せる。PR-U の審査の指摘。手順の正本は `docs/operation/identity-separation-owner-steps.md` 5節）
 2. `gh api 'repos/…/actions/runs/{run_id}/jobs?filter=all'`（再実行の前の試行も数える）で `name=="llm"` の job id
 3. `gh api 'repos/…/check-runs/{job_id}/annotations'` の `title=="review-usage"` の message を JSON として読み、`v` を確かめる
 4. 単価を掛けて日ごとに合計し、hq の手元に JSONL で貯める（1日約110 run で API 約220回）
@@ -687,6 +691,61 @@ v6 で直したこと:
 
 - 推奨は A。配列の末尾への追加は検査の項目を増やす向きが大半で、オブジェクトへのプロパティの追加は既存の期待値の意味を変える向き、と形で分けられる。A での本数は hq に数え直してもらう
 - 判断28: 0本の日を含めた分布は 中央値8・平均12.5・90%点24・最大59（10/13）、60以上の日は0日（過去に審査の App の APPROVE は0件なので、マージの日で代えて数えた）。前の版の「40 は 90%点 36 の少し上」は0本の日を除いた数で、根拠にならない。**30 で知らせ、60 で止める**に直した（30 は 90%点 24 の上、60 は過去の最大 59 の上で普段の日は止めない）
+
+**v6.2（hq の v6.1 の数え直しと system-architect の審査を受けて、2026-10-20）**
+
+hq の v6.1 の数え直し（正本は hq の drafts/dev-gate-classify-20261020.md の「## v6.1」の節）で分かったこと: 例にした4本（#1248・#1246・#1215・#1192）は v6.1 の「末尾だけ」では4本とも owner のまま（`MUTANTS` は機能ごとの塊の先頭や途中に挿す書き方、#1248 の `TARGETS` はオブジェクト）。名前の除外は1本も効いていない。末尾で通った8ファイルのうち5つは名前の無い配列で、期待値の配列への追加を止めていない。
+
+自分の数え直し（hq の判定の道具 tok61.cjs・verify61.py・classify61.py を写し、足した配列の親の形を記録する1項目だけ足した。946 本、3つ全部の形）:
+
+| 形 | 社員で回る | v6.1 からの差 |
+|---|---|---|
+| v6.1（末尾だけ・名前の除外） | 389（41.1%） | — |
+| どこに挿してもよい（hq の参考、再現した） | 398（42.1%） | +9 |
+| 最初の v6.2（形で分ける: 宣言・`Object.freeze` の宣言・for…of の対象） | 395（41.8%） | +6 |
+| **v6.2（使われ方で分ける、審査の後）** | **394（41.6%）**（見積り、hq の確認待ち） | +5 |
+
+どこに挿してもよい形で、配列の追加で通った 28 ファイルの配列の親の形と、v6.2 の行き先:
+
+| 親の形 | ファイル | v6.2 |
+|---|---|---|
+| 宣言の初期値で、参照が反復の元だけ（`MUTANTS`・`mutants`・`jobMutants`・`CLASSIFY_CASES`・`SNAPSHOT_CANDIDATES`・`TONE_CASES`・`jobs`・`ADMIN_PATHS`） | 15 | 許す |
+| 宣言の初期値で、反復の元以外に使う（`ROWS` は `overrides.rows ?? ROWS` で全部の検査の入力、`bad` は別の用途の同名あり） | 2 | owner |
+| for…of の対象（`for (const [label, sql, re] of [...])`） | 5 | 許す |
+| `Object.freeze([...])` の宣言（#919 の `MIGRATION_FILES`。`[0]` を使い、適用の順に意味がある） | 1 | owner |
+| 呼び出しの引数（verify-scrape-jobs の `same(windowJobNames().sort(), [...])` 4本、#1674 の `new Set([...])`） | 5 | owner |
+| メンバーの呼び出しの元（#1354・#1357 の `const bannedHits = [...].map(...).filter(...)`） | 2 | owner |
+| 既存の要素の中のプロパティの値の配列（#1567 の `const bad` の既存の行の中の `x_thread`） | 1 | owner |
+
+（1ファイルで複数の配列に当たるものがあるので、合計は 28 を超える。引数の5ファイルは、PR の行き先が他の理由で owner 以上（#1674 は scripts/db を含み deny）のため本数は変わらない。#1359 も他の理由で owner。v6.2 の最初の形から本数が動くのは #919 の1本だけ。）
+
+**審査（system-architect、2026-10-20。P1 2件・P2 4件・P3 4件、全部採用）**
+
+| 指摘 | 再現 | 直し |
+|---|---|---|
+| P1 形（宣言した配列）だけでは、除外の一覧・期待値・検査の入力を分けられない。`verify-pre-race-parsers.js:797` の `NEW_KEYS`（:812 の `.includes` で比べる前に外すキー。`"exhibitionTime"` を足すと展示タイムの退行を比べなくなる）、`verify-races-derived-backfill.js:44` の期待値 `w`、`verify-ai-copy-text.js:60` の `ROWS`（:120 で全部の検査の入力）が、最初の v6.2 で employee | コードで確かめた | 宣言の配列は、そのファイルの中の名前の参照が全部「反復の元」（for…of・`.entries()`・`.forEach`・`.map`・`.filter`・`.length` の読み取り・別の表の中の `...X`）のときだけ許す。`.includes`・`.has`・`.indexOf`・`.some`・`.every`・`.find`・`.join`・添字・`new Set(X)`・引数・代入・return・`.length` への代入があれば owner。export した宣言・分割代入の宣言・代入式・クラスのフィールド・`Object.freeze` 等で包んだ宣言も owner |
+| P1 `verify-analogy-v16.js:54` の `export const CLEANUP` は、nightly-verify-db.yml（environment: prod-jobs）が毎晩 `--cleanup` つきで動かし（:61 の `node "scripts/maintenance/$script.js" $ARGS`）、本番の Storage を消す一覧。先頭に `["scenario", 1]` を挿すと、龍神ソナーの表示用（2年残す）を毎晩消す。run の行のパスが変数なので、prodWrite の導出が拾わない。v6 の (a) でも `CLEANUP.unshift(…)` の文を足せば通る | コードと workflow で確かめた。変数のパスで verify を動かす workflow はこの1つ | 同じ for の5つの script を owner に名前で書いた。prodWrite の導出に「run の行の変数のパスは、for の単語の並びを展開して入口に足す。展開できなければその workflow を変える PR は owner」を足した。export は (c) で owner |
+| P2 順番に意味がある配列への途中の挿入。`verify-data-health-job.js:186-187` の `MIGRATION_FILES` は「適用の順に並べる（後ろが前の CREATE OR REPLACE を上書き）」、:194 は `[0]` を使う。最初の v6.2 で許す例に挙げていた | コードで確かめた | 使われ方の条件（添字は owner、freeze で包んだ宣言は owner）で外れる。plan の「表の行の位置は検査の意味を変えない」は、反復の元にしか使わない表に限って成り立つ、に直した |
+| P2 判断28 の数が v6.2 の分類と食い違う。v6.2 で数えると 10/2 が 40・10/13 が 60（#1486 が owner から外れて 10/13 にマージ）。「60 で止める」が60本目を通すかが無い。マージの日は承認を少なく数える側 | rows_any_ctx.json と prs.json の mergedAt で再現（10/1 45・10/2 40・10/13 60） | 数を v6.2 で書き直した。数え方を「notifyAt 本目で知らせ、perDay 本を超えた APPROVE から止める」と書いた。推奨は下の判断28 |
+| P2 名前の除外は補助にとどまる（`UNEXPECTED`・`unknown`・`exception`・`shallow` で誤って止める、`exempt`・`legacy`・`permit`・`whitelist`・`bypass`・`NEW_KEYS` は拾わない）。道具は `Object.freeze` の宣言の名前を取っていない | 確かめた（tok61.cjs の nameOf は呼び出しの親で null） | 主の線を使われ方にし、名前は補助と明記。freeze で包んだ宣言は owner にしたので、名前の取り方の問題は消えた |
+| P2 (a) の文の追加で表を空にできる（`ADMIN_PATHS.length = 0;` を足すと管理画面の認証の検査が全部消える）。(c) でもスプレッドで副作用を混ぜられる（`...((assert.ok = () => {}), [])`） | 審査の再現 | 禁止の文字列に `.length` への代入（`\.length\s*=(?!=)`）と `.splice(` を足した。(c) で足す要素は SpreadElement・代入・更新・delete を含まない |
+| P3 宣言の範囲（const だけか let・var・関数の中もか）、分割代入の宣言、日付が 10-21、version が小数 | — | let・var を含むと書き、分割代入は owner、v6.2 の節の日付を 10-20 に、version を文字列 "6.2" にした |
+
+**設計に関わっていない審査（独立、P2 1件・P3 8件、全部採用）**: (a)・(b)・(c) の1ファイル内の併用が書かれていない（P2。#1246・#1215・#1192 は (a) と (c)、#1354 は (a) と (b) の併用が前提で、「どれか1つ」で作ると例が通らない）→「1ファイルの差分を (a)・(b)・(c) に分け、全部の部分がどれかに当たれば許す」と書いた。ほかに、`same(jobs, [...])` の書き方を実物の `same(windowJobNames().sort(), [...])` に、#1567 の分類の置き場所を揃え、#1674 は deny と直し、禁止の文字列が .js にも掛かることを明記し、上限での最悪の月の run を書き、$comment の版の経緯を plan に寄せた（`.claude/rules/documentation.md` の変更履歴を書かない規則）。
+
+v6.2 の決めたこと（判断27・28）:
+
+| 決めること | v6.2 | 理由 |
+|---|---|---|
+| 1. 途中・先頭への挿入 | 許す（既存の要素が同じ字句・同じ順で全部残り、増えたのは丸ごとの要素だけ）。ただし下の 2 の「反復の元だけ」の表に限る | 反復の元にしか使わない表は、どの行も同じ検査を通るので、位置で意味が変わらない。末尾だけだと、例の4本のうち3本（#1246・#1215・#1192）が通らない。添字・`[0]`・`.join` で使う配列は 2 で外れる |
+| 2. 期待値の配列 | 足してよいのは for…of の対象の配列と、参照が全部「反復の元」の宣言の配列の、直接の要素だけ。他（引数・メンバーの呼び出しの元・プロパティ・入れ子・export・freeze・分割代入・`.includes` 等に使う宣言）は owner | 形では、除外の一覧・期待値・検査の入力・本番を消す一覧を分けられない（審査の P1 の実例4つ）。使われ方なら、例の表（`MUTANTS` 等）は通り、実例4つは止まる。誤って止める側は #1354・#1357（`[...].map` の元、検査を増やす向き）と #919（freeze）で、本数への影響は 4 本（v6.2 の最初の形から −1、どこでもから −4） |
+| 名前の除外 | 残し、`expect` を足す。補助と明記 | 過去31日に当たった例は0本で、止める本数は増えない。主の線は使われ方 |
+| 3. 判断28 | オーナー決定（2026-10-20 夜）の「30 本で知らせ、60 本で止める」に合わせる。60 本に達した後（61 本目から）を止める、と数え方を書いた | v6.2 の分類で数えると（マージの日 JST で代えた。APPROVE は過去0件）、30 以上は3日（10/1 45・10/2 40・10/13 60）、最大 60。**残る弱み**: 60 は過去の最大の日にちょうど届き余裕が0本で、マージの日は承認を少なく数える側（閉じた PR・承認のし直しが入らない、量は未測）なので、忙しい日に止まりうる。止まった損は翌日の起こし直しだけ。上げる案は 75（目安、根拠なし）で、切替の後の実測で見直す。月の run は、上限いっぱいの日が続くと 10日の区間で約 2,100 run（1 PR 3.55 run の試算、未実測）と頭打ち 2500 に近いので、日ごとに数えて足す形にした |
+
+- 残る弱み（draft の residual に書いた）: 反復の元にしか使わない表でも、反復の本体が「当たったら飛ばす」形なら、行を足すと検査が減る。使われ方の判定は1ファイルの中だけ（export を owner にしたのはこのため）。審査の指示文の「検証を弱める変更は P1」で補う
+- gate の実装の PR（PR-H）で verify に固定するもの: owner になる例（`NEW_KEYS` への追加・`w` への追加・`ROWS` への挿入・`MIGRATION_FILES` の先頭・途中への挿入・`const [x] = [...]` の先頭・`export const CLEANUP` への追加・`const SKIP_X = [...]`・`const expected = [...]`・#1567 の入れ子・`same(x, [...])`・`new Set([...])`・`[...].includes(x)`・スプレッドでの副作用・`ADMIN_PATHS.length = 0;` の文・`CLEANUP.unshift(…)`（名前で owner））、employee になる例（`MUTANTS` の途中への挿入・for…of の対象への追加・(a) と (c) の併用）
+- hq への数え直し: v6.2 の draft（使われ方の線）で 394 本になるかと、判断28 の日の分布（v6.2 の分類）の確認を頼む
+- 試算の比 3.55 run/PR は旧文の「40 本で月約 4,400 run」からの逆算で、実測ではない（判断14 の実費の測定で置き換える）
 
 #### ADR の追記の案（番号は PR 作成時に origin/master の最大＋1）
 

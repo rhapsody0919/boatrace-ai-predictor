@@ -2049,7 +2049,7 @@ const doneOdds = (delayMin, over = {}) =>
     crons.length >= 3 &&
       crons.every(
         (c) =>
-          /^\/api\/cron\/[a-z-]+$/.test(c.path) &&
+          /^\/api\/cron\/[a-z0-9-]+$/.test(c.path) &&
           fs.existsSync(path.join(ROOT, `${c.path.slice(1)}.js`)) &&
           cronRe.test(c.schedule),
       ),

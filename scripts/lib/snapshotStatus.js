@@ -112,5 +112,6 @@ export function failedSnapshotGroups(status) {
         visit(`blogI18n.${lang}`, e);
   }
   visit("blogList", status?.blogList);
+  visit("blogChartPng", status?.blogChartPng);
   return out;
 }

@@ -55,6 +55,7 @@
     {
       "key": "22",
       "label": "福岡",
+      "description": "福岡は1コースの1着率が59.2%（2,363レース中1,400回）で、全国の55.5%（55,414レース中30,732回）より高い。",  // switch があれば全 view に必須
       "badge": {
         "scope": "福岡",
         "period": { "from": "2025-10-20", "to": "2026-10-19" },
@@ -83,7 +84,7 @@
 | | `article` | 必 | 記事 id（`src/data/blog-posts` にある） |
 | | `kind` | 必 | 4 節の種類 |
 | | `title` | 必 | 1〜40字。図の見出し |
-| | `description` | 必 | 1〜90字。既定の view の答えを1文で（「〜を示す図」でなく「〜は〜」）。数字は図の中の値だけ（会場どうしを比べてよい）。割合には母数を添え（「2,363レース中1,400回」）、全国と比べるときは全国の母数も書く（札に出るのは選んだ view の母数だけ） |
+| | `description` | 必 | 1〜90字。既定の view の答えを1文で（「〜を示す図」でなく「〜は〜」）。数字（% と「N レース中 M 回」）は図の中の値だけ（会場どうしを比べてよい）。割合には母数を添え（「2,363レース中1,400回」）、全国と比べるときは全国の母数も書く（札に出るのは選んだ view の母数だけ） |
 | | `axes` | 必 | 4 節の種類ごとの軸 |
 | | `rows` | 必 | 行。`key`（文字列、重複なし）・`label`（1〜8字）・`boat`（任、1〜6。行が枠番（艇番）で key が "1"〜"6" のときだけ。進入コースの行には付けない。枠番と誤読されるため） |
 | | `switch` | 必 | `null` か `{ label, default }`。`default` は views の key のどれか |
@@ -91,7 +92,7 @@
 | | `source` | 必 | `name`・`dataVersion`（YYYY-MM-DD）必、`resultPath` 任 |
 | | `note` | 任 | 注記。1〜70字。定義（何を数えたか）と、言える範囲の限り（例「4〜6コースは1着の件数が少なく、会場の順位は年によって変わりうる」） |
 | view | `key`・`label` | 必 | 切り替えの選択肢 |
-| | `description` | 任 | 1〜90字。この view を選んだときに最上位の `description` の代わりに出す答え。数字はこの view か `all` の値だけ |
+| | `description` | `switch` があれば必、無ければ任 | 1〜90字。この view を選んだときに最上位の `description` の代わりに出す答え。数字（% と「N レース中 M 回」）は図の中の値だけ（会場どうしを比べてよい）。切り替えのある図は全 view に書く（札と棒だけ替わって答えが既定の view のままになるのを防ぐ。2026-10-20 オーナー決定）。既定の view の文は最上位の `description` と同じ文にする（最上位は本文との照合と画像の代替テキストに使う） |
 | | `badge` | 必 | `scope`（範囲）・`period`（`from` ≦ `to` ≦ `source.dataVersion`）・`sample`（`value` 正の整数・`unit`） |
 | | `series` | 必 | 種類ごとの上限以内 |
 | series | `key`・`label` | 必 | |
@@ -180,3 +181,19 @@ public/blog-charts/x.json: views[0].series[0].count: 契約に無いキー（cou
 
 - 新しい種類が要るとき: SEO 担当が Linear に「ブログの図の種類の追加（kind 名・使う記事）」を起票する。部品の担当が 4 節の表・部品・検査を足す。新しい種類と、その種類だけのキーを足すのは版を上げない
 - 既存の種類の項目の意味・必須・型を変えるとき: `schemaVersion` を上げ、同じ PR で全 JSON を書き換える。部品は最新版だけを読む（部品と JSON は同時にデプロイされる）
+
+## 8. PNG の書き出し（note・X 用、ADR 0099）
+
+図ごとに、Vercel のビルドが部品を撮った PNG を配る。作り手は何も書かない（JSON を置けば撮られる）。
+
+- URL: `/blog-charts/{id}.{大きさ}.png`（`id` は JSON の id）。ビルドの成果物で、リポジトリにはコミットしない
+- 大きさは部品の固定の一覧（`src/utils/blogChartPng.js`）。JSON からは変えられない
+
+| 大きさ | 画素 | 使う先 |
+|---|---|---|
+| `portrait` | 1080×1350（4:5） | X・note の本文 |
+| `landscape` | 1280×720（16:9、2段組み） | note の見出し画像・本文、PC（スマホの X では字が小さい） |
+
+- 撮るのは既定の view（`switch.default`）、日本語だけ、ライトの色。切り替えは写さず、札の1つ目（範囲 `badge.scope`）の前に切り替えの名前を足す（例「会場 福岡」。範囲に書いた条件は消さない）。注記は外さない。下端に「龍神レーダー」と「boat-ai.jp」を文字で入れる（ロゴの絵は入れない）。形の確認: `mock/png-review.md`
+- 字は縮めない。枠からはみ出す大きさは作らず、`/ai-snapshots/status.json` の `blogChartPng.skipped` に理由を残す（目安: portrait は注記つきで6行、landscape は7行まで。本番のフォントで測って決まる）。図が描けない等の失敗は `blogChartPng.errors` に残り、`ok` が false になる
+- 取り方: 本番の URL から取る。新しい図の PNG の URL は、オーケストレーターが朝夜のまとめに `node scripts/content/blog-chart-png-digest.js --since {前回の出力の最後の行のコミット}` の出力を貼って流す（初回は時刻でよい）。窓の上限は本番に配られた版（`status.json` の `blogChartPng.commit`）なので、ビルド中の図は次のまとめに回る。無い PNG は rewrite で 200 の index.html が返るので、この検査は content-type と先頭8バイトで見る

@@ -7,10 +7,13 @@ name: DB Apply (production)
 #   apply    Environment production-db（required reviewer の承認が要る）。sha256 を再照合してから psql で適用する
 #   record   適用の後。APPLIED.md の行を「適用済み」にして master に直接コミットする（アプリ ryujin-bot の名義）
 #
-# 手での起動（workflow_dispatch）は inspect → apply → record。起動・承認はユーザー本人が Actions 画面で行う。
+# 手での起動（workflow_dispatch・mode=manual）は inspect → apply → record。起動・承認はユーザー本人が Actions 画面で行う。
 # Claude からの起動・承認はフック（.claude/hooks/guard-deploy-approval.sh）で止めている。
 #
-# 定期の起動（schedule、ADR-0097）は reconcile → judge → apply-auto か apply-gated → record → notify。
+# 定期の起動（ADR-0097）は reconcile → judge → apply-auto か apply-gated → record → notify。起動の出元は2つで、動きは同じ:
+#   Vercel Cron の dispatch（mode=reconcile、毎時17分、api/cron/db-apply-dispatch.js）が主。GitHub の schedule は高頻度だと
+#   ほとんど来ないため（docs/design/db-apply-automation-finish/plan.md §1）
+#   schedule（毎時47分）は予備。同じ分にしないのは、遅れて来た schedule と dispatch が重なると互いを busy と見て両方とも何もしないため
 #   reconcile    鍵なし。切り替えのコミットより後に、審査の App が承認した PR で足された未適用の SQL を番号の順に1本選ぶ
 #                （scripts/db/db-reconcile.js の5点の検査）。db-apply の他の run が動いている・承認待ちなら何もしない
 #   judge        鍵なし。軽い／重い／止めるを、当てる時点の master のファイルで判定し直す（PR のコメントは使わない）
@@ -23,13 +26,21 @@ name: DB Apply (production)
 on:
   workflow_dispatch:
     inputs:
-      migration:
-        description: "適用するファイル（例: docs/db-migration/122_venues_first_win_rate_race_count.sql）"
+      mode:
+        description: "manual: 下のファイルを手で当てる（ユーザー本人）。reconcile: 定期の突き合わせ（Vercel Cron が起動する）"
         required: true
+        default: manual
+        type: choice
+        options:
+          - manual
+          - reconcile
+      migration:
+        description: "mode=manual で適用するファイル（例: docs/db-migration/122_venues_first_win_rate_race_count.sql）。reconcile では空"
+        required: false
         type: string
-  # 毎時17分（JST も毎時17分）。突き合わせだけで、DB に触るのは選んだ1本だけ
+  # 予備（主は Vercel Cron の dispatch、毎時17分）。毎時47分（JST も毎時47分）。突き合わせだけで、DB に触るのは選んだ1本だけ
   schedule:
-    - cron: "17 * * * *"
+    - cron: "47 * * * *"
 
 permissions:
   contents: read
@@ -46,7 +57,9 @@ env:
 jobs:
   inspect:
     # fork では動かさない（fork の Actions にはこのリポジトリの secret・Environment は無いが、念のため）
-    if: github.repository == 'rhapsody0919/boatrace-ai-predictor' && github.event_name == 'workflow_dispatch'
+    if: >-
+      github.repository == 'rhapsody0919/boatrace-ai-predictor' && github.event_name == 'workflow_dispatch' &&
+      inputs.mode != 'reconcile'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -106,9 +119,11 @@ jobs:
         run: node scripts/db/db-apply.js apply "$MIGRATION" "$EXPECTED_SHA256"
 
   reconcile:
+    # 定期の起動（schedule か、dispatch の mode=reconcile）だけ。
     # 審査の App の ID（repo の変数）が入るまでは動かさない（それまでは承認の付いた PR が無く、毎時の失敗になるだけ）
     if: >-
-      github.repository == 'rhapsody0919/boatrace-ai-predictor' && github.event_name == 'schedule' &&
+      github.repository == 'rhapsody0919/boatrace-ai-predictor' &&
+      (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'reconcile')) &&
       vars.REVIEWER_BOT_USER_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -124,6 +139,22 @@ jobs:
       reasons: ${{ steps.reconcile.outputs.reasons }}
       stale: ${{ steps.reconcile.outputs.stale }}
     steps:
+      # dispatch は ref と inputs を自由に付けられる。どちらの意図か曖昧な起動（reconcile にファイルを付けた）と、
+      # master 以外からの起動を通さない（当てる job の Environment も master だけだが、入口でも落とす）
+      - name: 起動の検査
+        env:
+          REF: ${{ github.ref }}
+          MIGRATION: ${{ inputs.migration }}
+        run: |
+          if [ "$REF" != "refs/heads/master" ]; then
+            echo "::error::master 以外（$REF）からは突き合わせない"
+            exit 1
+          fi
+          if [ -n "$MIGRATION" ]; then
+            echo "::error::mode=reconcile にファイル（$MIGRATION）が付いている。手で当てるなら mode=manual で起動する"
+            exit 1
+          fi
+
       # 切り替えのコミットから今の master までの履歴が要るので、全部取り出す
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -253,10 +284,32 @@ jobs:
           ref: master
           persist-credentials: false
 
+      # 手での起動は inputs と inspect の出力、定期の起動は judge の出力。起動の種類で分ける
+      # （`a || b` で混ぜると、片方が空でないときに別のファイルを台帳に「適用済み」と書きうる）
+      - name: 台帳に書くファイルを決める
+        id: target
+        env:
+          MANUAL: ${{ github.event_name == 'workflow_dispatch' && inputs.mode != 'reconcile' }}
+          INPUT_MIGRATION: ${{ inputs.migration }}
+          INSPECT_SHA256: ${{ needs.inspect.outputs.sha256 }}
+          JUDGE_FILE: ${{ needs.judge.outputs.file }}
+          JUDGE_SHA256: ${{ needs.judge.outputs.sha256 }}
+        run: |
+          if [ "$MANUAL" = "true" ]; then
+            migration="$INPUT_MIGRATION"; sha256="$INSPECT_SHA256"
+          else
+            migration="$JUDGE_FILE"; sha256="$JUDGE_SHA256"
+          fi
+          if [ -z "$migration" ] || [ -z "$sha256" ]; then
+            echo "::error::台帳に書くファイルか sha256 が空（MANUAL=$MANUAL）"
+            exit 1
+          fi
+          printf 'migration=%s\nsha256=%s\n' "$migration" "$sha256" >> "$GITHUB_OUTPUT"
+
       - name: APPLIED.md を更新する
         env:
-          MIGRATION: ${{ inputs.migration || needs.judge.outputs.file }}
-          SHA256: ${{ needs.inspect.outputs.sha256 || needs.judge.outputs.sha256 }}
+          MIGRATION: ${{ steps.target.outputs.migration }}
+          SHA256: ${{ steps.target.outputs.sha256 }}
         run: node scripts/db/db-apply.js mark-applied "$MIGRATION" "$SHA256"
 
       # トークンの有効期限は1時間なので push の直前に作る
@@ -271,7 +324,7 @@ jobs:
 
       - name: master にコミットする
         env:
-          MIGRATION: ${{ inputs.migration || needs.judge.outputs.file }}
+          MIGRATION: ${{ steps.target.outputs.migration }}
           PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           file=$(basename "$MIGRATION")
@@ -287,7 +340,9 @@ jobs:
     # 定期の起動で、知らせることがありうるとき（選んだ・止まった・承認待ち・どこかの job の失敗）だけ動かす。
     # 何も無い毎時の起動では動かさない（Environment prod-jobs の deployment を毎時作らない）
     if: >-
-      ${{ always() && github.event_name == 'schedule' && needs.reconcile.result != 'skipped' &&
+      ${{ always() &&
+      (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'reconcile')) &&
+      needs.reconcile.result != 'skipped' &&
       (needs.reconcile.result != 'success' || needs.judge.result == 'failure' ||
       needs.reconcile.outputs.status == 'selected' || needs.reconcile.outputs.status == 'blocked' ||
       needs.reconcile.outputs.pending != '[]' || needs.reconcile.outputs.stale != '[]') }}

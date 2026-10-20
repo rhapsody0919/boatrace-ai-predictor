@@ -79,3 +79,4 @@
 
 ## 検証の進め方
 - 専任のデータ分析レーンは無い。分析は BOA-271 の学習側・実装側レーンが行った（Phase M、slit-hint）。問い合わせはオーケストレーター経由（2026-10-11、Orchestrate）
+- 2026-10-20: 1号艇が20〜45走の選手の単勝・複勝回収率は、時期を分けると前後の順位相関が0.055・0.033（496人）で、選手の差を示さない。同じ組で1着率は0.449、2連率は0.315。20〜45走の回収率の95%区間は単勝±34〜50pt・複勝±29〜43pt（1号艇の1走あたりの払戻の標準偏差 単勝115円・複勝99円、直近180日28,282走）。出典 data/analysis/full-picture-boat1-return/boat1-return-rate-noise.json、docs/design/full-picture-remotion/analysis/boat1-return-rate-noise.md（data-scientist）

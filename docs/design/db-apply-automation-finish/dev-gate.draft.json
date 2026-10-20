@@ -1,6 +1,6 @@
 {
-  "$comment": "案 v6（2026-10-21、hq の v5 の数え直しを反映。2026-10-21、v4 の審査（P1 1件・P2 6件）を反映。hq の v3 の数え直しを反映。v2 の審査の P1 3件・P2 10件を反映。hq の分類 ~/hq/drafts/dev-gate-classify-20261020.md を反映）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js・approve.js が master の checkout（github.sha）から読み、実行のときに形を検査する（読めなければ全部止める側）。分類: (1) PR の全ファイルが content のパスに収まり #1699 の後の形なら content。(2) それ以外は、ファイルごとに deny / owner / appendOnly / prodWrite / frontendSmall / employee を決め、強い順 deny > owner > prodWrite > frontendSmall > employee で一番強いものにする（appendOnly は条件を満たせば employee、外れれば deny）。content のパスのファイルが混ざった PR は (2) で、content のファイルは employee として数え、画像の例外は効かない",
-  "version": 6,
+  "$comment": "案 v6.2（判断27 の配列の追加は使われ方で決める。版ごとの経緯は plan.md §10.4）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js・approve.js が master の checkout（github.sha）から読み、実行のときに形を検査する（読めなければ全部止める側）。分類: (1) PR の全ファイルが content のパスに収まり #1699 の後の形なら content。(2) それ以外は、ファイルごとに deny / owner / appendOnly / prodWrite / frontendSmall / employee を決め、強い順 deny > owner > prodWrite > frontendSmall > employee で一番強いものにする（appendOnly は条件を満たせば employee、外れれば deny）。content のパスのファイルが混ざった PR は (2) で、content のファイルは employee として数え、画像の例外は効かない",
+  "version": "6.2",
   "appliesTo": "作成の App の PR 全部（claude/・codex/・hq の社員）。名義が同じなので、社員だけに効かせることは機械ではできない",
   "branchPrefixes": [
     "claude/",
@@ -88,6 +88,11 @@
         "scripts/maintenance/verify-blog-*.js",
         "scripts/maintenance/verify-migration-rls.js",
         "scripts/maintenance/verify-migration-numbers.js",
+        "scripts/maintenance/verify-analogy-v16.js (nightly-verify-db.yml の prod-jobs で毎晩 --cleanup つきで動き、本番の Storage を消す。CLEANUP の一覧の書き換えで消す範囲が変わる。v6.2)",
+        "scripts/maintenance/verify-rpc-output-keys.js (nightly-verify-db.yml の prod-jobs の for の単語の並びで動く。run の行のパスが変数なので prodWrite の導出が拾わない。v6.2)",
+        "scripts/maintenance/verify-format-column-migration.js (同上)",
+        "scripts/maintenance/verify-winning-technique-filled.js (同上)",
+        "scripts/maintenance/verify-venue-technique-period.js (同上)",
         "docs/db-migration/APPLIED.md (足すだけの規則に当たらない変更)",
         "docs/design/*/mock/**",
         "api/cron/** (下の cronSmall に当たらないもの)",
@@ -142,7 +147,8 @@
       "derive": {
         "entries": [
           "Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある scripts/**・api/** のファイル（hq の実測で 66）",
-          "vercel.json の crons の path に当たる api/cron/*.js（hq の実測で 40。deny にも入っているが、import の先を数える入口）"
+          "vercel.json の crons の path に当たる api/cron/*.js（hq の実測で 40。deny にも入っているが、import の先を数える入口）",
+          "run の行のパスが変数で組み立てられているもの（nightly-verify-db.yml の for script in … の単語の並びから scripts/maintenance/$script.js）は、gate が単語の並びを展開して入口に足す。展開できない変数のパスがあれば、その workflow を変える PR は owner（v6.2、審査の指摘。今は名前で owner に書いた5つで止めている）"
         ],
         "closure": "入口から静的な import（JS の import/require の相対パス、Python のリポジトリ内の import）をたどった全部。master と PR の head の和で作る（head の変更したファイルは API で読む。実行しない）。fs で読むデータはたどらない（残る弱み）",
         "srcFiles": "閉包に入る src/**（src/utils の一部等）は prodWrite として数える。上限は prodWrite のファイルだけで数えるので、小さな画面の直し（#1627 の2ファイル16行）は上限の中で、審査の承認で入る",
@@ -244,16 +250,16 @@
       "class": "prodWrite"
     },
     "verifyScripts": {
-      "$comment": "scripts/maintenance/verify-*.js・verify-*.sh だけ（v6 で範囲をこれに揃えた。scripts/maintenance の外の verify は CI で動かないので employee。hq の v5 で該当 18 ファイル）。判断27、推奨は (ii) v6",
+      "$comment": "scripts/maintenance/verify-*.js・verify-*.sh だけ（v6 で範囲をこれに揃えた。scripts/maintenance の外の verify は CI で動かないので employee。hq の v5 で該当 18 ファイル）。判断27、推奨は (ii) v6.2",
       "added": "employee（今と同じ）",
       "removed": "owner",
-      "modified": "(ii) v6: .js は acorn で字句（トークン）の並びを作り、位置の情報を除いて比べる。許すのは次の2つだけ: (a) master の字句の並びが head の中に、文の境で区切られたまま順番どおり全部残り、head で増えたのは文の境に挟まった丸ごとの文だけ（空白・改行・コメントだけの違いを許し、文字列・正規表現の中身の書き換え、改行を消してコメントにつなげる書き換え、return の後の改行、既存の文の末尾につなげる && false・|| true・?? 0・. で始まる行は全部外れる）、(c) 配列のリテラルの末尾に要素を足す書き換え（acorn の構文木で、master の配列の要素が全部同じ字句のまま同じ順に残り、増えたのは末尾の要素だけ。退行の表・TARGETS への追加、#1248・#1246・#1215・#1192）。ただし、配列を代入している名前が skip・ignore・allow・exclude・except・known・baseline を含む（大小文字を問わず）ときは owner（検査を外す一覧に足すのは検証を緩めるため）。オブジェクトのリテラルへのプロパティの追加は許さない（既存の期待値に locked: null を足した #848 の形は owner のまま）、(b) import 文の書き換えで、読み込み先（from の文字列）が同じで、master の束縛（名前と別名の組）が全部 head に残り、足したものだけが違う（es-module-lexer か acorn で import を取り出す。行の文字列では見ない）。それ以外は owner。.sh は空白に意味があるので (a) を適用せず、- の行が0のときだけ足すだけとみなす。足した文が次のどれも含まなければ employee: process.exit・exitCode・process.on(・/*・*/・if (false・.skip(・SKIP・process.argv・インデントの無い return。バッククォートは禁止の文字列から外した（#781）",
-      "residual": "足すだけで検証を消す書き方は列挙し切れない（審査の実測で、/* */ で囲む・テンプレートリテラルで囲む・if (false) で囲む・process.exit を差し替える等）。(ii) が確実に止めるのは『既存の行の書き換え』（期待値を書き換えて通す手抜き）。足す側は禁止の文字列と、審査の指示文の『検証を弱める変更は P1』で補う。残る弱みに書く。v6 でバッククォートを外したので、テンプレートリテラルで既存の検査を囲む書き方は機械では止まらない（足すだけの形でも検査を消せる）。審査の指示文の『検証を弱める変更は P1』で補う"
+      "modified": "(ii) v6.2: .js は acorn で字句（トークン）の並びを作り、位置の情報を除いて比べる。1ファイルの差分を (a)・(b)・(c) の部分に分け、全部の部分がどれかに当たるときだけ許す（併用してよい。#1246・#1215・#1192 は (a) と (c)、#1354 は (a) と (b)）: (a) master の字句の並びが head の中に、文の境で区切られたまま順番どおり全部残り、head で増えたのは文の境に挟まった丸ごとの文だけ（空白・改行・コメントだけの違いを許し、文字列・正規表現の中身の書き換え、改行を消してコメントにつなげる書き換え、return の後の改行、既存の文の末尾につなげる && false・|| true・?? 0・. で始まる行は全部外れる）、(c) 表の配列への行の追加（v6.2）: acorn の構文木で、足したものが「表の配列」の直接の要素で、master の要素が全部同じ字句のまま同じ順に残り（末尾に限らず途中・先頭への挿入も許す）、増えたのは丸ごとの要素だけ。表の配列は次の2つだけ: (c1) for…of の反復の対象に直接書いた配列（for (const c of [...])）、(c2) 識別子への宣言の初期値の配列（const・let・var。export したもの・分割代入の宣言・代入式・クラスのフィールド・Object.freeze 等の呼び出しで包んだものは外れ）で、そのファイルの中のその名前の参照が全部「反復の元」だけのもの。反復の元は for (… of X)・X.entries()・X.forEach(・X.map(・X.filter(・X.length の読み取り・別の表の配列の中の ...X だけ。X.includes(・X.has(・X.indexOf(・X.some(・X.every(・X.find(・X.join(・X[添字]・new Set(X)・関数の引数として渡す・値として代入する・return する・X.length への代入、が1つでもあれば owner（除外の一覧・期待値・検査の入力・順番に意味がある一覧として使われうるため。実例: verify-pre-race-parsers.js の NEW_KEYS は .includes で比べる前に外すキー、verify-ai-copy-text.js の ROWS は全部の検査の入力、verify-data-health-job.js の MIGRATION_FILES は [0] と適用の順に意味がある、verify-analogy-v16.js の CLEANUP は export で本番の Storage を消す一覧）。足す要素は SpreadElement・代入・更新（++ 等）・delete を含まない。穴（[a,,b]）のある配列は許さない。宣言の名前が skip・ignore・allow・exclude・except・known・baseline・expect を含む（大小文字を問わない部分一致）ときも owner（補助。unknown・exception・UNEXPECTED 等の誤って止める側を含む。過去31日の946本で当たった例は0本）。呼び出し・new の引数の中の配列（same(windowJobNames().sort(), [...])・new Set([...]) 等）、メンバーの呼び出しの元の配列（[...].map(...)・[...].includes(x)）、オブジェクトのプロパティの値の配列、既存の要素の中の配列（入れ子。#1567 は const bad の既存の要素の中の x_thread の配列に要素を足し、親1件で141字を拒む入力を変えていた）への追加は owner。オブジェクトのリテラルへのプロパティの追加は許さない（#848 の locked: null、#1248 の TARGETS は owner のまま）、(b) import 文の書き換えで、読み込み先（from の文字列）が同じで、master の束縛（名前と別名の組）が全部 head に残り、足したものだけが違う（es-module-lexer か acorn で import を取り出す。行の文字列では見ない）。それ以外は owner。.sh は空白に意味があるので (a) を適用せず、- の行が0のときだけ足すだけとみなす。.js・.sh とも、足した文・足した要素・新しい import 文が次のどれも含まなければ employee: process.exit・exitCode・process.on(・/*・*/・if (false・.skip(・SKIP・process.argv・インデントの無い return・.length への代入（正規表現 \\.length\\s*=(?!=)、v6.2）・.splice(（v6.2。既存の表を空にする・削る文の追加、例: ADMIN_PATHS.length = 0; で管理画面の認証の検査が全部消える）。バッククォートは禁止の文字列から外した（#781）",
+      "residual": "足すだけで検証を消す書き方は列挙し切れない（審査の実測で、/* */ で囲む・テンプレートリテラルで囲む・if (false) で囲む・process.exit を差し替える等）。(ii) が確実に止めるのは『既存の行の書き換え』（期待値を書き換えて通す手抜き）。足す側は禁止の文字列と、審査の指示文の『検証を弱める変更は P1』で補う。残る弱みに書く。v6 でバッククォートを外したので、テンプレートリテラルで既存の検査を囲む書き方は機械では止まらない（足すだけの形でも検査を消せる）。審査の指示文の『検証を弱める変更は P1』で補う。v6.2 の (c) で止まらないもの: 反復の元にしか使っていない表でも、反復の本体が「当たったら飛ばす」形（for (const p of X) if (path.startsWith(p)) continue）なら、行を足すと検査が減る。使われ方の判定は1ファイルの中だけで、他のファイルから import されると見えない（export を owner にしたのはこのため）。名前の除外は補助で、exempt・legacy・permit・whitelist・bypass 等は拾わない"
     }
   },
   "monthlyLimit": {
-    "$comment": "runs の API の total_count は actor・created で絞ると 2500 で頭打ち（plan.md §10.2）。見込みの月約 3,400 run（hq）を数えるため、月を10日ごとの3区間に分けて数えて足す（1区間は約 1,100 で 2500 に届かない）。上限の数は、判断14 の実費の測定の後に、日の承認の上限 40（最大で月約 4,400 run）と食い違わない値で決める",
-    "countBy": "10日ごとに数えて足す",
+    "$comment": "runs の API の total_count は actor・created で絞ると 2500 で頭打ち（plan.md §10.2）。月を日ごとに数えて足す（v6.2 で10日ごとから変えた。日の承認の上限 60 で上限いっぱいの日が続くと、1 PR 3.55 run（旧文の 40 本で月約 4,400 run からの比、未実測）で10日の区間は最大約 2,100 run と頭打ちに近いため）。上限の数は、判断14 の実費の測定の後に、日の承認の上限と食い違わない値で決める",
+    "countBy": "日ごとに数えて足す",
     "runs": null,
     "notifyAtRatio": 0.8
   },
@@ -264,7 +270,7 @@
   },
   "precedence": "名前で書いたパス（deny・owner の paths）は、閉包（deny の閉包・prodWrite の閉包）より優先する。名前で書いたパスどうしが重なれば強い方（例: docs/design/*/mock/APPROVED.md は deny）。閉包から決まるクラスは、名前で書いたクラスが無いファイルにだけ付く",
   "dailyAutoMergeCap": {
-    "$comment": "判断28（v6、hq の v6 の実測）。社員で回る PR の1日の本数は、0本の日を含めて 中央値8・平均12.5・90%点24・最大59（10/13）、60以上の日は0日。過去に審査の App の APPROVE は0件なので、マージの日で代えて数えた。数えるのは、その日（JST）に APPROVE した PR の数（同じ PR の承認し直しは1つ）。30 で知らせ（90%点 24 の上、過去の30日で数日）、60 で以後の APPROVE を止める（過去の最大 59 の上で、普段の日は止めない）。止めた PR は翌日に空のコミットで審査を起こし直す。月の run は10日ごとに数えて足す。判断14 の実費の測定の後に見直す",
+    "$comment": "判断28（オーナー決定 2026-10-20 夜、オーケストレーター経由: 30本で知らせ、60本で止める）。数えるのは、その日（JST）に APPROVE した PR の数（同じ PR の承認し直しは1つ）。30 本目の APPROVE で知らせ、60 本に達した後の APPROVE（61 本目から）を止めて COMMENT にする。止めた PR は翌日に空のコミットで審査を起こし直す。残る弱み: v6.2 の分類で過去31日を数えると（マージの日 JST で代えた。APPROVE は過去0件）、30 以上は3日（10/1 45・10/2 40・10/13 60）で最大60、60 の上限は過去の最大の日に余裕0本。マージの日は承認を少なく数える側（閉じた PR・日をまたいだ承認のし直しが入らない、量は未測）なので、実際には止まる日がありうる。上げる案は 75（目安、根拠なし）。判断14 の実費の測定の後と、切替の後の実測で見直す",
     "countWhat": "distinct PRs approved per JST day",
     "perDay": 60,
     "notifyAt": 30

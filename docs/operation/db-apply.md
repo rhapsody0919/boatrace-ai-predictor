@@ -130,6 +130,7 @@ flowchart TD
 
 起動（`gh workflow run db-apply` や API の dispatch）・deployment の承認（`pending_deployments`）・Environments の変更は、ユーザー本人だけが行う。
 Claude の役割は、マイグレーションを書いて PR にすることと、適用後の確認（読み取り）まで。
+定期の突き合わせ（`mode=reconcile`）は Vercel Cron（`api/cron/db-apply-dispatch.js`）が起動する。手での起動（`mode=manual`）はユーザー本人だけ。
 
 **技術的には止め切れていない。** Claude の `gh` はユーザーと同じアカウントで認証されているため、GitHub から見て Claude の承認と本人の承認は区別できない。
 `.claude/hooks/guard-deploy-approval.sh`（PreToolUse）と `.claude/settings.json` の deny は、よく使う書き方を文字列で止めているだけで、言い換え（workflow の表示名や数値の ID での起動、GraphQL での承認、ブラウザ操作）は通る。
@@ -137,7 +138,11 @@ Claude の役割は、マイグレーションを書いて PR にすることと
 
 ## 自動の適用（ADR-0097）
 
-[ADR-0097](../adr/0097-identity-separation-auto-review-and-db-apply.md) で、手での起動に加えて、定期の起動（毎時17分）が未適用のマイグレーションを当てる。同じ `db-apply.yml` の中にあり、手での起動の流れは変わらない。
+[ADR-0097](../adr/0097-identity-separation-auto-review-and-db-apply.md) で、手での起動に加えて、定期の起動が未適用のマイグレーションを当てる。同じ `db-apply.yml` の中にあり、手での起動の流れは変わらない。
+
+- 定期の起動は2つの出元がある。主は Vercel Cron（毎時17分、`api/cron/db-apply-dispatch.js`）が `mode=reconcile` で dispatch するもの。予備は `db-apply.yml` の schedule（毎時47分）。GitHub の schedule は高頻度だとほとんど来ないため（[plan §1](../design/db-apply-automation-finish/plan.md)）。どちらから来ても動きは同じで、同時に動けば互いを busy と見て何もしない
+- Vercel 側のモードは `scrape_job_state` の `job='db_apply_dispatch'`（off・shadow・live）。止めるときは `off`。monitor の job は off でも失敗の回数が残る間は scrape-monitor が知らせ続けるので、同じ行の `consecutive_failures` も 0 に戻す
+- dispatch の関数は、live の最初の起動から3時間を過ぎて、直近3時間に reconcile の job が success で終わった run が無いと、起動した上で失敗を記録する（scrape-monitor が Slack に出す）。skipped・queued のまま・起動の失敗の見張り
 
 - 今は試運転（`db-apply.yml` の `DB_APPLY_DRY_RUN: "true"`）。当てずに、未処理のファイル（最大10本）ごとに「当てるはずだった（軽い／重い／止める、理由）」を Slack と元の PR に1回だけ出す。当てるのは今までどおり上の「毎回の手順」
 - 1回だけにする印は、元の PR のコメントの `<!-- db-apply:… -->`。同じ印があれば出さない（止まったままのものは日付を入れて毎日1回）。job の失敗・承認待ちの6時間は毎回 Slack に出す
