@@ -35,7 +35,7 @@ export const FRAME_AT = CHANGE_END + BEAT.pause;
 export const ANSWER_AT = FRAME_AT + BEAT.frameIn + BEAT.answerGap;
 
 /**
- * @param {{radar: {focus: {boat:number}[]}, cards: {items: unknown[], emptyLine: string|null}}} scene
+ * @param {{radar: {focus: {boat:number}[]}, cards: {items: unknown[], empty: object|null}}} scene
  * @returns {{beats: {kind: string, index: number, from: number, len: number}[], total: number}}
  */
 export function scene2Timeline(scene) {

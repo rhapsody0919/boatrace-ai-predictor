@@ -772,6 +772,12 @@ function QuestionBand({ text, opacity }) {
   );
 }
 
+/**
+ * その拍の答えの文。scene.answers（文の JSON。描画の前に1度だけ作って保存したもの）にあればそれを、
+ * 無ければ文型の版を使う。同じ JSON なら同じ絵になる
+ */
+const answerOf = (scene, id, template) => scene.answers?.[id] ?? template;
+
 export const scene2Duration = (scene) => scene2Timeline(scene).total;
 
 export function FullPictureScene2(scene) {
@@ -832,7 +838,7 @@ export function FullPictureScene2(scene) {
     const at = 24 + BEAT.pause;
     radarFrame = { box: chipBox(scene.radar.overview.frameBoats), t: t - at };
     radarAnswer = {
-      lines: scene.radar.overview.lines,
+      lines: answerOf(scene, scene.radar.overview.id, scene.radar.overview.lines),
       t: t - (at + BEAT.frameIn + BEAT.answerGap),
     };
   } else if (beat.kind === "focus") {
@@ -854,7 +860,7 @@ export function FullPictureScene2(scene) {
         t: t - FRAME_AT,
       };
     }
-    radarAnswer = { lines: f.lines, t: t - ANSWER_AT };
+    radarAnswer = { lines: answerOf(scene, f.id, f.lines), t: t - ANSWER_AT };
   }
 
   const fade = (f) =>
@@ -927,7 +933,7 @@ export function FullPictureScene2(scene) {
               />
               {active && (
                 <Bubble
-                  lines={item.answer}
+                  lines={answerOf(scene, item.id, item.answer)}
                   t={t - cardFrameAt(i) - BEAT.frameIn - BEAT.answerGap}
                 />
               )}
@@ -959,7 +965,7 @@ export function FullPictureScene2(scene) {
             }}
           >
             <Bubble
-              lines={[scene.cards.emptyLine]}
+              lines={answerOf(scene, scene.cards.empty?.id, scene.cards.empty?.lines)}
               t={beat.kind === "empty" ? t - 20 : -1}
               y={600}
             />

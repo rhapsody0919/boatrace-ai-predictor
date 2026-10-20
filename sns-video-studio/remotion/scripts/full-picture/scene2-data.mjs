@@ -79,43 +79,92 @@ const rankShort = (r) =>
 const unwrap = (json) => (json && json.data && json.data.today ? json.data : json);
 
 /**
- * 重ね図の1艇の答え（何で上位か）。1位の項目があればそれを、無ければ一番上の項目を、次点・1位の艇と数値で比べる
- * @returns {{frameAxis: number|null, lines: string[]}}
+ * 重ね図の1艇の比べた結果（facts）。1位の項目があればそれを、無ければ一番上の項目を選び、
+ * 1位なら次点の艇、1位でなければ1位の艇と値を比べる。文はここでは作らない（templateLines・polish が作る）
  */
-function focusAnswer(b, radar, axes, values) {
+function focusFacts(b, radar, axes, values) {
   const me = radar[b - 1];
-  const ranked = me.cells
-    .map((c, i) => ({ i, r: c.rank }))
-    .filter((x) => x.r);
-  if (ranked.length === 0)
-    return { frameAxis: null, lines: [`${b}号艇は比べられる値が無い`] };
+  const ranked = me.cells.map((c, i) => ({ i, r: c.rank })).filter((x) => x.r);
+  if (ranked.length === 0) return { frameAxis: null, facts: { kind: "focus", boat: b, item: null } };
   const best = ranked.reduce((a, x) => (x.r.from < a.r.from ? x : a));
   const ax = axes[best.i];
   const v = values[ax.key];
   const val = withUnit(ax.key, v[b - 1]);
-  // 表示の桁で同じ値なら、そう書く（例: 平均ST 0.13秒どうし）
-  const vs = (o) => {
+  const other = (o) => {
     const s = withUnit(ax.key, v[o - 1]);
-    return s === val ? `同じ${s}` : s;
+    return { boat: o, value: s, sameDisplay: s === val };
   };
-  let l1;
-  let l2;
-  if (best.r.from === 1) {
-    const firsts = ranked.filter((x) => x.r.from === 1).length;
-    // 次点（自分より下で一番上の艇）と比べる
+  const isFirst = best.r.from === 1;
+  let compare;
+  if (isFirst) {
+    // 次点（自分より下で一番上の艇）
     const next = BOATS.filter((o) => o !== b && radar[o - 1].cells[best.i].rank)
       .map((o) => ({ o, r: radar[o - 1].cells[best.i].rank }))
       .filter((x) => x.r.from > best.r.to)
       .sort((a, c) => a.r.from - c.r.from || a.o - c.o)[0];
-    const tie = best.r.from !== best.r.to ? "（同じ値の艇あり）" : "";
-    l1 = `${b}号艇は${ax.label}で1位${tie}${firsts > 1 ? `、ほか${firsts - 1}項目も1位` : ""}`;
-    l2 = next ? `${ax.label}${val}、2番手は${next.o}号艇の${vs(next.o)}` : `${ax.label}${val}`;
+    compare = next ? { role: "2番手", boats: [other(next.o)] } : null;
   } else {
-    const top = BOATS.filter((o) => radar[o - 1].cells[best.i].rank?.from === 1);
-    l1 = `${b}号艇の一番上は${ax.label}の${rankShort(best.r)}`;
-    l2 = `${val}、1位は${top.map((o) => `${o}号艇の${vs(o)}`).join("・")}`;
+    compare = { role: "1位", boats: BOATS.filter((o) => radar[o - 1].cells[best.i].rank?.from === 1).map(other) };
   }
-  return { frameAxis: best.i, lines: [l1, l2] };
+  return {
+    frameAxis: best.i,
+    facts: {
+      kind: "focus",
+      boat: b,
+      item: ax.label,
+      value: val,
+      rank: rankShort(best.r),
+      tie: best.r.from !== best.r.to,
+      otherFirstItems: isFirst ? ranked.filter((x) => x.r.from === 1 && x.i !== best.i).map((x) => axes[x.i].label) : [],
+      otherFirstCount: isFirst ? ranked.filter((x) => x.r.from === 1 && x.i !== best.i).length : 0,
+      compare,
+      top2Count: me.top2,
+      axesCount: axes.length,
+    },
+  };
+}
+
+/** 文型の版（facts だけから決まった文型で作る。必ず出せる下限） */
+export function templateLines(f) {
+  if (f.kind === "overview")
+    return [
+      `2位以内の項目が最多は${f.leaders.join("・")}号艇（${f.axesCount}項目中${f.maxTop2}）`,
+      f.runner ? `次は${f.runner.boats.join("・")}号艇の${f.runner.count}` : "6艇とも同じ数",
+    ];
+  if (f.kind === "focus") {
+    if (!f.item) return [`${f.boat}号艇は比べられる値が無い`];
+    const cmp = (c) => `${c.boat}号艇の${c.sameDisplay ? "同じ" : ""}${c.value}`;
+    if (f.rank === "1位" || f.rank.startsWith("1〜"))
+      return [
+        `${f.boat}号艇は${f.item}で1位${f.tie ? "（同じ値の艇あり）" : ""}${f.otherFirstItems.length ? `、ほか${f.otherFirstItems.length}項目も1位` : ""}`,
+        f.compare ? `${f.item}${f.value}、2番手は${cmp(f.compare.boats[0])}` : `${f.item}${f.value}`,
+      ];
+    return [`${f.boat}号艇の一番上は${f.item}の${f.rank}`, `${f.value}、1位は${f.compare.boats.map(cmp).join("・")}`];
+  }
+  if (f.kind === "card") {
+    const l1 =
+      f.todayRank === null
+        ? `${f.item} 1位${f.rate1}%・6位${f.rate6}%、差${f.spreadPt}ポイント`
+        : f.todayRank === 1
+          ? `${f.item}1位の1着率${f.todayRate}%、6位なら${f.rate6}%`
+          : f.todayRank === 6
+            ? `${f.item}6位の1着率${f.todayRate}%、1位なら${f.rate1}%`
+            : `${f.item}${f.todayRank}位の1着率${f.todayRate}%（1位${f.rate1}%・6位${f.rate6}%）`;
+    const l2 =
+      f.todayRank === null
+        ? f.roundDay
+          ? `${f.roundDay}は今日の位置を当てはめない`
+          : null
+        : f.usualDiffPt === null
+          ? null
+          : f.usualDiffPt < 1
+            ? `全体の${f.usual}%との差は1ポイント未満`
+            : `全体の${f.usual}%より${f.usualDiffPt}ポイント${f.direction}`;
+    return [l1, l2].filter(Boolean);
+  }
+  if (f.kind === "empty")
+    return [`${f.boat}号艇の材料で「差が大きい」カードは無い`, `${f.rowsCount}項目とも差が小さいか、ぶれ幅が重なる`];
+  throw new Error(`文型の無い種類: ${f.kind}`);
 }
 
 /** カード（差が大きい）1枚分 */
@@ -131,29 +180,23 @@ function cardOf(row, today, scopeFacts, values, omitted) {
     omitted.push({ where: "card.todayBar", item: row.key, boat: CARD_BOAT, reason: "今日の値または件数が無い" });
   const usual = rateOf(usualOf(scopeFacts, CARD_BOAT, TARGET));
   const pct = (p) => Math.round(p * 100);
-  const short = itemShort(row.key);
-  const lines = [];
-  if (line) {
-    lines.push(
-      line.bucket === 1
-        ? `${short}1位の1着率${pct(line.rate)}%、6位なら${pct(rates[5])}%`
-        : line.bucket === 6
-          ? `${short}6位の1着率${pct(line.rate)}%、1位なら${pct(rates[0])}%`
-          : `${short}${line.bucket}位の1着率${pct(line.rate)}%（1位${pct(rates[0])}%・6位${pct(rates[5])}%）`,
-    );
-    if (usual !== null) {
-      const d = pct(line.rate) - Math.round(usual * 1000) / 10;
-      const dd = Math.round(Math.abs(d) * 10) / 10;
-      lines.push(
-        dd < 1
-          ? `全体の${fmtPct(usual, 1)}との差は1ポイント未満`
-          : `全体の${fmtPct(usual, 1)}より${dd}ポイント${d > 0 ? "高い" : "低い"}`,
-      );
-    }
-  } else {
-    lines.push(`${short} 1位${pct(rates[0])}%・6位${pct(rates[5])}%、差${Math.abs(pct(rates[0]) - pct(rates[5]))}ポイント`);
-    if (finalDay) lines.push(`${ROUND_NAME[today.round] ?? "この日"}は今日の位置を当てはめない`);
-  }
+  const usualPct = usual === null ? null : Math.round(usual * 1000) / 10;
+  const d = line && usualPct !== null ? pct(line.rate) - usualPct : null;
+  const facts = {
+    kind: "card",
+    boat: CARD_BOAT,
+    item: itemShort(row.key),
+    todayRank: line ? line.bucket : null,
+    todayRate: line ? pct(line.rate) : null,
+    rate1: pct(rates[0]),
+    rate6: pct(rates[5]),
+    compareRanks: [1, 6],
+    spreadPt: Math.abs(pct(rates[0]) - pct(rates[5])),
+    usual: usualPct,
+    usualDiffPt: d === null ? null : Math.round(Math.abs(d) * 10) / 10,
+    direction: d === null ? null : d > 0 ? "高い" : "低い",
+    roundDay: finalDay ? (ROUND_NAME[today.round] ?? null) : null,
+  };
   return {
     key: row.key,
     label: row.label,
@@ -182,7 +225,9 @@ function cardOf(row, today, scopeFacts, values, omitted) {
       ? t(`${fk}.todayHit`, { rank: line.bucket, rate: fmtPct(line.rate), hits: fmtCount(line.hit[0]), n: fmtCount(line.hit[1]), lo: Math.round(line.lo * 100), hi: Math.round(line.hi * 100) })
       : null,
     note: note === "final" ? t(`${fk}.noteFinal`) : note === "early" ? t(`${fk}.noteEarly`) : null,
-    answer: lines,
+    id: `card-${row.key}`,
+    facts,
+    answer: templateLines(facts),
   };
 }
 
@@ -221,12 +266,14 @@ export function buildScene2(factsJson) {
   const maxTop2 = Math.max(...radar.map((b) => b.top2));
   const leaders = BOATS.filter((b) => radar[b - 1].top2 === maxTop2);
   const runner = [...new Set(radar.map((b) => b.top2))].sort((a, c) => c - a)[1];
-  const overview = [
-    `2位以内の項目が最多は${leaders.join("・")}号艇（${axes.length}項目中${maxTop2}）`,
-    runner === undefined
-      ? "6艇とも同じ数"
-      : `次は${BOATS.filter((b) => radar[b - 1].top2 === runner).join("・")}号艇の${runner}`,
-  ];
+  const overviewFacts = {
+    kind: "overview",
+    leaders,
+    maxTop2,
+    axesCount: axes.length,
+    withinRank: 2,
+    runner: runner === undefined ? null : { boats: BOATS.filter((b) => radar[b - 1].top2 === runner), count: runner },
+  };
 
   // カード: 1号艇・1着・既定の集めたレース。差がはっきりしている順で「差が大きい」だけ
   const countOf = (key) => facts?.[key]?.n ?? null;
@@ -255,15 +302,24 @@ export function buildScene2(factsJson) {
         typical: b.typical,
         top2: b.top2,
       })),
-      overview: { frameBoats: leaders, lines: overview },
-      focus: BOATS.map((b) => ({ boat: b, ...focusAnswer(b, radar, axes, values) })),
+      overview: { id: "overview", frameBoats: leaders, facts: overviewFacts, lines: templateLines(overviewFacts) },
+      focus: BOATS.map((b) => {
+        const { frameAxis, facts: f } = focusFacts(b, radar, axes, values);
+        return { id: `focus-${b}`, boat: b, frameAxis, facts: f, lines: templateLines(f) };
+      }),
     },
     cards: {
       boat: CARD_BOAT,
       scope: scopeName(scopeKey, t, { short: true }),
       usual: usual === null ? null : fmtPct(usual, 1),
       items: large.map((r) => cardOf(r, today, scopeFacts, values[r.key] ?? null, omitted)),
-      emptyLine: large.length === 0 ? `${CARD_BOAT}号艇の材料で「差が大きい」カードは無い（${rows.length}項目とも差が小さいか、ぶれ幅が重なる）` : null,
+      empty:
+        large.length === 0
+          ? (() => {
+              const f = { kind: "empty", boat: CARD_BOAT, rowsCount: rows.length };
+              return { id: "empty", facts: f, lines: templateLines(f) };
+            })()
+          : null,
     },
     omitted,
   };
