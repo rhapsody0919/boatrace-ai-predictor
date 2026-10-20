@@ -64,6 +64,15 @@ anon の鍵だと、非公開のバケットの一覧は 200 で空の配列を�
 - 件数・容量は run の Step Summary に出す。リポジトリは PUBLIC で Actions のログは外から見えるので、ログ・Step Summary・失敗の文にはバケット名・件数・容量・状態の番号だけを出し、ファイルのパス・R2 のアカウント ID を出さない
 - data_health: 画面が読む表を書かないので、`scripts/lib/dataHealth/workflowCoverage.js` の除外（no_table）に載せる
 
+### 復元の試験
+
+- `.github/workflows/storage-mirror-restore-drill.yml`（prod-jobs、毎月2日 05:20 JST と手での起動）で `scripts/storage-mirror/restore.js` を動かす。採用時に1回 `all`（全部）、以後は月1回の見本（バケットごとに一番大きいファイルと20件）
+- 最後の基準の manifest の行を R2 から GET し、sha256 と Content-Type を manifest と照合してから、Supabase の試験用のバケット `storage-mirror-drill` の `{元のバケット}/{元のパス}` へ戻す（x-upsert）。Supabase から読み直し、もう一度 sha256 と Content-Type を照合する
+- 戻す先は Supabase にする（runner の手元に戻すだけの案は、Supabase の容量・mimetype の制限・パスの文字・upload の口を試さず、本当の事故で初めて戻すコードを動かすことになるので退ける）
+- 「Supabase は読むだけ」の例外は restore.js と試験用のバケットに限る。戻す先は `scripts/lib/storageMirrorDrill.js` の定数1つで、写す元の3バケット・analogy-v16 は拒む。バケットはオーナーが Dashboard で作る（コードに作る呼び出しを置かない）。消す処理も置かない。毎回同じパスへ上書きするので、試験用のバケットの容量は写しの本体（約406MB）を超えない
+- 見張り: job-watch の watched、data_health の除外（not_daily）。hq は master の run の最後の success が40日より前なら知らせる
+- 本当の事故で元のバケットへ戻すときは、restore.js の戻す先を変える PR を出し、審査を通す（いつでも書ける口を置かない）
+
 ### 受け入れる損失
 
 - 最大1日分（約3MB）。analogy-v16 の展示後の段（exh-*）は戻せない。race_notices は取り直せない扱い

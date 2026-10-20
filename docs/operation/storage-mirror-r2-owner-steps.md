@@ -18,6 +18,8 @@
 | 7 | PR をマージする | 1分 |
 | 8 | 初回の run を手で起動し、件数を確かめる | 10分 |
 | 9 | 翌日、定期の run と見張りを確かめる | 3分 |
+| 10 | Supabase に復元の試験用のバケットを作る | 3分 |
+| 11 | 復元の試験を全部で1回動かす（採用時） | 10分 |
 
 ---
 
@@ -126,10 +128,35 @@ Actions → **Storage Mirror (R2)** → Run workflow → `initial` に**チェ�
 - Key Canary の job `r2` が緑
 - hq の dashboard-alerts の「Storage の写しの最後の成功」が1日以内
 
+## 10. Supabase に復元の試験用のバケットを作る
+
+（復元の試験の PR をマージする前に）Supabase の Dashboard → Storage → New bucket
+
+| 項目 | 値 |
+|---|---|
+| Name | `storage-mirror-drill`（この名前だけを受け付ける） |
+| Public bucket | オフ（非公開） |
+| Restrict file upload size | オフ、または 50MB 以上（今の最大は 15.3MB） |
+| Allowed MIME types | 空（制限しない。写す元に image/png・image/jpeg・video/mp4・application/json・text/plain・application/gzip がある） |
+
+- 試験は毎回同じパスへ上書きするだけで、消さない。容量は写しの本体（約406MB）を超えない
+- RLS のポリシーは足さない（service key だけが読み書きする）
+
+## 11. 復元の試験を全部で1回動かす（採用時）
+
+8 の初回の写しが緑になった後、Actions → **Storage Mirror Restore Drill** → Run workflow → `all` に**チェックを入れて**実行。
+
+確かめること（run の Summary の表）:
+- 失敗が0件で、run が緑
+- 「試した」と「一致」が同じで、合計が 8 の「書いた」の件数と同じ
+
+以後は毎月2日 05:20 JST に見本（バケットごとに一番大きいファイルと20件）で自動で動く。
+
 ## 落ちたとき
 
 - job-watch が Issue を開く（鍵の誤りはラベル job-watch-key、それ以外は job-watch-failure）
 - 「元から消えた」で落ちた: 写しには残っている。元で消したのが正しいか（ADR-0047 の軽量版への置き換え・掃除・誤り）を確かめる。正しければ Run workflow で `accept_gone` にチェックを入れて実行する（入れないと、最後に正しかった状態と比べて毎日落ちる）
 - 「一覧が0件」で落ちた: `SUPABASE_SERVICE_KEY` に anon の鍵が入っていないかを確かめる（anon の鍵だと非公開のバケットが空に見える）
 - 「1回の上限を超える」で落ちた: 何も書いていない。元で大量に書き換わった理由を確かめる。正しければ Claude に上限の見直しを頼む
+- 復元の試験で「Content-Type が違う」「sha256 が違う」: 写しが壊れているか、戻す口が変わった。Claude に調べるよう頼む（写しは lock で消えていない）
 - R2 の token の期限切れ・取り消し: 4 で作り直し、6 で `R2_ACCESS_KEY_ID`・`R2_SECRET_ACCESS_KEY` を上書きする

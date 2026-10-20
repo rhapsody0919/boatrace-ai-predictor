@@ -32,6 +32,13 @@ import {
   r2EnvOrThrow,
 } from "../storage-mirror/r2.js";
 import { keyRole } from "../storage-mirror/supabase-source.js";
+import {
+  assertDrillTarget,
+  DRILL_BUCKET,
+  pickDrillSample,
+  runDrill,
+  sameType,
+} from "../lib/storageMirrorDrill.js";
 
 const ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -649,6 +656,80 @@ const SECRET_PATH = "未投稿の企画/秘密 name.mp4";
   check("鍵の role: 読めない形は null", keyRole("garbage") === null);
 }
 
+// ---- 7. 復元の試験 ----
+{
+  for (const b of [...SOURCE_BUCKETS, ...EXCLUDED_BUCKETS, "other"]) {
+    let err = null;
+    try {
+      assertDrillTarget(b);
+    } catch (e) {
+      err = e;
+    }
+    check(`復元の試験: 戻す先 ${b} を拒む`, !!err);
+  }
+  let ok = true;
+  try {
+    assertDrillTarget(DRILL_BUCKET);
+  } catch {
+    ok = false;
+  }
+  check("復元の試験: 戻す先は storage-mirror-drill だけ", ok && DRILL_BUCKET === "storage-mirror-drill");
+
+  const entries = {
+    "raw-pages/a": { bucket: "raw-pages", size: 1, goneAt: null },
+    "raw-pages/big": { bucket: "raw-pages", size: 99, goneAt: null },
+    "raw-pages/gone": { bucket: "raw-pages", size: 500, goneAt: "2026-10-20T00:00:00Z" },
+    ...Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`analogy/${i}`, { bucket: "analogy", size: i, goneAt: null }])),
+  };
+  const sample = pickDrillSample(entries, { n: 5, random: () => 0.5 });
+  check("見本: バケットごとに一番大きいもの＋n件、消えたものは入れない",
+    sample.some(([k]) => k === "raw-pages/big") && sample.some(([k]) => k === "analogy/29") &&
+      sample.filter(([, e]) => e.bucket === "analogy").length === 6 && !sample.some(([k]) => k === "raw-pages/gone"));
+  check("全部（all）: 元にあるもの全部", pickDrillSample(entries, { all: true }).length === 32);
+  check("Content-Type の比べ方は大文字小文字・; の空白だけを揃える", sameType("text/plain; charset=utf-8", "Text/Plain;charset=UTF-8") && !sameType("image/png", "image/jpeg"));
+
+  const { r2, store } = fakeR2();
+  const src = fakeSource({
+    "sns-hub-media": { [SECRET_PATH]: { body: Buffer.from("video"), type: "video/mp4" }, "t.txt": { body: Buffer.from("t"), type: "text/plain; charset=utf-8" } },
+    "raw-pages": many("pit", 3),
+    analogy: many("v1", 2),
+  });
+  let err = null;
+  const fakeDrill = (mutate = (b) => b, typeOf = (t) => t) => {
+    const d = new Map();
+    return {
+      d,
+      bucket: DRILL_BUCKET,
+      async upload(k, body, contentType) {
+        d.set(k, { body: mutate(Buffer.from(body)), contentType: typeOf(contentType) });
+      },
+      async download(k) {
+        return d.get(k);
+      },
+    };
+  };
+  await runDrill({ r2, drill: fakeDrill() }).catch((e) => (err = e));
+  check("復元の試験: 写しがまだ無ければ止める", /基準の manifest が無い/.test(err?.message ?? ""));
+  await runMirror({ source: src, r2, now: t(21), initial: true });
+  const good = fakeDrill();
+  const r = await runDrill({ r2, drill: good, all: true });
+  check("復元の試験: 全部を戻し、sha256 と Content-Type が一致", r.failures.length === 0 && good.d.size === 7 && good.d.has(`sns-hub-media/${SECRET_PATH}`), r.failures.join(" / "));
+  const badType = await runDrill({ r2, drill: fakeDrill(undefined, () => "application/octet-stream"), all: true });
+  check("復元の試験: 戻した後の Content-Type が違えば失敗（文にパスを入れない）",
+    badType.failures.length > 0 && !badType.failures.join("").includes("秘密"), badType.failures.join(" / "));
+  const badBody = await runDrill({ r2, drill: fakeDrill((b) => Buffer.concat([b, Buffer.from("x")])), all: true });
+  check("復元の試験: 戻した後の中身が違えば失敗", badBody.failures.some((f) => /sha256/.test(f)));
+  store.get("objects/raw-pages/pit/0.gz").body = Buffer.from("rotten");
+  const rot = await runDrill({ r2, drill: fakeDrill(), all: true });
+  check("復元の試験: R2 の写しが壊れていれば失敗", rot.failures.some((f) => /R2 から読んだ/.test(f)));
+
+  const rs = read("scripts/storage-mirror/restore.js");
+  check("restore.js: 消す呼び出しが無く、戻す先は定数だけ（引数・環境変数で変えない）",
+    !/DELETE|\.remove\(|createBucket|deleteBucket|emptyBucket/.test(rs) &&
+      !/process\.env\.\w*BUCKET|argv\[/.test(rs.replace(/process\.env\.GITHUB_STEP_SUMMARY/g, "")) &&
+      /\/storage\/v1\/object\/\$\{DRILL_BUCKET\}\//.test(rs));
+}
+
 // ---- 6. 配線 ----
 {
   const dir = "scripts/storage-mirror";
@@ -678,46 +759,48 @@ const SECRET_PATH = "未投稿の企画/秘密 name.mp4";
     /"if-none-match": "\*"/.test(read(`${dir}/r2.js`)),
   );
 
-  const wf = read(".github/workflows/storage-mirror.yml");
-  const body = wf.replace(/^\s*#.*\n/gm, "");
-  check(
-    "workflow: permissions は空、job は contents: read",
-    /^permissions: \{\}$/m.test(body) &&
-      /permissions:\n\s+contents: read/.test(body),
-  );
-  check(
-    "workflow: environment は prod-jobs",
-    /environment: prod-jobs/.test(body),
-  );
-  check(
-    "workflow: action は SHA で固定・資格情報を残さない",
-    [...body.matchAll(/uses: (\S+)/g)].every((m) =>
-      /@[0-9a-f]{40}$/.test(m[1]),
-    ) && /persist-credentials: false/.test(body),
-  );
-  check(
-    "workflow: npm ci をしない（依存を入れない）",
-    !/npm (ci|install)/.test(body),
-  );
-  const runs = [
-    ...body.matchAll(
-      /^( +)run: ([\s\S]*?)(?=^\1(?:- |[a-z-]+:)|^ {0,4}[a-z-]+:|(?![\s\S]))/gm,
-    ),
-  ].map((m) => m[2]);
-  check(
-    "workflow: run に ${{ }} を書かない",
-    runs.length > 0 && runs.every((r) => !r.includes("${{")),
-  );
-  check(
-    "workflow: 手での起動の入力は boolean だけ",
-    [...body.matchAll(/type: (\w+)/g)].every((m) => m[1] === "boolean"),
-  );
-  check(
-    "workflow: 同時に2本動かさない",
-    /concurrency:\n\s+group: storage-mirror\n\s+cancel-in-progress: false/.test(
-      body,
-    ),
-  );
+  for (const name of ["storage-mirror", "storage-mirror-restore-drill"]) {
+    const wf = read(`.github/workflows/${name}.yml`);
+    const body = wf.replace(/^\s*#.*\n/gm, "");
+    check(
+      `${name}: permissions は空、job は contents: read`,
+      /^permissions: \{\}$/m.test(body) &&
+        /permissions:\n\s+contents: read/.test(body),
+    );
+    check(
+      `${name}: environment は prod-jobs`,
+      /environment: prod-jobs/.test(body),
+    );
+    check(
+      `${name}: action は SHA で固定・資格情報を残さない`,
+      [...body.matchAll(/uses: (\S+)/g)].every((m) =>
+        /@[0-9a-f]{40}$/.test(m[1]),
+      ) && /persist-credentials: false/.test(body),
+    );
+    check(
+      `${name}: npm ci をしない（依存を入れない）`,
+      !/npm (ci|install)/.test(body),
+    );
+    const runs = [
+      ...body.matchAll(
+        /^( +)run: ([\s\S]*?)(?=^\1(?:- |[a-z-]+:)|^ {0,4}[a-z-]+:|(?![\s\S]))/gm,
+      ),
+    ].map((m) => m[2]);
+    check(
+      `${name}: run に \${{ }} を書かない`,
+      runs.length > 0 && runs.every((r) => !r.includes("${{")),
+    );
+    check(
+      `${name}: 手での起動の入力は boolean だけ`,
+      [...body.matchAll(/type: (\w+)/g)].every((m) => m[1] === "boolean"),
+    );
+    check(
+      `${name}: 同時に2本動かさない`,
+      new RegExp(`concurrency:\\n\\s+group: ${name}\\n\\s+cancel-in-progress: false`).test(
+        body,
+      ),
+    );
+  }
 
   const canary = read(".github/workflows/key-canary.yml");
   check(

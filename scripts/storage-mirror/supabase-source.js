@@ -26,7 +26,7 @@ export function keyRole(key) {
   }
 }
 
-function env() {
+export function supabaseEnv() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key)
@@ -68,7 +68,7 @@ export async function listAll(bucket, prefix = "") {
 }
 
 export async function download(bucket, path) {
-  const { url, key } = env();
+  const { url, key } = supabaseEnv();
   const res = await fetch(
     `${url}/storage/v1/object/${encodeURIComponent(bucket)}/${encodeKeyPath(path)}`,
     {
@@ -91,6 +91,6 @@ export async function download(bucket, path) {
 }
 
 export const supabaseSource = () => {
-  env();
+  supabaseEnv();
   return { list: (bucket) => listAll(bucket), download };
 };
