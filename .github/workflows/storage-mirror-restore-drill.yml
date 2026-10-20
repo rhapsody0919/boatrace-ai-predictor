@@ -28,7 +28,8 @@ jobs:
   drill:
     if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # all（全部、約2,050件・406MB）は R2 から読む・上げる・読み直すの3往復。手元の写しの初回（読むだけ）が約10分だった
+    timeout-minutes: 120
     environment: prod-jobs
     permissions:
       contents: read
