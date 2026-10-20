@@ -174,13 +174,13 @@ const LOCALIZED_PAGES = [
   })),
 ];
 
-// blogPostsXx.js にエントリはあるが対応する -{suffix}.md が存在しない場合、sitemapが
+// 翻訳版の JSON（src/data/blog-posts/{lang}/{id}.json）はあるが対応する -{suffix}.md が存在しない場合、sitemapが
 // 実体の無いURLを配信してしまう（code-reviewで発見: エントリ追加と-en.md作成が
 // 別PRになるケースを想定した検知）。生成時に警告のみ出し、処理は止めない
 const BLOG_TRANSLATION_CHECKS = [
-  { label: "blogPostsEn.js", posts: blogPostsEn, mdSuffix: "-en" },
-  { label: "blogPostsZhTw.js", posts: blogPostsZhTw, mdSuffix: "-zh-tw" },
-  { label: "blogPostsKo.js", posts: blogPostsKo, mdSuffix: "-ko" },
+  { label: "blog-posts/en/*.json", posts: blogPostsEn, mdSuffix: "-en" },
+  { label: "blog-posts/zh-TW/*.json", posts: blogPostsZhTw, mdSuffix: "-zh-tw" },
+  { label: "blog-posts/ko/*.json", posts: blogPostsKo, mdSuffix: "-ko" },
 ];
 BLOG_TRANSLATION_CHECKS.forEach(({ label, posts, mdSuffix }) => {
   posts.forEach((post) => {
@@ -211,7 +211,7 @@ const LANGUAGE_ONLY_PAGES = {
     })),
     // ブログはja専用が原則だが、featured記事の一部のみ英語版を用意している
     // （languages.js の PARTIALLY_TRANSLATED_PATHS 参照）。記事リストは
-    // blogPostsEn.js から動的に生成し、新規記事追加時の登録漏れを防ぐ
+    // 英語版の JSON（blogPostsEn.js が読む）から動的に生成し、新規記事追加時の登録漏れを防ぐ
     {
       basePath: "/blog",
       changefreq: "weekly",

@@ -1,0 +1,15 @@
+{
+  "id": "ai-prediction-accuracy-review",
+  "title": "경정 AI 예측, 정말 적중할까? — 3개월・15,000레이스 검증 결과",
+  "description": "15,000레이스를 대상으로 AI 예측의 적중률과 회수율을 검증했습니다. 장단점을 솔직하게 짚어보고, 다른 서비스와의 차이점과 AI 예측의 한계까지 가감 없이 전합니다.",
+  "category": "데이터 분석",
+  "tags": [
+    "AI예측",
+    "적중률",
+    "회수율",
+    "정확도검증",
+    "투명성"
+  ],
+  "readTime": "10분",
+  "image": "/images/blog/ai-accuracy-comparison-ko.jpg"
+}
