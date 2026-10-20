@@ -166,24 +166,20 @@ test.describe("ブログの図", () => {
     ["字数の上限・選ぶ箱", longest],
     ["字数の上限・ボタン6つ", longestButtons],
   ]) {
-    test(`本文が出た最初の描画で図も出ていて、後から下の段落が動かない（CLS、${name}）`, async ({
+    test(`本文が出た最初の描画で図も出ていて、後から図の高さが変わらない（CLS、${name}）`, async ({
       page,
     }) => {
-      // 本文（.blog-post-content）が DOM に入った瞬間の、図の状態と下の段落の位置を記録する
+      // 本文（.blog-post-content）が DOM に入った瞬間の、図の状態と図の高さを記録する。
+      // 下の段落の位置で比べると、図より上の要素（CI の Linux でのフォントの差し替え等）の動きも拾って
+      // 図と関係なく落ちる（2026-10-20 CI の 481px で 7.6px）。図が原因の動きは図の高さの変化で見る
       await page.addInitScript(() => {
         const observer = new MutationObserver(() => {
           const content = document.querySelector(".blog-post-content");
           if (!content || window.__firstPaint) return;
-          const below = [...content.querySelectorAll("p")].find((p) =>
-            p.textContent.includes("図の下の段落。"),
-          );
+          const figure = content.querySelector("figure.blog-chart");
           window.__firstPaint = {
-            chartState:
-              content.querySelector("figure.blog-chart")?.dataset.chartState ??
-              null,
-            belowY: below
-              ? below.getBoundingClientRect().top + window.scrollY
-              : null,
+            chartState: figure?.dataset.chartState ?? null,
+            height: figure ? figure.getBoundingClientRect().height : null,
           };
         });
         observer.observe(document, { childList: true, subtree: true });
@@ -200,15 +196,12 @@ test.describe("ブログの図", () => {
         );
         const first = await page.evaluate(() => window.__firstPaint);
         expect(first.chartState, `${width}px: 最初の描画の図`).toBe("ready");
-        const below = page.locator(".blog-post-content p", {
-          hasText: "図の下の段落。",
-        });
-        const afterY = await below.evaluate(
-          (el) => el.getBoundingClientRect().top + window.scrollY,
+        const afterHeight = await chartLocator(page).evaluate(
+          (el) => el.getBoundingClientRect().height,
         );
         expect(
-          Math.abs(afterY - first.belowY),
-          `${width}px: 下の段落の移動`,
+          Math.abs(afterHeight - first.height),
+          `${width}px: 図の高さの変化`,
         ).toBeLessThanOrEqual(1);
       }
     });
