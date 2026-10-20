@@ -106,6 +106,11 @@
       "note": "PGliteの変異検証が重い（CI実測21.5秒、並行セッションで負荷の高い開発機では121秒・180秒超えも実測、2026-09-28）"
     },
     {
+      "script": "verify-data-health-workflow-coverage.js",
+      "tier": "ci",
+      "guards": "Environment prod-jobs を使う workflow が、data_health の鮮度の項目か理由つきの除外に載ること（2026-10-20 の鍵の誤りで夜の集計が落ちて誰も気づかなかった件の再発防止）"
+    },
+    {
       "script": "verify-display-coverage.js",
       "tier": "ci",
       "guards": "表示カバレッジ台帳（docs/reference/display-coverage.md）の抽出ロジックと、生成が成功すること・例外登録に実在しないテーブルが無いこと。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"

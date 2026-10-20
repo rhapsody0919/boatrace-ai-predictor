@@ -26,11 +26,15 @@ import { fileURLToPath } from "node:url";
 import {
   COUNT_CHECKS,
   EMPTY_TABLE_POLICIES,
+  MORNING_FRESHNESS_CHECKS,
+  NIGHTLY_FRESHNESS_CHECKS,
   validateChecks,
 } from "../lib/dataHealth/checks.js";
 import {
   DATA_HEALTH_FUNCTIONS,
   MAX_RANGE_DAYS,
+  MORNING_FRESHNESS_ITEMS,
+  NIGHTLY_FRESHNESS_ITEMS,
   TABLE_ROWS_TABLES,
   functionByName,
   renderFunctionDdl,
@@ -42,7 +46,17 @@ import {
   buildCoverageSql,
   literalCoverageSlots,
 } from "../lib/dataHealth/coverageSpec.js";
-import { createRpcCaller, runDataHealthJob } from "../lib/dataHealth/job.js";
+import {
+  createRpcCaller,
+  runDataHealthChecks,
+  runDataHealthJob,
+  runDataHealthMorningJob,
+} from "../lib/dataHealth/job.js";
+import {
+  evaluateFreshnessCheck,
+  formatBreach,
+  formatObserved,
+} from "../lib/dataHealth/evaluate.js";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
@@ -175,6 +189,7 @@ const MIGRATION_FILES = Object.freeze([
   "105_data_health_coverage_exhibition_row.sql",
   "107_data_health_cancellation_with_result.sql",
   "121_data_health_pre_race_series_day.sql",
+  "170_data_health_freshness.sql",
 ]);
 const MIGRATION_FILE = MIGRATION_FILES[0];
 const migrationSqlByFile = new Map(
@@ -300,6 +315,27 @@ try {
   process.exit(2);
 }
 
+/** マイグレーション170（鮮度の関数・朝のジョブのモードの行）が読む・書く表の最小のスキーマ */
+const FRESHNESS_STUB_SQL = `
+${["outcome_distribution", "exhibition_time_top_stats", "losing_technique_stats", "nige_outcome_distribution", "winning_technique_stats", "top_start_stats"].map((t) => `CREATE TABLE ${t} (id serial, created_at timestamptz);`).join("\n")}
+CREATE TABLE venue_technique_period_stats (venue_code smallint, last_updated date);
+CREATE TABLE st_course_baseline (course smallint, window_end date);
+CREATE TABLE nige_second_by_course (venue_code smallint, window_end date);
+CREATE TABLE accuracy_cache (key text primary key, updated_at timestamptz);
+CREATE TABLE race_history_cache (key text primary key, updated_at timestamptz);
+CREATE TABLE racer_grade_cache (key text primary key, updated_at timestamptz);
+CREATE TABLE model_performance_daily (model_id text, date date);
+ALTER TABLE racer_series_points ADD COLUMN scraped_at timestamptz;
+CREATE TABLE venues (code smallint, updated_at timestamptz);
+CREATE TABLE racer_aggregated_stats (racer_id integer, calculated_at timestamptz);
+CREATE TABLE venue_grade_boat_stats (venue_code smallint, updated_at timestamptz);
+CREATE TABLE bet_recommendations (race_id varchar(20), model_id text, recommendation text, created_at timestamptz default now());
+CREATE TABLE analogy_v16_snapshots (race_id varchar(20), stage text, primary key (race_id, stage));
+CREATE TABLE poirot_predictions (race_id varchar(20), model_version text, primary key (race_id, model_version));
+CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off');
+INSERT INTO scrape_job_state (job, mode) VALUES ('data_health', 'live');
+`;
+
 async function buildDb() {
   const db = new PGlite();
   await db.exec(`
@@ -322,6 +358,7 @@ CREATE TABLE venue_motor_stats (venue_code smallint);
 CREATE TABLE external_predictions (race_id varchar(20));
 CREATE TABLE race_special_notes (race_id varchar(20));
 `);
+  await db.exec(FRESHNESS_STUB_SQL);
   await db.exec("BEGIN;\n" + migrationSql + "\nCOMMIT;");
   // 冪等（再適用しても失敗しない）
   await db.exec("BEGIN;\n" + migrationSql + "\nCOMMIT;");
@@ -571,6 +608,241 @@ INSERT INTO racer_period_stats VALUES (1001,2026,1),(1001,2026,2),(1002,2026,2);
           p.volatility === "s",
       ),
     show(privileges),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (c2) 鮮度の関数（マイグレーション170）: 夜の集計（p_to=前日）・朝の生成（p_to=当日）
+// 既存の検証が使う固定のデータ（2026-09-18 の races 等）を壊さないよう、トランザクションの中で入れて戻す
+// ---------------------------------------------------------------------------
+{
+  await db.exec(`BEGIN;
+INSERT INTO outcome_distribution (created_at) VALUES ('2026-09-18 22:00+09');
+-- 境界: 前日 21:00 JST ちょうどは ok、1分前は未達
+INSERT INTO top_start_stats (created_at) VALUES ('2026-09-18 21:00+09');
+INSERT INTO exhibition_time_top_stats (created_at) VALUES ('2026-09-18 20:59+09');
+INSERT INTO venue_technique_period_stats VALUES (1, '2026-09-19');
+INSERT INTO st_course_baseline VALUES (1, '2026-09-17');
+INSERT INTO nige_second_by_course VALUES (1, '2026-09-18');
+INSERT INTO accuracy_cache VALUES ('accuracy_summary', '2026-09-19 00:30+09'), ('in_caution_accuracy', '2026-09-19 02:00+09');
+INSERT INTO model_performance_daily VALUES ('moriarty', '2026-09-17'), ('unified', '2026-09-18');
+INSERT INTO bet_recommendations (race_id, model_id, recommendation) VALUES ('2026-09-18-01-01', 'moriarty', 'bet');
+INSERT INTO analogy_v16_snapshots VALUES ('2026-09-18-02-01', 'racecard'), ('2026-09-18-01-01', 'exhibition');
+`);
+  const night = await call("data_health_nightly_freshness", "2026-09-18");
+  const morning = await call("data_health_morning_freshness", "2026-09-18");
+  const morningNoRace = await call(
+    "data_health_morning_freshness",
+    "2026-09-25",
+  );
+  await db.exec("ROLLBACK;");
+  const okOf = (o, k) => o[k]?.ok;
+  check(
+    "鮮度の関数（夜）: 全ての項目（NIGHTLY_FRESHNESS_ITEMS）と _since（前日 21:00 JST）を返す",
+    NIGHTLY_FRESHNESS_ITEMS.every((i) => typeof night[i.key] === "object") &&
+      Date.parse(night._since) === Date.parse("2026-09-18T12:00:00Z"),
+    show(night),
+  );
+  check(
+    "鮮度の関数（夜）: since は前日 21:00 JST 以降なら ok（ちょうどは ok、1分前は未達）。行が無い表は未達で observed=null",
+    okOf(night, "outcome_distribution") === true &&
+      okOf(night, "top_start_stats") === true &&
+      okOf(night, "exhibition_time_top_stats") === false &&
+      okOf(night, "losing_technique_stats") === false &&
+      night.losing_technique_stats.observed === null,
+    show(night),
+  );
+  check(
+    "鮮度の関数（夜）: accuracy_cache はキーごと（別のキー in_caution_accuracy の更新では ok にならない）",
+    okOf(night, "accuracy_summary") === true &&
+      okOf(night, "unified_model_accuracy") === false,
+    show([night.accuracy_summary, night.unified_model_accuracy]),
+  );
+  check(
+    "鮮度の関数（夜）: date_end は前日まで進んだら ok（window_end 09-17 は未達・09-18 は ok）、date_next は当日の日付で ok",
+    okOf(night, "st_course_baseline") === false &&
+      okOf(night, "nige_second_by_course") === true &&
+      okOf(night, "venue_technique_period_stats") === true,
+    show([night.st_course_baseline, night.nige_second_by_course]),
+  );
+  check(
+    "鮮度の関数（夜）: モリアーティの日別成績は moriarty の行だけを見る（unified の 09-18 では ok にならない）。賭けた日なので applicable",
+    night.model_performance_daily.applicable === true &&
+      okOf(night, "model_performance_daily") === false,
+    show(night.model_performance_daily),
+  );
+  check(
+    "鮮度の関数（夜）: 得点率は SG・G1 の4日目以降が無い日（09-18 の SG は2日目）は applicable=false。前日に結果のある日は集計の差分の表も applicable",
+    night.racer_series_points.applicable === false &&
+      night.racer_aggregated_stats.applicable === true &&
+      night.st_course_baseline.applicable === true,
+    show([night.racer_series_points, night.racer_aggregated_stats]),
+  );
+  check(
+    "鮮度の関数（朝）: ソナーは当日の中止でないレースの出走表の段だけを数える（展示の段・中止のレースは数えない）",
+    morning.sonar_racecard.applicable === true &&
+      morning.sonar_racecard.observed === 1 &&
+      morning.sonar_racecard.ok === true &&
+      morning.poirot_predictions.ok === false &&
+      morning.poirot_predictions.observed === 0,
+    show(morning),
+  );
+  check(
+    "鮮度の関数（朝）: 当日にレースが無ければ applicable=false（通知しない）",
+    MORNING_FRESHNESS_ITEMS.every(
+      (i) => morningNoRace[i.key].applicable === false,
+    ),
+    show(morningNoRace),
+  );
+  const modes = await q("select job, mode from scrape_job_state order by job");
+  check(
+    "マイグレーション170: data_health_morning の行を、data_health と同じ mode で足す（再適用しても1行のまま）",
+    show(modes) ===
+      show([
+        { job: "data_health", mode: "live" },
+        { job: "data_health_morning", mode: "live" },
+      ]),
+    show(modes),
+  );
+}
+
+// 鮮度の判定（純粋関数）
+{
+  const items = NIGHTLY_FRESHNESS_ITEMS;
+  const chk = NIGHTLY_FRESHNESS_CHECKS.find(
+    (c) => c.id === "nightly.course_baseline",
+  );
+  const r = (o) => evaluateFreshnessCheck(chk, o, items);
+  const fresh = { applicable: true, ok: true, observed: "2026-09-21" };
+  const okRes = r({ st_course_baseline: fresh, nige_second_by_course: fresh });
+  const stale = r({
+    st_course_baseline: { applicable: true, ok: false, observed: "2026-09-19" },
+    nige_second_by_course: fresh,
+  });
+  const na = r({
+    st_course_baseline: { applicable: false, ok: false, observed: null },
+    nige_second_by_course: { applicable: false, ok: false, observed: null },
+  });
+  const missing = r({ st_course_baseline: fresh });
+  check(
+    "鮮度の判定: 全て ok は ok、1つでも未達は breach（missing=未達の項目数）、全て applicable=false は not_applicable、項目の欠けは error",
+    okRes.status === "ok" &&
+      stale.status === "breach" &&
+      stale.missing === 1 &&
+      show(stale.staleItems) === show(["st_course_baseline"]) &&
+      na.status === "not_applicable" &&
+      missing.status === "error",
+    show([okRes, stale, na, missing]),
+  );
+  check(
+    "鮮度の判定: 通知の文に、項目・条件・最終の観測値（JST）を出す",
+    formatBreach(stale).includes("st_course_baseline") &&
+      formatBreach(stale).includes("前日の分まで進んでいない") &&
+      formatBreach(stale).includes("09-19") &&
+      formatObserved("2026-09-18T15:32:00+00:00") === "09-19 00:32 JST" &&
+      formatObserved(null) === "記録なし" &&
+      formatObserved(3) === "3件",
+    formatBreach(stale),
+  );
+  check(
+    "登録表: 鮮度の項目は、関数の項目にあるキーだけを参照する（朝は空テーブルを持たない）",
+    validateChecks({
+      checks: MORNING_FRESHNESS_CHECKS,
+      policies: {},
+      functions: DATA_HEALTH_FUNCTIONS,
+      tableRowsTables: [],
+    }).length === 0 &&
+      validateChecks({
+        checks: [{ ...chk, items: ["no_such_item"], workflow: "x" }],
+        policies: {},
+        functions: DATA_HEALTH_FUNCTIONS,
+        tableRowsTables: [],
+      }).length === 2,
+  );
+}
+
+// 鮮度の実行: 夜は data_health（評価の終端=前日）、朝は data_health_morning（評価の終端=当日・空テーブルを見ない）
+{
+  const nightStale = Object.fromEntries(
+    NIGHTLY_FRESHNESS_ITEMS.map((i) => [
+      i.key,
+      { applicable: true, ok: false, observed: "2026-10-18T16:00:00+00:00" },
+    ]),
+  );
+  const calls = [];
+  const caller = async (fn, args) => {
+    calls.push({ name: fn.name, args });
+    if (fn.name === "data_health_nightly_freshness") return nightStale;
+    if (fn.name === "data_health_table_rows")
+      return Object.fromEntries(TABLE_ROWS_TABLES.map((t) => [t, true]));
+    if (fn.items) return allFresh(fn.items);
+    return [];
+  };
+  const { report, alerts } = await runDataHealthChecks({
+    targetDate: "2026-10-20",
+    now: new Date("2026-10-19T21:35:00Z"),
+    mode: "live",
+    callFunction: caller,
+    checks: NIGHTLY_FRESHNESS_CHECKS,
+  });
+  const nightCall = calls.find(
+    (c) => c.name === "data_health_nightly_freshness",
+  );
+  check(
+    "鮮度の実行（夜）: 関数に p_to=前日 を渡し、11本が全て未達なら共通原因の要約を先頭に、11件を通知する（2026-10-20 朝の型）",
+    nightCall?.args.p_to === "2026-10-19" &&
+      alerts.length === 12 &&
+      alerts[0].key === "dh:summary:2026-10-20" &&
+      alerts.some((a) => a.key === "dh:nightly.accuracy:2026-10-20"),
+    show({ nightCall, n: alerts.length, keys: alerts.map((a) => a.key) }),
+  );
+  const morningCalls = [];
+  const sonarZero = async (fn, args) => {
+    morningCalls.push({ name: fn.name, args });
+    return {
+      sonar_racecard: { applicable: true, ok: false, observed: 0 },
+      poirot_predictions: { applicable: true, ok: false, observed: 0 },
+      moriarty_recommendations: { applicable: true, ok: false, observed: 0 },
+    };
+  };
+  const out = await runDataHealthMorningJob(
+    {
+      targetDate: "2026-10-20",
+      now: () => new Date("2026-10-19T22:55:00Z"),
+      mode: "live",
+      state: null,
+      client: {},
+    },
+    { callFunction: sonarZero },
+  );
+  check(
+    "朝のジョブ: 関数を1回だけ p_to=当日 で呼び、空テーブルの関数は呼ばない。ソナーの0件だけ通知し、ポアロ・モリアーティは info（通知しない・last_report に載る）",
+    morningCalls.length === 1 &&
+      morningCalls[0].name === "data_health_morning_freshness" &&
+      morningCalls[0].args.p_to === "2026-10-20" &&
+      out.report.alerts.length === 1 &&
+      out.report.alerts[0].key === "dh:morning.sonar:2026-10-20" &&
+      out.report.checks.filter((c) => c.status === "breach").length === 3,
+    show({
+      morningCalls,
+      alerts: out.report.alerts,
+      checks: out.report.checks,
+    }),
+  );
+  const shadow = await runDataHealthMorningJob(
+    {
+      targetDate: "2026-10-20",
+      now: () => new Date("2026-10-19T22:55:00Z"),
+      mode: "shadow",
+      state: null,
+      client: {},
+    },
+    { callFunction: sonarZero },
+  );
+  check(
+    "朝のジョブ: shadow は通知せず、wouldAlert に残す",
+    shadow.report.alerts.length === 0 && shadow.report.wouldAlert.length === 1,
+    show(shadow.report),
   );
 }
 
@@ -994,6 +1266,14 @@ const dates = [
 const ALL_TABLES_OK = Object.fromEntries(
   TABLE_ROWS_TABLES.map((t) => [t, true]),
 );
+/** 鮮度の関数の、全項目が ok の戻り値 */
+const allFresh = (items) =>
+  Object.fromEntries(
+    items.map((i) => [
+      i.key,
+      { applicable: true, ok: true, observed: "2026-09-21T16:00:00+00:00" },
+    ]),
+  );
 function makeCaller({
   coverage = dates.map((d) => coverageRow(d)),
   tableRows = {
@@ -1012,6 +1292,7 @@ function makeCaller({
     if (overrides[f.name]) return overrides[f.name];
     if (f.name === "data_health_coverage") return coverage;
     if (f.name === "data_health_table_rows") return tableRows;
+    if (f.items) return allFresh(f.items);
     return [];
   };
   fn.calls = calls;
@@ -1771,6 +2052,47 @@ async function wrapperRun({ rows, at = NOW, caller, worker = "verify" }) {
     status === 401,
     String(status),
   );
+  // 朝の監視 data_health_morning（07:50指定、07:55・08:55 JST）
+  const mdef = SCRAPE_JOBS.data_health_morning;
+  check(
+    "レジストリ: data_health_morning は daily・指定時刻 07:50（龍神ソナーの締め）・hosts なし",
+    mdef?.kind === "daily" &&
+      mdef.targetTimeJst === "07:50" &&
+      mdef.hosts.length === 0,
+    show(mdef),
+  );
+  const mcron = vercel.crons.filter(
+    (c) => c.path === "/api/cron/data-health-morning",
+  );
+  check(
+    "vercel.json: data-health-morning は JST 07:55・08:55（締め 07:50 の後の本番1回と補足1回）",
+    mcron.length === 1 && mcron[0].schedule === "55 22,23 * * *",
+    show(mcron),
+  );
+  const msrc = fs.readFileSync(
+    path.join(ROOT, "api/cron/data-health-morning.js"),
+    "utf8",
+  );
+  const mmod = await import("../../api/cron/data-health-morning.js");
+  let mstatus = null;
+  await mmod.default(
+    { headers: {}, query: {} },
+    {
+      status(s) {
+        mstatus = s;
+        return { json() {} };
+      },
+    },
+  );
+  check(
+    "api/cron/data-health-morning.js: maxDuration がレジストリと一致し、job='data_health_morning' で runDataHealthMorningJob を呼ぶ。未認証は401",
+    new RegExp(`maxDuration: ${mdef.maxDurationSec}`).test(msrc) &&
+      mmod.config.maxDuration === mdef.maxDurationSec &&
+      msrc.includes('job: "data_health_morning"') &&
+      msrc.includes("runDataHealthMorningJob") &&
+      mstatus === 401,
+    String(mstatus),
+  );
   check(
     "非DB: job.js は書き込みのAPI（insert・update・upsert・delete）を持たない（書き込みは共通ラッパの last_report のみ）",
     !/\.(insert|update|upsert|delete)\(/.test(
@@ -1996,6 +2318,7 @@ INSERT INTO race_results VALUES ('2026-09-18-01-01',1,2,3,4,5,6,1,'逃げ'), ('2
 INSERT INTO race_pit_reports VALUES ('2026-09-18-03-07','published');
 INSERT INTO race_series VALUES (1,'2026-09-16','2026-09-21');
 `);
+  await mdb.exec(FRESHNESS_STUB_SQL);
   try {
     await mdb.exec("BEGIN;\n" + mutated + "\nCOMMIT;");
     const cov = (
@@ -2037,6 +2360,7 @@ async function runEntriesDuplicates(sql) {
   const mdb = new PGlite();
   await mdb.exec(`
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off');
 CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, race_grade text, cancellation_status text, start_time time);
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint, rank5 smallint, rank6 smallint, actual_course_1 smallint, winning_technique text);
 CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id integer, weight_kg numeric, branch text, f_count smallint, l_count smallint, is_absent boolean, primary key (race_id, boat_number));
@@ -2171,6 +2495,7 @@ async function runCancellationWithResult(sql) {
   const mdb = new PGlite();
   await mdb.exec(`
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
+CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off');
 CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, cancellation_status text);
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint);
 INSERT INTO races VALUES
