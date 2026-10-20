@@ -1,5 +1,5 @@
 {
-  "$comment": "案（2026-10-20）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §11.4。gate.js・llm.js が master の checkout（github.sha）から読む。PR の分類は、変えたファイル（改名の元・削除を含む）のうち一番強いクラスに合わせる。強い順: deny > owner > orchestrate > prodWrite > content > frontendSmall > employee",
+  "$comment": "案（2026-10-20）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js が master の checkout（github.sha）から読む。PR の分類は、変えたファイル（改名の元・削除を含む）のうち一番強いクラスに合わせる。強い順: deny > owner > orchestrate > prodWrite > content > frontendSmall > employee",
   "version": 1,
   "appliesTo": "作成の App の PR 全部（claude/・codex/・hq の社員）。名義が同じなので、社員だけに効かせることは機械ではできない",
   "classes": {
@@ -159,15 +159,15 @@
     }
   },
   "p1": {
-    "$comment": "§11.1 案 A。P0 は全クラスで止める。同じ P1 が2回目に出たら、レーンは直すのをやめてオーケストレーターに上げる"
+    "$comment": "§10.1 案 A。P0 は全クラスで止める。同じ P1 が2回目に出たら、レーンは直すのをやめてオーケストレーターに上げる"
   },
   "monthlyLimit": {
-    "$comment": "1 run の実費と runs の API の頭打ちを測ってから決める（§11.2、判断14）",
+    "$comment": "1 run の実費と runs の API の頭打ちを測ってから決める（§10.2、判断14）",
     "runs": null,
     "notifyAtRatio": 0.8
   },
   "bannedWords": {
-    "$comment": "本文に出たら機械で落とす決まった文字列（§11.1 の4）。メタ情報の例外（title・meta・OGP）は code-style.md に従う",
+    "$comment": "本文に出たら機械で落とす決まった文字列（§10.1 の4）。メタ情報の例外（title・meta・OGP）は code-style.md に従う",
     "words": [
       "競艇"
     ]

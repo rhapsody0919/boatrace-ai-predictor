@@ -2,7 +2,7 @@
 
 [ADR-0097](../../adr/0097-identity-separation-auto-review-and-db-apply.md) の「レーンの PR → 審査の App の承認 → db-apply の定期の起動が軽い SQL を当てる」経路を、実際に動く形にする設計。ADR-0097 の決定（身元・審査・当てる対象の5点・軽い／重いの判定）は変えない。変えるのは、起動の出元・PR を作る身元の配線・D' の前に要る3点・その順番。
 
-オーナーの手順の正本は [identity-separation-owner-steps.md](../../operation/identity-separation-owner-steps.md)、適用の手順の正本は [db-apply.md](../../operation/db-apply.md)。この文書は、それらへの変更の設計を1か所にまとめたもの。実装は、オーナーの判断の後に PR を分けて行う（§5）。system-architect の審査（2026-10-20）の指摘を反映済み（§12）。
+オーナーの手順の正本は [identity-separation-owner-steps.md](../../operation/identity-separation-owner-steps.md)、適用の手順の正本は [db-apply.md](../../operation/db-apply.md)。この文書は、それらへの変更の設計を1か所にまとめたもの。実装は、オーナーの判断の後に PR を分けて行う（§5）。system-architect の審査（2026-10-20）の指摘を反映済み（§11）。
 
 ## 1. 今、動いていない理由（2026-10-20 15:30 JST の実測）
 
@@ -213,7 +213,7 @@ GRANT SELECT ON db_apply.applied TO claude_ro;            -- 台帳とのずれ�
 | PR-C | 印・止め印・時間の窓のコード（§4）。最初に psql の実機確認 | scripts/db・scripts/lib・.github・verify | オーナー（.github） | PR-B の適用 |
 | PR-D | 名義の切替の龍神の側（§3） | .claude・scripts/maintenance | オーナー。切替の作業の中で、8.2 の前にマージ | hq の道具 |
 | PR-F | ④ 審査の関門の画像の例外（§9.1）と再現テスト、ADR-0097 の追記 | scripts/lib/reviewPr.js・scripts/review・verify・docs/adr | オーナー（審査の仕組みの変更、段階2） | 判断8 |
-| PR-H | §11 の機械化（`decideAction` の P1・観点、月の上限、draft の検査、`config/dev-gate.json`） | scripts/lib/reviewPr.js・scripts/review・scripts/maintenance・config・.github | オーナー（段階2） | 判断13〜16。切替の前 |
+| PR-H | §10 の機械化（`decideAction` の P1・観点、月の上限、draft の検査、`config/dev-gate.json`） | scripts/lib/reviewPr.js・scripts/review・scripts/maintenance・config・.github | オーナー（段階2） | 判断13〜16。切替の前 |
 | PR-G | ⑥ orchestrate の段階0 F・案Z の書き直し（§9.3） | .claude/skills/orchestrate/SKILL.md | オーナー（.claude） | 判断11 |
 | PR-E | `DB_APPLY_DRY_RUN: "false"`（D'）と、急ぎの止め方の repo の変数 `DB_APPLY_AUTO_ENABLED`（apply-auto の `if` とコードの両方で見る。`== 'true'` のときだけ当てる。未設定・消したときは当てない） | .github | オーナー | 下の「D' の条件」 |
 
@@ -264,7 +264,7 @@ flowchart TD
 | `.env.local` の SUPABASE_ACCESS_TOKEN（管理 API）・VERCEL_OIDC_TOKEN 等。**全 worktree の写し（`.claude/worktrees/*/.env.local`）を含む** | 届く | Claude の届く所から外す（印を偽れるため。D' の条件） |
 | Vercel の環境変数 `GITHUB_MERGE_TOKEN`（ADR-0034、PR の書き込み権限の PAT、オーナーの名義） | ある | **失効させる（手順8の前提）**。ruleset は書き込み権限のある身元の承認を数えるので、この PAT で作成の App の PR を承認でき、審査の App を迂回できる（§9.2） |
 
-- どこまで外すかはオーナーの判断（判断5）。全部は外せない（terukina は macOS の admin で、sudo のパスワードを入れた後の操作には届く。hq の drafts §128）
+- どこまで外すかはオーナーの判断（判断5）。全部は外せない（terukina は macOS の admin で、sudo のパスワードを入れた後の操作には届く。hq の drafts §118）
 
 ### 決まった後の ADR-0097 の追記
 
@@ -291,19 +291,19 @@ flowchart TD
 | 10 | 画像の中身が LLM の審査に渡らないこと・polyglot を防ぎきれないこと・作成の App が自分で `--auto` を付けられることを受け入れるか | 受け入れて ADR-0097 の残る弱みに書く（グラフ・表の画像で、記事の本文は審査に入る。`nosniff` を足す） |
 | 11 | ⑥ SKILL.md の段階0 F・案Z の5点の書き直し（§9.3。5点目の P0/P1 の扱いはオーナー決定済み、文案の承認が要る） | はい。PR-D とは別の PR |
 | 12 | 切替の PR で `DB_APPLY_SWITCH_SHA` を切替のコミットに進めるか（切替の前に足した未承認の `未適用` を自動の対象から外す） | 進める。外れたものは手で当てる（今の手順のまま） |
-| 13 | P1 を機械で止めるか（§11.1） | 案 A: P1 も止め、止めない観点を許可のリストに（記事の fan・seo だけ）。木の SHA での持ち越し・切る前の件数・出口・2週の見直しの線とセット |
-| 14 | 審査の月の上限と費用（§11.2。30日で970本・月 2,000〜3,500 run の見込み） | 1 run の実費と API の頭打ちを測ってから、run の上限とベンダーの上限の金額を決め直す。それまで切替をしない |
-| 15 | `--auto` の後の push とマージ順（§11.3） | `--auto` を付けた head SHA を残し、見回りで違えば `--disable-auto`。`--match-head-commit` が効くならそれを第一に。draft は補助 |
-| 16 | 例外の線の正本（§11.4） | `config/dev-gate.json`（仮）を master から読む。名前と置き場所は hq の v2 と合わせる |
-| 17 | orchestrate のクラスを機械で分けるか（§11.4） | 分けるまでは owner と同じ。分けるならオーケストレーター用の別の App |
+| 13 | P1 を機械で止めるか（§10.1） | 案 A: P1 も止め、止めない観点を許可のリストに（記事の fan・seo だけ）。木の SHA での持ち越し・切る前の件数・出口・2週の見直しの線とセット |
+| 14 | 審査の月の上限と費用（§10.2。30日で970本・月 2,000〜3,500 run の見込み） | 1 run の実費と API の頭打ちを測ってから、run の上限とベンダーの上限の金額を決め直す。それまで切替をしない |
+| 15 | `--auto` の後の push とマージ順（§10.3） | `--auto` を付けた head SHA を残し、見回りで違えば `--disable-auto`。`--match-head-commit` が効くならそれを第一に。draft は補助 |
+| 16 | 例外の線の正本（§10.4） | `config/dev-gate.json`（仮）を master から読む。名前と置き場所は hq の v2 と合わせる |
+| 17 | orchestrate のクラスを機械で分けるか（§10.4） | 分けるまでは owner と同じ。分けるならオーケストレーター用の別の App |
 | 18 | owner のクラス（.github・.claude・AGENTS.md・審査の仕組み等）で ADR-0097 の「仕組みの変更も審査の App だけで通る」を改めるか | 審査の仕組みそのもの（config/dev-gate.json・scripts/review・reviewPr.js・.github/workflows）は改める。.claude・AGENTS.md は hq の分類の数を見て決める |
 | 19 | dev-gate を全員に効かせるか社員だけか | 全員 |
-| 20 | 審査の仕組み（dev-gate.json・review.yml・scripts/review・reviewPr.js）を変える PR を機械で落とすか（§11.4） | 落とす（deny）。オーナーは ruleset を一時 Disabled にして入れる |
-| 21 | ブランチの接頭辞を `claude/`・`codex/` に機械で揃える（§11.0。今は 970 本中 85 本だけ） | PR-D の check-gh-identity で push と PR の前に検査する |
+| 20 | 審査の仕組み（dev-gate.json・review.yml・scripts/review・reviewPr.js）を変える PR を機械で落とすか（§10.4） | 落とす（deny）。オーナーは ruleset を一時 Disabled にして入れる |
+| 21 | ブランチの接頭辞を `claude/`・`codex/` に機械で揃える（§10.0。今は 970 本中 85 本だけ） | PR-D の check-gh-identity で push と PR の前に検査する |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
-オーナーの yes（10/20 夕、hq 経由「記事を集客だけで出す道を作ってよい」、オーケストレーター経由）で、記事の PR も「作成の App → 審査の App → auto-merge」に乗せる。この節は ④ 審査の関門の画像の例外と ⑥ orchestrate の段階0 F・案Z の書き直し。② 翻訳のメタの JSON 化・寸法をビルドで作る、③ `scripts/content/check-content-pr.js`（manifest の形を含む）、⑤ ADR-0034（`GITHUB_MERGE_TOKEN` の PAT で記事の PR をマージする古い道）の廃止と PAT の失効は、別のレーンが受け持つ。§9 は system-architect の2回目の審査（P1 6件・P2 10件・P3 5件）を反映済み（§12）。
+オーナーの yes（10/20 夕、hq 経由「記事を集客だけで出す道を作ってよい」、オーケストレーター経由）で、記事の PR も「作成の App → 審査の App → auto-merge」に乗せる。この節は ④ 審査の関門の画像の例外と ⑥ orchestrate の段階0 F・案Z の書き直し。② 翻訳のメタの JSON 化・寸法をビルドで作る、③ `scripts/content/check-content-pr.js`（manifest の形を含む）、⑤ ADR-0034（`GITHUB_MERGE_TOKEN` の PAT で記事の PR をマージする古い道）の廃止と PAT の失効は、別のレーンが受け持つ。§9 は system-architect の2回目の審査（P1 6件・P2 10件・P3 5件）を反映済み（§11）。
 
 **時期**: 記事の PR が作成の App の名義で出るのは、切替（§6 の一連の作業）の後。切替までは PR の作者が rhapsody0919 で review.yml は skipped になるので（§1）、9.1 の例外も 9.2 の判定も効く PR が無い。**切替までは F の記事を案Z の束に入れない**（今の F のまま、オーケストレーターが4つのレビューを見てマージする）。
 
@@ -311,7 +311,7 @@ flowchart TD
 
 今は `scripts/lib/reviewPr.js:57-60` が、本文の無い差分（バイナリ）を消したファイル以外は全部落とす。記事の画像はバイナリなので、記事の PR は全部落ちる。
 
-**例外を効かせる PR**: PR の変更したファイルが**全部** F の許可のパス（9.3 の 90 行目の一覧）の中にあるときだけ。コードを含む PR では、画像も今どおり落とす（claude/ の PR を全部審査するので、例外を全 PR に効かせない）。許可のパスの正本は1か所（§11.4 の `config/dev-gate.json`、master から読む）に置き、③ の機械（push の前の照合）も同じものを読む。
+**例外を効かせる PR**: PR の変更したファイルが**全部** F の許可のパス（9.3 の 90 行目の一覧）の中にあるときだけ。コードを含む PR では、画像も今どおり落とす（claude/ の PR を全部審査するので、例外を全 PR に効かせない）。許可のパスの正本は1か所（§10.4 の `config/dev-gate.json`、master から読む）に置き、③ の機械（push の前の照合）も同じものを読む。
 
 **例外にする画像の条件**（全部を満たすファイルだけ、本文の無い差分の理由から外す）:
 
@@ -369,11 +369,11 @@ flowchart TD
 
 - PR-G（9.3）は切替の前にマージしてよい（F を束に入れるのは切替の後、と文に書くため）。PR-D（merge-pr の `--auto` 等）は切替の作業の中でマージする。別の PR
 
-## 11. auto-merge に移る前に決めること（2026-10-20 夜の追加、オーケストレーター経由の system-architect の別の審査）
+## 10. auto-merge に移る前に決めること（2026-10-20 夜の追加、オーケストレーター経由の system-architect の別の審査）
 
 切替（手順8の3）で auto-merge を ON にすると、今はオーケストレーターのマージと Claude のフックが受け持っている判定の一部が効かなくなる。切替の前に、どれを機械に移すかを決める。この節は system-architect の審査（P1 8件・P2 10件）を反映済み。
 
-### 11.0 前提の実測（2026-10-20）
+### 10.0 前提の実測（2026-10-20）
 
 | 項目 | 値 | 出典 |
 |---|---|---|
@@ -383,7 +383,7 @@ flowchart TD
 
 - **`vendorForBranch`（`reviewPr.js:17-22`）は `claude/`・`codex/` 以外で null を返し、REQUEST_CHANGES になる**。今の 970 本のうち 880 本ほどは接頭辞が違うので、切替の後はそのままでは全部承認されず、しかも run に数えられる。implement.md:22・create-pr.md:30 は `claude/` と書いているが守られていない。PR-D の `check-gh-identity.js`（または create-pr）で、push と PR の前に接頭辞を機械で検査する
 
-### 11.1 P1 が残った PR がそのまま本番に出る
+### 10.1 P1 が残った PR がそのまま本番に出る
 
 - `decideAction`（`scripts/lib/reviewPr.js:254-270`）は P0 が1件以上なら REQUEST_CHANGES、それ以外は P1 が残っていても APPROVE を返す。段階0 A の「実在する P0・P1 が0件」は、今はオーケストレーターが手でマージするときにしか効いていない
 - 案:
@@ -400,9 +400,9 @@ flowchart TD
   3. **出口**: P1 で止まり、レーンが直しても同じ趣旨の P1 が2回出たら、オーケストレーターが手で「同じ」と判定してオーナーに上げる（`decideAction` は前の回を覚えず、文は回ごとに変わるので機械では照合しない）。オーナーが PR を APPROVE すれば数える（作者ではない）。審査の App の REQUEST_CHANGES が残って止まるなら、オーナーが dismiss する
   4. **材料の無い観点は機械に移す**: 禁止語（本文の「競艇」等の決まった文字列）は gate の機械の検査にし、一覧は `config/dev-gate.json` に置く。「本文の数値を出典と照合済み」は機械にならないので、F の手の確認に残す
   5. **見直しの線**: 切替の後2週、P1 で止まった率・出口を通った数を記録する。止まる PR が3割を超えたら案を見直す
-- 費用: P1 を直す push ごとに run が増える（「呼ぶ回数は変わらない」は誤り）。11.2 に入れる
+- 費用: P1 を直す push ごとに run が増える（「呼ぶ回数は変わらない」は誤り）。10.2 に入れる
 
-### 11.2 審査の月の上限と費用
+### 10.2 審査の月の上限と費用
 
 - `scripts/review/gate.js:26`: `REVIEW_MONTHLY_LIMIT`（既定 300）。数えるのは作成の App が起こした review.yml の run の数で、**push ごと**に1回（取り消し・reopen・関門で落ちた run も1回）。超えると fail closed で全レーンが止まる
 - 見込み: 970 本 × 約3.7 コミットが全部乗ると、月 **2,000〜3,500 run**。1 run 0.1〜0.2 ドル（owner-steps:162、推測）なら月 200〜700 ドルで、ベンダーの月の上限（OpenAI 60・Anthropic 30 ドル）に**先に**当たる。当たると llm の失敗が REQUEST_CHANGES になり（`reviewPr.js:244-248`）、全部止まる
@@ -410,10 +410,10 @@ flowchart TD
 - 案（推奨）: 数を決める前に測る
   1. 切替の手順6のテスト PR で 1 run の実費を測る
   2. runs の API の頭打ちを、件数の多い別の workflow で読み取りで確かめる（頭打ちなら日ごとに分けて数える）
-  3. 1 と 11.1 の木の SHA の持ち越しを入れた上で、run の上限とベンダーの上限の金額を決め直す（オーナー、費用の判断）。それまでは切替をしない
+  3. 1 と 10.1 の木の SHA の持ち越しを入れた上で、run の上限とベンダーの上限の金額を決め直す（オーナー、費用の判断）。それまでは切替をしない
 - 通知: pr-review（審査の鍵）に Slack の鍵を足さない。数えて知らせるのは Slack を持つ側（hq の見張りか Vercel Cron の関数。GitHub の schedule は来ないので使わない、BOA-917）。見る数は run の数と、「審査が完了しなかった」の REQUEST_CHANGES の数（ベンダーの上限・429 の検知）
 
-### 11.3 マージ順と、`--auto` を付けた後の push
+### 10.3 マージ順と、`--auto` を付けた後の push
 
 - 前の版の「auto-merge はフックを通らない」は半分誤り。**`gh pr merge --auto` でもフックのマージ順の検査は動く**（`guard-pr-merge.js:505-511` → `checkMergeOrder`）。Claude が `/merge-pr` で付ける限り、順番は今も守られる
 - 本当の穴:
@@ -427,39 +427,39 @@ flowchart TD
 - 台帳（`$(git rev-parse --git-common-dir)/merge-order.json`、`mergeOrder.js:5`）は Mac の中にしか無く、GitHub の側からは強制できない。このことを残る弱みに書く
 - 並行の2本が同じ番号（`docs/db-migration` の番号・ADR の番号）を足して両方入りうる（up to date を要求しないため）。db-reconcile が同じ番号を見つけたら blocked にする検査を PR-C に足す
 
-### 11.4 例外の線の正本（`config/dev-gate.json`）
+### 10.4 例外の線の正本（`config/dev-gate.json`）
 
-- §9.1 の「許可のパス」「画像の条件」、§11.1 の「止めない観点」、禁止語の一覧は、どれも審査の関門の線。`config/dev-gate.json`（仮）に置き、gate.js・llm.js・approve.js が **master の checkout（`github.sha`）から**読む。PR が書き換えても、その PR の審査には効かない（review.yml の今の守りと同じ）
+- §9.1 の「許可のパス」「画像の条件」、§10.1 の「止めない観点」、禁止語の一覧は、どれも審査の関門の線。`config/dev-gate.json`（仮）に置き、gate.js・llm.js・approve.js が **master の checkout（`github.sha`）から**読む。PR が書き換えても、その PR の審査には効かない（review.yml の今の守りと同じ）
 - **ただし2段で緩められる**: PR1 で JSON を緩めて審査の承認と `--auto` で入れ、PR2 で使う。作成の App は自分で `--auto` を付けられる。そこで（推奨）**gate が `config/dev-gate.json`・review.yml・`scripts/review/**`・`scripts/lib/reviewPr.js` を変える PR を機械で落とす**（deny のクラス）。オーナーは ruleset を一時 Disabled にしてマージする（ADR-0097「影響」の形）。線を JSON に集めるほど、そこを緩める1本の PR の価値が上がるため（判断20）
 - JSON の形は、PR の CI の verify では守れない（作成の App が PR の中で書き換えられる）。gate・llm・approve が実行のときに形を検査し、読めない・形が違うときは例外なし（全部止める側）として理由を返す。exit 1 にしない（approve が skipped になり理由が残らない、review.yml:136-138）
 - ③ の機械（push の前の照合）は、作業ツリーではなく `git show origin/master:config/dev-gate.json` を読む（作業ツリーは Claude が書き換えられる）
 - 置き場所・名前は hq の v2 の審査と合わせて決める（判断16）
 
-### 11.5 ほかに auto-merge で変わるもの
+### 10.5 ほかに auto-merge で変わるもの
 
 | 今の判定 | auto-merge での扱い | 対応 |
 |---|---|---|
-| 必須チェック（verify・ml-tests は止める、e2e は確認を挟む。`guard-pr-merge.js:67-94`・`280-325`） | ruleset が必須にする | e2e の「確認を挟む」（DB の状態で落ちたものを人が見て通す、ADR-0077）が無くなる。e2e の揺れは空のコミットで再実行し、run 1回と審査1回の費用になる（11.1 の木の SHA の持ち越しで審査の反転は防ぐ） |
+| 必須チェック（verify・ml-tests は止める、e2e は確認を挟む。`guard-pr-merge.js:67-94`・`280-325`） | ruleset が必須にする | e2e の「確認を挟む」（DB の状態で落ちたものを人が見て通す、ADR-0077）が無くなる。e2e の揺れは空のコミットで再実行し、run 1回と審査1回の費用になる（10.1 の木の SHA の持ち越しで審査の反転は防ぐ） |
 | `--delete-branch` で worktree の中身が消える（`420-464`） | `--auto` のときは gh がその場で消さない見込み（要確認） | 実機確認の項目に入れる |
-| 段階0 A の「レビュー結果が PR コメントにある」・mock-diff・ファン評価（SKILL.md:69-71） | オーケストレーターが付ける `--auto` の前には効く | 付けた後の push（11.3 (b)）と、作成の App が自分で付ける `--auto` では効かない。判断10 の残る弱みに「段階0 の全部と段階1・2 の振り分けは機械では守れない」を足す |
+| 段階0 A の「レビュー結果が PR コメントにある」・mock-diff・ファン評価（SKILL.md:69-71） | オーケストレーターが付ける `--auto` の前には効く | 付けた後の push（10.3 (b)）と、作成の App が自分で付ける `--auto` では効かない。判断10 の残る弱みに「段階0 の全部と段階1・2 の振り分けは機械では守れない」を足す |
 
-### 11.6 切替の前の実機確認（手順6のテスト PR で）
+### 10.6 切替の前の実機確認（手順6のテスト PR で）
 
-1. workflow runs の API の頭打ち（11.2）
-2. 1 run の実費（11.2）
-3. draft・`--auto`・auto-merge の後の push・`--match-head-commit` の挙動（11.3）
-4. 作成の App で審査の App の review を dismiss できるか（11.1 の出口の前提。dismiss しても承認は増えないので迂回にはならない）
-5. `--auto` のときの `--delete-branch`（11.5）
+1. workflow runs の API の頭打ち（10.2）
+2. 1 run の実費（10.2）
+3. draft・`--auto`・auto-merge の後の push・`--match-head-commit` の挙動（10.3）
+4. 作成の App で審査の App の review を dismiss できるか（10.1 の出口の前提。dismiss しても承認は増えないので迂回にはならない）
+5. `--auto` のときの `--delete-branch`（10.5）
 
 #### 中身の案（[dev-gate.draft.json](./dev-gate.draft.json)、2026-10-20 夜。hq が過去30日の PR を分類して数を出す）
 
 - クラスは強い順に deny（承認しない・オーナーが入れる）> owner（審査は動くが承認せず、オーナーの APPROVE で入る）> orchestrate > prodWrite > content（記事、§9.1）> frontendSmall > employee。PR は、変えたファイル（改名の元・削除を含む）のうち一番強いクラスになる
 - deny には、審査で出た抜けを全部入れた（DB の適用・マージ順とフック・verify の台帳・e2e の録画と fixtures・リスクの規則・送信の設定・管理画面と認証・Cron の入口・下の階層の依存の宣言・ADR と知見・承認済みのモック・機械が作る文書）。パスは全部実在を確かめた
-- 審査の仕組みそのもの（`config/dev-gate.json`・`.github/workflows/review.yml`・`scripts/review/**`・`reviewPr.js`）は deny に移した（§11.4、2段の緩めを防ぐ）。owner には、仕組みの変更（`.github/**` の他・`.claude/**`・AGENTS.md・vercel.json・ルートの package.json 等）を入れた。**これは ADR-0097 の「CODEOWNERS は置かない。仕組みの変更も審査の App の承認だけで通る（オーナー判断）」を一部覆す**。仕組みの変更は直近30日で223本中の多数（ADR-0097 の却下した選択肢の表）なので、オーナーの承認の数が増える（判断18）
+- 審査の仕組みそのもの（`config/dev-gate.json`・`.github/workflows/review.yml`・`scripts/review/**`・`reviewPr.js`）は deny に移した（§10.4、2段の緩めを防ぐ）。owner には、仕組みの変更（`.github/**` の他・`.claude/**`・AGENTS.md・vercel.json・ルートの package.json 等）を入れた。**これは ADR-0097 の「CODEOWNERS は置かない。仕組みの変更も審査の App の承認だけで通る（オーナー判断）」を一部覆す**。仕組みの変更は直近30日で223本中の多数（ADR-0097 の却下した選択肢の表）なので、オーナーの承認の数が増える（判断18）
 - **orchestrate のクラスは機械では区別できない**。オーケストレーターも社員も同じ作成の App の名義で、ブランチの接頭辞は作成の App が選べる。区別する身元（オーケストレーター用の別の App）を作るまでは owner と同じ扱いにする（判断17）
 - prodWrite（本番を書く経路）は、手の一覧にせず、gate が master の上で毎回作る: Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある `scripts/**`・`api/**`（実測63本）と、vercel.json の crons の `api/cron/*.js` を入口にし、静的な import をたどった全部。審査は承認できるが、P1 も止め、10ファイル・300行を超えたら owner。PR が prod の入口のファイルに新しい import を足すと、入口のファイル自身が変わるので prodWrite に当たる（新しいファイルが閉包の外でも見逃さない）
 - frontendSmall（`src/**`・`public/**`、管理画面と記事を除く）は 5ファイル・150行（テストの spec を除く）まで。超えたら orchestrate（＝今は owner）。数は hq の分類の結果で直す
-- P1 はクラスを問わず止める（§11.1 案 A）。止めない観点を許可のリストにし、content のクラスで観点が fan・seo の P1 だけ止めない
+- P1 はクラスを問わず止める（§10.1 案 A）。止めない観点を許可のリストにし、content のクラスで観点が fan・seo の P1 だけ止めない
 
 #### ADR の追記の案（番号は PR 作成時に origin/master の最大＋1）
 
@@ -467,7 +467,7 @@ flowchart TD
 
 - 全員に効かせるのを推奨（判断19）。社員だけにすると、同じ PR を claude/ の接頭辞で出せば線を外せる
 
-## 12. 審査（system-architect、2026-10-20）の指摘と対応
+## 11. 審査（system-architect、2026-10-20）の指摘と対応
 
 | 指摘 | 重大度 | 対応 |
 |---|---|---|
@@ -489,6 +489,6 @@ flowchart TD
 | ADR の追記 | P2 | 採用。決まった後に追記（§6） |
 | （/code-review）hold が当てる前の止まり（窓の外等）も保留にする・notify が hold を拾わない・見張りが run と job を区別しない・file-transaction の代わりの案が無い・PR-A' を番号つきにすると列を塞ぐ・窓の境界が曖昧 | P1〜P3 | 採用。`attempted` の出力、notify の needs、job の結果で数える、single-transaction だけにする代わりの案、owner-prod-steps の形、FROM/UNTIL |
 | （代わりの審査、Codex は未接続）切替の前の未承認の 171 が D' の後の列を止める・PR-D に e2e-rerun（Actions: write）が漏れ・cancelled を保留にしない・PR-B の例外は要らない・PR-A' の SQL の形・notify の wait と hold・BEGIN のオプション・`DB_APPLY_AUTO_ENABLED` の未設定・shim の `-R` とトークンの期限・git の credential の空のリセット行・全 worktree の `.env.local`・record の MIGRATION の書き分け | P2〜P3 | 採用（171・e2e-rerun はコードと台帳で再現）。D' の条件・判断12・PR-D の表・§6 の表に反映。「Encrypted と Sensitive の揺れ」は別の概念（Encrypted は Vercel の保存の形、Sensitive は表示の可否）なので直さない。「§6 の図で PR-B が PR-A の後」は推奨の順で、前提ではないので直さない |
-| （§11 の審査）30日の PR は 970 本で月 2,000〜3,500 run・runs の API の頭打ち・通知を出す job が無い・接頭辞が `claude/` 85 本だけ・`--auto` でもフックは動き本当の穴は付けた後の push・draft は守りにならない・止める観点を許可のリストに・木の SHA での持ち越し・切る前の件数・出口・dev-gate の2段の緩め・JSON の形は実行のときに検査・同じ番号の2本 | P1〜P3 | 全部採用（970 本・接頭辞・`guard-pr-merge.js:505-511` を再現）。§11 を書き直した。dev-gate の自己変更は deny に移した |
+| （§10 の審査）30日の PR は 970 本で月 2,000〜3,500 run・runs の API の頭打ち・通知を出す job が無い・接頭辞が `claude/` 85 本だけ・`--auto` でもフックは動き本当の穴は付けた後の push・draft は守りにならない・止める観点を許可のリストに・木の SHA での持ち越し・切る前の件数・出口・dev-gate の2段の緩め・JSON の形は実行のときに検査・同じ番号の2本 | P1〜P3 | 全部採用（970 本・接頭辞・`guard-pr-merge.js:505-511` を再現）。§10 を書き直した。dev-gate の自己変更は deny に移した |
 | （§9 の2回目の審査）JPEG を禁止のリストで見ている（APP13 等が通る）・SOS の前だけ／末尾 FF D9 では足りない・`llm.js` の2か所目の呼び出し・review.yml の APPROVE は P1 を残しうる・切替の前は F の PR が存在しない・`GITHUB_MERGE_TOKEN` で審査を迂回できる・SOF の扱い・webp・縦横の上限・表の読み方・関門の許可のリストがどの PR に効くか・差し替えの画像・118 行目の二重・`--auto` は機械で守れない・codex の Preview・ADR の追記の時期・blob の sha・解析の例外・指示文の注記・polyglot と nosniff・ファイル名の長さ | P1〜P3 | 全部採用（APPROVE の条件 `reviewPr.js:261-270`、2か所の呼び出し `gate.js:45`・`llm.js:113`、APP13 99枚を再現）。§9 を書き直した |
 | §1 の 1' の言い過ぎ、git_protocol、useHttpPath、細部（mode=wait の notify、already_applied の文、REVOKE service_role、SET LOCAL ROLE、erDiagram） | P3 | 採用（該当箇所を直した。SET LOCAL ROLE は印を先に入れることで解消） |
