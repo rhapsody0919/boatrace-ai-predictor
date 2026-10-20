@@ -45,6 +45,7 @@ import {
   BAND,
   BUBBLE,
   BUBBLE_INNER,
+  CARD,
   CHIP,
   FRAME_PAD,
   H,
@@ -53,6 +54,10 @@ import {
   SUB_SIZE,
   W,
   angle,
+  cardBarFrame,
+  cardColW,
+  cardColX,
+  cardPairBox,
   chipX,
   labelBox,
   radarGeom,
@@ -346,23 +351,13 @@ const chipCenter = (b) => chipX(b) + CHIP.w / 2;
 
 /** 差がはっきりしている順のカード（ソナー「差がつく材料」のカードに寄せる） */
 function Card({ item, boat, frameT }) {
-  const top = 350;
-  const left = 40;
-  const width = 1000;
-  const barsBase = top + 762;
-  const barMax = 170;
+  const { top, left, width, barsBase, barMax, barW } = CARD;
   const pcts = item.bars.map((x) => x.pct ?? 0);
   const max = Math.max(...pcts, item.usual ?? 0, 0.01);
-  const colW = (width - 80) / 6;
-  const colX = (i) => left + 40 + i * colW;
-  const barW = 104;
+  const colW = cardColW;
+  const colX = cardColX;
   const barTop = (pct) => barsBase - (pct / max) * barMax;
-  const barFrame = (i) => ({
-    x: colX(i) + (colW - barW) / 2 - 10,
-    y: barTop(pcts[i]) - 58,
-    w: barW + 20,
-    h: barsBase - barTop(pcts[i]) + 58,
-  });
+  const barFrame = (i) => cardBarFrame(i, pcts[i], max);
   // 今日の順位の棒とその上の%。今日の順位を当てはめない日（優勝戦・準優勝戦の今節の着順点）は、文が比べる1位と6位
   const frames =
     item.todayBar === null
@@ -382,7 +377,7 @@ function Card({ item, boat, frameT }) {
           left,
           top,
           width,
-          height: 880,
+          height: CARD.height,
           boxSizing: "border-box",
           background: CARD_BG,
           border: "2px solid rgba(255,255,255,0.12)",
@@ -447,10 +442,10 @@ function Card({ item, boat, frameT }) {
           key={i}
           style={{
             position: "absolute",
-            left: left + 40 + i * 470,
-            top: top + 196,
-            width: 450,
-            height: 220,
+            left: cardPairBox(i).x,
+            top: cardPairBox(i).y,
+            width: cardPairBox(i).w,
+            height: cardPairBox(i).h,
             boxSizing: "border-box",
             background: "#0c1a2c",
             borderRadius: 20,
@@ -585,7 +580,8 @@ export function FullPictureScene2(scene) {
   const focus = scene.radar.focus;
 
   // 縦スクロール（重ね図 → カード1 → カード2 …）。頁 k は y = k*PAGE
-  const toCards = beats.find((b) => b.kind === "toCards");
+  // 入口版（重ね図だけ）はカードの頁へ送らない
+  const toCards = beats.find((b) => b.kind === "toCards") ?? { from: Infinity, len: 1 };
   let scroll = 0;
   if (frame >= toCards.from) {
     scroll = interpolate(frame - toCards.from, [0, toCards.len], [0, PAGE], {
@@ -597,7 +593,7 @@ export function FullPictureScene2(scene) {
         PAGE * beat.index +
         interpolate(t, [0, CARD_SCROLL], [0, PAGE], { ...clamp, easing: ease });
   }
-  const qSwitch = interpolate(
+  const qSwitch = !Number.isFinite(toCards.from) ? 1 : interpolate(
     frame - toCards.from,
     [0, 10, 14, 24],
     [1, 0, 0, 1],

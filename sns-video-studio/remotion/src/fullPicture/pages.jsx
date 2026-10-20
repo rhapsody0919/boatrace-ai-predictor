@@ -28,6 +28,12 @@ import {
   axisButtonBox,
   followerRow,
   slitFormBox,
+  slitFormOn,
+  summaryLayout,
+  SUMMARY,
+  statsBarRow,
+  statsBarBox,
+  STATS_BAR,
   slitX,
 } from "./pageLayout.js";
 
@@ -239,52 +245,55 @@ export function TablePage({ title, sub, cols, rows, button, shown = 1, grow = 0,
   );
 }
 
-/** 数値の欄（縦に並べる）。rows: [{label, value, note}] */
+/** 数値の欄（縦に並べる）。rows: [{label, value, note, bar?}]。bar があれば棒つきの大きい欄（statsBarRow） */
 export function StatsPage({ title, sub, rows }) {
   return (
     <>
       <Panel title={title} sub={sub} />
-      {rows.map((r, i) => {
-        const box = statsRow(i);
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: box.x,
-              top: box.y,
-              width: box.w,
-              height: box.h,
-              background: "#0c1a2c",
-              borderRadius: 20,
-              boxSizing: "border-box",
-              padding: "20px 28px",
-            }}
-          >
-            <div style={{ fontSize: MIN_TEXT, color: TEXT, fontWeight: 600 }}>
-              {r.label}
+      {rows.map((r, i) => (r.bar ? <StatsBarRow key={i} r={r} i={i} /> : <StatsRow key={i} r={r} i={i} />))}
+    </>
+  );
+}
+
+const ROW_BG = { position: "absolute", background: "#0c1a2c", borderRadius: 20, boxSizing: "border-box", padding: "20px 28px" };
+
+function StatsRow({ r, i }) {
+  const box = statsRow(i);
+  return (
+    <div style={{ ...ROW_BG, left: box.x, top: box.y, width: box.w, height: box.h }}>
+      <div style={{ fontSize: MIN_TEXT, color: TEXT, fontWeight: 600 }}>{r.label}</div>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 18 }}>
+        <span style={{ fontSize: 60, fontWeight: 900, color: "#ffffff" }}>{r.value}</span>
+        {r.note && <span style={{ fontSize: MIN_TEXT, color: MUTED }}>{r.note}</span>}
+      </div>
+    </div>
+  );
+}
+
+/** 棒つきの欄: 見出し・値（棒の上）・棒（欄の幅いっぱい）・全国の目印とその値（棒の下） */
+function StatsBarRow({ r, i }) {
+  const box = statsBarRow(i);
+  const bar = statsBarBox(i);
+  const markX = r.bar.mark === null || r.bar.mark === undefined ? null : bar.x + Math.min(1, r.bar.mark) * bar.w;
+  return (
+    <>
+      <div style={{ ...ROW_BG, left: box.x, top: box.y, width: box.w, height: box.h }}>
+        <div style={{ fontSize: MIN_TEXT, color: TEXT, fontWeight: 600 }}>{r.label}</div>
+        <div style={{ fontSize: 72, fontWeight: 900, color: "#ffffff", lineHeight: 1.2 }}>{r.value}</div>
+      </div>
+      <div style={{ position: "absolute", left: bar.x, top: bar.y, width: bar.w, height: bar.h, background: "rgba(255,255,255,0.08)", borderRadius: 10 }}>
+        <div style={{ width: `${Math.min(100, r.bar.value * 100)}%`, height: "100%", background: "#e9cf86", borderRadius: 10 }} />
+      </div>
+      {markX !== null && (
+        <>
+          <div style={{ position: "absolute", left: markX - 3, top: bar.y - 12, width: 6, height: bar.h + 24, background: "#2dd4bf", borderRadius: 3 }} />
+          {r.note && (
+            <div style={{ position: "absolute", left: Math.min(Math.max(markX - 150, bar.x), bar.x + bar.w - 300), top: box.y + STATS_BAR.markLabelTop, width: 300, textAlign: "center", fontSize: MIN_TEXT, color: "#2dd4bf", fontWeight: 700, whiteSpace: "nowrap" }}>
+              {r.note}
             </div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 18 }}>
-              <span style={{ fontSize: 60, fontWeight: 900, color: "#ffffff" }}>
-                {r.value}
-              </span>
-              {r.note && (
-                <span style={{ fontSize: MIN_TEXT, color: MUTED }}>
-                  {r.note}
-                </span>
-              )}
-            </div>
-            {r.bar && (
-              <div style={{ position: "absolute", left: 360, top: 78, width: 480, height: 40, background: "rgba(255,255,255,0.08)", borderRadius: 8 }}>
-                <div style={{ width: `${Math.min(100, r.bar.value * 100)}%`, height: "100%", background: "#e9cf86", borderRadius: 8 }} />
-                {r.bar.mark !== null && r.bar.mark !== undefined && (
-                  <div style={{ position: "absolute", left: `${Math.min(100, r.bar.mark * 100)}%`, top: -10, width: 6, height: 60, marginLeft: -3, background: "#2dd4bf", borderRadius: 3 }} />
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+          )}
+        </>
+      )}
     </>
   );
 }
@@ -440,8 +449,9 @@ export function SlitPage({ title, sub, st, boats, button, forms, shown = 1, t = 
           </div>
         );
       })}
-      {forms.map((f, i) => {
+      {forms.map((f0, i) => {
         const box = slitFormBox(i);
+        const f = { ...f0, on: slitFormOn(f0.on, t) };
         return (
           <div key={i} style={{ position: "absolute", left: box.x, top: box.y, width: box.w, height: box.h, borderRadius: 16, boxSizing: "border-box", border: `3px solid ${f.on ? GOLD : "rgba(255,255,255,0.15)"}`, background: f.on ? "rgba(226,185,59,0.15)" : "transparent", color: f.on ? "#ffffff" : MUTED, fontSize: MIN_TEXT, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap" }}>
             {f.name}
@@ -513,40 +523,37 @@ export function DeepPage({ title, sub, card, chips }) {
  * 各行は見る所を太字、意味は「→」付きで小さく薄く。行の頭に関係する艇番（橙は鍵の艇、それ以外は白）。右下に「スクショで保存」
  */
 export function SummaryPage({ groups, footer }) {
-  let y = PAGE_TOP - 10;
+  const lay = summaryLayout(groups);
   const out = [];
   groups.forEach((g, gi) => {
+    const L = lay.groups[gi];
     out.push(
-      <div key={`h${gi}`} style={{ position: "absolute", left: LEFT, top: y, padding: "6px 22px", borderRadius: 30, background: g.color, color: "#0d1b2e", fontSize: 40, fontWeight: 900 }}>
+      <div key={`h${gi}`} style={{ position: "absolute", left: LEFT, top: L.head, height: SUMMARY.headH - 8, padding: "0 22px", borderRadius: 30, background: g.color, color: "#0d1b2e", fontSize: 38, fontWeight: 900, display: "flex", alignItems: "center" }}>
         {g.title}
       </div>,
     );
-    y += 74;
-    const top = y;
     g.rows.forEach((r, ri) => {
       out.push(
-        <div key={`r${gi}-${ri}`} style={{ position: "absolute", left: LEFT + 30, top: y, width: RIGHT - LEFT - 30 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div key={`r${gi}-${ri}`} style={{ position: "absolute", left: LEFT + 30, top: L.rows[ri], width: RIGHT - LEFT - 30, height: SUMMARY.rowH }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, height: 42 }}>
             {r.boats.map((b) => (
-              <span key={b} style={{ minWidth: 44, height: 44, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: MIN_TEXT, fontWeight: 900, background: r.keys.includes(b) ? "#ff8a1f" : "#ffffff", color: "#0d1b2e" }}>
+              <span key={b} style={{ minWidth: 40, height: 40, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: MIN_TEXT, fontWeight: 900, background: r.keys.includes(b) ? "#ff8a1f" : "#ffffff", color: "#0d1b2e" }}>
                 {b}
               </span>
             ))}
-            <span style={{ fontSize: 38, fontWeight: 800, color: "#ffffff", whiteSpace: "nowrap" }}>{r.look}</span>
+            <span style={{ fontSize: 38, lineHeight: "42px", fontWeight: 800, color: "#ffffff", whiteSpace: "nowrap" }}>{r.look}</span>
           </div>
-          <div style={{ fontSize: MIN_TEXT, color: MUTED, marginTop: 2, whiteSpace: "nowrap" }}>→ {r.mean}</div>
+          <div style={{ fontSize: MIN_TEXT, lineHeight: "40px", color: MUTED, whiteSpace: "nowrap" }}>→ {r.mean}</div>
         </div>,
       );
-      y += 106;
     });
-    out.push(<div key={`l${gi}`} style={{ position: "absolute", left: LEFT, top: top, width: 8, height: y - top - 14, borderRadius: 4, background: g.color }} />);
-    y += 16;
+    out.push(<div key={`l${gi}`} style={{ position: "absolute", left: LEFT, top: L.line.top, width: 8, height: L.line.h, borderRadius: 4, background: g.color }} />);
   });
   return (
     <>
       {out}
-      <div style={{ position: "absolute", left: LEFT, top: y + 6, fontSize: 38, fontWeight: 800, color: GOLD, whiteSpace: "nowrap" }}>{footer}</div>
-      <div style={{ position: "absolute", left: RIGHT - 300, top: y + 70, width: 300, textAlign: "right", fontSize: MIN_TEXT, color: MUTED }}>スクショで保存</div>
+      <div style={{ position: "absolute", left: RIGHT - 300, top: lay.saveY, width: 300, textAlign: "right", fontSize: MIN_TEXT, color: MUTED }}>スクショで保存</div>
+      <div style={{ position: "absolute", left: LEFT, top: lay.footerY, height: SUMMARY.footerH, fontSize: 38, lineHeight: `${SUMMARY.footerH}px`, fontWeight: 800, color: GOLD, whiteSpace: "nowrap" }}>{footer}</div>
     </>
   );
 }

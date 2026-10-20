@@ -11,7 +11,7 @@ import { StepScene } from "./StepScene.jsx";
 import { sceneDuration } from "./fullPictureTimeline.js";
 
 export function FullPicture({ scenes = [], answers = {}, bgm = null }) {
-  const total = scenes.reduce((s, x) => s + sceneDuration(x), 0);
+  const total = scenes.reduce((s, x) => s + sceneDuration(x, answers), 0);
   const fade = (f) =>
     interpolate(f, [0, 10, total - 30, total], [0, 1, 1, 0], clamp);
   return (
@@ -27,9 +27,9 @@ export function FullPicture({ scenes = [], answers = {}, bgm = null }) {
       )}
       <Series>
         {scenes
-          .filter((x) => sceneDuration(x) > 0)
+          .filter((x) => sceneDuration(x, answers) > 0)
           .map((x) => (
-            <Series.Sequence key={x.id} durationInFrames={sceneDuration(x)}>
+            <Series.Sequence key={x.id} durationInFrames={sceneDuration(x, answers)}>
               {x.kind === "scene2" ? (
                 <FullPictureScene2 {...x.data} answers={answers} />
               ) : (

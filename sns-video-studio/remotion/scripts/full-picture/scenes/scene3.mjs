@@ -10,8 +10,9 @@
 import { roughCard, sameClassLabel, sameClassScope, anyCell } from "../../../../../src/utils/assistModel.js";
 import { tallyWinPlaceShow } from "../../../../../src/utils/racerConditionStats.js";
 import { isNoRaceResult } from "../../../../../scripts/lib/raceOutcomeFilters.js";
-import { statsRow, tableRowBox, tableRowH } from "../../../src/fullPicture/pageLayout.js";
+import { statsBarRow, tableRowBox, tableRowH } from "../../../src/fullPicture/pageLayout.js";
 import { BOATS, diffOf, diffText, venueName } from "./common.mjs";
+import { fitFirst } from "../fit.mjs";
 
 const Q = "1号艇は信頼できる？";
 const d1 = (v) => (v === null || v === undefined ? "—" : v.toFixed(1));
@@ -84,7 +85,7 @@ export function buildScene3(m) {
         rows: [{ label: "1号艇の1着", value: `${d1(x)}%`, note: `全国 ${d1(y)}%`, bar: { value: b.rate, mark: b.base } }],
       },
       press: null,
-      frames: [statsRow(0)],
+      frames: [statsBarRow(0)],
       facts: f,
       // 1行に収めるため「全国・」を除いた呼び名で書く（問いが1号艇なので「1号艇の」も省く）
       lines: [`${label.replace("全国・", "")}${b.n}件で1着${d1(x)}%`, diffText(`全国の${d1(y)}%`, f)].filter(Boolean),
@@ -136,7 +137,12 @@ export function buildScene3(m) {
       press: null,
       frames: [tableRowBox(idx, tableRowH(shown.length))],
       facts: f,
-      lines: [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`全会場の${d1(aw)}%`, f)].filter(Boolean),
+      // 選手名・会場名が長いと1行に入らないので、入らなければ走数と1着率を分ける
+      lines: fitFirst(
+        [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`全会場の${d1(aw)}%`, f)],
+        [`${name}の${venue}1号艇${here.n}走で1着率${d1(hw)}%`, diffText(`全会場の${d1(aw)}%`, f)],
+        [`${name}の${venue}1号艇は${here.n}走`, `1着率${d1(hw)}%、全会場は${d1(aw)}%`],
+      ),
     });
   } else omitted.push({ where: "scene3.venue", reason: `${venue}で1号艇の走が730日に無い` });
 

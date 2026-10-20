@@ -103,7 +103,8 @@ export function StepScene({ scene, frameOffset = 0 }) {
                   return <Frame key={k} box={box} t={t - at} />;
                 })}
               {windows
-                .filter((w) => w.index === i)
+                // 答えの無い段（重点でない艇は枠だけ移す）は吹き出しを出さない
+                .filter((w) => w.index === i && answerOf(scene, s.id, s.lines)?.length)
                 .map((w) => (
                   <Bubble
                     key={s.id}

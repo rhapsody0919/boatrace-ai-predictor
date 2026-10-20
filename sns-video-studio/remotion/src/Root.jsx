@@ -603,7 +603,7 @@ export function RemotionRoot() {
         height={1920}
         defaultProps={{}}
         calculateMetadata={({ props }) => ({
-          durationInFrames: props?.scenes?.length ? Math.max(30, fullPictureTimeline(props.scenes).total) : 300,
+          durationInFrames: props?.scenes?.length ? Math.max(30, fullPictureTimeline(props.scenes, props.answers).total) : 300,
         })}
       />
       {/* 全貌動画の段の場面を1つ（場面ごとの確認用）。props: { scene, answers } */}
@@ -616,7 +616,7 @@ export function RemotionRoot() {
         height={1920}
         defaultProps={{}}
         calculateMetadata={({ props }) => ({
-          durationInFrames: props?.scene?.steps?.length ? stepTimeline(props.scene).total : 300,
+          durationInFrames: props?.scene?.steps?.length ? stepTimeline({ ...props.scene, answers: props.answers }).total : 300,
         })}
       />
       <Composition

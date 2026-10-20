@@ -67,7 +67,7 @@ function roundSteps(sc, data, version, prevForm) {
       : [`${label}の並びは${formName(form)}に一致`, candidates.length > 1 ? `候補は${candidates.map(formName).join("・")}` : null].filter(Boolean),
   });
   // 同じ形なら2回目は形の一致まで
-  if (prevForm === form) return { steps, form, same: true };
+  if (prevForm === form) return { steps, form, same: true, conclusion: null };
   const atk = sc.attack?.[form]?.all;
   if (atk?.n) {
     const nige = atk.b1_nige;
@@ -97,8 +97,25 @@ function roundSteps(sc, data, version, prevForm) {
     // 2b と同じ見せ方は1回目だけ。2回目はよく出た3連単だけ
     const ss = sonarSteps(`s4-${version}`, cell.tri, cell.n, q, {});
     steps.push(...(prevForm === null ? ss : ss.filter((s) => s.id.endsWith("-tri"))));
+    // 入口版の結論の1拍（着順の流れの1着の段に、形の条件を書き足す）
+    const flow = ss.find((s) => s.id === `s4-${version}-flow`);
+    if (flow) {
+      const f = { ...flow.facts, form: formName(form) };
+      return {
+        steps,
+        form,
+        same: false,
+        conclusion: {
+          ...flow,
+          id: "s4-conclusion",
+          page: { ...flow.page, sub: `枠なりで${formName(form)}だったレース（${cell.n.toLocaleString("ja-JP")}件）` },
+          facts: f,
+          lines: [`${formName(form)}の${f.n}件で1着最多は${f.boat}号艇`, `${f.count}件（${f.pct}%）`],
+        },
+      };
+    }
   }
-  return { steps, form, same: false };
+  return { steps, form, same: false, conclusion: null };
 }
 
 /** @param {object} m 材料 JSON */
@@ -154,7 +171,7 @@ export function buildScene4(m) {
   const r2 = roundSteps(sc, data, "overall", r1.form);
   steps.push(...r2.steps);
   if (r2.same) omitted.push({ where: "scene4.overall", reason: "全体でも同じ形なので、2回目は形の一致まで（型どおり）" });
-  return { id: "scene4", steps, omitted };
+  return { id: "scene4", steps, omitted, conclusion: r1.conclusion ?? null };
 }
 
 /** 攻める艇（画面の「役」: カド一撃・カド受け凹み・ダッシュ勢先行は4コース、イン凹みは2コース、2コース凹みは3コース） */

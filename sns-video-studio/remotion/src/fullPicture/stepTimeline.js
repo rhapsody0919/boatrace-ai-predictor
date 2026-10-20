@@ -2,9 +2,9 @@
  * 段（STEP）で進む場面の拍の並び（純粋関数）。場面1・2b・3〜8 が使う（場面2は scene2Timeline.js）。
  * 型: 1つの STEP は同じ位置・大きさ、次へは縦スクロール。1拍に1つ（押す→変わる→0.5秒→枠→答え）。操作だけの区間を作らない。
  * 1つの段の拍: [頁を送る] → [押す（あれば）→ 変わる] → 0.5秒 → 枠（複数なら順に移す）→ 答え。
- * 答えは次の段で頁を送るまで残す。
+ * 答えは次の段で頁を送るまで残す。段の長さは決まった長さを下限に、答えを毎秒8字で読める長さまで伸ばす。
  */
-import { BEAT } from "./scene2Timeline.js";
+import { BEAT, readFrames } from "./scene2Timeline.js";
 
 export const SCROLL = 18;
 /** 枠を次の所へ移す間 */
@@ -37,15 +37,22 @@ export function stepTimes(step, first) {
 }
 
 /**
- * @param {{steps: {press?: object|null, frames?: unknown[]}[]}} scene
+ * @param {{steps: {id?: string, lines?: string[], press?: object|null, frames?: unknown[]}[], answers?: object}} scene
+ *   answers: 文の JSON（あれば答えの字数で段の長さを決める。無ければ文型の版 lines）
  * @returns {{beats: {index:number, from:number, len:number, times: ReturnType<typeof stepTimes>}[], total:number}}
  */
 export function stepTimeline(scene) {
+  const steps = scene?.steps ?? [];
+  const times = steps.map((s, i) => stepTimes(s, i === 0));
   let at = 0;
-  const beats = (scene?.steps ?? []).map((s, i) => {
-    const times = stepTimes(s, i === 0);
-    const b = { index: i, from: at, len: times.len, times };
-    at += times.len;
+  const beats = steps.map((s, i) => {
+    const t = times[i];
+    // 答えは次の段で頁を送り終えるまで出ている（最後の段は場面の終わりまで）
+    const nextScroll = times[i + 1]?.scroll ?? 0;
+    const lines = scene.answers?.[s.id] ?? s.lines;
+    const len = Math.max(t.len, t.answer + readFrames(lines) - nextScroll);
+    const b = { index: i, from: at, len, times: { ...t, len } };
+    at += len;
     return b;
   });
   return { beats, total: at };

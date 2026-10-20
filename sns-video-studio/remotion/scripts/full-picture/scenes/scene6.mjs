@@ -10,6 +10,7 @@ import { ASSIST_COPY as C } from "../../../../../src/data/thinkingAssistCopy.js"
 import { deepBox, tableRowBox } from "../../../src/fullPicture/pageLayout.js";
 import { keyBoatsOf } from "./scene4.mjs";
 import { BOATS, venueName } from "./common.mjs";
+import { fitFirst } from "../fit.mjs";
 
 const Q = "機力と調子は？";
 const latestBy = (rows, key, dateKey) => {
@@ -155,7 +156,11 @@ export function buildScene6(m) {
       frames: [deepBox(feats.length ? 1 : 0)],
       facts: f,
       lines: top
-        ? [`${b}号艇は${f.item}が6艇で一番${word}`, `そのとき1着${f.rate}%、全体${base}%`]
+        ? fitFirst(
+            [`${b}号艇は${f.item}が6艇で一番${word}`, `そのとき1着${f.rate}%、全体${base}%`],
+            [`${f.item}が6艇で一番${word}${b}号艇`, `そのとき1着${f.rate}%、全体${base}%`],
+            [`${f.item}が一番${word}${b}号艇`, `そのとき1着${f.rate}%、全体${base}%`],
+          )
         : [`${b}号艇は▲の付いた材料が無い`, feats.length ? `札は${feats.join("・")}` : "札も無い"],
     });
     if (!top) omitted.push({ where: "scene6.deep", boat: b, reason: "▲の付いた材料が無い（カードを出さず札だけ）" });

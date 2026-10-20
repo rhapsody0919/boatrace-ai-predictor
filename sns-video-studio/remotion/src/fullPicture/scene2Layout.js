@@ -98,3 +98,20 @@ export function frameInSafeArea(box, pad = FRAME_PAD) {
   const inButtons = r > SAFE_RIGHT + 20 && b > BUTTONS_TOP && t < 1700;
   return !inButtons;
 }
+
+/**
+ * 場面2のカード（材料1つ）の配置。右のボタン列（x960〜）にかからないよう x40〜960 に収める（visual-designer 2026-10-20 P1）
+ */
+export const CARD = { top: 350, left: 40, width: 920, height: 880, barsBase: 350 + 762, barMax: 170, barW: 104, pad: 40 };
+export const cardColW = (CARD.width - CARD.pad * 2) / 6;
+export const cardColX = (i) => CARD.left + CARD.pad + i * cardColW;
+/** 上の2つの箱（6艇で一番高いとき・低いとき） */
+export const cardPairBox = (i) => {
+  const w = (CARD.width - CARD.pad * 2 - 20) / 2;
+  return { x: CARD.left + CARD.pad + i * (w + 20), y: CARD.top + 196, w, h: 220 };
+};
+/** 棒 i（0〜5、値 pct・最大 max）を、上の%ごと囲う枠 */
+export function cardBarFrame(i, pct, max) {
+  const top = CARD.barsBase - (pct / max) * CARD.barMax;
+  return { x: cardColX(i) + (cardColW - CARD.barW) / 2 - 10, y: top - 58, w: CARD.barW + 20, h: CARD.barsBase - top + 58 };
+}

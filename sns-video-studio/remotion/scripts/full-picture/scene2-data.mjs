@@ -5,6 +5,7 @@
  * LLM は使わない。同じ入力なら同じ出力（日時・乱数を使わない）。欠けた値はその要素を描かず omitted に記録し、全体は止めない。
  * 型の正本: ~/hq/drafts/full-picture-scene-contract.md の「全場面共通」「場面2」。
  */
+import { fitFirst } from "./fit.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
@@ -142,10 +143,14 @@ export function templateLines(f) {
     if (!f.item) return [`${f.boat}号艇は比べられる値が無い`];
     const cmp = (c) => `${c.boat}号艇の${c.sameDisplay ? "同じ" : ""}${c.value}`;
     const l1 = `${f.boat}号艇は${f.item}${f.value}で${f.rank}`;
-    if (f.compare?.role === "2番手")
-      return [l1, `2番手は${cmp(f.compare.boats[0])}${f.otherFirstCount ? `、ほか${f.otherFirstCount}項目も1位` : ""}`];
-    if (f.compare?.role === "1位") return [l1, `1位は${f.compare.boats.map(cmp).join("・")}`];
-    return [l1];
+    const l2 =
+      f.compare?.role === "2番手"
+        ? `2番手は${cmp(f.compare.boats[0])}${f.otherFirstCount ? `、ほか${f.otherFirstCount}項目も1位` : ""}`
+        : f.compare?.role === "1位"
+          ? `1位は${f.compare.boats.map(cmp).join("・")}`
+          : null;
+    // 1行目が入らない（平均ST（直近30走）の値など）ときは、値を2行目の頭へ移す
+    return fitFirst([l1, l2], [`${f.boat}号艇は${f.item}で${f.rank}`, l2 ? `${f.value}、${l2}` : f.value]);
   }
   if (f.kind === "card") {
     if (f.todayRank !== null)

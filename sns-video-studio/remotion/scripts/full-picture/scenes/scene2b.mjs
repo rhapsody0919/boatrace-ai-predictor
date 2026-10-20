@@ -15,6 +15,7 @@ import {
 } from "../../../../../src/utils/analogyAggregate.js";
 import { sankeyLayout, sankeyNodeBox, sonarChipBox, triRowsBox } from "../../../src/fullPicture/sonarLayout.js";
 import { BOATS } from "./common.mjs";
+import { fitFirst } from "../fit.mjs";
 
 const Q = "類似レースの結果は？";
 const p1 = (c, n) => (n ? ((c / n) * 100).toFixed(1) : "0.0");
@@ -57,7 +58,10 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
     revealOnPress: true,
     frames: [sankeyNodeBox(node2)],
     facts: f2,
-    lines: [`${b}号艇が1着の${nB}件、2着は${s2}号艇が${second[s2 - 1]}件`, `3着は${s3}号艇の${third[s3 - 1]}件が最多`],
+    lines: fitFirst(
+      [`${b}号艇が1着の${nB}件、2着は${s2}号艇が${second[s2 - 1]}件`, `3着は${s3}号艇の${third[s3 - 1]}件が最多`],
+      [`${b}号艇が1着の${nB}件で2着最多は${s2}号艇`, `${second[s2 - 1]}件、3着は${s3}号艇の${third[s3 - 1]}件が最多`],
+    ),
   });
   // よく出た3連単（上位3つ）
   const top = trifectaList(tri).slice(0, TOP_TRIFECTA);

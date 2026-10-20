@@ -24,6 +24,21 @@ function keyBoats(m) {
   return [...BOATS].sort((a, b) => c[b - 1] - c[a - 1] || a - b).slice(0, 2);
 }
 
+/**
+ * 重点でない艇の「1着なら2着の最多」をまとめた答え。2着の艇が同じ艇ごとにまとめ、2行に収まらなければ「1着→2着」の矢印で並べる
+ * @param {{axis:number, second:number}[]} rest
+ */
+export function restLines(rest) {
+  const groups = [];
+  for (const r of rest) {
+    const g = groups.find((x) => x.second === r.second);
+    if (g) g.axes.push(r.axis);
+    else groups.push({ second: r.second, axes: [r.axis] });
+  }
+  if (groups.length <= 2) return groups.map((g) => `${g.axes.join("・")}号艇が1着なら2着は${g.second}号艇`);
+  return ["1着→2着の最多（号艇）", rest.map((r) => `${r.axis}→${r.second}`).join("・")];
+}
+
 /** @param {object} m 材料 JSON */
 export function buildScene5(m) {
   const omitted = [];
@@ -65,6 +80,8 @@ export function buildScene5(m) {
   const keys = keyBoats(m);
   const venue = venueName(m.venueCode);
   let first = true;
+  const rest = [];
+  let last = null;
   for (const axis of BOATS) {
     const f = winFollowers(va, axis);
     if (!f) {
@@ -85,11 +102,26 @@ export function buildScene5(m) {
       revealOnPress: false,
       frames: [followerRow(rows.indexOf(best))],
       facts: fx,
-      lines: key
-        ? [`${axis}号艇が1着なら2着は${best.boat}号艇`, `${f.n}件の${fx.second.rate}%（${fx.second.k}件）`]
-        : [`${axis}号艇が1着なら2着は${best.boat}号艇の${fx.second.rate}%`],
+      // 重点でない艇（約2秒）は答えを出さず枠だけ移す。答えは最後にまとめて1枚（読む時間が足りないため。visual-designer 2026-10-20 P1）
+      lines: key ? [`${axis}号艇が1着なら2着は${best.boat}号艇`, `${f.n}件の${fx.second.rate}%（${fx.second.k}件）`] : [],
     });
+    if (!key) rest.push({ axis, second: best.boat, rate: fx.second.rate });
+    last = steps[steps.length - 1];
     first = false;
+  }
+  if (rest.length) {
+    const fr = { kind: "followersRest", boats: [...new Set(rest.flatMap((r) => [r.axis, r.second]))], pairs: rest.map((r) => ({ axis: r.axis, second: r.second, rate: r.rate })) };
+    steps.push({
+      ...last,
+      id: "s5-axis-rest",
+      question: `${rest.map((r) => r.axis).join("・")}号艇が勝ったら2着は？`,
+      samePage: true,
+      len: undefined,
+      press: null,
+      frames: [],
+      facts: fr,
+      lines: restLines(rest),
+    });
   }
   if (!race) omitted.push({ where: "scene5", reason: "出走表にこのレースが無い" });
   return { id: "scene5", steps, omitted, keyBoats: keys };

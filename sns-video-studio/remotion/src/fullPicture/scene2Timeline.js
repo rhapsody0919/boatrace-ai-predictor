@@ -30,6 +30,17 @@ const LEN = {
   tail: 15,
 };
 
+/**
+ * 答えを読む時間（visual-designer 2026-10-20 P1）。答えの字数（全角1・半角0.55）を毎秒8字で読める長さだけ、
+ * 答えを不透明で出す。拍の長さは決まった長さを下限に、足りなければ伸ばす（文が決まってから長さが決まる）
+ */
+export const READ_CPS = 8;
+export const lineWidth = (l) => [...l].reduce((w, c) => w + (/[\x20-\x7e]/.test(c) ? 0.55 : 1), 0);
+/** その答えを読むのに要るフレーム数 */
+export const readFrames = (lines) => Math.ceil((((lines ?? []).reduce((w, l) => w + lineWidth(l), 0)) / READ_CPS) * FPS);
+/** 答えの文（文の JSON にあればそれ、無ければ文型の版） */
+const linesOf = (scene, id, template) => scene?.answers?.[id] ?? template;
+
 /** 押す拍の、枠と答えの出る時刻 */
 export const PRESS_AT = BEAT.press;
 export const CHANGE_END = BEAT.press + BEAT.change;
@@ -44,22 +55,30 @@ export const cardFrameAt = (i) => (i === 0 ? 0 : CARD_SCROLL) + BEAT.pause;
 export const cardAnswerAt = (i) => cardFrameAt(i) + BEAT.frameIn + BEAT.answerGap;
 
 /**
- * @param {{radar: {focus: {boat:number}[]}, cards: {items: unknown[], empty: object|null}}} scene
+ * @param {{radar: {overview?: object, focus: object[]}, cards: {items: object[], empty: object|null}, radarOnly?: boolean, answers?: object}} scene
+ *   radarOnly: 重ね図だけ（入口版。カードの頁へ送らない）。answers: 文の JSON（拍の長さを答えの字数に合わせる）
  * @returns {{beats: {kind: string, index: number, from: number, len: number}[], total: number}}
  */
 export function scene2Timeline(scene) {
+  const focus = scene?.radar?.focus ?? [];
+  const cards = scene?.radar && !scene.radarOnly ? (scene?.cards?.items ?? []) : [];
+  // 拍の長さ = 決まった長さと「答えが出てから、次の拍で消し始めるまでに読める長さ」の長い方
+  const fit = (base, answerAt, lines, holdAfterNext) => Math.max(base, answerAt + readFrames(lines) - holdAfterNext);
   const beats = [];
   let at = 0;
   const push = (kind, index, len) => {
     beats.push({ kind, index, from: at, len });
     at += len;
   };
-  push("overview", 0, LEN.overview);
-  (scene?.radar?.focus ?? []).forEach((_, i) => push("focus", i, LEN.focus));
-  push("toCards", 0, LEN.toCards);
-  const cards = scene?.cards?.items ?? [];
-  if (cards.length) cards.forEach((_, i) => push("card", i, LEN.card));
-  else push("empty", 0, LEN.empty);
+  const ov = scene?.radar?.overview;
+  push("overview", 0, fit(LEN.overview, OVERVIEW_ANSWER_AT, linesOf(scene, ov?.id, ov?.lines), focus.length ? PRESS_AT : 0));
+  focus.forEach((f, i) => push("focus", i, fit(LEN.focus, ANSWER_AT, linesOf(scene, f?.id, f?.lines), i < focus.length - 1 ? PRESS_AT : 0)));
+  if (!scene?.radarOnly) {
+    push("toCards", 0, LEN.toCards);
+    if (cards.length)
+      cards.forEach((c, i) => push("card", i, fit(LEN.card, cardAnswerAt(i), linesOf(scene, c?.id, c?.answer), i < cards.length - 1 ? CARD_SCROLL : 0)));
+    else push("empty", 0, fit(LEN.empty, 20, linesOf(scene, scene?.cards?.empty?.id, scene?.cards?.empty?.lines), 0));
+  }
   at += LEN.tail;
   return { beats, total: at };
 }
@@ -82,8 +101,9 @@ export function answerWindows(beats) {
     const next = beats[k + 1];
     if (b.kind === "overview" || b.kind === "focus") {
       const start = b.from + (b.kind === "overview" ? OVERVIEW_ANSWER_AT : ANSWER_AT);
-      const hold = next.kind === "focus" ? next.from + PRESS_AT : next.from;
-      const end = next.kind === "focus" ? next.from + CHANGE_END : next.from + next.len;
+      // 入口版（重ね図だけ）の最後の艇は、場面の終わりまで残す
+      const hold = !next ? b.from + b.len : next.kind === "focus" ? next.from + PRESS_AT : next.from;
+      const end = !next ? b.from + b.len : next.kind === "focus" ? next.from + CHANGE_END : next.from + next.len;
       out.push({ kind: b.kind, index: b.index, start, hold, end });
     } else if (b.kind === "card") {
       const start = b.from + cardAnswerAt(b.index);

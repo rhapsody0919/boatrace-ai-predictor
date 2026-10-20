@@ -1,19 +1,20 @@
 /**
- * 全貌動画 場面2 の答えの文（2段）。
- * (1) 文型の版: facts だけから決まった文型で作る（scene2-data.mjs の templateLines）。必ず出せる下限
- * (2) 整えた版: LLM が facts だけを入力に1〜2行に整える。機械の検査に1つでも落ちた拍は文型の版に戻す（全体は止めない）
+ * 全貌動画の答えの文（2段）。
+ * (1) 文型の版: facts だけから決まった文型で作る（各場面の build の lines）。比べる文はこれで固定する
+ * (2) つないだ版: LLM は「前の拍とつなぐ語」（一方・さらに 等の決まった語）を選ぶだけ。文型の文は変えない。
+ *     検査に落ちた拍はつなぐ語を付けない（文型の版のまま。全体は止めない）
+ *     2026-10-20 オーナー決定: LLM が文を整える版はやめる（4レース178拍で文型と違った4拍が4拍とも劣化した。wording-editor）
  * 文は描画の前に1度だけ作って JSON に保存し、描画はその JSON から行う（同じ JSON なら同じ MP4）。評価役の LLM は関門にしない。
  */
 import { execFileSync } from "node:child_process";
 import { FACT_ITEMS } from "../../../../src/utils/analogyFacts.js";
 import { t } from "./scene2-data.mjs";
 import { checkRiskRules } from "../../../../scripts/lib/riskRules.js";
+import { lineWidth } from "../../src/fullPicture/scene2Timeline.js";
 
-/**
- * 1行の幅の上限（全角1・半角0.55で数える）。吹き出しの内側 816px を最小の 36px で割った 22.6 字分
- */
-export const MAX_WIDTH = 22;
-export const lineWidth = (l) => [...l].reduce((w, c) => w + (/[\x20-\x7e]/.test(c) ? 0.55 : 1), 0);
+export { MAX_WIDTH } from "./fit.mjs";
+import { MAX_WIDTH } from "./fit.mjs";
+export { lineWidth };
 export const MAX_LINES = 2;
 /**
  * 禁止表現は risk-rules.json（sns-video-studio/remotion/risk-rules.json）を正本にして読む。字幕と投稿本文で同じ判定にする。
@@ -194,31 +195,33 @@ export function checkLines(lines, facts, prev) {
   for (const u of left) why.push(`facts に無い言い回し「${u}」`);
   // 向き（高い・低い）は facts の向きと合う
   if (facts.direction && /高い|低い/.test(text) && !text.includes(facts.direction)) why.push(`向きが facts（${facts.direction}）と逆`);
+  // 差1ポイント未満は向きを言わない（common.mjs の diffText。10/15 丸亀10R の整えた版が「0.2ポイント高い」と書いた。wording-editor 2026-10-20 P1）
+  const small = [facts.diffPt, facts.usualDiffPt].some((d) => typeof d === "number" && d < 1);
+  if (small && /ポイント(高い|低い|高く|低く)/.test(text)) why.push("差1ポイント未満で向き（高い・低い）を言った");
   // つなぐ語
   const head = lines[0];
   const conn = CONNECTORS.find((c) => head.startsWith(c));
   if (conn && !prev) why.push(`段の最初の拍でつなぐ語「${conn}」`);
-  if (conn && prev && SAME_ITEM_CONNECTORS.includes(conn) && prev.item !== facts.item)
-    why.push(`「${conn}」だが前の拍と材料が違う（前: ${prev.item ?? "なし"}、今: ${facts.item ?? "なし"}）`);
+  // 同じ材料か: 場面2は材料名（item）、段の場面は facts の種類（kind）で見る
+  const topic = (f) => f?.item ?? f?.kind ?? null;
+  if (conn && prev && SAME_ITEM_CONNECTORS.includes(conn) && (topic(prev) === null || topic(prev) !== topic(facts)))
+    why.push(`「${conn}」だが前の拍と材料が違う（前: ${topic(prev) ?? "なし"}、今: ${topic(facts) ?? "なし"}）`);
   return why;
 }
 
-const PROMPT = (beats) => `あなたはボートレースのデータ動画の字幕を整える係。下の各拍の facts（コードが計算した比較の結果）だけを使い、拍ごとに答えの字幕を1〜2行で書く。
+const PROMPT = (beats) => `あなたはボートレースのデータ動画の字幕に「前の拍とつなぐ語」を付ける係。字幕の文（lines）は決まっていて変えない。
+各拍について、前の拍の答えとのつながりに合うつなぐ語を、次の語から1つ選ぶか、付けない（null）を選ぶ: ${CONNECTORS.join("・")}
 
 規則:
-- 1行は全角${MAX_WIDTH}字分以内（半角の数字・記号は0.55字分）、1〜${MAX_LINES}行
-- 数値・艇番・材料名は facts にあるものだけ。計算し直さない、丸め直さない、足さない
-- 「問いへの答え」と「このレースにとっての意味（向き）」を数値で比べて書く。書き写しだけにしない
-- ぼかし語（半分・多い・少ない・かなり・やや・ほぼ 等）を使わない。予想の断定・保証（必ず・絶対・稼げる 等）、「競艇」「この選手」を使わない
-- 言葉は facts・template にある語と、比べる語（${VOCAB.join("・")}）と助詞だけ。facts に無い評価・主張の言葉（差がつく・有利・狙い目・注目 等）を足さない。足した拍は使われない
-- 前の拍の答えと自然につなぐ。step が変わった最初の拍は、つなぐ語（一方・さらに・同じく・また 等）で始めない。「同じく」「こちらも」は前の拍と同じ材料のときだけ
-- 各拍は上帯の問い（question。無ければ場面2の6艇比較）への答え。kind は facts の種類（overview＝6艇全体で2位以内の項目の数、focus＝その艇が何で上位か、card＝1号艇の材料のカード、ほかは場面1〜8の各段）
-- 文型の版（template）は参考。同じでもよい
+- step が前の拍と違う拍（場面・段の最初）は null
+- 「同じく」「こちらも」は前の拍と同じ材料（facts の item、無ければ kind）のときだけ
+- 「逆に」は前の拍と向きが逆のときだけ。迷ったら null
+- つなぐ語を付けると1行目が全角${MAX_WIDTH}字分を越える拍は null
 
-出力は JSON だけ（前後に説明を書かない）: {"beats":[{"id":"…","lines":["…","…"]}]}
+出力は JSON だけ（前後に説明を書かない）: {"beats":[{"id":"…","connector":"一方"|null}]}
 
 拍:
-${JSON.stringify(beats.map(({ id, step, question, facts, template }) => ({ id, step, question, facts, template })), null, 1)}`;
+${JSON.stringify(beats.map(({ id, step, question, facts, template }) => ({ id, step, question, facts, lines: template })), null, 1)}`;
 
 /** 既定の LLM 呼び出し: Claude Code の非対話モード（API キー不要、ログイン済みの claude で動く） */
 export function claudeCli(prompt, { model = "sonnet" } = {}) {
@@ -258,27 +261,39 @@ export function templateText(sceneOrBeats) {
 }
 
 /**
- * 整えた版の文の JSON。LLM が使えない・JSON が壊れているときは全拍を文型の版に戻す（理由を残す）
- * @param {object} scene
+ * つないだ版の1拍の検査。文型の文は変えず、1行目の頭に決まったつなぐ語＋「、」を足しただけで、検査（checkLines）を通ること
+ * @returns {string[]} 落ちた理由（空なら合格）
+ */
+export function checkConnected(connector, template, facts, prev) {
+  if (connector === null || connector === undefined) return [];
+  if (!CONNECTORS.includes(connector)) return [`決まったつなぐ語でない「${connector}」`];
+  const lines = connectedLines(connector, template);
+  return checkLines(lines, facts, prev);
+}
+export const connectedLines = (connector, template) =>
+  connector ? [`${connector}、${template[0]}`, ...template.slice(1)] : template;
+
+/**
+ * つないだ版の文の JSON。LLM が使えない・JSON が壊れているときは全拍をつなぐ語なし（文型の版）にする（理由を残す）
+ * @param {object[]|object} sceneOrBeats allBeats の拍の並び（または場面2の材料）
  * @param {(prompt: string) => string} llm
  */
-export function polishedText(sceneOrBeats, llm = claudeCli) {
+export function connectedText(sceneOrBeats, llm = claudeCli) {
   const beats = Array.isArray(sceneOrBeats) ? sceneOrBeats : beatsOf(sceneOrBeats);
   let got = {};
   let callError = null;
   try {
     const parsed = parseJson(llm(PROMPT(beats)));
-    got = Object.fromEntries((parsed.beats ?? []).map((b) => [b.id, b.lines]));
+    got = Object.fromEntries((parsed.beats ?? []).map((b) => [b.id, b.connector ?? null]));
   } catch (e) {
     callError = e instanceof Error ? e.message : String(e);
   }
   const rows = beats.map((b, i) => {
     const prev = i > 0 && beats[i - 1].step === b.step ? beats[i - 1].facts : null;
-    const draft = got[b.id];
-    const reasons = callError ? [callError] : draft === undefined ? ["LLM の出力にこの拍が無い"] : checkLines(draft, b.facts, prev);
-    return reasons.length
-      ? { id: b.id, source: "template", lines: b.template, rejected: draft ?? null, reasons }
-      : { id: b.id, source: "llm", lines: draft };
+    const c = got[b.id] ?? null;
+    const reasons = callError ? [callError] : checkConnected(c, b.template, b.facts, prev);
+    if (reasons.length) return { id: b.id, source: "template", lines: b.template, rejected: c, reasons };
+    return { id: b.id, source: c ? "connected" : "template", connector: c, lines: connectedLines(c, b.template) };
   });
-  return { mode: "polished", answers: Object.fromEntries(rows.map((r) => [r.id, r.lines])), beats: rows };
+  return { mode: "connected", answers: Object.fromEntries(rows.map((r) => [r.id, r.lines])), beats: rows };
 }

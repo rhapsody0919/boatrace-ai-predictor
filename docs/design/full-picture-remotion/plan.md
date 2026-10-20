@@ -1,28 +1,30 @@
 # 全貌動画をデータから描く（Remotion）— 計画
 
-全貌動画（1日1本以上の縦動画、X・YouTube Shorts）を、実画面の撮影ではなく龍神の材料データからコードで描く。
-2026-10-20 オーナー決定: (a) データから描く（生成の速さ・トークンの少なさ・質・再現性の4つを解く）、(b) 文は LLM で整えた版を使い、
-機械の検査に落ちた拍は文型の版に戻す、(c) 場面2は1艇4.5秒・約45秒。場面の型の正本は hq の `full-picture-scene-contract.md`。
+全貌動画（1日1本以上の縦動画）を、実画面の撮影ではなく龍神の材料データからコードで描く。
+2026-10-20 オーナー決定: (a) データから描く（生成の速さ・トークンの少なさ・質・再現性の4つを解く）、(b) 比べる文は文型で固定し、
+LLM はつなぐ語だけ（整えた版はやめた）、(c) 場面2は1艇4.5秒・約45秒、(d) 完全版（約3分）は YouTube の通常の動画、
+X・Shorts は59秒以内の入口版（条件＋6艇の重ね図＋結論1拍）。場面の型の正本は hq の `full-picture-scene-contract.md`。
 
 ## 持ち場
 
 | 段階 | 誰 | 中身 |
 |---|---|---|
 | 作る | 龍神の開発 | 材料 JSON の出口（版つきの契約・JSON Schema・CI）、Remotion の場面の型、検査 |
-| 毎日回す | hq の集客部署 | レース選び、`run.mjs` の実行、送る前の確かめ、投稿、数字の PDCA |
+| 毎日回す | hq の集客部署 | レース選び、`run-full.mjs` の実行、送る前の確かめ、投稿、数字の PDCA |
 
-毎日の実行は「材料 JSON 1つ → 文の JSON・MP4・本文」の1本のコマンド（`sns-video-studio/remotion/scripts/full-picture/run.mjs`）。
+毎日の実行は「材料 JSON 1つ → 文の JSON・完全版と入口版の MP4・本文」の1本のコマンド（`sns-video-studio/remotion/scripts/full-picture/run-full.mjs`）。
 龍神の鍵が要るのは材料の取得だけ。文は描画の前に1度だけ作って保存し、同じ文の JSON なら同じ MP4 になる。
 
-## 材料 JSON の契約（次にやること）
+## 材料 JSON の契約
 
-- 形: `full-picture-materials` の版つき JSON（`schemaVersion`）。場面ごとの節（`scene1`・`scene2`・…）に、画面と同じ計算関数（`src/utils/analogy*.js` 等）で
-  求めた値と、拍ごとの facts（比べた結果）を入れる。文は入れない（文は run.mjs が作る）
-- JSON Schema を `docs/design/full-picture-remotion/materials.schema.json` に置き、`verify-full-picture-materials.js`（ci）で
-  (1) 固定の材料（3レース分の最小の写し）が Schema に合う、(2) 出口のコードの出力が Schema に合う、を確かめる。形を変えたら版を上げ、
-  Schema と描画の両方を同じ PR で直さないと CI が落ちる
-- 出口: 龍神側の取得スクリプト（鍵あり）が `/api/analogy/*` と Supabase の読み取りから組み立てる。画面が API を通さず Supabase を直接読む
-  場面（1・3・6）は、取得スクリプトの中で画面と同じ関数で集計する（新しい API は作らない。必要になったら別に判断する）
+- 形: `full-picture-materials/{版}` の JSON。公開 API の応答と Supabase の匿名読み取りの行を、計算せずに1つにまとめたもの
+  （`fetch-materials.mjs`）。場面の値と facts は run-full.mjs の build（`build-all.mjs`）が画面と同じ関数で計算する。
+  当初の案（材料に場面ごとの節と facts を入れる）から変えた: 計算を1か所（build）にまとめ、材料の取得（鍵あり）を薄くするため
+- JSON Schema は `sns-video-studio/remotion/scripts/full-picture/materials.schema.json`（build が読む所だけを required）。
+  run-full.mjs は描く前に検査し、合わなければ止める。`verify-full-picture-scene2.js`（ci）が (1) 固定の材料（4レースの最小の写し、
+  `fixtures/`）が Schema に合う、(2) 取得のコードの出力（API・Supabase は偽物）が Schema に合う、(3) Schema の版と
+  `MATERIALS_VERSION` が同じ、を確かめる。形を変えたら版を上げ、Schema・取得・build を同じ PR で直さないと CI が落ちる
+- 画面が API を通さず Supabase を直接読む場面（3・6）は、取得スクリプトの中で行を取り、build が画面と同じ数え方で集計する
 - 欠けた値はその要素を省いて `omitted` に記録する（全体は止めない）
 
 ## 残りの場面（順と見込み）
@@ -31,7 +33,6 @@
 
 | 順 | 場面 | 材料の出どころ | 新しく描く部品 | 見込み |
 |---|---|---|---|---|
-| 0 | 契約（場面2の節） | facts（済） | — | 0.5日 |
 | 1 | 2b 類似レース | `/api/analogy/similar` | 類似度の円、サンキー図（帯を押して2・3着）、よく出た3連単 | 1日 |
 | 2 | 4 展開（省略禁止） | `/api/analogy/scenario`（boats=1・NA・VA） | 進入の割合と内訳、スリット図（平均STまで走らせる）、形の一致、2b のサンキーを再利用、「全体」での繰り返し | 2日 |
 | 3 | 5 相手 | scenario・facts（思考アシスト「相手」と同じ集計） | 2着以内の棒、軸ボタンを1→6で押す棒 | 1日 |
@@ -43,6 +44,6 @@
 
 - 場面ごとに、visual-designer・wording-editor を当て、P0・P1 を直してから次へ進む。場面2で決めた型（配置の純粋関数と検査、
   答えを次の拍で押すまで残す、1行は全角22字分以内、禁止表現は risk-rules.json）を全場面で使う
-- 尺: 場面2だけで約45秒（オーナー了承）。全場面をつなぐと 59 秒を大きく越えるので、つなぎの段で場面ごとの配分をオーナーに出す
+- 尺: 完全版は削らない（約3分半。答えを毎秒8字で読める長さに伸ばした）。X・Shorts は入口版（59秒以内、`entry.mjs`）
 - 本番の送信に移る前に、`.claude/CLAUDE.md` の全貌の自動送信の例外（「評価役の検査で P0 が0件」）を「機械の検査」に変える。
   .claude の変更なのでオーナーの直接承認が要る
