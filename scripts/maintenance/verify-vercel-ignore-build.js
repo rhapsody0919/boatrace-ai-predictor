@@ -6,10 +6,17 @@
  *   2. public/blog/*.md・run-heavy.sh・ルートの data/*、risk-rules.json・src・api はビルドする
  *   3. 変わったファイルが無い（作り直し・Deploy Hook）ときはビルドする
  *   4. vercel.json の ignoreCommand がこの判定のスクリプトを呼ぶ
+ *   5. 実際の git で、サイトのファイルを除外ディレクトリへ移すだけのコミットはビルドする（リネーム）
  */
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { shouldSkipBuild } from "../lib/vercelIgnoreBuild.js";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
 const cases = [
   // 1. ビルドしない
@@ -82,7 +89,56 @@ for (const [files, expected, label] of cases) {
   );
 }
 
-const vercel = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
+// 5. 実際の git で、サイトのファイルを除外ディレクトリへ移す（リネーム）だけのコミットはビルドする。
+//    git diff は既定でリネームを検出し、--name-only だと移動先しか出さないため、旧パスを落とさないこと
+function runIgnoreScript(cwd, previousSha) {
+  try {
+    execFileSync("node", [path.join(ROOT, "scripts/vercel-ignore-build.js")], {
+      cwd,
+      env: { ...process.env, VERCEL_GIT_PREVIOUS_SHA: previousSha },
+      stdio: "pipe",
+    });
+    return 0;
+  } catch (err) {
+    return err.status;
+  }
+}
+const git = (cwd, ...args) =>
+  execFileSync("git", args, { cwd, encoding: "utf8", stdio: "pipe" }).trim();
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vercel-ignore-"));
+try {
+  git(tmp, "init", "-q");
+  git(tmp, "config", "user.email", "verify@example.com");
+  git(tmp, "config", "user.name", "verify");
+  fs.mkdirSync(path.join(tmp, "public/blog"), { recursive: true });
+  fs.writeFileSync(path.join(tmp, "public/blog/a.md"), "# a\n");
+  git(tmp, "add", "-A");
+  git(tmp, "commit", "-qm", "base");
+  const base = git(tmp, "rev-parse", "HEAD");
+  fs.mkdirSync(path.join(tmp, "docs/archive"), { recursive: true });
+  git(tmp, "mv", "public/blog/a.md", "docs/archive/a.md");
+  git(tmp, "commit", "-qm", "move");
+  assert.equal(
+    runIgnoreScript(tmp, base),
+    1,
+    "public/blog の記事を docs/ へ移すだけのコミットはビルドする（旧パスが差分に入る）",
+  );
+  const moved = git(tmp, "rev-parse", "HEAD");
+  fs.writeFileSync(path.join(tmp, "docs/archive/b.md"), "# b\n");
+  git(tmp, "add", "-A");
+  git(tmp, "commit", "-qm", "docs only");
+  assert.equal(
+    runIgnoreScript(tmp, moved),
+    0,
+    "docs だけのコミットはビルドしない",
+  );
+} finally {
+  fs.rmSync(tmp, { recursive: true, force: true });
+}
+
+const vercel = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+);
 assert.equal(
   vercel.ignoreCommand,
   "node scripts/vercel-ignore-build.js",
@@ -90,5 +146,5 @@ assert.equal(
 );
 
 console.log(
-  `✅ verify-vercel-ignore-build: ${cases.length}件と vercel.json の ignoreCommand を確認`,
+  `✅ verify-vercel-ignore-build: ${cases.length}件・git のリネームの再現・vercel.json の ignoreCommand を確認`,
 );

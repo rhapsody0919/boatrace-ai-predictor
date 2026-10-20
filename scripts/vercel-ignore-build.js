@@ -8,10 +8,11 @@ import { shouldSkipBuild } from "./lib/vercelIgnoreBuild.js";
 const BUILD = 1;
 const SKIP = 0;
 
+// --no-renames: リネームでは旧パスも出す（サイトのファイルを除外ディレクトリへ移すだけのコミットをビルドするため）
 function changedFiles(previousSha) {
   const out = execFileSync(
     "git",
-    ["diff", "--name-only", previousSha, "HEAD"],
+    ["diff", "--name-only", "--no-renames", previousSha, "HEAD"],
     { encoding: "utf8" },
   );
   return out.split("\n").filter(Boolean);
