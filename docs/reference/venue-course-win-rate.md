@@ -3,6 +3,7 @@
 ブログの図（`docs/design/blog-charts/contract.md`）の最初の題材。何を数えたか、どこまで言えるかを残す。
 
 - 結果: `data/analysis/venue-course-win-rate/venue-course-win-rate.json`（3か月・6か月・12か月×24会場×6コース、進入コースと枠番、Wilson 95% 区間、除外の件数、`content_sha256`）
+- 独立の検証: data-accuracy-verifier（2026-10-20）が戸田・福岡・徳山を別の経路（kb_archive_boats の1着艇・race_results の逆引き）で数え直して一致。24会場の母数は `venue_technique_period_stats`（365日）と24/24一致。race_start_timings の進入コースとも 9,386/9,386 一致
 - 再実行: `node --env-file=.env.local scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs --to=YYYY-MM-DD`（本番 DB は読み取りのみ）
 - この版: 2025-10-20〜2026-10-19（365日）、55,414 レース、集計 2026-10-20、sha256 `f01f8238…7b89`
 
@@ -14,7 +15,7 @@
 | 分母 | 結果のあるレース。中止・順延（結果の行が無い）と不成立は入らない |
 | 分子 | 1着艇（返還艇を除く）の進入コース |
 | 欠場で6艇に満たないレース | 分母に残す（12か月で568レース、影響は約1%） |
-| 同着 | 1艇として数える（12か月で18レース） |
+| 同着 | 1着の同着は1艇として数える（12か月で1レース、2025-12-11-17-01。結果 JSON の `dead_heat_first_races`＝18 は新しい表の remark「同着あり」で数えていて2着以下の同着も入る） |
 | 丸め | `1着数 ÷ レース数 × 100` を小数第1位で1回だけ丸める |
 
 枠番で数えると6が3.0%、進入コースでは1.9%（全国12か月）。6号艇が前付けで内から勝つ分が枠番の6に入るため。会場ページの枠番別（`winning_technique_stats`、直近90日・枠番）とは別の数字。思考アシストの会場の決まり手（`venue_technique_period_stats`、365日）とは母数が一致する（戸田2,256・江戸川2,068・徳山2,592）。

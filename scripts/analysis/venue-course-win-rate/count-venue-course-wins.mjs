@@ -8,7 +8,9 @@
  *   参考 wins_waku    1着艇の枠番（艇番）が k
  *   races_course_present  コース k に艇がいたレース（欠場で5艇以下だと6コースが無い）
  *   1着艇の進入コースが不明なレースは分母から除き、件数を別に出す
- *   同着: 長期の表は dead_heat、新しい表は remark に「同着あり」。1着の同着は rank1 の1艇だけを数え、件数を出す
+ *   同着: 1着の同着は rank1 の1艇だけを数える。dead_heat_first_races は、長期の表は1着が2艇のレース、
+ *   新しい表は remark の「同着あり」で数えるので、2着以下の同着も入る（12か月の18件のうち1着の同着は
+ *   2025-12-11-17-01 の1件だけ。race_start_timings.finish_rank=1 が2艇で確認、2026-10-20 data-accuracy-verifier）
  * 使い方: node scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs [--to=2026-10-19] [--out=path]
  */
 import fs from "node:fs";
