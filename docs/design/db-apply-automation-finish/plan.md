@@ -281,7 +281,9 @@ flowchart TD
 
 **決定（2026-10-20 23:5x、オーナー、オーケストレーター経由）**: 判断1〜26 を推奨どおり一括で承認（「一括で yes」）。
 - 27・28 は保留（hq の数え直しが届いてから決める）
-- 2（PAT の範囲と Environment の Deployment branches）は、オーナーが設定の画面で確かめる
+- 2（PAT の範囲と Environment の Deployment branches）は、オーナーが設定の画面で確かめた（2026-10-21 0時台、オーケストレーター経由）:
+  - dispatch の PAT（`GITHUB_ACTIONS_DISPATCH_TOKEN`、fine-grained）: 対象は boatrace-ai-predictor だけ。権限は Actions の Read and write と Metadata の Read だけ（deployment の承認の権限は無い）。有効期限は無い（期限を付けるかは判断5の鍵の整理のときに決める）
+  - Environment の4つ（production-db・production-db-auto・prod-jobs・ryujin-bot）の Deployment branches は、どれも master だけ
 - 14 は「1 run の実費と runs の API の 1000 件の頭打ちを測ってから決める。それまで切替をしない」で確定
 - この承認は設計の方向の承認。.github・.claude を変える実装の PR（PR-A・C・D・E・F・G・H の一部）は、それぞれ文案・差分をこのレーンでオーナーに直接見せて承認をもらい、マージはオーナーが行う
 - PR-H（§10 の機械化）の前に、dev-gate v3 の再審査を通す
