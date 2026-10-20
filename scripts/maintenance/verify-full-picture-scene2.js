@@ -28,6 +28,8 @@ import {
   CHIP,
   FRAME_PAD,
   bubbleBottom,
+  bubbleLine,
+  bubbleFitSize,
   boxHitsCircle,
   chipX,
   frameInSafeArea,
@@ -326,6 +328,7 @@ assert.ok(
   "6号艇の札は Shorts の右のボタン列（x960〜）にかからない",
 );
 assert.ok(bubbleBottom([46, 40]) <= 1420, "2行の吹き出しの下端は y1420 より上");
+assert.deepEqual([0, 1].map((i) => bubbleLine(i).size), [46, 40], "既定は1行目が答えの行");
 
 // 拍の並び
 const tl = scene2Timeline({
@@ -502,6 +505,15 @@ for (const f of fixtures) {
   if (rough) {
     assert.ok(rough.lines[0].startsWith("全国・") && /\d件$/.test(rough.lines[0]), `${f}: s3-rough の1行目は「全国・…N件」: ${rough.lines[0]}`);
     assert.ok(rough.lines[1].startsWith("1着"), `${f}: s3-rough の2行目は1着率と全国の比較: ${rough.lines[1]}`);
+    // 答えの行（1着率）を大きく、範囲の行を小さく（範囲の行が答えより目立っていた。2026-10-21 オーケストレーター段階1）
+    assert.equal(rough.lead, 1, `${f}: s3-rough は2行目が答えの行`);
+    // 縮めた後の大きさで比べる（長い答えの行は 46px から縮み、範囲の行とほぼ同じ大きさになっていた）
+    const [s0, s1] = [0, 1].map((i) => bubbleFitSize(rough.lines[i], i, rough.lead));
+    assert.ok(s1 / s0 >= 1.25, `${f}: 答えの行（${s1}px）が範囲の行（${s0}px）の1.25倍以上（visual-designer 2026-10-20 P2）`);
+    assert.ok(bubbleLine(1, 1).weight - bubbleLine(0, 1).weight >= 200, `${f}: 太さにも差`);
+    assert.ok(bubbleLine(0, 1).size >= 36, "最小の字の大きさ 36px より下げない");
+    assert.equal(rough.accent, "全国", `${f}: 比べる基準の「全国」を目印の色で結び付ける`);
+    assert.ok(rough.lines[1].includes("全国") && !rough.lines[1].includes("全国・"), `${f}: 2行目の全国は基準の意味だけ`);
   }
   // s5: 重点でない艇の段は答えなし、まとめの段がある
   const s5 = scenes.find((x) => x.id === "scene5").data;
