@@ -13,11 +13,14 @@
 | [glossary.md](glossary.md) | 用語と禁止語、誇大・保証・射幸心、SNS の表現の可否 | wording-editor・ファンパネル |
 | [fan-reactions.md](fan-reactions.md) | オーナーとファン役が SNS・ブログ・画面で良し悪しとしたこと | ファンパネル・visual-designer |
 | [video-composition.md](video-composition.md) | SNS 動画の構成・画面配置・字幕・動き・音 | visual-designer |
+| [video-qa.md](video-qa.md) | SNS 動画の検査・合格判定・計画と承認の扱い | visual-designer・動画の評価役 |
 | [ui-layout.md](ui-layout.md) | サイトの画面の決まり（幅・押せる大きさ・余白・置き場所） | visual-designer |
 | [ui-implementation.md](ui-implementation.md) | 画面の実装の落とし穴（CLS・部品の埋め込み・状態の共有・機能変更で古くなるもの） | visual-designer・実装者 |
 | [i18n.md](i18n.md) | 多言語の実装の落とし穴と言語ごとの検索の需要 | 多言語のページ・記事を触る人 |
 | [measurement.md](measurement.md) | 計測の設計と GA4 | measurement-planner |
+| [db-readonly.md](db-readonly.md) | 読取専用ロール・権限検査・読取CLI | system-architect・実装者 |
 | [db-operations.md](db-operations.md) | ADR と番号、本番 DB の運用、Supabase の読み方 | system-architect |
+| [sns-send-ops.md](sns-send-ops.md) | SNS 自動送信（承認・runner・通知・容量・cron）の運用と点検 | system-architect・実装者 |
 | [batch-and-ci.md](batch-and-ci.md) | 定時実行・API のキャッシュ・Vercel・CI と E2E の落とし穴 | system-architect・実装者 |
 | [seo.md](seo.md) | 検索・ボット向け HTML・ブログの SEO（SPA の制約、食い合い） | seo-marketer |
 | [user-insights.md](user-insights.md) | オーナーがサイトを使って気づいたことと、その後の対応 | 全員（画面を変える前） |
@@ -34,6 +37,12 @@
 - 古くなった項目は消し、置き換える行に「（日付の『…』を置き換え）」と書く
 - 鍵・個人情報は書かない
 - 書き足すのは呼んだ側。専門役・ファンパネルが答えの最後に出す「知見ノートに足す行」を、話題に合うファイルへ書く
+- 知見の差分をまとめるときは、入力の候補の単位と追加する行の単位を決め、全候補の採否・重複先・確認待ちを台帳に残す（2026-10-13、2026-10-13-task-73-knowledge-merge.md・PR #1524）
+- 作業場所の写しと指定の土台に差があるときは、新しい側の行を無断で移さず、読んだ両方・土台・移植しない行を明記する（2026-10-13、2026-10-13-task-73-knowledge-merge.md）
+- 記憶（memory）から移した行の根拠は「memory 記憶ファイル名」でリポジトリの外を指す。記憶を消す前に、元の PR・BOA・パスで追えるか確かめる（2026-10-13、PR #1528）
+
+- 差分作成前に作業場所のknowledge/とrefのdocs/knowledge/の版・内容差を確認し、指定された土台と異なる版を採る必要がある場合は理由を報告して判断を求める。（2026-10-19、2026-10-18-task-76-knowledge-merge.md）
+- 報告・PRの「知見の候補」は候補が無いときは「なし」の1行とし、話題ファイルごとの同じ再確認を繰り返さない。（2026-10-19、2026-10-18-task-76-knowledge-merge.md）
 
 ## 旧ファイルとの対応（2026-10-12 まで）
 

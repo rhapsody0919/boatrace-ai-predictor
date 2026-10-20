@@ -1,0 +1,411 @@
+{
+ "facts": {
+  "files_saved": 1253,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 1253,
+  "leaves_common": 2403263,
+  "leaves_equal": 2403263,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 2395228,
+  "num_nonzero": 0,
+  "num_sum": 0.0,
+  "num_max": 0.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 1.0,
+  "num_mean_absdiff": 0.0,
+  "num_mean_absdiff_nonzero": 0.0,
+  "top_diff_paths": [],
+  "extra": {
+   "n_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 1253,
+    "n_nonzero": 0
+   }
+  }
+ },
+ "layer": {
+  "files_saved": 156,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 156,
+  "leaves_common": 5323441,
+  "leaves_equal": 5323441,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 4473728,
+  "num_nonzero": 0,
+  "num_sum": 0.0,
+  "num_max": 0.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 1.0,
+  "num_mean_absdiff": 0.0,
+  "num_mean_absdiff_nonzero": 0.0,
+  "top_diff_paths": [],
+  "extra": {
+   "n_total_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 156,
+    "n_nonzero": 0
+   },
+   "rows_set_jaccard": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "only_saved_ids": {
+    "n": 0,
+    "dates": {}
+   },
+   "only_rebuilt_ids": {
+    "n": 0,
+    "dates": {}
+   }
+  }
+ },
+ "scenario": {
+  "files_saved": 217,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 217,
+  "leaves_common": 2599925,
+  "leaves_equal": 2599925,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 2246405,
+  "num_nonzero": 0,
+  "num_sum": 0.0,
+  "num_max": 0.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 1.0,
+  "num_mean_absdiff": 0.0,
+  "num_mean_absdiff_nonzero": 0.0,
+  "top_diff_paths": [],
+  "extra": {
+   "n_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 217,
+    "n_nonzero": 0
+   }
+  }
+ },
+ "scenario-boat": {
+  "files_saved": 1038,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 1038,
+  "leaves_common": 627078,
+  "leaves_equal": 627078,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 623964,
+  "num_nonzero": 0,
+  "num_sum": 0.0,
+  "num_max": 0.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 1.0,
+  "num_mean_absdiff": 0.0,
+  "num_mean_absdiff_nonzero": 0.0,
+  "top_diff_paths": [],
+  "extra": {
+   "n_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 1038,
+    "n_nonzero": 0
+   }
+  }
+ },
+ "scenario-boat-races": {
+  "files_saved": 1038,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 1020,
+  "leaves_common": 5812320,
+  "leaves_equal": 5812302,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 2899935,
+  "num_nonzero": 0,
+  "num_sum": NaN,
+  "num_max": 0.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 0.9999969031299034,
+  "num_mean_absdiff": NaN,
+  "num_mean_absdiff_nonzero": NaN,
+  "top_diff_paths": [
+   [
+    "/rows[][]",
+    18
+   ]
+  ],
+  "extra": {
+   "n_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 1038,
+    "n_nonzero": 0
+   }
+  }
+ },
+ "scenario-races": {
+  "files_saved": 217,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 211,
+  "leaves_common": 1413820,
+  "leaves_equal": 1413814,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 705609,
+  "num_nonzero": 0,
+  "num_sum": NaN,
+  "num_max": 0.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 0.9999957561782971,
+  "num_mean_absdiff": NaN,
+  "num_mean_absdiff_nonzero": NaN,
+  "top_diff_paths": [
+   [
+    "/rows[][]",
+    6
+   ]
+  ],
+  "extra": {
+   "n_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 217,
+    "n_nonzero": 0
+   }
+  }
+ },
+ "similar": {
+  "files_saved": 156,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 0,
+  "leaves_common": 87609370,
+  "leaves_equal": 87607498,
+  "only_saved": 936,
+  "only_rebuilt": 0,
+  "num_n": 80385856,
+  "num_nonzero": 1872,
+  "num_sum": 1560.0000232458115,
+  "num_max": 1.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 0.9999786324225365,
+  "num_mean_absdiff": 1.940639934525063e-05,
+  "num_mean_absdiff_nonzero": 0.8333333457509676,
+  "top_diff_paths": [
+   [
+    "/exhibition/columns[]/cat",
+    780
+   ],
+   [
+    "/exhibition/categories/weather_code[]",
+    780
+   ],
+   [
+    "/exhibition/lambda",
+    156
+   ],
+   [
+    "/exhibition/L",
+    156
+   ]
+  ],
+  "extra": {
+   "top100_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "top1000_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "top10000_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "top30000_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "candidates_set_jaccard": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "n_layer_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 156,
+    "n_nonzero": 0
+   }
+  }
+ },
+ "similar-racecard": {
+  "files_saved": 156,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 0,
+  "leaves_common": 17244406,
+  "leaves_equal": 16652331,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 16305526,
+  "num_nonzero": 590360,
+  "num_sum": 1197217.9384753755,
+  "num_max": 3,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 0.9656656773216775,
+  "num_mean_absdiff": 0.07342406117259728,
+  "num_mean_absdiff_nonzero": 2.027945556059651,
+  "top_diff_paths": [
+   [
+    "/neighbors[]/items/exh_time_diff_6",
+    117916
+   ],
+   [
+    "/neighbors[]/items/wave_bin",
+    117916
+   ],
+   [
+    "/neighbors[]/items/wind_vector",
+    117916
+   ],
+   [
+    "/neighbors[]/items/weather",
+    117916
+   ],
+   [
+    "/neighbors[]/items/wind_bin",
+    117916
+   ],
+   [
+    "/today_display/exh_diff[]",
+    935
+   ],
+   [
+    "/today_display/wy",
+    156
+   ],
+   [
+    "/pool_rate/wind_bin",
+    156
+   ],
+   [
+    "/today_display/wave",
+    156
+   ],
+   [
+    "/today_display/weather",
+    156
+   ],
+   [
+    "/pool_rate/wave_bin",
+    156
+   ],
+   [
+    "/pool_rate/wind_vector",
+    156
+   ],
+   [
+    "/today_display/wx",
+    156
+   ],
+   [
+    "/today_display/ws",
+    156
+   ],
+   [
+    "/pool_rate/weather",
+    156
+   ]
+  ],
+  "extra": {
+   "top10_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "top50_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "top100_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "top800_overlap": {
+    "mean": 1.0,
+    "min": 1.0,
+    "max": 1.0,
+    "n": 156,
+    "n_nonzero": 156
+   },
+   "exact_order_top10": 1.0,
+   "dist_absdiff_same_race": {
+    "mean": 0.0,
+    "min": 0.0,
+    "max": 0.0,
+    "n": 117916,
+    "n_nonzero": 0
+   },
+   "n_layer_diff": {
+    "mean": 0.0,
+    "min": 0,
+    "max": 0,
+    "n": 156,
+    "n_nonzero": 0
+   }
+  }
+ },
+ "today": {
+  "files_saved": 156,
+  "files_missing_in_rebuilt": 0,
+  "files_identical": 156,
+  "leaves_common": 37128,
+  "leaves_equal": 37128,
+  "only_saved": 0,
+  "only_rebuilt": 0,
+  "num_n": 28460,
+  "num_nonzero": 0,
+  "num_sum": 0.0,
+  "num_max": 0.0,
+  "files_only_in_rebuilt": 0,
+  "leaf_match_rate": 1.0,
+  "num_mean_absdiff": 0.0,
+  "num_mean_absdiff_nonzero": 0.0,
+  "top_diff_paths": [],
+  "extra": {}
+ }
+}

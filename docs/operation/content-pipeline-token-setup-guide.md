@@ -4,6 +4,8 @@ Blog承認→PR自動マージ（ADR 0034）とYouTube承認→自動投稿（AD
 
 ## GITHUB_MERGE_TOKEN（Blog承認用）
 
+> **2026-10-20 に廃止**（ADR-0034 を ADR-0097 で置き換え、BOA-908）。新しく作らない。失効と削除の手順は ADR-0034 の追記。2026-10-20 時点で Vercel に残っているのは Production だけ（下の手順6の「Preview」には無い）。
+
 1. GitHubの [Fine-grained personal access tokens](https://github.com/settings/personal-access-tokens/new) を開く
 2. Resource owner: `rhapsody0919`
 3. Repository access: `Only select repositories` → `boatrace-ai-predictor` のみ選択

@@ -1,0 +1,223 @@
+/* ブログの図（BlogChart.jsx）。承認したモック: docs/design/blog-charts/mock/APPROVED.md
+   記事の本文の p・ol・li の書式（.blog-post-content の子孫セレクタ）が当たらないよう、
+   図の中は .blog-chart .blog-chart__… の2クラス（記事の要素セレクタより強い）で上書きする。クラス名は blog-chart__ に閉じる */
+
+.blog-chart {
+  --blog-chart-row-height: 32px;
+  --blog-chart-row-gap: 8px;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: var(--surface-card);
+  border: 1px solid var(--border-hairline);
+  border-radius: 8px;
+}
+
+.blog-chart .blog-chart__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.blog-chart .blog-chart__answer {
+  margin: 0.25rem 0 0.75rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.blog-chart__control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  min-height: 44px;
+}
+
+.blog-chart__control label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.blog-chart__control select {
+  font: inherit;
+  /* 16px 未満だと iOS Safari が押したときに画面を拡大する */
+  font-size: 16px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+}
+
+/* ボタンは1段で、収まらなければ横にスクロールする（折り返すと高さが段の数だけ増えて下の段落が動く） */
+.blog-chart__buttons {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.blog-chart__buttons button {
+  flex: none;
+  white-space: nowrap;
+  font: inherit;
+  font-size: 0.9rem;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border-hairline);
+  background: var(--surface-page);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.blog-chart__buttons button[aria-pressed="true"] {
+  background: var(--brand-accent-primary);
+  border-color: var(--brand-accent-primary);
+  color: var(--surface-card);
+  font-weight: 700;
+}
+
+.blog-chart__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: var(--font-size-xs);
+}
+
+.blog-chart__badges span {
+  padding: 2px 10px;
+  border-radius: 4px;
+  background: color-mix(
+    in srgb,
+    var(--border-hairline) 45%,
+    var(--surface-card)
+  );
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ラベルの列は一番長いラベルの幅（契約で8字まで）。行（li）は display: contents にして、全行で列をそろえる */
+.blog-chart .blog-chart__rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  grid-auto-rows: var(--blog-chart-row-height);
+  align-items: center;
+  column-gap: 8px;
+  row-gap: var(--blog-chart-row-gap);
+}
+
+.blog-chart .blog-chart__row {
+  display: contents;
+}
+
+.blog-chart__label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* 枠番（艇番）の行だけに付く艇の色の印。進入コースの行には付けない（契約3節） */
+.blog-chart__boat {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  display: inline-grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--border-hairline);
+}
+.blog-chart__boat[data-boat="1"] {
+  background: #ffffff;
+  color: #000000;
+}
+.blog-chart__boat[data-boat="2"] {
+  background: #000000;
+  color: #ffffff;
+}
+.blog-chart__boat[data-boat="3"] {
+  background: var(--boat-3-strong);
+  color: #ffffff;
+}
+.blog-chart__boat[data-boat="4"] {
+  background: var(--boat-4-strong);
+  color: #ffffff;
+}
+.blog-chart__boat[data-boat="5"] {
+  background: #fdd835;
+  color: #000000;
+}
+.blog-chart__boat[data-boat="6"] {
+  background: var(--boat-6-strong);
+  color: #ffffff;
+}
+
+.blog-chart__track {
+  position: relative;
+  height: 22px;
+  /* 値の文字（「59.2%」）が右端からはみ出さない余白。回数を添えるのは1着30回未満の短い棒なので、その分は取らない */
+  margin-right: 4em;
+  background: color-mix(in srgb, var(--border-hairline) 55%, transparent);
+  border-radius: 3px;
+}
+
+.blog-chart__rows--with-count .blog-chart__track {
+  margin-right: 7.5em;
+}
+
+.blog-chart__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ryujin-gold-700);
+  border-radius: 3px;
+}
+
+:root[data-theme="dark"] .blog-chart__fill {
+  background: var(--ryujin-gold-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .blog-chart__fill {
+    background: var(--ryujin-gold-500);
+  }
+}
+
+.blog-chart__value {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  padding-left: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.blog-chart__value small {
+  font-weight: 400;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.blog-chart__caption {
+  padding-top: 12px;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.blog-chart .blog-chart__caption p {
+  margin: 0;
+  line-height: 1.6;
+}

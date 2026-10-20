@@ -1,0 +1,15 @@
+{
+  "default": "本日のデータ一覧（{date}）",
+  "variants": [
+    {
+      "id": "a",
+      "uuid": "0f88824e-c630-4f94-8c15-475297e4b242",
+      "heading": "本日のデータ一覧（{date}）"
+    },
+    {
+      "id": "b",
+      "uuid": "be74c247-fa8f-442e-a29f-4d1d7866919a",
+      "heading": "本日のデータ一覧（{date}）"
+    }
+  ]
+}

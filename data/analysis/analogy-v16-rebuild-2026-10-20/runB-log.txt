@@ -1,0 +1,10 @@
+[    61s] features 2506920
+[    75s] series
+[    83s] races 411601 pool 411445 today 156
+[   127s] facts 1253
+[   223s] scenario 217
+[   304s] scenario-boat 1038 80.8s
+[   338s] distance (411601, 308) L 0.3768
+[   348s] exhibition columns 28 L 0.5821
+[   778s] races done 156 failed 0
+exit 0
