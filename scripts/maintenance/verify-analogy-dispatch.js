@@ -398,11 +398,14 @@ const run = (f, env = ENV) =>
     f.gets = () => calls.filter((c) => c.init.method !== "POST");
     return f;
   };
-  const ctxG = (mode, liveSince) => ({
+  // 前の起動（last_tick_at）は既定で1時間前（毎時の起動が続いている）
+  const ctxG = (mode, liveSince, lastTick = hoursAgo(1)) => ({
     now: () => now,
     client: null,
     mode,
-    state: liveSince ? { last_report: { liveSince } } : null,
+    state: liveSince
+      ? { last_report: { liveSince }, last_tick_at: lastTick }
+      : null,
   });
   const runG = (f) => createDbApplyDispatchRun({ fetchImpl: f, env: ENV });
   const job = (name, conclusion, completedHoursAgo) => ({
@@ -516,6 +519,23 @@ const run = (f, env = ENV) =>
       /GITHUB_ACTIONS_DISPATCH_TOKEN/.test(r.error) &&
       f.calls.length === 0,
     "(g) トークン未設定は失敗にする",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({ runs: [] });
+  r = await runG(f)(ctxG("live", hoursAgo(30), hoursAgo(24)));
+  check(
+    r.outcome !== "error" &&
+      f.gets().length === 0 &&
+      r.report?.liveSince === now.toISOString(),
+    "(g) off から戻したとき（前の起動が2.5時間より前）は liveSince を今にし、すぐには知らせない",
+    JSON.stringify(r),
+  );
+  f = fakeGh({ runs: [] });
+  r = await runG(f)(ctxG("live", hoursAgo(5), hoursAgo(2)));
+  check(
+    r.outcome === "error" && f.gets().length === 1,
+    "(g) 失敗が続く間（毎時の起動は来ている）は liveSince を引き継いで知らせ続ける（Vercel Cron の1回の抜けも許す）",
     JSON.stringify(r),
   );
 

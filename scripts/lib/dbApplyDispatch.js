@@ -10,23 +10,23 @@
  * 承認待ちの run は reconcile が終わっていても in_progress のままのため）。
  *
  * 「live の最初の起動」は scrape_job_state.last_report.liveSince に持つ（成功の記録のときだけ保存される。
- * 失敗の間は前の値が残る）。トークンは dispatch と同じ GITHUB_ACTIONS_DISPATCH_TOKEN（Actions: Read で runs・jobs を読める）。
+ * 失敗の間は前の値が残る）。shadow の記録には持たせず、off から戻したとき（前の起動から2.5時間より空いた）も数え直す。トークンは dispatch と同じ GITHUB_ACTIONS_DISPATCH_TOKEN（Actions: Read で runs・jobs を読める）。
  */
-import { GITHUB_REPO, createAnalogyDispatchRun } from "./analogyDispatch.js";
+import {
+  GITHUB_REPO,
+  createAnalogyDispatchRun,
+  githubHeaders,
+} from "./analogyDispatch.js";
 
 export const DB_APPLY_WORKFLOW = "db-apply.yml";
 export const STALE_AFTER_MS = 3 * 3600 * 1000;
+// 毎時の起動で、これより前の起動が空いていたら止まっていたとみなす（Vercel Cron の1回の抜けは許す）
+export const RESTART_AFTER_MS = 2.5 * 3600 * 1000;
 // 3時間の run は dispatch 3本＋予備の schedule 3本＋手での起動で、普段は10本に届かない
 const RUNS_PER_PAGE = 30;
 
 const ghGet = async ({ fetchImpl, token, url }) => {
-  const res = await fetchImpl(url, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
+  const res = await fetchImpl(url, { headers: githubHeaders(token) });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`GET ${url} が HTTP ${res.status}: ${text.slice(0, 200)}`);
@@ -80,8 +80,14 @@ export function createDbApplyDispatchRun({
   return async (ctx) => {
     if (ctx.mode !== "live") return dispatch(ctx);
     const now = ctx.now();
+    // off の間は起動の記録（last_tick_at）も last_report も更新されない。前の起動から RESTART_AFTER_MS より空いたら
+    // （off から戻した等）live の最初の起動を今にして、3時間を数え直す。失敗が続く間も毎時の起動で last_tick_at は進む
     const prevSince = Date.parse(ctx.state?.last_report?.liveSince ?? "");
-    const liveSince = Number.isFinite(prevSince) ? new Date(prevSince) : now;
+    const prevTick = Date.parse(ctx.state?.last_tick_at ?? "");
+    const resumed =
+      !Number.isFinite(prevTick) || now.getTime() - prevTick > RESTART_AFTER_MS;
+    const liveSince =
+      Number.isFinite(prevSince) && !resumed ? new Date(prevSince) : now;
 
     // 見張り。起動の前に見る（今回の起動の run はまだ数えない）。読めなくても起動は続け、失敗として返す
     let watch;
