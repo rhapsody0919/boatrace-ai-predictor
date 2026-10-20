@@ -215,6 +215,7 @@ GRANT SELECT ON db_apply.applied TO claude_ro;            -- 台帳とのずれ�
 | PR-F | ④ 審査の関門の画像の例外（§9.1）と再現テスト、ADR-0097 の追記 | scripts/lib/reviewPr.js・scripts/review・verify・docs/adr | オーナー（審査の仕組みの変更、段階2） | 判断8 |
 | PR-H | §10 の機械化（`decideAction` の P1・観点、月の上限、draft の検査、`config/dev-gate.json`） | scripts/lib/reviewPr.js・scripts/review・scripts/maintenance・config・.github | オーナー（段階2） | 判断13〜16。切替の前 |
 | PR-G | ⑥ orchestrate の段階0 F・案Z の書き直し（§9.3） | .claude/skills/orchestrate/SKILL.md | オーナー（.claude） | 判断11 |
+| PR-U | 審査の usage を annotation に1行（§10.7） | scripts/review/llm.js・.github/workflows/review.yml | オーナー（deny のクラス、直接承認・マージ） | 判断14 の測定の前 |
 | PR-E | `DB_APPLY_DRY_RUN: "false"`（D'）と、急ぎの止め方の repo の変数 `DB_APPLY_AUTO_ENABLED`（apply-auto の `if` とコードの両方で見る。`== 'true'` のときだけ当てる。未設定・消したときは当てない） | .github | オーナー | 下の「D' の条件」 |
 
 ### D' の条件（審査の P1-2）
@@ -433,7 +434,7 @@ flowchart TD
 - **測定の結果（2026-10-20 夜、判断14 の前提）**:
   - **runs の API の頭打ちは 1000 件ではなく 2500 件**。`quality-gates.yml` の runs で、絞り込みなしの `total_count` は 3027、`actor=rhapsody0919` か `created=>=2026-09-20` で絞ると **2500 ちょうど**、期間を2つに分けると 1541＋1467＝3008（`gh api repos/…/actions/workflows/quality-gates.yml/runs?per_page=1&…` の `total_count`）。gate の数え方（`actor`＋`created`、`gate.js:32-33`）では、月 2500 を超える数を数えられない。見込みの月 2,000〜3,500 run と重なるので、上限を 2500 未満にするか、日ごとに分けて数えて足す
   - **1 run の実費はまだ測れない**。`scripts/review/llm.js` は API の応答の usage を記録しておらず、審査が実際に動いたのはテスト PR の4 run（10/19、差分が小さく代表にならない）だけ。代わりに入力の大きさを測った: 直近にマージした 60 本の PR の差分（patch の文字数の合計）は 中央値 18,378 字・p90 86,239 字・最大 418,946 字、上限 20 万字で切った平均 37,559 字（`gh api repos/…/pulls/N/files` の patch の長さ）。1 run の入力は、平均でこの差分＋指示文。トークンへの換算（日本語とコードの混ざりで 1 トークン 2.5〜3 字と仮定）で平均 1.3〜1.5 万トークンの見込み（推測）。月 3,400 run なら入力で約 4,400〜5,100 万トークン
-  - 実費を確かめる手段は2つ: (1) オーナーが OpenAI の project `ryujin-review`・Anthropic の workspace の 10/19 の使用量（4 run 分）を見て、上の文字数と比べる、(2) `llm.js` に usage（入力・出力のトークン）を run の summary に出す変更を入れ、切替の前のテスト PR で実物の大きさの差分を流す。モデル名（`REVIEW_OPENAI_MODEL`）は Environment pr-review の変数で、Claude からは読めない（フックが Environments の API を止める）。単価はオーナーが確かめる
+  - 実費を確かめる手段は2つ: (1) オーナーが OpenAI の project `ryujin-review`・Anthropic の workspace の 10/19 の使用量（4 run 分）を見て、上の文字数と比べる、(2) `llm.js` に usage を annotation の1行で出す変更（§10.7、PR-U）を入れ、切替の前のテスト PR で実物の大きさの差分を流す。モデル名（`REVIEW_OPENAI_MODEL`）は Environment pr-review の変数で、Claude からは読めない（フックが Environments の API を止める）。単価はオーナーが確かめる
 - 通知: pr-review（審査の鍵）に Slack の鍵を足さない。数えて知らせるのは Slack を持つ側（hq の見張りか Vercel Cron の関数。GitHub の schedule は来ないので使わない、BOA-917）。見る数は run の数と、「審査が完了しなかった」の REQUEST_CHANGES の数（ベンダーの上限・429 の検知）
 
 ### 10.3 マージ順と、`--auto` を付けた後の push
@@ -473,6 +474,48 @@ flowchart TD
 3. draft・`--auto`・auto-merge の後の push・`--match-head-commit` の挙動（10.3）
 4. 作成の App で審査の App の review を dismiss できるか（10.1 の出口の前提。dismiss しても承認は増えないので迂回にはならない）
 5. `--auto` のときの `--delete-branch`（10.5）
+
+### 10.7 審査の usage を1 run ごとに残す（hq の費用の案 cost-control-20261020 v2、判断14 の測定の前提）
+
+置き場は system-architect の判定（2026-10-20）で決めた: **llm の job のログに `::notice title=review-usage::{JSON}` を1行出し、check run の annotation として読む**。新しい鍵・action・Environment は増えず、「LLM を呼ぶ job は API キーだけ」（ADR-0097）を守る。ADR の追記は要らない。
+
+| 置き場 | 判定 |
+|---|---|
+| **A: annotation（採用）** | 失敗した job でも残る（run 39268115731 の 429 で実測）。job id ＝ check run id。保持は run と同じ（既定90日）で、hq が毎日取り込んで手元に貯めれば関係ない |
+| B: artifact | SHA 固定の action が増え、失敗の後も残すには `if: always()` の step が要る。A で足りる |
+| C: DB の表 | pr-review に書き込みの鍵が増える（ADR-0097 の鍵の分離に反する） |
+| D: Slack | webhook が増え、hq が数字として読めない |
+| 承認の本文 | llm が失敗したときに残らない |
+
+**JSON の形（1行、自由文を入れない）**:
+
+```
+{"v":1,"run_id":…,"attempt":…,"pr":…,"head_sha":"…","vendor":"openai|anthropic",
+ "model_req":"…","model":"…","at":"ISO8601",
+ "in":…,"out":…,"cached_in":…,"cache_write":…,"reasoning":…,
+ "http":200,"outcome":"ok|unreadable|incomplete|refused|http|timeout|mechanical|error",
+ "p0":…,"p1":…}
+```
+
+- OpenAI: `in`＝`usage.prompt_tokens`、`out`＝`completion_tokens`、`cached_in`＝`prompt_tokens_details.cached_tokens`、`reasoning`＝`completion_tokens_details.reasoning_tokens`。Anthropic: `in`＝`input_tokens`、`out`＝`output_tokens`、`cached_in`＝`cache_read_input_tokens`、`cache_write`＝`cache_creation_input_tokens`
+- 注入の対策: トークン数は `Number.isSafeInteger` を通したものだけ（他は null）、model は `/^[\w.:-]+$/`（外れたら `"invalid"`）、PR 番号は `/^\d+$/`、head SHA は既存の正規表現。エラーの本文・finish_reason・理由の文は入れず、失敗は列挙値。PR のタイトル・本文・ブランチ名は使わない
+- 失敗も残す: 応答が来たもの（length・refusal・JSON が読めない）は課金済みなので usage つき。応答が来ないもの（429・5xx・401・timeout）は usage を null にして種類だけ。機械の検査で LLM を呼ばなかったもの（mechanical）も出す
+- 出し方（最小）: モジュールの変数を呼び出しの関数が埋め、`process.on("exit")` で `fs.writeSync(1, line)` を1回書く（`fail()` の `process.exit` も通る）
+- 取り消された job（cancel-in-progress）は行が出ない。課金はされうるので、hq は llm の job の `conclusion=cancelled` を「usage 不明」として別に数える
+
+**変更の範囲（PR-U、deny のクラス: オーナーが直接承認・マージ）**: `scripts/review/llm.js`（呼び出しの2関数で usage・model・HTTP の状態を記録、exit で1行）と、`review.yml` の llm の step の env に `PR_NUMBER: ${{ github.event.pull_request.number }}` の1行（approve と同じ書き方）。gate.js・approve.js・common.js・reviewPr.js は触らない。行を作る純関数を llm.js に置き、`verify-review-workflow.js` で「自由文が入らない・改行と `%` が無い・null の扱い」を固定する
+
+**hq の読み方**（偽の記録を拾わないため、`/commits/{sha}/check-runs` の job 名では引かない。作成の App は自分のブランチの workflow で同じ名前の job と notice を出せる）:
+1. `gh api --paginate 'repos/rhapsody0919/boatrace-ai-predictor/actions/workflows/review.yml/runs?event=pull_request_target&created=<JST の1日>&per_page=100'`、`path == ".github/workflows/review.yml"` を確かめる（1日は 2500 の頭打ちより十分少ない）
+2. `gh api 'repos/…/actions/runs/{run_id}/jobs?filter=all'`（再実行の前の試行も数える）で `name=="llm"` の job id
+3. `gh api 'repos/…/check-runs/{job_id}/annotations'` の `title=="review-usage"` の message を JSON として読み、`v` を確かめる
+4. 単価を掛けて日ごとに合計し、hq の手元に JSONL で貯める（1日約110 run で API 約220回）
+
+**判断14 の測定の手順**（PR-U のマージの後、切替の前）:
+- 元の PR の head のコミット（`refs/pull/N/head`）に `claude/costprobe-N`・`codex/costprobe-N` のブランチを作り、hq の道具（作成の App）で PR にする（squash マージなので元のコミットは master の祖先でなく PR を作れ、差分は元のまま）
+- 標本: 直近60本の分布から中央値（約1.8万字）・p90（約8.6万字）・上限20万字に近いものを1本ずつと、materials が付く SQL の PR を1本。OpenAI・Anthropic の両方で、同じ差分を2回ずつ（8〜10 run）
+- テスト PR はマージせず（auto-merge を付けない）、run を確かめたらすぐ閉じる。機械の検査で落ちない PR を選ぶ
+- 月の数え方は、この記録を日ごとに足せば runs の API の 2500 の頭打ちを避けられる（§10.2）
 
 #### 中身の案 v2（[dev-gate.draft.json](./dev-gate.draft.json)、2026-10-20 夜。hq の分類を反映）
 
