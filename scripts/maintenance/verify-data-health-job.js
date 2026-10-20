@@ -332,7 +332,7 @@ CREATE TABLE venue_grade_boat_stats (venue_code smallint, updated_at timestamptz
 CREATE TABLE bet_recommendations (race_id varchar(20), model_id text, recommendation text, created_at timestamptz default now());
 CREATE TABLE analogy_v16_snapshots (race_id varchar(20), stage text, primary key (race_id, stage));
 CREATE TABLE poirot_predictions (race_id varchar(20), model_version text, primary key (race_id, model_version));
-CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off');
+CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off', last_success_at timestamptz, last_tick_at timestamptz, updated_at timestamptz not null default now());
 INSERT INTO scrape_job_state (job, mode) VALUES ('data_health', 'live');
 `;
 
@@ -703,6 +703,76 @@ INSERT INTO analogy_v16_snapshots VALUES ('2026-09-18-02-01', 'racecard'), ('202
         { job: "data_health_morning", mode: "live" },
       ]),
     show(modes),
+  );
+}
+
+// マイグレーション170 の行の扱い（system-architect P1-a の再現）: 共通ラッパが先に作った off の行は上書きし、
+// 手で変えた行・一度でも動いた行は変えない
+{
+  const mig170 = migrationSqlByFile.get("170_data_health_freshness.sql");
+  const insert = mig170.slice(mig170.indexOf("INSERT INTO scrape_job_state"));
+  const modeAfter = async (row) => {
+    await db.exec(`BEGIN;
+DELETE FROM scrape_job_state WHERE job = 'data_health_morning';
+${row ? `INSERT INTO scrape_job_state (job, mode, last_tick_at) VALUES ('data_health_morning', '${row.mode}', ${row.tick ? "now()" : "NULL"});` : ""}
+${insert}`);
+    const r = await q(
+      "select mode from scrape_job_state where job = 'data_health_morning'",
+    );
+    await db.exec("ROLLBACK;");
+    return r[0]?.mode;
+  };
+  const created = await modeAfter({ mode: "off", tick: false });
+  const manual = await modeAfter({ mode: "shadow", tick: false });
+  const ticked = await modeAfter({ mode: "off", tick: true });
+  const none = await modeAfter(null);
+  check(
+    "マイグレーション170: 共通ラッパが作っただけの off の行は data_health の mode に上書き、手で shadow にした行・動いたことのある行は変えない、行が無ければ作る",
+    created === "live" &&
+      manual === "shadow" &&
+      ticked === "off" &&
+      none === "live",
+    show({ created, manual, ticked, none }),
+  );
+}
+
+// 鮮度の未達は毎日通知する（system-architect P1-b・/code-review の再現）。件数の未達は今までどおり翌日は黙る
+{
+  const chk = NIGHTLY_FRESHNESS_CHECKS.find(
+    (c) => c.id === "nightly.outcome_distribution",
+  );
+  const stale = {
+    outcome_distribution: { applicable: true, ok: false, observed: null },
+  };
+  const run = (targetDate, previousEmitted, result = stale) =>
+    runDataHealthChecks({
+      targetDate,
+      now: new Date(`${targetDate}T06:35:00+09:00`),
+      mode: "live",
+      callFunction: async () => result,
+      previousEmitted,
+      checks: [chk],
+      policies: {},
+    });
+  const d1 = await run("2026-10-20", {});
+  const d2 = await run("2026-10-21", d1.report.emitted);
+  const d2again = await run("2026-10-21", d2.report.emitted);
+  check(
+    "鮮度の未達: 2晩続けて落ちたら2晩目も通知する（同じ対象日の2回目の実行は通知しない）",
+    d1.alerts.length === 1 &&
+      d2.alerts.length === 1 &&
+      d2.alerts[0].key === "dh:nightly.outcome_distribution:2026-10-21" &&
+      d2again.alerts.length === 0,
+    show([d1.alerts, d2.alerts, d2again.alerts]),
+  );
+  const broken = await run("2026-10-20", {}, { _since: "x" });
+  check(
+    "鮮度の項目を判定できない（関数の結果に項目が無い）ときは、黙らず「検査を実行できませんでした」を通知する",
+    broken.alerts.length === 1 &&
+      broken.alerts[0].key ===
+        "dh:error.nightly.outcome_distribution:2026-10-20" &&
+      broken.alerts[0].text.includes("検査を実行できませんでした"),
+    show(broken.alerts),
   );
 }
 
@@ -2179,7 +2249,7 @@ const evalMutants = [
     "毎回通知する（状態を見ない）",
     [
       [
-        "if (prev === undefined || worsened || remind || undelivered) {",
+        "if (prev === undefined || worsened || remind || undelivered || nextDay) {",
         "if (true) {",
       ],
     ],
@@ -2360,7 +2430,7 @@ async function runEntriesDuplicates(sql) {
   const mdb = new PGlite();
   await mdb.exec(`
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
-CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off');
+CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off', last_success_at timestamptz, last_tick_at timestamptz, updated_at timestamptz not null default now());
 CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, race_grade text, cancellation_status text, start_time time);
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint, rank2 smallint, rank3 smallint, rank4 smallint, rank5 smallint, rank6 smallint, actual_course_1 smallint, winning_technique text);
 CREATE TABLE race_entries (race_id varchar(20), boat_number smallint, racer_id integer, weight_kg numeric, branch text, f_count smallint, l_count smallint, is_absent boolean, primary key (race_id, boat_number));
@@ -2495,7 +2565,7 @@ async function runCancellationWithResult(sql) {
   const mdb = new PGlite();
   await mdb.exec(`
 CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role;
-CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off');
+CREATE TABLE scrape_job_state (job text primary key, mode text not null default 'off', last_success_at timestamptz, last_tick_at timestamptz, updated_at timestamptz not null default now());
 CREATE TABLE races (race_id varchar(20) primary key, race_date date not null, venue_code smallint not null, race_number smallint not null, cancellation_status text);
 CREATE TABLE race_results (race_id varchar(20) primary key, rank1 smallint);
 INSERT INTO races VALUES

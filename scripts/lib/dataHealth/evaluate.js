@@ -214,10 +214,11 @@ export function evaluateFreshnessCheck(check, result, items) {
     (k) => !result || typeof result[k] !== "object" || result[k] === null,
   );
   if (missingKeys.length > 0) {
-    // 関数が項目を返さない（関数の版が古い等）。黙って ok にしない
+    // 関数が項目を返さない（関数の版が古い等）。黙って ok にしない（job.js が通知にする）
     return {
       ...base,
       status: "error",
+      alertOnError: true,
       detail: `関数の結果に項目がありません: ${missingKeys.join("、")}`,
     };
   }
@@ -226,6 +227,7 @@ export function evaluateFreshnessCheck(check, result, items) {
     return {
       ...base,
       status: "not_applicable",
+      alertOnError: true,
       detail: "この日は書かれないのが正常（前日にレース・対象の開催が無い）",
     };
   }
@@ -237,6 +239,7 @@ export function evaluateFreshnessCheck(check, result, items) {
   return {
     ...base,
     status: stale.length > 0 ? "breach" : "ok",
+    alertOnError: true,
     missing: stale.length,
     staleItems: stale,
     detail: (stale.length > 0 ? stale : applicable)
@@ -309,12 +312,13 @@ const daysBetween = (fromDate, toDate) =>
  *   - 未達で、前日に出した通知が、scrape-monitor の通知済みの記録（deliveredKeys）に無い → 通知（未配信の再通知。
  *     scrape-monitor の停止・Slack送信の失敗で、通知の有効期限（ALERT_VALID_HOURS）内に届かなかった場合に、
  *     REMIND_DAYS 日黙り込まないため。記録を読めない（deliveredKeys が null）ときは判定しない）
+ *   - 未達で、毎日通知する未達（everyDay。鮮度）で、最後の通知が別の対象日 → 通知（鮮度の未達は日ごとに別の事故）
  *   - 未達で上のいずれでもない → 通知しない（欠損数の観測値だけ更新する）
  *   - 未達でない（回復・対象外・未導入）→ 状態を消す（再発したら、初回として通知する）
  *   - 実行できなかった項目（errorKeys）→ 状態を変えない
  *
  * @param {Object} input
- * @param {Array<{key: string, text: string, missing: number}>} input.breaches 今回の未達（通知の候補）
+ * @param {Array<{key: string, text: string, missing: number, everyDay?: boolean}>} input.breaches 今回の未達（通知の候補）
  * @param {Set<string>} input.okKeys 今回、未達でないと確認できた項目のkey
  * @param {Record<string, {firstAt: string, lastAt: string, missing: number, alertKey?: string}>} input.previous
  * @param {string} input.targetDate
@@ -352,7 +356,10 @@ export function reconcileAlerts({
       deliveredKeys instanceof Set &&
       daysBetween(prev.lastAt, targetDate) === 1 &&
       !deliveredKeys.has(prev.alertKey);
-    if (prev === undefined || worsened || remind || undelivered) {
+    // 毎日通知する未達（鮮度）: 前回の通知が別の対象日なら、欠損数が同じでも通知する
+    const nextDay =
+      b.everyDay === true && prev !== undefined && prev.lastAt !== targetDate;
+    if (prev === undefined || worsened || remind || undelivered || nextDay) {
       const reason =
         prev === undefined
           ? ""

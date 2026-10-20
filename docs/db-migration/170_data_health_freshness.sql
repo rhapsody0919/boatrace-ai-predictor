@@ -13,14 +13,18 @@
 --   data_health_morning_freshness(p_to)  p_to=当日。龍神ソナー（出走表の段）・ポアロ・モリアーティの当日の件数。
 --                                        data_health_morning（07:55 JST）が呼ぶ
 --
--- テーブル・データの変更: scrape_job_state に job='data_health_morning' の行を1つ足す（mode は、今の data_health と同じ値。
---   data_health の行が無ければ足さない＝off）。既に行があれば何もしない。それ以外は CREATE OR REPLACE FUNCTION・
---   REVOKE・GRANT・COMMENT のみ（読み取りの関数。ロックなし）。再適用しても失敗しない（冪等）。
+-- テーブル・データの変更: scrape_job_state の job='data_health_morning' の行の mode を、今の data_health と同じ値にする
+--   （data_health の行が無ければ何もしない＝off）。行が無ければ作る。行があっても、共通ラッパが作っただけで一度も動いて
+--   いない off の行（last_success_at・last_tick_at が NULL）なら上書きする。それ以外の行（手で off・shadow にした等）は
+--   変えない。ほかは CREATE OR REPLACE FUNCTION・REVOKE・GRANT・COMMENT のみ（読み取りの関数。ロックなし）。
+--   再適用しても失敗しない（冪等）。
 --
--- 適用の順序: コード（PR）のデプロイの前後どちらでもよい。
---   - コードが先: data_health の 06:35 の実行で、関数が無いため「検査を実行できませんでした」が1回通知される
---     （同じ状態が続いても毎日は通知しない）。data_health_morning は行が無い（off）ので何もしない
---   - この SQL が先: 関数を呼ぶ側がまだ無いだけで、何も起きない
+-- 適用の順序: db-apply は master の SQL を当てるので、コード（PR）のデプロイが先になる。
+--   - data_health: 適用までの 06:35 の実行で、関数が無いため「検査を実行できませんでした」が1回通知される
+--     （同じ状態が続いても毎日は通知しない。適用後の最初の実行で消える）
+--   - data_health_morning: 適用までに 07:55・08:55 の cron が動くと、共通ラッパが off の行を作って何もしない。
+--     この SQL がその行を data_health と同じ mode に上書きする
+--   - SQL Editor で先に当てた場合: 古いコードはレジストリに無いジョブを見ないので、何も起きない
 --
 -- 適用後の確認（読み取りのみ）:
 --   SELECT data_health_nightly_freshness(current_date - 1);
@@ -134,4 +138,10 @@ COMMENT ON FUNCTION data_health_morning_freshness(date) IS 'データ健全性�
 -- 朝の監視ジョブのモードの行（始めのモードは、今の data_health に従う）
 INSERT INTO scrape_job_state (job, mode)
 SELECT 'data_health_morning', mode FROM scrape_job_state WHERE job = 'data_health'
-ON CONFLICT (job) DO NOTHING;
+ON CONFLICT (job) DO UPDATE SET mode = EXCLUDED.mode, updated_at = now()
+  -- 共通ラッパは、行の無いジョブの初回の起動で mode='off' の行を作る（cronWrapper.js の ensureRow）。db-apply は
+  -- master の SQL を当てるのでコードのデプロイが先になり、その間に 07:55 の cron が動くと off の行が先にできる。
+  -- その「作られただけで一度も動いていない行」だけを上書きする（手で off・shadow にした行は変えない）
+  WHERE scrape_job_state.mode = 'off'
+    AND scrape_job_state.last_success_at IS NULL
+    AND scrape_job_state.last_tick_at IS NULL;

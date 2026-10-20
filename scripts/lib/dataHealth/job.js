@@ -233,9 +233,24 @@ export async function runDataHealthChecks({
         key: r.id,
         text: `データ健全性 ${formatBreach(r)}`,
         missing: r.missing ?? 0,
+        // 鮮度の未達は日ごとに別の事故（2晩続けて落ちたら2晩目も知らせる）。件数の充足率と違い、毎日通知する
+        ...(r.staleItems ? { everyDay: true } : {}),
       });
     } else if (r.status !== "error") {
       okKeys.add(r.id);
+    }
+    // 鮮度の項目を判定できなかった（関数の結果に項目が無い＝本番の関数の版が古い等）。last_report に載せるだけだと
+    // 見張りが黙って止まるので、「検査を実行できなかった」として通知する
+    if (r.alertOnError && r.severity === "alert") {
+      if (r.status === "error") {
+        breaches.push({
+          key: `error.${r.id}`,
+          text: `データ健全性の検査を実行できませんでした: ${r.label}: ${r.detail}`,
+          missing: 1,
+        });
+      } else {
+        okKeys.add(`error.${r.id}`);
+      }
     }
   }
   for (const r of emptyResults) {
