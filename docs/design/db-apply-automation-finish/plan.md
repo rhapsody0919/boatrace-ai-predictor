@@ -318,7 +318,7 @@ flowchart TD
 | 26 | docs/adr を deny から owner に移す | はい |
 | 27 | scripts/**/verify-*.js の変更・削除を owner にするか（§10.4 v4 の比較） | (ii): 削除は owner、変更は「足すだけ・典型の早い終了を含まない」なら employee、他は owner。hq の数え直しで大きく下がるなら再検討 |
 | 28 | 日ごとの自動マージの本数の上限（小分けの迂回・暴走の止め役） | 数えるのは審査の APPROVE。40/日で以後の承認を止め（COMMENT、翌日に空のコミットで起こし直す）、30 で知らせる。月の run は10日ごとに数えて足す。数は判断14 の実費の測定の後に、日と月が食い違わない値で決める |
-| 29 | v4・v5 の変更（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・判定の本体は deny・api/cron の小さな直しを prodWrite（認証・ゲート・config の文字列は owner）・knowledge と mock と規則外れは owner・検証を緩める台帳は owner）。元の文:（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・api/cron の小さな直しを prodWrite・knowledge と mock の外れは owner） | はい |
+| 29 | v4・v5 の変更（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・判定の本体は deny・api/cron の小さな直しを prodWrite（認証・ゲート・config の文字列は owner）・knowledge と mock と規則外れは owner・検証を緩める台帳は owner） | はい |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
