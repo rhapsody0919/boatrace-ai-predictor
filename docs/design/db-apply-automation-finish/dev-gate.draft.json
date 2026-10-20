@@ -1,21 +1,29 @@
 {
-  "$comment": "案（2026-10-20）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js が master の checkout（github.sha）から読む。PR の分類は、変えたファイル（改名の元・削除を含む）のうち一番強いクラスに合わせる。強い順: deny > owner > orchestrate > prodWrite > content > frontendSmall > employee",
-  "version": 1,
+  "$comment": "案 v2（2026-10-20 夜、hq の分類 ~/hq/drafts/dev-gate-classify-20261020.md を反映）。正本の置き場所は config/dev-gate.json（仮、判断16）。説明は plan.md §10.4。gate.js・llm.js・approve.js が master の checkout（github.sha）から読み、実行のときに形を検査する（読めなければ全部止める側）。分類: (1) PR の全ファイルが content のパスに収まり #1699 の後の形なら content。(2) それ以外は、ファイルごとに deny / owner / appendOnly / prodWrite / frontendSmall / employee を決め、強い順 deny > owner > prodWrite > frontendSmall > employee で一番強いものにする（appendOnly は条件を満たせば employee、外れれば deny）。content のパスのファイルが混ざった PR は (2) で、content のファイルは employee として数え、画像の例外は効かない",
+  "version": 2,
   "appliesTo": "作成の App の PR 全部（claude/・codex/・hq の社員）。名義が同じなので、社員だけに効かせることは機械ではできない",
+  "branchPrefixes": ["claude/", "codex/"],
+  "p1": {
+    "$comment": "§10.1 案 A。P0・P1 は全クラスで止める。止めない観点は content の PR の fan・seo だけ（許可のリスト）。観点の無い P1 は止める。判定は head の木の SHA で持ち越す",
+    "nonBlockingViewpointsInContent": ["fan", "seo"]
+  },
+  "bannedWords": {
+    "$comment": "本文に出たら機械で落とす決まった文字列（§10.1 の4）。対象は public/blog/**・src/** の追加行。メタ情報の例外（title・meta・OGP）は code-style.md に従い、該当の行の形で除く",
+    "words": ["競艇"]
+  },
   "classes": {
     "deny": {
-      "$comment": "審査の App は承認しない（REQUEST_CHANGES、理由に一致したパターン）。オーナーが自分で書くか、オーナーが ruleset を一時 Disabled にして入れる",
+      "$comment": "審査の App は承認しない（REQUEST_CHANGES、理由に一致したパターン）。オーナーが自分で書くか、ruleset を一時 Disabled にして入れる",
       "paths": [
-        "scripts/lib/reviewPr.js",
-        "scripts/review/**",
-        ".github/workflows/review.yml",
         "config/dev-gate.json",
-        "docs/db-migration/**",
+        ".github/workflows/review.yml",
+        "scripts/review/**",
+        "scripts/lib/reviewPr.js",
         "scripts/db/**",
-        "scripts/maintenance/verify-registry.json",
         "scripts/maintenance/run-verify-registry.js",
         "scripts/maintenance/guard-pr-merge.js",
         "scripts/maintenance/merge-order.js",
+        "scripts/lib/mergeOrder.js",
         "scripts/maintenance/verify-codex-no-preview.js",
         "e2e/fixtures.js",
         "e2e/*fixture*",
@@ -41,18 +49,17 @@
         "**/requirements*.txt",
         "**/.npmrc",
         ".mcp.json",
-        "docs/adr/**",
-        "docs/knowledge/**",
         "docs/design/*/mock/**",
         "**/APPROVED.md",
         "@generated-docs"
       ],
       "notes": {
-        "@generated-docs": "scripts/maintenance/generated-docs.js の GENERATED_DOCS の output と public/sitemap.xml・public/llms.txt（ADR-0078、機械が作る文書）。gate は master の generated-docs.js を実行せずに読む（output の文字列を正規表現で取る）か、この JSON に展開して verify で一致を固定する"
+        "@generated-docs": "scripts/maintenance/generated-docs.js の GENERATED_DOCS の output と public/sitemap.xml・public/llms.txt（ADR-0078）。この JSON に展開して書き、verify で generated-docs.js と一致を固定する（gate は JS を実行しない）",
+        "docs/db-migration": "deny から外した（appendOnly を参照）。deny にすると、審査の App の承認つきの PR で足した SQL を当てる db-apply の自動の経路（ADR-0097）の対象が0本になる"
       }
     },
     "owner": {
-      "$comment": "審査は動くが承認しない（COMMENT で『オーナーの承認が要る』）。オーナーの APPROVE（スマホ）で入る。審査の仕組みそのもの・仕組みの変更",
+      "$comment": "審査は動くが承認しない（COMMENT で『オーナーの承認が要る』）。オーナーの APPROVE で入る",
       "paths": [
         ".github/**",
         ".claude/**",
@@ -64,116 +71,93 @@
         ".gitattributes",
         "scripts/lib/dbApplySql.js",
         "scripts/lib/dbReconcile.js",
-        "middleware.js"
+        "middleware.js",
+        "docs/adr/**"
       ]
     },
     "orchestrate": {
-      "$comment": "オーケストレーターが確かめてから入れる線。ただしオーケストレーターと社員は同じ作成の App の名義なので、機械では社員と区別できない。区別する身元ができるまでは owner と同じ扱いにする（判断17）",
-      "paths": [],
+      "$comment": "オーケストレーターと社員は同じ作成の App の名義で、機械では区別できない。別の身元ができるまで owner と同じ（判断17）",
       "fallback": "owner"
     },
+    "appendOnly": {
+      "$comment": "足すだけなら employee、外れたら deny。判定は master と PR の head の中身を API で取って比べる（patch の +/- だけで見ない。JSON は前の行の , が変わるため）",
+      "files": {
+        "scripts/maintenance/verify-registry.json": {
+          "rule": "jsonSuperset",
+          "detail": "head を JSON として読み、master のキーが全部あって値が同じ（深い一致）。足したキーだけが違う。hq の実測で 201 本が当たり、110 本はこれだけが理由"
+        },
+        "docs/knowledge/**": {
+          "rule": "linesAddedOnly",
+          "detail": "status が modified か added、patch の - の行が0（書き換え・削除が無い）。改名は外れ"
+        },
+        "docs/db-migration/[0-9][0-9][0-9]_*.sql": {
+          "rule": "addedFileOnly",
+          "detail": "status が added だけ（既存の SQL の変更・改名・削除は外れ）。番号が origin/master の最大より大きい。当てるかどうかは db-apply の判定（軽い／重い）と Environment が別に守る"
+        },
+        "docs/db-migration/APPLIED.md": {
+          "rule": "linesAddedOnly",
+          "detail": "行を足すだけ（足した行の適用状況は『未適用』で始まる）。既存の行の書き換えは外れ（台帳の『適用済み』化は record の job が ryujin-bot で直接行う）"
+        },
+        "docs/db-migration/**": {
+          "rule": "deny",
+          "detail": "上の2つに当たらない docs/db-migration の変更（runbook 等）"
+        }
+      }
+    },
     "prodWrite": {
-      "$comment": "本番を書く経路。審査は承認できるが、P1 も止め、大きさの上限を超えたら owner。一覧は手で書かず、master から機械で作る",
+      "$comment": "本番を書く経路。一覧は手で書かず、gate が master の上で毎回作る。審査の承認で入るが、大きさの上限は prodWrite のファイルだけで数え、超えたら owner",
       "derive": {
         "entries": [
-          "Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある scripts/**・api/** のファイル（2026-10-20 の実測で63本）",
-          "vercel.json の crons の path に当たる api/cron/*.js（deny に入っているが、そこから import される先を数えるための入口）"
+          "Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある scripts/**・api/** のファイル（hq の実測で 66）",
+          "vercel.json の crons の path に当たる api/cron/*.js（hq の実測で 40。deny にも入っているが、import の先を数える入口）"
         ],
-        "closure": "入口から静的な import（JS の import/require の相対パス、Python のリポジトリ内の import）をたどった全部。実行しない",
-        "where": "gate が master の checkout の上で毎回作る（生成物をコミットしない。ADR-0078 と同じ理由）"
+        "closure": "入口から静的な import（JS の import/require の相対パス、Python のリポジトリ内の import）をたどった全部（hq の実測で 330 ファイル）。実行しない。fs で読むデータ（JSON 等）はたどらない（残る弱み。送信・規則のデータは deny に名前で入れている）",
+        "srcFiles": "閉包に入る src/**（src/utils の一部等）は prodWrite として数える。上限は prodWrite のファイルだけで数えるので、小さな画面の直し（#1627 の2ファイル16行）は上限の中で、審査の承認で入る"
       },
-      "limits": {
-        "maxFiles": 10,
-        "maxChangedLines": 300
-      },
-      "p1Blocks": true,
+      "limits": { "maxFiles": 10, "maxChangedLines": 300, "countOnly": "prodWrite のファイル" },
       "overLimit": "owner"
     },
     "content": {
-      "$comment": "記事の PR（段階0 F）。PR の変更が全部ここに収まるときだけ。§9.1 の画像の例外はこのクラスだけで効く。P1 は fan・seo の観点だけ止めない（許可のリスト）。他の観点・観点の無い P1 は止める",
+      "$comment": "記事の PR（段階0 F）。PR の全ファイルがここに収まるときだけ。#1699（翻訳のメタの JSON 化・寸法をビルドで作る）がマージされてから有効にする。それまで content のクラスは無し（記事の PR は (2) で分ける）",
+      "requires": "PR #1699 のマージ",
       "paths": [
-        "public/blog/**",
-        "src/data/blog-posts/**",
-        "public/images/blog/*.jpg",
-        "src/data/blogImageDimensions.js",
-        "src/data/blogPostsEn.js",
-        "src/data/blogPostsKo.js",
-        "src/data/blogPostsZhTw.js"
+        "public/blog/*.md",
+        "src/data/blog-posts/*.json",
+        "src/data/blog-posts/en/*.json",
+        "src/data/blog-posts/ko/*.json",
+        "src/data/blog-posts/zh-TW/*.json",
+        "public/images/blog/*.jpg"
       ],
+      "statusAllowed": ["added", "modified"],
       "image": {
         "pathRegex": "^public/images/blog/[a-z0-9-]{1,100}\\.jpg$",
-        "status": [
-          "added"
-        ],
+        "status": ["added"],
         "mode": "100644",
         "maxBytes": 409600,
         "maxWidth": 2000,
         "maxHeight": 4000,
-        "jpegAllowedMarkers": [
-          "SOI",
-          "APP0:JFIF(thumbnail 0x0)",
-          "APP2:ICC_PROFILE",
-          "DQT",
-          "DHT",
-          "DRI",
-          "SOF0|SOF1|SOF2 (1つだけ)",
-          "SOS",
-          "RST0-7",
-          "EOI (ファイルの終わり)"
-        ],
-        "dimensionsTable": "src/data/blogImageDimensions.js（同じ PR で行を足す）"
+        "jpegAllowedMarkers": ["SOI", "APP0:JFIF(thumbnail 0x0)", "APP2:ICC_PROFILE", "DQT", "DHT", "DRI", "SOF0|SOF1|SOF2 (1つだけ)", "SOS", "RST0-7", "EOI (ファイルの終わり、1つだけ)"],
+        "dimensions": "#1699 の後は寸法の表が PR に無い（ビルドで作る）。照合は縦横の上限だけ"
       },
-      "p1AdvisoryViewpoints": [
-        "fan",
-        "seo"
-      ],
-      "p1NonBlockingViewpoints": [
-        "fan",
-        "seo"
-      ]
+      "limits": { "maxFiles": 40, "maxChangedLines": 3000 },
+      "overLimit": "owner"
     },
     "frontendSmall": {
-      "$comment": "画面の小さな直し。上限を超えたら employee ではなく orchestrate（＝今は owner）",
-      "paths": [
-        "src/**",
-        "public/**"
-      ],
-      "excludePaths": [
-        "src/pages/admin/**",
-        "public/images/blog/**",
-        "public/blog/**"
-      ],
-      "limits": {
-        "maxFiles": 5,
-        "maxChangedLines": 150
-      },
-      "limitsExclude": [
-        "e2e/**/*.spec.js"
-      ],
-      "overLimit": "orchestrate",
-      "p1Blocks": true
+      "$comment": "画面の小さな直し。上限は src/**・public/** のファイルだけで数える（docs 等が混ざっても上がらない。hq の実測で、上がった 236 本のうち 228 本は src/・public/ の外を含んでいた）",
+      "paths": ["src/**", "public/**"],
+      "excludePaths": ["src/pages/admin/**", "public/images/blog/**", "public/blog/**"],
+      "limits": { "maxFiles": 8, "maxChangedLines": 300, "countOnly": "src/**・public/** のファイル（spec を除く）" },
+      "overLimit": "orchestrate"
     },
     "employee": {
-      "$comment": "上のどれにも当たらない。審査の App の承認だけで auto-merge",
-      "p1Blocks": true
+      "$comment": "上のどれにも当たらない。審査の App の承認だけで auto-merge。大きさの上限を置く（#1684 は37ファイル・36万行、#1639・#1633 は大量の削除）",
+      "limits": { "maxFiles": 30, "maxChangedLines": 2000, "maxDeletedFiles": 3, "maxDeletedLines": 500 },
+      "overLimit": "owner"
     }
   },
-  "p1": {
-    "$comment": "§10.1 案 A。P0 は全クラスで止める。同じ P1 が2回目に出たら、レーンは直すのをやめてオーケストレーターに上げる"
-  },
   "monthlyLimit": {
-    "$comment": "1 run の実費と runs の API の頭打ちを測ってから決める（§10.2、判断14）",
+    "$comment": "1 run の実費と runs の API の頭打ちを測ってから決める（§10.2、判断14）。hq の見込みは月約 3,400 run（1PR 平均 3.64 コミット）",
     "runs": null,
     "notifyAtRatio": 0.8
-  },
-  "bannedWords": {
-    "$comment": "本文に出たら機械で落とす決まった文字列（§10.1 の4）。メタ情報の例外（title・meta・OGP）は code-style.md に従う",
-    "words": [
-      "競艇"
-    ]
-  },
-  "branchPrefixes": [
-    "claude/",
-    "codex/"
-  ]
+  }
 }

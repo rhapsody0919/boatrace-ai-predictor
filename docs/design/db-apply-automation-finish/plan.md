@@ -287,7 +287,7 @@ flowchart TD
 | 6 | 名義の差し替えを環境の側（hq の shim・credential helper）で行い、切替の前の暫定は置かない（§3） | はい |
 | 7 | D' の条件（§5: 切替の後7日・審査済みの SQL を5本判定 等） | この条件 |
 | 8 | ④ 審査の関門の画像の例外を §9.1 の条件（jpg だけ・印の欄の許可のリスト・EOI まで歩く・縦横の上限・F のパスだけの PR に限る）で入れ、同じ PR で ADR-0097 に追記する（段階2） | はい |
-| 9 | ② で寸法の表がビルドで作られる形になったときの関門の条件 | ② のレーンと合わせて決める。それまでは PR の head の表で照合 |
+| 9 | ② で寸法の表がビルドで作られる形になったときの関門の条件 | #1699 の後は縦横の上限だけで照合（§10.4 v2）。content は #1699 のマージの後から有効 |
 | 10 | 画像の中身が LLM の審査に渡らないこと・polyglot を防ぎきれないこと・作成の App が自分で `--auto` を付けられることを受け入れるか | 受け入れて ADR-0097 の残る弱みに書く（グラフ・表の画像で、記事の本文は審査に入る。`nosniff` を足す） |
 | 11 | ⑥ SKILL.md の段階0 F・案Z の5点の書き直し（§9.3。5点目の P0/P1 の扱いはオーナー決定済み、文案の承認が要る） | はい。PR-D とは別の PR |
 | 12 | 切替の PR で `DB_APPLY_SWITCH_SHA` を切替のコミットに進めるか（切替の前に足した未承認の `未適用` を自動の対象から外す） | 進める。外れたものは手で当てる（今の手順のまま） |
@@ -300,6 +300,11 @@ flowchart TD
 | 19 | dev-gate を全員に効かせるか社員だけか | 全員 |
 | 20 | 審査の仕組み（dev-gate.json・review.yml・scripts/review・reviewPr.js）を変える PR を機械で落とすか（§10.4） | 落とす（deny）。オーナーは ruleset を一時 Disabled にして入れる |
 | 21 | ブランチの接頭辞を `claude/`・`codex/` に機械で揃える（§10.0。今は 970 本中 85 本だけ） | PR-D の check-gh-identity で push と PR の前に検査する |
+| 22 | verify-registry.json と docs/knowledge を「足すだけ」なら employee にする（§10.4 v2） | はい（JSON は上位集合、md は - の行が0） |
+| 23 | docs/db-migration を deny から外し、新しい SQL の追加と APPLIED.md の行の追加だけを employee にする（§10.4 v2） | はい。deny のままだと db-apply の自動の経路が0本になる |
+| 24 | employee の大きさの上限（30ファイル・2000行・削除3ファイル・削除500行、超えたら owner） | この初期値で入れ、hq の分布で直す |
+| 25 | frontendSmall を src/・public/ のファイルだけで 8/300 で数える。prodWrite も prodWrite のファイルだけで数える | はい |
+| 26 | docs/adr を deny から owner に移す | はい |
 
 ## 9. 中身の PR（ブログ記事）を同じ道に乗せる（2026-10-20 夕の追加）
 
@@ -451,15 +456,44 @@ flowchart TD
 4. 作成の App で審査の App の review を dismiss できるか（10.1 の出口の前提。dismiss しても承認は増えないので迂回にはならない）
 5. `--auto` のときの `--delete-branch`（10.5）
 
-#### 中身の案（[dev-gate.draft.json](./dev-gate.draft.json)、2026-10-20 夜。hq が過去30日の PR を分類して数を出す）
+#### 中身の案 v2（[dev-gate.draft.json](./dev-gate.draft.json)、2026-10-20 夜。hq の分類を反映）
 
-- クラスは強い順に deny（承認しない・オーナーが入れる）> owner（審査は動くが承認せず、オーナーの APPROVE で入る）> orchestrate > prodWrite > content（記事、§9.1）> frontendSmall > employee。PR は、変えたファイル（改名の元・削除を含む）のうち一番強いクラスになる
-- deny には、審査で出た抜けを全部入れた（DB の適用・マージ順とフック・verify の台帳・e2e の録画と fixtures・リスクの規則・送信の設定・管理画面と認証・Cron の入口・下の階層の依存の宣言・ADR と知見・承認済みのモック・機械が作る文書）。パスは全部実在を確かめた
-- 審査の仕組みそのもの（`config/dev-gate.json`・`.github/workflows/review.yml`・`scripts/review/**`・`reviewPr.js`）は deny に移した（§10.4、2段の緩めを防ぐ）。owner には、仕組みの変更（`.github/**` の他・`.claude/**`・AGENTS.md・vercel.json・ルートの package.json 等）を入れた。**これは ADR-0097 の「CODEOWNERS は置かない。仕組みの変更も審査の App の承認だけで通る（オーナー判断）」を一部覆す**。仕組みの変更は直近30日で223本中の多数（ADR-0097 の却下した選択肢の表）なので、オーナーの承認の数が増える（判断18）
-- **orchestrate のクラスは機械では区別できない**。オーケストレーターも社員も同じ作成の App の名義で、ブランチの接頭辞は作成の App が選べる。区別する身元（オーケストレーター用の別の App）を作るまでは owner と同じ扱いにする（判断17）
-- prodWrite（本番を書く経路）は、手の一覧にせず、gate が master の上で毎回作る: Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある `scripts/**`・`api/**`（実測63本）と、vercel.json の crons の `api/cron/*.js` を入口にし、静的な import をたどった全部。審査は承認できるが、P1 も止め、10ファイル・300行を超えたら owner。PR が prod の入口のファイルに新しい import を足すと、入口のファイル自身が変わるので prodWrite に当たる（新しいファイルが閉包の外でも見逃さない）
-- frontendSmall（`src/**`・`public/**`、管理画面と記事を除く）は 5ファイル・150行（テストの spec を除く）まで。超えたら orchestrate（＝今は owner）。数は hq の分類の結果で直す
-- P1 はクラスを問わず止める（§10.1 案 A）。止めない観点を許可のリストにし、content のクラスで観点が fan・seo の P1 だけ止めない
+hq が v1 の案で、9/20 以降にマージされた 946 本（作者は全部 rhapsody0919）を分類した（正本は hq の drafts/dev-gate-classify-20261020.md）。
+
+| v1 のクラス | 本数 |
+|---|---|
+| deny | 394（41.6%） |
+| employee | 133 |
+| orchestrate（frontendSmall の上限超え） | 130 |
+| frontendSmall | 106 |
+| owner（パス） | 75 |
+| prodWrite | 45 |
+| owner（prodWrite の上限超え） | 32 |
+| content | 31 |
+
+- 社員で回る（employee・frontendSmall・prodWrite・content）のは 315 本（33%）。そのうち接頭辞が `claude/`・`codex/` のものは 15 本だけ（§10.0）
+- deny の4割は docs/adr・docs/knowledge・docs/db-migration・verify-registry.json。verify-registry.json は 201 本が当たり、110 本はこれだけが理由
+- frontendSmall の上限で上がる本数: 3ファイル/100行で 168、5/150 で 130、8/300 で 69、10/500 で 38、15/1000 で 5。上がった 236 本のうち 228 本は src/・public/ の外を含む
+- prodWrite の閉包: 入口は workflow 66・cron 40、閉包は 330 ファイル。prodWrite のファイルだけで上限を数えると、上がるのは 2 本
+- 審査の run: 1PR 平均 3.64 コミット（中央値2、最大136）、月約 3,400 run の見込み
+
+v2 で直したこと（hq の指摘1〜5とオーケストレーターの追加）:
+
+| 指摘 | v2 |
+|---|---|
+| 1. verify-registry.json の deny で 201 本 | appendOnly に移す。head の JSON が master の JSON の上位集合（既存のキーと値が同じ、足したキーだけ）なら employee、外れたら deny。patch の +/- では見ない（前の行の `,` が変わるため） |
+| docs/knowledge の「足すだけ」（オーケストレーター） | appendOnly。patch の `-` の行が0（書き換え・削除なし）、改名は外れ |
+| 2. blogPostsEn/Ko/ZhTw.js が generate-sitemap.js から import されて prodWrite になり、記事の画像の例外が効かない | **#1699（OPEN）を確かめた**: 翻訳のメタは `src/data/blog-posts/{en,ko,zh-TW}/*.json` に移り、`blogPostsEn.js` 等は `import.meta.glob`／`readdirSync` で読む形になり、記事の PR は触らない。`src/data/blogImageDimensions.js` は消え、寸法はビルドで作る。content のパスを #1699 の後の形（.md・.json・.jpg）にし、content は #1699 のマージの後から有効にする。寸法の照合は縦横の上限だけになる（判断9 はこれで決まる） |
+| 3. content に画面や spec を混ぜた PR も content になる（#1525・#1444） | content は「PR の全ファイルが content のパスに収まるとき」だけ。混ざった PR は通常の分類で、content のファイルは employee として数え、画像の例外は効かない |
+| 4. employee に大きさの上限が無い（#1684 は37ファイル・36万行、#1639・#1633 は大量の削除） | employee に 30ファイル・2000行・削除3ファイル・削除500行の上限を置き、超えたら owner（数は hq の分布で直す前提の初期値） |
+| 5. src/utils の一部が閉包に入り、小さな画面の直しが prodWrite になる（19本、#1627 は2ファイル16行） | prodWrite の上限を prodWrite のファイルだけで数える（hq の実測で上がるのは2本）。P1 は全クラスで止めるので、prodWrite と frontendSmall の違いは上限だけになり、#1627 は審査の承認で入る |
+| frontendSmall は src/・public/ だけで数える形も比べる（オーケストレーター） | src/**・public/** のファイルだけで数える形にした。上限は hq の落としどころの 8/300。v1 の「上がった 236 本のうち 228 本は外を含む」が消える。この形での本数は hq に数え直してもらう |
+
+**v2 で見つけた食い違い（自分で）**: v1 は `docs/db-migration/**` を deny にしていたが、そうすると審査の App の承認つきの PR で足した SQL を当てる db-apply の自動の経路（ADR-0097、この設計の §2〜§4）の対象が0本になる。v2 は appendOnly にした: 新しい番号の SQL の**追加だけ**（既存の変更・改名・削除は deny）と、APPLIED.md の**行を足すだけ**（足した行は `未適用` で始まる）を employee にする。当てるかどうかは db-apply の判定（軽い／重い）と Environment が別に守る（2段）。runbook 等の他の docs/db-migration の変更は deny のまま
+
+- docs/adr/** は deny から owner に移した（決定の記録なのでオーナーの承認が要るが、拒む理由は無い）
+- 審査の仕組み（`config/dev-gate.json`・review.yml・`scripts/review/**`・`reviewPr.js`）は deny のまま（§10.4、2段の緩めを防ぐ）。`scripts/lib/mergeOrder.js` を deny に足した（merge-order.js の本体）
+- prodWrite の閉包は静的な import だけをたどり、fs で読むデータ（JSON 等）はたどらない。#1699 の後の記事の JSON も generate-sitemap.js が readdir で読むが、閉包には入らない（記事の URL が sitemap に載るだけで、本番の DB は書かない）。送信・規則のデータ（today-variants.json・job-watch.json・risk-rules.json）は deny に名前で入れている。残る弱みに書く
 
 #### ADR の追記の案（番号は PR 作成時に origin/master の最大＋1）
 
