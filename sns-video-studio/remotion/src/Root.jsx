@@ -1,6 +1,8 @@
 import { Composition } from "remotion";
 import { FullPictureScene2 } from "./fullPicture/Scene2Compare.jsx";
 import { scene2Duration } from "./fullPicture/scene2Timeline.js";
+import { FullPictureStep } from "./fullPicture/FullPictureStep.jsx";
+import { stepTimeline } from "./fullPicture/stepTimeline.js";
 import { AshiyaCM, AmagasakiCM } from "./AshiyaCM.jsx";
 import { YoungPersonaCM } from "./YoungPersonaCM.jsx";
 import { HitCheckCM } from "./HitCheckCM.jsx";
@@ -587,6 +589,19 @@ export function RemotionRoot() {
         defaultProps={{}}
         calculateMetadata={({ props }) => ({
           durationInFrames: props?.radar ? scene2Duration(props) : 300,
+        })}
+      />
+      {/* 全貌動画の段の場面を1つ（場面ごとの確認用）。props: { scene, answers } */}
+      <Composition
+        id="FullPictureStep"
+        component={FullPictureStep}
+        durationInFrames={300}
+        fps={30}
+        width={1080}
+        height={1920}
+        defaultProps={{}}
+        calculateMetadata={({ props }) => ({
+          durationInFrames: props?.scene?.steps?.length ? stepTimeline(props.scene).total : 300,
         })}
       />
       <Composition

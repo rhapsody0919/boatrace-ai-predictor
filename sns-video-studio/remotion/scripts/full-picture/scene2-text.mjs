@@ -40,6 +40,8 @@ export const VOCAB = [
   "より", "まで", "中", "全体", "今日", "1着率", "順位", "当てはめない", "当てはめず", "参考", "枠順", "近く", "点の順",
   "比べられない", "値が無い", "値が無く", "材料", "差が大きい", "差が小さい", "重なる", "記録", "無い", "なし",
   "とき", "場合", "次点", "各", "3つ", "以内",
+  // 場面1（条件）
+  "全国", "連率", "逃げ率", "風", "この風", "風を問わず", "日", "R", "傾向", "会場", "未満",
   // 単位
   "秒", "%", "％", "点", "艇", "件",
 ];
@@ -66,6 +68,9 @@ export function uncovered(text, words) {
   while (end < chars.length && !ok[end]) end++;
   return chars.slice(last, end).join("");
 }
+
+/** 数字を含む決まった言い回し（facts の数として数えない） */
+const FIXED_NUMBER_PHRASES = /6艇|1着率|2番手|2連率|3連率|90日|1ポイント未満/g;
 
 /** 前の拍とつなぐ語。場面の各段の最初の拍では使えない。「同じく」「こちらも」は前の拍と同じ材料のときだけ */
 const CONNECTORS = ["一方", "さらに", "同じく", "また", "ただ", "逆に", "それに", "こちらも", "続いて"];
@@ -106,6 +111,8 @@ function allowedOf(facts) {
     if (typeof v === "object") return Object.entries(v).forEach(([k, x]) => walk(x, k));
     if (typeof v === "number") {
       nums.add(String(v));
+      // 画面と同じ小数1桁で文に出す数（72 → 72.0）
+      nums.add(v.toFixed(1));
       if (["boat", "leaders", "boats"].includes(key)) boats.add(v);
       if (["compareRanks", "todayRank", "withinRank", "todayRankRef"].includes(key)) ranks.add(`${v}位`);
       return;
@@ -165,7 +172,7 @@ export function checkLines(lines, facts, prev) {
   for (const m of rest.matchAll(/(\d+)位(?!以内)/g)) if (!ranks.has(m[0])) why.push(`facts に無い順位「${m[0]}」`);
   rest = rest.replace(/\d+位(?!以内)/g, "＿");
   // 言い回しに入る決まった数（6艇・1着率・2位以内・2番手・N項目中）は facts の数として数えない
-  rest = rest.replace(/6艇|1着率|2番手/g, "＿");
+  rest = rest.replace(FIXED_NUMBER_PHRASES, "＿");
   for (const m of rest.match(/\d+(?:\.\d+)?/g) ?? []) if (!nums.has(m)) why.push(`facts に無い数値「${m}」`);
   // 言い回し: facts の文字の値（例 準優勝戦の日）と決まった語・助詞だけで区切り切れること
   const masked = rest.replace(/\d+(?:\.\d+)?/g, "＿");
