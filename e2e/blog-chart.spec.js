@@ -161,32 +161,33 @@ test.describe("ブログの図", () => {
       .filter((v) => ["all", "01", "02", "03", "04", "22"].includes(v.key))
       .map((v) => ({ ...v, label: "あいう" })),
   };
+  // 1件で10幅を順に開くと60秒の上限に当たり、他の PR の CI を落とした（2026-10-20 #1699）。
+  // 幅ごとに1件に分ける。幅は CSS の境目（360・480・600・768/769・1024）の前後とよく使う幅（375・1440・1920）
+  const CLS_WIDTHS = [320, 360, 375, 481, 600, 768, 769, 1024, 1440, 1920];
   for (const [name, chart] of [
     ["契約の例", example],
     ["字数の上限・選ぶ箱", longest],
     ["字数の上限・ボタン6つ", longestButtons],
   ]) {
-    test(`本文が出た最初の描画で図も出ていて、後から図の高さが変わらない（CLS、${name}）`, async ({
-      page,
-    }) => {
-      // 本文（.blog-post-content）が DOM に入った瞬間の、図の状態と図の高さを記録する。
-      // 下の段落の位置で比べると、図より上の要素（CI の Linux でのフォントの差し替え等）の動きも拾って
-      // 図と関係なく落ちる（2026-10-20 CI の 481px で 7.6px）。図が原因の動きは図の高さの変化で見る
-      await page.addInitScript(() => {
-        const observer = new MutationObserver(() => {
-          const content = document.querySelector(".blog-post-content");
-          if (!content || window.__firstPaint) return;
-          const figure = content.querySelector("figure.blog-chart");
-          window.__firstPaint = {
-            chartState: figure?.dataset.chartState ?? null,
-            height: figure ? figure.getBoundingClientRect().height : null,
-          };
+    for (const width of CLS_WIDTHS) {
+      test(`本文が出た最初の描画で図も出ていて、後から図の高さが変わらない（CLS、${name}、${width}px）`, async ({
+        page,
+      }) => {
+        // 本文（.blog-post-content）が DOM に入った瞬間の、図の状態と図の高さを記録する。
+        // 下の段落の位置で比べると、図より上の要素（CI の Linux でのフォントの差し替え等）の動きも拾って
+        // 図と関係なく落ちる（2026-10-20 CI の 481px で 7.6px）。図が原因の動きは図の高さの変化で見る
+        await page.addInitScript(() => {
+          const observer = new MutationObserver(() => {
+            const content = document.querySelector(".blog-post-content");
+            if (!content || window.__firstPaint) return;
+            const figure = content.querySelector("figure.blog-chart");
+            window.__firstPaint = {
+              chartState: figure?.dataset.chartState ?? null,
+              height: figure ? figure.getBoundingClientRect().height : null,
+            };
+          });
+          observer.observe(document, { childList: true, subtree: true });
         });
-        observer.observe(document, { childList: true, subtree: true });
-      });
-      for (const width of [
-        320, 360, 375, 481, 600, 768, 769, 1024, 1440, 1920,
-      ]) {
         await page.setViewportSize({ width, height: 900 });
         await stubArticle(page, { chart, chartDelay: 500 });
         await page.goto(`/blog/${ARTICLE}`);
@@ -195,16 +196,16 @@ test.describe("ブログの図", () => {
           "ready",
         );
         const first = await page.evaluate(() => window.__firstPaint);
-        expect(first.chartState, `${width}px: 最初の描画の図`).toBe("ready");
+        expect(first.chartState, "最初の描画の図").toBe("ready");
         const afterHeight = await chartLocator(page).evaluate(
           (el) => el.getBoundingClientRect().height,
         );
         expect(
           Math.abs(afterHeight - first.height),
-          `${width}px: 図の高さの変化`,
+          "図の高さの変化",
         ).toBeLessThanOrEqual(1);
-      }
-    });
+      });
+    }
   }
 
   test("8字の行のラベルも棒に隠れず、全行で棒の始まりがそろう", async ({
@@ -256,10 +257,11 @@ test.describe("ブログの図", () => {
     );
   });
 
-  test("375〜1920px で図が横にはみ出さず、値の文字がカードの中に収まる", async ({
-    page,
-  }) => {
-    for (const width of [375, 768, 1024, 1440, 1920]) {
+  // 幅ごとに1件（1件で全幅を順に開くと CI で60秒の上限に近づく。2026-10-20 #1699）
+  for (const width of [375, 768, 1024, 1440, 1920]) {
+    test(`${width}px で図が横にはみ出さず、値の文字がカードの中に収まる`, async ({
+      page,
+    }) => {
       await page.setViewportSize({ width, height: 900 });
       await stubArticle(page);
       await page.goto(`/blog/${ARTICLE}`);
@@ -279,8 +281,8 @@ test.describe("ブログの図", () => {
           `${width}px: 値「${await v.textContent()}」がカードの右端を越える`,
         ).toBeLessThanOrEqual(box.x + box.width);
       }
-    }
-  });
+    });
+  }
 
   test("ダークでも棒と値の文字が見える（値の文字は意味のトークン）", async ({
     page,
