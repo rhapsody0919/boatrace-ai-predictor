@@ -321,38 +321,46 @@ const JUDGEMENT_STRIP_RE = new RegExp(
   "[*_~`\\s\\u{200B}-\\u{200D}\\u{FEFF}\\u{2060}]",
   "gu",
 );
+// 空白で隣り合う数がつながらないよう（「R1 150%」が 1150% にならないよう）、数と数の間の空白は区切りの | にしてから消す
 export const normalizeForJudgement = (s) =>
-  decodeEntities(s).normalize("NFKC").replace(JUDGEMENT_STRIP_RE, "");
+  decodeEntities(s)
+    .normalize("NFKC")
+    .replace(/([0-9])\s+(?=[0-9])/gu, "$1|")
+    .replace(JUDGEMENT_STRIP_RE, "");
 
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeClassChar = (c) => c.replace(/[\\\]^-]/g, "\\$&");
 
 /**
  * 回収率の主張（100% 以上・1倍以上）を正規化した文から探す。
- * 「回収率」＋最大 gapMax 字＋数（コンマ可）＋%・パーセント・倍、と、数＋%・パーセント・倍＋最大 reverseGapMax 字＋「回収率」。
- * 間の字に数字は含めない（別の数をまたがない）。漢数字・払戻率・ROI は対象外
+ * - 「回収率」＋最大 gapMax 字＋数（コンマ可）＋%・パーセント
+ * - 「回収率」＋最大 timesGapMax 字＋数＋倍（倍は回収率の後だけ。オッズの「1.2倍」を拾わない）
+ * - 数＋%・パーセント＋最大 reverseGapMax 字＋「回収率」（逆の語順は倍を受けない）
+ * 間の字に数字と区切り（rate.gapStopChars。文・列・箇条の区切り）は含めない（別の数・別の文をまたがない）。
+ * 数の直後が 未満・以下・(を)切・(を)下回 なら主張とみなさない。漢数字・払戻率・ROI は対象外
  */
 export function findRateClaims(norm, rate) {
   if (!rate) return [];
-  const kw = rate.keywords.map(escapeRe).join("|");
+  const kw = `(?:${rate.keywords.map(escapeRe).join("|")})`;
+  const stop = [...(rate.gapStopChars ?? "")].map(escapeClassChar).join("");
+  const gap = (max) => `[^0-9${stop}]{0,${max}}?`;
   const num = "([0-9][0-9,]*(?:\\.[0-9]+)?)";
-  const unit = "(%|パーセント|倍)";
-  const forward = new RegExp(
-    `(?:${kw})[^0-9]{0,${rate.gapMax}}?${num}${unit}`,
-    "gu",
-  );
-  const reverse = new RegExp(
-    `${num}${unit}[^0-9]{0,${rate.reverseGapMax}}?(?:${kw})`,
-    "gu",
-  );
-  const isClaim = (n, u) => {
-    const v = Number(n.replace(/,/g, ""));
-    return u === "倍" ? v >= rate.timesMin : v >= rate.percentMin;
-  };
+  const notBelow = "(?!未満|以下|を?切|を?下回)";
+  const patterns = [
+    [
+      `${kw}${gap(rate.gapMax)}${num}(?:%|パーセント)${notBelow}`,
+      rate.percentMin,
+    ],
+    [`${kw}${gap(rate.timesGapMax)}${num}倍${notBelow}`, rate.timesMin],
+    [
+      `${num}(?:%|パーセント)${notBelow}${gap(rate.reverseGapMax)}${kw}`,
+      rate.percentMin,
+    ],
+  ];
   const hits = [];
-  for (const m of norm.matchAll(forward))
-    if (isClaim(m[1], m[2])) hits.push(m[0]);
-  for (const m of norm.matchAll(reverse))
-    if (isClaim(m[1], m[2])) hits.push(m[0]);
+  for (const [src, min] of patterns)
+    for (const m of norm.matchAll(new RegExp(src, "gu")))
+      if (Number(m[1].replace(/,/g, "")) >= min) hits.push(m[0]);
   return hits;
 }
 
