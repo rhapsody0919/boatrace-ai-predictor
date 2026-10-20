@@ -23,6 +23,8 @@
 - サービス名は「龍神レーダー」（Ryujin Radar）、サブタイトルは「無料のボートレースAI予想＆データ分析」。ドメイン boat-ai.jp は維持し、表示の名前だけを変えた。「龍神杯」は蒲郡の公式大会名と重なる（2026-08-19 ユーザー決定、memory boatai_rebrand_investigation_2026_08_19）
 - 類似レースの機能名は「龍神ソナー」（旧名アナロジー・ファインダー。docs/design/analogy-finder/ 等のパスには旧名が残る）（2026-10-06、memory feedback_boa271_ui_details_user_decides、BOA-271）
 - ボートレースの「勝率」は着順点の平均で、1着の割合ではない。1着の割合は「1着率」と書く（2026-09-25、memory morning_data_digest_2026_09_25、BOA-402）
+- 本編で「1着割合」を使っていても、関連記事の表示ラベルへ旧タイトルの「勝率」をコピーすると区別が崩れる。リンクの表示文も確認する（2026-10-13、2026-10-13-plan-review-20261013-30.md）
+- 用語集の「統一済み」追記は、文書としての本文一致とコードへの反映確認を別条件にする（2026-10-13、2026-10-13-task-74-check-codex-patches.md・2026-10-16-codex-direct-pr-design.md）
 
 ## 用語の対訳
 - 4言語の用語は docs/reference/i18n-glossary.md が正本。新しい用語は glossary に足してから訳す（.claude/rules/i18n-new-pages.md）

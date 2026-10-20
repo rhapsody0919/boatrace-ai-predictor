@@ -1,0 +1,42 @@
+{
+ "meta": {
+  "dimensions": [
+   "device"
+  ],
+  "rowCount": 3,
+  "apiPages": 1,
+  "possiblyTruncated": false,
+  "responseAggregationType": "byProperty",
+  "totalClicks": 2591,
+  "totalImpressions": 51094
+ },
+ "rows": [
+  {
+   "keys": [
+    "MOBILE"
+   ],
+   "clicks": 2374,
+   "impressions": 46193,
+   "ctr": 0.051393068213798625,
+   "position": 7.136600783668521
+  },
+  {
+   "keys": [
+    "DESKTOP"
+   ],
+   "clicks": 141,
+   "impressions": 3927,
+   "ctr": 0.03590527119938885,
+   "position": 11.064171122994653
+  },
+  {
+   "keys": [
+    "TABLET"
+   ],
+   "clicks": 76,
+   "impressions": 974,
+   "ctr": 0.07802874743326489,
+   "position": 6.816221765913758
+  }
+ ]
+}
