@@ -12,6 +12,7 @@
  * リポジトリは PUBLIC で Actions のログは外から見えるので、失敗の文にファイルのパスを入れない（バケット名と件数だけ）。
  */
 import { createHash } from "node:crypto";
+import { amzDate, sha256Hex } from "./awsSigV4.js";
 
 /** 写す元のバケット。analogy-v16 は作り直せて量が大きいので写さない（ADR-0098） */
 export const SOURCE_BUCKETS = Object.freeze([
@@ -35,18 +36,14 @@ export const MASS_GONE_MIN = 10;
 export const RUN_LIMITS = Object.freeze({ maxFetch: 500, maxBytes: 200e6 });
 
 /** `20261021T194000Z`（キーに使う） */
-export const runStamp = (date) =>
-  date
-    .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\.\d{3}/, "");
+export const runStamp = amzDate;
 
 export const sourceKey = (bucket, path) => `${bucket}/${path}`;
 export const objectKey = (key) => `objects/${key}`;
 export const versionKey = (stamp, key) => `versions/${stamp}/${key}`;
 export const manifestKey = (stamp) => `${MANIFEST_PREFIX}${stamp}.json.gz`;
 
-export const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
+export const sha256 = sha256Hex;
 export const md5Base64 = (buf) =>
   createHash("md5").update(buf).digest("base64");
 
@@ -134,7 +131,8 @@ export async function mapPool(items, n, fn) {
 
 /**
  * 1つのファイルを写す。中身が前の版と同じなら書かない。元で見つからなければ { gone: true }。
- * 既にあるキー（412）は、R2 の x-amz-meta-sha256 が同じなら採り、違えば次の候補へ進む。
+ * known は最新の manifest（基準にしない run を含む）の同じパスの行。基準にしない run で既に書いた版と同じなら、それを採る
+ * （lock で消せない重複を作らない）。既にあるキー（412）は、R2 の x-amz-meta-sha256 が同じなら採り、違えば次の候補へ進む。
  * @returns {Promise<{entry?: object, wrote: string|null, gone?: boolean}>}
  */
 export async function mirrorOne({
@@ -142,6 +140,7 @@ export async function mirrorOne({
   file,
   bucket,
   prev,
+  known,
   stamp,
   source,
   r2,
@@ -171,6 +170,15 @@ export async function mirrorOne({
   if (prev && prev.sha256 === hash)
     return {
       entry: { ...base, r2Key: prev.r2Key, firstSeen: prev.firstSeen },
+      wrote: null,
+    };
+  if (known && known.sha256 === hash && known.r2Key)
+    return {
+      entry: {
+        ...base,
+        r2Key: known.r2Key,
+        firstSeen: prev?.firstSeen ?? known.firstSeen ?? stamp,
+      },
       wrote: null,
     };
   const candidates = prev
@@ -203,7 +211,7 @@ export async function mirrorOne({
  *           now: Date, buckets?: readonly string[], concurrency?: number, initial?: boolean, acceptGone?: boolean,
  *           limits?: {maxFetch: number, maxBytes: number}, log?: (s: string) => void }} deps
  *   initial    初回（基準の manifest が無いときだけ。あれば拒む）。取り寄せの上限を外す
- *   acceptGone 大量の削除を「消したのは正しい」と認め、この run を基準にする（手での起動の入力）
+ *   acceptGone 大量の削除を「消したのは正しい」と認め、この run を基準にする（手での起動の入力）。取り寄せの上限も外す
  */
 export async function runMirror({
   source,
@@ -231,6 +239,11 @@ export async function runMirror({
   if (base && initial)
     throw new Error("既に manifest があるので initial は付けない");
   const prevEntries = base?.manifest.entries ?? {};
+  // 最新の manifest（基準にしない run でも）。そこで既に書いた版を重ねて書かないため
+  const latestEntries =
+    keys.length && keys[0] !== base?.key
+      ? (await r2.getManifest(keys[0])).entries
+      : prevEntries;
   log(
     base
       ? `基準の manifest: ${base.key}（${Object.keys(prevEntries).length}件）`
@@ -287,8 +300,10 @@ export async function runMirror({
   // 2. 量の上限（書く前に止める）
   const fetchAll = Object.values(listed).flatMap((l) => l.fetch);
   const fetchBytes = fetchAll.reduce((a, f) => a + (f.file.size ?? 0), 0);
+  // accept_gone は人が確かめて起動するので外す（基準にしない日が続くと、古い基準との差が上限を超え、基準を進められなくなる）
   if (
     !initial &&
+    !acceptGone &&
     (fetchAll.length > limits.maxFetch || fetchBytes > limits.maxBytes)
   )
     throw new Error(
@@ -306,6 +321,7 @@ export async function runMirror({
         file,
         bucket,
         prev: prevEntries[key],
+        known: latestEntries[key],
         stamp,
         source,
         r2,
@@ -349,6 +365,9 @@ export async function runMirror({
       );
     }
   }
+
+  // 初回で写し損ねがあれば基準にしない（次も initial で始め直す。空に近い基準から毎日上限で落ちないため）
+  if (initial && failures.length) baseline = false;
 
   // 4. manifest（変わらない日は書かない）
   const changed =

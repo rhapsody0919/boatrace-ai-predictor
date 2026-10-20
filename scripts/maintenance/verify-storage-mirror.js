@@ -435,6 +435,93 @@ const SECRET_PATH = "未投稿の企画/秘密 name.mp4";
   );
 }
 
+// 基準にしない run の後の重複・上限・初回の失敗（/code-review の指摘の再現テスト）
+{
+  const { r2, store } = fakeR2();
+  const src = fakeSource({
+    "sns-hub-media": {},
+    "raw-pages": many("p", 20),
+    analogy: many("a", 2),
+  });
+  await runMirror({ source: src, r2, now: t(21), initial: true });
+  // 大量の削除の日に、残ったファイルの中身も変わる
+  src.files["raw-pages"] = Object.fromEntries(
+    Object.entries(src.files["raw-pages"]).slice(0, 3),
+  );
+  src.files["raw-pages"]["p/0.gz"] = {
+    body: Buffer.from("changed"),
+    type: "application/gzip",
+    v: 2,
+  };
+  const a = await runMirror({ source: src, r2, now: t(22) });
+  const b = await runMirror({ source: src, r2, now: t(23) });
+  const versionsOf0 = [...store.keys()].filter(
+    (k) => k.startsWith("versions/") && k.endsWith("raw-pages/p/0.gz"),
+  );
+  check(
+    "基準にしない run の翌日も、同じ中身の版を重ねて書かない",
+    a.baseline === false && b.baseline === false && versionsOf0.length === 1,
+    versionsOf0.join(","),
+  );
+
+  // 基準にしない日が続いて上限を超えても、accept_gone で基準を進められる
+  src.files["raw-pages"] = { ...src.files["raw-pages"], ...many("n", 4) };
+  let err = null;
+  await runMirror({
+    source: src,
+    r2,
+    now: t(24),
+    limits: { maxFetch: 2, maxBytes: 1e9 },
+  }).catch((e) => (err = e));
+  const c = await runMirror({
+    source: src,
+    r2,
+    now: t(25),
+    acceptGone: true,
+    limits: { maxFetch: 2, maxBytes: 1e9 },
+  });
+  check(
+    "上限を超えていても accept_gone の run は止めない",
+    /上限/.test(err?.message ?? "") &&
+      c.failures.length === 0 &&
+      c.baseline === true,
+    c.failures.join(" / "),
+  );
+}
+{
+  const { r2 } = fakeR2();
+  const src = fakeSource({
+    "sns-hub-media": {},
+    "raw-pages": many("p", 3),
+    analogy: {},
+  });
+  src.listError = "raw-pages";
+  const a = await runMirror({ source: src, r2, now: t(21), initial: true });
+  src.listError = null;
+  let err = null;
+  const b = await runMirror({
+    source: src,
+    r2,
+    now: t(22),
+    initial: true,
+  }).catch((e) => (err = e));
+  check(
+    "初回で写し損ねたら基準にせず、次も initial で始め直せる",
+    a.baseline === false &&
+      !err &&
+      b.failures.length === 0 &&
+      b.baseline === true,
+    err?.message,
+  );
+}
+{
+  const m = read("scripts/storage-mirror/mirror.js");
+  check(
+    "mirror.js は起動の判定を置かず main を呼ぶ（外れて何もせず success にならない）",
+    /^main\(\)\.catch/m.test(m) && !/import\.meta\.url/.test(m),
+  );
+}
+
 // 412 からの復旧（前の run が manifest を書く前に落ちた）
 {
   const { r2, store } = fakeR2();
@@ -571,12 +658,18 @@ const SECRET_PATH = "未投稿の企画/秘密 name.mp4";
   check(
     "写しの側の Supabase の口は一覧と GET だけ（method の指定・upload・remove・createClient・x-upsert が無い）",
     !/method\s*:|\.upload\(|\.remove\(|createClient|x-upsert/.test(sb) &&
-      /import \{ listObjects \} from "..\/..\/api\/_lib\/analogyV16.js"/.test(sb),
+      /import \{ listObjects \} from "..\/..\/api\/_lib\/analogyV16.js"/.test(
+        sb,
+      ),
   );
   check(
     "Supabase の鍵を読むのは supabase-source.js だけ",
     readdirSync(path.join(ROOT, dir))
-      .filter((f) => f.endsWith(".js") && !["supabase-source.js", "restore.js"].includes(f))
+      .filter(
+        (f) =>
+          f.endsWith(".js") &&
+          !["supabase-source.js", "restore.js"].includes(f),
+      )
       .every((f) => !/SUPABASE_/.test(read(`${dir}/${f}`))),
   );
   check("R2 に消す呼び出しを持たない", !/DELETE/.test(read(`${dir}/r2.js`)));

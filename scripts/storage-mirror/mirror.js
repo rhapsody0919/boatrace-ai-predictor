@@ -26,7 +26,7 @@ import { supabaseSource } from "./supabase-source.js";
 
 const MB = (n) => (n / 1e6).toFixed(1);
 
-export function summaryLines({ stamp, manifestKey, baseline, perBucket, failures }) {
+function summaryLines({ stamp, manifestKey, baseline, perBucket, failures }) {
   const lines = [
     `## Storage の写し（R2） ${stamp}`,
     "",
@@ -84,8 +84,8 @@ async function main() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`)
-  main().catch((e) => {
-    console.error(`::error::${e.message}`);
-    process.exit(1);
-  });
+// 起動の判定（モジュールの URL と argv の比較）は置かない。パスの符号化で外れると、何もせず exit 0（success）になる
+main().catch((e) => {
+  console.error(`::error::${e.message}`);
+  process.exit(1);
+});
