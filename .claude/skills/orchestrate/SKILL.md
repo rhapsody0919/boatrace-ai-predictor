@@ -66,7 +66,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 
 次のいずれかに当たり、条件をすべて満たす PR。
 
-- A. 画面が変わらない PR: CI が全部緑で CLEAN（承認待ちだけが理由の BLOCKED を含む。6. を参照）、レビュー結果が PR コメントにある、別ベンダーの審査（Claude の PR は Codex。止まっているときは代わりの審査）で実在する P0・P1 が0件、マージ順の制約を守っている
+- A. 画面が変わらない PR: CI が全部緑で CLEAN（承認待ちだけが理由の BLOCKED を含む。6. を参照）、レビュー結果が PR コメントにある、別ベンダーの審査（Claude の PR は Codex。止まっているときは代わりの審査）で実在する P0・P1 が0件、マージ順の制約を守っている。別ベンダーの審査には、review.yml の審査（作成の App の PR を別ベンダーの LLM が審査し、審査の App が承認する）も含める。review.yml は P0 が0件なら P1 が残っていても APPROVE するので、APPROVE があり、承認の本文の指摘に P1 が無いこと（P1 があれば実在を確かめて直す）を条件にする
 - B. 画面が変わる PR のうち、ユーザーが承認したモック・仕様の実装であるもの。A の条件に加えて次をすべて満たす
   - 承認したモックの画像が `docs/design/{slug}/mock/`（承認日つき）にあり、mock-diff-checker（`.claude/agents/mock-diff-checker.md`）が Preview と並べて「承認範囲内」と判定した
   - ファン評価ループ（review-fix-cycle.md）が終了条件を満たした
@@ -87,13 +87,13 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - 修正前は落ち、修正後は通る再現テストが同じ PR にある
   - 画面の見せ方（表示項目・配色・並び順・文言の方針）と、表示する数値の判断（集計・算出の定義）を変えない
   - .claude・CI ゲート・permission の変更、本番 DB への書き込みを伴わない
-- F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`・`public/images/blog/`・`src/data/blogImageDimensions.js`・`src/data/blogPostsEn.js` だけの PR。A の条件に加えて次をすべて満たす
-  - content-qa（`.claude/agents/content-qa.md`）の7観点で不合格が0
-  - wording-editor で P0・P1 が0
-  - ファンのレビュー（boatrace-fan-reviewer か discussion-panel）で P0・P1 が0
-  - seo-marketer で P0・P1 が0
+- F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`（翻訳のメタの `en/`・`ko/`・`zh-TW/` を含む。#1699 で移った先）・`public/images/blog/` だけの PR。画像は別の名前で足す（差し替えはオーナーが行う）。A の条件に加えて次をすべて満たす
+  - content-qa（`.claude/agents/content-qa.md`）・wording-editor・ファンのレビュー（boatrace-fan-reviewer か discussion-panel）・seo-marketer の4つの観点で審査する
+  - P0 は4つの観点のどれで出ても止める
+  - P1 は content-qa と wording-editor の分だけ止める。ファン・seo-marketer の P1 は助言として扱い、件数を PR コメントとダイジェストに記録する
+  - 4つの役を別々に呼ばず、1回の審査が観点ごとに分けて結果を出す形でもよい。役と観点の表の対応は契約に固定する（どの文書に置くかは ③ のレーンと hq で決める）
   - 本文の数値を出典（DB・分析結果・公式）と照合済み
-  - どれかで P0・P1 が出たら直して、そのレビューを回し直す
+  - 止まる指摘が出たら直して、その観点の審査を回し直す
   - 判断が要るもの（事業・法務・ブランドの表記、「競艇」の例外、誇大・的中率・回収率の表現、原稿の主張を変える改稿）は F に当たらず、ユーザーに回す
   - sns-hub（SNS 投稿）とは別の扱い。SNS 投稿の最終送信は引き続きユーザーの承認（全貌動画と /today の X 投稿は例外。全貌動画は機械の検査と評価役の検査で P0 が0件なら、/today の X 投稿は機械の検査が通れば自動で送る。`.claude/CLAUDE.md`「確認のバッチ化を標準運用にする」）
 
@@ -113,7 +113,7 @@ Codex が実装して `codex/` のブランチから出した PR は、次のと
 
 - **審査は Claude が行う**。鍵を持つ側で `claude -p` を Bash なしで実行し、差分を AGENTS.md の観点で審査する。Codex の PR 本文にある自己検証の結果は、合否の根拠にしない
 - **src/ の画面の作業は Codex に回さない**。`codex/*` には Vercel Preview が無く、画面を確かめられないため
-- **マージは当面「案Z」**: 機械と審査役が CI の見張り・失敗したときの再実行（1回まで）・審査を済ませ、P0・P1 が0件で CI が全部緑の PR を「マージ可」として束ね、オーケストレーターがまとめてマージする。束に入れてよいのは、上の段階0（A〜E）の条件に当たる PR だけ。当たらないものは段階1・2として扱う
+- **マージは当面「案Z」**: 機械と審査役が CI の見張り・失敗したときの再実行（1回まで）・審査を済ませ、P0・P1 が0件で CI が全部緑の PR を「マージ可」として束ね、オーケストレーターがまとめてマージする。束に入れてよいのは、上の段階0（A〜F）の条件に当たる PR だけ。ただし F は切替（ADR-0097。作成の App の名義と auto-merge）の後だけ。F の束はマージの時点で判定し直す（作者の bot の ID、今の head SHA に審査の App の APPROVE、変えたパスが F の許可のパスの中、CI が全部緑）。CI が赤なら空のコミットで1回だけ再実行してから決める。`codex/*` には Vercel Preview が無いので、Codex の記事の PR のファンのレビューは discussion-panel だけで行う。当たらないものは段階1・2として扱う
 - 再実行しても CI が落ちる PR は束に入れず、Codex に直させる（AGENTS.md「自分の PR の CI が落ちたら、直して同じブランチに push する」）
 - 自動マージをどの名義で行うかは未決（オーナーに確認中）。決まるまでは、オーケストレーターがこのセッションから `gh pr merge` を実行する
 

@@ -253,6 +253,10 @@
       "schedule": "30 17 * * *"
     },
     {
+      "path": "/api/cron/db-apply-dispatch",
+      "schedule": "17 * * * *"
+    },
+    {
       "path": "/api/cron/in-caution-health",
       "schedule": "30 19 * * *"
     },

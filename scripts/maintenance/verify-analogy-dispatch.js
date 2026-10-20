@@ -9,6 +9,9 @@
  *   (e) v16 の朝のバッチ（T2-5b）: analogy-v16-morning.yml を起動する。7:40 の起動だけ、出走表の段が無い今日のレース
  *       （締切まで10分以上・中止でない）があるときに起動し、ほかの起動は常に起動する。配線（レジストリ・api/cron・vercel.json）
  *   (f) BOA-822 イン崩れ注意度の夜の表（in-caution-nightly.yml）: inputs 空で起動、配線（レジストリ・api/cron・vercel.json の JST 2:30・workflow の concurrency）
+ *   (g) ADR-0097 db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile、scripts/lib/dbApplyDispatch.js）: inputs、
+ *       見張り（live の最初の起動から3時間を過ぎ、直近3時間に reconcile の job が success で終わった run が無ければ、起動した上で失敗）、
+ *       配線（レジストリ・api/cron・vercel.json の毎時17分・db-apply.yml の予備の schedule 47分と mode の choice）
  *
  * 使い方: node scripts/maintenance/verify-analogy-dispatch.js
  */
@@ -21,6 +24,10 @@ import {
   morningRetryNeeded,
   morningShouldDispatch,
 } from "../lib/analogyDispatch.js";
+import {
+  STALE_AFTER_MS,
+  createDbApplyDispatchRun,
+} from "../lib/dbApplyDispatch.js";
 import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
 import { evaluateJobStates } from "../lib/scrapeJobs/monitor.js";
 
@@ -363,6 +370,265 @@ const run = (f, env = ENV) =>
   );
 }
 
+// ---------------------------------------------------------------- (g)
+{
+  const now = at("12:17");
+  const hoursAgo = (h) =>
+    new Date(now.getTime() - h * 3600 * 1000).toISOString();
+  // GitHub の偽物: POST は dispatch、GET は runs・jobs を返す
+  const fakeGh = ({
+    runs = [],
+    jobsOf = {},
+    getStatus = 200,
+    hang = false,
+  } = {}) => {
+    const calls = [];
+    const f = async (url, init = {}) => {
+      calls.push({ url, init });
+      if (init.method === "POST")
+        return { ok: true, status: 204, text: async () => "" };
+      // GitHub が返らない: 期限（signal）で打ち切られるまで待つ。本物のソケットの代わりに、プロセスを生かすタイマーを置く
+      // （AbortSignal.timeout のタイマーは unref なので、これが無いと打ち切りの前にプロセスが終わる）。打ち切られなければ5秒で失敗
+      if (hang)
+        return new Promise((_, reject) => {
+          const keep = setTimeout(
+            () => reject(new Error("打ち切られなかった")),
+            5000,
+          );
+          init.signal?.addEventListener("abort", () => {
+            clearTimeout(keep);
+            reject(new Error("timeout"));
+          });
+        });
+      const jobsOfRun = /\/runs\/(\d+)\/jobs/.exec(url);
+      const body = jobsOfRun
+        ? { jobs: jobsOf[jobsOfRun[1]] ?? [] }
+        : { workflow_runs: runs };
+      return {
+        ok: getStatus === 200,
+        status: getStatus,
+        json: async () => body,
+        text: async () => "boom",
+      };
+    };
+    f.calls = calls;
+    f.posts = () => calls.filter((c) => c.init.method === "POST");
+    f.gets = () => calls.filter((c) => c.init.method !== "POST");
+    return f;
+  };
+  // 前の起動（last_tick_at）は既定で1時間前（毎時の起動が続いている）
+  const ctxG = (mode, liveSince, lastTick = hoursAgo(1)) => ({
+    now: () => now,
+    client: null,
+    mode,
+    state: liveSince
+      ? { last_report: { liveSince }, last_tick_at: lastTick }
+      : null,
+  });
+  const runG = (f) => createDbApplyDispatchRun({ fetchImpl: f, env: ENV });
+  const job = (name, conclusion, completedHoursAgo) => ({
+    name,
+    conclusion,
+    completed_at:
+      completedHoursAgo == null ? null : hoursAgo(completedHoursAgo),
+  });
+
+  check(STALE_AFTER_MS === 3 * 3600 * 1000, "(g) 見張りの窓は3時間");
+
+  let f = fakeGh();
+  let r = await runG(f)(ctxG("live", null));
+  check(
+    r.outcome !== "error" &&
+      f.posts().length === 1 &&
+      f.posts()[0].url.endsWith("/workflows/db-apply.yml/dispatches") &&
+      same(JSON.parse(f.posts()[0].init.body), {
+        ref: "master",
+        inputs: { mode: "reconcile" },
+      }) &&
+      f.gets().length === 0 &&
+      r.report?.liveSince === now.toISOString(),
+    "(g) 初回の live: db-apply.yml を master・mode=reconcile で起動し、liveSince を今にする（3時間以内なので見張らない）",
+    JSON.stringify({ r, calls: f.calls.map((c) => c.url) }),
+  );
+
+  f = fakeGh();
+  r = await runG(f)(ctxG("live", hoursAgo(2)));
+  check(
+    r.outcome !== "error" &&
+      f.gets().length === 0 &&
+      r.report?.liveSince === hoursAgo(2),
+    "(g) live の最初の起動から3時間以内は見張らない（liveSince は前の値を引き継ぐ）",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({
+    runs: [{ id: 11 }, { id: 10 }],
+    jobsOf: {
+      11: [job("reconcile", "skipped", 0.1)],
+      10: [job("reconcile", "success", 1), job("judge", "skipped", 1)],
+    },
+  });
+  r = await runG(f)(ctxG("live", hoursAgo(5)));
+  const runsUrl = decodeURIComponent(f.gets()[0]?.url ?? "");
+  check(
+    r.outcome !== "error" &&
+      f.posts().length === 1 &&
+      runsUrl.includes(
+        `/workflows/db-apply.yml/runs?created=>=${hoursAgo(3)}`,
+      ) &&
+      r.report?.watch?.found === true,
+    "(g) 直近3時間に reconcile の job が success の run があれば成功（直近3時間の run を見る）",
+    JSON.stringify({ r, runsUrl }),
+  );
+
+  f = fakeGh({
+    runs: [{ id: 21 }, { id: 20 }],
+    // 21: REVIEWER_BOT_USER_ID が空で skipped（run の結論は success になる）。20: reconcile がまだ終わっていない
+    jobsOf: {
+      21: [job("reconcile", "skipped", 0.2), job("judge", "skipped", 0.2)],
+      20: [job("reconcile", null, null)],
+    },
+  });
+  r = await runG(f)(ctxG("live", hoursAgo(5)));
+  check(
+    r.outcome === "error" &&
+      /reconcile の job が success/.test(r.error) &&
+      f.posts().length === 1,
+    "(g) reconcile が skipped・未完了の run しか無ければ、起動した上で失敗にする（run の結論でなく job で数える）",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({
+    runs: [{ id: 31 }],
+    jobsOf: { 31: [job("reconcile", "success", 3.5)] },
+  });
+  r = await runG(f)(ctxG("live", hoursAgo(5)));
+  check(
+    r.outcome === "error" && f.posts().length === 1,
+    "(g) 3時間より前に終わった reconcile の成功は数えない",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({ runs: [] });
+  r = await runG(f)(ctxG("live", hoursAgo(5)));
+  check(
+    r.outcome === "error" && f.posts().length === 1,
+    "(g) 直近3時間に run が1本も無ければ失敗にする（dispatch が run を作っていない）",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({ getStatus: 403 });
+  r = await runG(f)(ctxG("live", hoursAgo(5)));
+  check(
+    r.outcome === "error" &&
+      /見張れなかった/.test(r.error) &&
+      /HTTP 403/.test(r.error) &&
+      f.posts().length === 1,
+    "(g) run を読めないときも起動はし、失敗にする（黙らない）",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({ hang: true });
+  r = await createDbApplyDispatchRun({
+    fetchImpl: f,
+    env: ENV,
+    watchTimeoutMs: 50,
+  })(ctxG("live", hoursAgo(5)));
+  check(
+    r.outcome === "error" &&
+      /見張れなかった/.test(r.error) &&
+      f.posts().length === 1,
+    "(g) GitHub の読み取りが返らないときは期限で打ち切り、起動した上で失敗にする（関数の上限で黙らない）",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh();
+  r = await createDbApplyDispatchRun({ fetchImpl: f, env: {} })(
+    ctxG("live", hoursAgo(5)),
+  );
+  check(
+    r.outcome === "error" &&
+      /GITHUB_ACTIONS_DISPATCH_TOKEN/.test(r.error) &&
+      f.calls.length === 0,
+    "(g) トークン未設定は失敗にする",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh({ runs: [] });
+  r = await runG(f)(ctxG("live", hoursAgo(30), hoursAgo(24)));
+  check(
+    r.outcome !== "error" &&
+      f.gets().length === 0 &&
+      r.report?.liveSince === now.toISOString(),
+    "(g) off から戻したとき（前の起動が2.5時間より前）は liveSince を今にし、すぐには知らせない",
+    JSON.stringify(r),
+  );
+  f = fakeGh({ runs: [] });
+  r = await runG(f)(ctxG("live", hoursAgo(5), hoursAgo(2)));
+  check(
+    r.outcome === "error" && f.gets().length === 1,
+    "(g) 失敗が続く間（毎時の起動は来ている）は liveSince を引き継いで知らせ続ける（Vercel Cron の1回の抜けも許す）",
+    JSON.stringify(r),
+  );
+
+  f = fakeGh();
+  r = await runG(f)(ctxG("shadow", hoursAgo(5)));
+  check(
+    r.report?.wouldDispatch === true &&
+      f.calls.length === 0 &&
+      r.report?.liveSince === undefined,
+    "(g) shadow は起動も見張りもしない（liveSince を残さないので、live にした時点から3時間を数え直す）",
+    JSON.stringify(r),
+  );
+
+  const def = SCRAPE_JOBS.db_apply_dispatch;
+  check(
+    def?.kind === "monitor" && def.failureAlertAfter === 1,
+    "(g) db_apply_dispatch: monitor・failureAlertAfter 1",
+  );
+  const src = fs.readFileSync(
+    path.join(ROOT, "api/cron/db-apply-dispatch.js"),
+    "utf8",
+  );
+  check(
+    Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
+      /modeGated:\s*true/.test(src) &&
+      src.includes('job: "db_apply_dispatch"') &&
+      src.includes("createDbApplyDispatchRun()"),
+    "(g) api/cron/db-apply-dispatch.js: maxDuration がレジストリと一致し、モードのゲートを掛ける",
+  );
+  const vercel = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+  );
+  const crons = vercel.crons
+    .filter((c) => c.path === "/api/cron/db-apply-dispatch")
+    .map((c) => c.schedule);
+  check(
+    same(crons, ["17 * * * *"]),
+    "(g) vercel.json: 毎時17分に1本",
+    JSON.stringify(crons),
+  );
+  const wf = fs.readFileSync(
+    path.join(ROOT, ".github/workflows/db-apply.yml"),
+    "utf8",
+  );
+  const schedules = [...wf.matchAll(/^ {4}- cron: "([^"]+)"$/gm)].map(
+    (m) => m[1],
+  );
+  check(
+    same(schedules, ["47 * * * *"]),
+    "(g) db-apply.yml の schedule は予備の毎時47分だけ（dispatch の17分と重ねない。重なると互いを busy と見て両方とも何もしない）",
+    JSON.stringify(schedules),
+  );
+  const modeBlock = /^ {6}mode:\n((?: {8}.*\n)+)/m.exec(wf)?.[1] ?? "";
+  check(
+    /type: choice/.test(modeBlock) &&
+      /default: manual/.test(modeBlock) &&
+      /- manual\n {10}- reconcile/.test(modeBlock),
+    "(g) db-apply.yml の mode は choice（manual・reconcile）で、既定は manual（人の起動は今までどおり手で当てる）",
+    modeBlock,
+  );
+}
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の検査が失敗`);
   process.exit(1);
