@@ -322,6 +322,8 @@ check("ブランチ名が無ければ審査しない", vendorForBranch(undefined
   check("形の分からない JSON は生の本文に戻す", /rate_limit_exceeded/.test(emptyErr), emptyErr);
   const ellipsis = apiErrorSummary("OpenAI", 401, JSON.stringify({ error: { message: "key: sk-…wxyz and Xsk-proj-abcd1234", code: "invalid_api_key" } }));
   check("三点リーダの伏せ字と語の直後の鍵も伏せる", !/wxyz/.test(ellipsis) && !/abcd1234/.test(ellipsis), ellipsis);
+  const escaped = apiErrorSummary("OpenAI", 400, '{"error":{},"m":"sk-\\u2026abcd"}');
+  check("生の本文に戻したとき、JSON のエスケープのままの鍵（sk-\\u2026abcd）も伏せる", !/abcd/.test(escaped), escaped);
   check("JSON でない本文も切って出す", apiErrorSummary("OpenAI", 502, "x".repeat(1000)).length < 400);
 }
 
