@@ -1,0 +1,64 @@
+name: Storage Mirror (R2)
+
+# Supabase Storage の sns-hub-media・raw-pages・analogy を、Cloudflare R2 の1バケットへ書き足す（ADR-0098）。
+# R2 には書き足すだけ（同じパスが変わったら日付つきの別パス。消さない）。R2 のバケット全体に bucket lock。
+# Supabase は SUPABASE_SERVICE_KEY で一覧と読み取りだけ。R2 の token は1バケットの Object Read & Write で、prod-jobs にだけ置く。
+#
+# 見張り:
+#   落ちたら job-watch（scripts/watch/job-watch.json の watched）が Issue にする
+#   最後に成功した時刻は、この workflow の master の run の success（hq の dashboard-alerts が gh run list で読み、2日より前なら知らせる）。
+#   1件でも写し損ねたら run を失敗にするので、success は「その時点の全部を写した」
+#
+# リポジトリは PUBLIC で、ログと Step Summary は外から見える。出すのは件数・容量・バケット名だけ（パス・R2 のアカウント ID は出さない）。
+# npm ci はしない（Node の組み込みだけで動く）。値は env 経由で渡し、run に ${{ }} を書かない。
+
+on:
+  schedule:
+    # JST 04:40 = UTC 19:40（夜の確認 03:00 の Storage の掃除の後、龍神ソナーの朝のバッチの前）
+    - cron: "40 19 * * *"
+  workflow_dispatch:
+    inputs:
+      initial:
+        description: "初回だけ（R2 に manifest がまだ無いとき。取り寄せの上限を外す）"
+        type: boolean
+        default: false
+      accept_gone:
+        description: "元の大量の削除を正しいと認め、この run を基準にする"
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: storage-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: prod-jobs
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: 写す
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          INPUT_INITIAL: ${{ inputs.initial }}
+          INPUT_ACCEPT_GONE: ${{ inputs.accept_gone }}
+        run: |
+          node --version
+          args=""
+          if [ "$INPUT_INITIAL" = "true" ]; then args="$args --initial"; fi
+          if [ "$INPUT_ACCEPT_GONE" = "true" ]; then args="$args --accept-gone"; fi
+          node scripts/storage-mirror/mirror.js $args

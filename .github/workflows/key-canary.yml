@@ -6,6 +6,7 @@ name: Key Canary
 # 同じ日の失敗分を rerun し、Issue を閉じる。secret の更新時刻は値の正しさを示さないので使わない。
 #
 # 書き込み・送信はしない（Slack の webhook は投稿しないと確かめられないので見ない）。鍵の値はログに出さない。
+# R2（Storage の写し、ADR-0098）は別の job にする。R2 の鍵の誤りで開いた Issue が、Supabase だけの成功で閉じないように。
 
 on:
   schedule:
@@ -76,3 +77,22 @@ jobs:
           if [ "$code" = "401" ]; then echo "::error::Supabase が HTTP 401 を返した（Invalid API key）"; exit 1; fi
           if [ "$code" != "200" ]; then echo "::error::Supabase が HTTP $code を返した"; exit 1; fi
           echo "Supabase OK"
+
+  r2:
+    if: github.repository == 'rhapsody0919/boatrace-ai-predictor'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod-jobs
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - name: R2（manifests/ を1件だけ一覧する）
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: node scripts/storage-mirror/canary.js
