@@ -457,7 +457,7 @@ export async function runTodayPlan(
     source_data: sourceData,
     risk_flags: risk,
   };
-  const draft = existing.draft
+  let draft = existing.draft
     ? await store.updateTodayDraft(existing.draft.id, fields)
     : await store.insertDraft({
         content_group_id: crypto.randomUUID(),
@@ -484,17 +484,31 @@ export async function runTodayPlan(
     utm_content: date,
     release_evidence: releaseEvidence,
   };
+  let variantSaved = Boolean(variant.uuid);
   try {
     await trackingStore.save(trackingRow);
   } catch (error) {
-    // 案の uuid の行が sns_template_variants にまだ無い（設定の uuid を先に入れた）ときは、札なしで保存して投稿は止めない。
-    // 札は source_data.today_variant に残っている
-    if (!variant.uuid) throw error;
+    // 案の uuid の行が sns_template_variants にまだ無い（設定の uuid を先に入れた）ときだけ、札なしで保存して投稿は止めない。
+    // 外部キー違反（PostgREST は 409）に限る。一時的な失敗は投げて次の回にやり直す（札を null に固定しない）。札は source_data.today_variant に残る
+    if (!variant.uuid || !/HTTP 409|foreign key/i.test(error.message))
+      throw error;
     console.error(
       `/today の tracking に案の札（${variant.uuid}）を入れられない。札なしで保存する: ${error.message}`,
     );
+    variantSaved = false;
     await trackingStore.save({ ...trackingRow, template_variant_id: null });
   }
+  // 案の比較（管理画面の観測の CSV・比較）は下書きの template_variant_id を読むので、下書きにも入れる（承認の前なので承認は外れない）。
+  // tracking に入った（行がある）ときだけ。入れられなければ下書きは札なしのまま（source_data.today_variant には残る）
+  if (variantSaved)
+    draft = await store
+      .updateTodayDraft(draft.id, { template_variant_id: variant.uuid })
+      .catch((error) => {
+        console.error(
+          `/today の下書きに案の札（${variant.uuid}）を入れられない: ${error.message}`,
+        );
+        return draft;
+      });
   const state = risk.length ? "held_manual" : "manual";
   const checks = {
     passed: risk.length === 0,

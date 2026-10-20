@@ -125,14 +125,17 @@ const sqlStore = {
     ),
   async updateTodayDraft(id, p) {
     const row = await first(
-      `UPDATE sns_drafts SET caption_text=$2,cover_image_path=$3,source_data=$4,risk_flags=$5
+      // PostgREST の PATCH と同じく、渡した列だけを書く
+      `UPDATE sns_drafts SET caption_text=coalesce($2,caption_text),cover_image_path=coalesce($3,cover_image_path),
+         source_data=coalesce($4,source_data),risk_flags=coalesce($5,risk_flags),template_variant_id=coalesce($6,template_variant_id)
        WHERE id=$1 AND status IN ('pending_review','approved') RETURNING *`,
       [
         id,
-        p.caption_text,
-        p.cover_image_path,
-        p.source_data,
-        JSON.stringify(p.risk_flags),
+        p.caption_text ?? null,
+        p.cover_image_path ?? null,
+        p.source_data ?? null,
+        p.risk_flags === undefined ? null : JSON.stringify(p.risk_flags),
+        p.template_variant_id ?? null,
       ],
     );
     if (!row) throw new Error("下書きを書き換えられない");
@@ -1286,6 +1289,8 @@ test("見出しの日替わり: 案の uuid が入っていれば（sns_template
   );
   assert.equal(tracking.template_variant_id, id);
   assert.equal(draft.source_data.today_variant.uuid, id);
+  // 管理画面の観測の比較は下書きの template_variant_id を読む（代わりの審査の P2）
+  assert.equal(draft.template_variant_id, id);
 });
 
 test("見出しの日替わり: 案の uuid の行が sns_template_variants に無いときは、札なしで tracking を保存し、下書き・item は作る（/code-review の指摘）", async () => {
@@ -1304,6 +1309,41 @@ test("見出しの日替わり: 案の uuid の行が sns_template_variants に�
     [draft.id],
   );
   assert.equal(tracking.template_variant_id, null);
+  assert.equal(draft.template_variant_id, null);
   assert.equal(draft.source_data.today_variant.uuid, missing);
   assert.ok(await first("SELECT id FROM sns_auto_send_items"));
+});
+
+test("見出しの日替わり: tracking の保存が一時的な失敗（HTTP 503）なら札なしで保存し直さず投げ、次の回にやり直す（代わりの審査の P3）", async () => {
+  const id = "0f88824e-c630-4f94-8c15-475297e4b242";
+  await db.query(
+    "INSERT INTO sns_template_variants(id, format, variant_name, composition_name) VALUES($1,'today_digest','today-heading-a','TodayDigestX') ON CONFLICT DO NOTHING",
+    [id],
+  );
+  const same = { id: "a", uuid: id, heading: "今日のデータ（{date}）" };
+  const variants = () => ({
+    default: "本日のデータ一覧（{date}）",
+    variants: [same, { ...same, id: "b" }],
+  });
+  const save = trackingStore.save;
+  const saved = [];
+  trackingStore.save = async (row) => {
+    saved.push(row.template_variant_id);
+    throw new Error("UTM の保存に失敗: HTTP 503");
+  };
+  try {
+    await assert.rejects(plan({ loadVariants: variants }), /HTTP 503/);
+  } finally {
+    trackingStore.save = save;
+  }
+  // 札なしで保存し直していない
+  assert.deepEqual(saved, [id]);
+  // 次の回は札つきで保存できる
+  await plan({ now: at("07:45"), loadVariants: variants });
+  const draft = await first("SELECT * FROM sns_drafts");
+  const tracking = await first(
+    "SELECT template_variant_id FROM sns_post_tracking WHERE draft_id=$1",
+    [draft.id],
+  );
+  assert.equal(tracking.template_variant_id, id);
 });
