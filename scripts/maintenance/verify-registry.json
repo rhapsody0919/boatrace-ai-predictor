@@ -1235,6 +1235,11 @@
       "guards": "ブログ画像の実寸の表（BOA-908）。JPEG のヘッダーから幅と高さを読む処理（SOF0・SOF2、DHT を取り違えない）、public/images/blog の全画像が読めること、以前の手書きの表と同じ値（抜き取り）、記事の本文と JSON の image が参照する画像がすべて表にあること、vite.config.js の仮想モジュールと BlogPost.jsx の読み込み"
     },
     {
+      "script": "verify-blog-charts.js",
+      "tier": "ci",
+      "guards": "ブログの図の契約（docs/design/blog-charts/contract.md、src/utils/blogChartContract.js）。記事の <ryujin-chart> の書き方（小文字・閉じタグ・1行・前後空行・src は /blog-charts/ の実在する JSON・rows は行の数）、JSON の形（未知のキー・counts と値の整数での照合・切り替え1つ・予約の種類・翻訳の文字）、id・article、答えの割合が本文にもあること、「競艇」・廃止語・risk-rules の語、参照されない JSON"
+    },
+    {
       "script": "verify-vercel-ignore-build.js",
       "tier": "ci",
       "guards": "vercel.json の ignoreCommand（scripts/lib/vercelIgnoreBuild.js、BOA-908）。docs・台帳・機械の再生成・ワークフローだけの変更ではビルドせず、public/blog/*.md・run-heavy.sh・src・api・ルートの data/*・risk-rules.json・作り直し（差分なし）ではビルドすること"

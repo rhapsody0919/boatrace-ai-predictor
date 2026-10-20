@@ -1,0 +1,1140 @@
+<title>ブログの図 モック v1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 龍神レーダーの既存トークン（src/styles/design-tokens.css）を写した。記事の幅 800px の中に図を置く */
+:root {
+  --surface-page: #f7f3ea; --surface-card: #fbf9f3; --border-hairline: #ddd4bf;
+  --text-primary: #0f172a; --text-secondary: #475569; --accent: #6b500f;
+  --bar: #8a6a1a; --bar-track: #ece5d3; --note-bg: #f1ead9;
+  --boat-1-bg: #ffffff; --boat-1-fg: #000000; --boat-2-bg: #000000; --boat-2-fg: #ffffff;
+  --boat-3-bg: #c62828; --boat-4-bg: #1565c0; --boat-5-bg: #fdd835; --boat-6-bg: #2e7d32;
+  --font: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --surface-page: #0d1b2e; --surface-card: #142842; --border-hairline: #24344d;
+  --text-primary: #f8fafc; --text-secondary: #cbd5e1; --accent: #c9a227;
+  --bar: #c9a227; --bar-track: #1d3150; --note-bg: #1a2e4a;
+  --boat-1-bg: #ffffff; --boat-2-bg: #000000; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --surface-page: #0d1b2e; --surface-card: #142842; --border-hairline: #24344d;
+  --text-primary: #f8fafc; --text-secondary: #cbd5e1; --accent: #c9a227;
+  --bar: #c9a227; --bar-track: #1d3150; --note-bg: #1a2e4a; color-scheme: dark; }
+body { background: var(--surface-page); color: var(--text-primary); font-family: var(--font); line-height: 1.7;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 48px; }
+.wrap { max-width: 1440px; margin: 0 auto; display: grid; gap: 40px; }
+.intro h1 { font-size: 1.4rem; margin: 0 0 4px; text-wrap: balance; }
+.intro p { margin: 0; color: var(--text-secondary); max-width: 68ch; }
+.sec-label { font-size: .75rem; letter-spacing: .08em; color: var(--accent); font-weight: 700; margin: 0 0 8px; }
+.stage { display: grid; grid-template-columns: minmax(0, 800px) 375px; gap: 40px; align-items: start; }
+@media (max-width: 1260px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.article { min-width: 0; }
+.article h2 { font-size: 1.35rem; border-bottom: 2px solid var(--border-hairline); padding-bottom: 6px; margin: 0 0 12px; }
+.article p { margin: 0 0 16px; }
+.phone { width: 100%; max-width: 375px; box-sizing: border-box; border: 1px solid var(--border-hairline); border-radius: 20px; padding: 16px; background: var(--surface-page); }
+.phone .article h2 { font-size: 1.15rem; }
+
+/* ---- 図の部品 ---- */
+.bc { margin: 24px 0; padding: 16px; background: var(--surface-card); border: 1px solid var(--border-hairline); border-radius: 8px; }
+.bc h3 { margin: 0; font-size: 1.05rem; }
+.bc-desc { margin: 4px 0 12px !important; font-weight: 600; }
+.bc-ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; min-height: 40px; }
+.bc-ctrl label { font-size: .85rem; color: var(--text-secondary); }
+.bc-ctrl select { font: inherit; font-size: .95rem; min-height: 40px; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-hairline); background: var(--surface-page); color: var(--text-primary); }
+.bc-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.bc-seg button { font: inherit; font-size: .9rem; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border-hairline); background: var(--surface-page); color: var(--text-primary); cursor: pointer; }
+.bc-seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface-card); font-weight: 700; }
+.bc-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; font-size: .8rem; }
+.bc-badges span { padding: 2px 10px; border-radius: 4px; background: var(--note-bg); color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.bc-rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bc-row { display: grid; grid-template-columns: 4.6em minmax(0, 1fr); align-items: center; gap: 8px; height: 32px; }
+.bc-label { display: flex; align-items: center; gap: 6px; font-size: .85rem; white-space: nowrap; }
+.chip { width: 22px; height: 22px; border-radius: 4px; display: inline-grid; place-items: center; font-weight: 700; font-size: .8rem; border: 1px solid var(--border-hairline); }
+.chip[data-b="1"] { background: var(--boat-1-bg); color: #000; } .chip[data-b="2"] { background: var(--boat-2-bg); color: #fff; }
+.chip[data-b="3"] { background: var(--boat-3-bg); color: #fff; } .chip[data-b="4"] { background: var(--boat-4-bg); color: #fff; }
+.chip[data-b="5"] { background: var(--boat-5-bg); color: #000; } .chip[data-b="6"] { background: var(--boat-6-bg); color: #fff; }
+.bc-track { position: relative; height: 22px; background: var(--bar-track); border-radius: 3px; margin-right: 4.2em; }
+.bc-fill { position: absolute; inset: 0 auto 0 0; background: var(--bar); border-radius: 3px; }
+.bc-val small { font-weight: 400; font-size: .75rem; color: var(--text-secondary); }
+.bc-val { position: absolute; top: 50%; transform: translateY(-50%); padding-left: 6px; font-weight: 700; font-size: .9rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bc-cap { margin-top: 12px; font-size: .75rem; color: var(--text-secondary); line-height: 1.6; }
+.bc-cap p { margin: 0 !important; }
+.bc-skel { height: var(--h); display: grid; place-items: center; color: var(--text-secondary); font-size: .85rem; }
+.bc-skel.err { color: var(--text-primary); }
+
+table.md { border-collapse: collapse; font-size: .85rem; width: 100%; font-variant-numeric: tabular-nums; }
+table.md th, table.md td { border: 1px solid var(--border-hairline); padding: 4px 8px; text-align: right; }
+table.md th:first-child, table.md td:first-child { text-align: left; }
+.tbl { overflow-x: auto; margin-bottom: 16px; }
+
+.states { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 24px; }
+.states .bc { margin: 0; }
+.decide { max-width: 900px; }
+.decide ol { padding-left: 1.4em; margin: 0; display: grid; gap: 10px; }
+.decide b { color: var(--accent); }
+.rec { font-size: .85rem; color: var(--text-secondary); }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>ブログの図 モック v1（会場の切り替え×進入コース別の1着率）</h1>
+    <p>記事の中に置いたときの見え方。左が PC（記事の幅 800px）、右がスマホ（375px）。数字は実データ（直近1年 2025-10-20〜2026-10-19、55,414レース）。会場を切り替えると、棒・値・札が替わる。棒の長さの目盛りは全会場で共通（0〜70%）なので、切り替えても比べられる。</p>
+  </div>
+
+  <div class="stage">
+    <div>
+      <p class="sec-label">PC（1440px の画面、記事の幅 800px）</p>
+      <div class="article" id="pc"></div>
+    </div>
+    <div>
+      <p class="sec-label">スマホ（375px）</p>
+      <div class="phone"><div class="article" id="sp"></div></div>
+    </div>
+  </div>
+
+  <section>
+    <p class="sec-label">ほかの状態（同じ高さで場所を取る）</p>
+    <div class="states">
+      <div id="st-seg"></div>
+      <div><figure class="bc" style="--h:520px"><div class="bc-skel">図を読み込んでいます</div></figure></div>
+      <div><figure class="bc" style="--h:520px"><div class="bc-skel err">図のデータを読み込めませんでした。ページを読み込み直してください。</div></figure></div>
+    </div>
+  </section>
+
+  <section class="decide">
+    <p class="sec-label">見せ方（ファン役4人の議論の結論。docs/design/blog-charts/fan-panel-mock-v1.md）</p>
+    <ol>
+      <li><b>棒の色</b>: 金の1色。行の印に艇の色は使わない（進入コースの図なので、白い「1」が1号艇＝枠番に読まれる）。艇の色は枠番を行にする図だけで使う。<span class="rec">割れた点: 20代女は艇の色の印を残したい、30代男女は外したい。</span></li>
+      <li><b>値の位置</b>: 棒の右端のすぐ横。<span class="rec">割れた点: 30代男は右に1列にそろえたい。縦に比べるのは本文の表で。</span></li>
+      <li><b>1着数</b>: 棒には添えない。母数は札（「2,363レース」）、1着数は本文の表。<span class="rec">割れた点: 30代男は添えたい。</span></li>
+      <li><b>切り替えの部品</b>: 選択肢が6つまではボタン、7つ以上は選ぶ箱（上の「ほかの状態」の左がボタンの形）。</li>
+      <li><b>既定の会場</b>: 記事の主題の会場（福岡の記事なら福岡）。全国は選択肢の先頭。</li>
+      <li><b>件数が少ない行</b>: 1着が30回に満たない行は、値の横に回数を小さく添える（例「0.8%（19回）」）。部品が自動で付ける（推奨）／添えない。<span class="rec">言葉の審査の指摘。福岡の6コースは19回。</span></li>
+      <li><b>作り</b>: 横棒は HTML で描く（値が文字になり、AI 向けのページにも確実に載る）。見た目は既存の部品の色・文字に合わせる。</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+const DATA = {
+  "schemaVersion": 1,
+  "id": "example-venue-course-win",
+  "article": "example",
+  "kind": "hbar",
+  "title": "進入コース別の1着率",
+  "description": "福岡は1コースの1着率が59.2%（2,363レース中1,400回）で、全国の55.5%（55,414レース中30,732回）より高い。",
+  "axes": {
+    "category": {
+      "label": "進入コース"
+    },
+    "value": {
+      "label": "1着率",
+      "unit": "%",
+      "decimals": 1
+    }
+  },
+  "rows": [
+    {
+      "key": "1",
+      "label": "1コース"
+    },
+    {
+      "key": "2",
+      "label": "2コース"
+    },
+    {
+      "key": "3",
+      "label": "3コース"
+    },
+    {
+      "key": "4",
+      "label": "4コース"
+    },
+    {
+      "key": "5",
+      "label": "5コース"
+    },
+    {
+      "key": "6",
+      "label": "6コース"
+    }
+  ],
+  "switch": {
+    "label": "会場",
+    "default": "22"
+  },
+  "views": [
+    {
+      "key": "all",
+      "label": "全国",
+      "badge": {
+        "scope": "全国",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 55414,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            55.5,
+            13.3,
+            12.9,
+            10.3,
+            6.1,
+            1.9
+          ],
+          "counts": [
+            30732,
+            7373,
+            7127,
+            5726,
+            3406,
+            1050
+          ]
+        }
+      ]
+    },
+    {
+      "key": "01",
+      "label": "桐生",
+      "badge": {
+        "scope": "桐生",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2409,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            50.8,
+            11.9,
+            13.4,
+            12.3,
+            9.1,
+            2.5
+          ],
+          "counts": [
+            1223,
+            286,
+            323,
+            297,
+            219,
+            61
+          ]
+        }
+      ]
+    },
+    {
+      "key": "02",
+      "label": "戸田",
+      "badge": {
+        "scope": "戸田",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2256,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            42.6,
+            17.5,
+            16.4,
+            13.5,
+            7.8,
+            2.3
+          ],
+          "counts": [
+            960,
+            394,
+            370,
+            304,
+            177,
+            51
+          ]
+        }
+      ]
+    },
+    {
+      "key": "03",
+      "label": "江戸川",
+      "badge": {
+        "scope": "江戸川",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2068,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            46.9,
+            16.9,
+            14.6,
+            12.1,
+            6.6,
+            2.9
+          ],
+          "counts": [
+            970,
+            349,
+            302,
+            250,
+            136,
+            61
+          ]
+        }
+      ]
+    },
+    {
+      "key": "04",
+      "label": "平和島",
+      "badge": {
+        "scope": "平和島",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 1959,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            44.3,
+            16,
+            16.9,
+            12.5,
+            7.9,
+            2.5
+          ],
+          "counts": [
+            868,
+            314,
+            331,
+            244,
+            154,
+            48
+          ]
+        }
+      ]
+    },
+    {
+      "key": "05",
+      "label": "多摩川",
+      "badge": {
+        "scope": "多摩川",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2311,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            54.3,
+            13.5,
+            12.4,
+            11,
+            6.3,
+            2.5
+          ],
+          "counts": [
+            1254,
+            312,
+            287,
+            255,
+            145,
+            58
+          ]
+        }
+      ]
+    },
+    {
+      "key": "06",
+      "label": "浜名湖",
+      "badge": {
+        "scope": "浜名湖",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2444,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            55,
+            12.8,
+            13.5,
+            10.1,
+            6.5,
+            2
+          ],
+          "counts": [
+            1345,
+            312,
+            329,
+            248,
+            160,
+            50
+          ]
+        }
+      ]
+    },
+    {
+      "key": "07",
+      "label": "蒲郡",
+      "badge": {
+        "scope": "蒲郡",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2478,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            57.6,
+            11.7,
+            11.2,
+            10.9,
+            6.3,
+            2.2
+          ],
+          "counts": [
+            1428,
+            291,
+            278,
+            271,
+            156,
+            54
+          ]
+        }
+      ]
+    },
+    {
+      "key": "08",
+      "label": "常滑",
+      "badge": {
+        "scope": "常滑",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2546,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            58,
+            13.2,
+            10.4,
+            10.5,
+            5.8,
+            2.1
+          ],
+          "counts": [
+            1476,
+            336,
+            264,
+            268,
+            148,
+            54
+          ]
+        }
+      ]
+    },
+    {
+      "key": "09",
+      "label": "津",
+      "badge": {
+        "scope": "津",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2302,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            58.2,
+            13.5,
+            11.4,
+            9.3,
+            6,
+            1.7
+          ],
+          "counts": [
+            1339,
+            310,
+            262,
+            214,
+            138,
+            39
+          ]
+        }
+      ]
+    },
+    {
+      "key": "10",
+      "label": "三国",
+      "badge": {
+        "scope": "三国",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2266,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            52.3,
+            15,
+            14.7,
+            10.3,
+            5.9,
+            1.9
+          ],
+          "counts": [
+            1185,
+            339,
+            333,
+            234,
+            133,
+            42
+          ]
+        }
+      ]
+    },
+    {
+      "key": "11",
+      "label": "びわこ",
+      "badge": {
+        "scope": "びわこ",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2193,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            54.2,
+            13.4,
+            14.4,
+            9.8,
+            6.4,
+            1.7
+          ],
+          "counts": [
+            1189,
+            294,
+            316,
+            216,
+            140,
+            38
+          ]
+        }
+      ]
+    },
+    {
+      "key": "12",
+      "label": "住之江",
+      "badge": {
+        "scope": "住之江",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2303,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            57.5,
+            13.5,
+            11.7,
+            10.1,
+            5.5,
+            1.7
+          ],
+          "counts": [
+            1324,
+            311,
+            270,
+            233,
+            127,
+            38
+          ]
+        }
+      ]
+    },
+    {
+      "key": "13",
+      "label": "尼崎",
+      "badge": {
+        "scope": "尼崎",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2402,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            60.1,
+            12.3,
+            11.3,
+            10,
+            5,
+            1.4
+          ],
+          "counts": [
+            1443,
+            295,
+            271,
+            240,
+            120,
+            33
+          ]
+        }
+      ]
+    },
+    {
+      "key": "14",
+      "label": "鳴門",
+      "badge": {
+        "scope": "鳴門",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2125,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            48.8,
+            14.6,
+            15.8,
+            11.4,
+            7.6,
+            1.8
+          ],
+          "counts": [
+            1036,
+            311,
+            335,
+            242,
+            162,
+            39
+          ]
+        }
+      ]
+    },
+    {
+      "key": "15",
+      "label": "丸亀",
+      "badge": {
+        "scope": "丸亀",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2332,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            54.8,
+            13.2,
+            12.7,
+            10,
+            7.1,
+            2.2
+          ],
+          "counts": [
+            1278,
+            308,
+            295,
+            234,
+            165,
+            52
+          ]
+        }
+      ]
+    },
+    {
+      "key": "16",
+      "label": "児島",
+      "badge": {
+        "scope": "児島",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2316,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            53.9,
+            12.5,
+            14,
+            10.8,
+            6.6,
+            2.2
+          ],
+          "counts": [
+            1248,
+            289,
+            325,
+            250,
+            152,
+            52
+          ]
+        }
+      ]
+    },
+    {
+      "key": "17",
+      "label": "宮島",
+      "badge": {
+        "scope": "宮島",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2369,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            56.5,
+            12.2,
+            13.9,
+            10.1,
+            5.7,
+            1.6
+          ],
+          "counts": [
+            1339,
+            290,
+            329,
+            240,
+            134,
+            37
+          ]
+        }
+      ]
+    },
+    {
+      "key": "18",
+      "label": "徳山",
+      "badge": {
+        "scope": "徳山",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2592,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            61.6,
+            12.3,
+            11.5,
+            8.8,
+            4.6,
+            1.2
+          ],
+          "counts": [
+            1597,
+            320,
+            299,
+            227,
+            119,
+            30
+          ]
+        }
+      ]
+    },
+    {
+      "key": "19",
+      "label": "下関",
+      "badge": {
+        "scope": "下関",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2300,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            61.6,
+            10.7,
+            12,
+            9.1,
+            4.9,
+            1.7
+          ],
+          "counts": [
+            1416,
+            247,
+            276,
+            209,
+            113,
+            39
+          ]
+        }
+      ]
+    },
+    {
+      "key": "20",
+      "label": "若松",
+      "badge": {
+        "scope": "若松",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2317,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            59.5,
+            13.2,
+            11.1,
+            9.8,
+            4.7,
+            1.7
+          ],
+          "counts": [
+            1379,
+            306,
+            257,
+            226,
+            109,
+            40
+          ]
+        }
+      ]
+    },
+    {
+      "key": "21",
+      "label": "芦屋",
+      "badge": {
+        "scope": "芦屋",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2316,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            60.5,
+            10.1,
+            10.7,
+            10.1,
+            6.6,
+            1.9
+          ],
+          "counts": [
+            1401,
+            234,
+            248,
+            234,
+            154,
+            45
+          ]
+        }
+      ]
+    },
+    {
+      "key": "22",
+      "label": "福岡",
+      "badge": {
+        "scope": "福岡",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2363,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            59.2,
+            15,
+            13.8,
+            7.6,
+            3.6,
+            0.8
+          ],
+          "counts": [
+            1400,
+            354,
+            326,
+            179,
+            85,
+            19
+          ]
+        }
+      ]
+    },
+    {
+      "key": "23",
+      "label": "唐津",
+      "badge": {
+        "scope": "唐津",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2070,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            57.2,
+            13.6,
+            12.1,
+            9.4,
+            6,
+            1.7
+          ],
+          "counts": [
+            1184,
+            281,
+            250,
+            194,
+            125,
+            36
+          ]
+        }
+      ]
+    },
+    {
+      "key": "24",
+      "label": "大村",
+      "badge": {
+        "scope": "大村",
+        "period": {
+          "from": "2025-10-20",
+          "to": "2026-10-19"
+        },
+        "sample": {
+          "value": 2377,
+          "unit": "レース"
+        }
+      },
+      "series": [
+        {
+          "key": "win1",
+          "label": "1着率",
+          "values": [
+            61,
+            12.2,
+            10.6,
+            9.1,
+            5.7,
+            1.4
+          ],
+          "counts": [
+            1450,
+            290,
+            251,
+            217,
+            135,
+            34
+          ]
+        }
+      ]
+    }
+  ],
+  "source": {
+    "name": "ボートレース公式の競走成績（龍神レーダー集計）",
+    "dataVersion": "2026-10-20",
+    "resultPath": "data/analysis/venue-course-win-rate/venue-course-win-rate.json"
+  },
+  "note": "進入コース別（枠番ではない）。中止・不成立のレースを除く。4〜6コースは1着の件数が少なく、会場の順位は年によって変わりうる。"
+};
+const AXIS_MAX = Math.ceil(Math.max(...DATA.views.flatMap(v => v.series[0].values)) / 10) * 10;
+const fmtDate = d => d.replaceAll("-", "/");
+function chart(host, data, viewKey, idSuffix) {
+  const view = data.views.find(v => v.key === viewKey);
+  const s = view.series[0];
+  const opts = data.views.map(v => `<option value="${v.key}"${v.key === viewKey ? " selected" : ""}>${v.label}</option>`).join("");
+  const seg = data.views.length <= 6;
+  const ctrl = seg
+    ? `<span class="bc-seg" role="group" aria-label="${data.switch.label}">${data.views.map(v => `<button type="button" data-k="${v.key}" aria-pressed="${v.key === viewKey}">${v.label}</button>`).join("")}</span>`
+    : `<label for="sel-${idSuffix}">${data.switch.label}</label><select id="sel-${idSuffix}">${opts}</select>`;
+  host.innerHTML = `<figure class="bc" aria-label="${view.label}の${data.title}">
+    <h3>${data.title}</h3>
+    <p class="bc-desc">${data.description}</p>
+    <div class="bc-ctrl">${ctrl}</div>
+    <div class="bc-badges" aria-live="polite"><span>${view.badge.scope}</span><span>${fmtDate(view.badge.period.from)}〜${fmtDate(view.badge.period.to)}</span><span>全${view.badge.sample.value.toLocaleString()}${view.badge.sample.unit}</span></div>
+    <ol class="bc-rows">${data.rows.map((r, i) => {
+      const w = s.values[i] / AXIS_MAX * 100;
+      return `<li class="bc-row"><span class="bc-label">${r.boat ? `<span class="chip" data-b="${r.boat}">${r.boat}</span>` : ""}${r.label}</span>
+        <span class="bc-track"><span class="bc-fill" style="width:${w}%"></span><span class="bc-val" style="left:${w}%">${s.values[i].toFixed(data.axes.value.decimals)}%${s.counts[i] < 30 ? `<small>（${s.counts[i]}回）</small>` : ""}</span></span></li>`;
+    }).join("")}</ol>
+    <figcaption class="bc-cap"><p>${data.note}</p><p>出典: ${data.source.name}（集計日 ${fmtDate(data.source.dataVersion)}）</p></figcaption>
+  </figure>`;
+  const sel = host.querySelector("select");
+  if (sel) sel.addEventListener("change", e => chart(host, data, e.target.value, idSuffix));
+  host.querySelectorAll(".bc-seg button").forEach(b => b.addEventListener("click", () => chart(host, data, b.dataset.k, idSuffix)));
+}
+function article(host, id) {
+  host.innerHTML = `<h2>福岡は1コースが強い会場か</h2>
+    <p>直近1年（2025/10/20〜2026/10/19）、福岡の1コースの1着率は59.2%（2,363レース中1,400回）。全国の55.5%（55,414レース中30,732回）より高い。会場ページの枠番別の割合（直近90日）とは、数え方と期間が違う。</p>
+    <div class="fig"></div>
+    <div class="tbl"><table class="md"><thead><tr><th>進入コース</th><th>福岡</th><th>全国</th></tr></thead><tbody>
+    ${DATA.rows.map((r, i) => `<tr><td>${r.label}</td><td>${DATA.views.find(v=>v.key==="22").series[0].values[i].toFixed(1)}%</td><td>${DATA.views.find(v=>v.key==="all").series[0].values[i].toFixed(1)}%</td></tr>`).join("")}
+    </tbody></table></div>
+    <p>（本文の続き）</p>`;
+  chart(host.querySelector(".fig"), DATA, DATA.switch.default, id);
+}
+article(document.getElementById("pc"), "pc");
+article(document.getElementById("sp"), "sp");
+const small = { ...DATA, description: "直近1年の1コースの1着率は、戸田が42.6%、福岡が59.2%、徳山が61.6%。", views: DATA.views.filter(v => ["02", "22", "18"].includes(v.key)) };
+chart(document.getElementById("st-seg"), small, "02", "seg");
+</script>
