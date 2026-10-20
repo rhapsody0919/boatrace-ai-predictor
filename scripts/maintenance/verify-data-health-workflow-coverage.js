@@ -4,7 +4,8 @@
  * （scripts/lib/dataHealth/checks.js の workflow）か、理由つきの除外（scripts/lib/dataHealth/workflowCoverage.js）に
  * 載っていることを検査する。本番DBには接続しない。.github/workflows は読むだけ。
  *
- * 見張りの一覧（scripts/watch/job-watch.json、PR #1679）との照合は、#1679 が master に入った後に足す。
+ * あわせて、prod-jobs を使う workflow が job の失敗の見張りの一覧（scripts/watch/job-watch.json の watched、PR #1679）にも
+ * 載ることを検査する（見張りと data_health の両方に登録されていること。site-freshness-watch v2 の項目2-3）。
  *
  * 確認すること:
  *   (a) 今のリポジトリで、登録の漏れ・残骸が無い
@@ -43,12 +44,15 @@ const workflows = Object.fromEntries(
     .map((f) => [f, fs.readFileSync(path.join(DIR, f), "utf8")]),
 );
 const checks = [...COUNT_CHECKS, ...MORNING_FRESHNESS_CHECKS];
+const watched = JSON.parse(
+  fs.readFileSync(path.join(ROOT, "scripts/watch/job-watch.json"), "utf8"),
+).watched;
 
 console.log("(a) 今のリポジトリ");
 {
-  const problems = findCoverageProblems({ workflows, checks });
+  const problems = findCoverageProblems({ workflows, checks, watched });
   check(
-    "prod-jobs を使う workflow は全て、鮮度の項目か理由つきの除外に載る（残骸も無い）",
+    "prod-jobs を使う workflow は全て、鮮度の項目か理由つきの除外に載り、job-watch.json の watched にも載る（残骸も無い）",
     problems.length === 0,
     problems.join("\n     "),
   );
@@ -136,6 +140,20 @@ console.log("(b) 変異");
     stale.some((p) => p.includes("c.yml") && p.includes("残骸")) &&
       stale.some((p) => p.includes("z.yml がありません")) &&
       stale.some((p) => p.includes("除外 y.yml")),
+  );
+  const unwatched = findCoverageProblems({
+    ...base,
+    watched: [".github/workflows/a.yml"],
+  });
+  check(
+    "job-watch.json の watched に無い prod-jobs の workflow を検出する（載っていれば通る）",
+    unwatched.some(
+      (p) => p.startsWith("b.yml:") && p.includes("job-watch.json"),
+    ) &&
+      findCoverageProblems({
+        ...base,
+        watched: [".github/workflows/a.yml", ".github/workflows/b.yml"],
+      }).length === 0,
   );
   const noReason = findCoverageProblems({
     ...base,

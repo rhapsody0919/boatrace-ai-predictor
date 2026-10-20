@@ -6,6 +6,7 @@
  * （scripts/maintenance/verify-data-health-workflow-coverage.js）が次を検査する:
  *   - prod-jobs を使う workflow は全て、checks.js の鮮度の項目（workflow）に載るか、下の除外に理由つきで載る
  *   - 除外・鮮度の項目に、prod-jobs を使わない（または無い）workflow が残っていない
+ *   - prod-jobs を使う workflow は全て、job の失敗の見張りの一覧（scripts/watch/job-watch.json の watched）にも載る
  *
  * 除外の kind:
  *   no_table          画面が読む表を書かない（照合・検査・通知・適用）
@@ -59,6 +60,11 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
     kind: "watched_elsewhere",
     reason:
       "in_caution_gap_band_daily は api/cron/in-caution-health.js（04:30 JST）と in-caution-today-health.js（05:45 JST）が見る",
+  },
+  "key-canary.yml": {
+    kind: "no_table",
+    reason:
+      "prod-jobs の鍵で読み取りを1回だけ試すカナリア（PR #1679）。表を書かない",
   },
   "nightly-verify-db.yml": {
     kind: "no_table",
@@ -114,15 +120,19 @@ export function usesProdJobs(yamlText) {
 
 /**
  * 登録の漏れ・残骸を返す（空なら正常）。
- * @param {{workflows: Record<string, string>, checks: ReadonlyArray<{id: string, workflow?: string}>, exclusions?: Record<string, {kind: string, reason: string}>}} input
- *   workflows はファイル名 → 本文
+ * @param {{workflows: Record<string, string>, checks: ReadonlyArray<{id: string, workflow?: string}>, exclusions?: Record<string, {kind: string, reason: string}>, watched?: ReadonlyArray<string>|null}} input
+ *   workflows はファイル名 → 本文。watched は job-watch.json の watched（.github/workflows/ からのパス）。null なら照合しない
  */
 export function findCoverageProblems({
   workflows,
   checks,
   exclusions = WORKFLOW_EXCLUSIONS,
+  watched = null,
 }) {
   const problems = [];
+  const watchedFiles = watched
+    ? new Set(watched.map((w) => w.replace(/^\.github\/workflows\//, "")))
+    : null;
   const prodJobs = Object.keys(workflows).filter((f) =>
     usesProdJobs(workflows[f]),
   );
@@ -137,6 +147,10 @@ export function findCoverageProblems({
     if (!inChecks && !inExclusions)
       problems.push(
         `${f}: prod-jobs を使うのに、data_health の鮮度の項目（checks.js の workflow）にも除外（workflowCoverage.js）にも載っていません`,
+      );
+    if (watchedFiles && !watchedFiles.has(f))
+      problems.push(
+        `${f}: prod-jobs を使うのに、job の失敗の見張り（scripts/watch/job-watch.json の watched）に載っていません`,
       );
     if (inChecks && inExclusions)
       problems.push(
