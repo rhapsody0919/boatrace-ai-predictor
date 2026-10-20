@@ -1,0 +1,8367 @@
+{
+ "generated_at": "2026-10-20T06:15:29.683Z",
+ "period_to": "2026-10-19",
+ "script": "scripts/analysis/venue-course-win-rate/count-venue-course-wins.mjs",
+ "definition": {
+  "denominator": "結果のあるレース（不成立を除く。中止・順延は結果の行が無いので入らない）",
+  "numerator": "1着艇（返還艇を除く）の実際の進入コース（公式Kファイル）",
+  "waku_reference": "1着艇の枠番（艇番）",
+  "ci": "Wilson 95%",
+  "dead_heat": "1着の同着は艇番の小さい1艇（新しい表は rank1）"
+ },
+ "max_race_date": "2026-10-19",
+ "content_sha256": "f01f823897d38a3247b7020b4a789aa9be1c260d76ad98c7d1c2cd97e7e71b89",
+ "periods": {
+  "3m": {
+   "from": "2026-07-20",
+   "to": "2026-10-19",
+   "all": {
+    "races": 14301,
+    "days": 92,
+    "not_waku_nari_races": 2608,
+    "under6_boats_races": 130,
+    "partial_refund_races": 363,
+    "dead_heat_first_races": 3,
+    "by_course": [
+     {
+      "course": 1,
+      "wins": 7849,
+      "rate": 0.5488,
+      "ci95": [
+       0.5407,
+       0.557
+      ],
+      "races_course_present": 14301,
+      "rate_if_present": 0.5488
+     },
+     {
+      "course": 2,
+      "wins": 1930,
+      "rate": 0.135,
+      "ci95": [
+       0.1295,
+       0.1407
+      ],
+      "races_course_present": 14301,
+      "rate_if_present": 0.135
+     },
+     {
+      "course": 3,
+      "wins": 1890,
+      "rate": 0.1322,
+      "ci95": [
+       0.1267,
+       0.1378
+      ],
+      "races_course_present": 14301,
+      "rate_if_present": 0.1322
+     },
+     {
+      "course": 4,
+      "wins": 1468,
+      "rate": 0.1027,
+      "ci95": [
+       0.0978,
+       0.1077
+      ],
+      "races_course_present": 14301,
+      "rate_if_present": 0.1027
+     },
+     {
+      "course": 5,
+      "wins": 895,
+      "rate": 0.0626,
+      "ci95": [
+       0.0587,
+       0.0667
+      ],
+      "races_course_present": 14301,
+      "rate_if_present": 0.0626
+     },
+     {
+      "course": 6,
+      "wins": 269,
+      "rate": 0.0188,
+      "ci95": [
+       0.0167,
+       0.0212
+      ],
+      "races_course_present": 14171,
+      "rate_if_present": 0.019
+     }
+    ],
+    "by_waku": [
+     {
+      "waku": 1,
+      "wins": 7801,
+      "rate": 0.5455
+     },
+     {
+      "waku": 2,
+      "wins": 1937,
+      "rate": 0.1354
+     },
+     {
+      "waku": 3,
+      "wins": 1875,
+      "rate": 0.1311
+     },
+     {
+      "waku": 4,
+      "wins": 1409,
+      "rate": 0.0985
+     },
+     {
+      "waku": 5,
+      "wins": 859,
+      "rate": 0.0601
+     },
+     {
+      "waku": 6,
+      "wins": 420,
+      "rate": 0.0294
+     }
+    ],
+    "max_abs_diff_course_vs_waku_pt": 1.06
+   },
+   "venues": {
+    "10": {
+     "name": "三国",
+     "races": 645,
+     "days": 54,
+     "not_waku_nari_races": 112,
+     "under6_boats_races": 5,
+     "partial_refund_races": 11,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 352,
+       "rate": 0.5457,
+       "ci95": [
+        0.5072,
+        0.5838
+       ],
+       "races_course_present": 645,
+       "rate_if_present": 0.5457
+      },
+      {
+       "course": 2,
+       "wins": 85,
+       "rate": 0.1318,
+       "ci95": [
+        0.1078,
+        0.1601
+       ],
+       "races_course_present": 645,
+       "rate_if_present": 0.1318
+      },
+      {
+       "course": 3,
+       "wins": 103,
+       "rate": 0.1597,
+       "ci95": [
+        0.1334,
+        0.19
+       ],
+       "races_course_present": 645,
+       "rate_if_present": 0.1597
+      },
+      {
+       "course": 4,
+       "wins": 63,
+       "rate": 0.0977,
+       "ci95": [
+        0.0771,
+        0.123
+       ],
+       "races_course_present": 645,
+       "rate_if_present": 0.0977
+      },
+      {
+       "course": 5,
+       "wins": 34,
+       "rate": 0.0527,
+       "ci95": [
+        0.038,
+        0.0728
+       ],
+       "races_course_present": 645,
+       "rate_if_present": 0.0527
+      },
+      {
+       "course": 6,
+       "wins": 8,
+       "rate": 0.0124,
+       "ci95": [
+        0.0063,
+        0.0243
+       ],
+       "races_course_present": 640,
+       "rate_if_present": 0.0125
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 350,
+       "rate": 0.5426
+      },
+      {
+       "waku": 2,
+       "wins": 87,
+       "rate": 0.1349
+      },
+      {
+       "waku": 3,
+       "wins": 93,
+       "rate": 0.1442
+      },
+      {
+       "waku": 4,
+       "wins": 68,
+       "rate": 0.1054
+      },
+      {
+       "waku": 5,
+       "wins": 33,
+       "rate": 0.0512
+      },
+      {
+       "waku": 6,
+       "wins": 14,
+       "rate": 0.0217
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.55,
+     "cancelled_confirmed": 3
+    },
+    "11": {
+     "name": "びわこ",
+     "races": 576,
+     "days": 48,
+     "not_waku_nari_races": 58,
+     "under6_boats_races": 3,
+     "partial_refund_races": 10,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 333,
+       "rate": 0.5781,
+       "ci95": [
+        0.5374,
+        0.6178
+       ],
+       "races_course_present": 576,
+       "rate_if_present": 0.5781
+      },
+      {
+       "course": 2,
+       "wins": 74,
+       "rate": 0.1285,
+       "ci95": [
+        0.1036,
+        0.1583
+       ],
+       "races_course_present": 576,
+       "rate_if_present": 0.1285
+      },
+      {
+       "course": 3,
+       "wins": 74,
+       "rate": 0.1285,
+       "ci95": [
+        0.1036,
+        0.1583
+       ],
+       "races_course_present": 576,
+       "rate_if_present": 0.1285
+      },
+      {
+       "course": 4,
+       "wins": 50,
+       "rate": 0.0868,
+       "ci95": [
+        0.0665,
+        0.1126
+       ],
+       "races_course_present": 576,
+       "rate_if_present": 0.0868
+      },
+      {
+       "course": 5,
+       "wins": 32,
+       "rate": 0.0556,
+       "ci95": [
+        0.0396,
+        0.0774
+       ],
+       "races_course_present": 576,
+       "rate_if_present": 0.0556
+      },
+      {
+       "course": 6,
+       "wins": 13,
+       "rate": 0.0226,
+       "ci95": [
+        0.0132,
+        0.0382
+       ],
+       "races_course_present": 573,
+       "rate_if_present": 0.0227
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 333,
+       "rate": 0.5781
+      },
+      {
+       "waku": 2,
+       "wins": 73,
+       "rate": 0.1267
+      },
+      {
+       "waku": 3,
+       "wins": 72,
+       "rate": 0.125
+      },
+      {
+       "waku": 4,
+       "wins": 49,
+       "rate": 0.0851
+      },
+      {
+       "waku": 5,
+       "wins": 34,
+       "rate": 0.059
+      },
+      {
+       "waku": 6,
+       "wins": 15,
+       "rate": 0.026
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.35,
+     "cancelled_confirmed": 0
+    },
+    "12": {
+     "name": "住之江",
+     "races": 588,
+     "days": 49,
+     "not_waku_nari_races": 94,
+     "under6_boats_races": 2,
+     "partial_refund_races": 9,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 324,
+       "rate": 0.551,
+       "ci95": [
+        0.5106,
+        0.5908
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.551
+      },
+      {
+       "course": 2,
+       "wins": 91,
+       "rate": 0.1548,
+       "ci95": [
+        0.1278,
+        0.1862
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.1548
+      },
+      {
+       "course": 3,
+       "wins": 70,
+       "rate": 0.119,
+       "ci95": [
+        0.0953,
+        0.1477
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.119
+      },
+      {
+       "course": 4,
+       "wins": 62,
+       "rate": 0.1054,
+       "ci95": [
+        0.0831,
+        0.1329
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.1054
+      },
+      {
+       "course": 5,
+       "wins": 35,
+       "rate": 0.0595,
+       "ci95": [
+        0.0431,
+        0.0817
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.0595
+      },
+      {
+       "course": 6,
+       "wins": 6,
+       "rate": 0.0102,
+       "ci95": [
+        0.0047,
+        0.0221
+       ],
+       "races_course_present": 586,
+       "rate_if_present": 0.0102
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 324,
+       "rate": 0.551
+      },
+      {
+       "waku": 2,
+       "wins": 85,
+       "rate": 0.1446
+      },
+      {
+       "waku": 3,
+       "wins": 74,
+       "rate": 0.1259
+      },
+      {
+       "waku": 4,
+       "wins": 64,
+       "rate": 0.1088
+      },
+      {
+       "waku": 5,
+       "wins": 32,
+       "rate": 0.0544
+      },
+      {
+       "waku": 6,
+       "wins": 9,
+       "rate": 0.0153
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.02,
+     "cancelled_confirmed": 0
+    },
+    "13": {
+     "name": "尼崎",
+     "races": 720,
+     "days": 60,
+     "not_waku_nari_races": 151,
+     "under6_boats_races": 7,
+     "partial_refund_races": 19,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 416,
+       "rate": 0.5778,
+       "ci95": [
+        0.5414,
+        0.6133
+       ],
+       "races_course_present": 720,
+       "rate_if_present": 0.5778
+      },
+      {
+       "course": 2,
+       "wins": 99,
+       "rate": 0.1375,
+       "ci95": [
+        0.1143,
+        0.1646
+       ],
+       "races_course_present": 720,
+       "rate_if_present": 0.1375
+      },
+      {
+       "course": 3,
+       "wins": 89,
+       "rate": 0.1236,
+       "ci95": [
+        0.1015,
+        0.1497
+       ],
+       "races_course_present": 720,
+       "rate_if_present": 0.1236
+      },
+      {
+       "course": 4,
+       "wins": 75,
+       "rate": 0.1042,
+       "ci95": [
+        0.0839,
+        0.1286
+       ],
+       "races_course_present": 720,
+       "rate_if_present": 0.1042
+      },
+      {
+       "course": 5,
+       "wins": 33,
+       "rate": 0.0458,
+       "ci95": [
+        0.0328,
+        0.0637
+       ],
+       "races_course_present": 720,
+       "rate_if_present": 0.0458
+      },
+      {
+       "course": 6,
+       "wins": 8,
+       "rate": 0.0111,
+       "ci95": [
+        0.0056,
+        0.0218
+       ],
+       "races_course_present": 713,
+       "rate_if_present": 0.0112
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 416,
+       "rate": 0.5778
+      },
+      {
+       "waku": 2,
+       "wins": 95,
+       "rate": 0.1319
+      },
+      {
+       "waku": 3,
+       "wins": 91,
+       "rate": 0.1264
+      },
+      {
+       "waku": 4,
+       "wins": 75,
+       "rate": 0.1042
+      },
+      {
+       "waku": 5,
+       "wins": 30,
+       "rate": 0.0417
+      },
+      {
+       "waku": 6,
+       "wins": 13,
+       "rate": 0.0181
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.69,
+     "cancelled_confirmed": 0
+    },
+    "14": {
+     "name": "鳴門",
+     "races": 588,
+     "days": 49,
+     "not_waku_nari_races": 79,
+     "under6_boats_races": 9,
+     "partial_refund_races": 18,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 292,
+       "rate": 0.4966,
+       "ci95": [
+        0.4563,
+        0.5369
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.4966
+      },
+      {
+       "course": 2,
+       "wins": 92,
+       "rate": 0.1565,
+       "ci95": [
+        0.1293,
+        0.188
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.1565
+      },
+      {
+       "course": 3,
+       "wins": 86,
+       "rate": 0.1463,
+       "ci95": [
+        0.12,
+        0.1771
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.1463
+      },
+      {
+       "course": 4,
+       "wins": 60,
+       "rate": 0.102,
+       "ci95": [
+        0.0801,
+        0.1291
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.102
+      },
+      {
+       "course": 5,
+       "wins": 49,
+       "rate": 0.0833,
+       "ci95": [
+        0.0636,
+        0.1085
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.0833
+      },
+      {
+       "course": 6,
+       "wins": 9,
+       "rate": 0.0153,
+       "ci95": [
+        0.0081,
+        0.0288
+       ],
+       "races_course_present": 579,
+       "rate_if_present": 0.0155
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 291,
+       "rate": 0.4949
+      },
+      {
+       "waku": 2,
+       "wins": 95,
+       "rate": 0.1616
+      },
+      {
+       "waku": 3,
+       "wins": 86,
+       "rate": 0.1463
+      },
+      {
+       "waku": 4,
+       "wins": 56,
+       "rate": 0.0952
+      },
+      {
+       "waku": 5,
+       "wins": 45,
+       "rate": 0.0765
+      },
+      {
+       "waku": 6,
+       "wins": 15,
+       "rate": 0.0255
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.02,
+     "cancelled_confirmed": 0
+    },
+    "15": {
+     "name": "丸亀",
+     "races": 540,
+     "days": 45,
+     "not_waku_nari_races": 109,
+     "under6_boats_races": 9,
+     "partial_refund_races": 17,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 300,
+       "rate": 0.5556,
+       "ci95": [
+        0.5134,
+        0.5969
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.5556
+      },
+      {
+       "course": 2,
+       "wins": 75,
+       "rate": 0.1389,
+       "ci95": [
+        0.1123,
+        0.1706
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1389
+      },
+      {
+       "course": 3,
+       "wins": 68,
+       "rate": 0.1259,
+       "ci95": [
+        0.1006,
+        0.1566
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1259
+      },
+      {
+       "course": 4,
+       "wins": 45,
+       "rate": 0.0833,
+       "ci95": [
+        0.0629,
+        0.1097
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.0833
+      },
+      {
+       "course": 5,
+       "wins": 42,
+       "rate": 0.0778,
+       "ci95": [
+        0.0581,
+        0.1035
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.0778
+      },
+      {
+       "course": 6,
+       "wins": 10,
+       "rate": 0.0185,
+       "ci95": [
+        0.0101,
+        0.0337
+       ],
+       "races_course_present": 531,
+       "rate_if_present": 0.0188
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 300,
+       "rate": 0.5556
+      },
+      {
+       "waku": 2,
+       "wins": 76,
+       "rate": 0.1407
+      },
+      {
+       "waku": 3,
+       "wins": 68,
+       "rate": 0.1259
+      },
+      {
+       "waku": 4,
+       "wins": 43,
+       "rate": 0.0796
+      },
+      {
+       "waku": 5,
+       "wins": 37,
+       "rate": 0.0685
+      },
+      {
+       "waku": 6,
+       "wins": 16,
+       "rate": 0.0296
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.11,
+     "cancelled_confirmed": 0
+    },
+    "16": {
+     "name": "児島",
+     "races": 648,
+     "days": 54,
+     "not_waku_nari_races": 132,
+     "under6_boats_races": 2,
+     "partial_refund_races": 17,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 317,
+       "rate": 0.4892,
+       "ci95": [
+        0.4509,
+        0.5276
+       ],
+       "races_course_present": 648,
+       "rate_if_present": 0.4892
+      },
+      {
+       "course": 2,
+       "wins": 82,
+       "rate": 0.1265,
+       "ci95": [
+        0.1031,
+        0.1544
+       ],
+       "races_course_present": 648,
+       "rate_if_present": 0.1265
+      },
+      {
+       "course": 3,
+       "wins": 100,
+       "rate": 0.1543,
+       "ci95": [
+        0.1286,
+        0.1842
+       ],
+       "races_course_present": 648,
+       "rate_if_present": 0.1543
+      },
+      {
+       "course": 4,
+       "wins": 80,
+       "rate": 0.1235,
+       "ci95": [
+        0.1003,
+        0.151
+       ],
+       "races_course_present": 648,
+       "rate_if_present": 0.1235
+      },
+      {
+       "course": 5,
+       "wins": 55,
+       "rate": 0.0849,
+       "ci95": [
+        0.0658,
+        0.1089
+       ],
+       "races_course_present": 648,
+       "rate_if_present": 0.0849
+      },
+      {
+       "course": 6,
+       "wins": 14,
+       "rate": 0.0216,
+       "ci95": [
+        0.0129,
+        0.0359
+       ],
+       "races_course_present": 646,
+       "rate_if_present": 0.0217
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 317,
+       "rate": 0.4892
+      },
+      {
+       "waku": 2,
+       "wins": 78,
+       "rate": 0.1204
+      },
+      {
+       "waku": 3,
+       "wins": 98,
+       "rate": 0.1512
+      },
+      {
+       "waku": 4,
+       "wins": 81,
+       "rate": 0.125
+      },
+      {
+       "waku": 5,
+       "wins": 56,
+       "rate": 0.0864
+      },
+      {
+       "waku": 6,
+       "wins": 18,
+       "rate": 0.0278
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.62,
+     "cancelled_confirmed": 0
+    },
+    "17": {
+     "name": "宮島",
+     "races": 480,
+     "days": 40,
+     "not_waku_nari_races": 91,
+     "under6_boats_races": 9,
+     "partial_refund_races": 11,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 272,
+       "rate": 0.5667,
+       "ci95": [
+        0.522,
+        0.6103
+       ],
+       "races_course_present": 480,
+       "rate_if_present": 0.5667
+      },
+      {
+       "course": 2,
+       "wins": 52,
+       "rate": 0.1083,
+       "ci95": [
+        0.0836,
+        0.1393
+       ],
+       "races_course_present": 480,
+       "rate_if_present": 0.1083
+      },
+      {
+       "course": 3,
+       "wins": 65,
+       "rate": 0.1354,
+       "ci95": [
+        0.1077,
+        0.1689
+       ],
+       "races_course_present": 480,
+       "rate_if_present": 0.1354
+      },
+      {
+       "course": 4,
+       "wins": 56,
+       "rate": 0.1167,
+       "ci95": [
+        0.0909,
+        0.1485
+       ],
+       "races_course_present": 480,
+       "rate_if_present": 0.1167
+      },
+      {
+       "course": 5,
+       "wins": 27,
+       "rate": 0.0563,
+       "ci95": [
+        0.0389,
+        0.0806
+       ],
+       "races_course_present": 480,
+       "rate_if_present": 0.0563
+      },
+      {
+       "course": 6,
+       "wins": 8,
+       "rate": 0.0167,
+       "ci95": [
+        0.0085,
+        0.0325
+       ],
+       "races_course_present": 471,
+       "rate_if_present": 0.017
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 271,
+       "rate": 0.5646
+      },
+      {
+       "waku": 2,
+       "wins": 49,
+       "rate": 0.1021
+      },
+      {
+       "waku": 3,
+       "wins": 69,
+       "rate": 0.1437
+      },
+      {
+       "waku": 4,
+       "wins": 54,
+       "rate": 0.1125
+      },
+      {
+       "waku": 5,
+       "wins": 26,
+       "rate": 0.0542
+      },
+      {
+       "waku": 6,
+       "wins": 11,
+       "rate": 0.0229
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.83,
+     "cancelled_confirmed": 0
+    },
+    "18": {
+     "name": "徳山",
+     "races": 636,
+     "days": 53,
+     "not_waku_nari_races": 107,
+     "under6_boats_races": 6,
+     "partial_refund_races": 16,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 381,
+       "rate": 0.5991,
+       "ci95": [
+        0.5605,
+        0.6364
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.5991
+      },
+      {
+       "course": 2,
+       "wins": 82,
+       "rate": 0.1289,
+       "ci95": [
+        0.1051,
+        0.1572
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.1289
+      },
+      {
+       "course": 3,
+       "wins": 78,
+       "rate": 0.1226,
+       "ci95": [
+        0.0994,
+        0.1504
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.1226
+      },
+      {
+       "course": 4,
+       "wins": 54,
+       "rate": 0.0849,
+       "ci95": [
+        0.0657,
+        0.1091
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.0849
+      },
+      {
+       "course": 5,
+       "wins": 33,
+       "rate": 0.0519,
+       "ci95": [
+        0.0372,
+        0.072
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.0519
+      },
+      {
+       "course": 6,
+       "wins": 8,
+       "rate": 0.0126,
+       "ci95": [
+        0.0064,
+        0.0246
+       ],
+       "races_course_present": 630,
+       "rate_if_present": 0.0127
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 379,
+       "rate": 0.5959
+      },
+      {
+       "waku": 2,
+       "wins": 85,
+       "rate": 0.1336
+      },
+      {
+       "waku": 3,
+       "wins": 75,
+       "rate": 0.1179
+      },
+      {
+       "waku": 4,
+       "wins": 53,
+       "rate": 0.0833
+      },
+      {
+       "waku": 5,
+       "wins": 29,
+       "rate": 0.0456
+      },
+      {
+       "waku": 6,
+       "wins": 15,
+       "rate": 0.0236
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.1,
+     "cancelled_confirmed": 0
+    },
+    "19": {
+     "name": "下関",
+     "races": 708,
+     "days": 59,
+     "not_waku_nari_races": 137,
+     "under6_boats_races": 6,
+     "partial_refund_races": 21,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 437,
+       "rate": 0.6172,
+       "ci95": [
+        0.5809,
+        0.6523
+       ],
+       "races_course_present": 708,
+       "rate_if_present": 0.6172
+      },
+      {
+       "course": 2,
+       "wins": 64,
+       "rate": 0.0904,
+       "ci95": [
+        0.0714,
+        0.1138
+       ],
+       "races_course_present": 708,
+       "rate_if_present": 0.0904
+      },
+      {
+       "course": 3,
+       "wins": 90,
+       "rate": 0.1271,
+       "ci95": [
+        0.1046,
+        0.1537
+       ],
+       "races_course_present": 708,
+       "rate_if_present": 0.1271
+      },
+      {
+       "course": 4,
+       "wins": 68,
+       "rate": 0.096,
+       "ci95": [
+        0.0765,
+        0.12
+       ],
+       "races_course_present": 708,
+       "rate_if_present": 0.096
+      },
+      {
+       "course": 5,
+       "wins": 34,
+       "rate": 0.048,
+       "ci95": [
+        0.0346,
+        0.0664
+       ],
+       "races_course_present": 708,
+       "rate_if_present": 0.048
+      },
+      {
+       "course": 6,
+       "wins": 15,
+       "rate": 0.0212,
+       "ci95": [
+        0.0129,
+        0.0347
+       ],
+       "races_course_present": 702,
+       "rate_if_present": 0.0214
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 436,
+       "rate": 0.6158
+      },
+      {
+       "waku": 2,
+       "wins": 64,
+       "rate": 0.0904
+      },
+      {
+       "waku": 3,
+       "wins": 85,
+       "rate": 0.1201
+      },
+      {
+       "waku": 4,
+       "wins": 65,
+       "rate": 0.0918
+      },
+      {
+       "waku": 5,
+       "wins": 30,
+       "rate": 0.0424
+      },
+      {
+       "waku": 6,
+       "wins": 28,
+       "rate": 0.0395
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.84,
+     "cancelled_confirmed": 0
+    },
+    "20": {
+     "name": "若松",
+     "races": 672,
+     "days": 56,
+     "not_waku_nari_races": 152,
+     "under6_boats_races": 6,
+     "partial_refund_races": 12,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 390,
+       "rate": 0.5804,
+       "ci95": [
+        0.5427,
+        0.6171
+       ],
+       "races_course_present": 672,
+       "rate_if_present": 0.5804
+      },
+      {
+       "course": 2,
+       "wins": 91,
+       "rate": 0.1354,
+       "ci95": [
+        0.1116,
+        0.1634
+       ],
+       "races_course_present": 672,
+       "rate_if_present": 0.1354
+      },
+      {
+       "course": 3,
+       "wins": 82,
+       "rate": 0.122,
+       "ci95": [
+        0.0994,
+        0.1489
+       ],
+       "races_course_present": 672,
+       "rate_if_present": 0.122
+      },
+      {
+       "course": 4,
+       "wins": 62,
+       "rate": 0.0923,
+       "ci95": [
+        0.0726,
+        0.1165
+       ],
+       "races_course_present": 672,
+       "rate_if_present": 0.0923
+      },
+      {
+       "course": 5,
+       "wins": 36,
+       "rate": 0.0536,
+       "ci95": [
+        0.0389,
+        0.0733
+       ],
+       "races_course_present": 672,
+       "rate_if_present": 0.0536
+      },
+      {
+       "course": 6,
+       "wins": 11,
+       "rate": 0.0164,
+       "ci95": [
+        0.0092,
+        0.0291
+       ],
+       "races_course_present": 666,
+       "rate_if_present": 0.0165
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 387,
+       "rate": 0.5759
+      },
+      {
+       "waku": 2,
+       "wins": 88,
+       "rate": 0.131
+      },
+      {
+       "waku": 3,
+       "wins": 84,
+       "rate": 0.125
+      },
+      {
+       "waku": 4,
+       "wins": 56,
+       "rate": 0.0833
+      },
+      {
+       "waku": 5,
+       "wins": 34,
+       "rate": 0.0506
+      },
+      {
+       "waku": 6,
+       "wins": 23,
+       "rate": 0.0342
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.79,
+     "cancelled_confirmed": 0
+    },
+    "21": {
+     "name": "芦屋",
+     "races": 516,
+     "days": 43,
+     "not_waku_nari_races": 118,
+     "under6_boats_races": 3,
+     "partial_refund_races": 8,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 321,
+       "rate": 0.6221,
+       "ci95": [
+        0.5795,
+        0.6629
+       ],
+       "races_course_present": 516,
+       "rate_if_present": 0.6221
+      },
+      {
+       "course": 2,
+       "wins": 48,
+       "rate": 0.093,
+       "ci95": [
+        0.0709,
+        0.1212
+       ],
+       "races_course_present": 516,
+       "rate_if_present": 0.093
+      },
+      {
+       "course": 3,
+       "wins": 53,
+       "rate": 0.1027,
+       "ci95": [
+        0.0794,
+        0.1319
+       ],
+       "races_course_present": 516,
+       "rate_if_present": 0.1027
+      },
+      {
+       "course": 4,
+       "wins": 59,
+       "rate": 0.1143,
+       "ci95": [
+        0.0897,
+        0.1447
+       ],
+       "races_course_present": 516,
+       "rate_if_present": 0.1143
+      },
+      {
+       "course": 5,
+       "wins": 28,
+       "rate": 0.0543,
+       "ci95": [
+        0.0378,
+        0.0773
+       ],
+       "races_course_present": 516,
+       "rate_if_present": 0.0543
+      },
+      {
+       "course": 6,
+       "wins": 7,
+       "rate": 0.0136,
+       "ci95": [
+        0.0066,
+        0.0277
+       ],
+       "races_course_present": 513,
+       "rate_if_present": 0.0136
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 318,
+       "rate": 0.6163
+      },
+      {
+       "waku": 2,
+       "wins": 53,
+       "rate": 0.1027
+      },
+      {
+       "waku": 3,
+       "wins": 51,
+       "rate": 0.0988
+      },
+      {
+       "waku": 4,
+       "wins": 50,
+       "rate": 0.0969
+      },
+      {
+       "waku": 5,
+       "wins": 29,
+       "rate": 0.0562
+      },
+      {
+       "waku": 6,
+       "wins": 15,
+       "rate": 0.0291
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.74,
+     "cancelled_confirmed": 0
+    },
+    "22": {
+     "name": "福岡",
+     "races": 636,
+     "days": 53,
+     "not_waku_nari_races": 121,
+     "under6_boats_races": 3,
+     "partial_refund_races": 12,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 382,
+       "rate": 0.6006,
+       "ci95": [
+        0.5621,
+        0.638
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.6006
+      },
+      {
+       "course": 2,
+       "wins": 93,
+       "rate": 0.1462,
+       "ci95": [
+        0.1209,
+        0.1758
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.1462
+      },
+      {
+       "course": 3,
+       "wins": 88,
+       "rate": 0.1384,
+       "ci95": [
+        0.1137,
+        0.1674
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.1384
+      },
+      {
+       "course": 4,
+       "wins": 45,
+       "rate": 0.0708,
+       "ci95": [
+        0.0533,
+        0.0934
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.0708
+      },
+      {
+       "course": 5,
+       "wins": 23,
+       "rate": 0.0362,
+       "ci95": [
+        0.0242,
+        0.0537
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.0362
+      },
+      {
+       "course": 6,
+       "wins": 5,
+       "rate": 0.0079,
+       "ci95": [
+        0.0034,
+        0.0183
+       ],
+       "races_course_present": 633,
+       "rate_if_present": 0.0079
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 382,
+       "rate": 0.6006
+      },
+      {
+       "waku": 2,
+       "wins": 88,
+       "rate": 0.1384
+      },
+      {
+       "waku": 3,
+       "wins": 91,
+       "rate": 0.1431
+      },
+      {
+       "waku": 4,
+       "wins": 39,
+       "rate": 0.0613
+      },
+      {
+       "waku": 5,
+       "wins": 23,
+       "rate": 0.0362
+      },
+      {
+       "waku": 6,
+       "wins": 13,
+       "rate": 0.0204
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.26,
+     "cancelled_confirmed": 0
+    },
+    "23": {
+     "name": "唐津",
+     "races": 528,
+     "days": 44,
+     "not_waku_nari_races": 137,
+     "under6_boats_races": 3,
+     "partial_refund_races": 14,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 299,
+       "rate": 0.5663,
+       "ci95": [
+        0.5237,
+        0.6079
+       ],
+       "races_course_present": 528,
+       "rate_if_present": 0.5663
+      },
+      {
+       "course": 2,
+       "wins": 66,
+       "rate": 0.125,
+       "ci95": [
+        0.0995,
+        0.1559
+       ],
+       "races_course_present": 528,
+       "rate_if_present": 0.125
+      },
+      {
+       "course": 3,
+       "wins": 69,
+       "rate": 0.1307,
+       "ci95": [
+        0.1046,
+        0.1621
+       ],
+       "races_course_present": 528,
+       "rate_if_present": 0.1307
+      },
+      {
+       "course": 4,
+       "wins": 56,
+       "rate": 0.1061,
+       "ci95": [
+        0.0826,
+        0.1352
+       ],
+       "races_course_present": 528,
+       "rate_if_present": 0.1061
+      },
+      {
+       "course": 5,
+       "wins": 29,
+       "rate": 0.0549,
+       "ci95": [
+        0.0385,
+        0.0778
+       ],
+       "races_course_present": 528,
+       "rate_if_present": 0.0549
+      },
+      {
+       "course": 6,
+       "wins": 9,
+       "rate": 0.017,
+       "ci95": [
+        0.009,
+        0.0321
+       ],
+       "races_course_present": 525,
+       "rate_if_present": 0.0171
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 290,
+       "rate": 0.5492
+      },
+      {
+       "waku": 2,
+       "wins": 72,
+       "rate": 0.1364
+      },
+      {
+       "waku": 3,
+       "wins": 68,
+       "rate": 0.1288
+      },
+      {
+       "waku": 4,
+       "wins": 56,
+       "rate": 0.1061
+      },
+      {
+       "waku": 5,
+       "wins": 30,
+       "rate": 0.0568
+      },
+      {
+       "waku": 6,
+       "wins": 12,
+       "rate": 0.0227
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.7,
+     "cancelled_confirmed": 0
+    },
+    "24": {
+     "name": "大村",
+     "races": 599,
+     "days": 50,
+     "not_waku_nari_races": 88,
+     "under6_boats_races": 6,
+     "partial_refund_races": 15,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 349,
+       "rate": 0.5826,
+       "ci95": [
+        0.5427,
+        0.6215
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.5826
+      },
+      {
+       "course": 2,
+       "wins": 82,
+       "rate": 0.1369,
+       "ci95": [
+        0.1117,
+        0.1667
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.1369
+      },
+      {
+       "course": 3,
+       "wins": 70,
+       "rate": 0.1169,
+       "ci95": [
+        0.0935,
+        0.1451
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.1169
+      },
+      {
+       "course": 4,
+       "wins": 60,
+       "rate": 0.1002,
+       "ci95": [
+        0.0786,
+        0.1268
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.1002
+      },
+      {
+       "course": 5,
+       "wins": 29,
+       "rate": 0.0484,
+       "ci95": [
+        0.0339,
+        0.0687
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.0484
+      },
+      {
+       "course": 6,
+       "wins": 9,
+       "rate": 0.015,
+       "ci95": [
+        0.0079,
+        0.0283
+       ],
+       "races_course_present": 593,
+       "rate_if_present": 0.0152
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 349,
+       "rate": 0.5826
+      },
+      {
+       "waku": 2,
+       "wins": 78,
+       "rate": 0.1302
+      },
+      {
+       "waku": 3,
+       "wins": 79,
+       "rate": 0.1319
+      },
+      {
+       "waku": 4,
+       "wins": 53,
+       "rate": 0.0885
+      },
+      {
+       "waku": 5,
+       "wins": 26,
+       "rate": 0.0434
+      },
+      {
+       "waku": 6,
+       "wins": 14,
+       "rate": 0.0234
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.5,
+     "cancelled_confirmed": 0
+    },
+    "01": {
+     "name": "桐生",
+     "races": 540,
+     "days": 45,
+     "not_waku_nari_races": 109,
+     "under6_boats_races": 4,
+     "partial_refund_races": 10,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 286,
+       "rate": 0.5296,
+       "ci95": [
+        0.4875,
+        0.5714
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.5296
+      },
+      {
+       "course": 2,
+       "wins": 71,
+       "rate": 0.1315,
+       "ci95": [
+        0.1056,
+        0.1626
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1315
+      },
+      {
+       "course": 3,
+       "wins": 68,
+       "rate": 0.1259,
+       "ci95": [
+        0.1006,
+        0.1566
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1259
+      },
+      {
+       "course": 4,
+       "wins": 54,
+       "rate": 0.1,
+       "ci95": [
+        0.0775,
+        0.1282
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1
+      },
+      {
+       "course": 5,
+       "wins": 47,
+       "rate": 0.087,
+       "ci95": [
+        0.0661,
+        0.1138
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.087
+      },
+      {
+       "course": 6,
+       "wins": 14,
+       "rate": 0.0259,
+       "ci95": [
+        0.0155,
+        0.043
+       ],
+       "races_course_present": 536,
+       "rate_if_present": 0.0261
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 277,
+       "rate": 0.513
+      },
+      {
+       "waku": 2,
+       "wins": 78,
+       "rate": 0.1444
+      },
+      {
+       "waku": 3,
+       "wins": 67,
+       "rate": 0.1241
+      },
+      {
+       "waku": 4,
+       "wins": 53,
+       "rate": 0.0981
+      },
+      {
+       "waku": 5,
+       "wins": 44,
+       "rate": 0.0815
+      },
+      {
+       "waku": 6,
+       "wins": 21,
+       "rate": 0.0389
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.67,
+     "cancelled_confirmed": 0
+    },
+    "02": {
+     "name": "戸田",
+     "races": 612,
+     "days": 51,
+     "not_waku_nari_races": 112,
+     "under6_boats_races": 6,
+     "partial_refund_races": 21,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 253,
+       "rate": 0.4134,
+       "ci95": [
+        0.375,
+        0.4528
+       ],
+       "races_course_present": 612,
+       "rate_if_present": 0.4134
+      },
+      {
+       "course": 2,
+       "wins": 115,
+       "rate": 0.1879,
+       "ci95": [
+        0.1589,
+        0.2208
+       ],
+       "races_course_present": 612,
+       "rate_if_present": 0.1879
+      },
+      {
+       "course": 3,
+       "wins": 93,
+       "rate": 0.152,
+       "ci95": [
+        0.1257,
+        0.1826
+       ],
+       "races_course_present": 612,
+       "rate_if_present": 0.152
+      },
+      {
+       "course": 4,
+       "wins": 80,
+       "rate": 0.1307,
+       "ci95": [
+        0.1063,
+        0.1597
+       ],
+       "races_course_present": 612,
+       "rate_if_present": 0.1307
+      },
+      {
+       "course": 5,
+       "wins": 56,
+       "rate": 0.0915,
+       "ci95": [
+        0.0711,
+        0.117
+       ],
+       "races_course_present": 612,
+       "rate_if_present": 0.0915
+      },
+      {
+       "course": 6,
+       "wins": 15,
+       "rate": 0.0245,
+       "ci95": [
+        0.0149,
+        0.04
+       ],
+       "races_course_present": 606,
+       "rate_if_present": 0.0248
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 251,
+       "rate": 0.4101
+      },
+      {
+       "waku": 2,
+       "wins": 121,
+       "rate": 0.1977
+      },
+      {
+       "waku": 3,
+       "wins": 86,
+       "rate": 0.1405
+      },
+      {
+       "waku": 4,
+       "wins": 84,
+       "rate": 0.1373
+      },
+      {
+       "waku": 5,
+       "wins": 47,
+       "rate": 0.0768
+      },
+      {
+       "waku": 6,
+       "wins": 23,
+       "rate": 0.0376
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.47,
+     "cancelled_confirmed": 12
+    },
+    "03": {
+     "name": "江戸川",
+     "races": 540,
+     "days": 45,
+     "not_waku_nari_races": 8,
+     "under6_boats_races": 10,
+     "partial_refund_races": 24,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 250,
+       "rate": 0.463,
+       "ci95": [
+        0.4213,
+        0.5051
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.463
+      },
+      {
+       "course": 2,
+       "wins": 87,
+       "rate": 0.1611,
+       "ci95": [
+        0.1325,
+        0.1945
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1611
+      },
+      {
+       "course": 3,
+       "wins": 71,
+       "rate": 0.1315,
+       "ci95": [
+        0.1056,
+        0.1626
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1315
+      },
+      {
+       "course": 4,
+       "wins": 67,
+       "rate": 0.1241,
+       "ci95": [
+        0.0989,
+        0.1546
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.1241
+      },
+      {
+       "course": 5,
+       "wins": 46,
+       "rate": 0.0852,
+       "ci95": [
+        0.0645,
+        0.1118
+       ],
+       "races_course_present": 540,
+       "rate_if_present": 0.0852
+      },
+      {
+       "course": 6,
+       "wins": 19,
+       "rate": 0.0352,
+       "ci95": [
+        0.0226,
+        0.0543
+       ],
+       "races_course_present": 530,
+       "rate_if_present": 0.0358
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 250,
+       "rate": 0.463
+      },
+      {
+       "waku": 2,
+       "wins": 86,
+       "rate": 0.1593
+      },
+      {
+       "waku": 3,
+       "wins": 72,
+       "rate": 0.1333
+      },
+      {
+       "waku": 4,
+       "wins": 67,
+       "rate": 0.1241
+      },
+      {
+       "waku": 5,
+       "wins": 46,
+       "rate": 0.0852
+      },
+      {
+       "waku": 6,
+       "wins": 19,
+       "rate": 0.0352
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.19,
+     "cancelled_confirmed": 36
+    },
+    "04": {
+     "name": "平和島",
+     "races": 636,
+     "days": 53,
+     "not_waku_nari_races": 82,
+     "under6_boats_races": 9,
+     "partial_refund_races": 25,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 260,
+       "rate": 0.4088,
+       "ci95": [
+        0.3713,
+        0.4474
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.4088
+      },
+      {
+       "course": 2,
+       "wins": 111,
+       "rate": 0.1745,
+       "ci95": [
+        0.147,
+        0.206
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.1745
+      },
+      {
+       "course": 3,
+       "wins": 115,
+       "rate": 0.1808,
+       "ci95": [
+        0.1529,
+        0.2126
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.1808
+      },
+      {
+       "course": 4,
+       "wins": 76,
+       "rate": 0.1195,
+       "ci95": [
+        0.0965,
+        0.147
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.1195
+      },
+      {
+       "course": 5,
+       "wins": 56,
+       "rate": 0.0881,
+       "ci95": [
+        0.0684,
+        0.1126
+       ],
+       "races_course_present": 636,
+       "rate_if_present": 0.0881
+      },
+      {
+       "course": 6,
+       "wins": 18,
+       "rate": 0.0283,
+       "ci95": [
+        0.018,
+        0.0443
+       ],
+       "races_course_present": 627,
+       "rate_if_present": 0.0287
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 257,
+       "rate": 0.4041
+      },
+      {
+       "waku": 2,
+       "wins": 116,
+       "rate": 0.1824
+      },
+      {
+       "waku": 3,
+       "wins": 114,
+       "rate": 0.1792
+      },
+      {
+       "waku": 4,
+       "wins": 70,
+       "rate": 0.1101
+      },
+      {
+       "waku": 5,
+       "wins": 60,
+       "rate": 0.0943
+      },
+      {
+       "waku": 6,
+       "wins": 19,
+       "rate": 0.0299
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.94,
+     "cancelled_confirmed": 0
+    },
+    "05": {
+     "name": "多摩川",
+     "races": 588,
+     "days": 49,
+     "not_waku_nari_races": 109,
+     "under6_boats_races": 6,
+     "partial_refund_races": 13,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 319,
+       "rate": 0.5425,
+       "ci95": [
+        0.5021,
+        0.5824
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.5425
+      },
+      {
+       "course": 2,
+       "wins": 75,
+       "rate": 0.1276,
+       "ci95": [
+        0.103,
+        0.157
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.1276
+      },
+      {
+       "course": 3,
+       "wins": 79,
+       "rate": 0.1344,
+       "ci95": [
+        0.1091,
+        0.1643
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.1344
+      },
+      {
+       "course": 4,
+       "wins": 65,
+       "rate": 0.1105,
+       "ci95": [
+        0.0877,
+        0.1385
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.1105
+      },
+      {
+       "course": 5,
+       "wins": 34,
+       "rate": 0.0578,
+       "ci95": [
+        0.0417,
+        0.0797
+       ],
+       "races_course_present": 588,
+       "rate_if_present": 0.0578
+      },
+      {
+       "course": 6,
+       "wins": 16,
+       "rate": 0.0272,
+       "ci95": [
+        0.0168,
+        0.0437
+       ],
+       "races_course_present": 582,
+       "rate_if_present": 0.0275
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 319,
+       "rate": 0.5425
+      },
+      {
+       "waku": 2,
+       "wins": 77,
+       "rate": 0.131
+      },
+      {
+       "waku": 3,
+       "wins": 81,
+       "rate": 0.1378
+      },
+      {
+       "waku": 4,
+       "wins": 61,
+       "rate": 0.1037
+      },
+      {
+       "waku": 5,
+       "wins": 29,
+       "rate": 0.0493
+      },
+      {
+       "waku": 6,
+       "wins": 21,
+       "rate": 0.0357
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.85,
+     "cancelled_confirmed": 0
+    },
+    "06": {
+     "name": "浜名湖",
+     "races": 599,
+     "days": 50,
+     "not_waku_nari_races": 158,
+     "under6_boats_races": 3,
+     "partial_refund_races": 13,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 320,
+       "rate": 0.5342,
+       "ci95": [
+        0.4942,
+        0.5738
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.5342
+      },
+      {
+       "course": 2,
+       "wins": 80,
+       "rate": 0.1336,
+       "ci95": [
+        0.1086,
+        0.1631
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.1336
+      },
+      {
+       "course": 3,
+       "wins": 76,
+       "rate": 0.1269,
+       "ci95": [
+        0.1026,
+        0.1559
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.1269
+      },
+      {
+       "course": 4,
+       "wins": 66,
+       "rate": 0.1102,
+       "ci95": [
+        0.0875,
+        0.1378
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.1102
+      },
+      {
+       "course": 5,
+       "wins": 45,
+       "rate": 0.0751,
+       "ci95": [
+        0.0566,
+        0.099
+       ],
+       "races_course_present": 599,
+       "rate_if_present": 0.0751
+      },
+      {
+       "course": 6,
+       "wins": 12,
+       "rate": 0.02,
+       "ci95": [
+        0.0115,
+        0.0347
+       ],
+       "races_course_present": 596,
+       "rate_if_present": 0.0201
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 315,
+       "rate": 0.5259
+      },
+      {
+       "waku": 2,
+       "wins": 80,
+       "rate": 0.1336
+      },
+      {
+       "waku": 3,
+       "wins": 76,
+       "rate": 0.1269
+      },
+      {
+       "waku": 4,
+       "wins": 59,
+       "rate": 0.0985
+      },
+      {
+       "waku": 5,
+       "wins": 46,
+       "rate": 0.0768
+      },
+      {
+       "waku": 6,
+       "wins": 23,
+       "rate": 0.0384
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.84,
+     "cancelled_confirmed": 0
+    },
+    "07": {
+     "name": "蒲郡",
+     "races": 444,
+     "days": 37,
+     "not_waku_nari_races": 122,
+     "under6_boats_races": 5,
+     "partial_refund_races": 12,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 260,
+       "rate": 0.5856,
+       "ci95": [
+        0.5392,
+        0.6305
+       ],
+       "races_course_present": 444,
+       "rate_if_present": 0.5856
+      },
+      {
+       "course": 2,
+       "wins": 46,
+       "rate": 0.1036,
+       "ci95": [
+        0.0786,
+        0.1354
+       ],
+       "races_course_present": 444,
+       "rate_if_present": 0.1036
+      },
+      {
+       "course": 3,
+       "wins": 61,
+       "rate": 0.1374,
+       "ci95": [
+        0.1085,
+        0.1725
+       ],
+       "races_course_present": 444,
+       "rate_if_present": 0.1374
+      },
+      {
+       "course": 4,
+       "wins": 46,
+       "rate": 0.1036,
+       "ci95": [
+        0.0786,
+        0.1354
+       ],
+       "races_course_present": 444,
+       "rate_if_present": 0.1036
+      },
+      {
+       "course": 5,
+       "wins": 20,
+       "rate": 0.045,
+       "ci95": [
+        0.0293,
+        0.0685
+       ],
+       "races_course_present": 444,
+       "rate_if_present": 0.045
+      },
+      {
+       "course": 6,
+       "wins": 11,
+       "rate": 0.0248,
+       "ci95": [
+        0.0139,
+        0.0438
+       ],
+       "races_course_present": 439,
+       "rate_if_present": 0.0251
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 256,
+       "rate": 0.5766
+      },
+      {
+       "waku": 2,
+       "wins": 44,
+       "rate": 0.0991
+      },
+      {
+       "waku": 3,
+       "wins": 57,
+       "rate": 0.1284
+      },
+      {
+       "waku": 4,
+       "wins": 41,
+       "rate": 0.0923
+      },
+      {
+       "waku": 5,
+       "wins": 23,
+       "rate": 0.0518
+      },
+      {
+       "waku": 6,
+       "wins": 23,
+       "rate": 0.0518
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 2.7,
+     "cancelled_confirmed": 0
+    },
+    "08": {
+     "name": "常滑",
+     "races": 600,
+     "days": 50,
+     "not_waku_nari_races": 131,
+     "under6_boats_races": 3,
+     "partial_refund_races": 14,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 358,
+       "rate": 0.5967,
+       "ci95": [
+        0.5569,
+        0.6352
+       ],
+       "races_course_present": 600,
+       "rate_if_present": 0.5967
+      },
+      {
+       "course": 2,
+       "wins": 77,
+       "rate": 0.1283,
+       "ci95": [
+        0.1039,
+        0.1575
+       ],
+       "races_course_present": 600,
+       "rate_if_present": 0.1283
+      },
+      {
+       "course": 3,
+       "wins": 61,
+       "rate": 0.1017,
+       "ci95": [
+        0.08,
+        0.1284
+       ],
+       "races_course_present": 600,
+       "rate_if_present": 0.1017
+      },
+      {
+       "course": 4,
+       "wins": 59,
+       "rate": 0.0983,
+       "ci95": [
+        0.077,
+        0.1248
+       ],
+       "races_course_present": 600,
+       "rate_if_present": 0.0983
+      },
+      {
+       "course": 5,
+       "wins": 29,
+       "rate": 0.0483,
+       "ci95": [
+        0.0339,
+        0.0686
+       ],
+       "races_course_present": 600,
+       "rate_if_present": 0.0483
+      },
+      {
+       "course": 6,
+       "wins": 16,
+       "rate": 0.0267,
+       "ci95": [
+        0.0165,
+        0.0429
+       ],
+       "races_course_present": 597,
+       "rate_if_present": 0.0268
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 354,
+       "rate": 0.59
+      },
+      {
+       "waku": 2,
+       "wins": 80,
+       "rate": 0.1333
+      },
+      {
+       "waku": 3,
+       "wins": 57,
+       "rate": 0.095
+      },
+      {
+       "waku": 4,
+       "wins": 53,
+       "rate": 0.0883
+      },
+      {
+       "waku": 5,
+       "wins": 32,
+       "rate": 0.0533
+      },
+      {
+       "waku": 6,
+       "wins": 24,
+       "rate": 0.04
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.33,
+     "cancelled_confirmed": 0
+    },
+    "09": {
+     "name": "津",
+     "races": 662,
+     "days": 56,
+     "not_waku_nari_races": 91,
+     "under6_boats_races": 5,
+     "partial_refund_races": 21,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 378,
+       "rate": 0.571,
+       "ci95": [
+        0.533,
+        0.6082
+       ],
+       "races_course_present": 662,
+       "rate_if_present": 0.571
+      },
+      {
+       "course": 2,
+       "wins": 92,
+       "rate": 0.139,
+       "ci95": [
+        0.1147,
+        0.1674
+       ],
+       "races_course_present": 662,
+       "rate_if_present": 0.139
+      },
+      {
+       "course": 3,
+       "wins": 81,
+       "rate": 0.1224,
+       "ci95": [
+        0.0995,
+        0.1495
+       ],
+       "races_course_present": 662,
+       "rate_if_present": 0.1224
+      },
+      {
+       "course": 4,
+       "wins": 60,
+       "rate": 0.0906,
+       "ci95": [
+        0.0711,
+        0.1149
+       ],
+       "races_course_present": 662,
+       "rate_if_present": 0.0906
+      },
+      {
+       "course": 5,
+       "wins": 43,
+       "rate": 0.065,
+       "ci95": [
+        0.0486,
+        0.0864
+       ],
+       "races_course_present": 662,
+       "rate_if_present": 0.065
+      },
+      {
+       "course": 6,
+       "wins": 8,
+       "rate": 0.0121,
+       "ci95": [
+        0.0061,
+        0.0237
+       ],
+       "races_course_present": 657,
+       "rate_if_present": 0.0122
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 379,
+       "rate": 0.5725
+      },
+      {
+       "waku": 2,
+       "wins": 89,
+       "rate": 0.1344
+      },
+      {
+       "waku": 3,
+       "wins": 81,
+       "rate": 0.1224
+      },
+      {
+       "waku": 4,
+       "wins": 59,
+       "rate": 0.0891
+      },
+      {
+       "waku": 5,
+       "wins": 38,
+       "rate": 0.0574
+      },
+      {
+       "waku": 6,
+       "wins": 16,
+       "rate": 0.0242
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.21,
+     "cancelled_confirmed": 34
+    }
+   }
+  },
+  "6m": {
+   "from": "2026-04-20",
+   "to": "2026-10-19",
+   "all": {
+    "races": 28606,
+    "days": 183,
+    "not_waku_nari_races": 5345,
+    "under6_boats_races": 255,
+    "partial_refund_races": 753,
+    "dead_heat_first_races": 9,
+    "by_course": [
+     {
+      "course": 1,
+      "wins": 15746,
+      "rate": 0.5504,
+      "ci95": [
+       0.5447,
+       0.5562
+      ],
+      "races_course_present": 28606,
+      "rate_if_present": 0.5504
+     },
+     {
+      "course": 2,
+      "wins": 3895,
+      "rate": 0.1362,
+      "ci95": [
+       0.1322,
+       0.1402
+      ],
+      "races_course_present": 28606,
+      "rate_if_present": 0.1362
+     },
+     {
+      "course": 3,
+      "wins": 3749,
+      "rate": 0.1311,
+      "ci95": [
+       0.1272,
+       0.135
+      ],
+      "races_course_present": 28606,
+      "rate_if_present": 0.1311
+     },
+     {
+      "course": 4,
+      "wins": 2930,
+      "rate": 0.1024,
+      "ci95": [
+       0.099,
+       0.106
+      ],
+      "races_course_present": 28606,
+      "rate_if_present": 0.1024
+     },
+     {
+      "course": 5,
+      "wins": 1752,
+      "rate": 0.0612,
+      "ci95": [
+       0.0585,
+       0.0641
+      ],
+      "races_course_present": 28605,
+      "rate_if_present": 0.0612
+     },
+     {
+      "course": 6,
+      "wins": 534,
+      "rate": 0.0187,
+      "ci95": [
+       0.0172,
+       0.0203
+      ],
+      "races_course_present": 28351,
+      "rate_if_present": 0.0188
+     }
+    ],
+    "by_waku": [
+     {
+      "waku": 1,
+      "wins": 15642,
+      "rate": 0.5468
+     },
+     {
+      "waku": 2,
+      "wins": 3944,
+      "rate": 0.1379
+     },
+     {
+      "waku": 3,
+      "wins": 3691,
+      "rate": 0.129
+     },
+     {
+      "waku": 4,
+      "wins": 2811,
+      "rate": 0.0983
+     },
+     {
+      "waku": 5,
+      "wins": 1681,
+      "rate": 0.0588
+     },
+     {
+      "waku": 6,
+      "wins": 837,
+      "rate": 0.0293
+     }
+    ],
+    "max_abs_diff_course_vs_waku_pt": 1.06
+   },
+   "venues": {
+    "10": {
+     "name": "三国",
+     "races": 1185,
+     "days": 99,
+     "not_waku_nari_races": 240,
+     "under6_boats_races": 9,
+     "partial_refund_races": 20,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 622,
+       "rate": 0.5249,
+       "ci95": [
+        0.4964,
+        0.5532
+       ],
+       "races_course_present": 1185,
+       "rate_if_present": 0.5249
+      },
+      {
+       "course": 2,
+       "wins": 171,
+       "rate": 0.1443,
+       "ci95": [
+        0.1254,
+        0.1655
+       ],
+       "races_course_present": 1185,
+       "rate_if_present": 0.1443
+      },
+      {
+       "course": 3,
+       "wins": 180,
+       "rate": 0.1519,
+       "ci95": [
+        0.1326,
+        0.1735
+       ],
+       "races_course_present": 1185,
+       "rate_if_present": 0.1519
+      },
+      {
+       "course": 4,
+       "wins": 121,
+       "rate": 0.1021,
+       "ci95": [
+        0.0861,
+        0.1207
+       ],
+       "races_course_present": 1185,
+       "rate_if_present": 0.1021
+      },
+      {
+       "course": 5,
+       "wins": 68,
+       "rate": 0.0574,
+       "ci95": [
+        0.0455,
+        0.0721
+       ],
+       "races_course_present": 1185,
+       "rate_if_present": 0.0574
+      },
+      {
+       "course": 6,
+       "wins": 23,
+       "rate": 0.0194,
+       "ci95": [
+        0.013,
+        0.029
+       ],
+       "races_course_present": 1176,
+       "rate_if_present": 0.0196
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 617,
+       "rate": 0.5207
+      },
+      {
+       "waku": 2,
+       "wins": 171,
+       "rate": 0.1443
+      },
+      {
+       "waku": 3,
+       "wins": 172,
+       "rate": 0.1451
+      },
+      {
+       "waku": 4,
+       "wins": 123,
+       "rate": 0.1038
+      },
+      {
+       "waku": 5,
+       "wins": 70,
+       "rate": 0.0591
+      },
+      {
+       "waku": 6,
+       "wins": 32,
+       "rate": 0.027
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.76,
+     "cancelled_confirmed": 15
+    },
+    "11": {
+     "name": "びわこ",
+     "races": 1233,
+     "days": 103,
+     "not_waku_nari_races": 105,
+     "under6_boats_races": 12,
+     "partial_refund_races": 28,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 687,
+       "rate": 0.5572,
+       "ci95": [
+        0.5293,
+        0.5847
+       ],
+       "races_course_present": 1233,
+       "rate_if_present": 0.5572
+      },
+      {
+       "course": 2,
+       "wins": 162,
+       "rate": 0.1314,
+       "ci95": [
+        0.1137,
+        0.1514
+       ],
+       "races_course_present": 1233,
+       "rate_if_present": 0.1314
+      },
+      {
+       "course": 3,
+       "wins": 181,
+       "rate": 0.1468,
+       "ci95": [
+        0.1281,
+        0.1676
+       ],
+       "races_course_present": 1233,
+       "rate_if_present": 0.1468
+      },
+      {
+       "course": 4,
+       "wins": 107,
+       "rate": 0.0868,
+       "ci95": [
+        0.0723,
+        0.1038
+       ],
+       "races_course_present": 1233,
+       "rate_if_present": 0.0868
+      },
+      {
+       "course": 5,
+       "wins": 74,
+       "rate": 0.06,
+       "ci95": [
+        0.0481,
+        0.0747
+       ],
+       "races_course_present": 1233,
+       "rate_if_present": 0.06
+      },
+      {
+       "course": 6,
+       "wins": 22,
+       "rate": 0.0178,
+       "ci95": [
+        0.0118,
+        0.0269
+       ],
+       "races_course_present": 1221,
+       "rate_if_present": 0.018
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 685,
+       "rate": 0.5556
+      },
+      {
+       "waku": 2,
+       "wins": 162,
+       "rate": 0.1314
+      },
+      {
+       "waku": 3,
+       "wins": 171,
+       "rate": 0.1387
+      },
+      {
+       "waku": 4,
+       "wins": 111,
+       "rate": 0.09
+      },
+      {
+       "waku": 5,
+       "wins": 80,
+       "rate": 0.0649
+      },
+      {
+       "waku": 6,
+       "wins": 24,
+       "rate": 0.0195
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.81,
+     "cancelled_confirmed": 15
+    },
+    "12": {
+     "name": "住之江",
+     "races": 1175,
+     "days": 98,
+     "not_waku_nari_races": 201,
+     "under6_boats_races": 11,
+     "partial_refund_races": 30,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 656,
+       "rate": 0.5583,
+       "ci95": [
+        0.5298,
+        0.5865
+       ],
+       "races_course_present": 1175,
+       "rate_if_present": 0.5583
+      },
+      {
+       "course": 2,
+       "wins": 174,
+       "rate": 0.1481,
+       "ci95": [
+        0.1289,
+        0.1695
+       ],
+       "races_course_present": 1175,
+       "rate_if_present": 0.1481
+      },
+      {
+       "course": 3,
+       "wins": 143,
+       "rate": 0.1217,
+       "ci95": [
+        0.1042,
+        0.1416
+       ],
+       "races_course_present": 1175,
+       "rate_if_present": 0.1217
+      },
+      {
+       "course": 4,
+       "wins": 131,
+       "rate": 0.1115,
+       "ci95": [
+        0.0947,
+        0.1308
+       ],
+       "races_course_present": 1175,
+       "rate_if_present": 0.1115
+      },
+      {
+       "course": 5,
+       "wins": 55,
+       "rate": 0.0468,
+       "ci95": [
+        0.0361,
+        0.0604
+       ],
+       "races_course_present": 1175,
+       "rate_if_present": 0.0468
+      },
+      {
+       "course": 6,
+       "wins": 16,
+       "rate": 0.0136,
+       "ci95": [
+        0.0084,
+        0.022
+       ],
+       "races_course_present": 1164,
+       "rate_if_present": 0.0137
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 655,
+       "rate": 0.5574
+      },
+      {
+       "waku": 2,
+       "wins": 173,
+       "rate": 0.1472
+      },
+      {
+       "waku": 3,
+       "wins": 140,
+       "rate": 0.1191
+      },
+      {
+       "waku": 4,
+       "wins": 134,
+       "rate": 0.114
+      },
+      {
+       "waku": 5,
+       "wins": 50,
+       "rate": 0.0426
+      },
+      {
+       "waku": 6,
+       "wins": 23,
+       "rate": 0.0196
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.6,
+     "cancelled_confirmed": 0
+    },
+    "13": {
+     "name": "尼崎",
+     "races": 1410,
+     "days": 118,
+     "not_waku_nari_races": 250,
+     "under6_boats_races": 15,
+     "partial_refund_races": 38,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 842,
+       "rate": 0.5972,
+       "ci95": [
+        0.5713,
+        0.6225
+       ],
+       "races_course_present": 1410,
+       "rate_if_present": 0.5972
+      },
+      {
+       "course": 2,
+       "wins": 183,
+       "rate": 0.1298,
+       "ci95": [
+        0.1132,
+        0.1483
+       ],
+       "races_course_present": 1410,
+       "rate_if_present": 0.1298
+      },
+      {
+       "course": 3,
+       "wins": 170,
+       "rate": 0.1206,
+       "ci95": [
+        0.1046,
+        0.1386
+       ],
+       "races_course_present": 1410,
+       "rate_if_present": 0.1206
+      },
+      {
+       "course": 4,
+       "wins": 137,
+       "rate": 0.0972,
+       "ci95": [
+        0.0828,
+        0.1137
+       ],
+       "races_course_present": 1410,
+       "rate_if_present": 0.0972
+      },
+      {
+       "course": 5,
+       "wins": 64,
+       "rate": 0.0454,
+       "ci95": [
+        0.0357,
+        0.0575
+       ],
+       "races_course_present": 1410,
+       "rate_if_present": 0.0454
+      },
+      {
+       "course": 6,
+       "wins": 14,
+       "rate": 0.0099,
+       "ci95": [
+        0.0059,
+        0.0166
+       ],
+       "races_course_present": 1395,
+       "rate_if_present": 0.01
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 842,
+       "rate": 0.5972
+      },
+      {
+       "waku": 2,
+       "wins": 179,
+       "rate": 0.127
+      },
+      {
+       "waku": 3,
+       "wins": 169,
+       "rate": 0.1199
+      },
+      {
+       "waku": 4,
+       "wins": 132,
+       "rate": 0.0936
+      },
+      {
+       "waku": 5,
+       "wins": 63,
+       "rate": 0.0447
+      },
+      {
+       "waku": 6,
+       "wins": 25,
+       "rate": 0.0177
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.78,
+     "cancelled_confirmed": 18
+    },
+    "14": {
+     "name": "鳴門",
+     "races": 1092,
+     "days": 91,
+     "not_waku_nari_races": 145,
+     "under6_boats_races": 10,
+     "partial_refund_races": 30,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 551,
+       "rate": 0.5046,
+       "ci95": [
+        0.475,
+        0.5342
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.5046
+      },
+      {
+       "course": 2,
+       "wins": 158,
+       "rate": 0.1447,
+       "ci95": [
+        0.1251,
+        0.1668
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.1447
+      },
+      {
+       "course": 3,
+       "wins": 160,
+       "rate": 0.1465,
+       "ci95": [
+        0.1268,
+        0.1687
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.1465
+      },
+      {
+       "course": 4,
+       "wins": 117,
+       "rate": 0.1071,
+       "ci95": [
+        0.0902,
+        0.1269
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.1071
+      },
+      {
+       "course": 5,
+       "wins": 86,
+       "rate": 0.0788,
+       "ci95": [
+        0.0642,
+        0.0962
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.0788
+      },
+      {
+       "course": 6,
+       "wins": 20,
+       "rate": 0.0183,
+       "ci95": [
+        0.0119,
+        0.0281
+       ],
+       "races_course_present": 1082,
+       "rate_if_present": 0.0185
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 550,
+       "rate": 0.5037
+      },
+      {
+       "waku": 2,
+       "wins": 159,
+       "rate": 0.1456
+      },
+      {
+       "waku": 3,
+       "wins": 163,
+       "rate": 0.1493
+      },
+      {
+       "waku": 4,
+       "wins": 112,
+       "rate": 0.1026
+      },
+      {
+       "waku": 5,
+       "wins": 77,
+       "rate": 0.0705
+      },
+      {
+       "waku": 6,
+       "wins": 31,
+       "rate": 0.0284
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.01,
+     "cancelled_confirmed": 0
+    },
+    "15": {
+     "name": "丸亀",
+     "races": 1092,
+     "days": 91,
+     "not_waku_nari_races": 230,
+     "under6_boats_races": 10,
+     "partial_refund_races": 33,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 609,
+       "rate": 0.5577,
+       "ci95": [
+        0.5281,
+        0.5869
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.5577
+      },
+      {
+       "course": 2,
+       "wins": 148,
+       "rate": 0.1355,
+       "ci95": [
+        0.1165,
+        0.1571
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.1355
+      },
+      {
+       "course": 3,
+       "wins": 135,
+       "rate": 0.1236,
+       "ci95": [
+        0.1054,
+        0.1445
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.1236
+      },
+      {
+       "course": 4,
+       "wins": 104,
+       "rate": 0.0952,
+       "ci95": [
+        0.0792,
+        0.1141
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.0952
+      },
+      {
+       "course": 5,
+       "wins": 73,
+       "rate": 0.0668,
+       "ci95": [
+        0.0535,
+        0.0832
+       ],
+       "races_course_present": 1092,
+       "rate_if_present": 0.0668
+      },
+      {
+       "course": 6,
+       "wins": 23,
+       "rate": 0.0211,
+       "ci95": [
+        0.0141,
+        0.0314
+       ],
+       "races_course_present": 1082,
+       "rate_if_present": 0.0213
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 608,
+       "rate": 0.5568
+      },
+      {
+       "waku": 2,
+       "wins": 151,
+       "rate": 0.1383
+      },
+      {
+       "waku": 3,
+       "wins": 137,
+       "rate": 0.1255
+      },
+      {
+       "waku": 4,
+       "wins": 95,
+       "rate": 0.087
+      },
+      {
+       "waku": 5,
+       "wins": 67,
+       "rate": 0.0614
+      },
+      {
+       "waku": 6,
+       "wins": 34,
+       "rate": 0.0311
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.01,
+     "cancelled_confirmed": 0
+    },
+    "16": {
+     "name": "児島",
+     "races": 1236,
+     "days": 103,
+     "not_waku_nari_races": 247,
+     "under6_boats_races": 5,
+     "partial_refund_races": 32,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 629,
+       "rate": 0.5089,
+       "ci95": [
+        0.481,
+        0.5367
+       ],
+       "races_course_present": 1236,
+       "rate_if_present": 0.5089
+      },
+      {
+       "course": 2,
+       "wins": 151,
+       "rate": 0.1222,
+       "ci95": [
+        0.1051,
+        0.1416
+       ],
+       "races_course_present": 1236,
+       "rate_if_present": 0.1222
+      },
+      {
+       "course": 3,
+       "wins": 185,
+       "rate": 0.1497,
+       "ci95": [
+        0.1309,
+        0.1706
+       ],
+       "races_course_present": 1236,
+       "rate_if_present": 0.1497
+      },
+      {
+       "course": 4,
+       "wins": 152,
+       "rate": 0.123,
+       "ci95": [
+        0.1058,
+        0.1425
+       ],
+       "races_course_present": 1236,
+       "rate_if_present": 0.123
+      },
+      {
+       "course": 5,
+       "wins": 96,
+       "rate": 0.0777,
+       "ci95": [
+        0.064,
+        0.0939
+       ],
+       "races_course_present": 1236,
+       "rate_if_present": 0.0777
+      },
+      {
+       "course": 6,
+       "wins": 23,
+       "rate": 0.0186,
+       "ci95": [
+        0.0124,
+        0.0278
+       ],
+       "races_course_present": 1231,
+       "rate_if_present": 0.0187
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 627,
+       "rate": 0.5073
+      },
+      {
+       "waku": 2,
+       "wins": 149,
+       "rate": 0.1206
+      },
+      {
+       "waku": 3,
+       "wins": 183,
+       "rate": 0.1481
+      },
+      {
+       "waku": 4,
+       "wins": 149,
+       "rate": 0.1206
+      },
+      {
+       "waku": 5,
+       "wins": 95,
+       "rate": 0.0769
+      },
+      {
+       "waku": 6,
+       "wins": 33,
+       "rate": 0.0267
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.81,
+     "cancelled_confirmed": 0
+    },
+    "17": {
+     "name": "宮島",
+     "races": 1044,
+     "days": 87,
+     "not_waku_nari_races": 208,
+     "under6_boats_races": 16,
+     "partial_refund_races": 30,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 592,
+       "rate": 0.567,
+       "ci95": [
+        0.5368,
+        0.5968
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.567
+      },
+      {
+       "course": 2,
+       "wins": 124,
+       "rate": 0.1188,
+       "ci95": [
+        0.1005,
+        0.1398
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.1188
+      },
+      {
+       "course": 3,
+       "wins": 138,
+       "rate": 0.1322,
+       "ci95": [
+        0.113,
+        0.1541
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.1322
+      },
+      {
+       "course": 4,
+       "wins": 112,
+       "rate": 0.1073,
+       "ci95": [
+        0.0899,
+        0.1275
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.1073
+      },
+      {
+       "course": 5,
+       "wins": 63,
+       "rate": 0.0603,
+       "ci95": [
+        0.0474,
+        0.0765
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.0603
+      },
+      {
+       "course": 6,
+       "wins": 15,
+       "rate": 0.0144,
+       "ci95": [
+        0.0087,
+        0.0236
+       ],
+       "races_course_present": 1028,
+       "rate_if_present": 0.0146
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 588,
+       "rate": 0.5632
+      },
+      {
+       "waku": 2,
+       "wins": 125,
+       "rate": 0.1197
+      },
+      {
+       "waku": 3,
+       "wins": 137,
+       "rate": 0.1312
+      },
+      {
+       "waku": 4,
+       "wins": 111,
+       "rate": 0.1063
+      },
+      {
+       "waku": 5,
+       "wins": 59,
+       "rate": 0.0565
+      },
+      {
+       "waku": 6,
+       "wins": 24,
+       "rate": 0.023
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.86,
+     "cancelled_confirmed": 0
+    },
+    "18": {
+     "name": "徳山",
+     "races": 1344,
+     "days": 112,
+     "not_waku_nari_races": 251,
+     "under6_boats_races": 13,
+     "partial_refund_races": 29,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 823,
+       "rate": 0.6124,
+       "ci95": [
+        0.586,
+        0.638
+       ],
+       "races_course_present": 1344,
+       "rate_if_present": 0.6124
+      },
+      {
+       "course": 2,
+       "wins": 182,
+       "rate": 0.1354,
+       "ci95": [
+        0.1182,
+        0.1548
+       ],
+       "races_course_present": 1344,
+       "rate_if_present": 0.1354
+      },
+      {
+       "course": 3,
+       "wins": 151,
+       "rate": 0.1124,
+       "ci95": [
+        0.0966,
+        0.1304
+       ],
+       "races_course_present": 1344,
+       "rate_if_present": 0.1124
+      },
+      {
+       "course": 4,
+       "wins": 98,
+       "rate": 0.0729,
+       "ci95": [
+        0.0602,
+        0.0881
+       ],
+       "races_course_present": 1344,
+       "rate_if_present": 0.0729
+      },
+      {
+       "course": 5,
+       "wins": 75,
+       "rate": 0.0558,
+       "ci95": [
+        0.0447,
+        0.0694
+       ],
+       "races_course_present": 1344,
+       "rate_if_present": 0.0558
+      },
+      {
+       "course": 6,
+       "wins": 15,
+       "rate": 0.0112,
+       "ci95": [
+        0.0068,
+        0.0183
+       ],
+       "races_course_present": 1331,
+       "rate_if_present": 0.0113
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 820,
+       "rate": 0.6101
+      },
+      {
+       "waku": 2,
+       "wins": 189,
+       "rate": 0.1406
+      },
+      {
+       "waku": 3,
+       "wins": 142,
+       "rate": 0.1057
+      },
+      {
+       "waku": 4,
+       "wins": 95,
+       "rate": 0.0707
+      },
+      {
+       "waku": 5,
+       "wins": 65,
+       "rate": 0.0484
+      },
+      {
+       "waku": 6,
+       "wins": 33,
+       "rate": 0.0246
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.34,
+     "cancelled_confirmed": 0
+    },
+    "19": {
+     "name": "下関",
+     "races": 1200,
+     "days": 100,
+     "not_waku_nari_races": 251,
+     "under6_boats_races": 11,
+     "partial_refund_races": 31,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 745,
+       "rate": 0.6208,
+       "ci95": [
+        0.593,
+        0.6479
+       ],
+       "races_course_present": 1200,
+       "rate_if_present": 0.6208
+      },
+      {
+       "course": 2,
+       "wins": 123,
+       "rate": 0.1025,
+       "ci95": [
+        0.0866,
+        0.1209
+       ],
+       "races_course_present": 1200,
+       "rate_if_present": 0.1025
+      },
+      {
+       "course": 3,
+       "wins": 140,
+       "rate": 0.1167,
+       "ci95": [
+        0.0997,
+        0.1361
+       ],
+       "races_course_present": 1200,
+       "rate_if_present": 0.1167
+      },
+      {
+       "course": 4,
+       "wins": 116,
+       "rate": 0.0967,
+       "ci95": [
+        0.0812,
+        0.1147
+       ],
+       "races_course_present": 1200,
+       "rate_if_present": 0.0967
+      },
+      {
+       "course": 5,
+       "wins": 54,
+       "rate": 0.045,
+       "ci95": [
+        0.0347,
+        0.0583
+       ],
+       "races_course_present": 1200,
+       "rate_if_present": 0.045
+      },
+      {
+       "course": 6,
+       "wins": 22,
+       "rate": 0.0183,
+       "ci95": [
+        0.0121,
+        0.0276
+       ],
+       "races_course_present": 1189,
+       "rate_if_present": 0.0185
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 741,
+       "rate": 0.6175
+      },
+      {
+       "waku": 2,
+       "wins": 121,
+       "rate": 0.1008
+      },
+      {
+       "waku": 3,
+       "wins": 134,
+       "rate": 0.1117
+      },
+      {
+       "waku": 4,
+       "wins": 109,
+       "rate": 0.0908
+      },
+      {
+       "waku": 5,
+       "wins": 52,
+       "rate": 0.0433
+      },
+      {
+       "waku": 6,
+       "wins": 43,
+       "rate": 0.0358
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.75,
+     "cancelled_confirmed": 0
+    },
+    "20": {
+     "name": "若松",
+     "races": 1280,
+     "days": 107,
+     "not_waku_nari_races": 281,
+     "under6_boats_races": 9,
+     "partial_refund_races": 19,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 728,
+       "rate": 0.5687,
+       "ci95": [
+        0.5415,
+        0.5956
+       ],
+       "races_course_present": 1280,
+       "rate_if_present": 0.5687
+      },
+      {
+       "course": 2,
+       "wins": 181,
+       "rate": 0.1414,
+       "ci95": [
+        0.1234,
+        0.1616
+       ],
+       "races_course_present": 1280,
+       "rate_if_present": 0.1414
+      },
+      {
+       "course": 3,
+       "wins": 155,
+       "rate": 0.1211,
+       "ci95": [
+        0.1043,
+        0.1401
+       ],
+       "races_course_present": 1280,
+       "rate_if_present": 0.1211
+      },
+      {
+       "course": 4,
+       "wins": 126,
+       "rate": 0.0984,
+       "ci95": [
+        0.0833,
+        0.116
+       ],
+       "races_course_present": 1280,
+       "rate_if_present": 0.0984
+      },
+      {
+       "course": 5,
+       "wins": 68,
+       "rate": 0.0531,
+       "ci95": [
+        0.0421,
+        0.0668
+       ],
+       "races_course_present": 1280,
+       "rate_if_present": 0.0531
+      },
+      {
+       "course": 6,
+       "wins": 22,
+       "rate": 0.0172,
+       "ci95": [
+        0.0114,
+        0.0259
+       ],
+       "races_course_present": 1271,
+       "rate_if_present": 0.0173
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 720,
+       "rate": 0.5625
+      },
+      {
+       "waku": 2,
+       "wins": 187,
+       "rate": 0.1461
+      },
+      {
+       "waku": 3,
+       "wins": 160,
+       "rate": 0.125
+      },
+      {
+       "waku": 4,
+       "wins": 109,
+       "rate": 0.0852
+      },
+      {
+       "waku": 5,
+       "wins": 60,
+       "rate": 0.0469
+      },
+      {
+       "waku": 6,
+       "wins": 44,
+       "rate": 0.0344
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.72,
+     "cancelled_confirmed": 4
+    },
+    "21": {
+     "name": "芦屋",
+     "races": 1140,
+     "days": 95,
+     "not_waku_nari_races": 232,
+     "under6_boats_races": 7,
+     "partial_refund_races": 29,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 688,
+       "rate": 0.6035,
+       "ci95": [
+        0.5748,
+        0.6315
+       ],
+       "races_course_present": 1140,
+       "rate_if_present": 0.6035
+      },
+      {
+       "course": 2,
+       "wins": 117,
+       "rate": 0.1026,
+       "ci95": [
+        0.0863,
+        0.1216
+       ],
+       "races_course_present": 1140,
+       "rate_if_present": 0.1026
+      },
+      {
+       "course": 3,
+       "wins": 124,
+       "rate": 0.1088,
+       "ci95": [
+        0.092,
+        0.1282
+       ],
+       "races_course_present": 1140,
+       "rate_if_present": 0.1088
+      },
+      {
+       "course": 4,
+       "wins": 119,
+       "rate": 0.1044,
+       "ci95": [
+        0.0879,
+        0.1235
+       ],
+       "races_course_present": 1140,
+       "rate_if_present": 0.1044
+      },
+      {
+       "course": 5,
+       "wins": 73,
+       "rate": 0.064,
+       "ci95": [
+        0.0512,
+        0.0798
+       ],
+       "races_course_present": 1140,
+       "rate_if_present": 0.064
+      },
+      {
+       "course": 6,
+       "wins": 19,
+       "rate": 0.0167,
+       "ci95": [
+        0.0107,
+        0.0259
+       ],
+       "races_course_present": 1133,
+       "rate_if_present": 0.0168
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 686,
+       "rate": 0.6018
+      },
+      {
+       "waku": 2,
+       "wins": 122,
+       "rate": 0.107
+      },
+      {
+       "waku": 3,
+       "wins": 124,
+       "rate": 0.1088
+      },
+      {
+       "waku": 4,
+       "wins": 110,
+       "rate": 0.0965
+      },
+      {
+       "waku": 5,
+       "wins": 66,
+       "rate": 0.0579
+      },
+      {
+       "waku": 6,
+       "wins": 32,
+       "rate": 0.0281
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.14,
+     "cancelled_confirmed": 0
+    },
+    "22": {
+     "name": "福岡",
+     "races": 1152,
+     "days": 96,
+     "not_waku_nari_races": 185,
+     "under6_boats_races": 6,
+     "partial_refund_races": 22,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 701,
+       "rate": 0.6085,
+       "ci95": [
+        0.58,
+        0.6363
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.6085
+      },
+      {
+       "course": 2,
+       "wins": 161,
+       "rate": 0.1398,
+       "ci95": [
+        0.1209,
+        0.161
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.1398
+      },
+      {
+       "course": 3,
+       "wins": 163,
+       "rate": 0.1415,
+       "ci95": [
+        0.1226,
+        0.1628
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.1415
+      },
+      {
+       "course": 4,
+       "wins": 77,
+       "rate": 0.0668,
+       "ci95": [
+        0.0538,
+        0.0827
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.0668
+      },
+      {
+       "course": 5,
+       "wins": 39,
+       "rate": 0.0339,
+       "ci95": [
+        0.0249,
+        0.0459
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.0339
+      },
+      {
+       "course": 6,
+       "wins": 11,
+       "rate": 0.0095,
+       "ci95": [
+        0.0053,
+        0.017
+       ],
+       "races_course_present": 1146,
+       "rate_if_present": 0.0096
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 700,
+       "rate": 0.6076
+      },
+      {
+       "waku": 2,
+       "wins": 157,
+       "rate": 0.1363
+      },
+      {
+       "waku": 3,
+       "wins": 163,
+       "rate": 0.1415
+      },
+      {
+       "waku": 4,
+       "wins": 71,
+       "rate": 0.0616
+      },
+      {
+       "waku": 5,
+       "wins": 34,
+       "rate": 0.0295
+      },
+      {
+       "waku": 6,
+       "wins": 27,
+       "rate": 0.0234
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.39,
+     "cancelled_confirmed": 0
+    },
+    "23": {
+     "name": "唐津",
+     "races": 1152,
+     "days": 96,
+     "not_waku_nari_races": 320,
+     "under6_boats_races": 11,
+     "partial_refund_races": 37,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 660,
+       "rate": 0.5729,
+       "ci95": [
+        0.5442,
+        0.6012
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.5729
+      },
+      {
+       "course": 2,
+       "wins": 160,
+       "rate": 0.1389,
+       "ci95": [
+        0.1201,
+        0.1601
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.1389
+      },
+      {
+       "course": 3,
+       "wins": 140,
+       "rate": 0.1215,
+       "ci95": [
+        0.1039,
+        0.1417
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.1215
+      },
+      {
+       "course": 4,
+       "wins": 113,
+       "rate": 0.0981,
+       "ci95": [
+        0.0822,
+        0.1166
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.0981
+      },
+      {
+       "course": 5,
+       "wins": 60,
+       "rate": 0.0521,
+       "ci95": [
+        0.0407,
+        0.0665
+       ],
+       "races_course_present": 1152,
+       "rate_if_present": 0.0521
+      },
+      {
+       "course": 6,
+       "wins": 19,
+       "rate": 0.0165,
+       "ci95": [
+        0.0106,
+        0.0256
+       ],
+       "races_course_present": 1141,
+       "rate_if_present": 0.0167
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 642,
+       "rate": 0.5573
+      },
+      {
+       "waku": 2,
+       "wins": 171,
+       "rate": 0.1484
+      },
+      {
+       "waku": 3,
+       "wins": 136,
+       "rate": 0.1181
+      },
+      {
+       "waku": 4,
+       "wins": 117,
+       "rate": 0.1016
+      },
+      {
+       "waku": 5,
+       "wins": 56,
+       "rate": 0.0486
+      },
+      {
+       "waku": 6,
+       "wins": 30,
+       "rate": 0.026
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.56,
+     "cancelled_confirmed": 0
+    },
+    "24": {
+     "name": "大村",
+     "races": 1213,
+     "days": 102,
+     "not_waku_nari_races": 160,
+     "under6_boats_races": 10,
+     "partial_refund_races": 39,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 695,
+       "rate": 0.573,
+       "ci95": [
+        0.5449,
+        0.6005
+       ],
+       "races_course_present": 1213,
+       "rate_if_present": 0.573
+      },
+      {
+       "course": 2,
+       "wins": 161,
+       "rate": 0.1327,
+       "ci95": [
+        0.1148,
+        0.153
+       ],
+       "races_course_present": 1213,
+       "rate_if_present": 0.1327
+      },
+      {
+       "course": 3,
+       "wins": 138,
+       "rate": 0.1138,
+       "ci95": [
+        0.0971,
+        0.1329
+       ],
+       "races_course_present": 1213,
+       "rate_if_present": 0.1138
+      },
+      {
+       "course": 4,
+       "wins": 125,
+       "rate": 0.1031,
+       "ci95": [
+        0.0872,
+        0.1214
+       ],
+       "races_course_present": 1213,
+       "rate_if_present": 0.1031
+      },
+      {
+       "course": 5,
+       "wins": 74,
+       "rate": 0.061,
+       "ci95": [
+        0.0489,
+        0.0759
+       ],
+       "races_course_present": 1213,
+       "rate_if_present": 0.061
+      },
+      {
+       "course": 6,
+       "wins": 20,
+       "rate": 0.0165,
+       "ci95": [
+        0.0107,
+        0.0253
+       ],
+       "races_course_present": 1203,
+       "rate_if_present": 0.0166
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 692,
+       "rate": 0.5705
+      },
+      {
+       "waku": 2,
+       "wins": 158,
+       "rate": 0.1303
+      },
+      {
+       "waku": 3,
+       "wins": 152,
+       "rate": 0.1253
+      },
+      {
+       "waku": 4,
+       "wins": 110,
+       "rate": 0.0907
+      },
+      {
+       "waku": 5,
+       "wins": 69,
+       "rate": 0.0569
+      },
+      {
+       "waku": 6,
+       "wins": 32,
+       "rate": 0.0264
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.24,
+     "cancelled_confirmed": 10
+    },
+    "01": {
+     "name": "桐生",
+     "races": 1203,
+     "days": 101,
+     "not_waku_nari_races": 273,
+     "under6_boats_races": 5,
+     "partial_refund_races": 21,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 623,
+       "rate": 0.5179,
+       "ci95": [
+        0.4896,
+        0.546
+       ],
+       "races_course_present": 1203,
+       "rate_if_present": 0.5179
+      },
+      {
+       "course": 2,
+       "wins": 153,
+       "rate": 0.1272,
+       "ci95": [
+        0.1095,
+        0.1472
+       ],
+       "races_course_present": 1203,
+       "rate_if_present": 0.1272
+      },
+      {
+       "course": 3,
+       "wins": 164,
+       "rate": 0.1363,
+       "ci95": [
+        0.1181,
+        0.1569
+       ],
+       "races_course_present": 1203,
+       "rate_if_present": 0.1363
+      },
+      {
+       "course": 4,
+       "wins": 127,
+       "rate": 0.1056,
+       "ci95": [
+        0.0894,
+        0.1242
+       ],
+       "races_course_present": 1203,
+       "rate_if_present": 0.1056
+      },
+      {
+       "course": 5,
+       "wins": 102,
+       "rate": 0.0848,
+       "ci95": [
+        0.0703,
+        0.1019
+       ],
+       "races_course_present": 1203,
+       "rate_if_present": 0.0848
+      },
+      {
+       "course": 6,
+       "wins": 34,
+       "rate": 0.0283,
+       "ci95": [
+        0.0203,
+        0.0392
+       ],
+       "races_course_present": 1198,
+       "rate_if_present": 0.0284
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 613,
+       "rate": 0.5096
+      },
+      {
+       "waku": 2,
+       "wins": 160,
+       "rate": 0.133
+      },
+      {
+       "waku": 3,
+       "wins": 166,
+       "rate": 0.138
+      },
+      {
+       "waku": 4,
+       "wins": 121,
+       "rate": 0.1006
+      },
+      {
+       "waku": 5,
+       "wins": 92,
+       "rate": 0.0765
+      },
+      {
+       "waku": 6,
+       "wins": 51,
+       "rate": 0.0424
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.41,
+     "cancelled_confirmed": 21
+    },
+    "02": {
+     "name": "戸田",
+     "races": 1044,
+     "days": 87,
+     "not_waku_nari_races": 194,
+     "under6_boats_races": 7,
+     "partial_refund_races": 32,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 424,
+       "rate": 0.4061,
+       "ci95": [
+        0.3767,
+        0.4362
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.4061
+      },
+      {
+       "course": 2,
+       "wins": 191,
+       "rate": 0.183,
+       "ci95": [
+        0.1607,
+        0.2076
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.183
+      },
+      {
+       "course": 3,
+       "wins": 171,
+       "rate": 0.1638,
+       "ci95": [
+        0.1426,
+        0.1875
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.1638
+      },
+      {
+       "course": 4,
+       "wins": 146,
+       "rate": 0.1398,
+       "ci95": [
+        0.1201,
+        0.1622
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.1398
+      },
+      {
+       "course": 5,
+       "wins": 85,
+       "rate": 0.0814,
+       "ci95": [
+        0.0663,
+        0.0996
+       ],
+       "races_course_present": 1044,
+       "rate_if_present": 0.0814
+      },
+      {
+       "course": 6,
+       "wins": 27,
+       "rate": 0.0259,
+       "ci95": [
+        0.0178,
+        0.0374
+       ],
+       "races_course_present": 1037,
+       "rate_if_present": 0.026
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 421,
+       "rate": 0.4033
+      },
+      {
+       "waku": 2,
+       "wins": 201,
+       "rate": 0.1925
+      },
+      {
+       "waku": 3,
+       "wins": 161,
+       "rate": 0.1542
+      },
+      {
+       "waku": 4,
+       "wins": 148,
+       "rate": 0.1418
+      },
+      {
+       "waku": 5,
+       "wins": 77,
+       "rate": 0.0738
+      },
+      {
+       "waku": 6,
+       "wins": 36,
+       "rate": 0.0345
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.96,
+     "cancelled_confirmed": 12
+    },
+    "03": {
+     "name": "江戸川",
+     "races": 1012,
+     "days": 86,
+     "not_waku_nari_races": 12,
+     "under6_boats_races": 14,
+     "partial_refund_races": 38,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 457,
+       "rate": 0.4516,
+       "ci95": [
+        0.4212,
+        0.4824
+       ],
+       "races_course_present": 1012,
+       "rate_if_present": 0.4516
+      },
+      {
+       "course": 2,
+       "wins": 169,
+       "rate": 0.167,
+       "ci95": [
+        0.1453,
+        0.1912
+       ],
+       "races_course_present": 1012,
+       "rate_if_present": 0.167
+      },
+      {
+       "course": 3,
+       "wins": 154,
+       "rate": 0.1522,
+       "ci95": [
+        0.1314,
+        0.1756
+       ],
+       "races_course_present": 1012,
+       "rate_if_present": 0.1522
+      },
+      {
+       "course": 4,
+       "wins": 124,
+       "rate": 0.1225,
+       "ci95": [
+        0.1037,
+        0.1442
+       ],
+       "races_course_present": 1012,
+       "rate_if_present": 0.1225
+      },
+      {
+       "course": 5,
+       "wins": 74,
+       "rate": 0.0731,
+       "ci95": [
+        0.0586,
+        0.0908
+       ],
+       "races_course_present": 1012,
+       "rate_if_present": 0.0731
+      },
+      {
+       "course": 6,
+       "wins": 34,
+       "rate": 0.0336,
+       "ci95": [
+        0.0241,
+        0.0466
+       ],
+       "races_course_present": 998,
+       "rate_if_present": 0.0341
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 457,
+       "rate": 0.4516
+      },
+      {
+       "waku": 2,
+       "wins": 168,
+       "rate": 0.166
+      },
+      {
+       "waku": 3,
+       "wins": 153,
+       "rate": 0.1512
+      },
+      {
+       "waku": 4,
+       "wins": 126,
+       "rate": 0.1245
+      },
+      {
+       "waku": 5,
+       "wins": 74,
+       "rate": 0.0731
+      },
+      {
+       "waku": 6,
+       "wins": 34,
+       "rate": 0.0336
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.2,
+     "cancelled_confirmed": 67
+    },
+    "04": {
+     "name": "平和島",
+     "races": 1080,
+     "days": 90,
+     "not_waku_nari_races": 137,
+     "under6_boats_races": 13,
+     "partial_refund_races": 37,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 460,
+       "rate": 0.4259,
+       "ci95": [
+        0.3967,
+        0.4556
+       ],
+       "races_course_present": 1080,
+       "rate_if_present": 0.4259
+      },
+      {
+       "course": 2,
+       "wins": 194,
+       "rate": 0.1796,
+       "ci95": [
+        0.1579,
+        0.2036
+       ],
+       "races_course_present": 1080,
+       "rate_if_present": 0.1796
+      },
+      {
+       "course": 3,
+       "wins": 193,
+       "rate": 0.1787,
+       "ci95": [
+        0.157,
+        0.2027
+       ],
+       "races_course_present": 1080,
+       "rate_if_present": 0.1787
+      },
+      {
+       "course": 4,
+       "wins": 124,
+       "rate": 0.1148,
+       "ci95": [
+        0.0972,
+        0.1352
+       ],
+       "races_course_present": 1080,
+       "rate_if_present": 0.1148
+      },
+      {
+       "course": 5,
+       "wins": 85,
+       "rate": 0.0787,
+       "ci95": [
+        0.0641,
+        0.0963
+       ],
+       "races_course_present": 1080,
+       "rate_if_present": 0.0787
+      },
+      {
+       "course": 6,
+       "wins": 24,
+       "rate": 0.0222,
+       "ci95": [
+        0.015,
+        0.0329
+       ],
+       "races_course_present": 1067,
+       "rate_if_present": 0.0225
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 457,
+       "rate": 0.4231
+      },
+      {
+       "waku": 2,
+       "wins": 202,
+       "rate": 0.187
+      },
+      {
+       "waku": 3,
+       "wins": 191,
+       "rate": 0.1769
+      },
+      {
+       "waku": 4,
+       "wins": 115,
+       "rate": 0.1065
+      },
+      {
+       "waku": 5,
+       "wins": 88,
+       "rate": 0.0815
+      },
+      {
+       "waku": 6,
+       "wins": 27,
+       "rate": 0.025
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.83,
+     "cancelled_confirmed": 12
+    },
+    "05": {
+     "name": "多摩川",
+     "races": 1248,
+     "days": 104,
+     "not_waku_nari_races": 221,
+     "under6_boats_races": 14,
+     "partial_refund_races": 30,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 697,
+       "rate": 0.5585,
+       "ci95": [
+        0.5308,
+        0.5858
+       ],
+       "races_course_present": 1248,
+       "rate_if_present": 0.5585
+      },
+      {
+       "course": 2,
+       "wins": 165,
+       "rate": 0.1322,
+       "ci95": [
+        0.1145,
+        0.1521
+       ],
+       "races_course_present": 1248,
+       "rate_if_present": 0.1322
+      },
+      {
+       "course": 3,
+       "wins": 158,
+       "rate": 0.1266,
+       "ci95": [
+        0.1093,
+        0.1462
+       ],
+       "races_course_present": 1248,
+       "rate_if_present": 0.1266
+      },
+      {
+       "course": 4,
+       "wins": 124,
+       "rate": 0.0994,
+       "ci95": [
+        0.084,
+        0.1172
+       ],
+       "races_course_present": 1248,
+       "rate_if_present": 0.0994
+      },
+      {
+       "course": 5,
+       "wins": 74,
+       "rate": 0.0593,
+       "ci95": [
+        0.0475,
+        0.0738
+       ],
+       "races_course_present": 1248,
+       "rate_if_present": 0.0593
+      },
+      {
+       "course": 6,
+       "wins": 30,
+       "rate": 0.024,
+       "ci95": [
+        0.0169,
+        0.0341
+       ],
+       "races_course_present": 1234,
+       "rate_if_present": 0.0243
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 697,
+       "rate": 0.5585
+      },
+      {
+       "waku": 2,
+       "wins": 164,
+       "rate": 0.1314
+      },
+      {
+       "waku": 3,
+       "wins": 160,
+       "rate": 0.1282
+      },
+      {
+       "waku": 4,
+       "wins": 120,
+       "rate": 0.0962
+      },
+      {
+       "waku": 5,
+       "wins": 67,
+       "rate": 0.0537
+      },
+      {
+       "waku": 6,
+       "wins": 40,
+       "rate": 0.0321
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.8,
+     "cancelled_confirmed": 0
+    },
+    "06": {
+     "name": "浜名湖",
+     "races": 1223,
+     "days": 102,
+     "not_waku_nari_races": 337,
+     "under6_boats_races": 10,
+     "partial_refund_races": 36,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 668,
+       "rate": 0.5462,
+       "ci95": [
+        0.5182,
+        0.5739
+       ],
+       "races_course_present": 1223,
+       "rate_if_present": 0.5462
+      },
+      {
+       "course": 2,
+       "wins": 149,
+       "rate": 0.1218,
+       "ci95": [
+        0.1047,
+        0.1414
+       ],
+       "races_course_present": 1223,
+       "rate_if_present": 0.1218
+      },
+      {
+       "course": 3,
+       "wins": 160,
+       "rate": 0.1308,
+       "ci95": [
+        0.1131,
+        0.1509
+       ],
+       "races_course_present": 1223,
+       "rate_if_present": 0.1308
+      },
+      {
+       "course": 4,
+       "wins": 136,
+       "rate": 0.1112,
+       "ci95": [
+        0.0948,
+        0.1301
+       ],
+       "races_course_present": 1223,
+       "rate_if_present": 0.1112
+      },
+      {
+       "course": 5,
+       "wins": 84,
+       "rate": 0.0687,
+       "ci95": [
+        0.0558,
+        0.0843
+       ],
+       "races_course_present": 1223,
+       "rate_if_present": 0.0687
+      },
+      {
+       "course": 6,
+       "wins": 26,
+       "rate": 0.0213,
+       "ci95": [
+        0.0145,
+        0.031
+       ],
+       "races_course_present": 1213,
+       "rate_if_present": 0.0214
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 653,
+       "rate": 0.5339
+      },
+      {
+       "waku": 2,
+       "wins": 155,
+       "rate": 0.1267
+      },
+      {
+       "waku": 3,
+       "wins": 149,
+       "rate": 0.1218
+      },
+      {
+       "waku": 4,
+       "wins": 131,
+       "rate": 0.1071
+      },
+      {
+       "waku": 5,
+       "wins": 88,
+       "rate": 0.072
+      },
+      {
+       "waku": 6,
+       "wins": 47,
+       "rate": 0.0384
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.72,
+     "cancelled_confirmed": 0
+    },
+    "07": {
+     "name": "蒲郡",
+     "races": 1127,
+     "days": 94,
+     "not_waku_nari_races": 298,
+     "under6_boats_races": 14,
+     "partial_refund_races": 35,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 623,
+       "rate": 0.5528,
+       "ci95": [
+        0.5236,
+        0.5816
+       ],
+       "races_course_present": 1127,
+       "rate_if_present": 0.5528
+      },
+      {
+       "course": 2,
+       "wins": 140,
+       "rate": 0.1242,
+       "ci95": [
+        0.1062,
+        0.1448
+       ],
+       "races_course_present": 1127,
+       "rate_if_present": 0.1242
+      },
+      {
+       "course": 3,
+       "wins": 143,
+       "rate": 0.1269,
+       "ci95": [
+        0.1087,
+        0.1476
+       ],
+       "races_course_present": 1127,
+       "rate_if_present": 0.1269
+      },
+      {
+       "course": 4,
+       "wins": 124,
+       "rate": 0.11,
+       "ci95": [
+        0.0931,
+        0.1296
+       ],
+       "races_course_present": 1127,
+       "rate_if_present": 0.11
+      },
+      {
+       "course": 5,
+       "wins": 69,
+       "rate": 0.0612,
+       "ci95": [
+        0.0487,
+        0.0768
+       ],
+       "races_course_present": 1127,
+       "rate_if_present": 0.0612
+      },
+      {
+       "course": 6,
+       "wins": 28,
+       "rate": 0.0248,
+       "ci95": [
+        0.0172,
+        0.0357
+       ],
+       "races_course_present": 1113,
+       "rate_if_present": 0.0252
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 613,
+       "rate": 0.5439
+      },
+      {
+       "waku": 2,
+       "wins": 143,
+       "rate": 0.1269
+      },
+      {
+       "waku": 3,
+       "wins": 133,
+       "rate": 0.118
+      },
+      {
+       "waku": 4,
+       "wins": 114,
+       "rate": 0.1012
+      },
+      {
+       "waku": 5,
+       "wins": 78,
+       "rate": 0.0692
+      },
+      {
+       "waku": 6,
+       "wins": 46,
+       "rate": 0.0408
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.6,
+     "cancelled_confirmed": 12
+    },
+    "08": {
+     "name": "常滑",
+     "races": 1368,
+     "days": 114,
+     "not_waku_nari_races": 342,
+     "under6_boats_races": 13,
+     "partial_refund_races": 36,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 812,
+       "rate": 0.5936,
+       "ci95": [
+        0.5673,
+        0.6193
+       ],
+       "races_course_present": 1368,
+       "rate_if_present": 0.5936
+      },
+      {
+       "course": 2,
+       "wins": 175,
+       "rate": 0.1279,
+       "ci95": [
+        0.1113,
+        0.1467
+       ],
+       "races_course_present": 1368,
+       "rate_if_present": 0.1279
+      },
+      {
+       "course": 3,
+       "wins": 140,
+       "rate": 0.1023,
+       "ci95": [
+        0.0874,
+        0.1195
+       ],
+       "races_course_present": 1368,
+       "rate_if_present": 0.1023
+      },
+      {
+       "course": 4,
+       "wins": 139,
+       "rate": 0.1016,
+       "ci95": [
+        0.0867,
+        0.1188
+       ],
+       "races_course_present": 1368,
+       "rate_if_present": 0.1016
+      },
+      {
+       "course": 5,
+       "wins": 74,
+       "rate": 0.0541,
+       "ci95": [
+        0.0433,
+        0.0674
+       ],
+       "races_course_present": 1367,
+       "rate_if_present": 0.0541
+      },
+      {
+       "course": 6,
+       "wins": 28,
+       "rate": 0.0205,
+       "ci95": [
+        0.0142,
+        0.0294
+       ],
+       "races_course_present": 1355,
+       "rate_if_present": 0.0207
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 804,
+       "rate": 0.5877
+      },
+      {
+       "waku": 2,
+       "wins": 179,
+       "rate": 0.1308
+      },
+      {
+       "waku": 3,
+       "wins": 132,
+       "rate": 0.0965
+      },
+      {
+       "waku": 4,
+       "wins": 124,
+       "rate": 0.0906
+      },
+      {
+       "waku": 5,
+       "wins": 78,
+       "rate": 0.057
+      },
+      {
+       "waku": 6,
+       "wins": 51,
+       "rate": 0.0373
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.68,
+     "cancelled_confirmed": 0
+    },
+    "09": {
+     "name": "津",
+     "races": 1353,
+     "days": 114,
+     "not_waku_nari_races": 225,
+     "under6_boats_races": 10,
+     "partial_refund_races": 41,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 754,
+       "rate": 0.5573,
+       "ci95": [
+        0.5307,
+        0.5835
+       ],
+       "races_course_present": 1353,
+       "rate_if_present": 0.5573
+      },
+      {
+       "course": 2,
+       "wins": 203,
+       "rate": 0.15,
+       "ci95": [
+        0.132,
+        0.1701
+       ],
+       "races_course_present": 1353,
+       "rate_if_present": 0.15
+      },
+      {
+       "course": 3,
+       "wins": 163,
+       "rate": 0.1205,
+       "ci95": [
+        0.1042,
+        0.1389
+       ],
+       "races_course_present": 1353,
+       "rate_if_present": 0.1205
+      },
+      {
+       "course": 4,
+       "wins": 131,
+       "rate": 0.0968,
+       "ci95": [
+        0.0822,
+        0.1137
+       ],
+       "races_course_present": 1353,
+       "rate_if_present": 0.0968
+      },
+      {
+       "course": 5,
+       "wins": 83,
+       "rate": 0.0613,
+       "ci95": [
+        0.0498,
+        0.0754
+       ],
+       "races_course_present": 1353,
+       "rate_if_present": 0.0613
+      },
+      {
+       "course": 6,
+       "wins": 19,
+       "rate": 0.014,
+       "ci95": [
+        0.009,
+        0.0218
+       ],
+       "races_course_present": 1343,
+       "rate_if_present": 0.0141
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 754,
+       "rate": 0.5573
+      },
+      {
+       "waku": 2,
+       "wins": 198,
+       "rate": 0.1463
+      },
+      {
+       "waku": 3,
+       "wins": 163,
+       "rate": 0.1205
+      },
+      {
+       "waku": 4,
+       "wins": 124,
+       "rate": 0.0916
+      },
+      {
+       "waku": 5,
+       "wins": 76,
+       "rate": 0.0562
+      },
+      {
+       "waku": 6,
+       "wins": 38,
+       "rate": 0.0281
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.4,
+     "cancelled_confirmed": 63
+    }
+   }
+  },
+  "12m": {
+   "from": "2025-10-20",
+   "to": "2026-10-19",
+   "all": {
+    "races": 55414,
+    "days": 365,
+    "not_waku_nari_races": 10547,
+    "under6_boats_races": 568,
+    "partial_refund_races": 1720,
+    "dead_heat_first_races": 18,
+    "by_course": [
+     {
+      "course": 1,
+      "wins": 30732,
+      "rate": 0.5546,
+      "ci95": [
+       0.5504,
+       0.5587
+      ],
+      "races_course_present": 55414,
+      "rate_if_present": 0.5546
+     },
+     {
+      "course": 2,
+      "wins": 7373,
+      "rate": 0.1331,
+      "ci95": [
+       0.1303,
+       0.1359
+      ],
+      "races_course_present": 55414,
+      "rate_if_present": 0.1331
+     },
+     {
+      "course": 3,
+      "wins": 7127,
+      "rate": 0.1286,
+      "ci95": [
+       0.1259,
+       0.1314
+      ],
+      "races_course_present": 55414,
+      "rate_if_present": 0.1286
+     },
+     {
+      "course": 4,
+      "wins": 5726,
+      "rate": 0.1033,
+      "ci95": [
+       0.1008,
+       0.1059
+      ],
+      "races_course_present": 55414,
+      "rate_if_present": 0.1033
+     },
+     {
+      "course": 5,
+      "wins": 3406,
+      "rate": 0.0615,
+      "ci95": [
+       0.0595,
+       0.0635
+      ],
+      "races_course_present": 55407,
+      "rate_if_present": 0.0615
+     },
+     {
+      "course": 6,
+      "wins": 1050,
+      "rate": 0.0189,
+      "ci95": [
+       0.0178,
+       0.0201
+      ],
+      "races_course_present": 54846,
+      "rate_if_present": 0.0191
+     }
+    ],
+    "by_waku": [
+     {
+      "waku": 1,
+      "wins": 30480,
+      "rate": 0.55
+     },
+     {
+      "waku": 2,
+      "wins": 7522,
+      "rate": 0.1357
+     },
+     {
+      "waku": 3,
+      "wins": 7022,
+      "rate": 0.1267
+     },
+     {
+      "waku": 4,
+      "wins": 5465,
+      "rate": 0.0986
+     },
+     {
+      "waku": 5,
+      "wins": 3275,
+      "rate": 0.0591
+     },
+     {
+      "waku": 6,
+      "wins": 1650,
+      "rate": 0.0298
+     }
+    ],
+    "max_abs_diff_course_vs_waku_pt": 1.08
+   },
+   "venues": {
+    "10": {
+     "name": "三国",
+     "races": 2266,
+     "days": 191,
+     "not_waku_nari_races": 523,
+     "under6_boats_races": 17,
+     "partial_refund_races": 51,
+     "dead_heat_first_races": 2,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1185,
+       "rate": 0.5229,
+       "ci95": [
+        0.5024,
+        0.5435
+       ],
+       "races_course_present": 2266,
+       "rate_if_present": 0.5229
+      },
+      {
+       "course": 2,
+       "wins": 339,
+       "rate": 0.1496,
+       "ci95": [
+        0.1355,
+        0.1649
+       ],
+       "races_course_present": 2266,
+       "rate_if_present": 0.1496
+      },
+      {
+       "course": 3,
+       "wins": 333,
+       "rate": 0.147,
+       "ci95": [
+        0.133,
+        0.1621
+       ],
+       "races_course_present": 2266,
+       "rate_if_present": 0.147
+      },
+      {
+       "course": 4,
+       "wins": 234,
+       "rate": 0.1033,
+       "ci95": [
+        0.0914,
+        0.1165
+       ],
+       "races_course_present": 2266,
+       "rate_if_present": 0.1033
+      },
+      {
+       "course": 5,
+       "wins": 133,
+       "rate": 0.0587,
+       "ci95": [
+        0.0497,
+        0.0691
+       ],
+       "races_course_present": 2265,
+       "rate_if_present": 0.0587
+      },
+      {
+       "course": 6,
+       "wins": 42,
+       "rate": 0.0185,
+       "ci95": [
+        0.0137,
+        0.025
+       ],
+       "races_course_present": 2249,
+       "rate_if_present": 0.0187
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1171,
+       "rate": 0.5168
+      },
+      {
+       "waku": 2,
+       "wins": 340,
+       "rate": 0.15
+      },
+      {
+       "waku": 3,
+       "wins": 326,
+       "rate": 0.1439
+      },
+      {
+       "waku": 4,
+       "wins": 225,
+       "rate": 0.0993
+      },
+      {
+       "waku": 5,
+       "wins": 133,
+       "rate": 0.0587
+      },
+      {
+       "waku": 6,
+       "wins": 71,
+       "rate": 0.0313
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.28,
+     "cancelled_confirmed": 56
+    },
+    "11": {
+     "name": "びわこ",
+     "races": 2193,
+     "days": 183,
+     "not_waku_nari_races": 194,
+     "under6_boats_races": 25,
+     "partial_refund_races": 54,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1189,
+       "rate": 0.5422,
+       "ci95": [
+        0.5213,
+        0.5629
+       ],
+       "races_course_present": 2193,
+       "rate_if_present": 0.5422
+      },
+      {
+       "course": 2,
+       "wins": 294,
+       "rate": 0.1341,
+       "ci95": [
+        0.1204,
+        0.149
+       ],
+       "races_course_present": 2193,
+       "rate_if_present": 0.1341
+      },
+      {
+       "course": 3,
+       "wins": 316,
+       "rate": 0.1441,
+       "ci95": [
+        0.13,
+        0.1594
+       ],
+       "races_course_present": 2193,
+       "rate_if_present": 0.1441
+      },
+      {
+       "course": 4,
+       "wins": 216,
+       "rate": 0.0985,
+       "ci95": [
+        0.0867,
+        0.1117
+       ],
+       "races_course_present": 2193,
+       "rate_if_present": 0.0985
+      },
+      {
+       "course": 5,
+       "wins": 140,
+       "rate": 0.0638,
+       "ci95": [
+        0.0544,
+        0.0749
+       ],
+       "races_course_present": 2193,
+       "rate_if_present": 0.0638
+      },
+      {
+       "course": 6,
+       "wins": 38,
+       "rate": 0.0173,
+       "ci95": [
+        0.0127,
+        0.0237
+       ],
+       "races_course_present": 2168,
+       "rate_if_present": 0.0175
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1186,
+       "rate": 0.5408
+      },
+      {
+       "waku": 2,
+       "wins": 297,
+       "rate": 0.1354
+      },
+      {
+       "waku": 3,
+       "wins": 309,
+       "rate": 0.1409
+      },
+      {
+       "waku": 4,
+       "wins": 210,
+       "rate": 0.0958
+      },
+      {
+       "waku": 5,
+       "wins": 149,
+       "rate": 0.0679
+      },
+      {
+       "waku": 6,
+       "wins": 42,
+       "rate": 0.0192
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.41,
+     "cancelled_confirmed": 15
+    },
+    "12": {
+     "name": "住之江",
+     "races": 2303,
+     "days": 192,
+     "not_waku_nari_races": 412,
+     "under6_boats_races": 16,
+     "partial_refund_races": 64,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1324,
+       "rate": 0.5749,
+       "ci95": [
+        0.5546,
+        0.595
+       ],
+       "races_course_present": 2303,
+       "rate_if_present": 0.5749
+      },
+      {
+       "course": 2,
+       "wins": 311,
+       "rate": 0.135,
+       "ci95": [
+        0.1217,
+        0.1496
+       ],
+       "races_course_present": 2303,
+       "rate_if_present": 0.135
+      },
+      {
+       "course": 3,
+       "wins": 270,
+       "rate": 0.1172,
+       "ci95": [
+        0.1047,
+        0.131
+       ],
+       "races_course_present": 2303,
+       "rate_if_present": 0.1172
+      },
+      {
+       "course": 4,
+       "wins": 233,
+       "rate": 0.1012,
+       "ci95": [
+        0.0895,
+        0.1142
+       ],
+       "races_course_present": 2303,
+       "rate_if_present": 0.1012
+      },
+      {
+       "course": 5,
+       "wins": 127,
+       "rate": 0.0551,
+       "ci95": [
+        0.0465,
+        0.0652
+       ],
+       "races_course_present": 2303,
+       "rate_if_present": 0.0551
+      },
+      {
+       "course": 6,
+       "wins": 38,
+       "rate": 0.0165,
+       "ci95": [
+        0.012,
+        0.0226
+       ],
+       "races_course_present": 2287,
+       "rate_if_present": 0.0166
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1319,
+       "rate": 0.5727
+      },
+      {
+       "waku": 2,
+       "wins": 313,
+       "rate": 0.1359
+      },
+      {
+       "waku": 3,
+       "wins": 267,
+       "rate": 0.1159
+      },
+      {
+       "waku": 4,
+       "wins": 239,
+       "rate": 0.1038
+      },
+      {
+       "waku": 5,
+       "wins": 117,
+       "rate": 0.0508
+      },
+      {
+       "waku": 6,
+       "wins": 48,
+       "rate": 0.0208
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.43,
+     "cancelled_confirmed": 0
+    },
+    "13": {
+     "name": "尼崎",
+     "races": 2402,
+     "days": 201,
+     "not_waku_nari_races": 407,
+     "under6_boats_races": 26,
+     "partial_refund_races": 61,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1443,
+       "rate": 0.6007,
+       "ci95": [
+        0.581,
+        0.6202
+       ],
+       "races_course_present": 2402,
+       "rate_if_present": 0.6007
+      },
+      {
+       "course": 2,
+       "wins": 295,
+       "rate": 0.1228,
+       "ci95": [
+        0.1103,
+        0.1365
+       ],
+       "races_course_present": 2402,
+       "rate_if_present": 0.1228
+      },
+      {
+       "course": 3,
+       "wins": 271,
+       "rate": 0.1128,
+       "ci95": [
+        0.1008,
+        0.1261
+       ],
+       "races_course_present": 2402,
+       "rate_if_present": 0.1128
+      },
+      {
+       "course": 4,
+       "wins": 240,
+       "rate": 0.0999,
+       "ci95": [
+        0.0886,
+        0.1126
+       ],
+       "races_course_present": 2402,
+       "rate_if_present": 0.0999
+      },
+      {
+       "course": 5,
+       "wins": 120,
+       "rate": 0.05,
+       "ci95": [
+        0.0419,
+        0.0594
+       ],
+       "races_course_present": 2401,
+       "rate_if_present": 0.05
+      },
+      {
+       "course": 6,
+       "wins": 33,
+       "rate": 0.0137,
+       "ci95": [
+        0.0098,
+        0.0192
+       ],
+       "races_course_present": 2376,
+       "rate_if_present": 0.0139
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1441,
+       "rate": 0.5999
+      },
+      {
+       "waku": 2,
+       "wins": 287,
+       "rate": 0.1195
+      },
+      {
+       "waku": 3,
+       "wins": 281,
+       "rate": 0.117
+      },
+      {
+       "waku": 4,
+       "wins": 224,
+       "rate": 0.0933
+      },
+      {
+       "waku": 5,
+       "wins": 118,
+       "rate": 0.0491
+      },
+      {
+       "waku": 6,
+       "wins": 51,
+       "rate": 0.0212
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.75,
+     "cancelled_confirmed": 22
+    },
+    "14": {
+     "name": "鳴門",
+     "races": 2125,
+     "days": 179,
+     "not_waku_nari_races": 306,
+     "under6_boats_races": 31,
+     "partial_refund_races": 90,
+     "dead_heat_first_races": 2,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1036,
+       "rate": 0.4875,
+       "ci95": [
+        0.4663,
+        0.5088
+       ],
+       "races_course_present": 2125,
+       "rate_if_present": 0.4875
+      },
+      {
+       "course": 2,
+       "wins": 311,
+       "rate": 0.1464,
+       "ci95": [
+        0.132,
+        0.162
+       ],
+       "races_course_present": 2125,
+       "rate_if_present": 0.1464
+      },
+      {
+       "course": 3,
+       "wins": 335,
+       "rate": 0.1576,
+       "ci95": [
+        0.1428,
+        0.1738
+       ],
+       "races_course_present": 2125,
+       "rate_if_present": 0.1576
+      },
+      {
+       "course": 4,
+       "wins": 242,
+       "rate": 0.1139,
+       "ci95": [
+        0.1011,
+        0.1281
+       ],
+       "races_course_present": 2125,
+       "rate_if_present": 0.1139
+      },
+      {
+       "course": 5,
+       "wins": 162,
+       "rate": 0.0762,
+       "ci95": [
+        0.0657,
+        0.0883
+       ],
+       "races_course_present": 2125,
+       "rate_if_present": 0.0762
+      },
+      {
+       "course": 6,
+       "wins": 39,
+       "rate": 0.0184,
+       "ci95": [
+        0.0135,
+        0.025
+       ],
+       "races_course_present": 2094,
+       "rate_if_present": 0.0186
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1031,
+       "rate": 0.4852
+      },
+      {
+       "waku": 2,
+       "wins": 323,
+       "rate": 0.152
+      },
+      {
+       "waku": 3,
+       "wins": 330,
+       "rate": 0.1553
+      },
+      {
+       "waku": 4,
+       "wins": 243,
+       "rate": 0.1144
+      },
+      {
+       "waku": 5,
+       "wins": 140,
+       "rate": 0.0659
+      },
+      {
+       "waku": 6,
+       "wins": 58,
+       "rate": 0.0273
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.04,
+     "cancelled_confirmed": 17
+    },
+    "15": {
+     "name": "丸亀",
+     "races": 2332,
+     "days": 196,
+     "not_waku_nari_races": 473,
+     "under6_boats_races": 25,
+     "partial_refund_races": 78,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1278,
+       "rate": 0.548,
+       "ci95": [
+        0.5278,
+        0.5681
+       ],
+       "races_course_present": 2332,
+       "rate_if_present": 0.548
+      },
+      {
+       "course": 2,
+       "wins": 308,
+       "rate": 0.1321,
+       "ci95": [
+        0.1189,
+        0.1464
+       ],
+       "races_course_present": 2332,
+       "rate_if_present": 0.1321
+      },
+      {
+       "course": 3,
+       "wins": 295,
+       "rate": 0.1265,
+       "ci95": [
+        0.1136,
+        0.1406
+       ],
+       "races_course_present": 2332,
+       "rate_if_present": 0.1265
+      },
+      {
+       "course": 4,
+       "wins": 234,
+       "rate": 0.1003,
+       "ci95": [
+        0.0888,
+        0.1132
+       ],
+       "races_course_present": 2332,
+       "rate_if_present": 0.1003
+      },
+      {
+       "course": 5,
+       "wins": 165,
+       "rate": 0.0708,
+       "ci95": [
+        0.061,
+        0.0819
+       ],
+       "races_course_present": 2332,
+       "rate_if_present": 0.0708
+      },
+      {
+       "course": 6,
+       "wins": 52,
+       "rate": 0.0223,
+       "ci95": [
+        0.017,
+        0.0291
+       ],
+       "races_course_present": 2307,
+       "rate_if_present": 0.0225
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1275,
+       "rate": 0.5467
+      },
+      {
+       "waku": 2,
+       "wins": 310,
+       "rate": 0.1329
+      },
+      {
+       "waku": 3,
+       "wins": 290,
+       "rate": 0.1244
+      },
+      {
+       "waku": 4,
+       "wins": 223,
+       "rate": 0.0956
+      },
+      {
+       "waku": 5,
+       "wins": 149,
+       "rate": 0.0639
+      },
+      {
+       "waku": 6,
+       "wins": 85,
+       "rate": 0.0364
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.42,
+     "cancelled_confirmed": 40
+    },
+    "16": {
+     "name": "児島",
+     "races": 2316,
+     "days": 193,
+     "not_waku_nari_races": 445,
+     "under6_boats_races": 20,
+     "partial_refund_races": 69,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1248,
+       "rate": 0.5389,
+       "ci95": [
+        0.5185,
+        0.5591
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.5389
+      },
+      {
+       "course": 2,
+       "wins": 289,
+       "rate": 0.1248,
+       "ci95": [
+        0.1119,
+        0.1389
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.1248
+      },
+      {
+       "course": 3,
+       "wins": 325,
+       "rate": 0.1403,
+       "ci95": [
+        0.1268,
+        0.1551
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.1403
+      },
+      {
+       "course": 4,
+       "wins": 250,
+       "rate": 0.1079,
+       "ci95": [
+        0.0959,
+        0.1212
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.1079
+      },
+      {
+       "course": 5,
+       "wins": 152,
+       "rate": 0.0656,
+       "ci95": [
+        0.0562,
+        0.0765
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.0656
+      },
+      {
+       "course": 6,
+       "wins": 52,
+       "rate": 0.0225,
+       "ci95": [
+        0.0172,
+        0.0293
+       ],
+       "races_course_present": 2296,
+       "rate_if_present": 0.0226
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1242,
+       "rate": 0.5363
+      },
+      {
+       "waku": 2,
+       "wins": 286,
+       "rate": 0.1235
+      },
+      {
+       "waku": 3,
+       "wins": 318,
+       "rate": 0.1373
+      },
+      {
+       "waku": 4,
+       "wins": 245,
+       "rate": 0.1058
+      },
+      {
+       "waku": 5,
+       "wins": 157,
+       "rate": 0.0678
+      },
+      {
+       "waku": 6,
+       "wins": 68,
+       "rate": 0.0294
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.69,
+     "cancelled_confirmed": 0
+    },
+    "17": {
+     "name": "宮島",
+     "races": 2369,
+     "days": 198,
+     "not_waku_nari_races": 470,
+     "under6_boats_races": 28,
+     "partial_refund_races": 80,
+     "dead_heat_first_races": 2,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1339,
+       "rate": 0.5652,
+       "ci95": [
+        0.5452,
+        0.5851
+       ],
+       "races_course_present": 2369,
+       "rate_if_present": 0.5652
+      },
+      {
+       "course": 2,
+       "wins": 290,
+       "rate": 0.1224,
+       "ci95": [
+        0.1098,
+        0.1362
+       ],
+       "races_course_present": 2369,
+       "rate_if_present": 0.1224
+      },
+      {
+       "course": 3,
+       "wins": 329,
+       "rate": 0.1389,
+       "ci95": [
+        0.1255,
+        0.1534
+       ],
+       "races_course_present": 2369,
+       "rate_if_present": 0.1389
+      },
+      {
+       "course": 4,
+       "wins": 240,
+       "rate": 0.1013,
+       "ci95": [
+        0.0898,
+        0.1141
+       ],
+       "races_course_present": 2369,
+       "rate_if_present": 0.1013
+      },
+      {
+       "course": 5,
+       "wins": 134,
+       "rate": 0.0566,
+       "ci95": [
+        0.048,
+        0.0666
+       ],
+       "races_course_present": 2369,
+       "rate_if_present": 0.0566
+      },
+      {
+       "course": 6,
+       "wins": 37,
+       "rate": 0.0156,
+       "ci95": [
+        0.0114,
+        0.0215
+       ],
+       "races_course_present": 2341,
+       "rate_if_present": 0.0158
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1334,
+       "rate": 0.5631
+      },
+      {
+       "waku": 2,
+       "wins": 290,
+       "rate": 0.1224
+      },
+      {
+       "waku": 3,
+       "wins": 324,
+       "rate": 0.1368
+      },
+      {
+       "waku": 4,
+       "wins": 235,
+       "rate": 0.0992
+      },
+      {
+       "waku": 5,
+       "wins": 130,
+       "rate": 0.0549
+      },
+      {
+       "waku": 6,
+       "wins": 56,
+       "rate": 0.0236
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.8,
+     "cancelled_confirmed": 6
+    },
+    "18": {
+     "name": "徳山",
+     "races": 2592,
+     "days": 216,
+     "not_waku_nari_races": 460,
+     "under6_boats_races": 26,
+     "partial_refund_races": 66,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1597,
+       "rate": 0.6161,
+       "ci95": [
+        0.5972,
+        0.6347
+       ],
+       "races_course_present": 2592,
+       "rate_if_present": 0.6161
+      },
+      {
+       "course": 2,
+       "wins": 320,
+       "rate": 0.1235,
+       "ci95": [
+        0.1113,
+        0.1367
+       ],
+       "races_course_present": 2592,
+       "rate_if_present": 0.1235
+      },
+      {
+       "course": 3,
+       "wins": 299,
+       "rate": 0.1154,
+       "ci95": [
+        0.1036,
+        0.1282
+       ],
+       "races_course_present": 2592,
+       "rate_if_present": 0.1154
+      },
+      {
+       "course": 4,
+       "wins": 227,
+       "rate": 0.0876,
+       "ci95": [
+        0.0773,
+        0.0991
+       ],
+       "races_course_present": 2592,
+       "rate_if_present": 0.0876
+      },
+      {
+       "course": 5,
+       "wins": 119,
+       "rate": 0.0459,
+       "ci95": [
+        0.0385,
+        0.0547
+       ],
+       "races_course_present": 2592,
+       "rate_if_present": 0.0459
+      },
+      {
+       "course": 6,
+       "wins": 30,
+       "rate": 0.0116,
+       "ci95": [
+        0.0081,
+        0.0165
+       ],
+       "races_course_present": 2566,
+       "rate_if_present": 0.0117
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1587,
+       "rate": 0.6123
+      },
+      {
+       "waku": 2,
+       "wins": 333,
+       "rate": 0.1285
+      },
+      {
+       "waku": 3,
+       "wins": 287,
+       "rate": 0.1107
+      },
+      {
+       "waku": 4,
+       "wins": 222,
+       "rate": 0.0856
+      },
+      {
+       "waku": 5,
+       "wins": 104,
+       "rate": 0.0401
+      },
+      {
+       "waku": 6,
+       "wins": 59,
+       "rate": 0.0228
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.12,
+     "cancelled_confirmed": 12
+    },
+    "19": {
+     "name": "下関",
+     "races": 2300,
+     "days": 192,
+     "not_waku_nari_races": 495,
+     "under6_boats_races": 22,
+     "partial_refund_races": 62,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1416,
+       "rate": 0.6157,
+       "ci95": [
+        0.5956,
+        0.6353
+       ],
+       "races_course_present": 2300,
+       "rate_if_present": 0.6157
+      },
+      {
+       "course": 2,
+       "wins": 247,
+       "rate": 0.1074,
+       "ci95": [
+        0.0954,
+        0.1207
+       ],
+       "races_course_present": 2300,
+       "rate_if_present": 0.1074
+      },
+      {
+       "course": 3,
+       "wins": 276,
+       "rate": 0.12,
+       "ci95": [
+        0.1073,
+        0.1339
+       ],
+       "races_course_present": 2300,
+       "rate_if_present": 0.12
+      },
+      {
+       "course": 4,
+       "wins": 209,
+       "rate": 0.0909,
+       "ci95": [
+        0.0798,
+        0.1033
+       ],
+       "races_course_present": 2300,
+       "rate_if_present": 0.0909
+      },
+      {
+       "course": 5,
+       "wins": 113,
+       "rate": 0.0491,
+       "ci95": [
+        0.041,
+        0.0587
+       ],
+       "races_course_present": 2300,
+       "rate_if_present": 0.0491
+      },
+      {
+       "course": 6,
+       "wins": 39,
+       "rate": 0.017,
+       "ci95": [
+        0.0124,
+        0.0231
+       ],
+       "races_course_present": 2278,
+       "rate_if_present": 0.0171
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1401,
+       "rate": 0.6091
+      },
+      {
+       "waku": 2,
+       "wins": 252,
+       "rate": 0.1096
+      },
+      {
+       "waku": 3,
+       "wins": 272,
+       "rate": 0.1183
+      },
+      {
+       "waku": 4,
+       "wins": 203,
+       "rate": 0.0883
+      },
+      {
+       "waku": 5,
+       "wins": 95,
+       "rate": 0.0413
+      },
+      {
+       "waku": 6,
+       "wins": 77,
+       "rate": 0.0335
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.65,
+     "cancelled_confirmed": 16
+    },
+    "20": {
+     "name": "若松",
+     "races": 2317,
+     "days": 194,
+     "not_waku_nari_races": 531,
+     "under6_boats_races": 21,
+     "partial_refund_races": 53,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1379,
+       "rate": 0.5952,
+       "ci95": [
+        0.575,
+        0.615
+       ],
+       "races_course_present": 2317,
+       "rate_if_present": 0.5952
+      },
+      {
+       "course": 2,
+       "wins": 306,
+       "rate": 0.1321,
+       "ci95": [
+        0.1189,
+        0.1465
+       ],
+       "races_course_present": 2317,
+       "rate_if_present": 0.1321
+      },
+      {
+       "course": 3,
+       "wins": 257,
+       "rate": 0.1109,
+       "ci95": [
+        0.0988,
+        0.1244
+       ],
+       "races_course_present": 2317,
+       "rate_if_present": 0.1109
+      },
+      {
+       "course": 4,
+       "wins": 226,
+       "rate": 0.0975,
+       "ci95": [
+        0.0861,
+        0.1103
+       ],
+       "races_course_present": 2317,
+       "rate_if_present": 0.0975
+      },
+      {
+       "course": 5,
+       "wins": 109,
+       "rate": 0.047,
+       "ci95": [
+        0.0391,
+        0.0564
+       ],
+       "races_course_present": 2317,
+       "rate_if_present": 0.047
+      },
+      {
+       "course": 6,
+       "wins": 40,
+       "rate": 0.0173,
+       "ci95": [
+        0.0127,
+        0.0234
+       ],
+       "races_course_present": 2296,
+       "rate_if_present": 0.0174
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1363,
+       "rate": 0.5883
+      },
+      {
+       "waku": 2,
+       "wins": 318,
+       "rate": 0.1372
+      },
+      {
+       "waku": 3,
+       "wins": 251,
+       "rate": 0.1083
+      },
+      {
+       "waku": 4,
+       "wins": 194,
+       "rate": 0.0837
+      },
+      {
+       "waku": 5,
+       "wins": 116,
+       "rate": 0.0501
+      },
+      {
+       "waku": 6,
+       "wins": 75,
+       "rate": 0.0324
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.51,
+     "cancelled_confirmed": 23
+    },
+    "21": {
+     "name": "芦屋",
+     "races": 2316,
+     "days": 193,
+     "not_waku_nari_races": 493,
+     "under6_boats_races": 22,
+     "partial_refund_races": 85,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1401,
+       "rate": 0.6049,
+       "ci95": [
+        0.5849,
+        0.6246
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.6049
+      },
+      {
+       "course": 2,
+       "wins": 234,
+       "rate": 0.101,
+       "ci95": [
+        0.0894,
+        0.114
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.101
+      },
+      {
+       "course": 3,
+       "wins": 248,
+       "rate": 0.1071,
+       "ci95": [
+        0.0951,
+        0.1203
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.1071
+      },
+      {
+       "course": 4,
+       "wins": 234,
+       "rate": 0.101,
+       "ci95": [
+        0.0894,
+        0.114
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.101
+      },
+      {
+       "course": 5,
+       "wins": 154,
+       "rate": 0.0665,
+       "ci95": [
+        0.057,
+        0.0774
+       ],
+       "races_course_present": 2316,
+       "rate_if_present": 0.0665
+      },
+      {
+       "course": 6,
+       "wins": 45,
+       "rate": 0.0194,
+       "ci95": [
+        0.0146,
+        0.0259
+       ],
+       "races_course_present": 2294,
+       "rate_if_present": 0.0196
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1391,
+       "rate": 0.6006
+      },
+      {
+       "waku": 2,
+       "wins": 247,
+       "rate": 0.1066
+      },
+      {
+       "waku": 3,
+       "wins": 249,
+       "rate": 0.1075
+      },
+      {
+       "waku": 4,
+       "wins": 225,
+       "rate": 0.0972
+      },
+      {
+       "waku": 5,
+       "wins": 131,
+       "rate": 0.0566
+      },
+      {
+       "waku": 6,
+       "wins": 73,
+       "rate": 0.0315
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.21,
+     "cancelled_confirmed": 0
+    },
+    "22": {
+     "name": "福岡",
+     "races": 2363,
+     "days": 197,
+     "not_waku_nari_races": 385,
+     "under6_boats_races": 19,
+     "partial_refund_races": 74,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1400,
+       "rate": 0.5925,
+       "ci95": [
+        0.5725,
+        0.6121
+       ],
+       "races_course_present": 2363,
+       "rate_if_present": 0.5925
+      },
+      {
+       "course": 2,
+       "wins": 354,
+       "rate": 0.1498,
+       "ci95": [
+        0.136,
+        0.1648
+       ],
+       "races_course_present": 2363,
+       "rate_if_present": 0.1498
+      },
+      {
+       "course": 3,
+       "wins": 326,
+       "rate": 0.138,
+       "ci95": [
+        0.1246,
+        0.1525
+       ],
+       "races_course_present": 2363,
+       "rate_if_present": 0.138
+      },
+      {
+       "course": 4,
+       "wins": 179,
+       "rate": 0.0758,
+       "ci95": [
+        0.0658,
+        0.0871
+       ],
+       "races_course_present": 2363,
+       "rate_if_present": 0.0758
+      },
+      {
+       "course": 5,
+       "wins": 85,
+       "rate": 0.036,
+       "ci95": [
+        0.0292,
+        0.0443
+       ],
+       "races_course_present": 2362,
+       "rate_if_present": 0.036
+      },
+      {
+       "course": 6,
+       "wins": 19,
+       "rate": 0.008,
+       "ci95": [
+        0.0052,
+        0.0125
+       ],
+       "races_course_present": 2344,
+       "rate_if_present": 0.0081
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1399,
+       "rate": 0.592
+      },
+      {
+       "waku": 2,
+       "wins": 349,
+       "rate": 0.1477
+      },
+      {
+       "waku": 3,
+       "wins": 327,
+       "rate": 0.1384
+      },
+      {
+       "waku": 4,
+       "wins": 159,
+       "rate": 0.0673
+      },
+      {
+       "waku": 5,
+       "wins": 86,
+       "rate": 0.0364
+      },
+      {
+       "waku": 6,
+       "wins": 43,
+       "rate": 0.0182
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.02,
+     "cancelled_confirmed": 0
+    },
+    "23": {
+     "name": "唐津",
+     "races": 2070,
+     "days": 173,
+     "not_waku_nari_races": 529,
+     "under6_boats_races": 22,
+     "partial_refund_races": 61,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1184,
+       "rate": 0.572,
+       "ci95": [
+        0.5506,
+        0.5931
+       ],
+       "races_course_present": 2070,
+       "rate_if_present": 0.572
+      },
+      {
+       "course": 2,
+       "wins": 281,
+       "rate": 0.1357,
+       "ci95": [
+        0.1217,
+        0.1512
+       ],
+       "races_course_present": 2070,
+       "rate_if_present": 0.1357
+      },
+      {
+       "course": 3,
+       "wins": 250,
+       "rate": 0.1208,
+       "ci95": [
+        0.1074,
+        0.1355
+       ],
+       "races_course_present": 2070,
+       "rate_if_present": 0.1208
+      },
+      {
+       "course": 4,
+       "wins": 194,
+       "rate": 0.0937,
+       "ci95": [
+        0.0819,
+        0.107
+       ],
+       "races_course_present": 2070,
+       "rate_if_present": 0.0937
+      },
+      {
+       "course": 5,
+       "wins": 125,
+       "rate": 0.0604,
+       "ci95": [
+        0.0509,
+        0.0715
+       ],
+       "races_course_present": 2070,
+       "rate_if_present": 0.0604
+      },
+      {
+       "course": 6,
+       "wins": 36,
+       "rate": 0.0174,
+       "ci95": [
+        0.0126,
+        0.024
+       ],
+       "races_course_present": 2048,
+       "rate_if_present": 0.0176
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1160,
+       "rate": 0.5604
+      },
+      {
+       "waku": 2,
+       "wins": 299,
+       "rate": 0.1444
+      },
+      {
+       "waku": 3,
+       "wins": 236,
+       "rate": 0.114
+      },
+      {
+       "waku": 4,
+       "wins": 199,
+       "rate": 0.0961
+      },
+      {
+       "waku": 5,
+       "wins": 114,
+       "rate": 0.0551
+      },
+      {
+       "waku": 6,
+       "wins": 62,
+       "rate": 0.03
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.26,
+     "cancelled_confirmed": 6
+    },
+    "24": {
+     "name": "大村",
+     "races": 2377,
+     "days": 199,
+     "not_waku_nari_races": 316,
+     "under6_boats_races": 17,
+     "partial_refund_races": 75,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1450,
+       "rate": 0.61,
+       "ci95": [
+        0.5902,
+        0.6294
+       ],
+       "races_course_present": 2377,
+       "rate_if_present": 0.61
+      },
+      {
+       "course": 2,
+       "wins": 290,
+       "rate": 0.122,
+       "ci95": [
+        0.1095,
+        0.1358
+       ],
+       "races_course_present": 2377,
+       "rate_if_present": 0.122
+      },
+      {
+       "course": 3,
+       "wins": 251,
+       "rate": 0.1056,
+       "ci95": [
+        0.0939,
+        0.1186
+       ],
+       "races_course_present": 2377,
+       "rate_if_present": 0.1056
+      },
+      {
+       "course": 4,
+       "wins": 217,
+       "rate": 0.0913,
+       "ci95": [
+        0.0804,
+        0.1035
+       ],
+       "races_course_present": 2377,
+       "rate_if_present": 0.0913
+      },
+      {
+       "course": 5,
+       "wins": 135,
+       "rate": 0.0568,
+       "ci95": [
+        0.0482,
+        0.0668
+       ],
+       "races_course_present": 2377,
+       "rate_if_present": 0.0568
+      },
+      {
+       "course": 6,
+       "wins": 34,
+       "rate": 0.0143,
+       "ci95": [
+        0.0103,
+        0.0199
+       ],
+       "races_course_present": 2360,
+       "rate_if_present": 0.0144
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1445,
+       "rate": 0.6079
+      },
+      {
+       "waku": 2,
+       "wins": 286,
+       "rate": 0.1203
+      },
+      {
+       "waku": 3,
+       "wins": 266,
+       "rate": 0.1119
+      },
+      {
+       "waku": 4,
+       "wins": 197,
+       "rate": 0.0829
+      },
+      {
+       "waku": 5,
+       "wins": 123,
+       "rate": 0.0517
+      },
+      {
+       "waku": 6,
+       "wins": 60,
+       "rate": 0.0252
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.09,
+     "cancelled_confirmed": 10
+    },
+    "01": {
+     "name": "桐生",
+     "races": 2409,
+     "days": 203,
+     "not_waku_nari_races": 612,
+     "under6_boats_races": 26,
+     "partial_refund_races": 68,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1223,
+       "rate": 0.5077,
+       "ci95": [
+        0.4877,
+        0.5276
+       ],
+       "races_course_present": 2409,
+       "rate_if_present": 0.5077
+      },
+      {
+       "course": 2,
+       "wins": 286,
+       "rate": 0.1187,
+       "ci95": [
+        0.1064,
+        0.1322
+       ],
+       "races_course_present": 2409,
+       "rate_if_present": 0.1187
+      },
+      {
+       "course": 3,
+       "wins": 323,
+       "rate": 0.1341,
+       "ci95": [
+        0.1211,
+        0.1483
+       ],
+       "races_course_present": 2409,
+       "rate_if_present": 0.1341
+      },
+      {
+       "course": 4,
+       "wins": 297,
+       "rate": 0.1233,
+       "ci95": [
+        0.1108,
+        0.137
+       ],
+       "races_course_present": 2409,
+       "rate_if_present": 0.1233
+      },
+      {
+       "course": 5,
+       "wins": 219,
+       "rate": 0.0909,
+       "ci95": [
+        0.0801,
+        0.103
+       ],
+       "races_course_present": 2408,
+       "rate_if_present": 0.0909
+      },
+      {
+       "course": 6,
+       "wins": 61,
+       "rate": 0.0253,
+       "ci95": [
+        0.0198,
+        0.0324
+       ],
+       "races_course_present": 2383,
+       "rate_if_present": 0.0256
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1201,
+       "rate": 0.4985
+      },
+      {
+       "waku": 2,
+       "wins": 302,
+       "rate": 0.1254
+      },
+      {
+       "waku": 3,
+       "wins": 334,
+       "rate": 0.1386
+      },
+      {
+       "waku": 4,
+       "wins": 271,
+       "rate": 0.1125
+      },
+      {
+       "waku": 5,
+       "wins": 202,
+       "rate": 0.0839
+      },
+      {
+       "waku": 6,
+       "wins": 99,
+       "rate": 0.0411
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.58,
+     "cancelled_confirmed": 39
+    },
+    "02": {
+     "name": "戸田",
+     "races": 2256,
+     "days": 188,
+     "not_waku_nari_races": 432,
+     "under6_boats_races": 20,
+     "partial_refund_races": 75,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 960,
+       "rate": 0.4255,
+       "ci95": [
+        0.4053,
+        0.446
+       ],
+       "races_course_present": 2256,
+       "rate_if_present": 0.4255
+      },
+      {
+       "course": 2,
+       "wins": 394,
+       "rate": 0.1746,
+       "ci95": [
+        0.1595,
+        0.1909
+       ],
+       "races_course_present": 2256,
+       "rate_if_present": 0.1746
+      },
+      {
+       "course": 3,
+       "wins": 370,
+       "rate": 0.164,
+       "ci95": [
+        0.1493,
+        0.1799
+       ],
+       "races_course_present": 2256,
+       "rate_if_present": 0.164
+      },
+      {
+       "course": 4,
+       "wins": 304,
+       "rate": 0.1348,
+       "ci95": [
+        0.1213,
+        0.1495
+       ],
+       "races_course_present": 2256,
+       "rate_if_present": 0.1348
+      },
+      {
+       "course": 5,
+       "wins": 177,
+       "rate": 0.0785,
+       "ci95": [
+        0.0681,
+        0.0903
+       ],
+       "races_course_present": 2255,
+       "rate_if_present": 0.0785
+      },
+      {
+       "course": 6,
+       "wins": 51,
+       "rate": 0.0226,
+       "ci95": [
+        0.0172,
+        0.0296
+       ],
+       "races_course_present": 2236,
+       "rate_if_present": 0.0228
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 952,
+       "rate": 0.422
+      },
+      {
+       "waku": 2,
+       "wins": 411,
+       "rate": 0.1822
+      },
+      {
+       "waku": 3,
+       "wins": 356,
+       "rate": 0.1578
+      },
+      {
+       "waku": 4,
+       "wins": 293,
+       "rate": 0.1299
+      },
+      {
+       "waku": 5,
+       "wins": 170,
+       "rate": 0.0754
+      },
+      {
+       "waku": 6,
+       "wins": 74,
+       "rate": 0.0328
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.02,
+     "cancelled_confirmed": 12
+    },
+    "03": {
+     "name": "江戸川",
+     "races": 2068,
+     "days": 174,
+     "not_waku_nari_races": 34,
+     "under6_boats_races": 42,
+     "partial_refund_races": 103,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 970,
+       "rate": 0.4691,
+       "ci95": [
+        0.4476,
+        0.4906
+       ],
+       "races_course_present": 2068,
+       "rate_if_present": 0.4691
+      },
+      {
+       "course": 2,
+       "wins": 349,
+       "rate": 0.1688,
+       "ci95": [
+        0.1532,
+        0.1855
+       ],
+       "races_course_present": 2068,
+       "rate_if_present": 0.1688
+      },
+      {
+       "course": 3,
+       "wins": 302,
+       "rate": 0.146,
+       "ci95": [
+        0.1315,
+        0.1619
+       ],
+       "races_course_present": 2068,
+       "rate_if_present": 0.146
+      },
+      {
+       "course": 4,
+       "wins": 250,
+       "rate": 0.1209,
+       "ci95": [
+        0.1075,
+        0.1356
+       ],
+       "races_course_present": 2068,
+       "rate_if_present": 0.1209
+      },
+      {
+       "course": 5,
+       "wins": 136,
+       "rate": 0.0658,
+       "ci95": [
+        0.0559,
+        0.0773
+       ],
+       "races_course_present": 2068,
+       "rate_if_present": 0.0658
+      },
+      {
+       "course": 6,
+       "wins": 61,
+       "rate": 0.0295,
+       "ci95": [
+        0.023,
+        0.0377
+       ],
+       "races_course_present": 2026,
+       "rate_if_present": 0.0301
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 968,
+       "rate": 0.4681
+      },
+      {
+       "waku": 2,
+       "wins": 349,
+       "rate": 0.1688
+      },
+      {
+       "waku": 3,
+       "wins": 299,
+       "rate": 0.1446
+      },
+      {
+       "waku": 4,
+       "wins": 252,
+       "rate": 0.1219
+      },
+      {
+       "waku": 5,
+       "wins": 139,
+       "rate": 0.0672
+      },
+      {
+       "waku": 6,
+       "wins": 61,
+       "rate": 0.0295
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.15,
+     "cancelled_confirmed": 127
+    },
+    "04": {
+     "name": "平和島",
+     "races": 1959,
+     "days": 164,
+     "not_waku_nari_races": 304,
+     "under6_boats_races": 23,
+     "partial_refund_races": 67,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 868,
+       "rate": 0.4431,
+       "ci95": [
+        0.4212,
+        0.4652
+       ],
+       "races_course_present": 1959,
+       "rate_if_present": 0.4431
+      },
+      {
+       "course": 2,
+       "wins": 314,
+       "rate": 0.1603,
+       "ci95": [
+        0.1447,
+        0.1772
+       ],
+       "races_course_present": 1959,
+       "rate_if_present": 0.1603
+      },
+      {
+       "course": 3,
+       "wins": 331,
+       "rate": 0.169,
+       "ci95": [
+        0.153,
+        0.1862
+       ],
+       "races_course_present": 1959,
+       "rate_if_present": 0.169
+      },
+      {
+       "course": 4,
+       "wins": 244,
+       "rate": 0.1246,
+       "ci95": [
+        0.1107,
+        0.1399
+       ],
+       "races_course_present": 1959,
+       "rate_if_present": 0.1246
+      },
+      {
+       "course": 5,
+       "wins": 154,
+       "rate": 0.0786,
+       "ci95": [
+        0.0675,
+        0.0914
+       ],
+       "races_course_present": 1959,
+       "rate_if_present": 0.0786
+      },
+      {
+       "course": 6,
+       "wins": 48,
+       "rate": 0.0245,
+       "ci95": [
+        0.0185,
+        0.0323
+       ],
+       "races_course_present": 1936,
+       "rate_if_present": 0.0248
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 860,
+       "rate": 0.439
+      },
+      {
+       "waku": 2,
+       "wins": 320,
+       "rate": 0.1633
+      },
+      {
+       "waku": 3,
+       "wins": 326,
+       "rate": 0.1664
+      },
+      {
+       "waku": 4,
+       "wins": 235,
+       "rate": 0.12
+      },
+      {
+       "waku": 5,
+       "wins": 161,
+       "rate": 0.0822
+      },
+      {
+       "waku": 6,
+       "wins": 57,
+       "rate": 0.0291
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.46,
+     "cancelled_confirmed": 21
+    },
+    "05": {
+     "name": "多摩川",
+     "races": 2311,
+     "days": 193,
+     "not_waku_nari_races": 379,
+     "under6_boats_races": 22,
+     "partial_refund_races": 67,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1254,
+       "rate": 0.5426,
+       "ci95": [
+        0.5223,
+        0.5628
+       ],
+       "races_course_present": 2311,
+       "rate_if_present": 0.5426
+      },
+      {
+       "course": 2,
+       "wins": 312,
+       "rate": 0.135,
+       "ci95": [
+        0.1217,
+        0.1495
+       ],
+       "races_course_present": 2311,
+       "rate_if_present": 0.135
+      },
+      {
+       "course": 3,
+       "wins": 287,
+       "rate": 0.1242,
+       "ci95": [
+        0.1114,
+        0.1383
+       ],
+       "races_course_present": 2311,
+       "rate_if_present": 0.1242
+      },
+      {
+       "course": 4,
+       "wins": 255,
+       "rate": 0.1103,
+       "ci95": [
+        0.0982,
+        0.1238
+       ],
+       "races_course_present": 2311,
+       "rate_if_present": 0.1103
+      },
+      {
+       "course": 5,
+       "wins": 145,
+       "rate": 0.0627,
+       "ci95": [
+        0.0536,
+        0.0734
+       ],
+       "races_course_present": 2311,
+       "rate_if_present": 0.0627
+      },
+      {
+       "course": 6,
+       "wins": 58,
+       "rate": 0.0251,
+       "ci95": [
+        0.0195,
+        0.0323
+       ],
+       "races_course_present": 2289,
+       "rate_if_present": 0.0253
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1253,
+       "rate": 0.5422
+      },
+      {
+       "waku": 2,
+       "wins": 317,
+       "rate": 0.1372
+      },
+      {
+       "waku": 3,
+       "wins": 284,
+       "rate": 0.1229
+      },
+      {
+       "waku": 4,
+       "wins": 241,
+       "rate": 0.1043
+      },
+      {
+       "waku": 5,
+       "wins": 141,
+       "rate": 0.061
+      },
+      {
+       "waku": 6,
+       "wins": 75,
+       "rate": 0.0325
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 0.74,
+     "cancelled_confirmed": 5
+    },
+    "06": {
+     "name": "浜名湖",
+     "races": 2444,
+     "days": 204,
+     "not_waku_nari_races": 623,
+     "under6_boats_races": 30,
+     "partial_refund_races": 82,
+     "dead_heat_first_races": 1,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1345,
+       "rate": 0.5503,
+       "ci95": [
+        0.5305,
+        0.57
+       ],
+       "races_course_present": 2444,
+       "rate_if_present": 0.5503
+      },
+      {
+       "course": 2,
+       "wins": 312,
+       "rate": 0.1277,
+       "ci95": [
+        0.115,
+        0.1415
+       ],
+       "races_course_present": 2444,
+       "rate_if_present": 0.1277
+      },
+      {
+       "course": 3,
+       "wins": 329,
+       "rate": 0.1346,
+       "ci95": [
+        0.1217,
+        0.1487
+       ],
+       "races_course_present": 2444,
+       "rate_if_present": 0.1346
+      },
+      {
+       "course": 4,
+       "wins": 248,
+       "rate": 0.1015,
+       "ci95": [
+        0.0901,
+        0.1141
+       ],
+       "races_course_present": 2444,
+       "rate_if_present": 0.1015
+      },
+      {
+       "course": 5,
+       "wins": 160,
+       "rate": 0.0655,
+       "ci95": [
+        0.0563,
+        0.076
+       ],
+       "races_course_present": 2444,
+       "rate_if_present": 0.0655
+      },
+      {
+       "course": 6,
+       "wins": 50,
+       "rate": 0.0205,
+       "ci95": [
+        0.0156,
+        0.0269
+       ],
+       "races_course_present": 2414,
+       "rate_if_present": 0.0207
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1318,
+       "rate": 0.5393
+      },
+      {
+       "waku": 2,
+       "wins": 322,
+       "rate": 0.1318
+      },
+      {
+       "waku": 3,
+       "wins": 313,
+       "rate": 0.1281
+      },
+      {
+       "waku": 4,
+       "wins": 237,
+       "rate": 0.097
+      },
+      {
+       "waku": 5,
+       "wins": 159,
+       "rate": 0.0651
+      },
+      {
+       "waku": 6,
+       "wins": 95,
+       "rate": 0.0389
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.84,
+     "cancelled_confirmed": 3
+    },
+    "07": {
+     "name": "蒲郡",
+     "races": 2478,
+     "days": 207,
+     "not_waku_nari_races": 663,
+     "under6_boats_races": 29,
+     "partial_refund_races": 82,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1428,
+       "rate": 0.5763,
+       "ci95": [
+        0.5567,
+        0.5956
+       ],
+       "races_course_present": 2478,
+       "rate_if_present": 0.5763
+      },
+      {
+       "course": 2,
+       "wins": 291,
+       "rate": 0.1174,
+       "ci95": [
+        0.1053,
+        0.1307
+       ],
+       "races_course_present": 2478,
+       "rate_if_present": 0.1174
+      },
+      {
+       "course": 3,
+       "wins": 278,
+       "rate": 0.1122,
+       "ci95": [
+        0.1004,
+        0.1252
+       ],
+       "races_course_present": 2478,
+       "rate_if_present": 0.1122
+      },
+      {
+       "course": 4,
+       "wins": 271,
+       "rate": 0.1094,
+       "ci95": [
+        0.0977,
+        0.1223
+       ],
+       "races_course_present": 2478,
+       "rate_if_present": 0.1094
+      },
+      {
+       "course": 5,
+       "wins": 156,
+       "rate": 0.063,
+       "ci95": [
+        0.0541,
+        0.0732
+       ],
+       "races_course_present": 2477,
+       "rate_if_present": 0.063
+      },
+      {
+       "course": 6,
+       "wins": 54,
+       "rate": 0.0218,
+       "ci95": [
+        0.0167,
+        0.0283
+       ],
+       "races_course_present": 2449,
+       "rate_if_present": 0.022
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1397,
+       "rate": 0.5638
+      },
+      {
+       "waku": 2,
+       "wins": 313,
+       "rate": 0.1263
+      },
+      {
+       "waku": 3,
+       "wins": 260,
+       "rate": 0.1049
+      },
+      {
+       "waku": 4,
+       "wins": 248,
+       "rate": 0.1001
+      },
+      {
+       "waku": 5,
+       "wins": 158,
+       "rate": 0.0638
+      },
+      {
+       "waku": 6,
+       "wins": 102,
+       "rate": 0.0412
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.94,
+     "cancelled_confirmed": 12
+    },
+    "08": {
+     "name": "常滑",
+     "races": 2546,
+     "days": 213,
+     "not_waku_nari_races": 674,
+     "under6_boats_races": 21,
+     "partial_refund_races": 74,
+     "dead_heat_first_races": 0,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1476,
+       "rate": 0.5797,
+       "ci95": [
+        0.5605,
+        0.5988
+       ],
+       "races_course_present": 2546,
+       "rate_if_present": 0.5797
+      },
+      {
+       "course": 2,
+       "wins": 336,
+       "rate": 0.132,
+       "ci95": [
+        0.1194,
+        0.1457
+       ],
+       "races_course_present": 2546,
+       "rate_if_present": 0.132
+      },
+      {
+       "course": 3,
+       "wins": 264,
+       "rate": 0.1037,
+       "ci95": [
+        0.0924,
+        0.1161
+       ],
+       "races_course_present": 2546,
+       "rate_if_present": 0.1037
+      },
+      {
+       "course": 4,
+       "wins": 268,
+       "rate": 0.1053,
+       "ci95": [
+        0.0939,
+        0.1178
+       ],
+       "races_course_present": 2546,
+       "rate_if_present": 0.1053
+      },
+      {
+       "course": 5,
+       "wins": 148,
+       "rate": 0.0581,
+       "ci95": [
+        0.0497,
+        0.0679
+       ],
+       "races_course_present": 2545,
+       "rate_if_present": 0.0582
+      },
+      {
+       "course": 6,
+       "wins": 54,
+       "rate": 0.0212,
+       "ci95": [
+        0.0163,
+        0.0276
+       ],
+       "races_course_present": 2525,
+       "rate_if_present": 0.0214
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1450,
+       "rate": 0.5695
+      },
+      {
+       "waku": 2,
+       "wins": 346,
+       "rate": 0.1359
+      },
+      {
+       "waku": 3,
+       "wins": 261,
+       "rate": 0.1025
+      },
+      {
+       "waku": 4,
+       "wins": 243,
+       "rate": 0.0954
+      },
+      {
+       "waku": 5,
+       "wins": 149,
+       "rate": 0.0585
+      },
+      {
+       "waku": 6,
+       "wins": 97,
+       "rate": 0.0381
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1.69,
+     "cancelled_confirmed": 18
+    },
+    "09": {
+     "name": "津",
+     "races": 2302,
+     "days": 194,
+     "not_waku_nari_races": 387,
+     "under6_boats_races": 18,
+     "partial_refund_races": 79,
+     "dead_heat_first_races": 2,
+     "by_course": [
+      {
+       "course": 1,
+       "wins": 1339,
+       "rate": 0.5817,
+       "ci95": [
+        0.5614,
+        0.6017
+       ],
+       "races_course_present": 2302,
+       "rate_if_present": 0.5817
+      },
+      {
+       "course": 2,
+       "wins": 310,
+       "rate": 0.1347,
+       "ci95": [
+        0.1213,
+        0.1492
+       ],
+       "races_course_present": 2302,
+       "rate_if_present": 0.1347
+      },
+      {
+       "course": 3,
+       "wins": 262,
+       "rate": 0.1138,
+       "ci95": [
+        0.1015,
+        0.1274
+       ],
+       "races_course_present": 2302,
+       "rate_if_present": 0.1138
+      },
+      {
+       "course": 4,
+       "wins": 214,
+       "rate": 0.093,
+       "ci95": [
+        0.0818,
+        0.1055
+       ],
+       "races_course_present": 2302,
+       "rate_if_present": 0.093
+      },
+      {
+       "course": 5,
+       "wins": 138,
+       "rate": 0.0599,
+       "ci95": [
+        0.051,
+        0.0704
+       ],
+       "races_course_present": 2302,
+       "rate_if_present": 0.0599
+      },
+      {
+       "course": 6,
+       "wins": 39,
+       "rate": 0.0169,
+       "ci95": [
+        0.0124,
+        0.0231
+       ],
+       "races_course_present": 2284,
+       "rate_if_present": 0.0171
+      }
+     ],
+     "by_waku": [
+      {
+       "waku": 1,
+       "wins": 1336,
+       "rate": 0.5804
+      },
+      {
+       "waku": 2,
+       "wins": 312,
+       "rate": 0.1355
+      },
+      {
+       "waku": 3,
+       "wins": 256,
+       "rate": 0.1112
+      },
+      {
+       "waku": 4,
+       "wins": 202,
+       "rate": 0.0877
+      },
+      {
+       "waku": 5,
+       "wins": 134,
+       "rate": 0.0582
+      },
+      {
+       "waku": 6,
+       "wins": 62,
+       "rate": 0.0269
+      }
+     ],
+     "max_abs_diff_course_vs_waku_pt": 1,
+     "cancelled_confirmed": 93
+    }
+   }
+  }
+ },
+ "sources": {
+  "kb_archive": "2025-10-20〜2025-12-02",
+  "race_results": "2025-12-03〜2026-10-19"
+ },
+ "skipped_total": {
+  "no_race": 24,
+  "winner_course_unknown": 0,
+  "no_winner": 1
+ },
+ "rows": {
+  "races_counted": 55414,
+  "race_results_rows": 49607
+ },
+ "cancelled_confirmed_races": 553
+}

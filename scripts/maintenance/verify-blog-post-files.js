@@ -13,6 +13,9 @@
  *   5. blogPosts.js（Node 側の読み込み）が全ファイルを読み、日付の新しい順・同日は id 順で返す
  *   6. 画面に出る title・description（h1・一覧カード・関連記事）に「競艇」が無い。「競艇」は画面に出ない
  *      metaTitle・metaDescription（<title>・meta description・OGP）にだけ入れてよい（code-style.md 例外1）
+ *   7. 翻訳版（src/data/blog-posts/{en,ko,zh-TW}/{id}.json、BOA-908）: ファイル名と id が一致し、日本語版に同じ id があり、
+ *      必須項目（title・description・category・tags・readTime）が揃い、本文 public/blog/{id}{-en|-ko|-zh-tw}.md と
+ *      image（あれば）が実在する。blogPostsEn/Ko/ZhTw.js が全ファイルを id 順で返す
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -98,11 +101,79 @@ for (let i = 1; i < blogPosts.length; i++) {
   }
 }
 
+// 7. 翻訳版のメタデータ（BOA-908）
+const LANGS = [
+  {
+    lang: "en",
+    suffix: "-en",
+    module: "blogPostsEn.js",
+    exportName: "blogPostsEn",
+  },
+  {
+    lang: "ko",
+    suffix: "-ko",
+    module: "blogPostsKo.js",
+    exportName: "blogPostsKo",
+  },
+  {
+    lang: "zh-TW",
+    suffix: "-zh-tw",
+    module: "blogPostsZhTw.js",
+    exportName: "blogPostsZhTw",
+  },
+];
+const jaIds = new Set(posts.map((p) => p.id));
+let translationCount = 0;
+for (const { lang, suffix, module, exportName } of LANGS) {
+  const dir = path.join(POSTS_DIR, lang);
+  const langFiles = fs.readdirSync(dir).filter((f) => f.endsWith(".json"));
+  translationCount += langFiles.length;
+  for (const file of langFiles) {
+    const where = `${lang}/${file}`;
+    let post;
+    try {
+      post = JSON.parse(fs.readFileSync(path.join(dir, file), "utf8"));
+    } catch (err) {
+      fail(`${where}: JSON として読めない（${err.message}）`);
+      continue;
+    }
+    if (`${post.id}.json` !== file)
+      fail(`${where}: id（${post.id}）とファイル名が違う`);
+    if (!jaIds.has(post.id))
+      fail(`${where}: 日本語版（src/data/blog-posts/${post.id}.json）が無い`);
+    for (const key of ["title", "description", "category", "readTime"]) {
+      if (typeof post[key] !== "string" || post[key] === "")
+        fail(`${where}: ${key} が空か文字列でない`);
+    }
+    if (!Array.isArray(post.tags)) fail(`${where}: tags が配列でない`);
+    if (!fs.existsSync(path.join(MD_DIR, `${post.id}${suffix}.md`)))
+      fail(`${where}: public/blog/${post.id}${suffix}.md が無い`);
+    if (
+      post.image !== undefined &&
+      !fs.existsSync(path.join(ROOT, "public", post.image))
+    )
+      fail(`${where}: image（${post.image}）が public に無い`);
+  }
+  const loaded = (await import(`../../src/data/${module}`))[exportName];
+  if (loaded.length !== langFiles.length)
+    fail(
+      `${module} が ${loaded.length} 件しか返さない（ファイルは ${langFiles.length} 件）`,
+    );
+  for (let i = 1; i < loaded.length; i++) {
+    if (loaded[i - 1].id.localeCompare(loaded[i].id) > 0) {
+      fail(
+        `${module} の並びが id 順でない: ${loaded[i - 1].id} → ${loaded[i].id}`,
+      );
+      break;
+    }
+  }
+}
+
 if (errors.length > 0) {
   console.error(`❌ ブログ記事メタデータの検証に失敗（${errors.length}件）`);
   for (const e of errors) console.error(`  - ${e}`);
   process.exit(1);
 }
 console.log(
-  `✅ ブログ記事メタデータ ${files.length} 件（featured ${rankOwners.size} 件）を検証した`,
+  `✅ ブログ記事メタデータ ${files.length} 件（featured ${rankOwners.size} 件）と翻訳版 ${translationCount} 件を検証した`,
 );

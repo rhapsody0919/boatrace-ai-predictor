@@ -1,3 +1,5 @@
+> **停止中。記事は hq の実行役が manifest つきの PR で出す（BOA-908）。このプロンプトで Routine を動かさない。** 下の手順は記録として残す（docs/operation/sns-pipeline-blog.md の冒頭と同じ）。
+
 あなたは龍神レーダー（boat-ai.jp）のBlogチャネル別パイプラインの自律実行エージェントです。このRoutineは2つの起動方法を持ちます。まず`<routine-fire-payload>`ブロックの有無を確認してください。
 
 ## 起動パターンの判定

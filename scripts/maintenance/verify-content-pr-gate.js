@@ -154,6 +154,35 @@ const CHART_BASE = [
   "public/blog-charts/sample-chart.json",
 ];
 
+const CHART_PATH = "public/blog-charts/sample-guide-course-win.json";
+const chartJson = (o = {}) =>
+  JSON.stringify({
+    schemaVersion: 1,
+    id: "sample-guide-course-win",
+    article: ID,
+    title: "進入コース別の1着率",
+    description: "1コースの1着率は55.5%。",
+    ...o,
+  });
+/** 既存記事の改稿で図の JSON を M。withMd が false なら本文を変えない（図だけ） */
+const chartRevision = ({ baseArticle = ID, withMd = true }) => {
+  const headMd = `${baseMd}\n<ryujin-chart src="/blog-charts/sample-guide-course-win.json" rows="3"></ryujin-chart>\n`;
+  return {
+    md: withMd ? headMd : baseMd,
+    diff: [
+      ...(withMd ? [{ status: "M", path: MD }] : []),
+      { status: "M", path: CHART_PATH },
+    ],
+    headExtra: {
+      [CHART_PATH]: enc(chartJson({ title: "進入コース別の1着率（直した）" })),
+    },
+    base: { [MD]: baseMd, [CHART_PATH]: chartJson({ article: baseArticle }) },
+    basePaths: [MD, JSON_JA, MANIFEST, CHART_PATH],
+    manifestStatus: "M",
+    manifest: (m) => ({ ...m, kind: "revision" }),
+  };
+};
+
 /** 既存記事の改稿（.md と日本語版 JSON を M）。base と HEAD の中身を渡す */
 const revision = ({
   baseMdText = baseMd,
@@ -224,9 +253,34 @@ const cases = [
     /\[kyotei\] .* title/,
   ],
   [
-    "JSON の metaTitle の「競艇」は本文の関門は通るが、判断が要る語として落ちる",
+    "JSON の description の「競艇」は落ちる",
+    { json: { ...baseJson, description: "競艇の説明" } },
+    /\[kyotei\].* description/,
+  ],
+  [
+    "入れ子の metaTitle の「競艇」は落ちる（例外は最上位の文字列だけ）",
+    { json: { ...baseJson, x: { metaTitle: "競艇" } } },
+    /\[kyotei\].* x\.metaTitle/,
+  ],
+  [
+    "metaTitle の下の入れ子の「競艇」は落ちる",
+    { json: { ...baseJson, metaTitle: { title: "競艇" } } },
+    /\[kyotei\].* metaTitle\.title/,
+  ],
+  [
+    "metaTitle が配列の「競艇」は落ちる",
+    { json: { ...baseJson, metaTitle: ["競艇"] } },
+    /\[kyotei\].* metaTitle\.0/,
+  ],
+  [
+    "meta で始まる別のキー（metaKeywords）の「競艇」は落ちる",
+    { json: { ...baseJson, metaKeywords: "競艇" } },
+    /\[kyotei\].* metaKeywords/,
+  ],
+  [
+    "JSON の metaTitle の「競艇」は通る（オーナー決定 10/20、code-style.md 例外1。暫定）",
     { json: { ...baseJson, metaTitle: "競艇の記事" } },
-    /\[judgement\].*競艇/,
+    "ok",
   ],
   // 判断が要る句（決定 (a): 変えた行・足した行だけ、誤解を生む句と正規表現、免責の決まり文の例外）
   [
@@ -322,12 +376,12 @@ const cases = [
     "ok",
   ],
   [
-    "改稿で変えた metaTitle の「競艇」は判断が要るとして落ちる",
+    "改稿で変えた metaTitle の「競艇」も通る（暫定の例外）",
     revision({
       baseJsonObj: { ...baseJson, metaTitle: "記事" },
       headJsonObj: { ...baseJson, metaTitle: "競艇の記事" },
     }),
-    /\[judgement\].*metaTitle.*競艇/,
+    "ok",
   ],
   // ---- 8271c413a の審査 P1-1: 免責の決まり文は、その部分だけを消して残りを照合する
   [
@@ -785,6 +839,121 @@ const cases = [
   ],
   // ---- 図のタグ（src/utils/blogChartTag.js の形だけ、前後が空行、JSON が実在）
   [
+    "記事の PR で図の JSON（public/blog-charts/{記事id}-*.json）を足せる",
+    {
+      md: `${baseMd}\n<ryujin-chart src="/blog-charts/sample-guide-course-win.json" rows="3"></ryujin-chart>\n`,
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    "ok",
+  ],
+  [
+    "図の JSON の名前が manifest.id で始まらないと落ちる（1つの PR に1記事）",
+    {
+      extraFiles: {
+        "public/blog-charts/other-article-x.json":
+          '{"schemaVersion":1,"id":"other-article-x","article":"sample-guide","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[chart\].*other-article-x\.json の名前/,
+  ],
+  [
+    "図の JSON の article が manifest.id と違うと落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"other-article","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[chart\].*article "other-article"/,
+  ],
+  [
+    "図の JSON の「競艇」は落ちる（画面に出る文字）",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"競艇の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[kyotei\].*sample-guide-course-win\.json の title/,
+  ],
+  [
+    "図の JSON の判断が要る句は落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-course-win.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"進入コース別の1着率","description":"1コースを買えば儲かる。"}',
+      },
+    },
+    /\[judgement\].*儲かる/,
+  ],
+  ["改稿で図の JSON（M）と本文を一緒に直すと通る", chartRevision({}), "ok"],
+  [
+    "base の article が別記事の図（M）は落ちる（article だけ書き換えて乗っ取らない）",
+    chartRevision({ baseArticle: "sample-guide-x" }),
+    /\[chart\].*base の article "sample-guide-x"/,
+  ],
+  [
+    "名前が、manifest.id を接頭辞に持つ別記事の id で始まる図は落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-x-c.json": chartJson({
+          id: "sample-guide-x-c",
+        }),
+      },
+      basePaths: [
+        "public/blog/existing.md",
+        "src/data/blog-posts/existing.json",
+        "src/data/blog-posts/sample-guide-x.json",
+      ],
+    },
+    /\[chart\].*sample-guide-x-c\.json は記事 sample-guide-x の図/,
+  ],
+  [
+    "図だけの改稿は落ちる（本文と表も同じ PR で直す）",
+    chartRevision({ withMd: false }),
+    /\[chart\].*本文（public\/blog\/sample-guide/,
+  ],
+  [
+    "図の JSON には meta の例外が効かない（最上位の metaTitle の「競艇」も落ちる）",
+    { extraFiles: { [CHART_PATH]: chartJson({ metaTitle: "競艇の図" }) } },
+    /\[kyotei\].*sample-guide-course-win\.json の metaTitle/,
+  ],
+  [
+    "図 id が空の名前（{記事id}-.json）は落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sample-guide-.json": chartJson({
+          id: "sample-guide-",
+        }),
+      },
+    },
+    /\[chart\].*sample-guide-\.json の名前/,
+  ],
+  [
+    "図の JSON の中の画像のパスは、画像の参照に数えない",
+    {
+      extraFiles: {
+        [CHART_PATH]: chartJson({ note: "/images/blog/other.jpg" }),
+      },
+      headExtra: { "public/images/blog/other.jpg": JPEG },
+      extraDiff: [{ status: "A", path: "public/images/blog/other.jpg" }],
+    },
+    /\[image\] 変えた public\/images\/blog\/other\.jpg をどの/,
+  ],
+  [
+    "public/blog-charts の下の入れ子のパスは落ちる",
+    {
+      extraFiles: {
+        "public/blog-charts/sub/sample-guide-x.json":
+          '{"schemaVersion":1,"id":"sample-guide-course-win","article":"sample-guide","title":"進入コース別の1着率","description":"1コースの1着率は55.5%。"}',
+      },
+    },
+    /\[path\].*blog-charts\/sub/,
+  ],
+  [
     "正しい図の行は通る（JSON が base にある）",
     { md: `${baseMd}\n${CHART}\n`, basePaths: CHART_BASE },
     "ok",
@@ -1093,6 +1262,49 @@ for (const [name, over, expect] of cases) {
     failures.push(`${name}: 期待 ${expect}、結果 ${JSON.stringify(result)}`);
 }
 
+// メタ情報の「競艇」の一覧（暫定の例外を後で一括で外すため。オーナー決定 10/20）
+{
+  const withMeta = evaluateContentPr(
+    makePr({
+      json: {
+        ...baseJson,
+        metaTitle: "競艇の記事",
+        metaDescription: "競艇（ボートレース）の説明",
+      },
+    }),
+  );
+  if (!withMeta.ok)
+    failures.push(
+      `meta の「競艇」は通るはず: ${JSON.stringify(withMeta.errors)}`,
+    );
+  const entry = (withMeta.metaKyotei ?? []).find((m) => m.id === ID);
+  if (
+    !entry ||
+    JSON.stringify([...entry.keys].sort()) !==
+      JSON.stringify(["metaDescription", "metaTitle"])
+  )
+    failures.push(
+      `metaKyotei に ${ID} の metaTitle・metaDescription が出るはず: ${JSON.stringify(withMeta.metaKyotei)}`,
+    );
+  if (withMeta.judgementWordsFound.includes("競艇"))
+    failures.push("meta の「競艇」を判断が要る語に数えない");
+  const without = evaluateContentPr(makePr());
+  if ((without.metaKyotei ?? []).length !== 0)
+    failures.push(
+      `meta に「競艇」が無ければ metaKyotei は空: ${JSON.stringify(without.metaKyotei)}`,
+    );
+  const titleKyotei = evaluateContentPr(
+    makePr({
+      json: { ...baseJson, title: "競艇の記事", metaTitle: "競艇の記事" },
+    }),
+  );
+  if (
+    titleKyotei.ok ||
+    !titleKyotei.errors.some((e) => /\[kyotei\].* title/.test(e))
+  )
+    failures.push("title の「競艇」は、meta にあっても落ちる");
+}
+
 // p1 の記録
 {
   const r = evaluateContentPr(
@@ -1158,8 +1370,8 @@ const jsonFiles = readdirSync(postsDir, { recursive: true }).filter((f) =>
 for (const f of jsonFiles) {
   const path = `src/data/blog-posts/${f}`;
   const obj = JSON.parse(readFileSync(join(postsDir, f), "utf8"));
-  // 変えていない JSON とみなす（base = HEAD）。メタ情報の「競艇」は変えた値だけが判断の対象
-  masterErrors.push(...checkKyoteiJson(path, obj, obj));
+  // メタ情報の「競艇」は通す（暫定の例外）。それ以外の値の「競艇」は error
+  masterErrors.push(...checkKyoteiJson(path, obj, config).errors);
   const strings = changedJsonStrings(obj, undefined).map((s) => s.value);
   phraseHits.push(
     ...findJudgementPhrases(strings, config).map((h) => ({ path, ...h })),

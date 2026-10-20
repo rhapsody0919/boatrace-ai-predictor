@@ -65,4 +65,11 @@
 - Vercel の ignoreCommand の除外に `*.md` を全体で書くと、public/blog/*.md だけのブログ修正（1週に6本）が本番に出ない。除外はディレクトリと名前で書く。build は scripts/maintenance/run-heavy.sh を通るので除外しない（2026-10-20、system-architect、package.json の build、BOA-908、scripts/lib/vercelIgnoreBuild.js）
 - update-sitemap は master への push と Deploy Hook の両方で、同じ内容の本番ビルドを2回走らせていた（10/17 の 7e42db1 で2本）。Deploy Hook のビルドは GitHub の Deployments に載らない（2026-10-20、system-architect、update-sitemap.yml、BOA-908）
 - ビルドマシンを下げたときは、ビルドの成否ではなくスナップショットを作れた件数で確かめる。generate-ai-snapshots.js は失敗を受け止めて exit 0 にしうる。並列4は固定値（2026-10-20、system-architect、generate-ai-snapshots.js:49,51、BOA-908）
+- 2026-10-20 時点の審査の関門は、本文の無い差分を削除以外すべて落とす。画像を足す PR は、ADR-0097 の追記なしでは承認されない（2026-10-20、system-architect の content-publish の審査、scripts/lib/reviewPr.js:57-60・ADR-0097:34）
+- ブログの古い道（finalize-blog-draft.js の自動マージ、merge-blog-pr.js の GITHUB_MERGE_TOKEN の PAT、ADR-0034）は書き込みの身元を増やす道で、ADR-0097:109 と矛盾し、切替の後は失敗する。#1701 で止める（対応中、2026-10-20、system-architect の content-publish の審査、BOA-908 ⑤）
+- AI 審査の承認は P0 だけで決まり、P1 が残っていても APPROVE になる。段階0 A の「P0・P1 が0件」は、オーケストレーターがマージするときにしか効いていない（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:254-270・.claude/skills/orchestrate/SKILL.md:69）
+- review.yml の gate は、パス・PR の大きさ・テストの弱めを見ない。見るのは symlink・submodule・LFS・バイナリ・.gitattributes・299ファイル・20万字・月の上限だけ（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:8-67・scripts/review/gate.js）
+- 審査の月の上限（既定300）は作成の App の run の数で、push のたびに1回数える。全レーンと全社員で共有なので、1日7本の PR の流れでは上限に当たりうる（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:277-284・ADR-0097:96）
+- 例外の線を機械で効かせる置き場は、master から読まれる龍神の config に限る。pull_request_target は master の定義で動くので、PR がこのファイルを書き換えても、その PR の審査には効かない（2026-10-20、system-architect の開発の社員化 v2 の審査、.github/workflows/review.yml:12・54-56）
+- codex/* には Preview が無い。それ以外の接頭辞の Preview は本番の管理者キーを持つ。画面の作業を社員に回すと、段階0 B（mock-diff-checker・ファン評価）を満たす手段が無い（2026-10-20、system-architect の開発の社員化 v2 の審査、vercel.json:5-6・AGENTS.md:25・SKILL.md:115）
 - Linear の起票はすべて scripts/lib/linearIssueGate.js の assertCanCreateIssue を通す。未アーカイブ（issues を includeArchived なし・チームで絞らず数えた数、hq の count_unarchived と同じ）が200件以上、または数えられないときは起票せず Slack に件数と閾値を送る。新しい起票の経路は verify-linear-issue-gate.js が CI で検知する（2026-10-20、hq 台帳 PL48・docs/operation/linear-cli.md）

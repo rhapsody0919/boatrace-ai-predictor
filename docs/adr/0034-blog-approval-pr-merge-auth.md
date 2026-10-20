@@ -34,7 +34,7 @@ BOA-908（オーナー yes 10/20 夕）で、ADR-0097（書き込みの身元を
 - GitHub Actions の secret（リポジトリ・Environment）には、この PAT に当たる名前は無い
 - `api/admin/sns-hub/drafts/[id]/blog-pr-preview.js`（管理画面の記事の PR のプレビュー、読み取り）が同じ鍵を読む。PAT を失効すると、このプレビューは「接続設定がありません」等のエラーになる。管理画面の記事の承認まわりの片付けは別の作業
 
-オーナーの操作（この順で）:
+オーナーの操作（この順で）:（2026-10-20 にオーナーが 1・2 を実施。GitHub の PAT（説明「content-multi-channel-pipeline: sns-hub admin画面のBlog承認ボタンからDraft PRを自動マージするために使用（ADR 0034）」）を Revoke、Vercel の GITHUB_MERGE_TOKEN（Production）を削除）
 1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens で、このリポジトリ用に作った PAT（`docs/operation/content-pipeline-token-setup-guide.md` の手順で作ったもの）を Revoke する
 2. Vercel のプロジェクト boatrace-ai-predictor → Settings → Environment Variables で、`GITHUB_MERGE_TOKEN`（Production）を削除する
 3. 次の本番デプロイの後、`POST /api/admin/sns-hub/drafts/<id>/merge-blog-pr` が管理画面の認証つきで 410 を返すことを確かめる（`scripts/maintenance/verify-sns-existing-fixes.js` でも固定している）。管理画面では、410 の文言は出ず「マージに失敗しました」になる。また、プレビュー（同じ鍵を読む）が失敗するので承認のボタンは押せなくなる。画面の片付けは BOA-918

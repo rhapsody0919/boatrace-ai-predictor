@@ -1,0 +1,16 @@
+{
+  "id": "10000-races-analysis",
+  "title": "Ryujin Radar Passes 10,000 Races — What the Data Says About AI Prediction's Strengths and Limits",
+  "description": "Ryujin Radar's cumulative analyzed race count passed 10,000. An honest look at what 12,324 races reveal — a 47.4% Win hit rate, an 18.0% Trio hit rate, and the real challenges around return rate.",
+  "category": "Track Record",
+  "tags": [
+    "10000Races",
+    "TrackRecordAnalysis",
+    "HitRate",
+    "ReturnRate",
+    "Trio",
+    "DataDisclosure"
+  ],
+  "readTime": "10 min",
+  "image": "/images/blog/10000-races-hitrate-en.jpg"
+}

@@ -20,14 +20,14 @@ export const REVIEW_ROLES = [
 // p1 が0でなければ error にする役。残り（fan・seo-marketer）は件数を記録するだけ
 const P1_BLOCKING_ROLES = new Set(["content-qa", "wording-editor"]);
 const KYOTEI = "競艇";
-// JSON で「競艇」を許すキー（画面に出ないメタ情報。.claude/rules/code-style.md の例外1）
-const KYOTEI_ALLOWED_JSON_KEYS = new Set(["metaTitle", "metaDescription"]);
 const REGULAR_FILE_MODE = "100644";
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const TRANSLATION_SUFFIX_RE = /-(en|ko|zh-tw)$/;
 const MANIFEST_RE = /^docs\/content-manifests\/([^/]+)\.json$/;
 const JA_JSON_RE = /^src\/data\/blog-posts\/([^/]+)\.json$/;
 const TR_JSON_RE = /^src\/data\/blog-posts\/(?:en|ko|zh-TW)\/([^/]+)\.json$/;
+// 図の JSON（docs/design/blog-charts/contract.md）。名前は {記事id}-{図id}.json。形は verify-blog-charts.js（CI）が見る
+const CHART_JSON_RE = /^public\/blog-charts\/([^/]+)\.json$/;
 const MD_RE = /^public\/blog\/([^/]+)\.md$/;
 const IMAGE_RE = /^public\/images\/blog\/[^/]+$/;
 const IMAGE_REF_RE = /\/images\/blog\/[^\s)"'\]>]+/g;
@@ -237,27 +237,34 @@ export function changedMdLines(text, baseText) {
 }
 
 /**
- * 「競艇」: JSON の metaTitle・metaDescription 以外のすべての文字列値（tags・category を含む）に0件（[kyotei]）。
- * metaTitle・metaDescription の「競艇」は、変えた値にあれば判断が要るとして [judgement]（例外の使用はオーナー判断。決定 (a)）。
- * baseObj は base の同じ JSON（足したファイルなら undefined）
+ * 「競艇」: JSON の文字列値のうち、設定の kyoteiMetaAllowedKeys（metaTitle・metaDescription）以外に0件（[kyotei]）。
+ * meta の「競艇」は通す（オーナー決定 2026-10-20、.claude/rules/code-style.md の例外1。役所への営業の前に外す暫定の措置）。
+ * 後で一括で外せるように、meta に「競艇」があるキーを metaKeys で返す（結果の metaKyotei に出る）
  */
-export function checkKyoteiJson(path, obj, baseObj) {
+export function checkKyoteiJson(path, obj, config = {}) {
+  const metaAllowed = new Set(config.kyoteiMetaAllowedKeys ?? []);
   const label = (keyPath) => keyPath.join(".") || "(値)";
+  // 例外は最上位の文字列値だけ（入れ子の metaTitle や、metaTitle の下の値は対象外）
   const isMeta = (keyPath) =>
-    keyPath.some((k) => KYOTEI_ALLOWED_JSON_KEYS.has(k));
-  const body = collectKeyedStrings(obj)
-    .filter(({ keyPath, value }) => value.includes(KYOTEI) && !isMeta(keyPath))
-    .map(
-      ({ keyPath }) =>
-        `[kyotei] ${path} の ${label(keyPath)} に「${KYOTEI}」がある`,
-    );
-  const meta = changedJsonStrings(obj, baseObj)
-    .filter(({ keyPath, value }) => value.includes(KYOTEI) && isMeta(keyPath))
-    .map(
-      ({ keyPath }) =>
-        `[judgement] ${path} の ${label(keyPath)} に「${KYOTEI}」がある（メタ情報の例外を使うかはオーナーの判断。PR を作らずオーナーへ回す）`,
-    );
-  return [...body, ...meta];
+    keyPath.length === 1 && metaAllowed.has(keyPath[0]);
+  const hits = collectKeyedStrings(obj).filter(({ value }) =>
+    value.includes(KYOTEI),
+  );
+  return {
+    errors: hits
+      .filter(({ keyPath }) => !isMeta(keyPath))
+      .map(
+        ({ keyPath }) =>
+          `[kyotei] ${path} の ${label(keyPath)} に「${KYOTEI}」がある`,
+      ),
+    metaKeys: [
+      ...new Set(
+        hits
+          .filter(({ keyPath }) => isMeta(keyPath))
+          .map(({ keyPath }) => label(keyPath)),
+      ),
+    ],
+  };
 }
 
 // `//` と `/\`（ブラウザが // と同じに扱う）はプロトコル相対で、外へ出るので数えない
@@ -540,7 +547,9 @@ function checkManifest({
   manifest,
   diffPaths,
   head,
+  base,
   basePaths,
+  headPaths,
   config,
 }) {
   const errors = [];
@@ -624,6 +633,59 @@ function checkManifest({
     errors.push(
       `[manifest] 1つの PR に1記事。manifest.id "${manifest.id}" 以外の記事 ${otherIds.join("・")} が入っている`,
     );
+  // 図の JSON も manifest.id の記事のもの。名前が「{記事id}-{図id}」、article が記事 id（HEAD も、M なら base も）。
+  // manifest.id を接頭辞に持つ別の記事（a と a-b）の図は、名前が長いほうの記事 id で始まるので落とす
+  const chartDiffs = diffPaths.filter((x) => CHART_JSON_RE.test(x.path));
+  const longerIds = [...basePaths, ...headPaths]
+    .map((p) => p.match(JA_JSON_RE)?.[1])
+    .filter((id) => id && id.startsWith(`${manifest.id}-`));
+  const articleOf = (raw) => {
+    try {
+      const j = JSON.parse(toText(raw));
+      return isPlainObject(j) ? j.article : undefined;
+    } catch {
+      return undefined; // 読めない JSON は [json] で出している
+    }
+  };
+  for (const d of chartDiffs) {
+    const name = d.path.match(CHART_JSON_RE)[1];
+    if (
+      !name.startsWith(`${manifest.id}-`) ||
+      name.length === manifest.id.length + 1
+    )
+      errors.push(
+        `[chart] ${d.path} の名前が「${manifest.id}-{図id}」の形でない（図の名前は {記事id}-{図id}.json）`,
+      );
+    const owner = longerIds.find((id) => name.startsWith(`${id}-`));
+    if (owner)
+      errors.push(
+        `[chart] ${d.path} は記事 ${owner} の図（manifest.id は "${manifest.id}"）`,
+      );
+    if (head[d.path] !== undefined) {
+      const article = articleOf(head[d.path]);
+      if (article !== manifest.id)
+        errors.push(
+          `[chart] ${d.path} の article ${JSON.stringify(article)} が manifest.id "${manifest.id}" と違う`,
+        );
+    }
+    if (d.status === "M" && base[d.path] !== undefined) {
+      const baseArticle = articleOf(base[d.path]);
+      if (baseArticle !== manifest.id)
+        errors.push(
+          `[chart] ${d.path} の base の article ${JSON.stringify(baseArticle)} が manifest.id "${manifest.id}" と違う（別の記事の図は変えない）`,
+        );
+    }
+  }
+  // 図だけ日々更新しない。図を変えたら同じ記事の本文（.md）も同じ PR で直す（docs/design/blog-charts/contract.md 2節）
+  if (
+    chartDiffs.length > 0 &&
+    !diffPaths.some(
+      (d) => MD_RE.test(d.path) && articleIdOf(d.path) === manifest.id,
+    )
+  )
+    errors.push(
+      `[chart] 図の JSON を変えたのに、記事の本文（public/blog/${manifest.id}.md か翻訳）の差分が無い（本文と表も同じ PR で直す）`,
+    );
 
   // kind: new は日本語版 JSON の追加がある、revision は無い
   const addsJaJson = diffPaths.some(
@@ -665,6 +727,7 @@ export function evaluateContentPr({
   config,
 }) {
   const errors = [];
+  const metaKyotei = [];
   const entries = diff.map((d) => ({
     status: d.status,
     path: d.path,
@@ -716,7 +779,10 @@ export function evaluateContentPr({
   const textFiles = [];
   for (const e of live) {
     const isMd = MD_RE.test(e.path);
-    const isJson = JA_JSON_RE.test(e.path) || TR_JSON_RE.test(e.path);
+    const isJson =
+      JA_JSON_RE.test(e.path) ||
+      TR_JSON_RE.test(e.path) ||
+      CHART_JSON_RE.test(e.path);
     if (!isMd && !isJson) continue;
     if (head[e.path] === undefined) {
       errors.push(`[path] ${e.path} が HEAD に無い`);
@@ -744,12 +810,26 @@ export function evaluateContentPr({
         ...checkInternalLinks(f.path, f.text, f.status, config),
       );
     } else {
-      errors.push(...checkKyoteiJson(f.path, f.json, baseJsonOf(base, f.path)));
+      // 図の JSON は画面に出る文字だけなので、meta の例外を効かせない
+      const kyotei = checkKyoteiJson(
+        f.path,
+        f.json,
+        CHART_JSON_RE.test(f.path)
+          ? { ...config, kyoteiMetaAllowedKeys: [] }
+          : config,
+      );
+      errors.push(...kyotei.errors);
+      if (kyotei.metaKeys.length > 0)
+        metaKyotei.push({
+          id: typeof f.json?.id === "string" ? f.json.id : null,
+          path: f.path,
+          keys: kyotei.metaKeys,
+        });
     }
   }
 
-  // .md と JSON の対応
-  for (const f of textFiles) {
+  // .md と JSON の対応（図の JSON は記事の .md と対にならない）
+  for (const f of textFiles.filter((t) => !CHART_JSON_RE.test(t.path))) {
     const id = articleIdOf(f.path);
     const jaJson = `src/data/blog-posts/${id}.json`;
     const jaMd = `public/blog/${id}.md`;
@@ -825,7 +905,10 @@ export function evaluateContentPr({
   }
 
   // 画像: 参照先が HEAD にあり寸法が読める。足した画像はどれかが参照している
-  const refs = referencedImagePaths(textFiles.map((f) => f.text));
+  // 図の JSON の文字列は画像の参照に数えない（図は画像を持たない）
+  const refs = referencedImagePaths(
+    textFiles.filter((f) => !CHART_JSON_RE.test(f.path)).map((f) => f.text),
+  );
   for (const p of refs) {
     if (head[p] === undefined)
       errors.push(`[image] 参照している ${p} が HEAD に無い`);
@@ -858,13 +941,6 @@ export function evaluateContentPr({
       }
     }
   }
-  // メタ情報の「競艇」（checkKyoteiJson が [judgement] で出す）も見つかった語に数える
-  if (
-    errors.some(
-      (e) => e.startsWith("[judgement]") && e.includes(`に「${KYOTEI}」がある`),
-    )
-  )
-    found.add(KYOTEI);
   const judgementWordsFound = [...found];
 
   // manifest
@@ -896,7 +972,9 @@ export function evaluateContentPr({
         manifest,
         diffPaths,
         head,
+        base,
         basePaths,
+        headPaths,
         config,
       });
       errors.push(...r.errors);
@@ -917,6 +995,8 @@ export function evaluateContentPr({
     errors,
     judgementWordsFound,
     p1Recorded,
+    // meta（metaTitle・metaDescription）に「競艇」がある記事。暫定の例外を後で一括で外すための一覧
+    metaKyotei,
     manifest: manifestPath,
   };
 }
