@@ -11,6 +11,8 @@
  * - CLS を防ぐ: JSON は記事の本文と一緒に取ってある（src/utils/blogChartLoader.js）ので、
  *   本文と同じ描画で図が出る。読み込み中の状態が無く、アニメーションもしない
  * 状態は data-chart-state（ready・error）で外に示す。
+ * PNG の書き出し（scripts/lib/blogChartPng.js、ADR 0099）は data-chart-id で図を探し、[data-chart-export] の形
+ * （BlogChart.css）にして撮る。押せない画像では切り替えを消し、札の1つ目を data-chart-view（「会場 福岡」）に替える。
  * scripts/generate-ai-snapshots.js は error の記事を失敗として数える。
  */
 import { useId, useState } from "react";
@@ -152,6 +154,7 @@ function BlogChart({ src, result, lang = "ja" }) {
     <figure
       className="blog-chart"
       data-chart-state="ready"
+      data-chart-id={chart.id}
       aria-labelledby={`${controlId}-title`}
     >
       {/* 見出し（h3）にしない。記事の目次（BlogPost.jsx が h2・h3 を集める）に図の名前を入れないため */}
@@ -200,7 +203,16 @@ function BlogChart({ src, result, lang = "ja" }) {
           )}
         </div>
       )}
-      <div className="blog-chart__badges" aria-live="polite" aria-atomic="true">
+      <div
+        className="blog-chart__badges"
+        aria-live="polite"
+        aria-atomic="true"
+        data-chart-view={
+          chart.switch
+            ? `${localize(chart.switch.label, lang)} ${localize(view.label, lang)}`
+            : undefined
+        }
+      >
         <span>{localize(badge.scope, lang)}</span>
         <span>
           {formatDate(badge.period.from)}〜{formatDate(badge.period.to)}

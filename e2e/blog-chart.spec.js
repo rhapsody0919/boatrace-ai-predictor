@@ -7,6 +7,11 @@
  */
 import { test, expect } from "./fixtures.js";
 import { readFileSync } from "node:fs";
+import {
+  BLOG_CHART_PNG_CREDIT,
+  BLOG_CHART_PNG_PRESETS,
+} from "../src/utils/blogChartPng.js";
+import { enterExportMode } from "../scripts/lib/blogChartPng.js";
 
 const ARTICLE = "fukuoka-water-wind-guide";
 const CHART_URL = "/blog-charts/test-course-win.json";
@@ -412,5 +417,78 @@ test.describe("ブログの図（記事を移るとき）", () => {
     await page.goto(`/blog/${ARTICLE}`);
     await expect(page.locator(".blog-post-content")).toContainText("本文");
     expect(requested.filter((u) => u.includes("in-code.json"))).toEqual([]);
+  });
+});
+
+test.describe("ブログの図（PNG の書き出しの形、ADR 0099）", () => {
+  // ビルドの書き出し（scripts/lib/blogChartPng.js）と同じ関数で撮影の形にする
+  for (const [preset, { cssWidth, cssHeight }] of Object.entries(
+    BLOG_CHART_PNG_PRESETS,
+  )) {
+    test(`${preset}: 6行・注記つきの図が ${cssWidth}×${cssHeight} の枠に収まり、切り替えを写さず「会場 福岡」と出所を出す`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: cssWidth, height: cssHeight });
+      await stubArticle(page);
+      await page.goto(`/blog/${ARTICLE}`);
+      await expect(chartLocator(page)).toHaveAttribute(
+        "data-chart-state",
+        "ready",
+      );
+      const m = await page.evaluate(enterExportMode, {
+        id: example.id,
+        preset,
+        credit: BLOG_CHART_PNG_CREDIT,
+      });
+      expect(m).toMatchObject({ found: true, state: "ready" });
+      expect(m.overflowY).toBeLessThanOrEqual(0);
+      expect(m.overflowX).toBeLessThanOrEqual(0);
+      const fig = chartLocator(page);
+      expect(await fig.boundingBox()).toEqual({
+        x: 0,
+        y: 0,
+        width: cssWidth,
+        height: cssHeight,
+      });
+      await expect(fig.locator(".blog-chart__control")).toBeHidden();
+      const pseudo = await fig.evaluate((el) => ({
+        view: getComputedStyle(
+          el.querySelector(".blog-chart__badges"),
+          "::before",
+        ).content,
+        name: getComputedStyle(
+          el.querySelector(".blog-chart__caption"),
+          "::before",
+        ).content,
+        site: getComputedStyle(
+          el.querySelector(".blog-chart__caption"),
+          "::after",
+        ).content,
+      }));
+      expect(pseudo).toEqual({
+        view: '"会場 福岡"',
+        name: `"${BLOG_CHART_PNG_CREDIT.name}"`,
+        site: `"${BLOG_CHART_PNG_CREDIT.site}"`,
+      });
+      // 注記は外さない（fan-panel-png-v1.md）
+      await expect(fig.locator(".blog-chart__caption")).toContainText(
+        "枠番ではない",
+      );
+    });
+  }
+
+  test("書き出しの形でないときは、切り替えが出て出所の行は出ない（画面は変わらない）", async ({
+    page,
+  }) => {
+    await stubArticle(page);
+    await page.goto(`/blog/${ARTICLE}`);
+    const fig = chartLocator(page);
+    await expect(fig.locator(".blog-chart__control")).toBeVisible();
+    const site = await fig.evaluate(
+      (el) =>
+        getComputedStyle(el.querySelector(".blog-chart__caption"), "::after")
+          .content,
+    );
+    expect(site).toBe("none");
   });
 });

@@ -1245,6 +1245,11 @@
       "guards": "ブログの図の契約（docs/design/blog-charts/contract.md、src/utils/blogChartContract.js）。記事の <ryujin-chart> の書き方（小文字・閉じタグ・1行・前後空行・src は /blog-charts/ の実在する JSON・rows は行の数）、JSON の形（未知のキー・counts と値の整数での照合・切り替え1つ・予約の種類・翻訳の文字）、id・article、答えの割合が本文にもあること、「競艇」・廃止語・risk-rules の語、参照されない JSON"
     },
     {
+      "script": "verify-blog-chart-png.js",
+      "tier": "ci",
+      "guards": "ブログの図の PNG の書き出し（ADR 0099、src/utils/blogChartPng.js・scripts/lib/blogChartPng.js）。大きさの固定の一覧が整数の画素（1080×1350・1280×720）で BlogChart.css の [data-chart-export] と同じ、URL のパス、本番の判定は content-type と先頭8バイトの両方（無い PNG は rewrite で index.html が返る）、撮る図の一覧を記事ごとにまとめる、朝夜のまとめの行（足された・変わった JSON だけ、作られていない理由を status.json から）、status.json の照合が図の PNG の失敗を拾う"
+    },
+    {
       "script": "verify-vercel-ignore-build.js",
       "tier": "ci",
       "guards": "vercel.json の ignoreCommand（scripts/lib/vercelIgnoreBuild.js、BOA-908）。docs・台帳・機械の再生成・ワークフローだけの変更ではビルドせず、public/blog/*.md・run-heavy.sh・src・api・ルートの data/*・risk-rules.json・作り直し（差分なし）ではビルドすること"
