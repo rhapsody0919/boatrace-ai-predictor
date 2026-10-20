@@ -26,7 +26,10 @@ import { pathToFileURL } from "node:url";
 import twitterText from "twitter-text";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import { deadlineIso } from "../../api/_lib/snsClaimCheck.js";
-import { FULL_URL_PLACEHOLDER } from "../../api/_lib/snsDeadlineQueue.js";
+import {
+  FULL_URL_PLACEHOLDER,
+  fillFullUrl,
+} from "../../api/_lib/snsDeadlineQueue.js";
 import { xPostValid } from "../../api/_lib/snsXLength.js";
 import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
 
@@ -79,8 +82,10 @@ const withShorts = (bundle) => bundle?.bundle_version === SHORTS_BUNDLE_VERSION;
 const channelsOf = (bundle) =>
   withShorts(bundle) ? ["x", "youtube", "shorts"] : ["x", "youtube"];
 const dbChannel = (channel) => (channel === "shorts" ? "youtube" : channel);
-// 置き換えた後の長さ（"{full_url}" 10字 → "https://youtu.be/" + 11字 = 28字）
-const FILLED_URL_EXTRA = 28 - FULL_URL_PLACEHOLDER.length;
+// 置き換えで増える字数（送る時の fillFullUrl と同じ書式から求める）
+const FILLED_URL_EXTRA =
+  fillFullUrl(FULL_URL_PLACEHOLDER, "x".repeat(11)).length -
+  FULL_URL_PLACEHOLDER.length;
 
 /** bundle.json の検査（純粋関数）。不合格は理由の配列を返す */
 export function checkFullPicture(bundle, riskRules = []) {
@@ -341,34 +346,43 @@ export async function pushFullPicture(
   const out = {};
   // 下書きと item を全部入れてから承認する（途中の item で落ちたとき、先に承認した分だけが送られて残らないように）
   const made = {};
+  let shortsError = null;
   for (const channel of channels) {
     const control = controls[dbChannel(channel)];
     const auto = control?.mode === "auto" && control?.auto_approver_id;
-    const draft = await store.insertDraft(rows[channel]);
-    const item = await store.insertItem({
-      kind: FULL_PICTURE_FORMAT,
-      draft_id: draft.id,
-      channel: dbChannel(channel),
-      ...(channel === "shorts" ? { variant: "shorts" } : {}),
-      race_id: bundle.race_id,
-      deadline_at: when.deadline_at,
-      notify_by: when.notify_by,
-      veto_until: when.veto_until,
-      state: auto ? "notified" : "manual",
-      checks: {
-        passed: true,
-        review: bundle.review,
-        machine: bundle.qa.machine,
-        checked_at: observedAt,
-      },
-      // 止めるリンクは作らない（オーナー決定）。153 の CHECK が notified に要求するので、使わない乱数のハッシュを入れる
-      ...(auto
-        ? {
-            notified_at: observedAt,
-            stop_token_hash: randomBytes(32).toString("hex"),
-          }
-        : {}),
-    });
+    let draft, item;
+    try {
+      draft = await store.insertDraft(rows[channel]);
+      item = await store.insertItem({
+        kind: FULL_PICTURE_FORMAT,
+        draft_id: draft.id,
+        channel: dbChannel(channel),
+        ...(channel === "shorts" ? { variant: "shorts" } : {}),
+        race_id: bundle.race_id,
+        deadline_at: when.deadline_at,
+        notify_by: when.notify_by,
+        veto_until: when.veto_until,
+        state: auto ? "notified" : "manual",
+        checks: {
+          passed: true,
+          review: bundle.review,
+          machine: bundle.qa.machine,
+          checked_at: observedAt,
+        },
+        // 止めるリンクは作らない（オーナー決定）。153 の CHECK が notified に要求するので、使わない乱数のハッシュを入れる
+        ...(auto
+          ? {
+              notified_at: observedAt,
+              stop_token_hash: randomBytes(32).toString("hex"),
+            }
+          : {}),
+      });
+    } catch (error) {
+      // Shorts の書き込み（172 が未適用・一意の索引に当たる等）が落ちても、X・完全版は送る（X は Shorts と独立。x-channel の P1）
+      if (channel !== "shorts") throw error;
+      shortsError = `${error.message}${draft ? `（下書き ${draft.id} は承認されないまま残る）` : ""}`;
+      continue;
+    }
     made[channel] = { draft, item, control, auto: Boolean(auto) };
     out[channel] = {
       draft_id: draft.id,
@@ -376,7 +390,7 @@ export async function pushFullPicture(
       auto: Boolean(auto),
     };
   }
-  for (const channel of channels) {
+  for (const channel of Object.keys(made)) {
     const { item, control, auto } = made[channel];
     let { draft } = made[channel];
     if (!auto) continue;
@@ -422,6 +436,10 @@ export async function pushFullPicture(
         ? `${label[channel]}: 自動の承認に失敗（個別承認に回した）: ${r.error}`
         : `${label[channel]}: 自動モードでないので個別承認の画面で承認する`,
   );
+  if (shortsError)
+    lines.push(
+      `youtube（Shorts）: 下書き・item を作れなかったので作らなかった（X・完全版は送る）: ${shortsError}`,
+    );
   if (shortsLate)
     lines.push(
       `youtube（Shorts）: 締切の${SHORTS_LATEST_BEFORE_MIN}分前を過ぎて届いたので作らなかった（完全版の公開を待つ時間が無い）`,
@@ -429,7 +447,7 @@ export async function pushFullPicture(
   await notify(
     `SNS 全貌動画 ${bundle.race_id}（締切 ${jstTime(deadlineAt)}）\n${lines.join("\n")}\n止めるには: ${STOP_SQL}`,
   ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
-  return { channels: out, revision, when, shortsLate };
+  return { channels: out, revision, when, shortsLate, shortsError };
 }
 
 /** PostgREST・Storage の読み書き（service_role）。失敗は投げる */

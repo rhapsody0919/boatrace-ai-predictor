@@ -69,7 +69,7 @@ before(async () => {
 });
 beforeEach(async () => {
   await db.exec(`
-    UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;
+    DELETE FROM sns_metric_jobs; UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_youtube_quota_attempts; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;
     ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
     DELETE FROM races;
     UPDATE sns_auto_send_control SET mode='auto', dry_run=false;`);
@@ -166,24 +166,26 @@ const store = {
       ],
     ),
   insertItem: (row) =>
-    first(
-      `INSERT INTO sns_auto_send_items(kind,draft_id,channel,race_id,deadline_at,notify_by,veto_until,state,checks,notified_at,stop_token_hash,variant)
+    store.failInsertItem?.(row)
+      ? Promise.reject(new Error("item_insert_failed"))
+      : first(
+          `INSERT INTO sns_auto_send_items(kind,draft_id,channel,race_id,deadline_at,notify_by,veto_until,state,checks,notified_at,stop_token_hash,variant)
        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,coalesce($12,'main')) RETURNING *`,
-      [
-        row.kind,
-        row.draft_id,
-        row.channel,
-        row.race_id,
-        row.deadline_at,
-        row.notify_by,
-        row.veto_until,
-        row.state,
-        row.checks,
-        row.notified_at ?? null,
-        row.stop_token_hash ?? null,
-        row.variant ?? null,
-      ],
-    ),
+          [
+            row.kind,
+            row.draft_id,
+            row.channel,
+            row.race_id,
+            row.deadline_at,
+            row.notify_by,
+            row.veto_until,
+            row.state,
+            row.checks,
+            row.notified_at ?? null,
+            row.stop_token_hash ?? null,
+            row.variant ?? null,
+          ],
+        ),
   updateItem: (id, from, patch) =>
     first(
       "UPDATE sns_auto_send_items SET state=$3 WHERE id=$1 AND state=$2 RETURNING *",
@@ -487,6 +489,23 @@ test("bundle の版2: Shorts の下書きを足し、親（完全版の job）�
     [shorts.id],
   );
   assert.equal(claimed.r.error_code, "parent_not_posted");
+  // 本番の claim（158）は、YouTube の親（完全版）が posted で外部 ID があれば、Shorts の claim を通す
+  await db.exec(
+    "UPDATE sns_youtube_quota_control SET verified=true, baseline_day=(test_now() AT TIME ZONE 'America/Los_Angeles')::date, upload_limit=10, general_limit=10000, external_uploads=0, external_general=0",
+  );
+  await db.query(
+    "UPDATE sns_x_send_jobs SET state='queued', error_code=NULL WHERE id=$1",
+    [shorts.id],
+  );
+  await db.query(
+    "UPDATE sns_x_send_jobs SET state='posted', external_post_id='fullvideo01', posted_at=test_now() WHERE id=$1",
+    [full.id],
+  );
+  const again = await first(
+    "SELECT public.transition_sns_x_send($1,'claim','{}'::jsonb) r",
+    [shorts.id],
+  );
+  assert.equal(again.r.state, "sending");
 });
 
 test("bundle の版2の検査: 置き場所がちょうど1つ・題名が完全版と別・Shorts の機械の検査・shorts.mp4・版の値", async () => {
@@ -581,4 +600,20 @@ test("bundle の版2: 完全版の自動の承認に失敗したら、Shorts も
     items.map((i) => i.state),
     ["notified", "manual", "manual"],
   );
+});
+
+test("bundle の版2: Shorts の item を作れなくても（172 が未適用等）、X と完全版は承認して送る。Shorts は作らなかったと Slack に書く", async () => {
+  store.failInsertItem = (row) => row.variant === "shorts";
+  try {
+    const result = await push(bundleV2());
+    assert.equal(result.reasons, undefined);
+    assert.ok(result.channels.x.send_at);
+    assert.ok(result.channels.youtube.send_at);
+    assert.equal(result.channels.shorts, undefined);
+    assert.match(result.shortsError, /item_insert_failed/);
+    assert.match(result.notes[0], /Shorts）: 下書き・item を作れなかった/);
+  } finally {
+    store.failInsertItem = null;
+  }
+  assert.equal((await all("SELECT * FROM sns_x_send_jobs")).length, 2);
 });
