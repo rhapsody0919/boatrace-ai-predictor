@@ -1,5 +1,7 @@
 # Blogチャネル別パイプライン 制作ガイド
 
+> **停止。記事は hq の実行役が③の manifest つきの PR で出す（BOA-908）。この手順で下書きを作らない。** 記事の PR を posted にする道（merge-blog-pr・finalize-blog-draft）を止めたので、この Routine を動かすと 0.5 の `hasOpenBlogDraft()` で1本目の後に止まる。2026-10-20 時点で動いている Routine は無い
+
 承認済みネタ（`sns_topics.status='approved'`）のうち、blog向けに割り当てられた`sns_topic_targets`をポーリングして記事下書き（Draft PR）を生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにしている。
 
 **このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`が作った承認済みネタを拾って生成するだけの、疎結合な下流工程。
