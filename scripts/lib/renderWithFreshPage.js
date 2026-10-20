@@ -7,7 +7,8 @@
  * 並列のワーカーが同時に落ちたことに気づいても、起動し直すのは1回だけにする。
  *
  * @param {() => Promise<{ isConnected: () => boolean, newPage: () => Promise<unknown>, close: () => Promise<void> }>} launch
- * @returns {{ openPage: () => Promise<unknown>, close: () => Promise<void>, launches: () => number }}
+ * @returns {{ openPage: (options?: object) => Promise<unknown>, close: () => Promise<void>, launches: () => number }}
+ *   openPage の options は browser.newPage にそのまま渡す（図の PNG は deviceScaleFactor・colorScheme を決めて開く）
  */
 export function createPageOpener(launch) {
   let launched = 0;
@@ -17,7 +18,7 @@ export function createPageOpener(launch) {
   };
   let browserPromise = null;
 
-  const openPage = async () => {
+  const openPage = async (options) => {
     browserPromise ??= start();
     const browser = await browserPromise;
     if (!browser.isConnected()) {
@@ -26,7 +27,7 @@ export function createPageOpener(launch) {
         current.isConnected() ? current : start(),
       );
     }
-    return (await browserPromise).newPage();
+    return (await browserPromise).newPage(options);
   };
 
   const close = async () => {
