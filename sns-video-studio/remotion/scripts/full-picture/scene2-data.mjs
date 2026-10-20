@@ -173,18 +173,15 @@ export function templateLines(f) {
     // 過去のレースの集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
     if (f.todayRank !== null) {
       // 誰の率か（その順位だった過去の1号艇）と、比べる「全体」が何か（過去の1号艇全体）を書く（wording-editor P1）
-      const all = `${f.boat}号艇全体`;
-      const l2 =
+      // 比べる先は「同じ級別の組み合わせ」の範囲の1号艇（cards.scope。全体ではない。代わりの審査 P2）
+      const base = (who) =>
         f.usualDiffPt === null
           ? `1位${f.rate1}%・6位${f.rate6}%`
           : f.usualDiffPt < 1
-            ? `${all}の${f.usual}%との差は1ポイント未満`
-            : `${all}の${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
-      return fitFirst(
-        [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇は1着${f.todayRate}%`, l2],
-        [`${f.item}${f.todayRank}位の過去の${f.boat}号艇は1着${f.todayRate}%`, l2],
-        [`${f.item}${f.todayRank}位の過去のレースで1着${f.todayRate}%`, l2],
-      );
+            ? `${who}${f.usual}%との差は1ポイント未満`
+            : `${who}${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
+      const l1s = [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去のレースで1着${f.todayRate}%`];
+      return fitFirst(...l1s.flatMap((l1) => [[l1, base(`同じ級別の${f.boat}号艇の`)], [l1, base("同じ級別の")]]));
     }
     const l1 = fitFirst(
       [`過去の${f.boat}号艇は${f.item}1位で1着${f.rate1}%・6位で${f.rate6}%`],

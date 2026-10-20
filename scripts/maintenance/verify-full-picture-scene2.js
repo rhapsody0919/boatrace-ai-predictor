@@ -153,7 +153,7 @@ assert.deepEqual(templateLines(focusSt), [
 // 過去のレースの集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
 assert.deepEqual(templateLines(card), [
   "当地勝率3位だった過去の1号艇は1着69%",
-  "1号艇全体の71.1%より2.1ポイント低い",
+  "同じ級別の1号艇の71.1%より2.1ポイント低い",
 ]);
 // 「今日の順位を当てはめない」だけでは、カードの「今日 6艇中1位」と食い違って見えた（2026-10-20 オーケストレーター指摘）
 assert.deepEqual(templateLines(cardFinal), [
@@ -890,7 +890,7 @@ for (const f of fixtures) {
   assert.equal(groupDigits("1号艇が1着なら2着は2号艇 / 9961件の33.8%（3367件）"), "1号艇が1着なら2着は2号艇 / 9,961件の33.8%（3,367件）");
   assert.equal(groupDigits("類似レース400件で1着最多は1号艇"), "類似レース400件で1着最多は1号艇");
   assert.equal(groupDigits("篠崎元志の1号艇は1044走、過去90日の1234レース、21.3ポイント"), "篠崎元志の1号艇は1,044走、過去90日の1,234レース、21.3ポイント");
-  assert.deepEqual(checkLines(["9,961件の33.8%（3,367件）"], { kind: "followers", n: 9961, second: { rate: "33.8", k: 3367 } }, null), [], "桁区切りの数は facts と照合できる");
+  assert.deepEqual(checkLines(["下関で1号艇が1着なら2着は2号艇", "9,961件の33.8%（3,367件）"], { kind: "followers", venue: "下関", boat: 1, second: { boat: 2, rate: "33.8", k: 3367 }, n: 9961 }, null), [], "桁区切りの数は facts と照合できる");
   for (const f of fixtures) {
     const sc = buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8")));
     const ans = templateText(allBeats(sc)).answers;
@@ -904,41 +904,22 @@ for (const f of fixtures) {
 
 // ---- 個人の成績か、会場（全選手）・過去のレースの集計かが、答えを読んで分かる（2026-10-20 オーナー、BOA-913）----
 {
-  const SCOPE = [
-    [/^s1-(venue90|place|wind)$/, /全選手/],
-    [/^s1-day$/, /全選手|今日のレース|R中/],
-    [/^card-/, /過去|レース/],
-    [/^s3-rough$/, /全国・/],
-    [/^s3-venue$/, /本人/],
-    [/^focus-/, /選手|モーター|ボート/],
-    [/^s6-motor$/, /号機/],
-    [/^s4-entry$/, /過去/],
-    [/^s4-slit-/, /今日の6艇|並び/],
-    [/^s5-place$/, /過去のレース/],
-    [/^s5-axis-/, null],
-    [/^s6-deep-/, /過去/],
-  ];
+  const { scopeReasons, SCOPE_WORDS } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
+  // 4レースの全拍の答えが通る（kind ごとの範囲の語。決まって入る「全国の…」「件」では通さない）
   for (const f of fixtures) {
-    const m = JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"));
-    const venue = { "01": "桐生", 15: "丸亀", 24: "大村", 19: "下関" }[m.raceId.split("-")[3]];
-    const ans = templateText(allBeats(buildAll(m))).answers;
-    for (const [id, ls] of Object.entries(ans)) {
-      const rule = SCOPE.find(([re]) => re.test(id));
-      if (!rule) continue;
-      const text = ls.join("\n");
-      // 割合の無い答え（「▲の付いた材料が無い」等）は対象外
-      if (!/%/.test(text)) continue;
-      const want = rule[1] ?? new RegExp(venue);
-      assert.match(text, want, `${f} ${id}: 範囲の語（${want}）で個人か集計かが分かる「${text}」`);
-    }
+    const beats = allBeats(buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"))));
+    for (const b of beats) assert.deepEqual(scopeReasons(b.template, b.facts), [], `${f} ${b.id}: 範囲の語「${b.template.join(" / ")}」`);
   }
-  // 文の検査が、範囲の語の無い答えを止める
-  const { scopeReasons } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
-  has(checkLines(["1号艇の1着率62.1%"], { kind: "venue90", venue: "下関", rate: 62.1 }, null), "範囲の語が無い（会場");
-  assert.deepEqual(scopeReasons(["下関の1号艇（全選手）の1着率62.1%"], { kind: "venue90", venue: "下関" }), []);
-  has(scopeReasons(["下関1号艇は7走で1着率100.0%"], { kind: "venueRecord", name: "篠崎元志" }), "選手個人の成績");
-  assert.deepEqual(scopeReasons(["篠崎元志の下関1号艇は7走で1着率100.0%"], { kind: "venueRecord", name: "篠崎元志" }), []);
-  assert.deepEqual(scopeReasons(["1号艇は全国勝率8.06で1位"], { kind: "focus" }), [], "割合でない・個人の比較は対象外");
+  // 本番と同じ2行の形で、範囲の語を落とした答えを止める（代わりの審査 P2: 「全国の…」「件」「全体」で素通りしていた）
+  has(scopeReasons(["1号艇の1着率62.1%", "全国の54.6%より7.5ポイント高い"], { kind: "venue90", venue: "下関" }), "範囲の語が無い");
+  has(scopeReasons(["当地勝率3位の1着69%", "1号艇全体の71.1%より2.1ポイント低い"], { kind: "card" }), "範囲の語が無い");
+  has(scopeReasons(["1号艇が1着なら2着は2号艇", "9,961件の33.8%（3,367件）"], { kind: "followers", venue: "下関" }), "範囲の語が無い");
+  has(scopeReasons(["下関1号艇は7走で1着率100.0%", "全会場の87.7%より12.3ポイント高い"], { kind: "venueRecord", name: "篠崎元志" }), "範囲の語が無い");
+  has(scopeReasons(["1号艇は直近30走1着率33%で1位", "2番手は5号艇の18%"], { kind: "focus" }), "範囲の語が無い");
+  // 決まりの無い種類で割合を出したら止める（新しい集計の拍が検査から漏れない）
+  has(scopeReasons(["1号艇は単勝回収率100.2%"], { kind: "returnRate" }), "決まりが無い種類");
+  assert.ok(!("returnRate" in SCOPE_WORDS), "回収率の種類は無い");
+  has(checkLines(["1号艇の1着率62.1%", "全国の54.6%より7.5ポイント高い"], { kind: "venue90", venue: "下関", rate: 62.1, national: 54.6, diffPt: 7.5, direction: "高い" }, null), "範囲の語が無い");
 }
 
 console.log("verify-full-picture-scene2: OK");

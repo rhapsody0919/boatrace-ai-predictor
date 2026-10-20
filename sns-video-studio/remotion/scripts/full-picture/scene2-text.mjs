@@ -50,7 +50,7 @@ export const VOCAB = [
   "なら", "最高", "相手",
   // 場面4（展開）
   "前付けあり（1号艇イン）", "前付けあり", "割合", "並び", "前付けがあっても", "インを守った", "内訳", "うち", "平均ST", "このコース", "一致", "一致する形が無い", "横一線", "候補", "を参考に", "逃げ", "結果", "内3艇そろう", "2コース凹み", "カド受け凹み", "カド一撃", "イン凹み", "ダッシュ",
-  "過去", "全選手", "本人", "レース", "そう並んだ", "同じ級別", "今日の6艇", "6艇", "6艇中", "6人中", "選手", "進入コース別", "全コース", "号艇全体", "そうだった", "だった", "勝", "最高", "6号艇だけ前付け", "5号艇だけ前付け", "5・6号艇が前付け", "その他の前付け",
+  "過去", "全選手", "本人", "レース", "そう並んだ", "同じ級別", "今日の6艇", "6艇", "6艇中", "6人中", "選手", "進入コース別", "全コース", "号艇全体", "そうだった", "だった", "勝", "ふだん", "同じ級別の", "最高", "6号艇だけ前付け", "5号艇だけ前付け", "5・6号艇が前付け", "その他の前付け",
   // 場面3（軸）
   "全国・級の並びが同じ", "級の並びが同じ", "準優勝戦", "優勝戦", "走", "1着率", "全会場",
   // 場面2b（類似レース）
@@ -157,17 +157,46 @@ function stringsOf(facts) {
  * 数字の範囲（hq の型の正本、2026-10-20 オーナー決定 BOA-913）: 割合を出す答えは、範囲の語で、選手個人の成績か、会場・全国（全選手）・
  * 過去のレースの集計かが分かること。facts の種類で、集計か個人かを決めている
  */
-export const AGGREGATE_KINDS = new Set(["venue90", "place", "day", "wind", "card", "rough", "sonar", "flow1", "flow2", "trifecta", "entry", "entryMae", "attack", "followers", "followersRest", "deep"]);
-export const INDIVIDUAL_KINDS = new Set(["venueRecord"]);
-const AGGREGATE_WORDS = /全選手|全国|過去|件|レース|全体|そのとき/;
+/**
+ * kind ごとに、範囲の語として要る語（決まって入る「全国の…」「件」「全体」のような語では通さない。代わりの審査 P2）。
+ * venue: facts.venue（会場名）、name: facts.name（選手名）を足して照合する。null は割合が出ない種類
+ */
+export const SCOPE_WORDS = {
+  venue90: /全選手/,
+  place: /全選手/,
+  wind: /全選手/,
+  day: /全選手|R中/,
+  card: /過去|同じ級別/,
+  rough: /過去/,
+  sonar: /類似レース/,
+  flow1: /1着は\d号艇が[\d,]+件|類似レース|過去/,
+  flow2: /号艇が1着の[\d,]+件/,
+  trifecta: /[\d,]+件/,
+  entry: /過去/,
+  entryMae: /前付けあり[\d,]+件/,
+  attack: /の[\d,]+件で/,
+  followers: "venue",
+  followersRest: "venue",
+  rivals: /過去のレース/,
+  deep: /過去/,
+  venueRecord: "name",
+  focus: /選手|モーター|ボート/,
+  motor: /号機/,
+  overview: null,
+  exhibit: null,
+  slit: null,
+  summary: null,
+  empty: null,
+};
 export function scopeReasons(lines, facts) {
   const text = (lines ?? []).join("\n");
   if (!/%/.test(text) || !facts) return [];
-  if (AGGREGATE_KINDS.has(facts.kind) && !AGGREGATE_WORDS.test(text) && !(facts.venue && text.includes(facts.venue)))
-    return ["範囲の語が無い（会場・全国・過去のレースの集計と分からない）"];
-  if (INDIVIDUAL_KINDS.has(facts.kind) && !(facts.name && text.includes(facts.name)) && !text.includes("本人"))
-    return ["範囲の語が無い（選手個人の成績と分からない）"];
-  return [];
+  if (!(facts.kind in SCOPE_WORDS)) return [`範囲の語の決まりが無い種類「${facts.kind}」（SCOPE_WORDS に足す）`];
+  const want = SCOPE_WORDS[facts.kind];
+  if (want === null) return [];
+  const ok =
+    want === "venue" ? Boolean(facts.venue) && text.includes(facts.venue) : want === "name" ? (Boolean(facts.name) && text.includes(facts.name)) || text.includes("本人") : want.test(text);
+  return ok ? [] : [`範囲の語が無い（${facts.kind}: 個人の成績か、会場・全国・過去のレースの集計かが分からない）`];
 }
 
 /**
@@ -330,7 +359,7 @@ export function templateText(sceneOrBeats) {
 
 /** 同じつなぐ語を近くで繰り返さない（10/19 は「続いて」20回・同じ語の連続9回で単調だった。BOA-913、wording-editor） */
 export const CONNECTOR_GAP = 3;
-export const TSUZUITE_MAX_PER_SCENE = 2;
+export const TSUZUITE_MAX_PER_SCENE = 2; // 段（step）ごと。場面2は重ね図とカードの2つの段
 /**
  * つなぐ語の並びの検査（前の拍までに付けた語 used: [{step, connector}]）
  * - 直前の3拍の中で使った語は使わない

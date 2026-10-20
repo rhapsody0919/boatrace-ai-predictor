@@ -171,7 +171,7 @@ export function buildScene1(m) {
       revealOnPress: true,
       frames: [tableColsBox([1], 2), tableColsBox([2], 2)],
       facts: f4,
-      lines: fitFirst([`この風の1号艇（全選手）の1着率${d1(p1)}%`, diffText(`風を問わず${d1(b1)}%`, f4)], [`この風の1号艇の1着率${d1(p1)}%`, diffText(`風を問わず${d1(b1)}%`, f4)]),
+      lines: [`この風の1号艇（全選手）の1着率${d1(p1)}%`, diffText(`風を問わず${d1(b1)}%`, f4)].filter(Boolean),
     });
   } else omitted.push({ where: "scene1.wind", reason: post ? "風・会場の集計が無い" : "展示前（風の傾向が出ていない）" });
 

@@ -58,7 +58,7 @@ export function buildScene5(m) {
   if (ok.length) {
     const best = ok.reduce((a, x) => (x.rate > a.rate ? x : a));
     const next = ok.filter((x) => x !== best).reduce((a, x) => (!a || x.rate > a.rate ? x : a), null);
-    const f = { kind: "place", boats: [2, 3, 4, 5, 6], boat: best.boat, rate: p1(best.k, best.n), n: best.n, next: next ? { boat: next.boat, rate: p1(next.k, next.n) } : null };
+    const f = { kind: "rivals", boats: [2, 3, 4, 5, 6], boat: best.boat, rate: p1(best.k, best.n), n: best.n, next: next ? { boat: next.boat, rate: p1(next.k, next.n) } : null };
     steps.push({
       id: "s5-place",
       question: "2着・3着に残るのは？",
