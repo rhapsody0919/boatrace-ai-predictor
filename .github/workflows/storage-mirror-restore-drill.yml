@@ -49,6 +49,6 @@ jobs:
           INPUT_ALL: ${{ inputs.all }}
         run: |
           node --version
-          args=""
-          if [ "$INPUT_ALL" = "true" ]; then args="--all"; fi
-          node scripts/storage-mirror/restore.js $args
+          args=()
+          if [ "$INPUT_ALL" = "true" ]; then args+=(--all); fi
+          node scripts/storage-mirror/restore.js "${args[@]}"
