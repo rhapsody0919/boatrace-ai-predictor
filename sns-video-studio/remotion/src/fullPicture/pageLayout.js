@@ -63,3 +63,9 @@ export const statsRow = (i) => ({
 
 /** 押すボタン（見出しの右） */
 export const BUTTON = { x: 700, y: PAGE_TOP + 10, w: 240, h: 84 };
+
+/** スリット図: 6コースの横の線、スタートの線（右）、ST が遅いほど左。下に7つの形の札 */
+/** 一番早い艇をスタートの線の少し手前に置き、0.01秒の差を60px で描く（画面のスリット図と同じく差を見せる） */
+export const SLIT = { top: BODY_Y + 40, laneH: 60, line: 740, scale: 6000, lead: 40 };
+export const slitX = (st, fastest) => SLIT.line - SLIT.lead - (st - fastest) * SLIT.scale;
+export const slitFormBox = (i) => ({ x: LEFT + (i % 3) * 300, y: SLIT.top + 6 * SLIT.laneH + 30 + Math.floor(i / 3) * 90, w: 280, h: 80 });

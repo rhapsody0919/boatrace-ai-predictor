@@ -23,6 +23,9 @@ import {
   tableColW,
   tableRowH,
   tableRowY,
+  SLIT,
+  slitFormBox,
+  slitX,
 } from "./pageLayout.js";
 
 const GOLD = "#e2b93b";
@@ -83,21 +86,25 @@ export function BarsPage({ title, sub, rows, max, markLabel }) {
       <Panel title={title} sub={sub} />
       {rows.map((r, i) => {
         const box = barsRow(i);
+        // 艇番の無い行（進入の型など）は、名前を上の段、棒を下の段に分ける（名前が長くても棒に重ならない）
+        const lab = !r.boat;
+        const barLeft = lab ? LEFT : BARS.barX;
+        const barEnd = (v) => (lab ? LEFT + (v / max) * (BARS.valueX - 30 - LEFT) : xOf(v));
         return (
           <div key={i}>
             <div
               style={{
                 position: "absolute",
                 left: box.x,
-                top: box.y + 20,
+                top: lab ? box.y : box.y + 20,
                 display: "flex",
                 alignItems: "center",
                 gap: 12,
               }}
             >
-              <BoatBadge b={r.boat} size={52} />
+              {r.boat ? <BoatBadge b={r.boat} size={52} /> : null}
               <span
-                style={{ fontSize: MIN_TEXT, color: TEXT, fontWeight: 700 }}
+                style={{ fontSize: r.boat ? MIN_TEXT : 38, color: TEXT, fontWeight: 700, whiteSpace: "nowrap" }}
               >
                 {r.label}
               </span>
@@ -105,10 +112,10 @@ export function BarsPage({ title, sub, rows, max, markLabel }) {
             <div
               style={{
                 position: "absolute",
-                left: BARS.barX,
-                top: box.y + 22,
-                width: Math.max(4, xOf(r.value) - BARS.barX),
-                height: 56,
+                left: barLeft,
+                top: lab ? box.y + 54 : box.y + 22,
+                width: Math.max(4, barEnd(r.value) - barLeft),
+                height: lab ? 40 : 56,
                 background: "#b3a77a",
                 borderRadius: "0 10px 10px 0",
               }}
@@ -130,7 +137,7 @@ export function BarsPage({ title, sub, rows, max, markLabel }) {
               style={{
                 position: "absolute",
                 left: BARS.valueX,
-                top: box.y + 24,
+                top: lab ? box.y + 44 : box.y + 24,
                 fontSize: 40,
                 fontWeight: 800,
                 color: "#ffffff",
@@ -387,6 +394,54 @@ export function TrifectaPage({ title, sub, rows }) {
             ))}
             <span style={{ marginLeft: "auto", fontSize: 44, fontWeight: 900, color: "#ffffff" }}>{r.count}件</span>
             <span style={{ fontSize: MIN_TEXT, color: "#a9b8cc" }}>{r.pct}%</span>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/**
+ * スリット図（平均ST の位置までボートを走らせる）。st: コース順の平均ST（秒）、boats: コース順の艇番。
+ * 段の頭で走らせ、押した後（shown）に ST の数字を出す。forms: [{name, on}]（今日の並びに当てはまる形は on）
+ */
+export function SlitPage({ title, sub, st, boats, button, forms, shown = 1, t = 0 }) {
+  const run = Math.min(1, Math.max(0, (t + 18) / 18));
+  const fastest = Math.min(...st.filter((v) => v !== null));
+  return (
+    <>
+      <Panel title={title} sub={sub} />
+      {button && (
+        <div style={{ position: "absolute", left: BUTTON.x, top: BUTTON.y, width: BUTTON.w, height: BUTTON.h, borderRadius: 42, border: `3px solid ${GOLD}`, color: GOLD, fontSize: MIN_TEXT, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxSizing: "border-box" }}>
+          {button}
+        </div>
+      )}
+      <div style={{ position: "absolute", left: SLIT.line, top: SLIT.top - 10, width: 4, height: SLIT.laneH * 6 + 20, background: "#ffffff", opacity: 0.8 }} />
+      {st.map((v, i) => {
+        const y = SLIT.top + i * SLIT.laneH;
+        const x = v === null ? null : Math.max(LEFT + 120, slitX(v, fastest));
+        return (
+          <div key={i}>
+            <div style={{ position: "absolute", left: LEFT, top: y + SLIT.laneH / 2 - 1, width: SLIT.line - LEFT, height: 2, background: "rgba(255,255,255,0.08)" }} />
+            <div style={{ position: "absolute", left: LEFT, top: y + 12, fontSize: MIN_TEXT, color: MUTED, whiteSpace: "nowrap" }}>{i + 1}</div>
+            {x !== null && (
+              <div style={{ position: "absolute", left: LEFT + 60 + (x - LEFT - 60) * run - 54, top: y + (SLIT.laneH - 54) / 2 }}>
+                <BoatBadge b={boats[i]} size={54} />
+              </div>
+            )}
+            {x !== null && (
+              <div style={{ position: "absolute", left: SLIT.line + 24, top: y + 12, fontSize: 40, fontWeight: 800, color: "#ffffff", opacity: shown, whiteSpace: "nowrap" }}>
+                {v.toFixed(2)}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {forms.map((f, i) => {
+        const box = slitFormBox(i);
+        return (
+          <div key={i} style={{ position: "absolute", left: box.x, top: box.y, width: box.w, height: box.h, borderRadius: 16, boxSizing: "border-box", border: `3px solid ${f.on ? GOLD : "rgba(255,255,255,0.15)"}`, background: f.on ? "rgba(226,185,59,0.15)" : "transparent", color: f.on ? "#ffffff" : MUTED, fontSize: MIN_TEXT, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", whiteSpace: "nowrap" }}>
+            {f.name}
           </div>
         );
       })}

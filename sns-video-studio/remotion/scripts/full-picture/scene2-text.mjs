@@ -41,6 +41,9 @@ export const VOCAB = [
   "比べられない", "値が無い", "値が無く", "材料", "差が大きい", "差が小さい", "重なる", "記録", "無い", "なし",
   "とき", "場合", "次点", "各", "3つ", "以内",
   // 場面1（条件）
+  // 場面4（展開）
+  "前付けあり（1号艇イン）", "前付けあり", "割合", "並び", "前付けがあっても", "インを守った", "内訳", "うち", "平均ST", "このコース", "一致", "一致する形が無い", "横一線", "候補", "を参考に", "逃げ", "結果", "内3艇そろう", "2コース凹み", "カド受け凹み", "カド一撃", "イン凹み", "ダッシュ",
+  "6号艇だけ前付け", "5号艇だけ前付け", "5・6号艇が前付け", "その他の前付け",
   // 場面3（軸）
   "全国・級の並びが同じ", "級の並びが同じ", "準優勝戦", "優勝戦", "走", "1着率", "全会場", "単勝回収率", "複勝回収率", "回収率", "単勝", "複勝",
   // 場面2b（類似レース）
@@ -74,7 +77,7 @@ export function uncovered(text, words) {
 }
 
 /** 数字を含む決まった言い回し（facts の数として数えない） */
-const FIXED_NUMBER_PHRASES = /6艇|1着率|2番手|2連率|3連率|90日|1ポイント未満/g;
+const FIXED_NUMBER_PHRASES = /6艇|1着率|2番手|2連率|3連率|90日|1ポイント未満|[1-3]着/g;
 
 /** 前の拍とつなぐ語。場面の各段の最初の拍では使えない。「同じく」「こちらも」は前の拍と同じ材料のときだけ */
 const CONNECTORS = ["一方", "さらに", "同じく", "また", "ただ", "逆に", "それに", "こちらも", "続いて"];
@@ -182,7 +185,7 @@ export function checkLines(lines, facts, prev) {
   const masked = rest.replace(/\d+(?:\.\d+)?/g, "＿");
   const left = masked
     .split("\n")
-    .map((l) => uncovered(l, [...VOCAB, ...CONNECTORS, ...stringsOf(facts)].map((w) => w.replace(/\d+(?:\.\d+)?/g, "＿"))))
+    .map((l) => uncovered(l, [...VOCAB, ...CONNECTORS, ...stringsOf(facts)].map((w) => w.replace(/[1-6]号艇/g, "＿").replace(FIXED_NUMBER_PHRASES, "＿").replace(/\d+(?:\.\d+)?/g, "＿"))))
     .filter(Boolean);
   for (const u of left) why.push(`facts に無い言い回し「${u}」`);
   // 向き（高い・低い）は facts の向きと合う
