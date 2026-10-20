@@ -242,7 +242,9 @@ export function changedMdLines(text, baseText) {
 export function checkKyoteiJson(path, obj, config = {}) {
   const metaAllowed = new Set(config.kyoteiMetaAllowedKeys ?? []);
   const label = (keyPath) => keyPath.join(".") || "(値)";
-  const isMeta = (keyPath) => keyPath.some((k) => metaAllowed.has(k));
+  // 例外は最上位の文字列値だけ（入れ子の metaTitle や、metaTitle の下の値は対象外）
+  const isMeta = (keyPath) =>
+    keyPath.length === 1 && metaAllowed.has(keyPath[0]);
   const hits = collectKeyedStrings(obj).filter(({ value }) =>
     value.includes(KYOTEI),
   );

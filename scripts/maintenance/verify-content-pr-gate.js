@@ -224,6 +224,31 @@ const cases = [
     /\[kyotei\] .* title/,
   ],
   [
+    "JSON の description の「競艇」は落ちる",
+    { json: { ...baseJson, description: "競艇の説明" } },
+    /\[kyotei\].* description/,
+  ],
+  [
+    "入れ子の metaTitle の「競艇」は落ちる（例外は最上位の文字列だけ）",
+    { json: { ...baseJson, x: { metaTitle: "競艇" } } },
+    /\[kyotei\].* x\.metaTitle/,
+  ],
+  [
+    "metaTitle の下の入れ子の「競艇」は落ちる",
+    { json: { ...baseJson, metaTitle: { title: "競艇" } } },
+    /\[kyotei\].* metaTitle\.title/,
+  ],
+  [
+    "metaTitle が配列の「競艇」は落ちる",
+    { json: { ...baseJson, metaTitle: ["競艇"] } },
+    /\[kyotei\].* metaTitle\.0/,
+  ],
+  [
+    "meta で始まる別のキー（metaKeywords）の「競艇」は落ちる",
+    { json: { ...baseJson, metaKeywords: "競艇" } },
+    /\[kyotei\].* metaKeywords/,
+  ],
+  [
     "JSON の metaTitle の「競艇」は通る（オーナー決定 10/20、code-style.md 例外1。暫定）",
     { json: { ...baseJson, metaTitle: "競艇の記事" } },
     "ok",
