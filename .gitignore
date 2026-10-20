@@ -73,6 +73,8 @@ __pycache__/
 # SNS動画生成(Remotion) - ソースコードのみ追跡、生成物・依存関係は除外
 sns-video-studio/remotion/node_modules/
 sns-video-studio/remotion/out/
+# 全貌動画の BGM（render-scene2.mjs が都度コピーする。曲はリポジトリに入れない）
+sns-video-studio/remotion/public/full-picture/
 sns-video-studio/archive/
 sns-video-studio/published/
 

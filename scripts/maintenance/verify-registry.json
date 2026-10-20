@@ -1230,6 +1230,11 @@
       "guards": "全貌動画の測り時（SQL169、2026-10-19 オーナー決定）: 全貌は day_end（投稿日の JST 23:00）と 24h の job・JST 23:00 を過ぎた投稿は 24h だけ・日付は JST、それ以外は 48h・7d のまま、観測の表の CHECK（day_end は投稿日の JST 23:00 だけ・窓の名前は4つ）、JS の窓（windowsFor・observationPeriod・全貌に 48h を入れない）、画面は既定の 48h で全貌を当日の値・7d に全貌を出さない・全貌は型の版の確認をしない、CSV と collector の窓、169-runbook.md の1回で貼る SQL が154の状態から通り確認が全部 true・2回目は止まる。PGlite、外部接続なし"
     },
     {
+      "script": "verify-full-picture-scene2.js",
+      "tier": "ci",
+      "guards": "全貌動画（sns-video-studio/remotion/scripts/full-picture/）: 文型の版が facts から決まった文を作り検査を通る、検査が facts に無い数値・艇番・材料名・順位、禁止表現、ぼかし語、行の幅、段の最初のつなぐ語・材料の違う「同じく」・差1ポイント未満の向きを落とす、つないだ版（LLM はつなぐ語だけ、2026-10-20 オーナー決定）は文型の文を変えず落ちた拍・LLM の失敗はつなぐ語なし、配置（枠・カード x960 まで・まとめカードの CTA y1420 まで・s3 の棒と字が重ならない・形の札は枠と同時に選ぶ）、拍の並びと答えを毎秒8字で読める長さ、固定の材料4レース（fixtures、最小の写し）が材料の契約 materials.schema.json に合い取得の出力も合う・版が一致、全場面の文が検査を通り読める、入口版（条件＋重ね図＋結論1拍）が59秒以内で越えたら止まる。LLM・API・Supabase は偽物、外部接続なし"
+    },
+    {
       "script": "verify-blog-charts.js",
       "tier": "ci",
       "guards": "ブログの図の契約（docs/design/blog-charts/contract.md、src/utils/blogChartContract.js）。記事の <ryujin-chart> の書き方（小文字・閉じタグ・1行・前後空行・src は /blog-charts/ の実在する JSON・rows は行の数）、JSON の形（未知のキー・counts と値の整数での照合・切り替え1つ・予約の種類・翻訳の文字）、id・article、答えの割合が本文にもあること、「競艇」・廃止語・risk-rules の語、参照されない JSON"
