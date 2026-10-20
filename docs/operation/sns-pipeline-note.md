@@ -1,5 +1,7 @@
 # Noteチャネル別パイプライン 制作ガイド
 
+> **停止中。社員の note 担当に置き換える予定（BOA-866）。この手順で下書きを作らない。**
+
 承認済みネタ（`sns_topics.status='approved'`）のうち、note向けに割り当てられた`sns_topic_targets`をポーリングしてnote下書きを生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにしている。
 
 **このRoutineは`sns-pipeline-blog.md`が生成したブログ本文に依存する**（note下書きはブログ記事をnote形式に変換して作る設計）。ブログ側がまだ生成していない場合は本Routineは**生成せず、claimしたターゲットを`pending`に戻して次回ポーリングに委ねる**（note-YouTube動画の依存関係と同じ「未完了ならスキップ」方式、2026-09-03合意）。

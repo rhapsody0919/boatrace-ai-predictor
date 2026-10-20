@@ -22,6 +22,7 @@ import {
   localize,
 } from "../../src/utils/blogChartContract.js";
 import { checkRiskRules } from "../lib/riskRules.js";
+import { parseBlogChartLine } from "../../src/utils/blogChartTag.js";
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const BLOG_DIR = path.join(ROOT, "public/blog");
@@ -33,8 +34,6 @@ const EXAMPLE = path.join(
 );
 
 const LANG_SUFFIX = { "-en": "en", "-zh-tw": "zh-TW", "-ko": "ko" };
-const TAG_RE =
-  /^<ryujin-chart src="\/blog-charts\/([a-z0-9-]+)\.json" rows="(\d{1,2})"><\/ryujin-chart>$/;
 const deprecatedPatterns = JSON.parse(
   readFileSync(path.join(ROOT, "docs/reference/deprecated-terms.json"), "utf8"),
 ).terms.flatMap((t) => t.patterns.map((p) => ({ id: t.id, pattern: p })));
@@ -72,8 +71,9 @@ export function scanArticle(file, markdown) {
       );
       return;
     }
-    const m = line.match(TAG_RE);
-    if (!m) {
+    // 形の正本は src/utils/blogChartTag.js（記事の PR の関門・描画の許可リストと同じ判定）
+    const tag = parseBlogChartLine(line);
+    if (!tag) {
       errors.push(
         `${at}: 1行で <ryujin-chart src="/blog-charts/{名前}.json" rows="{行の数}"></ryujin-chart>（小文字・閉じタグ・行頭から） / 実際: ${line.trim()}`,
       );
@@ -87,7 +87,11 @@ export function scanArticle(file, markdown) {
         `${at}: タグの前後は空行にする（段落・リスト・表の中に置かない）`,
       );
     }
-    refs.push({ name: m[1], rows: Number(m[2]), at });
+    refs.push({
+      name: tag.src.replace(/^\/blog-charts\//, "").replace(/\.json$/, ""),
+      rows: tag.rows,
+      at,
+    });
   });
   return { errors, refs };
 }

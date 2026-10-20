@@ -7,10 +7,8 @@
  * そこで本文と図を同じ描画で出す。図ごとの失敗は握りつぶさず { error } として返し、部品が失敗を表示する。
  */
 import { validateBlogChart } from "./blogChartContract";
+import { parseBlogChartLine } from "./blogChartTag";
 
-/** 図の行（scripts/maintenance/verify-blog-charts.js と同じ形。行頭から1行で書いたものだけ） */
-const LINE_RE =
-  /^<ryujin-chart src="(\/blog-charts\/[a-z0-9-]+\.json)" rows="\d{1,2}"><\/ryujin-chart>$/;
 /** 図の JSON を待つ上限。返らないときに記事の本文まで出なくなるのを防ぐ */
 const TIMEOUT_MS = 8000;
 
@@ -21,8 +19,9 @@ function chartSrcs(markdown) {
   for (const line of markdown.split("\n")) {
     if (/^\s*(```|~~~)/.test(line)) inFence = !inFence;
     if (inFence) continue;
-    const m = line.match(LINE_RE);
-    if (m) srcs.add(m[1]);
+    // 形の正本は blogChartTag.js（CI・記事の関門と同じ1行の形だけを取る）
+    const tag = parseBlogChartLine(line);
+    if (tag) srcs.add(tag.src);
   }
   return [...srcs];
 }

@@ -71,7 +71,7 @@
     {
       "script": "verify-blog-draft-quality.js",
       "tier": "ci",
-      "guards": "ブログ下書きDraft PRを人手承認なしで自動マージしてよいかの品質判定"
+      "guards": "ブログ下書きDraft PRの機械的な品質チェック（PR を作る前の自己点検。自動マージは 2026-10-20 に停止、ADR-0034 の追記）"
     },
     {
       "script": "verify-boatcast-job.js",
@@ -82,6 +82,11 @@
       "script": "verify-content-index-coverage.js",
       "tier": "ci",
       "guards": "docs/design/{slug}/content-index.json の形式（フローA-2のトレーサビリティ索引）"
+    },
+    {
+      "script": "verify-content-pr-gate.js",
+      "tier": "ci",
+      "guards": "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js、契約 docs/operation/content-pr-contract.md）: 許可のパス（すり抜け・削除・status T・mode 100644 以外）・生 HTML（mdast の html ノード、図のタグ ryujin-chart の例外）・「競艇」・判断が要る語・slug・.md と JSON の対応・画像の寸法と参照・featured・内部リンク（画像と // を除く）・manifest（非オブジェクト・paths・files・content_sha256・1記事・kind・4つの役のレビュー・P0/P1・時刻の形）を表で検査。CLI の差分（--raw -z）の読み取りも。今の public/blog の全 .md・blog-posts の全 JSON・images/blog の全 JPEG で本文の関門が errors 0 であること"
     },
     {
       "script": "verify-css-class-collisions.js",
@@ -1087,7 +1092,7 @@
     {
       "script": "verify-sns-existing-fixes.js",
       "tier": "ci",
-      "guards": "依頼4: 既存YouTube公開・ブログPRマージ・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
+      "guards": "依頼4: 既存YouTube公開・停止したブログPRマージ（410・GitHub と DB に触れない、BOA-908）・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
     },
     {
       "script": "verify-sns-deadline-queue.js",
@@ -1228,6 +1233,11 @@
       "script": "verify-blog-charts.js",
       "tier": "ci",
       "guards": "ブログの図の契約（docs/design/blog-charts/contract.md、src/utils/blogChartContract.js）。記事の <ryujin-chart> の書き方（小文字・閉じタグ・1行・前後空行・src は /blog-charts/ の実在する JSON・rows は行の数）、JSON の形（未知のキー・counts と値の整数での照合・切り替え1つ・予約の種類・翻訳の文字）、id・article、答えの割合が本文にもあること、「競艇」・廃止語・risk-rules の語、参照されない JSON"
+    },
+    {
+      "script": "verify-vercel-ignore-build.js",
+      "tier": "ci",
+      "guards": "vercel.json の ignoreCommand（scripts/lib/vercelIgnoreBuild.js、BOA-908）。docs・台帳・機械の再生成・ワークフローだけの変更ではビルドせず、public/blog/*.md・run-heavy.sh・src・api・ルートの data/*・risk-rules.json・作り直し（差分なし）ではビルドすること"
     },
     {
       "script": "verify-blog-markdown-sanitize.js",

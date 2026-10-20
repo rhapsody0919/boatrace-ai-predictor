@@ -14,6 +14,8 @@
 次の段落。
 ```
 
+形の正本は `src/utils/blogChartTag.js`（`parseBlogChartLine`）。描画の許可リスト（`src/utils/blogMarkdownSanitize.js`）・記事の PR の関門（`scripts/lib/contentPrGate.js`）・図の CI（`scripts/maintenance/verify-blog-charts.js`）・図の取得（`src/utils/blogChartLoader.js`）が同じ判定を使う。属性は `src` → `rows` の順、`rows` は 1〜12。
+
 | 規則 | 理由 |
 |---|---|
 | タグ名・属性名は小文字 | HTML の解析器が小文字にするため。大文字だと部品に届かない |
