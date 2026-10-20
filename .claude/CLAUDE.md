@@ -88,7 +88,6 @@ node --env-file=.env.local scripts/linear-cli.js create "タイトル" "説明"
 
 - `update`の状態名は完全一致（大文字小文字は無視）が必要。不明な場合は該当チームのworkflow状態一覧を先にGraphQLで確認してから指定する（BOAチームの主要状態: `Backlog`/`Todo`/`In Progress`/`Done`/`Canceled`/`Duplicate`）。一致しないと`In Progress`相当の状態に誤って変更されるため、状態名を推測で決め打ちしない
 - MCP接続自体の再認証（ユーザー側の対応）が必要な場合のみユーザーに案内する
-- `create` は未アーカイブ200件以上（無料枠250件の手前）または件数を数えられないとき、Slack に知らせて終了コード1で止まる（`scripts/lib/linearIssueGate.js`、`docs/operation/linear-cli.md`）。Linear MCP の起票（`save_issue`）はこの関所を通らない
 
 ### フロントエンド変更の確認は自己完結させる（絶対ルール、例外なし）
 **「`npm run dev`」という文字列をユーザー向けの文章に書くこと自体を禁止**する。
