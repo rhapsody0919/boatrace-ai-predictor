@@ -100,11 +100,11 @@ function main() {
       head[p] = showBlob("HEAD", p);
   }
 
-  // 変えた JSON の base（分岐元）の中身。featured の比較に使う
+  // 変えた .md・JSON の base（分岐元）の中身。判断が要る句を変えた行・値だけで見る・featured の比較に使う
   const mergeBasePaths = new Set(lsTree(mergeBase));
   const base = {};
   for (const d of diff.filter(
-    (x) => x.status === "M" && x.path.endsWith(".json"),
+    (x) => x.status === "M" && /\.(json|md)$/.test(x.path),
   )) {
     if (mergeBasePaths.has(d.path))
       base[d.path] = new TextDecoder("utf-8").decode(

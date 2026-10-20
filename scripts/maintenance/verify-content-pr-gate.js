@@ -17,6 +17,8 @@ import {
   checkKyoteiMd,
   checkKyoteiJson,
   checkInternalLinks,
+  changedJsonStrings,
+  findJudgementPhrases,
 } from "../lib/contentPrGate.js";
 import { parseRawDiff } from "../content/check-content-pr.js";
 
@@ -151,6 +153,25 @@ const CHART_BASE = [
   "public/blog-charts/sample-chart.json",
 ];
 
+/** 既存記事の改稿（.md と日本語版 JSON を M）。base と HEAD の中身を渡す */
+const revision = ({
+  baseMdText = baseMd,
+  headMdText = baseMdText,
+  baseJsonObj = baseJson,
+  headJsonObj = baseJsonObj,
+}) => ({
+  md: headMdText,
+  json: headJsonObj,
+  diff: [
+    { status: "M", path: MD },
+    { status: "M", path: JSON_JA },
+  ],
+  base: { [MD]: baseMdText, [JSON_JA]: JSON.stringify(baseJsonObj) },
+  basePaths: [MD, JSON_JA, MANIFEST],
+  manifestStatus: "M",
+  manifest: (m) => ({ ...m, kind: "revision" }),
+});
+
 const withReview = (role, extra) => (m) => ({
   ...m,
   reviews: m.reviews.map((r) => (r.role === role ? { ...r, ...extra } : r)),
@@ -206,11 +227,106 @@ const cases = [
     { json: { ...baseJson, metaTitle: "競艇の記事" } },
     /\[judgement\].*競艇/,
   ],
-  // 判断が要る語
+  // 判断が要る句（決定 (a): 変えた行・足した行だけ、誤解を生む句と正規表現、免責の決まり文の例外）
   [
-    "判断が要る語があれば落ちる（PR を作らずオーナーへ回す）",
-    { md: `${baseMd}\n的中率の話\n` },
-    /\[judgement\].*的中率/,
+    "足した行の「必ず当たる」は落ちる",
+    { md: `${baseMd}\nこの買い方なら必ず当たる\n` },
+    /\[judgement\].*必ず当たる/,
+  ],
+  [
+    "足した行の「回収率120%」は落ちる",
+    { md: `${baseMd}\n回収率は120%でした\n` },
+    /\[judgement\].*回収率は120%/,
+  ],
+  [
+    "全角の「回収率１５０％」も落ちる",
+    { md: `${baseMd}\n回収率１５０％\n` },
+    /\[judgement\].*回収率１５０％/,
+  ],
+  [
+    "100% 未満の回収率・的中率はデータの記述として通る",
+    { md: `${baseMd}\n回収率は85.3%、的中率は12%だった\n` },
+    "ok",
+  ],
+  [
+    "免責文（保証されません・必ずご自身の判断で）を含む新規記事は通る",
+    { md: `${baseMd}\n結果は保証されません。舟券は必ずご自身の判断で。\n` },
+    "ok",
+  ],
+  [
+    "新規でも「的中保証はしません」は例外の行で通る",
+    { md: `${baseMd}\n的中保証はしません\n` },
+    "ok",
+  ],
+  [
+    "JSON の tags に足した「儲かる」は落ちる",
+    { json: { ...baseJson, tags: ["入門", "儲かる買い方"] } },
+    /\[judgement\].*儲かる/,
+  ],
+  [
+    "改稿で触っていない行・値に「回収率」「的中率」「回収率150%」があっても通る",
+    revision({
+      baseMdText: `${baseMd}\n回収率150%の月もあった。的中率の話\n`,
+      headMdText: `${baseMd}\n回収率150%の月もあった。的中率の話\n\n追記した行\n`,
+      baseJsonObj: {
+        ...baseJson,
+        description: "回収率120%を必ず当たると書いた古い説明",
+      },
+      headJsonObj: {
+        ...baseJson,
+        description: "回収率120%を必ず当たると書いた古い説明",
+        title: "新しい題",
+      },
+    }),
+    "ok",
+  ],
+  [
+    "改稿で行を並べ替えただけなら見ない",
+    revision({
+      baseMdText: `${baseMd}\n必ず当たる\n\nB の行\n`,
+      headMdText: `${baseMd}\nB の行\n\n必ず当たる\n`,
+    }),
+    "ok",
+  ],
+  [
+    "改稿で変えた行に「的中保証」があれば落ちる",
+    revision({
+      baseMdText: `${baseMd}\n古い行\n`,
+      headMdText: `${baseMd}\n的中保証つきの買い方\n`,
+    }),
+    /\[judgement\].*的中保証/,
+  ],
+  [
+    "改稿で変えた行が「的中保証はしません」なら例外の行で通る",
+    revision({
+      baseMdText: `${baseMd}\n古い行\n`,
+      headMdText: `${baseMd}\n的中保証はしません\n`,
+    }),
+    "ok",
+  ],
+  [
+    "改稿で JSON の値を変えて「稼げる」を入れると落ちる",
+    revision({
+      baseJsonObj: { ...baseJson, description: "説明" },
+      headJsonObj: { ...baseJson, description: "これで稼げる" },
+    }),
+    /\[judgement\].*稼げる/,
+  ],
+  [
+    "改稿で変えていない metaTitle の「競艇」は見ない",
+    revision({
+      baseJsonObj: { ...baseJson, metaTitle: "競艇の記事" },
+      headJsonObj: { ...baseJson, metaTitle: "競艇の記事", title: "新しい題" },
+    }),
+    "ok",
+  ],
+  [
+    "改稿で変えた metaTitle の「競艇」は判断が要るとして落ちる",
+    revision({
+      baseJsonObj: { ...baseJson, metaTitle: "記事" },
+      headJsonObj: { ...baseJson, metaTitle: "競艇の記事" },
+    }),
+    /\[judgement\].*metaTitle.*競艇/,
   ],
   [
     "判断が要る語を申告していても落ちる",
@@ -907,9 +1023,17 @@ for (const [name, over, expect] of cases) {
 const blogDir = join(ROOT, "public/blog");
 const mdFiles = readdirSync(blogDir).filter((f) => f.endsWith(".md"));
 const masterErrors = [];
+// 情報: 今の記事を「足したファイル」とみなして句の判定を当てたときの件数（落とさない。hq の見積もり用）
+const phraseHits = [];
 for (const f of mdFiles) {
   const path = `public/blog/${f}`;
   const text = readFileSync(join(blogDir, f), "utf8");
+  phraseHits.push(
+    ...findJudgementPhrases(text.split("\n"), config).map((h) => ({
+      path,
+      ...h,
+    })),
+  );
   masterErrors.push(
     ...checkRawHtml(path, text),
     ...checkKyoteiMd(path, text, config),
@@ -922,11 +1046,14 @@ const jsonFiles = readdirSync(postsDir, { recursive: true }).filter((f) =>
 );
 for (const f of jsonFiles) {
   const path = `src/data/blog-posts/${f}`;
-  masterErrors.push(
-    ...checkKyoteiJson(
-      path,
-      JSON.parse(readFileSync(join(postsDir, f), "utf8")),
-    ),
+  const obj = JSON.parse(readFileSync(join(postsDir, f), "utf8"));
+  // 変えていない JSON とみなす（base = HEAD）。メタ情報の「競艇」は変えた値だけが判断の対象
+  masterErrors.push(...checkKyoteiJson(path, obj, obj));
+  const strings = changedJsonStrings(obj, undefined).flatMap((s) =>
+    s.value.split("\n"),
+  );
+  phraseHits.push(
+    ...findJudgementPhrases(strings, config).map((h) => ({ path, ...h })),
   );
 }
 const imgDir = join(ROOT, "public/images/blog");
@@ -953,4 +1080,17 @@ if (failures.length > 0) {
 }
 console.log(
   `OK: 記事の PR の関門 ${cases.length} 件の表、今の記事 .md ${mdFiles.length} 本・JSON ${jsonFiles.length} 本・JPEG ${jpgFiles.length} 枚で errors 0`,
+);
+// 情報（落とさない）: 今の記事を全部「足したファイル」とみなしたときの判断が要る句
+const byHit = new Map();
+for (const h of phraseHits) {
+  const k = h.kind === "pattern" ? "回収率100%以上（正規表現）" : h.hit;
+  byHit.set(k, (byHit.get(k) ?? 0) + 1);
+}
+console.log(
+  `情報: 今の記事を足したファイルとみなすと、判断が要る句は ${phraseHits.length} 件（${new Set(phraseHits.map((h) => h.path)).size} ファイル）。` +
+    [...byHit.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([k, n]) => `${k}:${n}`)
+      .join("、"),
 );

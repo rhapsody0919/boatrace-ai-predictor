@@ -30,7 +30,7 @@ node scripts/content/check-content-pr.js [--base origin/master]
 ```
 
 - `ok`: errors が0のとき true
-- `judgementWordsFound`: 変えたファイルで見つかった判断が要る語
+- `judgementWordsFound`: 変えた行・値で見つかった判断が要る句（正規表現は当たった文字列。メタ情報の「競艇」は `競艇`）
 - `p1Recorded`: fan と seo-marketer の P1 の件数（関門は通す。記録のため）
 
 ## PR に入れてよいもの
@@ -142,8 +142,8 @@ computeContentSha256(files);
 |---|---|---|
 | 生の HTML | .md | Markdown（GFM。記事の描画と同じ）として読み、`html` のノードが0件。例外は下の「図のタグ」だけ |
 | 「競艇」 | .md | 本文に0件。例外は設定の `kyoteiExceptions`（`public/blog/venue-visit-guide-ko.md` の今ある1行。行の中身の完全一致） |
-| 「競艇」 | JSON | `metaTitle`・`metaDescription` 以外のすべての文字列値（`title`・`description`・`tags`・`category` 等）に0件。ただし判断が要る語の一覧（「競艇」を含む）が先に効くので、今は `metaTitle`・`metaDescription` の「競艇」も error（判断の道へ）。この例外が実際に効くのは、判断が要る語の扱いが決まってから |
-| 判断が要る語 | .md・JSON の文字列 | 0件（下の「判断が要る語」） |
+| 「競艇」 | JSON | `metaTitle`・`metaDescription` 以外のすべての文字列値（`title`・`description`・`tags`・`category` 等）に0件。`metaTitle`・`metaDescription` の「競艇」は、変えた値にあれば判断が要るとして error（下の「判断が要る語」） |
+| 判断が要る句 | .md の変えた行・足した行、JSON の変えた値 | 0件（下の「判断が要る語」） |
 | slug | 足した日本語版 JSON | `id` が `^[a-z0-9]+(-[a-z0-9]+)*$`、末尾が `-en`・`-ko`・`-zh-tw` でない、ファイル名と一致、base に同じ id の JSON も .md も無い |
 | .md と JSON の対応 | .md・JSON | 足した日本語版 .md には同じ id の日本語版 JSON（base か HEAD）がある。逆も同じ。翻訳の .md は `<id>-en|-ko|-zh-tw.md` の形で `<id>` の日本語版 JSON がある。翻訳の JSON は id がファイル名と一致し、日本語版 JSON がある |
 | 画像 | .md・JSON が参照する `/images/blog/...` | HEAD に実在し、JPEG のヘッダーから幅と高さが読める。足した画像も差し替えた画像も、この PR で変えた .md か JSON のどれかが参照している（別の記事の画像だけを差し替える PR は error） |
@@ -179,10 +179,40 @@ computeContentSha256(files);
 
 ## 判断が要る語
 
-実行役は、判断が要る語がある記事は PR にせず、オーナーの判断へ回す（2026-10-20 オーケストレーター決定）。PR に来た時点で道を外れているので、関門は error にする。
+実行役は、判断が要る句がある記事は PR にせず、オーナーの判断へ回す（2026-10-20 オーケストレーター決定）。PR に来た時点で道を外れているので、関門は error にする。何を判断の対象にするかはユーザーの判断 (a)（2026-10-20）。
 
-- 変えた .md と JSON の文字列に、設定の `judgementWords`（初期値: 的中率・回収率・必ず・絶対・儲か・稼げ・勝てる・保証・利益・メタの「競艇」）が1つでもあれば error
-- `judgement_words` が空でなければ error
+**語の一覧の正本は `scripts/content/content-pr-gate.json`**。hq の検査はこのファイルを読み、写さない。
+
+### 見る範囲: 変えた行・足した行だけ
+
+| ファイル | 見る範囲 |
+|---|---|
+| 足したファイル | 全行（JSON は全部の文字列値） |
+| 変えた .md | base（分岐元）と HEAD を行で比べ、HEAD で新しく現れた行だけ。並べ替えただけの行は見ない |
+| 変えた JSON | base と値が変わった文字列値だけ（キーの道筋で比べる。配列は base の同じ配列に無い要素の文字列） |
+
+触っていない行・値に「回収率150%」等があっても、改稿の PR は落ちない。
+
+### 句と正規表現
+
+誤解を生む句だけを見る。「保証」「必ず」「絶対」「利益」「的中率」「回収率」の単語だけは、もう判断の対象にしない。
+
+| 設定 | 照合 | 初期値 |
+|---|---|---|
+| `judgementPhrases` | 部分一致 | 必ず当たる・必ず勝てる・必ず儲か・絶対に当たる・絶対に勝てる・絶対儲か・的中保証・的中を保証・儲かる・儲けられる・稼げる・利益が出る・利益を保証・負けない・損しない・元が取れる |
+| `judgementPatterns` | 正規表現（フラグ `gu`） | 回収率が100%以上の数字の主張（`回収率` の後6字以内に3桁以上の数と `%`。半角・全角とも）。100% 未満の的中率・回収率はデータの記述として通す |
+| `judgementAllowedLines` | 部分一致。含む行は句の判定から外す | 保証するものではありません・保証されません・保証はありません・保証しません・保証はしません |
+
+`judgementAllowedLines` は免責の決まり文の逃げ道。句の一覧は単語より狭いので、ふつうは効かない。「的中保証はしません」のような否定文を通すためのもの。
+
+### 「競艇」
+
+- 本文（.md）と、JSON の `metaTitle`・`metaDescription` 以外の値の「競艇」は、上の「本文の関門」の `[kyotei]` の error（差分の行に限らず全部）
+- JSON の `metaTitle`・`metaDescription` の「競艇」は、変えた値にあれば判断が要るとして `[judgement]` の error（メタ情報の例外を使うかはオーナーの判断）。句の一覧ではなく「競艇」の関門の側で見る
+
+### manifest
+
+- `judgement_words` が空でなければ error（今までどおり）
 
 ## 検査
 

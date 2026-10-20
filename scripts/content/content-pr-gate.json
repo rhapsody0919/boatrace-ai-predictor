@@ -2,7 +2,7 @@
   "$comment": [
     "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js）の設定。契約は docs/operation/content-pr-contract.md。",
     "allowedPathPatterns: これ以外のパスが差分に1つでもあれば error。",
-    "judgementWords: 変えた .md と JSON の文字列に見つかれば error（PR を作らずオーナーの判断へ回す）。この一覧が先に効くので、JSON の metaTitle・metaDescription の「競艇」も今は error（判断の道へ）。",
+    "judgementPhrases（部分一致の句）・judgementPatterns（正規表現の文字列）: 判断が要る句。変えた行・足した行（JSON は変えた文字列値）に見つかれば error（PR を作らずオーナーの判断へ回す）。決定 (a)。語の一覧の正本はこのファイルで、hq の検査はこれを読み、写さない。単語（保証・必ず・絶対・利益・的中率・回収率）だけは判断の対象にしない。judgementAllowedLines（部分一致）を含む行は句の判定から外す（免責の決まり文。「的中保証はしません」のような否定文を通す逃げ道）。JSON の metaTitle・metaDescription の「競艇」は句ではなく checkKyoteiJson が判断が要るとして error にする。",
     "kyoteiExceptions: .md 本文の「競艇」を許す行（パスと行の中身の完全一致）。",
     "internalLinkGrandfathered: 内部リンク（/ で始まるリンク。画像と // は数えない）が無いまま master にある記事。改稿（変更）のときだけ内部リンクの関門を免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは verify-content-pr-gate.js が落とす）。",
     "allowedReviewAgents: 役ごとに許す agent の名前。hq の観点表の名前（hq-review:<名前>）はここに足すだけで通る。"
@@ -14,17 +14,33 @@
     "^public/images/blog/[^/]+\\.(jpg|jpeg)$",
     "^docs/content-manifests/[^/]+\\.json$"
   ],
-  "judgementWords": [
-    "的中率",
-    "回収率",
-    "必ず",
-    "絶対",
-    "儲か",
-    "稼げ",
-    "勝てる",
-    "保証",
-    "利益",
-    "競艇"
+  "judgementPhrases": [
+    "必ず当たる",
+    "必ず勝てる",
+    "必ず儲か",
+    "絶対に当たる",
+    "絶対に勝てる",
+    "絶対儲か",
+    "的中保証",
+    "的中を保証",
+    "儲かる",
+    "儲けられる",
+    "稼げる",
+    "利益が出る",
+    "利益を保証",
+    "負けない",
+    "損しない",
+    "元が取れる"
+  ],
+  "judgementPatterns": [
+    "回収率[^0-9０-９]{0,6}([1-9][0-9]{2,}|[１-９][０-９]{2,})(?:[.．][0-9０-９]+)?\\s*[%％]"
+  ],
+  "judgementAllowedLines": [
+    "保証するものではありません",
+    "保証されません",
+    "保証はありません",
+    "保証しません",
+    "保証はしません"
   ],
   "kyoteiExceptions": [
     {

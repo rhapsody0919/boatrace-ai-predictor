@@ -199,22 +199,57 @@ const collectKeyedStrings = (v, keyPath = []) =>
           )
         : [];
 
+/** 配列の添字を "[]" にそろえたキーの道筋（配列は要素の位置ではなく、要素があるかで比べる） */
+const shapeKey = (keyPath) =>
+  keyPath.map((k) => (/^\d+$/.test(k) ? "[]" : k)).join(".");
+
 /**
- * 「競艇」: JSON の metaTitle・metaDescription 以外のすべての文字列値（tags・category を含む）に0件。
- * ただし判断が要る語（config.judgementWords の「競艇」）が先に効くので、今は metaTitle・metaDescription の
- * 「競艇」も [judgement] の error になる（判断の道へ回す）。この例外が実際に効くのは、判断が要る語の扱いが決まってから。
+ * HEAD の JSON の文字列値のうち、base から変わったもの（キーの道筋で比べる。配列は base の同じ配列に無い要素）。
+ * baseObj が undefined（足したファイル）なら全部
  */
-export function checkKyoteiJson(path, obj) {
-  return collectKeyedStrings(obj)
-    .filter(
-      ({ keyPath, value }) =>
-        value.includes(KYOTEI) &&
-        !keyPath.some((k) => KYOTEI_ALLOWED_JSON_KEYS.has(k)),
-    )
+export function changedJsonStrings(obj, baseObj) {
+  const all = collectKeyedStrings(obj);
+  if (baseObj === undefined) return all;
+  const before = new Set(
+    collectKeyedStrings(baseObj).map(
+      (s) => `${shapeKey(s.keyPath)}\0${s.value}`,
+    ),
+  );
+  return all.filter((s) => !before.has(`${shapeKey(s.keyPath)}\0${s.value}`));
+}
+
+/**
+ * HEAD の .md の行のうち、base に無い行（行の差分。並べ替えただけの行は見ない）。baseText が undefined なら全行
+ */
+export function changedMdLines(text, baseText) {
+  const lines = text.split("\n").map((line, idx) => ({ line, no: idx + 1 }));
+  if (baseText === undefined) return lines;
+  const before = new Set(baseText.split("\n"));
+  return lines.filter(({ line }) => !before.has(line));
+}
+
+/**
+ * 「競艇」: JSON の metaTitle・metaDescription 以外のすべての文字列値（tags・category を含む）に0件（[kyotei]）。
+ * metaTitle・metaDescription の「競艇」は、変えた値にあれば判断が要るとして [judgement]（例外の使用はオーナー判断。決定 (a)）。
+ * baseObj は base の同じ JSON（足したファイルなら undefined）
+ */
+export function checkKyoteiJson(path, obj, baseObj) {
+  const label = (keyPath) => keyPath.join(".") || "(値)";
+  const isMeta = (keyPath) =>
+    keyPath.some((k) => KYOTEI_ALLOWED_JSON_KEYS.has(k));
+  const body = collectKeyedStrings(obj)
+    .filter(({ keyPath, value }) => value.includes(KYOTEI) && !isMeta(keyPath))
     .map(
       ({ keyPath }) =>
-        `[kyotei] ${path} の ${keyPath.join(".") || "(値)"} に「${KYOTEI}」がある`,
+        `[kyotei] ${path} の ${label(keyPath)} に「${KYOTEI}」がある`,
     );
+  const meta = changedJsonStrings(obj, baseObj)
+    .filter(({ keyPath, value }) => value.includes(KYOTEI) && isMeta(keyPath))
+    .map(
+      ({ keyPath }) =>
+        `[judgement] ${path} の ${label(keyPath)} に「${KYOTEI}」がある（メタ情報の例外を使うかはオーナーの判断。PR を作らずオーナーへ回す）`,
+    );
+  return [...body, ...meta];
 }
 
 // `//` と `/\`（ブラウザが // と同じに扱う）はプロトコル相対で、外へ出るので数えない
@@ -252,31 +287,52 @@ export function checkInternalLinks(path, text, status, config) {
       ];
 }
 
-/** 判断が要る語を探す。.md の「競艇」の例外行は「競艇」の対象から外す */
-function findJudgementWords(textFiles, config) {
-  const found = new Set();
-  for (const f of textFiles) {
-    const strings =
-      f.kind === "md"
-        ? [f.text]
-        : collectKeyedStrings(f.json).map((s) => s.value);
-    for (const word of config.judgementWords ?? []) {
-      const hit = strings.some((s) => {
-        if (word === KYOTEI && f.kind === "md") {
-          return s
-            .split("\n")
-            .some(
-              (line) =>
-                line.includes(word) &&
-                !isKyoteiExceptionLine(f.path, line, config),
-            );
-        }
-        return s.includes(word);
-      });
-      if (hit) found.add(word);
-    }
+/**
+ * 判断が要る句を、渡した行（変えた行・足した行）から探す。決定 (a)。
+ * config.judgementPhrases（部分一致）と config.judgementPatterns（正規表現）。
+ * config.judgementAllowedLines（免責の決まり文、部分一致）を含む行は外す。
+ * 返り値: [{ line, hit, kind }]（hit は見つかった句か正規表現に当たった文字列、kind は "phrase" か "pattern"）
+ */
+export function findJudgementPhrases(lines, config) {
+  const phrases = config.judgementPhrases ?? [];
+  const patterns = (config.judgementPatterns ?? []).map(
+    (s) => new RegExp(s, "gu"),
+  );
+  const allowed = config.judgementAllowedLines ?? [];
+  const hits = [];
+  for (const line of lines) {
+    if (allowed.some((a) => line.includes(a))) continue;
+    for (const p of phrases)
+      if (line.includes(p)) hits.push({ line, hit: p, kind: "phrase" });
+    for (const re of patterns)
+      for (const m of line.matchAll(re))
+        hits.push({ line, hit: m[0], kind: "pattern" });
   }
-  return (config.judgementWords ?? []).filter((w) => found.has(w));
+  return hits;
+}
+
+/** base の JSON。無い（足したファイル）か読めないときは undefined で、全部を見る（読めないときは featured の関門が別に error を出す） */
+function baseJsonOf(base, path) {
+  if (base[path] === undefined) return undefined;
+  try {
+    return JSON.parse(base[path]);
+  } catch {
+    return undefined;
+  }
+}
+
+/** 変えた .md・JSON の、変えた行・足した行（JSON は変えた文字列値の各行） */
+function changedTextsOf(f, base) {
+  if (f.kind === "md")
+    return changedMdLines(f.text, base[f.path]).map((l) => ({
+      where: `${f.path}:${l.no}`,
+      line: l.line,
+    }));
+  return changedJsonStrings(f.json, baseJsonOf(base, f.path)).flatMap((s) =>
+    s.value
+      .split("\n")
+      .map((line) => ({ where: `${f.path} の ${s.keyPath.join(".")}`, line })),
+  );
 }
 
 /** 変えた .md・JSON が参照する画像のリポジトリ上のパス（public/ つき）。CLI が HEAD から読む対象を決めるのにも使う */
@@ -488,7 +544,7 @@ function checkManifest({
  * @param {object} input
  * @param {{status: string, path: string, mode?: string}[]} input.diff  git diff --raw --no-renames の行。mode は変更後の mode
  * @param {Record<string, Uint8Array|string>} input.head  HEAD の中身（追加・変更したファイルと、参照された画像）。キーが無い＝HEAD に無い
- * @param {Record<string, string>} input.base  base の中身（変更した日本語版 JSON。featured の比較に使う）
+ * @param {Record<string, string>} input.base  base（分岐元）の中身（変更した .md・JSON。判断が要る句を変えた行・値だけで見るのと、featured の比較に使う）
  * @param {string[]} input.basePaths  base のファイル一覧（slug の衝突、.md と JSON の対応、図の JSON の実在）
  * @param {string[]} input.headPaths  HEAD のファイル一覧（同じ用途）
  * @param {object} input.config  scripts/content/content-pr-gate.json
@@ -581,7 +637,7 @@ export function evaluateContentPr({
         ...checkInternalLinks(f.path, f.text, f.status, config),
       );
     } else {
-      errors.push(...checkKyoteiJson(f.path, f.json));
+      errors.push(...checkKyoteiJson(f.path, f.json, baseJsonOf(base, f.path)));
     }
   }
 
@@ -682,14 +738,27 @@ export function evaluateContentPr({
       );
   }
 
-  // 判断が要る語。実行役は、判断が要る語があれば PR を作らずオーナーへ回す（2026-10-20 オーケストレーター決定）。
-  // PR に来た時点で道を外れているので、見つかれば error にする
-  const judgementWordsFound = findJudgementWords(textFiles, config);
-  if (judgementWordsFound.length > 0) {
-    errors.push(
-      `[judgement] 判断が要る語 ${judgementWordsFound.join("・")} が入っている（PR を作らずオーナーの判断へ回す）`,
-    );
+  // 判断が要る句。実行役は、判断が要る句があれば PR を作らずオーナーへ回す（2026-10-20 オーケストレーター決定）。
+  // PR に来た時点で道を外れているので、見つかれば error にする。見るのは変えた行・足した行だけ（決定 (a)）
+  const found = new Set();
+  for (const f of textFiles) {
+    for (const t of changedTextsOf(f, base)) {
+      for (const { hit } of findJudgementPhrases([t.line], config)) {
+        found.add(hit);
+        errors.push(
+          `[judgement] ${t.where} に判断が要る句「${hit}」がある（PR を作らずオーナーの判断へ回す）`,
+        );
+      }
+    }
   }
+  // メタ情報の「競艇」（checkKyoteiJson が [judgement] で出す）も見つかった語に数える
+  if (
+    errors.some(
+      (e) => e.startsWith("[judgement]") && e.includes(`に「${KYOTEI}」がある`),
+    )
+  )
+    found.add(KYOTEI);
+  const judgementWordsFound = [...found];
 
   // manifest
   let p1Recorded = { fan: 0, "seo-marketer": 0 };
