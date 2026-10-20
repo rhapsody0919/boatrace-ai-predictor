@@ -57,7 +57,7 @@ flowchart LR
 ### トークン
 
 - 今の Vercel の環境変数 `GITHUB_ACTIONS_DISPATCH_TOKEN` をそのまま使う。fine-grained PAT、boatrace-ai-predictor だけ、Actions: Read and write だけ（[analogy-weekly-train-dispatch.md](../../operation/analogy-weekly-train-dispatch.md) 49行目）。Vercel では Encrypted・Production だけ（審査の実測。Preview のデプロイからは読めない）。新しい鍵は作らない
-- 今のトークンでも db-apply は dispatch できる（Actions: write は workflow を選べない）ので、PR-A で今より**できることは増えない**。手での起動（mode=manual）は production-db の承認で止まり、reconcile は審査の App が承認した PR のファイルしか選ばない
+- 今のトークンでも db-apply は dispatch できる（Actions: write は workflow を選べない）ので、PR-A で当てられる対象は増えない。手での起動（mode=manual）は production-db の承認で止まり、reconcile は審査の App が承認した PR のファイルしか選ばない。**増えるのは、承認なしの経路（reconcile → apply-auto）を任意の時刻に起動できること**（今までは schedule だけ。PR #1722 の審査、P2）。D' の後は、この PAT に届いた者が、審査済みの軽いファイルを当てる時刻を選べる。ADR-0097 の「残る弱み」に足す（判断5）
 - ただし**切替の後の目標の状態と比べると、残る弱み**になる。このトークンは Actions: write を持つ（ADR-0097 は作成の App に Actions: write を付けない、と決めている）。Claude は Vercel CLI の認証（hq の drafts/identity-separation §54）と Vercel MCP に届き、値を読む関数をデプロイすれば読める（Sensitive は画面の表示を止めるだけ）。届いたときにできること: master の任意の workflow を inputs つきで dispatch、prod-jobs の run の rerun、review.yml の無効化。同じ経路で Vercel の SUPABASE_SERVICE_KEY 等にも届く
   - 塞ぐのは切替のとき（§6 の表）: Claude の動くユーザーから Vercel CLI の認証を外す（または書き込みの無いトークンにする）・Vercel MCP を切る。塞がないなら ADR-0097 の「残る弱み」に書いてオーナーが受け入れる（判断5）
 - オーナーに設定の画面で確かめてもらうこと（値ではなく）:
@@ -292,7 +292,7 @@ flowchart TD
 
 | # | 点 | 推奨 |
 |---|---|---|
-| 1 | 起動を Vercel Cron の dispatch にする（PR-A）。今の PAT を流用する | はい。今よりできることは増えない（切替の後の弱みは判断5で扱う） |
+| 1 | 起動を Vercel Cron の dispatch にする（PR-A）。今の PAT を流用する | はい。当てられる対象は増えない。承認なしの経路を任意の時刻に起動できる点だけ増える（§2「トークン」、切替の後の弱みは判断5で扱う） |
 | 2 | PAT の権限が Actions だけか、Environment 4つの Deployment branches が master だけかを、設定の画面で確かめる | 確かめる（PAT に承認の権限があると production-db を承認でき、Deployment branches が広いと dispatch の ref で鍵に届く） |
 | 3 | D' の前の3点を §4 の形で作る（印は DB の主キー、止め印は台帳の `保留`） | はい |
 | 4 | 自動の経路を JST 1:00〜4:59 に限る（§4.3 案 A） | 案 A |
