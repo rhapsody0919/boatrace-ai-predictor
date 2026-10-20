@@ -70,3 +70,5 @@
 - ブログ JSON の date がレース日でも、現行 BlogPost は datePublished と dateModified に同値を出す。レース日を初回公開日・更新日とみなす前に制作・公開履歴を確認する（2026-10-13、2026-10-13-plan-review-20261013-07.md）
 - 再計画では前回報告の候補状態に加え、同日付の制作稿と引継ぎを照合し、制作済みの記事を再び新規候補にしない。（2026-10-19、2026-10-19-plan-1758.md）
 - 会場記事の候補は保存稿一覧と今後の開催会場を突き合わせ、一般ガイドと水面・風の記事の主題を区別する。期間を限った確認結果を恒久的な需要なしへ広げない。（2026-10-19、2026-10-19-plan-2103.md）
+- 翻訳のメタ（blogPostsEn/Ko/ZhTw.js）と blogImageDimensions.js はデータではなく画面のバンドルに入る JS なので、記事の PR の許可のパスに入れるとコードを入れられる。#1699 で翻訳のメタを src/data/blog-posts/{lang}/{id}.json に、寸法をビルドの時に作る形に移す（対応中、2026-10-20、system-architect の content-publish の審査、旧 src/data/blogPostsEn.js:7,369-373、BOA-908 ②）
+- public/blog の217本で、生の HTML タグは0件、本文の「競艇」は venue-visit-guide-ko.md:23 の1件だけ。どちらも、変えたファイルに当てる関門にしても今の記事は壊れない（2026-10-20、system-architect の content-publish の審査、git grep・origin/master）

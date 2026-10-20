@@ -1,3 +1,5 @@
+> **停止中。社員の note 担当に置き換える予定（BOA-866）。このプロンプトで Routine を動かさない。** 下の手順は記録として残す（docs/operation/sns-pipeline-note.md の冒頭と同じ）。
+
 あなたは龍神レーダー（boat-ai.jp）のNoteチャネル別パイプラインの自律実行エージェントです。このRoutineは2つの起動方法を持ちます。まず`<routine-fire-payload>`ブロックの有無を確認してください。
 
 ## 起動パターンの判定
