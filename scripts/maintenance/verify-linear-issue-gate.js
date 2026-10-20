@@ -197,6 +197,7 @@ async function withLinearFetch(activeCount, fn) {
         headers: { "Content-Type": "application/json" },
       });
     if (/CountActiveIssues/.test(query)) return json(countPage(activeCount));
+    if (/OpenEscalations/.test(query)) return json({ issues: { nodes: [] } });
     if (/viewer/.test(query))
       return json({ viewer: { teams: { nodes: [{ id: "t1" }] } } });
     if (/labels/.test(query)) return json({ team: { labels: { nodes: [] } } });
@@ -272,6 +273,53 @@ for (const p of PATHS) {
     assert.ok(countAt >= 0 && createAt > countAt, "数えてから起票する");
   });
 }
+
+test("夜間のジョブ（checkRevisionEscalation）: 関所が止めたら保留（例外にしない）で終わり、記録に残さず、その晩の残りは数えない", async () => {
+  const { checkRevisionEscalation } =
+    await import("./content-ops-checks/check-revision-escalation.js");
+  const revision = (platform, code) => ({
+    platform,
+    revisionReasonCodes: [code],
+    title: "t",
+    revisionReasonFreetext: null,
+  });
+  const saved = [];
+  const env = {
+    key: process.env.LINEAR_API_KEY,
+    team: process.env.LINEAR_TEAM_ID,
+  };
+  process.env.LINEAR_API_KEY = "test-key";
+  process.env.LINEAR_TEAM_ID = "t1";
+  let result;
+  let queries;
+  try {
+    queries = await withLinearFetch(200, async () => {
+      result = await checkRevisionEscalation({
+        threshold: 2,
+        loadRevisions: async () => [
+          revision("x", "tone"),
+          revision("x", "tone"),
+          revision("youtube", "length"),
+          revision("youtube", "length"),
+        ],
+        loadHistory: async () => ({ escalated: {} }),
+        saveHistory: async (h) => saved.push(structuredClone(h)),
+      });
+    });
+  } finally {
+    if (env.key === undefined) delete process.env.LINEAR_API_KEY;
+    else process.env.LINEAR_API_KEY = env.key;
+    if (env.team === undefined) delete process.env.LINEAR_TEAM_ID;
+    else process.env.LINEAR_TEAM_ID = env.team;
+  }
+  assert.equal(sentCreate(queries), false);
+  assert.match(result.held.reason, /200/);
+  assert.deepEqual(result.escalated, []);
+  // 次の晩にもう一度数えるため、記録には残さない
+  assert.deepEqual(saved, [{ escalated: {} }]);
+  // 2つの組み合わせが閾値を超えていても、関所の件数の問い合わせ（＝Slack の通知）は1晩1回
+  assert.equal(queries.filter((q) => /CountActiveIssues/.test(q)).length, 1);
+});
 
 // ---- 抜け道の検知 ----
 

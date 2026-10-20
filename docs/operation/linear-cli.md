@@ -26,7 +26,7 @@ Linear の無料枠の上限は**アーカイブしていないチケットの�
 |---|---|
 | `scripts/linear-cli.js create` | 終了コード1。標準エラーに件数と閾値 |
 | `scripts/analysis/create-vup-linear-ticket.js`（`/analyze-vup-feature`） | 終了コード1。`❌ エラー:` の行に件数と閾値 |
-| `scripts/maintenance/content-ops-checks/check-revision-escalation.js`（夜の content-ops-nightly-check） | 終了コード1。ワークフローが `❌ エラー:` の行を Slack に送る |
+| `scripts/maintenance/content-ops-checks/check-revision-escalation.js`（夜の content-ops-nightly-check） | 保留で終了コード0（2026-10-20 オーナー決定。アーカイブが済むまで毎晩赤にしない）。関所が毎晩 Slack に件数と閾値を送る。その晩の起票はやめ、記録に残さず次の晩にもう一度数える |
 | `api/_lib/snsHubHelpers.js` の `createLinearIssue`（SNS ハブの「制作仕様の変更要望」） | HTTP 503・`code=LINEAR_ISSUE_GATE_BLOCKED`。画面は件数の文を出し、入力欄を閉じない |
 
 - **数え方**: `issues`（アーカイブ済みを含めない既定のまま）をチームで絞らずにページ送りで全件数える。hq の `platform/ticket.py` の `count_unarchived` と同じ数え方で、hq の心拍・ダッシュボードと同じ数字になる。Linear が上限に使う値（エラーでは `activeIssueCount`）を直接返す欄は、公開のスキーマで確かめられなかったので使わない。API キーの持ち主に見えないチーム（非公開チーム）のチケットは数に入らない

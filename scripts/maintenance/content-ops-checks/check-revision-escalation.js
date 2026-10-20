@@ -25,6 +25,7 @@ import {
   countReasonCodes,
 } from "../../lib/contentRevisionHistory.js";
 import {
+  LinearIssueGateError,
   assertCanCreateIssue,
   slackNotifierFromEnv,
 } from "../../lib/linearIssueGate.js";
@@ -154,7 +155,8 @@ async function findOpenEscalation(apiKey, teamId, platform, reasonCode) {
 
 /**
  * 起票の前に未アーカイブ件数を確かめる（scripts/lib/linearIssueGate.js）。閾値以上・数えられない
- * ときは例外で止まり、夜のワークフローが「❌ エラー:」の行を Slack に送る
+ * ときは関所が Slack に件数と閾値を送って LinearIssueGateError を投げる。checkRevisionEscalation はそれを
+ * 「保留」として受け、その晩の起票をやめて正常に終わる（2026-10-20 オーナー決定。アーカイブが済むまで毎晩赤にしない）
  */
 export async function createEscalationIssue(
   apiKey,
@@ -192,13 +194,18 @@ export async function checkRevisionEscalation({
   threshold = THRESHOLD,
   windowDays = WINDOW_DAYS,
   dryRun = false,
+  // 試験で差し替える（既定は本番の読み書き）
+  loadRevisions = getRecentRevisions,
+  loadHistory = readEscalations,
+  saveHistory = writeEscalations,
 } = {}) {
-  const revisions = await getRecentRevisions({ windowDays, limit: 200 });
+  const revisions = await loadRevisions({ windowDays, limit: 200 });
   const counts = countReasonCodes(revisions);
-  const history = await readEscalations();
+  const history = await loadHistory();
   history.escalated = history.escalated ?? {};
 
   const newlyEscalated = [];
+  let held = null;
   const apiKey = process.env.LINEAR_API_KEY;
 
   for (const [key, count] of Object.entries(counts)) {
@@ -250,12 +257,21 @@ export async function checkRevisionEscalation({
       )
       .join("\n");
 
-    const issue = await createEscalationIssue(apiKey, {
-      teamId,
-      labelId,
-      title: escalationTitle(platform, reasonCode),
-      description: `content-multi-channel-pipelineの却下フィードバック閾値エスカレーション（自動起票、check-revision-escalation.js）。\n\n直近${windowDays}日で同一理由による修正依頼が**${count}件**溜まりました（閾値${threshold}件）。生成プロンプト・品質採点基準の見直しを検討してください。\n\n件数はこの本文にのみ書いています。タイトルに入れると件数が変わるたびに別タイトルになり、重複起票の判定をすり抜けるためです。\n\n直近の該当下書き（最大5件）:\n${examples}`,
-    });
+    let issue;
+    try {
+      issue = await createEscalationIssue(apiKey, {
+        teamId,
+        labelId,
+        title: escalationTitle(platform, reasonCode),
+        description: `content-multi-channel-pipelineの却下フィードバック閾値エスカレーション（自動起票、check-revision-escalation.js）。\n\n直近${windowDays}日で同一理由による修正依頼が**${count}件**溜まりました（閾値${threshold}件）。生成プロンプト・品質採点基準の見直しを検討してください。\n\n件数はこの本文にのみ書いています。タイトルに入れると件数が変わるたびに別タイトルになり、重複起票の判定をすり抜けるためです。\n\n直近の該当下書き（最大5件）:\n${examples}`,
+      });
+    } catch (error) {
+      if (!(error instanceof LinearIssueGateError)) throw error;
+      // 関所が止めた（Slack には関所が件数と閾値を送った）。記録に残さず、次の晩にもう一度数える。
+      // 同じ晩の残りの組み合わせも同じ理由で止まるので、ここで打ち切る（通知を1晩1回にする）
+      held = { key, count, reason: error.message };
+      break;
+    }
 
     history.escalated[key] = {
       escalatedAt: new Date().toISOString(),
@@ -266,10 +282,14 @@ export async function checkRevisionEscalation({
   }
 
   if (!dryRun) {
-    await writeEscalations(history);
+    await saveHistory(history);
   }
 
-  return { escalated: newlyEscalated, checked: Object.keys(counts).length };
+  return {
+    escalated: newlyEscalated,
+    checked: Object.keys(counts).length,
+    ...(held ? { held } : {}),
+  };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -277,6 +297,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   checkRevisionEscalation({ dryRun })
     .then((result) => {
       console.log(JSON.stringify(result, null, 2));
+      // 関所で止めたときは保留（exit 0）。Slack への件数と閾値の通知は関所が送った
+      if (result.held)
+        console.log(`保留: Linear の起票を止めた（${result.held.reason}）`);
     })
     .catch((error) => {
       console.error(`❌ エラー: ${error.message}`);
