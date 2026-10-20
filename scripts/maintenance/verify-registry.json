@@ -71,7 +71,7 @@
     {
       "script": "verify-blog-draft-quality.js",
       "tier": "ci",
-      "guards": "ブログ下書きDraft PRを人手承認なしで自動マージしてよいかの品質判定"
+      "guards": "ブログ下書きDraft PRの機械的な品質チェック（PR を作る前の自己点検。自動マージは 2026-10-20 に停止、ADR-0034 の追記）"
     },
     {
       "script": "verify-boatcast-job.js",
@@ -1087,7 +1087,7 @@
     {
       "script": "verify-sns-existing-fixes.js",
       "tier": "ci",
-      "guards": "依頼4: 既存YouTube公開・ブログPRマージ・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
+      "guards": "依頼4: 既存YouTube公開・停止したブログPRマージ（410・GitHub と DB に触れない、BOA-908）・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
     },
     {
       "script": "verify-sns-deadline-queue.js",

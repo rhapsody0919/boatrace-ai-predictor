@@ -23,7 +23,7 @@ Personal Access Token（Fine-grained PAT）を使う。対象リポジトリ（`
 
 ## 追記（2026-10-20）: ADR-0097 で置き換え、PAT の道を止めた
 
-ADR-0097（本番の鍵と自動審査・自動適用の分け方）で、記事の PR も他の PR と同じ道（CI・4つのレビュー・マージの承認、`.claude/skills/orchestrate/SKILL.md` 段階0 F）でマージすることにした。強い書き込みの鍵（PAT）を Vercel の関数に置き、管理画面の操作でマージする道は使わない（BOA-908、オーナー yes 10/20 夕）。
+BOA-908（オーナー yes 10/20 夕）で、ADR-0097（書き込みの身元を分ける方針）に合わせて、記事の PR も他の PR と同じ道（CI・4つのレビュー・マージの承認、`.claude/skills/orchestrate/SKILL.md` 段階0 F）でマージすることにした。強い書き込みの鍵（PAT）を Vercel の関数に置き、管理画面の操作でマージする道は使わない。
 
 止めたもの:
 - `api/admin/sns-hub/drafts/[id]/merge-blog-pr.js`: `GITHUB_MERGE_TOKEN` を読まず、GitHub にも DB にも触れずに 410 を返す（検査: `scripts/maintenance/verify-sns-existing-fixes.js`）
@@ -37,4 +37,6 @@ ADR-0097（本番の鍵と自動審査・自動適用の分け方）で、記事
 オーナーの操作（この順で）:
 1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens で、このリポジトリ用に作った PAT（`docs/operation/content-pipeline-token-setup-guide.md` の手順で作ったもの）を Revoke する
 2. Vercel のプロジェクト boatrace-ai-predictor → Settings → Environment Variables で、`GITHUB_MERGE_TOKEN`（Production）を削除する
-3. 次の本番デプロイの後、管理画面の記事の承認を押すと「停止しました」が出ることを確かめる（GitHub には何も起きない）
+3. 次の本番デプロイの後、`POST /api/admin/sns-hub/drafts/<id>/merge-blog-pr` が管理画面の認証つきで 410 を返すことを確かめる（`scripts/maintenance/verify-sns-existing-fixes.js` でも固定している）。管理画面では、410 の文言は出ず「マージに失敗しました」になる。また、プレビュー（同じ鍵を読む）が失敗するので承認のボタンは押せなくなる。画面の片付けは BOA-918
+
+PAT の見分け方: Fine-grained tokens の一覧で、Repository access が boatrace-ai-predictor だけ、権限が Contents と Pull requests の書き込みのもの。

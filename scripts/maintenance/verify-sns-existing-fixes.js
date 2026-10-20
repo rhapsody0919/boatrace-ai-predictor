@@ -262,9 +262,8 @@ for (const platform of ["youtube"]) {
     test(`${platform}: 外部成功後${failRpc}失敗でも再送しない`, async () => {
       const f = await fixture(platform, { failRpc });
       try {
-        const handler = platform === "youtube" ? youtube : blog;
-        const action =
-          platform === "youtube" ? "publish-youtube" : "merge-blog-pr";
+        const handler = youtube;
+        const action = "publish-youtube";
         assert.equal((await handler(request(action, { headSha }))).status, 500);
         const row = await f.row();
         assert.equal(
@@ -278,10 +277,7 @@ for (const platform of ["youtube"]) {
           retry.status,
           failRpc === "sns_record_external" ? 409 : 200,
         );
-        assert.equal(
-          platform === "youtube" ? f.counts().uploads : f.counts().merges,
-          1,
-        );
+        assert.equal(f.counts().uploads, 1);
         if (retry.status === 200)
           assert.equal((await f.row()).status, "posted");
       } finally {
