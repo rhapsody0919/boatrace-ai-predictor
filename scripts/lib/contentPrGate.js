@@ -20,8 +20,6 @@ export const REVIEW_ROLES = [
 // p1 が0でなければ error にする役。残り（fan・seo-marketer）は件数を記録するだけ
 const P1_BLOCKING_ROLES = new Set(["content-qa", "wording-editor"]);
 const KYOTEI = "競艇";
-// JSON で「競艇」を許すキー（画面に出ないメタ情報。.claude/rules/code-style.md の例外1）
-const KYOTEI_ALLOWED_JSON_KEYS = new Set(["metaTitle", "metaDescription"]);
 const REGULAR_FILE_MODE = "100644";
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const TRANSLATION_SUFFIX_RE = /-(en|ko|zh-tw)$/;
@@ -237,27 +235,32 @@ export function changedMdLines(text, baseText) {
 }
 
 /**
- * 「競艇」: JSON の metaTitle・metaDescription 以外のすべての文字列値（tags・category を含む）に0件（[kyotei]）。
- * metaTitle・metaDescription の「競艇」は、変えた値にあれば判断が要るとして [judgement]（例外の使用はオーナー判断。決定 (a)）。
- * baseObj は base の同じ JSON（足したファイルなら undefined）
+ * 「競艇」: JSON の文字列値のうち、設定の kyoteiMetaAllowedKeys（metaTitle・metaDescription）以外に0件（[kyotei]）。
+ * meta の「競艇」は通す（オーナー決定 2026-10-20、.claude/rules/code-style.md の例外1。役所への営業の前に外す暫定の措置）。
+ * 後で一括で外せるように、meta に「競艇」があるキーを metaKeys で返す（結果の metaKyotei に出る）
  */
-export function checkKyoteiJson(path, obj, baseObj) {
+export function checkKyoteiJson(path, obj, config = {}) {
+  const metaAllowed = new Set(config.kyoteiMetaAllowedKeys ?? []);
   const label = (keyPath) => keyPath.join(".") || "(値)";
-  const isMeta = (keyPath) =>
-    keyPath.some((k) => KYOTEI_ALLOWED_JSON_KEYS.has(k));
-  const body = collectKeyedStrings(obj)
-    .filter(({ keyPath, value }) => value.includes(KYOTEI) && !isMeta(keyPath))
-    .map(
-      ({ keyPath }) =>
-        `[kyotei] ${path} の ${label(keyPath)} に「${KYOTEI}」がある`,
-    );
-  const meta = changedJsonStrings(obj, baseObj)
-    .filter(({ keyPath, value }) => value.includes(KYOTEI) && isMeta(keyPath))
-    .map(
-      ({ keyPath }) =>
-        `[judgement] ${path} の ${label(keyPath)} に「${KYOTEI}」がある（メタ情報の例外を使うかはオーナーの判断。PR を作らずオーナーへ回す）`,
-    );
-  return [...body, ...meta];
+  const isMeta = (keyPath) => keyPath.some((k) => metaAllowed.has(k));
+  const hits = collectKeyedStrings(obj).filter(({ value }) =>
+    value.includes(KYOTEI),
+  );
+  return {
+    errors: hits
+      .filter(({ keyPath }) => !isMeta(keyPath))
+      .map(
+        ({ keyPath }) =>
+          `[kyotei] ${path} の ${label(keyPath)} に「${KYOTEI}」がある`,
+      ),
+    metaKeys: [
+      ...new Set(
+        hits
+          .filter(({ keyPath }) => isMeta(keyPath))
+          .map(({ keyPath }) => label(keyPath)),
+      ),
+    ],
+  };
 }
 
 // `//` と `/\`（ブラウザが // と同じに扱う）はプロトコル相対で、外へ出るので数えない
@@ -665,6 +668,7 @@ export function evaluateContentPr({
   config,
 }) {
   const errors = [];
+  const metaKyotei = [];
   const entries = diff.map((d) => ({
     status: d.status,
     path: d.path,
@@ -744,7 +748,14 @@ export function evaluateContentPr({
         ...checkInternalLinks(f.path, f.text, f.status, config),
       );
     } else {
-      errors.push(...checkKyoteiJson(f.path, f.json, baseJsonOf(base, f.path)));
+      const kyotei = checkKyoteiJson(f.path, f.json, config);
+      errors.push(...kyotei.errors);
+      if (kyotei.metaKeys.length > 0)
+        metaKyotei.push({
+          id: typeof f.json?.id === "string" ? f.json.id : null,
+          path: f.path,
+          keys: kyotei.metaKeys,
+        });
     }
   }
 
@@ -858,13 +869,6 @@ export function evaluateContentPr({
       }
     }
   }
-  // メタ情報の「競艇」（checkKyoteiJson が [judgement] で出す）も見つかった語に数える
-  if (
-    errors.some(
-      (e) => e.startsWith("[judgement]") && e.includes(`に「${KYOTEI}」がある`),
-    )
-  )
-    found.add(KYOTEI);
   const judgementWordsFound = [...found];
 
   // manifest
@@ -917,6 +921,8 @@ export function evaluateContentPr({
     errors,
     judgementWordsFound,
     p1Recorded,
+    // meta（metaTitle・metaDescription）に「競艇」がある記事。暫定の例外を後で一括で外すための一覧
+    metaKyotei,
     manifest: manifestPath,
   };
 }
