@@ -20,6 +20,9 @@
 - public/sitemap.xml は日次の cron（.github/workflows/update-sitemap.yml）が作り直す。PR には scripts/generate-sitemap.js の変更だけを入れ、生成物は入れない（2026-08-09、memory i18n_p1_analysis_tools_handoff）
 - 記事の文字数は表と Markdown の記法を除いた日本語の文字で測る。wc -m だと目安（2,000〜3,500字）を大きく超えて見える（2026-09-28、memory phase_a_content_rollout_2026_09_28、PR #884）
 - 開催向けの記事の slug に年号を入れない。開催後に古く見えるため。同じテーマの既存記事の slug の型（会場名＋テーマ。例 -water-wind-guide）にそろえる（2026-10-13、#1548 の SEO P2）
+- ブログの図の既定状態（既定の会場の値・札・figcaption）は、スナップショットが図の読み込みを待つので DOM の文字としてボットに届く。遅延描画（画面に入ってから描く）にすると届かない。切り替え後の値は見えないので、根拠にしたい数字は本文の1行と表に置く（2026-10-20、seo-marketer・system-architect、scripts/generate-ai-snapshots.js の waitForBlogCharts、ADR 0098）
+- 図の切り替えで見せるだけの会場（全会場分）は本文の表にしない。会場別記事・会場ガイドと食い合い、問いから外れる。記事内の1図に Dataset の構造化データは付けない（2026-10-20、seo-marketer）
+- public の静的ファイルは `/blog/{名前}` の1段に置かない。aiCrawlerBots.js の `^\/blog\/([^/]+)$` に合い、ボットにだけ ai-snapshots へ書き換えられる。図の JSON は `/blog-charts/` に置く（2026-10-20、system-architect、src/config/aiCrawlerBots.js）
 
 ## インデックスと順位
 - 2026-04〜07 の自然検索の減少（平均掲載順位 6.0→7.5）は、日本語ブログの新規記事が4月以降ほぼ0になった時期と一致した。記事の鮮度を順位の先行指標とし、最新記事から2週間空いたら次の記事の種を探す（2026-07-28、memory boa_pv_plateau_diagnosis_2026_07・feedback_content_cadence_proactive_check）

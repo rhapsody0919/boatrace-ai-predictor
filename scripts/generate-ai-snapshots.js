@@ -141,6 +141,19 @@ function startStaticServer() {
   });
 }
 
+/**
+ * 記事の図（src/components/blog/BlogChart.jsx）は、JSON を本文と一緒に取ってから描く（src/utils/blogChartLoader.js）ので、
+ * .blog-post-content が出た時点で図も出ている。図が error の記事は保存せず失敗として数える
+ * （図の無い HTML を配らず、ボットには SPA を返す。ADR 0089 の「失敗したら SPA」と同じ。docs/design/blog-charts/contract.md 6節）
+ */
+async function waitForBlogCharts(page) {
+  const failed = await page.$$eval(
+    '[data-chart-state="error"]',
+    (els) => els.length,
+  );
+  if (failed > 0) throw new Error(`ブログの図の読み込みに失敗（${failed}件）`);
+}
+
 async function generateBlogSnapshots(openPage, baseUrl) {
   const outDir = path.join(SNAPSHOT_DIR, "blog");
   mkdirSync(outDir, { recursive: true });
@@ -159,6 +172,7 @@ async function generateBlogSnapshots(openPage, baseUrl) {
           timeout: 15000,
         });
         await page.waitForSelector(".blog-post-content", { timeout: 10000 });
+        await waitForBlogCharts(page);
         const html = dedupeDefaultTitle(await page.content());
         writeFileSync(path.join(outDir, `${post.id}.html`), html, "utf-8");
       },
@@ -243,6 +257,7 @@ async function generateTranslatedBlogSnapshots(openPage, baseUrl) {
         file: `${lang}/blog/${post.id}.html`,
       })),
       waitSelector: ".blog-post-content",
+      beforeSave: waitForBlogCharts,
     });
   }
   return results;

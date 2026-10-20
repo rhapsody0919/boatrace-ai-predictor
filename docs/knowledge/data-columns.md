@@ -40,3 +40,5 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 ## オッズ
 - 公式は票が0の艇の単勝を「0.0」、複勝を「0.0-0.0」と出す。0 を欠損として扱うと単勝の解析が失敗扱いになり、解析済みの3連単も捨てる。scrape_slots.outcome="no_values" は「単勝の値が無い」だけを表し、「何も発売されていない」と区別できない（2026-09-28、memory feedback_verify_status_label_branch_before_using_as_evidence・project_data_foundation_orchestration_2026_09_19、BOA-486、scrape-odds.js の scrapeWinOdds。今も同じ実装かは要確認）
 - 締切60分前の窓でオッズが取れないのは、公式がまだ発売していないため（1分ごとに17〜30回試みても値が無い）。取得の不具合ではない（2026-09-28、memory project_data_foundation_orchestration_2026_09_19、BOA-465）
+- race_results.remark の「同着あり」は2着以下の同着も含む（12か月で18件のうち1着の同着は1件）。1着の同着は race_start_timings.finish_rank=1 が2艇以上かで判定する（2026-10-20、data-accuracy-verifier、docs/reference/venue-course-win-rate.md）
+- race_start_timings.entry_course は 2025-12-06 以降の約9,400レースにだけ入っていて、その範囲では race_results.actual_course_* と1着艇の進入コースが 9,386/9,386 で一致（2026-10-20、同）
