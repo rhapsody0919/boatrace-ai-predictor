@@ -76,9 +76,8 @@ jobs:
         env:
           PUSH_TOKEN: ${{ steps.app-token.outputs.token }}
 
-      - name: Trigger Vercel Deploy
-        if: steps.sitemap_diff.outputs.changed == 'true'
-        run: curl -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+      # Deploy Hook は叩かない。上の master への push で Vercel の git デプロイが1回走る。
+      # 両方すると同じ内容の本番ビルドが2回になっていた（BOA-908、10/17 の 7e42db1 で2本）
 
       # sitemap変更時のみGoogleへ再送信を通知（BOA-152関連: SEO未対応の是正）
       # サービスアカウントがSearch Consoleで「フル」権限を持つ場合のみ成功する

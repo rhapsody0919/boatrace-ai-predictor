@@ -258,6 +258,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/assistTheory.js` | 思考アシスト（BOA-430）のセオリーカードとガイドのモデル。純粋関数だけ（取得・描画はしない）。 | theoryCard, guideSteps, windBandLabel |
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
+| `src/utils/blogMarkdownSanitize.js` | ブログ記事（public/blog/*.md）を描く rehype のプラグインと、HTML の許可リスト。 | blogSanitizeSchema, blogRehypePlugins |
 | `src/utils/botPageModel.js` | ボット向け HTML（ADR 0089）の中身を、/api/races/today の JSON から組む。 | assertTodayRacesJson, buildTopModel, buildVenueModel, TodayRacesShapeError |
 | `src/utils/breadcrumbLd.js` | パンくずの BreadcrumbList（構造化データ）を組む。画面の Breadcrumb と、ボット向け HTML（ADR 0089）が同じ値を出す。 | isValidCrumbs, toBreadcrumbListLd |
 | `src/utils/cautionEvents.js` | イン崩れ注意度（BOA-822 task 27）の GA4 のイベント。送る中身を決める純関数（assistEvents.js と同じ形）。 | cautionBandOf, cautionVisibleEvent, cautionClickEvent, CAUTION_SURFACES, CAUTION_TARGETS |
@@ -359,4 +360,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 324 ファイル / export 1831 件。
+対象 325 ファイル / export 1833 件。
