@@ -5,7 +5,7 @@
 import { BODY_Y, LEFT, RIGHT } from "./pageLayout.js";
 
 // 類似度の円
-export const SONAR = { cx: 500, cy: BODY_Y + 330, R: 300 };
+export const SONAR = { cx: 500, cy: BODY_Y + 300, R: 290 };
 const ang = (b) => -90 + (b - 1) * 60;
 /** 似ている順の番目 → 中心からの距離（100件未満は等間隔、それ以上は対数。画面の rOf と同じ） */
 export function sonarR(rank, n) {
@@ -23,7 +23,7 @@ export function sonarPoint(winner, rank, n) {
 }
 /** 円の下の、艇ごとの1着の件数の札 */
 export const SONAR_CHIP = {
-  y: SONAR.cy + SONAR.R + 40,
+  y: SONAR.cy + SONAR.R + 30,
   w: 135,
   h: 84,
   step: 153,
@@ -38,7 +38,7 @@ export const sonarChipBox = (b) => ({
 // 着順の流れ（1着・2着・3着の3列）
 export const SANKEY = {
   top: BODY_Y + 60,
-  height: 640,
+  height: 590,
   nodeW: 56,
   gap: 10,
   cols: [LEFT + 70, LEFT + 380, LEFT + 690],

@@ -359,4 +359,38 @@ for (const w of answerWindows(tl.beats))
     `${w.kind}${w.index}: 答えが不透明で出ている時間 ${w.hold - w.start} フレーム`,
   );
 
+// 段の場面（場面1・2b・3〜8）の枠の箱: 画面内・右のボタン列の外・吹き出し（y1252〜）より上
+const {
+  barsRow, statsRow, tableColsBox, tableRowBox, tableRowH, slitFormBox, axisButtonBox, followerRow, deepBox, BUTTON,
+} = await import("../../sns-video-studio/remotion/src/fullPicture/pageLayout.js");
+const { sankeyLayout, sankeyNodeBox, sonarChipBox, triRowsBox } = await import("../../sns-video-studio/remotion/src/fullPicture/sonarLayout.js");
+const { stepTimes } = await import("../../sns-video-studio/remotion/src/fullPicture/stepTimeline.js");
+const boxes = [
+  ...[0, 1, 2, 3, 4, 5].map(barsRow),
+  ...[0, 1, 2].map(statsRow),
+  tableColsBox([1, 2, 3], 3),
+  tableColsBox([1], 2),
+  tableColsBox([2], 2),
+  ...[0, 1, 2, 3, 4, 5].map((i) => tableRowBox(i)),
+  ...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => tableRowBox(i, tableRowH(8))),
+  ...[0, 1, 2, 3, 4, 5, 6].map(slitFormBox),
+  ...[0, 1, 2, 3, 4].map(followerRow),
+  ...[1, 2, 3, 4, 5, 6].map(axisButtonBox),
+  ...[1, 2, 3, 4, 5, 6].map(sonarChipBox),
+  triRowsBox(3),
+  deepBox(1),
+  BUTTON,
+];
+const links = [[0, 1, 2, 300], [0, 1, 3, 100], [0, 2, 1, 50], [0, 6, 1, 1], [1, 2, 3, 200], [1, 3, 2, 151], [1, 1, 4, 99], [1, 1, 6, 1]];
+for (const node of sankeyLayout(links, 451).nodes.filter((x) => x.col < 2)) boxes.push(sankeyNodeBox(node));
+for (const b of boxes) {
+  assert.ok(frameInSafeArea(b), `段の場面の枠が画面内・右のボタン列の外: ${JSON.stringify(b)}`);
+  assert.ok(b.y + b.h + FRAME_PAD <= 1252, `段の場面の枠が吹き出しより上: ${JSON.stringify(b)}`);
+}
+// 段の拍: 押す段は押す→変わる→0.5秒→枠→答え、枠を順に移す段は枠の数だけ伸びる、同時の枠は1拍
+const st = stepTimes({ press: { x: 1, y: 1 }, frames: [{}, {}] }, false);
+assert.ok(st.press < st.changed && st.changed + 15 === st.frames[0] && st.frames[1] > st.frames[0] && st.answer > st.frames[1], "段の拍の順");
+assert.equal(stepTimes({ frames: [{}, {}], framesTogether: true }, true).frames[1], stepTimes({ frames: [{}, {}], framesTogether: true }, true).frames[0], "同時の枠");
+assert.equal(stepTimes({ frames: [{}], samePage: true, len: 66 }, false).len, 66, "短い段");
+
 console.log("verify-full-picture-scene2: OK");

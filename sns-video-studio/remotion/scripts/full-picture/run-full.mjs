@@ -3,7 +3,7 @@
  * 龍神の鍵は要らない（鍵が要るのは材料の取得 fetch-materials.mjs だけ）。整えた版の LLM はログイン済みの claude（1レース1回）。
  *
  * 使い方（sns-video-studio/remotion で）:
- *   node scripts/full-picture/run-full.mjs <材料.json> <出力ディレクトリ> [--text template|polished|both] [--bgm <mp3>] [--regen-text]
+ *   node scripts/full-picture/run-full.mjs <材料.json> <出力ディレクトリ> [--text template|polished|both] [--bgm <mp3>] [--regen-text] [--no-video] [--concurrency N]
  * 出力:
  *   scenes.json                全場面の描く値と拍ごとの facts（コードが計算した比較）、omitted（省いた要素）
  *   text-{版}.json             答えの文（拍ごと。整えた版は文型の版に戻した拍と理由も）
@@ -44,6 +44,7 @@ const has = (name) => {
 const textMode = opt("--text", "both");
 const bgm = opt("--bgm");
 const regenText = has("--regen-text");
+const noVideo = has("--no-video");
 // 描画の並列数（既定はコア数−1。ほかの作業と同時に回すときは小さくする）
 const concurrency = opt("--concurrency", String(Math.max(1, (await import("node:os")).cpus().length - 1)));
 const [input, outDir] = args;
@@ -147,6 +148,10 @@ for (const mode of modes) {
   writeJson(propsPath, props);
   const dir = join(out, mode);
   mkdirSync(join(dir, "stills"), { recursive: true });
+  if (noVideo) {
+    writeJson(join(out, `run-${mode}.json`), { seconds: { text: (t1 - t0) / 1000 }, llmCalls, beats: text.beats.length, backToTemplate: back.length });
+    continue;
+  }
   const mp4 = join(dir, "full-picture.mp4");
   execFileSync("npx", ["remotion", "render", "src/index.jsx", "FullPicture", mp4, "--codec=h264", `--concurrency=${concurrency}`, `--props=${propsPath}`, "--log=error"], { stdio: ["ignore", "inherit", "pipe"] });
   const t2 = Date.now();
