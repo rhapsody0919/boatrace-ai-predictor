@@ -5,14 +5,15 @@
  * 2026-10-20 オーナー決定: 完全版は YouTube の通常の動画、入口版（scripts/full-picture/entry.mjs）は X・Shorts。
  *
  * 使い方（sns-video-studio/remotion で）:
- *   node scripts/full-picture/run-full.mjs <材料.json> <出力ディレクトリ> [--text template|connected|both] [--bgm <mp3>] [--regen-text] [--no-video] [--concurrency N]
+ *   node scripts/full-picture/run-full.mjs <材料.json> <出力ディレクトリ> [--text template|connected|both] [--bgm <mp3>] [--regen-text] [--no-video] [--entry-only] [--concurrency N]
  * 出力:
  *   scenes.json                全場面の描く値と拍ごとの facts（コードが計算した比較）、omitted（省いた要素）
  *   text-{版}.json             答えの文（拍ごと。つないだ版はつなぐ語と、付けなかった理由も）
  *   {版}/full-picture.mp4      完全版（全場面）の MP4。{版}/stills/*.png は拍ごとの静止画（答えが出て1秒後のコマ）
  *   entry/entry.mp4            入口版の MP4（文型の版。つなぐ語は完全版の拍の並びに合わせたものなので使わない）。entry/stills/*.png
  *   entry.json                 入口版の場面の並び・省いた要素・尺
- *   post.txt                   本文
+ *   post.txt                   完全版（YouTube）の本文。post-entry.txt は入口版（X・Shorts）の本文（動画に出る数字だけ）
+ *   chapters.txt               完全版の章（YouTube の説明文に貼る「0:00 条件」の行。10秒未満の場面は前の章に含める）
  *   run-{版}.json・run-entry.json  かかった時間・LLM の回数・尺
  * 文の JSON は既にあれば作り直さない（--regen-text で作り直す）。同じ文の JSON なら同じ MP4。
  */
@@ -44,6 +45,8 @@ const textMode = opt("--text", "connected");
 const bgm = opt("--bgm");
 const regenText = has("--regen-text");
 const noVideo = has("--no-video");
+// 入口版だけ描き直す（完全版の MP4 はそのまま）
+const entryOnly = has("--entry-only");
 // 描画の並列数（既定はコア数−1。ほかの作業と同時に回すときは小さくする）
 const concurrency = opt("--concurrency", String(Math.max(1, (await import("node:os")).cpus().length - 1)));
 const [input, outDir] = args;
@@ -130,12 +133,25 @@ function postText(answers) {
   return [head, ov, cardLine, "データは龍神レーダーで。", "#ボートレース"].filter(Boolean).join("\n") + "\n";
 }
 
+const [, mo, da, venueCode, raceNo] = m.raceId.split("-");
+/** レース名（例「下関10R（10/19）」）。入口版の最初の問いと本文に入れる */
+const raceLabel = `${venueLabel(Number(venueCode), t)}${Number(raceNo)}R（${Number(mo)}/${Number(da)}）`;
 const post = postText(templateText(beats).answers);
 writeFileSync(join(out, "post.txt"), post);
 const flags = bannedIn(post);
 if (flags.length) console.warn(`[本文の禁止表現] ${flags.join(" / ")}`);
 
-const modes = textMode === "both" ? ["template", "connected"] : [textMode];
+/** 完全版の章（YouTube の自動チャプターは 0:00 から、各章10秒以上） */
+const CHAPTER = { scene1: "条件", scene2: "6艇比較", scene2b: "類似レース", scene3: "軸", scene4: "展開", scene5: "相手", scene6: "機力と調子", scene8: "展示後に見るところ" };
+function chapters(answers) {
+  const mmss = (f) => `${Math.floor(f / 30 / 60)}:${String(Math.floor(f / 30) % 60).padStart(2, "0")}`;
+  return fullPictureTimeline(scenes, answers)
+    .starts.filter((x) => x.len >= 300)
+    .map((x, i) => `${i === 0 ? "0:00" : mmss(x.from)} ${CHAPTER[x.id] ?? x.id}`)
+    .join("\n") + "\n";
+}
+
+const modes = entryOnly ? [] : textMode === "both" ? ["template", "connected"] : [textMode];
 for (const mode of modes) {
   const t0 = Date.now();
   const textPath = join(out, `text-${mode}.json`);
@@ -161,11 +177,19 @@ for (const mode of modes) {
     console.log(`${dir}: 完全版 ${(total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
   }
   writeJson(join(out, `run-${mode}.json`), { seconds, llmCalls, beats: text.beats.length, videoSeconds: total / 30 });
+  if (mode === "connected" || textMode === "template") writeFileSync(join(out, "chapters.txt"), chapters(text.answers));
 }
 
 // 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）
 const entryAnswers = templateText(beats).answers;
-const entry = entryScenes(scenes, entryAnswers);
+const entry = entryScenes(scenes, entryAnswers, { race: raceLabel });
+// 入口版の本文: 動画に出る数字だけ（最初の答えと結論。x-channel 2026-10-20 P1）
+const stepsOf = (id) => entry.scenes.find((x) => x.id === id)?.data?.steps ?? [];
+const lineOf = (s) => (s ? (entryAnswers[s.id] ?? s.lines).join("、") : null);
+const postEntry = [entry.scenes[0].data.steps[0]?.question ?? raceLabel, lineOf(stepsOf("scene1")[0]), lineOf(stepsOf("conclusion")[0]), "データは龍神レーダーで。", "#ボートレース"].filter(Boolean).join("\n") + "\n";
+writeFileSync(join(out, "post-entry.txt"), postEntry);
+const flagsEntry = bannedIn(postEntry);
+if (flagsEntry.length) console.warn(`[入口版の本文の禁止表現] ${flagsEntry.join(" / ")}`);
 for (const o of entry.omitted) console.warn(`[入口版で省いた要素] ${JSON.stringify(o)}`);
 writeJson(join(out, "entry.json"), { seconds: entry.total / 30, omitted: entry.omitted, scenes: entry.scenes.map((x) => ({ id: x.id, steps: x.kind === "scene2" ? ["overview", ...(x.data?.radar?.focus ?? []).map((f) => f.id)] : x.data.steps.map((s) => s.id) })) });
 if (!noVideo) {

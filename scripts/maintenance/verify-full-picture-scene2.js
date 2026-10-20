@@ -406,7 +406,7 @@ const { fullPictureTimeline } = await import(`${R}/src/fullPicture/fullPictureTi
 const { CARD, cardBarFrame, cardPairBox } = await import(`${R}/src/fullPicture/scene2Layout.js`);
 const { slitFormOn, SLIT_FORM_ON_AT, summaryLayout, statsBarRow, statsBarBox, STATS_BAR } = await import(`${R}/src/fullPicture/pageLayout.js`);
 const { buildAll } = await import(`${R}/scripts/full-picture/build-all.mjs`);
-const { entryScenes, ENTRY_MAX_FRAMES } = await import(`${R}/scripts/full-picture/entry.mjs`);
+const { entryScenes, ENTRY_MAX_FRAMES, CONCLUSION_QUESTION } = await import(`${R}/scripts/full-picture/entry.mjs`);
 const { restLines } = await import(`${R}/scripts/full-picture/scenes/scene5.mjs`);
 const { buildScene8 } = await import(`${R}/scripts/full-picture/scenes/scene8.mjs`);
 const { MATERIALS_SCHEMA, validate } = await import(`${R}/scripts/full-picture/materials-contract.mjs`);
@@ -503,13 +503,18 @@ for (const f of fixtures) {
   assert.ok(short.every((s) => s.lines.length === 0), `${f}: 重点でない艇の段は答えを出さない`);
   if (short.length) assert.ok(s5.steps.at(-1).id === "s5-axis-rest" && s5.steps.at(-1).lines.length > 0, `${f}: 最後にまとめの1枚`);
   // 入口版: 条件（会場＋今日の条件）＋6艇の重ね図＋結論1拍で59秒以内
-  const e = entryScenes(scenes, text.answers);
+  const e = entryScenes(scenes, text.answers, { race: "下関10R（10/19）" });
   assert.ok(e.total <= ENTRY_MAX_FRAMES, `${f}: 入口版 ${(e.total / 30).toFixed(1)}秒は59秒以内`);
   assert.deepEqual(e.scenes.map((x) => x.id), ["scene1", "scene2", "conclusion"], `${f}: 入口版の型`);
   assert.equal(e.scenes[0].data.steps[0].id, "s1-venue90", `${f}: 条件の1つ目は会場の1着率`);
   assert.ok(e.scenes[1].data.radarOnly, `${f}: 入口版の場面2は重ね図だけ`);
   assert.deepEqual(e.scenes[2].data.steps.map((s) => s.id), ["s4-conclusion"], `${f}: 結論は1拍`);
-  assert.equal(e.scenes[2].data.steps[0].question, "結果はどう決まった？");
+  // 最初の画面にレース名と問い、結論は「過去」と書く（今日の結果と読まれない。x-channel・youtube-channel 2026-10-20 P1）
+  assert.ok(e.scenes[0].data.steps[0].question.startsWith("下関10R（10/19）"), `${f}: 最初の問いにレース名`);
+  const conc = e.scenes[2].data.steps[0];
+  assert.equal(conc.question, CONCLUSION_QUESTION);
+  assert.ok(!/結果/.test(conc.question) && conc.lines[0].includes("過去"), `${f}: 結論は過去の集計と分かる`);
+  assert.deepEqual(checkLines(conc.lines, conc.facts, null), [], `${f}: 結論の文が検査を通る`);
   assert.ok(fullPictureTimeline(scenes, text.answers).total > ENTRY_MAX_FRAMES, `${f}: 完全版は削らない（59秒を越えてよい）`);
 }
 // 入口版は59秒を越えたら条件の2つ目を外し、それでも越えたら止める
