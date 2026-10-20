@@ -111,6 +111,8 @@ export function StepScene({ scene, frameOffset = 0 }) {
                     lines={answerOf(scene, s.id, s.lines)}
                     t={frame - w.start}
                     tail={s.tail}
+                    lead={s.lead}
+                    accent={s.accent}
                   />
                 ))}
               {s.note && <Note lines={s.note} />}

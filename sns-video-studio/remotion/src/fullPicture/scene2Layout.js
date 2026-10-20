@@ -27,6 +27,24 @@ export const chipX = (b) => CHIP.left + (b - 1) * CHIP.step;
 /** 答えの吹き出し。2行で下端 1408（y1420 より上） */
 export const BUBBLE = { x: 60, y: 1252, w: 880, padY: 22, padX: 32 };
 export const BUBBLE_INNER = BUBBLE.w - BUBBLE.padX * 2;
+/**
+ * 吹き出しの行の字。答えの行（lead、既定は1行目）を大きく濃く、ほかの行を小さく薄く。
+ * 範囲の行を先に書く答え（場面3①「全国・…N件」→「1着…」）は lead を2行目にする（2026-10-21 オーケストレーター段階1）
+ */
+export const bubbleLine = (i, lead = 0) =>
+  i === lead
+    ? { size: 46, weight: 800, color: "#0d1b2e" }
+    : lead === 0
+      ? { size: 40, weight: 700, color: "#33465f" }
+      : // 答えの行が2行目の吹き出しは、前置きの行を最小の字・細く・薄くして差を広げる（46/40 では同じ強さに見えた。visual-designer 2026-10-20 P2）
+        { size: MIN_TEXT, weight: 600, color: "#5b6b82" };
+/** 吹き出しの中で、図の目印と同じ系統の色で塗る語の色（白地で読める濃さ。全国平均の目印 #2dd4bf の系統） */
+export const BUBBLE_ACCENT = "#0f8a7c";
+/** 1行に収めるために縮めた後の字の大きさの目安（全角1字＝字の大きさ、半角0.55。描画の fit1 と同じ考え） */
+export const bubbleFitSize = (line, i, lead = 0) => {
+  const w = [...line].reduce((a, c) => a + (/[\x20-\x7e]/.test(c) ? 0.55 : 1), 0);
+  return Math.min(bubbleLine(i, lead).size, Math.floor(BUBBLE_INNER / Math.max(1, w)));
+};
 export const bubbleBottom = (sizes) =>
   BUBBLE.y + BUBBLE.padY * 2 + sizes.reduce((h, s) => h + s * 1.3, 0);
 
