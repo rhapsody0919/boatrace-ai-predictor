@@ -281,7 +281,8 @@ flowchart TD
 ## 8. オーナーに決めてもらう点
 
 **決定（2026-10-20 23:5x、オーナー、オーケストレーター経由）**: 判断1〜26 を推奨どおり一括で承認（「一括で yes」）。
-- 27・29 は未承認（hq の数え直しが届いてから決める。29 は v4・v5 の変更で、一括承認の後に足したもの）
+- 27 は未承認（hq の v6.2 の数え直し 394 本を添えて、オーケストレーターからオーナーに出す）
+- 29 は推奨どおり承認（2026-10-20 夜、オーナー、オーケストレーター経由）
 - 28 は「30 本で知らせ、60 本で止める」で決定（2026-10-20 夜、オーナー、オーケストレーター経由）
 - 2（PAT の範囲と Environment の Deployment branches）は、オーナーが設定の画面で確かめた（2026-10-21 0時台、オーケストレーター経由）:
   - dispatch の PAT（`GITHUB_ACTIONS_DISPATCH_TOKEN`、fine-grained）: 対象は boatrace-ai-predictor だけ。権限は Actions の Read and write と Metadata の Read だけ（deployment の承認の権限は無い）。有効期限は無い（期限を付けるかは判断5の鍵の整理のときに決める）
@@ -318,7 +319,7 @@ flowchart TD
 | 24 | employee の大きさの上限（30ファイル・2000行・削除3ファイル・削除500行、超えたら owner） | この初期値で入れ、hq の分布で直す |
 | 25 | 大きさの上限の数え方 | v3: 種類ごとの束（prodWrite 10/300・frontendSmall 8/300・employee 30/2000）を全部同時に検査、閉包は master と head の和 |
 | 26 | docs/adr を deny から owner に移す | はい |
-| 27 | scripts/maintenance/verify-*.{js,sh} の変更・削除を owner にするか（§10.4 v6・v6.1・v6.2） | (ii) v6.2: 削除は owner、変更は「字句の比較で既存の文が全部残り増えたのは丸ごとの文だけ」「import の書き換え（読み込み先が同じ・束縛が残る）」「反復の元にしか使わない表の配列（for…of の対象、または参照が全部 for…of・`.entries`・`.forEach`・`.map`・`.filter`・`.length` の読み取りだけの宣言）の直接の要素の追加（途中・先頭も可）」の組み合わせだけで、禁止の文字列（`.length` への代入・`.splice(` を足した）が無ければ employee、他は owner。export・freeze・引数・プロパティ・入れ子の配列、`.includes` 等に使う宣言、名前に skip 等・expect を含む宣言への追加は owner。nightly-verify-db.yml が prod-jobs で変数のパスで動かす5つの verify（本番の Storage を消す verify-analogy-v16.js を含む）は名前で owner。社員で回るのは 394 本（41.6%、自分の見積り、hq の確認待ち）。v6.1 は 389、全部 owner の下限は 334 |
+| 27 | scripts/maintenance/verify-*.{js,sh} の変更・削除を owner にするか（§10.4 v6・v6.1・v6.2） | (ii) v6.2: 削除は owner、変更は「字句の比較で既存の文が全部残り増えたのは丸ごとの文だけ」「import の書き換え（読み込み先が同じ・束縛が残る）」「反復の元にしか使わない表の配列（for…of の対象、または参照が全部 for…of・`.entries`・`.forEach`・`.map`・`.filter`・`.length` の読み取りだけの宣言）の直接の要素の追加（途中・先頭も可）」の組み合わせだけで、禁止の文字列（`.length` への代入・`.splice(` を足した）が無ければ employee、他は owner。export・freeze・引数・プロパティ・入れ子の配列、`.includes` 等に使う宣言、名前に skip 等・expect を含む宣言への追加は owner。nightly-verify-db.yml が prod-jobs で変数のパスで動かす5つの verify（本番の Storage を消す verify-analogy-v16.js を含む）は名前で owner。社員で回るのは 394 本（41.6%、hq の v6.2 の数え直しで確認）。v6.1 は 389、全部 owner の下限は 334 |
 | 28 | 1日の自動マージの上限（小分けの迂回・暴走の止め役、§10.4 v6.1・v6.2） | **決定（2026-10-20 夜、オーナー、オーケストレーター経由）: 30 本で知らせ、60 本で止める**。数えるのはその日に APPROVE した PR の数（重複を除く）で、30 本目で知らせ、60 本に達した後（61 本目から）を止める。残る弱み: v6.2 の分類の実測（0本の日を含む31日、マージの日で代えた）で 30 以上は3日（10/1 45・10/2 40・10/13 60）、最大 60 で、上限に余裕0本。マージの日は承認を少なく数える側。上げる案は 75（目安、根拠なし）。月の run は日ごとに数えて足す。判断14 の実費の後と切替の後の実測で見直す |
 | 29 | v4・v5 の変更（registry は部分列・名前で書いたパスを閉包より優先し deny の閉包は owner・判定の本体は deny・api/cron の小さな直しを prodWrite（認証・ゲート・config の文字列は owner）・knowledge と mock と規則外れは owner・検証を緩める台帳は owner） | はい（v6 の直し: cronSmall は語の境で照合、既存の SQL の変更は owner、verify の範囲は maintenance に揃える）|
 
@@ -701,7 +702,7 @@ hq の v6.1 の数え直し（正本は hq の drafts/dev-gate-classify-20261020
 | v6.1（末尾だけ・名前の除外） | 389（41.1%） | — |
 | どこに挿してもよい（hq の参考、再現した） | 398（42.1%） | +9 |
 | 最初の v6.2（形で分ける: 宣言・`Object.freeze` の宣言・for…of の対象） | 395（41.8%） | +6 |
-| **v6.2（使われ方で分ける、審査の後）** | **394（41.6%）**（見積り、hq の確認待ち） | +5 |
+| **v6.2（使われ方で分ける、審査の後）** | **394（41.6%）**（hq の数え直しで確認） | +5 |
 
 どこに挿してもよい形で、配列の追加で通った 28 ファイルの配列の親の形と、v6.2 の行き先:
 
@@ -742,8 +743,16 @@ v6.2 の決めたこと（判断27・28）:
 
 - 残る弱み（draft の residual に書いた）: 反復の元にしか使わない表でも、反復の本体が「当たったら飛ばす」形なら、行を足すと検査が減る。使われ方の判定は1ファイルの中だけ（export を owner にしたのはこのため）。審査の指示文の「検証を弱める変更は P1」で補う
 - gate の実装の PR（PR-H）で verify に固定するもの: owner になる例（`NEW_KEYS` への追加・`w` への追加・`ROWS` への挿入・`MIGRATION_FILES` の先頭・途中への挿入・`const [x] = [...]` の先頭・`export const CLEANUP` への追加・`const SKIP_X = [...]`・`const expected = [...]`・#1567 の入れ子・`same(x, [...])`・`new Set([...])`・`[...].includes(x)`・スプレッドでの副作用・`ADMIN_PATHS.length = 0;` の文・`CLEANUP.unshift(…)`（名前で owner））、employee になる例（`MUTANTS` の途中への挿入・for…of の対象への追加・(a) と (c) の併用）
-- hq への数え直し: v6.2 の draft（使われ方の線）で 394 本になるかと、判断28 の日の分布（v6.2 の分類）の確認を頼む
+- hq の数え直し: 394 本で一致（下の「v6.2 の hq の数え直し」）
 - 試算の比 3.55 run/PR は旧文の「40 本で月約 4,400 run」からの逆算で、実測ではない（判断14 の実費の測定で置き換える）
+
+**v6.2 の hq の数え直し（2026-10-20、正本は hq の drafts/dev-gate-classify-20261020.md の「v6.2」の節）**: 社員で回るのは **394 本（41.6%）** で見込みと一致し、手で当てた 28 ファイルの判定は acorn の参照の解析による機械の判定とファイル単位で全部一致した。判断28 の日の分布（v6.2 の分類）は 中央値8・平均12.7・90%点25・最大60（10/13）、30 以上は3日。照合で合わなかった draft の文3つを直した:
+
+| hq の指摘 | 直し |
+|---|---|
+| 名前で owner に書いた5つの verify が import する `src/utils/analogyRetention.js`（消す範囲の日数 `SONAR_KEEP_DAYS`）が抜けている。展開を実装するまで prodWrite にも入らない | owner に名前で書いた（過去31日に触った PR は1本で、他の理由で owner。本数への影響0） |
+| 「展開できない変数のパスがあれば、その workflow を変える PR は owner」は、workflow が `.github/**` で既に owner なので何も足さない | 守る相手を「workflow は変えず、変数のパスで動くスクリプトと閉包を変える PR」と書き直し、展開できない形を見つけたらそのスクリプトを名前で owner に足す、とした |
+| `working-directory` を付けて素のファイル名で動かす入口（analogy-v16-morning・in-caution-nightly・train-analogy・train-poirot の9本、閉包24ファイル）を導出が拾わない | 入口の規則に「working-directory からのパスとして足す」を加えた。過去31日の社員で回る8本は prodWrite の束の上限の中で、本数は変わらない |
 
 #### ADR の追記の案（番号は PR 作成時に origin/master の最大＋1）
 
