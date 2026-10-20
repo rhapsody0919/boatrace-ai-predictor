@@ -21,3 +21,5 @@ async function worker() { while (i < keys.length) { const k = keys[i++];
     if (a >= 4) { fail++; console.error("fail", k, e.message); break; } await new Promise(r => setTimeout(r, 1000 * a)); } } }
 await Promise.all(Array.from({ length: 8 }, worker));
 console.log("done fail", fail, "methods", [...new Set(globalThis.__netlog)]);
+// 落とし損ねたファイルは比較から黙って外れるので、1件でもあれば失敗で終える
+if (fail > 0) process.exit(1);

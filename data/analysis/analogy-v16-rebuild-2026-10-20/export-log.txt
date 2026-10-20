@@ -1,0 +1,21 @@
+[dotenv@17.2.3] injecting env (0) from .env.local -- tip: ⚙️  override existing env vars with { override: true }
+✅ kb_boats.csv 2,233,656行
+   (31s)
+✅ kb_races.csv 372,276行
+   (19s)
+✅ kb_venue_days.csv 31,023行
+   (15s)
+✅ race_series.csv 6,448行
+   (1s)
+✅ races.csv 50,316行
+   (3s)
+✅ entries.csv 301,896行
+   (10s)
+✅ exhibition.csv 297,759行
+   (6s)
+✅ conditions.csv 50,112行
+   (3s)
+✅ results.csv 49,669行
+   (3s)
+✅ start_timings.csv 297,990行
+   (6s)
