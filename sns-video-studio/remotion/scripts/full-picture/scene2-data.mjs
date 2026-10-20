@@ -63,6 +63,8 @@ export function t(key, params = {}) {
 
 const fk = "aiPredictionTab.analogy.facts";
 const itemShort = (key) => t(`${fk}.items.${key}.short`);
+/** 文の中の材料名。平均ST は期間を付ける（BOA-815。図の軸は画面と同じ短い名前） */
+const itemSentence = (key) => (key === "st_mean30" ? t(`${fk}.items.${key}.label`) : itemShort(key));
 const unitOf = (key) => t(`${fk}.units.${key}`, "");
 const withUnit = (key, v) => {
   const s = fmtFactValue(key, v);
@@ -111,11 +113,11 @@ function focusFacts(b, radar, axes, values) {
     facts: {
       kind: "focus",
       boat: b,
-      item: ax.label,
+      item: itemSentence(ax.key),
       value: val,
       rank: rankShort(best.r),
       tie: best.r.from !== best.r.to,
-      otherFirstItems: isFirst ? ranked.filter((x) => x.r.from === 1 && x.i !== best.i).map((x) => axes[x.i].label) : [],
+      otherFirstItems: isFirst ? ranked.filter((x) => x.r.from === 1 && x.i !== best.i).map((x) => itemSentence(axes[x.i].key)) : [],
       otherFirstCount: isFirst ? ranked.filter((x) => x.r.from === 1 && x.i !== best.i).length : 0,
       compare,
       top2Count: me.top2,
@@ -124,46 +126,43 @@ function focusFacts(b, radar, axes, values) {
   };
 }
 
-/** 文型の版（facts だけから決まった文型で作る。必ず出せる下限） */
+/**
+ * 文型の版（facts だけから決まった文型で作る。必ず出せる下限）。1行は全角22字分以内（scene2-text.mjs の MAX_WIDTH）。
+ * 「項目＋値＋順位」を1文にまとめ、2行目で比べる相手を出す
+ */
 export function templateLines(f) {
   if (f.kind === "overview")
     return [
-      `2位以内の項目が最多は${f.leaders.join("・")}号艇（${f.axesCount}項目中${f.maxTop2}）`,
-      f.runner ? `次は${f.runner.boats.join("・")}号艇の${f.runner.count}` : "6艇とも同じ数",
+      `2位以内の項目が最多は${f.leaders.join("・")}号艇`,
+      f.runner
+        ? `${f.axesCount}項目中${f.maxTop2}、次は${f.runner.boats.join("・")}号艇の${f.runner.count}`
+        : `6艇とも${f.axesCount}項目中${f.maxTop2}`,
     ];
   if (f.kind === "focus") {
     if (!f.item) return [`${f.boat}号艇は比べられる値が無い`];
     const cmp = (c) => `${c.boat}号艇の${c.sameDisplay ? "同じ" : ""}${c.value}`;
-    if (f.rank === "1位" || f.rank.startsWith("1〜"))
-      return [
-        `${f.boat}号艇は${f.item}で1位${f.tie ? "（同じ値の艇あり）" : ""}${f.otherFirstItems.length ? `、ほか${f.otherFirstItems.length}項目も1位` : ""}`,
-        f.compare ? `${f.item}${f.value}、2番手は${cmp(f.compare.boats[0])}` : `${f.item}${f.value}`,
-      ];
-    return [`${f.boat}号艇の一番上は${f.item}の${f.rank}`, `${f.value}、1位は${f.compare.boats.map(cmp).join("・")}`];
+    const l1 = `${f.boat}号艇は${f.item}${f.value}で${f.rank}`;
+    if (f.compare?.role === "2番手")
+      return [l1, `2番手は${cmp(f.compare.boats[0])}${f.otherFirstCount ? `、ほか${f.otherFirstCount}項目も1位` : ""}`];
+    if (f.compare?.role === "1位") return [l1, `1位は${f.compare.boats.map(cmp).join("・")}`];
+    return [l1];
   }
   if (f.kind === "card") {
-    const l1 =
-      f.todayRank === null
-        ? `${f.item} 1位${f.rate1}%・6位${f.rate6}%、差${f.spreadPt}ポイント`
-        : f.todayRank === 1
-          ? `${f.item}1位の1着率${f.todayRate}%、6位なら${f.rate6}%`
-          : f.todayRank === 6
-            ? `${f.item}6位の1着率${f.todayRate}%、1位なら${f.rate1}%`
-            : `${f.item}${f.todayRank}位の1着率${f.todayRate}%（1位${f.rate1}%・6位${f.rate6}%）`;
-    const l2 =
-      f.todayRank === null
-        ? f.roundDay
-          ? `${f.roundDay}は今日の位置を当てはめない`
-          : null
-        : f.usualDiffPt === null
-          ? null
+    if (f.todayRank !== null)
+      return [
+        `${f.item}${f.todayRank}位の1着率${f.todayRate}%`,
+        f.usualDiffPt === null
+          ? `1位${f.rate1}%・6位${f.rate6}%`
           : f.usualDiffPt < 1
             ? `全体の${f.usual}%との差は1ポイント未満`
-            : `全体の${f.usual}%より${f.usualDiffPt}ポイント${f.direction}`;
-    return [l1, l2].filter(Boolean);
+            : `全体の${f.usual}%より${f.usualDiffPt}ポイント${f.direction}`,
+      ];
+    const l1 = `${f.item} 1位${f.rate1}%・6位${f.rate6}%`;
+    if (f.roundDay)
+      return [l1, f.todayRankRef ? `${f.boat}号艇は${f.todayRankRef}位、${f.roundDay}は枠順に近く参考` : `${f.roundDay}は点の順が枠順に近く参考`];
+    return [l1, "今日の値が無く、今日の順位では比べられない"];
   }
-  if (f.kind === "empty")
-    return [`${f.boat}号艇の材料で「差が大きい」カードは無い`, `${f.rowsCount}項目とも差が小さいか、ぶれ幅が重なる`];
+  if (f.kind === "empty") return [`${f.boat}号艇は差が大きい材料が無い`, `${f.rowsCount}項目とも差が小さいか重なる`];
   throw new Error(`文型の無い種類: ${f.kind}`);
 }
 
@@ -185,7 +184,7 @@ function cardOf(row, today, scopeFacts, values, omitted) {
   const facts = {
     kind: "card",
     boat: CARD_BOAT,
-    item: itemShort(row.key),
+    item: itemSentence(row.key),
     todayRank: line ? line.bucket : null,
     todayRate: line ? pct(line.rate) : null,
     rate1: pct(rates[0]),
@@ -196,6 +195,11 @@ function cardOf(row, today, scopeFacts, values, omitted) {
     usualDiffPt: d === null ? null : Math.round(Math.abs(d) * 10) / 10,
     direction: d === null ? null : d > 0 ? "高い" : "低い",
     roundDay: finalDay ? (ROUND_NAME[today.round] ?? null) : null,
+    // 優勝戦・準優勝戦の日の今節の着順点: 画面は今日の順位を出すが、棒の今日の位置は出さない（点の順がほぼ枠の順のため参考）
+    todayRankRef: finalDay && r && r.from === r.to ? r.from : null,
+    // 本文で割合に添える件数
+    todayN: line ? line.hit[1] : null,
+    usualN: usualOf(scopeFacts, CARD_BOAT, TARGET)?.[1] ?? null,
   };
   return {
     key: row.key,

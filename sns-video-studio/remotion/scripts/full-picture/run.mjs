@@ -16,9 +16,9 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { buildScene2, t } from "./scene2-data.mjs";
-import { polishedText, templateText } from "./scene2-text.mjs";
+import { bannedIn, lineWidth, MAX_WIDTH, polishedText, templateText } from "./scene2-text.mjs";
 import { ANSWER_AT, scene2Timeline } from "../../src/fullPicture/scene2Timeline.js";
-import { venueLabel } from "../../../../src/utils/analogyFormat.js";
+import { fmtCount, venueLabel } from "../../../../src/utils/analogyFormat.js";
 
 const args = process.argv.slice(2);
 const opt = (name, def = null) => {
@@ -52,14 +52,21 @@ if (bgm) {
   copyFileSync(bgm, "public/full-picture/bgm.mp3");
 }
 
-/** 本文（文型。数値は facts から） */
+/** 本文（文型。数値は facts から。割合には件数を添える） */
 function postText(answers) {
   const [, , , venue, race] = scene.race.raceId.split("-");
   const head = `${venueLabel(Number(venue), t)}${Number(race)}R 6艇比較`;
   const ov = answers[scene.radar.overview.id].join("、");
-  // 今日の順位が当てはまるカードを優先（優勝戦・準優勝戦の日の今節の着順点は今日の位置が無い）
-  const card = scene.cards.items.find((c) => c.facts.todayRank !== null) ?? scene.cards.items[0];
-  const cardLine = card ? `1号艇の材料: ${answers[card.id].join("、")}` : answers[scene.cards.empty.id].join("、");
+  // 今日の順位が当てはまるカード（優勝戦・準優勝戦の日の今節の着順点は今日の位置が無い）
+  const card = scene.cards.items.find((c) => c.facts.todayRank !== null);
+  let cardLine;
+  if (card) {
+    const f = card.facts;
+    const diff =
+      f.usualDiffPt === null ? "" : f.usualDiffPt < 1 ? "との差は1ポイント未満" : `より${f.usualDiffPt}ポイント${f.direction}`;
+    cardLine = `1号艇の材料: ${f.item}が今日${f.todayRank}位のときの1着率${f.todayRate}%（${fmtCount(f.todayN)}件）、全体${f.usual}%（${fmtCount(f.usualN)}件）${diff}`;
+  } else if (scene.cards.items.length) cardLine = `1号艇の材料: ${scene.cards.items.map((c) => c.facts.item).join("・")}で差が大きい`;
+  else cardLine = answers[scene.cards.empty.id].join("、");
   return `${head}\n${ov}\n${cardLine}\nデータは龍神レーダーで。\n#ボートレース\n`;
 }
 
@@ -76,7 +83,14 @@ for (const mode of modes) {
   const back = text.beats.filter((b) => b.reasons);
   if (mode === "polished")
     console.log(`整えた版: ${text.beats.length}拍中 ${back.length}拍を文型の版に戻した`);
-  writeFileSync(join(out, `post-${mode}.txt`), postText(text.answers));
+  const post = postText(text.answers);
+  writeFileSync(join(out, `post-${mode}.txt`), post);
+  // 本文も字幕と同じ禁止表現の判定（risk-rules.json）。送る前の関門は hq 側。ここでは記録して知らせる
+  const flags = bannedIn(post);
+  if (flags.length) console.warn(`[本文の禁止表現] ${mode}: ${flags.join(" / ")}`);
+  // 文型の版の幅（下限が上限を越えていないか）
+  for (const b of templateText(scene).beats)
+    for (const l of b.lines) if (lineWidth(l) > MAX_WIDTH) console.warn(`[文型の幅] ${b.id}: ${l}（全角${lineWidth(l).toFixed(1)}字分）`);
 
   const props = { ...scene, answers: text.answers, ...(bgm ? { bgm: "full-picture/bgm.mp3" } : {}) };
   const propsPath = join(out, `props-${mode}.json`);

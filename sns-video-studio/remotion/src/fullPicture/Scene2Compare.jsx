@@ -1,10 +1,11 @@
 /**
- * 全貌動画 場面2「6艇の重ね図」（試作）。材料 JSON（scripts/full-picture/scene2-data.mjs の出力）を流し込むと、
- * 決まった手順で描く。LLM・乱数・日時を使わない。
+ * 全貌動画 場面2「6艇の重ね図」。材料 JSON（scripts/full-picture/scene2-data.mjs の出力）と文の JSON（answers）を
+ * 流し込むと、決まった手順で描く。LLM・乱数・日時を使わない。同じ JSON なら同じ絵。
  *
  * 型（~/hq/drafts/full-picture-scene-contract.md）: 上帯 y0〜330 に問い／図 y340〜1420／答えの白い吹き出しは図の直下・
  * y1420 より上・x960 より左。押す操作は指＋波紋、強調はオレンジの四角枠。1拍に1つ（押す→変わる→0.5秒→枠→答え）。
- * 型と違う1点: 実画面の撮影ではなく、同じ中身をデータから描く（見た目はソナーの重ね図・カードに寄せる）。
+ * 実画面の撮影ではなく、同じ中身をデータから描く（2026-10-20 オーナー決定）。見た目はソナーの重ね図・カードに寄せる。
+ * 配置は scene2Layout.js（はみ出し・札との重なりを verify-full-picture-scene2.js が検査する）。
  */
 import {
   AbsoluteFill,
@@ -21,48 +22,49 @@ import {
   RADAR_TEXT,
   SCOPE_DASH,
   SCOPE_GRID,
+  SCOPE_LINE,
   SCOPE_SUBTEXT,
   SCOPE_TEXT,
 } from "../../../../src/components/race/analogy/analogyColors.js";
 import {
-  ANSWER_AT,
   BEAT,
+  CARD_SCROLL,
   CHANGE_END,
+  DRAW_END,
   FRAME_AT,
+  OVERVIEW_FRAME_AT,
   PRESS_AT,
+  answerWindows,
   beatAt,
+  cardFrameAt,
   scene2Timeline,
 } from "./scene2Timeline.js";
+import {
+  BADGE_R,
+  BAND,
+  BUBBLE,
+  BUBBLE_INNER,
+  CHIP,
+  FRAME_PAD,
+  H,
+  MIN_TEXT,
+  NAME_SIZE,
+  SUB_SIZE,
+  W,
+  angle,
+  chipX,
+  labelBox,
+  radarGeom,
+  vertex,
+} from "./scene2Layout.js";
 
-const W = 1080;
-const H = 1920;
-const BAND = 330;
 const ORANGE = "#ff8a1f";
 const BG_TOP = "#12233a";
 const BG_BOTTOM = "#0a1424";
 const MUTED = "#a9b8cc";
-const MIN_TEXT = 36;
-
-// 重ね図
-const CX = 540;
-const CY = 720;
-const R = 210;
+const CARD_BG = "#14263e";
+const PAGE = H;
 const fr = (rank) => (7 - rank) / 6;
-const angle = (i, n) => -Math.PI / 2 + (2 * Math.PI * i) / n;
-const pt = (i, n, f) => [
-  CX + R * f * Math.cos(angle(i, n)),
-  CY + R * f * Math.sin(angle(i, n)),
-];
-// 艇の札（押す所）
-const CHIP_Y = 1112;
-const CHIP_H = 92;
-const CHIP_W = 150;
-const chipX = (b) => 45 + (b - 1) * 170;
-// 答えの吹き出し
-const BUBBLE = { x: 60, y: 1236, w: 880 };
-// カードの頁
-const PAGE = 1920;
-
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" };
 const ease = Easing.bezier(0.33, 1, 0.68, 1);
 
@@ -76,19 +78,16 @@ function textWidth(text, size, weight = 700) {
   return ctx.measureText(text).width;
 }
 
-/** 1行に収まる最大の大きさ。36px でも1行に収まらなければ2行にする */
-function fit(text, maxWidth, maxFontSize, weight = 800, maxLines = 1) {
-  const opts = {
+/** 1行に収まる最大の大きさ（36px まで縮める）。文の幅は検査で全角22字分以内にしてあるので、36px なら1行に入る */
+function fit1(text, maxWidth, maxFontSize, weight = 800) {
+  return fitHeadline(text, {
     maxWidth,
+    maxLines: 1,
     fontFamily: FONT,
     fontWeight: weight,
     maxFontSize,
     minFontSize: MIN_TEXT,
-  };
-  const one = fitHeadline(text, { ...opts, maxLines: 1 });
-  if (maxLines === 1 || textWidth(text, one.fontSize, weight) <= maxWidth)
-    return one;
-  return fitHeadline(text, { ...opts, maxLines });
+  });
 }
 
 /** オレンジの四角枠（出るときに少し縮みながら現れる） */
@@ -98,7 +97,7 @@ function Frame({ box, t }) {
     ...clamp,
     easing: ease,
   });
-  const pad = 14 + (1 - p) * 18;
+  const pad = FRAME_PAD + (1 - p) * 18;
   return (
     <div
       style={{
@@ -111,6 +110,7 @@ function Frame({ box, t }) {
         borderRadius: 14,
         opacity: p,
         boxShadow: `0 0 24px ${ORANGE}66`,
+        boxSizing: "border-box",
       }}
     />
   );
@@ -133,17 +133,17 @@ function Finger({ x, y, t, from }) {
   );
   const fade = interpolate(t, [FRAME_AT, FRAME_AT + 8], [1, 0], clamp);
   const rip = interpolate(t, [PRESS_AT, PRESS_AT + 16], [0, 1], clamp);
-  const size = 120;
+  const size = 110;
   return (
     <>
       {t >= PRESS_AT && rip < 1 && (
         <div
           style={{
             position: "absolute",
-            left: x - 20 - rip * 70,
-            top: y - 20 - rip * 70,
-            width: 40 + rip * 140,
-            height: 40 + rip * 140,
+            left: x - 20 - rip * 60,
+            top: y - 20 - rip * 60,
+            width: 40 + rip * 120,
+            height: 40 + rip * 120,
             borderRadius: "50%",
             border: "6px solid rgba(255,255,255,0.9)",
             opacity: 1 - rip,
@@ -156,7 +156,7 @@ function Finger({ x, y, t, from }) {
         height={size}
         style={{
           position: "absolute",
-          // 指先（11.5, 5 付近）を押す点に合わせる
+          // 指先（11.5, 4 付近）を押す点に合わせる
           left: fx - size * (11.5 / 24),
           top: fy - size * (4 / 24),
           transform: `scale(${press})`,
@@ -176,14 +176,11 @@ function Finger({ x, y, t, from }) {
   );
 }
 
-/** 答えの白い吹き出し（1〜2行） */
-function Bubble({ lines, t, y = BUBBLE.y }) {
-  if (!lines?.length || t < 0) return null;
+/** 答えの白い吹き出し（1〜2行、各行1行に収める）。tail は尖りの x（押した札の中心） */
+function Bubble({ lines, t, out = 1, tail = BUBBLE.x + 90, y = BUBBLE.y }) {
+  if (!lines?.length || t < 0 || out <= 0) return null;
   const p = interpolate(t, [0, 8], [0, 1], { ...clamp, easing: ease });
-  const inner = BUBBLE.w - 64;
-  const fitted = lines.map((l, i) =>
-    fit(l, inner, i === 0 ? 46 : 40, i === 0 ? 800 : 700, 2),
-  );
+  const tailX = Math.min(Math.max(tail - BUBBLE.x - 22, 30), BUBBLE.w - 74);
   return (
     <div
       style={{
@@ -194,16 +191,16 @@ function Bubble({ lines, t, y = BUBBLE.y }) {
         background: "#ffffff",
         color: "#0d1b2e",
         borderRadius: 28,
-        padding: "24px 32px",
+        padding: `${BUBBLE.padY}px ${BUBBLE.padX}px`,
         boxSizing: "border-box",
-        opacity: p,
+        opacity: p * out,
         boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
       }}
     >
       <div
         style={{
           position: "absolute",
-          left: 70,
+          left: tailX,
           top: -22,
           width: 0,
           height: 0,
@@ -212,10 +209,11 @@ function Bubble({ lines, t, y = BUBBLE.y }) {
           borderBottom: "24px solid #ffffff",
         }}
       />
-      {fitted.map((f, i) =>
-        f.lines.map((l, j) => (
+      {lines.map((l, i) => {
+        const f = fit1(l, BUBBLE_INNER, i === 0 ? 46 : 40, i === 0 ? 800 : 700);
+        return (
           <div
-            key={`${i}-${j}`}
+            key={i}
             style={{
               fontSize: f.fontSize,
               fontWeight: i === 0 ? 800 : 700,
@@ -224,10 +222,10 @@ function Bubble({ lines, t, y = BUBBLE.y }) {
               whiteSpace: "nowrap",
             }}
           >
-            {l}
+            {f.lines[0]}
           </div>
-        )),
-      )}
+        );
+      })}
     </div>
   );
 }
@@ -249,6 +247,7 @@ function BoatBadge({ b, size = 56 }) {
         justifyContent: "center",
         fontSize: Math.max(MIN_TEXT, size * 0.68),
         fontWeight: 900,
+        flexShrink: 0,
       }}
     >
       {b}
@@ -266,7 +265,7 @@ function radarState(scene, beats, frame) {
       lead: null,
       prev: null,
       p: 0,
-      draw: interpolate(t, [0, 24], [0, 1], { ...clamp, easing: ease }),
+      draw: interpolate(t, [0, DRAW_END], [0, 1], { ...clamp, easing: ease }),
     };
   if (beat.kind === "focus")
     return {
@@ -286,42 +285,51 @@ function radarState(scene, beats, frame) {
   };
 }
 
-/** 項目名（＋その艇の順位）の置き場所と箱 */
-function axisLabel(i, n) {
-  const dx = Math.cos(angle(i, n));
-  const mid = Math.abs(dx) < 0.3;
-  const [x, y] = pt(i, n, mid ? 1.45 : 1.2);
-  const anchor = mid ? "middle" : dx > 0 ? "start" : "end";
-  return { x, y, anchor };
+/** 項目名の文字と、その艇の順位の行 */
+const axisName = (label) => `${label} ▼`;
+const axisSub = (boat, rank) => `${boat}号艇 ${rank ?? "—"}`;
+function axisBox(scene, i, boat) {
+  const n = scene.radar.axes.length;
+  const sub = boat ? axisSub(boat, scene.radar.boats[boat - 1].ranks[i]) : "";
+  const w = Math.max(
+    textWidth(scene.radar.axes[i].label, NAME_SIZE, 800) +
+      textWidth(" ▼", 28, 700),
+    textWidth(sub, SUB_SIZE, 600),
+  );
+  return labelBox(i, n, w);
 }
 
-function boxOfLabel(lab, name, sub) {
-  const w = Math.max(
-    textWidth(`${name} ▼`, 40, 800),
-    textWidth(sub, MIN_TEXT, 600),
-  );
-  const left =
-    lab.anchor === "middle"
-      ? lab.x - w / 2
-      : lab.anchor === "start"
-        ? lab.x
-        : lab.x - w;
-  return { x: left, y: lab.y - 40, w, h: 92 };
+/**
+ * 1艇の線。記録の無い軸（当地の記録なし等）は、その前後で線を切る（飛ばして閉じると、値がある形に見える）
+ * @returns {string[]} SVG の path の d（つながった区間ごと）
+ */
+function boatPaths(buckets, n, draw) {
+  const pts = buckets.map((k, i) => (k ? vertex(i, n, fr(k) * draw) : null));
+  if (pts.every(Boolean)) return [`M${pts.map((q) => q.join(",")).join("L")}Z`];
+  // 欠けた軸の次から一周して、つながった区間ごとに開いた線にする
+  const start = pts.findIndex((q, i) => q && !pts[(i - 1 + n) % n]);
+  const segs = [];
+  let cur = [];
+  for (let k = 0; k < n; k++) {
+    const q = pts[(start + k) % n];
+    if (q) cur.push(q);
+    else if (cur.length) (segs.push(cur), (cur = []));
+  }
+  if (cur.length) segs.push(cur);
+  return segs.map((s) => `M${s.map((q) => q.join(",")).join("L")}`);
 }
 
 function Radar({ scene, state }) {
   const { axes, boats } = scene.radar;
   const n = axes.length;
-  const ring = (f) => axes.map((_, i) => pt(i, n, f).join(",")).join(" ");
+  const { CX, CY } = radarGeom(n);
+  const ring = (f) => axes.map((_, i) => vertex(i, n, f).join(",")).join(" ");
   const { lead, prev, p, draw } = state;
   const emph = (b) => (b === lead ? p : 0) + (b === prev ? 1 - p : 0);
   // 6艇全体（主役なし）から1艇へ移るときだけ、ほかの艇を暗くする量が 0→1 で変わる
   const dim = lead === null ? 0 : prev === null ? p : 1;
   const order = [1, 2, 3, 4, 5, 6].sort((a, b) => emph(a) - emph(b));
-  const subBoat = lead ?? null;
-  const subOpacity = lead === null ? 0 : prev === null ? p : 1;
-  const dashBoat = lead;
-  const dash = dashBoat ? boats[dashBoat - 1].typical : null;
+  const dash = lead ? boats[lead - 1].typical : null;
   return (
     <svg width={W} height={H} style={{ position: "absolute", left: 0, top: 0 }}>
       {[1, 2, 3, 4, 5, 6].map((r) => (
@@ -334,7 +342,7 @@ function Radar({ scene, state }) {
         />
       ))}
       {axes.map((_, i) => {
-        const [x, y] = pt(i, n, 1);
+        const [x, y] = vertex(i, n);
         return (
           <line
             key={i}
@@ -349,73 +357,87 @@ function Radar({ scene, state }) {
       })}
       {order.map((b) => {
         const e = emph(b);
-        const ps = boats[b - 1].buckets
-          .map((k, i) => (k ? pt(i, n, fr(k) * draw) : null))
-          .filter(Boolean);
-        if (ps.length < 2) return null;
-        const pts = ps.map((q) => q.join(",")).join(" ");
+        const paths = boatPaths(boats[b - 1].buckets, n, draw);
+        const closed = paths.length === 1 && paths[0].endsWith("Z");
         const w = 4.5 + 5 * e;
         const op = 0.85 * (1 - dim) + dim * (0.22 + 0.78 * e);
         const blur = dim * (1 - e) * 2.5;
+        // 2号艇: 強調していないときは画面と同じ灰色の半透明。強調したときは黒に白の縁
+        const two = b === 2 && e < 0.5;
+        const color = two ? SCOPE_LINE[2] : RADAR_LINE[b];
         return (
           <g
             key={b}
             style={{ filter: blur > 0.05 ? `blur(${blur}px)` : undefined }}
-            opacity={op}
+            opacity={two ? op * 0.75 : op}
           >
-            {b === 2 && (
-              <polygon
-                points={pts}
-                fill="none"
-                stroke="#ffffff"
-                strokeWidth={w + 4}
-              />
-            )}
-            <polygon
-              points={pts}
-              fill={RADAR_LINE[b]}
-              fillOpacity={(b <= 2 ? 0.14 : 0.24) * e}
-              stroke={RADAR_LINE[b]}
-              strokeWidth={w}
-              strokeLinejoin="round"
-            />
-            {e > 0.5 &&
-              ps.map(([px, py], i) => (
-                <circle
-                  key={i}
-                  cx={px}
-                  cy={py}
-                  r={8}
-                  fill={RADAR_LINE[b]}
-                  stroke={b === 2 ? "#fff" : "#0d1b2e"}
-                  strokeWidth={2.5}
+            {b === 2 &&
+              !two &&
+              paths.map((d, k) => (
+                <path
+                  key={k}
+                  d={d}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={w + 4}
                 />
               ))}
+            {paths.map((d, k) => (
+              <path
+                key={k}
+                d={d}
+                fill={closed ? color : "none"}
+                fillOpacity={(b <= 2 ? 0.14 : 0.24) * e}
+                stroke={color}
+                strokeWidth={two ? w + 2 : w}
+                strokeLinejoin="round"
+                strokeLinecap="round"
+              />
+            ))}
+            {e > 0.5 &&
+              boats[b - 1].buckets.map((k, i) => {
+                if (!k) return null;
+                const [px, py] = vertex(i, n, fr(k));
+                return (
+                  <circle
+                    key={i}
+                    cx={px}
+                    cy={py}
+                    r={8}
+                    fill={RADAR_LINE[b]}
+                    stroke={b === 2 ? "#fff" : "#0d1b2e"}
+                    strokeWidth={2.5}
+                  />
+                );
+              })}
           </g>
         );
       })}
       {dash && dash.some((v) => v !== null) && (
         <polygon
           points={dash
-            .map((v, i) => (v === null ? null : pt(i, n, fr(v)).join(",")))
+            .map((v, i) => (v === null ? null : vertex(i, n, fr(v)).join(",")))
             .filter(Boolean)
             .join(" ")}
           fill="none"
-          stroke={dashBoat <= 2 ? SCOPE_DASH : RADAR_LINE[dashBoat]}
+          stroke={lead <= 2 ? SCOPE_DASH : RADAR_LINE[lead]}
           strokeWidth={4}
           strokeDasharray="12 9"
-          opacity={subOpacity}
+          opacity={dim}
         />
       )}
       {axes.map((ax, i) => {
-        const lab = axisLabel(i, n);
         const tops = [1, 2, 3, 4, 5, 6].filter(
           (b) => boats[b - 1].rankFrom[i] === 1,
         );
-        const [tx, ty] = pt(i, n, 1);
-        const sub = subBoat
-          ? `${subBoat}号艇 ${boats[subBoat - 1].ranks[i] ?? "—"}`
-          : "";
+        const [tx, ty] = vertex(i, n);
+        // 項目名の下の行は、強調の形と同じ進みで前の艇から入れ替える
+        const subs = [
+          lead && { boat: lead, op: prev === null ? p : p },
+          prev && { boat: prev, op: 1 - p },
+        ].filter((x) => x && x.op > 0.01);
+        const box = axisBox(scene, i, lead ?? prev);
+        const cx = box.x + box.w / 2;
         return (
           <g key={ax.key}>
             {tops.map((b, j) => {
@@ -428,7 +450,7 @@ function Radar({ scene, state }) {
                   <circle
                     cx={ox}
                     cy={oy}
-                    r={28}
+                    r={BADGE_R}
                     fill={RADAR_LINE[b]}
                     stroke={b === 2 ? "#fff" : "#0d1b2e"}
                     strokeWidth={3}
@@ -447,29 +469,34 @@ function Radar({ scene, state }) {
                 </g>
               );
             })}
-            <text
-              x={lab.x}
-              y={lab.y}
-              textAnchor={lab.anchor}
-              fontSize={40}
-              fontWeight={800}
-              fill={SCOPE_TEXT}
-              fontFamily={FONT}
-            >
-              {ax.label} ▼
+            <text x={cx} y={box.y + 40} textAnchor="middle" fontFamily={FONT}>
+              <tspan fontSize={NAME_SIZE} fontWeight={800} fill={SCOPE_TEXT}>
+                {ax.label}
+              </tspan>
+              <tspan
+                fontSize={28}
+                fontWeight={700}
+                fill={SCOPE_TEXT}
+                fillOpacity={0.55}
+              >
+                {" ▼"}
+              </tspan>
             </text>
-            <text
-              x={lab.x}
-              y={lab.y + 44}
-              textAnchor={lab.anchor}
-              fontSize={MIN_TEXT}
-              fontWeight={600}
-              fill={SCOPE_SUBTEXT}
-              fontFamily={FONT}
-              opacity={subOpacity}
-            >
-              {sub}
-            </text>
+            {subs.map((s) => (
+              <text
+                key={s.boat}
+                x={cx}
+                y={box.y + 84}
+                textAnchor="middle"
+                fontSize={SUB_SIZE}
+                fontWeight={600}
+                fill={SCOPE_SUBTEXT}
+                fontFamily={FONT}
+                opacity={s.op}
+              >
+                {axisSub(s.boat, boats[s.boat - 1].ranks[i])}
+              </text>
+            ))}
           </g>
         );
       })}
@@ -487,9 +514,9 @@ function Chips({ scene, state }) {
         style={{
           position: "absolute",
           left: chipX(b),
-          top: CHIP_Y,
-          width: CHIP_W,
-          height: CHIP_H,
+          top: CHIP.y,
+          width: CHIP.w,
+          height: CHIP.h,
           borderRadius: 16,
           boxSizing: "border-box",
           background: `rgba(255,255,255,${0.06 + 0.1 * on})`,
@@ -497,10 +524,10 @@ function Chips({ scene, state }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 12,
+          gap: 10,
         }}
       >
-        <BoatBadge b={b} size={58} />
+        <BoatBadge b={b} size={54} />
         <span
           style={{ fontSize: MIN_TEXT, fontWeight: 700, color: SCOPE_TEXT }}
         >
@@ -511,51 +538,34 @@ function Chips({ scene, state }) {
   });
 }
 
-function chipBox(boats) {
-  const xs = boats.map(chipX);
-  return {
-    x: Math.min(...xs),
-    y: CHIP_Y,
-    w: Math.max(...xs) + CHIP_W - Math.min(...xs),
-    h: CHIP_H,
-  };
-}
+const chipBoxOf = (b) => ({ x: chipX(b), y: CHIP.y, w: CHIP.w, h: CHIP.h });
+const chipCenter = (b) => chipX(b) + CHIP.w / 2;
 
 /** 差がはっきりしている順のカード（ソナー「差がつく材料」のカードに寄せる） */
 function Card({ item, boat, frameT }) {
   const top = 350;
   const left = 40;
   const width = 1000;
-  const barsBase = top + 720;
-  const barMax = 180;
+  const barsBase = top + 762;
+  const barMax = 170;
   const pcts = item.bars.map((x) => x.pct ?? 0);
-  const max = Math.max(
-    ...pcts,
-    item.usual ?? 0,
-    0.01,
-  );
+  const max = Math.max(...pcts, item.usual ?? 0, 0.01);
   const colW = (width - 80) / 6;
   const colX = (i) => left + 40 + i * colW;
   const barW = 104;
   const barTop = (pct) => barsBase - (pct / max) * barMax;
-  const today = item.todayBar;
-  const frame =
-    today === null
-      ? {
-          x: colX(0) + 6,
-          y: barTop(Math.max(...pcts)) - 58,
-          w: colW * 6 - 12,
-          h: barsBase - barTop(Math.max(...pcts)) + 58,
-        }
-      : {
-          x: colX(today) + (colW - barW) / 2 - 10,
-          y: barTop(pcts[today]) - 58,
-          w: barW + 20,
-          h: barsBase - barTop(pcts[today]) + 58,
-        };
-  // 1号艇の全レースの1着率（割合）。画面の棒の点線
-  const usualPct = item.usual ?? null;
-  const title = fit(
+  const barFrame = (i) => ({
+    x: colX(i) + (colW - barW) / 2 - 10,
+    y: barTop(pcts[i]) - 58,
+    w: barW + 20,
+    h: barsBase - barTop(pcts[i]) + 58,
+  });
+  // 今日の順位の棒とその上の%。今日の順位を当てはめない日（優勝戦・準優勝戦の今節の着順点）は、文が比べる1位と6位
+  const frames =
+    item.todayBar === null
+      ? [barFrame(0), barFrame(5)]
+      : [barFrame(item.todayBar)];
+  const title = fit1(
     item.label,
     width - 80 - textWidth(item.judge, 40, 800) - 24,
     46,
@@ -569,9 +579,9 @@ function Card({ item, boat, frameT }) {
           left,
           top,
           width,
-          height: 860,
+          height: 880,
           boxSizing: "border-box",
-          background: "#14263e",
+          background: CARD_BG,
           border: "2px solid rgba(255,255,255,0.12)",
           borderRadius: 28,
         }}
@@ -587,10 +597,23 @@ function Card({ item, boat, frameT }) {
           color: "#ffffff",
         }}
       >
-        <span style={{ fontSize: title.fontSize, fontWeight: 800 }}>
+        <span
+          style={{
+            fontSize: title.fontSize,
+            fontWeight: 800,
+            whiteSpace: "nowrap",
+          }}
+        >
           {title.lines[0]}
         </span>
-        <span style={{ fontSize: 40, fontWeight: 800, color: "#e2b93b" }}>
+        <span
+          style={{
+            fontSize: 40,
+            fontWeight: 800,
+            color: "#e2b93b",
+            whiteSpace: "nowrap",
+          }}
+        >
           {item.judge}
         </span>
       </div>
@@ -607,7 +630,7 @@ function Card({ item, boat, frameT }) {
         <BoatBadge b={boat} size={52} />
         <span
           style={{
-            fontSize: fit(item.todayLine, width - 160, 40, 800).fontSize,
+            fontSize: fit1(item.todayLine, width - 160, 40, 800).fontSize,
             fontWeight: 800,
             color: "#ffffff",
             whiteSpace: "nowrap",
@@ -622,28 +645,32 @@ function Card({ item, boat, frameT }) {
           style={{
             position: "absolute",
             left: left + 40 + i * 470,
-            top: top + 200,
+            top: top + 196,
             width: 450,
-            height: 180,
+            height: 220,
             boxSizing: "border-box",
             background: "#0c1a2c",
             borderRadius: 20,
-            padding: "18px 26px",
+            padding: "18px 26px 20px",
             color: "#ffffff",
           }}
         >
-          <div style={{ fontSize: MIN_TEXT, fontWeight: 500 }}>{x.word}</div>
-          <div style={{ fontSize: 64, fontWeight: 900, lineHeight: 1.1 }}>
+          <div style={{ fontSize: MIN_TEXT, fontWeight: 500, lineHeight: 1.3 }}>
+            {x.word}
+          </div>
+          <div style={{ fontSize: 64, fontWeight: 900, lineHeight: 1.2 }}>
             {x.pct}
           </div>
-          <div style={{ fontSize: MIN_TEXT, color: MUTED }}>{x.count}</div>
+          <div style={{ fontSize: MIN_TEXT, color: MUTED, lineHeight: 1.3 }}>
+            {x.count}
+          </div>
         </div>
       ))}
       <div
         style={{
           position: "absolute",
           left: left + 40,
-          top: top + 400,
+          top: top + 446,
           display: "flex",
           alignItems: "center",
           gap: 14,
@@ -654,19 +681,19 @@ function Card({ item, boat, frameT }) {
           6艇中の順位ごとの1着率
         </span>
       </div>
-      {usualPct !== null && (
+      {item.usual !== null && item.usual !== undefined && (
         <div
           style={{
             position: "absolute",
             left: left + 30,
-            top: barTop(usualPct) - 2,
+            top: barTop(item.usual) - 2,
             width: width - 60,
             borderTop: "5px dotted #2dd4bf",
           }}
         />
       )}
       {item.bars.map((x, i) => {
-        const on = i === today;
+        const on = i === item.todayBar;
         const pc = x.pct ?? 0;
         return (
           <div key={i}>
@@ -677,13 +704,13 @@ function Card({ item, boat, frameT }) {
                 width: colW,
                 top: barTop(pc) - 54,
                 textAlign: "center",
-                zIndex: 1,
                 fontSize: 38,
                 fontWeight: on ? 900 : 600,
                 color: on ? "#ffffff" : "#cfd8e3",
+                zIndex: 1,
               }}
             >
-              <span style={{ background: "#14263e", padding: "0 6px" }}>
+              <span style={{ background: CARD_BG, padding: "0 6px" }}>
                 {x.pct === null ? "—" : `${Math.round(pc * 100)}%`}
               </span>
             </div>
@@ -723,13 +750,22 @@ function Card({ item, boat, frameT }) {
           </div>
         );
       })}
-      <Frame box={frame} t={frameT} />
+      {frames.map((b, k) => (
+        <Frame key={k} box={b} t={frameT} />
+      ))}
     </>
   );
 }
 
 function QuestionBand({ text, opacity }) {
-  const f = fit(text, W - 120, 76, 900, 2);
+  const f = fitHeadline(text, {
+    maxWidth: W - 120,
+    maxLines: 2,
+    fontFamily: FONT,
+    fontWeight: 900,
+    maxFontSize: 76,
+    minFontSize: MIN_TEXT,
+  });
   return (
     <div
       style={{
@@ -772,6 +808,27 @@ function QuestionBand({ text, opacity }) {
   );
 }
 
+/** 下の注記（重要でない下段。y1700 まで・x940 まで） */
+function Note({ lines }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 60,
+        top: 1462,
+        width: 880,
+        fontSize: MIN_TEXT,
+        color: MUTED,
+        lineHeight: 1.4,
+      }}
+    >
+      {lines.map((l, i) => (
+        <div key={i}>{l}</div>
+      ))}
+    </div>
+  );
+}
+
 /**
  * その拍の答えの文。scene.answers（文の JSON。描画の前に1度だけ作って保存したもの）にあればそれを、
  * 無ければ文型の版を使う。同じ JSON なら同じ絵になる
@@ -802,6 +859,7 @@ export function FullPictureScene2(scene) {
   const t = frame - beat.from;
   const state = radarState(scene, beats, frame);
   const cards = scene.cards.items;
+  const focus = scene.radar.focus;
 
   // 縦スクロール（重ね図 → カード1 → カード2 …）。頁 k は y = k*PAGE
   const toCards = beats.find((b) => b.kind === "toCards");
@@ -814,10 +872,8 @@ export function FullPictureScene2(scene) {
     if (beat.kind === "card" && beat.index > 0)
       scroll =
         PAGE * beat.index +
-        interpolate(t, [0, 18], [0, PAGE], { ...clamp, easing: ease });
+        interpolate(t, [0, CARD_SCROLL], [0, PAGE], { ...clamp, easing: ease });
   }
-  const cardFrameAt = (i) =>
-    i === 0 ? FRAME_AT - CHANGE_END + 0 : 18 + BEAT.pause;
   const qSwitch = interpolate(
     frame - toCards.from,
     [0, 10, 14, 24],
@@ -829,39 +885,85 @@ export function FullPictureScene2(scene) {
       ? `${scene.cards.boat}号艇の勝敗を分ける材料`
       : "一目で分かる6艇比較";
 
-  // 押す・枠・答え
-  const focus = scene.radar.focus;
+  // 押す・枠
   let finger = null;
-  let radarFrame = null;
-  let radarAnswer = null;
+  let radarFrames = [];
   if (beat.kind === "overview") {
-    const at = 24 + BEAT.pause;
-    radarFrame = { box: chipBox(scene.radar.overview.frameBoats), t: t - at };
-    radarAnswer = {
-      lines: answerOf(scene, scene.radar.overview.id, scene.radar.overview.lines),
-      t: t - (at + BEAT.frameIn + BEAT.answerGap),
-    };
+    // 答えの艇ごとに別の枠（1・2・5号艇なら3つ。間の艇を囲まない）
+    radarFrames = scene.radar.overview.frameBoats.map((b) => ({
+      box: chipBoxOf(b),
+      t: t - OVERVIEW_FRAME_AT,
+    }));
   } else if (beat.kind === "focus") {
     const f = focus[beat.index];
     const prevBoat = beat.index === 0 ? null : focus[beat.index - 1].boat;
-    const to = { x: chipX(f.boat) + CHIP_W / 2, y: CHIP_Y + CHIP_H / 2 };
     finger = {
-      ...to,
+      x: chipCenter(f.boat),
+      y: CHIP.y + CHIP.h / 2,
       t,
       from: prevBoat
-        ? { x: chipX(prevBoat) + CHIP_W / 2, y: CHIP_Y + CHIP_H / 2 + 40 }
-        : { x: 900, y: 1500 },
+        ? { x: chipCenter(prevBoat), y: CHIP.y + CHIP.h / 2 + 40 }
+        : { x: 860, y: 1320 },
     };
-    if (f.frameAxis !== null) {
-      const lab = axisLabel(f.frameAxis, scene.radar.axes.length);
-      const sub = `${f.boat}号艇 ${scene.radar.boats[f.boat - 1].ranks[f.frameAxis] ?? "—"}`;
-      radarFrame = {
-        box: boxOfLabel(lab, scene.radar.axes[f.frameAxis].label, sub),
-        t: t - FRAME_AT,
-      };
-    }
-    radarAnswer = { lines: answerOf(scene, f.id, f.lines), t: t - ANSWER_AT };
+    if (f.frameAxis !== null)
+      radarFrames = [
+        { box: axisBox(scene, f.frameAxis, f.boat), t: t - FRAME_AT },
+      ];
   }
+
+  // 答え: 次の拍で押すまで残し、図が変わる間に消す
+  const bubbles = answerWindows(beats)
+    .filter((w) => frame >= w.start && frame < w.end)
+    .map((w) => {
+      const out =
+        frame < w.hold ? 1 : interpolate(frame, [w.hold, w.end], [1, 0], clamp);
+      if (w.kind === "overview")
+        return {
+          page: 0,
+          key: "overview",
+          lines: answerOf(
+            scene,
+            scene.radar.overview.id,
+            scene.radar.overview.lines,
+          ),
+          t: frame - w.start,
+          out,
+          tail: chipCenter(scene.radar.overview.frameBoats[0]),
+        };
+      if (w.kind === "focus") {
+        const f = focus[w.index];
+        return {
+          page: 0,
+          key: f.id,
+          lines: answerOf(scene, f.id, f.lines),
+          t: frame - w.start,
+          out,
+          tail: chipCenter(f.boat),
+        };
+      }
+      if (w.kind === "card") {
+        const c = cards[w.index];
+        return {
+          page: w.index + 1,
+          key: c.id,
+          lines: answerOf(scene, c.id, c.answer),
+          t: frame - w.start,
+          out,
+        };
+      }
+      return {
+        page: 1,
+        key: "empty",
+        lines: answerOf(scene, scene.cards.empty?.id, scene.cards.empty?.lines),
+        t: frame - w.start,
+        out,
+        y: 600,
+      };
+    });
+  const bubblesOn = (page) =>
+    bubbles
+      .filter((b) => b.page === page)
+      .map((b) => <Bubble key={b.key} {...b} />);
 
   const fade = (f) =>
     interpolate(f, [0, 10, total - 30, total], [0, 1, 1, 0], clamp);
@@ -894,23 +996,16 @@ export function FullPictureScene2(scene) {
         >
           <Radar scene={scene} state={state} />
           <Chips scene={scene} state={state} />
-          {radarFrame && <Frame box={radarFrame.box} t={radarFrame.t} />}
-          {radarAnswer && (
-            <Bubble lines={radarAnswer.lines} t={radarAnswer.t} />
-          )}
-          <div
-            style={{
-              position: "absolute",
-              left: 60,
-              top: 1470,
-              width: 960,
-              fontSize: MIN_TEXT,
-              color: MUTED,
-              lineHeight: 1.4,
-            }}
-          >
-            集め方: 各艇とも、その艇の級別がそろうレース（{scene.cards.scope}）
-          </div>
+          {radarFrames.map((f, k) => (
+            <Frame key={k} box={f.box} t={f.t} />
+          ))}
+          {bubblesOn(0)}
+          <Note
+            lines={[
+              "集め方: 各艇とも、その艇の級別がそろうレース",
+              `（${scene.cards.scope}）`,
+            ]}
+          />
           {finger && <Finger {...finger} />}
         </div>
         {cards.map((item, i) => {
@@ -931,26 +1026,13 @@ export function FullPictureScene2(scene) {
                 boat={scene.cards.boat}
                 frameT={active ? t - cardFrameAt(i) : -1}
               />
-              {active && (
-                <Bubble
-                  lines={answerOf(scene, item.id, item.answer)}
-                  t={t - cardFrameAt(i) - BEAT.frameIn - BEAT.answerGap}
-                />
-              )}
-              <div
-                style={{
-                  position: "absolute",
-                  left: 60,
-                  top: 1470,
-                  width: 960,
-                  fontSize: MIN_TEXT,
-                  color: MUTED,
-                  lineHeight: 1.4,
-                }}
-              >
-                集めたレース: {scene.cards.scope}（{scene.cards.boat}号艇の1着率
-                全体{scene.cards.usual ?? "—"}）
-              </div>
+              {bubblesOn(i + 1)}
+              <Note
+                lines={[
+                  `集めたレース: ${scene.cards.scope}`,
+                  `（${scene.cards.boat}号艇の1着率 全体${scene.cards.usual ?? "—"}）`,
+                ]}
+              />
             </div>
           );
         })}
@@ -964,11 +1046,7 @@ export function FullPictureScene2(scene) {
               height: H,
             }}
           >
-            <Bubble
-              lines={answerOf(scene, scene.cards.empty?.id, scene.cards.empty?.lines)}
-              t={beat.kind === "empty" ? t - 20 : -1}
-              y={600}
-            />
+            {bubblesOn(1)}
           </div>
         )}
       </div>

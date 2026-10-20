@@ -7,15 +7,25 @@
 import { execFileSync } from "node:child_process";
 import { FACT_ITEMS } from "../../../../src/utils/analogyFacts.js";
 import { t } from "./scene2-data.mjs";
+import { checkRiskRules } from "../../../../scripts/lib/riskRules.js";
 
 /**
  * 1行の幅の上限（全角1・半角0.55で数える）。吹き出しの内側 816px を最小の 36px で割った 22.6 字分
  */
-export const MAX_WIDTH = 22.5;
+export const MAX_WIDTH = 22;
 export const lineWidth = (l) => [...l].reduce((w, c) => w + (/[\x20-\x7e]/.test(c) ? 0.55 : 1), 0);
 export const MAX_LINES = 2;
-/** 禁止表現（射幸心・保証・旧称・人を指す言い方） */
-const BANNED = ["必ず当たる", "必ず", "絶対", "稼げる", "万舟", "儲か", "競艇", "この選手", "鉄板", "勝てる"];
+/**
+ * 禁止表現は risk-rules.json（sns-video-studio/remotion/risk-rules.json）を正本にして読む。字幕と投稿本文で同じ判定にする。
+ * 場面の型の規則（字幕で選手を「この選手」と呼ばない）だけはここに置く
+ */
+const CONTRACT_BANNED = ["この選手"];
+export function bannedIn(text, platform = "x") {
+  return [
+    ...checkRiskRules(text, platform).map((r) => `禁止表現「${r.matchedPattern}」（${r.id}）`),
+    ...CONTRACT_BANNED.filter((w) => text.includes(w)).map((w) => `型の禁止「${w}」`),
+  ];
+}
 /** ぼかし語（数値で比べずに量を言う語） */
 const VAGUE = ["半分", "多い", "少ない", "多め", "少なめ", "かなり", "やや", "ほぼ", "結構", "わりと", "圧倒的", "大差", "僅差", "わずか", "少し", "ちょっと", "大きく", "大幅"];
 /** 前の拍とつなぐ語。場面の各段の最初の拍では使えない。「同じく」「こちらも」は前の拍と同じ材料のときだけ */
@@ -58,7 +68,7 @@ function allowedOf(facts) {
     if (typeof v === "number") {
       nums.add(String(v));
       if (["boat", "leaders", "boats"].includes(key)) boats.add(v);
-      if (["compareRanks", "todayRank", "withinRank"].includes(key)) ranks.add(`${v}位`);
+      if (["compareRanks", "todayRank", "withinRank", "todayRankRef"].includes(key)) ranks.add(`${v}位`);
       return;
     }
     if (typeof v === "string") {
@@ -86,7 +96,7 @@ export function checkLines(lines, facts, prev) {
     const w = Math.round(lineWidth(l) * 10) / 10;
     if (w > MAX_WIDTH) why.push(`${i + 1}行目の幅が全角${w}字分（上限${MAX_WIDTH}字分）`);
   });
-  for (const w of BANNED) if (text.includes(w)) why.push(`禁止表現「${w}」`);
+  why.push(...bannedIn(text));
   for (const w of VAGUE) if (text.includes(w)) why.push(`ぼかし語「${w}」`);
   const { nums, boats, items, ranks } = allowedOf(facts);
   // 材料名: 文に出る材料は facts の材料だけ
