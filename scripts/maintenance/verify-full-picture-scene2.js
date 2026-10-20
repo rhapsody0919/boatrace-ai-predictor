@@ -497,6 +497,12 @@ for (const f of fixtures) {
       }
     }
   }
+  // s3-rough: 「全国・」を省かず、範囲と件数を1行目に（2026-10-21 オーナー決定 3。省くと母数が分からない）
+  const rough = scenes.find((x) => x.id === "scene3").data.steps.find((st) => st.id === "s3-rough");
+  if (rough) {
+    assert.ok(rough.lines[0].startsWith("全国・") && /\d件$/.test(rough.lines[0]), `${f}: s3-rough の1行目は「全国・…N件」: ${rough.lines[0]}`);
+    assert.ok(rough.lines[1].startsWith("1着"), `${f}: s3-rough の2行目は1着率と全国の比較: ${rough.lines[1]}`);
+  }
   // s5: 重点でない艇の段は答えなし、まとめの段がある
   const s5 = scenes.find((x) => x.id === "scene5").data;
   const short = s5.steps.filter((s) => /^s5-axis-\d$/.test(s.id) && !s.facts.key);

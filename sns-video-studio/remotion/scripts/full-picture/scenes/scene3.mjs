@@ -74,7 +74,7 @@ export function buildScene3(m) {
     const x = Math.round(b.rate * 1000) / 10;
     const y = Math.round(b.base * 1000) / 10;
     const label = sameClassLabel(scope);
-    const f = { kind: "rough", boat: 1, scopeLabel: label, shortLabel: label.replace("全国・", ""), n: b.k === undefined ? null : b.n, rate: x, national: y, ...diffOf(x, y) };
+    const f = { kind: "rough", boat: 1, scopeLabel: label, n: b.k === undefined ? null : b.n, rate: x, national: y, ...diffOf(x, y) };
     steps.push({
       id: "s3-rough",
       question: Q,
@@ -87,8 +87,12 @@ export function buildScene3(m) {
       press: null,
       frames: [statsBarRow(0)],
       facts: f,
-      // 1行に収めるため「全国・」を除いた呼び名で書く（問いが1号艇なので「1号艇の」も省く）
-      lines: [`${label.replace("全国・", "")}${b.n}件で1着${d1(x)}%`, diffText(`全国の${d1(y)}%`, f)].filter(Boolean),
+      // 「全国・」は省かず、範囲と件数を1行目、1着率と全国との比較を2行目に（母数が分かるように。2026-10-21 オーナー決定 3）。
+      // 問いが1号艇なので「1号艇の」は省く
+      lines: fitFirst(
+        [`${label}${b.n}件`, `1着${d1(x)}%、${diffText(`全国の${d1(y)}%`, f)}`],
+        [`${label}${b.n}件`, `1着${d1(x)}%（全国${d1(y)}%）`],
+      ),
     });
     if (scope.few) omitted.push({ where: "scene3.rough", reason: `同じラウンドが30件未満なので級の並びが同じ（NC）に戻した` });
   } else omitted.push({ where: "scene3.rough", reason: "級の並びが同じ・全国の集計が無い" });
