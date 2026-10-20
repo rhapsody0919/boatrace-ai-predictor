@@ -47,13 +47,20 @@ export function planBlogChartPngs(chartsDir) {
 
 /**
  * 1つの図を撮影の形にして、はみ出しを測る。ページの中で動く（関数の外の変数を使わない）
- * @returns {{ found: boolean, state?: string, overflowY?: number, overflowX?: number }}
+ * @returns {{ found: boolean, errorFigures?: number, state?: string, overflowY?: number, overflowX?: number }}
  */
 export function enterExportMode({ id, preset, credit }) {
   const fig = document.querySelector(
     `figure.blog-chart[data-chart-id="${CSS.escape(id)}"]`,
   );
-  if (!fig) return { found: false };
+  // 描けなかった図（error）には id が無い。「図が無い」と取り違えないよう、error の図の数を返す
+  if (!fig)
+    return {
+      found: false,
+      errorFigures: document.querySelectorAll(
+        'figure.blog-chart[data-chart-state="error"]',
+      ).length,
+    };
   fig.setAttribute("data-chart-export", preset);
   const caption = fig.querySelector(".blog-chart__caption");
   caption?.setAttribute("data-chart-credit-name", credit.name);
@@ -99,7 +106,13 @@ async function shootArticle(page, { baseUrl, outDir, article, ids, preset }) {
     });
     try {
       if (!m.found) {
-        bad.push({ id: key, error: `記事 ${article} に図が無い` });
+        bad.push({
+          id: key,
+          error:
+            m.errorFigures > 0
+              ? `記事 ${article} の図が描けていない（error の図 ${m.errorFigures}件。JSON が取れないか契約に合わない）`
+              : `記事 ${article} に図が無い`,
+        });
       } else if (m.state !== "ready") {
         bad.push({ id: key, error: `図が描けていない（${m.state}）` });
       } else if (m.overflowY > 0 || m.overflowX > 0) {
@@ -118,7 +131,9 @@ async function shootArticle(page, { baseUrl, outDir, article, ids, preset }) {
         done.push({ urlPath, png });
       }
     } finally {
-      await page.evaluate(leaveExportMode, id);
+      // 後片付けの失敗（ページが落ちた等）で、try の中の本当の失敗の理由を上書きしない。
+      // ページが落ちていれば、次の evaluate か呼ぶ側の再試行で失敗として残る
+      await page.evaluate(leaveExportMode, id).catch(() => {});
     }
   }
   for (const { urlPath, png } of done)
@@ -141,6 +156,9 @@ export async function exportBlogChartPngs({ openPage, baseUrl, plan, outDir }) {
   const files = [];
   const failed = [];
   const skipped = [];
+  // 図が無ければページを開かない（今の本番は0件。開いたページは閉じない設計なので、空でも残る）
+  if (plan.length === 0)
+    return { total: 0, files: [], failed: [], skipped: [], seconds: 0 };
   mkdirSync(path.join(outDir, "blog-charts"), { recursive: true });
 
   // 倍率はページを開くときに決まるので、大きさごとにページを開き直す

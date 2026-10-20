@@ -24,26 +24,36 @@ import {
 const SITE = "https://www.boat-ai.jp";
 
 /**
- * git log の引数。since がコミットなら since..upTo、時刻なら --since で upTo まで
+ * 窓の始まりのコミット。since がコミットならそのまま、時刻なら upTo の履歴でその時刻より前の最後のコミット
  * @param {string} since 前回のまとめのコミット（7〜40桁の16進）か時刻
  * @param {string} upTo 本番に配られている版のコミット
+ * @param {(args: string[]) => string} git
  */
-export function gitLogArgs(since, upTo) {
-  const range = /^[0-9a-f]{7,40}$/.test(since)
-    ? [`${since}..${upTo}`]
-    : [upTo, `--since=${since}`];
+export function resolveSince(since, upTo, git) {
+  if (/^[0-9a-f]{7,40}$/.test(since)) return since;
+  const sha = git(["rev-list", "-1", `--before=${since}`, upTo]).trim();
+  if (!sha) throw new Error(`${since} より前のコミットが ${upTo} の履歴に無い`);
+  return sha;
+}
+
+/**
+ * 窓の中で足された・変わった図の JSON を出す git の引数。git log でなく2点の diff にするのは、窓の中で足して消した
+ * JSON を拾わず、名前を変えた JSON（新しい id）を A として拾うため（代わりの審査 P3-4）
+ */
+export function gitDiffArgs(fromSha, upTo) {
   return [
-    "log",
-    ...range,
+    "diff",
+    "--no-renames",
     "--diff-filter=AM",
     "--name-only",
-    "--format=",
+    fromSha,
+    upTo,
     "--",
     "public/blog-charts/",
   ];
 }
 
-/** 足された・変わった図の JSON の id（ファイル名）。消えたものは除く */
+/** git diff の出力から図の JSON の id（ファイル名）を取る */
 export function changedChartIds(gitLogOutput) {
   const ids = new Set();
   for (const line of gitLogOutput.split("\n")) {
@@ -64,9 +74,19 @@ async function readStatus() {
   const res = await fetch(`${SITE}/ai-snapshots/status.json`);
   if (!res.ok) throw new Error(`status.json が HTTP ${res.status}`);
   const png = (await res.json())?.blogChartPng;
-  if (!png?.commit) {
+  if (!png) {
     throw new Error(
-      "status.json に blogChartPng.commit が無い（書き出す版がまだ本番に無い）",
+      "status.json に blogChartPng が無い（書き出す版がまだ本番に無いか、記事のスナップショットの生成が途中で止まった）",
+    );
+  }
+  if (png.fatalError) {
+    throw new Error(
+      `本番のビルドで図の PNG の書き出しが途中で止まった: ${png.fatalError}`,
+    );
+  }
+  if (!png.commit) {
+    throw new Error(
+      "status.json に blogChartPng.commit が無い（VERCEL_GIT_COMMIT_SHA の無いビルド）",
     );
   }
   return png;
@@ -106,9 +126,10 @@ async function main() {
     );
   }
   const status = await readStatus();
-  const log = execFileSync("git", gitLogArgs(since, status.commit), {
-    encoding: "utf8",
-  });
+  const git = (args) => execFileSync("git", args, { encoding: "utf8" });
+  const log = git(
+    gitDiffArgs(resolveSince(since, status.commit, git), status.commit),
+  );
   const ids = changedChartIds(log);
   const checks = [];
   for (const id of ids) {

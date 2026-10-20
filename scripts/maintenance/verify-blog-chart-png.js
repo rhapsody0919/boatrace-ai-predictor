@@ -7,7 +7,7 @@
  * 3. 撮る図の一覧（planBlogChartPngs）: 記事ごとにまとめる・置き場が無ければ空・id か article が無い JSON は止める
  * 4. 朝夜のまとめの行（blog-chart-png-digest.js）: 足された・変わった JSON だけ・配られていない理由を status.json から添える
  * 5. status.json の照合（failedSnapshotGroups）が図の PNG の失敗を拾う
- * 6. まとめの窓の上限は本番に配られた版（マージ直後のビルド中の図を「無い」と出して次の窓から落とさない。/code-review 指摘1）
+ * 6. まとめの窓は前回のコミットから本番に配られた版までの2点の diff（マージ直後のビルド中の図を「無い」と出して次の窓から落とさない。/code-review 指摘1）
  * 7. 記事の途中で落ちたら、その記事の PNG を1枚も書かない（status と配信物を食い違わせない。/code-review 指摘2）
  *
  * 使い方: node scripts/maintenance/verify-blog-chart-png.js
@@ -28,7 +28,8 @@ import { exportBlogChartPngs, planBlogChartPngs } from "../lib/blogChartPng.js";
 import {
   changedChartIds,
   digestLines,
-  gitLogArgs,
+  gitDiffArgs,
+  resolveSince,
 } from "../content/blog-chart-png-digest.js";
 import { failedSnapshotGroups } from "../lib/snapshotStatus.js";
 
@@ -150,19 +151,33 @@ test("status.json の照合が図の PNG の失敗を拾う", () => {
   );
 });
 
-test("まとめの窓: 前回のコミットから本番に配られた版まで。時刻のときも上限は配られた版", () => {
-  assert.deepEqual(gitLogArgs("3255c4a51", "abcdef1234").slice(0, 2), [
-    "log",
-    "3255c4a51..abcdef1234",
-  ]);
-  assert.deepEqual(
-    gitLogArgs("2026-10-20T21:00+09:00", "abcdef1234").slice(0, 3),
-    ["log", "abcdef1234", "--since=2026-10-20T21:00+09:00"],
+test("まとめの窓: 前回のコミットから本番に配られた版までの2点の diff。名前の変更は A で拾う", () => {
+  assert.equal(
+    resolveSince("3255c4a51", "abcdef1234", () => "x"),
+    "3255c4a51",
   );
+  const calls = [];
+  const sha = resolveSince("2026-10-20T21:00+09:00", "abcdef1234", (args) => {
+    calls.push(args);
+    return "1111111\n";
+  });
+  assert.equal(sha, "1111111");
+  // 時刻のときも上限は配られた版の履歴
+  assert.deepEqual(calls[0], [
+    "rev-list",
+    "-1",
+    "--before=2026-10-20T21:00+09:00",
+    "abcdef1234",
+  ]);
+  assert.throws(() => resolveSince("2000-01-01", "abcdef1234", () => ""));
+  const args = gitDiffArgs("1111111", "abcdef1234");
+  assert.deepEqual(args.slice(0, 2), ["diff", "--no-renames"]);
+  assert.ok(args.includes("--diff-filter=AM"));
+  assert.deepEqual(args.slice(4, 6), ["1111111", "abcdef1234"]);
 });
 
-/** 偽のページ。failOn の図で撮影の形に入るときに落ちる */
-function fakePage(failOn) {
+/** 偽のページ。failOn の図で撮影の形に入るときに落ちる。overflow の図ははみ出す */
+function fakePage(failOn, overflow = null) {
   return {
     setViewportSize: async () => {},
     goto: async () => {},
@@ -171,7 +186,8 @@ function fakePage(failOn) {
     evaluate: async (fn, arg) => {
       if (fn.name === "enterExportMode") {
         if (arg?.id === failOn) throw new Error("Target page closed");
-        return { found: true, state: "ready", overflowY: 0, overflowX: 0 };
+        const over = arg?.id === overflow ? 5 : 0;
+        return { found: true, state: "ready", overflowY: over, overflowX: 0 };
       }
       if (fn.name === "leaveExportMode") return undefined;
       return true;
@@ -208,4 +224,48 @@ test("記事の途中で落ちたら、その記事の PNG を書かず失敗に
     "a-y.landscape",
     "a-y.portrait",
   ]);
+});
+
+test("枠からはみ出す図は書かず、失敗でなく skipped に入れる。ページは大きさごとの倍率・ライトで開く", async () => {
+  const outDir = mkdtempSync(path.join(tmpdir(), "blog-chart-png-"));
+  const opened = [];
+  const r = await exportBlogChartPngs({
+    openPage: async (options) => {
+      opened.push(options);
+      return fakePage(null, "a-y");
+    },
+    baseUrl: "http://localhost",
+    plan: [{ article: "a", ids: ["a-x", "a-y"] }],
+    outDir,
+  });
+  assert.equal(
+    existsSync(path.join(outDir, "blog-charts/a-y.portrait.png")),
+    false,
+  );
+  assert.deepEqual(r.failed, []);
+  assert.deepEqual(r.skipped.map((f) => f.id).sort(), [
+    "a-y.landscape",
+    "a-y.portrait",
+  ]);
+  assert.equal(r.files.length, 2);
+  // 倍率を渡し忘れると、400×500 の小さい PNG が黙って作られる（代わりの審査 P3-2）
+  assert.deepEqual(opened, [
+    { deviceScaleFactor: 2.7, colorScheme: "light" },
+    { deviceScaleFactor: 2, colorScheme: "light" },
+  ]);
+});
+
+test("図が無ければページを開かない", async () => {
+  let opened = 0;
+  const r = await exportBlogChartPngs({
+    openPage: async () => {
+      opened += 1;
+      return fakePage(null);
+    },
+    baseUrl: "http://localhost",
+    plan: [],
+    outDir: mkdtempSync(path.join(tmpdir(), "blog-chart-png-")),
+  });
+  assert.equal(opened, 0);
+  assert.equal(r.total, 0);
 });

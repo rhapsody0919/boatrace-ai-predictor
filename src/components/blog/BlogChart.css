@@ -253,27 +253,16 @@
   --blog-chart-row-gap: 8px;
 }
 
-/* 押せない画像に切り替えを写さない。何を選んだ図かは札の1つ目（「会場 福岡」）で示す */
+/* 押せない画像に切り替えを写さない。何を選んだ図かは、札の1つ目（範囲）の前に切り替えの名前を足して示す
+   （「会場 福岡」。範囲に条件が書いてあっても消さない） */
 .blog-chart[data-chart-export] .blog-chart__control {
   display: none;
 }
 
 .blog-chart[data-chart-export]
-  .blog-chart__badges[data-chart-view]
-  > span:first-child {
-  display: none;
-}
-
-.blog-chart[data-chart-export] .blog-chart__badges[data-chart-view]::before {
-  content: attr(data-chart-view);
-  padding: 2px 10px;
-  border-radius: 4px;
-  background: color-mix(
-    in srgb,
-    var(--border-hairline) 45%,
-    var(--surface-card)
-  );
-  color: var(--text-primary);
+  .blog-chart__badges
+  > span[data-chart-switch]::before {
+  content: attr(data-chart-switch) " ";
 }
 
 .blog-chart[data-chart-export] .blog-chart__track {

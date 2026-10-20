@@ -12,7 +12,7 @@
 1. **撮る場所**: `scripts/generate-ai-snapshots.js` が記事のスナップショットの後に `scripts/lib/blogChartPng.js` を呼ぶ。`public/blog-charts/*.json` ごとに記事（JSON の `article`）を開き、`figure[data-chart-id]` を撮影の形（`[data-chart-export]`、`BlogChart.css`）にして、ビューポートの左上に固定して撮る。鍵は要らない
 2. **置き場と名前**: dist の `/blog-charts/{id}.{大きさ}.png`。コミットしない（ビルドの成果物）。名前は JSON の id から決まる
 3. **大きさ**: 部品の固定の一覧（`src/utils/blogChartPng.js`）。portrait 1080×1350（CSS 400×500 を 2.7 倍、X の 4:5）と landscape 1280×720（CSS 640×360 を 2 倍、2段組み）。撮るのは既定の view・日本語だけ・ライトの色
-4. **撮影の形**: 切り替えを消して札に「会場 福岡」の形で選んだ view を出す。注記は外さない。下端にサイト名とドメインを文字で入れる（ロゴの絵は入れない）。ファン役 `docs/design/blog-charts/fan-panel-png-v1.md`
+4. **撮影の形**: 切り替えを消し、札の範囲の前に切り替えの名前を足して選んだ view を示す（例「会場 福岡」。範囲の文字は消さない）。注記は外さない。下端にサイト名とドメインを文字で入れる（ロゴの絵は入れない）。ファン役 `docs/design/blog-charts/fan-panel-png-v1.md`
 5. **収まらないとき**: 字を縮めない。はみ出す大きさは作らず `status.json` の `blogChartPng.skipped` に理由を残す（作り手の側の事情なので `ok` は落とさない）。図が描けない・記事に図が無い等は `blogChartPng.errors` に残し `ok` を false にする（毎日の照合 `scripts/lib/botHtmlParity.js` が Slack に流す）。ビルドは落とさない（PR #624 と同じ）
 6. **取り方と知らせ方**: オーナーは本番の URL から取る。新しい PNG の URL は、オーケストレーターが朝夜のまとめに `scripts/content/blog-chart-png-digest.js` の出力を貼る。無い PNG は rewrite で 200 の index.html が返るので、content-type と先頭8バイトで PNG かを見る
 

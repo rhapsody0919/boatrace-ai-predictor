@@ -12,7 +12,7 @@
  *   本文と同じ描画で図が出る。読み込み中の状態が無く、アニメーションもしない
  * 状態は data-chart-state（ready・error）で外に示す。
  * PNG の書き出し（scripts/lib/blogChartPng.js、ADR 0099）は data-chart-id で図を探し、[data-chart-export] の形
- * （BlogChart.css）にして撮る。押せない画像では切り替えを消し、札の1つ目を data-chart-view（「会場 福岡」）に替える。
+ * （BlogChart.css）にして撮る。押せない画像では切り替えを消し、札の1つ目の前に data-chart-switch（「会場」）を足す（範囲の文字はそのまま残す）。
  * scripts/generate-ai-snapshots.js は error の記事を失敗として数える。
  */
 import { useId, useState } from "react";
@@ -203,17 +203,14 @@ function BlogChart({ src, result, lang = "ja" }) {
           )}
         </div>
       )}
-      <div
-        className="blog-chart__badges"
-        aria-live="polite"
-        aria-atomic="true"
-        data-chart-view={
-          chart.switch
-            ? `${localize(chart.switch.label, lang)} ${localize(view.label, lang)}`
-            : undefined
-        }
-      >
-        <span>{localize(badge.scope, lang)}</span>
+      <div className="blog-chart__badges" aria-live="polite" aria-atomic="true">
+        <span
+          data-chart-switch={
+            chart.switch ? localize(chart.switch.label, lang) : undefined
+          }
+        >
+          {localize(badge.scope, lang)}
+        </span>
         <span>
           {formatDate(badge.period.from)}〜{formatDate(badge.period.to)}
         </span>

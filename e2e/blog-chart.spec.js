@@ -451,11 +451,16 @@ test.describe("ブログの図（PNG の書き出しの形、ADR 0099）", () =>
         height: cssHeight,
       });
       await expect(fig.locator(".blog-chart__control")).toBeHidden();
+      await expect(
+        fig.locator(".blog-chart__badges > span").first(),
+      ).toBeVisible();
       const pseudo = await fig.evaluate((el) => ({
         view: getComputedStyle(
-          el.querySelector(".blog-chart__badges"),
+          el.querySelector(".blog-chart__badges > span:first-child"),
           "::before",
         ).content,
+        scope: el.querySelector(".blog-chart__badges > span:first-child")
+          .textContent,
         name: getComputedStyle(
           el.querySelector(".blog-chart__caption"),
           "::before",
@@ -466,7 +471,9 @@ test.describe("ブログの図（PNG の書き出しの形、ADR 0099）", () =>
         ).content,
       }));
       expect(pseudo).toEqual({
-        view: '"会場 福岡"',
+        // 切り替えの名前を範囲の前に足すだけ。範囲の文字（条件を書いた場合も）は消さない（代わりの審査 P2-1）
+        view: expect.stringContaining("会場"),
+        scope: "福岡",
         name: `"${BLOG_CHART_PNG_CREDIT.name}"`,
         site: `"${BLOG_CHART_PNG_CREDIT.site}"`,
       });
