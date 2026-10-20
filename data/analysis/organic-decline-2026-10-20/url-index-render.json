@@ -1,0 +1,1982 @@
+{
+  "generatedAt": "2026-10-20T02:45:46.655Z",
+  "siteUrl": "sc-domain:boat-ai.jp",
+  "userAgents": {
+    "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "googlebot": "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    "gptbot": "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot"
+  },
+  "results": [
+    {
+      "url": "https://www.boat-ai.jp/",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=yEXQNSLP9jn1hD7TCvEgLw&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-20T01:03:27Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/",
+          "userCanonical": "https://www.boat-ai.jp/",
+          "referringUrls": [
+            "https://www.boat-ai.jp/ko/",
+            "https://www.boat-ai.jp/ko/blog/how-to-predict-races",
+            "https://www.boat-ai.jp/races/2026-05-15"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 13286,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": "https://www.boat-ai.jp/",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/",
+        "htmlLang": "ja",
+        "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+        "canonical": "https://www.boat-ai.jp/",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "龍神レーダー（boat-ai.jp）は、全国24場のボートレース（競艇）全レースをAIが毎日予想する無料サイト。1マークの展開予測とイン崩れ指数を公開。会員登録なしで今すぐ使えます。",
+        "h1": [
+          "龍神レーダー"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "FAQPage"
+        ],
+        "bodyTextLength": 3249,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ 🏁 本日開催中のレース 10/20(火) ✅ 完全無料・登録不要 — 口座開設や会員登録なしで、今すぐ全機能をお使いいただけます ✅ レースデータ更新: 10/20 11:42 (更新完了) 🔄 再読み込み 💡 発走が近いレースから順次更新されます × 👋 初めての方へ 龍神レーダーの使い方を30秒の動画でご紹介します。会場選びから分"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/venue/1",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=MroxDocLV83TYDXaUHVJRA&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-15T16:14:39Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/venue/1",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/ko/venue/1"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 4216,
+          "htmlLang": "ja",
+          "title": "桐生競艇のAI予想｜本日の全レース - 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/venue/1",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 1,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/venue/1",
+        "htmlLang": "ja",
+        "title": "桐生競艇のAI予想｜本日の全レース - 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/venue/1",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "桐生競艇（ボートレース桐生）の本日の全レースをAIが予想。1マークの展開予測・イン崩れ指数と締切時刻を無料・登録不要で確認できます。",
+        "h1": [
+          "龍神レーダー",
+          "🏁 桐生 本日のレース・AI予想"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 3353,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ホーム › 桐生 🏁 桐生 本日のレース・AI予想 ← 会場一覧に戻る この会場の特徴（過去90日） 淡水・イン強い AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。 0 25 50 75 100% 主な決まり手 1 51.3% 全国平均54.6% 逃げ 96% 2 14.4%"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/venue/6",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=7GRrcEgvhc_GWdEu9HRrlg&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-08-31T05:33:10Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/venue/6",
+          "userCanonical": "https://www.boat-ai.jp/venue/6",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/en/venue/6",
+            "https://www.boat-ai.jp/zh-TW/venue/6",
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "レビュー スニペット",
+              "items": [
+                {
+                  "name": "龍神レーダー"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 2458,
+          "htmlLang": "ja",
+          "title": "浜名湖競艇のAI予想｜本日の全レース - 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/venue/6",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 1,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/venue/6",
+        "htmlLang": "ja",
+        "title": "浜名湖競艇のAI予想｜本日の全レース - 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/venue/6",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "浜名湖競艇（ボートレース浜名湖）の本日の全レースをAIが予想。1マークの展開予測・イン崩れ指数と締切時刻を無料・登録不要で確認できます。",
+        "h1": [
+          "龍神レーダー",
+          "🏁 浜名湖 本日のレース・AI予想"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 535,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ホーム › 浜名湖 🏁 浜名湖 本日のレース・AI予想 ← 会場一覧に戻る この会場の特徴（過去90日） 汽水・バランス型 AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。 0 25 50 75 100% 主な決まり手 1 52.6% 全国平均54.6% 逃げ 96% 2 13"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/venue/4/meet/2026-10-13",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=6lzRVrzPgg6UtBFuNKPFiQ&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-10T12:53:41Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/venue/4/meet/2026-10-13",
+          "userCanonical": "https://www.boat-ai.jp/venue/4/meet/2026-10-13",
+          "referringUrls": [
+            "https://www.boat-ai.jp/zh-TW/venue/4/meet/2026-10-13",
+            "https://www.boat-ai.jp/ko/venue/4/meet/2026-10-13"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/venue/4/meet/2026-10-13",
+        "htmlLang": "ja",
+        "title": "平和島競艇 開設72周年記念トーキョー・ベイ・カップ 得点率ランキング・準優ボーダー | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/venue/4/meet/2026-10-13",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "平和島競艇（ボートレース平和島）開設72周年記念トーキョー・ベイ・カップの全選手の得点率ランキングと準優ボーダー、準優勝戦・優勝戦の勝ち上がりメンバーを一覧で。予選最終日は勝負駆けの選手も分かります。",
+        "h1": [
+          "龍神レーダー",
+          "開設72周年記念トーキョー・ベイ・カップ"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 2741,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ホーム › 平和島 › 開設72周年記念トーキョー・ベイ・カップ G1 平和島 10/13〜10/18 節終了 開設72周年記念トーキョー・ベイ・カップ 優勝 白井 英治 （1号艇） 得点率ランキング 準優の枠 18位 5.83（確定） 予選の得点率（確定・公式の得点率一覧の値）・全51人 金の枠は得点率の1位（同率は全員） 着順の記号: 転"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/venue/6/meet/2026-05-26",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=0AI2IUNXFh2OEY5lHhi6tw&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-10T12:42:28Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/venue/6/meet/2026-05-26",
+          "userCanonical": "https://www.boat-ai.jp/venue/6/meet/2026-05-26",
+          "referringUrls": [
+            "https://www.boat-ai.jp/zh-TW/venue/6/meet/2026-05-26",
+            "https://www.boat-ai.jp/ko/venue/6/meet/2026-05-26"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/venue/6/meet/2026-05-26",
+        "htmlLang": "ja",
+        "title": "浜名湖競艇 第53回ボートレースオールスター 得点率ランキング・準優ボーダー | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/venue/6/meet/2026-05-26",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "浜名湖競艇（ボートレース浜名湖）第53回ボートレースオールスターの全選手の得点率ランキングと準優ボーダー、準優勝戦・優勝戦の勝ち上がりメンバーを一覧で。予選最終日は勝負駆けの選手も分かります。",
+        "h1": [
+          "龍神レーダー",
+          "第53回ボートレースオールスター"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 2740,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ホーム › 浜名湖 › 第53回ボートレースオールスター SG 浜名湖 5/26〜5/31 節終了 第53回ボートレースオールスター 優勝 丸野 一樹 （1号艇） 得点率ランキング 準優の枠 18位 6.17（確定） 予選の得点率（確定・公式の得点率一覧の値）・全52人 金の枠は得点率の1位（同率は全員） 着順の記号: 転＝転覆・落＝落水・沈"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/venue/9/meet/2026-09-03",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=nHrJ-SkXDC8UoynFQQ6CPw&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-08T21:02:50Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/venue/9/meet/2026-09-03",
+          "userCanonical": "https://www.boat-ai.jp/venue/9/meet/2026-09-03",
+          "referringUrls": [
+            "https://www.boat-ai.jp/en/venue/9/meet/2026-09-03",
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/venue/9/meet/2026-09-03",
+        "htmlLang": "ja",
+        "title": "津競艇 開設74周年記念 ツッキー王座決定戦 得点率ランキング・準優ボーダー | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/venue/9/meet/2026-09-03",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "津競艇（ボートレース津）開設74周年記念 ツッキー王座決定戦の全選手の得点率ランキングと準優ボーダー、準優勝戦・優勝戦の勝ち上がりメンバーを一覧で。予選最終日は勝負駆けの選手も分かります。",
+        "h1": [
+          "龍神レーダー",
+          "開設74周年記念 ツッキー王座決定戦"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 2744,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ホーム › 津 › 開設74周年記念 ツッキー王座決定戦 G1 津 9/3〜9/8 節終了 開設74周年記念 ツッキー王座決定戦 優勝 菊地 孝平 （1号艇） 得点率ランキング 準優の枠 18位 6.17（確定） 予選の得点率（確定・公式の得点率一覧の値）・全52人 金の枠は得点率の1位（同率は全員） 着順の記号: 転＝転覆・落＝落水・沈＝沈"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/racer/4734",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=0maEsw8k07ShmQg3yXZ6lw&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-06T20:30:00Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/racer/4734",
+          "userCanonical": "https://www.boat-ai.jp/racer/4734",
+          "referringUrls": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 83945,
+          "htmlLang": "ja",
+          "title": "安河内将（競艇）選手の成績・勝率・決まり手 | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/racer/4734",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 2,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/racer/4734",
+        "htmlLang": "ja",
+        "title": "安河内将（競艇）選手の成績・勝率・決まり手 | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/racer/4734",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "安河内将選手の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別成績、枠番別成績、決まり手傾向とプロフィール（支部・出身地等）をまとめて紹介。",
+        "h1": [
+          "龍神レーダー",
+          "安河内将"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "Person"
+        ],
+        "bodyTextLength": 3356,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ホームに戻る 選手一覧へ → 安河内将 佐賀支部 A1 生年月日 1989年10月27日 支部 佐賀 出身地 佐賀県 登録期 111期 身長・体重 169cm / 53kg 血液型 B型 🔧 今節のモーター状況 三国・65号機 機力指数 -1.3（過去90日・63走の平均） — 選手の実力より低調 💡 機力指数は「このモーターに乗った"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/racer/4320",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=q1sjlpk476dlXHR8BRnMCA&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-09-01T08:30:53Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/racer/4320",
+          "userCanonical": "https://www.boat-ai.jp/racer/4320",
+          "referringUrls": [
+            "https://www.boat-ai.jp/",
+            "https://boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "レビュー スニペット",
+              "items": [
+                {
+                  "name": "龍神レーダー"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 79102,
+          "htmlLang": "ja",
+          "title": "峰竜太（競艇）選手の成績・勝率・決まり手 | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/racer/4320",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 2,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/racer/4320",
+        "htmlLang": "ja",
+        "title": "峰竜太（競艇）選手の成績・勝率・決まり手 | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/racer/4320",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "峰竜太選手の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別成績、枠番別成績、決まり手傾向とプロフィール（支部・出身地等）をまとめて紹介。",
+        "h1": [
+          "龍神レーダー",
+          "峰竜太"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "Person"
+        ],
+        "bodyTextLength": 3539,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ホームに戻る 選手一覧へ → 峰竜太 佐賀支部 A1 生年月日 1985年3月30日 支部 佐賀 出身地 佐賀県 登録期 95期 身長・体重 171cm / 52kg 血液型 B型 🔧 今節のモーター状況 唐津・46号機 🔧 モーター鮮度 18走目 2節目 機力指数 +26.5（現行モーターの使用開始以降・21走の平均） — 実力以上"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/racer/3256",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=Mb84rz3rHdvWKyaLfujSRw&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-03T18:33:02Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/racer/3256",
+          "userCanonical": "https://www.boat-ai.jp/racer/3256",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "レビュー スニペット",
+              "items": [
+                {
+                  "name": "龍神レーダー"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 90280,
+          "htmlLang": "ja",
+          "title": "三角哲男（競艇）選手の成績・勝率・決まり手 | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/racer/3256",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 2,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/racer/3256",
+        "htmlLang": "ja",
+        "title": "三角哲男（競艇）選手の成績・勝率・決まり手 | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/racer/3256",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "三角哲男選手の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別成績、枠番別成績、決まり手傾向とプロフィール（支部・出身地等）をまとめて紹介。",
+        "h1": [
+          "龍神レーダー",
+          "三角哲男"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "Person"
+        ],
+        "bodyTextLength": 3383,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ホームに戻る 選手一覧へ → 三角哲男 東京支部 A1 生年月日 1967年3月3日 支部 東京 出身地 千葉県 登録期 58期 身長・体重 163cm / 52kg 血液型 A型 🔧 今節のモーター状況 住之江・25号機 機力指数 -14.0（過去90日・43走の平均） — 選手の実力より低調 💡 機力指数は「このモーターに乗った過"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/today",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=HjP9MkSYAlecCGwYq4QaEg&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-09-24T15:27:15Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/today",
+          "userCanonical": "https://www.boat-ai.jp/today",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "レビュー スニペット",
+              "items": [
+                {
+                  "name": "龍神レーダー"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 7099,
+          "htmlLang": "ja",
+          "title": "今日の競艇 鉄板・荒れるの判断材料｜逃げが堅い選手・まくりが利く選手 - 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/today",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 1,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/today",
+        "htmlLang": "ja",
+        "title": "今日の競艇 鉄板・荒れるの判断材料｜逃げが堅い選手・まくりが利く選手 - 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/today",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "今日（本日）の競艇全レースから、逃げが堅い1号艇と、1号艇に逃げられやすい選手（鉄板の根拠）、まくりが利く選手（荒れる要因）を抽出。会場とレースグレードの有利不利を除いて比較し、AIのイン崩れ指数と突き合わせた今日の注目レースも掲載。昨日のフライング・帰郷選手も無料で確認できます。",
+        "h1": [
+          "龍神レーダー",
+          "本日のデータ一覧（鉄板・荒れるの判断材料）"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 2607,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ホーム › 本日のデータ一覧 本日のデータ一覧（鉄板・荒れるの判断材料） 10月20日（火） 12会場 144レース 集計期間 2025-12-02 〜 2026-10-18（321日）／ 調子は直近90日 今日の注目レース 津 4R 締切 11:59 4538 笠置 博之 A1 枠5 5コースに入ったときにまくりで1着になった割合 31.6"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/about",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=gyPi28S4Pp2WjQWMR0AG-g&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-13T11:43:08Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/about",
+          "userCanonical": "https://www.boat-ai.jp/about",
+          "referringUrls": [
+            "https://www.boat-ai.jp/en/about",
+            "https://www.boat-ai.jp/zh-TW/about",
+            "https://www.boat-ai.jp/"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/about",
+        "htmlLang": "ja",
+        "title": "龍神レーダーについて | AIボートレース予想サービスの詳細",
+        "canonical": "https://www.boat-ai.jp/about",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "龍神レーダーは、選手成績・モーター・展示・スタートのデータを、過去の実際のレース結果で数えて見える化するボートレースのデータ分析サービスです。完全無料・登録不要で使えます。",
+        "h1": [
+          "龍神レーダー",
+          "🚀 龍神レーダーについて"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 1872,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ 🚀 龍神レーダーについて AI技術でボートレース予想を革新する ▶ 音楽:「Rocket Power」by Kevin MacLeod (incompetech.com) — Licensed under Creative Commons: By Attribution 4.0 龍神レーダーとは 龍神レーダーは、人工知能（AI）を活用したボ"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/races",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=ESoSWcFh4mS0w81lfrFOng&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-18T08:10:09Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/races",
+          "userCanonical": "https://www.boat-ai.jp/races",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/",
+            "https://www.boat-ai.jp/races/2026-08-28/17"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/races",
+        "htmlLang": "ja",
+        "title": "過去のAI予想データ - 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/races",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "龍神レーダーの過去のレース予想データと的中実績を確認できます。日別の展開予測的中率をチェックして、AIの精度を検証してください。",
+        "h1": [
+          "龍神レーダー",
+          "📅 過去の予想データ"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 1427,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ホーム › 過去の予想 📅 過去の予想データ 過去のレース予想と展開予測の的中実績を日付別に確認できます。 ▼ 📅 2026年10月 20日分 | 展開予測的中率 79.2% 10/20(火) 6/144 レース完了 🌊 展開予測的中率 100% （6レース） 詳細を見る → 10/19(月) 132/132 レース完了 🌊 展開予測"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/blog",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=ZHt66lgjkLvyGghocszt_A&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-18T11:39:52Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/blog",
+          "userCanonical": "https://www.boat-ai.jp/blog",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/en/blog",
+            "https://www.boat-ai.jp/"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 146460,
+          "htmlLang": "ja",
+          "title": "ブログ | 龍神レーダー - ボートレース予想・データ分析・戦略情報",
+          "canonical": "https://www.boat-ai.jp/blog",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 2,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/blog",
+        "htmlLang": "ja",
+        "title": "ブログ | 龍神レーダー - ボートレース予想・データ分析・戦略情報",
+        "canonical": "https://www.boat-ai.jp/blog",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "ボートレース予想、データ分析、舟券戦略に関する最新情報を発信。初心者向けの基本知識から、上級者向けの高度な戦略まで幅広くカバーしています。",
+        "h1": [
+          "龍神レーダー",
+          "📚 龍神レーダー ブログ"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 29708,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ 📚 龍神レーダー ブログ ボートレース予想・データ分析・戦略に関する情報を発信しています 🌟 注目記事 データ分析 決まり手データ分析とは？会場・枠番別の勝ちパターンを見る新機能 会場・枠番ごとにどの決まり手（逃げ・差し・まくり等）で1着になっているかを過去90日データから分析する新機能を解説。買い目選定・除外判断の根拠として活用する方法"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/blog/win-place-comparison",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=cuvPJqYlGIaBIAhRkSpxNQ&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-16T17:55:33Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/blog/win-place-comparison",
+          "userCanonical": "https://www.boat-ai.jp/blog/win-place-comparison",
+          "referringUrls": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 19548,
+          "htmlLang": "ja",
+          "title": "2連単と2連複、どちらが儲かるか？ — 控除率・的中率・回収率のデータ比較 | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/blog/win-place-comparison",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 3,
+          "jsonLdCount": 5
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/blog/win-place-comparison",
+        "htmlLang": "ja",
+        "title": "2連単と2連複、どちらが儲かるか？ — 控除率・的中率・回収率のデータ比較 | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/blog/win-place-comparison",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "2連単と2連複の違いをデータで徹底比較。的中確率、控除率、回収率から初心者〜中級者に最適な舟券種別を解説。",
+        "h1": [
+          "龍神レーダー",
+          "2連単と2連複、どちらが儲かるか？ — 控除率・的中率・回収率のデータ比較",
+          "2連単と2連複、どちらが儲かるか？ — 控除率・的中率・回収率のデータ比較"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BlogPosting",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 2323,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ブログ一覧に戻る初心者向け 2連単と2連複、どちらが儲かるか？ — 控除率・的中率・回収率のデータ比較 📅 2026-03-12 📖 7分 #2連単 #2連複 #舟券 #初心者 #回収率 📑 目次 (15) 2連単と2連複、どちらが儲かるか？ — 控除率・的中率・回収率のデータ比較 「2連単と2連複、結局どっちを買えばいいの？」 ボ"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/blog/rough-race-signals",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=Fxl041JvtKqOARPavva_mA&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-09-28T21:22:53Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/blog/rough-race-signals",
+          "userCanonical": "https://www.boat-ai.jp/blog/rough-race-signals",
+          "referringUrls": [
+            "https://boat-ai.jp/blog"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            },
+            {
+              "richResultType": "レビュー スニペット",
+              "items": [
+                {
+                  "name": "龍神レーダー"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 25279,
+          "htmlLang": "ja",
+          "title": "荒れるボートレースを見極める5つのサイン - AIが1,899レースから発見 | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/blog/rough-race-signals",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 3,
+          "jsonLdCount": 5
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/blog/rough-race-signals",
+        "htmlLang": "ja",
+        "title": "荒れるボートレースを見極める5つのサイン - AIが1,899レースから発見 | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/blog/rough-race-signals",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "「今日のレースは荒れそう」と見極められれば、舟券戦略が変わります。龍神レーダーが1,899レースを分析して発見した、荒れるレースに共通する5つのサインを公開。",
+        "h1": [
+          "龍神レーダー",
+          "荒れるボートレースを見極める5つのサイン - AIが1,899レースから発見",
+          "荒れるボートレースを見極める5つのサイン - AIが1,899レースから発見"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BlogPosting",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 3608,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ブログ一覧に戻る初心者向け 荒れるボートレースを見極める5つのサイン - AIが1,899レースから発見 📅 2025-12-22 📖 10分 #荒れるレース #予想 #サイン #見分け方 📑 目次 (26) 荒れるボートレースを見極める5つのサイン - AIが1,899レースから発見 「今日のレースは荒れそうだな」と予想できれば、"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/blog/suji-funaken-guide",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=buwHvZPtkDA8Wa2BkgiZAw&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-15T09:49:27Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/blog/suji-funaken-guide",
+          "userCanonical": "https://www.boat-ai.jp/blog/suji-funaken-guide",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/ko/blog/suji-funaken-guide",
+            "https://www.boat-ai.jp/",
+            "https://www.boat-ai.jp/blog/course-prediction-tips"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 29499,
+          "htmlLang": "ja",
+          "title": "スジ舟券とは？狙い目パターン早見表で解説【イン逃げ・まくり】 | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/blog/suji-funaken-guide",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 3,
+          "jsonLdCount": 6
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/blog/suji-funaken-guide",
+        "htmlLang": "ja",
+        "title": "スジ舟券とは？狙い目パターン早見表で解説【イン逃げ・まくり】 | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/blog/suji-funaken-guide",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "スジ舟券とは何か、狙い目パターンを早見表で整理。イン逃げ・まくり・差し別の買い目、逆スジの見分け方に加え、大村1号艇60%などイン逃げが決まりやすい会場、戸田・江戸川などまくりが出やすい会場の傾向も解説します。",
+        "h1": [
+          "龍神レーダー",
+          "スジ舟券とは？狙い目パターン早見表で解説【イン逃げ・まくり】",
+          "スジ舟券とは？意味と狙い目の見分け方を初心者向けに解説"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BlogPosting",
+          "FAQPage",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 4071,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ブログ一覧に戻る戦略 スジ舟券とは？狙い目パターン早見表で解説【イン逃げ・まくり】 📅 2026-01-30 📖 12分 #スジ舟券 #買い目 #展開予想 #まくり #差し #イン逃げ 📑 目次 (28) スジ舟券とは？意味と狙い目の見分け方を初心者向けに解説 はじめに 「1-2-3」「4-5-6」という買い目を見て、なぜこの組み合"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/blog/exhibition-run-guide",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=t10S8okVfL8OR1PikCGk-g&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-19T01:39:07Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/blog/exhibition-run-guide",
+          "userCanonical": "https://www.boat-ai.jp/blog/exhibition-run-guide",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/",
+            "https://www.boat-ai.jp/races/2025-12-26",
+            "https://www.boat-ai.jp/blog"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 27263,
+          "htmlLang": "ja",
+          "title": "展示航走は本番30分前｜見るべき3つのポイント | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/blog/exhibition-run-guide",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 3,
+          "jsonLdCount": 5
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/blog/exhibition-run-guide",
+        "htmlLang": "ja",
+        "title": "展示航走は本番30分前｜見るべき3つのポイント | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/blog/exhibition-run-guide",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "展示航走は本番レースの約30分前に行われる公開練習。スタート展示・展示タイム・伸び足回り足の見方を解説。フライング気味の選手は本番スタート成功率が約15%低下するという龍神レーダーの分析データも公開します。",
+        "h1": [
+          "龍神レーダー",
+          "展示航走は本番30分前｜見るべき3つのポイント",
+          "展示航走は本番30分前｜見るべき3つのポイント"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BlogPosting",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 3951,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ブログ一覧に戻るデータ分析 展示航走は本番30分前｜見るべき3つのポイント 📅 2025-12-22 📖 11分 #展示航走 #展示タイム #スタート #モーター 📑 目次 (33) 展示航走は本番30分前｜見るべき3つのポイント ボートレースのレースでは、本番の約30分前に展示航走が行われます。この展示航走を見ずに舟券を買うのは、"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=O5hiK2vY34I5YPiiQWsGzQ&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-13T06:21:50Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review",
+          "userCanonical": "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review",
+          "referringUrls": [
+            "https://www.boat-ai.jp/"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 23302,
+          "htmlLang": "ja",
+          "title": "ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果 | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 3,
+          "jsonLdCount": 5
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review",
+        "htmlLang": "ja",
+        "title": "ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果 | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/blog/ai-prediction-accuracy-review",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "AI予想の的中率・回収率を15,000レースで検証。強み・弱み、他サービスとの違い、AI予想の限界まで正直に公開。",
+        "h1": [
+          "龍神レーダー",
+          "ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果",
+          "ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BlogPosting",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 3419,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ブログ一覧に戻るデータ分析 ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果 📅 2026-03-12 📖 10分 #AI予想 #的中率 #回収率 #検証 #透明性 📑 目次 (13) ボートレースAI予想は本当に当たるのか？ — 3ヶ月15,000レースの検証結果 「AI予想って、本当に当たるの？」"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/blog/first-mark-prediction-guide",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=3zvHmyJq55ba47RhoXS5rA&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-15T07:43:54Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/blog/first-mark-prediction-guide",
+          "userCanonical": "https://www.boat-ai.jp/blog/first-mark-prediction-guide",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        },
+        "richResultsResult": {
+          "verdict": "PASS",
+          "detectedItems": [
+            {
+              "richResultType": "パンくずリスト",
+              "items": [
+                {
+                  "name": "名前のないアイテム"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 29143,
+          "htmlLang": "ja",
+          "title": "1マーク展開予測とは？AIが読み解くレース展開の仕組み | 龍神レーダー",
+          "canonical": "https://www.boat-ai.jp/blog/first-mark-prediction-guide",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 3,
+          "jsonLdCount": 6
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/blog/first-mark-prediction-guide",
+        "htmlLang": "ja",
+        "title": "1マーク展開予測とは？AIが読み解くレース展開の仕組み | 龍神レーダー",
+        "canonical": "https://www.boat-ai.jp/blog/first-mark-prediction-guide",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "龍神レーダーの展開予測機能を徹底解説。選手の決まり手分布・ST・モーター性能から1マーク旋回の展開をAIが統計予測する仕組みと、舟券戦略への活用法を紹介。",
+        "h1": [
+          "龍神レーダー",
+          "1マーク展開予測とは？AIが読み解くレース展開の仕組み",
+          "1マーク展開予測とは？AIが読み解くレース展開の仕組み"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "BlogPosting",
+          "FAQPage",
+          "BreadcrumbList"
+        ],
+        "bodyTextLength": 4354,
+        "bodyTextHead": "当サイトでは、サービス向上のためにCookieを使用しています。 詳しくはプライバシーポリシーをご確認ください。 同意する 拒否する 龍神レーダー ボートレースを見える化。迷ったら、データを信じる。 📊 データ分析ツール 🏁 予想 ✅ 的中 🔍 ☰ ← ブログ一覧に戻る使い方 1マーク展開予測とは？AIが読み解くレース展開の仕組み 📅 2026-03-12 📖 10分 #展開予測 #1マーク #決まり手 #AI予想 #使い方 📑 目次 (20) 1マーク展開予測とは？AIが読み解くレース展開の仕組み ボートレースの勝敗を決める最大のポイントは、第1ターンマークです。6艇が一斉にスタ"
+      }
+    },
+    {
+      "url": "https://www.boat-ai.jp/en/",
+      "inspection": {
+        "inspectionResultLink": "https://search.google.com/search-console/inspect?resource_id=sc-domain:boat-ai.jp&id=qan4Si0NPDSa767Xtp4smA&utm_medium=link&utm_source=api",
+        "indexStatusResult": {
+          "verdict": "PASS",
+          "coverageState": "送信して登録されました",
+          "robotsTxtState": "ALLOWED",
+          "indexingState": "INDEXING_ALLOWED",
+          "lastCrawlTime": "2026-10-14T04:43:16Z",
+          "pageFetchState": "SUCCESSFUL",
+          "googleCanonical": "https://www.boat-ai.jp/en/",
+          "userCanonical": "https://www.boat-ai.jp/en/",
+          "sitemap": [
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "referringUrls": [
+            "https://www.boat-ai.jp/",
+            "https://www.boat-ai.jp/sitemap.xml"
+          ],
+          "crawledAs": "MOBILE"
+        },
+        "mobileUsabilityResult": {
+          "verdict": "VERDICT_UNSPECIFIED"
+        }
+      },
+      "served": {
+        "browser": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "googlebot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 5049,
+          "htmlLang": "ja",
+          "title": "龍神レーダー - 無料のボートレースAI予想＆データ分析",
+          "canonical": null,
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 3
+        },
+        "gptbot": {
+          "status": 200,
+          "location": null,
+          "xRobotsTag": null,
+          "bytes": 11364,
+          "htmlLang": "en",
+          "title": "Ryujin Radar - Free AI Boat Race Predictions &amp; Data Analysis",
+          "canonical": "https://www.boat-ai.jp/en/",
+          "robots": "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+          "h1Count": 0,
+          "jsonLdCount": 4
+        }
+      },
+      "rendered": {
+        "status": 200,
+        "finalUrl": "https://www.boat-ai.jp/en/",
+        "htmlLang": "en",
+        "title": "Ryujin Radar - Free AI Boat Race Predictions & Data Analysis",
+        "canonical": "https://www.boat-ai.jp/en/",
+        "canonicalCount": 1,
+        "robots": [
+          "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+        ],
+        "description": "AI-powered predictions for Japanese boat racing (Kyotei). Our AI analyzes racer stats, motors, exhibitions and start timing to forecast outcomes — completely free, no sign-up required.",
+        "h1": [
+          "Ryujin Radar"
+        ],
+        "jsonLdTypes": [
+          "WebSite",
+          "SoftwareApplication",
+          "Organization",
+          "FAQPage"
+        ],
+        "bodyTextLength": 5560,
+        "bodyTextHead": "We use cookies to improve our service. For details, see our Privacy Policy (in Japanese). Accept Reject Ryujin Radar Visualize boat racing. When in doubt, trust the data. 📊 Analysis Tools 🏁 Predictions ✅ Hits ☰ 🏁 Today's Races Tue, 10/20 ✅ 100% Free, No Sign-up — use every feature right now, no b"
+      }
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-10-20T02:41:17.712Z",
+  "siteUrl": "sc-domain:boat-ai.jp",
+  "startDate": "2026-04-01",
+  "endDate": "2026-10-17",
+  "searchType": "web",
+  "dataState": "final",
+  "filters": "なし（全世界・全端末）",
+  "timezone": "Search Console の日付は太平洋時間（PT）",
+  "note": "query を含む集計は匿名化クエリを除くため、date のみの合計より小さい。page を含む集計は byPage 集計で、サイト合計（byProperty）と表示回数が一致しない",
+  "files": [
+    {
+      "file": "page+date.json",
+      "dimensions": [
+        "page",
+        "date"
+      ],
+      "rowCount": 6542,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byPage",
+      "totalClicks": 15082,
+      "totalImpressions": 273043
+    },
+    {
+      "file": "query+date.json",
+      "dimensions": [
+        "query",
+        "date"
+      ],
+      "rowCount": 20460,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byProperty",
+      "totalClicks": 11555,
+      "totalImpressions": 202661
+    },
+    {
+      "file": "device+date.json",
+      "dimensions": [
+        "device",
+        "date"
+      ],
+      "rowCount": 600,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byProperty",
+      "totalClicks": 14978,
+      "totalImpressions": 263734
+    },
+    {
+      "file": "country+date.json",
+      "dimensions": [
+        "country",
+        "date"
+      ],
+      "rowCount": 2082,
+      "apiPages": 1,
+      "possiblyTruncated": false,
+      "responseAggregationType": "byProperty",
+      "totalClicks": 14978,
+      "totalImpressions": 263734
+    }
+  ]
+}
