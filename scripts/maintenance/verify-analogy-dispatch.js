@@ -12,6 +12,9 @@
  *   (g) ADR-0097 db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile、scripts/lib/dbApplyDispatch.js）: inputs、
  *       見張り（live の最初の起動から3時間を過ぎ、直近3時間に reconcile の job が success で終わった run が無ければ、起動した上で失敗）、
  *       配線（レジストリ・api/cron・vercel.json の毎時17分・db-apply.yml の予備の schedule 47分と mode の choice）
+ *   (h) BOA-929 E2E の録画の撮り直し（e2e-rerecord.yml）・BOA-917 鍵のカナリア（key-canary.yml）: e2e は inputs.gate="true"、
+ *       カナリアは inputs 空で起動。配線（レジストリ・api/cron・vercel.json）。vercel.json の時刻が workflow の予備の
+ *       schedule と同じ（e2e は JST 10:23・12:47・14:37・16:13、カナリアは 7・37分）
  *
  * 使い方: node scripts/maintenance/verify-analogy-dispatch.js
  */
@@ -629,6 +632,106 @@ const run = (f, env = ENV) =>
     modeBlock,
   );
 }
+
+// ---------------------------------------------------------------- (h)
+{
+  const cases = [
+    {
+      target: "e2e_rerecord",
+      job: "e2e_rerecord_dispatch",
+      api: "e2e-rerecord-dispatch",
+      workflow: "e2e-rerecord.yml",
+      inputs: { gate: "true" },
+      crons: ["23 1 * * *", "47 3 * * *", "37 5 * * *", "13 7 * * *"],
+      alertAfter: 1,
+    },
+    {
+      target: "key_canary",
+      job: "key_canary_dispatch",
+      api: "key-canary-dispatch",
+      workflow: "key-canary.yml",
+      inputs: {},
+      crons: ["7,37 * * * *"],
+      // 1日48回なので一時的な失敗の1回では通知しない
+      alertAfter: 3,
+    },
+  ];
+  const vercel = JSON.parse(
+    fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
+  );
+  for (const c of cases) {
+    const f = fakeFetch();
+    const r = await createAnalogyDispatchRun(c.target, {
+      fetchImpl: f,
+      env: ENV,
+    })(ctxOf(at("10:23")));
+    check(
+      r.report?.dispatched === true &&
+        f.calls.length === 1 &&
+        f.calls[0].url.endsWith(
+          `/actions/workflows/${c.workflow}/dispatches`,
+        ) &&
+        same(JSON.parse(f.calls[0].init.body), {
+          ref: "master",
+          inputs: c.inputs,
+        }),
+      `(h) ${c.target} は ${c.workflow} を master で inputs ${JSON.stringify(c.inputs)} で起動する`,
+      JSON.stringify(f.calls[0]),
+    );
+
+    const def = SCRAPE_JOBS[c.job];
+    check(
+      def?.kind === "monitor" && def?.failureAlertAfter === c.alertAfter,
+      `(h) ${c.job}: monitor・failureAlertAfter ${c.alertAfter}`,
+      JSON.stringify(def),
+    );
+    const src = fs.readFileSync(
+      path.join(ROOT, `api/cron/${c.api}.js`),
+      "utf8",
+    );
+    check(
+      Number(/maxDuration:\s*(\d+)/.exec(src)?.[1]) === def?.maxDurationSec &&
+        /modeGated:\s*true/.test(src) &&
+        src.includes(`job: "${c.job}"`) &&
+        src.includes(`createAnalogyDispatchRun("${c.target}")`),
+      `(h) api/cron/${c.api}.js: maxDuration がレジストリと一致し、モードのゲートを掛ける`,
+    );
+    const crons = vercel.crons
+      .filter((x) => x.path === `/api/cron/${c.api}`)
+      .map((x) => x.schedule);
+    check(
+      same(crons, c.crons),
+      `(h) vercel.json: ${c.api} の時刻が ${c.crons.join("・")}（UTC）`,
+      JSON.stringify(crons),
+    );
+    // 予備の schedule を残し、Vercel Cron と同じ時刻にする（片方が来なくても同じ時刻に起動する）
+    const wf = fs.readFileSync(
+      path.join(ROOT, ".github/workflows", c.workflow),
+      "utf8",
+    );
+    const scheduled = [...wf.matchAll(/^\s*- cron:\s*['"]([^'"]+)['"]/gm)].map(
+      (m) => m[1],
+    );
+    check(
+      same(scheduled, c.crons),
+      `(h) ${c.workflow}: 予備の schedule が vercel.json と同じ時刻`,
+      JSON.stringify(scheduled),
+    );
+  }
+
+  // e2e は gate=true で起動する。workflow 側の入力は boolean・既定 false（人の起動は今と同じく判定せずに撮る）
+  const e2e = fs.readFileSync(
+    path.join(ROOT, ".github/workflows/e2e-rerecord.yml"),
+    "utf8",
+  );
+  check(
+    /\n {6}gate:\s*\n(?: {8}description: .*\n)? {8}type: boolean\s*\n {8}default: false/.test(
+      e2e,
+    ) && e2e.includes("github.event.inputs.gate == 'true'"),
+    "(h) e2e-rerecord.yml: inputs.gate は boolean・既定 false で、文字列の 'true' と比べる",
+  );
+}
+
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の検査が失敗`);
   process.exit(1);

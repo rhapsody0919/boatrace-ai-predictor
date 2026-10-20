@@ -53,14 +53,20 @@ name: E2E Re-record (録画の自動撮り直し)
 # 不採用・遅延でも同じ日のうちに撮り直せるようにする。
 # その日（JST）の録画を採用済みなら、後の起動は何もせず終わる（二重に撮らない）。
 # 遅れて JST19時以降に起動したときも撮らない（発走前のレースが夜間開催の数場だけになる）。
-# 判定は scripts/maintenance/e2e-recording.js gate。workflow_dispatch は判定せずに撮る。
+# 判定は scripts/maintenance/e2e-recording.js gate。人が起こす workflow_dispatch（gate=false、既定）は判定せずに撮る。
+#
+# 起動の出元（BOA-929、2026-10-20〜）: GitHub の schedule はこのリポジトリでは欠落が常態で（10/02 を最後に
+# 18日撮れていなかった）、主の起動を Vercel Cron（api/cron/e2e-rerecord-dispatch.js、vercel.json の同じ4つの時刻）
+# からの workflow_dispatch（inputs.gate=true）に移した。gate=true は schedule と同じ扱い（採用済み・JST19時以降は
+# 撮らない、Slack 通知の1日1回）。下の schedule は予備として残す。dispatch と予備が両方来ても、concurrency で
+# 後の起動が待ち、前の起動が採用していれば gate で撮らない。
 # 同時に2本は走らない（concurrency）。後の起動は前の起動の終了を待ってから master を
 # checkout するので、前の起動が push したポインタで「採用済み」を判定できる。
 #
-# Slack 通知: 定期実行の「採用しなかった・撮らなかった」は、同じ日（JST）に別の定期実行が
-# 通知済みなら出さない（e2e-recording.js notify-dedupe）。4回とも不採用でも通知は1回で、
-# 2回目以降の結果は各実行の step summary に残る。ワークフロー自体の失敗（ステップの失敗）と
-# workflow_dispatch は毎回通知する。
+# Slack 通知: 定期実行（schedule・gate=true の dispatch）の「採用しなかった・撮らなかった」は、
+# 同じ日（JST）に別の実行が通知済みなら出さない（e2e-recording.js notify-dedupe）。4回とも不採用でも
+# 通知は1回で、2回目以降の結果は各実行の step summary に残る。ワークフロー自体の失敗（ステップの失敗）と
+# 人が起こす workflow_dispatch（gate=false）は毎回通知する。
 # 必要な権限: contents: write（Release の作成・削除とポインタの push）、
 # actions: read（その日の他の実行が通知済みかを見る）。
 # 使う Secrets: VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY（本番の読み取りのみ、repoのSecrets）、
@@ -74,6 +80,11 @@ on:
     - cron: '37 5 * * *' # JST 14:37
     - cron: '13 7 * * *' # JST 16:13
   workflow_dispatch:
+    inputs:
+      gate:
+        description: '定期実行と同じ判定をする（採用済み・JST19時以降は撮らない）。Vercel Cron が true で起動する'
+        type: boolean
+        default: false
 
 # 起動が遅れて重なっても、同時には走らせない（後の起動は前の起動の終了を待ち、
 # checkout した master のポインタで「採用済み」を判定する）
@@ -113,9 +124,11 @@ jobs:
       - name: 撮り直すか（定期実行のみ）
         id: gate
         env:
-          EVENT_NAME: ${{ github.event_name }}
+          # 定期実行 = schedule か、Vercel Cron の dispatch（inputs.gate=true）。
+          # github.event.inputs は常に文字列（schedule では空）
+          SCHEDULED: ${{ github.event_name == 'schedule' || github.event.inputs.gate == 'true' }}
         run: |
-          if [ "$EVENT_NAME" != "schedule" ]; then
+          if [ "$SCHEDULED" != "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -390,10 +403,13 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           RESULT: ${{ steps.judge.outputs.result || needs.record.outputs.result }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          EVENT_NAME: ${{ github.event_name }}
+          SCHEDULED: ${{ github.event_name == 'schedule' || github.event.inputs.gate == 'true' }}
           # failure() は if: の中でしか使えない（env に書くとワークフロー全体が無効になる）。
           # env では job.status で同じ判定をする
           JOB_FAILED: ${{ job.status == 'failure' }}
+          # record ジョブ自体の失敗・取り消しも「ワークフロー自体の失敗」として毎回通知する
+          # （judge の job.status には出ない。dedupe で黙らせない）
+          RECORD_RESULT: ${{ needs.record.result }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
@@ -403,7 +419,7 @@ jobs:
           # 定期実行の「採用しなかった・撮らなかった」は1日1回だけ通知する（同じ日に別の
           # 定期実行が通知済みなら出さない）。ワークフロー自体の失敗（push の失敗等）は
           # 理由が別なので必ず通知する。checkout 前に落ちてスクリプトが無いときも通知する
-          if [ "$EVENT_NAME" = "schedule" ] && [ "$JOB_FAILED" != "true" ]; then
+          if [ "$SCHEDULED" = "true" ] && [ "$JOB_FAILED" != "true" ] && [ "$RECORD_RESULT" = "success" ]; then
             DEDUPE=$(node scripts/maintenance/e2e-recording.js notify-dedupe 2>/dev/null || echo '{"notify":true}')
             echo "$DEDUPE"
             if [ "$(printf '%s' "$DEDUPE" | jq -r '.notify')" = "false" ]; then
