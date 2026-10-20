@@ -19,6 +19,7 @@ import {
   checkInternalLinks,
   changedJsonStrings,
   findJudgementPhrases,
+  changedMdParagraphs,
 } from "../lib/contentPrGate.js";
 import { parseRawDiff } from "../content/check-content-pr.js";
 
@@ -241,7 +242,7 @@ const cases = [
   [
     "全角の「回収率１５０％」も落ちる",
     { md: `${baseMd}\n回収率１５０％\n` },
-    /\[judgement\].*回収率１５０％/,
+    /\[judgement\].*回収率150%/,
   ],
   [
     "100% 未満の回収率・的中率はデータの記述として通る",
@@ -327,6 +328,78 @@ const cases = [
       headJsonObj: { ...baseJson, metaTitle: "競艇の記事" },
     }),
     /\[judgement\].*metaTitle.*競艇/,
+  ],
+  // ---- 8271c413a の審査 P1-1: 免責の決まり文は、その部分だけを消して残りを照合する
+  [
+    "「必ず当たる。結果は保証されません」は落ちる（決まり文の行でも残りを見る）",
+    { md: `${baseMd}\n必ず当たる。結果は保証されません\n` },
+    /\[judgement\].*必ず当たる/,
+  ],
+  [
+    "「回収率300%！※結果を保証するものではありません」は落ちる",
+    { md: `${baseMd}\n回収率300%！※結果を保証するものではありません\n` },
+    /\[judgement\].*回収率300%/,
+  ],
+  // ---- P2-1: 強調・空白・実体参照・ゼロ幅文字・段落内の改行ですり抜けない
+  ...[
+    ["強調 **必ず**当たる", "**必ず**当たる"],
+    ["強調 必ず **当たる**", "必ず **当たる**"],
+    ["全角空白", "必ず　当たる"],
+    ["数値の実体参照", "&#24517;ず当たる"],
+    ["16進の実体参照", "&#x5FC5;ず当たる"],
+    ["名前付きの実体参照", "必ず&nbsp;当たる"],
+    ["ゼロ幅文字", `必${String.fromCodePoint(0x200b)}ず当${String.fromCodePoint(0x2060)}たる`],
+    ["段落内の改行", "必ず\n当たる"],
+    ["打ち消し線とバッククォート", "~~必~~ず`当`たる"],
+  ].map(([name, text]) => [
+    `${name}でも「必ず当たる」は落ちる`,
+    { md: `${baseMd}\n${text}\n` },
+    /\[judgement\].*必ず当たる/,
+  ]),
+  [
+    "改稿で、触っていない行と変えた行にまたがる句も段落で落ちる",
+    revision({
+      baseMdText: `${baseMd}\n必ず\n古い行\n`,
+      headMdText: `${baseMd}\n必ず\n当たる\n`,
+    }),
+    /\[judgement\].*必ず当たる/,
+  ],
+  [
+    "改稿で、句の無い段落だけを変えたなら別の段落の句は見ない",
+    revision({
+      baseMdText: `${baseMd}\n必ず当たる（古い文）\n\n古い行\n`,
+      headMdText: `${baseMd}\n必ず当たる（古い文）\n\n新しい行\n`,
+    }),
+    "ok",
+  ],
+  // ---- P2-2: 回収率の見落とし
+  ...[
+    ["コンマ区切り", "回収率1,343%"],
+    ["逆の語順", "120%の回収率"],
+    ["パーセント", "回収率120パーセント"],
+    ["間が7字以上", "回収率がなんと驚異の150%"],
+    ["半角と全角の混ざり", "回収率１2０%"],
+    ["倍", "回収率 1.5倍"],
+  ].map(([name, text]) => [
+    `回収率の${name}（${text}）は落ちる`,
+    { md: `${baseMd}\n${text}\n` },
+    /\[judgement\].*回収率/,
+  ]),
+  [
+    "回収率が 100% 未満・1倍未満・漢数字は通る",
+    {
+      md: `${baseMd}\n回収率85%、回収率0.8倍、回収率は百二十パーセント\n`,
+    },
+    "ok",
+  ],
+  // ---- P3-1: 今ある行の複製は、増えた分を足した行とみなす
+  [
+    "改稿で、今ある「必ず当たる」の行を複製すると落ちる",
+    revision({
+      baseMdText: `${baseMd}\n必ず当たる\n`,
+      headMdText: `${baseMd}\n必ず当たる\n\n必ず当たる\n`,
+    }),
+    /\[judgement\].*必ず当たる/,
   ],
   [
     "判断が要る語を申告していても落ちる",
@@ -1029,7 +1102,10 @@ for (const f of mdFiles) {
   const path = `public/blog/${f}`;
   const text = readFileSync(join(blogDir, f), "utf8");
   phraseHits.push(
-    ...findJudgementPhrases(text.split("\n"), config).map((h) => ({
+    ...findJudgementPhrases(
+      changedMdParagraphs(text, undefined).map((p) => p.text),
+      config,
+    ).map((h) => ({
       path,
       ...h,
     })),
@@ -1049,9 +1125,7 @@ for (const f of jsonFiles) {
   const obj = JSON.parse(readFileSync(join(postsDir, f), "utf8"));
   // 変えていない JSON とみなす（base = HEAD）。メタ情報の「競艇」は変えた値だけが判断の対象
   masterErrors.push(...checkKyoteiJson(path, obj, obj));
-  const strings = changedJsonStrings(obj, undefined).flatMap((s) =>
-    s.value.split("\n"),
-  );
+  const strings = changedJsonStrings(obj, undefined).map((s) => s.value);
   phraseHits.push(
     ...findJudgementPhrases(strings, config).map((h) => ({ path, ...h })),
   );
@@ -1084,7 +1158,7 @@ console.log(
 // 情報（落とさない）: 今の記事を全部「足したファイル」とみなしたときの判断が要る句
 const byHit = new Map();
 for (const h of phraseHits) {
-  const k = h.kind === "pattern" ? "回収率100%以上（正規表現）" : h.hit;
+  const k = h.kind === "rate" ? "回収率100%以上・1倍以上" : h.hit;
   byHit.set(k, (byHit.get(k) ?? 0) + 1);
 }
 console.log(

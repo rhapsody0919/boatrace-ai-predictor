@@ -135,6 +135,7 @@
     "@supabase/supabase-js": "^2.89.0",
     "@vercel/functions": "^3.9.5",
     "cheerio": "^1.1.2",
+    "decode-named-character-reference": "^1.2.0",
     "framer-motion": "^12.35.0",
     "googleapis": "^168.0.0",
     "gray-matter": "^4.0.3",
