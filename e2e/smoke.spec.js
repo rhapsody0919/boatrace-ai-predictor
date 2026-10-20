@@ -3755,6 +3755,24 @@ test.describe("ホームズ予想（α版・非公開リンク）", () => {
       "—",
     );
   });
+
+  test("/holmes のモリアーティタブは推奨停止中で、本日の推奨レースを出さない", async ({
+    page,
+  }) => {
+    await page.goto("/holmes");
+    await page.click('.holmes-tab:has-text("モリアーティ")');
+    await expect(page.locator(".holmes-detective-name")).toHaveText(
+      "モリアーティ予想",
+    );
+    // 推奨の72%が発走後に作られていた（買えない買い目）ため、提示を止めている
+    // （docs/issues/moriarty-post-hoc-generation-and-odds-drift.md）。
+    // 再開するときはこのテストを「本日の推奨レース」が出る形に書き換える
+    await expect(page.locator(".holmes-status-badge")).toHaveText(
+      "検証中（推奨停止）",
+    );
+    await expect(page.locator(".moriarty-verification-notice")).toBeVisible();
+    await expect(page.getByText("本日の推奨レース")).toHaveCount(0);
+  });
 });
 
 test.describe("的中レース一覧のunified一本化（BOA-174）", () => {
