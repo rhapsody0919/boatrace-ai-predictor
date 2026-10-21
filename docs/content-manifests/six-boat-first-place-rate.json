@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "six-boat-first-place-rate",
+ "kind": "new",
+ "ticket": "OC-20261021T221644-seo-human-1",
+ "paths": [
+  "public/blog/six-boat-first-place-rate.md",
+  "src/data/blog-posts/six-boat-first-place-rate.json"
+ ],
+ "files": {
+  "public/blog/six-boat-first-place-rate.md": "199b6119a70b6b60c86c0dfc131961d24f0b7da5b5a07ba09b98b757b2341bab",
+  "src/data/blog-posts/six-boat-first-place-rate.json": "4c9c8d8a9d46883e80ff5777eda1110ef50a17abeb0d6848e0ac5af8b3ad29cf"
+ },
+ "content_sha256": "33c7156034ab48aaa35620efd673cc06cee74bc204ce96ec194fbe54460c9aba",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "33c7156034ab48aaa35620efd673cc06cee74bc204ce96ec194fbe54460c9aba",
+   "model": "codex-default/high",
+   "at": "2026-10-21T22:24:36+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "33c7156034ab48aaa35620efd673cc06cee74bc204ce96ec194fbe54460c9aba",
+   "model": "codex-default/high",
+   "at": "2026-10-21T22:24:36+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "33c7156034ab48aaa35620efd673cc06cee74bc204ce96ec194fbe54460c9aba",
+   "model": "codex-default/high",
+   "at": "2026-10-21T22:24:36+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "33c7156034ab48aaa35620efd673cc06cee74bc204ce96ec194fbe54460c9aba",
+   "model": "codex-default/high",
+   "at": "2026-10-21T22:24:36+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-21T22:26:45+09:00",
+ "run": "20261021T221644-seo-human",
+ "engine": "codex"
+}
