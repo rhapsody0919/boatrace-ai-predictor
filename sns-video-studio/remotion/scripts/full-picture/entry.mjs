@@ -29,7 +29,8 @@ export function entryScenes(scenes, answers = {}, { race = null } = {}) {
   const venue = venue0 && race ? { ...venue0, question: entryQuestion(race) } : venue0;
   const today = s1.find((s) => s.id === "s1-wind") ?? s1.find((s) => s.id === "s1-day");
   const c0 = by.scene4?.data?.conclusion ?? null;
-  const conclusion = c0 ? { ...c0, question: CONCLUSION_QUESTION } : null;
+  // 当てはまる形が無い日は「同じ並び」と言わない（場面4が entryQuestion を持つ。BOA-979）
+  const conclusion = c0 ? { ...c0, question: c0.entryQuestion ?? CONCLUSION_QUESTION } : null;
   if (!conclusion) omitted.push({ where: "entry.conclusion", reason: "展開の着順の流れが無い（結論の拍を省いた）", mustReport: true });
   const build = (cond) => [
     { id: "scene1", kind: "step", data: { id: "scene1", steps: cond.map((s) => ({ ...s, samePage: false })), omitted: [] } },

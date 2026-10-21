@@ -61,7 +61,7 @@ function lines({ venue90, overview, conclusion }) {
       ? `6艇比較の${overview.axesCount}項目で2位以内に入った数は、${overview.leaders.join("・")}号艇の${overview.maxTop2}が最多${overview.runner ? `、次は${overview.runner.boats.join("・")}号艇の${overview.runner.count}` : ""}`
       : null,
     conclusion: conclusion
-      ? `スタートの形が${conclusion.form}だった過去${conclusion.n.toLocaleString("ja-JP")}件中、1着最多は${conclusion.boat}号艇で${conclusion.count.toLocaleString("ja-JP")}件（${conclusion.pct}%）`
+      ? `${conclusion.form ? `スタートの形が${conclusion.form}だった` : "枠なりの"}過去${conclusion.n.toLocaleString("ja-JP")}件中、1着最多は${conclusion.boat}号艇で${conclusion.count.toLocaleString("ja-JP")}件（${conclusion.pct}%）`
       : null,
   };
 }
