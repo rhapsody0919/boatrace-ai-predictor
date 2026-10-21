@@ -1,0 +1,64 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "venue-course1-win-rate-ranking",
+ "kind": "new",
+ "ticket": "BOA-957",
+ "paths": [
+  "public/blog-charts/venue-course1-win-rate-ranking-course-win.json",
+  "public/blog/venue-course1-win-rate-ranking.md",
+  "src/data/blog-posts/venue-course1-win-rate-ranking.json"
+ ],
+ "files": {
+  "public/blog-charts/venue-course1-win-rate-ranking-course-win.json": "ac971969a40f2542217bc48b5c6d02b52f06ceb3b4b87cd06ac4eaf8b6481202",
+  "public/blog/venue-course1-win-rate-ranking.md": "184a3e7251eeb51a751f1bcf6e078756815eb59f12e27203a8806db69b62e2de",
+  "src/data/blog-posts/venue-course1-win-rate-ranking.json": "c6b5e0f5eceee0a17a78a61fc3e1b130a6ba1668b4096a92ce6125d06b3c30b4"
+ },
+ "content_sha256": "7d2b7af8c3b62b317e6498671c9f304fe9512215909b13c78f99e4a3a2c70e13",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "7d2b7af8c3b62b317e6498671c9f304fe9512215909b13c78f99e4a3a2c70e13",
+   "model": "opus",
+   "at": "2026-10-20T21:35:26+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "7d2b7af8c3b62b317e6498671c9f304fe9512215909b13c78f99e4a3a2c70e13",
+   "model": "opus",
+   "at": "2026-10-20T21:35:26+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "7d2b7af8c3b62b317e6498671c9f304fe9512215909b13c78f99e4a3a2c70e13",
+   "model": "opus",
+   "at": "2026-10-20T21:35:26+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "7d2b7af8c3b62b317e6498671c9f304fe9512215909b13c78f99e4a3a2c70e13",
+   "model": "opus",
+   "at": "2026-10-20T21:35:26+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-21T15:08:43+09:00",
+ "run": "20261020T212848-seo-human",
+ "engine": "codex"
+}
