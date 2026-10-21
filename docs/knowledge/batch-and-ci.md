@@ -72,3 +72,5 @@
 - 審査の月の上限（既定300）は作成の App の run の数で、push のたびに1回数える。全レーンと全社員で共有なので、1日7本の PR の流れでは上限に当たりうる（2026-10-20、system-architect の開発の社員化 v2 の審査、scripts/lib/reviewPr.js:277-284・ADR-0097:96）
 - 例外の線を機械で効かせる置き場は、master から読まれる龍神の config に限る。pull_request_target は master の定義で動くので、PR がこのファイルを書き換えても、その PR の審査には効かない（2026-10-20、system-architect の開発の社員化 v2 の審査、.github/workflows/review.yml:12・54-56）
 - codex/* には Preview が無い。それ以外の接頭辞の Preview は本番の管理者キーを持つ。画面の作業を社員に回すと、段階0 B（mock-diff-checker・ファン評価）を満たす手段が無い（2026-10-20、system-architect の開発の社員化 v2 の審査、vercel.json:5-6・AGENTS.md:25・SKILL.md:115）
+- verify-registry.json の entries は script の名前の順に置き、新しい項目は名前の位置に挿す。順は `run-verify-registry.js` の突き合わせ（verify:ci）で落ち、`--sort` で並べ直せる。同じ隙間への追加は今後も衝突しうる（10/06〜10/20 の同じ日のコミットの組で6.3%、末尾に足す運用では100%。verify-sns-*・verify-bot-* の束に偏る）（2026-10-20、BOA-938、system-architect が master の台帳の履歴から数えた）
+- 台帳の衝突を「両方残す」で直すと、別の項目の guards が付いた項目ができうる（checkRegistry は名前と tier・guards の対応を見ない）。master の台帳を丸ごと取り、自分の項目だけ足して `--sort`・`--check`、`git diff origin/master` が足した塊だけか確かめる（2026-10-20、BOA-938、system-architect が #1708 の merge-tree で再現）
