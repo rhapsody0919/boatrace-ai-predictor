@@ -93,6 +93,7 @@
         "scripts/maintenance/verify-format-column-migration.js (同上)",
         "scripts/maintenance/verify-winning-technique-filled.js (同上)",
         "scripts/maintenance/verify-venue-technique-period.js (同上)",
+        "src/utils/analogyRetention.js (verify-analogy-v16.js が import し、--cleanup で消す範囲の日数 SONAR_KEEP_DAYS を決める。変数のパスで動く5つの閉包は、展開を実装するまで prodWrite に入らないので名前で書く。hq の v6.2 の照合)",
         "docs/db-migration/APPLIED.md (足すだけの規則に当たらない変更)",
         "docs/design/*/mock/**",
         "api/cron/** (下の cronSmall に当たらないもの)",
@@ -148,7 +149,8 @@
         "entries": [
           "Environment が prod-jobs・ryujin-bot・production-db・production-db-auto の job の run の行にある scripts/**・api/** のファイル（hq の実測で 66）",
           "vercel.json の crons の path に当たる api/cron/*.js（hq の実測で 40。deny にも入っているが、import の先を数える入口）",
-          "run の行のパスが変数で組み立てられているもの（nightly-verify-db.yml の for script in … の単語の並びから scripts/maintenance/$script.js）は、gate が単語の並びを展開して入口に足す。展開できない変数のパスがあれば、その workflow を変える PR は owner（v6.2、審査の指摘。今は名前で owner に書いた5つで止めている）"
+          "run の行のパスが変数で組み立てられているもの（nightly-verify-db.yml の for script in … の単語の並びから scripts/maintenance/$script.js）は、gate が単語の並びを展開して入口に足す。workflow 自体は .github/** で owner なので、ここで守る相手は「workflow は変えず、変数のパスで動くスクリプトとその閉包を変える PR」。展開を実装するまでは、その5つと閉包（src/utils/analogyRetention.js）を owner に名前で書いて止める。展開できない形の変数のパスを gate が見つけたら、そのスクリプトを名前で owner に足す（v6.2）",
+          "working-directory（step の working-directory か、job・workflow の defaults.run.working-directory）を付けた run の行の素のファイル名（python v16_morning.py 等）は、その working-directory からのパスとして入口に足す（v6.2、hq の照合。今の文では拾わず、analogy-v16-morning.yml・in-caution-nightly.yml・train-analogy.yml・train-poirot.yml の9本・閉包24ファイルが prodWrite に入っていなかった。過去31日の社員で回る8本は prodWrite の束の上限の中で、本数は変わらない）"
         ],
         "closure": "入口から静的な import（JS の import/require の相対パス、Python のリポジトリ内の import）をたどった全部。master と PR の head の和で作る（head の変更したファイルは API で読む。実行しない）。fs で読むデータはたどらない（残る弱み）",
         "srcFiles": "閉包に入る src/**（src/utils の一部等）は prodWrite として数える。上限は prodWrite のファイルだけで数えるので、小さな画面の直し（#1627 の2ファイル16行）は上限の中で、審査の承認で入る",
