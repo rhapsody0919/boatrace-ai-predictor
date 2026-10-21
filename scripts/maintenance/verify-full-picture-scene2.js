@@ -133,30 +133,31 @@ const cardFinal = {
   usualN: 4294,
 };
 
-// 文型の版（項目＋値＋順位を1文に。2行目で比べる相手）
+// 文型の版（項目＋値＋順位を1文に。2行目で比べる相手）。選手の成績か、機械の数字か、過去のレースの集計かが分かる主語（2026-10-20 オーナー）
 assert.deepEqual(templateLines(overview), [
-  "2位以内の項目が最多は2号艇",
+  "今日の6艇で2位以内の項目が最多は2号艇",
   "5項目中4、次は1号艇の3",
 ]);
 assert.deepEqual(templateLines(focus1), [
-  "1号艇は全国勝率8.06で1位",
+  "1号艇の選手は全国勝率8.06で6人中1位",
   "2番手は2号艇の7.61、ほか2項目も1位",
 ]);
 assert.deepEqual(templateLines(focus3), [
-  "3号艇は当地勝率7.78で2位",
+  "3号艇の選手は当地勝率7.78で6人中2位",
   "1位は2号艇の8.28",
 ]);
 assert.deepEqual(templateLines(focusSt), [
-  "1号艇は平均ST（直近30走）0.12秒で1位",
-  "2番手は2号艇の同じ0.12秒、ほか1項目も1位",
+  "1号艇の選手は平均ST（直近30走）で6人中1位",
+  "0.12秒、2番手は2号艇の同じ0.12秒",
 ]);
+// 過去のレースの集計と分かるように（今日の1号艇の選手の成績と読まれない。2026-10-20 オーナー）
 assert.deepEqual(templateLines(card), [
-  "当地勝率3位の1着率69%",
-  "全体の71.1%より2.1ポイント低い",
+  "当地勝率3位だった過去の1号艇は1着69%",
+  "同じ級別の1号艇の71.1%より2.1ポイント低い",
 ]);
 // 「今日の順位を当てはめない」だけでは、カードの「今日 6艇中1位」と食い違って見えた（2026-10-20 オーケストレーター指摘）
 assert.deepEqual(templateLines(cardFinal), [
-  "今節の着順点 1位77%・6位64%",
+  "過去の1号艇は今節の着順点1位77%・6位64%",
   "1号艇は1位、準優勝戦の日は枠順に近く参考",
 ]);
 for (const f of [overview, focus1, focus3, focusSt, card, cardFinal]) {
@@ -505,7 +506,7 @@ for (const f of fixtures) {
   const rough = scenes.find((x) => x.id === "scene3").data.steps.find((st) => st.id === "s3-rough");
   if (rough) {
     assert.ok(rough.lines[0].startsWith("全国・") && /\d件$/.test(rough.lines[0]), `${f}: s3-rough の1行目は「全国・…N件」: ${rough.lines[0]}`);
-    assert.ok(rough.lines[1].startsWith("1着"), `${f}: s3-rough の2行目は1着率と全国の比較: ${rough.lines[1]}`);
+    assert.ok(rough.lines[1].startsWith("1着") && rough.lines[1].includes("全国の1号艇"), `${f}: s3-rough の2行目は1着率と全国の比較: ${rough.lines[1]}`);
     // 答えの行（1着率）を大きく、範囲の行を小さく（範囲の行が答えより目立っていた。2026-10-20 オーケストレーター段階1）
     assert.equal(rough.lead, 1, `${f}: s3-rough は2行目が答えの行`);
     // 縮めた後の大きさで比べる（長い答えの行は 46px から縮み、範囲の行とほぼ同じ大きさになっていた）
@@ -611,10 +612,10 @@ for (const f of fixtures) {
   const raceOf = (m) => m.api.races.find((r) => r.raceId === m.raceId);
   // 各レースの段の並び（正解の写し）。build の退行で段が消えたら落ちる
   const GOLDEN = {
-    "2026-10-12-01-12": "scene1:venue90,place,day,wind scene2:6/4 scene2b:sonar,flow,flow-1,tri scene3:rough,venue,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
-    "2026-10-15-15-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-4,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
-    "2026-10-16-24-11": "scene1:venue90,place,day,wind scene2:6/5 scene2b:sonar,flow,flow-1,tri scene3:rough,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
-    "2026-10-19-19-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue,return scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-12-01-12": "scene1:venue90,place,day,wind scene2:6/4 scene2b:sonar,flow,flow-1,tri scene3:rough,venue scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-15-15-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-4,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-16-24-11": "scene1:venue90,place,day,wind scene2:6/5 scene2b:sonar,flow,flow-1,tri scene3:rough scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall,attack-overall,overall-tri scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
+    "2026-10-19-19-10": "scene1:venue90,place,day,wind scene2:6/2 scene2b:sonar,flow,flow-1,tri scene3:rough,venue scene4:entry,entry-mae,slit-course,attack-course,course-flow,course-flow-1,course-tri,slit-overall scene5:place,axis-1,axis-2,axis-3,axis-4,axis-5,axis-6,axis-rest scene6:motor,exhibit,deep-2,deep-3,deep-4,deep-5,deep-6 scene8:summary",
   };
   const shape = (scenes) => scenes.map((x) => (x.kind === "scene2" ? `${x.id}:${x.data.radar.focus.length}/${x.data.cards.items.length}` : `${x.id}:${x.data.steps.map((st) => st.id.replace(/^s\d+b?-/, "")).join(",")}`)).join(" ");
   for (const f of fixtures) assert.equal(shape(buildAll(load(f))), GOLDEN[f.replace(".json.gz", "")], `${f}: 段の並びが正解の写しと同じ`);
@@ -854,6 +855,71 @@ for (const f of fixtures) {
   // LLM が失敗した文の JSON は印を付け、使い回さない
   assert.ok(connectedText(scene, () => { throw new Error("x"); }).llmError, "LLM の失敗に印");
   assert.equal(connectedText(scene, fake).llmError, undefined);
+}
+
+// ---- BOA-913 ----
+{
+  // 場面3③の回収率の拍は出さない（2026-10-20 オーナー決定。20〜45走では選手の差を示さず、収益を連想させる）
+  for (const f of fixtures) {
+    const sc = buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8")));
+    assert.ok(!sc.find((x) => x.id === "scene3").data.steps.some((st) => st.id === "s3-return"), `${f}: 回収率の拍が無い`);
+    assert.ok(!/回収率/.test(Object.values(templateText(allBeats(sc)).answers).flat().join("\n")), `${f}: 字幕に回収率が無い`);
+  }
+  // つなぐ語を近くで繰り返さない（10/19 は「続いて」20回・同じ語の連続9回だった）
+  const { repeatReasons, groupDigits } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
+  const u = [{ step: "s", connector: "さらに" }, { step: "s", connector: null }, { step: "s", connector: "続いて" }];
+  has(repeatReasons("さらに", "s", u), "直前の3拍");
+  assert.deepEqual(repeatReasons("さらに", "s", [...u, { step: "s", connector: null }]), [], "4拍離れれば使える");
+  const gap = Array(3).fill({ step: "s", connector: null });
+  has(repeatReasons("続いて", "s", [{ step: "s", connector: "続いて" }, ...gap, { step: "s", connector: "続いて" }, ...gap]), "2回まで");
+  assert.deepEqual(repeatReasons(null, "s", u), []);
+  // 偽物の LLM が全拍に「続いて」を付けても、付くのは間を空けた場面ごとに2回まで
+  const allBeats4 = allBeats(buildAll(JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"))));
+  const allTsuzuite = connectedText(allBeats4, () => JSON.stringify({ beats: allBeats4.map((b) => ({ id: b.id, connector: "続いて" })) }));
+  const perScene = {};
+  allTsuzuite.beats.forEach((b, i) => {
+    if (b.connector !== "続いて") return;
+    perScene[allBeats4[i].step] = (perScene[allBeats4[i].step] ?? 0) + 1;
+  });
+  assert.ok(Object.values(perScene).every((n) => n <= 2), `「続いて」は場面ごとに2回まで: ${JSON.stringify(perScene)}`);
+  allTsuzuite.beats.forEach((b, i) => {
+    if (b.connector) for (let k = Math.max(0, i - 3); k < i; k++) assert.notEqual(allTsuzuite.beats[k].connector, b.connector, `${b.id}: 直前の3拍と同じ語`);
+  });
+
+  // 件数の桁区切り（頁とそろえる）と、差のポイントは小数1桁
+  assert.equal(groupDigits("1号艇が1着なら2着は2号艇 / 9961件の33.8%（3367件）"), "1号艇が1着なら2着は2号艇 / 9,961件の33.8%（3,367件）");
+  assert.equal(groupDigits("類似レース400件で1着最多は1号艇"), "類似レース400件で1着最多は1号艇");
+  assert.equal(groupDigits("篠崎元志の1号艇は1044走、過去90日の1234レース、21.3ポイント"), "篠崎元志の1号艇は1,044走、過去90日の1,234レース、21.3ポイント");
+  assert.deepEqual(checkLines(["下関で1号艇が1着なら2着は2号艇", "9,961件の33.8%（3,367件）"], { kind: "followers", venue: "下関", boat: 1, second: { boat: 2, rate: "33.8", k: 3367 }, n: 9961 }, null), [], "桁区切りの数は facts と照合できる");
+  for (const f of fixtures) {
+    const sc = buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8")));
+    const ans = templateText(allBeats(sc)).answers;
+    for (const [id, ls] of Object.entries(ans))
+      for (const l of ls) {
+        assert.ok(!/(?<![\d.,])\d{4,}(件|走|レース)/.test(l), `${f} ${id}: 4桁以上の件数は桁区切り「${l}」`);
+        assert.ok(!/より\d+ポイント/.test(l), `${f} ${id}: 差のポイントは小数1桁「${l}」`);
+      }
+  }
+}
+
+// ---- 個人の成績か、会場（全選手）・過去のレースの集計かが、答えを読んで分かる（2026-10-20 オーナー、BOA-913）----
+{
+  const { scopeReasons, SCOPE_WORDS } = await import(`${R}/scripts/full-picture/scene2-text.mjs`);
+  // 4レースの全拍の答えが通る（kind ごとの範囲の語。決まって入る「全国の…」「件」では通さない）
+  for (const f of fixtures) {
+    const beats = allBeats(buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"))));
+    for (const b of beats) assert.deepEqual(scopeReasons(b.template, b.facts), [], `${f} ${b.id}: 範囲の語「${b.template.join(" / ")}」`);
+  }
+  // 本番と同じ2行の形で、範囲の語を落とした答えを止める（代わりの審査 P2: 「全国の…」「件」「全体」で素通りしていた）
+  has(scopeReasons(["1号艇の1着率62.1%", "全国の54.6%より7.5ポイント高い"], { kind: "venue90", venue: "下関" }), "範囲の語が無い");
+  has(scopeReasons(["当地勝率3位の1着69%", "1号艇全体の71.1%より2.1ポイント低い"], { kind: "card" }), "範囲の語が無い");
+  has(scopeReasons(["1号艇が1着なら2着は2号艇", "9,961件の33.8%（3,367件）"], { kind: "followers", venue: "下関" }), "範囲の語が無い");
+  has(scopeReasons(["下関1号艇は7走で1着率100.0%", "全会場の87.7%より12.3ポイント高い"], { kind: "venueRecord", name: "篠崎元志" }), "範囲の語が無い");
+  has(scopeReasons(["1号艇は直近30走1着率33%で1位", "2番手は5号艇の18%"], { kind: "focus" }), "範囲の語が無い");
+  // 決まりの無い種類で割合を出したら止める（新しい集計の拍が検査から漏れない）
+  has(scopeReasons(["1号艇は単勝回収率100.2%"], { kind: "returnRate" }), "決まりが無い種類");
+  assert.ok(!("returnRate" in SCOPE_WORDS), "回収率の種類は無い");
+  has(checkLines(["1号艇の1着率62.1%", "全国の54.6%より7.5ポイント高い"], { kind: "venue90", venue: "下関", rate: 62.1, national: 54.6, diffPt: 7.5, direction: "高い" }, null), "範囲の語が無い");
 }
 
 console.log("verify-full-picture-scene2: OK");

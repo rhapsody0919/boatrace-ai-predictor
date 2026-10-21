@@ -23,6 +23,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/archiveDownloader.js` | 公式サイトの静的ファイル・ページを、生のまま保管する取得ループ（fan・月間スケジュールのCLI共通） | readJsonl, fetchOnce, planItems, runArchiveDownload, HARD_MIN_INTERVAL_MS ほか4件 |
 | `scripts/lib/beforeInfoParser.js` | 公式の直前情報ページ（boatrace.jp beforeinfo）の全項目パーサー（純関数。DB・取得先に接続しない） | parseStartExhibitionCell, parseBeforeInfoDocument, parseBeforeInfoPage, BEFOREINFO_PARSER_VERSION |
 | `scripts/lib/beforeinfoWeather.js` | 公式ページの「水面気象情報」の解析（BOA-358） | convertWindDirection, scrapeObservedPoint, scrapeConditions, hasAnyWeather, resolveObservedAt ほか5件 |
+| `scripts/lib/blogChartPng.js` | ブログの図の PNG をビルドで書き出す（ADR 0099、docs/design/blog-charts/contract.md 8節）。 | planBlogChartPngs, enterExportMode, exportBlogChartPngs |
 | `scripts/lib/blogImageDimensions.js` | ブログ画像（public/images/blog/）の実寸を、画像のヘッダーから読む（BOA-908）。 | readJpegSize, buildImageDimensions |
 | `scripts/lib/boatcast/boatcastClient.js` | BOATCAST（race.boatcast.jp）への取得の共通部品: URL・間隔の制御・カナリア・403の解釈。 | buildOritenUrl, buildMotorStartUrl, createPacer, fetchBoatcast, checkCanary ほか6件 |
 | `scripts/lib/boatcast/motorStartJob.js` | BOATCASTのモーター使用開始日（bc_mst。N26）の日次取得ジョブ（docs/design/boatcast-original-exhibition/… | fetchMotorStartDates, nextHistory, createMotorStartRun, MOTOR_START_JOB, ABORT_AFTER_CONSECUTIVE_FAILURES ほか1件 |
@@ -227,6 +228,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueParameters.js` | 会場別パラメータ | getVolatilityThreshold, getVenueType, VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG, VENUE_VOLATILITY_THRESHOLD ほか2件 |
 | `scripts/lib/venueTechniquePeriod.js` | 会場の決まり手を期間（直近90日・直近365日）ごとに数える（BOA-430 思考アシスト、ADR 0088、マイグレーション 134）。 | addDays, periodRange, sourceRanges, fromLiveRow, fromArchiveRow ほか8件 |
 | `scripts/lib/vercelIgnoreBuild.js` | Vercel の Ignored Build Step（vercel.json の ignoreCommand）の判定（BOA-908）。 | isSiteIrrelevant, shouldSkipBuild, IGNORED_DIRS, ALWAYS_BUILD |
+| `scripts/lib/verifyRegistryOrder.js` | verify-registry.json の entries を script の名前の順に保つ（BOA-938）。 | registryOrderProblems, sortRegistryText |
 | `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | boat1StReason, calculateVolatilityComposite, toVolatilityPercentile |
 | `scripts/lib/winningTechniques.js` | 決まり手ユーティリティ | toTechniqueKey, getDefaultDistribution, TECHNIQUES, TECHNIQUE_NAMES, COURSE_DEFAULT_DISTRIBUTION ほか1件 |
 
@@ -263,6 +265,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/bestOf.js` | 6艇を並べた値の中で、レース内の最良の艇番を返す（docs/design/race-detail-ui-unify spec R1）。 | bestOf |
 | `src/utils/blogChartContract.js` | ブログの図の契約（docs/design/blog-charts/contract.md、schemaVersion 1）の検査と読み出し。 | localize, valueAxisMax, validateBlogChart, SCHEMA_VERSION, LANGS ほか1件 |
 | `src/utils/blogChartLoader.js` | 記事の Markdown にある図（<ryujin-chart src>）の JSON を、本文を描く前にまとめて取る。 | loadBlogCharts |
+| `src/utils/blogChartPng.js` | ブログの図の PNG の書き出し（ADR 0099、docs/design/blog-charts/contract.md 8節）の固定の一覧と名前。依存なし・… | isPngResponse, BLOG_CHART_PNG_PRESETS, blogChartPngSize, BLOG_CHART_PNG_CREDIT, blogChartPngPath |
 | `src/utils/blogChartTag.js` | ブログの図のタグ <ryujin-chart src="/blog-charts/<name>.json" rows="N"></ryujin-chart> の… | parseBlogChartLine, BLOG_CHART_TAG, BLOG_CHART_SRC_RE, BLOG_CHART_ROWS_RE, BLOG_CHART_ROWS_MAX |
 | `src/utils/blogFaqSchema.js` | — | extractFaqItems, buildFaqPageSchema |
 | `src/utils/blogMarkdownSanitize.js` | ブログ記事（public/blog/*.md）を描く rehype のプラグインと、HTML の許可リスト。 | blogSanitizeSchema, blogRehypePlugins |
@@ -367,4 +370,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 332 ファイル / export 1876 件。
+対象 335 ファイル / export 1886 件。

@@ -42,7 +42,7 @@ PRごとに走る検証ワークフローは他に `e2e-smoke-test.yml` と `ver
 
 ## 決定
 
-1. **`scripts/maintenance/verify-registry.json` を単一の分類台帳とする。** 全 `verify-*.js` を `ci`（PRごとに自動実行）か `manual`（実DB等が必要で自動実行しない）に分類し、各エントリに「何を守るか」（`guards`）を1行で書く。`manual` には「なぜCIに載せないか」（`reason`）と実行コマンド（`command`）を必須にする。
+1. **`scripts/maintenance/verify-registry.json` を単一の分類台帳とする。** 全 `verify-*.js` を `ci`（PRごとに自動実行）か `manual`（実DB等が必要で自動実行しない）に分類し、各エントリに「何を守るか」（`guards`）を1行で書く。`manual` には「なぜCIに載せないか」（`reason`）と実行コマンド（`command`）を必須にする。entries は `script` の名前の順に置き、新しい項目は名前の位置に挿す（2026-10-20 追記、BOA-938。末尾に足す運用で並行する PR の衝突が1日に7回を超えたため。順と重複は `run-verify-registry.js` が検査し、`--sort` で並べ直せる）。
 2. **`npm run verify:ci` が台帳と実ファイルを突き合わせてから、`tier=ci` を並列実行する。** 未登録のスクリプトがあれば失敗する（分類漏れを構造的に止める）。逆に台帳にあってファイルが無い場合も失敗する。
 3. **`.github/workflows/quality-gates.yml` が master向けPRごとに、およびmasterへのpush後に `npm run verify:ci` を実行する。** 旧 `verify-query-errors.yml` は統合して削除した。push時にも走らせるのは、masterにブランチ保護が無く "Require branches to be up to date" が効かないため、2つのPRが同じ時点のmasterに対して緑になり、片方のマージ後にもう片方が再検証されずにマージされうるから（063の番号重複はこの経路で入った）。
 4. **CLAUDE.md からは個別コマンドの列挙を削除する。** 「該当する変更をしたら手元でこれを実行せよ」という散文の指示は、機械的に実行される仕組みに置き換える。機械検出できない2点（`content-index.json` の新規作成、`APPLIED.md` への行追加）だけを人の判断事項として残す。

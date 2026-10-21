@@ -8,9 +8,12 @@ name: Key Canary
 # 書き込み・送信はしない（Slack の webhook は投稿しないと確かめられないので見ない）。鍵の値はログに出さない。
 # R2（Storage の写し、ADR-0100）は別の job にする。R2 の鍵の誤りで開いた Issue が、Supabase だけの成功で閉じないように。
 
+# 起動の出元（BOA-917、2026-10-20〜）: schedule は新設の日から1回も来なかった（10/20 に0回）。主の起動を
+# Vercel Cron（api/cron/key-canary-dispatch.js、vercel.json の同じ時刻）からの workflow_dispatch に移し、
+# schedule は予備として残す。両方来ても読み取り1回が2回になるだけ（job-watch はどちらの event も拾う）。
 on:
   schedule:
-    # 30分ごと（JST も同じ）
+    # 30分ごと（JST も同じ）。予備（主は Vercel Cron の dispatch）
     - cron: "7,37 * * * *"
   workflow_dispatch:
 

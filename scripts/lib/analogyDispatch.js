@@ -7,6 +7,9 @@
  *   7:40 は出走表の段（racecard の snapshot）が無い今日のレースがあるときだけ起動する（拾い直し。plan「朝のバッチ」）
  * - in_caution_nightly: BOA-822 イン崩れ注意度の夜の表（in-caution-nightly.yml、ADR-0095）。JST 2:30
  * - db_apply_reconcile: ADR-0097 db-apply の定期の突き合わせ（db-apply.yml の mode=reconcile）。毎時17分
+ * - e2e_rerecord: E2E の録画の撮り直し（e2e-rerecord.yml、BOA-929）。JST 10:23・12:47・14:37・16:13。gate=true で、
+ *   その日に採用済み・JST19時以降なら撮らない（schedule と同じ判定。e2e-recording.js gate）
+ * - key_canary: 定期の job の鍵のカナリア（key-canary.yml、BOA-917）。30分ごと（7・37分）
  * レースごとの寄与度の日次の特徴量ジョブは廃止した（Q2、#1242）ので起動しない。
  *
  * 失敗（トークン未設定・dispatch の HTTP 失敗）は outcome:"error" で返す。レジストリの failureAlertAfter: 1 により、
@@ -25,6 +28,9 @@ export const DISPATCH_WORKFLOWS = Object.freeze({
     workflow: "db-apply.yml",
     inputs: { mode: "reconcile" },
   },
+  // gate は boolean の入力。dispatch の API には文字列で渡す（workflow 側は github.event.inputs.gate == 'true' で見る）
+  e2e_rerecord: { workflow: "e2e-rerecord.yml", inputs: { gate: "true" } },
+  key_canary: { workflow: "key-canary.yml", inputs: {} },
 });
 
 const MIN_MINUTES_BEFORE_DEADLINE = 10; // v16_morning.py の select_targets と同じ
