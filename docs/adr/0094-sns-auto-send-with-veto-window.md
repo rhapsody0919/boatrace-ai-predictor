@@ -23,3 +23,10 @@
 - 誤投稿1件、または1週間に「止めた」が3件以上なら個別承認に戻す（spec の運用の段取り）
   - 個別承認の画面は #1645 で撤去し、140 の RPC と表は 163 で削除した。個別承認に戻すときは mode=manual と、drafts の x-send・queue-send（`approve_sns_x_send`）を使う。DB 側の QA・公開証拠の検査（旧 `approve_sns_mobile_channel`）は無くなり、JS の `sendHolds` が担う
 - 送信の関数に許可のリストの検査が加わり、transition の分岐が増える。PGlite の verify-sns-* で全経路を固定する
+
+## 追記: 全貌の Shorts は、承認した文と送る文が完全版の URL の分だけ違う（2026-10-20、BOA-912・マイグレーション 172）
+- 全貌動画の YouTube は、1レースで完全版と Shorts（入口版）の2件を送る。Shorts の説明文には完全版の URL を入れるが、完全版の URL は完全版を公開するまで決まらない
+- そこで「承認した版をそのまま送る」の例外を1つだけ置く。承認するのは、説明文に置き場所 `{full_url}` をちょうど1つ含む文。送る時（upload の直前、承認版のハッシュの照合の後）に、親（`parent_job_id` の完全版の job）の公開済みの動画 ID で `https://youtu.be/<id>` に置き換える（`fillFullUrl`、api/_lib/snsDeadlineQueue.js）
+- 違いは URL だけで、置き換えは承認した文と親の external_post_id（complete の後は変わらない、158）から決まる。送った文を別に残す列は持たない
+- 待ち合わせは X のスレッドと同じ `parent_job_id`。runner は親が posted でない子を選ばず、DB は claim で parent_not_posted として止める。親の無い `{full_url}` は送る前の検査（unresolved_placeholder）で止める（個別承認の道で置き場所が出ないため）
+- 却下: 完全版の公開後に cron が Shorts の文を作って承認する（承認の経路が cron に入り、個別承認のときの扱いが分かれる）。完全版の公開後に作り手が Shorts だけ入れ直す（締切に間に合わない）

@@ -31,6 +31,8 @@ export function createDeadlinePreflight({ headless, markers, readCurrent, now = 
   return async job => {
     const snapshot = JSON.parse(job.snapshot_text), q = snapshot.queue;
     if (!q || !Number.isFinite(Date.parse(q.expires_at)) || now() >= Date.parse(q.expires_at)) throw new Error('deadline_expired');
+    // 全貌の Shorts は、完全版の URL の置き場所を親（完全版の job）の公開後に埋める。親の無い置き場所は送らない（個別承認の道で素通りさせない）
+    if (job.channel === 'youtube' && snapshot.text?.includes(FULL_URL_PLACEHOLDER) && !q.parent_job_id) throw new Error('unresolved_placeholder');
     if (job.channel === 'x') {
       if (/[{}]|\$\{/.test(snapshot.text)) throw new Error('unresolved_placeholder');
       // 長文（25,000まで）は、auto-plan が承認の前に「親1件だけのスレッド」と書いたもの（queue.thread_length=1）だけ。ほかは280まで
@@ -64,6 +66,19 @@ export async function reconcileSendJob(job, { store, lookup }) {
   return store.transition(job.id, 'complete', result);
 }
 
+/** 全貌の Shorts の説明文に置く、完全版の URL の置き場所（承認するのはこの文字列を含む文。送る時に親の動画の URL に置き換える） */
+export const FULL_URL_PLACEHOLDER = '{full_url}';
+
+/**
+ * 置き場所を完全版の URL に置き換える（純粋関数）。置き場所はちょうど1つ、動画 ID は YouTube の11字だけを受ける。
+ * 承認した文との差はこの URL だけ（ADR 0094 の追記）。親の external_post_id は complete の後に変わらないので、いつでも作り直せる
+ */
+export function fillFullUrl(text, videoId) {
+  if (!/^[A-Za-z0-9_-]{11}$/.test(videoId ?? '')) throw new Error('parent_video_id_invalid');
+  if (typeof text !== 'string' || text.split(FULL_URL_PLACEHOLDER).length !== 2) throw new Error('unresolved_placeholder');
+  return text.replace(FULL_URL_PLACEHOLDER, `https://youtu.be/${videoId}`);
+}
+
 /** 既存YouTube uploadの非公開adapterを差し込む契約だけ。実API・cronは提供しない。
  * 予約はローカルjobのscheduled_at待ち。時刻到達後、再検査して即時公開する。
  * YouTube publishAtによる外部の自動公開は最終検査を保証できないため今回提供しない。
@@ -95,6 +110,13 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
       if (bytes.byteLength !== media.size || await sha256(bytes) !== media.sha256) throw new Error('媒体が変更されています');
       verifiedMedia.push({ ...media, bytes });
     }
+    // 親（全貌の完全版）がある Shorts は、親の公開済みの動画 ID で URL の置き場所を埋める。runner は親が posted の子だけを選び、
+    // DB も claim で parent_not_posted として止めるので、ここで親が無いのは異常（begin_post の前なので外部へは何も送らない）
+    if (snapshot.queue?.parent_job_id) {
+      if (!store.parent) throw new Error('親の照会が未接続です');
+      snapshot.text = fillFullUrl(snapshot.text, (await store.parent(snapshot.queue.parent_job_id)).external_post_id);
+    }
+    if (snapshot.text?.includes(FULL_URL_PLACEHOLDER)) throw new Error('unresolved_placeholder');
     // adapter が送る前に分かる不備（題名の長さ等）は begin_post の前に落とす。後で落ちると、何も上がっていない job が要照合に残る
     if (youtube.validate) youtube.validate(snapshot);
     await preflight(job);
