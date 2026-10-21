@@ -50,9 +50,9 @@ export const VOCAB = [
   "なら", "最高", "相手",
   // 場面4（展開）
   "前付けあり（1号艇イン）", "前付けあり", "割合", "並び", "前付けがあっても", "インを守った", "内訳", "うち", "平均ST", "このコース", "一致", "一致する形が無い", "横一線", "候補", "を参考に", "逃げ", "結果", "内3艇そろう", "2コース凹み", "カド受け凹み", "カド一撃", "イン凹み", "ダッシュ",
-  "過去", "6号艇だけ前付け", "5号艇だけ前付け", "5・6号艇が前付け", "その他の前付け",
+  "過去", "全選手", "本人", "レース", "そう並んだ", "同じ級別", "今日の6艇", "6艇", "6艇中", "6人中", "選手", "進入コース別", "全コース", "号艇全体", "そうだった", "だった", "勝", "ふだん", "同じ級別の", "最高", "6号艇だけ前付け", "5号艇だけ前付け", "5・6号艇が前付け", "その他の前付け",
   // 場面3（軸）
-  "全国・級の並びが同じ", "級の並びが同じ", "準優勝戦", "優勝戦", "走", "1着率", "全会場", "単勝回収率", "複勝回収率", "回収率", "単勝", "複勝",
+  "全国・級の並びが同じ", "級の並びが同じ", "準優勝戦", "優勝戦", "走", "1着率", "全会場",
   // 場面2b（類似レース）
   "類似レース", "着", "3連単", "-",
   "全国", "連率", "逃げ率", "風", "この風", "風を問わず", "日", "R", "傾向", "会場", "未満",
@@ -84,7 +84,7 @@ export function uncovered(text, words) {
 }
 
 /** 数字を含む決まった言い回し（facts の数として数えない） */
-const FIXED_NUMBER_PHRASES = /6艇|1着率|2番手|2連率|3連率|90日|1ポイント未満|[1-3]着/g;
+const FIXED_NUMBER_PHRASES = /6人中|6艇|1着率|2番手|2連率|3連率|90日|1ポイント未満|[1-3]着/g;
 
 /** 前の拍とつなぐ語。場面の各段の最初の拍では使えない。「同じく」「こちらも」は前の拍と同じ材料のときだけ */
 const CONNECTORS = ["一方", "さらに", "同じく", "また", "ただ", "逆に", "それに", "こちらも", "続いて"];
@@ -154,6 +154,52 @@ function stringsOf(facts) {
 }
 
 /**
+ * 数字の範囲（hq の型の正本、2026-10-20 オーナー決定 BOA-913）: 割合を出す答えは、範囲の語で、選手個人の成績か、会場・全国（全選手）・
+ * 過去のレースの集計かが分かること。facts の種類で、集計か個人かを決めている
+ */
+/**
+ * kind ごとに、範囲の語として要る語（決まって入る「全国の…」「件」「全体」のような語では通さない。代わりの審査 P2）。
+ * venue: facts.venue（会場名）、name: facts.name（選手名）を足して照合する。null は割合が出ない種類
+ */
+export const SCOPE_WORDS = {
+  venue90: /全選手/,
+  place: /全選手/,
+  wind: /全選手/,
+  day: /全選手|R中/,
+  card: /過去|同じ級別/,
+  rough: /過去/,
+  sonar: /類似レース/,
+  flow1: /1着は\d号艇が[\d,]+件|類似レース|過去/,
+  flow2: /号艇が1着の[\d,]+件/,
+  trifecta: /[\d,]+件/,
+  entry: /過去/,
+  entryMae: /前付けあり[\d,]+件/,
+  attack: /の[\d,]+件で/,
+  followers: "venue",
+  followersRest: "venue",
+  rivals: /過去のレース/,
+  deep: /過去/,
+  venueRecord: "name",
+  focus: /選手|モーター|ボート/,
+  motor: /号機/,
+  overview: null,
+  exhibit: null,
+  slit: null,
+  summary: null,
+  empty: null,
+};
+export function scopeReasons(lines, facts) {
+  const text = (lines ?? []).join("\n");
+  if (!/%/.test(text) || !facts) return [];
+  if (!(facts.kind in SCOPE_WORDS)) return [`範囲の語の決まりが無い種類「${facts.kind}」（SCOPE_WORDS に足す）`];
+  const want = SCOPE_WORDS[facts.kind];
+  if (want === null) return [];
+  const ok =
+    want === "venue" ? Boolean(facts.venue) && text.includes(facts.venue) : want === "name" ? (Boolean(facts.name) && text.includes(facts.name)) || text.includes("本人") : want.test(text);
+  return ok ? [] : [`範囲の語が無い（${facts.kind}: 個人の成績か、会場・全国・過去のレースの集計かが分からない）`];
+}
+
+/**
  * 整えた版の1拍の検査。落ちた理由の一覧を返す（空なら合格）
  * @param {string[]} lines
  * @param {object} facts その拍の facts
@@ -163,12 +209,14 @@ export function checkLines(lines, facts, prev) {
   const why = [];
   if (!Array.isArray(lines) || lines.length < 1 || lines.length > MAX_LINES || lines.some((l) => typeof l !== "string" || !l.trim()))
     return [`行の数・形が不正（1〜${MAX_LINES}行の文字列）`];
-  const text = lines.join("\n");
+  // 桁区切りは外して照合する（「9,961件」→ 9961）。区切りの「、」は外さない
+  const text = lines.join("\n").replace(/(\d),(?=\d{3}(?!\d))/g, "$1");
   lines.forEach((l, i) => {
     const w = Math.round(lineWidth(l) * 10) / 10;
     if (w > MAX_WIDTH) why.push(`${i + 1}行目の幅が全角${w}字分（上限${MAX_WIDTH}字分）`);
   });
   why.push(...bannedIn(text));
+  why.push(...scopeReasons(lines, facts));
   for (const w of VAGUE) if (text.includes(w)) why.push(`ぼかし語「${w}」`);
   const { nums, boats, items, ranks } = allowedOf(facts);
   // 材料名: 文に出る材料は facts の材料だけ
@@ -221,6 +269,7 @@ const PROMPT = (beats) => `あなたはボートレースのデータ動画の�
 - step が前の拍と違う拍（場面・段の最初）は null
 - 「同じく」「こちらも」は前の拍と同じ材料（facts の item、無ければ kind）のときだけ
 - 「逆に」は前の拍と向きが逆のときだけ。迷ったら null
+- つなぐ語は、前の拍との関係（対比・追加・同じ材料）があるときだけ付ける。並べるだけなら null。同じ語を近くで繰り返さない
 - つなぐ語を付けると1行目が全角${MAX_WIDTH}字分を越える拍は null
 
 出力は JSON だけ（前後に説明を書かない）: {"beats":[{"id":"…","connector":"一方"|null}]}
@@ -259,14 +308,20 @@ function parseJson(text) {
   return JSON.parse(m[0]);
 }
 
+/**
+ * 字幕の件数・走・レースの数の桁区切り（頁の表・見出しの「9,961件」とそろえる。BOA-913）。小数・ポイント・%は触らない
+ */
+export const groupDigits = (line) => line.replace(/(?<![\d.,])(\d{4,})(?=件|走|レース)/g, (n) => Number(n).toLocaleString("ja-JP"));
+export const groupLines = (lines) => (lines ?? []).map(groupDigits);
+
 /** 全場面の拍（場面2 は beatsOf、段の場面は段ごと。答えの無い段＝場面8 のまとめカードは除く） */
 export function allBeats(scenes) {
   return scenes.flatMap((x) =>
     !x.data
       ? []
       : x.kind === "scene2"
-      ? beatsOf(x.data).map((b) => ({ ...b, step: `scene2-${b.step}` }))
-      : (x.data?.steps ?? []).filter((s) => s.lines?.length).map((s) => ({ id: s.id, step: x.id, question: s.question, facts: s.facts, template: s.lines })),
+      ? beatsOf(x.data).map((b) => ({ ...b, step: `scene2-${b.step}`, template: groupLines(b.template) }))
+      : (x.data?.steps ?? []).filter((s) => s.lines?.length).map((s) => ({ id: s.id, step: x.id, question: s.question, facts: s.facts, template: groupLines(s.lines) })),
   );
 }
 
@@ -300,6 +355,23 @@ export function templateText(sceneOrBeats) {
     answers: Object.fromEntries(beats.map((b) => [b.id, b.template])),
     beats: beats.map((b) => ({ id: b.id, source: "template", lines: b.template })),
   };
+}
+
+/** 同じつなぐ語を近くで繰り返さない（10/19 は「続いて」20回・同じ語の連続9回で単調だった。BOA-913、wording-editor） */
+export const CONNECTOR_GAP = 3;
+export const TSUZUITE_MAX_PER_SCENE = 2; // 段（step）ごと。場面2は重ね図とカードの2つの段
+/**
+ * つなぐ語の並びの検査（前の拍までに付けた語 used: [{step, connector}]）
+ * - 直前の3拍の中で使った語は使わない
+ * - 「続いて」は1つの場面（step）で2回まで
+ */
+export function repeatReasons(c, step, used) {
+  if (!c) return [];
+  const why = [];
+  if (used.slice(-CONNECTOR_GAP).some((u) => u.connector === c)) why.push(`直前の${CONNECTOR_GAP}拍で使ったつなぐ語「${c}」`);
+  if (c === "続いて" && used.filter((u) => u.step === step && u.connector === "続いて").length >= TSUZUITE_MAX_PER_SCENE)
+    why.push(`「続いて」は1つの場面で${TSUZUITE_MAX_PER_SCENE}回まで`);
+  return why;
 }
 
 /** claude の usage → { calls, tokens_in, tokens_out }。入力はキャッシュの読み書きを含めた合計 */
@@ -348,10 +420,12 @@ export function connectedText(sceneOrBeats, llm = claudeCli) {
   } catch (e) {
     callError = e instanceof Error ? e.message : String(e);
   }
+  const used = [];
   const rows = beats.map((b, i) => {
     const prev = i > 0 && beats[i - 1].step === b.step ? beats[i - 1].facts : null;
     const c = got[b.id] ?? null;
-    const reasons = callError ? [callError] : checkConnected(c, b.template, b.facts, prev);
+    const reasons = callError ? [callError] : [...checkConnected(c, b.template, b.facts, prev), ...repeatReasons(c, b.step, used)];
+    used.push({ step: b.step, connector: reasons.length ? null : c });
     if (reasons.length) return { id: b.id, source: "template", lines: b.template, rejected: c, reasons };
     return { id: b.id, source: c ? "connected" : "template", connector: c, lines: connectedLines(c, b.template) };
   });

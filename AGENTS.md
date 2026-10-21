@@ -68,7 +68,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 以下は変更しない（内容の変更が必要だと思っても行わず、PR 本文に指摘として書くだけに留める）。
 - `.claude/` 配下全て
 - `.github/workflows/` 配下全て
-- CI のゲート設定（`scripts/maintenance/verify-registry.json` 等の品質ゲート台帳）。例外として、自分が新しく足した `scripts/maintenance/verify-*.js` の `"tier": "ci"` のエントリを `verify-registry.json` に1つ追加することだけはしてよい（未登録だと CI が落ちる）。既存のエントリの変更・削除はしない
+- CI のゲート設定（`scripts/maintenance/verify-registry.json` 等の品質ゲート台帳）。例外として、自分が新しく足した `scripts/maintenance/verify-*.js` の `"tier": "ci"` のエントリを `verify-registry.json` に1つ追加することだけはしてよい（未登録だと CI が落ちる）。置く位置は script の名前の順の位置で、末尾に足さない（順が崩れると `verify:ci` が落ちる。`node scripts/maintenance/run-verify-registry.js --sort` で並べ直せる。BOA-938）。既存のエントリの変更・削除はしない
 - CI の判定を動かすもの: `package.json` の `scripts`、`scripts/maintenance/run-verify-registry.js`、`scripts/maintenance/guard-pr-merge.js`、`playwright.config.*`、`e2e/fixtures.js`
 - 既存の `scripts/maintenance/verify-*.js`・`e2e/*.spec.js` の期待値を緩める変更（落ちるテストを通すために期待値・条件を変えない）。期待値が間違っていると考えたら止める
 - `vercel.json`

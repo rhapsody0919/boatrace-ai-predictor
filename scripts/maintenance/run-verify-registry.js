@@ -21,6 +21,7 @@
  *   node scripts/maintenance/run-verify-registry.js            # 突き合わせ + ci層の実行
  *   node scripts/maintenance/run-verify-registry.js --list     # 実行せず一覧だけ出す
  *   node scripts/maintenance/run-verify-registry.js --check    # 突き合わせだけ（実行しない）
+ *   node scripts/maintenance/run-verify-registry.js --sort     # entries を script の名前の順に並べ直して書く（BOA-938）
  *   node scripts/maintenance/run-verify-registry.js --jobs=2   # 並列度を指定（既定: CPU数と4の小さい方）
  */
 import { promises as fs } from "node:fs";
@@ -28,6 +29,10 @@ import { spawn } from "node:child_process";
 import { cpus } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  registryOrderProblems,
+  sortRegistryText,
+} from "../lib/verifyRegistryOrder.js";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
@@ -217,6 +222,34 @@ async function runAll(entries) {
   return results;
 }
 
+// 末尾に足すと並行する PR が衝突するので、entries は script の名前の順に置く（BOA-938）
+if (args.includes("--sort")) {
+  // 並べ替えだけをする。ほかの引数と一緒だと検査を飛ばして 0 で終わるので断る
+  if (args.length > 1) {
+    console.error(
+      "NG: --sort はほかの引数と一緒に使えない（並べた後に --check を別に実行する）",
+    );
+    process.exit(2);
+  }
+  const text = await fs.readFile(REGISTRY_PATH, "utf8");
+  let sorted;
+  try {
+    sorted = sortRegistryText(text);
+  } catch (err) {
+    console.error(
+      `NG: 並べ替えられない（書き換えていない）: ${err.message}。行末の空白・CRLF・衝突の印が残っていないか確かめる`,
+    );
+    process.exit(2);
+  }
+  if (sorted !== text) await fs.writeFile(REGISTRY_PATH, sorted);
+  console.log(
+    sorted === text
+      ? "OK: entries は名前の順に並んでいる（書き換えなし）"
+      : `並べ直した: ${REGISTRY_PATH}`,
+  );
+  process.exit(0);
+}
+
 let registry;
 try {
   registry = JSON.parse(await fs.readFile(REGISTRY_PATH, "utf8"));
@@ -246,7 +279,10 @@ if (listOnly) {
   process.exit(0);
 }
 
-const problems = await checkRegistry(entries);
+const problems = [
+  ...(await checkRegistry(entries)),
+  ...registryOrderProblems(entries),
+];
 if (problems.length > 0) {
   console.error("NG: verify-registry.json と実ファイルが食い違っています\n");
   for (const p of problems) console.error(`  - ${p}`);
