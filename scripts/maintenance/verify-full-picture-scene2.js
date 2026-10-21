@@ -922,4 +922,43 @@ for (const f of fixtures) {
   has(checkLines(["1号艇の1着率62.1%", "全国の54.6%より7.5ポイント高い"], { kind: "venue90", venue: "下関", rate: 62.1, national: 54.6, diffPt: 7.5, direction: "高い" }, null), "範囲の語が無い");
 }
 
+// ---- 場面4のスタートの形（BOA-979、2026-10-21 オーナー決定）----
+// 平均ST をサイトと同じ型の定義（slitForms）で判定する。手がかりの条件からの写像（1コース最速→イン凹み 等）はやめ、
+// 当てはまらなければ横一線に寄せず「どの形にも当てはまらない」にする
+{
+  const { formsOfAvgSt, keyBoatsOf } = await import(`${R}/scripts/full-picture/scenes/scene4.mjs`);
+  const s4Of = (f) => buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8"))).find((x) => x.id === "scene4").data;
+  const slit = (d, v) => d.steps.find((st) => st.id === `s4-slit-${v}`);
+  // 2026-10-16-24-11「このコース」の平均ST 126,121,139,169,181,202（外ほど遅い段々）は「横一線を参考に」と出ていた。内3艇そろう（差0.02以内）に当てはまる
+  const d16 = s4Of("2026-10-16-24-11.json.gz");
+  assert.ok(!/横一線を参考に/.test(slit(d16, "course").lines.join("")), "10/16 このコースで横一線に寄せない");
+  assert.equal(slit(d16, "course").facts.form, "内3艇そろう", "10/16 このコースは内3艇そろう");
+  // 2026-10-12-01-12「全体」の平均ST 123,124,153,162,170,143（1コースが最速）は「イン凹みに一致」と出ていた（逆の意味）。横一線に当てはまる
+  const d12 = s4Of("2026-10-12-01-12.json.gz");
+  assert.ok(!/イン凹み/.test(slit(d12, "overall").lines.join("")), "10/12 全体はイン凹みと言わない");
+  assert.equal(slit(d12, "overall").facts.form, "横一線");
+  // 1コースが最速の並びは、イン凹み（1コースが2コースより0.05以上遅い）に当てはまらない
+  assert.ok(!formsOfAvgSt([0.1, 0.15, 0.16, 0.17, 0.18, 0.19]).includes("d1"));
+  assert.ok(formsOfAvgSt([0.2, 0.14, 0.15, 0.16, 0.17, 0.18]).includes("d1"), "1コースが0.06遅ければイン凹み");
+  assert.deepEqual(formsOfAvgSt([0.1, null, 0.1, 0.1, 0.1, 0.1]), [], "欠けがあれば判定しない");
+  // どの形にも当てはまらない並び（外3艇遅れ＝外凹み。7形に無い）: 横一線に寄せず、STEP3 を出さず、STEP4 と結論は「どの形でも」
+  const outDent = [0.05, 0.09, 0.06, 0.09, 0.16, 0.18];
+  assert.deepEqual(formsOfAvgSt(outDent), [], "外凹みは7形のどれにも当てはまらない");
+  const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  m.api.scenario.course_st.course_filled = outDent;
+  // 固定の材料は読んだ所だけの写しなので「どの形でも」のセルが無い。同じ形の値を代わりに置く（判定と言い方の試験）
+  m.api.scenario.scenario.cells.waku.forms.any = m.api.scenario.scenario.cells.waku.forms.flat;
+  const dn = buildAll(m).find((x) => x.id === "scene4").data;
+  const sn = slit(dn, "course");
+  assert.equal(sn.facts.form, null);
+  assert.ok(sn.lines.join("").includes("どの形にも当てはまらない") && !/横一線/.test(sn.lines.join("")), `当てはまらない言い方: ${sn.lines.join(" / ")}`);
+  assert.ok(!sn.page.forms.some((x) => x.on), "形の札を点けない");
+  assert.ok(!dn.steps.some((st) => st.id === "s4-attack-course"), "当てはまる形が無ければ攻めの拍を出さない（Web と同じ）");
+  assert.ok(dn.conclusion && dn.conclusion.lines[0].startsWith("枠なりの過去"), `結論は「どの形でも」: ${dn.conclusion?.lines[0]}`);
+  assert.equal(dn.conclusion.entryQuestion, "過去のレースは、どう決まった？", "入口版で「同じ並び」と言わない");
+  assert.deepEqual(keyBoatsOf(m), { form: null, boats: [1] }, "鍵の艇も横一線に寄せない");
+  const ans = templateText(allBeats(buildAll(m))).answers;
+  for (const id of ["s4-slit-course"]) assert.deepEqual(checkLines(ans[id], dn.steps.find((st) => st.id === id).facts, null), [], "当てはまらない言い方も文の検査を通る");
+}
+
 console.log("verify-full-picture-scene2: OK");
