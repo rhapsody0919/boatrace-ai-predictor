@@ -653,18 +653,41 @@ test.describe("その他の主要ページ", () => {
   test("ブログ記事の metaTitle・metaDescription は <title>・meta・OGP にだけ使い、h1 は title のまま（「競艇」は画面に出さない）", async ({
     page,
   }) => {
-    await page.goto("/blog/ai-index-reading-guide");
+    // 期待値は記事のデータ（src/data/blog-posts）から読む。記事の改稿で題が変わるたびに試験が落ちないように。
+    // 題（title）に「競艇」が無く、metaTitle に有る記事で見る。ai-index-reading-guide がそうでなくなったら、
+    // ほかの当てはまる記事で見る（試験が黙って空振りしないよう、当てはまる記事が無ければ落とす）
+    const postsDir = new URL("../src/data/blog-posts/", import.meta.url);
+    const readPost = (file) =>
+      JSON.parse(fs.readFileSync(new URL(file, postsDir), "utf8"));
+    const fits = (p) =>
+      typeof p.metaTitle === "string" &&
+      typeof p.metaDescription === "string" &&
+      p.metaTitle.includes("競艇") &&
+      !p.title.includes("競艇");
+    const preferred = readPost("ai-index-reading-guide.json");
+    const post = fits(preferred)
+      ? preferred
+      : fs
+          .readdirSync(postsDir)
+          .filter((f) => f.endsWith(".json"))
+          .map(readPost)
+          .find(fits);
+    expect(post, "題に「競艇」が無く metaTitle に有る記事").toBeTruthy();
+    const startsWith = (text) =>
+      new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`);
+
+    await page.goto(`/blog/${post.id}`);
     const h1 = page.locator(".blog-post-header h1");
-    await expect(h1).toContainText("ボートレースのAI指数の見方");
-    await expect(page).toHaveTitle(/^競艇・ボートレースのAI指数の見方/);
+    await expect(h1).toContainText(post.title);
+    await expect(page).toHaveTitle(startsWith(post.metaTitle));
     expect(await h1.innerText()).not.toContain("競艇");
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       "content",
-      /^競艇（ボートレース）のAI指数/,
+      startsWith(post.metaDescription),
     );
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
       "content",
-      /^競艇・ボートレースのAI指数の見方/,
+      startsWith(post.metaTitle),
     );
   });
 
