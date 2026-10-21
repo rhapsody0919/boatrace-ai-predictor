@@ -21,7 +21,7 @@
  * （USAGE_LIMIT_EXCEEDED、2026-09-28）、起票したつもりで進みかけた。
  * docs/operation/linear-cli.md
  *
- * create は起票の前に scripts/lib/linearIssueGate.js で未アーカイブ件数を数え、閾値（200件）
+ * create は起票の前に scripts/lib/linearIssueGate.js で未アーカイブ件数を数え、閾値（230件）
  * 以上なら Slack に知らせて終了コード1で止める（無料枠250件の手前で止める。hq 台帳 PL48）。
  */
 

@@ -10,7 +10,7 @@
  *   いないチケット数で数えられる）。update で状態の種類（state.type）が完了・取り消しに
  *   変わったら、続けて issueArchive を呼ぶ
  * - 2026-10-20、無料枠（未アーカイブ250件）の手前で止めるため、create の前に未アーカイブ件数を
- *   数え、200件以上・数えられないときは Slack に知らせて止める（scripts/lib/linearIssueGate.js）
+ *   数え、230件以上・数えられないときは Slack に知らせて止める（scripts/lib/linearIssueGate.js）
  *
  * ## どう検査するか
  *
@@ -225,16 +225,16 @@ const CASES = [
       code !== 0 && stderr.includes("USAGE_LIMIT_EXCEEDED"),
   },
   {
-    name: "create: 未アーカイブが閾値の200件なら起票せず、Slack に件数と閾値を送って終了コード1",
-    scenario: { activeCount: 200 },
+    name: "create: 未アーカイブが閾値の230件なら起票せず、Slack に件数と閾値を送って終了コード1",
+    scenario: { activeCount: 230 },
     args: ["create", "タイトル", "説明"],
     expect: ({ code, stderr }, calls, slack) =>
       code !== 0 &&
       !calls.includes("CreateIssue") &&
-      stderr.includes("未アーカイブ 200 件") &&
+      stderr.includes("未アーカイブ 230 件") &&
       slack.length === 1 &&
-      slack[0].includes("200 件") &&
-      slack[0].includes("閾値 200 件"),
+      slack[0].includes("230 件") &&
+      slack[0].includes("閾値 230 件"),
   },
   {
     name: "create: 未アーカイブ件数を数えられなければ起票せず（fail closed）、Slack に送って終了コード1",

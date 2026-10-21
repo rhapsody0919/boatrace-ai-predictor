@@ -10,7 +10,7 @@
  *   hq の platform/ticket.py の count_unarchived と同じ数え方にし、hq の心拍・ダッシュボードと
  *   同じ数字にする。Linear が上限に使う値（エラー文では activeIssueCount）を直接返す GraphQL の
  *   欄は、公開のスキーマで確かめられなかったため使わない
- * - 閾値: 200（hq の config/platform.json の heartbeat.linear_warn と同じ）。200件以上なら起票しない
+ * - 閾値: 230（2026-10-21 hq 決定。hq は 200 で警告・240 で社員の起票を止める。龍神の経路は 230 で止める）。230件以上なら起票しない
  * - 数えられないとき: 止める（fail closed）。数えられないまま起票して上限に当たると、
  *   起票したつもりで進むことになるため
  * - 止めたときは黙らない: notify（Slack）に件数と閾値を入れた文を送り、例外を投げる。
@@ -20,7 +20,7 @@
  */
 
 export const LINEAR_FREE_ISSUE_LIMIT = 250;
-export const LINEAR_ISSUE_GATE_THRESHOLD = 200;
+export const LINEAR_ISSUE_GATE_THRESHOLD = 230;
 export const LINEAR_ISSUE_GATE_CODE = "LINEAR_ISSUE_GATE_BLOCKED";
 
 export const COUNT_ACTIVE_ISSUES_QUERY = `query CountActiveIssues($after: String) {

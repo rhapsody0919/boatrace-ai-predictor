@@ -155,7 +155,7 @@ test("起票できたら 200 で URL を返す", async () => {
   );
 });
 
-test("未アーカイブが閾値の200件なら起票せず、503 と LINEAR_ISSUE_GATE_BLOCKED を返す", async () => {
+test("未アーカイブが閾値の230件なら起票せず、503 と LINEAR_ISSUE_GATE_BLOCKED を返す", async () => {
   await withMockFetch(
     () => {
       throw new Error("起票の mutation が呼ばれた");
@@ -165,10 +165,10 @@ test("未アーカイブが閾値の200件なら起票せず、503 と LINEAR_IS
       const body = await res.json();
       assert.equal(res.status, 503);
       assert.equal(body.code, "LINEAR_ISSUE_GATE_BLOCKED");
-      assert.match(body.error, /未アーカイブ 200 件/);
+      assert.match(body.error, /未アーカイブ 230 件/);
       assert.ok(!linearCalls.some((q) => /issueCreate/.test(q)));
     },
-    { activeCount: 200 },
+    { activeCount: 230 },
   );
 });
 
@@ -179,7 +179,7 @@ test("specChangeFeedback: 閾値で止めたら閉じず、件数の文と本文
     new Response(
       JSON.stringify({
         error:
-          "Linear の起票を止めました: 未アーカイブ 200 件が閾値 200 件以上です（無料枠の上限 250 件）。完了・取り消しのチケットをアーカイブしてから起票し直してください",
+          "Linear の起票を止めました: 未アーカイブ 230 件が閾値 230 件以上です（無料枠の上限 250 件）。完了・取り消しのチケットをアーカイブしてから起票し直してください",
         code: "LINEAR_ISSUE_GATE_BLOCKED",
       }),
       { status: 503, headers: { "Content-Type": "application/json" } },
@@ -197,7 +197,7 @@ test("specChangeFeedback: 閾値で止めたら閉じず、件数の文と本文
   assert.doesNotMatch(f.message, /再読み込み/);
   assert.equal(f.closePanel, false);
   assert.equal(f.type, "error");
-  assert.match(f.message, /未アーカイブ 200 件/);
+  assert.match(f.message, /未アーカイブ 230 件/);
   assert.match(f.message, /欄に残して/);
 });
 

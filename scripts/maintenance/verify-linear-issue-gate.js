@@ -5,13 +5,13 @@
  *
  * オーナーは Linear の無料プラン（未アーカイブ250件まで）に留まると決めた（hq 台帳 PL48、2026-10-20）。
  * 2026-09-28 に上限で起票が止まり、2026-10-18 時点で 228/250。起票の経路ごとに数えると数字と
- * 止め方がばらつくので、数える場所を1か所にし、200件以上・数えられないときは Slack に知らせて止める。
+ * 止め方がばらつくので、数える場所を1か所にし、230件以上・数えられないときは Slack に知らせて止める。
  *
  * ## どう検査するか
  *
  * - 関所の関数: 偽の request・notify を渡す（ネットワークを使わない）
  * - 各経路（check-revision-escalation.js・create-vup-linear-ticket.js・api/_lib/snsHubHelpers.js）:
- *   globalThis.fetch を差し替え、200件なら issueCreate を送らないこと、199件なら送ること
+ *   globalThis.fetch を差し替え、230件なら issueCreate を送らないこと、229件なら送ること
  * - scripts/linear-cli.js は CLI なので verify-linear-cli.js が模擬サーバーで同じことを見る
  * - 抜け道の検知: api/・scripts/・src/ で issueCreate を送るファイルが、すべて関所を読み込んでいること
  */
@@ -60,15 +60,15 @@ function recorder() {
 
 // ---- 関所の関数 ----
 
-test("issueGateDecision: 199件は起票してよく、200件は止める（文に件数・閾値・上限が入る）", () => {
-  assert.deepEqual(issueGateDecision({ count: 199 }), {
+test("issueGateDecision: 229件は起票してよく、230件は止める（文に件数・閾値・上限が入る）", () => {
+  assert.deepEqual(issueGateDecision({ count: 229 }), {
     allowed: true,
     message: null,
   });
-  const blocked = issueGateDecision({ count: 200 });
+  const blocked = issueGateDecision({ count: 230 });
   assert.equal(blocked.allowed, false);
-  assert.match(blocked.message, /未アーカイブ 200 件/);
-  assert.match(blocked.message, /閾値 200 件/);
+  assert.match(blocked.message, /未アーカイブ 230 件/);
+  assert.match(blocked.message, /閾値 230 件/);
   assert.match(blocked.message, /上限 250 件/);
   assert.equal(issueGateDecision({ count: 230 }).allowed, false);
 });
@@ -96,32 +96,32 @@ test("countActiveIssues: 応答の形が不正なら例外", async () => {
 test("assertCanCreateIssue: 閾値の下なら件数を返し、通知しない", async () => {
   const { calls, notify } = recorder();
   const count = await assertCanCreateIssue({
-    request: async () => countPage(199),
+    request: async () => countPage(229),
     notify,
     source: "test",
   });
-  assert.equal(count, 199);
+  assert.equal(count, 229);
   assert.equal(calls.length, 0);
 });
 
-test("assertCanCreateIssue: 200件以上なら通知してから LinearIssueGateError を投げる", async () => {
+test("assertCanCreateIssue: 230件以上なら通知してから LinearIssueGateError を投げる", async () => {
   const { calls, notify } = recorder();
   await assert.rejects(
     assertCanCreateIssue({
-      request: async () => countPage(228),
+      request: async () => countPage(233),
       notify,
       source: "test",
     }),
     (error) =>
       error instanceof LinearIssueGateError &&
       error.code === LINEAR_ISSUE_GATE_CODE &&
-      error.count === 228 &&
-      error.threshold === 200,
+      error.count === 233 &&
+      error.threshold === 230,
   );
   assert.equal(calls.length, 1);
   assert.match(calls[0], /^\[test\]/);
-  assert.match(calls[0], /未アーカイブ 228 件/);
-  assert.match(calls[0], /閾値 200 件/);
+  assert.match(calls[0], /未アーカイブ 233 件/);
+  assert.match(calls[0], /閾値 230 件/);
 });
 
 test("assertCanCreateIssue: 数えられないときは止める（fail closed）、通知に理由が入る", async () => {
@@ -143,7 +143,7 @@ test("assertCanCreateIssue: 数えられないときは止める（fail closed�
 test("assertCanCreateIssue: 通知が失敗しても止める（通知の失敗で起票が通らない）", async () => {
   await assert.rejects(
     assertCanCreateIssue({
-      request: async () => countPage(200),
+      request: async () => countPage(230),
       notify: async () => {
         throw new Error("Slack down");
       },
@@ -253,9 +253,9 @@ const PATHS = [
 ];
 
 for (const p of PATHS) {
-  test(`${p.name}: 200件なら issueCreate を送らず LinearIssueGateError`, async () => {
+  test(`${p.name}: 230件なら issueCreate を送らず LinearIssueGateError`, async () => {
     let error = null;
-    const queries = await withLinearFetch(200, async () => {
+    const queries = await withLinearFetch(230, async () => {
       try {
         await p.run();
       } catch (e) {
@@ -266,8 +266,8 @@ for (const p of PATHS) {
     assert.equal(sentCreate(queries), false);
   });
 
-  test(`${p.name}: 199件なら件数を数えてから issueCreate を送る`, async () => {
-    const queries = await withLinearFetch(199, p.run);
+  test(`${p.name}: 229件なら件数を数えてから issueCreate を送る`, async () => {
+    const queries = await withLinearFetch(229, p.run);
     const countAt = queries.findIndex((q) => /CountActiveIssues/.test(q));
     const createAt = queries.findIndex((q) => /issueCreate/.test(q));
     assert.ok(countAt >= 0 && createAt > countAt, "数えてから起票する");
@@ -293,7 +293,7 @@ test("夜間のジョブ（checkRevisionEscalation）: 関所が止めたら保�
   let result;
   let queries;
   try {
-    queries = await withLinearFetch(200, async () => {
+    queries = await withLinearFetch(230, async () => {
       result = await checkRevisionEscalation({
         threshold: 2,
         loadRevisions: async () => [
@@ -313,7 +313,7 @@ test("夜間のジョブ（checkRevisionEscalation）: 関所が止めたら保�
     else process.env.LINEAR_TEAM_ID = env.team;
   }
   assert.equal(sentCreate(queries), false);
-  assert.match(result.held.reason, /200/);
+  assert.match(result.held.reason, /230/);
   assert.deepEqual(result.escalated, []);
   // 次の晩にもう一度数えるため、記録には残さない
   assert.deepEqual(saved, [{ escalated: {} }]);
