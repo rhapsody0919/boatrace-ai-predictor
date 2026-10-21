@@ -89,6 +89,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - .claude・CI ゲート・permission の変更、本番 DB への書き込みを伴わない
 - F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`（翻訳のメタの `en/`・`ko/`・`zh-TW/` を含む。#1699 で移った先）・`public/images/blog/`・`docs/content-manifests/`（記事の審査記録、契約 docs/operation/content-pr-contract.md）・`public/blog-charts/`（記事の図のデータ、ADR 0098）だけの PR。画像は別の名前で足す（差し替えはオーナーが行う）。A の条件に加えて次をすべて満たす
   - content-qa（`.claude/agents/content-qa.md`）・wording-editor・ファンのレビュー（boatrace-fan-reviewer か discussion-panel）・seo-marketer の4つの観点で審査する
+  - hq の社員の道（content-pr）の記事は、hq の審査の低の段（同じベンダーの1回の審査。止めるのは事実の誤り・無い機能・壊れたリンク・形・禁止語の5つ、ファン・seo-marketer は助言）で manifest の4役が pass なら、4つの観点の審査を満たすとみなす（オーナー決定 2026-10-21）。記事は作るときに質を高くする前提で、マージ前に Claude が観点を足して審査し直すことはしない（この道では、下の P0・P1 の止め方は低の段の5つに置き換わる）
   - P0 は4つの観点のどれで出ても止める
   - P1 は content-qa と wording-editor の分だけ止める。ファン・seo-marketer の P1 は助言として扱い、件数を PR コメントとダイジェストに記録する
   - 4つの役を別々に呼ばず、1回の審査が観点ごとに分けて結果を出す形でもよい。役と観点の表の対応は契約に固定する（どの文書に置くかは ③ のレーンと hq で決める）
