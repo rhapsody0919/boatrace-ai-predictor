@@ -87,7 +87,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - 修正前は落ち、修正後は通る再現テストが同じ PR にある
   - 画面の見せ方（表示項目・配色・並び順・文言の方針）と、表示する数値の判断（集計・算出の定義）を変えない
   - .claude・CI ゲート・permission の変更、本番 DB への書き込みを伴わない
-- F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`（翻訳のメタの `en/`・`ko/`・`zh-TW/` を含む。#1699 で移った先）・`public/images/blog/` だけの PR。画像は別の名前で足す（差し替えはオーナーが行う）。A の条件に加えて次をすべて満たす
+- F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`（翻訳のメタの `en/`・`ko/`・`zh-TW/` を含む。#1699 で移った先）・`public/images/blog/`・`docs/content-manifests/`（記事の審査記録、契約 docs/operation/content-pr-contract.md）・`public/blog-charts/`（記事の図のデータ、ADR 0098）だけの PR。画像は別の名前で足す（差し替えはオーナーが行う）。A の条件に加えて次をすべて満たす
   - content-qa（`.claude/agents/content-qa.md`）・wording-editor・ファンのレビュー（boatrace-fan-reviewer か discussion-panel）・seo-marketer の4つの観点で審査する
   - P0 は4つの観点のどれで出ても止める
   - P1 は content-qa と wording-editor の分だけ止める。ファン・seo-marketer の P1 は助言として扱い、件数を PR コメントとダイジェストに記録する

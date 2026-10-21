@@ -5,7 +5,16 @@
  * errors が0であること、public/images/blog の全 JPEG から寸法が読めることを固定する。
  * 外部接続なし・実時刻に依存しない（tier ci）。
  */
-import { readFileSync, readdirSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -1339,6 +1348,60 @@ for (const [name, over, expect] of cases) {
     failures.push("parseRawDiff('') が空でない");
 }
 
+// 今の記事の図の JSON は、リポジトリ（作業ツリー）にあるかで答える。
+// 以前は checkRawHtml に実在の答えを渡さず（既定は常に「無い」）、図つきの記事を足した PR では、
+// その記事が「今の記事」として検査され、図が同じ PR にあっても必ず落ちた（2026-10-21 #1747）
+const chartExistsUnder = (root) => (repoPath) =>
+  existsSync(join(root, repoPath));
+
+// 再現テスト: 図つきの記事と、同じ PR で足した図の JSON の組
+{
+  const tmp = mkdtempSync(join(tmpdir(), "content-gate-chart-"));
+  try {
+    mkdirSync(join(tmp, "public/blog-charts"), { recursive: true });
+    writeFileSync(
+      join(tmp, "public/blog-charts/new-article-course-win.json"),
+      "{}",
+    );
+    const md = [
+      "# 新しい記事",
+      "",
+      "本文。",
+      "",
+      '<ryujin-chart src="/blog-charts/new-article-course-win.json" rows="6"></ryujin-chart>',
+      "",
+      "次の段落。",
+      "",
+    ].join("\n");
+    const path = "public/blog/new-article.md";
+    // 修正前の呼び方（実在の答えなし）では落ちる
+    if (checkRawHtml(path, md).length === 0)
+      failures.push(
+        "再現テスト: 実在の答えなしで図の行が通った（再現できていない）",
+      );
+    // 修正後: 図の JSON がリポジトリにあれば通る
+    const ok = checkRawHtml(path, md, chartExistsUnder(tmp));
+    if (ok.length !== 0)
+      failures.push(
+        `再現テスト: 図の JSON があるのに落ちた: ${ok.join(" / ")}`,
+      );
+    // 図の JSON が無ければ、今までどおり落ちる
+    const missing = checkRawHtml(
+      path,
+      md.replace("new-article-course-win", "missing-chart"),
+      chartExistsUnder(tmp),
+    );
+    if (
+      !missing.some((e) => e.includes("public/blog-charts/missing-chart.json"))
+    )
+      failures.push(
+        `再現テスト: 無い図の JSON を通した: ${JSON.stringify(missing)}`,
+      );
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
 // 今の記事を壊さない: 全 .md・全 JSON を「変えたファイル」（status M）とみなして本文の関門を当てる
 const blogDir = join(ROOT, "public/blog");
 const mdFiles = readdirSync(blogDir).filter((f) => f.endsWith(".md"));
@@ -1358,7 +1421,7 @@ for (const f of mdFiles) {
     })),
   );
   masterErrors.push(
-    ...checkRawHtml(path, text),
+    ...checkRawHtml(path, text, chartExistsUnder(ROOT)),
     ...checkKyoteiMd(path, text, config),
     ...checkInternalLinks(path, text, "M", config),
   );
