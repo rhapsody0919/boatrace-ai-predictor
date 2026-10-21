@@ -24,6 +24,8 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 
   `codex/*` の Preview を止めているのは、Preview 環境の環境変数に本番 DB の管理者キーが載るため。Codex が書いたコードが、レビュー・マージの前にそのキーを持って動かないようにしている（`scripts/maintenance/verify-codex-no-preview.js` が設定を固定）。マージ後は本番で同じキーを持って動くので、これはマージ前の歯止めにすぎない
 
+- Linear の起票は、コードからはすべて `scripts/lib/linearIssueGate.js` の `assertCanCreateIssue` を通す（`scripts/linear-cli.js create` もこれを通る）。未アーカイブが230件以上（無料枠250件の手前。hq は200で警告・240で社員の起票を止める）か、件数を数えられないときは起票せず、Slack に件数と閾値を知らせる。新しい起票の経路を足すときもここを通す（`verify-linear-issue-gate.js` が CI で抜け道を検知する）。Linear MCP の起票（`save_issue`）はこの関所を通らない
+
 ## 知見を残す（Codex・Claude 共通）
 
 - 作業の完了報告と PR 本文の最後に「## 知見の候補」を書く。1行1知見で、足し先の `docs/knowledge/` の話題ファイル名を付ける（例: `- data-definitions.md: …（日付、根拠）`）。無ければ「なし」と書く

@@ -489,6 +489,11 @@
       "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
     },
     {
+      "script": "verify-linear-issue-gate.js",
+      "tier": "ci",
+      "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値230件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48、閾値は 2026-10-21 hq 決定）。check-revision-escalation.js・create-vup-linear-ticket.js・api/_lib/snsHubHelpers.js が数えてから issueCreate を送り、230件では送らないこと、夜間のジョブは止めたら保留で終わること、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
+    },
+    {
       "script": "verify-meet-before-race.js",
       "tier": "ci",
       "guards": "直前情報タブ「今節展示情報」・今節タブの今節の切り出し（src/utils/meetGrouping.js の groupIntoMeetBeforeRace）。会場で絞らないと別会場の同じモーター番号の節が、表示中レースを目印にしないと節の初戦で前の節が「今節」として混ざる（BOA-591）"

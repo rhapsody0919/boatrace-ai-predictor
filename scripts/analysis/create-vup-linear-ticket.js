@@ -21,6 +21,12 @@
  */
 import * as fs from "fs";
 
+import { isDirectRun } from "../lib/isDirectRun.js";
+import {
+  assertCanCreateIssue,
+  slackNotifierFromEnv,
+} from "../lib/linearIssueGate.js";
+
 const LINEAR_API_URL = "https://api.linear.app/graphql";
 
 async function graphqlRequest(query, variables) {
@@ -80,7 +86,14 @@ async function getTeamLabels(teamId) {
   return new Map(data.team.labels.nodes.map((l) => [l.name, l.id]));
 }
 
-async function createVupLinearTicket(ticket) {
+// 起票の前に未アーカイブ件数を確かめる（scripts/lib/linearIssueGate.js）。閾値以上・数えられない
+// ときは Slack に知らせて例外で止まる
+export async function createVupLinearTicket(ticket) {
+  await assertCanCreateIssue({
+    request: graphqlRequest,
+    notify: slackNotifierFromEnv(process.env),
+    source: "create-vup-linear-ticket.js",
+  });
   const teamId = await resolveTeamId();
 
   const labelMap = await getTeamLabels(teamId);
@@ -121,23 +134,26 @@ async function createVupLinearTicket(ticket) {
   return data.issueCreate.issue;
 }
 
-const ticketPath = process.argv[2];
-if (!ticketPath) {
-  console.error(
-    "使用方法: node create-vup-linear-ticket.js path/to/ticket.json",
-  );
-  process.exit(1);
-}
+// 検査（verify-linear-issue-gate.js）から関数だけを読むため、直接実行したときだけ動かす
+if (isDirectRun(import.meta.url)) {
+  const ticketPath = process.argv[2];
+  if (!ticketPath) {
+    console.error(
+      "使用方法: node create-vup-linear-ticket.js path/to/ticket.json",
+    );
+    process.exit(1);
+  }
 
-const ticket = JSON.parse(fs.readFileSync(ticketPath, "utf-8"));
+  const ticket = JSON.parse(fs.readFileSync(ticketPath, "utf-8"));
 
-try {
-  const issue = await createVupLinearTicket(ticket);
-  console.log(`✅ チケット作成成功！`);
-  console.log(`📋 チケットID: ${issue.identifier}`);
-  console.log(`🔗 URL: ${issue.url}`);
-  console.log(`📝 タイトル: ${issue.title}`);
-} catch (error) {
-  console.error(`❌ エラー: ${error.message}`);
-  process.exit(1);
+  try {
+    const issue = await createVupLinearTicket(ticket);
+    console.log(`✅ チケット作成成功！`);
+    console.log(`📋 チケットID: ${issue.identifier}`);
+    console.log(`🔗 URL: ${issue.url}`);
+    console.log(`📝 タイトル: ${issue.title}`);
+  } catch (error) {
+    console.error(`❌ エラー: ${error.message}`);
+    process.exit(1);
+  }
 }
