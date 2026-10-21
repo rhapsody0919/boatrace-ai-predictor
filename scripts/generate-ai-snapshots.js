@@ -29,6 +29,7 @@ import {
 } from "./lib/renderWithFreshPage.js";
 import { planRacerSnapshots } from "./lib/racerSnapshotPlan.js";
 import { launchChromium } from "./lib/launchChromium.js";
+import { exportBlogChartPngs, planBlogChartPngs } from "./lib/blogChartPng.js";
 import {
   summarizeSnapshotRun,
   addSnapshotGroup,
@@ -477,6 +478,7 @@ async function main() {
   let racerResult = null;
   let translatedResult = null;
   let listResult = null;
+  let chartPngResult = null;
   let server;
   try {
     const started = await startStaticServer();
@@ -505,6 +507,33 @@ async function main() {
         listResult = { total: null, failed: [], fatalError: err.message };
         console.error(
           "⚠️ ブログ一覧のスナップショット生成が途中で止まった:",
+          err.message,
+        );
+      }
+      // ブログの図の PNG（ADR 0099）。止まっても記事・選手ページの結果には影響させない
+      try {
+        chartPngResult = await exportBlogChartPngs({
+          openPage: opener.openPage,
+          baseUrl,
+          plan: planBlogChartPngs(path.join(ROOT, "public", "blog-charts")),
+          outDir: DIST_DIR,
+        });
+        console.log(
+          `✓ ブログの図の PNG: ${chartPngResult.files.length}/${chartPngResult.total}枚（${chartPngResult.seconds}秒）`,
+        );
+        for (const f of chartPngResult.failed)
+          console.error(`⚠️ 図の PNG を作れなかった: ${f.id}: ${f.error}`);
+        for (const f of chartPngResult.skipped)
+          console.log(`- 図の PNG を作らなかった: ${f.id}: ${f.error}`);
+      } catch (err) {
+        chartPngResult = {
+          total: null,
+          failed: [],
+          skipped: [],
+          fatalError: err.message,
+        };
+        console.error(
+          "⚠️ ブログの図の PNG の書き出しが途中で止まった:",
           err.message,
         );
       }
@@ -575,6 +604,29 @@ async function main() {
     }
   }
   if (listResult) addSnapshotGroup(status, lines, "blogList", listResult);
+  // 図の PNG（ADR 0099）。失敗の理由と書いた URL も残す（作り手・朝夜のまとめが読む）。
+  // 枠に収まらず作らなかったもの（skipped）は撮る対象から外して数える（失敗にも成功にも入れない）
+  if (chartPngResult) {
+    const skipped = chartPngResult.skipped ?? [];
+    addSnapshotGroup(status, lines, "blogChartPng", {
+      ...chartPngResult,
+      total:
+        chartPngResult.total == null
+          ? null
+          : chartPngResult.total - skipped.length,
+    });
+    Object.assign(status.blogChartPng, {
+      // 朝夜のまとめ（scripts/content/blog-chart-png-digest.js）が、配られた版までの JSON の変更を数えるのに使う
+      commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      files: chartPngResult.files ?? [],
+      errors: Object.fromEntries(
+        chartPngResult.failed.map((f) => [f.id, f.error]),
+      ),
+      skipped: Object.fromEntries(skipped.map((f) => [f.id, f.error])),
+      seconds: chartPngResult.seconds ?? null,
+    });
+  }
+
   writeFileSync(
     path.join(SNAPSHOT_DIR, "status.json"),
     `${JSON.stringify(status, null, 2)}\n`,

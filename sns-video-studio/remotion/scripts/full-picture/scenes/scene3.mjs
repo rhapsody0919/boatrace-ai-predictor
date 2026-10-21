@@ -3,9 +3,10 @@
  * ① 思考アシスト「このレースは堅い？荒れる？」: 「1号艇の1着」の「全国・級の並びが同じ {n}件 {x}%（全国 {y}%）」と棒をまとめて囲う
  *    （sameClassScope・roughCard。優勝戦・準優勝戦の日は同じラウンド、30件未満なら NC に戻す）
  * ② 1号艇の選手ページ「会場別成績 — 1号艇」: その日の会場の行を囲う。表を縦に伸ばし、約6秒
- * ③ 同じ選手ページ「枠番別回収率（過去180日）」: 枠番1の行を囲う（回収率として扱い、1着率と言わない）
- * 選手ページの集計は画面の aggregateRacerCrossStats・getRacerBoatReturnRate と同じ数え方（取得関数の中にあるので写した）。
- * 画面は見た日から730日・180日を数えるが、ここはレースの日から数え、このレースより前の走だけ（同じ材料なら同じ値）。
+ * ③ 枠番別回収率は出さない（2026-10-20 オーナー決定 BOA-913。20〜45走の回収率は選手の差を示さず、収益を連想させる。
+ *   docs/design/full-picture-remotion/analysis/boat1-return-rate-noise.md）
+ * 選手ページの集計は画面の aggregateRacerCrossStats と同じ数え方（取得関数の中にあるので写した）。
+ * 画面は見た日から730日を数えるが、ここはレースの日から数え、このレースより前の走だけ（同じ材料なら同じ値）。
  */
 import { roughCard, sameClassLabel, sameClassScope, anyCell } from "../../../../../src/utils/assistModel.js";
 import { tallyWinPlaceShow } from "../../../../../src/utils/racerConditionStats.js";
@@ -95,8 +96,9 @@ export function buildScene3(m) {
       // 2行目が答えの行（lead）で大きい字にするので、全国の値（棒の目印の下に出ている）は書かず差だけにして縮めずに収める。
       // 問いが1号艇なので「1号艇の」は省く
       lines: fitFirst(
-        [`${label}${b.n}件`, `1着${d1(x)}%、${diffText("全国", f)}`],
-        [`${label}${b.n}件`, `1着${d1(x)}%（全国${d1(y)}%）`],
+        // 1行目は過去のレースの範囲、2行目は主語（1号艇）と比べる先（全国の1号艇）を書く（wording-editor P1）
+        // 2行目は答えの行（大きい字）なので短く。主語の1号艇は上帯の問い「1号艇は信頼できる？」にある。比べる先は「全国の1号艇」と書く
+        [`${label}${label.endsWith("同じ") ? "" : "の"}過去${b.n.toLocaleString("ja-JP")}件`, `1着${d1(x)}%（全国の1号艇${d1(y)}%）`],
       ),
     });
     if (scope.few) omitted.push({ where: "scene3.rough", reason: `同じラウンドが30件未満なので級の並びが同じ（NC）に戻した` });
@@ -130,7 +132,7 @@ export function buildScene3(m) {
     const rate = (g, k) => (g.n ? Math.round((g[k] / g.n) * 1000) / 10 : null);
     const hw = rate(here, "win");
     const aw = all.n ? Math.round((all.win / all.n) * 1000) / 10 : null;
-    const f = { kind: "venueRecord", boat: 1, name, venue, runs: here.n, rate: hw, top2: rate(here, "top2"), allRuns: all.n, allRate: aw, ...diffOf(hw, aw) };
+    const f = { kind: "venueRecord", boat: 1, name, venue, runs: here.n, wins: here.win, rate: hw, top2: rate(here, "top2"), allRuns: all.n, allWins: all.win, allRate: aw, ...diffOf(hw, aw) };
     steps.push({
       id: "s3-venue",
       question: Q,
@@ -148,47 +150,18 @@ export function buildScene3(m) {
       facts: f,
       // 選手名・会場名が長いと1行に入らないので、入らなければ走数と1着率を分ける
       lines: fitFirst(
-        [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`全会場の${d1(aw)}%`, f)],
-        [`${name}の${venue}1号艇${here.n}走で1着率${d1(hw)}%`, diffText(`全会場の${d1(aw)}%`, f)],
-        [`${name}の${venue}1号艇は${here.n}走`, `1着率${d1(hw)}%、全会場は${d1(aw)}%`],
+        // 2行目の比べる相手も本人の成績（全会場の1号艇）。会場の集計と読まれないよう「本人の」と書く（2026-10-20 オーナー）
+        // 30走未満は割合を出さず走と勝ちの数で言う（number-wording.md、1〜3走の100%を比べていた。wording-editor P2）
+        ...(here.n < 30
+          ? [[`${name}の${venue}1号艇は${here.n}走${here.win}勝`, all.n < 30 ? `本人の全会場では${all.n}走${all.win}勝` : `本人の全会場では${all.n}走で1着率${d1(aw)}%`]]
+          : [
+              [`${name}の${venue}1号艇は${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場（${d1(aw)}%）`, f)],
+              [`${name}の${venue}1号艇${here.n}走で1着率${d1(hw)}%`, diffText(`本人の全会場（${d1(aw)}%）`, f)],
+            ]),
+        [`${name}の${venue}1号艇は${here.n}走`, `1着率${d1(hw)}%、本人の全会場では${d1(aw)}%`],
       ),
     });
   } else omitted.push({ where: "scene3.venue", reason: `${venue}で1号艇の走が730日に無い` });
 
-  // ③ 枠番別回収率（180日）
-  const h180 = history(rows, m.date, 180);
-  const byBoat = new Map();
-  for (const r of h180) {
-    const s = byBoat.get(r.boatNumber) ?? { n: 0, win: 0, place: 0 };
-    s.n += 1;
-    if (r.rank1 === r.boatNumber) {
-      s.win += r.payoutWin ?? 0;
-      s.place += r.payoutPlace1 ?? 0;
-    } else if (r.rank2 === r.boatNumber) s.place += r.payoutPlace2 ?? 0;
-    byBoat.set(r.boatNumber, s);
-  }
-  const rr = (sum, n) => (n ? Math.round((sum / (n * 100)) * 1000) / 10 : null);
-  const b1 = byBoat.get(1);
-  if (b1) {
-    const f = { kind: "returnRate", boat: 1, name, runs: b1.n, win: rr(b1.win, b1.n), place: rr(b1.place, b1.n) };
-    steps.push({
-      id: "s3-return",
-      question: Q,
-      page: {
-        kind: "table",
-        title: `${name} 枠番別回収率`,
-        sub: "過去180日",
-        cols: ["走", "単勝", "複勝"],
-        rows: BOATS.map((b) => {
-          const s = byBoat.get(b);
-          return { boat: b, cells: s ? [String(s.n), `${d1(rr(s.win, s.n))}%`, `${d1(rr(s.place, s.n))}%`] : ["0", "—", "—"] };
-        }),
-      },
-      press: null,
-      frames: [tableRowBox(0)],
-      facts: f,
-      lines: [`${name}の1号艇は${b1.n}走`, `単勝回収率${d1(f.win)}%・複勝回収率${d1(f.place)}%`],
-    });
-  } else omitted.push({ where: "scene3.return", reason: "180日に1号艇の走が無い" });
   return { id: "scene3", steps, omitted };
 }
