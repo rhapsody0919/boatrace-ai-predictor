@@ -62,7 +62,7 @@ check(
 // --- 0件（docs だけ） ---
 check(
   "docs だけは0件",
-  scopeOf(["docs/adr/0100-x.md", "docs/knowledge/a.md"]),
+  scopeOf(["docs/adr/0100-e2e-scope-by-diff.md", "docs/knowledge/a.md"]),
   "none",
 );
 check(

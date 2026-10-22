@@ -517,13 +517,15 @@ const jobBlocks = Object.fromEntries(
   const agg = e2e.slice(e2e.indexOf("\n  e2e:\n"));
   check(
     "e2e の集約の job は always() で走る（取り消しで skipped にならない）",
-    /^ {2}e2e:\n {4}needs: e2e-shard\n(?: {4}#.*\n)* {4}if: always\(\)\n/m.test(e2e),
+    /^ {2}e2e:\n {4}needs: \[e2e-scope, e2e-shard, e2e-light\]\n(?: {4}#.*\n)* {4}if: always\(\)\n/m.test(e2e),
   );
+  // 範囲（ADR-0100）ごとに走るべき組の結果を見る。範囲が分からないときも落とす
   check(
     "e2e の集約は組の結果が success 以外なら落とす",
-    /if \[ "\$\{\{ needs\.e2e-shard\.result \}\}" != "success" \]; then[\s\S]*?exit 1/.test(
-      agg,
-    ),
+    /full\) job=e2e-shard; result="\$\{\{ needs\.e2e-shard\.result \}\}"/.test(agg) &&
+      /light\) job=e2e-light; result="\$\{\{ needs\.e2e-light\.result \}\}"/.test(agg) &&
+      /\*\) echo "[^"\n]*"; exit 1 ;;/.test(agg) &&
+      /if \[ "\$result" != "success" \]; then[\s\S]*?exit 1/.test(agg),
   );
 }
 
