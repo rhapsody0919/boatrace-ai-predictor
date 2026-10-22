@@ -396,6 +396,11 @@
       "guards": "GA4 の計測の切れ目（2026-09-29 の page_view 修正）をまたぐ期間の判定と注記（scripts/lib/ga4MeasurementBreaks.js）。崩れると計測修正による PV の増減を需要の変化と誤読する"
     },
     {
+      "script": "verify-ga4-traffic-source-params.js",
+      "tier": "ci",
+      "guards": "サイトの中から GA4 のセッションの流入元を上書きしないこと（BOA-996）。trackEvent が予約名（source・medium・campaign・utm_* 等）のパラメータを gtag に渡さない、src の trackEvent の引数に予約名のキーが無い、src の文にサイトの中を指す URL で utm_ を付けたものが無い。崩れると、そのセッションと同じ人の後の直接の訪問が data_race_table 等の流入元（Unassigned）に化ける（PR #656 の前に起きた）"
+    },
+    {
       "script": "verify-generated-docs-not-in-pr.js",
       "tier": "ci",
       "args": ["--base=origin/master"],
