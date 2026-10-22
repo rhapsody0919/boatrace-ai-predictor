@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "heiwajima-meet-ranking-guide",
+ "kind": "new",
+ "ticket": "BOA-911",
+ "paths": [
+  "public/blog/heiwajima-meet-ranking-guide.md",
+  "src/data/blog-posts/heiwajima-meet-ranking-guide.json"
+ ],
+ "files": {
+  "public/blog/heiwajima-meet-ranking-guide.md": "e874490f63a839a6ae07efd06abaa972fa40c69f02ddc6e941d133b7a5f39e3c",
+  "src/data/blog-posts/heiwajima-meet-ranking-guide.json": "79334f507532648e7f5efa8eb4058719b9696a04ec8f366ee6db0430d857e3fb"
+ },
+ "content_sha256": "a3c844d56572cb0dcf8e0d2a9b756a3c4c07030905438091de71986a2ce56c88",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "a3c844d56572cb0dcf8e0d2a9b756a3c4c07030905438091de71986a2ce56c88",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:06:36+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "a3c844d56572cb0dcf8e0d2a9b756a3c4c07030905438091de71986a2ce56c88",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:06:36+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "a3c844d56572cb0dcf8e0d2a9b756a3c4c07030905438091de71986a2ce56c88",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:06:36+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "a3c844d56572cb0dcf8e0d2a9b756a3c4c07030905438091de71986a2ce56c88",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:06:36+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-22T18:08:48+09:00",
+ "run": "20261022T175759-seo-human",
+ "engine": "codex"
+}
