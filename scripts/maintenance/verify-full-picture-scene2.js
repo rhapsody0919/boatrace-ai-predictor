@@ -750,7 +750,8 @@ for (const f of fixtures) {
     // BOA-989: X の1行目は完全版の題名と同じ頭、X・説明文にレースの日時（曜日）とレース名
     const xHead = b.x_text.split("\n")[0];
     assert.ok(b.youtube_full.title.startsWith(xHead.slice(0, xHead.indexOf("】") + 1)), `${f}: X の1行目は題名と同じ頭`);
-    for (const txt of [b.x_text, b.youtube_full.description, b.youtube_shorts.description]) assert.match(txt, /\d+\/\d+（[日月火水木金土]）.+\d+R/, `${f}: 日付・曜日・会場・R`);
+    for (const txt of [b.youtube_full.description, b.youtube_shorts.description]) assert.match(txt, /\d+\/\d+（[日月火水木金土]）.+\d+R/, `${f}: 日付・曜日・会場・R`);
+    assert.match(b.x_text.split("\n")[1], /^\d+\/\d+（[日月火水木金土]）(締切\d{1,2}:\d{2})?$/, `${f}: X の2行目は日付・曜日・締切だけ（hq 2026-10-23）`);
     assert.ok(b.youtube_full.description.startsWith("ボートレース "), `${f}: 説明文の1行目`);
     assert.ok(b.youtube_full.description.includes("条件・6艇比較・類似レース・展開の順に見る動画です。"), `${f}: 章の名前から作った順`);
     assert.ok(b.youtube_shorts.description.includes("完全版の動画（約3分半）"), `${f}: 完全版の長さ`);
@@ -761,11 +762,12 @@ for (const f of fixtures) {
     assert.equal(b.race_id, "2026-10-12-01-12");
     assert.ok(b.youtube_full.title.startsWith("【G1 桐生12R 優勝戦｜10/12】1号艇は堅い？ "), b.youtube_full.title);
     assert.ok(b.youtube_shorts.title.startsWith("桐生12R 優勝戦（10/12）1号艇は堅い？"), b.youtube_shorts.title);
-    for (const txt of [b.x_text, b.youtube_full.description, b.youtube_shorts.description]) assert.ok(txt.includes("10/12（月）桐生12R 優勝戦 締切16:40"), txt);
-    assert.ok(b.x_text.startsWith("【G1 桐生12R 優勝戦｜10/12】1号艇は堅い？\n"), b.x_text);
+    for (const txt of [b.youtube_full.description, b.youtube_shorts.description]) assert.ok(txt.includes("10/12（月）桐生12R 優勝戦 締切16:40"), txt);
+    assert.ok(b.x_text.startsWith("【G1 桐生12R 優勝戦｜10/12】1号艇は堅い？\n10/12（月）締切16:40\n"), b.x_text);
     const other = bundleOf(fixtures.find((f) => f.startsWith("2026-10-15-15-10")));
     assert.ok(other.youtube_full.title.startsWith("【丸亀10R｜10/15】"), `round=other・一般は名前もグレードも書かない: ${other.youtube_full.title}`);
-    assert.ok(other.x_text.includes("10/15（木）丸亀10R\n"), "締切が無ければ書かない");
+    assert.ok(other.x_text.includes("\n10/15（木）\n"), "締切が無ければ書かない");
+    assert.equal(raceHeader({ year: 2026, month: 10, day: 22, venue: "児島", raceNo: 12, round: "junyu", deadline: "16:44:00", short: true }), "10/22（木）締切16:44");
     const junyu = bundleOf(fixtures.find((f) => f.startsWith("2026-10-19-19-10")));
     assert.ok(junyu.youtube_full.title.startsWith("【下関10R 準優勝戦｜10/19】"), junyu.youtube_full.title);
     assert.equal(raceHeader({ year: 2026, month: 10, day: 22, venue: "児島", raceNo: 12, round: "junyu", deadline: "16:44:00" }), "10/22（木）児島12R 準優勝戦 締切16:44");
@@ -816,7 +818,7 @@ for (const f of fixtures) {
     const sc = JSON.parse(readFileSync(`${tmp}/out/scenes.json`, "utf8"));
     assert.equal(sc.scenes.find((x) => x.id === "scene1").data.steps[0].question, `${HEADER} 1号艇は堅い？`, "完全版の冒頭の問いに見出し");
     const post = readFileSync(`${tmp}/out/post-entry.txt`, "utf8");
-    assert.ok(post.startsWith("【桐生12R 優勝戦｜10/12】1号艇は堅い？\n" + HEADER + "\n"), post);
+    assert.ok(post.startsWith("【桐生12R 優勝戦｜10/12】1号艇は堅い？\n10/12（月）締切16:40\n"), post);
   }
   assert.equal(runFull({ ...mOk, api: { ...mOk.api, scenario: null } }), 1, "場面4の材料が無ければ止める");
   assert.equal(runFull({ ...mOk, schemaVersion: "full-picture-materials/0" }), 1, "契約に合わなければ止める");

@@ -34,13 +34,15 @@ const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
 /**
  * レースの見出し「10/22（木）児島12R 準優勝戦 締切16:44」。冒頭の場面・説明文・X の本文に同じ文を出す。
  * レース名・締切が無いときはその部分を書かない
- * @param {{year: number, month: number, day: number, venue: string, raceNo: number, round?: string|null, deadline?: string|null}} p deadline は "HH:MM[:SS]"
+ * short: 会場・R・レース名を省く（X の2行目。1行目の頭と重ねない、hq 2026-10-23）
+ * @param {{year: number, month: number, day: number, venue: string, raceNo: number, round?: string|null, deadline?: string|null, short?: boolean}} p deadline は "HH:MM[:SS]"
  */
-export function raceHeader({ year, month, day, venue, raceNo, round = null, deadline = null }) {
+export function raceHeader({ year, month, day, venue, raceNo, round = null, deadline = null, short = false }) {
   const wd = WEEKDAY[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
   const name = ROUND_NAME[round] ?? null;
   const hm = /^\d{1,2}:\d{2}/.exec(deadline ?? "")?.[0] ?? null;
-  return `${month}/${day}（${wd}）${venue}${raceNo}R${name ? ` ${name}` : ""}${hm ? ` 締切${hm}` : ""}`;
+  const race = short ? "" : `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
+  return `${month}/${day}（${wd}）${race}${hm ? `${race ? " " : ""}締切${hm}` : ""}`;
 }
 const join = (lines) => lines.filter((l) => l !== null && l !== undefined).join("\n");
 const d1 = (v) => Number(v).toFixed(1);
@@ -98,14 +100,15 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   const name = ROUND_NAME[round] ?? null;
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
   const date = `${month}/${day}`;
-  const header = raceHeader({ year: Number(raceId.slice(0, 4)), month, day, venue, raceNo, round, deadline });
+  const headerArgs = { year: Number(raceId.slice(0, 4)), month, day, venue, raceNo, round, deadline };
+  const header = raceHeader(headerArgs);
   // 完全版の題名と X の1行目の頭（hq 2026-10-21、BOA-989）。SG・G1・G2・G3 は頭にグレード
   const head = `【${GRADE_HEAD.includes(grade) ? `${grade} ` : ""}${label}｜${date}】`;
   const L = lines(facts ?? {});
   const order = chapterNames(chapters);
   const x_text = join([
     `${head}1号艇は堅い？`,
-    header,
+    raceHeader({ ...headerArgs, short: true }),
     L.venue,
     L.conclusion,
     `このレースのデータは龍神レーダーで: ${utmUrl(raceId, "x")}`,
