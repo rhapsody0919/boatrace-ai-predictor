@@ -84,6 +84,8 @@ export const TODAY_PICK_RULES = [
   },
 ];
 export const TODAY_MIN_SAMPLE = 30;
+/** 見出しの直後に置くリンクの行の頭 */
+export const TODAY_LINK_LABEL = "今日の一覧はこちら：";
 export const TODAY_NOTICE =
   "過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。";
 
@@ -185,7 +187,14 @@ export function buildTodayPost(
   const head = (row) =>
     `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}`;
   // 見出し（1行目）だけは日替わりの案（config/today-variants.json）。ほかは機械が作る
-  const lines = [renderTodayHeading(heading, model.dateLine), ""];
+  // リンクは見出しの直後（3行目）。末尾だと長文の折りたたみの先に隠れて押されにくい（2026-10-22 オーナー「前倒しで押される形」、
+  // 10/20 は表示321・クリック1以下）
+  const lines = [
+    renderTodayHeading(heading, model.dateLine),
+    "",
+    `${TODAY_LINK_LABEL}${url}`,
+    "",
+  ];
   // 注目レースを先頭に（2026-10-16 オーナー指示。「イン崩れ指数」「AIが算出」の言い方は使わない）
   if (featured)
     lines.push(
@@ -206,7 +215,7 @@ export function buildTodayPost(
       );
     lines.push("");
   }
-  lines.push(TODAY_NOTICE, url);
+  lines.push(TODAY_NOTICE);
   return {
     text: lines.join("\n"),
     // 画像（龍神ソナーの図）を撮るレース。注目レースを先頭に、一覧を締切順で、同じレースは1回
