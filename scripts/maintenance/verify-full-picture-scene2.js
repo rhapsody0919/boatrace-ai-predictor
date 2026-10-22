@@ -700,7 +700,7 @@ for (const f of fixtures) {
 
 // ---- 送信の道に渡す bundle（2026-10-20 オーケストレーターの分担 a・b・c、送信レーンとの Shorts の契約 bundle_version 2）----
 {
-  const { buildBundle, checkBundle, chaptersOk, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
+  const { buildBundle, checkBundle, chaptersOk, raceHeader, utmUrl, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
   const { checkFullPicture } = await import("../sns/push-full-picture.js");
   const riskRules = JSON.parse(readFileSync(new URL(`${R}/risk-rules.json`, import.meta.url), "utf8")).rules;
   assert.ok(riskRules.length > 0, "禁止表現の規則を読めた");
@@ -708,18 +708,19 @@ for (const f of fixtures) {
   const VENUE = { "01": "桐生", 15: "丸亀", 24: "大村", 19: "下関" };
   const qaAll = { contract: true, text: true, post: true, entry_max59s: true, full_size: true, shorts_vertical: true, shorts_max_60s: true, shorts_size: true, full_min185s: true, chapters: true };
   const CH = "0:00 条件\n0:22 6艇比較\n1:07 類似レース\n1:43 展開";
+  // 締切・グレードは固定の材料に無い（BOA-989 より前の写し）ので、ここで足す
+  const RACE = { "2026-10-12-01-12": { startTime: "16:40:00", grade: "G1" } };
   const bundleOf = (f, qa = qaAll) => {
     const m = load(f);
+    const race = RACE[m.raceId] ?? null;
     const [, mo, da, vc, rn] = m.raceId.split("-");
     const scenes = buildAll(m);
-    const ans = templateText(allBeats(scenes)).answers;
-    const e = entryScenes(scenes, ans, { race: `${VENUE[vc]}${Number(rn)}R（${Number(mo)}/${Number(da)}）` });
     const facts = {
       venue90: scenes.find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-venue90")?.facts ?? null,
       overview: scenes.find((x) => x.id === "scene2").data.radar.overview.facts,
       conclusion: scenes.find((x) => x.id === "scene4").data.conclusion?.facts ?? null,
     };
-    return buildBundle({ raceId: m.raceId, venue: VENUE[vc], raceNo: Number(rn), month: Number(mo), day: Number(da), facts, entryFirstQuestion: e.scenes[0].data.steps[0].question, chapters: CH, fullSeconds: 211, qa });
+    return buildBundle({ raceId: m.raceId, venue: VENUE[vc], raceNo: Number(rn), month: Number(mo), day: Number(da), round: m.api.facts.today.round, grade: race?.grade ?? null, deadline: race?.startTime ?? null, facts, chapters: CH, fullSeconds: 211, qa });
   };
   for (const f of fixtures) {
     const b = bundleOf(f);
@@ -741,12 +742,41 @@ for (const f of fixtures) {
     assert.match(b.x_text, /スタートの形が.+だった過去[\d,]+件中、1着最多は/, `${f}: 結論に条件と N件中`);
     assert.ok(b.x_text.includes("結果を保証するものではありません"), `${f}: X にも免責`);
     // youtube-channel P2: 題名・説明文の1行目に「ボートレース」とその日の向き、章の名前は実際の章から
-    assert.match(b.youtube_full.title, /^【.+ボートレース】1号艇は堅い？ /, `${f}: 完全版の題名`);
+    assert.match(b.youtube_full.title, /^【(?:(?:SG|G[123]) )?.+\d+R(?: .+)?｜\d+\/\d+】1号艇は堅い？ /, `${f}: 完全版の題名（hq 2026-10-21 の形）`);
+    // BOA-995: X・YouTube のリンクに UTM（X は x、YouTube は youtube と utm_term）
+    assert.ok(b.x_text.includes(`?utm_source=x&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}`), `${f}: X の URL に UTM`);
+    assert.ok(b.youtube_full.description.includes(`?utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}&utm_term=full`), `${f}: 完全版の説明文の URL に UTM`);
+    assert.ok(b.youtube_shorts.description.includes(`?utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}&utm_term=shorts`), `${f}: Shorts の説明文の URL に UTM`);
+    // BOA-989: X の1行目は完全版の題名と同じ頭、X・説明文にレースの日時（曜日）とレース名
+    const xHead = b.x_text.split("\n")[0];
+    assert.ok(b.youtube_full.title.startsWith(xHead.slice(0, xHead.indexOf("】") + 1)), `${f}: X の1行目は題名と同じ頭`);
+    for (const txt of [b.youtube_full.description, b.youtube_shorts.description]) assert.match(txt, /\d+\/\d+（[日月火水木金土]）.+\d+R/, `${f}: 日付・曜日・会場・R`);
+    assert.match(b.x_text.split("\n")[1], /^\d+\/\d+（[日月火水木金土]）(締切\d{1,2}:\d{2})?$/, `${f}: X の2行目は日付・曜日・締切だけ（hq 2026-10-23）`);
     assert.ok(b.youtube_full.description.startsWith("ボートレース "), `${f}: 説明文の1行目`);
     assert.ok(b.youtube_full.description.includes("条件・6艇比較・類似レース・展開の順に見る動画です。"), `${f}: 章の名前から作った順`);
     assert.ok(b.youtube_shorts.description.includes("完全版の動画（約3分半）"), `${f}: 完全版の長さ`);
   }
+  // BOA-989: レース名（round）・グレード・締切。固定の材料 0 は桐生12R 優勝戦（G1 を足した）、round=other は名前を書かない
+  {
+    const b = bundleOf(fixtures[0]);
+    assert.equal(b.race_id, "2026-10-12-01-12");
+    assert.ok(b.youtube_full.title.startsWith("【G1 桐生12R 優勝戦｜10/12】1号艇は堅い？ "), b.youtube_full.title);
+    assert.ok(b.youtube_shorts.title.startsWith("桐生12R 優勝戦（10/12）1号艇は堅い？"), b.youtube_shorts.title);
+    for (const txt of [b.youtube_full.description, b.youtube_shorts.description]) assert.ok(txt.includes("10/12（月）桐生12R 優勝戦 締切16:40"), txt);
+    assert.ok(b.x_text.startsWith("【G1 桐生12R 優勝戦｜10/12】1号艇は堅い？\n10/12（月）締切16:40\n"), b.x_text);
+    const other = bundleOf(fixtures.find((f) => f.startsWith("2026-10-15-15-10")));
+    assert.ok(other.youtube_full.title.startsWith("【丸亀10R｜10/15】"), `round=other・一般は名前もグレードも書かない: ${other.youtube_full.title}`);
+    assert.ok(other.x_text.includes("\n10/15（木）\n"), "締切が無ければ書かない");
+    assert.equal(raceHeader({ year: 2026, month: 10, day: 22, venue: "児島", raceNo: 12, round: "junyu", deadline: "16:44:00", short: true }), "10/22（木）締切16:44");
+    const junyu = bundleOf(fixtures.find((f) => f.startsWith("2026-10-19-19-10")));
+    assert.ok(junyu.youtube_full.title.startsWith("【下関10R 準優勝戦｜10/19】"), junyu.youtube_full.title);
+    assert.equal(raceHeader({ year: 2026, month: 10, day: 22, venue: "児島", raceNo: 12, round: "junyu", deadline: "16:44:00" }), "10/22（木）児島12R 準優勝戦 締切16:44");
+    assert.equal(raceHeader({ year: 2026, month: 10, day: 22, venue: "児島", raceNo: 12, round: "nazo", deadline: null }), "10/22（木）児島12R", "対応に無い値は書かない");
+    assert.equal(utmUrl("2026-10-22-16-12", "youtube", "shorts"), "https://www.boat-ai.jp/race/2026-10-22-16-12?utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=2026-10-22-16-12&utm_term=shorts");
+  }
   const b0 = bundleOf(fixtures[0]);
+  has(checkBundle({ ...b0, x_text: b0.x_text.replace(/\?utm_[^\s]+/, "") }), "UTM つき");
+  has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: b0.youtube_full.description.replace(/\?utm_[^\s]+/, "") } }), "youtube_full.description");
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, title: b0.youtube_full.title } }), "題名が同じ");
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, description: "x" } }), "ちょうど1つ無い");
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, description: `${FULL_URL_SLOT} ${FULL_URL_SLOT}` } }), "ちょうど1つ無い");
@@ -754,7 +784,7 @@ for (const f of fixtures) {
   // 全国との差が出せない日は、題名に「差は1ポイント未満」と書かず既定の文にする
   {
     const m = load(fixtures[0]);
-    const b = buildBundle({ raceId: m.raceId, venue: "桐生", raceNo: 12, month: 10, day: 12, facts: { venue90: { venue: "桐生", rate: 51.3, national: null, races: 600, diffPt: null, direction: null }, overview: null, conclusion: null }, entryFirstQuestion: "桐生12R（10/12） 1号艇は堅い？", chapters: CH, fullSeconds: 211, qa: qaAll });
+    const b = buildBundle({ raceId: m.raceId, venue: "桐生", raceNo: 12, month: 10, day: 12, facts: { venue90: { venue: "桐生", rate: 51.3, national: null, races: 600, diffPt: null, direction: null }, overview: null, conclusion: null }, chapters: CH, fullSeconds: 211, qa: qaAll });
     assert.ok(!b.youtube_full.title.includes("1ポイント未満"), b.youtube_full.title);
   }
   has(checkBundle(bundleOf(fixtures[0], { ...qaAll, full_size: false })), "機械の検査");
@@ -781,6 +811,15 @@ for (const f of fixtures) {
   };
   const mOk = load(fixtures[0]);
   assert.equal(runFull(mOk), 0, "固定の材料なら文だけの実行は通る");
+  // BOA-989: 冒頭の場面（完全版・入口版の最初の問い）と X の本文にレースの日時・レース名・締切
+  assert.equal(runFull({ ...mOk, race: { startTime: "16:40:00", grade: "ippan" } }), 0, "締切つきの材料でも通る");
+  {
+    const HEADER = "10/12（月）桐生12R 優勝戦 締切16:40";
+    const sc = JSON.parse(readFileSync(`${tmp}/out/scenes.json`, "utf8"));
+    assert.equal(sc.scenes.find((x) => x.id === "scene1").data.steps[0].question, `${HEADER} 1号艇は堅い？`, "完全版の冒頭の問いに見出し");
+    const post = readFileSync(`${tmp}/out/post-entry.txt`, "utf8");
+    assert.ok(post.startsWith("【桐生12R 優勝戦｜10/12】1号艇は堅い？\n10/12（月）締切16:40\n"), post);
+  }
   assert.equal(runFull({ ...mOk, api: { ...mOk.api, scenario: null } }), 1, "場面4の材料が無ければ止める");
   assert.equal(runFull({ ...mOk, schemaVersion: "full-picture-materials/0" }), 1, "契約に合わなければ止める");
 }
