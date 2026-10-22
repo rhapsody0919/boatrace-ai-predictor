@@ -5,7 +5,8 @@
     "judgementPhrases（部分一致の句）・judgementRate（回収率の主張。「回収率」＋最大 gapMax 字＋数＋%・パーセント（percentMin 以上）、「回収率」＋最大 timesGapMax 字＋数＋倍（timesMin 以上）、数＋%・パーセント＋最大 reverseGapMax 字＋「回収率」。間に数字と gapStopChars（正規化の後の文・表の列・箇条の区切り）を含めない。数の直後が未満・以下・切る・下回るなら主張としない）: 判断が要る句。変えた行を含む .md の段落・JSON の変えた文字列値に見つかれば error（PR を作らずオーナーの判断へ回す）。決定 (a)。照合の前に、実体参照を戻し・NFKC・強調の記号と空白とゼロ幅文字を消す（一覧にも同じ正規化をかける）。語の一覧の正本はこのファイルで、hq の検査はこれを読み、写さない。単語（保証・必ず・絶対・利益・的中率・回収率）だけは判断の対象にしない。judgementAllowedLines（免責の決まり文）は、その部分だけを消して残りを照合する。JSON の metaTitle・metaDescription（kyoteiMetaAllowedKeys）の「競艇」は通す（オーナー決定 2026-10-20、code-style.md 例外1、役所への営業の前に外す暫定の措置）。結果の metaKyotei に記事 id を出し、後で一括で外す。",
     "kyoteiExceptions: .md 本文の「競艇」を許す行（パスと行の中身の完全一致）。",
     "internalLinkGrandfathered: 内部リンク（/ で始まるリンク。画像と // は数えない）が無いまま master にある記事。改稿（変更）のときだけ内部リンクの関門を免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは verify-content-pr-gate.js が落とす）。",
-    "allowedReviewAgents: 役ごとに許す agent の名前。hq の観点表の名前（hq-review:<名前>）はここに足すだけで通る。"
+    "allowedReviewAgents: 役ごとに許す agent の名前。hq の観点表の名前（hq-review:<名前>）はここに足すだけで通る。",
+    "allowedPathPatterns は PR ゲートの e2e の軽い組（vite build と @blog の試験だけ）の判定にも使う。e2eSkipPathPatterns: 差分の全ファイルがこれに当たる PR は e2e を流さずに成功にする（docs だけ。docs/content-manifests は記事の一部なので除く）。判定は scripts/maintenance/e2e-scope.js、マージ時の照合は guard-pr-merge.js（どちらも master の側のこのファイルを読む）。"
   ],
   "allowedPathPatterns": [
     "^public/blog/[^/]+\\.md$",
@@ -14,6 +15,9 @@
     "^public/images/blog/[^/]+\\.(jpg|jpeg)$",
     "^docs/content-manifests/[^/]+\\.json$",
     "^public/blog-charts/[^/]+\\.json$"
+  ],
+  "e2eSkipPathPatterns": [
+    "^docs/(?!content-manifests/)"
   ],
   "judgementPhrases": [
     "必ず当たる",

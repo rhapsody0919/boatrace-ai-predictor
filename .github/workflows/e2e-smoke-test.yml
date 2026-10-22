@@ -10,6 +10,11 @@ name: E2E Smoke Test
 #   step summary と PR コメント（1件を更新し続ける）に必ず一覧で出す
 # - 録画は e2e-rerecord.yml が毎日 JST11:00 に master で撮り直す
 # - 本番データ・実時刻での実行は e2e-live.yml が JST14:00 に行う
+# - 差分で流す範囲を変える（BOA-929）。記事の中身だけの PR は vite build と @blog の試験だけ（e2e-light）、
+#   docs だけの PR は流さずに成功。判定は e2e-scope ジョブが base（master）側の
+#   scripts/maintenance/e2e-scope.js と scripts/content/content-pr-gate.json で行う（PR の側で一覧を書き換えて
+#   軽い組に逃げられないように）。マージ時は guard-pr-merge.js が master の一覧で判定し直し、
+#   全部流すべき PR で e2e-shard が成功していなければ止める
 
 on:
   pull_request:
@@ -29,6 +34,37 @@ permissions:
   pull-requests: write
 
 jobs:
+  # 差分から流す範囲（none / light / full）を決める。判定できないときは full
+  e2e-scope:
+    runs-on: ubuntu-latest
+    outputs:
+      scope: ${{ steps.scope.outputs.scope }}
+    steps:
+      # pull_request の checkout は base と head のマージコミット。1つ目の親が base
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 判定のスクリプトと一覧は base 側を使う。base に無ければ（導入の PR 等）full
+      - name: Decide e2e scope
+        id: scope
+        run: |
+          set -euo pipefail
+          git diff --name-only --no-renames HEAD^1 HEAD > "$RUNNER_TEMP/e2e-files.txt"
+          if git show HEAD^1:scripts/maintenance/e2e-scope.js > "$RUNNER_TEMP/e2e-scope.mjs" 2>/dev/null \
+            && git show HEAD^1:scripts/content/content-pr-gate.json > "$RUNNER_TEMP/content-pr-gate.json" 2>/dev/null; then
+            node "$RUNNER_TEMP/e2e-scope.mjs" --config "$RUNNER_TEMP/content-pr-gate.json" --files "$RUNNER_TEMP/e2e-files.txt" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "base に e2e-scope.js が無いため全部流します"
+            echo "scope=full" | tee -a "$GITHUB_OUTPUT"
+          fi
+
   # 3台に分けて並行に走らせる（BOA-769）。律速は1台の CPU（4 vCPU を vite dev と Chromium が
   # 取り合う。PR #1263 で workers を 4 に増やしても縮まなかった）なので、台数を増やす。
   #
@@ -41,6 +77,8 @@ jobs:
   # 組の中では --fully-parallel でテスト単位に workers（既定2）へ割り振る（#1263 で順序依存が無いことを確認済み）。
   # 全テストがちょうど1回ずつ走ったかは、集約ジョブで check-e2e-shard-coverage.js が確かめる。
   e2e-shard:
+    needs: e2e-scope
+    if: needs.e2e-scope.outputs.scope == 'full'
     runs-on: ubuntu-latest
     strategy:
       # 1組が落ちても他の組は最後まで走らせ、失敗を一度に全部見せる
@@ -114,15 +152,12 @@ jobs:
           path: test-results/
           retention-days: 7
 
-  # 集約ジョブ。名前は e2e のまま変えない（scripts/maintenance/guard-pr-merge.js と
-  # .claude/skills/orchestrate/scripts/patrol.sh が check 名 "e2e" で判定している）。
-  # 素通しの一覧と skip の検査は、ここで全組分をまとめて1回だけ出す
-  e2e:
-    needs: e2e-shard
-    # 組が落ちても、取り消されても、必ず走って結果を報告する（ADR-0097）。e2e は master の必須の check で、
-    # job が skipped になると GitHub は通過として扱う。以前の `!cancelled()` では、取り消した run で
-    # この job が skipped になり、e2e を通らずに自動マージされえた。取り消しは最後の段で失敗にする
-    if: always()
+  # 記事の中身だけの PR（scope=light）。記事の JSON は src/data/blogPosts.js の import.meta.glob（eager）で
+  # 画面の束に入り、1つ壊れると全体が壊れるので、vite build と記事に関わる試験（@blog の印）は残す。
+  # 印の付け漏れは集約ジョブの check-e2e-blog-tags.js が落とす
+  e2e-light:
+    needs: e2e-scope
+    if: needs.e2e-scope.outputs.scope == 'light'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -137,7 +172,98 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build (vite build)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npx vite build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Cache E2E recording
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/boatai-e2e-recording
+          key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
+
+      - name: Run E2E (@blog の試験だけ、録画の再生)
+        env:
+          CI: true
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          PLAYWRIGHT_BLOB_OUTPUT_NAME: report-light.zip
+        run: npx playwright test --fully-parallel --reporter=list,blob --grep @blog
+
+      - name: Upload blob report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-blob-light
+          path: blob-report/
+          retention-days: 1
+
+      - name: Upload passthrough log
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-passthrough-light
+          path: test-results/.e2e-passthrough/
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 1
+
+      - name: Upload Playwright trace on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-light
+          path: test-results/
+          retention-days: 7
+
+  # 集約ジョブ。名前は e2e のまま変えない（scripts/maintenance/guard-pr-merge.js と
+  # .claude/skills/orchestrate/scripts/patrol.sh が check 名 "e2e" で判定している）。
+  # 素通しの一覧と skip の検査は、ここで全組分をまとめて1回だけ出す
+  e2e:
+    needs: [e2e-scope, e2e-shard, e2e-light]
+    # 組が落ちても、取り消されても、必ず走って結果を報告する（ADR-0097）。e2e は master の必須の check で、
+    # job が skipped になると GitHub は通過として扱う。以前の `!cancelled()` では、取り消した run で
+    # この job が skipped になり、e2e を通らずに自動マージされえた。取り消しは最後の段で失敗にする
+    if: always()
+    runs-on: ubuntu-latest
+    env:
+      SCOPE: ${{ needs.e2e-scope.outputs.scope }}
+    steps:
+      # 流した範囲を summary に出す（軽い組・0件だったことを見えるようにする）
+      - name: Report e2e scope
+        run: |
+          case "$SCOPE" in
+            full) msg="全部流した（e2e-shard）" ;;
+            light) msg="記事の中身だけの PR のため、軽い組（vite build と @blog の試験）だけを流した" ;;
+            none) msg="docs だけの PR のため、e2e は流していない" ;;
+            *) msg="範囲を判定できなかった（e2e-scope の結果: ${{ needs.e2e-scope.result }}）" ;;
+          esac
+          echo "e2e の範囲: ${SCOPE:-不明} — $msg"
+          echo "### e2e の範囲: \`${SCOPE:-不明}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "$msg" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Checkout
+        if: env.SCOPE == 'full' || env.SCOPE == 'light'
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        if: env.SCOPE == 'full' || env.SCOPE == 'light'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: env.SCOPE == 'full' || env.SCOPE == 'light'
+        run: npm ci
+
       - name: Download blob reports
+        if: env.SCOPE == 'full' || env.SCOPE == 'light'
         uses: actions/download-artifact@v4
         with:
           pattern: e2e-blob-*
@@ -146,12 +272,14 @@ jobs:
 
       # 素通しの記録はワーカーの pid 名で書かれ、組をまたぐと同名になりうるので、組の名前を前に付けて並べる
       - name: Download passthrough logs
+        if: env.SCOPE == 'full' || env.SCOPE == 'light'
         uses: actions/download-artifact@v4
         with:
           pattern: e2e-passthrough-*
           path: passthrough-by-shard
 
       - name: Collect passthrough logs
+        if: env.SCOPE == 'full' || env.SCOPE == 'light'
         run: |
           mkdir -p test-results/.e2e-passthrough
           for f in passthrough-by-shard/*/*.jsonl; do
@@ -161,13 +289,14 @@ jobs:
 
       # merge-reports はテストが落ちていても終了コード0を返す。合否は最後の手順で組の結果から決める
       - name: Merge reports
+        if: env.SCOPE == 'full' || env.SCOPE == 'light'
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-results.json
         run: npx playwright merge-reports --reporter=dot,json all-blob-reports
 
       # テストが落ちても素通しの状況は見たいので always() で動かす
       - name: Report passthrough requests (録画に無く本番へ素通しした通信)
-        if: always()
+        if: always() && (env.SCOPE == 'full' || env.SCOPE == 'light')
         env:
           GH_TOKEN: ${{ github.token }}
         run: node scripts/maintenance/report-e2e-passthrough.js --summary --pr=${{ github.event.pull_request.number }}
@@ -176,26 +305,57 @@ jobs:
       # そのテストは無言で無効化され、緑のまま何も検証しない状態が続く。
       # 実際に320px横スクロールのテスト7個が長期間skipされていた（3b6ef2ce）。
       # テストが落ちても skip の状況は見たいので always() で動かす。
+      # 軽い組は @blog の試験があるプロジェクトだけが走る。揃っているべき集合を一覧から出して渡す
       - name: Check skipped tests
-        if: always()
-        run: node scripts/maintenance/check-e2e-skips.js
+        if: always() && (env.SCOPE == 'full' || env.SCOPE == 'light')
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-light-list.json
+        run: |
+          if [ "$SCOPE" = light ]; then
+            npx playwright test --list --reporter=json --grep @blog
+            projects=$(node -e 'const r=JSON.parse(require("fs").readFileSync("e2e-light-list.json","utf8"));const p=new Set();const w=(s)=>{for(const x of s||[]){for(const sp of x.specs||[])for(const t of sp.tests||[])p.add(t.projectName);w(x.suites)}};w(r.suites);console.log([...p].join(","))')
+            node scripts/maintenance/check-e2e-skips.js --projects="$projects"
+          else
+            node scripts/maintenance/check-e2e-skips.js
+          fi
 
-      # 分け方（e2e-shard の matrix）が全テストを1回ずつ走らせたか
+      # 分け方（e2e-shard の matrix）が全テストを1回ずつ走らせたか。軽い組は @blog の試験が全部1回ずつ走ったか
       - name: Check shard coverage
-        if: always()
+        if: always() && (env.SCOPE == 'full' || env.SCOPE == 'light')
         # --list は Vite の env読み込み（dotenv）がバナーを標準出力に出すため、
         # `> e2e-list.json` だと先頭行が混ざってJSONとして壊れる（実測）。
         # merge-reports と同じ PLAYWRIGHT_JSON_OUTPUT_NAME でレポーターに直接書かせる
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
         run: |
-          npx playwright test --list --reporter=json
+          if [ "$SCOPE" = light ]; then
+            npx playwright test --list --reporter=json --grep @blog
+          else
+            npx playwright test --list --reporter=json
+          fi
           node scripts/maintenance/check-e2e-shard-coverage.js e2e-list.json e2e-results.json
 
+      # 記事に関わる試験（/blog を開く・記事の JSON を読む等）に @blog の印が付いているか。
+      # 付け漏れると、記事だけの PR の軽い組でその試験が走らない
+      - name: Check @blog tags
+        if: always() && (env.SCOPE == 'full' || env.SCOPE == 'light')
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-all-list.json
+        run: |
+          npx playwright test --list --reporter=json
+          node scripts/maintenance/check-e2e-blog-tags.js e2e-all-list.json
+
+      # 範囲ごとに、走るべきジョブが成功したかで合否を決める。範囲が分からないときは失敗
       - name: Fail if any shard failed
         if: always()
         run: |
-          if [ "${{ needs.e2e-shard.result }}" != "success" ]; then
-            echo "e2e-shard の結果: ${{ needs.e2e-shard.result }}（どの組が落ちたかは e2e-shard の各ジョブを参照）"
+          case "$SCOPE" in
+            full) job=e2e-shard; result="${{ needs.e2e-shard.result }}" ;;
+            light) job=e2e-light; result="${{ needs.e2e-light.result }}" ;;
+            none) echo "docs だけの PR のため e2e は流していない（成功）"; exit 0 ;;
+            *) echo "e2e の範囲を判定できませんでした（e2e-scope の結果: ${{ needs.e2e-scope.result }}）"; exit 1 ;;
+          esac
+          if [ "$result" != "success" ]; then
+            echo "$job の結果: $result（どの組が落ちたかは $job の各ジョブを参照）"
             exit 1
           fi

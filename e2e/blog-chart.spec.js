@@ -60,7 +60,7 @@ async function stubArticle(
 const chartLocator = (page) =>
   page.locator(".blog-post-content figure.blog-chart");
 
-test.describe("ブログの図", () => {
+test.describe("ブログの図 @blog", () => {
   test("開いた時点で既定の会場（福岡）の答え・札・6行の値が文字で出る", async ({
     page,
   }) => {
@@ -384,7 +384,7 @@ test.describe("ブログの図", () => {
   });
 });
 
-test.describe("ブログの図（ブラウザの言語がドイツ語）", () => {
+test.describe("ブログの図（ブラウザの言語がドイツ語） @blog", () => {
   test.use({ locale: "de-DE" });
   test("札の母数の桁区切りはブラウザの言語に左右されない", async ({ page }) => {
     await stubArticle(page);
@@ -395,7 +395,7 @@ test.describe("ブログの図（ブラウザの言語がドイツ語）", () =>
   });
 });
 
-test.describe("ブログの図（記事を移るとき）", () => {
+test.describe("ブログの図（記事を移るとき） @blog", () => {
   test("図の取得が遅い記事から別の記事へ移っても、前の記事の本文で上書きされない", async ({
     page,
   }) => {
@@ -445,7 +445,7 @@ test.describe("ブログの図（記事を移るとき）", () => {
   });
 });
 
-test.describe("ブログの図（PNG の書き出しの形、ADR 0099）", () => {
+test.describe("ブログの図（PNG の書き出しの形、ADR 0099） @blog", () => {
   // ビルドの書き出し（scripts/lib/blogChartPng.js）と同じ関数で撮影の形にする
   for (const [preset, { cssWidth, cssHeight }] of Object.entries(
     BLOG_CHART_PNG_PRESETS,

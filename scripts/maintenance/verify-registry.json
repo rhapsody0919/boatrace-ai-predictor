@@ -304,6 +304,11 @@
       "guards": "失格（K の S0〜S2）の艇の着欄を結果ページから埋める処理（backfill-disqualified-finish-marks.js、BOA-582）が、失格の表記（転・落・沈・妨・エ・失）だけを書き、行を挿入せず、着欄が NULL の行だけを更新し（既存の値を上書きしない）、取得の間隔を空けて 429・503 で即中止すること"
     },
     {
+      "script": "verify-e2e-blog-tags.js",
+      "tier": "ci",
+      "guards": "記事に関わるE2Eの @blog の印の付け漏れの検査（check-e2e-blog-tags.js）。付け漏れると記事だけの PR の軽い組でその試験が走らない（BOA-929）"
+    },
+    {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
       "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化・Vercel Cron の dispatch（inputs.gate=true）を schedule と同じ扱いにすること（BOA-929）、素通し一覧の集計（ADR-0077）"
@@ -322,6 +327,11 @@
       "script": "verify-e2e-rerun.js",
       "tier": "ci",
       "guards": "PR の E2E Smoke Test の再実行の判定（e2e-rerun.js）。落ちた・50分を超えて止まった実行は1回目だけ再実行（止まったものは cancel してから）、2回目以降は再実行せずオーケストレーターに上げる"
+    },
+    {
+      "script": "verify-e2e-scope.js",
+      "tier": "ci",
+      "guards": "PRゲートの e2e の範囲の判定（e2e-scope.js）。記事だけは軽い組・docs だけは0件・src/scripts/e2e/.github/package*.json/設定を触る PR は必ず全部、一覧を PR の側で書き換えても master の一覧で全部に戻る（BOA-929）"
     },
     {
       "script": "verify-e2e-skips.js",

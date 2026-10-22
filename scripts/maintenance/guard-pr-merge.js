@@ -41,6 +41,14 @@
  *
  *    ブランチ名・位置引数なしを gh でPRに解決できない場合も、確定できないものとして同じく止める。
  *
+ * 4. e2e を軽い組（記事だけ）・0件（docs だけ）で済ませた PR が、本当にそれで済む差分かを確かめる（BOA-929）。
+ *
+ *    PR ゲートの e2e は差分で流す範囲を変える（scripts/maintenance/e2e-scope.js）。ワークフローは base 側の
+ *    一覧で判定するが、pull_request のワークフロー自体は PR の側の定義で動くので、.github を書き換えれば
+ *    軽い組に逃げられる。そこでマージの時点で、master の一覧（origin/master の content-pr-gate.json）で
+ *    差分を判定し直し、全部流すべき PR なのに e2e-shard が成功していなければ止める。
+ *    --auto で GitHub にチェックを任せる場合は、e2e の集約しか見られないので、.github/workflows を変える PR を止めて手のマージに回す。
+ *
  * それ以外で判定できない場合（台帳に制約が無いときの番号不明、検査中にghが応答しない等）は素通しする。
  * 止めるべきものを見逃す方が、止めるべきでないものを止めて作業を詰まらせるより軽いため。
  *
@@ -52,6 +60,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
+import { classifyE2eScope } from "./e2e-scope.js";
 import {
   judgeMergeOrder,
   ledgerPath,
@@ -84,7 +93,7 @@ const REQUIRED_CHECKS = [
     name: "e2e",
     onFailure: "ask",
     duration:
-      "3つに分けたshardが並行で走り、実測で約20〜37分。止まって終わらないときは " +
+      "3つに分けたshardが並行で走り、実測で約20〜37分（記事だけの PR は軽い組、docs だけの PR は0件）。止まって終わらないときは " +
       "node scripts/maintenance/e2e-rerun.js で再実行を判定できます",
     failureNote:
       "e2eは録画（HAR）の再生で決定的に実行するが、録画に無い通信は本番へ素通しするため、" +
@@ -403,13 +412,76 @@ function fetchMasterRules() {
   }
 }
 
-function checkQualityGate(pr) {
+/** PR のチェック一覧。読めなければ null（呼び出し側で素通しする）。 */
+function fetchChecks(pr) {
   const raw = gh(["pr", "checks", pr, "--json", "name,state"]);
   if (!raw) return null;
   try {
-    return judgeChecks(pr, JSON.parse(raw));
+    return JSON.parse(raw);
   } catch {
     return null;
+  }
+}
+
+/** e2e の各組のジョブ名（e2e-smoke-test.yml の e2e-shard。skip されると matrix が展開されない名前で1件出る）。 */
+const isShardCheck = (c) => /^e2e-shard\b/.test(c?.name ?? "");
+
+/**
+ * master の一覧で判定した範囲（scope）と、実際に走った e2e の組を突き合わせる（純関数）。止める必要が無ければ null。
+ * full なのに、e2e の集約が緑のまま e2e-shard が1つも無い・成功以外がある（skip を含む）なら止める。
+ * e2e が緑でないときは judgeChecks が先に扱うので、ここでは見ない。
+ */
+export function judgeE2eScope(pr, scope, checks) {
+  if (scope !== "full" || !Array.isArray(checks)) return null;
+  if (checks.find((c) => c.name === "e2e")?.state !== "SUCCESS") return null;
+  const shards = checks.filter(isShardCheck);
+  const bad = shards.filter((c) => c.state !== "SUCCESS");
+  if (shards.length > 0 && bad.length === 0) return null;
+  const seen =
+    shards.map((c) => `${c.name}=${c.state}`).join(", ") || "e2e-shard が無い";
+  return {
+    decision: "deny",
+    reason:
+      `PR #${pr} は master の一覧（scripts/content/content-pr-gate.json）では e2e を全部流すべき差分ですが、` +
+      `全部の組が成功していません（${seen}）。軽い組・0件で済ませた e2e は、この差分には足りません。` +
+      `ワークフロー（.github/workflows/e2e-smoke-test.yml）や一覧を PR の側で変えていないか確かめ、e2e を全部流してからマージしてください。`,
+  };
+}
+
+/** --auto で GitHub に任せるとき、ワークフローを変える PR を止める（純関数）。止める必要が無ければ null。 */
+export function judgeAutoWorkflowChange(pr, files) {
+  if (!files.some((f) => f.startsWith(".github/workflows/"))) return null;
+  return {
+    decision: "ask",
+    reason:
+      `PR #${pr} は .github/workflows を変えています。pull_request の e2e は PR の側のワークフローで動くため、` +
+      `GitHub の必須チェック（e2e の集約）だけでは全部流したかを確かめられません。--auto を外し、` +
+      `e2e-shard が全部成功してからマージしてください。`,
+  };
+}
+
+/** PR の差分のパス（改名は元と先の両方）。読めなければ null。 */
+function fetchPrFiles(pr) {
+  const raw = gh([
+    "api",
+    "--paginate",
+    `repos/{owner}/{repo}/pulls/${pr}/files`,
+    "--jq",
+    ".[] | .filename, (.previous_filename // empty)",
+  ]);
+  return raw === null ? null : raw.split("\n").filter(Boolean);
+}
+
+/** master の一覧で差分を判定する。一覧が読めなければ full に倒す（軽い組を通す方へは倒さない）。 */
+function masterE2eScope(files) {
+  const raw = gitIn([
+    "show",
+    "origin/master:scripts/content/content-pr-gate.json",
+  ]);
+  try {
+    return classifyE2eScope(files, JSON.parse(raw ?? "")).scope;
+  } catch {
+    return "full";
   }
 }
 
@@ -510,9 +582,17 @@ function main() {
     const order = checkMergeOrder(pr, ledger);
     if (order) respond(order.decision, order.reason);
 
-    if (!(rulesEnforce && autoOnly(pr))) {
-      const gate = checkQualityGate(pr);
+    const files = fetchPrFiles(pr);
+    if (rulesEnforce && autoOnly(pr)) {
+      const auto = files && judgeAutoWorkflowChange(pr, files);
+      if (auto) respond(auto.decision, auto.reason);
+    } else {
+      const checks = fetchChecks(pr);
+      const gate = checks && judgeChecks(pr, checks);
       if (gate) respond(gate.decision, gate.reason);
+      const scope =
+        files && checks && judgeE2eScope(pr, masterE2eScope(files), checks);
+      if (scope) respond(scope.decision, scope.reason);
     }
 
     const data = checkWorktreeData(pr, command);
