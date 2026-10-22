@@ -182,7 +182,14 @@ const nameOf = (f) =>
         yml(f),
       ),
     );
-  const expected = [...uses, ".github/workflows/key-canary.yml"].sort();
+  // 鍵を使わないが、master での失敗を知らせたい workflow（理由つき）。今は Quality Gates だけ
+  // （docs/design/codex-direct-pr/design.md §5.4。範囲A の自動マージの後の検査）
+  const extra = config.watchedExtra ?? [];
+  check(
+    "watchedExtra の各行に path と理由がある",
+    extra.every((e) => typeof e.path === "string" && typeof e.reason === "string" && e.reason.length > 0),
+  );
+  const expected = [...uses, ".github/workflows/key-canary.yml", ...extra.map((e) => e.path)].sort();
   const watched = [...config.watched].sort();
   check(
     "prod-jobs・ryujin-bot を使う workflow は全部見張りの一覧にある（漏れも余りも無い）",
