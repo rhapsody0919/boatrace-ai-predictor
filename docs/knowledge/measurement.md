@@ -56,3 +56,8 @@
 - Vercel のボット取得数は Observability のクエリ（`vercel.request.count`、`incoming_request` を `bot_name` で集計）で CDN 段まで数えられ、静的ファイル・robots.txt・CDN HIT も入る。開始は36日以内、生の UA の次元は無い。関数のログは CDN HIT が漏れ、middleware は matcher に無いパスが漏れる（2026-10-20、Vercel API で実測、docs/proposal/ai-crawler-daily-count.md §1）
 - GSC プロパティのデータは 2025-12-21 から。前年同期の比較はできない（2026-10-20、data/analysis/organic-decline-2026-10-20/README.md）
 - GA4 の Admin API は Google Cloud プロジェクトで無効。タイムゾーン・カスタムディメンション・キーイベントは API で読めない（有効化はプロジェクト設定の変更）（2026-10-20、ga4-organic-weekly-export.js の settings.*.error）
+- 月の費用見込みは累計÷経過日×月の日数だけで判断せず、直近7日平均による見込みも並べる。両者の差が大きければ費用水準が変わった日を調べ、変更前後を混ぜた平均を現在の水準とみなさない（2026-10-20、finance、ledger/costs.jsonl・alerts.json の費用点検）
+- costs.jsonlの月累計や見込みを使う前に、月初から集計終端までの日付とserviceの欠落を確認する。欠測を0ドルとして扱わず、累計の欠落範囲と平均に使った日数を併記する（2026-10-20、finance、ledger/costs.jsonl の日付・service欠落点検）
+- 費用見込みの終端は全source共通の最終日でなく、sourceごとの確定済み最終日を使う。請求確定が遅れるsourceの未確定日を0ドルで平均へ入れず、検算時は各sourceの最後のdateと確定状況を先に確認する（2026-10-21、finance、ledger/costs.jsonl のsource別終端点検）
+- sns-channel-daily.csvのdayがUTCの15:00で、definitionがJSTの暦日を指す場合、表へ転記する日付はJSTへ直す。UTCの日付のままでは1日ずれるため、報告には時区変換を明記する。他のSNS指標の時区へ一般化しない（2026-10-21、measurement、company-in/sns-db/sns-channel-daily.csv のday・definition）
+- sns-post-metrics.csvで投稿24時間後の累積値を使うときは、window=24hかつobserved_atが投稿24時間後以降の行を選ぶ。day_endは別窓で、23:00 JSTの取得前に作った写しには当日分が無い。窓名・観測時刻・写しの取得時刻を照合し、未取得を0にしない（2026-10-22、measurement、company-in/sns-db/sns-post-metrics.csv）
