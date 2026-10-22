@@ -4292,8 +4292,8 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
   // 解消したため、スコープをHeader/Footer/IntroBannerのみからページ全体に拡張した
   // （ページごとにルート要素のクラスが異なる=.app/.race-detail-page/.about-container等の
   // ため.include()では絞り込まず、document全体を対象にする）
-  // 記事のページは題に @blog を付け、記事だけの PR の軽い組でも走らせる（BOA-929）
-  const blogTag = (path) => (/^\/blog(\/|$)/.test(path) ? " @blog" : "");
+  // 記事のページとホーム（最新記事のカードを出す）は題に @blog を付け、記事だけの PR の軽い組でも走らせる（BOA-929）
+  const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "");
   const PAGES = [
     "/",
     "/about",

@@ -26,12 +26,14 @@ PR ゲートの e2e（`.github/workflows/e2e-smoke-test.yml`）は、どの PR �
 
 | 範囲 | 条件 | 流すもの |
 |---|---|---|
-| `none` | 全ファイルが `e2eSkipPathPatterns`（`docs/`。`docs/content-manifests/` は除く）に当たる | 何も流さずに成功 |
-| `light` | 全ファイルが `allowedPathPatterns`（記事の中身だけの PR の許可の一覧）か `e2eSkipPathPatterns` に当たる | `vite build` と `--grep @blog` の試験（102件） |
+| `none` | 全ファイルが `e2eSkipPathPatterns`（`docs/`。`docs/content-manifests/` と、e2e が例の JSON を読む `docs/design/blog-charts/` は除く）に当たる | 何も流さずに成功 |
+| `light` | 全ファイルが `allowedPathPatterns`（記事の中身だけの PR の許可の一覧）か `e2eSkipPathPatterns` に当たる | `vite build` と `@blog` の試験（114件） |
 | `full` | それ以外。空の差分・判定できないときも | 従来どおり全部 |
 
 - 一覧は `scripts/content/content-pr-gate.json` を読む（記事の PR の関門と同じ一覧。写さない）。`.github`・`scripts`・`src`（記事の JSON を除く）・`e2e`・`package*.json`・vite/playwright の設定は一覧に無いので、触れば必ず `full` になる
 - 記事の JSON は `src/data/blogPosts.js` の `import.meta.glob`（eager）で画面の束に入り、1つ壊れると全体が壊れる。そのため軽い組でも `vite build` と記事に関わる試験は残す
+- e2e が `../docs/` から読むファイル（今は `docs/design/blog-charts/` の例の JSON）は0件の対象から外す。`verify-e2e-scope.js` が e2e の中の `../docs/` の読み込みを拾い、0件にならないことを確かめる
+- 記事の JSON はホーム（最新記事のカード）でも描画するので、ホーム（`/`・`/en` 等）を開く試験にも印を付ける
 - 記事に関わる試験には題に `@blog` を付ける。付け漏れは `scripts/maintenance/check-e2e-blog-tags.js` が、`check-e2e-shard-coverage.js` と同じく `--list` の一覧を読んで落とす（題・本体に `/blog`・記事のデータ・記事の部品の class があるのに印が無いもの）
 
 ### 2. 必須のチェックの名前は `e2e` のまま

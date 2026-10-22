@@ -7,7 +7,7 @@
  * 触る PR は必ず全部。PR の側で一覧を書き換えても、master の一覧で判定すれば全部に戻る。
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { classifyE2eScope } from "./e2e-scope.js";
@@ -123,6 +123,38 @@ check(
   "light",
 );
 check("master の一覧で判定すれば全部", scopeOf(tamperedDiff, config), "full");
+
+// --- e2e が読む docs/ のファイルは0件にしない（代替審査の P1） ---
+// docs/ だけの PR を0件にすると、e2e が ../docs/ から読むファイルの変更が e2e を通らずにマージされる
+{
+  const e2eDir = path.join(repoRoot, "e2e");
+  const reads = new Set();
+  const walk = (dir) => {
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, ent.name);
+      if (ent.isDirectory()) walk(full);
+      else if (/\.(js|mjs|cjs)$/.test(ent.name)) {
+        for (const m of readFileSync(full, "utf8").matchAll(
+          /\.\.\/(?:\.\.\/)*(docs\/[^"'`\s)]+)/g,
+        ))
+          reads.add(m[1]);
+      }
+    }
+  };
+  walk(e2eDir);
+  check(
+    "e2e が docs/ を読む箇所を1つ以上見つける（検査の前提）",
+    reads.size > 0,
+    true,
+  );
+  for (const file of reads) {
+    check(
+      `e2e が読む ${file} を変える PR は0件にしない`,
+      scopeOf([file]) !== "none",
+      true,
+    );
+  }
+}
 
 // --- 設定が無い・壊れているときは例外（CLI は full に倒す） ---
 let threw = false;

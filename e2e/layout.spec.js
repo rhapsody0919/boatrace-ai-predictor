@@ -71,8 +71,8 @@ const PAGES = [
 /** グリッドの空トラックとみなす最小の余白。gapや端数の誤差を除くための閾値 */
 const TRAILING_GAP_THRESHOLD_PX = 40;
 
-/** 記事のページ（/blog・/blog/{id}）を開く試験の題に付ける印。記事だけの PR の軽い組で走らせる（BOA-929） */
-const blogTag = (path) => (/^\/blog(\/|$)/.test(path) ? " @blog" : "");
+/** 記事のページ（/blog・/blog/{id}）とホーム（最新記事のカードを出す）を開く試験の題に付ける印。記事だけの PR の軽い組で走らせる（BOA-929） */
+const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "");
 
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
