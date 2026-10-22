@@ -15,6 +15,7 @@ import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
 import { getJaT } from "../../api/_lib/botPage.js";
 import { SCREEN_MARKERS } from "../lib/snsScreenMarkers.js";
 import {
+  TODAY_NOTICE,
   TODAY_URL,
   createTodayStore,
   runTodayPlan,
@@ -487,7 +488,7 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   assert.ok(
     draft.caption_text.includes(
-      `）\n\n${FEATURED_LINE}\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。\nhttps://`,
+      `）\n\n今日の一覧はこちら：https://www.boat-ai.jp/today?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=2037-10-17\n\n${FEATURED_LINE}\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。`,
     ),
     draft.caption_text,
   );
@@ -514,11 +515,14 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
       `${DATE}-02-07`,
     ],
   );
-  assert.ok(
-    draft.caption_text.endsWith(
-      `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${DATE}`,
-    ),
-  );
+  // リンクは見出しの直後（3行目）に1回だけ。末尾は注意書き（2026-10-22 オーナー「前倒しで押される形」）
+  const todayUrl = `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${DATE}`;
+  const captionLines = draft.caption_text.split("\n");
+  assert.equal(captionLines[1], "");
+  assert.equal(captionLines[2], `今日の一覧はこちら：${todayUrl}`);
+  assert.equal(captionLines[3], "");
+  assert.equal(draft.caption_text.split(todayUrl).length, 2);
+  assert.ok(draft.caption_text.endsWith(TODAY_NOTICE));
   assert.deepEqual(sendHolds(draft), []);
   assert.deepEqual(
     [
@@ -838,7 +842,7 @@ test("区分が1つだけの日も印の意味を書き、印を付ける（割�
   const [draft] = await all("SELECT * FROM sns_drafts");
   assert.ok(
     draft.caption_text.includes(
-      "）\n\n［逃げ］全国で1コースに入ったとき逃げ切った割合72%以上の1号艇\n\n［逃げ］平和島3R 14:15締切｜1号艇 逃げ 3｜全国40走\n［逃げ］平和島5R 15:15締切｜1号艇 逃げ 5｜全国40走\n［逃げ］平和島2R 16:15締切｜1号艇 逃げ 2｜全国40走\n\n過去の実績は",
+      "\n\n［逃げ］全国で1コースに入ったとき逃げ切った割合72%以上の1号艇\n\n［逃げ］平和島3R 14:15締切｜1号艇 逃げ 3｜全国40走\n［逃げ］平和島5R 15:15締切｜1号艇 逃げ 5｜全国40走\n［逃げ］平和島2R 16:15締切｜1号艇 逃げ 2｜全国40走\n\n過去の実績は",
     ),
     draft.caption_text,
   );
@@ -908,7 +912,7 @@ test("注目レース: 先頭に置き一覧に重ねない。逃がしからの
   });
   assert.match(
     onlyFeatured.text,
-    /^本日のデータ一覧（[^\n]+）\n\n注目レース：[^\n]+\n\n過去の実績/,
+    /^本日のデータ一覧（[^\n]+）\n\n今日の一覧はこちら：[^\n]+\n\n注目レース：[^\n]+\n\n過去の実績[^\n]+$/,
   );
   assert.deepEqual(onlyFeatured.picks, [
     { race_id: `${DATE}-04-12`, boat_number: 1 },
