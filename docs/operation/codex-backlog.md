@@ -1,6 +1,6 @@
 # Codex に仕事を積む（codex-ok ラベルと backlog）
 
-> **2026-10-22 以降、Codex は `codex/` のブランチから PR を直接出す。** 下のパッチ・取り込みレーン（`git am`）の流れは旧方式で、直接 PR の規約は `AGENTS.md`「実装者としての規約」が正。issue の必須項目（雛形）・出せる／出せないもの・大きさの目安は、直接 PR でも使う。
+> **Codex はパッチを出す。hq の `codex-pr.py`（AI なし）が関門を通し、`ryujin-maker` の名義で `codex/` の PR を作り、条件を満たすものを自動でマージする。** 設計は [docs/design/codex-direct-pr/](../design/codex-direct-pr/design.md)。下の「取り込みレーンのチェック」（Claude が `git am` で PR にする）は、`codex-pr.py` が動き始めるまでの旧方式。動き始めたら、Claude のレーンは `out/patches/` を拾わない（`CLAIMED-codex-pr`）。
 
 Linear の issue に `codex-ok` ラベルと必須項目を付けると、hq の無人スクリプト（AI なし）が `~/ryujin-codex-dev/backlog/` に積み、Codex がパッチを出す。パッチは取り込みレーンが PR にする（2026-10-12 オーナー承認、hq 経由）。
 
@@ -14,8 +14,10 @@ flowchart TD
   B -->|積む条件を満たさない| W[積まない<br/>次の回に再判定]
   B -->|満たす| C[~/ryujin-codex-dev/backlog/]
   C --> D[Codex がパッチを出す<br/>out/patches/]
-  D --> E[取り込みレーン<br/>git am・チェック・PR]
-  E --> F[オーケストレーター／ユーザーがマージ]
+  D --> E[hq の codex-pr.py<br/>AI なし・関門・PR]
+  E -->|関門 NG・CI の赤・審査の P0/P1| D
+  E -->|条件を満たす| F[自動マージ]
+  E -->|範囲外・差し戻し3回| G[オーケストレーター]
 ```
 
 ### 積む条件（hq のスクリプトが判定）
@@ -59,7 +61,7 @@ issue 本文の末尾に、次をそのまま貼って埋める。
 <!-- 1行。何を直すか -->
 
 ### 変えてよいファイル
-<!-- パスの列挙かグロブ。ここに無いファイルは変えない -->
+<!-- パスの列挙かグロブ。ここに無いファイルは変えない。削除・改名・mode の変更は、箇条の頭に（削除）［改名］（mode）の目印を付けて書く（本文の語だけでは codex-pr.py の関門 G6 が許さない）。例: - （削除）`scripts/old.js` -->
 - `path/to/file.js`
 - `e2e/xxx.spec.js`
 
@@ -88,7 +90,7 @@ issue 本文の末尾に、次をそのまま貼って埋める。
 - [ ] 差分 300行・5ファイル以内、`src/` と `docs/` を混ぜない
 ```
 
-## 取り込みレーンのチェック
+## 取り込みレーンのチェック（旧方式。`codex-pr.py` が動き始めるまで）
 
 Codex の自己点検を通ったパッチでも、取り込みで CI に落ちる不具合が毎回見つかっている（[sns-hub-codex-intake-handoff.md](./sns-hub-codex-intake-handoff.md) の「CI で毎回引っかかる点」）。PR を作る前に次を確かめる。
 
