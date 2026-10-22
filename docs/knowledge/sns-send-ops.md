@@ -54,3 +54,4 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - job の順番の待ち合わせは parent_job_id を使う。pickDueJobs で Chromium を使わずに外し、transition_sns_send_139 が claim で parent_not_posted として止める。claim の後に JS で待つと、日次の枠とクォータを使ったまま held で終わる（2026-10-20、system-architect、158:144-145・snsSendRunner.js:323-331。全貌の Shorts はこれで完全版を待つ、172）
 - 期限切れの queued は sweep で held/deadline_expired になるが、Slack に知らせる経路は無かった。親を待つ子は、送る前の検査の alert も出ないまま切れるので、runner が期限の10分前から parent_waiting で知らせる（2026-10-20、system-architect、139:204-205）
 - claim が日次の上限で例外になると、job は queued のまま残り、runner が2分ごとに Slack へ「送信が止まった」を送り続ける。全貌の YouTube が1レース2件になると daily_limit_youtube=2 は1日1レースで使い切る（2026-10-20、system-architect、158:169・snsSendRunner.js:203-210、本番の値は同日の読み取り）
+- push-full-pictureの拒否理由をnotifyのthrow/reject後も保持できることと、CLIがWebhookのHTTP失敗を検出することは別に検証する。fetchは非2xxだけではrejectしないため、注入notifyの合格だけで実配達を保証しない（2026-10-21、BOA-909、scripts/sns/push-full-picture.js・scripts/maintenance/verify-sns-full-picture.js）
