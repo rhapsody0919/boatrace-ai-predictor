@@ -126,6 +126,33 @@ const fixed = specs.map((s) =>
 );
 check("印を付ければ0件", findUntagged(fixed, () => source).length, 0);
 
+// 正規表現の中の片側だけの括弧で閉じなくても、次の試験の手前で打ち切る（レビューの指摘）
+{
+  const src = [
+    'test("括弧の正規表現", async ({ page }) => {', // 1
+    "  expect(text).toMatch(/\\(/);", // 2
+    "});", // 3
+    'test("記事 @blog", async ({ page }) => {', // 4
+    '  await page.goto("/blog");', // 5
+    "});", // 6
+  ];
+  const sp = [
+    {
+      title: "括弧の正規表現",
+      file: "b.spec.js",
+      line: 1,
+      column: 1,
+      tags: [],
+    },
+    { title: "記事 @blog", file: "b.spec.js", line: 4, column: 1, tags: [] },
+  ];
+  check(
+    "閉じない括弧でも次の試験の本体を含めない",
+    findUntagged(sp, () => src).length,
+    0,
+  );
+}
+
 if (failures.length > 0) {
   console.error("NG: check-e2e-blog-tags の検査に失敗");
   for (const f of failures) console.error(`  - ${f}`);

@@ -472,8 +472,13 @@ function fetchPrFiles(pr) {
   return raw === null ? null : raw.split("\n").filter(Boolean);
 }
 
-/** master の一覧で差分を判定する。一覧が読めなければ full に倒す（軽い組を通す方へは倒さない）。 */
+/**
+ * master の一覧で差分を判定する。一覧が読めなければ full に倒す（軽い組を通す方へは倒さない）。
+ * 手元の origin/master が古いと一覧の鍵が足りず full に倒れ、正しい軽い組の PR まで止めるので、先に取り直す
+ * （取り直せなければ手元のままで判定する）。
+ */
 function masterE2eScope(files) {
+  gitIn(["fetch", "-q", "origin", "master"]);
   const raw = gitIn([
     "show",
     "origin/master:scripts/content/content-pr-gate.json",

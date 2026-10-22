@@ -23,6 +23,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const BLOG_TAG = "@blog";
+/** 印の照合。ワークフローの --grep にも同じ式を渡す（部分一致の @blog だと @blogger 等も拾ってずれる） */
+export const BLOG_TAG_PATTERN = "(^|\\s)@blog(\\s|$)";
 const TITLE_MARKER = /\/blog\b|ブログ/;
 const BODY_MARKER =
   /\/blog\b|blog-posts|blogPosts|blog-charts|blogChart|\.blog-|"blog-|'blog-/;
@@ -34,10 +36,10 @@ const repoRoot = path.resolve(
 
 /**
  * test( の呼び出しの本体を、行・桁（1始まり、Playwright の一覧の location）から括弧の対応で切り出す（純関数）。
- * 文字列・正規表現の中の括弧は数えないので、閉じなければ maxLines 行で打ち切る。
+ * 文字列・正規表現の中の括弧も数えるので、閉じなければ endLine（同じファイルの次の試験の行。無ければ末尾）の手前で打ち切る。
  */
-export function testBlock(lines, line, column, maxLines = 400) {
-  const text = lines.slice(line - 1, line - 1 + maxLines).join("\n");
+export function testBlock(lines, line, column, endLine = lines.length + 1) {
+  const text = lines.slice(line - 1, Math.max(line, endLine - 1)).join("\n");
   const start = Math.max(0, column - 1);
   const open = text.indexOf("(", start);
   if (open < 0) return text;
@@ -57,8 +59,7 @@ export function testBlock(lines, line, column, maxLines = 400) {
  * （一覧の JSON の tags には describe の題の印が入らない。実測）。
  */
 export const hasBlogTag = (spec) =>
-  spec.tags.includes(BLOG_TAG) ||
-  new RegExp(`(^|\\s)${BLOG_TAG}(\\s|$)`).test(spec.title);
+  spec.tags.includes(BLOG_TAG) || new RegExp(BLOG_TAG_PATTERN).test(spec.title);
 
 /** 記事に関わる試験か（純関数）。 */
 export const isBlogRelated = (title, block) =>
@@ -88,9 +89,21 @@ export function listSpecs(report) {
 
 /** 記事に関わるのに @blog の印が無い試験（純関数）。readLines(file) は spec のソースを行の配列で返す。 */
 export function findUntagged(specs, readLines) {
+  const linesByFile = new Map();
+  for (const s of specs) {
+    if (!linesByFile.has(s.file)) linesByFile.set(s.file, new Set());
+    linesByFile.get(s.file).add(s.line);
+  }
+  const nextLine = (s) =>
+    Math.min(
+      ...[...linesByFile.get(s.file)].filter((l) => l > s.line),
+      Infinity,
+    );
   return specs.filter((s) => {
     if (hasBlogTag(s)) return false;
-    const block = testBlock(readLines(s.file), s.line, s.column);
+    const lines = readLines(s.file);
+    const end = Math.min(nextLine(s), lines.length + 1);
+    const block = testBlock(lines, s.line, s.column, end);
     return isBlogRelated(s.title, block);
   });
 }

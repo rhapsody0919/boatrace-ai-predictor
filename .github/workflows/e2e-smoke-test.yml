@@ -193,7 +193,7 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-light.zip
-        run: npx playwright test --fully-parallel --reporter=list,blob --grep @blog
+        run: npx playwright test --fully-parallel --reporter=list,blob --grep '(^|\s)@blog(\s|$)'
 
       - name: Upload blob report
         if: ${{ !cancelled() }}
@@ -312,7 +312,7 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-light-list.json
         run: |
           if [ "$SCOPE" = light ]; then
-            npx playwright test --list --reporter=json --grep @blog
+            npx playwright test --list --reporter=json --grep '(^|\s)@blog(\s|$)'
             projects=$(node -e 'const r=JSON.parse(require("fs").readFileSync("e2e-light-list.json","utf8"));const p=new Set();const w=(s)=>{for(const x of s||[]){for(const sp of x.specs||[])for(const t of sp.tests||[])p.add(t.projectName);w(x.suites)}};w(r.suites);console.log([...p].join(","))')
             node scripts/maintenance/check-e2e-skips.js --projects="$projects"
           else
@@ -329,7 +329,7 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
         run: |
           if [ "$SCOPE" = light ]; then
-            npx playwright test --list --reporter=json --grep @blog
+            npx playwright test --list --reporter=json --grep '(^|\s)@blog(\s|$)'
           else
             npx playwright test --list --reporter=json
           fi
