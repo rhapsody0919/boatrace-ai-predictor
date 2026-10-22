@@ -115,7 +115,7 @@ const isReservedEventParam = (key) =>
 // イベントをトラッキング。予約名のパラメータは送らずにエラーを出す（流入元を壊さない）
 export const trackEvent = (eventName, eventParams = {}) => {
   if (!window.gtag) return;
-  const reserved = Object.keys(eventParams).filter(isReservedEventParam);
+  const reserved = Object.keys(eventParams ?? {}).filter(isReservedEventParam);
   if (reserved.length > 0) {
     console.error(
       `trackEvent(${eventName}): GA4 の流入元を上書きするパラメータ名 ${reserved.join(", ")} は送りません。別の名前にしてください`,

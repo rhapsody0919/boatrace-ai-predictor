@@ -54,6 +54,12 @@ assert.deepEqual(sent.at(-1), [
   { race_id: "2026-10-22-01-01" },
 ]);
 assert.equal(errors.length, 0, "予約名が無いのにエラーを出している");
+trackEvent("ai_copy", null);
+assert.deepEqual(
+  sent.at(-1),
+  ["event", "ai_copy", null],
+  "params が null で落ちる",
+);
 console.error = origError;
 
 // 2・3. src の静的検査
