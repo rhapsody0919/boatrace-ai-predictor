@@ -80,10 +80,11 @@ const [, mo, da, venueCode, raceNo] = m.raceId.split("-");
 // レースの見出し（例「10/22（木）児島12R 準優勝戦 締切16:44」、BOA-989）。レース名は facts の round、締切は races.start_time
 const round = m.api.facts?.today?.round ?? null;
 const header = raceHeader({ year: Number(m.raceId.slice(0, 4)), month: Number(mo), day: Number(da), venue: venueLabel(Number(venueCode), t), raceNo: Number(raceNo), round, deadline: m.race?.startTime ?? null });
-// 完全版の冒頭の場面（場面1の最初の問い）にも見出しを出す（入口版は entryScenes の race で同じ問い）
+// 完全版の冒頭の場面（場面1の会場の1着率の問い）にも見出しを出す。入口版の entryScenes と同じく s1-venue90 だけを書き換える
+// （会場の集計が無い日に風・水面の頁へ「1号艇は堅い？」を付けない）
 {
-  const first = scenes.find((x) => x.id === "scene1")?.data?.steps?.[0];
-  if (first) first.question = entryQuestion(header);
+  const venue90 = scenes.find((x) => x.id === "scene1")?.data?.steps?.find((st) => st.id === "s1-venue90");
+  if (venue90) venue90.question = entryQuestion(header);
 }
 const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scene: x.id, ...o })));
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
