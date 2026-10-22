@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "course1-win-rate-recent-period-comparison",
+ "kind": "new",
+ "ticket": "OC-20261022T101546-seo-human-1",
+ "paths": [
+  "public/blog/course1-win-rate-recent-period-comparison.md",
+  "src/data/blog-posts/course1-win-rate-recent-period-comparison.json"
+ ],
+ "files": {
+  "public/blog/course1-win-rate-recent-period-comparison.md": "6063f233f0188f553cde567dac7133a049f623592d877d3426588d36cf98a3d4",
+  "src/data/blog-posts/course1-win-rate-recent-period-comparison.json": "9cf6faf38a0e73aeb6fb43640228eff34eb4cd34cabd1a15a2b38ce83d1b8e34"
+ },
+ "content_sha256": "192fa0312643c9a4bcb31f03739ace0413e80f3d26f666250ef986f36ff51482",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "192fa0312643c9a4bcb31f03739ace0413e80f3d26f666250ef986f36ff51482",
+   "model": "codex-default/high",
+   "at": "2026-10-22T10:15:47+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "192fa0312643c9a4bcb31f03739ace0413e80f3d26f666250ef986f36ff51482",
+   "model": "codex-default/high",
+   "at": "2026-10-22T10:15:47+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "192fa0312643c9a4bcb31f03739ace0413e80f3d26f666250ef986f36ff51482",
+   "model": "codex-default/high",
+   "at": "2026-10-22T10:15:47+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "192fa0312643c9a4bcb31f03739ace0413e80f3d26f666250ef986f36ff51482",
+   "model": "codex-default/high",
+   "at": "2026-10-22T10:15:47+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-22T10:17:00+09:00",
+ "run": "20261022T101546-seo-human",
+ "engine": "codex"
+}
