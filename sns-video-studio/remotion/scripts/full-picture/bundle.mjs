@@ -1,7 +1,7 @@
 /**
  * 送信の道（scripts/sns/push-full-picture.js）に渡す bundle.json の中身（純粋関数）。
  * 2026-10-20 オーケストレーターの分担（a・b・c の文型）と、送信レーンとの Shorts の契約（bundle_version 2）:
- * - x_text: 入口版の本文＋このレースの URL をちょうど1つ（X には入口版 full-x.mp4）
+ * - x_text: 入口版の本文＋このレースの URL（UTM つき）をちょうど1つ（X には入口版 full-x.mp4）
  * - youtube_full: 完全版（通常の動画、full-youtube.mp4）の題名・説明文（要点・URL・章・免責）
  * - youtube_shorts: 入口版を Shorts に出す題名・説明文。説明文に完全版の URL の置き場所 `{full_url}` をちょうど1つ（送信側が置き換える）
  * - qa.machine: run-full の機械の検査（全部 true のときだけ bundle を出す）
@@ -20,6 +20,28 @@ export const DISCLAIMER = "過去のレースを集計した参考の値です�
 export const HASHTAG = "#ボートレース";
 
 const raceUrl = (raceId) => `${SITE}/race/${raceId}`;
+/**
+ * 投稿のリンクの UTM（BOA-995、2026-10-19 合意 scripts/lib/snsDailyRunner.js の UTM ごとの読み取り）。
+ * X は utm_source=x、YouTube は utm_source=youtube と utm_term=full|shorts。utm_content はレース ID
+ */
+export const utmUrl = (raceId, source, term = null) =>
+  `${raceUrl(raceId)}?utm_source=${source}&utm_medium=social&utm_campaign=race-full&utm_content=${raceId}${term ? `&utm_term=${term}` : ""}`;
+/** レース名（materials の facts.today.round → 表示）。対応に無い値・無いときは書かない（hq 2026-10-21、BOA-989）。材料の準優勝戦は junyu */
+export const ROUND_NAME = { yusho: "優勝戦", junyu: "準優勝戦", jun_yusho: "準優勝戦", tokusen: "特選", senbatsu: "選抜", yosen: "予選" };
+/** 題名の頭に付けるグレード（races.race_grade。一般 ippan は付けない） */
+const GRADE_HEAD = ["SG", "G1", "G2", "G3"];
+const WEEKDAY = ["日", "月", "火", "水", "木", "金", "土"];
+/**
+ * レースの見出し「10/22（木）児島12R 準優勝戦 締切16:44」。冒頭の場面・説明文・X の本文に同じ文を出す。
+ * レース名・締切が無いときはその部分を書かない
+ * @param {{year: number, month: number, day: number, venue: string, raceNo: number, round?: string|null, deadline?: string|null}} p deadline は "HH:MM[:SS]"
+ */
+export function raceHeader({ year, month, day, venue, raceNo, round = null, deadline = null }) {
+  const wd = WEEKDAY[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  const name = ROUND_NAME[round] ?? null;
+  const hm = /^\d{1,2}:\d{2}/.exec(deadline ?? "")?.[0] ?? null;
+  return `${month}/${day}（${wd}）${venue}${raceNo}R${name ? ` ${name}` : ""}${hm ? ` 締切${hm}` : ""}`;
+}
 const join = (lines) => lines.filter((l) => l !== null && l !== undefined).join("\n");
 const d1 = (v) => Number(v).toFixed(1);
 /** 完全版を通常の動画にする尺の下限（縦で3分以下は Shorts として扱われる。youtube-channel 2026-10-20 P1） */
@@ -68,28 +90,41 @@ function lines({ venue90, overview, conclusion }) {
 
 /**
  * @param {{raceId: string, venue: string, raceNo: number, month: number, day: number,
+ *   round?: string|null, grade?: string|null, deadline?: string|null,
  *   facts: {venue90?: object|null, overview?: object|null, conclusion?: object|null},
- *   entryFirstQuestion: string, chapters: string, fullSeconds: number, qa: Record<string, boolean>}} p
+ *   chapters: string, fullSeconds: number, qa: Record<string, boolean>}} p
  */
-export function buildBundle({ raceId, venue, raceNo, month, day, facts, entryFirstQuestion, chapters, fullSeconds, qa }) {
-  const label = `${venue}${raceNo}R`;
+export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa }) {
+  const name = ROUND_NAME[round] ?? null;
+  const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
   const date = `${month}/${day}`;
-  const url = raceUrl(raceId);
+  const header = raceHeader({ year: Number(raceId.slice(0, 4)), month, day, venue, raceNo, round, deadline });
+  // 完全版の題名と X の1行目の頭（hq 2026-10-21、BOA-989）。SG・G1・G2・G3 は頭にグレード
+  const head = `【${GRADE_HEAD.includes(grade) ? `${grade} ` : ""}${label}｜${date}】`;
   const L = lines(facts ?? {});
   const order = chapterNames(chapters);
-  const x_text = join([entryFirstQuestion, L.venue, L.conclusion, `このレースのデータは龍神レーダーで: ${url}`, "結果を保証するものではありません。", HASHTAG]);
+  const x_text = join([
+    `${head}1号艇は堅い？`,
+    header,
+    L.venue,
+    L.conclusion,
+    `このレースのデータは龍神レーダーで: ${utmUrl(raceId, "x")}`,
+    "結果を保証するものではありません。",
+    HASHTAG,
+  ]);
   const youtube_full = {
-    // 会場・R・日付・「ボートレース」を前に、問いとその日の向き（youtube-channel P2-1）。Shorts の題名とは別の文
-    title: `【${label}・${date} ボートレース】1号艇は堅い？ ${L.venueHead ?? "6艇の比較と展開の傾向"}`,
+    // レース名・日付を頭に、問いとその日の向き（youtube-channel P2-1）。Shorts の題名とは別の文
+    title: `${head}1号艇は堅い？ ${L.venueHead ?? "6艇の比較と展開の傾向"}`,
     description: join([
-      // 1行目に「ボートレース」とその日の発見（モバイルで折りたたむ前に見える。youtube-channel P2-2）
-      `ボートレース ${label}（${date}）: ${L.venue ?? "6艇の比較と展開の傾向"}`,
+      // 1行目に「ボートレース」とレースの日時・レース名（モバイルで折りたたむ前に見える。youtube-channel P2-2）
+      `ボートレース ${header}`,
+      L.venue ?? "6艇の比較と展開の傾向",
       L.overview,
       L.conclusion,
       "",
       // 実際に作った章の名前から（章の無い場面を書かない。wording-editor・youtube-channel P2）
       order.length ? `${order.join("・")}の順に見る動画です。` : null,
-      `このレースのデータ（龍神レーダー）: ${url}`,
+      `このレースのデータ（龍神レーダー）: ${utmUrl(raceId, "youtube", "full")}`,
       "",
       chapters?.trim() || null,
       "",
@@ -100,12 +135,12 @@ export function buildBundle({ raceId, venue, raceNo, month, day, facts, entryFir
   const youtube_shorts = {
     title: `${label}（${date}）1号艇は堅い？ 同じ並びの過去の着順`,
     description: join([
-      entryFirstQuestion,
+      `${header} 1号艇は堅い？`,
       L.venue,
       L.conclusion,
       "",
       `完全版の動画（${aboutMinutes(fullSeconds)}）: ${FULL_URL_SLOT}`,
-      `このレースのデータ（龍神レーダー）: ${url}`,
+      `このレースのデータ（龍神レーダー）: ${utmUrl(raceId, "youtube", "shorts")}`,
       "",
       DISCLAIMER,
       HASHTAG,
@@ -129,7 +164,9 @@ export function checkBundle(b) {
   if (slots !== 1) why.push(`Shorts の説明文に ${FULL_URL_SLOT} がちょうど1つ無い（${slots}）`);
   else if (b.youtube_shorts.description.length - FULL_URL_SLOT.length + FULL_URL_GROWTH > LIMITS.description) why.push("完全版の URL に置き換えると5000字を超える");
   const urls = b.x_text.match(/https?:\/\/\S+/g) ?? [];
-  if (urls.length !== 1 || urls[0] !== raceUrl(b.race_id)) why.push("x_text にこのレースの URL がちょうど1つ無い");
+  if (urls.length !== 1 || urls[0] !== utmUrl(b.race_id, "x")) why.push("x_text にこのレースの URL がちょうど1つ無い（UTM つき）");
+  for (const [k, term] of [["youtube_full", "full"], ["youtube_shorts", "shorts"]])
+    if (!b[k]?.description?.includes(utmUrl(b.race_id, "youtube", term))) why.push(`${k}.description にこのレースの URL（UTM つき）が無い`);
   if (!Object.values(b.qa?.machine ?? {}).every((v) => v === true) || !Object.keys(b.qa?.machine ?? {}).length) why.push("機械の検査が全部通っていない");
   return why;
 }
