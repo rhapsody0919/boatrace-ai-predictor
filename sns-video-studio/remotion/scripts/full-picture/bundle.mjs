@@ -135,7 +135,7 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   const youtube_shorts = {
     title: `${label}（${date}）1号艇は堅い？ 同じ並びの過去の着順`,
     description: join([
-      `${header} 1号艇は堅い？`,
+      `ボートレース ${header} 1号艇は堅い？`,
       L.venue,
       L.conclusion,
       "",
