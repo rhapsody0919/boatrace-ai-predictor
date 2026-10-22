@@ -34,7 +34,7 @@ flowchart LR
     L1 -->|範囲A の外| OR[Orchestrate が<br/>朝夜にまとめて承認]
     OR --> L2
   end
-  L2 -->|codex-feed 30分<br/>SHA は積む時に自動| C[Codex 実装レーン 3本]
+  L2 -->|codex-feed 30分<br/>変えない・H1 の案のみ| C[Codex 実装レーン 3本]
   C -->|out/patches/id/| R[codex-pr.py<br/>hq・AI なし]
   R -->|関門 NG| BACK[Linear にコメント<br/>codex-feed が再依頼]
   R -->|ryujin-maker で push・PR| PR[codex/boa-xxx PR]
@@ -80,7 +80,7 @@ Claude が関わるのは「範囲A の外の割りの承認」と「束のマ�
 
 | 何が起きたか | 動き |
 |---|---|
-| 関門 NG | PR を作らない。Linear の issue に理由をコメントし、ラベル `codex-retry` を付ける。codex-feed が最新の SHA で同じ issue を1回だけ積み直す。2回 NG なら `codex-ok` を外し、Orchestrate の朝夜のまとめに1行 |
+| 関門 NG | PR を作らない。Linear の issue に理由をコメントし、ラベル `codex-retry` を付ける。積み直しは hq への変更案 H3（§6.1）。H3 が通るまでは、Orchestrate が朝夜のまとめで issue の SHA を取り直して積み直す（今と同じ手）。2回 NG なら `codex-ok` を外し、Orchestrate の朝夜のまとめに1行 |
 | CI が赤（直し） | 下の再実行でも赤なら、CI の失敗の要約を Linear に写し、Codex がその PR の head を元に直しのパッチを出す。codex-pr.py が関門を通して**同じブランチに追加のコミットで push**（AGENTS.md「同じブランチに push」。force push しない）。master と衝突したときだけ `-v2` で作り直す |
 | CI が赤（再実行） | 落ちた job だけを1回だけ再実行。空のコミットは review.yml を synchronize で起こし審査費が倍になるので使わない。作成の App は Actions: write を持たない（ADR-0097）ため、再実行は ADR-0097 追記（10/20）の master の定義の rerun の job に任せる（実装の時に流用できるか確かめる）。まだ赤なら上の「直し」へ |
 | review.yml が P0/P1 | 同上（指摘の要約を Linear に写して積み直す）。Claude は直さない |
@@ -118,9 +118,21 @@ Claude が関わるのは「範囲A の外の割りの承認」と「束のマ�
 
 1. **割り役を hq の Codex 社員にする**（新設、Codex の枠）。毎朝、Linear の未着手の issue（`Backlog`・`Todo`）のうち**受け入れの条件（期待値・再現手順）が既に書かれたもの**だけから、範囲A に割れるものを選び、子 issue の下書きを**1日3件まで**作る（どのファイルを変えるかは設計の判断に近いので、条件が書かれていない issue は割らせない）。5項目を埋め、「変えてよいファイル」は実在するパス、「通すべきコマンド」は `package.json` に実在する script に限る。`codex-split-draft` ラベル
 2. **機械の検査で codex-ok を付ける**（hq、AI なし）: パスが実在・5ファイル以内・禁止のパスなし・範囲A・コマンドが実在 → `codex-ok` を自動で付ける。範囲A の外は Orchestrate の朝夜のまとめに一覧で出し、承認したものだけ付ける
-3. **SHA は積むときに自動で入れる**: issue の SHA の欄が `latest` なら、codex-feed が積む時点の `origin/master` を入れる。3日の期限切れでの取り直しの依頼（人の手）を無くす
+3. **SHA は積むときに自動で入れる**（hq への変更案 H1、§6.1）
 4. **qa 社員の起票に5項目を足す**: qa（Codex、試用）が起票するとき、範囲A なら「## Codex 用」を最初から書く
-5. **取り込み待ちの上限 INTAKE_CAP=6 を見直す**: 上限は Claude の取り込み量に合わせたもの（10/13 案B）。取り込みが機械になれば根拠が無くなる。代わりに「CI 待ち＋審査待ちの PR が6件以上なら積まない」に置き換える（GitHub Actions の分と Anthropic の審査費の歯止め）
+5. **取り込み待ちの上限 INTAKE_CAP=6 の数え方を変える**（hq への変更案 H2、§6.1）
+
+### 6.1 hq への変更案（hq が ops-architect の審査を通してオーナーに諮る）
+
+hq の回答（10/22、Orchestrate 経由）: Codex の実装レーン3本と codex-feed を変える予定は無い。INTAKE_CAP=6（`~/hq/scripts/codex-feed.py:34`、オーナー 10/13 案B）、MAX_SHA_AGE_DAYS=3、必須の5項目、依頼口 `in`・`in-2`・`in-3` は codex-feed だけが書く。**本設計はレーン3本・依頼口・必須の5項目・3日の期限を変えない**。変えたいのは次の3つだけで、どれも無くても codex-pr.py は動く（効きが落ちるだけ）。
+
+| # | 変更 | 数字 | 理由 | 無いとき |
+|---|---|---|---|---|
+| H1 | issue の SHA の欄が `latest` なら、codex-feed が積む時点の `origin/master` の SHA を入れる（MAX_SHA_AGE_DAYS=3 はそのまま。`latest` 以外の書き方は今と同じ判定） | 期限切れで止まる件数を0に | 割り役の下書きは承認まで日が空くので、3日の期限で止まって Orchestrate（Claude）が SHA を取り直す手間が件数に比例して増える | Orchestrate が朝夜に SHA を取り直す（Claude の量が増える） |
+| H2 | INTAKE_CAP の「取り込み待ち」を、パッチの数から「codex-pr.py が PR にしたが未マージの数＋関門待ちのパッチの数」に変える。値は6のまま | 6 | 案B の6は「Claude の取り込み量に合わせる」ための数。取り込みが機械になると、守る対象は Orchestrate のマージの量と審査・CI の量になる。PR にした時点でパッチを待ちから外すと、待ちが溜まらず上限が効かない（今の数え方は「Linear で開いているパッチ」なので PR ができても数え続け、実害は小さい。数え方の明記が主） | 今の数え方のまま。PR が未マージの間は待ちに数えられ、上限6で止まる（量の天井は6件のまま） |
+| H3 | `codex-retry` のラベルの issue を、関門の理由のコメントを写して1回だけ積み直す。2回目は積まない | 積み直し1回 | 関門 NG の多くは master が進んだ衝突（G2・G9）で、Codex が新しい SHA でやり直せば通る。人が積み直すと Claude のターンが要る | Orchestrate が積み直す |
+
+ops-architect への論点: H2 で量の天井（6件）を上げるかは、試運転の数字（マージの量・審査費）が出るまで提案しない。
 
 割りの質は割り役の出来次第で、最初の2週は Orchestrate が `codex-split-draft` を全部見る（範囲A でも自動の codex-ok を止める。1日3件まで、朝夜のまとめで一覧）。この2週は今の取り込みがほぼ0なので **Claude の量は純増する**（下書きを読む分）。差し戻しが2割を切ったら自動にする（目安、根拠なし）。
 
@@ -161,6 +173,7 @@ Claude が関わるのは「範囲A の外の割りの承認」と「束のマ�
 | Q1 | Codex が自分で push するか（AGENTS.md の書き方）、Codex はパッチまでで hq の機械が PR にするか | 後者（本設計） | Codex のレーンに App の鍵を渡すと「Codex は鍵に届かない」が崩れる。記事の経路（content-pr.py）で同じ形が動いている。採れば AGENTS.md・codex-backlog.md の「直接 PR」の書き方を合わせて直す |
 | Q2 | 範囲B（小さな画面の修正）を CI の撮影つきで入れるか | 試運転の後に別に判断。最初は範囲A だけ | SKILL の「画面は Codex に回さない」と vercel.json の決定を変える話。撮影は `.github` の変更が要る |
 | Q3 | review.yml の Anthropic API の審査費を「Claude の使用量」に数えるか | 数えない（週の枠とは別の財布）。ただし月の上限 `REVIEW_MONTHLY_LIMIT` で抑える | 目的の「Claude の使用量」は 10/15・10/17 の決定の文脈で週の枠のこと、と読んだ。違えば審査を Codex の別の役に替える案が要る |
+| Q7 | hq への変更案 H1〜H3（§6.1）を hq に諮ってもらうか | 諮る（H1 が効きの大半。H2 は数え方の明記で値は6のまま） | 本設計は hq のレーン・依頼口・必須の項目を変えない。H1〜H3 が無くても動くが、Orchestrate の手が残る |
 | Q4 | 大きい issue を割る役を誰にするか | hq の Codex 社員（新設） | Claude を増やさない。割りの判断のうち設計の判断に当たるもの（範囲A の外）は Orchestrate の承認に回す |
 | Q5 | 段階0（オーケストレーターがまとめてマージする束）を「範囲A の Codex の PR」まで広げるか | 広げる（範囲A は許可のリスト・review.yml の APPROVE・CI 緑・merge-check の4つで守る） | 広げなければ Codex の PR は段階1・2になり、1件ずつオーナーかOrchestrate の判断が要って量が出ない |
 | Q6 | 段取り S（repo の階層の本番の鍵を Environment に移す）を、この仕組みの前提として先に済ませるか | 済ませる（P0） | §7。済むまで codex-pr.py は push しない |
