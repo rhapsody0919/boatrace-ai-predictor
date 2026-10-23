@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "headwind-strength-makurizashi-by-venue",
+ "kind": "new",
+ "ticket": "OC-20261023T100052-seo-human-1",
+ "paths": [
+  "public/blog/headwind-strength-makurizashi-by-venue.md",
+  "src/data/blog-posts/headwind-strength-makurizashi-by-venue.json"
+ ],
+ "files": {
+  "public/blog/headwind-strength-makurizashi-by-venue.md": "b57ed40989ff2a7f5d69cd737bc7e7e55b86800ce7c621ada9bcd2e63fe7bce9",
+  "src/data/blog-posts/headwind-strength-makurizashi-by-venue.json": "4dbec9e0a78923ae32e929ed9d55626e790eb4e002f5208551ea7c849f2eed4a"
+ },
+ "content_sha256": "7d31a512cb320c583b44c962b328345d029af5a680ca305e92de136b5d4c9dc2",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "7d31a512cb320c583b44c962b328345d029af5a680ca305e92de136b5d4c9dc2",
+   "model": "codex-default/high",
+   "at": "2026-10-23T10:09:59+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "7d31a512cb320c583b44c962b328345d029af5a680ca305e92de136b5d4c9dc2",
+   "model": "codex-default/high",
+   "at": "2026-10-23T10:09:59+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "7d31a512cb320c583b44c962b328345d029af5a680ca305e92de136b5d4c9dc2",
+   "model": "codex-default/high",
+   "at": "2026-10-23T10:09:59+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "7d31a512cb320c583b44c962b328345d029af5a680ca305e92de136b5d4c9dc2",
+   "model": "codex-default/high",
+   "at": "2026-10-23T10:09:59+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-23T10:11:39+09:00",
+ "run": "20261023T100052-seo-human",
+ "engine": "codex"
+}
