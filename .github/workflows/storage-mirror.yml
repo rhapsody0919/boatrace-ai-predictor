@@ -1,6 +1,6 @@
 name: Storage Mirror (R2)
 
-# Supabase Storage の sns-hub-media・raw-pages・analogy を、Cloudflare R2 の1バケットへ書き足す（ADR-0100）。
+# Supabase Storage の sns-hub-media・raw-pages・analogy を、Cloudflare R2 の1バケットへ書き足す（ADR-0101）。
 # R2 には書き足すだけ（同じパスが変わったら日付つきの別パス。消さない）。R2 のバケット全体に bucket lock。
 # Supabase は SUPABASE_SERVICE_KEY で一覧と読み取りだけ。R2 の token は1バケットの Object Read & Write で、prod-jobs にだけ置く。
 #
