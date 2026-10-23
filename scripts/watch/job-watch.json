@@ -42,6 +42,7 @@
     ".github/workflows/scrape-scheduled.yml",
     ".github/workflows/scrape-venue-entry-course-stats.yml",
     ".github/workflows/scrape-venue-motor-stats.yml",
+    ".github/workflows/storage-mirror.yml",
     ".github/workflows/train-analogy.yml",
     ".github/workflows/train-moriarty.yml",
     ".github/workflows/train-poirot.yml",
