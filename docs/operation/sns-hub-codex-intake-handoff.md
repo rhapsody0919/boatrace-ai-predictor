@@ -1,5 +1,7 @@
 # sns-hub の Codex パッチ取り込み（引き継ぎ）
 
+> この手順は、Claude の取り込みレーンが `git am` でパッチを PR にする旧方式。直接 PR への移行後は hq の `codex-pr.py` が PR を作る（[codex-backlog.md](./codex-backlog.md) 冒頭、[codex-direct-pr/design.md](../design/codex-direct-pr/design.md)）。「CI で毎回引っかかる点」の表は今も参照されている（codex-backlog.md の95行目）。
+
 Codex（OpenAI、`~/ryujin-codex-dev`）が手元の複製で実装した sns-hub 改修のパッチを、hq 経由で受け取り、このリポジトリに取り込んで PR にするレーンの引き継ぎ。2026-10-08 に、前のセッションが3件（#1302・#1315・#1316）を処理した時点の状態をまとめる。
 
 ## 誰が何をするか
@@ -11,8 +13,8 @@ Codex（OpenAI、`~/ryujin-codex-dev`）が手元の複製で実装した sns-hu
 | このレーン | 取り込み担当 | `git am` で取り込み、レビュー、PR、runbook |
 
 - パッチ: `~/ryujin-codex-dev/out/patches/<名前>/`（各フォルダの README に基準と適用順）
-- Codex の報告: `~/ryujin-codex-dev/out/reports/`
-- 開発の補助の点検: `~/ryujin-dev-assist/out/reports/`
+- Codex の報告（旧方式の置き場）: `~/ryujin-codex-dev/out/reports/`
+- 開発の補助の点検（旧方式の置き場）: `~/ryujin-dev-assist/out/reports/`（移行後のパッチの置き場は `out/patches/<id>/`、再提出は `out/patches/<id>/v<n>/`。[設計 §3.1](../design/codex-direct-pr/design.md#31-どこで誰の名義で)）
 - マージはオーケストレーターかユーザー。本番 SQL の適用はユーザー（このレーンは SQL と runbook を用意するだけ）
 
 ## 取り込みの手順
