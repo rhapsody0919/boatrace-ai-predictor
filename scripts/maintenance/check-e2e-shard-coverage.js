@@ -3,8 +3,8 @@
  * E2E を spec 単位で分けて並行に走らせたとき（e2e-smoke-test.yml の e2e-shard）、
  * 全テストがちょうど1回ずつ走ったかを確かめる（BOA-769）。
  *
- * 分け方はワークフローの matrix に spec 名で書いてあり、最後の組は「それ以外すべて」を
- * --grep-invert で拾う。正規表現を書き違えると、テストが黙ってどの組にも入らない
+ * 分け方は e2e/shards.json に spec 名で書いてあり（e2e-shards.js がワークフローの matrix に直す）、
+ * 最後の組は「それ以外すべて」を --grep-invert で拾う。正規表現を書き違えると、テストが黙ってどの組にも入らない
  * （緑のまま検証されない）か、2つの組で二重に走る。skip の検査（check-e2e-skips.js）は
  * プロジェクト単位で見るので、spec が1本丸ごと抜けても気づかない。
  *
@@ -20,6 +20,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { flattenTests } from "./check-e2e-skips.js";
+import { loadShards } from "./e2e-shards.js";
 
 /** テストの識別子。Playwright は同じファイル内の同名テストを許さないので、プロジェクト＋タイトル（ファイル名を含む）で一意 */
 const keyOf = (t) => `[${t.project}] ${t.title}`;
@@ -54,6 +55,8 @@ function main() {
   // 「NG: ...」の一文に揃える
   let listed, ran;
   try {
+    // 分け方そのものの誤り（rest が最後に無い・実在しない spec 等）を先に出す
+    loadShards();
     listed = flattenTests(readReport(listFile));
     ran = flattenTests(readReport(resultFile));
   } catch (error) {
@@ -76,7 +79,7 @@ function main() {
   show("一覧に無いのに走ったテスト", unexpected);
   if (missing.length + duplicated.length + unexpected.length > 0) {
     console.error(
-      "NG: E2E の分割（e2e-smoke-test.yml の matrix）が全テストを1回ずつに分けていません",
+      "NG: E2E の分割（e2e/shards.json）が全テストを1回ずつに分けていません",
     );
     process.exit(1);
   }

@@ -13,7 +13,7 @@ name: E2E Re-record (録画の自動撮り直し)
 #   3. [judge] 3分割のレポートを集約し、採用条件を満たすときだけ採用する
 #      - 2 が全件通る
 #      - skip が現行の録画より増えていない（発走前のレースが少ない日に撮ると skip が増える）
-#      - 3分割の全テストがちょうど1回ずつ走った（check-e2e-shard-coverage.js、#1318と共用）
+#      - 組に分けた全テストがちょうど1回ずつ走った（check-e2e-shard-coverage.js、#1318と共用）
 #      採用したら GitHub Release に zip で添付し、ポインタ（e2e/recording.json）を master に
 #      直接 push する（push-with-retry.sh。regenerate-generated-docs.yml と同じ流儀）。
 #      push はアプリ ryujin-bot のトークンで行う（master の ruleset の bypass のため）。この push で
@@ -105,6 +105,7 @@ jobs:
       notify: ${{ steps.gate.outputs.notify }}
       result: ${{ steps.gate.outputs.result }}
       sha: ${{ steps.resolve-sha.outputs.sha }}
+      matrix: ${{ steps.shards.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -120,6 +121,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+
+      # replay の組の分け方は PR ゲートと同じ e2e/shards.json（BOA-929、ADR-0100）
+      - name: 組の分け方を読む
+        id: shards
+        run: node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
 
       - name: 撮り直すか（定期実行のみ）
         id: gate
@@ -185,7 +191,7 @@ jobs:
           path: record.log
           retention-days: 7
 
-  # #1318（BOA-769 E）と同じ spec 単位の3分割で並行に再生する。録画は1本のHARに束ねる
+  # PR ゲート（e2e-smoke-test.yml）と同じ組（e2e/shards.json）で並行に再生する。録画は1本のHARに束ねる
   # 必要があり3並列での同時書き込みは不整合のリスクがあるため分割しないが、再生は
   # 録画済みのファイルを読むだけ（書き込みをしない）ので分割して問題ない
   replay:
@@ -195,14 +201,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - shard: 1
-            args: e2e/smoke.spec.js e2e/race-odds-live.spec.js
-          - shard: 2
-            args: e2e/layout.spec.js e2e/race-detail-details.spec.js
-          - shard: 3
-            args: --grep-invert "(^|[ /])(smoke|race-odds-live|layout|race-detail-details)\.spec\.js( |$)"
+      matrix: ${{ fromJSON(needs.record.outputs.matrix) }}
     name: replay (${{ matrix.shard }}/${{ strategy.job-total }})
     steps:
       - uses: actions/checkout@v4
@@ -344,7 +343,7 @@ jobs:
           path: e2e-results.json
           retention-days: 7
 
-      # 3分割（replayのmatrix）が全テストを1回ずつ走らせたか（#1318のe2e-shardと同じ検査を
+      # 組（replayのmatrix、e2e/shards.json）が全テストを1回ずつ走らせたか（#1318のe2e-shardと同じ検査を
       # 共用する）。ここが失敗すると後続のステップは（bareのif:がsuccess()を含意するため）
       # 自動的にスキップされ、採用しない扱いになる
       - name: Check shard coverage

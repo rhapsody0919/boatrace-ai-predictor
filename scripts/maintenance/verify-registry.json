@@ -334,6 +334,11 @@
       "guards": "PRゲートの e2e の範囲の判定（e2e-scope.js）。記事だけは軽い組・docs だけは0件・src/scripts/e2e/.github/package*.json/設定を触る PR は必ず全部、一覧を PR の側で書き換えても master の一覧で全部に戻る（BOA-929）"
     },
     {
+      "script": "verify-e2e-shards.js",
+      "tier": "ci",
+      "guards": "E2E の組の分け方の正本 e2e/shards.json（e2e-shards.js）。両ワークフローが matrix をここから作る（手で書かない）、最後の組が上に書いた spec をちょうど除く、rest の位置・実在しない spec を落とす（BOA-929・BOA-769）"
+    },
+    {
       "script": "verify-e2e-skips.js",
       "tier": "ci",
       "guards": "E2Eのskip判定（check-e2e-skips.js）。無言でskipされ続けるテストの検知が壊れないこと"
