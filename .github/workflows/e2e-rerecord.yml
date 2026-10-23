@@ -9,8 +9,8 @@ name: E2E Re-record (録画の自動撮り直し)
 # 手順（BOA-799、2026-10-12〜。1ジョブ→3ジョブに分割）:
 #   1. [record] 本番に繋いで全件を録画する（E2E_RECORD=1）。録画データを artifact で渡す
 #   2. [replay] 撮った録画だけで再生して全件実行する（E2E_REPLAY_STRICT=1: 録画に無い通信は abort）。
-#      #1318（BOA-769 E）と同じ spec 単位の3分割で並行に走らせる
-#   3. [judge] 3分割のレポートを集約し、採用条件を満たすときだけ採用する
+#      PR ゲートと同じ組（e2e/shards.json）で並行に走らせる
+#   3. [judge] 組ごとのレポートを集約し、採用条件を満たすときだけ採用する
 #      - 2 が全件通る
 #      - skip が現行の録画より増えていない（発走前のレースが少ない日に撮ると skip が増える）
 #      - 組に分けた全テストがちょうど1回ずつ走った（check-e2e-shard-coverage.js、#1318と共用）
@@ -37,7 +37,7 @@ name: E2E Re-record (録画の自動撮り直し)
 #     timeout-minutes を90（以前の全体と同じ値）に戻し、再生と共有しない専用の予算にする
 #   - replay: 3つに分けて並行に走らせる（#1318と同じ spec 単位の分け方）。
 #     record が artifact で渡した録画（e2e/recordings/）をダウンロードして使う
-#   - judge: 3分割のレポートを集約し、採用判定・Release公開・古い録画の削除・Slack通知を行う。
+#   - judge: 組ごとのレポートを集約し、採用判定・Release公開・古い録画の削除・Slack通知を行う。
 #     ryujin-bot のトークンを使うため environment: ryujin-bot はこのジョブだけに付ける
 #     （record・replay は本番Supabaseの読み取り専用キーしか使わず、environment は不要）
 #   - 3ジョブとも同じコミット（record が解決したSHA）を checkout する。ジョブをまたいで
@@ -125,7 +125,10 @@ jobs:
       # replay の組の分け方は PR ゲートと同じ e2e/shards.json（BOA-929、ADR-0100）
       - name: 組の分け方を読む
         id: shards
-        run: node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
+        # shell を書かない run は pipefail が無く、node の失敗が tee の0に隠れる。分け方の誤りはここで落とす
+        run: |
+          set -euo pipefail
+          node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
 
       - name: 撮り直すか（定期実行のみ）
         id: gate
@@ -192,7 +195,7 @@ jobs:
           retention-days: 7
 
   # PR ゲート（e2e-smoke-test.yml）と同じ組（e2e/shards.json）で並行に再生する。録画は1本のHARに束ねる
-  # 必要があり3並列での同時書き込みは不整合のリスクがあるため分割しないが、再生は
+  # 必要があり並列での同時書き込みは不整合のリスクがあるため分割しないが、再生は
   # 録画済みのファイルを読むだけ（書き込みをしない）ので分割して問題ない
   replay:
     needs: record
@@ -257,7 +260,7 @@ jobs:
           path: test-results/
           retention-days: 7
 
-  # 3分割のレポートを集約し、採用判定・Release公開・古い録画の削除・Slack通知を行う。
+  # 組ごとのレポートを集約し、採用判定・Release公開・古い録画の削除・Slack通知を行う。
   # record・replayが（gateでrun=falseだった等の理由で）走らなくても、Slack通知のために
   # 必ず実行する（if: always()）
   judge:

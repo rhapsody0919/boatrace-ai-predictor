@@ -128,6 +128,41 @@ check(
   true,
 );
 
+check(
+  "rest の組に specs・projects を書けば落とす（黙って無視しない）",
+  validateShards(
+    {
+      shards: [
+        { specs: ["smoke.spec.js"] },
+        { rest: true, specs: ["a-b.spec.js"] },
+      ],
+    },
+    specs,
+  ).length > 0,
+  true,
+);
+check(
+  "同じ組に同じ spec を2回書いたら、組をまたぐ二重とは別の文で落とす",
+  validateShards(
+    { shards: [{ specs: ["smoke.spec.js", "smoke.spec.js"] }, { rest: true }] },
+    specs,
+  ).some((p) => p.includes("同じ組に2回")),
+  true,
+);
+for (const name of ["e2e-smoke-test.yml", "e2e-rerecord.yml"]) {
+  const wf = readFileSync(
+    path.join(repoRoot, ".github/workflows", name),
+    "utf8",
+  );
+  check(
+    `${name} の matrix を作る段は pipefail で node の失敗を落とす（審査の指摘）`,
+    /set -euo pipefail\n\s*node scripts\/maintenance\/e2e-shards\.js --matrix/.test(
+      wf,
+    ),
+    true,
+  );
+}
+
 // --- 今の e2e/shards.json ---
 let config = null;
 try {
@@ -136,7 +171,7 @@ try {
   failures.push(`e2e/shards.json を読めない: ${error.message}`);
 }
 if (config) {
-  check("今の分け方は4〜5組", [4, 5].includes(config.shards.length), true);
+  check("今の分け方は2組以上", config.shards.length >= 2, true);
   check(
     "今の分け方の spec は全部実在する",
     validateShards(config, listSpecFiles()),

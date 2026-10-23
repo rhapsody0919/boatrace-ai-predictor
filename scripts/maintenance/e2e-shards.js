@@ -51,7 +51,18 @@ export function validateShards(config, specFiles) {
         `${i + 1}組目: rest: true は最後の組だけに1つ置きます（残り全部を拾う組）`,
       );
     }
-    if (last) return;
+    if (last) {
+      if (s.specs !== undefined || s.projects !== undefined) {
+        problems.push(
+          `${i + 1}組目: rest の組には specs・projects を書きません（残り全部を拾う）`,
+        );
+      }
+      return;
+    }
+    const dup = s.specs?.filter?.((f, k) => s.specs.indexOf(f) !== k) ?? [];
+    for (const f of new Set(dup)) {
+      problems.push(`${i + 1}組目: ${f} を同じ組に2回書いています`);
+    }
     if (!Array.isArray(s.specs) || s.specs.length === 0) {
       problems.push(`${i + 1}組目: specs が空です`);
       return;
@@ -71,7 +82,7 @@ export function validateShards(config, specFiles) {
   // 両方に projects があるときは playwright.config.js の当たり方次第なので、実行後の網羅の検査に任せる
   const owners = new Map();
   shards.forEach((s, i) => {
-    for (const spec of s.specs ?? []) {
+    for (const spec of new Set(s.specs ?? [])) {
       for (const j of owners.get(spec) ?? []) {
         if (!s.projects || !shards[j].projects) {
           problems.push(`${spec} が ${j + 1}組目と${i + 1}組目で2回走ります`);

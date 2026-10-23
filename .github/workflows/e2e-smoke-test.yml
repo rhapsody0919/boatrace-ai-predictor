@@ -69,7 +69,10 @@ jobs:
       # 組の分け方（e2e/shards.json）を e2e-shard の matrix に直す。誤りがあればここで落とす
       - name: Read e2e shards
         id: shards
-        run: node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
+        # shell を書かない run は pipefail が無く、node の失敗が tee の0に隠れる
+        run: |
+          set -euo pipefail
+          node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
 
   # 組に分けて並行に走らせる（BOA-769）。律速は1台の CPU（4 vCPU を vite dev と Chromium が
   # 取り合う。PR #1263 で workers を 4 に増やしても縮まなかった）なので、台数を増やす。
