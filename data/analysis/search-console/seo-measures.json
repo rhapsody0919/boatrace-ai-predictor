@@ -119,6 +119,118 @@
       "id": "racer-index-a1",
       "description": "現役の A1 選手（最新の出走が A1 で直近30日以内、10/2 時点で322人）の選手ページを index にし、title を「{名前}（競艇）選手の成績・勝率・決まり手」にした（本番反映 13:36 JST。/racer/3941 の index と title を確認）。sitemap への反映は同日 23:30 JST の自動生成から。A2 への拡大は 10/30 ごろの観測で判断",
       "ref": "PR#1120"
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "measure",
+      "id": "static-og-url-remove",
+      "description": "index.html のトップ固定の静的 og:url を削除。本番反映はマージ日",
+      "ref": "PR#1146"
+    },
+    {
+      "date": "2026-10-02",
+      "kind": "measure",
+      "id": "static-description-item-count-remove",
+      "description": "og・twitter description と JSON-LD から「45項目」を削除。本番反映はマージ日",
+      "ref": "PR#1147"
+    },
+    {
+      "date": "2026-10-05",
+      "kind": "measure",
+      "id": "structured-data-rating-remove-bot-expand",
+      "description": "JSON-LD の AggregateRating（4.5・100件）と SearchAction を削除し、Organization を追加。bingbot・Applebot・DuckDuckBot 等にもスナップショットを返すようにした。本番反映はマージ日",
+      "ref": "PR#1264"
+    },
+    {
+      "date": "2026-10-05",
+      "kind": "measure",
+      "id": "static-meta-data-visualization",
+      "description": "keywords・og・twitter description・JSON-LD description をデータの見える化の説明に変更。本番反映はマージ日",
+      "ref": "PR#1265"
+    },
+    {
+      "date": "2026-10-07",
+      "kind": "measure",
+      "id": "graded-meeting-pages-sitemap",
+      "description": "SG・G1・G2 の節ページを追加し、sitemap に掲載。本番反映はマージ日",
+      "ref": "PR#1151"
+    },
+    {
+      "date": "2026-10-12",
+      "kind": "measure",
+      "id": "localized-canonical-assist-racers-meta",
+      "description": "4言語のページの canonical を表示中の言語の URL に変更（従来はレース詳細・会場一覧等の言語版も ja の URL）。思考アシスト・選手一覧に description・canonical を追加。本番反映はマージ日",
+      "ref": "PR#1395"
+    },
+    {
+      "date": "2026-10-12",
+      "kind": "measure",
+      "id": "bot-home-venue-html",
+      "description": "ja の / と /venue/1〜24 のボット向け HTML（関数）を middleware から配線。本番反映はマージ日",
+      "ref": "PR#1409"
+    },
+    {
+      "date": "2026-10-12",
+      "kind": "measure",
+      "id": "bot-html-hreflang-jsonld",
+      "description": "ボット向け HTML に hreflang・JSON-LD を追加。本番反映はマージ日",
+      "ref": "PR#1422"
+    },
+    {
+      "date": "2026-10-12",
+      "kind": "measure",
+      "id": "bot-racer-snapshot",
+      "description": "選手ページのボット向けスナップショットを追加。本番反映はマージ日",
+      "ref": "PR#1421"
+    },
+    {
+      "date": "2026-10-12",
+      "kind": "measure",
+      "id": "home-faq-structured-data",
+      "description": "トップに FAQ 5問と FAQPage を追加。本番反映はマージ日",
+      "ref": "PR#1447"
+    },
+    {
+      "date": "2026-10-12",
+      "kind": "measure",
+      "id": "bot-localized-home-venue-html",
+      "description": "言語版の / と /venue/1〜24 をボット向け HTML へ変更。master 入りは 10/12〜13。ADR 0089 の記述と食い違う（台帳 2章）。本番反映はマージ日",
+      "ref": "PR#1425"
+    },
+    {
+      "date": "2026-10-13",
+      "kind": "measure",
+      "id": "bot-translated-blog-list-snapshot",
+      "description": "翻訳記事とブログ一覧をボット向けスナップショットへ追加。master 入りは 10/12〜13。ADR 0089 の記述と食い違う（台帳 2章）。本番反映はマージ日",
+      "ref": "PR#1431"
+    },
+    {
+      "date": "2026-10-13",
+      "kind": "measure",
+      "id": "bot-today-html",
+      "description": "/today をボット向け関数へ変更。master 入りは 10/12〜13。ADR 0089 の記述と食い違う（台帳 2章）。本番反映はマージ日",
+      "ref": "PR#1433"
+    },
+    {
+      "date": "2026-10-13",
+      "kind": "measure",
+      "id": "bot-today-race-detail-html",
+      "description": "本日のレース詳細をボット向け関数へ変更。master 入りは 10/12〜13。ADR 0089 の記述と食い違う（台帳 2章）。本番反映はマージ日",
+      "ref": "PR#1437"
+    },
+    {
+      "date": "2026-10-13",
+      "kind": "measure",
+      "id": "bot-home-intro-faq-blog",
+      "description": "ボット向けトップに説明・FAQ・ブログ欄を追加。本番反映はマージ日",
+      "ref": "PR#1456"
+    },
+    {
+      "date": "2026-10-19",
+      "kind": "measure",
+      "id": "blog-ai-index-search-meta",
+      "description": "ブログ記事 ai-index-reading-guide の metaTitle・metaDescription に「競艇」を追加し、h1・一覧は「ボートレース」のまま維持。適用は同記事1本だけ。本番反映はマージ日",
+      "ref": "PR#1673"
     }
   ]
 }
