@@ -93,7 +93,7 @@ const REQUIRED_CHECKS = [
     name: "e2e",
     onFailure: "ask",
     duration:
-      "e2e/shards.json の組（5組）が並行で走る（記事だけの PR は軽い組、docs だけの PR は0件）。止まって終わらないときは " +
+      "e2e/shards.json の組が並行で走る（記事だけの PR は軽い組、docs だけの PR は0件）。止まって終わらないときは " +
       "node scripts/maintenance/e2e-rerun.js で再実行を判定できます",
     failureNote:
       "e2eは録画（HAR）の再生で決定的に実行するが、録画に無い通信は本番へ素通しするため、" +

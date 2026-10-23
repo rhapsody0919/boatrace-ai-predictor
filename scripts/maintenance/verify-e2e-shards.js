@@ -113,6 +113,21 @@ check(
   true,
 );
 
+check(
+  "projects の無い組と同じ spec を別の組に書けば落とす（レビューの指摘）",
+  validateShards(
+    {
+      shards: [
+        { specs: ["smoke.spec.js"] },
+        { specs: ["smoke.spec.js"], projects: ["smoke"] },
+        { rest: true },
+      ],
+    },
+    specs,
+  ).some((p) => p.includes("2回走ります")),
+  true,
+);
+
 // --- 今の e2e/shards.json ---
 let config = null;
 try {

@@ -67,6 +67,19 @@ export function validateShards(config, specFiles) {
       problems.push(`${i + 1}組目: projects は1つ以上の配列で書きます`);
     }
   });
+  // projects の無い組は全プロジェクトを走らせるので、同じ spec を別の組にも書けば必ず二重になる。
+  // 両方に projects があるときは playwright.config.js の当たり方次第なので、実行後の網羅の検査に任せる
+  const owners = new Map();
+  shards.forEach((s, i) => {
+    for (const spec of s.specs ?? []) {
+      for (const j of owners.get(spec) ?? []) {
+        if (!s.projects || !shards[j].projects) {
+          problems.push(`${spec} が ${j + 1}組目と${i + 1}組目で2回走ります`);
+        }
+      }
+      owners.set(spec, [...(owners.get(spec) ?? []), i]);
+    }
+  });
   return problems;
 }
 
