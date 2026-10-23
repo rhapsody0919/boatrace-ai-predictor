@@ -661,3 +661,71 @@ test("x_text の検査は1回だけ（{full_url} の欄のループに入れな�
     ["x_text が無い・長すぎる"],
   );
 });
+
+// BOA-909: 検査で拒否した束は理由を1回通知し、試運転では通知しない。
+const rejectionCases = [
+  ["欄", () => bundle({ x_text: undefined }), {}, /x_text/],
+  ["P0", () => bundle({ review: { p0_count: 1 } }), {}, /P0/],
+  ["機械", () => bundle({ qa: { machine: { verify: false } } }), {}, /機械/],
+  ["動画欠落", bundleV2, { missingVideo: true }, /shorts.mp4 が無い/],
+  ["レース無し", bundle, { race: null }, /レースが見つからない/],
+  ["中止", bundle, { cancelled: true }, /レースが中止/],
+  ["締切45分前", bundle, { now: new Date("2037-10-18T19:51:00+09:00") }, /45分前/],
+  ["複数理由", () => bundle({ x_text: undefined, review: { p0_count: 1 } }), {}, /P0/],
+];
+for (const [name, makeBundle, scenario, expected] of rejectionCases) {
+  test(`BOA-909: ${name} の拒否理由と race_id を1回通知する（dry-run は通知しない）`, async () => {
+    const b = makeBundle();
+    const f = files(b);
+    if (scenario.missingVideo) delete f["/f/shorts.mp4"];
+    const readBytes = async (p) => {
+      if (!f[p]) throw new Error("no file");
+      return f[p];
+    };
+    const raceStore = {
+      ...store,
+      race: async (id) => scenario.race === null ? null : {
+        ...(await store.race(id)),
+        ...(scenario.cancelled ? { cancellation_status: "confirmed" } : {}),
+      },
+    };
+    const savedBefore = saved.length;
+    let reasons;
+    for (const dryRun of [false, true]) {
+      const result = await push(b, {
+        store: raceStore, readBytes, dryRun, now: scenario.now ?? NOW,
+      });
+      assert.match(result.reasons.join("\n"), expected);
+      assert.equal(result.notes.length, dryRun ? 0 : 1);
+      if (!dryRun) {
+        reasons = result.reasons;
+        assert.ok(result.notes[0].includes(RACE));
+        assert.ok(result.notes[0].includes(reasons.join("\n")));
+      } else assert.deepEqual(result.reasons, reasons);
+    }
+    assert.equal(saved.length, savedBefore);
+    assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
+    assert.equal((await all("SELECT * FROM sns_auto_send_items")).length, 0);
+    assert.equal((await all("SELECT * FROM sns_x_send_jobs")).length, 0);
+  });
+}
+
+test("BOA-909: notify の同期例外・非同期拒否でも元の拒否理由を返す", async (t) => {
+  const errors = [];
+  t.mock.method(console, "error", (...args) => errors.push(args));
+  const b = bundle({ x_text: undefined, review: { p0_count: 1 } });
+  const reasons = checkFullPicture(b, riskRules);
+  for (const asyncFailure of [false, true]) {
+    let calls = 0;
+    const result = await push(b, {
+      notify: () => {
+        calls++;
+        if (asyncFailure) return Promise.reject(new Error("notify_failed"));
+        throw new Error("notify_failed");
+      },
+    });
+    assert.equal(calls, 1);
+    assert.deepEqual(result.reasons, reasons);
+  }
+  assert.equal(errors.length, 2);
+});
