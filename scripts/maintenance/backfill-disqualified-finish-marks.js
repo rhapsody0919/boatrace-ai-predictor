@@ -38,6 +38,11 @@ const INTERVAL_MS = 3000;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** 公式への取得窓（JST 0時以上・6時未満）。渡された時刻だけで判定する。 */
+export function isFetchTime(date) {
+  return (date.getUTCHours() + 9) % 24 < 6;
+}
+
 /** 失格コードで着欄が NULL の既存の行（読み取りのみ） */
 export async function loadTargets(client, from, to) {
   const rows = await fetchAll(
@@ -91,13 +96,14 @@ export async function loadOfficialRowTargets(client, from, to) {
 
 /**
  * 計画を作る（結果ページの取得と解析。DBへは書かない）。
- * 依存（fetchHtml・wait）は差し替え可能（検証用）。
+ * 依存（fetchHtml・wait・canFetch）は差し替え可能（検証用）。
  */
 export async function buildPlan(
   targets,
   {
     fetchHtml = (url) => fetchRaceResultHtml(url),
     wait = sleep,
+    canFetch = () => true,
     intervalMs = INTERVAL_MS,
     maxRaces = Infinity,
     log = console.log,
@@ -127,6 +133,10 @@ export async function buildPlan(
     ];
     let html;
     try {
+      if (!canFetch()) {
+        plan.stopped = `${raceId}: 取得の時間外（JST 6時）のため中止`;
+        break;
+      }
       html = await fetchHtml(raceResultUrl(venue, race, date));
     } catch (error) {
       if (error.status === 429 || error.status === 503) {
@@ -232,8 +242,10 @@ async function main() {
   if (!out) throw new Error("--out=FILE（計画の保存先）を指定してください");
   const maxRaces = getArg("max-races") ? Number(getArg("max-races")) : Infinity;
   // 公式への取得は JST 0〜6時だけ（開催時間帯の負荷を避ける。オーケストレーターの指示、BOA-667）
-  const jstHour = (new Date().getUTCHours() + 9) % 24;
-  if (jstHour >= 6 && !process.argv.includes("--any-time")) {
+  const anyTime = process.argv.includes("--any-time");
+  const now = new Date();
+  const jstHour = (now.getUTCHours() + 9) % 24;
+  if (!anyTime && !isFetchTime(now)) {
     throw new Error(
       `結果ページの取得は JST 0〜6時に行う（現在 ${jstHour}時）。時間外に実行する場合は --any-time を付ける`,
     );
@@ -253,7 +265,10 @@ async function main() {
   console.log(
     `[PLAN] ${from}〜${to}: 失格コードで着欄が NULL の艇 ${markTargets.length}・行の順が NULL の行 ${rowTargets.length}（合わせて${raceCount}レース）。結果ページを取得します`,
   );
-  const plan = await buildPlan(targets, { maxRaces });
+  const plan = await buildPlan(targets, {
+    maxRaces,
+    canFetch: anyTime ? () => true : () => isFetchTime(new Date()),
+  });
   fs.writeFileSync(
     out,
     JSON.stringify(

@@ -183,6 +183,53 @@ async function evaluatePlan(cli) {
   return failed;
 }
 
+// BOA-779: 実時間・実通信を使わず、待機中に取得窓を外れる状況を再現する。
+async function evaluateFetchWindow(cli) {
+  const failed = [];
+  const expect = (label, pass) => { if (!pass) failed.push(label); };
+  const targets = [
+    ...TARGETS,
+    { race_id: TAMA, boat_number: 1, kind: "row" },
+    t(TAMA, 7, "S1"),
+  ];
+  const fetched = [];
+  let allowed = true;
+  let checks = 0;
+  const options = {
+    fetchHtml: async (url) => (fetched.push(url), fixture(PAGES[url])),
+    wait: async () => { allowed = false; },
+    log: () => {},
+    canFetch: () => { checks++; return allowed; },
+  };
+  const stopped = await cli.buildPlan(targets, options);
+  expect("待機後の2レース目の直前で止め、1レース目の計画を全て残す",
+    fetched.length === 1 && checks === 2 && stopped.races === 1 &&
+    stopped.stopped === `${WAKA}: 取得の時間外（JST 6時）のため中止` &&
+    same(stopped.rows, [
+      { race_id: TAMA, boat_number: 4, finish_mark: "落" },
+      { race_id: TAMA, boat_number: 5, finish_mark: "転" },
+    ]) && same(stopped.officialRows, [
+      { race_id: TAMA, boat_number: 1, official_row: 3 },
+    ]) && stopped.anomalies.length === 1 && stopped.anomalies[0].startsWith(TAMA));
+  const baseline = await cli.buildPlan(targets, { ...options, canFetch: undefined });
+  const unrestricted = await cli.buildPlan(targets, { ...options, canFetch: () => true });
+  expect("常に許可なら既定動作と同じ", same(unrestricted, baseline) && unrestricted.races === 3);
+  fetched.length = 0;
+  const blocked = await cli.buildPlan(targets, { ...options, canFetch: () => false });
+  expect("最初から時間外なら1件も取得しない", fetched.length === 0 && blocked.races === 0 &&
+    blocked.stopped === `${TAMA}: 取得の時間外（JST 6時）のため中止`);
+  for (const [time, expected] of [
+    ["2026-10-23T05:59:00+09:00", true],
+    ["2026-10-23T06:00:00+09:00", false],
+    ["2026-10-23T00:00:00+09:00", true],
+    ["2026-10-23T23:59:00+09:00", false],
+  ]) {
+    expect(`JST取得窓 ${time}`, typeof cli.isFetchTime === "function" &&
+      cli.isFetchTime(new Date(time)) === expected);
+  }
+  return failed;
+}
+
 /** update().eq().eq().is().select() の偽クライアント。is(finish_mark, null) を守る行だけ更新する */
 function fakeClient(table) {
   const calls = [];
@@ -384,6 +431,9 @@ const a = await evaluateApply(cli);
 check("(c) 書き込み", a.length === 0, a.join(" / "));
 const o = await evaluateOfficialRow(lib, parser, cli);
 check("(e) 公式の行の順（BOA-667）", o.length === 0, o.join(" / "));
+
+const w = await evaluateFetchWindow(cli);
+check("(f) JST取得窓（BOA-779）", w.length === 0, w.join(" / "));
 
 // (d) 変異検証
 let mutantSeq = 0;
