@@ -48,6 +48,8 @@ on:
       - Scrape Scheduled
       - Scrape Venue Entry Course Stats
       - Scrape Venue Motor Stats
+      - Storage Mirror (R2)
+      - Storage Mirror Restore Drill
       - Train Analogy Finder
       - Train Moriarty Calibration
       - Train Poirot Models
