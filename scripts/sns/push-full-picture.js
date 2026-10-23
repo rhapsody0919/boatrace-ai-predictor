@@ -11,7 +11,7 @@
  *   bundle_version: 2 のときだけ、youtube_shorts{title,description} と shorts.mp4（入口版、縦）を受け、YouTube の Shorts の下書きを足す
  *   （マイグレーション 172、BOA-912）。Shorts は完全版の公開の後に送り、説明文の {full_url} を完全版の URL に置き換える（parent_job_id）
  *
- * 1. 検査: 欄・P0 が0件・機械の検査が全部通った・禁止表現・動画の大きさ・レースが今日あり中止でない・締切の40分前より前
+ * 1. 検査: 欄・P0 が0件・機械の検査が全部通った・禁止表現・動画の大きさ・レースが今日あり中止でない・締切の45分前より前
  *    --dry-run はここまで（DB・Storage に書かない）
  * 2. 動画を Storage（sns-hub-media/full-picture/{race_id}/{版}/）に上げる
  * 3. X・YouTube の下書き（send_lane=A、format=full_picture）と item（kind=full_picture）を作る
@@ -309,6 +309,18 @@ export async function pushFullPicture(
   const bundle = JSON.parse(
     new TextDecoder().decode(await readBytes(path.join(folder, "bundle.json"))),
   );
+  const reject = async (reasons) => {
+    if (!dryRun) {
+      try {
+        await notify(
+          `SNS 全貌動画 ${bundle?.race_id ?? "不明"} を検査で拒否した\n${reasons.join("\n")}`,
+        );
+      } catch (error) {
+        console.error(`Slack に通知できません: ${error.message}`);
+      }
+    }
+    return { reasons };
+  };
   const reasons = checkFullPicture(bundle, riskRules);
   const files = {};
   for (const channel of channelsOf(bundle)) {
@@ -326,14 +338,14 @@ export async function pushFullPicture(
       reasons.push(`${name} が無い`);
     }
   }
-  if (reasons.length) return { reasons };
+  if (reasons.length) return reject(reasons);
   const race = await store.race(bundle.race_id);
   const deadlineAt = race && deadlineIso(race);
-  if (!deadlineAt) return { reasons: ["レースが見つからない"] };
-  if (race.cancellation_status != null) return { reasons: ["レースが中止"] };
+  if (!deadlineAt) return reject(["レースが見つからない"]);
+  if (race.cancellation_status != null) return reject(["レースが中止"]);
   const when = schedule(deadlineAt, now);
   if (now.getTime() >= Date.parse(when.latest))
-    return { reasons: [`締切の${LATEST_BEFORE_MIN}分前を過ぎた`] };
+    return reject([`締切の${LATEST_BEFORE_MIN}分前を過ぎた`]);
   // Shorts は、期限までに完全版の公開を待てる時刻に届いたときだけ作る
   const shortsLate =
     withShorts(bundle) &&
