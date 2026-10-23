@@ -38,6 +38,9 @@ const UNDELIVERED_PREFIX = "undelivered:";
 /** 送る前の検査・トークンの失敗の通知を、見直すまで残す時間（候補の巡回が一周するより長く） */
 export const CONTINUING_ALERT_MINUTES = 30;
 
+/** 親を待つ子の期限が、この分数より近くなったら知らせる */
+export const PARENT_WAIT_ALERT_MINUTES = 10;
+
 /** 走査位置（scrape_job_state.cursor）: 送る時刻と id の組。次の実行はこの位置の後から読む（開発の補助の点検 D1） */
 const positionOf = (job) => ({ scheduled_at: job.scheduled_at, id: job.id });
 
@@ -96,6 +99,17 @@ export async function runSnsSend(
     alerts.push({
       key: `reconcile:${job.id}`,
       text: `SNS の送信が要照合: ${job.channel} job ${job.id}（${job.youtube_stage ?? job.error_code ?? "結果が不明"}）。管理画面で照合する`,
+    });
+  // 親（スレッドの親・全貌の完全版）が公開されないまま、期限が近い子。子は候補から外れて検査の通知も出ず、
+  // 期限の後に sweep で黙って held（deadline_expired）になるので、ここで知らせる（2026-10-20 system-architect の指摘）
+  for (const child of (await store.waitingChildren?.(
+    now,
+    PARENT_WAIT_ALERT_MINUTES,
+  )) ?? [])
+    alerts.push({
+      key: `parent_waiting:${child.id}`,
+      text: `SNS の送信: ${child.channel} job ${child.id} が、親（job ${child.parent_job_id}）の公開を待ったまま期限（${child.expires_at}）が近い。親が公開されなければ送らずに切れる`,
+      until: continuingUntil,
     });
   const controls = await store.controls();
   const { jobs: candidates, nextCursor } = await store.dueJobs(
@@ -309,6 +323,19 @@ export function createSnsSendStore({ db, xSendStore }) {
         jobs: pickDueJobs(queued, parents),
         nextCursor: queued.length === limit ? positionOf(queued.at(-1)) : null,
       };
+    },
+    // 親が posted でないまま、期限が withinMinutes 分以内の queued の子
+    async waitingChildren(now, withinMinutes) {
+      const limit = new Date(now.getTime() + withinMinutes * 60000);
+      const children = await db(
+        `sns_x_send_jobs?state=eq.queued&parent_job_id=not.is.null&expires_at=lte.${encodeURIComponent(limit.toISOString())}&order=id.asc&select=id,channel,parent_job_id,expires_at`,
+      );
+      if (!children.length) return [];
+      const parents = await db(
+        `sns_x_send_jobs?id=in.(${[...new Set(children.map((c) => c.parent_job_id))].join(",")})&select=id,state,external_post_id`,
+      );
+      const posted = new Set(pickDueJobs(children, parents).map((c) => c.id));
+      return children.filter((c) => !posted.has(c.id));
     },
     // 要照合の job（オーナーが照合するまで残る。件数は少ない）
     async reconcileJobs() {

@@ -21,6 +21,10 @@ import {
 } from "../../../../_lib/snsHubHelpers.js";
 
 import { requireAdminAuth } from "../../../../_lib/adminAuth.js";
+import {
+  LINEAR_ISSUE_GATE_CODE,
+  gateBlockedMessage,
+} from "../../../../../scripts/lib/linearIssueGate.js";
 
 export const config = {
   runtime: "edge",
@@ -80,6 +84,20 @@ export default async function handler(req) {
       // Linear の失敗は、汎用の 500 にせず理由（コード）を返す。画面は入力欄を閉じずに本文を残す
       // （以前は無料枠の上限でも「処理を完了できませんでした」だけで、本文も消えた。2026-10-18 調査）
       console.error("SNS Hub request-spec-change Linear起票エラー:", error);
+      // 未アーカイブ件数が閾値以上で起票を止めた（scripts/lib/linearIssueGate.js。Slack には通知済み）
+      if (error.code === LINEAR_ISSUE_GATE_CODE) {
+        // 例外の文は返さず、件数と閾値から組み立てた文を返す（snsRawErrors の検査）
+        return jsonResponse(
+          {
+            error: gateBlockedMessage({
+              count: error.count,
+              threshold: error.threshold,
+            }),
+            code: LINEAR_ISSUE_GATE_CODE,
+          },
+          503,
+        );
+      }
       const usageLimit = error.linearCode === "USAGE_LIMIT_EXCEEDED";
       return jsonResponse(
         {

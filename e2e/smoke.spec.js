@@ -285,7 +285,7 @@ test.describe("言語切替 (回帰: 対応外言語クリックでホームに�
 });
 
 // BOA-653: 非jaのトップに日本語の直書きが残っていた（データ一覧の導線・ja記事のブログ・曜日・フッターの日付）
-test("英語のトップに ja 専用の導線・ja 記事・日本語の日付を出さない（BOA-653）", async ({
+test("英語のトップに ja 専用の導線・ja 記事・日本語の日付を出さない（BOA-653） @blog", async ({
   page,
 }) => {
   const JA = /[\u3040-\u30FF\u4E00-\u9FFF]/;
@@ -561,7 +561,7 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
   }
 });
 
-test.describe("ブログ英語版（部分翻訳、blog-i18n）", () => {
+test.describe("ブログ英語版（部分翻訳、blog-i18n） @blog", () => {
   test("/en/blog は英語版が存在する記事のみ一覧表示される（ja版全件より少ない件数）", async ({
     page,
   }) => {
@@ -645,26 +645,49 @@ test.describe("ブログ英語版（部分翻訳、blog-i18n）", () => {
 });
 
 test.describe("その他の主要ページ", () => {
-  test("ブログ一覧が表示される", async ({ page }) => {
+  test("ブログ一覧が表示される @blog", async ({ page }) => {
     await page.goto("/blog");
     await expect(page.locator(".app-header")).toBeVisible();
   });
 
-  test("ブログ記事の metaTitle・metaDescription は <title>・meta・OGP にだけ使い、h1 は title のまま（「競艇」は画面に出さない）", async ({
+  test("ブログ記事の metaTitle・metaDescription は <title>・meta・OGP にだけ使い、h1 は title のまま（「競艇」は画面に出さない） @blog", async ({
     page,
   }) => {
-    await page.goto("/blog/ai-index-reading-guide");
+    // 期待値は記事のデータ（src/data/blog-posts）から読む。記事の改稿で題が変わるたびに試験が落ちないように。
+    // 題（title）に「競艇」が無く、metaTitle に有る記事で見る。ai-index-reading-guide がそうでなくなったら、
+    // ほかの当てはまる記事で見る（試験が黙って空振りしないよう、当てはまる記事が無ければ落とす）
+    const postsDir = new URL("../src/data/blog-posts/", import.meta.url);
+    const readPost = (file) =>
+      JSON.parse(fs.readFileSync(new URL(file, postsDir), "utf8"));
+    const fits = (p) =>
+      typeof p.metaTitle === "string" &&
+      typeof p.metaDescription === "string" &&
+      p.metaTitle.includes("競艇") &&
+      !p.title.includes("競艇");
+    const preferred = readPost("ai-index-reading-guide.json");
+    const post = fits(preferred)
+      ? preferred
+      : fs
+          .readdirSync(postsDir)
+          .filter((f) => f.endsWith(".json"))
+          .map(readPost)
+          .find(fits);
+    expect(post, "題に「競艇」が無く metaTitle に有る記事").toBeTruthy();
+    const startsWith = (text) =>
+      new RegExp(`^${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`);
+
+    await page.goto(`/blog/${post.id}`);
     const h1 = page.locator(".blog-post-header h1");
-    await expect(h1).toContainText("ボートレースのAI指数の見方");
-    await expect(page).toHaveTitle(/^競艇・ボートレースのAI指数の見方/);
+    await expect(h1).toContainText(post.title);
+    await expect(page).toHaveTitle(startsWith(post.metaTitle));
     expect(await h1.innerText()).not.toContain("競艇");
     await expect(page.locator('meta[name="description"]')).toHaveAttribute(
       "content",
-      /^競艇（ボートレース）のAI指数/,
+      startsWith(post.metaDescription),
     );
     await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
       "content",
-      /^競艇・ボートレースのAI指数の見方/,
+      startsWith(post.metaTitle),
     );
   });
 
@@ -4208,7 +4231,7 @@ test.describe("レース荒れ度ムード演出（BOA-195: race-open-animation�
 });
 
 test.describe("titleタグの回帰確認（React 19 head-hoistingは<title>の子要素が複数だと空文字になる）", () => {
-  test("ブログ記事詳細ページのtitleが空にならない", async ({ page }) => {
+  test("ブログ記事詳細ページのtitleが空にならない @blog", async ({ page }) => {
     await page.goto("/blog/rough-race-signals");
     await expect(page).toHaveTitle(/.+\| 龍神レーダー$/);
   });
@@ -4269,6 +4292,8 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
   // 解消したため、スコープをHeader/Footer/IntroBannerのみからページ全体に拡張した
   // （ページごとにルート要素のクラスが異なる=.app/.race-detail-page/.about-container等の
   // ため.include()では絞り込まず、document全体を対象にする）
+  // 記事のページとホーム（最新記事のカードを出す）は題に @blog を付け、記事だけの PR の軽い組でも走らせる（BOA-929）
+  const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "");
   const PAGES = [
     "/",
     "/about",
@@ -4296,7 +4321,7 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
 
   for (const path of PAGES) {
     for (const theme of ["light", "dark"]) {
-      test(`${path}（${theme}テーマ）でcolor-contrast違反が無い`, async ({
+      test(`${path}（${theme}テーマ）でcolor-contrast違反が無い${blogTag(path)}`, async ({
         page,
       }) => {
         const { default: AxeBuilder } = await import("@axe-core/playwright");

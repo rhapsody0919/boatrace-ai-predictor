@@ -79,3 +79,12 @@
 - 投稿の本文・説明文は、動画の字幕より詳しく書く。会場の1着率には期間と件数（「過去90日の684レースで62.1%」）、類似の過去の結果には条件と「N件中」（「スタートの形が横一線だった過去709件中、1着最多は1号艇で540件（76.2%）」）を付ける（2026-10-20、wording-editor、全貌動画 bundle.mjs）
 - 全貌動画の字幕で、選手個人の回収率（100%超え）は出さない（収益の連想と、19〜44走の小さい母数で選手の差を示さないため）。回収率の定義文に「購入額」を使わない（舟券を買った前提になる）（2026-10-20、wording-editor・data-scientist、BOA-913 の場面3③）
 - 字幕の差のポイントは小数1桁にそろえる（19.0ポイント）。diffOf の値をそのまま文字にすると .0 が落ちるので toFixed(1) で書く（2026-10-20、wording-editor、BOA-913）
+- 検索語にAIが含まれていても、過去成績の割合をAIの予測値として紹介しない。掲載前に検索語と画面の名称・値の定義を照合し、該当する機能が無い場合は既存の数字を改名せず、機能の提案として分ける（2026-10-20、BOA-902、seo-human、src/locales/ja/common.json）
+- 準優進出の境界に同率が並ぶ実例では、順位・同率人数・残る席数・得点・走数を併記する。表の行順を選考優先順とみなさず、丸めた得点率だけで点差や進出者を説明しない（2026-10-20、BOA-921、src/components/race/seriesPoints.js・src/utils/meetPageModel.js の borderTieOf）
+- 会場の進入コース別1着率の順位を本文で述べるときは、同じ期間の95%区間も確認する。区間が重なる会場間の小差を確定的な優劣とせず、区間が重なる範囲の差として書く（2026-10-20、seo-human、docs/reference/venue-course-win-rate.md「言えること・言えないこと」、data/analysis/venue-course-win-rate/venue-course-win-rate.json）
+- 風とイン逃げ率の画面と同じデータで記事の表を作るときも、1,000件以上は値、300〜999件は参考値、300件未満は件数だけという表示条件を引き継ぐ。低件数の極端な値を通常の値と同列のランキングにしない（2026-10-20、seo-human、src/components/analysis/WeatherInEscapeChart.jsx の SHOW_MIN_N・REFERENCE_MIN_N）
+- 分析JSONに率と母数だけがあり分子の件数が無いときは、丸めた率から件数を逆算せず「Nレース中X%」と書く。分子の実数がある場合だけ「Nレース中M回」を使う（2026-10-20、seo-human、data/analysis/weather-in-escape.json）
+- 会場別データから全国値を作って記事へ載せるときは、会場ごと・区分ごとの2通りで合計を合わせ、同じ時点の公開表示用JSONに合計があれば照合する。これは集約件数の算術照合であり、個票からの独立検証とは区別する（2026-10-20、seo-human、data/analysis/weather-in-escape.json・public/data/weather-in-escape.json）
+- 風速区分の全国割合を比較するときは会場別の比較も添える。全国の単純合計は区分ごとの会場構成が異なり、全国の差から全会場が同じ方向に動くとは言えない。1コース1着率の調整値・区間を、決まり手構成比の差の根拠へ転用しない（2026-10-21、seo-human、docs/design/weather-in-escape/results.md、src/locales/ja/common.json）
+- 同じ終了日の3か月・6か月・1年の統計はレースが重なるため、独立した3回の検証として扱わない。期間別の比較は窓を狭めたときの並びの変化として示し、季節が原因という説明や将来の優劣へ飛躍しない（2026-10-21、BOA-985、docs/reference/venue-course-win-rate.md・data/analysis/venue-course-win-rate/venue-course-win-rate.json）
+- 出典の件数から割合差の検定を加えるときは「件数から計算した目安」と明記し、出典自身の判定と分ける。比較2群の件数・計算方法を残し、別指標の区間を流用しない。新しい統計検証はスクリプト・結果・読み物もリポジトリへ残す（2026-10-21、seo-humanへの審査助言「追い風と差し」、保存要件はstat-findings.md）

@@ -87,15 +87,17 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - 修正前は落ち、修正後は通る再現テストが同じ PR にある
   - 画面の見せ方（表示項目・配色・並び順・文言の方針）と、表示する数値の判断（集計・算出の定義）を変えない
   - .claude・CI ゲート・permission の変更、本番 DB への書き込みを伴わない
-- F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`（翻訳のメタの `en/`・`ko/`・`zh-TW/` を含む。#1699 で移った先）・`public/images/blog/` だけの PR。画像は別の名前で足す（差し替えはオーナーが行う）。A の条件に加えて次をすべて満たす
+- F. ブログ記事の掲載・改稿。変更が `public/blog/`・`src/data/blog-posts/`（翻訳のメタの `en/`・`ko/`・`zh-TW/` を含む。#1699 で移った先）・`public/images/blog/`・`docs/content-manifests/`（記事の審査記録、契約 docs/operation/content-pr-contract.md）・`public/blog-charts/`（記事の図のデータ、ADR 0098）だけの PR。画像は別の名前で足す（差し替えはオーナーが行う）。A の条件に加えて次をすべて満たす
   - content-qa（`.claude/agents/content-qa.md`）・wording-editor・ファンのレビュー（boatrace-fan-reviewer か discussion-panel）・seo-marketer の4つの観点で審査する
+  - hq の社員の道（content-pr）の記事は、hq の審査の低の段（同じベンダーの1回の審査。止めるのは事実の誤り・無い機能・壊れたリンク・形・禁止語の5つ、ファン・seo-marketer は助言）で manifest の4役が pass なら、4つの観点の審査を満たすとみなす（オーナー決定 2026-10-21）。記事は作るときに質を高くする前提で、マージ前に Claude が観点を足して審査し直すことはしない（この道では、下の P0・P1 の止め方は低の段の5つに置き換わる）
   - P0 は4つの観点のどれで出ても止める
   - P1 は content-qa と wording-editor の分だけ止める。ファン・seo-marketer の P1 は助言として扱い、件数を PR コメントとダイジェストに記録する
   - 4つの役を別々に呼ばず、1回の審査が観点ごとに分けて結果を出す形でもよい。役と観点の表の対応は契約に固定する（どの文書に置くかは ③ のレーンと hq で決める）
   - 本文の数値を出典（DB・分析結果・公式）と照合済み
   - 止まる指摘が出たら直して、その観点の審査を回し直す
   - 判断が要るもの（事業・法務・ブランドの表記、「競艇」の例外、誇大・的中率・回収率の表現、原稿の主張を変える改稿）は F に当たらず、ユーザーに回す
-  - sns-hub（SNS 投稿）とは別の扱い。SNS 投稿の最終送信は引き続きユーザーの承認（全貌動画と /today の X 投稿は例外。全貌動画は機械の検査と評価役の検査で P0 が0件なら、/today の X 投稿は機械の検査が通れば自動で送る。`.claude/CLAUDE.md`「確認のバッチ化を標準運用にする」）
+  - ただし記事の JSON の `metaTitle`・`metaDescription` の「競艇」は例外で、F で出してよい（オーナー決定 2026-10-20、`.claude/rules/code-style.md` 例外1 と同じ扱い。関門は `scripts/content/content-pr-gate.json` の `kyoteiMetaAllowedKeys`）。本文・見出し・画面の title・description・tags・category の「競艇」は今までどおり F に当たらない。役所への営業の前に外す暫定の措置なので、F でマージした記事の PR 本文に「meta に競艇あり: <記事 id>」を書く（関門の結果の `metaKyotei` の id）
+  - sns-hub（SNS 投稿）とは別の扱い。SNS 投稿の最終送信は引き続きユーザーの承認（全貌動画と /today の X 投稿は例外。全貌動画と /today の X 投稿は、機械の検査が通れば自動で送る。`.claude/CLAUDE.md`「確認のバッチ化を標準運用にする」）
 
 - G. ユーザーが中身を直接決めた .claude の変更を、決定どおりに書いた PR（2026-10-13 ユーザー決定）。自動モード以外のセッションで書かれ、編集の許可をユーザーが直接出したもの。オーケストレーターが差分を読み、決定から外れた語・範囲が入っていないことを確かめ、CI が全部緑ならマージする。マージの承認を改めて取らない。外れていればユーザーに回す
 
@@ -109,13 +111,14 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 
 ### Codex の PR（`codex/*`）
 
-Codex が実装して `codex/` のブランチから出した PR は、次のとおりに扱う。Codex 側の規約は AGENTS.md「実装者としての規約」。
+Codex のパッチを hq の `codex-pr.py`（AI なし）が `ryujin-maker` の名義で `codex/` のブランチから出した PR は、次のとおりに扱う。Codex 側の規約は AGENTS.md「実装者としての規約」、仕組みは `docs/design/codex-direct-pr/design.md`。
 
-- **審査は Claude が行う**。鍵を持つ側で `claude -p` を Bash なしで実行し、差分を AGENTS.md の観点で審査する。Codex の PR 本文にある自己検証の結果は、合否の根拠にしない
-- **src/ の画面の作業は Codex に回さない**。`codex/*` には Vercel Preview が無く、画面を確かめられないため
-- **マージは当面「案Z」**: 機械と審査役が CI の見張り・失敗したときの再実行（1回まで）・審査を済ませ、P0・P1 が0件で CI が全部緑の PR を「マージ可」として束ね、オーケストレーターがまとめてマージする。束に入れてよいのは、上の段階0（A〜F）の条件に当たる PR だけ。ただし F は切替（ADR-0097。作成の App の名義と auto-merge）の後だけ。F の束はマージの時点で判定し直す（作者の bot の ID、今の head SHA に審査の App の APPROVE、変えたパスが F の許可のパスの中、CI が全部緑）。CI が赤なら空のコミットで1回だけ再実行してから決める。`codex/*` には Vercel Preview が無いので、Codex の記事の PR のファンのレビューは discussion-panel だけで行う。当たらないものは段階1・2として扱う
-- 再実行しても CI が落ちる PR は束に入れず、Codex に直させる（AGENTS.md「自分の PR の CI が落ちたら、直して同じブランチに push する」）
-- 自動マージをどの名義で行うかは未決（オーナーに確認中）。決まるまでは、オーケストレーターがこのセッションから `gh pr merge` を実行する
+- **審査は review.yml（Anthropic）が行う**。Codex の PR 本文にある自己検証の結果は、合否の根拠にしない
+- **範囲A の PR は `codex-pr.py` が自動でマージする**（設計 §5.2 の条件を全部満たすものだけ）。オーケストレーターに来るのは、範囲外の PR、差し戻しが3回で直らない PR、公開後の戻す起票（段1）だけ。戻すかの判断と revert の PR はオーケストレーター
+- **src/ の画面の作業は Codex に回さない**。`codex/*` には Vercel Preview が無く、画面を確かめられないため。ただし丸ごと任せる試運転の1件（`docs/design/codex-direct-pr/design.md` §4.3、hq の設定に置いた issue の id）は例外。自動マージせず、オーケストレーターが審査する（変更前後の画面はオーケストレーターが手元で撮る）
+- **記事の PR（hq の `content-pr.py` が出す `codex/content-*`）のマージは当面「案Z」**: 機械と審査役が CI の見張り・失敗したときの再実行（1回まで）・審査を済ませ、P0・P1 が0件で CI が全部緑の PR を「マージ可」として束ね、オーケストレーターがまとめてマージする。束に入れてよいのは、上の段階0（A〜F）の条件に当たる PR だけ。ただし F は切替（ADR-0097。作成の App の名義と auto-merge）の後だけ。F の束はマージの時点で判定し直す（作者の bot の ID、今の head SHA に審査の App の APPROVE、変えたパスが F の許可のパスの中、CI が全部緑）。CI が赤なら空のコミットで1回だけ再実行してから決める。`codex/*` には Vercel Preview が無いので、Codex の記事の PR のファンのレビューは discussion-panel だけで行う。当たらないものは段階1・2として扱う
+- `codex-pr.py` の PR で CI が赤なら、1周待って同じ head がまだ赤のとき Codex に差し戻す（直しのパッチが同じブランチに追加される）
+- `codex-pr.py` の自動マージの名義は `ryujin-maker`。記事の PR の案Z のマージは、オーケストレーターがこのセッションから `gh pr merge` を実行する
 
 ### 段階1: 代理で決め、ダイジェストで事後に報告する
 

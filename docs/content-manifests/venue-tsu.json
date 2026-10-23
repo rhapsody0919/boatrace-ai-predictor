@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "venue-tsu",
+ "kind": "revision",
+ "ticket": "BOA-907",
+ "paths": [
+  "public/blog/venue-tsu.md",
+  "src/data/blog-posts/venue-tsu.json"
+ ],
+ "files": {
+  "public/blog/venue-tsu.md": "d95ac92fba3efd2d86a5f2b293ecb23c83fc3828a94c6d47b161168a210df86e",
+  "src/data/blog-posts/venue-tsu.json": "59260afaec2629b064dbc6271bc4a9ac1ab5ada663a7938faab532ed39e6622b"
+ },
+ "content_sha256": "c3f4bdefc5b37f1265f2b0730079fd1ccfc8f3f3b9efe78fd2d397c088aece96",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "c3f4bdefc5b37f1265f2b0730079fd1ccfc8f3f3b9efe78fd2d397c088aece96",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:20:41+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "c3f4bdefc5b37f1265f2b0730079fd1ccfc8f3f3b9efe78fd2d397c088aece96",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:20:41+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "c3f4bdefc5b37f1265f2b0730079fd1ccfc8f3f3b9efe78fd2d397c088aece96",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:20:41+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "c3f4bdefc5b37f1265f2b0730079fd1ccfc8f3f3b9efe78fd2d397c088aece96",
+   "model": "codex-default/high",
+   "at": "2026-10-22T18:20:41+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-22T18:23:03+09:00",
+ "run": "20261022T181005-seo-human",
+ "engine": "codex"
+}

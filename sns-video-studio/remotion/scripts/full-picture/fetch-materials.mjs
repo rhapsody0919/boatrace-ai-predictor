@@ -166,7 +166,16 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
     db.motor = null;
     missing.push({ source: "db.motor", reason: e instanceof Error ? e.message : String(e) });
   }
-  return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, api, db, missing };
+  // レースの締切（races.start_time、出走表の締切予定時刻 JST）とグレード。冒頭の場面・題名・本文の見出しに使う（BOA-989）
+  let raceRow = null;
+  try {
+    const [r] = await sbGet("races", `select=start_time,race_grade&race_id=eq.${raceId}`);
+    raceRow = { startTime: r?.start_time ?? null, grade: r?.race_grade ?? null };
+    if (!r?.start_time) missing.push({ source: "race.startTime", reason: "races に締切の時刻が無い" });
+  } catch (e) {
+    missing.push({ source: "race", reason: e instanceof Error ? e.message : String(e) });
+  }
+  return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, race: raceRow, api, db, missing };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {

@@ -10,6 +10,7 @@ import {
 } from "../../api/_lib/snsXSend.js";
 import { createMockYoutubeAdapter } from "../../api/_lib/snsDeadlineQueue.js";
 import {
+  PARENT_WAIT_ALERT_MINUTES,
   createSnsSendStore,
   pickDueJobs,
   runSnsSend,
@@ -75,6 +76,16 @@ const store = {
           : null,
     };
   },
+  waitingChildren: async (now, minutes) =>
+    (
+      await db.query(
+        `SELECT c.id, c.channel, c.parent_job_id, c.expires_at FROM sns_x_send_jobs c
+           JOIN sns_x_send_jobs p ON p.id = c.parent_job_id
+         WHERE c.state='queued' AND c.expires_at <= $1::timestamptz + make_interval(mins => $2)
+           AND NOT (p.state='posted' AND p.external_post_id IS NOT NULL) ORDER BY c.id`,
+        [now.toISOString(), minutes],
+      )
+    ).rows,
   reconcileJobs: async () =>
     (
       await db.query(
@@ -898,4 +909,82 @@ test("live の sweep: RETURNS void の RPC の空の応答で落ちない（2026
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test("親を待ったまま期限が近い子（全貌の Shorts・スレッドの子）は report.alerts で知らせる。期限が遠い子・親が公開済みの子は出さない", async () => {
+  const parent = await approvedJob("youtube", { scheduledOffsetMin: 60 });
+  const child = await approvedJob("youtube", { parentJobId: parent.id });
+  const quiet = await runSnsSend(ctx(), deps());
+  assert.ok(
+    !quiet.report.alerts.some((a) => a.key.startsWith("parent_waiting:")),
+  );
+  // 期限を PARENT_WAIT_ALERT_MINUTES 分以内に寄せる
+  await db.query(
+    "UPDATE sns_x_send_jobs SET expires_at = now() + interval '5 minutes' WHERE id=$1",
+    [child.id],
+  );
+  assert.ok(PARENT_WAIT_ALERT_MINUTES > 5);
+  const near = await runSnsSend(ctx(), deps());
+  const alert = near.report.alerts.find(
+    (a) => a.key === `parent_waiting:${child.id}`,
+  );
+  assert.ok(alert, "親を待つ子の通知が出る");
+  assert.match(alert.text, new RegExp(parent.id));
+  assert.equal((await job(child.id)).state, "queued");
+  // 親が公開されたら出さない
+  await db.query(
+    "UPDATE sns_x_send_jobs SET state='posted', external_post_id='fullvideo01' WHERE id=$1",
+    [parent.id],
+  );
+  assert.deepEqual(
+    await store.waitingChildren(new Date(), PARENT_WAIT_ALERT_MINUTES),
+    [],
+  );
+});
+
+test("PostgREST の読み取り: 親を待つ子は queued・親あり・期限の上限で引き、親が posted の子を除く", async () => {
+  const calls = [];
+  const fakeDb = async (path) => {
+    calls.push(decodeURIComponent(path));
+    if (path.includes("parent_job_id=not.is.null"))
+      return [
+        {
+          id: "c1",
+          channel: "youtube",
+          parent_job_id: "p1",
+          expires_at: "2026-10-21T03:00:00Z",
+        },
+        {
+          id: "c2",
+          channel: "youtube",
+          parent_job_id: "p2",
+          expires_at: "2026-10-21T03:00:00Z",
+        },
+      ];
+    return [
+      { id: "p1", state: "posted", external_post_id: "fullvideo01" },
+      { id: "p2", state: "sending", external_post_id: null },
+    ];
+  };
+  const pg = createSnsSendStore({ db: fakeDb, xSendStore: {} });
+  const waiting = await pg.waitingChildren(
+    new Date("2026-10-21T02:55:00Z"),
+    10,
+  );
+  assert.deepEqual(
+    waiting.map((c) => c.id),
+    ["c2"],
+  );
+  assert.match(
+    calls[0],
+    /state=eq\.queued&parent_job_id=not\.is\.null&expires_at=lte\.2026-10-21T03:05:00\.000Z/,
+  );
+  assert.match(calls[1], /id=in\.\(p1,p2\)/);
+  assert.deepEqual(
+    await createSnsSendStore({
+      db: async () => [],
+      xSendStore: {},
+    }).waitingChildren(new Date(), 10),
+    [],
+  );
 });

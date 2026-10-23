@@ -304,6 +304,11 @@
       "guards": "失格（K の S0〜S2）の艇の着欄を結果ページから埋める処理（backfill-disqualified-finish-marks.js、BOA-582）が、失格の表記（転・落・沈・妨・エ・失）だけを書き、行を挿入せず、着欄が NULL の行だけを更新し（既存の値を上書きしない）、取得の間隔を空けて 429・503 で即中止すること"
     },
     {
+      "script": "verify-e2e-blog-tags.js",
+      "tier": "ci",
+      "guards": "記事に関わるE2Eの @blog の印の付け漏れの検査（check-e2e-blog-tags.js）。付け漏れると記事だけの PR の軽い組でその試験が走らない（BOA-929）"
+    },
+    {
       "script": "verify-e2e-har-merge.js",
       "tier": "ci",
       "guards": "E2E録画の束ね方（in-listの正規化・5xx/本文欠けの除外・ローカルポートのプレースホルダ化・認証ヘッダー除去）、部分録画の判定、自動撮り直しの採用判定（全件通過・skip非増加）、定期実行の起動時刻（1日4回・0分回避・打ち切り前）と直列化・通知の1日1回化・Vercel Cron の dispatch（inputs.gate=true）を schedule と同じ扱いにすること（BOA-929）、素通し一覧の集計（ADR-0077）"
@@ -322,6 +327,11 @@
       "script": "verify-e2e-rerun.js",
       "tier": "ci",
       "guards": "PR の E2E Smoke Test の再実行の判定（e2e-rerun.js）。落ちた・50分を超えて止まった実行は1回目だけ再実行（止まったものは cancel してから）、2回目以降は再実行せずオーケストレーターに上げる"
+    },
+    {
+      "script": "verify-e2e-scope.js",
+      "tier": "ci",
+      "guards": "PRゲートの e2e の範囲の判定（e2e-scope.js）。記事だけは軽い組・docs だけは0件・src/scripts/e2e/.github/package*.json/設定を触る PR は必ず全部、一覧を PR の側で書き換えても master の一覧で全部に戻る（BOA-929）"
     },
     {
       "script": "verify-e2e-skips.js",
@@ -394,6 +404,11 @@
       "script": "verify-ga4-measurement-breaks.js",
       "tier": "ci",
       "guards": "GA4 の計測の切れ目（2026-09-29 の page_view 修正）をまたぐ期間の判定と注記（scripts/lib/ga4MeasurementBreaks.js）。崩れると計測修正による PV の増減を需要の変化と誤読する"
+    },
+    {
+      "script": "verify-ga4-traffic-source-params.js",
+      "tier": "ci",
+      "guards": "サイトの中から GA4 のセッションの流入元を上書きしないこと（BOA-996）。trackEvent が予約名（source・medium・campaign・utm_* 等）のパラメータを gtag に渡さない、src の trackEvent の引数に予約名のキーが無い、src の文にサイトの中を指す URL で utm_ を付けたものが無い。崩れると、そのセッションと同じ人の後の直接の訪問が data_race_table 等の流入元（Unassigned）に化ける（PR #656 の前に起きた）"
     },
     {
       "script": "verify-generated-docs-not-in-pr.js",
@@ -487,6 +502,11 @@
       "script": "verify-linear-cli.js",
       "tier": "ci",
       "guards": "scripts/linear-cli.js の失敗（create の無料枠上限・コメント失敗・アーカイブ失敗）が終了コード1になること、update で状態の種類が完了・取り消しになったらアーカイブすること。ローカルの模擬サーバーに向けて CLI を起動する（実 Linear に触れない）"
+    },
+    {
+      "script": "verify-linear-issue-gate.js",
+      "tier": "ci",
+      "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値230件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48、閾値は 2026-10-21 hq 決定）。check-revision-escalation.js・create-vup-linear-ticket.js・api/_lib/snsHubHelpers.js が数えてから issueCreate を送り、230件では送らないこと、夜間のジョブは止めたら保留で終わること、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
     },
     {
       "script": "verify-meet-before-race.js",

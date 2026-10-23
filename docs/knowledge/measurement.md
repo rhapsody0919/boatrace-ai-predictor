@@ -7,6 +7,7 @@
 - イベントの定義は機能ごとの events.md に置く（docs/design/analogy-reaction-measurement/events.md、docs/design/thinking-assist/events.md）
 - 同じイベントで入口を分けたいときはパラメータで分ける。例 assist_view_switch の assist_entry = top / tab_row / copy_toast（BOA-832、docs/design/thinking-assist/events.md）
 - GA4 のカスタムイベントのパラメータに source・medium・campaign・term・content・id を使わない。source だけ送ると流入元が上書きされ Unassigned になる（2026-09 に 71→259 件、PR #656 で link_source に改名、memory ga4_unassigned_source_param_collision_2026_09_15）
+- 上の予約名と utm_* は src/utils/analytics.js の trackEvent が落として送らない。verify-ga4-traffic-source-params.js が入口・src の引数・内部リンクの utm_ を CI で見る（2026-10-22、BOA-996）
 
 ## GA4 への登録
 - イベントのパラメータは GA4 にカスタムディメンションとして登録しないと、レポートにも Data API にも出ない（docs/design/analogy-reaction-measurement/ga4-custom-dimensions.md）
@@ -27,6 +28,7 @@
 - レース詳細の中の動きを前後で比べる基準は 10/11 以降しか使えない（tab_id 登録 10/8、ソナー別タブ化 10/9 09:17、思考アシスト公開 10/11）（2026-10-12、同 measurement.md）
 - 9/28 以前の / の PV にはレース詳細が混ざっている。ページ別の比較は 9/29 以降（2026-10-12、BOA-531、同 measurement.md）
 - 置き場所を比べる機能は、イベントを共通にしてパラメータで置き場所を区別すると、後で動かしても前後がつながる（2026-10-12、同 measurement.md）
+- sessionSource の data_race_table・outcome_pattern_preview・volatility_display・venue_tendency_panel（medium は (not set)、チャネルは Unassigned）は、PR #656（2026-09-15）より前に汚れた人の、後の直接の訪問。GA4 は直接の訪問に前回の直接でない流入元を引き継ぐ。9/17〜10/22 の該当は15人で全員の初回訪問が 9/14 以前、改名後に初めて来た人には出ない。検索・SNS の流入は上書きされない（そちらが来れば流入元はそれになる）。読み替えは「Direct に足す」。引き継ぎの期間の目安は GA4 既定の90日（このプロパティの設定は未確認）で、12月中旬に消える見込み（2026-10-22、GA4 Data API の sessionSource×newVsReturning・firstSessionDate、BOA-996）
 - GA4 の PV は 9/29（page_view の修正）と 10/1（内部トラフィックの除外）で切れる。注記は scripts/lib/ga4MeasurementBreaks.js が出す（2026-10-01、memory seo_keyword_strategy_2026_09_29）
 - PV の絶対値は AdSense の PV とも突き合わせる（2026-09-29 の GA4 日本語 PV 29,270 に対し、同時期の AdSense の PV は 10,573）（2026-10-05、memory ai_agent_era_strategy_2026_10_05）
 - i18n-demand-report.js 等の月別 PV を JST 9時より前に実行すると、期間の始まりが前月の末日になる（2026-10-06、memory project_ai_multi_venture_ops_2026_10_05）
@@ -56,3 +58,8 @@
 - Vercel のボット取得数は Observability のクエリ（`vercel.request.count`、`incoming_request` を `bot_name` で集計）で CDN 段まで数えられ、静的ファイル・robots.txt・CDN HIT も入る。開始は36日以内、生の UA の次元は無い。関数のログは CDN HIT が漏れ、middleware は matcher に無いパスが漏れる（2026-10-20、Vercel API で実測、docs/proposal/ai-crawler-daily-count.md §1）
 - GSC プロパティのデータは 2025-12-21 から。前年同期の比較はできない（2026-10-20、data/analysis/organic-decline-2026-10-20/README.md）
 - GA4 の Admin API は Google Cloud プロジェクトで無効。タイムゾーン・カスタムディメンション・キーイベントは API で読めない（有効化はプロジェクト設定の変更）（2026-10-20、ga4-organic-weekly-export.js の settings.*.error）
+- 月の費用見込みは累計÷経過日×月の日数だけで判断せず、直近7日平均による見込みも並べる。両者の差が大きければ費用水準が変わった日を調べ、変更前後を混ぜた平均を現在の水準とみなさない（2026-10-20、finance、ledger/costs.jsonl・alerts.json の費用点検）
+- costs.jsonlの月累計や見込みを使う前に、月初から集計終端までの日付とserviceの欠落を確認する。欠測を0ドルとして扱わず、累計の欠落範囲と平均に使った日数を併記する（2026-10-20、finance、ledger/costs.jsonl の日付・service欠落点検）
+- 費用見込みの終端は全source共通の最終日でなく、sourceごとの確定済み最終日を使う。請求確定が遅れるsourceの未確定日を0ドルで平均へ入れず、検算時は各sourceの最後のdateと確定状況を先に確認する（2026-10-21、finance、ledger/costs.jsonl のsource別終端点検）
+- sns-channel-daily.csvのdayがUTCの15:00で、definitionがJSTの暦日を指す場合、表へ転記する日付はJSTへ直す。UTCの日付のままでは1日ずれるため、報告には時区変換を明記する。他のSNS指標の時区へ一般化しない（2026-10-21、measurement、company-in/sns-db/sns-channel-daily.csv のday・definition）
+- sns-post-metrics.csvで投稿24時間後の累積値を使うときは、window=24hかつobserved_atが投稿24時間後以降の行を選ぶ。day_endは別窓で、23:00 JSTの取得前に作った写しには当日分が無い。窓名・観測時刻・写しの取得時刻を照合し、未取得を0にしない（2026-10-22、measurement、company-in/sns-db/sns-post-metrics.csv）

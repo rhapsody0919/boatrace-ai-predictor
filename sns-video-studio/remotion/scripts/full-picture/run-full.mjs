@@ -25,10 +25,10 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, scopeReasons, templateText } from "./scene2-text.mjs";
-import { entryScenes } from "./entry.mjs";
+import { entryQuestion, entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
-import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle } from "./bundle.mjs";
+import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
 import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
@@ -76,6 +76,16 @@ if (contractErrors.length) {
   process.exit(1);
 }
 const scenes = buildAll(m);
+const [, mo, da, venueCode, raceNo] = m.raceId.split("-");
+// レースの見出し（例「10/22（木）児島12R 準優勝戦 締切16:44」、BOA-989）。レース名は facts の round、締切は races.start_time
+const round = m.api.facts?.today?.round ?? null;
+const header = raceHeader({ year: Number(m.raceId.slice(0, 4)), month: Number(mo), day: Number(da), venue: venueLabel(Number(venueCode), t), raceNo: Number(raceNo), round, deadline: m.race?.startTime ?? null });
+// 完全版の冒頭の場面（場面1の会場の1着率の問い）にも見出しを出す。入口版の entryScenes と同じく s1-venue90 だけを書き換える
+// （会場の集計が無い日に風・水面の頁へ「1号艇は堅い？」を付けない）
+{
+  const venue90 = scenes.find((x) => x.id === "scene1")?.data?.steps?.find((st) => st.id === "s1-venue90");
+  if (venue90) venue90.question = entryQuestion(header);
+}
 const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scene: x.id, ...o })));
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
 for (const o of omitted) console.warn(`[省いた要素] ${JSON.stringify(o)}`);
@@ -173,9 +183,6 @@ function postText(answers) {
   return [head, ov, cardLine, "データは龍神レーダーで。", "#ボートレース"].filter(Boolean).join("\n") + "\n";
 }
 
-const [, mo, da, venueCode, raceNo] = m.raceId.split("-");
-/** レース名（例「下関10R（10/19）」）。入口版の最初の問いと本文に入れる */
-const raceLabel = `${venueLabel(Number(venueCode), t)}${Number(raceNo)}R（${Number(mo)}/${Number(da)}）`;
 const templateAnswers = templateText(beats).answers;
 {
   // 数字の範囲（個人か集計か）が分からない答えは止める（hq の型の正本 2026-10-20）
@@ -198,7 +205,7 @@ function chapters(answers) {
 
 // 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）。描く前に文を確かめる
 const entryAnswers = templateAnswers;
-const entry = entryScenes(scenes, entryAnswers, { race: raceLabel });
+const entry = entryScenes(scenes, entryAnswers, { race: header });
 const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entryAnswers[s.id] ?? s.lines]) : [])));
 /** 送信の道に渡す文（題名・説明文・X の本文）。数値は場面の facts（字幕と同じ値）から */
 const factsOf = (sceneId, stepId) => scenes.find((x) => x.id === sceneId)?.data?.steps?.find((st) => st.id === stepId)?.facts ?? null;
@@ -209,12 +216,14 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     raceNo: Number(raceNo),
     month: Number(mo),
     day: Number(da),
+    round,
+    grade: m.race?.grade ?? null,
+    deadline: m.race?.startTime ?? null,
     facts: {
       venue90: factsOf("scene1", "s1-venue90"),
       overview: scenes.find((x) => x.id === "scene2")?.data?.radar?.overview?.facts ?? null,
       conclusion: scenes.find((x) => x.id === "scene4")?.data?.conclusion?.facts ?? null,
     },
-    entryFirstQuestion: entry.scenes[0].data.steps[0]?.question ?? raceLabel,
     chapters: chaptersText,
     fullSeconds,
     qa,
