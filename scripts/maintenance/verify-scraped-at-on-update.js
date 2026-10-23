@@ -37,7 +37,7 @@
  * 呼び出しの「周辺」をテキストで見るだけで、実行経路は追わない。`scraped_at` を別の関数で足している
  * 場合は取りこぼす。**取りこぼす方向（偽陰性）に倒しており、偽陽性で止めることを避けている。**
  */
-import fs from "node:fs";
+import { walkSourceFiles, readSourceFile } from "../lib/sourceFileWalk.js";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -96,20 +96,6 @@ const OPT_OUT_MARKER = /scraped_at-intentionally-not-set/;
 /** 実際に値を設定している書き方（`scraped_at: ...`）。単なる言及と区別する */
 const ASSIGNS_SCRAPED_AT = /\bscraped_at\s*:/;
 
-const listFiles = (dir, ext, acc = []) => {
-  for (const name of fs.readdirSync(dir)) {
-    const full = path.join(dir, name);
-    const stat = fs.statSync(full);
-    if (stat.isDirectory()) {
-      if (name === "node_modules" || name === "__fixtures__") continue;
-      listFiles(full, ext, acc);
-    } else if (name.endsWith(ext)) {
-      acc.push(full);
-    }
-  }
-  return acc;
-};
-
 /** マイグレーションから、scraped_at 列を持つテーブル名を集める */
 export function tablesWithScrapedAt(sqlTexts) {
   const tables = new Set();
@@ -160,10 +146,10 @@ export function findUnstampedWrites(text, tables) {
 }
 
 function main() {
-  const sqlTexts = listFiles(
+  const sqlTexts = walkSourceFiles(
     path.join(REPO_ROOT, "docs/db-migration"),
-    ".sql",
-  ).map((f) => fs.readFileSync(f, "utf8"));
+    { extensions: [".sql"], excludedDirs: ["node_modules", "__fixtures__"] },
+  ).map((f) => readSourceFile(f)).filter((text) => text !== null);
   const tables = tablesWithScrapedAt(sqlTexts);
   if (tables.size === 0) {
     console.error("NG: scraped_at を持つテーブルを1つも見つけられませんでした");
@@ -173,7 +159,9 @@ function main() {
     return 1;
   }
 
-  const jsFiles = listFiles(path.join(REPO_ROOT, "scripts"), ".js").filter(
+  const jsFiles = walkSourceFiles(path.join(REPO_ROOT, "scripts"), {
+    extensions: [".js"], excludedDirs: ["node_modules", "__fixtures__"],
+  }).filter(
     (f) => {
       const rel = path.relative(REPO_ROOT, f);
       return !EXCLUDED_DIRS.some((d) => rel.startsWith(d));
@@ -183,10 +171,9 @@ function main() {
   const all = [];
   for (const file of jsFiles) {
     const rel = path.relative(REPO_ROOT, file);
-    for (const p of findUnstampedWrites(
-      fs.readFileSync(file, "utf8"),
-      tables,
-    )) {
+    const text = readSourceFile(file);
+    if (text === null) continue;
+    for (const p of findUnstampedWrites(text, tables)) {
       all.push({ ...p, file: rel });
     }
   }
