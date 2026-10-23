@@ -14,13 +14,16 @@ import {
   extractMergeTargets,
   findWorktreePath,
   hasOrderConstraints,
+  judgeAutoWorkflowChange,
   judgeChecks,
+  judgeE2eScope,
   judgeUnresolved,
   judgeWorktree,
   REQUIRED_CHECK_NAMES,
   rulesetEnforcesChecks,
 } from "./guard-pr-merge.js";
 import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
+import { classifyE2eScope } from "./e2e-scope.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -468,6 +471,83 @@ check(
   "止める理由にworktreeのパスが入る",
   judgeWorktree("/w/x", ["data/ml"], 0).reason.includes("/w/x"),
   true,
+);
+
+// --- e2e を軽い組・0件で済ませた PR（BOA-929） ---
+const shardsSkipped = [
+  ...green,
+  { name: "e2e-scope", state: "SUCCESS" },
+  {
+    name: "e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})",
+    state: "SKIPPED",
+  },
+  { name: "e2e-light", state: "SUCCESS" },
+];
+const shardsGreen = [
+  ...green,
+  { name: "e2e-shard (1/3)", state: "SUCCESS" },
+  { name: "e2e-shard (2/3)", state: "SUCCESS" },
+  { name: "e2e-shard (3/3)", state: "SUCCESS" },
+  { name: "e2e-light", state: "SKIPPED" },
+];
+check(
+  "全部流すべき PR で shard が skip なら止める",
+  judgeE2eScope("1", "full", shardsSkipped)?.decision,
+  "deny",
+);
+check(
+  "全部流すべき PR で shard が1つも無ければ止める",
+  judgeE2eScope("1", "full", green)?.decision,
+  "deny",
+);
+check(
+  "全部流すべき PR で shard が全部成功なら止めない",
+  judgeE2eScope("1", "full", shardsGreen),
+  null,
+);
+check(
+  "軽い組の PR は shard が skip でも止めない",
+  judgeE2eScope("1", "light", shardsSkipped),
+  null,
+);
+check("docs だけの PR は止めない", judgeE2eScope("1", "none", green), null);
+check(
+  "e2e の集約が緑でなければここでは判定しない（judgeChecks が扱う）",
+  judgeE2eScope("1", "full", greenWith("e2e", "FAILURE")),
+  null,
+);
+// 一覧の改ざん: PR の側で allowedPathPatterns に src を足して軽い組で通しても、
+// master の一覧で判定し直すと全部流すべき差分になり、止まる
+{
+  const masterConfig = JSON.parse(
+    readFileSync(
+      path.join(repoRoot, "scripts/content/content-pr-gate.json"),
+      "utf8",
+    ),
+  );
+  const diff = [
+    "scripts/content/content-pr-gate.json",
+    "src/App.jsx",
+    "public/blog/a.md",
+  ];
+  const masterScope = classifyE2eScope(diff, masterConfig).scope;
+  check("改ざんした一覧の PR は master の一覧では全部", masterScope, "full");
+  check(
+    "改ざんした一覧で軽い組に逃げた PR を止める",
+    judgeE2eScope("1", masterScope, shardsSkipped)?.decision,
+    "deny",
+  );
+}
+check(
+  "--auto でワークフローを変える PR は手のマージに回す",
+  judgeAutoWorkflowChange("1", [".github/workflows/e2e-smoke-test.yml"])
+    ?.decision,
+  "ask",
+);
+check(
+  "--auto でワークフローを変えない PR は止めない",
+  judgeAutoWorkflowChange("1", ["public/blog/a.md"]),
+  null,
 );
 
 // --- 保護対象パスが .gitignore と一致しているか ---

@@ -3,6 +3,11 @@
  * ファイル名に`_`prefixを付けたディレクトリはVercelのルーティング対象外になる。
  */
 
+import {
+  assertCanCreateIssue,
+  slackNotifierFromEnv,
+} from "../../scripts/lib/linearIssueGate.js";
+
 export const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 export const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -542,6 +547,7 @@ async function getLinearLabelId(apiKey, teamId, labelName) {
  * パターンをEdge Function向けに移植したもの（fsを使わない点のみ異なる）。
  * LINEAR_API_KEY未設定の場合は起票をスキップし、その旨を返す
  * （fireRoutineと同じ「未設定なら静かにスキップ」方針）。
+ * 未アーカイブ件数が閾値以上なら起票せず LinearIssueGateError（code=LINEAR_ISSUE_GATE_BLOCKED）を投げる。
  *
  * @param {{title: string, description: string}} params
  * @returns {Promise<{created: boolean, url?: string, reason?: string}>}
@@ -552,6 +558,14 @@ export async function createLinearIssue({ title, description }) {
     console.warn("Linear起票をスキップ: LINEAR_API_KEY未設定");
     return { created: false, reason: "not_configured" };
   }
+  // 起票の前に未アーカイブ件数を確かめる（scripts/lib/linearIssueGate.js）。閾値以上・数えられない
+  // ときは Slack に知らせて LinearIssueGateError を投げる（呼び出し側が理由のコードを返す）
+  await assertCanCreateIssue({
+    request: (query, variables) =>
+      linearGraphqlRequest(apiKey, query, variables),
+    notify: slackNotifierFromEnv(process.env),
+    source: "sns-hub request-spec-change",
+  });
   const teamId = await resolveLinearTeamId(apiKey);
   const labelId = await getLinearLabelId(apiKey, teamId, CONTENT_QUALITY_LABEL);
   const data = await linearGraphqlRequest(

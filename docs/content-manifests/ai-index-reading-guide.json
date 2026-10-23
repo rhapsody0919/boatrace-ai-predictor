@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "ai-index-reading-guide",
+ "kind": "revision",
+ "ticket": "BOA-972",
+ "paths": [
+  "public/blog/ai-index-reading-guide.md",
+  "src/data/blog-posts/ai-index-reading-guide.json"
+ ],
+ "files": {
+  "public/blog/ai-index-reading-guide.md": "f44b5fb8df4644f092b0bad4482df7f2690baf1b567e765f6deae430b0db21a7",
+  "src/data/blog-posts/ai-index-reading-guide.json": "5026b1f87c7649834dceae32213d6c99d6a92eda22b212cc4efda7ac5f593745"
+ },
+ "content_sha256": "9019b697cdaae0b4efd912f58c6ce144c1a2dbf4ef6f185153e206296e9606d6",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "9019b697cdaae0b4efd912f58c6ce144c1a2dbf4ef6f185153e206296e9606d6",
+   "model": "sonnet",
+   "at": "2026-10-21T16:41:15+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "9019b697cdaae0b4efd912f58c6ce144c1a2dbf4ef6f185153e206296e9606d6",
+   "model": "sonnet",
+   "at": "2026-10-21T16:41:15+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 2,
+   "reviewed_sha256": "9019b697cdaae0b4efd912f58c6ce144c1a2dbf4ef6f185153e206296e9606d6",
+   "model": "sonnet",
+   "at": "2026-10-21T16:41:15+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "9019b697cdaae0b4efd912f58c6ce144c1a2dbf4ef6f185153e206296e9606d6",
+   "model": "sonnet",
+   "at": "2026-10-21T16:41:15+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-21T16:41:53+09:00",
+ "run": "20261021T164115-seo-human",
+ "engine": "claude"
+}

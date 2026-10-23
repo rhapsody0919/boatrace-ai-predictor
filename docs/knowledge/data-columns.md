@@ -42,3 +42,6 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - 締切60分前の窓でオッズが取れないのは、公式がまだ発売していないため（1分ごとに17〜30回試みても値が無い）。取得の不具合ではない（2026-09-28、memory project_data_foundation_orchestration_2026_09_19、BOA-465）
 - race_results.remark の「同着あり」は2着以下の同着も含む（12か月で18件のうち1着の同着は1件）。1着の同着は race_start_timings.finish_rank=1 が2艇以上かで判定する（2026-10-20、data-accuracy-verifier、docs/reference/venue-course-win-rate.md）
 - race_start_timings.entry_course は 2025-12-06 以降の約9,400レースにだけ入っていて、その範囲では race_results.actual_course_* と1着艇の進入コースが 9,386/9,386 で一致（2026-10-20、同）
+- CSVの抽出完了報告だけで受領済みと扱わず、分析前に指定パスの実ファイル・列定義・対象期間・取得時刻を確認する。未配置なら母数や時点を検証できないため、再配置を依頼してから分析する（2026-10-21、BOA-991、data-scientist のCSV受領点検）
+- 記事の6艇比較表は、全国勝率・2連率・当地勝率・モーター2連率・級を日付つきの同じ出走表の写しからそろえる。一部の列しかない画面を別日時の資料で継ぎ足さない。public/data/races.jsonを使う場合も対象日を確認し、含まれない開催名は別の根拠を残す（2026-10-20、BOA-922、seo-human、public/data/races.json）
+- weather-in-escape.jsonのwind.venues.*.bins.*.techniquesは、その区分の全レースを分母とする勝者の決まり手内訳。逃げ件数は1コース1着数ではなく、1コースの抜き・恵まれ等もあるため「1コースが負けたとき」の内訳へ変換しない。決まり手合計は各binのn、風5区分のnの和は会場のall.nに対応する（2026-10-20、seo-human、data/analysis/weather-in-escape.json）

@@ -95,6 +95,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/kfileParser.js` | 公式成績ファイル（Kファイル）のダウンロード・解凍・パース（BOA-257） | fetchKFileText, parseKFileText, parseKFileRankings, _internal |
 | `scripts/lib/latestByRaceId.js` | 行の配列から、IDフィールド（既定はrace_id）ごとにタイムスタンプフィールド | latestByRaceId |
 | `scripts/lib/launchChromium.js` | Chromium の起動（ビルド時の AI スナップショット scripts/generate-ai-snapshots.js と、 | installJapaneseFont, reapChromium, cleanTmpLeftovers, launchChromium, JAPANESE_FONT ほか1件 |
+| `scripts/lib/linearIssueGate.js` | Linear の起票の前に、未アーカイブのチケット数を数えて上限の手前で止める（hq 台帳 PL48、2026-10-20）。 | countActiveIssues, issueGateDecision, gateBlockedMessage, assertCanCreateIssue, slackNotifierFromEnv ほか5件 |
 | `scripts/lib/liveOdds.js` | オッズのライブ取得（BOA-487）の純粋部分。api/odds/live.js から使う。 | validateLiveOddsQuery, liveOddsUrl, parseLiveOddsPage, badRequestResponse, upstreamErrorResponse ほか10件 |
 | `scripts/lib/meetBoundaries.js` | 節（開催）の切り出しと、全レースの一括取得。 | buildMeets, fetchAllByRaceId |
 | `scripts/lib/mergeOrder.js` | マージ順の台帳。「PR 901 は 902 のマージ後に」という順序を、並行セッションのオーケストレーションが | ledgerPath, parseLedger, readLedger, writeLedger, prerequisitesOf ほか3件 |
@@ -202,9 +203,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsPostTracking.js` | X の親の投稿の UTM（sns-pdca-loop tasks 23、plan §2・§5、spec C3）。 | insertTrackingUrl, prepareRaceTracking, createPostTrackingStore |
 | `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
-| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか5件 |
+| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか6件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
-| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, todayCandidates, todayFeatured, buildTodayPost, isTodayRebuild ほか17件 |
+| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, todayCandidates, todayFeatured, buildTodayPost, isTodayRebuild ほか18件 |
 | `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayVariants, loadTodayVariants, pickTodayHeading, TODAY_HEADING_BUILTIN, renderTodayHeading |
 | `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
@@ -256,7 +257,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/analogySonar.js` | 龍神ソナーの図の輪（承認モック sonar-tab v3）。外周＝今の件数で、内側の輪は決まった番目（5・10・25・50・100・200・400 のうち間が空… | sonarRings |
 | `src/utils/analogyTips.js` | アナロジー・ファインダー v16 の吹き出しの文（spec B-8）。純粋関数 | boatTip |
 | `src/utils/analogyTreeShap.js` | アナロジー・ファインダーのレースごとの寄与度（BOA-271 FR-1b、ADR 案（#1134「レースごとの寄与度」））: LightGBM の | compileModel, predictRaw, contributions |
-| `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか9件 |
+| `src/utils/analytics.js` | — | getCookieConsent, setCookieConsent, initAdSense, initTrackingIfConsented, initGA ほか10件 |
 | `src/utils/assistEvents.js` | 思考アシスト（BOA-430）の GA4 のイベント。画面の操作（reducer の action）と押す前の状態から、送るイベントを決める純関数。 | assistEventOf |
 | `src/utils/assistModel.js` | 思考アシスト（BOA-430）の画面のモデル。純粋関数だけ（取得・描画はしない）。 | raceRound, sameClassScope, sameClassLabel, baseVerdict, roughCard ほか26件 |
 | `src/utils/assistSession.js` | 思考アシストの買い目などを、同じタブの中でレースごとに残す（sessionStorage）。 | parseAssistSession, loadAssistSession, saveAssistSession, ASSIST_SESSION_PREFIX, ASSIST_SESSION_MAX ほか1件 |
@@ -370,4 +371,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 335 ファイル / export 1886 件。
+対象 336 ファイル / export 1899 件。

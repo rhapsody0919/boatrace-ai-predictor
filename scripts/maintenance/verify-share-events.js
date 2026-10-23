@@ -9,11 +9,11 @@
  */
 import assert from "node:assert/strict";
 import { aiCopyEventOf, raceShareEventOf } from "../../src/utils/shareEvents.js";
+import { GA4_RESERVED_EVENT_PARAMS } from "../../src/utils/analytics.js";
 
-const RESERVED = ["source", "medium", "campaign", "term", "content", "id"];
 const noReserved = (ev) =>
   assert.ok(
-    Object.keys(ev.params).every((k) => !RESERVED.includes(k)),
+    Object.keys(ev.params).every((k) => !GA4_RESERVED_EVENT_PARAMS.includes(k)),
     `予約語のパラメータ: ${Object.keys(ev.params)}`,
   );
 

@@ -6,6 +6,12 @@
     "dryRun: true の間は rerun せず、「rerun するはずだった」を Issue に書くだけ（試運転）。"
   ],
   "dryRun": true,
+  "watchedExtra": [
+    {
+      "path": ".github/workflows/quality-gates.yml",
+      "reason": "鍵は使わないが、master への push の失敗を知らせる。Codex の PR の自動マージの後の検査（docs/design/codex-direct-pr/design.md §5.4）。rerun はしない"
+    }
+  ],
   "watched": [
     ".github/workflows/aggregate-course-baseline-stats.yml",
     ".github/workflows/aggregate-racer-course-technique-stats.yml",
@@ -27,6 +33,7 @@
     ".github/workflows/key-canary.yml",
     ".github/workflows/nightly-verify-db.yml",
     ".github/workflows/post-merge-checks.yml",
+    ".github/workflows/quality-gates.yml",
     ".github/workflows/race-notices-drift-monitor.yml",
     ".github/workflows/regenerate-generated-docs.yml",
     ".github/workflows/scrape-monitor-liveness.yml",

@@ -1,6 +1,6 @@
 # Storage の写し（R2）: オーナーの作業の手順
 
-設計: [ADR-0100](../adr/0100-storage-mirror-to-r2.md)。Supabase Storage の sns-hub-media・raw-pages・analogy を、1日1回 Cloudflare R2 の1バケットへ書き足す。R2 のアカウント・バケット・token の作成と、GitHub の Environment prod-jobs への登録はオーナーの操作。
+設計: [ADR-0101](../adr/0101-storage-mirror-to-r2.md)。Supabase Storage の sns-hub-media・raw-pages・analogy を、1日1回 Cloudflare R2 の1バケットへ書き足す。R2 のアカウント・バケット・token の作成と、GitHub の Environment prod-jobs への登録はオーナーの操作。
 
 ## 全体の決まり
 - **鍵の値（Access Key ID・Secret Access Key・アカウント ID）は、チャット・Slack・Linear・PR に貼らない。** Claude・hq には「登録した」「名前は ○○」だけを返す
@@ -80,7 +80,7 @@ R2 Object Storage の Overview → Account Details の API Tokens の **Manage**
 
 Cloudflare のダッシュボード → Notifications → Add → 請求・使用量の通知（Usage Based Billing 等、画面にある名前）を R2 について置く。
 
-- 見込みは R2 の無料枠（10GB-month）の内（初回 約406MB、1年で約1.2GB）。超えるのは6〜7年後の試算（ADR-0100「費用・容量の見込み」）
+- 見込みは R2 の無料枠（10GB-month）の内（初回 約406MB、1年で約1.2GB）。超えるのは6〜7年後の試算（ADR-0101「費用・容量の見込み」）
 - 通知は、誤りで大量に書かれたときに気づくため
 
 ## 6. prod-jobs に secret を4つ登録する

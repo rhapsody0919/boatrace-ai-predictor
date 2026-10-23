@@ -17,6 +17,7 @@ import {
   reconcileSendJob,
   runYoutubeQueueJob,
   createMockYoutubeAdapter,
+  fillFullUrl,
 } from "../../api/_lib/snsDeadlineQueue.js";
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -222,7 +223,13 @@ test("長文の1投稿（25,000まで）は queue.thread_length=1 の親だけ�
       ...extra,
     };
     const snapshot = { text, queue };
-    return { id: "j", draft_id: "d", channel: "x", snapshot, snapshot_text: JSON.stringify(snapshot) };
+    return {
+      id: "j",
+      draft_id: "d",
+      channel: "x",
+      snapshot,
+      snapshot_text: JSON.stringify(snapshot),
+    };
   };
   const long = "あ".repeat(5000);
   const ok = fake(long, { thread_length: 1 });
@@ -661,4 +668,88 @@ test("YouTube の動画も X と同じ 32 MiB まで。超えると承認の前�
     ])
   ).result;
   assert.equal(approved.state, "queued");
+});
+
+test("全貌の Shorts: 完全版（親）の公開後に、説明文の {full_url} を完全版の URL に置き換えて上げる（BOA-912）", async () => {
+  await enable();
+  const youtube = { ...queue(), youtube_mode: "immediate" };
+  const parent = await job({ platform: "youtube", q: youtube, text: "完全版" });
+  const child = await job({
+    platform: "youtube",
+    q: { ...youtube, parent_job_id: parent.id },
+    text: "入口版。続きは {full_url} で",
+  });
+  // 親が未公開の間は claim で止まる（外部へは何も送らない）
+  assert.equal(
+    (await store.transition(child.id, "claim")).error_code,
+    "parent_not_posted",
+  );
+  const full = createMockYoutubeAdapter({ videoId: "fullvideo01" });
+  assert.equal(
+    (
+      await runYoutubeQueueJob(parent.id, {
+        store,
+        youtube: full,
+        loadMedia,
+        preflight: preflight(parent),
+      })
+    ).state,
+    "posted",
+  );
+  const d = await first("SELECT * FROM sns_drafts WHERE id=$1", [
+    child.draft_id,
+  ]);
+  const approved = (
+    await first("SELECT approve_sns_x_send($1,$2,$3,now()) result", [
+      d.id,
+      approver,
+      await createXSnapshot(d, loadMedia),
+    ])
+  ).result;
+  const shorts = createMockYoutubeAdapter({ videoId: "shortsvid01" });
+  assert.equal(
+    (
+      await runYoutubeQueueJob(approved.id, {
+        store,
+        youtube: shorts,
+        loadMedia,
+        preflight: preflight(approved),
+      })
+    ).state,
+    "posted",
+  );
+  assert.equal(
+    shorts.calls[0].payload.snapshot.text,
+    "入口版。続きは https://youtu.be/fullvideo01 で",
+  );
+});
+
+test("全貌の Shorts: 親の無い {full_url} は送る前の検査で止める。置き換えは置き場所1つ・11字の ID だけ", async () => {
+  await enable();
+  const j = await job({
+    platform: "youtube",
+    q: { ...queue(), youtube_mode: "immediate" },
+    text: "続きは {full_url} で",
+  });
+  await assert.rejects(preflight(j)(j), /unresolved_placeholder/);
+  assert.equal(
+    fillFullUrl("a {full_url} b", "abcdefghijk"),
+    "a https://youtu.be/abcdefghijk b",
+  );
+  assert.throws(
+    () => fillFullUrl("a b", "abcdefghijk"),
+    /unresolved_placeholder/,
+  );
+  assert.throws(
+    () => fillFullUrl("{full_url}{full_url}", "abcdefghijk"),
+    /unresolved_placeholder/,
+  );
+  assert.throws(
+    () => fillFullUrl("a {full_url}", "short"),
+    /parent_video_id_invalid/,
+  );
+  assert.throws(
+    () => fillFullUrl("a {full_url}", null),
+    /parent_video_id_invalid/,
+  );
 });

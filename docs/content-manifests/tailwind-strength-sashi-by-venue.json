@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "tailwind-strength-sashi-by-venue",
+ "kind": "new",
+ "ticket": "OC-20261021T174053-seo-human-1",
+ "paths": [
+  "public/blog/tailwind-strength-sashi-by-venue.md",
+  "src/data/blog-posts/tailwind-strength-sashi-by-venue.json"
+ ],
+ "files": {
+  "public/blog/tailwind-strength-sashi-by-venue.md": "a3f60c10f103cf95f2d6392f4510b8b9315edb3725472847e0451c4a4a91c031",
+  "src/data/blog-posts/tailwind-strength-sashi-by-venue.json": "fc2e610b00063acccfb3f71d132b14d6b4bc52bc31406a1258cff04f8e74823c"
+ },
+ "content_sha256": "ccbb0d883861fecb4391075c92b4597721cba781af1bad04be293da8c314c7e4",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "ccbb0d883861fecb4391075c92b4597721cba781af1bad04be293da8c314c7e4",
+   "model": "sonnet",
+   "at": "2026-10-21T17:40:53+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "ccbb0d883861fecb4391075c92b4597721cba781af1bad04be293da8c314c7e4",
+   "model": "sonnet",
+   "at": "2026-10-21T17:40:53+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 3,
+   "reviewed_sha256": "ccbb0d883861fecb4391075c92b4597721cba781af1bad04be293da8c314c7e4",
+   "model": "sonnet",
+   "at": "2026-10-21T17:40:53+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 2,
+   "reviewed_sha256": "ccbb0d883861fecb4391075c92b4597721cba781af1bad04be293da8c314c7e4",
+   "model": "sonnet",
+   "at": "2026-10-21T17:40:53+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-21T17:42:09+09:00",
+ "run": "20261021T174053-seo-human",
+ "engine": "claude"
+}

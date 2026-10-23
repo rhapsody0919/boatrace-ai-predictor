@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "kiryu-course2-course3-period-comparison",
+ "kind": "revision",
+ "ticket": "OC-20261022T234355-seo-human-1",
+ "paths": [
+  "public/blog/kiryu-course2-course3-period-comparison.md",
+  "src/data/blog-posts/kiryu-course2-course3-period-comparison.json"
+ ],
+ "files": {
+  "public/blog/kiryu-course2-course3-period-comparison.md": "858a8c770bd6473215c673269dcdf694157044b035563decf14fe95bfc1187ac",
+  "src/data/blog-posts/kiryu-course2-course3-period-comparison.json": "d7e8430dcc8d0e903b7c5c925f314f3a5947830a84bd2bdb302c7503bb706ffb"
+ },
+ "content_sha256": "cc386f27793d9df750a35535416e46abbcda346d90b16c6b08167cb81c5a8f7a",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "cc386f27793d9df750a35535416e46abbcda346d90b16c6b08167cb81c5a8f7a",
+   "model": "opus",
+   "at": "2026-10-22T23:43:55+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "cc386f27793d9df750a35535416e46abbcda346d90b16c6b08167cb81c5a8f7a",
+   "model": "opus",
+   "at": "2026-10-22T23:43:55+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "cc386f27793d9df750a35535416e46abbcda346d90b16c6b08167cb81c5a8f7a",
+   "model": "opus",
+   "at": "2026-10-22T23:43:55+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "cc386f27793d9df750a35535416e46abbcda346d90b16c6b08167cb81c5a8f7a",
+   "model": "opus",
+   "at": "2026-10-22T23:43:55+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-23T00:03:44+09:00",
+ "run": "20261022T234355-seo-human",
+ "engine": "claude"
+}

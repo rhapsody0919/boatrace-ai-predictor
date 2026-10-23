@@ -30,6 +30,9 @@ for (const name of [
   process.env[name] = "mock";
 process.env.SUPABASE_URL = "https://mock.invalid";
 process.env.LINEAR_API_URL = "https://linear.mock.invalid/graphql";
+// 起票を止めたときの通知は、実の Slack に送らずログだけにする
+delete process.env.SLACK_WEBHOOK_URL;
+delete process.env.SLACK_DIGEST_WEBHOOK_URL;
 
 const { default: handler } =
   await import("../../api/admin/sns-hub/drafts/[id]/request-spec-change.js");
@@ -56,7 +59,7 @@ function request() {
 }
 
 /** Supabase は下書きを返し、Linear は指定の応答を返す fetch に差し替える */
-async function withMockFetch(linearReply, fn) {
+async function withMockFetch(linearReply, fn, { activeCount = 10 } = {}) {
   const original = globalThis.fetch;
   const linearCalls = [];
   globalThis.fetch = async (url, init = {}) => {
@@ -68,6 +71,18 @@ async function withMockFetch(linearReply, fn) {
     if (u.hostname === "linear.mock.invalid") {
       const { query } = JSON.parse(init.body);
       linearCalls.push(query);
+      // 起票の前の未アーカイブ件数（scripts/lib/linearIssueGate.js）
+      if (/CountActiveIssues/.test(query))
+        return json({
+          data: {
+            issues: {
+              nodes: Array.from({ length: activeCount }, (_, i) => ({
+                id: `a${i}`,
+              })),
+              pageInfo: { hasNextPage: false, endCursor: null },
+            },
+          },
+        });
       if (/team\(id/.test(query))
         return json({ data: { team: { labels: { nodes: [] } } } });
       return linearReply(json);
@@ -138,6 +153,52 @@ test("起票できたら 200 で URL を返す", async () => {
       assert.equal(body.issue.url, "u");
     },
   );
+});
+
+test("未アーカイブが閾値の230件なら起票せず、503 と LINEAR_ISSUE_GATE_BLOCKED を返す", async () => {
+  await withMockFetch(
+    () => {
+      throw new Error("起票の mutation が呼ばれた");
+    },
+    async (linearCalls) => {
+      const res = await handler(request());
+      const body = await res.json();
+      assert.equal(res.status, 503);
+      assert.equal(body.code, "LINEAR_ISSUE_GATE_BLOCKED");
+      assert.match(body.error, /未アーカイブ 230 件/);
+      assert.ok(!linearCalls.some((q) => /issueCreate/.test(q)));
+    },
+    { activeCount: 230 },
+  );
+});
+
+test("specChangeFeedback: 閾値で止めたら閉じず、件数の文と本文を残したことを伝える（取得の経路 request() を通す。代わりの審査の P1）", async () => {
+  const { requestSpecChange } = await import("../../src/services/snsHubService.js");
+  const saved = globalThis.fetch;
+  globalThis.fetch = async () =>
+    new Response(
+      JSON.stringify({
+        error:
+          "Linear の起票を止めました: 未アーカイブ 230 件が閾値 230 件以上です（無料枠の上限 250 件）。完了・取り消しのチケットをアーカイブしてから起票し直してください",
+        code: "LINEAR_ISSUE_GATE_BLOCKED",
+      }),
+      { status: 503, headers: { "Content-Type": "application/json" } },
+    );
+  let error;
+  try {
+    await requestSpecChange("d1", { approverId: "a1", message: "本文" });
+  } catch (e) {
+    error = e;
+  } finally {
+    globalThis.fetch = saved;
+  }
+  const f = specChangeFeedback({ error });
+  assert.doesNotMatch(f.message, /。。/);
+  assert.doesNotMatch(f.message, /再読み込み/);
+  assert.equal(f.closePanel, false);
+  assert.equal(f.type, "error");
+  assert.match(f.message, /未アーカイブ 230 件/);
+  assert.match(f.message, /欄に残して/);
 });
 
 test("specChangeFeedback: 上限なら閉じず、上限と本文を残したことを伝える", () => {

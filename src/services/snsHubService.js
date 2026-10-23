@@ -43,6 +43,8 @@ async function request(path, options = {}) {
       "処理を完了できませんでした。最新の状態を再読み込みして確認してください。",
     );
     error.code = body.code;
+    // サーバーの理由の文（例: Linear の起票を止めた件数と閾値）。画面が理由ごとに使う（汎用の文は message のまま）
+    if (typeof body.error === "string") error.serverMessage = body.error;
     throw error;
   }
   return body;

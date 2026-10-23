@@ -3,12 +3,21 @@
  * 起票できなかったときは closePanel=false にし、入力した本文を欄に残す
  * （以前は Linear の無料枠の上限でも汎用の通知だけが出て、本文も消えた。2026-10-18 調査）。
  *
- * @param {{result?: unknown, error?: {code?: string, message?: string}}} outcome
+ * @param {{result?: unknown, error?: {code?: string, message?: string, serverMessage?: string}}} outcome
  * @returns {{type: "success" | "error", message: string, closePanel: boolean}}
  */
 export function specChangeFeedback({ result, error }) {
   const keep = "入力した本文は欄に残しています。";
   if (error) {
+    // 未アーカイブ件数が閾値以上で、起票の前に止めた（文に件数と閾値が入っている）
+    if (error.code === "LINEAR_ISSUE_GATE_BLOCKED") {
+      return {
+        type: "error",
+        // サーバーの文（件数と閾値）を使う。request() の message は汎用の文なので使わない（代わりの審査の P1）
+        message: `${String(error.serverMessage ?? "Linear の起票を止めました（未アーカイブのチケットが閾値以上です）").replace(/。$/, "")}。${keep}`,
+        closePanel: false,
+      };
+    }
     if (error.code === "LINEAR_USAGE_LIMIT_EXCEEDED") {
       return {
         type: "error",

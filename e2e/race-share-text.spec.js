@@ -273,7 +273,7 @@ test.describe("シェアボタンの共有 URL（BOA-691）", () => {
     await expect(page.locator('meta[property="og:url"]')).toHaveCount(0);
   });
 
-  test("記事ページは記事の og:url を持ち、離れると消える（useSocialMeta）", async ({
+  test("記事ページは記事の og:url を持ち、離れると消える（useSocialMeta） @blog", async ({
     page,
   }) => {
     await page.goto("/blog/odds-expected-value-guide");

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Supabase Storage の3バケットを Cloudflare R2 に書き足す（ADR-0100、.github/workflows/storage-mirror.yml が1日1回動かす）。
+ * Supabase Storage の3バケットを Cloudflare R2 に書き足す（ADR-0101、.github/workflows/storage-mirror.yml が1日1回動かす）。
  *
  *   node scripts/storage-mirror/mirror.js                 写す（Environment prod-jobs の secret が要る）
  *   node scripts/storage-mirror/mirror.js --initial       初回だけ（基準の manifest が無いとき。取り寄せの上限を外す）

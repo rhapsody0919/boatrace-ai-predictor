@@ -39,6 +39,7 @@ on:
       - Key Canary
       - Nightly DB Verify
       - Post-merge Checks
+      - Quality Gates
       - Race Notices Drift Monitor
       - Regenerate Generated Docs
       - Scrape Monitor Liveness

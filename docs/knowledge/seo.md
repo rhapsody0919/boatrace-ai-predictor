@@ -72,3 +72,8 @@
 - 会場記事の候補は保存稿一覧と今後の開催会場を突き合わせ、一般ガイドと水面・風の記事の主題を区別する。期間を限った確認結果を恒久的な需要なしへ広げない。（2026-10-19、2026-10-19-plan-2103.md）
 - 翻訳のメタ（blogPostsEn/Ko/ZhTw.js）と blogImageDimensions.js はデータではなく画面のバンドルに入る JS なので、記事の PR の許可のパスに入れるとコードを入れられる。#1699 で翻訳のメタを src/data/blog-posts/{lang}/{id}.json に、寸法をビルドの時に作る形に移す（対応中、2026-10-20、system-architect の content-publish の審査、旧 src/data/blogPostsEn.js:7,369-373、BOA-908 ②）
 - public/blog の217本で、生の HTML タグは0件、本文の「競艇」は venue-visit-guide-ko.md:23 の1件だけ。どちらも、変えたファイルに当てる関門にしても今の記事は壊れない（2026-10-20、system-architect の content-publish の審査、git grep・origin/master）
+- 日替わりページの読取失敗は、測定URLの日付とボットHTMLの配信対象日を先に照合する。レース詳細のボット向けHTMLは本日（JST）だけで、過去・未来はSPAになるため、固定した過去URLの失敗を当日ページの配信障害と同一視しない（2026-10-20、ai-visibility、src/config/aiCrawlerBots.js の resolveBotPagePath）
+- ページへの到達方法を記事で案内するときは、入口ルートと遷移元にあるリンクを別々に確認する。会場ページと開催別ランキングが両方実在しても両者のリンクは保証されず、経路が裏付けられなければ各ページの役割だけを書く（2026-10-20、BOA-921、src/pages/VenueRaceListPage.jsx、fanの指摘）
+- ブログのFAQ後へ導線を足すときは、次の第2階層見出しでFAQ節を閉じるか、導線をFAQ前へ置く。blogFaqSchema.jsは次の第2階層見出しまでをFAQとして読むため、見出しなしの誘導文が最後の回答へ混ざる（2026-10-20、seo-marketerの指摘、src/utils/blogFaqSchema.js の extractFaqItems）
+- 主題語がllms.txtの既存記事紹介にだけ出る場合、それを機能の実在根拠にしない。記事由来の説明を記事の根拠へ戻す循環を避け、画面の名称・値の定義・公開ルートを別に照合してから紹介する（2026-10-21、ai-index-reading-guideのcontent-qa指摘、public/llms.txt・src/locales/ja/common.json）
+- 展示後の読み方で根拠表へ案内するときは、表の名前・会場の行・期間の列まで示す。「コース別の行」だけで済ませず、進入コースと枠番、長期表と短期表を取り違えずに同じ根拠へ戻れるようにする（2026-10-22、seo-humanへのfan P1「参照するコース別の行」）
