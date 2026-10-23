@@ -7,19 +7,19 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/accuracy</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/hit-races</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -66,7 +66,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/races</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -92,7 +92,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/accuracy/history</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -103,13 +103,13 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/winning-technique" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/winning-technique" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/winning-technique" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/today</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -158,7 +158,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/4" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/4" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/4" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -169,7 +169,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/5" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/5" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/5" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -180,7 +180,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/6" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/6" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/6" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -235,7 +235,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/11" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/11" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/11" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -246,7 +246,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/12" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/12" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/12" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -257,7 +257,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/13" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/13" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/13" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -268,7 +268,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/14" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/14" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/14" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -301,7 +301,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/17" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/17" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/17" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -312,7 +312,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -334,7 +334,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/20" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/20" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/20" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -345,7 +345,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/21" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/21" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/21" />
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -356,7 +356,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/22" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/22" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/22" />
-    <lastmod>2026-10-15</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -367,7 +367,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -378,7 +378,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/24" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/24" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/24" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -389,7 +389,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -410,7 +410,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/winning-technique" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/winning-technique" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/winning-technique" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -454,7 +454,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/4" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/4" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/4" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -465,7 +465,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/5" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/5" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/5" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -476,7 +476,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/6" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/6" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/6" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -531,7 +531,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/11" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/11" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/11" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -542,7 +542,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/12" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/12" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/12" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -553,7 +553,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/13" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/13" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/13" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -564,7 +564,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/14" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/14" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/14" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -597,7 +597,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/17" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/17" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/17" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -608,7 +608,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -630,7 +630,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/20" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/20" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/20" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -641,7 +641,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/21" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/21" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/21" />
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -652,7 +652,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/22" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/22" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/22" />
-    <lastmod>2026-10-15</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -663,7 +663,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -674,7 +674,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/24" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/24" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/24" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1219,7 +1219,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -1240,7 +1240,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/winning-technique" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/winning-technique" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/winning-technique" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -1284,7 +1284,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/4" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/4" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/4" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1295,7 +1295,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/5" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/5" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/5" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1306,7 +1306,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/6" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/6" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/6" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1361,7 +1361,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/11" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/11" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/11" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1372,7 +1372,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/12" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/12" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/12" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1383,7 +1383,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/13" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/13" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/13" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1394,7 +1394,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/14" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/14" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/14" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1427,7 +1427,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/17" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/17" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/17" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1438,7 +1438,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1460,7 +1460,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/20" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/20" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/20" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1471,7 +1471,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/21" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/21" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/21" />
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1482,7 +1482,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/22" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/22" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/22" />
-    <lastmod>2026-10-15</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1493,7 +1493,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -1504,7 +1504,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/24" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/24" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/24" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2049,7 +2049,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
@@ -2070,7 +2070,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/winning-technique" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/winning-technique" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/winning-technique" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
@@ -2114,7 +2114,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/4" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/4" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/4" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2125,7 +2125,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/5" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/5" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/5" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2136,7 +2136,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/6" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/6" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/6" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2191,7 +2191,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/11" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/11" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/11" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2202,7 +2202,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/12" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/12" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/12" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2213,7 +2213,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/13" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/13" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/13" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2224,7 +2224,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/14" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/14" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/14" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2257,7 +2257,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/17" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/17" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/17" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2268,7 +2268,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2290,7 +2290,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/20" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/20" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/20" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2301,7 +2301,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/21" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/21" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/21" />
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2312,7 +2312,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/22" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/22" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/22" />
-    <lastmod>2026-10-15</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2323,7 +2323,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -2334,7 +2334,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/24" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/24" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/24" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -3050,6 +3050,12 @@
   <url>
     <loc>https://www.boat-ai.jp/blog/headwind-strength-makuri-by-venue</loc>
     <lastmod>2026-10-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/blog/headwind-strength-makurizashi-by-venue</loc>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
@@ -3898,6 +3904,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.boat-ai.jp/races/2026-10-22</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>weekly</changefreq>
@@ -3934,10 +3946,88 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16</loc>
-    <lastmod>2026-10-16</lastmod>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/24</loc>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/23</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/22</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/21</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/20</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/18</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/17</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/14</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/13</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/12</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/11</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/6</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/5</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.boat-ai.jp/races/2026-10-23/4</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/races/2026-10-22/24</loc>
@@ -4360,90 +4450,6 @@
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-17/10</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-17/9</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-17/8</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-17/4</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-17/3</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-17/2</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-17/1</loc>
-    <lastmod>2026-10-17</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16/24</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16/21</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16/20</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16/19</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16/14</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16/13</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.boat-ai.jp/races/2026-10-16/10</loc>
-    <lastmod>2026-10-16</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.boat-ai.jp/racer/3256</loc>
     <lastmod>2026-10-11</lastmod>
     <changefreq>weekly</changefreq>
@@ -4451,13 +4457,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3257</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3304</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4487,7 +4493,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3415</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4511,7 +4517,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3554</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4523,7 +4529,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3557</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4535,7 +4541,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3576</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4547,7 +4553,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3612</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4559,13 +4565,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3623</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3641</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4577,7 +4583,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3716</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4589,7 +4595,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3721</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4619,19 +4625,19 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3779</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3783</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3792</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4643,7 +4649,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3813</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4673,37 +4679,37 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3898</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3908</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3909</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3918</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3940</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3941</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4715,19 +4721,19 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3944</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3946</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3952</loc>
-    <lastmod>2026-10-15</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4739,7 +4745,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3960</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4769,31 +4775,31 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3984</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/3997</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4002</loc>
-    <lastmod>2026-10-19</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4013</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4019</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4817,13 +4823,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4030</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4036</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4841,7 +4847,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4058</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4853,7 +4859,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4063</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4871,7 +4877,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4073</loc>
-    <lastmod>2026-10-14</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4895,13 +4901,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4084</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4095</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4943,13 +4949,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4166</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4168</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -4991,25 +4997,25 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4205</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4207</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4208</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4218</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5039,7 +5045,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4256</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5051,7 +5057,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4264</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5063,7 +5069,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4278</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5075,7 +5081,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4290</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5087,13 +5093,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4295</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4302</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5117,7 +5123,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4320</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5135,7 +5141,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4344</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5153,19 +5159,19 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4352</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4357</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4361</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5183,7 +5189,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4366</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5195,31 +5201,31 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4371</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4373</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4377</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4384</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4387</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5231,7 +5237,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4397</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5267,25 +5273,25 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4433</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4436</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4444</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4445</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5297,25 +5303,25 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4448</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4456</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4464</loc>
-    <lastmod>2026-10-12</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4467</loc>
-    <lastmod>2026-10-15</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5333,7 +5339,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4472</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5357,13 +5363,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4482</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4483</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5375,49 +5381,49 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4494</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4496</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4497</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4500</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4502</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4503</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4504</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4505</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5429,7 +5435,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4512</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5465,7 +5471,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4530</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5507,7 +5513,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4545</loc>
-    <lastmod>2026-10-15</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5519,7 +5525,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4556</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5536,8 +5542,14 @@
     <priority>0.5</priority>
   </url>
   <url>
+    <loc>https://www.boat-ai.jp/racer/4571</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
     <loc>https://www.boat-ai.jp/racer/4573</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5549,7 +5561,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4584</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5561,7 +5573,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4587</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5585,13 +5597,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4604</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4610</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5615,13 +5627,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4644</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4645</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5633,7 +5645,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4659</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5645,25 +5657,25 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4682</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4685</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4686</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4688</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5693,13 +5705,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4715</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4719</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5711,7 +5723,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4736</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5741,7 +5753,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4757</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5771,19 +5783,19 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4771</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4772</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4776</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5795,13 +5807,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4787</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4790</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5813,13 +5825,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4796</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4798</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5831,7 +5843,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4809</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5879,7 +5891,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4848</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5903,19 +5915,19 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4857</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4877</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4903</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5927,7 +5939,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4908</loc>
-    <lastmod>2026-10-18</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5951,13 +5963,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4928</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4931</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5969,7 +5981,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4938</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5981,7 +5993,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4950</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -5999,13 +6011,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4959</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4960</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6017,7 +6029,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/4980</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6047,7 +6059,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5015</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6059,19 +6071,19 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5017</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5018</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5026</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6089,7 +6101,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5034</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6113,7 +6125,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5054</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6125,7 +6137,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5064</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6143,7 +6155,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5084</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6155,13 +6167,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5088</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5089</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6173,13 +6185,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5121</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5126</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6191,7 +6203,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5136</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6209,7 +6221,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5142</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6221,7 +6233,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5158</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6251,7 +6263,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5216</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6263,13 +6275,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5218</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5221</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6287,13 +6299,13 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5234</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5255</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6311,7 +6323,7 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5267</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -6323,25 +6335,25 @@
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5278</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5280</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5281</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://www.boat-ai.jp/racer/5298</loc>
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -8408,7 +8420,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23/meet/2026-10-18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>
@@ -8419,7 +8431,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23/meet/2026-10-18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -8430,7 +8442,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23/meet/2026-10-18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
@@ -8441,7 +8453,7 @@
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://www.boat-ai.jp/zh-TW/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="ko" href="https://www.boat-ai.jp/ko/venue/23/meet/2026-10-18" />
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.boat-ai.jp/venue/23/meet/2026-10-18" />
-    <lastmod>2026-10-22</lastmod>
+    <lastmod>2026-10-23</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
