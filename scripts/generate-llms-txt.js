@@ -9,8 +9,9 @@
  */
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 import { blogPosts } from "../src/data/blogPosts.js";
+import { sanitizeLlmsLinkText } from "./lib/outputEscape.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(__dirname, "../public");
@@ -51,7 +52,7 @@ const CORE_PAGES = [
   },
 ];
 
-function buildLlmsTxt() {
+export function buildLlmsTxt(posts = blogPosts) {
   const lines = [];
   lines.push("# 龍神レーダー");
   lines.push("");
@@ -70,12 +71,17 @@ function buildLlmsTxt() {
   lines.push("## ブログ記事");
   lines.push("");
 
-  const sortedPosts = [...blogPosts].sort(
+  const sortedPosts = [...posts].sort(
     (a, b) => new Date(b.date) - new Date(a.date),
   );
   for (const post of sortedPosts) {
+    // Markdown のリンク先を閉じる括弧も含め、ID を URL の1区画として符号化する。
+    const id = encodeURIComponent(post.id).replace(
+      /[!'()*]/g,
+      (character) => `%${character.charCodeAt(0).toString(16).toUpperCase()}`,
+    );
     lines.push(
-      `- [${post.title}](${SITE_URL}/blog/${post.id}): ${post.description}`,
+      `- [${sanitizeLlmsLinkText(post.title)}](${SITE_URL}/blog/${id}): ${sanitizeLlmsLinkText(post.description)}`,
     );
   }
   lines.push("");
@@ -93,4 +99,6 @@ function main() {
   );
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

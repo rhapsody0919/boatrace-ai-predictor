@@ -6,6 +6,7 @@
  * 意味のある日付が無いURLは lastmod を出さない（出さないほうが、毎日変わる嘘の日付より良い）。
  */
 import { execFileSync } from "child_process";
+import { escapeXml } from "./outputEscape.js";
 
 /**
  * ファイルの最終コミット日（YYYY-MM-DD）。git の履歴が無い（浅い checkout 等）・
@@ -45,9 +46,9 @@ export function renderUrlEntry(
   { loc, lastmod, changefreq, priority, alternates = [] },
 ) {
   let xml = "  <url>\n";
-  xml += `    <loc>${siteUrl}${loc}</loc>\n`;
+  xml += `    <loc>${escapeXml(siteUrl + loc)}</loc>\n`;
   for (const { hreflang, href } of alternates) {
-    xml += `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${href}" />\n`;
+    xml += `    <xhtml:link rel="alternate" hreflang="${hreflang}" href="${escapeXml(href)}" />\n`;
   }
   if (lastmod) xml += `    <lastmod>${lastmod}</lastmod>\n`;
   xml += `    <changefreq>${changefreq}</changefreq>\n`;
