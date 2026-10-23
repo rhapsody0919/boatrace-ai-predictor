@@ -115,7 +115,7 @@ Codex のパッチを hq の `codex-pr.py`（AI なし）が `ryujin-maker` の�
 
 - **審査は review.yml（Anthropic）が行う**。Codex の PR 本文にある自己検証の結果は、合否の根拠にしない
 - **範囲A の PR は `codex-pr.py` が自動でマージする**（設計 §5.2 の条件を全部満たすものだけ）。オーケストレーターに来るのは、範囲外の PR、差し戻しが3回で直らない PR、公開後の戻す起票（段1）だけ。戻すかの判断と revert の PR はオーケストレーター
-- **src/ の画面の作業は Codex に回さない**。`codex/*` には Vercel Preview が無く、画面を確かめられないため
+- **src/ の画面の作業は Codex に回さない**。`codex/*` には Vercel Preview が無く、画面を確かめられないため。ただし丸ごと任せる試運転の1件（`docs/design/codex-direct-pr/design.md` §4.3、hq の設定に置いた issue の id）は例外。自動マージせず、オーケストレーターが審査する（変更前後の画面はオーケストレーターが手元で撮る）
 - **記事の PR（hq の `content-pr.py` が出す `codex/content-*`）のマージは当面「案Z」**: 機械と審査役が CI の見張り・失敗したときの再実行（1回まで）・審査を済ませ、P0・P1 が0件で CI が全部緑の PR を「マージ可」として束ね、オーケストレーターがまとめてマージする。束に入れてよいのは、上の段階0（A〜F）の条件に当たる PR だけ。ただし F は切替（ADR-0097。作成の App の名義と auto-merge）の後だけ。F の束はマージの時点で判定し直す（作者の bot の ID、今の head SHA に審査の App の APPROVE、変えたパスが F の許可のパスの中、CI が全部緑）。CI が赤なら空のコミットで1回だけ再実行してから決める。`codex/*` には Vercel Preview が無いので、Codex の記事の PR のファンのレビューは discussion-panel だけで行う。当たらないものは段階1・2として扱う
 - `codex-pr.py` の PR で CI が赤なら、1周待って同じ head がまだ赤のとき Codex に差し戻す（直しのパッチが同じブランチに追加される）
 - `codex-pr.py` の自動マージの名義は `ryujin-maker`。記事の PR の案Z のマージは、オーケストレーターがこのセッションから `gh pr merge` を実行する
