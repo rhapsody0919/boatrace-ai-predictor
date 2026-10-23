@@ -53,8 +53,8 @@
  *    共通の fetchAll を使うか、例外にする
  */
 
-import fs from "fs";
 import path from "path";
+import { walkSourceFiles, readSourceFile } from "../lib/sourceFileWalk.js";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -62,26 +62,15 @@ const ROOT = path.resolve(__dirname, "../..");
 const SRC = path.join(ROOT, "src");
 const CLIENT_REL = "src/services/supabaseClient.js";
 
-function walk(dir, out = []) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      walk(full, out);
-    } else if (/\.(js|jsx)$/.test(entry.name)) {
-      out.push(full);
-    }
-  }
-  return out;
-}
-
 const errors = [];
-const files = walk(SRC);
+const files = walkSourceFiles(SRC);
 
 // 1 & 3: クライアントの生成・importが単一の入口に閉じているか
 for (const file of files) {
   const rel = path.relative(ROOT, file);
   if (rel === CLIENT_REL) continue;
-  const text = fs.readFileSync(file, "utf8");
+  const text = readSourceFile(file);
+  if (text === null) continue;
 
   if (/\bcreateClient\s*\(/.test(text)) {
     errors.push(
@@ -114,8 +103,9 @@ for (const file of files) {
   const rel = path.relative(ROOT, file);
   if (!rel.startsWith(SERVICES_REL) || rel === CLIENT_REL) continue;
   // コメント行は対象外（行数は保つ）
-  const code = fs
-    .readFileSync(file, "utf8")
+  const text = readSourceFile(file);
+  if (text === null) continue;
+  const code = text
     .split("\n")
     .map((line) => (/^\s*(\/\/|\*|\/\*)/.test(line) ? "" : line))
     .join("\n");
@@ -131,10 +121,10 @@ for (const file of files) {
 
 // 2: 単一の入口が .throwOnError() を既定で適用しているか
 const clientPath = path.join(ROOT, CLIENT_REL);
-if (!fs.existsSync(clientPath)) {
+const clientText = readSourceFile(clientPath);
+if (clientText === null) {
   errors.push(`${CLIENT_REL} が見つからない`);
 } else {
-  const clientText = fs.readFileSync(clientPath, "utf8");
   if (!/\.throwOnError\(\)/.test(clientText)) {
     errors.push(
       `${CLIENT_REL}: .throwOnError() の適用が無い。取得失敗が例外にならず、空データに化ける（BOA-359）`,
@@ -150,10 +140,11 @@ if (!fs.existsSync(clientPath)) {
 }
 
 // 5: バッチ側の関数が、失敗を握りつぶすことを既定にしていないか（BOA-391）
-const scriptFiles = walk(path.join(ROOT, "scripts"));
+const scriptFiles = walkSourceFiles(path.join(ROOT, "scripts"));
 for (const file of scriptFiles) {
   const rel = path.relative(ROOT, file);
-  const text = fs.readFileSync(file, "utf8");
+  const text = readSourceFile(file);
+  if (text === null) continue;
   const lines = text.split("\n");
   lines.forEach((line, i) => {
     if (/^\s*(\/\/|\*)/.test(line)) return;
@@ -184,7 +175,8 @@ const SWALLOW_RE =
 for (const file of scriptFiles) {
   const rel = path.relative(ROOT, file);
   if (/(^|\/)verify-[^/]*\.js$/.test(rel)) continue;
-  const text = fs.readFileSync(file, "utf8");
+  const text = readSourceFile(file);
+  if (text === null) continue;
   if (!text.includes(".range(")) continue;
   for (const m of text.matchAll(SWALLOW_RE)) {
     const line = text.slice(0, m.index).split("\n").length;
