@@ -71,11 +71,14 @@ const PAGES = [
 /** グリッドの空トラックとみなす最小の余白。gapや端数の誤差を除くための閾値 */
 const TRAILING_GAP_THRESHOLD_PX = 40;
 
+/** 記事のページ（/blog・/blog/{id}）とホーム（最新記事のカードを出す）を開く試験の題に付ける印。記事だけの PR の軽い組で走らせる（BOA-929） */
+const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "");
+
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
 for (const venue of ["heiwajima", "biwako", "marugame"]) {
-  test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない`, async ({ page }) => {
+  test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない @blog`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`/blog/${venue}-water-wind-guide`);
     const tables = page.locator(".blog-post-content table");
@@ -218,7 +221,7 @@ async function gotoAndSettle(page, path) {
 
 test.describe("レイアウト: 横スクロールが発生しない", () => {
   for (const path of PAGES) {
-    test(`${path} で横スクロールが出ない`, async ({ page }) => {
+    test(`${path} で横スクロールが出ない${blogTag(path)}`, async ({ page }) => {
       await gotoAndSettle(page, path);
 
       const overflow = await page.evaluate((tolerance) => {
@@ -354,7 +357,7 @@ function expectNoWastedGrids(result) {
 
 test.describe("レイアウト: グリッドの幅が無駄になっていない", () => {
   for (const path of PAGES) {
-    test(`${path} のグリッドに使われていない幅が無い`, async ({ page }) => {
+    test(`${path} のグリッドに使われていない幅が無い${blogTag(path)}`, async ({ page }) => {
       await gotoAndSettle(page, path);
       expectNoWastedGrids(await inspectGrids(page));
     });
@@ -659,7 +662,7 @@ test.describe("レイアウト: /hit-races の期間タブは1段に並ぶ（BOA
  * 記事はバンドルされた静的データ（src/data/blog-posts/*.json）なので、本番データにも
  * 通信にも依存しない。カテゴリを全部押して、そのたびにグリッドを検査する。
  */
-test.describe("レイアウト: /blog はカテゴリで絞って件数が列数より少なくても幅を余らせない（BOA-528）", () => {
+test.describe("レイアウト: /blog はカテゴリで絞って件数が列数より少なくても幅を余らせない（BOA-528） @blog", () => {
   test("どのカテゴリでも空トラックが出ない", async ({ page }) => {
     await gotoAndSettle(page, "/blog");
     const grid = page.locator(".blog-grid");
@@ -713,7 +716,7 @@ function expectedHomeVenueColumns(width) {
   return 4;
 }
 
-test.describe("レイアウト: ホームの会場グリッドに /guide の指定が効かない（BOA-539）", () => {
+test.describe("レイアウト: ホームの会場グリッドに /guide の指定が効かない（BOA-539） @blog", () => {
   test("/guide からSPA遷移で戻ったホームの会場グリッドが意図した列数になる", async ({
     page,
   }) => {

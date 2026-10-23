@@ -103,7 +103,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 ### PR 時に CI で走るチェック
 必須チェックは `verify`・`ml-tests`・`e2e` の3つ（GitHub の ruleset「master-checks」。bypass は ryujin-bot だけで、admin も CI が緑でなければマージできない。ruleset はオーナーが入れる。入るまでは GitHub 側では止まらない）。PR を出したら次の結果を確かめ、落ちたら直して push する。
 - `verify`（Quality Gates。`npm run verify:ci`）
-- `e2e`（E2E Smoke Test。3つの `e2e-shard` の集約）
+- `e2e`（E2E Smoke Test。3つの `e2e-shard` の集約。記事の中身だけの PR は `e2e-light`（vite build と `@blog` の試験）、docs だけの PR は0件で成功。記事に関わる試験の題には ` @blog` を付ける。ADR-0100）
 - `ml-tests`（Quality Gates。ジョブは毎回走り、`scripts/ml/` を変えたときだけ pytest を実行する）
 - 該当するときだけ走る: `verify-cache`（`api/**` 等を変えたとき。必須ではない）
 

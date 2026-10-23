@@ -27,7 +27,7 @@ test.describe("GA4 page_view の送信経路", () => {
   const configCalls = (page) =>
     page.evaluate(() => window.__gaCalls.filter(([cmd]) => cmd === "config"));
 
-  test("初回表示とSPA遷移で1回ずつ、page_location を明示して送る", async ({
+  test("初回表示とSPA遷移で1回ずつ、page_location を明示して送る @blog", async ({
     page,
     baseURL,
   }) => {
