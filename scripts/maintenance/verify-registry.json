@@ -638,7 +638,10 @@
       "script": "verify-no-undef.js",
       "tier": "ci",
       "timeoutSec": 300,
-      "guards": "src・api・middleware.js・scripts・e2e・ルートの *.config.js・*.mjs に未定義の名前の参照（ESLint の no-undef）が無いこと。他のルールの既存違反では落とさない。#999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版を検出できることと、src/ に Node のグローバルが付いていないことを自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
+      "args": [
+        "--rules=no-undef,no-empty,no-irregular-whitespace,react-hooks/rules-of-hooks"
+      ],
+      "guards": "lint の関門（ESLint の1回の実行で --rules の規則だけを数える。開発効率の計画 段1a、2026-10-24。引数なしは no-undef だけで、post-merge-checks.yml のマージ後の検査・Slack 通知はこちら）。src・api・middleware.js・scripts・e2e・ルートの *.config.js・*.mjs に、no-undef・no-empty・no-irregular-whitespace・react-hooks/rules-of-hooks（src だけ）の違反が許可リスト（verify-no-undef-allowlist.json。no-undef はファイルごとの名前、他は規則・ファイルごとの件数）を超えて無いこと、解消済みの行が許可リストに残っていないこと、関門の規則に触れる設定コメント（eslint-disable・global 等。この検査では noInlineConfig で効かせない）が無いこと。他の規則の既存違反では落とさない。始まりは no-undef: #999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版の検出、src/ に Node のグローバルが付いていないこと、規則ごとの検出、実在のファイルに違反を1つ足すと許可リストと突き合わせて落ちること（変異の検証）を自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
     },
     {
       "script": "verify-node-function-json-imports.js",
