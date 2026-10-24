@@ -130,6 +130,43 @@ hq の案 v2（`~/hq/drafts/codex-automerge-tiers-20261023.md`、ops-architect �
 - 前の案（`src/utils/**`・`src/lib/**` を条件つきで入れる、`scripts/lib` は名前の許可の一覧）は取り下げる。`src/utils` は画面と鍵の両方に近い部品が混ざり、パスでは守れない
 - 入れる時期は §10 の順番のとおり、範囲A の自動マージのルールが安定した後
 
+#### 追記（2026-10-24）: 共有の根
+
+開発効率の計画（`docs/design/dev-efficiency/plan.md` の 1b）で、画面とスクリプトの両方が使う純関数の置き場を決める。
+
+**決定: 2つの根のまま、`scripts/lib/pure/**` から `src/pure/**` への片方向の import だけを許す。画面とスクリプトの両方が使う純関数は `src/pure/**` に置く（共有の根は `src/pure`）。`src/pure/**` から `scripts/lib/pure/**` への import は禁じる。新しい根は足さない。**
+
+今の依存（2026-10-24、origin/master `e2d194f35` の grep）:
+
+| 向き | 数 | 例 |
+|---|---|---|
+| scripts・api → src | 104 ファイル | `src/components/race/seriesPoints.js`（8）・`src/utils/snsObservations.js`（7）・`src/utils/dateUtils.js`（6）・`src/utils/raceOutcome.js`（4） |
+| src → scripts/lib | 4 ファイル・5 行 | `supabaseDataService.js:11-12`（`hitCalculator.js`・`dateUtils.js`）、`racerConditionStats.js:2`（`hitCalculator.js`）、`basicInfoStats.js`・`adlerModel.js`（`hitCalculator.js`・`harville.js`） |
+| 往復 | 1 本 | `supabaseDataService.js` → `src/utils/racerConditionStats.js` → `scripts/lib/hitCalculator.js` → `src/utils/raceOutcome.js`（`hitCalculator.js:9`） |
+
+理由:
+
+1. **今の向きに合う。** scripts から src を読む向きが 104 ファイルで主流、逆は 4 ファイル。共有の根を src の側に置けば、逆向きの 5 行は「`src/pure` に移して `scripts/lib/*.js` は再 export を残す」で消え、往復も解ける（`hitCalculator.js` と `raceOutcome.js` の純粋な部分を両方 `src/pure` に移す）
+2. **画面の束（バンドル）に scripts の木が入らない。** `src/pure` → `scripts/lib/pure` を禁じるので、ブラウザで動く側が Node の側の部品に依存しない。`scripts/lib/pure` はスクリプトだけが使う純関数の置き場として残す（§4.2 の表のまま）
+3. **新しい根は既存の守りの外に落ちる。** 例えば最上位に `shared/pure/` を足すと、`post-merge-checks.yml` の `paths`（`src/**`・`scripts/**` 等、26-37 行）に入らず、マージ後の no-undef・build が走らない。直すには `.github` の変更が要り、本計画の「`.github` は変えない」と食い違う。`eslint.config.js` の区分、hq の codex-pr.py の段2 のパス（§4・M7）も全部足し直しになる
+4. **§4.2 の表・段2 の表・hq の設定が既に `src/pure`・`scripts/lib/pure` で書かれている。** 根を変えない案は、それらを変えずに済む
+
+採らなかった案: 新しい共有の根を1つ足す（上の3・4）。`scripts/lib/pure` を共有の根にする（画面から scripts の木を読む向きが増え、1・2 と逆）。
+
+verify-pure-imports.js の判定（§4.2 の表に足す）:
+- `src/pure/` の中のファイル: 行き先が `src/pure/` の中の .js だけを許す
+- `scripts/lib/pure/` の中のファイル: 行き先が `scripts/lib/pure/` か `src/pure/` の中の .js だけを許す
+- どちらの根も、グローバルは ES の組み込みだけ（`scripts/lib/pure` も `globals.node` を使わない。`src/pure` から読まれる物と同じ条件にそろえる）
+
+移したときの旧の置き場: `scripts/lib/hitCalculator.js` 等は再 export だけのファイルとして残す（定期の job の import を変えない）。`scripts/lib/**` は段の対象外なので、この再 export の PR は Claude の PR（§4.2「切り出しの PR」）。
+
+G5（§3.2）と M3（§5.2）に足すもの（守りの設定を Codex の PR で緩めさせない）:
+- `eslint.config.js`（区分のグローバル・規則の重さを変えると verify-no-undef と verify-pure-imports の判定が変わる）
+- 抑制の一覧: `scripts/maintenance/verify-no-undef-allowlist.json` と、1a で規則ごとに足す一覧（`scripts/maintenance/verify-*-allowlist.json` の全部）
+- `jsconfig.json`・`tsconfig*.json`（4 の範囲を限った tsc の `include` を広げ・狭めると検査が変わる。今は無い）
+- `scripts/maintenance/verify-no-undef.js`（1a で lint の本体になる守りの verify。§4.1 の守りの verify にも足す）
+- `scripts/maintenance/verify-pure-imports.js`（既に G5 にある。再掲）
+
 ### 4.3 画面の Codex の PR（オーナー 10/24）
 
 オーナー 2026-10-24「codexはlinearチケットで開発でできそうなやつを回しても良い」で、丸ごと任せる試運転の1件の例外を広げ、`src/` の画面の Codex の PR も受ける。段3 が開くまで自動マージしない。
