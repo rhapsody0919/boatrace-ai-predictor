@@ -26,6 +26,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { getDaysAgoJST } from "../../src/utils/dateUtils.js";
+import { finishPositionOf as pureFinishPositionOf } from "../../src/pure/finishPosition.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
@@ -210,9 +211,13 @@ function suiteBasicInfoStats(m, check) {
   );
   check("getRecentRaces: null は空配列", m.getRecentRaces(null), []);
 
-  // --- finishPositionOf: 本体は src/pure/finishPosition.js（段3 で移した）。
-  // basicInfoStats の再 export でも同じ答えになることをここで見る
-  suiteFinishPosition(m, check);
+  // --- finishPositionOf: 本体は src/pure/finishPosition.js（段3 で移した。中身の検査は
+  // suiteFinishPosition）。basicInfoStats の再 export が同じ関数を指すことだけを見る
+  check(
+    "finishPositionOf: basicInfoStats の再 export は src/pure の関数",
+    m.finishPositionOf === pureFinishPositionOf,
+    true,
+  );
 
   // --- computeRates: 平均STは startTiming が取れた走だけで割る（d3817581）
   const rates = m.computeRates([
