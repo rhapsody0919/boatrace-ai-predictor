@@ -10,6 +10,24 @@
 
 export const GA4_PV_BREAKS = Object.freeze([
   Object.freeze({
+    date: "2026-08-29",
+    ref: "PR#415（6c5683315）・PR#935 で是正",
+    description:
+      "/ の描画元が App から VenueGridPage に変わり、同意を見ずに GA を読み込んでいた App.jsx の経路を / では通らなくなった。以後 / に着地して同意しない人は計測されず、/ の PV・ユーザーが下がって見えうる（コードからの帰結で大きさは未観測）。需要の変化ではない。この経路は 2026-09-29 の PR#935 で全ページから削除された",
+  }),
+  Object.freeze({
+    date: "2026-08-31",
+    ref: "PR#435（6ceba491c）",
+    description:
+      "deep_link_click の source パラメータ（GA4 の予約名）が、押した人のセッションの流入元を data_race_table 等（チャネルは Unassigned）に上書きし始めた。以後 Organic Search 等のチャネル別の数が減り Unassigned が増えて見える。PV の合計は変わらない。需要の変化ではない",
+  }),
+  Object.freeze({
+    date: "2026-09-15",
+    ref: "PR#656（ad9cea7f5）・BOA-996",
+    description:
+      "source を link_source に改名し上書きが止まった。以前に上書きされた人の後の直接の訪問は data_race_table 等のまま残る（9/17〜10/22 で15人）。チャネル別の数をこの日の前後で比べない",
+  }),
+  Object.freeze({
     // この日の 13時 JST ごろに本番へ反映。この日を含む以前と、翌日以降を比べない
     date: "2026-09-29",
     ref: "PR#935（BOA-531）・拡張計測「ブラウザの履歴イベントに基づくページの変更」OFF",
