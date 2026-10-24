@@ -84,3 +84,7 @@
 - Codex用cloneに.env*があれば停止する規則は、例外の明記が無い限り追跡済みの.env.exampleにも当たる。配布前にテンプレートを含むファイル名を確認し、cloneの条件とテンプレートの扱いを明示する。内容を読んで安全と推測する例外は作らない（2026-10-21、BOA-779、指定SHAのAGENTS.md「作業場所と認証」、Codex報告2026-10-21-boa-779.md）
 - ファイル走査中の削除競合は、隔離した木でstat・readdir・readの直前に同期的な削除を注入すると、実時間の並行実行に頼らず再現できる。共通部品だけでなく実際のverifyもその木で動かし、通常ファイルの違反検出が残ることを確認する（2026-10-21、BOA-969、Codex報告2026-10-21-boa-969.md、検証用パッチのscripts/maintenance/verify-source-file-walk.js）
 - 時間帯を制限する取得処理は、リクエスト間隔の待機後・fetch直前に取得窓を判定する。待機で窓をまたぐ状況を注入し、次の取得が止まることに加え、取得済み計画の全配列が保持されることも検証する（2026-10-23、BOA-779、Codex報告2026-10-23-boa-779.md、scripts/maintenance/verify-disqualified-finish-marks.js）
+- ESLint 9 の noInlineConfig は、無効にした設定コメントを1つずつ ruleId=null・severity 1 の「'<コメント全文>' has no effect because you have 'noInlineConfig'…」で返す。関門に触れるコメントだけを落とすときはこの文を解析し、文言の変化は自己テストで捕まえる（2026-10-24 実測、ESLint 9.39.1、PR #1819、scripts/maintenance/verify-no-undef.js）
+- 許可リストを (規則, ファイル) の件数だけで持つと、同じファイルの中で1件直って1件増える入れ替わりを通す。no-undef のように名前で区別できる規則は名前までキーに入れる（2026-10-24、PR #1819 の system-architect・/code-review）
+- ESLint の設定コメントの説明の区切りは `\s-{2,}\s`（`--` に限らない）。自前で解析するときは `---` も区切りに扱う（2026-10-24 実測、PR #1819）
+- ruleFilter だけの lint の関門は、ファイル内の eslint-disable・`/* global */` で消せる。検査側の ESLint にだけ noInlineConfig を付けると、`npm run lint` とエディタを変えずに塞げる（2026-10-24、PR #1819）
