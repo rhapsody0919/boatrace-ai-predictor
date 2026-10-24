@@ -8,7 +8,7 @@
  *
  * 確認すること:
  *   - src/ と api/ が、旧フラグ is_cancelled・is_no_race を select・判定に使っていない（コメントは除く）
- *   - supabaseDataService.js の isUsableRaceResult が、raceOutcome.js の getRaceOutcomeState で不成立を外している
+ *   - raceResultUsable.js の isUsableRaceResult が、raceOutcome.js の getRaceOutcomeState で不成立を外している
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -61,15 +61,15 @@ check(
   offenders.slice(0, 10).join(", "),
 );
 
-const service = fs.readFileSync(
-  path.join(ROOT, "src/services/supabaseDataService.js"),
+const resultUsable = fs.readFileSync(
+  path.join(ROOT, "src/utils/raceResultUsable.js"),
   "utf8",
 );
-const usable = /function isUsableRaceResult\(result\) \{([\s\S]*?)\n\}/.exec(
-  service,
+const usable = /export function isUsableRaceResult\(result\) \{([\s\S]*?)\n\}/.exec(
+  resultUsable,
 );
-const noRace = /function isNoRaceResult\(result\) \{([\s\S]*?)\n\}/.exec(
-  service,
+const noRace = /export function isNoRaceResult\(result\) \{([\s\S]*?)\n\}/.exec(
+  resultUsable,
 );
 check(
   "isUsableRaceResult は、不成立（getRaceOutcomeState が NO_RACE）と rank1 の無い行を外す",
