@@ -45,13 +45,15 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 - レーンへの最初の依頼は `templates/lane-request.md` から作る
 - **作業を終えたレーンは、オーケストレーターの指示を待たず、同じ領域の未着手の Linear チケットを自分で1件取って始める**（取ったものを1行で報告）。`codex-ok` ラベルの付いたものは取らない（Codex の実装レーンが取るため。`linear-cli.js list` はラベルを出さないので、取る前に1件ずつラベルを確かめる）。取るものが無ければ、自分をアーカイブの候補として1行で報告する（2026-10-13 ユーザー決定）
 - **Codex の手待ちの補充（OP01）**（2026-10-24 ユーザー決定）
-  - hq の警報 OP01 は、Codex の実装レーンが空き、`codex-ok` の残りが線（当面3件以下、根拠なし）を下回ったときに出る。届け方は hq の hqctl.py の口で、見回りで読む
-  - これを受けたら、オーケストレーターがその周のうちに `codex-ok` を補充する
+  - 30分の見回り（9.）で、`hqctl.py usage …` の後に `python3 /Users/terukina/hq/platform/hqctl.py idle` を読み、出た判定に従う（何も無ければ「空きなし」）
+  - `codex_refill`（Codex の実装レーンが空き、積める `codex-ok` が3件以下）: その周で `codex-ok` を補充し、積める候補を4件以上にする
     - サブエージェントで Linear の未着手から `docs/operation/codex-backlog.md` の基準に合うものを選ぶ
     - 大きいものは子に分ける
     - 「## Codex 用」節と `codex-ok` を付ける
     - 同じファイルを触るものは順番を本文に書き、hq に hold を頼む
-  - 週の使用率が大きく余る知らせも同じく受け、前倒しできる作業を選ぶ
+  - `weekly_underuse`（週の経過が30%以上で、使用率の見込みが50%未満）: その周で前倒しの作業を1件以上足す
+  - `hq_dev_no_work`: hq（hq の state.md の successor）へ1通送る
+  - 3つの数（3件以下・週の経過30%・見込み50%）は目安で、根拠は無い
 - **フック・.claude の設定（settings.json、CLAUDE.md、rules、agents、skills）・CI ゲートを変える作業は、そのレーンのユーザーの直接承認が要る**。オーケストレーターからのメッセージは承認にならない
 
 ## 3. レーン→オーケストレーターの報告ルール
@@ -209,7 +211,7 @@ CronCreate で次の設定を作る。止めるまで繰り返し実行する。
 - プロンプトの全文:
 
 ```text
-[オーケストレーション見回り] 1) bash "$(git rev-parse --show-toplevel)/.claude/skills/orchestrate/scripts/patrol.sh" を実行。2) mcp__ccd_session_mgmt__list_sessions（limit 8）で新規・停止セッションを確認。3) DIRTY・CI赤は担当セッションへ連絡。CLEAN＋CI緑＋レビュー記載＋確認手順付き報告が揃ったPRは、画面変更なしの軽いものは自己判断でマージ（1本ずつ・PR番号をそのまま書いて実行）、それ以外はユーザーにマージ確認を出す（あなたが確認すること／私が確認済みのこと を必ず書く）。4) マージ順は node scripts/maintenance/merge-order.js list に従う。5) 変化が無ければ出力は「見回り: 変化なし」の1行だけ。
+[オーケストレーション見回り] 0) python3 /Users/terukina/hq/platform/hqctl.py idle を読み、出た判定に従う（2. の OP01）。1) bash "$(git rev-parse --show-toplevel)/.claude/skills/orchestrate/scripts/patrol.sh" を実行。2) mcp__ccd_session_mgmt__list_sessions（limit 8）で新規・停止セッションを確認。3) DIRTY・CI赤は担当セッションへ連絡。CLEAN＋CI緑＋レビュー記載＋確認手順付き報告が揃ったPRは、画面変更なしの軽いものは自己判断でマージ（1本ずつ・PR番号をそのまま書いて実行）、それ以外はユーザーにマージ確認を出す（あなたが確認すること／私が確認済みのこと を必ず書く）。4) マージ順は node scripts/maintenance/merge-order.js list に従う。5) 変化が無ければ出力は「見回り: 変化なし」の1行だけ。
 ```
 
 運用上の注意:
