@@ -121,7 +121,7 @@ e2e が落ちた・止まったまま終わらない（shard が50分を超え�
 - **知見の候補**（上の「知見を残す」）
 
 ### 自動マージ
-- CI が緑の PR をどの条件でマージするかは、Claude のオーケストレーターが `.claude/skills/orchestrate/SKILL.md` の「承認の3段階」と「Codex の PR」に従って決める。判定は PR の差分で行い、PR 本文の記述には頼らない
+- CI が緑の PR は、hq の `codex-pr.py` が `docs/design/codex-direct-pr/design.md` §5.2 の条件（開いている段と M1〜M7）を満たすものを自動でマージする。満たさないものは、Claude のオーケストレーターが `.claude/skills/orchestrate/SKILL.md` の「承認の3段階」と「Codex の PR」に従って決める（段階2 はユーザーが決める）。判定は PR の差分で行い、PR 本文の記述には頼らない
 - あなたの側で自動マージを有効にする操作（`gh pr merge --auto` 等）はしない
 
 ### 前提にしないこと
