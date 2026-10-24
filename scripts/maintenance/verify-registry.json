@@ -426,6 +426,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-formatters.js",
+      "tier": "ci",
+      "guards": "日付・割合の7関数の表記、TZ非依存の関数の3タイムゾーン検証、既知の差異の記録（BOA-1086）"
+    },
+    {
       "script": "verify-fortune-systems.js",
       "tier": "ci",
       "guards": "4占術の配点・日付境界・12分類とFORTUNE_SYSTEMSの関数参照（BOA-1073）"
