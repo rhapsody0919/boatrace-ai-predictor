@@ -40,13 +40,13 @@ const COLS = [
 
 const store = {
   youtubeVideos: async () => videos,
-  engagedObserved: async (ids, definition) =>
+  engagedObservations: async (ids, definition) =>
     (
       await all(
-        "SELECT draft_id FROM sns_metric_observations WHERE \"window\"='pt3d' AND metric_name='engagedViews' AND source='youtube-analytics' AND metric_value IS NOT NULL AND denominator_value IS NOT NULL AND definition=$1 AND draft_id = ANY($2)",
+        "SELECT draft_id, metric_value::float metric_value, denominator_value::float denominator_value, observed_at FROM sns_metric_observations WHERE \"window\"='pt3d' AND metric_name='engagedViews' AND source='youtube-analytics' AND definition=$1 AND draft_id = ANY($2)",
         [definition, ids],
       )
-    ).map((r) => r.draft_id),
+    ).map((o) => ({ ...o, observed_at: o.observed_at.toISOString() })),
   appendObservation: (id, observation) =>
     db.query("SELECT append_sns_metric_observation($1,$2)", [id, observation]),
   fullPictureDrafts: async (raceIds) =>
@@ -722,6 +722,11 @@ const engagedYoutube =
       return (await mockYoutube()()).report(params);
     },
   });
+const nextDay = {
+  mode: "live",
+  now: () => new Date(NOW.getTime() + 86400000),
+  targetDate: "2026-10-17",
+};
 const observations = () =>
   all(
     `SELECT draft_id, "window", metric_name, metric_value::float v, missing_reason, denominator_name, denominator_value::float d,
@@ -804,7 +809,16 @@ test("pt3d の観測: Analytics が行を返さなければ欠測で入れ、値
     ),
   );
   assert.ok(missing.every((o) => o.denominator_name === null));
+  // 同じ日の2回目の起動（補足の起動）では欠測を重ねない
+  const same = [];
   await runSnsDaily(ctx(), {
+    store,
+    youtube: engagedYoutube(same, null),
+    ga4: mockGa4(),
+  });
+  assert.equal(same.filter((c) => !c.dimensions).length, 0);
+  // 次の日に値が出たら入れ直す
+  await runSnsDaily(nextDay, {
     store,
     youtube: engagedYoutube(),
     ga4: mockGa4(),
@@ -828,7 +842,7 @@ test("pt3d の観測: engagedViews があっても分母の views が欠けた�
     ga4: mockGa4(),
   });
   const calls = [];
-  await runSnsDaily(ctx(), {
+  await runSnsDaily(nextDay, {
     store,
     youtube: engagedYoutube(calls),
     ga4: mockGa4(),
@@ -910,10 +924,12 @@ test("PostgREST の store: pt3d の観測の有無を引き、append_sns_metric_
         : Response.json([{ draft_id: "d1" }]);
     },
   });
-  assert.deepEqual(await s.engagedObserved(["d1", "d2"], "定義"), ["d1"]);
+  assert.deepEqual(await s.engagedObservations(["d1", "d2"], "定義"), [
+    { draft_id: "d1" },
+  ]);
   assert.match(
     calls[0].url,
-    /sns_metric_observations\?window=eq\.pt3d&metric_name=eq\.engagedViews&source=eq\.youtube-analytics&metric_value=not\.is\.null&denominator_value=not\.is\.null&definition=eq\.定義&draft_id=in\.\(d1,d2\)/,
+    /sns_metric_observations\?window=eq\.pt3d&metric_name=eq\.engagedViews&source=eq\.youtube-analytics&definition=eq\.定義&draft_id=in\.\(d1,d2\)&select=draft_id,metric_value,denominator_value,observed_at/,
   );
   await s.appendObservation("d1", { window: "pt3d" });
   assert.equal(
@@ -930,4 +946,53 @@ test("PostgREST の store: pt3d の観測の有無を引き、append_sns_metric_
     fetchImpl: async () => new Response("no", { status: 400 }),
   });
   await assert.rejects(bad.appendObservation("d1", {}), /HTTP 400/);
+  // PostgREST の本文は details が長い。制約名（message）を切らずに残す（/code-review の指摘）
+  const pg = createSnsDailyStore({
+    url: "https://db",
+    key: "k",
+    fetchImpl: async () =>
+      Response.json(
+        {
+          code: "23514",
+          details: `Failing row contains (${"x".repeat(400)})`,
+          hint: null,
+          message:
+            'new row for relation "sns_metric_observations" violates check constraint "sns_metric_observations_window_check"',
+        },
+        { status: 400 },
+      ),
+  });
+  await assert.rejects(
+    pg.appendObservation("d1", {}),
+    /HTTP 400 23514 .*sns_metric_observations_window_check/,
+  );
+});
+
+test("pt3d の観測: 1本の Analytics の読み取りに落ちても、残りの動画は入れ、失敗として返す。日付が壊れていれば分かる理由で落とす", async () => {
+  videos.push({
+    draft_id: draftId,
+    external_post_id: "broken",
+    posted_at: "2026-10-09T20:00:00Z",
+  });
+  const result = await runSnsDaily(ctx(), {
+    store,
+    youtube: async () => ({
+      report: async (params) => {
+        if (params.filters === "video==broken" && !params.dimensions)
+          throw new Error("YouTube Analytics reports が失敗: HTTP 500");
+        return (await engagedYoutube()()).report(params);
+      },
+    }),
+    ga4: mockGa4(),
+  });
+  assert.equal(result.outcome, "error");
+  assert.match(result.error, /engagedViews の観測（.*）の読み取り: .*HTTP 500/);
+  assert.equal((await observations()).length, 4);
+  // 日次の表は今までどおり書く
+  assert.ok((await rows(`draft_id IS NOT NULL`)).length > 0);
+  const { ptMidnightUtc } = await import("../lib/snsDailyRunner.js");
+  assert.throws(
+    () => ptMidnightUtc("Invalid Date"),
+    /PT の 0:00 を出せない日付/,
+  );
 });

@@ -79,5 +79,5 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 
 - 上の「暦日の値は観測の表ではなく `sns_channel_daily` に入れる」の例外。hq の毎日の PDCA（Shorts の「見た・スワイプした」の代わり）が `sns_metric_observations` を投稿ごとに読むため、YouTube Analytics の動画ごとの engagedViews（`denominator_name=views`）・views・averageViewPercentage・averageViewDuration を窓 `pt3d` で入れる（cron `sns_daily`、`scripts/lib/snsDailyRunner.js` の collectEngaged）
 - `pt3d` は暦日の窓: 太平洋時間の投稿日から3日（投稿日＋2日）の和。`period_end` は PT の3日目の翌日 0:00（day_end と同じく投稿ごとに長さが違う）。時間の窓（posted_at＋72h）へは変換しない。投稿前の views は0なので和は [posted_at, period_end) と同じで、`data_through=period_end`
-- 入れるのは3日目が取り直しの最も古い日（D−3）より前になってから（反映の遅れ2〜3日、BOA-1006 (b)）。投稿からおよそ5.5〜6.5日後。engagedViews と分母の views がそろうまで、10日の間は毎日やり直す（欠測は revision を足す）
+- 入れるのは3日目が取り直しの最も古い日（D−3）より前になってから（反映の遅れ2〜3日、BOA-1006 (b)）。投稿からおよそ5.5〜6.5日後。engagedViews と分母の views がそろうまで、投稿から14日まで1日1回やり直す（欠測は revision を足す。同じ日の2回目の起動では重ねない）
 - Shorts と完全版の区別は `sns_auto_send_items.variant`（172）。完全版は engagedViews がほぼ views と同じ見込み（未確認）なので、比は Shorts に絞る

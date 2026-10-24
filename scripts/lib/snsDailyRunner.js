@@ -46,9 +46,12 @@ const VIDEO_METRICS = [
  */
 export const ENGAGED_WINDOW = "pt3d";
 const ENGAGED_PT_DAYS = 3;
-export const ENGAGED_LOOKBACK_DAYS = 10;
+// 3日目が D−3 より前になるのは投稿の約6日後。14日まで見ると、欠測のときに約8回やり直せる
+export const ENGAGED_LOOKBACK_DAYS = 14;
+/** 同じ日の2回目の起動（補足の起動・重複配信）で欠測の revision を重ねない間隔 */
+const ENGAGED_RETRY_HOURS = 20;
 /** Analytics を読む時間の上限（関数の時間 300 秒の中で、残りは次の起動に回す） */
-export const ENGAGED_BUDGET_MS = 120000;
+export const ENGAGED_BUDGET_MS = 90000;
 const ENGAGED_METRICS = [
   "engagedViews",
   "views",
@@ -56,11 +59,17 @@ const ENGAGED_METRICS = [
   "averageViewDuration",
 ];
 /** PT の暦日 day の 0:00 の UTC の時刻（夏時間は UTC 07:00、冬時間は 08:00） */
-export const ptMidnightUtc = (day) =>
-  ["07", "08"]
-    .map((h) => new Date(`${day}T${h}:00:00Z`))
-    .find((t) => ptDate(t) === day && ptDate(new Date(t.getTime() - 1)) !== day)
-    .toISOString();
+export function ptMidnightUtc(day) {
+  const hit = /^\d{4}-\d{2}-\d{2}$/.test(day ?? "")
+    ? ["07", "08"]
+        .map((h) => new Date(`${day}T${h}:00:00Z`))
+        .find(
+          (t) => ptDate(t) === day && ptDate(new Date(t.getTime() - 1)) !== day,
+        )
+    : null;
+  if (!hit) throw new Error(`PT の 0:00 を出せない日付: ${day}`);
+  return hit.toISOString();
+}
 const RACE_ID_RE = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 /** 時刻を JST の YYYY-MM-DD にする */
 const toJstDay = (iso) =>
@@ -118,6 +127,7 @@ const rowKey = (r) =>
  * ga4 が null なら鍵が未設定
  */
 export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
+  const startedMs = Date.now();
   const now = ctx.now();
   const observedAt = now.toISOString();
   const jstDays = range(ctx.targetDate);
@@ -142,7 +152,20 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
       new Date(now.getTime() - ENGAGED_LOOKBACK_DAYS * 86400000).toISOString(),
     );
     await collectYoutube({ yt, videos, ptDays, push });
-    observations = await collectEngaged({ yt, store, videos, ptDays, now });
+    // 観測（pt3d）は日次の表と別に失敗を数える。動画ごとの失敗は collectEngaged の中で errors に入れて次へ進む
+    try {
+      observations = await collectEngaged({
+        yt,
+        store,
+        videos,
+        ptDays,
+        now,
+        startedMs,
+        errors,
+      });
+    } catch (error) {
+      errors.push(`engagedViews の観測の準備: ${error.message}`);
+    }
   } catch (error) {
     errors.push(`YouTube Analytics: ${error.message}`);
   }
@@ -284,6 +307,7 @@ async function collectEngaged({
   ptDays,
   now,
   startedMs = Date.now(),
+  errors = [],
 }) {
   const due = videos.filter(
     (v) =>
@@ -293,22 +317,41 @@ async function collectEngaged({
       addDays(ptDate(new Date(v.posted_at)), ENGAGED_PT_DAYS - 1) < ptDays[0],
   );
   if (!due.length) return [];
+  // 入れ直さない: engagedViews と分母（views）がそろった観測がある動画と、直近（同じ日の2回目の起動）に欠測で入れた動画
+  const since = now.getTime() - ENGAGED_RETRY_HOURS * 3600000;
   const done = new Set(
-    await store.engagedObserved(
-      due.map((v) => v.draft_id),
-      def.ytEngaged("engagedViews"),
-    ),
+    (
+      await store.engagedObservations(
+        due.map((v) => v.draft_id),
+        def.ytEngaged("engagedViews"),
+      )
+    )
+      .filter(
+        (o) =>
+          (o.metric_value !== null && o.denominator_value !== null) ||
+          Date.parse(o.observed_at) >= since,
+      )
+      .map((o) => o.draft_id),
   );
   const out = [];
   for (const video of due.filter((v) => !done.has(v.draft_id))) {
     if (Date.now() - startedMs > ENGAGED_BUDGET_MS) break; // 残りは次の起動（値が入るまで毎日やり直す）
     const start = ptDate(new Date(video.posted_at));
-    const [row] = await yt.report({
-      startDate: start,
-      endDate: addDays(start, ENGAGED_PT_DAYS - 1),
-      metrics: ENGAGED_METRICS.join(","),
-      filters: `video==${video.external_post_id}`,
-    });
+    let row;
+    try {
+      [row] = await yt.report({
+        startDate: start,
+        endDate: addDays(start, ENGAGED_PT_DAYS - 1),
+        metrics: ENGAGED_METRICS.join(","),
+        filters: `video==${video.external_post_id}`,
+      });
+    } catch (error) {
+      // 1本の失敗で残りの動画を止めない。この動画は次の日にやり直す
+      errors.push(
+        `engagedViews の観測（${video.draft_id}）の読み取り: ${error.message}`,
+      );
+      continue;
+    }
     const periodEnd = ptMidnightUtc(addDays(start, ENGAGED_PT_DAYS));
     const value = (m) =>
       Number.isFinite(row?.[m]) && row[m] >= 0 ? row[m] : null;
@@ -598,13 +641,11 @@ export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
     return response.json();
   }
   return {
-    // engagedViews と分母（views）の両方が入った pt3d の観測がある下書き（入れ直さない。分母が欠けたら取り直す）
-    engagedObserved: async (draftIds, definition) =>
-      (
-        await get(
-          `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&metric_name=eq.engagedViews&source=eq.youtube-analytics&metric_value=not.is.null&denominator_value=not.is.null&definition=eq.${encodeURIComponent(definition)}&draft_id=in.(${draftIds.join(",")})&select=draft_id`,
-        )
-      ).map((r) => r.draft_id),
+    // pt3d の engagedViews の観測（入れ直すかは runner が決める）
+    engagedObservations: (draftIds, definition) =>
+      get(
+        `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&metric_name=eq.engagedViews&source=eq.youtube-analytics&definition=eq.${encodeURIComponent(definition)}&draft_id=in.(${draftIds.join(",")})&select=draft_id,metric_value,denominator_value,observed_at`,
+      ),
     async appendObservation(draftId, observation) {
       const response = await fetchImpl(
         `${url}/rest/v1/rpc/append_sns_metric_observation`,
@@ -617,10 +658,20 @@ export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
           }),
         },
       );
-      if (!response.ok)
+      if (!response.ok) {
+        // PostgREST の本文は details（失敗した行の全体）が長く、先頭で切ると制約名が落ちる。code と message だけを残す
+        const text = await response.text();
+        let detail = text;
+        try {
+          const body = JSON.parse(text);
+          detail = `${body.code ?? ""} ${body.message ?? ""}`.trim() || text;
+        } catch {
+          // JSON でなければ本文のまま
+        }
         throw new Error(
-          `観測の保存に失敗: HTTP ${response.status} ${(await response.text()).slice(0, 200)}`,
+          `観測の保存に失敗: HTTP ${response.status} ${detail.slice(0, 300)}`,
         );
+      }
     },
     youtubeVideos: (since) =>
       get(

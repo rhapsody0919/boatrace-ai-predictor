@@ -6,7 +6,7 @@
 -- 投稿前の views は0なので、和は [posted_at, period_end) と同じで、data_through=period_end が成り立つ。
 -- 変えるのは観測の表の CHECK 2つだけ（窓の値と、窓の終わりの式）。列・関数・sns_metric_jobs は変えない（pt3d は job を作らない）。
 -- コードは 175 の前でも動く（窓の CHECK で拒まれたら日次の取り込みを失敗にせず report.alerts の engaged_window_unapplied で知らせる）。
--- db-apply で当てる。土台は 169（本番に適用済み、2026-10-19）。マージした日のうちに当てる（取り直しの範囲は10日で、それより前の動画は戻らない）。
+-- db-apply で当てる。土台は 169（本番に適用済み、2026-10-19）。マージした日のうちに当てる（取り直しは投稿から14日までで、それより前の動画は戻らない）。
 --
 -- 適用前の確認（読み取り）:
 --   SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint
