@@ -82,3 +82,14 @@
 - review.yml の gate（scripts/lib/reviewPr.js の mechanicalRejections）は .github/** の変更を一般には落とさない（落とすのは本文の無い差分・symlink・submodule・LFS・.gitattributes 等、reviewPr.js:56 付近）。保護パスの守りは codex-pr.py の G5・M3 だけ（2026-10-24、system-architect の審査、design.md:70・186）
 - ruleset master-guard の承認1件は、書き込み権限のある身元の承認なら誰のものでも数える（審査の App に限らない）。審査の App だけを数える前提で守りを組まない（2026-10-24、system-architect の審査）
 - ruleset の bypass の Integration 5220661 は App が非公開で、API では名前を確かめられない。オーナーが画面で ryujin-bot と確認した（2026-10-23、design.md §10.1 Q8）
+
+## 検査と試験の土台
+- DAL（src/services/supabaseDataService.js）は Node で import できない。supabaseClient.js:44-45 が import.meta.env を読み、拡張子なしの import（./supabaseClient・../utils/stConsideration 等）を Node の ESM が解決しない。中の純粋な計算を試験するには、手を加えずに別ファイルへ移して旧の export から呼ぶ（2026-10-24、system-architect の審査、docs/design/dev-efficiency/plan.md 3+2）
+- PGlite を使う verify（scripts/maintenance/ に34本）は、それぞれ必要なマイグレーションだけを読む。全スキーマの共通の土台は無く、マイグレーションの積み上げでは DROP・RENAME を追えない。土台を作るなら claude_ro でカタログを読んだ本番のスナップショットを正本にする（2026-10-24、system-architect の審査、plan.md 5）
+- ESLint の error は 345（system-architect の実測）。範囲で数が変わり、e2d194f35 の再測は eslint . 全体で 699、docs・sns-video-studio を除くと 352（no-unused-vars 316）。lint 全体を必須にせず、違反を 0 にした規則から verify:ci に足す（2026-10-24、ADR-0079 追記、plan.md 1a）
+- E2E で録画に無いリクエストの素通しが0件なら、その E2E が通る経路の SQL（PostgREST のクエリ）を変えていない証拠になる。録画は URL で照合するので、クエリが変われば素通しに出る。E2E が通らない関数のクエリは証拠にならない（2026-10-24、system-architect の審査、e2e/fixtures.js:35・426、scripts/maintenance/report-e2e-passthrough.js）
+- ADR-0072 の「ci が100本を超えたらランナーを見直す」の線を越えた（2026-10-24 の台帳で ci 239本・manual 12本）。当面は自作のランナーを続け、新しい純関数の試験だけ新しい verify ファイルにする。vitest・node:test への移行は3件の切り出しの後に見直す（2026-10-24、ADR-0072 追記）
+- ESLint の flat config は languageOptions.globals を上から重ねて合わせるので、後のブロックの globals: {} では node・browser の名前を消せない。消すには "off" を並べるか、overrideConfigFile: true の別の設定で検査する（2026-10-24、system-architect の審査、eslint.config.js:19・45）
+- post-merge-checks.yml:69 は verify-no-undef.js を引数なしで直接呼ぶ。このスクリプトの既定の規則を増やすと、マージ後の Slack の範囲も広がる。規則を広げるのは引数（台帳の args）で行う（2026-10-24、system-architect の審査、ADR-0079 追記）
+- 共通ロジックの索引（generate-lib-index.js:39-55）の対象は scripts/lib・src/utils・src/services だけで、再 export の行は export に数えない。src/pure に移すときは TARGETS に足す（2026-10-24、system-architect の審査）
+- tsc の範囲を include で絞っても、JSDoc の import('...') 型と /// <reference> を伝って根の外が入る。既定の lib は DOM を含み、@types/* も自動で入る。閉じるには types: [] と DOM なしの lib（2026-10-24、system-architect の審査）
