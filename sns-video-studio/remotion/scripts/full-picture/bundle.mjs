@@ -30,10 +30,27 @@ export const utmUrl = (raceId, source, term = null) =>
  * 完全版の説明文の機能への導線（hq 契約 10/24 C1）。ソナーはタブ、思考アシストは別ページへ直接着く。
  * UTM は utmUrl と同じ形で、utm_content を「レース ID/機能」にして機能を分ける（下書きの ID の UTM と同じ「/」の区切り）
  */
+// line は URL の前の文。全角換算20字以内で、語尾に機能名（PC は長い URL を先頭37字ほどに縮めて2本とも同じ頭に見えるので、
+// 見分けは文だけが持つ。hq 契約 10/24 C3）
 export const FEATURES = {
-  sonar: { name: "龍神ソナー", path: (id) => `${raceUrl(id)}?tab=sonar&`, line: "類似レースの着順の流れは龍神ソナーで" },
+  sonar: { name: "龍神ソナー", path: (id) => `${raceUrl(id)}?tab=sonar&`, line: "類似レースの着順の流れは龍神ソナー" },
   assist: { name: "思考アシスト", path: (id) => `${raceUrl(id)}/assist?`, line: "軸・相手を自分で読むなら思考アシスト" },
 };
+/** 説明文の字数（全角換算。半角の英数字・記号は0.5、ほかは1。hq 契約 10/24 C3。組み立てと検査で同じ関数を使う） */
+export const jaWidth = (s) => [...(s ?? "")].reduce((w, c) => w + (/[\x20-\x7e\uff61-\uff9f]/.test(c) ? 0.5 : 1), 0);
+/** 完全版の説明文の1行目の上限（PC の折りたたみは3行・1行全角約59字。1行目が折れると3行目の思考アシストが隠れる。C3） */
+export const FULL_LINE1_MAX = 40;
+/** URL の前の文の上限（C3） */
+export const FEATURE_LINE_MAX = 20;
+/**
+ * 完全版の説明文の1行目「{結論の数字}｜ボートレース {会場}{R}」。40字を越えたら止めずに短い形へ落とす
+ * （冒頭の数字の文 → 「同じ並びの」を外した形（数字と件数は切り離さない）→ 「ボートレース {会場}{R}」。C3）
+ */
+export function fullLine1(heroTitle, place) {
+  const tail = `｜ボートレース ${place}`;
+  const forms = heroTitle ? [heroTitle, heroTitle.replace(/^(同じ並びの|枠なりの)/, "")].map((t) => `${t}${tail}`) : [];
+  return forms.find((l) => jaWidth(l) <= FULL_LINE1_MAX) ?? `ボートレース ${place}`;
+}
 export const featureUrl = (raceId, feature, term = "full") =>
   `${FEATURES[feature].path(raceId)}utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${raceId}/${feature}&utm_term=${term}`;
 /** 完全版のタグ（YouTube の snippet.tags に渡す。説明文の末尾のハッシュタグにも同じ語） */
@@ -135,9 +152,11 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     // 1行目にその回の結論の数字（入口版の冒頭の数字と同じ値）と「ボートレース」・レースの見出し、2・3行目に機能への導線
     // （折りたたむ前に見える所。hq 契約 10/24 C1、ファン役4人・デザイナー役の審査）
     description: join([
-      `${facts?.hero?.title ?? L.conclusion ?? L.venue ?? "6艇の比較と展開の傾向"}（ボートレース ${header}）`,
+      // 1行目は全角換算40字以内（C3）。日付・締切は題と4行目
+      fullLine1(facts?.hero?.title ?? null, `${venue}${raceNo}R`),
       `${FEATURES.sonar.line}: ${featureUrl(raceId, "sonar")}`,
       `${FEATURES.assist.line}: ${featureUrl(raceId, "assist")}`,
+      `ボートレース ${header}`,
       "",
       L.venue,
       L.overview,
@@ -189,8 +208,17 @@ export function checkBundle(b) {
   const urls = b.x_text.match(/https?:\/\/\S+/g) ?? [];
   if (urls.length !== 1 || urls[0] !== utmUrl(b.race_id, "x")) why.push("x_text にこのレースの URL がちょうど1つ無い（UTM つき）");
   const fullLines = b.youtube_full?.description?.split("\n") ?? [];
-  for (const [i, f] of [[1, "sonar"], [2, "assist"]])
+  for (const [i, f] of [[1, "sonar"], [2, "assist"]]) {
     if (!fullLines[i]?.endsWith(featureUrl(b.race_id, f))) why.push(`youtube_full.description の${i + 1}行目に${FEATURES[f].name}への導線（UTM つき）が無い`);
+    // URL の前の文は20字以内で、語尾に機能名（C3）
+    const lead = fullLines[i]?.split(": http")[0] ?? "";
+    if (jaWidth(lead) > FEATURE_LINE_MAX || !lead.endsWith(FEATURES[f].name)) why.push(`youtube_full.description の${i + 1}行目の URL の前の文が20字を越える・機能名で終わらない`);
+  }
+  // 1行目: 空でない・URL やハッシュタグで始まらない・全角換算40字以内（C3）
+  const l1 = fullLines[0] ?? "";
+  if (!l1.trim() || /^(https?:|#)/.test(l1) || jaWidth(l1) > FULL_LINE1_MAX) why.push("youtube_full.description の1行目が空・URL かハッシュタグで始まる・40字を越える");
+  const tagLine = fullLines.at(-1) ?? "";
+  if ((tagLine.match(/#\S+/g) ?? []).length > 3) why.push("youtube_full.description の末尾のハッシュタグが3つを越える");
   for (const [k, term] of [["youtube_full", "full"], ["youtube_shorts", "shorts"]])
     if (!b[k]?.description?.includes(utmUrl(b.race_id, "youtube", term))) why.push(`${k}.description にこのレースの URL（UTM つき）が無い`);
   if (!Object.values(b.qa?.machine ?? {}).every((v) => v === true) || !Object.keys(b.qa?.machine ?? {}).length) why.push("機械の検査が全部通っていない");

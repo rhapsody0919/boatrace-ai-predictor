@@ -745,7 +745,7 @@ for (const f of fixtures) {
 
 // ---- 送信の道に渡す bundle（2026-10-20 オーケストレーターの分担 a・b・c、送信レーンとの Shorts の契約 bundle_version 2）----
 {
-  const { buildBundle, checkBundle, chaptersOk, raceHeader, utmUrl, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
+  const { buildBundle, checkBundle, chaptersOk, raceHeader, utmUrl, jaWidth, fullLine1, FULL_URL_SLOT, BUNDLE_VERSION } = await import(`${R}/scripts/full-picture/bundle.mjs`);
   const { checkFullPicture } = await import("../sns/push-full-picture.js");
   const riskRules = JSON.parse(readFileSync(new URL(`${R}/risk-rules.json`, import.meta.url), "utf8")).rules;
   assert.ok(riskRules.length > 0, "禁止表現の規則を読めた");
@@ -799,8 +799,11 @@ for (const f of fixtures) {
     assert.match(b.x_text.split("\n")[1], /^\d+\/\d+（[日月火水木金土]）(締切\d{1,2}:\d{2})?$/, `${f}: X の2行目は日付・曜日・締切だけ（hq 2026-10-23）`);
     // C1（hq 契約 10/24）: 1行目に結論の数字と「（ボートレース {見出し}）」、2・3行目に龍神ソナー・思考アシストへの導線、タグ
     const fl = b.youtube_full.description.split("\n");
-    assert.match(fl[0], /（ボートレース \d+\/\d+（[日月火水木金土]）.+\d+R.*）$/, `${f}: 説明文の1行目: ${fl[0]}`);
-    assert.ok(fl[1].startsWith("類似レースの着順の流れは龍神ソナーで: https://www.boat-ai.jp/race/") && fl[1].includes(`?tab=sonar&utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}/sonar&utm_term=full`), `${f}: 2行目にソナー: ${fl[1]}`);
+    // C3: 1行目は「{結論の数字}｜ボートレース {会場}{R}」で全角換算40字以内、4行目に日付・締切の見出し
+    assert.match(fl[0], /^(.+｜)?ボートレース .+\d+R$/, `${f}: 説明文の1行目: ${fl[0]}`);
+    assert.ok(jaWidth(fl[0]) <= 40, `${f}: 1行目は40字以内（${jaWidth(fl[0])}）`);
+    assert.match(fl[3], /^ボートレース \d+\/\d+（[日月火水木金土]）.+\d+R/, `${f}: 4行目に見出し: ${fl[3]}`);
+    assert.ok(fl[1].startsWith("類似レースの着順の流れは龍神ソナー: https://www.boat-ai.jp/race/") && fl[1].includes(`?tab=sonar&utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}/sonar&utm_term=full`), `${f}: 2行目にソナー: ${fl[1]}`);
     assert.ok(fl[2].startsWith("軸・相手を自分で読むなら思考アシスト: ") && fl[2].endsWith(`/race/${b.race_id}/assist?utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}/assist&utm_term=full`), `${f}: 3行目に思考アシスト: ${fl[2]}`);
     assert.deepEqual(b.youtube_full.tags, ["ボートレース", "龍神ソナー", "思考アシスト"], `${f}: 完全版のタグ`);
     assert.ok(b.youtube_full.description.endsWith("#ボートレース #龍神ソナー #思考アシスト"), `${f}: 末尾のハッシュタグ`);
@@ -835,8 +838,26 @@ for (const f of fixtures) {
     assert.equal(b.youtube_shorts.title, `桐生12R 優勝戦（10/12）1号艇は堅い？ ${e.hero.title}`);
     assert.ok(b.youtube_shorts.title.includes(e.hero.value), "題の数字は冒頭の数字と同じ値");
     assert.deepEqual(checkBundle(b), [], "v2 の題でも束の形を通る（100字以内）");
+    assert.equal(b.youtube_full.description.split("\n")[0], `${e.hero.title}｜ボートレース 桐生12R`, "完全版の1行目は冒頭の数字の文（C3）");
   }
   const b0 = bundleOf(fixtures[0]);
+  // C3: 1行目は40字を越えたら止めずに短い形へ落とす（冒頭の数字の文 →「同じ並びの」を外す → 「ボートレース {会場}{R}」）
+  {
+    assert.equal(jaWidth("ab12"), 2, "半角は0.5");
+    assert.equal(jaWidth("全角"), 2);
+    const hero = "同じ並びの過去1,857件で1号艇の1着72.0%";
+    assert.equal(fullLine1(hero, "住之江11R"), `${hero}｜ボートレース 住之江11R`, "収まる日はそのまま");
+    const long = "同じ並びの過去12,345件で1号艇の1着率は72.0%、2着は3号艇";
+    const l = fullLine1(long, "平和島12R");
+    assert.ok(jaWidth(l) <= 40, `越えたら短い形（${l}）`);
+    assert.equal(fullLine1("あ".repeat(50), "平和島12R"), "ボートレース 平和島12R", "どれも越えたら会場と R だけ");
+    assert.equal(fullLine1(null, "平和島12R"), "ボートレース 平和島12R", "冒頭の数字が無い日");
+    const fl = b0.youtube_full.description.split("\n");
+    has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: ["あ".repeat(41), ...fl.slice(1)].join("\n") } }), "40字を越える");
+    has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: ["", ...fl.slice(1)].join("\n") } }), "1行目が空");
+    has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: [fl[0], fl[1].replace("龍神ソナー:", "龍神ソナーを使ってください、とても長い文:"), ...fl.slice(2)].join("\n") } }), "20字を越える");
+    has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: [...fl.slice(0, -1), "#a #b #c #d"].join("\n") } }), "3つを越える");
+  }
   // C1: 2・3行目の機能への導線が無ければ落ちる
   {
     const fl = b0.youtube_full.description.split("\n");
