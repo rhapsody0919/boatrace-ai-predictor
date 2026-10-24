@@ -25,14 +25,6 @@ const TABS = [
   { id: "history", label: "履歴" },
 ];
 
-// ソートキー
-const SORT_KEYS = [
-  { key: "recovery", label: "回収率" },
-  { key: "hitRate", label: "的中率" },
-  { key: "samples", label: "サンプル数" },
-  { key: "ruleId", label: "ルールID" },
-];
-
 function AdminRules() {
   const [activeTab, setActiveTab] = useState("overview");
   const [allRules, setAllRules] = useState([]);
