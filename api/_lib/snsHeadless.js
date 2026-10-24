@@ -48,6 +48,69 @@ export async function waitForStableBox(
   throw new Error("screenshot_unstable");
 }
 
+const sameBox = (a, b) =>
+  Boolean(a && b) &&
+  ["x", "y", "width", "height"].every((k) => Math.abs(a[k] - b[k]) < 0.5);
+
+/**
+ * 要素だけを撮り、撮れた画像がその要素だけかを確かめる（2026-10-24 BOA-1013）。
+ * 位置が落ち着いたのを見てから撮っても、撮る途中で上の部品が広がると図が下にずれ、上の部品と図の頭が入った画像になった
+ * （/today の2枚目、鳴門3R: 上に思考アシストのタブと条件のカード、下は図の見出しで切れた）。
+ * - 撮った後に位置と大きさを測り直し、撮る前と違えば撮り直す
+ * - edgeColorVar（CSS の変数名）を渡すと、画像の上端と下端の中央の色がその色に近いかを見る。別の部品が入ると外れる
+ * 決めた回数で合わなければ screenshot_misframed（撮れなかった扱い。投稿には載せない）
+ */
+export async function captureElement(
+  page,
+  target,
+  { attempts = 3, edgeColorVar = null } = {},
+) {
+  for (let i = 0; i < attempts; i++) {
+    const box = await waitForStableBox(page, target);
+    const png = await target.screenshot({ type: "png" });
+    if (!sameBox(box, await target.boundingBox())) continue;
+    if (
+      edgeColorVar &&
+      !(await target.evaluate(edgesMatch, {
+        edgeCheck: Buffer.from(png).toString("base64"),
+        edgeColorVar,
+      }))
+    )
+      continue;
+    return png;
+  }
+  throw new Error("screenshot_misframed");
+}
+
+/** ブラウザの中で動く。画像の上端・下端の近くの中央の画素が、CSS の変数の色から各成分40以内か */
+export async function edgesMatch(node, { edgeCheck, edgeColorVar }) {
+  const probe = document.createElement("span");
+  probe.style.color = getComputedStyle(document.documentElement)
+    .getPropertyValue(edgeColorVar)
+    .trim();
+  document.body.append(probe);
+  const want = (getComputedStyle(probe).color.match(/[\d.]+/g) ?? []).map(
+    Number,
+  );
+  probe.remove();
+  if (want.length < 3) return false;
+  const img = new Image();
+  img.src = `data:image/png;base64,${edgeCheck}`;
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = img.width;
+  canvas.height = img.height;
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0);
+  const near = (y) => {
+    const px = ctx.getImageData(Math.floor(img.width / 2), y, 1, 1).data;
+    return [0, 1, 2].every((c) => Math.abs(px[c] - want[c]) <= 40);
+  };
+  // 端から10px の行（3倍の画像で約3px 内側）。いちばん外の数px は角の丸みと縁の明るい線で背景の色が出る
+  // （2026-10-21・10-24 の正常な図5枚で、上下とも10px の行は #0e1d31 前後、崩れた鳴門3R は #b6b9ba・#525855）
+  return near(10) && near(img.height - 11);
+}
+
 export function createChromiumHeadless({
   launch = launchChromium,
   gotoTimeoutMs = 30000,
@@ -138,6 +201,7 @@ export function createChromiumHeadless({
       deviceScaleFactor = 3,
       element = null,
       label = null,
+      edgeColorVar = null,
     }) {
       return open(
         { url, viewport, deviceScaleFactor, requiredSelectors },
@@ -169,9 +233,10 @@ export function createChromiumHeadless({
             await target.scrollIntoViewIfNeeded();
             await page.evaluate(() => document.fonts.ready);
             // 位置と大きさが落ち着いてから撮る。後から読み込まれる部品で表示がずれると、上に背景の帯が入り、
-            // 下が切れた図になる（2026-10-19 の /today の4枚目、桐生6R）
-            await waitForStableBox(page, target);
-            return { png: await target.screenshot({ type: "png" }) };
+            // 下が切れた図になる（2026-10-19 の /today の4枚目、桐生6R）。撮る途中のずれ・別の部品の混入は captureElement が落とす
+            return {
+              png: await captureElement(page, target, { edgeColorVar }),
+            };
           }
           await page.evaluate(() => document.fonts.ready);
           return { png: await page.screenshot({ type: "png" }) };

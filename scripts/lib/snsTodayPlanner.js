@@ -124,6 +124,9 @@ const pct = (value) => `${Number(value)}%`;
 // 8:30 を過ぎたら撮れた分で作る
 export const TODAY_MAX_IMAGES = 4;
 export const SONAR_ELEMENT = ".af-hep .af-dark";
+// 図の外周の色（.af-dark の放射状のグラデーションの外側、AnalogyV16.css）。撮った画像の上端・下端がこの色でなければ、
+// 別の部品が入った画像として撮り直す（2026-10-24 BOA-1013）
+export const SONAR_EDGE_COLOR_VAR = "--ryujin-navy-600";
 // 図を撮る前に待つ印は条件のカードだけ。段の表示（analogy-stage-chip）は展示のデータが入ると切り替えのボタンに変わり、
 // 展示の後に撮ると見えない（2026-10-17 夜の作り直しで4枚とも screenshot_component_missing）
 export const SONAR_READY = ['[data-testid="analogy-fact-card"]'];
@@ -384,6 +387,7 @@ export async function runTodayPlan(
         requiredSelectors: SONAR_READY,
         viewport: { width: 390, height: 844 },
         element: SONAR_ELEMENT,
+        edgeColorVar: SONAR_EDGE_COLOR_VAR,
         label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
       });
       // X の画像は1枚 5 MB まで（承認の関数 160 と同じ）。超えたら撮れなかった扱い
