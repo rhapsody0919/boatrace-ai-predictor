@@ -89,3 +89,6 @@
 - ESLint の設定コメントの説明の区切りは `\s-{2,}\s`（`--` に限らない）。自前で解析するときは `---` も区切りに扱う（2026-10-24 実測、PR #1819）
 - ruleFilter だけの lint の関門は、ファイル内の eslint-disable・`/* global */` で消せる。検査側の ESLint にだけ noInlineConfig を付けると、`npm run lint` とエディタを変えずに塞げる（2026-10-24、PR #1819）
 - ESLint 9 の ruleFilter は、外した規則の報告だけでなく実行も止める。何も報告せず変数に「使った」印を付ける補助ルール（eslint.config.js の local/jsx-uses-vars）は、no-unused-vars を関門に足すときに一緒に残さないと `<motion.div>` でだけ使う motion の誤検知が戻る（2026-10-24 実測、ESLint 9.39.1、BOA-1017 の system-architect）
+- ESM の import の行き先は URL として解決される。`%2e%2e` は `..`、`\` は `/`、`?`・`#` 以降は問い合わせになる（`./b?.js` は `b` を読む）。行き先をパスの文字列で判定する検査は、使える文字を英数字・`_`・`-`・`.`・`/` に限って塞ぐ（2026-10-24 実測、Node の `new URL`、scripts/maintenance/verify-pure-imports.js）
+- import の行き先とグローバルだけを見張る関門は、組み込みの書き換え（`JSON.stringify=`・`Date.prototype.toJSON=`・`Object.defineProperty(Object.prototype, …)`）を通す。import された物は同じ処理の中の supabase-js の直し方まで変え、DB に書く値を誤らせるので、`no-extend-native`・`no-global-assign` と「組み込みが根の書き換えの禁止」を足す（2026-10-24 実測、PR #1842 の system-architect、scripts/maintenance/verify-pure-imports.js）
+- JSDoc の型の import は、改行と行頭の ` * ` をはさんでも tsc が読む。コメントを正規表現で見るときは各行の先頭の `*` を取り除いてから照合し、取り出せない `import(` は不合格にする（2026-10-24 実測、PR #1842 の system-architect）
