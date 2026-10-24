@@ -58,6 +58,7 @@ function flattenInCautionRaces(venuesData, nowHHMM) {
       races.push({
         raceId: getRaceId({ rawData: race }),
         venueName: venue.placeName,
+        venueCode: Number(venue.placeCd),
         raceNo: race.raceNo,
         startTime: race.startTime || null,
         pct: ic.pct,
@@ -89,6 +90,7 @@ function flattenRaces(venuesData, nowHHMM) {
       races.push({
         raceId: getRaceId({ rawData: race }),
         venueName: venue.placeName,
+        venueCode: Number(venue.placeCd),
         raceNo: race.raceNo,
         startTime: race.startTime || null,
         percentile: race.volatility.percentile,
@@ -138,7 +140,7 @@ function RaceLink({ race, t, onRaceClick = null }) {
     >
       <div className="volatility-highlights__race-main">
         <span translate="no">
-          {race.venueName} {race.raceNo}R
+          {t(`venues.${race.venueCode}`, race.venueName)} {race.raceNo}R
           {race.startTime && (
             <span className="volatility-highlights__time">
               {" "}
