@@ -167,19 +167,33 @@ export function checkFullPicture(bundle, riskRules = []) {
   return reasons;
 }
 
-/** 完全版の YouTube のタグ（bundle の youtube_full.tags。下書きの hashtags に入れ、送るときに snippet.tags になる。hq 契約 10/24 C1） */
+/** 完全版の YouTube のタグ（bundle の youtube_full.tags。hq 契約 10/24 C1） */
 export const fullTagsOf = (bundle) =>
   Array.isArray(bundle?.youtube_full?.tags)
-    ? [...new Set(bundle.youtube_full.tags.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim()))]
+    ? [...new Set(bundle.youtube_full.tags.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim().replace(/^#+/, "")))]
     : [];
+
+/**
+ * 完全版の下書きの本文とハッシュタグ。送る文は buildPostText（本文＋空行＋hashtags の行）で作られ、YouTube の snippet.tags は
+ * hashtags の頭の # を外したもの（youtubeTagsOf）。説明文の末尾のハッシュタグ行を hashtags に移し、送る文を bundle の説明文と同じにする
+ * （本文に残したまま hashtags を足すと、末尾に「#」なしのタグの行が重なっていた。代わりの審査 2026-10-24 P2-1）
+ */
+export function fullYoutubeText(bundle) {
+  const description = bundle?.youtube_full?.description ?? "";
+  const tags = fullTagsOf(bundle);
+  if (!tags.length) return { caption_text: description, hashtags: [] };
+  const line = tags.map((t) => `#${t}`).join(" ");
+  const lines = description.split("\n");
+  if (lines.at(-1) !== line) return { caption_text: description, hashtags: tags.map((t) => `#${t}`) };
+  return { caption_text: lines.slice(0, -1).join("\n").replace(/\n+$/, ""), hashtags: tags.map((t) => `#${t}`) };
+}
 
 const draftTexts = (bundle) => ({
   x: { platform: "x", caption_text: bundle?.x_text ?? "", hashtags: [] },
   youtube: {
     platform: "youtube",
     title: bundle?.youtube_full?.title ?? "",
-    caption_text: bundle?.youtube_full?.description ?? "",
-    hashtags: fullTagsOf(bundle),
+    ...fullYoutubeText(bundle),
   },
   ...(withShorts(bundle)
     ? {
@@ -276,8 +290,7 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
       scheduled_at: sendAtOf(when, "youtube"),
       platform: "youtube",
       title: bundle.youtube_full.title,
-      caption_text: bundle.youtube_full.description,
-      hashtags: fullTagsOf(bundle),
+      ...fullYoutubeText(bundle),
       video_storage_path: paths.youtube,
       source_data: sourceData("youtube"),
     },
