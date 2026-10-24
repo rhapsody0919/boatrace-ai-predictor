@@ -16,7 +16,6 @@ import { supabaseDataService } from "../services/supabaseDataService";
 import "./RacersPage.css";
 
 const PAGE_SIZE = 50;
-const EMPTY_RANGE = { min: null, max: null };
 const DEFAULT_SORT_KEY = "winRate";
 const DEFAULT_SORT_DIR = "desc";
 // spec.md FR4 の例（?sort=height）のように、列名の短い呼び方でも並ぶようにする（BOA-470）。

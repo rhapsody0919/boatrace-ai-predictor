@@ -20,9 +20,6 @@ import {
   getDefaultDraftCardExpanded,
 } from "./utils";
 
-// blog/youtubeは承認操作自体がPRマージ/YouTube投稿まで行うため、
-// 承認後は"approved"状態を経由せず直接"posted"になる（ADR 0034, 0035）
-const AUTO_PUBLISH_PLATFORMS = new Set(["blog", "youtube"]);
 const TEXT_DRAFT_PLATFORMS = new Set(["blog", "note"]);
 
 export default function DraftCard({
