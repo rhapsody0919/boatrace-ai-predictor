@@ -28,7 +28,7 @@ import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import {
   TODAY_HEADING_BUILTIN,
   loadTodayVariants,
-  pickTodayHeading,
+  pickTodayPost,
   renderTodayHeading,
 } from "./snsTodayVariants.js";
 import { randomBytes } from "node:crypto";
@@ -159,6 +159,8 @@ export function buildTodayPost(
     sendAt = TODAY_SEND_AT,
     excluded = new Set(),
     heading = TODAY_HEADING_BUILTIN,
+    linkLead = null,
+    linkPosition = "after_heading",
   },
 ) {
   const model = buildTodayModel(digest, { date, t });
@@ -190,14 +192,11 @@ export function buildTodayPost(
   const head = (row) =>
     `${t(`venues.${row.venue_code}`)}${row.race_number}R ${row.start_time.slice(0, 5)}締切｜${row.boat_number}号艇 ${String(row.racer_name ?? "").replace(/\u3000/g, " ")}`;
   // 見出し（1行目）だけは日替わりの案（config/today-variants.json）。ほかは機械が作る
-  // リンクは見出しの直後（3行目）。末尾だと長文の折りたたみの先に隠れて押されにくい（2026-10-22 オーナー「前倒しで押される形」、
-  // 10/20 は表示321・クリック1以下）
-  const lines = [
-    renderTodayHeading(heading, model.dateLine),
-    "",
-    `${TODAY_LINK_LABEL}${url}`,
-    "",
-  ];
+  // リンクの置き場は型で選ぶ（PD02）。既定は見出しの直後（3行目）。末尾だと長文の折りたたみの先に隠れて押されにくい
+  // （2026-10-22 オーナー「前倒しで押される形」、10/20 は表示321・クリック1以下）。reply は本文に置かず自分への返信に置く
+  const linkLine = `${linkLead ?? TODAY_LINK_LABEL}${url}`;
+  const lines = [renderTodayHeading(heading, model.dateLine), ""];
+  if (linkPosition === "after_heading") lines.push(linkLine, "");
   // 注目レースを先頭に（2026-10-16 オーナー指示。「イン崩れ指数」「AIが算出」の言い方は使わない）
   if (featured)
     lines.push(
@@ -219,8 +218,11 @@ export function buildTodayPost(
     lines.push("");
   }
   lines.push(TODAY_NOTICE);
+  if (linkPosition === "end") lines.push("", linkLine);
   return {
     text: lines.join("\n"),
+    // 自分への返信に置く文（reply の型だけ）。返信は親の投稿の後に送る（送信の runner が親の posted を待つ）
+    reply: linkPosition === "reply" ? linkLine : null,
     // 画像（龍神ソナーの図）を撮るレース。注目レースを先頭に、一覧を締切順で、同じレースは1回
     races: [...(featured ? [featured] : []), ...picks]
       .filter(
@@ -310,9 +312,13 @@ export async function runTodayPlan(
     return done({ outcome: "skipped", reason: "not_generated" });
   const revision = await digestRevision(digest);
   const existing = await store.todayState(date);
-  // 下書きを作った後に item の作成で落ちた（item が無い）ときは、同じ版でも作り直して item を作る
+  // 下書きを作った後に item の作成で落ちた（item が無い。返信の型なら返信の item も）ときは、同じ版でも作り直して item を作る
+  const replyPending =
+    existing.draft?.source_data?.content_type?.link_position === "reply" &&
+    !existing.reply?.item;
   if (
     existing.item &&
+    !replyPending &&
     existing.draft?.source_data?.digest?.revision === revision
   )
     return done({ outcome: "unchanged", item_id: existing.item?.id ?? null });
@@ -335,7 +341,23 @@ export async function runTodayPlan(
       .filter((p) => p.reason)
       .map((p) => `${p.race_id}:${p.boat_number}`),
   );
-  const { heading, variant } = pickTodayHeading(loadVariants(), date);
+  // その日の型（PD02）。下書きができた後は、その日の型を変えない（作り直しでも同じ型。途中で列が変わっても返信の下書きを取り残さない）
+  const picked =
+    existing.draft?.source_data?.content_type?.heading &&
+    existing.draft?.source_data?.today_variant
+      ? {
+          ...existing.draft.source_data.content_type,
+          variant: existing.draft.source_data.today_variant,
+          content_type: existing.draft.source_data.content_type,
+        }
+      : await pickTodayType(date, { store, loadVariants, review });
+  const { heading, variant } = picked;
+  const contentType = {
+    ...picked.content_type,
+    heading: picked.heading,
+    link_lead: picked.link_lead ?? null,
+    link_position: picked.link_position,
+  };
   const post = buildTodayPost(digest, {
     date,
     t,
@@ -343,15 +365,21 @@ export async function runTodayPlan(
     sendAt,
     excluded,
     heading,
+    linkLead: contentType.link_lead,
+    linkPosition: contentType.link_position,
   });
   if (!post)
     return done({ outcome: "skipped", reason: "no_candidates", revision });
   const caption = post.text;
-  const risk = matchRiskRules(
-    draftRiskFields({ platform: "x", caption_text: caption, hashtags: [] }),
-    "x",
-    riskRules,
-  );
+  const riskOf = (text) =>
+    matchRiskRules(
+      draftRiskFields({ platform: "x", caption_text: text, hashtags: [] }),
+      "x",
+      riskRules,
+    );
+  const replyRisk = post.reply ? riskOf(post.reply) : [];
+  // 返信の文に禁止表現があれば、親も止める（リンクの無い親だけを送らない）
+  const risk = [...riskOf(caption), ...replyRisk];
   if (!live)
     return done({ outcome: risk.length ? "held_manual" : "manual", revision });
 
@@ -427,6 +455,8 @@ export async function runTodayPlan(
     digest: { date, revision, picks: post.picks },
     // 見出しの案の札（uuid は sns_template_variants の行。入るまでは null）
     today_variant: variant,
+    // 型の札（PD02）。hq の毎日の PDCA は id を読む。source は schedule（型の列）か config、fallback_reason は列を使わなかった理由
+    content_type: contentType,
     deadline_queue: {
       deadline_at: when.deadline_at,
       expires_at: when.expires_at,
@@ -522,6 +552,39 @@ export async function runTodayPlan(
         );
         return draft;
       });
+  // 返信（link_position=reply）: リンクだけの子の下書き。親の job ができるまで公開保留（子だけ先に承認されて単独の投稿にならない）。
+  // 親と同じ版・締切・表示の確認を持つので、送る直前の検査（readCurrent）は親と同じに通る。thread_index は 0 のまま
+  // （X の月の予約は thread_index=0 を URL つきの額で引く。子は URL つきなので、こちらに合わせる）
+  let replyDraft = existing.reply?.draft ?? null;
+  if (post.reply) {
+    const { image_paths: _images, ...rest } = sourceData;
+    const replyFields = {
+      caption_text: post.reply,
+      source_data: {
+        ...rest,
+        race_id: `${date}-today-reply`,
+        today_reply: { parent_draft_id: draft.id },
+      },
+      risk_flags: replyRisk,
+      publish_blocked: true,
+    };
+    replyDraft = replyDraft
+      ? await store.updateTodayDraft(replyDraft.id, replyFields)
+      : await store.insertDraft({
+          content_group_id: draft.content_group_id,
+          platform: "x",
+          language: "ja",
+          status: "pending_review",
+          format: "today_digest",
+          title: "本日のデータ一覧（返信のリンク）",
+          hashtags: [],
+          cover_image_path: null,
+          publication_hold_reasons: [],
+          send_lane: "A",
+          scheduled_at: when.scheduled_at,
+          ...replyFields,
+        });
+  }
   const state = risk.length ? "held_manual" : "manual";
   const checks = {
     passed: risk.length === 0,
@@ -549,6 +612,29 @@ export async function runTodayPlan(
         checks,
         held_reason: heldReason,
       });
+  const replyRow = {
+    kind: "digest",
+    channel: "x",
+    race_id: `today:${date}:reply`,
+    deadline_at: when.deadline_at,
+    notify_by: when.notify_by,
+    veto_until: when.veto_until,
+  };
+  let replyItem = existing.reply?.item ?? null;
+  if (replyDraft && post.reply)
+    replyItem = replyItem
+      ? await store.updateItem(replyItem.id, replyItem.state, {
+          state,
+          checks,
+          held_reason: heldReason,
+        })
+      : await store.insertItem({
+          ...replyRow,
+          draft_id: replyDraft.id,
+          state,
+          checks,
+          held_reason: heldReason,
+        });
   // 自動（mode=auto、2026-10-18 オーナー決定: /today も承認なし）: item を notified にして自動送信の承認者で承認する。
   // 送る時刻は 8:00 と下書きを作った時刻の遅い方（veto_until と同じ）。確認用の作り直し（review）は自動にしない
   let autoError = null;
@@ -566,7 +652,7 @@ export async function runTodayPlan(
         stop_token_hash: randomBytes(32).toString("hex"),
       });
       const bytes = new Map(imagePaths.map((p, i) => [p, shots[i]]));
-      await store.approve({
+      const parentJob = await store.approve({
         p_draft_id: draft.id,
         p_approver_id: control.auto_approver_id,
         p_snapshot: await createXSnapshot(draft, async (p) => {
@@ -575,11 +661,44 @@ export async function runTodayPlan(
         }),
         p_scheduled_at: when.scheduled_at,
       });
+      // 返信: 親の job を deadline_queue.parent_job_id に入れて（承認は queue の一致を照合する）公開保留を外してから承認する。
+      // 送信の runner は親が posted の子だけを選び、claim も parent_not_posted で止める（153・158）
+      if (replyItem) {
+        if (!parentJob?.id) throw new Error("親の job の id を受け取れない");
+        replyItem = await store.updateItem(replyItem.id, "manual", {
+          state: "notified",
+          notified_at: checkedAt,
+          stop_token_hash: randomBytes(32).toString("hex"),
+        });
+        replyDraft = await store.updateTodayDraft(replyDraft.id, {
+          source_data: {
+            ...replyDraft.source_data,
+            deadline_queue: {
+              ...replyDraft.source_data.deadline_queue,
+              parent_job_id: parentJob.id,
+            },
+          },
+          publish_blocked: false,
+        });
+        await store.approve({
+          p_draft_id: replyDraft.id,
+          p_approver_id: control.auto_approver_id,
+          p_snapshot: await createXSnapshot(replyDraft, async (p) => {
+            throw new Error(`返信に媒体は無い: ${p}`);
+          }),
+          p_scheduled_at: when.scheduled_at,
+        });
+      }
     } catch (error) {
       autoError = error.message;
+      // 親も返信も manual に戻す（自動の承認者の job は item が notified でないと claim で止まる。リンクの無い親だけを送らない）
       await store
         .updateItem(item.id, "notified", { state: "manual" })
         .catch(() => {});
+      if (replyItem?.state === "notified")
+        await store
+          .updateItem(replyItem.id, "notified", { state: "manual" })
+          .catch(() => {});
     }
   }
   const images = await Promise.all(
@@ -600,7 +719,7 @@ export async function runTodayPlan(
             : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
-      `SNS /today（${date}）: ${head}\n${caption}${images
+      `SNS /today（${date}）: ${head}\n${caption}${post.reply ? `\n\n（自分への返信）${post.reply}` : ""}${images
         .filter(Boolean)
         .map((url, i) => `\n画像${i + 1}: ${url}`)
         .join("")}`,
@@ -614,8 +733,45 @@ export async function runTodayPlan(
     ...(review ? { review: true } : {}),
     item_id: item.id,
     draft_id: draft.id,
+    ...(replyDraft && post.reply ? { reply_draft_id: replyDraft.id } : {}),
+    content_type: contentType.id,
+    ...(contentType.fallback_reason
+      ? { type_fallback: contentType.fallback_reason }
+      : {}),
     revision,
     written: true,
+  });
+}
+
+/**
+ * その日の型を選ぶ（PD02）。型の列（store.typeSchedule）を読み、読めなければ config の案で送る（止めない。理由は fallback_reason）。
+ * 返信（reply）は自動（mode=auto・自動送信の承認者あり）で、確認用の作り直しでないときだけ選べる（親から順につなぐのが自動の道だけのため）
+ */
+async function pickTodayType(date, { store, loadVariants, review }) {
+  let row = null;
+  let scheduleError = null;
+  if (store.typeSchedule) {
+    try {
+      row = await store.typeSchedule(date);
+    } catch (error) {
+      // 表がまだ無い（174 の適用前、PostgREST は 404）と、それ以外の読み取りの失敗を分ける
+      scheduleError = /HTTP 404/.test(error.message)
+        ? "schedule_unavailable"
+        : "schedule_read_failed";
+      console.error(
+        `/today の型の列を読めない（config の案で送る）: ${error.message}`,
+      );
+    }
+  }
+  let allowReply = false;
+  if (row?.post?.link_position === "reply" && !review && store.control) {
+    const control = await store.control();
+    allowReply = control?.mode === "auto" && Boolean(control?.auto_approver_id);
+  }
+  return pickTodayPost(loadVariants(), date, {
+    row,
+    scheduleError,
+    allowReply,
   });
 }
 
@@ -649,18 +805,44 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
     return rows[0];
   };
   return {
+    // 親（本文）と返信（source_data.today_reply のある子、PD02）を分けて返す
     async todayState(date) {
       const [drafts, items] = await Promise.all([
         call(
-          `sns_drafts?send_lane=eq.A&format=eq.today_digest&source_data->digest->>date=eq.${date}&status=neq.archived&select=id,status,source_data&limit=2`,
+          `sns_drafts?send_lane=eq.A&format=eq.today_digest&source_data->digest->>date=eq.${date}&status=neq.archived&select=id,status,source_data&limit=4`,
         ),
         call(
-          `sns_auto_send_items?kind=eq.digest&race_id=eq.${encodeURIComponent(`today:${date}`)}&select=id,state,draft_id`,
+          `sns_auto_send_items?kind=eq.digest&race_id=in.(${encodeURIComponent(`"today:${date}","today:${date}:reply"`)})&select=id,state,draft_id,race_id`,
         ),
       ]);
-      if (drafts.length > 1)
+      const parents = drafts.filter((d) => !d.source_data?.today_reply);
+      if (parents.length > 1)
         throw new Error(`/today の下書きが2件ある: ${date}`);
-      return { draft: drafts[0] ?? null, item: items[0] ?? null };
+      const draft = parents[0] ?? null;
+      const replies = drafts.filter(
+        (d) =>
+          draft && d.source_data?.today_reply?.parent_draft_id === draft.id,
+      );
+      if (replies.length > 1)
+        throw new Error(`/today の返信の下書きが2件ある: ${date}`);
+      return {
+        draft,
+        item: items.find((i) => i.race_id === `today:${date}`) ?? null,
+        reply: replies[0]
+          ? {
+              draft: replies[0],
+              item:
+                items.find((i) => i.race_id === `today:${date}:reply`) ?? null,
+            }
+          : null,
+      };
+    },
+    // 型の列のその日の行（PD02、174）。無ければ null。表が無い（174 の適用前）は HTTP 404 で投げる（呼び出し側が config で送る）
+    async typeSchedule(date) {
+      const rows = await call(
+        `sns_today_type_schedule?day=eq.${date}&select=day,type_id,post`,
+      );
+      return rows[0] ?? null;
     },
     insertDraft: async (row) =>
       one(
