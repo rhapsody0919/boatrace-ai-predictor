@@ -55,31 +55,23 @@ try {
       });
     }
 
-    if (tz === "Asia/Tokyo") {
-      for (const [input, expected] of [
-        ["2026-10-25", "2026年10月25日(日)"],
-        ["2026-01-01", "2026年1月1日(木)"],
-        ["2024-02-29", "2024年2月29日(木)"],
-      ]) {
-        test(`${tz} formatDate(${input}) 年月日と曜日`, () => {
-          assert.equal(formatDate(input), expected);
-        });
-      }
-      test(`${tz} formatDateObject(2026-01-01) 3形式とキー`, () => {
-        assert.deepEqual(formatDateObject("2026-01-01"), {
-          full: "2026年1月1日(木)",
-          short: "1/1(木)",
-          yearMonth: "2026年1月",
-        });
+    // 日本の暦日は実行環境のタイムゾーンに依らない（BOA-1092 で直した。以前は UTC・LA で1日前になり KNOWN_GAPS に残していた）
+    for (const [input, expected] of [
+      ["2026-10-25", "2026年10月25日(日)"],
+      ["2026-01-01", "2026年1月1日(木)"],
+      ["2024-02-29", "2024年2月29日(木)"],
+    ]) {
+      test(`${tz} formatDate(${input}) 年月日と曜日`, () => {
+        assert.equal(formatDate(input), expected);
       });
-    } else {
-      recordGap('formatDate("2026-10-25")', "2026年10月25日(日)", () =>
-        formatDate("2026-10-25"),
-      );
-      recordGap('formatDateObject("2026-01-01")', {
-        full: "2026年1月1日(木)", short: "1/1(木)", yearMonth: "2026年1月",
-      }, () => formatDateObject("2026-01-01"));
     }
+    test(`${tz} formatDateObject(2026-01-01) 3形式とキー`, () => {
+      assert.deepEqual(formatDateObject("2026-01-01"), {
+        full: "2026年1月1日(木)",
+        short: "1/1(木)",
+        yearMonth: "2026年1月",
+      });
+    });
 
     for (const [input, expected] of [
       ["2026-10-25", "10/25(日)"],

@@ -14,16 +14,27 @@ import { WEEKDAYS } from "../constants/index.js";
 export const formatPercent = (rate) => (rate * 100).toFixed(1) + "%";
 
 /**
+ * YYYY-MM-DD（日本の暦日。レースの開催日等）を年・月・日・曜日に分ける。
+ * 文字列の年月日をそのまま使い、実行環境のタイムゾーンに左右されないようにする。
+ * `new Date(dateStr + "T00:00:00+09:00")` をローカル時刻の getDate() で読むと、
+ * JST より西（UTC のサーバー・海外のブラウザ）で前日になる（ADR 0089、BOA-1092）
+ * @param {string} dateStr - YYYY-MM-DD形式の日付
+ * @returns {{year: number, month: number, day: number, weekday: string}}
+ */
+const splitJstDate = (dateStr) => {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const weekday =
+    WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  return { year, month, day, weekday };
+};
+
+/**
  * 日付フォーマット（フル形式）
  * @param {string} dateStr - YYYY-MM-DD形式の日付
  * @returns {string} YYYY年M月D日(曜日) 形式
  */
 export const formatDate = (dateStr) => {
-  const date = new Date(dateStr + "T00:00:00+09:00");
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const weekday = WEEKDAYS[date.getDay()];
+  const { year, month, day, weekday } = splitJstDate(dateStr);
   return `${year}年${month}月${day}日(${weekday})`;
 };
 
@@ -65,11 +76,7 @@ export const formatDateLocalized = (dateStr, lang) => {
  * @returns {string} M/D(曜日) 形式
  */
 export const formatDateShort = (dateStr) => {
-  // 文字列の年月日をそのまま使い、実行環境のタイムゾーンに左右されないようにする。
-  // ローカル時刻の getDate() だと、JST より西（UTC のサーバー・海外のブラウザ）で前日になる（ADR 0089）
-  const [year, month, day] = dateStr.split("-").map(Number);
-  const weekday =
-    WEEKDAYS[new Date(Date.UTC(year, month - 1, day)).getUTCDay()];
+  const { month, day, weekday } = splitJstDate(dateStr);
   return `${month}/${day}(${weekday})`;
 };
 
@@ -112,11 +119,7 @@ export const formatDateLongLocalized = (dateStr, lang) => {
  * @returns {Object} full, short, yearMonth の各形式
  */
 export const formatDateObject = (dateStr) => {
-  const date = new Date(dateStr + "T00:00:00+09:00");
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const weekday = WEEKDAYS[date.getDay()];
+  const { year, month, day, weekday } = splitJstDate(dateStr);
   return {
     full: `${year}年${month}月${day}日(${weekday})`,
     short: `${month}/${day}(${weekday})`,

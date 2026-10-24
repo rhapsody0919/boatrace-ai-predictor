@@ -431,6 +431,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-formatters-timezone.js",
+      "tier": "ci",
+      "guards": "日本の暦日の整形（formatDate・formatDateObject・formatDateShort）が実行環境のタイムゾーンに依らず同じ日付・曜日になる（JST より西で1日前になった BOA-1092）"
+    },
+    {
       "script": "verify-formatters.js",
       "tier": "ci",
       "guards": "日付・割合の7関数の表記、TZ非依存の関数の3タイムゾーン検証、既知の差異の記録（BOA-1086）"
