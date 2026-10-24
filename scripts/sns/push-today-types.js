@@ -49,7 +49,12 @@ export function checkTypeSchedule(
   const seen = new Set();
   for (const [i, item] of items.entries()) {
     const at = `types[${i}]${item?.day ? `（${item.day}）` : ""}`;
-    if (!DAY.test(item?.day ?? "") || Number.isNaN(Date.parse(item.day))) {
+    // 暦に無い日（2026-02-30 等。Date.parse は 3/2 にずらして受ける）も落とす
+    if (
+      !DAY.test(item?.day ?? "") ||
+      Number.isNaN(Date.parse(item.day)) ||
+      new Date(`${item.day}T00:00:00Z`).toISOString().slice(0, 10) !== item.day
+    ) {
       reasons.push(`${at}: day が YYYY-MM-DD でない`);
       continue;
     }

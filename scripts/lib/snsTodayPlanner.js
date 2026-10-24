@@ -313,9 +313,16 @@ export async function runTodayPlan(
   const revision = await digestRevision(digest);
   const existing = await store.todayState(date);
   // 下書きを作った後に item の作成で落ちた（item が無い。返信の型なら返信の item も）ときは、同じ版でも作り直して item を作る
+  // 返信の型は、子の item が無い・親と状態が違う・親が自動で承認済み（notified）なのに子が親の job につながっていない
+  // （子の承認の前に関数が落ちた）ときも作り直す。「変化なし」で親だけが送られるのを防ぐ（system-architect の審査 P2-2）
+  const isReply =
+    existing.draft?.source_data?.content_type?.link_position === "reply";
   const replyPending =
-    existing.draft?.source_data?.content_type?.link_position === "reply" &&
-    !existing.reply?.item;
+    isReply &&
+    (!existing.reply?.item ||
+      existing.reply.item.state !== existing.item?.state ||
+      (existing.item?.state === "notified" &&
+        !existing.reply.draft?.source_data?.deadline_queue?.parent_job_id));
   if (
     existing.item &&
     !replyPending &&
@@ -326,6 +333,15 @@ export async function runTodayPlan(
   // 自動で承認した（notified）ものは作り直す（版が変わると送る直前の読み直しで止まるため。2026-10-18）
   if (existing.item && !["manual", "notified"].includes(existing.item.state))
     return done({ outcome: "skipped", reason: `item_${existing.item.state}` });
+  // 返信の子だけを止めた（stopped・held_manual）ときも、親を作り直さない（system-architect の審査 P3-1）
+  if (
+    existing.reply?.item &&
+    !["manual", "notified"].includes(existing.reply.item.state)
+  )
+    return done({
+      outcome: "skipped",
+      reason: `reply_item_${existing.reply.item.state}`,
+    });
 
   const trackingUrl = todayTrackingUrl(date);
   // 欠場・中止・締切を確かめられない候補は除く（区分の上限までは後ろの rank から補う）
@@ -341,6 +357,11 @@ export async function runTodayPlan(
       .filter((p) => p.reason)
       .map((p) => `${p.race_id}:${p.boat_number}`),
   );
+  // 送信の設定は1回だけ読み、型の選び方（返信を選べるか）と自動の承認の両方に使う（2回読むと間で変わりうる）。
+  // 確認用の作り直し（review）は自動にしない
+  const control = !review && store.control ? await store.control() : null;
+  const replyAllowed =
+    control?.mode === "auto" && Boolean(control?.auto_approver_id);
   // その日の型（PD02）。下書きができた後は、その日の型を変えない（作り直しでも同じ型。途中で列が変わっても返信の下書きを取り残さない）
   const picked =
     existing.draft?.source_data?.content_type?.heading &&
@@ -350,7 +371,7 @@ export async function runTodayPlan(
           variant: existing.draft.source_data.today_variant,
           content_type: existing.draft.source_data.content_type,
         }
-      : await pickTodayType(date, { store, loadVariants, review });
+      : await pickTodayType(date, { store, loadVariants, replyAllowed });
   const { heading, variant } = picked;
   const contentType = {
     ...picked.content_type,
@@ -585,7 +606,10 @@ export async function runTodayPlan(
           ...replyFields,
         });
   }
-  const state = risk.length ? "held_manual" : "manual";
+  // 返信の型を引き継いだ作り直しで、自動でなくなっていたら（mode を manual に戻した等）送らない。親だけが承認されて
+  // リンクの無い投稿が出るのを防ぐ（/code-review の指摘）
+  const replyBlocked = Boolean(post.reply) && !replyAllowed;
+  const state = risk.length || replyBlocked ? "held_manual" : "manual";
   const checks = {
     passed: risk.length === 0,
     risk: risk.map((r) => r.id),
@@ -593,7 +617,11 @@ export async function runTodayPlan(
     display: { ok: true, checked_at: checkedAt },
     checked_at: checkedAt,
   };
-  const heldReason = risk.length ? `禁止表現: ${checks.risk.join(",")}` : null;
+  const heldReason = risk.length
+    ? `禁止表現: ${checks.risk.join(",")}`
+    : replyBlocked
+      ? "返信の型は自動（mode=auto）の日だけ送れる"
+      : null;
   let item = existing.item
     ? await store.updateItem(existing.item.id, existing.item.state, {
         state,
@@ -638,11 +666,7 @@ export async function runTodayPlan(
   // 自動（mode=auto、2026-10-18 オーナー決定: /today も承認なし）: item を notified にして自動送信の承認者で承認する。
   // 送る時刻は 8:00 と下書きを作った時刻の遅い方（veto_until と同じ）。確認用の作り直し（review）は自動にしない
   let autoError = null;
-  const control =
-    state === "manual" && !review && store.control
-      ? await store.control()
-      : null;
-  const auto = control?.mode === "auto" && control?.auto_approver_id;
+  const auto = state === "manual" && replyAllowed;
   if (auto) {
     try {
       item = await store.updateItem(item.id, "manual", {
@@ -699,9 +723,13 @@ export async function runTodayPlan(
             held_reason: `返信の型の自動の承認に失敗: ${firstLine(autoError)}`,
           }
         : { state: "manual" };
-      await store.updateItem(item.id, "notified", back).catch(() => {});
-      if (replyItem?.state === "notified")
-        await store.updateItem(replyItem.id, "notified", back).catch(() => {});
+      // 戻せなかったら握りつぶさず、Slack の知らせ（autoError）に載せる
+      const undo = (row) =>
+        store.updateItem(row.id, row.state, back).catch((e) => {
+          autoError += ` / item ${row.id} を戻せない: ${e.message}`;
+        });
+      await undo(item);
+      if (replyItem && replyItem.state !== back.state) await undo(replyItem);
     }
   }
   const images = await Promise.all(
@@ -750,7 +778,7 @@ export async function runTodayPlan(
  * その日の型を選ぶ（PD02）。型の列（store.typeSchedule）を読み、読めなければ config の案で送る（止めない。理由は fallback_reason）。
  * 返信（reply）は自動（mode=auto・自動送信の承認者あり）で、確認用の作り直しでないときだけ選べる（親から順につなぐのが自動の道だけのため）
  */
-async function pickTodayType(date, { store, loadVariants, review }) {
+async function pickTodayType(date, { store, loadVariants, replyAllowed }) {
   let row = null;
   let scheduleError = null;
   if (store.typeSchedule) {
@@ -766,15 +794,10 @@ async function pickTodayType(date, { store, loadVariants, review }) {
       );
     }
   }
-  let allowReply = false;
-  if (row?.post?.link_position === "reply" && !review && store.control) {
-    const control = await store.control();
-    allowReply = control?.mode === "auto" && Boolean(control?.auto_approver_id);
-  }
   return pickTodayPost(loadVariants(), date, {
     row,
     scheduleError,
-    allowReply,
+    allowReply: replyAllowed,
   });
 }
 

@@ -13,7 +13,8 @@
 --   SELECT relrowsecurity FROM pg_class WHERE oid = 'public.sns_today_type_schedule'::regclass;  -- 期待: true
 --   SELECT has_table_privilege('anon', 'public.sns_today_type_schedule', 'SELECT'),
 --          has_table_privilege('authenticated', 'public.sns_today_type_schedule', 'INSERT');      -- 期待: false, false
---   SELECT has_table_privilege('claude_ro', 'public.sns_today_type_schedule', 'SELECT');          -- 期待: true（hq が入った行を読み返す）
+--   SELECT has_table_privilege('claude_ro', 'public.sns_today_type_schedule', 'SELECT'),
+--          has_table_privilege('service_role', 'public.sns_today_type_schedule', 'INSERT');      -- 期待: true, true（hq の読み返し・push-today-types.js の書き込み）
 --
 -- 戻し方（行は hq が作り直せる。下書きの source_data.content_type に送った型が残る）:
 --   DROP TABLE public.sns_today_type_schedule;

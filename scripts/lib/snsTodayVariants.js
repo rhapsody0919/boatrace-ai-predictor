@@ -18,7 +18,9 @@ const headingOk = (v) =>
   v.trim().length > 0 &&
   v.length <= 80 &&
   !/[\r\n]/.test(v) &&
-  v.includes("{date}");
+  v.includes("{date}") &&
+  // {date} のほかの差し込み・波かっこは、送る直前の検査（unresolved_placeholder）で止まるので受けない（/code-review の指摘）
+  !/[{}]|\$\{/.test(v.replaceAll("{date}", ""));
 
 /** リンクの置き場: 見出しの直後（今の型、2026-10-22〜）・本文の末尾・自分への返信（PD02、型の列だけが選べる） */
 export const TODAY_LINK_POSITIONS = ["after_heading", "end", "reply"];
@@ -110,16 +112,9 @@ export function loadTodayVariants(
  * 日の番号（1970-01-01 からの日数）の偶奇で選ぶ（週ごとに順が逆になるのは、1週が7日で奇数のため）。案が無ければ既定の文（id "default"）
  */
 export function pickTodayHeading(config, date) {
-  const { fallback, variants } = normalizeTodayVariants(config);
-  if (!variants.length)
-    return { heading: fallback, variant: { id: "default", uuid: null } };
-  const day = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86400000);
-  // 日ごとに交互。1週は7日（奇数）なので、週が変わると最初の案が入れ替わり、同じ曜日の案も週ごとに逆になる
-  const choice = variants[day % 2];
-  return {
-    heading: choice.heading,
-    variant: { id: choice.id, uuid: choice.uuid },
-  };
+  // 偶奇の選び方は pickTodayPost の1か所だけに置く（型の列なしのときと同じ）
+  const { heading, variant } = pickTodayPost(config, date);
+  return { heading, variant };
 }
 
 /**
@@ -169,9 +164,14 @@ export function pickTodayPost(
         link_position: "after_heading",
       };
   const variant = { id: base.id, uuid: base.uuid };
+  // 返信は X の投稿が1日1本増え、月の予約も URL つきの額で2本分引く（158 の thread_index=0）。費用の線はオーナーの判断なので、
+  // config の reply_enabled が true の間だけ選べる（既定は false。system-architect の審査 P1-1）
+  const replyOn = config?.reply_enabled === true;
   const checked = row
-    ? normalizeTypeScheduleRow(row, date, { allowReply })
+    ? normalizeTypeScheduleRow(row, date, { allowReply: allowReply && replyOn })
     : null;
+  if (checked?.reason === "reply_not_allowed" && !replyOn)
+    checked.reason = "reply_disabled";
   // 列の型の日は、見出しの a・b の札（today_variant・template_variant_id）を付けない。札と実際の文面が食い違い、
   // a・b の比較の母数を汚すため（x-channel の審査 P1）。型の比較は content_type で行う
   if (checked?.post)

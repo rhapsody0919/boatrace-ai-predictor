@@ -170,6 +170,8 @@ test("型の列の1行: 書ける項目だけを受け、作れない項目・�
       "type_unsupported:thumb",
     ],
     [{ ...base, post: { heading: "日付なし" } }, "heading_invalid"],
+    // {date} のほかの差し込みは、送る直前の検査（unresolved_placeholder）で止まるので受けない
+    [{ ...base, post: { heading: "{date}の{top_stat}" } }, "heading_invalid"],
     [
       { ...base, post: { ...base.post, link_lead: "改行\nあり" } },
       "link_lead_invalid",
@@ -261,15 +263,23 @@ test("その日の型: 列の行があれば a・b どちらの日もその中�
     type_id: "t01-link-in-reply",
     post: { heading: "見出し（{date}）", link_position: "reply" },
   };
+  const on = { ...typed, reply_enabled: true };
   assert.equal(
-    pickTodayPost(typed, "2026-10-27", { row: reply, allowReply: false })
+    pickTodayPost(on, "2026-10-27", { row: reply, allowReply: false })
       .content_type.fallback_reason,
     "reply_not_allowed",
   );
   assert.equal(
-    pickTodayPost(typed, "2026-10-27", { row: reply }).link_position,
+    pickTodayPost(on, "2026-10-27", { row: reply }).link_position,
     "reply",
   );
+  // 返信は費用が増えるので、config の reply_enabled が true の間だけ（既定は false）
+  assert.equal(
+    pickTodayPost(typed, "2026-10-27", { row: reply }).content_type
+      .fallback_reason,
+    "reply_disabled",
+  );
+  assert.notEqual(loadTodayVariants().reply_enabled, true);
 });
 
 test("リポジトリの config の案 a・b の型の id は today-a（2案が同じ中身の間は、hq の基準の型と同じ）", () => {
@@ -323,6 +333,7 @@ test("push-today-types.js: 先の7日分を検査し、1行でも落ちたら何
       /type_unsupported:caption/,
     ],
     [types[1], /同じ日が2回/],
+    [{ ...types[0], day: "2026-11-31" }, /YYYY-MM-DD/],
   ]) {
     const res = checkTypeSchedule(
       { types: [...types.slice(1), bad] },

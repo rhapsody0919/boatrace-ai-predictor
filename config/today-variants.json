@@ -1,5 +1,6 @@
 {
   "default": "本日のデータ一覧（{date}）",
+  "reply_enabled": false,
   "variants": [
     {
       "id": "a",
