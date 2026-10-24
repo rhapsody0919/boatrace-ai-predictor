@@ -93,6 +93,11 @@
       "guards": "マイグレーション143（龍神ソナーの画面の中の声 analogy_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・同じブラウザ×レース×種類は1行・列挙値と一言の長さと理由の置き場所の CHECK・races の外部キー・created_at の上書き・同じブラウザ24時間40行の連投制限・冪等・ロールバックを確かめる"
     },
     {
+      "script": "verify-analogy-format.js",
+      "tier": "ci",
+      "guards": "類似レースの割合・件数・会場・級別構成・今日の値・順位の表記"
+    },
+    {
       "script": "verify-analogy-outlook-tips.js",
       "tier": "ci",
       "guards": "BOA-1068: AIの見立ての整数割合（最大剰余法）・向きの翻訳キーとグレード順、類似レースの吹き出しの割合・Wilson区間・追加文の接続"
