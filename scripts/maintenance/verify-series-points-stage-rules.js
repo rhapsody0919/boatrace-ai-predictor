@@ -540,11 +540,16 @@ check(
       true,
     );
     // 本番STの行そのものが無い欠場（他艇の行はある）も、履歴で「欠場」と出す
-    // （2026-06-13 浜名湖5R・12R の中岡正彦が「着外(順位不明)」になっていた）
+    // （2026-06-13 浜名湖5R・12R の中岡正彦が「着外(順位不明)」になっていた）。
+    // 整形は getRacerScopedRaceStats から racerScopedRaceRows.js へ移した（BOA-1022）
+    const racerScopedRows = readFileSync(
+      new URL("../../src/services/racerScopedRaceRows.js", import.meta.url),
+      "utf8",
+    );
     check(
       "選手の履歴は、本番STの行が無い欠場も欠場として扱う",
       /absent:\s*isAbsentStartRow\(st\) \|\|\s*\(!st && stRowsByRace\.has\(entry\.race_id\)\)/.test(
-        service,
+        racerScopedRows,
       ),
       true,
     );
