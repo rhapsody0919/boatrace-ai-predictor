@@ -8,12 +8,7 @@
   ],
   "rules": {
     "no-undef": {},
-    "no-empty": {
-      "src/services/supabaseDataService.js": {
-        "count": 3,
-        "reason": "キャッシュの clear・_clearAllLocalStorage・_cleanupOldCache の空の catch（localStorage が使えないときに黙って続ける意図）。BOA-1015 が同じ catch の no-unused-vars と合わせて直す。直したらこの行を消す"
-      }
-    },
+    "no-empty": {},
     "no-irregular-whitespace": {
       "src/components/holmes/explanations/MoriartyExplanation.jsx": {
         "count": 2,
