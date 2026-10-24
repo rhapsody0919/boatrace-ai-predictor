@@ -1,10 +1,3 @@
-const THRESHOLDS = [
-  { label: "初期段階", min: 0, max: 30 },
-  { label: "データ蓄積中", min: 30, max: 100 },
-  { label: "成長中", min: 100, max: 300 },
-  { label: "成熟", min: 300, max: 300 },
-];
-
 function MoriartyDataMaturity({ totalBets = 0, stage = "starting" }) {
   const target = stage === "starting" ? 30 : stage === "gathering" ? 100 : 300;
   const progress = Math.min((totalBets / target) * 100, 100);
