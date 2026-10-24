@@ -93,6 +93,11 @@
       "guards": "マイグレーション143（龍神ソナーの画面の中の声 analogy_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・同じブラウザ×レース×種類は1行・列挙値と一言の長さと理由の置き場所の CHECK・races の外部キー・created_at の上書き・同じブラウザ24時間40行の連投制限・冪等・ロールバックを確かめる"
     },
     {
+      "script": "verify-analogy-outlook-tips.js",
+      "tier": "ci",
+      "guards": "BOA-1068: AIの見立ての整数割合（最大剰余法）・向きの翻訳キーとグレード順、類似レースの吹き出しの割合・Wilson区間・追加文の接続"
+    },
+    {
       "script": "verify-analogy-racers.js",
       "tier": "ci",
       "guards": "/api/analogy/facts の include=racers（BOA-855、毎日の全貌 Shorts 用）: 今節の展示タイム順位が節の初日からこのレースより前の同じ会場の走だけで、同着は同順位・展示の無い艇は母数から外すこと。進入傾向は venue_code=0 の行の全会場とこの会場の分で、行の無い選手は null。include を渡さない画面には racers を返さず追加の読み出しもしないこと。snapshot の無いレースでも返すこと。各走の state（ok・absent・missing）と締切前のレースを入れないこと、集計の終わり以前の日のレースは course_entry=null・after_race になること（BOA-860）"
