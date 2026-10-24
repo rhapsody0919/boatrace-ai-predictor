@@ -37,15 +37,30 @@ const VIDEO_METRICS = [
   "subscribersGained",
 ];
 /**
- * 動画ごとの engagedViews・views を sns_metric_observations にも入れる（PD02、hq の毎日の PDCA の流れ shorts_engaged）。
- * 窓は 72h（マイグレーション 175）。Analytics は太平洋時間の暦日の粒度なので、投稿日から3日（投稿日＋2日）の和を
- * 「投稿から72時間」として入れる（端は日の粒度でずれる。definition に書く）。反映の遅れ（2〜3日、BOA-1006 (b)）のため、
- * 3日目が取り直しの最も古い日（D−3）以前になってから1回入れる。値が無ければ、値が出るまで ENGAGED_LOOKBACK_DAYS の間は毎日やり直す
+ * 動画ごとの engagedViews・views（と平均の視聴の割合・時間）を sns_metric_observations にも入れる（PD02、hq の毎日の PDCA の流れ shorts_engaged）。
+ * 窓は pt3d（マイグレーション 175）: 太平洋時間の投稿日から3日（投稿日＋2日）の暦日の和。終わりは PT の3日目の翌日 0:00。
+ * Analytics は暦日の粒度なので、「投稿から72時間」のような時間の窓へ変換しない（docs/design/sns-hub-metrics/contract.md「日次Analyticsを
+ * 時間窓へ推測変換しない」。day_end と同じく投稿ごとに長さが違う窓）。投稿前の views は0なので、和は [posted_at, period_end) と同じ。
+ * 反映の遅れ（2〜3日、BOA-1006 (b)）のため、3日目が取り直しの最も古い日（D−3）より前になってから1回入れる。
+ * 値（engagedViews と分母の views）が無ければ、値が出るまで ENGAGED_LOOKBACK_DAYS の間は毎日やり直す
  */
-export const ENGAGED_WINDOW = "72h";
+export const ENGAGED_WINDOW = "pt3d";
 const ENGAGED_PT_DAYS = 3;
 export const ENGAGED_LOOKBACK_DAYS = 10;
-const ENGAGED_METRICS = ["engagedViews", "views"];
+/** Analytics を読む時間の上限（関数の時間 300 秒の中で、残りは次の起動に回す） */
+export const ENGAGED_BUDGET_MS = 120000;
+const ENGAGED_METRICS = [
+  "engagedViews",
+  "views",
+  "averageViewPercentage",
+  "averageViewDuration",
+];
+/** PT の暦日 day の 0:00 の UTC の時刻（夏時間は UTC 07:00、冬時間は 08:00） */
+export const ptMidnightUtc = (day) =>
+  ["07", "08"]
+    .map((h) => new Date(`${day}T${h}:00:00Z`))
+    .find((t) => ptDate(t) === day && ptDate(new Date(t.getTime() - 1)) !== day)
+    .toISOString();
 const RACE_ID_RE = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 /** 時刻を JST の YYYY-MM-DD にする */
 const toJstDay = (iso) =>
@@ -61,7 +76,7 @@ const def = {
   ytVideo: (m) =>
     `YouTube Analytics reports dimensions=day filters=video・${m}・太平洋時間の暦日・v1`,
   ytEngaged: (m) =>
-    `YouTube Analytics reports filters=video・${m}・太平洋時間の暦日で投稿日から${ENGAGED_PT_DAYS}日の和（投稿の時刻からの72時間とは端が日の粒度でずれる）・D−3 の取り直しの後・v1`,
+    `YouTube Analytics reports filters=video・${m}・太平洋時間の暦日で投稿日から${ENGAGED_PT_DAYS}日の和（窓 pt3d、終わりは PT の${ENGAGED_PT_DAYS}日目の翌日 0:00）・D−3 より前になってから・v1`,
   ga4Channel: (m) =>
     `GA4 ${m}・hostName=${SITE_HOST}・sessionSource は X・YouTube の完全一致のリスト・流入元ごとの和・JST の暦日・Cookie 同意者のみ・v1`,
   // 全貌（utm_content=race_id）は X・YouTube と utm_term（full・shorts）で分ける
@@ -177,16 +192,17 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
         await store.appendObservation(draft_id, observation);
         observed += 1;
       } catch (error) {
-        // 175 の前（窓の CHECK に 72h が無い）は、日次の取り込みを失敗にせず知らせる（当てれば次の日から入る）
-        if (/23514|check constraint/i.test(error.message)) {
+        // 175 の前（窓の CHECK に pt3d が無い）は、日次の取り込みを失敗にせず知らせる（当てれば次の日から入る）。
+        // 判定は窓の CHECK の名前だけ。ほかの CHECK 違反（期間の式等）は本当の不整合なので失敗にする（system-architect の審査 P2-2）
+        if (/sns_metric_observations_window_check/.test(error.message)) {
           alerts.push({
             key: "engaged_window_unapplied",
-            text: "SNS の日次の取り込み: 動画ごとの engagedViews（72h）を sns_metric_observations に入れられない。マイグレーション 175 が未適用",
+            text: "SNS の日次の取り込み: 動画ごとの engagedViews（pt3d）を sns_metric_observations に入れられない。マイグレーション 175 が未適用",
           });
           break;
         }
-        errors.push(`engagedViews の観測: ${error.message}`);
-        break;
+        // 1件の失敗で残りの動画を止めない（system-architect の審査 P3-1）
+        errors.push(`engagedViews の観測（${draft_id}）: ${error.message}`);
       }
     }
 
@@ -258,15 +274,23 @@ async function collectYoutube({ yt, videos, ptDays, push }) {
 }
 
 /**
- * 72h の観測（sns_metric_observations、append_sns_metric_observation に渡す形）。投稿日から3日目が D−3 以前の動画で、
+ * pt3d の観測（sns_metric_observations、append_sns_metric_observation に渡す形）。投稿日から3日目が D−3 より前の動画で、
  * まだ値の入った観測が無いものだけ。動画ごとに1回（クォータ1）。engagedViews は分母 views を持つ
  */
-async function collectEngaged({ yt, store, videos, ptDays, now }) {
+async function collectEngaged({
+  yt,
+  store,
+  videos,
+  ptDays,
+  now,
+  startedMs = Date.now(),
+}) {
   const due = videos.filter(
     (v) =>
       v.external_post_id &&
       v.posted_at &&
-      addDays(ptDate(new Date(v.posted_at)), ENGAGED_PT_DAYS - 1) <= ptDays[0],
+      // D−3 は今日も取り直す日（反映が日で揺れる）なので、それより前だけ（system-architect の審査 P2-3）
+      addDays(ptDate(new Date(v.posted_at)), ENGAGED_PT_DAYS - 1) < ptDays[0],
   );
   if (!due.length) return [];
   const done = new Set(
@@ -277,6 +301,7 @@ async function collectEngaged({ yt, store, videos, ptDays, now }) {
   );
   const out = [];
   for (const video of due.filter((v) => !done.has(v.draft_id))) {
+    if (Date.now() - startedMs > ENGAGED_BUDGET_MS) break; // 残りは次の起動（値が入るまで毎日やり直す）
     const start = ptDate(new Date(video.posted_at));
     const [row] = await yt.report({
       startDate: start,
@@ -284,9 +309,7 @@ async function collectEngaged({ yt, store, videos, ptDays, now }) {
       metrics: ENGAGED_METRICS.join(","),
       filters: `video==${video.external_post_id}`,
     });
-    const periodEnd = new Date(
-      Date.parse(video.posted_at) + 72 * 3600000,
-    ).toISOString();
+    const periodEnd = ptMidnightUtc(addDays(start, ENGAGED_PT_DAYS));
     const value = (m) =>
       Number.isFinite(row?.[m]) && row[m] >= 0 ? row[m] : null;
     for (const metric of ENGAGED_METRICS) {
@@ -575,11 +598,11 @@ export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
     return response.json();
   }
   return {
-    // 値の入った 72h の engagedViews の観測がある下書き（入れ直さない）
+    // engagedViews と分母（views）の両方が入った pt3d の観測がある下書き（入れ直さない。分母が欠けたら取り直す）
     engagedObserved: async (draftIds, definition) =>
       (
         await get(
-          `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&metric_name=eq.engagedViews&source=eq.youtube-analytics&metric_value=not.is.null&definition=eq.${encodeURIComponent(definition)}&draft_id=in.(${draftIds.join(",")})&select=draft_id`,
+          `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&metric_name=eq.engagedViews&source=eq.youtube-analytics&metric_value=not.is.null&denominator_value=not.is.null&definition=eq.${encodeURIComponent(definition)}&draft_id=in.(${draftIds.join(",")})&select=draft_id`,
         )
       ).map((r) => r.draft_id),
     async appendObservation(draftId, observation) {

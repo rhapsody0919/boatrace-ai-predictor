@@ -74,3 +74,10 @@ provider入力は保存窓への適合検査と分離し、値・欠測理由・
 - sns-daily（`sns_channel_daily`）は、utm_content がレース ID の行を、X・YouTube と utm_term ごとに分けて入れる。下書きは `source_data.full_picture.race_id` で引き、**その下書きの実際の投稿日（posted_at の JST の日付）と翌日の2日分だけ**を残す。投稿された下書きが無いレースは数えない
 - GA4 の反映は最大48時間遅れるが、sns-daily は毎日 D−3〜D−1 を取り直すので、投稿日と翌日の値は両方とも58時間後まで読み直される。2日分の合計を画面に出す変更はまだ入れない（データが溜まってからオーナーに見せて決める）
 
+
+## YouTube の動画ごとの engagedViews を暦日の窓 pt3d で観測の表に入れる（SQL175、PD02、2026-10-25）
+
+- 上の「暦日の値は観測の表ではなく `sns_channel_daily` に入れる」の例外。hq の毎日の PDCA（Shorts の「見た・スワイプした」の代わり）が `sns_metric_observations` を投稿ごとに読むため、YouTube Analytics の動画ごとの engagedViews（`denominator_name=views`）・views・averageViewPercentage・averageViewDuration を窓 `pt3d` で入れる（cron `sns_daily`、`scripts/lib/snsDailyRunner.js` の collectEngaged）
+- `pt3d` は暦日の窓: 太平洋時間の投稿日から3日（投稿日＋2日）の和。`period_end` は PT の3日目の翌日 0:00（day_end と同じく投稿ごとに長さが違う）。時間の窓（posted_at＋72h）へは変換しない。投稿前の views は0なので和は [posted_at, period_end) と同じで、`data_through=period_end`
+- 入れるのは3日目が取り直しの最も古い日（D−3）より前になってから（反映の遅れ2〜3日、BOA-1006 (b)）。投稿からおよそ5.5〜6.5日後。engagedViews と分母の views がそろうまで、10日の間は毎日やり直す（欠測は revision を足す）
+- Shorts と完全版の区別は `sns_auto_send_items.variant`（172）。完全版は engagedViews がほぼ views と同じ見込み（未確認）なので、比は Shorts に絞る

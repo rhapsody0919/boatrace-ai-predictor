@@ -43,7 +43,7 @@ const store = {
   engagedObserved: async (ids, definition) =>
     (
       await all(
-        "SELECT draft_id FROM sns_metric_observations WHERE \"window\"='72h' AND metric_name='engagedViews' AND source='youtube-analytics' AND metric_value IS NOT NULL AND definition=$1 AND draft_id = ANY($2)",
+        "SELECT draft_id FROM sns_metric_observations WHERE \"window\"='pt3d' AND metric_name='engagedViews' AND source='youtube-analytics' AND metric_value IS NOT NULL AND denominator_value IS NOT NULL AND definition=$1 AND draft_id = ANY($2)",
         [definition, ids],
       )
     ).map((r) => r.draft_id),
@@ -111,7 +111,7 @@ before(async () => {
     "153_sns_auto_send.sql",
     "154_sns_tokens_metric_jobs.sql",
     "169_sns_full_picture_metric_windows.sql",
-    "175_sns_metric_observations_72h.sql",
+    "175_sns_metric_observations_pt3d.sql",
   ])
     await db.exec(
       await readFile(
@@ -216,7 +216,7 @@ test("YouTube: チャネル全体は D−3〜D−1（PT）を埋め、動画は�
     "2026-10-13",
     "2026-10-14",
   ]);
-  // 古い動画は日次の行を読まない（クォータを使わない）。72h の観測（投稿日から3日目が D−3 以前）だけ1回読む（PD02）
+  // 古い動画は日次の行を読まない（クォータを使わない）。pt3d の観測（投稿日から3日目が D−3 より前）だけ1回読む（PD02）
   assert.deepEqual(
     calls.map((c) => c.filters ?? "channel"),
     ["channel", "video==vid1", "video==old"],
@@ -705,9 +705,15 @@ test("全貌: JST で翌日になる投稿（UTC 15:00 以降）は JST の日�
     ],
   );
 });
-// ---------- PD02: 動画ごとの engagedViews・views を sns_metric_observations に（72h、マイグレーション 175） ----------
+// ---------- PD02: 動画ごとの engagedViews・views を sns_metric_observations に（pt3d、マイグレーション 175） ----------
+const TOTALS = {
+  views: 200,
+  engagedViews: 150,
+  averageViewPercentage: 64.5,
+  averageViewDuration: 21,
+};
 const engagedYoutube =
-  (calls = [], totals = { views: 200, engagedViews: 150 }) =>
+  (calls = [], totals = TOTALS) =>
   async () => ({
     report: async (params) => {
       calls.push(params);
@@ -723,7 +729,7 @@ const observations = () =>
      FROM sns_metric_observations ORDER BY metric_name, revision`,
   );
 
-test("72h の観測: 投稿日から3日目が D−3 以前の動画だけ、PT の3日の和の engagedViews（分母 views）と views を1回入れる", async () => {
+test("pt3d の観測: 投稿日から3日目が D−3 より前の動画だけ、PT の3日の和の engagedViews（分母 views）・views・平均を1回入れる", async () => {
   const calls = [];
   const result = await runSnsDaily(ctx(), {
     store,
@@ -731,13 +737,13 @@ test("72h の観測: 投稿日から3日目が D−3 以前の動画だけ、PT 
     ga4: mockGa4(),
   });
   assert.equal(result.outcome, undefined, result.error);
-  // 古い動画（PT 10-09 投稿、3日目 10-11 ≤ D−3 の 10-12）だけ。vid1（PT 10-13）はまだ
+  // 古い動画（PT 10-09 投稿、3日目 10-11 < D−3 の 10-12）だけ。vid1（PT 10-13）はまだ
   const q = calls.filter((c) => !c.dimensions);
   assert.deepEqual(q, [
     {
       startDate: "2026-10-09",
       endDate: "2026-10-11",
-      metrics: "engagedViews,views",
+      metrics: "engagedViews,views,averageViewPercentage,averageViewDuration",
       filters: "video==old",
     },
   ]);
@@ -745,19 +751,23 @@ test("72h の観測: 投稿日から3日目が D−3 以前の動画だけ、PT 
   assert.deepEqual(
     obs.map((o) => [o.metric_name, o.v, o.denominator_name, o.d, o.window]),
     [
-      ["engagedViews", 150, "views", 200, "72h"],
-      ["views", 200, null, null, "72h"],
+      ["averageViewDuration", 21, null, null, "pt3d"],
+      ["averageViewPercentage", 64.5, null, null, "pt3d"],
+      ["engagedViews", 150, "views", 200, "pt3d"],
+      ["views", 200, null, null, "pt3d"],
     ],
   );
-  assert.equal(obs[0].period_start.toISOString(), "2026-10-09T20:00:00.000Z");
-  assert.equal(obs[0].period_end.toISOString(), "2026-10-12T20:00:00.000Z");
-  assert.equal(obs[0].data_through.toISOString(), "2026-10-12T20:00:00.000Z");
-  assert.equal(obs[0].observed_at.toISOString(), NOW.toISOString());
-  assert.equal(obs[0].source, "youtube-analytics");
-  assert.equal(obs[0].external_post_id, "old");
-  assert.match(obs[0].definition, /投稿日から3日の和/);
-  assert.equal(result.report.observed, 2);
-  // 次の日も、値の入った観測があれば読まない・入れない
+  // 窓の終わりは PT の3日目の翌日 0:00（10-12 0:00 PDT = 07:00 UTC）。175 の CHECK と同じ式
+  const e = obs[2];
+  assert.equal(e.period_start.toISOString(), "2026-10-09T20:00:00.000Z");
+  assert.equal(e.period_end.toISOString(), "2026-10-12T07:00:00.000Z");
+  assert.equal(e.data_through.toISOString(), "2026-10-12T07:00:00.000Z");
+  assert.equal(e.observed_at.toISOString(), NOW.toISOString());
+  assert.equal(e.source, "youtube-analytics");
+  assert.equal(e.external_post_id, "old");
+  assert.match(e.definition, /投稿日から3日の和（窓 pt3d/);
+  assert.equal(result.report.observed, 4);
+  // 次の日も、engagedViews と分母の入った観測があれば読まない・入れない
   const again = [];
   await runSnsDaily(ctx(), {
     store,
@@ -765,10 +775,23 @@ test("72h の観測: 投稿日から3日目が D−3 以前の動画だけ、PT 
     ga4: mockGa4(),
   });
   assert.equal(again.filter((c) => !c.dimensions).length, 0);
-  assert.equal((await observations()).length, 2);
+  assert.equal((await observations()).length, 4);
 });
 
-test("72h の観測: Analytics が行を返さなければ欠測で入れ、値が出た日に入れ直す（revision 2）", async () => {
+test("pt3d の窓の終わり: 夏時間・冬時間・切り替わりの日も PT の 0:00", async () => {
+  const { ptMidnightUtc } = await import("../lib/snsDailyRunner.js");
+  assert.equal(ptMidnightUtc("2026-10-12"), "2026-10-12T07:00:00.000Z");
+  assert.equal(ptMidnightUtc("2026-11-02"), "2026-11-02T08:00:00.000Z");
+  // 2026-11-01 は夏時間の終わり（0:00 はまだ PDT）
+  assert.equal(ptMidnightUtc("2026-11-01"), "2026-11-01T07:00:00.000Z");
+  // PGlite の 175 の CHECK と同じ値になる（冬時間の投稿）
+  const row = await first(
+    `SELECT ((((timestamptz '2026-11-05T20:00:00Z' AT TIME ZONE 'America/Los_Angeles')::date + 3)::timestamp) AT TIME ZONE 'America/Los_Angeles') e`,
+  );
+  assert.equal(row.e.toISOString(), ptMidnightUtc("2026-11-08"));
+});
+
+test("pt3d の観測: Analytics が行を返さなければ欠測で入れ、値が出た日に入れ直す（revision 2）", async () => {
   await runSnsDaily(ctx(), {
     store,
     youtube: engagedYoutube([], null),
@@ -780,31 +803,46 @@ test("72h の観測: Analytics が行を返さなければ欠測で入れ、値�
       (o) => o.v === null && /未確定/.test(o.missing_reason) && !o.data_through,
     ),
   );
-  assert.equal(missing[0].denominator_name, null);
+  assert.ok(missing.every((o) => o.denominator_name === null));
   await runSnsDaily(ctx(), {
     store,
     youtube: engagedYoutube(),
     ga4: mockGa4(),
   });
-  const obs = await observations();
+  const ev = (await observations()).filter(
+    (o) => o.metric_name === "engagedViews",
+  );
   assert.deepEqual(
-    obs.map((o) => [o.metric_name, o.revision, o.v]),
+    ev.map((o) => [o.revision, o.v]),
     [
-      ["engagedViews", 1, null],
-      ["engagedViews", 2, 150],
-      ["views", 1, null],
-      ["views", 2, 200],
+      [1, null],
+      [2, 150],
     ],
   );
 });
 
-test("72h の観測: 175 の前（窓の CHECK に 72h が無い）は日次の取り込みを失敗にせず知らせる。shadow は入れない", async () => {
+test("pt3d の観測: engagedViews があっても分母の views が欠けたら、次の日に取り直す", async () => {
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: engagedYoutube([], { engagedViews: 150 }),
+    ga4: mockGa4(),
+  });
+  const calls = [];
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: engagedYoutube(calls),
+    ga4: mockGa4(),
+  });
+  assert.equal(calls.filter((c) => !c.dimensions).length, 1);
+});
+
+test("pt3d の観測: 175 の前（窓の CHECK）は日次の取り込みを失敗にせず知らせる。ほかの CHECK 違反・失敗は失敗にし、残りの動画も入れる。shadow は入れない", async () => {
   const result = await runSnsDaily(ctx(), {
     store: {
       ...store,
       appendObservation: async () => {
         throw new Error(
-          '観測の保存に失敗: HTTP 400 {"code":"23514","message":"new row violates check constraint \\"sns_metric_observations_window_check\\""}',
+          '観測の保存に失敗: HTTP 400 {"code":"23514","message":"new row for relation \\"sns_metric_observations\\" violates check constraint \\"sns_metric_observations_window_check\\""}',
         );
       },
     },
@@ -817,12 +855,16 @@ test("72h の観測: 175 の前（窓の CHECK に 72h が無い）は日次の�
   );
   // 日次の表は今までどおり書く
   assert.ok((await rows(`source='youtube-analytics'`)).length > 0);
-  // ほかの失敗は失敗として返す
+  // 期間の式の CHECK 違反は「未適用」にしない
+  const tried = [];
   const failed = await runSnsDaily(ctx(), {
     store: {
       ...store,
-      appendObservation: async () => {
-        throw new Error("観測の保存に失敗: HTTP 500");
+      appendObservation: async (id, o) => {
+        tried.push(o.metric_name);
+        throw new Error(
+          '観測の保存に失敗: HTTP 400 {"code":"23514","message":"violates check constraint \\"sns_metric_observations_period_end\\""}',
+        );
       },
     },
     youtube: engagedYoutube(),
@@ -830,6 +872,11 @@ test("72h の観測: 175 の前（窓の CHECK に 72h が無い）は日次の�
   });
   assert.equal(failed.outcome, "error");
   assert.match(failed.error, /engagedViews の観測/);
+  assert.ok(
+    !failed.report.alerts.some((a) => a.key === "engaged_window_unapplied"),
+  );
+  // 1件の失敗で止めず、残りも試す
+  assert.equal(tried.length, 4);
   await runSnsDaily(ctx("shadow"), {
     store,
     youtube: engagedYoutube(),
@@ -838,7 +885,20 @@ test("72h の観測: 175 の前（窓の CHECK に 72h が無い）は日次の�
   assert.equal((await observations()).length, 0);
 });
 
-test("PostgREST の store: 72h の観測の有無を引き、append_sns_metric_observation で入れる", async () => {
+test("pt3d の観測: 実際の CHECK（175）を通る（窓の値と窓の終わりの式）", async () => {
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: engagedYoutube(),
+    ga4: mockGa4(),
+  });
+  assert.equal((await observations()).length, 4);
+  const def = await first(
+    "SELECT pg_get_constraintdef(oid) d FROM pg_constraint WHERE conname='sns_metric_observations_window_check'",
+  );
+  assert.match(def.d, /pt3d/);
+});
+
+test("PostgREST の store: pt3d の観測の有無を引き、append_sns_metric_observation で入れる", async () => {
   const calls = [];
   const s = createSnsDailyStore({
     url: "https://db",
@@ -853,16 +913,16 @@ test("PostgREST の store: 72h の観測の有無を引き、append_sns_metric_o
   assert.deepEqual(await s.engagedObserved(["d1", "d2"], "定義"), ["d1"]);
   assert.match(
     calls[0].url,
-    /sns_metric_observations\?window=eq\.72h&metric_name=eq\.engagedViews&source=eq\.youtube-analytics&metric_value=not\.is\.null&definition=eq\.定義&draft_id=in\.\(d1,d2\)/,
+    /sns_metric_observations\?window=eq\.pt3d&metric_name=eq\.engagedViews&source=eq\.youtube-analytics&metric_value=not\.is\.null&denominator_value=not\.is\.null&definition=eq\.定義&draft_id=in\.\(d1,d2\)/,
   );
-  await s.appendObservation("d1", { window: "72h" });
+  await s.appendObservation("d1", { window: "pt3d" });
   assert.equal(
     calls[1].url,
     "https://db/rest/v1/rpc/append_sns_metric_observation",
   );
   assert.deepEqual(JSON.parse(calls[1].opts.body), {
     p_draft_id: "d1",
-    p_observation: { window: "72h" },
+    p_observation: { window: "pt3d" },
   });
   const bad = createSnsDailyStore({
     url: "https://db",
