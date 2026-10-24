@@ -31,11 +31,11 @@
 | PR | 作る側 | 審査する側 | 審査の手段 |
 |---|---|---|---|
 | Claude の PR（`claude/*` 等） | Claude | Codex（正） | GitHub の `@codex review`。観点は `AGENTS.md` の「Review guidelines」「Code Review Rules」 |
-| Codex の PR（`codex/*`） | Codex | Claude | 鍵を持つ側で `claude -p` を Bash なしで実行する。Codex の自己検証の結果は合否の根拠にしない |
+| Codex の PR（`codex/*`） | Codex | review.yml（Anthropic） | hq の `codex-pr.py` が出した PR を review.yml が審査する。Codex の自己検証の結果は合否の根拠にしない（`.claude/skills/orchestrate/SKILL.md`「Codex の PR」） |
 
 - Claude のセルフレビュー（`/code-review`）は、Codex の審査の前に行う
 - `second-opinion-reviewer`（`.claude/agents/`）は、Codex が止まっているときの代わりとしてだけ使う
-- Codex には `src/` の画面の作業を回さない（`codex/*` には Vercel Preview が無く、画面を確かめられないため）
+- Codex に回す範囲は `docs/operation/codex-backlog.md`「回すもの・回さないもの」（2026-10-24）。`src/` の画面の作業も回す。`codex/*` には Vercel Preview が無いので、画面の確認はオーケストレーターが手元で撮る
 - マージは、機械と審査役が CI の見張り・再実行（1回まで）・審査を済ませた PR を、オーケストレーターが「マージ可」の束としてまとめて行う。手順と段階は `.claude/skills/orchestrate/SKILL.md` に従う
 - 手元で Codex に diff を審査させる旧方式（`/codex-review`）は削除した
 
