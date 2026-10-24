@@ -322,7 +322,9 @@ async function collectGa4({ runReport, store, jstDays, push }) {
       contents.map((c) => c.split("/")[0]).filter((id) => UUID_RE.test(id)),
     ),
   ];
-  const raceIds = [...new Set(contents.filter((c) => RACE_ID_RE.test(c)))];
+  // 全貌の完全版の機能への導線は utm_content が「レース ID/sonar」「レース ID/assist」（hq 契約 10/24 C1）。下書きの結びつけはレース ID で
+  const raceKey = (c) => String(c).split("/")[0];
+  const raceIds = [...new Set(contents.map(raceKey).filter((c) => RACE_ID_RE.test(c)))];
   const [known, fullPicture] = await Promise.all([
     candidates.length ? store.existingDrafts(candidates) : [],
     raceIds.length ? store.fullPictureDrafts(raceIds) : [],
@@ -357,10 +359,10 @@ async function collectGa4({ runReport, store, jstDays, push }) {
         : ["full", "shorts"].includes(String(rawTerm).toLowerCase())
           ? String(rawTerm).toLowerCase()
           : "その他";
-    if (RACE_ID_RE.test(content)) {
+    if (RACE_ID_RE.test(raceKey(content))) {
       if (campaign !== "race-full") return;
       const channel = source === "youtube" ? "youtube" : "x";
-      const draft = fpDraft.get(`${content}|${channel}`);
+      const draft = fpDraft.get(`${raceKey(content)}|${channel}`);
       // 投稿された全貌の下書きが無い（まだ送っていない・手で出した）ときは、投稿日が分からないので数えない
       if (!draft?.posted_at) return;
       const postedDay = toJstDay(draft.posted_at);

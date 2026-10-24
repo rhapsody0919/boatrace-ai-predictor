@@ -178,54 +178,99 @@ export function BoatBadge({ b, size = 56 }) {
   );
 }
 
-export function QuestionBand({ text, opacity }) {
-  const f = fitHeadline(text, {
-    maxWidth: W - 120,
-    maxLines: 2,
-    fontFamily: FONT,
-    fontWeight: 900,
-    maxFontSize: 76,
-    minFontSize: MIN_TEXT,
-  });
+/**
+ * 出どころの札（「龍神ソナー｜類似レース」等。hq 契約 10/24 C2）。紺の地に白い字、細い枠線、橙は使わない。
+ * 見出しより小さく控えめに。幅が place.maxWidth を越えたら字を詰める（fit1、36px まで）。note は初めての札だけの1行説明
+ */
+export function SourceBadge({ badge, place, opacity = 1 }) {
+  if (!badge || !place) return null;
+  const f = fit1(badge.text, place.maxWidth - 56, place.fontSize, 700);
+  const n = badge.note ? fit1(badge.note, place.maxWidth, place.noteSize, 600) : null;
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: 0,
-        top: 0,
-        width: W,
-        height: BAND,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        opacity,
-      }}
-    >
-      <div
-        style={{
-          width: 120,
-          height: 10,
-          borderRadius: 5,
-          background: ORANGE,
-          marginBottom: 28,
-        }}
-      />
-      {f.lines.map((l, i) => (
+    <>
+      <div style={{ position: "absolute", left: 0, top: place.top, width: W, height: place.height, display: "flex", justifyContent: "center", opacity }}>
         <div
-          key={i}
           style={{
-            fontSize: f.fontSize,
-            fontWeight: 900,
+            height: place.height,
+            padding: "0 26px",
+            boxSizing: "border-box",
+            borderRadius: place.height / 2,
+            background: "#16325a",
+            border: "2px solid rgba(255,255,255,0.45)",
             color: "#ffffff",
-            lineHeight: 1.25,
+            fontSize: f.fontSize,
+            fontWeight: 700,
+            display: "flex",
+            alignItems: "center",
             whiteSpace: "nowrap",
           }}
         >
-          {l}
+          {f.lines[0]}
         </div>
-      ))}
-    </div>
+      </div>
+      {n && (
+        <div style={{ position: "absolute", left: 0, top: place.noteTop, width: W, textAlign: "center", fontSize: n.fontSize, fontWeight: 600, color: MUTED, whiteSpace: "nowrap", opacity }}>
+          {n.lines[0]}
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * 上帯の問い。place（版の印の置き場）と badge があるときは、オレンジの飾り線の代わりに中央に札を出し、問いは札の下に収める
+ */
+export function QuestionBand({ text, opacity, badge = null, place = null, badgeOpacity = 1 }) {
+  const withBadge = Boolean(place && badge);
+  const top = withBadge ? (badge.note ? place.noteTop + place.noteSize + 10 : place.top + place.height + 12) : 0;
+  const fitQ = (max) => fitHeadline(text, { maxWidth: W - 120, maxLines: 2, fontFamily: FONT, fontWeight: 900, maxFontSize: max, minFontSize: MIN_TEXT });
+  let f = fitQ(76);
+  // 札の下に収まらないときは字を詰める（行の高さ 1.25）
+  if (withBadge && f.lines.length * f.fontSize * 1.25 > BAND - top - 8) f = fitQ(Math.max(MIN_TEXT, Math.floor((BAND - top - 8) / (f.lines.length * 1.25))));
+  return (
+    <>
+      {withBadge && <SourceBadge badge={badge} place={place} opacity={badgeOpacity} />}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top,
+          width: W,
+          height: BAND - top,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          opacity,
+        }}
+      >
+        {!withBadge && (
+          <div
+            style={{
+              width: 120,
+              height: 10,
+              borderRadius: 5,
+              background: ORANGE,
+              marginBottom: 28,
+            }}
+          />
+        )}
+        {f.lines.map((l, i) => (
+          <div
+            key={i}
+            style={{
+              fontSize: f.fontSize,
+              fontWeight: 900,
+              color: "#ffffff",
+              lineHeight: 1.25,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {l}
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 

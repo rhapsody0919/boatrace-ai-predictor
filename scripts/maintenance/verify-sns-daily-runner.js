@@ -552,6 +552,41 @@ test("全貌の UTM（utm_content=race_id）: X・YouTube を term ごとに分�
   );
 });
 
+test("全貌の完全版の機能への導線（utm_content=レース ID/sonar・/assist、hq 契約 10/24 C1）: レース ID で下書きに結びつけ、utm_content は機能つきで残す", async () => {
+  const race = "2026-10-13-06-11";
+  const yt = (
+    await first(
+      "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at,source_data) VALUES(gen_random_uuid(),'full_picture','youtube','ja','全貌','本文','posted','2026-10-13T08:05:00Z',$1) RETURNING id",
+      [{ full_picture: { race_id: race } }],
+    )
+  ).id;
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4([], {
+      utm: [
+        ["20261013", "youtube", "race-full", `${race}/sonar`, "full", 4, 5],
+        ["20261014", "youtube", "race-full", `${race}/assist`, "full", 2, 2],
+        ["20261014", "youtube", "race-full", "2026-10-14-07-01/sonar", "full", 9, 9], // 下書きの無いレースは数えない
+      ],
+    }),
+  });
+  const got = await all(
+    "SELECT day::text, utm_content, draft_id, metric_name, metric_value::float v FROM sns_channel_daily WHERE utm_content LIKE $1 ORDER BY day, utm_content, metric_name",
+    [`${race}/%`],
+  );
+  assert.deepEqual(
+    got.map((r) => [r.day, r.utm_content, r.draft_id === yt ? "yt" : r.draft_id, r.metric_name, r.v]),
+    [
+      ["2026-10-13", `${race}/sonar`, "yt", "sessions", 5],
+      ["2026-10-13", `${race}/sonar`, "yt", "users", 4],
+      ["2026-10-14", `${race}/assist`, "yt", "sessions", 2],
+      ["2026-10-14", `${race}/assist`, "yt", "users", 2],
+    ],
+  );
+  assert.equal((await all("SELECT 1 FROM sns_channel_daily WHERE utm_content LIKE '2026-10-14-07-01%'")).length, 0);
+});
+
 test("PostgREST の store: 全貌の下書きは race_id で引き、投稿の時刻を読む", async () => {
   const urls = [];
   const pg = createSnsDailyStore({

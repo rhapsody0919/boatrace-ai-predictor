@@ -449,7 +449,13 @@ assert.equal(SLIT_FORM_ON_AT, BEAT.pause, "枠と同じ時刻");
 
 // s8: まとめカードの CTA まで y1420 より上（Shorts の下の帯 y1450〜 に隠れていた）
 const s8 = buildScene8({ api: {} }).steps[0].page;
-assert.ok(summaryLayout(s8.groups).footerBottom <= 1420, `まとめカードの CTA の下端 ${summaryLayout(s8.groups).footerBottom}`);
+// 締めの行数で数える（2行の締めの下端 1430 を1行ぶんの計算で見逃していた。visual-designer 2026-10-24 P2）
+const s8Lines = [s8.footer].flat().filter(Boolean).length;
+assert.equal(s8Lines, 2, "前提: 場面8 の締めは2行");
+const s8Lay = summaryLayout(s8.groups, s8Lines);
+assert.ok(s8Lay.footerBottom <= 1420, `まとめカードの CTA の下端 ${s8Lay.footerBottom}`);
+assert.ok(s8Lay.rowH >= 76, `詰めても行の高さは 76 以上（${s8Lay.rowH}）`);
+assert.equal(summaryLayout(s8.groups, 1).rowH, 84, "1行の締めなら行の高さは今までどおり");
 
 // s3-rough: 棒は欄の幅いっぱい、値は棒の上、全国の値は棒の下（「全国 55.2%」が棒に重なっていた）
 const row = statsBarRow(0);
@@ -791,7 +797,13 @@ for (const f of fixtures) {
     assert.ok(b.youtube_full.title.startsWith(xHead.slice(0, xHead.indexOf("】") + 1)), `${f}: X の1行目は題名と同じ頭`);
     for (const txt of [b.youtube_full.description, b.youtube_shorts.description]) assert.match(txt, /\d+\/\d+（[日月火水木金土]）.+\d+R/, `${f}: 日付・曜日・会場・R`);
     assert.match(b.x_text.split("\n")[1], /^\d+\/\d+（[日月火水木金土]）(締切\d{1,2}:\d{2})?$/, `${f}: X の2行目は日付・曜日・締切だけ（hq 2026-10-23）`);
-    assert.ok(b.youtube_full.description.startsWith("ボートレース "), `${f}: 説明文の1行目`);
+    // C1（hq 契約 10/24）: 1行目に結論の数字と「（ボートレース {見出し}）」、2・3行目に龍神ソナー・思考アシストへの導線、タグ
+    const fl = b.youtube_full.description.split("\n");
+    assert.match(fl[0], /（ボートレース \d+\/\d+（[日月火水木金土]）.+\d+R.*）$/, `${f}: 説明文の1行目: ${fl[0]}`);
+    assert.ok(fl[1].startsWith("類似レースの着順の流れは龍神ソナーで: https://www.boat-ai.jp/race/") && fl[1].includes(`?tab=sonar&utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}/sonar&utm_term=full`), `${f}: 2行目にソナー: ${fl[1]}`);
+    assert.ok(fl[2].startsWith("軸・相手を自分で読むなら思考アシスト: ") && fl[2].endsWith(`/race/${b.race_id}/assist?utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${b.race_id}/assist&utm_term=full`), `${f}: 3行目に思考アシスト: ${fl[2]}`);
+    assert.deepEqual(b.youtube_full.tags, ["ボートレース", "龍神ソナー", "思考アシスト"], `${f}: 完全版のタグ`);
+    assert.ok(b.youtube_full.description.endsWith("#ボートレース #龍神ソナー #思考アシスト"), `${f}: 末尾のハッシュタグ`);
     assert.ok(b.youtube_full.description.includes("条件・6艇比較・類似レース・展開の順に見る動画です。"), `${f}: 章の名前から作った順`);
     assert.ok(b.youtube_shorts.description.includes("完全版の動画（約3分半）"), `${f}: 完全版の長さ`);
   }
@@ -825,6 +837,12 @@ for (const f of fixtures) {
     assert.deepEqual(checkBundle(b), [], "v2 の題でも束の形を通る（100字以内）");
   }
   const b0 = bundleOf(fixtures[0]);
+  // C1: 2・3行目の機能への導線が無ければ落ちる
+  {
+    const fl = b0.youtube_full.description.split("\n");
+    has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: [fl[0], fl[2], fl[1], ...fl.slice(3)].join("\n") } }), "龍神ソナーへの導線");
+    has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: [fl[0], fl[1], "x", ...fl.slice(3)].join("\n") } }), "思考アシストへの導線");
+  }
   has(checkBundle({ ...b0, x_text: b0.x_text.replace(/\?utm_[^\s]+/, "") }), "UTM つき");
   has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: b0.youtube_full.description.replace(/\?utm_[^\s]+/, "") } }), "youtube_full.description");
   has(checkBundle({ ...b0, youtube_shorts: { ...b0.youtube_shorts, title: b0.youtube_full.title } }), "題名が同じ");

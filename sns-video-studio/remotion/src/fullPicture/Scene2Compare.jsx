@@ -18,6 +18,7 @@ import {
 import { FONT } from "../fonts.js";
 import { BG_BOTTOM, BG_TOP, CARD_BG, MUTED, PAGE, answerOf, clamp, ease, fit1, fr, textWidth } from "./parts.js";
 import { BoatBadge, Bubble, Finger, Frame, Note, QuestionBand } from "./parts.jsx";
+import { BADGE_FADE, BADGE_PLACES } from "./sourceBadge.js";
 import {
   RADAR_LINE,
   RADAR_TEXT,
@@ -781,6 +782,9 @@ export function FullPictureScene2(scene) {
       />
       <QuestionBand
         text={question}
+        badge={scene.badge ?? null}
+        place={BADGE_PLACES[scene.badgePlace] ?? null}
+        badgeOpacity={interpolate(frame, [0, BADGE_FADE], [0, 1], clamp)}
         opacity={
           frame >= toCards.from
             ? qSwitch

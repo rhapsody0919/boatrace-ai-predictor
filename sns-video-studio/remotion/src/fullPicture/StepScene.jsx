@@ -8,6 +8,7 @@ import { PAGE, answerOf, clamp, ease } from "./parts.js";
 import { Bubble, Finger, Frame, Note, QuestionBand } from "./parts.jsx";
 import { BarsPage, CtaPage, DeepPage, HeroPage, SummaryPage, FollowersPage, SankeyPage, SlitPage, SonarPage, StatsPage, TablePage, TrifectaPage } from "./pages.jsx";
 import { BAND, H, W } from "./scene2Layout.js";
+import { BADGE_FADE, BADGE_PLACES } from "./sourceBadge.js";
 import {
   scrollPages,
   stepAnswerWindows,
@@ -55,6 +56,14 @@ export function StepScene({ scene, frameOffset = 0 }) {
     : 1;
   const question =
     changing && t < step.times.scroll / 2 ? prevQ : step.question;
+
+  // 出どころの札（版の印 scene.badgePlace があるときだけ）。替わるとき・場面の頭だけ 0.2秒で出す
+  const place = BADGE_PLACES[scene.badgePlace] ?? null;
+  const prevBadge = beat.index > 0 ? steps[beat.index - 1].badge?.text : null;
+  const badgeOpacity =
+    beat.index === 0 || prevBadge !== step.badge?.text
+      ? interpolate(t, [0, BADGE_FADE], [0, 1], clamp)
+      : 1;
 
   const windows = stepAnswerWindows(beats).filter(
     (w) => frame >= w.start && frame < w.end,
@@ -138,7 +147,7 @@ export function StepScene({ scene, frameOffset = 0 }) {
           background: `linear-gradient(180deg, ${BG_TOP} 85%, rgba(18,35,58,0))`,
         }}
       />
-      <QuestionBand text={question} opacity={qOpacity} />
+      <QuestionBand text={question} opacity={qOpacity} badge={step.badge ?? null} place={place} badgeOpacity={badgeOpacity} />
     </div>
   );
 }
