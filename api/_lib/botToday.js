@@ -250,7 +250,7 @@ export function buildTodayModel(digest, { date, t }) {
       count: countText(list.length, total),
       description: copy.description ?? null,
       notice: copy.notice ?? null,
-      empty: list.length === 0 ? DEFAULT_EMPTY_MESSAGE : null,
+      empty: list.length === 0 ? (copy.emptyMessage ?? DEFAULT_EMPTY_MESSAGE) : null,
       races: list.slice(0, CARD_PREVIEW_COUNT).map(race),
     };
   };
