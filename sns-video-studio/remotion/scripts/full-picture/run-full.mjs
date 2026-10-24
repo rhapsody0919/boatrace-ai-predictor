@@ -25,7 +25,7 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, scopeReasons, templateText } from "./scene2-text.mjs";
-import { entryQuestion, entryScenes } from "./entry.mjs";
+import { entryQuestion, entryScenes, heroOf } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { withSourceBadges } from "../../src/fullPicture/sourceBadge.js";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
@@ -92,15 +92,21 @@ const header = raceHeader({ year: Number(m.raceId.slice(0, 4)), month: Number(mo
   if (venue90) venue90.question = entryQuestion(header);
 }
 const type = typeSpecPath ? resolveType(JSON.parse(readFileSync(typeSpecPath, "utf8"))) : null;
-if (type?.reasons.length) {
-  console.error(type.reasons.join("\n"));
+/**
+ * 型で作れないときの止め方。標準エラーに「type_unsupported:<項目>」（固定の文）と「type_detail: …」（実測など）を出す。
+ * daily.mjs がこの行を拾って stage=type-spec・reasons に写す（system-architect 2026-10-25 P1-1）
+ */
+function typeStop(reasons, detail = null) {
+  console.error([...[reasons].flat(), ...(detail ? [`type_detail: ${detail}`] : [])].join("\n"));
   process.exit(1);
 }
+if (type?.reasons.length) typeStop(type.reasons);
+// 冒頭の数字を使う型（e03 要点1つ）は、その数字が結論（同じ並びの過去）のときだけ作る。
+// 件数が足りず当日の水面の数字に替わる日は型と違う数字になるので止める（同 P2）
+if (type?.impl?.entry === "one_point" && heroOf(scenes)?.source !== "conclusion")
+  typeStop("type_unsupported:structure", "冒頭の数字が結論（同じ並びの過去）ではない日");
 const racer = type?.impl?.racerName ? racerNameOf(m.api.races?.find((r) => r.raceId === m.raceId)?.entries?.find((e) => e.number === 1)?.name) : null;
-if (type?.impl?.racerName && !racer) {
-  console.error("type_unsupported:title（1号艇の選手名が材料に無い）");
-  process.exit(1);
-}
+if (type?.impl?.racerName && !racer) typeStop("type_unsupported:title", "1号艇の選手名が材料に無い");
 const ask = askOf(racer);
 if (racer) {
   // 型 e04: 完全版の冒頭の問いにも選手名
@@ -231,10 +237,7 @@ const entry = entryScenes(scenes, entryAnswers, { race: header, question: racer 
 {
   // 型の尺（length_s）に入口版が入らなければ止める（作り直さない）
   const why = lengthReason(type?.attributes, entry.total / 30);
-  if (why) {
-    console.error(why);
-    process.exit(1);
-  }
+  if (why) typeStop(why.reason, why.detail);
 }
 const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entry.answers[s.id] ?? s.lines]) : [])));
 /** 送信の道に渡す文（題名・説明文・X の本文）。数値は場面の facts（字幕と同じ値）から */

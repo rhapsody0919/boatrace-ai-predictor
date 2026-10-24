@@ -915,31 +915,37 @@ for (const f of fixtures) {
 
 // ---- 投稿の型（hq PD02、type-spec.mjs・daily.mjs --type-spec）----
 {
-  const { resolveType, lengthRange, lengthReason, racerNameOf, TYPE_IMPL } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
+  const { resolveType, lengthRange, lengthReason, racerNameOf, listTypes, TYPE_IMPL } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
+  // 型の文は hq の config/content-types.json の文（承認した文）そのまま
+  const spec = (id) => listTypes().find((t) => t.id === id);
   const { buildBundle, checkBundle } = await import(`${R}/scripts/full-picture/bundle.mjs`);
   const { mkdtempSync, writeFileSync: wf3, readFileSync: rf3 } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const { spawnSync } = await import("node:child_process");
-  // 表の型（最初の PR は e02・e03・e04・e05、Orchestrate 10/25）
-  assert.deepEqual(Object.keys(TYPE_IMPL).sort(), ["e02-cliffhanger", "e03-one-point-30s", "e04-racer-name", "e05-number-only-15s"]);
-  const e03 = { id: "e03-one-point-30s", attributes: { structure: "要点1つ", length_s: "25〜30" } };
+  // 表の型（最初の PR は e02・e03・e04。e05 はオーナー 10/25「明らかにダメ」で外した）
+  assert.deepEqual(resolveType({ id: "e05-number-only-15s", attributes: { structure: "数字1枚だけ（結論の数字と母数）", length_s: "12〜15" } }).reasons.map((r) => r.split("（")[0]), ["type_unsupported:structure", "type_unsupported:length_s"], "e05 は表に無いので止める");
+  assert.deepEqual(Object.keys(TYPE_IMPL).sort(), ["e02-cliffhanger", "e03-one-point-30s", "e04-racer-name"]);
+  const e03 = spec("e03-one-point-30s");
+  assert.deepEqual(listTypes().map((t) => t.id), Object.keys(TYPE_IMPL), "--list-types は表の型だけ");
   assert.deepEqual(resolveType(e03).reasons, []);
   assert.equal(resolveType(e03).impl.entry, "one_point");
   // 表に無い型は、渡された項目ごとに type_unsupported（黙って今の型で作らない）
   assert.deepEqual(resolveType({ id: "e06-data-cheatsheet", attributes: { structure: "早見表", thumb: "表" } }).reasons, ["type_unsupported:structure（型 e06-data-cheatsheet は龍神の表に無い）", "type_unsupported:thumb（型 e06-data-cheatsheet は龍神の表に無い）"]);
   // 表の型でも、実装していない項目が足されたら止める
   assert.deepEqual(resolveType({ ...e03, attributes: { ...e03.attributes, thumb: "表" } }).reasons, ["type_unsupported:thumb"]);
+  // 同じ id のまま文が変わったら、その項目を止める（古い実装で黙って作らない。system-architect P2）
+  assert.deepEqual(resolveType({ ...e03, attributes: { ...e03.attributes, structure: "要点2つ" } }).reasons, ["type_unsupported:structure（文が変わった）"]);
   assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }).reasons, ["type_unsupported:voice（知らない項目）"]);
   assert.match(resolveType({ id: "e03-one-point-30s", attributes: {} }).reasons[0], /^type_spec_invalid/);
   assert.equal(resolveType({ id: "e03-one-point-30s", attributes: {} }).impl, null);
   assert.deepEqual(lengthRange("25〜30"), [25, 30]);
-  assert.deepEqual(lengthRange("12〜15"), [12, 15]);
   assert.equal(lengthRange("短め"), null);
   assert.equal(lengthReason({ length_s: "25〜30" }, 26), null);
-  assert.match(lengthReason({ length_s: "25〜30" }, 38.4), /^type_unsupported:length_s（入口版 38\.4秒が範囲 25〜30秒の外）/);
+  // 理由は固定の文、実測は detail（hq は reasons[0] で起票の重複を判定する。system-architect P1-1）
+  assert.deepEqual(lengthReason({ length_s: "25〜30" }, 38.4), { reason: "type_unsupported:length_s", detail: "入口版 38.4秒が範囲 25〜30秒の外" });
   assert.equal(lengthReason({ structure: "x" }, 99), null, "length_s が無ければ尺は見ない");
   assert.equal(racerNameOf("土井　　祥伍"), "土井祥伍");
-  // 入口版の並び: 固定の材料4本で、型の部品と尺の範囲（e03 25〜30秒・e05 12〜15秒）
+  // 入口版の並び: 固定の材料4本で、型の部品と尺の範囲（e03 25〜30秒）
   for (const f of fixtures) {
     const scenes = buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8")));
     const ans = templateText(allBeats(scenes)).answers;
@@ -947,9 +953,6 @@ for (const f of fixtures) {
     const one = entryScenes(scenes, ans, { race: "X", structure: "one_point" });
     assert.ok(!ids(one).includes("scene2") && !ids(one).includes("s1-venue90") && ids(one).includes("s4-conclusion") && ids(one)[0] === "entry-hero", `${f}: e03 は6艇比較・会場の棒を外す（${ids(one)}）`);
     assert.equal(lengthReason({ length_s: "25〜30" }, one.total / 30), null, `${f}: e03 の尺 ${(one.total / 30).toFixed(1)}秒`);
-    const num = entryScenes(scenes, ans, { race: "X", structure: "number_only" });
-    assert.deepEqual(ids(num), ["entry-hero", "entry-cta"], `${f}: e05 は数字1枚と案内だけ`);
-    assert.equal(lengthReason({ length_s: "12〜15" }, num.total / 30), null, `${f}: e05 の尺 ${(num.total / 30).toFixed(1)}秒`);
     const cliff = entryScenes(scenes, ans, { race: "X", structure: "cliffhanger" });
     assert.ok(!ids(cliff).includes("entry-hero") && !ids(cliff).includes("s4-conclusion") && ids(cliff).at(-1) === "entry-cta", `${f}: e02 は冒頭の数字・結論を出さない（${ids(cliff)}）`);
     assert.deepEqual(cliff.scenes.at(-1).data.steps.at(-1).page.lines, ["続きは完全版・龍神レーダーで"]);
@@ -958,6 +961,18 @@ for (const f of fixtures) {
     assert.equal(named.scenes[0].data.steps[0].question, "X 1号艇 土井祥伍は堅い？", `${f}: e04 は冒頭の問いに選手名`);
   }
   assert.throws(() => entryScenes([], {}, { structure: "nazo" }), /並び/);
+  // 要点1つは会場の棒を出さないので、|z|>=1.96 の日でも水面の答えに会場の90日の1着率を出さない（system-architect P2）
+  {
+    const high = buildAll(JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"))).map((x) =>
+      x.id === "scene1" ? { ...x, data: { ...x.data, steps: x.data.steps.filter((st) => st.id !== "s1-wind") } } : x,
+    );
+    const hAns = templateText(allBeats(high)).answers;
+    assert.ok(hAns["s1-day"].some((l) => l.includes("90日の1着率")), "前提: 水面の答えが会場の90日と比べる");
+    const one = entryScenes(high, hAns, { race: "X", structure: "one_point" });
+    assert.ok(!one.answers["s1-day"].some((l) => l.includes("90日の1着率")), `要点1つは根拠1つ: ${one.answers["s1-day"]}`);
+    assert.ok(entryScenes(high, hAns, { race: "X" }).answers["s1-day"].some((l) => l.includes("90日の1着率")), "今の型で棒を出す日は変えない");
+  }
+
   // 束: 選手名（e04）・寸止め（e02 は入口版の文に結論を出さない）・リンクの前の文・型の id
   {
     const CH = "0:00 条件\n0:22 6艇比較\n1:07 類似レース\n1:43 展開";
@@ -984,27 +999,29 @@ for (const f of fixtures) {
       wf3(`${tmp}/t.json`, JSON.stringify(spec));
       return spawnSync(process.execPath, [new URL(`${R}/scripts/full-picture/run-full.mjs`, import.meta.url).pathname, `${tmp}/m.json`, `${tmp}/out`, "--text", "template", "--no-video", "--type-spec", `${tmp}/t.json`], { encoding: "utf8" });
     };
-    const ok = run({ id: "e02-cliffhanger", attributes: { structure: "寸止め", caption: "続きは完全版" } });
+    const ok = run(spec("e02-cliffhanger"));
     assert.equal(ok.status, 0, ok.stderr.slice(-400));
     assert.match(rf3(`${tmp}/out/post-entry.txt`, "utf8"), /\n続きは完全版・龍神レーダーで: https/, "X の本文に型が効く");
     const name = racerNameOf(m.api.races.find((r) => r.raceId === m.raceId).entries.find((e) => e.number === 1).name);
-    assert.equal(run({ id: "e04-racer-name", attributes: { title: "選手名", hook: "選手名" } }).status, 0);
+    assert.equal(run(spec("e04-racer-name")).status, 0);
     assert.ok(rf3(`${tmp}/out/post-entry.txt`, "utf8").startsWith(`【桐生12R 優勝戦｜10/12】1号艇 ${name}は堅い？`), "X の1行目に選手名");
     const sc = JSON.parse(rf3(`${tmp}/out/scenes.json`, "utf8"));
     const v90 = sc.scenes.find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-venue90");
     if (v90) assert.ok(v90.question.includes(name), "完全版の冒頭の問いにも選手名");
     const bad = run({ id: "e06-data-cheatsheet", attributes: { structure: "早見表" } });
     assert.equal(bad.status, 1);
-    assert.match(bad.stderr, /type_unsupported:structure/);
-    const long = run({ id: "e03-one-point-30s", attributes: { structure: "要点1つ", length_s: "40〜45" } });
-    assert.equal(long.status, 1, "尺の範囲の外は止める");
-    assert.match(long.stderr, /type_unsupported:length_s（入口版 26\.0秒が範囲 40〜45秒の外）/);
+    assert.match(bad.stderr, /^type_unsupported:structure/m);
+    // 尺の外: 固定の文と実測の行（daily.mjs が stage=type-spec・reasons・detail に写す形）。表の文のまま尺だけを変えると「文が変わった」で先に止まるので、表を一時的に替えずに長さの判定は単体で確かめた
+    assert.equal(run(spec("e03-one-point-30s")).status, 0, "e03 は 26.0秒で範囲に入る");
   }
 }
 
 // ---- 毎日の実行（daily.mjs、hq の切替案 v2 §9）と LLM の usage ----
 {
-  const { selectRaces, childEnv, readAnonEnv, SELECT_RULE, withVariant, VARIANTS } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  const { selectRaces, childEnv, readAnonEnv, SELECT_RULE, withVariant, VARIANTS, typeFailure } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  // run-full が型で止まったときは stage=type-spec・固定の文の reasons・実測の detail（system-architect P1-1）
+  assert.deepEqual(typeFailure("[省いた要素] x\ntype_unsupported:length_s\ntype_detail: 入口版 38.4秒が範囲 25〜30秒の外\n"), { reasons: ["type_unsupported:length_s"], detail: ["入口版 38.4秒が範囲 25〜30秒の外"] });
+  assert.equal(typeFailure("Error: 描画に失敗\n    at x"), null, "描画の失敗は型の失敗にしない");
   const race = (n, t, stage, cancel = null) => ({ raceId: `2026-10-19-19-${String(n).padStart(2, "0")}`, raceNumber: n, startTime: t, raceStage: stage, cancellationStatus: cancel });
   const day = [race(9, "21:23", "一般"), race(10, "21:51", "準優勝戦"), race(11, "22:20", "準優勝戦"), race(12, "22:45", "一般")];
   // 締切 21:58 前の優勝戦・準優勝戦のうち一番遅いもの（22:20 の11R は締切を過ぎるので外す）
@@ -1054,6 +1071,12 @@ for (const f of fixtures) {
     assert.deepEqual(j.content_type, { id: "e07-voice-character" });
     const r2 = runDaily(daily, ["2026-10-19-19-10", "--out", "/tmp/x", "--bgm", envFile, "--type-spec", "/nonexistent.json"]);
     assert.equal(r2.status, 2, "型の json が無ければ使い方の誤り");
+    // 型の表を外に出す（hq の pdca_daily.py は載る型だけを割り当てる。system-architect P1-2）
+    const r3 = runDaily(daily, ["--list-types"]);
+    assert.equal(r3.status, 0);
+    const lt = JSON.parse(r3.stdout);
+    assert.deepEqual(lt.types.map((t) => t.id), ["e02-cliffhanger", "e03-one-point-30s", "e04-racer-name"]);
+    assert.ok(lt.types.every((t) => t.attributes && Object.keys(t.attributes).length));
   }
   // 送信の鍵と一緒に起動されたら止める（--env-file=.env.local で起動した等）
   {

@@ -3,7 +3,13 @@
  * hq の pdca_daily.py が翌日の割り当てを書き、daily.mjs --type-spec <json> で1レースに1型を渡す。
  * 型の attributes（hq の config/content-types.json）は自由な文なので、コードは文を解釈しない。龍神側に「型の id → 実装」の表を持ち、
  * 表に無い型・表の型が実装していない項目は、どれも type_unsupported:<項目> で止める（黙って今の型で作らない）。
- * 表は、hq の型の文と照らして作れるものから足す（10/25 Orchestrate 了承: 最初は e02・e03・e04・e05）。
+ * 表は、hq の型の文と照らして作れるものから足す（10/25 Orchestrate 了承: 最初は e02・e03・e04）。
+ * 表に入れる前に、描いた試作をチャネルの評価役（youtube-channel・x-channel）に見せ、P0・P1 が0のものだけ入れる
+ * （e05「数字1枚だけ・12〜15秒」はオーナー 10/25「明らかにダメ」で外した。hq の出どころは「尺の極端。根拠なし」）。
+ * approved は実装したときの hq の文（config/content-types.json）。同じ id のまま文が変わったら、その項目を type_unsupported で止める
+ * （古い実装で黙って作り続けると、hq の台帳が新しい意味の型として数えて判定が汚れる。system-architect 2026-10-25 P2）。
+ * hq との約束: 対の a（今の型）は --type-spec を渡さない。割り当ててよい型は daily.mjs --list-types が返す表だけ（同 P1-2）。
+ * content_type は PD02 の投稿の型で、テーブル sns_content_types（043、ネタの型）とは別物。
  */
 
 /** 型が持ちうる項目（hq config/pdca.json の type_attrs と同じ） */
@@ -15,13 +21,24 @@ export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "a
  */
 export const TYPE_IMPL = {
   // 結論を寸止め（冒頭の数字・結論の再掲を出さない）。最後は「続きは完全版で」
-  "e02-cliffhanger": { attrs: ["structure", "caption"], entry: "cliffhanger", linkLead: "続きは完全版・龍神レーダーで" },
+  "e02-cliffhanger": {
+    attrs: ["structure", "caption"],
+    entry: "cliffhanger",
+    linkLead: "続きは完全版・龍神レーダーで",
+    approved: { structure: "結論を寸止め。最後の買い目・本命は本編（完全版）とサイトで見せる。Shorts の最後に完全版への導線", caption: "続きは完全版・龍神レーダーで（utm つき）" },
+  },
   // 要点1つ（冒頭の数字と根拠1つ）。6艇の比べ・会場の棒を外す
-  "e03-one-point-30s": { attrs: ["structure", "length_s"], entry: "one_point" },
+  "e03-one-point-30s": {
+    attrs: ["structure", "length_s"],
+    entry: "one_point",
+    approved: { structure: "要点1つ（結論の数字1つと根拠1つ）。6艇の比べ・会場の棒を外す", length_s: "25〜30" },
+  },
   // 題と冒頭に1号艇の選手名と会場
-  "e04-racer-name": { attrs: ["title", "hook"], racerName: true },
-  // 数字1枚だけ（冒頭の数字と母数）
-  "e05-number-only-15s": { attrs: ["structure", "length_s"], entry: "number_only" },
+  "e04-racer-name": {
+    attrs: ["title", "hook"],
+    racerName: true,
+    approved: { title: "レース名＋1号艇（か本命）の選手名＋問い", hook: "冒頭に選手名と会場" },
+  },
 };
 
 /**
@@ -35,9 +52,11 @@ export function resolveType(spec) {
   const unknown = Object.keys(attributes).filter((k) => !TYPE_ATTRS.includes(k));
   const impl = TYPE_IMPL[id] ?? null;
   const unsupported = Object.keys(attributes).filter((k) => !impl || !impl.attrs.includes(k));
+  const changed = impl ? Object.keys(attributes).filter((k) => impl.attrs.includes(k) && attributes[k] !== impl.approved?.[k]) : [];
   const reasons = [
     ...unknown.map((k) => `type_unsupported:${k}（知らない項目）`),
     ...unsupported.filter((k) => !unknown.includes(k)).map((k) => `type_unsupported:${k}${impl ? "" : `（型 ${id} は龍神の表に無い）`}`),
+    ...changed.map((k) => `type_unsupported:${k}（文が変わった）`),
   ];
   return { id, attributes, impl: reasons.length ? null : impl, reasons };
 }
@@ -49,13 +68,18 @@ export function lengthRange(text) {
   return nums.length === 1 ? [nums[0], nums[0]] : [Math.min(...nums), Math.max(...nums)];
 }
 
-/** 作った入口版の尺が型の length_s の範囲に入るか。入らなければ理由（作り直さず止める） */
+/**
+ * 作った入口版の尺が型の length_s の範囲に入るか。入らなければ {reason, detail}（作り直さず止める）。
+ * reason は固定の文（hq は reasons[0] で起票の重複を判定するので、実測の秒数は detail に分ける。system-architect P1-1）
+ */
 export function lengthReason(attributes, seconds) {
   if (attributes?.length_s === undefined) return null;
   const r = lengthRange(attributes.length_s);
-  if (!r) return `type_unsupported:length_s（範囲を読めない: ${attributes.length_s}）`;
-  return seconds >= r[0] && seconds <= r[1] ? null : `type_unsupported:length_s（入口版 ${seconds.toFixed(1)}秒が範囲 ${r[0]}〜${r[1]}秒の外）`;
+  if (!r) return { reason: "type_unsupported:length_s", detail: `範囲を読めない: ${attributes.length_s}` };
+  return seconds >= r[0] && seconds <= r[1] ? null : { reason: "type_unsupported:length_s", detail: `入口版 ${seconds.toFixed(1)}秒が範囲 ${r[0]}〜${r[1]}秒の外` };
 }
+/** 型の表（daily.mjs --list-types が返す。hq の pdca_daily.py はここに載る型だけを割り当てる） */
+export const listTypes = () => Object.entries(TYPE_IMPL).map(([id, t]) => ({ id, attributes: t.approved }));
 
 /** 出走表の選手名（全角の空白で字をそろえてある）→ 空白なし */
 export const racerNameOf = (name) => String(name ?? "").replace(/[\s　]+/g, "") || null;

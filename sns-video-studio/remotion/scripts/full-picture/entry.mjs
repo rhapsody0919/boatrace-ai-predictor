@@ -14,17 +14,16 @@ export const CONCLUSION_QUESTION = "同じ並びの過去は、どう決まっ�
 /** 冒頭の数字に使う件数の下限。目安（根拠なし）。下回る日は当日の水面の数字に替える */
 export const HERO_MIN_N = 30;
 /** 冒頭の数字（3秒）・結論の再掲（5秒）・会場の棒と当日の水面（各5秒）・案内（2秒） */
-const LEN = { hero: 90, cond: 150, conclusion: 150, cta: 60, heroOnly: 330 };
+const LEN = { hero: 90, cond: 150, conclusion: 150, cta: 60 };
 /** 要点1つ（e03、25〜30秒）は部品を増やさず、冒頭の数字・根拠・結論をそれぞれ長く見せる */
 const ONE_POINT_LEN = { hero: 180, cond: 270, conclusion: 270 };
 const CTA_TEXT = "チャンネルの完全版へ";
 /**
  * 入口版の並び（投稿の型、type-spec.mjs の TYPE_IMPL の entry）。default は v2 の型。
  * one_point: 冒頭の数字と根拠1つ（当日の条件）と結論。6艇比較・会場の棒を外す（e03）
- * number_only: 冒頭の数字1枚（11秒）と案内だけ（e05）
  * cliffhanger: 冒頭の数字と結論の再掲を出さず、条件と6艇比較の後に「続きは完全版で」（e02）
  */
-export const STRUCTURES = ["default", "one_point", "number_only", "cliffhanger"];
+export const STRUCTURES = ["default", "one_point", "cliffhanger"];
 const CLIFF_CTA = { lines: ["続きは完全版・龍神レーダーで"], sub: "どう決まったか・買い目の読みは本編で" };
 
 /** 会場の1号艇の1着率と全国の差の z（1つの割合の検定。races が母数） */
@@ -97,7 +96,9 @@ export function entryScenes(scenes, answers = {}, { race = null, question = null
   const day0 = s1.find((s) => s.id === "s1-wind") ?? s1.find((s) => s.id === "s1-day");
   const day = day0 ? { ...day0, len: LEN.cond } : null;
   // 会場の棒を外した日は、当日の水面の答えの「90日の1着率…より」を出さない（画面に出ない数字を指す。Orchestrate 10/24）
-  const dayAnswer = day && !venue ? (answers[day.id] ?? day.lines ?? []).filter((l) => !VENUE90_REF.test(l)) : null;
+  // 入口版に会場の棒を出さない並び（要点1つ）も同じ（|z| だけで決めると、要点1つで根拠が2つになる。system-architect 2026-10-25 P2）
+  const venueShown = Boolean(venue) && (structure === "default" || structure === "cliffhanger");
+  const dayAnswer = day && !venueShown ? (answers[day.id] ?? day.lines ?? []).filter((l) => !VENUE90_REF.test(l)) : null;
   const entryAnswers = dayAnswer ? { ...answers, [day.id]: dayAnswer } : answers;
   const c0 = by.scene4?.data?.conclusion ?? null;
   // 当てはまる形が無い日は「同じ並び」と言わない（場面4が entryQuestion を持つ。BOA-979）
@@ -107,16 +108,15 @@ export function entryScenes(scenes, answers = {}, { race = null, question = null
   if (!hero) omitted.push({ where: "entry.hero", reason: "冒頭の数字の材料が無い（結論・当日の水面とも無い）" });
   if (hero?.source === "day") omitted.push({ where: "entry.hero", reason: `同じ並びの件数が${HERO_MIN_N}件（目安・根拠なし）未満なので当日の水面の数字にした` });
   const heroStep = hero && structure !== "cliffhanger"
-    ? { id: "entry-hero", question: q, page: { kind: "hero", boat: hero.boat, label: hero.label, value: hero.value, base: hero.base }, press: null, frames: [], lines: [], len: structure === "number_only" ? LEN.heroOnly : structure === "one_point" ? ONE_POINT_LEN.hero : LEN.hero }
+    ? { id: "entry-hero", question: q, page: { kind: "hero", boat: hero.boat, label: hero.label, value: hero.value, base: hero.base }, press: null, frames: [], lines: [], len: structure === "one_point" ? ONE_POINT_LEN.hero : LEN.hero }
     : null;
   const ctaPage = structure === "cliffhanger" ? { kind: "cta", ...CLIFF_CTA } : { kind: "cta", lines: [CTA_TEXT], sub: "展開・相手・展示後に見る所まで" };
   const cta = { id: "entry-cta", question: q, page: ctaPage, press: null, frames: [], lines: [], len: LEN.cta };
-  if (structure === "number_only" && !heroStep) throw new Error("数字1枚の型だが冒頭の数字の材料が無い。投稿しない");
   const keep = [1, ...secondBoats(c0)];
   const s2 = by.scene2?.data
     ? { ...by.scene2.data, radarOnly: true, radar: { ...by.scene2.data.radar, focus: (by.scene2.data.radar?.focus ?? []).filter((f) => keep.includes(f.boat)) } }
     : null;
-  // 型ごとに出す部品（one_point は根拠を当日の条件1つに、number_only は冒頭の数字だけ、cliffhanger は結論を出さない）
+  // 型ごとに出す部品（one_point は根拠を当日の条件1つに、cliffhanger は結論を出さない）
   const useS2 = structure === "default" || structure === "cliffhanger";
   const useConclusion = structure === "default" || structure === "one_point";
   const build = (cond) => [
@@ -124,7 +124,7 @@ export function entryScenes(scenes, answers = {}, { race = null, question = null
     { id: "scene2", kind: "scene2", data: useS2 ? s2 : null },
     { id: "conclusion", kind: "step", data: { id: "conclusion", steps: [useConclusion && conclusion ? (structure === "one_point" ? { ...conclusion, len: ONE_POINT_LEN.conclusion } : conclusion) : null, cta].filter(Boolean), omitted: [] } },
   ];
-  let cond = structure === "number_only" ? [] : structure === "one_point" ? [day && { ...day, len: ONE_POINT_LEN.cond }].filter(Boolean) : [venue, day].filter(Boolean);
+  let cond = structure === "one_point" ? [day && { ...day, len: ONE_POINT_LEN.cond }].filter(Boolean) : [venue, day].filter(Boolean);
   let out = build(cond);
   let total = fullPictureTimeline(out, entryAnswers).total;
   while (total > ENTRY_MAX_FRAMES && cond.length) {
