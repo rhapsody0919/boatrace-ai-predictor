@@ -381,7 +381,7 @@
     {
       "script": "verify-fetch-all-by-in-order.js",
       "tier": "ci",
-      "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）"
+      "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）。in() の値を fetchAllInChunks で分けて読み（URL の長さの上限、BOA-1051）、in() の列がどの呼び出しでもテーブルの並びの先頭の列であること（分けた結果をつないでも並びが崩れない条件）"
     },
     {
       "script": "verify-fetchall-order.js",
@@ -903,6 +903,11 @@
       "script": "verify-racer-condition-stats.js",
       "tier": "ci",
       "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
+    },
+    {
+      "script": "verify-racer-entries-paging.js",
+      "tier": "ci",
+      "guards": "選手単位の730日窓の race_entries の取得（getRacerScopedRaceStats・getRacerVenueStats・getRacerRaceHistory）が1000行で黙って切れないこと（BOA-1051）。上限1000行の偽の PostgREST で、旧の .range() 無しは切れ・fetchAllPages は全件（境目の重複・欠落なし、ちょうど1000行、失敗は例外）。続く fetchAllByIn の in() が URL の長さ（本番の実測で race_id 約850件）で落ちないよう、fetchAllInChunks が値を分けて読み、分けないときと同じ行・並びになること。3関数が fetchRacerEntriesSince（主キーで並べて .range()）を通ること、会場別成績の同数の並びが会場コード順であることを静的に検査"
     },
     {
       "script": "verify-racer-index-policy.js",
