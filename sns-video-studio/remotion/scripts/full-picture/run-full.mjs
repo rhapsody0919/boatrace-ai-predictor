@@ -5,7 +5,7 @@
  * 2026-10-20 オーナー決定: 完全版は YouTube の通常の動画、入口版（scripts/full-picture/entry.mjs）は X・Shorts。
  *
  * 使い方（sns-video-studio/remotion で）:
- *   node scripts/full-picture/run-full.mjs <材料.json> <出力ディレクトリ> [--text template|connected|both] [--bgm <mp3>] [--regen-text] [--no-video] [--entry-only] [--concurrency N]
+ *   node scripts/full-picture/run-full.mjs <材料.json> <出力ディレクトリ> [--text template|connected|both] [--bgm <mp3>] [--regen-text] [--no-video] [--entry-only] [--concurrency N] [--type-spec <型の json>]
  * 出力:
  *   scenes.json                全場面の描く値と拍ごとの facts（コードが計算した比較）、omitted（省いた要素）
  *   text-{版}.json             答えの文（拍ごと。つないだ版はつなぐ語と、付けなかった理由も）
@@ -30,6 +30,7 @@ import { buildAll } from "./build-all.mjs";
 import { withSourceBadges } from "../../src/fullPicture/sourceBadge.js";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
 import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
+import { lengthReason, resolveType } from "./type-spec.mjs";
 import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
@@ -55,6 +56,8 @@ const noVideo = has("--no-video");
 const entryOnly = has("--entry-only");
 // 描かずに、今ある MP4 から送信の道に渡すフォルダ（bundle/）だけを作り直す
 const bundleOnly = has("--bundle-only");
+// 投稿の型（hq PD02、daily.mjs --type-spec）。表に無い型・項目は type_unsupported で止める（黙って今の型で作らない）
+const typeSpecPath = opt("--type-spec");
 // 描画の並列数（既定はコア数−1。ほかの作業と同時に回すときは小さくする）
 // 完全版の画質（h264 の crf。大きいほど小さいファイル）。送信の上限 32MiB に収める（Remotion の既定 18 では 31〜35MB だった）。
 // 音声は BGM だけなので 160kbps（既定の約317kbps だと容量の約36%を占めていた。visual-designer 2026-10-20 P2）
@@ -88,6 +91,16 @@ const header = raceHeader({ year: Number(m.raceId.slice(0, 4)), month: Number(mo
   const venue90 = scenes.find((x) => x.id === "scene1")?.data?.steps?.find((st) => st.id === "s1-venue90");
   if (venue90) venue90.question = entryQuestion(header);
 }
+const type = typeSpecPath ? resolveType(JSON.parse(readFileSync(typeSpecPath, "utf8"))) : null;
+/**
+ * 型で作れないときの止め方。標準エラーに「type_unsupported:<項目>」（固定の文）と「type_detail: …」（実測など）を出す。
+ * daily.mjs がこの行を拾って stage=type-spec・reasons に写す（system-architect 2026-10-25 P1-1）
+ */
+function typeStop(reasons, detail = null) {
+  console.error([...[reasons].flat(), ...(detail ? [`type_detail: ${detail}`] : [])].join("\n"));
+  process.exit(1);
+}
+if (type?.reasons.length) typeStop(type.reasons);
 const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scene: x.id, ...o })));
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
 for (const o of omitted) console.warn(`[省いた要素] ${JSON.stringify(o)}`);
@@ -209,6 +222,11 @@ function chapters(answers) {
 // 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）。描く前に文を確かめる
 const entryAnswers = templateAnswers;
 const entry = entryScenes(scenes, entryAnswers, { race: header });
+{
+  // 型の尺（length_s）に入口版が入らなければ止める（作り直さない）
+  const why = lengthReason(type?.attributes, entry.total / 30);
+  if (why) typeStop(why.reason, why.detail);
+}
 const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entry.answers[s.id] ?? s.lines]) : [])));
 /** 送信の道に渡す文（題名・説明文・X の本文）。数値は場面の facts（字幕と同じ値）から */
 const factsOf = (sceneId, stepId) => scenes.find((x) => x.id === sceneId)?.data?.steps?.find((st) => st.id === stepId)?.facts ?? null;
@@ -231,6 +249,7 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     chapters: chaptersText,
     fullSeconds,
     qa,
+    contentType: type?.id ?? null,
   });
 const preBundle = bundleText({});
 const postEntry = `${preBundle.x_text}\n`;

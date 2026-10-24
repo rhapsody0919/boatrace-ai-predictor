@@ -4,8 +4,12 @@
  *   選ぶ: node scripts/full-picture/daily.mjs --select --date YYYY-MM-DD [--count N] --plan-only
  *     → 標準出力に JSON 1つ {status, plan: [{race_id, deadline, race_stage}]}
  *   作る: node scripts/full-picture/daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b]
+ *        [--type-spec <型の json>]
  *     → 標準出力に JSON 1つ {status, stage, reasons, files, video{full_s,entry_s,full_mib}, llm{calls,tokens_in,tokens_out},
- *        text_mode, missing, ref_commit, variant}
+ *        text_mode, missing, ref_commit, variant, content_type}
+ *   --type-spec: 投稿の型 {id, attributes}（hq PD02）。龍神の表（type-spec.mjs）に無い型・項目・文の変わった項目、型の尺の外は、
+ *     作らずに stage=type-spec・reasons に type_unsupported:<項目>（固定の文。実測は detail）。対の a（今の型）は渡さない
+ *   型の表: node scripts/full-picture/daily.mjs --list-types → {status, types: [{id, attributes}]}
  *   exit: 0 合格、1 止める、2 使い方の誤り。ログは標準エラーに出す（標準出力は JSON だけ）
  *
  * 作る中身: 材料（--stage racecard、失敗したら1回だけ取り直す）→ run-full.mjs（完全版・入口版・bundle）→ 止める判定 →
@@ -23,6 +27,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchMaterials } from "./fetch-materials.mjs";
 import { validate } from "./materials-contract.mjs";
+import { listTypes, resolveType } from "./type-spec.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REMOTION = resolve(HERE, "../..");
@@ -46,6 +51,13 @@ export function selectRaces(races, date, count = 1) {
   const twelve = ok.filter((r) => r.raceNumber === SELECT_RULE.fallbackRace).sort(byLate);
   const picked = [...finals, ...twelve.filter((r) => !finals.includes(r))].slice(0, count);
   return picked.map((r) => ({ race_id: r.raceId, deadline: new Date(`${date}T${r.startTime}+09:00`).toISOString(), race_stage: r.raceStage ?? null }));
+}
+
+/** run-full の標準エラーから、型で作れなかった行（type_unsupported:<項目>・type_detail:）を拾う（純粋関数）。無ければ null */
+export function typeFailure(stderr) {
+  const lines = String(stderr ?? "").split("\n");
+  const reasons = lines.filter((l) => l.startsWith("type_unsupported:"));
+  return reasons.length ? { reasons, detail: lines.filter((l) => l.startsWith("type_detail: ")).map((l) => l.slice(13)) } : null;
 }
 
 /** YouTube の型を比べる札（hq SQ08 v5）。今は a・b の中身は同じで、送る下書きの source_data.full_picture_variant.id に入れるだけ */
@@ -108,7 +120,7 @@ async function materials(raceId) {
 
 async function make(raceId, opts) {
   // 予期しない例外でも、標準出力に JSON 1つを出して止める（止まった段を残す。代わりの審査 P2）
-  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null, variant: opts.variant ?? null };
+  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null, variant: opts.variant ?? null, content_type: null };
   try {
     return await makeSteps(raceId, opts, result);
   } catch (e) {
@@ -116,8 +128,22 @@ async function make(raceId, opts) {
   }
 }
 
-async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null }, result0) {
+async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null, typeSpec = null }, result0) {
   const result = result0;
+  // 型は材料を取る前に確かめる（作れない型で材料・描画の時間を使わない）
+  if (typeSpec) {
+    result.stage = "type-spec";
+    let spec;
+    try {
+      spec = JSON.parse(readFileSync(typeSpec, "utf8"));
+    } catch (e) {
+      return finish({ ...result, reasons: [`type_spec_invalid: ${e instanceof Error ? e.message : String(e)}`] }, 1);
+    }
+    const t = resolveType(spec);
+    result.content_type = t.id ? { id: t.id } : null;
+    if (t.reasons.length) return finish({ ...result, reasons: t.reasons }, 1);
+    result.stage = "materials";
+  }
   try {
     result.ref_commit = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   } catch {
@@ -131,12 +157,16 @@ async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null }
   writeFileSync(matPath, JSON.stringify(got.m));
 
   result.stage = "run-full";
-  const args = [join(HERE, "run-full.mjs"), matPath, out, "--text", text, "--bgm", bgm, ...(concurrency ? ["--concurrency", String(concurrency)] : [])];
+  const args = [join(HERE, "run-full.mjs"), matPath, out, "--text", text, "--bgm", bgm, ...(concurrency ? ["--concurrency", String(concurrency)] : []), ...(typeSpec ? ["--type-spec", typeSpec] : [])];
   const r = spawnSync(process.execPath, args, { cwd: REMOTION, env: childEnv(process.env), encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 45 * 60 * 1000 });
   if (r.error) return finish({ ...result, reasons: [`run-full が終わらない・起動できない: ${r.error.message}`] }, 1);
   process.stderr.write(r.stderr ?? "");
   if (r.status !== 0) {
     const lines = (r.stderr ?? "").split("\n").filter((l) => l && !l.startsWith("[省いた要素]"));
+    // 型で作れなかったとき（run-full の typeStop）は、描画の失敗と分けて stage=type-spec・固定の文の reasons にする
+    // （hq は reasons[0] で起票の重複を、stage で連続の失敗を数える。system-architect 2026-10-25 P1-1）
+    const tf = typeFailure(r.stderr);
+    if (tf) return finish({ ...result, stage: "type-spec", ...tf }, 1);
     return finish({ ...result, reasons: lines.slice(-10) }, r.status === 2 ? 2 : 1);
   }
 
@@ -196,6 +226,8 @@ async function main(argv) {
   // 材料の取得の匿名キー（.env.local からこの2つだけ。--env-file は使わない）
   Object.assign(process.env, { ...readAnonEnv(opt("--anon-env") ?? join(ROOT, ".env.local")), ...Object.fromEntries(ANON_ENV.filter((k) => process.env[k]).map((k) => [k, process.env[k]])) });
 
+  // 型の表（hq の pdca_daily.py は、ここに載る型だけを割り当てる。対の a＝今の型は --type-spec を渡さない。system-architect P1-2）
+  if (flag("--list-types")) return finish({ status: "ok", stage: "list-types", reasons: [], types: listTypes() }, 0);
   if (flag("--select")) {
     const date = opt("--date");
     const count = Number(opt("--count") ?? 1);
@@ -216,11 +248,13 @@ async function main(argv) {
   const concurrency = opt("--concurrency");
   const text = opt("--text") ?? "connected";
   const variant = opt("--variant");
+  const typeSpec = opt("--type-spec");
   const [raceId] = args;
   if (!raceId || !/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(raceId) || !out || !bgm || !["connected", "template"].includes(text) || (variant !== null && !VARIANTS.includes(variant)))
-    return usage("使い方: daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b]");
+    return usage("使い方: daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b] [--type-spec <json>]");
   if (!existsSync(bgm)) return usage(`BGM が無い: ${bgm}`);
-  return make(raceId, { out: resolve(out), bgm: resolve(bgm), concurrency, text, variant });
+  if (typeSpec && !existsSync(typeSpec)) return usage(`型の json が無い: ${typeSpec}`);
+  return make(raceId, { out: resolve(out), bgm: resolve(bgm), concurrency, text, variant, typeSpec: typeSpec ? resolve(typeSpec) : null });
 }
 
 // シンボリックリンクや空白を含むパスから起動しても動く（file:// の文字列で比べると何もせず exit 0 になった。代わりの審査 P2）
