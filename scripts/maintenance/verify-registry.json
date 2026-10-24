@@ -242,6 +242,11 @@
       "guards": "進入コース傾向の集計ロジック（scripts/lib/courseEntryTendency.js、BOA-284）"
     },
     {
+      "script": "verify-cover-image-strategy.js",
+      "tier": "ci",
+      "guards": "カバー画像の調達戦略: new-feature のルート・data-insight のタブのスクリーンショット、venue-characteristic・daily-result・trivia のデータカード、未知の sourceId を含む例外。humor は仕様未定として KNOWN_GAPS に表示（BOA-1064）"
+    },
+    {
       "script": "verify-css-class-collisions.js",
       "tier": "ci",
       "guards": "src/ の別々の CSS ファイルが同じクラス名をスコープせずに（同じ詳細度で）定義すること。Vite が全ページの CSS を1つに結合するため、バンドル順で他ページの見た目が壊れる（BOA-206・207・539。#961 はホームの会場グリッドが PC 幅で 8〜16 列になった）。既存の衝突は css-class-collisions-allowlist.json に載せ、新規の衝突と解消済みの許可リストの残骸で失敗する。#961 の修正前の CSS を検出できることを自己テストで毎回確かめる"
