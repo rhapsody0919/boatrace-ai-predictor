@@ -845,6 +845,11 @@
       "guards": "結果ページの全項目パーサー・艇別/払戻明細の行・書き込み経路"
     },
     {
+      "script": "verify-race-result-usable.js",
+      "tier": "ci",
+      "guards": "BOA-1021: 集計対象・不成立の判定5入力と、supabaseDataServiceから共通関数へのimportを固定する"
+    },
+    {
       "script": "verify-race-series-final-title.js",
       "tier": "ci",
       "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
