@@ -1,0 +1,463 @@
+{
+  "generatedAt": "2026-10-24T08:12:31.265Z",
+  "head": "2c1d177213ad7e795ae63d8eafc60fd317cc7a75",
+  "since": "2026-07-26",
+  "shallow": false,
+  "totals": {
+    "commits": 999,
+    "fixCommits": 371,
+    "files": 1352
+  },
+  "files": [
+    {
+      "path": "src/services/supabaseDataService.js",
+      "commits": 129,
+      "lines": 11551,
+      "fixCommits": 54,
+      "score": 80464266,
+      "planScore": 623754,
+      "existsNow": true
+    },
+    {
+      "path": "src/pages/admin/SnsHubAdmin.jsx",
+      "commits": 43,
+      "lines": 7270,
+      "fixCommits": 16,
+      "score": 5001760,
+      "planScore": 116320,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/RaceMeetTab.jsx",
+      "commits": 36,
+      "lines": 3991,
+      "fixCommits": 20,
+      "score": 2873520,
+      "planScore": 79820,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-frontend-pure-functions.js",
+      "commits": 37,
+      "lines": 2981,
+      "fixCommits": 22,
+      "score": 2426534,
+      "planScore": 65582,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/analysis/MotorConditionChart.jsx",
+      "commits": 37,
+      "lines": 3065,
+      "fixCommits": 18,
+      "score": 2041290,
+      "planScore": 55170,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/RaceBasicInfoTab.jsx",
+      "commits": 25,
+      "lines": 3172,
+      "fixCommits": 10,
+      "score": 793000,
+      "planScore": 31720,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/daily/scrape-results.js",
+      "commits": 22,
+      "lines": 3113,
+      "fixCommits": 10,
+      "score": 684860,
+      "planScore": 31130,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/RaceResult.jsx",
+      "commits": 23,
+      "lines": 2263,
+      "fixCommits": 12,
+      "score": 624588,
+      "planScore": 27156,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-series-points-stage-rules.js",
+      "commits": 21,
+      "lines": 1935,
+      "fixCommits": 15,
+      "score": 609525,
+      "planScore": 29025,
+      "existsNow": true
+    },
+    {
+      "path": "src/data/blogPosts.js",
+      "commits": 46,
+      "lines": 3822,
+      "fixCommits": 3,
+      "score": 527436,
+      "planScore": 11466,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/seriesPoints.js",
+      "commits": 19,
+      "lines": 1287,
+      "fixCommits": 14,
+      "score": 342342,
+      "planScore": 18018,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/basicInfoStats.js",
+      "commits": 25,
+      "lines": 1018,
+      "fixCommits": 12,
+      "score": 305400,
+      "planScore": 12216,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/PredictionPanel.jsx",
+      "commits": 37,
+      "lines": 1013,
+      "fixCommits": 8,
+      "score": 299848,
+      "planScore": 8104,
+      "existsNow": true
+    },
+    {
+      "path": "src/pages/ThinkingAssistPage.jsx",
+      "commits": 27,
+      "lines": 1367,
+      "fixCommits": 8,
+      "score": 295272,
+      "planScore": 10936,
+      "existsNow": true
+    },
+    {
+      "path": "src/data/thinkingAssistCopy.js",
+      "commits": 24,
+      "lines": 1029,
+      "fixCommits": 9,
+      "score": 222264,
+      "planScore": 9261,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/raceIndicators.jsx",
+      "commits": 27,
+      "lines": 906,
+      "fixCommits": 9,
+      "score": 220158,
+      "planScore": 8154,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/RaceBeforeInfoTab.jsx",
+      "commits": 20,
+      "lines": 1077,
+      "fixCommits": 9,
+      "score": 193860,
+      "planScore": 9693,
+      "existsNow": true
+    },
+    {
+      "path": "src/data/venueGuidesKo.js",
+      "commits": 28,
+      "lines": 2005,
+      "fixCommits": 3,
+      "score": 168420,
+      "planScore": 6015,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/RaceWakuInfoTab.jsx",
+      "commits": 14,
+      "lines": 1632,
+      "fixCommits": 7,
+      "score": 159936,
+      "planScore": 11424,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/daily/generate-predictions.js",
+      "commits": 15,
+      "lines": 1024,
+      "fixCommits": 10,
+      "score": 153600,
+      "planScore": 10240,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/analogy/ScenarioTab.jsx",
+      "commits": 20,
+      "lines": 1756,
+      "fixCommits": 4,
+      "score": 140480,
+      "planScore": 7024,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-sns-today-plan.js",
+      "commits": 19,
+      "lines": 1791,
+      "fixCommits": 4,
+      "score": 136116,
+      "planScore": 7164,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/racer/RacerPerformanceStats.jsx",
+      "commits": 16,
+      "lines": 1163,
+      "fixCommits": 7,
+      "score": 130256,
+      "planScore": 8141,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/daily/scrape-exhibition-data.js",
+      "commits": 16,
+      "lines": 1251,
+      "fixCommits": 6,
+      "score": 120096,
+      "planScore": 7506,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-sns-bundle-import.js",
+      "commits": 13,
+      "lines": 2074,
+      "fixCommits": 4,
+      "score": 107848,
+      "planScore": 8296,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/lib/scrapeJobs/registry.js",
+      "commits": 38,
+      "lines": 924,
+      "fixCommits": 3,
+      "score": 105336,
+      "planScore": 2772,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/lib/snsTodayPlanner.js",
+      "commits": 17,
+      "lines": 1030,
+      "fixCommits": 6,
+      "score": 105060,
+      "planScore": 6180,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/assist/LensSummary.jsx",
+      "commits": 15,
+      "lines": 1379,
+      "fixCommits": 5,
+      "score": 103425,
+      "planScore": 6895,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-scrape-pre-race-job.js",
+      "commits": 9,
+      "lines": 2715,
+      "fixCommits": 4,
+      "score": 97740,
+      "planScore": 10860,
+      "existsNow": true
+    },
+    {
+      "path": "src/pages/VenueGridPage.jsx",
+      "commits": 19,
+      "lines": 620,
+      "fixCommits": 7,
+      "score": 82460,
+      "planScore": 4340,
+      "existsNow": true
+    },
+    {
+      "path": "src/App.jsx",
+      "commits": 7,
+      "lines": 2801,
+      "fixCommits": 4,
+      "score": 78428,
+      "planScore": 11204,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/daily/update-race-info.js",
+      "commits": 11,
+      "lines": 1581,
+      "fixCommits": 4,
+      "score": 69564,
+      "planScore": 6324,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/RaceHistoryTable.jsx",
+      "commits": 15,
+      "lines": 507,
+      "fixCommits": 9,
+      "score": 68445,
+      "planScore": 4563,
+      "existsNow": true
+    },
+    {
+      "path": "src/data/venueGuidesZhTw.js",
+      "commits": 23,
+      "lines": 1485,
+      "fixCommits": 2,
+      "score": 68310,
+      "planScore": 2970,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-scrape-monitor.js",
+      "commits": 9,
+      "lines": 2303,
+      "fixCommits": 3,
+      "score": 62181,
+      "planScore": 6909,
+      "existsNow": true
+    },
+    {
+      "path": "src/components/race/RaceOddsListTab.jsx",
+      "commits": 11,
+      "lines": 1813,
+      "fixCommits": 3,
+      "score": 59829,
+      "planScore": 5439,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-scrape-jobs.js",
+      "commits": 9,
+      "lines": 2212,
+      "fixCommits": 3,
+      "score": 59724,
+      "planScore": 6636,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-motor-tab-readability.js",
+      "commits": 12,
+      "lines": 594,
+      "fixCommits": 8,
+      "score": 57024,
+      "planScore": 4752,
+      "existsNow": true
+    },
+    {
+      "path": "src/pages/RaceDetailPage.jsx",
+      "commits": 15,
+      "lines": 750,
+      "fixCommits": 5,
+      "score": 56250,
+      "planScore": 3750,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/lib/scrapeJobs/monitor.js",
+      "commits": 13,
+      "lines": 1325,
+      "fixCommits": 3,
+      "score": 51675,
+      "planScore": 3975,
+      "existsNow": true
+    },
+    {
+      "path": "src/services/snsHubService.js",
+      "commits": 27,
+      "lines": 442,
+      "fixCommits": 4,
+      "score": 47736,
+      "planScore": 1768,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-full-picture-scene2.js",
+      "commits": 10,
+      "lines": 1181,
+      "fixCommits": 4,
+      "score": 47240,
+      "planScore": 4724,
+      "existsNow": true
+    },
+    {
+      "path": "src/pages/BlogPost.jsx",
+      "commits": 11,
+      "lines": 591,
+      "fixCommits": 7,
+      "score": 45507,
+      "planScore": 4137,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-thinking-assist-model.js",
+      "commits": 14,
+      "lines": 1029,
+      "fixCommits": 3,
+      "score": 43218,
+      "planScore": 3087,
+      "existsNow": true
+    },
+    {
+      "path": "src/utils/assistModel.js",
+      "commits": 13,
+      "lines": 1089,
+      "fixCommits": 3,
+      "score": 42471,
+      "planScore": 3267,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-data-health-job.js",
+      "commits": 8,
+      "lines": 2605,
+      "fixCommits": 2,
+      "score": 41680,
+      "planScore": 5210,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-sns-send-runner.js",
+      "commits": 8,
+      "lines": 1042,
+      "fixCommits": 5,
+      "score": 41680,
+      "planScore": 5210,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-motor-window-generation.js",
+      "commits": 12,
+      "lines": 481,
+      "fixCommits": 7,
+      "score": 40404,
+      "planScore": 3367,
+      "existsNow": true
+    },
+    {
+      "path": "src/hooks/useAiCopyText.js",
+      "commits": 14,
+      "lines": 542,
+      "fixCommits": 5,
+      "score": 37940,
+      "planScore": 2710,
+      "existsNow": true
+    },
+    {
+      "path": "scripts/maintenance/verify-analogy-facts.js",
+      "commits": 16,
+      "lines": 1175,
+      "fixCommits": 2,
+      "score": 37600,
+      "planScore": 2350,
+      "existsNow": true
+    }
+  ]
+}
