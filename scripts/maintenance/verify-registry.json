@@ -165,6 +165,11 @@
       "guards": "ブログ記事メタデータ src/data/blog-posts/{id}.json（BOA-247）の形。id とファイル名の一致・必須項目・本文 .md の存在・featuredRank の有無と重複・blogPosts.js が全件を新しい順で返すこと"
     },
     {
+      "script": "verify-boat-colors.js",
+      "tier": "ci",
+      "guards": "BOA-1038: colors.js の回収率の境界・艇番印の濃いトークンとフォールバック・全6艇の公式配色・1/2号艇の線のテーマトークンを固定する"
+    },
+    {
       "script": "verify-boatcast-job.js",
       "tier": "ci",
       "guards": "BOATCASTのオリジナル展示・モーター使用開始日（N25・N26）のパーサー・取得ジョブ・403の扱い"
