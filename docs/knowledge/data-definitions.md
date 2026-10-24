@@ -26,7 +26,7 @@
 - 公式の「N日目」は丸一日中止があると翌日に同じ日目を振り直し、最終日は total_days に飛ぶ。ページから読めた値が常に正で、start_date からの引き算は欠けた所を埋めるだけ（2026-09、memory boatrace_series_day_renumbering_on_cancellation、BOA-501 PR #911、scripts/lib/raceSeriesLookup.js）
 - 得点率は予選終了で確定。着順点 10/8/6/4/2/1、特別戦は 12/10/9/7/6/5。予選は「種別が予選の最後のレース」で切る（2026-09、memory boatrace_series_points_official_rules、公式ガイド guide-7、src/components/race/seriesPoints.js）
 - 必要得点 = ceil(ボーダー ×（今の走数＋残り走数）− 今の得点)。ボーダーは公式が出さないので自社推定（2026-09、src/components/race/seriesPoints.js）
-- フライングは即日帰郷ではない。途中帰郷は「節の最終日に出走が無い」で判定できる（2026-09、memory boatrace_series_points_official_rules）
+- フライングは即日帰郷ではない（2026-09、memory boatrace_series_points_official_rules）。途中帰郷の推定は「前の日まで走っていて、表示日に1走も組まれていない選手」で、予選中も外す。旧の「節の最終日に出走が無い」は廃止（2026-10、#1149・BOA-649、`withdrawnByAbsence`。判定は `src/services/meetExclusion.js`）
 - 賞典除外・途中帰郷は racer_series_points.remarks に公式の備考がそのまま入る。penalty_points=99 や placements の「妨」は途中帰郷でも出るので区別に使えない。収録は一部の開催だけで、無い節はこの経路で判定できない（2026-09-27〜28、memory boatrace_series_points_official_rules・project_data_foundation_orchestration_2026_09_19、マイグレーション064。収録の範囲は要確認）
 - 公式の得点率一覧（race/pointrank）は最終日に開いても予選終了の時点で止まる（2026-09-27、memory boatrace_series_points_official_rules）
 - 特別戦の配点の判定は race_stage の名前の部分一致（「ドリーム」「選抜」）なので、「桐生ＤＲ戦女子」等の表記ゆれを拾えない（2026-09-27、memory boatrace_series_points_official_rules、BOA-458。修正済みかは要確認）
