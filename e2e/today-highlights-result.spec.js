@@ -74,10 +74,13 @@ function edgeTodayResponse(races = RACES) {
 // 左右されないよう、時刻をテストで決める。既定は全レースの締切前（09:00）
 async function setup(
   page,
-  { edge, races = RACES, now = "2026-09-29T09:00:00+09:00" },
+  { edge, races = RACES, now = "2026-09-29T09:00:00+09:00", lang = "ja" },
 ) {
   await page.clock.setFixedTime(new Date(now));
-  await page.addInitScript(() => localStorage.setItem("boatai-language", "ja"));
+  await page.addInitScript(
+    (language) => localStorage.setItem("boatai-language", language),
+    lang,
+  );
   await page.route("**/rest/v1/**", (route) =>
     route.fulfill({ status: 200, json: [] }),
   );
@@ -285,4 +288,29 @@ test.describe("ホームの注目レース: 締切前のレースから選ぶ（
     await expect(section).not.toContainText("1着予想");
     await expect(section).not.toContainText("逃げ");
   });
+});
+
+test("BOA-762: ホームのハイライトの会場名を英語で出し、日本語の表示を保つ", async ({
+  page,
+}) => {
+  await setup(page, { edge: true, lang: "en" });
+  await page.goto("/en/");
+  await readHighlights(page);
+  const links = page.locator(".volatility-highlights__race-link");
+  await expect(links).toHaveCount(2);
+  for (const link of await links.all()) {
+    await expect(link).toContainText("Kiryu");
+    await expect(link).not.toContainText("桐生");
+  }
+
+  const jaPage = await page.context().newPage();
+  await setup(jaPage, { edge: true });
+  await jaPage.goto("/");
+  await readHighlights(jaPage);
+  const jaLinks = jaPage.locator(".volatility-highlights__race-link");
+  await expect(jaLinks).toHaveCount(2);
+  for (const link of await jaLinks.all()) {
+    await expect(link).toContainText("桐生");
+  }
+  await jaPage.close();
 });

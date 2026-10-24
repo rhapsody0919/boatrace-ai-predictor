@@ -121,7 +121,7 @@ hq の案 v2（`~/hq/drafts/codex-automerge-tiers-20261023.md`、ops-architect �
 | 項目 | 決め |
 |---|---|
 | フォルダ | `src/pure/**`（画面の側）と `scripts/lib/pure/**`（スクリプトの側）。今は無い（2026-10-23 確認） |
-| 強制の仕方 | 新しい `scripts/maintenance/verify-pure-imports.js`（台帳で `ci`、Quality Gates で必ず走る）。規則を並べる形（`no-restricted-imports` 等）にしない。`no-restricted-imports` は静的な import と `export … from` しか見ず、`import()`・`require`・`createRequire` が通り、scripts の側は `globals.node` で `require` も定義済み（`eslint.config.js:35-48`）だから。代わりに ESLint のパーサ（`verify-no-undef.js` と同じ使い方）で AST を取り、全部の ImportDeclaration・ExportNamed/AllDeclaration の `from`・ImportExpression・`require(` の呼び出しの行き先をパスに解決し、**同じ pure の根（`src/pure/` か `scripts/lib/pure/`）の中の .js だけ**を許す。文字列でない `import()` は不合格。`../` での脱出・再 export・JSON・npm の部品も同じ判定で塞ぐ。グローバルは ES の組み込みだけにして no-undef を当て、`globalThis`・`window`・`self`・`process`・`eval`・`Function`・`import.meta`・`fetch`・`XMLHttpRequest`・`WebSocket` は個別に禁止する。龍神は JavaScript なので、型（TypeScript）で守る案（Gemini の前提）は使わない |
+| 強制の仕方 | 新しい `scripts/maintenance/verify-pure-imports.js`（台帳で `ci`、Quality Gates で必ず走る）。規則を並べる形（`no-restricted-imports` 等）にしない。`no-restricted-imports` は静的な import と `export … from` しか見ず、`import()`・`require`・`createRequire` が通り、scripts の側は `globals.node` で `require` も定義済み（`eslint.config.js:35-48`）だから。代わりに ESLint のパーサ（`verify-no-undef.js` と同じ使い方）で AST を取り、全部の ImportDeclaration・ExportNamed/AllDeclaration の `from`・ImportExpression・`require(` の呼び出しの行き先をパスに解決し、**根ごとの許可の向き（下の「追記（2026-10-24）: 共有の根」。`src/pure/` は自分の中だけ、`scripts/lib/pure/` は自分の中と `src/pure/`）に合う .js だけ**を許す。文字列でない `import()` は不合格。`../` での脱出・再 export・JSON・npm の部品も同じ判定で塞ぐ。グローバルは ES の組み込みだけにして no-undef を当て、`globalThis`・`window`・`self`・`process`・`eval`・`Function`・`import.meta`・`fetch`・`XMLHttpRequest`・`WebSocket` は個別に禁止する。龍神は JavaScript なので、型（TypeScript）で守る案（Gemini の前提）は使わない |
 | CI の lint | `npm run lint`（`eslint .`）は今 CI で走っていない（Quality Gates に無い。未定義参照だけ `verify-no-undef.js` が見る）。そこで lint 全体を必須にするのでなく、上の verify を verify:ci に入れて必須にする（`.github` を変えない） |
 | 切り出しの PR | 既存の処理を pure のフォルダに移す PR は自動マージしない（Claude の PR か、Orchestrate が審査する Codex の PR）。移した後は verify が import を見張るので、import 先が変わったら CI が落ちる（確かめ直しを機械に任せる） |
 | 自動マージの条件 | 変えたパスが全部 pure のフォルダの中、変えた関数を import する単体の試験の**追加**が差分にある（数えるのは `scripts/maintenance/verify-*.js` で台帳が `ci` のものだけ。`scripts/tests/**` は CI が呼ばない、AGENTS.md:91）（既存の試験の行の削除・書き換えは範囲外。M7 と同じ）、M2 の check が全部 success |
@@ -129,6 +129,47 @@ hq の案 v2（`~/hq/drafts/codex-automerge-tiers-20261023.md`、ops-architect �
 
 - 前の案（`src/utils/**`・`src/lib/**` を条件つきで入れる、`scripts/lib` は名前の許可の一覧）は取り下げる。`src/utils` は画面と鍵の両方に近い部品が混ざり、パスでは守れない
 - 入れる時期は §10 の順番のとおり、範囲A の自動マージのルールが安定した後
+
+#### 追記（2026-10-24）: 共有の根
+
+開発効率の計画（`docs/design/dev-efficiency/plan.md` の 1b）で、画面とスクリプトの両方が使う純関数の置き場を決める。
+
+**決定: 2つの根のまま、`scripts/lib/pure/**` から `src/pure/**` への片方向の import だけを許す。画面とスクリプトの両方が使う純関数は `src/pure/**` に置く（共有の根は `src/pure`）。`src/pure/**` から `scripts/lib/pure/**` への import は禁じる。新しい根は足さない。**
+
+今の依存（2026-10-24、origin/master `e2d194f35` の grep）:
+
+| 向き | 数 | 例 |
+|---|---|---|
+| scripts・api → src | 104 ファイル（静的な `from` の import。`grep -rlE "from ['\"](\.\./)+src/" scripts api`。`import()` を含めると 111、うち `scripts/maintenance` の verify が 69、本番の処理は 42） | `src/components/race/seriesPoints.js`（8）・`src/data/blogPosts.js`・`src/config/languages.js`・`src/utils/snsObservations.js`・`src/utils/dateUtils.js`・`src/utils/raceOutcome.js` |
+| src → scripts/lib | 4 ファイル・5 行 | `supabaseDataService.js:11-12`（`hitCalculator.js`・`dateUtils.js`）、`racerConditionStats.js:2`（`hitCalculator.js`）、`basicInfoStats.js`・`adlerModel.js`（`hitCalculator.js`・`harville.js`） |
+| 往復 | 1 本 | `supabaseDataService.js` → `src/utils/racerConditionStats.js` → `scripts/lib/hitCalculator.js` → `src/utils/raceOutcome.js`（`hitCalculator.js:9`） |
+
+理由:
+
+1. **今の向きに合う。** scripts から src を読む向きが主流（本番の処理だけでも 42 ファイル）、逆は 4 ファイル。共有の根を src の側に置けば、逆向きの 5 行は「`src/pure` に移して `scripts/lib/*.js` は再 export を残す」で消え、往復も解ける（`hitCalculator.js` と `raceOutcome.js` の純粋な部分を両方 `src/pure` に移す）
+2. **画面の束（バンドル）に scripts の木が入らない。** `src/pure` → `scripts/lib/pure` を禁じるので、ブラウザで動く側が Node の側の部品に依存しない。`scripts/lib/pure` はスクリプトだけが使う純関数の置き場として残す（§4.2 の表のまま）
+3. **新しい根は既存の守りの外に落ちる。** 例えば最上位に `shared/pure/` を足すと、`post-merge-checks.yml` の `paths`（`src/**`・`scripts/**` 等、27-38 行）に入らず、マージ後の no-undef・build が走らない。`verify-no-undef.js:43-51` の対象（src・api・middleware.js・scripts・e2e 等）にも入らない。直すには `.github` の変更が要り、本計画の「`.github` は変えない」と食い違う。`eslint.config.js` の区分、hq の codex-pr.py の段2 のパス（§4・M7）も全部足し直しになる
+4. **§4.2 の表・段2 の表・hq の設定が既に `src/pure`・`scripts/lib/pure` で書かれている。** 根を変えない案は、それらを変えずに済む
+
+採らなかった案: 新しい共有の根を1つ足す（上の3・4）。`scripts/lib/pure` を共有の根にする（画面から scripts の木を読む向きが増え、1・2 と逆）。
+
+verify-pure-imports.js の判定（§4.2 の表に足す）:
+- `src/pure/` の中のファイル: 行き先が `src/pure/` の中の .js だけを許す
+- `scripts/lib/pure/` の中のファイル: 行き先が `scripts/lib/pure/` か `src/pure/` の中の .js だけを許す
+- どちらの根も、グローバルは ES の組み込みだけ（`scripts/lib/pure` も `globals.node` を使わない。`src/pure` から読まれる物と同じ条件にそろえる）
+- グローバルの判定は `eslint.config.js` を使わず、verify-pure-imports.js が自分の設定（`overrideConfigFile: true`、`ecmaVersion` と ES の組み込みだけ）で no-undef を当てる。flat config の `languageOptions.globals` は上から重ねて合わさり、後のブロックの `globals: {}` では `eslint.config.js:19` の browser・35-46 行の node の名前を消せないため（審査 P2）
+- コメントの中の型の import（JSDoc の `import('...')`）と `/// <reference` も、import と同じ判定にかける。`tsc` はこれらを解決して根の外のファイルをプログラムに入れる（4 の型の検査の範囲を閉じるため。審査 P2）
+
+移したときの旧の置き場: `scripts/lib/hitCalculator.js`・`src/utils/raceOutcome.js` 等は再 export だけのファイルとして残す（定期の job・画面の import を変えない）。共通ロジックの索引（`scripts/maintenance/generate-lib-index.js:39-55` の TARGETS は `scripts/lib`・`src/utils`・`src/services` だけ。再 export の行は export に数えない）から移した関数が消えないよう、切り出しの最初の PR で TARGETS に `src/pure` を足す（Claude の PR）。`scripts/lib/**` は段の対象外なので、この再 export の PR は Claude の PR（§4.2「切り出しの PR」）。
+
+G5（§3.2）と M3（§5.2）に足すもの（守りの設定を Codex の PR で緩めさせない）:
+- `eslint.config.*`（区分のグローバル・規則の重さを変えると verify-no-undef と verify-pure-imports の判定が変わる）
+- 抑制の一覧: `scripts/maintenance/*-allowlist.json`（`verify-no-undef-allowlist.json` と、1a で規則ごとに足す一覧）
+- `**/jsconfig*.json`・`**/tsconfig*.json`（4 の範囲を限った tsc の `include` を広げ・狭めると検査が変わる。今は無い）
+- `scripts/maintenance/verify-no-undef.js`（1a で lint の本体になる守りの verify。§4.1 の守りの verify にも足す）
+- `scripts/maintenance/verify-pure-imports.js`（既に G5 にある。再掲）
+
+この glob は hq の `config/codex-pr.json` の `forbidden_paths`・`automerge.exclude` が既に持つもの（system-architect の審査で確認、2026-10-24）にそろえた。段2 を開くとき、hq の `merge_protected` の `scripts/lib/**` から `scripts/lib/pure/**` を除く（今は除かれておらず、安全側に倒れている）。
 
 ### 4.3 画面の Codex の PR（オーナー 10/24）
 

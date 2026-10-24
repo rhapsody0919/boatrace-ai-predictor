@@ -42,6 +42,7 @@
 - 必須の check: `verify`・`e2e`・`ml-tests`（出元は GitHub Actions）。マージは squash だけ。dismiss_stale を ON
 - 必須の check は品質のためのもの。作成の App は PR の中で workflow を書き換えられるので、守りにはならない。守りは審査の App の承認だけ
 - auto-merge は切替のときに ON。admin の bypass は切替のときに外す
+- 追記（2026-10-24、オーナー決定、Orchestrate のセッション）: 上の1行は取りやめる。auto-merge は ON にせず、admin の bypass も外さない（身元の分離 v5 の手順8 の A・B をやらない）。理由: Codex の自動マージ（hq の `codex-pr.py --merge`）は GitHub の auto-merge を使わず、ryujin-maker の名義で `gh pr merge --squash --match-head-commit` の直接マージをする（`~/hq/scripts/codex-pr.py:1035-1036`、`docs/design/codex-direct-pr/design.md:208`）。ON にすると `--auto` を付けた PR が承認1件と必須の3つの check だけで入り、M2〜M7 を飛ばす道が増える（system-architect の審査）。Codex の自動マージを開ける条件は、design §10.1 の Q6・Q8（どちらも済み）と、ryujin-maker の名義の直接マージの実測（hq がテスト PR で行う）だけ
 
 ### 鍵の移し替え（段取り S）
 
