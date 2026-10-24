@@ -270,7 +270,7 @@ check("A11 #1477 今節Fの理由は前夜の途中帰郷で上書きしない",
 });
 
 check(
-  "A12 推定の経路の ID は数値で、昇順（オブジェクトの整数キーの順）",
+  "A12 推定の経路の ID は数値（呼び出し側は Set で引くので順は固定しない）",
   () => {
     const out = run({
       meetRows: [
@@ -280,7 +280,10 @@ check(
       ],
       meetStarts: [st("2026-10-01-04-01", 1, { is_flying: true })],
     });
-    assert.deepEqual(out.withdrawnRacerIds, [5201, 5203]);
+    assert.deepEqual(
+      [...out.withdrawnRacerIds].sort((a, b) => a - b),
+      [5201, 5203],
+    );
     assert.ok(out.withdrawnRacerIds.every((id) => typeof id === "number"));
   },
 );
@@ -309,6 +312,25 @@ check(
       meetStarts: [st("2026-10-01-04-01", 1, { finish_mark: "L" })],
     });
     assert.deepEqual(out.withdrawnRacerIds, []);
+  },
+);
+
+check(
+  "A15 今節Fの後に帰った選手の理由は flying のまま（不在・前夜の途中帰郷で上書きしない）",
+  () => {
+    const out = run({
+      date: "2026-10-02",
+      meetRows: [
+        entry("2026-10-01-04-01", 1, 5310),
+        entry("2026-10-02-04-01", 2, 5311),
+      ],
+      meetStarts: [st("2026-10-01-04-01", 1, { is_flying: true })],
+      prelimOfficial: { withdrawnRacerIds: [5310] },
+    });
+    assert.deepEqual(out, {
+      withdrawnRacerIds: [5310],
+      exclusionReasonByRacer: { 5310: "flying" },
+    });
   },
 );
 
@@ -363,7 +385,10 @@ check("B4 公式が賞典除外・途中帰郷とした選手は順位を付け�
       { racer_id: 5432, remarks: null },
     ],
   });
-  assert.deepEqual([...excluded(out)].sort(), [5430, 5431]);
+  assert.deepEqual(
+    [...excluded(out)].sort((a, b) => a - b),
+    [5430, 5431],
+  );
 });
 
 check(
@@ -386,12 +411,11 @@ const service = readFileSync(
   "utf8",
 );
 check("C1 getMeetScoreboard は meetExclusionsOf を呼ぶ", () => {
-  assert.match(
-    service,
-    /import\s*\{\s*meetExclusionsOf\s*\}\s*from\s*["']\.\/meetExclusion\.js["']/,
-  );
-  assert.match(service, /\.\.\.meetExclusionsOf\(\{/);
-  assert.doesNotMatch(service, /exclusionReasonByRacer:\s*reasons/);
+  // 書き方（import の改行・展開の形）には縛られないよう、名前と行き先だけを見る
+  assert.match(service, /from\s*["']\.\/meetExclusion\.js["']/);
+  assert.match(service, /\bmeetExclusionsOf\(/);
+  // 旧の即時関数の本文（目印のコメント）が DAL に戻っていない
+  assert.doesNotMatch(service, /公式の備考が取れていればそれが正/);
 });
 
 console.log(`✅ meetExclusion: ${count} 件の例を確認`);
