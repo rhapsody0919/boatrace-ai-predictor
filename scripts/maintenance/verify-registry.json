@@ -865,6 +865,11 @@
       "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
     },
     {
+      "script": "verify-race-series-ym.js",
+      "tier": "ci",
+      "guards": "節の年月計算（年越し・月初末・うるう年）と節名未掲載の警告（BOA-1045）"
+    },
+    {
       "script": "verify-race-stage-parsing.js",
       "tier": "ci",
       "guards": "レースステージ抽出（update-race-info.js の scrapeRaceStage、BOA-226）"
