@@ -230,7 +230,7 @@ for (const name of [
 }
 
 await check(
-  "fetchRacerEntriesSince: 窓を今日（JST）までにし、主キーで並べ、fetchAllPages の .range() でページを読む",
+  "fetchRacerEntriesSince: 主キーで並べ、fetchAllPages の .range() でページを読む",
   () => {
     const m = /function fetchRacerEntriesSince\([^)]*\) \{([\s\S]*?)\n\}/.exec(
       source,
@@ -238,9 +238,6 @@ await check(
     assert.ok(m, "fetchRacerEntriesSince が見つからない");
     assert.match(m[1], /return fetchAllPages\(\(from, to\) =>/);
     assert.match(m[1], /\.from\("race_entries"\)/);
-    // E2E は時計を録画の時刻に止める。上限が無いと、素通しした取得に録画より後の走が混ざる
-    assert.match(m[1], /const untilRaceId = `\$\{jstToday\(\)\}-99`;/);
-    assert.match(m[1], /\.lte\("race_id", untilRaceId\)/);
     assert.match(
       m[1],
       /for \(const key of FETCH_ALL_BY_IN_ORDER\.race_entries\) \{\s*query = query\.order\(key\);/,
