@@ -11,6 +11,12 @@
 //
 // 2026-09-28の実行結果: 2開催とも順位が全件一致（多摩川G1 45/45・若松G1 49/49）。
 // キーのズレで公式行を取れなかった節は0件。
+// 2026-10-25の実行結果（BOA-1049）: 6開催306行。走数の検算 282/282、順位・得点率・走数は6開催とも全件一致。
+// 得点率を出していない行の読み替えは 23/24（残る1件は大村 10/18 節 5088 の減点109、BOA-1053 で直す）。
+//
+// 台帳（scripts/maintenance/verify-registry.json）には載せない: 台帳は scripts/maintenance/ 直下だけが対象で、
+// 本番 DB を読むので載せても tier=manual。BOA-1053 が直るまで (0b) が1件落ちるので、毎晩の検証に回すのは
+// その後（scripts/maintenance/ へ移して manual で登録する）
 import { supabase } from "../lib/supabaseClient.js";
 import {
   buildMeetRanking,
@@ -42,6 +48,13 @@ const official = await must("公式の得点率一覧", () =>
     ),
 );
 
+// 下の (0)・(0b) から数えるので、先に宣言する（BOA-1049。後ろで宣言していて ReferenceError で落ちていた）
+let failures = 0;
+const fail = (msg) => {
+  failures += 1;
+  console.error(`  ❌ ${msg}`);
+};
+
 // (0) 走数の検算。`placements` の非空白文字数 = (得点 − 減点) / 得点率 か。
 //     **公式の列だけで完結する独立な検算**にする。読み替え関数の戻り値どうしを
 //     比べると両辺が同じ実装由来でほぼ恒真になる（2026-09-28のレビュー指摘）
@@ -67,12 +80,22 @@ const official = await must("公式の得点率一覧", () =>
 }
 
 // (0b) 得点率を出していない行（賞典除外・途中帰郷）も、読み替えが破綻しないこと。
-//      順位の比較からは外れるので、ここでしか見られない
+//      順位の比較からは外れるので、ここでしか見られない。
+//      得点率が負になるのは破綻ではない: 途中帰郷で減点が得点を上回ると (得点−減点)/走数 は負になる
+//      （若松 2026-10-13 節 4188「転５」得点2・減点5 → −1.50。公式はこの行の得点率を「-」で出さないので、
+//      負を出すか0で止めるかは未確認。BOA-1049 の official-data-spec の調査）。代わりに、引いた減点が
+//      99 以上なら破綻とみる。99 は賞典除外の印で、引く点数ではないため（大村 2026-10-18 節 5088 の
+//      減点 109 を丸ごと引いて −13.00 になる。当社の算出の誤りとして BOA-1053 で直す）
 {
   const noRate = official.filter((r) => r.score_rate === null);
   const broken = noRate.filter((r) => {
     const v = officialSeriesScore(r);
-    return !v || !Number.isFinite(v.rate) || v.rate < 0 || v.rate > 12;
+    return (
+      !v ||
+      !Number.isFinite(v.rate) ||
+      v.rate > 12 ||
+      r.total_points - v.points >= 99
+    );
   });
   console.log(
     `■ 公式が得点率を出していない行の読み替え: ${noRate.length - broken.length}/${noRate.length} ${broken.length === 0 ? "✅" : "❌"}`,
@@ -85,12 +108,6 @@ const official = await must("公式の得点率一覧", () =>
   if (broken.length > 0) failures += broken.length;
 }
 
-let failures = 0;
-const fail = (msg) => {
-  failures += 1;
-  console.error(`  ❌ ${msg}`);
-};
-
 const meets = [
   ...new Map(
     official.map((r) => [
@@ -100,7 +117,6 @@ const meets = [
   ).values(),
 ];
 console.log(`公式の行がある節: ${meets.length}（${official.length}行）\n`);
-
 
 for (const m of meets) {
   const vv = String(m.venueCode).padStart(2, "0");
@@ -119,7 +135,9 @@ for (const m of meets) {
       .eq("meet_start_date", m.meetStart),
   );
   if (byKey.length !== rows.length) {
-    fail(`v${vv} ${m.meetStart}: キーで引けた行 ${byKey.length} ≠ 実際 ${rows.length}`);
+    fail(
+      `v${vv} ${m.meetStart}: キーで引けた行 ${byKey.length} ≠ 実際 ${rows.length}`,
+    );
   }
 
   // 節の全レース（開始日から最長9日）
