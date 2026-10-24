@@ -88,3 +88,4 @@
 - 許可リストを (規則, ファイル) の件数だけで持つと、同じファイルの中で1件直って1件増える入れ替わりを通す。no-undef のように名前で区別できる規則は名前までキーに入れる（2026-10-24、PR #1819 の system-architect・/code-review）
 - ESLint の設定コメントの説明の区切りは `\s-{2,}\s`（`--` に限らない）。自前で解析するときは `---` も区切りに扱う（2026-10-24 実測、PR #1819）
 - ruleFilter だけの lint の関門は、ファイル内の eslint-disable・`/* global */` で消せる。検査側の ESLint にだけ noInlineConfig を付けると、`npm run lint` とエディタを変えずに塞げる（2026-10-24、PR #1819）
+- ESLint 9 の ruleFilter は、外した規則の報告だけでなく実行も止める。何も報告せず変数に「使った」印を付ける補助ルール（eslint.config.js の local/jsx-uses-vars）は、no-unused-vars を関門に足すときに一緒に残さないと `<motion.div>` でだけ使う motion の誤検知が戻る（2026-10-24 実測、ESLint 9.39.1、BOA-1017 の system-architect）
