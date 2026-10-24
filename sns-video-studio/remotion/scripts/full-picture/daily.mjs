@@ -2,10 +2,10 @@
  * 全貌動画の毎日の実行（hq の集客部署が回す1本のコマンド）。2つの使い方:
  *
  *   選ぶ: node scripts/full-picture/daily.mjs --select --date YYYY-MM-DD [--count N] --plan-only
- *     → 標準出力に JSON 1つ {status, plan: [{race_id, deadline}]}
- *   作る: node scripts/full-picture/daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template]
+ *     → 標準出力に JSON 1つ {status, plan: [{race_id, deadline, race_stage}]}
+ *   作る: node scripts/full-picture/daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b]
  *     → 標準出力に JSON 1つ {status, stage, reasons, files, video{full_s,entry_s,full_mib}, llm{calls,tokens_in,tokens_out},
- *        text_mode, missing, ref_commit}
+ *        text_mode, missing, ref_commit, variant}
  *   exit: 0 合格、1 止める、2 使い方の誤り。ログは標準エラーに出す（標準出力は JSON だけ）
  *
  * 作る中身: 材料（--stage racecard、失敗したら1回だけ取り直す）→ run-full.mjs（完全版・入口版・bundle）→ 止める判定 →
@@ -37,7 +37,7 @@ export const SELECT_RULE = { deadlineBefore: "21:58", stages: ["優勝戦", "準
  * @param {{raceId: string, raceNumber: number, startTime: string|null, raceStage: string|null, cancellationStatus: string|null}[]} races
  * @param {string} date YYYY-MM-DD
  * @param {number} count
- * @returns {{race_id: string, deadline: string}[]}
+ * @returns {{race_id: string, deadline: string, race_stage: string|null}[]} race_stage は race_conditions.race_stage の文字列そのまま（優勝戦・準優勝戦の判別は hq がする。hq SQ08 v5）
  */
 export function selectRaces(races, date, count = 1) {
   const ok = (races ?? []).filter((r) => r.startTime && r.startTime < SELECT_RULE.deadlineBefore && !r.cancellationStatus);
@@ -45,8 +45,13 @@ export function selectRaces(races, date, count = 1) {
   const finals = ok.filter((r) => SELECT_RULE.stages.some((s) => (r.raceStage ?? "").includes(s))).sort(byLate);
   const twelve = ok.filter((r) => r.raceNumber === SELECT_RULE.fallbackRace).sort(byLate);
   const picked = [...finals, ...twelve.filter((r) => !finals.includes(r))].slice(0, count);
-  return picked.map((r) => ({ race_id: r.raceId, deadline: new Date(`${date}T${r.startTime}+09:00`).toISOString() }));
+  return picked.map((r) => ({ race_id: r.raceId, deadline: new Date(`${date}T${r.startTime}+09:00`).toISOString(), race_stage: r.raceStage ?? null }));
 }
+
+/** YouTube の型を比べる札（hq SQ08 v5）。今は a・b の中身は同じで、送る下書きの source_data.full_picture_variant.id に入れるだけ */
+export const VARIANTS = ["a", "b"];
+/** bundle に札を書く（純粋関数。札が無ければ元のまま） */
+export const withVariant = (bundle, variant) => (variant ? { ...bundle, full_picture_variant: { id: variant } } : bundle);
 
 /**
  * 子のプロセスに渡す環境変数。通す名前を並べる（禁止の名前を並べると DATABASE_URL 等が素通りする。代わりの審査 P3）。
@@ -103,7 +108,7 @@ async function materials(raceId) {
 
 async function make(raceId, opts) {
   // 予期しない例外でも、標準出力に JSON 1つを出して止める（止まった段を残す。代わりの審査 P2）
-  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null };
+  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null, variant: opts.variant ?? null };
   try {
     return await makeSteps(raceId, opts, result);
   } catch (e) {
@@ -111,7 +116,7 @@ async function make(raceId, opts) {
   }
 }
 
-async function makeSteps(raceId, { out, bgm, concurrency, text }, result0) {
+async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null }, result0) {
   const result = result0;
   try {
     result.ref_commit = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
@@ -139,7 +144,10 @@ async function makeSteps(raceId, { out, bgm, concurrency, text }, result0) {
   const bundleDir = join(out, "bundle");
   const bundlePath = join(bundleDir, "bundle.json");
   if (!existsSync(bundlePath)) return finish({ ...result, reasons: ["bundle.json が無い"] }, 1);
-  const bundle = JSON.parse(readFileSync(bundlePath, "utf8"));
+  // 札（--variant）を bundle に書き、送信の道（push-full-picture.js）が下書きの source_data.full_picture_variant に写す
+  const bundle = withVariant(JSON.parse(readFileSync(bundlePath, "utf8")), variant);
+  if (variant) writeFileSync(bundlePath, JSON.stringify(bundle, null, 2));
+  result.variant = variant;
   const runText = JSON.parse(readFileSync(join(out, `run-${text}.json`), "utf8"));
   const runEntry = JSON.parse(readFileSync(join(out, "run-entry.json"), "utf8"));
   result.video = {
@@ -207,11 +215,12 @@ async function main(argv) {
   const bgm = opt("--bgm");
   const concurrency = opt("--concurrency");
   const text = opt("--text") ?? "connected";
+  const variant = opt("--variant");
   const [raceId] = args;
-  if (!raceId || !/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(raceId) || !out || !bgm || !["connected", "template"].includes(text))
-    return usage("使い方: daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template]");
+  if (!raceId || !/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(raceId) || !out || !bgm || !["connected", "template"].includes(text) || (variant !== null && !VARIANTS.includes(variant)))
+    return usage("使い方: daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b]");
   if (!existsSync(bgm)) return usage(`BGM が無い: ${bgm}`);
-  return make(raceId, { out: resolve(out), bgm: resolve(bgm), concurrency, text });
+  return make(raceId, { out: resolve(out), bgm: resolve(bgm), concurrency, text, variant });
 }
 
 // シンボリックリンクや空白を含むパスから起動しても動く（file:// の文字列で比べると何もせず exit 0 になった。代わりの審査 P2）
