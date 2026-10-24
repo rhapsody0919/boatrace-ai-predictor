@@ -34,13 +34,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/boatcast/probe.js` | BOATCASTへ、Vercel（実際の本番のリージョン）から到達できるかの確認（probe）。 | createBoatcastProbeHandler |
 | `scripts/lib/boatcast/publicMap.js` | BOATCASTのオリジナル展示（bc_oriten）の「公開マップ」（会場 × 項目）。事前に凍結した静的な設定。 | venueEntry, publicVenueCodes, isPublicVenue, venueOfRaceId, expectedValueRows ほか4件 |
 | `scripts/lib/botHtmlParity.js` | ボット向け HTML（ADR 0089）と人の画面の照合に使う純粋な関数。 | extractBotItems, canonicalJson, normalizeHref, findMissing, classifyHtml ほか5件 |
-| `scripts/lib/campaignResultRetrospective.js` | 企画エントリの結果確定後、「なぜ当たった/外れたか」を実データで説明する | buildResultRetrospective |
-| `scripts/lib/campaignVolatilityModel.js` | イン崩れ狙い企画（docs/design/sns-hub-campaign-pipeline/）用の買い目生成モデル。 | computeCampaignPicks, MODEL_NAME |
 | `scripts/lib/cancellationStatus.js` | レース中止・順延検出の状態遷移ロジック（BOA-254） | isCancellationConfirmed, computeCancellationTransition, CONFIRM_STREAK_THRESHOLD, CANCELLATION_CONFIRMED, CANCELLATION_TENTATIVE |
 | `scripts/lib/compareWithAllowlist.js` | 違反（{ file, code, ... }）と許可リスト（{ file, code, reason }）を突き合わせる（純関数）。 | compareWithAllowlist |
 | `scripts/lib/contentChannels/captureScreenshot.js` | ブログ/note/YouTubeサムネイル用のスクリーンショット取得。 | captureScreenshot |
 | `scripts/lib/contentChannels/coverImageStrategy.js` | ブログ/note/YouTubeサムネイルのカバー画像調達方法を、ネタ種別ごとに決める。 | getCoverImageStrategy |
-| `scripts/lib/contentChannels/renderCampaignCard.js` | CampaignEntryCard / CampaignDataExcerptCard | renderCampaignEntryCard, renderCampaignDataExcerptCard, COMPOSITION_IDS |
 | `scripts/lib/contentChannels/renderCoverCard.js` | DataQuoteCard（sns-video-studio/remotion/src/DataQuoteCard.jsx）を | renderCoverCard, COMPOSITION_IDS |
 | `scripts/lib/contentPrGate.js` | 記事の中身だけの PR を機械で判定する関門（純粋関数）。 | readJpegSize, computeContentSha256, checkRawHtml, checkKyoteiMd, changedJsonStrings ほか13件 |
 | `scripts/lib/contentRevisionHistory.js` | sns_draftsの却下・修正依頼履歴（revision_reason_codes/revision_reason_freetext）を | getRecentRevisions, countReasonCodes |
@@ -197,7 +194,6 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/sitemapLastmod.js` | sitemap.xml の lastmod を「実際に中身が変わった日」にするための部品（BOA-599）。 | gitLastCommitDate, laterDate, renderUrlEntry |
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups |
 | `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel, reviewGate, createAutoPlanStore ほか8件 |
-| `scripts/lib/snsCampaigns.js` | 企画型（キャンペーン型）SNS投稿パイプライン用 sns_campaigns / sns_campaign_entries | createCampaign, getCampaign, getActiveCampaigns, findQualifyingRaces, getRaceIdsWithResults ほか6件 |
 | `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | runSnsDaily, mergeSameKey, createYoutubeAnalyticsClient, createSnsDailyStore, SNS_DAILY_LOOKBACK_DAYS ほか3件 |
 | `scripts/lib/snsGa4.js` | SNS の流入の GA4 の共通部分（sns-pdca-loop plan §5）。分析スクリプト（scripts/analysis/sns-pdca-base… | getServiceAccountToken, createGa4Client, X_SOURCES, YOUTUBE_SOURCES, SITE_HOST ほか5件 |
 | `scripts/lib/snsMetricsRunner.js` | SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron `sns_metrics`、plan §5）。 | runSnsMetrics, createYoutubeMetricsReader, createXMetricsReader, dailySendMicrousd, createSnsMetricsStore ほか7件 |
@@ -208,7 +204,6 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, todayCandidates, todayFeatured, buildTodayPost, isTodayRebuild ほか19件 |
 | `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayVariants, loadTodayVariants, pickTodayHeading, TODAY_HEADING_BUILTIN, renderTodayHeading |
-| `scripts/lib/snsTopics.js` | SNSコンテンツ ネタ生成ライン用 sns_content_types / sns_target_accounts / | getActiveContentTypes, getContentTypeByKey, getTopicCategories, getActiveTopicCategoryByKey, enabledChannelsOf ほか13件 |
 | `scripts/lib/sourceFileWalk.js` | — | walkSourceFiles, readSourceFile |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
 | `scripts/lib/stripNonCode.js` | コメント・文字列・テンプレート・正規表現リテラルの中身を空白に置き換える簡易な字句解析（純関数）。 | stripNonCode |
@@ -366,11 +361,11 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
 | `src/services/sherlockModel.js` | シャーロック予想 共有モデルロジック（純粋関数のみ） | mean, buildFeatures, softmax, predictConditionalLogit, impliedProbs ほか5件 |
 | `src/services/sherlockService.js` | シャーロック予想 データ取得・推論サービス | getSherlockModelInfo, getSherlockPredictions |
-| `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか28件 |
+| `src/services/snsHubService.js` | — | importPreviewBundle, getDrafts, getApprovers, approveDraft, getBlogPrPreview ほか16件 |
 | `src/services/supabaseClient.js` | Supabase クライアント（フロントエンド用） | supabase |
 | `src/services/supabaseDataService.js` | Supabase データサービス | clearCache, aggregateRacerVenueBoatStats, aggregateRacerCrossStats, FETCH_ALL_BY_IN_ORDER, supabaseDataService |
 | `src/services/watsonService.js` | ワトソン予想 データ取得サービス | getWatsonModelInfo, getWatsonPredictions |
 
 ---
 
-対象 338 ファイル / export 1905 件。
+対象 333 ファイル / export 1858 件。
