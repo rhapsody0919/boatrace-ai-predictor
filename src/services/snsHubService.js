@@ -108,6 +108,34 @@ export async function archiveDraft(draftId) {
   });
 }
 
+/**
+ * 「戦略メモ」insight一覧を取得する
+ * @param {string} [status] - 'proposed' | 'active' | 'retired' | undefined(全件)
+ */
+export async function getInsights(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  const { data } = await request(`/insights${query}`);
+  return data || [];
+}
+
+export async function getRecentRevisions() {
+  const { data } = await request("/revisions");
+  return data || [];
+}
+
+/** insightを却下する（理由は任意） */
+export async function rejectInsight(insightId, reason) {
+  return request(`/insights/${insightId}/reject`, {
+    method: "POST",
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+}
+
+/** insightを採用する（active化、次回生成から参照される） */
+export async function approveInsight(insightId) {
+  return request(`/insights/${insightId}/approve`, { method: "POST" });
+}
+
 /** 観測窓つき指標。旧手動指標から期間を推測しない。 */
 export async function getMetricObservations(window, metric) {
   const { data } = await request(

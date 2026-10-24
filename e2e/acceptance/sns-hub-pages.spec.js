@@ -2,8 +2,8 @@ import { test, expect, e2eNow } from "../fixtures.js";
 import { mkdir } from "node:fs/promises";
 
 // SNS ハブ管理画面のページ分割（2026-10-18 オーナー承認、docs/design/sns-hub-page-split/APPROVED.md）。
-// 4ページ（手動承認・自動送信・数字・資料）と上部の切り替え、撤去した区画が出ないことを見る。
-// ネタ承認・戦略メモ・型一覧（DB）は使われていない口として撤去した（2026-10-24、hq SH01 R2）
+// 4ページ（手動承認・自動送信・数字と戦略メモ・資料）と上部の切り替え、撤去した区画が出ないことを見る。
+// ネタ承認・型一覧（DB）は使われていない口として撤去した（2026-10-24、hq SH01 R2）
 // dev サーバーには Edge Function が無いので /api/admin/sns-hub/* はすべてスタブ
 const H = 60 * 60 * 1000;
 const iso = (ms) => new Date(ms).toISOString();
@@ -43,6 +43,17 @@ function stubApi(page, { now, queue }) {
     "/approvers": [
       { id: "44444444-4444-4444-4444-444444444444", display_name: "本人" },
     ],
+    "/insights": [
+      {
+        id: "i1",
+        status: "proposed",
+        insight_text: "数字の比較を冒頭に置く",
+        evidence: "48h の再生が伸びた型",
+        source: "own-metrics",
+        created_at: iso(now),
+      },
+    ],
+    "/revisions": [],
     "/observations": { drafts: [], observations: [] },
     "/deadline-queue": queue,
   };
@@ -165,8 +176,8 @@ for (const width of [375, 1440]) {
     ).toBe(true);
     await page.screenshot({ path: `${dir}/auto-${width}.png`, fullPage: true });
 
-    // 数字
-    await nav(page).getByRole("link", { name: "数字", exact: true }).click();
+    // 数字と戦略メモ
+    await nav(page).getByRole("link", { name: "数字と戦略メモ" }).click();
     await expect(page).toHaveURL(/\/admin\/sns-hub\/metrics$/);
     await expect(
       page.getByRole("heading", { name: "観測窓別の型比較" }),
@@ -174,7 +185,8 @@ for (const width of [375, 1440]) {
     await expect(
       page.getByRole("region", { name: "投稿ごとの観測" }),
     ).toContainText("/today 朝のまとめ");
-    await expect(page.getByRole("button", { name: /戦略メモ/ })).toHaveCount(0);
+    await page.getByRole("button", { name: /^戦略メモ \(1\)$/ }).click();
+    await expect(page.getByText("数字の比較を冒頭に置く")).toBeVisible();
     await page.screenshot({
       path: `${dir}/metrics-${width}.png`,
       fullPage: true,
@@ -292,6 +304,52 @@ test("後から届いた古い下書きの一覧で新しい一覧を上書き�
   await expect(nav(page).getByRole("link", { name: /手動承認/ })).toContainText(
     "0",
   );
+});
+
+test("戦略メモの採用で返ったリスク警告を、消えない通知に残す", async ({
+  page,
+}) => {
+  await page.route(/\/api\/admin\/sns-hub\//, (route) => {
+    const path = new URL(route.request().url()).pathname.replace(
+      "/api/admin/sns-hub",
+      "",
+    );
+    if (path === "/insights/i1/approve")
+      return route.fulfill({
+        json: { data: {}, riskWarnings: [{ description: "断定的な表現" }] },
+      });
+    if (path === "/insights")
+      return route.fulfill({
+        json: {
+          data: [
+            {
+              id: "i1",
+              status: "proposed",
+              insight_text: "数字の比較を冒頭に置く",
+              source: "own-metrics",
+              created_at: iso(e2eNow().getTime()),
+            },
+          ],
+        },
+      });
+    if (path === "/deadline-queue")
+      return route.fulfill({ json: { data: [], control: null } });
+    if (path === "/observations")
+      return route.fulfill({
+        json: { data: { drafts: [], observations: [] } },
+      });
+    return route.fulfill({ json: { data: [] } });
+  });
+  await page.goto("/admin/sns-hub/metrics");
+  await page.getByRole("button", { name: /^戦略メモ \(1\)$/ }).click();
+  await page.getByRole("button", { name: "採用", exact: true }).click();
+  await expect(
+    page.getByRole("alert").filter({ hasText: "リスク警告: 断定的な表現" }),
+  ).toBeVisible();
+  await page.waitForTimeout(2500); // トースト（2秒）が消えても残る
+  await expect(
+    page.getByRole("alert").filter({ hasText: "リスク警告: 断定的な表現" }),
+  ).toBeVisible();
 });
 
 test("自動送信のナビの件数は 10 秒ごとの読み直しに追従する", async ({

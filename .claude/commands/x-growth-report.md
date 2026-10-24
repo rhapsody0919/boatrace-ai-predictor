@@ -7,7 +7,7 @@ Xは`docs/operation/x-operations-playbook.md`で最も運用に力を入れて�
 **役割分担（重複実装を避けるため必読）**:
 - Xプラットフォーム側の仕組み・アルゴリズム自体の深掘り調査は本スキルの範囲外にはしていない（`/channel-algorithm-research`は`youtube|note`のみ対応でXは未対応のため、`x-algorithm-and-growth-notes.md`の維持は引き続き本スキルのステップ4.5が担う）
 - 他チャネル（YouTube/note/SEO）との**資源配分の判断**は`/growth-monthly-summary`（月次）の役割。本スキルは「Xが十分な投資対効果を出せているか」の単体診断に留め、配分の意思決定はそちらに委ねる（ステップ5.5参照）
-- 提案した施策の「戦略メモ」DB登録後の**採用・却下の意思決定**は、sns-hub管理画面の「戦略メモ」タブを撤去したため（2026-10-24、hq SH01 R2。直近30日の利用0件）、今は画面で行えない。本スキルはinsightを登録するところまでが責務（ステップ7）
+- 提案した施策の「戦略メモ」DB登録後の**採用・却下の意思決定**はsns-hub管理画面「戦略メモ」タブが担う（週次デフォルト採用方式、ステップ7参照）。本スキルはinsightを登録するところまでが責務
 
 **本スキルが答えるべき問い（実行前に自問する）**:
 1. Xは`x-operations-playbook.md`の絶対厳守事項・運用ルール通りに運用できているか（Plan通りにDoできているか）
@@ -27,7 +27,7 @@ PDCAの「C→A」を閉じるための最重要ステップ。**新しいデー
 - 前回提案した施策（投稿時間帯変更、フォーマット変更等）は実際に実行されたか
 - 実行された場合、その後の投稿実績に変化が見えるか（今回集めるデータと突き合わせる）
 - 実行されていない場合、なぜか（判断が保留された/優先度が下がった等）を記録する
-- 前回「小施策」として`sns_strategy_insights`に登録したinsightが、その後`active`（週次デフォルト採用）になったか`retired`（却下）になったかを確認できる場合は明記する（`sns_strategy_insights` の `status` を読んで確かめる。管理画面の「戦略メモ」タブは 2026-10-24 に撤去した）
+- 前回「小施策」として`sns_strategy_insights`に登録したinsightが、その後`active`（週次デフォルト採用）になったか`retired`（却下）になったかを確認できる場合は明記する（sns-hub管理画面「戦略メモ」タブの履歴ビューで確認可能。「採用後どれだけ実際の下書き生成に参照されたか」も表示される設計のため、見れる場合はそれも報告に含める）
 
 過去レポートが無い初回実行時はこのステップをスキップし、その旨を明記する。
 
@@ -204,7 +204,7 @@ node scripts/analysis/x-trend-summary.js
 
 SNSマーケティングハブPhase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）の入力として、ステップ6で挙げた「小施策（即実行）」を`sns_strategy_insights`テーブルに`status='proposed'`で構造化して登録する。既存の`data/analysis/x-growth/report-{日付}.json`への保存は維持したまま、追加で行う（ADR 0027）。
 
-**登録後の意思決定フロー**: 登録したinsightは即座に採用されるわけではなく、`status=proposed`（要判断）で残る（表示していた sns-hub 管理画面「戦略メモ」タブは 2026-10-24 に撤去、hq SH01 R2）。**週次サイクル内にユーザーが却下操作をしなければ、次のサイクル開始時に自動的に`status=active`へ昇格する**（デフォルト採用・拒否権レビュー方式）。却下された場合は`status=retired`になり、理由が`decision_note`に記録される。本スキルの責務は登録までであり、採用・却下の判断はsns-hub側に委ねる。
+**登録後の意思決定フロー**: 登録したinsightは即座に採用されるわけではなく、sns-hub管理画面「戦略メモ」タブに`status=proposed`（要判断）として表示される。**週次サイクル内にユーザーが却下操作をしなければ、次のサイクル開始時に自動的に`status=active`へ昇格する**（デフォルト採用・拒否権レビュー方式）。却下された場合は`status=retired`になり、理由が`decision_note`に記録される。本スキルの責務は登録までであり、採用・却下の判断はsns-hub側に委ねる。
 
 - 各「小施策」1件につき1レコードを`createInsight`（`scripts/lib/snsStrategyInsights.js`）で登録する
   - `platform`: `'x'`
@@ -241,4 +241,5 @@ SNSマーケティングハブPhase 2（改善案の自律立案ループ、`doc
 - サイト送客効果測定: `scripts/analysis/x-referral-report.js`
 - 複数時点トレンド判定: `scripts/analysis/x-trend-summary.js`
 - 他チャネルとの資源配分（月次）: `/growth-monthly-summary`
+- 戦略メモ管理画面: `/admin/sns-hub/metrics`「戦略メモ」タブ
 - ブログ側の集客PDCA: `/growth-report`・`/growth-pdca`

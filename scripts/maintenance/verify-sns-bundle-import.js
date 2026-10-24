@@ -198,8 +198,52 @@ const riskRules = JSON.parse(
   ),
 ).rules;
 await check(
-  "共通リスク判定は既存の経路の結果・順序・返却形式を維持する",
+  "共通リスク判定は既存3経路の結果・順序・返却形式を維持する",
   async () => {
+    const approvePath = new URL(
+      "api/admin/sns-hub/insights/[id]/approve.js",
+      root,
+    );
+    let source = await fs.readFile(approvePath, "utf8");
+    let insight;
+    let updates = 0;
+    globalThis.__riskRuleTest = {
+      get: () => insight,
+      update: (value) => {
+        updates++;
+        return value;
+      },
+    };
+    const helpers =
+      "data:text/javascript," +
+      encodeURIComponent(`
+    export const jsonResponse=(v,status=200)=>new Response(JSON.stringify(v),{status});
+    export const isConfigured=()=>true; export const isValidUuid=()=>true;
+    export const getInsightById=async()=>globalThis.__riskRuleTest.get();
+    export const updateInsight=async(id,v)=>globalThis.__riskRuleTest.update(v);
+    export const requireAdminAuth=async()=>null;
+  `);
+    source = source
+      .replace(
+        /"[^"\n]+_lib\/(snsHubHelpers|adminAuth)\.js"/g,
+        JSON.stringify(helpers),
+      )
+      .replace(
+        /"[^"\n]+lib\/riskRuleMatcher\.js"/g,
+        JSON.stringify(new URL("scripts/lib/riskRuleMatcher.js", root).href),
+      )
+      .replace(
+        /"[^"\n]+risk-rules\.json"/g,
+        JSON.stringify(
+          "data:text/javascript," +
+            encodeURIComponent(
+              `export default ${JSON.stringify({ rules: riskRules })}`,
+            ),
+        ),
+      );
+    const handler = (
+      await import("data:text/javascript," + encodeURIComponent(source))
+    ).default;
     const cases = [
       ["競艇", ["banned-term-kyoutei"]],
       ["本命 VS", []],
@@ -296,8 +340,7 @@ await check(
         ],
       ],
     ];
-    // 戦略メモの採用の口（insights/[id]/approve.js）は SH01 R2 で消した。残る経路は matchRiskRules・checkRiskRules・validateBundle
-    {
+    try {
       for (const [content, xIds] of cases) {
         for (const platform of [
           "x",
@@ -358,6 +401,21 @@ await check(
               [],
             );
           }
+          insight = { status: "proposed", insight_text: content, platform };
+          const response = await handler(
+            new Request("https://local.invalid/insights/test/approve", {
+              method: "POST",
+            }),
+          );
+          assert.equal(response.status, 200);
+          assert.deepEqual(
+            (await response.json()).riskWarnings,
+            expected.map(({ id, category, matchedPattern }) => ({
+              id,
+              category,
+              matchedPattern,
+            })),
+          );
         }
         const result = await validateBundle(
           form(
@@ -394,7 +452,10 @@ await check(
         for (const platform of ["x", "youtube"])
           assert.deepEqual(result.riskFlags[platform], []);
       }
+      assert.equal(updates, cases.length * 6); // 警告があっても承認は継続する。
       assert.deepEqual(matchRiskRules("VS", "x", []), []);
+    } finally {
+      delete globalThis.__riskRuleTest;
     }
   },
 );

@@ -156,3 +156,41 @@ export async function updateDraft(id, patch, expectedStatus) {
   }
   return rows[0];
 }
+
+export async function getInsightById(id) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_strategy_insights?id=eq.${id}&select=*`,
+    {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_strategy_insights取得エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}
+
+export async function updateInsight(id, patch) {
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/sns_strategy_insights?id=eq.${id}`,
+    {
+      method: "PATCH",
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify(patch),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`sns_strategy_insights更新エラー: ${response.status}`);
+  }
+  const rows = await response.json();
+  return rows[0] || null;
+}

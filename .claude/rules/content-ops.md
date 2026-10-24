@@ -22,7 +22,7 @@ paths:
 
 新機能の実装完了からYouTube解説動画・ブログ記事・X投稿・note投稿へ展開する一連の流れ。全体設計は [`docs/design/content-ops-flow/spec.md`](../../docs/design/content-ops-flow/spec.md) を参照。
 
-**ネタ駆動のパイプライン**: 新機能／会場特性／データ知見／成績の4系統のネタから、チャネルごとにブログ・note・X・YouTubeのコンテンツを作る。`sns_topics`/`sns_topic_targets`によるネタゲート＋チャネル別パイプライン（`docs/operation/sns-pipeline-{blog,note,x,youtube}.md`、設計は`docs/design/sns-topic-gate/`・ADR 0036〜0038）。sns-hub管理画面（`/admin/sns-hub`）で下書きの承認・（blog/youtubeは）自動公開を行う。管理画面のネタ承認・ネタ型設定・修正の依頼・戦略メモの口は、直近30日の利用0件のため 2026-10-24 に撤去した（hq SH01 R2）
+**ネタ駆動のパイプライン（止まっている）**: 新機能／会場特性／データ知見／成績の4系統のネタから、チャネルごとにブログ・note・X・YouTubeのコンテンツを作る仕組みだった。`sns_topics`/`sns_topic_targets`によるネタゲート＋チャネル別パイプライン。Routine は止まり、ネタを書く口（朝の digest の登録・提案の起動・企画の検出・管理画面）も 2026-10-24 に消したので、今は新しいネタが作られない。今動いている投稿は全貌動画（hq の作り手→push-full-picture.js）と /today の X（snsTodayPlanner.js）（`docs/operation/sns-pipeline-{blog,note,x,youtube}.md`、設計は`docs/design/sns-topic-gate/`・ADR 0036〜0038）。sns-hub管理画面（`/admin/sns-hub`）で下書きの承認・（blog/youtubeは）自動公開を行う。管理画面のネタ承認・ネタ型設定・修正の依頼の口は、直近30日の利用0件のため 2026-10-24 に撤去した（hq SH01 R2）
 
 ### フローA-1: 並列着手とチャネル展開の基本ルール
 - 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆は**並列で着手できる**。X・note投稿は両方の完成を待ってから着手する（記事だけ先に公開されて動画が後追いだとリンクが死ぬため）
@@ -105,7 +105,7 @@ X・YouTube・note への定常投稿は SNS マーケティングハブ（`src/
 **核心の方針**: 「人間が覚えている」ことに依存する仕組みは形骸化する。機械的に判定できるものは実装完了チェックリスト（フローA-2）またはGitHub Actions、判断が要るものはセッション開始時の能動チェックまたはSlack通知のどちらかに必ず寄せる。
 
 ### フローC-0: セッション開始時チェックの統合（session-start-check.js）
-以下のセッション開始時の確認（フローC-2・C-4・C-5・C-7・C-8・C-10）を、`node scripts/maintenance/session-start-check.js`が1回の実行で集約する（C-6 は依頼で起動するもの、C-9 は GitHub Actions）。**セッション開始時、このスクリプトを実行し、結果をこのセッションの最初の応答で報告する**（判定ロジックはスクリプト冒頭のコメント。以下の本文は、確認後に何をするかの手順）。
+以下のセッション開始時の確認（フローC-2・C-4・C-5・C-7・C-8・C-10・C-11）を、`node scripts/maintenance/session-start-check.js`が1回の実行で集約する（C-6 は依頼で起動するもの、C-9 は GitHub Actions）。**セッション開始時、このスクリプトを実行し、結果をこのセッションの最初の応答で報告する**（判定ロジックはスクリプト冒頭のコメント。以下の本文は、確認後に何をするかの手順）。
 
 ### フローC-2: セッション開始時のX動画投稿確認
 Xは「可能な範囲で毎日投稿する」運用（`docs/operation/x-operations-playbook.md`）。本日の投稿状況は`session-start-check.js`の`xVideo`で取得できる。
@@ -153,6 +153,13 @@ SNSマーケティングハブ Phase 2（改善案の自律立案ループ、`do
 - `node scripts/maintenance/check-deprecated-terms.js`が、静的ページ（`About.jsx`・`FAQ.jsx`・`HowToUse.jsx`・各言語版ガイド）・オンボーディングUI（`FirstVisitGuideCard.jsx`）・note下書き（`note-articles/`）・ブログ記事（`public/blog/`）を対象にgrepし、ヒット件数を報告する
 - `docs/reference/`配下の内部ドキュメント（用語集・DB設計等）は対象外
 - 検知できるのは「この単語が存在すること」だけで、文脈が本当に矛盾しているかは目視確認が必要。ヒット件数は`session-start-check.js`の`deprecatedTerms`で取得できる
+
+### フローC-11: セッション開始時の戦略メモ（insight）承認待ち確認
+`sns_strategy_insights`の`status='proposed'`（要判断）は、sns-hub「戦略メモ」タブの手動採用ボタンで人間が個別に承認する。件数は`session-start-check.js`の`pendingInsights`で取得できる。
+
+- `pendingInsights.pendingCount`が1件以上あれば、**このセッションの最初の応答で**最も古い1件（`oldest`）の内容を自発的に提示し、「戦略メモの承認画面で確認しますか？」と一言確認する
+- 承認・却下の判断自体はsns-hub管理画面（`/admin/sns-hub/metrics`「戦略メモ」タブ）で行う（Claude Code側から代理で採用・却下しない）
+- 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
 ## ブログ記事の公開前品質チェック（新規作成・改稿とも必須）
 ビルドとE2Eだけでは記事の中身の質を担保できない。新規記事・既存記事の改稿（画像追加、FAQ追加等）を問わず、公開前に次の4つのレビューを通す。

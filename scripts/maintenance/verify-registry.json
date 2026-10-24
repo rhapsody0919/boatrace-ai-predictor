@@ -511,7 +511,7 @@
     {
       "script": "verify-linear-issue-gate.js",
       "tier": "ci",
-      "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値230件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48、閾値は 2026-10-21 hq 決定）。check-revision-escalation.js・create-vup-linear-ticket.js・api/_lib/snsHubHelpers.js が数えてから issueCreate を送り、230件では送らないこと、夜間のジョブは止めたら保留で終わること、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
+      "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値230件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48、閾値は 2026-10-21 hq 決定）。check-revision-escalation.js・create-vup-linear-ticket.js が数えてから issueCreate を送り、230件では送らないこと、夜間のジョブは止めたら保留で終わること、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
     },
     {
       "script": "verify-meet-before-race.js",

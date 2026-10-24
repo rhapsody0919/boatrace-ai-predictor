@@ -1,7 +1,7 @@
 # ADR 0036: ネタ×アカウントのclaim機構の実装方式
 
 ## ステータス
-採用
+採用（2026-10-24 に対象のコードを撤去、末尾の追記）
 
 ## 背景
 `sns_topic_targets`（ネタ×アカウントの中間テーブル）の各行を、チャネルごとに独立した複数のパイプライン（Routine）が同時にポーリングして拾う設計にする（`docs/design/sns-topic-gate/spec.md`要件5）。同じ行を2つのパイプラインが同時にclaimして二重生成することを防ぐ、アトミックな取り合い（claim）の実装方式を決める必要がある。
@@ -26,3 +26,7 @@ Body: { "status": "claimed", "claimed_by": "{routine_run_id}", "claimed_at": "{n
 ## 影響
 - claimしたパイプラインが生成途中で異常終了した場合、そのターゲットは`claimed`のまま放置される（claim解放・タイムアウトの仕組みは今回スコープ外、`docs/design/sns-topic-gate/spec.md`未確定事項#3）。当面は`sns-hub`の進捗マトリクスUIで人間が気づき、手動で`pending`に戻す運用とする
 - 同じ仕組みは`sns_topics`自体の承認処理（複数の承認者が同時に同じネタを操作するケース）には使わない。ネタ承認はspecの既存方針通り1件ごとの人間操作であり、同時競合の可能性が実運用上ほぼ無いため、`sns_drafts`の承認操作と同様の単純な状態更新で十分と判断する
+
+## 2026-10-24追記: 対象のコードを撤去（hq SH01 R2）
+
+ネタの claim の書き手・読み手（`scripts/lib/snsTopics.js`、topics の API）を消した。Routine が止まり、直近30日の claim は停止前の残りだけだったため（hq SH01 R2 の棚卸し）。表（sns_topics・sns_topic_targets）は残す。

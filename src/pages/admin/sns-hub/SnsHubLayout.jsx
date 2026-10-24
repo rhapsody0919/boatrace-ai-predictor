@@ -12,7 +12,7 @@ const REVIEW_STATUSES = ["pending_review", "revision_requested"];
 const PAGES = [
   { to: "/admin/sns-hub", label: "手動承認", count: "manual", end: true },
   { to: "/admin/sns-hub/auto", label: "自動送信", count: "auto" },
-  { to: "/admin/sns-hub/metrics", label: "数字" },
+  { to: "/admin/sns-hub/metrics", label: "数字と戦略メモ" },
   { to: "/admin/sns-hub/library", label: "資料" },
 ];
 

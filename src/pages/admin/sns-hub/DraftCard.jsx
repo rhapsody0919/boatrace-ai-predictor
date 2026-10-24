@@ -132,10 +132,6 @@ export default function DraftCard({
           {draft.parent_draft_id && "（修正版・再生成）"}
         </p>
 
-        {draft.status === "revision_requested" && (
-          <ProcessingStatusBadge updatedAt={draft.updated_at} />
-        )}
-
         <button
           type="button"
           className="draft-card-expand-toggle"
@@ -707,26 +703,6 @@ export function VideoPreview({ videoUrl, coverImageUrl, active = true }) {
         preload="metadata"
       />
     </div>
-  );
-}
-
-// revision_requestedからの経過時間の目安（この時間を超えたら「時間がかかっています」表示に切り替える）
-const PROCESSING_STALE_THRESHOLD_MINUTES = 30;
-
-// 修正の依頼（redo、2026-10-24 撤去）の後、新規下書きの生成・旧下書きのarchived化は非同期Routine任せで
-// 画面には完了検知の仕組みが無いため、updated_at（revision_requestedへの遷移時刻の
-// 近似値）からの経過時間で「処理中」「時間がかかっています」を出し分ける（spec.md課題2）
-function ProcessingStatusBadge({ updatedAt }) {
-  const minutesElapsed = updatedAt
-    ? (Date.now() - new Date(updatedAt).getTime()) / 60000
-    : 0;
-  const isStale = minutesElapsed > PROCESSING_STALE_THRESHOLD_MINUTES;
-  return (
-    <span className={`processing-status-badge ${isStale ? "stale" : ""}`}>
-      {isStale
-        ? "⏱️ 時間がかかっています（Routineの状況を確認してください）"
-        : "⏳ 処理中"}
-    </span>
   );
 }
 

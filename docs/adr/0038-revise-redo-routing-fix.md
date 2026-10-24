@@ -1,7 +1,7 @@
 # ADR 0038: revise/redoのルーティング解決キー
 
 ## ステータス
-採用
+採用（2026-10-24 に対象のコードを撤去、末尾の追記）
 
 ## 背景
 現状`api/admin/sns-hub/drafts/[id]/revise.js`・`redo.js`は、下書きの生成元パイプラインに関わらず一律`fireRoutine("SNS_HUB_ROUTINE", ...)`を呼んでいる。このため、`content-multi-channel-pipeline`（Pipeline B）が生成した下書きに対して「一部修正」「作り直し」を行っても、実際には`sns-hub-content-generation`（Pipeline A）のRoutineが発火してしまう既存バグがある（2026-09-03、実ファイルで確認済み）。`docs/design/sns-topic-gate/spec.md`要件11の修正、およびチャネル別パイプライン分離後（ADR 0037）は5つの発火先候補から正しいものを選ぶ必要があり、その解決キーを決める。
@@ -28,3 +28,7 @@ const PLATFORM_ROUTINE_ENV_PREFIX = {
 
 ## 影響
 - チャネル別パイプラインの段階的展開（ADR 0037）が完了するまでの間、未展開チャネルの下書きに対する`revise`/`redo`は、暫定的に旧`SNS_HUB_ROUTINE`にフォールバックする経過措置が必要になる。`/step3`のタスク分解で、展開順序とこのフォールバック解除のタイミングを対応付ける
+
+## 2026-10-24追記: 対象のコードを撤去（hq SH01 R2）
+
+この決定の対象（`api/admin/sns-hub/drafts/[id]/redo.js` と `resolveRoutineEnvPrefix`）を消した。修正の依頼の口は直近30日の利用0件。検査 `verify-routine-routing.js` も外した。

@@ -1,7 +1,7 @@
 # ADR 0037: チャネル別パイプラインの構成方式
 
 ## ステータス
-採用
+採用（2026-10-24 に対象のコードを撤去、末尾の追記）
 
 ## 背景
 `docs/design/sns-topic-gate/spec.md`要件10により、blog/note/x/tiktok/youtubeそれぞれに独立したパイプライン（Claude Code Routine）を持たせる設計にする。一方でRoutineは新規作成のたびに発火トークンの登録が人間の手動作業になる（Claude Codeからは自動化不可、2026-09-03に2回検証済み）という制約があり、構成方式によってこの手動セットアップ負荷が大きく変わる。
@@ -19,3 +19,7 @@
 ## 影響
 - チャネルを1つ追加する（例: Instagram）たびに、新規Routineの発火トークン登録という手動作業が発生する。これは本ADRで解消できないコストとして受け入れる（`spec.md`制約・前提に明記済み）
 - 段階的展開の間、未展開のチャネルは引き続き既存の`content-multi-channel-pipeline`（Pipeline B）または`sns-hub-content-generation`（Pipeline A）が担当する暫定状態が生じる。どのチャネルがどちらの仕組みで動いているかを`sns-hub`の進捗マトリクスUIまたはドキュメントで明示し、混乱を避ける
+
+## 2026-10-24追記: 対象のコードを撤去（hq SH01 R2）
+
+チャネル別パイプラインの起動の口（redo・今すぐ生成の fire・提案の trigger）と `scripts/lib/snsTopics.js` を消した。Routine は止まっている。`docs/operation/sns-pipeline-{x,youtube}.md` は作り方の規則として評価役（x-channel・youtube-channel）が読むので残す。
