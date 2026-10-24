@@ -327,6 +327,40 @@ check(
   check("select に course がある（逃がしを分けるため）", ROW_SELECT.includes("course"), true);
 }
 
+// ---- BOA-1004: 0件の文言は人の画面と同じ ----
+for (const noNigashiRows of [false, true]) {
+  const fx = fresh();
+  fx.rows = fx.rows.filter((r) => !["nige", "makuri"].includes(r.section));
+  if (noNigashiRows) {
+    fx.rows = fx.rows.filter((r) => r.section !== "nigashi");
+  } else {
+    for (const r of fx.rows.filter((r) => r.section === "nigashi")) {
+      r.course = 3;
+    }
+  }
+  const { res } = await call({ fetchImpl: stubRest(fx) });
+  check(`0件の応答（逃がし行なし: ${noNigashiRows}）`, res.statusCode, 200);
+  const b = bodyOf(res.body);
+  const defaultEmpty = "本日、条件に該当するレースはありません";
+  for (const key of ["nige", "makuri", "nigashi"]) {
+    const copy = MORNING_DIGEST_SECTION_BY_KEY[key];
+    const section = b.split(`<h2>${copy.title}</h2>`)[1].split("<h2>")[0];
+    const label = `${key}（逃がし行なし: ${noNigashiRows}）`;
+    check(`${label}: 0件`, /<span>(?:上位0件 \/ \d+件|0件)<\/span>/.test(section), true);
+    check(
+      `${label}: 人の画面と同じ0件の文言`,
+      section.includes(`<p>${copy.emptyMessage ?? defaultEmpty}</p>`),
+      true,
+    );
+    check(
+      `${label}: 既定の文言は逃げ・まくりだけ`,
+      section.includes(defaultEmpty),
+      key !== "nigashi",
+    );
+    check(`${label}: レースのリンクなし`, section.includes('<a href="'), false);
+  }
+}
+
 // ---- 4. 失敗と未生成 ----
 {
   const origError = console.error;
