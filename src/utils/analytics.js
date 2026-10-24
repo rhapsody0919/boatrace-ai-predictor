@@ -199,7 +199,7 @@ export const refreshAdsOnRouteChange = () => {
   try {
     const adsbygoogle = window.adsbygoogle || [];
     adsbygoogle.push({});
-  } catch (e) {
+  } catch {
     // AdSense未読み込み時は無視
   }
 };
