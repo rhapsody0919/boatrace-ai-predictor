@@ -1045,6 +1045,11 @@
       "command": "node scripts/maintenance/verify-run-heavy-lock.js"
     },
     {
+      "script": "verify-schema-detect.js",
+      "tier": "ci",
+      "guards": "マイグレーション適用判定・確認不能時の再試行・client別TTLキャッシュとclear（BOA-1075）"
+    },
+    {
       "script": "verify-scrape-daily-jobs.js",
       "tier": "ci",
       "guards": "日次・低頻度ジョブ（B2〜B6）のVercel Cron実装"
