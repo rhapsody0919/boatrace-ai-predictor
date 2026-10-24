@@ -53,7 +53,6 @@ import { translateTechnique } from "./raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD, recordsBeforeRace } from "./basicInfoStats";
 import {
   GRID_COURSES,
-  GRID_ROWS,
   TODAY_METRICS,
   buildCourseGrid,
   buildTodayCourseRows,

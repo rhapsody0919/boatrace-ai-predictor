@@ -44,6 +44,7 @@ import {
 } from "../utils/meetPageModel.js";
 import { meetExclusionsOf } from "./meetExclusion.js";
 import { buildRacerScopedRaceRows } from "./racerScopedRaceRows.js";
+import { fetchAllInChunks, fetchAllPages } from "./fetchAllPages.js";
 import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
 import { competitionRank } from "../utils/competitionRank.js";
 import { toWakuRacerStats } from "../utils/racerStats.js";
@@ -469,6 +470,11 @@ async function attachExhibitionStartFlags(raceId, rows) {
   }));
 }
 
+// fetchAllByIn が1回の in() に入れる値の数。値が多いと URL が長すぎて要求が落ちる
+// （BOA-1051。2026-10-25 の本番の実測: race_id 800件・URL 約15.4KB は通り、850件・約16.3KB で fetch failed）。
+// 選手単位の730日窓は1人で最大約1460走になりうるので、分けて読む（fetchAllInChunks）
+const FETCH_ALL_BY_IN_CHUNK_SIZE = 300;
+
 async function fetchAllByIn(table, select, column, values) {
   const orderKeys = FETCH_ALL_BY_IN_ORDER[table];
   if (!orderKeys) {
@@ -476,19 +482,37 @@ async function fetchAllByIn(table, select, column, values) {
       `fetchAllByIn: ${table} の並び（主キー）が FETCH_ALL_BY_IN_ORDER に無い`,
     );
   }
-  const results = [];
-  const pageSize = 1000;
-  let from = 0;
-  while (true) {
-    let query = supabase.from(table).select(select).in(column, values);
-    for (const key of orderKeys) query = query.order(key);
-    const { data } = await query.range(from, from + pageSize - 1);
-    if (!data || data.length === 0) break;
-    results.push(...data);
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-  return results;
+  // 呼び出しはどれも並びの先頭の列（race_id）で in() する（verify-fetch-all-by-in-order が検査）ので、
+  // 分けて読んでつないだ結果は、分けずに読んだときと同じ並びになる
+  return fetchAllInChunks(
+    values,
+    FETCH_ALL_BY_IN_CHUNK_SIZE,
+    (chunk, from, to) => {
+      let query = supabase.from(table).select(select).in(column, chunk);
+      for (const key of orderKeys) query = query.order(key);
+      return query.range(from, to);
+    },
+  );
+}
+
+/**
+ * 1選手の race_entries を、race_id が sinceRaceId 以降の窓で全件取る（BOA-1051）。
+ * 1選手でも730日の窓では最大で約1460走（1日2走×730日）になりうるので、1000行の上限で
+ * 黙って切れないよう、主キーで並べて .range() のページを読み切る。2026-10-25 の本番の実測で
+ * 最大は1人290行（DB の開始 2025-12-02 からの約11か月分）で、まだ届いていない
+ */
+function fetchRacerEntriesSince(racerId, select, sinceRaceId) {
+  return fetchAllPages((from, to) => {
+    let query = supabase
+      .from("race_entries")
+      .select(select)
+      .eq("racer_id", racerId)
+      .gte("race_id", sinceRaceId);
+    for (const key of FETCH_ALL_BY_IN_ORDER.race_entries) {
+      query = query.order(key);
+    }
+    return query.range(from, to);
+  });
 }
 
 /**
@@ -4330,7 +4354,8 @@ export const supabaseDataService = {
    * race_entries×races×race_resultsから直接算出する
    */
   getRacerVenueStats(racerId) {
-    return withCache(`racer-venue-stats-v2-${racerId}`, async () => {
+    // v3: race_entries を1000行で切らずに取り切るようにした（BOA-1051）
+    return withCache(`racer-venue-stats-v3-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4348,13 +4373,13 @@ export const supabaseDataService = {
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("race_id, boat_number")
-        .eq("racer_id", racerId)
-        .gte("race_id", cutoffStr);
+      const entries = await fetchRacerEntriesSince(
+        racerId,
+        "race_id, boat_number",
+        cutoffStr,
+      );
 
-      if (!entries || entries.length === 0) {
+      if (entries.length === 0) {
         return [];
       }
 
@@ -4396,6 +4421,8 @@ export const supabaseDataService = {
         }
       });
 
+      // 出走数が同じ会場は会場コードの順（BOA-1051）。以前は race_entries を並びなしで取っていたので、
+      // 同数の会場の並びが DB の返す順で決まり、取り方を変えると入れ替わった
       return [...byVenue.entries()]
         .map(([venueCode, stat]) => ({
           venue_code: venueCode,
@@ -4405,7 +4432,11 @@ export const supabaseDataService = {
           top3_rate: stat.total > 0 ? stat.top3 / stat.total : null,
         }))
         .filter((row) => row.total_races >= 5)
-        .sort((a, b) => b.total_races - a.total_races);
+        .sort(
+          (a, b) =>
+            b.total_races - a.total_races ||
+            Number(a.venue_code) - Number(b.venue_code),
+        );
     });
   },
 
@@ -4446,7 +4477,8 @@ export const supabaseDataService = {
     // v6: 着順が付かない走の公式の記号（finishMark）を足した（BOA-537）
     // v7: 同じ日の走を R の古い順に並べ直した（BOA-588）
     // v8: フライングの走の ST（flyingStartTiming）を足した（BOA-583。直近10走・今節の表で「F.01」と出すため）
-    return withCache(`racer-scoped-race-stats-v10-${racerId}`, async () => {
+    // v11: race_entries を1000行で切らずに取り切るようにした（BOA-1051）
+    return withCache(`racer-scoped-race-stats-v11-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4458,13 +4490,13 @@ export const supabaseDataService = {
 
       // gradeはST考察のベースライン（st_course_baselineの(course, grade)セル）を
       // 引くのに使う（phase a FR-1）。race_entries.gradeは実測でnull 0件・4値（A1/A2/B1/B2）
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("race_id, boat_number, grade, f_count")
-        .eq("racer_id", racerId)
-        .gte("race_id", cutoffStr);
+      const entries = await fetchRacerEntriesSince(
+        racerId,
+        "race_id, boat_number, grade, f_count",
+        cutoffStr,
+      );
 
-      if (!entries || entries.length === 0) {
+      if (entries.length === 0) {
         return [];
       }
 
@@ -4692,7 +4724,8 @@ export const supabaseDataService = {
   getRacerRaceHistory(racerId) {
     // v2: ST を展示ST（exhibition_data）から本番ST（race_start_timings）に替え、isFlying・finishMark を足した（BOA-576）
     // v5: 天候・風速・波高を足した（レース条件別の成績、BOA-336）
-    return withCache(`racer-race-history-v5-${racerId}`, async () => {
+    // v6: race_entries を1000行で切らずに取り切るようにした（BOA-1051）
+    return withCache(`racer-race-history-v6-${racerId}`, async () => {
       if (!supabase) {
         console.error("Supabase client not initialized");
         return [];
@@ -4702,13 +4735,13 @@ export const supabaseDataService = {
       cutoffDate.setDate(cutoffDate.getDate() - 730);
       const cutoffStr = cutoffDate.toISOString().split("T")[0];
 
-      const { data: entries } = await supabase
-        .from("race_entries")
-        .select("race_id, boat_number")
-        .eq("racer_id", racerId)
-        .gte("race_id", cutoffStr);
+      const entries = await fetchRacerEntriesSince(
+        racerId,
+        "race_id, boat_number",
+        cutoffStr,
+      );
 
-      if (!entries || entries.length === 0) {
+      if (entries.length === 0) {
         return [];
       }
 

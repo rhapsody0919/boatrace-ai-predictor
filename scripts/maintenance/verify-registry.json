@@ -381,7 +381,7 @@
     {
       "script": "verify-fetch-all-by-in-order.js",
       "tier": "ci",
-      "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）"
+      "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）。in() の値を fetchAllInChunks で分けて読み（URL の長さの上限、BOA-1051）、in() の列がどの呼び出しでもテーブルの並びの先頭の列であること（分けた結果をつないでも並びが崩れない条件）"
     },
     {
       "script": "verify-fetchall-order.js",
@@ -905,9 +905,19 @@
       "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
     },
     {
+      "script": "verify-racer-entries-paging.js",
+      "tier": "ci",
+      "guards": "選手単位の730日窓の race_entries の取得（getRacerScopedRaceStats・getRacerVenueStats・getRacerRaceHistory）が1000行で黙って切れないこと（BOA-1051）。上限1000行の偽の PostgREST で、旧の .range() 無しは切れ・fetchAllPages は全件（境目の重複・欠落なし、ちょうど1000行、失敗は例外）。続く fetchAllByIn の in() が URL の長さ（本番の実測で race_id 約850件）で落ちないよう、fetchAllInChunks が値を分けて読み、分けないときと同じ行・並びになること。3関数が fetchRacerEntriesSince（主キーで並べて .range()）を通ること、会場別成績の同数の並びが会場コード順であることを静的に検査"
+    },
+    {
       "script": "verify-racer-index-policy.js",
       "tier": "ci",
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
+    },
+    {
+      "script": "verify-racer-news-templates.js",
+      "tier": "ci",
+      "guards": "選手ニュースFR2の題・要約の定型文、返却キー2つ、入力表記の保持と禁止語の非追加。空・undefinedは仕様未定としてKNOWN_GAPSに出力"
     },
     {
       "script": "verify-racer-profile-sync.js",
@@ -918,6 +928,11 @@
       "script": "verify-racer-scoped-race-rows.js",
       "tier": "ci",
       "guards": "選手の走ごとの行の整形（src/services/racerScopedRaceRows.js、getRacerScopedRaceStats から切り出し。src の12ファイルが読む）。raceId の昇順、不成立・rank1 null の除外、欠場（「欠」と自艇だけ本番STの行が無い走）、FのSTを平均に入れない、race_conditions の取得失敗は undefined、展示の同順位と単独最速（#962・#1010・#1029・#1107・BOA-333 の再現、BOA-1022）"
+    },
+    {
+      "script": "verify-racer-season-stats-parse.js",
+      "tier": "ci",
+      "guards": "期別成績のURL・不存在判定・前期後期ラベルと手書きHTMLの期間・数値・着順内訳を通信なしで検証（BOA-1061）"
     },
     {
       "script": "verify-racer-snapshot-plan.js",
@@ -1310,6 +1325,11 @@
       "script": "verify-venue-motor-stats-parsers.js",
       "tier": "ci",
       "guards": "会場別モーター成績パーサー（BOA-264）"
+    },
+    {
+      "script": "verify-venue-parameters.js",
+      "tier": "ci",
+      "guards": "会場別イン崩れ閾値の式・既定値65、24会場の表の形と展開の型の分類（BOA-1060、scripts/lib/venueParameters.js）。仕様未定の入力と旧表の差はKNOWN_GAPSとして報告する"
     },
     {
       "script": "verify-venue-rank-generation.js",

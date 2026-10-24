@@ -16,13 +16,6 @@ export const FINISH_TARGETS = [1, 2, 3];
 export const STAGES = ["exhibition", "racecard"];
 export const DEFAULT_STAGE = "exhibition";
 
-const STAGE_CATEGORY_ROUND = {
-  qualifier: "yosen",
-  qualifierSpecial: "yosen",
-  semifinal: "junyu",
-  final: "yusho",
-};
-
 /** 会場→ラウンド→グレードの順に一段ずつ広げた候補（要求そのものが先頭） */
 export function sliceCandidates({ venue, grade, round }) {
   const out = [{ venue, grade, round, widened: [] }];
