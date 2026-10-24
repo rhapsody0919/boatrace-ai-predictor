@@ -1079,11 +1079,6 @@
       "guards": "全貌動画の測り時（SQL169、2026-10-19 オーナー決定）: 全貌は day_end（投稿日の JST 23:00）と 24h の job・JST 23:00 を過ぎた投稿は 24h だけ・日付は JST、それ以外は 48h・7d のまま、観測の表の CHECK（day_end は投稿日の JST 23:00 だけ・窓の名前は4つ）、JS の窓（windowsFor・observationPeriod・全貌に 48h を入れない）、画面は既定の 48h で全貌を当日の値・7d に全貌を出さない・全貌は型の版の確認をしない、CSV と collector の窓、169-runbook.md の1回で貼る SQL が154の状態から通り確認が全部 true・2回目は止まる。PGlite、外部接続なし"
     },
     {
-      "script": "verify-sns-youtube-comment-quota.js",
-      "tier": "ci",
-      "guards": "全貌の YouTube 完全版のチャンネルのコメント（commentThreads.insert、50単位、hq 契約 10/24 C3）をクォータの台帳に載せる（マイグレーション 173）: record_sns_youtube_comment は公開済みの完全版の job に1件だけ reads へ50単位を入れる、全体の停止（paused）・公開前・Shorts（parent_job_id あり）・台帳の未確認・日の上限では入れない、入れた50単位は claim と同じ合計式に入る、reads の CHECK は videos.list・1 と commentThreads.insert・50 だけで DEFAULT の省略形は今までどおり、匿名・ログイン利用者は実行できない。SQL173 までを PGlite、外部接続なし"
-    },
-    {
       "script": "verify-sns-full-picture.js",
       "tier": "ci",
       "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし"
@@ -1172,6 +1167,11 @@
       "script": "verify-sns-youtube-adapter.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は非公開のまま残す、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
+    },
+    {
+      "script": "verify-sns-youtube-comment-quota.js",
+      "tier": "ci",
+      "guards": "全貌の YouTube 完全版のチャンネルのコメント（commentThreads.insert、50単位、hq 契約 10/24 C3）をクォータの台帳に載せる（マイグレーション 173）: record_sns_youtube_comment は公開済みの完全版の job に1件だけ reads へ50単位を入れる、全体の停止（paused）・公開前・Shorts（parent_job_id あり）・台帳の未確認・日の上限では入れない、入れた50単位は claim と同じ合計式に入る、reads の CHECK は videos.list・1 と commentThreads.insert・50 だけで DEFAULT の省略形は今までどおり、匿名・ログイン利用者は実行できない。SQL173 までを PGlite、外部接続なし"
     },
     {
       "script": "verify-sonar-hint-order.js",
