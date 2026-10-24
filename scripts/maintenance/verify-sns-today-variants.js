@@ -194,7 +194,7 @@ test("型の列の1行: 書ける項目だけを受け、作れない項目・�
   );
 });
 
-test("その日の型: 列の行があれば a・b どちらの日もその中身。札（偶奇の a・b）は変えない。無ければ config の案と理由", () => {
+test("その日の型: 列の行があれば a・b どちらの日もその中身で、見出しの a・b の札は付けない（id schedule）。無ければ config の案と理由", () => {
   const typed = {
     default: "既定（{date}）",
     variants: [
@@ -214,7 +214,8 @@ test("その日の型: 列の行があれば a・b どちらの日もその中�
   ]) {
     const picked = pickTodayPost(typed, day, { row: row(day) });
     assert.equal(picked.heading, "問い（{date}）");
-    assert.equal(picked.variant.id, side);
+    // 列の型の日は見出しの a・b の札を付けない
+    assert.deepEqual(picked.variant, { id: "schedule", uuid: null });
     assert.deepEqual(picked.content_type, {
       id: "t04-question-heading",
       side,

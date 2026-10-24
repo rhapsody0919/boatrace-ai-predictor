@@ -172,10 +172,12 @@ export function pickTodayPost(
   const checked = row
     ? normalizeTypeScheduleRow(row, date, { allowReply })
     : null;
+  // 列の型の日は、見出しの a・b の札（today_variant・template_variant_id）を付けない。札と実際の文面が食い違い、
+  // a・b の比較の母数を汚すため（x-channel の審査 P1）。型の比較は content_type で行う
   if (checked?.post)
     return {
       ...checked.post,
-      variant,
+      variant: { id: "schedule", uuid: null },
       content_type: { id: checked.type_id, side, source: "schedule" },
     };
   const reason = scheduleError ?? checked?.reason ?? "no_schedule_row";

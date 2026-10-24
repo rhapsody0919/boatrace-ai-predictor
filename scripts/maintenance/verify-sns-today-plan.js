@@ -1508,8 +1508,12 @@ test("型の列: その日の行があれば見出し・リンクの前の文・
     ["t03-conclusion-heading", "schedule", "b", undefined],
   );
   assert.equal(result.report.items[0].content_type, "t03-conclusion-heading");
-  // 札（日の偶奇）はそのまま
-  assert.equal(draft.source_data.today_variant.id, "b");
+  // 列の型の日は見出しの a・b の札を付けない（札と文面の食い違いで a・b の比較を汚さない。x-channel の審査 P1）
+  assert.deepEqual(draft.source_data.today_variant, {
+    id: "schedule",
+    uuid: null,
+  });
+  assert.equal(draft.template_variant_id, null);
 });
 
 test("型の列: 行が無い日・作れない項目がある日・壊れた日・表が無い日は config の案で送り、理由を残す（止めない）", async () => {
@@ -1719,7 +1723,7 @@ test("返信: 子の下書きの後に落ちて子の item が無いときは、
   });
 });
 
-test("返信: 子の承認に落ちたら、親の item も manual に戻して送らない（リンクの無い親だけを出さない）", async () => {
+test("返信: 子の承認に落ちたら、親の item も held_manual にして送らない（リンクの無い親だけを出さない。x-channel の審査 P2）", async () => {
   await putType(DATE, "t01-link-in-reply", {
     heading: "本日のデータ一覧（{date}）",
     link_position: "reply",
@@ -1743,7 +1747,7 @@ test("返信: 子の承認に落ちたら、親の item も manual に戻して�
     );
     assert.deepEqual(
       items.map((i) => i.state),
-      ["manual", "manual"],
+      ["held_manual", "held_manual"],
     );
   });
 });

@@ -691,14 +691,17 @@ export async function runTodayPlan(
       }
     } catch (error) {
       autoError = error.message;
-      // 親も返信も manual に戻す（自動の承認者の job は item が notified でないと claim で止まる。リンクの無い親だけを送らない）
-      await store
-        .updateItem(item.id, "notified", { state: "manual" })
-        .catch(() => {});
+      // 自動の承認者の job は item が notified でないと claim で止まる。返信の型は親も子も held_manual にする
+      // （manual に戻すと親だけが承認されてリンクの無い投稿が出うる。x-channel の審査 P2）。返信の無い型は今までどおり manual
+      const back = replyItem
+        ? {
+            state: "held_manual",
+            held_reason: `返信の型の自動の承認に失敗: ${firstLine(autoError)}`,
+          }
+        : { state: "manual" };
+      await store.updateItem(item.id, "notified", back).catch(() => {});
       if (replyItem?.state === "notified")
-        await store
-          .updateItem(replyItem.id, "notified", { state: "manual" })
-          .catch(() => {});
+        await store.updateItem(replyItem.id, "notified", back).catch(() => {});
     }
   }
   const images = await Promise.all(

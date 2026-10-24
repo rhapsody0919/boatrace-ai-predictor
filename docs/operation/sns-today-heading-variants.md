@@ -28,8 +28,13 @@ hq の毎日の PDCA（`~/hq/platform/pdca_daily.py`）が /today の型を日�
 - 置き場をここにした理由: hq は本番 DB を読み取り専用（claude_ro、ADR-0096）でしか持たず、Vercel の鍵も持たない。DB の表なら新しい鍵を増やさず（hq は既に龍神のスクリプトを .env.local で動かしている）、cron が service key で読め、hq が claude_ro で入った行を読み返せる。リポジトリの config だと週1回の PR が要る
 - `post` に書ける項目: `heading`（必須。1行・80字まで・`{date}` を含む）・`link_lead`（リンクと同じ行の前の文。空なら「今日の一覧はこちら：」）・`link_position`（`after_heading`＝見出しの直後、既定・今の型／`end`＝注意書きの後の末尾／`reply`＝本文に置かず自分への返信）。ほかの項目（thumb・caption 等）は作れない型として、その日は config で送る（理由 `type_unsupported:<項目>`）。hq の型の attributes（文の説明）は、hq がこの3項目に直して入れる
 - 行は a・b どちらの日にも効く（hq が基準の型を変えたときに config の PR を待たない）。行が無い・壊れている・表を読めない日は config の a・b で送る（止めない）。理由は下書きの `source_data.content_type.fallback_reason`（`no_schedule_row`・`schedule_unavailable`・`schedule_read_failed`・`reply_not_allowed`・項目の検査の理由）と cron の report の `type_fallback`
+- 列の型の日は、見出しの a・b の札を付けない（`source_data.today_variant` は `{id: "schedule", uuid: null}`、`template_variant_id` は null）。札と実際の文面が食い違うと a・b の比較の母数を汚すため（x-channel の審査）。型の比較は `content_type` で行う。config で送った日だけ今までどおり a・b の札
 - 型の札: 下書きの `source_data.content_type`（`id`・`side`（a・b）・`source`（schedule・config）・中身の3項目）。hq は `id` を読む。config の案の型の id は `config/today-variants.json` の `type_id`（無ければ `today-a`）
 - その日の型は、下書きができた後は変えない（一覧の作り直しでも同じ型。途中で列を変えても次の日から）
 - 返信（`reply`）: 本文からリンクの行を外し、リンクだけの子の下書き（`source_data.today_reply.parent_draft_id`、`race_id` は `{日付}-today-reply`）と item（`race_id` は `today:{日付}:reply`）を作る。親を承認した後、子の `deadline_queue.parent_job_id` に親の job をつないで公開保留を外してから承認する。送信の runner は親が posted の子だけを選び（`pickDueJobs`）、`snsXSend.js` が親の投稿への返信として送る。自動（`sns_auto_send_control` の x が mode=auto）の日だけ選べる（個別承認の道には親から順につなぐ所が無いため）。子の承認で落ちたら親の item も manual に戻して送らない（リンクの無い親だけを出さない）。子の文に禁止表現があれば親も止める
+- 子の承認（自動）に落ちたら、親と子の item を held_manual にして送らない（manual に戻すと親だけが承認されてリンクの無い投稿が出うる）
 - 返信は X の投稿が1日1本増える（日次の上限 `daily_limit_x`・月の予約に数える）。子は URL を含むので、月の予約は親と同じ URL つきの額（thread_index=0）で引く
 - hq の写し: 子の下書きも format は `today_digest`。投稿の数え方では `source_data.today_reply` のある行を親の投稿と別に扱う（子の url_link_clicks がリンクの押された数）
+- 返信の日は日次の上限（本番 `daily_limit_x`=6、2026-10-25 に読み取りで確認）が全貌の X 4本＋/today 1本＋返信 1本でちょうど埋まる。他の道の投稿（`daily_external_count`）があると子が「日次全体上限です」で送れず、親だけが出る日がありうる。hq は子が posted でない日を型の判定から外す
+- 測り方の注意（x-channel の審査）: 「リンクを返信に置く」は配信を上げる根拠が弱い（X は 2026-07 に不要と明言したとされる。出典は docs/knowledge/x.md の調査ノート、未確認）。reply の型は親の impressions で読み、子のクリックを親の impressions で割った率を他の日と並べない
+- 作れない型: 見出しに当日の数字を入れる型（hq の t03「見出しの1行目に今日いちばん偏った数字」）は、週1回に固定文を入れる口では作れない（固定文の数字はその日の実データと別物になる）。当日の値を機械が差し込む口（例 `{top_stat}`）が要る。それまで t03 は割り当てない
