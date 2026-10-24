@@ -69,31 +69,36 @@ export async function captureElement(
     const box = await waitForStableBox(page, target);
     const png = await target.screenshot({ type: "png" });
     if (!sameBox(box, await target.boundingBox())) continue;
-    if (
-      edgeColorVar &&
-      !(await target.evaluate(edgesMatch, {
+    if (edgeColorVar) {
+      const edges = await target.evaluate(edgesMatch, {
         edgeCheck: Buffer.from(png).toString("base64"),
         edgeColorVar,
-      }))
-    )
-      continue;
+      });
+      // 比べる色が分からない（CSS の変数が無い・名前が変わった）ときは、撮り直しても直らないので理由を分けて止める
+      if (edges === "no_color")
+        throw new Error("screenshot_edge_color_missing");
+      if (edges !== true) continue;
+    }
     return png;
   }
   throw new Error("screenshot_misframed");
 }
 
-/** ブラウザの中で動く。画像の上端・下端の近くの中央の画素が、CSS の変数の色から各成分40以内か */
+/** ブラウザの中で動く。画像の上端・下端の近くの中央の画素が、CSS の変数の色から各成分40以内か（true/false）。変数が解決できなければ "no_color" */
 export async function edgesMatch(node, { edgeCheck, edgeColorVar }) {
-  const probe = document.createElement("span");
-  probe.style.color = getComputedStyle(document.documentElement)
+  const value = getComputedStyle(document.documentElement)
     .getPropertyValue(edgeColorVar)
     .trim();
+  // 変数が無いと probe の色が親の文字の色になり、検査が素通りか全部外れになる（2026-10-24 審査の P2）
+  if (!value) return "no_color";
+  const probe = document.createElement("span");
+  probe.style.color = value;
   document.body.append(probe);
   const want = (getComputedStyle(probe).color.match(/[\d.]+/g) ?? []).map(
     Number,
   );
   probe.remove();
-  if (want.length < 3) return false;
+  if (want.length < 3) return "no_color";
   const img = new Image();
   img.src = `data:image/png;base64,${edgeCheck}`;
   await img.decode();

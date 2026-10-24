@@ -489,6 +489,13 @@ test("captureElement（2026-10-24 BOA-1013）: 撮る途中で位置がずれた
     /screenshot_misframed/,
   );
   assert.equal(never.log.shots, 3);
+  // 比べる色が分からない（CSS の変数が無い）ときは撮り直さず、理由を分けて止める（2026-10-24 審査の P2）
+  const noColor = target(Array(3).fill(at(10)), ["no_color"]);
+  await assert.rejects(
+    captureElement(page, noColor, { edgeColorVar: "--ryujin-navy-600" }),
+    /screenshot_edge_color_missing/,
+  );
+  assert.equal(noColor.log.shots, 1);
 });
 
 test("/today の図は外周の色の検査つきで撮る（SONAR_EDGE_COLOR_VAR を headless.screenshot に渡す）", async () => {
