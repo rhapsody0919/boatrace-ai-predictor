@@ -242,6 +242,11 @@
       "guards": "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js、契約 docs/operation/content-pr-contract.md）: 許可のパス（すり抜け・削除・status T・mode 100644 以外）・生 HTML（mdast の html ノード、図のタグ ryujin-chart の例外）・「競艇」・判断が要る語・slug・.md と JSON の対応・画像の寸法と参照・featured・内部リンク（画像と // を除く）・manifest（非オブジェクト・paths・files・content_sha256・1記事・kind・4つの役のレビュー・P0/P1・時刻の形）を表で検査。CLI の差分（--raw -z）の読み取りも。今の public/blog の全 .md・blog-posts の全 JSON・images/blog の全 JPEG で本文の関門が errors 0 であること"
     },
     {
+      "script": "verify-course-baseline-lookup.js",
+      "tier": "ci",
+      "guards": "ST考察のベースラインのコース・級別キー、欠損値・course 0・重複後勝ち・入力不変、セル参照、抜出期待回数の換算と走数境界（BOA-1085）。仕様未定の文字列走数はKNOWN_GAPSに出力"
+    },
+    {
       "script": "verify-course-entry-tendency.js",
       "tier": "ci",
       "guards": "進入コース傾向の集計ロジック（scripts/lib/courseEntryTendency.js、BOA-284）"
