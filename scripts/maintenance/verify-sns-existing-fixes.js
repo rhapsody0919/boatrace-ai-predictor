@@ -47,8 +47,6 @@ const approveSource = (
 const { default: approve } = await import(
   "data:text/javascript," + encodeURIComponent(approveSource)
 );
-const { default: redo } =
-  await import("../../api/admin/sns-hub/drafts/[id]/redo.js");
 const { default: preview } =
   await import("../../api/admin/sns-hub/drafts/[id]/blog-pr-preview.js");
 const { default: archiveDraft } =
@@ -240,17 +238,16 @@ test("同時YouTube承認は1回だけアップロードする", async () => {
   }
 });
 
-test("通常承認とredoは条件付き更新で片方のみ成功する", async () => {
+// 作り直し（redo）の口は SH01 R2 で消した。同時の承認2回で条件付き更新を確かめる
+test("同時の通常承認は条件付き更新で片方のみ成功する", async () => {
   const f = await fixture();
   try {
     const results = await Promise.all([
       approve(request("approve")),
-      redo(request("redo", { freeText: "直す" })),
+      approve(request("approve")),
     ]);
     assert.equal(results.filter((r) => r.status === 200).length, 1);
-    assert.ok(
-      ["approved", "revision_requested"].includes((await f.row()).status),
-    );
+    assert.equal((await f.row()).status, "approved");
   } finally {
     await f.close();
   }
@@ -336,15 +333,11 @@ test("停止した merge-blog-pr は鍵があっても GitHub と DB に触れ�
   }
 });
 
-test("claim中は承認・redo・DB直接更新・削除を拒否、RPCは公開ロールに不可", async () => {
+test("claim中は承認・DB直接更新・削除を拒否、RPCは公開ロールに不可", async () => {
   const f = await fixture("youtube", { uploadTimeout: true });
   try {
     await youtube(request("publish-youtube"));
     assert.notEqual((await approve(request("approve"))).status, 200);
-    assert.notEqual(
-      (await redo(request("redo", { freeText: "直す" }))).status,
-      200,
-    );
     await assert.rejects(f.db.query("UPDATE sns_drafts SET title='変更'"));
     await assert.rejects(f.db.query("DELETE FROM sns_drafts"));
     await assert.rejects(
@@ -378,25 +371,15 @@ test("承認済み下書きが外部操作中のmark-postedは409（500固定で
   }
 });
 
-test("redo起動失敗は応答に残り、通知はrisk/thumbnailも保持する", async () => {
-  const f = await fixture();
-  try {
-    const response = await redo(request("redo", { freeText: "直す" }));
-    assert.equal(response.status, 200);
-    const body = await response.json();
-    assert.equal(body.routine.fired, false);
-    const messages = actionFeedback({
-      ...body,
-      riskWarnings: [{ id: "risk", matchedPattern: "対象" }],
-      thumbnailWarning: "権限不足",
-    });
-    assert.equal(messages.length, 3);
-    assert.match(messages[0], /起動を確認できません/);
-    assert.equal(messages[2], "サムネイルを設定できませんでした。");
-    assert.ok(!messages[2].includes("権限不足"));
-  } finally {
-    await f.close();
-  }
+test("通知はrisk/thumbnailを保持し、サーバーの理由の文を出さない", () => {
+  const messages = actionFeedback({
+    riskWarnings: [{ id: "risk", matchedPattern: "対象" }],
+    thumbnailWarning: "権限不足",
+  });
+  assert.equal(messages.length, 2);
+  assert.match(messages[0], /リスク警告: 対象/);
+  assert.equal(messages[1], "サムネイルを設定できませんでした。");
+  assert.ok(!messages[1].includes("権限不足"));
 });
 
 test("未認証時は外部通信しない", async () => {

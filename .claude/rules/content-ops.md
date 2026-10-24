@@ -105,7 +105,7 @@ X・YouTube・note への定常投稿は SNS マーケティングハブ（`src/
 **核心の方針**: 「人間が覚えている」ことに依存する仕組みは形骸化する。機械的に判定できるものは実装完了チェックリスト（フローA-2）またはGitHub Actions、判断が要るものはセッション開始時の能動チェックまたはSlack通知のどちらかに必ず寄せる。
 
 ### フローC-0: セッション開始時チェックの統合（session-start-check.js）
-以下のセッション開始時の確認（フローC-2・C-4・C-5・C-7・C-8・C-10・C-11）を、`node scripts/maintenance/session-start-check.js`が1回の実行で集約する（C-6 は依頼で起動するもの、C-9 は GitHub Actions）。**セッション開始時、このスクリプトを実行し、結果をこのセッションの最初の応答で報告する**（判定ロジックはスクリプト冒頭のコメント。以下の本文は、確認後に何をするかの手順）。
+以下のセッション開始時の確認（フローC-2・C-4・C-5・C-7・C-8・C-10）を、`node scripts/maintenance/session-start-check.js`が1回の実行で集約する（C-6 は依頼で起動するもの、C-9 は GitHub Actions）。**セッション開始時、このスクリプトを実行し、結果をこのセッションの最初の応答で報告する**（判定ロジックはスクリプト冒頭のコメント。以下の本文は、確認後に何をするかの手順）。
 
 ### フローC-2: セッション開始時のX動画投稿確認
 Xは「可能な範囲で毎日投稿する」運用（`docs/operation/x-operations-playbook.md`）。本日の投稿状況は`session-start-check.js`の`xVideo`で取得できる。
@@ -153,13 +153,6 @@ SNSマーケティングハブ Phase 2（改善案の自律立案ループ、`do
 - `node scripts/maintenance/check-deprecated-terms.js`が、静的ページ（`About.jsx`・`FAQ.jsx`・`HowToUse.jsx`・各言語版ガイド）・オンボーディングUI（`FirstVisitGuideCard.jsx`）・note下書き（`note-articles/`）・ブログ記事（`public/blog/`）を対象にgrepし、ヒット件数を報告する
 - `docs/reference/`配下の内部ドキュメント（用語集・DB設計等）は対象外
 - 検知できるのは「この単語が存在すること」だけで、文脈が本当に矛盾しているかは目視確認が必要。ヒット件数は`session-start-check.js`の`deprecatedTerms`で取得できる
-
-### フローC-11: セッション開始時の戦略メモ（insight）承認待ち確認
-`sns_strategy_insights`の`status='proposed'`（要判断）は、sns-hub「戦略メモ」タブの手動採用ボタンで人間が個別に承認する。件数は`session-start-check.js`の`pendingInsights`で取得できる。
-
-- `pendingInsights.pendingCount`が1件以上あれば、**このセッションの最初の応答で**最も古い1件（`oldest`）の内容を自発的に提示し、「戦略メモの承認画面で確認しますか？」と一言確認する
-- 承認・却下の判断自体はsns-hub管理画面（`/admin/sns-hub/metrics`「戦略メモ」タブ）で行う（Claude Code側から代理で採用・却下しない）
-- 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
 ## ブログ記事の公開前品質チェック（新規作成・改稿とも必須）
 ビルドとE2Eだけでは記事の中身の質を担保できない。新規記事・既存記事の改稿（画像追加、FAQ追加等）を問わず、公開前に次の4つのレビューを通す。

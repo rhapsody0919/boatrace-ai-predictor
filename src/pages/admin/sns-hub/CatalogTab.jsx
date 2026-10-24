@@ -8,15 +8,11 @@ import {
   SHARED_COMPONENTS,
   buildDocUrl,
 } from "../../../data/snsFormatCatalogContent";
-import { FORMAT_LABELS } from "./constants.js";
 
-export default function CatalogTab({ templateVariants }) {
+// DB の型一覧（sns_template_variants）は、読む口（template-variants）を SH01 R2 で消したため出さない
+export default function CatalogTab() {
   return (
     <div className="catalog-tab">
-      <section className="catalog-section">
-        <h2 className="catalog-section-title">型一覧</h2>
-        <TemplateVariantList templateVariants={templateVariants} />
-      </section>
       <section className="catalog-section">
         <h2 className="catalog-section-title">生成ルール</h2>
         <RulesReferenceSection />
@@ -29,53 +25,6 @@ export default function CatalogTab({ templateVariants }) {
         <h2 className="catalog-section-title">デザイン・ペルソナ方針</h2>
         <DocReferenceSection />
       </section>
-    </div>
-  );
-}
-
-function TemplateVariantList({ templateVariants }) {
-  if (templateVariants.length === 0) {
-    return (
-      <div className="empty-state">
-        <p>登録されている型はありません。</p>
-      </div>
-    );
-  }
-
-  const grouped = templateVariants.reduce((acc, tv) => {
-    (acc[tv.format] ||= []).push(tv);
-    return acc;
-  }, {});
-
-  return (
-    <div className="template-variant-groups">
-      {Object.entries(grouped).map(([format, variants]) => (
-        <details key={format} className="template-variant-group">
-          <summary className="template-variant-format">
-            {FORMAT_LABELS[format] || format}（{variants.length}件）
-          </summary>
-          <table className="template-variant-table">
-            <thead>
-              <tr>
-                <th>デザイン名</th>
-                <th>コンポジション</th>
-                <th>作成者</th>
-                <th>状態</th>
-              </tr>
-            </thead>
-            <tbody>
-              {variants.map((tv) => (
-                <tr key={tv.id}>
-                  <td>{tv.variant_name}</td>
-                  <td>{tv.composition_name}</td>
-                  <td>{tv.created_by === "routine" ? "Routine" : "人間"}</td>
-                  <td>{tv.active ? "稼働中" : "停止中"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-      ))}
     </div>
   );
 }

@@ -10,8 +10,6 @@ import {
 } from "../../../utils/webShare";
 import {
   PLATFORM_UPLOAD_URLS,
-  REVISION_REASONS,
-  CONTENT_REVISION_REASONS,
   PLATFORM_LABELS,
   LANGUAGE_LABELS,
 } from "./constants.js";
@@ -30,15 +28,12 @@ const TEXT_DRAFT_PLATFORMS = new Set(["blog", "note"]);
 
 export default function DraftCard({
   draft,
-  contentType,
   youtubeUrl,
   approvers,
   onApprove,
   onMergeBlogPr,
   onPublishYoutube,
   onXChanged,
-  onRevise,
-  onRequestSpecChange,
   onMarkPosted,
   onArchive,
 }) {
@@ -46,7 +41,6 @@ export default function DraftCard({
     approvers[0]?.id || null,
   );
   const [blogReview, setBlogReview] = useState(null);
-  const [openPanel, setOpenPanel] = useState(null); // null | 'feedback'
   // X送信パネルが確かめた送信の状態。確かめるまでは unknown（投稿導線を出さない）
   const [xSendState, setXSendState] = useState("unknown");
   const [confirmingArchive, setConfirmingArchive] = useState(false);
@@ -56,7 +50,7 @@ export default function DraftCard({
     ? `${draft.format} / ${draft.sns_template_variants.variant_name}`
     : draft.format;
 
-  // 承認・修正はpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
+  // 承認はpending_reviewの下書きにのみ許可される（api/admin/sns-hub側の検証と一致）
   const canAct = draft.status === "pending_review" && !draft.external_operation_state;
   // api/_lib/snsBundleValidation.jsのisBundlePublicationBlocked()と同じ判定式。
   // フロントはapi/_libを直接importしないため手書きで複製している。あちらを変えたらここも直すこと
@@ -66,10 +60,7 @@ export default function DraftCard({
     draft.bundle_version_hash,
   );
 
-  // 修正指摘パネルを開いている間は、トグルで折りたたんでも
-  // パネルをアンマウントしない（コードレビューで指摘: 折りたたむと入力中の
-  // freeText等がRevisionPanelごと消え、ユーザーに無警告でデータが失われるため）
-  const isOpen = expanded || openPanel !== null;
+  const isOpen = expanded;
 
   return (
     <div className={`draft-card${isOpen ? " draft-card--expanded" : ""}`}>
@@ -134,7 +125,6 @@ export default function DraftCard({
           <span className="draft-badge draft-badge-variant">
             {variantLabel}
           </span>
-          {contentType && <ContentTypeBadge contentType={contentType} />}
         </div>
 
         <p className="draft-meta-text">
@@ -149,14 +139,9 @@ export default function DraftCard({
         <button
           type="button"
           className="draft-card-expand-toggle"
-          disabled={openPanel !== null}
           onClick={() => setExpanded((v) => !v)}
         >
-          {openPanel !== null
-            ? "▲ 修正内容を確定/キャンセルすると閉じられます"
-            : isOpen
-              ? "▲ 閉じる"
-              : "▼ 詳細・操作を見る"}
+          {isOpen ? "▲ 閉じる" : "▼ 詳細・操作を見る"}
         </button>
 
         {isOpen && (
@@ -211,48 +196,7 @@ export default function DraftCard({
                       ✅ 承認
                     </button>
                   )}
-                  <button
-                    className="draft-action-btn revise"
-                    disabled={publicationBlocked}
-                    onClick={() =>
-                      setOpenPanel(openPanel === "feedback" ? null : "feedback")
-                    }
-                  >
-                    📝 修正を依頼
-                  </button>
                 </div>
-
-                {openPanel === "feedback" && (
-                  <RevisionPanel
-                    mode="draft-feedback"
-                    reasons={
-                      TEXT_DRAFT_PLATFORMS.has(draft.platform)
-                        ? CONTENT_REVISION_REASONS
-                        : REVISION_REASONS
-                    }
-                    onCancel={() => setOpenPanel(null)}
-                    onSubmit={async (payload) => {
-                      if (payload.category === "spec") {
-                        // 起票できなかったときは閉じない（入力した本文を欄に残す）
-                        const closePanel = await onRequestSpecChange({
-                          approverId: selectedApproverId,
-                          platform: draft.platform,
-                          message: payload.freeText,
-                        });
-                        if (closePanel) setOpenPanel(null);
-                      } else {
-                        onRevise({
-                          approverId: selectedApproverId,
-                          reasonCodes: payload.reasonCodes,
-                          freeText: payload.freeText,
-                          saveAsInsight: payload.permanent,
-                          scope: payload.scope,
-                        });
-                        setOpenPanel(null);
-                      }
-                    }}
-                  />
-                )}
               </>
             )}
 
@@ -469,207 +413,6 @@ export function ApproverChips({ approvers, selectedId, onSelect }) {
           {a.display_name}
         </button>
       ))}
-    </div>
-  );
-}
-
-// mode:
-//  - "topic-reject": ネタ却下用（TopicCard）。理由チップ+自由記述+「今後に反映」
-//    チェックボックスのみのシンプルな形（2026-09-04以前と同じ挙動を維持）
-//  - "draft-feedback": 下書きへの修正指摘用（DraftCard、2026-09-04再設計）。
-//    「一部修正」「全部作り直し」は実務上ほぼ全部作り直しになっていたため
-//    1つのフローに統合した上で、指摘の性質を明示的に2分岐させる:
-//    - コンテンツ品質の指摘: 理由チップ+自由記述。反映期間（今回限り/恒久）と
-//      適用範囲（このチャネルのみ/全チャネル共通）を明示的に選ばせる
-//      （旧「この指摘を今後の生成方針に反映する」チェックボックス1個だと、
-//      恒久化した際の適用範囲が下書きから自動推定される曖昧な挙動だった）
-//    - 制作仕様の変更要望: 尺・BGM等、個別の下書き修正では解決しない要望。
-//      Linear起票のみ行い、下書き自体のステータスは変更しない
-export function RevisionPanel({
-  mode,
-  reasons = REVISION_REASONS,
-  onSubmit,
-  onCancel,
-}) {
-  const isDraftFeedback = mode === "draft-feedback";
-  const [category, setCategory] = useState("quality"); // "quality" | "spec"
-  const [reasonCodes, setReasonCodes] = useState([]);
-  const [freeText, setFreeText] = useState("");
-  const [saveAsInsight, setSaveAsInsight] = useState(false); // topic-reject用
-  const [permanent, setPermanent] = useState(false); // draft-feedback用（旧saveAsInsight相当）
-  const [scope, setScope] = useState("channel"); // "channel" | "all"
-  // 送信の応答を待つ間の二重送信を防ぐ（制作仕様の変更要望は応答を待ってから閉じるため）
-  const [submitting, setSubmitting] = useState(false);
-
-  function toggleReason(code) {
-    setReasonCodes((prev) =>
-      prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
-    );
-  }
-
-  const isSpecCategory = isDraftFeedback && category === "spec";
-  const hasFreeText = freeText.trim().length > 0;
-  const canSubmit = isSpecCategory
-    ? hasFreeText
-    : reasonCodes.length > 0 || hasFreeText;
-
-  return (
-    <div className="revision-panel">
-      {isDraftFeedback && (
-        <div className="revision-category-toggle">
-          <button
-            type="button"
-            className={`revision-category-btn ${category === "quality" ? "selected" : ""}`}
-            onClick={() => setCategory("quality")}
-          >
-            📋 コンテンツ品質の指摘
-          </button>
-          <button
-            type="button"
-            className={`revision-category-btn ${category === "spec" ? "selected" : ""}`}
-            onClick={() => setCategory("spec")}
-          >
-            🔧 制作仕様の変更要望
-          </button>
-        </div>
-      )}
-
-      {!isSpecCategory && (
-        <div className="revision-reason-chips">
-          {reasons.map((r) => (
-            <button
-              key={r.code}
-              className={`revision-reason-chip ${
-                reasonCodes.includes(r.code) ? "selected" : ""
-              }`}
-              onClick={() => toggleReason(r.code)}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <textarea
-        className="revision-freetext"
-        placeholder={
-          isSpecCategory
-            ? "例: BGMをもっと軽快な曲にしてほしい、尺を20秒に伸ばしてほしい"
-            : "自由記述（任意）"
-        }
-        value={freeText}
-        onChange={(e) => setFreeText(e.target.value)}
-      />
-
-      {isSpecCategory ? (
-        <p className="revision-spec-hint">
-          この内容でLinearにチケットを起票します。この下書き自体は変更されません（承認/修正指摘は別途行ってください）。
-          今すぐ複数案を比較しながら作り込みたい場合は、Claude Codeで
-          <code>/refine-creative</code>を使う方が早い場合があります。
-        </p>
-      ) : (
-        <>
-          {/* BGM・デザイン等の抜本的な作り込みはこのUIでは行わない設計
-              （.claude/CLAUDE.mdフローB参照）。ここで気づいてもらうための
-              軽いヒントのみ表示する */}
-          {isDraftFeedback && (
-            <p className="revision-refine-hint">
-              💡 尺・BGM等の制作仕様そのものを変えたい場合は、上の「🔧
-              制作仕様の変更要望」を選んでください
-            </p>
-          )}
-
-          {isDraftFeedback ? (
-            <div className="revision-permanence-group">
-              <span className="revision-permanence-label">反映期間:</span>
-              <label className="revision-radio">
-                <input
-                  type="radio"
-                  name="revision-permanent"
-                  checked={!permanent}
-                  disabled={!hasFreeText}
-                  onChange={() => setPermanent(false)}
-                />
-                今回限り
-              </label>
-              <label className="revision-radio">
-                <input
-                  type="radio"
-                  name="revision-permanent"
-                  checked={permanent}
-                  disabled={!hasFreeText}
-                  onChange={() => setPermanent(true)}
-                />
-                恒久ルール化
-              </label>
-              {permanent && (
-                <>
-                  <span className="revision-permanence-label">適用範囲:</span>
-                  <label className="revision-radio">
-                    <input
-                      type="radio"
-                      name="revision-scope"
-                      checked={scope === "channel"}
-                      onChange={() => setScope("channel")}
-                    />
-                    このチャネルのみ
-                  </label>
-                  <label className="revision-radio">
-                    <input
-                      type="radio"
-                      name="revision-scope"
-                      checked={scope === "all"}
-                      onChange={() => setScope("all")}
-                    />
-                    全チャネル共通
-                  </label>
-                </>
-              )}
-            </div>
-          ) : (
-            <label className="revision-save-insight">
-              <input
-                type="checkbox"
-                checked={saveAsInsight}
-                disabled={!hasFreeText}
-                onChange={(e) => setSaveAsInsight(e.target.checked)}
-              />
-              この指摘を今後の生成方針に反映する
-            </label>
-          )}
-        </>
-      )}
-
-      <div className="revision-panel-actions">
-        <button className="revision-cancel" onClick={onCancel}>
-          キャンセル
-        </button>
-        <button
-          className="revision-submit"
-          disabled={!canSubmit || submitting}
-          onClick={async () => {
-            setSubmitting(true);
-            try {
-              await onSubmit({
-              category: isDraftFeedback ? category : undefined,
-              reasonCodes,
-              freeText,
-              // ラジオ/チェックボックスはdisabledでもstate自体はリセットされない
-              // ため、自由記述を消してから送信した場合に備え送信時点で再検証する
-              // （コードレビューで指摘: 空のfreeTextとsaveAsInsight:trueが
-              // 同時に送信されうる不整合があった）
-              saveAsInsight: saveAsInsight && hasFreeText,
-              permanent: permanent && hasFreeText,
-              scope,
-              });
-            } finally {
-              setSubmitting(false);
-            }
-          }}
-        >
-          送信
-        </button>
-      </div>
     </div>
   );
 }
@@ -993,58 +736,4 @@ function RiskWarningBadge({ flag }) {
       ? flag
       : flag.description || flag.ruleId || "リスク検出";
   return <span className="risk-warning-badge">⚠️ {label}</span>;
-}
-
-// 型（週次/日次・一般/日次・時間制約）を表す小バッジ。TopicCardとDraftCardの
-// 両方で使う共通部品（screens.md #4）
-export function ContentTypeBadge({ contentType }) {
-  return (
-    <span
-      className={`content-type-badge content-type-badge-${contentType.type_key}`}
-    >
-      {contentType.label}
-    </span>
-  );
-}
-
-// sns_topic_targetsの各アカウントをpending⇔skippedで切り替えるチップ群
-// （spec.md要件14、screens.md #5）。claim済み・生成済みのターゲットは
-// クリック不可（既にパイプラインが着手しているため）
-export function ChannelTargetToggle({ targets, onToggle }) {
-  return (
-    <div className="channel-target-toggle">
-      {targets.map((target) => {
-        const account = target.sns_target_accounts;
-        const label = account
-          ? `${PLATFORM_LABELS[account.platform] || account.platform}`
-          : "unknown";
-        const isLocked =
-          target.status === "claimed" || target.status === "generated";
-        return (
-          <button
-            key={target.id}
-            type="button"
-            className={`channel-target-chip channel-target-chip-${target.status}`}
-            disabled={isLocked}
-            title={
-              target.status === "skipped" && target.skip_reason
-                ? target.skip_reason
-                : undefined
-            }
-            onClick={() =>
-              onToggle(
-                target.id,
-                target.status === "skipped" ? "pending" : "skipped",
-              )
-            }
-          >
-            {label}
-            {target.status === "skipped" && " (除外)"}
-            {isLocked &&
-              ` (${target.status === "claimed" ? "生成中" : "生成済み"})`}
-          </button>
-        );
-      })}
-    </div>
-  );
 }

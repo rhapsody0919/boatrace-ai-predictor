@@ -23,14 +23,6 @@
  * 9) contentQualityAudit… 直近公開ブログ/note記事のスポットチェック対象を
  *     ローテーション提示（FR4b、content-multi-channel-pipeline/spec.md）。
  *     生成時の自己採点だけでは気づけない盲点を人間の目で拾う
- * 10) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
- *     （content-ops.md フローC-11）。戦略メモの手動採用ボタン（PR #514）が
- *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
- * 11) campaignDraftLag… 稼働中企画のネタ（sns_topics）のうち、承認済みなのに
- *     チャネル別生成Routineが下書きをまだ作っていないもの（sns_topic_targets.status
- *     が'pending'のまま3時間以上経過）の件数。下書き生成は
- *     このリポジトリ外の生成Routineに依存しており、その稼働状況を直接監視する
- *     手段が無いため、症状（承認済みなのに下書きが作られない）で間接的に検知する
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -46,8 +38,6 @@ import { checkRecentFlowAContent } from "./content-ops-checks/check-recent-flow-
 import { checkDeprecatedTerms } from "./content-ops-checks/check-deprecated-terms.js";
 import { checkMissingContentIndex } from "./content-ops-checks/check-missing-content-index.js";
 import { checkContentQualityAudit } from "./content-ops-checks/check-content-quality-audit.js";
-import { checkPendingInsights } from "./content-ops-checks/check-pending-insights.js";
-import { checkCampaignDraftLag } from "./content-ops-checks/check-campaign-draft-lag.js";
 import { supabase } from "../lib/supabaseClient.js";
 import {
   createDbPendingStore,
@@ -168,8 +158,6 @@ async function main() {
     deprecatedTerms,
     missingContentIndex,
     contentQualityAudit,
-    pendingInsights,
-    campaignDraftLag,
   ] = await Promise.all([
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
     checkRacerNewsPending(),
@@ -193,8 +181,6 @@ async function main() {
       recentCount: 0,
       error: error.message,
     })),
-    checkPendingInsights(),
-    checkCampaignDraftLag(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -225,8 +211,6 @@ async function main() {
           ? "詳細は `node scripts/maintenance/check-deprecated-terms.js` を実行"
           : undefined,
     },
-    pendingInsights,
-    campaignDraftLag,
   };
 
   if (process.argv.includes("--json")) {

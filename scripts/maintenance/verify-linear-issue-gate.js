@@ -10,7 +10,7 @@
  * ## どう検査するか
  *
  * - 関所の関数: 偽の request・notify を渡す（ネットワークを使わない）
- * - 各経路（check-revision-escalation.js・create-vup-linear-ticket.js・api/_lib/snsHubHelpers.js）:
+ * - 各経路（check-revision-escalation.js・create-vup-linear-ticket.js）:
  *   globalThis.fetch を差し替え、230件なら issueCreate を送らないこと、229件なら送ること
  * - scripts/linear-cli.js は CLI なので verify-linear-cli.js が模擬サーバーで同じことを見る
  * - 抜け道の検知: api/・scripts/・src/ で issueCreate を送るファイルが、すべて関所を読み込んでいること
@@ -240,14 +240,6 @@ const PATHS = [
       const { createVupLinearTicket } =
         await import("../analysis/create-vup-linear-ticket.js");
       return createVupLinearTicket({ title: "t", description: "d" });
-    },
-  },
-  {
-    name: "api/_lib/snsHubHelpers.js の createLinearIssue",
-    run: async () => {
-      const { createLinearIssue } =
-        await import("../../api/_lib/snsHubHelpers.js");
-      return createLinearIssue({ title: "t", description: "d" });
     },
   },
 ];

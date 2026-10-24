@@ -912,11 +912,6 @@
       "guards": "本番の読み取り専用ロール claude_ro（マイグレーション 166、ADR-0096）と scripts/db/ro-query.js。PGlite で 166 を適用し、RLS の表が0行に化けず全行読めること、READ ONLY を外しても表・SECURITY DEFINER の書き込み関数・public への CREATE で書けないこと、sns_oauth_tokens を読めないこと、PUBLIC が呼べる書き込みの SECURITY DEFINER 関数があれば 166 が例外で全体を戻すこと。ro-query の1文だけ・上限＋1行の打ち切り・必ず ROLLBACK・ロールの確認、SCRAM の検証子を pg のクライアントの証明で検証"
     },
     {
-      "script": "verify-routine-routing.js",
-      "tier": "ci",
-      "guards": "revise/redoの発火先ルーティング（ADR 0038）"
-    },
-    {
       "script": "verify-rpc-key-regression.js",
       "tier": "ci",
       "guards": "CREATE OR REPLACE FUNCTION が、それ以前の定義にあったキーを取りこぼしていないか（BOA-363・BOA-431と同型の回帰）",
@@ -1139,11 +1134,6 @@
       "guards": "依頼9・10: YouTube Shorts案B（private insert→処理確認→public update→実公開確認）・PT/JST日跨ぎの日次枠・upload lease失効時の非公開残置・処理pollの上限3回・update応答喪失時の要照合（142をPGlite、モックadapter、外部接続なし）"
     },
     {
-      "script": "verify-sns-spec-change-linear-failure.js",
-      "tier": "ci",
-      "guards": "SNS ハブの「制作仕様の変更要望」で Linear の起票が失敗したとき（無料枠の上限 USAGE_LIMIT_EXCEEDED は HTTP 400・200 の両方）、request-spec-change.js が汎用の 500 でなく 502 と理由のコードを返すこと、画面の判定（specChangeFeedback）が失敗では入力欄を閉じないこと。fetch を差し替え、実 env・ネットワークを使わない"
-    },
-    {
       "script": "verify-sns-today-plan.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
@@ -1197,13 +1187,6 @@
       "script": "verify-thinking-assist-summary.js",
       "tier": "ci",
       "guards": "思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル src/utils/assistSummary.js。2026-10-06 徳山10R の本番 v16 の値（e2e/thinking-assist-fixture.json.gz）で、差がつく材料の範囲（VC 300件未満は全国、準優勝戦は NCR に絞る。D-37）、札の今日の位置と準優勝戦の今節の点を使わないこと（FR-5）、図の良い方の札、平均ST の手がかり・スリットの形・進入の型（展開）、展示の表の最良（F を外す）・チルト・部品交換（機力）、今節の走（今日の走を点に入れない。D-29）・今節より前の5走（今節と後の走を除く。D-36 (10)）・進入コースで集めるコースの1着（D-36 (11)）、成績から付けた札（D-41。PR4）"
-    },
-    {
-      "script": "verify-topic-target-claim.js",
-      "tier": "manual",
-      "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
-      "reason": "実Supabaseに対する並行実行テストのため",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
     },
     {
       "script": "verify-turn-time-venues.js",
