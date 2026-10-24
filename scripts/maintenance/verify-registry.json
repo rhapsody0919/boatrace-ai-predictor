@@ -1312,6 +1312,11 @@
       "guards": "会場別モーター成績パーサー（BOA-264）"
     },
     {
+      "script": "verify-venue-parameters.js",
+      "tier": "ci",
+      "guards": "会場別イン崩れ閾値の式・既定値65、24会場の表の形と展開の型の分類（BOA-1060、scripts/lib/venueParameters.js）。仕様未定の入力と旧表の差はKNOWN_GAPSとして報告する"
+    },
+    {
       "script": "verify-venue-rank-generation.js",
       "tier": "ci",
       "guards": "入れ替え後のレースに、入れ替え前に取った会場公式スナップショットの会場内順位を付けないこと。入れ替え前のレースの順位は消さないこと（BOA-834）"
