@@ -58,6 +58,11 @@ function fakeBrowser({ visible = [], finalUrl } = {}) {
                 },
                 isVisible: async () => visible.includes(selector),
                 evaluate: async (fn, arg) => {
+                  // 撮った画像の上下の色の検査（captureElement）は、見出しの差し込みと分けて数える
+                  if (arg?.edgeCheck) {
+                    log.edgeChecks = [...(log.edgeChecks ?? []), arg];
+                    return (log.edgeResults ?? []).shift() ?? true;
+                  }
                   log.labels = [...(log.labels ?? []), { selector, arg }];
                 },
                 scrollIntoViewIfNeeded: async () => {},
@@ -434,4 +439,70 @@ test("screenshot の element: 位置と大きさが落ち着くまで待って�
     ),
     /screenshot_unstable/,
   );
+});
+
+test("captureElement（2026-10-24 BOA-1013）: 撮る途中で位置がずれたら撮り直し、上下の色が図の外周の色でなければ撮り直す。決めた回数で合わなければ screenshot_misframed", async () => {
+  const { captureElement } = await import("../../api/_lib/snsHeadless.js");
+  const page = { waitForTimeout: async () => {} };
+  const target = (boxes, edges = []) => {
+    const log = { shots: 0, edgeArgs: [] };
+    return {
+      log,
+      boundingBox: async () => boxes.shift(),
+      screenshot: async () => {
+        log.shots += 1;
+        return Buffer.from(`png${log.shots}`);
+      },
+      evaluate: async (fn, arg) => {
+        log.edgeArgs.push(arg);
+        return edges.shift();
+      },
+    };
+  };
+  const at = (y) => ({ x: 0, y, width: 374, height: 303 });
+  // 1回目: 落ち着いた（10・10）後、撮った直後に 185 へずれた（上の部品が広がった）→ 撮り直す。2回目は合う
+  const moved = target([at(10), at(10), at(185), at(185), at(185), at(185)]);
+  assert.equal(String(await captureElement(page, moved)), "png2");
+  assert.equal(moved.log.shots, 2);
+  // 色の検査: 1回目は外れ（別の部品が入った）、2回目で合う。検査には撮った画像と CSS の変数名を渡す
+  const framed = target(
+    [at(10), at(10), at(10), at(10), at(10), at(10)],
+    [false, true],
+  );
+  assert.equal(
+    String(
+      await captureElement(page, framed, {
+        edgeColorVar: "--ryujin-navy-600",
+      }),
+    ),
+    "png2",
+  );
+  assert.equal(framed.log.edgeArgs[0].edgeColorVar, "--ryujin-navy-600");
+  assert.equal(
+    framed.log.edgeArgs[0].edgeCheck,
+    Buffer.from("png1").toString("base64"),
+  );
+  // 3回とも外れたら撮れなかった扱い（投稿に崩れた画像を載せない）
+  const never = target(Array(9).fill(at(10)), [false, false, false]);
+  await assert.rejects(
+    captureElement(page, never, { edgeColorVar: "--ryujin-navy-600" }),
+    /screenshot_misframed/,
+  );
+  assert.equal(never.log.shots, 3);
+  // 比べる色が分からない（CSS の変数が無い）ときは撮り直さず、理由を分けて止める（2026-10-24 審査の P2）
+  const noColor = target(Array(3).fill(at(10)), ["no_color"]);
+  await assert.rejects(
+    captureElement(page, noColor, { edgeColorVar: "--ryujin-navy-600" }),
+    /screenshot_edge_color_missing/,
+  );
+  assert.equal(noColor.log.shots, 1);
+});
+
+test("/today の図は外周の色の検査つきで撮る（SONAR_EDGE_COLOR_VAR を headless.screenshot に渡す）", async () => {
+  const planner = await import("../lib/snsTodayPlanner.js");
+  assert.equal(planner.SONAR_EDGE_COLOR_VAR, "--ryujin-navy-600");
+  const src = await (
+    await import("node:fs/promises")
+  ).readFile(new URL("../lib/snsTodayPlanner.js", import.meta.url), "utf8");
+  assert.match(src, /edgeColorVar: SONAR_EDGE_COLOR_VAR/);
 });
