@@ -4,6 +4,34 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import { defineConfig, globalIgnores } from "eslint/config";
 
+// JSX の要素名で使った変数を「使った」と印す（eslint-plugin-react の jsx-uses-vars と同じ働き）。
+// ESLint 9 は JSX の要素名を変数の参照として数えないため、<motion.div> でだけ使う motion が
+// no-unused-vars に「使っていない」と誤って出る。依存を足さずに直すため、ここで同じことをする。
+// 小文字1語の名前（<div> 等）は HTML の要素で変数ではないので印さない。
+// 何も報告しないルールなので、ruleFilter・--rule で no-unused-vars だけを動かすときは、これも一緒に残す
+// （外すと motion の誤検知が戻る）
+const jsxUsesVars = {
+  rules: {
+    "jsx-uses-vars": {
+      meta: { type: "problem", schema: [] },
+      create(context) {
+        return {
+          JSXOpeningElement(node) {
+            let name = node.name;
+            if (name.type === "JSXNamespacedName") return;
+            if (name.type === "JSXIdentifier" && /^[a-z]/.test(name.name))
+              return;
+            while (name.type === "JSXMemberExpression") name = name.object;
+            if (name.type === "JSXIdentifier") {
+              context.sourceCode.markVariableAsUsed(name.name, node);
+            }
+          },
+        };
+      },
+    },
+  },
+};
+
 export default defineConfig([
   globalIgnores(["dist"]),
   {
@@ -14,6 +42,7 @@ export default defineConfig([
       reactHooks.configs.flat.recommended,
       reactRefresh.configs.vite,
     ],
+    plugins: { local: jsxUsesVars },
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
@@ -24,7 +53,12 @@ export default defineConfig([
       },
     },
     rules: {
-      "no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }],
+      "local/jsx-uses-vars": "error",
+      // ignoreRestSiblings: ({ node, ...props }) のように、残りから外すための分割代入を使っていないと数えない
+      "no-unused-vars": [
+        "error",
+        { varsIgnorePattern: "^[A-Z_]", ignoreRestSiblings: true },
+      ],
     },
   },
   {
