@@ -4,6 +4,16 @@
   padding: 1rem 1.5rem 2.5rem;
 }
 
+.venue-race-list-page .back-link {
+  color: var(--brand-accent-secondary);
+  text-decoration: none;
+}
+
+.venue-race-list-page .back-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
 .venue-race-list-container .page-header {
   display: flex;
   align-items: center;

@@ -104,16 +104,23 @@ export const deepBox = (nChipRows) => ({ x: LEFT, y: DEEP.cardY, w: RIGHT - LEFT
  * visual-designer 2026-10-20 P1）。「スクショで保存」は1つ目の見出しの右に置く
  */
 export const SUMMARY = { top: PAGE_TOP - 10, headH: 64, rowH: 84, gap: 10, footerH: 46, bottom: 1420 };
-export function summaryLayout(groups) {
+/**
+ * footerLines: 締めの行数（場面8 は2行、hq 契約 10/24 C2）。y1420 に収まらないときは行の高さ rowH だけを詰める
+ * （1行ぶんで数えていて、2行目の下端 1430 を検査が見逃していた。visual-designer 2026-10-24 P2）
+ */
+export function summaryLayout(groups, footerLines = 1) {
+  const nRows = groups.reduce((a, g) => a + g.rows.length, 0);
+  const fixed = SUMMARY.top + groups.length * (SUMMARY.headH + SUMMARY.gap) + footerLines * SUMMARY.footerH;
+  const rowH = nRows ? Math.min(SUMMARY.rowH, Math.floor((SUMMARY.bottom - fixed) / nRows)) : SUMMARY.rowH;
   let y = SUMMARY.top;
   const out = groups.map((g) => {
     const head = y;
     y += SUMMARY.headH;
-    const rows = g.rows.map((_, i) => y + i * SUMMARY.rowH);
-    y += g.rows.length * SUMMARY.rowH;
-    const line = { top: head + SUMMARY.headH, h: g.rows.length * SUMMARY.rowH - 6 };
+    const rows = g.rows.map((_, i) => y + i * rowH);
+    y += g.rows.length * rowH;
+    const line = { top: head + SUMMARY.headH, h: g.rows.length * rowH - 6 };
     y += SUMMARY.gap;
     return { head, rows, line };
   });
-  return { groups: out, footerY: y, footerBottom: y + SUMMARY.footerH, saveY: SUMMARY.top + 12 };
+  return { groups: out, rowH, footerY: y, footerBottom: y + footerLines * SUMMARY.footerH, saveY: SUMMARY.top + 12 };
 }

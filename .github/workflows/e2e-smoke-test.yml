@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
+      matrix: ${{ steps.shards.outputs.matrix }}
     steps:
       # pull_request の checkout は base と head のマージコミット。1つ目の親が base
       - name: Checkout
@@ -65,15 +66,20 @@ jobs:
             echo "scope=full" | tee -a "$GITHUB_OUTPUT"
           fi
 
-  # 3台に分けて並行に走らせる（BOA-769）。律速は1台の CPU（4 vCPU を vite dev と Chromium が
+      # 組の分け方（e2e/shards.json）を e2e-shard の matrix に直す。誤りがあればここで落とす
+      - name: Read e2e shards
+        id: shards
+        # shell を書かない run は pipefail が無く、node の失敗が tee の0に隠れる
+        run: |
+          set -euo pipefail
+          node scripts/maintenance/e2e-shards.js --matrix | tee -a "$GITHUB_OUTPUT"
+
+  # 組に分けて並行に走らせる（BOA-769）。律速は1台の CPU（4 vCPU を vite dev と Chromium が
   # 取り合う。PR #1263 で workers を 4 に増やしても縮まなかった）なので、台数を増やす。
   #
-  # 分け方は spec 単位。Playwright の --shard は件数で均等に割るが、venue-guide-data.spec.js の
-  # 792件はブラウザを使わず一瞬で終わるため、件数で割ると所要が 2338秒/201秒/1226秒 に偏る
-  # （2026-10-08 の CI 2回の実測から試算）。実測の所要がほぼ3等分になるように組んである:
-  #   1: smoke.spec.js（1088秒）＋ race-odds-live.spec.js（224秒）
-  #   2: layout.spec.js の5幅（1083秒）＋ race-detail-details.spec.js（200秒）
-  #   3: それ以外すべて（約1300秒）。新しい spec は自動でここに入る
+  # 分け方の正本は e2e/shards.json（e2e-rerecord.yml の replay と共用。BOA-929、ADR-0100）。
+  # 件数でなく実測の所要（worker 秒）で割る。venue-guide-data.spec.js の792件はブラウザを使わず
+  # 一瞬で終わるため、件数で割ると偏る。最後の組は「それ以外すべて」で、新しい spec は自動でここに入る。
   # 組の中では --fully-parallel でテスト単位に workers（既定2）へ割り振る（#1263 で順序依存が無いことを確認済み）。
   # 全テストがちょうど1回ずつ走ったかは、集約ジョブで check-e2e-shard-coverage.js が確かめる。
   e2e-shard:
@@ -83,14 +89,7 @@ jobs:
     strategy:
       # 1組が落ちても他の組は最後まで走らせ、失敗を一度に全部見せる
       fail-fast: false
-      matrix:
-        include:
-          - shard: 1
-            args: e2e/smoke.spec.js e2e/race-odds-live.spec.js
-          - shard: 2
-            args: e2e/layout.spec.js e2e/race-detail-details.spec.js
-          - shard: 3
-            args: --grep-invert "(^|[ /])(smoke|race-odds-live|layout|race-detail-details)\.spec\.js( |$)"
+      matrix: ${{ fromJSON(needs.e2e-scope.outputs.matrix) }}
     name: e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})
     steps:
       - name: Checkout
@@ -349,6 +348,10 @@ jobs:
       - name: Fail if any shard failed
         if: always()
         run: |
+          if [ "${{ needs.e2e-scope.result }}" != "success" ]; then
+            echo "e2e-scope の結果: ${{ needs.e2e-scope.result }}（範囲か組の分け方 e2e/shards.json を読めなかった）"
+            exit 1
+          fi
           case "$SCOPE" in
             full) job=e2e-shard; result="${{ needs.e2e-shard.result }}" ;;
             light) job=e2e-light; result="${{ needs.e2e-light.result }}" ;;

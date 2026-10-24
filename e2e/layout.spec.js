@@ -77,6 +77,31 @@ const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? "
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+for (const theme of ["light", "dark"]) {
+  test(`BOA-894: 会場一覧へ戻るリンクが375pxの${theme}で意味トークンを使う`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/venue/2");
+    const link = page.locator(".venue-race-list-page .page-header .back-link");
+    await expect(link).toBeVisible();
+    await page.evaluate((theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+    }, theme);
+    const tokenColor = (token) => page.evaluate((token) => {
+      const probe = document.createElement("span");
+      probe.style.color = `var(${token})`;
+      document.body.append(probe);
+      const color = getComputedStyle(probe).color;
+      probe.remove();
+      return color;
+    }, token);
+    await expect(link).toHaveCSS("color", await tokenColor("--brand-accent-secondary"));
+    await expect(link).toHaveCSS("text-decoration-line", "none");
+    await link.hover();
+    await expect(link).toHaveCSS("color", await tokenColor("--text-primary"));
+    await expect(link).toHaveCSS("text-decoration-line", "underline");
+  });
+}
+
 for (const path of ["/blog/10000-races-analysis", "/en/blog/10000-races-analysis"]) {
   test(`ブログ記事の戻るリンクとカテゴリに375pxで余白がある: ${path} @blog`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });

@@ -46,6 +46,24 @@ PR ゲートの e2e（`.github/workflows/e2e-smoke-test.yml`）は、どの PR �
 - **マージ時**: `pull_request` のワークフロー自体は PR の側の定義で動くので、`.github` を書き換えれば軽い組に逃げられる。`scripts/maintenance/guard-pr-merge.js` が `origin/master` の一覧で差分を判定し直し、`full` なのに `e2e-shard` が全部成功していなければ（skip を含む）止める。`--auto` で GitHub にチェックを任せる場合は `e2e` の集約しか見られないので、`.github/workflows` を変える PR は手のマージに回す
 - `pull_request_target` は使わない（PR のコードを秘密の鍵のある文脈で動かすことになるため）
 
+### 4. 組の分け方は e2e/shards.json の1か所に置き、所要時間で割る（BOA-929 の 2）
+
+以前は `e2e-smoke-test.yml` の `e2e-shard` と `e2e-rerecord.yml` の `replay` の matrix に、同じ分け方を2回手で書いていた。最後の組の `--grep-invert` の正規表現も手で書いていた。3つ目の組は「残り全部」なので、spec が増えるたびに重くなった。2026-10-23 の実測（run 39870857258、全2,234件・合計8,626 worker 秒）では、3つ目の組だけで約3,700 worker 秒あった。2026-10-21 の再生（run 39527057420）では、30分の上限で打ち切られている。
+
+- 分け方は `e2e/shards.json` に置く。`scripts/maintenance/e2e-shards.js --matrix` がこれを両ワークフローの matrix に直す。`check-e2e-shard-coverage.js` も同じファイルを読み、分け方の誤りを先に出す
+- 件数でなく、実測の所要（worker 秒）で5組に割る。layout.spec.js は5つの幅（プロジェクト）を2組に分ける。`smoke` プロジェクトは layout.spec.js を無視し、`layout-*` は layout.spec.js だけに当たるので、`--project` を並べれば layout の一部の幅と他の spec を1つの組に混ぜられる
+- 最後の組は `rest: true` で、上の組に書いた spec を除く残り全部。新しい spec は自動でここに入る
+
+| 組 | 中身 | worker 秒 |
+|---|---|---|
+| 1 | smoke.spec.js | 1,784 |
+| 2 | layout（mobile・tablet・laptop）＋ race-odds-live | 1,780 |
+| 3 | layout（desktop・wide）＋ thinking-assist-states ＋ race-share-text | 1,754 |
+| 4 | analogy-contribution ほか10本 | 1,637 |
+| 5 | 残り全部 | 約1,670 |
+
+replay の `timeout-minutes`（30）は、組を増やした効果を測ってから見直す。
+
 ## ADR-0077 との関係
 
 ADR-0077（録画の再生と時計の固定）は変えない。軽い組も同じ録画を再生し、録画に無い通信は同じく本番へ素通しして一覧を出す。この ADR は「どのテストを流すか」だけを決め、「どう流すか」は ADR-0077 のまま。
@@ -53,5 +71,5 @@ ADR-0077（録画の再生と時計の固定）は変えない。軽い組も同
 ## 結果
 
 - 直近1か月の実績では、約13%の PR が e2e の全部を流さずに済む（0件 10.1%、軽い組 2.7%）
-- 3つ目の組が30分で終わらない問題そのものは、この ADR では直らない。組の分け方を1つの JSON にし、所要時間で4〜5組に割るのは別の PR で行う（BOA-929 の 2）
+- 3つ目の組が重い問題は、下の「4. 組の分け方」で直す（BOA-929 の 2、別の PR）
 - `.claude/` だけの PR（46件、4.9%）は今回は `full` のまま。hooks のスクリプトを含むため、一覧に足すかは別に決める
