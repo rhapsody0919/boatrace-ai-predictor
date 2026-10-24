@@ -499,15 +499,20 @@ async function fetchAllByIn(table, select, column, values) {
  * 1選手の race_entries を、race_id が sinceRaceId 以降の窓で全件取る（BOA-1051）。
  * 1選手でも730日の窓では最大で約1460走（1日2走×730日）になりうるので、1000行の上限で
  * 黙って切れないよう、主キーで並べて .range() のページを読み切る。2026-10-25 の本番の実測で
- * 最大は1人290行（DB の開始 2025-12-02 からの約11か月分）で、まだ届いていない
+ * 最大は1人290行（DB の開始 2025-12-02 からの約11か月分）で、まだ届いていない。
+ * 窓の終わりは今日（JST）まで。明日以降の出走表の行は結果が無く、3つの呼び出し元はどれも集計から
+ * 外すので、本番の値は変わらない。E2E は時計を録画の時刻に止めるので、録画に無い取得が本番へ素通し
+ * しても、録画より後の走が混ざって直近の表の行が押し出されない（racer-history-st.spec.js で起きた）
  */
 function fetchRacerEntriesSince(racerId, select, sinceRaceId) {
+  const untilRaceId = `${jstToday()}-99`;
   return fetchAllPages((from, to) => {
     let query = supabase
       .from("race_entries")
       .select(select)
       .eq("racer_id", racerId)
-      .gte("race_id", sinceRaceId);
+      .gte("race_id", sinceRaceId)
+      .lte("race_id", untilRaceId);
     for (const key of FETCH_ALL_BY_IN_ORDER.race_entries) {
       query = query.order(key);
     }
