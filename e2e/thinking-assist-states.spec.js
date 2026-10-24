@@ -46,7 +46,7 @@ async function routeExhibition(page, edit, gate = null) {
       const res = await fetchRecorded(route);
       const rows = await res.json();
       if (gate) await gate;
-      await route.fulfill({ response: res, json: edit(rows) });
+      await route.fulfill(res.fulfillOptions({ json: edit(rows) }));
     } catch (e) {
       // 録画に無いときは本番へ素通しする（fixtures.js の fetchRecorded）。その途中でテストが終わると
       // 「route.fetch: Target page, context or browser has been closed」になる（#1400 の CI、指摘12）。
@@ -210,7 +210,7 @@ test.describe("思考アシスト: 状態の出し分け（Codex 依頼27）", (
           r.cancellationStatus = "confirmed";
           r.result = null;
         }
-      await route.fulfill({ response: res, json: body });
+      await route.fulfill(res.fulfillOptions({ json: body }));
     });
     // 出走表は軽量版→完全版の2回取る。完全版が届く前にテストを終えると、取得中の route が閉じたページで落ちる
     const full = page.waitForResponse(
@@ -234,7 +234,7 @@ test.describe("思考アシスト: 状態の出し分け（Codex 依頼27）", (
       const rows = await res.json();
       for (const row of rows)
         if (row.trifecta_all) delete row.trifecta_all["1-2-4"];
-      await route.fulfill({ response: res, json: rows });
+      await route.fulfill(res.fulfillOptions({ json: rows }));
     });
     await open(page);
     await lensTab(page, "買い目").click();
@@ -352,7 +352,7 @@ test.describe("思考アシスト: ファン評価 2周目", () => {
       const body = await res.json();
       for (const r of body.races ?? [])
         if (r.raceId === RACE_ID) r.raceStage = "一般";
-      await route.fulfill({ response: res, json: body });
+      await route.fulfill(res.fulfillOptions({ json: body }));
     });
     const full = page.waitForResponse(
       (r) =>
@@ -721,7 +721,7 @@ test.describe("思考アシスト: PR4 の /code-review 指摘", () => {
       for (const r of body.races ?? [])
         if (r.raceId === RACE_ID)
           for (const e of r.entries ?? []) if (e.number === 1) e.racerId = null;
-      await route.fulfill({ response: res, json: body });
+      await route.fulfill(res.fulfillOptions({ json: body }));
     });
     // 出走表は軽量版→完全版の2回取る。完全版が届く前にテストを終えると、取得中の route が閉じたページで落ちる
     const full = page.waitForResponse(

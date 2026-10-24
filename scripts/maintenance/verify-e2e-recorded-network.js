@@ -12,6 +12,10 @@
  *      → `route.fallback()` を使う
  *   3. page.route の中の `route.fetch()`（ブラウザの経路を通らず直接ネットワークへ出る）
  *      → `fetchRecorded(route)` を使う
+ *   4. `route.fulfill({ response, ... })`（BOA-929）。fetchRecorded の戻り値は APIResponse ではなく、
+ *      Playwright は APIResponse でない `response` を黙って無視して空の200を返す。素通し（本番）の
+ *      間は APIResponse なので通り、撮り直した録画の strict 再生でだけ落ちて採用を止めていた
+ *      → `route.fulfill(response.fulfillOptions())`（本文を差し替えるなら `fulfillOptions({ json })`）
  *
  * 1 は、ブラウザを使わない spec（page / context / browser を受け取らない）なら許す。
  *
@@ -53,6 +57,35 @@ const IMPORT_RE =
 
 const lineOf = (source, index) => source.slice(0, index).split("\n").length;
 
+/** code[open] が "{" のオブジェクトリテラルの、最上位のキー（識別子・省略記法）を返す */
+function topLevelKeys(code, open) {
+  const keys = [];
+  let depth = 0;
+  let segment = "";
+  for (let k = open; k < code.length; k += 1) {
+    const ch = code[k];
+    if (ch === "{" || ch === "(" || ch === "[") {
+      depth += 1;
+      if (depth === 1) continue;
+    } else if (ch === "}" || ch === ")" || ch === "]") {
+      depth -= 1;
+      if (depth === 0) break;
+    }
+    if (depth === 1 && ch === ",") {
+      keys.push(segment);
+      segment = "";
+    } else if (depth === 1) {
+      segment += ch;
+    } else {
+      segment += " ";
+    }
+  }
+  keys.push(segment);
+  return keys
+    .map((seg) => (seg.match(/^\s*([A-Za-z_$][\w$]*)\s*(?::|$)/) ?? [])[1])
+    .filter(Boolean);
+}
+
 /** コメント・文字列を除いた行ごとに、違反を返す（純関数） */
 export function findViolations(source) {
   const code = stripNonCode(source);
@@ -86,6 +119,16 @@ export function findViolations(source) {
         "route.fetch() は録画を通らない。fixtures.js の fetchRecorded(route) を使う",
     });
   }
+  // `{ response }`・`{ response: res, json }` の両方。fulfill の第1引数のオブジェクトの最上位に response キーがあるか
+  for (const m of code.matchAll(/\.fulfill\s*\(\s*\{/g)) {
+    if (topLevelKeys(code, m.index + m[0].length - 1).includes("response")) {
+      violations.push({
+        line: lineOf(code, m.index),
+        message:
+          "route.fulfill({ response }) は fetchRecorded の応答を黙って捨てる（空の200）。route.fulfill(response.fulfillOptions()) を使う",
+      });
+    }
+  }
   return violations.sort((a, b) => a.line - b.line);
 }
 
@@ -115,6 +158,15 @@ function selfTest() {
       '// import { test } from "@playwright/test";\ntest("a", async ({ page }) => {});',
       0,
     ],
+    // BOA-929: 修正前の motor-strength-compare.spec.js の書き方
+    ["return route.fulfill({ response });", 1],
+    ["await route.fulfill({ response, json: body });", 1],
+    ["await route.fulfill({ response: res, json: edit(rows) });", 1],
+    ["await route.fulfill({\n  response,\n  json: body,\n});", 1],
+    ["await route.fulfill(response.fulfillOptions());", 0],
+    ["await route.fulfill(res.fulfillOptions({ json: body }));", 0],
+    ["await route.fulfill({ status: 200, json: { response: 1 } });", 0],
+    ["await route.fulfill({ json: responseRows });", 0],
   ];
   return cases
     .map(([src, expected]) => ({

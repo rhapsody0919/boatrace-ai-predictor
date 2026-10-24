@@ -12,6 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonicalUrl, harKey, mergeHarLogs } from "../../e2e/har-merge.js";
 import { isPartialRun } from "../../e2e/global-setup.js";
+import { viewportSkipReason } from "../../e2e/viewport-skip.js";
 import {
   countResults,
   judgeAdoption,
@@ -399,10 +400,67 @@ const counts = countResults(
 check("件数の数え方（flaky は失敗に数えない）", counts, {
   tests: 4,
   skipped: 1,
+  viewportSkipped: 0,
   failed: 1,
   flaky: 1,
   errors: 0,
 });
+// BOA-929: 画面幅だけで決まる skip（e2e/viewport-skip.js の印）は skipped に数えない。
+// 2026-10-24 の撮り直しは、layout.spec.js の画面幅の skip 28件で「現行 0件 → 新 28件」と不採用になった
+const skipReport = (annotations) => ({
+  suites: [
+    {
+      title: "layout.spec.js",
+      specs: annotations.map((a, i) => ({
+        title: `t${i}`,
+        tests: [{ status: "skipped", annotations: a ? [a] : [] }],
+      })),
+    },
+  ],
+});
+const viewportCounts = countResults(
+  skipReport([
+    { type: "skip", description: viewportSkipReason("1440pxで確認") },
+    {
+      type: "skip",
+      description: viewportSkipReason("スマホ幅でだけ溢れる画面"),
+    },
+    { type: "skip", description: "本日開催中の未終了レースが見つからない" },
+    null,
+  ]),
+);
+check(
+  "画面幅の skip は skipped から外し viewportSkipped に数える",
+  [viewportCounts.skipped, viewportCounts.viewportSkipped],
+  [2, 2],
+);
+check(
+  "画面幅の skip だけが増えても採用する（10/24 の不採用の再現: 現行 0件）",
+  judgeAdoption(
+    countResults(
+      skipReport(
+        Array.from({ length: 28 }, () => ({
+          type: "skip",
+          description: viewportSkipReason("PC幅（1025px以上）だけの指定"),
+        })),
+      ),
+    ),
+    { skipped: 0 },
+  ).reasons.filter((r) => r.startsWith("skip")),
+  [],
+);
+check(
+  "印の無い skip（データ依存）が増えたら不採用のまま",
+  judgeAdoption(
+    countResults(
+      skipReport([
+        { type: "skip", description: "本日開催中の未終了レースが見つからない" },
+      ]),
+    ),
+    { skipped: 0 },
+  ).reasons.some((r) => r.startsWith("skip")),
+  true,
+);
 check(
   "全件通過・skip 同数なら採用",
   judgeAdoption({ tests: 10, skipped: 1, failed: 0, errors: 0 }, { skipped: 1 })

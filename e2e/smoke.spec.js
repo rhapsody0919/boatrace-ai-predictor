@@ -4293,7 +4293,8 @@ test.describe("龍神レーダー ブランドトークンのコントラスト�
   // （ページごとにルート要素のクラスが異なる=.app/.race-detail-page/.about-container等の
   // ため.include()では絞り込まず、document全体を対象にする）
   // 記事のページとホーム（最新記事のカードを出す）は題に @blog を付け、記事だけの PR の軽い組でも走らせる（BOA-929）
-  const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "");
+  const blogTag = (path) =>
+    /^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "";
   const PAGES = [
     "/",
     "/about",
@@ -5364,13 +5365,28 @@ test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-47
 
     // 同じ節・同じモーターでも、当日の出走表更新が走る前の行は1桁で入っている。
     // 2桁で出すと同じモーターが 54.80 と 54.84 に見えるため1桁に揃えた
-    const officialCells = table.locator("tbody tr td:nth-child(5)");
-    const count = await officialCells.count();
-    expect(count).toBeGreaterThan(0);
-    for (let i = 0; i < count; i += 1) {
-      const text = (await officialCells.nth(i).innerText()).trim();
-      if (text === "-") continue;
-      expect(text).toMatch(/^\d+\.\d$/);
+    // 列は位置でなく見出しで引く。会場内順位の列（BOA-428、「2位/65」）は会場のスナップショットが
+    // あるときだけ出るので、位置で決め打ちすると録画の日によって別の列を読む（BOA-929）
+    const rateColumns = await table.locator("thead th").evaluateAll((ths) =>
+      ths
+        .map((th, i) => ({
+          i,
+          text: th.textContent.trim(),
+          venueRank: th.classList.contains("motor-venue-rank-head"),
+        }))
+        .filter((h) => /連率/.test(h.text) && !h.venueRank)
+        .map((h) => h.i + 1),
+    );
+    expect(rateColumns.length).toBeGreaterThan(0);
+    for (const column of rateColumns) {
+      const cells = table.locator(`tbody tr td:nth-child(${column})`);
+      const count = await cells.count();
+      expect(count).toBeGreaterThan(0);
+      for (let i = 0; i < count; i += 1) {
+        const text = (await cells.nth(i).innerText()).trim();
+        if (text === "-") continue;
+        expect(text, `${column}列目`).toMatch(/^\d+\.\d%?$/);
+      }
     }
   });
 });

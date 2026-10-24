@@ -210,8 +210,25 @@ function toResponse(status, headersArray, body) {
     body: async () => body,
     text: async () => body.toString("utf8"),
     json: async () => JSON.parse(body.toString("utf8")),
-    fulfillOptions: () => ({ status, headers, body }),
+    /**
+     * route.fulfill に渡す引数。本文を差し替えるときは { json } を渡す（状態・ヘッダーは元の応答のまま）。
+     * route.fulfill({ response }) には渡さない。Playwright は APIResponse でない response を黙って
+     * 無視し、空の200を返す（録画・再生でだけ壊れ、live では通る。BOA-929）
+     */
+    fulfillOptions: ({ json } = {}) =>
+      json === undefined
+        ? { status, headers, body }
+        : { status, headers, json },
   };
+}
+
+/** route.fetch() の APIResponse を、録画・再生の応答と同じ形にする（どのモードでも fulfillOptions を持たせる） */
+async function fromApiResponse(response) {
+  return toResponse(
+    response.status(),
+    response.headersArray(),
+    await response.body(),
+  );
 }
 
 function entryToResponse(entry) {
@@ -297,15 +314,18 @@ async function recordThrough(request, fetchResponse) {
  * context の routeFromHAR では再生されない（再生時に本番へ出ようとする）。
  * 録画時は取った応答を録画に入れ、再生時は録画から同じ応答を返す。
  *
- * 戻り値は status() / headers() / body() / text() / json() を持つ。
+ * 戻り値は status() / headers() / body() / text() / json() / fulfillOptions() を持つ（どのモードでも同じ形）。
  * APIResponse そのものではないので、route.fulfill には { response } ではなく
- * status・headers を明示して渡すこと。
+ * response.fulfillOptions()（本文を差し替えるときは fulfillOptions({ json })）を渡すこと。
+ * { response } で渡すと Playwright は黙って無視し、空の200を返す。live と素通しでだけ
+ * 通り、撮り直した録画の strict 再生で落ちて採用を止めていた（BOA-929。
+ * scripts/maintenance/verify-e2e-recorded-network.js が検出する）
  */
 export async function fetchRecorded(route, options = {}) {
   const request = route.request();
   // options.url で取り先を差し替えられる（route.fetch({ url }) と同じ）
   const url = options.url ?? request.url();
-  if (E2E_MODE === "live") return route.fetch(options);
+  if (E2E_MODE === "live") return fromApiResponse(await route.fetch(options));
   if (E2E_MODE === "record") {
     return recordThrough(
       {
@@ -327,7 +347,7 @@ export async function fetchRecorded(route, options = {}) {
     );
   }
   notePassthrough(test.info(), request.method(), url);
-  return route.fetch(options);
+  return fromApiResponse(await route.fetch(options));
 }
 
 /**

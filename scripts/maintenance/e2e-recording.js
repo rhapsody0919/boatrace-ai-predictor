@@ -36,7 +36,12 @@ import {
 } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { flattenTests, reportProblems } from "./check-e2e-skips.js";
+import {
+  flattenTests,
+  reportProblems,
+  skipReasonOf,
+} from "./check-e2e-skips.js";
+import { VIEWPORT_SKIP_PREFIX } from "../../e2e/viewport-skip.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -145,13 +150,25 @@ export async function ensureRecording({ quiet = false, force = false } = {}) {
   return pointer;
 }
 
-/** Playwright の JSON レポートから、全件数・skip・失敗を数える（純関数） */
+/** 画面幅だけで決まる skip か（e2e/viewport-skip.js の印。どの日に撮っても同じ数になる） */
+const isViewportSkip = (test) =>
+  test.status === "skipped" &&
+  skipReasonOf(test).startsWith(VIEWPORT_SKIP_PREFIX.trim());
+
+/**
+ * Playwright の JSON レポートから、全件数・skip・失敗を数える（純関数）。
+ * skipped は画面幅だけで決まる skip（viewportSkipped）を除いた数。採用の条件（skip が増えていない）と
+ * ポインタの skipped はこの数で比べる。画面幅の skip はテストを足すたびに増え、撮った日とは
+ * 関係が無いため（BOA-929。含めていた間、現行 0件 → 新 28件で撮り直しを毎回止めていた）
+ */
 export function countResults(report) {
   const tests = flattenTests(report);
   const by = (s) => tests.filter((t) => t.status === s).length;
+  const viewportSkipped = tests.filter(isViewportSkip).length;
   return {
     tests: tests.length,
-    skipped: by("skipped"),
+    skipped: by("skipped") - viewportSkipped,
+    viewportSkipped,
     // flaky（1回目に落ちて CI のリトライで通った）は失敗に数えない。録画に無い通信は
     // strict で abort されるので、録画の不足ならリトライでも落ちて unexpected になる。
     // 1回目だけの失敗は録画ではなく実行環境の負荷によるもの（2026-09-29 の手元検証で、
@@ -475,6 +492,11 @@ async function main() {
         ...judgeAdoption(counts, current, problems),
         counts,
         current: current && { tag: current.tag, skipped: current.skipped },
+        // skip が増えて不採用になったとき、どのテストかを step summary・Slack から辿れるようにする
+        skippedTests: flattenTests(report)
+          .filter((t) => t.status === "skipped" && !isViewportSkip(t))
+          .slice(0, 20)
+          .map((t) => `${t.title} [${t.project}] ${skipReasonOf(t)}`),
       };
       console.log(JSON.stringify(result));
       process.exitCode = result.adopt ? 0 : 3;

@@ -33,6 +33,8 @@
 - PR ゲートの E2E（e2e-smoke-test）は HAR 再生・3台分割。直接 PR の前段の機械 E2E は CI の代替にならない（2026-10-17、2026-10-17-codex-direct-pr-design-v2.md）
 - テスト名・assert・mock の合格を実際の範囲より広く読まない。通知失敗の検査名は reject 通知の実行を保証せず、MP4 シグネチャだけを書く ffmpeg の注入 mock は実動画の寸法・尺・音を保証しない（2026-10-13、2026-10-13-plan-review-20261013-09.md・2026-10-13-plan-review-20261013-15.md）
 - 録画ポインタの tests/skipped は録画時点の件数で、新規 PR の収集・成功を証明しない。ローカル public/data への fetch も録画対象 API とは別（2026-10-15、2026-10-15-plan-review-20261015-01.md）
+- e2e-rerecord.yml の run が success でも録画は採用されていないことがある。採用の有無は judge の step summary（adopt）と e2e/recording.json の tag で見る。replay の step は tee で終了コードを隠すので、テストが落ちても緑になる（2026-10-25、BOA-929、run 40073298307）
+- 撮り直しの strict 再生でだけ落ちるテストは、録画の日時に依存しているか、fetchRecorded の応答を route.fulfill({ response }) で渡している（Playwright は APIResponse でない response を無視して空の200を返す。PR ゲートでは素通しで本物の APIResponse になり通る）（2026-10-25、BOA-929）
 - 版 hash の順序非依存は ID の一意性まで確認する。値変化の検証は、同一入力集合で値だけを変えて行う（claims 集合を減らす assert は値変化の検証ではない）（2026-10-13、2026-10-13-plan-review-20261013-32.md）
 - generate-ai-snapshots.js は Chromium が起動できなくても例外を捕捉して build を続ける。npm run build の exit 0 とブラウザ生成の成功は別。Vite の成功と後続のブラウザ・スナップショットの成功も分ける（2026-10-13、2026-10-13-boa-873.md・2026-10-13-boa-875.md）
 - build で使う Chromium 起動ヘルパーを API で共用しても、build の実績や mock CI は API の Node 版・bin 収録・関数サイズ/メモリを証明しない。lock の engine 条件と実配備を別に確認する（2026-10-13、2026-10-13-plan-review-20261013-33.md）
