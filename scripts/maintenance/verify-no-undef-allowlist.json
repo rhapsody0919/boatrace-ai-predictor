@@ -1,8 +1,8 @@
 {
   "$comment": [
-    "verify-no-undef.js（lint の関門）の許可リスト。規則ごと・ファイルごとに、残してよい違反の件数を書く。",
-    "件数を超えたら失敗（新しい違反）。件数に満たなくなっても失敗（解消したら件数を減らすか行を消す）。",
-    "形式: { \"rules\": { \"規則\": { \"リポジトリからの相対パス\": { \"count\": 件数, \"reason\": \"残す理由\" } } } }。rules の規則は verify-no-undef.js の GATED_RULES と同じにする。",
+    "verify-no-undef.js（lint の関門）の許可リスト。規則ごと・ファイルごとに、残してよい違反を書く。no-undef は名前（names）、他の規則は件数（count）。",
+    "許可を超えたら失敗（新しい違反）。許可に満たなくなっても失敗（解消したら件数を減らすか行を消す）。検査するのは --rules で渡した規則だけ（引数なしは no-undef だけ）。",
+    "形式: { \"rules\": { \"規則\": { \"リポジトリからの相対パス\": { \"count\": 件数, \"reason\": \"残す理由\" } } } }（no-undef は count の代わりに \"names\": [\"名前\"]）。規則は verify-no-undef.js の KNOWN_RULES のどれか。",
     "未定義の名前の参照（no-undef）は、import の抜け・名前の打ち間違いならここに足さずに直す。Node で動くファイルで process 等が出る場合は eslint.config.js の Node 区分に入れる。",
     "ファイル内の eslint-disable はこの検査では効かない。残す違反はここに載せる。"
   ],
