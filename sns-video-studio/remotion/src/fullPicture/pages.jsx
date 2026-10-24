@@ -523,7 +523,8 @@ export function DeepPage({ title, sub, card, chips }) {
  * 各行は見る所を太字、意味は「→」付きで小さく薄く。行の頭に関係する艇番（橙は鍵の艇、それ以外は白）。右下に「スクショで保存」
  */
 export function SummaryPage({ groups, footer }) {
-  const lay = summaryLayout(groups);
+  const footerLines = [footer].flat().filter(Boolean);
+  const lay = summaryLayout(groups, footerLines.length || 1);
   const out = [];
   groups.forEach((g, gi) => {
     const L = lay.groups[gi];
@@ -534,7 +535,7 @@ export function SummaryPage({ groups, footer }) {
     );
     g.rows.forEach((r, ri) => {
       out.push(
-        <div key={`r${gi}-${ri}`} style={{ position: "absolute", left: LEFT + 30, top: L.rows[ri], width: RIGHT - LEFT - 30, height: SUMMARY.rowH }}>
+        <div key={`r${gi}-${ri}`} style={{ position: "absolute", left: LEFT + 30, top: L.rows[ri], width: RIGHT - LEFT - 30, height: lay.rowH }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, height: 42 }}>
             {r.boats.map((b) => (
               <span key={b} style={{ minWidth: 40, height: 40, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: MIN_TEXT, fontWeight: 900, background: r.keys.includes(b) ? "#ff8a1f" : "#ffffff", color: "#0d1b2e" }}>
@@ -553,7 +554,7 @@ export function SummaryPage({ groups, footer }) {
     <>
       {out}
       <div style={{ position: "absolute", left: RIGHT - 300, top: lay.saveY, width: 300, textAlign: "right", fontSize: MIN_TEXT, color: MUTED }}>スクショで保存</div>
-      {[footer].flat().filter(Boolean).map((l, i) => (
+      {footerLines.map((l, i) => (
         <div key={`f${i}`} style={{ position: "absolute", left: LEFT, top: lay.footerY + i * SUMMARY.footerH, height: SUMMARY.footerH, fontSize: fit1(l, RIGHT - LEFT, 38, 800).fontSize, lineHeight: `${SUMMARY.footerH}px`, fontWeight: 800, color: GOLD, whiteSpace: "nowrap" }}>
           {l}
         </div>

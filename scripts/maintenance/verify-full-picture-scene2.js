@@ -449,7 +449,13 @@ assert.equal(SLIT_FORM_ON_AT, BEAT.pause, "枠と同じ時刻");
 
 // s8: まとめカードの CTA まで y1420 より上（Shorts の下の帯 y1450〜 に隠れていた）
 const s8 = buildScene8({ api: {} }).steps[0].page;
-assert.ok(summaryLayout(s8.groups).footerBottom <= 1420, `まとめカードの CTA の下端 ${summaryLayout(s8.groups).footerBottom}`);
+// 締めの行数で数える（2行の締めの下端 1430 を1行ぶんの計算で見逃していた。visual-designer 2026-10-24 P2）
+const s8Lines = [s8.footer].flat().filter(Boolean).length;
+assert.equal(s8Lines, 2, "前提: 場面8 の締めは2行");
+const s8Lay = summaryLayout(s8.groups, s8Lines);
+assert.ok(s8Lay.footerBottom <= 1420, `まとめカードの CTA の下端 ${s8Lay.footerBottom}`);
+assert.ok(s8Lay.rowH >= 76, `詰めても行の高さは 76 以上（${s8Lay.rowH}）`);
+assert.equal(summaryLayout(s8.groups, 1).rowH, 84, "1行の締めなら行の高さは今までどおり");
 
 // s3-rough: 棒は欄の幅いっぱい、値は棒の上、全国の値は棒の下（「全国 55.2%」が棒に重なっていた）
 const row = statsBarRow(0);
