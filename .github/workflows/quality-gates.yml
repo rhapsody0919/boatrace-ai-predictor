@@ -98,7 +98,7 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          if git diff --quiet "$BASE" HEAD -- scripts/ml/ src/constants/raceStageConfig.js; then
+          if git diff --quiet "$BASE" HEAD -- scripts/ml/ src/constants/raceStageConfig.js src/pure/raceStageConfig.js; then
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
             echo "run=true" >> "$GITHUB_OUTPUT"
@@ -114,7 +114,7 @@ jobs:
         if: steps.changed.outputs.run == 'true'
         run: pip install -r scripts/ml/analogy/requirements.txt
 
-      # ラウンド区分のテストは node で src/constants/raceStageConfig.js を読む（依存パッケージは不要）
+      # ラウンド区分のテストは node で src/constants/raceStageConfig.js（再 export。本体は src/pure/raceStageConfig.js）を読む（依存パッケージは不要）
       - name: pytest (scripts/ml/analogy/tests)
         if: steps.changed.outputs.run == 'true'
         run: python -m pytest scripts/ml/analogy/tests -q

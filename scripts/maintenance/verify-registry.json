@@ -242,6 +242,11 @@
       "guards": "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js、契約 docs/operation/content-pr-contract.md）: 許可のパス（すり抜け・削除・status T・mode 100644 以外）・生 HTML（mdast の html ノード、図のタグ ryujin-chart の例外）・「競艇」・判断が要る語・slug・.md と JSON の対応・画像の寸法と参照・featured・内部リンク（画像と // を除く）・manifest（非オブジェクト・paths・files・content_sha256・1記事・kind・4つの役のレビュー・P0/P1・時刻の形）を表で検査。CLI の差分（--raw -z）の読み取りも。今の public/blog の全 .md・blog-posts の全 JSON・images/blog の全 JPEG で本文の関門が errors 0 であること"
     },
     {
+      "script": "verify-course-baseline-lookup.js",
+      "tier": "ci",
+      "guards": "ST考察のベースラインのコース・級別キー、欠損値・course 0・重複後勝ち・入力不変、セル参照、抜出期待回数の換算と走数境界（BOA-1085）。仕様未定の文字列走数はKNOWN_GAPSに出力"
+    },
+    {
       "script": "verify-course-entry-tendency.js",
       "tier": "ci",
       "guards": "進入コース傾向の集計ロジック（scripts/lib/courseEntryTendency.js、BOA-284）"
@@ -297,6 +302,11 @@
       "script": "verify-digest-featured-candidates.js",
       "tier": "ci",
       "guards": "注目レースは表示上限で切る前の逃げ候補から選ぶ（BOA-851）"
+    },
+    {
+      "script": "verify-digest-metrics.js",
+      "tier": "ci",
+      "guards": "本日のデータ一覧の地力・予測・z・小標本・Wilson下限の式とパーセント単位（BOA-1084）"
     },
     {
       "script": "verify-digest-motor-race-count.js",
@@ -419,6 +429,11 @@
       "script": "verify-formatters-timezone.js",
       "tier": "ci",
       "guards": "日本の暦日の整形（formatDate・formatDateObject・formatDateShort）が実行環境のタイムゾーンに依らず同じ日付・曜日になる（JST より西で1日前になった BOA-1092）"
+    },
+    {
+      "script": "verify-formatters.js",
+      "tier": "ci",
+      "guards": "日付・割合の7関数の表記、TZ非依存の関数の3タイムゾーン検証、既知の差異の記録（BOA-1086）"
     },
     {
       "script": "verify-fortune-systems.js",
@@ -581,7 +596,7 @@
     {
       "script": "verify-meet-exclusion.js",
       "tier": "ci",
-      "guards": "今節タブの順位の対象から外す選手と理由（src/services/meetExclusion.js、getMeetScoreboard から切り出し）。公式の備考は予選の後だけ、今節Fは予選終了まで、途中帰郷は表示日に番組が無い選手、予選中は前夜の公式の途中帰郷を先に入れる（#1000・#1128・#1149・#1477 の再現）"
+      "guards": "今節タブの順位の対象から外す選手と理由（src/pure/meetExclusion.js、getMeetScoreboard から切り出し。旧の src/services/meetExclusion.js は再 export）。公式の備考は予選の後だけ、今節Fは予選終了まで、途中帰郷は表示日に番組が無い選手、予選中は前夜の公式の途中帰郷を先に入れる（#1000・#1128・#1149・#1477 の再現）"
     },
     {
       "script": "verify-meet-form-trend.js",
@@ -1124,7 +1139,7 @@
     {
       "script": "verify-series-points-stage-rules.js",
       "tier": "ci",
-      "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
+      "guards": "得点率の種別判定（src/pure/seriesPoints.js の算入範囲と配点、src/pure/raceStageConfig.js のバッジ。旧の置き場は再 export）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
     },
     {
       "script": "verify-session-progress.js",

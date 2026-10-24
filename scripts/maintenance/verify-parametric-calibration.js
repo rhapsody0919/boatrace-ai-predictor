@@ -90,6 +90,31 @@ check("Platt: 切片MLEの予測合計205", () => {
   assert.equal(sum(outcomes), 205);
   near(sum(fitPlatt().predict(scores)), 205, 1e-6);
 });
+check("Platt: 非対称の入力で予測の合計が1の数に一致", () => {
+  const asymmetricScores = [], asymmetricOutcomes = [];
+  for (let s = 0; s <= 100; s += 5) {
+    const ones = Math.round(10 / (1 + Math.exp(-(s - 70) / 8)));
+    for (let i = 0; i < 10; i++) {
+      asymmetricScores.push(s);
+      asymmetricOutcomes.push(i < ones ? 1 : 0);
+    }
+  }
+  assert.equal(asymmetricScores.length, 210);
+  assert.equal(sum(asymmetricOutcomes), 65);
+  const cal = new PlattCalibrator();
+  cal.fit(asymmetricScores, asymmetricOutcomes);
+  // 切片のスコア方程式。微小な正則化によるずれを許容する。
+  near(sum(cal.predict(asymmetricScores)), 65, 1e-4);
+});
+check("Platt: 傾きのスコア方程式", () => {
+  const cal = fitPlatt();
+  const { mean, std, w } = cal.toJSON();
+  const predictions = cal.predict(scores);
+  // 本体のRIDGEが変わったら、正則化項の1e-6も合わせて直す。
+  const gradient = sum(scores.map((s, i) =>
+    (predictions[i] - outcomes[i]) * (s - mean) / std)) + 1e-6 * w[0];
+  near(gradient, 0, 1e-6);
+});
 check("Platt: 中央・単調・範囲・返却型", () => {
   const cal = fitPlatt();
   near(cal.predict(50), 0.5, 0.05);
