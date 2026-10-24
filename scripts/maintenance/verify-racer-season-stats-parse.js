@@ -90,6 +90,30 @@ test("parseSeasonStatsHtml: 集計期間・数値全欄・1〜6着の率と回�
   });
 });
 
+test("parseSeasonStatsHtml: 出遅れ回数（選手責任）の2回をfalseStartCountに読む", () => {
+  const numericHtml = html.replace(
+    "<th>出遅れ回数（選手責任）</th><td>-</td>",
+    "<th>出遅れ回数（選手責任）</th><td>2回</td>",
+  );
+  assert.deepEqual(parseSeasonStatsHtml(numericHtml), {
+    periodStart: "2025-11-01",
+    periodEnd: "2026-04-30",
+    periodLabel: "2026-second",
+    winRate: 6.87,
+    rentai2Rate: 54.3,
+    rentai3Rate: 70.1,
+    starts: 116,
+    finalistCount: 5,
+    winCount: 0,
+    avgStartTiming: 0.15,
+    flyingCount: 1,
+    falseStartCount: 2,
+    abilityIndex: 56,
+    placeRates: { 1: 34.5, 2: 19.8, 3: 15.5, 4: 12.1, 5: 0, 6: null },
+    placeCounts: { 1: 40, 2: 23, 3: 18, 4: 14, 5: 0, 6: null },
+  });
+});
+
 // 想定外の終了日の運用は呼び出し元がログする決まりだけで、パーサーの仕様は未定。
 // 仕様未定の入力は assert せず、観測値を出す。
 const KNOWN_GAPS = [
