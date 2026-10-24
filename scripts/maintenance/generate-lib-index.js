@@ -38,6 +38,16 @@ export const OUTPUT_PATH = "docs/reference/shared-logic-index.md";
 /** 索引の対象。実装時に「既にあるか」を探す場所だけを載せる。 */
 const TARGETS = [
   {
+    dir: "src/pure",
+    title: "src/pure — 画面とスクリプトが共有する純関数",
+    note: "鍵・DB・送信に触れない純関数だけ。根の外の import・ES の組み込みの外のグローバルは verify-pure-imports.js が落とす（docs/design/codex-direct-pr/design.md §4.2）。",
+  },
+  {
+    dir: "scripts/lib/pure",
+    title: "scripts/lib/pure — スクリプトだけが使う純関数",
+    note: "自分の中と src/pure だけを読める（片方向）。条件は src/pure と同じ（verify-pure-imports.js）。",
+  },
+  {
     dir: "scripts/lib",
     title: "scripts/lib — バッチ・取得・集計の共通ロジック",
     note: "日次バッチ・スクレイピング・Vercel Cron から使う。DBに触れるものと純粋な計算が混在する。",
@@ -56,6 +66,9 @@ const TARGETS = [
 
 const SKIP_DIRS = new Set(["node_modules", "__fixtures__", "__tests__"]);
 
+// 入れ子の対象（scripts/lib の中の scripts/lib/pure）は、外側の対象では辿らず自分の節に載せる
+const TARGET_DIRS = new Set(TARGETS.map((t) => t.dir));
+
 function listFiles(dir, acc = []) {
   let entries;
   try {
@@ -66,8 +79,9 @@ function listFiles(dir, acc = []) {
   for (const entry of entries.sort()) {
     if (SKIP_DIRS.has(entry)) continue;
     const rel = path.join(dir, entry);
-    if (statSync(path.join(repoRoot, rel)).isDirectory()) listFiles(rel, acc);
-    else if (entry.endsWith(".js") || entry.endsWith(".jsx")) acc.push(rel);
+    if (statSync(path.join(repoRoot, rel)).isDirectory()) {
+      if (!TARGET_DIRS.has(rel)) listFiles(rel, acc);
+    } else if (entry.endsWith(".js") || entry.endsWith(".jsx")) acc.push(rel);
   }
   return acc;
 }
