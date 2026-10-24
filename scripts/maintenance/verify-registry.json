@@ -207,6 +207,11 @@
       "guards": "ボット向け HTML の /today の関数（ADR 0089 第2段・BOA-848。api/bot-page/today.js、中身は api/_lib/botToday.js）。本番の morning_digest のフィクスチャで、head が人の /today と同じ値・JSON-LD が共通の3つとパンくず、本文が人の画面の部分集合（見出し・日付と開催数・期間・注目レース・各セクションの名前と件数・初期表示の6枚のレース・用語・免責）、選手の値を select せず本文にも出さないこと、取得の失敗を「まだ公開されていません」にせず 503、行が無い・generated_at が NULL のときだけ「まだ公開されていません」、日付は JST の今日、60秒の使い回し、カードの枚数が人の DigestCardGrid と同じこと"
     },
     {
+      "script": "verify-breadcrumb-ld.js",
+      "tier": "ci",
+      "guards": "画面・ボット共通の breadcrumbLd.js。名前・URLの欠落と別キーを拒否し、BreadcrumbList・ListItemの型、1からのposition、名前と順序、サイト内パスの絶対URL化・クエリ保持・外部絶対URL保持、通常入力にundefinedが無いこと。仕様と現状の差はKNOWN_GAPSとして出力する"
+    },
+    {
       "script": "verify-bug-cause-report.js",
       "tier": "ci",
       "guards": "バグ原因の定点観測の集計基準（bug-cause-report.js）。基準が変わると第1期と比較できなくなる"
