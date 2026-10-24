@@ -12,6 +12,17 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 名前で当たりをつけてファイルを開く、という使い方を想定している。
 関数ごとの引数・戻り値はソースのJSDocを見ること。
 
+## src/pure — 画面とスクリプトが共有する純関数
+
+鍵・DB・送信に触れない純関数だけ。根の外の import・ES の組み込みの外のグローバルは verify-pure-imports.js が落とす（docs/design/codex-direct-pr/design.md §4.2）。
+
+| ファイル | 役割 | 主なexport |
+| --- | --- | --- |
+| `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
+| `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
+| `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
+| `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか31件 |
+
 ## scripts/lib — バッチ・取得・集計の共通ロジック
 
 日次バッチ・スクレイピング・Vercel Cron から使う。DBに触れるものと純粋な計算が混在する。
@@ -356,7 +367,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/dataService.js` | データ取得サービス | dataService |
 | `src/services/fetchAllPages.js` | .range() のページを、短いページが返るまで読み続けて全件を返す（BOA-1051）。 | fetchAllPages, fetchAllInChunks |
 | `src/services/liveOddsService.js` | オッズのライブ取得（BOA-487）。/api/odds/live を呼ぶ。 | fetchLiveOdds, LIVE_PAGE_OF_BET_TYPE, LiveOddsError |
-| `src/services/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
+| `src/services/meetExclusion.js` | 再 export だけのファイル。本体は `src/pure/meetExclusion.js`（開発効率の計画 段3、pure の根へ移した）。 | — |
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
@@ -372,4 +383,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 337 ファイル / export 1864 件。
+対象 341 ファイル / export 1906 件。
