@@ -452,6 +452,11 @@
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
     },
     {
+      "script": "verify-id-path-utils.js",
+      "tier": "ci",
+      "guards": "race_id・選手名・選手ページ・会場ガイドの仕様と24会場の記事存在（BOA-1039）"
+    },
+    {
       "script": "verify-in-caution-coverage.js",
       "tier": "manual",
       "guards": "BOA-822 イン崩れ注意度の本番の充足（完了の定義A・C）: 夜の表の最初の日・最後の日（前日）・合計の件数、今日の unified で inCaution がある割合（99%以上）・出さない理由の内訳・through。判定は api/cron/in-caution-health.js と同じ純関数",
