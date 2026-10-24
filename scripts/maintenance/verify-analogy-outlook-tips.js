@@ -8,13 +8,15 @@ const t = (key, opts) => key + (opts ? JSON.stringify(opts) : "");
 const root = "aiPredictionTab.analogy";
 const outlook = `${root}.outlook`;
 const separator = `${root}.listSeparator`;
+let failures = 0;
 const test = (name, run) => {
   try {
     run();
     console.log(`PASS: ${name}`);
   } catch (error) {
     console.error(`FAIL: ${name}`);
-    throw error;
+    console.error(error);
+    failures += 1;
   }
 };
 
@@ -29,6 +31,11 @@ const KNOWN_GAPS = [
     input: { function: "to100", values: [-1, 2] },
     specification: "未定（負数入力の扱い）",
     current: to100([-1, 2]),
+  },
+  {
+    input: { function: "directionText", group: "round", up: ["yosen", "zzz"], down: [] },
+    specification: "未定（ROUND_ORDER に無い値の位置）",
+    current: directionText("round", { up: ["yosen", "zzz"], down: [] }, t),
   },
 ];
 console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length}`, JSON.stringify(KNOWN_GAPS));
@@ -83,6 +90,17 @@ test("directionText: グレード順と空欄", () => {
   }));
 });
 
+test("directionText: ラウンド順と空欄", () => {
+  const direction = { up: ["other", "yusho", "yosen", "junyu"], down: [] };
+  const roundOrder = ["yosen", "junyu", "yusho", "other"];
+  assert.equal(directionText("round", direction, t), t(`${outlook}.dir.category`, {
+    up: roundOrder.map((value) => t(`${outlook}.roundNames.${value}`, value))
+      .join(t(separator)),
+    down: "—",
+  }));
+  assert.deepEqual(direction, { up: ["other", "yusho", "yosen", "junyu"], down: [] });
+});
+
 test("boatTip: 母数0はぶれ幅0で割合なし", () => {
   assert.equal(boatTip(t, 2, 0, 0, []), t(`${root}.similar.tip`, {
     boat: 2, n: "0", hits: "0", pct: "—", lo: 0, hi: 0,
@@ -106,3 +124,5 @@ test("boatTip: 追加文は句点と翻訳の区切りで接続", () => {
   assert.equal(boatTip(t, 4, 1, 14, ["全国10%", "比較13%"]),
     `${base}。全国10%${separator}比較13%`);
 });
+
+if (failures > 0) process.exitCode = 1;
