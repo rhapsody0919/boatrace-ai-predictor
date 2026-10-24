@@ -12,11 +12,28 @@ const KNOWN_GAPS = [
   {
     input: { sourceId: "humor" },
     spec: "未定（humorSource.js に id はあるが戦略の仕様がない）",
-    current: '例外: 未知のネタ種別 "humor" に対するカバー画像戦略が定義されていません',
   },
 ];
 console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length}件`);
-for (const gap of KNOWN_GAPS) console.log(JSON.stringify(gap));
+for (const gap of KNOWN_GAPS) {
+  try {
+    gap.current = getCoverImageStrategy(gap.input);
+  } catch (error) {
+    gap.current = `例外: ${error.message}`;
+  }
+  console.log(JSON.stringify(gap));
+}
+
+let failures = 0;
+function runTest(label, test) {
+  try {
+    test();
+    console.log(`PASS: ${label}`);
+  } catch (error) {
+    failures += 1;
+    console.error(`FAIL: ${label} — ${error.message.replace(/\r?\n/g, " ")}`);
+  }
+}
 
 const cases = [
   {
@@ -36,15 +53,22 @@ const cases = [
   })),
 ];
 for (const { label, input, expected } of cases) {
-  assert.deepEqual(getCoverImageStrategy(input), expected, label);
-  console.log(`OK: ${label}`);
+  runTest(label, () => {
+    assert.deepEqual(getCoverImageStrategy(input), expected, label);
+  });
 }
 
 const unknownTest = "未知の sourceId は名前を含む例外";
-assert.throws(
-  () => getCoverImageStrategy({ sourceId: "no-such-source" }),
-  (error) => error instanceof Error && error.message.includes("no-such-source"),
-  unknownTest,
-);
-console.log(`OK: ${unknownTest}`);
-console.log("✅ verify-cover-image-strategy: 検証通過（KNOWN_GAPS は失敗に含めない）");
+runTest(unknownTest, () => {
+  assert.throws(
+    () => getCoverImageStrategy({ sourceId: "no-such-source" }),
+    (error) => error instanceof Error && error.message.includes("no-such-source"),
+    unknownTest,
+  );
+});
+if (failures > 0) {
+  console.error(`verify-cover-image-strategy: ${failures}件失敗`);
+  process.exitCode = 1;
+} else {
+  console.log("✅ verify-cover-image-strategy: 検証通過（KNOWN_GAPS は失敗に含めない）");
+}
