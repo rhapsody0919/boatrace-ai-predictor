@@ -25,11 +25,6 @@ export const WORKFLOW_EXCLUSIONS = Object.freeze({
     kind: "no_table",
     reason: "ボット向け HTML の照合（失敗は Slack）。表を書かない",
   },
-  "campaign-pipeline.yml": {
-    kind: "no_table",
-    reason:
-      "企画型 SNS 投稿のネタ（sns_topics）と下書き用。画面が読む表を書かない",
-  },
   "collect-racer-news.yml": {
     kind: "watched_elsewhere",
     reason:

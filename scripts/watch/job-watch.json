@@ -19,7 +19,6 @@
     ".github/workflows/analogy-v16-morning.yml",
     ".github/workflows/bot-html-parity.yml",
     ".github/workflows/calculate-accuracy.yml",
-    ".github/workflows/campaign-pipeline.yml",
     ".github/workflows/collect-racer-news.yml",
     ".github/workflows/content-ops-nightly-check.yml",
     ".github/workflows/db-apply.yml",
