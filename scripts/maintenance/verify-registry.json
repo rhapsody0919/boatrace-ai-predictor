@@ -524,6 +524,11 @@
       "guards": "K/Bアーカイブによる race_results 欠損補填CLI（BOA-403）"
     },
     {
+      "script": "verify-kelly-isotonic.js",
+      "tier": "ci",
+      "guards": "Kellyの定義・負の値の切り捨て・半分と4分の1、PAVの平均・端の値・単調性・JSON往復。仕様未定のオッズはKNOWN_GAPSに出力"
+    },
+    {
       "script": "verify-ko-boat-counter.js",
       "tier": "ci",
       "guards": "ko の「N号艇」が「N번 보트」にそろっていること（src/locales/ko・src/pages/Ko*.jsx・src/data/blog-posts/ko/*.json に「호정」「번 정」「번정」が無い。BOA-615）"
