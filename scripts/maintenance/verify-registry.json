@@ -1244,6 +1244,11 @@
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
     },
     {
+      "script": "verify-venue-card-display.js",
+      "tier": "ci",
+      "guards": "会場カードの時間帯境界・最小レース番号と人・ボット共通の表示値（BOA-1036）"
+    },
+    {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
       "guards": "進入コース別選手成績パーサー（BOA-293）"
