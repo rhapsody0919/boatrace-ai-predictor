@@ -271,7 +271,7 @@ const cache = {
             CACHE_PREFIX + key,
             JSON.stringify({ data, timestamp }),
           );
-        } catch (e2) {
+        } catch {
           console.log(`[Cache SET] ${key} (memory only, localStorage full)`);
         }
       } else {
@@ -288,7 +288,9 @@ const cache = {
       this.memory.delete(key);
       try {
         localStorage.removeItem(CACHE_PREFIX + key);
-      } catch (e) {}
+      } catch {
+        // localStorage が使えない環境では何もしない
+      }
       console.log(`[Cache CLEAR] ${key}`);
     } else {
       this.memory.clear();
@@ -306,7 +308,9 @@ const cache = {
         (k) => readCacheEntry(k) !== null,
       );
       keys.forEach((k) => localStorage.removeItem(k));
-    } catch (e) {}
+    } catch {
+      // localStorage が使えない環境では何もしない
+    }
   },
 
   /**
@@ -326,7 +330,9 @@ const cache = {
       const toDelete = entries.slice(0, Math.ceil(entries.length / 2));
       toDelete.forEach((e) => localStorage.removeItem(e.key));
       console.log(`[Cache CLEANUP] Removed ${toDelete.length} old entries`);
-    } catch (e) {}
+    } catch {
+      // localStorage が使えない環境では何もしない
+    }
   },
 };
 
