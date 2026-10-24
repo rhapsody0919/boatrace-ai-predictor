@@ -140,6 +140,29 @@ test("29件と未登録の組は同じ決まり手の30件以上の加重平均"
   }
 });
 
+test("nukiの未登録コース7の加重平均は30件の組を含む501件", () => {
+  const entries = courses.map((course) => PLACEMENT_DISTRIBUTION[`nuki_${course}`]);
+  const sampleSize = sum(entries.map((entry) => entry.sampleSize));
+  const actual = getPlacementBaseline("nuki", 7);
+  // 範囲外の勝者コースで追加されるキーの形は仕様未定。実行時の値だけ残す。
+  KNOWN_GAPS.push({
+    input: ["nuki", 7],
+    specification: "未定（範囲外の勝者コース）",
+    actual: { second: Object.keys(actual.second), third: Object.keys(actual.third) },
+  });
+  assert.equal(sampleSize, 501);
+  assert.equal(actual.sampleSize, sampleSize);
+  // weightedExpectationと同じ式。7は1〜6に無いので除外せず、配列外に書かない。
+  for (const rank of ["second", "third"]) {
+    const means = courses.map((course) => round3(sum(entries.map(
+      (entry) => entry[rank][course] * entry.sampleSize,
+    )) / sampleSize));
+    const total = sum(means);
+    const expected = means.map((mean) => round3(mean / total));
+    assert.deepEqual(courses.map((course) => actual[rank][course]), expected);
+  }
+});
+
 test("未知の決まり手は全体平均から勝者を除外して再正規化", () => {
   // グローバル平均のコメントに従う。未知キーでも sampleSize=7642 を返すのは
   // フォールバックの母数であり、未知の決まり手の実測件数ではない。
