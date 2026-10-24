@@ -1,9 +1,10 @@
 /**
  * verify-meet-exclusion.js — 今節の「順位の対象から外す選手と理由」の判定の回帰テスト。
  *
- * 対象は `src/services/meetExclusion.js` の `meetExclusionsOf`。`getMeetScoreboard`
+ * 対象は `src/pure/meetExclusion.js` の `meetExclusionsOf`。`getMeetScoreboard`
  * （`src/services/supabaseDataService.js`）の中の即時関数を手を加えずに移したもの
- * （開発効率の計画 段3 の1件目）。この判定には fix が4件あった（#1000・#1128・
+ * （開発効率の計画 段3 の1件目。#1837 で `src/services/meetExclusion.js` に仮置きし、
+ * pure の根へ移した。旧の置き場は再 export で、DAL はそこから読む）。この判定には fix が4件あった（#1000・#1128・
  * #1149・#1477）ので、それぞれの再現の入力を例に入れる。
  *
  * 期待値は2つに分ける（plan.md 3+2）:
@@ -17,7 +18,8 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { meetExclusionsOf } from "../../src/services/meetExclusion.js";
+import { meetExclusionsOf } from "../../src/pure/meetExclusion.js";
+import * as meetExclusionShim from "../../src/services/meetExclusion.js";
 
 // 節: 10/1〜10/2 が予選、10/3 が準優（1R）・優勝戦（2R）
 const conditions = [
@@ -417,5 +419,13 @@ check("C1 getMeetScoreboard は meetExclusionsOf を呼ぶ", () => {
   // 旧の即時関数の本文（目印のコメント）が DAL に戻っていない
   assert.doesNotMatch(service, /公式の備考が取れていればそれが正/);
 });
+
+// DAL が読む旧の置き場（再 export）が、pure の根の同じ関数を指していること
+check(
+  "C2 src/services/meetExclusion.js は src/pure の meetExclusionsOf を再 export する",
+  () => {
+    assert.equal(meetExclusionShim.meetExclusionsOf, meetExclusionsOf);
+  },
+);
 
 console.log(`✅ meetExclusion: ${count} 件の例を確認`);

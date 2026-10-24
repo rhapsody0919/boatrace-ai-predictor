@@ -581,7 +581,7 @@
     {
       "script": "verify-meet-exclusion.js",
       "tier": "ci",
-      "guards": "今節タブの順位の対象から外す選手と理由（src/services/meetExclusion.js、getMeetScoreboard から切り出し）。公式の備考は予選の後だけ、今節Fは予選終了まで、途中帰郷は表示日に番組が無い選手、予選中は前夜の公式の途中帰郷を先に入れる（#1000・#1128・#1149・#1477 の再現）"
+      "guards": "今節タブの順位の対象から外す選手と理由（src/pure/meetExclusion.js、getMeetScoreboard から切り出し。旧の src/services/meetExclusion.js は再 export）。公式の備考は予選の後だけ、今節Fは予選終了まで、途中帰郷は表示日に番組が無い選手、予選中は前夜の公式の途中帰郷を先に入れる（#1000・#1128・#1149・#1477 の再現）"
     },
     {
       "script": "verify-meet-form-trend.js",
@@ -1124,7 +1124,7 @@
     {
       "script": "verify-series-points-stage-rules.js",
       "tier": "ci",
-      "guards": "得点率の種別判定（src/components/race/seriesPoints.js の算入範囲と配点、raceStageConfig のバッジ）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
+      "guards": "得点率の種別判定（src/pure/seriesPoints.js の算入範囲と配点、src/pure/raceStageConfig.js のバッジ。旧の置き場は再 export）。race_stage は会場の自由記述で349種あり、部分一致の判定が壊れやすい（BOA-457・BOA-458）"
     },
     {
       "script": "verify-session-progress.js",
