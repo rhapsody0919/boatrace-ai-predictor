@@ -16,7 +16,7 @@ async function showAsPreRace(page) {
   await page.route("**/api/predictions/**", async (route) => {
     const response = await fetchRecorded(route);
     const body = await response.json().catch(() => null);
-    if (!body) return route.fulfill({ response });
+    if (!body) return route.fulfill(response.fulfillOptions());
     const clear = (v) => {
       if (Array.isArray(v)) v.forEach(clear);
       else if (v && typeof v === "object") {

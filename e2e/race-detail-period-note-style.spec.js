@@ -8,7 +8,7 @@ async function hidePreviousTerm(page) {
   await page.route(PERIOD_STATS, async (route) => {
     const response = await fetchRecorded(route);
     const body = await response.json().catch(() => null);
-    if (!Array.isArray(body)) return route.fulfill({ response });
+    if (!Array.isArray(body)) return route.fulfill(response.fulfillOptions());
     // 前期（2026年2期）の行を抜く。「前期を取り込んだか」の確認（period_year=eq.2026&period_no=eq.2、
     // racer_id だけを返す）は列で見分けられないので、URL で見分けて空にする
     const url = route.request().url();

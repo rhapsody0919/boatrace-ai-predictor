@@ -31,7 +31,7 @@ test("未使用の新モーターは「—」と注記、使用済みで2着以�
         motors[row.boat_number] = row.motor_number;
       }
     }
-    await route.fulfill({ response, json: rows });
+    await route.fulfill(response.fulfillOptions({ json: rows }));
   });
   await page.route("**/rest/v1/venue_motor_stats*", async (route) => {
     const url = new URL(route.request().url());
@@ -41,7 +41,7 @@ test("未使用の新モーターは「—」と注記、使用済みで2着以�
     const response = await fetchRecorded(route);
     const text = await response.text();
     if (!text) {
-      await route.fulfill({ response });
+      await route.fulfill(response.fulfillOptions());
       return;
     }
     const body = JSON.parse(text);
@@ -51,10 +51,11 @@ test("未使用の新モーターは「—」と注記、使用済みで2着以�
         : motor === motors[2]
           ? { ...row, race_count: 5 }
           : row;
-    await route.fulfill({
-      response,
-      json: Array.isArray(body) ? body.map(patch) : body && patch(body),
-    });
+    await route.fulfill(
+      response.fulfillOptions({
+        json: Array.isArray(body) ? body.map(patch) : body && patch(body),
+      }),
+    );
   });
 
   await page.goto(RACE);
@@ -64,7 +65,9 @@ test("未使用の新モーターは「—」と注記、使用済みで2着以�
   await expect(table).toBeVisible({ timeout: 30000 });
   const motorRow = table.locator("tbody tr").filter({
     // 見出しは「モーター2連率（過去90日）」（BOA-802 の3）
-    has: page.locator(".drt-label-full", { hasText: /^モーター2連率（過去90日）$/ }),
+    has: page.locator(".drt-label-full", {
+      hasText: /^モーター2連率（過去90日）$/,
+    }),
   });
   await expect(motorRow).toBeVisible({ timeout: 30000 });
   // 注記

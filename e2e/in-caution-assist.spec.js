@@ -41,7 +41,7 @@ async function routeInCaution(page) {
       for (const race of body.races ?? []) {
         if (race.raceId === THINKING_ASSIST_RACE) race.inCaution = IN_CAUTION;
       }
-      await route.fulfill({ response: res, json: body });
+      await route.fulfill(res.fulfillOptions({ json: body }));
     } catch (e) {
       // テストの終わった後に届いた応答（light の取得など）だけは無視する（thinking-assist-states.spec.js の routeExhibition と同じ）
       if (page.isClosed() || /has been closed/.test(String(e?.message))) return;

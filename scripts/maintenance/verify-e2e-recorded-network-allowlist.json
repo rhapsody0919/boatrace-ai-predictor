@@ -8,7 +8,7 @@
     },
     {
       "file": "e2e/fixtures.js",
-      "code": "if (E2E_MODE === \"live\") return route.fetch(options);",
+      "code": "if (E2E_MODE === \"live\") return fromApiResponse(await route.fetch(options));",
       "reason": "live モード（本番データ・実時刻）では録画の再生を使わないため、本物の route.fetch で素通りさせてよい"
     },
     {
@@ -18,7 +18,7 @@
     },
     {
       "file": "e2e/fixtures.js",
-      "code": "return route.fetch(options);",
+      "code": "return fromApiResponse(await route.fetch(options));",
       "reason": "replay で録画に無いリクエストを本番へ素通しする fetchRecorded 自身の実装（A改、notePassthrough で一覧に残す）"
     },
     {

@@ -30,7 +30,7 @@ test("/today: 未使用の新モーターは「—（新モーター・実績な
       else delete row.motor_race_count;
       patched.push(row);
     });
-    await route.fulfill({ response, json: rows });
+    await route.fulfill(response.fulfillOptions({ json: rows }));
   });
 
   await page.goto(`/today?date=${DIGEST_FIXED_DATE}`);

@@ -237,13 +237,13 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
         !Array.isArray(body) ||
         !route.request().url().includes("2026-09-30-16-07")
       ) {
-        return route.fulfill({ response });
+        return route.fulfill(response.fulfillOptions());
       }
       const rates = { 1: 30, 2: 31, 3: 32, 4: 33, 5: 38.33, 6: 38.28 };
       for (const row of body) {
         if (row.boat_number in rates) row.motor_2rate = rates[row.boat_number];
       }
-      await route.fulfill({ response, json: body });
+      await route.fulfill(response.fulfillOptions({ json: body }));
     });
     await page.goto(KOJIMA_7R);
     await expect(page.locator(".rate-bar-label").first()).toBeVisible({
@@ -268,12 +268,12 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       const response = await fetchRecorded(route);
       const body = await response.json().catch(() => null);
       if (!Array.isArray(body) || body.length < 10) {
-        return route.fulfill({ response });
+        return route.fulfill(response.fulfillOptions());
       }
       for (const row of body) {
         if (row.motor_number === 44) row.race_count = 0;
       }
-      await route.fulfill({ response, json: body });
+      await route.fulfill(response.fulfillOptions({ json: body }));
     });
     await page.goto(KOJIMA_7R);
     await expect(page.locator(".motor-venue-rank").first()).toBeVisible({
@@ -297,12 +297,12 @@ test.describe("モーター表の棒と会場内順位（BOA-428）", () => {
       const response = await fetchRecorded(route);
       const body = await response.json().catch(() => null);
       if (!Array.isArray(body) || body.length < 10) {
-        return route.fulfill({ response });
+        return route.fulfill(response.fulfillOptions());
       }
       body.forEach((row, i) => {
         row.stats_period_end = i % 3 === 0 ? "2026-09-09" : "2026-09-18";
       });
-      await route.fulfill({ response, json: body });
+      await route.fulfill(response.fulfillOptions({ json: body }));
     });
     await page.goto(KOJIMA_7R);
     await expect(page.locator(".motor-venue-rank-note")).toContainText(

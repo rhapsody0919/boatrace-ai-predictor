@@ -18,7 +18,7 @@ async function rewriteTodayRaces(page, mutate) {
   await page.route(TODAY_RACES, async (route) => {
     const response = await fetchRecorded(route);
     const body = await response.json().catch(() => null);
-    if (!Array.isArray(body?.data)) return route.fulfill({ response });
+    if (!Array.isArray(body?.data)) return route.fulfill(response.fulfillOptions());
     mutate(body.data);
     await route.fulfill({
       status: response.status(),

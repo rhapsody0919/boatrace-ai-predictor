@@ -11,7 +11,7 @@ async function openNigashi(page, edit = (rows) => rows) {
   await page.route("**/rest/v1/morning_digest_rows*", async (route) => {
     const response = await fetchRecorded(route);
     const rows = await response.json();
-    await route.fulfill({ response, json: edit(rows) });
+    await route.fulfill(response.fulfillOptions({ json: edit(rows) }));
   });
   await page.goto(`/today?date=${DIGEST_FIXED_DATE}`);
   const heading = page.getByRole("heading", { name: "逃がしやすい選手" });

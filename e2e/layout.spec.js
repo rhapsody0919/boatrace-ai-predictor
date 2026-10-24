@@ -1,3 +1,4 @@
+import { viewportSkipReason } from "./viewport-skip.js";
 import {
   test,
   expect,
@@ -72,13 +73,16 @@ const PAGES = [
 const TRAILING_GAP_THRESHOLD_PX = 40;
 
 /** 記事のページ（/blog・/blog/{id}）とホーム（最新記事のカードを出す）を開く試験の題に付ける印。記事だけの PR の軽い組で走らせる（BOA-929） */
-const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "");
+const blogTag = (path) =>
+  /^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? " @blog" : "";
 
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
 for (const theme of ["light", "dark"]) {
-  test(`BOA-894: 会場一覧へ戻るリンクが375pxの${theme}で意味トークンを使う`, async ({ page }) => {
+  test(`BOA-894: 会場一覧へ戻るリンクが375pxの${theme}で意味トークンを使う`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/venue/2");
     const link = page.locator(".venue-race-list-page .page-header .back-link");
@@ -86,15 +90,19 @@ for (const theme of ["light", "dark"]) {
     await page.evaluate((theme) => {
       document.documentElement.setAttribute("data-theme", theme);
     }, theme);
-    const tokenColor = (token) => page.evaluate((token) => {
-      const probe = document.createElement("span");
-      probe.style.color = `var(${token})`;
-      document.body.append(probe);
-      const color = getComputedStyle(probe).color;
-      probe.remove();
-      return color;
-    }, token);
-    await expect(link).toHaveCSS("color", await tokenColor("--brand-accent-secondary"));
+    const tokenColor = (token) =>
+      page.evaluate((token) => {
+        const probe = document.createElement("span");
+        probe.style.color = `var(${token})`;
+        document.body.append(probe);
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      }, token);
+    await expect(link).toHaveCSS(
+      "color",
+      await tokenColor("--brand-accent-secondary"),
+    );
     await expect(link).toHaveCSS("text-decoration-line", "none");
     await link.hover();
     await expect(link).toHaveCSS("color", await tokenColor("--text-primary"));
@@ -102,8 +110,13 @@ for (const theme of ["light", "dark"]) {
   });
 }
 
-for (const path of ["/blog/10000-races-analysis", "/en/blog/10000-races-analysis"]) {
-  test(`ブログ記事の戻るリンクとカテゴリに375pxで余白がある: ${path} @blog`, async ({ page }) => {
+for (const path of [
+  "/blog/10000-races-analysis",
+  "/en/blog/10000-races-analysis",
+]) {
+  test(`ブログ記事の戻るリンクとカテゴリに375pxで余白がある: ${path} @blog`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(path);
     const header = page.locator(".blog-post-header");
@@ -113,18 +126,25 @@ for (const path of ["/blog/10000-races-analysis", "/en/blog/10000-races-analysis
     await page.evaluate(() => document.fonts.ready);
     const spacing = await header.evaluate((element) => {
       const link = element.querySelector(".back-link").getBoundingClientRect();
-      const badge = element.querySelector(".category-badge").getBoundingClientRect();
+      const badge = element
+        .querySelector(".category-badge")
+        .getBoundingClientRect();
       return {
         horizontal: badge.left - link.right,
         wrapped: badge.top >= link.bottom,
       };
     });
-    expect(spacing.wrapped || spacing.horizontal >= 8, JSON.stringify(spacing)).toBe(true);
+    expect(
+      spacing.wrapped || spacing.horizontal >= 8,
+      JSON.stringify(spacing),
+    ).toBe(true);
   });
 }
 
 for (const venue of ["heiwajima", "biwako", "marugame"]) {
-  test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない @blog`, async ({ page }) => {
+  test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない @blog`, async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`/blog/${venue}-water-wind-guide`);
     const tables = page.locator(".blog-post-content table");
@@ -143,13 +163,18 @@ for (const venue of ["heiwajima", "biwako", "marugame"]) {
               .filter((r) => r.width > 0)
               .map((r) => r.top)
               .sort((x, y) => x - y);
-            const lines = tops.filter((t, i) => i === 0 || t - tops[i - 1] > 4).length;
+            const lines = tops.filter(
+              (t, i) => i === 0 || t - tops[i - 1] > 4,
+            ).length;
             return { label: cell.textContent.trim(), lines };
           });
         return {
           lines,
-          laterColumns: [...table.querySelectorAll("th:not(:first-child), td:not(:first-child)")]
-            .map((element) => getComputedStyle(element).whiteSpace),
+          laterColumns: [
+            ...table.querySelectorAll(
+              "th:not(:first-child), td:not(:first-child)",
+            ),
+          ].map((element) => getComputedStyle(element).whiteSpace),
           overflowX: getComputedStyle(table).overflowX,
         };
       }),
@@ -179,7 +204,9 @@ test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそ�
   for (const label of ["", "今節", "this meet", "이번 시리즈", "本節"]) {
     const measured = await rows.evaluateAll((elements, meetLabel) => {
       for (const row of elements) {
-        row.querySelectorAll(".flying-badge").forEach((badge) => badge.remove());
+        row
+          .querySelectorAll(".flying-badge")
+          .forEach((badge) => badge.remove());
       }
       const badge = document.createElement("span");
       badge.className = `flying-badge is-f2${meetLabel ? " has-meet" : ""}`;
@@ -192,9 +219,12 @@ test("rbit-bar: Fバッジの有無・長さによらず6艇の棒の枠がそ�
       }
       elements[5].querySelector(".rbit-name-cell").append(badge);
       return {
-        badges: elements.map((row) => row.querySelectorAll(".flying-badge").length),
+        badges: elements.map(
+          (row) => row.querySelectorAll(".flying-badge").length,
+        ),
         widths: elements.map(
-          (row) => row.querySelector(".rbit-bar-track").getBoundingClientRect().width,
+          (row) =>
+            row.querySelector(".rbit-bar-track").getBoundingClientRect().width,
         ),
         overflow:
           document.documentElement.scrollWidth -
@@ -403,7 +433,9 @@ function expectNoWastedGrids(result) {
 
 test.describe("レイアウト: グリッドの幅が無駄になっていない", () => {
   for (const path of PAGES) {
-    test(`${path} のグリッドに使われていない幅が無い${blogTag(path)}`, async ({ page }) => {
+    test(`${path} のグリッドに使われていない幅が無い${blogTag(path)}`, async ({
+      page,
+    }) => {
       await gotoAndSettle(page, path);
       expectNoWastedGrids(await inspectGrids(page));
     });
@@ -1324,7 +1356,7 @@ test.describe("レイアウト: 横スクロールの手がかりは右に残っ
     test(screen.name, async ({ page }, testInfo) => {
       test.skip(
         screen.mobileOnly && testInfo.project.name !== "layout-mobile",
-        "スマホ幅でだけ溢れる画面",
+        viewportSkipReason("スマホ幅でだけ溢れる画面"),
       );
       test.slow();
       await page.goto(screen.path, { waitUntil: "domcontentloaded" });
@@ -1489,7 +1521,10 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
     page,
   }, testInfo) => {
     const widths = widthsFor(testInfo);
-    test.skip(widths.length === 0, "PC幅（1025px以上）だけの指定");
+    test.skip(
+      widths.length === 0,
+      viewportSkipReason("PC幅（1025px以上）だけの指定"),
+    );
     for (const width of widths) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${RACE}?tab=aiPrediction`, {
@@ -1524,7 +1559,10 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
 
   test("結果の払戻金: 券種と金額が近い", async ({ page }, testInfo) => {
     const widths = widthsFor(testInfo);
-    test.skip(widths.length === 0, "PC幅（1025px以上）だけの指定");
+    test.skip(
+      widths.length === 0,
+      viewportSkipReason("PC幅（1025px以上）だけの指定"),
+    );
     for (const width of widths) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(`${RACE}?tab=result`, { waitUntil: "domcontentloaded" });
@@ -1545,7 +1583,10 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
   test("払戻の注記と水面傾向の間に16pxの余白（BOA-707）", async ({
     page,
   }, testInfo) => {
-    test.skip(testInfo.project.name !== "layout-desktop", "1440pxで確認");
+    test.skip(
+      testInfo.project.name !== "layout-desktop",
+      viewportSkipReason("1440pxで確認"),
+    );
     // 1100px は縦に積む（上下の余白）。1440px は払戻金の右に置く2段（BOA-881、左右の余白）
     for (const width of [1100, 1440]) {
       await page.setViewportSize({ width, height: 900 });
@@ -1583,7 +1624,7 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
         : testInfo.project.name === "layout-wide"
           ? [1920]
           : [];
-    test.skip(widths.length === 0, "769px 以上だけの指定");
+    test.skip(widths.length === 0, viewportSkipReason("769px 以上だけの指定"));
     for (const race of ["2026-09-23-09-12", "2026-09-28-09-11"]) {
       for (const width of widths) {
         await page.setViewportSize({ width, height: 900 });
@@ -1617,7 +1658,7 @@ test.describe("レイアウト: PC幅で名前と数値を離しすぎない（B
         : testInfo.project.name === "layout-wide"
           ? [1920]
           : [];
-    test.skip(widths.length === 0, "769px 以上だけの指定");
+    test.skip(widths.length === 0, viewportSkipReason("769px 以上だけの指定"));
     for (const width of widths) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/race/2026-09-23-09-12?tab=meet", {
@@ -1646,7 +1687,7 @@ test.describe("レイアウト: 枠別情報の ST考察と「1コースが逃�
   }, testInfo) => {
     test.skip(
       testInfo.project.name !== "layout-mobile",
-      "スマホ幅（320・375px）だけの指定",
+      viewportSkipReason("スマホ幅（320・375px）だけの指定"),
     );
     for (const [path, width] of [
       ["/race/2026-09-28-09-11", 320],
@@ -1857,9 +1898,13 @@ test("今節のカード: 1200px以上は列いっぱい、769〜1199pxは720px�
       const table = await page.locator(".rmt-compare").boundingBox();
       expect(table.width).toBeLessThanOrEqual(640);
     }
-    expect(await page.evaluate(() =>
-      document.documentElement.scrollWidth - document.documentElement.clientWidth,
-    )).toBeLessThanOrEqual(2);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(2);
   }
 });
 
@@ -1941,7 +1986,13 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
     status: "ok",
     run_id: "layout",
     race_id: RACE_ID,
-    conditions: { b1_class: "A1", gap_band: 2, top_boat: 1, round: null, grade_g1plus: false },
+    conditions: {
+      b1_class: "A1",
+      gap_band: 2,
+      top_boat: 1,
+      round: null,
+      grade_g1plus: false,
+    },
     n_total: 3000,
     n_returned: 40,
     pool_from: "2019-04-01",
@@ -1949,16 +2000,26 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
     rows: Array.from({ length: 40 }, (_, i) => row(i)),
   };
 
-  test("AI予想タブのスリットの入力と結果が横にはみ出さない", async ({ page }) => {
+  test("AI予想タブのスリットの入力と結果が横にはみ出さない", async ({
+    page,
+  }) => {
     await page.route("**/api/analogy/layer/**", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(LAYER) }),
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(LAYER),
+      }),
     );
-    await page.goto(`/race/${RACE_ID}?tab=aiPrediction`, { waitUntil: "domcontentloaded" });
+    await page.goto(`/race/${RACE_ID}?tab=aiPrediction`, {
+      waitUntil: "domcontentloaded",
+    });
     const checker = page.getByTestId("past-rate-checker");
     await expect(checker).toBeVisible({ timeout: 30000 });
     await checker.getByRole("tab", { name: "スリット" }).click();
     await checker.getByRole("button", { name: /^カド一撃/ }).click();
-    await checker.getByRole("button", { name: "過去に発生した割合を見る" }).click();
+    await checker
+      .getByRole("button", { name: "過去に発生した割合を見る" })
+      .click();
     await expect(checker.locator(".prc-result")).toBeVisible();
     const m = await checker.evaluate((el) => {
       const de = document.documentElement;
@@ -1966,7 +2027,8 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
       // SVG の中（描画範囲で切られる）と、横にスクロールする列（型のタブ）の中は数えない
       const scrolls = (x) => {
         for (let p = x.parentElement; p && p !== el; p = p.parentElement)
-          if (["auto", "scroll"].includes(getComputedStyle(p).overflowX)) return true;
+          if (["auto", "scroll"].includes(getComputedStyle(p).overflowX))
+            return true;
         return false;
       };
       const wide = [...el.querySelectorAll("*")].filter(
@@ -1975,7 +2037,12 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
           !scrolls(x) &&
           x.getBoundingClientRect().right > r.right + 1,
       ).length;
-      return { overflow: de.scrollWidth - de.clientWidth, right: r.right, vw: de.clientWidth, wide };
+      return {
+        overflow: de.scrollWidth - de.clientWidth,
+        right: r.right,
+        vw: de.clientWidth,
+        wide,
+      };
     });
     expect(m.overflow, "ページの横スクロール").toBeLessThanOrEqual(1);
     expect(m.right, "部品の右端").toBeLessThanOrEqual(m.vw + 1);
