@@ -47,32 +47,6 @@
       "note": "チャネル別パイプライン未整備プラットフォームのフォールバック発火先。生成側の主役はsns-topic-gate体系に移行済み"
     },
     {
-      "name": "sns-topic-proposer-weekly",
-      "trigger_id": "trig_01NNE7jviPWqqgjctimGzJF5",
-      "migrate": true,
-      "enabled": false,
-      "cron_expression_utc": "0 18 * * *",
-      "schedule_jst": "毎日3:00（プロンプト内で月曜のみ実行と判定）",
-      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
-      "connectors": ["Linear", "Claude_Code_Remote"],
-      "api_trigger": true,
-      "fire_env_prefix": "TOPIC_PROPOSER_WEEKLY_ROUTINE",
-      "prompt_file": "sns-topic-proposer-weekly.prompt.md"
-    },
-    {
-      "name": "sns-topic-proposer-daily-auto",
-      "trigger_id": "trig_01B155yYLeutCbMzhMAh8n5j",
-      "migrate": true,
-      "enabled": false,
-      "cron_expression_utc": "0 18 * * *",
-      "schedule_jst": "毎日3:00",
-      "allowed_tools": ["Bash", "Read", "Write", "Edit", "Glob", "Grep", "WebFetch"],
-      "connectors": ["Linear", "Claude_Code_Remote"],
-      "api_trigger": true,
-      "fire_env_prefix": "TOPIC_PROPOSER_DAILY_AUTO_ROUTINE",
-      "prompt_file": "sns-topic-proposer-daily-auto.prompt.md"
-    },
-    {
       "name": "sns-pipeline-x",
       "trigger_id": "trig_01F33qUruzoQnTmyu2mySqvq",
       "migrate": true,

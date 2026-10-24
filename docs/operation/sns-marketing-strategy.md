@@ -37,7 +37,7 @@ X・YouTube・note での集客の方針。運用の手順は`docs/operation/sns
 - **ブランドのガードレール**: `BOAT_COLORS`（艇番色）・金の龍ロゴ・GOLD 統一のトーン・`risk-rules.json` のテキストルール。新しいコンポジションを作るときは必ず参照する（`docs/reference/brand-kit.md`）
 - **試作のコードも git で管理する**。採用・不採用にかかわらず Remotion の JSX をコミットする（動画のバイナリは Supabase Storage）
 - **改善案は DB に構造化して残す**（`sns_strategy_insights`。scope・本文・根拠・status）。生成側は active な insight だけを読む。採用の前に `risk-rules.json` と照合し、禁止の規則に触れるものは採用しない
-- 「戦略メモ」タブ（`/admin/sns-hub/metrics`）で、提案・採用・却下の履歴と、その insight を使って作った下書きの件数を追える
+- 「戦略メモ」タブ（採用・却下の画面）は、直近30日の利用0件のため 2026-10-24 に撤去した（hq SH01 R2）。insight の status は `sns_strategy_insights` を読んで確かめる
 
 ### 外部調査の手段
 

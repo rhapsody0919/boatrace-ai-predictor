@@ -1,5 +1,7 @@
 # Noteチャネル別パイプライン 制作ガイド
 
+> **Routine は止まっている（2026-10-24 時点）。** 起動の口（修正指摘の redo・今すぐ生成の fire・ネタの提案）と `scripts/lib/snsTopics.js`・`scripts/lib/snsCampaigns.js` は hq SH01 R2 で消した。下の手順のうち、それらを呼ぶ所は動かない。
+
 > **停止中。社員の note 担当に置き換える予定（BOA-866）。この手順で下書きを作らない。**
 
 承認済みネタ（`sns_topics.status='approved'`）のうち、note向けに割り当てられた`sns_topic_targets`をポーリングしてnote下書きを生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにしている。
@@ -48,7 +50,7 @@ claimしたターゲットの`topic_id`と同じ`sns_topics.id`（`sns_drafts.co
 
 ## 3'. 「本日のデータ一覧」型（morning-digest）のネタ
 
-型が `morning-digest` のネタは、共通の規則を [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) で確認する。数値の出所は `morning_digest_days` / `morning_digest_rows` の2表だけ（再計算禁止）。note は通常どおりブログ本文からの変換を基本とし、ブログ側が未生成なら2節の依存関係チェックに従って待つ。
+型が `morning-digest` のネタは、共通の規則を [`sns-pipeline-morning-digest.md`](../archive/sns-pipeline-morning-digest.md) で確認する。数値の出所は `morning_digest_days` / `morning_digest_rows` の2表だけ（再計算禁止）。note は通常どおりブログ本文からの変換を基本とし、ブログ側が未生成なら2節の依存関係チェックに従って待つ。
 
 ## 4. 下書きの永続化
 

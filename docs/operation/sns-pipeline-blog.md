@@ -1,5 +1,7 @@
 # Blogチャネル別パイプライン 制作ガイド
 
+> **Routine は止まっている（2026-10-24 時点）。** 起動の口（修正指摘の redo・今すぐ生成の fire・ネタの提案）と `scripts/lib/snsTopics.js`・`scripts/lib/snsCampaigns.js` は hq SH01 R2 で消した。下の手順のうち、それらを呼ぶ所は動かない。
+
 > **停止。記事は hq の実行役が③の manifest つきの PR で出す（BOA-908）。この手順で下書きを作らない。** 記事の PR を posted にする道（merge-blog-pr・finalize-blog-draft）を止めたので、この Routine を動かすと 0.5 の `hasOpenBlogDraft()` で1本目の後に止まる。2026-10-20 時点で動いている Routine は無い
 
 承認済みネタ（`sns_topics.status='approved'`）のうち、blog向けに割り当てられた`sns_topic_targets`をポーリングして記事下書き（Draft PR）を生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにしている。
@@ -86,7 +88,7 @@ claimしたターゲットに紐づく`sns_topics.topic_text`・型・`source_in
 
 ## 3''. 「本日のデータ一覧」型（morning-digest）のネタ
 
-型が `morning-digest` のネタは、本文中の数値を `morning_digest_days` / `morning_digest_rows` の2表だけから取る（再計算禁止）。共通の規則は [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) を読む。
+型が `morning-digest` のネタは、本文中の数値を `morning_digest_days` / `morning_digest_rows` の2表だけから取る（再計算禁止）。共通の規則は [`sns-pipeline-morning-digest.md`](../archive/sns-pipeline-morning-digest.md) を読む。
 
 ブログでは**その日の一覧をそのまま転記しない**。「会場によって逃げ率は20ポイント違うので、率だけ並べても比較にならない」という主題の解説記事にし、その週に実際に出た行を実例として使う。**毎日1本は書かない**（同じ主題の薄い記事を量産しないため、週1本程度）。0.5節の重複防止チェックに加えて、直近1週間に `morning-digest` 由来の記事を出していないかも確認する。
 

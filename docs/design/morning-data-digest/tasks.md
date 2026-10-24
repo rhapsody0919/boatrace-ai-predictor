@@ -314,7 +314,7 @@ ADR: [ADR-0070](../../adr/0070-morning-digest-precomputed-rows.md) / [ADR-0071](
   - 「競艇」使用禁止
   - **受入基準**: 4チャネルぶんの下書きが sns-hub の承認待ちに現れ、本文の数値が `morning_digest_rows` と一致する。**投稿の最終送信は行わない**（1件ごとにユーザーの明示承認）
 
-  **ドキュメント整備済み・本番確認待ち（2026-09-25）。** 4つの文書に同じ内容を4回書くのを避け、型の共通仕様を [`docs/operation/sns-pipeline-morning-digest.md`](../../operation/sns-pipeline-morning-digest.md) に1枚で置き、各チャネル文書（`sns-pipeline-{x,blog,note,youtube}.md`）からは切り口だけを書いて参照させた。
+  **ドキュメント整備済み・本番確認待ち（2026-09-25）。** 4つの文書に同じ内容を4回書くのを避け、型の共通仕様を [`docs/archive/sns-pipeline-morning-digest.md`](../../archive/sns-pipeline-morning-digest.md) に1枚で置き、各チャネル文書（`sns-pipeline-{x,blog,note,youtube}.md`）からは切り口だけを書いて参照させた。
   - 共通仕様に入れたもの: 材料は2表だけ（再計算禁止）・`section` の一覧・「予測」と書かない・`metric_predicted` を出さない・**「勝率」を使わない**・`detail.baselineGrade` はレースのグレードであって選手の級別ではない・小標本の扱い・`?date=` なしのリンク・「競艇」禁止・`getRecentRevisions()` / `getActiveInsights()` / `checkRiskRules()`・最終送信は自動化しない
   - 残り: 実際に4チャネルぶんの下書きが承認待ちに現れることの確認（T5-1 の本番確認と同時）
 

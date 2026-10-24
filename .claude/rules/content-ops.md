@@ -22,7 +22,7 @@ paths:
 
 新機能の実装完了からYouTube解説動画・ブログ記事・X投稿・note投稿へ展開する一連の流れ。全体設計は [`docs/design/content-ops-flow/spec.md`](../../docs/design/content-ops-flow/spec.md) を参照。
 
-**ネタ駆動のパイプライン**: 新機能／会場特性／データ知見／成績の4系統のネタから、チャネルごとにブログ・note・X・YouTubeのコンテンツを作る。`sns_topics`/`sns_topic_targets`によるネタゲート＋チャネル別パイプライン（`docs/operation/sns-pipeline-{blog,note,x,youtube}.md`、設計は`docs/design/sns-topic-gate/`・ADR 0036〜0038）。sns-hub管理画面（`/admin/sns-hub`）で下書きの承認・却下・（blog/youtubeは）自動公開を行う。
+**ネタ駆動のパイプライン**: 新機能／会場特性／データ知見／成績の4系統のネタから、チャネルごとにブログ・note・X・YouTubeのコンテンツを作る。`sns_topics`/`sns_topic_targets`によるネタゲート＋チャネル別パイプライン（`docs/operation/sns-pipeline-{blog,note,x,youtube}.md`、設計は`docs/design/sns-topic-gate/`・ADR 0036〜0038）。sns-hub管理画面（`/admin/sns-hub`）で下書きの承認・（blog/youtubeは）自動公開を行う。管理画面のネタ承認・ネタ型設定・修正の依頼・戦略メモの口は、直近30日の利用0件のため 2026-10-24 に撤去した（hq SH01 R2）
 
 ### フローA-1: 並列着手とチャネル展開の基本ルール
 - 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆は**並列で着手できる**。X・note投稿は両方の完成を待ってから着手する（記事だけ先に公開されて動画が後追いだとリンクが死ぬため）
@@ -80,7 +80,7 @@ X・YouTube・note への定常投稿は SNS マーケティングハブ（`src/
 2. プラットフォームの制約を**実測**する（文字数はコードで数える。「だいたい収まるはず」で出さない）
 3. ユーザーの指摘を各チャネルのプロンプト（`docs/operation/sns-pipeline-*.md`）に反映する
 4. **ユーザーのOKが出るまでは実運用としない**。その間も下書きの生成自体は続けてよい（提示する材料になるため）が、投稿はしない
-5. 重すぎる・不要と判断されたチャネルは、コードを触らず sns-hub 管理画面「ネタ型設定」の `enabled` を落とす
+5. 重すぎる・不要と判断されたチャネルは、`sns_topic_category_channels` の `enabled` を落とす（管理画面の「ネタ型設定」は 2026-10-24 に撤去した。hq SH01 R2）
 
 ### フローB-2: 投稿の「型」を変える PR はチャネルの評価役を通す
 

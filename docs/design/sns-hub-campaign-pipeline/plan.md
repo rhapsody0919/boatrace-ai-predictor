@@ -80,8 +80,8 @@ erDiagram
 | `scripts/lib/snsCampaigns.js`（新設） | `getActiveCampaigns()`・`getCampaignById()`・`createCampaign()`・`recordCampaignEntry()`・`updateCampaignEntryResult()`・`getCampaignEntries(campaignId)`。`scripts/lib/snsTopics.js`と同じパターン（Supabaseクライアント直叩き、JSDoc付きexport関数） |
 | `scripts/lib/campaignPromptBuilder.js`（新設） | ADR 0043の通り、対象レースのAI用プロンプトを組み立てる。`src/hooks/useAiCopyText.js`から`buildRows()`をexportして再利用、`src/utils/aiCopyPrompts.js`のプロンプト文言もそのまま使う |
 | `scripts/maintenance/create-campaign.js`（新設） | 要件10のCLIスクリプト。対話的にプロンプトを出す形ではなく、`node scripts/maintenance/create-campaign.js '{"name": "...", ...}'`のようにJSON引数を受け取り`sns_campaigns`にINSERTする最小実装（インタラクティブUIは作らない、YAGNI） |
-| `docs/operation/sns-campaign-entry-detection.md`（新設） | フェーズAの実行手順書。既存の`sns-topic-proposer-daily-auto.md`と同じ構成（実行トリガー・手順・制約） |
-| `docs/operation/sns-campaign-result-backfill.md`（新設） | フェーズBの実行手順書 |
+| `docs/archive/sns-campaign-entry-detection.md`（新設） | フェーズAの実行手順書。既存の`sns-topic-proposer-daily-auto.md`と同じ構成（実行トリガー・手順・制約） |
+| `docs/archive/sns-campaign-result-backfill.md`（新設） | フェーズBの実行手順書 |
 
 ## 4. 既存基盤との連携
 

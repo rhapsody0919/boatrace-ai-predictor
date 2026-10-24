@@ -18,7 +18,8 @@ try {
   }
   globalThis.fetch = async () => { throw new Error(detail); };
   await assert.rejects(getDrafts, error => !error.message.includes(detail) && error.message.includes("確認"));
-  const feedback = actionFeedback({ routine: { fired: false, reason: detail }, thumbnailWarning: detail });
+  // routine の起動結果を返す口（redo・今すぐ生成）は SH01 R2 で消した。残る警告はサムネイル・リスクだけ
+  const feedback = actionFeedback({ riskWarnings: [{ id: 'risk' }], thumbnailWarning: detail });
   assert.equal(feedback.length, 2);
   assert(feedback.every(message => !message.includes(detail)));
   assert.deepEqual(actionFeedback({ thumbnailWarning: 'unconfirmed' }), ['サムネイルの設定結果を確認できていません。YouTube Studio で確認してください。']);

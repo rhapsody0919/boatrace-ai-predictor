@@ -1,5 +1,7 @@
 # 週次ネタ提案Routine 制作ガイド
 
+> **アーカイブ（2026-10-24、hq SH01 R2）。** この Routine は止まっており、使っていた口（ネタの登録・承認・提案の起動・企画の検出）はコードから消した。履歴として残す。
+
 週1回（月曜想定）、`requires_topic_approval=true`（要承認・ストック管理）の3カテゴリ——**会場特性ネタ**（`category_key: venue-characteristic`）・**機能紹介ネタ**（`category_key: feature-intro`）・**豆知識ネタ**（`category_key: trivia`）——を合わせて提案し、sns-hubの「ネタ承認」セクションに人間の承認待ちとして登録するRoutine向けの実行手順。3カテゴリとも型`venue-feature`（週次・要承認）に紐づく。API起動（sns-hub「📅 週次ネタ提案を今すぐ実行」ボタン）の場合は、在庫をまとめて積みたい場面向けに1回の実行で最大10件提案する（2026-09-05追加、件数の考え方は「1. ネタ候補の選定」参照）。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。
 
 **このRoutineは下書き（動画・記事）を生成しない**。ネタを1件作り承認キューに乗せるところまでが役割。承認後の実際の生成は、チャネル別パイプライン（`docs/operation/sns-pipeline-x.md`等）が`sns_topic_targets`をポーリングして行う（疎結合、ADR 0036）。
@@ -160,7 +162,7 @@
 
 ## 制約（絶対厳守）
 
-- 頻度上限は週1本（`sns_content_types.venue-feature`の`cadence='weekly'`と一致させる）、ただしこれは**月曜cronでのスケジュール起動**に適用する上限。API起動（sns-hub「📅 週次ネタ提案を今すぐ実行」ボタン）はこの上限の対象外とし、今週分が登録・承認済みかどうかに関わらず、押すたびに新規ネタ候補を最大10件まとめて提案する（`docs/operation/sns-topic-proposer-daily-auto.md`の`race-time-critical`型と同じ扱い。2026-09-05、手動実行しても「今週分は生成済み」で毎回スキップされ何も生成されない不具合が発覚したための変更。同日、在庫をまとめて積みたいというユーザー要望を受け1件→最大10件に変更）
+- 頻度上限は週1本（`sns_content_types.venue-feature`の`cadence='weekly'`と一致させる）、ただしこれは**月曜cronでのスケジュール起動**に適用する上限。API起動（sns-hub「📅 週次ネタ提案を今すぐ実行」ボタン）はこの上限の対象外とし、今週分が登録・承認済みかどうかに関わらず、押すたびに新規ネタ候補を最大10件まとめて提案する（`docs/archive/sns-topic-proposer-daily-auto.md`の`race-time-critical`型と同じ扱い。2026-09-05、手動実行しても「今週分は生成済み」で毎回スキップされ何も生成されない不具合が発覚したための変更。同日、在庫をまとめて積みたいというユーザー要望を受け1件→最大10件に変更）
 - 実データの裏付けが取れない候補は提案せず、次点候補に切り替える。プレースホルダーでの提案はしない
 - このRoutineは`sns_drafts`（下書き）を一切生成しない。ネタの登録（`sns_topics`/`sns_topic_targets`）のみ
 - コード・ドキュメントの変更・コミット・PR作成は行わない（データ登録のみのRoutine）。**例外**: 5.の使用履歴更新で書き換わる`data/analysis/content-topics/venue-characteristic-history.json`・`data-insight-history.json`・`trivia-history.json`のみ、変更後に`git add`してコミットしてよい（例: `content: 週次ネタ提案（{会場}×{角度}等）の使用履歴を記録`）。ローテーション状態を永続化する目的の定型的な更新であり、コード変更を伴わないため対象外とする（2026-09-05追加、この例外が無かったため使用履歴がコミットされず、セッション終了で毎回リセットされていた不具合を修正）
