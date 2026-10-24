@@ -564,6 +564,11 @@ for (const f of fixtures) {
   const eHigh = entryScenes(high, highAns, { race: "下関10R" });
   assert.ok(eHigh.scenes[0].data.steps.some((st) => st.id === "s1-venue90"), "前提: |z|>=1.96 で会場の棒を出す");
   assert.deepEqual(eHigh.answers["s1-day"], highAns["s1-day"], "棒を出す日は水面の答えを変えない");
+  // 結論が無い日は当日の水面の数字。書式は水面の頁と同じ小数1桁（代わりの審査 P3-1）
+  const noConc = low.map((x) => (x.id === "scene4" ? { ...x, data: { ...x.data, conclusion: null } } : x));
+  const eDay = entryScenes(noConc, lowAns, { race: "桐生12R" });
+  assert.equal(eDay.hero.source, "day");
+  assert.match(eDay.hero.value, /^\d+\.\d%$/, `水面の数字は小数1桁: ${eDay.hero.value}`);
   assert.ok(HERO_MIN_N > 0);
 }
 // 入口版は59秒を越えたら会場の棒、次に今日の条件を外し、それでも越えたら止める

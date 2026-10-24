@@ -48,7 +48,8 @@ export function heroOf(scenes) {
       source: "day",
       boat: 1,
       label: `今日の${d.venue} 1号艇の逃げ率`,
-      value: `${d.nigeRate}%`,
+      // 水面の頁と同じ小数1桁（割り切れる日も「50.0%」）
+      value: `${Number(d.nigeRate).toFixed(1)}%`,
       base: `確定${d.races}R中${d.nigeCount}R`,
       title: `今日の${d.venue}は1号艇が${d.races}R中${d.nigeCount}R逃げ`,
     };
