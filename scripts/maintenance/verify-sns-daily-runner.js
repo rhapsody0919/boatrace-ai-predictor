@@ -144,6 +144,7 @@ function mockYoutube(calls = [], { channelDays } = {}) {
             views: 100,
             engagedViews: 80,
             averageViewPercentage: 71.5,
+            averageViewDuration: 42,
             subscribersGained: 1,
           },
         ];
@@ -210,12 +211,13 @@ test("YouTube: チャネル全体は D−3〜D−1（PT）を埋め、動画は�
   assert.equal(calls[1].startDate, "2026-10-13");
   assert.equal(calls[1].endDate, "2026-10-14");
   const video = await rows(`draft_id IS NOT NULL AND channel='youtube'`);
-  assert.equal(video.length, 8); // 2日×4指標
+  assert.equal(video.length, 10); // 2日×5指標
   assert.deepEqual(
     video
       .filter((r) => r.day === "2026-10-13")
       .map((r) => [r.metric_name, r.v]),
     [
+      ["averageViewDuration", 42],
       ["averageViewPercentage", 71.5],
       ["engagedViews", 80],
       ["subscribersGained", 1],
@@ -296,6 +298,7 @@ test("取り直しは値が変わった行だけ書く（同じなら0行）", a
                 views: 100,
                 engagedViews: 80,
                 averageViewPercentage: 71.5,
+                averageViewDuration: 42,
                 subscribersGained: 1,
               },
               {
@@ -303,13 +306,14 @@ test("取り直しは値が変わった行だけ書く（同じなら0行）", a
                 views: 30,
                 engagedViews: 20,
                 averageViewPercentage: 60,
+                averageViewDuration: 25,
                 subscribersGained: 0,
               },
             ]
           : await (await mockYoutube()()).report(params),
     }),
   });
-  assert.equal(changed.rowsWritten, 4);
+  assert.equal(changed.rowsWritten, 5); // PT 10-14 の5指標
   assert.equal(
     Number((await first("SELECT count(*) c FROM sns_channel_daily")).c),
     total,

@@ -26,10 +26,14 @@ import {
 export const SNS_DAILY_LOOKBACK_DAYS = 3;
 export const UTM_CAMPAIGNS = ["race-full", "today_digest"];
 const CHANNEL_METRICS = ["views", "engagedViews", "subscribersGained"];
+// averageViewDuration（秒）は 2026-10-24 に追加（BOA-1006 (b)、hq の Shorts の改善の周の主な指標）。
+// Shorts の「スワイプされた割合」は公開の API の指標に無い（YouTube Analytics の metrics の一覧、2026-10-24 確認）。
+// 近いものは engagedViews / views で、今の行から計算できる
 const VIDEO_METRICS = [
   "views",
   "engagedViews",
   "averageViewPercentage",
+  "averageViewDuration",
   "subscribersGained",
 ];
 const RACE_ID_RE = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
