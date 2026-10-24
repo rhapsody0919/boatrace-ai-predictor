@@ -440,9 +440,13 @@ const service = readFileSync(
 check("C1 getRacerScopedRaceStats は buildRacerScopedRaceRows を呼ぶ", () => {
   // 書き方（import の改行・引数の並び）には縛られないよう、名前と行き先だけを見る
   assert.match(service, /from\s*["']\.\/racerScopedRaceRows\.js["']/);
-  assert.match(service, /\bbuildRacerScopedRaceRows\(/);
-  // 旧の整形の本文（目印の変数）が DAL に戻っていない
-  assert.doesNotMatch(service, /soleFastestBoatByRace/);
+  // getRacerScopedRaceStats の本文（次のメソッドの JSDoc の手前まで）が、組み立てた行を返す
+  const start = service.indexOf("getRacerScopedRaceStats(racerId) {");
+  assert.ok(start >= 0, "getRacerScopedRaceStats が DAL に無い");
+  const body = service.slice(start, service.indexOf("\n  /**", start));
+  assert.match(body, /return\s+buildRacerScopedRaceRows\(/);
+  // 旧の整形の本文（目印の変数）が戻っていない
+  assert.doesNotMatch(body, /soleFastestBoatByRace|exhibitionRowsByRace/);
 });
 
 console.log(`✅ racerScopedRaceRows: ${count} 件の例を確認`);
