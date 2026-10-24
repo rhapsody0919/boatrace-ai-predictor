@@ -40,11 +40,11 @@ const COLS = [
 
 const store = {
   youtubeVideos: async () => videos,
-  engagedObservations: async (ids, definition) =>
+  engagedObservations: async (ids, metrics) =>
     (
       await all(
-        "SELECT draft_id, metric_value::float metric_value, denominator_value::float denominator_value, observed_at FROM sns_metric_observations WHERE \"window\"='pt3d' AND metric_name='engagedViews' AND source='youtube-analytics' AND definition=$1 AND draft_id = ANY($2)",
-        [definition, ids],
+        "SELECT draft_id, metric_name, definition, metric_value::float metric_value, denominator_value::float denominator_value, observed_at FROM sns_metric_observations WHERE \"window\"='pt3d' AND source='youtube-analytics' AND metric_name = ANY($1) AND draft_id = ANY($2)",
+        [metrics, ids],
       )
     ).map((o) => ({ ...o, observed_at: o.observed_at.toISOString() })),
   appendObservation: (id, observation) =>
@@ -924,12 +924,13 @@ test("PostgREST の store: pt3d の観測の有無を引き、append_sns_metric_
         : Response.json([{ draft_id: "d1" }]);
     },
   });
-  assert.deepEqual(await s.engagedObservations(["d1", "d2"], "定義"), [
-    { draft_id: "d1" },
-  ]);
+  assert.deepEqual(
+    await s.engagedObservations(["d1", "d2"], ["engagedViews", "views"]),
+    [{ draft_id: "d1" }],
+  );
   assert.match(
     calls[0].url,
-    /sns_metric_observations\?window=eq\.pt3d&metric_name=eq\.engagedViews&source=eq\.youtube-analytics&definition=eq\.定義&draft_id=in\.\(d1,d2\)&select=draft_id,metric_value,denominator_value,observed_at/,
+    /sns_metric_observations\?window=eq\.pt3d&source=eq\.youtube-analytics&metric_name=in\.\(engagedViews,views\)&draft_id=in\.\(d1,d2\)&select=draft_id,metric_name,definition,metric_value,denominator_value,observed_at/,
   );
   await s.appendObservation("d1", { window: "pt3d" });
   assert.equal(
@@ -994,5 +995,42 @@ test("pt3d の観測: 1本の Analytics の読み取りに落ちても、残り�
   assert.throws(
     () => ptMidnightUtc("Invalid Date"),
     /PT の 0:00 を出せない日付/,
+  );
+});
+
+test("pt3d の観測: 4指標のうち1つの保存に落ちたら、次の日にその指標だけ取り直す（Codex の審査 P1）", async () => {
+  const first1 = await runSnsDaily(ctx(), {
+    store: {
+      ...store,
+      appendObservation: async (id, o) => {
+        if (o.metric_name === "views")
+          throw new Error("観測の保存に失敗: HTTP 503");
+        return store.appendObservation(id, o);
+      },
+    },
+    youtube: engagedYoutube(),
+    ga4: mockGa4(),
+  });
+  assert.equal(first1.outcome, "error");
+  assert.deepEqual(
+    (await observations()).map((o) => o.metric_name),
+    ["averageViewDuration", "averageViewPercentage", "engagedViews"],
+  );
+  const calls = [];
+  const again = await runSnsDaily(nextDay, {
+    store,
+    youtube: engagedYoutube(calls),
+    ga4: mockGa4(),
+  });
+  assert.equal(again.report.observed, 1);
+  assert.equal(calls.filter((c) => !c.dimensions).length, 1);
+  assert.deepEqual(
+    (await observations()).map((o) => [o.metric_name, o.v]),
+    [
+      ["averageViewDuration", 21],
+      ["averageViewPercentage", 64.5],
+      ["engagedViews", 150],
+      ["views", 200],
+    ],
   );
 });

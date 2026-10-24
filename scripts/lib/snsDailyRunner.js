@@ -317,24 +317,30 @@ async function collectEngaged({
       addDays(ptDate(new Date(v.posted_at)), ENGAGED_PT_DAYS - 1) < ptDays[0],
   );
   if (!due.length) return [];
-  // 入れ直さない: engagedViews と分母（views）がそろった観測がある動画と、直近（同じ日の2回目の起動）に欠測で入れた動画
+  // 指標ごとに、まだ入れる要るものだけを残す（Codex の審査 P1: 4指標は別々に保存するので、1つだけ落ちても取り直す）。
+  // 入れない: 値のある観測がある指標（engagedViews は分母も）と、直近（同じ日の2回目の起動）に欠測で入れた指標
   const since = now.getTime() - ENGAGED_RETRY_HOURS * 3600000;
-  const done = new Set(
+  const settled = new Set(
     (
       await store.engagedObservations(
         due.map((v) => v.draft_id),
-        def.ytEngaged("engagedViews"),
+        ENGAGED_METRICS,
       )
     )
       .filter(
         (o) =>
-          (o.metric_value !== null && o.denominator_value !== null) ||
-          Date.parse(o.observed_at) >= since,
+          o.definition === def.ytEngaged(o.metric_name) &&
+          ((o.metric_value !== null &&
+            (o.metric_name !== "engagedViews" ||
+              o.denominator_value !== null)) ||
+            Date.parse(o.observed_at) >= since),
       )
-      .map((o) => o.draft_id),
+      .map((o) => `${o.draft_id}|${o.metric_name}`),
   );
+  const pending = (v) =>
+    ENGAGED_METRICS.filter((m) => !settled.has(`${v.draft_id}|${m}`));
   const out = [];
-  for (const video of due.filter((v) => !done.has(v.draft_id))) {
+  for (const video of due.filter((v) => pending(v).length)) {
     if (Date.now() - startedMs > ENGAGED_BUDGET_MS) break; // 残りは次の起動（値が入るまで毎日やり直す）
     const start = ptDate(new Date(video.posted_at));
     let row;
@@ -355,7 +361,7 @@ async function collectEngaged({
     const periodEnd = ptMidnightUtc(addDays(start, ENGAGED_PT_DAYS));
     const value = (m) =>
       Number.isFinite(row?.[m]) && row[m] >= 0 ? row[m] : null;
-    for (const metric of ENGAGED_METRICS) {
+    for (const metric of pending(video)) {
       const v = value(metric);
       out.push({
         draft_id: video.draft_id,
@@ -641,10 +647,10 @@ export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
     return response.json();
   }
   return {
-    // pt3d の engagedViews の観測（入れ直すかは runner が決める）
-    engagedObservations: (draftIds, definition) =>
+    // pt3d の観測（入れ直すかは runner が指標と定義ごとに決める）
+    engagedObservations: (draftIds, metrics) =>
       get(
-        `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&metric_name=eq.engagedViews&source=eq.youtube-analytics&definition=eq.${encodeURIComponent(definition)}&draft_id=in.(${draftIds.join(",")})&select=draft_id,metric_value,denominator_value,observed_at`,
+        `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&source=eq.youtube-analytics&metric_name=in.(${metrics.join(",")})&draft_id=in.(${draftIds.join(",")})&select=draft_id,metric_name,definition,metric_value,denominator_value,observed_at`,
       ),
     async appendObservation(draftId, observation) {
       const response = await fetchImpl(
