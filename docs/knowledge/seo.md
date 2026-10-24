@@ -77,3 +77,6 @@
 - ブログのFAQ後へ導線を足すときは、次の第2階層見出しでFAQ節を閉じるか、導線をFAQ前へ置く。blogFaqSchema.jsは次の第2階層見出しまでをFAQとして読むため、見出しなしの誘導文が最後の回答へ混ざる（2026-10-20、seo-marketerの指摘、src/utils/blogFaqSchema.js の extractFaqItems）
 - 主題語がllms.txtの既存記事紹介にだけ出る場合、それを機能の実在根拠にしない。記事由来の説明を記事の根拠へ戻す循環を避け、画面の名称・値の定義・公開ルートを別に照合してから紹介する（2026-10-21、ai-index-reading-guideのcontent-qa指摘、public/llms.txt・src/locales/ja/common.json）
 - 展示後の読み方で根拠表へ案内するときは、表の名前・会場の行・期間の列まで示す。「コース別の行」だけで済ませず、進入コースと枠番、長期表と短期表を取り違えずに同じ根拠へ戻れるようにする（2026-10-22、seo-humanへのfan P1「参照するコース別の行」）
+- 審査後に本文の見出しを直したら、記事設計のh2も更新し、出稿前に順序と文面を照合する。設計に古い結論を残したまま、本文の問いと根拠が対応していると判断しない（2026-10-23、seo-human、桐生記事のoutlineと本文h2の不一致への審査助言）
+- seo-measures.jsonの構文・kind・id検査とverify-seo-keyword-kpiの成功だけでは、施策の欠落を検知できない。出典台帳のPR集合とmaster入り日を照合し、各施策が月曜始まりの該当週へ配置されることも別に検証する（2026-10-23、BOA-906、Codex報告2026-10-23-boa-906.md、scripts/maintenance/verify-seo-keyword-kpi.js・scripts/analysis/search-console-report.js）
+- llms.txtのブログ一覧は、タイトルのMarkdownエスケープだけでなく、記事IDを括弧も含めURLの1区画として符号化し、説明の改行やリンク構造の混入も抑止する。特殊文字を含む入力で行・リンク構造を検証する（2026-10-23、BOA-920、Codex報告2026-10-23-boa-920.md、scripts/maintenance/verify-output-escape.js）
