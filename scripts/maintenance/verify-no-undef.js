@@ -28,7 +28,7 @@
  *   - ファイル内の設定コメント（eslint-disable・global 等）は、この検査では効かせない（noInlineConfig）。
  *     さらに、関門の規則に触れる設定コメント（規則名を書かない eslint-disable、関門の規則を名指す
  *     eslint-disable、global・globals・eslint・eslint-env）があれば失敗にする。
- *     関門の規則に触れない既存のもの（react-hooks/exhaustive-deps 等、2026-10-24 時点で33件）は通す。
+ *     関門の規則に触れない既存のもの（react-hooks/exhaustive-deps 等、2026-10-24 時点で30件）は通す。
  *     「今の数を一覧に固定する」案は採らない。関門の外の規則の disable を足すたびに一覧の更新が要り、
  *     しかも一覧の数が合っていれば関門の規則の disable を紛れ込ませられるため
  *   - 構文エラーで検査できなかったファイル、どの設定にも当たらず検査されなかったファイルも失敗にする
