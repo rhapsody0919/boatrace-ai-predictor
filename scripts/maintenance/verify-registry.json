@@ -920,6 +920,11 @@
       "guards": "選手の走ごとの行の整形（src/services/racerScopedRaceRows.js、getRacerScopedRaceStats から切り出し。src の12ファイルが読む）。raceId の昇順、不成立・rank1 null の除外、欠場（「欠」と自艇だけ本番STの行が無い走）、FのSTを平均に入れない、race_conditions の取得失敗は undefined、展示の同順位と単独最速（#962・#1010・#1029・#1107・BOA-333 の再現、BOA-1022）"
     },
     {
+      "script": "verify-racer-season-stats-parse.js",
+      "tier": "ci",
+      "guards": "期別成績のURL・不存在判定・前期後期ラベルと手書きHTMLの期間・数値・着順内訳を通信なしで検証（BOA-1061）"
+    },
+    {
       "script": "verify-racer-snapshot-plan.js",
       "tier": "ci",
       "guards": "選手ページの AI スナップショット（BOA-848）を作る範囲（scripts/lib/racerSnapshotPlan.js）。本番のビルドだけで sitemap の選手（isRacerIndexable の集合）を全員作り、Preview・手元では RACER_SNAPSHOT_LIMIT が無ければ作らないこと（Preview のビルドから本番 DB に数千のリクエストを送らない）。本番では RACER_SNAPSHOT_LIMIT を無視すること"
