@@ -744,6 +744,11 @@
       "guards": "sitemap の <loc>・href と llms.txt の記事の行を出力側でエスケープし、記事の名前や題に & < ] 改行があっても XML が壊れず別の行・リンクを注入できないこと（BOA-920）"
     },
     {
+      "script": "verify-parametric-calibration.js",
+      "tier": "ci",
+      "guards": "BOA-1074: 連立方程式・Platt/BetaのMLE・確率校正・オッズ特徴量・JSON往復と未定義境界の観測"
+    },
+    {
       "script": "verify-past-rate-count.js",
       "tier": "ci",
       "guards": "BOA-635「過去に発生した割合を見る」の純関数（6型の数え方・スリットの強さの段・同時に起きない形・切り詰めと layer の使える条件・定番／レアの線と小分け・端末内保存の30日・上限・締切・壊れた値）と変異検証"
