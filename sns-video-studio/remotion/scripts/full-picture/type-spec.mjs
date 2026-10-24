@@ -3,9 +3,7 @@
  * hq の pdca_daily.py が翌日の割り当てを書き、daily.mjs --type-spec <json> で1レースに1型を渡す。
  * 型の attributes（hq の config/content-types.json）は自由な文なので、コードは文を解釈しない。龍神側に「型の id → 実装」の表を持ち、
  * 表に無い型・表の型が実装していない項目は、どれも type_unsupported:<項目> で止める（黙って今の型で作らない）。
- * 表は、hq の型の文と照らして作れるものから足す（10/25 Orchestrate 了承: 最初は e02・e03・e04）。
- * 表に入れる前に、描いた試作をチャネルの評価役（youtube-channel・x-channel）に見せ、P0・P1 が0のものだけ入れる
- * （e05「数字1枚だけ・12〜15秒」はオーナー 10/25「明らかにダメ」で外した。hq の出どころは「尺の極端。根拠なし」）。
+ * 表に足すのは、中身を固めて試作をチャネルの評価役（youtube-channel・x-channel）が P0・P1 なしと判定し、オーナーが見たものだけ。
  * approved は実装したときの hq の文（config/content-types.json）。同じ id のまま文が変わったら、その項目を type_unsupported で止める
  * （古い実装で黙って作り続けると、hq の台帳が新しい意味の型として数えて判定が汚れる。system-architect 2026-10-25 P2）。
  * hq との約束: 対の a（今の型）は --type-spec を渡さない。割り当ててよい型は daily.mjs --list-types が返す表だけ（同 P1-2）。
@@ -16,41 +14,23 @@
 export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "angle", "caption"];
 
 /**
- * 型の id → 実装。attrs はこの実装が受け持つ項目。
- * entry: 入口版（X・Shorts）の並び（entry.mjs の STRUCTURES）。racerName: 題と冒頭の問いに1号艇の選手名。linkLead: X の本文のリンクの前の文
+ * 型の id → 実装（{attrs: 受け持つ項目, approved: 実装したときの hq の文, ...部品}）。今は空。
+ * 最初の候補（e02 寸止め・e03 要点1つ・e04 選手名・e05 数字1枚）は、試作を youtube-channel・x-channel が見て P1 が出た・オーナーが
+ * 「明らかにダメ」「今の投稿の劣化版」とした（2026-10-25）。型は、ファン・チャネルの評価役・強いエージェントと中身を固め、
+ * 試作をオーナーが見てから足す（オーナー 10/25）。それまで表に無い型はすべて type_unsupported で止まり、投稿は今の型のまま
  */
-export const TYPE_IMPL = {
-  // 結論を寸止め（冒頭の数字・結論の再掲を出さない）。最後は「続きは完全版で」
-  "e02-cliffhanger": {
-    attrs: ["structure", "caption"],
-    entry: "cliffhanger",
-    linkLead: "続きは完全版・龍神レーダーで",
-    approved: { structure: "結論を寸止め。最後の買い目・本命は本編（完全版）とサイトで見せる。Shorts の最後に完全版への導線", caption: "続きは完全版・龍神レーダーで（utm つき）" },
-  },
-  // 要点1つ（冒頭の数字と根拠1つ）。6艇の比べ・会場の棒を外す
-  "e03-one-point-30s": {
-    attrs: ["structure", "length_s"],
-    entry: "one_point",
-    approved: { structure: "要点1つ（結論の数字1つと根拠1つ）。6艇の比べ・会場の棒を外す", length_s: "25〜30" },
-  },
-  // 題と冒頭に1号艇の選手名と会場
-  "e04-racer-name": {
-    attrs: ["title", "hook"],
-    racerName: true,
-    approved: { title: "レース名＋1号艇（か本命）の選手名＋問い", hook: "冒頭に選手名と会場" },
-  },
-};
+export const TYPE_IMPL = {};
 
 /**
  * 型の JSON（{id, attributes}）を読み、実装に結びつける（純粋関数）。
  * @returns {{id: string|null, attributes: object, impl: object|null, reasons: string[]}} reasons が空でなければ作らない
  */
-export function resolveType(spec) {
+export function resolveType(spec, table = TYPE_IMPL) {
   const id = typeof spec?.id === "string" && spec.id ? spec.id : null;
   const attributes = spec?.attributes && typeof spec.attributes === "object" && !Array.isArray(spec.attributes) ? spec.attributes : null;
   if (!id || !attributes || !Object.keys(attributes).length) return { id, attributes: attributes ?? {}, impl: null, reasons: ["type_spec_invalid: id と attributes（空でない辞書）が要る"] };
   const unknown = Object.keys(attributes).filter((k) => !TYPE_ATTRS.includes(k));
-  const impl = TYPE_IMPL[id] ?? null;
+  const impl = table[id] ?? null;
   const unsupported = Object.keys(attributes).filter((k) => !impl || !impl.attrs.includes(k));
   const changed = impl ? Object.keys(attributes).filter((k) => impl.attrs.includes(k) && attributes[k] !== impl.approved?.[k]) : [];
   const reasons = [
@@ -79,7 +59,5 @@ export function lengthReason(attributes, seconds) {
   return seconds >= r[0] && seconds <= r[1] ? null : { reason: "type_unsupported:length_s", detail: `入口版 ${seconds.toFixed(1)}秒が範囲 ${r[0]}〜${r[1]}秒の外` };
 }
 /** 型の表（daily.mjs --list-types が返す。hq の pdca_daily.py はここに載る型だけを割り当てる） */
-export const listTypes = () => Object.entries(TYPE_IMPL).map(([id, t]) => ({ id, attributes: t.approved }));
+export const listTypes = (table = TYPE_IMPL) => Object.entries(table).map(([id, t]) => ({ id, attributes: t.approved }));
 
-/** 出走表の選手名（全角の空白で字をそろえてある）→ 空白なし */
-export const racerNameOf = (name) => String(name ?? "").replace(/[\s　]+/g, "") || null;

@@ -25,12 +25,12 @@ import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSyn
 import { join, resolve } from "node:path";
 import process from "node:process";
 import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, scopeReasons, templateText } from "./scene2-text.mjs";
-import { entryQuestion, entryScenes, heroOf } from "./entry.mjs";
+import { entryQuestion, entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
 import { withSourceBadges } from "../../src/fullPicture/sourceBadge.js";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
-import { FULL_MIN_SECONDS, LINK_LEAD, askOf, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
-import { lengthReason, racerNameOf, resolveType } from "./type-spec.mjs";
+import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
+import { lengthReason, resolveType } from "./type-spec.mjs";
 import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
@@ -101,18 +101,6 @@ function typeStop(reasons, detail = null) {
   process.exit(1);
 }
 if (type?.reasons.length) typeStop(type.reasons);
-// 冒頭の数字を使う型（e03 要点1つ）は、その数字が結論（同じ並びの過去）のときだけ作る。
-// 件数が足りず当日の水面の数字に替わる日は型と違う数字になるので止める（同 P2）
-if (type?.impl?.entry === "one_point" && heroOf(scenes)?.source !== "conclusion")
-  typeStop("type_unsupported:structure", "冒頭の数字が結論（同じ並びの過去）ではない日");
-const racer = type?.impl?.racerName ? racerNameOf(m.api.races?.find((r) => r.raceId === m.raceId)?.entries?.find((e) => e.number === 1)?.name) : null;
-if (type?.impl?.racerName && !racer) typeStop("type_unsupported:title", "1号艇の選手名が材料に無い");
-const ask = askOf(racer);
-if (racer) {
-  // 型 e04: 完全版の冒頭の問いにも選手名
-  const venue90 = scenes.find((x) => x.id === "scene1")?.data?.steps?.find((st) => st.id === "s1-venue90");
-  if (venue90) venue90.question = `${header} ${ask}`;
-}
 const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scene: x.id, ...o })));
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
 for (const o of omitted) console.warn(`[省いた要素] ${JSON.stringify(o)}`);
@@ -233,7 +221,7 @@ function chapters(answers) {
 
 // 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）。描く前に文を確かめる
 const entryAnswers = templateAnswers;
-const entry = entryScenes(scenes, entryAnswers, { race: header, question: racer ? `${header} ${ask}` : null, structure: type?.impl?.entry ?? "default" });
+const entry = entryScenes(scenes, entryAnswers, { race: header });
 {
   // 型の尺（length_s）に入口版が入らなければ止める（作り直さない）
   const why = lengthReason(type?.attributes, entry.total / 30);
@@ -261,10 +249,7 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     chapters: chaptersText,
     fullSeconds,
     qa,
-    racer,
-    linkLead: type?.impl?.linkLead ?? LINK_LEAD,
     contentType: type?.id ?? null,
-    holdConclusion: type?.impl?.entry === "cliffhanger",
   });
 const preBundle = bundleText({});
 const postEntry = `${preBundle.x_text}\n`;

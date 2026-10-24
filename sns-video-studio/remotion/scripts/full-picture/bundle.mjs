@@ -126,16 +126,9 @@ function lines({ venue90, overview, conclusion }) {
  *   round?: string|null, grade?: string|null, deadline?: string|null,
  *   facts: {venue90?: object|null, overview?: object|null, conclusion?: object|null},
  *   chapters: string, fullSeconds: number, qa: Record<string, boolean>,
- *   racer?: string|null, linkLead?: string, contentType?: string|null, holdConclusion?: boolean}} p
- *   racer・linkLead・contentType・holdConclusion は投稿の型（type-spec.mjs、hq PD02）の部品
+ *   contentType?: string|null}} p  contentType は投稿の型の id（type-spec.mjs、hq PD02）
  */
-/** 問いの文（投稿の型 e04 は1号艇の選手名を入れる。hq PD02） */
-export const askOf = (racer = null) => (racer ? `1号艇 ${racer}は堅い？` : "1号艇は堅い？");
-/** X の本文のリンクの前の文の既定（型 e02 は「続きは完全版・龍神レーダーで」に替える） */
-export const LINK_LEAD = "このレースのデータは龍神レーダーで";
-
-export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, racer = null, linkLead = LINK_LEAD, contentType = null, holdConclusion = false }) {
-  const ask = askOf(racer);
+export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null }) {
   const name = ROUND_NAME[round] ?? null;
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
   const date = `${month}/${day}`;
@@ -146,18 +139,17 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   const L = lines(facts ?? {});
   const order = chapterNames(chapters);
   const x_text = join([
-    `${head}${ask}`,
+    `${head}1号艇は堅い？`,
     raceHeader({ ...headerArgs, short: true }),
     L.venue,
-    // 寸止めの型（e02）は入口版（X・Shorts）に結論を出さない
-    holdConclusion ? null : L.conclusion,
-    `${linkLead}: ${utmUrl(raceId, "x")}`,
+    L.conclusion,
+    `このレースのデータは龍神レーダーで: ${utmUrl(raceId, "x")}`,
     "結果を保証するものではありません。",
     HASHTAG,
   ]);
   const youtube_full = {
     // レース名・日付を頭に、問いとその日の向き（youtube-channel P2-1）。Shorts の題名とは別の文
-    title: `${head}${ask} ${L.venueHead ?? "6艇の比較と展開の傾向"}`,
+    title: `${head}1号艇は堅い？ ${L.venueHead ?? "6艇の比較と展開の傾向"}`,
     // 1行目にその回の結論の数字（入口版の冒頭の数字と同じ値）と「ボートレース」・レースの見出し、2・3行目に機能への導線
     // （折りたたむ前に見える所。hq 契約 10/24 C1、ファン役4人・デザイナー役の審査）
     description: join([
@@ -184,11 +176,11 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   };
   const youtube_shorts = {
     // レース名＋問い＋その日の数字（冒頭の数字と同じ値。hq 契約 10/24 v2。「〜で読み解く展開」型はやめる）
-    title: `${label}（${date}）${ask} ${(holdConclusion ? null : facts?.hero?.title) ?? "同じ並びの過去の着順"}`,
+    title: `${label}（${date}）1号艇は堅い？ ${facts?.hero?.title ?? "同じ並びの過去の着順"}`,
     description: join([
-      `ボートレース ${header} ${ask}`,
+      `ボートレース ${header} 1号艇は堅い？`,
       L.venue,
-      holdConclusion ? null : L.conclusion,
+      L.conclusion,
       "",
       `完全版の動画（${aboutMinutes(fullSeconds)}）: ${FULL_URL_SLOT}`,
       `このレースのデータ（龍神レーダー）: ${utmUrl(raceId, "youtube", "shorts")}`,
