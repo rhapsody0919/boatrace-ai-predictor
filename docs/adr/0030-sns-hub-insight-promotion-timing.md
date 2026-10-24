@@ -29,3 +29,7 @@ insightの`proposed`→`active`昇格（週次デフォルト採用、spec.md要
 ## 2026-10-12追記: 週次の自動採用に戻す
 
 ユーザー決定（2026-10-12、SNS PDCA ループ）で「週1回の改善案は止めなければ採用、risk-rules に触れる案は自動で外す」に戻す。実行主体は Routine ではなく Vercel Cron `sns-insights`（ADR-0066）。risk-rules の照合は `scripts/lib/riskRules.js` の決定的なパターン一致（ADR 0028）なので、Claude の判断を要しない。2026-09-05 追記の手動の「採用」「却下」ボタンは残し、期限前に手で決めてもよい。設計は docs/design/sns-pdca-loop/plan.md §6。
+
+## 2026-10-24追記: 採用・却下の口は残す（hq SH01 R2）
+
+SNS 管理画面の使われていない口を消したとき（直近30日の戦略メモの行は0件）、戦略メモの採用・却下の口（`api/admin/sns-hub/insights/*`・`InsightTab`）は上の 2026-10-12 追記（手動の採用・却下ボタンは残す、止めなければ採用）の前提なので残した。消すなら、この追記と docs/design/sns-pdca-loop の B1・screens #8・#9・tasks 24・25 を先に見直す。

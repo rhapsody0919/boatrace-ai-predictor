@@ -102,8 +102,8 @@ const ADMIN_PATHS = [
   "/admin/rules/",
   "/admin/rules/detail",
   "/admin/sns-hub",
-  "/admin/sns-hub/insights",
-  "/api/admin/sns-hub/trigger-weekly-proposer",
+  "/admin/sns-hub/metrics",
+  "/api/admin/sns-hub/deadline-queue",
   "/api/admin/rules/performance",
 ];
 

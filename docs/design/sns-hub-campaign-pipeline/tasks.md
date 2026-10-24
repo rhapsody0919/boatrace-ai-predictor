@@ -19,9 +19,9 @@
 
 - [x] **5. `scripts/maintenance/create-campaign.js`新設**: 実装・実行済み（PR #594）。パイロット企画は引数無しCLIとして実装（JSON引数化はせず、決め打ちの値を直接記述。将来2つ目の企画を作る際にパラメータ化を検討）
 
-- [x] **6. `docs/operation/sns-campaign-entry-detection.md`新設**（フェーズA運用手順書）: 本ファイルで作成（実装は`campaignVolatilityModel.js`ベースに変更済み）
+- [x] **6. `docs/archive/sns-campaign-entry-detection.md`新設**（フェーズA運用手順書）: 本ファイルで作成（実装は`campaignVolatilityModel.js`ベースに変更済み）
 
-- [x] **7. `docs/operation/sns-campaign-result-backfill.md`新設**（フェーズB運用手順書）: 本ファイルで作成
+- [x] **7. `docs/archive/sns-campaign-result-backfill.md`新設**（フェーズB運用手順書）: 本ファイルで作成
 
 - [x] **8. チャネル別パイプライン文書へのcampaign_id分岐追記**: `sns-pipeline-x.md`の「2. ネタ本文・根拠insightの確認」に追記済み。tiktok/youtube/blogの同節は元々「x.mdの2.と同じ」参照のため自動的に反映される。noteは本文をブログから変換する構成のため、ブログ側で反映済みである旨を明記した
 

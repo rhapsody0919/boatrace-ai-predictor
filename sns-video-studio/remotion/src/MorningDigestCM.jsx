@@ -16,7 +16,7 @@ import { fitHeadline } from "./textFit.js";
  * 「本日のデータ一覧」型（morning-digest、BOA-402）— 龍神レーダー YouTube Shorts / X
  *
  * 材料は morning_digest_days / morning_digest_rows の2表だけ（ADR-0070）。
- * 制作仕様は docs/operation/sns-pipeline-morning-digest.md。
+ * 制作仕様は docs/archive/sns-pipeline-morning-digest.md。
  *
  * この型の主役は「率そのもの」ではなく **率と会場・グレード平均の差**。
  * 逃げ切り率70%でも、大村（平均約73%）と戸田（平均39.5%）では意味が違う。

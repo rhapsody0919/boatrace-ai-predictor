@@ -1,7 +1,7 @@
 # ADR 0043: 企画型パイプラインでのAI用プロンプト再現方法
 
 ## ステータス
-採用
+採用（2026-10-24 に対象のコードを撤去、末尾の追記）
 
 ## 背景
 企画型パイプライン（`docs/design/sns-hub-campaign-pipeline/spec.md`）は、対象レースについて既存の「AI用プロンプトコピー機能」（`useAiCopyText.js`、BOA-194）と同じ内容のプロンプトをRoutine（Node.jsスクリプト）側で組み立てる必要がある。
@@ -23,3 +23,7 @@ DRYの観点では望ましいが、`supabaseDataService.js`は3,700行超・多
 ## 影響
 - RPC呼び出しコード（`race_entries`・`race_technique_profile_breakdown`等の取得部分）がフロントエンドとスクリプトの2箇所に存在する状態になる。将来RPCのインターフェースが変わった場合、両方の更新が必要になる点は技術的負債として認識しておく
 - `useAiCopyText.js`の`buildRows()`をexportする変更は、既存のUI動作に影響を与えない（関数のエクスポートのみ、ロジック変更なし）
+
+## 2026-10-24追記: 対象のコードを撤去（hq SH01 R2）
+
+企画型パイプラインのコード（campaign-detect-and-generate.js・campaign-backfill-results.js・campaign-daily-summary.js・snsCampaigns.js 等）を消した。企画は 2026-09-08 に完了した1件だけで、直近30日の企画の行は0件。`.github/workflows/campaign-pipeline.yml` は別の PR（オーナー承認）で消す。表（sns_campaigns・sns_campaign_entries）は残す。

@@ -1,5 +1,7 @@
 # YouTubeチャネル別パイプライン 制作ガイド
 
+> **Routine は止まっている（2026-10-24 時点）。** 起動の口（修正指摘の redo・今すぐ生成の fire・ネタの提案）と `scripts/lib/snsTopics.js`・`scripts/lib/snsCampaigns.js` は hq SH01 R2 で消した。下の手順のうち、それらを呼ぶ所は動かない。YouTube の作り方の節は `youtube-channel` の評価の参照として残す。
+
 承認済みネタ（`sns_topics.status='approved'`）のうち、YouTube向けに割り当てられた`sns_topic_targets`をポーリングして動画下書きを生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。`docs/operation/sns-pipeline-x.md`と同じ構成をテンプレートにしている。
 
 **このRoutineは下書き（`sns_drafts`、`status='pending_review'`）を作るところまでが責務**。承認後の実際のYouTubeへのアップロード・公開は、既存の`api/admin/sns-hub/drafts/[id]/publish-youtube.js`（YouTube Data API v3、ADR 0035）が承認操作をトリガーに自動で行う。このRoutine自身はYouTubeへの投稿を一切行わない。
@@ -36,7 +38,7 @@
 
 ## 3'. 「本日のデータ一覧」型（morning-digest）のネタ
 
-型が `morning-digest` のネタは、映像の材料を `morning_digest_days` / `morning_digest_rows` の2表だけから取る（再計算禁止）。共通の規則は [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) を読む。
+型が `morning-digest` のネタは、映像の材料を `morning_digest_days` / `morning_digest_rows` の2表だけから取る（再計算禁止）。共通の規則は [`sns-pipeline-morning-digest.md`](../archive/sns-pipeline-morning-digest.md) を読む。
 
 YouTube向けは `section='featured'` の1レースに絞り、「この選手の割合」と「その会場・グレードの平均」を並べる構成にする。`metric_predicted`（推定値）には触れない。
 

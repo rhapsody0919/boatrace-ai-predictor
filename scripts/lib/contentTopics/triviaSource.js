@@ -25,7 +25,7 @@ const HISTORY_PATH = path.join(
 export const id = "trivia";
 
 // 新しい軸を追加する場合はこのリストに追記する。データ取得方法は
-// docs/operation/sns-topic-proposer-weekly.md「2-C. 豆知識ネタの本文作成」参照
+// docs/archive/sns-topic-proposer-weekly.md「2-C. 豆知識ネタの本文作成」参照
 const ANGLES = [
   "grade-win-rate", // 級別（A1/A2/B1/B2）別平均勝率の格差
   "age-win-rate", // 年代別平均勝率
