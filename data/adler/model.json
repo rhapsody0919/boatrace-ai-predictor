@@ -1,19 +1,19 @@
 {
   "model_id": "adler",
   "version": 1,
-  "trained_at": "2026-10-17T19:40:04.506Z",
+  "trained_at": "2026-10-24T19:42:21.887Z",
   "base_model": "sherlock",
-  "base_model_trained_at": "2026-10-17T19:37:41.937Z",
-  "gamma": 0.6689194568026483,
-  "delta": 0.4671463640373761,
-  "n_races": 49331,
+  "base_model_trained_at": "2026-10-24T19:39:37.371Z",
+  "gamma": 0.6684226300116766,
+  "delta": 0.46810958643282286,
+  "n_races": 50411,
   "fit_from": "2025-12-02",
-  "fit_to": "2026-10-17",
+  "fit_to": "2026-10-24",
   "eval": {
-    "n_test": 7400,
-    "trifecta_logloss_plain": 4.0176380636600495,
-    "trifecta_logloss_benter": 3.904377764411298,
-    "trifecta_logloss_fitted": 3.8838564736009555,
-    "top1_trifecta_hit_rate": 0.09162162162162162
+    "n_test": 7562,
+    "trifecta_logloss_plain": 4.0156065947579105,
+    "trifecta_logloss_benter": 3.9032621395934872,
+    "trifecta_logloss_fitted": 3.883339572692299,
+    "top1_trifecta_hit_rate": 0.09045226130653267
   }
 }
