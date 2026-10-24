@@ -524,6 +524,11 @@
       "guards": "直前情報タブ「今節展示情報」・今節タブの今節の切り出し（src/utils/meetGrouping.js の groupIntoMeetBeforeRace）。会場で絞らないと別会場の同じモーター番号の節が、表示中レースを目印にしないと節の初戦で前の節が「今節」として混ざる（BOA-591）"
     },
     {
+      "script": "verify-meet-exclusion.js",
+      "tier": "ci",
+      "guards": "今節タブの順位の対象から外す選手と理由（src/services/meetExclusion.js、getMeetScoreboard から切り出し）。公式の備考は予選の後だけ、今節Fは予選終了まで、途中帰郷は表示日に番組が無い選手、予選中は前夜の公式の途中帰郷を先に入れる（#1000・#1128・#1149・#1477 の再現）"
+    },
+    {
       "script": "verify-meet-form-trend.js",
       "tier": "ci",
       "guards": "直前情報タブ「今節の足の推移と着順」（BOA-885、src/components/race/meetFormTrend.js）。走は今節展示情報の走だけで、着順・進入・オリジナル展示を race_id と艇番で突き合わせる（他の艇・他のレースの値が混ざらない）。F・欠・転を残す、値の無い指標のタブを出さない、展示が無い走を挟む区間は点線、縦軸に会場平均を含める、今節の初戦はカードを出さない"
