@@ -714,6 +714,11 @@
       "guards": "ピットレポート（選手コメント。N24、BOA-379）のパーサー・取得ジョブ"
     },
     {
+      "script": "verify-pit-report-url-parity.js",
+      "tier": "ci",
+      "guards": "ピットレポートの画面側と取得側のURL・候補判定・定数の一致と、文書にある不明グレード・不正IDの扱いの差（BOA-1035）"
+    },
+    {
       "script": "verify-plan-erd.js",
       "tier": "ci",
       "guards": "新規テーブル・外部キーを導入する設計書（plan.md）のER図欠落"
