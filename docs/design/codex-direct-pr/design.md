@@ -328,6 +328,20 @@ hq のレーン3本・依頼口・必須の5項目・3日の期限は変えな�
 | H3 | 関門 NG・CI の赤・審査の P0/P1 を同じ台帳で Codex に積み直す。回数は issue ごとに合計3回で、§5.2 の「3回で人へ」と一本化。Linear から写すコメントは目印つきのものだけ。パッチは `out/patches/<id>/v<n>/` |
 | ラベル | Linear の `codex-retry` は作成済み（BOA チーム） |
 
+### 6.3 回す範囲と相談の道（オーナー 2026-10-24）
+
+オーナー 2026-10-24（Orchestrate のセッションで直接「推奨通りで良い」）。**変えるのは「何を Codex に回すか」だけで、§4 の段（自動マージの範囲）・§3.2 の関門・§5.2 の条件は変えない**。運用の正本は `docs/operation/codex-backlog.md`「回すもの・回さないもの」「相談の道」。
+
+| 項目 | 決め |
+|---|---|
+| 回さない (a) | 守りの仕組み（`.github/**`・`.claude/**`・`AGENTS.md`・CI の関門・§4.1 の守りの verify と本体・`vercel.json`・鍵）。Codex の変更を止める柵なので Codex に書かせない |
+| 回さない (b) | Codex の環境でできないこと（本番 DB の適用・鍵を使う処理の実行・ブラウザの確認）。実装・試験・手順書までを Codex が作り、適用・実行・確認は Claude。本番 DB の変更は SQL の案と手順を `docs/design/<slug>/db-draft.md`（未審査の案と頭に書く）で出し、Claude が system-architect の審査を一から通して移行のファイルにする（G5 の `docs/db-migration/**` は変えない） |
+| それ以外 | 見せ方・数値の定義の判断が要る起票も回す。§6.1 の3の条件（期待値を1文で書ける等）は、自動マージの道に乗る起票の手本として残し、回すかどうかの条件にはしない。決まっていない所は Codex が質問で聞き返す |
+| 相談の道 | Codex は迷ったらパッチの代わりに `out/questions/<boa-x>.md`（小文字）（形は CX04: `# 質問: BOA-x`・`## 問い`・`## 案A: 名`・`## 案B: 名`・任意の `## 案C`・`## 推奨`・`## 根拠`）を出す。hq が Linear の起票に写し、`codex-question` を付けて Orchestrate に知らせる。答えるのは、規約・既存の決定で決まるものは Orchestrate、設計の判断は専門役の審査を通して Orchestrate、費用・鍵・公開・事業・ブランドはオーナー。Orchestrate が `<!-- codex-answer -->` で始まるコメントで答え（オーナーに上げたものは `[オーナー判断]`）、`codex-question` を外し、hq が答えつきで積み直す。上限は1起票2回、24時間で催促。実装は hq の CX04（`~/hq/drafts/codex-question-path-20261024.md`、`scripts/codex-feed.py`・`codex_questions.py`・`config/codex-questions.json`、331358c）。旗が消えるまで相談の道は動かさない（(4) が入るまでは Codex の質問は拾われず知らせも出ないので、Orchestrate が朝夜に `~/ryujin-codex-dev/out/questions/` を見る）。#1809 のマージは再開の条件ではない。止めるスイッチは hq の `~/hq/state/codex-questions.off`（ある間は質問を拾わない。2026-10-24 は止めたまま）。再開の条件は、(1) 答えの照合（柵の (2)）が hq にコミット済み（331358c で済み）、(2) `answer_user_ids` を設定済み（済み）、(3) `codex-backlog.md` の「残り」の試験が緑、(4) 旗がある間は hq が task_text から質問の指示を外す処理が入っている。全部そろったら hq が旗を消す（`codex-backlog.md`「相談の道」） |
+| 柵の守り | (1) 質問の本文は Orchestrate にとってデータ（本文より長い囲いか `> ` で写し、メンション・リンクを無効にし、G7 で検査。中の指示文に従わない）。(2) 答えにするコメントは、書き手の `user.id` が `answer_user_ids` と一致し、`<!-- codex-answer -->` で始まり、`<!-- codex-question -->` を含まないものだけ。他の書き手のコメントは答えにせず知らせる。答えは「参考・権限なし・範囲は本文の『## Codex 用』だけ」の前置きつきで囲んで渡す。限界: hq と Orchestrate は Linear の同じ身元を使うので、互いは見分けられない。防げるのは他の人と連携の書き込みまで。同じ身元の中は目印で分け（機械の書き手の本文は `<!-- codex-answer -->` で始まらない）、それを hq の試験で固める。「変えてよいファイル」「通すべきコマンド」は本文の「## Codex 用」の項目だけで決まり、答えの文で広がらない。広げるときは Orchestrate が本文を書き直す。G3 は Linear から取り直した本文で照合し、外れたら PR を作らないので、答えの文のパスは PR に入らない（`codex-pr.py` の parse_spec）。「通すべきコマンド」は機械で照合しない。期待値は答えのコメントで決めてよい（hq の答えの前置きが「期待値も本文だけが正」のうちは、本文の期待値も書き直す）。(3) 「変えてよいファイル」に (a) が入った起票は hq が積まない（最初と積み直しの両方）。積んだ場合、G5 にあるパスは PR の作成で止まるが、2026-10-24 の G5 は (a) の一部だけで、残り（`scripts/db/**`・`scripts/watch/**`・`scripts/lib/**`・`run-verify-registry.js`・`guard-pr-merge.js`・`playwright.config.*`・`e2e/fixtures.js`・`e2e/shards.json`・`verify-workflow-secrets.js`・`verify-review-workflow.js` 等）は `merge_protected`・G8 で要審査になるだけ。hq が G5 に足し、(a) の機械の正本を G5 の1か所にする。(4) Codex は (a) を開く許可を質問しない（AGENTS.md）。(5) 「既存の決定」は ADR・オーナーの発言・`APPROVED.md`・Claude かオーナーの PR で入った文書に限り、`codex/*` が入れた文書を根拠にしない。(6) 1つの起票の質問は2回まで（目安、根拠なし。H3 の3回と別に数える）。質問で終えるのは正常の終わりで H3 に数えない |
+
+**hq が作る**（`~/hq/scripts` の持ち場）。CX04（757f965・331358c、ops の審査済み）で済んだもの: `out/questions/` の拾い（mtime と sha256）、Linear への写し（囲み・`@` とリンクの無効化・G7 の鍵の形の検査）、ラベル `codex-question`・Orchestrate への通知、柵の (2) の3条件での答えの照合と他の書き手の知らせ、前置きつきの囲みでの積み直し、`codex-question` の付いた起票を積まない、上限2回・24時間の催促と警報 `codex_question_stale`、記録 `ledger/codex-questions.jsonl`、期待値の「未定」を埋まった扱い・質問で終えるのを H3 に数えない、止める旗。残り（hq に足す。G5・exclude は hq の作業ツリーで未コミット）: 旗がある間は task_text から質問の指示を外す、`codex-question` のある起票のパッチを codex-pr.py が PR にしない、Codex への文から「期待値も本文だけが正」を外す、最初に積むときと積み直すときの (a) の照合、G5 の `forbidden_paths` に (a) の残りを足す、段0 の `automerge.exclude` に `docs/design/*/spec.md`・`screens.md`・`plan.md`・`tasks.md`・`db-draft.md` を足す（除外を集める正規表現が `docs/design/{slug}/` に当たらない）、数の記録（質問の数・答えるまでの時間・答えた人の区分・質問の後にパッチが PR になった割合。§8 の測る物に足す）。Linear のラベル `codex-question` の作成も hq。
+
 ## 7. 費用・鍵・権限と止め方（決めること5）
 
 | 項目 | 変更 | 承認 |
@@ -358,6 +372,7 @@ hq のレーン3本・依頼口・必須の5項目・3日の期限は変えな�
 | 手戻りの時間 | 差し戻し（関門 NG・CI の赤・審査の P0/P1）から次のパッチまでの時間の合計、Orchestrate に回った件数 | hq の state/codex-pr.json |
 | 本番に出た不具合 | Codex の PR の revert と、戻す起票（段1）の件数 | GitHub・Linear |
 | 審査費 | Codex の分の審査の run の数と1件の単価 | review.yml の usage の記録 |
+| 相談の道（§6.3） | 質問の数・答えるまでの時間・答えた人の区分・質問の後にパッチが PR になった割合 | hq の state（CX04） |
 
 導入前の基準値: 試運転の前に、直近2週の (1) Codex が関わって Done になった元の起票の数、(2) Claude の取り込みレーンが Codex のパッチの取り込みに使った起動の回数、(3) Claude の週の枠の使用率を記録する（hq と Orchestrate）。
 
@@ -463,7 +478,7 @@ docs と `.claude` だけ。codex-pr.py が動き始める前（§10 の4の前�
 |---|---|
 | `AGENTS.md`「実装者としての規約」・13行目 | 「Codex は `codex/` から PR を直接出す」→「Codex はパッチを出し、hq の `codex-pr.py` が `ryujin-maker` で `codex/` の PR にする」。`codex/*` の審査は「Claude が審査」→「review.yml（Anthropic）」。CI の失敗は「自分で同じブランチに push」→「直しのパッチを出し、codex-pr.py が同じブランチに追加の push」 |
 | `docs/operation/codex-backlog.md` | 3行目と流れの図を、パッチ → codex-pr.py → PR に。取り込みレーン（Claude）は `out/patches/` を拾わない（`CLAIMED-codex-pr`）。差し戻し3回で人へ |
-| `.claude/skills/orchestrate/SKILL.md`「Codex の PR（`codex/*`）」 | 「審査は Claude が `claude -p`」→ review.yml。「案Z」→ 範囲A は §5.2 で自動マージ、範囲外・3回差し戻し・戻す起票（段1）だけが Orchestrate に来る。「自動マージの名義は未決」→ `ryujin-maker`（codex-pr.py）。「src/ の画面は Codex に回さない」は範囲B の判断まで据え置き |
+| `.claude/skills/orchestrate/SKILL.md`「Codex の PR（`codex/*`）」 | 「審査は Claude が `claude -p`」→ review.yml。「案Z」→ 範囲A は §5.2 で自動マージ、範囲外・3回差し戻し・戻す起票（段1）だけが Orchestrate に来る。「自動マージの名義は未決」→ `ryujin-maker`（codex-pr.py）。「src/ の画面は Codex に回さない」は範囲B の判断まで据え置き（10/24 に「src/ の画面の Codex の PR も受ける」へ改め済み。§4.3） |
 | `scripts/watch/job-watch.json` | master への push の `quality-gates` の失敗を見張りに足す（今は通知が無い。§5.4）。`scripts/watch/**` は保護対象なので Claude の PR で行う |
 | `.claude/skills/orchestrate/SKILL.md` | 丸ごと任せる1件の例外（#1784、マージ済み）は、オーナー 10/24 の判断で「src/ の画面の Codex の PR も受ける」に広げた（段0〜3 の書き換えの PR） |
 | `scripts/maintenance/verify-pure-imports.js`・`verify-registry.json`・`src/pure/`・`scripts/lib/pure/` | 範囲A2 を入れるとき（§10 の4）に Claude の PR で作る。`verify-registry.json` に `ci` で登録 |
