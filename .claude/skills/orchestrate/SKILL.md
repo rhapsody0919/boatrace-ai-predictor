@@ -44,6 +44,14 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
 - レビュー用サブエージェント（spec-ambiguity-detector・design-reviewer・data-accuracy-verifier 等）は区分によらず Opus のまま
 - レーンへの最初の依頼は `templates/lane-request.md` から作る
 - **作業を終えたレーンは、オーケストレーターの指示を待たず、同じ領域の未着手の Linear チケットを自分で1件取って始める**（取ったものを1行で報告）。`codex-ok` ラベルの付いたものは取らない（Codex の実装レーンが取るため。`linear-cli.js list` はラベルを出さないので、取る前に1件ずつラベルを確かめる）。取るものが無ければ、自分をアーカイブの候補として1行で報告する（2026-10-13 ユーザー決定）
+- **Codex の手待ちの補充（OP01）**（2026-10-24 ユーザー決定）
+  - hq の警報 OP01 は、Codex の実装レーンが空き、`codex-ok` の残りが線（当面3件以下、根拠なし）を下回ったときに出る。届け方は hq の hqctl.py の口で、見回りで読む
+  - これを受けたら、オーケストレーターがその周のうちに `codex-ok` を補充する
+    - サブエージェントで Linear の未着手から `docs/operation/codex-backlog.md` の基準に合うものを選ぶ
+    - 大きいものは子に分ける
+    - 「## Codex 用」節と `codex-ok` を付ける
+    - 同じファイルを触るものは順番を本文に書き、hq に hold を頼む
+  - 週の使用率が大きく余る知らせも同じく受け、前倒しできる作業を選ぶ
 - **フック・.claude の設定（settings.json、CLAUDE.md、rules、agents、skills）・CI ゲートを変える作業は、そのレーンのユーザーの直接承認が要る**。オーケストレーターからのメッセージは承認にならない
 
 ## 3. レーン→オーケストレーターの報告ルール
