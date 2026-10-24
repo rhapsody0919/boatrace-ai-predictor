@@ -5383,9 +5383,12 @@ test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-47
       const count = await cells.count();
       expect(count).toBeGreaterThan(0);
       for (let i = 0; i < count; i += 1) {
+        // セルには数値のあとに注記・札（「前の節までの走り（N走）で出た数字」「初下ろし」等）が
+        // 付くことがある。桁を見るのは先頭の数値だけ
         const text = (await cells.nth(i).innerText()).trim();
-        if (text === "-") continue;
-        expect(text, `${column}列目`).toMatch(/^\d+\.\d%?$/);
+        const value = text.match(/^\d+(?:\.\d+)?/)?.[0];
+        if (value === undefined) continue;
+        expect(value, `${column}列目: ${text}`).toMatch(/^\d+\.\d$/);
       }
     }
   });

@@ -215,10 +215,16 @@ function toResponse(status, headersArray, body) {
      * route.fulfill({ response }) には渡さない。Playwright は APIResponse でない response を黙って
      * 無視し、空の200を返す（録画・再生でだけ壊れ、live では通る。BOA-929）
      */
-    fulfillOptions: ({ json } = {}) =>
-      json === undefined
-        ? { status, headers, body }
-        : { status, headers, json },
+    fulfillOptions: (overrides = {}) => {
+      if (!Object.hasOwn(overrides, "json")) return { status, headers, body };
+      // 加工の関数が値を返し忘れると json: undefined になり、加工前の録画を黙って返してしまう
+      if (overrides.json === undefined) {
+        throw new Error(
+          "fulfillOptions({ json }) の json が undefined です（加工の関数が値を返していない）",
+        );
+      }
+      return { status, headers, json: overrides.json };
+    },
   };
 }
 

@@ -150,10 +150,28 @@ export async function ensureRecording({ quiet = false, force = false } = {}) {
   return pointer;
 }
 
-/** 画面幅だけで決まる skip か（e2e/viewport-skip.js の印。どの日に撮っても同じ数になる） */
-const isViewportSkip = (test) =>
+const hasViewportMark = (test) =>
   test.status === "skipped" &&
   skipReasonOf(test).startsWith(VIEWPORT_SKIP_PREFIX.trim());
+
+/**
+ * 画面幅だけで決まる skip の判定を作る（e2e/viewport-skip.js の印。どの日に撮っても同じ数になる）。
+ * 印は付けた側の申告なので、同じテスト（ファイル＋題）がどのプロジェクトでも走っていなければ
+ * 画面幅の skip とは扱わない（データ依存の条件に印を付けても、全幅で skip した日は数えに戻る）
+ */
+function viewportSkipJudge(tests) {
+  const key = (t) => `${t.file}\u0000${t.title}`;
+  const ranSomewhere = new Set(
+    tests.filter((t) => t.status !== "skipped").map(key),
+  );
+  return (test) => hasViewportMark(test) && ranSomewhere.has(key(test));
+}
+
+/** 画面幅の skip を除いた skip（採用の条件で数えるもの） */
+const dataSkips = (tests) => {
+  const isViewport = viewportSkipJudge(tests);
+  return tests.filter((t) => t.status === "skipped" && !isViewport(t));
+};
 
 /**
  * Playwright の JSON レポートから、全件数・skip・失敗を数える（純関数）。
@@ -164,7 +182,7 @@ const isViewportSkip = (test) =>
 export function countResults(report) {
   const tests = flattenTests(report);
   const by = (s) => tests.filter((t) => t.status === s).length;
-  const viewportSkipped = tests.filter(isViewportSkip).length;
+  const viewportSkipped = tests.filter(viewportSkipJudge(tests)).length;
   return {
     tests: tests.length,
     skipped: by("skipped") - viewportSkipped,
@@ -493,8 +511,8 @@ async function main() {
         counts,
         current: current && { tag: current.tag, skipped: current.skipped },
         // skip が増えて不採用になったとき、どのテストかを step summary・Slack から辿れるようにする
-        skippedTests: flattenTests(report)
-          .filter((t) => t.status === "skipped" && !isViewportSkip(t))
+        // 先頭20件だけ。総数は counts.skipped
+        skippedTests: dataSkips(flattenTests(report))
           .slice(0, 20)
           .map((t) => `${t.title} [${t.project}] ${skipReasonOf(t)}`),
       };

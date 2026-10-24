@@ -275,8 +275,12 @@ test("カードの見出しは、本命が予想どおりに勝ったときだ�
   await more.waitFor({ timeout: 60000 });
   await more.click();
   await expect(more).toContainText("閉じる", { timeout: 60000 });
-  // 前付けの「◯コース進入」は表示中のカードだけ後から引くので、読み終わるまで待つ
-  await page.waitForLoadState("networkidle");
+  // 前付けの「◯コース進入」は表示中のカードだけ後から引く（「もっと見る」の後に取り直す）。
+  // networkidle は最初の読み込みで済んでいて待たないので、前付けのカードが出るまで待つ
+  // （14日分の的中には前付けで勝ったレースが必ずある。出ないなら配線が壊れている）
+  await expect(
+    page.locator(".turn-hit-course", { hasText: "コース進入" }).first(),
+  ).toBeVisible({ timeout: 60000 });
   const cards = await page.locator(".race-card").evaluateAll((els) =>
     els.map((el) => ({
       date: el.querySelector(".race-card-date")?.textContent.trim() ?? "",

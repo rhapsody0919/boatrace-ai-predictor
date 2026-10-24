@@ -406,43 +406,78 @@ check("件数の数え方（flaky は失敗に数えない）", counts, {
   errors: 0,
 });
 // BOA-929: 画面幅だけで決まる skip（e2e/viewport-skip.js の印）は skipped に数えない。
-// 2026-10-24 の撮り直しは、layout.spec.js の画面幅の skip 28件で「現行 0件 → 新 28件」と不採用になった
-const skipReport = (annotations) => ({
+// 2026-10-24 の撮り直しは、layout.spec.js の画面幅の skip 28件で「現行 0件 → 新 28件」と不採用になった。
+// 印は付けた側の申告なので、同じテストがどのプロジェクトでも走っていなければ数えに戻す
+const vp = (reason) => ({
+  type: "skip",
+  description: viewportSkipReason(reason),
+});
+const dataSkip = {
+  type: "skip",
+  description: "本日開催中の未終了レースが見つからない",
+};
+// tests: [title, status, annotation] のうち、題ごとに [skip, 走った] の2プロジェクトを作る
+const projectReport = (rows) => ({
   suites: [
     {
       title: "layout.spec.js",
-      specs: annotations.map((a, i) => ({
-        title: `t${i}`,
-        tests: [{ status: "skipped", annotations: a ? [a] : [] }],
+      file: "layout.spec.js",
+      specs: rows.map(([title, tests]) => ({
+        title,
+        tests: tests.map(([projectName, status, annotation]) => ({
+          projectName,
+          status,
+          annotations: annotation ? [annotation] : [],
+        })),
       })),
     },
   ],
 });
 const viewportCounts = countResults(
-  skipReport([
-    { type: "skip", description: viewportSkipReason("1440pxで確認") },
-    {
-      type: "skip",
-      description: viewportSkipReason("スマホ幅でだけ溢れる画面"),
-    },
-    { type: "skip", description: "本日開催中の未終了レースが見つからない" },
-    null,
+  projectReport([
+    [
+      "1440",
+      [
+        ["layout-mobile", "skipped", vp("1440pxで確認")],
+        ["layout-desktop", "expected"],
+      ],
+    ],
+    [
+      "smp",
+      [
+        ["layout-wide", "skipped", vp("スマホ幅でだけ溢れる画面")],
+        ["layout-mobile", "expected"],
+      ],
+    ],
+    ["data", [["smoke", "skipped", dataSkip]]],
+    ["noreason", [["smoke", "skipped", null]]],
+    // 印はあるが、どのプロジェクトでも走っていない（データ依存の条件に印を付けた）
+    [
+      "mislabeled",
+      [
+        ["layout-mobile", "skipped", vp("PC幅だけ")],
+        ["layout-desktop", "skipped", vp("PC幅だけ")],
+      ],
+    ],
   ]),
 );
 check(
-  "画面幅の skip は skipped から外し viewportSkipped に数える",
+  "画面幅の skip は skipped から外し viewportSkipped に数える。全プロジェクトで skip なら数えに戻す",
   [viewportCounts.skipped, viewportCounts.viewportSkipped],
-  [2, 2],
+  [4, 2],
 );
 check(
   "画面幅の skip だけが増えても採用する（10/24 の不採用の再現: 現行 0件）",
   judgeAdoption(
     countResults(
-      skipReport(
-        Array.from({ length: 28 }, () => ({
-          type: "skip",
-          description: viewportSkipReason("PC幅（1025px以上）だけの指定"),
-        })),
+      projectReport(
+        Array.from({ length: 28 }, (_, i) => [
+          `t${i}`,
+          [
+            ["layout-mobile", "skipped", vp("PC幅（1025px以上）だけの指定")],
+            ["layout-desktop", "expected"],
+          ],
+        ]),
       ),
     ),
     { skipped: 0 },
@@ -452,11 +487,7 @@ check(
 check(
   "印の無い skip（データ依存）が増えたら不採用のまま",
   judgeAdoption(
-    countResults(
-      skipReport([
-        { type: "skip", description: "本日開催中の未終了レースが見つからない" },
-      ]),
-    ),
+    countResults(projectReport([["data", [["smoke", "skipped", dataSkip]]]])),
     { skipped: 0 },
   ).reasons.some((r) => r.startsWith("skip")),
   true,
