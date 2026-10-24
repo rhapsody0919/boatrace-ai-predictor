@@ -1,0 +1,38 @@
+{
+  "$comment": [
+    "E2E の組の分け方の正本（BOA-929・BOA-769、ADR-0100）。e2e-smoke-test.yml の e2e-shard、e2e-rerecord.yml の replay、check-e2e-shard-coverage.js がこれを読む（scripts/maintenance/e2e-shards.js）。",
+    "specs: e2e/ からの spec のパス。projects: 指定すればそのプロジェクトだけを走らせる（smoke プロジェクトは layout.spec.js を無視し、layout-* は layout.spec.js だけに当たるので、layout の一部の幅と他の spec を同じ組に混ぜるときは smoke も並べる）。最後の組は rest: true で、上の組に書いた spec を除く残り全部（新しい spec は自動でここに入る）。",
+    "所要（worker 秒、リトライ込み）は run 39870857258（2026-10-23、全2,234件・合計8,626）の実測。組の目安は合計の1/5（約1,700）。spec を足して rest が重くなったら、ここを書き換えて組を足すか移す。",
+    "1: smoke 1,784 / 2: layout 3幅 1,421＋race-odds-live 359 / 3: layout 2幅 995＋thinking-assist-states 579＋race-share-text 180 / 4: 10本 1,637 / 5: 残り 約1,670"
+  ],
+  "shards": [
+    { "specs": ["smoke.spec.js"] },
+    {
+      "specs": ["layout.spec.js", "race-odds-live.spec.js"],
+      "projects": ["layout-mobile", "layout-tablet", "layout-laptop", "smoke"]
+    },
+    {
+      "specs": [
+        "layout.spec.js",
+        "thinking-assist-states.spec.js",
+        "race-share-text.spec.js"
+      ],
+      "projects": ["layout-desktop", "layout-wide", "smoke"]
+    },
+    {
+      "specs": [
+        "analogy-contribution.spec.js",
+        "race-detail-details.spec.js",
+        "blog-chart.spec.js",
+        "meet-tab-entrants.spec.js",
+        "race-tab-width.spec.js",
+        "race-detail-url-state.spec.js",
+        "venue-next-race.spec.js",
+        "venue-motor-ranking.spec.js",
+        "motor-strength-compare.spec.js",
+        "flying-late-badge.spec.js"
+      ]
+    },
+    { "rest": true }
+  ]
+}

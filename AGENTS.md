@@ -91,7 +91,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 - 再現テストは CI から呼ばれる場所に置く（`scripts/tests/` 等の CI が呼ばない場所に置かない）。新しい `verify-*.js` は `verify-registry.json` に登録する（上の「変更してはならない」の例外）
 - CI は Node 20 で動く。手元の Node が新しくても、Node 20 に無い API を使わない
 - Codex は手元で playwright（`npm run test:e2e`・`npm run test:layout` を含む）を実行しない。録画に無い取得が本番へ素通しするため（下の録画の項）。UI・レイアウトの確認は PR の CI の `e2e` に任せ、PR 本文に「UI テストは CI で確認」と書く。以下の playwright の手元実行の項は Claude 向け
-- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更でも、手元で全件 `npm run test:e2e` は実行しない。CIのE2E（3shardに分割、所要約20分、`.github/workflows/e2e-smoke-test.yml`）が全部のテストを検証し、`scripts/maintenance/guard-pr-merge.js` が e2e の結果が出るまでマージを止める。手元の全件実行は、複数のworktree・セッションが同じMacで並行稼働する運用とCPU・メモリを取り合うため避ける。関係する一部だけ素早く確認したい場合は `bash scripts/maintenance/run-heavy.sh playwright test --workers=1 e2e/<対象ファイル>.spec.js` のように対象を絞って実行してよい
+- 既存のページ挙動・共通コンポーネント・ルーティングに影響しうる変更でも、手元で全件 `npm run test:e2e` は実行しない。CIのE2E（`e2e/shards.json` の5組に分割、`.github/workflows/e2e-smoke-test.yml`）が全部のテストを検証し、`scripts/maintenance/guard-pr-merge.js` が e2e の結果が出るまでマージを止める。手元の全件実行は、複数のworktree・セッションが同じMacで並行稼働する運用とCPU・メモリを取り合うため避ける。関係する一部だけ素早く確認したい場合は `bash scripts/maintenance/run-heavy.sh playwright test --workers=1 e2e/<対象ファイル>.spec.js` のように対象を絞って実行してよい
 - 手元で `playwright`・`vite build` を直接実行する場合（`npm run` のスクリプト経由以外）は、必ず `bash scripts/maintenance/run-heavy.sh <コマンド>` 経由にし、playwrightには `--workers=1` を付ける（同じMacで複数のworktree・Codexが同時に重い処理を走らせるため。`npm run` 経由のスクリプトは既にrun-heavy.sh経由になっている）。ロックの既定配置先は `$HOME/.cache/ryujin-local-heavy/`。サンドボックス（例: Codexのworkspace-write）等でそこに書けない環境は、`RYUJIN_HEAVY_LOCK_DIR` を書き込める場所に向ける（Claude側とロックディレクトリが分かれるため、枠数の合計は各ロックの `RYUJIN_HEAVY_MAX_SLOTS` の合算になる）
 - CSS・レイアウトを変更した場合は `npm run test:layout`（375/768/1024/1440/1920px の5軸）も実行し、横スクロール・グリッドの崩れが無いことを確認する
 - `scripts/maintenance/verify-*.js` の検証群は、master向けPRごとに Quality Gates ワークフローが `npm run verify:ci` でまとめて自動実行するため、個別コマンドを手元で1本ずつ実行する必要はない。全件は手元で実行しない（複数のセッションが同じMacで同時に走らせると負荷が大きすぎるため）。手元で先に確かめたい場合は、変更に関係する個別の `npm run verify:*` だけを実行する
@@ -103,7 +103,7 @@ boatAI はボートレースAI予想サービス（React 19 + Vite + react-route
 ### PR 時に CI で走るチェック
 必須チェックは `verify`・`ml-tests`・`e2e` の3つ（GitHub の ruleset「master-checks」。bypass は ryujin-bot だけで、admin も CI が緑でなければマージできない。ruleset はオーナーが入れる。入るまでは GitHub 側では止まらない）。PR を出したら次の結果を確かめ、落ちたら直して push する。
 - `verify`（Quality Gates。`npm run verify:ci`）
-- `e2e`（E2E Smoke Test。3つの `e2e-shard` の集約。記事の中身だけの PR は `e2e-light`（vite build と `@blog` の試験）、docs だけの PR は0件で成功。記事に関わる試験の題には ` @blog` を付ける。ADR-0100）
+- `e2e`（E2E Smoke Test。`e2e-shard`（組の分け方の正本は `e2e/shards.json`）の集約。記事の中身だけの PR は `e2e-light`（vite build と `@blog` の試験）、docs だけの PR は0件で成功。記事に関わる試験の題には ` @blog` を付ける。ADR-0100）
 - `ml-tests`（Quality Gates。ジョブは毎回走り、`scripts/ml/` を変えたときだけ pytest を実行する）
 - 該当するときだけ走る: `verify-cache`（`api/**` 等を変えたとき。必須ではない）
 
