@@ -206,7 +206,7 @@ function chapters(answers) {
 // 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）。描く前に文を確かめる
 const entryAnswers = templateAnswers;
 const entry = entryScenes(scenes, entryAnswers, { race: header });
-const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entryAnswers[s.id] ?? s.lines]) : [])));
+const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entry.answers[s.id] ?? s.lines]) : [])));
 /** 送信の道に渡す文（題名・説明文・X の本文）。数値は場面の facts（字幕と同じ値）から */
 const factsOf = (sceneId, stepId) => scenes.find((x) => x.id === sceneId)?.data?.steps?.find((st) => st.id === stepId)?.facts ?? null;
 const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = fullPictureTimeline(scenes, entryAnswers).total / 30) =>
@@ -223,6 +223,7 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
       venue90: factsOf("scene1", "s1-venue90"),
       overview: scenes.find((x) => x.id === "scene2")?.data?.radar?.overview?.facts ?? null,
       conclusion: scenes.find((x) => x.id === "scene4")?.data?.conclusion?.facts ?? null,
+      hero: entry.hero,
     },
     chapters: chaptersText,
     fullSeconds,
@@ -278,7 +279,7 @@ writeJson(join(out, "entry.json"), { seconds: entry.total / 30, omitted: entry.o
 if (!noVideo && !bundleOnly) {
   const dir = join(out, "entry");
   mkdirSync(dir, { recursive: true });
-  const seconds = render(entry.scenes, entryAnswers, dir, "entry");
+  const seconds = render(entry.scenes, entry.answers, dir, "entry");
   writeJson(join(out, "run-entry.json"), { seconds, llmCalls: 0, videoSeconds: entry.total / 30 });
   console.log(`${dir}: 入口版 ${(entry.total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
 }

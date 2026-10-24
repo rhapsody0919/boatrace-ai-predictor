@@ -557,3 +557,31 @@ export function SummaryPage({ groups, footer }) {
     </>
   );
 }
+
+/**
+ * 入口版（Shorts）の冒頭の数字（hq 契約 10/24 v2）。y360〜900・x≤940 に、frame0 から確定値で出す（数え上げない）。
+ * 上から 見出し48px → 数字約180px → 母数48px。数字は艇の色。2号艇（灰）は背景と近いので白の縁取り。
+ */
+export function HeroPage({ label, value, base, boat = null }) {
+  const color = boat ? FLOW[boat] : "#ffffff";
+  const outline = boat === 2 ? { WebkitTextStroke: "5px #ffffff", paintOrder: "stroke fill" } : {};
+  return (
+    <div style={{ position: "absolute", left: 60, top: 360, width: 880, height: 540, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18 }}>
+      <div style={{ fontSize: 48, fontWeight: 800, color: TEXT, whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ fontSize: 180, fontWeight: 900, color, lineHeight: 1, whiteSpace: "nowrap", ...outline }}>{value}</div>
+      <div style={{ fontSize: 48, fontWeight: 700, color: MUTED, whiteSpace: "nowrap" }}>{base}</div>
+    </div>
+  );
+}
+
+/** 入口版の最後の案内（y≤1420・x≤940。下の帯に重ねない） */
+export function CtaPage({ lines = [], sub = null }) {
+  return (
+    <div style={{ position: "absolute", left: 60, top: 760, width: 880, height: 520, display: "flex", flexDirection: "column", justifyContent: "center", gap: 24 }}>
+      {sub && <div style={{ fontSize: 44, fontWeight: 700, color: MUTED }}>{sub}</div>}
+      {lines.map((l, i) => (
+        <div key={i} style={{ fontSize: 84, fontWeight: 900, color: "#ff8a1f", lineHeight: 1.15 }}>{l}</div>
+      ))}
+    </div>
+  );
+}

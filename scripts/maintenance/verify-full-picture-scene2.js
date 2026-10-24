@@ -411,7 +411,7 @@ const { fullPictureTimeline } = await import(`${R}/src/fullPicture/fullPictureTi
 const { CARD, cardBarFrame, cardPairBox } = await import(`${R}/src/fullPicture/scene2Layout.js`);
 const { slitFormOn, SLIT_FORM_ON_AT, summaryLayout, statsBarRow, statsBarBox, STATS_BAR } = await import(`${R}/src/fullPicture/pageLayout.js`);
 const { buildAll } = await import(`${R}/scripts/full-picture/build-all.mjs`);
-const { entryScenes, ENTRY_MAX_FRAMES, CONCLUSION_QUESTION } = await import(`${R}/scripts/full-picture/entry.mjs`);
+const { entryScenes, ENTRY_MAX_FRAMES, CONCLUSION_QUESTION, venueZ, HERO_MIN_N } = await import(`${R}/scripts/full-picture/entry.mjs`);
 const { restLines } = await import(`${R}/scripts/full-picture/scenes/scene5.mjs`);
 const { buildScene8 } = await import(`${R}/scripts/full-picture/scenes/scene8.mjs`);
 const { MATERIALS_SCHEMA, validate } = await import(`${R}/scripts/full-picture/materials-contract.mjs`);
@@ -522,22 +522,51 @@ for (const f of fixtures) {
   const short = s5.steps.filter((s) => /^s5-axis-\d$/.test(s.id) && !s.facts.key);
   assert.ok(short.every((s) => s.lines.length === 0), `${f}: 重点でない艇の段は答えを出さない`);
   if (short.length) assert.ok(s5.steps.at(-1).id === "s5-axis-rest" && s5.steps.at(-1).lines.length > 0, `${f}: 最後にまとめの1枚`);
-  // 入口版: 条件（会場＋今日の条件）＋6艇の重ね図＋結論1拍で59秒以内
+  // 入口版 v2（hq 契約 10/24）: 冒頭の数字 →（会場の棒は |z|>=1.96 の日だけ）→ 今日の条件 → 重ね図（艇は3つまで）→ 結論の再掲 → 完全版への案内
   const e = entryScenes(scenes, text.answers, { race: "下関10R（10/19）" });
   assert.ok(e.total <= ENTRY_MAX_FRAMES, `${f}: 入口版 ${(e.total / 30).toFixed(1)}秒は59秒以内`);
+  assert.ok(e.total >= 34 * 30 && e.total <= 45 * 30, `${f}: 入口版 ${(e.total / 30).toFixed(1)}秒は34〜45秒（hq 契約 v2）`);
   assert.deepEqual(e.scenes.map((x) => x.id), ["scene1", "scene2", "conclusion"], `${f}: 入口版の型`);
-  assert.equal(e.scenes[0].data.steps[0].id, "s1-venue90", `${f}: 条件の1つ目は会場の1着率`);
+  const st1 = e.scenes[0].data.steps;
+  assert.equal(st1[0].id, "entry-hero", `${f}: 冒頭は数字`);
+  assert.equal(st1[0].page.kind, "hero");
+  assert.ok(e.hero.source === "conclusion" ? e.hero.value === `${scenes.find((x) => x.id === "scene4").data.conclusion.facts.pct}%` : true, `${f}: 冒頭の数字は結論の割合と同じ値`);
+  const z = venueZ(scenes.find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-venue90")?.facts);
+  assert.equal(st1.some((st) => st.id === "s1-venue90"), z !== null && Math.abs(z) >= 1.96, `${f}: 会場の棒は |z|>=1.96 の日だけ（z=${z?.toFixed(2)}）`);
   assert.ok(e.scenes[1].data.radarOnly, `${f}: 入口版の場面2は重ね図だけ`);
-  assert.deepEqual(e.scenes[2].data.steps.map((s) => s.id), ["s4-conclusion"], `${f}: 結論は1拍`);
+  const fb = e.scenes[1].data.radar.focus.map((x) => x.boat);
+  assert.ok(fb.length <= 3 && fb[0] === 1, `${f}: 重ね図の艇は1号艇を含め3つまで（${fb}）`);
+  assert.deepEqual(e.scenes[2].data.steps.map((s) => s.id), ["s4-conclusion", "entry-cta"], `${f}: 結論の再掲と案内`);
+  assert.deepEqual(e.scenes[2].data.steps[1].page.lines, ["チャンネルの完全版へ"]);
   // 最初の画面にレース名と問い、結論は「過去」と書く（今日の結果と読まれない。x-channel・youtube-channel 2026-10-20 P1）
-  assert.ok(e.scenes[0].data.steps[0].question.startsWith("下関10R（10/19）"), `${f}: 最初の問いにレース名`);
+  assert.ok(st1[0].question.startsWith("下関10R（10/19）"), `${f}: 最初の問いにレース名`);
   const conc = e.scenes[2].data.steps[0];
   assert.equal(conc.question, CONCLUSION_QUESTION);
   assert.ok(!/結果/.test(conc.question) && conc.lines[0].includes("過去"), `${f}: 結論は過去の集計と分かる`);
   assert.deepEqual(checkLines(conc.lines, conc.facts, null), [], `${f}: 結論の文が検査を通る`);
   assert.ok(fullPictureTimeline(scenes, text.answers).total > ENTRY_MAX_FRAMES, `${f}: 完全版は削らない（59秒を越えてよい）`);
 }
-// 入口版は59秒を越えたら条件の2つ目を外し、それでも越えたら止める
+// 入口版 v2: 会場の棒を外した日は、当日の水面の答えに「90日の1着率…より」を出さない（画面に出ない数字を指す。Orchestrate 10/24）
+{
+  const load1 = (f) => buildAll(JSON.parse(gunzipSync(readFileSync(new URL(f, FX))).toString("utf8")));
+  // 風の段を外して当日の水面の日にする（固定の材料はどれも風がある）
+  const noWind = (scenes) => scenes.map((x) => (x.id === "scene1" ? { ...x, data: { ...x.data, steps: x.data.steps.filter((st) => st.id !== "s1-wind") } } : x));
+  const low = noWind(load1("2026-10-12-01-12.json.gz"));
+  const lowAns = templateText(allBeats(low)).answers;
+  assert.ok(lowAns["s1-day"].some((l) => l.includes("90日の1着率")), "前提: 完全版の水面の答えは会場の90日の1着率と比べる");
+  const eLow = entryScenes(low, lowAns, { race: "桐生12R" });
+  assert.ok(!eLow.scenes[0].data.steps.some((st) => st.id === "s1-venue90"), "前提: |z|<1.96 で会場の棒を外す");
+  assert.ok(eLow.scenes[0].data.steps.some((st) => st.id === "s1-day"), "前提: 当日の水面の段がある");
+  assert.ok(eLow.answers["s1-day"].length > 0 && !eLow.answers["s1-day"].some((l) => l.includes("90日の1着率")), `棒を外した日は90日の1着率を出さない: ${eLow.answers["s1-day"]}`);
+  assert.deepEqual(lowAns["s1-day"].filter((l) => !l.includes("90日の1着率")), eLow.answers["s1-day"], "ほかの行はそのまま");
+  const high = noWind(load1("2026-10-19-19-10.json.gz"));
+  const highAns = templateText(allBeats(high)).answers;
+  const eHigh = entryScenes(high, highAns, { race: "下関10R" });
+  assert.ok(eHigh.scenes[0].data.steps.some((st) => st.id === "s1-venue90"), "前提: |z|>=1.96 で会場の棒を出す");
+  assert.deepEqual(eHigh.answers["s1-day"], highAns["s1-day"], "棒を出す日は水面の答えを変えない");
+  assert.ok(HERO_MIN_N > 0);
+}
+// 入口版は59秒を越えたら会場の棒、次に今日の条件を外し、それでも越えたら止める
 {
   const m = JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
   const scenes = buildAll(m);
@@ -553,7 +582,9 @@ for (const f of fixtures) {
   if (worst) assert.ok(worst.total <= ENTRY_MAX_FRAMES, `最長の答えでも入口版は59秒以内（${(worst.total / 30).toFixed(1)}秒）`);
   // 重ね図の艇が多くて越えるなら、条件の2つ目を外し、それでも越えれば止める
   const s2 = scenes.find((x) => x.id === "scene2");
-  const many = scenes.map((x) => (x === s2 ? { ...x, data: { ...x.data, radar: { ...x.data.radar, focus: [...x.data.radar.focus, ...x.data.radar.focus] } } } : x));
+  // v2 は重ね図を1号艇と2着が多い2艇に絞るので、残る1号艇の焦点を重ねて越えさせる
+  const one = s2.data.radar.focus.filter((x) => x.boat === 1);
+  const many = scenes.map((x) => (x === s2 ? { ...x, data: { ...x.data, radar: { ...x.data.radar, focus: Array.from({ length: 20 }, () => one).flat() } } } : x));
   assert.throws(() => entryScenes(many, long), /59秒を越える/, "どうしても越えるなら止める（投稿しない）");
 }
 // 契約: 形が変わったら落ちる
@@ -675,13 +706,13 @@ for (const f of fixtures) {
   // F10: 「逆に」は前の拍と向きが逆のときだけ
   has(checkLines(["逆に、1号艇は2連率50.0%"], { kind: "place", direction: "高い" }, { kind: "venue90", direction: "高い" }), "「逆に」だが");
   assert.deepEqual(checkLines(["逆に、全国の72.0%より6.1ポイント低い"], { kind: "place", direction: "低い", diffPt: 6.1 }, { kind: "venue90", direction: "高い" }).filter((w) => w.includes("逆に")), []);
-  // F7: 入口版は59秒を越えたら条件の2つ目を外す（外して収まる長さを作る）
+  // F7: 入口版は59秒を越えたら条件を外す（外して収まる長さを作る）
   {
     const scenes = buildAll(m0);
     const ans = templateText(allBeats(scenes)).answers;
-    // 重ね図の艇の拍を足して、条件2つでは越え、1つなら収まる並びを作る
+    // 重ね図の艇の拍を足して、条件があると越え、外すと収まる並びを作る（v2 は1号艇と2着が多い2艇だけ残すので1号艇を重ねる）
     const s2 = scenes.find((x) => x.id === "scene2");
-    const one = s2.data.radar.focus[0];
+    const one = s2.data.radar.focus.find((x) => x.boat === 1);
     let hit = null;
     for (let k = 1; k <= 12 && !hit; k++) {
       const more = scenes.map((x) => (x === s2 ? { ...x, data: { ...x.data, radar: { ...x.data.radar, focus: [...x.data.radar.focus, ...Array.from({ length: k }, () => one)] } } } : x));
@@ -693,7 +724,10 @@ for (const f of fixtures) {
       }
     }
     assert.ok(hit, "条件の2つ目を外す経路を通った");
-    assert.equal(hit.scenes[0].data.steps.length, 1, "条件の2つ目を外した");
+    // v2: 会場の棒→今日の条件の順に外す。外した段は無く、冒頭の数字は残る
+    const gone = hit.omitted.filter((o) => o.where === "entry.scene1").map((o) => o.id);
+    assert.ok(gone.every((id) => !hit.scenes[0].data.steps.some((st) => st.id === id)), `外した段が残っていない（${gone}）`);
+    assert.equal(hit.scenes[0].data.steps[0].id, "entry-hero", "冒頭の数字は外さない");
     assert.ok(hit.total <= ENTRY_MAX_FRAMES, "外して59秒以内");
   }
 }
@@ -773,6 +807,17 @@ for (const f of fixtures) {
     assert.equal(raceHeader({ year: 2026, month: 10, day: 22, venue: "児島", raceNo: 12, round: "junyu", deadline: "16:44:00" }), "10/22（木）児島12R 準優勝戦 締切16:44");
     assert.equal(raceHeader({ year: 2026, month: 10, day: 22, venue: "児島", raceNo: 12, round: "nazo", deadline: null }), "10/22（木）児島12R", "対応に無い値は書かない");
     assert.equal(utmUrl("2026-10-22-16-12", "youtube", "shorts"), "https://www.boat-ai.jp/race/2026-10-22-16-12?utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=2026-10-22-16-12&utm_term=shorts");
+  }
+  // 入口版 v2: Shorts の題は「レース名＋問い＋冒頭の数字」（冒頭の数字と同じ値）
+  {
+    const m = load(fixtures[0]);
+    const scenes = buildAll(m);
+    const e = entryScenes(scenes, templateText(allBeats(scenes)).answers, { race: "桐生12R" });
+    assert.ok(e.hero, "前提: 冒頭の数字がある");
+    const b = buildBundle({ raceId: m.raceId, venue: "桐生", raceNo: 12, month: 10, day: 12, round: "yusho", facts: { venue90: null, overview: null, conclusion: null, hero: e.hero }, chapters: CH, fullSeconds: 211, qa: qaAll });
+    assert.equal(b.youtube_shorts.title, `桐生12R 優勝戦（10/12）1号艇は堅い？ ${e.hero.title}`);
+    assert.ok(b.youtube_shorts.title.includes(e.hero.value), "題の数字は冒頭の数字と同じ値");
+    assert.deepEqual(checkBundle(b), [], "v2 の題でも束の形を通る（100字以内）");
   }
   const b0 = bundleOf(fixtures[0]);
   has(checkBundle({ ...b0, x_text: b0.x_text.replace(/\?utm_[^\s]+/, "") }), "UTM つき");
