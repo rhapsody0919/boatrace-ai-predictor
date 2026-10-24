@@ -7,20 +7,32 @@ import {
   getVenueType,
   VENUE_1COURSE_WIN_RATE,
   VENUE_TYPE,
+  VENUE_VOLATILITY_THRESHOLD,
   VENUE_VOLATILITY_THRESHOLD_DEFAULT,
 } from "../lib/venueParameters.js";
 
 // 未定の期待値は assert しない。現行の表に無い入力の仕様を追加しない。
+let zeroRateThreshold;
+try {
+  VENUE_1COURSE_WIN_RATE["99"] = 0;
+  zeroRateThreshold = getVolatilityThreshold("99");
+} finally {
+  delete VENUE_1COURSE_WIN_RATE["99"];
+}
 const KNOWN_GAPS = [
   {
     input: "会場の率が0（現行の表には無し）",
     specification: "未定（式だけなら75）",
-    current: "!rate により既定の65",
+    current: zeroRateThreshold,
   },
   {
     input: "旧 VENUE_VOLATILITY_THRESHOLD と動的な式の差",
     specification: "未定（旧表は参照用で、一致の仕様は無い）",
-    current: "例: 02 は旧表55、動的な式64",
+    current: {
+      venueCode: "02",
+      legacy: VENUE_VOLATILITY_THRESHOLD["02"],
+      dynamic: getVolatilityThreshold("02"),
+    },
   },
 ];
 console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length}件`);
@@ -54,6 +66,28 @@ test("表に無い会場の閾値は既定の65", () => {
   assert.equal(VENUE_VOLATILITY_THRESHOLD_DEFAULT, 65);
   for (const code of ["99", undefined]) {
     assert.equal(getVolatilityThreshold(code), VENUE_VOLATILITY_THRESHOLD_DEFAULT);
+  }
+});
+
+test("閾値の下限は式の値44を45に制限する", () => {
+  try {
+    VENUE_1COURSE_WIN_RATE["99"] = 0.93;
+    const actual = getVolatilityThreshold("99");
+    assert.equal(actual, 45);
+    assert.ok(Number.isInteger(actual));
+  } finally {
+    delete VENUE_1COURSE_WIN_RATE["99"];
+  }
+});
+
+test("閾値の上限は式の値76を75に制限する", () => {
+  try {
+    VENUE_1COURSE_WIN_RATE["99"] = 0.13;
+    const actual = getVolatilityThreshold("99");
+    assert.equal(actual, 75);
+    assert.ok(Number.isInteger(actual));
+  } finally {
+    delete VENUE_1COURSE_WIN_RATE["99"];
   }
 });
 
