@@ -44,6 +44,17 @@ for (const timezoneId of ["UTC", "America/Los_Angeles"]) {
       await expect(page.locator(".month-group")).toHaveCount(1);
     });
 
+    test("開催日の会場一覧の見出し・title は日本の暦日で出る", async ({
+      page,
+    }) => {
+      // /races/:date の h1・title・パンくずは URL の日付を formatDate で出す。端末が JST より西だと前日になっていた
+      await page.goto("/races/2026-09-18");
+      await expect(page).toHaveTitle(/^2026年9月18日\(金\)のAI予想データ/);
+      await expect(
+        page.locator("h1", { hasText: "2026年9月18日(金)" }),
+      ).toBeVisible();
+    });
+
     test("レース詳細の会場の傾向パネルの集計基準日は日本の暦日で出る", async ({
       page,
     }) => {

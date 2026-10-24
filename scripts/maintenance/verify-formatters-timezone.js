@@ -4,8 +4,8 @@
  *
  * formatDate・formatDateObject は `new Date(dateStr + "T00:00:00+09:00")` をローカル時刻の getDate() で読んでいたため、
  * JST より西（UTC のサーバー・海外のブラウザ）で1日前になっていた（TZ=UTC で 2026-10-25 が「2026年10月24日(土)」。
- * /races の日付カードが、リンク先 /races/2026-10-24 と違う「10/23(金)」を出していた）。
- * BOA-1086 の verify-formatters.js が KNOWN_GAPS に残した件を、ここで仕様として固定する。
+ * /races の日付カードが、リンク先 /races/2026-10-24 と違う「10/23(金)」を出し、/races/:date の見出し・title も前日だった）。
+ * BOA-1086（PR #1877、formatters.js 全体の verify）が JST 以外を KNOWN_GAPS（合否に含めない）に残した件を、ここで仕様として固定する。
  *
  * TZ は process.env.TZ の代入で切り替える（Node は代入でタイムゾーンを読み直す）。ネットワーク・DB は使わない。
  */
