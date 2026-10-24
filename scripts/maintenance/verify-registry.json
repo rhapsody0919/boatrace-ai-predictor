@@ -416,6 +416,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-fortune-systems.js",
+      "tier": "ci",
+      "guards": "4占術の配点・日付境界・12分類とFORTUNE_SYSTEMSの関数参照（BOA-1073）"
+    },
+    {
       "script": "verify-frontend-pure-functions.js",
       "tier": "ci",
       "guards": "画面側の純関数（basicInfoStats / raceStatus / courseGridStats / venueDayTrend / weatherInfo）の、過去に fix が入った箇所の回帰と変異検証（BOA-255）"
