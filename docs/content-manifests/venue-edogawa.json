@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "venue-edogawa",
+ "kind": "revision",
+ "ticket": "BOA-958",
+ "paths": [
+  "public/blog/venue-edogawa.md",
+  "src/data/blog-posts/venue-edogawa.json"
+ ],
+ "files": {
+  "public/blog/venue-edogawa.md": "f6f80081cb60268c28608f2d67fdca3ab6ee95b16dbc8df25c620edb7c78900d",
+  "src/data/blog-posts/venue-edogawa.json": "8d5dd71b88fb7db014fa475344a01e633e0e5bd44926233aa89c9f01f4afe445"
+ },
+ "content_sha256": "87aba417a11a7b1ee2206ebc905292ba47d81f2de61755d0021cecf60f393ffb",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "87aba417a11a7b1ee2206ebc905292ba47d81f2de61755d0021cecf60f393ffb",
+   "model": "codex-default/high",
+   "at": "2026-10-24T09:08:10+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "87aba417a11a7b1ee2206ebc905292ba47d81f2de61755d0021cecf60f393ffb",
+   "model": "codex-default/high",
+   "at": "2026-10-24T09:08:10+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "87aba417a11a7b1ee2206ebc905292ba47d81f2de61755d0021cecf60f393ffb",
+   "model": "codex-default/high",
+   "at": "2026-10-24T09:08:10+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "87aba417a11a7b1ee2206ebc905292ba47d81f2de61755d0021cecf60f393ffb",
+   "model": "codex-default/high",
+   "at": "2026-10-24T09:08:10+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-24T09:09:33+09:00",
+ "run": "20261024T090117-seo-human",
+ "engine": "codex"
+}
