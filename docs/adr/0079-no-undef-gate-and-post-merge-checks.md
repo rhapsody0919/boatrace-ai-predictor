@@ -61,13 +61,13 @@
 
 開発効率の計画（`docs/design/dev-efficiency/plan.md` の 1a・4）で、本 ADR の範囲を次のように広げる。元の決定（lint 全体を PR の関門にしない・`checkJs` を全体に入れない）は変えない。
 
-1. **lint は verify:ci の中で、ESLint の1回の実行に複数の規則を見る。** `verify-no-undef.js` の `ruleFilter` を規則の一覧に広げ、同じ対象のディレクトリ・同じ「検査されなかったファイルは失敗」の扱いで回す。`npm run lint`（`eslint .`）を必須にはしない。`.github` は変えない（Quality Gates が verify:ci を走らせる）
+1. **lint は verify:ci の中で、ESLint の1回の実行に複数の規則を見る。** `verify-no-undef.js` に規則の一覧を渡す引数を足し、`verify-registry.json` の行の `args` で verify:ci のときだけ一覧を渡す。同じ対象のディレクトリ・同じ「検査されなかったファイルは失敗」の扱いで回す。**引数が無いときは今のまま no-undef だけ**にする。`post-merge-checks.yml:69` は引数なしで呼ぶので、マージ後の Slack は no-undef・build のまま（上の「採らなかった案」3行目の「マージ後の通知は本番に出ると壊れるものに絞る」を保つ。system-architect の審査 P2、2026-10-24）。`npm run lint`（`eslint .`）を必須にはしない。`.github` は変えない（Quality Gates が verify:ci を走らせる）
    - 最初に入れるのは今の違反が少ない規則（`no-empty`・`no-irregular-whitespace` 等）と、`src` だけの `react-hooks/rules-of-hooks`。違反を直してから入れる
    - `no-unused-vars` は既存の違反の解消（BOA-1015〜1018・1024）の後
    - 抑制の一覧は規則ごとに持ち、解消済みの行が残っていても失敗にする（決定2の流儀のまま）。ファイルの中の `eslint-disable` の追加も検出し、一覧を通らない抑制を塞ぐ
-   - 「lint 全体を PR の関門にする」を採らなかった理由（既存の違反が多数）はそのまま当てはまる。実測 error 345（system-architect、2026-10-24。範囲の取り方で 352〜699、plan.md 1a）。規則ごとに違反を 0 にしてから足すので、無関係な既存の違反で落ちない
+   - 「lint 全体を PR の関門にする」を採らなかった理由（既存の違反が多数）はそのまま当てはまる。実測 error 345〜699（範囲の取り方で変わる。system-architect の実測 345、e2d194f35 の `eslint .` 全体 699・docs と sns-video-studio を除く 352。1a で verify-no-undef と同じ対象で数え直す、plan.md 1a）。規則ごとに違反を 0 にしてから足すので、無関係な既存の違反で落ちない
 2. **型の検査（`@ts-check` と範囲を限った `tsc --noEmit`）は pure の根（`src/pure/**`・`scripts/lib/pure/**`、`docs/design/codex-direct-pr/design.md` §4.2）の中だけ。** `checkJs` を全体に入れない元の決定と両立する理由:
    - 元の理由は「既存のコードへの導入の費用が大きい」。pure の根は新しく作るフォルダで、入る物は切り出しの PR で1関数ずつ移すので、既存の違反の山が無い。導入の費用が元の理由の前提に当たらない
-   - pure の根は `verify-pure-imports.js` で根の外を読めない。型の検査の範囲が import でほかのファイルへ広がらない（`tsc` が根の外の型を引き込まない）
+   - pure の根は `verify-pure-imports.js` で根の外を読めない。型の検査の範囲が import でほかのファイルへ広がらない。ただし `tsc` は JSDoc の `import('...')` 型と `/// <reference>` も解決し、既定の `lib` は DOM を含み `@types/*`（今は `@types/react`・`@types/react-dom`）も自動で入る。範囲を閉じる条件として、(a) verify-pure-imports.js がコメントの中の `import(` と `/// <reference` も import と同じ判定にかける (b) jsconfig に `"types": []` と DOM を含まない `"lib"`（例 `["ES2022"]`）を置く、の2つを満たす（system-architect の審査 P2、2026-10-24）
    - no-undef が捕まえない「名前はあるが引数・戻り値の形が変わった」（本 ADR の限界）を、共有される純関数に限って捕まえる。画面と定期の job の両方から呼ばれる関数ほど、この壊れ方の害が大きい
    - 「await し忘れ」（`no-floating-promises` 相当、型の情報が要る規則）も、この型の段まで入れない

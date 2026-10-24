@@ -41,6 +41,7 @@ flowchart TD
 ### 1a. lint の範囲を広げる
 
 - `scripts/maintenance/verify-no-undef.js` を、ESLint の1回の実行（`ruleFilter` に複数の規則）で見る形に広げ、verify:ci の中で回す。`.github` は変えない（Quality Gates が既に verify:ci を必ず走らせる）
+- 規則の一覧は引数で渡し、`verify-registry.json` の行の `args` で verify:ci のときだけ付ける。引数なしは今のまま no-undef だけ。`post-merge-checks.yml:69` が引数なしで呼ぶので、マージ後の Slack の範囲は広がらない（ADR-0079 追記）
 - 最初に error にするもの: 今の違反が少ない規則（`no-empty`・`no-irregular-whitespace` 等）と、`src` だけの `react-hooks/rules-of-hooks`
 - `no-unused-vars` は BOA-1015〜1018・1024（既存の違反の解消）の後に入れる
 - 抑制の一覧（`verify-no-undef-allowlist.json` を規則ごとに広げたもの）は、解消済みの行が残っていても落とす（今の流儀のまま）
@@ -70,10 +71,11 @@ flowchart TD
 - SQL を変えていない証拠: その PR の E2E で、録画に無いリクエストの素通しが0件（`scripts/maintenance/report-e2e-passthrough.js` の集計）。録画の照合は URL（PostgREST のクエリ）で行うので、クエリが変われば素通しが出る。限界: E2E が通らない関数のクエリは証拠にならない。そういう関数は SQL の部分を移さない
 - 依存が `src/utils` にある関数は、1b が決まるまで `src/services` の下の別ファイル（Node で import できるもの）に移す。1b の後に pure の根へ移し直す
 - 切り出しの PR は自動マージしない（design §4.2「切り出しの PR」）
+- 切り出しの最初の PR で、共通ロジックの索引（`scripts/maintenance/generate-lib-index.js` の TARGETS）に `src/pure` を足す。足さないと移した関数が索引から消える（design §4.2 追記）
 
 ### 4. 型の検査
 
-- pure の根の中だけ `// @ts-check` を付け、範囲を限った `tsc --noEmit`（jsconfig の `include` を pure の根だけにする）を verify:ci の中で回す
+- pure の根の中だけ `// @ts-check` を付け、範囲を限った `tsc --noEmit`（jsconfig の `include` を pure の根だけ、`"types": []`、DOM を含まない `"lib"`）を verify:ci の中で回す。JSDoc の `import('...')` 型と `/// <reference` で根の外が入らないよう、verify-pure-imports.js がコメントの中も見る（ADR-0079 追記）
 - `typescript` は今 devDependency に無い。足す PR は `package.json` を変えるので Claude の PR（Codex の G5 の対象）
 - 全体に `checkJs` を入れない理由は ADR-0079 の追記
 

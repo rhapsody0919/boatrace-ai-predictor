@@ -89,3 +89,7 @@
 - ESLint の error は 345（system-architect の実測）。範囲で数が変わり、e2d194f35 の再測は eslint . 全体で 699、docs・sns-video-studio を除くと 352（no-unused-vars 316）。lint 全体を必須にせず、違反を 0 にした規則から verify:ci に足す（2026-10-24、ADR-0079 追記、plan.md 1a）
 - E2E で録画に無いリクエストの素通しが0件なら、その E2E が通る経路の SQL（PostgREST のクエリ）を変えていない証拠になる。録画は URL で照合するので、クエリが変われば素通しに出る。E2E が通らない関数のクエリは証拠にならない（2026-10-24、system-architect の審査、e2e/fixtures.js:35・426、scripts/maintenance/report-e2e-passthrough.js）
 - ADR-0072 の「ci が100本を超えたらランナーを見直す」の線を越えた（2026-10-24 の台帳で ci 239本・manual 12本）。当面は自作のランナーを続け、新しい純関数の試験だけ新しい verify ファイルにする。vitest・node:test への移行は3件の切り出しの後に見直す（2026-10-24、ADR-0072 追記）
+- ESLint の flat config は languageOptions.globals を上から重ねて合わせるので、後のブロックの globals: {} では node・browser の名前を消せない。消すには "off" を並べるか、overrideConfigFile: true の別の設定で検査する（2026-10-24、system-architect の審査、eslint.config.js:19・45）
+- post-merge-checks.yml:69 は verify-no-undef.js を引数なしで直接呼ぶ。このスクリプトの既定の規則を増やすと、マージ後の Slack の範囲も広がる。規則を広げるのは引数（台帳の args）で行う（2026-10-24、system-architect の審査、ADR-0079 追記）
+- 共通ロジックの索引（generate-lib-index.js:39-55）の対象は scripts/lib・src/utils・src/services だけで、再 export の行は export に数えない。src/pure に移すときは TARGETS に足す（2026-10-24、system-architect の審査）
+- tsc の範囲を include で絞っても、JSDoc の import('...') 型と /// <reference> を伝って根の外が入る。既定の lib は DOM を含み、@types/* も自動で入る。閉じるには types: [] と DOM なしの lib（2026-10-24、system-architect の審査）
