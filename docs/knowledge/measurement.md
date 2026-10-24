@@ -63,3 +63,5 @@
 - 費用見込みの終端は全source共通の最終日でなく、sourceごとの確定済み最終日を使う。請求確定が遅れるsourceの未確定日を0ドルで平均へ入れず、検算時は各sourceの最後のdateと確定状況を先に確認する（2026-10-21、finance、ledger/costs.jsonl のsource別終端点検）
 - sns-channel-daily.csvのdayがUTCの15:00で、definitionがJSTの暦日を指す場合、表へ転記する日付はJSTへ直す。UTCの日付のままでは1日ずれるため、報告には時区変換を明記する。他のSNS指標の時区へ一般化しない（2026-10-21、measurement、company-in/sns-db/sns-channel-daily.csv のday・definition）
 - sns-post-metrics.csvで投稿24時間後の累積値を使うときは、window=24hかつobserved_atが投稿24時間後以降の行を選ぶ。day_endは別窓で、23:00 JSTの取得前に作った写しには当日分が無い。窓名・観測時刻・写しの取得時刻を照合し、未取得を0にしない（2026-10-22、measurement、company-in/sns-db/sns-post-metrics.csv）
+- Search ConsoleのURL検査で429などの取得失敗が特定の群に偏ると、indexed÷checkedは群全体の代表値にならない。再検査後も群ごとのerrors件数を併記し、取得失敗のある群と全件取得できた群の率を同条件として比較しない（2026-10-23、measurement、company-in/growth-main/2026-10-18/summary.json・inspect-retry.jsonl）
+- gsc_daily.jsonの更新待ちで日別値が欠ける場合、growth-mainのgsc-date.jsonを補完候補にできる。使う前に重なる日の値が一致するか確認し、補完した日と出典・更新時点を残す。一部の日の一致を将来の更新分まで同値である保証にしない（2026-10-23、measurement、company-in/growth-main/2026-10-18/gsc-date.json・hq/state/growth-dashboard/gsc_daily.json）

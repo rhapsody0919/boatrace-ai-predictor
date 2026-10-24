@@ -136,7 +136,8 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     ]).replace(/\n{3,}/g, "\n\n"),
   };
   const youtube_shorts = {
-    title: `${label}（${date}）1号艇は堅い？ 同じ並びの過去の着順`,
+    // レース名＋問い＋その日の数字（冒頭の数字と同じ値。hq 契約 10/24 v2。「〜で読み解く展開」型はやめる）
+    title: `${label}（${date}）1号艇は堅い？ ${facts?.hero?.title ?? "同じ並びの過去の着順"}`,
     description: join([
       `ボートレース ${header} 1号艇は堅い？`,
       L.venue,

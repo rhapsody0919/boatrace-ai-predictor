@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "venue-waku-nari-entry-rate",
+ "kind": "new",
+ "ticket": "OC-20261024T105934-seo-human-1",
+ "paths": [
+  "public/blog/venue-waku-nari-entry-rate.md",
+  "src/data/blog-posts/venue-waku-nari-entry-rate.json"
+ ],
+ "files": {
+  "public/blog/venue-waku-nari-entry-rate.md": "3c13e24f1f6bfc1f8b2f343eee2728feb2ef9ce93adaca5377f9b1923f173936",
+  "src/data/blog-posts/venue-waku-nari-entry-rate.json": "6508b5b5cc1eb4239c39e20ca11df3569f52912b6dcaeb8c004b6a0de20a96c9"
+ },
+ "content_sha256": "1ad21ecf1cb25113a7d5058f30394df04010e3a1cdcc57a7f72c6fa818f78fc5",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "1ad21ecf1cb25113a7d5058f30394df04010e3a1cdcc57a7f72c6fa818f78fc5",
+   "model": "opus",
+   "at": "2026-10-24T11:05:53+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "1ad21ecf1cb25113a7d5058f30394df04010e3a1cdcc57a7f72c6fa818f78fc5",
+   "model": "opus",
+   "at": "2026-10-24T11:05:53+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 3,
+   "reviewed_sha256": "1ad21ecf1cb25113a7d5058f30394df04010e3a1cdcc57a7f72c6fa818f78fc5",
+   "model": "opus",
+   "at": "2026-10-24T11:05:53+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 2,
+   "reviewed_sha256": "1ad21ecf1cb25113a7d5058f30394df04010e3a1cdcc57a7f72c6fa818f78fc5",
+   "model": "opus",
+   "at": "2026-10-24T11:05:53+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-24T11:07:20+09:00",
+ "run": "20261024T105934-seo-human",
+ "engine": "claude"
+}
