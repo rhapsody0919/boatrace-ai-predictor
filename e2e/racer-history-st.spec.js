@@ -1,6 +1,30 @@
 import { test, expect } from "./fixtures.js";
 
 /**
+ * レース一覧（10走ずつのページ。新しい順）から、race_id の走の行を探す。1ページ目に無ければ「次へ →」で送る。
+ * 録画に無い取得が本番へ素通しすると、録画の時刻より後の走が前に入り、狙いの走が2ページ目以降に
+ * 押し出される（BOA-1051 で選手の race_entries の取得の URL が変わったとき、5250 は録画後10走・
+ * 3928 は9走で起きた）。何ページ目にあるかは表示の仕様ではないので、ページに依らずに引く
+ */
+async function findRaceRow(page, raceId) {
+  const row = page.locator("tr", {
+    has: page.locator(`a[href$="/race/${raceId}"]`),
+  });
+  const next = page
+    .locator(".racer-vc-pager")
+    .getByRole("button", { name: "次へ →" });
+  await expect(
+    page.locator(".racer-vc-race-list tbody tr").first(),
+  ).toBeVisible({ timeout: 30000 });
+  for (let i = 0; i < 20; i += 1) {
+    if ((await row.count()) > 0) break;
+    if ((await next.count()) === 0 || (await next.isDisabled())) break;
+    await next.click();
+  }
+  return row;
+}
+
+/**
  * 選手ページの履歴は本番ST（race_start_timings）と公式の着欄の記号を出す（BOA-576）。
  * 以前は ST を展示ST（exhibition_data.start_timing）から出し、落・転・妨などの走を「着外(順位不明)」としていた。
  * 選手5250の本番データ（2026-09-30 確認）:
@@ -11,15 +35,13 @@ test("選手ページの履歴: 本番STと公式の記号を出す", async ({ p
   await page.goto("/racer/5250");
   // 行は日付のリンク先（race_id）で引く。日付は月日だけになり、R のセルには
   // 種別も入るので、文字では一意に取れない（BOA-623）
-  const rowOf = (raceId) =>
-    page.locator("tr", { has: page.locator(`a[href$="/race/${raceId}"]`) });
   // 9/24 は2走（5R・10R）ある。10R の行を取る
-  const r0924 = rowOf("2026-09-24-01-10");
+  const r0924 = await findRaceRow(page, "2026-09-24-01-10");
   await expect(r0924).toBeVisible({ timeout: 30000 });
   // ST は公式の表記（.02）。先頭の0は省く（BOA-623）
   await expect(r0924).toContainText(".02");
   await expect(r0924).not.toContainText(".06");
-  const r0921 = rowOf("2026-09-21-01-11");
+  const r0921 = await findRaceRow(page, "2026-09-21-01-11");
   await expect(r0921).toContainText("落");
   await expect(r0921).not.toContainText("着外");
 });
@@ -31,9 +53,7 @@ test("選手ページの履歴: フライングの走は着順でなく F を出
   page,
 }) => {
   await page.goto("/racer/4069");
-  const row = page.locator("tr", {
-    has: page.locator('a[href$="/race/2026-09-22-16-01"]'),
-  });
+  const row = await findRaceRow(page, "2026-09-22-16-01");
   await expect(row).toBeVisible({ timeout: 30000 });
   await expect(row).toContainText("F.01");
 });
@@ -43,9 +63,7 @@ test("選手ページの履歴: race_results の着順に入った返還艇（F�
   page,
 }) => {
   await page.goto("/racer/3928");
-  const row = page.locator("tr", {
-    has: page.locator('a[href$="/race/2026-09-19-02-09"]'),
-  });
+  const row = await findRaceRow(page, "2026-09-19-02-09");
   await expect(row).toBeVisible({ timeout: 30000 });
   await expect(row).toContainText("F.04");
   // 着欄は見出しが「着順」の列（BOA-569 で R のすぐ右に移したので、位置で決め打ちしない）
