@@ -27,23 +27,32 @@
  *     browser・node の名前を消せないため（design §4.2 追記の審査 P2）
  *   - 組み込みでも抜け道になるもの（globalThis・eval・Function）と、window・self・process・fetch・
  *     XMLHttpRequest・WebSocket・import.meta は名指しで禁止する（同じ名前を自分で宣言した変数は対象外）
- *   - ファイル内の設定コメント（eslint-disable・global 等）は noInlineConfig で効かせず、あれば失敗にする
+ *   - ファイル内の設定コメント（eslint-disable・global 等）は noInlineConfig で効かせない（違反は消えずに落ちる）。
+ *     コメント自体は落とさない（「global な…」で始まる説明のコメントも ESLint は設定コメントと読むため）
  *
  * 根の中に置けるのは .js の通常のファイルだけ（.json・.mjs・.jsx・シンボリックリンク等は失敗）。
  * 外から import される JSON や検査されない拡張子を根の中に置いて、自動マージの範囲を広げさせないため。
+ * 一覧は git ls-files（追跡済み＋未追跡で無視されないもの）から取る。根そのものがリンクでも落ちる。
  *
  * 毎回、自己テスト（変異）で禁止の形を1つずつ流し、落ちることを確かめる。入力は lintText と仮のパスで
  * メモリの上で作り、ディスクに一時ファイルを書かない（verify:ci は並行で走り、一時ファイルを他の verify に
  * 拾われるため。PR #1819 と同じ流儀）。
  *
+ * 組み込みの書き換え（JSON.stringify=・Date.prototype.toJSON=・Object.defineProperty(Object.prototype, …)
+ * 等）も落とす。読み込んだ job の中の supabase-js 等の動きが変わり、DB に書く値を誤らせるため
+ * （no-global-assign・no-extend-native と自前の判定）。
+ *
  * 限界（静的な検査で塞がないもの）: ({}).constructor.constructor のように組み込みのプロトタイプを辿って
- * Function に届く形、根の中の .js が実在するかどうか（実行時に落ちる）。誤りを誘う意図の無い PR の
- * 取り違え（根の外の import・グローバル）を落とすのが目的。
+ * Function に届く形、組み込みを別名に入れてから書き換える形（const P = Array.prototype; P.x = 1）、
+ * 実行する機械の時間帯・言語で値が変わる計算（new Date().getHours()・toLocale*。dateUtils を移せなく
+ * なるので止めない）、無限ループ、根の中の .js が実在するかどうか（実行時に落ちる）。誤りを誘う意図の
+ * 無い PR の取り違え（根の外の import・グローバル・組み込みの書き換え）を落とすのが目的。
  *
  * 使い方: node scripts/maintenance/verify-pure-imports.js
  */
 import { ESLint } from "eslint";
 import globals from "globals";
+import { execFileSync } from "node:child_process";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -124,20 +133,76 @@ function staticString(node) {
 function commentImports(comment) {
   const found = [];
   const text = comment.value;
-  for (const m of text.matchAll(/\bimport\s*\(\s*(['"`])([^'"`]*)\1\s*\)/g))
-    found.push({ spec: m[2] });
-  for (const m of text.matchAll(/@import\b[\s\S]*?\bfrom\s*(['"])([^'"]*)\1/g))
-    found.push({ spec: m[2] });
-  // /// <reference …/> は行コメント（本文は "/ <reference …"）
-  if (comment.type === "Line" && /^\/\s*<reference\b/.test(text)) {
-    const p = text.match(/\bpath\s*=\s*(['"])([^'"]*)\1/);
-    if (p) found.push({ spec: p[2] });
-    else
+  // 型の import() と @import を tsc が読むのは JSDoc（/** … */）だけ。説明の行コメントは見ない
+  if (comment.type === "Block" && text.startsWith("*")) {
+    // tsc は各行の先頭の * を飛ばして読む。改行をはさんだ import(\n * "…") も同じに扱う
+    const body = text.replace(/^\s*\*/gm, " ");
+    const imports = [
+      ...body.matchAll(/\bimport\s*\(\s*(['"`])([^'"`]*)\1\s*\)/g),
+    ];
+    const atImports = [
+      ...body.matchAll(/@import\b[\s\S]*?\bfrom\s*(['"])([^'"]*)\1/g),
+    ];
+    for (const m of [...imports, ...atImports]) found.push({ spec: m[2] });
+    // 行き先を取り出せない import( ・@import は落とす（見落としを合格にしない向き）
+    const importCount = (body.match(/\bimport\s*\(/g) ?? []).length;
+    const atImportCount = (body.match(/@import\b/g) ?? []).length;
+    if (importCount !== imports.length || atImportCount !== atImports.length)
       found.push({
-        bad: `/// <reference> は path= だけ許す: "//${text.trim()}"`,
+        bad: `JSDoc の import( ・@import の行き先を取り出せません（文字列で1つずつ書く）: "${body.replace(/\s+/g, " ").trim().slice(0, 120)}"`,
       });
   }
+  // /// <reference …/> は行コメント（本文は "/ <reference …"）。tsc は名前・属性の大文字小文字を区別しない。
+  // 属性は path= の1つだけを許す（types=・lib=・no-default-lib= が並んでいれば、path= があっても不合格）
+  if (comment.type === "Line" && /^\/\s*<reference\b/i.test(text)) {
+    const attrs = [...text.matchAll(/([\w-]+)\s*=\s*(['"])([^'"]*)\2/g)].map(
+      (m) => ({ name: m[1].toLowerCase(), value: m[3] }),
+    );
+    if (attrs.length === 1 && attrs[0].name === "path") {
+      // tsc は path= の素の名前（"types.js"）もそのファイルからの相対で読む
+      const p = attrs[0].value;
+      found.push({ spec: /^(\.\.?\/|\/)/.test(p) ? p : `./${p}` });
+    } else {
+      found.push({
+        bad: `/// <reference> は path= の1つだけを許す（types=・lib= 等は不可）: "//${text.trim()}"`,
+      });
+    }
+  }
   return found;
+}
+
+/** 第1引数の物を書き換える組み込みの関数（Object.defineProperty(Array.prototype, …) 等） */
+const MUTATING_CALLS = {
+  Object: ["defineProperty", "defineProperties", "assign", "setPrototypeOf"],
+  Reflect: ["set", "defineProperty", "deleteProperty", "setPrototypeOf"],
+};
+
+const propName = (m) =>
+  m.computed ? staticString(m.property) : m.property.name;
+
+/**
+ * 組み込みのグローバルの識別子が、書き換えの先の根になっているか。
+ * 対象: 組み込み（またはその先の a.b.c）への代入・++/--・delete、
+ * Object.defineProperty 等・Reflect.set 等の第1引数。別名に入れてから書き換える形は塞がない（限界）
+ */
+function mutatesBuiltin(identifier) {
+  let top = identifier;
+  while (top.parent?.type === "MemberExpression" && top.parent.object === top)
+    top = top.parent;
+  const p = top.parent;
+  if (p?.type === "AssignmentExpression" && p.left === top) return true;
+  if (p?.type === "UpdateExpression") return true;
+  if (p?.type === "UnaryExpression" && p.operator === "delete") return true;
+  if (p?.type === "CallExpression" && p.arguments[0] === top) {
+    const c = p.callee;
+    if (
+      c.type === "MemberExpression" &&
+      c.object.type === "Identifier" &&
+      MUTATING_CALLS[c.object.name]?.includes(propName(c))
+    )
+      return true;
+  }
+  return false;
 }
 
 const pureImportsRule = {
@@ -150,6 +215,8 @@ const pureImportsRule = {
         "{{what}} の行き先が文字列ではありません（行き先を決められないので不合格）",
       banned: "{{name}} は pure の根では使えません",
       importMeta: "import.meta は pure の根では使えません",
+      builtinMutation:
+        "組み込みの {{name}} を書き換えています（代入・delete・defineProperty 等）。pure の根では使えません",
     },
   },
   create(context) {
@@ -213,8 +280,20 @@ const pureImportsRule = {
             }
           }
         }
-        // グローバルに解決された参照（宣言済みの組み込み）と、解決されなかった参照（through）の両方
         const globalScope = sourceCode.getScope(program);
+        // 組み込み（JSON・Date・Array.prototype 等）の書き換え。読み込んだ job の中の supabase-js 等の
+        // 動きまで変わり、DB に書く値を誤らせるため（system-architect の審査 P2-1）
+        for (const variable of globalScope.variables) {
+          for (const ref of variable.references) {
+            if (mutatesBuiltin(ref.identifier))
+              context.report({
+                node: ref.identifier,
+                messageId: "builtinMutation",
+                data: { name: variable.name },
+              });
+          }
+        }
+        // グローバルに解決された参照（宣言済みの組み込み）と、解決されなかった参照（through）の両方
         for (const name of BANNED_GLOBALS) {
           const refs = [
             ...(globalScope.set.get(name)?.references ?? []),
@@ -252,19 +331,28 @@ const eslint = new ESLint({
       plugins: { pure: { rules: { imports: pureImportsRule } } },
       rules: {
         "no-undef": ["error", { typeof: true }],
+        "no-global-assign": "error",
+        "no-extend-native": "error",
         "pure/imports": "error",
       },
     },
   ],
 });
 
-/** ESLint の結果を不合格の行に直す（違反・設定コメント・構文エラー） */
+// noInlineConfig のとき、設定コメントごとに ESLint が出す警告。効いていないので不合格にしない
+// （「global な…」で始まる説明のコメントも設定コメントと読まれ、落とすと誤検出になる）
+const NO_EFFECT_RE = /has no effect because you have 'noInlineConfig'/;
+
+/** ESLint の結果を不合格の行に直す（違反・構文エラー・検査されなかったファイル） */
 function problemsOf(results) {
   const problems = [];
   for (const r of results) {
     const file = toRel(r.filePath);
     for (const m of r.messages) {
-      const kind = m.ruleId ?? (m.fatal ? "parse" : "inline-config");
+      if (m.ruleId === null && !m.fatal && NO_EFFECT_RE.test(m.message))
+        continue;
+      // ruleId の無いもの: 構文エラー（fatal）と、無視の対象等で検査されなかったファイル
+      const kind = m.ruleId ?? (m.fatal ? "parse" : "unchecked");
       problems.push({
         file,
         line: m.line,
@@ -277,27 +365,44 @@ function problemsOf(results) {
   return problems;
 }
 
-/** 根の中を lstat で辿る。.js の通常のファイルと、置いてはいけないもの（他の拡張子・リンク等）に分ける */
-async function listRoot(rootRel) {
+/**
+ * 根の中のファイルを、git が扱うもの（追跡済み＋未追跡で .gitignore に当たらないもの）から取り、
+ * lstat で .js の通常のファイルと、置いてはいけないもの（他の拡張子・シンボリックリンク）に分ける。
+ * git に聞くのは、.DS_Store・node_modules 等の無視されるファイルで手元だけ落ちないため。
+ * 根そのものがリンクなら git はそれを1つのファイルとして返すので、リンクとして落ちる
+ */
+async function listPureFiles() {
+  let out;
+  try {
+    out = execFileSync(
+      "git",
+      [
+        "ls-files",
+        "-z",
+        "--cached",
+        "--others",
+        "--exclude-standard",
+        "--",
+        ...Object.keys(PURE_ROOTS),
+      ],
+      { cwd: ROOT, encoding: "utf8" },
+    );
+  } catch (e) {
+    throw new Error(`git ls-files で pure の根を一覧できません: ${e.message}`);
+  }
   const js = [];
   const misplaced = [];
-  const visit = async (rel) => {
-    let names;
+  for (const rel of [...new Set(out.split("\0").filter(Boolean))].sort()) {
+    let st;
     try {
-      names = await fs.readdir(path.join(ROOT, rel));
+      st = await fs.lstat(path.join(ROOT, rel));
     } catch (e) {
-      if (e.code === "ENOENT" && rel === rootRel) return; // 根が無い
-      throw new Error(`${rel} を読めません: ${e.message}`);
+      if (e.code === "ENOENT") continue; // 追跡済みで手元で消したもの
+      throw e;
     }
-    for (const name of names.sort()) {
-      const child = `${rel}/${name}`;
-      const st = await fs.lstat(path.join(ROOT, child));
-      if (st.isDirectory()) await visit(child);
-      else if (st.isFile() && name.endsWith(".js")) js.push(child);
-      else misplaced.push(child);
-    }
-  };
-  await visit(rootRel);
+    if (st.isFile() && rel.endsWith(".js")) js.push(rel);
+    else misplaced.push(rel);
+  }
   return { js, misplaced };
 }
 
@@ -526,6 +631,30 @@ const CASES = [
     code: '/// <reference path="../../types/x.d.ts" />\nexport const f = 1;\n',
     want: "pure/imports:badTarget",
   },
+  {
+    name: "/// <reference> に path= と types= が並ぶ",
+    file: SRC,
+    code: '/// <reference types="node" path="./a.js" />\nexport const f = 1;\n',
+    want: "pure/imports:badTarget",
+  },
+  {
+    name: "/// <Reference>（大文字。tsc は区別しない）",
+    file: SRC,
+    code: '/// <Reference LIB="dom" />\nexport const f = 1;\n',
+    want: "pure/imports:badTarget",
+  },
+  {
+    name: "/// <reference path> の素の名前は相対として判定する（根の中なら通す）",
+    file: SRC,
+    code: '/// <reference path="b.js" />\nexport const f = 1;\n',
+    want: "ok",
+  },
+  {
+    name: '説明の行コメント・/* */ の中の import("…") は見ない（tsc は JSDoc だけ読む）',
+    file: SRC,
+    code: '// 旧: import("../../services/x.js") から移した\n/* import("../../utils/y.js") */\n/* global な状態を持たない */\nexport const f = 1;\n',
+    want: "ok",
+  },
   // グローバル
   ...BANNED_GLOBALS.map((g) => ({
     name: `グローバル ${g}`,
@@ -581,18 +710,72 @@ const CASES = [
     code: "export const a = () => setTimeout(() => {}, 1);\n",
     want: "no-undef:undef",
   },
-  // 設定コメント・構文エラー
-  {
-    name: "/* global */ は効かず、設定コメントとして落ちる",
+  // 組み込みの書き換え（system-architect の審査 P2-1）
+  ...[
+    'JSON.stringify = (v) => "x";',
+    "Date.prototype.toJSON = function () { return 1; };",
+    'Object.defineProperty(Object.prototype, "q", { value: 1 });',
+    'Object.defineProperty(Array.prototype, "q", { value: 1 });',
+    "Object.assign(Math, { x: 1 });",
+    'Reflect.set(JSON, "parse", () => 1);',
+    "delete JSON.parse;",
+    "Math.counter++;",
+    'Error.prepareStackTrace = () => "";',
+  ].map((code) => ({
+    name: `組み込みの書き換え: ${code}`,
     file: SRC,
-    code: "/* global document */\nexport const a = 1;\n",
-    want: "inline-config",
+    code: `${code}\nexport const a = 1;\n`,
+    want: "pure/imports:builtinMutation",
+  })),
+  {
+    name: "組み込みそのものへの代入（no-global-assign）",
+    file: SRC,
+    code: "JSON = {};\nexport const a = 1;\n",
+    want: "no-global-assign:globalShouldNotBeModified",
   },
   {
-    name: "eslint-disable は効かず、設定コメントとして落ちる",
+    name: "組み込みを読むだけ・自分の物への assign・defineProperty・同名の自前の変数は通す",
+    file: SRC,
+    code: 'const o = {};\nObject.defineProperty(o, "q", { value: 1 });\nexport const a = Object.assign({}, o, { b: JSON.parse("1"), c: Array.prototype.slice.call([1]) });\nexport const f = () => { const Math = { x: 0 }; Math.x = 1; return Math; };\n',
+    want: "ok",
+  },
+  // 複数行の JSDoc（system-architect の審査 P2-2）
+  {
+    name: "改行をはさんだ JSDoc の import( で根の外",
+    file: SRC,
+    code: '/**\n * @typedef {import(\n *   "../../services/x.js"\n * ).T} T\n */\nexport const f = 1;\n',
+    want: "pure/imports:badTarget",
+  },
+  {
+    name: "改行をはさんだ @import で根の外",
+    file: SCR,
+    code: '/**\n * @import { A } from\n *   "../../x.js"\n */\nexport const f = 1;\n',
+    want: "pure/imports:badTarget",
+  },
+  {
+    name: "行き先を取り出せない JSDoc の import(",
+    file: SRC,
+    code: "/** @type {import(someName).T} */\nexport const f = 1;\n",
+    want: "pure/imports:badTarget",
+  },
+  // 設定コメントは効かない・構文エラー
+  {
+    name: "/* global document */ は効かず、document は no-undef で落ちる",
+    file: SRC,
+    code: "/* global document */\nexport const a = () => document.title;\n",
+    want: "no-undef:undef",
+  },
+  {
+    name: "eslint-disable は効かず、npm の import は落ちる",
     file: SRC,
     code: '// eslint-disable-next-line pure/imports\nimport x from "lodash";\nexport { x };\n',
-    want: "inline-config",
+    want: "pure/imports:badTarget",
+  },
+  {
+    name: "/* eslint-disable */ は効かず、window は落ちる",
+    file: SRC,
+    code: "/* eslint-disable */\nexport const a = () => window;\n",
+    want: "pure/imports:banned",
   },
   { name: "構文エラー", file: SRC, code: "export const = ;\n", want: "parse" },
 ];
@@ -644,11 +827,18 @@ async function main() {
     process.exit(1);
   }
 
-  const lists = await Promise.all(Object.keys(PURE_ROOTS).map(listRoot));
-  const js = lists.flatMap((l) => l.js);
-  const misplaced = lists.flatMap((l) => l.misplaced);
+  const { js, misplaced } = await listPureFiles();
   const results = js.length > 0 ? await eslint.lintFiles(js) : [];
   const problems = problemsOf(results);
+  // ESLint が黙ってファイルを飛ばしたら、検査されずに 0 件で通る。数をそろえて確かめる
+  if (results.length !== js.length)
+    problems.push({
+      file: "(全体)",
+      line: 0,
+      kind: "unchecked",
+      messageId: null,
+      message: `一覧の ${js.length} ファイルのうち ESLint の結果は ${results.length} 件`,
+    });
 
   if (misplaced.length > 0) {
     console.error(
