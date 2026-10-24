@@ -77,6 +77,27 @@ const blogTag = (path) => (/^\/(blog(\/|$)|((en|ko|zh-TW)\/?)?$)/.test(path) ? "
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+for (const path of ["/blog/10000-races-analysis", "/en/blog/10000-races-analysis"]) {
+  test(`ブログ記事の戻るリンクとカテゴリに375pxで余白がある: ${path} @blog`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto(path);
+    const header = page.locator(".blog-post-header");
+    await expect(header.locator(".back-link")).toBeVisible();
+    await expect(header.locator(".category-badge")).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`${path}$`));
+    await page.evaluate(() => document.fonts.ready);
+    const spacing = await header.evaluate((element) => {
+      const link = element.querySelector(".back-link").getBoundingClientRect();
+      const badge = element.querySelector(".category-badge").getBoundingClientRect();
+      return {
+        horizontal: badge.left - link.right,
+        wrapped: badge.top >= link.bottom,
+      };
+    });
+    expect(spacing.wrapped || spacing.horizontal >= 8, JSON.stringify(spacing)).toBe(true);
+  });
+}
+
 for (const venue of ["heiwajima", "biwako", "marugame"]) {
   test(`ブログ記事の表: ${venue} の1列目が375pxで折り返さない @blog`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });

@@ -26,6 +26,7 @@
    RaceDetail.cssの.back-linkと同じ理由・同じトークンで親スコープを指定 */
 .blog-post-header .back-link {
   color: var(--brand-accent-secondary);
+  margin-right: var(--spacing-3);
 }
 
 .blog-post-header .back-link:hover {
