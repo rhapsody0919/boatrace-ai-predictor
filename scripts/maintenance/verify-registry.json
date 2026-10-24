@@ -915,6 +915,11 @@
       "guards": "選手ページのインデックス判定（src/utils/racerIndexPolicy.js。ページの noindex と sitemap が共用）。崩れると B 級の大量インデックスか、現役 A1 の noindex 化が両方同時に起きる"
     },
     {
+      "script": "verify-racer-news-templates.js",
+      "tier": "ci",
+      "guards": "選手ニュースFR2の題・要約の定型文、返却キー2つ、入力表記の保持と禁止語の非追加。空・undefinedは仕様未定としてKNOWN_GAPSに出力"
+    },
+    {
       "script": "verify-racer-profile-sync.js",
       "tier": "ci",
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"
