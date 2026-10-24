@@ -10,14 +10,6 @@
     "no-undef": {},
     "no-empty": {},
     "no-irregular-whitespace": {
-      "src/components/holmes/explanations/MoriartyExplanation.jsx": {
-        "count": 2,
-        "reason": "式の説明の JSX の文字に、見た目の間隔として全角空白を直接書いている。BOA-1018 が {\"\\u3000\"} に直す。直したらこの行を消す"
-      },
-      "src/components/race/RacePitReportSection.jsx": {
-        "count": 1,
-        "reason": "コメントの例「峰（全角空白）竜太」。BOA-1018 が直す。直したらこの行を消す"
-      },
       "scripts/lib/kbFileParser.js": {
         "count": 2,
         "reason": "コメントに公式の払戻金の要約の表記「中（全角空白）止」をそのまま書いている（BOA-412）。動きに関係しない"
