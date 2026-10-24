@@ -17,13 +17,13 @@
 | 5 | 別ベンダーの API キーと月の上限 | 審査の PR（E）の前 | 15分 |
 | 6 | 作成の App の鍵を作り、テスト PR で承認が数えられるか確かめる | E のマージの後、トークンを出す道具ができてから | 15分（hq と） |
 | 7 | repo の secret を消す | S（鍵の移し替えの PR）のマージの後 | 5分 |
-| 8 | 切替 | D を本当に当てる形にする前 | 15分 |
+| 8 | 切替（bypass を外す・auto-merge の ON は**やらない**、10/24 オーナー決定。下の 8 の節） | ― | ― |
 
 ---
 
 ## 1. ruleset とリポジトリ設定（段取り 0）
 
-今の状態（設計時に読み取りで確認）: 承認1件・最後の push の後の承認あり・dismiss_stale なし・必須の check なし・マージは merge/squash/rebase の3つとも可・auto-merge は OFF・bypass は admin ロールと ryujin-bot（どちらも always）。
+今の状態（2026-10-24 に `gh api repos/rhapsody0919/boatrace-ai-predictor/rulesets/24693068` とリポジトリ設定を読み取りで確認）: 承認1件・最後の push の後の承認あり・dismiss_stale あり・必須の check は `verify`・`e2e`・`ml-tests`（GitHub Actions）・マージは squash だけ（ruleset とリポジトリ設定の両方）・auto-merge は OFF・bypass は admin ロールと Integration 5220661（ryujin-bot、どちらも always）。1-1・1-2 は済み（設計時は dismiss_stale なし・必須の check なし・3つのマージ方法とも可だった）。
 
 ### 1-1. ruleset master-guard
 Settings → Rules → Rulesets → master-guard
@@ -37,7 +37,7 @@ Settings → Rules → Rulesets → master-guard
    - `e2e`
    - `ml-tests`
    - 「Require branches to be up to date before merging」は **付けない**（付けると PR を1本ずつ作り直す待ちになる）
-3. Bypass list は **今は触らない**（8 の切替で直す）
+3. Bypass list は **触らない**（admin の bypass は外さない、10/24 オーナー決定。8 の節）
 4. 「Save changes」
 - 注: 必須の check は品質のためのもので、守りにはならない（作成の App は workflow を書き換えられるので、PR の中で check を空で通せる）。守りは審査の App の承認だけ
 
@@ -45,7 +45,7 @@ Settings → Rules → Rulesets → master-guard
 Settings → General → Pull Requests
 
 - 「Allow merge commits」と「Allow rebase merging」の印を外し、「Allow squash merging」だけ残す
-- 「Allow auto-merge」は **まだ OFF のまま**（8 の切替で ON）
+- 「Allow auto-merge」は **OFF のまま**（10/24 オーナー決定で ON にしない。理由は 8 の節）
 
 ### 1-3. 確かめ方
 - Claude に「1 が済んだ」と返す。Claude が読み取りで ruleset とリポジトリ設定を確かめる
@@ -218,7 +218,15 @@ review.yml の llm の job は、終わるとき（失敗も含む）にログ�
 
 ---
 
-## 8. 切替（D を本当に当てる形にする前）
+## 8. 切替（手順2の bypass・手順3の auto-merge はやらない、2026-10-24 オーナー決定）
+
+**この節の手順2（admin の bypass を外す）と手順3（Allow auto-merge を ON）はやらない**（オーナーが Orchestrate のセッションで直接決めた。ADR-0097「ruleset とマージ」の追記）。理由:
+
+- Codex の自動マージ（hq の `codex-pr.py --merge`）は GitHub の auto-merge を使わず、ryujin-maker の名義で `gh pr merge --squash --match-head-commit` の直接マージをする（`~/hq/scripts/codex-pr.py:1035-1036`、`docs/design/codex-direct-pr/design.md:208`）。auto-merge は要らない
+- ON にすると、`--auto` を付けた PR が承認1件と必須の3つの check だけで入り、codex-pr.py の M2〜M7 を飛ばす道が増える（system-architect の審査）
+- Codex の自動マージを開ける条件は、design §10.1 の Q6・Q8（どちらも済み）と、ryujin-maker の名義の直接マージの実測（hq がテスト PR で行う）だけ
+
+以下は検討した時点の手順と戻し方の記録として残す。
 
 ### 前提（全部そろってから）
 - 6 で承認が数えられると確かめた
