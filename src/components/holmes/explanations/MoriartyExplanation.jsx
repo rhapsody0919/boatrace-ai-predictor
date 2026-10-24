@@ -438,7 +438,7 @@ function MoriartyExplanation() {
               期待値がプラスのとき、資金の何割を賭けるべきかを数学的に最大化する公式です。
             </p>
             <code className="explanation-formula">
-              f* = (b·p - q) / b　　（q = 1 - p）
+              f* = (b·p - q) / b{"\u3000\u3000"}（q = 1 - p）
             </code>
             <p>
               ただしフルKellyは確率推定の誤差が大きい場合に過大なベットになりがちです。
@@ -454,7 +454,7 @@ function MoriartyExplanation() {
               キャリブレーション後 p=0.18、オッズ b=7.2 の場合：
             </p>
             <code className="explanation-formula">
-              EV = 0.18 × 7.2 = 1.30　（30%のエッジあり）
+              EV = 0.18 × 7.2 = 1.30{"\u3000"}（30%のエッジあり）
             </code>
             <code className="explanation-formula">
               f* = (7.2 × 0.18 - 0.82) / 7.2 = 0.066 → Half Kelly: 資金の3.3%
