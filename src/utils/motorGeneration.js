@@ -22,6 +22,25 @@ export function currentMotorGenerationStart(rows) {
 }
 
 /**
+ * レース日以前で最新の使用開始日を返す（当日は新しい世代に含める）。
+ * その日以前の履歴が無い場合は null。
+ * @param {ReadonlyArray<{start_date: string}>|null} rows
+ * @param {string} date YYYY-MM-DD または race_id（YYYY-MM-DD-VV-RR）
+ * @returns {string|null} YYYY-MM-DD
+ */
+export function motorGenerationStartAsOf(rows, date) {
+  const raceDate = date.slice(0, 10);
+  return (rows ?? []).reduce(
+    (latest, row) =>
+      row.start_date <= raceDate &&
+      (latest === null || row.start_date > latest)
+        ? row.start_date
+        : latest,
+    null,
+  );
+}
+
+/**
  * race_id（YYYY-MM-DD-VV-RR）のレースが、generationStart 以降（当日を含む）に行われたか。
  * 使用開始日の当日から新モーターが使われるため、当日は現行世代に含める。
  * @param {string} raceId
