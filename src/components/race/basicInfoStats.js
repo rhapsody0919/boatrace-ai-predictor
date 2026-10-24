@@ -34,6 +34,7 @@ import { isPlaceHit, isShowHit } from "../../../scripts/lib/hitCalculator.js";
 import { parseRaceId } from "../../utils/raceId.js";
 import { groupIntoMeetBeforeRace } from "../../utils/meetGrouping.js";
 import { getDaysAgoJST } from "../../utils/dateUtils.js";
+import { finishPositionOf } from "../../pure/finishPosition.js";
 
 export const METRICS = ["winRate", "top2Rate", "top3Rate", "avgSt"];
 export const SCOPES = ["local", "national"];
@@ -177,19 +178,9 @@ export function computeRates(records) {
   };
 }
 
-// レース内順位（1〜6）を返す。rank1〜3は必ず取得済み、rank4〜6はBOA-238以降のみ
-// バックフィル済みのため、一致しなければ「着外だが正確な順位は不明」として
-// nullを返す（"out"というラベル文字列ではなく、呼び出し側で明示的に判定させる）。
-// BOA-159（選手ページのレース一覧）でも同じ判定が必要になったためexportした
-export function finishPositionOf(r) {
-  if (r.rank1 === r.boatNumber) return 1;
-  if (r.rank2 === r.boatNumber) return 2;
-  if (r.rank3 === r.boatNumber) return 3;
-  if (r.rank4 === r.boatNumber) return 4;
-  if (r.rank5 === r.boatNumber) return 5;
-  if (r.rank6 === r.boatNumber) return 6;
-  return null;
-}
+// finishPositionOf は src/pure/finishPosition.js に移した（開発効率の計画 段3。
+// src/pure/seriesPoints.js が使うため）。呼び出し側を変えないよう、ここから再 export する
+export { finishPositionOf };
 
 /**
  * 直近n走の個別結果を返す（新しい方が配列の末尾）。

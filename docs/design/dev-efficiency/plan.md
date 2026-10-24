@@ -134,6 +134,9 @@ DAL の中の偏りは、DAL を変えた fix 54件の差分の hunk を、そ�
 - 試験の期待値は2つに分ける: 「旧の実装から取った値」（今の動きの固定。誤りも含めて写す）と「仕様の値」（公式の定義・設計書から決まる値）。食い違ったら別の起票にし、切り出しの PR では直さない
 - SQL を変えていない証拠: その PR の E2E で、録画に無いリクエストの素通しが0件（`scripts/maintenance/report-e2e-passthrough.js` の集計）。録画の照合は URL（PostgREST のクエリ）で行うので、クエリが変われば素通しが出る。限界: E2E が通らない関数のクエリは証拠にならない。そういう関数は SQL の部分を移さない
 - 依存が `src/utils` にある関数は、1b が決まるまで `src/services` の下の別ファイル（Node で import できるもの）に移す。1b の後に pure の根へ移し直す
+- pure の根へ移すときの「手を加えず」の例外は2つだけ: 拡張子の無い import に `.js` を足す（verify-pure-imports.js が拡張子なしを落とすため）、移した先の import の行き先を根の中に書き換える。旧の置き場は `export * from` だけのファイルとして残し、呼び出し側の import は変えない
+- 移す依存が根の外の部品の一部の関数を使うときは、その関数だけを根に移し、元のファイルは再 export する（例: `finishPositionOf` を `basicInfoStats.js` から `src/pure/finishPosition.js` へ。2026-10-24、`meetExclusionsOf`・`seriesPoints.js`・`raceStageConfig.js` を `src/pure/` へ移した PR）。旧の置き場の文字列を書き換える変異の試験（`verify-frontend-pure-functions.js` 等）は、変異の対象を移した先へ向け直す
+- 移したファイルのパスを名指しする CI の条件（`quality-gates.yml` の `raceStageConfig.js` の変更で pytest を回す条件等）は、移した先のパスも足す。旧の置き場だけだと、本体の変更で検査が走らない
 - 切り出しの PR は自動マージしない（design §4.2「切り出しの PR」）
 - 切り出しの最初の PR で、共通ロジックの索引（`scripts/maintenance/generate-lib-index.js` の TARGETS）に `src/pure` を足す。足さないと移した関数が索引から消える（design §4.2 追記）
 

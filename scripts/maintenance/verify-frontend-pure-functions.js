@@ -31,6 +31,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
 
 const TARGETS = {
+  finishPosition: "src/pure/finishPosition.js",
   basicInfoStats: "src/components/race/basicInfoStats.js",
   raceStatus: "src/utils/raceStatus.js",
   courseGridStats: "src/components/race/courseGridStats.js",
@@ -92,6 +93,30 @@ function rec({
     payoutWin: null,
     ...rest,
   };
+}
+
+// ---------------------------------------------------------------------------
+// 0. finishPosition.js（src/pure。basicInfoStats.js から移した）
+// ---------------------------------------------------------------------------
+function suiteFinishPosition(m, check) {
+  // --- finishPositionOf: 4〜6着を実際の順位で返す（d3817581）
+  // 以前は1〜3着以外を一律 "out" にしていた
+  const pos = (boatNumber, ranks) =>
+    m.finishPositionOf(rec({ raceId: "2026-09-10-01-01", boatNumber, ranks }));
+  check(
+    "finishPositionOf: 4〜6着は 4/5/6 を返す（d3817581）",
+    [
+      pos(4, [1, 2, 3, 4, 5, 6]),
+      pos(5, [1, 2, 3, 4, 5, 6]),
+      pos(6, [1, 2, 3, 4, 5, 6]),
+    ],
+    [4, 5, 6],
+  );
+  check(
+    "finishPositionOf: rank4〜6 が未バックフィル（null）なら null（'out' 等の文字列にしない）",
+    pos(5, [1, 2, 3, null, null, null]),
+    null,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -185,24 +210,9 @@ function suiteBasicInfoStats(m, check) {
   );
   check("getRecentRaces: null は空配列", m.getRecentRaces(null), []);
 
-  // --- finishPositionOf: 4〜6着を実際の順位で返す（d3817581）
-  // 以前は1〜3着以外を一律 "out" にしていた
-  const pos = (boatNumber, ranks) =>
-    m.finishPositionOf(rec({ raceId: "2026-09-10-01-01", boatNumber, ranks }));
-  check(
-    "finishPositionOf: 4〜6着は 4/5/6 を返す（d3817581）",
-    [
-      pos(4, [1, 2, 3, 4, 5, 6]),
-      pos(5, [1, 2, 3, 4, 5, 6]),
-      pos(6, [1, 2, 3, 4, 5, 6]),
-    ],
-    [4, 5, 6],
-  );
-  check(
-    "finishPositionOf: rank4〜6 が未バックフィル（null）なら null（'out' 等の文字列にしない）",
-    pos(5, [1, 2, 3, null, null, null]),
-    null,
-  );
+  // --- finishPositionOf: 本体は src/pure/finishPosition.js（段3 で移した）。
+  // basicInfoStats の再 export でも同じ答えになることをここで見る
+  suiteFinishPosition(m, check);
 
   // --- computeRates: 平均STは startTiming が取れた走だけで割る（d3817581）
   const rates = m.computeRates([
@@ -2277,6 +2287,7 @@ function suiteInCautionLevel(m, check) {
 const SUITES = {
   nextOpenDate: suiteNextOpenDate,
   prevResult: suitePrevResult,
+  finishPosition: suiteFinishPosition,
   basicInfoStats: suiteBasicInfoStats,
   raceStatus: suiteRaceStatus,
   courseGridStats: suiteCourseGridStats,
@@ -2419,7 +2430,7 @@ const MUTANTS = [
     "boatNumber: r.actualCourse ?? r.boatNumber,",
   ],
   [
-    "basicInfoStats",
+    "finishPosition",
     "4着の判定を外す（d3817581 の退行）",
     "if (r.rank4 === r.boatNumber) return 4;",
     "",
