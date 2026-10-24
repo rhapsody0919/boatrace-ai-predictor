@@ -110,6 +110,8 @@ flowchart TB
 
 ### 龍神の側で変えるもの（切替の PR、§5 の PR-D）
 
+> 注（2026-10-24 オーナー決定で取りやめ: 手順8 の auto-merge の ON・admin の bypass を外すことはやらない。ADR-0097 の追記）。下の表の `--auto` への置き換え（merge-pr.md・SKILL.md）と「作業の順番」は、auto-merge の ON と bypass を外すことを前提にしているので、そのままでは行わない。
+
 | 場所 | 今 | 変更 |
 |---|---|---|
 | `.claude/commands/merge-pr.md` 24行目 | `gh pr merge {pr} --squash --admin` | `gh pr merge {pr} --squash --auto`。切替の後は admin の bypass が無く、作成の App にも admin は無い。審査の承認と必須の check がそろったら GitHub がマージする |
@@ -239,7 +241,7 @@ flowchart TD
   S1 -->|"通知の配線が動く<br/>（審査済みの PR が無いので判定はまだ）"| S2["PR-B 印の表（オーナーが手で当てる）"]
   S2 --> S3["PR-C 印・止め印・窓（まだ試運転）"]
   S1 --> S4["手順7: repo の secret を消す<br/>（prod-jobs の定期実行が2〜3日緑の後）"]
-  S4 --> S7["1回の作業で続けて:<br/>hq の shim・credential helper → PR-D をマージ（bypass がある間に）<br/>→ 手順8: gh から admin を外す・bypass を外す・auto-merge ON"]
+  S4 --> S7["1回の作業で続けて:<br/>hq の shim・credential helper → PR-D をマージ（bypass がある間に）<br/>→ 手順8: gh から admin を外す・bypass を外す・auto-merge ON<br/>（bypass・auto-merge は 10/24 に取りやめ）"]
   S7 -->|"ここから試運転の評価が始まる"| S8
   S3 --> S8["PR-E: D'（試運転を外す）<br/>「D' の条件」を全部満たしたら"]
 ```
@@ -250,7 +252,7 @@ flowchart TD
 | PR-B | 表は残してよい（読まれなければ害は無い）。消すなら `DROP SCHEMA db_apply CASCADE` を手で（重い） | ― |
 | PR-C | revert の PR。止め印 `保留` の行は手で `未適用` に戻す | 試運転なので当てる動きは変わらない |
 | 手順7 | 消した secret を repo に入れ直す（オーナー） | 今と同じ |
-| PR-D・手順8 | 手順書の「戻し方（逆の順）」。auto-merge を OFF → bypass に Repository admin を足す → `gh auth login`（rhapsody0919）→ PR-D を revert | 今と同じ |
+| PR-D・手順8 | （2026-10-24 オーナー決定で取りやめ: 手順8 の auto-merge の ON・admin の bypass を外すことはやらない。ADR-0097 の追記）手順書の「戻し方（逆の順）」。auto-merge を OFF → bypass に Repository admin を足す → `gh auth login`（rhapsody0919）→ PR-D を revert | 今と同じ |
 | PR-E | 急ぎは repo の変数 `DB_APPLY_AUTO_ENABLED` を `false`（オーナー。作成の App は Variables を書けない、ADR-0097）。後で `DB_APPLY_DRY_RUN: "true"` に戻す PR。Environment `production-db-auto` を消すのは効かない（参照された Environment は GitHub が保護なしで作り直す。owner-steps 4-2） | 試運転に戻る |
 
 ### 手順7・8 への追記（owner-steps に足す）
@@ -396,6 +398,8 @@ flowchart TD
 ## 10. auto-merge に移る前に決めること（2026-10-20 夜の追加、オーケストレーター経由の system-architect の別の審査）
 
 切替（手順8の3）で auto-merge を ON にすると、今はオーケストレーターのマージと Claude のフックが受け持っている判定の一部が効かなくなる。切替の前に、どれを機械に移すかを決める。この節は system-architect の審査（P1 8件・P2 10件）を反映済み。
+
+> 注（2026-10-24 オーナー決定で取りやめ: 手順8 の auto-merge の ON・admin の bypass を外すことはやらない。ADR-0097 の追記）。auto-merge に移らないので、この節は検討の記録として残す。Codex の自動マージは codex-pr.py の直接マージ（`--match-head-commit`）で、M1〜M7 の判定は codex-pr.py が持つ（`docs/design/codex-direct-pr/design.md` §5.2）。
 
 ### 10.0 前提の実測（2026-10-20）
 

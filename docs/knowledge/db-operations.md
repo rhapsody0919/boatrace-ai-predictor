@@ -77,3 +77,8 @@
 - scrape_job_state.last_report は recordSuccess が丸ごと置き換え、recordFailure は触らない。off の間は起動の記録（last_tick_at）も更新されない。失敗が続く間も持ち越したい状態は last_report に置き、off から戻したかは last_tick_at の空きで見る（2026-10-20、scripts/lib/scrapeJobs/store.js・cronWrapper.js、scripts/lib/dbApplyDispatch.js）
 - kind:"monitor" の job は mode を問わず通知の対象になる（scrapeJobs/monitor.js の active）。off にしても consecutive_failures が残る間は通知が止まらない。止めるときは失敗の回数も 0 に戻す（2026-10-20、PR #1722 の審査）
 - AbortSignal.timeout のタイマーは unref なので、偽の fetch が返らない Promise だけを返すテストでは、打ち切りの前に Node のプロセスが終わる（unsettled top-level await）。偽物の側で ref のタイマーを持つ（2026-10-20、verify-analogy-dispatch.js (g)）
+- hq の codex-pr.py の自動マージ（--merge）は ryujin-maker の名義の直接マージ（squash・--match-head-commit）で、GitHub の auto-merge を要さない。Allow auto-merge は OFF のままでよい（2026-10-24、~/hq/scripts/codex-pr.py:1035-1036、docs/design/codex-direct-pr/design.md:208、オーナー決定）
+- Allow auto-merge を ON にすると、--auto を付けた PR が ruleset の承認1件と必須の3つの check だけで入り、codex-pr.py の M2〜M7（skipped の不合格・保護対象・新規ファイルだけ等）を飛ばす道が増える（2026-10-24、system-architect の審査、design.md §5.2）
+- review.yml の gate（scripts/lib/reviewPr.js の mechanicalRejections）は .github/** の変更を一般には落とさない（落とすのは本文の無い差分・symlink・submodule・LFS・.gitattributes 等、reviewPr.js:56 付近）。保護パスの守りは codex-pr.py の G5・M3 だけ（2026-10-24、system-architect の審査、design.md:70・186）
+- ruleset master-guard の承認1件は、書き込み権限のある身元の承認なら誰のものでも数える（審査の App に限らない）。審査の App だけを数える前提で守りを組まない（2026-10-24、system-architect の審査）
+- ruleset の bypass の Integration 5220661 は App が非公開で、API では名前を確かめられない。オーナーが画面で ryujin-bot と確認した（2026-10-23、design.md §10.1 Q8）
