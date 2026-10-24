@@ -531,13 +531,6 @@ async function main() {
   const allowRules = await loadAllowlist();
   const results = await eslint.lintFiles(TARGETS);
 
-  if (!reportFailedCases(await mutationSelfTests(results, allowRules))) {
-    console.error(
-      "変異の検証が失敗したため検査結果を信用できません。本スクリプトと許可リストを確認してください",
-    );
-    process.exit(1);
-  }
-
   const { ok, violations, directives, unchecked, added, stale } = judge(
     results,
     allowRules,
@@ -582,6 +575,14 @@ async function main() {
       );
   }
   if (!ok) process.exit(1);
+
+  // 本検査が通ってから変異の検証をする（本検査が落ちていると変異の結果も崩れ、原因が読みにくいため）
+  if (!reportFailedCases(await mutationSelfTests(results, allowRules))) {
+    console.error(
+      "変異の検証が失敗したため検査結果を信用できません。本スクリプトと許可リストを確認してください",
+    );
+    process.exit(1);
+  }
 
   const allowedTotal = Object.values(allowRules)
     .flatMap((files) => Object.values(files))
