@@ -841,16 +841,16 @@ for (const f of fixtures) {
     assert.equal(b.youtube_full.description.split("\n")[0], `${e.hero.title}｜ボートレース 桐生12R`, "完全版の1行目は冒頭の数字の文（C3）");
   }
   const b0 = bundleOf(fixtures[0]);
-  // C3: 1行目は40字を越えたら止めずに短い形へ落とす（冒頭の数字の文 →「同じ並びの」を外す → 「ボートレース {会場}{R}」）
+  // C3: 1行目は40字を越えたら止めずに「ボートレース {会場}{R}」へ落とす
   {
     assert.equal(jaWidth("ab12"), 2, "半角は0.5");
     assert.equal(jaWidth("全角"), 2);
     const hero = "同じ並びの過去1,857件で1号艇の1着72.0%";
     assert.equal(fullLine1(hero, "住之江11R"), `${hero}｜ボートレース 住之江11R`, "収まる日はそのまま");
-    const long = "同じ並びの過去12,345件で1号艇の1着率は72.0%、2着は3号艇";
-    const l = fullLine1(long, "平和島12R");
-    assert.ok(jaWidth(l) <= 40, `越えたら短い形（${l}）`);
-    assert.equal(fullLine1("あ".repeat(50), "平和島12R"), "ボートレース 平和島12R", "どれも越えたら会場と R だけ");
+    // 越えたら間の短い形を作らず、会場と R だけにする（条件の語を落として数字だけ残さない。youtube-channel P2-1）
+    const long = "同じ並びの過去12,345件で1号艇の1着率は72.0%、2着は3号艇、3着は4号艇が多い";
+    assert.ok(jaWidth(`${long}｜ボートレース 平和島12R`) > 40, "前提: 越える");
+    assert.equal(fullLine1(long, "平和島12R"), "ボートレース 平和島12R");
     assert.equal(fullLine1(null, "平和島12R"), "ボートレース 平和島12R", "冒頭の数字が無い日");
     const fl = b0.youtube_full.description.split("\n");
     has(checkBundle({ ...b0, youtube_full: { ...b0.youtube_full, description: ["あ".repeat(41), ...fl.slice(1)].join("\n") } }), "40字を越える");

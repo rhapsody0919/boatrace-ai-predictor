@@ -43,13 +43,13 @@ export const FULL_LINE1_MAX = 40;
 /** URL の前の文の上限（C3） */
 export const FEATURE_LINE_MAX = 20;
 /**
- * 完全版の説明文の1行目「{結論の数字}｜ボートレース {会場}{R}」。40字を越えたら止めずに短い形へ落とす
- * （冒頭の数字の文 → 「同じ並びの」を外した形（数字と件数は切り離さない）→ 「ボートレース {会場}{R}」。C3）
+ * 完全版の説明文の1行目「{結論の数字}｜ボートレース {会場}{R}」。40字を越えたら止めずに「ボートレース {会場}{R}」へ落とす（C3）。
+ * 間の短い形（「同じ並びの」を外す等）は作らない。条件の語を落とすと数字が会場全体の値に読める（youtube-channel 2026-10-24 P2-1）。
+ * 冒頭の数字の文は固定の型で28〜31字なので、ふつうは越えない
  */
 export function fullLine1(heroTitle, place) {
-  const tail = `｜ボートレース ${place}`;
-  const forms = heroTitle ? [heroTitle, heroTitle.replace(/^(同じ並びの|枠なりの)/, "")].map((t) => `${t}${tail}`) : [];
-  return forms.find((l) => jaWidth(l) <= FULL_LINE1_MAX) ?? `ボートレース ${place}`;
+  const line = heroTitle ? `${heroTitle}｜ボートレース ${place}` : null;
+  return line && jaWidth(line) <= FULL_LINE1_MAX ? line : `ボートレース ${place}`;
 }
 export const featureUrl = (raceId, feature, term = "full") =>
   `${FEATURES[feature].path(raceId)}utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${raceId}/${feature}&utm_term=${term}`;
