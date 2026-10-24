@@ -520,6 +520,16 @@ test("札（full_picture_variant、hq SQ08 v5）: bundle の札を送る下書�
   assert.ok(!checkFullPicture({ ...bundleV2(), review: { p0_count: 0 } }, riskRules).some((r) => r.includes("full_picture_variant")));
 });
 
+test("投稿の型（content_type、hq PD02）: bundle の型の id を送る下書き（X・完全版・Shorts）の source_data.content_type.id に写す。id の無い型は受け取らない", async () => {
+  const result = await push(bundleV2({ content_type: { id: "e03-one-point-30s" }, full_picture_variant: { id: "b" } }));
+  assert.equal(result.reasons, undefined);
+  const rows = (await all("SELECT source_data FROM sns_drafts WHERE format='full_picture'")).map((r) => r.source_data);
+  assert.equal(rows.length, 3);
+  assert.ok(rows.every((d) => d.content_type?.id === "e03-one-point-30s" && d.full_picture_variant?.id === "b"), JSON.stringify(rows.map((d) => d.content_type)));
+  assert.ok(checkFullPicture({ ...bundleV2(), content_type: {}, review: { p0_count: 0 } }, riskRules).some((r) => r.includes("content_type")));
+  assert.ok(!checkFullPicture({ ...bundleV2(), review: { p0_count: 0 } }, riskRules).some((r) => r.includes("content_type")), "型の無い bundle は今までどおり");
+});
+
 test("完全版のタグ（youtube_full.tags、hq 契約 10/24 C1）: 完全版の下書きの hashtags に入り、承認の snapshot から YouTube の snippet.tags になる。X・Shorts には付けない", async () => {
   const base = bundleV2();
   // bundle.mjs と同じく、説明文の末尾にタグと同じハッシュタグ行がある

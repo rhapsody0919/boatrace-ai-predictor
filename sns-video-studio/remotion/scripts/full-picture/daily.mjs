@@ -4,8 +4,10 @@
  *   選ぶ: node scripts/full-picture/daily.mjs --select --date YYYY-MM-DD [--count N] --plan-only
  *     → 標準出力に JSON 1つ {status, plan: [{race_id, deadline, race_stage}]}
  *   作る: node scripts/full-picture/daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b]
+ *        [--type-spec <型の json>]
  *     → 標準出力に JSON 1つ {status, stage, reasons, files, video{full_s,entry_s,full_mib}, llm{calls,tokens_in,tokens_out},
- *        text_mode, missing, ref_commit, variant}
+ *        text_mode, missing, ref_commit, variant, content_type}
+ *   --type-spec: 投稿の型 {id, attributes}（hq PD02）。龍神の表（type-spec.mjs）に無い型・項目は、作らずに reasons に type_unsupported:<項目>
  *   exit: 0 合格、1 止める、2 使い方の誤り。ログは標準エラーに出す（標準出力は JSON だけ）
  *
  * 作る中身: 材料（--stage racecard、失敗したら1回だけ取り直す）→ run-full.mjs（完全版・入口版・bundle）→ 止める判定 →
@@ -23,6 +25,7 @@ import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { fetchMaterials } from "./fetch-materials.mjs";
 import { validate } from "./materials-contract.mjs";
+import { resolveType } from "./type-spec.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REMOTION = resolve(HERE, "../..");
@@ -108,7 +111,7 @@ async function materials(raceId) {
 
 async function make(raceId, opts) {
   // 予期しない例外でも、標準出力に JSON 1つを出して止める（止まった段を残す。代わりの審査 P2）
-  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null, variant: opts.variant ?? null };
+  const result = { status: "stopped", stage: "materials", reasons: [], files: {}, video: null, llm: null, text_mode: opts.text, missing: [], ref_commit: null, variant: opts.variant ?? null, content_type: null };
   try {
     return await makeSteps(raceId, opts, result);
   } catch (e) {
@@ -116,8 +119,22 @@ async function make(raceId, opts) {
   }
 }
 
-async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null }, result0) {
+async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null, typeSpec = null }, result0) {
   const result = result0;
+  // 型は材料を取る前に確かめる（作れない型で材料・描画の時間を使わない）
+  if (typeSpec) {
+    result.stage = "type-spec";
+    let spec;
+    try {
+      spec = JSON.parse(readFileSync(typeSpec, "utf8"));
+    } catch (e) {
+      return finish({ ...result, reasons: [`type_spec_invalid: ${e instanceof Error ? e.message : String(e)}`] }, 1);
+    }
+    const t = resolveType(spec);
+    result.content_type = t.id ? { id: t.id } : null;
+    if (t.reasons.length) return finish({ ...result, reasons: t.reasons }, 1);
+    result.stage = "materials";
+  }
   try {
     result.ref_commit = execFileSync("git", ["-C", ROOT, "rev-parse", "HEAD"], { encoding: "utf8" }).trim();
   } catch {
@@ -131,7 +148,7 @@ async function makeSteps(raceId, { out, bgm, concurrency, text, variant = null }
   writeFileSync(matPath, JSON.stringify(got.m));
 
   result.stage = "run-full";
-  const args = [join(HERE, "run-full.mjs"), matPath, out, "--text", text, "--bgm", bgm, ...(concurrency ? ["--concurrency", String(concurrency)] : [])];
+  const args = [join(HERE, "run-full.mjs"), matPath, out, "--text", text, "--bgm", bgm, ...(concurrency ? ["--concurrency", String(concurrency)] : []), ...(typeSpec ? ["--type-spec", typeSpec] : [])];
   const r = spawnSync(process.execPath, args, { cwd: REMOTION, env: childEnv(process.env), encoding: "utf8", maxBuffer: 64 * 1024 * 1024, timeout: 45 * 60 * 1000 });
   if (r.error) return finish({ ...result, reasons: [`run-full が終わらない・起動できない: ${r.error.message}`] }, 1);
   process.stderr.write(r.stderr ?? "");
@@ -216,11 +233,13 @@ async function main(argv) {
   const concurrency = opt("--concurrency");
   const text = opt("--text") ?? "connected";
   const variant = opt("--variant");
+  const typeSpec = opt("--type-spec");
   const [raceId] = args;
   if (!raceId || !/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(raceId) || !out || !bgm || !["connected", "template"].includes(text) || (variant !== null && !VARIANTS.includes(variant)))
-    return usage("使い方: daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b]");
+    return usage("使い方: daily.mjs <race_id> --out <dir> --bgm <mp3> [--concurrency N] [--text connected|template] [--variant a|b] [--type-spec <json>]");
   if (!existsSync(bgm)) return usage(`BGM が無い: ${bgm}`);
-  return make(raceId, { out: resolve(out), bgm: resolve(bgm), concurrency, text, variant });
+  if (typeSpec && !existsSync(typeSpec)) return usage(`型の json が無い: ${typeSpec}`);
+  return make(raceId, { out: resolve(out), bgm: resolve(bgm), concurrency, text, variant, typeSpec: typeSpec ? resolve(typeSpec) : null });
 }
 
 // シンボリックリンクや空白を含むパスから起動しても動く（file:// の文字列で比べると何もせず exit 0 になった。代わりの審査 P2）
