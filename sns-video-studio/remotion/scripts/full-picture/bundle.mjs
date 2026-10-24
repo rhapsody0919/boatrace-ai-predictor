@@ -26,6 +26,18 @@ const raceUrl = (raceId) => `${SITE}/race/${raceId}`;
  */
 export const utmUrl = (raceId, source, term = null) =>
   `${raceUrl(raceId)}?utm_source=${source}&utm_medium=social&utm_campaign=race-full&utm_content=${raceId}${term ? `&utm_term=${term}` : ""}`;
+/**
+ * 完全版の説明文の機能への導線（hq 契約 10/24 C1）。ソナーはタブ、思考アシストは別ページへ直接着く。
+ * UTM は utmUrl と同じ形で、utm_content を「レース ID/機能」にして機能を分ける（下書きの ID の UTM と同じ「/」の区切り）
+ */
+export const FEATURES = {
+  sonar: { name: "龍神ソナー", path: (id) => `${raceUrl(id)}?tab=sonar&`, line: "類似レースの着順の流れは龍神ソナーで" },
+  assist: { name: "思考アシスト", path: (id) => `${raceUrl(id)}/assist?`, line: "軸・相手を自分で読むなら思考アシスト" },
+};
+export const featureUrl = (raceId, feature, term = "full") =>
+  `${FEATURES[feature].path(raceId)}utm_source=youtube&utm_medium=social&utm_campaign=race-full&utm_content=${raceId}/${feature}&utm_term=${term}`;
+/** 完全版のタグ（YouTube の snippet.tags に渡す。説明文の末尾のハッシュタグにも同じ語） */
+export const FULL_TAGS = ["ボートレース", "龍神ソナー", "思考アシスト"];
 /** レース名（materials の facts.today.round → 表示）。対応に無い値・無いときは書かない（hq 2026-10-21、BOA-989）。材料の準優勝戦は junyu */
 export const ROUND_NAME = { yusho: "優勝戦", junyu: "準優勝戦", jun_yusho: "準優勝戦", tokusen: "特選", senbatsu: "選抜", yosen: "予選" };
 /** 題名の頭に付けるグレード（races.race_grade。一般 ippan は付けない） */
@@ -55,6 +67,8 @@ const aboutMinutes = (sec) => {
 };
 /** 章の行（「0:00 条件」）→ 章の名前 */
 export const chapterNames = (text) => (text ?? "").split("\n").map((l) => l.replace(/^\d+:\d{2}\s+/, "").trim()).filter(Boolean);
+/** 章の名前の末尾の機能名の括弧書き（「6艇比較（龍神ソナー）」）を外した名前 */
+export const chapterBase = (name) => name.replace(/（[^（）]*）$/, "");
 /** 章の行 → 秒 */
 export const chapterStarts = (text) =>
   (text ?? "").split("\n").map((l) => l.match(/^(\d+):(\d{2})\s/)).filter(Boolean).map((x) => Number(x[1]) * 60 + Number(x[2]));
@@ -118,22 +132,27 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   const youtube_full = {
     // レース名・日付を頭に、問いとその日の向き（youtube-channel P2-1）。Shorts の題名とは別の文
     title: `${head}1号艇は堅い？ ${L.venueHead ?? "6艇の比較と展開の傾向"}`,
+    // 1行目にその回の結論の数字（入口版の冒頭の数字と同じ値）と「ボートレース」・レースの見出し、2・3行目に機能への導線
+    // （折りたたむ前に見える所。hq 契約 10/24 C1、ファン役4人・デザイナー役の審査）
     description: join([
-      // 1行目に「ボートレース」とレースの日時・レース名（モバイルで折りたたむ前に見える。youtube-channel P2-2）
-      `ボートレース ${header}`,
-      L.venue ?? "6艇の比較と展開の傾向",
+      `${facts?.hero?.title ?? L.conclusion ?? L.venue ?? "6艇の比較と展開の傾向"}（ボートレース ${header}）`,
+      `${FEATURES.sonar.line}: ${featureUrl(raceId, "sonar")}`,
+      `${FEATURES.assist.line}: ${featureUrl(raceId, "assist")}`,
+      "",
+      L.venue,
       L.overview,
       L.conclusion,
       "",
       // 実際に作った章の名前から（章の無い場面を書かない。wording-editor・youtube-channel P2）
-      order.length ? `${order.join("・")}の順に見る動画です。` : null,
+      order.length ? `${order.map(chapterBase).join("・")}の順に見る動画です。` : null,
       `このレースのデータ（龍神レーダー）: ${utmUrl(raceId, "youtube", "full")}`,
       "",
       chapters?.trim() || null,
       "",
       DISCLAIMER,
-      HASHTAG,
+      FULL_TAGS.map((x) => `#${x}`).join(" "),
     ]).replace(/\n{3,}/g, "\n\n"),
+    tags: FULL_TAGS,
   };
   const youtube_shorts = {
     // レース名＋問い＋その日の数字（冒頭の数字と同じ値。hq 契約 10/24 v2。「〜で読み解く展開」型はやめる）
@@ -169,6 +188,9 @@ export function checkBundle(b) {
   else if (b.youtube_shorts.description.length - FULL_URL_SLOT.length + FULL_URL_GROWTH > LIMITS.description) why.push("完全版の URL に置き換えると5000字を超える");
   const urls = b.x_text.match(/https?:\/\/\S+/g) ?? [];
   if (urls.length !== 1 || urls[0] !== utmUrl(b.race_id, "x")) why.push("x_text にこのレースの URL がちょうど1つ無い（UTM つき）");
+  const fullLines = b.youtube_full?.description?.split("\n") ?? [];
+  for (const [i, f] of [[1, "sonar"], [2, "assist"]])
+    if (!fullLines[i]?.endsWith(featureUrl(b.race_id, f))) why.push(`youtube_full.description の${i + 1}行目に${FEATURES[f].name}への導線（UTM つき）が無い`);
   for (const [k, term] of [["youtube_full", "full"], ["youtube_shorts", "shorts"]])
     if (!b[k]?.description?.includes(utmUrl(b.race_id, "youtube", term))) why.push(`${k}.description にこのレースの URL（UTM つき）が無い`);
   if (!Object.values(b.qa?.machine ?? {}).every((v) => v === true) || !Object.keys(b.qa?.machine ?? {}).length) why.push("機械の検査が全部通っていない");

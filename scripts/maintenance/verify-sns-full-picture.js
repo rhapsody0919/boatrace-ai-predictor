@@ -10,6 +10,7 @@ import {
   schedule,
 } from "../sns/push-full-picture.js";
 import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
+import { youtubeTagsOf } from "../../api/_lib/youtubeQueueAdapter.js";
 
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -506,6 +507,17 @@ test("bundle の版2: Shorts の下書きを足し、親（完全版の job）�
     [shorts.id],
   );
   assert.equal(again.r.state, "sending");
+});
+
+test("完全版のタグ（youtube_full.tags、hq 契約 10/24 C1）: 完全版の下書きの hashtags に入り、承認の snapshot から YouTube の snippet.tags になる。X・Shorts には付けない", async () => {
+  const base = bundleV2();
+  const result = await push({ ...base, youtube_full: { ...base.youtube_full, tags: ["ボートレース", "龍神ソナー", "思考アシスト", "龍神ソナー", ""] } });
+  assert.equal(result.reasons, undefined);
+  const job = (id) => first("SELECT j.snapshot_text, d.hashtags FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id WHERE j.id=$1", [id]);
+  const full = await job(result.channels.youtube.job_id);
+  assert.deepEqual(full.hashtags, ["ボートレース", "龍神ソナー", "思考アシスト"], "重複と空は除く");
+  assert.deepEqual(youtubeTagsOf(JSON.parse(full.snapshot_text)), ["ボートレース", "龍神ソナー", "思考アシスト"]);
+  for (const ch of ["x", "shorts"]) assert.deepEqual((await job(result.channels[ch].job_id)).hashtags, [], `${ch} にタグは付けない`);
 });
 
 test("bundle の版2の検査: 置き場所がちょうど1つ・題名が完全版と別・Shorts の機械の検査・shorts.mp4・版の値", async () => {

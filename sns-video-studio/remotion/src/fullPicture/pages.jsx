@@ -5,7 +5,7 @@
 import { FONT } from "../fonts.js";
 import { BoatBadge } from "./parts.jsx";
 import { SANKEY, SONAR, sankeyLayout, sonarChipBox, sonarPoint, triRowBox } from "./sonarLayout.js";
-import { CARD_BG, MUTED } from "./parts.js";
+import { CARD_BG, MUTED, fit1 } from "./parts.js";
 import { MIN_TEXT, W } from "./scene2Layout.js";
 import {
   BARS,
@@ -553,7 +553,11 @@ export function SummaryPage({ groups, footer }) {
     <>
       {out}
       <div style={{ position: "absolute", left: RIGHT - 300, top: lay.saveY, width: 300, textAlign: "right", fontSize: MIN_TEXT, color: MUTED }}>スクショで保存</div>
-      <div style={{ position: "absolute", left: LEFT, top: lay.footerY, height: SUMMARY.footerH, fontSize: 38, lineHeight: `${SUMMARY.footerH}px`, fontWeight: 800, color: GOLD, whiteSpace: "nowrap" }}>{footer}</div>
+      {[footer].flat().filter(Boolean).map((l, i) => (
+        <div key={`f${i}`} style={{ position: "absolute", left: LEFT, top: lay.footerY + i * SUMMARY.footerH, height: SUMMARY.footerH, fontSize: fit1(l, RIGHT - LEFT, 38, 800).fontSize, lineHeight: `${SUMMARY.footerH}px`, fontWeight: 800, color: GOLD, whiteSpace: "nowrap" }}>
+          {l}
+        </div>
+      ))}
     </>
   );
 }

@@ -167,13 +167,19 @@ export function checkFullPicture(bundle, riskRules = []) {
   return reasons;
 }
 
+/** 完全版の YouTube のタグ（bundle の youtube_full.tags。下書きの hashtags に入れ、送るときに snippet.tags になる。hq 契約 10/24 C1） */
+export const fullTagsOf = (bundle) =>
+  Array.isArray(bundle?.youtube_full?.tags)
+    ? [...new Set(bundle.youtube_full.tags.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim()))]
+    : [];
+
 const draftTexts = (bundle) => ({
   x: { platform: "x", caption_text: bundle?.x_text ?? "", hashtags: [] },
   youtube: {
     platform: "youtube",
     title: bundle?.youtube_full?.title ?? "",
     caption_text: bundle?.youtube_full?.description ?? "",
-    hashtags: [],
+    hashtags: fullTagsOf(bundle),
   },
   ...(withShorts(bundle)
     ? {
@@ -271,6 +277,7 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
       platform: "youtube",
       title: bundle.youtube_full.title,
       caption_text: bundle.youtube_full.description,
+      hashtags: fullTagsOf(bundle),
       video_storage_path: paths.youtube,
       source_data: sourceData("youtube"),
     },

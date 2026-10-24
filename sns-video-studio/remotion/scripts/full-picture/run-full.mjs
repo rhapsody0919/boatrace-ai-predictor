@@ -27,6 +27,7 @@ import process from "node:process";
 import { allBeats, checkAnswers, checkPost, connectedText, sameAsTemplate, scopeReasons, templateText } from "./scene2-text.mjs";
 import { entryQuestion, entryScenes } from "./entry.mjs";
 import { buildAll } from "./build-all.mjs";
+import { withSourceBadges } from "../../src/fullPicture/sourceBadge.js";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
 import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
 import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
@@ -75,7 +76,8 @@ if (contractErrors.length) {
   console.error(`材料が契約（${MATERIALS_SCHEMA.$id}）に合わない:\n${contractErrors.slice(0, 20).join("\n")}`);
   process.exit(1);
 }
-const scenes = buildAll(m);
+// 出どころの札（完全版だけ描く。入口版は印を渡さないので描かない。hq 契約 10/24 C2）
+const scenes = withSourceBadges(buildAll(m));
 const [, mo, da, venueCode, raceNo] = m.raceId.split("-");
 // レースの見出し（例「10/22（木）児島12R 準優勝戦 締切16:44」、BOA-989）。レース名は facts の round、締切は races.start_time
 const round = m.api.facts?.today?.round ?? null;
@@ -141,8 +143,8 @@ const probe = (file) => {
   const j = JSON.parse(execFileSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height:format=duration,size", "-of", "json", file], { encoding: "utf8" }));
   return { width: j.streams?.[0]?.width, height: j.streams?.[0]?.height, seconds: Number(j.format?.duration), bytes: Number(j.format?.size) };
 };
-function render(list, answers, dir, name) {
-  const props = { scenes: list, answers, ...(bgm ? { bgm: bgmName } : {}) };
+function render(list, answers, dir, name, { badgePlace = null } = {}) {
+  const props = { scenes: list, answers, ...(bgm ? { bgm: bgmName } : {}), ...(badgePlace ? { badgePlace } : {}) };
   const propsPath = join(dir, `props-${name}.json`);
   writeJson(propsPath, props);
   // 前の書き出しの静止画を残さない（拍の長さが変わるとフレーム番号が変わり、古い静止画が混ざっていた）
@@ -194,7 +196,8 @@ if (checkPost(post).length) stop("本文", checkPost(post));
 writeFileSync(join(out, "post.txt"), post);
 
 /** 完全版の章（YouTube の自動チャプターは 0:00 から、各章10秒以上） */
-const CHAPTER = { scene1: "条件", scene2: "6艇比較", scene2b: "類似レース", scene3: "軸", scene4: "展開", scene5: "相手", scene6: "機力と調子", scene8: "展示後に見るところ" };
+// 章の名前の機能名は末尾の括弧書きだけ（hq 契約 10/24 C1）。場面8 は10秒にして展示後の章を足した
+const CHAPTER = { scene1: "条件", scene2: "6艇比較（龍神ソナー）", scene2b: "類似レース（龍神ソナー）", scene3: "軸（思考アシスト）", scene4: "展開（龍神ソナー）", scene5: "相手（思考アシスト）", scene6: "機力と調子", scene8: "展示後に見るところ" };
 function chapters(answers) {
   const mmss = (f) => `${Math.floor(f / 30 / 60)}:${String(Math.floor(f / 30) % 60).padStart(2, "0")}`;
   return fullPictureTimeline(scenes, answers)
@@ -265,7 +268,7 @@ for (const mode of modes) {
   if (!noVideo) {
     const dir = join(out, mode);
     mkdirSync(dir, { recursive: true });
-    Object.assign(seconds, render(scenes, text.answers, dir, "full-picture"));
+    Object.assign(seconds, render(scenes, text.answers, dir, "full-picture", { badgePlace: "band" }));
     console.log(`${dir}: 完全版 ${(total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
   }
   // LLM のトークン（呼んだときだけ。使い回した文の JSON なら0回）
