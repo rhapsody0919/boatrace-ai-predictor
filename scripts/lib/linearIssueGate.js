@@ -15,8 +15,6 @@
  *   起票したつもりで進むことになるため
  * - 止めたときは黙らない: notify（Slack）に件数と閾値を入れた文を送り、例外を投げる。
  *   通知が失敗しても例外は投げる（通知の失敗で起票が通ることはない）
- *
- * Edge Function（api/_lib/snsHubHelpers.js）からも読むため、node: の読み込みを使わない。
  */
 
 export const LINEAR_FREE_ISSUE_LIMIT = 250;

@@ -4,7 +4,8 @@ const PR_URL = "https://github.com/rhapsody0919/boatrace-ai-predictor/pull/1";
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
-test("blog はPRリンクと修正依頼を残し、YouTubeだけDB反映を再試行できる", async ({
+// 修正を依頼（redo）の口は hq SH01 R2（#1813）で撤去した（直近30日の利用0件）
+test("blog はPRリンクを残し、YouTubeだけDB反映を再試行できる", async ({
   page,
 }) => {
   const base = {
@@ -56,7 +57,7 @@ test("blog はPRリンクと修正依頼を残し、YouTubeだけDB反映を再�
   await expect(cards).toHaveCount(2);
   await expect(cards.filter({ hasText: "反映待ちの記事" })).toBeVisible();
   await expect(page.locator(`a[href="${PR_URL}"]`)).toBeVisible();
-  await expect(cards.getByRole("button", { name: /修正を依頼/ })).toBeVisible();
+  await expect(cards.getByRole("button", { name: /修正を依頼/ })).toHaveCount(0);
   await expect(cards.getByRole("button", { name: /PRをマージ/ })).toHaveCount(0);
   await expect(
     cards.getByRole("button", { name: "承認するPRの版を取得" }),

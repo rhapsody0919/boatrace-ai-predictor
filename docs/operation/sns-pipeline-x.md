@@ -1,5 +1,7 @@
 # Xチャネル別パイプライン 制作ガイド
 
+> **Routine は止まっている（2026-10-24 時点）。** 起動の口（修正指摘の redo・今すぐ生成の fire・ネタの提案）と `scripts/lib/snsTopics.js`・`scripts/lib/snsCampaigns.js` は hq SH01 R2 で消した。下の手順のうち、それらを呼ぶ所は動かない。X の作り方（文・画像・動画の規則）の節は `x-channel` の評価の参照として残す。
+
 承認済みネタ（`sns_topics.status='approved'`）のうち、X向けに割り当てられた`sns_topic_targets`をポーリングして下書きを生成するRoutine向けの実行手順。設計背景は[`docs/design/sns-topic-gate/`](../design/sns-topic-gate/)（spec.md/plan.md、ADR 0036〜0038）を参照。チャネル別パイプライン分離の最初の1本（ADR 0037）として、note/blog/tiktok/youtubeへの展開時もこのドキュメントの構成をテンプレートにする。
 
 **このRoutineはネタを自分で選定しない**。`sns-topic-proposer-weekly.md`・`sns-topic-proposer-daily-auto.md`・sns-hubの手動生成ボタン（日次・時間制約型、実装後）・企画型パイプライン（`scripts/daily/campaign-*.js`、`campaign_id`ありのネタ、後述「3'.」参照）のいずれかが作った承認済みネタを拾って生成するだけの、疎結合な下流工程。企画由来のネタは`sns-topic-proposer-daily-auto`とは無関係の別経路（このリポジトリ内のGitHub Actionsが自動生成）である点に注意（2026-09-09、ユーザーからの確認を受けて明記）。
@@ -92,7 +94,7 @@ claim対象が0件の場合はここで終了する（正常系、失敗では�
 
 ## 3''. 「本日のデータ一覧」型（morning-digest）のネタ
 
-`sns_topics` の型が `morning-digest` のネタは、**動画・画像の材料を `morning_digest_days` / `morning_digest_rows` の2表だけから取る**（再計算禁止）。書いてよい数値・禁止表現・リンクの規則は [`sns-pipeline-morning-digest.md`](sns-pipeline-morning-digest.md) にまとめてあるので、着手前にそれを読む。
+`sns_topics` の型が `morning-digest` のネタは、**動画・画像の材料を `morning_digest_days` / `morning_digest_rows` の2表だけから取る**（再計算禁止）。書いてよい数値・禁止表現・リンクの規則は [`sns-pipeline-morning-digest.md`](../archive/sns-pipeline-morning-digest.md) にまとめてあるので、着手前にそれを読む。
 
 X向けの切り口は「その日の朝に、今日どこを見るかを渡す」。`section='featured'` の1件を主役にし、`detail.reason` の文を素材として数値2〜3個に絞る。9:16は通常フローと同じ。**`?date=` を付けずに `https://www.boat-ai.jp/today` へリンクする**。
 

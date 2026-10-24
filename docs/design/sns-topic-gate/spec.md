@@ -101,7 +101,7 @@ sns-topic-gate実装後、`generate.js`/`SNS_HUB_ROUTINE`（Pipeline A、要件1
 | # | 要件 | 優先度 | 受入基準 |
 |---|---|---|---|
 | 23 | 「⚡今すぐ生成」ボタン | 高 | `sns_topic_targets.status='pending'`の行に対し、対象チャネルパイプラインのRoutineを即時発火するボタンをUIに追加する。既存の`fireRoutine`パターンを再利用し、対象1件のみを狙って処理させるペイロードを渡す |
-| 24 | daily-auto Routineの対象カテゴリ修正 | 高 | `docs/operation/sns-topic-proposer-daily-auto.md`の型一覧から古い前提（回収率型・出目分布型を含む）を修正し、選手調子・モーター調子・イン崩れ・予想数値フック型・的中の5型に揃える |
+| 24 | daily-auto Routineの対象カテゴリ修正 | 高 | `docs/archive/sns-topic-proposer-daily-auto.md`の型一覧から古い前提（回収率型・出目分布型を含む）を修正し、選手調子・モーター調子・イン崩れ・予想数値フック型・的中の5型に揃える |
 | 25 | evergreen残り4型のネタ提案Routine新設 | 中（別イテレーション） | 一覧アピール型・豆知識型・新機能紹介型・レース考察型それぞれに専用の候補選定ロジックを設計し、`sns_topic_categories`へ登録した上でネタ提案Routineに組み込む。型ごとに編集判断が必要なため、本追記では設計を確定せず個別に着手する |
 | 26 | sns-hub UI再設計（🌅当日の運用／📦ストック管理の2ブロック化） | 高 | `requires_topic_approval`で2ブロックに分け、両ブロックとも「ネタ本文＋チャネル別チップ（generated/pending/skipped + ⚡今すぐ生成）」の共通カード構造にする。承認待ちカードにのみ承認/却下ボタンを追加で表示する |
 

@@ -3,6 +3,7 @@ import { mkdir } from "node:fs/promises";
 
 // SNS ハブ管理画面のページ分割（2026-10-18 オーナー承認、docs/design/sns-hub-page-split/APPROVED.md）。
 // 4ページ（手動承認・自動送信・数字と戦略メモ・資料）と上部の切り替え、撤去した区画が出ないことを見る。
+// ネタ承認・型一覧（DB）は使われていない口として撤去した（2026-10-24、hq SH01 R2）
 // dev サーバーには Edge Function が無いので /api/admin/sns-hub/* はすべてスタブ
 const H = 60 * 60 * 1000;
 const iso = (ms) => new Date(ms).toISOString();
@@ -42,8 +43,6 @@ function stubApi(page, { now, queue }) {
     "/approvers": [
       { id: "44444444-4444-4444-4444-444444444444", display_name: "本人" },
     ],
-    "/topics": [],
-    "/topic-categories": [],
     "/insights": [
       {
         id: "i1",
@@ -55,7 +54,6 @@ function stubApi(page, { now, queue }) {
       },
     ],
     "/revisions": [],
-    "/template-variants": [],
     "/observations": { drafts: [], observations: [] },
     "/deadline-queue": queue,
   };
@@ -142,6 +140,7 @@ for (const width of [375, 1440]) {
     await expect(page.getByRole("button", { name: /TikTok/ })).toHaveCount(0);
     await expect(page.getByText("今日のレースを確認・個別承認")).toHaveCount(0);
     await expect(page.getByText("全月カレンダー（JST）")).toHaveCount(0);
+    await expect(page.getByText("ネタのストック管理")).toHaveCount(0);
     await expect(
       page.getByText("ボートレース初心者のための展示タイムの読み方"),
     ).toBeVisible();
@@ -196,7 +195,8 @@ for (const width of [375, 1440]) {
     // 資料
     await nav(page).getByRole("link", { name: "資料" }).click();
     await expect(page).toHaveURL(/\/admin\/sns-hub\/library$/);
-    await expect(page.getByRole("heading", { name: "型一覧" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "生成ルール" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "型一覧" })).toHaveCount(0);
     await expect(
       page.getByRole("heading", { name: "展望素材の取り込み" }),
     ).toBeVisible();
@@ -221,7 +221,7 @@ test("各ページの URL を直接開ける", async ({ page }) => {
   for (const [path, text] of [
     ["/admin/sns-hub/auto", "いまの状態"],
     ["/admin/sns-hub/metrics", "観測窓別の型比較"],
-    ["/admin/sns-hub/library", "型一覧"],
+    ["/admin/sns-hub/library", "生成ルール"],
   ]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: text })).toBeVisible();

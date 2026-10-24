@@ -1,5 +1,7 @@
 # 「本日のデータ一覧」（morning-digest）型 共通仕様
 
+> **アーカイブ（2026-10-24、hq SH01 R2）。** この Routine は止まっており、使っていた口（ネタの登録・承認・提案の起動・企画の検出）はコードから消した。履歴として残す。
+
 `sns_topics` の型（`sns_topic_categories.category_key = 'morning-digest'`）で来たネタの、**チャネル横断で共通の**制作仕様。チャネル別の手順（claim・レンダリング・永続化）はそれぞれの `docs/operation/sns-pipeline-{x,blog,note,youtube}.md` に従い、このファイルは「何を材料に、何を書いてよいか」だけを定める。
 
 ネタの出所は `/today`（「本日のデータ一覧」、[BOA-402](https://linear.app/boat-ai/issue/BOA-402)）の日次バッチ。設計は [`docs/design/morning-data-digest/`](../design/morning-data-digest/)（spec/screens/plan/tasks）、[ADR-0070](../adr/0070-morning-digest-precomputed-rows.md)・[ADR-0071](../adr/0071-venue-adjusted-skill-delta.md)。
@@ -41,7 +43,7 @@ select * from morning_digest_rows where digest_date = '{date}' order by section,
 - **「勝率」という語を使わない。** ボートレースの勝率は着順点の平均であり1着率ではないため、誤用になる。「逃げ切った割合」「まくりで1着になった割合」のように書く
 - **`detail.baselineGrade` はレースのグレード**（`SG`/`G1`/`G2`/`G3`/`ippan`/`ALL`）で、**A1・A2 といった選手の級別ではない**。「本日の級別」等と書くと事実と食い違う（実際にUIでこの誤表記をして直した経緯がある）。`ALL` は「そのグレードの母数が100走未満のため全グレードをまとめた平均」を意味する
 - `is_small_sample = true` の行を主役に据えない。触れる場合は母数（`sample_size`）を併記する
-- 会場名は `venue_code` から引く。選手名は `racer_name` をそのまま使い、勝敗や実力を揶揄する表現にしない（選手個人のデータを題材にした煽り・ユーモアは2026-09-07に却下済み。`docs/operation/sns-topic-proposer-daily-auto.md` 参照）
+- 会場名は `venue_code` から引く。選手名は `racer_name` をそのまま使い、勝敗や実力を揶揄する表現にしない（選手個人のデータを題材にした煽り・ユーモアは2026-09-07に却下済み。`docs/archive/sns-topic-proposer-daily-auto.md` 参照）
 - 「競艇」は**ハッシュタグのみ使用可**（`#競艇`）。本文・ナレーション・画像や動画に焼き込む文字は「ボートレース」で統一する（`.claude/rules/code-style.md` 例外2、2026-09-25ユーザー判断）
 - リンクは**常に `https://www.boat-ai.jp/today`**。`?date=` を付けない、`www` を省略しない（canonical と揃える）
 - **不自然な日本語の言い回しを入れない**（2026-09-25ユーザー指摘）。「同じ70%でも会場が違えば意味が違う。」のような、体言止め・対句で語呂を作りにいった一文は削る。数値と事実をそのまま並べ、読者が読み取れる形にする

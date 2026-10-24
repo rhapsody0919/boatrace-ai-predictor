@@ -12,9 +12,9 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | 区分 | 件数 |
 |---|---|
 | テーブル・ビューの定義 | 101 |
-| 読んでいる（テーブルを直接） | 54 |
+| 読んでいる（テーブルを直接） | 48 |
 | 読んでいる（RPC経由のみ） | 2 |
-| 画面から読んでいない（例外登録あり） | 23 |
+| 画面から読んでいない（例外登録あり） | 29 |
 | **画面から読んでいない（例外登録なし＝要判断）** | **22** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
@@ -51,7 +51,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `sns_youtube_quota_reads` | 表 | 146_sns_shorts_send.sql | なし | 記述なし |  |
 | `venue_rules` | 表 | 008_venue_rules.sql | なし | 記述なし |  |
 
-## 画面から読んでいない（例外登録あり）（23件）
+## 画面から読んでいない（例外登録あり）（29件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -69,8 +69,14 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `scrape_job_state` | 表 | 075_scrape_slots_and_job_state.sql | なし | 記述なし | 取得基盤の内部状態（ジョブのモード live/shadow/off と最終成功時刻、075）。画面ではなく data_health と orchestration.md が使う |
 | `scrape_slots` | 表 | 075_scrape_slots_and_job_state.sql | なし | 記述なし | 取得基盤の内部状態（Cronの実行スロット、075）。画面に出す性質のデータではない |
 | `sns_campaign_entries` | 表 | 054_sns_campaigns_schema.sql | なし | 記述なし | SNS運用（sns-hub）。上と同じ |
-| `sns_campaigns` | 表 | 054_sns_campaigns_schema.sql | なし | 記述なし | SNS運用（sns-hub）。他の sns_* は管理API（api/admin/sns-hub）経由で読まれており、公開サイトの表示対象ではない |
-| `sns_target_accounts` | 表 | 043_sns_topic_gate_schema.sql | なし | 記述なし | SNS運用（sns-hub）。上と同じ |
+| `sns_campaigns` | 表 | 054_sns_campaigns_schema.sql | なし | 記述なし | SNS運用（sns-hub）の企画。書き手（campaign-detect 等）と読み手を SH01 R2（2026-10-24、直近30日0件）で消した。表は残す（DROP は別途）。公開サイトの表示対象ではない |
+| `sns_content_types` | 表 | 043_sns_topic_gate_schema.sql | なし | 記述なし | SNS運用のネタの型の区分。上と同じ（SH01 R2） |
+| `sns_target_accounts` | 表 | 043_sns_topic_gate_schema.sql | なし | 記述なし | SNS運用（sns-hub）。管理画面・送信の経路は sns_drafts を読み、この表を直接は読まない。公開サイトの表示対象ではない |
+| `sns_template_variants` | 表 | 035_sns_marketing_hub_schema.sql | なし | 記述なし | SNS運用の型の版。drafts API の埋め込み select（sns_template_variants(variant_name,...)）で今も読む。一覧の口（template-variants API）は SH01 R2 で撤去。抽出が .from() だけを見るため例外に置く |
+| `sns_topic_categories` | 表 | 044_sns_topic_categories.sql | なし | 記述なし | SNS運用のネタの型。上と同じ（SH01 R2 で topic-categories の口を撤去） |
+| `sns_topic_category_channels` | 表 | 044_sns_topic_categories.sql | なし | 記述なし | SNS運用のネタの型×チャネルの ON/OFF。上と同じ（SH01 R2） |
+| `sns_topic_targets` | 表 | 043_sns_topic_gate_schema.sql | なし | 記述なし | SNS運用のネタのチャネル割り当て。上と同じ（SH01 R2 で口と書き手を撤去） |
+| `sns_topics` | 表 | 043_sns_topic_gate_schema.sql | なし | 記述なし | SNS運用のネタ。管理画面の口（topics API）と書き手（朝の digest の登録・提案の起動・企画）を SH01 R2（2026-10-24、Routine 停止後の残り）で消した。表は残す（DROP は別途） |
 | `user_visible_summary` | 表 | 001_schema.sql | なし | ポリシー（001_schema.sql） | 001_schema.sql の初期設計に由来。読み手は scripts/ のみ |
 | `v_performance_comparison` | ビュー | 001_schema.sql | なし | 記述なし | 001_schema.sql のモデル評価用ビュー。読み手は scripts/ のみ |
 | `v_prediction_performance` | ビュー | 001_schema.sql | なし | 記述なし | 001_schema.sql のモデル評価用ビュー。読み手は scripts/ のみ |
@@ -79,7 +85,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `venue_course_technique_baseline` | 表 | 098_morning_data_digest.sql | なし | GRANT（098_morning_data_digest.sql） | 会場×グレード×実進入コースの決まり手ベースライン（098）。上と同じく集計の中間テーブル |
 | `venue_entry_course_stats` | 表 | 064_venue_entry_course_stats.sql | なし | 記述なし | 「表示には使わず、自前計算の全国値の検証にのみ使う」とユーザー判断済み（BOA-293、orchestration.md）。読み手が無いことは既知 |
 
-## 画面から読んでいる（56件）
+## 画面から読んでいる（50件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -121,15 +127,9 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `races` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
 | `sns_approvers` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
 | `sns_bundle_imports` | 表 | 135_sns_preview_bundle_import.sql | RPC経由: import_sns_preview_bundle(API) | 記述なし |  |
-| `sns_content_types` | 表 | 043_sns_topic_gate_schema.sql | APIが直接 | 記述なし |  |
 | `sns_drafts` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 / RPC経由: append_sns_metric_observation(API), import_sns_preview_bundle(API) | 記述なし |  |
 | `sns_metric_observations` | 表 | 136_sns_metric_observations.sql | RPC経由: append_sns_metric_observation(API) | 記述なし |  |
 | `sns_strategy_insights` | 表 | 039_sns_strategy_insights.sql | APIが直接 | 記述なし |  |
-| `sns_template_variants` | 表 | 035_sns_marketing_hub_schema.sql | APIが直接 | 記述なし |  |
-| `sns_topic_categories` | 表 | 044_sns_topic_categories.sql | APIが直接 | 記述なし |  |
-| `sns_topic_category_channels` | 表 | 044_sns_topic_categories.sql | APIが直接 | 記述なし |  |
-| `sns_topic_targets` | 表 | 043_sns_topic_gate_schema.sql | APIが直接 | 記述なし |  |
-| `sns_topics` | 表 | 043_sns_topic_gate_schema.sql | APIが直接 | 記述なし |  |
 | `st_course_baseline` | 表 | 094_course_baselines.sql | 画面が直接 | GRANT（094_course_baselines.sql） |  |
 | `top_start_stats` | 表 | 025_top_start_stats.sql | 画面が直接 | GRANT（025_top_start_stats.sql） |  |
 | `venue_grade_boat_stats` | 表 | 059_venue_grade_boat_stats.sql | 画面が直接 | ポリシー（059_venue_grade_boat_stats.sql） |  |

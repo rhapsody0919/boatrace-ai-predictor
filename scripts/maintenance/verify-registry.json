@@ -165,6 +165,11 @@
       "guards": "ブログ記事メタデータ src/data/blog-posts/{id}.json（BOA-247）の形。id とファイル名の一致・必須項目・本文 .md の存在・featuredRank の有無と重複・blogPosts.js が全件を新しい順で返すこと"
     },
     {
+      "script": "verify-boat-colors.js",
+      "tier": "ci",
+      "guards": "BOA-1038: colors.js の回収率の境界・艇番印の濃いトークンとフォールバック・全6艇の公式配色・1/2号艇の線のテーマトークンを固定する"
+    },
+    {
       "script": "verify-boatcast-job.js",
       "tier": "ci",
       "guards": "BOATCASTのオリジナル展示・モーター使用開始日（N25・N26）のパーサー・取得ジョブ・403の扱い"
@@ -205,6 +210,11 @@
       "script": "verify-bot-today-function.js",
       "tier": "ci",
       "guards": "ボット向け HTML の /today の関数（ADR 0089 第2段・BOA-848。api/bot-page/today.js、中身は api/_lib/botToday.js）。本番の morning_digest のフィクスチャで、head が人の /today と同じ値・JSON-LD が共通の3つとパンくず、本文が人の画面の部分集合（見出し・日付と開催数・期間・注目レース・各セクションの名前と件数・初期表示の6枚のレース・用語・免責）、選手の値を select せず本文にも出さないこと、取得の失敗を「まだ公開されていません」にせず 503、行が無い・generated_at が NULL のときだけ「まだ公開されていません」、日付は JST の今日、60秒の使い回し、カードの枚数が人の DigestCardGrid と同じこと"
+    },
+    {
+      "script": "verify-breadcrumb-ld.js",
+      "tier": "ci",
+      "guards": "画面・ボット共通の breadcrumbLd.js。名前・URLの欠落と別キーを拒否し、BreadcrumbList・ListItemの型、1からのposition、名前と順序、サイト内パスの絶対URL化・クエリ保持・外部絶対URL保持、通常入力にundefinedが無いこと。仕様と現状の差はKNOWN_GAPSとして出力する"
     },
     {
       "script": "verify-bug-cause-report.js",
@@ -452,6 +462,11 @@
       "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
     },
     {
+      "script": "verify-id-path-utils.js",
+      "tier": "ci",
+      "guards": "race_id・選手名・選手ページ・会場ガイドの仕様と24会場の記事存在（BOA-1039）"
+    },
+    {
       "script": "verify-in-caution-coverage.js",
       "tier": "manual",
       "guards": "BOA-822 イン崩れ注意度の本番の充足（完了の定義A・C）: 夜の表の最初の日・最後の日（前日）・合計の件数、今日の unified で inCaution がある割合（99%以上）・出さない理由の内訳・through。判定は api/cron/in-caution-health.js と同じ純関数",
@@ -516,7 +531,7 @@
     {
       "script": "verify-linear-issue-gate.js",
       "tier": "ci",
-      "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値230件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48、閾値は 2026-10-21 hq 決定）。check-revision-escalation.js・create-vup-linear-ticket.js・api/_lib/snsHubHelpers.js が数えてから issueCreate を送り、230件では送らないこと、夜間のジョブは止めたら保留で終わること、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
+      "guards": "Linear の起票の前の関所（scripts/lib/linearIssueGate.js）が、未アーカイブ件数が閾値230件以上・数えられないときに起票を止め、件数と閾値の入った文で通知すること（無料枠250件の手前で止める。hq 台帳 PL48、閾値は 2026-10-21 hq 決定）。check-revision-escalation.js・create-vup-linear-ticket.js が数えてから issueCreate を送り、230件では送らないこと、夜間のジョブは止めたら保留で終わること、issueCreate を送るファイルがすべて関所を読み込むこと（fetch を差し替え、実 Linear・Slack に触れない。linear-cli.js は verify-linear-cli.js が見る）"
     },
     {
       "script": "verify-meet-before-race.js",
@@ -835,6 +850,11 @@
       "guards": "結果ページの全項目パーサー・艇別/払戻明細の行・書き込み経路"
     },
     {
+      "script": "verify-race-result-usable.js",
+      "tier": "ci",
+      "guards": "BOA-1021: 集計対象・不成立の判定5入力と、supabaseDataServiceから共通関数へのimportを固定する"
+    },
+    {
       "script": "verify-race-series-final-title.js",
       "tier": "ci",
       "guards": "race_conditions の race_title・is_final_day を race_series から埋める候補（BOA-695、backfill-race-series-meta.js final-title）。既存値を上書きしない、最終日は race_date = end_date、節の外・重なり・races に無い行は書かない、全行が同じ3列を持つこと"
@@ -938,11 +958,6 @@
       "script": "verify-ro-query.js",
       "tier": "ci",
       "guards": "本番の読み取り専用ロール claude_ro（マイグレーション 166、ADR-0096）と scripts/db/ro-query.js。PGlite で 166 を適用し、RLS の表が0行に化けず全行読めること、READ ONLY を外しても表・SECURITY DEFINER の書き込み関数・public への CREATE で書けないこと、sns_oauth_tokens を読めないこと、PUBLIC が呼べる書き込みの SECURITY DEFINER 関数があれば 166 が例外で全体を戻すこと。ro-query の1文だけ・上限＋1行の打ち切り・必ず ROLLBACK・ロールの確認、SCRAM の検証子を pg のクライアントの証明で検証"
-    },
-    {
-      "script": "verify-routine-routing.js",
-      "tier": "ci",
-      "guards": "revise/redoの発火先ルーティング（ADR 0038）"
     },
     {
       "script": "verify-rpc-key-regression.js",
@@ -1167,11 +1182,6 @@
       "guards": "依頼9・10: YouTube Shorts案B（private insert→処理確認→public update→実公開確認）・PT/JST日跨ぎの日次枠・upload lease失効時の非公開残置・処理pollの上限3回・update応答喪失時の要照合（142をPGlite、モックadapter、外部接続なし）"
     },
     {
-      "script": "verify-sns-spec-change-linear-failure.js",
-      "tier": "ci",
-      "guards": "SNS ハブの「制作仕様の変更要望」で Linear の起票が失敗したとき（無料枠の上限 USAGE_LIMIT_EXCEEDED は HTTP 400・200 の両方）、request-spec-change.js が汎用の 500 でなく 502 と理由のコードを返すこと、画面の判定（specChangeFeedback）が失敗では入力欄を閉じないこと。fetch を差し替え、実 env・ネットワークを使わない"
-    },
-    {
       "script": "verify-sns-today-plan.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
@@ -1230,13 +1240,6 @@
       "script": "verify-thinking-assist-summary.js",
       "tier": "ci",
       "guards": "思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル src/utils/assistSummary.js。2026-10-06 徳山10R の本番 v16 の値（e2e/thinking-assist-fixture.json.gz）で、差がつく材料の範囲（VC 300件未満は全国、準優勝戦は NCR に絞る。D-37）、札の今日の位置と準優勝戦の今節の点を使わないこと（FR-5）、図の良い方の札、平均ST の手がかり・スリットの形・進入の型（展開）、展示の表の最良（F を外す）・チルト・部品交換（機力）、今節の走（今日の走を点に入れない。D-29）・今節より前の5走（今節と後の走を除く。D-36 (10)）・進入コースで集めるコースの1着（D-36 (11)）、成績から付けた札（D-41。PR4）"
-    },
-    {
-      "script": "verify-topic-target-claim.js",
-      "tier": "manual",
-      "guards": "sns_topic_targetsのclaim機構（ADR 0036）の並行実行時の排他",
-      "reason": "実Supabaseに対する並行実行テストのため",
-      "command": "node --env-file=.env.local scripts/maintenance/verify-topic-target-claim.js"
     },
     {
       "script": "verify-turn-time-venues.js",
