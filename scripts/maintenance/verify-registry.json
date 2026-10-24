@@ -472,6 +472,11 @@
       "guards": "補正Harvilleの公開関数・確率の総和と周辺化・買い目解析・正規化（BOA-1032）"
     },
     {
+      "script": "verify-hit-calculator.js",
+      "tier": "ci",
+      "guards": "的中判定と券種別配当（trifecta=3連複・trio=3連単）の純関数仕様"
+    },
+    {
       "script": "verify-hit-verification-guidance.js",
       "tier": "ci",
       "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
