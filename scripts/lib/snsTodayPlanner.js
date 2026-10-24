@@ -322,7 +322,9 @@ export async function runTodayPlan(
     (!existing.reply?.item ||
       existing.reply.item.state !== existing.item?.state ||
       (existing.item?.state === "notified" &&
-        !existing.reply.draft?.source_data?.deadline_queue?.parent_job_id));
+        (!existing.reply.draft?.source_data?.deadline_queue?.parent_job_id ||
+          // 子を親につないだ後、子の承認（job の作成）の前に落ちた（Codex の審査 P1）
+          !["approved", "posted"].includes(existing.reply.draft?.status))));
   if (
     existing.item &&
     !replyPending &&

@@ -80,7 +80,7 @@ before(async () => {
 });
 beforeEach(async () => {
   await db.exec(`
-    DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; DELETE FROM sns_today_type_schedule;
+    DELETE FROM sns_metric_jobs; DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; DELETE FROM sns_today_type_schedule;
     ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
     UPDATE test_clock SET value=NULL;`);
 });
@@ -1475,7 +1475,7 @@ const linkAt = (caption) =>
   caption.split("\n").findIndex((l) => l.includes(TODAY_URL));
 const clearAll = () =>
   db.exec(`
-    DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; DELETE FROM sns_today_type_schedule;
+    DELETE FROM sns_metric_jobs; DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; DELETE FROM sns_today_type_schedule;
     ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;`);
 const withAuto = async (fn) => {
   await db.exec(
@@ -1928,5 +1928,34 @@ test("返信: 送信の側（158・153 の transition）で、親の claim → �
         "UPDATE sns_auto_send_control SET dry_run=true WHERE channel='x'",
       );
     }
+  });
+});
+test("返信: 子を親につないだ後、子の承認の前に関数が落ちた（子は pending_review・job なし）ら、同じ版でも作り直して子を承認する（Codex の審査 P1）", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    await plan({ loadVariants: () => TYPE_VARIANTS });
+    const { reply } = await sqlStore.todayState(DATE);
+    // 落ちた状態を作る: 子の job が無く、子の下書きは承認前（parent_job_id は入っている）
+    await db.query("DELETE FROM sns_x_send_jobs WHERE draft_id=$1", [
+      reply.draft.id,
+    ]);
+    await db.query(
+      "UPDATE sns_drafts SET status='pending_review', approver_id=NULL, approved_at=NULL, x_approved_hash=NULL WHERE id=$1",
+      [reply.draft.id],
+    );
+    const again = await plan({
+      now: at("07:45"),
+      loadVariants: () => TYPE_VARIANTS,
+    });
+    assert.notEqual(again.report.items[0].outcome, "unchanged");
+    const job = await first(
+      "SELECT state, parent_job_id FROM sns_x_send_jobs WHERE draft_id=$1",
+      [reply.draft.id],
+    );
+    assert.equal(job.state, "queued");
+    assert.ok(job.parent_job_id);
   });
 });
