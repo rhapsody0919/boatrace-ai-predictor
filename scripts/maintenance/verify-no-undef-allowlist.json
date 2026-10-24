@@ -1,8 +1,44 @@
 {
   "$comment": [
-    "verify-no-undef.js の許可リスト。導入時点（ADR-0079）で残す違反は無い。",
-    "未定義の名前の参照は、import の抜け・名前の打ち間違いならここに足さずに直す。Node で動くファイルで process 等が出る場合は eslint.config.js の Node 区分に入れる。",
-    "どうしても残す場合だけ { \"file\": \"リポジトリからの相対パス\", \"name\": \"名前\", \"reason\": \"残す理由\" } を足す。解消したら消す。消し忘れると verify が失敗する。"
+    "verify-no-undef.js（lint の関門）の許可リスト。規則ごと・ファイルごとに、残してよい違反を書く。no-undef は名前（names）、他の規則は件数（count）。",
+    "許可を超えたら失敗（新しい違反）。許可に満たなくなっても失敗（解消したら件数を減らすか行を消す）。検査するのは --rules で渡した規則だけ（引数なしは no-undef だけ）。",
+    "形式: { \"rules\": { \"規則\": { \"リポジトリからの相対パス\": { \"count\": 件数, \"reason\": \"残す理由\" } } } }（no-undef は count の代わりに \"names\": [\"名前\"]）。規則は verify-no-undef.js の KNOWN_RULES のどれか。",
+    "未定義の名前の参照（no-undef）は、import の抜け・名前の打ち間違いならここに足さずに直す。Node で動くファイルで process 等が出る場合は eslint.config.js の Node 区分に入れる。",
+    "ファイル内の eslint-disable はこの検査では効かない。残す違反はここに載せる。"
   ],
-  "entries": []
+  "rules": {
+    "no-undef": {},
+    "no-empty": {},
+    "no-irregular-whitespace": {
+      "scripts/lib/kbFileParser.js": {
+        "count": 2,
+        "reason": "コメントに公式の払戻金の要約の表記「中（全角空白）止」をそのまま書いている（BOA-412）。動きに関係しない"
+      },
+      "scripts/maintenance/verify-kb-file-parser.js": {
+        "count": 1,
+        "reason": "コメントに公式の表記「中（全角空白）止」をそのまま書いている（BOA-412）。動きに関係しない"
+      },
+      "e2e/acceptance/meet-page.spec.js": {
+        "count": 8,
+        "reason": "選手名・級別の照合の正規表現に、公式の表記の全角空白を直接書いている（姓と名の間など）。\\u3000 への書き換えは別の作業"
+      },
+      "e2e/in-caution-card.spec.js": {
+        "count": 1,
+        "reason": "試験用の選手名に全角空白を入れている（公式の選手名の形）。\\u3000 への書き換えは別の作業"
+      },
+      "e2e/race-detail-details.spec.js": {
+        "count": 1,
+        "reason": "全角空白が残っていないことを見る正規表現。\\u3000 への書き換えは別の作業"
+      },
+      "e2e/race-result-display-fixes.spec.js": {
+        "count": 1,
+        "reason": "コメントに公式の選手名の表記（全角空白で詰めた名前）をそのまま書いている"
+      },
+      "e2e/racer-page-wide.spec.js": {
+        "count": 1,
+        "reason": "コメントに公式の節名の表記をそのまま書いている"
+      }
+    },
+    "react-hooks/rules-of-hooks": {}
+  }
 }

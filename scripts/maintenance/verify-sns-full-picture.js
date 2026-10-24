@@ -509,6 +509,17 @@ test("bundle の版2: Shorts の下書きを足し、親（完全版の job）�
   assert.equal(again.r.state, "sending");
 });
 
+test("札（full_picture_variant、hq SQ08 v5）: bundle の札を送る下書き（X・完全版・Shorts）の source_data.full_picture_variant.id に写す。a・b 以外は受け取らない", async () => {
+  const result = await push(bundleV2({ full_picture_variant: { id: "b" } }));
+  assert.equal(result.reasons, undefined);
+  const rows = (await all("SELECT platform, source_data FROM sns_drafts WHERE format='full_picture' ORDER BY platform")).map((r) => r.source_data.full_picture_variant);
+  assert.equal(rows.length, 3);
+  assert.ok(rows.every((v) => v?.id === "b"), JSON.stringify(rows));
+  assert.ok(checkFullPicture({ ...bundleV2(), full_picture_variant: { id: "c" }, review: { p0_count: 0 } }, riskRules).some((r) => r.includes("full_picture_variant")));
+  // 札の無い bundle は今までどおり（source_data に札を書かない）
+  assert.ok(!checkFullPicture({ ...bundleV2(), review: { p0_count: 0 } }, riskRules).some((r) => r.includes("full_picture_variant")));
+});
+
 test("完全版のタグ（youtube_full.tags、hq 契約 10/24 C1）: 完全版の下書きの hashtags に入り、承認の snapshot から YouTube の snippet.tags になる。X・Shorts には付けない", async () => {
   const base = bundleV2();
   // bundle.mjs と同じく、説明文の末尾にタグと同じハッシュタグ行がある

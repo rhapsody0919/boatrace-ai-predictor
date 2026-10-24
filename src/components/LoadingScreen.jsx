@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 const tips = [
@@ -77,10 +77,10 @@ export default function LoadingScreen({ title, description }) {
   // keyframesを注入
   injectKeyframes();
 
-  // ランダムなTipを選択（再レンダリングで変わらないようにmemo化）
-  const randomTip = useMemo(() => {
+  // ランダムなTipを選択（再レンダリングで変わらないように初期化）
+  const [randomTip] = useState(() => {
     return tips[Math.floor(Math.random() * tips.length)];
-  }, []);
+  });
 
   return (
     <div style={styles.container}>

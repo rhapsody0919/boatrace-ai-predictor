@@ -41,6 +41,7 @@ import { fileURLToPath } from "node:url";
 import {
   formatGenerationDate,
   isClippedByGeneration,
+  motorGenerationStartAsOf,
 } from "../../src/utils/motorGeneration.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -60,6 +61,33 @@ const slice = (beginMarker, endMarker) => {
   return begin >= 0 && end > begin ? src.slice(begin, end) : "";
 };
 const methodBody = (name) => slice(`  ${name}(`, "\n  },\n");
+
+// BOA-1019: レース日以前で最新の使用開始日。当日は新しい世代に含める。
+const generationRows = [
+  { start_date: "2025-10-20" },
+  { start_date: "2026-10-06" },
+];
+for (const rows of [generationRows, [...generationRows].reverse()]) {
+  for (const [date, expected] of [
+    ["2025-11-11", "2025-10-20"],
+    ["2026-10-06", "2026-10-06"],
+    ["2026-10-05", "2025-10-20"],
+    ["2025-10-19", null],
+  ]) {
+    for (const input of [date, `${date}-08-07`]) {
+      check(
+        `motorGenerationStartAsOf: ${input} → ${expected}（先頭 ${rows[0].start_date}）`,
+        motorGenerationStartAsOf(rows, input) === expected,
+      );
+    }
+  }
+}
+for (const rows of [[], null]) {
+  check(
+    `motorGenerationStartAsOf: 履歴 ${JSON.stringify(rows)} は null`,
+    motorGenerationStartAsOf(rows, "2026-10-06") === null,
+  );
+}
 
 // 1. 期間の開始日
 const windowFn = slice("async function motorWindowStart(", "\n}\n");

@@ -15,7 +15,6 @@ import {
   getDrafts,
   getApprovers,
   approveDraft,
-  mergeBlogPr,
   publishYoutube,
   markDraftPosted,
   archiveDraft,
@@ -144,34 +143,6 @@ function SnsHubAdmin() {
     }
   }
 
-  // ブログ「承認してPR」後の反映確認（要件82）。GitHubのマージレスポンス
-  // （merge.merged/merge.sha）を見て個別にメッセージを出し分ける
-  async function handleMergeBlogPr(draftId, approverId, headSha) {
-    try {
-      const result = await mergeBlogPr(draftId, approverId, headSha);
-      if (result?.merge?.merged) {
-        const shaLabel = result.merge.sha
-          ? `(${result.merge.sha.slice(0, 7)})`
-          : "";
-        showToast(`マージしました${shaLabel}`, "success");
-      } else {
-        showToast("マージ結果を確認できません", "error");
-      }
-      await loadDrafts({ silent: true, fetch: { drafts: true } });
-    } catch (err) {
-      setActionMessages((previous) => [
-        ...previous,
-        "マージに失敗しました。PRと最新状態を確認してください。",
-      ]);
-      await loadDrafts({ silent: true, fetch: { drafts: true } });
-      console.error("ブログPRマージエラー:", err);
-      showToast(
-        "マージに失敗しました。PRと最新状態を確認してください。",
-        "error",
-      );
-    }
-  }
-
   if (loading) {
     return (
       <SnsHubLayout counts={{ manual: null }}>
@@ -281,9 +252,6 @@ function SnsHubAdmin() {
                 }
                 onApprove={(approverId) =>
                   handleAction(approveDraft, [draft.id, approverId])
-                }
-                onMergeBlogPr={(approverId, headSha) =>
-                  handleMergeBlogPr(draft.id, approverId, headSha)
                 }
                 onPublishYoutube={(approverId) =>
                   handleAction(publishYoutube, [draft.id, approverId])

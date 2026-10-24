@@ -437,6 +437,11 @@
       "guards": "品質ゲートが緑でないPRのマージと、worktreeごと消える取り直しの効かないデータの保護（guard-pr-merge.js）"
     },
     {
+      "script": "verify-harville.js",
+      "tier": "ci",
+      "guards": "補正Harvilleの公開関数・確率の総和と周辺化・買い目解析・正規化（BOA-1032）"
+    },
+    {
       "script": "verify-hit-verification-guidance.js",
       "tier": "ci",
       "guards": "「毎回の的中/不的中はどこで見られるか」の案内（About・FAQ・使い方ガイド）が、実際に判定を描くタブと食い違うこと（BOA-346の移設で3か所が取り残された）"
@@ -638,7 +643,10 @@
       "script": "verify-no-undef.js",
       "tier": "ci",
       "timeoutSec": 300,
-      "guards": "src・api・middleware.js・scripts・e2e・ルートの *.config.js・*.mjs に未定義の名前の参照（ESLint の no-undef）が無いこと。他のルールの既存違反では落とさない。#999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版を検出できることと、src/ に Node のグローバルが付いていないことを自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
+      "args": [
+        "--rules=no-undef,no-empty,no-irregular-whitespace,react-hooks/rules-of-hooks"
+      ],
+      "guards": "lint の関門（ESLint の1回の実行で --rules の規則だけを数える。開発効率の計画 段1a、2026-10-24。引数なしは no-undef だけで、post-merge-checks.yml のマージ後の検査・Slack 通知はこちら）。src・api・middleware.js・scripts・e2e・ルートの *.config.js・*.mjs に、no-undef・no-empty・no-irregular-whitespace・react-hooks/rules-of-hooks（src だけ）の違反が許可リスト（verify-no-undef-allowlist.json。no-undef はファイルごとの名前、他は規則・ファイルごとの件数）を超えて無いこと、解消済みの行が許可リストに残っていないこと、関門の規則に触れる設定コメント（eslint-disable・global 等。この検査では noInlineConfig で効かせない）が無いこと。他の規則の既存違反では落とさない。始まりは no-undef: #999 と #1002 の組み合わせで master の supabaseDataService.js が import の無い groupIntoCurrentMeet を呼び、本番で今節Fの印が全レースで消えた（2026-10-01、#1020 で修正、ADR-0079）。vite build はこの型を通す。#1020 直前の壊れていた版の検出、src/ に Node のグローバルが付いていないこと、規則ごとの検出、実在のファイルに違反を1つ足すと許可リストと突き合わせて落ちること（変異の検証）を自己テストで毎回確かめる。構文エラー・設定の当たらないファイルで検査が素通りするのも失敗にする。master への push 後にも post-merge-checks.yml が実行し、失敗を Slack に流す"
     },
     {
       "script": "verify-node-function-json-imports.js",
@@ -691,6 +699,11 @@
       "guards": "BOA-635「過去に発生した割合を見る」の純関数（6型の数え方・スリットの強さの段・同時に起きない形・切り詰めと layer の使える条件・定番／レアの線と小分け・端末内保存の30日・上限・締切・壊れた値）と変異検証"
     },
     {
+      "script": "verify-payout-calculator.js",
+      "tier": "ci",
+      "guards": "配当・回収率の6関数、trifecta=3連複・trio=3連単のキーと集計、回収率の単位・賭け金・ゼロ分母・空入力の13項目（BOA-1033）"
+    },
+    {
       "script": "verify-pit-report-backfill.js",
       "tier": "ci",
       "guards": "ピットレポートの取り直し（backfill-pit-reports.js）が、行の無いレースと、コメントが出走表の艇数に満たないレースだけを選び、not_target・全艇そろったレース・対象外のグレードを取り直さないこと。前後のコメント数の集計（BOA-611。取得ジョブが公開直後の1回しか取らず、9/21〜10/1 の57レースでコメントが欠けていた）"
@@ -699,6 +712,11 @@
       "script": "verify-pit-report-job.js",
       "tier": "ci",
       "guards": "ピットレポート（選手コメント。N24、BOA-379）のパーサー・取得ジョブ"
+    },
+    {
+      "script": "verify-pit-report-url-parity.js",
+      "tier": "ci",
+      "guards": "ピットレポートの画面側と取得側のURL・候補判定・定数の一致と、文書にある不明グレード・不正IDの扱いの差（BOA-1035）"
     },
     {
       "script": "verify-plan-erd.js",
@@ -890,6 +908,11 @@
       "script": "verify-render-with-fresh-page.js",
       "tier": "ci",
       "guards": "ブログのスナップショット生成で、ページが1つ落ちても後続の記事を取りこぼさないこと（scripts/lib/renderWithFreshPage.js）。2026-10-11 の本番ビルドで、落ちたページを使い続けた後続の3記事が失敗し、AI クローラーに中身の無い画面が返っていた"
+    },
+    {
+      "script": "verify-report-comparison.js",
+      "tier": "ci",
+      "guards": "reportComparison.js の5関数: 前回・直近レポート、傾向、日割り、差分表記（BOA-1034）"
     },
     {
       "script": "verify-review-workflow.js",
@@ -1179,6 +1202,11 @@
       "guards": "BOA-969: 変異の一時ファイル除外、stat/readdir/read の ENOENT と他のエラーの区別、verify 2本への接続"
     },
     {
+      "script": "verify-st-consideration.js",
+      "tier": "ci",
+      "guards": "BOA-1031: ST考察の4純関数、Fと欠損の除外・同順位・内側最速、安定/出遅/抜出の整数比較の境界と母数、ヒストグラム、履歴の逆順と入力不変"
+    },
+    {
       "script": "verify-thinking-assist-model.js",
       "tier": "ci",
       "guards": "思考アシスト（BOA-430）の画面のモデル src/utils/assistModel.js。2026-10-06 徳山10R の本番 v16 の値（scripts/lib/__fixtures__/thinking-assist/）で、全国・級の並びが同じの範囲の選び方（準優勝戦は NCR 112件、30件未満・キー無しは NC に戻して矢印なし。spec D-37）、基準つきバーの3段階（D-21）、類似レースの上位400件・件数と万舟の分母（D-35・D-36 (3)）、級の並びの絵（D-31）、最良の金枠の向き・桁・除外（FR-3a）、会場の決まり手の「最近↑／↓」（直近90日 対 前の275日、D-37）、時点（D-36 (1)）、レースの図のモデル（レンズごとの横軸・数字2個・最良、展示 F は最良から外す、欠場の艇を含む組は1着の合成オッズに数えない。PR3）"
@@ -1197,6 +1225,11 @@
       "script": "verify-unchanged-rows.js",
       "tier": "ci",
       "guards": "「変更の無い行は書かない」比較ロジック（scripts/lib/unchangedRows.js、BOA-349）と、バルクupsertのpayload列そろえ（キーの集合が違う行を混ぜると、持たない行にNULLが書かれる。2026-09-27にrace_entriesのbranch・hometownを1,729行消した）"
+    },
+    {
+      "script": "verify-venue-card-display.js",
+      "tier": "ci",
+      "guards": "会場カードの時間帯境界・最小レース番号と人・ボット共通の表示値（BOA-1036）"
     },
     {
       "script": "verify-venue-entry-course-stats-parser.js",

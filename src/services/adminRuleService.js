@@ -6,8 +6,6 @@
 import { supabase } from "./supabaseClient";
 import {
   getMatchingRules,
-  getBetTypeName,
-  getVenueName,
 } from "./ruleMatchService";
 
 // 会場コードから会場名への変換（ローカル定義）

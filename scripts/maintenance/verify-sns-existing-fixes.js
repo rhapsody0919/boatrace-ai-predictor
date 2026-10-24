@@ -499,7 +499,7 @@ test("親画面の成功・例外通知は関数型更新で蓄積し、閉じ�
   const updates = [...source.matchAll(/setActionMessages\(([^;]+)\);/g)].map(
     (match) => match[1],
   );
-  assert.equal(updates.length, 3);
+  assert.equal(updates.length, 2);
   assert.ok(
     // 整形（prettier）で `(previous) => [` と改行が入っても同じ関数型更新として扱う
     updates.every((update) =>
@@ -522,9 +522,8 @@ test("親画面の成功・例外通知は関数型更新で蓄積し、閉じ�
   const err = { message: "内部エラー詳細" };
   for (const update of updates.slice(1))
     messages = new Function("err", `return (${update})`)(err)(messages);
-  assert.deepEqual(messages.slice(-2), [
+  assert.deepEqual(messages.slice(-1), [
     "操作に失敗しました。最新状態を確認してください。",
-    "マージに失敗しました。PRと最新状態を確認してください。",
   ]);
   assert.ok(
     !messages.some((message) => message.includes(err.message)),

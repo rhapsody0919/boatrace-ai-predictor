@@ -97,6 +97,12 @@ export function checkFullPicture(bundle, riskRules = []) {
     reasons.push(`format が ${FULL_PICTURE_FORMAT} でない`);
   if (!/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(bundle?.race_id ?? ""))
     reasons.push("race_id が不正");
+  // 札は無いか、{id: "a"|"b"} だけ（hq SQ08 v5）
+  if (
+    bundle?.full_picture_variant !== undefined &&
+    !["a", "b"].includes(bundle.full_picture_variant?.id)
+  )
+    reasons.push("full_picture_variant.id が a・b でない");
   if (!nonEmpty(bundle?.x_text, 25000)) reasons.push("x_text が無い・長すぎる");
   else {
     if (!xPostValid(bundle.x_text, { long: true }))
@@ -263,6 +269,8 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
       review: bundle.review,
       qa: bundle.qa,
     },
+    // YouTube の型を比べる札（daily.mjs --variant、hq SQ08 v5）。hq が source_data.full_picture_variant.id で数える
+    ...(bundle.full_picture_variant ? { full_picture_variant: { id: bundle.full_picture_variant.id } } : {}),
     deadline_queue: queue(channel),
     release_evidence: {
       status: "released",

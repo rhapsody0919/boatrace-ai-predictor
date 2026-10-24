@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import XSendPanel from "./XSendPanel.jsx";
 import DraftDiffPanel from "./DraftDiffPanel.jsx";
-import BlogPrReview from "./BlogPrReview";
 import {
   canShareVideo,
   shareVideoFile,
@@ -31,7 +30,6 @@ export default function DraftCard({
   youtubeUrl,
   approvers,
   onApprove,
-  onMergeBlogPr,
   onPublishYoutube,
   onXChanged,
   onMarkPosted,
@@ -40,7 +38,6 @@ export default function DraftCard({
   const [selectedApproverId, setSelectedApproverId] = useState(
     approvers[0]?.id || null,
   );
-  const [blogReview, setBlogReview] = useState(null);
   // X送信パネルが確かめた送信の状態。確かめるまでは unknown（投稿導線を出さない）
   const [xSendState, setXSendState] = useState("unknown");
   const [confirmingArchive, setConfirmingArchive] = useState(false);
@@ -74,11 +71,9 @@ export default function DraftCard({
         />
       )}
       {draft.external_operation_state === "reconcile" && <p role="alert">送信中または要照合です。外部結果の確認が終わるまで再送・修正できません。</p>}
-      {draft.external_operation_state === "external_done" && <div>
+      {draft.platform === "youtube" && draft.external_operation_state === "external_done" && <div>
         <p>外部操作は完了済みです。DBへの反映だけを再試行できます。</p>
-        <button className="draft-action-btn" onClick={() => draft.platform === "youtube"
-          ? onPublishYoutube(draft.approver_id || selectedApproverId)
-          : onMergeBlogPr(draft.approver_id || selectedApproverId, draft.external_operation_result?.source_data?.blog_reviewed_head_sha)}>
+        <button className="draft-action-btn" onClick={() => onPublishYoutube(draft.approver_id || selectedApproverId)}>
           DB反映を再試行
         </button>
       </div>}
@@ -171,19 +166,13 @@ export default function DraftCard({
                   onSelect={setSelectedApproverId}
                 />
 
-                {draft.platform === "blog" && <BlogPrReview draft={draft} review={blogReview} onReview={setBlogReview} />}
                 <div className="draft-actions">
-                  {draft.platform === "blog" ? (
-                    <BlogApproveAction
-                      disabled={publicationBlocked || !selectedApproverId || !blogReview?.confirmed || blogReview.prUrl !== draft.pr_url}
-                      onApprove={() => onMergeBlogPr(selectedApproverId, blogReview.headSha)}
-                    />
-                  ) : draft.platform === "youtube" ? (
+                  {draft.platform === "youtube" ? (
                     <YouTubeApproveAction
                       disabled={!selectedApproverId || publicationBlocked}
                       onApprove={() => onPublishYoutube(selectedApproverId)}
                     />
-                  ) : (
+                  ) : draft.platform !== "blog" && (
                     <button
                       className="draft-action-btn approve"
                       disabled={!selectedApproverId || publicationBlocked}
@@ -613,29 +602,6 @@ function ThumbnailPreview({ thumbnailUrl }) {
     <div className="thumbnail-preview">
       <img src={thumbnailUrl} alt="" className="thumbnail-preview-image" />
     </div>
-  );
-}
-
-// blogの「承認」は同時にDraft PRをマージする不可逆操作のため、確認ダイアログを
-// 挟む（ADR 0034）。ボタン文言も「承認」ではなく明示的にする
-function BlogApproveAction({ disabled, onApprove }) {
-  function handleClick() {
-    if (
-      window.confirm(
-        "承認すると、対応するDraft PRが即座にマージされます。よろしいですか？",
-      )
-    ) {
-      onApprove();
-    }
-  }
-  return (
-    <button
-      className="draft-action-btn approve"
-      disabled={disabled}
-      onClick={handleClick}
-    >
-      ✅ 承認してPRをマージ
-    </button>
   );
 }
 

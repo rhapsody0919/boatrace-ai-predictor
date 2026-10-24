@@ -915,11 +915,18 @@ for (const f of fixtures) {
 
 // ---- 毎日の実行（daily.mjs、hq の切替案 v2 §9）と LLM の usage ----
 {
-  const { selectRaces, childEnv, readAnonEnv, SELECT_RULE } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  const { selectRaces, childEnv, readAnonEnv, SELECT_RULE, withVariant, VARIANTS } = await import(`${R}/scripts/full-picture/daily.mjs`);
   const race = (n, t, stage, cancel = null) => ({ raceId: `2026-10-19-19-${String(n).padStart(2, "0")}`, raceNumber: n, startTime: t, raceStage: stage, cancellationStatus: cancel });
   const day = [race(9, "21:23", "一般"), race(10, "21:51", "準優勝戦"), race(11, "22:20", "準優勝戦"), race(12, "22:45", "一般")];
   // 締切 21:58 前の優勝戦・準優勝戦のうち一番遅いもの（22:20 の11R は締切を過ぎるので外す）
-  assert.deepEqual(selectRaces(day, "2026-10-19"), [{ race_id: "2026-10-19-19-10", deadline: "2026-10-19T12:51:00.000Z" }]);
+  assert.deepEqual(selectRaces(day, "2026-10-19"), [{ race_id: "2026-10-19-19-10", deadline: "2026-10-19T12:51:00.000Z", race_stage: "準優勝戦" }]);
+  // plan の各行に race_stage（race_conditions.race_stage の文字列そのまま。hq SQ08 v5）。12R の代わりの行も、無ければ null
+  assert.deepEqual(selectRaces([race(12, "21:30", "一般")], "2026-10-19").map((x) => x.race_stage), ["一般"]);
+  assert.deepEqual(selectRaces([race(12, "21:30", null)], "2026-10-19").map((x) => x.race_stage), [null]);
+  // 札（--variant a|b）は bundle の full_picture_variant.id に書く。無ければ bundle はそのまま
+  assert.deepEqual(VARIANTS, ["a", "b"]);
+  assert.deepEqual(withVariant({ race_id: "x" }, "b"), { race_id: "x", full_picture_variant: { id: "b" } });
+  assert.deepEqual(withVariant({ race_id: "x" }, null), { race_id: "x" });
   // 中止なら外す。優勝戦・準優勝戦が無ければ 12R の一番遅いもの
   const other = [race(12, "16:40", "一般"), { ...race(12, "17:10", "一般"), raceId: "2026-10-19-01-12" }, race(10, "15:50", "一般")];
   assert.deepEqual(selectRaces(other, "2026-10-19").map((x) => x.race_id), ["2026-10-19-01-12"]);
@@ -941,7 +948,7 @@ for (const f of fixtures) {
   const daily = new URL(`${R}/scripts/full-picture/daily.mjs`, import.meta.url).pathname;
   const cleanEnv = { PATH: process.env.PATH, HOME: process.env.HOME };
   const runDaily = (file, args, env = cleanEnv) => spawnSync(process.execPath, [file, ...args, "--anon-env", envFile], { encoding: "utf8", env });
-  for (const args of [["--select", "--date", "2026/10/19", "--plan-only"], ["--select", "--date", "2026-10-19"], ["2026-10-19-19-10"], ["bad-id", "--out", "/tmp/x", "--bgm", "/tmp/x.mp3"]]) {
+  for (const args of [["--select", "--date", "2026/10/19", "--plan-only"], ["--select", "--date", "2026-10-19"], ["2026-10-19-19-10"], ["bad-id", "--out", "/tmp/x", "--bgm", "/tmp/x.mp3"], ["2026-10-19-19-10", "--out", "/tmp/x", "--bgm", envFile, "--variant", "c"]]) {
     const r = runDaily(daily, args);
     assert.equal(r.status, 2, `使い方の誤りは exit 2: ${args.join(" ")}`);
     assert.equal(JSON.parse(r.stdout).status, "usage");

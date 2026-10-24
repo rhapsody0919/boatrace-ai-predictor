@@ -56,3 +56,29 @@
 - マージ後の検査は「検知」であって「予防」ではない。Vercel の本番デプロイと並行して走るため、壊れたコミットが一度本番に出ることはありうる。通知で気づいて直すまでの時間を縮めるのが目的
 - no-undef は「名前が無い」ことしか見ない。名前はあるが引数・戻り値の形が変わった、という組み合わせの壊れ方は捕まえない
 - 動的に作る名前（`globalThis[name]` 等）や、`typeof x === "undefined"` で守った参照は対象外（no-undef の仕様）
+
+## 追記（2026-10-24）: lint の範囲を広げる・型の検査は pure の根の中だけ
+
+開発効率の計画（`docs/design/dev-efficiency/plan.md` の 1a・4）で、本 ADR の範囲を次のように広げる。元の決定（lint 全体を PR の関門にしない・`checkJs` を全体に入れない）は変えない。
+
+1. **lint は verify:ci の中で、ESLint の1回の実行に複数の規則を見る。** `verify-no-undef.js` に規則の一覧を渡す引数を足し、`verify-registry.json` の行の `args` で verify:ci のときだけ一覧を渡す。同じ対象のディレクトリ・同じ「検査されなかったファイルは失敗」の扱いで回す。**引数が無いときは今のまま no-undef だけ**にする。`post-merge-checks.yml:69` は引数なしで呼ぶので、マージ後の Slack は no-undef・build のまま（上の「採らなかった案」3行目の「マージ後の通知は本番に出ると壊れるものに絞る」を保つ。system-architect の審査 P2、2026-10-24）。`npm run lint`（`eslint .`）を必須にはしない。`.github` は変えない（Quality Gates が verify:ci を走らせる）
+   - 最初に入れるのは今の違反が少ない規則（`no-empty`・`no-irregular-whitespace` 等）と、`src` だけの `react-hooks/rules-of-hooks`。違反を直してから入れる
+   - `no-unused-vars` は既存の違反の解消（BOA-1015〜1018・1024）の後
+   - 抑制の一覧は規則ごとに持ち、解消済みの行が残っていても失敗にする（決定2の流儀のまま）。ファイルの中の `eslint-disable` の追加も検出し、一覧を通らない抑制を塞ぐ
+   - 「lint 全体を PR の関門にする」を採らなかった理由（既存の違反が多数）はそのまま当てはまる。実測 error 345〜699（範囲の取り方で変わる。system-architect の実測 345、e2d194f35 の `eslint .` 全体 699・docs と sns-video-studio を除く 352。1a で verify-no-undef と同じ対象で数え直す、plan.md 1a）。規則ごとに違反を 0 にしてから足すので、無関係な既存の違反で落ちない
+2. **型の検査（`@ts-check` と範囲を限った `tsc --noEmit`）は pure の根（`src/pure/**`・`scripts/lib/pure/**`、`docs/design/codex-direct-pr/design.md` §4.2）の中だけ。** `checkJs` を全体に入れない元の決定と両立する理由:
+   - 元の理由は「既存のコードへの導入の費用が大きい」。pure の根は新しく作るフォルダで、入る物は切り出しの PR で1関数ずつ移すので、既存の違反の山が無い。導入の費用が元の理由の前提に当たらない
+   - pure の根は `verify-pure-imports.js` で根の外を読めない。型の検査の範囲が import でほかのファイルへ広がらない。ただし `tsc` は JSDoc の `import('...')` 型と `/// <reference>` も解決し、既定の `lib` は DOM を含み `@types/*`（今は `@types/react`・`@types/react-dom`）も自動で入る。範囲を閉じる条件として、(a) verify-pure-imports.js がコメントの中の `import(` と `/// <reference` も import と同じ判定にかける (b) jsconfig に `"types": []` と DOM を含まない `"lib"`（例 `["ES2022"]`）を置く、の2つを満たす（system-architect の審査 P2、2026-10-24）
+   - no-undef が捕まえない「名前はあるが引数・戻り値の形が変わった」（本 ADR の限界）を、共有される純関数に限って捕まえる。画面と定期の job の両方から呼ばれる関数ほど、この壊れ方の害が大きい
+   - 「await し忘れ」（`no-floating-promises` 相当、型の情報が要る規則）も、この型の段まで入れない
+
+## 追記（2026-10-24）: 1a の実装（PR #1819、オーナー承認済みの計画どおり）
+
+`verify-no-undef.js` を、ESLint の1回の実行で複数の規則を数える「lint の関門」に広げる。名前は変えない（`post-merge-checks.yml` がこの名前で呼び、`.github` は変えない方針のため）。
+
+- 規則は引数 `--rules=` で渡す。PR の Quality Gates（verify:ci）は `verify-registry.json` の `args` で下の4規則を渡す。**引数が無いときは no-undef だけ**で、`post-merge-checks.yml` は引数なしで呼ぶ。マージ後の Slack 通知の範囲は「本番に出ると壊れるもの」（no-undef・build）のまま変わらず、上の「採らなかった案」（マージ後の通知を広げない）と合う
+- 規則: `no-undef`・`no-empty`・`no-irregular-whitespace`・`react-hooks/rules-of-hooks`（`src/` だけ。`e2e/fixtures.js` の Playwright の `use(...)` が誤検出になる）。重さは `eslint.config.js` に頼らず検査の側で `error` に固定する。`no-unused-vars` は BOA-1015〜1018・1024 の後、「await し忘れ」は入れない
+- 範囲は変えない（src・api・middleware.js・scripts・e2e・ルートの `*.config.js`・`*.mjs`）。`globalIgnores` が `dist` だけなので、範囲を明示して `public`・`sns-video-studio`・`data` を読まない
+- 許可リストは「規則 → ファイル → 許可・理由」。no-undef は名前（`names`。旧版と同じく名前の入れ替わりも落とす）、他の規則は件数（`count`）。許可を超えたら失敗、許可に満たなくなっても失敗（解消済みの行を残さない）。件数で持つ規則は、同じファイルの中で1件直って1件増える入れ替わりを通す（代償として受け入れる）。導入時は no-irregular-whitespace 15件（no-empty の3件は BOA-1015（#1811）、全角空白の3件は BOA-1018（#1815）が先に直した）
+- ファイル内の設定コメント: この検査では `noInlineConfig` で効かせず、検査中の規則に触れるもの（規則名の無い `eslint-disable`、検査中の規則を名指す `eslint-disable`・`/* eslint 規則: 重さ */`、`global`・`globals`・`eslint-env`）があれば失敗にする。旧版は `eslint-disable no-undef`・`/* global */` で no-undef を消せた（導入時に消されていたものは0件）。関門の外の規則の `eslint-disable`（`react-hooks/exhaustive-deps` 等、導入時30件。exhaustive-deps 28・no-unused-vars 2）は通す。「今の数を一覧に固定する」案は採らない。関門の外の disable を足すたびに一覧の更新が要り、数が合っていれば関門の規則の disable を紛れ込ませられるため。`eslint.config.js` には `noInlineConfig` を入れない（`npm run lint` とエディタの挙動を変えない）
+- 自己テストに、規則ごとの検出、突き合わせの単体（許可リストが空でも added・stale を確かめる）、実在のファイルに違反を1つ足した版を実際の許可リストと突き合わせて落ちること（変異の検証）を足す。変異は `lintText` でメモリの上で作り、ディスクに一時ファイルを書かない（並行で走る他の verify に拾われないため）
