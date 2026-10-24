@@ -130,6 +130,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
     },
     {
+      "script": "verify-assist-run-points.js",
+      "tier": "ci",
+      "guards": "思考アシストの finishOf・runPoints・finishClass・tiesBeyond の着、着順点10/8/6/4/2/1、今日・欠場・着なし、色クラスと境目以降の同点件数を固定する（BOA-1089）。仕様未定の入力は KNOWN_GAPS に実測値を出す"
+    },
+    {
       "script": "verify-assist-summary-tie-boundary.js",
       "tier": "ci",
       "guards": "思考アシスト（BOA-430）の formSummary の「よく出た2連単（5位）・3連単（3位）」で、境目と同数の組を黙って落とさないこと（BOA-838）。境目未満は含めない、並びは組の昇順のまま"
