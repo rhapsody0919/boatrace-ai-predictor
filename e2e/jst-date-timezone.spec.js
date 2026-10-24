@@ -1,0 +1,78 @@
+import { test, expect } from "./fixtures.js";
+
+// レースの日付（日本の暦日）は、閲覧者の端末のタイムゾーンでなく Asia/Tokyo で出す（BOA-1092）。
+// JST より西の端末（英語・海外の利用者）で、/races の日付カードが1日前（リンク先 /races/2026-10-24 に
+// 「10/23(金)」）になり、会場の傾向パネルの集計基準日も前日になっていた。
+// 端末のタイムゾーンを日付変更線の西側（UTC・ロサンゼルス）にして、日本の暦日のまま出ることを見る
+for (const timezoneId of ["UTC", "America/Los_Angeles"]) {
+  test.describe(`端末のタイムゾーンが ${timezoneId}`, () => {
+    test.use({ timezoneId });
+
+    test("過去のレース一覧の日付カードと月の見出しは日本の暦日で出る", async ({
+      page,
+    }) => {
+      const day = (date) => ({
+        date,
+        totalRaces: 12,
+        finishedRaces: 12,
+        turnRaces: 12,
+        turnHitRate: 50,
+      });
+      await page.route("**/api/race-history/summary**", (route) =>
+        route.fulfill({
+          json: { days: [day("2026-10-25"), day("2026-10-01")] },
+        }),
+      );
+      await page.goto("/races");
+      // 端末のタイムゾーンが本当に効いていること（効いていなければこの試験は何も見ていない）
+      expect(
+        await page.evaluate(
+          () => new Date("2026-10-25T00:00:00+09:00").getDate(),
+        ),
+      ).toBe(24);
+      const month = page.locator(".month-group").first();
+      // 月の1日が前月に化けて、10月の中に「9/30」が出ていた
+      await expect(month.locator("h2")).toHaveText(/2026年10月/);
+      await expect(month.locator(".date-card h3")).toHaveText([
+        "10/25(日)",
+        "10/1(木)",
+      ]);
+      await expect(month.locator(".date-card").first()).toHaveAttribute(
+        "href",
+        "/races/2026-10-25",
+      );
+      await expect(page.locator(".month-group")).toHaveCount(1);
+    });
+
+    test("レース詳細の会場の傾向パネルの集計基準日は日本の暦日で出る", async ({
+      page,
+    }) => {
+      // JST 2026-10-25 00:30 は UTC・ロサンゼルスでは 10/24
+      await page.route("**/rest/v1/winning_technique_stats**", (route) =>
+        route.fulfill({
+          json: [
+            {
+              venue_code: 2,
+              boat_number: 1,
+              winning_technique: "逃げ",
+              count_90days: 10,
+              percentage: 50,
+              total_races: 20,
+              last_updated: "2026-10-25T00:30:00+09:00",
+            },
+          ],
+        }),
+      );
+      await page.addInitScript(() =>
+        localStorage.setItem("boatai-language", "ja"),
+      );
+      await page.goto("/race/2026-09-18-02-08");
+      await page
+        .locator(".race-tabs-btn", { hasText: "基本情報" })
+        .click({ timeout: 20000 });
+      await expect(
+        page.locator(".venue-tendency-panel .vtp-updated"),
+      ).toContainText("2026/10/25", { timeout: 15000 });
+    });
+  });
+}

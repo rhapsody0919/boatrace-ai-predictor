@@ -416,6 +416,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
     },
     {
+      "script": "verify-formatters-timezone.js",
+      "tier": "ci",
+      "guards": "日本の暦日の整形（formatDate・formatDateObject・formatDateShort）が実行環境のタイムゾーンに依らず同じ日付・曜日になる（JST より西で1日前になった BOA-1092）"
+    },
+    {
       "script": "verify-fortune-systems.js",
       "tier": "ci",
       "guards": "4占術の配点・日付境界・12分類とFORTUNE_SYSTEMSの関数参照（BOA-1073）"
