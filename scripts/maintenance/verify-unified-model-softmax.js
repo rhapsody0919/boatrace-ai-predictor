@@ -58,6 +58,29 @@ const tests = [
     near(result[0].prob, 0.7310585786300049, 1e-9);
     near(result[1].prob, 0.2689414213699951, 1e-9);
   }],
+  ["温度1でスコア0と1000でも最大値を引いて有限", () => {
+    const result = softmaxProbabilities([{ number: 1, score: 0 }, { number: 2, score: 1000 }], 1);
+    assert.equal(result.length, 2);
+    result.forEach((boat) => assert.ok(Number.isFinite(boat.prob)));
+    assert.deepEqual(result.map((boat) => boat.number), [2, 1]);
+    near(result[0].prob, 1);
+    near(result[1].prob, 0);
+    near(result.reduce((sum, boat) => sum + boat.prob, 0), 1);
+  }],
+  ["温度1でスコア-1000・0・1000でも最大値を引いて有限", () => {
+    const result = softmaxProbabilities([
+      { number: 1, score: -1000 },
+      { number: 2, score: 0 },
+      { number: 3, score: 1000 },
+    ], 1);
+    assert.equal(result.length, 3);
+    result.forEach((boat) => {
+      assert.ok(Number.isFinite(boat.prob));
+      near(boat.prob, boat.number === 3 ? 1 : 0);
+    });
+    assert.equal(result[0].number, 3);
+    near(result.reduce((sum, boat) => sum + boat.prob, 0), 1);
+  }],
 ];
 
 // JSDoc に仕様がない入力。現在値は観測だけに使い、assert しない。
