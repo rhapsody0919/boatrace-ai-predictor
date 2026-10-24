@@ -519,6 +519,11 @@
       "guards": "ko の今節・F まわりの文言（BOA-734）。今節タブの賞典除外・F の6キーと F 凡例の全文が決めた表現で、旧表現（「준결승전·우승전 출전 제외(이번 시리즈 F)」等）が残っていないこと"
     },
     {
+      "script": "verify-latest-by-race-id.js",
+      "tier": "ci",
+      "guards": "latestByRaceId の最新行選択・同時刻の先行行保持・入力順に依存しない最新時刻・フィールド指定・空配列（BOA-1041）。固定入力のみで外部接続しない"
+    },
+    {
       "script": "verify-lib-index.js",
       "tier": "ci",
       "guards": "共通ロジックの索引（docs/reference/shared-logic-index.md）の抽出ロジックと、生成が成功すること。最新性はmasterへのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078）"
