@@ -359,6 +359,11 @@
       "guards": "master 上のメイン作業ツリーの直接編集を止めるフック（.claude/hooks/guard-edit-on-master.sh、2026-08-13 の誤削除インシデントの再発防止）。master のメインツリーは拒否、worktree・リポジトリ外・.git 配下・master 以外は素通し、jq が無くても素通し、settings.json の登録"
     },
     {
+      "script": "verify-error-message-deadline-status.js",
+      "tier": "ci",
+      "guards": "例外文言の非空フォールバック（BOA-668）と、レース日付・JST固定の締切日時・5分前と締切ちょうどの状態境界（ADR 0042、BOA-1065）"
+    },
+    {
       "script": "verify-exhibition-time-top-stats.js",
       "tier": "ci",
       "guards": "展示タイム1位率の集計（update-exhibition-time-top-stats.js）が、展示タイムが NULL の行（展示ST先行・展示前の体重だけの行・展示なし）を分母に入れないこと、同着の最速を数えないこと（BOA-520。PR #917 で見つかった率の薄まり）"
