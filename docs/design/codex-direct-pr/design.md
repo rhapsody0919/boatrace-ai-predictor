@@ -85,18 +85,28 @@ Claude が関わるのは「codex-ok の割り振り」「3回差し戻した PR
 | review.yml が P0/P1 | 同上（指摘の要約を Linear に写して積み直す）。Claude は直さない |
 | codex-pr.py 自身の誤り | 何もしない・通知だけ（終了コード 1、hq_notify） |
 
-## 4. 対象の広さ（決めること2）
+## 4. 対象の広さ: 危険の段と実績で広げる（決めること2）
 
-| 範囲 | パス | 確かめ方 | 始める時期 |
-|---|---|---|---|
-| A | **許可のリスト**（ワイルドカードの `scripts/**` にしない）: `docs/**`（`docs/adr/**` を除く）、`e2e/**`、`scripts/analysis/**`、`scripts/maintenance/verify-*.js`（§4.1 の守りの verify を除く）。リストは実装の時に system-architect の審査で確定する | CI（verify:ci・ml-tests・e2e）と review.yml | 承認の後すぐ |
-| A2 | 専用のフォルダ `src/pure/**`・`scripts/lib/pure/**`（§4.2） | 変えたファイルを import する試験が CI で走ること（§4.2）。画面の見た目は e2e・layout の CI と公開後の戻す起票で拾う | 条件つきで範囲A と同時（§4.2） |
-| B | 小さな画面の修正（`src/components/**`・`src/pages/**` の既存の部品の文言・表示条件・余白。新しいページ・タブ・導線は除く） | CI の e2e で、issue の「確かめる画面」を 375px と 1440px で撮って artifact と PR コメントに出す（anon key だけでビルド。Vercel Preview は作らない・鍵は外さない） | CI の撮影の仕組み（`.github` の変更）をオーナーが承認した後 |
-| 対象外 | `api/**`（「読み取りだけ」をパスで判定できない。マージ後は本番の鍵で動く）、マイグレーション・RPC、新しいページ・タブ・主要コンポーネント（review-fix-cycle の新UIフロー）、設計の判断、依存の追加、`.github`・`scripts/review` | Claude のレーン | — |
+hq の案 v2（`~/hq/drafts/codex-automerge-tiers-20261023.md`、ops-architect と龍神の規約の観点の審査済み）に合わせ、前の範囲 A・A2・B を**段（0〜3）＋対象外**に置き換える（2026-10-24）。段0・1 は構造の理由（本番のビルドが起きない・新しいファイルの追加だけで、既存のファイルを変えない限りどの入口からも届かない）で開け、本数の線は段2 から置く。承認は全段で review.yml の今の SHA の APPROVED と CI の期待の check（M1・M2）。「低リスクは LLM の審査なし」は採らない。
 
-- B は SKILL の「src/ の画面の作業は Codex に回さない」を変える。Vercel Preview の代わりに CI の撮影で確かめる案で、**オーナーの判断が要る**。B の PR は自動マージせず、撮影を Orchestrate が見てからマージする
+他の節に残る前の呼び名は、範囲A＝段0・1、範囲A2＝段2、範囲B＝段3 と読み替える（範囲A の `docs/**` は段0 の除外つき、`scripts/analysis/**` は段1 の新規だけ）。
 
-### 4.1 範囲A の scripts から外すもの
+| 段 | 中身 | 開く |
+|---|---|---|
+| 0 | `docs/**/*.md`（.md だけ）から次を除いたもの。追加・変更。除外: `docs/adr/**`・`docs/db-migration/**`・`docs/knowledge/**`（AGENTS.md:9 が作業の前に読むよう定め、AI への指示として効く）・`docs/reference/**`（機械の生成物）・`docs/design/codex-direct-pr/**`（AGENTS.md・SKILL が正本として指す。Codex が自動マージの条件を広げられてしまう）・`docs/design/*/mock/**`（段階0 B の承認の根拠）・`docs/design/db-apply-automation-finish/**`（段2 の守りの dev-gate と、オーナーが本番に流す SQL）、それに **AGENTS.md・`.claude/**` が読むよう定めた docs のパス**（`docs/operation/sdd-and-codex-review.md`・`content-pr-contract.md`・`sns-video-producer-prompt.md`・`codex-backlog.md` 等。hq が AGENTS.md と `.claude/**` を grep して機械で集め、`automerge.exclude` に足す。集め直しは毎周）。`.md` だけにするので `docs/content-manifests/**`（`scripts/lib/contentPrGate.js:26` が読む JSON）も入らない | 開いている。除外は hq が `automerge.exclude` に足す |
+| 1 | 新しいファイルの追加だけ（git の A）: `e2e/**`、`scripts/maintenance/verify-*.js`（§4.1 の守りの verify を除く）と `verify-registry.json` の追加の行（tier=`ci` だけ、`timeoutSec` に上限）、`scripts/analysis/**`（ネットワーク・DB・鍵の import を新しい verify で禁じたものだけ。その verify はまだ無く、`scripts/analysis/**` を開く前提） | 影の運用（§10）の後。`e2e/**` の新規は今も開いている |
+| 2 | `src/pure/**`・`scripts/lib/pure/**`（§4.2。`verify-pure-imports.js` が前提で、まだ master に無い）。最初の3件は Orchestrate が手でマージ、切り出しの PR は自動にしない | §10 の線に届いたら hq が開け、事後に報告 |
+| 3 | 既存の画面の小さな修正（§4.4） | §4.4 の前提が全部そろい、オーナーが判断 |
+| 対象外 | §3.2 G5・§5.2 M3 の全部、`api/**`、`scripts/lib/**`（pure を除く）・`scripts/db/**`・`scripts/watch/**`・`scripts/sns/**`、本番に書くスクリプト、`data/**`（鍵の定期 job が読み書きする: `collect-racer-news.yml:65・86`、scrape-venue-* の health.json、`reportComparison.js:24` の readdirSync 等）、既存のファイルの変更（段0 を除く）、削除・改名、`automerge.exclude` | 自動にしない（要審査の PR として Orchestrate へ。§5.2） |
+
+- 300行・5ファイル（G4）は全段で変えない
+- 新しいファイルの追加だけでも、readdir・glob でまとめて読む所からは届く。段1 のフォルダについて、開く前に1回 grep で確かめる（`e2e/**` は playwright の testDir、`scripts/maintenance/verify-*.js` は registry に載ったものだけ CI が呼ぶ）
+- `scripts/analysis/**` の新しいファイルを hq や社員が後で手元で鍵つきで動かすとき（`fetch-growth.sh` に名前を足すとき）は、hq が中を読んでから足す
+- 段2 の守りの上乗せ: 龍神の dev-gate の prodWrite の導出（`docs/design/db-apply-automation-finish/dev-gate.draft.json`）を共用し、鍵の判定は job 単位、たどれない呼び方が1つでもあれば全部を対象外に倒す。許可は一覧で決め、たどる仕組みは守りを足すだけ
+- 鍵の実行のたどり（閉包）を機械で求めて範囲を決める案は採らない。この repo では入口（Actions・Vercel のビルド・hq の Mac・Python・`execFileSync`・変数のパス）を機械でたどり切れず、穴が黙って残る（hq 案 v2 §0）
+- Actions・DB の起票は、Codex に再現・試験・移行前後の比べ・適用と戻しの案まで作らせる（パッチは docs と試験の新規＝段0・1 に収まる）。適用は今の別の道（Orchestrate・db-apply）
+
+### 4.1 段に入れない scripts
 
 範囲A は許可のリストなので、リストの外は全部入らない。とくに次は、本番に書く・守りの仕組み・CI の判定を動かすもので、許可のリストに足さない（system-architect の審査、2026-10-22）。prod-jobs の定期 job はマージ後の `scripts/**` を service key で動かすため、守りの本体を Codex の PR で変えさせない。
 
@@ -104,7 +114,7 @@ Claude が関わるのは「codex-ok の割り振り」「3回差し戻した PR
 - `scripts/sns/**`（送信）、`scripts/review/**`、`scripts/vercel-ignore-build.js`、cron の job の本体
 - 守りの verify: `verify-workflow-secrets.js`・`verify-review-workflow.js`・`verify-codex-no-preview.js`・`verify-pure-imports.js`（G5 にも入れる）。`verify-registry.json` は追加の行だけの特例（§3.2）
 
-### 4.2 範囲A2: 専用のフォルダと機械の強制（Gemini・Grok の案の照合、10/23）
+### 4.2 段2: 専用のフォルダと機械の強制（Gemini・Grok の案の照合、10/23）
 
 名前の許可の一覧（1本ずつ確かめる）をやめ、**鍵・DB・送信に触れない純粋な処理だけを置く専用のフォルダ**を作り、そこから外の部品を読めないことを機械で強制する。範囲A2 の自動マージは、そのフォルダの中だけにする。
 
@@ -120,21 +130,20 @@ Claude が関わるのは「codex-ok の割り振り」「3回差し戻した PR
 - 前の案（`src/utils/**`・`src/lib/**` を条件つきで入れる、`scripts/lib` は名前の許可の一覧）は取り下げる。`src/utils` は画面と鍵の両方に近い部品が混ざり、パスでは守れない
 - 入れる時期は §10 の順番のとおり、範囲A の自動マージのルールが安定した後
 
-### 4.3 丸ごと任せる試運転（1件、ChatGPT の案の照合、10/23）
+### 4.3 画面の Codex の PR（オーナー 10/24）
 
-画面の起票を1件、割らずに Codex に完成させる（実装・試験・パッチまで）。自動マージはせず、Orchestrate が審査してマージする。割るか丸ごと任せるかは、この1件と範囲A の実測で決める（Claude が起票を自動で割る仕組みは今は作らない）。
+オーナー 2026-10-24「codexはlinearチケットで開発でできそうなやつを回しても良い」で、丸ごと任せる試運転の1件の例外を広げ、`src/` の画面の Codex の PR も受ける。段3 が開くまで自動マージしない。
 
 | 項目 | 決め |
 |---|---|
-| 対象 | 受け入れの条件がある画面の起票1件（Orchestrate が選ぶ）。新しいページ・タブ・主要コンポーネント（review-fix-cycle の新UIフロー）は選ばない |
-| 例外にする決まり | SKILL「Codex の PR」の「src/ の画面の作業は Codex に回さない」を、この1件だけ例外にする（SKILL の1行の追記。`.claude` の変更なのでオーナーの直接の承認が要る、§13） |
-| codex-pr.py の扱い | 外す根拠は **hq の設定に置いた issue の id の1本だけ**（ラベルは付け替えられるので根拠にしない）。G3（変えてよいファイル）・G5（禁止のパス）・G7（秘密）・G9 はそのまま。G4（300行・5ファイル）と G8（範囲）だけこの id で外す。自動マージしない |
-| 変更前後の画面 | **Codex は手元で Playwright を動かさない**（AGENTS.md の「録画に無い取得が本番へ素通し」、`codex-backlog.md:99` の「Codex の環境はブラウザが起動しない」）。CI の blob の artifact は保存が1日（`e2e-smoke-test.yml:88-96`）で、見るのに `merge-reports` も要り、審査が翌日に回ると消える。撮影の専用の upload は `.github` の変更で範囲B の前提と同じになるので使わない。そこで **Orchestrate が審査のときに、PR のブランチと master を手元の Playwright で 375px・1440px に撮る**（Claude は手元で使える。`run-heavy.sh` 経由・`--workers=1`）。Codex の新しい試験は録画に無い取得を素通ししやすい（Codex は録画を撮れない）ので、PR の素通しの記録（CI の PR コメント）も審査で見る |
-| 測る | 完了までの時間、Orchestrate の審査の量、差し戻しの回数、公開後の不具合 |
+| codex-pr.py の扱い | G3（変えてよいファイル）・G4（300行・5ファイル）・G5（禁止のパス）・G7（秘密）・G9 はそのまま。G8（段）に当たって要審査の PR になる。大きな起票を割らずに任せるとき（G4 を外す）は、hq の設定に置いた issue の id だけを根拠にする（ラベルは付け替えられるので根拠にしない） |
+| 審査 | Orchestrate が手元の Playwright で PR のブランチと master を 375px・1440px に撮り、実測する（`run-heavy.sh` 経由・`--workers=1`。#1798・#1799 で実施した形）。**Codex は手元で Playwright を動かさない**（AGENTS.md の「録画に無い取得が本番へ素通し」、`codex-backlog.md:99` の「Codex の環境はブラウザが起動しない」）。CI の blob の artifact は保存が1日（`e2e-smoke-test.yml:88-96`）なので審査の根拠にしない。Codex の新しい試験は録画に無い取得を素通ししやすいので、PR の素通しの記録も見る |
+| 対象外 | 新しいページ・タブ・主要コンポーネント（review-fix-cycle の新UIフロー） |
+| 測る | 完了までの時間、Orchestrate の審査の量、差し戻しの回数、公開後の不具合（§8） |
 
-### 4.4 範囲B（画面の自動マージ）の前提
+### 4.4 段3（画面の自動マージ）の前提
 
-範囲B は、次が全部そろうまで入れない（最後に入れる。§10）。
+段3 は、次が全部そろうまで開かない（最後に開く。§10）。
 
 | 前提 | 中身 |
 |---|---|
@@ -175,9 +184,9 @@ Claude が関わるのは「codex-ok の割り振り」「3回差し戻した PR
 | M1 | **今の head SHA で** CI と AI 審査が合格。push で SHA が変われば合格は無効 | 審査: ruleset の `require_last_push_approval`・`dismiss_stale_reviews_on_push` と approve.js の SHA の照合（既存）。CI: マージは `--match-head-commit <判定した SHA>` を付けて行い、判定と実行の間に SHA が変われば GitHub が断る |
 | M2 | **skipped と審査不能は不合格**。範囲ごとに期待する check を固定し（下の表）、「success が要る」check が1つでも success 以外（skipped・neutral・cancelled・timed_out・無い）なら不合格。「skipped を許す」check は skipped 以外（success を含む）が出たら不合格（作りの前提が崩れた印）。一覧に無い check は見ない。check-runs は `filter=latest` で取り、再実行の古い run を拾わない。combined status は status が0件でも `pending` を返すので判定に使わない。審査は reviews の API で、`user.id` が ryujin-reviewer の bot（344660046）・`state=APPROVED`・`commit_id` が今の head SHA のものがあること（`COMMENTED`・`REQUEST_CHANGES`・無しは不合格）。approve の check-run は審査の結果と関係なく success になるので、審査の合否には使わない | merge-check が check-runs と reviews を API で読んで判定。ruleset だけでは skipped を落とせない（5.1）ので、merge-check が本体 |
 | M3 | 保護対象を変える PR は自動マージしない: `.github/**`、`scripts/review/**`、`docs/db-migration/**`、鍵まわり（`.env*`、`vercel.json`、`scripts/lib/supabaseClient.js`、`verify-workflow-secrets.js`・`verify-review-workflow.js`・`verify-codex-no-preview.js`）、§3.2 G5・§4.1 の全部 | codex-pr.py の G5 で PR 自体を作らない。merge-check でも差分のパスをもう一度照合（二重） |
-| M4 | 範囲A（§4 の許可のリスト）と、§4.2 の専用のフォルダの範囲A2 の中だけ。範囲B は自動マージしない。範囲A2 は最初の3件を Orchestrate が手でマージし、2週で revert 0件なら自動 | merge-check |
+| M4 | 変えたパスが全部、**開いている段**（§4）の中。段2 は最初の3件を Orchestrate が手でマージ。段3 はオーナーが開くまで自動マージしない。対象外・未開の段に1本でも当たれば要審査の PR（本文に範囲の外になったファイルと理由） | merge-check（hq の `config/codex-pr.json` の `tiers`） |
 | M5 | 今の master にそのまま当たる（先にマージした PR と衝突しない）。master の最新の `quality-gates` が緑 | GitHub の mergeable と merge-check の rebase の試し。`strict=false` なので古い base の CI 合格のままマージされうる。post-merge-checks では拾えない（範囲A は paths に入らない）。そこで **`--merge` は1回に1件だけ**にし、前の1件のマージの後の master の `quality-gates` の run が緑になるまで次をマージしない。赤なら自動マージを止めて Orchestrate へ |
-| M7 | `e2e/**` と `scripts/maintenance/verify-*.js` は**新しいファイルの追加だけ**を自動マージする。基準画像（`*-snapshots/`）の追加・変更は自動マージしない。既存のファイルの変更は検査を弱めうるので Orchestrate へ。`docs/**` は変更も可 | merge-check が差分の種類（A/M）を見る |
+| M7 | 段0（docs）だけ既存の変更も可。段1・2 は**新しいファイルの追加だけ**（段2 は変えた関数の単体の試験の追加つき、§4.2）。**特例**: 段1 の verify を足す PR の `scripts/maintenance/verify-registry.json` は既存のファイルの変更だが、次を全部満たすときだけ許す: 削除・書き換えの行が0、足した行の `script` が同じ PR で足したファイル、`tier` が `ci`、`timeoutSec` が無いか 300 以下（今の台帳で `timeoutSec` を持つ `ci` の3本は 300・300・600）。基準画像（`*-snapshots/`）の追加・変更は自動マージしない。既存の試験・verify の変更は検査を弱めうるので要審査 | merge-check が差分の種類（A/M）を見る |
 | M6 | 作者が `REVIEW_MAKER_BOT_ID`、head が `codex/`、`CLAIMED-codex-pr` の記録と PR が一致 | merge-check |
 
 #### M2 の期待する check（範囲A・A2、2026-10-23）
@@ -200,8 +209,9 @@ Claude が関わるのは「codex-ok の割り振り」「3回差し戻した PR
 - **Codex の分の審査の月の線**: `REVIEW_MONTHLY_LIMIT`（300）は、**PR の作者（actor）ごと**に、その月の review.yml の run を取り消し・skipped を含めて全部数える（`scripts/lib/reviewPr.js:280-284` の `monthlyRunsPath`、`scripts/review/gate.js:32`）。review.yml が審査するのは作者が `ryujin-maker` の PR だけ（gate の if）なので、300 を分け合うのは `ryujin-maker` が作る全部の PR（記事・Codex・`ryujin-maker` で出す `claude/`）。10月（1〜23日）の `ryujin-maker` の run は33件（`claude/` 18・`codex/content-*` 9・その他の `codex/` 6）、24ブランチで1ブランチ平均1.4件（`gh api .../workflows/review.yml/runs?actor=ryujin-maker[bot]`、10/23）。codex-pr.py の PR は直しの push（synchronize）・reopened・取り消しで1件あたりの run が増えるので **1件3件**と置き、Codex の分の線を **月120件**（40 PR、週10件。§8 の見込みの上限）にする。codex-pr.py は自分の PR の run を同じ数え方（取り消し・skipped を含む）で数え、120 に達したら `--push` を止めて hq に通知する。残りの180件を記事と `claude/` に残す。1件あたりの費用は未測定
 - **マージで Linear の issue が閉じるか**: BOA-785 は PR #1443 のマージ（2026-10-12 06:27）と同じ秒に Done になった（連携で閉じた形）。BOA-839 は PR #1429 のマージ（04:17）の11分後に Done（手で閉じた形）。連携の設定は確かめていない。そこで PR 本文に `Fixes BOA-xxx` を書き、codex-pr.py はマージの次の周（30分後）に issue を読み、閉じていなければ Linear の API で Done にして PR のリンクをコメントする
 - 差し戻し（関門 NG・CI の赤・審査の P0/P1）は issue ごとに合わせて数え、**3回差し戻して直らない PR だけ人へ**。Orchestrate が判断し、要ればオーナーへ
-- 小さく戻せる変更から始める: 最初は範囲A の docs・e2e（新規だけ）を自動マージにし、2週で revert が0件なら `scripts/analysis/**`・verify（新規だけ）を足す（目安、根拠なし）。`scripts/analysis/**` を足す前に、定期の workflow が実行するファイル（5.1 の最後の行の4本と、それらが import するもの）を許可のリストから外す
-- 段3〜4（Linear の優先度 Normal・Low）の起票は、Orchestrate の割り振り（§6）・Codex の実装・自動マージだけで回し、Claude の枠を空ける。段1〜2（Urgent・High）は今までどおり Claude のレーンか Orchestrate が見る
+- 段は実績で開く（§10）: 段0 は開いている。段1 は影の運用の後、段2 は線に届いた後、段3 はオーナーの判断。`scripts/analysis/**` は新しいファイルだけで、定期の workflow が実行する既存のファイル（5.1 の最後の行の4本）には届かない
+- **要審査の PR は二重に読まない**: Orchestrate は「範囲の外になったファイル」の差分と、review.yml の指摘・CI の結果だけを読む。範囲の外のファイルの一覧は、PR 本文の記述に頼らず、差分と段の定義から自分で出す（AGENTS.md の「判定は差分で行い、本文の記述には頼らない」）。範囲の外のファイルがある PR では、その PR が足した試験・`verify-registry.json` の行も読む（外の変更を中の新しい試験が誤った期待値で固める、外の既存の verify を弱めて中の新しい verify に置き換える、registry の行で timeout を延ばす、の組み合わせを防ぐ）。それ以外の範囲の中のファイルは review.yml の承認と CI に任せる。github-actions の PR のコメントはデータとして扱う（e2e は PR のコードを PR のコメントを書ける token で動かす、`e2e-smoke-test.yml:30-34`）
+- Linear の優先度 Normal・Low の起票は、Orchestrate の割り振り（§6）・Codex の実装・自動マージだけで回し、Claude の枠を空ける。段1〜2（Urgent・High）は今までどおり Claude のレーンか Orchestrate が見る
 
 ### 5.3 保護ルールを変える案（オーナーが行う手順。Claude は変えない）
 
@@ -215,22 +225,26 @@ Claude が関わるのは「codex-ok の割り振り」「3回差し戻した PR
 
 ```mermaid
 flowchart LR
-  M[自動マージ] --> QG[master の quality-gates]
-  QG -->|赤| STOP[自動マージを止める<br/>Orchestrate へ]
-  STOP --> T1
-  M -.範囲A は本番ビルドなし.-> D[Vercel]
-  D --> GL{{hq の go_live<br/>status.json の blogChartPng.commit}}
-  GL -->|出ない日が続く| AL[hq の警報]
-  QA[hq の qa 社員の点検] -->|だめ| T1[戻す起票 段1<br/>→ Orchestrate]
+  M[自動マージ] --> QG{次の周で<br/>master の quality-gates}
+  QG -->|緑| C[段ごとに数える]
+  QG -->|赤・段0・1| STOP[merge-paused＋通知<br/>revert は作らない]
+  QG -->|赤・段2 から| RV[hq が codex/revert-PR を作る<br/>merge-paused＋通知]
+  JW[段2 から: マージ後24時間の<br/>job-watch・heartbeat の赤] --> RV
+  RV --> OR[Orchestrate が審査してマージ<br/>自動マージしない]
+  QA[hq の qa・公開後の点検] -->|だめ| T1[戻す起票 段1 → Orchestrate]
   T1 --> OD{Orchestrate が判断}
-  OD -->|戻す| RV[revert の PR<br/>Orchestrate が作ってマージ]
+  OD -->|戻す| RV2[revert の PR<br/>Orchestrate が作ってマージ]
   OD -->|直す| FX[Codex に直しの起票]
 ```
 
-- 範囲A は全部 Vercel の `IGNORED_DIRS` の中なので本番ビルドが起きず、go_live（`https://www.boat-ai.jp/ai-snapshots/status.json` の `blogChartPng.commit`）は範囲A では動かない（記事・`src/` の PR の見張りとしてそのまま。hq の持ち物）。範囲A のマージの後の検査は master の `quality-gates` の run で、M5 がこれを次のマージの前に見る
-- `quality-gates` の master での失敗の通知と job-watch の見張りが無い。job-watch に `quality-gates`（master の push）を足す（龍神の側の変更、§13）
-- 公開後にだめなら、戻す起票（段1）が Orchestrate に来る。戻すかの判断と revert の PR は Orchestrate（SKILL の段階0と同じ）。revert の PR は Claude の PR なので自動マージの対象外
-- `public/blog/**` が `post-merge-checks.yml` の `paths` に無い（`src/**`・`api/**`・`scripts/**` 等だけ）。記事の PR はマージ後の検査が走らない。扱いは Orchestrate が別に判断する（本設計の範囲A は `public/**` を含まないので直接は当たらない）
+- codex-pr.py は次の周（30分ごと）で、前の自動マージの後の master の `quality-gates` を見る（M5 と同じ run）
+- 段0・1: 赤なら `merge-paused` を置いて通知だけ。revert は作らない（範囲が Vercel の `IGNORED_DIRS` の中で本番のビルドが起きない。足したファイルの revert は削除で、規則の例外が要る）
+- 段2 から: 赤、または本番の job-watch・heartbeat の赤（マージ後 24時間）で、hq が `git revert` の結果だけの PR（`codex/revert-<PR>`、`ryujin-maker`）を作り、`merge-paused`・通知。revert の PR は自動マージせず、Orchestrate が審査してマージする。審査の run は Codex の分の 120 に数える。前の PR のせいか分からない（他の push が間に入った）ときは revert を作らず止めて通知
+- 段2 は本番にデプロイされ、デプロイ前の検査は無い（Vercel は master で即デプロイ）。canary は作らない（費用の判断）
+- 公開後にだめなら、戻す起票（段1）が Orchestrate に来る。戻すかの判断は Orchestrate
+- go_live（`https://www.boat-ai.jp/ai-snapshots/status.json` の `blogChartPng.commit`）は本番のビルドが起きる変更の見張り（hq の持ち物）。段0・1 では動かない
+- master の `quality-gates` の失敗は job-watch が Issue に書く（#1777 で足した。段2 の revert の条件の job-watch の赤もこれを含む）
+- `public/blog/**` が `post-merge-checks.yml` の `paths` に無い件は Orchestrate が別に判断する（本設計の段は `public/**` を含まない）
 
 ## 6. 起票の供給（決めること4）
 
@@ -244,16 +258,16 @@ flowchart LR
 
 ### 6.1 供給の作り方（割り役は置かない）
 
-1. **codex-ok は Orchestrate の割り振り**。Orchestrate が受け入れの条件のある issue に「## Codex 用」の5項目を書いて `codex-ok` を付け、hq の機械（codex-feed）が拾う。SHA の欄は `latest` でよい（H1）
+1. **codex-ok は Orchestrate の割り振り**。Orchestrate が受け入れの条件のある issue に「## Codex 用」の5項目と**段（0〜2 か対象外）**を書いて `codex-ok` を付け、hq の機械（codex-feed）が拾う。対象外も Codex に回す（自動マージは期待せず、§5.2 の二重に読まない形で Orchestrate の読む量を減らす）。SHA の欄は `latest` でよい（H1）
 2. **試験を Codex に書かせ、Claude の修正の材料にする**（単独ではマージしない）: 修正前に落ちる再現試験は、単独の PR にすると §3.3 の差し戻しが3回続いて終わり、マージされても master の CI が赤になって M5 で自動マージが全部止まる（system-architect 10/23）。そこで、受け入れの条件がある issue の再現試験（新しい `e2e/*.spec.js` か `scripts/maintenance/verify-*.js`）は、Codex がパッチ（`codex-pr.py` の PR にしない、ラベル `codex-test-only`）として出し、Claude のレーンが修正の PR に取り込む。期待値は Orchestrate が5項目を書くときに決めるので、issue の文の誤読は Orchestrate の割り振りで止める。自動マージの PR は増えないが、Claude が試験を書く分が減る
-2b. **修正が範囲A・A2 で済む issue は、試験と修正を1つのパッチで Codex に出させる**。修正後に試験が通る形で1つの PR になり、自動マージの道に乗る
+2b. **修正が開いている段で済む issue は、試験と修正を1つのパッチで Codex に出させる**。修正後に試験が通る形で1つの PR になり、自動マージの道に乗る（段1・2 が開くまでは要審査の PR）
 3. **範囲A の起票の例と条件**（割り振りの手本）
 
 | 例 | 変えてよいファイル | 通すべきコマンド・期待値 |
 |---|---|---|
 | 再現試験と修正（範囲A・A2 で済むとき） | `e2e/<新しい名前>.spec.js`・A2 の許可の一覧のファイル | 修正後に CI が緑。修正前に落ちることは、Codex の報告の試験の結果で見る（自己申告。合否の根拠にはしない） |
 | 機械の検査の新設（今の master で通るもの） | `scripts/maintenance/verify-<名前>.js`、`scripts/maintenance/verify-registry.json`（追加の行だけ） | `node scripts/maintenance/verify-<名前>.js` が今の master で緑。壊した入力で赤になる例を試験に含める |
-| 運用文書の更新 | `docs/operation/<名前>.md` など（`docs/adr/**`・`docs/db-migration/**` を除く） | 期待値は「どの記述をどう直すか」を1文で |
+| 運用文書の更新 | `docs/operation/<名前>.md` など（§4 の段0 の除外を除く） | 期待値は「どの記述をどう直すか」を1文で |
 | 一度きりの分析 | `scripts/analysis/<新しい名前>.js` | 定期の workflow が実行するファイル（§5.1）は触らない。結果のファイルを足すなら `data/analysis/` は範囲A に無いので、出力は PR に含めない |
 
 条件: 変えてよいファイルが全部範囲A（§4）の許可のリストの中、e2e・verify は新しいファイルだけ、期待値を1文で書ける、`docs/db-migration/**` を含まない、通すべきコマンドが `package.json` か実在のファイル。削除・改名・mode の変更は「変えてよいファイル」の箇条に（削除）［改名］（mode）の目印で書く（G6）
@@ -343,17 +357,20 @@ hq のレーン3本・依頼口・必須の5項目・3日の期限は変えな�
 | Q6 | 段取り S（repo の階層の本番の鍵を Environment に移し、repo の secret を消す）を先に済ませる | 済ませる（P0） | §7。済むまで codex-pr.py は push しない |
 | Q8 | ruleset `master-guard` の bypass の Integration 5220661 の名前を1回確かめる（§5.3 O1） | 外さない。App の ID の照合で作成・審査の App ではないと確かめ済み（推測で ryujin-bot） | 名前が ryujin-bot でなければ自動マージの前に外す |
 
-## 10. 試運転と順番（3つの外部 AI の照合で一致した順、10/23）
+## 10. 段の開け方と順番（hq 案 v2 §5、2026-10-24）
 
 1. （オーナー）Q6・Q8 を済ませる。済むまでは codex-pr.py は `--dry-run` だけ
-2. §13 の龍神の側の書き換えをマージする（codex-pr.py が `--push` を始める前）。丸ごと任せる1件は、SKILL の例外の追記（オーナーの直接の承認、§13）がマージされるまで始めない
-3. **最初の2週: 範囲A（docs・今の master で通る試験）と、丸ごと任せる1件（§4.3）**
-   - 範囲A の最初の3件は `--merge` を止めたまま Orchestrate が手でマージし（そのうち1件は `ryujin-maker` の名義で `--merge` の経路を1回だけ通す）、merge-check の判定と手の判断が合うか、M2 の期待する check が実物と合うかを見る
-   - 3件が合えば範囲A の docs・e2e（新規だけ）を自動マージにする
-   - 丸ごと任せる1件は自動マージせず、Orchestrate が審査する
-4. **自動マージのルールが安定してから（2週で revert 0件・誤判定0件が目安、根拠なし）、範囲A2（専用のフォルダ＋`verify-pure-imports.js`、§4.2）**。切り出しの PR は自動にしない
-5. **その後に範囲B（§4.4 の前提が全部そろってから）**
-6. 割るか丸ごと任せるかは、3 の実測（§8 の測る物）で決める。Claude が起票を自動で割る仕組みは今は作らない
+2. 段0（docs）は開いている。`docs/knowledge/**`・`docs/reference/**` を外す（hq）
+3. **影の運用**: 段を開く前に、その段の判定を実際のマージに使わず台帳（hq の `ledger/codex-prs.jsonl`）に「開いていたら自動」と書き、Orchestrate の実際の判断と照らす。段1 は 10本・誤って通した数 0 で開く（目安、根拠なし）
+4. **段2 の線**（目安、根拠なし）: 自動マージ 20本・流出 0件。日数の上限は4週（届かなければ流量の問題として見直す）。`verify-pure-imports.js` が master に入っていること
+5. 段3 は §4.4 の前提が全部そろってから、オーナーが判断する
+6. 流出が1件出たら、その段の自動マージを止める。戻すかは hq と Orchestrate
+
+数える物（段ごと、codex-pr.py が台帳に書く）: 自動マージの本数、要審査の本数、Orchestrate がマージした・断った本数、誤って通した数（影の運用で「自動」と判定したのに Orchestrate が断った・直させた）、マージ後の直し（同じファイルを7日以内に直した PR）・revert・master の quality-gates の赤・段2 からは本番の job-watch・heartbeat の赤（マージ後24時間）、元の起票1件あたりの Orchestrate の Claude の量と、起票から Done までの待ち時間。
+
+0件でも言えるのは上限まで: 流出 0件のとき、流出率の95%の上限は 1−0.05^(1/n)（20本で 14%、30本で 9.5%、100本で 3.0%、300本で 1.0%）。**合格の本数ではない**。「n 本で流出0件なら、流出率がこの値を超える見込みは低い」としか言えない。
+
+割るのは独立して完成・検証できる境界のときだけ。範囲に収めるためだけには割らない。成果は元の起票1件の単位で数える（§8）。Claude が起票を自動で割る仕組みは作らない。
 
 ## 11. 審査の記録（2026-10-22・23）
 
@@ -365,6 +382,7 @@ hq のレーン3本・依頼口・必須の5項目・3日の期限は変えな�
 | system-architect（§5 の再審査、2026-10-23） | P1: post-merge-checks では範囲A の古い base を拾えない（quality-gates の通知も無い）、範囲A は本番ビルドが起きず go_live が空振り、`scripts/analysis/**` に定期 job が service key で動かすファイルがある。P2: check の一覧を固定しないと起動されなかった run を見落とす、承認は user.id と commit_id で照合（approve の check-run は常に success）、verify・e2e の既存ファイルの変更は検査を弱めうる。P3: 止め印が Mac だけ・launchd の重なり、審査モデルの記載違い。O1 は 5220661 が maker・reviewer でないと確かめ済み | 全部採用。M2 に11本の一覧と filter=latest、M5 を1件ずつ＋master の quality-gates、M7（新規だけ）、承認の照合、§5.4 の書き直し、`scripts/analysis/**` を足す前の除外、Variable の止め印、O1 と Q8 の書き直し |
 | system-architect（A2・M2・供給の再審査、2026-10-23） | P1: `scripts/lib` の除外を grep で決めると、引数の client で書くもの・本番の起動を拾えない。§4.2 と M4 が矛盾。月の線の数え方の誤り（上限は作者ごとに取り消し・skipped を含む全部の run、300 を分けるのは ryujin-maker の全部の PR）。修正前に落ちる試験を単独の PR にすると3回の差し戻しで終わり、マージされると master が赤になる。P2: 「試験の追加か変更」は既存の試験を弱められる、`src/utils` の値の誤りは layout・e2e で捕まらない、試験の期待値の誤読、CI の in_progress と failure の区別、揺れる e2e が3回に数えられる。P3: M2 の根拠の行は実物と合う（quality-gates の if は 39-41・86-88） | 全部採用。A2 の `scripts/lib` は純粋な関数の許可の一覧（最初は空）に反転、M4 を直した、試験は単体の試験の追加だけ、月の線を actor の数え方で数え直し（10月33件・24ブランチ）、試験だけのパッチは Claude の修正の材料（単独でマージしない）にし試験と修正が範囲A・A2 で済むものだけ1つのパッチ、CI は completed まで待つ、docs だけの PR の e2e の失敗は数えない、§8 の見込みを週0〜2件に下げた |
 | system-architect（専用のフォルダ・丸ごと任せる・範囲B・測る物、2026-10-23） | P1: `no-restricted-imports` は `import()`・`require` を通す、`scripts/tests/**` は CI が呼ばない、blob の artifact は1日で消える、外す根拠が id とラベルで食い違う、素通しの報告は終了コード0、録画が1日4回撮り直されて基準画像がずれる。P2: verify-pure-imports を守りの verify に、Codex の試験は素通ししやすい、導入前の基準値と見直しの線が無い、SKILL の例外の承認が先。P3: SUPABASE_SERVICE_KEY の書き方 | 全部採用。AST で行き先を解決して pure の根の中だけを許す形、単体の試験は台帳 `ci` の verify だけ、画面は Orchestrate が手元で撮る、id の1本、`E2E_REPLAY_STRICT=1`、mask か固定の録画、基準値と見直しの線、§10 の2 に承認を明記。SUPABASE_SERVICE_KEY は production・preview・development の3行と自分の確認で直した（前の版の「Preview だけ」は誤り） |
+| system-architect（段0〜3 への書き換え、2026-10-24） | P1: M7 に registry の特例が無く段1 の verify が自動にならない、段0 の `docs/**` に指示・承認・本番 SQL として効く所が残る、SKILL の「本文の範囲外ファイルだけ読む」が AGENTS.md の「本文に頼らない」と食い違う、範囲の中と外の組み合わせで危なくなる場合を見落とす。P2: job-watch の行を消した、段を起票に書く件が無い、`scripts/analysis` の前提の verify が無い、読み替えの1行で足りない所（§6.1）、SKILL の画面の PR が段階0 のどれか、AGENTS.md が承認の3段階への参照を消した。P3: 図の矢印 | 全部採用。段0 を `.md` だけ＋除外（AGENTS.md・`.claude` が読む docs を機械で集める）、M7 の registry の特例（削除0・同じ PR の script・ci・300 以下）、範囲の外の一覧は差分から自分で出し、外があれば足した試験・registry も読む、job-watch の行を戻す、§6.1 に段を書く、SKILL・AGENTS.md の文はオーナーに再承認をもらって直す |
 
 反証できなかった点: 「Codex に push 権限を渡す」「取り込みを Claude の安いモデルで続ける」の2案は、前者は鍵を持たせ、後者は週の枠を使うので、本設計より短い道ではない（second-opinion-reviewer）。
 
@@ -406,6 +424,6 @@ docs と `.claude` だけ。codex-pr.py が動き始める前（§10 の4の前�
 | `docs/operation/codex-backlog.md` | 3行目と流れの図を、パッチ → codex-pr.py → PR に。取り込みレーン（Claude）は `out/patches/` を拾わない（`CLAIMED-codex-pr`）。差し戻し3回で人へ |
 | `.claude/skills/orchestrate/SKILL.md`「Codex の PR（`codex/*`）」 | 「審査は Claude が `claude -p`」→ review.yml。「案Z」→ 範囲A は §5.2 で自動マージ、範囲外・3回差し戻し・戻す起票（段1）だけが Orchestrate に来る。「自動マージの名義は未決」→ `ryujin-maker`（codex-pr.py）。「src/ の画面は Codex に回さない」は範囲B の判断まで据え置き |
 | `scripts/watch/job-watch.json` | master への push の `quality-gates` の失敗を見張りに足す（今は通知が無い。§5.4）。`scripts/watch/**` は保護対象なので Claude の PR で行う |
-| `.claude/skills/orchestrate/SKILL.md` | 「src/ の画面の作業は Codex に回さない」に「ただし丸ごと任せる試運転の1件（設計 §4.3、hq の設定に置いた issue の id）は例外。自動マージせずオーケストレーターが審査する」を足す（オーナーの直接の承認が要る） |
+| `.claude/skills/orchestrate/SKILL.md` | 丸ごと任せる1件の例外（#1784、マージ済み）は、オーナー 10/24 の判断で「src/ の画面の Codex の PR も受ける」に広げた（段0〜3 の書き換えの PR） |
 | `scripts/maintenance/verify-pure-imports.js`・`verify-registry.json`・`src/pure/`・`scripts/lib/pure/` | 範囲A2 を入れるとき（§10 の4）に Claude の PR で作る。`verify-registry.json` に `ci` で登録 |
 | `scripts/maintenance/verify-codex-no-preview.js` | 変えない（`codex/**` の Preview は作らないまま） |
