@@ -845,6 +845,11 @@
       "guards": "/api/predictions/{date} の CDN キャッシュの長さ（api/_lib/predictionsCache.js）。JST の今日・未来は s-maxage=300、今日より前だけ s-maxage=86400。JST 0:00〜8:59（UTC ではまだ前日）に当日を1日キャッシュにしないこと（以前の UTC 判定の不具合）、日付の境目、api/predictions/[date].js が同じ関数を使い UTC の日付で判定していないこと"
     },
     {
+      "script": "verify-predictions-response.js",
+      "tier": "ci",
+      "guards": "/api/predictions/{date} の入口の検査と応答から外す欄（api/_lib/predictionsResponse.js、BOA-1110）。応答に廃止した3モデルの aiScore* と predictionOdds が無く、inCaution・turnPrediction・predictions・知らないキーは残る（外す欄は名指し）。クエリは無しか ?light=true だけ、実在しない日付・JST の明日より先は 400・no-store で RPC を呼ばない。ハンドラを偽の fetch で通しで呼ぶ"
+    },
+    {
       "script": "verify-pretest-row-pick.js",
       "tier": "manual",
       "guards": "前検タイム（motor_pretest_stats）の行の選び方の前提。節の中で値が変わらないこと・6日ルックバックが前の節を拾わないこと・カバー率（BOA-451）",
