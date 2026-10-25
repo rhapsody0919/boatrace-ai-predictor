@@ -4,6 +4,7 @@
  * （計算は場面ごとの build が画面と同じ関数で行う）。取れなかった材料は missing に記録し、全体は止めない。
  *
  * 使い方: node scripts/full-picture/fetch-materials.mjs <raceId> <出力.json> [--stage racecard|exhibition] [--from-case <dir>]
+ *   --stage exhibition: 展示の後の材料 db.exhibition（fetchExhibitionMaterials）も足す
  *   --from-case: 撮影済みの全貌の case（~/full-picture/cases/{raceId}）の analysis/source から facts・similar・scenario を使う
  *   （試作で、撮影した画面と同じ時点の材料にそろえるため）
  */
@@ -66,6 +67,82 @@ async function racerRows(racerId, raceId, date) {
     sbIn("race_start_timings", "race_id,boat_number,finish_mark", "race_id", ids),
   ]);
   return { racerId, entries, races, results, st: st.filter((r) => entries.some((e) => e.race_id === r.race_id && e.boat_number === r.boat_number)) };
+}
+
+/**
+ * 展示の後の材料で、艇ごとに出す欄（exhibition_data の列。オリジナル展示は時刻で間に合わないので取らない）。
+ * MEASURED は展示で必ず入る値で、null は欠け（missing に記録）。MARK は表示が無いと null（F・L の印、プロペラ・部品の交換なし。
+ * docs/db-migration/082・scripts/lib/preRaceRows.js）なので、null を欠けにしない
+ */
+export const EXHIBITION_MEASURED_FIELDS = ["exhibition_course", "start_timing", "exhibition_time", "tilt"];
+export const EXHIBITION_MARK_FIELDS = ["start_flag", "parts_changed", "propeller_change"];
+const EXHIBITION_BOAT_FIELDS = [...EXHIBITION_MEASURED_FIELDS, ...EXHIBITION_MARK_FIELDS];
+/** 風・波（race_conditions の発走前の値） */
+export const CONDITION_FIELDS = ["weather", "wind_direction", "wind_speed", "wave_height"];
+
+/** races.start_time（締切 JST の HH:MM[:SS]）を UTC の時刻にする。無ければ null */
+const deadlineUtc = (date, startTime) => (startTime ? Date.parse(`${date}T${startTime.length === 5 ? `${startTime}:00` : startTime}+09:00`) : null);
+
+/**
+ * 展示の後の材料（stage=exhibition のときだけ）。読み取りだけ・新しい集計はしない。
+ * 艇は1〜6号艇を必ず並べ、行・値が無い欄は null にして missing に「db.exhibition.boats.{艇}[.{欄}]」で記録する（欠けを隠さない。
+ * 欠場の艇は理由を「欠場」にする）。
+ * 風・波は締切より前の観測だけを使う（race_conditions は結果の取り込みで発走時点の値に上書きされる。その場合は null）。
+ * 決まり手の過去の分布は会場の既存の集計表をそのまま写す（venue_technique_period_stats＝会場の90・365日、
+ * winning_technique_stats＝1着の枠番別の90日。どちらもレースの日でなく最新の集計で、last_updated を残す）
+ * @param {string} raceId
+ * @param {string} date
+ * @param {number} venueCode
+ * @param {string|null} startTime races.start_time
+ * @param {{source: string, reason: string}[]} missing 追記する
+ */
+export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing) {
+  const out = { boats: null, conditions: null, technique: null };
+  try {
+    const rows = await sbGet("exhibition_data", `select=boat_number,${EXHIBITION_BOAT_FIELDS.join(",")},is_absent,updated_at&race_id=eq.${raceId}`);
+    out.boats = [1, 2, 3, 4, 5, 6].map((n) => {
+      const r = rows.find((x) => x.boat_number === n);
+      if (!r) missing.push({ source: `db.exhibition.boats.${n}`, reason: "exhibition_data にこの艇の行が無い" });
+      const boat = { boat_number: n, is_absent: r?.is_absent ?? null, updated_at: r?.updated_at ?? null };
+      for (const f of EXHIBITION_BOAT_FIELDS) boat[f] = r?.[f] ?? null;
+      for (const f of EXHIBITION_MEASURED_FIELDS) {
+        if (r && boat[f] === null) missing.push({ source: `db.exhibition.boats.${n}.${f}`, reason: r.is_absent ? "欠場" : "値が無い" });
+      }
+      return boat;
+    });
+  } catch (e) {
+    missing.push({ source: "db.exhibition.boats", reason: e instanceof Error ? e.message : String(e) });
+  }
+  try {
+    const [c] = await sbGet("race_conditions", `select=${CONDITION_FIELDS.join(",")},weather_observed_at&race_id=eq.${raceId}`);
+    const observed = c?.weather_observed_at ? Date.parse(c.weather_observed_at) : null;
+    const deadline = deadlineUtc(date, startTime);
+    // 締切の後の観測（結果の値）は発走前の値でない。観測時刻か締切が無いと確かめられないので値は残し、そのことを記録する
+    const afterDeadline = observed !== null && deadline !== null && observed >= deadline;
+    out.conditions = Object.fromEntries(CONDITION_FIELDS.map((f) => [f, c && !afterDeadline ? (c[f] ?? null) : null]));
+    out.conditions.observedAt = c?.weather_observed_at ?? null;
+    if (!c) missing.push({ source: "db.exhibition.conditions", reason: "race_conditions にこのレースの行が無い" });
+    else if (CONDITION_FIELDS.every((f) => c[f] == null)) missing.push({ source: "db.exhibition.conditions", reason: "race_conditions に気象の値が無い（未取得）" });
+    else if (afterDeadline) missing.push({ source: "db.exhibition.conditions", reason: `観測 ${c.weather_observed_at} が締切の後（発走前の値でない）` });
+    else {
+      for (const f of CONDITION_FIELDS) if (out.conditions[f] === null) missing.push({ source: `db.exhibition.conditions.${f}`, reason: "値が無い" });
+      if (observed === null || deadline === null) missing.push({ source: "db.exhibition.conditions.observedAt", reason: observed === null ? "観測時刻が無い（発走前の値か確かめられない）" : "締切の時刻が無い（発走前の値か確かめられない）" });
+    }
+  } catch (e) {
+    missing.push({ source: "db.exhibition.conditions", reason: e instanceof Error ? e.message : String(e) });
+  }
+  try {
+    const [byPeriod, byBoat] = await Promise.all([
+      sbGet("venue_technique_period_stats", `select=period_days,winning_technique,race_count,total_races,period_from,period_to,last_updated&venue_code=eq.${venueCode}&order=period_days,winning_technique`),
+      sbGet("winning_technique_stats", `select=boat_number,winning_technique,count_90days,total_races,percentage,last_updated&venue_code=eq.${venueCode}&order=boat_number,winning_technique`),
+    ]);
+    out.technique = { byPeriod, byBoat };
+    if (!byPeriod.length) missing.push({ source: "db.exhibition.technique.byPeriod", reason: "venue_technique_period_stats にこの会場の行が無い" });
+    if (!byBoat.length) missing.push({ source: "db.exhibition.technique.byBoat", reason: "winning_technique_stats にこの会場の行が無い" });
+  } catch (e) {
+    missing.push({ source: "db.exhibition.technique", reason: e instanceof Error ? e.message : String(e) });
+  }
+  return out;
 }
 
 async function getJson(path) {
@@ -175,6 +252,8 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
   } catch (e) {
     missing.push({ source: "race", reason: e instanceof Error ? e.message : String(e) });
   }
+  // 展示の後の材料（進入・展示 ST・チルト・部品交換・展示タイム・風と波・決まり手の過去の分布）。展示の前の出力は変えない
+  if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing);
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, race: raceRow, api, db, missing };
 }
 
