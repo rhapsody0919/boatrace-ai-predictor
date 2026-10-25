@@ -51,6 +51,9 @@ import {
 import {
   getRaceStageKey,
   getRaceStageCategory,
+  getRaceStageBadge,
+  isFinalStage,
+  raceStageLabel,
 } from "../../src/constants/raceStageConfig.js";
 import {
   dayCenter,
@@ -785,6 +788,63 @@ check(
   "semifinalQualifier",
 );
 check("バッジ: 予選", getRaceStageKey("予選"), null);
+
+// BOA-1120: バッジの全フィールド・優勝戦判定・表の種別表示を固定する。
+const FINAL_BADGE = { emoji: "🏆", i18nKey: "raceStage.final", color: "#b91c1c" };
+const SEMIFINAL_BADGE = { emoji: "🥈", i18nKey: "raceStage.semifinal", color: "#c2410c" };
+const BADGE_CASES = [
+  ...["優勝戦", "ツッキー優勝戦", "ＭＤ優勝戦", "決勝戦", "王将位決定戦",
+    "ファイナル", "県内選手権優", "ゴールド優勝"].map((stage) => [stage, true, FINAL_BADGE]),
+  ...["準優勝戦", "Ｗ準優戦前半", "準決勝戦", "セミファイナル"].map(
+    (stage) => [stage, false, SEMIFINAL_BADGE],
+  ),
+  ...["準々優勝戦", "準優進出戦", "ファイナル進出戦", "ファイナル選抜",
+    "予選", "一般", "", null, undefined].map((stage) => [stage, false, undefined]),
+];
+for (const [stage, final, badge] of BADGE_CASES) {
+  const input = String(JSON.stringify(stage));
+  const key = getRaceStageKey(stage);
+  check(`isFinalStage(${input})`, isFinalStage(stage), final);
+  check(`getRaceStageBadge(${input})`, getRaceStageBadge(stage), badge);
+  check(`isFinalStage とキーの一致(${input})`, isFinalStage(stage), key === "final");
+  check(
+    `バッジとキーの一致(${input})`,
+    getRaceStageBadge(stage)?.i18nKey,
+    key ? `raceStage.${key}` : undefined,
+  );
+}
+
+const t = (key) => `T(${key})`;
+const LABEL_CASES = [
+  ["予選特賞", "ja", { text: "予選特賞", isOfficial: true }],
+  ["予選特賞", "en", { text: "T(raceStage.qualifierSpecial)", isOfficial: false }],
+  ["予選特賞", "zh", { text: "T(raceStage.qualifierSpecial)", isOfficial: false }],
+  ["一般", "ko", { text: "T(raceStage.general)", isOfficial: false }],
+  ["優勝戦", "en", { text: "T(raceStage.final)", isOfficial: false }],
+  ["準優進出戦", "en", { text: "T(raceStage.semifinalQualifier)", isOfficial: false }],
+  ["ＤＲ", "en", { text: "T(raceStage.dream)", isOfficial: false }],
+  ["朝からセンプル", "en", { text: "朝からセンプル", isOfficial: true }],
+  ["朝からセンプル", "ja", { text: "朝からセンプル", isOfficial: true }],
+  ["", "en", null],
+  [null, "en", null],
+  [undefined, "ja", null],
+];
+for (const [stage, lang, expected] of LABEL_CASES) {
+  check(
+    `raceStageLabel(${JSON.stringify(stage)}, ${JSON.stringify(lang)})`,
+    raceStageLabel(stage, t, lang),
+    expected,
+  );
+}
+
+// lang は i18n が渡す。未指定・空文字の仕様は未定なので assert しない。
+const KNOWN_GAPS = [undefined, ""].map((lang) => ({
+  input: { raceStage: "優勝戦", lang: String(JSON.stringify(lang)) },
+  specification: "言語が未指定・空文字の場合の扱いは未定",
+  current: raceStageLabel("優勝戦", t, lang),
+}));
+console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length} 件`);
+for (const gap of KNOWN_GAPS) console.log(JSON.stringify(gap));
 
 // ---- 5. 全件取得のページング -----------------------------------------------
 // `race_entries` は1レース6行で `race_id` が一意でない。ページの境目が同じ
