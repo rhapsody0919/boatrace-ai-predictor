@@ -1357,6 +1357,11 @@
       "guards": "BOA-1031: ST考察の4純関数、Fと欠損の除外・同順位・内側最速、安定/出遅/抜出の整数比較の境界と母数、ヒストグラム、履歴の逆順と入力不変"
     },
     {
+      "script": "verify-start-timing-cells.js",
+      "tier": "ci",
+      "guards": "BOA-1112: ST・F/L・レースタイムの表記別戻り値と結果・展示STの整合。未確定表記はKNOWN_GAPSで表示"
+    },
+    {
       "script": "verify-technique-placement-tables.js",
       "tier": "ci",
       "guards": "BOA-1066: 決まり手6種の変換、コース別既定分布、着順21組の勝者除外と合計、30件境界・加重平均・全体平均の補完"
