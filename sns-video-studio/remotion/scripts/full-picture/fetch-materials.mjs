@@ -141,7 +141,7 @@ export const EXHIBITION_NOTES = [
   "attack_defense は画面の超展開データ（AttackDefenseTable）と同じ値。キーは枠番（実進入コースではない）。回数は全期間の決まり手の内訳の割合×直近365日の勝ち（負け）数を丸めたもので、分母は直近365日のその枠の出走数。予想（standard の最新）の時点の写し。展示の進入が枠と違う艇は exhibition_course_differs=true（値は枠番のまま）",
   "attack_defense の state: value=選手の値、reference=勝ちが2〜4で参考（画面は※）、national_default=勝ちが2未満で画面は全国平均の%（選手の値ではないので value は null）、national_default_distribution=全期間の勝ちが5未満で決まり手の内訳が全国の既定（value は null）、none=画面が「-」",
   "st_consideration は画面の ST考察と同じ値。このレースより前の730日の走のうち、実進入コースが course（枠番＝画面と同じ枠なり想定）の走。stable_rate・late_rate は%で画面と同じ1桁。late_rate（出遅率）は最速より0.10以上遅い率で、公式の出遅れ（L）ではない。baseline は同コース・同級別の平均（st_course_baseline、最新の集計でレースの日の版ではない）で、画面の差は1桁に丸めた値どうしの差",
-  "st_stability は画面に無い値。st_consideration と同じ走から、そのコースの直近30走（欠場を除く）の窓をとり、F・L 以外の ST の母標準偏差（秒、有効2走以上）と、公式の出遅れ（L、L0・L1 の区別なし）の回数。公式の L は本番で全体でも数十件と少なく、ほとんどの選手で0",
+  "st_stability は画面に無い値。st_consideration と同じ走から、そのコースの直近30走（欠場を除く）の窓をとり、F・L 以外の ST の母標準偏差（秒、有効2走以上）と、公式の出遅れ（L、L0・L1 の区別なし）の回数。公式の L は本番で全体でも31件と少なく、ほとんどの選手で0。L の艇は実進入コースが付かないことが多く（確定済みの約4割）、その L は数えない",
 ];
 
 /** racer_period_stats の cN_* のうち写す欄（N は進入コース） */
