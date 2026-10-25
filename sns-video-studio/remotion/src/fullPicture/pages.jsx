@@ -5,7 +5,9 @@
 import { FONT } from "../fonts.js";
 import { BoatBadge } from "./parts.jsx";
 import { SANKEY, SONAR, sankeyLayout, sonarChipBox, sonarPoint, triRowBox } from "./sonarLayout.js";
-import { CARD_BG, MUTED, fit1 } from "./parts.js";
+import { interpolate } from "remotion";
+import { fitHeadline } from "../textFit.js";
+import { CARD_BG, MUTED, clamp, fit1 } from "./parts.js";
 import { MIN_TEXT, W } from "./scene2Layout.js";
 import {
   BARS,
@@ -560,6 +562,60 @@ export function SummaryPage({ groups, footer }) {
         </div>
       ))}
     </>
+  );
+}
+
+/**
+ * 入口版の冒頭の答え（v2r1、docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）。
+ * 0秒から答えの言葉・数字・範囲を出し（X のプレビュー・Shorts の最初のコマ）、2.5秒から比べる棒が伸びる。下に形の説明。
+ * x60〜940・y≤1420（Shorts の右の操作・下の帯に重ねない）。字は幅に収まらなければ fit1 で詰める
+ */
+export function AnswerPage({ label, small, value, baseLines = [], scopeLines = [], bars = [], defLines = [], t = 0 }) {
+  const Wd = 880;
+  const grow = interpolate(t, [75, 105], [0, 1], clamp);
+  // 1行に収まらなければ2行まで折り返す（最小の字 36px より詰めない）。それでも収まらなければ止める（黙ってはみ出さない）
+  const fit = (txt, max, weight, lines = 2) => {
+    const f = fitHeadline(txt, { maxWidth: Wd, maxLines: lines, fontFamily: FONT, fontWeight: weight, maxFontSize: max, minFontSize: MIN_TEXT });
+    if (!f) throw new Error(`冒頭の答えの文が ${Wd}px・${lines}行に収まらない: ${txt}`);
+    return f;
+  };
+  const Text = ({ txt, max, weight, color, lines = 2, mt = 0 }) => {
+    const f = fit(txt, max, weight, lines);
+    return (
+      <div style={{ marginTop: mt, color, fontWeight: weight, fontSize: f.fontSize, lineHeight: 1.25 }}>
+        {f.lines.map((l, i) => (
+          <div key={i} style={{ whiteSpace: "nowrap" }}>{l}</div>
+        ))}
+      </div>
+    );
+  };
+  return (
+    <div style={{ position: "absolute", left: 60, top: 320, width: Wd, display: "flex", flexDirection: "column" }}>
+      <Text txt={label} max={62} weight={900} color={GOLD} />
+      <Text txt={small} max={38} weight={600} color={MUTED} mt={6} />
+      <div style={{ marginTop: 14, fontSize: 160, fontWeight: 900, color: TEXT, lineHeight: 1, whiteSpace: "nowrap" }}>{value}</div>
+      {baseLines.map((b, i) => (
+        <Text key={`l${i}`} txt={b} max={38} weight={700} color={TEXT} lines={1} mt={i ? 2 : 14} />
+      ))}
+      <div style={{ marginTop: 14, alignSelf: "flex-start", padding: "4px 14px", border: "2px solid #4a5b75", borderRadius: 8 }}>
+        {scopeLines.map((l, i) => (
+          <Text key={`s${i}`} txt={l} max={36} weight={600} color={MUTED} lines={1} />
+        ))}
+      </div>
+      {bars.map((b, i) => (
+        <div key={`b${i}`} style={{ marginTop: i ? 18 : 40 }}>
+          <div style={{ fontSize: 36, fontWeight: 700, color: TEXT, whiteSpace: "nowrap" }}>{b.label}</div>
+          <div style={{ marginTop: 8, height: 32, width: Wd, background: "#24384f", borderRadius: 6 }}>
+            <div style={{ height: 32, width: Wd * (b.value / 100) * grow, background: b.color, borderRadius: 6 }} />
+          </div>
+        </div>
+      ))}
+      <div style={{ marginTop: 30, borderTop: "2px solid #33465f", paddingTop: 16 }}>
+        {defLines.map((d, i) => (
+          <Text key={`d${i}`} txt={d} max={36} weight={600} color={TEXT} mt={i ? 4 : 0} />
+        ))}
+      </div>
+    </div>
   );
 }
 

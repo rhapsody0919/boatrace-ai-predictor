@@ -22,6 +22,22 @@ export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "a
 export const TYPE_IMPL = {};
 
 /**
+ * 関門を通っている途中の型（試作だけで使う。daily.mjs からは渡せないので投稿には出ない）。
+ * 関門を通ったら TYPE_IMPL に移し、審査の記録を足す（docs/design/full-picture-type-gate/spec.md の 7）
+ */
+export const PROTOTYPE_IMPL = {
+  // 今の型 v2 の直し: 冒頭に言葉の答え・比べる棒・形の説明（台本 docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）
+  "v2r1-answer-fill-explain": {
+    attrs: ["structure"],
+    answer: true,
+    approved: {
+      structure:
+        "今の型 v2 の直し: ①題の問い（例「1号艇は堅い？」）に言葉で答える結論の一文を入れる ②冒頭の画面の下6割の空きを結論か根拠で埋める ③「内3艇そろう」等の言葉に説明を1行添える",
+    },
+  },
+};
+
+/**
  * 型の JSON（{id, attributes}）を読み、実装に結びつける（純粋関数）。
  * @returns {{id: string|null, attributes: object, impl: object|null, reasons: string[]}} reasons が空でなければ作らない
  */

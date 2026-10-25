@@ -126,9 +126,13 @@ function lines({ venue90, overview, conclusion }) {
  *   round?: string|null, grade?: string|null, deadline?: string|null,
  *   facts: {venue90?: object|null, overview?: object|null, conclusion?: object|null},
  *   chapters: string, fullSeconds: number, qa: Record<string, boolean>,
- *   contentType?: string|null}} p  contentType は投稿の型の id（type-spec.mjs、hq PD02）
+ *   contentType?: string|null, answer?: object|null}} p  contentType は投稿の型の id（type-spec.mjs、hq PD02）。answer は冒頭の答え（v2r1、answer.mjs）
  */
-export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null }) {
+export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null, answer = null }) {
+  // 冒頭の答え（v2r1）の一文。件数・範囲・免責を同じ文に（wording-editor 2026-10-25 P1）。会場の過去90日の行の代わり（動画に出ない数字を本文に載せない）
+  const answerLine = answer
+    ? `同じスタートの形の過去${answer.n.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k.toLocaleString("ja-JP")}件（${answer.p}%）。同じ範囲のどの形でも${answer.n0.toLocaleString("ja-JP")}件中${answer.k0.toLocaleString("ja-JP")}件（${answer.p0}%）で、${{ A: "どの形でもより多い", B: "はっきりした差は無い", C: "どの形でもより少ない" }[answer.stage]}。過去の割合で、今日の結果を示すものではない`
+    : null;
   const name = ROUND_NAME[round] ?? null;
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
   const date = `${month}/${day}`;
@@ -141,8 +145,9 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
   const x_text = join([
     `${head}1号艇は堅い？`,
     raceHeader({ ...headerArgs, short: true }),
-    L.venue,
-    L.conclusion,
+    answerLine ?? L.venue,
+    // 答えの一文が同じ件数を言うので、結論の行は重ねない
+    answerLine ? null : L.conclusion,
     `このレースのデータは龍神レーダーで: ${utmUrl(raceId, "x")}`,
     "結果を保証するものではありません。",
     HASHTAG,
@@ -179,8 +184,8 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     title: `${label}（${date}）1号艇は堅い？ ${facts?.hero?.title ?? "同じ並びの過去の着順"}`,
     description: join([
       `ボートレース ${header} 1号艇は堅い？`,
-      L.venue,
-      L.conclusion,
+      answerLine ?? L.venue,
+      answerLine ? null : L.conclusion,
       "",
       `完全版の動画（${aboutMinutes(fullSeconds)}）: ${FULL_URL_SLOT}`,
       `このレースのデータ（龍神レーダー）: ${utmUrl(raceId, "youtube", "shorts")}`,

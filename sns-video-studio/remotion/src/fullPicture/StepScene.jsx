@@ -6,7 +6,7 @@
 import { interpolate, useCurrentFrame } from "remotion";
 import { PAGE, answerOf, clamp, ease } from "./parts.js";
 import { Bubble, Finger, Frame, Note, QuestionBand } from "./parts.jsx";
-import { BarsPage, CtaPage, DeepPage, HeroPage, SummaryPage, FollowersPage, SankeyPage, SlitPage, SonarPage, StatsPage, TablePage, TrifectaPage } from "./pages.jsx";
+import { AnswerPage, BarsPage, CtaPage, DeepPage, HeroPage, SummaryPage, FollowersPage, SankeyPage, SlitPage, SonarPage, StatsPage, TablePage, TrifectaPage } from "./pages.jsx";
 import { BAND, H, W } from "./scene2Layout.js";
 import { BADGE_FADE, BADGE_PLACES } from "./sourceBadge.js";
 import {
@@ -16,7 +16,7 @@ import {
   stepTimeline,
 } from "./stepTimeline.js";
 
-const PAGES = { bars: BarsPage, table: TablePage, stats: StatsPage, sonar: SonarPage, sankey: SankeyPage, trifecta: TrifectaPage, slit: SlitPage, followers: FollowersPage, deep: DeepPage, summary: SummaryPage, hero: HeroPage, cta: CtaPage };
+const PAGES = { bars: BarsPage, table: TablePage, stats: StatsPage, sonar: SonarPage, sankey: SankeyPage, trifecta: TrifectaPage, slit: SlitPage, followers: FollowersPage, deep: DeepPage, summary: SummaryPage, hero: HeroPage, cta: CtaPage, answer: AnswerPage };
 const BG_TOP = "#12233a";
 
 /** その段の頁（押す段は、押した後に中身が出る） */

@@ -129,6 +129,8 @@ function roundSteps(sc, data, version, prevForm) {
         conclusion: {
           ...flow,
           id: "s4-conclusion",
+          // 今日の予想の形のキー（入口版の冒頭の答え answer.mjs が同じ形の集計を引く）
+          formKey: form,
           page: { ...flow.page, sub: `${cond}（${cell.n.toLocaleString("ja-JP")}件）` },
           facts: f,
           // 形が無ければ入口版の問いも「同じ並び」と言わない
