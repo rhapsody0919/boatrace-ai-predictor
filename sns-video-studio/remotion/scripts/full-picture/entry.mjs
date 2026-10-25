@@ -89,7 +89,8 @@ export function entryScenes(scenes, answers = {}, { race = null, answer = null }
   // 会場の棒を外した日は、当日の水面の答えの「90日の1着率…より」を出さない（画面に出ない数字を指す。Orchestrate 10/24）
   const dayAnswer = day && !venue ? (answers[day.id] ?? day.lines ?? []).filter((l) => !VENUE90_REF.test(l)) : null;
   const entryAnswers = dayAnswer ? { ...answers, [day.id]: dayAnswer } : answers;
-  const c0 = by.scene4?.data?.conclusion ?? null;
+  // 冒頭の答え（v2r1）があるときは、結論も形を問わない割合にそろえる（冒頭と結論の数字を分けない。オーナー 10/25 (a)）
+  const c0 = (answer ? by.scene4?.data?.conclusionAny : null) ?? by.scene4?.data?.conclusion ?? null;
   // 当てはまる形が無い日は「同じ並び」と言わない（場面4が entryQuestion を持つ。BOA-979）
   const conclusion = c0 ? { ...c0, question: c0.entryQuestion ?? CONCLUSION_QUESTION, len: LEN.conclusion } : null;
   if (!conclusion) omitted.push({ where: "entry.conclusion", reason: "展開の着順の流れが無い（結論の拍を省いた）", mustReport: true });

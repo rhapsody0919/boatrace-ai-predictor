@@ -146,8 +146,8 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     `${head}1号艇は堅い？`,
     raceHeader({ ...headerArgs, short: true }),
     answerLine ?? L.venue,
-    // 形が無い日は結論の行が答えと同じ数字（枠なり全体）になるので重ねない
-    answerLine && !facts?.conclusion?.form ? null : L.conclusion,
+    // 冒頭の答え（v2r1）は形を問わない割合で、入口版の結論も同じ母数にそろえた。形の行は出さない（オーナー 10/25 (a)）
+    answerLine ? null : L.conclusion,
     `このレースのデータは龍神レーダーで: ${utmUrl(raceId, "x")}`,
     "結果を保証するものではありません。",
     HASHTAG,
@@ -185,7 +185,7 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     description: join([
       `ボートレース ${header} 1号艇は堅い？`,
       answerLine ?? L.venue,
-      answerLine && !facts?.conclusion?.form ? null : L.conclusion,
+      answerLine ? null : L.conclusion,
       "",
       `完全版の動画（${aboutMinutes(fullSeconds)}）: ${FULL_URL_SLOT}`,
       `このレースのデータ（龍神レーダー）: ${utmUrl(raceId, "youtube", "shorts")}`,
