@@ -716,30 +716,80 @@ for (const f of fixtures) {
       { race_id, boat_number: 2, start_timing: pastSt[i][0], is_flying: i === 2, finish_mark: i === 3 ? "L" : i === 2 ? "F" : "6", entry_course: 2 },
     ]),
   };
+  // 3号艇の選手（4003）の走（2026-10-25 hq 依頼、FT01 の PR A）。今節（会場1の10/10・10/11）と別の会場の1走
+  //   10/10 5R: 3号艇・実進入2（前づけ）・ST .12・1着（差し）・F持ち（f_count 1）・風6m・波5cm・展示1位
+  //   10/11 3R: 3号艇・実進入3（枠なり）・ST .16・2着・F無し（f_count 0）・風2m・波2cm
+  //   9/01 1R（会場2）: 1号艇・実進入1・ST .11・1着・F数なし（null）・風7m・波0cm
+  const r3 = { a: "2026-10-10-01-05", b: "2026-10-11-01-03", c: "2026-09-01-02-01" };
+  const res = (race_id, over) => ({ race_id, rank1: 1, rank2: 2, rank3: 4, rank4: 5, rank5: 6, rank6: 3, race_status: null, actual_course_1: 1, actual_course_2: 2, actual_course_3: 3, actual_course_4: 4, actual_course_5: 5, actual_course_6: 6, winning_technique: "逃げ", payout_win: 150, payout_place_1: 110, payout_place_2: 120, ...over });
+  const scoped3 = {
+    entries: [{ race_id: r3.c, boat_number: 1, grade: "B1", f_count: null }, { race_id: r3.a, boat_number: 3, grade: "B1", f_count: 1 }, { race_id: r3.b, boat_number: 3, grade: "B1", f_count: 0 }],
+    races: [r3.a, r3.b, r3.c].map((race_id) => ({ race_id, race_date: race_id.slice(0, 10), venue_code: Number(race_id.slice(11, 13)), race_grade: "ippan" })),
+    results: [res(r3.a, { rank1: 3, rank2: 1, rank3: 2, rank6: 4, actual_course_3: 2, actual_course_2: 3, winning_technique: "差し" }), res(r3.b, { rank2: 3, rank3: 2 }), res(r3.c, {})],
+    st: [
+      { race_id: r3.a, boat_number: 3, start_timing: 0.12, is_flying: false, finish_mark: "1", entry_course: 2 },
+      { race_id: r3.b, boat_number: 3, start_timing: 0.16, is_flying: false, finish_mark: "2", entry_course: 3 },
+      { race_id: r3.c, boat_number: 1, start_timing: 0.11, is_flying: false, finish_mark: "1", entry_course: 1 },
+    ],
+    ex: [{ race_id: r3.a, boat_number: 3, exhibition_time: 6.7 }, { race_id: r3.a, boat_number: 1, exhibition_time: 6.8 }, { race_id: r3.b, boat_number: 3, exhibition_time: 6.75 }],
+    conditions: [
+      { race_id: r3.a, race_stage: "予選", race_title: "x杯", weather: "晴", wind_speed: 6, wave_height: 5, series_day: 3, is_final_day: false },
+      { race_id: r3.b, race_stage: "予選", race_title: "x杯", weather: "曇り", wind_speed: 2, wave_height: 2, series_day: 4, is_final_day: false },
+      { race_id: r3.c, race_stage: "一般", race_title: "y杯", weather: "雨", wind_speed: 7, wave_height: 0, series_day: 1, is_final_day: false },
+    ],
+  };
+  let failConditions = false;
+  let accidentRows = [{ racer_id: 4003, starts: 40, incidents: [{ race_id: r3.c, code: "F", stage: null }, { race_id: r3.a, code: "S2", stage: "予選" }] }];
+  const rpcBodies = [];
+  // オリジナル展示: 会場は 一周・まわり足・直線 の3項目（半周ラップが無い）。2号艇の直線は欠測、6号艇は値の行が無い
+  let origHeader = [{ measure_status: 1, item_count: 3, item_labels: "一周|まわり足|直線", updated_at: `${date}T06:50:00+00:00` }];
+  let origValues = [1, 2, 3, 4, 5].flatMap((n) => [["一周", 37 + n / 10], ["まわり足", 5.5 + n / 100], ["直線", n === 2 ? null : 7 + n / 100]].map(([kind, value]) => ({ boat_number: n, kind, value: value === null ? null : String(value), updated_at: `${date}T06:50:00+00:00` })));
+  const losingRows = [
+    { boat_number: 1, losing_technique: "差し", count_90days: 30, total_losses_90days: 80, percentage: 37.5, last_updated: "2026-10-25" },
+    { boat_number: 1, losing_technique: "まくり", count_90days: 20, total_losses_90days: 80, percentage: 25, last_updated: "2026-10-25" },
+    { boat_number: 2, losing_technique: "逃げ", count_90days: 50, total_losses_90days: 300, percentage: 16.67, last_updated: "2026-10-25" },
+  ];
   const seenQueries = [];
   const listParam = (v) => (v ?? "").replace(/^in\.\(|\)$/g, "").split(",");
+  const inIds = (q) => listParam(q.get("race_id")).map((x) => decodeURIComponent(x).replace(/"/g, ""));
   const run = async ({ conditions, startTime = "16:06:00", ex = exRows, stage = "exhibition", racers = m.api.facts.racers, grade = "G1" }) => {
     const facts = { ...m.api.facts, racers };
     const json = (v) => ({ ok: true, status: 200, json: async () => v });
-    globalThis.fetch = async (url) => {
+    globalThis.fetch = async (url, init = {}) => {
       const u = new URL(String(url));
       if (u.hostname === "sb.invalid") {
         const table = u.pathname.split("/").pop();
         const q = u.searchParams;
+        if (table === "get_racer_accident_records") {
+          rpcBodies.push(JSON.parse(init.body));
+          return accidentRows === "fail" ? { ok: false, status: 503, json: async () => ({}) } : json(accidentRows);
+        }
+        if (table === "race_original_exhibition") return json(origHeader);
+        if (table === "race_original_exhibition_values") return json(origValues);
+        if (table === "losing_technique_stats") {
+          seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+          return json(losingRows);
+        }
         if (table === "exhibition_data" && q.get("race_id") === `eq.${m.raceId}`) return json(ex);
-        if (table === "exhibition_data") return json(m.db.motor?.exhibition ?? []);
+        // 選手 4003 の走の展示は偽物だけ（固定の材料のモーターの展示に同じ race_id の実の行がある）
+        if (table === "exhibition_data") return json([...(m.db.motor?.exhibition ?? []).filter((r) => !Object.values(r3).includes(r.race_id)), ...scoped3.ex].filter((r) => inIds(q).includes(r.race_id)));
+        // 選手の走の race_conditions（in.(...)）と、このレースの気象（eq.）
+        if (table === "race_conditions" && q.get("race_id")?.startsWith("in.")) {
+          if (failConditions) return { ok: false, status: 503, json: async () => ({}) };
+          return json(scoped3.conditions.filter((r) => inIds(q).includes(r.race_id)));
+        }
         if (table === "race_conditions") return json(conditions === undefined ? [] : [conditions]);
         if (table === "race_entries" && q.get("race_id") === `eq.${m.raceId}`) return json(ex.length ? entryRows : []);
         // ST考察の元（選手の730日の走）。select に start_timing を含む問い合わせだけ
-        if (table === "race_start_timings" && /start_timing/.test(q.get("select") ?? "")) return json(scoped.st.filter((r) => listParam(q.get("race_id")).map((x) => x.replace(/"/g, "")).includes(r.race_id)));
+        if (table === "race_start_timings" && /start_timing/.test(q.get("select") ?? "")) return json([...scoped.st, ...scoped3.st].filter((r) => inIds(q).includes(r.race_id)));
         if (table === "race_start_timings") return json(startRows);
         if (table === "race_entries" && q.get("racer_id")) {
           seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
           if (q.get("racer_id") === failRacer && /grade/.test(q.get("select") ?? "")) return { ok: false, status: 503, json: async () => ({}) };
-          if (/grade/.test(q.get("select") ?? "")) return json(q.get("racer_id") === "eq.4002" ? scoped.entries : []);
+          if (/grade/.test(q.get("select") ?? "")) return json(q.get("racer_id") === "eq.4002" ? scoped.entries : q.get("racer_id") === "eq.4003" ? scoped3.entries : []);
         }
-        if (table === "races" && /race_date/.test(q.get("select") ?? "")) return json(scoped.races);
-        if (table === "race_results" && /actual_course_1/.test(q.get("select") ?? "")) return json(scoped.results);
+        if (table === "races" && /race_date/.test(q.get("select") ?? "")) return json([...scoped.races, ...scoped3.races].filter((r) => inIds(q).includes(r.race_id)));
+        if (table === "race_results" && /actual_course_1/.test(q.get("select") ?? "")) return json([...scoped.results, ...scoped3.results].filter((r) => inIds(q).includes(r.race_id)));
         if (table === "predictions") {
           seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
           return json(predictionRows);
@@ -808,9 +858,9 @@ for (const f of fixtures) {
   assert.equal(boats[4].tilt, null, "欠けたチルトは null");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.tilt"), "欠けた欄を missing に記録");
   assert.deepEqual(
-    Object.entries(boats[5]).filter(([k]) => !["boat_number", "meet_finishes", "course", "course_source"].includes(k)),
-    Object.keys(boats[0]).filter((k) => !["boat_number", "meet_finishes", "course", "course_source"].includes(k)).map((k) => [k, null]),
-    "行の無い艇は全欄 null（今節の着順は facts から、進入コースは枠番で別に取る）",
+    Object.entries(boats[5]).filter(([k]) => !["boat_number", "meet_finishes", "course", "course_source", "original_exhibition"].includes(k)),
+    Object.keys(boats[0]).filter((k) => !["boat_number", "meet_finishes", "course", "course_source", "original_exhibition"].includes(k)).map((k) => [k, null]),
+    "行の無い艇は全欄 null（今節の着順は facts から、進入コースは枠番で、オリジナル展示は別の表から別に取る）",
   );
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.6"), "行の無い艇を missing に記録");
   assert.ok(!got.missing.some((x) => /\.(start_flag|parts_changed|propeller_change)$/.test(x.source)), "印・交換の null は「表示なし」で欠けにしない");
@@ -931,6 +981,120 @@ for (const f of fixtures) {
   racerStatsRaw.splice(0, racerStatsRaw.length, ...saved);
   entryRows[1].grade = "A1";
   failRacer = null;
+  // ---- 画面と同じ定義の材料の2（2026-10-25 hq 依頼、FT01 の PR A）----
+  // 4. F持ち時・F無し時の平均ST と 11. 当地・波5cm以上（基本情報タブの条件別の表 buildConditionRows と同じ）
+  const b3 = boats[2];
+  assert.deepEqual(
+    [b3.condition_rows.national, b3.condition_rows.local],
+    [
+      { n: 3, base_n: null, excluded_n: null, win_rate: 66.7, top2_rate: 100, top3_rate: 100, avg_st: 0.13, avg_st_n: 3 },
+      { n: 2, base_n: null, excluded_n: null, win_rate: 50, top2_rate: 100, top3_rate: 100, avg_st: 0.14, avg_st_n: 2 },
+    ],
+    "条件別: 全国と当地（会場1の2走）。率は%の1桁、平均ST は2桁",
+  );
+  assert.deepEqual(
+    [b3.condition_rows.fHolding, b3.condition_rows.fClean],
+    [
+      { n: 1, base_n: 2, excluded_n: null, win_rate: 100, top2_rate: 100, top3_rate: 100, avg_st: 0.12, avg_st_n: 1 },
+      { n: 1, base_n: 2, excluded_n: null, win_rate: 0, top2_rate: 100, top3_rate: 100, avg_st: 0.16, avg_st_n: 1 },
+    ],
+    "F持ち時・F無し時: F数の取れた2走を分け合う（F数の無い走は母数に入れない）",
+  );
+  assert.deepEqual(b3.condition_rows.wave5, { n: 1, base_n: 3, excluded_n: 0, win_rate: 100, top2_rate: 100, top3_rate: 100, avg_st: 0.12, avg_st_n: 1 }, "波5cm以上: 波の取れた3走のうち5cm以上の1走");
+  assert.deepEqual(Object.keys(b3.condition_rows), ["national", "local", "ippan", "sgg1", "firstDay", "finalDay", "wave5", "fHolding", "fClean"], "条件別の表の全行");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.1.condition_rows.local" && /走が0/.test(x.reason)), "走の無い条件を記録");
+  // 11. 風5m以上・波5cm以上（選手ページのレース条件別の成績 aggregateRacerConditionStats と同じ。5走未満は出さない）
+  assert.deepEqual([b3.condition_stats.overall, b3.condition_stats.rows, b3.condition_stats.since], [{ n: 3, win_rate: 66.7, top2_rate: 100, top3_rate: 100 }, {}, "2026-09-01"], "選手ページの条件別: 3走では5走以上の条件が無い");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.condition_stats.windStrong" && /5走未満/.test(x.reason)), "風5m以上が出ないことを記録");
+  // 6. 今節の各走（今節タブ buildMeetResults・getRecentRaces と同じ。別の会場の9/01は今節でない）
+  assert.deepEqual(
+    b3.meet_results,
+    [
+      { race_id: r3.a, date: "2026-10-10", race_no: 5, boat_number: 3, entry_course: 2, start_timing: 0.12, is_flying: false, finish_rank: 1, finish_mark: null, absent: false, winning_technique: "差し", race_stage: "予選", race_title: "x杯", exhibition_time: 6.7, exhibition_rank: 1 },
+      { race_id: r3.b, date: "2026-10-11", race_no: 3, boat_number: 3, entry_course: 3, start_timing: 0.16, is_flying: false, finish_rank: 2, finish_mark: null, absent: false, winning_technique: null, race_stage: "予選", race_title: "x杯", exhibition_time: 6.75, exhibition_rank: 1 },
+    ],
+    "今節: 進入・本番ST・着・決まり手（1着だけ）・レースの種別",
+  );
+  // 7. 前づけ%・枠なり進入率（直前情報タブ computeFrameEntryDistribution・枠情報タブ computeWakuNariRate と同じ）
+  assert.deepEqual(
+    b3.entry_distribution,
+    { frame: 3, n: 2, counts: [0, 1, 1, 0, 0, 0], waku_rate: 50, inward_rate: 50, outward_rate: 0, waku_nari: { rate: 66.7, n: 3 } },
+    "この枠（3号艇）からの進入: 2走のうち前づけ1・枠なり1。枠なり進入率は全枠の3走",
+  );
+  // 10. 事故率（RPC get_racer_accident_records ＋ computeAccidentStats。今期は 5/1 から、その日の走は含めない）
+  assert.deepEqual(rpcBodies.at(-1), { p_racer_ids: [4001, 4002, 4003, 4004, 4005], p_from: "2026-05-01", p_to: date }, "画面と同じ RPC・同じ期間");
+  assert.deepEqual(
+    b3.accident,
+    { from: "2026-05-01", to: date, starts: 40, points: 35, rate: 0.87, need: 0, counts: { F: 1, L1: 0, K1: 0, S1: 0, S2: 1 }, status: "over", settled: true, show_badge: true },
+    "事故率: F 20点＋妨害失格 15点 ÷ 40走",
+  );
+  assert.deepEqual([boats[0].accident.starts, boats[0].accident.rate, boats[0].accident.status, boats[5].accident], [0, null, null, null], "RPC の行が無い選手は出走0（画面と同じ）、選手が分からない艇は null");
+  // 9. オリジナル展示（getRaceOriginalExhibition と同じ表と整形）。会場に無い項目は not_offered、欠測は no_value
+  assert.deepEqual(
+    boats[1].original_exhibition,
+    { 一周: { value: 37.2, status: "value" }, 半周ラップ: { value: null, status: "not_offered" }, まわり足: { value: 5.52, status: "value" }, 直線: { value: null, status: "no_value" } },
+    "オリジナル展示: 値・会場に無い項目・欠測を分ける",
+  );
+  assert.deepEqual(Object.values(boats[5].original_exhibition).map((x) => x.status), ["no_value", "not_offered", "no_value", "no_value"], "値の行が無い艇は欠け");
+  assert.deepEqual(
+    got.db.exhibition.originalExhibition,
+    { state: "published", measure_status: 1, item_labels: ["一周", "まわり足", "直線"], kinds: ["一周", "まわり足", "直線"], captured_at: `${date}T06:50:00+00:00`, last_written_at: `${date}T06:50:00+00:00` },
+    "オリジナル展示のレースの状態",
+  );
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.2.original_exhibition.直線" && /欠測/.test(x.reason)), "欠測を記録");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.originalExhibition.kinds" && /半周ラップ/.test(x.reason)), "会場に無い項目を記録");
+  assert.ok(!got.missing.some((x) => x.source === "db.exhibition.originalExhibition" && /締切の後/.test(x.reason)), "締切の前の値なら記録しない");
+  // 3. 会場の負けの決まり手（losing_technique_stats、LosingTechniqueChart と同じまとめ）
+  assert.deepEqual(
+    got.db.exhibition.losingTechnique,
+    { last_updated: "2026-10-25", by_boat: { 1: { total_races: 80, techniques: [{ technique: "差し", count: 30, percentage: 37.5 }, { technique: "まくり", count: 20, percentage: 25 }] }, 2: { total_races: 300, techniques: [{ technique: "逃げ", count: 50, percentage: 16.67 }] } } },
+    "負けの決まり手: 枠ごとにまとめる",
+  );
+  assert.ok(seenQueries.some((x) => x.startsWith("losing_technique_stats?") && /venue_code=eq\.1/.test(x) && /order=boat_number,percentage\.desc/.test(x)), "画面と同じ並びで読む");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.losingTechnique" && /より後の集計/.test(x.reason)), "レースの日より後の集計を記録（値は残す）");
+  // 欠けの形: race_conditions が読めない・事故の RPC が読めない・オリジナル展示が未公開・締切の後の書き換え
+  failConditions = true;
+  accidentRows = "fail";
+  const keepHeader = origHeader;
+  const keepValues = origValues;
+  origHeader = [];
+  origValues = [];
+  const gaps = await run({ conditions: pre });
+  assert.deepEqual(validate(gaps), [], "欠けた材料も契約に合う");
+  const g3 = gaps.db.exhibition.boats[2];
+  assert.deepEqual([g3.condition_rows.wave5, g3.condition_rows.firstDay, g3.condition_rows.local?.n, g3.condition_stats, g3.meet_results.length, g3.st_consideration?.n], [null, null, 2, null, 2, 1], "race_conditions が読めなければ波・日目の行と選手ページの条件別だけ null（画面も出さない）");
+  assert.ok(gaps.missing.some((x) => x.source === "db.exhibition.boats.conditions.racer.4003"), "読めない race_conditions を記録");
+  assert.ok(gaps.missing.some((x) => x.source === "db.exhibition.boats.3.condition_rows.wave5" && /未取得/.test(x.reason)), "出さない行を記録");
+  assert.ok(gaps.db.exhibition.boats.every((b) => b.accident === null) && gaps.missing.some((x) => x.source === "db.exhibition.boats.accident"), "事故の RPC が読めなければ null で記録");
+  assert.ok(gaps.db.exhibition.boats.every((b) => b.original_exhibition === null) && gaps.db.exhibition.originalExhibition.state === "no_row", "オリジナル展示の行が無ければ null・no_row");
+  assert.ok(gaps.missing.some((x) => x.source === "db.exhibition.originalExhibition" && /行が無い/.test(x.reason)), "未公開を記録");
+  failConditions = false;
+  accidentRows = [];
+  origHeader = [{ ...keepHeader[0], updated_at: `${date}T07:10:00+00:00` }];
+  origValues = keepValues;
+  const lateOrig = await run({ conditions: pre });
+  assert.ok(lateOrig.missing.some((x) => x.source === "db.exhibition.originalExhibition" && /締切の後/.test(x.reason)), "締切の後に書いた値を記録（値は残す）");
+  assert.equal(lateOrig.db.exhibition.boats[0].original_exhibition.一周.value, 37.1, "締切の後でも値は残す");
+  origHeader = [{ ...keepHeader[0], measure_status: 2 }];
+  origValues = [];
+  const notMeasured = await run({ conditions: pre });
+  assert.deepEqual([notMeasured.db.exhibition.originalExhibition.state, notMeasured.db.exhibition.originalExhibition.measure_status], ["empty", 2], "計測不可は empty と measure_status=2");
+  assert.ok(notMeasured.missing.some((x) => x.source === "db.exhibition.originalExhibition" && /計測不可/.test(x.reason)), "計測不可を記録");
+  origHeader = keepHeader;
+  origValues = keepValues;
+  accidentRows = [{ racer_id: 4003, starts: 40, incidents: [] }];
+  // 契約の enum の漏れ（#1905 の Codex P1 と同じ型の検査）: 出す値の状態がすべて契約にある
+  const { ORIGINAL_EXHIBITION_STATUSES, conditionStatsOf } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
+  const oeProps = MATERIALS_SCHEMA.properties.db.properties.exhibition.properties.boats.items.properties;
+  assert.deepEqual(oeProps.original_exhibition.additionalProperties.properties.status.enum, ORIGINAL_EXHIBITION_STATUSES, "オリジナル展示の状態はすべて契約にある");
+  assert.deepEqual(MATERIALS_SCHEMA.properties.db.properties.exhibition.properties.originalExhibition.properties.state.enum, ["published", "empty", "no_row"], "レースの状態はすべて契約にある");
+  has(validate({ ...got, db: { ...got.db, exhibition: { ...got.db.exhibition, boats: got.db.exhibition.boats.map((b, i) => (i === 1 ? { ...b, original_exhibition: { ...b.original_exhibition, 一周: { value: 1, status: "x" } } } : b)) } } }), "value|no_value|not_offered");
+  has(validate({ ...got, db: { ...got.db, exhibition: { ...got.db.exhibition, boats: got.db.exhibition.boats.map((b, i) => (i === 2 ? { ...b, accident: { ...b.accident, status: "bad" } } : b)) } } }), "over|near|");
+  // 選手ページの条件別は、5走以上の条件を出す（率は%）
+  const hist = [6, 6, 6, 2, 7].map((w, i) => ({ raceId: `2026-10-0${i + 1}-02-01`, venueCode: 2, boatNumber: 1, rank1: i < 2 ? 1 : 2, rank2: i < 2 ? 2 : 1, rank3: 3, weather: "晴", windSpeed: w, waveHeight: 6, unranked: false }));
+  const cs = conditionStatsOf(hist);
+  assert.deepEqual([cs.rows.waveRough, cs.rows.windStrong, cs.rows.sunny.n], [{ group: "波高", label: "波5cm以上", n: 5, win_rate: 40, top2_rate: 100, top3_rate: 100 }, undefined, 5], "5走以上の条件だけ出し、率は%の1桁（風5m以上は4走で出ない）");
+
   // 予想が無い・読めないときも艇の材料は残す
   predictionRows = [];
   const noPred = await run({ conditions: pre });
