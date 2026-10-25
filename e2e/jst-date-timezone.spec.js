@@ -87,3 +87,42 @@ for (const timezoneId of ["UTC", "America/Los_Angeles"]) {
     });
   });
 }
+
+// BOA-1101: 同じ取得時刻を端末の時差・表示言語によらず日本時間で表示する。
+for (const timezoneId of ["America/Los_Angeles", "Asia/Tokyo"]) {
+  test.describe(`更新時刻: ${timezoneId}`, () => {
+    test.use({ timezoneId });
+    for (const lang of ["ja", "en"]) {
+      test(`${lang} の更新時刻と相対表示`, async ({ page }) => {
+        await page.clock.setFixedTime(new Date("2026-10-25T00:05:00Z"));
+        await page.addInitScript((language) => {
+          localStorage.setItem("boatai-language", language);
+        }, lang);
+        await page.route("**/rest/v1/**", (route) =>
+          route.fulfill({ json: [] }),
+        );
+        await page.route("**/api/races/today", (route) =>
+          route.fulfill({
+            json: {
+              success: true,
+              data: [],
+              scrapedAt: "2026-10-25T00:00:00Z",
+            },
+          }),
+        );
+        await page.goto(lang === "ja" ? "/" : "/en/");
+        expect(await page.evaluate(() =>
+          Intl.DateTimeFormat().resolvedOptions().timeZone,
+        )).toBe(timezoneId);
+        const status = page.locator(".update-text");
+        await expect(status).toContainText(
+          lang === "ja" ? "10/25 09:00" : "10/25 09:00 JST",
+        );
+        if (lang === "ja") await expect(status).not.toContainText("JST");
+        await expect(status.locator(".update-relative")).toContainText(
+          lang === "ja" ? "5分前" : "Updated 5 min ago",
+        );
+      });
+    }
+  });
+}
