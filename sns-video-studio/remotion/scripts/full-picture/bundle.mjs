@@ -131,7 +131,7 @@ function lines({ venue90, overview, conclusion }) {
 export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null, answer = null }) {
   // 冒頭の答え（v2r1）の一文。件数・範囲・免責を同じ文に（wording-editor 2026-10-25 P1）。会場の過去90日の行の代わり（動画に出ない数字を本文に載せない）
   const answerLine = answer
-    ? `この組み合わせ（級の組み合わせが同じ）の過去${answer.n0.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k0.toLocaleString("ja-JP")}件（${answer.p0.toFixed(1)}%）。過去の割合で、今日の結果を示すものではない`
+    ? `この組み合わせ（${answer.scope}）の過去${answer.n0.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k0.toLocaleString("ja-JP")}件（${answer.p0.toFixed(1)}%）。過去の割合で、今日の結果を示すものではない`
     : null;
   const name = ROUND_NAME[round] ?? null;
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;

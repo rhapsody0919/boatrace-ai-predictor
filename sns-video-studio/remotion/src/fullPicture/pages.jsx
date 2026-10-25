@@ -5,9 +5,8 @@
 import { FONT } from "../fonts.js";
 import { BoatBadge } from "./parts.jsx";
 import { SANKEY, SONAR, sankeyLayout, sonarChipBox, sonarPoint, triRowBox } from "./sonarLayout.js";
-import { interpolate } from "remotion";
 import { fitHeadline } from "../textFit.js";
-import { CARD_BG, MUTED, clamp, fit1 } from "./parts.js";
+import { CARD_BG, MUTED, fit1 } from "./parts.js";
 import { MIN_TEXT, W } from "./scene2Layout.js";
 import {
   BARS,
@@ -570,9 +569,8 @@ export function SummaryPage({ groups, footer }) {
  * 0秒から答えの言葉・数字・範囲を出し（X のプレビュー・Shorts の最初のコマ）、2.5秒から比べる棒が伸びる。下に形の説明。
  * x60〜940・y≤1420（Shorts の右の操作・下の帯に重ねない）。字は幅に収まらなければ fit1 で詰める
  */
-export function AnswerPage({ label, small, value, baseLines = [], scopeLines = [], bars = [], defLines = [], t = 0 }) {
+export function AnswerPage({ labelLines = [], value, base, note }) {
   const Wd = 880;
-  const grow = interpolate(t, [75, 105], [0, 1], clamp);
   // 1行に収まらなければ2行まで折り返す（最小の字 36px より詰めない）。それでも収まらなければ止める（黙ってはみ出さない）
   const fit = (txt, max, weight, lines = 2) => {
     const f = fitHeadline(txt, { maxWidth: Wd, maxLines: lines, fontFamily: FONT, fontWeight: weight, maxFontSize: max, minFontSize: MIN_TEXT });
@@ -589,32 +587,15 @@ export function AnswerPage({ label, small, value, baseLines = [], scopeLines = [
       </div>
     );
   };
+  // 上帯の下から y1420 までの真ん中に置く（字を減らした分、大きく。下の空きを残さない）
   return (
-    <div style={{ position: "absolute", left: 60, top: 330, width: Wd, display: "flex", flexDirection: "column" }}>
-      <Text txt={label} max={70} weight={900} color={GOLD} />
-      <Text txt={small} max={40} weight={600} color={MUTED} mt={10} />
-      <div style={{ marginTop: 30, fontSize: 210, fontWeight: 900, color: TEXT, lineHeight: 1, whiteSpace: "nowrap" }}>{value}</div>
-      {baseLines.map((b, i) => (
-        <Text key={`l${i}`} txt={b} max={44} weight={700} color={TEXT} lines={1} mt={i ? 4 : 24} />
+    <div style={{ position: "absolute", left: 60, top: 300, width: Wd, height: 1120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      {labelLines.map((l, i) => (
+        <Text key={`a${i}`} txt={l} max={84} weight={900} color={GOLD} lines={1} />
       ))}
-      <div style={{ marginTop: 24, alignSelf: "flex-start", padding: "6px 16px", border: "2px solid #4a5b75", borderRadius: 8 }}>
-        {scopeLines.map((l, i) => (
-          <Text key={`s${i}`} txt={l} max={36} weight={600} color={MUTED} lines={1} />
-        ))}
-      </div>
-      {bars.map((b, i) => (
-        <div key={`b${i}`} style={{ marginTop: i ? 18 : 40 }}>
-          <div style={{ fontSize: 36, fontWeight: 700, color: TEXT, whiteSpace: "nowrap" }}>{b.label}</div>
-          <div style={{ marginTop: 8, height: 32, width: Wd, background: "#24384f", borderRadius: 6 }}>
-            <div style={{ height: 32, width: Wd * (b.value / 100) * grow, background: b.color, borderRadius: 6 }} />
-          </div>
-        </div>
-      ))}
-      <div style={{ marginTop: 56, borderTop: "2px solid #33465f", paddingTop: 28 }}>
-        {defLines.map((d, i) => (
-          <Text key={`d${i}`} txt={d} max={40} weight={600} color={TEXT} lines={1} mt={i ? 8 : 0} />
-        ))}
-      </div>
+      <div style={{ marginTop: 40, fontSize: 260, fontWeight: 900, color: TEXT, lineHeight: 1, whiteSpace: "nowrap" }}>{value}</div>
+      <Text txt={base} max={48} weight={700} color={TEXT} lines={1} mt={36} />
+      <Text txt={note} max={38} weight={600} color={MUTED} lines={1} mt={70} />
     </div>
   );
 }

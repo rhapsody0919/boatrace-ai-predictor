@@ -19,11 +19,6 @@ export function scopeLabel(scope, period, venueName) {
   const span = period?.[0] && period?.[1] ? `・${ym(period[0])}〜${ym(period[1])}` : "";
   return `${where}・級の組み合わせが同じ${span}・枠なり`;
 }
-/** 範囲の札を2行に分ける（場所と級／期間と枠なり。画面の幅 880px に1行ずつ収める） */
-export const scopeLines = (label) => {
-  const [where, cls, ...rest] = label.split("・");
-  return [`${where}・${cls}`, rest.join("・")].filter(Boolean);
-};
 
 /**
  * 冒頭の答え。全レースで形を問わない割合（この組み合わせの過去で1号艇が1着の割合）で答える（オーナー 10/25「1でよい」）。
@@ -48,6 +43,8 @@ export function answerOf(sc, form) {
     k0,
     p0: pct1(k0, n0),
     label: `この組み合わせの過去で、1号艇の1着は約${Math.round((k0 / n0) * 10)}割`,
+    // 画面では句の切れ目で2行に分ける（「、」が行頭に来ないように）
+    labelLines: ["この組み合わせの過去で", `1号艇の1着は約${Math.round((k0 / n0) * 10)}割`],
     small: "過去の割合で、今日の結果を示すものではない",
     form: fact,
     hasForm: Boolean(cell),

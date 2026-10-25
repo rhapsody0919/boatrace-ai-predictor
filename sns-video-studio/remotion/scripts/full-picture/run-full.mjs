@@ -31,7 +31,7 @@ import { withSourceBadges } from "../../src/fullPicture/sourceBadge.js";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
 import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
 import { PROTOTYPE_IMPL, lengthReason, resolveType } from "./type-spec.mjs";
-import { answerOf, scopeLabel, scopeLines } from "./answer.mjs";
+import { answerOf, scopeLabel } from "./answer.mjs";
 import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
@@ -117,23 +117,14 @@ function answerPage() {
   if (!a.ok) typeStop(`type_unsupported:${a.kind}`, a.reason);
   const fk = (key) => `aiPredictionTab.analogy.scenario.forms.${key}`;
   // 形は事実として添えるだけ（本番がその形だった過去。今日の本番の形はレース前には分からない）
-  // 行は句の切れ目で分けて渡す（画面が語の途中で折り返さないように。各行は1行に収める）
-  const formHead = (key) => ["今日の6人の平均ST（直近30走）は", `「${t(`${fk(key)}.name`)}」＝${t(`${fk(key)}.def`)}`];
-  const formLines = a.form
-    ? [...formHead(a.form.key), `本番がこの形の過去${a.form.n.toLocaleString("ja-JP")}件中`, `1号艇が1着は${a.form.k.toLocaleString("ja-JP")}件（${a.form.p.toFixed(1)}%）`]
-    : a.hasForm
-      ? formHead(formKey)
-      : ["今日の6人の平均ST（直近30走）は、", "横一線・内3艇そろう等のどの形にも当たらない"];
   return {
     ...a,
     page: {
-      label: a.label,
-      small: a.small,
+      // 冒頭は答えに要るものだけ（オーナー 10/25「文字が多いという印象」）。形の事実は結論の場面、期間は本文と説明文
+      labelLines: a.labelLines,
       value: `${a.p0.toFixed(1)}%`,
-      baseLines: ["級の組み合わせが同じ過去", `${a.n0.toLocaleString("ja-JP")}件中、1号艇が1着は${a.k0.toLocaleString("ja-JP")}件`],
-      scopeLines: scopeLines(scopeLabel(m.api.scenario?.scope, sc?.period, venueLabel(Number(venueCode), t))),
-      bars: [],
-      defLines: formLines,
+      base: `${String(m.api.scenario?.scope ?? "").startsWith("VC:") ? venueLabel(Number(venueCode), t) : "全国"}・同じ級の組み合わせの過去 ${a.n0.toLocaleString("ja-JP")}件`,
+      note: "過去の割合。今日の結果を示すものではない",
     },
   };
 }
@@ -286,7 +277,7 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     fullSeconds,
     qa,
     contentType: type?.id ?? null,
-    answer: answer ? { n0: answer.n0, k0: answer.k0, p0: answer.p0 } : null,
+    answer: answer ? { n0: answer.n0, k0: answer.k0, p0: answer.p0, scope: scopeLabel(m.api.scenario?.scope, m.api.scenario?.scenario?.period, venueLabel(Number(venueCode), t)) } : null,
   });
 const preBundle = bundleText({});
 const postEntry = `${preBundle.x_text}\n`;
