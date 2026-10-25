@@ -147,9 +147,7 @@ export async function fetchExhibitionMaterials(raceId, date, venueCode, startTim
   // オリジナル展示はレースの単位で1回読み、艇ごとの欄とレースの欄の両方に使う
   const original = originalExhibition(raceId, date, startTime, missing).catch((e) => (fail("db.exhibition.originalExhibition")(e), null));
   // 互いに依らないので並べて読む（選手のコース別の成績だけは艇の行の racer_id・進入を使うので、その後に読む）
-  // 会場×枠の決まり手は technique の winning_technique_stats の行を使う（同じ表を2回読まない）
-  const technique = venueTechnique(date, venueCode, missing).catch(fail("db.exhibition.technique"));
-  const [boats, conditions, techniqueOut, courseOut, losingTechnique, originalRace, boatOut] = await Promise.all([
+  const [boats, conditions, technique, courseOut, losingTechnique, originalRace] = await Promise.all([
     exhibitionBoats(raceId, racers, missing)
       // 選手の成績の表が読めなくても艇の材料は残し、足す欄を null にする
       // 画面と同じ定義の値（超展開データ・ST考察・条件別・今節・進入・事故率）も、互いに依らないので並べて読み、艇ごとに合わせる
@@ -163,17 +161,19 @@ export async function fetchExhibitionMaterials(raceId, date, venueCode, startTim
       )
       .catch(fail("db.exhibition.boats")),
     preRaceConditions(raceId, date, startTime, missing).catch(fail("db.exhibition.conditions")),
-    technique,
+    venueTechnique(date, venueCode, missing).catch(fail("db.exhibition.technique")),
     venueCourseBaseline(date, venueCode, raceGrade, missing).catch((e) => (fail("db.exhibition.venueCourse")(e), fail("db.exhibition.nationalCourse")(e), null)),
     venueLosingTechnique(date, venueCode, missing).catch(fail("db.exhibition.losingTechnique")),
     original.then((o) => o?.race ?? null),
-    technique.then((t) => boatTendency(date, outcome, t?.byBoat ?? null, missing)).catch((e) => (fail("db.exhibition.venueBoat")(e), fail("db.exhibition.nationalBoat")(e), null)),
   ]);
+  // 会場×枠の決まり手は technique の winning_technique_stats の行を使う（同じ表を2回読まない）。全会場の表は2500行を超えるので、
+  // 選手ごとの読みと並べると30秒の時間切れになった（2026-10-26 実測）。後に読む
+  const boatOut = await boatTendency(date, outcome, technique?.byBoat ?? null, missing).catch((e) => (fail("db.exhibition.venueBoat")(e), fail("db.exhibition.nationalBoat")(e), null));
   return {
     notes: EXHIBITION_NOTES,
     boats,
     conditions,
-    technique: techniqueOut,
+    technique,
     venueCourse: courseOut?.venueCourse ?? null,
     nationalCourse: courseOut?.nationalCourse ?? null,
     venueBoat: boatOut?.venueBoat ?? null,
