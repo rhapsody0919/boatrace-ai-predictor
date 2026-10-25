@@ -11,7 +11,7 @@ import {
   MIN_RELIABLE_RUNS,
   EXTRACTION_THRESHOLDS,
 } from "../../src/utils/digestMetrics.js";
-import { wilsonLowerBound } from "../../src/utils/wilson.js";
+import { wilsonLowerBound, wilsonLowerBoundFromRate, isSmallSample } from "../../src/utils/wilson.js";
 
 const cases = [];
 const test = (name, run) => cases.push([name, run]);
@@ -112,8 +112,80 @@ for (const [successes, n, expected] of [[5.6, 8, 36.6], [6, 8, 40.9],
   });
 }
 
+// BOA-1119: 率からの下限と、Wilson下限による小標本判定を固定する。
+for (const [rate, n, expected] of [
+  [0.7, 8, 0.3661613038101525],
+  [0.75, 8, 0.40926987910258916],
+  [0.5, 10, 0.2365895936154873],
+  [0.25, 10, 0.0809462330106019],
+  [0, 10, 0],
+  [1, 10, 0.7224598312333834],
+]) {
+  test(`Wilson率: rate=${rate}, n=${n} の下限と成功数からの計算が一致`, () => {
+    const actual = wilsonLowerBoundFromRate(rate, n);
+    assert.ok(Math.abs(actual - expected) < 1e-12);
+    assert.equal(actual, wilsonLowerBound(rate * n, n));
+  });
+}
+for (const n of [0, -1, NaN, null]) {
+  test(`Wilson率: 母数${n} はnull`, () => {
+    assert.equal(wilsonLowerBoundFromRate(0.5, n), null);
+    assert.equal(wilsonLowerBoundFromRate(0.5, n), wilsonLowerBound(0.5 * n, n));
+  });
+}
+for (const rate of [1.01, -0.01, NaN, null]) {
+  test(`Wilson率: rate=${rate} を拒否する`, () => {
+    assert.throws(
+      () => wilsonLowerBoundFromRate(rate, 10),
+      /wilsonLowerBoundFromRate: rate\(.*\) は 0〜1 である必要があります/,
+    );
+  });
+}
+for (const [successes, n, referenceRate, expected] of [
+  [2.5, 10, 0.25, true], [7, 10, 0.25, false],
+  [28, 31, 0.7, false], [5, 10, 0.5, true],
+  [500, 1000, 0.5, true], [600, 1000, 0.5, false],
+  [3, 10, 0.1077, false], [3, 10, 0.1078, true],
+  [0, 10, 0, false], [10, 10, 1, true],
+  [0, 0, 0.1, true], [3, null, 0.1, true],
+]) {
+  test(`Wilson小標本: successes=${successes}, n=${n}, referenceRate=${referenceRate}`, () => {
+    assert.equal(isSmallSample(successes, n, referenceRate), expected);
+  });
+}
+test("Wilson小標本: z=1 を渡せる", () => {
+  assert.equal(isSmallSample(5, 10, 0.5, 1), true);
+  // 0.3 は既定zではtrue、z=1ではfalseになり、引数の転送も確認できる。
+  assert.equal(isSmallSample(5, 10, 0.3, 1), false);
+});
+for (const successes of [-1, 11]) {
+  test(`Wilson小標本: successes=${successes} を拒否する`, () => {
+    assert.throws(() => isSmallSample(successes, 10, 0.1), /wilsonLowerBound: successes/);
+  });
+}
+
 // 仕様と一致しない入力・仕様未定の入力は合否判定に使わない。
 const KNOWN_GAPS = [
+  {
+    name: "isSmallSampleのJSDocの下限は約74%だが現在は約75.1%",
+    input: { rate: 0.903, n: 31 },
+    specification: "JSDocは約74%（閾値70%での判定falseは同じ）。コメントの修正は別起票",
+    actual: () => wilsonLowerBound(0.903 * 31, 31),
+  },
+  {
+    name: "nullの率は拒否するが、nullからの成功数は0になる",
+    input: { rate: null, n: 10 },
+    specification: "2関数でnullの扱いが異なる。統一の仕様は未定",
+    actual: () => {
+      let fromRate;
+      try {
+        fromRate = wilsonLowerBoundFromRate(null, 10);
+      } catch (error) {
+        fromRate = { error: error.message };
+      }
+      return { fromRate, fromCount: wilsonLowerBound(null * 10, 10) };
+    },
+  },
   {
     name: "地力の丸め境界での浮動小数誤差",
     input: { rate: 60, expected: 52.35 },
