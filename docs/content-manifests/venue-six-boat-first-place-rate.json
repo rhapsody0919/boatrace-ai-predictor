@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "venue-six-boat-first-place-rate",
+ "kind": "new",
+ "ticket": "BOA-1108",
+ "paths": [
+  "public/blog/venue-six-boat-first-place-rate.md",
+  "src/data/blog-posts/venue-six-boat-first-place-rate.json"
+ ],
+ "files": {
+  "public/blog/venue-six-boat-first-place-rate.md": "824c0447a684ef617ef1ef6ae808b1d0b1e82c21dff69ddbada28072aaa03fb7",
+  "src/data/blog-posts/venue-six-boat-first-place-rate.json": "af8420be1ef677715be03ac5b6fd2842aea694701081d41e0f530099489fe39b"
+ },
+ "content_sha256": "d364b1bd8577f9cea89caa9c61197e0a90edbe94eac00bb1d45997147d8e2655",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "d364b1bd8577f9cea89caa9c61197e0a90edbe94eac00bb1d45997147d8e2655",
+   "model": "opus",
+   "at": "2026-10-25T17:22:05+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "d364b1bd8577f9cea89caa9c61197e0a90edbe94eac00bb1d45997147d8e2655",
+   "model": "opus",
+   "at": "2026-10-25T17:22:05+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 2,
+   "reviewed_sha256": "d364b1bd8577f9cea89caa9c61197e0a90edbe94eac00bb1d45997147d8e2655",
+   "model": "opus",
+   "at": "2026-10-25T17:22:05+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "d364b1bd8577f9cea89caa9c61197e0a90edbe94eac00bb1d45997147d8e2655",
+   "model": "opus",
+   "at": "2026-10-25T17:22:05+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-25T17:23:22+09:00",
+ "run": "20261025T171939-seo-human",
+ "engine": "claude"
+}
