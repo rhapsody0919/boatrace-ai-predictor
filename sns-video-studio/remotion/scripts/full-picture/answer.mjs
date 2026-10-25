@@ -2,7 +2,8 @@
  * 入口版の冒頭の答え（v2r1-answer-fill-explain、関門の台本 docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）。
  * 題の問い「1号艇は堅い？」に言葉で答える。言葉は数字から機械で選ぶ（毎日自動で作るので作文しない）。
  * p＝今日の予想の形と同じ本番のスタートの形だった過去で1号艇が1着の割合、p0＝同じ範囲（同じ会場・級の組み合わせ・期間・枠なり）のどの形でもの割合。
- * 段は p の Wilson 95% 区間と p0 で決める。データが薄いレース（同じ形の過去が MIN_N 件未満、形が無い）は作らない（オーナー 10/25）。
+ * 段は p の Wilson 95% 区間と p0 で決める。データが薄いレース（過去が MIN_N 件未満）は作らない（オーナー 10/25）。
+ * 形が無いレースは段 N: 形の比較をせず、形を問わない過去の割合だけを答える（オーナー 10/25 (b)）。
  */
 import { SLIT_FORMS } from "../../../../src/utils/analogyScenario.js";
 
@@ -39,13 +40,20 @@ export const scopeLines = (label) => {
 /**
  * @param {{cells: object, period?: string[]}} sc 材料の api.scenario.scenario
  * @param {string|null} form 今日の予想の形のキー（scene4 の形。null は形が無い）
- * @returns {{stage: "A"|"B"|"C"|null, reason?: string, n?: number, k?: number, p?: number, n0?: number, k0?: number, p0?: number, label?: string, small?: string}}
+ * @returns {{stage: "A"|"B"|"C"|"N"|null, reason?: string, n?: number, k?: number, p?: number, n0?: number, k0?: number, p0?: number, label?: string, small?: string}}
  */
 export function answerOf(sc, form) {
   const forms = sc?.cells?.waku?.forms ?? null;
   // kind は hq が日ごとの減りを数える固定の語（daily.mjs の reasons に type_unsupported:<kind> で出る）
   if (!forms?.any?.n) return { stage: null, kind: "thin_data", reason: "どの形でもの集計が無い" };
-  if (!form || !SLIT_FORMS.includes(form)) return { stage: null, kind: "no_form", reason: "今日の平均STがどの形にも当てはまらない" };
+  // 形が無いレースは形の比較をせず、形を問わない過去の割合だけを答える（段 N。オーナー 10/25 (b)）
+  if (!form || !SLIT_FORMS.includes(form)) {
+    const n0 = forms.any.n;
+    const k0 = win1(forms.any);
+    if (n0 < ANSWER_RULE.minN) return { stage: null, kind: "thin_data", reason: `形を問わない過去が${n0}件（${ANSWER_RULE.minN}件未満）` };
+    const p0 = pct1(k0, n0);
+    return { stage: "N", n: n0, k: k0, p: p0, n0, k0, p0, label: `過去の1号艇の1着は約${Math.round((k0 / n0) * 10)}割`, small: "今日の並びはどの形にも当てはまらない" };
+  }
   const cell = forms[form];
   const n = cell?.n ?? 0;
   if (n < ANSWER_RULE.minN) return { stage: null, kind: "thin_data", reason: `同じ形の過去が${n}件（${ANSWER_RULE.minN}件未満）` };

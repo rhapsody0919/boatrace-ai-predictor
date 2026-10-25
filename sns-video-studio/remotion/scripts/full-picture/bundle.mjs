@@ -130,8 +130,10 @@ function lines({ venue90, overview, conclusion }) {
  */
 export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null, answer = null }) {
   // 冒頭の答え（v2r1）の一文。件数・範囲・免責を同じ文に（wording-editor 2026-10-25 P1）。会場の過去90日の行の代わり（動画に出ない数字を本文に載せない）
-  const answerLine = answer
-    ? `同じスタートの形の過去${answer.n.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k.toLocaleString("ja-JP")}件（${answer.p}%）。同じ範囲のどの形でも${answer.n0.toLocaleString("ja-JP")}件中${answer.k0.toLocaleString("ja-JP")}件（${answer.p0}%）で、${{ A: "どの形でもより多い", B: "はっきりした差は無い", C: "どの形でもより少ない" }[answer.stage]}。過去の割合で、今日の結果を示すものではない`
+  const answerLine = answer?.stage === "N"
+    ? `今日の並びはどの形にも当てはまらない。形を問わず、この組み合わせの過去${answer.n.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k.toLocaleString("ja-JP")}件（${answer.p.toFixed(1)}%）。過去の割合で、今日の結果を示すものではない`
+    : answer
+    ? `同じスタートの形の過去${answer.n.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k.toLocaleString("ja-JP")}件（${answer.p.toFixed(1)}%）。同じ範囲のどの形でも${answer.n0.toLocaleString("ja-JP")}件中${answer.k0.toLocaleString("ja-JP")}件（${answer.p0.toFixed(1)}%）で、${{ A: "どの形でもより多い", B: "はっきりした差は無い", C: "どの形でもより少ない" }[answer.stage]}。過去の割合で、今日の結果を示すものではない`
     : null;
   const name = ROUND_NAME[round] ?? null;
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
