@@ -1,0 +1,30 @@
+{
+  "topic": "BOA-1096 全貌の冒頭の答え（v2r1）の段の分布と言える範囲",
+  "fetched_at": "2026-10-25T10:50+09:00",
+  "source": "公開 API /api/predictions/{date}・/api/analogy/scenario/{raceId}?stage=racecard、本番 DB race_start_timings（anon・SELECT のみ）",
+  "rule_version": "answer.mjs @605e3585a（段 A/B/C・thin_data・no_form、minN 30・Wilson z 1.96）。段 N は 9344a96fd",
+  "period": ["2026-10-06", "2026-10-24"],
+  "period_note": "scenario の保存は 2026-10-06 から（10/02〜10/05 は not_saved）。60日は取れない",
+  "selected4": {
+    "days": 19, "races": 76, "material_missing": 0, "stages": {"優勝戦": 26, "準優勝戦": 50},
+    "dist": {"A": 33, "B": 20, "C": 2, "thin_data": 5, "no_form": 16},
+    "skip_per_day_605e": {"0": 4, "1": 9, "2": 6},
+    "skip_per_day_with_stage_N": {"0": 14, "1": 5},
+    "scope": {"NC": 56, "VC": 20},
+    "staged_n_quantiles_10_25_50_75_90": [61, 118, 243, 686, 886],
+    "predicted_form": {"flat": 50, "none": 16, "wall": 4, "d2": 3, "d1": 1, "d3": 1, "kado": 1},
+    "no_form_any_n": {"min": 300, "median": 1604, "max": 4714, "lt30": 0},
+    "alt_rules": {"wilson_z1.645": {"A": 37, "B": 16, "C": 2}, "wilson_z1.28": {"A": 39, "B": 14, "C": 2}, "complement_2prop_z1.96": {"A": 37, "B": 16, "C": 2}}
+  },
+  "sensitivity_12R_all_venues": {"races": 244, "dist": {"A": 102, "B": 72, "C": 3, "thin_data": 4, "no_form": 63}, "no_form_any_n_min": 240},
+  "forward_check": {
+    "population": "選ぶ4本＋全会場の 2・4・6・8・10・12R、2026-10-06〜10-24、結果あり 1478R（材料は朝のバッチ、結果は後）",
+    "actual_minus_p0_pt": {"A": [-1.9, -6.3, 2.4, 486], "B": [-7.2, -11.5, -2.9, 466], "C": [-8.0, -18.4, 2.3, 81], "no_form": [1.3, -3.3, 6.0, 389], "all_staged": [-4.8, -7.8, -1.9, 1033]},
+    "claimed_p_minus_p0_pt": {"A": 9.5, "B": 4.6, "C": -21.4},
+    "A_minus_B_dayboot95": [5.4, 0.7, 10.0],
+    "slope_y_minus_p0_on_p_minus_p0": {"b": 0.282, "ci95": [-0.025, 0.590], "n": 1033, "note": "VC/NC の水準を外した OLS、HC0"},
+    "brier_staged": {"p": 0.2467, "p0": 0.2358},
+    "predicted_form_hit_waku_1220R": {"flat": [652, 0.163, 0.146], "wall": [133, 0.195, 0.156], "d2": [38, 0.132, 0.074], "d3": [20, 0.05, 0.048], "kado": [21, 0.333, 0.14], "d1": [41, 0.341, 0.12]},
+    "actual_flat_today_b1win": {"flat": [189, 0.661], "other": [1031, 0.492], "note": "後付け（今日の材料では使えない）"}
+  }
+}

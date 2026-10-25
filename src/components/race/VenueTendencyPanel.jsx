@@ -261,8 +261,11 @@ function VenueTendencyPanel({ venueCode, raceId }) {
           {lastUpdated && (
             <p className="vtp-updated">
               {t("venueTendency.lastUpdated", {
+                // last_updated は集計の時刻（timestamptz）。日本の暦日で出す。端末の
+                // タイムゾーンで読むと、JST より西の端末で前日になる（BOA-1092）
                 date: new Date(lastUpdated).toLocaleDateString(
                   i18n.language === "ja" ? "ja-JP" : i18n.language,
+                  { timeZone: "Asia/Tokyo" },
                 ),
               })}
             </p>

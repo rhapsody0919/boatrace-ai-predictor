@@ -30,3 +30,9 @@
 - 違いは URL だけで、置き換えは承認した文と親の external_post_id（complete の後は変わらない、158）から決まる。送った文を別に残す列は持たない
 - 待ち合わせは X のスレッドと同じ `parent_job_id`。runner は親が posted でない子を選ばず、DB は claim で parent_not_posted として止める。親の無い `{full_url}` は送る前の検査（unresolved_placeholder）で止める（個別承認の道で置き場所が出ないため）
 - 却下: 完全版の公開後に cron が Shorts の文を作って承認する（承認の経路が cron に入り、個別承認のときの扱いが分かれる）。完全版の公開後に作り手が Shorts だけ入れ直す（締切に間に合わない）
+
+## 追記: /today の返信の型は、親と子の2件の item・job になる（2026-10-25、PD02・マイグレーション 174）
+- hq の型の列で link_position=reply の日は、/today を本文（親）とリンクだけの返信（子、`source_data.today_reply.parent_draft_id`）の2件にする。子の item は kind=digest・race_id `today:{日付}:reply`。待ち合わせは Shorts・X のスレッドと同じ `parent_job_id`
+- 選べるのは自動（mode=auto）の日で、`config/today-variants.json` の `reply_enabled` が true のときだけ（既定は false）。X の投稿が1日1本増え、月の予約を URL つきの額で2本分引く（158 は thread_index=0 を URL つきの額で引き、親の claim で子の分を一緒に引かない）ので、有効にするかは費用の線のオーナーの判断
+- 止める操作: 親だけ止めると子は親を待ったまま失効で切れる。子の承認に落ちたら、親と子の item を held_manual にして送らない。返信の型の日に自動でなくなっていたら、作り直しの回に親も子も held_manual にする
+- 残る壊れ方（有効にする前に直す）: (1) 予算・日次の上限の際で親だけが通る（親子の対で予約する transition_sns_send_139 の置き換えが要る）、(2) 親の公開の後に一覧の版・欠場が変わると子が source_changed で送れない（子は親の公開の後は版の照合を外す例外が要る）

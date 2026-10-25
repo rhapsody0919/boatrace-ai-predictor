@@ -71,3 +71,8 @@ Supabase の `postgres` は `rolbypassrls=true`・`rolcreaterole=true`（2026-10
 - 接続文字列は Environment `db-readonly`（Deployment branches は master だけ）の `CLAUDE_RO_DB_URL`。repo の secret には置かない（どのブランチの workflow からも読めるため）
 - 接続の上限2本は、手元の ro-query.js と取り合う。材料の job は1本だけ使い、接続できなければ材料なしで審査を続けず、審査を失敗にする（材料が無いまま承認しない）
 - 読み方は ro-query.js と同じ（`BEGIN TRANSACTION READ ONLY`、最後は ROLLBACK、接続したロールが `claude_ro` か確かめる）
+
+## 追記: hq が本番に書くのは、龍神のスクリプトを .env.local で動かす道だけ（2026-10-25、PD02）
+- hq 自身が持つ本番の鍵は claude_ro（読み取り専用）だけ。本番に書くのは、同じ Mac の本リポジトリで龍神のスクリプトを `node --env-file=.env.local` で動かす道に限る（service key は node のプロセスだけが読む）
+- 今ある道: `scripts/sns/push-full-picture.js`（全貌の下書き・item・承認）と `scripts/sns/push-today-types.js`（/today の型の列 `sns_today_type_schedule`）。形・禁止表現の検査は龍神のスクリプトが持ち、hq の側に写しを置かない
+- 書いた結果は hq が claude_ro で読み返す

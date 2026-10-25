@@ -642,8 +642,8 @@ export function isAbsentStartRow(row) {
  * 備考（`racer_series_points.remarks`）が取れている節ではそちらが正で、これは
  * 備考が無い節のための推定。2026-09-30実測（備考がある3節）: 今節Fの2人は
  * 2人とも「賞典除外」、Fがあるのに賞典除外でない選手は0人。
- * **Lは数えない**。出遅れは選手責任のときだけ賞典除外で、当社データでは責任の
- * 有無が分からない（同じ実測でLの1人は賞典除外ではなかった）
+ * L はこの関数では扱わない。選手責任の出遅れ（L1）は
+ * `lateStartL1RacerIdsInMeet` で別に判定する（BOA-1072）
  *
  * @param {Array<Object>} starts `race_start_timings` の行（表示中レースより前の今節ぶん）
  * @param {Array<Object>} entries `race_entries` の行（race_id・boat_number・racer_id）
@@ -658,6 +658,30 @@ export function flyingRacerIdsInMeet(starts, entries) {
     const flying =
       r.is_flying === true || r.finish_mark === "F" || r.finish_mark === "Ｆ";
     if (!flying) continue;
+    const id = racerByKey.get(`${r.race_id}|${r.boat_number}`);
+    if (id !== null && id !== undefined) ids.add(id);
+  }
+  return [...ids];
+}
+
+/**
+ * 今節に選手責任の出遅れ（L1）がある選手（純関数、BOA-1072）。
+ *
+ * F と同じく賞典除外の推定に使う。公式の備考がある節はそちらが正。
+ * `official_finish_code` が L1 の行だけを対象にし、L0（選手責任外）や
+ * 責任の分からない `finish_mark` の L だけでは判定しない。
+ *
+ * @param {Array<Object>} starts `race_start_timings` の行（表示中レースより前の今節ぶん）
+ * @param {Array<Object>} entries `race_entries` の行（race_id・boat_number・racer_id）
+ * @returns {Array<number>} 選手ID
+ */
+export function lateStartL1RacerIdsInMeet(starts, entries) {
+  const racerByKey = new Map(
+    (entries ?? []).map((e) => [`${e.race_id}|${e.boat_number}`, e.racer_id]),
+  );
+  const ids = new Set();
+  for (const r of starts ?? []) {
+    if (r.official_finish_code !== "L1") continue;
     const id = racerByKey.get(`${r.race_id}|${r.boat_number}`);
     if (id !== null && id !== undefined) ids.add(id);
   }

@@ -913,9 +913,60 @@ for (const f of fixtures) {
   assert.equal(runFull({ ...mOk, schemaVersion: "full-picture-materials/0" }), 1, "契約に合わなければ止める");
 }
 
+// ---- 投稿の型（hq PD02、type-spec.mjs・daily.mjs --type-spec）----
+// 型の表は今は空（オーナー 10/25: 中身を固めて試作を見てから載せる）。仕組みは試験用の表で確かめる
+{
+  const { resolveType, lengthRange, lengthReason, listTypes, TYPE_IMPL } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
+  const { buildBundle, checkBundle } = await import(`${R}/scripts/full-picture/bundle.mjs`);
+  const { mkdtempSync, writeFileSync: wf3, readFileSync: rf3, existsSync: ex3 } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { spawnSync } = await import("node:child_process");
+  assert.deepEqual(TYPE_IMPL, {}, "型の表は空（中身を固めて試作をオーナーが見るまで足さない）");
+  assert.deepEqual(listTypes(), []);
+  // 試験用の表: 受け持つ項目と承認した文
+  const T = { "t-test": { attrs: ["structure", "length_s"], approved: { structure: "要点1つ", length_s: "25〜30" } } };
+  const ok = { id: "t-test", attributes: { structure: "要点1つ", length_s: "25〜30" } };
+  assert.deepEqual(resolveType(ok, T).reasons, []);
+  assert.deepEqual(listTypes(T), [{ id: "t-test", attributes: T["t-test"].approved }]);
+  // 表に無い型は、渡された項目ごとに type_unsupported（黙って今の型で作らない）
+  assert.deepEqual(resolveType({ id: "e06-data-cheatsheet", attributes: { structure: "早見表", thumb: "表" } }, T).reasons, ["type_unsupported:structure（型 e06-data-cheatsheet は龍神の表に無い）", "type_unsupported:thumb（型 e06-data-cheatsheet は龍神の表に無い）"]);
+  assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, thumb: "表" } }, T).reasons, ["type_unsupported:thumb"], "表の型でも実装していない項目は止める");
+  assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, structure: "要点2つ" } }, T).reasons, ["type_unsupported:structure（文が変わった）"], "同じ id で文が変わった項目は止める（system-architect P2）");
+  assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（知らない項目）"]);
+  assert.match(resolveType({ id: "t-test", attributes: {} }, T).reasons[0], /^type_spec_invalid/);
+  assert.ok(resolveType(ok).reasons.length > 0, "今の表（空）では、どの型も止まる");
+  assert.deepEqual(lengthRange("25〜30"), [25, 30]);
+  assert.equal(lengthRange("短め"), null);
+  assert.equal(lengthReason({ length_s: "25〜30" }, 26), null);
+  // 理由は固定の文、実測は detail（hq は reasons[0] で起票の重複を判定する。system-architect P1-1）
+  assert.deepEqual(lengthReason({ length_s: "25〜30" }, 38.4), { reason: "type_unsupported:length_s", detail: "入口版 38.4秒が範囲 25〜30秒の外" });
+  assert.equal(lengthReason({ structure: "x" }, 99), null, "length_s が無ければ尺は見ない");
+  // 束: 型の id を content_type に。無ければ書かない
+  {
+    const base = { raceId: "2026-10-12-01-12", venue: "桐生", raceNo: 12, month: 10, day: 12, round: "yusho", facts: { venue90: null, overview: null, conclusion: null, hero: null }, chapters: "0:00 条件\n0:22 6艇比較\n1:07 類似レース\n1:43 展開", fullSeconds: 211, qa: { a: true } };
+    const b = buildBundle({ ...base, contentType: "t-test" });
+    assert.deepEqual(b.content_type, { id: "t-test" });
+    assert.deepEqual(checkBundle(b), []);
+    assert.equal(buildBundle(base).content_type, undefined, "型が無ければ書かない");
+  }
+  // run-full --type-spec: 今の表では、どの型も描く前に exit 1・標準エラーに type_unsupported:<項目>（daily.mjs が拾う形）
+  {
+    const tmp = mkdtempSync(`${tmpdir()}/fp-type-`);
+    wf3(`${tmp}/m.json`, gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
+    wf3(`${tmp}/t.json`, JSON.stringify({ id: "e03-one-point-30s", attributes: { structure: "要点1つ", length_s: "25〜30" } }));
+    const r = spawnSync(process.execPath, [new URL(`${R}/scripts/full-picture/run-full.mjs`, import.meta.url).pathname, `${tmp}/m.json`, `${tmp}/out`, "--text", "template", "--no-video", "--type-spec", `${tmp}/t.json`], { encoding: "utf8" });
+    assert.equal(r.status, 1);
+    assert.match(r.stderr, /^type_unsupported:structure（型 e03-one-point-30s は龍神の表に無い）$/m);
+    assert.ok(!ex3(`${tmp}/out/post-entry.txt`), "止めたら本文を書かない（今の型で作らない）");
+  }
+}
+
 // ---- 毎日の実行（daily.mjs、hq の切替案 v2 §9）と LLM の usage ----
 {
-  const { selectRaces, childEnv, readAnonEnv, SELECT_RULE, withVariant, VARIANTS } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  const { selectRaces, childEnv, readAnonEnv, SELECT_RULE, withVariant, VARIANTS, typeFailure } = await import(`${R}/scripts/full-picture/daily.mjs`);
+  // run-full が型で止まったときは stage=type-spec・固定の文の reasons・実測の detail（system-architect P1-1）
+  assert.deepEqual(typeFailure("[省いた要素] x\ntype_unsupported:length_s\ntype_detail: 入口版 38.4秒が範囲 25〜30秒の外\n"), { reasons: ["type_unsupported:length_s"], detail: ["入口版 38.4秒が範囲 25〜30秒の外"] });
+  assert.equal(typeFailure("Error: 描画に失敗\n    at x"), null, "描画の失敗は型の失敗にしない");
   const race = (n, t, stage, cancel = null) => ({ raceId: `2026-10-19-19-${String(n).padStart(2, "0")}`, raceNumber: n, startTime: t, raceStage: stage, cancellationStatus: cancel });
   const day = [race(9, "21:23", "一般"), race(10, "21:51", "準優勝戦"), race(11, "22:20", "準優勝戦"), race(12, "22:45", "一般")];
   // 締切 21:58 前の優勝戦・準優勝戦のうち一番遅いもの（22:20 の11R は締切を過ぎるので外す）
@@ -952,6 +1003,24 @@ for (const f of fixtures) {
     const r = runDaily(daily, args);
     assert.equal(r.status, 2, `使い方の誤りは exit 2: ${args.join(" ")}`);
     assert.equal(JSON.parse(r.stdout).status, "usage");
+  }
+  // --type-spec: 作れない型は材料を取る前に止め、reasons に type_unsupported:<項目>（hq PD02）
+  {
+    const specFile = `${mkdtempSync(`${td()}/fp-spec-`)}/t.json`;
+    wf2(specFile, JSON.stringify({ id: "e07-voice-character", attributes: { hook: "キャラ声" } }));
+    const r = runDaily(daily, ["2026-10-19-19-10", "--out", `${mkdtempSync(`${td()}/fp-out-`)}`, "--bgm", envFile, "--type-spec", specFile]);
+    assert.equal(r.status, 1);
+    const j = JSON.parse(r.stdout);
+    assert.equal(j.stage, "type-spec");
+    assert.deepEqual(j.reasons, ["type_unsupported:hook（型 e07-voice-character は龍神の表に無い）"]);
+    assert.deepEqual(j.content_type, { id: "e07-voice-character" });
+    const r2 = runDaily(daily, ["2026-10-19-19-10", "--out", "/tmp/x", "--bgm", envFile, "--type-spec", "/nonexistent.json"]);
+    assert.equal(r2.status, 2, "型の json が無ければ使い方の誤り");
+    // 型の表を外に出す（hq の pdca_daily.py は載る型だけを割り当てる。system-architect P1-2）
+    const r3 = runDaily(daily, ["--list-types"]);
+    assert.equal(r3.status, 0);
+    const lt = JSON.parse(r3.stdout);
+    assert.deepEqual(lt.types, [], "型の表は空");
   }
   // 送信の鍵と一緒に起動されたら止める（--env-file=.env.local で起動した等）
   {

@@ -125,9 +125,10 @@ function lines({ venue90, overview, conclusion }) {
  * @param {{raceId: string, venue: string, raceNo: number, month: number, day: number,
  *   round?: string|null, grade?: string|null, deadline?: string|null,
  *   facts: {venue90?: object|null, overview?: object|null, conclusion?: object|null},
- *   chapters: string, fullSeconds: number, qa: Record<string, boolean>}} p
+ *   chapters: string, fullSeconds: number, qa: Record<string, boolean>,
+ *   contentType?: string|null}} p  contentType は投稿の型の id（type-spec.mjs、hq PD02）
  */
-export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa }) {
+export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null }) {
   const name = ROUND_NAME[round] ?? null;
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
   const date = `${month}/${day}`;
@@ -188,7 +189,17 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
       HASHTAG,
     ]).replace(/\n{3,}/g, "\n\n"),
   };
-  return { bundle_version: BUNDLE_VERSION, format: "full_picture", race_id: raceId, x_text, youtube_full, youtube_shorts, qa: { machine: qa, bannedWords: [] } };
+  return {
+    bundle_version: BUNDLE_VERSION,
+    format: "full_picture",
+    race_id: raceId,
+    x_text,
+    youtube_full,
+    youtube_shorts,
+    qa: { machine: qa, bannedWords: [] },
+    // 投稿の型の id（hq PD02）。送信の道が下書きの source_data.content_type.id に写す
+    ...(contentType ? { content_type: { id: contentType } } : {}),
+  };
 }
 
 /**

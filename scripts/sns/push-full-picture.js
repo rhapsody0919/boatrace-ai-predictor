@@ -103,6 +103,12 @@ export function checkFullPicture(bundle, riskRules = []) {
     !["a", "b"].includes(bundle.full_picture_variant?.id)
   )
     reasons.push("full_picture_variant.id が a・b でない");
+  // 型は無いか、{id: 空でない文字列} だけ
+  if (
+    bundle?.content_type !== undefined &&
+    !(typeof bundle.content_type?.id === "string" && bundle.content_type.id.trim())
+  )
+    reasons.push("content_type.id が無い");
   if (!nonEmpty(bundle?.x_text, 25000)) reasons.push("x_text が無い・長すぎる");
   else {
     if (!xPostValid(bundle.x_text, { long: true }))
@@ -271,6 +277,8 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
     },
     // YouTube の型を比べる札（daily.mjs --variant、hq SQ08 v5）。hq が source_data.full_picture_variant.id で数える
     ...(bundle.full_picture_variant ? { full_picture_variant: { id: bundle.full_picture_variant.id } } : {}),
+    // 投稿の型の id（daily.mjs --type-spec、hq PD02）。hq が source_data.content_type.id で数える
+    ...(bundle.content_type ? { content_type: { id: bundle.content_type.id } } : {}),
     deadline_queue: queue(channel),
     release_evidence: {
       status: "released",

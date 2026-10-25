@@ -93,6 +93,11 @@
       "guards": "マイグレーション143（龍神ソナーの画面の中の声 analogy_feedback）を PGlite に適用し、RLS 有効・anon は INSERT のみ（SELECT・UPDATE・DELETE 不可）・同じブラウザ×レース×種類は1行・列挙値と一言の長さと理由の置き場所の CHECK・races の外部キー・created_at の上書き・同じブラウザ24時間40行の連投制限・冪等・ロールバックを確かめる"
     },
     {
+      "script": "verify-analogy-format.js",
+      "tier": "ci",
+      "guards": "類似レースの割合・件数・会場・級別構成・今日の値・順位の表記"
+    },
+    {
       "script": "verify-analogy-outlook-tips.js",
       "tier": "ci",
       "guards": "BOA-1068: AIの見立ての整数割合（最大剰余法）・向きの翻訳キーとグレード順、類似レースの吹き出しの割合・Wilson区間・追加文の接続"
@@ -128,6 +133,11 @@
       "guards": "アナロジー・ファインダー v16（BOA-271）の前日の出力: 出走表の段が締切前にそろった割合（99%）、6艇の展示タイムがそろったレースの展示後の段が締切前にそろった割合（95%）。--cleanup で Storage の7日より前の similar/ を消す",
       "reason": "本番の analogy_v16_snapshots・races・exhibition_data を読み、--cleanup は本番 Storage を消すため。Nightly DB Verify（JST 3:00）が毎晩実行する",
       "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
+    },
+    {
+      "script": "verify-assist-run-points.js",
+      "tier": "ci",
+      "guards": "思考アシストの finishOf・runPoints・finishClass・tiesBeyond の着、着順点10/8/6/4/2/1、今日・欠場・着なし、色クラスと境目以降の同点件数を固定する（BOA-1089）。仕様未定の入力は KNOWN_GAPS に実測値を出す"
     },
     {
       "script": "verify-assist-summary-tie-boundary.js",
@@ -240,6 +250,11 @@
       "script": "verify-content-pr-gate.js",
       "tier": "ci",
       "guards": "記事の中身だけの PR の関門（scripts/lib/contentPrGate.js、契約 docs/operation/content-pr-contract.md）: 許可のパス（すり抜け・削除・status T・mode 100644 以外）・生 HTML（mdast の html ノード、図のタグ ryujin-chart の例外）・「競艇」・判断が要る語・slug・.md と JSON の対応・画像の寸法と参照・featured・内部リンク（画像と // を除く）・manifest（非オブジェクト・paths・files・content_sha256・1記事・kind・4つの役のレビュー・P0/P1・時刻の形）を表で検査。CLI の差分（--raw -z）の読み取りも。今の public/blog の全 .md・blog-posts の全 JSON・images/blog の全 JPEG で本文の関門が errors 0 であること"
+    },
+    {
+      "script": "verify-course-baseline-lookup.js",
+      "tier": "ci",
+      "guards": "ST考察のベースラインのコース・級別キー、欠損値・course 0・重複後勝ち・入力不変、セル参照、抜出期待回数の換算と走数境界（BOA-1085）。仕様未定の文字列走数はKNOWN_GAPSに出力"
     },
     {
       "script": "verify-course-entry-tendency.js",
@@ -419,6 +434,16 @@
       "guards": "sns_drafts.format列の語彙統一（sns-topic-gate 要件12・22）の移行整合性",
       "reason": "実Supabaseの sns_drafts を読むため。環境変数が無いと検証をスキップできず失敗する nightly-verify-db.yml が毎晩JST3:00に実行する（読み取りのみ）。",
       "command": "node --env-file=.env.local scripts/maintenance/verify-format-column-migration.js"
+    },
+    {
+      "script": "verify-formatters-timezone.js",
+      "tier": "ci",
+      "guards": "日本の暦日の整形（formatDate・formatDateObject・formatDateShort）が実行環境のタイムゾーンに依らず同じ日付・曜日になる（JST より西で1日前になった BOA-1092）"
+    },
+    {
+      "script": "verify-formatters.js",
+      "tier": "ci",
+      "guards": "日付・割合の7関数の表記、TZ非依存の関数の3タイムゾーン検証、既知の差異の記録（BOA-1086）"
     },
     {
       "script": "verify-fortune-systems.js",
@@ -1340,6 +1365,11 @@
       "script": "verify-turn-time-venues.js",
       "tier": "ci",
       "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"
+    },
+    {
+      "script": "verify-unchanged-rows-summary.js",
+      "tier": "ci",
+      "guards": "normalizeTimestampの同一時刻・空値・不正文字列、planWriteAllの配列参照と統計、formatSkipSummaryの件数・多い順の上位5列・fallback。仕様未定と不一致はKNOWN_GAPSに出力（BOA-1088）"
     },
     {
       "script": "verify-unchanged-rows.js",
