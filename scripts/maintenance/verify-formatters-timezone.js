@@ -10,6 +10,7 @@
  * TZ は process.env.TZ の代入で切り替える（Node は代入でタイムゾーンを読み直す）。ネットワーク・DB は使わない。
  */
 import assert from "node:assert/strict";
+import { calcAge } from "../../src/components/racer/racerFilterUtils.js";
 import {
   formatDate,
   formatDateObject,
@@ -75,6 +76,38 @@ try {
     assert.equal(new Date("2026-10-25T00:00:00+09:00").getDate(), 24);
   });
 } finally {
+  if (originalTz === undefined) delete process.env.TZ;
+  else process.env.TZ = originalTz;
+}
+
+// JST の誕生日当日でも、UTC・米国では前日になる時刻で既定の「今日」を検証する。
+const RealDate = globalThis.Date;
+const fixedNow = RealDate.parse("2026-10-25T00:30:00+09:00");
+try {
+  globalThis.Date = class extends RealDate {
+    constructor(...args) {
+      super(...(args.length ? args : [fixedNow]));
+    }
+
+    static now() {
+      return fixedNow;
+    }
+  };
+  for (const tz of TIMEZONES) {
+    process.env.TZ = tz;
+    for (const [birthDate, expected] of [
+      ["1990-10-25", 36],
+      ["1990-10-26", 35],
+      [null, null],
+      ["", null],
+    ]) {
+      test(`${tz} calcAge(${JSON.stringify(birthDate)})`, () => {
+        assert.equal(calcAge(birthDate), expected);
+      });
+    }
+  }
+} finally {
+  globalThis.Date = RealDate;
   if (originalTz === undefined) delete process.env.TZ;
   else process.env.TZ = originalTz;
 }
