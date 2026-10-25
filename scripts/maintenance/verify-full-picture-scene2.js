@@ -658,11 +658,16 @@ for (const f of fixtures) {
   const row = (n, over = {}) => ({ boat_number: n, exhibition_course: n, start_timing: 0.1 + n / 100, start_flag: null, exhibition_time: 6.7, tilt: 0, parts_changed: null, propeller_change: null, is_absent: false, updated_at: "2026-10-25T06:39:35+00:00", ...over });
   // 1号艇は F 表記・部品交換、2号艇はプロペラ交換、3・4号艇は進入が入れ替わり、5号艇はチルトが欠け、6号艇は行が無い
   const exRows = [row(1, { start_flag: "F", start_timing: 0.01, parts_changed: ["リング", "ピストン"] }), row(2, { propeller_change: "新" }), row(3, { exhibition_course: 4 }), row(4, { exhibition_course: 3 }), row(5, { tilt: null })];
+  // 今節の走は facts の racers.boats[].meet_runs（固定の材料は racers を写していないので足す）。1号艇は2走（2走目は結果の行が無い）、3号艇は racers に無い
+  m.api.facts.racers = { meet_start: "2026-10-10", boats: [1, 2, 4, 5, 6].map((n) => ({ boat_number: n, meet_runs: n === 1 ? [{ race_id: "2026-10-11-01-03", boat_number: 2 }, { race_id: "2026-10-10-01-05", boat_number: 4 }, { race_id: "2026-10-12-01-02", boat_number: 1 }] : [] })) };
+  const startRows = [{ race_id: "2026-10-10-01-05", boat_number: 4, finish_mark: "1", finish_rank: 1 }, { race_id: "2026-10-11-01-03", boat_number: 2, finish_mark: "F", finish_rank: null }];
+  const entryRows = [1, 2, 3, 4, 5].map((n) => ({ boat_number: n, f_count: n === 1 ? 1 : n === 5 ? null : 0 }));
   const technique = {
     venue_technique_period_stats: [{ period_days: 90, winning_technique: "逃げ", race_count: 388, total_races: 660, period_from: "2026-07-27", period_to: "2026-10-24", last_updated: "2026-10-25" }],
     winning_technique_stats: [{ boat_number: 1, winning_technique: "逃げ", count_90days: 385, total_races: 412, percentage: 93.45, last_updated: "2026-10-25" }],
   };
-  const run = async ({ conditions, startTime = "16:06:00", ex = exRows, stage = "exhibition" }) => {
+  const run = async ({ conditions, startTime = "16:06:00", ex = exRows, stage = "exhibition", racers = m.api.facts.racers }) => {
+    const facts = { ...m.api.facts, racers };
     const json = (v) => ({ ok: true, status: 200, json: async () => v });
     globalThis.fetch = async (url) => {
       const u = new URL(String(url));
@@ -672,13 +677,15 @@ for (const f of fixtures) {
         if (table === "exhibition_data" && q.get("race_id") === `eq.${m.raceId}`) return json(ex);
         if (table === "exhibition_data") return json(m.db.motor?.exhibition ?? []);
         if (table === "race_conditions") return json(conditions === undefined ? [] : [conditions]);
+        if (table === "race_entries" && q.get("race_id") === `eq.${m.raceId}`) return json(ex.length ? entryRows : []);
+        if (table === "race_start_timings") return json(startRows);
         if (table === "races" && q.get("race_id") === `eq.${m.raceId}`) return json([{ start_time: startTime, race_grade: "G1" }]);
         if (technique[table]) return json(technique[table]);
         const map = { race_entries: m.db.racer1?.entries ?? [], races: m.db.racer1?.races ?? [], motor_pretest_stats: m.db.motor?.pretest ?? [], venue_motor_stats: m.db.motor?.stats ?? [] };
         return json(map[table] ?? []);
       }
       const p = u.pathname;
-      if (p.startsWith("/api/analogy/facts/")) return json(m.api.facts);
+      if (p.startsWith("/api/analogy/facts/")) return json(facts);
       if (p.startsWith("/api/analogy/similar/")) return json(m.api.similar);
       if (p.startsWith("/api/analogy/scenario/")) return json(m.api.scenario);
       if (p.startsWith("/api/predictions/")) return json({ races: m.api.races });
@@ -704,13 +711,29 @@ for (const f of fixtures) {
     "進入・展示 ST と F 表記・展示タイム・チルト・部品交換を出す",
   );
   assert.equal(boats[1].propeller_change, "新", "プロペラ交換を出す");
+  // 追加の依頼（hq 10/25）: F 数（出走表の期の F 数）と今節の着順の並び
+  assert.deepEqual(boats.map((b) => b.f_count), [1, 0, 0, 0, null, null], "F 数は出走表の f_count、欠けは null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.f_count" && x.reason === "値が無い"), "F 数の欠けを記録");
+  assert.deepEqual(
+    boats[0].meet_finishes,
+    [
+      { race_id: "2026-10-10-01-05", finish_mark: "1", finish_rank: 1 },
+      { race_id: "2026-10-11-01-03", finish_mark: "F", finish_rank: null },
+      { race_id: "2026-10-12-01-02", finish_mark: null, finish_rank: null },
+    ],
+    "今節の着順は時系列（race_id の順）で、着の無い表記（F 等）は finish_mark に残す",
+  );
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.1.meet_finishes" && /着順の無い走が1件/.test(x.reason)), "結果の無い走を記録");
+  assert.deepEqual(boats[1].meet_finishes, [], "今節の走が無い艇は空の並び（初走）");
+  assert.equal(boats[2].meet_finishes, null, "racers に無い艇は null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.meet_finishes"), "racers に無い艇を記録");
   assert.deepEqual([boats[2].exhibition_course, boats[3].exhibition_course], [4, 3], "進入は展示の並び（枠番と違ってよい）");
   assert.equal(boats[4].tilt, null, "欠けたチルトは null");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.tilt"), "欠けた欄を missing に記録");
   assert.deepEqual(
-    Object.entries(boats[5]).filter(([k]) => k !== "boat_number"),
-    Object.keys(boats[0]).filter((k) => k !== "boat_number").map((k) => [k, null]),
-    "行の無い艇は全欄 null",
+    Object.entries(boats[5]).filter(([k]) => !["boat_number", "meet_finishes"].includes(k)),
+    Object.keys(boats[0]).filter((k) => !["boat_number", "meet_finishes"].includes(k)).map((k) => [k, null]),
+    "行の無い艇は全欄 null（今節の着順は facts から別に取る）",
   );
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.6"), "行の無い艇を missing に記録");
   assert.ok(!got.missing.some((x) => /\.(start_flag|parts_changed|propeller_change)$/.test(x.source)), "印・交換の null は「表示なし」で欠けにしない");
@@ -745,6 +768,9 @@ for (const f of fixtures) {
   technique.winning_technique_stats = [];
   const empty = await run({ conditions: undefined, ex: [] });
   assert.deepEqual(validate(empty), [], "欠けた材料も契約に合う");
+  const noRacers = await run({ conditions: pre, racers: null });
+  assert.ok(noRacers.db.exhibition.boats.every((b) => b.meet_finishes === null), "facts に racers が無ければ今節の着順は null");
+  assert.ok(noRacers.missing.some((x) => x.source === "db.exhibition.boats.meet_finishes"), "racers が無いことを記録");
   assert.ok(empty.db.exhibition.boats.every((b) => b.exhibition_course === null && b.start_timing === null), "展示前は進入・ST が null");
   assert.deepEqual(empty.db.exhibition.conditions, { weather: null, wind_direction: null, wind_speed: null, wave_height: null, observedAt: null });
   for (const s of ["db.exhibition.boats.1", "db.exhibition.boats.6", "db.exhibition.conditions", "db.exhibition.technique.byPeriod", "db.exhibition.technique.byBoat"]) {

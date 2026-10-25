@@ -87,6 +87,9 @@ const deadlineUtc = (date, startTime) => (startTime ? Date.parse(`${date}T${star
  * 展示の後の材料（stage=exhibition のときだけ）。読み取りだけ・新しい集計はしない。
  * 艇は1〜6号艇を必ず並べ、行・値が無い欄は null にして missing に「db.exhibition.boats.{艇}[.{欄}]」で記録する（欠けを隠さない。
  * 欠場の艇は理由を「欠場」にする）。
+ * 各艇には出走表の F 数（race_entries.f_count、このレースの行）と、今節の着順の並び（meet_finishes）も足す。今節の走は
+ * facts の racers.boats[].meet_runs（api/_lib/racerEntryExhibition.js。節の初日からこのレースより前、中止・締切前を外した
+ * 今節タブと同じ定義）をそのまま使い、着順は race_start_timings の finish_mark（公式の表記）・finish_rank を写す。
  * 風・波は締切より前の観測だけを使う（race_conditions は結果の取り込みで発走時点の値に上書きされる。その場合は null）。
  * 決まり手の過去の分布は会場の既存の集計表をそのまま写す（venue_technique_period_stats＝会場の90・365日、
  * winning_technique_stats＝1着の枠番別の90日。どちらもレースの日でなく最新の集計で、last_updated を残す）
@@ -95,23 +98,31 @@ const deadlineUtc = (date, startTime) => (startTime ? Date.parse(`${date}T${star
  * @param {number} venueCode
  * @param {string|null} startTime races.start_time
  * @param {{source: string, reason: string}[]} missing 追記する
+ * @param {{boats?: {boat_number: number, meet_runs?: {race_id: string, boat_number: number}[]}[]}|null} [racers] facts の racers
  */
-export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing) {
+export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing, racers = null) {
   const fail = (source) => (e) => {
     missing.push({ source, reason: e instanceof Error ? e.message : String(e) });
     return null;
   };
   // 3つは互いに依らないので並べて読む
   const [boats, conditions, technique] = await Promise.all([
-    exhibitionBoats(raceId, missing).catch(fail("db.exhibition.boats")),
+    exhibitionBoats(raceId, racers, missing).catch(fail("db.exhibition.boats")),
     preRaceConditions(raceId, date, startTime, missing).catch(fail("db.exhibition.conditions")),
     venueTechnique(date, venueCode, missing).catch(fail("db.exhibition.technique")),
   ]);
   return { boats, conditions, technique };
 }
 
-async function exhibitionBoats(raceId, missing) {
-  const rows = await sbGet("exhibition_data", `select=boat_number,${EXHIBITION_BOAT_FIELDS.join(",")},is_absent,updated_at&race_id=eq.${raceId}`);
+async function exhibitionBoats(raceId, racers, missing) {
+  const runsOf = (n) => racers?.boats?.find((b) => b.boat_number === n)?.meet_runs ?? null;
+  const runIds = [...new Set([1, 2, 3, 4, 5, 6].flatMap((n) => (runsOf(n) ?? []).map((r) => r.race_id)))];
+  const [rows, entries, finishes] = await Promise.all([
+    sbGet("exhibition_data", `select=boat_number,${EXHIBITION_BOAT_FIELDS.join(",")},is_absent,updated_at&race_id=eq.${raceId}`),
+    sbGet("race_entries", `select=boat_number,f_count&race_id=eq.${raceId}`),
+    runIds.length ? sbIn("race_start_timings", "race_id,boat_number,finish_mark,finish_rank", "race_id", runIds) : [],
+  ]);
+  if (!racers?.boats) missing.push({ source: "db.exhibition.boats.meet_finishes", reason: "facts に今節の走（racers）が無い" });
   return [1, 2, 3, 4, 5, 6].map((n) => {
     const r = rows.find((x) => x.boat_number === n);
     if (!r) missing.push({ source: `db.exhibition.boats.${n}`, reason: "exhibition_data にこの艇の行が無い" });
@@ -120,6 +131,22 @@ async function exhibitionBoats(raceId, missing) {
     for (const f of EXHIBITION_MEASURED_FIELDS) {
       if (r && boat[f] === null) missing.push({ source: `db.exhibition.boats.${n}.${f}`, reason: r.is_absent ? "欠場" : "値が無い" });
     }
+    const entry = entries.find((x) => x.boat_number === n);
+    boat.f_count = entry?.f_count ?? null;
+    if (boat.f_count === null) missing.push({ source: `db.exhibition.boats.${n}.f_count`, reason: entry ? "値が無い" : "race_entries にこの艇の行が無い" });
+    const runs = runsOf(n);
+    // 今節の各走の着順（race_id の順＝時系列）。結果の行が無い走は着順を null にして件数を記録する
+    boat.meet_finishes = runs
+      ? [...runs]
+          .sort((a, b) => a.race_id.localeCompare(b.race_id))
+          .map((run) => {
+            const st = finishes.find((x) => x.race_id === run.race_id && x.boat_number === run.boat_number);
+            return { race_id: run.race_id, finish_mark: st?.finish_mark ?? null, finish_rank: st?.finish_rank ?? null };
+          })
+      : null;
+    if (racers?.boats && !runs) missing.push({ source: `db.exhibition.boats.${n}.meet_finishes`, reason: "facts の racers にこの艇が無い" });
+    const noMark = boat.meet_finishes?.filter((x) => x.finish_mark === null).length ?? 0;
+    if (noMark) missing.push({ source: `db.exhibition.boats.${n}.meet_finishes`, reason: `着順の無い走が${noMark}件` });
     return boat;
   });
 }
@@ -272,7 +299,7 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
     missing.push({ source: "race", reason: e instanceof Error ? e.message : String(e) });
   }
   // 展示の後の材料（進入・展示 ST・チルト・部品交換・展示タイム・風と波・決まり手の過去の分布）。展示の前の出力は変えない
-  if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing);
+  if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing, api.facts?.racers ?? null);
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, race: raceRow, api, db, missing };
 }
 
