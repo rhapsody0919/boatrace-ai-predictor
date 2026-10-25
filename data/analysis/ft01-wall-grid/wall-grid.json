@@ -1,0 +1,1673 @@
+{
+  "question": "準優勝戦・優勝戦で、イン崩れ注意度（gapband-r-v1）の3段 × 展示タイム順位3段の1着を逃した率",
+  "requestedBy": "hq（FT01 優勝戦の思考の投稿の較正）",
+  "period": {
+    "from": "2025-06-01",
+    "to": "2026-10-24",
+    "kbThrough": "2025-12-02",
+    "mainFrom": "2025-12-03",
+    "actualFirstDate": "2025-06-01",
+    "actualLastDate": "2026-10-24"
+  },
+  "generatedAt": "2026-10-25T13:18:21.192Z",
+  "definitions": {
+    "caution": "gapband-r-v1: round(勝率×100) の1号艇−2〜6号艇の最高、帯 clamp(floor/50,-8,6)、in_caution_gap_band_daily の (ラウンド,帯) の前日までの累積、pct=(200k+n) div 2n、low<35・35<=mid<55・high>=55、累積 n<100 は sparse で除外",
+    "exhRank": "exhibition_time 昇順の6艇内順位、同タイムは method=min（そろって小さい方の順位）、6艇そろわないレースは除外",
+    "versions": {
+      "boat": "艇番1",
+      "course": "実進入1コースの艇（本体 actual_course_N、長期 kb_archive_boats.course）。注意度は同じ値"
+    },
+    "excluded": "不成立（race_status=no_race）・中止（is_cancelled・cancellation_status）・結果なし・返還艇（本体 race_status<>normal か F/L/欠場、長期 finish_raw が 01〜06 以外）。is_no_race は不使用"
+  },
+  "counts": {
+    "racesUsed": 4191,
+    "bySrc": {
+      "kb": 1472,
+      "main": 2719
+    },
+    "sparse": 25,
+    "courseVersionMissing": 0,
+    "course1NotBoat1": 30,
+    "boat1ExhTie": 969,
+    "dropped": {
+      "kb:返還艇あり": 90,
+      "main:返還艇あり（race_status=partial_refund）": 101,
+      "main:結果なし": 22
+    }
+  },
+  "mantelTrend": {
+    "boat": {
+      "z": 5.33,
+      "strata": "round×level"
+    },
+    "course": {
+      "z": 5.7,
+      "strata": "round×level"
+    },
+    "boatFirstHalf": {
+      "z": 2.76,
+      "strata": "round×level"
+    },
+    "boatSecondHalf": {
+      "z": 4.82,
+      "strata": "round×level"
+    }
+  },
+  "byPeriod": {
+    "boat_until_2026_02": [
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "1-2",
+        "n": 1308,
+        "nonWin": 349,
+        "pct": 26.7,
+        "lo": 24.4,
+        "hi": 29.1
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "3-4",
+        "n": 617,
+        "nonWin": 191,
+        "pct": 31,
+        "lo": 27.4,
+        "hi": 34.7
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "5-6",
+        "n": 259,
+        "nonWin": 89,
+        "pct": 34.4,
+        "lo": 28.8,
+        "hi": 40.3
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "all",
+        "n": 2184,
+        "nonWin": 629,
+        "pct": 28.8,
+        "lo": 26.9,
+        "hi": 30.7
+      }
+    ],
+    "boat_from_2026_03": [
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "1-2",
+        "n": 1214,
+        "nonWin": 284,
+        "pct": 23.4,
+        "lo": 21.1,
+        "hi": 25.9
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "3-4",
+        "n": 530,
+        "nonWin": 170,
+        "pct": 32.1,
+        "lo": 28.2,
+        "hi": 36.2
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "5-6",
+        "n": 238,
+        "nonWin": 87,
+        "pct": 36.6,
+        "lo": 30.7,
+        "hi": 42.8
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "all",
+        "n": 1982,
+        "nonWin": 541,
+        "pct": 27.3,
+        "lo": 25.4,
+        "hi": 29.3
+      }
+    ],
+    "boat_dsWindow_2026_03_10_to_10_24": [
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "1-2",
+        "n": 1177,
+        "nonWin": 278,
+        "pct": 23.6,
+        "lo": 21.3,
+        "hi": 26.1
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "3-4",
+        "n": 513,
+        "nonWin": 163,
+        "pct": 31.8,
+        "lo": 27.9,
+        "hi": 35.9
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "5-6",
+        "n": 230,
+        "nonWin": 83,
+        "pct": 36.1,
+        "lo": 30.2,
+        "hi": 42.5
+      },
+      {
+        "version": "boat",
+        "round": "all",
+        "level": "all",
+        "exhRank": "all",
+        "n": 1920,
+        "nonWin": 524,
+        "pct": 27.3,
+        "lo": 25.3,
+        "hi": 29.3
+      }
+    ]
+  },
+  "grid": [
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 2308,
+      "nonWin": 564,
+      "pct": 24.4,
+      "lo": 22.7,
+      "hi": 26.2
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 1038,
+      "nonWin": 317,
+      "pct": 30.5,
+      "lo": 27.8,
+      "hi": 33.4
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 445,
+      "nonWin": 149,
+      "pct": 33.5,
+      "lo": 29.3,
+      "hi": 38
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "low",
+      "exhRank": "all",
+      "n": 3791,
+      "nonWin": 1030,
+      "pct": 27.2,
+      "lo": 25.8,
+      "hi": 28.6
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 211,
+      "nonWin": 68,
+      "pct": 32.2,
+      "lo": 26.3,
+      "hi": 38.8
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 109,
+      "nonWin": 44,
+      "pct": 40.4,
+      "lo": 31.6,
+      "hi": 49.8
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 49,
+      "nonWin": 25,
+      "pct": 51,
+      "lo": 37.5,
+      "hi": 64.4
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 369,
+      "nonWin": 137,
+      "pct": 37.1,
+      "lo": 32.4,
+      "hi": 42.2
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "high",
+      "exhRank": "1-2",
+      "n": 3,
+      "nonWin": 1,
+      "pct": 33.3,
+      "lo": 6.1,
+      "hi": 79.2
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "high",
+      "exhRank": "3-4",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "high",
+      "exhRank": "5-6",
+      "n": 3,
+      "nonWin": 2,
+      "pct": 66.7,
+      "lo": 20.8,
+      "hi": 93.9
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "high",
+      "exhRank": "all",
+      "n": 6,
+      "nonWin": 3,
+      "pct": 50,
+      "lo": 18.8,
+      "hi": 81.2
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 2522,
+      "nonWin": 633,
+      "pct": 25.1,
+      "lo": 23.4,
+      "hi": 26.8
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 1147,
+      "nonWin": 361,
+      "pct": 31.5,
+      "lo": 28.9,
+      "hi": 34.2
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 497,
+      "nonWin": 176,
+      "pct": 35.4,
+      "lo": 31.3,
+      "hi": 39.7
+    },
+    {
+      "version": "boat",
+      "round": "all",
+      "level": "all",
+      "exhRank": "all",
+      "n": 4166,
+      "nonWin": 1170,
+      "pct": 28.1,
+      "lo": 26.7,
+      "hi": 29.5
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 1752,
+      "nonWin": 417,
+      "pct": 23.8,
+      "lo": 21.9,
+      "hi": 25.9
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 783,
+      "nonWin": 230,
+      "pct": 29.4,
+      "lo": 26.3,
+      "hi": 32.7
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 309,
+      "nonWin": 101,
+      "pct": 32.7,
+      "lo": 27.7,
+      "hi": 38.1
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "all",
+      "n": 2844,
+      "nonWin": 748,
+      "pct": 26.3,
+      "lo": 24.7,
+      "hi": 28
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 125,
+      "nonWin": 40,
+      "pct": 32,
+      "lo": 24.5,
+      "hi": 40.6
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 51,
+      "nonWin": 22,
+      "pct": 43.1,
+      "lo": 30.5,
+      "hi": 56.7
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 30,
+      "nonWin": 16,
+      "pct": 53.3,
+      "lo": 36.1,
+      "hi": 69.8
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 206,
+      "nonWin": 78,
+      "pct": 37.9,
+      "lo": 31.5,
+      "hi": 44.7
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "1-2",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "3-4",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "5-6",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "all",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 1877,
+      "nonWin": 457,
+      "pct": 24.3,
+      "lo": 22.5,
+      "hi": 26.3
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 834,
+      "nonWin": 252,
+      "pct": 30.2,
+      "lo": 27.2,
+      "hi": 33.4
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 339,
+      "nonWin": 117,
+      "pct": 34.5,
+      "lo": 29.7,
+      "hi": 39.7
+    },
+    {
+      "version": "boat",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "all",
+      "n": 3050,
+      "nonWin": 826,
+      "pct": 27.1,
+      "lo": 25.5,
+      "hi": 28.7
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 556,
+      "nonWin": 147,
+      "pct": 26.4,
+      "lo": 22.9,
+      "hi": 30.3
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 255,
+      "nonWin": 87,
+      "pct": 34.1,
+      "lo": 28.6,
+      "hi": 40.1
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 136,
+      "nonWin": 48,
+      "pct": 35.3,
+      "lo": 27.8,
+      "hi": 43.6
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "all",
+      "n": 947,
+      "nonWin": 282,
+      "pct": 29.8,
+      "lo": 27,
+      "hi": 32.8
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 86,
+      "nonWin": 28,
+      "pct": 32.6,
+      "lo": 23.6,
+      "hi": 43
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 58,
+      "nonWin": 22,
+      "pct": 37.9,
+      "lo": 26.6,
+      "hi": 50.8
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 19,
+      "nonWin": 9,
+      "pct": 47.4,
+      "lo": 27.3,
+      "hi": 68.3
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 163,
+      "nonWin": 59,
+      "pct": 36.2,
+      "lo": 29.2,
+      "hi": 43.8
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "1-2",
+      "n": 3,
+      "nonWin": 1,
+      "pct": 33.3,
+      "lo": 6.1,
+      "hi": 79.2
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "3-4",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "5-6",
+      "n": 3,
+      "nonWin": 2,
+      "pct": 66.7,
+      "lo": 20.8,
+      "hi": 93.9
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "all",
+      "n": 6,
+      "nonWin": 3,
+      "pct": 50,
+      "lo": 18.8,
+      "hi": 81.2
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 645,
+      "nonWin": 176,
+      "pct": 27.3,
+      "lo": 24,
+      "hi": 30.9
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 313,
+      "nonWin": 109,
+      "pct": 34.8,
+      "lo": 29.8,
+      "hi": 40.3
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 158,
+      "nonWin": 59,
+      "pct": 37.3,
+      "lo": 30.2,
+      "hi": 45.1
+    },
+    {
+      "version": "boat",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "all",
+      "n": 1116,
+      "nonWin": 344,
+      "pct": 30.8,
+      "lo": 28.2,
+      "hi": 33.6
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 2295,
+      "nonWin": 550,
+      "pct": 24,
+      "lo": 22.3,
+      "hi": 25.8
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 1041,
+      "nonWin": 315,
+      "pct": 30.3,
+      "lo": 27.5,
+      "hi": 33.1
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 455,
+      "nonWin": 154,
+      "pct": 33.8,
+      "lo": 29.6,
+      "hi": 38.3
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "low",
+      "exhRank": "all",
+      "n": 3791,
+      "nonWin": 1019,
+      "pct": 26.9,
+      "lo": 25.5,
+      "hi": 28.3
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 211,
+      "nonWin": 68,
+      "pct": 32.2,
+      "lo": 26.3,
+      "hi": 38.8
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 108,
+      "nonWin": 43,
+      "pct": 39.8,
+      "lo": 31.1,
+      "hi": 49.2
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 50,
+      "nonWin": 26,
+      "pct": 52,
+      "lo": 38.5,
+      "hi": 65.2
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 369,
+      "nonWin": 137,
+      "pct": 37.1,
+      "lo": 32.4,
+      "hi": 42.2
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "high",
+      "exhRank": "1-2",
+      "n": 3,
+      "nonWin": 1,
+      "pct": 33.3,
+      "lo": 6.1,
+      "hi": 79.2
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "high",
+      "exhRank": "3-4",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "high",
+      "exhRank": "5-6",
+      "n": 3,
+      "nonWin": 2,
+      "pct": 66.7,
+      "lo": 20.8,
+      "hi": 93.9
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "high",
+      "exhRank": "all",
+      "n": 6,
+      "nonWin": 3,
+      "pct": 50,
+      "lo": 18.8,
+      "hi": 81.2
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 2509,
+      "nonWin": 619,
+      "pct": 24.7,
+      "lo": 23,
+      "hi": 26.4
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 1149,
+      "nonWin": 358,
+      "pct": 31.2,
+      "lo": 28.5,
+      "hi": 33.9
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 508,
+      "nonWin": 182,
+      "pct": 35.8,
+      "lo": 31.8,
+      "hi": 40.1
+    },
+    {
+      "version": "course",
+      "round": "all",
+      "level": "all",
+      "exhRank": "all",
+      "n": 4166,
+      "nonWin": 1159,
+      "pct": 27.8,
+      "lo": 26.5,
+      "hi": 29.2
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 1741,
+      "nonWin": 405,
+      "pct": 23.3,
+      "lo": 21.3,
+      "hi": 25.3
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 788,
+      "nonWin": 229,
+      "pct": 29.1,
+      "lo": 26,
+      "hi": 32.3
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 315,
+      "nonWin": 103,
+      "pct": 32.7,
+      "lo": 27.8,
+      "hi": 38.1
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "all",
+      "n": 2844,
+      "nonWin": 737,
+      "pct": 25.9,
+      "lo": 24.3,
+      "hi": 27.6
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 125,
+      "nonWin": 40,
+      "pct": 32,
+      "lo": 24.5,
+      "hi": 40.6
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 50,
+      "nonWin": 21,
+      "pct": 42,
+      "lo": 29.4,
+      "hi": 55.8
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 31,
+      "nonWin": 17,
+      "pct": 54.8,
+      "lo": 37.8,
+      "hi": 70.8
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 206,
+      "nonWin": 78,
+      "pct": 37.9,
+      "lo": 31.5,
+      "hi": 44.7
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "1-2",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "3-4",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "5-6",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "high",
+      "exhRank": "all",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 1866,
+      "nonWin": 445,
+      "pct": 23.8,
+      "lo": 22,
+      "hi": 25.8
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 838,
+      "nonWin": 250,
+      "pct": 29.8,
+      "lo": 26.8,
+      "hi": 33
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 346,
+      "nonWin": 120,
+      "pct": 34.7,
+      "lo": 29.9,
+      "hi": 39.8
+    },
+    {
+      "version": "course",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "all",
+      "n": 3050,
+      "nonWin": 815,
+      "pct": 26.7,
+      "lo": 25.2,
+      "hi": 28.3
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 554,
+      "nonWin": 145,
+      "pct": 26.2,
+      "lo": 22.7,
+      "hi": 30
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 253,
+      "nonWin": 86,
+      "pct": 34,
+      "lo": 28.4,
+      "hi": 40
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 140,
+      "nonWin": 51,
+      "pct": 36.4,
+      "lo": 28.9,
+      "hi": 44.7
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "all",
+      "n": 947,
+      "nonWin": 282,
+      "pct": 29.8,
+      "lo": 27,
+      "hi": 32.8
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 86,
+      "nonWin": 28,
+      "pct": 32.6,
+      "lo": 23.6,
+      "hi": 43
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 58,
+      "nonWin": 22,
+      "pct": 37.9,
+      "lo": 26.6,
+      "hi": 50.8
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 19,
+      "nonWin": 9,
+      "pct": 47.4,
+      "lo": 27.3,
+      "hi": 68.3
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 163,
+      "nonWin": 59,
+      "pct": 36.2,
+      "lo": 29.2,
+      "hi": 43.8
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "1-2",
+      "n": 3,
+      "nonWin": 1,
+      "pct": 33.3,
+      "lo": 6.1,
+      "hi": 79.2
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "3-4",
+      "n": 0,
+      "nonWin": 0,
+      "pct": null,
+      "lo": null,
+      "hi": null
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "5-6",
+      "n": 3,
+      "nonWin": 2,
+      "pct": 66.7,
+      "lo": 20.8,
+      "hi": 93.9
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "high",
+      "exhRank": "all",
+      "n": 6,
+      "nonWin": 3,
+      "pct": 50,
+      "lo": 18.8,
+      "hi": 81.2
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 643,
+      "nonWin": 174,
+      "pct": 27.1,
+      "lo": 23.8,
+      "hi": 30.6
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 311,
+      "nonWin": 108,
+      "pct": 34.7,
+      "lo": 29.7,
+      "hi": 40.2
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 162,
+      "nonWin": 62,
+      "pct": 38.3,
+      "lo": 31.1,
+      "hi": 45.9
+    },
+    {
+      "version": "course",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "all",
+      "n": 1116,
+      "nonWin": 344,
+      "pct": 30.8,
+      "lo": 28.2,
+      "hi": 33.6
+    }
+  ],
+  "sensitivityTieMax": [
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 2015,
+      "nonWin": 483,
+      "pct": 24,
+      "lo": 22.2,
+      "hi": 25.9
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 1164,
+      "nonWin": 346,
+      "pct": 29.7,
+      "lo": 27.2,
+      "hi": 32.4
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 612,
+      "nonWin": 201,
+      "pct": 32.8,
+      "lo": 29.2,
+      "hi": 36.7
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "low",
+      "exhRank": "all",
+      "n": 3791,
+      "nonWin": 1030,
+      "pct": 27.2,
+      "lo": 25.8,
+      "hi": 28.6
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 178,
+      "nonWin": 55,
+      "pct": 30.9,
+      "lo": 24.6,
+      "hi": 38
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 123,
+      "nonWin": 48,
+      "pct": 39,
+      "lo": 30.9,
+      "hi": 47.9
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 68,
+      "nonWin": 34,
+      "pct": 50,
+      "lo": 38.4,
+      "hi": 61.6
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 369,
+      "nonWin": 137,
+      "pct": 37.1,
+      "lo": 32.4,
+      "hi": 42.2
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 2196,
+      "nonWin": 539,
+      "pct": 24.5,
+      "lo": 22.8,
+      "hi": 26.4
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 1287,
+      "nonWin": 394,
+      "pct": 30.6,
+      "lo": 28.2,
+      "hi": 33.2
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 683,
+      "nonWin": 237,
+      "pct": 34.7,
+      "lo": 31.2,
+      "hi": 38.3
+    },
+    {
+      "version": "boatTieMax",
+      "round": "all",
+      "level": "all",
+      "exhRank": "all",
+      "n": 4166,
+      "nonWin": 1170,
+      "pct": 28.1,
+      "lo": 26.7,
+      "hi": 29.5
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 1545,
+      "nonWin": 364,
+      "pct": 23.6,
+      "lo": 21.5,
+      "hi": 25.7
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 865,
+      "nonWin": 245,
+      "pct": 28.3,
+      "lo": 25.4,
+      "hi": 31.4
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 434,
+      "nonWin": 139,
+      "pct": 32,
+      "lo": 27.8,
+      "hi": 36.6
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "low",
+      "exhRank": "all",
+      "n": 2844,
+      "nonWin": 748,
+      "pct": 26.3,
+      "lo": 24.7,
+      "hi": 28
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 101,
+      "nonWin": 33,
+      "pct": 32.7,
+      "lo": 24.3,
+      "hi": 42.3
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 65,
+      "nonWin": 24,
+      "pct": 36.9,
+      "lo": 26.2,
+      "hi": 49.1
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 40,
+      "nonWin": 21,
+      "pct": 52.5,
+      "lo": 37.5,
+      "hi": 67.1
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 206,
+      "nonWin": 78,
+      "pct": 37.9,
+      "lo": 31.5,
+      "hi": 44.7
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 1646,
+      "nonWin": 397,
+      "pct": 24.1,
+      "lo": 22.1,
+      "hi": 26.2
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 930,
+      "nonWin": 269,
+      "pct": 28.9,
+      "lo": 26.1,
+      "hi": 31.9
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 474,
+      "nonWin": 160,
+      "pct": 33.8,
+      "lo": 29.6,
+      "hi": 38.1
+    },
+    {
+      "version": "boatTieMax",
+      "round": "junyu",
+      "level": "all",
+      "exhRank": "all",
+      "n": 3050,
+      "nonWin": 826,
+      "pct": 27.1,
+      "lo": 25.5,
+      "hi": 28.7
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "1-2",
+      "n": 470,
+      "nonWin": 119,
+      "pct": 25.3,
+      "lo": 21.6,
+      "hi": 29.4
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "3-4",
+      "n": 299,
+      "nonWin": 101,
+      "pct": 33.8,
+      "lo": 28.7,
+      "hi": 39.3
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "5-6",
+      "n": 178,
+      "nonWin": 62,
+      "pct": 34.8,
+      "lo": 28.2,
+      "hi": 42.1
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "low",
+      "exhRank": "all",
+      "n": 947,
+      "nonWin": 282,
+      "pct": 29.8,
+      "lo": 27,
+      "hi": 32.8
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "1-2",
+      "n": 77,
+      "nonWin": 22,
+      "pct": 28.6,
+      "lo": 19.7,
+      "hi": 39.5
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "3-4",
+      "n": 58,
+      "nonWin": 24,
+      "pct": 41.4,
+      "lo": 29.6,
+      "hi": 54.2
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "5-6",
+      "n": 28,
+      "nonWin": 13,
+      "pct": 46.4,
+      "lo": 29.5,
+      "hi": 64.2
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "mid",
+      "exhRank": "all",
+      "n": 163,
+      "nonWin": 59,
+      "pct": 36.2,
+      "lo": 29.2,
+      "hi": 43.8
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "1-2",
+      "n": 550,
+      "nonWin": 142,
+      "pct": 25.8,
+      "lo": 22.3,
+      "hi": 29.6
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "3-4",
+      "n": 357,
+      "nonWin": 125,
+      "pct": 35,
+      "lo": 30.2,
+      "hi": 40.1
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "5-6",
+      "n": 209,
+      "nonWin": 77,
+      "pct": 36.8,
+      "lo": 30.6,
+      "hi": 43.6
+    },
+    {
+      "version": "boatTieMax",
+      "round": "yusho",
+      "level": "all",
+      "exhRank": "all",
+      "n": 1116,
+      "nonWin": 344,
+      "pct": 30.8,
+      "lo": 28.2,
+      "hi": 33.6
+    }
+  ],
+  "mantelTrendTieMax": {
+    "z": 5.45,
+    "strata": "round×level"
+  },
+  "pctByLevel": {
+    "low": {
+      "n": 3791,
+      "min": 11,
+      "max": 34
+    },
+    "mid": {
+      "n": 369,
+      "min": 35,
+      "max": 54
+    },
+    "high": {
+      "n": 6,
+      "min": 55,
+      "max": 55
+    }
+  }
+}
