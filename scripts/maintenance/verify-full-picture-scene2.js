@@ -750,9 +750,64 @@ for (const f of fixtures) {
     { boat_number: 1, losing_technique: "まくり", count_90days: 20, total_losses_90days: 80, percentage: 25, last_updated: "2026-10-25" },
     { boat_number: 2, losing_technique: "逃げ", count_90days: 50, total_losses_90days: 300, percentage: 16.67, last_updated: "2026-10-25" },
   ];
+  // 優勝戦の成績・優出・優勝回数（2026-10-26 hq 依頼、FT01 の PR B の 5）。本体の優勝戦（固定の材料の日 2026-10-12 より前）:
+  //   Y1 1/10: 4001 1号艇 1着 / 4002 2号艇 欠 / 4003 3号艇 F / 4005 5号艇 6着だが race_entries.is_absent
+  //   Y2 3/05: 4001 3号艇 2着 / 4003 2号艇 着の表記なしで rank1=2（1着） / 4004 1号艇 L
+  //   Y3 4/01 不成立（no_race） / Y4 5/01 中止（cancellation_status） / Y5 6/01 結果の行なし（いずれも 4001 1号艇）
+  //   Y6 10/13（このレースの後）・Y0 2025-12-02（本体の窓の前、長期のアーカイブの日）は問い合わせの範囲の外
+  // 長期のアーカイブ（既定は匿名で読めない 401）: K1 2024-05-05 は 4001 1号艇 01・4002 2号艇 S1・4003 4号艇 K0、K2 2023-01-01 は結果なし
+  const Y = { y0: "2025-12-02-09-12", y1: "2026-01-10-01-12", y2: "2026-03-05-02-12", y3: "2026-04-01-03-12", y4: "2026-05-01-04-12", y5: "2026-06-01-05-12", y6: "2026-10-13-01-12" };
+  const finals = {
+    stage: Object.values(Y).map((race_id) => ({ race_id })),
+    entries: [
+      [Y.y0, 1, 4001], [Y.y1, 1, 4001], [Y.y1, 2, 4002], [Y.y1, 3, 4003], [Y.y1, 5, 4005, true], [Y.y2, 3, 4001], [Y.y2, 2, 4003], [Y.y2, 1, 4004], [Y.y3, 1, 4001], [Y.y4, 1, 4001], [Y.y5, 1, 4001], [Y.y6, 1, 4001],
+    ].map(([race_id, boat_number, racer_id, is_absent = false]) => ({ race_id, boat_number, racer_id, is_absent })),
+    results: [[Y.y0, 1], [Y.y1, 1], [Y.y2, 2], [Y.y3, null, "no_race"], [Y.y4, 1], [Y.y6, 1]].map(([race_id, rank1, race_status = "normal"]) => ({ race_id, rank1, race_status })),
+    races: Object.values(Y).map((race_id) => ({ race_id, cancellation_status: race_id === Y.y4 ? "confirmed" : null })),
+    st: [[Y.y1, 1, "1"], [Y.y1, 2, "欠"], [Y.y1, 3, "F"], [Y.y1, 5, "6"], [Y.y2, 3, "2"], [Y.y2, 2, null], [Y.y2, 1, "L"]].map(([race_id, boat_number, finish_mark]) => ({ race_id, boat_number, finish_mark })),
+    kbRaces: [{ race_id: "2024-05-05-06-12", has_result: true }, { race_id: "2023-01-01-07-12", has_result: false }],
+    kbBoats: [["2024-05-05-06-12", 1, 4001, "01"], ["2024-05-05-06-12", 2, 4002, "S1"], ["2024-05-05-06-12", 4, 4003, "K0"], ["2023-01-01-07-12", 1, 4001, null]].map(([race_id, boat_number, racer_id, finish_raw]) => ({ race_id, boat_number, racer_id, finish_raw })),
+    // 4001: 5期（2026-10-31 締めはレースの日の後で使わない、5期目の 2024-04-30 は4期の外）/ 4003: 2期だけ / 4004: finals の無い期 / 4005: 4期 / 4002: 期なし
+    periods: [
+      [4001, 2027, 1, "2026-05-01", "2026-10-31", 9, 9], [4001, 2026, 2, "2025-11-01", "2026-04-30", 3, 1], [4001, 2026, 1, "2025-05-01", "2025-10-31", 2, 0], [4001, 2025, 2, "2024-11-01", "2025-04-30", 1, 1], [4001, 2025, 1, "2024-05-01", "2024-10-31", 4, 2], [4001, 2024, 2, "2023-11-01", "2024-04-30", 7, 7],
+      [4003, 2026, 2, "2025-11-01", "2026-04-30", 1, 0], [4003, 2026, 1, "2025-05-01", "2025-10-31", 0, 0],
+      [4004, 2026, 2, "2025-11-01", "2026-04-30", null, null],
+      [4005, 2026, 2, "2025-11-01", "2026-04-30", 0, 0], [4005, 2026, 1, "2025-05-01", "2025-10-31", 1, 0], [4005, 2025, 2, "2024-11-01", "2025-04-30", 0, 0], [4005, 2025, 1, "2024-05-01", "2024-10-31", 2, 1],
+    ].map(([racer_id, period_year, period_no, calc_from, calc_to, fin, wins]) => ({ racer_id, period_year, period_no, calc_from, calc_to, starts: 100, finals: fin, wins })),
+  };
+  let kbReadable = false;
+  let failFinals = null;
   const seenQueries = [];
   const listParam = (v) => (v ?? "").replace(/^in\.\(|\)$/g, "").split(",");
   const inIds = (q) => listParam(q.get("race_id")).map((x) => decodeURIComponent(x).replace(/"/g, ""));
+  // 優勝戦の成績・期の表の問い合わせの偽物（PostgREST の絞り込みの代わり）。該当しなければ undefined
+  const finalsResponse = (table, q) => {
+    const sel = q.get("select") ?? "";
+    const fail = { ok: false, status: 503, json: async () => ({}) };
+    if (table === "race_conditions" && q.get("race_stage")) {
+      seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+      if (failFinals === "stage") return fail;
+      const [, gte, lt] = q.get("and")?.match(/^\(race_id\.gte\.([^,]+),race_id\.lt\.([^)]+)\)$/) ?? [];
+      return q.get("race_stage") === "eq.優勝戦" ? finals.stage.filter((r) => r.race_id >= gte && r.race_id < lt) : [];
+    }
+    const racers = listParam(q.get("racer_id")).map(Number);
+    if (table === "race_entries" && /is_absent/.test(sel)) return finals.entries.filter((r) => inIds(q).includes(r.race_id) && racers.includes(r.racer_id));
+    if (table === "race_results" && sel === "race_id,rank1,race_status") return finals.results.filter((r) => inIds(q).includes(r.race_id));
+    if (table === "races" && /cancellation_status/.test(sel)) return finals.races.filter((r) => inIds(q).includes(r.race_id));
+    if (table === "race_start_timings" && sel === "race_id,boat_number,finish_mark") return finals.st.filter((r) => inIds(q).includes(r.race_id));
+    if (table === "kb_archive_races") {
+      seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+      return kbReadable ? finals.kbRaces : { ok: false, status: 401, json: async () => ({ message: "permission denied for table kb_archive_races" }) };
+    }
+    if (table === "kb_archive_boats") return finals.kbBoats.filter((r) => inIds(q).includes(r.race_id) && racers.includes(r.racer_id));
+    if (table === "racer_period_stats" && /finals/.test(sel)) {
+      seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+      if (failFinals === "periods") return fail;
+      const [, lt, gte] = q.get("and")?.match(/^\(calc_to\.lt\.([\d-]+),calc_to\.gte\.([\d-]+)\)$/) ?? [];
+      return finals.periods.filter((r) => racers.includes(r.racer_id) && r.calc_to < lt && r.calc_to >= gte).sort((a, b) => a.racer_id - b.racer_id || b.calc_to.localeCompare(a.calc_to));
+    }
+    return undefined;
+  };
   const run = async ({ conditions, startTime = "16:06:00", ex = exRows, stage = "exhibition", racers = m.api.facts.racers, grade = "G1" }) => {
     const facts = { ...m.api.facts, racers };
     const json = (v) => ({ ok: true, status: 200, json: async () => v });
@@ -761,6 +816,8 @@ for (const f of fixtures) {
       if (u.hostname === "sb.invalid") {
         const table = u.pathname.split("/").pop();
         const q = u.searchParams;
+        const fr = finalsResponse(table, q);
+        if (fr !== undefined) return Array.isArray(fr) ? json(fr) : fr;
         if (table === "get_racer_accident_records") {
           rpcBodies.push(JSON.parse(init.body));
           return accidentRows === "fail" ? { ok: false, status: 503, json: async () => ({}) } : json(accidentRows);
@@ -1058,6 +1115,75 @@ for (const f of fixtures) {
   );
   assert.ok(seenQueries.some((x) => x.startsWith("losing_technique_stats?") && /venue_code=eq\.1/.test(x) && /order=boat_number,percentage\.desc/.test(x)), "画面と同じ並びで読む");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.losingTechnique" && /より後の集計/.test(x.reason)), "レースの日より後の集計を記録（値は残す）");
+  // ---- 5. 本人の優勝戦の成績・優出・優勝回数（2026-10-26 hq 依頼、FT01 の PR B）----
+  const fin = (n) => got.db.exhibition.boats[n - 1].final_race_record;
+  const windowsKbUnread = [{ source: "races", from: "2025-12-03", to: null, read: true }, { source: "kb_archive", from: null, to: "2025-12-02", read: false }];
+  assert.deepEqual(
+    fin(1),
+    {
+      stage: "優勝戦", before: m.raceId, windows: windowsKbUnread, complete: false,
+      runs: 2, wins: 1, win_rate: 50, boat1_runs: 1, boat1_wins: 1, boat1_win_rate: 100, fl_runs: 0, absent_runs: 0,
+      excluded_races: { no_result: 1, no_race: 1, cancelled: 1 },
+      rides: [{ race_id: Y.y1, boat_number: 1, kind: "win", source: "races" }, { race_id: Y.y2, boat_number: 3, kind: "run", source: "races" }],
+    },
+    "優勝戦: 不成立・中止・結果なしを除き、このレースの後・本体の窓の前の走は数えない",
+  );
+  assert.deepEqual([fin(2).runs, fin(2).absent_runs, fin(2).win_rate], [0, 1, null], "欠場は走数に入れない（走0なら率は null）");
+  assert.deepEqual([fin(3).runs, fin(3).wins, fin(3).fl_runs, fin(3).boat1_runs, fin(3).boat1_win_rate], [2, 1, 1, 0, null], "F は走数に入れ1着にしない、着の表記が無い走は rank1 で1着を決める");
+  assert.deepEqual([fin(4).runs, fin(4).boat1_runs, fin(4).boat1_wins, fin(4).boat1_win_rate, fin(4).fl_runs], [1, 1, 0, 0, 1], "1号艇の L は1号艇の走で1着でない");
+  assert.deepEqual([fin(5).runs, fin(5).absent_runs], [0, 1], "race_entries.is_absent の走は欠場");
+  assert.equal(fin(6), null, "選手が分からない艇は null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.final_race_record.kb_archive" && /本体の窓（2025-12-03〜）だけ/.test(x.reason)), "kb_archive が読めないことをレースの単位で記録");
+  assert.equal(got.missing.filter((x) => x.source.includes("kb_archive")).length, 1, "kb_archive の欠けは1件だけ（艇ごとに増やさない）");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.6.final_race_record"), "選手の分からない艇を記録");
+  // /code-review（2026-10-26）#1: 優勝戦の一覧は1000行を超えうるので、ページを並べ替えて読む（並べ替えないとページの境で行が抜け・重なる）
+  assert.ok(seenQueries.some((x) => x === `race_conditions?select=race_id&race_stage=eq.優勝戦&and=(race_id.gte.2025-12-03,race_id.lt.${m.raceId})&order=race_id`), "優勝戦は race_stage の完全一致、このレースより前、race_id の順で読む");
+  // #2: アーカイブもこのレースより前に限る（2025-12-02 より前のレースで取り直したとき、後の優勝戦を数えない）
+  assert.ok(seenQueries.some((x) => x.startsWith("kb_archive_races?") && /stage=eq\.優勝戦/.test(x) && /race_date=lte\.2025-12-02/.test(x) && x.includes(`race_id=lt.${m.raceId}`) && /order=race_id/.test(x)), "アーカイブは stage の完全一致、2025-12-02 まで、このレースより前");
+  // 優出・優勝回数（racer_period_stats の finals・wins）
+  const pf = (n) => got.db.exhibition.boats[n - 1].period_finals;
+  assert.deepEqual(
+    pf(1),
+    {
+      latest: { period_year: 2026, period_no: 2, calc_from: "2025-11-01", calc_to: "2026-04-30", starts: 100, finals: 3, wins: 1 },
+      last4: { periods_count: 4, from: "2024-05-01", to: "2026-04-30", finals: 10, wins: 4, periods: [{ period_year: 2026, period_no: 2 }, { period_year: 2026, period_no: 1 }, { period_year: 2025, period_no: 2 }, { period_year: 2025, period_no: 1 }] },
+    },
+    "前期はレースの日より前に締めた最新の期、直近4期の合計（5期目は入れない）",
+  );
+  // #9: 4期だけ要るので、締めが900日より前の期は読まない
+  assert.ok(seenQueries.some((x) => x.startsWith("racer_period_stats?") && /finals,wins/.test(x) && x.includes(`and=(calc_to.lt.${date},calc_to.gte.2024-04-25)`)), "calc_to < レースの日 で、900日より前の期は読まない");
+  assert.deepEqual([pf(3).last4.periods_count, pf(3).last4.finals], [2, 1], "期が4期そろわなければある分だけ");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.period_finals.last4" && /2期だけ/.test(x.reason)), "4期そろわないことを記録");
+  assert.deepEqual([pf(4).latest.finals, pf(4).last4.finals], [null, null], "finals の無い期があれば合計は null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.2.period_finals" && /期が無い/.test(x.reason)), "期の無い選手を記録");
+  assert.deepEqual([pf(2).latest, pf(2).last4.finals, pf(5).last4.finals, pf(5).last4.wins], [null, null, 3, 1], "期の無い選手は latest が null");
+  // アーカイブが読めるとき（権限が付いたら）は窓を合わせる
+  kbReadable = true;
+  const withKb = await run({ conditions: pre });
+  kbReadable = false;
+  assert.deepEqual(validate(withKb), [], "アーカイブを合わせた材料も契約に合う");
+  const kb1 = withKb.db.exhibition.boats[0].final_race_record;
+  assert.deepEqual([kb1.complete, kb1.runs, kb1.wins, kb1.boat1_runs, kb1.boat1_wins, kb1.excluded_races.no_result, kb1.rides[0]], [true, 3, 2, 2, 2, 2, { race_id: "2024-05-05-06-12", boat_number: 1, kind: "win", source: "kb_archive" }], "アーカイブの 01 は1着、結果なしは除く");
+  assert.deepEqual([withKb.db.exhibition.boats[1].final_race_record.runs, withKb.db.exhibition.boats[1].final_race_record.wins, withKb.db.exhibition.boats[2].final_race_record.absent_runs], [1, 0, 1], "失格（S1）は走で1着でない、K0 は欠場");
+  assert.ok(!withKb.missing.some((x) => x.source.includes("kb_archive")), "読めれば記録しない");
+  // 読めないとき: 本体の優勝戦・期の表が読めなければその欄だけ null
+  failFinals = "stage";
+  const noStage = await run({ conditions: pre });
+  failFinals = "periods";
+  const noPeriods = await run({ conditions: pre });
+  failFinals = null;
+  assert.deepEqual(validate(noStage), [], "優勝戦が読めない材料も契約に合う");
+  assert.ok(noStage.db.exhibition.boats.every((b) => b.final_race_record === null) && noStage.db.exhibition.boats[0].period_finals?.latest?.finals === 3, "優勝戦が読めなければ成績だけ null");
+  assert.ok(noStage.missing.some((x) => x.source === "db.exhibition.boats.1.final_race_record" && /読めない/.test(x.reason)), "読めない成績を艇ごとに記録");
+  assert.ok(noPeriods.db.exhibition.boats.every((b) => b.period_finals === null) && noPeriods.db.exhibition.boats[0].final_race_record?.runs === 2, "期の表が読めなければ優出・優勝だけ null");
+  assert.ok(noPeriods.missing.some((x) => x.source === "db.exhibition.boats.1.period_finals" && /読めない/.test(x.reason)), "読めない期を艇ごとに記録");
+  // 1走の分類（アーカイブの表記）と、出す値と契約の enum
+  const { classifyFinalRide, FINAL_RIDE_KINDS, FINAL_RECORD_SOURCES } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
+  assert.deepEqual(["01", "02", "06", "F", "L0", "L1", "K0", "K1", "S0", "S2", null].map((finish) => classifyFinalRide({ source: "kb_archive", finish })), ["win", "run", "run", "fl", "fl", "fl", "absent", "absent", "run", "run", "absent"], "アーカイブの成績コードの分類");
+  assert.deepEqual(["1", "2", "F", "L", "欠", "転", "妨", null].map((finish) => classifyFinalRide({ source: "races", finish, rank1: 3, boatNumber: 3 })), ["win", "run", "fl", "fl", "absent", "run", "run", "win"], "本体の着の表記の分類");
+  const frProps = MATERIALS_SCHEMA.properties.db.properties.exhibition.properties.boats.items.properties.final_race_record.properties;
+  assert.deepEqual(frProps.rides.items.properties.kind.enum, FINAL_RIDE_KINDS, "1走の分類はすべて契約にある");
+  assert.deepEqual([frProps.rides.items.properties.source.enum, frProps.windows.items.properties.source.enum], [FINAL_RECORD_SOURCES, FINAL_RECORD_SOURCES], "窓の元はすべて契約にある");
   // 欠けの形: race_conditions が読めない・事故の RPC が読めない・オリジナル展示が未公開・締切の後の書き換え
   failConditions = true;
   accidentRows = "fail";

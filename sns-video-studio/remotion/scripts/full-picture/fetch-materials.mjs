@@ -71,11 +71,12 @@ async function sbRpc(name, args) {
   if (!res.ok) throw new Error(`rpc ${name}: HTTP ${res.status}`);
   return res.json();
 }
-async function sbIn(table, select, col, ids) {
+/** extra: 足す絞り込み（例 `racer_id=in.(1,2)`） */
+async function sbIn(table, select, col, ids, extra = null) {
   const out = [];
   for (let i = 0; i < ids.length; i += 100) {
     const list = ids.slice(i, i + 100).map((x) => `"${x}"`).join(",");
-    out.push(...(await sbGet(table, `select=${select}&${col}=in.(${encodeURIComponent(list)})`)));
+    out.push(...(await sbGet(table, `select=${select}&${col}=in.(${encodeURIComponent(list)})${extra ? `&${extra}` : ""}`)));
   }
   return out;
 }
@@ -153,7 +154,8 @@ export async function fetchExhibitionMaterials(raceId, date, venueCode, startTim
           racerCourseStats(bs, date, missing, racers).catch((e) => (fail("db.exhibition.boats.racer")(e), bs.map(withoutRacerStats))),
           racerScreenStats(bs, raceId, date, venueCode, missing).catch((e) => (fail("db.exhibition.boats.screen")(e), bs.map(() => SCREEN_STATS_NULL))),
           original,
-        ]).then(([withRacer, screen, orig]) => withRacer.map((b, i) => ({ ...b, ...screen[i], original_exhibition: orig?.byBoat?.[b.boat_number] ?? null }))),
+          racerFinals(bs, raceId, date, missing).catch((e) => (fail("db.exhibition.boats.finals")(e), bs.map(() => FINALS_NULL))),
+        ]).then(([withRacer, screen, orig, finals]) => withRacer.map((b, i) => ({ ...b, ...screen[i], original_exhibition: orig?.byBoat?.[b.boat_number] ?? null, ...finals[i] }))),
       )
       .catch(fail("db.exhibition.boats")),
     preRaceConditions(raceId, date, startTime, missing).catch(fail("db.exhibition.conditions")),
@@ -183,6 +185,8 @@ export const EXHIBITION_NOTES = [
   "original_exhibition はオリジナル展示（BOATCAST、getRaceOriginalExhibition と同じ表と整形）。status: value・no_value（この会場の項目だが値が無い）・not_offered（この会場に無い項目）。会場で項目と計測区間が違うので、会場の中で比べる",
   "losingTechnique は会場の負けの決まり手（losing_technique_stats、90日・会場×枠。LosingTechniqueChart と同じまとめ）。最新の集計だけを持つ",
   "条件別・今節・進入・事故率は選手の730日の走をレースの日から数え、このレースより前の走だけを使う（画面は見た日から730日）",
+  "final_race_record は画面に無い値。本人の優勝戦（race_conditions.race_stage・kb_archive_races.stage が '優勝戦' の完全一致）の走で、このレースより前（race_id < 対象）。窓は本体（2025-12-03〜）と kb_archive（〜2025-12-02）を合わせる。kb_archive は匿名キーで読めない（074 で anon から REVOKE）ので、読めなければ本体の窓だけで数え、complete=false と windows の read=false で分ける。不成立（race_status='no_race'。is_no_race は使わない）・中止（races.cancellation_status）・結果なし（rank1 が無い、kb は has_result=false）のレースは除く（excluded_races）。欠場（finish_mark '欠'・race_entries.is_absent、kb は K0・K1）は走数に入れない（absent_runs）。F・L（返還）は走数に入れ1着にしない（fl_runs）。失格・転覆等も走数に入れ1着にしない。1着は rank1＝艇番か finish_mark '1'（kb は '01'）。率は%の1桁",
+  "period_finals は racer_period_stats の finals（優出回数）・wins（優勝回数）。latest は calc_to < レースの日 の最新の期（前期）、last4 は同じ条件の新しい順の4期の合計（4期そろわなければ periods_count が4未満）。period_year・period_no は期の表記、数えた期間は calc_from〜calc_to",
 ];
 
 /** racer_period_stats の cN_* のうち写す欄（N は進入コース） */
@@ -456,6 +460,141 @@ export function attackDefenseOf(s, b, predictedAt) {
     exhibition_course_differs: b.exhibition_course != null && b.exhibition_course !== b.boat_number,
     predicted_at: predictedAt ?? null,
   };
+}
+
+/** 優勝戦の成績の窓の元（本体・長期のアーカイブ）と、本体の窓の始まり（アーカイブは前日まで。scripts/lib/officialFinishCode.js） */
+export const FINAL_RECORD_SOURCES = ["races", "kb_archive"];
+export const FINAL_STAGE = "優勝戦";
+/** classifyFinalRide の分類 */
+export const FINAL_RIDE_KINDS = ["win", "run", "fl", "absent"];
+export const FINAL_MAIN_FROM = "2025-12-03";
+const FINAL_KB_TO = "2025-12-02";
+const FINALS_NULL = { final_race_record: null, period_finals: null };
+/** 優出・優勝回数の4期を読む範囲（期は半年。締めから公表までの間を見て900日。全期を読まない） */
+const PERIOD_FINALS_DAYS = 900;
+
+/**
+ * 1走の分類（純関数）。absent=欠場（走数に入れない）、fl=F・L（返還。走数に入れ1着にしない）、win=1着、run=それ以外の走。
+ * 本体: finish_mark（'1'〜'6'・F・L・欠・妨・転 等）と、rank1（finish_mark が無い走の1着の判定）と race_entries.is_absent。
+ * kb: finish_raw（01〜06・F・L0・L1・K0・K1・S0〜S2）。null はその艇の結果が無いので欠場と同じに扱う
+ */
+export function classifyFinalRide({ source, finish, rank1 = null, boatNumber, isAbsent = false }) {
+  if (source === "kb_archive") {
+    if (finish == null || /^K/.test(finish)) return "absent";
+    if (finish === "F" || /^L/.test(finish)) return "fl";
+    return finish === "01" ? "win" : "run";
+  }
+  if (finish === "欠" || isAbsent === true) return "absent";
+  if (finish === "F" || finish === "L") return "fl";
+  return finish === "1" || (finish == null && rank1 === boatNumber) ? "win" : "run";
+}
+
+/**
+ * 優勝戦の成績（純関数）。rides は除外の済んだ走（{race_id, boat_number, kind}）。走数・1着数は欠場を除いた走。
+ * before はこの race_id より前の走だけを数えたこと、windows は数えた元（races は FINAL_MAIN_FROM から、kb_archive は FINAL_KB_TO まで）
+ * @param {{race_id: string, boat_number: number, kind: string, source: string}[]} rides
+ */
+export function finalRaceRecordOf(rides, { windows, excludedRaces, before }) {
+  const ran = rides.filter((r) => r.kind !== "absent");
+  const b1 = ran.filter((r) => r.boat_number === 1);
+  const wins = (rs) => rs.filter((r) => r.kind === "win").length;
+  const rate = (w, n) => (n ? pct1((w / n) * 100) : null);
+  return {
+    stage: FINAL_STAGE,
+    before,
+    windows,
+    complete: windows.every((w) => w.read),
+    runs: ran.length,
+    wins: wins(ran),
+    win_rate: rate(wins(ran), ran.length),
+    boat1_runs: b1.length,
+    boat1_wins: wins(b1),
+    boat1_win_rate: rate(wins(b1), b1.length),
+    fl_runs: ran.filter((r) => r.kind === "fl").length,
+    absent_runs: rides.length - ran.length,
+    excluded_races: excludedRaces,
+    rides: [...rides].sort((a, b) => a.race_id.localeCompare(b.race_id)).map(({ race_id, boat_number, kind, source }) => ({ race_id, boat_number, kind, source })),
+  };
+}
+
+/**
+ * 優出・優勝回数（racer_period_stats の finals・wins、純関数）。periods は1選手の calc_to < レースの日 の期（calc_to の降順）
+ */
+export function periodFinalsOf(periods) {
+  const pick = (p) => ({ period_year: p.period_year, period_no: p.period_no, calc_from: p.calc_from, calc_to: p.calc_to, starts: p.starts ?? null, finals: p.finals ?? null, wins: p.wins ?? null });
+  const last4 = periods.slice(0, 4).map(pick);
+  const sum = (k) => (!last4.length || last4.some((p) => p[k] === null) ? null : last4.reduce((a, p) => a + p[k], 0));
+  return {
+    latest: last4[0] ?? null,
+    last4: { periods_count: last4.length, from: last4.at(-1)?.calc_from ?? null, to: last4[0]?.calc_to ?? null, finals: sum("finals"), wins: sum("wins"), periods: last4.map((p) => ({ period_year: p.period_year, period_no: p.period_no })) },
+  };
+}
+
+/**
+ * 艇ごとに、本人の優勝戦の成績（final_race_record）と優出・優勝回数（period_finals）を返す（画面に無い値。2026-10-26 hq 依頼、FT01）。
+ * 本体は優勝戦のレース（race_conditions）→ その6選手の出走（race_entries）→ 結果・中止・着順の順に読む。
+ * kb_archive は匿名で読めない（074）。読めなければ本体の窓だけで数え、レースの単位で1件記録する
+ * @returns {Promise<object[]>} boats と同じ順
+ */
+async function racerFinals(boats, raceId, date, missing) {
+  const ids = [...new Set(boats.map((b) => b.racer_id).filter((x) => x != null))];
+  if (!ids.length) return boats.map(() => FINALS_NULL);
+  const racerIn = `racer_id=in.(${ids.join(",")})`;
+  const main = async () => {
+    // 優勝戦の一覧は1000行を超えうるので race_id の順で読む（並べ替えないとページの境で抜け・重なる。/code-review 2026-10-26 #1）
+    const stageRows = await sbGet("race_conditions", `select=race_id&race_stage=eq.${FINAL_STAGE}&and=(race_id.gte.${FINAL_MAIN_FROM},race_id.lt.${raceId})&order=race_id`);
+    const entries = stageRows.length ? await sbIn("race_entries", "race_id,boat_number,racer_id,is_absent", "race_id", stageRows.map((r) => r.race_id), racerIn) : [];
+    const rids = [...new Set(entries.map((e) => e.race_id))];
+    const [results, races, st] = rids.length
+      ? await Promise.all([sbIn("race_results", "race_id,rank1,race_status", "race_id", rids), sbIn("races", "race_id,cancellation_status", "race_id", rids), sbIn("race_start_timings", "race_id,boat_number,finish_mark", "race_id", rids)])
+      : [[], [], []];
+    return entries.map((e) => {
+      const rr = results.find((x) => x.race_id === e.race_id);
+      const cancelled = races.find((x) => x.race_id === e.race_id)?.cancellation_status;
+      const excluded = rr?.race_status === "no_race" ? "no_race" : cancelled ? "cancelled" : !rr || rr.rank1 == null ? "no_result" : null;
+      const finish = st.find((x) => x.race_id === e.race_id && x.boat_number === e.boat_number)?.finish_mark ?? null;
+      return { racer_id: e.racer_id, race_id: e.race_id, boat_number: e.boat_number, source: "races", excluded, kind: excluded ? null : classifyFinalRide({ source: "races", finish, rank1: rr.rank1, boatNumber: e.boat_number, isAbsent: e.is_absent }) };
+    });
+  };
+  const kb = async () => {
+    // アーカイブもこのレースより前に限る（2025-12-02 より前のレースで取り直したとき。/code-review 2026-10-26 #2）
+    const stageRows = await sbGet("kb_archive_races", `select=race_id,has_result&stage=eq.${FINAL_STAGE}&race_date=lte.${FINAL_KB_TO}&race_id=lt.${raceId}&order=race_id`);
+    const rows = stageRows.length ? await sbIn("kb_archive_boats", "race_id,boat_number,racer_id,finish_raw", "race_id", stageRows.map((r) => r.race_id), racerIn) : [];
+    return rows.map((b) => {
+      const excluded = stageRows.find((r) => r.race_id === b.race_id)?.has_result ? null : "no_result";
+      return { racer_id: b.racer_id, race_id: b.race_id, boat_number: b.boat_number, source: "kb_archive", excluded, kind: excluded ? null : classifyFinalRide({ source: "kb_archive", finish: b.finish_raw }) };
+    });
+  };
+  const [mainRides, kbRides, periods] = await Promise.all([
+    main().catch(orNull(missing, "db.exhibition.boats.final_race_record")),
+    kb().catch((e) => (missing.push({ source: "db.exhibition.boats.final_race_record.kb_archive", reason: `kb_archive が読めない（${e instanceof Error ? e.message : String(e)}。匿名キーは 074 で REVOKE 済み）。本体の窓（${FINAL_MAIN_FROM}〜）だけで数えた` }), null)),
+    sbGet("racer_period_stats", `select=racer_id,period_year,period_no,calc_from,calc_to,starts,finals,wins&${racerIn}&and=(calc_to.lt.${date},calc_to.gte.${daysBefore(date, PERIOD_FINALS_DAYS)})&order=racer_id,calc_to.desc`).catch(orNull(missing, "db.exhibition.boats.period_finals")),
+  ]);
+  const windows = [
+    { source: "races", from: FINAL_MAIN_FROM, to: null, read: mainRides !== null },
+    { source: "kb_archive", from: null, to: FINAL_KB_TO, read: kbRides !== null },
+  ];
+  return boats.map((b) => {
+    const at = (key) => `db.exhibition.boats.${b.boat_number}.${key}`;
+    if (b.racer_id == null) {
+      for (const k of ["final_race_record", "period_finals"]) missing.push({ source: at(k), reason: "この艇の選手が分からない（race_entries.racer_id が無い）" });
+      return FINALS_NULL;
+    }
+    const out = { ...FINALS_NULL };
+    if (mainRides !== null) {
+      const mine = [...mainRides, ...(kbRides ?? [])].filter((r) => r.racer_id === b.racer_id);
+      const excludedRaces = Object.fromEntries(["no_result", "no_race", "cancelled"].map((k) => [k, mine.filter((r) => r.excluded === k).length]));
+      out.final_race_record = finalRaceRecordOf(mine.filter((r) => !r.excluded), { windows, excludedRaces, before: raceId });
+    } else missing.push({ source: at("final_race_record"), reason: "本体の優勝戦の走が読めない" });
+    if (periods) {
+      const mine = periods.filter((p) => p.racer_id === b.racer_id);
+      out.period_finals = periodFinalsOf(mine);
+      if (!mine.length) missing.push({ source: at("period_finals"), reason: "racer_period_stats にレースの日より前に締めた期が無い" });
+      else if (out.period_finals.last4.periods_count < 4) missing.push({ source: at("period_finals.last4"), reason: `レースの日より前に締めた期が${out.period_finals.last4.periods_count}期だけ` });
+      else if (out.period_finals.last4.finals === null) missing.push({ source: at("period_finals.last4"), reason: "finals・wins の無い期がある" });
+    } else missing.push({ source: at("period_finals"), reason: "racer_period_stats が読めない" });
+    return out;
+  });
 }
 
 /** 読みの失敗を欠けとして記録し、null を返す（1つの元の失敗で他の欄を消さない） */
