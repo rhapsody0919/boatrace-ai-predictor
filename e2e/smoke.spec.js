@@ -792,7 +792,23 @@ test.describe("データ分析ツール（BOA-150/151/152）", () => {
     const rows = page.locator(".motor-ranking-row");
     await expect(rows.first()).toBeVisible({ timeout: 10000 });
     await expect(rows).toHaveCount(6);
-    await rows.first().click();
+    // 過去のズレの件数（最後の列）が1件以上の選手を開く。先頭の艇がデビュー直後の選手だと、
+    // 過去90日の走が無く推移は空（「推移データが見つかりません」）で正しい。先頭を決め打ちすると、
+    // 撮影日の1Rの1号艇しだいで落ちる（2026-10-25 の撮り直し: 桐生1R 1号艇 5306 が件数0）
+    const sampleCounts = await rows.evaluateAll((trs) =>
+      trs.map((tr) =>
+        tr.classList.contains("non-clickable-row")
+          ? 0
+          : Number(tr.lastElementChild?.textContent ?? "0"),
+      ),
+    );
+    const target = sampleCounts.findIndex((n) => n > 0);
+    // 6艇とも0件は、ST・展示の取得か集計が止まった疑いが強い。skip で隠さず落とす
+    expect(
+      target,
+      `6艇とも過去のズレの件数が0件: ${sampleCounts}`,
+    ).toBeGreaterThanOrEqual(0);
+    await rows.nth(target).click();
     await expect(page.locator(".back-to-ranking-btn")).toBeVisible();
     await expect(page.locator(".recharts-wrapper")).toBeVisible({
       timeout: 10000,
