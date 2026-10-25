@@ -327,6 +327,69 @@
                       "calculated_at": { "type": ["string", "null"] }
                     }
                   },
+                  "final_race_record": {
+                    "$comment": "本人の優勝戦（race_stage・stage が '優勝戦' の完全一致）の、このレースより前（before）の成績。窓は本体と kb_archive を合わせ、読めなかった窓は windows の read=false・complete=false。不成立・中止・結果なしは除き（excluded_races）、欠場は走数に入れず（absent_runs）、F・L は走数に入れ1着にしない（fl_runs）。率は%の1桁。画面に無い値。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["stage", "before", "windows", "complete", "runs", "wins", "win_rate", "boat1_runs", "boat1_wins", "boat1_win_rate", "fl_runs", "absent_runs", "excluded_races", "rides"],
+                    "properties": {
+                      "stage": { "const": "優勝戦" },
+                      "before": { "type": "string" },
+                      "windows": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["source", "from", "to", "read"],
+                          "properties": { "source": { "enum": ["races", "kb_archive"] }, "from": { "type": ["string", "null"] }, "to": { "type": ["string", "null"] }, "read": { "type": "boolean" } }
+                        }
+                      },
+                      "complete": { "type": "boolean" },
+                      "runs": { "type": "integer", "minimum": 0 },
+                      "wins": { "type": "integer", "minimum": 0 },
+                      "win_rate": { "type": ["number", "null"] },
+                      "boat1_runs": { "type": "integer", "minimum": 0 },
+                      "boat1_wins": { "type": "integer", "minimum": 0 },
+                      "boat1_win_rate": { "type": ["number", "null"] },
+                      "fl_runs": { "type": "integer", "minimum": 0 },
+                      "absent_runs": { "type": "integer", "minimum": 0 },
+                      "excluded_races": {
+                        "type": "object",
+                        "required": ["no_result", "no_race", "cancelled"],
+                        "additionalProperties": { "type": "integer", "minimum": 0 }
+                      },
+                      "rides": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["race_id", "boat_number", "kind", "source"],
+                          "properties": { "race_id": { "type": "string" }, "boat_number": { "type": "integer", "minimum": 1, "maximum": 6 }, "kind": { "enum": ["win", "run", "fl", "absent"] }, "source": { "enum": ["races", "kb_archive"] } }
+                        }
+                      }
+                    }
+                  },
+                  "period_finals": {
+                    "$comment": "racer_period_stats の finals（優出回数）・wins（優勝回数）。latest は calc_to < レースの日 の最新の期、last4 は新しい順の4期の合計（そろわなければ periods_count<4、finals・wins の無い期があれば合計は null）。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["latest", "last4"],
+                    "properties": {
+                      "latest": {
+                        "type": ["object", "null"],
+                        "required": ["period_year", "period_no", "calc_from", "calc_to", "finals", "wins"],
+                        "properties": { "period_year": { "type": "integer" }, "period_no": { "type": "integer" }, "calc_from": { "type": "string" }, "calc_to": { "type": "string" }, "starts": { "type": ["integer", "null"] }, "finals": { "type": ["integer", "null"] }, "wins": { "type": ["integer", "null"] } }
+                      },
+                      "last4": {
+                        "type": "object",
+                        "required": ["periods_count", "from", "to", "finals", "wins", "periods"],
+                        "properties": {
+                          "periods_count": { "type": "integer", "minimum": 0, "maximum": 4 },
+                          "from": { "type": ["string", "null"] },
+                          "to": { "type": ["string", "null"] },
+                          "finals": { "type": ["integer", "null"] },
+                          "wins": { "type": ["integer", "null"] },
+                          "periods": { "type": "array", "items": { "type": "object", "required": ["period_year", "period_no"] } }
+                        }
+                      }
+                    }
+                  },
                   "meet_finishes": {
                     "type": ["array", "null"],
                     "items": {
