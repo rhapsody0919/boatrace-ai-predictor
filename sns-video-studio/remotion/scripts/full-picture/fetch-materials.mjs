@@ -97,52 +97,71 @@ const deadlineUtc = (date, startTime) => (startTime ? Date.parse(`${date}T${star
  * @param {{source: string, reason: string}[]} missing 追記する
  */
 export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing) {
-  const out = { boats: null, conditions: null, technique: null };
-  try {
-    const rows = await sbGet("exhibition_data", `select=boat_number,${EXHIBITION_BOAT_FIELDS.join(",")},is_absent,updated_at&race_id=eq.${raceId}`);
-    out.boats = [1, 2, 3, 4, 5, 6].map((n) => {
-      const r = rows.find((x) => x.boat_number === n);
-      if (!r) missing.push({ source: `db.exhibition.boats.${n}`, reason: "exhibition_data にこの艇の行が無い" });
-      const boat = { boat_number: n, is_absent: r?.is_absent ?? null, updated_at: r?.updated_at ?? null };
-      for (const f of EXHIBITION_BOAT_FIELDS) boat[f] = r?.[f] ?? null;
-      for (const f of EXHIBITION_MEASURED_FIELDS) {
-        if (r && boat[f] === null) missing.push({ source: `db.exhibition.boats.${n}.${f}`, reason: r.is_absent ? "欠場" : "値が無い" });
-      }
-      return boat;
-    });
-  } catch (e) {
-    missing.push({ source: "db.exhibition.boats", reason: e instanceof Error ? e.message : String(e) });
-  }
-  try {
-    const [c] = await sbGet("race_conditions", `select=${CONDITION_FIELDS.join(",")},weather_observed_at&race_id=eq.${raceId}`);
-    const observed = c?.weather_observed_at ? Date.parse(c.weather_observed_at) : null;
-    const deadline = deadlineUtc(date, startTime);
-    // 締切の後の観測（結果の値）は発走前の値でない。観測時刻か締切が無いと確かめられないので値は残し、そのことを記録する
-    const afterDeadline = observed !== null && deadline !== null && observed >= deadline;
-    out.conditions = Object.fromEntries(CONDITION_FIELDS.map((f) => [f, c && !afterDeadline ? (c[f] ?? null) : null]));
-    out.conditions.observedAt = c?.weather_observed_at ?? null;
-    if (!c) missing.push({ source: "db.exhibition.conditions", reason: "race_conditions にこのレースの行が無い" });
-    else if (CONDITION_FIELDS.every((f) => c[f] == null)) missing.push({ source: "db.exhibition.conditions", reason: "race_conditions に気象の値が無い（未取得）" });
-    else if (afterDeadline) missing.push({ source: "db.exhibition.conditions", reason: `観測 ${c.weather_observed_at} が締切の後（発走前の値でない）` });
-    else {
-      for (const f of CONDITION_FIELDS) if (out.conditions[f] === null) missing.push({ source: `db.exhibition.conditions.${f}`, reason: "値が無い" });
-      if (observed === null || deadline === null) missing.push({ source: "db.exhibition.conditions.observedAt", reason: observed === null ? "観測時刻が無い（発走前の値か確かめられない）" : "締切の時刻が無い（発走前の値か確かめられない）" });
+  const fail = (source) => (e) => {
+    missing.push({ source, reason: e instanceof Error ? e.message : String(e) });
+    return null;
+  };
+  // 3つは互いに依らないので並べて読む
+  const [boats, conditions, technique] = await Promise.all([
+    exhibitionBoats(raceId, missing).catch(fail("db.exhibition.boats")),
+    preRaceConditions(raceId, date, startTime, missing).catch(fail("db.exhibition.conditions")),
+    venueTechnique(date, venueCode, missing).catch(fail("db.exhibition.technique")),
+  ]);
+  return { boats, conditions, technique };
+}
+
+async function exhibitionBoats(raceId, missing) {
+  const rows = await sbGet("exhibition_data", `select=boat_number,${EXHIBITION_BOAT_FIELDS.join(",")},is_absent,updated_at&race_id=eq.${raceId}`);
+  return [1, 2, 3, 4, 5, 6].map((n) => {
+    const r = rows.find((x) => x.boat_number === n);
+    if (!r) missing.push({ source: `db.exhibition.boats.${n}`, reason: "exhibition_data にこの艇の行が無い" });
+    const boat = { boat_number: n, is_absent: r?.is_absent ?? null, updated_at: r?.updated_at ?? null };
+    for (const f of EXHIBITION_BOAT_FIELDS) boat[f] = r?.[f] ?? null;
+    for (const f of EXHIBITION_MEASURED_FIELDS) {
+      if (r && boat[f] === null) missing.push({ source: `db.exhibition.boats.${n}.${f}`, reason: r.is_absent ? "欠場" : "値が無い" });
     }
-  } catch (e) {
-    missing.push({ source: "db.exhibition.conditions", reason: e instanceof Error ? e.message : String(e) });
-  }
-  try {
-    const [byPeriod, byBoat] = await Promise.all([
-      sbGet("venue_technique_period_stats", `select=period_days,winning_technique,race_count,total_races,period_from,period_to,last_updated&venue_code=eq.${venueCode}&order=period_days,winning_technique`),
-      sbGet("winning_technique_stats", `select=boat_number,winning_technique,count_90days,total_races,percentage,last_updated&venue_code=eq.${venueCode}&order=boat_number,winning_technique`),
-    ]);
-    out.technique = { byPeriod, byBoat };
-    if (!byPeriod.length) missing.push({ source: "db.exhibition.technique.byPeriod", reason: "venue_technique_period_stats にこの会場の行が無い" });
-    if (!byBoat.length) missing.push({ source: "db.exhibition.technique.byBoat", reason: "winning_technique_stats にこの会場の行が無い" });
-  } catch (e) {
-    missing.push({ source: "db.exhibition.technique", reason: e instanceof Error ? e.message : String(e) });
-  }
+    return boat;
+  });
+}
+
+/**
+ * 風・波は、観測時刻が締切より前と確かめられたときだけ出す。観測時刻が無い（scrape-to-json の経路は NULL にする。
+ * scripts/daily/generate-predictions.js）・締切が無い・締切の後（結果の値）のときは null にして理由を記録する
+ */
+async function preRaceConditions(raceId, date, startTime, missing) {
+  const [c] = await sbGet("race_conditions", `select=${CONDITION_FIELDS.join(",")},weather_observed_at&race_id=eq.${raceId}`);
+  const observed = c?.weather_observed_at ? Date.parse(c.weather_observed_at) : null;
+  const deadline = deadlineUtc(date, startTime);
+  const preRace = observed !== null && deadline !== null && observed < deadline;
+  const out = Object.fromEntries(CONDITION_FIELDS.map((f) => [f, preRace ? (c[f] ?? null) : null]));
+  out.observedAt = c?.weather_observed_at ?? null;
+  const why = !c
+    ? "race_conditions にこのレースの行が無い"
+    : CONDITION_FIELDS.every((f) => c[f] == null)
+      ? "race_conditions に気象の値が無い（未取得）"
+      : observed === null
+        ? "観測時刻が無く、発走前の値か確かめられない"
+        : deadline === null
+          ? "締切の時刻が無く、発走前の値か確かめられない"
+          : !preRace
+            ? `観測 ${c.weather_observed_at} が締切の後（発走前の値でない）`
+            : null;
+  if (why) missing.push({ source: "db.exhibition.conditions", reason: why });
+  else for (const f of CONDITION_FIELDS) if (out[f] === null) missing.push({ source: `db.exhibition.conditions.${f}`, reason: "値が無い" });
   return out;
+}
+
+/** 表は最新の集計だけを持つ（過去の日の版は無い）。レースの日より後に集計した表なら、そのことを記録する（過去のレースで取り直したとき） */
+async function venueTechnique(date, venueCode, missing) {
+  const [byPeriod, byBoat] = await Promise.all([
+    sbGet("venue_technique_period_stats", `select=period_days,winning_technique,race_count,total_races,period_from,period_to,last_updated&venue_code=eq.${venueCode}&order=period_days,winning_technique`),
+    sbGet("winning_technique_stats", `select=boat_number,winning_technique,count_90days,total_races,percentage,last_updated&venue_code=eq.${venueCode}&order=boat_number,winning_technique`),
+  ]);
+  for (const [key, table, rows] of [["byPeriod", "venue_technique_period_stats", byPeriod], ["byBoat", "winning_technique_stats", byBoat]]) {
+    if (!rows.length) missing.push({ source: `db.exhibition.technique.${key}`, reason: `${table} にこの会場の行が無い` });
+    else if (rows.some((r) => r.last_updated > date)) missing.push({ source: `db.exhibition.technique.${key}`, reason: `${table} はレースの日（${date}）より後の集計（このレースの結果を含みうる）` });
+  }
+  return { byPeriod, byBoat };
 }
 
 async function getJson(path) {

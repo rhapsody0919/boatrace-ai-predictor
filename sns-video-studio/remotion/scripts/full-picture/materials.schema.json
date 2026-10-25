@@ -113,7 +113,7 @@
               "properties": {
                 "weather": { "type": ["string", "null"] },
                 "wind_direction": { "type": ["string", "null"] },
-                "wind_speed": { "type": ["number", "string", "null"] },
+                "wind_speed": { "type": ["number", "null"] },
                 "wave_height": { "type": ["number", "null"] },
                 "observedAt": { "type": ["string", "null"] }
               }

@@ -652,6 +652,7 @@ for (const f of fixtures) {
 {
   const m = JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
   const realFetch = globalThis.fetch;
+  const realEnv = { url: process.env.VITE_SUPABASE_URL, key: process.env.VITE_SUPABASE_ANON_KEY };
   process.env.VITE_SUPABASE_URL = "https://sb.invalid";
   process.env.VITE_SUPABASE_ANON_KEY = "x";
   const row = (n, over = {}) => ({ boat_number: n, exhibition_course: n, start_timing: 0.1 + n / 100, start_flag: null, exhibition_time: 6.7, tilt: 0, parts_changed: null, propeller_change: null, is_absent: false, updated_at: "2026-10-25T06:39:35+00:00", ...over });
@@ -726,6 +727,19 @@ for (const f of fixtures) {
     "締切の後の観測の風・波は null",
   );
   assert.ok(late.missing.some((x) => x.source === "db.exhibition.conditions" && /締切の後/.test(x.reason)), "締切の後の観測を missing に記録");
+  // 観測時刻が無い（scrape-to-json の経路）・締切が無いと発走前か確かめられないので null（/code-review 2026-10-25 #1）
+  const noObs = await run({ conditions: { ...pre, weather_observed_at: null } });
+  assert.equal(noObs.db.exhibition.conditions.wind_speed, null, "観測時刻の無い風は null");
+  assert.ok(noObs.missing.some((x) => x.source === "db.exhibition.conditions" && /観測時刻が無く/.test(x.reason)), "観測時刻が無いことを記録");
+  const noDeadline = await run({ conditions: pre, startTime: null });
+  assert.equal(noDeadline.db.exhibition.conditions.wave_height, null, "締切の無いレースの波は null");
+  assert.ok(noDeadline.missing.some((x) => x.source === "db.exhibition.conditions" && /締切の時刻が無く/.test(x.reason)), "締切が無いことを記録");
+  // 決まり手の表は最新の集計だけ。レースの日より後の集計なら記録する（固定の材料は 10/12、表は 10/25。/code-review #2）
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.technique.byPeriod" && /より後の集計/.test(x.reason)), "レースの日より後の集計を記録");
+  technique.venue_technique_period_stats = technique.venue_technique_period_stats.map((r) => ({ ...r, last_updated: date }));
+  technique.winning_technique_stats = technique.winning_technique_stats.map((r) => ({ ...r, last_updated: date }));
+  const sameDay = await run({ conditions: pre });
+  assert.ok(!sameDay.missing.some((x) => x.source.startsWith("db.exhibition.technique")), "レースの日の集計なら欠けなし");
   // 展示前（行も気象も無い）・集計表が空でも止まらず、全部 null と missing で出す
   technique.venue_technique_period_stats = [];
   technique.winning_technique_stats = [];
@@ -735,6 +749,10 @@ for (const f of fixtures) {
   assert.deepEqual(empty.db.exhibition.conditions, { weather: null, wind_direction: null, wind_speed: null, wave_height: null, observedAt: null });
   for (const s of ["db.exhibition.boats.1", "db.exhibition.boats.6", "db.exhibition.conditions", "db.exhibition.technique.byPeriod", "db.exhibition.technique.byBoat"]) {
     assert.ok(empty.missing.some((x) => x.source === s), `欠けを missing に記録: ${s}`);
+  }
+  for (const [k, v] of [["VITE_SUPABASE_URL", realEnv.url], ["VITE_SUPABASE_ANON_KEY", realEnv.key]]) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
   }
 }
 
