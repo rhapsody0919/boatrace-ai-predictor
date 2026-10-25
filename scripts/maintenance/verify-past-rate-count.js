@@ -166,6 +166,41 @@ const SUITES = {
       const r = m.countPastRate(rows, type, input);
       return [r.n, r.count, r.excluded];
     };
+    // orderCombos の組の中身・並びを直接固定する（点数だけでは並びを検出できない）。
+    check("着順の組 1点", m.orderCombos({ first: 1, second: [2], third: [3] }), [[1, 2, 3]]);
+    check(
+      "着順の組 2着・3着を昇順にして同じ艇を除く",
+      m.orderCombos({ first: 1, second: [3, 2], third: [4, 2, 3] }),
+      [[1, 2, 3], [1, 2, 4], [1, 3, 2], [1, 3, 4]],
+    );
+    check(
+      "着順の組 2着と3着の入れ替わり",
+      m.orderCombos({ first: 1, second: [2, 3], third: [3, 2] }),
+      [[1, 2, 3], [1, 3, 2]],
+    );
+    check(
+      "着順の組 全流し20組の中身と並び",
+      m.orderCombos({ first: 1, second: [2, 3, 4, 5, 6], third: [2, 3, 4, 5, 6] }),
+      [
+        [1, 2, 3], [1, 2, 4], [1, 2, 5], [1, 2, 6],
+        [1, 3, 2], [1, 3, 4], [1, 3, 5], [1, 3, 6],
+        [1, 4, 2], [1, 4, 3], [1, 4, 5], [1, 4, 6],
+        [1, 5, 2], [1, 5, 3], [1, 5, 4], [1, 5, 6],
+        [1, 6, 2], [1, 6, 3], [1, 6, 4], [1, 6, 5],
+      ],
+    );
+    check("着順の組 2着が1着と同じ艇だけ", m.orderCombos({ first: 1, second: [1], third: [2] }), []);
+    check("着順の組 2着と3着が同じ艇だけ", m.orderCombos({ first: 1, second: [2], third: [2] }), []);
+    check("着順の組 2着・3着の欄が無い", m.orderCombos({ first: 1 }), []);
+    check("着順の組 3着の欄が無い", m.orderCombos({ first: 1, second: [2] }), []);
+    check(
+      "着順の組 並びは文字列順でなく数値順",
+      m.orderCombos({ first: 1, second: [10, 2], third: [3] }),
+      [[1, 2, 3], [1, 10, 3]],
+    );
+    const orderInput = { first: 1, second: [3, 2], third: [2, 3] };
+    m.orderCombos(orderInput);
+    check("着順の組 入力を並べ替えない", orderInput, { first: 1, second: [3, 2], third: [2, 3] });
     // 着順
     check(
       "着順 1点 1-3-2",
@@ -873,6 +908,8 @@ const SUITES = {
 // ---------------------------------------------------------------------------
 const MUTANTS = [
   ["scenario", "2段目の凹みの線を1段目のままにする", "dent: 8", "dent: 5"],
+  ["count", "着順の組の2着を並べ替えない", "[...second].sort((x, y) => x - y)", "[...second]"],
+  ["count", "着順の組の3着を並べ替えない", "[...third].sort((x, y) => x - y)", "[...third]"],
   [
     "count",
     "ST を整数にせず浮動小数のまま比べる",
@@ -1003,5 +1040,22 @@ for (const [i, [target, name, from, to]] of MUTANTS.entries()) {
 }
 
 fs.rmSync(MUTANT_DIR, { recursive: true, force: true });
+// 仕様が未定の入力は観測だけ行い、SUITES・変異検証・failures には含めない。
+const KNOWN_GAPS = [
+  { input: { first: 2, second: [1, 1], third: [3] }, spec: "欄内の重複の扱いは未定（画面では足し外し）" },
+  { input: { first: "1", second: [1], third: [2] }, spec: "1着が文字列のときの同一艇判定は未定" },
+  { input: undefined, spec: "入力がundefinedのときの扱いは未定" },
+];
+const countModule = await import(pathToFileURL(path.join(ROOT, TARGETS.count)).href);
+console.log(`\n## KNOWN_GAPS（${KNOWN_GAPS.length}件、合否判定の対象外）`);
+for (const { input, spec } of KNOWN_GAPS) {
+  let current;
+  try {
+    current = { combos: countModule.orderCombos(input), points: countModule.orderPoints(input) };
+  } catch (error) {
+    current = { exception: error.name };
+  }
+  console.log(`- 入力: ${show(input) ?? "undefined"} / 仕様: ${spec} / 今の値: ${show(current)}`);
+}
 console.log(failures === 0 ? "\n✅ 全テスト成功" : `\n❌ ${failures}件失敗`);
 process.exit(failures === 0 ? 0 : 1);
