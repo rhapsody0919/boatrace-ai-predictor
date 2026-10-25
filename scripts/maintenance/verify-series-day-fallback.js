@@ -22,6 +22,7 @@ import {
   buildSeriesDayByVenue,
   deriveSeriesDay,
   findSeriesFor,
+  hasCancellationBefore,
   indexSeriesByVenue,
   loadSeriesDayByVenue,
   planSeriesDayBackfill,
@@ -402,6 +403,45 @@ const TSU_SERIES = [
   { venue_code: 9, start_date: "2026-09-21", end_date: "2026-09-28" },
 ];
 const TSU_CANCELLED = [{ venue_code: 9, race_date: "2026-09-22" }];
+// hasCancellationBefore を直接呼び、開始日を含み・当日を含まない境界と会場一致を固定する。
+for (const [label, cancelled, venue, start, date, expected] of [
+  ["節の中・その日より前", TSU_CANCELLED, 9, "2026-09-21", "2026-09-23", true],
+  ["中止の日が開始日（開始日を含む）", TSU_CANCELLED, 9, "2026-09-22", "2026-09-23", true],
+  ["中止の日が当日（当日を含まない）", TSU_CANCELLED, 9, "2026-09-21", "2026-09-22", false],
+  ["節の開始より前", TSU_CANCELLED, 9, "2026-09-23", "2026-09-24", false],
+  ["別の会場", TSU_CANCELLED, 10, "2026-09-21", "2026-09-23", false],
+  ["空配列", [], 9, "2026-09-21", "2026-09-23", false],
+  ["前の節の中止", [{ venue_code: 9, race_date: "2026-09-20" }], 9, "2026-09-21", "2026-09-23", false],
+  ["指定日の中止", [{ venue_code: 9, race_date: "2026-09-23" }], 9, "2026-09-21", "2026-09-23", false],
+  ["別会場の行に続く一致行があれば true", [
+    { venue_code: 10, race_date: "2026-09-22" },
+    { venue_code: 9, race_date: "2026-09-22" },
+  ], 9, "2026-09-21", "2026-09-23", true],
+]) {
+  const actual = hasCancellationBefore(cancelled, venue, start, date);
+  check(`hasCancellationBefore: ${label}`, actual === expected, show(actual));
+}
+
+// 仕様が未定の入力。現在値は観測だけ行い、assert・failures の対象にしない。
+const KNOWN_GAPS = [
+  {
+    label: "行の会場コードが文字列（数値との同一視は未定。DB は数値の前提）",
+    input: [[{ venue_code: "9", race_date: "2026-09-22" }], 9, "2026-09-21", "2026-09-23"],
+  },
+  {
+    label: "引数の会場コードが文字列（数値との同一視は未定）",
+    input: [TSU_CANCELLED, "9", "2026-09-21", "2026-09-23"],
+  },
+  {
+    label: "時刻つきの日付（受入仕様は未定。現在は文字列比較）",
+    input: [[{ venue_code: 9, race_date: "2026-09-21T00:00:00" }], 9, "2026-09-21", "2026-09-22"],
+  },
+  {
+    label: "null 配列（受入仕様は未定。呼出元は cancelled.data ?? [] と既定の [] を使用）",
+    input: [null, 9, "2026-09-21", "2026-09-23"],
+  },
+];
+
 /** 観測: ローダーの導出と、バックフィルの計画が、中止・順延のある節を埋めない */
 function skipsSeriesWithCancellation(
   buildMap = buildSeriesDayByVenue,
@@ -468,6 +508,17 @@ check(
     !skipsSeriesWithCancellation(ignoreCancellations, planSeriesDayBackfill) &&
       !skipsSeriesWithCancellation(buildSeriesDayByVenue, planIgnoring),
   );
+}
+
+console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length} 件（仕様未定・失敗に含めない）`);
+for (const { label, input } of KNOWN_GAPS) {
+  let actual;
+  try {
+    actual = hasCancellationBefore(...input);
+  } catch (error) {
+    actual = `例外: ${error.name}`;
+  }
+  console.log(`${label}: 入力=${show(input)}, 今の値=${show(actual)}`);
 }
 
 console.log("");
