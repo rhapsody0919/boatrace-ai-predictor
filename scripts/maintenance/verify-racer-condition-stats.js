@@ -12,6 +12,7 @@
  */
 import {
   aggregateRacerConditionStats,
+  tallyWinPlaceShow,
   RACER_CONDITION_MIN_RUNS,
 } from "../../src/utils/racerConditionStats.js";
 
@@ -139,6 +140,95 @@ check(
   aggregateRacerConditionStats(null).overall.n === 0 &&
     aggregateRacerConditionStats([]).rows.length === 0,
 );
+
+// BOA-1117: rank1〜3 は着順そのものではなく、その着の艇番。
+const ranks123 = { rank1: 1, rank2: 2, rank3: 3 };
+const tallyCases = [
+  ["1着", { boatNumber: 1, ...ranks123 }, true, [1, 1, 1]],
+  ["2着", { boatNumber: 2, ...ranks123 }, false, [0, 1, 1]],
+  ["3着", { boatNumber: 3, ...ranks123 }, false, [0, 0, 1]],
+  ["4着以下", { boatNumber: 4, ...ranks123 }, false, [0, 0, 0]],
+  ["1着でも着順なし", { boatNumber: 1, ...ranks123, unranked: true }, false, [0, 0, 0]],
+  ["3着でも着順なし", { boatNumber: 3, ...ranks123, unranked: true }, false, [0, 0, 0]],
+  ["3着が欠けた行", { boatNumber: 3, ...ranks123, rank3: null }, false, [0, 0, 0]],
+  ["2着・3着の欄なし", { boatNumber: 1, rank1: 1 }, true, [1, 1, 1]],
+  ["結果なし", { boatNumber: 1, rank1: null, rank2: null, rank3: null }, false, [0, 0, 0]],
+  ["同着で3着の欄に入る艇", { boatNumber: 2, rank1: 1, rank2: 1, rank3: 2 }, false, [0, 0, 1]],
+  ["同着の1着艇", { boatNumber: 1, rank1: 1, rank2: 1, rank3: 3 }, true, [1, 1, 1]],
+  ["unranked が0", { boatNumber: 1, ...ranks123, unranked: 0 }, true, [1, 1, 1]],
+];
+for (const [label, row, expectedWin, expectedTotals] of tallyCases) {
+  const totals = { win: 0, top2: 0, top3: 0 };
+  const isWin = tallyWinPlaceShow(totals, row);
+  check(`1走: ${label}の戻り値`, isWin === expectedWin);
+  check(
+    `1走: ${label}の加算`,
+    totals.win === expectedTotals[0] &&
+      totals.top2 === expectedTotals[1] &&
+      totals.top3 === expectedTotals[2],
+  );
+}
+const cumulative = { win: 0, top2: 0, top3: 0 };
+for (const [, row] of tallyCases.slice(0, 4)) {
+  tallyWinPlaceShow(cumulative, row);
+}
+check(
+  "1走: 1〜4着を同じ totals に加算すると1勝・2連対2・3連対3",
+  cumulative.win === 1 && cumulative.top2 === 2 && cumulative.top3 === 3,
+);
+
+// 実データにない形。仕様未定なので assert せず、入力・現値を表示する。
+const KNOWN_GAPS = [
+  {
+    label: "艇番も結果もnull",
+    row: { boatNumber: null, rank1: null, rank2: null, rank3: null },
+    specification: "未定。DBの艇番は整数。null同士の一致をどう扱うか",
+    current: { isWin: true, totals: { win: 1, top2: 1, top3: 1 } },
+  },
+  {
+    label: "艇番が文字列",
+    row: { boatNumber: "1", ...ranks123 },
+    specification: "未定。艇番の型変換の要否（現状は厳密比較）",
+    current: { isWin: false, totals: { win: 0, top2: 0, top3: 0 } },
+  },
+  {
+    label: "unranked が文字列",
+    row: { boatNumber: 1, ...ranks123, unranked: "yes" },
+    specification: "未定。真の値をすべて着順なしとするか",
+    current: { isWin: false, totals: { win: 0, top2: 0, top3: 0 } },
+  },
+];
+console.log(`\nKNOWN_GAPS: ${KNOWN_GAPS.length}件（判定対象外）`);
+for (const gap of KNOWN_GAPS) {
+  const totals = { win: 0, top2: 0, top3: 0 };
+  const isWin = tallyWinPlaceShow(totals, gap.row);
+  console.log(JSON.stringify({ ...gap, observed: { isWin, totals } }));
+}
+
+const sunnyTop3 = aggregateRacerConditionStats(
+  [1, 2, 3, 3, 5].map((place) => run({ place })),
+);
+const unrankedTop3 = aggregateRacerConditionStats([
+  ...times(4, { place: 3 }),
+  run({ place: 3, unranked: true }),
+]);
+const cloudyTop3 = aggregateRacerConditionStats(
+  [1, 2, 3, 4, 6].map((place) => run({ place, weather: "曇り" })),
+);
+for (const [label, row, winRate, top2Rate, top3Rate] of [
+  ["晴1・2・3・3・5着の全体", sunnyTop3.overall, 0.2, 0.4, 0.8],
+  ["晴1・2・3・3・5着の晴行", rowOf(sunnyTop3, "sunny"), 0.2, 0.4, 0.8],
+  ["3着4走と着順なし1走の全体", unrankedTop3.overall, 0, 0, 0.8],
+  ...["cloudy", "windWeak", "waveCalm"].map((key) => [
+    `曇り1・2・3・4・6着の${key}行`, rowOf(cloudyTop3, key), 0.2, 0.4, 0.6,
+  ]),
+]) {
+  check(
+    `3連率: ${label}は5走で各率が一致`,
+    row?.n === 5 && row.winRate === winRate &&
+      row.top2Rate === top2Rate && row.top3Rate === top3Rate,
+  );
+}
 
 if (failures.length > 0) {
   console.error(`\n${failures.length}件失敗`);
