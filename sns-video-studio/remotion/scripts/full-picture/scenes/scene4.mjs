@@ -68,7 +68,16 @@ function anyConclusion(sc, todayForm) {
   const cell = sc.cells?.waku?.forms?.any;
   if (!cell?.n || !cell.tri) return null;
   const flow = sonarSteps("s4-any", cell.tri, cell.n, "結果はどう決まった？", {}).find((x) => x.id === "s4-any-flow");
-  return flow ? { ...conclusionOf(flow, cell, null), formKey: todayForm } : null;
+  if (!flow) return null;
+  const c = conclusionOf(flow, cell, null);
+  // 冒頭の答えと同じ呼び名（同じ級の組み合わせ）にそろえる（関門の審査 2026-10-25）
+  return {
+    ...c,
+    formKey: todayForm,
+    page: { ...c.page, sub: `同じ級の組み合わせ・枠なり（${cell.n.toLocaleString("ja-JP")}件）` },
+    entryQuestion: "この組み合わせの過去は、どう決まった？",
+    lines: [`同じ級の組み合わせ${c.facts.n.toLocaleString("ja-JP")}件で1着最多は${c.facts.boat}号艇`, c.lines[1]],
+  };
 }
 
 /** STEP2〜4（版: course＝このコース、overall＝全体）。prevForm は1回目の形（1回目は undefined。形が無いときの null と区別する） */

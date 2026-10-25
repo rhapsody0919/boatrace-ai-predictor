@@ -123,7 +123,7 @@ function answerPage() {
       // 冒頭は答えに要るものだけ（オーナー 10/25「文字が多いという印象」）。形の事実は結論の場面、期間は本文と説明文
       labelLines: a.labelLines,
       value: `${a.p0.toFixed(1)}%`,
-      base: `${String(m.api.scenario?.scope ?? "").startsWith("VC:") ? venueLabel(Number(venueCode), t) : "全国"}・同じ級の組み合わせの過去 ${a.n0.toLocaleString("ja-JP")}件`,
+      base: `${String(m.api.scenario?.scope ?? "").startsWith("VC:") ? venueLabel(Number(venueCode), t) : "全国"}・同じ級の組み合わせ ${a.n0.toLocaleString("ja-JP")}件`,
       note: "過去の割合。今日の結果を示すものではない",
     },
   };
