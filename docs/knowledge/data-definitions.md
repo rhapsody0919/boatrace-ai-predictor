@@ -6,6 +6,7 @@
 - 公開 API predictions の exhibitionData は展示タイムと展示ST だけ。チルト・調整重量・部品交換・プロペラ・体重・展示進入は DB の exhibition_data、一周・まわり足・直線は race_original_exhibition_values（kind 列）。今節の展示順位は race_entries（racer_id）と exhibition_data から作れる（2026-10-11、hq の data-scientist ノート）
 - 選手ごとの「同じ枠番での実際の進入コース」は racer_aggregated_stats.course_entry_tendency（直近1年、全国と会場別）。サイトの画面には出ていない。例: 岩永雅人(4630) 6号艇29走すべて6コース（2026-10-11、本番 DB の読み取り）
 - 本番 race_conditions の風速・波高は2025-12以降だけ。公式Kファイルの値と風速が同じなのは55.5%、5m以上の区分の一致は94.9%、波5cm以上の区分の一致は97.7%（2026-02〜09 の6日・888レース）。差の理由は未検証（2026-10-13、BOA-716、docs/reference/rough-water-trait-verification.md）
+- 準優・優勝戦で実進入1コースが1号艇でないのは 4,166R中30R。実進入版（race_results.actual_course_N・kb_archive_boats.course）と艇番版の非1着率の差はセルごとに最大1.5pt（件数100以上のセルでは1.1pt）。1号艇が展示タイムで他艇と同タイムなのは23%なので、順位の同タイムの扱い（method=min）を明記する（2026-10-25、docs/design/finals-thinking/analysis/ft01-wall-grid.md、data/analysis/ft01-wall-grid/wall-grid.json）
 
 ## モーター
 - 新しいモーターの最初の開催では、公式の出走表のモーター2連率・3連率は全艇0。2節目の初日から入り、節の途中は固定。全会場で同じ（2026-10-11、BOA-830、常滑 2026-10-06 入れ替えで確認）
