@@ -45,6 +45,10 @@ import { meetExclusionsOf } from "./meetExclusion.js";
 import { buildRacerScopedRaceRows } from "./racerScopedRaceRows.js";
 import { buildRacerRaceHistoryRows } from "./racerRaceHistoryRows.js";
 import { groupLosingTechniqueRows } from "../utils/losingTechnique.js";
+import {
+  nationalWinRateByBoat,
+  groupWinningTechniqueRows,
+} from "../utils/venuePlaceRates.js";
 import { shapeOriginalExhibition } from "../utils/originalExhibition.js";
 import { fetchAllInChunks, fetchAllPages } from "./fetchAllPages.js";
 import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
@@ -2063,22 +2067,8 @@ export const supabaseDataService = {
         if (page.length < pageSize) break;
         from += pageSize;
       }
-      if (data.length === 0) return null;
-
-      const countByBoat = {};
-      let total = 0;
-      data.forEach((row) => {
-        countByBoat[row.first_boat] =
-          (countByBoat[row.first_boat] ?? 0) + (row.count_90days ?? 0);
-        total += row.count_90days ?? 0;
-      });
-      if (total === 0) return null;
-
-      const rateByBoat = {};
-      Object.entries(countByBoat).forEach(([boat, count]) => {
-        rateByBoat[boat] = (count / total) * 100;
-      });
-      return rateByBoat;
+      // 計算は全貌動画の材料（fetch-materials.mjs）と共通の純関数（src/utils/venuePlaceRates.js）
+      return nationalWinRateByBoat(data);
     });
   },
 
@@ -2232,29 +2222,9 @@ export const supabaseDataService = {
         };
       }
 
-      // 枠番別にグループ化
-      const techniqueData = {};
-      let lastUpdated = null;
-
-      data.forEach((row) => {
-        const boatNumber = row.boat_number;
-        if (!techniqueData[boatNumber]) {
-          techniqueData[boatNumber] = {
-            total_races: row.total_races,
-            techniques: [],
-          };
-        }
-
-        techniqueData[boatNumber].techniques.push({
-          technique: row.winning_technique,
-          count: row.count_90days,
-          percentage: row.percentage,
-        });
-
-        if (!lastUpdated) {
-          lastUpdated = row.last_updated;
-        }
-      });
+      // 枠番別にグループ化（全貌動画の材料 fetch-materials.mjs と共通の純関数）
+      const { last_updated: lastUpdated, data: techniqueData } =
+        groupWinningTechniqueRows(data);
 
       const VENUE_NAMES = {
         1: "桐生",
