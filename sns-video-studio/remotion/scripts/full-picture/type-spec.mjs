@@ -14,19 +14,11 @@
 export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "angle", "caption"];
 
 /**
- * 型の id → 実装（{attrs: 受け持つ項目, approved: 実装したときの hq の文, ...部品}）。今は空。
- * 最初の候補（e02 寸止め・e03 要点1つ・e04 選手名・e05 数字1枚）は、試作を youtube-channel・x-channel が見て P1 が出た・オーナーが
- * 「明らかにダメ」「今の投稿の劣化版」とした（2026-10-25）。型は、ファン・チャネルの評価役・強いエージェントと中身を固め、
- * 試作をオーナーが見てから足す（オーナー 10/25）。それまで表に無い型はすべて type_unsupported で止まり、投稿は今の型のまま
+ * 型の id → 実装（{attrs: 受け持つ項目, approved: 実装したときの hq の文, review: 関門の審査の記録, range: 変えてよい幅, ...部品}）。
+ * 載せるのは関門（docs/design/full-picture-type-gate/spec.md）を通った型だけ。最初の候補（e02〜e05）は試作で P1・オーナーの不可が出て外した（2026-10-25）
  */
-export const TYPE_IMPL = {};
-
-/**
- * 関門を通っている途中の型（試作だけで使う。daily.mjs からは渡せないので投稿には出ない）。
- * 関門を通ったら TYPE_IMPL に移し、審査の記録を足す（docs/design/full-picture-type-gate/spec.md の 7）
- */
-export const PROTOTYPE_IMPL = {
-  // 今の型 v2 の直し: 冒頭に言葉の答え・比べる棒・形の説明（台本 docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）
+export const TYPE_IMPL = {
+  // 今の型 v2 の直し（入口版の冒頭に言葉の答え。台本 docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）
   "v2r1-answer-fill-explain": {
     attrs: ["structure"],
     answer: true,
@@ -34,8 +26,26 @@ export const PROTOTYPE_IMPL = {
       structure:
         "今の型 v2 の直し: ①題の問い（例「1号艇は堅い？」）に言葉で答える結論の一文を入れる ②冒頭の画面の下6割の空きを結論か根拠で埋める ③「内3艇そろう」等の言葉に説明を1行添える",
     },
+    // 関門の審査の記録（docs/design/full-picture-type-gate/spec.md の 7。無い型は試験で落とす）
+    review: {
+      direction: "オーナー 2026-10-25 台本可、答えを形を問わない割合に（「1でよい」）、結論もそろえる（(a)）",
+      stats: "BOA-1096（docs/design/full-picture-type-gate/analysis/answer-stage.md）: 評価の言葉は今日について言えない、形を問わない割合は成り立つ",
+      blindCompare: "2026-10-25 2周目 3レース×順を入れ替えて2回、3組とも今の型に劣らない",
+      channels: "youtube-channel P0 0・P1 0、x-channel P0 0・P1 0（2026-10-25）",
+      owner: "2026-10-25 試作3本を見て可（P2 の直しは推奨どおり）",
+      ownerMatchesGate: true,
+      preSendCompare: "しない（オーナー 2026-10-25 選択肢3。今の型の直しで試作の審査を2周通ったため）",
+    },
+    // 変えてよい幅（hq の磨きの b が自動で試してよい範囲）。v2r1 は無し（変えるときは新しい型として関門を通す）
+    range: {},
   },
 };
+
+/**
+ * 関門を通っている途中の型（試作だけで使う。daily.mjs からは渡せないので投稿には出ない）。
+ * 関門を通ったら TYPE_IMPL に移し、審査の記録を足す（docs/design/full-picture-type-gate/spec.md の 7）
+ */
+export const PROTOTYPE_IMPL = {};
 
 /**
  * 型の JSON（{id, attributes}）を読み、実装に結びつける（純粋関数）。
