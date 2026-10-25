@@ -921,6 +921,8 @@ for (const f of fixtures) {
   failRacer = "eq.4001";
   const fixes = await run({ conditions: pre });
   const fb = fixes.db.exhibition.boats;
+  // Codex の審査（#1905 P1）: no_distribution を含む材料も契約に合う（enum に無いと run-full が動画の前に止まる）
+  assert.deepEqual(validate(fixes), [], "守りの内訳が無いセル（no_distribution）を含む材料も契約に合う");
   assert.deepEqual([fb[0].attack_defense.cells.sashi.value, fb[0].attack_defense.cells.sashi.state, fb[0].attack_defense.cells.sashi.screen_value, fb[0].attack_defense.cells.nige.value], [null, "no_distribution", "0/20", "9/20"], "#2 負けの内訳が無い「0/N」は null（逃げは攻めの内訳から出るので残す）");
   assert.deepEqual([fb[3].attack_defense.cells.sashi.value, fb[3].attack_defense.cells.sashi.state], ["0/25", "value"], "#4 勝ち0の「0/N」は既定の内訳でも実の値");
   assert.deepEqual([fb[1].st_consideration.grade, fb[1].st_consideration.baseline?.stable_rate], ["A1", 67], "#5 出走表の級別が無ければ直近の走の級別");

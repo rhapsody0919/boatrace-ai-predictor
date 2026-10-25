@@ -168,7 +168,7 @@
                           "required": ["value", "state", "screen_value"],
                           "properties": {
                             "value": { "type": ["string", "null"] },
-                            "state": { "enum": ["value", "reference", "national_default", "national_default_distribution", "none"] },
+                            "state": { "enum": ["value", "reference", "national_default", "national_default_distribution", "no_distribution", "none"] },
                             "screen_value": { "type": ["string", "null"] }
                           }
                         }
