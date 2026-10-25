@@ -30,7 +30,8 @@ import { buildAll } from "./build-all.mjs";
 import { withSourceBadges } from "../../src/fullPicture/sourceBadge.js";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
 import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
-import { lengthReason, resolveType } from "./type-spec.mjs";
+import { PROTOTYPE_IMPL, lengthReason, resolveType } from "./type-spec.mjs";
+import { answerOf, scopeLabel } from "./answer.mjs";
 import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
 import { t } from "./scene2-data.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
@@ -58,6 +59,8 @@ const entryOnly = has("--entry-only");
 const bundleOnly = has("--bundle-only");
 // 投稿の型（hq PD02、daily.mjs --type-spec）。表に無い型・項目は type_unsupported で止める（黙って今の型で作らない）
 const typeSpecPath = opt("--type-spec");
+// 関門の試作だけで使う型（PROTOTYPE_IMPL）。daily.mjs は渡さないので投稿には出ない
+const prototypePath = opt("--prototype-type");
 // 描画の並列数（既定はコア数−1。ほかの作業と同時に回すときは小さくする）
 // 完全版の画質（h264 の crf。大きいほど小さいファイル）。送信の上限 32MiB に収める（Remotion の既定 18 では 31〜35MB だった）。
 // 音声は BGM だけなので 160kbps（既定の約317kbps だと容量の約36%を占めていた。visual-designer 2026-10-20 P2）
@@ -91,7 +94,11 @@ const header = raceHeader({ year: Number(m.raceId.slice(0, 4)), month: Number(mo
   const venue90 = scenes.find((x) => x.id === "scene1")?.data?.steps?.find((st) => st.id === "s1-venue90");
   if (venue90) venue90.question = entryQuestion(header);
 }
-const type = typeSpecPath ? resolveType(JSON.parse(readFileSync(typeSpecPath, "utf8"))) : null;
+const type = typeSpecPath
+  ? resolveType(JSON.parse(readFileSync(typeSpecPath, "utf8")))
+  : prototypePath
+    ? resolveType(JSON.parse(readFileSync(prototypePath, "utf8")), PROTOTYPE_IMPL)
+    : null;
 /**
  * 型で作れないときの止め方。標準エラーに「type_unsupported:<項目>」（固定の文）と「type_detail: …」（実測など）を出す。
  * daily.mjs がこの行を拾って stage=type-spec・reasons に写す（system-architect 2026-10-25 P1-1）
@@ -101,6 +108,27 @@ function typeStop(reasons, detail = null) {
   process.exit(1);
 }
 if (type?.reasons.length) typeStop(type.reasons);
+// 冒頭の答え（v2r1）。データが薄いレース（この組み合わせの過去が30件未満）は作らない（オーナー 10/25）
+const answer = type?.impl?.answer ? answerPage() : null;
+function answerPage() {
+  const sc = m.api.scenario?.scenario;
+  const formKey = scenes.find((x) => x.id === "scene4")?.data?.conclusion?.formKey ?? null;
+  const a = answerOf(sc, formKey);
+  if (!a.ok) typeStop(`type_unsupported:${a.kind}`, a.reason);
+  // 形は事実として添えるだけ（本番がその形だった過去。今日の本番の形はレース前には分からない）
+  return {
+    ...a,
+    page: {
+      // 冒頭は答えに要るものだけ（オーナー 10/25「文字が多いという印象」）。形の事実は結論の場面、期間は本文と説明文
+      labelLines: a.labelLines,
+      value: `${a.p0.toFixed(1)}%`,
+      base: `${String(m.api.scenario?.scope ?? "").startsWith("VC:") ? venueLabel(Number(venueCode), t) : "全国"}・同じ級別の組み合わせ ${a.n0.toLocaleString("ja-JP")}件`,
+      // 会場の過去が少なく全国に替わった日は、題の会場名と数字の範囲が違うので一言添える（youtube-channel・x-channel 2026-10-25 P2、オーナー可）
+      fallbackNote: m.api.scenario?.vc_fell_back != null ? "会場の過去が少ないため全国" : null, // vc_fell_back は全国に替わったときだけ会場の件数が入る（会場で取れた日は null）
+      note: "過去の割合。今日の結果を示すものではない",
+    },
+  };
+}
 const omitted = scenes.flatMap((x) => (x.data?.omitted ?? []).map((o) => ({ scene: x.id, ...o })));
 writeJson(join(out, "scenes.json"), { raceId: m.raceId, materialsVersion: m.schemaVersion, missing: m.missing, omitted, scenes });
 for (const o of omitted) console.warn(`[省いた要素] ${JSON.stringify(o)}`);
@@ -221,7 +249,7 @@ function chapters(answers) {
 
 // 入口版（文型の版。59秒を越えたら entryScenes が条件の2つ目を外し、それでも越えたら止める）。描く前に文を確かめる
 const entryAnswers = templateAnswers;
-const entry = entryScenes(scenes, entryAnswers, { race: header });
+const entry = entryScenes(scenes, entryAnswers, { race: header, answer });
 {
   // 型の尺（length_s）に入口版が入らなければ止める（作り直さない）
   const why = lengthReason(type?.attributes, entry.total / 30);
@@ -250,6 +278,7 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     fullSeconds,
     qa,
     contentType: type?.id ?? null,
+    answer: answer ? { label: answer.label, n0: answer.n0, k0: answer.k0, p0: answer.p0, scope: scopeLabel(m.api.scenario?.scope, m.api.scenario?.scenario?.period, venueLabel(Number(venueCode), t)) } : null,
   });
 const preBundle = bundleText({});
 const postEntry = `${preBundle.x_text}\n`;

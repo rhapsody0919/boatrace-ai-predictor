@@ -1057,8 +1057,15 @@ for (const f of fixtures) {
   const { mkdtempSync, writeFileSync: wf3, readFileSync: rf3, existsSync: ex3 } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const { spawnSync } = await import("node:child_process");
-  assert.deepEqual(TYPE_IMPL, {}, "型の表は空（中身を固めて試作をオーナーが見るまで足さない）");
-  assert.deepEqual(listTypes(), []);
+  // 型の表に載せるのは関門を通った型だけ。各型に審査の記録と変えてよい幅を持たせる（docs/design/full-picture-type-gate/spec.md の 7）
+  assert.deepEqual(Object.keys(TYPE_IMPL), ["v2r1-answer-fill-explain"]);
+  for (const [id, impl] of Object.entries(TYPE_IMPL)) {
+    for (const k of ["direction", "blindCompare", "channels", "owner"]) assert.ok(typeof impl.review?.[k] === "string" && impl.review[k], `${id}: 審査の記録 ${k} がある`);
+    assert.equal(typeof impl.review.ownerMatchesGate, "boolean", `${id}: 評価役とオーナーの一致の記録`);
+    assert.ok(impl.range && typeof impl.range === "object", `${id}: 変えてよい幅（無ければ {}）`);
+    assert.ok(impl.approved && Object.keys(impl.approved).length, `${id}: 承認した文`);
+  }
+  assert.deepEqual(listTypes().map((x) => x.id), ["v2r1-answer-fill-explain"]);
   // 試験用の表: 受け持つ項目と承認した文
   const T = { "t-test": { attrs: ["structure", "length_s"], approved: { structure: "要点1つ", length_s: "25〜30" } } };
   const ok = { id: "t-test", attributes: { structure: "要点1つ", length_s: "25〜30" } };
@@ -1070,7 +1077,7 @@ for (const f of fixtures) {
   assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, structure: "要点2つ" } }, T).reasons, ["type_unsupported:structure（文が変わった）"], "同じ id で文が変わった項目は止める（system-architect P2）");
   assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（知らない項目）"]);
   assert.match(resolveType({ id: "t-test", attributes: {} }, T).reasons[0], /^type_spec_invalid/);
-  assert.ok(resolveType(ok).reasons.length > 0, "今の表（空）では、どの型も止まる");
+  assert.ok(resolveType(ok).reasons.length > 0, "表に無い型は止まる");
   assert.deepEqual(lengthRange("25〜30"), [25, 30]);
   assert.equal(lengthRange("短め"), null);
   assert.equal(lengthReason({ length_s: "25〜30" }, 26), null);
@@ -1094,6 +1101,52 @@ for (const f of fixtures) {
     assert.equal(r.status, 1);
     assert.match(r.stderr, /^type_unsupported:structure（型 e03-one-point-30s は龍神の表に無い）$/m);
     assert.ok(!ex3(`${tmp}/out/post-entry.txt`), "止めたら本文を書かない（今の型で作らない）");
+  }
+}
+
+// ---- v2r1（今の型の直し、入口版の冒頭に言葉の答え。docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）----
+{
+  const { answerOf, scopeLabel } = await import(`${R}/scripts/full-picture/answer.mjs`);
+  const { buildBundle } = await import(`${R}/scripts/full-picture/bundle.mjs`);
+  const { listTypes } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
+  const { mkdtempSync, writeFileSync: wf4, readFileSync: rf4 } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { spawnSync } = await import("node:child_process");
+  // 答えは形を問わない割合（予想の形の過去の差は今日に引き継がれない。BOA-1096）。評価の言葉は使わない
+  const tri = (k1, other) => ({ "1-2-3": k1, "2-1-3": other });
+  const sc = { cells: { waku: { forms: { any: { n: 242, tri: tri(137, 105) }, wall: { n: 49, tri: tri(30, 19) } } } }, period: ["2019-04-01", "2026-10-22"] };
+  const a = answerOf(sc, "wall");
+  assert.equal(a.ok, true);
+  assert.deepEqual([a.n0, a.k0, a.p0], [242, 137, 56.6]);
+  assert.equal(a.label, "この組み合わせの過去で、1号艇の1着は約6割");
+  assert.deepEqual(a.labelLines, ["この組み合わせの過去で", "1号艇の1着は約6割"]);
+  assert.ok(!/堅い|崩れ|いつも/.test(a.label + a.small), "評価の言葉を使わない");
+  assert.deepEqual(a.form, { key: "wall", n: 49, k: 30, p: 61.2 }, "形は事実として持つだけ");
+  assert.equal(answerOf(sc, null).ok, true, "形が無くても作る（段 N、オーナー 10/25 (b)→(1)）");
+  // データが薄いレース（この組み合わせの過去が30件未満）は作らない。固定の語 thin_data（hq が日ごとの減りを数える）
+  const thin = answerOf({ cells: { waku: { forms: { any: { n: 25, tri: tri(15, 10) } } } } }, null);
+  assert.deepEqual([thin.ok, thin.kind], [false, "thin_data"]);
+  assert.equal(scopeLabel("VC:12:2-2-2-0:1A2", ["2019-04-01", "2026-10-22"], "住之江"), "住之江・同じ級別の組み合わせ・2019/4〜2026/10・枠なり");
+  assert.equal(scopeLabel("NC:2-2-2-0:1A2", null, "びわこ"), "全国・同じ級別の組み合わせ・枠なり");
+  // 本文: 答えの1文と、条件・件数・注記の行に分ける。形の行（結論の行）は出さない（入口版の結論も同じ母数にそろえた）
+  const answer = { label: a.label, n0: 242, k0: 137, p0: 56.6, scope: "住之江・同じ級別の組み合わせ・2019/4〜2026/10・枠なり" };
+  const conclusion = { form: "内3艇そろう", n: 49, boat: 1, count: 30, pct: 61.2 };
+  const b = buildBundle({ raceId: "2026-10-23-12-11", venue: "住之江", raceNo: 11, month: 10, day: 23, round: "junyu", facts: { venue90: null, overview: null, conclusion, hero: { title: a.label } }, chapters: "0:00 条件\n0:22 6艇比較\n1:07 類似レース\n1:43 展開", fullSeconds: 211, qa: { a: true }, answer });
+  const xl = b.x_text.split("\n");
+  assert.equal(xl[2], "この組み合わせの過去で、1号艇の1着は約6割");
+  assert.equal(xl[3], "（住之江・同じ級別の組み合わせ・2019/4〜2026/10・枠なりの過去242件中137件・56.6%。過去の割合で、今日の結果を示すものではない）");
+  assert.ok(!b.x_text.includes("61.2%"), "形の行は出さない（冒頭と結論の数字を分けない）");
+  assert.ok(b.youtube_shorts.description.includes("過去242件中137件・56.6%"));
+  // run-full --type-spec v2r1: 冒頭の答えの頁、入口版の結論は形を問わない着順の流れ（冒頭と同じ母数）
+  {
+    const tmp = mkdtempSync(`${tmpdir()}/fp-v2r1-`);
+    wf4(`${tmp}/m.json`, gunzipSync(readFileSync(new URL(fixtures.find((f) => f.startsWith("2026-10-19")), FX))).toString("utf8"));
+    wf4(`${tmp}/t.json`, JSON.stringify(listTypes()[0]));
+    const r = spawnSync(process.execPath, [new URL(`${R}/scripts/full-picture/run-full.mjs`, import.meta.url).pathname, `${tmp}/m.json`, `${tmp}/out`, "--text", "template", "--no-video", "--type-spec", `${tmp}/t.json`], { encoding: "utf8" });
+    assert.equal(r.status, 0, r.stderr.slice(-500));
+    const post = rf4(`${tmp}/out/post-entry.txt`, "utf8");
+    assert.match(post.split("\n")[2], /^この組み合わせの過去で、1号艇の1着は約\d割$/, post);
+    assert.match(post.split("\n")[3], /^（.+・同じ級別の組み合わせ.+の過去[\d,]+件中[\d,]+件・\d+\.\d%。過去の割合で、今日の結果を示すものではない）$/, post);
   }
 }
 
@@ -1156,7 +1209,7 @@ for (const f of fixtures) {
     const r3 = runDaily(daily, ["--list-types"]);
     assert.equal(r3.status, 0);
     const lt = JSON.parse(r3.stdout);
-    assert.deepEqual(lt.types, [], "型の表は空");
+    assert.deepEqual(lt.types.map((x) => x.id), ["v2r1-answer-fill-explain"], "型の表は関門を通った型だけ");
   }
   // 送信の鍵と一緒に起動されたら止める（--env-file=.env.local で起動した等）
   {

@@ -14,7 +14,7 @@ export const CONCLUSION_QUESTION = "同じ並びの過去は、どう決まっ�
 /** 冒頭の数字に使う件数の下限。目安（根拠なし）。下回る日は当日の水面の数字に替える */
 export const HERO_MIN_N = 30;
 /** 冒頭の数字（3秒）・結論の再掲（5秒）・会場の棒と当日の水面（各5秒）・案内（2秒） */
-const LEN = { hero: 90, cond: 150, conclusion: 150, cta: 60 };
+const LEN = { hero: 90, cond: 150, conclusion: 150, cta: 60, answerHero: 150 };
 const CTA_TEXT = "チャンネルの完全版へ";
 
 /** 会場の1号艇の1着率と全国の差の z（1つの割合の検定。races が母数） */
@@ -70,33 +70,38 @@ export function secondBoats(conclusion, k = 2) {
 /**
  * @param {{id: string, kind: string, data: object}[]} scenes 完全版の場面（run-full.mjs の buildAll）
  * @param {object} answers 文の JSON の answers（拍の長さは答えの字数で決まる）
- * @param {{race?: string}} opts race: 最初の問いに入れるレース見出し
+ * @param {{race?: string, answer?: object|null}} opts race: 最初の問いに入れるレース見出し。
+ *   answer: 冒頭の答え（v2r1、answer.mjs の answerOf に hero 用の文を足したもの）。あれば冒頭を答えの頁（5秒）にし、会場の棒を出さない
  * @returns {{scenes: object[], answers: object, omitted: object[], total: number, hero: object|null}} answers は入口版で描く答え（会場の棒を外した日は当日の水面の答えから会場の90日の行を外す）
  */
-export function entryScenes(scenes, answers = {}, { race = null } = {}) {
+export function entryScenes(scenes, answers = {}, { race = null, answer = null } = {}) {
   const by = Object.fromEntries(scenes.map((x) => [x.id, x]));
   const omitted = [];
   const q = race ? entryQuestion(race) : null;
   const s1 = by.scene1?.data?.steps ?? [];
   const venue0 = s1.find((s) => s.id === "s1-venue90");
   const z = venueZ(venue0?.facts);
-  const venue = venue0 && z !== null && Math.abs(z) >= 1.96 ? { ...venue0, len: LEN.cond } : null;
-  if (venue0 && !venue) omitted.push({ where: "entry.venue90", reason: `会場と全国の差を確認できない（|z|=${z === null ? "—" : Math.abs(z).toFixed(2)}<1.96）` });
+  // 冒頭の答え（v2r1）は同じ範囲のどの形でもと比べるので、期間・級の違う会場の過去90日の棒は出さない
+  const venue = !answer && venue0 && z !== null && Math.abs(z) >= 1.96 ? { ...venue0, len: LEN.cond } : null;
+  if (venue0 && !venue && !answer) omitted.push({ where: "entry.venue90", reason: `会場と全国の差を確認できない（|z|=${z === null ? "—" : Math.abs(z).toFixed(2)}<1.96）` });
   const day0 = s1.find((s) => s.id === "s1-wind") ?? s1.find((s) => s.id === "s1-day");
   const day = day0 ? { ...day0, len: LEN.cond } : null;
   // 会場の棒を外した日は、当日の水面の答えの「90日の1着率…より」を出さない（画面に出ない数字を指す。Orchestrate 10/24）
   const dayAnswer = day && !venue ? (answers[day.id] ?? day.lines ?? []).filter((l) => !VENUE90_REF.test(l)) : null;
   const entryAnswers = dayAnswer ? { ...answers, [day.id]: dayAnswer } : answers;
-  const c0 = by.scene4?.data?.conclusion ?? null;
+  // 冒頭の答え（v2r1）があるときは、結論も形を問わない割合にそろえる（冒頭と結論の数字を分けない。オーナー 10/25 (a)）
+  const c0 = (answer ? by.scene4?.data?.conclusionAny : null) ?? by.scene4?.data?.conclusion ?? null;
   // 当てはまる形が無い日は「同じ並び」と言わない（場面4が entryQuestion を持つ。BOA-979）
   const conclusion = c0 ? { ...c0, question: c0.entryQuestion ?? CONCLUSION_QUESTION, len: LEN.conclusion } : null;
   if (!conclusion) omitted.push({ where: "entry.conclusion", reason: "展開の着順の流れが無い（結論の拍を省いた）", mustReport: true });
   const hero = heroOf(scenes);
   if (!hero) omitted.push({ where: "entry.hero", reason: "冒頭の数字の材料が無い（結論・当日の水面とも無い）" });
   if (hero?.source === "day") omitted.push({ where: "entry.hero", reason: `同じ並びの件数が${HERO_MIN_N}件（目安・根拠なし）未満なので当日の水面の数字にした` });
-  const heroStep = hero
-    ? { id: "entry-hero", question: q, page: { kind: "hero", boat: hero.boat, label: hero.label, value: hero.value, base: hero.base }, press: null, frames: [], lines: [], len: LEN.hero }
-    : null;
+  const heroStep = answer
+    ? { id: "entry-hero", question: q, page: { kind: "answer", ...answer.page }, press: null, frames: [], lines: [], len: LEN.answerHero }
+    : hero
+      ? { id: "entry-hero", question: q, page: { kind: "hero", boat: hero.boat, label: hero.label, value: hero.value, base: hero.base }, press: null, frames: [], lines: [], len: LEN.hero }
+      : null;
   const cta = { id: "entry-cta", question: q, page: { kind: "cta", lines: [CTA_TEXT], sub: "展開・相手・展示後に見る所まで" }, press: null, frames: [], lines: [], len: LEN.cta };
   const keep = [1, ...secondBoats(c0)];
   const s2 = by.scene2?.data
@@ -117,5 +122,5 @@ export function entryScenes(scenes, answers = {}, { race = null } = {}) {
     total = fullPictureTimeline(out, entryAnswers).total;
   }
   if (total > ENTRY_MAX_FRAMES) throw new Error(`入口版が59秒を越える（${(total / 30).toFixed(1)}秒）。投稿しない`);
-  return { scenes: out, answers: entryAnswers, omitted, total, hero };
+  return { scenes: out, answers: entryAnswers, omitted, total, hero: answer ? { source: "answer", title: answer.label, value: `${answer.p0.toFixed(1)}%` } : hero };
 }

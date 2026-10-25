@@ -39,6 +39,47 @@ function unionBox(a, b) {
   return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
 }
 
+/** 入口版の結論の1拍（着順の流れの1着の段に、形の条件を書き足す） */
+function conclusionOf(flow, cell, form) {
+  const cond = form ? `枠なりで${formName(form)}だったレース` : "枠なりで進入したレース";
+  const f = { ...flow.facts, form: form ? formName(form) : null };
+  return {
+    ...flow,
+    id: "s4-conclusion",
+    // 今日の予想の形のキー（入口版の冒頭の答え answer.mjs が使う）
+    formKey: form,
+    page: { ...flow.page, sub: `${cond}（${cell.n.toLocaleString("ja-JP")}件）` },
+    facts: f,
+    // 形が無ければ入口版の問いも「同じ並び」と言わない
+    entryQuestion: form ? null : "過去のレースは、どう決まった？",
+    // 過去の集計と分かるように「過去」を入れる（今日の結果と読まれない。2026-10-20 x-channel・youtube-channel P1）
+    lines: [
+      form ? `${formName(form)}の過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇` : `枠なりの過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇`,
+      `${f.count.toLocaleString("ja-JP")}件（${f.pct}%）`,
+    ],
+  };
+}
+
+/**
+ * 形を問わない結論（v2r1 の入口版。冒頭の答え＝形を問わない割合と同じ母数にそろえる。オーナー 10/25 (a)）。
+ * 予想の形の過去の差は今日に引き継がれないので、入口版では形の結論を出さない（BOA-1096）
+ */
+function anyConclusion(sc, todayForm) {
+  const cell = sc.cells?.waku?.forms?.any;
+  if (!cell?.n || !cell.tri) return null;
+  const flow = sonarSteps("s4-any", cell.tri, cell.n, "結果はどう決まった？", {}).find((x) => x.id === "s4-any-flow");
+  if (!flow) return null;
+  const c = conclusionOf(flow, cell, null);
+  // 冒頭の答え・6艇比較の脚注と同じ呼び名（同じ級別の組み合わせ）にそろえる（関門の審査 2026-10-25）
+  return {
+    ...c,
+    formKey: todayForm,
+    page: { ...c.page, sub: `同じ級別の組み合わせ・枠なり（${cell.n.toLocaleString("ja-JP")}件）` },
+    entryQuestion: "この組み合わせの過去は、どう決まった？",
+    lines: [`同じ級別の組み合わせ${c.facts.n.toLocaleString("ja-JP")}件で1着最多は${c.facts.boat}号艇`, c.lines[1]],
+  };
+}
+
 /** STEP2〜4（版: course＝このコース、overall＝全体）。prevForm は1回目の形（1回目は undefined。形が無いときの null と区別する） */
 function roundSteps(sc, data, version, prevForm) {
   const steps = [];
@@ -120,27 +161,7 @@ function roundSteps(sc, data, version, prevForm) {
     steps.push(...(prevForm === undefined ? ss : ss.filter((s) => s.id.endsWith("-tri"))));
     // 入口版の結論の1拍（着順の流れの1着の段に、形の条件を書き足す）
     const flow = ss.find((s) => s.id === `s4-${version}-flow`);
-    if (flow) {
-      const f = { ...flow.facts, form: form ? formName(form) : null };
-      return {
-        steps,
-        form,
-        same: false,
-        conclusion: {
-          ...flow,
-          id: "s4-conclusion",
-          page: { ...flow.page, sub: `${cond}（${cell.n.toLocaleString("ja-JP")}件）` },
-          facts: f,
-          // 形が無ければ入口版の問いも「同じ並び」と言わない
-          entryQuestion: form ? null : "過去のレースは、どう決まった？",
-          // 過去の集計と分かるように「過去」を入れる（今日の結果と読まれない。2026-10-20 x-channel・youtube-channel P1）
-          lines: [
-            form ? `${formName(form)}の過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇` : `枠なりの過去${f.n.toLocaleString("ja-JP")}件で1着最多は${f.boat}号艇`,
-            `${f.count.toLocaleString("ja-JP")}件（${f.pct}%）`,
-          ],
-        },
-      };
-    }
+    if (flow) return { steps, form, same: false, conclusion: conclusionOf(flow, cell, form) };
   }
   return { steps, form, same: false, conclusion: null };
 }
@@ -204,7 +225,7 @@ export function buildScene4(m) {
   const r2 = roundSteps(sc, data, "overall", r1.form);
   steps.push(...r2.steps);
   if (r2.same) omitted.push({ where: "scene4.overall", reason: "全体でも同じ形なので、2回目は形の一致まで（型どおり）" });
-  return { id: "scene4", steps, omitted, conclusion: r1.conclusion ?? null };
+  return { id: "scene4", steps, omitted, conclusion: r1.conclusion ?? null, conclusionAny: anyConclusion(sc, r1.form) };
 }
 
 /** 攻める艇（画面の「役」: カド一撃・カド受け凹み・ダッシュ勢先行は4コース、イン凹みは2コース、2コース凹みは3コース） */

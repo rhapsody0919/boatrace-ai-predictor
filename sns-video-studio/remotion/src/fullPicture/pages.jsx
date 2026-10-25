@@ -5,6 +5,7 @@
 import { FONT } from "../fonts.js";
 import { BoatBadge } from "./parts.jsx";
 import { SANKEY, SONAR, sankeyLayout, sonarChipBox, sonarPoint, triRowBox } from "./sonarLayout.js";
+import { fitHeadline } from "../textFit.js";
 import { CARD_BG, MUTED, fit1 } from "./parts.js";
 import { MIN_TEXT, W } from "./scene2Layout.js";
 import {
@@ -560,6 +561,43 @@ export function SummaryPage({ groups, footer }) {
         </div>
       ))}
     </>
+  );
+}
+
+/**
+ * 入口版の冒頭の答え（v2r1、docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）。
+ * 0秒から答えの言葉・数字・範囲を出し（X のプレビュー・Shorts の最初のコマ）、2.5秒から比べる棒が伸びる。下に形の説明。
+ * x60〜940・y≤1420（Shorts の右の操作・下の帯に重ねない）。字は幅に収まらなければ fit1 で詰める
+ */
+export function AnswerPage({ labelLines = [], value, base, fallbackNote = null, note }) {
+  const Wd = 880;
+  // 1行に収まらなければ2行まで折り返す（最小の字 36px より詰めない）。それでも収まらなければ止める（黙ってはみ出さない）
+  const fit = (txt, max, weight, lines = 2) => {
+    const f = fitHeadline(txt, { maxWidth: Wd, maxLines: lines, fontFamily: FONT, fontWeight: weight, maxFontSize: max, minFontSize: MIN_TEXT });
+    if (!f) throw new Error(`冒頭の答えの文が ${Wd}px・${lines}行に収まらない: ${txt}`);
+    return f;
+  };
+  const Text = ({ txt, max, weight, color, lines = 2, mt = 0 }) => {
+    const f = fit(txt, max, weight, lines);
+    return (
+      <div style={{ marginTop: mt, color, fontWeight: weight, fontSize: f.fontSize, lineHeight: 1.25 }}>
+        {f.lines.map((l, i) => (
+          <div key={i} style={{ whiteSpace: "nowrap" }}>{l}</div>
+        ))}
+      </div>
+    );
+  };
+  // 上帯の下から y1420 までの真ん中に置く（字を減らした分、大きく。下の空きを残さない）
+  return (
+    <div style={{ position: "absolute", left: 60, top: 300, width: Wd, height: 1120, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+      {labelLines.map((l, i) => (
+        <Text key={`a${i}`} txt={l} max={84} weight={900} color={GOLD} lines={1} />
+      ))}
+      <div style={{ marginTop: 40, fontSize: 260, fontWeight: 900, color: TEXT, lineHeight: 1, whiteSpace: "nowrap" }}>{value}</div>
+      <Text txt={base} max={48} weight={700} color={TEXT} lines={1} mt={36} />
+      {fallbackNote && <Text txt={fallbackNote} max={38} weight={600} color={MUTED} lines={1} mt={8} />}
+      <Text txt={note} max={38} weight={600} color={MUTED} lines={1} mt={70} />
+    </div>
   );
 }
 
