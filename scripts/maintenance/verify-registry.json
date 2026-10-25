@@ -145,6 +145,11 @@
       "guards": "思考アシスト（BOA-430）の formSummary の「よく出た2連単（5位）・3連単（3位）」で、境目と同数の組を黙って落とさないこと（BOA-838）。境目未満は含めない、並びは組の昇順のまま"
     },
     {
+      "script": "verify-attack-defense-cells.js",
+      "tier": "ci",
+      "guards": "超展開データのセルの値（src/utils/attackDefenseCells.js）を画面と全貌動画の材料が共有し、表が計算の写しを持たないこと。回数／分母・参考の※・全国平均の%・「-」と、既定の分布の判定（2026-10-25 hq 依頼、FT01）"
+    },
+    {
       "script": "verify-best-of.js",
       "tier": "ci",
       "guards": "6艇の中の最良値の判定 bestOf（src/utils/bestOf.js、docs/design/race-detail-ui-unify R1）。同値の最良を全部返すこと、全艇同値と値なしは空、表示の桁で丸めて比べること（54.84 と 54.80、平均の浮動小数の誤差）、null と NaN を除くこと"

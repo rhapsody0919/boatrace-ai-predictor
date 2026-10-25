@@ -12,6 +12,12 @@ import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from
 import { pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 import process from "node:process";
+import { buildRacerScopedRaceRows } from "../../../../src/services/racerScopedRaceRows.js";
+import { recordsBeforeRace, SMALL_SAMPLE_THRESHOLD } from "../../../../src/components/race/basicInfoStats.js";
+import { computeStConsideration } from "../../../../src/utils/stConsideration.js";
+import { indexBaseline, getBaselineCell, expectedBreakoutCount } from "../../../../src/utils/courseBaseline.js";
+import { toWakuRacerStats } from "../../../../src/utils/racerStats.js";
+import { attackDefenseColumn, isDefaultAttackDistribution } from "../../../../src/utils/attackDefenseCells.js";
 
 export const MATERIALS_VERSION = "full-picture-materials/1";
 const BASE = process.env.FULL_PICTURE_API_BASE ?? "https://www.boat-ai.jp";
@@ -112,6 +118,8 @@ export async function fetchExhibitionMaterials(raceId, date, venueCode, startTim
     exhibitionBoats(raceId, racers, missing)
       // 選手の成績の表が読めなくても艇の材料は残し、足す欄を null にする
       .then((bs) => racerCourseStats(bs, date, missing, racers).catch((e) => (fail("db.exhibition.boats.racer")(e), bs.map(withoutRacerStats))))
+      // 画面（超展開データ・ST考察）と同じ定義の値。読めなくても艇の材料は残す
+      .then((bs) => racerScreenStats(bs, raceId, date, missing).catch((e) => (fail("db.exhibition.boats.screen")(e), bs.map(withoutScreenStats))))
       .catch(fail("db.exhibition.boats")),
     preRaceConditions(raceId, date, startTime, missing).catch(fail("db.exhibition.conditions")),
     venueTechnique(date, venueCode, missing).catch(fail("db.exhibition.technique")),
@@ -126,22 +134,24 @@ export const EXHIBITION_NOTES = [
   "racer_period_stats はレースの日より前に締めた（calc_to < レースの日）最新の期を使う",
   "entry_tendency は facts の racers.boats[].course_entry（画面・場面と同じ定義）。集計がこのレース以後の出走を含むと API が出さないので null",
   "course は進入コース。exhibition_course（展示の進入）があればそれ、無ければ枠番で引き、course_source に書く",
+  "attack_defense は画面の超展開データ（AttackDefenseTable）と同じ値。キーは枠番（実進入コースではない）。回数は全期間の決まり手の内訳の割合×直近365日の勝ち（負け）数を丸めたもので、分母は直近365日のその枠の出走数。予想（standard の最新）の時点の写し。展示の進入が枠と違う艇は exhibition_course_differs=true（値は枠番のまま）",
+  "attack_defense の state: value=選手の値、reference=勝ちが2〜4で参考（画面は※）、national_default=勝ちが2未満で画面は全国平均の%（選手の値ではないので value は null）、national_default_distribution=全期間の勝ちが5未満で決まり手の内訳が全国の既定（value は null）、none=画面が「-」",
+  "st_consideration は画面の ST考察と同じ値。このレースより前の730日の走のうち、実進入コースが course（枠番＝画面と同じ枠なり想定）の走。stable_rate・late_rate は%で画面と同じ1桁。late_rate（出遅率）は最速より0.10以上遅い率で、公式の出遅れ（L）ではない。baseline は同コース・同級別の平均（st_course_baseline、最新の集計でレースの日の版ではない）で、画面の差は1桁に丸めた値どうしの差",
+  "st_stability は画面に無い値。st_consideration と同じ走から、そのコースの直近30走（欠場を除く）の窓をとり、F・L 以外の ST の母標準偏差（秒、有効2走以上）と、公式の出遅れ（L、L0・L1 の区別なし）の回数。公式の L は本番で全体でも数十件と少なく、ほとんどの選手で0",
 ];
 
 /** racer_period_stats の cN_* のうち写す欄（N は進入コース） */
 export const PERIOD_COURSE_FIELDS = ["entries", "avg_st", "avg_start_rank", "f", "l0", "l1", "p1", "p2", "p3"];
 /** racer_course_technique_stats の写す欄（地力窓と直近90日。expected は写さない） */
 export const COURSE_TECHNIQUE_FIELDS = ["window_start", "window_end", "window_days", "runs", "nige_count", "nige_rate", "makuri_count", "makuri_rate", "nigashi_count", "nigashi_rate", "runs_90d", "nige_rate_90d", "makuri_rate_90d", "nigashi_rate_90d", "last_updated"];
-/**
- * マイグレーション 176 で足した欄（差し・まくり差しの回数と率、ST の安定度）。分母は runs・runs_90d。
- * ST の安定度は前日までの、そのコースの直近30走（出走に数える走）の窓で、st_stddev_last30 は窓の中の F・L 以外の ST の
- * 母標準偏差（有効2走以上）、late_start_count_last30 は窓の中の出遅れ（L）の回数。176 の前は列が無いので null にして欠けに記録する
- */
-export const COURSE_SASHI_ST_FIELDS = ["sashi_count", "sashi_rate", "makurizashi_count", "makurizashi_rate", "sashi_rate_90d", "makurizashi_rate_90d", "st_window_runs", "st_valid_runs", "st_stddev_last30", "late_start_count_last30"];
 /** 会場のコース別の決まり手（venue_course_technique_baseline）の写す欄 */
 export const VENUE_COURSE_FIELDS = ["course", "runs", "nige_rate", "makuri_rate", "nigashi_rate", "window_start", "window_end", "last_updated"];
 const COURSES = [1, 2, 3, 4, 5, 6];
 const withoutRacerStats = (b) => ({ ...b, course: b.exhibition_course ?? b.boat_number, course_source: b.exhibition_course != null ? "exhibition_course" : "boat_number", course_technique: null, period_course: null, entry_tendency: null });
+const withoutScreenStats = (b) => ({ ...b, attack_defense: null, st_consideration: null, st_stability: null });
+/** ST の安定度の窓（そのコースの直近の走数） */
+export const ST_STABILITY_WINDOW = 30;
+const round = (v, d) => (v === null || v === undefined ? null : Number(Number(v).toFixed(d)));
 const lateReason = (table, date) => `${table} はレースの日（${date}）より後の集計（このレースの結果を含みうる）`;
 
 /**
@@ -160,8 +170,7 @@ async function racerCourseStats(boats, date, missing, racers) {
   // 期は半年ごと。直近の期だけ要るので、締めが400日より前の期は読まない（選手ごとに全期を読まない）
   const [technique, periods] = ids.length
     ? await Promise.all([
-        // 176 の前は名指しした列が無いと PostgREST が 400 を返すので、全列を読んで無い列を欠けにする
-        sbGet("racer_course_technique_stats", `select=*&racer_id=in.(${ids.join(",")})`),
+        sbGet("racer_course_technique_stats", `select=racer_id,course,${COURSE_TECHNIQUE_FIELDS.join(",")}&racer_id=in.(${ids.join(",")})`),
         sbGet("racer_period_stats", `select=${periodSelect}&racer_id=in.(${ids.join(",")})&and=(calc_to.lt.${date},calc_to.gte.${daysBefore(date, 400)})&order=calc_to.desc`),
       ])
     : [[], []];
@@ -176,10 +185,7 @@ async function racerCourseStats(boats, date, missing, racers) {
     const t = technique.find((r) => r.racer_id === b.racer_id && r.course === course);
     if (!t) missing.push({ source: at("course_technique"), reason: `racer_course_technique_stats にこの選手の${course}コースの行が無い` });
     else {
-      out.course_technique = Object.fromEntries([...COURSE_TECHNIQUE_FIELDS, ...COURSE_SASHI_ST_FIELDS].map((f) => [f, t[f] ?? null]));
-      const absent = COURSE_SASHI_ST_FIELDS.filter((f) => !(f in t));
-      if (absent.length) missing.push({ source: at("course_technique"), reason: `racer_course_technique_stats に列が無い（マイグレーション 176 の前）: ${absent.join(",")}` });
-      else if (t.st_stddev_last30 == null) missing.push({ source: at("course_technique.st_stddev_last30"), reason: `直近30走の有効な ST が2走未満（${t.st_valid_runs ?? 0}走）` });
+      out.course_technique = Object.fromEntries(COURSE_TECHNIQUE_FIELDS.map((f) => [f, t[f] ?? null]));
       if (t.window_end >= date || t.last_updated > date) missing.push({ source: at("course_technique"), reason: lateReason("racer_course_technique_stats", date) });
     }
     // 期は calc_to の降順で読んでいるので、選手ごとの最初の行が最新
@@ -207,6 +213,148 @@ async function racerCourseStats(boats, date, missing, racers) {
         calculated_at: entry.calculated_at ?? null,
       };
     }
+    return out;
+  });
+}
+
+/**
+ * 選手の、このレースより前の730日の走（ST考察の画面と同じ行。getRacerScopedRaceStats の整形
+ * buildRacerScopedRaceRows をそのまま使う）。画面は見た日から730日だが、ここはレースの日から数える（racerRows と同じ）。
+ * ST考察が読まない展示・水面の行は取らない（[] を渡す）
+ */
+async function racerStRecords(racerId, raceId, date) {
+  const entries = await sbGet(
+    "race_entries",
+    `select=race_id,boat_number,grade,f_count&racer_id=eq.${racerId}&and=(race_id.gte.${daysBefore(date, 730)},race_id.lt.${raceId})&order=race_id,boat_number`,
+  );
+  const ids = [...new Set(entries.map((e) => e.race_id))];
+  const [raceRows, resultRows, startTimingRows] = ids.length
+    ? await Promise.all([
+        sbIn("races", "race_id,race_date,venue_code,race_grade", "race_id", ids),
+        sbIn("race_results", "race_id,rank1,rank2,rank3,rank4,rank5,rank6,race_status,actual_course_1,actual_course_2,actual_course_3,actual_course_4,actual_course_5,actual_course_6,winning_technique,payout_win", "race_id", ids),
+        sbIn("race_start_timings", "race_id,boat_number,start_timing,is_flying,finish_mark,entry_course", "race_id", ids),
+      ])
+    : [[], [], []];
+  return recordsBeforeRace(buildRacerScopedRaceRows({ entries, raceRows, resultRows, startTimingRows, exhibitionRows: [], conditionRows: [] }), raceId);
+}
+
+/**
+ * ST の安定度（画面に無い。2026-10-25 hq 依頼）。records（ST考察と同じ行）のうち実進入コースが course の、欠場でない
+ * 直近 ST_STABILITY_WINDOW 走の窓をとり、F・L・ST の無い走を除いた ST の母標準偏差（scripts/lib/racerStStats.js の
+ * st_stddev と同じ母標準偏差・2値以上）と、窓の中の公式の出遅れ（L）の回数。窓を先に取り、除外の後に走を集め直さない
+ * （docs/knowledge/data-definitions.md の平均ST（直近30走）と同じ）
+ * @param {object[]} records buildRacerScopedRaceRows の行（raceId の昇順）
+ * @param {number} course
+ */
+export function stStability(records, course) {
+  const window = records.filter((r) => r.actualCourse === course && !r.absent).slice(-ST_STABILITY_WINDOW);
+  const sts = window.filter((r) => r.stForRank !== null && r.stForRank !== undefined && r.finishMark !== "L").map((r) => Number(r.stForRank));
+  const mean = sts.reduce((a, b) => a + b, 0) / (sts.length || 1);
+  const sd = sts.length >= 2 ? Math.sqrt(sts.reduce((a, x) => a + (x - mean) ** 2, 0) / sts.length) : null;
+  return {
+    course,
+    window_runs: window.length,
+    valid_runs: sts.length,
+    st_stddev: round(sd, 3),
+    official_l_count: window.filter((r) => r.finishMark === "L").length,
+    since: window[0]?.raceId?.slice(0, 10) ?? null,
+  };
+}
+
+/**
+ * 超展開データの1セルを材料の形にする（画面の「-」・全国平均の%・参考の※を state で分ける）。
+ * screen_value は画面に出る文字（照合用）。value は選手の値として使ってよいものだけ（全国平均から出た値は null）
+ */
+export function adCell(v, attackIsDefault, fromAttack) {
+  const screen_value = typeof v === "object" && v !== null ? v.value : (v ?? null);
+  if (v === "-" || v === null || v === undefined) return { value: null, state: "none", screen_value };
+  if (typeof v === "object" && v.type === "default") return { value: null, state: "national_default", screen_value };
+  if (attackIsDefault && fromAttack) return { value: null, state: "national_default_distribution", screen_value };
+  if (typeof v === "object" && v.type === "reference") return { value: v.value, state: "reference", screen_value };
+  return { value: v, state: "value", screen_value };
+}
+
+/**
+ * 艇ごとに、画面と同じ定義の値を足す（2026-10-25 hq 依頼、FT01。画面と投稿の数字が食い違わないため、新しい集計を作らない）。
+ * attack_defense: 超展開データ（src/utils/attackDefenseCells.js の attackDefenseColumn。画面と同じ関数）。元は予想（standard の最新）の
+ *   feature_contributions.racerStats（画面の getRaceRacerStats と同じ問い合わせ）
+ * st_consideration: ST考察（src/utils/stConsideration.js の computeStConsideration。course は枠番＝画面の枠なり想定）と
+ *   同コース・同級別の平均（st_course_baseline。級別はこのレースの出走表の値）
+ * st_stability: stStability（画面に無い分だけ新しく計算）
+ */
+async function racerScreenStats(boats, raceId, date, missing) {
+  const ids = [...new Set(boats.map((b) => b.racer_id).filter((x) => x != null))];
+  const [pred, baselineRows, entryGrades, recordsList] = await Promise.all([
+    sbGet("predictions", `select=racerStats:feature_contributions->racerStats,predicted_at&race_id=eq.${raceId}&model_id=eq.standard&order=predicted_at.desc&limit=1`),
+    sbGet("st_course_baseline", "select=course,grade,window_start,window_end,runs,stable_rate,late_rate,breakout_rate&order=course,grade"),
+    sbGet("race_entries", `select=boat_number,grade&race_id=eq.${raceId}`),
+    Promise.all(ids.map((id) => racerStRecords(id, raceId, date))),
+  ]);
+  const recordsById = new Map(ids.map((id, i) => [id, recordsList[i]]));
+  const racerStats = toWakuRacerStats(pred[0]?.racerStats) ?? [];
+  const baselineIndex = baselineRows.length ? indexBaseline(baselineRows) : null;
+  if (!pred[0]) missing.push({ source: "db.exhibition.boats.attack_defense", reason: "predictions に standard の予想が無い（超展開データの元）" });
+  if (!baselineIndex) missing.push({ source: "db.exhibition.boats.st_consideration.baseline", reason: "st_course_baseline が読めない（空）" });
+  return boats.map((b) => {
+    const at = (key) => `db.exhibition.boats.${b.boat_number}.${key}`;
+    const out = withoutScreenStats(b);
+    const s = racerStats.find((x) => x.boatNumber === b.boat_number);
+    if (pred[0] && !s) missing.push({ source: at("attack_defense"), reason: "予想の racerStats にこの艇が無い" });
+    if (s) {
+      const col = attackDefenseColumn(s);
+      const attackIsDefault = isDefaultAttackDistribution(s.attackDistribution);
+      // 1号艇の差され・まくられ等は defenseDistribution から、それ以外（1号艇の逃げ、2〜6号艇）は attackDistribution から出る
+      const fromAttack = (key) => b.boat_number !== 1 || key === "nige";
+      const cells = Object.fromEntries(Object.entries(col.cells).map(([k, v]) => [k, adCell(v, attackIsDefault, fromAttack(k))]));
+      out.attack_defense = {
+        basis: "boat_number",
+        role: b.boat_number === 1 ? "defense" : "attack",
+        wins: col.wins,
+        total: col.total,
+        cells,
+        exhibition_course_differs: b.exhibition_course != null && b.exhibition_course !== b.boat_number,
+        predicted_at: pred[0].predicted_at ?? null,
+      };
+      const national = Object.entries(cells).filter(([, c]) => c.state.startsWith("national_default")).map(([k]) => k);
+      if (national.length) missing.push({ source: at("attack_defense"), reason: `勝ちが少なく全国平均の値（選手の値でないので null）: ${national.join(",")}` });
+    }
+    if (b.racer_id == null) {
+      missing.push({ source: at("st_consideration"), reason: "この艇の選手が分からない（race_entries.racer_id が無い）" });
+      return out;
+    }
+    const records = recordsById.get(b.racer_id) ?? [];
+    const course = b.boat_number;
+    const grade = entryGrades.find((x) => x.boat_number === b.boat_number)?.grade ?? null;
+    const st = computeStConsideration(records, { course });
+    const cell = getBaselineCell(baselineIndex, course, grade);
+    out.st_consideration = {
+      course,
+      course_basis: "boat_number",
+      grade,
+      since: daysBefore(date, 730),
+      n: st.n,
+      small_sample: st.n > 0 && st.n < SMALL_SAMPLE_THRESHOLD,
+      stable_rate: round(st.stableRate, 1),
+      late_rate: round(st.lateRate, 1),
+      breakout_count: st.breakoutCount,
+      avg_st: round(st.avgSt, 3),
+      flying_count: st.flyingCount,
+      baseline: cell
+        ? {
+            stable_rate: round(cell.stable_rate, 1),
+            late_rate: round(cell.late_rate, 1),
+            breakout_rate: cell.breakout_rate ?? null,
+            expected_breakout: round(expectedBreakoutCount(cell.breakout_rate ?? null, st.n), 1),
+            runs: cell.runs ?? null,
+            window_start: cell.window_start ?? null,
+            window_end: cell.window_end ?? null,
+          }
+        : null,
+    };
+    if (st.n === 0) missing.push({ source: at("st_consideration"), reason: `このレースより前の730日に${course}コースの ST が無い` });
+    if (!cell && baselineIndex) missing.push({ source: at("st_consideration.baseline"), reason: `st_course_baseline に${course}コース・${grade ?? "級別不明"}の行が無い` });
+    out.st_stability = stStability(records, course);
+    if (out.st_stability.st_stddev === null) missing.push({ source: at("st_stability.st_stddev"), reason: `直近${ST_STABILITY_WINDOW}走の有効な ST が2走未満（${out.st_stability.valid_runs}走）` });
     return out;
   });
 }

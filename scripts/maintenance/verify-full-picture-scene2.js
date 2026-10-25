@@ -669,7 +669,7 @@ for (const f of fixtures) {
   };
   m.api.facts.racers = { meet_start: "2026-10-10", boats: [1, 2, 4, 5, 6].map((n) => ({ boat_number: n, course_entry: courseEntry[n] ?? null, after_race: n === 4, meet_runs: n === 1 ? [{ race_id: "2026-10-11-01-03", boat_number: 2 }, { race_id: "2026-10-10-01-05", boat_number: 4 }, { race_id: "2026-10-12-01-02", boat_number: 1 }] : [] })) };
   const startRows = [{ race_id: "2026-10-10-01-05", boat_number: 4, finish_mark: "1", finish_rank: 1 }, { race_id: "2026-10-11-01-03", boat_number: 2, finish_mark: "F", finish_rank: null }];
-  const entryRows = [1, 2, 3, 4, 5].map((n) => ({ boat_number: n, racer_id: 4000 + n, f_count: n === 1 ? 1 : n === 5 ? null : 0 }));
+  const entryRows = [1, 2, 3, 4, 5].map((n) => ({ boat_number: n, racer_id: 4000 + n, f_count: n === 1 ? 1 : n === 5 ? null : 0, grade: n === 2 ? "A1" : "B1" }));
   const technique = {
     venue_technique_period_stats: [{ period_days: 90, winning_technique: "逃げ", race_count: 388, total_races: 660, period_from: "2026-07-27", period_to: "2026-10-24", last_updated: "2026-10-25" }],
     winning_technique_stats: [{ boat_number: 1, winning_technique: "逃げ", count_90days: 385, total_races: 412, percentage: 93.45, last_updated: "2026-10-25" }],
@@ -677,20 +677,44 @@ for (const f of fixtures) {
   // 選手のコース別の成績・会場のコース別の決まり手（2026-10-25 hq 依頼、FT01 優勝戦の思考の材料）。固定の材料の日は 2026-10-12
   const date = m.raceId.slice(0, 10);
   const tech = (racer_id, course, over = {}) => ({ racer_id, course, window_start: "2025-12-02", window_end: "2026-10-11", window_days: 314, runs: 25, nige_count: course === 1 ? 10 : null, nige_rate: course === 1 ? 40 : null, nige_expected: 54.48, makuri_count: 2, makuri_rate: 8, makuri_expected: 0, nigashi_count: course === 1 ? null : 12, nigashi_rate: course === 1 ? null : 48, nigashi_expected: 50, runs_90d: 6, nige_rate_90d: course === 1 ? 50 : null, makuri_rate_90d: 0, nigashi_rate_90d: course === 1 ? null : 50, last_updated: "2026-10-12", ...over });
-  // マイグレーション 176 の列（差し・まくり差し、ST の安定度）
-  const sashiSt = (over = {}) => ({ sashi_count: 0, sashi_rate: 0, makurizashi_count: 0, makurizashi_rate: 0, sashi_rate_90d: 0, makurizashi_rate_90d: 0, st_window_runs: 25, st_valid_runs: 24, st_stddev_last30: 0.041, late_start_count_last30: 1, ...over });
   const cN = (c, v) => Object.fromEntries(["entries", "avg_st", "avg_start_rank", "f", "l0", "l1", "p1", "p2", "p3"].map((f, i) => [`c${c}_${f}`, f === "avg_st" ? 0.15 + v / 100 : f === "avg_start_rank" ? 2.5 : v + i]));
   const period = (racer_id, period_year, period_no, calc_to, v) => ({ racer_id, period_year, period_no, calc_to, ...[1, 2, 3, 4, 5, 6].reduce((o, c) => ({ ...o, ...cN(c, v * 10 + c) }), {}) });
   const racerTables = {
     // 1号艇 1コース（欠けなし）、2号艇 2コースは行が無い、3号艇は展示の進入 4コース（レースの日を含む集計）、4号艇 3コース、5号艇は枠番の5コース
-    // 1号艇・5号艇は 176 の列あり（5号艇は有効な ST が1走で標準偏差なし）、ほかは 176 の前の行（列が無い）
-    racer_course_technique_stats: [tech(4001, 1, sashiSt()), tech(4001, 2), tech(4003, 3), tech(4003, 4, { window_end: date }), tech(4004, 3), tech(4005, 5, sashiSt({ st_window_runs: 2, st_valid_runs: 1, st_stddev_last30: null, late_start_count_last30: 1 }))],
+    racer_course_technique_stats: [tech(4001, 1), tech(4001, 2), tech(4003, 3), tech(4003, 4, { window_end: date }), tech(4004, 3), tech(4005, 5)],
     // 1号艇は締めた期（2026-04-30）とレースの日より後に締めた期（2026-10-31）。後者は使わない。2号艇は期が無い
     racer_period_stats: [period(4001, 2026, 1, "2026-04-30", 1), period(4001, 2026, 2, "2026-10-31", 9), period(4001, 2025, 2, "2025-10-31", 2), period(4003, 2026, 1, "2026-04-30", 3), period(4004, 2026, 1, "2026-04-30", 4), period(4005, 2026, 1, "2026-04-30", 5)],
   };
   const vRow = (race_grade, course, over = {}) => ({ race_grade, course, runs: 136, nige_rate: course === 1 ? 62.2 : null, makuri_rate: course === 1 ? 0 : 5.1, nigashi_rate: course === 1 ? null : 62.2, window_start: "2025-12-02", window_end: "2026-10-11", last_updated: "2026-10-12", ...over });
   // G1 は6コースが欠け、ALL は6コースそろう
   let baseline = [...[1, 2, 3, 4, 5].map((c) => vRow("G1", c)), ...[1, 2, 3, 4, 5, 6].map((c) => vRow("ALL", c, { runs: 2103 }))];
+  // 超展開データの元（予想 standard の racerStats、保存されたままの形）。2026-10-25 hq 依頼（FT01）
+  // 1号艇: 勝ち10で選手の値 / 2号艇: 全枠の勝ちが4で参考 / 3号艇: 勝ちが1で全国平均の% / 4号艇: 決まり手の内訳が全国の既定 /
+  // 5号艇: 勝ちは5号艇2・1号艇3の計5 / 6号艇: racerStats に無い
+  const { COURSE_DEFAULT_DISTRIBUTION } = await import("../lib/winningTechniques.js");
+  const racerStatsRaw = [
+    { boatNumber: 1, course: 1, avgST: 0.15, courseRaceCounts: { 1: { total: 20, wins: 10 } }, attackDistribution: { 1: { nige: 0.9, nuki: 0.1 } }, defenseDistribution: { 1: { sashi: 0.5, makuri: 0.3, makurizashi: 0.2 } } },
+    { boatNumber: 2, course: 2, avgST: 0.15, courseRaceCounts: { 2: { total: 30, wins: 4 } }, attackDistribution: { 2: { sashi: 0.5, makuri: 0.25, makurizashi: 0.25 } }, defenseDistribution: {} },
+    { boatNumber: 3, course: 3, avgST: 0.15, courseRaceCounts: { 3: { total: 10, wins: 1 } }, attackDistribution: { 3: { makuri: 1 } }, defenseDistribution: {} },
+    { boatNumber: 4, course: 4, avgST: 0.15, courseRaceCounts: { 4: { total: 25, wins: 5 } }, attackDistribution: structuredClone(COURSE_DEFAULT_DISTRIBUTION), defenseDistribution: {} },
+    { boatNumber: 5, course: 5, avgST: 0.15, courseRaceCounts: { 5: { total: 12, wins: 2 }, 1: { total: 3, wins: 3 } }, attackDistribution: { 5: { makurizashi: 1 } }, defenseDistribution: {} },
+  ];
+  let predictionRows = [{ racerStats: racerStatsRaw, predicted_at: `${date}T00:10:00+00:00` }];
+  const stBaseline = [{ course: 2, grade: "A1", window_start: "2025-12-02", window_end: "2026-10-11", runs: 12000, stable_rate: 67.04, late_rate: 12.06, breakout_rate: 7.5 }];
+  // 2号艇の選手（4002）のこのレースより前の5走。どれも2号艇・2コース進入。1号艇の ST を並べてレースの最速を決める
+  //   r1: 自 .15・最速 .12（差 .03 で安定） / r2: 自 .10・1号艇 .18（最速で安定、内より .08 早く抜出） / r3: F / r4: L（ST なし） /
+  //   r5: 自 .30・最速 .14（差 .16 で出遅れ）。有効な ST は .15・.10・.30
+  const pastIds = ["2026-10-01-01-01", "2026-10-02-01-01", "2026-10-03-01-01", "2026-10-04-01-01", "2026-10-05-01-01"];
+  const pastSt = [[0.15, 0.12], [0.1, 0.18], [0.02, 0.15], [null, 0.13], [0.3, 0.14]];
+  const scoped = {
+    entries: pastIds.map((race_id) => ({ race_id, boat_number: 2, grade: "A1", f_count: 0 })),
+    races: pastIds.map((race_id) => ({ race_id, race_date: race_id.slice(0, 10), venue_code: 1, race_grade: "ippan" })),
+    results: pastIds.map((race_id) => ({ race_id, rank1: 1, rank2: 3, rank3: 4, rank4: 5, rank5: 6, rank6: 2, race_status: null, actual_course_1: 1, actual_course_2: 2, actual_course_3: 3, actual_course_4: 4, actual_course_5: 5, actual_course_6: 6, winning_technique: "逃げ", payout_win: 150 })),
+    st: pastIds.flatMap((race_id, i) => [
+      { race_id, boat_number: 1, start_timing: pastSt[i][1], is_flying: false, finish_mark: "1", entry_course: 1 },
+      { race_id, boat_number: 2, start_timing: pastSt[i][0], is_flying: i === 2, finish_mark: i === 3 ? "L" : i === 2 ? "F" : "6", entry_course: 2 },
+    ]),
+  };
   const seenQueries = [];
   const listParam = (v) => (v ?? "").replace(/^in\.\(|\)$/g, "").split(",");
   const run = async ({ conditions, startTime = "16:06:00", ex = exRows, stage = "exhibition", racers = m.api.facts.racers, grade = "G1" }) => {
@@ -705,7 +729,20 @@ for (const f of fixtures) {
         if (table === "exhibition_data") return json(m.db.motor?.exhibition ?? []);
         if (table === "race_conditions") return json(conditions === undefined ? [] : [conditions]);
         if (table === "race_entries" && q.get("race_id") === `eq.${m.raceId}`) return json(ex.length ? entryRows : []);
+        // ST考察の元（選手の730日の走）。select に start_timing を含む問い合わせだけ
+        if (table === "race_start_timings" && /start_timing/.test(q.get("select") ?? "")) return json(scoped.st.filter((r) => listParam(q.get("race_id")).map((x) => x.replace(/"/g, "")).includes(r.race_id)));
         if (table === "race_start_timings") return json(startRows);
+        if (table === "race_entries" && q.get("racer_id")) {
+          seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+          if (/grade/.test(q.get("select") ?? "")) return json(q.get("racer_id") === "eq.4002" ? scoped.entries : []);
+        }
+        if (table === "races" && /race_date/.test(q.get("select") ?? "")) return json(scoped.races);
+        if (table === "race_results" && /actual_course_1/.test(q.get("select") ?? "")) return json(scoped.results);
+        if (table === "predictions") {
+          seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+          return json(predictionRows);
+        }
+        if (table === "st_course_baseline") return json(stBaseline);
         if (table === "races" && q.get("race_id") === `eq.${m.raceId}`) return json([{ start_time: startTime, race_grade: grade }]);
         if (technique[table]) return json(technique[table]);
         if (racerTables[table]) {
@@ -788,20 +825,9 @@ for (const f of fixtures) {
   );
   assert.deepEqual(
     boats[0].course_technique,
-    { window_start: "2025-12-02", window_end: "2026-10-11", window_days: 314, runs: 25, nige_count: 10, nige_rate: 40, makuri_count: 2, makuri_rate: 8, nigashi_count: null, nigashi_rate: null, runs_90d: 6, nige_rate_90d: 50, makuri_rate_90d: 0, nigashi_rate_90d: null, last_updated: "2026-10-12", sashi_count: 0, sashi_rate: 0, makurizashi_count: 0, makurizashi_rate: 0, sashi_rate_90d: 0, makurizashi_rate_90d: 0, st_window_runs: 25, st_valid_runs: 24, st_stddev_last30: 0.041, late_start_count_last30: 1 },
-    "その選手のその進入コースの逃げ・まくり・逃がし・差し・まくり差しの回数と率、90日の率、ST の安定度（176）",
+    { window_start: "2025-12-02", window_end: "2026-10-11", window_days: 314, runs: 25, nige_count: 10, nige_rate: 40, makuri_count: 2, makuri_rate: 8, nigashi_count: null, nigashi_rate: null, runs_90d: 6, nige_rate_90d: 50, makuri_rate_90d: 0, nigashi_rate_90d: null, last_updated: "2026-10-12" },
+    "その選手のその進入コースの逃げ・まくり・逃がしの回数と率、90日の率",
   );
-  // 176 の前の行（列が無い）は値を null にし、欠けに記録する。列を名指しすると 176 の前に 400 になるので select=*
-  assert.ok(seenQueries.some((x) => x.startsWith("racer_course_technique_stats?") && /(^|&|\?)select=\*(&|$)/.test(x.split("?")[1])), "racer_course_technique_stats は select=* で読む");
-  assert.deepEqual(
-    [boats[3].course_technique?.sashi_count, boats[3].course_technique?.st_stddev_last30, boats[3].course_technique?.runs],
-    [null, null, 25],
-    "176 の前の行は足した欄だけ null（既存の欄は写す）",
-  );
-  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.4.course_technique" && /マイグレーション 176 の前/.test(x.reason) && /sashi_count/.test(x.reason)), "176 の前の列の欠けを記録");
-  assert.ok(!got.missing.some((x) => x.source.startsWith("db.exhibition.boats.1.course_technique")), "176 の列がそろえば欠けなし");
-  assert.equal(boats[4].course_technique?.late_start_count_last30, 1, "出遅れの回数を写す");
-  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.course_technique.st_stddev_last30" && /2走未満（1走）/.test(x.reason)), "有効な ST が2走未満なら標準偏差の欠けを記録");
   assert.equal(boats[2].course_technique?.window_end, date, "3号艇は展示の進入（4コース）の行を引く（枠番の3コースでない）");
   assert.equal(boats[4].course_technique?.runs, 25, "進入の無い艇は枠番のコースで引く");
   assert.equal(boats[1].course_technique, null, "行の無い選手・コースは null");
@@ -836,6 +862,58 @@ for (const f of fixtures) {
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.venueCourse.G1.6"), "行の無いコースを記録");
   assert.ok(!got.missing.some((x) => x.source === "db.exhibition.venueCourse"), "レースの日より前の集計なら欠けなし");
   assert.ok((got.db.exhibition.notes ?? []).some((x) => /racer_course_technique_stats・venue_course_technique_baseline・racer_aggregated_stats は最新の値だけ/.test(x)), "日付の無い表の注意を出力に書く");
+  // 画面と同じ定義の材料（2026-10-25 hq 依頼、FT01）。超展開データは画面と同じ関数（src/utils/attackDefenseCells.js）
+  const adOf = (n) => boats[n - 1].attack_defense;
+  const cellsOf = (n, key) => Object.fromEntries(Object.entries(adOf(n).cells).map(([k, c]) => [k, c[key]]));
+  assert.ok(seenQueries.some((x) => x.startsWith("predictions?") && /model_id=eq\.standard/.test(x) && /order=predicted_at\.desc/.test(x) && /limit=1/.test(x)), "画面と同じ予想（standard の最新）の racerStats を読む");
+  assert.deepEqual(
+    [adOf(1).role, adOf(1).wins, adOf(1).total, cellsOf(1, "value")],
+    ["defense", 10, 20, { nige: "9/20", sashi: "5/20", makuri: "3/20", makurizashi: "2/20", other: "0/20" }],
+    "1号艇は逃げと差され・まくられ・捲差され（割合×直近365日の勝ち・負け数を丸めた回数／出走）",
+  );
+  assert.deepEqual(
+    [cellsOf(2, "value"), cellsOf(2, "state")],
+    [{ nige: null, sashi: "2/30", makuri: "1/30", makurizashi: "1/30", other: "0/30" }, { nige: "none", sashi: "reference", makuri: "reference", makurizashi: "reference", other: "reference" }],
+    "全枠の勝ちが2〜4は参考（画面の※）、2〜6号艇の逃げは「-」",
+  );
+  assert.deepEqual(
+    [cellsOf(3, "value").sashi, cellsOf(3, "state").sashi, cellsOf(3, "screen_value").sashi],
+    [null, "national_default", "12%"],
+    "勝ちが2未満は画面が全国平均の%なので、選手の値として出さない（画面の文字は screen_value）",
+  );
+  assert.deepEqual(
+    [cellsOf(4, "value").sashi, cellsOf(4, "state").sashi, cellsOf(4, "screen_value").sashi],
+    [null, "national_default_distribution", "1/25"],
+    "決まり手の内訳が全国の既定（全期間の勝ち5未満）なら、画面に回数が出ても選手の値として出さない",
+  );
+  assert.deepEqual(cellsOf(5, "value"), { nige: null, sashi: "0/12", makuri: "0/12", makurizashi: "2/12", other: "0/12" }, "勝ちの合計は全枠（5号艇2＋1号艇3）で判定する");
+  assert.equal(adOf(6), null, "racerStats に無い艇は null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.6.attack_defense" && /racerStats にこの艇が無い/.test(x.reason)), "racerStats に無い艇を記録");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.attack_defense" && /全国平均/.test(x.reason)), "全国平均の値を出さないことを記録");
+  assert.deepEqual([adOf(3).exhibition_course_differs, adOf(1).exhibition_course_differs, adOf(3).basis], [true, false, "boat_number"], "展示の進入が枠と違う艇に印を付ける（値は枠番のまま）");
+  // ST考察（画面の computeStConsideration と同じ。course は枠番＝画面の枠なり想定）
+  assert.deepEqual(
+    boats[1].st_consideration,
+    {
+      course: 2, course_basis: "boat_number", grade: "A1", since: "2024-10-12", n: 3, small_sample: true,
+      stable_rate: 66.7, late_rate: 33.3, breakout_count: 1, avg_st: 0.183, flying_count: 1,
+      baseline: { stable_rate: 67, late_rate: 12.1, breakout_rate: 7.5, expected_breakout: 0.2, runs: 12000, window_start: "2025-12-02", window_end: "2026-10-11" },
+    },
+    "ST考察: F・ST の無い走を母数から外し、安定率（最速との差.05以内）・出遅率（.10以上遅い）・抜出（内より.07早い）と同コース・同級別の平均",
+  );
+  assert.deepEqual(boats[1].st_stability, { course: 2, window_runs: 5, valid_runs: 3, st_stddev: 0.085, official_l_count: 1, since: "2026-10-01" }, "ST の安定度: 窓の5走から F・L を除いた3走の母標準偏差と、公式の L の回数");
+  assert.deepEqual([boats[0].st_consideration.n, boats[0].st_consideration.baseline, boats[0].st_stability.st_stddev], [0, null, null], "走の無い選手は n=0・平均の行なし・標準偏差なし");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.1.st_stability.st_stddev" && /2走未満（0走）/.test(x.reason)), "標準偏差が出せないことを記録");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.1.st_consideration.baseline" && /1コース・B1の行が無い/.test(x.reason)), "同コース・同級別の平均が無いことを記録");
+  assert.equal(boats[5].st_consideration, null, "選手が分からない艇は null");
+  assert.ok(seenQueries.some((x) => x.startsWith("race_entries?") && /racer_id=eq\.4002/.test(x) && /race_id\.lt\.2026-10-12/.test(x)), "選手の走はこのレースより前だけ読む");
+  // 予想が無い・読めないときも艇の材料は残す
+  predictionRows = [];
+  const noPred = await run({ conditions: pre });
+  assert.deepEqual(validate(noPred), [], "予想の無い材料も契約に合う");
+  assert.ok(noPred.db.exhibition.boats.every((b) => b.attack_defense === null) && noPred.db.exhibition.boats[1].st_consideration?.n === 3, "予想が無ければ超展開データだけ null");
+  assert.ok(noPred.missing.some((x) => x.source === "db.exhibition.boats.attack_defense" && /standard の予想が無い/.test(x.reason)), "予想が無いことを記録");
+  predictionRows = [{ racerStats: racerStatsRaw, predicted_at: `${date}T00:10:00+00:00` }];
   baseline = baseline.map((r) => ({ ...r, window_end: date }));
   const noGrade = await run({ conditions: pre, grade: null });
   assert.deepEqual(validate(noGrade), [], "グレードの無い材料も契約に合う");
