@@ -209,6 +209,111 @@
                       "since": { "type": ["string", "null"] }
                     }
                   },
+                  "condition_rows": {
+                    "$comment": "基本情報タブの条件別の表（buildConditionRows）と同じ値。キーは national・local・ippan・sgg1・firstDay・finalDay・wave5・fHolding・fClean。行が null は race_conditions が読めず画面も出さない。率は%の1桁、avg_st は2桁。任意の欄",
+                    "type": ["object", "null"],
+                    "additionalProperties": { "$ref": "#/definitions/conditionRow" }
+                  },
+                  "condition_stats": {
+                    "$comment": "選手ページのレース条件別の成績（aggregateRacerConditionStats）と同じ値。rows は5走以上の条件だけ（windStrong＝風5m以上、waveRough＝波5cm以上）。率は%の1桁。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["since", "overall", "rows"],
+                    "properties": {
+                      "since": { "type": ["string", "null"] },
+                      "overall": { "$ref": "#/definitions/rateRow" },
+                      "rows": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "object",
+                          "required": ["group", "label", "n", "win_rate", "top2_rate", "top3_rate"],
+                          "properties": {
+                            "group": { "type": "string" },
+                            "label": { "type": "string" },
+                            "n": { "type": "integer", "minimum": 0 },
+                            "win_rate": { "type": ["number", "null"] },
+                            "top2_rate": { "type": ["number", "null"] },
+                            "top3_rate": { "type": ["number", "null"] }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "meet_results": {
+                    "$comment": "今節タブの日別の走りの表（buildMeetResults・getRecentRaces）と同じ行。決まり手は1着の走だけ。任意の欄",
+                    "type": ["array", "null"],
+                    "items": {
+                      "type": "object",
+                      "required": ["race_id", "date", "boat_number", "entry_course", "start_timing", "is_flying", "finish_rank", "finish_mark", "absent", "winning_technique", "race_stage"],
+                      "properties": {
+                        "race_id": { "type": "string" },
+                        "date": { "type": "string" },
+                        "race_no": { "type": ["integer", "null"] },
+                        "boat_number": { "type": "integer", "minimum": 1, "maximum": 6 },
+                        "entry_course": { "type": ["integer", "null"], "minimum": 1, "maximum": 6 },
+                        "start_timing": { "type": ["number", "null"] },
+                        "is_flying": { "type": "boolean" },
+                        "finish_rank": { "type": ["integer", "null"], "minimum": 1, "maximum": 6 },
+                        "finish_mark": { "type": ["string", "null"] },
+                        "absent": { "type": "boolean" },
+                        "winning_technique": { "type": ["string", "null"] },
+                        "race_stage": { "type": ["string", "null"] },
+                        "race_title": { "type": ["string", "null"] },
+                        "exhibition_time": { "type": ["number", "null"] },
+                        "exhibition_rank": { "type": ["integer", "null"] }
+                      }
+                    }
+                  },
+                  "entry_distribution": {
+                    "$comment": "直前情報タブのこの枠からの進入コース（computeFrameEntryDistribution）。inward_rate が前づけ%。waku_nari は枠情報タブの枠なり進入率（computeWakuNariRate、全枠）。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["frame", "n", "counts", "waku_rate", "inward_rate", "outward_rate", "waku_nari"],
+                    "properties": {
+                      "frame": { "type": "integer", "minimum": 1, "maximum": 6 },
+                      "n": { "type": "integer", "minimum": 0 },
+                      "counts": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+                      "waku_rate": { "type": ["number", "null"] },
+                      "inward_rate": { "type": ["number", "null"] },
+                      "outward_rate": { "type": ["number", "null"] },
+                      "waku_nari": {
+                        "type": "object",
+                        "required": ["rate", "n"],
+                        "properties": { "rate": { "type": ["number", "null"] }, "n": { "type": "integer", "minimum": 0 } }
+                      }
+                    }
+                  },
+                  "accident": {
+                    "$comment": "基本情報タブの今期の事故率（RPC get_racer_accident_records・computeAccidentStats）。rate は小数第2位で切り捨て。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["from", "to", "starts", "points", "rate", "need", "counts", "status", "settled", "show_badge"],
+                    "properties": {
+                      "from": { "type": "string" },
+                      "to": { "type": "string" },
+                      "starts": { "type": "integer", "minimum": 0 },
+                      "points": { "type": "integer", "minimum": 0 },
+                      "rate": { "type": ["number", "null"] },
+                      "need": { "type": "integer", "minimum": 0 },
+                      "counts": {
+                        "type": "object",
+                        "required": ["F", "L1", "K1", "S1", "S2"],
+                        "additionalProperties": { "type": "integer", "minimum": 0 }
+                      },
+                      "status": { "enum": ["over", "near", null] },
+                      "settled": { "type": "boolean" },
+                      "show_badge": { "type": "boolean" }
+                    }
+                  },
+                  "original_exhibition": {
+                    "$comment": "オリジナル展示（getRaceOriginalExhibition と同じ表と整形）。キーは項目名（一周・半周ラップ・まわり足・直線と会場の項目）。行が無い（未公開）レースは null。任意の欄",
+                    "type": ["object", "null"],
+                    "additionalProperties": {
+                      "type": "object",
+                      "required": ["value", "status"],
+                      "properties": {
+                        "value": { "type": ["number", "null"] },
+                        "status": { "enum": ["value", "no_value", "not_offered"] }
+                      }
+                    }
+                  },
                   "entry_tendency": {
                     "$comment": "racer_aggregated_stats（venue_code=0＝全国）の course_entry_tendency.all のこの枠の {n, courses}（courses はコース→回数）と since。facts の racers.boats[].course_entry から写す。venue は会場の分（無ければ null）。任意の欄",
                     "type": ["object", "null"],
@@ -250,6 +355,45 @@
               "properties": { "byPeriod": { "type": "array" }, "byBoat": { "type": "array" } }
             },
             "notes": { "$comment": "材料を読む側への注意（日付の無い表など）。任意の欄", "type": "array", "items": { "type": "string" } },
+            "losingTechnique": {
+              "$comment": "会場の負けの決まり手（losing_technique_stats、90日・会場×枠。LosingTechniqueChart と同じまとめ）。by_boat のキーは枠番。任意の欄",
+              "type": ["object", "null"],
+              "required": ["last_updated", "by_boat"],
+              "properties": {
+                "last_updated": { "type": ["string", "null"] },
+                "by_boat": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": ["total_races", "techniques"],
+                    "properties": {
+                      "total_races": { "type": "integer", "minimum": 0 },
+                      "techniques": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": ["technique", "count", "percentage"],
+                          "properties": { "technique": { "type": "string" }, "count": { "type": "integer", "minimum": 0 }, "percentage": { "type": "number" } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "originalExhibition": {
+              "$comment": "オリジナル展示のレースの状態。state: published（値あり）・empty（値が1つも無い）・no_row（行が無い＝未公開・未取得）。measure_status 1=計測あり・2=計測不可。任意の欄",
+              "type": ["object", "null"],
+              "required": ["state", "measure_status", "item_labels", "kinds", "captured_at"],
+              "properties": {
+                "state": { "enum": ["published", "empty", "no_row"] },
+                "measure_status": { "enum": [1, 2, null] },
+                "item_labels": { "type": "array", "items": { "type": "string" } },
+                "kinds": { "type": "array", "items": { "type": "string" } },
+                "captured_at": { "type": ["string", "null"] },
+                "last_written_at": { "type": ["string", "null"] }
+              }
+            },
             "venueCourse": {
               "$comment": "venue_course_technique_baseline の会場・レースのグレード（無ければ ippan）の6コース（courses）と、グレードを問わない ALL の6コース（all）。行の無いコースは null。任意の欄",
               "type": ["object", "null"],
@@ -267,6 +411,30 @@
     "missing": { "type": "array", "items": { "type": "object", "required": ["source", "reason"], "properties": { "source": { "type": "string" }, "reason": { "type": "string" } } } }
   },
   "definitions": {
+    "rateRow": {
+      "type": "object",
+      "required": ["n", "win_rate", "top2_rate", "top3_rate"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "win_rate": { "type": ["number", "null"] },
+        "top2_rate": { "type": ["number", "null"] },
+        "top3_rate": { "type": ["number", "null"] }
+      }
+    },
+    "conditionRow": {
+      "type": ["object", "null"],
+      "required": ["n", "base_n", "win_rate", "top2_rate", "top3_rate", "avg_st", "avg_st_n"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "base_n": { "type": ["integer", "null"], "minimum": 0 },
+        "excluded_n": { "type": ["integer", "null"], "minimum": 0 },
+        "win_rate": { "type": ["number", "null"] },
+        "top2_rate": { "type": ["number", "null"] },
+        "top3_rate": { "type": ["number", "null"] },
+        "avg_st": { "type": ["number", "null"] },
+        "avg_st_n": { "type": "integer", "minimum": 0 }
+      }
+    },
     "venueCourseRow": {
       "type": ["object", "null"],
       "required": ["course", "runs", "nige_rate", "makuri_rate", "nigashi_rate", "window_start", "window_end"],

@@ -19,7 +19,6 @@ import {
   meetStartFromRows,
   seriesDayByDate,
 } from "../utils/meetGrouping";
-import { deriveRaceStContext } from "../utils/stConsideration";
 import { isWithinFreshMotorWindow } from "../utils/motorFreshRate.js";
 import {
   currentMotorGenerationStart,
@@ -44,6 +43,9 @@ import {
 } from "../utils/meetPageModel.js";
 import { meetExclusionsOf } from "./meetExclusion.js";
 import { buildRacerScopedRaceRows } from "./racerScopedRaceRows.js";
+import { buildRacerRaceHistoryRows } from "./racerRaceHistoryRows.js";
+import { groupLosingTechniqueRows } from "../utils/losingTechnique.js";
+import { shapeOriginalExhibition } from "../utils/originalExhibition.js";
 import { fetchAllInChunks, fetchAllPages } from "./fetchAllPages.js";
 import { winnerEntryCourseOf } from "../utils/raceOutcome.js";
 import { competitionRank } from "../utils/competitionRank.js";
@@ -4769,78 +4771,15 @@ export const supabaseDataService = {
           ),
         ]);
 
-      const raceInfoByRaceId = new Map(raceRows.map((r) => [r.race_id, r]));
-      const resultByRaceId = new Map(resultRows.map((r) => [r.race_id, r]));
-      const exhibitionByKey = new Map(
-        exhibitionRows.map((e) => [`${e.race_id}-${e.boat_number}`, e]),
-      );
-      const conditionByRaceId = new Map(
-        conditionRows.map((c) => [c.race_id, c]),
-      );
-      const stByKey = new Map(
-        stRows.map((r) => [`${r.race_id}-${r.boat_number}`, r]),
-      );
-      // レース内のST順位（Fを除く。同タイムは同順位）。今節タブ・直近10走と同じ規則
-      // （deriveRaceStContext）。レース一覧の「ST」に順位を添える（BOA-623）
-      const stRowsByRace = new Map();
-      stRows.forEach((r) => {
-        if (!stRowsByRace.has(r.race_id)) stRowsByRace.set(r.race_id, []);
-        stRowsByRace.get(r.race_id).push(r);
+      // 整形は src/services/racerRaceHistoryRows.js（2026-10-25、全貌動画の材料と共有するため手を加えずに移した）
+      return buildRacerRaceHistoryRows({
+        entries,
+        raceRows,
+        resultRows,
+        exhibitionRows,
+        conditionRows,
+        stRows,
       });
-      const stRankOf = (raceId, boatNumber) =>
-        deriveRaceStContext(stRowsByRace.get(raceId) ?? [], null).byBoat.get(
-          boatNumber,
-        )?.stRank ?? null;
-
-      return entries
-        .map((entry) => {
-          const raceInfo = raceInfoByRaceId.get(entry.race_id);
-          const result = resultByRaceId.get(entry.race_id);
-          const exhibition = exhibitionByKey.get(
-            `${entry.race_id}-${entry.boat_number}`,
-          );
-          const condition = conditionByRaceId.get(entry.race_id);
-          const st = stByKey.get(`${entry.race_id}-${entry.boat_number}`);
-          if (!raceInfo?.venue_code || !isUsableRaceResult(result)) return null;
-          return {
-            raceId: entry.race_id,
-            venueCode: raceInfo.venue_code,
-            raceGrade: raceInfo.race_grade ?? null,
-            raceStage: condition?.race_stage ?? null,
-            raceTitle: condition?.race_title ?? null,
-            // レース直前の発表値（BOA-336）。race_conditions の行が無い走は null
-            weather: condition?.weather ?? null,
-            windSpeed: condition?.wind_speed ?? null,
-            waveHeight: condition?.wave_height ?? null,
-            boatNumber: entry.boat_number,
-            rank1: result.rank1,
-            rank2: result.rank2,
-            rank3: result.rank3,
-            rank4: result.rank4,
-            rank5: result.rank5,
-            rank6: result.rank6,
-            winningTechnique: result.winning_technique ?? null,
-            payoutWin: result.payout_win ?? null,
-            payoutPlace1: result.payout_place_1 ?? null,
-            payoutPlace2: result.payout_place_2 ?? null,
-            exhibitionTime: exhibition?.exhibition_time ?? null,
-            startTiming: st?.start_timing ?? null,
-            isFlying: st?.is_flying === true,
-            finishMark: st?.finish_mark ?? null,
-            // 進入コースとST順位（BOA-623）。進入は本番STの進入を先に、無ければ Kファイル
-            entryCourse:
-              st?.entry_course ??
-              result[`actual_course_${entry.boat_number}`] ??
-              null,
-            stRank: stRankOf(entry.race_id, entry.boat_number),
-            // 公式の着欄が数字でない（F・L・欠・落・転・妨・エ・不・失・沈・＿ など）走は着順が付かない。
-            // race_results の rank1〜6 には、完走が3艇未満のレースで返還艇（F等）が入っていることがある
-            // （43件、BOA-576 のデータ精度検証）。着欄の記号を優先し、着順・勝率には数えない
-            unranked: isUnrankedFinishMark(st?.finish_mark),
-          };
-        })
-        .filter(Boolean)
-        .sort((a, b) => a.raceId.localeCompare(b.raceId));
     });
   },
 
@@ -6613,28 +6552,9 @@ export const supabaseDataService = {
         };
       }
 
-      const techniqueData = {};
-      let lastUpdated = null;
-
-      data.forEach((row) => {
-        const boatNumber = row.boat_number;
-        if (!techniqueData[boatNumber]) {
-          techniqueData[boatNumber] = {
-            total_races: row.total_losses_90days,
-            techniques: [],
-          };
-        }
-
-        techniqueData[boatNumber].techniques.push({
-          technique: row.losing_technique,
-          count: row.count_90days,
-          percentage: row.percentage,
-        });
-
-        if (!lastUpdated) {
-          lastUpdated = row.last_updated;
-        }
-      });
+      // 枠ごとのまとめは src/utils/losingTechnique.js（2026-10-25、全貌動画の材料と共有するため手を加えずに移した）
+      const { last_updated: lastUpdated, data: techniqueData } =
+        groupLosingTechniqueRows(data);
 
       const VENUE_NAMES = {
         1: "桐生",
@@ -8017,52 +7937,8 @@ export const supabaseDataService = {
         throw error;
       }
 
-      const values = valueRes.data ?? [];
-
-      // `value` は nullable で、欠測（BOATCASTのファイルの `--.--`。津・三国の
-      // 一周など。091のコメント）は NULL で入る。**値がある行だけ**を数えて
-      // 「出せるかどうか」を決める。行数だけで見ると、全艇が欠測の項目まで
-      // 出典に名前が並んだり、1行も出ないのに出典ブロックだけ残ったりする
-      const measured = values.filter(
-        (row) => row.value !== null && row.value !== undefined,
-      );
-      if (measured.length === 0) {
-        // まだ計測されていない（または全艇欠測）。発走の30分前あたりに値が
-        // 入るので、この状態をキャッシュすると出た後もリロードまで出ない
-        return {
-          state: "empty",
-          capturedAt: null,
-          kinds: [],
-          byBoat: {},
-          fetchFailed: true,
-        };
-      }
-
-      const byBoat = {};
-      measured.forEach((row) => {
-        byBoat[row.boat_number] = {
-          ...(byBoat[row.boat_number] ?? {}),
-          [row.kind]: Number(row.value),
-        };
-      });
-
-      // 会場によって項目が違う（例: 住之江・尼崎・徳山は「一周|まわり足」の2項目だけ）。
-      // ヘッダの item_labels（"一周|まわり足|直線"）を正として順番を決め、
-      // 実際に値がある種別だけ残す。ヘッダが無ければ既定の順に落とす
-      const present = new Set(measured.map((row) => row.kind));
-      const declared = (headerRes.data?.item_labels ?? "")
-        .split("|")
-        .map((label) => label.trim())
-        .filter(Boolean);
-      const order = declared.length > 0 ? declared : ORIGINAL_EXHIBITION_KINDS;
-      const kinds = order.filter((kind) => present.has(kind));
-
-      return {
-        state: "published",
-        capturedAt: headerRes.data?.updated_at ?? null,
-        kinds,
-        byBoat,
-      };
+      // 整形は src/utils/originalExhibition.js（2026-10-25、全貌動画の材料と共有するため手を加えずに移した）
+      return shapeOriginalExhibition(headerRes.data, valueRes.data ?? []);
     });
   },
 
@@ -8155,12 +8031,6 @@ const NON_TERMINAL_PIT_REPORT = Object.freeze({
 });
 
 /**
- * オリジナル展示の項目の既定の並び（BOATCASTのTSVの並びに合わせる）。
- * 会場ごとに項目数が違うため、実際の並びは `item_labels` を正とする
- */
-const ORIGINAL_EXHIBITION_KINDS = ["一周", "半周ラップ", "まわり足", "直線"];
-
-/**
  * モータ情報タブ向けに、節の前検タイムを選手ごとに1クエリで引く（BOA-451）。
  * 採る行は「同じ会場・`race_date <= 当日` かつ `>= 当日 - 6日` の最新」。
  * 根拠と、今節タブ（節の最初の行）と必ず一致することの実測は
@@ -8192,11 +8062,6 @@ function isPermissionDeniedError(error) {
   if (!error) return false;
   if (error.code === "42501") return true;
   return /permission denied/i.test(error.message ?? "");
-}
-
-// 公式の着欄の記号が数字でない（着順が付かない走）か。記号が無い（未取得）ときは着順に従う
-function isUnrankedFinishMark(mark) {
-  return typeof mark === "string" && mark !== "" && !/^[1-6]$/.test(mark);
 }
 
 /**
