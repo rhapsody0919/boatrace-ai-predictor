@@ -40,6 +40,53 @@ function check(label, pass, detail = "") {
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+// 未定義の入力は現状を表示するだけで、成功・失敗の判定に含めない。
+const KNOWN_GAPS = [
+  { input: "fanIdOf(2100, 4)", spec: "2000年代以外は未定", current: () => parserMod.fanIdOf(2100, 4) },
+  { input: "fanIdOf(2026, 1)", spec: "04・10以外の月は未定（parseFanIdは拒否）", current: () => parserMod.fanIdOf(2026, 1) },
+  { input: "fanIdOf(26, 4)", spec: "2桁の年は未定", current: () => parserMod.fanIdOf(26, 4) },
+  { input: "courseColumns(0)", spec: "1〜6以外のコースは未定", current: () => rowsMod.courseColumns(0) },
+  { input: "courseColumns(7)", spec: "1〜6以外のコースは未定", current: () => rowsMod.courseColumns(7) },
+];
+
+for (const [year, month, expected] of [
+  [2026, 4, "fan2604"],
+  [2025, 10, "fan2510"],
+  [2001, 10, "fan0110"],
+  [2009, 4, "fan0904"],
+  [2026, "04", "fan2604"],
+]) {
+  check(
+    `fanIdOf(${year}, ${JSON.stringify(month)}): ${expected}`,
+    same(parserMod.fanIdOf(year, month), expected),
+  );
+}
+for (const id of ["fan2604", "fan2510", "fan0110"]) {
+  const { year, month } = parserMod.parseFanId(id);
+  check(`parseFanId → fanIdOf: ${id}`, same(parserMod.fanIdOf(year, month), id));
+}
+check(
+  "courseColumns(1): 18列の名前と順序",
+  same(rowsMod.courseColumns(1), [
+    "c1_entries", "c1_top2_rate", "c1_avg_st", "c1_avg_start_rank",
+    "c1_p1", "c1_p2", "c1_p3", "c1_p4", "c1_p5", "c1_p6",
+    "c1_f", "c1_l0", "c1_l1", "c1_k0", "c1_k1", "c1_s0", "c1_s1", "c1_s2",
+  ]),
+);
+check(
+  "courseColumns(6): 先頭4列の名前と順序",
+  same(rowsMod.courseColumns(6).slice(0, 4), [
+    "c6_entries", "c6_top2_rate", "c6_avg_st", "c6_avg_start_rank",
+  ]),
+);
+const courseColumns = [1, 2, 3, 4, 5, 6].flatMap(rowsMod.courseColumns);
+check("courseColumns(1〜6): 108列", courseColumns.length === 108);
+check("courseColumns(1〜6): 重複なし", new Set(courseColumns).size === courseColumns.length);
+check(
+  "courseColumns(1〜6): 全列がSTATS_COLUMNSに含まれる",
+  courseColumns.every((column) => rowsMod.STATS_COLUMNS.includes(column)),
+);
+
 // ---------------------------------------------------------------------------
 // フィクスチャ（実ファイルから抜粋した選手のレコード）
 // ---------------------------------------------------------------------------
@@ -1337,6 +1384,11 @@ for (const [label, reps] of downloaderMutants) {
 }
 
 fs.rmSync(tmp, { recursive: true, force: true });
+
+console.log(`\nKNOWN_GAPS: ${KNOWN_GAPS.length}件（失敗には含めない）`);
+for (const gap of KNOWN_GAPS) {
+  console.log(`${gap.input}: ${gap.spec} / 今の値=${JSON.stringify(gap.current())}`);
+}
 
 console.log(
   failures === 0
