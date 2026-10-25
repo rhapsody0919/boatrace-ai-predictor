@@ -51,6 +51,11 @@ import {
 } from "../../src/utils/analogyScenario.js";
 import {
   FACT_ITEMS,
+  rateOf,
+  usualOf,
+  typicalRanks,
+  uniformClass,
+  scopeKind,
   boatScopeKey,
   defaultScope,
   factRows,
@@ -324,6 +329,84 @@ for (const c of defs.hints)
 }
 
 // ---- 4. 画面の純粋関数 ------------------------------------------------------
+// BOA-1129: 来る艇の条件の率・件数・平均の順位・級別・範囲の種類
+const SF = {
+  usual: {
+    "1": { win: [55, 100], top2: [70, 100], top3: [80, 100] },
+    "2": { win: [14, 100] },
+  },
+  typ: {
+    "1": {
+      series_score: { win: 2.1, top2: 2.5, top3: null },
+      exh_time: { win: 3 },
+    },
+  },
+};
+const ITEMS = [{ key: "series_score" }, { key: "exh_time" }, { key: "motor_top2" }];
+for (const [label, input, expected] of [
+  ["3/10", [3, 10], 0.3],
+  ["0/10", [0, 10], 0],
+  ["5/5", [5, 5], 1],
+  ["1/3", [1, 3], 0.3333333333333333],
+  ["母数0", [3, 0], null],
+  ["null", null, null],
+  ["undefined", undefined, null],
+  ["空配列", [], null],
+]) check(`rateOf: ${label}`, rateOf(input), expected);
+for (const [label, sf, boat, target, expected] of [
+  ["1着", SF, 1, 1, [55, 100]],
+  ["2着以内", SF, 1, 2, [70, 100]],
+  ["3着以内", SF, 1, 3, [80, 100]],
+  ["文字列の艇番", SF, "1", 1, [55, 100]],
+  ["文字列のtarget", SF, 1, "2", [70, 100]],
+  ["着順キーなし", SF, 2, 2, null],
+  ["艇なし", SF, 3, 1, null],
+  ["target範囲外", SF, 1, 4, null],
+  ["null", null, 1, 1, null],
+  ["undefined", undefined, 1, 1, null],
+  ["空オブジェクト", {}, 1, 1, null],
+  ["母数0も組のまま", { usual: { "1": { win: [0, 0] } } }, 1, 1, [0, 0]],
+]) check(`usualOf: ${label}`, usualOf(sf, boat, target), expected);
+for (const [label, sf, boat, target, items, expected] of [
+  ["1着の項目順", SF, 1, 1, ITEMS, [2.1, 3, null]],
+  ["2着以内の欠けた軸", SF, 1, 2, ITEMS, [2.5, null, null]],
+  ["3着以内の明示null", SF, 1, 3, ITEMS, [null, null, null]],
+  ["文字列の艇番", SF, "1", 1, ITEMS, [2.1, 3, null]],
+  ["艇なし", SF, 2, 1, ITEMS, [null, null, null]],
+  ["null", null, 1, 1, ITEMS, [null, null, null]],
+  ["target範囲外", SF, 1, 4, ITEMS, [null, null, null]],
+  ["項目なし", SF, 1, 1, [], []],
+  ["0を保持", { typ: { "1": { series_score: { win: 0 } } } }, 1, 1,
+    [{ key: "series_score" }], [0]],
+]) check(`typicalRanks: ${label}`, typicalRanks(sf, boat, target, items), expected);
+for (const [label, input, expected] of [
+  ["6艇A1", { classes: Array(6).fill("A1") }, "A1"],
+  ["級別混在", { classes: ["A1", "A1", "A1", "A1", "A1", "B1"] }, null],
+  ["5艇", { classes: Array(5).fill("B1") }, null],
+  ["7艇", { classes: Array(7).fill("B1") }, null],
+  ["配列でない", { classes: "A1A1A1" }, null],
+  ["null", null, null],
+  ["空オブジェクト", {}, null],
+  ["6艇null", { classes: Array(6).fill(null) }, null],
+]) check(`uniformClass: ${label}`, uniformClass(input), expected);
+for (const [input, expected] of [
+  ["VC:01:A1", "VC"], ["NC", "NC"], ["NCR:x", "NCR"], ["", ""],
+]) check(`scopeKind: ${JSON.stringify(input)}`, scopeKind(input), expected);
+
+// 作り手から来ない入力の仕様は未定。現在値を観測するだけで assert しない。
+const KNOWN_GAPS = [
+  ["rateOf([12, 10])", () => rateOf([12, 10])],
+  ["rateOf([3, -10])", () => rateOf([3, -10])],
+  ["rateOf([null, 10])", () => rateOf([null, 10])],
+  ['rateOf(["3", "10"])', () => rateOf(["3", "10"])],
+  ["typicalRanks(SF, 1, 1, null)", () => typicalRanks(SF, 1, 1, null)],
+  ['uniformClass: 6艇とも空文字', () => uniformClass({ classes: Array(6).fill("") })],
+  ["uniformClass: 空き要素6個", () => uniformClass({ classes: new Array(6) })],
+  ["scopeKind(null)", () => scopeKind(null)],
+  ["scopeKind(undefined)", () => scopeKind(undefined)],
+  ["scopeKind(12)", () => scopeKind(12)],
+];
+
 const ui = JSON.parse(
   fs.readFileSync(
     path.join(__dirname, "../ml/analogy/testdata/v16-ui-cases.json"),
@@ -1150,6 +1233,18 @@ check(
     raceListRows(races, { pick: { kind: "first", boat: 2 } })[0].forms,
     ["flat", "wall", "kado"],
   );
+}
+
+console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length} 件（仕様未定・不一致に数えない）`);
+for (const [input, observe] of KNOWN_GAPS) {
+  let current;
+  try {
+    const value = observe();
+    current = value === undefined ? "undefined" : JSON.stringify(value);
+  } catch (error) {
+    current = `例外 ${error.message}`;
+  }
+  console.log(`  ${input}: ${current}`);
 }
 
 if (failures > 0) {
