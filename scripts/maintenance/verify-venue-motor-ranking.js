@@ -49,6 +49,71 @@ function runChecks(mod) {
   };
   const pick = (rows) => rows.map((r) => [r.motorNumber, r.rank]);
 
+  const rankRows = [
+    { motorNumber: 55, top2Rate: 47.9 },
+    { motorNumber: 22, top2Rate: 36.1 },
+    { motorNumber: 16, top2Rate: 36.1 },
+    { motorNumber: 69, top2Rate: 35.6 },
+    { motorNumber: 70, top2Rate: null },
+  ];
+  check("rankBy: 空配列", [...mod.rankBy([], "top2Rate").entries()], []);
+  check(
+    "rankBy: 降順・同値・null 除外・入力順",
+    [...mod.rankBy(rankRows, "top2Rate").entries()],
+    [[55, { rank: 1, tied: 1 }], [22, { rank: 2, tied: 2 }],
+      [16, { rank: 2, tied: 2 }], [69, { rank: 4, tied: 1 }]],
+  );
+  check(
+    "rankBy: 昇順でも入力順を保つ",
+    [...mod.rankBy(rankRows, "top2Rate", { ascending: true }).entries()],
+    [[55, { rank: 4, tied: 1 }], [22, { rank: 2, tied: 2 }],
+      [16, { rank: 2, tied: 2 }], [69, { rank: 1, tied: 1 }]],
+  );
+  check(
+    "rankBy: 前検の昇順・同値・列なし除外",
+    [...mod.rankBy([
+      { motorNumber: 1, pretestTime: 6.8 },
+      { motorNumber: 2, pretestTime: 6.74 },
+      { motorNumber: 3, pretestTime: 6.8 },
+      { motorNumber: 4 },
+    ], "pretestTime", { ascending: true }).entries()],
+    [[1, { rank: 2, tied: 2 }], [2, { rank: 1, tied: 1 }],
+      [3, { rank: 2, tied: 2 }]],
+  );
+  check(
+    "rankBy: undefined・NaN は除外",
+    [...mod.rankBy([
+      { motorNumber: 1, top2Rate: undefined },
+      { motorNumber: 2, top2Rate: NaN },
+      { motorNumber: 3, top2Rate: 40 },
+    ], "top2Rate").entries()],
+    [[3, { rank: 1, tied: 1 }]],
+  );
+  check(
+    "rankBy: 数値文字列と数値は同値",
+    [...mod.rankBy([
+      { motorNumber: 1, top2Rate: "36.1" },
+      { motorNumber: 2, top2Rate: 40 },
+      { motorNumber: 3, top2Rate: 36.1 },
+    ], "top2Rate").entries()],
+    [[1, { rank: 2, tied: 2 }], [2, { rank: 1, tied: 1 }],
+      [3, { rank: 2, tied: 2 }]],
+  );
+  check(
+    "rankBy: 0 は値あり",
+    [...mod.rankBy([
+      { motorNumber: 1, top2Rate: 0 },
+      { motorNumber: 2, top2Rate: 10 },
+    ], "top2Rate").entries()],
+    [[1, { rank: 2, tied: 1 }], [2, { rank: 1, tied: 1 }]],
+  );
+  check(
+    "rankBy: 全行 null",
+    [...mod.rankBy([{ motorNumber: 1, top2Rate: null }], "top2Rate").entries()],
+    [],
+  );
+
+
   check(
     "2連率（降順）: 同値は同じ順位で次が飛ぶ、値なしは末尾で順位 null",
     pick(mod.sortMotorRows(ROWS, "top2Rate")),
@@ -220,6 +285,16 @@ function runChecks(mod) {
 
 const MUTANTS = [
   {
+    name: "rankBy: NaN を値ありにする",
+    from: " && !Number.isNaN(v)",
+    to: "",
+  },
+  {
+    name: "rankBy: ascending を無視する",
+    from: "competitionRank(values, Number(r[key]), { ascending })",
+    to: "competitionRank(values, Number(r[key]), {})",
+  },
+  {
     name: "値の無い行を先頭に置く",
     from: "if (av !== bv) return av ? -1 : 1;",
     to: "if (av !== bv) return av ? 1 : -1;",
@@ -261,8 +336,43 @@ const MUTANTS = [
   },
 ];
 
+// DB の数値列・機番の一意性からは来ない入力。仕様未定のため assert しない。
+const KNOWN_GAPS = [
+  {
+    input: 'rankBy([{motorNumber:1,top2Rate:""},{motorNumber:2,top2Rate:10}], "top2Rate")',
+    rows: [{ motorNumber: 1, top2Rate: "" }, { motorNumber: 2, top2Rate: 10 }],
+    specification: "未定: 空文字を値として扱うか（現在は0）",
+  },
+  {
+    input: 'rankBy([{motorNumber:1,top2Rate:"abc"},{motorNumber:2,top2Rate:10}], "top2Rate")',
+    rows: [{ motorNumber: 1, top2Rate: "abc" }, { motorNumber: 2, top2Rate: 10 }],
+    specification: "未定: 非数値文字列の扱い（現在は順位1・tied 0）",
+  },
+  {
+    input: 'rankBy([{motorNumber:1,top2Rate:30},{motorNumber:1,top2Rate:40}], "top2Rate")',
+    rows: [{ motorNumber: 1, top2Rate: 30 }, { motorNumber: 1, top2Rate: 40 }],
+    specification: "未定: 機番重複の扱い（現在は後の行で上書き）",
+  },
+  {
+    input: 'rankBy(null, "top2Rate")',
+    rows: null,
+    specification: "未定: null 入力の扱い（現在は filter の参照で例外）",
+  },
+];
+
 async function main() {
-  const failures = runChecks(await import(pathToFileURL(TARGET).href));
+  const mod = await import(pathToFileURL(TARGET).href);
+  const failures = runChecks(mod);
+  console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length}件（仕様未定・判定対象外）`);
+  for (const gap of KNOWN_GAPS) {
+    let current;
+    try {
+      current = [...mod.rankBy(gap.rows, "top2Rate").entries()];
+    } catch (err) {
+      current = { exception: err.message };
+    }
+    console.log(`  - ${gap.input}: ${gap.specification} / 今の値 ${show(current)}`);
+  }
   if (failures.length > 0) {
     console.error("❌ venueMotorRanking の検証に失敗:");
     failures.forEach((f) => console.error(`  - ${f}`));
