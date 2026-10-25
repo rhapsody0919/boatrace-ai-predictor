@@ -24,7 +24,9 @@ import {
   buildResultWeatherRows,
   buildStartTimeLookup,
   buildWeatherRows,
+  convertWindDirection,
   formatWeatherStats,
+  hasAnyWeather,
   resolveObservedAt,
   scrapeConditions,
   toWeatherColumns,
@@ -270,6 +272,81 @@ check(
     emptyPage.observedTime === null &&
     emptyPage.observedRace === null,
 );
+// 直接呼び出しの契約（BOA-1131）。未定義の入力は下の KNOWN_GAPS で観測する。
+check(
+  "convertWindDirection: 1〜16の方位名は番号順に一致する",
+  same(Array.from({ length: 16 }, (_, i) => convertWindDirection(i + 1)), [
+    "北", "北北東", "北東", "東北東", "東", "東南東", "南東", "南南東",
+    "南", "南南西", "南西", "西南西", "西", "西北西", "北西", "北北西",
+  ]),
+);
+for (const [label, input, expected] of [
+  ["17（無風）", 17, null],
+  ["0", 0, null],
+  ["-1", -1, null],
+  ["null", null, null],
+  ["undefined", undefined, null],
+  ['文字列"1"', "1", "北"],
+  ['文字列"16"', "16", "北北西"],
+  ['文字列"17"', "17", null],
+]) {
+  check(`convertWindDirection: ${label}`, same(convertWindDirection(input), expected));
+}
+const EMPTY_WEATHER = {
+  weather: null,
+  airTemp: null,
+  windVelocity: null,
+  windDirection: null,
+  waterTemp: null,
+  waveHeight: null,
+  observedTime: null,
+  observedRace: null,
+};
+for (const [label, input, expected] of [
+  ["null", null, false],
+  ["undefined", undefined, false],
+  ["空オブジェクト", {}, false],
+  ["全項目null", EMPTY_WEATHER, false],
+  ['weather="晴"のみ', { ...EMPTY_WEATHER, weather: "晴" }, true],
+  ["airTemp=0のみ", { ...EMPTY_WEATHER, airTemp: 0 }, true],
+  ["windVelocity=0のみ", { ...EMPTY_WEATHER, windVelocity: 0 }, true],
+  ["waterTemp=24のみ", { ...EMPTY_WEATHER, waterTemp: 24 }, true],
+  ["waveHeight=0のみ", { ...EMPTY_WEATHER, waveHeight: 0 }, true],
+  ['observedTime="10:34"のみ', { ...EMPTY_WEATHER, observedTime: "10:34" }, false],
+  ["observedRace=3のみ", { ...EMPTY_WEATHER, observedRace: 3 }, false],
+  ["気象ブロックの無いemptyPage", emptyPage, false],
+]) {
+  check(`hasAnyWeather: ${label}`, same(hasAnyWeather(input), expected));
+}
+
+// 仕様未定。現在値を表示するだけで、failures には含めない。
+const KNOWN_GAPS = [
+  ...[
+    ["1.5", 1.5],
+    ["NaN", NaN],
+    ['"abc"', "abc"],
+  ].map(([label, input]) => ({
+    input: `convertWindDirection(${label})`,
+    specification: "未定（scrapeConditionsはparseIntの整数のみ渡す）",
+    current: convertWindDirection(input),
+  })),
+  {
+    input: "hasAnyWeather({...B, windDirection: 5})",
+    specification: "未定（風向だけを気象ありに含める意図は未確認）",
+    current: hasAnyWeather({ ...EMPTY_WEATHER, windDirection: 5 }),
+  },
+  {
+    input: 'hasAnyWeather({...B, weather: ""})',
+    specification: "未定（scrapeConditionsは空文字をnullにする）",
+    current: hasAnyWeather({ ...EMPTY_WEATHER, weather: "" }),
+  },
+  {
+    input: "hasAnyWeather({...B, airTemp: NaN})",
+    specification: "未定（NaNの扱い）",
+    current: hasAnyWeather({ ...EMPTY_WEATHER, airTemp: NaN }),
+  },
+];
+
 const fullWidthTitle = scrapeConditions(
   cheerio.load(
     '<div class="weather1"><p class="weather1_title">水面気象情報　１２Ｒ時点</p></div>',
@@ -673,6 +750,11 @@ const silence = async (fn) => {
     secondResult.written === 0 && second.calls.upserts.length === 0,
     JSON.stringify(secondResult.stats),
   );
+}
+
+console.log(`\nKNOWN_GAPS: ${KNOWN_GAPS.length}件（非assert）`);
+for (const gap of KNOWN_GAPS) {
+  console.log(`- ${gap.input}: ${gap.specification}; 現在値=${String(gap.current)}`);
 }
 
 if (failures > 0) {
