@@ -4,6 +4,10 @@
  */
 
 import { predictionsCacheControl } from '../_lib/predictionsCache.js';
+import {
+  stripUnusedPredictionFields,
+  validatePredictionsRequest,
+} from '../_lib/predictionsResponse.js';
 
 export const config = {
   runtime: 'edge',
@@ -30,23 +34,24 @@ export default async function handler(req) {
   const pathParts = url.pathname.split('/');
   const date = pathParts[pathParts.length - 1];
 
-  // 日付形式のバリデーション
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  // 日付・クエリの検査（実在の日付・JST の明日まで・クエリは無しか light=true だけ。api/_lib/predictionsResponse.js）
+  const checked = validatePredictionsRequest(date, url.searchParams, Date.now());
+  if (!checked.ok) {
     return new Response(JSON.stringify({
       success: false,
-      error: 'Invalid date format. Use YYYY-MM-DD',
+      error: checked.error,
     }), {
       status: 400,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-store',
       },
     });
   }
 
-  // light パラメータで turnPrediction/racerStats を除外（初期表示の高速化用）
-  const isLight = url.searchParams.get('light') === 'true';
-  const rpcName = isLight ? 'get_predictions_by_date_light' : 'get_predictions_by_date';
+  // light で turnPrediction/racerStats を除外（初期表示の高速化用）
+  const rpcName = checked.light ? 'get_predictions_by_date_light' : 'get_predictions_by_date';
 
   try {
     // Supabase RPC関数を呼び出し
@@ -69,7 +74,8 @@ export default async function handler(req) {
     // JST の今日より前の日付だけ1日、今日・未来は5分（判定は api/_lib/predictionsCache.js。UTC で比べない）
     const cacheControl = predictionsCacheControl(date, Date.now());
 
-    return new Response(JSON.stringify(data), {
+    // 読み手の無い欄（廃止した3モデルの点・予想オッズ）を外す（BOA-1110）
+    return new Response(JSON.stringify(stripUnusedPredictionFields(data)), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

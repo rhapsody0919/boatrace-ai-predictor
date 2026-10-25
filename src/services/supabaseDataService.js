@@ -1022,8 +1022,8 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
     const entries = race.entries || [];
     const predictions = race.predictions || {};
 
-    // players配列を作成（entriesからaiScoreでソート）
-    const createPlayers = (modelPred, scoreField) =>
+    // players配列を作成（艇番順。廃止した3モデルの点 aiScore は /api が返さないので持たない。BOA-1110）
+    const createPlayers = () =>
       entries
         .map((e) => ({
           number: e.number,
@@ -1038,9 +1038,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
           motor2Rate: String(e.motor2Rate || ""),
           boatNumber: e.boatNumber,
           boat2Rate: String(e.boat2Rate || ""),
-          aiScore: e[scoreField] || 0,
-        }))
-        .sort((a, b) => b.aiScore - a.aiScore);
+        }));
 
     // turnPrediction を取得（standardの予測に含まれる）
     const stdPred = predictions.standard;
@@ -1092,30 +1090,18 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
           exhibition_time: ed.exhibitionTime,
           start_timing: ed.startTiming,
         })) || null,
-      predictionOdds: race.predictionOdds || null,
       // モデル非依存の選手一覧（race_entriesから直接構築、DataRaceTable等がunifiedモデルの
       // predictions行が無い過去日付でも表示できるようにするため）
-      players: createPlayers(null, null),
+      players: createPlayers(),
     };
 
     // 予測データ（モデル別）
     raceData.predictions = {};
     for (const [modelId, pred] of Object.entries(predictions)) {
       if (!pred) continue;
-      // unifiedモデル専用のai_score列はDBに存在しない（旧3モデル
-      // aiScoreStandard/SafeBet/UpsetFocusのみ）。従来はここが必ずaiScoreUpsetFocusに
-      // フォールバックしており、unified.playersを直接参照する経路が増えた場合に
-      // 穴狙いモデルの並び順が紛れ込むバグになっていた（2026-08-14修正、BOA-187）。
-      // nullを渡しaiScore=0（順位付け不能）として扱う
-      const scoreField =
-        modelId === "standard"
-          ? "aiScoreStandard"
-          : modelId === "safeBet"
-            ? "aiScoreSafeBet"
-            : modelId === "upsetFocus"
-              ? "aiScoreUpsetFocus"
-              : null;
-      const players = createPlayers(pred, scoreField);
+      // 廃止した3モデルの点（aiScoreStandard/SafeBet/UpsetFocus）は /api/predictions が返さない（BOA-1110）。
+      // RPC 直のフォールバックでも同じ形にするため、ここでも読まない（aiScore=0、並びは艇番順のまま）
+      const players = createPlayers();
       const topPickPlayer = players.find((p) => p.number === pred.topPick);
       raceData.predictions[modelId] = {
         topPick: pred.topPick,

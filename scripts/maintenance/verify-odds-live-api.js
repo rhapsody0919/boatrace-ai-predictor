@@ -27,6 +27,7 @@ import {
   validateLiveOddsQuery,
   parseLiveOddsPage,
   handleLiveOddsRequest,
+  isCanonicalLiveOddsSearch,
   liveOddsUrl,
   CACHE_OK,
   CACHE_OK_EARLY,
@@ -457,6 +458,52 @@ const fetcher = (fn) => {
   check(
     "vite.config.js: READ_ONLY_API に odds",
     /READ_ONLY_API = '[^']*\|odds\)/.test(vite),
+  );
+}
+
+
+// ---- (f) 生のクエリの形（BOA-1110）: 並び替え・エンコード・余計な & でキャッシュを外させない ----
+{
+  const target = { raceId: TODAY_RACE, page: "3t" };
+  const canonical = `?${new URLSearchParams(target)}`;
+  check(
+    "画面と同じ形（URLSearchParams({raceId, page})）は通る",
+    isCanonicalLiveOddsSearch(canonical, target),
+    canonical,
+  );
+  for (const [label, raw] of [
+    ["並び替え", `?page=3t&raceId=${TODAY_RACE}`],
+    ["ハイフンのエンコード", `?raceId=${TODAY_RACE.replace(/-/g, "%2D")}&page=3t`],
+    ["末尾の &", `${canonical}&`],
+    ["空のパラメータ", `${canonical}&=`],
+  ]) {
+    check(`形の違うクエリは通らない: ${label}`, !isCanonicalLiveOddsSearch(raw, target), raw);
+  }
+  const f = fetcher(() => htmlResponse(T3_PREDEADLINE));
+  const reordered = await handleLiveOddsRequest({
+    query: target,
+    politeFetch: f,
+    now: () => NOW,
+    rawSearch: `?page=3t&raceId=${TODAY_RACE}`,
+  });
+  check(
+    "並び替えたクエリ: 400・no-store・公式へ取りに行かない",
+    reordered.status === 400 &&
+      reordered.cacheControl === CACHE_NO_STORE &&
+      f.calls.length === 0,
+    show({ status: reordered.status, cacheControl: reordered.cacheControl, calls: f.calls }),
+  );
+  const ok = await handleLiveOddsRequest({
+    query: target,
+    politeFetch: f,
+    now: () => NOW,
+    rawSearch: canonical,
+  });
+  check("正しい形のクエリ: 200", ok.status === 200, show(ok.status));
+  const apiSrc = fs.readFileSync(new URL("../../api/odds/live.js", import.meta.url), "utf8");
+  check(
+    "api/odds/live.js: req.url の生のクエリを rawSearch に渡す",
+    /rawSearch:\s*new URL\(req\.url/.test(apiSrc),
   );
 }
 

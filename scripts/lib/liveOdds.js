@@ -83,6 +83,20 @@ export function validateLiveOddsQuery(query, now = new Date()) {
   return { ok: true, raceId, page, date, venue, raceNo };
 }
 
+/**
+ * 生のクエリが、画面（src/services/liveOddsService.js の URLSearchParams({ raceId, page })）と同じ1つの形か（BOA-1110）。
+ *
+ * validateLiveOddsQuery はデコード後の値だけを見るので、並びを替えた・パーセントエンコードした・空の値を足した
+ * クエリも通る。CDN のキャッシュのキーは生のクエリで分かれうるので、形の違う要求は毎回 boatrace.jp まで届き、
+ * 公式への匿名の中継になる（ADR-0059 §2）。正しい形の1つだけを受ける
+ *
+ * @param {string} rawSearch 例: "?raceId=2026-10-25-01-01&page=3t"
+ * @param {{raceId: string, page: string}} target validateLiveOddsQuery が通した値
+ */
+export function isCanonicalLiveOddsSearch(rawSearch, { raceId, page }) {
+  return rawSearch === `?raceId=${raceId}&page=${page}`;
+}
+
 /** 公式オッズページのURL */
 export function liveOddsUrl({ date, venue, raceNo, page }) {
   const hd = date.replace(/-/g, "");
@@ -237,18 +251,25 @@ export function successResponse(target, parsed, fetchedAt) {
  * @param {string} [options.method]
  * @param {(url: string) => Promise<Response>} options.politeFetch createPoliteFetch の返り値（ブレーカー込み）
  * @param {() => Date} [options.now]
+ * @param {string} [options.rawSearch] 生のクエリ（req.url の ? から。渡したときだけ isCanonicalLiveOddsSearch で検査する）
  */
 export async function handleLiveOddsRequest({
   query,
   method = "GET",
   politeFetch,
   now = () => new Date(),
+  rawSearch,
 }) {
   if (method !== "GET") {
     return { ...badRequestResponse("GET のみ"), status: 405 };
   }
   const target = validateLiveOddsQuery(query ?? {}, now());
   if (!target.ok) return badRequestResponse(target.error);
+  if (rawSearch !== undefined && !isCanonicalLiveOddsSearch(rawSearch, target)) {
+    return badRequestResponse(
+      "クエリは ?raceId=…&page=… の順・エンコードなしで指定してください",
+    );
+  }
 
   let response;
   try {

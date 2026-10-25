@@ -5,6 +5,7 @@
  * race_odds には書かない（スナップショットの窓・prediction_odds の導出と混ぜない）。
  *
  * - 受け付けるのは JST の当日のレースだけ。page は列挙値のみ、未知のクエリパラメータは 400（no-store）
+ * - クエリの形は ?raceId=…&page=… の順・エンコードなしの1つだけ。違えば 400（BOA-1110、isCanonicalLiveOddsSearch）
  * - 成功: 200 { ok:true, raceId, page, fetchedAt, officialUpdatedAt, final, data }
  *   Cache-Control は s-maxage=30（締切時オッズ＝final なら300）。CDN に集約し、閲覧者数によらず公式への
  *   アクセスを1レース×1ページあたり最大30秒に1回に抑える
@@ -50,6 +51,8 @@ export default async function handler(req, res) {
   const { status, cacheControl, body } = await handleLiveOddsRequest({
     query: req.query ?? {},
     method: req.method,
+    // 生のクエリの形も検査する（並び替え・エンコードでキャッシュを外させない。BOA-1110）
+    rawSearch: new URL(req.url ?? "", "http://localhost").search,
     politeFetch: await getPoliteFetch(),
   });
   res.setHeader("Cache-Control", cacheControl);
