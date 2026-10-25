@@ -1,28 +1,16 @@
 /**
  * 入口版の冒頭の答え（v2r1-answer-fill-explain、関門の台本 docs/design/full-picture-type-gate/candidates/v2r1-answer-fill-explain/script.md）。
  * 題の問い「1号艇は堅い？」に言葉で答える。言葉は数字から機械で選ぶ（毎日自動で作るので作文しない）。
- * p＝今日の予想の形と同じ本番のスタートの形だった過去で1号艇が1着の割合、p0＝同じ範囲（同じ会場・級の組み合わせ・期間・枠なり）のどの形でもの割合。
- * 段は p の Wilson 95% 区間と p0 で決める。データが薄いレース（過去が MIN_N 件未満）は作らない（オーナー 10/25）。
- * 形が無いレースは段 N: 形の比較をせず、形を問わない過去の割合だけを答える（オーナー 10/25 (b)）。
+ * 答えは形を問わない割合（同じ範囲＝同じ会場か全国・級の組み合わせ・期間・枠なり）。データが薄いレース（過去が MIN_N 件未満）は作らない（オーナー 10/25）。
  */
 import { SLIT_FORMS } from "../../../../src/utils/analogyScenario.js";
 
-/** 段を出す件数の下限・区間の z。目安（根拠なし）。BOA-1096 の統計検証で見直す */
-export const ANSWER_RULE = { minN: 30, z: 1.96 };
+/** 答えを出す件数の下限。目安（根拠なし）。BOA-1096 で段 N（形を問わない割合）の n は最少300で、毎日の4本では下回らなかった */
+export const ANSWER_RULE = { minN: 30 };
 
 const pct1 = (k, n) => Math.round((k / n) * 1000) / 10;
 /** 1号艇が1着の件数（3連単の件数の表から） */
 const win1 = (cell) => Object.entries(cell?.tri ?? {}).filter(([k]) => k.startsWith("1-")).reduce((s, [, c]) => s + c, 0);
-
-/** Wilson の区間（割合 0〜1） */
-export function wilson(k, n, z = ANSWER_RULE.z) {
-  if (!(n > 0)) return null;
-  const p = k / n;
-  const d = 1 + (z * z) / n;
-  const c = (p + (z * z) / (2 * n)) / d;
-  const h = (z * Math.sqrt((p * (1 - p)) / n + (z * z) / (4 * n * n))) / d;
-  return [c - h, c + h];
-}
 
 /** 範囲の札（例「住之江・級の組み合わせが同じ・2019/4〜2026/10・枠なり」）。scope は "VC:12:..."（会場）か "NC:..."（全国） */
 export function scopeLabel(scope, period, venueName) {
@@ -38,36 +26,30 @@ export const scopeLines = (label) => {
 };
 
 /**
+ * 冒頭の答え。全レースで形を問わない割合（この組み合わせの過去で1号艇が1着の割合）で答える（オーナー 10/25「1でよい」）。
+ * 予想の形の過去の割合は、今日の結果に引き継がれない（BOA-1096、docs/design/full-picture-type-gate/analysis/answer-stage.md）ので、
+ * 答えには使わず、形の事実（本番がその形だった過去）として添えるだけにする。評価の言葉（堅い寄り等）は使わない
  * @param {{cells: object, period?: string[]}} sc 材料の api.scenario.scenario
  * @param {string|null} form 今日の予想の形のキー（scene4 の形。null は形が無い）
- * @returns {{stage: "A"|"B"|"C"|"N"|null, reason?: string, n?: number, k?: number, p?: number, n0?: number, k0?: number, p0?: number, label?: string, small?: string}}
+ * @returns {{ok: boolean, kind?: string, reason?: string, n0?: number, k0?: number, p0?: number, label?: string, small?: string, form?: {key: string, n: number, k: number, p: number}|null}}
  */
 export function answerOf(sc, form) {
   const forms = sc?.cells?.waku?.forms ?? null;
   // kind は hq が日ごとの減りを数える固定の語（daily.mjs の reasons に type_unsupported:<kind> で出る）
-  if (!forms?.any?.n) return { stage: null, kind: "thin_data", reason: "どの形でもの集計が無い" };
-  // 形が無いレースは形の比較をせず、形を問わない過去の割合だけを答える（段 N。オーナー 10/25 (b)）
-  if (!form || !SLIT_FORMS.includes(form)) {
-    const n0 = forms.any.n;
-    const k0 = win1(forms.any);
-    if (n0 < ANSWER_RULE.minN) return { stage: null, kind: "thin_data", reason: `形を問わない過去が${n0}件（${ANSWER_RULE.minN}件未満）` };
-    const p0 = pct1(k0, n0);
-    return { stage: "N", n: n0, k: k0, p: p0, n0, k0, p0, label: `過去の1号艇の1着は約${Math.round((k0 / n0) * 10)}割`, small: "今日の並びはどの形にも当てはまらない" };
-  }
-  const cell = forms[form];
-  const n = cell?.n ?? 0;
-  if (n < ANSWER_RULE.minN) return { stage: null, kind: "thin_data", reason: `同じ形の過去が${n}件（${ANSWER_RULE.minN}件未満）` };
-  const k = win1(cell);
-  const n0 = forms.any.n;
+  const n0 = forms?.any?.n ?? 0;
+  if (n0 < ANSWER_RULE.minN) return { ok: false, kind: "thin_data", reason: `この組み合わせの過去が${n0}件（${ANSWER_RULE.minN}件未満）` };
   const k0 = win1(forms.any);
-  const [lo, hi] = wilson(k, n);
-  const p0r = k0 / n0;
-  const stage = lo > p0r ? "A" : hi < p0r ? "C" : "B";
-  const p = pct1(k, n);
-  const p0 = pct1(k0, n0);
-  const wari = Math.round(k / n * 10);
-  const y = Math.round((k0 / n0) * 100);
-  const word = { A: "いつもより堅い寄り", B: "いつもと同じ程度", C: "崩れやすい寄り" }[stage];
-  const small = { A: `どの形でもの${y}%より多い（過去の割合）`, B: `はっきりした差は無い（どの形でも${y}%と比べて）`, C: `どの形でもの${y}%より少ない（過去の割合）` }[stage];
-  return { stage, n, k, p, n0, k0, p0, lo, hi, label: `過去の1号艇の1着は約${wari}割、${word}`, small };
+  const cell = form && SLIT_FORMS.includes(form) ? forms[form] : null;
+  // 形の事実は件数が足りるときだけ（少ない件数の割合は出さない）
+  const fact = cell?.n >= ANSWER_RULE.minN ? { key: form, n: cell.n, k: win1(cell), p: pct1(win1(cell), cell.n) } : null;
+  return {
+    ok: true,
+    n0,
+    k0,
+    p0: pct1(k0, n0),
+    label: `この組み合わせの過去で、1号艇の1着は約${Math.round((k0 / n0) * 10)}割`,
+    small: "過去の割合で、今日の結果を示すものではない",
+    form: fact,
+    hasForm: Boolean(cell),
+  };
 }

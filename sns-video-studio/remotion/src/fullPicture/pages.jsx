@@ -590,14 +590,14 @@ export function AnswerPage({ label, small, value, baseLines = [], scopeLines = [
     );
   };
   return (
-    <div style={{ position: "absolute", left: 60, top: 320, width: Wd, display: "flex", flexDirection: "column" }}>
-      <Text txt={label} max={62} weight={900} color={GOLD} />
-      <Text txt={small} max={38} weight={600} color={MUTED} mt={6} />
-      <div style={{ marginTop: 14, fontSize: 160, fontWeight: 900, color: TEXT, lineHeight: 1, whiteSpace: "nowrap" }}>{value}</div>
+    <div style={{ position: "absolute", left: 60, top: 330, width: Wd, display: "flex", flexDirection: "column" }}>
+      <Text txt={label} max={70} weight={900} color={GOLD} />
+      <Text txt={small} max={40} weight={600} color={MUTED} mt={10} />
+      <div style={{ marginTop: 30, fontSize: 210, fontWeight: 900, color: TEXT, lineHeight: 1, whiteSpace: "nowrap" }}>{value}</div>
       {baseLines.map((b, i) => (
-        <Text key={`l${i}`} txt={b} max={38} weight={700} color={TEXT} lines={1} mt={i ? 2 : 14} />
+        <Text key={`l${i}`} txt={b} max={44} weight={700} color={TEXT} lines={1} mt={i ? 4 : 24} />
       ))}
-      <div style={{ marginTop: 14, alignSelf: "flex-start", padding: "4px 14px", border: "2px solid #4a5b75", borderRadius: 8 }}>
+      <div style={{ marginTop: 24, alignSelf: "flex-start", padding: "6px 16px", border: "2px solid #4a5b75", borderRadius: 8 }}>
         {scopeLines.map((l, i) => (
           <Text key={`s${i}`} txt={l} max={36} weight={600} color={MUTED} lines={1} />
         ))}
@@ -610,9 +610,9 @@ export function AnswerPage({ label, small, value, baseLines = [], scopeLines = [
           </div>
         </div>
       ))}
-      <div style={{ marginTop: 30, borderTop: "2px solid #33465f", paddingTop: 16 }}>
+      <div style={{ marginTop: 56, borderTop: "2px solid #33465f", paddingTop: 28 }}>
         {defLines.map((d, i) => (
-          <Text key={`d${i}`} txt={d} max={36} weight={600} color={TEXT} mt={i ? 4 : 0} />
+          <Text key={`d${i}`} txt={d} max={40} weight={600} color={TEXT} lines={1} mt={i ? 8 : 0} />
         ))}
       </div>
     </div>

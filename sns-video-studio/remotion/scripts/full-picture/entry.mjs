@@ -121,5 +121,5 @@ export function entryScenes(scenes, answers = {}, { race = null, answer = null }
     total = fullPictureTimeline(out, entryAnswers).total;
   }
   if (total > ENTRY_MAX_FRAMES) throw new Error(`入口版が59秒を越える（${(total / 30).toFixed(1)}秒）。投稿しない`);
-  return { scenes: out, answers: entryAnswers, omitted, total, hero: answer ? { source: "answer", title: answer.label, value: `${answer.p.toFixed(1)}%` } : hero };
+  return { scenes: out, answers: entryAnswers, omitted, total, hero: answer ? { source: "answer", title: answer.label, value: `${answer.p0.toFixed(1)}%` } : hero };
 }

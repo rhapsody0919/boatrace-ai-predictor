@@ -130,10 +130,8 @@ function lines({ venue90, overview, conclusion }) {
  */
 export function buildBundle({ raceId, venue, raceNo, month, day, round = null, grade = null, deadline = null, facts, chapters, fullSeconds, qa, contentType = null, answer = null }) {
   // 冒頭の答え（v2r1）の一文。件数・範囲・免責を同じ文に（wording-editor 2026-10-25 P1）。会場の過去90日の行の代わり（動画に出ない数字を本文に載せない）
-  const answerLine = answer?.stage === "N"
-    ? `今日の並びはどの形にも当てはまらない。形を問わず、この組み合わせの過去${answer.n.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k.toLocaleString("ja-JP")}件（${answer.p.toFixed(1)}%）。過去の割合で、今日の結果を示すものではない`
-    : answer
-    ? `同じスタートの形の過去${answer.n.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k.toLocaleString("ja-JP")}件（${answer.p.toFixed(1)}%）。同じ範囲のどの形でも${answer.n0.toLocaleString("ja-JP")}件中${answer.k0.toLocaleString("ja-JP")}件（${answer.p0.toFixed(1)}%）で、${{ A: "どの形でもより多い", B: "はっきりした差は無い", C: "どの形でもより少ない" }[answer.stage]}。過去の割合で、今日の結果を示すものではない`
+  const answerLine = answer
+    ? `この組み合わせ（級の組み合わせが同じ）の過去${answer.n0.toLocaleString("ja-JP")}件中、1号艇が1着は${answer.k0.toLocaleString("ja-JP")}件（${answer.p0.toFixed(1)}%）。過去の割合で、今日の結果を示すものではない`
     : null;
   const name = ROUND_NAME[round] ?? null;
   const label = `${venue}${raceNo}R${name ? ` ${name}` : ""}`;
@@ -148,8 +146,8 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     `${head}1号艇は堅い？`,
     raceHeader({ ...headerArgs, short: true }),
     answerLine ?? L.venue,
-    // 答えの一文が同じ件数を言うので、結論の行は重ねない
-    answerLine ? null : L.conclusion,
+    // 形が無い日は結論の行が答えと同じ数字（枠なり全体）になるので重ねない
+    answerLine && !facts?.conclusion?.form ? null : L.conclusion,
     `このレースのデータは龍神レーダーで: ${utmUrl(raceId, "x")}`,
     "結果を保証するものではありません。",
     HASHTAG,
@@ -187,7 +185,7 @@ export function buildBundle({ raceId, venue, raceNo, month, day, round = null, g
     description: join([
       `ボートレース ${header} 1号艇は堅い？`,
       answerLine ?? L.venue,
-      answerLine ? null : L.conclusion,
+      answerLine && !facts?.conclusion?.form ? null : L.conclusion,
       "",
       `完全版の動画（${aboutMinutes(fullSeconds)}）: ${FULL_URL_SLOT}`,
       `このレースのデータ（龍神レーダー）: ${utmUrl(raceId, "youtube", "shorts")}`,

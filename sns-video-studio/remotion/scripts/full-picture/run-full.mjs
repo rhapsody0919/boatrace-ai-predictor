@@ -114,29 +114,26 @@ function answerPage() {
   const sc = m.api.scenario?.scenario;
   const formKey = scenes.find((x) => x.id === "scene4")?.data?.conclusion?.formKey ?? null;
   const a = answerOf(sc, formKey);
-  if (!a.stage) typeStop(`type_unsupported:${a.kind}`, a.reason);
-  const fk = `aiPredictionTab.analogy.scenario.forms.${formKey}`;
-  const noForm = a.stage === "N";
+  if (!a.ok) typeStop(`type_unsupported:${a.kind}`, a.reason);
+  const fk = (key) => `aiPredictionTab.analogy.scenario.forms.${key}`;
+  // 形は事実として添えるだけ（本番がその形だった過去。今日の本番の形はレース前には分からない）
+  // 行は句の切れ目で分けて渡す（画面が語の途中で折り返さないように。各行は1行に収める）
+  const formHead = (key) => ["今日の6人の平均ST（直近30走）は", `「${t(`${fk(key)}.name`)}」＝${t(`${fk(key)}.def`)}`];
+  const formLines = a.form
+    ? [...formHead(a.form.key), `本番がこの形の過去${a.form.n.toLocaleString("ja-JP")}件中`, `1号艇が1着は${a.form.k.toLocaleString("ja-JP")}件（${a.form.p.toFixed(1)}%）`]
+    : a.hasForm
+      ? formHead(formKey)
+      : ["今日の6人の平均ST（直近30走）は、", "横一線・内3艇そろう等のどの形にも当たらない"];
   return {
     ...a,
     page: {
       label: a.label,
       small: a.small,
-      value: `${a.p.toFixed(1)}%`,
-      baseLines: noForm
-        ? ["この組み合わせの、形を問わない過去", `${a.n.toLocaleString("ja-JP")}件中、1号艇が1着は${a.k.toLocaleString("ja-JP")}件`]
-        : ["今日の予想の形と同じ、本番のスタートの形だった", `過去${a.n.toLocaleString("ja-JP")}件中、1号艇が1着は${a.k.toLocaleString("ja-JP")}件`],
+      value: `${a.p0.toFixed(1)}%`,
+      baseLines: ["級の組み合わせが同じ過去", `${a.n0.toLocaleString("ja-JP")}件中、1号艇が1着は${a.k0.toLocaleString("ja-JP")}件`],
       scopeLines: scopeLines(scopeLabel(m.api.scenario?.scope, sc?.period, venueLabel(Number(venueCode), t))),
-      // 形が無ければ比べる相手が無いので棒は1本（形を問わない過去）
-      bars: noForm
-        ? [{ label: `形を問わず ${a.n0.toLocaleString("ja-JP")}件 ${a.p0.toFixed(1)}%`, value: a.p0, color: "#e2b93b" }]
-        : [
-            { label: `同じ形 ${a.n.toLocaleString("ja-JP")}件 ${a.p.toFixed(1)}%`, value: a.p, color: "#e2b93b" },
-            { label: `どの形でも ${a.n0.toLocaleString("ja-JP")}件 ${a.p0.toFixed(1)}%`, value: a.p0, color: "#8b95a5" },
-          ],
-      defLines: noForm
-        ? ["今日の6人の平均ST（直近30走）は、", "横一線・内3艇そろう等のどの形にも当たらない"]
-        : [`今日の6人の平均ST（直近30走）は「${t(`${fk}.name`)}」`, `＝${t(`${fk}.def`)}`],
+      bars: [],
+      defLines: formLines,
     },
   };
 }
@@ -289,7 +286,7 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     fullSeconds,
     qa,
     contentType: type?.id ?? null,
-    answer: answer ? { label: answer.label, n: answer.n, k: answer.k, p: answer.p, n0: answer.n0, k0: answer.k0, p0: answer.p0, stage: answer.stage } : null,
+    answer: answer ? { n0: answer.n0, k0: answer.k0, p0: answer.p0 } : null,
   });
 const preBundle = bundleText({});
 const postEntry = `${preBundle.x_text}\n`;
