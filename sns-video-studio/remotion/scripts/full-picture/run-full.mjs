@@ -114,7 +114,7 @@ function answerPage() {
   const sc = m.api.scenario?.scenario;
   const formKey = scenes.find((x) => x.id === "scene4")?.data?.conclusion?.formKey ?? null;
   const a = answerOf(sc, formKey);
-  if (!a.stage) typeStop("type_unsupported:structure", `データが薄い: ${a.reason}`);
+  if (!a.stage) typeStop(`type_unsupported:${a.kind}`, a.reason);
   const fk = `aiPredictionTab.analogy.scenario.forms.${formKey}`;
   return {
     ...a,

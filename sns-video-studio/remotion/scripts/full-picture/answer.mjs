@@ -43,11 +43,12 @@ export const scopeLines = (label) => {
  */
 export function answerOf(sc, form) {
   const forms = sc?.cells?.waku?.forms ?? null;
-  if (!forms?.any?.n) return { stage: null, reason: "どの形でもの集計が無い" };
-  if (!form || !SLIT_FORMS.includes(form)) return { stage: null, reason: "今日の予想の形が無い" };
+  // kind は hq が日ごとの減りを数える固定の語（daily.mjs の reasons に type_unsupported:<kind> で出る）
+  if (!forms?.any?.n) return { stage: null, kind: "thin_data", reason: "どの形でもの集計が無い" };
+  if (!form || !SLIT_FORMS.includes(form)) return { stage: null, kind: "no_form", reason: "今日の平均STがどの形にも当てはまらない" };
   const cell = forms[form];
   const n = cell?.n ?? 0;
-  if (n < ANSWER_RULE.minN) return { stage: null, reason: `同じ形の過去が${n}件（${ANSWER_RULE.minN}件未満）` };
+  if (n < ANSWER_RULE.minN) return { stage: null, kind: "thin_data", reason: `同じ形の過去が${n}件（${ANSWER_RULE.minN}件未満）` };
   const k = win1(cell);
   const n0 = forms.any.n;
   const k0 = win1(forms.any);
