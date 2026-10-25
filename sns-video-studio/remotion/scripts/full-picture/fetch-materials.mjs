@@ -74,7 +74,7 @@ async function racerRows(racerId, raceId, date) {
  * MEASURED は展示で必ず入る値で、null は欠け（missing に記録）。MARK は表示が無いと null（F・L の印、プロペラ・部品の交換なし。
  * docs/db-migration/082・scripts/lib/preRaceRows.js）なので、null を欠けにしない
  */
-export const EXHIBITION_MEASURED_FIELDS = ["exhibition_course", "start_timing", "exhibition_time", "tilt"];
+export const EXHIBITION_MEASURED_FIELDS = ["exhibition_course", "start_timing", "exhibition_time", "tilt", "today_weight"];
 export const EXHIBITION_MARK_FIELDS = ["start_flag", "parts_changed", "propeller_change"];
 const EXHIBITION_BOAT_FIELDS = [...EXHIBITION_MEASURED_FIELDS, ...EXHIBITION_MARK_FIELDS];
 /** 風・波（race_conditions の発走前の値） */
@@ -92,26 +92,132 @@ const deadlineUtc = (date, startTime) => (startTime ? Date.parse(`${date}T${star
  * 今節タブと同じ定義）をそのまま使い、着順は race_start_timings の finish_mark（公式の表記）・finish_rank を写す。
  * 風・波は締切より前の観測だけを使う（race_conditions は結果の取り込みで発走時点の値に上書きされる。その場合は null）。
  * 決まり手の過去の分布は会場の既存の集計表をそのまま写す（venue_technique_period_stats＝会場の90・365日、
- * winning_technique_stats＝1着の枠番別の90日。どちらもレースの日でなく最新の集計で、last_updated を残す）
+ * winning_technique_stats＝1着の枠番別の90日。どちらもレースの日でなく最新の集計で、last_updated を残す）。
+ * 艇ごとの選手のコース別の成績（racerCourseStats）と、会場のコース別の決まり手（venueCourseBaseline）も既存の表を写す
  * @param {string} raceId
  * @param {string} date
  * @param {number} venueCode
  * @param {string|null} startTime races.start_time
  * @param {{source: string, reason: string}[]} missing 追記する
  * @param {{boats?: {boat_number: number, meet_runs?: {race_id: string, boat_number: number}[]}[]}|null} [racers] facts の racers
+ * @param {string|null} [raceGrade] races.race_grade（SG/G1/G2/G3/ippan）
  */
-export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing, racers = null) {
+export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing, racers = null, raceGrade = null) {
   const fail = (source) => (e) => {
     missing.push({ source, reason: e instanceof Error ? e.message : String(e) });
     return null;
   };
-  // 3つは互いに依らないので並べて読む
-  const [boats, conditions, technique] = await Promise.all([
-    exhibitionBoats(raceId, racers, missing).catch(fail("db.exhibition.boats")),
+  // 4つは互いに依らないので並べて読む（選手のコース別の成績だけは艇の行の racer_id・進入を使うので、その後に読む）
+  const [boats, conditions, technique, venueCourse] = await Promise.all([
+    exhibitionBoats(raceId, racers, missing)
+      // 選手の成績の表が読めなくても艇の材料は残し、足す欄を null にする
+      .then((bs) => racerCourseStats(bs, date, missing, racers).catch((e) => (fail("db.exhibition.boats.racer")(e), bs.map(withoutRacerStats))))
+      .catch(fail("db.exhibition.boats")),
     preRaceConditions(raceId, date, startTime, missing).catch(fail("db.exhibition.conditions")),
     venueTechnique(date, venueCode, missing).catch(fail("db.exhibition.technique")),
+    venueCourseBaseline(date, venueCode, raceGrade, missing).catch(fail("db.exhibition.venueCourse")),
   ]);
-  return { boats, conditions, technique };
+  return { notes: EXHIBITION_NOTES, boats, conditions, technique, venueCourse };
+}
+
+/** 出力に書く注意（材料を読む側が日付の無い表を当日の値と取り違えないため） */
+export const EXHIBITION_NOTES = [
+  "racer_course_technique_stats・venue_course_technique_baseline・racer_aggregated_stats は最新の値だけを持ち、過去の日の版が無い。レースの日より後の集計なら missing に「レースの日より後の集計」と記録する（過去のレースで取り直したとき、このレースの結果を含みうる）",
+  "racer_period_stats はレースの日より前に締めた（calc_to < レースの日）最新の期を使う",
+  "entry_tendency は facts の racers.boats[].course_entry（画面・場面と同じ定義）。集計がこのレース以後の出走を含むと API が出さないので null",
+  "course は進入コース。exhibition_course（展示の進入）があればそれ、無ければ枠番で引き、course_source に書く",
+];
+
+/** racer_period_stats の cN_* のうち写す欄（N は進入コース） */
+export const PERIOD_COURSE_FIELDS = ["entries", "avg_st", "avg_start_rank", "f", "l0", "l1", "p1", "p2", "p3"];
+/** racer_course_technique_stats の写す欄（地力窓と直近90日。expected は写さない） */
+export const COURSE_TECHNIQUE_FIELDS = ["window_start", "window_end", "window_days", "runs", "nige_count", "nige_rate", "makuri_count", "makuri_rate", "nigashi_count", "nigashi_rate", "runs_90d", "nige_rate_90d", "makuri_rate_90d", "nigashi_rate_90d", "last_updated"];
+/** 会場のコース別の決まり手（venue_course_technique_baseline）の写す欄 */
+export const VENUE_COURSE_FIELDS = ["course", "runs", "nige_rate", "makuri_rate", "nigashi_rate", "window_start", "window_end", "last_updated"];
+const COURSES = [1, 2, 3, 4, 5, 6];
+const withoutRacerStats = (b) => ({ ...b, course: b.exhibition_course ?? b.boat_number, course_source: b.exhibition_course != null ? "exhibition_course" : "boat_number", course_technique: null, period_course: null, entry_tendency: null });
+const lateReason = (table, date) => `${table} はレースの日（${date}）より後の集計（このレースの結果を含みうる）`;
+
+/**
+ * 艇ごとに、その艇の選手のその進入コースの成績を足す（既存の表を写すだけ）。
+ * course_technique: racer_course_technique_stats（racer_id, course）の行
+ * period_course: racer_period_stats の calc_to < レースの日 の最新の期の cN_*（期の年・番号・calc_to を添える）
+ * entry_tendency: racer_aggregated_stats（venue_code=0＝全国）の course_entry_tendency の、その枠の {n, courses} と since。
+ *   facts の racers.boats[].course_entry（api/_lib/racerEntryExhibition.js）をそのまま使う。集計がこのレース以後の出走を
+ *   含む（after_race）と API が値を出さないので null にし、「レースの日より後の集計」と記録する（画面・場面と同じ定義）
+ * @param {object[]} boats exhibitionBoats の出力（racer_id を持つ）
+ * @param {{boats?: {boat_number: number, course_entry?: object|null, after_race?: boolean}[]}|null} racers facts の racers
+ */
+async function racerCourseStats(boats, date, missing, racers) {
+  const ids = [...new Set(boats.map((b) => b.racer_id).filter((x) => x != null))];
+  const periodSelect = ["racer_id", "period_year", "period_no", "calc_to", ...COURSES.flatMap((c) => PERIOD_COURSE_FIELDS.map((f) => `c${c}_${f}`))].join(",");
+  // 期は半年ごと。直近の期だけ要るので、締めが400日より前の期は読まない（選手ごとに全期を読まない）
+  const [technique, periods] = ids.length
+    ? await Promise.all([
+        sbGet("racer_course_technique_stats", `select=racer_id,course,${COURSE_TECHNIQUE_FIELDS.join(",")}&racer_id=in.(${ids.join(",")})`),
+        sbGet("racer_period_stats", `select=${periodSelect}&racer_id=in.(${ids.join(",")})&and=(calc_to.lt.${date},calc_to.gte.${daysBefore(date, 400)})&order=calc_to.desc`),
+      ])
+    : [[], []];
+  return boats.map((b) => {
+    const at = (key) => `db.exhibition.boats.${b.boat_number}.${key}`;
+    const out = withoutRacerStats(b);
+    const { course } = out;
+    if (b.racer_id == null) {
+      for (const k of ["course_technique", "period_course", "entry_tendency"]) missing.push({ source: at(k), reason: "この艇の選手が分からない（race_entries.racer_id が無い）" });
+      return out;
+    }
+    const t = technique.find((r) => r.racer_id === b.racer_id && r.course === course);
+    if (!t) missing.push({ source: at("course_technique"), reason: `racer_course_technique_stats にこの選手の${course}コースの行が無い` });
+    else {
+      out.course_technique = Object.fromEntries(COURSE_TECHNIQUE_FIELDS.map((f) => [f, t[f] ?? null]));
+      if (t.window_end >= date || t.last_updated > date) missing.push({ source: at("course_technique"), reason: lateReason("racer_course_technique_stats", date) });
+    }
+    // 期は calc_to の降順で読んでいるので、選手ごとの最初の行が最新
+    const p = periods.find((r) => r.racer_id === b.racer_id);
+    if (!p) missing.push({ source: at("period_course"), reason: "racer_period_stats にレースの日より前に締めた期が無い" });
+    else {
+      out.period_course = { period_year: p.period_year, period_no: p.period_no, calc_to: p.calc_to, course, ...Object.fromEntries(PERIOD_COURSE_FIELDS.map((f) => [f, p[`c${course}_${f}`] ?? null])) };
+      if (out.period_course.entries == null) missing.push({ source: at("period_course"), reason: `racer_period_stats の c${course}_entries が無い` });
+    }
+    const fb = racers?.boats?.find((x) => x.boat_number === b.boat_number) ?? null;
+    const entry = fb?.course_entry ?? null;
+    const frame = entry?.all?.[String(b.boat_number)] ?? null;
+    if (!racers?.boats) missing.push({ source: at("entry_tendency"), reason: "facts に racers が無い" });
+    else if (!fb) missing.push({ source: at("entry_tendency"), reason: "facts の racers にこの艇が無い" });
+    else if (fb.after_race) missing.push({ source: at("entry_tendency"), reason: lateReason("racer_aggregated_stats", date) });
+    else if (!entry) missing.push({ source: at("entry_tendency"), reason: "racer_aggregated_stats にこの選手の全国の行が無い" });
+    else if (!frame) missing.push({ source: at("entry_tendency"), reason: `course_entry_tendency にこの選手の${b.boat_number}号艇の進入が無い` });
+    if (frame) {
+      out.entry_tendency = {
+        boat_number: b.boat_number,
+        n: frame.n ?? null,
+        courses: frame.courses ?? null,
+        venue: entry.venue?.[String(b.boat_number)] ?? null,
+        since: entry.since ?? null,
+        calculated_at: entry.calculated_at ?? null,
+      };
+    }
+    return out;
+  });
+}
+
+/**
+ * 会場のコース別の決まり手（venue_course_technique_baseline）。レースのグレードの6コースと、グレードを問わない ALL の6コース
+ * （グレードの母数が小さいとき朝の一覧は ALL を使う。scripts/daily/generate-morning-digest.js）。race_grade が無ければ ippan で引く
+ */
+async function venueCourseBaseline(date, venueCode, raceGrade, missing) {
+  const grade = raceGrade ?? "ippan";
+  if (!raceGrade) missing.push({ source: "db.exhibition.venueCourse.race_grade", reason: "races に race_grade が無く ippan で引いた" });
+  const rows = await sbGet("venue_course_technique_baseline", `select=race_grade,${VENUE_COURSE_FIELDS.join(",")}&venue_code=eq.${venueCode}&race_grade=in.(${grade},ALL)&order=race_grade,course`);
+  const pick = (g) =>
+    COURSES.map((c) => {
+      const r = rows.find((x) => x.race_grade === g && x.course === c);
+      if (!r) missing.push({ source: `db.exhibition.venueCourse.${g}.${c}`, reason: "venue_course_technique_baseline にこの会場・グレード・コースの行が無い" });
+      return r ? Object.fromEntries(VENUE_COURSE_FIELDS.map((f) => [f, r[f] ?? null])) : null;
+    });
+  const out = { race_grade: grade, courses: pick(grade), all: pick("ALL") };
+  if (rows.some((r) => r.window_end >= date || r.last_updated > date)) missing.push({ source: "db.exhibition.venueCourse", reason: lateReason("venue_course_technique_baseline", date) });
+  return out;
 }
 
 async function exhibitionBoats(raceId, racers, missing) {
@@ -119,7 +225,7 @@ async function exhibitionBoats(raceId, racers, missing) {
   const runIds = [...new Set([1, 2, 3, 4, 5, 6].flatMap((n) => (runsOf(n) ?? []).map((r) => r.race_id)))];
   const [rows, entries, finishes] = await Promise.all([
     sbGet("exhibition_data", `select=boat_number,${EXHIBITION_BOAT_FIELDS.join(",")},is_absent,updated_at&race_id=eq.${raceId}`),
-    sbGet("race_entries", `select=boat_number,f_count&race_id=eq.${raceId}`),
+    sbGet("race_entries", `select=boat_number,racer_id,f_count&race_id=eq.${raceId}`),
     runIds.length ? sbIn("race_start_timings", "race_id,boat_number,finish_mark,finish_rank", "race_id", runIds) : [],
   ]);
   if (!racers?.boats) missing.push({ source: "db.exhibition.boats.meet_finishes", reason: "facts に今節の走（racers）が無い" });
@@ -132,6 +238,7 @@ async function exhibitionBoats(raceId, racers, missing) {
       if (r && boat[f] === null) missing.push({ source: `db.exhibition.boats.${n}.${f}`, reason: r.is_absent ? "欠場" : "値が無い" });
     }
     const entry = entries.find((x) => x.boat_number === n);
+    boat.racer_id = entry?.racer_id ?? null;
     boat.f_count = entry?.f_count ?? null;
     if (boat.f_count === null) missing.push({ source: `db.exhibition.boats.${n}.f_count`, reason: entry ? "値が無い" : "race_entries にこの艇の行が無い" });
     const runs = runsOf(n);
@@ -299,7 +406,7 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
     missing.push({ source: "race", reason: e instanceof Error ? e.message : String(e) });
   }
   // 展示の後の材料（進入・展示 ST・チルト・部品交換・展示タイム・風と波・決まり手の過去の分布）。展示の前の出力は変えない
-  if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing, api.facts?.racers ?? null);
+  if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing, api.facts?.racers ?? null, raceRow?.grade ?? null);
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, race: raceRow, api, db, missing };
 }
 
