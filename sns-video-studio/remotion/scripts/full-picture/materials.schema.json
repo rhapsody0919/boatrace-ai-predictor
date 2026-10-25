@@ -489,10 +489,11 @@
               }
             },
             "nationalBoat": {
-              "$comment": "全国×枠の1着率（会場特徴カードの全国平均の目盛りと同じ nationalWinRateByBoat、24会場の outcome_distribution のプール）と決まり手（画面に無い。24会場の winning_technique_stats の回数のプール）。90日。by_boat のキーは枠番。任意の欄",
+              "$comment": "全国×枠の1着率（会場特徴カードの全国平均の目盛りと同じ nationalWinRateByBoat、24会場の outcome_distribution のプール。元は api.outcome）と決まり手（画面に無い。24会場の winning_technique_stats の回数のプール）。90日。by_boat のキーは枠番。任意の欄",
               "type": ["object", "null"],
-              "required": ["total_races", "venues", "technique_venues", "last_updated", "technique_last_updated", "by_boat"],
+              "required": ["count_total", "total_races", "venues", "technique_venues", "last_updated", "technique_last_updated", "by_boat"],
               "properties": {
+                "count_total": { "$comment": "1着率の分母（24会場の3連単の組の件数の合計。画面の全国平均と同じ）", "type": ["integer", "null"], "minimum": 0 },
                 "total_races": { "type": ["integer", "null"], "minimum": 0 },
                 "venues": { "type": ["integer", "null"], "minimum": 0 },
                 "technique_venues": { "type": ["integer", "null"], "minimum": 0 },
