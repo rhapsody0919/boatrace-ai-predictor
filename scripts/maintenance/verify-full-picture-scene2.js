@@ -672,8 +672,20 @@ for (const f of fixtures) {
   const entryRows = [1, 2, 3, 4, 5].map((n) => ({ boat_number: n, racer_id: 4000 + n, f_count: n === 1 ? 1 : n === 5 ? null : 0, grade: n === 2 ? "A1" : "B1" }));
   const technique = {
     venue_technique_period_stats: [{ period_days: 90, winning_technique: "逃げ", race_count: 388, total_races: 660, period_from: "2026-07-27", period_to: "2026-10-24", last_updated: "2026-10-25" }],
-    winning_technique_stats: [{ boat_number: 1, winning_technique: "逃げ", count_90days: 385, total_races: 412, percentage: 93.45, last_updated: "2026-10-25" }],
+    // 1号艇の抜きは percentage の小さい行を先に置く（画面と同じく percentage の降順で主な決まり手を選ぶか）
+    winning_technique_stats: [
+      { boat_number: 1, winning_technique: "抜き", count_90days: 27, total_races: 412, percentage: 6.55, last_updated: "2026-10-25" },
+      { boat_number: 1, winning_technique: "逃げ", count_90days: 385, total_races: 412, percentage: 93.45, last_updated: "2026-10-25" },
+    ],
   };
+  // 全国×枠（2026-10-26 hq 依頼、FT01）: 1着率は固定の材料の api.outcome（24会場）、決まり手は
+  // winning_technique_stats の全会場の行（各会場 1号艇 逃げ10・抜き2、会場1だけ恵まれ1）
+  const VENUES24 = Array.from({ length: 24 }, (_, i) => i + 1);
+  let techAll = VENUES24.flatMap((venue_code) => [
+    { venue_code, boat_number: 1, winning_technique: "逃げ", count_90days: 10, last_updated: "2026-10-11" },
+    { venue_code, boat_number: 1, winning_technique: "抜き", count_90days: 2, last_updated: "2026-10-11" },
+    ...(venue_code === 1 ? [{ venue_code, boat_number: 1, winning_technique: "恵まれ", count_90days: 1, last_updated: "2026-10-11" }] : []),
+  ]);
   // 選手のコース別の成績・会場のコース別の決まり手（2026-10-25 hq 依頼、FT01 優勝戦の思考の材料）。固定の材料の日は 2026-10-12
   const date = m.raceId.slice(0, 10);
   const tech = (racer_id, course, over = {}) => ({ racer_id, course, window_start: "2025-12-02", window_end: "2026-10-11", window_days: 314, runs: 25, nige_count: course === 1 ? 10 : null, nige_rate: course === 1 ? 40 : null, nige_expected: 54.48, makuri_count: 2, makuri_rate: 8, makuri_expected: 0, nigashi_count: course === 1 ? null : 12, nigashi_rate: course === 1 ? null : 48, nigashi_expected: 50, runs_90d: 6, nige_rate_90d: course === 1 ? 50 : null, makuri_rate_90d: 0, nigashi_rate_90d: course === 1 ? null : 50, last_updated: "2026-10-12", ...over });
@@ -685,9 +697,11 @@ for (const f of fixtures) {
     // 1号艇は締めた期（2026-04-30）とレースの日より後に締めた期（2026-10-31）。後者は使わない。2号艇は期が無い
     racer_period_stats: [period(4001, 2026, 1, "2026-04-30", 1), period(4001, 2026, 2, "2026-10-31", 9), period(4001, 2025, 2, "2025-10-31", 2), period(4003, 2026, 1, "2026-04-30", 3), period(4004, 2026, 1, "2026-04-30", 4), period(4005, 2026, 1, "2026-04-30", 5)],
   };
-  const vRow = (race_grade, course, over = {}) => ({ race_grade, course, runs: 136, nige_rate: course === 1 ? 62.2 : null, makuri_rate: course === 1 ? 0 : 5.1, nigashi_rate: course === 1 ? null : 62.2, window_start: "2025-12-02", window_end: "2026-10-11", last_updated: "2026-10-12", ...over });
+  const vRow = (race_grade, course, over = {}) => ({ venue_code: m.venueCode, race_grade, course, runs: 136, nige_rate: course === 1 ? 62.2 : null, makuri_rate: course === 1 ? 0 : 5.1, nigashi_rate: course === 1 ? null : 62.2, window_start: "2025-12-02", window_end: "2026-10-11", last_updated: "2026-10-12", ...over });
   // G1 は6コースが欠け、ALL は6コースそろう
-  let baseline = [...[1, 2, 3, 4, 5].map((c) => vRow("G1", c)), ...[1, 2, 3, 4, 5, 6].map((c) => vRow("ALL", c, { runs: 2103 }))];
+  // 全国×コース: 他の23会場の ALL（runs 1000・逃げ50%・まくり10.1%・逃がし50%）と、会場2の G1 の6コース（runs 50・まくり4%・逃がし52%）
+  const otherVenues = [...[1, 2, 3, 4, 5, 6].flatMap((c) => VENUES24.filter((v) => v !== m.venueCode).map((v) => vRow("ALL", c, { venue_code: v, runs: 1000, nige_rate: c === 1 ? 50 : null, makuri_rate: 10.1, nigashi_rate: c === 1 ? null : 50 }))), vRow("G1", 6, { venue_code: 2, runs: 50, makuri_rate: 4, nigashi_rate: 52 })];
+  let baseline = [...[1, 2, 3, 4, 5].map((c) => vRow("G1", c)), ...[1, 2, 3, 4, 5, 6].map((c) => vRow("ALL", c, { runs: 2103 })), ...otherVenues];
   // 超展開データの元（予想 standard の racerStats、保存されたままの形）。2026-10-25 hq 依頼（FT01）
   // 1号艇: 勝ち10で選手の値 / 2号艇: 全枠の勝ちが4で参考 / 3号艇: 勝ちが1で全国平均の% / 4号艇: 決まり手の内訳が全国の既定 /
   // 5号艇: 勝ちは5号艇2・1号艇3の計5 / 6号艇: racerStats に無い
@@ -855,6 +869,11 @@ for (const f of fixtures) {
         }
         if (table === "st_course_baseline") return json(stBaseline);
         if (table === "races" && q.get("race_id") === `eq.${m.raceId}`) return json([{ start_time: startTime, race_grade: grade }]);
+        // 全会場の集計表（会場で絞らない問い合わせ）は全国×枠の元
+        if (table === "winning_technique_stats" && !q.get("venue_code")) {
+          seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+          return json(techAll);
+        }
         if (technique[table]) return json(technique[table]);
         if (racerTables[table]) {
           seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
@@ -972,6 +991,55 @@ for (const f of fixtures) {
   assert.deepEqual([vc.courses.length, vc.courses[5], vc.all.map((r) => r.runs)], [6, null, [2103, 2103, 2103, 2103, 2103, 2103]], "6コース並べ、行の無いコースは null");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.venueCourse.G1.6"), "行の無いコースを記録");
   assert.ok(!got.missing.some((x) => x.source === "db.exhibition.venueCourse"), "レースの日より前の集計なら欠けなし");
+  // ---- 全国×コース・会場×枠・全国×枠（2026-10-26 hq 依頼、FT01 オーナー「会場の特性を分岐の判定に使う」）----
+  const { nationalCourseOf, BASELINE_GRADES, pctRound2, outcomeRowsOf, boatTendencyOf } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
+  const { placeRatesByBoat, nationalWinRateByBoat } = await import("../../src/utils/venuePlaceRates.js");
+  const nc = got.db.exhibition.nationalCourse;
+  assert.equal(nc?.race_grade, "G1", "全国もレースのグレードと ALL");
+  assert.ok(seenQueries.some((x) => x.startsWith("venue_course_technique_baseline?") && !/venue_code=eq/.test(x) && /order=venue_code,race_grade,course/.test(x)), "全国は同じ表の24会場の行を1回で読む");
+  // 会場1の ALL 1コース: 62.2%×2103 → 1308回、他の23会場: 50%×1000 → 500回ずつ
+  assert.deepEqual(nc.all[0], { course: 1, runs: 2103 + 23000, venues: 24, nige_count: 1308 + 11500, nige_rate: 51.02, makuri_count: 0 + 23 * 101, makuri_rate: 9.25, nigashi_count: null, nigashi_rate: null, window_start: "2025-12-02", window_end: "2026-10-11", last_updated: "2026-10-12" }, "全国の ALL 1コースは24会場の回数と走数の合計（RPC と同じ小数2桁の%）");
+  assert.deepEqual([nc.courses[5]?.runs, nc.courses[5]?.venues, nc.courses[5]?.makuri_count, nc.courses[5]?.nigashi_count, nc.courses[5]?.nigashi_rate, nc.courses[5]?.nige_rate], [50, 1, 2, 26, 52, null], "行のある会場だけを足す（G1 の6コースは会場2だけ）。2〜6コースは逃がし率");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.nationalCourse" && /会場1 G1 2コースの makuri_rate 5\.1 から回数に戻せない/.test(x.reason)), "率から回数に戻せない行を記録（固定の材料の会場1の行は作り物）");
+  assert.ok(!got.missing.some((x) => x.source === "db.exhibition.nationalCourse" && /より後の集計|窓が違う|会場だけ/.test(x.reason)), "窓がそろい24会場あり、レースの日より前なら欠けなし");
+  const vb = got.db.exhibition.venueBoat;
+  const screenRates = placeRatesByBoat(m.api.outcome[m.venueCode]);
+  assert.deepEqual(
+    [1, 2, 3, 4, 5, 6].map((n) => [vb.by_boat[n].win_rate, vb.by_boat[n].top2_rate, vb.by_boat[n].top3_rate]),
+    screenRates.map((r) => [r.winRate, r.top2Rate, r.top3Rate].map((v) => Number(v.toFixed(1)))),
+    "会場×枠の1着率・2連率・3連率は会場特徴カード（placeRatesByBoat）と同じ値の1桁",
+  );
+  assert.equal(vb.total_races, m.api.outcome[m.venueCode].total_races, "会場の90日のレース数");
+  assert.deepEqual(vb.by_boat[1].top_technique, { technique: "逃げ", percentage: 93.45 }, "主な決まり手は percentage の最大（カードの techniques[0]）");
+  assert.deepEqual([vb.by_boat[1].technique_total, vb.by_boat[1].techniques], [412, [{ technique: "逃げ", count: 385, share: 93.4 }, { technique: "抜き", count: 27, share: 6.6 }]], "決まり手の内訳は techniqueBreakdown（固定の順・1着の回数の中の割合）");
+  assert.deepEqual([vb.by_boat[2].top_technique, vb.by_boat[2].technique_total, vb.by_boat[2].techniques], [null, 0, []], "決まり手の行の無い枠は0件");
+  assert.equal(vb.technique_last_updated, "2026-10-25", "決まり手の集計の日");
+  assert.ok(!got.missing.some((x) => x.source.startsWith("db.exhibition.venueBoat")), "会場の決まり手の集計の日は technique.byBoat に記録済みで重ねない（/code-review #6）");
+  const nb = got.db.exhibition.nationalBoat;
+  // 全国の1着率を api.outcome から独立に数える（3連単の組の件数を1着の艇で足す）
+  const byFirst = {};
+  let pooledN = 0;
+  for (const o of Object.values(m.api.outcome)) for (const [first, ps] of Object.entries(o.data)) for (const x of ps) ((byFirst[first] = (byFirst[first] ?? 0) + x.count), (pooledN += x.count));
+  assert.deepEqual([nb.count_total, nb.venues, nb.technique_venues, nb.total_races], [pooledN, 24, 24, Object.values(m.api.outcome).reduce((a, o) => a + o.total_races, 0)], "全国は24会場のプール（分母は組の件数の合計）");
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map((n) => nb.by_boat[n].win_rate), [1, 2, 3, 4, 5, 6].map((n) => Number(((byFirst[n] / pooledN) * 100).toFixed(1))), "全国×枠の1着率は全国平均の目盛りと同じ数え方の1桁");
+  assert.equal(nb.by_boat[1].win_rate, Number(nationalWinRateByBoat(outcomeRowsOf(m.api.outcome))[1].toFixed(1)), "画面の全国平均と同じ関数");
+  assert.ok(!seenQueries.some((x) => x.startsWith("outcome_distribution?")), "1着率は取得済みの api.outcome を使い、表を読み直さない（/code-review #3）");
+  assert.deepEqual([nb.by_boat[1].technique_total, nb.by_boat[1].techniques], [289, [{ technique: "逃げ", count: 240, share: 83 }, { technique: "抜き", count: 48, share: 16.6 }, { technique: "恵まれ", count: 1, share: 0.3 }]], "全国×枠の決まり手は24会場の回数を足した内訳");
+  assert.ok(!got.missing.some((x) => x.source.startsWith("db.exhibition.nationalBoat")), "24会場そろいレースの日より前の集計なら欠けなし");
+  assert.ok(seenQueries.some((x) => x.startsWith("winning_technique_stats?") && /order=venue_code,boat_number,winning_technique/.test(x)), "全会場の決まり手は並べ替えて読む");
+  // 1会場の outcome-distribution が取れないと全国は23会場で、記録する
+  const partial = boatTendencyOf(m.venueCode, { ...m.api.outcome, 5: null }, technique.winning_technique_stats, techAll);
+  assert.equal(partial.nationalBoat.venues, 23, "取れなかった会場は数えない");
+  // RPC（PostgreSQL の ROUND）と同じ四捨五入（/code-review #1: 23/160=14.375 を浮動小数で丸めると 14.37 になる）
+  assert.deepEqual([pctRound2(23, 160), pctRound2(1, 3), pctRound2(2, 3), pctRound2(1308, 2103)], [14.38, 33.33, 66.67, 62.2], "回数/走数の%の2桁は半分を上へ");
+  assert.ok(!nationalCourseOf([{ venue_code: 1, race_grade: "ALL", course: 2, runs: 160, nige_rate: null, makuri_rate: 14.38, nigashi_rate: 50, window_start: "a", window_end: "b", last_updated: "c" }], "ALL").problems.some((x) => /戻せない/.test(x)), "RPC の丸めの 14.38 は 23回に戻る");
+  // 純関数: 会場の行が欠けた・窓が違う・ALL が24会場にない
+  const ncOnly = nationalCourseOf([{ venue_code: 3, race_grade: "ALL", course: 1, runs: 7, nige_rate: 57.14, makuri_rate: 0, nigashi_rate: null, window_start: "2025-12-02", window_end: "2026-10-11", last_updated: "2026-10-12" }, { venue_code: 4, race_grade: "ALL", course: 1, runs: 3, nige_rate: 33.33, makuri_rate: 33.33, nigashi_rate: null, window_start: "2025-12-03", window_end: "2026-10-11", last_updated: "2026-10-13" }], "ALL");
+  assert.deepEqual([ncOnly.all[0].runs, ncOnly.all[0].nige_count, ncOnly.all[0].nige_rate, ncOnly.all[0].makuri_count, ncOnly.all[0].last_updated, ncOnly.courses === ncOnly.all, ncOnly.all[1]], [10, 5, 50, 1, "2026-10-13", true, null], "4/7 と 1/3 を戻して 5/10、行の無いコースは null");
+  assert.ok(["窓が違う", "ALL 2コースの行が1会場も無い", "2会場だけ"].every((w) => ncOnly.problems.some((p) => p.includes(w))), "窓の食い違い・行の無いコース・会場の不足を書く");
+  // 契約の enum（出す値の race_grade がすべて契約にある）
+  assert.deepEqual(MATERIALS_SCHEMA.properties.db.properties.exhibition.properties.nationalCourse.properties.race_grade.enum, BASELINE_GRADES, "全国×コースのグレードはすべて契約にある");
+  has(validate({ ...got, db: { ...got.db, exhibition: { ...got.db.exhibition, nationalCourse: { ...nc, race_grade: "G4" } } } }), "SG|G1|G2|G3|ippan|ALL");
   assert.ok((got.db.exhibition.notes ?? []).some((x) => /racer_course_technique_stats・venue_course_technique_baseline・racer_aggregated_stats は最新の値だけ/.test(x)), "日付の無い表の注意を出力に書く");
   // 画面と同じ定義の材料（2026-10-25 hq 依頼、FT01）。超展開データは画面と同じ関数（src/utils/attackDefenseCells.js）
   const adOf = (n) => boats[n - 1].attack_defense;

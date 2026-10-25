@@ -32,6 +32,7 @@ import { computeStConsideration } from "../../../../src/utils/stConsideration.js
 import { indexBaseline, getBaselineCell, expectedBreakoutCount } from "../../../../src/utils/courseBaseline.js";
 import { toWakuRacerStats } from "../../../../src/utils/racerStats.js";
 import { attackDefenseColumn, isDefaultAttackDistribution } from "../../../../src/utils/attackDefenseCells.js";
+import { placeRatesByBoat, techniqueBreakdown, nationalWinRateByBoat, groupWinningTechniqueRows, poolTechniqueCounts } from "../../../../src/utils/venuePlaceRates.js";
 
 export const MATERIALS_VERSION = "full-picture-materials/1";
 const BASE = process.env.FULL_PICTURE_API_BASE ?? "https://www.boat-ai.jp";
@@ -136,8 +137,9 @@ const deadlineUtc = (date, startTime) => (startTime ? Date.parse(`${date}T${star
  * @param {{source: string, reason: string}[]} missing 追記する
  * @param {{boats?: {boat_number: number, meet_runs?: {race_id: string, boat_number: number}[]}[]}|null} [racers] facts の racers
  * @param {string|null} [raceGrade] races.race_grade（SG/G1/G2/G3/ippan）
+ * @param {Record<string, object|null>|null} [outcomes] 24会場の /api/outcome-distribution の応答（api.outcome。会場ページの会場特徴カードと同じ元）
  */
-export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing, racers = null, raceGrade = null) {
+export async function fetchExhibitionMaterials(raceId, date, venueCode, startTime, missing, racers = null, raceGrade = null, outcomes = null) {
   const fail = (source) => (e) => {
     missing.push({ source, reason: e instanceof Error ? e.message : String(e) });
     return null;
@@ -145,7 +147,7 @@ export async function fetchExhibitionMaterials(raceId, date, venueCode, startTim
   // オリジナル展示はレースの単位で1回読み、艇ごとの欄とレースの欄の両方に使う
   const original = originalExhibition(raceId, date, startTime, missing).catch((e) => (fail("db.exhibition.originalExhibition")(e), null));
   // 互いに依らないので並べて読む（選手のコース別の成績だけは艇の行の racer_id・進入を使うので、その後に読む）
-  const [boats, conditions, technique, venueCourse, losingTechnique, originalRace] = await Promise.all([
+  const [boats, conditions, technique, courseOut, losingTechnique, originalRace] = await Promise.all([
     exhibitionBoats(raceId, racers, missing)
       // 選手の成績の表が読めなくても艇の材料は残し、足す欄を null にする
       // 画面と同じ定義の値（超展開データ・ST考察・条件別・今節・進入・事故率）も、互いに依らないので並べて読み、艇ごとに合わせる
@@ -160,11 +162,25 @@ export async function fetchExhibitionMaterials(raceId, date, venueCode, startTim
       .catch(fail("db.exhibition.boats")),
     preRaceConditions(raceId, date, startTime, missing).catch(fail("db.exhibition.conditions")),
     venueTechnique(date, venueCode, missing).catch(fail("db.exhibition.technique")),
-    venueCourseBaseline(date, venueCode, raceGrade, missing).catch(fail("db.exhibition.venueCourse")),
+    venueCourseBaseline(date, venueCode, raceGrade, missing).catch((e) => (fail("db.exhibition.venueCourse")(e), fail("db.exhibition.nationalCourse")(e), null)),
     venueLosingTechnique(date, venueCode, missing).catch(fail("db.exhibition.losingTechnique")),
     original.then((o) => o?.race ?? null),
   ]);
-  return { notes: EXHIBITION_NOTES, boats, conditions, technique, venueCourse, losingTechnique, originalExhibition: originalRace };
+  // 会場×枠の決まり手は technique の winning_technique_stats の行を使う（同じ表を2回読まない）。全会場の表は、
+  // 選手ごとの読みと並べると30秒の時間切れになった（2026-10-26 実測）ので後に読む
+  const boatOut = await boatTendency(date, venueCode, outcomes, technique?.byBoat ?? null, missing).catch((e) => (fail("db.exhibition.venueBoat")(e), fail("db.exhibition.nationalBoat")(e), null));
+  return {
+    notes: EXHIBITION_NOTES,
+    boats,
+    conditions,
+    technique,
+    venueCourse: courseOut?.venueCourse ?? null,
+    nationalCourse: courseOut?.nationalCourse ?? null,
+    venueBoat: boatOut?.venueBoat ?? null,
+    nationalBoat: boatOut?.nationalBoat ?? null,
+    losingTechnique,
+    originalExhibition: originalRace,
+  };
 }
 
 /** 出力に書く注意（材料を読む側が日付の無い表を当日の値と取り違えないため） */
@@ -186,6 +202,9 @@ export const EXHIBITION_NOTES = [
   "losingTechnique は会場の負けの決まり手（losing_technique_stats、90日・会場×枠。LosingTechniqueChart と同じまとめ）。最新の集計だけを持つ",
   "条件別・今節・進入・事故率は選手の730日の走をレースの日から数え、このレースより前の走だけを使う（画面は見た日から730日）",
   "final_race_record は画面に無い値。本人の優勝戦（race_conditions.race_stage・kb_archive_races.stage が '優勝戦' の完全一致）の走で、このレースより前（race_id < 対象）。窓は本体（2025-12-03〜）と kb_archive（〜2025-12-02）を合わせる。kb_archive は匿名キーで読めない（074 で anon から REVOKE）ので、読めなければ本体の窓だけで数え、complete=false と windows の read=false で分ける。不成立（race_status='no_race'。is_no_race は使わない）・中止（races.cancellation_status）・結果なし（rank1 が無い、kb は has_result=false）のレースは除く（excluded_races）。欠場（finish_mark '欠'・race_entries.is_absent、kb は K0・K1）は走数に入れない（absent_runs）。F・L（返還）は走数に入れ1着にしない（fl_runs）。失格・転覆等も走数に入れ1着にしない。1着は rank1＝艇番か finish_mark '1'（kb は '01'）。率は%の1桁",
+  "nationalCourse は全国×実進入コースの逃げ率・まくり率・逃がし率（venueCourse と同じ表・同じ窓・同じグレードと ALL）。表に全国の行は無い（venue_code は1〜24）ので、24会場の行の率×runs/100 を整数の回数に戻して（RPC compute_venue_course_technique_baseline が数えた回数。戻した回数が率と食い違えば missing）足し、RPC と同じく小数2桁の%に丸める（PostgreSQL の ROUND と同じ四捨五入を整数で）。行の無い会場・グレードはその会場の走が0。venues は足した会場の数",
+  "venueBoat は会場ページの会場特徴カード（VenueCharacteristicsCard・もっと詳しく VenueCharacteristicsDetails）と同じ値。1着率・2連率・3連率は outcome_distribution（90日）の3連単の件数から placeRatesByBoat（%の1桁）、top_technique は winning_technique_stats の percentage が最大の行（カードの主な決まり手）、techniques は techniqueBreakdown（その枠の1着の回数の中の割合。share は%の1桁で、画面は整数）。キーは枠番。決まり手の欠け・集計の日は db.exhibition.technique.byBoat の missing と同じ",
+  "nationalBoat の win_rate は会場特徴カードの全国平均の目盛り（getNationalAverageOutcomeDistribution と同じ nationalWinRateByBoat。24会場の outcome_distribution の件数のプール。元は取得済みの api.outcome で、場面の全国平均と同じ読み）。分母は3連単の組の件数の合計 count_total（total_races は会場の total_races の合計）。決まり手の内訳は画面に無い値で、24会場の winning_technique_stats の回数を枠番×決まり手で足した（poolTechniqueCounts）。会場・全国とも90日・最新の集計だけを持つ",
   "period_finals は racer_period_stats の finals（優出回数）・wins（優勝回数）。latest は calc_to < レースの日 の最新の期（前期）、last4 は同じ条件の新しい順の4期の合計（4期そろわなければ periods_count が4未満）。period_year・period_no は期の表記、数えた期間は calc_from〜calc_to",
 ];
 
@@ -195,6 +214,8 @@ export const PERIOD_COURSE_FIELDS = ["entries", "avg_st", "avg_start_rank", "f",
 export const COURSE_TECHNIQUE_FIELDS = ["window_start", "window_end", "window_days", "runs", "nige_count", "nige_rate", "makuri_count", "makuri_rate", "nigashi_count", "nigashi_rate", "runs_90d", "nige_rate_90d", "makuri_rate_90d", "nigashi_rate_90d", "last_updated"];
 /** 会場のコース別の決まり手（venue_course_technique_baseline）の写す欄 */
 export const VENUE_COURSE_FIELDS = ["course", "runs", "nige_rate", "makuri_rate", "nigashi_rate", "window_start", "window_end", "last_updated"];
+/** venue_course_technique_baseline の race_grade（表の CHECK vctb_grade_values と同じ） */
+export const BASELINE_GRADES = ["SG", "G1", "G2", "G3", "ippan", "ALL"];
 const COURSES = [1, 2, 3, 4, 5, 6];
 const withoutRacerStats = (b) => ({ ...b, course: b.exhibition_course ?? b.boat_number, course_source: b.exhibition_course != null ? "exhibition_course" : "boat_number", course_technique: null, period_course: null, entry_tendency: null });
 const SCREEN_STATS_NULL = { attack_defense: null, st_consideration: null, st_stability: null, condition_rows: null, condition_stats: null, meet_results: null, entry_distribution: null, accident: null };
@@ -770,20 +791,188 @@ async function originalExhibition(raceId, date, startTime, missing) {
 
 /**
  * 会場のコース別の決まり手（venue_course_technique_baseline）。レースのグレードの6コースと、グレードを問わない ALL の6コース
- * （グレードの母数が小さいとき朝の一覧は ALL を使う。scripts/daily/generate-morning-digest.js）。race_grade が無ければ ippan で引く
+ * （グレードの母数が小さいとき朝の一覧は ALL を使う。scripts/daily/generate-morning-digest.js）。race_grade が無ければ ippan で引く。
+ * 全国（nationalCourse）は同じ問い合わせの24会場の行から nationalCourseOf で出す
  */
 async function venueCourseBaseline(date, venueCode, raceGrade, missing) {
   const grade = raceGrade ?? "ippan";
   if (!raceGrade) missing.push({ source: "db.exhibition.venueCourse.race_grade", reason: "races に race_grade が無く ippan で引いた" });
-  const rows = await sbGet("venue_course_technique_baseline", `select=race_grade,${VENUE_COURSE_FIELDS.join(",")}&venue_code=eq.${venueCode}&race_grade=in.(${grade},ALL)&order=race_grade,course`);
+  const rows = await sbGet("venue_course_technique_baseline", `select=venue_code,race_grade,${VENUE_COURSE_FIELDS.join(",")}&race_grade=in.(${grade},ALL)&order=venue_code,race_grade,course`);
+  const mine = rows.filter((r) => r.venue_code === venueCode);
   const pick = (g) =>
     COURSES.map((c) => {
-      const r = rows.find((x) => x.race_grade === g && x.course === c);
+      const r = mine.find((x) => x.race_grade === g && x.course === c);
       if (!r) missing.push({ source: `db.exhibition.venueCourse.${g}.${c}`, reason: "venue_course_technique_baseline にこの会場・グレード・コースの行が無い" });
       return r ? Object.fromEntries(VENUE_COURSE_FIELDS.map((f) => [f, r[f] ?? null])) : null;
     });
-  const out = { race_grade: grade, courses: pick(grade), all: pick("ALL") };
-  if (rows.some((r) => r.window_end >= date || r.last_updated > date)) missing.push({ source: "db.exhibition.venueCourse", reason: lateReason("venue_course_technique_baseline", date) });
+  const venueCourse = { race_grade: grade, courses: pick(grade), all: pick("ALL") };
+  if (mine.some((r) => r.window_end >= date || r.last_updated > date)) missing.push({ source: "db.exhibition.venueCourse", reason: lateReason("venue_course_technique_baseline", date) });
+  const { problems, ...nationalCourse } = nationalCourseOf(rows, grade);
+  for (const p of problems) missing.push({ source: "db.exhibition.nationalCourse", reason: p });
+  if (rows.some((r) => r.window_end >= date || r.last_updated > date)) missing.push({ source: "db.exhibition.nationalCourse", reason: lateReason("venue_course_technique_baseline", date) });
+  return { venueCourse, nationalCourse };
+}
+
+/** 全国×コースの行の欄（回数は率×走数から戻した整数）。nige は1コースだけ、nigashi は2〜6コースだけ（表の CHECK と同じ） */
+export const NATIONAL_COURSE_FIELDS = ["course", "runs", "venues", "nige_count", "nige_rate", "makuri_count", "makuri_rate", "nigashi_count", "nigashi_rate", "window_start", "window_end", "last_updated"];
+/**
+ * 回数/走数×100 の小数2桁（PostgreSQL の ROUND(numeric, 2) と同じ四捨五入。半分は0から遠い側）。
+ * 浮動小数の割り算を丸めると 23/160=14.375 が 14.37 になり RPC の 14.38 と食い違うので、整数で丸める（/code-review 2026-10-26 #1）
+ */
+export const pctRound2 = (n, runs) => Math.floor((2 * n * 10000 + runs) / (2 * runs)) / 100;
+const maxOf = (rows, key) => rows.reduce((a, r) => (r[key] != null && (a === null || r[key] > a) ? r[key] : a), null);
+
+/**
+ * 全国×実進入コースの逃げ率・まくり率・逃がし率（純関数）。venue_course_technique_baseline は会場ごとの行だけを持つ
+ * （venue_code 1〜24、全国の行は無い）。各行の率は RPC compute_venue_course_technique_baseline が回数/runs×100 を
+ * 小数2桁に丸めた値なので、率×runs/100 を丸めて回数に戻し（runs が10000未満なら一意に戻る。戻した回数から率を作り直して
+ * 一致しなければ problems に書く）、会場の回数と runs を足して、RPC と同じく小数2桁の%にする。
+ * 行の無い会場・グレードのセルは、RPC が走の無いセルを出さないので0走として扱う。窓が会場で食い違えば problems に書く
+ * @param {object[]} rows 24会場の行（venue_code, race_grade, course, runs, nige_rate, makuri_rate, nigashi_rate, window_start, window_end, last_updated）
+ * @param {string} grade レースのグレード
+ * @returns {{race_grade: string, courses: (object|null)[], all: (object|null)[], problems: string[]}}
+ */
+export function nationalCourseOf(rows, grade) {
+  const problems = [];
+  const windows = new Set(rows.map((r) => `${r.window_start}〜${r.window_end}`));
+  if (windows.size > 1) problems.push(`会場で集計の窓が違う（${[...windows].join("・")}）`);
+  const back = (r, key) => {
+    const n = Math.round((Number(r[key]) * r.runs) / 100);
+    if (pctRound2(n, r.runs) !== Number(r[key])) problems.push(`会場${r.venue_code} ${r.race_grade} ${r.course}コースの ${key} ${r[key]} から回数に戻せない（runs ${r.runs}）`);
+    return n;
+  };
+  const sum = (g) =>
+    COURSES.map((c) => {
+      const cell = rows.filter((r) => r.race_grade === g && r.course === c && r.runs > 0);
+      if (!cell.length) {
+        problems.push(`${g} ${c}コースの行が1会場も無い`);
+        return null;
+      }
+      const runs = cell.reduce((a, r) => a + r.runs, 0);
+      const count = (key) => cell.reduce((a, r) => a + back(r, key), 0);
+      const rate = (n) => (n === null ? null : pctRound2(n, runs));
+      const nige = c === 1 ? count("nige_rate") : null;
+      const makuri = count("makuri_rate");
+      const nigashi = c === 1 ? null : count("nigashi_rate");
+      return {
+        course: c,
+        runs,
+        venues: cell.length,
+        nige_count: nige,
+        nige_rate: rate(nige),
+        makuri_count: makuri,
+        makuri_rate: rate(makuri),
+        nigashi_count: nigashi,
+        nigashi_rate: rate(nigashi),
+        window_start: cell[0].window_start,
+        window_end: cell[0].window_end,
+        last_updated: maxOf(cell, "last_updated"),
+      };
+    });
+  const all = sum("ALL");
+  const allVenues = new Set(rows.filter((r) => r.race_grade === "ALL").map((r) => r.venue_code));
+  if (allVenues.size < 24) problems.push(`ALL の行がある会場が${allVenues.size}会場だけ（24会場の合計でない）`);
+  return { race_grade: grade, courses: grade === "ALL" ? all : sum(grade), all, problems: [...new Set(problems)] };
+}
+
+/** 枠の決まり手の内訳（techniqueBreakdown、画面と同じ関数）。share は%の1桁 */
+const boatTechniques = (t) => {
+  const { total, items } = techniqueBreakdown(t);
+  return { technique_total: total, techniques: items.map((x) => ({ technique: x.technique, count: x.count, share: pct1(x.share) })) };
+};
+const NO_TECHNIQUES = { technique_total: null, techniques: null };
+
+/**
+ * /api/outcome-distribution の応答（会場ごと）を outcome_distribution の行の形（venue_code, first_boat, count_90days）に戻す。
+ * 応答は表の行を1着の艇でまとめただけ（api/outcome-distribution/index.js）なので、全会場を並べると画面の全国平均の元
+ * （getNationalAverageOutcomeDistribution が読む表の全行）と同じ件数になる
+ * @param {Record<string, {data?: Record<string, {count?: number}[]>}|null>} outcomes api.outcome
+ */
+export function outcomeRowsOf(outcomes) {
+  return Object.entries(outcomes ?? {}).flatMap(([venue, o]) =>
+    Object.entries(o?.data ?? {}).flatMap(([first, patterns]) => (patterns ?? []).map((p) => ({ venue_code: Number(venue), first_boat: Number(first), count_90days: p.count ?? 0 }))),
+  );
+}
+
+/**
+ * 会場×枠と全国×枠の1着率・決まり手（純関数）。会場は会場特徴カード（VenueCharacteristicsCard・VenueCharacteristicsDetails）と
+ * 同じ関数（placeRatesByBoat・groupWinningTechniqueRows・techniqueBreakdown。主な決まり手は percentage の最大＝画面の techniques[0]）、
+ * 全国の1着率は画面の全国平均（nationalWinRateByBoat）。全国の決まり手は24会場の回数のプール（poolTechniqueCounts、画面に無い）。
+ * 元が無いものは null（会場の両方が無ければ venueBoat が null、全国の両方が無ければ nationalBoat が null）
+ * @param {number} venueCode
+ * @param {Record<string, object|null>|null} outcomes api.outcome（会場ごとの /api/outcome-distribution の応答）
+ * @param {object[]|null} venueTechRows この会場の winning_technique_stats の行
+ * @param {object[]|null} techRows 全会場の winning_technique_stats の行
+ */
+export function boatTendencyOf(venueCode, outcomes, venueTechRows, techRows) {
+  const outcome = outcomes?.[venueCode]?.total_races ? outcomes[venueCode] : null;
+  const rates = outcome ? placeRatesByBoat(outcome) : null;
+  // 画面は boat_number・percentage の降順で読む（techniques[0] が主な決まり手）
+  const grouped = venueTechRows?.length ? groupWinningTechniqueRows([...venueTechRows].sort((a, b) => a.boat_number - b.boat_number || b.percentage - a.percentage)) : null;
+  const read = Object.entries(outcomes ?? {}).filter(([, o]) => o);
+  const outcomeRows = outcomeRowsOf(Object.fromEntries(read));
+  const national = nationalWinRateByBoat(outcomeRows);
+  const pooled = techRows?.length ? poolTechniqueCounts(techRows) : null;
+  const venueBoat =
+    rates || grouped
+      ? {
+          total_races: rates ? outcome.total_races : null,
+          last_updated: rates ? (outcome.last_updated ?? null) : null,
+          technique_last_updated: grouped ? maxOf(venueTechRows, "last_updated") : null,
+          by_boat: Object.fromEntries(
+            COURSES.map((n) => {
+              const r = rates?.find((x) => x.boat === n);
+              const top = grouped?.data?.[n]?.techniques?.[0] ?? null;
+              return [
+                n,
+                {
+                  win_rate: r ? pct1(r.winRate) : null,
+                  top2_rate: r ? pct1(r.top2Rate) : null,
+                  top3_rate: r ? pct1(r.top3Rate) : null,
+                  top_technique: top ? { technique: top.technique, percentage: top.percentage } : null,
+                  ...(grouped ? boatTechniques(grouped.data[n]) : NO_TECHNIQUES),
+                },
+              ];
+            }),
+          ),
+        }
+      : null;
+  const nationalBoat =
+    national || pooled
+      ? {
+          // 1着率の分母は3連単の組の件数の合計（画面の全国平均と同じ）。total_races は会場の total_races の合計
+          count_total: national ? outcomeRows.reduce((a, r) => a + r.count_90days, 0) : null,
+          total_races: national ? read.reduce((a, [, o]) => a + (o.total_races ?? 0), 0) : null,
+          venues: national ? read.length : null,
+          technique_venues: pooled ? new Set(techRows.map((r) => r.venue_code)).size : null,
+          last_updated: national ? maxOf(read.map(([, o]) => o), "last_updated") : null,
+          technique_last_updated: pooled ? maxOf(techRows, "last_updated") : null,
+          by_boat: Object.fromEntries(COURSES.map((n) => [n, { win_rate: national ? pct1(national[n] ?? 0) : null, ...(pooled ? boatTechniques(pooled[n]) : NO_TECHNIQUES) }])),
+        }
+      : null;
+  return { venueBoat, nationalBoat };
+}
+
+/**
+ * 会場×枠と全国×枠の1着率・決まり手（boatTendencyOf）。1着率は取得済みの api.outcome（24会場の /api/outcome-distribution、
+ * 会場特徴カードと同じ元）を使い、全国の決まり手だけ winning_technique_stats の全会場の行を読む。会場の決まり手の欠け・
+ * レースの日より後の集計は db.exhibition.technique.byBoat に記録済み（同じ行なので重ねて書かない）。
+ * どれも90日の最新の集計だけを持つので、レースの日より後の集計なら記録する（値は残す）
+ */
+async function boatTendency(date, venueCode, outcomes, venueTechRows, missing) {
+  const techRows = await sbGet("winning_technique_stats", "select=venue_code,boat_number,winning_technique,count_90days,last_updated&order=venue_code,boat_number,winning_technique").catch(orNull(missing, "db.exhibition.nationalBoat.techniques"));
+  const outcome = outcomes?.[venueCode] ?? null;
+  if (!outcome) missing.push({ source: "db.exhibition.venueBoat.win_rate", reason: "この会場の outcome-distribution が無い（api.outcome）" });
+  else if (!outcome.total_races) missing.push({ source: "db.exhibition.venueBoat.win_rate", reason: "outcome_distribution にこの会場の90日のレースが無い" });
+  else if (outcome.last_updated > date) missing.push({ source: "db.exhibition.venueBoat.win_rate", reason: lateReason("outcome_distribution", date) });
+  if (techRows && !techRows.length) missing.push({ source: "db.exhibition.nationalBoat.techniques", reason: "winning_technique_stats が空" });
+  const out = boatTendencyOf(venueCode, outcomes, venueTechRows, techRows);
+  const nb = out.nationalBoat;
+  if (nb?.venues == null) missing.push({ source: "db.exhibition.nationalBoat.win_rate", reason: "outcome-distribution が1会場も無い（api.outcome）" });
+  else if (nb.venues < 24) missing.push({ source: "db.exhibition.nationalBoat.win_rate", reason: `outcome-distribution が${nb.venues}会場だけ（24会場の合計でない）` });
+  if (nb?.technique_venues != null && nb.technique_venues < 24) missing.push({ source: "db.exhibition.nationalBoat.techniques", reason: `winning_technique_stats の会場が${nb.technique_venues}会場だけ` });
+  if ((nb?.last_updated ?? "") > date) missing.push({ source: "db.exhibition.nationalBoat.win_rate", reason: lateReason("outcome_distribution", date) });
+  if ((nb?.technique_last_updated ?? "") > date) missing.push({ source: "db.exhibition.nationalBoat.techniques", reason: lateReason("winning_technique_stats", date) });
   return out;
 }
 
@@ -973,7 +1162,7 @@ export async function fetchMaterials(raceId, { stage = "racecard", caseDir = nul
     missing.push({ source: "race", reason: e instanceof Error ? e.message : String(e) });
   }
   // 展示の後の材料（進入・展示 ST・チルト・部品交換・展示タイム・風と波・決まり手の過去の分布）。展示の前の出力は変えない
-  if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing, api.facts?.racers ?? null, raceRow?.grade ?? null);
+  if (stage === "exhibition") db.exhibition = await fetchExhibitionMaterials(raceId, date, Number(venue), raceRow?.startTime ?? null, missing, api.facts?.racers ?? null, raceRow?.grade ?? null, api.outcome ?? null);
   return { schemaVersion: MATERIALS_VERSION, raceId, date, venueCode: Number(venue), stage, race: raceRow, api, db, missing };
 }
 

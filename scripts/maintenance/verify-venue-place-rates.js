@@ -10,6 +10,9 @@ import {
   TECHNIQUE_ORDER,
   placeRatesByBoat,
   techniqueBreakdown,
+  nationalWinRateByBoat,
+  groupWinningTechniqueRows,
+  poolTechniqueCounts,
 } from "../../src/utils/venuePlaceRates.js";
 
 const KNOWN_GAPS = [
@@ -116,6 +119,42 @@ check("techniqueBreakdown: 全既知名はexportの順で未知名は末尾", ()
   ];
   const result = techniqueBreakdown({ techniques });
   assert.deepEqual(result.items.map((x) => x.technique), [...TECHNIQUE_ORDER, "謎"]);
+});
+
+// 画面（supabaseDataService）から移した計算（2026-10-26、全貌動画の材料と共通にした）。移す前の式の手計算と一致する
+check("nationalWinRateByBoat: 24会場の件数のプール（移す前の getNationalAverageOutcomeDistribution と同じ）", () => {
+  const rows = [
+    { first_boat: 1, count_90days: 6 }, { first_boat: 2, count_90days: 3 },
+    { first_boat: 1, count_90days: 1 }, { first_boat: 6, count_90days: null },
+  ];
+  assert.deepEqual(nationalWinRateByBoat(rows), { 1: 70, 2: 30, 6: 0 });
+  assert.equal(nationalWinRateByBoat([]), null);
+  assert.equal(nationalWinRateByBoat([{ first_boat: 1, count_90days: 0 }]), null);
+});
+check("groupWinningTechniqueRows: 入力の順のまま枠番ごとにまとめる（移す前の getWinningTechniqueStats と同じ）", () => {
+  const rows = [
+    { boat_number: 1, winning_technique: "逃げ", count_90days: 9, total_races: 10, percentage: 90, last_updated: "2026-10-25" },
+    { boat_number: 1, winning_technique: "抜き", count_90days: 1, total_races: 10, percentage: 10, last_updated: "2026-10-24" },
+    { boat_number: 3, winning_technique: "まくり", count_90days: 2, total_races: 2, percentage: 100, last_updated: "2026-10-25" },
+  ];
+  assert.deepEqual(groupWinningTechniqueRows(rows), {
+    last_updated: "2026-10-25",
+    data: {
+      1: { total_races: 10, techniques: [{ technique: "逃げ", count: 9, percentage: 90 }, { technique: "抜き", count: 1, percentage: 10 }] },
+      3: { total_races: 2, techniques: [{ technique: "まくり", count: 2, percentage: 100 }] },
+    },
+  });
+  assert.deepEqual(groupWinningTechniqueRows([]), { last_updated: null, data: {} });
+});
+check("poolTechniqueCounts: 会場をまたいで枠番×決まり手の回数を足す", () => {
+  const pooled = poolTechniqueCounts([
+    { venue_code: 1, boat_number: 1, winning_technique: "逃げ", count_90days: 3 },
+    { venue_code: 2, boat_number: 1, winning_technique: "逃げ", count_90days: 4 },
+    { venue_code: 2, boat_number: 1, winning_technique: "抜き", count_90days: 1 },
+    { venue_code: 2, boat_number: 4, winning_technique: "まくり", count_90days: null },
+  ]);
+  assert.deepEqual(pooled, { 1: { techniques: [{ technique: "逃げ", count: 7 }, { technique: "抜き", count: 1 }] }, 4: { techniques: [{ technique: "まくり", count: 0 }] } });
+  assert.deepEqual(techniqueBreakdown(pooled[1]).items.map((x) => x.share), [87.5, 12.5]);
 });
 
 console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length}件`);

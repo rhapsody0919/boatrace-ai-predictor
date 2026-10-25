@@ -466,6 +466,41 @@
                 "courses": { "type": "array", "items": { "$ref": "#/definitions/venueCourseRow" } },
                 "all": { "type": "array", "items": { "$ref": "#/definitions/venueCourseRow" } }
               }
+            },
+            "nationalCourse": {
+              "$comment": "全国×実進入コースの逃げ率・まくり率・逃がし率（venueCourse と同じ表 venue_course_technique_baseline・同じ窓・同じグレードと ALL の6コース）。表に全国の行は無いので、24会場の行の率×runs から戻した回数と runs を足す（nationalCourseOf）。朝の一覧（/today）の会場平均と同じ表の全国版で、画面に全国の値は無い。任意の欄",
+              "type": ["object", "null"],
+              "required": ["race_grade", "courses", "all"],
+              "properties": {
+                "race_grade": { "enum": ["SG", "G1", "G2", "G3", "ippan", "ALL"] },
+                "courses": { "type": "array", "items": { "$ref": "#/definitions/nationalCourseRow" } },
+                "all": { "type": "array", "items": { "$ref": "#/definitions/nationalCourseRow" } }
+              }
+            },
+            "venueBoat": {
+              "$comment": "会場×枠の1着率・2連率・3連率と決まり手。会場ページの会場特徴カード（VenueCharacteristicsCard・もっと詳しく VenueCharacteristicsDetails）と同じ表（outcome_distribution・winning_technique_stats、90日）と同じ関数（placeRatesByBoat・techniqueBreakdown）。by_boat のキーは枠番。任意の欄",
+              "type": ["object", "null"],
+              "required": ["total_races", "last_updated", "technique_last_updated", "by_boat"],
+              "properties": {
+                "total_races": { "type": ["integer", "null"], "minimum": 0 },
+                "last_updated": { "type": ["string", "null"] },
+                "technique_last_updated": { "type": ["string", "null"] },
+                "by_boat": { "type": "object", "additionalProperties": { "$ref": "#/definitions/boatTendency" } }
+              }
+            },
+            "nationalBoat": {
+              "$comment": "全国×枠の1着率（会場特徴カードの全国平均の目盛りと同じ nationalWinRateByBoat、24会場の outcome_distribution のプール。元は api.outcome）と決まり手（画面に無い。24会場の winning_technique_stats の回数のプール）。90日。by_boat のキーは枠番。任意の欄",
+              "type": ["object", "null"],
+              "required": ["count_total", "total_races", "venues", "technique_venues", "last_updated", "technique_last_updated", "by_boat"],
+              "properties": {
+                "count_total": { "$comment": "1着率の分母（24会場の3連単の組の件数の合計。画面の全国平均と同じ）", "type": ["integer", "null"], "minimum": 0 },
+                "total_races": { "type": ["integer", "null"], "minimum": 0 },
+                "venues": { "type": ["integer", "null"], "minimum": 0 },
+                "technique_venues": { "type": ["integer", "null"], "minimum": 0 },
+                "last_updated": { "type": ["string", "null"] },
+                "technique_last_updated": { "type": ["string", "null"] },
+                "by_boat": { "type": "object", "additionalProperties": { "$ref": "#/definitions/boatTendency" } }
+              }
             }
           }
         }
@@ -510,6 +545,47 @@
         "window_start": { "type": "string" },
         "window_end": { "type": "string" },
         "last_updated": { "type": ["string", "null"] }
+      }
+    },
+    "nationalCourseRow": {
+      "type": ["object", "null"],
+      "required": ["course", "runs", "venues", "nige_count", "nige_rate", "makuri_count", "makuri_rate", "nigashi_count", "nigashi_rate", "window_start", "window_end", "last_updated"],
+      "properties": {
+        "course": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "runs": { "type": "integer", "minimum": 0 },
+        "venues": { "type": "integer", "minimum": 0, "maximum": 24 },
+        "nige_count": { "type": ["integer", "null"], "minimum": 0 },
+        "nige_rate": { "type": ["number", "null"] },
+        "makuri_count": { "type": "integer", "minimum": 0 },
+        "makuri_rate": { "type": "number" },
+        "nigashi_count": { "type": ["integer", "null"], "minimum": 0 },
+        "nigashi_rate": { "type": ["number", "null"] },
+        "window_start": { "type": "string" },
+        "window_end": { "type": "string" },
+        "last_updated": { "type": ["string", "null"] }
+      }
+    },
+    "boatTendency": {
+      "type": "object",
+      "required": ["win_rate", "technique_total", "techniques"],
+      "properties": {
+        "win_rate": { "type": ["number", "null"] },
+        "top2_rate": { "type": ["number", "null"] },
+        "top3_rate": { "type": ["number", "null"] },
+        "top_technique": {
+          "type": ["object", "null"],
+          "required": ["technique", "percentage"],
+          "properties": { "technique": { "type": "string" }, "percentage": { "type": "number" } }
+        },
+        "technique_total": { "type": ["integer", "null"], "minimum": 0 },
+        "techniques": {
+          "type": ["array", "null"],
+          "items": {
+            "type": "object",
+            "required": ["technique", "count", "share"],
+            "properties": { "technique": { "type": "string" }, "count": { "type": "integer", "minimum": 0 }, "share": { "type": "number" } }
+          }
+        }
       }
     },
     "scenario": {
