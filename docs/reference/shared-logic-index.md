@@ -294,6 +294,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/horizontalScrollHint.js` | 右に残っている幅がこれを超えたら「溢れている」とみなす（px）。「›」を出す、右に余白を足す、 | hscrollFadeWidth, horizontalScrollHintState, horizontalScrollStep, snapScrollTarget, tailPaddingFor ほか3件 |
 | `src/utils/inCautionAccuracy.js` | /accuracy のイン崩れ注意度の段ごとの実績（BOA-822 task 24、screens S-5、plan §6）の表示用の値（純関数）。 | inCautionAccuracyView, MIN_RATE_N, pct1 |
 | `src/utils/inCautionLevel.js` | BOA-822 イン崩れ注意度の段・帯の判定（生成 scripts/lib/inCaution.js と画面で同じ関数を使う）。 | pctOf, levelOf, rateCents, bandOf, bandRange ほか4件 |
+| `src/utils/losingTechnique.js` | 会場の負けの決まり手（losing_technique_stats、90日・会場×枠）の行を枠ごとにまとめる（純関数）。 | groupLosingTechniqueRows |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate, seriesDayByDate, meetDaysFromRows ほか1件 |
 | `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, meetDaysOf, meetPageState, officialAsOfDate, pickMeetAnchor ほか5件 |
 | `src/utils/motorFreshRate.js` | 新しいモーターの最初の開催で、公式の2連率が 0 のときに何を出すか（BOA-830、 | isWithinFreshMotorWindow, motorRateView, motorRate3View, FRESH_MOTOR_WINDOW_DAYS |
@@ -301,6 +302,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/motorUsage.js` | モーターの使用回数と「未使用（新モーター・実績なし）」の判定（BOA-702）。 | motorUsageCount, isUnusedMotor |
 | `src/utils/nextOpenDate.js` | 非開催会場の「次開催日」を節（race_series）から求める（BOA-225）。 | computeNextOpenDates, formatMonthDay |
 | `src/utils/oddsMath.js` | オッズの計算（BOA-430 で RaceOddsListTab.jsx から移した。計算は変えていない）。 | formatOdds, compositeOdds, latestSnapshotWith, popularityRanks, expandTickets ほか2件 |
+| `src/utils/originalExhibition.js` | オリジナル展示（BOATCAST、race_original_exhibition・_values）の行を画面の形にする（純関数）。 | shapeOriginalExhibition, ORIGINAL_EXHIBITION_KINDS |
 | `src/utils/pageMeta.js` | トップ（/）と会場ページ（本日分、/venue/:code）の title・meta description・canonical を作る。 | getTopPageMeta, getTodayVenuePageMeta, getTodayVenueBreadcrumbItems |
 | `src/utils/pastRate/count.js` | BOA-635「過去に発生した割合を見る」の数え方（docs/design/past-rate-check/spec.md FR-1・共通の数え方）。純粋関数。 | orderCombos, countPastRate, incompatibleForms, TYPES, TENKAI_TECHNIQUES ほか3件 |
 | `src/utils/pastRate/label.js` | BOA-635 の定番／レアのラベル（docs/design/past-rate-check/spec.md FR-3）。純粋関数。 | subtypeOf, rateLabel, thresholdNote |
@@ -372,6 +374,7 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 | `src/services/moriartyService.js` | — | getMoriartyStats, getMoriartyRecommendations, getMoriartyROIHistory, getMoriartyVenueBreakdown, getMoriartyCalibrationData |
 | `src/services/mycroftService.js` | マイクロフト予想 データ取得サービス | venueName, getMycroftModelInfo, getMycroftPredictions |
 | `src/services/poirotService.js` | — | getPoirotPredictions |
+| `src/services/racerRaceHistoryRows.js` | 選手の出走履歴の行（getRacerRaceHistory の返り値）の整形（純関数）。 | isUnrankedFinishMark, buildRacerRaceHistoryRows |
 | `src/services/racerScopedRaceRows.js` | 選手の走ごとの行（getRacerScopedRaceStats の返り値）の整形（純関数）。 | buildRacerScopedRaceRows |
 | `src/services/racerService.js` | 選手個別ページ用データ取得サービス | getRacerPageData, getRacerCurrentMotorStatus, getRacerStats |
 | `src/services/ruleMatchService.js` | 会場別ルールマッチングサービス | getMatchingRules, getBetTypeName, getReliabilityName, getVenueName, getTodaysMatchingRaces ほか1件 |
@@ -384,4 +387,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 342 ファイル / export 1923 件。
+対象 345 ファイル / export 1928 件。
