@@ -28,6 +28,8 @@ import {
 import { classifyStage } from "../../src/components/race/seriesPoints.js";
 import {
   EXHIBITION_ITEMS,
+  exhibitionBoats,
+  exhDiffLevel,
   exhibitionItemLevels,
   exhibitionPoolRate,
   poolExhDiffs,
@@ -103,6 +105,8 @@ const CASES = path.join(
   "../ml/analogy/testdata/stage-rule-v2-cases.json",
 );
 
+const KNOWN_GAPS = [];
+
 let failures = 0;
 function check(label, actual, expected) {
   if (JSON.stringify(actual) === JSON.stringify(expected)) return;
@@ -143,6 +147,76 @@ for (const [stage, key] of [
 }
 
 // ---- 2. 展示後の並べ直し ------------------------------------------------
+// 2関数を直接検査する（BOA-1130）。NaN は null と区別して位置も固定する。
+{
+  const f = Math.fround;
+  const c = (values) => values.map(f);
+  const six = (v) => Array(6).fill(v);
+  const rounded = (values) => values.map((v) => Math.round(v * 1e4) / 1e4);
+  const E = c([6.70, 6.75, 6.80, 6.70, 6.85, 6.90]);
+  for (const [label, input, diff, rank] of [
+    ["同タイムはmin順位", E,
+      [-0.0833, -0.0333, 0.0167, -0.0833, 0.0667, 0.1167], [1, 3, 4, 1, 5, 6]],
+    ["NaNを除いた5艇の平均", c([6.7, NaN, 6.8, 6.7, 6.85, 6.9]),
+      [-0.09, NaN, 0.01, -0.09, 0.06, 0.11], [1, NaN, 3, 1, 4, 5]],
+    ["全艇NaN", six(NaN), six(NaN), six(NaN)],
+    ["空配列", [], [], []],
+    ["全艇同タイム", six(f(6.8)), six(0), six(1)],
+  ]) {
+    const boats = exhibitionBoats(input);
+    check(`exhibitionBoats ${label}: 入力配列を保持`, boats.exh_time === input, true);
+    for (const [key, expected] of [["exh_time_diff", diff], ["exh_time_rank", rank]]) {
+      check(`exhibitionBoats ${label}: ${key} NaNの位置`,
+        boats[key].map(Number.isNaN), expected.map(Number.isNaN));
+      check(`exhibitionBoats ${label}: ${key}`,
+        key === "exh_time_diff" ? rounded(boats[key]) : boats[key], expected);
+    }
+  }
+
+  const z = six(0);
+  const offset = new Float32Array([9, 9, 9, 9, 9, 9, 0, 0, 0, 0, 0, 0.06]);
+  for (const [label, dq, dc, off, expected] of [
+    ["差0は同じ", z, z, undefined, 2],
+    ["平均0.03は同じ", z, c(six(0.03)), undefined, 2],
+    ["平均0.031は近い", z, c(six(0.031)), undefined, 1],
+    ["平均0.05は近い", z, c(six(0.05)), undefined, 1],
+    ["平均0.051は違う", z, c(six(0.051)), undefined, 0],
+    ["負の差も絶対値", z, c(six(-0.04)), undefined, 1],
+    ["片方NaNの艇を平均から除く", [NaN, 0, 0, 0, 0, 0], c([0.5, 0, 0, 0, 0, 0]), undefined, 2],
+    ["dq全艇NaNは欠損", six(NaN), z, undefined, -1],
+    ["dc全艇NaNは欠損", z, six(NaN), undefined, -1],
+    ["offから6艇を見る", z, offset, 6, 2],
+    ["off省略は0", z, offset, undefined, 0],
+    ["3艇だけなら3艇の平均", z, c([0.1, 0.1, 0.1]), undefined, 0],
+  ]) {
+    check(`exhDiffLevel ${label}`, exhDiffLevel(dq, dc, off), expected);
+  }
+
+  // 未確定の境目・null・生のfloat32誤差は記録だけ行い、assertしない。
+  KNOWN_GAPS.push(
+    {
+      input: "exhDiffLevel(z, c([0.18,0,0,0,0,0]))",
+      specification: "float32の0.18/6はf(0.03)をわずかに超える。Python nanmeanとの一致は未確認",
+      actual: exhDiffLevel(z, c([0.18, 0, 0, 0, 0, 0])),
+    },
+    {
+      input: "exhDiffLevel(z, [null,0,0,0,0,0.3])",
+      specification: "nullの扱いは未定。現状は0として平均に含む（平均0.05）",
+      actual: exhDiffLevel(z, [null, 0, 0, 0, 0, 0.3]),
+    },
+    {
+      input: "exhibitionBoats([f(6.7),null,f(6.8),f(6.7),f(6.85),f(6.9)])",
+      specification: "nullの扱いは未定。現状は0秒として平均・順位に含む。呼び出し側はnullをNaNに変換する",
+      actual: exhibitionBoats([f(6.7), null, f(6.8), f(6.7), f(6.85), f(6.9)]),
+    },
+    {
+      input: "exhibitionBoats(Array(6).fill(f(6.8))).exh_time_diff",
+      specification: "全艇同タイムでもfloat32の平均で生の差は0にならない。生の誤差は固定しない",
+      actual: exhibitionBoats(six(f(6.8))).exh_time_diff,
+    },
+  );
+}
+
 const rerank = JSON.parse(
   fs.readFileSync(
     path.join(__dirname, "../ml/analogy/testdata/v16-rerank.json"),
@@ -1151,6 +1225,9 @@ check(
     ["flat", "wall", "kado"],
   );
 }
+
+console.log(`KNOWN_GAPS: ${KNOWN_GAPS.length} 件`);
+for (const gap of KNOWN_GAPS) console.log(JSON.stringify(gap));
 
 if (failures > 0) {
   console.error(`\n❌ ${failures} 件の不一致`);
