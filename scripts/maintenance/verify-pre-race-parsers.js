@@ -678,6 +678,46 @@ function evaluate(m) {
     );
   }
 
+  // BOA-1122: 全体の行を比較し、余分な更新・スキップも検出する。
+  {
+    const race = (hm, raceNo = 1) => ({
+      race_id: `2026-09-16-23-${String(raceNo).padStart(2, "0")}`,
+      venue_code: 23,
+      race_no: raceNo,
+      start_time: new Date(`2026-09-16T${hm}:00+09:00`),
+    });
+    const empty = { updates: [], skipped: [] };
+    const updated = (previous, time) => ({
+      updates: [{ race_id: race("10:00").race_id, start_time: `${time}:00`, previous }],
+      skipped: [],
+    });
+    const skipped = (reason, raceNo = 1) => ({
+      updates: [],
+      skipped: [{ race_id: race("10:00", raceNo).race_id, reason }],
+    });
+    const cases = [
+      ["+180分は更新", [race("10:00")], [{ race_number: 1, time: "13:00" }], updated("10:00", "13:00")],
+      ["+181分はスキップ", [race("10:00")], [{ race_number: 1, time: "13:01" }], skipped("shift_too_large")],
+      ["-180分は更新", [race("13:00")], [{ race_number: 1, time: "10:00" }], updated("13:00", "10:00")],
+      ["-181分はスキップ", [race("13:01")], [{ race_number: 1, time: "10:00" }], skipped("shift_too_large")],
+      ["日付またぎは1420分の差", [race("23:50", 12)], [{ race_number: 12, time: "00:10" }], skipped("shift_too_large", 12)],
+      ["空文字は no_time", [race("10:00")], [{ race_number: 1, time: "" }], skipped("no_time")],
+      ["time 欄なしは no_time", [race("10:00")], [{ race_number: 1 }], skipped("no_time")],
+      ["出走表に無い2Rは対象外", [race("10:00"), race("10:30", 2)], [{ race_number: 1, time: "10:05" }], updated("10:00", "10:05")],
+      ["重複番号は後の値が勝つ", [race("10:00")], [{ race_number: 1, time: "10:05" }, { race_number: 1, time: "10:00" }], empty],
+      ["文字列の番号は対象外", [race("10:00")], [{ race_number: "1", time: "10:05" }], empty],
+      ["空配列", [], [], empty],
+      ["上限0分では1分差もスキップ", [race("10:00")], [{ race_number: 1, time: "10:01" }], skipped("shift_too_large"), { maxShiftMin: 0 }],
+      ["上限0分でも同じ時刻は何もしない", [race("10:00")], [{ race_number: 1, time: "10:00" }], empty, { maxShiftMin: 0 }],
+    ];
+    for (const [label, schedule, deadlines, expected, options] of cases) {
+      expect(
+        `締切予定時刻: ${label}`,
+        same(m.planDeadlineUpdates(schedule, 23, deadlines, options), expected),
+      );
+    }
+  }
+
   return failed;
 }
 
@@ -701,6 +741,62 @@ const realModules = {
     failed.join(" / "),
   );
 }
+
+// JST はホストの TZ に依存せず、秒を表示しない。
+{
+  const originalTz = process.env.TZ;
+  try {
+    for (const tz of ["UTC", "America/Los_Angeles"]) {
+      process.env.TZ = tz;
+      for (const [input, expected] of [
+        ["2026-10-25T15:00:00Z", "00:00"],
+        ["2026-10-25T14:59:59.999Z", "23:59"],
+        ["2026-10-25T00:00:00Z", "09:00"],
+        ["2026-12-31T15:00:00Z", "00:00"],
+        ["2026-10-25T08:30:00+09:00", "08:30"],
+      ]) {
+        check(`formatJstHm: ${tz} / ${input}`, realRows.formatJstHm(new Date(input)) === expected);
+      }
+      let error;
+      try {
+        realRows.formatJstHm(new Date(NaN));
+      } catch (e) {
+        error = e;
+      }
+      check(`formatJstHm: ${tz} / Invalid Date は RangeError`, error instanceof RangeError);
+    }
+  } finally {
+    if (originalTz === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTz;
+  }
+}
+
+// parseDeadlines が HH:MM に正規化して渡す契約の外。仕様未定のため合否に含めない。
+const KNOWN_GAPS = [];
+for (const [input, currentTime, time] of [
+  ["1R 09:05 → 9:05", "09:05", "9:05"],
+  ["1R 10:00 → 全角１０:０５", "10:00", "１０:０５"],
+]) {
+  KNOWN_GAPS.push({
+    input,
+    specification: "HH:MM 以外の入力は仕様未定",
+    current: realRows.planDeadlineUpdates([{
+      race_id: "2026-09-16-23-01", venue_code: 23, race_no: 1,
+      start_time: new Date(`2026-09-16T${currentTime}:00+09:00`),
+    }], 23, [{ race_number: 1, time }]),
+  });
+}
+for (const input of [null, "2026-10-25T00:00:00Z"]) {
+  let current;
+  try {
+    current = realRows.formatJstHm(input);
+  } catch (e) {
+    current = e.name;
+  }
+  KNOWN_GAPS.push({ input, specification: "Date 以外は仕様未定", current });
+}
+printOut(`KNOWN_GAPS ${KNOWN_GAPS.length}件`);
+for (const gap of KNOWN_GAPS) printOut(show(gap));
 
 // ---------------------------------------------------------------------------
 // (b) 旧解析との互換
@@ -1528,6 +1624,18 @@ const LIST = "raceListParser.js";
 const BEFORE = "beforeInfoParser.js";
 const ROWS = "preRaceRows.js";
 const mutants = [
+  [
+    "180分ちょうどの更新を拒否する",
+    ROWS,
+    [["> maxShiftMin", ">= maxShiftMin"]],
+    "rows",
+  ],
+  [
+    "出走表に無いレースも no_time にする",
+    ROWS,
+    [["if (byRaceNo.has(race.race_no))", "if (true)"]],
+    "rows",
+  ],
   [
     "欠場の表示（is-miss）を読まない（出走表）",
     LIST,
