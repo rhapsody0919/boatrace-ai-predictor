@@ -135,6 +135,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
     },
     {
+      "script": "verify-assist-class-exh-ranks.js",
+      "tier": "ci",
+      "guards": "思考アシストの restClassCounts・exhRanks・courseFilled・compositeText の現行値（級の艇数・同タイムのmin順位・5走未満の補い・小数2桁表記）を固定する。仕様未定の入力はKNOWN_GAPSで観測のみ（BOA-1114）"
+    },
+    {
       "script": "verify-assist-run-points.js",
       "tier": "ci",
       "guards": "思考アシストの finishOf・runPoints・finishClass・tiesBeyond の着、着順点10/8/6/4/2/1、今日・欠場・着なし、色クラスと境目以降の同点件数を固定する（BOA-1089）。仕様未定の入力は KNOWN_GAPS に実測値を出す"
