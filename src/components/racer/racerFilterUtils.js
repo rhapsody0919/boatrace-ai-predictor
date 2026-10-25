@@ -2,6 +2,8 @@
 // ソート用ユーティリティ（docs/design/racer-search-and-list/参照）。
 // 名前によるあいまい検索（ヘッダー検索のみが持つ）はここに含めない。
 
+import { getTodayJST } from "../../utils/dateUtils.js";
+
 // 「99期」のような登録期文字列から数値部分を抽出する（新しい順ソート用）。
 // 抽出できない場合はnullを返す（0を返すと「未設定」が「0期」として
 // ソート時に他列と異なり先頭に来てしまうバグになるため、2026-09-08修正）
@@ -17,10 +19,8 @@ export function extractPeriodNumber(period) {
 export function calcAge(birthDate) {
   if (!birthDate) return null;
   const [birthYear, birthMonth, birthDay] = birthDate.split("-").map(Number);
-  const today = new Date();
-  const todayYear = today.getFullYear();
-  const todayMonth = today.getMonth() + 1;
-  const todayDay = today.getDate();
+  // 生年月日も今日も日本の暦日で比較する。
+  const [todayYear, todayMonth, todayDay] = getTodayJST().split("-").map(Number);
   let age = todayYear - birthYear;
   if (
     todayMonth < birthMonth ||

@@ -1,20 +1,11 @@
 import { useTranslation } from 'react-i18next';
+import { formatCapturedAtJst } from '../utils/formatters.js';
 import './UpdateStatus.css';
 
 export default function UpdateStatus({ lastUpdated, dataType = 'データ', onRefresh, isRefreshing }) {
   const { t } = useTranslation();
 
   if (!lastUpdated && !onRefresh) return null;
-
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-
-    return `${month}/${day} ${hours}:${minutes}`;
-  };
 
   const getTimeSinceUpdate = (dateStr) => {
     const now = new Date();
@@ -46,7 +37,7 @@ export default function UpdateStatus({ lastUpdated, dataType = 'データ', onRe
           <>
             <span className="update-icon">{stale ? '⚠️' : '✅'}</span>
             <span className="update-text">
-              {t('updateStatus.updatedLabel', { dataType, time: formatDate(lastUpdated) })}
+              {t('updateStatus.updatedLabel', { dataType, time: `${formatCapturedAtJst(lastUpdated)}${t('home.jstNote')}` })}
               <span className="update-relative"> ({getTimeSinceUpdate(lastUpdated)})</span>
             </span>
           </>

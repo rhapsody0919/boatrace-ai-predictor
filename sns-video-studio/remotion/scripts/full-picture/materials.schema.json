@@ -82,6 +82,57 @@
           "type": ["object", "null"],
           "required": ["meetStart", "pretest", "stats", "meetEntries", "exhibition"],
           "properties": { "pretest": { "type": "array" }, "stats": { "type": "array" }, "meetEntries": { "type": "array" }, "exhibition": { "type": "array" } }
+        },
+        "exhibition": {
+          "$comment": "展示の後の材料（stage=exhibition のときだけ。展示の前の材料には無い）。足しただけで build はまだ読まないので required にしない（版は上げない）。欠けた欄は null で、missing に db.exhibition.* で記録する。start_flag・parts_changed・propeller_change の null は「表示なし」で欠けではない",
+          "type": ["object", "null"],
+          "required": ["boats", "conditions", "technique"],
+          "properties": {
+            "boats": {
+              "type": ["array", "null"],
+              "items": {
+                "type": "object",
+                "required": ["boat_number", "exhibition_course", "start_timing", "start_flag", "exhibition_time", "tilt", "parts_changed", "propeller_change", "is_absent", "updated_at", "f_count", "meet_finishes"],
+                "properties": {
+                  "boat_number": { "type": "integer", "minimum": 1, "maximum": 6 },
+                  "exhibition_course": { "type": ["integer", "null"], "minimum": 1, "maximum": 6 },
+                  "start_timing": { "type": ["number", "null"] },
+                  "start_flag": { "type": ["string", "null"] },
+                  "exhibition_time": { "type": ["number", "null"] },
+                  "tilt": { "type": ["number", "null"] },
+                  "parts_changed": { "type": ["array", "null"], "items": { "type": "string" } },
+                  "propeller_change": { "type": ["string", "null"] },
+                  "is_absent": { "type": ["boolean", "null"] },
+                  "updated_at": { "type": ["string", "null"] },
+                  "f_count": { "type": ["integer", "null"], "minimum": 0 },
+                  "meet_finishes": {
+                    "type": ["array", "null"],
+                    "items": {
+                      "type": "object",
+                      "required": ["race_id", "finish_mark", "finish_rank"],
+                      "properties": { "race_id": { "type": "string" }, "finish_mark": { "type": ["string", "null"] }, "finish_rank": { "type": ["integer", "null"] } }
+                    }
+                  }
+                }
+              }
+            },
+            "conditions": {
+              "type": ["object", "null"],
+              "required": ["weather", "wind_direction", "wind_speed", "wave_height", "observedAt"],
+              "properties": {
+                "weather": { "type": ["string", "null"] },
+                "wind_direction": { "type": ["string", "null"] },
+                "wind_speed": { "type": ["number", "null"] },
+                "wave_height": { "type": ["number", "null"] },
+                "observedAt": { "type": ["string", "null"] }
+              }
+            },
+            "technique": {
+              "type": ["object", "null"],
+              "required": ["byPeriod", "byBoat"],
+              "properties": { "byPeriod": { "type": "array" }, "byBoat": { "type": "array" } }
+            }
+          }
         }
       }
     },

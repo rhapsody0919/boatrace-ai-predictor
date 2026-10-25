@@ -65,6 +65,7 @@ before(async () => {
     "158_sns_lanes_digest_period.sql",
     "160_sns_x_multiple_images.sql",
     "163_drop_sns_mobile_approval.sql",
+    "174_sns_today_type_schedule.sql",
   ])
     await db.exec(
       (
@@ -79,7 +80,7 @@ before(async () => {
 });
 beforeEach(async () => {
   await db.exec(`
-    DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items;
+    DELETE FROM sns_metric_jobs; DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; DELETE FROM sns_today_type_schedule;
     ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
     UPDATE test_clock SET value=NULL;`);
 });
@@ -88,19 +89,35 @@ after(() => db.close());
 // PostgREST の store と同じ契約を SQL で（URL の形は下の別のテストで確かめる）
 const sqlStore = {
   async todayState(date) {
+    const draft =
+      (await first(
+        "SELECT * FROM sns_drafts WHERE send_lane='A' AND format='today_digest' AND source_data->'digest'->>'date'=$1 AND status<>'archived' AND source_data->'today_reply' IS NULL",
+        [date],
+      )) ?? null;
+    const reply = draft
+      ? await first(
+          "SELECT * FROM sns_drafts WHERE source_data->'today_reply'->>'parent_draft_id'=$1 AND status<>'archived'",
+          [draft.id],
+        )
+      : null;
+    const itemOf = async (raceId) =>
+      (await first(
+        "SELECT * FROM sns_auto_send_items WHERE kind='digest' AND race_id=$1",
+        [raceId],
+      )) ?? null;
     return {
-      draft:
-        (await first(
-          "SELECT * FROM sns_drafts WHERE send_lane='A' AND format='today_digest' AND source_data->'digest'->>'date'=$1 AND status<>'archived'",
-          [date],
-        )) ?? null,
-      item:
-        (await first(
-          "SELECT * FROM sns_auto_send_items WHERE kind='digest' AND race_id=$1",
-          [`today:${date}`],
-        )) ?? null,
+      draft,
+      item: await itemOf(`today:${date}`),
+      reply: reply
+        ? { draft: reply, item: await itemOf(`today:${date}:reply`) }
+        : null,
     };
   },
+  typeSchedule: (date) =>
+    first(
+      "SELECT day::text AS day, type_id, post FROM sns_today_type_schedule WHERE day=$1",
+      [date],
+    ).then((row) => row ?? null),
   insertDraft: (row) =>
     first(
       `INSERT INTO sns_drafts(content_group_id,platform,language,status,format,title,caption_text,hashtags,cover_image_path,
@@ -128,7 +145,8 @@ const sqlStore = {
     const row = await first(
       // PostgREST の PATCH と同じく、渡した列だけを書く
       `UPDATE sns_drafts SET caption_text=coalesce($2,caption_text),cover_image_path=coalesce($3,cover_image_path),
-         source_data=coalesce($4,source_data),risk_flags=coalesce($5,risk_flags),template_variant_id=coalesce($6,template_variant_id)
+         source_data=coalesce($4,source_data),risk_flags=coalesce($5,risk_flags),template_variant_id=coalesce($6,template_variant_id),
+         publish_blocked=coalesce($7,publish_blocked)
        WHERE id=$1 AND status IN ('pending_review','approved') RETURNING *`,
       [
         id,
@@ -137,6 +155,7 @@ const sqlStore = {
         p.source_data ?? null,
         p.risk_flags === undefined ? null : JSON.stringify(p.risk_flags),
         p.template_variant_id ?? null,
+        p.publish_blocked ?? null,
       ],
     );
     if (!row) throw new Error("下書きを書き換えられない");
@@ -180,13 +199,16 @@ const sqlStore = {
     first(
       "SELECT mode, dry_run, auto_approver_id FROM sns_auto_send_control WHERE channel='x'",
     ),
-  approve: (a) =>
-    first("SELECT public.approve_sns_x_send($1,$2,$3,$4) r", [
-      a.p_draft_id,
-      a.p_approver_id,
-      a.p_snapshot,
-      a.p_scheduled_at,
-    ]),
+  // PostgREST の rpc と同じく、関数の返り値（job の JSON）を返す
+  approve: async (a) =>
+    (
+      await first("SELECT public.approve_sns_x_send($1,$2,$3,$4) r", [
+        a.p_draft_id,
+        a.p_approver_id,
+        a.p_snapshot,
+        a.p_scheduled_at,
+      ])
+    ).r,
 };
 const trackingStore = {
   save: (t) =>
@@ -699,9 +721,18 @@ test("PostgREST の store: 今日の下書き・item の引き方、承認済み
   assert.ok(
     calls.some((c) =>
       c.url.includes(
-        `sns_auto_send_items?kind=eq.digest&race_id=eq.today:${DATE}`,
+        `sns_auto_send_items?kind=eq.digest&race_id=in.("today:${DATE}","today:${DATE}:reply")`,
       ),
     ),
+  );
+  // 型の列（174）はその日の1行
+  await store.typeSchedule(DATE);
+  assert.ok(
+    calls
+      .at(-1)
+      .url.endsWith(
+        `sns_today_type_schedule?day=eq.${DATE}&select=day,type_id,post`,
+      ),
   );
   await store.updateTodayDraft("d1", {});
   assert.ok(
@@ -1414,4 +1445,517 @@ test("171: /today の見出しの2案の行を入れる。もう一度当てて�
       ["b", rows[1].id],
     ],
   );
+});
+// ---------- PD02: 型の列（174）とリンクの置き場（2026-10-25 hq の依頼） ----------
+const TYPE_VARIANTS = {
+  default: "本日のデータ一覧（{date}）",
+  // 返信の型は reply_enabled の間だけ（費用の線はオーナーの判断。リポジトリの config は false）
+  reply_enabled: true,
+  variants: [
+    {
+      id: "a",
+      uuid: null,
+      type_id: "today-a",
+      heading: "本日のデータ一覧（{date}）",
+    },
+    {
+      id: "b",
+      uuid: null,
+      type_id: "today-a",
+      heading: "本日のデータ一覧（{date}）",
+    },
+  ],
+};
+const putType = (day, typeId, post) =>
+  db.query(
+    "INSERT INTO sns_today_type_schedule(day, type_id, post) VALUES($1,$2,$3)",
+    [day, typeId, post],
+  );
+const linkAt = (caption) =>
+  caption.split("\n").findIndex((l) => l.includes(TODAY_URL));
+const clearAll = () =>
+  db.exec(`
+    DELETE FROM sns_metric_jobs; DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; DELETE FROM sns_today_type_schedule;
+    ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;`);
+const withAuto = async (fn) => {
+  await db.exec(
+    "UPDATE sns_auto_send_control SET mode='auto' WHERE channel='x'",
+  );
+  try {
+    await fn();
+  } finally {
+    await db.exec(
+      "UPDATE sns_auto_send_control SET mode='manual' WHERE channel='x'",
+    );
+  }
+};
+
+test("型の列: その日の行があれば見出し・リンクの前の文・置き場がその型になり、型の id を source_data.content_type に書く", async () => {
+  await putType(DATE, "t03-conclusion-heading", {
+    heading: "今日いちばん偏った数字は（{date}）",
+    link_lead: "一覧はこちら→",
+    link_position: "end",
+  });
+  const result = await plan({ loadVariants: () => TYPE_VARIANTS });
+  const draft = await first("SELECT * FROM sns_drafts");
+  const lines = draft.caption_text.split("\n");
+  assert.match(lines[0], /^今日いちばん偏った数字は（/);
+  // 末尾はリンクの1行（注意書きの後）
+  assert.equal(linkAt(draft.caption_text), lines.length - 1);
+  assert.ok(lines.at(-1).startsWith("一覧はこちら→https://"));
+  assert.equal(lines.at(-3), TODAY_NOTICE);
+  const ct = draft.source_data.content_type;
+  assert.deepEqual(
+    [ct.id, ct.source, ct.side, ct.fallback_reason],
+    ["t03-conclusion-heading", "schedule", "b", undefined],
+  );
+  assert.equal(result.report.items[0].content_type, "t03-conclusion-heading");
+  // 列の型の日は見出しの a・b の札を付けない（札と文面の食い違いで a・b の比較を汚さない。x-channel の審査 P1）
+  assert.deepEqual(draft.source_data.today_variant, {
+    id: "schedule",
+    uuid: null,
+  });
+  assert.equal(draft.template_variant_id, null);
+});
+
+test("型の列: 行が無い日・作れない項目がある日・壊れた日・表が無い日は config の案で送り、理由を残す（止めない）", async () => {
+  const cases = [
+    [null, "no_schedule_row"],
+    [
+      { heading: "見出し（{date}）", thumb: "早見表" },
+      "type_unsupported:thumb",
+    ],
+    [{ heading: "日付なし" }, "heading_invalid"],
+    [
+      { heading: "見出し（{date}）", link_position: "middle" },
+      "link_position_invalid",
+    ],
+  ];
+  for (const [post, reason] of cases) {
+    await clearAll();
+    if (post) await putType(DATE, "t09-test", post);
+    const result = await plan({ loadVariants: () => TYPE_VARIANTS });
+    assert.equal(result.report.items[0].outcome, "manual", reason);
+    const draft = await first("SELECT * FROM sns_drafts");
+    const ct = draft.source_data.content_type;
+    assert.deepEqual(
+      [ct.id, ct.source, ct.fallback_reason],
+      ["today-a", "config", reason],
+    );
+    // 今の型（リンクは見出しの直後、3行目）
+    assert.equal(linkAt(draft.caption_text), 2);
+    assert.equal(result.report.items[0].type_fallback, reason);
+  }
+  // 表が無い（174 の適用前。PostgREST は 404）
+  await clearAll();
+  const typeSchedule = sqlStore.typeSchedule;
+  sqlStore.typeSchedule = async () => {
+    throw new Error(
+      "/today の計画の DB 操作に失敗: HTTP 404 GET sns_today_type_schedule",
+    );
+  };
+  try {
+    await plan({ loadVariants: () => TYPE_VARIANTS });
+  } finally {
+    sqlStore.typeSchedule = typeSchedule;
+  }
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(
+    draft.source_data.content_type.fallback_reason,
+    "schedule_unavailable",
+  );
+});
+
+test("型の列: 下書きができた後は列が変わってもその日の型を変えない（作り直しでも同じ型）", async () => {
+  await putType(DATE, "t04-question-heading", {
+    heading: "今日いちばん荒れそうな場は？（{date}）",
+  });
+  await plan({ loadVariants: () => TYPE_VARIANTS });
+  await db.exec(
+    `UPDATE sns_today_type_schedule SET type_id='t03-conclusion-heading', post='{"heading":"別の見出し（{date}）"}'`,
+  );
+  const again = await plan({
+    now: at("08:10"),
+    digest: digestOf(24),
+    loadVariants: () => TYPE_VARIANTS,
+  });
+  assert.equal(again.report.items[0].outcome, "rebuilt");
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.id, "t04-question-heading");
+  assert.match(draft.caption_text, /^今日いちばん荒れそうな場は？/);
+});
+
+test("返信（link_position=reply、mode=auto）: 本文にリンクを置かず、リンクだけの子の下書き・item を作り、親の job につないで自動で承認する。子は親の公開の後に選ばれる", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    const notes = [];
+    const result = await plan({ notes, loadVariants: () => TYPE_VARIANTS });
+    assert.equal(result.report.items[0].outcome, "notified");
+    const state = await sqlStore.todayState(DATE);
+    const { draft: parent, item } = state;
+    const { draft: child, item: childItem } = state.reply;
+    assert.equal(linkAt(parent.caption_text), -1);
+    assert.ok(!parent.caption_text.includes("今日の一覧はこちら"));
+    assert.equal(
+      child.caption_text,
+      `今日の一覧はこちら：${parent.source_data.deadline_queue.public_url}`,
+    );
+    assert.equal(child.source_data.today_reply.parent_draft_id, parent.id);
+    assert.equal(child.source_data.image_paths, undefined);
+    assert.equal(child.cover_image_path, null);
+    assert.equal(child.source_data.content_type.id, "t01-link-in-reply");
+    assert.equal(child.publish_blocked, false);
+    assert.equal(result.report.items[0].reply_draft_id, child.id);
+    assert.deepEqual([item.state, childItem.state], ["notified", "notified"]);
+    assert.equal(childItem.race_id, `today:${DATE}:reply`);
+    const parentJob = await first(
+      "SELECT * FROM sns_x_send_jobs WHERE draft_id=$1",
+      [parent.id],
+    );
+    const childJob = await first(
+      "SELECT * FROM sns_x_send_jobs WHERE draft_id=$1",
+      [child.id],
+    );
+    assert.equal(childJob.parent_job_id, parentJob.id);
+    assert.equal(childJob.auto_item_id, childItem.id);
+    assert.equal(
+      childJob.scheduled_at.toISOString(),
+      parentJob.scheduled_at.toISOString(),
+    );
+    assert.ok(
+      notes.some((n) => n.includes("（自分への返信）今日の一覧はこちら：")),
+    );
+    // 送信の runner は親が posted の子だけを選ぶ
+    const { pickDueJobs } = await import("../lib/snsSendRunner.js");
+    assert.deepEqual(
+      pickDueJobs([parentJob, childJob], [parentJob]).map((j) => j.id),
+      [parentJob.id],
+    );
+    assert.deepEqual(
+      pickDueJobs(
+        [childJob],
+        [{ ...parentJob, state: "posted", external_post_id: "123" }],
+      ).map((j) => j.id),
+      [childJob.id],
+    );
+    // 子の送る直前の検査（一覧の版の読み直し）は親と同じに通る
+    const sent = {
+      ...childJob,
+      snapshot_text: JSON.stringify(childJob.snapshot),
+    };
+    await createDeadlinePreflight({
+      headless: createMockHeadless({ visibleSelectors: SCREEN_MARKERS.today }),
+      markers: SCREEN_MARKERS,
+      readCurrent: createReadCurrent({
+        db: async (path) =>
+          path.startsWith("sns_drafts")
+            ? [{ bundle_import_id: null, source_data: child.source_data }]
+            : raceDbOf()(path),
+        getDigest: async () => digestOf(),
+      }),
+      now: () => at("08:01").getTime(),
+    })(sent);
+    // 同じ版でもう一度走らせても何も書かない
+    const again = await plan({
+      now: at("07:50"),
+      loadVariants: () => TYPE_VARIANTS,
+    });
+    assert.equal(again.report.items[0].outcome, "unchanged");
+    // 一覧がやり直されたら、親も子も作り直して、同じ親の job につなぎ直す
+    const rebuilt = await plan({
+      now: at("07:55"),
+      digest: digestOf(24),
+      loadVariants: () => TYPE_VARIANTS,
+    });
+    assert.equal(rebuilt.report.items[0].outcome, "rebuilt");
+    const child2 = await first("SELECT * FROM sns_drafts WHERE id=$1", [
+      child.id,
+    ]);
+    assert.equal(child2.status, "approved");
+    assert.equal(
+      child2.source_data.digest.revision,
+      rebuilt.report.items[0].revision,
+    );
+    const childJob2 = await first(
+      "SELECT * FROM sns_x_send_jobs WHERE draft_id=$1",
+      [child.id],
+    );
+    assert.equal(childJob2.state, "queued");
+    assert.equal(childJob2.parent_job_id, parentJob.id);
+    assert.equal((await all("SELECT * FROM sns_drafts")).length, 2);
+  });
+});
+
+test("返信: 子の下書きの後に落ちて子の item が無いときは、同じ版でも「変化なし」で止まらず子の item を作る", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    const insertItem = sqlStore.insertItem;
+    sqlStore.insertItem = async (row) => {
+      if (row.race_id.endsWith(":reply")) throw new Error("item を作れない");
+      return insertItem(row);
+    };
+    try {
+      await assert.rejects(
+        plan({ loadVariants: () => TYPE_VARIANTS }),
+        /item を作れない/,
+      );
+    } finally {
+      sqlStore.insertItem = insertItem;
+    }
+    const again = await plan({
+      now: at("07:45"),
+      loadVariants: () => TYPE_VARIANTS,
+    });
+    // 親の item はあるので作り直しの扱い（子の item を作り、親から順に承認する）
+    assert.equal(again.report.items[0].outcome, "rebuilt");
+    const items = await all(
+      "SELECT race_id, state FROM sns_auto_send_items ORDER BY race_id",
+    );
+    assert.deepEqual(
+      items.map((i) => i.state),
+      ["notified", "notified"],
+    );
+    assert.equal((await all("SELECT * FROM sns_drafts")).length, 2);
+  });
+});
+
+test("返信: 子の承認に落ちたら、親の item も held_manual にして送らない（リンクの無い親だけを出さない。x-channel の審査 P2）", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    const approveFn = sqlStore.approve;
+    let calls = 0;
+    sqlStore.approve = async (a) => {
+      calls += 1;
+      if (calls === 2) throw new Error("子の承認に失敗");
+      return approveFn(a);
+    };
+    try {
+      const result = await plan({ loadVariants: () => TYPE_VARIANTS });
+      assert.match(result.report.items[0].reason, /子の承認に失敗/);
+    } finally {
+      sqlStore.approve = approveFn;
+    }
+    const items = await all(
+      "SELECT race_id, state FROM sns_auto_send_items ORDER BY race_id",
+    );
+    assert.deepEqual(
+      items.map((i) => i.state),
+      ["held_manual", "held_manual"],
+    );
+  });
+});
+
+test("返信: 個別承認（mode=manual）の日は返信を選べず、config の案（リンクは見出しの直後）で送る。理由は reply_not_allowed", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await plan({ loadVariants: () => TYPE_VARIANTS });
+  const drafts = await all("SELECT * FROM sns_drafts");
+  assert.equal(drafts.length, 1);
+  assert.equal(linkAt(drafts[0].caption_text), 2);
+  assert.deepEqual(
+    [
+      drafts[0].source_data.content_type.id,
+      drafts[0].source_data.content_type.fallback_reason,
+    ],
+    ["today-a", "reply_not_allowed"],
+  );
+});
+
+test("返信: 子の文に禁止表現があれば、親も held_manual にして承認しない", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_lead: "必ず当たる一覧→",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    const result = await plan({ loadVariants: () => TYPE_VARIANTS });
+    assert.equal(result.report.items[0].outcome, "held_manual");
+    const items = await all("SELECT state FROM sns_auto_send_items");
+    assert.deepEqual(
+      items.map((i) => i.state),
+      ["held_manual", "held_manual"],
+    );
+    assert.equal((await all("SELECT * FROM sns_x_send_jobs")).length, 0);
+  });
+});
+
+test("PostgREST の store: 親と返信の下書きを分けて返す（返信は source_data.today_reply.parent_draft_id）", async () => {
+  const fetchImpl = async (url) =>
+    Response.json(
+      String(url).includes("sns_drafts")
+        ? [
+            { id: "c", source_data: { today_reply: { parent_draft_id: "p" } } },
+            { id: "p", source_data: {} },
+          ]
+        : [
+            { id: "i1", race_id: `today:${DATE}`, draft_id: "p" },
+            { id: "i2", race_id: `today:${DATE}:reply`, draft_id: "c" },
+          ],
+    );
+  const state = await createTodayStore({
+    url: "https://db",
+    key: "k",
+    fetchImpl,
+  }).todayState(DATE);
+  assert.deepEqual(
+    [state.draft.id, state.item.id, state.reply.draft.id, state.reply.item.id],
+    ["p", "i1", "c", "i2"],
+  );
+});
+test("返信: 返信の型を引き継いだ作り直しで自動でなくなっていたら（mode を manual に戻した）、親も子も held_manual にして送らない（/code-review の指摘）", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(() => plan({ loadVariants: () => TYPE_VARIANTS }));
+  // withAuto の後は mode=manual。一覧がやり直されて作り直す
+  const rebuilt = await plan({
+    now: at("07:55"),
+    digest: digestOf(24),
+    loadVariants: () => TYPE_VARIANTS,
+  });
+  assert.equal(rebuilt.report.items[0].outcome, "rebuilt");
+  const items = await all(
+    "SELECT race_id, state, held_reason FROM sns_auto_send_items ORDER BY race_id",
+  );
+  assert.deepEqual(
+    items.map((i) => i.state),
+    ["held_manual", "held_manual"],
+  );
+  assert.match(items[0].held_reason, /自動（mode=auto）の日だけ/);
+  const parent = (await sqlStore.todayState(DATE)).draft;
+  assert.equal(linkAt(parent.caption_text), -1);
+});
+
+test("返信: 自動の承認に落ちて item を戻せなかったら、握りつぶさず知らせる", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    const approveFn = sqlStore.approve;
+    const updateItem = sqlStore.updateItem;
+    sqlStore.approve = async () => {
+      throw new Error("承認に失敗");
+    };
+    sqlStore.updateItem = async (id, from, p) => {
+      if (p.state === "held_manual") throw new Error("戻せない");
+      return updateItem(id, from, p);
+    };
+    try {
+      const notes = [];
+      const result = await plan({ notes, loadVariants: () => TYPE_VARIANTS });
+      assert.match(result.report.items[0].reason, /承認に失敗.*を戻せない/);
+      assert.ok(notes.some((n) => /を戻せない/.test(n)));
+    } finally {
+      sqlStore.approve = approveFn;
+      sqlStore.updateItem = updateItem;
+    }
+  });
+});
+test("返信: 送信の側（158・153 の transition）で、親の claim → 公開 → 子の claim が通る。子の予約も URL つきの額（system-architect の審査 P2-4）", async () => {
+  const runbook = await readFile(
+    new URL("../../docs/db-migration/153-runbook.md", import.meta.url),
+    "utf8",
+  );
+  const sql = runbook
+    .split("<!-- l2-today-sql:start -->")[1]
+    .split("<!-- l2-today-sql:end -->")[0]
+    .replace(/```sql|```/g, "");
+  await db.exec(
+    "UPDATE sns_x_send_control SET period_start=NULL, period_end=NULL, reserved_microusd=0, paused=true",
+  );
+  await db.query("UPDATE test_clock SET value=$1", [at("07:40")]);
+  await db.exec(sql.replaceAll("now()", "test_now()"));
+  await db.exec(
+    "UPDATE sns_x_send_control SET period_start = test_now() - interval '1 day', period_end = test_now() + interval '30 days', daily_limit_x = 2",
+  );
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    await db.exec(
+      "UPDATE sns_auto_send_control SET dry_run=false WHERE channel='x'",
+    );
+    try {
+      await plan({ loadVariants: () => TYPE_VARIANTS });
+      const state = await sqlStore.todayState(DATE);
+      const parentJob = await first(
+        "SELECT * FROM sns_x_send_jobs WHERE draft_id=$1",
+        [state.draft.id],
+      );
+      const childJob = await first(
+        "SELECT * FROM sns_x_send_jobs WHERE draft_id=$1",
+        [state.reply.draft.id],
+      );
+      await db.query("UPDATE test_clock SET value=$1", [at("08:01")]);
+      const claim = async (id) =>
+        (await first("SELECT transition_sns_x_send($1,'claim','{}') r", [id]))
+          .r;
+      const parent = await claim(parentJob.id);
+      assert.equal(parent.state, "sending", JSON.stringify(parent));
+      await first("SELECT transition_sns_x_send($1,'begin_post','{}') r", [
+        parentJob.id,
+      ]);
+      const done = (
+        await first("SELECT transition_sns_x_send($1,'complete',$2) r", [
+          parentJob.id,
+          { id: "1234567890", posted_at: at("08:01").toISOString() },
+        ])
+      ).r;
+      assert.equal(done.state, "posted", JSON.stringify(done));
+      const child = await claim(childJob.id);
+      assert.equal(child.state, "sending", JSON.stringify(child));
+      // 子の予約も URL つきの額（thread_index=0）。親子で2本分
+      const control = await first(
+        "SELECT reserved_microusd::bigint r FROM sns_x_send_control",
+      );
+      assert.equal(Number(control.r), 500000);
+    } finally {
+      await db.exec(
+        "UPDATE sns_auto_send_control SET dry_run=true WHERE channel='x'",
+      );
+    }
+  });
+});
+test("返信: 子を親につないだ後、子の承認の前に関数が落ちた（子は pending_review・job なし）ら、同じ版でも作り直して子を承認する（Codex の審査 P1）", async () => {
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  await withAuto(async () => {
+    await plan({ loadVariants: () => TYPE_VARIANTS });
+    const { reply } = await sqlStore.todayState(DATE);
+    // 落ちた状態を作る: 子の job が無く、子の下書きは承認前（parent_job_id は入っている）
+    await db.query("DELETE FROM sns_x_send_jobs WHERE draft_id=$1", [
+      reply.draft.id,
+    ]);
+    await db.query(
+      "UPDATE sns_drafts SET status='pending_review', approver_id=NULL, approved_at=NULL, x_approved_hash=NULL WHERE id=$1",
+      [reply.draft.id],
+    );
+    const again = await plan({
+      now: at("07:45"),
+      loadVariants: () => TYPE_VARIANTS,
+    });
+    assert.notEqual(again.report.items[0].outcome, "unchanged");
+    const job = await first(
+      "SELECT state, parent_job_id FROM sns_x_send_jobs WHERE draft_id=$1",
+      [reply.draft.id],
+    );
+    assert.equal(job.state, "queued");
+    assert.ok(job.parent_job_id);
+  });
 });
