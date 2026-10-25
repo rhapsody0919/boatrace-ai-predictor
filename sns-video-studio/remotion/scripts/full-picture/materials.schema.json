@@ -151,6 +151,64 @@
                       "p3": { "type": ["integer", "null"] }
                     }
                   },
+                  "attack_defense": {
+                    "$comment": "画面の超展開データ（AttackDefenseTable、src/utils/attackDefenseCells.js）と同じ値。枠番（実進入コースでない）、予想（standard の最新）の時点。value は選手の値として使えるものだけ（全国平均から出た値は null、画面の文字は screen_value）。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["basis", "role", "wins", "total", "cells", "exhibition_course_differs"],
+                    "properties": {
+                      "basis": { "const": "boat_number" },
+                      "role": { "enum": ["defense", "attack"] },
+                      "wins": { "type": "integer", "minimum": 0 },
+                      "total": { "type": "integer", "minimum": 0 },
+                      "cells": {
+                        "type": "object",
+                        "required": ["nige", "sashi", "makuri", "makurizashi", "other"],
+                        "additionalProperties": {
+                          "type": "object",
+                          "required": ["value", "state", "screen_value"],
+                          "properties": {
+                            "value": { "type": ["string", "null"] },
+                            "state": { "enum": ["value", "reference", "national_default", "national_default_distribution", "no_distribution", "none"] },
+                            "screen_value": { "type": ["string", "null"] }
+                          }
+                        }
+                      },
+                      "exhibition_course_differs": { "type": "boolean" },
+                      "predicted_at": { "type": ["string", "null"] }
+                    }
+                  },
+                  "st_consideration": {
+                    "$comment": "画面の ST考察（computeStConsideration）と同じ値。このレースより前の730日の、実進入コースが course（枠番＝画面の枠なり想定）の走。late_rate は最速より0.10以上遅い率で公式の L ではない。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["course", "course_basis", "grade", "since", "n", "stable_rate", "late_rate", "breakout_count", "avg_st", "flying_count", "baseline"],
+                    "properties": {
+                      "course": { "type": "integer", "minimum": 1, "maximum": 6 },
+                      "course_basis": { "const": "boat_number" },
+                      "grade": { "type": ["string", "null"] },
+                      "since": { "type": "string" },
+                      "n": { "type": "integer", "minimum": 0 },
+                      "small_sample": { "type": "boolean" },
+                      "stable_rate": { "type": ["number", "null"] },
+                      "late_rate": { "type": ["number", "null"] },
+                      "breakout_count": { "type": ["integer", "null"] },
+                      "avg_st": { "type": ["number", "null"] },
+                      "flying_count": { "type": "integer", "minimum": 0 },
+                      "baseline": { "type": ["object", "null"] }
+                    }
+                  },
+                  "st_stability": {
+                    "$comment": "画面に無い値。st_consideration と同じ走の、そのコースの直近30走（欠場を除く）の窓の F・L 以外の ST の母標準偏差（有効2走以上）と公式の L の回数。任意の欄",
+                    "type": ["object", "null"],
+                    "required": ["course", "window_runs", "valid_runs", "st_stddev", "official_l_count"],
+                    "properties": {
+                      "course": { "type": "integer", "minimum": 1, "maximum": 6 },
+                      "window_runs": { "type": "integer", "minimum": 0, "maximum": 30 },
+                      "valid_runs": { "type": "integer", "minimum": 0, "maximum": 30 },
+                      "st_stddev": { "type": ["number", "null"], "minimum": 0 },
+                      "official_l_count": { "type": "integer", "minimum": 0 },
+                      "since": { "type": ["string", "null"] }
+                    }
+                  },
                   "entry_tendency": {
                     "$comment": "racer_aggregated_stats（venue_code=0＝全国）の course_entry_tendency.all のこの枠の {n, courses}（courses はコース→回数）と since。facts の racers.boats[].course_entry から写す。venue は会場の分（無ければ null）。任意の欄",
                     "type": ["object", "null"],
