@@ -739,6 +739,7 @@ for (const f of fixtures) {
     ],
   };
   let failConditions = false;
+  let failExhibition = false;
   let accidentRows = [{ racer_id: 4003, starts: 40, incidents: [{ race_id: r3.c, code: "F", stage: null }, { race_id: r3.a, code: "S2", stage: "予選" }] }];
   const rpcBodies = [];
   // オリジナル展示: 会場は 一周・まわり足・直線 の3項目（半周ラップが無い）。2号艇の直線は欠測、6号艇は値の行が無い
@@ -772,6 +773,7 @@ for (const f of fixtures) {
         }
         if (table === "exhibition_data" && q.get("race_id") === `eq.${m.raceId}`) return json(ex);
         // 選手 4003 の走の展示は偽物だけ（固定の材料のモーターの展示に同じ race_id の実の行がある）
+        if (table === "exhibition_data" && failExhibition) return { ok: false, status: 503, json: async () => ({}) };
         if (table === "exhibition_data") return json([...(m.db.motor?.exhibition ?? []).filter((r) => !Object.values(r3).includes(r.race_id)), ...scoped3.ex].filter((r) => inIds(q).includes(r.race_id)));
         // 選手の走の race_conditions（in.(...)）と、このレースの気象（eq.）
         if (table === "race_conditions" && q.get("race_id")?.startsWith("in.")) {
@@ -978,6 +980,10 @@ for (const f of fixtures) {
   assert.deepEqual([fb[1].st_consideration.grade, fb[1].st_consideration.baseline?.stable_rate], ["A1", 67], "#5 出走表の級別が無ければ直近の走の級別");
   assert.ok(fb[0].attack_defense !== null && fb[0].st_consideration === null && fb[1].st_consideration?.n === 3, "#1 読めない選手の ST考察だけ null");
   assert.ok(fixes.missing.some((x) => x.source === "db.exhibition.boats.st_consideration.racer.4001"), "#1 読めない選手を記録");
+  // /code-review（2026-10-26）#2: 選手の走が読めないとき、足した欄ごとにも欠けを記録する
+  for (const k of ["condition_rows", "meet_results", "entry_distribution", "condition_stats"]) {
+    assert.ok(fixes.missing.some((x) => x.source === `db.exhibition.boats.1.${k}` && /選手の走が読めない/.test(x.reason)), `#2 読めない選手の ${k} を記録`);
+  }
   racerStatsRaw.splice(0, racerStatsRaw.length, ...saved);
   entryRows[1].grade = "A1";
   failRacer = null;
@@ -1066,6 +1072,7 @@ for (const f of fixtures) {
   assert.ok(gaps.missing.some((x) => x.source === "db.exhibition.boats.conditions.racer.4003"), "読めない race_conditions を記録");
   assert.ok(gaps.missing.some((x) => x.source === "db.exhibition.boats.3.condition_rows.wave5" && /未取得/.test(x.reason)), "出さない行を記録");
   assert.ok(gaps.db.exhibition.boats.every((b) => b.accident === null) && gaps.missing.some((x) => x.source === "db.exhibition.boats.accident"), "事故の RPC が読めなければ null で記録");
+  assert.ok(gaps.missing.some((x) => x.source === "db.exhibition.boats.3.accident"), "事故率の欠けを艇ごとにも記録（/code-review 2026-10-26 #6）");
   assert.ok(gaps.db.exhibition.boats.every((b) => b.original_exhibition === null) && gaps.db.exhibition.originalExhibition.state === "no_row", "オリジナル展示の行が無ければ null・no_row");
   assert.ok(gaps.missing.some((x) => x.source === "db.exhibition.originalExhibition" && /行が無い/.test(x.reason)), "未公開を記録");
   failConditions = false;
@@ -1075,6 +1082,25 @@ for (const f of fixtures) {
   const lateOrig = await run({ conditions: pre });
   assert.ok(lateOrig.missing.some((x) => x.source === "db.exhibition.originalExhibition" && /締切の後/.test(x.reason)), "締切の後に書いた値を記録（値は残す）");
   assert.equal(lateOrig.db.exhibition.boats[0].original_exhibition.一周.value, 37.1, "締切の後でも値は残す");
+  // /code-review（2026-10-26）#4: 時刻の表記が違っても最も遅い書き込みで判定する（文字の順では 16:05+09:00 が遅く見える）
+  origHeader = [{ ...keepHeader[0], updated_at: `${date}T07:10:00+00:00` }];
+  origValues = keepValues.map((v) => ({ ...v, updated_at: `${date}T16:05:00+09:00` }));
+  const mixedTz = await run({ conditions: pre });
+  assert.ok(mixedTz.missing.some((x) => x.source === "db.exhibition.originalExhibition" && /締切の後（.*07:10/.test(x.reason)), "#4 表記の違う時刻も数で比べる");
+  // #5: 既定・会場の項目に無い名前の項目の値も落とさない
+  origHeader = [];
+  origValues = [{ boat_number: 1, kind: "展示周回", value: "36.5", updated_at: `${date}T06:50:00+00:00` }];
+  const unknownKind = await run({ conditions: pre });
+  assert.deepEqual(unknownKind.db.exhibition.boats[0].original_exhibition.展示周回, { value: 36.5, status: "value" }, "#5 名前の違う項目の値を残す");
+  assert.deepEqual(validate(unknownKind), [], "#5 名前の違う項目を含む材料も契約に合う");
+  // #1: 選手の走の展示が読めなくても ST考察・条件別は残す
+  origHeader = keepHeader;
+  origValues = keepValues;
+  failExhibition = true;
+  const noEx = await run({ conditions: pre });
+  failExhibition = false;
+  assert.deepEqual([noEx.db.exhibition.boats[1].st_consideration?.n, noEx.db.exhibition.boats[2].condition_rows?.local?.n, noEx.db.exhibition.boats[2].meet_results?.[0]?.exhibition_time], [3, 2, null], "#1 展示が読めなければ展示の値だけ null");
+  assert.ok(noEx.missing.some((x) => x.source === "db.exhibition.boats.exhibition.racer.4003"), "#1 読めない展示を記録");
   origHeader = [{ ...keepHeader[0], measure_status: 2 }];
   origValues = [];
   const notMeasured = await run({ conditions: pre });

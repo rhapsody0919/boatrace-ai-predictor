@@ -282,12 +282,13 @@ async function racerRecords(racerId, raceId, date, missing) {
     sbIn("race_results", "race_id,rank1,rank2,rank3,rank4,rank5,rank6,race_status,actual_course_1,actual_course_2,actual_course_3,actual_course_4,actual_course_5,actual_course_6,winning_technique,payout_win,payout_place_1,payout_place_2", "race_id", ids),
     sbIn("race_start_timings", "race_id,boat_number,start_timing,is_flying,finish_mark,entry_course", "race_id", ids),
     // 展示タイム1位・展示順位には同レースの全艇の展示が要る（画面と同じ）
-    sbIn("exhibition_data", "race_id,boat_number,exhibition_time", "race_id", ids),
+    // 読めなくても ST考察・条件別は残す（展示タイム・展示順位だけが null になる。/code-review 2026-10-26 #1）
+    sbIn("exhibition_data", "race_id,boat_number,exhibition_time", "race_id", ids).catch((e) => (orNull(missing, `db.exhibition.boats.exhibition.racer.${racerId}`)(e), [])),
     sbIn("race_conditions", "race_id,race_stage,race_title,weather,wind_speed,wave_height,series_day,is_final_day", "race_id", ids).catch(orNull(missing, `db.exhibition.boats.conditions.racer.${racerId}`)),
   ]);
   const scoped = recordsBeforeRace(buildRacerScopedRaceRows({ entries, raceRows, resultRows, startTimingRows, exhibitionRows, conditionRows }), raceId);
   const history = conditionRows
-    ? buildRacerRaceHistoryRows({ entries, raceRows, resultRows, exhibitionRows, conditionRows, stRows: startTimingRows }).filter((r) => r.raceId < raceId)
+    ? buildRacerRaceHistoryRows({ entries, raceRows, resultRows, exhibitionRows, conditionRows, stRows: startTimingRows })
     : null;
   return { scoped, history };
 }
@@ -507,8 +508,13 @@ async function racerScreenStats(boats, raceId, date, venueCode, missing) {
       return out;
     }
     if (accidentRows) out.accident = accidentOf(accidentRows, b.racer_id, range);
+    else missing.push({ source: at("accident"), reason: "事故の RPC が読めない・今期の期間が決まらない（db.exhibition.boats.accident）" });
     const got = recordsById.get(b.racer_id);
-    if (!got) return out; // 読めなかった（orNull が記録済み）
+    if (!got) {
+      // 読めなかった（orNull が選手の単位で記録済み）。欄ごとにも記録する（/code-review 2026-10-26 #2）
+      for (const k of ["st_consideration", "st_stability", "condition_rows", "condition_stats", "meet_results", "entry_distribution"]) missing.push({ source: at(k), reason: "選手の走が読めない" });
+      return out;
+    }
     const records = got.scoped;
     const course = b.boat_number;
     const grade = entryGrades?.find((x) => x.boat_number === b.boat_number)?.grade ?? records[records.length - 1]?.grade ?? null;
@@ -591,11 +597,13 @@ async function originalExhibition(raceId, date, startTime, missing) {
   const header = headers[0] ?? null;
   const shaped = shapeOriginalExhibition(header, values);
   const declared = (header?.item_labels ?? "").split("|").map((x) => x.trim()).filter(Boolean);
-  const kinds = [...new Set([...ORIGINAL_EXHIBITION_KINDS, ...declared])];
+  // 既定の4項目・会場の項目・値のある項目（名前の違う項目も落とさない。/code-review 2026-10-26 #5）
+  const kinds = [...new Set([...ORIGINAL_EXHIBITION_KINDS, ...declared, ...values.filter((v) => v.value !== null && v.value !== undefined).map((v) => v.kind)])];
   const offered = (k) => declared.length === 0 || declared.includes(k);
   const state = !header && values.length === 0 ? "no_row" : shaped.state;
   const deadline = deadlineUtc(date, startTime);
-  const lastWrite = [header?.updated_at, ...values.map((v) => v.updated_at)].filter(Boolean).sort().at(-1) ?? null;
+  // 時刻の表記の桁が違っても比べられるよう、数にして最も遅いものを取る（/code-review 2026-10-26 #4）
+  const lastWrite = [header?.updated_at, ...values.map((v) => v.updated_at)].filter(Boolean).reduce((a, x) => (a === null || Date.parse(x) > Date.parse(a) ? x : a), null);
   const race = { state, measure_status: header?.measure_status ?? null, item_labels: declared, kinds: shaped.kinds, captured_at: shaped.capturedAt, last_written_at: lastWrite };
   if (state === "no_row") missing.push({ source: "db.exhibition.originalExhibition", reason: "race_original_exhibition にこのレースの行が無い（未公開・未取得）" });
   else if (header?.measure_status === 2) missing.push({ source: "db.exhibition.originalExhibition", reason: "計測不可（measure_status=2）" });
