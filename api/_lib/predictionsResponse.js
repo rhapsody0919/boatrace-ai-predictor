@@ -14,6 +14,8 @@
  * 検証: scripts/maintenance/verify-predictions-response.js
  */
 
+import { jstDate } from "./predictionsCache.js";
+
 export const REMOVED_ENTRY_FIELDS = Object.freeze([
   "aiScoreStandard",
   "aiScoreSafeBet",
@@ -23,7 +25,6 @@ export const REMOVED_RACE_FIELDS = Object.freeze(["predictionOdds"]);
 
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const DAY_MS = 24 * 60 * 60 * 1000;
-const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 /** 暦にある日付か（2026-02-30 等を弾く） */
 function isCalendarDate(date) {
@@ -44,9 +45,7 @@ export function validatePredictionsRequest(date, params, nowMs) {
     return { ok: false, error: "Invalid date format. Use YYYY-MM-DD" };
   }
   // JST の明日まで（前日の夜に翌日の出走表を見る）。それより先は出走表が無いので RPC を呼ばない
-  const jstTomorrow = new Date(nowMs + JST_OFFSET_MS + DAY_MS)
-    .toISOString()
-    .slice(0, 10);
+  const jstTomorrow = jstDate(nowMs + DAY_MS);
   if (date > jstTomorrow) {
     return { ok: false, error: "date must be on or before tomorrow (JST)" };
   }

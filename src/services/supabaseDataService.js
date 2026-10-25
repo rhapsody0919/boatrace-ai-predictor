@@ -1022,7 +1022,7 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
     const entries = race.entries || [];
     const predictions = race.predictions || {};
 
-    // players配列を作成（艇番順。aiScore は廃止した3モデルの点を返さなくなったので常に0。BOA-1110）
+    // players配列を作成（艇番順。廃止した3モデルの点 aiScore は /api が返さないので持たない。BOA-1110）
     const createPlayers = () =>
       entries
         .map((e) => ({
@@ -1038,7 +1038,6 @@ function transformEdgeResponse(edgeData, date, venueWinRateMap = {}) {
           motor2Rate: String(e.motor2Rate || ""),
           boatNumber: e.boatNumber,
           boat2Rate: String(e.boat2Rate || ""),
-          aiScore: 0,
         }));
 
     // turnPrediction を取得（standardの予測に含まれる）
