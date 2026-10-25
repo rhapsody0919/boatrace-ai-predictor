@@ -1327,6 +1327,11 @@
       "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は非公開のまま残す、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
     },
     {
+      "script": "verify-sns-youtube-comment-quota.js",
+      "tier": "ci",
+      "guards": "全貌の YouTube 完全版のチャンネルのコメント（commentThreads.insert、50単位、hq 契約 10/24 C3）をクォータの台帳に載せる（マイグレーション 173）: record_sns_youtube_comment は公開済みの完全版の job に1件だけ reads へ50単位を入れる、全体の停止（paused）・公開前・Shorts（parent_job_id あり）・台帳の未確認・日の上限では入れない、入れた50単位は claim と同じ合計式に入る、reads の CHECK は videos.list・1 と commentThreads.insert・50 だけで DEFAULT の省略形は今までどおり、匿名・ログイン利用者は実行できない。SQL173 までを PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sonar-hint-order.js",
       "tier": "ci",
       "guards": "龍神ソナーの展開シナリオ STEP2 の形のカードを「なりやすい→はっきりしない→むしろなりにくい」、同じ区分は率の高い順に並べること（BOA-890）。1号艇が最速の日に、むしろなりにくいイン凹みを先頭にしないこと（鳴門10/16 10R・住之江10/15 12R・丸亀10/15 10R の全体とこのコース）"
