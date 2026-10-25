@@ -24,6 +24,8 @@ import { fileURLToPath } from "node:url";
 import {
   toJstDateString,
   jstStartOfDay,
+  jstMinutesOfDay,
+  addSeconds,
   raceStartInstant,
   slotDeadline,
   slotWindowEnd,
@@ -92,6 +94,23 @@ function check(label, pass, detail = "") {
 }
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const show = (v) => JSON.stringify(v);
+const KNOWN_GAPS = [
+  {
+    input: 'jstMinutesOfDay(new Date("x"))',
+    specification: "不正な日時の扱いは未定",
+    current: String(jstMinutesOfDay(new Date("x"))),
+  },
+  {
+    input: "addSeconds(B, NaN)",
+    specification: "数値でない秒の扱いは未定",
+    current: String(addSeconds(new Date("2026-10-26T00:00:00Z"), NaN)),
+  },
+  {
+    input: 'addSeconds(B, "60")',
+    specification: "文字列の秒の扱いは未定",
+    current: addSeconds(new Date("2026-10-26T00:00:00Z"), "60").toISOString(),
+  },
+];
 
 // ---------------------------------------------------------------------------
 // (a) 期限計算（TZを切り替えても同じ）
@@ -99,6 +118,46 @@ const show = (v) => JSON.stringify(v);
 const ORIGINAL_TZ = process.env.TZ;
 for (const tz of ["UTC", "Asia/Tokyo", "America/Los_Angeles", "Asia/Kolkata"]) {
   process.env.TZ = tz;
+  for (const [input, expected] of [
+    ["2026-10-26T00:00:00+09:00", 0],
+    ["2026-10-25T15:00:00Z", 0],
+    ["2026-10-26T14:59:00Z", 1439],
+    ["2026-10-26T15:00:00Z", 0],
+    ["2026-10-26T23:59:59.999+09:00", 1439],
+    ["2026-10-26T10:34:59+09:00", 634],
+    ["2026-10-26T21:30:00+09:00", 1290],
+    ["2026-10-26T12:00:00-08:00", 300],
+  ]) {
+    const actual = jstMinutesOfDay(new Date(input));
+    check(
+      `[TZ=${tz}] jstMinutesOfDay(${input}) は ${expected}`,
+      same(actual, expected),
+      show(actual),
+    );
+  }
+  const base = new Date("2026-10-26T00:00:00Z");
+  for (const [seconds, expected] of [
+    [0, "2026-10-26T00:00:00.000Z"],
+    [1, "2026-10-26T00:00:01.000Z"],
+    [60, "2026-10-26T00:01:00.000Z"],
+    [-60, "2026-10-25T23:59:00.000Z"],
+    [3600, "2026-10-26T01:00:00.000Z"],
+    [86400, "2026-10-27T00:00:00.000Z"],
+    [0.5, "2026-10-26T00:00:00.500Z"],
+  ]) {
+    const actual = addSeconds(base, seconds).toISOString();
+    check(
+      `[TZ=${tz}] addSeconds(B, ${seconds}) は ${expected}`,
+      same(actual, expected),
+      show(actual),
+    );
+  }
+  check(
+    `[TZ=${tz}] addSeconds は元の B を変更せず、0秒でも別の Date を返す`,
+    same(base.toISOString(), "2026-10-26T00:00:00.000Z") &&
+      same(addSeconds(base, 0) !== base, true) &&
+      same(base.toISOString(), "2026-10-26T00:00:00.000Z"),
+  );
   const d = slotDeadline("2026-09-19", "10:00:00", -60);
   check(
     `[TZ=${tz}] 10:00発走の60分前は 09:00 JST（= 00:00 UTC）`,
@@ -2177,6 +2236,9 @@ check(
     partial.length === 1000,
   );
 }
+
+printOut(`\nKNOWN_GAPS: ${KNOWN_GAPS.length} 件`);
+for (const gap of KNOWN_GAPS) printOut(show(gap));
 
 printOut(
   failures === 0 ? "\nALL PASS" : `\n${failures} 件の検証が失敗しました`,
