@@ -14,21 +14,16 @@
  *
  * Node からも読むため、import は拡張子付き。
  */
-import { COURSE_DEFAULT_DISTRIBUTION } from "../../scripts/lib/winningTechniques.js";
+import {
+  COURSE_DEFAULT_DISTRIBUTION,
+  COURSE_DEFAULT_DEFENSE,
+} from "../../scripts/lib/winningTechniques.js";
 
 // 全国平均 攻撃分布（14,155レース集計）。集計側の既定の分布と同じもの
 const DEFAULT_ATTACK = COURSE_DEFAULT_DISTRIBUTION;
 
-// 全国平均 防御分布
-const DEFAULT_DEFENSE = {
-  1: {
-    sashi: 0.28,
-    makuri: 0.25,
-    makurizashi: 0.22,
-    nuki: 0.15,
-    megumare: 0.1,
-  },
-};
+// 全国平均 防御分布（1号艇の分だけ使う。集計側の既定と同じもの）
+const DEFAULT_DEFENSE = { 1: COURSE_DEFAULT_DEFENSE[1] };
 
 // 表示する行の定義（文言は i18n キーで管理）
 export const TECHNIQUE_ROWS = [

@@ -699,6 +699,7 @@ for (const f of fixtures) {
     { boatNumber: 4, course: 4, avgST: 0.15, courseRaceCounts: { 4: { total: 25, wins: 5 } }, attackDistribution: structuredClone(COURSE_DEFAULT_DISTRIBUTION), defenseDistribution: {} },
     { boatNumber: 5, course: 5, avgST: 0.15, courseRaceCounts: { 5: { total: 12, wins: 2 }, 1: { total: 3, wins: 3 } }, attackDistribution: { 5: { makurizashi: 1 } }, defenseDistribution: {} },
   ];
+  let failRacer = null;
   let predictionRows = [{ racerStats: racerStatsRaw, predicted_at: `${date}T00:10:00+00:00` }];
   const stBaseline = [{ course: 2, grade: "A1", window_start: "2025-12-02", window_end: "2026-10-11", runs: 12000, stable_rate: 67.04, late_rate: 12.06, breakout_rate: 7.5 }];
   // 2号艇の選手（4002）のこのレースより前の5走。どれも2号艇・2コース進入。1号艇の ST を並べてレースの最速を決める
@@ -734,6 +735,7 @@ for (const f of fixtures) {
         if (table === "race_start_timings") return json(startRows);
         if (table === "race_entries" && q.get("racer_id")) {
           seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
+          if (q.get("racer_id") === failRacer && /grade/.test(q.get("select") ?? "")) return { ok: false, status: 503, json: async () => ({}) };
           if (/grade/.test(q.get("select") ?? "")) return json(q.get("racer_id") === "eq.4002" ? scoped.entries : []);
         }
         if (table === "races" && /race_date/.test(q.get("select") ?? "")) return json(scoped.races);
@@ -889,7 +891,7 @@ for (const f of fixtures) {
   assert.deepEqual(cellsOf(5, "value"), { nige: null, sashi: "0/12", makuri: "0/12", makurizashi: "2/12", other: "0/12" }, "勝ちの合計は全枠（5号艇2＋1号艇3）で判定する");
   assert.equal(adOf(6), null, "racerStats に無い艇は null");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.6.attack_defense" && /racerStats にこの艇が無い/.test(x.reason)), "racerStats に無い艇を記録");
-  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.attack_defense" && /全国平均/.test(x.reason)), "全国平均の値を出さないことを記録");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.attack_defense" && /sashi\(national_default\)/.test(x.reason)), "全国平均の値を出さないことを記録");
   assert.deepEqual([adOf(3).exhibition_course_differs, adOf(1).exhibition_course_differs, adOf(3).basis], [true, false, "boat_number"], "展示の進入が枠と違う艇に印を付ける（値は枠番のまま）");
   // ST考察（画面の computeStConsideration と同じ。course は枠番＝画面の枠なり想定）
   assert.deepEqual(
@@ -901,12 +903,32 @@ for (const f of fixtures) {
     },
     "ST考察: F・ST の無い走を母数から外し、安定率（最速との差.05以内）・出遅率（.10以上遅い）・抜出（内より.07早い）と同コース・同級別の平均",
   );
-  assert.deepEqual(boats[1].st_stability, { course: 2, window_runs: 5, valid_runs: 3, st_stddev: 0.085, official_l_count: 1, since: "2026-10-01" }, "ST の安定度: 窓の5走から F・L を除いた3走の母標準偏差と、公式の L の回数");
+  assert.deepEqual(boats[1].st_stability, { course: 2, course_basis: "boat_number", window_runs: 5, valid_runs: 3, st_stddev: 0.085, official_l_count: 1, since: "2026-10-01" }, "ST の安定度: 窓の5走から F・L を除いた3走の母標準偏差と、公式の L の回数");
   assert.deepEqual([boats[0].st_consideration.n, boats[0].st_consideration.baseline, boats[0].st_stability.st_stddev], [0, null, null], "走の無い選手は n=0・平均の行なし・標準偏差なし");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.1.st_stability.st_stddev" && /2走未満（0走）/.test(x.reason)), "標準偏差が出せないことを記録");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.1.st_consideration.baseline" && /1コース・B1の行が無い/.test(x.reason)), "同コース・同級別の平均が無いことを記録");
   assert.equal(boats[5].st_consideration, null, "選手が分からない艇は null");
   assert.ok(seenQueries.some((x) => x.startsWith("race_entries?") && /racer_id=eq\.4002/.test(x) && /race_id\.lt\.2026-10-12/.test(x)), "選手の走はこのレースより前だけ読む");
+  // /code-review（2026-10-25）の再現テスト
+  // #2 1号艇の負けの内訳が無い（全期間の負け5未満で集計が {} を入れる）と画面は「0/N」と出すが、選手の値ではない
+  // #4 内訳が全国の既定でも、その枠の勝ちが0なら「0/N」は実の値
+  // #5 このレースの出走表に級別が無ければ、画面と同じく選手の直近の走の級別で平均を引く
+  // #1 1人の選手の走が読めなくても、予想から出す超展開データと他の選手の値は残す
+  const saved = structuredClone(racerStatsRaw);
+  racerStatsRaw[0].defenseDistribution = {};
+  racerStatsRaw[3].courseRaceCounts = { 4: { total: 25, wins: 0 }, 1: { total: 5, wins: 5 } };
+  entryRows[1].grade = null;
+  failRacer = "eq.4001";
+  const fixes = await run({ conditions: pre });
+  const fb = fixes.db.exhibition.boats;
+  assert.deepEqual([fb[0].attack_defense.cells.sashi.value, fb[0].attack_defense.cells.sashi.state, fb[0].attack_defense.cells.sashi.screen_value, fb[0].attack_defense.cells.nige.value], [null, "no_distribution", "0/20", "9/20"], "#2 負けの内訳が無い「0/N」は null（逃げは攻めの内訳から出るので残す）");
+  assert.deepEqual([fb[3].attack_defense.cells.sashi.value, fb[3].attack_defense.cells.sashi.state], ["0/25", "value"], "#4 勝ち0の「0/N」は既定の内訳でも実の値");
+  assert.deepEqual([fb[1].st_consideration.grade, fb[1].st_consideration.baseline?.stable_rate], ["A1", 67], "#5 出走表の級別が無ければ直近の走の級別");
+  assert.ok(fb[0].attack_defense !== null && fb[0].st_consideration === null && fb[1].st_consideration?.n === 3, "#1 読めない選手の ST考察だけ null");
+  assert.ok(fixes.missing.some((x) => x.source === "db.exhibition.boats.st_consideration.racer.4001"), "#1 読めない選手を記録");
+  racerStatsRaw.splice(0, racerStatsRaw.length, ...saved);
+  entryRows[1].grade = "A1";
+  failRacer = null;
   // 予想が無い・読めないときも艇の材料は残す
   predictionRows = [];
   const noPred = await run({ conditions: pre });
