@@ -33,6 +33,8 @@ import {
   analyzeRaceFromDb,
   compareRaceWithKDay,
   kDayToRaceFacts,
+  isRefundedKFinish,
+  parseRaceId,
   summarizeDbFindings,
 } from "../lib/raceResultAudit.js";
 import { applyFixPlan, buildFixPlan } from "../lib/raceResultFix.js";
@@ -1462,6 +1464,87 @@ const fullColumns = {
       sum.flaggedByVenue["02"] === 1 &&
       sum.flaggedByVenue["23"] === 1,
   );
+
+  // Kファイルの生の着欄と race_id の契約（範囲の判断が未定の入力は下の KNOWN_GAPS）
+  for (const [input, expected] of [
+    ["01", false], ["06", false], ["F", true],
+    ["L", true], ["L0", true], ["L1", true],
+    ["K", true], ["K0", true], ["K1", true],
+    ["S0", false], ["S1", false], ["S2", false],
+    ["F1", false], ["L10", false], ["K12", false],
+    [" F", false], ["F ", false], ["f", false], ["Ｆ", false],
+    ["", false], ["00", false], ["07", false], ["転", false],
+  ]) {
+    const actual = isRefundedKFinish(input);
+    check(
+      `isRefundedKFinish: ${show(input)} → ${expected}`,
+      same(actual, expected),
+      show({ actual, expected }),
+    );
+  }
+  const refundedMarks = ["01", "F", "L0", "L1", "K0", "K1", "S0", "S1", "S2"]
+    .filter(isRefundedKFinish);
+  check(
+    "isRefundedKFinish: 返還の集合は F・L0・L1・K0・K1（Sは返還しない）",
+    same(refundedMarks, ["F", "L0", "L1", "K0", "K1"]),
+    show(refundedMarks),
+  );
+  for (const [input, expected] of [
+    ["2026-10-25-01-12", { date: "2026-10-25", venue: 1, race: 12 }],
+    ["2026-10-25-24-01", { date: "2026-10-25", venue: 24, race: 1 }],
+  ]) {
+    const actual = parseRaceId(input);
+    check(
+      `parseRaceId: ${show(input)} → 日付・数値の会場とレース番号`,
+      same(actual, expected),
+      show({ actual, expected }),
+    );
+  }
+  for (const input of [
+    "2026-10-25-1-12", "2026-10-25-01-1", "2026-10-25-01-12 ",
+    "2026-10-25", null,
+  ]) {
+    let error = null;
+    try {
+      parseRaceId(input);
+    } catch (e) {
+      error = e;
+    }
+    check(
+      `parseRaceId: ${show(input)} は形式不正の例外`,
+      error instanceof Error && /race_id の形式が不正です/.test(error.message),
+      show(error?.message ?? "例外なし"),
+    );
+  }
+
+  // 未決定の仕様は assert せず、入力・今の値・判断が必要な点を表示する。
+  const KNOWN_GAPS = [
+    {
+      fn: "parseRaceId", input: "2026-10-25-00-00",
+      specification: "会場・レース番号の範囲検査は未定（現在は0を通す）",
+      observe: () => parseRaceId("2026-10-25-00-00"),
+    },
+    {
+      fn: "parseRaceId", input: "2026-13-40-99-99",
+      specification: "暦・会場・レース番号の範囲検査は未定（現在は範囲外を通す）",
+      observe: () => parseRaceId("2026-13-40-99-99"),
+    },
+    ...[null, undefined].map((input) => ({
+      fn: "isRefundedKFinish", input: show(input) ?? "undefined",
+      specification: "非文字列入力の契約は未定（現在はRegExp.testの文字列化によりfalse）",
+      observe: () => isRefundedKFinish(input),
+    })),
+  ];
+  printOut(`KNOWN_GAPS: ${KNOWN_GAPS.length}件（合否に含めない）`);
+  for (const { fn, input, specification, observe } of KNOWN_GAPS) {
+    let actual;
+    try {
+      actual = observe();
+    } catch (e) {
+      actual = { error: e.message };
+    }
+    printOut(show({ fn, input, specification, actual }));
+  }
 
   // Kファイルとの突合（実ファイル由来のフィクスチャ）
   const kText = fs.readFileSync(
