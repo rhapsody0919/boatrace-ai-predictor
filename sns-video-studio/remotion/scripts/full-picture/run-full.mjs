@@ -108,14 +108,13 @@ function typeStop(reasons, detail = null) {
   process.exit(1);
 }
 if (type?.reasons.length) typeStop(type.reasons);
-// 冒頭の答え（v2r1）。データが薄いレース（同じ形の過去が30件未満・形が無い）は作らない（オーナー 10/25）
+// 冒頭の答え（v2r1）。データが薄いレース（この組み合わせの過去が30件未満）は作らない（オーナー 10/25）
 const answer = type?.impl?.answer ? answerPage() : null;
 function answerPage() {
   const sc = m.api.scenario?.scenario;
   const formKey = scenes.find((x) => x.id === "scene4")?.data?.conclusion?.formKey ?? null;
   const a = answerOf(sc, formKey);
   if (!a.ok) typeStop(`type_unsupported:${a.kind}`, a.reason);
-  const fk = (key) => `aiPredictionTab.analogy.scenario.forms.${key}`;
   // 形は事実として添えるだけ（本番がその形だった過去。今日の本番の形はレース前には分からない）
   return {
     ...a,
