@@ -327,18 +327,22 @@ export const SCRAPE_JOBS = Object.freeze({
 
   // N25 BOATCASTのオリジナル展示（一周/半周ラップ・まわり足・直線。docs/design/boatcast-original-exhibition/）。
   // 別ホスト race.boatcast.jp（boatrace.jp のブレーカーとは独立）。対象は、公開マップ（scripts/lib/boatcast/publicMap.js）で
-  // 公開を確認済みの23会場（江戸川は常時403で対象外）の全レース。公開時刻の実測（2026-09-21、n=21）: ファイルは発走の
-  // 9.9〜29.0分前に現れる（HTTPのLast-Modified）。期限は発走の8分前の1本で、未公開（403）は最大3回（発走の約3分前・約5分後）
-  // まで再試行し、打ち切る（oritenRows.js の decideNotPublished。許容幅30分は、3回目の取得を含む）。リクエストは逐次で
-  // 2.2秒以上の間隔（同時数1）。各tickの先頭にカナリア（既知の存在ファイル）を1回取るため、1スロットの見積りは4秒。
+  // 公開を確認済みの23会場（江戸川は常時403で対象外）の全レース。公開時刻の実測（直近30日、HTTPのLast-Modified）: 発走の
+  // 2.3〜25.2分前、中央11.4分。期限は発走の20分前の1本で、未公開（403）は発走の6分前まで2分おきに再試行し（窓）、その後は
+  // 発走の約1分前・約7分後の2回で打ち切る（最大10回。oritenRows.js の decideNotPublished）。取れた時点でスロットは done に
+  // なり、それ以上取らない。2026-10-25 にオーナー決定（締切8分前に DB にそろっている割合を上げる。旧: 発走8分前の1回）。
+  // 許容幅40分（期限+40分＝発走の20分後）は、最後の取得（約7分後）を含む。retrySec（error のときの再試行）は5分のまま。
+  // claimLimit: 1分あたりに期限・再試行が来るスロットは、10/18〜10/24 の実測で最大6件。10件なら、カナリア＋10件×4秒＝44秒で、
+  // ソフトデッドライン（60秒）とリース（60秒）の中に収まる。リクエストは逐次で2.2秒以上の間隔（同時数1）。各tickの先頭に
+  // カナリア（既知の存在ファイル）を1回取るため、1スロットの見積りは4秒。
   // 実装: scripts/lib/boatcast/oritenJob.js、api/cron/boatcast-oriten.js
   boatcast_oriten: {
     kind: "window",
-    offsets: [-8],
-    graceMin: 30,
+    offsets: [-20],
+    graceMin: 40,
     retrySec: 300,
     leaseSec: 60,
-    claimLimit: 6,
+    claimLimit: 10,
     concurrency: 1,
     slotSecEstimate: 4,
     maxDurationSec: 90,

@@ -83,6 +83,11 @@ export function compareLabelsToMap(labels, expected) {
 
 /** 403の再試行の判断の閾値（decideNotPublished）。秒・分 */
 export const NOT_PUBLISHED_POLICY = Object.freeze({
+  // 窓（発走20分前〜6分前の2分おき）。取得の時刻は毎分のCronのぶれ（数秒〜数十秒）で、-8分の取得は m=7〜8、-6分の取得は
+  // m=5〜6 になる。境目をその間の6.5分に置き、-8分の取得までを窓の中（次は-6分）、-6分の取得を窓の最後にする
+  windowRetrySec: 120,
+  windowRetryAboveMin: 6.5,
+  // 窓の後（後段）。旧来の規則のうち、発走直前・直後の2回だけを残す
   firstRetrySec: 300,
   secondRetrySec: 480,
   earlyBandAboveMin: 4,
@@ -90,13 +95,15 @@ export const NOT_PUBLISHED_POLICY = Object.freeze({
 });
 
 /**
- * 未公開（403で、カナリアは正常）のときの再試行の判断。発走までの分（minutesToStart。発走後は負）で、
- * 再試行の間隔を延ばし、最大3回で打ち切る（403は「存在しない」もありうる。取得先への負荷を抑える）。
+ * 未公開（403で、カナリアは正常）のときの再試行の判断。発走までの分（minutesToStart。発走後は負）で決める。
+ * 1レース1スロット（発走20分前が期限）の再試行の列で、窓と後段が二重にならない（同じスロットの次の時刻を1つ返すだけ）。
  *
- * 実測（2026-09-21）: ファイルは発走の9.9〜29.0分前（n=21）に現れる。最初の取得は発走8分前。
- *   発走の4分より前  5分後に再試行（2回目は発走の約3分前）
- *   発走の4分前〜−4分  8分後に再試行（3回目は発走の約5分後）
- *   発走の−4分より後   打ち切り（データ無しとして完了。scrape_slots.outcome=skipped_not_target）
+ * 実測（直近30日、Last-Modified）: 公開は発走の2.3〜25.2分前、中央11.4分、p10 10.2分、p90 13.0分。
+ *   発走の6.5分より前      2分後に再試行（窓。取得は -20,-18,…,-8,-6 分）
+ *   6.5分前〜発走の4分前    5分後に再試行（後段。-6分の取得の次は発走の約1分前）
+ *   発走の4分前〜−4分      8分後に再試行（後段。次は発走の約7分後）
+ *   発走の−4分より後       打ち切り（データ無しとして完了。scrape_slots.outcome=skipped_not_target）
+ * 未公開のままなら最大10回（窓の8回＋後段の2回）。公開されて取れた時点で、スロットは done になり、それ以上取らない。
  * minutesToStart が不明・無限小（過去日のバックフィル）は、打ち切り。
  *
  * @param {number|undefined} minutesToStart
@@ -108,6 +115,9 @@ export function decideNotPublished(
 ) {
   if (!Number.isFinite(minutesToStart)) return { final: true };
   if (minutesToStart <= policy.finalAtOrBelowMin) return { final: true };
+  if (minutesToStart > policy.windowRetryAboveMin) {
+    return { final: false, retrySec: policy.windowRetrySec };
+  }
   if (minutesToStart > policy.earlyBandAboveMin) {
     return { final: false, retrySec: policy.firstRetrySec };
   }

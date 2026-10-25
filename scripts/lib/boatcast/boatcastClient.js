@@ -8,7 +8,7 @@
  *   - 403は「データ無し」として扱う前に、既知の存在ファイル（カナリア: bc_mst）を取り、それも403・失敗なら、
  *     アクセス拒否・接続の異常として扱う（データ無しとして記録しない）
  *   - 会場×項目の公開マップ（publicMap.js）で、常時403の会場は最初から取得しない
- *   - 403の再試行は最大3回（oritenRows.js の decideNotPublished）
+ *   - 403の再試行は、発走の6分前まで2分おき＋その後2回の最大10回（oritenRows.js の decideNotPublished）
  *   - 取得は逐次で、リクエストの間隔を2.2秒以上空ける（sharedPacer。ADR-0067の負荷の配慮）
  *
  * 別ホスト: ブレーカーのキーは host:race.boatcast.jp（boatrace.jp のブレーカーとは独立）。

@@ -57,7 +57,11 @@ import {
 } from "../lib/boatcast/motorStartJob.js";
 import { createBoatcastProbeHandler } from "../lib/boatcast/probe.js";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
-import { SCRAPE_JOBS, validateRegistry } from "../lib/scrapeJobs/registry.js";
+import {
+  SCRAPE_JOBS,
+  SOFT_DEADLINE_MARGIN_SEC,
+  validateRegistry,
+} from "../lib/scrapeJobs/registry.js";
 import { hostKeyOf } from "../lib/scrapeJobs/politeFetch.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 import { computeWindowStats } from "../lib/scrapeJobs/monitor.js";
@@ -397,8 +401,16 @@ function evaluateRows(mRows, mParser) {
   // 403の再試行の判断
   const d = mRows.decideNotPublished;
   expect(
-    "403: 発走8分前（1回目）→ 5分後に再試行、3分前（2回目）→ 8分後、-5分（3回目）→ 打ち切り",
-    same(d(8), { final: false, retrySec: 300 }) &&
+    "403: 窓の中（発走20分前〜8分前の取得。6.5分より前）は2分後に再試行（古い5分・8分の規則を使わない）",
+    same(d(20), { final: false, retrySec: 120 }) &&
+      same(d(19.9), { final: false, retrySec: 120 }) &&
+      same(d(8), { final: false, retrySec: 120 }) &&
+      same(d(7), { final: false, retrySec: 120 }) &&
+      same(d(6.6), { final: false, retrySec: 120 }),
+  );
+  expect(
+    "403: 窓の最後（6分前の取得）の後は、後段の規則: 5分後に再試行、4分前〜-4分は8分後、-4分以降は打ち切り",
+    same(d(6), { final: false, retrySec: 300 }) &&
       same(d(5), { final: false, retrySec: 300 }) &&
       same(d(3), { final: false, retrySec: 480 }) &&
       same(d(0), { final: false, retrySec: 480 }) &&
@@ -412,20 +424,20 @@ function evaluateRows(mRows, mParser) {
       same(d(Number.NEGATIVE_INFINITY), { final: true }) &&
       same(d(NaN), { final: true }),
   );
-  // 通常の進行で、取得は最大3回
+  // 通常の進行で、取得は最大10回（窓の8回＋後段の2回）
   {
-    let m = 8; // 1回目: 発走の8分前
-    let attempts = 1;
+    let m = 20; // 1回目: 発走の20分前
+    const seen = [m];
     for (;;) {
       const r = d(m);
       if (r.final) break;
       m -= r.retrySec / 60;
-      attempts++;
-      if (attempts > 6) break;
+      seen.push(m);
+      if (seen.length > 12) break;
     }
     expect(
-      `403の通常の進行（8分前から）は最大3回で打ち切り（実際: ${attempts}回）`,
-      attempts === 3,
+      `403の通常の進行（20分前から）は 20,18,…,6 分前・1分前・発走7分後の10回で打ち切り（実際: ${show(seen)}）`,
+      same(seen, [20, 18, 16, 14, 12, 10, 8, 6, 1, -7]),
     );
   }
   return failed;
@@ -800,11 +812,17 @@ async function evaluateJob(processFn) {
     const f403 = fetchTextOf(createFakeFetch(routeOriten(() => FORBIDDEN)));
     const first = await go({ fetchText: f403, minutesToStart: 8 });
     expect(
-      "403（発走8分前）: no_values・5分後に再試行（データ無しにしない）",
+      "403（発走8分前、窓の中）: no_values・2分後に再試行（データ無しにしない）",
       first.outcome === "no_values" &&
-        first.retrySec === 300 &&
+        first.retrySec === 120 &&
         first.rowsWritten === 0,
       show(first),
+    );
+    const afterWindow = await go({ fetchText: f403, minutesToStart: 6 });
+    expect(
+      "403（発走6分前、窓の最後）: no_values・5分後に再試行（後段の規則）",
+      afterWindow.outcome === "no_values" && afterWindow.retrySec === 300,
+      show(afterWindow),
     );
     const second = await go({ fetchText: f403, minutesToStart: 3 });
     expect(
@@ -1116,11 +1134,11 @@ async function runWrapped({
   const early = await runWrapped({ mode: "live", client, fetchImpl: f403 });
   const claimedMs = new Date("2026-09-21T10:22:30+09:00").getTime();
   check(
-    "(d) 403（カナリア正常）: 発走の約7分前 → no_values で再試行（claimから290秒後）",
+    "(d) 403（カナリア正常）: 発走の約7分前（窓の中）→ no_values で再試行（claimから110秒後＝次の次の毎分の起動）",
     early.store.retried.length === 1 &&
       early.store.retried[0].outcome === "no_values" &&
       new Date(early.store.retried[0].retryAt).getTime() ===
-        claimedMs + 290 * 1000 &&
+        claimedMs + 110 * 1000 &&
       early.store.completed.length === 0,
     show(early.store.retried.map((r) => [r.outcome, r.retryAt])),
   );
@@ -1155,6 +1173,104 @@ async function runWrapped({
   check(
     "(d) 監視: 打ち切り（skipped_not_target）は窓内取得率の分母に入れない",
     stats.length === 1 && stats[0].total === 1,
+  );
+}
+{
+  // 発走20分前から6分前まで2分おき（全レース）。1スロットの再試行の列として、共通ラッパ・ハンドラー・decideNotPublished・
+  // computeRetryAt を通して確かめる。Cron は毎分 :05 秒に起動し、claim できるのは「期限 <= 今 <= 期限+許容幅」かつ
+  // 「再試行の時刻 <= 今」（claim_scrape_slots と同じ。memoryStore は claim を再現しないため、ここで判定する）
+  const def = SCRAPE_JOBS.boatcast_oriten;
+  const START_MS = new Date("2026-09-21T10:30:00+09:00").getTime();
+  const CRON_SEC = 5;
+  async function simulate(publishAtMin) {
+    const offset = def.offsets[0];
+    const deadlineMs = START_MS + offset * 60000;
+    const windowEndMs = deadlineMs + def.graceMin * 60000;
+    let nextAttemptMs = 0;
+    const attempts = [];
+    let final = null;
+    for (let min = offset - 2; min <= 40 && !final; min++) {
+      const nowMs = START_MS + min * 60000 + CRON_SEC * 1000;
+      if (nowMs < deadlineMs || nowMs > windowEndMs) continue;
+      if (nowMs < nextAttemptMs) continue;
+      attempts.push(min);
+      const published = nowMs >= START_MS + publishAtMin * 60000;
+      const fetchImpl = createFakeFetch(
+        routeOriten(() =>
+          published ? { status: 200, body: THREE } : FORBIDDEN,
+        ),
+      );
+      const { store } = await runWrapped({
+        mode: "shadow",
+        client: freshClient(),
+        fetchImpl,
+        now: () => new Date(nowMs),
+        slots: [
+          SLOT(RACE_ID, {
+            offset_min: offset,
+            last_attempt_at: new Date(nowMs).toISOString(),
+            lease_until: new Date(nowMs + def.leaseSec * 1000).toISOString(),
+          }),
+        ],
+      });
+      if (store.completed.length > 0) {
+        final = store.completed[0].outcome;
+      } else if (store.retried.length === 1) {
+        nextAttemptMs = new Date(store.retried[0].retryAt).getTime();
+      } else {
+        final = "unexpected";
+      }
+    }
+    return { attempts, final };
+  }
+  const never = await simulate(Infinity);
+  check(
+    "(d) 窓: 未公開のままなら、取得は発走の -20,-18,-16,-14,-12,-10,-8,-6 分（2分おき）→ 窓の後に -1・+7 分 → 打ち切り（最大10回。窓の中は古い5分・8分の再試行を使わない）",
+    same(never.attempts, [-20, -18, -16, -14, -12, -10, -8, -6, -1, 7]) &&
+      never.final === "skipped_not_target",
+    show(never),
+  );
+  const median = await simulate(-11.4);
+  check(
+    "(d) 窓: 発走11.4分前に公開（実測の中央値）→ -10 分の取得で完了し、それ以降は取りに行かない（6回）",
+    same(median.attempts, [-20, -18, -16, -14, -12, -10]) &&
+      median.final === "ok",
+    show(median),
+  );
+  const early = await simulate(-25.2);
+  check(
+    "(d) 窓: 窓の前に公開済み（発走25.2分前、実測の最大）→ -20 分の1回で完了",
+    same(early.attempts, [-20]) && early.final === "ok",
+    show(early),
+  );
+  const late = await simulate(-2.3);
+  check(
+    "(d) 窓: 窓の後に公開（発走2.3分前、実測の最小）→ 窓の後の -1 分の取得で完了（9回）",
+    same(late.attempts, [-20, -18, -16, -14, -12, -10, -8, -6, -1]) &&
+      late.final === "ok",
+    show(late),
+  );
+  check(
+    "(d) 窓: 最後の取得（+7分）は、許容幅（期限+graceMin）の5分以上手前（Cronの遅れで expired にしない）",
+    7 + 5 <= def.offsets[0] + def.graceMin,
+    show([def.offsets, def.graceMin]),
+  );
+}
+{
+  // 1回の起動の件数（claimLimit）: 10/18〜10/24 の races と公開時刻から求めた1分あたりの取得の最大は6件、hq の見積りは約7件
+  // （PR本文の見積り）。大きいほうの7件以上で、全件を処理しても、ソフトデッドライン（maxDuration−30秒）とリース（leaseSec）の
+  // 中に収まる
+  const def = SCRAPE_JOBS.boatcast_oriten;
+  const PEAK_PER_MIN = 7;
+  const tickSec = (def.claimLimit + 1) * def.slotSecEstimate; // +1 はカナリア
+  check(
+    `(d) claimLimit: 1分あたりの最大（${PEAK_PER_MIN}件）以上で、1回の起動（カナリア＋${def.claimLimit}件×${def.slotSecEstimate}秒=${tickSec}秒）がソフトデッドラインとリースの中に収まる。同時数は1のまま`,
+    def.offsets.length === 1 &&
+      def.claimLimit >= PEAK_PER_MIN &&
+      tickSec <= def.maxDurationSec - SOFT_DEADLINE_MARGIN_SEC &&
+      tickSec <= def.leaseSec &&
+      def.concurrency === 1,
+    show(def),
   );
 }
 {
@@ -1240,9 +1356,46 @@ async function runWrapped({
     created === 2 &&
       same(ids, ["2026-09-21-05-02", "2026-09-21-12-03"]) &&
       client.data.scrape_slots.every(
-        (s) => s.job === realJob.ORITEN_JOB && s.offset_min === -8,
+        (s) => s.job === realJob.ORITEN_JOB && s.offset_min === -20,
       ),
     show(ids),
+  );
+}
+{
+  // 切り替えの日: 既に別の offset（旧 -8）のスロットがあるレースには、新しい -20 のスロットを作らない
+  // （1レース1本の再試行の列にして、二重に取らない）。スロットの無いレースにだけ作る
+  const races = ["01", "02"].map((rr) => ({
+    race_id: `2026-09-21-05-${rr}`,
+    race_date: "2026-09-21",
+    start_time: "12:00:00",
+  }));
+  const client = freshClient({
+    races,
+    scrape_slots: [
+      {
+        job: realJob.ORITEN_JOB,
+        race_id: "2026-09-21-05-01",
+        offset_min: -8,
+        race_date: "2026-09-21",
+        status: "pending",
+      },
+    ],
+  });
+  const store = realJob.createOritenStore(client, {
+    base: createMemoryStore(),
+  });
+  const created = await store.ensureSlots({
+    date: "2026-09-21",
+    now: new Date("2026-09-21T10:00:00+09:00"),
+  });
+  const keys = client.data.scrape_slots
+    .map((s) => `${s.race_id}@${s.offset_min}`)
+    .sort();
+  check(
+    "(e) 予定表: 既にスロットのあるレース（旧 -8）には -20 を足さない。スロットの無いレースにだけ作る",
+    created === 1 &&
+      same(keys, ["2026-09-21-05-01@-8", "2026-09-21-05-02@-20"]),
+    show(keys),
   );
 }
 {
@@ -1675,11 +1828,11 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
 // ---------------------------------------------------------------------------
 {
   check(
-    "(h) レジストリ: 整合している。boatcast_oriten は窓型（発走8分前・許容幅30分）、boatcast_motor_start は日次（06:30）",
+    "(h) レジストリ: 整合している。boatcast_oriten は窓型（発走20分前の1本・許容幅40分）、boatcast_motor_start は日次（06:30）",
     same(validateRegistry(), []) &&
       SCRAPE_JOBS.boatcast_oriten.kind === "window" &&
-      same(SCRAPE_JOBS.boatcast_oriten.offsets, [-8]) &&
-      SCRAPE_JOBS.boatcast_oriten.graceMin === 30 &&
+      same(SCRAPE_JOBS.boatcast_oriten.offsets, [-20]) &&
+      SCRAPE_JOBS.boatcast_oriten.graceMin === 40 &&
       SCRAPE_JOBS.boatcast_oriten.concurrency === 1 &&
       SCRAPE_JOBS.boatcast_motor_start.kind === "daily" &&
       SCRAPE_JOBS.boatcast_motor_start.targetTimeJst === "06:30",
@@ -1998,6 +2151,24 @@ const rowsMutants = [
     ],
   ],
   [
+    "窓の中でも古い5分の規則で再試行する（2分おきにしない）",
+    [
+      [
+        "return { final: false, retrySec: policy.windowRetrySec };",
+        "return { final: false, retrySec: policy.firstRetrySec };",
+      ],
+    ],
+  ],
+  [
+    "窓の後も2分おきを続ける（後段の規則に移らない）",
+    [
+      [
+        "if (minutesToStart > policy.windowRetryAboveMin) {",
+        "if (minutesToStart > policy.finalAtOrBelowMin) {",
+      ],
+    ],
+  ],
+  [
     "発走時刻が不明でも待つ（バックフィルで打ち切らない）",
     [
       [
@@ -2104,8 +2275,8 @@ for (const [label, replacements] of jobMutants) {
     "oritenJob.js",
     [
       [
-        '(r) => venueEntry(venueOfRaceId(r.race_id), map)?.status === "public",',
-        "() => true,",
+        'venueEntry(venueOfRaceId(r.race_id), map)?.status === "public",',
+        "true,",
       ],
     ],
     async (m) => {
@@ -2135,6 +2306,36 @@ for (const [label, replacements] of jobMutants) {
   check(
     `(i) 変異検証（予定表）: 対象会場の絞り込みを外すと、対象外のスロットができる → 検証が失敗する（${failedEnsure.length}項目）`,
     failedEnsure.length > 0,
+  );
+  // 予定表: 既存スロットの確認を外すと、旧 offset のスロットがあるレースにも新しいスロットができる（二重の取得）
+  const failedDedupe = await withMutant(
+    "oritenJob.js",
+    [["!hasSlot.has(r.race_id) &&", ""]],
+    async (m) => {
+      const client = freshClient({
+        scrape_slots: [
+          {
+            job: realJob.ORITEN_JOB,
+            race_id: RACE_ID,
+            offset_min: -8,
+            race_date: "2026-09-21",
+            status: "pending",
+          },
+        ],
+      });
+      const store = m.createOritenStore(client, { base: createMemoryStore() });
+      await store.ensureSlots({
+        date: "2026-09-21",
+        now: new Date("2026-09-21T10:00:00+09:00"),
+      });
+      return client.data.scrape_slots.length > 1
+        ? ["旧 offset のスロットがあるレースに新しいスロットができた"]
+        : [];
+    },
+  );
+  check(
+    `(i) 変異検証（予定表）: 既存スロットの確認を外すと、同じレースに2本目のスロットができる → 検証が失敗する（${failedDedupe.length}項目）`,
+    failedDedupe.length > 0,
   );
   // カナリア: 失敗でもデータを取りに行く
   const failedCanary = await withMutant(

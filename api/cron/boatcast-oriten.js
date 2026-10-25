@@ -1,7 +1,8 @@
 /**
  * BOATCASTのオリジナル展示（N25。一周/半周ラップ・まわり足・直線）の Vercel Cron（docs/design/boatcast-original-exhibition/plan.md）。
  *
- * 予定表（scrape_slots）の `boatcast_oriten` スロット（発走8分前を期限、許容幅30分、未公開（403）は最大3回まで再試行）を、
+ * 予定表（scrape_slots）の `boatcast_oriten` スロット（発走20分前を期限、許容幅40分、未公開（403）は発走6分前まで2分おき＋
+ * その後2回の最大10回まで再試行し、取れたら完了）を、
  * 共通ラッパ（scripts/lib/scrapeJobs/cronWrapper.js）経由で消化する。対象は、公開マップ（scripts/lib/boatcast/publicMap.js）で
  * 公開を確認済みの会場の全レースだけで、スロットも対象会場のレースにだけ作る（scripts/lib/boatcast/oritenJob.js の
  * createOritenStore）。取得・解析・書き込みは scripts/lib/boatcast/oritenJob.js（processOritenRace）。
@@ -14,7 +15,8 @@
  *
  * cron式（vercel.json）はUTC。JSTに換算した起動時間帯:
  *   毎分、時は UTC 22〜23時・0〜14時 = JST 07:00〜23:59（他の窓型ジョブと同じ。監視の死活の判定（運用窓 07:10〜23:59）に合わせる）。
- *   最初のレースの期限（発走8分前）は08:20頃、最後のレースの3回目の取得は21:10頃で、それ以外の時間帯は空振り（予定表のスロットなし）。
+ *   最初のレースの期限（発走20分前）は08:15頃、最後のレースの最後の取得（発走の約7分後）は22:45頃（10/18〜10/24 の races）で、
+ *   それ以外の時間帯は空振り（予定表のスロットなし）。
  *
  * 認証: Authorization: Bearer {CRON_SECRET}（共通ラッパ）。応答は、処理の完了後に 200/500（waitUntil は使わない）。
  *
