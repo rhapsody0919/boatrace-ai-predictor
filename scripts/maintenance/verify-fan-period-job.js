@@ -25,6 +25,7 @@ import {
   FAN_PUBLISH_DEADLINE_DAYS,
   fanIdEndedBefore,
   fanRawPath,
+  periodOfFanId,
   runFanPeriodJob,
 } from "../lib/fanPeriodJob.js";
 import { fakeClient } from "../lib/fakeSupabaseClient.js";
@@ -121,6 +122,58 @@ check(
     daysSincePeriodEnd("fan2610", "2027-02-13") === FAN_PUBLISH_DEADLINE_DAYS,
 );
 
+// ファイル名から期の識別子と終了日を直接固定する。
+for (const [id, expected] of [
+  ["fan2604", { periodYear: 2026, periodNo: 2, endDate: "2026-04-30" }],
+  ["fan2510", { periodYear: 2026, periodNo: 1, endDate: "2025-10-31" }],
+  ["fan2610", { periodYear: 2027, periodNo: 1, endDate: "2026-10-31" }],
+  ["fan0110", { periodYear: 2002, periodNo: 1, endDate: "2001-10-31" }],
+  ["fan2004", { periodYear: 2020, periodNo: 2, endDate: "2020-04-30" }],
+  ["fan1910", { periodYear: 2020, periodNo: 1, endDate: "2019-10-31" }],
+]) {
+  check(
+    `periodOfFanId: ${id} の年・期・終了日`,
+    same(periodOfFanId(id), expected),
+  );
+}
+for (const id of [
+  "fan2605", "fan2600", "fan26041", "FAN2604", "fan264", "", null, undefined,
+]) {
+  const expected = ["fan2605", "fan2600"].includes(id)
+    ? `ファイル名の月は 04 か 10 です: ${id}`
+    : `ファイル名の形式が不正です（fanYYMM）: ${id}`;
+  let threw = false;
+  let message;
+  try {
+    periodOfFanId(id);
+  } catch (error) {
+    threw = true;
+    message = error.message;
+  }
+  check(
+    `periodOfFanId: ${JSON.stringify(id)} の例外と文言`,
+    threw && same(message, expected),
+  );
+}
+for (const [date, expected] of [
+  ["2026-05-01", [2026, 2]],
+  ["2026-10-31", [2026, 2]],
+  ["2026-11-01", [2027, 1]],
+  ["2026-04-30", [2026, 1]],
+]) {
+  const { periodYear, periodNo } = periodOfFanId(fanIdEndedBefore(date));
+  check(
+    `periodOfFanId: 対象日 ${date} から年・期`,
+    same([periodYear, periodNo], expected),
+  );
+}
+
+const KNOWN_GAPS = [
+  { input: "fan9910", specification: "2桁年の世紀の扱いは未定（現状は常に2000年代）" },
+  { input: "fan0104", specification: "最古 fan0110 より前の扱いは未定" },
+  { input: 2604, specification: "数の入力の扱いは未定" },
+];
+
 // 2. 取り込み済み
 {
   const j = jobCtx({
@@ -179,6 +232,15 @@ const imported = jobCtx();
 {
   const r = await runFanPeriodJob(imported.ctx, OPTS);
   const rows = imported.client.tables.racer_period_stats ?? [];
+  const period = periodOfFanId("fan2604");
+  check(
+    "periodOfFanId: fan2604 の期は FIXTURE から取り込んだ全行の期と一致",
+    rows.length > 0 &&
+      rows.every((row) => same(
+        [period.periodYear, period.periodNo],
+        [row.period_year, row.period_no],
+      )),
+  );
   const ledger = imported.client.tables.raw_snapshots ?? [];
   const up = imported.client.storage.uploads;
   check(
@@ -319,6 +381,17 @@ const imported = jobCtx();
       /REVOKE ALL ON raw_snapshots FROM anon, authenticated/.test(sql) &&
       /UNIQUE \(page_type, key, sha256\)/.test(sql),
   );
+}
+
+console.log(`\nKNOWN_GAPS: ${KNOWN_GAPS.length}件（失敗には含めない）`);
+for (const gap of KNOWN_GAPS) {
+  let current;
+  try {
+    current = periodOfFanId(gap.input);
+  } catch (error) {
+    current = { error: error.message };
+  }
+  console.log(JSON.stringify({ ...gap, current }));
 }
 
 if (failures > 0) {
