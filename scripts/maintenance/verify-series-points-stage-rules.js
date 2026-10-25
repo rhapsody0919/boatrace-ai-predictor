@@ -61,7 +61,10 @@ import {
   layoutTrendByDate,
 } from "../../src/utils/trendDateLayout.js";
 import { buildMeets, fetchAllByRaceId } from "../lib/meetBoundaries.js";
-import { pickMeetPretestByRacer } from "../../src/utils/pretestRows.js";
+import {
+  pickMeetPretestByRacer,
+  pickLatestPretestByRacer,
+} from "../../src/utils/pretestRows.js";
 
 let failures = 0;
 function check(label, actual, expected) {
@@ -1831,6 +1834,95 @@ check(
   );
   check("今節のモーターの行が無ければ採らない", onlyOther.has(2), false);
 }
+
+// ---- モータ情報タブは選手ごとに最新の前検の行を採る（BOA-1128） ------------
+{
+  for (const [label, rows] of [
+    ["null", null],
+    ["undefined", undefined],
+    ["空配列", []],
+  ]) {
+    check(`最新の前検: ${label} は空`, [...pickLatestPretestByRacer(rows).entries()], []);
+  }
+  const rows = [
+    { racer_id: 1, race_date: "2026-10-20", t: 6.8 },
+    { racer_id: 1, race_date: "2026-10-23", t: 6.7 },
+    { racer_id: 2, race_date: "2026-10-21", t: 6.9 },
+  ];
+  check(
+    "最新の前検: 選手ごとに日付の一番新しい行を採る",
+    [...pickLatestPretestByRacer(rows).entries()],
+    [
+      [1, { racer_id: 1, race_date: "2026-10-23", t: 6.7 }],
+      [2, { racer_id: 2, race_date: "2026-10-21", t: 6.9 }],
+    ],
+  );
+  check(
+    "今節の前検: 同じ入力でも最も古い行を採る",
+    [...pickMeetPretestByRacer(rows, new Map()).entries()],
+    [
+      [1, { racer_id: 1, race_date: "2026-10-20", t: 6.8 }],
+      [2, { racer_id: 2, race_date: "2026-10-21", t: 6.9 }],
+    ],
+  );
+  check(
+    "最新の前検: 同じ日付は入力の先の行を採る",
+    [...pickLatestPretestByRacer([
+      { racer_id: 1, race_date: "2026-10-23", t: "a" },
+      { racer_id: 1, race_date: "2026-10-23", t: "b" },
+    ]).entries()],
+    [[1, { racer_id: 1, race_date: "2026-10-23", t: "a" }]],
+  );
+  check(
+    "最新の前検: Map のキーは日付の新しい順",
+    [...pickLatestPretestByRacer([
+      { racer_id: 2, race_date: "2026-10-20" },
+      { racer_id: 1, race_date: "2026-10-23" },
+      { racer_id: 3, race_date: "2026-10-22" },
+    ]).keys()],
+    [1, 3, 2],
+  );
+  const input = [
+    { racer_id: 1, race_date: "2026-10-20" },
+    { racer_id: 1, race_date: "2026-10-23" },
+  ];
+  pickLatestPretestByRacer(input);
+  check(
+    "最新の前検: 入力の配列を並べ替えない",
+    input.map((row) => row.race_date),
+    ["2026-10-20", "2026-10-23"],
+  );
+}
+
+// NOT NULL の日付・整数の列から来ない入力。仕様は未定なので assert しない。
+const PRETEST_KNOWN_GAPS = [
+  {
+    input: [
+      { racer_id: 1, race_date: null, t: "n" },
+      { racer_id: 1, race_date: "2026-10-20", t: "d" },
+    ],
+    specification: "日付が null の扱いは未定（現在は null の行が最新になる）",
+  },
+  {
+    input: [
+      { racer_id: 1, t: "u" },
+      { racer_id: 1, race_date: "2026-10-20", t: "d" },
+    ],
+    specification: "日付が undefined の扱いは未定（現在は欠けた行が最新になる）",
+  },
+  {
+    input: [
+      { racer_id: "1", race_date: "2026-10-23" },
+      { racer_id: 1, race_date: "2026-10-20" },
+    ],
+    specification: "文字列と数の選手IDの扱いは未定（現在は別の選手になる）",
+  },
+].map((gap) => ({
+  ...gap,
+  current: [...pickLatestPretestByRacer(gap.input).entries()],
+}));
+console.log(`PRETEST_KNOWN_GAPS: ${PRETEST_KNOWN_GAPS.length} 件`);
+for (const gap of PRETEST_KNOWN_GAPS) console.log(JSON.stringify(gap));
 
 // 順位の対象外の内訳は理由ごとに、今節F → 賞典除外 → 途中帰郷 → 欠場 の順でまとめる。
 // 公式の備考による途中帰郷も「途中帰郷」に入れ、順位の付いた選手は入れない（BOA-697）
