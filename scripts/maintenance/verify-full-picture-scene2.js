@@ -8,6 +8,7 @@
  * - 拍の並び（scene2Timeline・stepTimeline）: 答えを毎秒8字で読める長さ
  * - 固定の材料（scripts/full-picture/fixtures、4レースの最小の写し）: 材料の契約（materials.schema.json）に合う、
  *   取得（fetch-materials.mjs）の出力も合う、全場面の文が検査を通り読める、入口版が59秒以内
+ * - 取得の stage=exhibition: 展示の後の材料（db.exhibition）を足し、欠けは null で出して missing に記録する。racecard の出力は変えない
  */
 import assert from "node:assert/strict";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
@@ -641,8 +642,143 @@ for (const f of fixtures) {
     assert.deepEqual(got.missing.filter((x) => /匿名キー/.test(x.reason)), [], "匿名キーを読み込みの後に入れても Supabase を読める");
     assert.ok(got.db.motor, "モーターの材料が取れる");
     assert.equal(got.schemaVersion, MATERIALS_VERSION);
+    assert.ok(!("exhibition" in got.db), "展示の前（racecard）の出力に展示の後の材料は足さない（既存の出力は変えない）");
   } finally {
     globalThis.fetch = realFetch;
+  }
+}
+// 展示の後（stage=exhibition）の材料: 進入・展示 ST・チルト・部品交換・展示タイム・風と波・決まり手の過去の分布を足す。
+// 欠けは null で出し、missing に記録する（Supabase は偽物。2026-10-25 hq 依頼、優勝戦・準優の投稿の材料）
+{
+  const m = JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
+  const realFetch = globalThis.fetch;
+  const realEnv = { url: process.env.VITE_SUPABASE_URL, key: process.env.VITE_SUPABASE_ANON_KEY };
+  process.env.VITE_SUPABASE_URL = "https://sb.invalid";
+  process.env.VITE_SUPABASE_ANON_KEY = "x";
+  const row = (n, over = {}) => ({ boat_number: n, exhibition_course: n, start_timing: 0.1 + n / 100, start_flag: null, exhibition_time: 6.7, tilt: 0, parts_changed: null, propeller_change: null, is_absent: false, updated_at: "2026-10-25T06:39:35+00:00", ...over });
+  // 1号艇は F 表記・部品交換、2号艇はプロペラ交換、3・4号艇は進入が入れ替わり、5号艇はチルトが欠け、6号艇は行が無い
+  const exRows = [row(1, { start_flag: "F", start_timing: 0.01, parts_changed: ["リング", "ピストン"] }), row(2, { propeller_change: "新" }), row(3, { exhibition_course: 4 }), row(4, { exhibition_course: 3 }), row(5, { tilt: null })];
+  // 今節の走は facts の racers.boats[].meet_runs（固定の材料は racers を写していないので足す）。1号艇は2走（2走目は結果の行が無い）、3号艇は racers に無い
+  m.api.facts.racers = { meet_start: "2026-10-10", boats: [1, 2, 4, 5, 6].map((n) => ({ boat_number: n, meet_runs: n === 1 ? [{ race_id: "2026-10-11-01-03", boat_number: 2 }, { race_id: "2026-10-10-01-05", boat_number: 4 }, { race_id: "2026-10-12-01-02", boat_number: 1 }] : [] })) };
+  const startRows = [{ race_id: "2026-10-10-01-05", boat_number: 4, finish_mark: "1", finish_rank: 1 }, { race_id: "2026-10-11-01-03", boat_number: 2, finish_mark: "F", finish_rank: null }];
+  const entryRows = [1, 2, 3, 4, 5].map((n) => ({ boat_number: n, f_count: n === 1 ? 1 : n === 5 ? null : 0 }));
+  const technique = {
+    venue_technique_period_stats: [{ period_days: 90, winning_technique: "逃げ", race_count: 388, total_races: 660, period_from: "2026-07-27", period_to: "2026-10-24", last_updated: "2026-10-25" }],
+    winning_technique_stats: [{ boat_number: 1, winning_technique: "逃げ", count_90days: 385, total_races: 412, percentage: 93.45, last_updated: "2026-10-25" }],
+  };
+  const run = async ({ conditions, startTime = "16:06:00", ex = exRows, stage = "exhibition", racers = m.api.facts.racers }) => {
+    const facts = { ...m.api.facts, racers };
+    const json = (v) => ({ ok: true, status: 200, json: async () => v });
+    globalThis.fetch = async (url) => {
+      const u = new URL(String(url));
+      if (u.hostname === "sb.invalid") {
+        const table = u.pathname.split("/").pop();
+        const q = u.searchParams;
+        if (table === "exhibition_data" && q.get("race_id") === `eq.${m.raceId}`) return json(ex);
+        if (table === "exhibition_data") return json(m.db.motor?.exhibition ?? []);
+        if (table === "race_conditions") return json(conditions === undefined ? [] : [conditions]);
+        if (table === "race_entries" && q.get("race_id") === `eq.${m.raceId}`) return json(ex.length ? entryRows : []);
+        if (table === "race_start_timings") return json(startRows);
+        if (table === "races" && q.get("race_id") === `eq.${m.raceId}`) return json([{ start_time: startTime, race_grade: "G1" }]);
+        if (technique[table]) return json(technique[table]);
+        const map = { race_entries: m.db.racer1?.entries ?? [], races: m.db.racer1?.races ?? [], motor_pretest_stats: m.db.motor?.pretest ?? [], venue_motor_stats: m.db.motor?.stats ?? [] };
+        return json(map[table] ?? []);
+      }
+      const p = u.pathname;
+      if (p.startsWith("/api/analogy/facts/")) return json(facts);
+      if (p.startsWith("/api/analogy/similar/")) return json(m.api.similar);
+      if (p.startsWith("/api/analogy/scenario/")) return json(m.api.scenario);
+      if (p.startsWith("/api/predictions/")) return json({ races: m.api.races });
+      if (p === "/api/outcome-distribution") return json(m.api.outcome[u.searchParams.get("venue_code")]);
+      return { ok: false, status: 404, json: async () => ({}) };
+    };
+    try {
+      const { fetchMaterials } = await import(`${R}/scripts/full-picture/fetch-materials.mjs`);
+      return await fetchMaterials(m.raceId, { stage });
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+  };
+  const date = m.raceId.slice(0, 10);
+  const pre = { weather: "曇り", wind_direction: "北", wind_speed: 1, wave_height: 2, weather_observed_at: `${date}T05:51:00+00:00` };
+  const got = await run({ conditions: pre });
+  assert.deepEqual(validate(got), [], "展示の後の材料も契約に合う");
+  const { boats, conditions, technique: tq } = got.db.exhibition;
+  assert.deepEqual(boats.map((b) => b.boat_number), [1, 2, 3, 4, 5, 6], "1〜6号艇を必ず並べる");
+  assert.deepEqual(
+    { course: boats[0].exhibition_course, st: boats[0].start_timing, flag: boats[0].start_flag, time: boats[0].exhibition_time, tilt: boats[0].tilt, parts: boats[0].parts_changed, prop: boats[0].propeller_change },
+    { course: 1, st: 0.01, flag: "F", time: 6.7, tilt: 0, parts: ["リング", "ピストン"], prop: null },
+    "進入・展示 ST と F 表記・展示タイム・チルト・部品交換を出す",
+  );
+  assert.equal(boats[1].propeller_change, "新", "プロペラ交換を出す");
+  // 追加の依頼（hq 10/25）: F 数（出走表の期の F 数）と今節の着順の並び
+  assert.deepEqual(boats.map((b) => b.f_count), [1, 0, 0, 0, null, null], "F 数は出走表の f_count、欠けは null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.f_count" && x.reason === "値が無い"), "F 数の欠けを記録");
+  assert.deepEqual(
+    boats[0].meet_finishes,
+    [
+      { race_id: "2026-10-10-01-05", finish_mark: "1", finish_rank: 1 },
+      { race_id: "2026-10-11-01-03", finish_mark: "F", finish_rank: null },
+      { race_id: "2026-10-12-01-02", finish_mark: null, finish_rank: null },
+    ],
+    "今節の着順は時系列（race_id の順）で、着の無い表記（F 等）は finish_mark に残す",
+  );
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.1.meet_finishes" && /着順の無い走が1件/.test(x.reason)), "結果の無い走を記録");
+  assert.deepEqual(boats[1].meet_finishes, [], "今節の走が無い艇は空の並び（初走）");
+  assert.equal(boats[2].meet_finishes, null, "racers に無い艇は null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.meet_finishes"), "racers に無い艇を記録");
+  assert.deepEqual([boats[2].exhibition_course, boats[3].exhibition_course], [4, 3], "進入は展示の並び（枠番と違ってよい）");
+  assert.equal(boats[4].tilt, null, "欠けたチルトは null");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.tilt"), "欠けた欄を missing に記録");
+  assert.deepEqual(
+    Object.entries(boats[5]).filter(([k]) => !["boat_number", "meet_finishes"].includes(k)),
+    Object.keys(boats[0]).filter((k) => !["boat_number", "meet_finishes"].includes(k)).map((k) => [k, null]),
+    "行の無い艇は全欄 null（今節の着順は facts から別に取る）",
+  );
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.6"), "行の無い艇を missing に記録");
+  assert.ok(!got.missing.some((x) => /\.(start_flag|parts_changed|propeller_change)$/.test(x.source)), "印・交換の null は「表示なし」で欠けにしない");
+  assert.deepEqual(conditions, { weather: "曇り", wind_direction: "北", wind_speed: 1, wave_height: 2, observedAt: pre.weather_observed_at }, "締切より前の風・波を出す");
+  assert.ok(!got.missing.some((x) => x.source.startsWith("db.exhibition.conditions")), "発走前の値がそろえば欠けなし");
+  assert.deepEqual(tq, { byPeriod: technique.venue_technique_period_stats, byBoat: technique.winning_technique_stats }, "決まり手の過去の分布は会場の既存の集計表をそのまま写す");
+  // 既存の材料は展示の前と同じキーのまま（足すだけ）
+  assert.ok(["racer1", "motor"].every((k) => k in got.db) && got.api.facts && got.race.startTime === "16:06:00", "既存の材料はそのまま");
+  // 締切の後の観測（結果の取り込みで上書きされた値）は発走前の値でないので null
+  const late = await run({ conditions: { ...pre, weather_observed_at: `${date}T07:08:00+00:00` } });
+  assert.deepEqual(
+    [late.db.exhibition.conditions.wind_speed, late.db.exhibition.conditions.wave_height, late.db.exhibition.conditions.observedAt],
+    [null, null, `${date}T07:08:00+00:00`],
+    "締切の後の観測の風・波は null",
+  );
+  assert.ok(late.missing.some((x) => x.source === "db.exhibition.conditions" && /締切の後/.test(x.reason)), "締切の後の観測を missing に記録");
+  // 観測時刻が無い（scrape-to-json の経路）・締切が無いと発走前か確かめられないので null（/code-review 2026-10-25 #1）
+  const noObs = await run({ conditions: { ...pre, weather_observed_at: null } });
+  assert.equal(noObs.db.exhibition.conditions.wind_speed, null, "観測時刻の無い風は null");
+  assert.ok(noObs.missing.some((x) => x.source === "db.exhibition.conditions" && /観測時刻が無く/.test(x.reason)), "観測時刻が無いことを記録");
+  const noDeadline = await run({ conditions: pre, startTime: null });
+  assert.equal(noDeadline.db.exhibition.conditions.wave_height, null, "締切の無いレースの波は null");
+  assert.ok(noDeadline.missing.some((x) => x.source === "db.exhibition.conditions" && /締切の時刻が無く/.test(x.reason)), "締切が無いことを記録");
+  // 決まり手の表は最新の集計だけ。レースの日より後の集計なら記録する（固定の材料は 10/12、表は 10/25。/code-review #2）
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.technique.byPeriod" && /より後の集計/.test(x.reason)), "レースの日より後の集計を記録");
+  technique.venue_technique_period_stats = technique.venue_technique_period_stats.map((r) => ({ ...r, last_updated: date }));
+  technique.winning_technique_stats = technique.winning_technique_stats.map((r) => ({ ...r, last_updated: date }));
+  const sameDay = await run({ conditions: pre });
+  assert.ok(!sameDay.missing.some((x) => x.source.startsWith("db.exhibition.technique")), "レースの日の集計なら欠けなし");
+  // 展示前（行も気象も無い）・集計表が空でも止まらず、全部 null と missing で出す
+  technique.venue_technique_period_stats = [];
+  technique.winning_technique_stats = [];
+  const empty = await run({ conditions: undefined, ex: [] });
+  assert.deepEqual(validate(empty), [], "欠けた材料も契約に合う");
+  const noRacers = await run({ conditions: pre, racers: null });
+  assert.ok(noRacers.db.exhibition.boats.every((b) => b.meet_finishes === null), "facts に racers が無ければ今節の着順は null");
+  assert.ok(noRacers.missing.some((x) => x.source === "db.exhibition.boats.meet_finishes"), "racers が無いことを記録");
+  assert.ok(empty.db.exhibition.boats.every((b) => b.exhibition_course === null && b.start_timing === null), "展示前は進入・ST が null");
+  assert.deepEqual(empty.db.exhibition.conditions, { weather: null, wind_direction: null, wind_speed: null, wave_height: null, observedAt: null });
+  for (const s of ["db.exhibition.boats.1", "db.exhibition.boats.6", "db.exhibition.conditions", "db.exhibition.technique.byPeriod", "db.exhibition.technique.byBoat"]) {
+    assert.ok(empty.missing.some((x) => x.source === s), `欠けを missing に記録: ${s}`);
+  }
+  for (const [k, v] of [["VITE_SUPABASE_URL", realEnv.url], ["VITE_SUPABASE_ANON_KEY", realEnv.key]]) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
   }
 }
 
