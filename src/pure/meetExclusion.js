@@ -14,6 +14,7 @@
 import {
   prelimEndRaceIdOf,
   flyingRacerIdsInMeet,
+  lateStartL1RacerIdsInMeet,
   withdrawnByAbsence,
 } from "./seriesPoints.js";
 
@@ -26,7 +27,7 @@ import {
  * @param {Array<{race_id: string, boat_number: number, racer_id: number}>} input.meetRows 節の出走表（表示日まで）
  * @param {{withdrawnRacerIds?: number[]}|null} input.prelimOfficial `prelimOfficialAdjustments` の値（予選中だけ）
  * @param {string} input.date 表示日（YYYY-MM-DD）
- * @returns {{withdrawnRacerIds: number[], exclusionReasonByRacer: Object<string, "awardExcluded"|"officialWithdrawn"|"flying"|"withdrawn">}}
+ * @returns {{withdrawnRacerIds: number[], exclusionReasonByRacer: Object<string, "awardExcluded"|"officialWithdrawn"|"flying"|"lateStart"|"withdrawn">}}
  */
 export function meetExclusionsOf({
   usesOfficialSeries,
@@ -70,14 +71,16 @@ export function meetExclusionsOf({
   // 順位は予選終了で確定しているのに、準優・優勝戦のFで最終日の
   // レースごとに節内順位が動いていた（ファン評価1周目: 桐生9/24で
   // 1〜8Rは47人、9〜12Rは45人）
-  const prelimEndForFlying = prelimEndRaceIdOf(conditions ?? []);
-  const flying = flyingRacerIdsInMeet(
-    (meetStarts ?? []).filter(
-      (r) => !prelimEndForFlying || r.race_id <= prelimEndForFlying,
-    ),
-    meetRows,
+  // 選手責任の出遅れ（L1）も、F と同じ範囲で賞典除外にする（BOA-1072）。
+  const prelimEnd = prelimEndRaceIdOf(conditions ?? []);
+  const startsForExclusion = (meetStarts ?? []).filter(
+    (r) => !prelimEnd || r.race_id <= prelimEnd,
   );
+  const flying = flyingRacerIdsInMeet(startsForExclusion, meetRows);
   const reasons = Object.fromEntries(flying.map((id) => [id, "flying"]));
+  for (const id of lateStartL1RacerIdsInMeet(startsForExclusion, meetRows)) {
+    if (!reasons[id]) reasons[id] = "lateStart";
+  }
 
   // **途中帰郷**: 前の日まで走っていたのに、表示日に1走も組まれていない選手。
   // 予選中でも予選の後でも、その日から外す（withdrawnByAbsence の実測を参照）。
