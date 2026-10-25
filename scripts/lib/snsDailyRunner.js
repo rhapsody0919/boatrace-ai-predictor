@@ -36,6 +36,40 @@ const VIDEO_METRICS = [
   "averageViewDuration",
   "subscribersGained",
 ];
+/**
+ * 動画ごとの engagedViews・views（と平均の視聴の割合・時間）を sns_metric_observations にも入れる（PD02、hq の毎日の PDCA の流れ shorts_engaged）。
+ * 窓は pt3d（マイグレーション 175）: 太平洋時間の投稿日から3日（投稿日＋2日）の暦日の和。終わりは PT の3日目の翌日 0:00。
+ * Analytics は暦日の粒度なので、「投稿から72時間」のような時間の窓へ変換しない（docs/design/sns-hub-metrics/contract.md「日次Analyticsを
+ * 時間窓へ推測変換しない」。day_end と同じく投稿ごとに長さが違う窓）。投稿前の views は0なので、和は [posted_at, period_end) と同じ。
+ * 反映の遅れ（2〜3日、BOA-1006 (b)）のため、3日目が取り直しの最も古い日（D−3）より前になってから1回入れる。
+ * 値（engagedViews と分母の views）が無ければ、値が出るまで ENGAGED_LOOKBACK_DAYS の間は毎日やり直す
+ */
+export const ENGAGED_WINDOW = "pt3d";
+const ENGAGED_PT_DAYS = 3;
+// 3日目が D−3 より前になるのは投稿の約6日後。14日まで見ると、欠測のときに約8回やり直せる
+export const ENGAGED_LOOKBACK_DAYS = 14;
+/** 同じ日の2回目の起動（補足の起動・重複配信）で欠測の revision を重ねない間隔 */
+const ENGAGED_RETRY_HOURS = 20;
+/** Analytics を読む時間の上限（関数の時間 300 秒の中で、残りは次の起動に回す） */
+export const ENGAGED_BUDGET_MS = 90000;
+const ENGAGED_METRICS = [
+  "engagedViews",
+  "views",
+  "averageViewPercentage",
+  "averageViewDuration",
+];
+/** PT の暦日 day の 0:00 の UTC の時刻（夏時間は UTC 07:00、冬時間は 08:00） */
+export function ptMidnightUtc(day) {
+  const hit = /^\d{4}-\d{2}-\d{2}$/.test(day ?? "")
+    ? ["07", "08"]
+        .map((h) => new Date(`${day}T${h}:00:00Z`))
+        .find(
+          (t) => ptDate(t) === day && ptDate(new Date(t.getTime() - 1)) !== day,
+        )
+    : null;
+  if (!hit) throw new Error(`PT の 0:00 を出せない日付: ${day}`);
+  return hit.toISOString();
+}
 const RACE_ID_RE = /^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/;
 /** 時刻を JST の YYYY-MM-DD にする */
 const toJstDay = (iso) =>
@@ -50,6 +84,8 @@ const def = {
     `YouTube Analytics reports dimensions=day・チャネル全体・${m}・太平洋時間の暦日・v1`,
   ytVideo: (m) =>
     `YouTube Analytics reports dimensions=day filters=video・${m}・太平洋時間の暦日・v1`,
+  ytEngaged: (m) =>
+    `YouTube Analytics reports filters=video・${m}・太平洋時間の暦日で投稿日から${ENGAGED_PT_DAYS}日の和（窓 pt3d、終わりは PT の${ENGAGED_PT_DAYS}日目の翌日 0:00）・D−3 より前になってから・v1`,
   ga4Channel: (m) =>
     `GA4 ${m}・hostName=${SITE_HOST}・sessionSource は X・YouTube の完全一致のリスト・流入元ごとの和・JST の暦日・Cookie 同意者のみ・v1`,
   // 全貌（utm_content=race_id）は X・YouTube と utm_term（full・shorts）で分ける
@@ -91,6 +127,7 @@ const rowKey = (r) =>
  * ga4 が null なら鍵が未設定
  */
 export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
+  const startedMs = Date.now();
   const now = ctx.now();
   const observedAt = now.toISOString();
   const jstDays = range(ctx.targetDate);
@@ -107,10 +144,28 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
     });
   let expected = 0;
 
+  let observations = [];
   try {
     const yt = await youtube();
     expected += ptDays.length * CHANNEL_METRICS.length;
-    await collectYoutube({ yt, store, ptDays, now, push });
+    const videos = await store.youtubeVideos(
+      new Date(now.getTime() - ENGAGED_LOOKBACK_DAYS * 86400000).toISOString(),
+    );
+    await collectYoutube({ yt, videos, ptDays, push });
+    // 観測（pt3d）は日次の表と別に失敗を数える。動画ごとの失敗は collectEngaged の中で errors に入れて次へ進む
+    try {
+      observations = await collectEngaged({
+        yt,
+        store,
+        videos,
+        ptDays,
+        now,
+        startedMs,
+        errors,
+      });
+    } catch (error) {
+      errors.push(`engagedViews の観測の準備: ${error.message}`);
+    }
   } catch (error) {
     errors.push(`YouTube Analytics: ${error.message}`);
   }
@@ -153,12 +208,34 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
   if (live)
     for (let i = 0; i < changed.length; i += UPSERT_CHUNK)
       await store.upsert(changed.slice(i, i + UPSERT_CHUNK));
+  let observed = 0;
+  if (live)
+    for (const { draft_id, observation } of observations) {
+      try {
+        await store.appendObservation(draft_id, observation);
+        observed += 1;
+      } catch (error) {
+        // 175 の前（窓の CHECK に pt3d が無い）は、日次の取り込みを失敗にせず知らせる（当てれば次の日から入る）。
+        // 判定は窓の CHECK の名前だけ。ほかの CHECK 違反（期間の式等）は本当の不整合なので失敗にする（system-architect の審査 P2-2）
+        if (/sns_metric_observations_window_check/.test(error.message)) {
+          alerts.push({
+            key: "engaged_window_unapplied",
+            text: "SNS の日次の取り込み: 動画ごとの engagedViews（pt3d）を sns_metric_observations に入れられない。マイグレーション 175 が未適用",
+          });
+          break;
+        }
+        // 1件の失敗で残りの動画を止めない（system-architect の審査 P3-1）
+        errors.push(`engagedViews の観測（${draft_id}）: ${error.message}`);
+      }
+    }
 
   const report = {
     jstDays,
     ptDays,
     parsed: rows.length,
     changed: changed.length,
+    observations: observations.length,
+    observed,
     alerts,
   };
   return {
@@ -173,7 +250,7 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
   };
 }
 
-async function collectYoutube({ yt, store, ptDays, now, push }) {
+async function collectYoutube({ yt, videos, ptDays, push }) {
   const channelRows = await yt.report({
     startDate: ptDays[0],
     endDate: ptDays.at(-1),
@@ -192,9 +269,8 @@ async function collectYoutube({ yt, store, ptDays, now, push }) {
         }),
       );
 
-  // 投稿日が D−4 以降の動画（翌日が取り直しの範囲に入る）。動画ごとに1回（クォータ1）
-  const since = new Date(now.getTime() - 6 * 86400000).toISOString();
-  for (const video of await store.youtubeVideos(since)) {
+  // 投稿日か翌日が取り直しの範囲に入る動画だけ。動画ごとに1回（クォータ1）
+  for (const video of videos) {
     const posted = ptDate(new Date(video.posted_at));
     const days = [posted, addDays(posted, 1)].filter((d) => ptDays.includes(d));
     if (!days.length || !video.external_post_id) continue;
@@ -218,6 +294,98 @@ async function collectYoutube({ yt, store, ptDays, now, push }) {
           }),
         );
   }
+}
+
+/**
+ * pt3d の観測（sns_metric_observations、append_sns_metric_observation に渡す形）。投稿日から3日目が D−3 より前の動画で、
+ * まだ値の入った観測が無いものだけ。動画ごとに1回（クォータ1）。engagedViews は分母 views を持つ
+ */
+async function collectEngaged({
+  yt,
+  store,
+  videos,
+  ptDays,
+  now,
+  startedMs = Date.now(),
+  errors = [],
+}) {
+  const due = videos.filter(
+    (v) =>
+      v.external_post_id &&
+      v.posted_at &&
+      // D−3 は今日も取り直す日（反映が日で揺れる）なので、それより前だけ（system-architect の審査 P2-3）
+      addDays(ptDate(new Date(v.posted_at)), ENGAGED_PT_DAYS - 1) < ptDays[0],
+  );
+  if (!due.length) return [];
+  // 指標ごとに、まだ入れる要るものだけを残す（Codex の審査 P1: 4指標は別々に保存するので、1つだけ落ちても取り直す）。
+  // 入れない: 値のある観測がある指標（engagedViews は分母も）と、直近（同じ日の2回目の起動）に欠測で入れた指標
+  const since = now.getTime() - ENGAGED_RETRY_HOURS * 3600000;
+  const settled = new Set(
+    (
+      await store.engagedObservations(
+        due.map((v) => v.draft_id),
+        ENGAGED_METRICS,
+      )
+    )
+      .filter(
+        (o) =>
+          o.definition === def.ytEngaged(o.metric_name) &&
+          ((o.metric_value !== null &&
+            (o.metric_name !== "engagedViews" ||
+              o.denominator_value !== null)) ||
+            Date.parse(o.observed_at) >= since),
+      )
+      .map((o) => `${o.draft_id}|${o.metric_name}`),
+  );
+  const pending = (v) =>
+    ENGAGED_METRICS.filter((m) => !settled.has(`${v.draft_id}|${m}`));
+  const out = [];
+  for (const video of due.filter((v) => pending(v).length)) {
+    if (Date.now() - startedMs > ENGAGED_BUDGET_MS) break; // 残りは次の起動（値が入るまで毎日やり直す）
+    const start = ptDate(new Date(video.posted_at));
+    let row;
+    try {
+      [row] = await yt.report({
+        startDate: start,
+        endDate: addDays(start, ENGAGED_PT_DAYS - 1),
+        metrics: ENGAGED_METRICS.join(","),
+        filters: `video==${video.external_post_id}`,
+      });
+    } catch (error) {
+      // 1本の失敗で残りの動画を止めない。この動画は次の日にやり直す
+      errors.push(
+        `engagedViews の観測（${video.draft_id}）の読み取り: ${error.message}`,
+      );
+      continue;
+    }
+    const periodEnd = ptMidnightUtc(addDays(start, ENGAGED_PT_DAYS));
+    const value = (m) =>
+      Number.isFinite(row?.[m]) && row[m] >= 0 ? row[m] : null;
+    for (const metric of pending(video)) {
+      const v = value(metric);
+      out.push({
+        draft_id: video.draft_id,
+        observation: {
+          window: ENGAGED_WINDOW,
+          external_post_id: video.external_post_id,
+          observed_at: now.toISOString(),
+          period_start: video.posted_at,
+          period_end: periodEnd,
+          data_through: v === null ? null : periodEnd,
+          source: "youtube-analytics",
+          metric_name: metric,
+          metric_value: v,
+          missing_reason: v === null ? YT_MISSING : null,
+          definition: def.ytEngaged(metric),
+          measurement_kind: "period",
+          ...(metric === "engagedViews" && value("views") !== null
+            ? { denominator_name: "views", denominator_value: value("views") }
+            : {}),
+        },
+      });
+    }
+  }
+  return out;
 }
 
 function ytRow({ day, metric, row, definition, draft_id = null }) {
@@ -328,7 +496,9 @@ async function collectGa4({ runReport, store, jstDays, push }) {
   ];
   // 全貌の完全版の機能への導線は utm_content が「レース ID/sonar」「レース ID/assist」（hq 契約 10/24 C1）。下書きの結びつけはレース ID で
   const raceKey = (c) => String(c).split("/")[0];
-  const raceIds = [...new Set(contents.map(raceKey).filter((c) => RACE_ID_RE.test(c)))];
+  const raceIds = [
+    ...new Set(contents.map(raceKey).filter((c) => RACE_ID_RE.test(c))),
+  ];
   const [known, fullPicture] = await Promise.all([
     candidates.length ? store.existingDrafts(candidates) : [],
     raceIds.length ? store.fullPictureDrafts(raceIds) : [],
@@ -477,6 +647,38 @@ export function createSnsDailyStore({ url, key, fetchImpl = fetch }) {
     return response.json();
   }
   return {
+    // pt3d の観測（入れ直すかは runner が指標と定義ごとに決める）
+    engagedObservations: (draftIds, metrics) =>
+      get(
+        `sns_metric_observations?window=eq.${ENGAGED_WINDOW}&source=eq.youtube-analytics&metric_name=in.(${metrics.join(",")})&draft_id=in.(${draftIds.join(",")})&select=draft_id,metric_name,definition,metric_value,denominator_value,observed_at`,
+      ),
+    async appendObservation(draftId, observation) {
+      const response = await fetchImpl(
+        `${url}/rest/v1/rpc/append_sns_metric_observation`,
+        {
+          method: "POST",
+          headers: { ...headers, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            p_draft_id: draftId,
+            p_observation: observation,
+          }),
+        },
+      );
+      if (!response.ok) {
+        // PostgREST の本文は details（失敗した行の全体）が長く、先頭で切ると制約名が落ちる。code と message だけを残す
+        const text = await response.text();
+        let detail = text;
+        try {
+          const body = JSON.parse(text);
+          detail = `${body.code ?? ""} ${body.message ?? ""}`.trim() || text;
+        } catch {
+          // JSON でなければ本文のまま
+        }
+        throw new Error(
+          `観測の保存に失敗: HTTP ${response.status} ${detail.slice(0, 300)}`,
+        );
+      }
+    },
     youtubeVideos: (since) =>
       get(
         `sns_x_send_jobs?channel=eq.youtube&state=eq.posted&posted_at=gte.${encodeURIComponent(since)}&select=draft_id,external_post_id,posted_at`,
