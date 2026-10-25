@@ -569,7 +569,7 @@ export function SummaryPage({ groups, footer }) {
  * 0秒から答えの言葉・数字・範囲を出し（X のプレビュー・Shorts の最初のコマ）、2.5秒から比べる棒が伸びる。下に形の説明。
  * x60〜940・y≤1420（Shorts の右の操作・下の帯に重ねない）。字は幅に収まらなければ fit1 で詰める
  */
-export function AnswerPage({ labelLines = [], value, base, note }) {
+export function AnswerPage({ labelLines = [], value, base, fallbackNote = null, note }) {
   const Wd = 880;
   // 1行に収まらなければ2行まで折り返す（最小の字 36px より詰めない）。それでも収まらなければ止める（黙ってはみ出さない）
   const fit = (txt, max, weight, lines = 2) => {
@@ -595,6 +595,7 @@ export function AnswerPage({ labelLines = [], value, base, note }) {
       ))}
       <div style={{ marginTop: 40, fontSize: 260, fontWeight: 900, color: TEXT, lineHeight: 1, whiteSpace: "nowrap" }}>{value}</div>
       <Text txt={base} max={48} weight={700} color={TEXT} lines={1} mt={36} />
+      {fallbackNote && <Text txt={fallbackNote} max={38} weight={600} color={MUTED} lines={1} mt={8} />}
       <Text txt={note} max={38} weight={600} color={MUTED} lines={1} mt={70} />
     </div>
   );

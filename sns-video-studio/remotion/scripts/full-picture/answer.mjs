@@ -12,12 +12,12 @@ const pct1 = (k, n) => Math.round((k / n) * 1000) / 10;
 /** 1号艇が1着の件数（3連単の件数の表から） */
 const win1 = (cell) => Object.entries(cell?.tri ?? {}).filter(([k]) => k.startsWith("1-")).reduce((s, [, c]) => s + c, 0);
 
-/** 範囲の札（例「住之江・級の組み合わせが同じ・2019/4〜2026/10・枠なり」）。scope は "VC:12:..."（会場）か "NC:..."（全国） */
+/** 範囲の札（例「住之江・同じ級別の組み合わせ・2019/4〜2026/10・枠なり」。6艇比較の脚注と同じ語）。scope は "VC:12:..."（会場）か "NC:..."（全国） */
 export function scopeLabel(scope, period, venueName) {
   const where = String(scope ?? "").startsWith("VC:") ? venueName : "全国";
   const ym = (d) => (d ? `${Number(d.slice(0, 4))}/${Number(d.slice(5, 7))}` : null);
   const span = period?.[0] && period?.[1] ? `・${ym(period[0])}〜${ym(period[1])}` : "";
-  return `${where}・級の組み合わせが同じ${span}・枠なり`;
+  return `${where}・同じ級別の組み合わせ${span}・枠なり`;
 }
 
 /**

@@ -123,7 +123,9 @@ function answerPage() {
       // 冒頭は答えに要るものだけ（オーナー 10/25「文字が多いという印象」）。形の事実は結論の場面、期間は本文と説明文
       labelLines: a.labelLines,
       value: `${a.p0.toFixed(1)}%`,
-      base: `${String(m.api.scenario?.scope ?? "").startsWith("VC:") ? venueLabel(Number(venueCode), t) : "全国"}・同じ級の組み合わせ ${a.n0.toLocaleString("ja-JP")}件`,
+      base: `${String(m.api.scenario?.scope ?? "").startsWith("VC:") ? venueLabel(Number(venueCode), t) : "全国"}・同じ級別の組み合わせ ${a.n0.toLocaleString("ja-JP")}件`,
+      // 会場の過去が少なく全国に替わった日は、題の会場名と数字の範囲が違うので一言添える（youtube-channel・x-channel 2026-10-25 P2、オーナー可）
+      fallbackNote: m.api.scenario?.vc_fell_back != null ? "会場の過去が少ないため全国" : null, // vc_fell_back は全国に替わったときだけ会場の件数が入る（会場で取れた日は null）
       note: "過去の割合。今日の結果を示すものではない",
     },
   };
@@ -277,7 +279,7 @@ const bundleText = (qa, chaptersText = chapters(entryAnswers), fullSeconds = ful
     fullSeconds,
     qa,
     contentType: type?.id ?? null,
-    answer: answer ? { n0: answer.n0, k0: answer.k0, p0: answer.p0, scope: scopeLabel(m.api.scenario?.scope, m.api.scenario?.scenario?.period, venueLabel(Number(venueCode), t)) } : null,
+    answer: answer ? { label: answer.label, n0: answer.n0, k0: answer.k0, p0: answer.p0, scope: scopeLabel(m.api.scenario?.scope, m.api.scenario?.scenario?.period, venueLabel(Number(venueCode), t)) } : null,
   });
 const preBundle = bundleText({});
 const postEntry = `${preBundle.x_text}\n`;
