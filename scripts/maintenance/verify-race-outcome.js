@@ -82,6 +82,50 @@ function runChecks(m) {
   const check = (name, ok, detail = "") => results.push({ name, ok, detail });
   const show = (v) => JSON.stringify(v);
 
+  // BOA-1118: キーの形・型変換・補完の優先順位を直接固定する。
+  const refundCases = [
+    ["null", null, []],
+    ["undefined", undefined, []],
+    ["空オブジェクト", {}, []],
+    ["空配列", { refundBoats: [] }, []],
+    ["数値の配列", { refundBoats: [1, 3] }, [1, 3]],
+    ["生の行のキー", { refund_boats: [2] }, [2]],
+    ["文字列の配列", { refundBoats: ["3", "5"] }, [3, 5]],
+    ["空白付きの文字列", { refundBoats: [" 2 "] }, [2]],
+    ["null は生の行で補完", { refundBoats: null, refund_boats: [6] }, [6]],
+    ["空配列は補完しない", { refundBoats: [], refund_boats: [6] }, []],
+    ["配列以外", { refundBoats: "1,2" }, []],
+    ["整数以外を除外", { refundBoats: [1, "x", 2.5, 4] }, [1, 4]],
+  ];
+  for (const [label, input, expected] of refundCases) {
+    const got = m.getRefundBoats(input);
+    check(
+      `getRefundBoats: ${label}`,
+      show(got) === show(expected),
+      `got=${show(got)}`,
+    );
+  }
+
+  const winnerCases = [
+    ["null", [null], null],
+    ["undefined は補完しない", [undefined, 3], null],
+    ["1着なしは補完しない", [{ rank1: null }, 2], null],
+    ["actual_course を優先", [{ rank1: 3, actual_course_3: 2 }, 4], 2],
+    ["actual_course が null なら補完", [{ rank1: 3, actual_course_3: null }, 4], 4],
+    ["actual_course が無ければ補完", [{ rank1: 3 }, 4], 4],
+    ["補完値を省略", [{ rank1: 3 }], null],
+    ["補完値が null", [{ rank1: 3 }, null], null],
+    ["文字列の艇番", [{ rank1: "3", actual_course_3: 2 }, null], 2],
+  ];
+  for (const [label, args, expected] of winnerCases) {
+    const got = m.winnerEntryCourseOf(...args);
+    check(
+      `winnerEntryCourseOf: ${label}`,
+      show(got) === show(expected),
+      `got=${show(got)}`,
+    );
+  }
+
   // 1. 成立状態
   check(
     "不成立: race_status='no_race' → no_race",
@@ -400,6 +444,16 @@ for (const p of problems) {
 // 変異検証
 const MUTANTS = [
   {
+    name: "getRefundBoats が整数以外を除かない",
+    from: ".filter((boat) => Number.isInteger(boat))",
+    to: "",
+  },
+  {
+    name: "winnerEntryCourseOf が actual_course を優先しない",
+    from: "if (actual != null) return actual;",
+    to: "",
+  },
+  {
     name: "race_status が NULL のとき is_no_race を見る",
     from: "const status = result?.raceStatus ?? result?.race_status ?? null;",
     to: 'const status = result?.raceStatus ?? result?.race_status ?? (result?.isNoRace ? "no_race" : null);',
@@ -456,6 +510,29 @@ for (const [i, mutant] of MUTANTS.entries()) {
   }
 }
 fs.rmSync(tmp, { recursive: true, force: true });
+
+// DB の整数列では起きない入力。仕様未定のため assert・変異判定には含めない。
+const KNOWN_GAPS = [
+  {
+    input: 'getRefundBoats({refundBoats: [null, 0, 7, true]})',
+    specification: "型変換で生じる値・艇番の範囲外の扱いは未定",
+    current: () => target.getRefundBoats({ refundBoats: [null, 0, 7, true] }),
+  },
+  {
+    input: 'winnerEntryCourseOf({rank1: 3, actual_course_3: 0}, 4)',
+    specification: "actual_course が 0 の扱いは未定",
+    current: () => target.winnerEntryCourseOf({ rank1: 3, actual_course_3: 0 }, 4),
+  },
+  {
+    input: 'winnerEntryCourseOf({rank1: 0}, 1)',
+    specification: "rank1 が 0 の扱いは未定",
+    current: () => target.winnerEntryCourseOf({ rank1: 0 }, 1),
+  },
+];
+console.log(`\n## KNOWN_GAPS: ${KNOWN_GAPS.length}件（判定対象外）`);
+for (const gap of KNOWN_GAPS) {
+  console.log(`${gap.input}: ${gap.specification} / 今の値=${JSON.stringify(gap.current())}`);
+}
 
 if (failed > 0) {
   console.error(`\nNG: ${failed}件`);
