@@ -152,7 +152,7 @@
                     }
                   },
                   "entry_tendency": {
-                    "$comment": "racer_aggregated_stats（venue_code=0＝全国）の course_entry_tendency.all のこの枠の {n, courses}（courses はコース→回数）と since。venue は会場の分（無ければ null）。任意の欄",
+                    "$comment": "racer_aggregated_stats（venue_code=0＝全国）の course_entry_tendency.all のこの枠の {n, courses}（courses はコース→回数）と since。facts の racers.boats[].course_entry から写す。venue は会場の分（無ければ null）。任意の欄",
                     "type": ["object", "null"],
                     "required": ["boat_number", "n", "courses", "since"],
                     "properties": {
@@ -197,7 +197,7 @@
               "type": ["object", "null"],
               "required": ["race_grade", "courses", "all"],
               "properties": {
-                "race_grade": { "enum": ["SG", "G1", "G2", "G3", "ippan"] },
+                "race_grade": { "type": "string" },
                 "courses": { "type": "array", "items": { "$ref": "#/definitions/venueCourseRow" } },
                 "all": { "type": "array", "items": { "$ref": "#/definitions/venueCourseRow" } }
               }

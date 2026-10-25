@@ -661,7 +661,13 @@ for (const f of fixtures) {
   // 5号艇は進入と体重も欠ける（選手のコース別の成績は枠番で引く）
   const exRows = [row(1, { start_flag: "F", start_timing: 0.01, parts_changed: ["リング", "ピストン"], today_weight: 52.3 }), row(2, { propeller_change: "新", today_weight: 50 }), row(3, { exhibition_course: 4, today_weight: 51 }), row(4, { exhibition_course: 3, today_weight: 53 }), row(5, { tilt: null, exhibition_course: null, today_weight: null })];
   // 今節の走は facts の racers.boats[].meet_runs（固定の材料は racers を写していないので足す）。1号艇は2走（2走目は結果の行が無い）、3号艇は racers に無い
-  m.api.facts.racers = { meet_start: "2026-10-10", boats: [1, 2, 4, 5, 6].map((n) => ({ boat_number: n, meet_runs: n === 1 ? [{ race_id: "2026-10-11-01-03", boat_number: 2 }, { race_id: "2026-10-10-01-05", boat_number: 4 }, { race_id: "2026-10-12-01-02", boat_number: 1 }] : [] })) };
+  // 進入の分布は facts の racers.boats[].course_entry（racer_aggregated_stats）。1号艇は全国と会場の分、2号艇は行が無い、
+  // 4号艇は集計がこのレース以後の出走を含む（after_race）、5号艇はこの枠の進入が無い
+  const courseEntry = {
+    1: { since: "2025-10-11", calculated_at: "2026-10-11T14:23:07+00:00", all: { 1: { n: 36, courses: { 1: 35, 2: 1 } } }, venue: { 1: { n: 3, courses: { 1: 3 } } } },
+    5: { since: "2025-10-11", calculated_at: "2026-10-11T14:23:07+00:00", all: { 1: { n: 2, courses: { 1: 2 } } }, venue: null },
+  };
+  m.api.facts.racers = { meet_start: "2026-10-10", boats: [1, 2, 4, 5, 6].map((n) => ({ boat_number: n, course_entry: courseEntry[n] ?? null, after_race: n === 4, meet_runs: n === 1 ? [{ race_id: "2026-10-11-01-03", boat_number: 2 }, { race_id: "2026-10-10-01-05", boat_number: 4 }, { race_id: "2026-10-12-01-02", boat_number: 1 }] : [] })) };
   const startRows = [{ race_id: "2026-10-10-01-05", boat_number: 4, finish_mark: "1", finish_rank: 1 }, { race_id: "2026-10-11-01-03", boat_number: 2, finish_mark: "F", finish_rank: null }];
   const entryRows = [1, 2, 3, 4, 5].map((n) => ({ boat_number: n, racer_id: 4000 + n, f_count: n === 1 ? 1 : n === 5 ? null : 0 }));
   const technique = {
@@ -678,13 +684,6 @@ for (const f of fixtures) {
     racer_course_technique_stats: [tech(4001, 1), tech(4001, 2), tech(4003, 3), tech(4003, 4, { window_end: date }), tech(4004, 3), tech(4005, 5)],
     // 1号艇は締めた期（2026-04-30）とレースの日より後に締めた期（2026-10-31）。後者は使わない。2号艇は期が無い
     racer_period_stats: [period(4001, 2026, 1, "2026-04-30", 1), period(4001, 2026, 2, "2026-10-31", 9), period(4001, 2025, 2, "2025-10-31", 2), period(4003, 2026, 1, "2026-04-30", 3), period(4004, 2026, 1, "2026-04-30", 4), period(4005, 2026, 1, "2026-04-30", 5)],
-    // 1号艇は全国と会場の分、4号艇はレースの日の夜の集計（このレースを含みうる）、5号艇はこの枠の進入が無い、2号艇は行が無い
-    racer_aggregated_stats: [
-      { racer_id: 4001, course_entry_tendency: { all: { 1: { n: 36, courses: { 1: 35, 2: 1 } } }, since: "2025-10-11", venues: { [String(m.venueCode)]: { 1: { n: 3, courses: { 1: 3 } } } } }, calculated_at: "2026-10-11T14:23:07+00:00" },
-      { racer_id: 4003, course_entry_tendency: { all: { 3: { n: 34, courses: { 3: 28, 4: 6 } } }, since: "2025-10-11", venues: {} }, calculated_at: "2026-10-11T14:23:07+00:00" },
-      { racer_id: 4004, course_entry_tendency: { all: { 4: { n: 29, courses: { 4: 27, 3: 2 } } }, since: "2025-10-11" }, calculated_at: `${date}T14:23:07+00:00` },
-      { racer_id: 4005, course_entry_tendency: { all: { 1: { n: 2, courses: { 1: 2 } } }, since: "2025-10-11" }, calculated_at: "2026-10-11T14:23:07+00:00" },
-    ],
   };
   const vRow = (race_grade, course, over = {}) => ({ race_grade, course, runs: 136, nige_rate: course === 1 ? 62.2 : null, makuri_rate: course === 1 ? 0 : 5.1, nigashi_rate: course === 1 ? null : 62.2, window_start: "2025-12-02", window_end: "2026-10-11", last_updated: "2026-10-12", ...over });
   // G1 は6コースが欠け、ALL は6コースそろう
@@ -709,9 +708,9 @@ for (const f of fixtures) {
         if (racerTables[table]) {
           seenQueries.push(`${table}?${decodeURIComponent(String(q))}`);
           const ids = listParam(q.get("racer_id")).map(Number);
-          const lt = q.get("calc_to")?.replace(/^lt\./, "");
-          // PostgREST の絞り込みと並べ替えの代わり（calc_to=lt.・order=calc_to.desc）
-          const rows = racerTables[table].filter((r) => ids.includes(r.racer_id) && (!lt || r.calc_to < lt));
+          const [, lt, gte] = q.get("and")?.match(/^\(calc_to\.lt\.([\d-]+),calc_to\.gte\.([\d-]+)\)$/) ?? [];
+          // PostgREST の絞り込みと並べ替えの代わり（and=(calc_to.lt.,calc_to.gte.)・order=calc_to.desc）
+          const rows = racerTables[table].filter((r) => ids.includes(r.racer_id) && (!lt || (r.calc_to < lt && r.calc_to >= gte)));
           return json(table === "racer_period_stats" ? [...rows].sort((a, b) => b.calc_to.localeCompare(a.calc_to)) : rows);
         }
         if (table === "venue_course_technique_baseline") {
@@ -801,14 +800,15 @@ for (const f of fixtures) {
     "calc_to < レースの日 の最新の期の、その進入コースの cN_*（レースの日より後に締めた期は使わない）",
   );
   assert.deepEqual([boats[2].period_course?.course, boats[2].period_course?.entries], [4, 34], "期の成績も進入コースの列（c4_*）");
-  assert.ok(seenQueries.some((x) => x.startsWith("racer_period_stats?") && x.includes(`calc_to=lt.${date}`)), "期は calc_to < レースの日 で読む");
+  assert.ok(seenQueries.some((x) => x.startsWith("racer_period_stats?") && x.includes(`calc_to.lt.${date}`)), "期は calc_to < レースの日 で読む");
   assert.equal(boats[1].period_course, null, "期の無い選手は null");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.2.period_course"), "期の無い選手を記録");
   assert.deepEqual(boats[0].entry_tendency, { boat_number: 1, n: 36, courses: { 1: 35, 2: 1 }, venue: { n: 3, courses: { 1: 3 } }, since: "2025-10-11", calculated_at: "2026-10-11T14:23:07+00:00" }, "その枠の進入の分布と since");
-  assert.equal(boats[2].entry_tendency?.venue, null, "会場の分が無ければ venue は null");
   assert.equal(boats[4].entry_tendency, null, "その枠の進入が無ければ null");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.entry_tendency" && /5号艇の進入が無い/.test(x.reason)), "枠の進入が無いことを記録");
-  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.4.entry_tendency" && /racer_aggregated_stats はレースの日.*より後の集計/.test(x.reason)), "レースの日の夜の集計を記録");
+  assert.equal(boats[3].entry_tendency, null, "集計がこのレース以後の出走を含めば null（API と同じ）");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.4.entry_tendency" && /racer_aggregated_stats はレースの日.*より後の集計/.test(x.reason)), "レースの日より後の集計を記録");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.3.entry_tendency" && /racers にこの艇が無い/.test(x.reason)), "racers に無い艇を記録");
   assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.2.entry_tendency" && /全国の行が無い/.test(x.reason)), "行の無い選手を記録");
   for (const k of ["course_technique", "period_course", "entry_tendency"]) {
     assert.equal(boats[5][k], null, `選手の分からない艇の ${k} は null`);
@@ -860,6 +860,8 @@ for (const f of fixtures) {
   const noRacers = await run({ conditions: pre, racers: null });
   assert.ok(noRacers.db.exhibition.boats.every((b) => b.meet_finishes === null), "facts に racers が無ければ今節の着順は null");
   assert.ok(noRacers.missing.some((x) => x.source === "db.exhibition.boats.meet_finishes"), "racers が無いことを記録");
+  assert.ok(noRacers.db.exhibition.boats.every((b) => b.entry_tendency === null), "facts に racers が無ければ進入の分布は null");
+  assert.ok(noRacers.missing.some((x) => x.source === "db.exhibition.boats.1.entry_tendency" && /racers が無い/.test(x.reason)), "進入の分布の欠けを記録");
   assert.ok(empty.db.exhibition.boats.every((b) => b.exhibition_course === null && b.start_timing === null), "展示前は進入・ST が null");
   assert.ok(empty.db.exhibition.boats.every((b) => b.course === b.boat_number && b.course_source === "boat_number" && b.course_technique === null), "展示前は枠番で引き、選手が分からなければ null");
   assert.deepEqual(empty.db.exhibition.conditions, { weather: null, wind_direction: null, wind_speed: null, wave_height: null, observedAt: null });
