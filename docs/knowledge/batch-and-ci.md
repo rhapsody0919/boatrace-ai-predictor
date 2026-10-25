@@ -6,6 +6,8 @@
 - 定時のジョブは、定時の実行の成功を見てから完了とする。手動で作った分の時刻が偶然条件を満たし、定時では一度も成功しないまま完了扱いになった例がある（2026-09-25、memory morning_data_digest_2026_09_25、BOA-402）
 - GitHub Actions の定時実行は実測で2.5〜4.5時間遅れることが多い。時刻が大事な取得・集計は Vercel Cron に置く（2026-09-25、memory morning_data_digest_2026_09_25、ADR-0066）
 - scrape_job_state の mode が off でも、kind が monitor のジョブ（scrape-monitor・scrape-cleanup）は5分ごとに動く。last_report は10分ごとに上書きされるので過去の判断の証拠に使えない（2026-09-28、memory project_data_foundation_orchestration_2026_09_19、PR #874）
+- オリジナル展示（boatcast_oriten）は1レース1スロット（期限は発走20分前）で、未公開の間は発走6分前まで2分おき、その後1分前・7分後の最大10回。10/18〜10/24 の races では1分あたり最大6件・1日約700〜980回の取得（旧の発走8分前の1回は約130〜200回）。締切8分前に DB にある割合は旧1.2%、新は公開が10分前以前の91%（2026-10-25、registry.js・oritenRows.js の decideNotPublished、race_original_exhibition.source_last_modified の実測）
+- 窓型ジョブの offset を変えると、races-init（朝）が作った旧 offset のスロットと新しい offset のスロットが同じレースに並ぶ。オリジナル展示は createOritenStore の ensureSlots が既存スロットのあるレースを飛ばす（2026-10-25、oritenJob.js）
 - Routine を起動する Vercel の環境変数（*_FIRE_URL・*_FIRE_TOKEN）が未設定でも、fireRoutine は {fired:false, reason:"not_configured"} を返して黙って飛ばす。送られていないのにエラーにならない（2026-09-24、memory claude_account_migration_runbook、api/_lib/snsHubHelpers.js）
 
 ## API のキャッシュ

@@ -2,9 +2,10 @@
  * BOATCASTのオリジナル展示（bc_oriten。N25）の取得ジョブ（docs/design/boatcast-original-exhibition/）。
  * api/cron/boatcast-oriten.js が、共通ラッパ（scripts/lib/scrapeJobs/cronWrapper.js）経由で使う。
  *
- * 窓型ジョブ（レジストリ boatcast_oriten）。1スロット＝1レース。期限は発走の8分前（公開は発走の9.9〜29.0分前に
- * 現れる実測。oritenRows.js の decideNotPublished）。対象は、公開マップ（publicMap.js）で status='public' の会場の
- * 全レースだけ（createOritenStore が、予定表のスロットを対象会場のレースにだけ作る）。
+ * 窓型ジョブ（レジストリ boatcast_oriten）。1スロット＝1レース。期限は発走の20分前で、未公開の間は発走の6分前まで
+ * 2分おきに取り、取れたら完了（公開は発走の2.3〜25.2分前の実測。oritenRows.js の decideNotPublished）。対象は、公開マップ
+ * （publicMap.js）で status='public' の会場の全レースだけ（createOritenStore が、予定表のスロットを対象会場のレースにだけ、
+ * 1レース1本だけ作る）。
  * 取得・解析・書き込みの本体 processOritenRace は、定期取得と過去分の一括取得（将来のCLI）が共有する。
  *
  * モード（scrape_job_state.mode。DBの更新のみで切り替える）:
@@ -14,7 +15,7 @@
  *
  * 403の扱い（boatcastClient.js の冒頭を参照）: 各tickの先頭（スロットを取った後の最初の取得の前）で、既知の存在ファイル
  * （カナリア）を1回取る。カナリアが失敗なら、その回の取得を全て止め、alerts に出す。カナリアが正常なときの403は、
- * 「未公開または公開されないレース」として、最大3回まで再試行し、打ち切る（skipped_not_target）。
+ * 「未公開または公開されないレース」として、最大10回（窓の8回＋発走の約1分前・約7分後）まで再試行し、打ち切る（skipped_not_target）。
  *
  * 書き込みの順序: 艇×項目の行 → レース単位の行（content_hash は「書き込み完了」の目印）。途中で失敗しても、
  * 次の取得が同じ内容を書き直す。マイグレーション091が未適用のDBでは、書かずに error を返す（成功にしない）。
@@ -435,12 +436,16 @@ export function createOritenSlotHandler({
 
     const race = await load(ctx.client, slot.race_id);
     const now = ctx.now();
+    // 発走までの分は、claim した時刻（同じ起動のスロットで共通）から測る。処理の順番（1起動で最大 claimLimit 件を逐次）で
+    // 測る時刻がずれ、窓（2分おき）と後段の境目（decideNotPublished）をまたがないようにする
+    const claimedMs = new Date(slot.last_attempt_at ?? NaN).getTime();
+    const basisMs = Number.isFinite(claimedMs) ? claimedMs : now.getTime();
     let minutesToStart;
     try {
       if (race?.race_date && race?.start_time) {
         minutesToStart =
           (raceStartInstant(race.race_date, race.start_time).getTime() -
-            now.getTime()) /
+            basisMs) /
           60000;
       }
     } catch {
@@ -523,9 +528,24 @@ export function createOritenStore(
           `予定表の対象レースの取得に失敗しました: ${error.message}`,
         );
       }
+      // 既にこのジョブのスロットがあるレース（offset を変えた日の旧 offset のスロットを含む）には作らない。
+      // 1レース1本の再試行の列にして、窓の取得を二重にしない（offsets が1つの前提。verify-boatcast-job.js が固定する）
+      const { data: existing, error: existingError } = await client
+        .from("scrape_slots")
+        .select("race_id")
+        .eq("job", ORITEN_JOB)
+        .eq("race_date", date);
+      if (existingError) {
+        throw new Error(
+          `予定表の既存スロットの取得に失敗しました: ${existingError.message}`,
+        );
+      }
+      const hasSlot = new Set((existing ?? []).map((s) => s.race_id));
       const rows = (data ?? [])
         .filter(
-          (r) => venueEntry(venueOfRaceId(r.race_id), map)?.status === "public",
+          (r) =>
+            !hasSlot.has(r.race_id) &&
+            venueEntry(venueOfRaceId(r.race_id), map)?.status === "public",
         )
         .flatMap((r) =>
           def.offsets
