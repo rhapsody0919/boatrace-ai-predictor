@@ -1382,6 +1382,11 @@
       "guards": "BOA-1112: ST・F/L・レースタイムの表記別戻り値と結果・展示STの整合。未確定表記はKNOWN_GAPSで表示"
     },
     {
+      "script": "verify-statistical-tests.js",
+      "tier": "ci",
+      "guards": "BOA-1043: 統計検定4関数の既知値・対称性・早期return（ADR-0020、外部接続なし）"
+    },
+    {
       "script": "verify-technique-placement-tables.js",
       "tier": "ci",
       "guards": "BOA-1066: 決まり手6種の変換、コース別既定分布、着順21組の勝者除外と合計、30件境界・加重平均・全体平均の補完"
