@@ -470,6 +470,8 @@ export const FINAL_RIDE_KINDS = ["win", "run", "fl", "absent"];
 export const FINAL_MAIN_FROM = "2025-12-03";
 const FINAL_KB_TO = "2025-12-02";
 const FINALS_NULL = { final_race_record: null, period_finals: null };
+/** 優出・優勝回数の4期を読む範囲（期は半年。締めから公表までの間を見て900日。全期を読まない） */
+const PERIOD_FINALS_DAYS = 900;
 
 /**
  * 1走の分類（純関数）。absent=欠場（走数に入れない）、fl=F・L（返還。走数に入れ1着にしない）、win=1着、run=それ以外の走。
@@ -539,7 +541,8 @@ async function racerFinals(boats, raceId, date, missing) {
   if (!ids.length) return boats.map(() => FINALS_NULL);
   const racerIn = `racer_id=in.(${ids.join(",")})`;
   const main = async () => {
-    const stageRows = await sbGet("race_conditions", `select=race_id&race_stage=eq.${FINAL_STAGE}&and=(race_id.gte.${FINAL_MAIN_FROM},race_id.lt.${raceId})`);
+    // 優勝戦の一覧は1000行を超えうるので race_id の順で読む（並べ替えないとページの境で抜け・重なる。/code-review 2026-10-26 #1）
+    const stageRows = await sbGet("race_conditions", `select=race_id&race_stage=eq.${FINAL_STAGE}&and=(race_id.gte.${FINAL_MAIN_FROM},race_id.lt.${raceId})&order=race_id`);
     const entries = stageRows.length ? await sbIn("race_entries", "race_id,boat_number,racer_id,is_absent", "race_id", stageRows.map((r) => r.race_id), racerIn) : [];
     const rids = [...new Set(entries.map((e) => e.race_id))];
     const [results, races, st] = rids.length
@@ -554,7 +557,8 @@ async function racerFinals(boats, raceId, date, missing) {
     });
   };
   const kb = async () => {
-    const stageRows = await sbGet("kb_archive_races", `select=race_id,has_result&stage=eq.${FINAL_STAGE}&race_date=lte.${FINAL_KB_TO}`);
+    // アーカイブもこのレースより前に限る（2025-12-02 より前のレースで取り直したとき。/code-review 2026-10-26 #2）
+    const stageRows = await sbGet("kb_archive_races", `select=race_id,has_result&stage=eq.${FINAL_STAGE}&race_date=lte.${FINAL_KB_TO}&race_id=lt.${raceId}&order=race_id`);
     const rows = stageRows.length ? await sbIn("kb_archive_boats", "race_id,boat_number,racer_id,finish_raw", "race_id", stageRows.map((r) => r.race_id), racerIn) : [];
     return rows.map((b) => {
       const excluded = stageRows.find((r) => r.race_id === b.race_id)?.has_result ? null : "no_result";
@@ -564,7 +568,7 @@ async function racerFinals(boats, raceId, date, missing) {
   const [mainRides, kbRides, periods] = await Promise.all([
     main().catch(orNull(missing, "db.exhibition.boats.final_race_record")),
     kb().catch((e) => (missing.push({ source: "db.exhibition.boats.final_race_record.kb_archive", reason: `kb_archive が読めない（${e instanceof Error ? e.message : String(e)}。匿名キーは 074 で REVOKE 済み）。本体の窓（${FINAL_MAIN_FROM}〜）だけで数えた` }), null)),
-    sbGet("racer_period_stats", `select=racer_id,period_year,period_no,calc_from,calc_to,starts,finals,wins&${racerIn}&calc_to=lt.${date}&order=racer_id,calc_to.desc`).catch(orNull(missing, "db.exhibition.boats.period_finals")),
+    sbGet("racer_period_stats", `select=racer_id,period_year,period_no,calc_from,calc_to,starts,finals,wins&${racerIn}&and=(calc_to.lt.${date},calc_to.gte.${daysBefore(date, PERIOD_FINALS_DAYS)})&order=racer_id,calc_to.desc`).catch(orNull(missing, "db.exhibition.boats.period_finals")),
   ]);
   const windows = [
     { source: "races", from: FINAL_MAIN_FROM, to: null, read: mainRides !== null },
