@@ -1147,7 +1147,24 @@ async function runWrapped({
     client,
     fetchImpl: createFakeFetch(routeOriten(() => FORBIDDEN)),
     now: () => new Date("2026-09-21T10:36:00+09:00"),
+    slots: [SLOT(RACE_ID, { last_attempt_at: "2026-09-21T10:36:00+09:00" })],
   });
+  // 発走までの分は claim の時刻から測る: -8分の取得（claim 10:22:05、m=7.9）が、同じ起動の後ろの順番で処理され
+  // 処理の時刻が m=6.3 になっても、窓の中（2分後）のまま
+  const queued = await runWrapped({
+    mode: "live",
+    client,
+    fetchImpl: createFakeFetch(routeOriten(() => FORBIDDEN)),
+    now: () => new Date("2026-09-21T10:23:40+09:00"),
+    slots: [SLOT(RACE_ID, { last_attempt_at: "2026-09-21T10:22:05+09:00" })],
+  });
+  check(
+    "(d) 403: 発走までの分は claim の時刻から測る（処理の順番で後ろになっても、窓と後段の境目をまたがない）",
+    queued.store.retried.length === 1 &&
+      new Date(queued.store.retried[0].retryAt).getTime() ===
+        new Date("2026-09-21T10:23:55+09:00").getTime(),
+    show(queued.store.retried.map((r) => r.retryAt)),
+  );
   check(
     "(d) 403（カナリア正常）: 発走の6分後 → 打ち切り（skipped_not_target で完了。予定表の expired にしない）",
     late.store.completed.length === 1 &&

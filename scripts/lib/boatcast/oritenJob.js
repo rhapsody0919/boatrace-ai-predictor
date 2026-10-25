@@ -436,12 +436,16 @@ export function createOritenSlotHandler({
 
     const race = await load(ctx.client, slot.race_id);
     const now = ctx.now();
+    // 発走までの分は、claim した時刻（同じ起動のスロットで共通）から測る。処理の順番（1起動で最大 claimLimit 件を逐次）で
+    // 測る時刻がずれ、窓（2分おき）と後段の境目（decideNotPublished）をまたがないようにする
+    const claimedMs = new Date(slot.last_attempt_at ?? NaN).getTime();
+    const basisMs = Number.isFinite(claimedMs) ? claimedMs : now.getTime();
     let minutesToStart;
     try {
       if (race?.race_date && race?.start_time) {
         minutesToStart =
           (raceStartInstant(race.race_date, race.start_time).getTime() -
-            now.getTime()) /
+            basisMs) /
           60000;
       }
     } catch {
@@ -525,7 +529,7 @@ export function createOritenStore(
         );
       }
       // 既にこのジョブのスロットがあるレース（offset を変えた日の旧 offset のスロットを含む）には作らない。
-      // 1レース1本の再試行の列にして、窓の取得を二重にしない
+      // 1レース1本の再試行の列にして、窓の取得を二重にしない（offsets が1つの前提。verify-boatcast-job.js が固定する）
       const { data: existing, error: existingError } = await client
         .from("scrape_slots")
         .select("race_id")
