@@ -135,6 +135,12 @@ export const NUMERIC_SCALES = {
     nige_rate_90d: 2,
     makuri_rate_90d: 2,
     nigashi_rate_90d: 2,
+    // 176（差し・まくり差し、ST の安定度）
+    sashi_rate: 2,
+    makurizashi_rate: 2,
+    sashi_rate_90d: 2,
+    makurizashi_rate_90d: 2,
+    st_stddev_last30: 3,
   },
   // morning_digest_rows は日付ごとに delete→insert する設計のため upsertChangedRows を
   // 使わないが、将来差分更新に変えたときに登録漏れで毎日全行更新になるのを防ぐため先に入れておく

@@ -677,11 +677,14 @@ for (const f of fixtures) {
   // 選手のコース別の成績・会場のコース別の決まり手（2026-10-25 hq 依頼、FT01 優勝戦の思考の材料）。固定の材料の日は 2026-10-12
   const date = m.raceId.slice(0, 10);
   const tech = (racer_id, course, over = {}) => ({ racer_id, course, window_start: "2025-12-02", window_end: "2026-10-11", window_days: 314, runs: 25, nige_count: course === 1 ? 10 : null, nige_rate: course === 1 ? 40 : null, nige_expected: 54.48, makuri_count: 2, makuri_rate: 8, makuri_expected: 0, nigashi_count: course === 1 ? null : 12, nigashi_rate: course === 1 ? null : 48, nigashi_expected: 50, runs_90d: 6, nige_rate_90d: course === 1 ? 50 : null, makuri_rate_90d: 0, nigashi_rate_90d: course === 1 ? null : 50, last_updated: "2026-10-12", ...over });
+  // マイグレーション 176 の列（差し・まくり差し、ST の安定度）
+  const sashiSt = (over = {}) => ({ sashi_count: 0, sashi_rate: 0, makurizashi_count: 0, makurizashi_rate: 0, sashi_rate_90d: 0, makurizashi_rate_90d: 0, st_window_runs: 25, st_valid_runs: 24, st_stddev_last30: 0.041, late_start_count_last30: 1, ...over });
   const cN = (c, v) => Object.fromEntries(["entries", "avg_st", "avg_start_rank", "f", "l0", "l1", "p1", "p2", "p3"].map((f, i) => [`c${c}_${f}`, f === "avg_st" ? 0.15 + v / 100 : f === "avg_start_rank" ? 2.5 : v + i]));
   const period = (racer_id, period_year, period_no, calc_to, v) => ({ racer_id, period_year, period_no, calc_to, ...[1, 2, 3, 4, 5, 6].reduce((o, c) => ({ ...o, ...cN(c, v * 10 + c) }), {}) });
   const racerTables = {
     // 1号艇 1コース（欠けなし）、2号艇 2コースは行が無い、3号艇は展示の進入 4コース（レースの日を含む集計）、4号艇 3コース、5号艇は枠番の5コース
-    racer_course_technique_stats: [tech(4001, 1), tech(4001, 2), tech(4003, 3), tech(4003, 4, { window_end: date }), tech(4004, 3), tech(4005, 5)],
+    // 1号艇・5号艇は 176 の列あり（5号艇は有効な ST が1走で標準偏差なし）、ほかは 176 の前の行（列が無い）
+    racer_course_technique_stats: [tech(4001, 1, sashiSt()), tech(4001, 2), tech(4003, 3), tech(4003, 4, { window_end: date }), tech(4004, 3), tech(4005, 5, sashiSt({ st_window_runs: 2, st_valid_runs: 1, st_stddev_last30: null, late_start_count_last30: 1 }))],
     // 1号艇は締めた期（2026-04-30）とレースの日より後に締めた期（2026-10-31）。後者は使わない。2号艇は期が無い
     racer_period_stats: [period(4001, 2026, 1, "2026-04-30", 1), period(4001, 2026, 2, "2026-10-31", 9), period(4001, 2025, 2, "2025-10-31", 2), period(4003, 2026, 1, "2026-04-30", 3), period(4004, 2026, 1, "2026-04-30", 4), period(4005, 2026, 1, "2026-04-30", 5)],
   };
@@ -785,9 +788,20 @@ for (const f of fixtures) {
   );
   assert.deepEqual(
     boats[0].course_technique,
-    { window_start: "2025-12-02", window_end: "2026-10-11", window_days: 314, runs: 25, nige_count: 10, nige_rate: 40, makuri_count: 2, makuri_rate: 8, nigashi_count: null, nigashi_rate: null, runs_90d: 6, nige_rate_90d: 50, makuri_rate_90d: 0, nigashi_rate_90d: null, last_updated: "2026-10-12" },
-    "その選手のその進入コースの逃げ・まくり・逃がしの回数と率、90日の率",
+    { window_start: "2025-12-02", window_end: "2026-10-11", window_days: 314, runs: 25, nige_count: 10, nige_rate: 40, makuri_count: 2, makuri_rate: 8, nigashi_count: null, nigashi_rate: null, runs_90d: 6, nige_rate_90d: 50, makuri_rate_90d: 0, nigashi_rate_90d: null, last_updated: "2026-10-12", sashi_count: 0, sashi_rate: 0, makurizashi_count: 0, makurizashi_rate: 0, sashi_rate_90d: 0, makurizashi_rate_90d: 0, st_window_runs: 25, st_valid_runs: 24, st_stddev_last30: 0.041, late_start_count_last30: 1 },
+    "その選手のその進入コースの逃げ・まくり・逃がし・差し・まくり差しの回数と率、90日の率、ST の安定度（176）",
   );
+  // 176 の前の行（列が無い）は値を null にし、欠けに記録する。列を名指しすると 176 の前に 400 になるので select=*
+  assert.ok(seenQueries.some((x) => x.startsWith("racer_course_technique_stats?") && /(^|&|\?)select=\*(&|$)/.test(x.split("?")[1])), "racer_course_technique_stats は select=* で読む");
+  assert.deepEqual(
+    [boats[3].course_technique?.sashi_count, boats[3].course_technique?.st_stddev_last30, boats[3].course_technique?.runs],
+    [null, null, 25],
+    "176 の前の行は足した欄だけ null（既存の欄は写す）",
+  );
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.4.course_technique" && /マイグレーション 176 の前/.test(x.reason) && /sashi_count/.test(x.reason)), "176 の前の列の欠けを記録");
+  assert.ok(!got.missing.some((x) => x.source.startsWith("db.exhibition.boats.1.course_technique")), "176 の列がそろえば欠けなし");
+  assert.equal(boats[4].course_technique?.late_start_count_last30, 1, "出遅れの回数を写す");
+  assert.ok(got.missing.some((x) => x.source === "db.exhibition.boats.5.course_technique.st_stddev_last30" && /2走未満（1走）/.test(x.reason)), "有効な ST が2走未満なら標準偏差の欠けを記録");
   assert.equal(boats[2].course_technique?.window_end, date, "3号艇は展示の進入（4コース）の行を引く（枠番の3コースでない）");
   assert.equal(boats[4].course_technique?.runs, 25, "進入の無い艇は枠番のコースで引く");
   assert.equal(boats[1].course_technique, null, "行の無い選手・コースは null");

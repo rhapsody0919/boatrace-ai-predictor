@@ -153,7 +153,7 @@ function checkBaseline(rows) {
   return problems;
 }
 
-function checkRacerStats(rows) {
+export function checkRacerStats(rows) {
   const problems = [];
 
   for (const r of rows) {
@@ -195,8 +195,67 @@ function checkRacerStats(rows) {
         `${label}: runs_90d=0 なのに90日窓の率がNULLではありません`,
       );
     }
+    problems.push(...checkSashiAndStColumns(r, label));
   }
 
+  return problems;
+}
+
+/** 176 で足した列（差し・まくり差し、ST の安定度）。RPC が返すときだけ見る（176 の前の RPC は返さない） */
+export const SASHI_ST_COLUMNS = [
+  "sashi_count",
+  "sashi_rate",
+  "makurizashi_count",
+  "makurizashi_rate",
+  "sashi_rate_90d",
+  "makurizashi_rate_90d",
+  "st_window_runs",
+  "st_valid_runs",
+  "st_stddev_last30",
+  "late_start_count_last30",
+];
+
+/**
+ * 176 の列の整合。列が1つも無ければ（176 の前）何も見ない。一部だけあるのは RPC の取り違えなので落とす。
+ * @param {Record<string, unknown>} r RPC の1行
+ * @param {string} label
+ * @returns {string[]}
+ */
+export function checkSashiAndStColumns(r, label) {
+  const present = SASHI_ST_COLUMNS.filter((c) => c in r);
+  if (present.length === 0) return [];
+  if (present.length < SASHI_ST_COLUMNS.length) {
+    return [
+      `${label}: 176 の列の一部しかありません（${SASHI_ST_COLUMNS.filter((c) => !(c in r)).join(",")} が無い）`,
+    ];
+  }
+  const problems = [];
+  for (const k of ["sashi", "makurizashi"]) {
+    const count = r[`${k}_count`];
+    if (count === null || r[`${k}_rate`] === null) {
+      problems.push(`${label}: ${k} の回数または率がNULLです`);
+    } else if (count < 0 || count > r.runs) {
+      problems.push(
+        `${label}: ${k}_count=${count} が runs=${r.runs} の範囲外です`,
+      );
+    }
+    if (r.runs_90d === 0 && r[`${k}_rate_90d`] !== null) {
+      problems.push(
+        `${label}: runs_90d=0 なのに ${k}_rate_90d がNULLではありません`,
+      );
+    }
+  }
+  const { st_window_runs: w, st_valid_runs: v, late_start_count_last30: l } = r;
+  if (!(w >= 0 && w <= 30 && v >= 0 && v <= w && l >= 0 && l <= w)) {
+    problems.push(
+      `${label}: ST の窓の走数が不正です（窓 ${w}・有効 ${v}・出遅れ ${l}）`,
+    );
+  }
+  if (v >= 2 !== (r.st_stddev_last30 !== null)) {
+    problems.push(
+      `${label}: st_stddev_last30 は有効な ST が2走以上のときだけ値を持つはずです（有効 ${v}・値 ${r.st_stddev_last30}）`,
+    );
+  }
   return problems;
 }
 

@@ -132,6 +132,12 @@ export const EXHIBITION_NOTES = [
 export const PERIOD_COURSE_FIELDS = ["entries", "avg_st", "avg_start_rank", "f", "l0", "l1", "p1", "p2", "p3"];
 /** racer_course_technique_stats の写す欄（地力窓と直近90日。expected は写さない） */
 export const COURSE_TECHNIQUE_FIELDS = ["window_start", "window_end", "window_days", "runs", "nige_count", "nige_rate", "makuri_count", "makuri_rate", "nigashi_count", "nigashi_rate", "runs_90d", "nige_rate_90d", "makuri_rate_90d", "nigashi_rate_90d", "last_updated"];
+/**
+ * マイグレーション 176 で足した欄（差し・まくり差しの回数と率、ST の安定度）。分母は runs・runs_90d。
+ * ST の安定度は前日までの、そのコースの直近30走（出走に数える走）の窓で、st_stddev_last30 は窓の中の F・L 以外の ST の
+ * 母標準偏差（有効2走以上）、late_start_count_last30 は窓の中の出遅れ（L）の回数。176 の前は列が無いので null にして欠けに記録する
+ */
+export const COURSE_SASHI_ST_FIELDS = ["sashi_count", "sashi_rate", "makurizashi_count", "makurizashi_rate", "sashi_rate_90d", "makurizashi_rate_90d", "st_window_runs", "st_valid_runs", "st_stddev_last30", "late_start_count_last30"];
 /** 会場のコース別の決まり手（venue_course_technique_baseline）の写す欄 */
 export const VENUE_COURSE_FIELDS = ["course", "runs", "nige_rate", "makuri_rate", "nigashi_rate", "window_start", "window_end", "last_updated"];
 const COURSES = [1, 2, 3, 4, 5, 6];
@@ -154,7 +160,8 @@ async function racerCourseStats(boats, date, missing, racers) {
   // 期は半年ごと。直近の期だけ要るので、締めが400日より前の期は読まない（選手ごとに全期を読まない）
   const [technique, periods] = ids.length
     ? await Promise.all([
-        sbGet("racer_course_technique_stats", `select=racer_id,course,${COURSE_TECHNIQUE_FIELDS.join(",")}&racer_id=in.(${ids.join(",")})`),
+        // 176 の前は名指しした列が無いと PostgREST が 400 を返すので、全列を読んで無い列を欠けにする
+        sbGet("racer_course_technique_stats", `select=*&racer_id=in.(${ids.join(",")})`),
         sbGet("racer_period_stats", `select=${periodSelect}&racer_id=in.(${ids.join(",")})&and=(calc_to.lt.${date},calc_to.gte.${daysBefore(date, 400)})&order=calc_to.desc`),
       ])
     : [[], []];
@@ -169,7 +176,10 @@ async function racerCourseStats(boats, date, missing, racers) {
     const t = technique.find((r) => r.racer_id === b.racer_id && r.course === course);
     if (!t) missing.push({ source: at("course_technique"), reason: `racer_course_technique_stats にこの選手の${course}コースの行が無い` });
     else {
-      out.course_technique = Object.fromEntries(COURSE_TECHNIQUE_FIELDS.map((f) => [f, t[f] ?? null]));
+      out.course_technique = Object.fromEntries([...COURSE_TECHNIQUE_FIELDS, ...COURSE_SASHI_ST_FIELDS].map((f) => [f, t[f] ?? null]));
+      const absent = COURSE_SASHI_ST_FIELDS.filter((f) => !(f in t));
+      if (absent.length) missing.push({ source: at("course_technique"), reason: `racer_course_technique_stats に列が無い（マイグレーション 176 の前）: ${absent.join(",")}` });
+      else if (t.st_stddev_last30 == null) missing.push({ source: at("course_technique.st_stddev_last30"), reason: `直近30走の有効な ST が2走未満（${t.st_valid_runs ?? 0}走）` });
       if (t.window_end >= date || t.last_updated > date) missing.push({ source: at("course_technique"), reason: lateReason("racer_course_technique_stats", date) });
     }
     // 期は calc_to の降順で読んでいるので、選手ごとの最初の行が最新

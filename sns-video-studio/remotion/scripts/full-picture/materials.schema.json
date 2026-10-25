@@ -128,7 +128,17 @@
                       "nige_rate_90d": { "type": ["number", "null"] },
                       "makuri_rate_90d": { "type": ["number", "null"] },
                       "nigashi_rate_90d": { "type": ["number", "null"] },
-                      "last_updated": { "type": "string" }
+                      "last_updated": { "type": "string" },
+                      "sashi_count": { "$comment": "176 から。差しで1着の回数（分母 runs）。176 の前は null", "type": ["integer", "null"], "minimum": 0 },
+                      "sashi_rate": { "type": ["number", "null"] },
+                      "makurizashi_count": { "$comment": "176 から。まくり差しで1着の回数（分母 runs）", "type": ["integer", "null"], "minimum": 0 },
+                      "makurizashi_rate": { "type": ["number", "null"] },
+                      "sashi_rate_90d": { "type": ["number", "null"] },
+                      "makurizashi_rate_90d": { "type": ["number", "null"] },
+                      "st_window_runs": { "$comment": "176 から。前日までのそのコースの直近30走の窓の走数（30未満もある）", "type": ["integer", "null"], "minimum": 0, "maximum": 30 },
+                      "st_valid_runs": { "$comment": "窓の中で F・L 以外の ST がある走", "type": ["integer", "null"], "minimum": 0, "maximum": 30 },
+                      "st_stddev_last30": { "$comment": "窓の中の F・L 以外の ST の母標準偏差（秒、3桁）。有効2走未満は null", "type": ["number", "null"], "minimum": 0 },
+                      "late_start_count_last30": { "$comment": "窓の中の出遅れ（L）の回数", "type": ["integer", "null"], "minimum": 0 }
                     }
                   },
                   "period_course": {
