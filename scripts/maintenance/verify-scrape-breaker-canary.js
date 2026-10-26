@@ -239,7 +239,7 @@ for (const status of [404, 500]) {
 {
   const s = setup(() => 200);
   for (let i = 0; i < 3; i++) await s.breaker.recordFailure(HOST, "HTTP 429");
-  s.clock.t += 60_001;
+  s.clock.t += 5 * 60_000 + 1;
   const r = await s.tryFetch(ODDS);
   check(
     "(f) 429 で開いたホストの半開も race/index で試す",
@@ -254,7 +254,7 @@ for (const status of [404, 500]) {
   const s = setup(() => 403);
   for (let i = 0; i < 3; i++)
     await s.breaker.recordFailure("host:race.boatcast.jp", "HTTP 429");
-  s.clock.t += 60_001;
+  s.clock.t += 5 * 60_000 + 1;
   const r = await s.tryFetch(BC);
   check(
     "(g) カナリアの無いホスト（BOATCAST）は要求されたページで半開を試し、403 でもカナリアを取らない（未公開の 403 は通常）",

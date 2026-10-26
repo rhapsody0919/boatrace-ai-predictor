@@ -546,8 +546,8 @@ check(
   await b.recordFailure(HOST, "HTTP 429");
   const e1 = await openError(b);
   check(
-    "連続3件の 429/503 で開く（60秒）",
-    e1 instanceof BreakerOpenError && e1.until === clock.t + 60_000,
+    "連続3件の 429/503 で開く（5分。段階1）",
+    e1 instanceof BreakerOpenError && e1.until === clock.t + 5 * 60_000,
     String(e1?.until),
   );
   check(
@@ -565,7 +565,7 @@ check(
   );
 
   // 半開: 期限後、1件だけ試行できる
-  clock.t += 60_001;
+  clock.t += 5 * 60_000 + 1;
   await b.check(HOST); // 試行を予約
   const e2 = await openError(b);
   check(
@@ -583,13 +583,13 @@ check(
   b = mk();
   store.until = 0;
   for (let i = 0; i < 3; i++) await b.recordFailure(HOST);
-  clock.t += 60_001;
+  clock.t += 5 * 60_000 + 1;
   await b.check(HOST);
   await b.recordFailure(HOST);
   const e3 = await openError(b);
   check(
-    "半開の試行が失敗すると開く期間が2倍（120秒）",
-    e3 instanceof BreakerOpenError && e3.until === clock.t + 120_000,
+    "半開の試行が失敗すると段階が上がり10分開く",
+    e3 instanceof BreakerOpenError && e3.until === clock.t + 10 * 60_000,
     String(e3?.until - clock.t),
   );
 
@@ -629,7 +629,7 @@ check(
   b = mk();
   store.until = 0;
   for (let i = 0; i < 3; i++) await b.recordFailure(HOST);
-  clock.t += 60_001;
+  clock.t += 5 * 60_000 + 1;
   await b.check(HOST);
   b.abortProbe(HOST);
   check(
@@ -774,11 +774,11 @@ check(
       sleep: async (ms) => void sleeps.push(ms),
       random: () => 0,
     });
-    await f("https://www.boatrace.jp/a");
+    const res = await f("https://www.boatrace.jp/a");
     check(
-      "Retry-After を尊重する（4秒）。長すぎる値は10秒で頭打ち",
-      same(sleeps, [4000, 10000]),
-      show(sleeps),
+      "Retry-After を尊重する（4秒）。10秒を超える値（120秒）は再試行せず、その応答を返す（BOA-1145 P4a ④b）",
+      same(sleeps, [4000]) && n === 2 && res.status === 429,
+      show({ sleeps, n }),
     );
     check(
       "Retry-After の解釈（秒・HTTP日付・不正値）",
@@ -939,7 +939,7 @@ check(
       String(err),
     );
     // 60秒後（半開）に、取得が成功すればブレーカーが閉じる
-    clock.t += 60_001;
+    clock.t += 5 * 60_000 + 1;
     fetchOk = true;
     const probe = await f("https://www.boatrace.jp/c");
     check(

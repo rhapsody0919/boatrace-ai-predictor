@@ -1140,6 +1140,11 @@
       "guards": "BOA-1145 P4a ②: 403 のブレーカーの段階（breaker_level・breaker_opened_at、マイグレーション178）。開く期間 30分→1時間→2時間→4時間→6時間、段階は DB に残り別の起動も同じ段階から上げる（起動ごとに30分へ戻って30分おきに叩き直さない）、24時間 403 が無ければ1段下げる（成功1回で0にしない）、閉じた後24時間は claimLimit を半分、178 の前でも動く"
     },
     {
+      "script": "verify-scrape-breaker-overload.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ④b: 429/503 のホストのブレーカーの段階化（5分→10分→20分→60分、段階は DB の breaker_level に残し起動をまたいで上げる）と、Retry-After が10秒を超える 429/503 は再試行せずホストをその時間（上限60分）開くこと。403 で上がった段階を 429 で下げない"
+    },
+    {
       "script": "verify-scrape-daily-jobs.js",
       "tier": "ci",
       "guards": "日次・低頻度ジョブ（B2〜B6）のVercel Cron実装"

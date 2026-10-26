@@ -9,9 +9,11 @@
  *
  * 状態遷移（plan.md §8の初期値）:
  *   closed    → open:      直近 windowMs（2分）に threshold（5）件、または連続 consecutiveThreshold（3）件の 429/503
- *   open      → half-open: openMs（60秒）後。1件だけ試行させる（同じプロセスの同時の呼び出しは、まだ開いている扱い）
+ *   open      → half-open: 段階ごとの期間（retryStagesMs: 5分→10分→20分→60分。段階は DB の breaker_level に残す。
+ *                          BOA-1145 P4a ④b、spec §5.1）の後。1件だけ試行させる（同じプロセスの同時の呼び出しは、まだ開いている扱い）
  *   half-open → closed:    試行が成功
- *   half-open → open:      試行が失敗。開く期間を2倍にする（最大 maxOpenMs）
+ *   half-open → open:      試行が失敗。段階を1つ上げて開き直す（最大60分）
+ *   Retry-After が10秒を超える 429/503（recordRetryAfter）: 1回で、その時間（上限60分）開く。段階も1つ上げる
  *
  * store が使えない（予定表のテーブルが未適用・DBエラー）場合は、プロセス内の状態のみで動く
  * （ブレーカーの共有ができないだけで、取得は止めない）。
@@ -132,8 +134,8 @@ export function createCircuitBreaker({
   threshold = 5,
   windowMs = 2 * 60 * 1000,
   consecutiveThreshold = 3,
-  openMs = 60 * 1000,
-  maxOpenMs = 10 * 60 * 1000,
+  retryStagesMs = [5, 10, 20, 60].map((m) => m * 60 * 1000),
+  retryAfterMaxMs = 60 * 60 * 1000,
   blockOpenMs = 30 * 60 * 1000,
   blockMaxOpenMs = 6 * 60 * 60 * 1000,
   stepDownMs = 24 * 60 * 60 * 1000,
@@ -152,7 +154,7 @@ export function createCircuitBreaker({
       MAX_BREAKER_LEVEL,
       Math.max(1, Math.ceil(Math.log2(blockMaxOpenMs / blockBaseOf(key))) + 1),
     );
-  /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, openCount: number, probing: boolean, fetchStop: boolean, level: number, openedAt: number, lastRead: number}>} */
+  /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, probing: boolean, fetchStop: boolean, level: number, openedAt: number, lastRead: number}>} */
   const hosts = new Map();
   const stateOf = (hostKey) => {
     let s = hosts.get(hostKey);
@@ -161,7 +163,6 @@ export function createCircuitBreaker({
         events: [],
         consecutive: 0,
         openUntil: 0,
-        openCount: 0,
         probing: false,
         fetchStop: false,
         // 403 で開いた段階と、最後に開いた時刻（DB の breaker_level・breaker_opened_at と同期する）
@@ -223,6 +224,29 @@ export function createCircuitBreaker({
     return s.inflight;
   };
 
+  // 過負荷（429/503）で開く。書く前に DB を読み直し（別の起動の段階・長い期限を採る）、段階を今の段階＋1（429 の段階の数まで）に
+  // して durationOf(段階) だけ開く。期限は DB の長い方を残す（403 のホストの60分を縮めない）
+  const openOverloaded = async (hostKey, s, t, reason, durationOf) => {
+    await refresh(hostKey, s, { force: true });
+    const current = effectiveBlockLevel(s.level, s.openedAt, t, stepDownMs);
+    // 429 の段階は4つまで。403 で上がった段階（それより上）は下げない
+    const level = Math.max(current, Math.min(retryStagesMs.length, current + 1));
+    s.level = level;
+    s.openedAt = t;
+    s.openUntil = Math.max(s.openUntil, t + durationOf(level));
+    s.probing = false;
+    s.events = [];
+    s.consecutive = 0;
+    if (store) {
+      await safe("開放の記録", () =>
+        store.open(hostKey, s.openUntil, reason, {
+          level: s.level,
+          openedAtMs: t,
+        }),
+      );
+    }
+  };
+
   return {
     /**
      * 取得の前に呼ぶ。開いていれば BreakerOpenError を投げる。半開の試行を予約したら {probe: true} を返す
@@ -255,19 +279,23 @@ export function createCircuitBreaker({
         s.events.length >= threshold ||
         s.consecutive >= consecutiveThreshold;
       if (!shouldOpen) return;
-      s.openCount++;
-      const duration = Math.min(maxOpenMs, openMs * 2 ** (s.openCount - 1));
-      // 別の起動が開いた長い期限（403 のホストの60分等）を短く上書きしない（書く前に DB を読み、長い方を書く）
-      await refresh(hostKey, s, { force: true });
-      s.openUntil = Math.max(s.openUntil, t + duration);
-      s.probing = false;
-      s.events = [];
-      s.consecutive = 0;
-      if (store) {
-        await safe("開放の記録", () =>
-          store.open(hostKey, s.openUntil, reason),
-        );
-      }
+      await openOverloaded(hostKey, s, t, reason, (level) =>
+        retryStagesMs[Math.min(level, retryStagesMs.length) - 1],
+      );
+    },
+
+    /**
+     * Retry-After が10秒を超える 429/503 を受けた（politeFetch は再試行しない）。1回で、その時間（上限 retryAfterMaxMs）開く。
+     * 段階も1つ上げる（次に連続の 429 で開くときは、上げた段階の期間）
+     * @param {string} hostKey
+     * @param {number} retryAfterMs
+     * @param {string} [reason]
+     */
+    async recordRetryAfter(hostKey, retryAfterMs, reason = "429/503") {
+      const s = stateOf(hostKey);
+      await openOverloaded(hostKey, s, now(), reason, () =>
+        Math.min(retryAfterMaxMs, Math.max(0, retryAfterMs)),
+      );
     },
 
     /**
@@ -326,7 +354,6 @@ export function createCircuitBreaker({
       // 半開の試行が成功: 閉じる（閉じた時刻は、閉じた後24時間の絞りの起点。DB の breaker_closed_at、178）
       s.probing = false;
       s.openUntil = 0;
-      s.openCount = 0;
       s.events = [];
       s.closedAt = now();
       if (store)
@@ -348,7 +375,6 @@ export function createCircuitBreaker({
       const s = stateOf(hostKey);
       return {
         openUntil: s.openUntil,
-        openCount: s.openCount,
         probing: s.probing,
         fetchStop: s.fetchStop,
         level: s.level,

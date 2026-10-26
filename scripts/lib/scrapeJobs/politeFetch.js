@@ -3,7 +3,8 @@
  *
  *   - タイムアウト: 15秒（ヘッダーと本文の両方。scripts/lib/supabaseClient.js の fetchWithTimeout はヘッダーのみで、
  *     本文の読み取りが止まると関数の最大実行時間まで固まるため、ここでは本文も含める）
- *   - 429/503: 指数バックオフ＋ジッターで最大2回まで再試行（Retry-After があれば尊重する。上限10秒）。
+ *   - 429/503: 指数バックオフ＋ジッターで最大2回まで再試行（Retry-After があれば尊重する。上限10秒）。Retry-After が10秒を
+ *     超えるときは再試行せず、ホストのブレーカーをその時間（上限60分）開いて、その応答を返す（BOA-1145 P4a ④b）。
  *     上限に達したら、429/503 のままの応答を返す（呼び出し側が判断する）
  *   - ネットワークエラー・タイムアウト: 同じ再試行。上限に達したら FetchError を投げる
  *   - サーキットブレーカー: 取得の前に breaker.check() を呼び、開いていれば BreakerOpenError を投げる
@@ -346,14 +347,22 @@ export function createPoliteFetch({
         }
         if (RETRYABLE_STATUSES.has(response.status)) {
           if (guarded) breaker?.abortProbe(pathKey);
+          const retryAfterMs = parseRetryAfterMs(
+            response.headers.get("retry-after"),
+            now(),
+          );
+          if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
+            // 待つ時間が再試行の上限（10秒）を超える: 再試行せず、ホストをその時間（上限60分）開く（spec §5.1、BOA-1145 P4a ④b）
+            await breaker?.recordRetryAfter(
+              hostKey,
+              retryAfterMs,
+              `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
+            );
+            return response;
+          }
           await breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
           if (attempt < maxRetries) {
-            await sleep(
-              backoffMs(
-                attempt,
-                parseRetryAfterMs(response.headers.get("retry-after"), now()),
-              ),
-            );
+            await sleep(backoffMs(attempt, retryAfterMs));
             continue;
           }
           return response;
