@@ -2427,3 +2427,73 @@ test("型 b: 作り直しで b を作れなくなった（一覧が変わり材�
   assert.match(draft.caption_text, /^本日のデータ一覧（/);
   assert.match(notes[0], /型 b の日だったが型 a で送る: rpc_error/);
 });
+
+test("型 b: 候補が100レースを超える日も、欠場・中止を100レースずつに分けて読み、後ろのレースの欠場も外す（Codex の審査 P1）", async () => {
+  const n = 150;
+  const races = Array.from({ length: n }, (_, i) => ({
+    race_id: `${DATE}-${String(1 + (i % 24)).padStart(2, "0")}-${String(100 + i)}`,
+    venue_code: 1 + (i % 24),
+    race_number: 1 + (i % 12),
+    start_time: "18:00:00",
+  }));
+  const w = { window_start: "2025-12-02", window_end: "2037-10-15" };
+  const notes = buildCourseWinNotes({
+    races,
+    entries: races.map((r, i) => ({
+      race_id: r.race_id,
+      boat_number: 1,
+      racer_id: 5000 + i,
+      grade: "A1",
+      player_name: `選手 ${i}`,
+    })),
+    rpcRows: [
+      ...CW_BASE.map(([grade, course, runs, wins]) => ({
+        scope: "grade",
+        grade,
+        course,
+        runs,
+        wins,
+        ...w,
+      })),
+      // 最後のレースの選手がいちばん上に来る（1着の数が多い）
+      ...races.map((r, i) => ({
+        scope: "racer",
+        racer_id: 5000 + i,
+        course: 1,
+        runs: 40,
+        wins: i === n - 1 ? 39 : 30,
+        off_frame_runs: 0,
+        ...w,
+      })),
+    ],
+    until: "2037-10-15",
+  });
+  const last = races[n - 1].race_id;
+  const sizes = [];
+  const base = raceDbOf({ absent: [`${last}:1`] });
+  const raceDb = async (path) => {
+    if (path.startsWith("race_entries"))
+      sizes.push(
+        decodeURIComponent(path)
+          .match(/in\.\(([^)]*)\)/)[1]
+          .split(",").length,
+      );
+    return base(path);
+  };
+  await plan({
+    digest: withCourseWin(notes),
+    headless: sheetShooter(),
+    raceDb,
+    loadVariants: abVariants,
+  });
+  assert.ok(sizes.length >= 2, String(sizes));
+  assert.ok(
+    sizes.every((s) => s <= 100),
+    String(sizes),
+  );
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "b");
+  // 欠場の選手（最後のレース）は載せず、K からも外す
+  assert.equal(draft.source_data.course_win.k.c1, n - 1);
+  assert.notEqual(draft.source_data.course_win.featured.race_id, last);
+});

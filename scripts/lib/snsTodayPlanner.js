@@ -76,6 +76,8 @@ export const todayTrackingUrl = (date, sent = "a") =>
 export const COURSE_WIN_SHEET_PATH = "/share/today-sheet";
 export const COURSE_WIN_SHEET_ELEMENT = "[data-today-sheet]";
 export const COURSE_WIN_SHEET_VIEWPORT = { width: 1080, height: 1350 };
+/** 欠場・中止を1回に読むレースの数（6艇×100＝600行で、PostgREST の上限1000行の内） */
+export const COURSE_WIN_STATUS_CHUNK = 100;
 
 /** 撮影用のページの URL。渡すのは日付・送る時刻・除く行だけ（数字は渡さない。ページはサーバーの朝の一覧から作る） */
 export function courseWinSheetUrl(date, sendAt, skip = []) {
@@ -96,7 +98,19 @@ export async function prepareCourseWin(digest, { date, sendAt, raceDb, t }) {
     (c) =>
       typeof c.start_time === "string" && c.start_time.slice(0, 5) > sendAt,
   );
-  const statuses = await pickRaceStatus(raceDb, live);
+  // pickRaceStatus はレースの全艇の出走表を1回で読む。PostgREST の上限1000行（約166レース分）を超えないよう、
+  // レースを COURSE_WIN_STATUS_CHUNK ずつに分けて読む（Codex の審査 P1。候補は1日に100〜130レース前後に散る）
+  const raceIds = [...new Set(live.map((c) => c.race_id))];
+  const statuses = [];
+  for (let i = 0; i < raceIds.length; i += COURSE_WIN_STATUS_CHUNK) {
+    const ids = new Set(raceIds.slice(i, i + COURSE_WIN_STATUS_CHUNK));
+    statuses.push(
+      ...(await pickRaceStatus(
+        raceDb,
+        live.filter((c) => ids.has(c.race_id)),
+      )),
+    );
+  }
   const skip = statuses
     .filter((p) => p.reason)
     .map((p) => `${p.race_id}:${p.boat_number}`);
