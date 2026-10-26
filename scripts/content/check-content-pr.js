@@ -21,12 +21,14 @@ const CONFIG_PATH = join(
   "content-pr-gate.json",
 );
 const MAX_BUFFER = 64 * 1024 * 1024;
-// 在るかを見るディレクトリ（slug の衝突・.md と JSON の対応・図の JSON・画像）
+// 在るかを見るディレクトリ（slug の衝突・.md と JSON の対応・図の JSON・画像）と、
+// 免除の一覧から外す変更（オーナー決定 2026-10-26）で base の中身を読む関門の設定
 const TRACKED_DIRS = [
   "public/blog",
   "src/data/blog-posts",
   "public/blog-charts",
   "public/images/blog",
+  "scripts/content/content-pr-gate.json",
 ];
 
 const runGit = (args, encoding = "utf8") =>

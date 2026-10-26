@@ -9,6 +9,10 @@ import { gfm } from "micromark-extension-gfm";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { decodeNamedCharacterReference } from "decode-named-character-reference";
 import { parseBlogChartLine } from "../../src/utils/blogChartTag.js";
+import {
+  GATE_CONFIG_PATH,
+  grandfatherRemovals,
+} from "../maintenance/e2e-scope.js";
 
 export const MANIFEST_SCHEMA = "content-pr-manifest/v1";
 export const REVIEW_ROLES = [
@@ -709,6 +713,54 @@ function checkManifest({
 }
 
 /**
+ * 記事の PR に入った関門の設定（content-pr-gate.json）の変更を見る。オーナー決定 2026-10-26。
+ * 通すのは、internalLinkGrandfathered から行を外すだけ（一覧の外のキー・残った行の順は変えない、足さない）で、
+ * 外した行がすべて manifest の paths にある記事の .md、かつ改稿後の本文に内部リンクがあるときだけ。
+ * 一覧に足す（関門を緩める）変更は通常の PR でオーナー承認（今までどおり）
+ */
+function checkGateConfigChange(entry, { head, base, manifest }) {
+  const p = entry.path;
+  if (entry.status !== "M")
+    return [`[gate-config] ${p} は変更（M）だけ扱う（状態 ${entry.status}）`];
+  if (base[p] === undefined || head[p] === undefined)
+    return [`[gate-config] ${p} の base か HEAD の中身が無い`];
+  let baseCfg;
+  let headCfg;
+  try {
+    baseCfg = JSON.parse(base[p]);
+    headCfg = JSON.parse(toText(head[p]));
+  } catch (err) {
+    return [
+      `[gate-config] ${p} の base か HEAD を JSON として読めない: ${err.message}`,
+    ];
+  }
+  const removed = grandfatherRemovals(baseCfg, headCfg);
+  if (!removed)
+    return [
+      `[gate-config] ${p} の変更は internalLinkGrandfathered からの削除だけ許す（足す・並べ替え・他のキーの変更・整形だけの変更は通常の PR でオーナー承認）`,
+    ];
+  const declared = Array.isArray(manifest?.paths) ? manifest.paths : [];
+  const errors = [];
+  for (const r of removed) {
+    if (!MD_RE.test(r) || !declared.includes(r)) {
+      errors.push(
+        `[gate-config] 一覧から外した ${r} がこの PR の manifest の記事（paths の public/blog/<id>.md）でない`,
+      );
+      continue;
+    }
+    if (head[r] === undefined) {
+      errors.push(`[gate-config] 一覧から外した ${r} が HEAD に無い`);
+      continue;
+    }
+    if (countInternalLinks(toText(head[r])) === 0)
+      errors.push(
+        `[gate-config] 一覧から外した ${r} の改稿後の本文に内部リンクが無い（一覧から外せない）`,
+      );
+  }
+  return errors;
+}
+
+/**
  * 関門の本体。
  * @param {object} input
  * @param {{status: string, path: string, mode?: string}[]} input.diff  git diff --raw --no-renames の行。mode は変更後の mode
@@ -750,7 +802,9 @@ export function evaluateContentPr({
       e.path.split("/").some((seg) => seg === "." || seg === ".." || seg === "")
     )
       errors.push(`[path] ${e.path} は . や .. や空の区切りを含む`);
-    else if (!patterns.some((re) => re.test(e.path)))
+    else if (e.path === GATE_CONFIG_PATH) {
+      // 許可の型の外。免除の一覧から外すだけの変更かを checkGateConfigChange で見る（型を足しても素通りさせない）
+    } else if (!patterns.some((re) => re.test(e.path)))
       errors.push(`[path] ${e.path} は記事の PR で変えてよいパスでない`);
     if (e.status !== "D" && e.mode !== REGULAR_FILE_MODE)
       errors.push(
@@ -945,9 +999,9 @@ export function evaluateContentPr({
 
   // manifest
   let p1Recorded = { fan: 0, "seo-marketer": 0 };
+  let manifest;
   if (manifestPath) {
     const raw = head[manifestPath];
-    let manifest;
     let parsed = false;
     if (raw === undefined)
       errors.push(`[manifest] ${manifestPath} が HEAD に無い`);
@@ -966,7 +1020,10 @@ export function evaluateContentPr({
         `[manifest] ${manifestPath} が JSON のオブジェクトでない（${Array.isArray(manifest) ? "配列" : manifest === null ? "null" : typeof manifest}）`,
       );
     } else if (parsed) {
-      const diffPaths = entries.filter((e) => e.path !== manifestPath);
+      // 設定の変更は manifest の paths に入れない（checkGateConfigChange が別に見る）
+      const diffPaths = entries.filter(
+        (e) => e.path !== manifestPath && e.path !== GATE_CONFIG_PATH,
+      );
       const r = checkManifest({
         manifestPath,
         manifest,
@@ -989,6 +1046,16 @@ export function evaluateContentPr({
       }
     }
   }
+
+  const gateEntry = entries.find((e) => e.path === GATE_CONFIG_PATH);
+  if (gateEntry)
+    errors.push(
+      ...checkGateConfigChange(gateEntry, {
+        head,
+        base,
+        manifest: isPlainObject(manifest) ? manifest : undefined,
+      }),
+    );
 
   return {
     ok: errors.length === 0,

@@ -7,10 +7,23 @@
  * 触る PR は必ず全部。PR の側で一覧を書き換えても、master の一覧で判定すれば全部に戻る。
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifyE2eScope } from "./e2e-scope.js";
+import {
+  classifyE2eScope,
+  GATE_CONFIG_PATH,
+  grandfatherRemovals,
+} from "./e2e-scope.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -31,7 +44,8 @@ function check(label, actual, expected) {
       `${label}: 期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(actual)}`,
     );
 }
-const scopeOf = (files, cfg = config) => classifyE2eScope(files, cfg).scope;
+const scopeOf = (files, cfg = config, opts) =>
+  classifyE2eScope(files, cfg, opts).scope;
 
 // --- 軽い組（記事の中身だけ） ---
 check(
@@ -105,6 +119,149 @@ check(
   classifyE2eScope(["public/blog/a.md", "src/b.js"], config).outside,
   ["src/b.js"],
 );
+
+// --- 免除の一覧から外すだけの設定の変更（オーナー決定 2026-10-26、#1934→#1938） ---
+{
+  const list = config.internalLinkGrandfathered;
+  const removed = { ...config, internalLinkGrandfathered: list.slice(1) };
+  check(
+    "一覧から1行を外すだけなら外した行を返す",
+    grandfatherRemovals(config, removed),
+    [list[0]],
+  );
+  check(
+    "行を足すと null",
+    grandfatherRemovals(config, {
+      ...config,
+      internalLinkGrandfathered: [...list, "public/blog/x.md"],
+    }),
+    null,
+  );
+  check(
+    "外して足すと null",
+    grandfatherRemovals(config, {
+      ...config,
+      internalLinkGrandfathered: [...list.slice(1), "public/blog/x.md"],
+    }),
+    null,
+  );
+  check(
+    "残った行の並べ替えは null",
+    grandfatherRemovals(config, {
+      ...config,
+      internalLinkGrandfathered: [...list.slice(2), list[1]],
+    }),
+    null,
+  );
+  check(
+    "他のキーの変更が混ざると null",
+    grandfatherRemovals(config, {
+      ...removed,
+      allowedPathPatterns: [...config.allowedPathPatterns, "^src/"],
+    }),
+    null,
+  );
+  check(
+    "キーの順の変更は null",
+    grandfatherRemovals(config, {
+      internalLinkGrandfathered: removed.internalLinkGrandfathered,
+      ...Object.fromEntries(
+        Object.entries(config).filter(
+          ([k]) => k !== "internalLinkGrandfathered",
+        ),
+      ),
+    }),
+    null,
+  );
+  check(
+    "変更なし（整形だけ）は null",
+    grandfatherRemovals(config, config),
+    null,
+  );
+  const articlePr = [
+    "public/blog/foo.md",
+    "src/data/blog-posts/foo.json",
+    "docs/content-manifests/foo.json",
+    GATE_CONFIG_PATH,
+  ];
+  check(
+    "記事の PR に一覧から外すだけの設定の変更が混ざっても軽い組",
+    scopeOf(articlePr, config, { gateConfigRemovalOnly: true }),
+    "light",
+  );
+  check(
+    "削除だけと確かめていなければ全部（今までどおり）",
+    scopeOf(articlePr),
+    "full",
+  );
+  check(
+    "削除だけでも src が混ざれば全部",
+    scopeOf([...articlePr, "src/App.jsx"], config, {
+      gateConfigRemovalOnly: true,
+    }),
+    "full",
+  );
+  check(
+    "印は設定のパスにだけ効く（e2e-scope.js 自身は全部）",
+    scopeOf([...articlePr, "scripts/maintenance/e2e-scope.js"], config, {
+      gateConfigRemovalOnly: true,
+    }),
+    "full",
+  );
+}
+
+// --- CLI の配線: CI のチェックアウト（HEAD）の設定を git show で読んで判定する ---
+// 一時の git リポジトリに base の設定を置き、HEAD で一覧から外す（または足す）。CI と同じく --config に base を渡す
+{
+  const script = fileURLToPath(new URL("./e2e-scope.js", import.meta.url));
+  const runCli = (headConfig) => {
+    const dir = mkdtempSync(path.join(tmpdir(), "e2e-scope-"));
+    try {
+      const git = (...args) =>
+        execFileSync(
+          "git",
+          ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args],
+          { cwd: dir, stdio: "pipe" },
+        );
+      const gatePath = path.join(dir, GATE_CONFIG_PATH);
+      mkdirSync(path.dirname(gatePath), { recursive: true });
+      git("init", "-q");
+      writeFileSync(gatePath, JSON.stringify(config, null, 2));
+      git("add", ".");
+      git("commit", "-q", "-m", "base");
+      writeFileSync(gatePath, JSON.stringify(headConfig, null, 2));
+      git("commit", "-q", "-am", "head");
+      const basePath = path.join(dir, "base-config.json");
+      writeFileSync(basePath, JSON.stringify(config));
+      const filesPath = path.join(dir, "files.txt");
+      writeFileSync(
+        filesPath,
+        ["public/blog/foo.md", GATE_CONFIG_PATH].join("\n"),
+      );
+      return execFileSync(
+        process.execPath,
+        [script, "--config", basePath, "--files", filesPath],
+        { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      ).trim();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  const list = config.internalLinkGrandfathered;
+  check(
+    "CLI: HEAD が一覧から外すだけなら light",
+    runCli({ ...config, internalLinkGrandfathered: list.slice(1) }),
+    "scope=light",
+  );
+  check(
+    "CLI: HEAD が一覧に足すなら full",
+    runCli({
+      ...config,
+      internalLinkGrandfathered: [...list, "public/blog/x.md"],
+    }),
+    "scope=full",
+  );
+}
 
 // --- 一覧の改ざん ---
 // PR の側で一覧に src を足しても、master の一覧（ここでは今のファイル）で判定すれば全部に戻る

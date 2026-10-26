@@ -47,6 +47,7 @@ node scripts/content/check-content-pr.js [--base origin/master]
 | `public/images/blog/<name>.jpg` / `.jpeg` | 画像。JPEG だけ（寸法はビルドの時に JPEG のヘッダーから作るため）。拡張子は小文字 |
 | `public/blog-charts/<id>-<図id>.json` | 図の JSON（`docs/design/blog-charts/contract.md`）。名前は manifest の記事 id＋`-`＋空でない図 id で、manifest.id を接頭辞に持つ別の記事 id（`a` に対する `a-b`）で始まらない。`article` が記事 id（変更なら base の `article` も）。図を変える PR は同じ記事の本文（.md）の差分も要る（図だけ更新しない）。「競艇」と判断が要る句は記事の JSON と同じに見るが、meta の例外は効かない。図の中の `/images/blog/` は画像の参照に数えない。形・参照・孤立・廃止語は `npm run verify:blog-charts`（CI）が見る |
 | `docs/content-manifests/<id>.json` | manifest。PR にちょうど1つ |
+| `scripts/content/content-pr-gate.json` | 免除の一覧（`internalLinkGrandfathered`）からこの記事の行を外す変更だけ。条件は下の「一覧から外す変更は記事の PR に入れてよい」。manifest の `paths` には入れない |
 
 - 追加（A）と変更（M）だけ。**削除は許さない**（削除は別の道、通常の PR で行う）。種類の変更（T）も error
 - ファイルの型は通常のファイル（mode `100644`）だけ。symlink（`120000`）・実行ビット（`100755`）・gitlink（`160000`）は error
@@ -177,7 +178,23 @@ computeContentSha256(files);
 
 ### 内部リンクの免除
 
-今 master にある内部リンクの無い記事（設定の `internalLinkGrandfathered`、89本。画像のリンクしか無い記事を含む）の改稿だけ免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは `verify-content-pr-gate.js` が落とす）。
+今 master にある内部リンクの無い記事（設定の `internalLinkGrandfathered`。画像のリンクしか無い記事を含む）の改稿だけ免除する。新規には効かない。内部リンクを足したら一覧から外す（外し忘れは `verify-content-pr-gate.js` が落とす）。
+
+#### 一覧から外す変更は記事の PR に入れてよい（オーナー決定 2026-10-26）
+
+一覧にある記事の改稿で内部リンクを足すと、一覧に残せば `verify-content-pr-gate.js` が「外せ」で落ち、先に外す PR を出すと「一覧に無い記事に内部リンクが無い」で落ちる（#1934→#1938）。そこで記事の PR は、`scripts/content/content-pr-gate.json` の変更を、次を**すべて**満たすときだけ含めてよい。範囲は「外す」だけ（関門を締める側）。一覧に足す（緩める）変更は今までどおり通常の PR でオーナー承認。
+
+| 条件 | 関門の見方 |
+|---|---|
+| 変更（M）である | 追加・削除・種類の変更は error |
+| `internalLinkGrandfathered` から行を外すだけ | base（分岐元）と HEAD の設定を JSON として読み、HEAD が「base の一覧から外した行を除いたもの」と完全に一致する。一覧の外のキー・キーの順・残った行の順が変わる、行を足す・重複させる、何も外さない（整形だけ）は error。比べるのは JSON の値なので、行を外すのと同時に空白・字下げを変えても通る（値は同じ） |
+| 外した行が、この PR の manifest の記事 | 外した各パスが `public/blog/<name>.md` の形で、manifest の `paths` にある（日本語版・翻訳版のどちらも可。`paths` は1記事なので、他の記事の行は外せない） |
+| 外した記事の改稿後の本文に内部リンクがある | HEAD の .md を、上の「内部リンク」の関門と同じ数え方（`countInternalLinks`）で数えて1本以上 |
+
+- 設定のパスは manifest の `paths`・`files` に**入れない**（入れたら「paths の … が差分に無い」で error）
+- 許可の型（`allowedPathPatterns`）には足していない。型を PR の側で足しても、設定の変更は必ず上の条件で見る
+- 違反は `[gate-config]` の error
+- e2e の範囲（`scripts/maintenance/e2e-scope.js`）は、この変更だけなら記事の PR と同じ軽い組のまま扱う（base とマージコミットの設定を比べる）。マージの照合（`guard-pr-merge.js`）も、PR の分岐元と先頭の設定を `gh api` で読んで同じく判定する。確かめられないときは全部流す側に倒す
 
 ## 判断が要る語
 
