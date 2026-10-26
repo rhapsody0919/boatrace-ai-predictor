@@ -11,6 +11,9 @@
  *   (f) /api/odds/live の本体: fetch_stop で公式へ取りに行かず、ok:false の breaker_open
  *   (g) 旧い形のストア（read が数を返す）も今のまま動く
  *   (h) マイグレーション178 が3列と CHECK を足し、mode には触れない
+ *   (i) 会場のジョブの理由コード: FetchStoppedError も breaker_open（名前の比較で子を落とさない。審査 B）
+ *   (j) 監視: fetch_stop が立った host の行を知らせる（下ろし忘れの検知。審査 E）
+ *   (k) 178 の前と分かった後は、しばらく列を入れずに1往復で読む（審査 F）
  *
  * 実行: node scripts/maintenance/verify-scrape-fetch-stop.js
  */
@@ -25,6 +28,8 @@ import { createSupabaseStore } from "../lib/scrapeJobs/store.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
 import { handleLiveOddsRequest } from "../lib/liveOdds.js";
+import { reasonFromError } from "../lib/scrapeJobs/venueJobSupport.js";
+import { evaluateJobStates } from "../lib/scrapeJobs/monitor.js";
 
 let failures = 0;
 function check(label, pass, detail = "") {
@@ -159,6 +164,7 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
 // (c)(d) store.breakerStore
 {
   const mkClient = (responses) => {
+    responses.push(...Array(5).fill({ data: { breaker_open_until: null }, error: null }));
     const log = [];
     const client = {
       from(table) {
@@ -222,7 +228,8 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
       },
       { data: { breaker_open_until: null }, error: null },
     ]);
-    const r = await createSupabaseStore(client).breakerStore.read(HOST);
+    const st = createSupabaseStore(client);
+    const r = await st.breakerStore.read(HOST);
     check(
       "(c) read: 178 の前（fetch_stop の列が無い）は breaker_open_until だけを読み直し、止まっていない扱い",
       r.fetchStop === false &&
@@ -230,6 +237,13 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
         log.length === 2 &&
         log[1].cols === "breaker_open_until",
       show({ r, log }),
+    );
+    const before = log.length;
+    await st.breakerStore.read(HOST);
+    check(
+      "(k) 178 の前と分かった後の読み取りは、列を入れずに1往復",
+      log.length === before + 1 && log[before].cols === "breaker_open_until",
+      show(log),
     );
   }
   {
@@ -427,6 +441,43 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
     // COMMENT の文字列の中の語は除いて見る
     !/\bmode\b/.test(body.replace(/'[^']*'/g, "''")) &&
       !/\b(GRANT|REVOKE|DROP COLUMN)\b/.test(body),
+  );
+}
+
+// (i)
+check(
+  "(i) 会場のジョブの理由コード: FetchStoppedError も breaker_open（その日を処理済みにしない）",
+  reasonFromError(new FetchStoppedError(HOST, 0)) === "breaker_open" &&
+    reasonFromError(new BreakerOpenError(HOST, 0)) === "breaker_open",
+);
+{
+  const src = fs.readFileSync(
+    new URL("../daily/scrape-race-information.js", import.meta.url),
+    "utf8",
+  );
+  check(
+    "(i) scrape-race-information.js も名前ではなく instanceof で見る",
+    /error instanceof BreakerOpenError/.test(src) &&
+      !/name === "BreakerOpenError"/.test(src),
+  );
+}
+
+// (j)
+{
+  const now = new Date("2026-10-26T03:00:00Z");
+  const alerts = evaluateJobStates(
+    [
+      { job: HOST, mode: "off", fetch_stop: true, breaker_open_until: null },
+      { job: "host:mbrace.or.jp", mode: "off", fetch_stop: false },
+    ],
+    now,
+  );
+  check(
+    "(j) 監視: fetch_stop が立った host の行だけを知らせる",
+    alerts.length === 1 &&
+      alerts[0].key === `fetch_stop:${HOST}` &&
+      /非常停止/.test(alerts[0].text),
+    show(alerts),
   );
 }
 

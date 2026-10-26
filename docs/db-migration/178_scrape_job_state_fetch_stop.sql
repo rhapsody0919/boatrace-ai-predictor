@@ -22,8 +22,16 @@
 -- 非常停止の操作（オーナー。行が無くても効く。mode・ブレーカーの列は触らない）:
 --   INSERT INTO public.scrape_job_state (job, fetch_stop) VALUES ('host:boatrace.jp', true)
 --   ON CONFLICT (job) DO UPDATE SET fetch_stop = true, updated_at = now();
---   解除: UPDATE public.scrape_job_state SET fetch_stop = false, updated_at = now() WHERE job = 'host:boatrace.jp';
+--   解除（半開から戻す。ブレーカーの期限を今にすると、次の取得が1件だけの試行になる。P4a ③の後はその試行が race/index。
+--   spec §9.3 の4）:
+--   UPDATE public.scrape_job_state SET fetch_stop = false, breaker_open_until = now(), updated_at = now() WHERE job = 'host:boatrace.jp';
 --   効くまで最大10秒（breakerStore.read の TTL）。ホストのキーは www・www1 を外した名前（politeFetch.js の hostKeyOf）。
+--   立っている間は scrape-monitor が知らせ続ける（下ろし忘れの検知。monitor.js の fetch_stop:<ホスト>）。
+--   GitHub Actions はまだ fetch_stop を読まない（開いている PR #1948 のマージ後の別 PR で読む）。それまでは、非常停止を立てるときに
+--   GitHub Actions の scrape-scheduled・朝の初期化（morning-init）のワークフローも人が止める（Vercel の races_init が止まると、
+--   GHA の朝の初期化の安全装置が 07:00 以降にブレーカーなしの素の fetch で初期化しに行くため。system-architect の審査 A）。
+--   読み取りに失敗したときは、プロセスの中の直前の値のまま（一度立ったと読めば止まったまま）。プロセスの最初の読み取りが
+--   失敗したときだけ止めない側（共通ラッパは readState の失敗で取得の前に終わるので、当たるのは一時の1回と /api/odds/live だけ）。
 --
 -- 適用前の確認（読み取り）:
 --   SELECT column_name FROM information_schema.columns
@@ -44,15 +52,13 @@ BEGIN;
 
 SET LOCAL lock_timeout = '10s';
 
+-- 1つの ALTER TABLE にまとめる（ロックは1回）。段階は 0（閉じている・下がりきった）〜 10。開く期間の上限（6時間）は段階5で届くので、
+-- 10 は暴走の歯止め
 ALTER TABLE public.scrape_job_state
   ADD COLUMN IF NOT EXISTS fetch_stop BOOLEAN NOT NULL DEFAULT false,
   ADD COLUMN IF NOT EXISTS breaker_level SMALLINT NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS breaker_opened_at TIMESTAMPTZ;
-
--- 段階は 0（閉じている・下がりきった）〜 10。開く期間の上限（6時間）は段階4で届くので、10 は暴走の歯止め
-ALTER TABLE public.scrape_job_state
-  DROP CONSTRAINT IF EXISTS scrape_job_state_breaker_level_range;
-ALTER TABLE public.scrape_job_state
+  ADD COLUMN IF NOT EXISTS breaker_opened_at TIMESTAMPTZ,
+  DROP CONSTRAINT IF EXISTS scrape_job_state_breaker_level_range,
   ADD CONSTRAINT scrape_job_state_breaker_level_range CHECK (breaker_level BETWEEN 0 AND 10);
 
 COMMENT ON COLUMN public.scrape_job_state.fetch_stop IS

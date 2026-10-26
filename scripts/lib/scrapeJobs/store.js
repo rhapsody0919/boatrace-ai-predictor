@@ -34,6 +34,9 @@ import { addSeconds } from "./time.js";
 import { truncateError } from "./outcomes.js";
 import { isColumnMissingError } from "../optionalColumns.js";
 
+/** fetch_stop の列が無い（マイグレーション178 の前）と分かった後、もう一度列を入れて読み直すまでの間隔 */
+export const FETCH_STOP_RECHECK_MS = 10 * 60 * 1000;
+
 /** last_tick_at を更新する最小の間隔（毎分書くと、同じ行が1日1,000回更新され、無駄なdead tupleになる） */
 export const TICK_WRITE_INTERVAL_MS = 5 * 60 * 1000;
 
@@ -50,6 +53,9 @@ const wrap = (what, error) => {
 export function createSupabaseStore(client) {
   const STATE = "scrape_job_state";
   const SLOTS = "scrape_slots";
+
+  /** fetch_stop の列が無い（178 の前）と分かった後、列を入れずに読む期限（epoch ms） */
+  let fetchStopMissingUntil = 0;
 
   /** 直前の claimSlots が、上書きなしの既存の関数で取った（フォールバックした）理由。takeClaimFallback で読むと消える */
   let claimFallback = null;
@@ -262,8 +268,16 @@ export function createSupabaseStore(client) {
       async read(hostKey) {
         const select = (columns) =>
           client.from(STATE).select(columns).eq("job", hostKey).maybeSingle();
-        let { data, error } = await select("breaker_open_until, fetch_stop");
-        if (error && isColumnMissingError(error, ["fetch_stop"])) {
+        let data;
+        let error;
+        if (Date.now() >= fetchStopMissingUntil) {
+          ({ data, error } = await select("breaker_open_until, fetch_stop"));
+          if (error && isColumnMissingError(error, ["fetch_stop"])) {
+            // 178 の前: しばらく（FETCH_STOP_RECHECK_MS）は列を入れずに読む（キーごと・10秒ごとの2往復を避ける）
+            fetchStopMissingUntil = Date.now() + FETCH_STOP_RECHECK_MS;
+            ({ data, error } = await select("breaker_open_until"));
+          }
+        } else {
           ({ data, error } = await select("breaker_open_until"));
         }
         if (error) throw wrap(`ブレーカーの読み取り(${hostKey})`, error);

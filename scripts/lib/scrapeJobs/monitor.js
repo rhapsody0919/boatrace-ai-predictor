@@ -418,6 +418,14 @@ export function evaluateJobStates(jobStates, now, registry = SCRAPE_JOBS) {
   const alerts = [];
   for (const row of jobStates) {
     if (isHostRow(row)) {
+      // 非常停止（fetch_stop、178）は人が下ろすまで止まり続ける。下ろし忘れで黙って取得が止まらないよう、立っている間は知らせる
+      if (row.fetch_stop === true) {
+        alerts.push({
+          key: `fetch_stop:${row.job}`,
+          kind: "breaker",
+          text: `取得の非常停止が立っています ${row.job}（fetch_stop=true。人が下ろすまで、このホストへの取得は止まったまま）`,
+        });
+      }
       if (row.breaker_open_until && new Date(row.breaker_open_until) > now) {
         alerts.push({
           key: `breaker:${row.job}`,
