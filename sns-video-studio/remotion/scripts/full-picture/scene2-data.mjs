@@ -6,6 +6,7 @@
  * 型の正本: ~/hq/drafts/full-picture-scene-contract.md の「全場面共通」「場面2」。
  */
 import { fitFirst } from "./fit.mjs";
+import { diffOf } from "./scenes/diff.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
@@ -179,7 +180,11 @@ export function templateLines(f) {
           ? `1位${f.rate1}%・6位${f.rate6}%`
           : f.usualDiffPt < 1
             ? `${who}${f.usual}%との差は1ポイント未満`
-            : `${who}${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
+            : f.direction
+              ? `${who}${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`
+              : `${who}${f.usual}%との差は確認できない`;
+      // 30件未満は割合・差を出さず件数だけ（number-wording.md、BOA-1157）
+      if (f.todayN < 30) return [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇`, `${f.todayN}件中${f.todayK}件1着`];
       const l1s = [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去のレースで1着${f.todayRate}%`];
       return fitFirst(...l1s.flatMap((l1) => [[l1, base(`同じ級別の${f.boat}号艇の`)], [l1, base("同じ級別の")]]));
     }
@@ -211,6 +216,9 @@ function cardOf(row, today, scopeFacts, values, omitted) {
   const pct = (p) => Math.round(p * 100);
   const usualPct = usual === null ? null : Math.round(usual * 1000) / 10;
   const d = line && usualPct !== null ? pct(line.rate) - usualPct : null;
+  // 向きは |z|>=1.96 のときだけ（BOA-1157）。件数は今日の順位だった過去の件数
+  const uo = usualOf(scopeFacts, CARD_BOAT, TARGET);
+  const zd = d === null ? null : diffOf(pct(line.rate), usualPct, { a: line.rate * 100, na: line.hit[1], b: usual * 100, nb: uo?.[1] ?? null });
   const facts = {
     kind: "card",
     boat: CARD_BOAT,
@@ -223,12 +231,15 @@ function cardOf(row, today, scopeFacts, values, omitted) {
     spreadPt: Math.abs(pct(rates[0]) - pct(rates[5])),
     usual: usualPct,
     usualDiffPt: d === null ? null : Math.round(Math.abs(d) * 10) / 10,
-    direction: d === null ? null : d > 0 ? "高い" : "低い",
+    direction: zd?.direction ?? null,
+    z: zd?.z ?? null,
+    sig: zd?.sig ?? false,
     roundDay: finalDay ? (ROUND_NAME[today.round] ?? null) : null,
     // 優勝戦・準優勝戦の日の今節の着順点: 画面は今日の順位を出すが、棒の今日の位置は出さない（点の順がほぼ枠の順のため参考）
     todayRankRef: finalDay && r && r.from === r.to ? r.from : null,
     // 本文で割合に添える件数
     todayN: line ? line.hit[1] : null,
+    todayK: line ? line.hit[0] : null,
     usualN: usualOf(scopeFacts, CARD_BOAT, TARGET)?.[1] ?? null,
   };
   return {

@@ -10,6 +10,7 @@
  * 題名・説明文は wording-editor・youtube-channel（2026-10-20）を通した。Shorts の題名の「同じ並び」は、入口版の結論の問い
  * 「同じ並びの過去は、どう決まった？」（2026-10-20 オーナー決定）にそろえている。
  */
+import { diffWords } from "./scenes/diff.mjs";
 export const BUNDLE_VERSION = 2;
 export const SITE = "https://www.boat-ai.jp";
 export const FULL_URL_SLOT = "{full_url}";
@@ -102,21 +103,24 @@ export function chaptersOk(text, durationSec) {
  * 数値は場面の facts（字幕と同じ値）から
  */
 function lines({ venue90, overview, conclusion }) {
-  const diff = (f, base) => (f.diffPt === null || f.diffPt === undefined ? "" : f.diffPt < 1 ? `、${base}との差は1ポイント未満` : `、${base}より${f.diffPt.toFixed(1)}ポイント${f.direction}`);
+  // 線を通らない差は「差はない」と読まれないよう、差の大きさと件数を添える（wording-editor 2026-10-27 P2）
+  const diff = (f, base, n) =>
+    diffWords(f) === null ? "" : `、${base}${diffWords(f)}${!f.direction && !f.few && f.diffPt >= 1 ? `（${f.diffPt.toFixed(1)}ポイント差だが、${n}レースでは偶然の範囲を除けない）` : ""}`;
   return {
     venue: venue90
-      ? `${venue90.venue}の1号艇の1着率は過去90日の${venue90.races.toLocaleString("ja-JP")}レースで${d1(venue90.rate)}%${diff(venue90, `全国の同じ期間の${d1(venue90.national)}%`)}`
+      ? `${venue90.venue}の1号艇の1着率は過去90日の${venue90.races.toLocaleString("ja-JP")}レースで${d1(venue90.rate)}%${diff(venue90, `全国の同じ期間の${d1(venue90.national)}%`, venue90.races.toLocaleString("ja-JP"))}`
       : null,
-    // 題名の後半（その日の向き）
-    venueHead:
-      venue90 && venue90.diffPt !== null && venue90.diffPt !== undefined
-        ? `${venue90.venue}の1着率は全国${venue90.diffPt < 1 ? "との差は1ポイント未満" : `より${venue90.direction}`}`
-        : null,
+    // 題名の後半（その日の向き）。向きを言える日（|z|>=1.96）だけ。言えない日は否定の結論になり「差なし」と読まれるので既定の後半に落とす（wording-editor 2026-10-27）
+    venueHead: venue90?.direction ? `${venue90.venue}の1着率は全国より${venue90.direction}` : null,
     overview: overview
       ? `6艇比較の${overview.axesCount}項目で2位以内に入った数は、${overview.leaders.join("・")}号艇の${overview.maxTop2}が最多${overview.runner ? `、次は${overview.runner.boats.join("・")}号艇の${overview.runner.count}` : ""}`
       : null,
     conclusion: conclusion
-      ? `${conclusion.form ? `スタートの形が${conclusion.form}だった` : "枠なりの"}過去${conclusion.n.toLocaleString("ja-JP")}件中、1着最多は${conclusion.boat}号艇で${conclusion.count.toLocaleString("ja-JP")}件（${conclusion.pct}%）`
+      ? `${conclusion.form ? `スタートの形が${conclusion.form}だった` : "枠なりの"}過去${conclusion.n.toLocaleString("ja-JP")}件中、${
+          conclusion.rankSig === false
+            ? `1着は${conclusion.boat}号艇が${conclusion.count.toLocaleString("ja-JP")}件、${conclusion.next.boat}号艇が${conclusion.next.count.toLocaleString("ja-JP")}件で差は確認できない`
+            : `1着最多は${conclusion.boat}号艇で${conclusion.count.toLocaleString("ja-JP")}件（${conclusion.pct}%）`
+        }`
       : null,
   };
 }
