@@ -1989,4 +1989,31 @@ for (const f of fixtures) {
   }
 }
 
+// #1973 Codex P1・hq facts.py（2026-10-27）の再現
+{
+  // P1-1: 有意の判定は丸める前の件数・率で（700件中431勝・基準58.1%は生で z≈1.86、62%に丸めると2.09）
+  const raw = diffOf(62, 58.1, { a: (431 / 700) * 100, na: 700, b: 58.1, nb: 100000 });
+  assert.equal(raw.direction, null, `丸める前の率で判定する（z=${raw.z}）`);
+  // P1-2: 有意差の無い結論の文も字幕の幅（全角22字）に収める（709件・1号艇359・2号艇350）
+  const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  m.api.scenario.scenario.cells.waku.forms.any = { n: 709, tri: { "1-2-3": 359, "2-1-3": 350 } };
+  const d4 = buildAll(m).find((x) => x.id === "scene4").data;
+  for (const c of [d4.conclusionAny, d4.conclusion].filter(Boolean)) {
+    if (c.facts.rankSig === false) assert.ok(!/最多/.test(c.lines.join("")), c.lines.join(" / "));
+    assert.deepEqual(checkLines(c.lines, c.facts, null).filter((w) => /幅|字/.test(w)), [], `結論の文が幅に収まる: ${c.lines.join(" / ")}`);
+  }
+  assert.equal(d4.conclusionAny.facts.rankSig, false, "359 対 350 は線を通らない");
+  // 30件未満の母数に割合を付けない（hq: s4-course-flow「15件の66.7%」）
+  const m2 = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  m2.api.scenario.scenario.cells.waku.forms.flat = { n: 15, tri: { "1-2-3": 10, "2-1-3": 3, "3-1-2": 2 } };
+  m2.api.scenario.scenario.cells.waku.forms.any = m2.api.scenario.scenario.cells.waku.forms.flat;
+  for (const st of buildAll(m2).flatMap((x) => [...(x.data.steps ?? []), ...(x.data.conclusion ? [x.data.conclusion] : [])])) {
+    if ((st.facts?.n ?? 99) < 30 && /flow|tri|conclusion/.test(st.id)) assert.ok(!/%/.test(st.lines.join("")), `${st.id}: 30件未満に割合: ${st.lines.join(" / ")}`);
+  }
+  // 軸の文「1着なら2着は◯号艇」も2着の1位と2位の差が線を通ったときだけ
+  for (const st of buildAll(m).find((x) => x.id === "scene5").data.steps.filter((x) => x.facts?.kind === "followers" && x.lines.length)) {
+    if (st.facts.rankSig === false) assert.ok(!/2着は\d号艇/.test(st.lines.join("")), `${st.id}: ${st.lines.join(" / ")}`);
+  }
+}
+
 console.log("verify-full-picture-scene2: OK");

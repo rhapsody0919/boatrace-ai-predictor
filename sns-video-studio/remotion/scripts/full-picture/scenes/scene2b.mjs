@@ -44,7 +44,7 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
     frames: [sankeyNodeBox(node0)],
     facts: f1,
     lines: f1.rankSig
-      ? [firstLine ?? `1着は${b}号艇が${win[b - 1]}件で最多`, `${n}件の${f1.pct}%`]
+      ? [firstLine ?? `1着は${b}号艇が${win[b - 1]}件で最多`, n < 30 ? `${n}件中${win[b - 1]}件` : `${n}件の${f1.pct}%`]
       : [`1着は${b}号艇${win[b - 1]}件・${b2}号艇${win[b2 - 1]}件`, `${n}件中、2艇の差は確認できない`],
   });
   // その帯を押して2・3着を出す（1着の艇で絞る）
@@ -79,6 +79,8 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
   }
   // よく出た3連単（上位3つ）
   const top = trifectaList(tri).slice(0, TOP_TRIFECTA);
+  // 30件未満の母数には割合を付けない（number-wording.md、hq facts.py 2026-10-27）
+  const pctOf = (c) => (n < 30 ? "" : `（${p1(c, n)}%）`);
   if (top.length) {
     const f3 = { kind: "trifecta", n, top: top.map(([x, c]) => ({ combo: x.join("-"), boats: x, count: c, pct: p1(c, n) })), ...rankOf(top[0][1], top[1]?.[1]) };
     steps.push({
@@ -89,8 +91,8 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
       frames: [triRowsBox(top.length)],
       facts: f3,
       lines: f3.rankSig
-        ? [`最多は${top[0][0].join("-")}の${top[0][1]}件（${f3.top[0].pct}%）`, top[1] ? `次は${top[1][0].join("-")}の${top[1][1]}件` : null].filter(Boolean)
-        : [`${top[0][0].join("-")}が${top[0][1]}件（${f3.top[0].pct}%）`, `${top[1][0].join("-")}が${top[1][1]}件、差は確認できない`],
+        ? [`最多は${top[0][0].join("-")}の${top[0][1]}件${pctOf(top[0][1])}`, top[1] ? `次は${top[1][0].join("-")}の${top[1][1]}件` : null].filter(Boolean)
+        : [`${top[0][0].join("-")}が${top[0][1]}件${pctOf(top[0][1])}`, `${top[1][0].join("-")}が${top[1][1]}件、差は確認できない`],
     });
   }
   return steps;
