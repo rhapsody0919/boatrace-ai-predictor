@@ -10,6 +10,9 @@
  *   (f) 開いているかだけを見る check（reserve:false）は予約しない（共通ラッパの起動の前の確認）
  *   (g) store.breakerStore.reserveProbe: job と breaker_open_until（読んだ文字列）の両方を条件にした UPDATE。1行で true・0行で false・エラーは投げる
  *   (h) politeFetch: パスが開いているときは、ホストの半開の試行を予約しない（全体の試行を止めない）
+ *   (i) 開放の書き込みが失敗しても、読み直しで自分の開放を DB の古い値で消さない（審査 P2-1）
+ *   (j) 予約した試行が閉じるとき、その間に別の起動が開き直していれば閉じない（条件つきの close。審査 P2-2）
+ *   (k) store.breakerStore.close: expectedRaw があれば breaker_open_until を条件にし、0行なら false
  *
  * 実行: node scripts/maintenance/verify-scrape-probe-reserve.js
  */
@@ -52,8 +55,11 @@ const mkDb = () => {
     async open(k, untilMs) {
       rows[k] = new Date(untilMs).toISOString();
     },
-    async close(k) {
+    async close(k, closed) {
+      // 本物と同じく、expectedRaw があれば期限がその値（同じ時刻）のときだけ閉じる
+      if (closed?.expectedRaw && Date.parse(rows[k] ?? "") !== Date.parse(closed.expectedRaw)) return false;
       rows[k] = null;
+      return true;
     },
     async reserveProbe(k, expectedRaw, newUntilMs) {
       log.push(["reserve", k, expectedRaw]);
@@ -272,6 +278,96 @@ const tryCheck = (b, key, opts) =>
       db.log.length === 0 &&
       db.rows[HOST] === new Date(T0 - 1000).toISOString(),
     show({ e: String(e), log: db.log, row: db.rows[HOST] }),
+  );
+}
+
+// (i)
+{
+  const c = { t: T0 };
+  const KEY = "host:boatrace.jp/owpc/pc/race/beforeinfo";
+  const warn = console.warn;
+  console.warn = () => {};
+  const b = createCircuitBreaker({
+    store: {
+      read: async () => ({ untilMs: 0, fetchStop: false, untilRaw: null }),
+      open: async () => {
+        throw new Error("db down");
+      },
+      close: async () => true,
+    },
+    now: () => c.t,
+  });
+  await b.check(KEY);
+  await b.recordBlocked(KEY);
+  c.t += 11_000;
+  const r = await tryCheck(b, KEY);
+  console.warn = warn;
+  check(
+    "(i) 開放の書き込みが失敗しても、11秒後の読み直しで自分の開放を消さない",
+    r instanceof BreakerOpenError,
+    String(r),
+  );
+}
+
+// (j)
+{
+  const c = { t: T0 };
+  const db = mkDb();
+  db.rows[HOST] = new Date(T0 - 1000).toISOString();
+  const a = createCircuitBreaker({ store: db, now: () => c.t });
+  const cc = createCircuitBreaker({ store: db, now: () => c.t });
+  await tryCheck(a, HOST); // A が予約してカナリアを取る
+  await cc.recordBlocked(HOST, "canary HTTP 403"); // その間に C がホストを60分開く
+  await a.recordSuccess(HOST); // A のカナリアは 200
+  c.t += 11_000;
+  const r = await tryCheck(cc, HOST);
+  const ra = await tryCheck(a, HOST);
+  check(
+    "(j) 予約した試行が閉じるとき、その間に別の起動が開き直していれば閉じない（C も A も開いている扱い）",
+    r instanceof BreakerOpenError &&
+      ra instanceof BreakerOpenError &&
+      db.rows[HOST] === new Date(T0 + 60 * MIN).toISOString(),
+    show({ r: String(r), ra: String(ra), row: db.rows[HOST] }),
+  );
+}
+
+// (k)
+{
+  const calls = [];
+  const mkClient = (result) => ({
+    from() {
+      const q = {
+        update(patch) {
+          calls.push({ patch, eq: [] });
+          return q;
+        },
+        eq(col, val) {
+          calls.at(-1).eq.push([col, val]);
+          return q;
+        },
+        async select() {
+          return result;
+        },
+      };
+      return q;
+    },
+  });
+  const raw = "2026-10-27T03:02:00.000Z";
+  const ok = await createSupabaseStore(mkClient({ data: [{ job: HOST }], error: null })).breakerStore.close(HOST, {
+    closedAtMs: T0,
+    expectedRaw: raw,
+  });
+  const ng = await createSupabaseStore(mkClient({ data: [], error: null })).breakerStore.close(HOST, {
+    closedAtMs: T0,
+    expectedRaw: raw,
+  });
+  check(
+    "(k) close は expectedRaw があれば breaker_open_until を条件にし、1行で true・0行で false",
+    ok === true &&
+      ng === false &&
+      show(calls[0].eq) === show([["job", HOST], ["breaker_open_until", raw]]) &&
+      calls[0].patch.breaker_open_until === null,
+    show(calls),
   );
 }
 

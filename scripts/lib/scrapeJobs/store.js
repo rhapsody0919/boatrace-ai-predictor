@@ -350,13 +350,21 @@ export function createSupabaseStore(client) {
         if (error) throw wrap(`ブレーカーの開放(${hostKey})`, error);
       },
       // closed を渡すと閉じた時刻（breaker_closed_at、178）も書く。178 の前（PGRST204、列名つき）は外して書き直す
+      // closed を渡すと閉じた時刻（breaker_closed_at、178）も書く。178 の前（PGRST204、列名つき）は外して書き直す。
+      // closed.expectedRaw を渡すと、breaker_open_until がその値のままの行だけを閉じる（別の起動の開き直しを消さない。④c）。
+      // 戻り値: 閉じたら true、条件に合わず閉じなかったら false（expectedRaw が無いときは常に true）
       async close(hostKey, closed) {
         const patch = {
           breaker_open_until: null,
           updated_at: new Date().toISOString(),
         };
-        const update = (p) => client.from(STATE).update(p).eq("job", hostKey);
-        let { error } = await update(
+        const expectedRaw = closed?.expectedRaw ?? null;
+        const update = async (p) => {
+          let q = client.from(STATE).update(p).eq("job", hostKey);
+          if (expectedRaw) q = q.eq("breaker_open_until", expectedRaw);
+          return expectedRaw ? q.select("job") : q;
+        };
+        let { data, error } = await update(
           closed
             ? {
                 ...patch,
@@ -369,9 +377,10 @@ export function createSupabaseStore(client) {
           closed &&
           isColumnMissingError(error, ["breaker_closed_at"])
         ) {
-          ({ error } = await update(patch));
+          ({ data, error } = await update(patch));
         }
         if (error) throw wrap(`ブレーカーの解除(${hostKey})`, error);
+        return expectedRaw ? (data?.length ?? 0) === 1 : true;
       },
     },
   };
