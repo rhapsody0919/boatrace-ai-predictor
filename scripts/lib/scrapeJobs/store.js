@@ -302,7 +302,23 @@ export function createSupabaseStore(client) {
           level: typeof data?.breaker_level === "number" ? data.breaker_level : 0,
           openedAtMs: openedAt ? new Date(openedAt).getTime() : 0,
           closedAtMs: closedAt ? new Date(closedAt).getTime() : 0,
+          untilRaw: typeof until === "string" ? until : null,
         };
+      },
+      // 半開の試行の予約（BOA-1145 P4a ④c）: breaker_open_until が読んだ値（expectedRaw。DB が返した文字列のまま）の行だけを
+      // newUntilMs に進める。1行変わったら予約できた（このプロセスだけが試す）。0行なら別の起動が先に予約・開き直した
+      async reserveProbe(hostKey, expectedRaw, newUntilMs) {
+        const { data, error } = await client
+          .from(STATE)
+          .update({
+            breaker_open_until: new Date(newUntilMs).toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("job", hostKey)
+          .eq("breaker_open_until", expectedRaw)
+          .select("job");
+        if (error) throw wrap(`半開の試行の予約(${hostKey})`, error);
+        return (data?.length ?? 0) === 1;
       },
       // level（403 のとき）を渡すと段階と開いた時刻も書く。fetch_stop・mode は書かない（人が立てた値・既定の off に触れない）。
       // 178 の前（段階の列が無い: PGRST204、列名つき）は段階を外して書き直す
