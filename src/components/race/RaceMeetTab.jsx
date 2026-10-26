@@ -53,6 +53,7 @@ import {
   SEMIFINAL_DEFAULT_SLOTS,
   SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
+  meetRateBestCandidates,
 } from "./seriesPoints";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { raceStageLabel } from "../../constants/raceStageConfig";
@@ -471,15 +472,10 @@ function RaceMeetTab({
   const tableHasInBorder = compareRows.some(({ row }) =>
     rankInBorder(row, slots),
   );
-  const bestRate = bestOf(
-    compareRows.map(({ boat, row }) => ({
-      boat,
-      value: row.rate,
-      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
-    })),
-    "max",
-    { digits: 2 },
-  );
+  // 公式の途中帰郷は得点率を「—」で出すので候補から外す（BOA-872）
+  const bestRate = bestOf(meetRateBestCandidates(compareRows), "max", {
+    digits: 2,
+  });
   const bestRank = bestOf(
     compareRows.map(({ boat, row }) => ({
       boat,
@@ -662,6 +658,7 @@ function RaceMeetTab({
                         b.row.rate - a.row.rate,
                     )
                     .map(({ player: p, row }, i, arr) => {
+                      const hideRate = row.excludedReason === "officialWithdrawn";
                       const tied = tiedCount(row.rank);
                       const inBorder = showBorderBadge && rankInBorder(row, slots);
                       // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
@@ -694,7 +691,7 @@ function RaceMeetTab({
                         >
                           {renderPlayerHead(p, row.finishes)}
                           <td className={`rmt-rate${bestCls(bestRate, p.number)}`}>
-                            {row.runs < MEET_SMALL_SAMPLE_RUNS && (
+                            {!hideRate && row.runs < MEET_SMALL_SAMPLE_RUNS && (
                               <span
                                 className="rmt-warn"
                                 title={t("basicInfo.smallSampleTitle")}
@@ -702,9 +699,9 @@ function RaceMeetTab({
                                 ⚠
                               </span>
                             )}
-                            {row.rate.toFixed(2)}
+                            {hideRate ? "—" : row.rate.toFixed(2)}
                             {/* 公式の前夜の減点を引いた選手（BOA-782）。着順の点と合わない理由を行で示す */}
-                            {row.penaltyFromOfficial > 0 && (
+                            {!hideRate && row.penaltyFromOfficial > 0 && (
                               <span className="rmt-penalty">
                                 {t("meetTab.penaltyMark", {
                                   points: row.penaltyFromOfficial,
@@ -1067,6 +1064,7 @@ function RaceMeetTab({
                       {forecastRows.map(
                         ({ player: p, row, cells, needed, remaining }) => {
                           const color = BOAT_COLORS[p.number] || {};
+                          const hideRate = row.excludedReason === "officialWithdrawn";
                           return (
                             <tr
                               key={p.number}
@@ -1108,7 +1106,7 @@ function RaceMeetTab({
                               >
                                 {/* 走数が少ない得点率は、目安に届いて青くても当てにならない。
                                     比較表と同じ⚠を付ける（BOA-757） */}
-                                {row.runs < MEET_SMALL_SAMPLE_RUNS && (
+                                {!hideRate && row.runs < MEET_SMALL_SAMPLE_RUNS && (
                                   <span
                                     className="rmt-warn"
                                     title={t("basicInfo.smallSampleTitle")}
@@ -1116,7 +1114,7 @@ function RaceMeetTab({
                                     ⚠
                                   </span>
                                 )}
-                                {row.rate.toFixed(2)}
+                                {hideRate ? "—" : row.rate.toFixed(2)}
                               </td>
                               {hasNeeded && (
                                 <td className="rmt-needed">
@@ -1177,7 +1175,7 @@ function RaceMeetTab({
                                       : undefined
                                   }
                                 >
-                                  {f.rate.toFixed(2)}
+                                  {hideRate ? "—" : f.rate.toFixed(2)}
                                 </td>
                               ))}
                             </tr>
