@@ -20,6 +20,8 @@ import {
   borderTieOf,
 } from "../../src/utils/meetPageModel.js";
 
+import { readFileSync } from "node:fs";
+
 const failures = [];
 let checked = 0;
 function check(label, actual, expected) {
@@ -225,6 +227,99 @@ check(
   state("2026-10-10", doneThrough(id("2026-10-03", 12))),
   "finished",
 );
+
+// BOA-780: 初日でない URL でも、指定日の既知の対象外グレードは案内する。
+const middleStart = "2026-09-29";
+const middleDays = meetDaysOf(middleStart, window, entries);
+for (const grade of ["ippan", "G3", "SG", "G1", "G2", null, ""]) {
+  check(
+    `途中日 URL・指定日のグレード ${JSON.stringify(grade)}`,
+    meetPageState({
+      ...base,
+      startDate: middleStart,
+      today: middleStart,
+      meetDays: middleDays,
+      hasEntries: false,
+      grade: null,
+      startDateGrade: grade,
+      windowHasRaces: true,
+      doneRaceIds: new Set(),
+    }),
+    ["ippan", "G3"].includes(grade) ? "outOfScope" : "notFound",
+  );
+}
+for (const [today, expected] of [
+  ["2026-09-27", "preOpen"],
+  [START, "preOpen"],
+  ["2026-09-29", "notFound"],
+]) {
+  check(
+    `指定日のレースが無い・${today}（別の日の一般戦を使わない）`,
+    meetPageState({
+      ...base,
+      today,
+      grade: "ippan",
+      startDateGrade: null,
+      meetDays: [],
+      hasEntries: false,
+      doneRaceIds: new Set(),
+    }),
+    expected,
+  );
+}
+check(
+  "race_series・種別・出走表が無く指定日の races だけある一般戦も対象外",
+  meetPageState({
+    ...base,
+    today: START,
+    grade: null,
+    startDateGrade: "ippan",
+    meetDays: [],
+    hasEntries: false,
+    doneRaceIds: new Set(),
+  }),
+  "outOfScope",
+);
+
+// 取得関数の本体をローカルの応答だけで実行し、指定日のグレードの受け渡しも検査する。
+const serviceSource = readFileSync(
+  new URL("../../src/services/supabaseDataService.js", import.meta.url), "utf8",
+);
+const methodStart = serviceSource.indexOf("  async getMeetPage(");
+const bodyStart = serviceSource.indexOf("{", methodStart) + 1;
+const bodyEnd = serviceSource.indexOf("    // 予選中で公式の表があれば", bodyStart);
+const getMeetPage = new (Object.getPrototypeOf(async function () {}).constructor)(
+  "supabase", "meetDaysOf", "meetPageState", "seriesDayByDate", "isRaceCancelled",
+  "venueCode", "startDate", "today",
+  serviceSource.slice(bodyStart, bodyEnd),
+);
+for (const [label, races, expected] of [
+  ["指定日の一般戦", [{ race_id: id(middleStart, 1), race_grade: "ippan" }], "outOfScope"],
+  ["指定日のSG", [{ race_id: id(middleStart, 1), race_grade: "SG" }], "notFound"],
+  ["翌日の一般戦だけ", [{ race_id: id("2026-09-30", 1), race_grade: "ippan" }], "notFound"],
+]) {
+  const rows = {
+    race_conditions: day(middleStart, 2, () => "予選"),
+    races,
+  };
+  const mock = {
+    from(table) {
+      const query = new Proxy({}, {
+        get(_, key) {
+          if (key === "then") return (resolve) => resolve({ data: rows[table] ?? [] });
+          if (key === "maybeSingle") return () => Promise.resolve({ data: null });
+          return () => query;
+        },
+      });
+      return query;
+    },
+  };
+  const page = await getMeetPage(
+    mock, meetDaysOf, meetPageState, () => new Map(), () => false,
+    16, middleStart, middleStart,
+  );
+  check(`getMeetPage・race_seriesなし・${label}`, page.state, expected);
+}
 
 // --- pickMeetAnchor ---
 const anchor = (today, done) =>

@@ -7292,6 +7292,10 @@ export const supabaseDataService = {
       startDate,
       meetDays,
       hasEntries: entries.length > 0,
+      // 節の日が空でも指定日のグレードは失わない。翌日以降の別の節は使わない。
+      startDateGrade: (racesRes.data ?? []).find(
+        (r) => r.race_id.startsWith(`${startDate}-`) && r.race_grade,
+      )?.race_grade ?? null,
       grade,
       title,
       conditions,
