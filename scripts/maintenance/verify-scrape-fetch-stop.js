@@ -10,7 +10,7 @@
  *   (e) 共通ラッパ: ホストの fetch_stop で、スロットを取らず skipped=fetch_stop（breaker_open と分ける）。連続失敗に数えない
  *   (f) /api/odds/live の本体: fetch_stop で公式へ取りに行かず、ok:false の breaker_open
  *   (g) 旧い形のストア（read が数を返す）も今のまま動く
- *   (h) マイグレーション178 が3列と CHECK を足し、mode には触れない
+ *   (h) マイグレーション178 が4列と CHECK を足し、mode には触れない
  *   (i) 会場のジョブの理由コード: FetchStoppedError も breaker_open（名前の比較で子を落とさない。審査 B）
  *   (j) 監視: fetch_stop が立った host の行を知らせる（下ろし忘れの検知。審査 E）
  *   (k) 178 の前と分かった後は、しばらく列を入れずに1往復で読む（審査 F）
@@ -434,6 +434,7 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
         body,
       ) &&
       /ADD COLUMN IF NOT EXISTS breaker_opened_at TIMESTAMPTZ/.test(body) &&
+      /ADD COLUMN IF NOT EXISTS breaker_closed_at TIMESTAMPTZ/.test(body) &&
       /CHECK \(breaker_level BETWEEN 0 AND 10\)/.test(body),
   );
   check(
