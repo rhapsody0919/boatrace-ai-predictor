@@ -100,15 +100,19 @@ export function createMemoryStore({
       return true;
     },
     // until: 全てのキーに効く期限（テストが直接入れる）。byKey: キーごとの期限（ブレーカーが open で書く。
-    // ホストのキーとパスのキー（BOA-1145）を分けて確かめるため）
+    // ホストのキーとパスのキー（BOA-1145）を分けて確かめるため）。fetchStop: キーごとの非常停止（テストが直接入れる。178）
     breakerStore: {
       until: 0,
       byKey: {},
+      fetchStop: {},
       async read(hostKey) {
-        return Math.max(
-          store.breakerStore.until,
-          store.breakerStore.byKey[hostKey] ?? 0,
-        );
+        return {
+          untilMs: Math.max(
+            store.breakerStore.until,
+            store.breakerStore.byKey[hostKey] ?? 0,
+          ),
+          fetchStop: store.breakerStore.fetchStop[hostKey] === true,
+        };
       },
       async open(hostKey, untilMs) {
         store.breakerStore.byKey[hostKey] = untilMs;

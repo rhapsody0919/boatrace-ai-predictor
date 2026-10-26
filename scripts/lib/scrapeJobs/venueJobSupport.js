@@ -13,6 +13,7 @@
  * 履歴の更新（updateVenueHealth）は、従来どおり scripts/lib/venueMotorStats/driftHealth.js のコアを使う。
  */
 import { updateVenueHealth } from "../venueMotorStats/driftHealth.js";
+import { BreakerOpenError } from "./circuitBreaker.js";
 
 /**
  * 1会場・1日分の結果を、履歴に反映する。同じ日の再実行（補足の起動）は、その日の結果を置き換え、
@@ -56,7 +57,8 @@ export function isTransientReason(reason) {
 export function reasonFromError(error) {
   const message = error?.message ?? String(error);
   if (error?.name === "AbortError" || message === "timeout") return "timeout";
-  if (error?.name === "BreakerOpenError") return "breaker_open";
+  // 子の FetchStoppedError（非常停止、178）も breaker_open にする（名前ではなく instanceof で見る）
+  if (error instanceof BreakerOpenError) return "breaker_open";
   if (error?.name === "FetchError") {
     return error.cause?.name === "AbortError" ? "timeout" : "network_error";
   }
