@@ -135,7 +135,9 @@ export function templateLines(f) {
   if (f.kind === "overview")
     return [
       // 今日の6艇（選手・機械）の比較と分かるように
-      `今日の6艇で2位以内の項目が最多は${f.leaders.join("・")}号艇`,
+      f.leaders.length >= 3
+        ? "今日の6艇で2位以内の項目が最多で並ぶ"
+        : `今日の6艇で2位以内の項目が最多は${f.leaders.join("・")}号艇`,
       f.runner
         ? `${f.axesCount}項目中${f.maxTop2}、次は${f.runner.boats.join("・")}号艇の${f.runner.count}`
         : `6艇とも${f.axesCount}項目中${f.maxTop2}`,
