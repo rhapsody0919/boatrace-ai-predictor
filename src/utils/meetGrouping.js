@@ -267,3 +267,19 @@ export function meetDaysFromRows(dates, conditions) {
 export function meetStartFromRows(dates, conditions, targetDate) {
   return findMeetStartDate(meetDaysFromRows(dates, conditions), targetDate);
 }
+
+/** 同一選手・会場・モーターの走（race_id 昇順）から今節の走を返す。 */
+export function groupCurrentMeetFromRows(sortedAscEntries, conditions) {
+  if (!sortedAscEntries?.length) return [];
+  const rows = conditions ?? [];
+  const targetDate = sortedAscEntries.at(-1).race_id.slice(0, 10);
+  // getVenueMeetStart と同じく、開催日は種別の行を基準にする。
+  const start = meetStartFromRows(
+    rows.map((row) => row.race_id.slice(0, 10)),
+    rows,
+    targetDate,
+  );
+  return start === null
+    ? groupIntoCurrentMeet(sortedAscEntries)
+    : sortedAscEntries.filter((entry) => entry.race_id.slice(0, 10) >= start);
+}
