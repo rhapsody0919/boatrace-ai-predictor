@@ -41,7 +41,7 @@ export const VOCAB = [
   "2位以内", "項目", "最多", "最少", "次", "次いで", "2番手", "番手", "一番上", "最上位", "上位", "下位", "同じ", "同値", "並ぶ", "並び",
   "ほか", "すべて", "全て", "差", "ポイント", "未満", "以上", "以下", "上回る", "下回る", "上回り", "下回り", "高い", "低い", "高く", "低く",
   "より", "まで", "中", "全体", "今日", "1着率", "順位", "当てはめない", "当てはめず", "参考", "枠順", "近く", "点の順",
-  "比べられない", "値が無い", "値が無く", "材料", "差が大きい", "差が小さい", "重なる", "記録", "無い", "なし",
+  "比べられない", "確認できない", "回", "値が無い", "値が無く", "材料", "差が大きい", "差が小さい", "重なる", "記録", "無い", "なし",
   "とき", "場合", "次点", "各", "3つ", "以内",
   // 場面1（条件）
   // 場面6（機力と調子）
@@ -245,6 +245,14 @@ export function checkLines(lines, facts, prev) {
   for (const u of left) why.push(`facts に無い言い回し「${u}」`);
   // 向き（高い・低い）は facts の向きと合う
   if (facts.direction && /高い|低い/.test(text) && !text.includes(facts.direction)) why.push(`向きが facts（${facts.direction}）と逆`);
+  // 差の言い切りは |z|>=1.96 の根拠があるときだけ（BOA-1157。facts に z の判定が無い・通らない差で向きを言わない）
+  if ("sig" in facts && !facts.sig && /(高い|低い|高く|低く|上回|下回)/.test(text)) why.push(`差の向きを言ったが z の根拠が無い（z=${facts.z ?? "なし"}、線は |z|>=1.96）`);
+  // 「最多・最高」は1位と2位の差が線を通ったときだけ（BOA-1157。7 対 6 は z≈0.28）
+  const rankWhy = `順位を言い切ったが z の根拠が無い（線は z>=1.96）`;
+  if (facts.kind === "flow2") {
+    if (facts.second?.rankSig === false && /2着最多/.test(text)) why.push(`2着の${rankWhy}`);
+    if (facts.third?.rankSig === false && /3着[^\n]*最多/.test(text)) why.push(`3着の${rankWhy}`);
+  } else if (facts.rankSig === false && /最多|最高/.test(text)) why.push(`${rankWhy}（rankZ=${facts.rankZ ?? "なし"}）`);
   // 差1ポイント未満は向きを言わない（common.mjs の diffText。10/15 丸亀10R の整えた版が「0.2ポイント高い」と書いた。wording-editor 2026-10-20 P1）
   const small = [facts.diffPt, facts.usualDiffPt].some((d) => typeof d === "number" && d < 1);
   if (small && /ポイント(高い|低い|高く|低く)/.test(text)) why.push("差1ポイント未満で向き（高い・低い）を言った");
