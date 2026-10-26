@@ -1019,8 +1019,8 @@ async function quiet(fn) {
   // 展示・レース情報の Vercel 関数の本体は scripts/lib/scrapeJobs/preRaceHandlers.js（api/cron/exhibition.js・race-info.js は薄い入口）
   const handlers = read("scripts/lib/scrapeJobs/preRaceHandlers.js");
   check(
-    "preRaceHandlers.js: 展示の従来の経路は、取得の後に refreshAfterChange（＝refreshAfterExhibition）を呼び、mainRefresh は有効なときだけ動的 import する（無効なときは従来と同じ動作・同じモジュール読み込み）",
-    /\.then\(\(result\) =>\s*refreshAfterChange\(/.test(handlers) &&
+    "preRaceHandlers.js: mainRefresh は有効なときだけ動的 import する（無効なときは同じモジュール読み込み）。展示の従来の経路（runLegacyExhibition）は消した（scraping-load-budget spec の P0）",
+    !/runLegacyExhibition\(/.test(handlers) &&
       /await import\("\.\.\/\.\.\/daily\/generate-predictions\.js"\)/.test(
         handlers,
       ) &&

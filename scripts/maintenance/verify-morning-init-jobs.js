@@ -1683,13 +1683,13 @@ const inCautionTable = (through) =>
   );
   const pc = SCRAPE_JOBS.pcexpect;
   check(
-    "(j) pcexpect: 窓型・発走12時間前から30分前まで（許容幅690分）・再試行600秒・リース300秒・20件×3並列（設計どおり）",
+    "(j) pcexpect: 窓型・発走12時間前から30分前まで（許容幅690分）・再試行600秒・リース300秒・6件×3並列（設計どおり）",
     pc.kind === "window" &&
       same(pc.offsets, [-720]) &&
       pc.graceMin === 690 &&
       pc.retrySec === 600 &&
       pc.leaseSec === 300 &&
-      pc.claimLimit === 20 &&
+      pc.claimLimit === 6 &&
       pc.concurrency === 3,
   );
   const read = (p) =>

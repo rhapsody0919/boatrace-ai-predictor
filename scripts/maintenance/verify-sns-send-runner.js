@@ -265,6 +265,84 @@ test("live・dry_run=false: X と YouTube を送って posted、最大件数を�
   );
 });
 
+// runner の時計だけを固定する。SQL の now() と承認・失効は実時刻のままにし、
+// dueJobs の取得時刻だけ合わせる（SQL の日次ガードを別の日に偽装しない）。
+for (const [at, paused] of [
+  ["2026-10-27T06:49:59Z", false],
+  ["2026-10-27T06:50:00Z", true],
+  ["2026-10-27T06:55:00Z", true],
+  ["2026-10-27T07:00:00Z", true],
+  ["2026-10-27T07:01:00Z", true],
+  ["2026-10-27T07:04:59Z", true],
+  ["2026-10-27T07:05:00Z", false],
+  ["2026-11-02T07:49:59Z", false],
+  ["2026-11-02T07:50:00Z", true],
+  ["2026-11-02T07:55:00Z", true],
+  ["2026-11-02T08:01:00Z", true],
+  ["2026-11-02T08:05:00Z", false],
+]) {
+  test(`YouTube の PT 日付境界: ${at} は${paused ? "待機" : "送信"}、X は送信`, async () => {
+    const y = await approvedJob("youtube", { scheduledOffsetMin: -2 });
+    const x = await approvedJob("x");
+    const notices = [];
+    const youtube = createMockYoutubeAdapter();
+    const result = await runSnsSend(
+      { ...ctx(), now: () => new Date(at) },
+      deps({
+        maxJobs: paused ? 1 : 2,
+        store: { ...store, dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args) },
+        adapters: {
+          x: async () => createMockXAdapter(),
+          youtube: async () => youtube,
+        },
+        notify: async (text) => notices.push(text),
+      }),
+    );
+    const row = await job(y.id);
+    assert.equal(row.state, paused ? "queued" : "posted");
+    assert.equal(row.attempts, paused ? 0 : 1);
+    assert.equal(Number((await first("SELECT count(*) n FROM sns_youtube_quota_attempts")).n), paused ? 0 : 1);
+    assert.equal(result.body.jobs.find((r) => r.id === y.id).outcome,
+      paused ? "youtube_quota_day_wait" : "posted");
+    assert.equal((await job(x.id)).state, "posted");
+    assert.deepEqual(result.report.alerts.map((a) => a.key),
+      paused ? [`youtube_quota_day_wait:${y.id}`] : []);
+    assert.deepEqual(notices, []);
+    if (paused) assert.deepEqual(youtube.calls, []);
+  });
+}
+
+test("検査・トークン取得中に PT の停止窓へ入ったら claim せず、窓の後に同じ job を送る", async () => {
+  const y = await approvedJob("youtube");
+  let at = "2026-10-27T06:49:59Z";
+  const clock = { ...ctx(), now: () => new Date(at) };
+  const runnerStore = { ...store, dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args) };
+  const options = deps({
+    store: runnerStore,
+    adapters: { youtube: async () => {
+      at = "2026-10-27T06:50:00Z";
+      return createMockYoutubeAdapter();
+    } },
+  });
+  const waiting = await runSnsSend(clock, options);
+  assert.equal(waiting.body.jobs[0].outcome, "youtube_quota_day_wait");
+  assert.equal((await job(y.id)).attempts, 0);
+  assert.equal((await job(y.id)).state, "queued");
+  const carried = await runSnsSend(
+    { ...clock, state: { last_report: waiting.report } },
+    deps({ store: { ...runnerStore, dueJobs: async () => ({ jobs: [], nextCursor: null }) } }),
+  );
+  assert.deepEqual(carried.report.alerts, waiting.report.alerts);
+  at = "2026-10-27T07:05:00Z";
+  const resumed = await runSnsSend(
+    { ...clock, state: { last_report: waiting.report } },
+    deps({ store: runnerStore }),
+  );
+  assert.equal((await job(y.id)).state, "posted");
+  assert.equal((await job(y.id)).attempts, 1);
+  assert.deepEqual(resumed.report.alerts, []);
+});
+
 test("YouTube の処理が3回の確認で終わらなければ、公開せず非公開のまま残す", async () => {
   const y = await approvedJob("youtube");
   const youtube = createMockYoutubeAdapter({ processingStatus: "processing" });

@@ -214,6 +214,16 @@ for (const [date, time] of [
 // (b) レジストリ
 // ---------------------------------------------------------------------------
 check(
+  "result の最初の窓は発走 +10分",
+  same(SCRAPE_JOBS.result.offsets, [10]),
+  show(SCRAPE_JOBS.result.offsets),
+);
+check(
+  "pcexpect の claimLimit は6",
+  SCRAPE_JOBS.pcexpect.claimLimit === 6,
+  show(SCRAPE_JOBS.pcexpect.claimLimit),
+);
+check(
   "本番のレジストリは整合している",
   same(validateRegistry(), []),
   show(validateRegistry()),
@@ -291,13 +301,13 @@ check(
 {
   const defs = slotDefsFor(["odds", "result"]);
   check(
-    "ensure用の定義: oddsは6窓（-60だけ許容幅30、他は3）、resultは1窓（許容幅85）",
+    "ensure用の定義: oddsは6窓（-60だけ許容幅30、他は3）、resultは1窓（+10分、許容幅80）",
     defs.length === 7 &&
       defs
         .filter((d) => d.job === "odds")
         .every((d) => d.grace_min === (d.offset_min === -60 ? 30 : 3)) &&
-      defs.find((d) => d.job === "result").offset_min === 5 &&
-      defs.find((d) => d.job === "result").grace_min === 85,
+      defs.find((d) => d.job === "result").offset_min === 10 &&
+      defs.find((d) => d.job === "result").grace_min === 80,
     show(defs),
   );
   let threw = false;

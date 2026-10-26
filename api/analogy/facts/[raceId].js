@@ -67,7 +67,7 @@ async function buildFacts({ raceId, stage, state, snapshot }) {
     keys.map((k, i) => [k, withoutSeriesScoreOnFinal(k, files[i])]),
   );
   const exhibition =
-    stage === "exhibition" && snapshot?.status === "ok"
+    stage === "exhibition" && ["ok", "empty_layer"].includes(snapshot?.status)
       ? await readObject(
           objectPath(raceId, snapshot.run_id, "today-exhibition", raceId),
         )

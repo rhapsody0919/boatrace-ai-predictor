@@ -21,6 +21,7 @@ import {
   FALLBACK_FROM_JST_HOUR,
   decideMorningInitOnGha,
 } from "../lib/racesInit/ghaSkip.js";
+import { shouldSkipOnGha } from "../lib/ghaSkipGate.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -149,8 +150,10 @@ async function triggerDeployHook() {
 // 既定（未設定・true以外）は、どちらも従来どおり実行する。
 //   SKIP_MORNING_INIT_ON_GHA=true  朝の初期化（races の初期化・取りこぼし会場の確認・予測の再生成・unified・
 //                                  pcexpect・Deploy Hook）を行わない。ただし、フェイルセーフとして、JST 07:00 になっても
-//                                  当日の races が1件も無ければ、従来どおり初期化する（Vercel が失敗した日に、
-//                                  誰も初期化しない状態を避ける。判定は scripts/lib/racesInit/ghaSkip.js）
+//                                  当日の races が1件も無ければ、初期化する（Vercel が失敗した日に、誰も初期化しない
+//                                  状態を避ける）。ただし Vercel の races-init が起動していない・boatrace.jp のブレーカーが
+//                                  閉じている・直近の失敗が 403・接続の失敗でない、を満たすときだけ（素の fetch で公式を
+//                                  回り込んで叩かない。判定は scripts/lib/racesInit/ghaSkip.js・scripts/lib/ghaSkipGate.js）
 //   SKIP_PCEXPECT_ON_GHA=true      初期化の中の pcexpect（公式コンピュータ予想）の段だけを行わない
 //                                  （races-init より先に pcexpect だけを Vercel へ切り替える場合、または、上のフェイルセーフで
 //                                  GitHub が初期化する場合に、Vercel の pcexpect と重複させない）
@@ -173,14 +176,26 @@ async function main() {
         .select("*", { count: "exact", head: true })
         .gte("race_id", today)
         .lt("race_id", `${today}~`);
-      // 読み取りに失敗したら、件数は不明（止めない側に倒す）
+      // 読み取りに失敗したら、件数は不明（下の肩代わりの判定に進む）
       racesCount = error ? null : (count ?? 0);
     }
-    const decision = decideMorningInitOnGha({
+    let decision = decideMorningInitOnGha({
       skipVar: true,
       jstHour,
       racesCount,
     });
+    if (decision.needsGate) {
+      // フェイルセーフの候補。GitHub の肩代わりの条件を満たすかを確かめる（確かめられなければ実行しない）
+      const gate = await shouldSkipOnGha({
+        varName: "SKIP_MORNING_INIT_ON_GHA",
+      });
+      decision = decideMorningInitOnGha({
+        skipVar: true,
+        jstHour,
+        racesCount,
+        gateSkip: gate.skip,
+      });
+    }
     if (!decision.run) {
       console.log(
         `⏭️ 朝の初期化をスキップ（SKIP_MORNING_INIT_ON_GHA=true。Vercel の races-init が担当。${decision.reason}）`,
@@ -272,7 +287,11 @@ async function main() {
       // 欠ける（以前は素の .select() のみで、fetchAll の range ページネーションを
       // 使っていなかった）。ensureUnifiedPredictions と同じ fetchAll に統一する
       const entries = await fetchAll("race_entries", "race_id", (q) =>
-        q.gte("race_id", date).lt("race_id", `${date}~`).order("race_id").order("boat_number"),
+        q
+          .gte("race_id", date)
+          .lt("race_id", `${date}~`)
+          .order("race_id")
+          .order("boat_number"),
       );
       const allTodayRaceIds = [
         ...new Set((entries || []).map((e) => e.race_id)),

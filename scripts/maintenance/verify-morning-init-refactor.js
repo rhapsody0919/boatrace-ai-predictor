@@ -14,8 +14,10 @@
  *       失敗は例外。findRacesMissingUnified が、欠けたレースだけを返す。strict のとき、DBの読み取り失敗を「対象なし」にしない
  *   (d) scrape-pcexpect.js: import しても main() が走らない。実ページの解析結果が、本番DBの payload と同じダイジェストになる。
  *       runForRaces: shadow は書かない・live は race_start_at つきで upsert・未公開は no_values・失敗・ブレーカーの扱い
- *   (e) morning-init.js: SKIP_MORNING_INIT_ON_GHA=true で何もせず終了する（既定は従来どおり）。ただし、フェイルセーフとして、
- *       JST 07:00 を過ぎても当日の races が無い（または確認できない）なら、従来どおり初期化する
+ *   (e) morning-init.js: SKIP_MORNING_INIT_ON_GHA=true で何もせず終了する（既定は従来どおり）。フェイルセーフとして、
+ *       JST 07:00 を過ぎても当日の races が無い（または確認できない）なら初期化するが、GitHub の肩代わりの条件
+ *       （ghaSkipGate の races_init: mode=live・Vercel が起動していない・ブレーカーが閉じている・直近の失敗が 403・
+ *       接続の失敗でない）を満たすときだけ。確かめられなければ初期化しない（P0。素の fetch で公式を回り込まない）
  *
  * 実行: node scripts/maintenance/verify-morning-init-refactor.js
  */
@@ -854,8 +856,9 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
 // (e) morning-init.js の GitHub 側を止める変数（と、フェイルセーフ）
 // ---------------------------------------------------------------------------
 {
-  const decide = (skipVar, jstHour, racesCount) =>
-    decideMorningInitOnGha({ skipVar, jstHour, racesCount });
+  // gateSkip=false（肩代わりの条件を満たす）を既定にして、時刻・件数の判定を見る
+  const decide = (skipVar, jstHour, racesCount, gateSkip = false) =>
+    decideMorningInitOnGha({ skipVar, jstHour, racesCount, gateSkip });
   check(
     "(e) 変数が true でない: 常に実行する（従来どおり。時刻・races の件数に依らない）",
     [0, 5, 7, 12].every(
@@ -881,6 +884,20 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   check(
     "(e) true・07:00 以降で件数を確認できない（DB未設定・読み取り失敗）: 実行する（止めない側に倒す）",
     decide(true, 8, null).run && decide(true, 8, undefined).run,
+  );
+  check(
+    "(e) 再現（P0）: races が0件・確認できなくても、肩代わりの条件を満たさない（gateSkip=true）・まだ確かめていない（undefined）なら実行しない",
+    !decide(true, 8, 0, true).run &&
+      !decide(true, 8, null, true).run &&
+      !decideMorningInitOnGha({ skipVar: true, jstHour: 8, racesCount: 0 })
+        .run &&
+      decideMorningInitOnGha({ skipVar: true, jstHour: 8, racesCount: 0 })
+        .needsGate === true &&
+      decide(true, 8, 0, true).needsGate === false &&
+      decideMorningInitOnGha({ skipVar: true, jstHour: 8, racesCount: 12 })
+        .needsGate === false &&
+      decideMorningInitOnGha({ skipVar: true, jstHour: 6, racesCount: 0 })
+        .needsGate === false,
   );
   check(
     "(e) フェイルセーフが働き始める時刻は JST 07:00（従来の初回の初期化と同じ）",
@@ -938,10 +955,11 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     "2026-09-21T07:30:00+09:00",
   );
   check(
-    "(e) SKIP_MORNING_INIT_ON_GHA=true・07:30 JST で、races の件数を確認できない: スキップせず、従来の初期化に進む（フェイルセーフ。ここでは Supabase 未設定で異常終了）",
-    failsafe.status === 1 &&
-      /フェイルセーフで初期化/.test(failsafe.stderr) &&
-      /Supabase環境変数が未設定/.test(failsafe.stderr),
+    "(e) 再現（P0）: SKIP_MORNING_INIT_ON_GHA=true・07:30 JST で、races の件数も肩代わりの条件も確かめられない（Supabase 未設定）: 初期化せず正常終了（GitHub から公式を素の fetch で叩かない）",
+    failsafe.status === 0 &&
+      /スキップ/.test(failsafe.stdout) &&
+      /no_takeover/.test(failsafe.stdout) &&
+      !/フェイルセーフで初期化/.test(failsafe.stderr),
     why(failsafe),
   );
   const normal = spawn({}, "2026-09-21T05:30:00+09:00");
