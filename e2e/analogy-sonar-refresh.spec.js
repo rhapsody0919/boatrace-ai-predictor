@@ -8,6 +8,8 @@ const absent = "欠場があったため、このレースの龍神ソナーは�
 async function setup(page, initial = "before_exhibition") {
   let status = initial;
   let requests = 0;
+  // 展示の facts の何回目を HTTP 500 で返すか
+  const failAt = new Set();
   await page.clock.install({ time: new Date(`${DATE}T10:00:00+09:00`) });
   await page.addInitScript(() => {
     localStorage.setItem("boatai-language", "ja");
@@ -73,8 +75,11 @@ async function setup(page, initial = "before_exhibition") {
     // まとめて数えると開いた直後から 1 にならない。
     if (
       new URL(route.request().url()).searchParams.get("stage") === "exhibition"
-    )
+    ) {
       requests += 1;
+      if (failAt.has(requests))
+        return route.fulfill({ status: 500, json: { error: "test" } });
+    }
     return route.fulfill({ json: { ...analogyV16Facts(), status } });
   });
   await page.goto(`/race/${ID}`);
@@ -94,6 +99,7 @@ async function setup(page, initial = "before_exhibition") {
     change: (next) => {
       status = next;
     },
+    failOn: (n) => failAt.add(n),
   };
 }
 
@@ -163,4 +169,30 @@ test("内部タブとレース詳細タブを往復してもタイマーは重�
   await state.waitRead(2);
   await page.clock.runFor(61000);
   await expect.poll(state.count).toBe(3);
+});
+
+test("定期の読み直しが失敗しても前の値を残し、次の60秒で読み直す", async ({
+  page,
+}) => {
+  const state = await setup(page);
+  state.failOn(2);
+  const failed = page.waitForEvent("console", (m) =>
+    m.text().includes("定期の読み直しに失敗"),
+  );
+  await page.clock.runFor(61000);
+  await expect.poll(state.count).toBe(2);
+  // 次の60秒の予約は失敗を受けた後に入るので、それを待ってから時計を進める
+  await failed;
+  await expect(state.section.locator(".af-ctl-box")).toBeVisible();
+  await expect(state.section.locator(".af-tab-error")).toHaveCount(0);
+  state.change("exhibition_ready");
+  await page.clock.runFor(61000);
+  await expect.poll(state.count).toBe(3);
+  const stage = state.section.locator('[data-af-control="stage"]');
+  await expect(
+    stage.getByRole("button", { name: "展示後（直前情報も）", exact: true }),
+  ).toBeEnabled();
+  await expect(state.section.locator(".af-tab-error")).toHaveCount(0);
+  await page.clock.runFor(61000);
+  expect(state.count()).toBe(3);
 });

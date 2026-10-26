@@ -13,6 +13,7 @@ import { hasLayerDate } from "../utils/pastRate/layer.js";
  * 取得の状態の持ち方は思考アシスト（BOA-430）の取得でも使う（export）。
  * @returns {{status: "idle"|"loading"|"ready"|"error", data: object|null, retry: () => void}}
  *   refreshBeforeExhibition=true の呼び出しだけ展示前の間60秒ごとに取得する。
+ *   定期の読み直しが失敗しても前の値を残し、次の60秒で読み直しを続ける（最初の読み込みの失敗は error）。
  *   enabled=false の間は取得しない（タブを開いたときに初めて取得する）。
  *   error は取得の失敗（「データなし」に倒さない。.claude/rules/frontend-data-fetch.md）。
  *   条件を変えた直後の読み込み中も、前の条件の結果を data に返す（表示がガタつかないように）
@@ -32,15 +33,15 @@ export function useAnalogyResource(
     if (!enabled) return undefined;
     let alive = true;
     let timer;
-    const load = () => {
+    // refresh=true は展示前の定期の読み直し（最初の読み込みではない）
+    const load = (refresh = false) => {
       // StrictMode の effect 再実行でも、同じ条件の処理中の要求は共有する。
       // 定期更新を有効にしていない思考アシスト等の取得は変えない。
       const request =
         refreshBeforeExhibition && pendingRefresh.current?.key === key
           ? pendingRefresh.current.request
           : fetcher();
-      if (refreshBeforeExhibition)
-        pendingRefresh.current = { key, request };
+      if (refreshBeforeExhibition) pendingRefresh.current = { key, request };
       const clearPending = () => {
         if (pendingRefresh.current?.request === request)
           pendingRefresh.current = null;
@@ -58,11 +59,22 @@ export function useAnalogyResource(
             (data.status === "before_exhibition" ||
               data.status === "exhibition_reflecting")
           )
-            timer = setTimeout(load, 60_000);
+            timer = setTimeout(() => load(true), 60_000);
         })
         .catch((error) => {
           clearPending();
           if (!alive) return;
+          // 定期の読み直しの失敗は、見えている値をエラー表示に置き換えない。
+          // 開いたままのページを壊さないよう前の値を残し、次の60秒で読み直しを続ける
+          if (refresh) {
+            console.error(
+              "[analogy] 定期の読み直しに失敗（前の値を残し60秒後に再試行）:",
+              key,
+              error,
+            );
+            timer = setTimeout(() => load(true), 60_000);
+            return;
+          }
           console.error("[analogy] 取得に失敗:", key, error);
           setFailedKey(key);
         });
