@@ -146,11 +146,11 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
-  // A6 結果取得。発走5分後から90分後まで、5分おきに再試行
+  // A6 結果取得。発走10分後から90分後まで、5分おきに再試行
   result: {
     kind: "window",
-    offsets: [5],
-    graceMin: 85,
+    offsets: [10],
+    graceMin: 80,
     retrySec: 300,
     leaseSec: 180,
     claimLimit: 40,
@@ -160,7 +160,7 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
   // B1 公式コンピュータ予想。朝（-720分）から発走30分前まで。1レース約10.6秒（GitHub Actionsの実測）のため、
-  // 20件×3並列で約75秒。公式予想は静的（2026-09-21の実測: 8.5時間後の再取得が朝の値と一致）で、朝1回の取得で足りる。
+  // 6件×3並列で約22秒。窓の始まりの取得の山をならす。公式予想は静的（2026-09-21の実測: 8.5時間後の再取得が朝の値と一致）で、朝1回の取得で足りる。
   // 実装: scripts/lib/scrapeJobs/pcexpectHandlers.js、api/cron/pcexpect.js（T4b-08）
   pcexpect: {
     kind: "window",
@@ -168,7 +168,7 @@ export const SCRAPE_JOBS = Object.freeze({
     graceMin: 690,
     retrySec: 600,
     leaseSec: 300,
-    claimLimit: 20,
+    claimLimit: 6,
     concurrency: 3,
     slotSecEstimate: 12,
     maxDurationSec: 300,
