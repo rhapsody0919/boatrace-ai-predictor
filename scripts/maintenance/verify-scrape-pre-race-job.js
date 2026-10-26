@@ -1865,13 +1865,13 @@ async function routingIsCorrect(handlerFactory) {
     show(ri),
   );
   check(
-    "レジストリ exhibition: 窓 -33（〜-7分。許容幅26分）・再試行120秒・リース90秒（-33 のスロットは、承認済みの判断(e)のまま）",
+    "レジストリ exhibition: 窓 -33（〜-7分。許容幅26分）・再試行120秒・リース110秒（BOA-1145。-33 のスロットは、承認済みの判断(e)のまま）",
     ex.kind === "window" &&
       ex.offsets.includes(-33) &&
       ex.graceMin === 26 &&
       -33 + ex.graceMin === -7 &&
       ex.retrySec === 120 &&
-      ex.leaseSec === 90,
+      ex.leaseSec === 110,
     show(ex),
   );
   check(
@@ -2733,9 +2733,9 @@ async function weightOnlyRetriesSlowly(weightOnly) {
     publishedMinBefore: 0,
   });
   check(
-    "予定の時刻（20・16・13・10・8分前）: 公開されないままなら、窓の中で取得は5回だけ（120秒おきなら13回）。最初の claim（33分前）は取得しない",
-    show(ex.pollMinBefore) === show([20, 16, 13, 10, 8]) &&
-      notYet.fetches === 5,
+    "予定の時刻（20・16・13・10・8・7分前）: 公開されないままなら、窓の中で取得は6回だけ（120秒おきなら13回）。最初の claim（33分前）は取得しない",
+    show(ex.pollMinBefore) === show([20, 16, 13, 10, 8, 7]) &&
+      notYet.fetches === 6,
     show(notYet),
   );
   const median = await simulate({
@@ -2756,8 +2756,8 @@ async function weightOnlyRetriesSlowly(weightOnly) {
   );
   const legacy = await simulate({ pollMinBefore: null, publishedMinBefore: 0 });
   check(
-    "変異検証: 予定の時刻を外した版（120秒おき）では、取得が5回を超える（『5回だけ』の検証が失敗する）",
-    legacy.fetches > 5,
+    "変異検証: 予定の時刻を外した版（120秒おき）では、取得が6回を超える（『6回だけ』の検証が失敗する）",
+    legacy.fetches > 6,
     show(legacy),
   );
 
@@ -2801,19 +2801,22 @@ async function weightOnlyRetriesSlowly(weightOnly) {
     );
   }
   check(
-    "nextPollTime: 20分前の予定で処理したら次は16分前、8分前の後は次なし（窓の終わりまで取りに行かない）",
-    nextPollTime([20, 16, 13, 10, 8], {
+    "nextPollTime: 20分前の予定で処理したら次は16分前、7分前の後は次なし（窓の終わりまで取りに行かない）。最初の予定の30秒前（時計のずれ）までは due、21分前は due でない",
+    nextPollTime(ex.pollMinBefore, {
       deadline: DEADLINE,
       now: at(20, 10),
     }).nextAt?.getTime() === at(16, 10).getTime() &&
-      nextPollTime([20, 16, 13, 10, 8], { deadline: DEADLINE, now: at(8, 10) })
+      nextPollTime(ex.pollMinBefore, { deadline: DEADLINE, now: at(7, 10) })
         .nextAt === null &&
-      nextPollTime([20, 16, 13, 10, 8], { deadline: DEADLINE, now: at(25) })
+      nextPollTime(ex.pollMinBefore, { deadline: DEADLINE, now: at(20, 30) })
+        .due === true &&
+      nextPollTime(ex.pollMinBefore, { deadline: DEADLINE, now: at(21) })
         .due === false,
   );
   check(
-    "レジストリ exhibition（BOA-1145）: claimLimit 6・concurrency 1（403 の後、その起動の残りを叩かない）、breakerUrls に beforeinfo、検査は正常",
-    ex.claimLimit === 6 &&
+    "レジストリ exhibition（BOA-1145）: claimLimit 8・concurrency 1・leaseSec 110（403 の後、その起動の残りを叩かない）、breakerUrls に beforeinfo、検査は正常",
+    ex.claimLimit === 8 &&
+      ex.leaseSec === 110 &&
       ex.concurrency === 1 &&
       show(ex.breakerUrls) ===
         show(["https://www.boatrace.jp/owpc/pc/race/beforeinfo"]) &&

@@ -180,7 +180,8 @@ export function createPoliteFetch({
         }
         if (guarded && BLOCKED_STATUSES.has(response.status)) {
           if (!breaker) return response;
-          breaker.abortProbe(hostKey);
+          // ホストは応答した（過負荷ではない）: ホストの数え方は従来どおり成功の側（半開の試行なら閉じる）
+          await breaker.recordSuccess(hostKey);
           await breaker.recordBlocked(pathKey, `HTTP ${response.status}`);
           throw new BreakerOpenError(
             pathKey,
@@ -202,7 +203,11 @@ export function createPoliteFetch({
           return response;
         }
         await breaker?.recordSuccess(hostKey);
-        if (guarded) await breaker?.recordSuccess(pathKey);
+        if (guarded) {
+          // 登録したパスのブレーカーは、2xx・3xx でだけ閉じる（半開の試行が 404・500・保守のページでも閉じない）
+          if (response.ok) await breaker?.recordSuccess(pathKey);
+          else breaker?.abortProbe(pathKey);
+        }
         return response;
       }
       // ループは必ず return か throw で終わる（maxRetries >= 0 のため）

@@ -114,7 +114,8 @@ export function createMemoryStore({
         store.breakerStore.byKey[hostKey] = untilMs;
       },
       async close(hostKey) {
-        store.breakerStore.until = 0;
+        // until はホストのキーの閉鎖でだけ消す（パスのキーの閉鎖で、テストが入れたホストの開放を消さない）
+        if (!String(hostKey).includes("/")) store.breakerStore.until = 0;
         delete store.breakerStore.byKey[hostKey];
       },
     },

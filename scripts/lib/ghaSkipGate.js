@@ -12,7 +12,8 @@
  * 健全の定義（ジョブの kind ごと。scripts/lib/scrapeJobs/registry.js）:
  *   共通   scrape_job_state.mode = 'live'（shadow は last_success_at を更新するため、mode の確認が必須）
  *   窓型   Vercel が起動し続けている（last_tick_at が新しい）・連続失敗が閾値未満。
- *          取得先のブレーカー（ホスト・403 のパス）が開いている間は、健全とみなす（肩代わりしない。BOA-1145）。
+ *          取得先のブレーカーが開いている間は肩代わりしない（BOA-1145）: 403 のパスは常に、ホスト（429/503）は
+ *          Vercel が起動している（tick_stale でない）限り。
  *          last_success_at は使わない: 窓型の成功は「処理する予定があった実行」でしか更新されず、レースの無い
  *          時間帯（夜間・朝の最初の窓の前）に古く見え、GitHub が誤って二重に動くため。「起動している・失敗が
  *          続いていない・ブレーカーが閉じている」なら、成功が無いのは処理対象が無いだけ、と扱う
@@ -37,6 +38,7 @@ import { SCRAPE_JOBS, HOST_JOB_PREFIX } from "./scrapeJobs/registry.js";
 import { resolveTargetDate } from "./scrapeJobs/dailyJob.js";
 import { TICK_WRITE_INTERVAL_MS } from "./scrapeJobs/store.js";
 import { THRESHOLDS } from "./scrapeJobs/monitor.js";
+import { hostKeyOf, pathKeyOf } from "./scrapeJobs/politeFetch.js";
 
 /** SKIP 変数 → Vercel 側のジョブ名（全て健全なときだけスキップする） */
 export const GHA_SKIP_TARGETS = Object.freeze({
@@ -95,26 +97,18 @@ const minutesSince = (ms, nowMs) => Math.floor((nowMs - ms) / 60000);
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** ジョブのブレーカーのキー（ホスト host:xxx と、403 で開くパス host:xxx/path。BOA-1145） */
-function breakerKeysOf(def) {
-  return [
-    ...(def?.hosts ?? []).map((host) => `${HOST_JOB_PREFIX}${host}`),
-    ...(def?.breakerUrls ?? []).map((url) => {
-      const u = new URL(url);
-      return `${HOST_JOB_PREFIX}${u.hostname.replace(/^www\d*\./, "")}${u.pathname}`;
-    }),
-  ];
-}
-
-/** 開いているブレーカーのキーを返す（開いていなければ null） */
-function openBreakerKey(def, rowsByJob, nowMs) {
-  for (const key of breakerKeysOf(def)) {
+/** 開いているブレーカーのキーを返す（開いていなければ null）。キーは politeFetch と同じ関数で作る */
+function openBreakerKey(keys, rowsByJob, nowMs) {
+  for (const key of keys) {
     const row = rowsByJob.get(key);
     const until = parseTime(row?.breaker_open_until);
     if (until !== null && until > nowMs) return key;
   }
   return null;
 }
+const hostKeysOf = (def) =>
+  (def?.hosts ?? []).map((host) => hostKeyOf(`https://${host}/`));
+const pathKeysOf = (def) => (def?.breakerUrls ?? []).map(pathKeyOf);
 
 /**
  * 1ジョブの健全性（純関数）。
@@ -167,17 +161,18 @@ export function evaluateJobHealth({
     );
   }
   const nowMs = now.getTime();
-  // 取得先のブレーカーが開いている（429/503 の過負荷、または 403 の拒否。BOA-1145）: 肩代わりしない。
-  // GitHub Actions の取得はブレーカーも 403 の扱いも無い素の fetch で、別の IP から同じ取得先を叩くことになる
-  // （拒否・過負荷を悪化させ、回り込みにもなる）。Vercel が起動していない（tick_stale）ときの肩代わりは、
-  // ブレーカーが閉じている限り従来どおり。連続失敗より先に見る（ブレーカーが開く前後の失敗で肩代わりさせない）
-  const openKey = openBreakerKey(def, rowsByJob, nowMs);
-  if (openKey) {
+  // 取得先のブレーカーが開いている間は肩代わりしない（BOA-1145）。GitHub Actions の取得はブレーカーも 403 の扱いも
+  // 無い素の fetch で、別の IP から同じ取得先を叩くことになる（拒否・過負荷を悪化させ、回り込みにもなる）。
+  //   403 のパス（breakerUrls）が開いている: 常に肩代わりしない（Vercel が止まっていても、拒否されたページを叩かない）
+  //   ホスト（429/503）が開いている: 連続失敗では肩代わりしない。Vercel が起動していない（tick_stale）ときだけ肩代わりする
+  const openPath = openBreakerKey(pathKeysOf(def), rowsByJob, nowMs);
+  if (openPath) {
     return good(
       "breaker_open_no_takeover",
-      `${job}: 取得先 ${openKey} のブレーカーが開いている（肩代わりしない）`,
+      `${job}: 取得先 ${openPath} のブレーカー（403）が開いている（肩代わりしない）`,
     );
   }
+  const openHost = openBreakerKey(hostKeysOf(def), rowsByJob, nowMs);
   const failures = row.consecutive_failures;
   if (!Number.isInteger(failures) || failures < 0) {
     return bad(
@@ -185,7 +180,7 @@ export function evaluateJobHealth({
       `${job}: consecutive_failures が不正: ${String(failures)}`,
     );
   }
-  if (failures >= policy.maxConsecutiveFailures) {
+  if (failures >= policy.maxConsecutiveFailures && !openHost) {
     return bad("consecutive_failures", `${job}: 連続失敗${failures}回`);
   }
 
@@ -198,6 +193,12 @@ export function evaluateJobHealth({
       return bad(
         "tick_stale",
         `${job}: 最終起動${tickAge}分前（${policy.tickMaxAgeMin}分以上更新なし・時計の異常を含む）`,
+      );
+    }
+    if (openHost) {
+      return good(
+        "breaker_open_no_takeover",
+        `${job}: 取得先 ${openHost} のブレーカーが開いている（Vercel は起動している。肩代わりしない）`,
       );
     }
     const success = parseTime(row.last_success_at);
@@ -230,6 +231,12 @@ export function evaluateJobHealth({
     const sinceTargetMin =
       targetInstant === null ? null : minutesSince(targetInstant, nowMs);
 
+    if (openHost) {
+      return good(
+        "breaker_open_no_takeover",
+        `${job}: 取得先 ${openHost} のブレーカーが開いている（肩代わりしない）`,
+      );
+    }
     if (CHUNKED_JOBS.includes(job)) {
       const success = parseTime(row.last_success_at);
       if (
@@ -316,7 +323,11 @@ export function jobKeysFor(varName, registry = SCRAPE_JOBS) {
   const jobs = GHA_SKIP_TARGETS[varName] ?? [];
   const keys = new Set(jobs);
   for (const job of jobs) {
-    for (const key of breakerKeysOf(registry[job])) keys.add(key);
+    for (const key of [
+      ...hostKeysOf(registry[job]),
+      ...pathKeysOf(registry[job]),
+    ])
+      keys.add(key);
   }
   return [...keys];
 }

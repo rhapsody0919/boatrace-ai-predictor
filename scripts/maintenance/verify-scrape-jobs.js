@@ -1051,6 +1051,37 @@ check(
     );
   }
 
+  // 半開の試行が 404・500 等（2xx・3xx でない）なら、403 のパスのブレーカーを閉じない（次の取得がもう一度試行になる）
+  {
+    const clock = { t: 11_000_000 };
+    const breaker = createCircuitBreaker({ now: () => clock.t });
+    const BEFORE = "https://www.boatrace.jp/owpc/pc/race/beforeinfo";
+    let status = 403;
+    let n = 0;
+    const f = createPoliteFetch({
+      breaker,
+      sleep: noSleep,
+      fetchImpl: async () => (n++, mkResponse(status)),
+    });
+    await f(`${BEFORE}?rno=1`).catch(() => {});
+    clock.t += 30 * 60_000 + 1;
+    status = 404;
+    const r404 = await f(`${BEFORE}?rno=2`);
+    const snap404 = breaker.snapshot(pathKeyOf(BEFORE));
+    status = 200;
+    const r200 = await f(`${BEFORE}?rno=3`);
+    check(
+      "半開の試行が 404 なら 403 のパスのブレーカーは閉じず（期限は残り、試行中の印だけ外す）、次の 200 で閉じる",
+      r404.status === 404 &&
+        snap404.openUntil > 0 &&
+        snap404.probing === false &&
+        r200.status === 200 &&
+        breaker.snapshot(pathKeyOf(BEFORE)).openUntil === 0 &&
+        n === 3,
+      show(snap404),
+    );
+  }
+
   // 登録していないパスの 403 は従来どおり（BOATCAST は未公開のファイルを 403 で返すのが通常。ADR-0067）
   {
     const breaker = createCircuitBreaker({ now: () => 9_000_000 });

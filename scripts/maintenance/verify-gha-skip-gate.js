@@ -249,6 +249,30 @@ async function suite(mod, record) {
         (await skipOf(V, [healthy(), closed], NOW)) === true,
     );
     {
+      // ホスト（429/503）のブレーカー（BOA-1145）: 連続失敗では肩代わりしない。Vercel が起動していない（tick_stale）ときだけ肩代わりする
+      const hostOpen = row("host:boatrace.jp", {
+        breaker_open_until: minutesAgo(NOW, -20),
+      });
+      const h1 = await decide(
+        V,
+        [healthy({ consecutive_failures: 5 }), hostOpen],
+        NOW,
+      );
+      const h2 = await decide(
+        V,
+        [healthy({ last_tick_at: minutesAgo(NOW, 30) }), hostOpen],
+        NOW,
+      );
+      record(
+        "オッズ: ホストのブレーカーが開いている間、連続失敗5回でもスキップ。Vercel が起動していない（tick_stale）なら実行（肩代わり）",
+        h1.skip === true &&
+          h1.reason === "breaker_open_no_takeover" &&
+          h2.skip === false &&
+          h2.reason === "tick_stale",
+        show([h1, h2]),
+      );
+    }
+    {
       // 403 のパスのブレーカー（BOA-1145）: 展示が live で連続失敗が閾値を超えていても、beforeinfo のパスの
       // ブレーカーが開いている間は、GitHub が beforeinfo を肩代わりで叩かない
       const EX = "SKIP_EXHIBITION_ON_GHA";
@@ -1078,13 +1102,18 @@ const MUTANTS = [
   ["時計の異常（未来の起動）を許す", "tickAge < -1 || ", ""],
   [
     "連続失敗の確認を外す",
-    "if (failures >= policy.maxConsecutiveFailures) {",
+    "if (failures >= policy.maxConsecutiveFailures && !openHost) {",
     "if (false) {",
   ],
   [
-    "ブレーカーが開いている間の肩代わりの抑止を外す（BOA-1145）",
-    "if (openKey) {",
+    "403 のパスのブレーカーが開いている間の肩代わりの抑止を外す（BOA-1145）",
+    "if (openPath) {",
     "if (false) {",
+  ],
+  [
+    "ホストのブレーカーが開いている間の連続失敗の肩代わりを戻す（BOA-1145）",
+    "if (failures >= policy.maxConsecutiveFailures && !openHost) {",
+    "if (failures >= policy.maxConsecutiveFailures) {",
   ],
   [
     "日次: 対象日でなく、何か処理済みならよいことにする",

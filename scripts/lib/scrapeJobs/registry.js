@@ -69,17 +69,17 @@ export const SCRAPE_JOBS = Object.freeze({
   //
   // 取得の回数を減らす（BOA-1145。2026-10-26 15:50 から beforeinfo が当社の取得だけ 403 になった。10/25 は beforeinfo を
   // 1日1,874回、1レース約11回取っていた。うち -33 の窓が120秒おきで平均8.95回）:
-  //   - -33 の窓は、締切（races.start_time）の pollMinBefore 分前（20・16・13・10・8分前）にだけ取りに行く。-33 のスロットを
+  //   - -33 の窓は、締切（races.start_time）の pollMinBefore 分前（20・16・13・10・8・7分前）にだけ取りに行く。-33 のスロットを
   //     claim した時点で20分前より前なら、取得せずに20分前まで戻す（not_due。試行回数は数えない）。offsets の -33 は
   //     変えない（その日の予定表に既にある -33 のスロットと、新しい offset のスロットが二重にならないよう）。
   //     根拠（10/19〜25 の1,088レース、-33 のスロットの完了時刻の締切までの分）: 最も遅い公開は8.43分前、中央値16.4分前。
   //     この予定で1レース平均2.3〜2.5回（今は8.95回）、締切8分前までに取れる割合100%、10分前まで99.7%。
-  //     公開（20分前より前の公開は20分前とみなす）から取得までの遅れは平均約2分（今は約0.4分）。8分前の後は取りに行かず、窓の終わり（7分前）で期限切れにする
-  //     （その後は +10 の補完が拾う）。切り戻し: pollMinBefore を消す（120秒おきに戻る）
+  //     公開（20分前より前の公開は20分前とみなす）から取得までの遅れは平均約2分（今は約0.4分）。7分前（窓の終わり）の
+  //     後は取りに行かず、窓の終わりで期限切れにする（その後は +10 の補完が拾う）。切り戻し: pollMinBefore を消す（120秒おきに戻る）
   //   - 体重だけの窓（-60）の再試行は900秒おき（最大2回。実測は平均1.00回）
-  //   - claimLimit 6・concurrency 1: 1回の起動で1件ずつ取り、403 を受けたらパスのブレーカー（breakerUrls・politeFetch.js）が
-  //     開いて、その起動の残りは叩かない（再開・半開の試行が、ちょうど1件で止まる）。1分あたりの claim は、7日の実測から
-  //     多くて7件（not_due・skipped_have_data は取得なし）
+  //   - claimLimit 8・concurrency 1・leaseSec 110: 1回の起動で1件ずつ取り、403 を受けたらパスのブレーカー（breakerUrls・
+  //     politeFetch.js）が開いて、その起動の残りは叩かない（再開・半開の試行が、その起動では1件で止まる）。1分あたりの claim は、
+  //     7日の実測から多くて7件（not_due・skipped_have_data は取得なし）。8件 × 12秒 = 96秒 ≦ リース110秒−10秒
   //   - breakerUrls: 起動の最初に、このページのパスのブレーカーも見る（開いていれば claim せずに終える。cronWrapper.js）
   exhibition: {
     kind: "window",
@@ -88,11 +88,11 @@ export const SCRAPE_JOBS = Object.freeze({
     catchupRetrySec: 600,
     weightOnlyOffsets: [-60],
     weightOnlyRetrySec: 900,
-    pollMinBefore: [20, 16, 13, 10, 8],
+    pollMinBefore: [20, 16, 13, 10, 8, 7],
     graceMin: 26,
     retrySec: 120,
-    leaseSec: 90,
-    claimLimit: 6,
+    leaseSec: 110,
+    claimLimit: 8,
     concurrency: 1,
     slotSecEstimate: 12,
     maxDurationSec: 300,
@@ -695,7 +695,8 @@ export function nextPollTime(pollMinBefore, { deadline, now }) {
   const at = (m) =>
     new Date(deadline.getTime() - m * 60000 - POLL_EARLY_SEC * 1000);
   const first = pollMinBefore[0];
-  if (minutesBefore > first + POLL_EARLY_SEC / 60 + 1 / 60) {
+  // 最初の予定の時刻（−10秒）に claim された分は、Vercel と DB の時計の小さなずれ（30秒まで）があっても、取りに行く
+  if (minutesBefore > first + POLL_EARLY_SEC / 60 + 0.5) {
     return { due: false, retryAt: at(first) };
   }
   const next = pollMinBefore.find((m) => m < minutesBefore - 0.5);

@@ -258,7 +258,7 @@ export function createRaceInfoSlotHandler({
  * @param {{isWeightOnly: (offsetMin: number) => boolean, retrySec: number}} [options.weightOnly]
  *   既定はレジストリの exhibition の weightOnlyOffsets・weightOnlyRetrySec（テスト用の差し替え）
  * @param {number[]|undefined} [options.pollMinBefore]
- *   既定はレジストリの exhibition の pollMinBefore（通常の窓の -33 を、締切の20・16・13・10・8分前にだけ取る。BOA-1145）。
+ *   既定はレジストリの exhibition の pollMinBefore（通常の窓の -33 を、締切の20・16・13・10・8・7分前にだけ取る。BOA-1145）。
  *   最初の予定より前に claim したら、取得せずに outcome "not_due"（試行回数を戻す）で最初の予定まで戻す。
  *   undefined なら従来どおり retrySec（120秒）おき
  */
