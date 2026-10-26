@@ -109,6 +109,7 @@ export function createCircuitBreaker({
         probing: false,
         fetchStop: false,
         lastRead: -Infinity,
+        inflight: null,
       };
       hosts.set(hostKey, s);
     }
@@ -127,16 +128,27 @@ export function createCircuitBreaker({
     }
   };
 
+  // 読み取り中の並行の呼び出しは、同じ読み取り（s.inflight）を待つ。lastRead は読み終わってから更新する
+  // （先に更新すると、読み取りの完了前に来た並行の check が TTL 内として読みを省き、初期値の fetchStop=false で
+  // 取りに行く。Codex の審査 P1、/api/odds/live の同時の要求）
   const refresh = async (hostKey, s) => {
     if (!store) return;
+    if (s.inflight) return s.inflight;
     if (now() - s.lastRead < readTtlMs) return;
-    s.lastRead = now();
-    const read = normalizeBreakerRead(
-      await safe("状態の読み取り", () => store.read(hostKey)),
-    );
-    if (!read) return;
-    if (read.untilMs > s.openUntil) s.openUntil = read.untilMs;
-    s.fetchStop = read.fetchStop;
+    s.inflight = (async () => {
+      try {
+        const read = normalizeBreakerRead(
+          await safe("状態の読み取り", () => store.read(hostKey)),
+        );
+        if (!read) return;
+        if (read.untilMs > s.openUntil) s.openUntil = read.untilMs;
+        s.fetchStop = read.fetchStop;
+      } finally {
+        s.lastRead = now();
+        s.inflight = null;
+      }
+    })();
+    return s.inflight;
   };
 
   return {
