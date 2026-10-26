@@ -2,34 +2,28 @@
  * GitHub Actions 側の取得を止める判定（フェイルセーフ付きSKIP。自動フェイルオーバー）。
  *
  * 従来の SKIP_<JOB>_ON_GHA=true は静的な停止で、Vercel が止まっても、人間が変数を戻すまで取得が止まる
- * （無人の夜間は特に危険）。本モジュールは、変数が true のときだけ scrape_job_state を読み、Vercel が
- * 健全なときに限りスキップする。それ以外（Vercel が live でない・止まっている・読み取りに失敗・不正な値）は、
- * 従来どおり実行する（迷ったら実行する。上書き型のため、二重に取得してもデータは壊れない）。
+ * （無人の夜間は特に危険）。本モジュールは、変数が true のときだけ scrape_job_state を読み、**Vercel が起動していないと
+ * 確かめられ、かつ取得先が拒否・過負荷でないと確かめられたときだけ**、GitHub Actions に肩代わりさせる。
  *
- *   変数が未設定・true 以外 → DB を読まず、常に「実行」（現行と完全に同じ）
- *   変数が true            → 下の判定。全ジョブが健全ならスキップ
+ *   変数が未設定・true 以外 → DB を読まず、常に「実行」（現行と完全に同じ。人が GitHub を主に選んだ状態）
+ *   変数が true            → 下の判定。全ジョブで「肩代わりしない」ならスキップ
  *
- * 健全の定義（ジョブの kind ごと。scripts/lib/scrapeJobs/registry.js）:
- *   共通   scrape_job_state.mode = 'live'（shadow は last_success_at を更新するため、mode の確認が必須）
- *   窓型   Vercel が起動し続けている（last_tick_at が新しい）・連続失敗が閾値未満。
- *          取得先のブレーカーが開いている間は肩代わりしない（BOA-1145）: 403 のパスは常に、ホスト（429/503）は
- *          Vercel が起動している（tick_stale でない）限り。
- *          last_success_at は使わない: 窓型の成功は「処理する予定があった実行」でしか更新されず、レースの無い
- *          時間帯（夜間・朝の最初の窓の前）に古く見え、GitHub が誤って二重に動くため。「起動している・失敗が
- *          続いていない・ブレーカーが閉じている」なら、成功が無いのは処理対象が無いだけ、と扱う
- *   日次   対象日（resolveTargetDate。指定時刻から解決）を Vercel が処理済み（last_target_date）。
- *          前日分が済んでいるだけでは、当日の Vercel の失敗を救えないため、当日分の処理済みを要求する
- *   日次（チャンク処理。racer_profiles）  上に加えて、処理中（対象日の指定時刻以降に成功があり、直近の成功が新しい）も健全
+ * 肩代わりの条件（docs/design/scraping-load-budget/spec.md §0・§8 の P0。BOA-1145 の後）:
+ *   GitHub Actions の取得は politeFetch・DB のブレーカー・403 の扱いを通らない素の fetch で、別の IP から公式を叩く。
+ *   公式が 403 や接続の失敗を返し続けるときに肩代わりすると、守りを回り込むことになる。そこで、肩代わりは次の全てを
+ *   満たすときだけにする。どれかを確かめられない（行なし・読み取りの失敗・不正な値）ときも肩代わりしない。
+ *     1. scrape_job_state.mode = 'live'（off・shadow は「どこからも取らない」。人が止めた間に GitHub が取らない）
+ *     2. Vercel が起動していない
+ *          窓型: last_tick_at が tickMaxAgeMin 分以上古い（tick_stale）
+ *          日次: 対象日が未処理で、対象日の指定時刻以降に Vercel の起動（last_tick_at）が無い
+ *        Vercel が起動しているなら、連続失敗があっても肩代わりしない（失敗の多くは取得先の拒否・接続の失敗で、
+ *        別の IP から叩き直すのは回り込みになる。それ以外の失敗は監視の通知で人が見る）
+ *     3. 取得先のブレーカー（ホスト・パス）が閉じている
+ *     4. 直近の失敗（last_error）が、取得先の拒否・過負荷・接続の失敗（403・429・503・ネットワーク）ではない
  *
  * 判定は純関数（evaluateJobHealth・decideFromRows）と、IO（createRestJobStateClient・shouldSkipOnGha）に分ける。
+ * 戻り値の healthy は「肩代わりしない（GitHub はスキップする）」の意味（名前は従来のまま）。
  * DB は supabase-js を使わず、REST（fetch）で該当ジョブの行だけを読む（GitHub Actions の判定ステップが npm ci なしで動く）。
- *
- * 従来の経路を持つジョブ（LEGACY_PATH_JOBS。展示 exhibition）:
- *   Vercel の api/cron/exhibition.js は、2026-09-16（BOA-313）から、scrape_job_state を使わない従来の経路（cron-job.org 起点、
- *   waitUntil）で動いており、本番の SKIP_EXHIBITION_ON_GHA=true は、この経路が担う前提の静的な停止。スロット化（T4b-06）後も、
- *   mode が live になるまで、この経路が動く（mode が off・行なし・shadow の間）。その間は DB の状態で健全性を判定できないため、
- *   従来どおり静的にスキップする（GitHub Actions が、従来の経路と二重に動き出さないように）。mode が live になったら、
- *   他のジョブと同じ判定（起動・連続失敗・ブレーカー）に切り替わり、不健全なら GitHub Actions が肩代わりする。
  *
  * 対象外（現行のまま静的な変数）:
  *   SKIP_ODDS_REFRESH_ON_GHA  予測リフレッシュ。Vercel 側の REFRESH_ON_VERCEL（環境変数）と連動しており、DB の状態では判定できない
@@ -37,10 +31,9 @@
 import { SCRAPE_JOBS, HOST_JOB_PREFIX } from "./scrapeJobs/registry.js";
 import { resolveTargetDate } from "./scrapeJobs/dailyJob.js";
 import { TICK_WRITE_INTERVAL_MS } from "./scrapeJobs/store.js";
-import { THRESHOLDS } from "./scrapeJobs/monitor.js";
 import { hostKeyOf, pathKeyOf } from "./scrapeJobs/politeFetch.js";
 
-/** SKIP 変数 → Vercel 側のジョブ名（全て健全なときだけスキップする） */
+/** SKIP 変数 → Vercel 側のジョブ名（どのジョブも肩代わりの条件を満たさないときスキップする） */
 export const GHA_SKIP_TARGETS = Object.freeze({
   SKIP_RESULTS_ON_GHA: Object.freeze(["result", "result_catchup"]),
   SKIP_KFILE_ON_GHA: Object.freeze(["kfile_sync"]),
@@ -52,16 +45,9 @@ export const GHA_SKIP_TARGETS = Object.freeze({
   SKIP_RACER_SEASON_ON_GHA: Object.freeze(["racer_profiles"]),
   SKIP_RACE_INFO_ON_GHA: Object.freeze(["race_info"]),
   SKIP_EXHIBITION_ON_GHA: Object.freeze(["exhibition"]),
+  // 朝の初期化の安全装置（scripts/daily/morning-init.js）。races が無い日でも、上の条件を満たすときだけ GitHub が初期化する
+  SKIP_MORNING_INIT_ON_GHA: Object.freeze(["races_init"]),
 });
-
-/**
- * scrape_job_state を使わない従来の経路が、mode が live になるまで動いているジョブ（上の説明を参照）。
- * mode が live でない（行なし・off・shadow を含む）間は、健全とみなす（＝従来どおり静的にスキップ）。
- */
-export const LEGACY_PATH_JOBS = Object.freeze(["exhibition"]);
-
-/** チャンク処理（1回の呼び出しで終わらず、複数回の起動で対象日を完了する）の日次ジョブ */
-const CHUNKED_JOBS = Object.freeze(["racer_profiles"]);
 
 export const GHA_SKIP_POLICY = Object.freeze({
   /**
@@ -69,13 +55,11 @@ export const GHA_SKIP_POLICY = Object.freeze({
    * tick は5分に1回しか書かれない（TICK_WRITE_INTERVAL_MS）ため、正常でも最大約6分古い。書き込み2回分+2分の余裕
    */
   tickMaxAgeMin: (TICK_WRITE_INTERVAL_MS / 60000) * 2 + 2,
-  /** 連続失敗がこの回数以上なら不健全（monitor の通知閾値と同じ） */
-  maxConsecutiveFailures: THRESHOLDS.consecutiveFailures,
-  /** チャンク処理中とみなす、直近の成功の鮮度（cron は10分間隔、1チャンク最大約13分のため、成功は最大約20分おき） */
-  chunkProgressMaxAgeMin: 40,
+  /** 日次ジョブで「対象日の指定時刻以降に起動した」とみなす、指定時刻の前の許容（Vercel と時計のずれ） */
+  dailyStartSkewMin: 1,
   /** 日次ジョブの指定時刻からこの分数までは、Vercel の処理の完了を待つ価値がある（判定ステップの待機の上限） */
   dailyWaitGraceMin: 10,
-  /** DB の読み取りのタイムアウト（超えたら「実行」） */
+  /** DB の読み取りのタイムアウト（超えたら確かめられないため「スキップ」） */
   readTimeoutMs: 5000,
 });
 
@@ -111,7 +95,18 @@ const hostKeysOf = (def) =>
 const pathKeysOf = (def) => (def?.breakerUrls ?? []).map(pathKeyOf);
 
 /**
- * 1ジョブの健全性（純関数）。
+ * 直近の失敗が、取得先の拒否・過負荷・接続の失敗か（last_error の文字列。htmlFetch の `HTTP 403 for …`、
+ * politeFetch の FetchError・BreakerOpenError、Node の fetch のネットワークエラー）。この失敗が理由で
+ * Vercel が取れていないなら、別の IP から叩き直さない
+ */
+export const FETCH_FAILURE_RE =
+  /HTTP (403|429|503)\b|取得に失敗しました|サーキットブレーカー|fetch failed|ECONN(RESET|REFUSED|ABORTED)|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR|socket hang up|network|timed? ?out|タイムアウト|aborted|AbortError/i;
+
+export const isFetchFailureError = (lastError) =>
+  typeof lastError === "string" && FETCH_FAILURE_RE.test(lastError);
+
+/**
+ * 1ジョブについて、GitHub Actions が肩代わりしてよいか（純関数）。healthy=true は「肩代わりしない」。
  *
  * @param {Object} params
  * @param {string} params.job レジストリのジョブ名
@@ -120,7 +115,7 @@ const pathKeysOf = (def) => (def?.breakerUrls ?? []).map(pathKeyOf);
  * @param {typeof GHA_SKIP_POLICY} [params.policy]
  * @param {typeof SCRAPE_JOBS} [params.registry]
  * @returns {{job: string, healthy: boolean, reason: string, detail: string, retryable: boolean}}
- *   retryable: 今は不健全だが、Vercel の処理の完了を少し待てば健全になりうる（日次ジョブの指定時刻の直後）
+ *   retryable: 今は肩代わりの条件を満たすが、Vercel の起動を少し待てば満たさなくなりうる（日次ジョブの指定時刻の直後）
  */
 export function evaluateJobHealth({
   job,
@@ -129,14 +124,14 @@ export function evaluateJobHealth({
   policy = GHA_SKIP_POLICY,
   registry = SCRAPE_JOBS,
 }) {
-  const bad = (reason, detail, retryable = false) => ({
+  const takeover = (reason, detail, retryable = false) => ({
     job,
     healthy: false,
     reason,
     detail,
     retryable,
   });
-  const good = (reason, detail) => ({
+  const noTakeover = (reason, detail) => ({
     job,
     healthy: true,
     reason,
@@ -145,70 +140,60 @@ export function evaluateJobHealth({
   });
 
   const def = registry[job];
-  if (!def) return bad("unknown_job", `${job}: レジストリに無いジョブ`);
-  const row = rowsByJob.get(job);
-  if (LEGACY_PATH_JOBS.includes(job) && (!row || row.mode !== "live")) {
-    return good(
-      "legacy_path",
-      `${job}: mode=${row ? String(row.mode) : "行なし"}（従来の経路が動く。DBの状態では判定できないため、従来どおり静的にスキップ）`,
+  if (!def) {
+    return noTakeover(
+      "unknown_job",
+      `${job}: レジストリに無いジョブ（確かめられないため肩代わりしない）`,
     );
   }
-  if (!row) return bad("no_row", `${job}: ジョブ状態の行なし`);
+  const row = rowsByJob.get(job);
+  if (!row) {
+    return noTakeover(
+      "no_row",
+      `${job}: ジョブ状態の行なし（mode を確かめられないため肩代わりしない）`,
+    );
+  }
   if (row.mode !== "live") {
-    return bad(
+    return noTakeover(
       "mode_not_live",
-      `${job}: mode=${String(row.mode)}（liveではない）`,
+      `${job}: mode=${String(row.mode)}（live ではない。どこからも取らない）`,
     );
   }
   const nowMs = now.getTime();
-  // 取得先のブレーカーが開いている間は肩代わりしない（BOA-1145）。GitHub Actions の取得はブレーカーも 403 の扱いも
-  // 無い素の fetch で、別の IP から同じ取得先を叩くことになる（拒否・過負荷を悪化させ、回り込みにもなる）。
-  //   403 のパス（breakerUrls）が開いている: 常に肩代わりしない（Vercel が止まっていても、拒否されたページを叩かない）
-  //   ホスト（429/503）が開いている: 連続失敗では肩代わりしない。Vercel が起動していない（tick_stale）ときだけ肩代わりする
-  const openPath = openBreakerKey(pathKeysOf(def), rowsByJob, nowMs);
-  if (openPath) {
-    return good(
+  // 取得先のブレーカー（403 のパス・429/503 のホスト）が開いている間は、Vercel が止まっていても肩代わりしない
+  const openKey =
+    openBreakerKey(pathKeysOf(def), rowsByJob, nowMs) ??
+    openBreakerKey(hostKeysOf(def), rowsByJob, nowMs);
+  if (openKey) {
+    return noTakeover(
       "breaker_open_no_takeover",
-      `${job}: 取得先 ${openPath} のブレーカー（403）が開いている（肩代わりしない）`,
+      `${job}: 取得先 ${openKey} のブレーカーが開いている（肩代わりしない）`,
     );
   }
-  const openHost = openBreakerKey(hostKeysOf(def), rowsByJob, nowMs);
-  const failures = row.consecutive_failures;
-  if (!Number.isInteger(failures) || failures < 0) {
-    return bad(
-      "invalid_value",
-      `${job}: consecutive_failures が不正: ${String(failures)}`,
+  if (isFetchFailureError(row.last_error)) {
+    return noTakeover(
+      "fetch_failure_no_takeover",
+      `${job}: 直近の失敗が取得先の拒否・接続の失敗（${String(row.last_error).slice(0, 120)}。肩代わりしない）`,
     );
-  }
-  if (failures >= policy.maxConsecutiveFailures && !openHost) {
-    return bad("consecutive_failures", `${job}: 連続失敗${failures}回`);
   }
 
+  const tick = parseTime(row.last_tick_at);
+  const tickAge = tick === null ? null : minutesSince(tick, nowMs);
+  const tickFresh =
+    tickAge !== null && tickAge >= -1 && tickAge < policy.tickMaxAgeMin;
+
   if (def.kind === "window") {
-    const tick = parseTime(row.last_tick_at);
-    if (tick === null)
-      return bad("tick_missing", `${job}: last_tick_at が無い・不正`);
-    const tickAge = minutesSince(tick, nowMs);
-    if (tickAge < -1 || tickAge >= policy.tickMaxAgeMin) {
-      return bad(
-        "tick_stale",
-        `${job}: 最終起動${tickAge}分前（${policy.tickMaxAgeMin}分以上更新なし・時計の異常を含む）`,
+    if (tickFresh) {
+      return noTakeover(
+        "vercel_running",
+        `${job}: live・最終起動${tickAge}分前（Vercel が起動している。連続失敗${String(row.consecutive_failures)}回でも肩代わりしない）`,
       );
     }
-    if (openHost) {
-      return good(
-        "breaker_open_no_takeover",
-        `${job}: 取得先 ${openHost} のブレーカーが開いている（Vercel は起動している。肩代わりしない）`,
-      );
-    }
-    const success = parseTime(row.last_success_at);
-    const successNote =
-      success === null
-        ? "成功の記録なし"
-        : `最終成功${minutesSince(success, nowMs)}分前`;
-    return good(
-      "window_alive",
-      `${job}: live・最終起動${tickAge}分前・${successNote}`,
+    return takeover(
+      tick === null ? "tick_missing" : "tick_stale",
+      tick === null
+        ? `${job}: last_tick_at が無い・不正（Vercel が起動していない）`
+        : `${job}: 最終起動${tickAge}分前（${policy.tickMaxAgeMin}分以上更新なし・時計の異常を含む）`,
     );
   }
 
@@ -216,54 +201,46 @@ export function evaluateJobHealth({
     const target = resolveTargetDate(now, def.targetTimeJst);
     const done = row.last_target_date;
     if (done !== null && done !== undefined && !DATE_RE.test(String(done))) {
-      return bad(
+      return noTakeover(
         "invalid_value",
-        `${job}: last_target_date が不正: ${String(done)}`,
+        `${job}: last_target_date が不正: ${String(done)}（確かめられないため肩代わりしない）`,
       );
     }
     if (done && done >= target) {
-      return good(
+      return noTakeover(
         "daily_done",
         `${job}: live・対象日${target}は処理済み（${done}）`,
       );
     }
     const targetInstant = parseTime(`${target}T${def.targetTimeJst}:00+09:00`);
-    const sinceTargetMin =
-      targetInstant === null ? null : minutesSince(targetInstant, nowMs);
-
-    if (openHost) {
-      return good(
-        "breaker_open_no_takeover",
-        `${job}: 取得先 ${openHost} のブレーカーが開いている（肩代わりしない）`,
+    const startedSinceTarget =
+      tick !== null &&
+      targetInstant !== null &&
+      tick >= targetInstant - policy.dailyStartSkewMin * 60000;
+    if (tickFresh || startedSinceTarget) {
+      return noTakeover(
+        "vercel_running",
+        `${job}: 対象日${target}は未処理だが、Vercel が起動している（最終起動${tickAge}分前。肩代わりしない）`,
       );
     }
-    if (CHUNKED_JOBS.includes(job)) {
-      const success = parseTime(row.last_success_at);
-      if (
-        success !== null &&
-        targetInstant !== null &&
-        success >= targetInstant &&
-        minutesSince(success, nowMs) < policy.chunkProgressMaxAgeMin
-      ) {
-        return good(
-          "chunk_in_progress",
-          `${job}: live・対象日${target}を処理中（最終成功${minutesSince(success, nowMs)}分前）`,
-        );
-      }
-    }
+    const sinceTargetMin =
+      targetInstant === null ? null : minutesSince(targetInstant, nowMs);
     const retryable =
       sinceTargetMin !== null &&
       sinceTargetMin >= 0 &&
       sinceTargetMin < policy.dailyWaitGraceMin;
-    return bad(
+    return takeover(
       "target_pending",
-      `${job}: 対象日${target}が未処理（最終処理済み ${done ?? "なし"}）`,
+      `${job}: 対象日${target}が未処理で、指定時刻以降に Vercel の起動が無い（最終処理済み ${done ?? "なし"}）`,
       retryable,
     );
   }
 
   // continuous・monitor は SKIP 変数の対象ではない
-  return bad("unsupported_kind", `${job}: kind=${def.kind} は判定対象外`);
+  return noTakeover(
+    "unsupported_kind",
+    `${job}: kind=${def.kind} は判定対象外（肩代わりしない）`,
+  );
 }
 
 /**
@@ -284,9 +261,9 @@ export function decideFromRows({
   const jobs = GHA_SKIP_TARGETS[varName];
   if (!jobs) {
     return {
-      skip: false,
+      skip: true,
       reason: "unsupported_var",
-      message: `実行: ${varName} は判定の対象外（従来どおり実行）`,
+      message: `スキップ: ${varName} は判定の対象外（肩代わりの条件を確かめられない）`,
       retryable: false,
       results: [],
     };
@@ -304,7 +281,7 @@ export function decideFromRows({
     return {
       skip: true,
       reason: results.length === 1 ? results[0].reason : "all_healthy",
-      message: `スキップ: Vercelが健全（${results.map((r) => r.detail).join(" / ")}）`,
+      message: `スキップ: 肩代わりしない（${results.map((r) => r.detail).join(" / ")}）`,
       retryable: false,
       results,
     };
@@ -340,6 +317,7 @@ const STATE_COLUMNS = [
   "consecutive_failures",
   "last_target_date",
   "breaker_open_until",
+  "last_error",
 ].join(",");
 
 /**
@@ -400,7 +378,8 @@ function withTimeout(promise, ms) {
 }
 
 /**
- * GitHub Actions 側の取得を、スキップするか判定する（IO込み）。失敗・不正・未確認は、すべて「実行」。
+ * GitHub Actions 側の取得を、スキップするか判定する（IO込み）。変数が true のとき、失敗・不正・未確認は、すべて
+ * 「スキップ」（肩代わりの条件を確かめられないときに、守りを通らない取得をしない。P0）。
  *
  * @param {Object} params
  * @param {string} params.varName SKIP 変数名（GHA_SKIP_TARGETS のキー）
@@ -422,11 +401,11 @@ export async function shouldSkipOnGha({
     logger?.log(`[gha-skip] ${varName}: ${decision.message}`);
     return decision;
   };
-  const run = (reason, message) =>
+  const skipUnconfirmed = (reason, message) =>
     finish({
-      skip: false,
+      skip: true,
       reason,
-      message: `実行: ${message}`,
+      message: `スキップ: ${message}（肩代わりの条件を確かめられない）`,
       retryable: false,
       results: [],
     });
@@ -442,15 +421,12 @@ export async function shouldSkipOnGha({
     };
   }
   if (!GHA_SKIP_TARGETS[varName]) {
-    return run(
-      "unsupported_var",
-      `${varName} は判定の対象外（従来どおり実行）`,
-    );
+    return skipUnconfirmed("unsupported_var", `${varName} は判定の対象外`);
   }
   let stateClient = client;
   if (!stateClient) {
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
-      return run(
+      return skipUnconfirmed(
         "no_credentials",
         "SUPABASE_URL・SUPABASE_SERVICE_KEY が未設定で、Vercelの状態を確認できない",
       );
@@ -462,7 +438,7 @@ export async function shouldSkipOnGha({
         timeoutMs: policy.readTimeoutMs,
       });
     } catch (error) {
-      return run(
+      return skipUnconfirmed(
         "read_failed",
         `DB クライアントを作れない（${describeError(error)}）`,
       );
@@ -477,7 +453,7 @@ export async function shouldSkipOnGha({
       policy.readTimeoutMs,
     );
   } catch (error) {
-    return run(
+    return skipUnconfirmed(
       "read_failed",
       `Vercelの状態を読み取れない（${describeError(error)}）`,
     );
@@ -486,7 +462,10 @@ export async function shouldSkipOnGha({
   try {
     decision = decideFromRows({ varName, rows, now, policy });
   } catch (error) {
-    return run("evaluate_failed", `判定に失敗（${describeError(error)}）`);
+    return skipUnconfirmed(
+      "evaluate_failed",
+      `判定に失敗（${describeError(error)}）`,
+    );
   }
   return finish(decision);
 }
@@ -499,7 +478,7 @@ const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 /**
  * shouldSkipOnGha に、日次ジョブの指定時刻の直後の待機を足したもの。Vercel と GitHub は同じ時刻に起動するため、
  * 「Vercel がまだ処理中」で二重に取得しないよう、retryable の間だけ、上限（dailyWaitGraceMin）まで待って再判定する。
- * 待機の上限を過ぎても未処理なら「実行」（フェイルオーバー）。
+ * 待機の上限を過ぎても Vercel の起動が無ければ「実行」（フェイルオーバー。上の肩代わりの条件を満たすときだけ）。
  */
 export async function shouldSkipOnGhaWaiting(
   params,

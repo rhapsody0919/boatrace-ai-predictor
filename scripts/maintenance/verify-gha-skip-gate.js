@@ -4,19 +4,22 @@
  *
  * 確認すること:
  *   (a) 変数が未設定・false・空・未知の値: clientを一切呼ばず（DBを読まず）、常に「実行」（現行と同じ）
- *   (b) 窓型（odds・result）: live・起動が新しい・連続失敗なし → スキップ。取得先のブレーカー（ホスト・403 のパス）が
- *       開いている間もスキップ（GitHub の素の fetch で同じ取得先を叩かない。BOA-1145）。
- *       modeがlive以外・行なし・起動が古い・連続失敗・不正な値 → 実行。
+ *   肩代わり（実行）は「mode=live・Vercel が起動していない・取得先のブレーカーが閉じている・直近の失敗が 403・
+ *   接続の失敗でない」ときだけ（docs/design/scraping-load-budget/spec.md §0・§8 の P0）。
+ *   (b) 窓型（odds・result）: 起動が新しい → スキップ（連続失敗があっても）。起動が古い・記録なし → 実行。
+ *       mode が live 以外・行なし → スキップ（どこからも取らない）。取得先のブレーカー（ホスト・403 のパス）が開いている、
+ *       直近の失敗が 403・接続の失敗 → 起動が古くてもスキップ（GitHub の素の fetch で公式を回り込んで叩かない）。
  *       レースの無い時間帯（最終成功が半日前でも、起動が新しい）は誤って実行しない
- *   (c) 日次（point_rank等）: 対象日を処理済み → スキップ。未処理・前日分のみ・shadow・失敗 → 実行。指定時刻の直後は retryable
- *   (d) チャンク処理（racer_profiles）: 処理中（指定時刻以降に成功があり新しい）はスキップ。それ以外は実行
- *   (e) 複数ジョブ（SKIP_RESULTS_ON_GHA = result・result_catchup）: 全て健全のときだけスキップ
- *   (f) 失敗・タイムアウト・不正な応答・認証情報なし・不正な行: すべて「実行」
+ *   (c) 日次（point_rank等）: 対象日を処理済み・指定時刻以降に Vercel が起動した → スキップ。未処理で起動なし → 実行。
+ *       指定時刻の直後は retryable
+ *   (d) チャンク処理（racer_profiles）: 指定時刻以降に起動があればスキップ。それ以外は実行
+ *   (e) 複数ジョブ（SKIP_RESULTS_ON_GHA = result・result_catchup）: どれか1つでも肩代わりの条件を満たせば実行
+ *   (f) 失敗・タイムアウト・不正な応答・認証情報なし・不正な行: すべて「スキップ」（確かめられないときは叩かない）
  *   (g) 待機（日次の指定時刻の直後）: Vercelの完了を待って再判定し、上限まで完了しなければ「実行」
  *   (h) RESTクライアント: 該当ジョブの行だけを、service_roleのキーで読む。HTTPエラー・非配列は例外
- *   (i) CLI: 常にskip=true|falseを出力し、あらゆる失敗でskip=false
+ *   (i) CLI: 常にskip=true|falseを出力し、変数が未設定なら skip=false、変数が true のあらゆる失敗で skip=true
  *   (j) 配線: 変数とジョブの対応・対象外の変数・ワークフローのgateジョブ・scrape-scheduled.js・vercel.jsonの起動間隔
- *   (k) 変異検証: 判定の要（modeの確認・起動の鮮度・連続失敗・ブレーカー・対象日の比較・失敗時のフェイルセーフ・全ジョブの健全性・
+ *   (k) 変異検証: 判定の要（modeの確認・起動の鮮度・直近の失敗・ブレーカー・対象日の比較・失敗時のスキップ・全ジョブの判定・
  *       タイムアウト・DBを読まない既定）を1つずつ壊したコピーで、この検証が失敗すること
  */
 import fs from "node:fs";
@@ -140,7 +143,7 @@ async function suite(mod, record) {
       "変数は大文字小文字・前後の空白を無視して true と判定する（GitHubの式 vars.X == 'true' と同じ。true のときだけDBを読む）",
       client.calls.length === 1 &&
         d.reason === "read_failed" &&
-        d.skip === false,
+        d.skip === true,
       show(d),
     );
     const d2 = await mod.shouldSkipOnGha({
@@ -151,8 +154,8 @@ async function suite(mod, record) {
       logger: null,
     });
     record(
-      "対象外の変数（予測リフレッシュ SKIP_ODDS_REFRESH_ON_GHA）: true でもスキップしない（判定できないため。従来の静的な変数のまま）",
-      d2.skip === false && d2.reason === "unsupported_var",
+      "対象外の変数（予測リフレッシュ SKIP_ODDS_REFRESH_ON_GHA）が判定に来たら: スキップ（肩代わりの条件を確かめられない。scrape-scheduled.js は静的な変数のまま扱い、このゲートを呼ばない）",
+      d2.skip === true && d2.reason === "unsupported_var",
       show(d2),
     );
   }
@@ -176,10 +179,37 @@ async function suite(mod, record) {
       show(d0),
     );
     const rowsFor = (r, host) => (host ? [r, host] : [r]);
+    // 肩代わりしない（スキップ）: mode が live 以外（どこからも取らない）、Vercel が起動している間の連続失敗（P0）
+    const noTakeoverCases = [
+      ["modeがshadow", healthy({ mode: "shadow" }), "mode_not_live"],
+      ["modeがoff", healthy({ mode: "off" }), "mode_not_live"],
+      ["modeが不正", healthy({ mode: null }), "mode_not_live"],
+      [
+        "連続失敗3回（起動は新しい）",
+        healthy({ consecutive_failures: 3 }),
+        "vercel_running",
+      ],
+      [
+        "連続失敗が不正（null）",
+        healthy({ consecutive_failures: null }),
+        "vercel_running",
+      ],
+      [
+        "連続失敗が不正（文字列）",
+        healthy({ consecutive_failures: "2" }),
+        "vercel_running",
+      ],
+      ["連続失敗が負", healthy({ consecutive_failures: -1 }), "vercel_running"],
+    ];
+    for (const [label, r, reason] of noTakeoverCases) {
+      const d = await decide(V, rowsFor(r), NOW);
+      record(
+        `オッズ: ${label} → スキップ（肩代わりしない）`,
+        d.skip === true && d.reason === reason,
+        show(d),
+      );
+    }
     const cases = [
-      ["modeがshadow", healthy({ mode: "shadow" }), false],
-      ["modeがoff", healthy({ mode: "off" }), false],
-      ["modeが不正", healthy({ mode: null }), false],
       [
         "起動が12分前（閾値ちょうど）",
         healthy({ last_tick_at: minutesAgo(NOW, 12) }),
@@ -197,18 +227,6 @@ async function suite(mod, record) {
         healthy({ last_tick_at: minutesAgo(NOW, -5) }),
         false,
       ],
-      ["連続失敗3回", healthy({ consecutive_failures: 3 }), false],
-      [
-        "連続失敗が不正（null）",
-        healthy({ consecutive_failures: null }),
-        false,
-      ],
-      [
-        "連続失敗が不正（文字列）",
-        healthy({ consecutive_failures: "2" }),
-        false,
-      ],
-      ["連続失敗が負", healthy({ consecutive_failures: -1 }), false],
     ];
     for (const [label, r, expected] of cases) {
       const d = await decide(V, rowsFor(r), NOW);
@@ -225,11 +243,14 @@ async function suite(mod, record) {
     );
     const ok2 = await skipOf(V, [healthy({ consecutive_failures: 2 })], NOW);
     record(
-      "オッズ: 起動11分前・連続失敗2回はまだ健全 → スキップ（閾値の境界）",
+      "オッズ: 起動11分前・連続失敗2回 → スキップ（起動の閾値の境界）",
       ok1 === true && ok2 === true,
     );
     const d1 = await skipOf(V, [], NOW);
-    record("オッズ: ジョブ状態の行なし（空の応答） → 実行", d1 === false);
+    record(
+      "オッズ: ジョブ状態の行なし（空の応答） → スキップ（mode を確かめられない）",
+      d1 === true,
+    );
     const open = row("host:boatrace.jp", {
       breaker_open_until: minutesAgo(NOW, -20),
     });
@@ -249,7 +270,7 @@ async function suite(mod, record) {
         (await skipOf(V, [healthy(), closed], NOW)) === true,
     );
     {
-      // ホスト（429/503）のブレーカー（BOA-1145）: 連続失敗では肩代わりしない。Vercel が起動していない（tick_stale）ときだけ肩代わりする
+      // ホスト（429/503）のブレーカー: 連続失敗でも、Vercel が起動していない（tick_stale）ときも肩代わりしない（P0）
       const hostOpen = row("host:boatrace.jp", {
         breaker_open_until: minutesAgo(NOW, -20),
       });
@@ -264,11 +285,11 @@ async function suite(mod, record) {
         NOW,
       );
       record(
-        "オッズ: ホストのブレーカーが開いている間、連続失敗5回でもスキップ。Vercel が起動していない（tick_stale）なら実行（肩代わり）",
+        "オッズ: ホストのブレーカーが開いている間は、連続失敗5回でも、Vercel が起動していない（tick_stale）ときもスキップ（P0）",
         h1.skip === true &&
           h1.reason === "breaker_open_no_takeover" &&
-          h2.skip === false &&
-          h2.reason === "tick_stale",
+          h2.skip === true &&
+          h2.reason === "breaker_open_no_takeover",
         show([h1, h2]),
       );
     }
@@ -286,18 +307,86 @@ async function suite(mod, record) {
       });
       const e1 = await decide(EX, [exRow, pathOpen], NOW);
       const e2 = await decide(EX, [exRow], NOW);
+      const e3 = await decide(
+        EX,
+        [{ ...exRow, last_tick_at: minutesAgo(NOW, 30) }, pathOpen],
+        NOW,
+      );
       record(
-        "展示: beforeinfo のパスのブレーカー（403）が開いている → 連続失敗が多くてもスキップ（肩代わりしない）。閉じていれば従来どおり実行",
+        "展示: beforeinfo のパスのブレーカー（403）が開いている → 連続失敗が多くても、起動が古くてもスキップ。閉じていても、起動が新しければ連続失敗ではスキップ（P0）",
         e1.skip === true &&
           e1.reason === "breaker_open_no_takeover" &&
-          e2.skip === false &&
+          e2.skip === true &&
+          e2.reason === "vercel_running" &&
+          e3.skip === true &&
+          e3.reason === "breaker_open_no_takeover" &&
           show(mod.jobKeysFor(EX)) ===
             show([
               "exhibition",
               "host:boatrace.jp",
               "host:boatrace.jp/owpc/pc/race/beforeinfo",
             ]),
-        show([e1, e2, mod.jobKeysFor(EX)]),
+        show([e1, e2, e3, mod.jobKeysFor(EX)]),
+      );
+    }
+    {
+      // 再現（P0）: 公式が 403・接続の失敗を返し続けて連続失敗が閾値を超え、その後 Vercel の起動も止まった。
+      // ブレーカーは開いていない（403 は beforeinfo 以外のパスで数えない）。修正前は GitHub が素の fetch で肩代わりした
+      const stale = minutesAgo(NOW, 30);
+      const lastErrors = [
+        "HTTP 403 for https://www.boatrace.jp/owpc/pc/race/odds3t?rno=1&jcd=01&hd=20260924",
+        "取得に失敗しました（3回試行）: https://www.boatrace.jp/owpc/pc/race/odds3t — fetch failed",
+        "HTTP 503 for https://www.boatrace.jp/owpc/pc/race/raceresult",
+        "TypeError: fetch failed",
+        "connect ETIMEDOUT 1.2.3.4:443",
+        "サーキットブレーカーが開いています（host:boatrace.jp、2026-09-24T03:00:00.000Z まで）",
+      ];
+      const results = [];
+      for (const lastError of lastErrors) {
+        results.push(
+          await decide(
+            V,
+            [
+              healthy({
+                last_tick_at: stale,
+                consecutive_failures: 5,
+                last_error: lastError,
+              }),
+            ],
+            NOW,
+          ),
+        );
+      }
+      record(
+        "オッズ（再現 P0）: 起動が古くても、直近の失敗が 403・503・接続の失敗・ブレーカー → スキップ（GitHub の IP から回り込まない）",
+        results.every(
+          (d) => d.skip === true && d.reason === "fetch_failure_no_takeover",
+        ),
+        show(results.map((d) => d.reason)),
+      );
+      const other = await decide(
+        V,
+        [
+          healthy({
+            last_tick_at: stale,
+            consecutive_failures: 5,
+            last_error: "races の読み取りに失敗しました: permission denied",
+          }),
+        ],
+        NOW,
+      );
+      const cleared = await decide(
+        V,
+        [healthy({ last_tick_at: stale, last_error: null })],
+        NOW,
+      );
+      record(
+        "オッズ: 起動が古く、直近の失敗が取得先と関係ない（DB の権限等）・失敗なし → 実行（Vercel の停止の予備は残す）",
+        other.skip === false &&
+          other.reason === "tick_stale" &&
+          cleared.skip === false &&
+          cleared.reason === "tick_stale",
+        show([other, cleared]),
       );
     }
     // レースの無い時間帯: 最終成功が半日前・なしでも、起動が新しければ（Vercelは動いている）誤って実行しない
@@ -399,26 +488,63 @@ async function suite(mod, record) {
       N1,
     );
     record(
-      "point_rank: mode=shadow は、対象日が済みでも実行・retryable でない",
-      d6.skip === false && d6.retryable === false,
+      "point_rank: mode=shadow → スキップ（どこからも取らない）",
+      d6.skip === true && d6.reason === "mode_not_live",
       show(d6),
     );
     const d7 = await decide(V, [row("point_rank", { mode: "off" })], N1);
-    record("point_rank: mode=off → 実行", d7.skip === false);
+    record(
+      "point_rank: mode=off → スキップ（どこからも取らない）",
+      d7.skip === true && d7.reason === "mode_not_live",
+    );
     const d8 = await decide(
       V,
       [
         row("point_rank", {
           consecutive_failures: 3,
           last_target_date: "2026-09-23",
+          last_tick_at: jst("2026-09-24 22:00").toISOString(),
         }),
       ],
-      jst("2026-09-24 22:04"),
+      jst("2026-09-24 22:30"),
     );
     record(
-      "point_rank: 連続失敗3回・未処理 → 実行・retryable でない",
-      d8.skip === false && d8.retryable === false,
+      "point_rank: 22:00 に Vercel が起動し、連続失敗3回・未処理 → スキップ（Vercel の失敗を GitHub の IP で叩き直さない。P0）",
+      d8.skip === true && d8.reason === "vercel_running",
       show(d8),
+    );
+    const d8b = await decide(
+      V,
+      [
+        row("point_rank", {
+          consecutive_failures: 3,
+          last_target_date: "2026-09-23",
+          last_tick_at: jst("2026-09-23 22:00").toISOString(),
+          last_error:
+            "HTTP 403 for https://www.boatrace.jp/owpc/pc/extra/pointrank",
+        }),
+      ],
+      jst("2026-09-24 22:30"),
+    );
+    record(
+      "point_rank（再現 P0）: 当日の起動は無いが、直近の失敗が 403 → スキップ",
+      d8b.skip === true && d8b.reason === "fetch_failure_no_takeover",
+      show(d8b),
+    );
+    const d8c = await decide(
+      V,
+      [
+        row("point_rank", {
+          last_target_date: "2026-09-23",
+          last_tick_at: jst("2026-09-23 22:00").toISOString(),
+        }),
+      ],
+      jst("2026-09-24 22:30"),
+    );
+    record(
+      "point_rank: 当日の起動が無い（最終起動が前日）・失敗なし → 実行（Vercel の停止の予備）",
+      d8c.skip === false && d8c.reason === "target_pending",
+      show(d8c),
     );
     const d9 = await decide(
       V,
@@ -426,8 +552,8 @@ async function suite(mod, record) {
       N1,
     );
     record(
-      "point_rank: last_target_date が不正 → 実行",
-      d9.skip === false && d9.reason === "invalid_value",
+      "point_rank: last_target_date が不正 → スキップ（確かめられない）",
+      d9.skip === true && d9.reason === "invalid_value",
       show(d9),
     );
     const d10 = await decide(
@@ -518,45 +644,45 @@ async function suite(mod, record) {
       V,
       [
         row("racer_profiles", {
-          last_success_at: minutesAgo(N, 10),
+          last_tick_at: minutesAgo(N, 10),
           last_target_date: "2026-09-02",
         }),
       ],
       N,
     );
     record(
-      "racer_profiles: 03:00以降に成功があり10分前 → 処理中としてスキップ",
-      d1.skip === true && d1.reason === "chunk_in_progress",
+      "racer_profiles: 03:00以降に起動があり10分前 → 処理中としてスキップ",
+      d1.skip === true && d1.reason === "vercel_running",
       show(d1),
     );
     const d2 = await decide(
       V,
       [
         row("racer_profiles", {
-          last_success_at: jst("2026-10-02 02:00").toISOString(),
+          last_tick_at: jst("2026-10-02 02:00").toISOString(),
           last_target_date: "2026-09-02",
         }),
       ],
       N,
     );
     record(
-      "racer_profiles: 成功が指定時刻(03:00)より前（前月・前日の残り） → 実行",
-      d2.skip === false,
+      "racer_profiles: 起動が指定時刻(03:00)より前（前月・前日の残り） → 実行",
+      d2.skip === false && d2.reason === "target_pending",
       show(d2),
     );
     const d3 = await decide(
       V,
       [
         row("racer_profiles", {
-          last_success_at: minutesAgo(N, 50),
+          last_tick_at: minutesAgo(N, 50),
           last_target_date: "2026-09-02",
         }),
       ],
       N,
     );
     record(
-      "racer_profiles: 成功が50分前（処理中の鮮度40分を超えた＝止まっている） → 実行",
-      d3.skip === false,
+      "racer_profiles: 03:10 に起動があり、その後止まっている → スキップ（当日 Vercel が動いた。P0）",
+      d3.skip === true && d3.reason === "vercel_running",
       show(d3),
     );
     const d4 = await decide(
@@ -573,15 +699,15 @@ async function suite(mod, record) {
       V,
       [
         row("racer_profiles", {
-          last_success_at: minutesAgo(N, 10),
+          last_tick_at: minutesAgo(N, 10),
           consecutive_failures: 3,
         }),
       ],
       N,
     );
     record(
-      "racer_profiles: 処理中でも連続失敗3回 → 実行",
-      d5.skip === false,
+      "racer_profiles: 起動中で連続失敗3回 → スキップ（P0）",
+      d5.skip === true && d5.reason === "vercel_running",
       show(d5),
     );
     const d6 = await decide(
@@ -608,8 +734,8 @@ async function suite(mod, record) {
       N,
     );
     record(
-      "racer_profiles: shadow の成功は処理中と認めない → 実行",
-      d7.skip === false && d7.reason === "mode_not_live",
+      "racer_profiles: shadow → スキップ（どこからも取らない）",
+      d7.skip === true && d7.reason === "mode_not_live",
       show(d7),
     );
     // チャンクでない日次ジョブは、成功が新しくても、対象日が未処理なら実行
@@ -678,8 +804,8 @@ async function suite(mod, record) {
     );
     const d2 = await decide(V, [result(), catchup({ mode: "shadow" })], NOW);
     record(
-      "結果取得: result_catchup が shadow → 実行（片方でも不健全なら実行）",
-      d2.skip === false && d2.reason === "mode_not_live",
+      "結果取得: result_catchup が shadow・result が起動中 → スキップ（どちらも肩代わりの条件を満たさない）",
+      d2.skip === true,
       show(d2),
     );
     const d3 = await decide(
@@ -688,7 +814,7 @@ async function suite(mod, record) {
       NOW,
     );
     record(
-      "結果取得: result の起動が古い → 実行",
+      "結果取得: result の起動が古い → 実行（片方でも肩代わりの条件を満たせば実行）",
       d3.skip === false && d3.reason === "tick_stale",
       show(d3),
     );
@@ -704,12 +830,12 @@ async function suite(mod, record) {
     );
     const d5 = await decide(V, [result()], NOW);
     record(
-      "結果取得: result_catchup の行なし → 実行",
-      d5.skip === false && d5.reason === "no_row",
+      "結果取得: result_catchup の行なし → スキップ（確かめられない）",
+      d5.skip === true,
       show(d5),
     );
     const d6 = await decide(V, [catchup()], NOW);
-    record("結果取得: result の行なし → 実行", d6.skip === false);
+    record("結果取得: result の行なし → スキップ", d6.skip === true);
     const client = fakeClient([result(), catchup()]);
     await mod.shouldSkipOnGha({
       varName: V,
@@ -756,8 +882,8 @@ async function suite(mod, record) {
       logger: null,
     });
     record(
-      "DBの読み取りが例外 → 実行（理由付き）",
-      d1.skip === false &&
+      "DBの読み取りが例外 → スキップ（理由付き。確かめられないときは叩かない）",
+      d1.skip === true &&
         d1.reason === "read_failed" &&
         /ECONNREFUSED/.test(d1.message),
       show(d1),
@@ -774,8 +900,8 @@ async function suite(mod, record) {
       logger: null,
     });
     record(
-      "DBの読み取りが同期的に例外 → 実行",
-      d2.skip === false && d2.reason === "read_failed",
+      "DBの読み取りが同期的に例外 → スキップ",
+      d2.skip === true && d2.reason === "read_failed",
       show(d2),
     );
     const started = Date.now();
@@ -788,8 +914,8 @@ async function suite(mod, record) {
       policy: { ...mod.GHA_SKIP_POLICY, readTimeoutMs: 50 },
     });
     record(
-      "DBの読み取りが応答しない（タイムアウト） → 実行（クライアントがタイムアウトを持たなくても待たされない）",
-      d3.skip === false &&
+      "DBの読み取りが応答しない（タイムアウト） → スキップ（クライアントがタイムアウトを持たなくても待たされない）",
+      d3.skip === true &&
         d3.reason === "read_failed" &&
         // 意図は「readTimeoutMs=50 が効いていて数十秒待たされない」ことの確認で、
         // 具体的な閾値は本質ではない。Quality Gates CI が並列度4で走らせるため、
@@ -814,7 +940,7 @@ async function suite(mod, record) {
         now: NOW,
         logger: null,
       });
-      record(`不正な応答（${label}） → 実行`, d.skip === false, show(d));
+      record(`不正な応答（${label}） → スキップ`, d.skip === true, show(d));
     }
     const d4 = await mod.shouldSkipOnGha({
       varName: V,
@@ -823,7 +949,17 @@ async function suite(mod, record) {
       now: NOW,
       logger: null,
     });
-    record("（対照）正しい応答なら → スキップ", d4.skip === true);
+    const d4b = await mod.shouldSkipOnGha({
+      varName: V,
+      env,
+      client: fakeClient([row("odds", { last_tick_at: minutesAgo(NOW, 30) })]),
+      now: NOW,
+      logger: null,
+    });
+    record(
+      "（対照）正しい応答: 起動が新しければスキップ、古ければ実行",
+      d4.skip === true && d4b.skip === false,
+    );
     const d5 = await mod.shouldSkipOnGha({
       varName: V,
       env: { [V]: "true" },
@@ -831,8 +967,8 @@ async function suite(mod, record) {
       logger: null,
     });
     record(
-      "認証情報（SUPABASE_URL・SUPABASE_SERVICE_KEY）なし・client未指定 → 実行（DBを読めない）",
-      d5.skip === false && d5.reason === "no_credentials",
+      "認証情報（SUPABASE_URL・SUPABASE_SERVICE_KEY）なし・client未指定 → スキップ（DBを読めない）",
+      d5.skip === true && d5.reason === "no_credentials",
       show(d5),
     );
     const d6 = await mod.shouldSkipOnGha({
@@ -846,8 +982,8 @@ async function suite(mod, record) {
       logger: null,
     });
     record(
-      "SUPABASE_URL が不正 → 実行（例外にしない）",
-      d6.skip === false,
+      "SUPABASE_URL が不正 → スキップ（例外にしない）",
+      d6.skip === true,
       show(d6),
     );
     // ログ
@@ -862,17 +998,17 @@ async function suite(mod, record) {
     await mod.shouldSkipOnGha({
       varName: V,
       env,
-      client: fakeClient([]),
+      client: fakeClient([row("odds", { last_tick_at: minutesAgo(NOW, 30) })]),
       now: NOW,
       logger: { log: (l) => lines.push(l) },
     });
     record(
-      "判定結果と理由をログに出す（スキップ: Vercel健全・最終起動N分前／実行: 理由）",
+      "判定結果と理由をログに出す（スキップ: 肩代わりしない・最終起動N分前／実行: 理由）",
       lines.length === 2 &&
-        /^\[gha-skip\] SKIP_ODDS_ON_GHA: スキップ: Vercelが健全（odds: live・最終起動1分前/.test(
+        /^\[gha-skip\] SKIP_ODDS_ON_GHA: スキップ: 肩代わりしない（odds: live・最終起動1分前/.test(
           lines[0],
         ) &&
-        /^\[gha-skip\] SKIP_ODDS_ON_GHA: 実行: odds: ジョブ状態の行なし/.test(
+        /^\[gha-skip\] SKIP_ODDS_ON_GHA: 実行: odds: 最終起動30分前/.test(
           lines[1],
         ),
       show(lines),
@@ -940,8 +1076,8 @@ async function suite(mod, record) {
       { sleep, nowFn: clock },
     );
     record(
-      "待機: mode=shadow（待っても変わらない） → 待たずに実行",
-      d3.skip === false && sleeps === 0,
+      "待機: mode=shadow → 待たずにスキップ（どこからも取らない）",
+      d3.skip === true && sleeps === 0,
     );
     sleeps = 0;
     const d4 = await mod.shouldSkipOnGhaWaiting(
@@ -992,7 +1128,7 @@ async function suite(mod, record) {
         u.pathname === "/rest/v1/scrape_job_state" &&
         u.searchParams.get("job") === 'in.("odds","host:boatrace.jp")' &&
         u.searchParams.get("select") ===
-          "job,mode,last_tick_at,last_success_at,consecutive_failures,last_target_date,breaker_open_until" &&
+          "job,mode,last_tick_at,last_success_at,consecutive_failures,last_target_date,breaker_open_until,last_error" &&
         calls[0].init.headers.apikey === "SERVICE_KEY" &&
         calls[0].init.headers.Authorization === "Bearer SERVICE_KEY" &&
         calls[0].init.signal instanceof AbortSignal &&
@@ -1032,7 +1168,7 @@ async function suite(mod, record) {
       threw2 = e.message;
     }
     record(
-      "RESTクライアント: HTTPエラー・配列でない応答は、例外（判定側が「実行」にする）",
+      "RESTクライアント: HTTPエラー・配列でない応答は、例外（判定側が「スキップ」にする）",
       /503/.test(threw) && /配列/.test(threw2),
       show({ threw, threw2 }),
     );
@@ -1054,8 +1190,8 @@ async function suite(mod, record) {
       }),
     });
     record(
-      "RESTクライアント経由でネットワーク失敗（fetch failed） → 実行",
-      d.skip === false && d.reason === "read_failed",
+      "RESTクライアント経由でネットワーク失敗（fetch failed） → スキップ",
+      d.skip === true && d.reason === "read_failed",
       show(d),
     );
     record(
@@ -1095,25 +1231,35 @@ async function loadMutant(name, replace, by) {
 const MUTANTS = [
   ["modeの確認を外す", 'if (row.mode !== "live") {', "if (false) {"],
   [
-    "起動の鮮度の確認を外す",
-    "if (tickAge < -1 || tickAge >= policy.tickMaxAgeMin) {",
-    "if (false) {",
+    "窓型: 起動の鮮度の確認を外す（起動中でも肩代わり）",
+    "    if (tickFresh) {\n      return noTakeover(",
+    "    if (false) {\n      return noTakeover(",
   ],
-  ["時計の異常（未来の起動）を許す", "tickAge < -1 || ", ""],
+  ["時計の異常（未来の起動）を許す", "tickAge >= -1 && ", ""],
   [
-    "連続失敗の確認を外す",
-    "if (failures >= policy.maxConsecutiveFailures && !openHost) {",
-    "if (false) {",
-  ],
-  [
-    "403 のパスのブレーカーが開いている間の肩代わりの抑止を外す（BOA-1145）",
-    "if (openPath) {",
+    "直近の失敗（403・接続の失敗）の確認を外す（P0）",
+    "if (isFetchFailureError(row.last_error)) {",
     "if (false) {",
   ],
   [
-    "ホストのブレーカーが開いている間の連続失敗の肩代わりを戻す（BOA-1145）",
-    "if (failures >= policy.maxConsecutiveFailures && !openHost) {",
-    "if (failures >= policy.maxConsecutiveFailures) {",
+    "403 のパスのブレーカーの確認を外す（BOA-1145）",
+    "openBreakerKey(pathKeysOf(def), rowsByJob, nowMs) ??",
+    "null ??",
+  ],
+  [
+    "ホストのブレーカーの確認を外す（P0）",
+    "openBreakerKey(hostKeysOf(def), rowsByJob, nowMs);",
+    "null;",
+  ],
+  [
+    "連続失敗で肩代わりを戻す（P0）",
+    "    if (tickFresh) {\n      return noTakeover(",
+    "    if (tickFresh && !(row.consecutive_failures >= 3)) {\n      return noTakeover(",
+  ],
+  [
+    "日次: 指定時刻以降の起動を見ない（Vercel の失敗を肩代わりする）",
+    "if (tickFresh || startedSinceTarget) {",
+    "if (tickFresh) {",
   ],
   [
     "日次: 対象日でなく、何か処理済みならよいことにする",
@@ -1126,19 +1272,14 @@ const MUTANTS = [
     "const target = resolveTargetDate(new Date(now.getTime() - 86400000), def.targetTimeJst);",
   ],
   [
-    "チャンク: 指定時刻より前の成功を許す",
-    "success >= targetInstant &&",
-    "true &&",
+    "日次: 指定時刻より前の起動を、当日の起動と認める",
+    "tick >= targetInstant - policy.dailyStartSkewMin * 60000;",
+    "true;",
   ],
   [
-    "チャンク: 成功の鮮度を見ない",
-    "minutesSince(success, nowMs) < policy.chunkProgressMaxAgeMin",
-    "true",
-  ],
-  [
-    "読み取り失敗を「スキップ」にする",
-    /return run\(\s*"read_failed",\s*`Vercelの状態を読み取れない[^`]*`,?\s*\);/,
-    'return finish({ skip: true, reason: "read_failed", message: "スキップ", retryable: false, results: [] });',
+    "読み取り失敗を「実行」にする（P0 の前のフェイルオープン）",
+    /return skipUnconfirmed\(\s*"read_failed",\s*`Vercelの状態を読み取れない[^`]*`,?\s*\);/,
+    'return finish({ skip: false, reason: "read_failed", message: "実行", retryable: false, results: [] });',
   ],
   [
     "タイムアウトを外す",
@@ -1156,9 +1297,14 @@ const MUTANTS = [
     "if (false) {",
   ],
   [
-    "応答が配列でなくても、空として扱わず例外にせず、スキップ扱いにする（行の検証を外す）",
-    'if (!row) return bad("no_row", `${job}: ジョブ状態の行なし`);',
-    'if (!row) return good("no_row", `${job}`);',
+    "行なしを肩代わりにする（確かめられないのに叩く）",
+    'return noTakeover(\n      "no_row",',
+    'return takeover(\n      "no_row",',
+  ],
+  [
+    "mode が live でないとき肩代わりする（人が止めた間に GitHub が取る）",
+    'return noTakeover(\n      "mode_not_live",',
+    'return takeover(\n      "mode_not_live",',
   ],
   [
     "待機の上限を外す（常に retryable）",
@@ -1208,23 +1354,23 @@ await suite(realGate, record);
     SKIP_POINT_RANK_ON_GHA: "true",
   });
   record(
-    "CLI: 変数が true・認証情報なし → skip=false（DBを読めない）",
-    r2.skip === false && r2.output === "skip=false\n",
+    "CLI: 変数が true・認証情報なし → skip=true（DBを読めず、肩代わりの条件を確かめられない）",
+    r2.skip === true && r2.output === "skip=true\n",
     show(r2),
   );
   const r3 = await run(["NOT_A_VAR"], {});
   const r4 = await run([], {});
   record(
-    "CLI: 未知の変数・引数なし → skip=false",
-    r3.output === "skip=false\n" && r4.output === "skip=false\n",
+    "CLI: 未知の変数・引数なし → skip=true（確かめられない）",
+    r3.output === "skip=true\n" && r4.output === "skip=true\n",
   );
   const r5 = await gateMain(["SKIP_POINT_RANK_ON_GHA"], {
     SKIP_POINT_RANK_ON_GHA: "true",
     GITHUB_OUTPUT: path.join(MUTANT_DIR, "no-such-dir", "x"),
   });
   record(
-    "CLI: GITHUB_OUTPUT に書けなくても、例外にせず skip=false",
-    r5 === false,
+    "CLI: GITHUB_OUTPUT に書けなくても、例外にせず判定を返す（認証情報なしのため skip=true）",
+    r5 === true,
   );
 }
 
@@ -1240,11 +1386,12 @@ await suite(realGate, record);
       .every((j) => ["window", "daily"].includes(SCRAPE_JOBS[j]?.kind)),
   );
   record(
-    "配線: 予測リフレッシュ（SKIP_ODDS_REFRESH_ON_GHA）は対象外（DBのジョブ状態で判定できない）。レース情報（SKIP_RACE_INFO_ON_GHA）・展示（SKIP_EXHIBITION_ON_GHA。従来の経路を持つジョブ）は対象",
+    "配線: 予測リフレッシュ（SKIP_ODDS_REFRESH_ON_GHA）は対象外（DBのジョブ状態で判定できない）。レース情報・展示・朝の初期化（races_init）は対象。展示の従来の経路の例外（LEGACY_PATH_JOBS）は無い",
     !("SKIP_ODDS_REFRESH_ON_GHA" in targets) &&
       show(targets.SKIP_RACE_INFO_ON_GHA) === show(["race_info"]) &&
       show(targets.SKIP_EXHIBITION_ON_GHA) === show(["exhibition"]) &&
-      show(realGate.LEGACY_PATH_JOBS) === show(["exhibition"]),
+      show(targets.SKIP_MORNING_INIT_ON_GHA) === show(["races_init"]) &&
+      !("LEGACY_PATH_JOBS" in realGate),
   );
   // 日次ワークフロー: gate ジョブ・変数・ジョブ名の対応
   const wf = {
