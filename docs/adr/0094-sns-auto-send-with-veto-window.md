@@ -58,3 +58,11 @@
 - 根拠の鮮度は集計の時刻から24時間（kind=research_image だけ）。直近1年の集計なので、他の kind の max_source_age_seconds（本番 14400）を当てると、15:00 に作り 19:00 に送る形で止まるため
 - 本文にリンクを置かない型なので、送る直前のリンク先の表示の確認（tasks 10）は無い。代わりに readCurrent が DB の item の kind・許可・同じ日に送ったか・本文（禁止表現・加重280・リンクなし）・画像1枚を読み直し、preflight は送る文にリンクが無いことを確かめる（public_check='none' を返すのは item が research_image のときだけ）
 - 自動送信の許可は `.claude/CLAUDE.md` の例外（(1)〜(3)）に無い。許可のフラグ `sns_auto_send_control.research_image_enabled`（x の行、既定 false）を置き、false の間は push が何も書かず、送り手も claim・check・begin_post で held（research_image_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのはオーナー本人
+
+## 追記: X の日の枠を出し物（item の kind）ごとに取り置く（2026-10-27、hq per-type-workflow-review P0-2・マイグレーション 182）
+- 取り置きの数は表 `sns_x_kind_reserves`（kind・daily_count・曜日）に置く。正本は hq の config/x-slots.json で、本番の送り手は hq のファイルを読めないので DB に写す。書くのはオーナー、照合は `scripts/sns/x-slots-check.js`（読み取りだけ）
+- claim（transition_sns_send_139）は、177 の全体の検査に加えて「他経路 + その出し物の試行と予定 + Σ他の出し物の max(取り置き, 試行と予定) + 必要な本数 ≤ daily_limit_x」を見る（関数 sns_x_slot_room。取り込みも同じ関数で予定に入れる前に確かめる）。先に claim した出し物が、他の出し物の取り置きの残りを使わない。取り置きを越えた分は取り置かれていない残りを早い者勝ちで使う
+- 止め方を変える: 取り置きで入らない claim は例外にせず held（error_code=kind_slot_full）にし、runner が Slack に1回知らせる（177 の「日次全体上限です」の例外は残す）。取り置きは後から空かないので、queued のまま2分ごとに知らせ続けない
+- 通り道 B と kind=race は取り置きが0なので、取り置かれていない残りだけを使い、無ければ held。子（リプ）にも同じ式を当てる（親の claim が子の分を数え、他の claim は claim 済みの親の子を予定に数える）
+- 残る壊れ方: (1) 取り置きの合計＋他経路が上限を越える日は、取り置きの中でも後から来た出し物が止まる（DB では拒まず、取り込みと照合が警告する） (2) 取り置きはその日の締切が過ぎても・許可が off でも解けない (3) 取り込みの確かめは目安で、同時に2本を受けると両方通りうる（正は claim）
+

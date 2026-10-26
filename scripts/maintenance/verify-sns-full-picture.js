@@ -377,6 +377,53 @@ test("締切の45分前を過ぎた・中止のレースは受け取らない。
   );
 });
 
+test("182: X の日の枠の全貌の取り置きに入らなければ、X の下書きを作らず YouTube だけ送る。182 の前（404）・読めないときは今のまま", async () => {
+  const asked = [];
+  store.xSlotRoom = async (kind, need) => {
+    asked.push([kind, need]);
+    return {
+      ok: false,
+      reason: "kind_slot_full",
+      kind,
+      need,
+      limit: 8,
+      reserve: 4,
+      booked: 4,
+      others_booked: 1,
+      held_for_others: 3,
+      external: 0,
+    };
+  };
+  try {
+    const result = await push();
+    assert.deepEqual(asked, [["full_picture", 1]]);
+    assert.deepEqual(Object.keys(result.channels), ["youtube"]);
+    assert.ok(result.channels.youtube.job_id);
+    assert.deepEqual(
+      (await all("SELECT DISTINCT platform FROM sns_drafts")).map(
+        (r) => r.platform,
+      ),
+      ["youtube"],
+    );
+    assert.ok(
+      result.notes.some((n) => /x: 作らなかった.*全貌|full_picture/.test(n)),
+    );
+    // 182 の前（PostgREST の 404）は止めない
+    await db.exec(
+      "DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+    );
+    store.xSlotRoom = async () => {
+      throw new Error(
+        "DB 操作に失敗: HTTP 404 POST rpc/sns_x_slot_room PGRST202",
+      );
+    };
+    const before = await push();
+    assert.ok(before.channels.x?.job_id);
+  } finally {
+    delete store.xSlotRoom;
+  }
+});
+
 test("mode=manual なら item を manual にして個別承認に回す。承認に失敗したら manual に戻す", async () => {
   await db.exec(
     "UPDATE sns_auto_send_control SET mode='manual' WHERE channel='youtube'",
