@@ -7,7 +7,7 @@
 import { b1Usual, factsScope, winFollowers } from "../../../../../src/utils/assistSummary.js";
 import { defaultStepIndex, normalizeNeighbor, sliderSteps } from "../../../../../src/utils/analogyAggregate.js";
 import { axisButtonBox, barsRow, followerRow } from "../../../src/fullPicture/pageLayout.js";
-import { BOATS, venueName } from "./common.mjs";
+import { BOATS, diffOf, venueName } from "./common.mjs";
 import { fitFirst } from "../fit.mjs";
 
 const p1 = (k, n) => (n ? ((k / n) * 100).toFixed(1) : "0.0");
@@ -58,7 +58,13 @@ export function buildScene5(m) {
   if (ok.length) {
     const best = ok.reduce((a, x) => (x.rate > a.rate ? x : a));
     const next = ok.filter((x) => x !== best).reduce((a, x) => (!a || x.rate > a.rate ? x : a), null);
-    const f = { kind: "rivals", boats: [2, 3, 4, 5, 6], boat: best.boat, rate: p1(best.k, best.n), n: best.n, next: next ? { boat: next.boat, rate: p1(next.k, next.n) } : null };
+    // 「最高」と言うのは2位との差が線（|z|>=1.96、2標本）を通ったときだけ（BOA-1157）
+    const z = next ? diffOf(p1(best.k, best.n), p1(next.k, next.n), { a: best.rate * 100, na: best.n, b: next.rate * 100, nb: next.n }) : null;
+    const f = {
+      kind: "rivals", boats: [2, 3, 4, 5, 6], boat: best.boat, rate: p1(best.k, best.n), n: best.n,
+      next: next ? { boat: next.boat, rate: p1(next.k, next.n) } : null,
+      rankZ: z?.z ?? null, rankSig: z ? z.sig : true,
+    };
     steps.push({
       id: "s5-place",
       question: "2着・3着に残るのは？",
@@ -73,10 +79,15 @@ export function buildScene5(m) {
       frames: [barsRow(top2.indexOf(best))],
       facts: f,
       // 過去のレース（その艇の級別がそろうレース）の集計と分かるように（2026-10-20 オーナー）
-      lines: fitFirst(
-        [`同じ級別の過去のレースで2着以内の最高は${best.boat}号艇`, next ? `${f.rate}%、次は${next.boat}号艇の${f.next.rate}%` : `${f.rate}%`],
-        [`過去のレースで2着以内の最高は${best.boat}号艇`, next ? `${f.rate}%、次は${next.boat}号艇の${f.next.rate}%` : `${f.rate}%`],
-      ),
+      lines: f.rankSig
+        ? fitFirst(
+            [`同じ級別の過去のレースで2着以内の最高は${best.boat}号艇`, next ? `${f.rate}%、次は${next.boat}号艇の${f.next.rate}%` : `${f.rate}%`],
+            [`過去のレースで2着以内の最高は${best.boat}号艇`, next ? `${f.rate}%、次は${next.boat}号艇の${f.next.rate}%` : `${f.rate}%`],
+          )
+        : fitFirst(
+            [`同じ級別の過去のレースで2着以内は${best.boat}号艇${f.rate}%`, `${next.boat}号艇${f.next.rate}%、差は確認できない`],
+            [`過去のレースで2着以内は${best.boat}号艇${f.rate}%`, `${next.boat}号艇${f.next.rate}%、差は確認できない`],
+          ),
     });
     for (const x of top2) if (x.rate === null) omitted.push({ where: "scene5.place", boat: x.boat, reason: "その艇の2着以内の集計が無い" });
   } else omitted.push({ where: "scene5.place", reason: "2着以内の集計が無い" });

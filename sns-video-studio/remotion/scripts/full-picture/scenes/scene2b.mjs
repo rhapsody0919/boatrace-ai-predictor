@@ -14,12 +14,14 @@ import {
   TOP_TRIFECTA,
 } from "../../../../../src/utils/analogyAggregate.js";
 import { sankeyLayout, sankeyNodeBox, sonarChipBox, triRowsBox } from "../../../src/fullPicture/sonarLayout.js";
-import { BOATS } from "./common.mjs";
+import { BOATS, rankOf } from "./common.mjs";
 import { fitFirst } from "../fit.mjs";
 
 const Q = "類似レースの結果は？";
 const p1 = (c, n) => (n ? ((c / n) * 100).toFixed(1) : "0.0");
 const maxBoat = (arr) => arr.reduce((best, c, i) => (c > arr[best] ? i : best), 0) + 1;
+/** 1位の艇 b を除いた件数の最大（2位の艇） */
+const nextBoat = (arr, b) => maxBoat(arr.map((c, i) => (i === b - 1 ? -1 : c)));
 
 /** 類似レースの集計（画面と同じ件数）。scene4 も同じ見せ方で使う */
 export function sonarSteps(prefix, tri, n, question, { firstLine }) {
@@ -31,7 +33,9 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
   const node0 = nodes.find((x) => x.col === 0 && x.boat === b);
   // 着順の材料が無い（件数0）なら段を作らない（呼び出し側が omitted に書く）
   if (!n || !win[b - 1] || !node0) return [];
-  const f1 = { kind: "flow1", boat: b, count: win[b - 1], n, pct: p1(win[b - 1], n) };
+  const b2 = nextBoat(win, b);
+  // 「最多」と言うのは1位と2位の差が線（|z|>=1.96）を通ったときだけ（hq 2026-10-27、BOA-1157）
+  const f1 = { kind: "flow1", boat: b, count: win[b - 1], n, pct: p1(win[b - 1], n), next: { boat: b2, count: win[b2 - 1] }, ...rankOf(win[b - 1], win[b2 - 1]) };
   steps.push({
     id: `${prefix}-flow`,
     question,
@@ -39,7 +43,9 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
     press: null,
     frames: [sankeyNodeBox(node0)],
     facts: f1,
-    lines: [firstLine ?? `1着は${b}号艇が${win[b - 1]}件で最多`, `${n}件の${f1.pct}%`],
+    lines: f1.rankSig
+      ? [firstLine ?? `1着は${b}号艇が${win[b - 1]}件で最多`, `${n}件の${f1.pct}%`]
+      : [`1着は${b}号艇${win[b - 1]}件・${b2}号艇${win[b2 - 1]}件`, `${n}件中、2艇の差は確認できない`],
   });
   // その帯を押して2・3着を出す（1着の艇で絞る）
   const triB = Object.fromEntries(Object.entries(tri).filter(([k]) => k.startsWith(`${b}-`)));
@@ -52,7 +58,11 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
   const nodesB = sankeyLayout(linksB, nB).nodes;
   const node2 = nodesB.find((x) => x.col === 1 && x.boat === s2);
   if (node2) {
-  const f2 = { kind: "flow2", boat: b, count: nB, second: { boat: s2, count: second[s2 - 1] }, third: { boat: s3, count: third[s3 - 1] } };
+  const r2 = rankOf(second[s2 - 1], second[nextBoat(second, s2) - 1]);
+  const r3 = rankOf(third[s3 - 1], third[nextBoat(third, s3) - 1]);
+  const f2 = { kind: "flow2", boat: b, count: nB, second: { boat: s2, count: second[s2 - 1], ...r2 }, third: { boat: s3, count: third[s3 - 1], ...r3 }, rankSig: r2.rankSig && r3.rankSig };
+  // 最多と言えない着は「が最多」を付けず件数だけ
+  const most3 = r3.rankSig ? "が最多" : "";
   steps.push({
     id: `${prefix}-flow-${b}`,
     question,
@@ -62,15 +72,15 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
     frames: [sankeyNodeBox(node2)],
     facts: f2,
     lines: fitFirst(
-      [`${b}号艇が1着の${nB}件、2着は${s2}号艇が${second[s2 - 1]}件`, `3着は${s3}号艇の${third[s3 - 1]}件が最多`],
-      [`${b}号艇が1着の${nB}件で2着最多は${s2}号艇`, `${second[s2 - 1]}件、3着は${s3}号艇の${third[s3 - 1]}件が最多`],
+      [`${b}号艇が1着の${nB}件、2着は${s2}号艇が${second[s2 - 1]}件`, `3着は${s3}号艇の${third[s3 - 1]}件${most3}`],
+      ...(r2.rankSig ? [[`${b}号艇が1着の${nB}件で2着最多は${s2}号艇`, `${second[s2 - 1]}件、3着は${s3}号艇の${third[s3 - 1]}件${most3}`]] : []),
     ),
   });
   }
   // よく出た3連単（上位3つ）
   const top = trifectaList(tri).slice(0, TOP_TRIFECTA);
   if (top.length) {
-    const f3 = { kind: "trifecta", n, top: top.map(([x, c]) => ({ combo: x.join("-"), boats: x, count: c, pct: p1(c, n) })) };
+    const f3 = { kind: "trifecta", n, top: top.map(([x, c]) => ({ combo: x.join("-"), boats: x, count: c, pct: p1(c, n) })), ...rankOf(top[0][1], top[1]?.[1]) };
     steps.push({
       id: `${prefix}-tri`,
       question,
@@ -78,7 +88,9 @@ export function sonarSteps(prefix, tri, n, question, { firstLine }) {
       press: null,
       frames: [triRowsBox(top.length)],
       facts: f3,
-      lines: [`最多は${top[0][0].join("-")}の${top[0][1]}件（${f3.top[0].pct}%）`, top[1] ? `次は${top[1][0].join("-")}の${top[1][1]}件` : null].filter(Boolean),
+      lines: f3.rankSig
+        ? [`最多は${top[0][0].join("-")}の${top[0][1]}件（${f3.top[0].pct}%）`, top[1] ? `次は${top[1][0].join("-")}の${top[1][1]}件` : null].filter(Boolean)
+        : [`${top[0][0].join("-")}が${top[0][1]}件（${f3.top[0].pct}%）`, `${top[1][0].join("-")}が${top[1][1]}件、差は確認できない`],
     });
   }
   return steps;
@@ -99,7 +111,7 @@ export function buildScene2b(m) {
   const b = maxBoat(counts);
   const sorted = [...BOATS].sort((x, y) => counts[y - 1] - counts[x - 1] || x - y);
   const b2 = sorted[1];
-  const f0 = { kind: "sonar", n: N, top: { boat: b, count: counts[b - 1], pct: p1(counts[b - 1], N) }, next: { boat: b2, count: counts[b2 - 1] } };
+  const f0 = { kind: "sonar", n: N, top: { boat: b, count: counts[b - 1], pct: p1(counts[b - 1], N) }, next: { boat: b2, count: counts[b2 - 1] }, ...rankOf(counts[b - 1], counts[b2 - 1]) };
   const steps = [
     {
       id: "s2b-sonar",
@@ -108,7 +120,9 @@ export function buildScene2b(m) {
       press: null,
       frames: [sonarChipBox(b)],
       facts: f0,
-      lines: [`類似レース${N}件で1着最多は${b}号艇`, `${counts[b - 1]}件（${f0.top.pct}%）、次は${b2}号艇の${counts[b2 - 1]}件`],
+      lines: f0.rankSig
+        ? [`類似レース${N}件で1着最多は${b}号艇`, `${counts[b - 1]}件（${f0.top.pct}%）、次は${b2}号艇の${counts[b2 - 1]}件`]
+        : [`類似レース${N}件の1着は${b}号艇${counts[b - 1]}件`, `${b2}号艇${counts[b2 - 1]}件、差は確認できない`],
     },
     ...sonarSteps("s2b", ag.tri, ag.n, Q, {}),
   ];

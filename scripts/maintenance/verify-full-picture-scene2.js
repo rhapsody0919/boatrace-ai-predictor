@@ -12,7 +12,7 @@
  *   艇ごとの選手の進入コースの成績（決まり手・期のコース別・進入の分布）と体重、会場のコース別の決まり手も写し、レースの日より後の集計を記録する
  */
 import assert from "node:assert/strict";
-import { diffOf, diffText } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
+import { diffOf, diffText, rankOf } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
   MAX_WIDTH,
@@ -562,7 +562,8 @@ for (const f of fixtures) {
   const noWind = (scenes) => scenes.map((x) => (x.id === "scene1" ? { ...x, data: { ...x.data, steps: x.data.steps.filter((st) => st.id !== "s1-wind") } } : x));
   const low = noWind(load1("2026-10-12-01-12.json.gz"));
   const lowAns = templateText(allBeats(low)).answers;
-  assert.ok(lowAns["s1-day"].some((l) => l.includes("90日の1着率")), "前提: 完全版の水面の答えは会場の90日の1着率と比べる");
+  // BOA-1157: 当日の数は件数だけで、90日の1着率とも比べない（割合も書かない）
+  assert.ok(!lowAns["s1-day"].some((l) => l.includes("90日") || l.includes("%")), `当日の水面の答えは件数だけ: ${lowAns["s1-day"]}`);
   const eLow = entryScenes(low, lowAns, { race: "桐生12R" });
   assert.ok(!eLow.scenes[0].data.steps.some((st) => st.id === "s1-venue90"), "前提: |z|<1.96 で会場の棒を外す");
   assert.ok(eLow.scenes[0].data.steps.some((st) => st.id === "s1-day"), "前提: 当日の水面の段がある");
@@ -577,7 +578,7 @@ for (const f of fixtures) {
   const noConc = low.map((x) => (x.id === "scene4" ? { ...x, data: { ...x.data, conclusion: null } } : x));
   const eDay = entryScenes(noConc, lowAns, { race: "桐生12R" });
   assert.equal(eDay.hero.source, "day");
-  assert.match(eDay.hero.value, /^\d+\.\d%$/, `水面の数字は小数1桁: ${eDay.hero.value}`);
+  assert.match(eDay.hero.value, /^\d+\/\d+R$/, `水面の数字は件数だけ（BOA-1157）: ${eDay.hero.value}`);
   assert.ok(HERO_MIN_N > 0);
 }
 // 入口版は59秒を越えたら会場の棒、次に今日の条件を外し、それでも越えたら止める
@@ -1969,12 +1970,22 @@ for (const f of fixtures) {
   assert.equal(diffOf(40, 50, S(400, 1000, 5000, 10000)).direction, "低い");
   assert.equal(diffOf(51, 50, null).direction, null, "件数が無ければ言い切らない");
   assert.equal(diffText("全国", diffOf(50.5, 50, S(505, 1000, 5000, 10000))), "全国との差は1ポイント未満", "1ポイント未満は今までどおり");
-  // s1-day は今日の1着率と90日の1着率（同じ指標）を比べる
+  // 小標本（どちらかが30件未満）は z を出さない。6/6 対 348/599 は z=2.07 でも止める（hq data-scientist 2026-10-27）
+  assert.equal(diffOf(60, 50, S(18, 29, 5000, 10000)).z, null, "29件は z を出さない");
+  // s1-day は件数だけ（割合・ポイント差・90日との比べを書かない。その日の1会場の比べは Bonferroni の線が約3.08）
   const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
   const day = buildAll(m).find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-day");
-  if (day) {
-    assert.equal(typeof day.facts.winRate, "number", "s1-day の facts に今日の1着率");
-    assert.ok(day.lines[0].includes("1着") && !day.lines[0].includes("逃げ"), `s1-day の1行目は1着: ${day.lines[0]}`);
+  assert.ok(day, "前提: s1-day がある");
+  assert.equal(day.facts.direction, null);
+  assert.ok(day.lines.join("").includes("1着") && !/%|90日|高い|低い/.test(day.lines.join("")), `s1-day は件数だけ: ${day.lines.join(" / ")}`);
+  // 順位（最多）の言い切りも z で見る（hq 2026-10-27。7 対 6 は z≈0.28）
+  assert.deepEqual(rankOf(7, 6), { rankZ: 0.28, rankSig: false });
+  assert.equal(rankOf(30, 10).rankSig, true);
+  assert.equal(rankOf(5, 0).rankSig, true, "2位が無ければ言い切ってよい");
+  const sonar = { kind: "sonar", n: 20, top: { boat: 1, count: 7, pct: 35 }, next: { boat: 2, count: 6 }, ...rankOf(7, 6) };
+  assert.ok(checkLines(["類似レース20件で1着最多は1号艇", "7件（35%）、次は2号艇の6件"], sonar, null).some((w) => w.includes("順位を言い切った")), "7 対 6 で「最多」は止まる");
+  for (const st of buildAll(m).flatMap((x) => x.data.steps ?? [])) {
+    if (st.facts?.rankSig === false) assert.ok(!/最多|最高/.test(st.lines.join("")), `${st.id}: 線を通らない順位で最多と言わない: ${st.lines.join(" / ")}`);
   }
 }
 

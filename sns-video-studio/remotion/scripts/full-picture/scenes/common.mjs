@@ -12,4 +12,4 @@ export const pct1 = (p) => (p === null || p === undefined ? null : Math.round(p 
 export const pct0 = (p) => (p === null || p === undefined ? null : Math.round(p * 100));
 export const venueName = (code) => venueLabel(Number(code), t);
 // 差の計算と言い方は diff.mjs（scene2-data.mjs からも使うので、scene2-data.mjs を読む common.mjs と分ける）
-export { Z_LINE, zOf, diffOf, diffWords, diffText } from "./diff.mjs";
+export { Z_LINE, MIN_N, zOf, diffOf, diffWords, diffText, rankOf } from "./diff.mjs";

@@ -113,14 +113,9 @@ export function buildScene1(m) {
   const race = (m.api.races ?? []).find((r) => r.raceId === m.raceId);
   const day = daySummary(m.api.races, race?.raceNumber ?? 0);
   if (day.raceCount > 0) {
-    const nige = pct1(day.nigeCount / day.raceCount);
-    const win = pct1(day.winCount / day.raceCount);
-    const v1 = rates ? round1(rateOf(1, "winRate")) : null;
-    // 比べるのは同じ指標どうし（今日の1着率と90日の1着率）。前は今日の逃げ率を90日の1着率と比べていた（hq 2026-10-27、BOA-1157）
-    const f3 = {
-      kind: "day", boat: 1, venue, races: day.raceCount, nigeCount: day.nigeCount, nigeRate: nige, winCount: day.winCount, winRate: win, venueRate: v1,
-      ...diffOf(win, v1, { a: (day.winCount / day.raceCount) * 100, na: day.raceCount, b: rateOf(1, "winRate"), nb: total }),
-    };
+    // その日の1会場の数は件数だけで言い、90日と比べない（hq data-scientist 2026-10-27、BOA-1157）。
+    // 1日は12R以下で30件の線に届かず、24場から極端な会場を選ぶと Bonferroni の線は約3.08になる。前は今日の逃げ率を90日の1着率と比べていた
+    const f3 = { kind: "day", boat: 1, venue, races: day.raceCount, nigeCount: day.nigeCount, winCount: day.winCount, diffPt: null, direction: null, z: null, sig: false, few: true };
     steps.push({
       id: "s1-day",
       question: q,
@@ -131,18 +126,17 @@ export function buildScene1(m) {
         rows: [
           { label: "平均配当", value: day.avgPayout === null ? "—" : `${Math.round(day.avgPayout).toLocaleString("ja-JP")}円` },
           { label: "万舟率", value: day.manshuRate === null ? "—" : `${pct1(day.manshuRate)}%` },
-          { label: "1号艇の逃げ率", value: `${d1(nige)}%`, note: `${day.nigeCount}/${day.raceCount}R` },
-          { label: "1号艇の1着率", value: `${d1(win)}%`, note: `${day.winCount}/${day.raceCount}R` },
+          // 30件未満なので割合を出さず件数だけ（number-wording.md）
+          { label: "1号艇の1着", value: `${day.winCount}/${day.raceCount}R`, note: `うち逃げ${day.nigeCount}R` },
         ],
       },
       press: null,
-      frames: [statsRow(3)],
+      frames: [statsRow(2)],
       facts: f3,
       lines: fitFirst(
-        // 今日の数を件数で言う。比べるのは1着率どうし（BOA-1157）
-        [`今日の${venue}の1号艇は${day.raceCount}R中${day.winCount}R1着（${d1(win)}%）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
-        [`今日の${venue}の1号艇（全選手）の1着率${d1(win)}%（${day.winCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
-        [`今日のレースの1号艇の1着率${d1(win)}%（${day.winCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
+        // 件数だけ。割合・ポイント差・90日との比べは書かない（BOA-1157）
+        [`今日の${venue}の1号艇は${day.raceCount}レース中${day.winCount}回1着`, `うち逃げは${day.nigeCount}回`],
+        [`今日の${venue}の1号艇は${day.raceCount}R中${day.winCount}R1着`, `うち逃げ${day.nigeCount}R`],
       ),
     });
   } else omitted.push({ where: "scene1.day", reason: "このレースより前に確定したレースが無い" });
@@ -180,7 +174,10 @@ export function buildScene1(m) {
       revealOnPress: true,
       frames: [tableColsBox([1], 2), tableColsBox([2], 2)],
       facts: f4,
-      lines: [`この風の1号艇（全選手）の1着率${d1(p1)}%`, diffText(`風を問わず${d1(b1)}%`, f4)].filter(Boolean),
+      // この風の件数が30件未満なら割合を出さず件数だけ（number-wording.md、BOA-1157）
+      lines: (view.rows["1"]?.win?.[1] ?? 0) < 30
+        ? [`この風の1号艇（全選手）は${view.rows["1"]?.win?.[1] ?? 0}走${view.rows["1"]?.win?.[0] ?? 0}勝`]
+        : [`この風の1号艇（全選手）の1着率${d1(p1)}%`, diffText(`風を問わず${d1(b1)}%`, f4)].filter(Boolean),
     });
   } else omitted.push({ where: "scene1.wind", reason: post ? "風・会場の集計が無い" : "展示前（風の傾向が出ていない）" });
 

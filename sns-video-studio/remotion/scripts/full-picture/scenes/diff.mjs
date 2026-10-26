@@ -3,6 +3,8 @@
  */
 /** 差の向きを言い切る線（|z|>=1.96、docs/knowledge/number-wording.md・stat-findings.md） */
 export const Z_LINE = 1.96;
+/** z を出す件数の下限（どちらかの群が30件未満なら差を言い切らない。number-wording.md「30件未満の範囲は割合を出さず件数だけ」、hq data-scientist 2026-10-27） */
+export const MIN_N = 30;
 /**
  * 2つの率の z（2標本の比率の検定、合算した率で標準誤差を出す）。hq の照合（fp_facts.py の pair_z）と同じ形にそろえる
  * （作り手と照合の判定が割れないように。BOA-1157）。比べる先が部分集合を含む（会場⊂全国 等）ときも独立として扱う。
@@ -13,8 +15,8 @@ export function zOf(s) {
   if (!s || [s.a, s.na, s.b, s.nb].some((x) => typeof x !== "number" || !Number.isFinite(x)) || s.na <= 0 || s.nb <= 0) return null;
   const pa = s.a / 100;
   const pb = s.b / 100;
-  // 正規近似が使える件数のときだけ（各群で n·p と n·(1−p) がどちらも5以上。教科書の目安）。6R の当日の数などは z を出さない
-  if ([s.na * pa, s.na * (1 - pa), s.nb * pb, s.nb * (1 - pb)].some((x) => x < 5)) return null;
+  // 小標本は z を出さない: どちらかの群が30件未満、または期待度数が5未満（hq data-scientist 2026-10-27。6/6 対 348/599 は z=2.07 でも止める）
+  if (s.na < MIN_N || s.nb < MIN_N || [s.na * pa, s.na * (1 - pa), s.nb * pb, s.nb * (1 - pb)].some((x) => x < 5)) return null;
   const p = (pa * s.na + pb * s.nb) / (s.na + s.nb);
   const se = Math.sqrt(p * (1 - p) * (1 / s.na + 1 / s.nb));
   return se > 0 ? Math.round(((pa - pb) / se) * 100) / 100 : null;
@@ -42,3 +44,15 @@ export const diffText = (base, f) => {
   const w = diffWords(f);
   return w === null ? null : `${base}${w}`;
 };
+
+/**
+ * 順位の言い切り（最多・最高）。同じ母数の中の1位と2位の件数 c1・c2 の z（多項の2つのセルの差、(c1−c2)/√(c1+c2)）。
+ * |z|>=1.96 かつ c1+c2>=10 のときだけ「最多」と言う（hq 2026-10-27。7 対 6 は z≈0.28）。2位が無ければ言い切ってよい
+ * @param {number} c1 @param {number|null|undefined} c2
+ */
+export function rankOf(c1, c2) {
+  if (typeof c2 !== "number" || c2 <= 0) return { rankZ: null, rankSig: true };
+  if (c1 + c2 < 10) return { rankZ: null, rankSig: false };
+  const z = Math.round(((c1 - c2) / Math.sqrt(c1 + c2)) * 100) / 100;
+  return { rankZ: z, rankSig: z >= Z_LINE };
+}

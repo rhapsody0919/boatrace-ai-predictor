@@ -183,6 +183,8 @@ export function templateLines(f) {
             : f.direction
               ? `${who}${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`
               : `${who}${f.usual}%との差は確認できない`;
+      // 30件未満は割合・差を出さず件数だけ（number-wording.md、BOA-1157）
+      if (f.todayN < 30) return [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇`, `${f.todayN}件中${f.todayK}件1着`];
       const l1s = [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去のレースで1着${f.todayRate}%`];
       return fitFirst(...l1s.flatMap((l1) => [[l1, base(`同じ級別の${f.boat}号艇の`)], [l1, base("同じ級別の")]]));
     }
@@ -237,6 +239,7 @@ function cardOf(row, today, scopeFacts, values, omitted) {
     todayRankRef: finalDay && r && r.from === r.to ? r.from : null,
     // 本文で割合に添える件数
     todayN: line ? line.hit[1] : null,
+    todayK: line ? line.hit[0] : null,
     usualN: usualOf(scopeFacts, CARD_BOAT, TARGET)?.[1] ?? null,
   };
   return {
