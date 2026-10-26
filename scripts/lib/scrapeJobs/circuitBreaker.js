@@ -210,8 +210,9 @@ export function createCircuitBreaker({
 
   return {
     /**
-     * 取得の前に呼ぶ。開いていれば BreakerOpenError を投げる。
+     * 取得の前に呼ぶ。開いていれば BreakerOpenError を投げる。半開の試行を予約したら {probe: true} を返す
      * @param {string} hostKey
+     * @returns {Promise<{probe: true} | undefined>}
      */
     async check(hostKey) {
       const s = stateOf(hostKey);
@@ -221,9 +222,10 @@ export function createCircuitBreaker({
       if (s.openUntil === 0) return;
       const t = now();
       if (t < s.openUntil) throw new BreakerOpenError(hostKey, s.openUntil);
-      // 半開: 期限を過ぎた。1件だけ試行させる
+      // 半開: 期限を過ぎた。1件だけ試行させる（呼び出し側が試行のページを選べるよう、予約したことを返す）
       if (s.probing) throw new BreakerOpenError(hostKey, t + 5000);
       s.probing = true;
+      return { probe: true };
     },
 
     /** 429/503 を受けた */

@@ -16,6 +16,13 @@
  *     ジョブの連続失敗に数えない＝GHA の肩代わりの条件に入らない）。登録したパスは、取得の前にパスのキーも check() する。
  *     同じホストの他のページ（odds・racelist 等）は巻き込まない。登録していないパスの 403 は従来どおり成功の側
  *     （BOATCAST は未公開のファイルを 403 で返すのが通常。ADR-0067 の追記 2026-09-21・2026-10-26）
+ *   - カナリア（BOA-1145 P4a ③、spec §5.1）: 登録したパスが 403 で開いたら、その場で軽いページ（canaryUrls。boatrace.jp は
+ *     race/index）を1件だけ取る。403 ならホスト全体のブレーカーを開く（60分から段階で倍、上限6時間）。2xx・3xx ならパスだけの
+ *     拒否と判断し、ホストは開かない。同じプロセスで同じパスの 403 が続いても、カナリアは開いた最初の1回だけ
+ *   - ホストの半開（同）: ホストのブレーカーの期限が来たら、要求されたページではなく canaryUrls のページで1件試す
+ *     （止められたパスを試して開き直さない）。2xx・3xx で閉じ、その後に要求されたページを取る。403 は段階を上げて開き直す
+ *   - 403 の記録（同）: 応答のヘッダ（Server・server-timing）・Akamai の参照番号・本文の先頭200字を、ブレーカーの
+ *     last_error に残す（拒否の理由の切り分け。追加の取得はしない。describeBlockedResponse）
  *   - 並列度の上限: この関数の同時実行数を maxConcurrent に抑える（ジョブ単位の並列度とは別の、最後の砦）
  *   - User-Agent: 未指定なら BoatraceAIBot/1.0（既存のスクレイパーと同じ）
  *
@@ -64,6 +71,55 @@ export const DEFAULT_BLOCK_PATH_KEYS = new Set(
   ),
 );
 
+/**
+ * ホストのカナリア（パスが 403 で開いたときと、ホストの半開の試行で取る軽いページ）。ホストのキー → URL。
+ * 載せていないホスト（race.boatcast.jp 等）はカナリアを取らない（BOATCAST は未公開のファイルを 403 で返すのが通常）
+ */
+export const DEFAULT_CANARY_URLS = Object.freeze({
+  [`${HOST_JOB_PREFIX}boatrace.jp`]:
+    "https://www.boatrace.jp/owpc/pc/race/index",
+});
+
+const fromCode = (n) => (n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "");
+const decodeEntities = (text) =>
+  text
+    .replace(/&#(\d{1,7});/g, (_, n) => fromCode(Number(n)))
+    .replace(/&#x([0-9a-f]{1,6});/gi, (_, n) => fromCode(Number.parseInt(n, 16)))
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+
+/**
+ * 403 の応答を、ブレーカーの記録（last_error、500字まで）に残す1行にする（spec §5.1）。
+ * Server・server-timing・Akamai の参照番号（本文の「Reference #18.xxxx」。数値文字参照で書かれることがある）・本文の先頭200字
+ * （タグを除き空白を詰めたもの）。本文を読めなくても（読み済み等）ヘッダだけで返す
+ * @param {Response} response
+ * @returns {Promise<string>}
+ */
+export async function describeBlockedResponse(response) {
+  let body = "";
+  try {
+    body = await response.clone().text();
+  } catch {
+    body = "";
+  }
+  const text = decodeEntities(body.replace(/<[^>]*>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+  const ref = /Reference\s*#\s*([0-9a-f]+(?:\.[0-9a-f]+)+)/i.exec(text)?.[1];
+  const parts = [`HTTP ${response.status}`];
+  const server = response.headers.get("server");
+  if (server) parts.push(`server: ${server.slice(0, 40)}`);
+  const timing = response.headers.get("server-timing");
+  if (timing) parts.push(`server-timing: ${timing.slice(0, 120)}`);
+  if (ref) parts.push(`ref: ${ref}`);
+  if (text) parts.push(`body: ${text.slice(0, 200)}`);
+  return parts.join(" | ");
+}
+
+const isPassStatus = (status) => status >= 200 && status < 400;
+
 /** Retry-After（秒、またはHTTP日付）をミリ秒に。解釈できなければ null */
 export function parseRetryAfterMs(value, nowMs = Date.now()) {
   if (value === null || value === undefined || value === "") return null;
@@ -95,8 +151,11 @@ export function createPoliteFetch({
   maxConcurrent = 20,
   userAgent = DEFAULT_USER_AGENT,
   blockPathKeys = DEFAULT_BLOCK_PATH_KEYS,
+  canaryUrls = DEFAULT_CANARY_URLS,
 } = {}) {
   const semaphore = createSemaphore(maxConcurrent);
+  // カナリアを取っている最中のホスト（同じプロセスで同時に 403 が重なっても1件にする）
+  const canaryRunning = new Set();
 
   const backoffMs = (attempt, retryAfterMs) => {
     const base = retryAfterMs ?? baseDelayMs * 2 ** attempt;
@@ -142,6 +201,82 @@ export function createPoliteFetch({
   };
 
   /**
+   * ホストの半開の試行を、カナリアのページで行う（check(hostKey) が試行を予約した後に呼ぶ）。
+   * 2xx・3xx で閉じて戻る。それ以外は開いたまま（403 は段階を上げて開き直し、429/503 は開き直す）で例外を投げる
+   */
+  const probeHostWithCanary = async (hostKey, canaryUrl) => {
+    let response;
+    try {
+      response = await fetchOnce(canaryUrl, {});
+    } catch (error) {
+      breaker.abortProbe(hostKey);
+      throw new FetchError(canaryUrl, 1, error);
+    }
+    if (isPassStatus(response.status)) {
+      await breaker.recordSuccess(hostKey);
+      return;
+    }
+    if (BLOCKED_STATUSES.has(response.status)) {
+      const reason = await describeBlockedResponse(response);
+      console.warn(`⚠️ ${hostKey}: 半開のカナリアが拒否された（${reason}）`);
+      await breaker.recordBlocked(hostKey, reason);
+    } else if (RETRYABLE_STATUSES.has(response.status)) {
+      await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+    } else {
+      breaker.abortProbe(hostKey);
+    }
+    throw new BreakerOpenError(
+      hostKey,
+      Math.max(breaker.snapshot(hostKey).openUntil, now() + 5000),
+    );
+  };
+
+  /**
+   * パスが 403 で開いた直後に、ホストへ広げるかをカナリアで決める（spec §5.1）。ホストが既に開いている・カナリアの取得に
+   * 失敗したときは何もしない（パスのブレーカーは開いたまま）
+   */
+  const decideHostByCanary = async (hostKey) => {
+    const canaryUrl = canaryUrls[hostKey];
+    if (!canaryUrl || canaryRunning.has(hostKey)) return;
+    canaryRunning.add(hostKey);
+    try {
+      let reserved;
+      try {
+        reserved = await breaker.check(hostKey);
+      } catch {
+        return; // ホストは既に開いている（非常停止を含む）
+      }
+      if (reserved?.probe) {
+        // ホストの半開の試行と重なった: その試行をカナリアで行う
+        await probeHostWithCanary(hostKey, canaryUrl).catch(() => {});
+        return;
+      }
+      let response;
+      try {
+        response = await fetchOnce(canaryUrl, {});
+      } catch (error) {
+        console.warn(
+          `⚠️ ${hostKey}: カナリア（${canaryUrl}）の取得に失敗。ホストは開かない: ${error?.message ?? error}`,
+        );
+        return;
+      }
+      if (BLOCKED_STATUSES.has(response.status)) {
+        const reason = await describeBlockedResponse(response);
+        console.warn(
+          `⚠️ ${hostKey}: カナリアも拒否された。ホスト全体を開く（${reason}）`,
+        );
+        await breaker.recordBlocked(hostKey, `canary ${reason}`);
+      } else if (RETRYABLE_STATUSES.has(response.status)) {
+        await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+      } else {
+        await breaker.recordSuccess(hostKey);
+      }
+    } finally {
+      canaryRunning.delete(hostKey);
+    }
+  };
+
+  /**
    * @param {string} url
    * @param {RequestInit} [init]
    * @returns {Promise<Response>}
@@ -154,13 +289,23 @@ export function createPoliteFetch({
       let lastError;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         if (breaker) {
-          await breaker.check(hostKey);
+          const hostCheck = await breaker.check(hostKey);
           if (guarded) {
             try {
               await breaker.check(pathKey);
             } catch (error) {
               // ホストの半開の試行を予約していたら戻す（取得しないため）
               breaker.abortProbe(hostKey);
+              throw error;
+            }
+          }
+          const canaryUrl = canaryUrls[hostKey];
+          if (hostCheck?.probe && canaryUrl) {
+            // ホストの半開の試行は、要求されたページではなくカナリアのページで行う（閉じたら要求されたページを取る）
+            try {
+              await probeHostWithCanary(hostKey, canaryUrl);
+            } catch (error) {
+              if (guarded) breaker.abortProbe(pathKey);
               throw error;
             }
           }
@@ -180,9 +325,16 @@ export function createPoliteFetch({
         }
         if (guarded && BLOCKED_STATUSES.has(response.status)) {
           if (!breaker) return response;
-          // ホストは応答した（過負荷ではない）: ホストの数え方は従来どおり成功の側（半開の試行なら閉じる）
+          const reason = await describeBlockedResponse(response);
+          // 同じプロセスで既に開いていた（並行の要求の 403 が後から届いた）ならカナリアを取らない
+          const wasOpen = breaker.snapshot(pathKey).openUntil > now();
+          // ホストは応答した（過負荷ではない）: ホストの数え方は従来どおり成功の側
           await breaker.recordSuccess(hostKey);
-          await breaker.recordBlocked(pathKey, `HTTP ${response.status}`);
+          await breaker.recordBlocked(pathKey, reason);
+          if (!wasOpen) {
+            console.warn(`⚠️ ${pathKey}: 拒否された（${reason}）`);
+            await decideHostByCanary(hostKey);
+          }
           throw new BreakerOpenError(
             pathKey,
             breaker.snapshot(pathKey).openUntil,
