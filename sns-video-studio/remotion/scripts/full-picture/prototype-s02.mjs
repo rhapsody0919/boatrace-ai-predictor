@@ -1,6 +1,6 @@
 /**
  * 型 s02-loss-breakdown-card の試作（関門の段4）。毎日の実行の出力（run-full の出力ディレクトリ）の shorts.mp4 は書き出し直さず、
- * 冒頭に札（1.5秒）をつなぎ、答えの頁と着順の流れの場面に重ねの画像を載せる（ffmpeg）。題・X の本文も型の文に替える。
+ * 冒頭に札（3秒）をつなぎ、答えの頁に艇ごとの件数の札を重ねる（ffmpeg）。題・X の本文も型の文に替える。
  * 台本: docs/design/full-picture-type-gate/candidates/s02-loss-breakdown-card/script.md
  *
  * 使い方（sns-video-studio/remotion で）:
@@ -11,7 +11,7 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import process from "node:process";
-import { S02_CARD_SECONDS, S02_CHIPS_UNTIL, S02_QUESTION_UNTIL, s02Check, s02Facts, s02Text } from "./s02.mjs";
+import { S02_CARD_SECONDS, S02_CHIPS_UNTIL, s02Check, s02Facts, s02Text } from "./s02.mjs";
 import { fullPictureTimeline } from "../../src/fullPicture/fullPictureTimeline.js";
 
 const [runDir, outArg] = process.argv.slice(2);
@@ -56,10 +56,9 @@ const concTo = (conc.from + conc.len) / 30 + S02_CARD_SECONDS;
 const still = (id, file, p) =>
   execFileSync("npx", ["remotion", "still", "src/index.jsx", id, join(out, file), `--props=${JSON.stringify(p)}`, "--image-format=png"], { stdio: "inherit" });
 still("S02Card", "card.png", tx.card);
-still("S02Overlay", "overlay-question.png", { question: tx.card.lines.at(-1), chips: tx.chips });
 still("S02Overlay", "overlay-chips.png", { chips: tx.chips });
 
-// 札（静止 1.5秒・無音）＋ shorts.mp4。重ね: 1.5〜3.5秒は問いと件数の札、3.5〜8秒は件数の札、着順の流れの場面も件数の札
+// 札（静止 3秒・無音）＋ shorts.mp4。重ね: 札の後〜8秒に艇ごとの件数の札（着順の流れの場面は今の吹き出しと重なるので重ねない）
 const C = S02_CARD_SECONDS;
 execFileSync(
   "ffmpeg",
@@ -67,16 +66,14 @@ execFileSync(
     "-y", "-v", "error",
     "-loop", "1", "-framerate", "30", "-t", String(C), "-i", join(out, "card.png"),
     "-i", shorts,
-    "-i", join(out, "overlay-question.png"),
     "-i", join(out, "overlay-chips.png"),
     "-f", "lavfi", "-t", String(C), "-i", "anullsrc=r=48000:cl=stereo",
     "-filter_complex",
     [
       "[0:v]scale=1080:1920,setsar=1,format=yuv420p[c]",
       "[1:v]setsar=1,format=yuv420p[b]",
-      "[c][4:a][b][1:a]concat=n=2:v=1:a=1[v0][a]",
-      `[v0][2:v]overlay=0:0:enable='between(t,${C},${S02_QUESTION_UNTIL})'[v1]`,
-      `[v1][3:v]overlay=0:0:enable='between(t,${S02_QUESTION_UNTIL},${S02_CHIPS_UNTIL})+between(t,${concFrom.toFixed(2)},${concTo.toFixed(2)})'[v]`,
+      "[c][3:a][b][1:a]concat=n=2:v=1:a=1[v0][a]",
+      `[v0][2:v]overlay=0:0:enable='between(t,${C},${C + S02_CHIPS_UNTIL - 1.5})'[v]`,
     ].join(";"),
     "-map", "[v]", "-map", "[a]",
     "-c:v", "libx264", "-pix_fmt", "yuv420p", "-r", "30", "-c:a", "aac", "-b:a", "128k",
@@ -86,7 +83,7 @@ execFileSync(
 );
 
 // 確認用のコマ（札・問い・件数の札・着順の流れ）
-const frames = { "0-card": 0.7, "1-question": 2.5, "2-chips": 6, "3-flow": concFrom + 1.5 };
+const frames = { "0-card": 0.7, "1-card-end": C - 0.3, "2-chips": C + 3, "3-flow": concFrom + 1.5 };
 for (const [name, t] of Object.entries(frames))
   execFileSync("ffmpeg", ["-y", "-v", "error", "-ss", String(t), "-i", join(out, "shorts-s02.mp4"), "-frames:v", "1", join(out, "frames", `${name}.png`)]);
 

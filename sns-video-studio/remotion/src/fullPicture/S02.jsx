@@ -2,8 +2,8 @@
  * 型 s02-loss-breakdown-card の札と重ね（静止画）。数字と文は scripts/full-picture/s02.mjs、つなぐのは prototype-s02.mjs（ffmpeg）。
  * 台本: docs/design/full-picture-type-gate/candidates/s02-loss-breakdown-card/script.md
  * - S02Card: 冒頭 1.5秒の札（背景あり）。y250〜1400 に収める
- * - S02Overlay: 答えの頁・着順の流れの場面に重ねる透明の画像。問いの1行（question）と艇ごとの件数の札（chips）。
- *   答えの頁は y1420 まで使うので、その下（y1440〜1700）に置き、x940 より右（Shorts の右のボタン列）には置かない
+ * - S02Overlay: 答えの頁に重ねる透明の画像（艇ごとの件数の札）。
+ *   答えの頁の注記（〜y1230）の下、y1270〜1460 に置き（Shorts の下部の題・チャンネル名の表示を避けて y1500 より上。youtube-channel 試作の審査 P1）、x940 より右（Shorts の右のボタン列）には置かない
  */
 import { AbsoluteFill } from "remotion";
 import { FONT } from "../fonts.js";
@@ -14,7 +14,7 @@ const GOLD = "#d4af37";
 const LEFT = 60;
 const RIGHT = 940;
 
-export function S02Card({ head, lines, band }) {
+export function S02Card({ head, lines, band, scope }) {
   // 主の文字は2行とも同じ大きさで幅に収める（件数が4桁の日も。最大 84px）。収まらなければ止める（黙ってはみ出さない）
   const size = Math.min(
     ...lines.map((l) => {
@@ -79,37 +79,26 @@ export function S02Card({ head, lines, band }) {
         <div style={{ width: winW, background: "#ffffff" }} />
         <div style={{ flex: 1, background: GOLD }} />
       </div>
-      <div style={{ position: "absolute", left: LEFT, top: 1140, width: RIGHT - LEFT, fontSize: 36, color: MUTED }}>1号艇の過去の着順（級の並びが同じ・枠なり）</div>
+      <div style={{ position: "absolute", left: LEFT, top: 1140, width: RIGHT - LEFT, fontSize: 36, color: MUTED }}>1号艇の過去の着順</div>
+      {/* 範囲と期間（動画だけ広まっても読めるように。x-channel 試作の審査 P2） */}
+      <div style={{ position: "absolute", left: LEFT, top: 1195, width: RIGHT - LEFT, fontSize: 36, color: MUTED, lineHeight: 1.35 }}>
+        {scope.map((l) => (
+          <div key={l} style={{ whiteSpace: "nowrap" }}>{l}</div>
+        ))}
+      </div>
     </AbsoluteFill>
   );
 }
 
-export function S02Overlay({ question = null, chips = null }) {
+export function S02Overlay({ chips = null }) {
   return (
     <AbsoluteFill style={{ background: "transparent", fontFamily: FONT }}>
-      {question && (
-        <div
-          style={{
-            position: "absolute",
-            left: LEFT,
-            top: 1440,
-            width: RIGHT - LEFT,
-            textAlign: "center",
-            fontSize: 60,
-            fontWeight: 900,
-            color: GOLD,
-            textShadow: "0 2px 8px #000",
-          }}
-        >
-          {question}
-        </div>
-      )}
       {chips && (
         <div
           style={{
             position: "absolute",
             left: LEFT,
-            top: question ? 1540 : 1450,
+            top: 1270,
             width: RIGHT - LEFT,
           }}
         >

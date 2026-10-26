@@ -7,10 +7,10 @@
 import { ANSWER_RULE } from "./answer.mjs";
 
 /** 札の秒（台本 0〜1.5秒）と、艇ごとの件数の札を答えの頁に重ねる秒 */
-export const S02_CARD_SECONDS = 1.5;
+export const S02_CARD_SECONDS = 3;
 export const S02_CHIPS_UNTIL = 8;
-/** 札の問いの1行（勝ったのは何号艇？）を答えの頁の頭に重ねて残す秒。札と合わせて主の文字を読む時間（毎秒8字に収める） */
-export const S02_QUESTION_UNTIL = 3.5;
+/** 艇ごとの件数の札の下端（Shorts の下部の題・チャンネル名の表示を避ける。youtube-channel 試作の審査 P1） */
+export const S02_CHIPS_BOTTOM = 1500;
 /** 札の主の文字の毎秒の上限（video-composition.md「毎秒8字」） */
 export const S02_CHARS_PER_SEC = 8;
 /** 札・字幕・題・本文に使わない順位の語 */
@@ -57,9 +57,12 @@ export function s02Text(f, r) {
       head: `${r.race}（${r.date}）`,
       lines: [`過去の1号艇が負けた${f.m.toLocaleString("ja-JP")}件`, "勝ったのは何号艇？"],
       band: { win: f.k, loss: f.m },
+      // 範囲と期間は別の行（期間の途中で折り返さない）
+      scope: ["全国・級の並びが同じ・枠なり", span].filter(Boolean),
     },
     chips: { title: `負けた${f.m.toLocaleString("ja-JP")}件の内訳`, by: f.by },
-    shortsTitle: `${r.race}（${r.date}）｜過去の1号艇が負けた${f.m.toLocaleString("ja-JP")}件、勝ったのは何号艇？`,
+    // 競技の名を題に（検索・おすすめで判別する手掛かり。youtube-channel 試作の審査 P2）
+    shortsTitle: `${r.race}（${r.date}）｜過去の1号艇が負けた${f.m.toLocaleString("ja-JP")}件、勝ったのは何号艇？｜ボートレース`,
     xText: [
       `${r.race}（${r.date}${r.deadline ? ` ${r.deadline}締切` : ""}）`,
       `全国で6艇の級の並びがこのレースと同じ、進入が枠なりの過去${f.n.toLocaleString("ja-JP")}件中${span ? `（${span}）` : ""}、1号艇の1着は${f.k.toLocaleString("ja-JP")}件（${f.p.toFixed(1)}%）。`,
@@ -80,9 +83,9 @@ export function s02Check(f, tx, seconds) {
   const sum = f.by.reduce((a, x) => a + x.count, 0);
   if (sum !== f.m) why.push(`内訳の和${sum}が負けた件数${f.m}と違う`);
   if (f.k + f.m !== f.n) why.push("N＝K＋M にならない");
-  // 札の主の文字は、札（1.5秒）と答えの頁の頭に残す問いの1行（〜3.5秒）を合わせた時間で毎秒8字以内
-  const chars = tx.card.lines.join("").length;
-  if (chars / S02_QUESTION_UNTIL > S02_CHARS_PER_SEC) why.push(`札の主の文字が${chars}字（${S02_QUESTION_UNTIL}秒で毎秒${S02_CHARS_PER_SEC}字を越える）`);
+  // 札の主の文字は札の秒で毎秒8字以内（問いを答えの頁に重ねると本編の問い「1号艇は堅い？」と2つ並ぶので、札を延ばす。試作の審査 P2）
+  const chars = tx.card.lines.join("").replace(/,/g, "").length; // 桁区切りのカンマは読む字に数えない
+  if (chars / S02_CARD_SECONDS > S02_CHARS_PER_SEC) why.push(`札の主の文字が${chars}字（${S02_CARD_SECONDS}秒で毎秒${S02_CHARS_PER_SEC}字を越える）`);
   if (tx.card.lines.some((l) => l.length > 16)) why.push("札の主の文字の1行が16字を越える");
   for (const s of [tx.card.head, ...tx.card.lines, tx.chips.title, tx.shortsTitle, tx.xText]) if (S02_RANK_WORDS.test(s)) why.push(`順位の語: ${s.split("\n")[0]}`);
   if (!/過去/.test(tx.xText) || !/全国/.test(tx.xText)) why.push("本文に「過去」「全国」が無い");
