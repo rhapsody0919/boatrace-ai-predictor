@@ -146,6 +146,13 @@ export async function checkClaims({
   };
 }
 
+/** 優勝戦の投稿の部分（下書きの source_data.finals_image.part）と item の variant（176・177）。part の無い下書きは本投稿 */
+export const FINALS_PART_VARIANTS = Object.freeze({
+  main: "finals",
+  poll: "finals_poll",
+  reply: "finals_reply",
+});
+
 /** races の締切（発走の時刻、JST）を ISO にする。承認（auto-plan）と送る直前で同じ文字列になるよう、ここだけで作る */
 export function deadlineIso(race) {
   if (!race?.race_date || !race?.start_time) return null;
@@ -209,8 +216,12 @@ export function createReadCurrent({
     // 優勝戦の画像（176、scripts/sns/push-finals-image.js）: 全貌と同じ読み直しに、優勝戦であること・同じレースの finals_image を
     // まだ送っていないこと・自動送信の許可（finals_image_enabled）を足す。違えば投げる（runner の claim の前の検査で止まる。
     // claim の後の検査で投げた場合は claim で使った日次の枠・予約額が残る。許可は transition_sns_send_139（176）も claim で見る）
+    // 本投稿へのリプ（177）は同じ読み直しで、送ったかは自分の種類（variant）だけを見る（本投稿を送った後に子が止まらないように）
     if (draft?.source_data?.finals_image?.race_id) {
-      const { race_id: raceId, revision } = draft.source_data.finals_image;
+      const { race_id: raceId, revision, part = "main" } =
+        draft.source_data.finals_image;
+      const variant = FINALS_PART_VARIANTS[part];
+      if (!variant) throw new Error("finals_part_unknown");
       const id = encodeURIComponent(raceId);
       const [[race], entries, exhibition, [conditions], sent, [control]] =
         await Promise.all([
@@ -221,7 +232,7 @@ export function createReadCurrent({
           db(`exhibition_data?race_id=eq.${id}&select=is_absent`),
           db(`race_conditions?race_id=eq.${id}&select=race_stage`),
           db(
-            `sns_auto_send_items?kind=eq.finals_image&race_id=eq.${id}&state=eq.sent&select=id`,
+            `sns_auto_send_items?kind=eq.finals_image&variant=eq.${variant}&race_id=eq.${id}&state=eq.sent&select=id`,
           ),
           db("sns_auto_send_control?channel=eq.x&select=finals_image_enabled"),
         ]);
