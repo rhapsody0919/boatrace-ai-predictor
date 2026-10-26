@@ -3,7 +3,10 @@
  * DB・ネットワークに接続しない。
  *
  *   (a) 連続の 429 で開く期間は段階で 5分→10分→20分→60分（上限）。段階は DB に残り、別の起動も同じ段階から上げる
- *   (b) Retry-After が10秒を超える 429 は再試行せず、ホストをその時間開いて応答を返す。次の取得は叩かない
+ *   (b) Retry-After が10秒を超える 429 は再試行せず、ホストをその時間開いて応答を返す（段階は上げない）。次の取得は叩かない
+ *   (f) 開いている間に届いた 429・403（並行の要求の後着）は段階を上げない（#1983 の審査 P1）
+ *   (g) countOverload:false（/api/odds/live）の 429 は数えない。Retry-After>10秒ならその時間開く
+ *   (h) 半開のカナリアの 429 も Retry-After を見る
  *   (c) Retry-After の上限は60分
  *   (d) Retry-After が10秒以下なら従来どおり待って再試行する
  *   (e) 403 で上がったホストの段階（4）を、429 で下げない
@@ -92,12 +95,12 @@ const setup = (responses) => {
     next = e;
   }
   check(
-    "(b) Retry-After 300秒の 429: 再試行せず応答を返し、ホストを300秒・段階1で開く。次の取得は叩かない",
+    "(b) Retry-After 300秒の 429: 再試行せず応答を返し、ホストを300秒開く（段階は上げない）。次の取得は叩かない",
     r.status === 429 &&
       s.sleeps.length === 0 &&
       s.fetched.length === 1 &&
       s.store.breakerStore.byKey[HOST] === T0 + 300_000 &&
-      s.store.breakerStore.levels[HOST]?.level === 1 &&
+      (s.store.breakerStore.levels[HOST]?.level ?? 0) === 0 &&
       next instanceof BreakerOpenError,
     show({
       status: r.status,
@@ -149,6 +152,85 @@ const setup = (responses) => {
     show(store.breakerStore),
   );
 }
+// (f)
+{
+  const c = { t: T0 };
+  const store = createMemoryStore();
+  const b = createCircuitBreaker({ store: store.breakerStore, now: () => c.t });
+  // 同時の要求12件がすべて 429（旧は level 4・60分になった）
+  await Promise.all(
+    Array.from({ length: 12 }, () => b.recordFailure(HOST, "HTTP 429")),
+  );
+  const lvl429 = store.breakerStore.levels[HOST]?.level;
+  const until429 = store.breakerStore.byKey[HOST];
+  const KEY = "host:boatrace.jp/owpc/pc/race/beforeinfo";
+  await Promise.all(Array.from({ length: 5 }, () => b.recordBlocked(KEY)));
+  check(
+    "(f) 同時の12件の 429 でも段階1・5分、同時の5件の 403 でも段階1・30分（開いている間の後着は段階を上げない）",
+    lvl429 === 1 &&
+      until429 === T0 + 5 * MIN &&
+      store.breakerStore.levels[KEY]?.level === 1 &&
+      store.breakerStore.byKey[KEY] === T0 + 30 * MIN,
+    show({ lvl429, until429, db: store.breakerStore }),
+  );
+}
+
+// (g)
+{
+  const c = { t: T0 };
+  const store = createMemoryStore();
+  const breaker = createCircuitBreaker({ store: store.breakerStore, now: () => c.t });
+  const responses = [
+    { status: 429 },
+    { status: 429 },
+    { status: 429 },
+    { status: 429, headers: { "retry-after": "60" } },
+  ];
+  const f = createPoliteFetch({
+    breaker,
+    now: () => c.t,
+    maxRetries: 0,
+    countOverload: false,
+    canaryUrls: {},
+    fetchImpl: async () => {
+      const r = responses.shift();
+      return new Response("x", { status: r.status, headers: r.headers ?? {} });
+    },
+  });
+  for (let i = 0; i < 3; i++) await f(ODDS);
+  const afterPlain = HOST in store.breakerStore.byKey;
+  await f(ODDS);
+  check(
+    "(g) countOverload:false の 429 は数えない（3件続いても開かない）。Retry-After 60秒ならその時間開く",
+    afterPlain === false && store.breakerStore.byKey[HOST] === T0 + 60_000,
+    show({ afterPlain, db: store.breakerStore }),
+  );
+}
+
+// (h)
+{
+  const c = { t: T0 };
+  const store = createMemoryStore();
+  const breaker = createCircuitBreaker({ store: store.breakerStore, now: () => c.t });
+  await breaker.recordBlocked(HOST, "canary HTTP 403"); // ホストが60分開く
+  c.t += 60 * MIN + 1;
+  const INDEX = "https://www.boatrace.jp/owpc/pc/race/index";
+  const f = createPoliteFetch({
+    breaker,
+    now: () => c.t,
+    fetchImpl: async (url) =>
+      url === INDEX
+        ? new Response("x", { status: 429, headers: { "retry-after": "900" } })
+        : new Response("ok"),
+  });
+  const e = await f(ODDS).catch((x) => x);
+  check(
+    "(h) 半開のカナリアが Retry-After 900秒の 429 なら、その時間開く",
+    e instanceof BreakerOpenError && store.breakerStore.byKey[HOST] === c.t + 900_000,
+    show({ e: String(e), db: store.breakerStore }),
+  );
+}
+
 function HOUR() {
   return 60 * MIN;
 }

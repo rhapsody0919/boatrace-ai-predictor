@@ -119,7 +119,7 @@ export function blockDurationMs(level, openMs, maxOpenMs) {
  *   breaker_open_until（epoch ms。開いていなければ0）・fetch_stop・breaker_level・breaker_opened_at（epoch ms。無ければ0）。
  *   数だけを返すと fetchStop=false・段階0として扱う
  * @property {(hostKey: string, untilMs: number, reason: string, level?: {level: number, openedAtMs: number}) => Promise<void>} open
- *   level を渡すと breaker_level・breaker_opened_at も書く（403 のとき。429/503 は渡さない）
+ *   level を渡すと breaker_level・breaker_opened_at も書く（403・429/503 で開くとき。403 と 429 は同じ段階の列を使う）
  * @property {(hostKey: string, closed?: {closedAtMs: number}) => Promise<void>} close closed を渡すと breaker_closed_at も書く
  */
 
@@ -226,22 +226,39 @@ export function createCircuitBreaker({
 
   // 過負荷（429/503）で開く。書く前に DB を読み直し（別の起動の段階・長い期限を採る）、段階を今の段階＋1（429 の段階の数まで）に
   // して durationOf(段階) だけ開く。期限は DB の長い方を残す（403 のホストの60分を縮めない）
-  const openOverloaded = async (hostKey, s, t, reason, durationOf) => {
+  // escalate:false は段階を上げない（Retry-After でその時間だけ開くとき）。
+  // 開いている間（半開の試行でない）に届いた 429 は段階を上げない（同時の要求の 429 が重なって一気に60分にしない。#1983 の審査 P1）
+  const openOverloaded = async (
+    hostKey,
+    s,
+    t,
+    reason,
+    durationOf,
+    { escalate = true } = {},
+  ) => {
+    const wasProbing = s.probing;
     await refresh(hostKey, s, { force: true });
+    const alreadyOpen = s.openUntil > t && !wasProbing;
     const current = effectiveBlockLevel(s.level, s.openedAt, t, stepDownMs);
     // 429 の段階は4つまで。403 で上がった段階（それより上）は下げない
-    const level = Math.max(current, Math.min(retryStagesMs.length, current + 1));
-    s.level = level;
-    s.openedAt = t;
-    s.openUntil = Math.max(s.openUntil, t + durationOf(level));
+    const level =
+      escalate && !alreadyOpen
+        ? Math.max(current, Math.min(retryStagesMs.length, current + 1))
+        : current;
+    const until = Math.max(s.openUntil, t + durationOf(Math.max(1, level)));
     s.probing = false;
     s.events = [];
     s.consecutive = 0;
+    // 既に開いていて期限も延びないなら書かない（長い方を残すだけ）
+    if (alreadyOpen && until <= s.openUntil) return;
+    if (!alreadyOpen) s.openedAt = t;
+    s.level = level;
+    s.openUntil = until;
     if (store) {
       await safe("開放の記録", () =>
         store.open(hostKey, s.openUntil, reason, {
           level: s.level,
-          openedAtMs: t,
+          openedAtMs: s.openedAt,
         }),
       );
     }
@@ -286,15 +303,21 @@ export function createCircuitBreaker({
 
     /**
      * Retry-After が10秒を超える 429/503 を受けた（politeFetch は再試行しない）。1回で、その時間（上限 retryAfterMaxMs）開く。
-     * 段階も1つ上げる（次に連続の 429 で開くときは、上げた段階の期間）
+     * 段階は上げない
      * @param {string} hostKey
      * @param {number} retryAfterMs
      * @param {string} [reason]
      */
     async recordRetryAfter(hostKey, retryAfterMs, reason = "429/503") {
       const s = stateOf(hostKey);
-      await openOverloaded(hostKey, s, now(), reason, () =>
-        Math.min(retryAfterMaxMs, Math.max(0, retryAfterMs)),
+      // 段階は上げない（その時間だけ開く。#1983 の審査 P2 の決定）
+      await openOverloaded(
+        hostKey,
+        s,
+        now(),
+        reason,
+        () => Math.min(retryAfterMaxMs, Math.max(0, retryAfterMs)),
+        { escalate: false },
       );
     },
 
@@ -309,8 +332,14 @@ export function createCircuitBreaker({
      */
     async recordBlocked(hostKey, reason = "HTTP 403") {
       const s = stateOf(hostKey);
+      const wasProbing = s.probing;
       await refresh(hostKey, s, { force: true });
       const t = now();
+      // 既に開いている間（半開の試行でない）に届いた 403（並行の要求の後着）は段階を上げない（#1983 の審査 P1 と同じ穴）
+      if (s.openUntil > t && !wasProbing) {
+        s.probing = false;
+        return;
+      }
       const level = Math.min(
         levelCapOf(hostKey),
         effectiveBlockLevel(s.level, s.openedAt, t, stepDownMs) + 1,

@@ -1032,12 +1032,16 @@ check(
         breaker.snapshot(pathKeyOf(BEFORE)).openUntil === 0,
     );
     // 上限は6時間（30分→1時間→2時間→4時間→6時間。段階は verify-scrape-breaker-level.js）
-    const capped = createCircuitBreaker({ now: () => clock.t });
-    for (let i = 0; i < 6; i++) await capped.recordBlocked("k");
-    check(
-      "403 で開く期間の上限は6時間",
-      capped.snapshot("k").openUntil === clock.t + 6 * 60 * 60_000,
-    );
+    // 開いている間の 403 は段階を上げないので、毎回期限の後（半開）に受けたことにする
+    const cc = { t: clock.t };
+    const capped = createCircuitBreaker({ now: () => cc.t });
+    let lastDuration = 0;
+    for (let i = 0; i < 6; i++) {
+      await capped.recordBlocked("k");
+      lastDuration = capped.snapshot("k").openUntil - cc.t;
+      cc.t = capped.snapshot("k").openUntil + 1;
+    }
+    check("403 で開く期間の上限は6時間", lastDuration === 6 * 60 * 60_000);
     // 別プロセス（新しいブレーカー）も、DB の期限で開いている扱い（パスのキーで共有）
     const log = [];
     const shared = { byKey: {} };

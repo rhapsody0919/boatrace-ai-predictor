@@ -40,7 +40,13 @@ function getPoliteFetch() {
             ? createSupabaseStore(supabase).breakerStore
             : undefined,
         });
-        return createPoliteFetch({ breaker, maxRetries: 0, timeoutMs: 12000 });
+        // 利用者の要求の 429 は段階を上げない（Retry-After>10秒ならその時間開く。BOA-1145 #1983 の審査）
+        return createPoliteFetch({
+          breaker,
+          maxRetries: 0,
+          timeoutMs: 12000,
+          countOverload: false,
+        });
       },
     );
   }
