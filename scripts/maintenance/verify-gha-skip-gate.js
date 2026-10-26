@@ -4,8 +4,9 @@
  *
  * 確認すること:
  *   (a) 変数が未設定・false・空・未知の値: clientを一切呼ばず（DBを読まず）、常に「実行」（現行と同じ）
- *   (b) 窓型（odds・result）: live・起動が新しい・連続失敗なし・ブレーカーが閉じている → スキップ。
- *       modeがlive以外・行なし・起動が古い・連続失敗・ブレーカーが開いている・不正な値 → 実行。
+ *   (b) 窓型（odds・result）: live・起動が新しい・連続失敗なし → スキップ。取得先のブレーカー（ホスト・403 のパス）が
+ *       開いている間もスキップ（GitHub の素の fetch で同じ取得先を叩かない。BOA-1145）。
+ *       modeがlive以外・行なし・起動が古い・連続失敗・不正な値 → 実行。
  *       レースの無い時間帯（最終成功が半日前でも、起動が新しい）は誤って実行しない
  *   (c) 日次（point_rank等）: 対象日を処理済み → スキップ。未処理・前日分のみ・shadow・失敗 → 実行。指定時刻の直後は retryable
  *   (d) チャンク処理（racer_profiles）: 処理中（指定時刻以降に成功があり新しい）はスキップ。それ以外は実行
@@ -238,8 +239,8 @@ async function suite(mod, record) {
     const closed = row("host:boatrace.jp");
     const b1 = await decide(V, [healthy(), open], NOW);
     record(
-      "オッズ: 取得先（host:boatrace.jp）のブレーカーが開いている → 実行（Vercelのfetchが止められている間、GitHubが肩代わり）",
-      b1.skip === false && b1.reason === "breaker_open",
+      "オッズ: 取得先（host:boatrace.jp）のブレーカーが開いている → スキップ（GitHub の素の fetch で、過負荷・拒否の取得先を別の IP から叩かない。BOA-1145）",
+      b1.skip === true && b1.reason === "breaker_open_no_takeover",
       show(b1),
     );
     record(
@@ -247,6 +248,58 @@ async function suite(mod, record) {
       (await skipOf(V, [healthy(), past], NOW)) === true &&
         (await skipOf(V, [healthy(), closed], NOW)) === true,
     );
+    {
+      // ホスト（429/503）のブレーカー（BOA-1145）: 連続失敗では肩代わりしない。Vercel が起動していない（tick_stale）ときだけ肩代わりする
+      const hostOpen = row("host:boatrace.jp", {
+        breaker_open_until: minutesAgo(NOW, -20),
+      });
+      const h1 = await decide(
+        V,
+        [healthy({ consecutive_failures: 5 }), hostOpen],
+        NOW,
+      );
+      const h2 = await decide(
+        V,
+        [healthy({ last_tick_at: minutesAgo(NOW, 30) }), hostOpen],
+        NOW,
+      );
+      record(
+        "オッズ: ホストのブレーカーが開いている間、連続失敗5回でもスキップ。Vercel が起動していない（tick_stale）なら実行（肩代わり）",
+        h1.skip === true &&
+          h1.reason === "breaker_open_no_takeover" &&
+          h2.skip === false &&
+          h2.reason === "tick_stale",
+        show([h1, h2]),
+      );
+    }
+    {
+      // 403 のパスのブレーカー（BOA-1145）: 展示が live で連続失敗が閾値を超えていても、beforeinfo のパスの
+      // ブレーカーが開いている間は、GitHub が beforeinfo を肩代わりで叩かない
+      const EX = "SKIP_EXHIBITION_ON_GHA";
+      const exRow = row("exhibition", {
+        mode: "live",
+        last_tick_at: minutesAgo(NOW, 1),
+        consecutive_failures: 5,
+      });
+      const pathOpen = row("host:boatrace.jp/owpc/pc/race/beforeinfo", {
+        breaker_open_until: minutesAgo(NOW, -30),
+      });
+      const e1 = await decide(EX, [exRow, pathOpen], NOW);
+      const e2 = await decide(EX, [exRow], NOW);
+      record(
+        "展示: beforeinfo のパスのブレーカー（403）が開いている → 連続失敗が多くてもスキップ（肩代わりしない）。閉じていれば従来どおり実行",
+        e1.skip === true &&
+          e1.reason === "breaker_open_no_takeover" &&
+          e2.skip === false &&
+          show(mod.jobKeysFor(EX)) ===
+            show([
+              "exhibition",
+              "host:boatrace.jp",
+              "host:boatrace.jp/owpc/pc/race/beforeinfo",
+            ]),
+        show([e1, e2, mod.jobKeysFor(EX)]),
+      );
+    }
     // レースの無い時間帯: 最終成功が半日前・なしでも、起動が新しければ（Vercelは動いている）誤って実行しない
     const quiet1 = await skipOf(
       V,
@@ -397,10 +450,8 @@ async function suite(mod, record) {
       jst("2026-09-24 22:04"),
     );
     record(
-      "point_rank: 未処理でブレーカーが開いている → 実行・retryable でない（待っても完了しない）",
-      d11.skip === false &&
-        d11.retryable === false &&
-        d11.reason === "breaker_open",
+      "point_rank: 未処理でもブレーカーが開いている → スキップ（肩代わりしない。BOA-1145）",
+      d11.skip === true && d11.reason === "breaker_open_no_takeover",
       show(d11),
     );
     const d12 = await decide(
@@ -542,8 +593,8 @@ async function suite(mod, record) {
       N,
     );
     record(
-      "racer_profiles: 処理中でもブレーカーが開いている → 実行",
-      d6.skip === false,
+      "racer_profiles: ブレーカーが開いている → スキップ（肩代わりしない。BOA-1145）",
+      d6.skip === true,
       show(d6),
     );
     const d7 = await decide(
@@ -1051,13 +1102,18 @@ const MUTANTS = [
   ["時計の異常（未来の起動）を許す", "tickAge < -1 || ", ""],
   [
     "連続失敗の確認を外す",
-    "if (failures >= policy.maxConsecutiveFailures) {",
+    "if (failures >= policy.maxConsecutiveFailures && !openHost) {",
     "if (false) {",
   ],
   [
-    "ブレーカーの確認を外す（窓型。最初の if (host)）",
-    "if (host)",
-    "if (false)",
+    "403 のパスのブレーカーが開いている間の肩代わりの抑止を外す（BOA-1145）",
+    "if (openPath) {",
+    "if (false) {",
+  ],
+  [
+    "ホストのブレーカーが開いている間の連続失敗の肩代わりを戻す（BOA-1145）",
+    "if (failures >= policy.maxConsecutiveFailures && !openHost) {",
+    "if (failures >= policy.maxConsecutiveFailures) {",
   ],
   [
     "日次: 対象日でなく、何か処理済みならよいことにする",

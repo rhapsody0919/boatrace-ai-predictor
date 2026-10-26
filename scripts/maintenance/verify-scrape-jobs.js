@@ -59,6 +59,7 @@ import {
   FetchError,
   createPoliteFetch,
   hostKeyOf,
+  pathKeyOf,
   parseRetryAfterMs,
 } from "../lib/scrapeJobs/politeFetch.js";
 import {
@@ -922,6 +923,194 @@ check(
     );
   }
 
+  // 拒否（403。BOA-1145）: パス単位のブレーカーが1回で開き、そのパスだけを止める。半開で1件だけ試す
+  {
+    const clock = { t: 7_000_000 };
+    const breaker = createCircuitBreaker({ now: () => clock.t });
+    const BEFORE = "https://www.boatrace.jp/owpc/pc/race/beforeinfo";
+    const ODDS = "https://www.boatrace.jp/owpc/pc/race/odds3t";
+    const fetched = [];
+    let beforeStatus = 403;
+    const f = createPoliteFetch({
+      breaker,
+      sleep: noSleep,
+      fetchImpl: async (url) => {
+        fetched.push(url);
+        return mkResponse(url.startsWith(BEFORE) ? beforeStatus : 200);
+      },
+    });
+    const tryFetch = async (url) => {
+      try {
+        return await f(url);
+      } catch (e) {
+        return e;
+      }
+    };
+    const first = await tryFetch(`${BEFORE}?rno=1&jcd=04&hd=20261026`);
+    check(
+      "403（登録したパス beforeinfo）: 再試行せず（1回だけ取得）、そのパスのブレーカーが30分開き、BreakerOpenError（呼び出し側は breaker_open。連続失敗に数えない）",
+      first instanceof BreakerOpenError &&
+        first.until === clock.t + 30 * 60_000 &&
+        fetched.length === 1 &&
+        breaker.snapshot(pathKeyOf(BEFORE)).openUntil === clock.t + 30 * 60_000,
+      show({ fetched, snap: breaker.snapshot(pathKeyOf(BEFORE)) }),
+    );
+    const rest = [];
+    for (let i = 2; i <= 9; i++) {
+      rest.push(await tryFetch(`${BEFORE}?rno=${i}&jcd=04&hd=20261026`));
+    }
+    check(
+      "403 の後は、同じパスの残り（クエリ違いの別レース）を叩かず BreakerOpenError（1回の起動で9件が立て続けに 403 にならない）",
+      rest.every((e) => e instanceof BreakerOpenError) && fetched.length === 1,
+      show(fetched),
+    );
+    const odds = await tryFetch(`${ODDS}?rno=1&jcd=04&hd=20261026`);
+    check(
+      "403 のパスのブレーカーは、同じホストの他のページ（odds 等）を止めない。ホストのブレーカーも開かない",
+      odds.status === 200 &&
+        breaker.snapshot(hostKeyOf(BEFORE)).openUntil === 0 &&
+        pathKeyOf(BEFORE) === "host:boatrace.jp/owpc/pc/race/beforeinfo",
+      show(odds),
+    );
+    // 30分後: 半開で1件だけ。403 なら再び開き（同じプロセスでは期間2倍）、2件目は叩かない
+    clock.t += 30 * 60_000 + 1;
+    const before = fetched.length;
+    const probe = await tryFetch(`${BEFORE}?rno=10&jcd=04&hd=20261026`);
+    const afterProbe = await tryFetch(`${BEFORE}?rno=11&jcd=04&hd=20261026`);
+    check(
+      "半開: 期限後は1件だけ試す。403 なら再び開き（60分）、続く取得は叩かない",
+      probe instanceof BreakerOpenError &&
+        afterProbe instanceof BreakerOpenError &&
+        fetched.length === before + 1 &&
+        breaker.snapshot(pathKeyOf(BEFORE)).openUntil === clock.t + 60 * 60_000,
+      show({ n: fetched.length - before }),
+    );
+    // さらに期限後、試行が成功すれば閉じ、以降は通常どおり
+    clock.t += 60 * 60_000 + 1;
+    beforeStatus = 200;
+    const ok = await tryFetch(`${BEFORE}?rno=12&jcd=04&hd=20261026`);
+    const next = await tryFetch(`${BEFORE}?rno=1&jcd=05&hd=20261026`);
+    check(
+      "半開の試行が成功すると、そのパスのブレーカーは閉じ、以降は通常どおり取得できる",
+      ok.status === 200 &&
+        next.status === 200 &&
+        breaker.snapshot(pathKeyOf(BEFORE)).openUntil === 0,
+    );
+    // 上限は120分
+    const capped = createCircuitBreaker({ now: () => clock.t });
+    for (let i = 0; i < 5; i++) await capped.recordBlocked("k");
+    check(
+      "403 で開く期間の上限は120分",
+      capped.snapshot("k").openUntil === clock.t + 120 * 60_000,
+    );
+    // 別プロセス（新しいブレーカー）も、DB の期限で開いている扱い（パスのキーで共有）
+    const log = [];
+    const shared = { byKey: {} };
+    const sharedStore = {
+      async read(k) {
+        return shared.byKey[k] ?? 0;
+      },
+      async open(k, until, reason) {
+        shared.byKey[k] = until;
+        log.push([k, reason]);
+      },
+      async close(k) {
+        delete shared.byKey[k];
+      },
+    };
+    const p1 = createPoliteFetch({
+      breaker: createCircuitBreaker({ store: sharedStore, now: () => clock.t }),
+      sleep: noSleep,
+      fetchImpl: async () => mkResponse(403),
+    });
+    await p1(`${BEFORE}?rno=1`).catch(() => {});
+    let otherFetched = 0;
+    const p2 = createPoliteFetch({
+      breaker: createCircuitBreaker({
+        store: sharedStore,
+        now: () => clock.t,
+        readTtlMs: 0,
+      }),
+      sleep: noSleep,
+      fetchImpl: async () => (otherFetched++, mkResponse(200)),
+    });
+    let err;
+    try {
+      await p2(`${BEFORE}?rno=2`);
+    } catch (e) {
+      err = e;
+    }
+    check(
+      "403 で開いたパスのブレーカーは DB（scrape_job_state の host:…/beforeinfo の行）に書かれ、別の起動も叩かない",
+      log.length === 1 &&
+        log[0][0] === "host:boatrace.jp/owpc/pc/race/beforeinfo" &&
+        log[0][1] === "HTTP 403" &&
+        err instanceof BreakerOpenError &&
+        otherFetched === 0,
+      show(log),
+    );
+  }
+
+  // 半開の試行が 404・500 等（2xx・3xx でない）なら、403 のパスのブレーカーを閉じない（次の取得がもう一度試行になる）
+  {
+    const clock = { t: 11_000_000 };
+    const breaker = createCircuitBreaker({ now: () => clock.t });
+    const BEFORE = "https://www.boatrace.jp/owpc/pc/race/beforeinfo";
+    let status = 403;
+    let n = 0;
+    const f = createPoliteFetch({
+      breaker,
+      sleep: noSleep,
+      fetchImpl: async () => (n++, mkResponse(status)),
+    });
+    await f(`${BEFORE}?rno=1`).catch(() => {});
+    clock.t += 30 * 60_000 + 1;
+    status = 404;
+    const r404 = await f(`${BEFORE}?rno=2`);
+    const snap404 = breaker.snapshot(pathKeyOf(BEFORE));
+    status = 200;
+    const r200 = await f(`${BEFORE}?rno=3`);
+    check(
+      "半開の試行が 404 なら 403 のパスのブレーカーは閉じず（期限は残り、試行中の印だけ外す）、次の 200 で閉じる",
+      r404.status === 404 &&
+        snap404.openUntil > 0 &&
+        snap404.probing === false &&
+        r200.status === 200 &&
+        breaker.snapshot(pathKeyOf(BEFORE)).openUntil === 0 &&
+        n === 3,
+      show(snap404),
+    );
+  }
+
+  // 登録していないパスの 403 は従来どおり（BOATCAST は未公開のファイルを 403 で返すのが通常。ADR-0067）
+  {
+    const breaker = createCircuitBreaker({ now: () => 9_000_000 });
+    let n = 0;
+    const f = createPoliteFetch({
+      breaker,
+      sleep: noSleep,
+      fetchImpl: async () => (n++, mkResponse(403)),
+    });
+    const a = await f(
+      "https://race.boatcast.jp/txt/04/bc_oriten_20261026_04_01.txt",
+    );
+    const b = await f(
+      "https://race.boatcast.jp/txt/04/bc_oriten_20261026_04_01.txt",
+    );
+    const c = await f("https://www.boatrace.jp/owpc/pc/race/racelist?rno=1");
+    check(
+      "登録していないパスの 403（BOATCAST・racelist）は、ブレーカーを開かず 403 をそのまま返す（従来どおり）",
+      a.status === 403 &&
+        b.status === 403 &&
+        c.status === 403 &&
+        n === 3 &&
+        breaker.snapshot(pathKeyOf("https://race.boatcast.jp/txt/04/x.txt"))
+          .openUntil === 0 &&
+        breaker.snapshot(hostKeyOf("https://race.boatcast.jp/")).openUntil ===
+          0,
+    );
+  }
+
   // 並列度の上限
   {
     let active = 0;
@@ -1329,6 +1518,101 @@ check(
         r.status === 200,
       show(store.retried),
     );
+  }
+
+  // 拒否（403。BOA-1145）: 展示のジョブ（breakerUrls に beforeinfo）
+  {
+    const BEFORE = "https://www.boatrace.jp/owpc/pc/race/beforeinfo";
+    const exSlot = (raceId) => ({ ...slot(raceId, -33), job: "exhibition" });
+    // 事前に beforeinfo のパスのブレーカーが開いている → claim しない。odds（同じホスト）は止めない
+    {
+      const clock = mkClock();
+      const store = createMemoryStore({
+        rows: {
+          exhibition: { job: "exhibition", mode: "live" },
+          odds: { job: "odds", mode: "live" },
+        },
+        slots: [exSlot("2026-09-19-01-01"), slot("2026-09-19-01-02")],
+      });
+      store.breakerStore.byKey[pathKeyOf(BEFORE)] = clock.c.t + 30 * 60_000;
+      const ex = await run(store, {
+        clock,
+        job: "exhibition",
+        handleSlot: async () => ({ outcome: "ok" }),
+      });
+      const oddsStore = createMemoryStore({
+        rows: { odds: { job: "odds", mode: "live" } },
+        slots: [slot("2026-09-19-01-02")],
+      });
+      oddsStore.breakerStore.byKey[pathKeyOf(BEFORE)] = clock.c.t + 30 * 60_000;
+      const odds = await run(oddsStore, {
+        clock,
+        handleSlot: async () => ({ outcome: "ok" }),
+      });
+      check(
+        "beforeinfo のパスのブレーカーが開いている: 展示はスロットを取らず skipped（claim なし）。同じホストの odds は動く",
+        ex.status === 200 &&
+          ex.body.skipped === "breaker_open" &&
+          ex.body.host === pathKeyOf(BEFORE) &&
+          !store.calls.some((c) => c.name === "claimSlots") &&
+          odds.body.claimed === 1 &&
+          oddsStore.completed.length === 1,
+        show([ex.body, odds.body]),
+      );
+    }
+    // 起動の途中で 403: その起動の残りは叩かない（展示は1件ずつ取る。concurrency 1）。再開・半開がちょうど1件で止まる
+    {
+      const clock = mkClock();
+      const store = createMemoryStore({
+        rows: { exhibition: { job: "exhibition", mode: "live" } },
+        slots: [1, 2, 3, 4, 5, 6].map((n) => exSlot(`2026-09-19-01-0${n}`)),
+      });
+      const breaker = createCircuitBreaker({
+        store: store.breakerStore,
+        now: () => clock.c.t,
+      });
+      let fetched = 0;
+      const pf = createPoliteFetch({
+        breaker,
+        sleep: async () => {},
+        fetchImpl: async () => (fetched++, new Response("", { status: 403 })),
+      });
+      const r = await runScrapeJob({
+        job: "exhibition",
+        store,
+        handleSlot: async (s, ctx) => {
+          try {
+            const res = await ctx.politeFetch(`${BEFORE}?rno=1`);
+            return {
+              outcome: res.ok ? "ok" : "error",
+              error: `HTTP ${res.status}`,
+            };
+          } catch (e) {
+            if (e instanceof BreakerOpenError) throw e;
+            return { outcome: "error", error: e.message };
+          }
+        },
+        now: clock.now,
+        worker: "w-test",
+        breaker,
+        politeFetch: pf,
+      });
+      const breakerOpen = store.retried.filter(
+        (x) => x.outcome === "breaker_open",
+      );
+      check(
+        "起動の途中で 403: 公式へのリクエストは1件だけ。403 の1件も残りの5件も breaker_open（ブレーカーの期限＝30分後まで再試行しない。全件失敗＝連続失敗に数えない）",
+        fetched === 1 &&
+          breakerOpen.length === 6 &&
+          r.status === 200 &&
+          breakerOpen.every(
+            (x) => x.retryAt.getTime() === clock.c.t + 30 * 60_000,
+          ) &&
+          store.breakerStore.byKey[pathKeyOf(BEFORE)] ===
+            clock.c.t + 30 * 60_000,
+        show({ fetched, r: r.body, retried: store.retried.length }),
+      );
+    }
   }
 
   // ソフトデッドライン: 超えていたら着手せず pending に戻す（並列度1にして、逐次で確認する）

@@ -66,21 +66,42 @@ export const SCRAPE_JOBS = Object.freeze({
   // 分母に入れず、期限切れを通知しない（体重の公開が遅れても -33 の窓が同じ行を埋める。best effort の前倒し。monitor.js）。
   // スロットは翌朝の予定表の生成（ensure_scrape_slots）から作られる。切り戻し: offsets から -60 を消す
   // （weightOnlyOffsets は残す。DBに残った offset -60 のスロットは、claim されても体重だけの窓として扱われる）
+  //
+  // 取得の回数を減らす（BOA-1145。2026-10-26 15:50 から beforeinfo が当社の取得だけ 403 になった。10/25 は beforeinfo を
+  // 1日1,874回、1レース約11回取っていた。うち -33 の窓が120秒おきで平均8.95回）:
+  //   - -33 の窓は、締切（races.start_time）の pollMinBefore 分前（20・16・13・10・8分前）にだけ取りに行く。-33 のスロットを
+  //     claim した時点で20分前より前なら、取得せずに20分前まで戻す（not_due。試行回数は数えない）。offsets の -33 は
+  //     変えない（その日の予定表に既にある -33 のスロットと、新しい offset のスロットが二重にならないよう）。
+  //     根拠（10/19〜25 の1,088レース、-33 のスロットの完了時刻の締切までの分）: 最も遅い公開は8.43分前、中央値16.4分前。
+  //     この予定で1レース平均2.3〜2.5回（今は8.95回）、締切8分前までに取れる割合100%、10分前まで99.7%。
+  //     公開（20分前より前の公開は20分前とみなす）から取得までの遅れは平均約2分（今は約0.4分）。8分前の後は
+  //     取りに行かず、窓の終わり（7分前）で期限切れにする（その後は +10 の補完が拾う）。7分前は予定に入れない: 窓の
+  //     終わり（offset＋許容幅＝−7）と同じ時刻で、claim_scrape_slots は「期限＋許容幅 < now」を claim の前に expired にする
+  //     （075）ため、毎分の Cron の起動が分の頭から数秒遅れるだけで取れない（Codex の指摘、BOA-1145）。許容幅を延ばして
+  //     窓の終わりを後ろへずらす案は、-60 の体重の窓（−60＋許容幅）が -33 の窓と重なり、offset ごとの許容幅（092）が要るうえ、
+  //     締切8分前にそろえる画面・材料の目標には8分前の取得で足りるため採らない。切り戻し: pollMinBefore を消す（120秒おきに戻る）
+  //   - 体重だけの窓（-60）の再試行は900秒おき（最大2回。実測は平均1.00回）
+  //   - claimLimit 8・concurrency 1・leaseSec 110: 1回の起動で1件ずつ取り、403 を受けたらパスのブレーカー（breakerUrls・
+  //     politeFetch.js）が開いて、その起動の残りは叩かない（再開・半開の試行が、その起動では1件で止まる）。1分あたりの claim は、
+  //     7日の実測から多くて7件（not_due・skipped_have_data は取得なし）。8件 × 12秒 = 96秒 ≦ リース110秒−10秒
+  //   - breakerUrls: 起動の最初に、このページのパスのブレーカーも見る（開いていれば claim せずに終える。cronWrapper.js）
   exhibition: {
     kind: "window",
     offsets: [-60, -33, 10],
     catchupOffsets: [10],
     catchupRetrySec: 600,
     weightOnlyOffsets: [-60],
-    weightOnlyRetrySec: 300,
+    weightOnlyRetrySec: 900,
+    pollMinBefore: [20, 16, 13, 10, 8],
     graceMin: 26,
     retrySec: 120,
-    leaseSec: 90,
-    claimLimit: 24,
-    concurrency: 4,
+    leaseSec: 110,
+    claimLimit: 8,
+    concurrency: 1,
     slotSecEstimate: 12,
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
+    breakerUrls: ["https://www.boatrace.jp/owpc/pc/race/beforeinfo"],
   },
   // A3 オッズ。6窓×5ページ。許容幅3分のため、リースは許容幅より短く（120秒）
   // 実装: scripts/lib/scrapeJobs/oddsHandlers.js、api/cron/odds.js（T4b-04）。1スロット＝1レース×1窓（5ページを並列）
@@ -650,6 +671,43 @@ export function isWeightOnlyOffset(def, offsetMin) {
 }
 
 /**
+ * 通常の窓（体重だけ・補完以外）の offsets。展示は [-33]
+ *
+ * @param {{offsets?: number[], catchupOffsets?: number[], weightOnlyOffsets?: number[]}|undefined} def
+ */
+export function mainWindowOffsetsOf(def) {
+  return (def?.offsets ?? []).filter(
+    (o) => !isCatchupOffset(def, o) && !isWeightOnlyOffset(def, o),
+  );
+}
+
+/** nextPollTime が予定の時刻から引く秒数（毎分の Cron の起動のぶれで、その分の起動を1回飛ばさないため） */
+export const POLL_EARLY_SEC = 10;
+
+/**
+ * 通常の窓で、次に取りに行く時刻（BOA-1145。レジストリの pollMinBefore＝締切の何分前か）。
+ *   - 最初の予定より前（締切まで pollMinBefore[0] 分より長い）: {due: false, retryAt: 最初の予定}（取得しない）
+ *   - それ以外: {due: true, nextAt: 今より後の次の予定、無ければ null}
+ * 予定の時刻から POLL_EARLY_SEC（10秒）を引く（毎分の Cron の起動のぶれで、その分の起動を1回飛ばさないため）。
+ * 「今より後」は、30秒の余白を見る（17分前の予定を 17.3分前に処理したとき、次を17分前にしない）
+ *
+ * @param {number[]} pollMinBefore 狭義の降順
+ * @param {{deadline: Date, now: Date}} params
+ */
+export function nextPollTime(pollMinBefore, { deadline, now }) {
+  const minutesBefore = (deadline.getTime() - now.getTime()) / 60000;
+  const at = (m) =>
+    new Date(deadline.getTime() - m * 60000 - POLL_EARLY_SEC * 1000);
+  const first = pollMinBefore[0];
+  // 最初の予定の時刻（−10秒）に claim された分は、Vercel と DB の時計の小さなずれ（30秒まで）があっても、取りに行く
+  if (minutesBefore > first + POLL_EARLY_SEC / 60 + 0.5) {
+    return { due: false, retryAt: at(first) };
+  }
+  const next = pollMinBefore.find((m) => m < minutesBefore - 0.5);
+  return { due: true, nextAt: next === undefined ? null : at(next) };
+}
+
+/**
  * 窓（offset_min）ごとの許容幅（分）。graceMinByOffset に指定があればその値、なければジョブの graceMin
  * （odds の -60 だけ、未公開の間の延長で30分。ファイル内の odds の説明）
  *
@@ -863,6 +921,48 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
         ) {
           problems.push(
             `${name}: weightOnlyRetrySec(${def.weightOnlyRetrySec}) は、許容幅(${graceSec}秒)より短い正の整数にしてください`,
+          );
+        }
+      }
+      // 取りに行く時刻の予定（pollMinBefore。締切の何分前か）: 狭義の降順の正の整数で、通常の窓
+      // （体重だけ・補完以外の offsets）の中に収まる（最初 ≦ −offset、最後 ≧ −(offset＋許容幅)）
+      if (def.pollMinBefore !== undefined) {
+        const main = mainWindowOffsetsOf(def);
+        const p = def.pollMinBefore;
+        const valid =
+          Array.isArray(p) &&
+          p.length > 0 &&
+          p.every(
+            (m, i) => Number.isInteger(m) && m > 0 && (i === 0 || m < p[i - 1]),
+          );
+        if (!valid || main.length !== 1) {
+          problems.push(
+            `${name}: pollMinBefore は、通常の窓が1つのジョブに、狭義の降順の正の整数の配列で指定してください: ${JSON.stringify(p)}`,
+          );
+        } else {
+          const offset = main[0];
+          const end = -(offset + graceMinFor(def, offset));
+          // 最後の予定は、窓の終わりより1分以上前（毎分の Cron の起動の遅れで、claim の前に expired にならない。BOA-1145）
+          if (p[0] > -offset || p[p.length - 1] < end + 1) {
+            problems.push(
+              `${name}: pollMinBefore(${JSON.stringify(p)}) が通常の窓（締切の${-offset}〜${end + 1}分前。最後は窓の終わり${end}分前より1分以上前）の外にあります`,
+            );
+          }
+        }
+      }
+      if (def.breakerUrls !== undefined) {
+        const ok =
+          Array.isArray(def.breakerUrls) &&
+          def.breakerUrls.every((u) => {
+            try {
+              return new URL(u).protocol === "https:";
+            } catch {
+              return false;
+            }
+          });
+        if (!ok) {
+          problems.push(
+            `${name}: breakerUrls は https の URL の配列にしてください: ${JSON.stringify(def.breakerUrls)}`,
           );
         }
       }

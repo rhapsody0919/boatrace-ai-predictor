@@ -49,7 +49,7 @@ import { SCRAPE_JOBS, SOFT_DEADLINE_MARGIN_SEC } from "./registry.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { resolveTargetDate } from "./dailyJob.js";
 import { BreakerOpenError, createCircuitBreaker } from "./circuitBreaker.js";
-import { createPoliteFetch, hostKeyOf } from "./politeFetch.js";
+import { createPoliteFetch, hostKeyOf, pathKeyOf } from "./politeFetch.js";
 import {
   applyZeroRowGuard,
   computeRetryAt,
@@ -86,12 +86,26 @@ export function shouldEnsureSlots(now, lastTickAt) {
   return new Date(lastTickAt) < jstStartOfDay(now);
 }
 
-async function isBreakerOpen(breaker, hosts, nowMs) {
-  for (const host of hosts ?? []) {
+/**
+ * ジョブのブレーカーが開いているか。ホスト（definition.hosts）と、ページのパス（definition.breakerUrls。403 の拒否で
+ * 開くパス単位のブレーカー。BOA-1145）の両方を見る。開いていれば、claim せずにこの起動を終える
+ */
+async function isBreakerOpen(breaker, definition, nowMs) {
+  const keys = [
+    ...(definition.hosts ?? []).map((host) => ({
+      key: hostKeyOf(`https://${host}/`),
+      host,
+    })),
+    ...(definition.breakerUrls ?? []).map((url) => ({
+      key: pathKeyOf(url),
+      host: pathKeyOf(url),
+    })),
+  ];
+  for (const { key, host } of keys) {
     try {
-      await breaker.check(hostKeyOf(`https://${host}/`));
+      await breaker.check(key);
       // check() が半開の試行を予約した場合は、ここでは取得しないので戻す
-      breaker.abortProbe(hostKeyOf(`https://${host}/`));
+      breaker.abortProbe(key);
     } catch (error) {
       if (error instanceof BreakerOpenError) {
         return { open: true, until: error.until, host };
@@ -279,7 +293,7 @@ async function runWindow({
   state,
 }) {
   const { now, mode, worker, shouldStop } = ctx;
-  const brk = await isBreakerOpen(breaker, definition.hosts, now().getTime());
+  const brk = await isBreakerOpen(breaker, definition, now().getTime());
   if (brk.open) {
     return {
       failed: false,
@@ -335,6 +349,8 @@ async function runWindow({
         now: at,
         outcome: result.outcome,
         error: result.error,
+        // 取得せずに戻した（展示の not_due。BOA-1145）: 試行回数を戻す
+        releaseAttempt: result.releaseAttempt === true,
         retryAt:
           result.retryAt ??
           computeRetryAt({
@@ -432,7 +448,10 @@ async function runWindow({
     tally[r.outcome] = (tally[r.outcome] ?? 0) + 1;
     rowsWritten += r.rowsWritten ?? 0;
   }
-  const processed = results.filter((r) => r.outcome !== "deferred");
+  // 着手しなかった（deferred）・予定の時刻より前で取得しなかった（not_due）スロットは、処理に数えない
+  const processed = results.filter(
+    (r) => r.outcome !== "deferred" && r.outcome !== "not_due",
+  );
   // 処理したスロットが全て error なら、この実行は失敗（HTTP 500・連続失敗数を増やす）
   const allFailed =
     processed.length > 0 && processed.every((r) => r.outcome === "error");
@@ -476,7 +495,7 @@ async function runLeased({
     }
   }
 
-  const brk = await isBreakerOpen(breaker, definition.hosts, now().getTime());
+  const brk = await isBreakerOpen(breaker, definition, now().getTime());
   if (brk.open) {
     return {
       failed: false,

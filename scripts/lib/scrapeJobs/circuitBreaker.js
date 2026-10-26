@@ -15,6 +15,12 @@
  *
  * store が使えない（予定表のテーブルが未適用・DBエラー）場合は、プロセス内の状態のみで動く
  * （ブレーカーの共有ができないだけで、取得は止めない）。
+ *
+ * 拒否（403）の扱い（BOA-1145）: 取得先が特定のページだけを 403 で拒んだ（2026-10-26 の beforeinfo）。過負荷の 429/503 と
+ * 違い、待っても数分では戻らない見込みが高く、叩き続けるほど拒否が長引く恐れがある。recordBlocked は1回で開き、
+ * 開く期間を blockOpenMs（30分）から開くたびに2倍（上限 blockMaxOpenMs＝120分）にする。倍にするのは同じプロセスの
+ * 中だけ（DB には期限しか残さない）で、起動ごとに別のプロセスなら、30分ごとに1件の試行になる（1日最大48件）。
+ * 期限後は同じ半開（1件だけ試行）。キーは呼び出し側が決める（politeFetch はページのパス単位にし、同じホストの他のページを巻き込まない）。
  */
 
 export class BreakerOpenError extends Error {
@@ -52,6 +58,8 @@ export function createCircuitBreaker({
   consecutiveThreshold = 3,
   openMs = 60 * 1000,
   maxOpenMs = 10 * 60 * 1000,
+  blockOpenMs = 30 * 60 * 1000,
+  blockMaxOpenMs = 120 * 60 * 1000,
   readTtlMs = 10 * 1000,
 } = {}) {
   /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, openCount: number, probing: boolean, lastRead: number}>} */
@@ -122,6 +130,29 @@ export function createCircuitBreaker({
       if (!shouldOpen) return;
       s.openCount++;
       const duration = Math.min(maxOpenMs, openMs * 2 ** (s.openCount - 1));
+      s.openUntil = t + duration;
+      s.probing = false;
+      s.events = [];
+      s.consecutive = 0;
+      if (store) {
+        await safe("開放の記録", () =>
+          store.open(hostKey, s.openUntil, reason),
+        );
+      }
+    },
+
+    /**
+     * 拒否（403）を受けた。1回で開く（開く期間は blockOpenMs から開くたびに2倍、上限 blockMaxOpenMs）。
+     * 開いた期限は store に書き、他のジョブ・他の起動と共有する（半開の試行が 403 でも、ここで開き直す）
+     */
+    async recordBlocked(hostKey, reason = "HTTP 403") {
+      const s = stateOf(hostKey);
+      const t = now();
+      s.openCount++;
+      const duration = Math.min(
+        blockMaxOpenMs,
+        blockOpenMs * 2 ** (s.openCount - 1),
+      );
       s.openUntil = t + duration;
       s.probing = false;
       s.events = [];
