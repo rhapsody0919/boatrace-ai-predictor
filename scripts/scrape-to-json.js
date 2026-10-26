@@ -80,145 +80,20 @@ function getUrl(date, placeCd, raceNo, content) {
   return url;
 }
 
-// 展示データ（展示タイム・展示ST）を取得する関数
-function scrapeExhibitionData($) {
-  const exhibitionData = [];
-
-  // beforeinfoページの構造:
-  //   table[1] (選手テーブル): 6つのtbody、各4行
-  //     tbody[n]/tr[0] = 選手情報行 (td[0]=枠番, td[4]=展示タイム)
-  //   table[2] (スタート展示テーブル): .table1_boatImage1 でコース順のST
-  const tables = $(".table1");
-  if (tables.length < 2) return null;
-
-  // 展示タイムを各選手から取得（table[1]）
-  const exTable = tables.eq(1);
-  const tbodies = exTable.find("tbody");
-
-  tbodies.each((i, tbody) => {
-    if (i >= 6) return;
-    const rows = $(tbody).find("tr");
-    if (rows.length < 1) return;
-
-    const mainCells = rows.eq(0).find("td");
-    const boatNumber = parseInt(mainCells.eq(0).text().trim());
-    const exhibitionTime = parseFloat(mainCells.eq(4).text().trim());
-
-    if (boatNumber >= 1 && boatNumber <= 6) {
-      exhibitionData.push({
-        boatNumber,
-        exhibitionTime:
-          !isNaN(exhibitionTime) && exhibitionTime > 0 ? exhibitionTime : null,
-        startTiming: null,
-      });
-    }
-  });
-
-  // 展示ST（スタート展示テーブル table[2]）
-  if (tables.length >= 3) {
-    const startTable = tables.eq(2);
-    startTable.find(".table1_boatImage1").each((i, el) => {
-      // 艇番（画像またはテキストから取得）
-      const boatText =
-        $(el).find(".table1_boatImage1Number").text().trim() ||
-        $(el).text().trim().split("\n")[0].trim();
-      const boatNum = parseInt(boatText);
-
-      // ST値（.table1_boatImage1Time）
-      const stText = $(el).find(".table1_boatImage1Time").text().trim();
-      const isFlying = stText.includes("F");
-      const numMatch = stText.match(/[FL]?\.(\d+)/);
-      const stValue = numMatch ? parseFloat("0." + numMatch[1]) : null;
-
-      if (boatNum >= 1 && boatNum <= 6 && stValue !== null) {
-        const entry = exhibitionData.find((e) => e.boatNumber === boatNum);
-        if (entry) {
-          entry.startTiming = stValue;
-          entry.isFlying = isFlying;
-        }
-      }
-    });
-  }
-
-  const hasData = exhibitionData.some(
-    (e) => e.exhibitionTime !== null || e.startTiming !== null,
-  );
-  return hasData ? exhibitionData : null;
-}
-
-// 直前情報を取得する関数
-async function getBeforeinfo(date, placeCd, raceNo, io = DEFAULT_IO) {
-  try {
-    const url = getUrl(date, placeCd, raceNo, "beforeinfo");
-
-    const html = await io.fetchHtml(url);
-    const $ = cheerio.load(html);
-
-    // 天候情報を取得
-    const weatherData = [];
-    $(".weather1_bodyUnitLabelData").each((i, elem) => {
-      weatherData.push($(elem).text().trim());
-    });
-
-    // 天気を取得
-    let weather = "";
-    $(".weather1_bodyUnitLabelTitle").each((i, elem) => {
-      if (i === 1) {
-        weather = $(elem).text().trim();
-      }
-    });
-
-    // 風向を取得
-    let windDirection = 0;
-    const windElem = $('p[class*="is-wind"]');
-    if (windElem.length > 0) {
-      const classes = windElem.attr("class");
-      const windClass = classes.split(" ").find((c) => c.startsWith("is-wind"));
-      if (windClass) {
-        windDirection = parseInt(windClass.replace("is-wind", ""));
-      }
-    }
-
-    // 展示データを取得
-    const exhibitionData = scrapeExhibitionData($);
-
-    // データを統合
-    const result = {
-      date: date,
-      placeCd: placeCd,
-      raceNo: raceNo,
-      weather: weather,
-      airTemp: weatherData[0]
-        ? parseFloat(weatherData[0].replace("℃", ""))
-        : null,
-      windDirection: windDirection,
-      windVelocity: weatherData[1]
-        ? parseFloat(weatherData[1].replace("m", ""))
-        : null,
-      waterTemp: weatherData[2]
-        ? parseFloat(weatherData[2].replace("℃", ""))
-        : null,
-      waveHeight: weatherData[3]
-        ? parseFloat(weatherData[3].replace("cm", ""))
-        : null,
-      exhibitionData: exhibitionData,
-    };
-
-    return result;
-  } catch (error) {
-    if (io.strict) {
-      throw new Error(
-        `beforeinfo の取得に失敗（会場${placeCd} ${raceNo}R）: ${error.message}`,
-        { cause: error },
-      );
-    }
-    console.error(
-      `Error fetching beforeinfo for place ${placeCd}, race ${raceNo}:`,
-      error.message,
-    );
-    return null;
-  }
-}
+// 直前情報（beforeinfo）は朝の初期化では取らない（BOA-1145）。朝は展示の前で、展示・気象の値が無い
+// （2026-09-21 の実ページの fixture でも全て空）。展示・気象は、展示の取得（api/cron/exhibition.js、
+// scrape-exhibition-data.js）が発走前に beforeinfo から書く。朝の races の作成が beforeinfo の取得の成否
+// （2026-10-26 から当社だけ HTTP 403）に左右されないよう、出走表（racelist）と発走時刻だけで作る。
+// 欄の形（data/races.json・generate-predictions.js が読む）は保ち、値は null にする
+const EMPTY_BEFOREINFO_FIELDS = Object.freeze({
+  weather: null,
+  airTemp: null,
+  windDirection: null,
+  windVelocity: null,
+  waterTemp: null,
+  waveHeight: null,
+  exhibitionData: null,
+});
 
 // レース場の全レース締切予定時刻を取得する関数
 async function getRaceStartTimes(date, placeCd, io = DEFAULT_IO) {
@@ -469,10 +344,11 @@ export async function getTodayVenues(date, io = DEFAULT_IO) {
 }
 
 /**
- * 1会場の全レース（1R〜12R）の、直前情報・出走表・発走時刻を取得する（メモリ上のデータを返す。fs は使わない）。
+ * 1会場の全レース（1R〜12R）の、出走表・発走時刻を取得する（メモリ上のデータを返す。fs は使わない）。
+ * 直前情報（beforeinfo）は取らない（上の EMPTY_BEFOREINFO_FIELDS の説明を参照。BOA-1145）。
  *
- * beforeinfo と racelist を、レースごとに並列で取得する。raceConcurrency 個のレースを同時に処理する
- * （既定 12＝従来どおり全レース同時。Vercel は取得先への負荷を抑えるため、少なくする）。
+ * racelist を、raceConcurrency 個のレースずつ同時に取得する（既定 12＝全レース同時。Vercel は取得先への負荷を
+ * 抑えるため、少なくする）。
  * strict のときは、1ページでも取得に失敗したら、会場全体の失敗として例外を投げる（一部のレースだけが
  * 欠けた状態で書き込まれ、その会場が「済み」になるのを避ける）。発走時刻が1件も取れない場合も失敗とする。
  *
@@ -482,7 +358,7 @@ export async function getTodayVenues(date, io = DEFAULT_IO) {
  * @param {(url: string) => Promise<string>} [options.fetchHtml]
  * @param {boolean} [options.strict]
  * @param {number} [options.raceConcurrency]
- * @returns {Promise<{placeCd: number, placeName: string, races: Object[]}|null>} 取得できたレースが無ければ null
+ * @returns {Promise<{placeCd: number, placeName: string, races: Object[]}|null>} 出走表が1レースも取れなければ null
  */
 export async function scrapeVenue(
   date,
@@ -500,24 +376,23 @@ export async function scrapeVenue(
     );
   }
 
-  // 1RからMAX_RACESまで取得（beforeinfoとracelistの両方）
+  // 1RからMAX_RACESまで、出走表を取得
   const raceNos = Array.from({ length: MAX_RACES }, (_, i) => i + 1);
   const results = await mapWithConcurrency(
     raceNos,
     raceConcurrency,
     async (raceNo) => {
       // strict では、失敗を捕捉して集め、会場全体の失敗として最後にまとめて投げる
-      const settled = await Promise.allSettled([
-        getBeforeinfo(date, placeCd, raceNo, io),
+      const [settled] = await Promise.allSettled([
         getRacelist(date, placeCd, raceNo, io),
       ]);
       return { raceNo, settled };
     },
   );
 
-  const failures = results.flatMap(({ settled }) =>
-    settled.filter((r) => r.status === "rejected").map((r) => r.reason),
-  );
+  const failures = results
+    .filter(({ settled }) => settled.status === "rejected")
+    .map(({ settled }) => settled.reason);
   if (failures.length > 0) {
     throw new Error(
       `会場${placeCd}: ${failures.length}ページの取得に失敗（例: ${failures[0].message}）`,
@@ -525,22 +400,26 @@ export async function scrapeVenue(
     );
   }
 
-  const venueRaces = [];
-  // nullでないデータのみを追加し、beforeinfoとracelistをマージ
-  for (const { raceNo, settled } of results) {
-    const beforeinfo = settled[0].value;
-    const racelistData = settled[1].value;
-    if (!beforeinfo) continue;
-    // beforeinfoとracelistを統合し、締切予定時刻も追加
-    venueRaces.push({
-      ...beforeinfo,
-      startTime: startTimes[raceNo] || null, // 締切予定時刻を追加
-      racers: racelistData?.racers || [], // 選手情報を追加（取得できない場合は空配列）
+  // 非 strict で出走表が1レースも取れなければ、取得できなかった会場として null を返す
+  // （従来の「直前情報が1レースも取れなければ null」に当たる）
+  if (results.every(({ settled }) => !settled.value)) return null;
+
+  // 出走表が取れなかったレース（非 strict）も、従来どおり選手が空のレースとして残す
+  // （選手の無いレースは generate-predictions.js が races を作らない）
+  const venueRaces = results.map(({ raceNo, settled }) => {
+    const racelistData = settled.value;
+    return {
+      date,
+      placeCd,
+      raceNo,
+      ...EMPTY_BEFOREINFO_FIELDS,
+      startTime: startTimes[raceNo] || null, // 締切予定時刻
+      racers: racelistData?.racers || [], // 選手情報（取得できない場合は空配列）
       raceGrade: racelistData?.raceGrade || null, // レースグレード
       raceTitle: racelistData?.raceTitle || null, // レースタイトル
       raceStage: racelistData?.raceStage || null, // 開催ステージ（予選/準優勝戦/優勝戦等）
-    });
-  }
+    };
+  });
 
   // このレース場でデータが取得できた場合のみ返す
   if (venueRaces.length === 0) return null;

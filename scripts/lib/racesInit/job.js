@@ -15,7 +15,7 @@
  *      行のある会場（GitHub Actions の morning-init や、前回の起動が書いたもの）を「初期化済み」として除き、
  *      無い会場だけを処理する（従来の morning-init の「races が1件でもあれば初期化済み。取りこぼし会場だけ追加」と
  *      同じ。日中に live へ切り替えても、初期化済みの予測・的中フラグを上書きしない）。shadow は、DBを読まず、全会場を処理する
- *   2. 会場の処理: scrapeVenue（strict）→ live なら generateAndWriteFromRacesData（races・race_entries・
+ *   2. 会場の処理: scrapeVenue（strict。出走表・発走時刻だけを取り、直前情報 beforeinfo は取らない。BOA-1145）→ live なら generateAndWriteFromRacesData（races・race_entries・
  *      exhibition_data・predictions・race_conditions）。shadow は、取得・解析のみで、レースごとのダイジェスト
  *      （digest.js）を cursor に記録する。1会場の失敗（1ページでも取得できない・書き込みの失敗）は、その会場だけ
  *      「済み」にせず、指数バックオフ（2・4・8・16・20分）で再試行する（他の会場は進める）。会場の書き込みは、
@@ -47,7 +47,7 @@ import { parseVenueStatuses, raceIndexUrl } from "../raceStatusParsers.js";
 
 /** 1回の呼び出しで処理する会場数の上限（時間の許す限り、この数まで。1会場約30秒） */
 export const RACES_INIT_VENUES_PER_INVOCATION = 8;
-/** 1会場の中で同時に取得するレース数（各レースは beforeinfo と racelist を並列に取る＝同時リクエストは2倍） */
+/** 1会場の中で同時に取得するレース数（各レースは racelist だけを取る。beforeinfo は取らない。BOA-1145） */
 export const RACES_INIT_RACE_CONCURRENCY = 6;
 /** 手動の動作確認（?venues=N）の上限 */
 const MAX_VENUES_OVERRIDE = 24;

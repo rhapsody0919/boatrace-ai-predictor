@@ -1055,6 +1055,11 @@
       "guards": "races の導出列の埋め直し（build-races-derived-backfill-sql.js、BOA-630）が、generate-predictions.js と同じ式（丸めてから平均・母標準偏差）で計算し、6列とも NULL の行だけを更新し（既存の値を上書きしない・再実行は0件）、モデルの出力の列（volatility_* 等）に触れないこと"
     },
     {
+      "script": "verify-races-init-without-beforeinfo.js",
+      "tier": "ci",
+      "guards": "朝の初期化（races-init・scrape-to-json）が直前情報（beforeinfo）を取らず、出走表と発走時刻だけで races を作ること（BOA-1145、beforeinfo の 403 で朝の races が作られない障害の予防）"
+    },
+    {
       "script": "verify-registry-order.js",
       "tier": "ci",
       "guards": "verify-registry.json の entries を script の名前の順に保つ（scripts/lib/verifyRegistryOrder.js、BOA-938）。順と重複の判定、文字列のままの並べ替え（--sort）、名前の順に挿した2つの PR が git merge-file で衝突しないこと"
