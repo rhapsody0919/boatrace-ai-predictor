@@ -12,6 +12,7 @@
  *   艇ごとの選手の進入コースの成績（決まり手・期のコース別・進入の分布）と体重、会場のコース別の決まり手も写し、レースの日より後の集計を記録する
  */
 import assert from "node:assert/strict";
+import { s02Check, s02Facts, s02Text } from "../../sns-video-studio/remotion/scripts/full-picture/s02.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
   MAX_WIDTH,
@@ -1944,6 +1945,24 @@ for (const f of fixtures) {
   assert.deepEqual(keyBoatsOf(m), { form: null, boats: [1] }, "鍵の艇も横一線に寄せない");
   const ans = templateText(allBeats(buildAll(m))).answers;
   for (const id of ["s4-slit-course"]) assert.deepEqual(checkLines(ans[id], dn.steps.find((st) => st.id === id).facts, null), [], "当てはまらない言い方も文の検査を通る");
+}
+
+// 型 s02-loss-breakdown-card（関門の段4）: 10/26 大村10R の実数で数字・文・検査
+{
+  const tri = { "1-2-3": 150, "2-1-3": 24, "3-1-2": 14, "4-1-2": 17, "5-1-2": 6, "6-1-2": 1 };
+  const sc = { cells: { waku: { forms: { any: { n: 212, tri } } } }, period: ["2019-04-01", "2026-10-25"] };
+  const f = s02Facts(sc);
+  assert.deepEqual([f.n, f.k, f.m, f.p], [212, 150, 62, 70.8]);
+  assert.deepEqual(f.by.map((x) => x.count), [24, 14, 17, 6, 1], "艇番の順（順位で並べない）");
+  const tx = s02Text(f, { race: "大村10R 準優勝戦", date: "10/26", deadline: "19:36", url: "https://www.boat-ai.jp/race/2026-10-26-24-10" });
+  assert.deepEqual(tx.card.lines, ["過去の1号艇が負けた62件", "勝ったのは何号艇？"]);
+  assert.ok(tx.xText.includes("過去212件中（2019/4/1〜2026/10/25）、1号艇の1着は150件（70.8%）"), tx.xText);
+  assert.ok(tx.xText.includes("その62件で、勝ったのは何号艇？"));
+  assert.deepEqual(s02Check(f, tx, 39.5), []);
+  assert.ok(s02Check(f, tx, 59.5).some((w) => w.includes("59秒")));
+  assert.ok(s02Check(f, { ...tx, shortsTitle: tx.shortsTitle + " 最多は2号艇" }, 39.5).some((w) => w.includes("順位の語")));
+  assert.equal(s02Facts({ cells: { waku: { forms: { any: { n: 29, tri: {} } } } } }).kind, "thin_data", "30件未満は作らない");
+  assert.equal(s02Facts({ cells: { waku: { forms: { any: { n: 213, tri } } } } }).kind, "count_mismatch", "件数と3連単の和が合わない日は作らない");
 }
 
 console.log("verify-full-picture-scene2: OK");
