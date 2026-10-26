@@ -1563,12 +1563,6 @@ export const supabaseDataService = {
         const thisMonthStart = `${thisYear}-${String(thisMonth).padStart(2, "0")}-01`;
         const thisMonthEnd = `${thisYear}-${String(thisMonth).padStart(2, "0")}-31`;
 
-        // 過去30日の開始日を計算
-        const thirtyDaysAgo = new Date(
-          jstNow.getTime() - 30 * 24 * 60 * 60 * 1000,
-        );
-        const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
-
         // モデル情報を取得
         const { data: models } = await supabase
           .from("models")
@@ -1815,7 +1809,7 @@ export const supabaseDataService = {
 
           // 月別履歴を構築（過去6ヶ月分）
           const monthlyHistory = Object.entries(monthlyPredictionsMap)
-            .map(([key, data]) => {
+            .map(([, data]) => {
               const monthPreds =
                 data.predictions?.filter((p) => p.model_id === modelId) || [];
               const stats = calculateStats(monthPreds);
