@@ -757,7 +757,7 @@ test("X の日の上限に入らないときは受け取らない（claim と同
   assert.match((await push()).reasons.join(), /daily_baseline_date/);
 });
 
-test("179: 優勝戦の取り置きに入らないときは受け取らない（本投稿は投票と対で2本）。179 の前（404）は日の上限だけで決める", async () => {
+test("182: 優勝戦の取り置きに入らないときは受け取らない（本投稿は投票と対で2本）。182 の前（404）は日の上限だけで決める", async () => {
   const asked = [];
   store.xSlotRoom = async (kind, need) => {
     asked.push([kind, need]);

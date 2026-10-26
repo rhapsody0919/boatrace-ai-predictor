@@ -1342,6 +1342,11 @@
       "guards": "sns-pdca-loop tasks 23: X の親の投稿の UTM（campaign=race-full は型の版なしで作れ utm_content は下書きの ID、sonar-preview は型の版が必須のまま、許可の無い campaign・クエリつきの URL は作らない、本文のレースの URL をちょうど1か所だけ差し替え句点・改行の直前も終わりとみなし番号が続く別のレースは差し替えない、差し替え済みならそのまま、子・YouTube は対象外、sns_post_tracking に型の版なしで保存できやり直しは同じ URL なら成功・違えば投げる）。SQL154 までを PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-research-image.js",
+      "tier": "ci",
+      "guards": "X の「数字で見たら」の集計の画像1枚（format=research_image、マイグレーション 179・180、scripts/sns/push-research-image.js、hq XR01）: item は X・variant=main・race_id は research:{日}:{slug} だけで1日1本（別の slug も・送った後も2本目は入らない、held_manual・stopped は外れる）、許可 research_image_enabled は既定 false で x の行だけ・off の間は push が何も書かない（Slack も）・承認の後に off にすると claim で held（research_image_disabled）、--dry-run は書かない、on なら画像1枚の job を送る時刻（19:00）に入れる（締切は送る時刻＋120分・期限は＋60分）、鮮度は research_image だけ集計から24時間（他の kind の max_source_age_seconds はそのまま）、通り道 B の claim は今日の research_image の分を先に枠から引く、検査（禁止表現と本文の競艇・#競艇 のタグだけ可・risk-rules・加重280・リンクなし・置き場所・本文のハッシュタグ・画像1枚 PNG 1080x1350・P0・send_time 08:00〜21:30・今日・期限の10分前・集計の時刻・X の日の上限）、送り手の readCurrent（許可・同じ日に送った research_image・item の kind・本文・画像の数）と preflight（リンク先の表示を開かず、送る文にリンクがあれば止める。他の型は表示を確かめる）、送った後の item sent と tweet id、結果の1行 RESEARCH_RESULT と exit、177 の transition_sns_send_139 の md5 が本番と一致。SQL180 までを PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-send-probe.js",
       "tier": "ci",
       "guards": "送信の試験（投稿しない、/api/admin/sns-hub/send-probe、2026-10-18 /today の初送信が原因不明で止まった件）: 媒体は initialize→append（4 MiB ずつ）→finalize→status まで行い createPost を呼ばない、落ちた段階を「段階_種類」で返す、表示の確認は印の有無と Chromium の落ちを区別する。外部接続なし"
@@ -1384,7 +1389,7 @@
     {
       "script": "verify-sns-x-slots.js",
       "tier": "ci",
-      "guards": "X の日の枠の出し物ごとの取り置き（マイグレーション 179、docs/design/x-daily-slots/plan.md）: 全貌が取り置き4本を claim した後でも優勝戦の3本（本投稿・投票・展示後のリプ）と /today は claim でき、全貌の5本目は held（kind_slot_full）、取り置かれていない残りは先に来た出し物が使い出し物ごとの上限で止まる、合計は daily_limit_x を越えない、親は自分の子の分も数える、他の親の claim 済みの子は二重に数えない、取り込みの確かめは今日の queued も数える、曜日（JST・ISO）の取り置き、item の無い job（通り道 B）は全部の取り置きを空ける、他経路・基準の日、表と関数の権限（service_role は読むだけ）。取り込みの判定（scripts/lib/snsXSlots.js: kind_slot_full だけ止める・404 は止めない）と hq の config/x-slots.json との照合（scripts/sns/x-slots-check.js）。SQL177・179 を PGlite、外部接続なし"
+      "guards": "X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）: 全貌が取り置き4本を claim した後でも優勝戦の3本（本投稿・投票・展示後のリプ）と /today は claim でき、全貌の5本目は held（kind_slot_full）、取り置かれていない残りは先に来た出し物が使い出し物ごとの上限で止まる、合計は daily_limit_x を越えない、親は自分の子の分も数える、他の親の claim 済みの子は二重に数えない、取り込みの確かめは今日の queued も数える、曜日（JST・ISO）の取り置き、item の無い job（通り道 B）は全部の取り置きを空ける、他経路・基準の日、表と関数の権限（service_role は読むだけ）。取り込みの判定（scripts/lib/snsXSlots.js: kind_slot_full だけ止める・404 は止めない）と hq の config/x-slots.json との照合（scripts/sns/x-slots-check.js）。#1978 の数字で見たら（research_image、月水金）の取り置きと 180 の照合が重ねても残ること。SQL180・182 を PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-youtube-adapter.js",

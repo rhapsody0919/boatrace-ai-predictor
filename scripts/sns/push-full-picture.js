@@ -15,7 +15,7 @@
  *    --dry-run はここまで（DB・Storage に書かない）
  * 2. 動画を Storage（sns-hub-media/full-picture/{race_id}/{版}/）に上げる
  * 3. X・YouTube の下書き（send_lane=A、format=full_picture）と item（kind=full_picture）を作る
- *    X の日の枠の全貌の取り置き（179）に1本が入らなければ X の下書きを作らず、YouTube（完全版・Shorts）だけを送る
+ *    X の日の枠の全貌の取り置き（182）に1本が入らなければ X の下書きを作らず、YouTube（完全版・Shorts）だけを送る
  * 4. チャネルが mode=auto なら item を notified にして自動送信の承認者で承認する（送る時刻は締切の60分前と今から5分後の遅い方）。
  *    mode=manual なら item を manual にして、個別承認の画面に回す
  * 5. Slack（SLACK_WEBHOOK_URL、無ければ SLACK_DIGEST_WEBHOOK_URL）に、送る時刻と止める SQL を知らせる
@@ -389,8 +389,8 @@ export async function pushFullPicture(
     withShorts(bundle) &&
     now.getTime() >=
       Date.parse(minutesBefore(deadlineAt, SHORTS_LATEST_BEFORE_MIN));
-  // X の日の枠の全貌の取り置き（179、docs/design/x-daily-slots/plan.md）。入らないと分かったら X だけ作らない
-  // （claim で止まる job を作ると期限まで Slack が鳴る）。179 の前・読めないときは今のまま作る（claim が正）
+  // X の日の枠の全貌の取り置き（182、docs/design/x-daily-slots/plan.md）。入らないと分かったら X だけ作らない
+  // （claim で止まる job を作ると期限まで Slack が鳴る）。182 の前・読めないときは今のまま作る（claim が正）
   const xSlot = store.xSlotRoom
     ? await checkXSlot(store.xSlotRoom, SLOT_KINDS.fullPicture, 1)
     : null;
@@ -603,7 +603,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       ),
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
-    // X の日の枠の取り置きの残り（179）
+    // X の日の枠の取り置きの残り（182）
     xSlotRoom: xSlotRoomVia(call),
     // 下書きの deadline_queue に親（完全版の job）を入れる。承認の前に入れないと、承認の queue の照合に通らない
     setParentJob: async (draft, parentJobId) =>

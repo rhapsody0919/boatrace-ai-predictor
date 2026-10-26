@@ -377,7 +377,7 @@ test("締切の45分前を過ぎた・中止のレースは受け取らない。
   );
 });
 
-test("179: X の日の枠の全貌の取り置きに入らなければ、X の下書きを作らず YouTube だけ送る。179 の前（404）・読めないときは今のまま", async () => {
+test("182: X の日の枠の全貌の取り置きに入らなければ、X の下書きを作らず YouTube だけ送る。182 の前（404）・読めないときは今のまま", async () => {
   const asked = [];
   store.xSlotRoom = async (kind, need) => {
     asked.push([kind, need]);
@@ -408,7 +408,7 @@ test("179: X の日の枠の全貌の取り置きに入らなければ、X の�
     assert.ok(
       result.notes.some((n) => /x: 作らなかった.*全貌|full_picture/.test(n)),
     );
-    // 179 の前（PostgREST の 404）は止めない
+    // 182 の前（PostgREST の 404）は止めない
     await db.exec(
       "DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
     );

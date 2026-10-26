@@ -51,7 +51,15 @@
 - 枠の予約: transition_sns_send_139 は、通り道 B でない X の claim・begin_post で、まだ claim していないリプの子（素材のスレッドでない）を v_need に足す。親は自分の子の分の空きが無ければ claim できない（親だけ送って子が上限で止まる穴、174 の追記の (1) のうち日次の側を塞ぐ）。子でない job は、他の親（今日 claim 済み）の子の枠も取らない。子どうしは先に claim した方が通る
 - 残る壊れ方: (1) 枠に余りが無い（8＝予定の本数）。送れなかった試行も1枠使うので、その日に全貌のやり直しがあると本投稿は push の事前検査で落ちる (2) 月の予算の親子の対の予約はまだ無い（174 の追記の (1) のうち予算の側） (3) push（hq の Mac）と送り手（Vercel の cron）は別々にデプロイされるので、許可を入れるのは送り手の本番に 177 の対のコードが入った後だけ（古い送り手は snapshot.poll を無視して本文だけを送る） (4) X の投票の仕様（リプに付けられるか、和文の25字の数え方）は一次の文書で未確認。400 なら begin_post の後なので要照合に残る
 
-## 追記: X の日の枠を出し物（item の kind）ごとに取り置く（2026-10-27、hq per-type-workflow-review P0-2・マイグレーション 179）
+## 追記: 「数字で見たら」の集計の画像1枚（research_image）は、レースを持たず、送る時刻から60分の窓で送る（2026-10-27、hq XR01・マイグレーション 179・180）
+- X に週3本（月・水・金 19:00）出す集計ランキングの画像1枚の投稿。集計・画像・本文は hq が作り、scripts/sns/push-research-image.js が受け取る（15:00 に作り、送る時刻の予定に入れる）
+- レースを持たないので、item の race_id は research:{YYYY-MM-DD}:{slug}（送る日の JST と題の札）。1日1本は 179 の一意の索引 (channel, left(race_id, 19)) で守る（送った後も2本目は入らない）
+- 締切は送る時刻＋120分、期限は締切の60分前（送る時刻から60分）。この締切はレースの公式締切ではなく形の上の値（item の CHECK と期限の照合のため）。通知は push の時（15:00）に止める SQL と一緒に送り、3時間前の通知・止める窓は置かない。期限は finals_image と同じく item の kind で分ける（kind=research_image だけ60分）
+- 根拠の鮮度は集計の時刻から24時間（kind=research_image だけ）。直近1年の集計なので、他の kind の max_source_age_seconds（本番 14400）を当てると、15:00 に作り 19:00 に送る形で止まるため
+- 本文にリンクを置かない型なので、送る直前のリンク先の表示の確認（tasks 10）は無い。代わりに readCurrent が DB の item の kind・許可・同じ日に送ったか・本文（禁止表現・加重280・リンクなし）・画像1枚を読み直し、preflight は送る文にリンクが無いことを確かめる（public_check='none' を返すのは item が research_image のときだけ）
+- 自動送信の許可は `.claude/CLAUDE.md` の例外（(1)〜(3)）に無い。許可のフラグ `sns_auto_send_control.research_image_enabled`（x の行、既定 false）を置き、false の間は push が何も書かず、送り手も claim・check・begin_post で held（research_image_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのはオーナー本人
+
+## 追記: X の日の枠を出し物（item の kind）ごとに取り置く（2026-10-27、hq per-type-workflow-review P0-2・マイグレーション 182）
 - 取り置きの数は表 `sns_x_kind_reserves`（kind・daily_count・曜日）に置く。正本は hq の config/x-slots.json で、本番の送り手は hq のファイルを読めないので DB に写す。書くのはオーナー、照合は `scripts/sns/x-slots-check.js`（読み取りだけ）
 - claim（transition_sns_send_139）は、177 の全体の検査に加えて「他経路 + その出し物の試行と予定 + Σ他の出し物の max(取り置き, 試行と予定) + 必要な本数 ≤ daily_limit_x」を見る（関数 sns_x_slot_room。取り込みも同じ関数で予定に入れる前に確かめる）。先に claim した出し物が、他の出し物の取り置きの残りを使わない。取り置きを越えた分は取り置かれていない残りを早い者勝ちで使う
 - 止め方を変える: 取り置きで入らない claim は例外にせず held（error_code=kind_slot_full）にし、runner が Slack に1回知らせる（177 の「日次全体上限です」の例外は残す）。取り置きは後から空かないので、queued のまま2分ごとに知らせ続けない

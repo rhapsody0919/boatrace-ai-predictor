@@ -239,7 +239,7 @@ export async function runSnsSend(
       result.outcome = done.state;
       result.error_code = done.error_code ?? null;
       if (done.state === "posted") posted += 1;
-      // 出し物ごとの取り置き（179）で claim が止めた。取り置きは後から空かないので一度きりの事象として知らせる
+      // 出し物ごとの取り置き（182）で claim が止めた。取り置きは後から空かないので一度きりの事象として知らせる
       if (done.state === "held" && done.error_code === "kind_slot_full")
         await tell(
           `held:${job.id}`,

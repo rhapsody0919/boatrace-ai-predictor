@@ -1,5 +1,5 @@
-// X の日の枠の出し物ごとの取り置き（マイグレーション 179、docs/design/x-daily-slots/plan.md）の再現テスト。
-// PGlite に 177 までと 179 を当て、本番と同じ承認（approve_sns_x_send）・claim（transition_sns_x_send → transition_sns_send_139）で通す。
+// X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）の再現テスト。
+// PGlite に 180（#1978 の「数字で見たら」）までと 182 を当て、本番と同じ承認（approve_sns_x_send）・claim（transition_sns_x_send → transition_sns_send_139）で通す。
 // 外部接続なし。X へは何も送らない
 import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
@@ -16,12 +16,15 @@ const all = async (sql, args = []) => (await db.query(sql, args)).rows;
 const loadMedia = async () => new Uint8Array([1, 2, 3]);
 // 2026-10-27（火）JST 12:00
 const T0 = Date.parse("2026-10-27T03:00:00Z");
-const at = (minutes) => new Date(T0 + minutes * 60000).toISOString();
+// 曜日を変えるテストだけ base を動かす（終わったら T0 に戻す）
+let base = T0;
+const at = (minutes) => new Date(base + minutes * 60000).toISOString();
 const setClock = (minutes) =>
   db.query("UPDATE test_clock SET value=$1", [at(minutes)]);
 const DEADLINE = 300; // 締切は T0+300分（17:00）
 const hash = () => randomBytes(32).toString("hex");
 let autoApprover;
+let seeded;
 let seq = 0;
 
 before(async () => {
@@ -55,7 +58,9 @@ before(async () => {
     "172_sns_full_picture_shorts.sql",
     "176_sns_finals_image_items.sql",
     "177_sns_finals_replies.sql",
-    "179_sns_x_kind_reserves.sql",
+    "179_sns_research_image_items.sql",
+    "180_sns_research_image_send.sql",
+    "182_sns_x_kind_reserves.sql",
   ])
     await db.exec(
       (
@@ -65,6 +70,9 @@ before(async () => {
         )
       ).replaceAll("now()", "test_now()"),
     );
+  seeded = await all(
+    "SELECT kind, daily_count, weekdays FROM sns_x_kind_reserves ORDER BY kind",
+  );
   autoApprover = (
     await first(
       "SELECT auto_approver_id id FROM sns_auto_send_control WHERE channel='x'",
@@ -77,7 +85,7 @@ beforeEach(async () => {
     ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;
     DELETE FROM sns_x_kind_reserves;
     INSERT INTO sns_x_kind_reserves(kind, daily_count) VALUES ('full_picture',4),('digest',1),('finals_image',3);
-    UPDATE sns_auto_send_control SET mode='auto', dry_run=false, finals_image_enabled=(channel='x');`);
+    UPDATE sns_auto_send_control SET mode='auto', dry_run=false, finals_image_enabled=(channel='x'), research_image_enabled=(channel='x');`);
   await setClock(0);
   await db.exec(`
     UPDATE sns_x_send_control SET paused=false,timing_approved=true,schedule_minutes=60,expiry_minutes=30,
@@ -92,6 +100,7 @@ const FORMAT = {
   full_picture: "full_picture",
   digest: "today_digest",
   finals_image: "finals_image",
+  research_image: "research_image",
 };
 const transition = async (id, action, result = {}) =>
   (
@@ -116,7 +125,10 @@ async function makeJob(kind, { variant, parentJobId = null } = {}) {
       `${kind} ${seq}`,
       {
         deadline_at: at(DEADLINE),
-        expires_at: at(DEADLINE - (kind === "finals_image" ? 5 : 30)),
+        expires_at: at(
+          DEADLINE -
+            (kind === "finals_image" ? 5 : kind === "research_image" ? 60 : 30),
+        ),
         source_revision: `r${seq}`,
         source_observed_at: at(0),
         ...(parentJobId ? { parent_job_id: parentJobId } : {}),
@@ -130,7 +142,7 @@ async function makeJob(kind, { variant, parentJobId = null } = {}) {
       kind,
       draft.id,
       variant ?? (kind === "finals_image" ? "finals" : "main"),
-      `R${seq}`,
+      kind === "research_image" ? `research:${at(0).slice(0, 10)}:r${seq}` : `R${seq}`,
       at(DEADLINE),
       at(-180),
       at(0),
@@ -186,7 +198,7 @@ async function finalsPair() {
   return { main, poll, claimed: await claim(main) };
 }
 
-test("179: 全貌が取り置き4本を claim した後でも、優勝戦の3本（本投稿・投票・展示後のリプ）は claim できる。全貌の5本目は止まる", async () => {
+test("182: 全貌が取り置き4本を claim した後でも、優勝戦の3本（本投稿・投票・展示後のリプ）は claim できる。全貌の5本目は止まる", async () => {
   await setClock(1);
   for (let i = 0; i < 4; i++)
     assert.equal((await claim(await makeJob("full_picture"))).state, "sending");
@@ -210,7 +222,7 @@ test("179: 全貌が取り置き4本を claim した後でも、優勝戦の3本
   assert.equal(await attemptsToday(), 8);
 });
 
-test("179: 取り置かれていない残り（上限9−取り置き8）は先に来た出し物が使い、出し物ごとの上限（取り置き＋残り）で止まる", async () => {
+test("182: 取り置かれていない残り（上限9−取り置き8）は先に来た出し物が使い、出し物ごとの上限（取り置き＋残り）で止まる", async () => {
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=9");
   await setClock(1);
   for (let i = 0; i < 5; i++)
@@ -230,7 +242,7 @@ test("179: 取り置かれていない残り（上限9−取り置き8）は先�
   assert.ok((await attemptsToday()) <= 9);
 });
 
-test("179: 親は自分の子の分も取り置きに入らなければ claim しない（優勝戦の本投稿と投票は2本で数える）", async () => {
+test("182: 親は自分の子の分も取り置きに入らなければ claim しない（優勝戦の本投稿と投票は2本で数える）", async () => {
   await db.exec(
     "UPDATE sns_x_kind_reserves SET daily_count=1 WHERE kind='finals_image'",
   );
@@ -255,7 +267,7 @@ test("179: 親は自分の子の分も取り置きに入らなければ claim �
   assert.equal((await room("finals_image", 1, true)).booked, 0);
 });
 
-test("179: 他の親の claim 済みの子は、その出し物の予定として数え、二重に数えない", async () => {
+test("182: 他の親の claim 済みの子は、その出し物の予定として数え、二重に数えない", async () => {
   await setClock(1);
   const { main, poll } = await finalsPair();
   await post(main);
@@ -267,7 +279,7 @@ test("179: 他の親の claim 済みの子は、その出し物の予定とし�
   assert.equal((await claim(poll)).state, "sending");
 });
 
-test("179: 取り込みの確かめ（with_queued）は、まだ claim していない今日の queued も数える", async () => {
+test("182: 取り込みの確かめ（with_queued）は、まだ claim していない今日の queued も数える", async () => {
   // 朝に全貌を4本受けた（まだ送る時刻でない）。5本目を受ける時点で止められる
   for (let i = 0; i < 4; i++) await makeJob("full_picture");
   const r = await room("full_picture", 1, true);
@@ -280,7 +292,7 @@ test("179: 取り込みの確かめ（with_queued）は、まだ claim してい
   assert.equal((await room("finals_image", 2, true)).ok, true);
 });
 
-test("179: 曜日つきの取り置きは、その曜日（JST）だけ他の出し物から取っておく", async () => {
+test("182: 曜日つきの取り置きは、その曜日（JST）だけ他の出し物から取っておく", async () => {
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=9");
   // 火曜（2026-10-27）。数字で見たら（仮の kind）を月水金に1本
   await db.exec(
@@ -302,7 +314,7 @@ test("179: 曜日つきの取り置きは、その曜日（JST）だけ他の出
   );
 });
 
-test("179: item の無い job（通り道 B）は、全部の出し物の取り置きの残りを空けて待つ", async () => {
+test("182: item の無い job（通り道 B）は、全部の出し物の取り置きの残りを空けて待つ", async () => {
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=9");
   const r = await room("", 1, false);
   assert.equal(r.held_for_others, 8);
@@ -311,7 +323,7 @@ test("179: item の無い job（通り道 B）は、全部の出し物の取り�
   assert.equal((await room("", 1, false)).ok, false);
 });
 
-test("179: 他経路の本数と今日の基準の日も数える", async () => {
+test("182: 他経路の本数と今日の基準の日も数える", async () => {
   await db.exec("UPDATE sns_x_send_control SET daily_external_count=1");
   assert.equal((await room("digest", 1, false)).ok, false);
   await db.exec(
@@ -336,7 +348,7 @@ test("179: 他経路の本数と今日の基準の日も数える", async () => 
   );
 });
 
-test("179: 表と関数の権限（匿名・authenticated に無い、service_role は読むだけ）", async () => {
+test("182: 表と関数の権限（匿名・authenticated に無い、service_role は読むだけ）", async () => {
   const grants = await all(
     "SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_name='sns_x_kind_reserves' AND grantee IN ('anon','authenticated','service_role') ORDER BY 1,2",
   );
@@ -357,7 +369,7 @@ test("179: 表と関数の権限（匿名・authenticated に無い、service_ro
 });
 
 // ---- 取り込みの確かめ（scripts/lib/snsXSlots.js） ----
-test("snsXSlots: 止めるのは kind_slot_full のときだけ。関数が無い（179 の前）・読めないときは止めない（読めない理由は返す）", async () => {
+test("snsXSlots: 止めるのは kind_slot_full のときだけ。関数が無い（182 の前）・読めないときは止めない（読めない理由は返す）", async () => {
   assert.equal(slotDecision({ ok: true, reason: null }).blocked, false);
   assert.equal(
     slotDecision({ ok: false, reason: "baseline_unconfirmed" }).blocked,
@@ -417,7 +429,7 @@ test("snsXSlots: 止めるのは kind_slot_full のときだけ。関数が無�
   assert.match(over.note, /合計 10.*上限 9 を越えている/);
 });
 
-test("179: 出し物が NULL は拒む。作り直し（p_draft_id）はその下書きの前の版の job と子を数えない。取り置きの合計の越えを返す", async () => {
+test("182: 出し物が NULL は拒む。作り直し（p_draft_id）はその下書きの前の版の job と子を数えない。取り置きの合計の越えを返す", async () => {
   await assert.rejects(
     first("SELECT sns_x_slot_room(NULL,1,true,NULL,NULL) r"),
     /出し物（kind）が無い/,
@@ -453,9 +465,7 @@ test("x-slots-check: hq の取り置きを表の行に直し、違いと越え�
       research_rank: { count: 1, weekdays: ["mon", "wed", "fri"] },
     },
   };
-  const { rows, unknown } = hqReserveRows(config, {
-    research_rank: "research_image",
-  });
+  const { rows, unknown } = hqReserveRows(config);
   assert.deepEqual(unknown, []);
   assert.deepEqual(rows, [
     { kind: "full_picture", daily_count: 4, weekdays: null },
@@ -463,7 +473,10 @@ test("x-slots-check: hq の取り置きを表の行に直し、違いと越え�
     { kind: "finals_image", daily_count: 3, weekdays: null },
     { kind: "research_image", daily_count: 1, weekdays: [1, 3, 5] },
   ]);
-  assert.deepEqual(hqReserveRows(config).unknown, ["research_rank"]);
+  assert.deepEqual(
+    hqReserveRows({ reserve: { other_type: 1 } }).unknown,
+    ["other_type"],
+  );
   const diff = reserveDiff(
     rows,
     [
@@ -495,4 +508,53 @@ test("x-slots-check: hq の取り置きを表の行に直し、違いと越え�
   // 曜日ごとの取り置きの合計が上限を越えると知らせる
   const over = reserveDiff(rows, rows, { hqLimit: 8, dbLimit: 8 });
   assert.ok(over.lines.some((l) => /越える/.test(l)));
+});
+
+test("182: マイグレーションの初期の取り置きは 全貌4・/today 1・優勝戦3・数字で見たら1（月水金）", () => {
+  assert.deepEqual(
+    seeded.map((r) => [r.kind, r.daily_count, r.weekdays]),
+    [
+      ["digest", 1, null],
+      ["finals_image", 3, null],
+      ["full_picture", 4, null],
+      ["research_image", 1, [1, 3, 5]],
+    ],
+  );
+});
+
+test("182: #1978 と重ねたとき、数字で見たら（research_image）の取り置きは月水金だけ効き、送る口（180 の許可・期限）の照合も残る", async () => {
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=9");
+  await db.exec(
+    "INSERT INTO sns_x_kind_reserves(kind, daily_count, weekdays) VALUES ('research_image', 1, '{1,3,5}')",
+  );
+  // 水曜（2026-10-28 JST 12:00）。全貌4・/today 1・優勝戦3・数字で見たら1＝9＝上限
+  base = Date.parse("2026-10-28T03:00:00Z");
+  try {
+    await setClock(1);
+    await db.exec(
+      "UPDATE sns_x_send_control SET daily_baseline_date=(test_now() AT TIME ZONE 'Asia/Tokyo')::date",
+    );
+    const claimOf = async (kind) => claim(await makeJob(kind));
+    for (let i = 0; i < 4; i++)
+      assert.equal((await claimOf("full_picture")).state, "sending");
+    // 全貌の5本目は、数字で見たらの取り置きの残りを使えないので止まる（火曜なら残り1で通る。上の曜日のテスト）
+    assert.equal((await claimOf("full_picture")).error_code, "kind_slot_full");
+    // 数字で見たらの1本は取り置きで通る（180 の許可が true・期限は締切の60分前）
+    assert.equal((await claimOf("research_image")).state, "sending");
+    // /today と優勝戦は取り置きのまま通る
+    assert.equal((await claimOf("digest")).state, "sending");
+    const { claimed } = await finalsPair();
+    assert.equal(claimed.state, "sending");
+    // 試行は 全貌4・数字で見たら1・/today 1・優勝戦の本投稿1＝7、投票のリプ（claim 済みの親の子）を予定に数えて8
+    assert.equal(await attemptsToday(), 7);
+    assert.equal((await room("full_picture", 1, false)).ok, false);
+    // 180 の許可・期限・鮮度の照合は 182 の置き換えでも残る（research_image_enabled=false の held は verify-sns-research-image.js が見る）
+    const src = await first(
+      "SELECT prosrc FROM pg_proc WHERE proname='transition_sns_send_139'",
+    );
+    assert.match(src.prosrc, /research_image_disabled/);
+    assert.match(src.prosrc, /kind_slot_full/);
+  } finally {
+    base = T0;
+  }
 });

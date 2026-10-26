@@ -1,5 +1,5 @@
 /**
- * X の日の枠の出し物ごとの取り置き（マイグレーション 179、docs/design/x-daily-slots/plan.md）を、取り込み（push-full-picture・
+ * X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）を、取り込み（push-full-picture・
  * /today・push-finals-image・push-research-image）が予定に入れる前に確かめる。
  * 正は送り手の claim（transition_sns_send_139 が同じ sns_x_slot_room で数え、越えれば held/kind_slot_full）。ここは目安で、
  * claim で止まるのが分かっている job を作らないため（作ると期限まで runner が2分ごとに Slack に知らせる）。
@@ -10,11 +10,12 @@ export const SLOT_KINDS = {
   fullPicture: "full_picture",
   today: "digest",
   finals: "finals_image",
+  research: "research_image",
 };
 
 /**
  * rpc sns_x_slot_room の答えから、止めるかを決める（純粋関数）。止めるのは取り置きで入らないと分かったときだけ。
- * 関数が無い（179 の適用前）・今日の基準が未確認・読めないときは止めない（claim が正）
+ * 関数が無い（182 の適用前）・今日の基準が未確認・読めないときは止めない（claim が正）
  */
 export function slotDecision(room) {
   // 今日の取り置きの合計（と他経路）が上限を越える日は、取り置きの中でも後から来た出し物が止まる。止めずに知らせる（note）
@@ -30,7 +31,7 @@ export function slotDecision(room) {
   };
 }
 
-/** 179 の適用前（PostgREST が関数を知らない）か */
+/** 182 の適用前（PostgREST が関数を知らない）か */
 export const isMissingFunction = (error) =>
   /HTTP 404|PGRST202|Could not find the function/.test(error?.message ?? "");
 

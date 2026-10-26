@@ -21,7 +21,7 @@
  * 時刻: 全貌の 60分の遅らせ・45分の締め・30分の期限は当てない。送る時刻＝今すぐ、期限＝締切の5分前（3本とも）。
  * 本投稿は締切の15分前を過ぎて届いたら受け取らない。展示後のリプは締切の25分前より前・13分前を過ぎたら受け取らない（exit 1 と理由）。
  * X の日の上限（daily_limit_x）は1本ずつ数える。本投稿は投票のリプと対で2本分の空きが無ければ受け取らない（送り手の claim も対で数える、177）。
- * 優勝戦の取り置き（179、sns_x_kind_reserves の finals_image）に入らないときも受け取らない
+ * 優勝戦の取り置き（182、sns_x_kind_reserves の finals_image）に入らないときも受け取らない
  * 送るのは送り手（cron sns-send、2分ごと）。push は job を入れた後、送り終わる（posted・held 等）か期限を過ぎるまで待つ（--no-wait で待たない）。
  * 本投稿は投票のリプが送り終わるまで待つ
  *
@@ -584,8 +584,8 @@ export async function pushFinalsImage(
     children,
   });
   if (limitReason) raceCheck.reasons.push(limitReason);
-  // 出し物ごとの取り置き（179、docs/design/x-daily-slots/plan.md）。他の出し物の取り置きの残りを使わないか。
-  // 179 の前・読めないときは上の日の上限だけで決める（送り手の claim が正）
+  // 出し物ごとの取り置き（182、docs/design/x-daily-slots/plan.md）。他の出し物の取り置きの残りを使わないか。
+  // 182 の前・読めないときは上の日の上限だけで決める（送り手の claim が正）
   const xSlot = store.xSlotRoom
     ? await checkXSlot(store.xSlotRoom, SLOT_KINDS.finals, reply ? 1 : 2)
     : null;
@@ -997,7 +997,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
           "sns_x_send_control?id=eq.true&select=daily_limit,daily_limit_x,daily_baseline_date,daily_external_count",
         )
       )[0] ?? null,
-    // X の日の枠の取り置きの残り（179）
+    // X の日の枠の取り置きの残り（182）
     xSlotRoom: xSlotRoomVia(call),
     // 今日（JST）に試行のある job（X・YouTube の両方。数えるのは dailyLimitReason が X だけ）
     jobsAttemptedOn: (day) =>

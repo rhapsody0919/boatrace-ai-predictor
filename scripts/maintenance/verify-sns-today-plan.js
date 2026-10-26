@@ -1813,7 +1813,7 @@ test("PostgREST の store: 親と返信の下書きを分けて返す（返信�
     ["p", "i1", "c", "i2"],
   );
 });
-test("179: X の日の枠の /today の取り置きに入らなければ自動の承認をしない（返信の型は親と返信の2本で数え、両方 held_manual）。179 の前（404）は今のまま", async () => {
+test("182: X の日の枠の /today の取り置きに入らなければ自動の承認をしない（返信の型は親と返信の2本で数え、両方 held_manual）。182 の前（404）は今のまま", async () => {
   await clearAll();
   await putType(DATE, "t01-link-in-reply", {
     heading: "本日のデータ一覧（{date}）",

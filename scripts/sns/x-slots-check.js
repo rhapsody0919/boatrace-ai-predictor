@@ -1,6 +1,6 @@
 /**
  * hq の config/x-slots.json（X の日の枠の取り置きの正本）と、龍神の DB の写し（sns_x_kind_reserves・sns_x_send_control.daily_limit_x、
- * マイグレーション 179）を比べる。読み取りだけ。違えば直す SQL を出す（当てるのはオーナー、SQL Editor）。
+ * マイグレーション 182）を比べる。読み取りだけ。違えば直す SQL を出す（当てるのはオーナー、SQL Editor）。
  * 本番の送り手（Vercel）は hq のファイルを読めないので、DB の写しが送るときの正。hq が同じ Mac でこれを回して写しのずれを見る。
  *
  * 使い方:
@@ -12,13 +12,13 @@ import { readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 
 /**
- * hq の出し物の名前 → sns_auto_send_items.kind。数字で見たら（research_rank）は取り込み（push-research-image.js）の PR が
- * kind を決めたらここに足す。足すまでは unknown として知らせる（黙って飛ばさない）
+ * hq の出し物の名前 → sns_auto_send_items.kind（数字で見たらは #1978 の research_image）。ここに無い名前は unknown として知らせる（黙って飛ばさない）
  */
 export const HQ_KIND = {
   full_picture: "full_picture",
   today: "digest",
   finals: "finals_image",
+  research_rank: "research_image",
 };
 const DOW = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
 
@@ -122,7 +122,7 @@ async function main() {
     });
     if (!response.ok)
       throw new Error(
-        `DB を読めない: HTTP ${response.status} ${p.split("?")[0]}（179 の適用前なら表が無い）`,
+        `DB を読めない: HTTP ${response.status} ${p.split("?")[0]}（182 の適用前なら表が無い）`,
       );
     return response.json();
   };

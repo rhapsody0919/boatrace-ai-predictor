@@ -1,27 +1,29 @@
--- 179: X の日の枠（sns_x_send_control.daily_limit_x）を出し物（item の kind）ごとに取り置く。先に送る出し物が他の出し物の
+-- 182: X の日の枠（sns_x_send_control.daily_limit_x）を出し物（item の kind）ごとに取り置く。先に送る出し物が他の出し物の
 -- 取り置きの残りを使わない（hq の per-type-workflow-review 10/27 P0-2、取り置きの数の正本は hq の config/x-slots.json）。
 -- 設計: docs/design/x-daily-slots/plan.md
 -- 変えるもの:
---   1. 表 sns_x_kind_reserves（kind・daily_count・weekdays）。初期は full_picture 4・digest（/today）1・finals_image（優勝戦）3＝合計8。
---      本番の daily_limit_x は 9（2026-10-27 読み取り）なので、取り置かれていない残りは1。数字で見たらの行（月水金に1）は、その取り込み
---      （push-research-image.js）の PR で kind を決めて入れる。入れると月水金は合計9＝上限で残りが0になる
+--   1. 表 sns_x_kind_reserves（kind・daily_count・weekdays）。初期は full_picture 4・digest（/today）1・finals_image（優勝戦）3・
+--      research_image（数字で見たら）1（月水金だけ）。本番の daily_limit_x は 9（2026-10-27 読み取り）なので、月水金は合計9＝上限で
+--      取り置かれていない残りは0、他の曜日は合計8で残り1
 --   2. 関数 sns_x_slot_room(kind, need, with_queued, job_id, draft_id): 出し物 k が need 本を足せるか。
 --      他経路 + B_k + Σ_{j≠k} max(r_j, B_j) + need ≤ daily_limit_x（r=今日の取り置き、B=今日の試行＋まだ claim していない分）。
 --      claim（with_queued=false）と取り込みの確かめ（true、rpc）で同じ式を使う
---   3. transition_sns_send_139（土台は 177）: X の claim で 2 を確かめ、越えるなら自分とまだ claim していない自分の子を held
---      （error_code=kind_slot_full）。177 の検査はそのまま残す
+--   3. transition_sns_send_139（土台は 180、#1978 の「数字で見たら」）: X の claim で 2 を確かめ、越えるなら自分とまだ claim していない
+--      自分の子を held（error_code=kind_slot_full）。177 の全体の検査と 180 の research_image の期限・鮮度・許可はそのまま残す
+-- 番号: 179・180 は #1978（research_image）、181 は #1977。この 182 は 180 の後に当てる（transition の土台が 180 の本文）
 -- 検証: scripts/maintenance/verify-sns-x-slots.js（PGlite、外部接続なし）
--- 適用の順: コードが先でも後でもよい。適用前は取り込みの rpc が 404 で今のまま送る（claim も 177 のまま）。db-apply は master の HEAD の SQL を当てる
+-- 適用の順: 180 の後（下の DO が transition の本文が 180 であることを確かめ、違えば全体を戻す）。コードとはどちらが先でもよい。
+--   適用前は取り込みの rpc が 404 で今のまま送る（claim も 180 のまま）。db-apply は master の HEAD の SQL を当てる
 --
 -- 適用前の確認（読み取り）:
---   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: d70f142b2f3545d5660464b6c66aec59（177 の本文）
+--   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: dbc326553cecd51f7552ebbab0d006b7（180 の本文）
 --   SELECT daily_limit_x, daily_external_count FROM public.sns_x_send_control;  期待: 9・0（取り置きの合計8以上。8未満なら初期の行を直してから当てる。
 --     当てる直前に読み直す。PR を書いた時点の値で決めない）
---   177 のヘッダーの「今 claim を待つリプの子の数」が0であること（claim 済みの親の子が 179 の式で止まらないように）。優勝戦の時間帯（16:30〜20:45）は避ける
+--   177 のヘッダーの「今 claim を待つリプの子の数」が0であること（claim 済みの親の子が 182 の式で止まらないように）。優勝戦の時間帯（16:30〜20:45）は避ける
 --   SELECT to_regclass('public.sns_x_kind_reserves'), to_regprocedure('public.sns_x_slot_room(text,integer,boolean,uuid,uuid)');  期待: どちらも NULL
 --
 -- 適用後の確認（読み取り）:
---   SELECT * FROM public.sns_x_kind_reserves ORDER BY kind;  期待: digest 1・finals_image 3・full_picture 4（weekdays は NULL）
+--   SELECT * FROM public.sns_x_kind_reserves ORDER BY kind;  期待: digest 1・finals_image 3・full_picture 4（weekdays は NULL）・research_image 1（{1,3,5}）
 --   SELECT prosrc LIKE '%kind_slot_full%' FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: true
 --   SELECT public.sns_x_slot_room('finals_image', 2, true, NULL, NULL);  期待: 今日の基準があれば ok と数の内訳
 --   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js
@@ -31,10 +33,18 @@
 --   合計（その曜日の取り置き）は daily_limit_x 以下に保つ（越えると後から送る出し物が止まる）。hq の config との照合は scripts/sns/x-slots-check.js
 --
 -- 戻し方（この順を守る。transition の中の sns_x_slot_room の呼び出しは pg_depend に出ないので、先に DROP すると X の claim が全部例外になる）:
---   1. 関数を戻す: 177_sns_finals_replies.sql の transition_sns_send_139 の CREATE OR REPLACE と REVOKE をそのまま実行
+--   1. 関数を戻す: 180_sns_research_image_send.sql の transition_sns_send_139 の CREATE OR REPLACE と REVOKE をそのまま実行
 --   2. 表と sns_x_slot_room は残してよい（呼ばれなければ効かない）。消すなら
 --      DROP FUNCTION public.sns_x_slot_room(TEXT,INTEGER,BOOLEAN,UUID,UUID); DROP TABLE public.sns_x_kind_reserves;
 BEGIN;
+
+DO $$
+BEGIN
+  -- 土台は 180 の transition（research_image の許可・期限・鮮度）。180 の前に当てると、置き換えで 180 の照合を消してしまう
+  IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'transition_sns_send_139' AND prosrc LIKE '%research_image_disabled%') THEN
+    RAISE EXCEPTION '182: 180（research_image の transition）を先に当てる';
+  END IF;
+END $$;
 
 CREATE TABLE public.sns_x_kind_reserves (
   kind TEXT PRIMARY KEY CHECK (kind ~ '^[a-z][a-z_]{0,39}$'),       -- sns_auto_send_items.kind と同じ値
@@ -52,6 +62,9 @@ INSERT INTO public.sns_x_kind_reserves(kind, daily_count, note) VALUES
   ('full_picture', 4, '全貌（X の1本/レース）'),
   ('digest', 1, '/today（返信の型は親と返信の2本）'),
   ('finals_image', 3, '優勝戦（本投稿・投票のリプ・展示後のリプ）');
+-- 数字で見たら（179・180、月水金 19:00 に1本）。月水金は取り置きの合計9＝上限9で、取り置かれていない残りは0（他の曜日は1）
+INSERT INTO public.sns_x_kind_reserves(kind, daily_count, weekdays, note) VALUES
+  ('research_image', 1, '{1,3,5}', '数字で見たら（月水金）');
 
 -- 出し物 p_kind が p_need 本を足せるか。JST の今日について数える。
 --   r_j: 今日の取り置き（曜日が外れれば0。表に無い kind・item の無い job（通り道 B、kind=''）は0）
@@ -126,14 +139,14 @@ $$;
 REVOKE ALL ON FUNCTION public.sns_x_slot_room(TEXT,INTEGER,BOOLEAN,UUID,UUID) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.sns_x_slot_room(TEXT,INTEGER,BOOLEAN,UUID,UUID) TO service_role;
 
--- 置き換え（177）: transition_sns_send_139。変更は v_base・v_own・v_room の宣言、v_base の代入、177 の子の数え方で自分の子（v_own）も
+-- 置き換え（180）: transition_sns_send_139。変更は v_base・v_own・v_room の宣言、v_base の代入、177 の子の数え方で自分の子（v_own）も
 -- 数えること、claim の取り置きの確かめ（kind_slot_full で held）の1つの IF だけ
 CREATE OR REPLACE FUNCTION public.transition_sns_send_139(p_job_id UUID, p_action TEXT, p_result JSONB DEFAULT '{}'::jsonb)
 RETURNS JSONB LANGUAGE plpgsql SET search_path=public AS $$
 DECLARE d public.sns_drafts; j public.sns_x_send_jobs; c public.sns_x_send_control; reason TEXT; day_count INTEGER;
   v_limit INTEGER; v_need INTEGER := 1; v_ceiling BIGINT; v_rest BIGINT := 0; v_a_pending INTEGER := 0;
   v_kind TEXT; v_expiry_min INTEGER; v_children INTEGER := 0;
-  v_base INTEGER; v_own INTEGER := 0; v_room JSONB;
+  v_base INTEGER; v_own INTEGER := 0; v_room JSONB; v_max_age INTEGER;
 BEGIN
   SELECT * INTO d FROM public.sns_drafts WHERE id=(SELECT draft_id FROM public.sns_x_send_jobs WHERE id=p_job_id) FOR UPDATE;
   SELECT * INTO c FROM public.sns_x_send_control WHERE id=true FOR UPDATE;
@@ -141,7 +154,10 @@ BEGIN
   IF j.id IS NULL THEN RAISE EXCEPTION 'jobが見つかりません'; END IF;
   -- 176: 優勝戦の画像（item の kind=finals_image）は期限が締切の5分前（他は今までどおり sns_x_send_control.expiry_minutes）
   SELECT kind INTO v_kind FROM public.sns_auto_send_items WHERE id=j.auto_item_id;
-  v_expiry_min := CASE WHEN v_kind='finals_image' THEN 5 ELSE c.expiry_minutes END;
+  v_expiry_min := CASE WHEN v_kind='finals_image' THEN 5 WHEN v_kind='research_image' THEN 60 ELSE c.expiry_minutes END;
+  -- 180: 「数字で見たら」（research_image）は期限が締切の60分前（締切＝送る時刻＋120分なので、送る時刻から60分）、
+  -- 根拠の鮮度は集計の時刻から24時間（直近1年の集計なので、他の kind の max_source_age_seconds（本番 14400）は当てない）
+  v_max_age := CASE WHEN v_kind='research_image' THEN 86400 ELSE c.max_source_age_seconds END;
   v_limit := CASE WHEN j.channel='youtube' THEN coalesce(c.daily_limit_youtube,c.daily_limit) ELSE coalesce(c.daily_limit_x,c.daily_limit) END;
   v_ceiling := CASE WHEN j.channel='youtube' THEN 0
     WHEN d.thread_index=0 THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
@@ -151,7 +167,7 @@ BEGIN
     v_need := greatest(v_need,1);
     v_rest := (v_need-1)*coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd);
   END IF;
-  -- 179: 自分の本数（素材のスレッドの兄弟を含む）。出し物の取り置きの n はこれと自分の子
+  -- 182: 自分の本数（素材のスレッドの兄弟を含む）。出し物の取り置きの n はこれと自分の子
   v_base := v_need;
   -- 通り道 B（企画・承認）は、今日まだ送っていない A（定型・自動）の予定の本数を先に枠から引く（A を先に入れる。158、plan §8）。
   -- A の予定 = 今日が締切の A の item（検査中・検査を通ったもの: checking・manual・notifying・notified）の X の下書きのうち、
@@ -160,7 +176,7 @@ BEGIN
   IF p_action='claim' AND j.channel='x' AND d.send_lane='B' THEN
     SELECT count(*) INTO v_a_pending FROM public.sns_drafts ad
       JOIN public.sns_auto_send_items ai ON ai.channel='x' AND (
-        (ai.kind='race' AND ad.bundle_import_id=ai.bundle_import_id) OR (ai.kind IN ('digest','finals_image') AND ad.id=ai.draft_id))
+        (ai.kind='race' AND ad.bundle_import_id=ai.bundle_import_id) OR (ai.kind IN ('digest','finals_image','research_image') AND ad.id=ai.draft_id))
       LEFT JOIN public.sns_x_send_jobs aj ON aj.draft_id=ad.id
       WHERE ad.send_lane='A' AND ad.platform='x' AND ad.status NOT IN ('posted','archived')
         AND ai.state IN ('checking','manual','notifying','notified')
@@ -193,10 +209,12 @@ BEGIN
     ELSIF c.timing_approved IS NOT TRUE THEN reason:='timing_pending_owner';
     -- 176: 優勝戦の画像は、自動送信の許可（sns_auto_send_control の x の行の finals_image_enabled、既定 false）が true のときだけ進める
     ELSIF v_kind='finals_image' AND (SELECT finals_image_enabled FROM public.sns_auto_send_control WHERE channel='x') IS NOT TRUE THEN reason:='finals_image_disabled';
+    -- 180: 「数字で見たら」は、自動送信の許可（x の行の research_image_enabled、179、既定 false）が true のときだけ進める
+    ELSIF v_kind='research_image' AND (SELECT research_image_enabled FROM public.sns_auto_send_control WHERE channel='x') IS NOT TRUE THEN reason:='research_image_disabled';
     ELSIF j.expires_at IS DISTINCT FROM (j.snapshot->'queue'->>'deadline_at')::timestamptz - make_interval(mins=>v_expiry_min) THEN reason:='deadline_policy_changed';
-    ELSIF (j.snapshot->'queue'->>'source_observed_at')::timestamptz IS NULL OR c.max_source_age_seconds IS NULL THEN reason:='freshness_unknown';
+    ELSIF (j.snapshot->'queue'->>'source_observed_at')::timestamptz IS NULL OR v_max_age IS NULL THEN reason:='freshness_unknown';
     ELSIF (j.snapshot->'queue'->>'source_observed_at')::timestamptz>now() OR
-      (j.snapshot->'queue'->>'source_observed_at')::timestamptz + make_interval(secs=>c.max_source_age_seconds)<=now() THEN reason:='source_stale';
+      (j.snapshot->'queue'->>'source_observed_at')::timestamptz + make_interval(secs=>v_max_age)<=now() THEN reason:='source_stale';
     ELSIF j.parent_job_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.sns_x_send_jobs p
       WHERE p.id=j.parent_job_id AND p.channel=j.channel AND p.state='posted' AND p.external_post_id IS NOT NULL) THEN reason:='parent_not_posted';
     ELSIF p_action<>'claim' AND (j.lease_until IS NULL OR now()>=j.lease_until) THEN reason:='lease_expired';
@@ -215,13 +233,13 @@ BEGIN
       RAISE EXCEPTION '再承認が必要です'; END IF;
   END IF;
   IF p_action='begin_post' AND j.state<>'sending' THEN RAISE EXCEPTION '送信開始できません'; END IF;
-  -- 179: 通り道 B は 177 の子の数えを通らないので、自分の子（v_own）をここで数える（B の親が子の分を取らずに通る穴。/code-review の指摘）
+  -- 182: 通り道 B は 177 の子の数えを通らないので、自分の子（v_own）をここで数える（B の親が子の分を取らずに通る穴。/code-review の指摘）
   IF p_action='claim' AND j.channel='x' AND d.send_lane='B' THEN
     SELECT count(*) INTO v_own FROM public.sns_x_send_jobs cj JOIN public.sns_drafts cd ON cd.id=cj.draft_id
       WHERE cj.parent_job_id=j.id AND cj.channel='x' AND cj.state='queued' AND cj.attempts=0
         AND cd.bundle_import_id IS NULL AND cj.expires_at>now();
   END IF;
-  -- 179: 出し物ごとの取り置き（sns_x_kind_reserves）。claim のときだけ、自分（スレッドの兄弟を含む）と自分の子の本数を足したとき、
+  -- 182: 出し物ごとの取り置き（sns_x_kind_reserves）。claim のときだけ、自分（スレッドの兄弟を含む）と自分の子の本数を足したとき、
   -- 他の出し物の取り置きの残りを使わないかを sns_x_slot_room で確かめる（同じ式を取り込みも使う）。止めるときは例外にせず held にする
   -- （取り置きは後から空かない。例外だと queued のまま runner が2分ごとに Slack に知らせ続ける）。基準の日が未確認なら下の例外に任せる
   IF p_action='claim' AND j.channel='x' AND j.state='queued' AND j.scheduled_at<=now() THEN

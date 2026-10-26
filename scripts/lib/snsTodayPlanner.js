@@ -673,8 +673,8 @@ export async function runTodayPlan(
   const auto = state === "manual" && replyAllowed;
   if (auto) {
     try {
-      // X の日の枠の /today の取り置き（179、docs/design/x-daily-slots/plan.md）。返信の型は親と返信の2本。
-      // 入らないと分かったら自動の承認をしない（下の失敗の道で item を戻す）。179 の前・読めないときは今のまま（claim が正）
+      // X の日の枠の /today の取り置き（182、docs/design/x-daily-slots/plan.md）。返信の型は親と返信の2本。
+      // 入らないと分かったら自動の承認をしない（下の失敗の道で item を戻す）。182 の前・読めないときは今のまま（claim が正）
       if (store.xSlotRoom) {
         // 作り直し（版が同じ）では前の版の job が queued のまま残るので、この下書きの job は数えない（system-architect の P2）
         const slot = await checkXSlot(
@@ -915,7 +915,7 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
       )[0] ?? null,
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
-    // X の日の枠の取り置きの残り（179）
+    // X の日の枠の取り置きの残り（182）
     xSlotRoom: xSlotRoomVia(call),
     async updateItem(id, fromState, patch) {
       return one(

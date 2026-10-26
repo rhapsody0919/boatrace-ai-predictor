@@ -1,6 +1,6 @@
 # X の日の枠の取り置き（出し物ごと）
 
-X の1日の送信の枠（`sns_x_send_control.daily_limit_x`）を出し物（全貌・/today・優勝戦・数字で見たら）ごとに取り置き、先に送る出し物が他の出し物の枠を使わないようにする。マイグレーション 179。
+X の1日の送信の枠（`sns_x_send_control.daily_limit_x`）を出し物（全貌・/today・優勝戦・数字で見たら）ごとに取り置き、先に送る出し物が他の出し物の枠を使わないようにする。マイグレーション 182（#1978 の 179・180 の後）。
 
 ## 1. 背景
 
@@ -16,14 +16,15 @@ X の1日の送信の枠（`sns_x_send_control.daily_limit_x`）を出し物（�
 
 | 列 | 型 | 意味 |
 |---|---|---|
-| kind | text PK | 出し物。`sns_auto_send_items.kind` と同じ値（`full_picture`・`digest`・`finals_image`、数字で見たらは取り込みの PR が決める kind） |
+| kind | text PK | 出し物。`sns_auto_send_items.kind` と同じ値（`full_picture`・`digest`・`finals_image`・`research_image`（#1978）） |
 | daily_count | int 0〜100 | その日の取り置きの本数（スレッド・リプも1本ずつ数える） |
 | weekdays | smallint[]（ISO の曜日 1=月〜7=日）、NULL は毎日 | この曜日だけ取り置く |
 | note | text | 説明 |
 
-- 初期の行（179 で入れる）: `full_picture` 4・`digest` 1・`finals_image` 3（合計8。上限9なので取り置かれていない残りは1）。数字で見たらの行（月水金に1）は、その取り込みの PR が kind を決めて入れる。入れると月水金は合計9＝上限で残りが0になる
+- 初期の行（182 で入れる）: `full_picture` 4・`digest` 1・`finals_image` 3・`research_image` 1（月水金だけ）。上限9なので、月水金は合計9＝上限で取り置かれていない残りは0、他の曜日は合計8で残り1
+- 番号: 179・180 は #1978（research_image の kind・許可・送り手の照合）、181 は #1977。182 は 180 の transition を土台にするので 180 の後に当てる（182 の最初の DO が確かめる）
 - 書き込みはオーナー（SQL Editor）だけ。service_role は読むだけ。RLS 有効・匿名の権限なし
-- hq の config との照合: `scripts/sns/x-slots-check.js <x-slots.json>`（読み取りだけ）が DB と比べ、違えば直す SQL を出す。hq が同じ Mac で回す。名前の対応（hq → kind）は `today→digest`・`finals→finals_image`・`full_picture→full_picture`・`research_rank→`（取り込みの PR が決める）
+- hq の config との照合: `scripts/sns/x-slots-check.js <x-slots.json>`（読み取りだけ）が DB と比べ、違えば直す SQL を出す。hq が同じ Mac で回す。名前の対応（hq → kind）は `today→digest`・`finals→finals_image`・`full_picture→full_picture`・`research_rank→research_image`
 - 代案（採らない）: `sns_x_send_control` に JSONB の列。曜日つきの行を CHECK で縛れず、1行の更新で全部を書き換えるので取り違えやすい
 
 ### 2.2 数え方（関数 `sns_x_slot_room`、claim と取り込みで同じ式）
@@ -62,19 +63,19 @@ JST の今日について、出し物 j ごとに
 
 ### 2.5 取り込みの確かめ
 
-共通の `scripts/lib/snsXSlots.js` の `checkXSlot(call, kind, need, draftId)` が rpc `sns_x_slot_room` を呼ぶ。止めるのは `reason='kind_slot_full'` のときだけ。関数が無い（179 の適用前、PostgREST の 404・PGRST202）・今日の基準が未確認・読めない（5xx 等）ときは止めない（今のまま。claim が正）。読めない理由と取り置きの越えは `note` で返し、呼ぶ側が Slack・結果に1行出す。
+共通の `scripts/lib/snsXSlots.js` の `checkXSlot(call, kind, need, draftId)` が rpc `sns_x_slot_room` を呼ぶ。止めるのは `reason='kind_slot_full'` のときだけ。関数が無い（182 の適用前、PostgREST の 404・PGRST202）・今日の基準が未確認・読めない（5xx 等）ときは止めない（今のまま。claim が正）。読めない理由と取り置きの越えは `note` で返し、呼ぶ側が Slack・結果に1行出す。
 
 | 取り込み | kind | n | 枠が無いとき |
 |---|---|---|---|
 | push-full-picture.js | full_picture | 1（X だけ） | X の下書きを作らず、YouTube（完全版・Shorts）は送る。Slack に1行 |
 | /today（snsTodayPlanner.js） | digest | 1、返信の型は2 | 自動の承認をせず、item を manual（返信の型は held_manual）に戻す（今の自動の承認の失敗と同じ道） |
 | push-finals-image.js | finals_image | 本投稿2（投票のリプと対）・展示後のリプ1 | 今の dailyLimitReason の拒否と同じ（exit 1）。dailyLimitReason（全体の上限）は残し、取り置きの確かめを足す |
-| push-research-image.js（並行で新設） | 新しい kind | 1 | 同じ `xSlotRoom` を使う（その PR で） |
+| push-research-image.js（#1978） | research_image | 1 | 今は確かめない（claim が 182 の式で止める）。両方が入った後に同じ `checkXSlot` を足す |
 
 ### 2.6 適用の順と互換
 
-- コード（取り込みの確かめ）が先でも後でもよい。179 の前は rpc が 404 で、取り込みは今のまま送る。claim も今のまま
-- 179 の後は claim が取り置きを見る。古いコードの取り込みでも、claim が出し物ごとに止める（held）
+- コード（取り込みの確かめ）が先でも後でもよい。182 の前は rpc が 404 で、取り込みは今のまま送る。claim も今のまま
+- 182 の後は claim が取り置きを見る。古いコードの取り込みでも、claim が出し物ごとに止める（held）
 - 戻し方: 関数 `transition_sns_send_139` を 177 の本文に戻す。表と `sns_x_slot_room` は残してよい（呼ばれなければ効かない）。消すなら必ず関数を戻した後（plpgsql の中の呼び出しは pg_depend に出ないので、先に消すと X の claim が全部例外になる）
 - 当てるとき: 当てる直前に `daily_limit_x` を読み直す（PR を書いた時点の値で決めない）。177 の「claim を待つリプの子の数」が0で、優勝戦の時間帯（16:30〜20:45）の外に当てる（claim 済みの親の子が、当てた瞬間に新しい式で止まらないように）
 
@@ -98,7 +99,7 @@ erDiagram
 - /today の返信の型は1日2本（親と返信、どちらも kind=digest）。取り置き1のままだと、取り置かれていない残りが無い日（合計＝上限）は親の claim が止まる（返信と対で数えるため。177 の意図どおり親だけは送らない）。返信の型を回すなら /today の取り置きを2にし、上限も1上げる
 - 合計（取り置き）＋他経路 ≤ `daily_limit_x` を保つ。越えると後から送る出し物が止まる。`x-slots-check.js` と取り込みの Slack が越えを警告する
 - 取り置きは、その出し物の締切が全部過ぎても・許可が off でも、その日は解けない（無駄が出る。今の全貌は1日1〜4本なので実害なし。必要になったら「許可が false の kind は r=0」にする）
-- 数字で見たらの kind 名は push-research-image.js の PR が決める。決まったら hq の対応（research_rank → kind）を `x-slots-check.js` の `HQ_KIND` に足す
+- 数字で見たらの kind は research_image（#1978）。push-research-image.js の取り込みの確かめ（`checkXSlot(store.xSlotRoom, SLOT_KINDS.research, 1)`）は、#1978 と 182 が両方入った後に足す（claim は 182 だけで取り置きを効かせる）
 
 ## 4. （急がない）全貌を完全版と入口版の別の出し物に分ける案
 
