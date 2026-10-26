@@ -36,3 +36,10 @@
 - 選べるのは自動（mode=auto）の日で、`config/today-variants.json` の `reply_enabled` が true のときだけ（既定は false）。X の投稿が1日1本増え、月の予約を URL つきの額で2本分引く（158 は thread_index=0 を URL つきの額で引き、親の claim で子の分を一緒に引かない）ので、有効にするかは費用の線のオーナーの判断
 - 止める操作: 親だけ止めると子は親を待ったまま失効で切れる。子の承認に落ちたら、親と子の item を held_manual にして送らない。返信の型の日に自動でなくなっていたら、作り直しの回に親も子も held_manual にする
 - 残る壊れ方（有効にする前に直す）: (1) 予算・日次の上限の際で親だけが通る（親子の対で予約する transition_sns_send_139 の置き換えが要る）、(2) 親の公開の後に一覧の版・欠場が変わると子が source_changed で送れない（子は親の公開の後は版の照合を外す例外が要る）
+
+## 追記: 優勝戦の画像（finals_image）は、止める窓なしで今すぐ送り、期限は締切の5分前（2026-10-26、hq FT02・マイグレーション 176）
+- 優勝戦の「展示を見た直前の思考の順」の画像4枚の X 投稿は、展示の後に作るので、締切の60分前に送る・30分前に切れるこの ADR の時刻に収まらない。送る時刻は push の時（veto_until＝今）、期限は締切の5分前、締切の8分前を過ぎて届いたものは受け取らない（scripts/sns/push-finals-image.js）
+- 期限の照合（transition_sns_send_139 の expires_at = 締切 − expiry_minutes）は sns_x_send_control の1行の値で全部に効くので、item の kind で分ける（kind=finals_image だけ5分）。snapshot に分数を持たせない（依頼側が自分の期限を決められるため）
+- 自動送信の許可は `.claude/CLAUDE.md` の例外（全貌動画・/today）に無い。許可のフラグ `sns_auto_send_control.finals_image_enabled`（x の行、既定 false）を置き、false の間は push が何も書かず、送り手も claim・check・begin_post で held（finals_image_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのはオーナー本人
+- 1レース1件: item の variant=finals と 172 の一意の索引（race_id, channel, variant）。同じ優勝戦の全貌（full_picture・x・main）とは両立する
+- 残る壊れ方: 送り手（sns-send、2分ごと・リース300秒）の前の実行が長いと、締切の8分前の push は期限に間に合わず held（deadline_expired）になり得る。JST 23時台より後の締切は cron が動かず送れない
