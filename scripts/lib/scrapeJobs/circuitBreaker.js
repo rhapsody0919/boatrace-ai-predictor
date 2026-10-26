@@ -169,6 +169,7 @@ export function createCircuitBreaker({
         openedAt: 0,
         closedAt: 0,
         lastRead: -Infinity,
+        inflight: null,
       };
       hosts.set(hostKey, s);
     }
@@ -187,25 +188,39 @@ export function createCircuitBreaker({
     }
   };
 
-  // force: TTL を無視して読む（書く前に、別の起動が書いた長い期限を短く上書きしないため）
+  // 読み取り中の並行の呼び出しは、同じ読み取り（s.inflight）を待つ。lastRead は読み終わってから更新する
+  // （先に更新すると、読み取りの完了前に来た並行の check が TTL 内として読みを省き、初期値の fetchStop=false で
+  // 取りに行く。Codex の審査 P1、/api/odds/live の同時の要求）。
+  // force: TTL を無視して読む（書く前に、別の起動が書いた長い期限を短く上書きしないため）。読み取り中なら、それを待ってから読み直す
   const refresh = async (hostKey, s, { force = false } = {}) => {
     if (!store) return;
-    if (!force && now() - s.lastRead < readTtlMs) return;
-    s.lastRead = now();
-    const read = normalizeBreakerRead(
-      await safe("状態の読み取り", () => store.read(hostKey)),
-    );
-    if (!read) return;
-    if (read.untilMs > s.openUntil) s.openUntil = read.untilMs;
-    s.fetchStop = read.fetchStop;
-    // 段階は、より新しく開いた側を採る（別の起動が開き直していれば、その段階から上げる）
-    if (read.openedAtMs > s.openedAt) {
-      s.level = read.level;
-      s.openedAt = read.openedAtMs;
-    } else if (read.openedAtMs === s.openedAt && read.level > s.level) {
-      s.level = read.level;
+    if (s.inflight) {
+      await s.inflight;
+      if (!force) return;
     }
-    if (read.closedAtMs > s.closedAt) s.closedAt = read.closedAtMs;
+    if (!force && now() - s.lastRead < readTtlMs) return;
+    s.inflight = (async () => {
+      try {
+        const read = normalizeBreakerRead(
+          await safe("状態の読み取り", () => store.read(hostKey)),
+        );
+        if (!read) return;
+        if (read.untilMs > s.openUntil) s.openUntil = read.untilMs;
+        s.fetchStop = read.fetchStop;
+        // 段階は、より新しく開いた側を採る（別の起動が開き直していれば、その段階から上げる）
+        if (read.openedAtMs > s.openedAt) {
+          s.level = read.level;
+          s.openedAt = read.openedAtMs;
+        } else if (read.openedAtMs === s.openedAt && read.level > s.level) {
+          s.level = read.level;
+        }
+        if (read.closedAtMs > s.closedAt) s.closedAt = read.closedAtMs;
+      } finally {
+        s.lastRead = now();
+        s.inflight = null;
+      }
+    })();
+    return s.inflight;
   };
 
   return {
