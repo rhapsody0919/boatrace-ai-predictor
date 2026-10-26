@@ -41,6 +41,7 @@ import {
   VENUE_NAMES,
 } from "../lib/supabaseClient.js";
 import { parsePointRankTable } from "../lib/pointRankParser.js";
+import { isGhaFetchStopped } from "../lib/ghaSkipGate.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 import { upsertWithOptionalColumns } from "../lib/optionalColumns.js";
 
@@ -463,6 +464,11 @@ async function main() {
   if (!isSupabaseEnabled()) {
     console.error("❌ Supabase環境変数が未設定です。");
     process.exit(1);
+  }
+  // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数に関係なく公式へ取りに行かない（ADR-0101 決定6、BOA-1145 P4a ④a）
+  if ((await isGhaFetchStopped()).stopped) {
+    console.log("⏭️ 取得の非常停止中のため、取得を行わない");
+    return;
   }
   const date = parseDateArg() || resolveTargetDate();
   console.log(`📅 対象日: ${date}`);

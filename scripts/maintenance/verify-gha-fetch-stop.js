@@ -6,7 +6,8 @@
  *   (b) 同じ変数の別のジョブの非常停止でも、変数ごと止める（REMOTE_VETO）
  *   (c) 読み取る列に fetch_stop を入れている（REST の select）
  *   (d) isGhaFetchStopped: 立っていれば stopped、立っていない・行なし・読み取りの失敗・鍵なしは stopped=false（止めない側）
- *   (e) scrape-scheduled・morning-init は、SKIP 変数・取得より前に isGhaFetchStopped を呼ぶ
+ *   (e) scrape-scheduled・morning-init・選手ニュース・得点率・選手プロフィールの GHA の取得は、SKIP 変数・取得より前に
+ *       isGhaFetchStopped を呼ぶ（変数が false でも非常停止を効かせる。審査 P2）
  *
  * 実行: node scripts/maintenance/verify-gha-fetch-stop.js
  */
@@ -149,13 +150,16 @@ const silent = { log() {} };
 for (const [file, firstFetchRe] of [
   ["../daily/scrape-scheduled.js", /getRaceSchedule\(date/],
   ["../daily/morning-init.js", /isTrueVar\("SKIP_MORNING_INIT_ON_GHA"\)\)/],
+  ["../daily/collect-racer-news.js", /await collectGradeAnnouncementNews\(/],
+  ["../daily/scrape-point-rank.js", /await run\(date\)/],
+  ["../maintenance/scrape-racer-profiles.js", /runRacerProfileSync\(/],
 ]) {
   const src = fs.readFileSync(new URL(file, import.meta.url), "utf8");
   const main = src.slice(src.indexOf("async function main()"));
   const stopAt = main.indexOf("await isGhaFetchStopped()");
   const firstAt = main.search(firstFetchRe);
   check(
-    `(e) ${file.replace("../daily/", "")}: SKIP 変数・取得より前に isGhaFetchStopped を呼び、止まっていれば return`,
+    `(e) ${file.replace(/^\.\.\//, "")}: SKIP 変数・取得より前に isGhaFetchStopped を呼び、止まっていれば return`,
     stopAt >= 0 &&
       firstAt > stopAt &&
       /isGhaFetchStopped\(\)\)\.stopped\) \{[\s\S]{0,120}return;/.test(main),

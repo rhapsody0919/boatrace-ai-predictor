@@ -167,7 +167,9 @@ async function main() {
   console.log(`⏰ ${new Date().toISOString()}`);
 
   // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数・安全装置に関係なく初期化しない
-  // （Vercel の races_init が止まって races が0件でも、GitHub が素の fetch で取りに行かない。ADR-0101 決定6、system-architect の審査 A）
+  // （Vercel の races_init が止まって races が0件でも、GitHub が素の fetch で取りに行かない。ADR-0101 決定6、system-architect の審査 A）。
+  // 非常停止の間は、DB だけを使う予測の再生成・unified の確認も止まる（新しいデータが入らないので意図どおり）。
+  // GHA は起動ごとに新しいプロセスで直前の値を持たないので、読み取りに失敗した起動は止めない側になる（isGhaFetchStopped）
   if ((await isGhaFetchStopped()).stopped) {
     console.log("⏭️ 取得の非常停止中のため、朝の初期化を行わない");
     return;
