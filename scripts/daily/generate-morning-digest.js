@@ -55,6 +55,10 @@ import {
   wilsonLowerPercentFromCount,
   normalizeRacerName,
 } from "../../src/utils/digestMetrics.js";
+import {
+  buildCourseWinNotes,
+  courseWinRowsFromJson,
+} from "../../src/utils/todayCourseWin.js";
 
 /** PostgRESTの1ページあたりの行数 */
 const PAGE_SIZE = 1000;
@@ -262,6 +266,50 @@ async function fetchBaseline() {
       .select("*")
       .range(from, to),
   );
+}
+
+/**
+ * /today の X 投稿の型 b の材料（級別の全国のコース別1着率と今日の選手のコース別の1着数、RPC 179）。
+ * 窓は前々日まで（STATS_MAX_LAG_DAYS と同じ理由）。関数がまだ無い（マイグレーション 179 の適用前）・読めないときは
+ * 一覧の生成を止めず、notes.courseWin を unavailable にする（/today は型 a で送り、Slack の知らせに理由が出る）。
+ * notes（匿名でも読める）には理由のコードだけを入れ、エラーの本文はログにだけ出す（system-architect の審査 P3）
+ */
+export async function fetchCourseWin(
+  date,
+  races,
+  entries,
+  rpc = (args) => supabase.rpc("compute_today_course_win_stats", args),
+) {
+  const until = addDays(date, -STATS_MAX_LAG_DAYS);
+  const racerIds = [...new Set(entries.map((e) => e.racer_id))];
+  const unavailable = (reason, message) => {
+    console.error(
+      `  ⚠️ コース別1着率の材料を作れない（${reason}: ${message}）。/today の型 b は出さない`,
+    );
+    return { v: 1, status: "unavailable", reason };
+  };
+  const startedMs = Date.now();
+  const { data, error } = await rpc({
+    p_until: until,
+    p_racer_ids: racerIds,
+  });
+  if (error)
+    return error.code === "PGRST202"
+      ? unavailable("rpc_missing", "関数が無い。マイグレーション179が未適用")
+      : unavailable("rpc_error", error.message);
+  // 窓が全期間なので、時間はデータとともに伸びる。通信を含むこの値が6秒を超えたら窓の上限を入れて見直す（179 の注記）
+  console.log(`  コース別1着率の RPC: ${Date.now() - startedMs}ms`);
+  try {
+    return buildCourseWinNotes({
+      races,
+      entries,
+      rpcRows: courseWinRowsFromJson(data),
+      until,
+    });
+  } catch (buildError) {
+    // 材料の形が想定と違う（窓がそろわない等）。一覧の a の材料は壊さず、型 b だけを止める
+    return unavailable("build_error", buildError.message);
+  }
 }
 
 /**
@@ -958,6 +1006,7 @@ export async function runMorningDigest({
     volatilityMap,
   });
   const featured = pickFeatured(sections);
+  const courseWin = await fetchCourseWin(date, races, entries);
   const flying = await buildFlying(date, prevDate);
   const returned = await buildReturned(date, prevDate, races);
 
@@ -1056,6 +1105,8 @@ export async function runMorningDigest({
       clampedPredictedRows: clamped,
       volatilityAvailable: volatilityMap.size,
       thresholds: EXTRACTION_THRESHOLDS,
+      // /today の X 投稿の型 b（コース別1着率）の候補の全数（src/utils/todayCourseWin.js）
+      courseWin,
     },
   };
 
@@ -1070,6 +1121,10 @@ export async function runMorningDigest({
     raceCount: dayRow.race_count,
     sectionCounts: dayRow.notes?.sectionCounts,
     baselineGrades: byGradeReport,
+    courseWin:
+      courseWin.status === "ok"
+        ? { status: "ok", counts: courseWin.counts, window: courseWin.window }
+        : { status: courseWin.status, reason: courseWin.reason },
   };
 
   if (dryRun) {
