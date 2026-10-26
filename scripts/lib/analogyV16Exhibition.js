@@ -176,8 +176,9 @@ function poolLoader() {
 
 async function buildRace(raceId, racecardSnap, ctx, runId, loadPool) {
   const rc = racecardSnap;
+  const emptyLayer = rc.status === "empty_layer";
   const [file, todayRc, exhRows, conds, display, pool] = await Promise.all([
-    readObject(objectPath(raceId, rc.run_id, "similar", raceId)),
+    emptyLayer ? null : readObject(objectPath(raceId, rc.run_id, "similar", raceId)),
     readObject(objectPath(raceId, rc.run_id, "today", raceId)),
     rest(
       `exhibition_data?race_id=eq.${raceId}&select=boat_number,exhibition_time,exhibition_course,start_timing,start_flag,is_absent`,
@@ -186,10 +187,10 @@ async function buildRace(raceId, racecardSnap, ctx, runId, loadPool) {
       `race_conditions?race_id=eq.${raceId}&select=weather,wind_direction,wind_speed,wave_height`,
     ),
     // 表示用の値（無い回＝この列を足す前の朝のバッチの回は、値なしで並べ直す）
-    readObject(objectPath(raceId, rc.run_id, "similar-display", raceId)),
-    loadPool(raceId, rc.run_id),
+    emptyLayer ? null : readObject(objectPath(raceId, rc.run_id, "similar-display", raceId)),
+    emptyLayer ? null : loadPool(raceId, rc.run_id),
   ]);
-  if (!file || !todayRc)
+  if ((!emptyLayer && !file) || !todayRc)
     throw new Error(
       `${raceId}: 出走表の段のファイルが無い（run ${rc.run_id}）`,
     );
@@ -201,6 +202,15 @@ async function buildRace(raceId, racecardSnap, ctx, runId, loadPool) {
     conditions: cond,
     windOffset: offset,
   });
+  // 層が0件でも今日の展示は必要。類似レースの並べ直しだけを省く。
+  if (emptyLayer) {
+    if (ctx.mode === "live")
+      await writeObject(
+        objectPath(raceId, runId, "today-exhibition", raceId),
+        todayExhibition(exhRows, live, cond),
+      );
+    return { exact: true };
+  }
   const today = {
     boats: {
       exh_time: live.map((v) => v.exh_time),
@@ -307,11 +317,11 @@ export async function runAnalogyV16Exhibition(ctx) {
     try {
       let row;
       if (t.absent) row = { ...base, status: "absent", exact: null };
-      else if (rc.status !== "ok")
+      else if (rc.status !== "ok" && rc.status !== "empty_layer")
         row = { ...base, status: "empty_layer", exact: true };
       else {
         const { exact } = await buildRace(t.race_id, rc, ctx, runId, loadPool);
-        row = { ...base, status: "ok", exact };
+        row = { ...base, status: rc.status, exact };
       }
       // 締切は書く直前に確かめ直す（起動時は締切前でも、前のレースの処理やこのレースの読み込みの間に締切を
       // 越えうる。plan「締切前だけ書く」。朝のバッチの late_for と同じ）。Storage のファイルは置いたまま

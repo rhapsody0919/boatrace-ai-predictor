@@ -13,16 +13,18 @@
  * 7. 展開シナリオの艇ごとの範囲（boatScopes、BOA-806）: 種類は1号艇の確定した範囲に追従、VA・VG・NA は null、ファイルの無い艇は null
  */
 import {
+  objectPath,
   cacheControl,
   isRaceId,
   resolveStatus,
 } from "../../api/_lib/analogyV16.js";
 import fs from "fs";
+import { buildLiveFeatures } from "../../src/utils/analogyRaceFeatures.js";
 import zlib from "zlib";
 import { layerStatus } from "../../api/analogy/layer/[raceId].js";
-import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
+import factsHandler, { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
 import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
-import { boatScopes } from "../../api/analogy/scenario/[raceId].js";
+import scenarioHandler, { boatScopes } from "../../api/analogy/scenario/[raceId].js";
 import {
   CLEANUP,
   cleanup,
@@ -930,6 +932,102 @@ check(
     ],
     [[], [["ok", "2026-10-05T00:59:50.000Z"]]],
   );
+}
+
+// ---- BOA-796 F03: 層0件でも今日の展示を保存し、APIから読む（偽Storage・REST） ----
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const id = "2026-10-05-20-01";
+  const rc = { race_id: id, stage: "racecard", status: "empty_layer",
+    run_id: "morning", n_layer: 0, pool_cutoff: "2026-10-04" };
+  const today = { wind_offset_deg: 0, scope_keys: { 1: { VA: "VA:20" } } };
+  const rows = [1, 2, 3, 4, 5, 6].map((b) => ({ race_id: id,
+    boat_number: b, exhibition_time: 6.7 + b / 100, exhibition_course: b,
+    start_timing: b === 4 ? 0.05 : 0.15, start_flag: null, is_absent: false }));
+  const cond = { weather: "晴", wind_direction: "北", wind_speed: 3, wave_height: 2 };
+  const run = async ({ absent = false, late = false, mode = "live" } = {}) => {
+    const storage = new Map([[objectPath(id, rc.run_id, "today", id), today]]);
+    const snapshots = [rc], writes = [], reads = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+      const u = new URL(url);
+      const post = init?.method === "POST";
+      if (u.origin !== "https://example.invalid") throw new Error("外部接続は禁止");
+      if (u.pathname.includes("/storage/v1/object/")) {
+        const path = u.pathname.split("/analogy-v16/")[1];
+        if (post) {
+          storage.set(path, JSON.parse(zlib.gunzipSync(Buffer.from(init.body))));
+          writes.push(path);
+          return new Response("{}");
+        }
+        reads.push(path);
+        return storage.has(path)
+          ? new Response(zlib.gzipSync(Buffer.from(JSON.stringify(storage.get(path)))))
+          : new Response("not found", { status: 404 });
+      }
+      let body;
+      if (u.pathname.endsWith("/analogy_v16_snapshots")) {
+        if (post) {
+          check("層0件: snapshotより先に今日の展示を保存", storage.has(
+            objectPath(id, JSON.parse(init.body)[0].run_id, "today-exhibition", id)), !absent);
+          snapshots.push(...JSON.parse(init.body));
+          return new Response(null, { status: 201 });
+        }
+        body = snapshots;
+      } else if (u.pathname.endsWith("/races")) {
+        body = [{ race_id: id, race_date: "2026-10-05", start_time: "10:00:00" }];
+      } else if (u.pathname.endsWith("/exhibition_data")) {
+        body = rows.map((r) => ({ ...r, is_absent: absent && r.boat_number === 6 }));
+      } else if (u.pathname.endsWith("/race_conditions")) body = [cond];
+      else if (u.pathname.endsWith("/race_entries")) body = [];
+      else throw new Error(`未定義のREST: ${u.pathname}`);
+      return new Response(JSON.stringify(body));
+    };
+    let tick = 0;
+    try {
+      const result = await runAnalogyV16Exhibition({ mode,
+        now: () => new Date(`2026-10-05T${tick++ === 0 ? "09:59:30" : late ? "10:00:00" : "09:59:50"}+09:00`) });
+      const path = objectPath(id, "exh-20261005005930", "today-exhibition", id);
+      const expected = todayExhibition(rows, buildLiveFeatures({
+        boatNumbers: [1, 2, 3, 4, 5, 6], exhibition: rows,
+        conditions: cond, windOffset: today.wind_offset_deg,
+      }), cond);
+      if (!absent && mode === "live") {
+        const value = storage.get(path);
+        check("層0件: today-exhibitionを書いた", value !== undefined, true);
+        check("層0件: okと同じtodayExhibitionの形と値", value, expected);
+        if (value) {
+          check("層0件: 展示タイム6艇", value.exh_time.map((v) => Number(v.toFixed(2))),
+            rows.map((r) => Number(r.exhibition_time.toFixed(2))));
+          check("層0件: 展示タイム順位", value.exh_time_rank, [1, 2, 3, 4, 5, 6]);
+          check("層0件: 風・波・進入・ST・形", [value.wind_speed, value.wave_height,
+            value.course_by_boat, value.st_by_course, value.entry_type, value.forms],
+            [3, 2, [1, 2, 3, 4, 5, 6], [0.15, 0.15, 0.15, 0.05, 0.15, 0.15], "waku", ["wall", "kado"]]);
+        }
+      }
+      check("層0件: 類似レース関連を読まない", reads.some((p) => /\/(similar|similar-display|pool)\//.test(p)), false);
+      check("層0件: similar-exhibitionを作らない", writes.some((p) => p.includes("/similar-exhibition/")), false);
+      if (absent || mode !== "live") check("欠場・shadowはStorageに書かない", writes, []);
+      check("層0件: snapshotの状態・late", [snapshots.slice(1).map((s) => [s.status, s.exact]), result.report.late],
+        [late || mode !== "live" ? [] : [[absent ? "absent" : "empty_layer", absent ? null : true]], late ? [id] : []]);
+      if (!late && mode === "live") {
+        for (const [name, handler] of [["facts", factsHandler], ["scenario", scenarioHandler]]) {
+          for (const stage of ["exhibition", "racecard"]) {
+            const res = await handler(new Request(`https://example.invalid/api/analogy/${name}/${id}?stage=${stage}`));
+            const body = await res.json();
+            check(`${name}: 応答200`, res.status, 200);
+            check(`${name}: ${stage}の展示値`, body.exhibition ?? null,
+              stage === "exhibition" && !absent ? storage.get(path) ?? "missing" : null);
+          }
+        }
+      }
+    } finally { globalThis.fetch = realFetch; }
+  };
+  await run();
+  await run({ absent: true });
+  await run({ late: true });
+  await run({ mode: "shadow" });
 }
 
 // ---- 7. 展開シナリオの艇ごとの範囲（BOA-806） ------------------------------------
