@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "rough-race-signals",
+ "kind": "revision",
+ "ticket": "OC-20261026T100015-seo-human-1",
+ "paths": [
+  "public/blog/rough-race-signals.md",
+  "src/data/blog-posts/rough-race-signals.json"
+ ],
+ "files": {
+  "public/blog/rough-race-signals.md": "6c6ea1ac20fac9590c72569165909daf199569021ea8519361a635132f0869fd",
+  "src/data/blog-posts/rough-race-signals.json": "6727b57deb21eea8ef7a8e9fe991cfd0c871427897e05ebd4223843ac6dad877"
+ },
+ "content_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
+   "model": "codex-default/high",
+   "at": "2026-10-26T10:07:06+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
+   "model": "codex-default/high",
+   "at": "2026-10-26T10:07:06+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
+   "model": "codex-default/high",
+   "at": "2026-10-26T10:07:06+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "756f3f4803ebbc8f9cf7b167cdf389915cd6773101c98b38d0554a3283c9fe32",
+   "model": "codex-default/high",
+   "at": "2026-10-26T10:07:06+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-26T10:08:47+09:00",
+ "run": "20261026T100015-seo-human",
+ "engine": "codex"
+}
