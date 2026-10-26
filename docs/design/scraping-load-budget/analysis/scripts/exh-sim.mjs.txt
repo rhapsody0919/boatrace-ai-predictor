@@ -1,0 +1,7 @@
+const H = { "-33": 2, "-31": 7, "-29": 12, "-27": 24, "-26": 1, "-25": 31, "-23": 49, "-21": 86, "-20": 1, "-19": 135, "-18": 4, "-17": 262, "-16": 4, "-15": 216, "-14": 9, "-13": 174, "-12": 5, "-11": 63, "-10": 1, "-9": 2 };
+const FIRST = -32.6;
+function sim(start, r) { let att = 0, delay = 0, n = 0, d90 = [], late8 = 0, late10 = 0, late12 = 0; for (const [b, c] of Object.entries(H)) { const done = Number(b) + 0.6; for (let i = 0; i < c * 50; i++) { const p = done - 2 * Math.random(); let t = start, a = 1; while (t < p) { t += r; a++; } att += a; delay += t - p; d90.push(t - p); n++; if (t > -8) late8++; if (t > -10) late10++; if (t > -12) late12++; } } d90.sort((x, y) => x - y); return { start, r, attemptsPerRace: +(att / n).toFixed(2), meanDelayMin: +(delay / n).toFixed(2), p90DelayMin: +d90[Math.floor(n * 0.9)].toFixed(2), maxDelay: +d90[n - 1].toFixed(2), shareAfterMinus12: +(late12 / n).toFixed(3), shareAfterMinus10: +(late10 / n).toFixed(3), shareAfterMinus8: +(late8 / n).toFixed(3) }; }
+const out = [];
+for (const [s, r] of [[FIRST, 2], [FIRST, 3], [FIRST, 4], [FIRST, 5], [-25, 2], [-22, 2], [-20, 2], [-25, 3], [-22, 3], [-20, 3]]) out.push(sim(s, r));
+console.log(JSON.stringify(out));
+for (const o of out) console.log(Object.values(o).join("\t"));

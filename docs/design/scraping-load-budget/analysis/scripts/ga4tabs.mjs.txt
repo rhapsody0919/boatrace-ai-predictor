@@ -1,0 +1,60 @@
+// GA4: レース詳細の閲覧の時刻を、締切（races.start_time, JST）からの分で数える（読み取りのみ）
+import { createRequire } from "node:module";
+import { readFileSync, writeFileSync } from "node:fs";
+import { withDb } from "./db.mjs";
+const req = createRequire("./package.json");
+const { google } = req("googleapis");
+const dotenv = req("dotenv");
+dotenv.config({ path: "./.env.local" });
+const FROM = process.argv[2] || "2026-10-12";
+const TO = process.argv[3] || "2026-10-25";
+const OUT = process.argv[4] || "ga4-race-views.json";
+const Q = String.fromCharCode(39);
+const cred = JSON.parse(readFileSync("./credentials/google-service-account.json", "utf8"));
+const auth = new google.auth.JWT({ email: cred.client_email, key: cred.private_key, scopes: ["https://www.googleapis.com/auth/analytics.readonly"] });
+const ad = google.analyticsdata({ version: "v1beta", auth });
+const prop = "properties/" + process.env.GA4_PROPERTY_ID;
+const rows = [];
+let offset = 0;
+for (;;) {
+  const body = { dateRanges: [{ startDate: FROM, endDate: TO }], dimensions: [{ name: "dateHourMinute" }, { name: "pagePath" }, { name: "customEvent:tab_id" }, { name: "eventName" }], metrics: [{ name: "eventCount" }], dimensionFilter: { andGroup: { expressions: [ { filter: { fieldName: "pagePath", stringFilter: { matchType: "PARTIAL_REGEXP", value: "^/race/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}" } } }, { filter: { fieldName: "hostName", stringFilter: { matchType: "EXACT", value: "www.boat-ai.jp" } } }, { filter: { fieldName: "eventName", stringFilter: { matchType: "BEGINS_WITH", value: "race_tab_" } } } ] } }, limit: 100000, offset };
+  const res = await ad.properties.runReport({ property: prop, requestBody: body });
+  const rs = res.data.rows || [];
+  for (const r of rs) rows.push([r.dimensionValues[0].value, r.dimensionValues[1].value + "?tab=" + r.dimensionValues[3].value + ":" + r.dimensionValues[2].value, Number(r.metricValues[0].value)]);
+  if (rs.length < 100000) break;
+  offset += rs.length;
+}
+const meta = await ad.properties.getMetadata ? null : null;
+const ids = new Set(rows.map((r) => (r[1].match(/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}/) || [""])[0]).filter(Boolean));
+const start = new Map();
+await withDb(async (qq) => {
+  const list = [...ids];
+  for (let i = 0; i < list.length; i += 1000) {
+    const part = list.slice(i, i + 1000).map((x) => Q + x + Q).join(",");
+    const rr = await qq("SELECT race_id, race_date::text d, start_time::text t FROM races WHERE race_id IN (" + part + ")");
+    for (const r of rr) start.set(r.race_id, Date.parse(r.d + "T" + r.t + "+09:00"));
+  }
+});
+function kind(p) { if (/\/assist/.test(p)) return "assist"; const m = p.match(/[?&]tab=([^&]+)/); return m ? "tab:" + m[1] : "detail(no tab)"; }
+const bins = [[-Infinity, -720], [-720, -180], [-180, -60], [-60, -30], [-30, -15], [-15, -10], [-10, -5], [-5, 0], [0, 5], [5, 10], [10, 15], [15, 30], [30, 60], [60, 180], [180, 1440], [1440, Infinity]];
+const byKind = {};
+let unmatched = 0, total = 0;
+for (const [dhm, path, v] of rows) {
+  total += v;
+  const id = (path.match(/[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]{2}/) || [""])[0];
+  const s = start.get(id);
+  if (!s || Number.isNaN(s)) { unmatched += v; continue; }
+  const t = Date.parse(dhm.slice(0, 4) + "-" + dhm.slice(4, 6) + "-" + dhm.slice(6, 8) + "T" + dhm.slice(8, 10) + ":" + dhm.slice(10, 12) + ":00+09:00");
+  const off = (t - s) / 60000; if (Number.isNaN(off)) { unmatched += v; continue; }
+  const k = kind(path);
+  for (const kk of [k, "ALL"]) {
+    byKind[kk] = byKind[kk] || { total: 0, bins: bins.map((b) => ({ from: b[0], to: b[1], views: 0 })) };
+    byKind[kk].total += v;
+    const bi = bins.findIndex((b) => off >= b[0] && off < b[1]);
+    byKind[kk].bins[bi].views += v;
+  }
+}
+const out = { period: { from: FROM, to: TO }, generatedAt: new Date().toISOString(), source: "GA4 Data API screenPageViews, pagePath ^/race/{race_id}, host www.boat-ai.jp, dateHourMinute (property timezone assumed JST), offset = view minute - races.start_time (締切予定)", rowsFromGa4: rows.length, totalViews: total, unmatchedViews: unmatched, byKind };
+writeFileSync(OUT, JSON.stringify(out, null, 2));
+for (const [k, o] of Object.entries(byKind).sort((a, b) => b[1].total - a[1].total)) console.log(k, o.total, o.bins.map((b) => b.from + ".." + b.to + ":" + b.views).join(" "));
+console.log("total", total, "unmatched", unmatched, "rows", rows.length);

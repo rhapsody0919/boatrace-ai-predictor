@@ -1,0 +1,86 @@
+// オッズの窓ごとの変化（読み取りのみ）。引数 FROM TO OUT（JST の race_date）
+import { withDb } from "./db.mjs";
+import { writeFileSync } from "node:fs";
+const Q = String.fromCharCode(39);
+const FROM = process.argv[2] || "2026-10-12";
+const TO = process.argv[3] || "2026-10-25";
+const OUT = process.argv[4] || "odds-windows.json";
+const WINDOWS = [-60, -30, -15, -10, -5, 0];
+const TYPES = ["win", "trifecta", "trio", "exacta", "quinella", "wide"];
+const TOPN = { win: 6, trifecta: 10, trio: 10, exacta: 10, quinella: 10, wide: 10 };
+function days(a, b) { const out = []; let d = new Date(a + "T00:00:00Z"); const e = new Date(b + "T00:00:00Z"); while (d <= e) { out.push(d.toISOString().slice(0, 10)); d = new Date(d.getTime() + 86400000); } return out; }
+function clean(obj) { const m = new Map(); if (!obj) return m; for (const k of Object.keys(obj)) { let v = obj[k]; if (v && typeof v === "object") v = v.low; v = Number(v); if (Number.isFinite(v) && v > 0) m.set(k, v); } return m; }
+function winMap(row) { const m = new Map(); for (let i = 1; i <= 6; i++) { const v = Number(row["odds_win_" + i]); if (row["odds_win_" + i] != null && Number.isFinite(v) && v > 0) m.set(String(i), v); } return m; }
+function ranked(m) { return [...m.entries()].sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1)); }
+function rk(a) { const idx = a.map((v, i) => [v, i]).sort((p, q) => p[0] - q[0]); const r = new Array(a.length); let i = 0; while (i < idx.length) { let j = i; while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++; for (let k = i; k <= j; k++) r[idx[k][1]] = (i + j) / 2 + 1; i = j + 1; } return r; }
+function spearman(xs, ys) { const n = xs.length; if (n < 3) return null; const rx = rk(xs), ry = rk(ys); let mx = 0, my = 0; for (let i = 0; i < n; i++) { mx += rx[i]; my += ry[i]; } mx /= n; my /= n; let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < n; i++) { sxy += (rx[i] - mx) * (ry[i] - my); sxx += (rx[i] - mx) ** 2; syy += (ry[i] - my) ** 2; } return sxx && syy ? sxy / Math.sqrt(sxx * syy) : null; }
+function qt(arr, p) { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b); const pos = (s.length - 1) * p; const lo = Math.floor(pos), hi = Math.ceil(pos); return s[lo] + (s[hi] - s[lo]) * (pos - lo); }
+function r3(x) { return x == null ? null : Math.round(x * 1000) / 1000; }
+const L10 = Math.log(1.1);
+function compare(a, ref, n) {
+  if (!a || !ref || a.size === 0 || ref.size === 0) return null;
+  const rr = ranked(ref); const ra = ranked(a);
+  const refTop = rr.slice(0, n).map((e) => e[0]);
+  const aTop = ra.slice(0, n).map((e) => e[0]);
+  const favRef = rr[0][0];
+  const favSame = a.get(favRef) === ra[0][1] ? 1 : 0;
+  const xs = [], ys = [], d = [];
+  for (const k of refTop) { if (a.has(k)) { xs.push(a.get(k)); ys.push(ref.get(k)); d.push(Math.abs(Math.log(a.get(k) / ref.get(k)))); } }
+  const ov = aTop.filter((k) => refTop.includes(k)).length / Math.min(n, refTop.length);
+  const d1 = a.has(favRef) ? Math.abs(Math.log(a.get(favRef) / ref.get(favRef))) : null;
+  return { favSame, rho: spearman(xs, ys), overlap: ov, dAll: d, d1 };
+}
+function agg(list) {
+  const ok = list.filter(Boolean);
+  const all = ok.flatMap((x) => x.dAll);
+  const rhos = ok.map((x) => x.rho).filter((x) => x != null);
+  const d1 = ok.map((x) => x.d1).filter((x) => x != null);
+  const n = ok.length || 1;
+  return { n: ok.length, favSame: r3(ok.reduce((s, x) => s + x.favSame, 0) / n), rhoTopMedian: r3(qt(rhos, 0.5)), rhoTopP10: r3(qt(rhos, 0.1)), topOverlapMean: r3(ok.reduce((s, x) => s + x.overlap, 0) / n), absLogRatioMedian: r3(qt(all, 0.5)), absLogRatioP90: r3(qt(all, 0.9)), shareMoved10pct: r3(all.filter((x) => x >= L10).length / (all.length || 1)), fav1AbsLogRatioMedian: r3(qt(d1, 0.5)), fav1AbsLogRatioP90: r3(qt(d1, 0.9)) };
+}
+function distSummary(d) { return { n: d.length, med: r3(qt(d, 0.5)), p90: r3(qt(d, 0.9)), shareMoved10pct: r3(d.filter((x) => x >= L10).length / (d.length || 1)) }; }
+const res = await withDb(async (qq) => {
+  const per = {};
+  const push = (t, key, v) => { per[t] = per[t] || {}; (per[t][key] = per[t][key] || []).push(v); };
+  const predPick = [];
+  let nRaces = 0, nFull = 0, nFinal = 0;
+  for (const day of days(FROM, TO)) {
+    const D = Q + day + Q;
+    const odds = await qq("SELECT o.race_id, o.window_min, o.odds_win_1, o.odds_win_2, o.odds_win_3, o.odds_win_4, o.odds_win_5, o.odds_win_6, o.trifecta_all, o.trio_all, o.exacta_all, o.quinella_all, o.wide_all FROM race_odds o JOIN races r USING (race_id) WHERE r.race_date = " + D + " AND o.source = " + Q + "vercel" + Q + " AND o.window_min IS NOT NULL");
+    const fin = await qq("SELECT f.race_id, f.win_all, f.trifecta_all, f.trio_all, f.exacta_all, f.quinella_all, f.wide_all FROM race_odds_final f JOIN races r USING (race_id) WHERE r.race_date = " + D);
+    const preds = await qq("SELECT p.race_id, p.top_pick, p.top_2nd, p.top_3rd FROM predictions p JOIN races r USING (race_id) WHERE r.race_date = " + D + " AND p.model_id = " + Q + "standard" + Q + " AND p.is_shadow = false");
+    const byRace = new Map();
+    for (const o of odds) { if (!byRace.has(o.race_id)) byRace.set(o.race_id, {}); const m = { win: winMap(o) }; for (const t of TYPES.slice(1)) m[t] = clean(o[t + "_all"]); byRace.get(o.race_id)[o.window_min] = m; }
+    const finBy = new Map();
+    for (const f of fin) { const m = { win: clean(f.win_all) }; for (const t of TYPES.slice(1)) m[t] = clean(f[t + "_all"]); finBy.set(f.race_id, m); }
+    const predBy = new Map(preds.map((p) => [p.race_id, p.top_pick + "-" + p.top_2nd + "-" + p.top_3rd]));
+    for (const [rid, ws] of byRace) {
+      nRaces++;
+      if (WINDOWS.every((w) => ws[w])) nFull++;
+      const F = finBy.get(rid);
+      if (F) nFinal++;
+      for (const t of TYPES) {
+        const n = TOPN[t];
+        for (const w of WINDOWS) {
+          const a = ws[w] && ws[w][t];
+          if (F) push(t, "vsFinal:" + w, compare(a, F[t], n));
+          if (ws[0]) push(t, "vs0:" + w, compare(a, ws[0][t], n));
+        }
+        for (let i = 0; i + 1 < WINDOWS.length; i++) { const a = ws[WINDOWS[i]], b = ws[WINDOWS[i + 1]]; if (a && b) push(t, "adj:" + WINDOWS[i] + ">" + WINDOWS[i + 1], compare(a[t], b[t], n)); }
+        for (let i = 1; i + 1 < WINDOWS.length; i++) { const p = ws[WINDOWS[i - 1]], x = ws[WINDOWS[i]]; if (p && x) push(t, "dropStale:" + WINDOWS[i], compare(p[t], x[t], n)); }
+      }
+      const key = predBy.get(rid);
+      if (key) { const row = {}; for (const w of WINDOWS) row[w] = ws[w] ? ws[w].trifecta.get(key) ?? null : null; row.final = F ? F.trifecta.get(key) ?? null : null; predPick.push(row); }
+    }
+  }
+  const out = { period: { from: FROM, to: TO }, generatedAt: new Date().toISOString(), source: "race_odds(source=vercel, window_min) + race_odds_final + predictions(standard, is_shadow=false)", races: nRaces, racesAllSixWindows: nFull, racesWithFinal: nFinal, metrics: {} };
+  for (const t of Object.keys(per)) { out.metrics[t] = {}; for (const k of Object.keys(per[t])) out.metrics[t][k] = agg(per[t][k]); }
+  const pp = { n: predPick.length };
+  for (const ref of ["0", "final"]) { pp["vs" + ref] = {}; for (const w of WINDOWS) pp["vs" + ref][w] = distSummary(predPick.filter((r) => r[w] && r[ref]).map((r) => Math.abs(Math.log(r[w] / r[ref])))); }
+  pp.dropStale = {};
+  for (let i = 1; i < WINDOWS.length - 1; i++) { const p = WINDOWS[i - 1], x = WINDOWS[i]; pp.dropStale[x] = distSummary(predPick.filter((r) => r[p] && r[x]).map((r) => Math.abs(Math.log(r[p] / r[x])))); }
+  out.predictionPickTrifectaStandard = pp;
+  return out;
+});
+writeFileSync(OUT, JSON.stringify(res, null, 2));
+console.log("races", res.races, "full", res.racesAllSixWindows, "final", res.racesWithFinal);

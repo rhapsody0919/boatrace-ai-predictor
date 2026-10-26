@@ -1,0 +1,21 @@
+import { createRequire } from "node:module";
+import { runReadOnlyQuery, checkRoUrl } from "./scripts/lib/roQuery.js";
+const req = createRequire("./package.json");
+const pg = req("pg");
+const MODE = "extended";
+const APP = "claude-ro-slb";
+export async function withDb(fn) {
+  const conn = checkRoUrl(process.env.SUPABASE_RO_DB_URL);
+  const opts = { connectionString: conn, ssl: { rejectUnauthorized: false }, application_name: APP };
+  const client = new pg.Client(opts);
+  await client.connect();
+  const ext = {};
+  ext.query = function (t) { const o = { text: t, queryMode: MODE }; return client.query(o); };
+  const q = async function (sql) {
+    const lim = { limit: 5000 };
+    const r = await runReadOnlyQuery(ext, sql, lim);
+    if (r.truncated) throw new Error(sql.slice(0, 80));
+    return r.rows;
+  };
+  try { return await fn(q); } finally { await client.end(); }
+}
