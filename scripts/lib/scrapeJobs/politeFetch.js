@@ -153,6 +153,9 @@ export function createPoliteFetch({
   userAgent = DEFAULT_USER_AGENT,
   blockPathKeys = DEFAULT_BLOCK_PATH_KEYS,
   canaryUrls = DEFAULT_CANARY_URLS,
+  // false: 429/503 をブレーカーの連続の失敗に数えない（段階を上げない）。利用者の要求（/api/odds/live）用。
+  // Retry-After が10秒を超えるときにその時間開くのは同じ（#1983 の審査 P2 の決定）
+  countOverload = true,
 } = {}) {
   const semaphore = createSemaphore(maxConcurrent);
   // カナリアを取っている最中のホスト（同じプロセスで同時に 403 が重なっても1件にする）
@@ -220,7 +223,20 @@ export function createPoliteFetch({
       console.warn(`⚠️ ${hostKey}: 半開のカナリアが拒否された（${reason}）`);
       await breaker.recordBlocked(hostKey, reason);
     } else if (RETRYABLE_STATUSES.has(response.status)) {
-      await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+      // Retry-After が10秒を超えるなら、その時間開く（通常の取得と同じ扱い。#1983 の審査 P3）
+      const retryAfterMs = parseRetryAfterMs(
+        response.headers.get("retry-after"),
+        now(),
+      );
+      if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
+        await breaker.recordRetryAfter(
+          hostKey,
+          retryAfterMs,
+          `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
+        );
+      } else {
+        await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+      }
     } else {
       if (!isPassStatus(response.status)) {
         console.warn(
@@ -363,7 +379,9 @@ export function createPoliteFetch({
             );
             return response;
           }
-          await breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
+          if (countOverload)
+            await breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
+          else breaker?.abortProbe(hostKey);
           if (attempt < maxRetries) {
             await sleep(backoffMs(attempt, retryAfterMs));
             continue;
