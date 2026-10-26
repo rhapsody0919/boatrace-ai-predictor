@@ -1140,6 +1140,11 @@
       "guards": "BOA-1148: scrape_slots の固定ページ数によるホスト×パス別日次近似。再試行・取得0 outcome・SQL集約・1000行超・読取失敗を検証する"
     },
     {
+      "script": "verify-scrape-fetch-stop.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a: 取得の非常停止 scrape_job_state.fetch_stop（マイグレーション178）。host の行で立てると Vercel の各ジョブ（共通ラッパ・politeFetch）と /api/odds/live が公式へ取りに行かない、178 の前（列なし）でも動く、列の不在以外の読み取りエラーを黙って無いことにしない、ブレーカーの upsert が fetch_stop・mode を書かない（mode の既定 'off' で一度開いたホストが永久に止まる事故を繰り返さない）"
+    },
+    {
       "script": "verify-scrape-jobs.js",
       "tier": "ci",
       "guards": "データ取得基盤の共通ライブラリ（scripts/lib/scrapeJobs/、WS4a）"

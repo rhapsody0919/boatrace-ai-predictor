@@ -48,7 +48,11 @@ import { randomUUID, timingSafeEqual } from "node:crypto";
 import { SCRAPE_JOBS, SOFT_DEADLINE_MARGIN_SEC } from "./registry.js";
 import { mapWithConcurrency } from "./concurrency.js";
 import { resolveTargetDate } from "./dailyJob.js";
-import { BreakerOpenError, createCircuitBreaker } from "./circuitBreaker.js";
+import {
+  BreakerOpenError,
+  FetchStoppedError,
+  createCircuitBreaker,
+} from "./circuitBreaker.js";
 import { createPoliteFetch, hostKeyOf, pathKeyOf } from "./politeFetch.js";
 import {
   applyZeroRowGuard,
@@ -108,7 +112,14 @@ async function isBreakerOpen(breaker, definition, nowMs) {
       breaker.abortProbe(key);
     } catch (error) {
       if (error instanceof BreakerOpenError) {
-        return { open: true, until: error.until, host };
+        return {
+          open: true,
+          until: error.until,
+          host,
+          // 非常停止（fetch_stop、178）は応答で breaker_open と分ける（人が立てたものか、ブレーカーが開いたものか）
+          skipped:
+            error instanceof FetchStoppedError ? "fetch_stop" : "breaker_open",
+        };
       }
       throw error;
     }
@@ -298,7 +309,7 @@ async function runWindow({
     return {
       failed: false,
       body: {
-        skipped: "breaker_open",
+        skipped: brk.skipped,
         host: brk.host,
         until: new Date(brk.until).toISOString(),
       },
@@ -500,7 +511,7 @@ async function runLeased({
     return {
       failed: false,
       body: {
-        skipped: "breaker_open",
+        skipped: brk.skipped,
         host: brk.host,
         until: new Date(brk.until).toISOString(),
       },

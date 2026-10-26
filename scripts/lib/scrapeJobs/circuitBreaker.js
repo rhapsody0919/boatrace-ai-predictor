@@ -21,6 +21,13 @@
  * 開く期間を blockOpenMs（30分）から開くたびに2倍（上限 blockMaxOpenMs＝120分）にする。倍にするのは同じプロセスの
  * 中だけ（DB には期限しか残さない）で、起動ごとに別のプロセスなら、30分ごとに1件の試行になる（1日最大48件）。
  * 期限後は同じ半開（1件だけ試行）。キーは呼び出し側が決める（politeFetch はページのパス単位にし、同じホストの他のページを巻き込まない）。
+ *
+ * 非常停止（fetch_stop。マイグレーション178、ADR-0101 決定6）: store.read が {untilMs, fetchStop} を返し、fetchStop が true の
+ * キー（人が `host:<ホスト>` の行で立てる）は、check が FetchStoppedError を投げる（BreakerOpenError の一種なので、呼び出し側は
+ * 既存の breaker_open と同じ扱い＝取らない・ジョブの連続失敗に数えない）。下ろすのも人で、ブレーカーは書かない。
+ * 読み取りの TTL（readTtlMs）の間はプロセス内の値で判定するので、立ててから効くまで最大 readTtlMs。
+ * 読み取りに失敗したときは直前の値のまま（他の読み取りの失敗と同じく、取得は止めない側。DB が読めないときは
+ * スロットの claim も失敗する）。
  */
 
 export class BreakerOpenError extends Error {
@@ -38,9 +45,36 @@ export class BreakerOpenError extends Error {
   }
 }
 
+/** 非常停止（fetch_stop）が立っている。BreakerOpenError の一種（呼び出し側の breaker_open の扱いをそのまま使う） */
+export class FetchStoppedError extends BreakerOpenError {
+  /**
+   * @param {string} hostKey
+   * @param {number} untilMs 次に読み直す時刻（epoch ms。期限ではない。人が下ろすまで止まる）
+   */
+  constructor(hostKey, untilMs) {
+    super(hostKey, untilMs);
+    this.message = `取得の非常停止中です（${hostKey} の fetch_stop。人が下ろすまで取りません）`;
+    this.name = "FetchStoppedError";
+  }
+}
+
+/**
+ * store.read の戻り値を {untilMs, fetchStop} にそろえる（数だけを返す旧い形・テストのストアも受ける）
+ * @param {unknown} value
+ * @returns {{untilMs: number, fetchStop: boolean} | null} 解釈できなければ null（直前の値のまま）
+ */
+export function normalizeBreakerRead(value) {
+  if (typeof value === "number") return { untilMs: value, fetchStop: false };
+  if (value && typeof value === "object" && typeof value.untilMs === "number") {
+    return { untilMs: value.untilMs, fetchStop: value.fetchStop === true };
+  }
+  return null;
+}
+
 /**
  * @typedef {Object} BreakerStore
- * @property {(hostKey: string) => Promise<number>} read breaker_open_until（epoch ms。開いていなければ0）
+ * @property {(hostKey: string) => Promise<number | {untilMs: number, fetchStop: boolean}>} read
+ *   breaker_open_until（epoch ms。開いていなければ0）と fetch_stop。数だけを返すと fetchStop=false として扱う
  * @property {(hostKey: string, untilMs: number, reason: string) => Promise<void>} open
  * @property {(hostKey: string) => Promise<void>} close
  */
@@ -62,7 +96,7 @@ export function createCircuitBreaker({
   blockMaxOpenMs = 120 * 60 * 1000,
   readTtlMs = 10 * 1000,
 } = {}) {
-  /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, openCount: number, probing: boolean, lastRead: number}>} */
+  /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, openCount: number, probing: boolean, fetchStop: boolean, lastRead: number}>} */
   const hosts = new Map();
   const stateOf = (hostKey) => {
     let s = hosts.get(hostKey);
@@ -73,7 +107,9 @@ export function createCircuitBreaker({
         openUntil: 0,
         openCount: 0,
         probing: false,
+        fetchStop: false,
         lastRead: -Infinity,
+        inflight: null,
       };
       hosts.set(hostKey, s);
     }
@@ -92,12 +128,27 @@ export function createCircuitBreaker({
     }
   };
 
+  // 読み取り中の並行の呼び出しは、同じ読み取り（s.inflight）を待つ。lastRead は読み終わってから更新する
+  // （先に更新すると、読み取りの完了前に来た並行の check が TTL 内として読みを省き、初期値の fetchStop=false で
+  // 取りに行く。Codex の審査 P1、/api/odds/live の同時の要求）
   const refresh = async (hostKey, s) => {
     if (!store) return;
+    if (s.inflight) return s.inflight;
     if (now() - s.lastRead < readTtlMs) return;
-    s.lastRead = now();
-    const until = await safe("状態の読み取り", () => store.read(hostKey));
-    if (typeof until === "number" && until > s.openUntil) s.openUntil = until;
+    s.inflight = (async () => {
+      try {
+        const read = normalizeBreakerRead(
+          await safe("状態の読み取り", () => store.read(hostKey)),
+        );
+        if (!read) return;
+        if (read.untilMs > s.openUntil) s.openUntil = read.untilMs;
+        s.fetchStop = read.fetchStop;
+      } finally {
+        s.lastRead = now();
+        s.inflight = null;
+      }
+    })();
+    return s.inflight;
   };
 
   return {
@@ -108,6 +159,8 @@ export function createCircuitBreaker({
     async check(hostKey) {
       const s = stateOf(hostKey);
       await refresh(hostKey, s);
+      // 非常停止は期限・半開より先に見る（半開の試行も取らない）
+      if (s.fetchStop) throw new FetchStoppedError(hostKey, now() + readTtlMs);
       if (s.openUntil === 0) return;
       const t = now();
       if (t < s.openUntil) throw new BreakerOpenError(hostKey, s.openUntil);
@@ -192,6 +245,7 @@ export function createCircuitBreaker({
         openUntil: s.openUntil,
         openCount: s.openCount,
         probing: s.probing,
+        fetchStop: s.fetchStop,
         consecutive: s.consecutive,
         recentFailures: s.events.length,
       };
