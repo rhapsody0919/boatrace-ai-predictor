@@ -20,6 +20,7 @@ import {
   hostFilter,
   inList,
   sonarTabFilter,
+  assistPageFilter,
   SITE_HOST,
 } from "./snsGa4.js";
 
@@ -510,7 +511,7 @@ async function collectGa4({ runReport, store, jstDays, push }) {
     { name: "sessionManualAdContent" },
     { name: "sessionManualTerm" },
   ];
-  const [utmVisits, utmSonar] = await Promise.all([
+  const [utmVisits, utmSonar, utmAssist] = await Promise.all([
     runReport({
       dateRanges,
       dimensions: utmDims,
@@ -523,9 +524,19 @@ async function collectGa4({ runReport, store, jstDays, push }) {
       metrics: [{ name: "totalUsers" }],
       dimensionFilter: and(utmFilter, sonarTabFilter),
     }),
+    runReport({
+      dateRanges,
+      dimensions: utmDims,
+      metrics: [{ name: "totalUsers" }],
+      dimensionFilter: and(
+        utmFilter,
+        exact("sessionCampaignName", "race-full"),
+        assistPageFilter,
+      ),
+    }),
   ]);
-  const contents = [...utmVisits, ...utmSonar].map(([, , , content]) =>
-    String(content),
+  const contents = [...utmVisits, ...utmSonar, ...utmAssist].map(
+    ([, , , content]) => String(content),
   );
   const candidates = [
     ...new Set(
@@ -621,6 +632,16 @@ async function collectGa4({ runReport, store, jstDays, push }) {
   }
   for (const [date, source, campaign, content, term, users] of utmSonar)
     utmRow(date, source, campaign, String(content), term, "sonar_users", users);
+  for (const [date, source, campaign, content, term, users] of utmAssist)
+    utmRow(
+      date,
+      source,
+      campaign,
+      String(content),
+      term,
+      "assist_users",
+      users,
+    );
 }
 
 /** 一意キーが同じ行を1行にする（値は足す。欠測の行は値のある行に負ける）。GA4 の値はどれも人数・回数なので足せる */

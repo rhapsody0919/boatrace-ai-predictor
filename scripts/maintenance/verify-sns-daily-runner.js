@@ -170,7 +170,7 @@ function mockYoutube(calls = [], { channelDays } = {}) {
 }
 
 // UTM の行: [日付, 流入元, campaign, content, term, 指標...]
-function mockGa4(calls = [], { utm = [], utmSonar = [] } = {}) {
+function mockGa4(calls = [], { utm = [], utmSonar = [], utmAssist = [] } = {}) {
   return async () => async (body) => {
     calls.push(body);
     const dims = body.dimensions.map((d) => d.name).join(",");
@@ -183,6 +183,8 @@ function mockGa4(calls = [], { utm = [], utmSonar = [] } = {}) {
             ["20261014", "x", 3, 3],
             ["20261014", "youtube.com", 4, 4],
           ];
+    if (JSON.stringify(body.dimensionFilter).includes("page_view"))
+      return utmAssist;
     return sonar
       ? [["20261014", "x", "race-full", draftId, "(not set)", 1], ...utmSonar]
       : [
@@ -1172,4 +1174,108 @@ test("pt3d の観測: 4指標のうち1つの保存に落ちたら、次の日�
       ["views", 200],
     ],
   );
+});
+
+test("全貌の assist_users: page_view の人数を UTM ごとに投稿日・翌日だけ保存する", async () => {
+  const race = "2026-10-13-08-12";
+  const drafts = {};
+  for (const platform of ["x", "youtube"])
+    drafts[platform] = (
+      await first(
+        "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at,source_data) VALUES(gen_random_uuid(),'full_picture',$1,'ja','全貌','本文','posted','2026-10-13T08:05:00Z',$2) RETURNING id",
+        [platform, { full_picture: { race_id: race } }],
+      )
+    ).id;
+  const calls = [];
+  await runSnsDaily(ctx(), {
+    store,
+    youtube: mockYoutube(),
+    ga4: mockGa4(calls, {
+      utmAssist: [
+        ["20261013", "YouTube", "race-full", `${race}/assist`, "FULL", 3],
+        ["20261014", "youtube", "race-full", `${race}/assist`, "shorts", 2],
+        ["20261014", "youtube", "race-full", `${race}/assist`, "full", 4],
+        ["20261014", "x", "race-full", race, "full", 1],
+        ["20261015", "youtube", "race-full", `${race}/assist`, "full", 9],
+        ["20261012", "youtube", "race-full", `${race}/assist`, "full", 9],
+        [
+          "20261014",
+          "youtube",
+          "race-full",
+          "2026-10-14-07-01/assist",
+          "full",
+          9,
+        ],
+        ["20261014", "x", "today_digest", race, "full", 9],
+      ],
+    }),
+  });
+  const got = await all(
+    "SELECT day::text, channel, draft_id, utm_content, metric_value::float v, definition FROM sns_channel_daily WHERE metric_name='assist_users' ORDER BY day, channel, definition",
+  );
+  assert.deepEqual(
+    got.map((r) => [r.day, r.channel, r.draft_id, r.utm_content, r.v]),
+    [
+      ["2026-10-13", "youtube", drafts.youtube, `${race}/assist`, 3],
+      ["2026-10-14", "x", drafts.x, race, 1],
+      ["2026-10-14", "youtube", drafts.youtube, `${race}/assist`, 4],
+      ["2026-10-14", "youtube", drafts.youtube, `${race}/assist`, 2],
+    ],
+  );
+  for (const [i, term] of ["full", "full", "full", "shorts"].entries())
+    assert.equal(
+      got[i].definition,
+      `GA4 assist_users・utm_source=${got[i].channel}・utm_medium=social・utm_campaign=race-full・utm_content=race_id・utm_term=${term}・JST の暦日・投稿日と翌日だけ・Cookie 同意者のみ・v1`,
+    );
+  const assist = calls.filter((b) =>
+    JSON.stringify(b.dimensionFilter).includes("page_view"),
+  );
+  assert.equal(assist.length, 1);
+  assert.deepEqual(assist[0].metrics, [{ name: "totalUsers" }]);
+  assert.deepEqual(
+    assist[0].dimensions.map((d) => d.name),
+    [
+      "date",
+      "sessionSource",
+      "sessionCampaignName",
+      "sessionManualAdContent",
+      "sessionManualTerm",
+    ],
+  );
+  assert.equal(
+    (
+      await all(
+        "SELECT 1 FROM sns_channel_daily WHERE utm_content IS NULL AND metric_name='assist_users'",
+      )
+    ).length,
+    0,
+  );
+});
+
+test("思考アシストのフィルタ: page_view と言語接頭辞つきも含む /race/{id}/assist だけ", async () => {
+  const { assistPageFilter } = await import("../lib/snsGa4.js");
+  assert.ok(assistPageFilter);
+  const expressions = assistPageFilter.andGroup.expressions;
+  assert.deepEqual(expressions[0], {
+    filter: {
+      fieldName: "eventName",
+      stringFilter: { matchType: "EXACT", value: "page_view" },
+    },
+  });
+  assert.equal(expressions[1].filter.fieldName, "pagePath");
+  const filter = expressions[1].filter.stringFilter;
+  assert.equal(filter.matchType, "FULL_REGEXP");
+  const re = new RegExp(filter.value);
+  for (const prefix of ["", "/en", "/zh-TW", "/ko"])
+    for (const suffix of ["", "/"])
+      assert.ok(re.test(`${prefix}/race/2026-10-13-08-12/assist${suffix}`));
+  for (const path of [
+    "/race/id",
+    "/race/id/sonar",
+    "/race/id/assist/deep",
+    "/race//assist",
+    "/fr/race/id/assist",
+    "/other/race/id/assist",
+  ])
+    assert.equal(re.test(path), false, path);
 });

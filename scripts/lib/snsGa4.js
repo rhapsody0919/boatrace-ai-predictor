@@ -6,6 +6,10 @@
  * 数は Cookie に同意した人だけ（src/utils/analytics.js）なので下限として扱う。
  */
 import { createSign } from "node:crypto";
+import {
+  SUPPORTED_LANGUAGES,
+  DEFAULT_LANGUAGE,
+} from "../../src/config/languages.js";
 
 export const X_SOURCES = ["t.co", "x.com", "twitter.com", "x"];
 export const YOUTUBE_SOURCES = [
@@ -30,6 +34,23 @@ export const sonarTabFilter = and(
   inList("eventName", ["race_tab_select", "race_tab_initial"]),
   exact("customEvent:tab_id", "sonar"),
 );
+
+/** 思考アシストのページを開いた（言語付き URL・末尾の / も含む） */
+const languagePrefixes = SUPPORTED_LANGUAGES.filter(
+  ({ code }) => code !== DEFAULT_LANGUAGE,
+)
+  .map(({ code }) => code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+  .join("|");
+export const assistPageFilter = and(exact("eventName", "page_view"), {
+  filter: {
+    fieldName: "pagePath",
+    stringFilter: {
+      matchType: "FULL_REGEXP",
+      value: `^/(?:(?:${languagePrefixes})/)?race/[^/]+/assist/?$`,
+      caseSensitive: true,
+    },
+  },
+});
 
 const GA4_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
