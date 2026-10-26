@@ -7,7 +7,7 @@
 import { ANSWER_RULE } from "./answer.mjs";
 
 /** 札の秒（台本 0〜1.5秒）と、艇ごとの件数の札を答えの頁に重ねる秒 */
-export const S02_CARD_SECONDS = 3;
+export const S02_CARD_SECONDS = 3.5;
 export const S02_CHIPS_UNTIL = 8;
 /** 艇ごとの件数の札の下端（Shorts の下部の題・チャンネル名の表示を避ける。youtube-channel 試作の審査 P1） */
 export const S02_CHIPS_BOTTOM = 1500;
@@ -39,6 +39,12 @@ export function s02Facts(sc) {
     m,
     p: Math.round((k / n) * 1000) / 10,
     by: [2, 3, 4, 5, 6].map((b) => ({ boat: b, count: first[b - 1] })),
+    // 負けた件で1着の多い艇を強調するのは、2位との差が線を通った日だけ（BOA-1157 の rankOf と同じ式: (c1−c2)/√(c1+c2)>=1.96、c1+c2>=10）。
+    // rankOf は #1973（scenes/diff.mjs）で入る。マージ後はそちらを使う
+    top: (() => {
+      const [a, b] = [2, 3, 4, 5, 6].map((x) => ({ boat: x, count: first[x - 1] })).sort((p, q) => q.count - p.count);
+      return a.count + b.count >= 10 && (a.count - b.count) / Math.sqrt(a.count + b.count) >= 1.96 ? a.boat : null;
+    })(),
     period: sc?.period?.[0] && sc?.period?.[1] ? [sc.period[0], sc.period[1]] : null,
   };
 }
@@ -55,12 +61,13 @@ export function s02Text(f, r) {
   return {
     card: {
       head: `${r.race}（${r.date}）`,
-      lines: [`過去の1号艇が負けた${f.m.toLocaleString("ja-JP")}件`, "勝ったのは何号艇？"],
+      // 冒頭は結論から（オーナー 10/11）。答え（1号艇の1着は約X割）を先に、問いは負けた側（伏せた比較 1周目で「冒頭が結論でない」）
+      lines: [`過去の1号艇の1着は約${Math.round((f.k / f.n) * 10)}割`, `負けた${f.m.toLocaleString("ja-JP")}件、勝ったのは？`],
       band: { win: f.k, loss: f.m },
       // 範囲と期間は別の行（期間の途中で折り返さない）
       scope: ["全国・級の並びが同じ・枠なり", span].filter(Boolean),
     },
-    chips: { title: `負けた${f.m.toLocaleString("ja-JP")}件の内訳`, by: f.by },
+    chips: { title: f.top ? `負けた${f.m.toLocaleString("ja-JP")}件の内訳（最多は${f.top}号艇）` : `負けた${f.m.toLocaleString("ja-JP")}件の内訳`, by: f.by, top: f.top },
     // 競技の名を題に（検索・おすすめで判別する手掛かり。youtube-channel 試作の審査 P2）
     shortsTitle: `${r.race}（${r.date}）｜過去の1号艇が負けた${f.m.toLocaleString("ja-JP")}件、勝ったのは何号艇？｜ボートレース`,
     xText: [
@@ -87,7 +94,8 @@ export function s02Check(f, tx, seconds) {
   const chars = tx.card.lines.join("").replace(/,/g, "").length; // 桁区切りのカンマは読む字に数えない
   if (chars / S02_CARD_SECONDS > S02_CHARS_PER_SEC) why.push(`札の主の文字が${chars}字（${S02_CARD_SECONDS}秒で毎秒${S02_CHARS_PER_SEC}字を越える）`);
   if (tx.card.lines.some((l) => l.length > 16)) why.push("札の主の文字の1行が16字を越える");
-  for (const s of [tx.card.head, ...tx.card.lines, tx.chips.title, tx.shortsTitle, tx.xText]) if (S02_RANK_WORDS.test(s)) why.push(`順位の語: ${s.split("\n")[0]}`);
+  // 順位の語は線を通った日の件数の札の見出しだけ（f.top）。ほかは使わない
+  for (const s of [tx.card.head, ...tx.card.lines, ...(f.top ? [] : [tx.chips.title]), tx.shortsTitle, tx.xText]) if (S02_RANK_WORDS.test(s)) why.push(`順位の語: ${s.split("\n")[0]}`);
   if (!/過去/.test(tx.xText) || !/全国/.test(tx.xText)) why.push("本文に「過去」「全国」が無い");
   if (!/\d{4}\/\d+\/\d+〜\d{4}\/\d+\/\d+/.test(tx.xText)) why.push("本文の期間に終わりの日が無い");
   if (seconds > 59) why.push(`尺が${seconds.toFixed(1)}秒（59秒を越える）`);

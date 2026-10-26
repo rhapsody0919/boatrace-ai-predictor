@@ -12,7 +12,8 @@ import { BOAT_COLORS } from "../../../../src/utils/colors.js";
 
 const GOLD = "#d4af37";
 const LEFT = 60;
-const RIGHT = 940;
+// 右端は Shorts の右の操作ボタンの列から離す（x900。youtube-channel 試作の審査 2周目 P2）
+const RIGHT = 900;
 
 export function S02Card({ head, lines, band, scope }) {
   // 主の文字は2行とも同じ大きさで幅に収める（件数が4桁の日も。最大 84px）。収まらなければ止める（黙ってはみ出さない）
@@ -123,7 +124,8 @@ export function S02Overlay({ chips = null }) {
                   borderRadius: 16,
                   background: BOAT_COLORS[c.boat].bg,
                   color: BOAT_COLORS[c.boat].text,
-                  border: c.boat === 2 ? "3px solid #fff" : "none",
+                  // 線を通った日だけ1着の多い艇を金の枠で強調（2号艇は黒地なので白い縁で見分ける）
+                  border: c.boat === chips.top ? `6px solid ${GOLD}` : c.boat === 2 ? "3px solid #fff" : "none",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",

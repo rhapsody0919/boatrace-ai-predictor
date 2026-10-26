@@ -1955,7 +1955,8 @@ for (const f of fixtures) {
   assert.deepEqual([f.n, f.k, f.m, f.p], [212, 150, 62, 70.8]);
   assert.deepEqual(f.by.map((x) => x.count), [24, 14, 17, 6, 1], "艇番の順（順位で並べない）");
   const tx = s02Text(f, { race: "大村10R 準優勝戦", date: "10/26", deadline: "19:36", url: "https://www.boat-ai.jp/race/2026-10-26-24-10" });
-  assert.deepEqual(tx.card.lines, ["過去の1号艇が負けた62件", "勝ったのは何号艇？"]);
+  assert.deepEqual(tx.card.lines, ["過去の1号艇の1着は約7割", "負けた62件、勝ったのは？"], "冒頭は結論から");
+  assert.equal(f.top, null, "24 対 17 は線を通らないので強調しない");
   assert.ok(tx.xText.includes("過去212件中（2019/4/1〜2026/10/25）、1号艇の1着は150件（70.8%）"), tx.xText);
   assert.ok(tx.xText.includes("その62件で、勝ったのは何号艇？"));
   assert.deepEqual(s02Check(f, tx, 39.5), []);
