@@ -82,6 +82,19 @@ const X_METRICS = [
     "bookmark_count",
     "X API v2 public_metrics.bookmark_count の累積値・分母なし・v1",
   ],
+  // 返信・引用（hq 2026-10-27 /today の型の比べの副の数。X の推薦の重みは返信・引用が大きい）。同じ読み取りの応答に入っている
+  [
+    "replies",
+    "public_metrics",
+    "reply_count",
+    "X API v2 public_metrics.reply_count の累積値（自分の返信も含む）・分母なし・v1",
+  ],
+  [
+    "quotes",
+    "public_metrics",
+    "quote_count",
+    "X API v2 public_metrics.quote_count の累積値（リポストは含まない）・分母なし・v1",
+  ],
 ];
 const METRICS_BY_CHANNEL = {
   youtube: YOUTUBE_METRICS.map(([name, , definition]) => ({
