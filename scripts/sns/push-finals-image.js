@@ -75,8 +75,16 @@ export const IMAGE_HEIGHT = 1350;
 export const IMAGE_MAX_BYTES = 5000000;
 /** 期限（送り手が送れる最後）は締切の5分前。transition_sns_send_139（176）の finals_image の期限と同じ値 */
 export const EXPIRES_BEFORE_MIN = 5;
-/** 受け取る最後は締切の8分前（送り手の周期2分で、期限までに1回以上の実行を残す） */
-export const LATEST_BEFORE_MIN = 8;
+/**
+ * 本投稿を受け取る最後は締切の15分前（目安・根拠は送り手の周期）。本投稿の後に投票のリプを期限（5分前）までに送るので、
+ * 送る時刻の遅らせ2分＋本投稿と投票のリプの送り手の実行（2分ごと）2回分＋リース5分を残す（/code-review の指摘、8分では投票のリプが間に合わない）
+ */
+export const LATEST_BEFORE_MIN = 15;
+/**
+ * 送る時刻は受け取りの2分後（送り手の1周期）。本投稿を承認してから投票のリプを承認するまでの間に、送り手が本投稿を
+ * claim して（子の枠を数えずに）送るのを防ぐ。投票のリプの承認に落ちたら、送る時刻の前に item を held_manual にして止める
+ */
+export const SEND_DELAY_SEC = 120;
 /** 展示後のリプを受け取る窓は締切の25分前から13分前まで（13分前ちょうどは受け取らない。オーナー 2026-10-26） */
 export const REPLY_EARLIEST_BEFORE_MIN = 25;
 export const REPLY_LATEST_BEFORE_MIN = 13;
@@ -202,7 +210,7 @@ export function checkImages(names, files) {
 }
 
 /**
- * 締切まわりの時刻（純粋関数）。送る時刻・止められる期限（veto_until）は今。
+ * 締切まわりの時刻（純粋関数）。止められる期限（veto_until）は今、送る時刻は SEND_DELAY_SEC の後。
  * item の CHECK（notify_by < veto_until < deadline_at、153）のため、notify_by は今の1分前
  */
 export function schedule(deadlineAt, now) {
@@ -212,7 +220,7 @@ export function schedule(deadlineAt, now) {
     latest: minutesBefore(deadlineAt, LATEST_BEFORE_MIN),
     notify_by: new Date(now.getTime() - 60000).toISOString(),
     veto_until: now.toISOString(),
-    send_at: now.toISOString(),
+    send_at: new Date(now.getTime() + SEND_DELAY_SEC * 1000).toISOString(),
   };
 }
 
@@ -525,13 +533,18 @@ export async function pushFinalsImage(
     ).filter((i) => !["stopped", "held_manual", "sent"].includes(i.state));
     retry.push(...poll);
   }
-  // 展示後のリプの親は、送った本投稿（item が sent・job が posted で tweet id がある）
+  // 展示後のリプの親は、送った本投稿（job が posted で tweet id がある）。item の状態ではなく job で見る
+  // （要照合の後で手で complete した等で item が sent にならない場合も、送った本投稿につなぐ）
   let parentJob = null;
   if (reply) {
-    const mains = await store.finalsItems(bundle.race_id, FINALS_VARIANT);
-    const sent = mains.find((i) => i.state === "sent");
-    parentJob = sent ? await store.jobForDraft(sent.draft_id) : null;
-    if (parentJob?.state !== "posted" || !parentJob.external_post_id)
+    for (const item of await store.finalsItems(bundle.race_id, FINALS_VARIANT)) {
+      const job = await store.jobForDraft(item.draft_id);
+      if (job?.state === "posted" && job.external_post_id) {
+        parentJob = job;
+        break;
+      }
+    }
+    if (!parentJob)
       return reject(["本投稿がまだ送られていない（リプの親が無い）"]);
   }
   const names = bundle.images;
@@ -585,12 +598,16 @@ export async function pushFinalsImage(
       when,
     };
 
-  for (const item of retry)
+  // 前の item を止め、下書きを公開保留に戻す（148 のトリガーが承認を外し、queued・held の job を取り消す。
+  // 止めた本投稿を親に持つ投票のリプの job が queued のまま残り、送り手が「親を待つ」を知らせ続けないように）
+  for (const item of retry) {
     await store.updateItem(item.id, item.state, {
       state: "stopped",
       stopped_at: now.toISOString(),
       stopped_via: "superseded",
     });
+    await store.updateDraft(item.draft_id, { publish_blocked: true });
+  }
   const paths = names.map(
     (name) =>
       `finals-image/${bundle.race_id}/${revision}/${reply ? "reply-" : ""}${name}`,

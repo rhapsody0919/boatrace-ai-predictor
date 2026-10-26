@@ -6,7 +6,7 @@
 -- 変えるもの:
 --   1. sns_auto_send_items の variant に finals_poll（投票のリプ）・finals_reply（展示後のリプ）。どちらも kind=finals_image・X だけ。
 --      一意の索引 (race_id, channel, variant) は変えない（種類ごとに1レース1件の生きた item）
---   2. transition_sns_send_139（土台は 176）: 通り道 B でない X の claim・begin_post で、リプの子（素材のスレッドでない、
+--   2. transition_sns_send_139（土台は 176）: 通り道 B でない X の claim で、リプの子（素材のスレッドでない、
 --      まだ claim していない子）の枠を v_need に足す。親は自分の子の分も空きが無ければ claim できない（親だけ送って子が止まる穴を塞ぐ。
 --      /today の reply にも効く）。他の親の claim 済みの子の枠も取っておく。YouTube（全貌の Shorts）は変えない
 --   3. approve_sns_x_send（土台は 160）: 投票は下書きの source_data.x_poll を createXSnapshot が snapshot.poll に写す（承認の hash に入る）。
@@ -154,7 +154,7 @@ $$;
 REVOKE ALL ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.approve_sns_x_send(UUID,UUID,JSONB,TIMESTAMPTZ) TO service_role;
 
--- 置き換え2（176）: transition_sns_send_139。変更は v_children の宣言と、リプの子の枠を v_need に足す1つの IF だけ
+-- 置き換え2（176）: transition_sns_send_139。変更は v_children の宣言と、リプの子の枠を v_need・v_rest に足す1つの IF だけ
 CREATE OR REPLACE FUNCTION public.transition_sns_send_139(p_job_id UUID, p_action TEXT, p_result JSONB DEFAULT '{}'::jsonb)
 RETURNS JSONB LANGUAGE plpgsql SET search_path=public AS $$
 DECLARE d public.sns_drafts; j public.sns_x_send_jobs; c public.sns_x_send_control; reason TEXT; day_count INTEGER;
@@ -192,13 +192,15 @@ BEGIN
         AND (aj.id IS NULL OR (aj.state='queued' AND aj.attempts=0));
     v_need := v_need + v_a_pending;
   END IF;
-  -- 177: 通り道 B でない X の claim・begin_post は、リプの子の枠を先に取る。子＝parent_job_id で親につながる、まだ claim していない
+  -- 177: 通り道 B でない X の claim は、リプの子の枠を先に取る。子＝parent_job_id で親につながる、まだ claim していない
   -- （queued・attempts=0）X の job のうち、素材のスレッドでないもの（下書きの bundle_import_id が NULL。スレッドは上の v_need が兄弟で数える）。
   --   自分の子: 親（自分）の claim で子の分の空きも確かめる（/today の reply で親だけ通って子が上限で止まった穴、#1883）
   --   他の親の子: 親が今日 claim 済み（sending・reconcile・posted）で、子がまだ claim していないもの（その間に他の job が子の枠を使わない）。
   --     数えるのは自分が子でないときだけ（子どうしは先に claim した方が通る。子どうしで互いの枠を取り合って両方止まらないように）
   -- 通り道 B は、上の v_a_pending が A の子（item のある下書き）を数えるので足さない（二重に数えない）
-  IF p_action IN ('claim','begin_post') AND j.channel='x' AND d.send_lane IS DISTINCT FROM 'B' THEN
+  -- claim のときだけ数える（v_a_pending と同じ。begin_post で数え直すと、間に他の親の子が増えたときに claim 済みの job が
+  -- 予約額を使ったまま「日次全体上限です」で止まる。/code-review の指摘）。月の予算も子の分（URL つきの額）の空きを確かめる
+  IF p_action='claim' AND j.channel='x' AND d.send_lane IS DISTINCT FROM 'B' THEN
     SELECT count(*) INTO v_children FROM public.sns_x_send_jobs cj
       JOIN public.sns_drafts cd ON cd.id=cj.draft_id
       LEFT JOIN public.sns_x_send_jobs pj ON pj.id=cj.parent_job_id
@@ -207,6 +209,7 @@ BEGIN
         AND (cj.parent_job_id=j.id OR (j.parent_job_id IS NULL AND pj.state IN ('sending','reconcile','posted')
           AND (now() AT TIME ZONE 'Asia/Tokyo')::date = ANY(pj.attempt_dates)));
     v_need := v_need + v_children;
+    v_rest := v_rest + v_children*coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd);
   END IF;
   IF p_action IN ('claim','begin_post','check') AND j.state IN ('queued','sending') THEN
     IF j.expires_at IS NULL THEN reason:='deadline_missing';

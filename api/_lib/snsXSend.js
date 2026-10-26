@@ -207,12 +207,19 @@ export async function runXSendJob(
     stage = "preflight";
     await preflight(job);
     const snapshot = JSON.parse(job.snapshot_text);
-    // 投票は begin_post の前に形を確かめる（後で落ちると、何も送っていない job が要照合に残る）
+    // 投票は begin_post の前に形を確かめ、時間（分）を決める（後で落ちると、何も送っていない job が要照合に残る）
+    let poll = null;
     if (snapshot.poll !== undefined) {
       stage = "poll";
       const issue = pollOptionsIssue(snapshot.poll?.options);
       if (issue || snapshot.media?.length) throw new Error("poll_invalid");
-      pollDurationMinutes(snapshot.poll.closes_at, now());
+      let minutes;
+      try {
+        minutes = pollDurationMinutes(snapshot.poll.closes_at, now());
+      } catch {
+        throw new Error("poll_invalid");
+      }
+      poll = { options: snapshot.poll.options, duration_minutes: minutes };
     }
     const mediaIds = [];
     for (const m of snapshot.media) {
@@ -270,17 +277,7 @@ export async function runXSendJob(
       text: snapshot.text,
       mediaIds,
       ...(replyTo ? { replyTo } : {}),
-      ...(snapshot.poll
-        ? {
-            poll: {
-              options: snapshot.poll.options,
-              duration_minutes: pollDurationMinutes(
-                snapshot.poll.closes_at,
-                now(),
-              ),
-            },
-          }
-        : {}),
+      ...(poll ? { poll } : {}),
     });
     return await store.transition(id, "complete", result);
   } catch (error) {

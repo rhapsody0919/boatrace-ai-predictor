@@ -49,6 +49,7 @@ const DEADLINE = "2037-10-26T07:30:00.000Z";
 const NAMES = imageNamesOf(RACE);
 const NOW = new Date("2037-10-26T16:15:00+09:00");
 const at = (hhmmss) => new Date(`2037-10-26T${hhmmss}+09:00`);
+const PUSHED_AT = at("16:13:00");
 
 /** 最小の PNG（署名と IHDR の幅・高さだけ。検査は IHDR だけを読む） */
 function png(width = 1080, height = 1350, padding = 200) {
@@ -265,8 +266,8 @@ const store = {
   },
   updateDraft: (id, patch) =>
     first(
-      "UPDATE sns_drafts SET source_data=$2, publish_blocked=$3 WHERE id=$1 RETURNING *",
-      [id, patch.source_data, patch.publish_blocked],
+      "UPDATE sns_drafts SET source_data=coalesce($2, source_data), publish_blocked=$3 WHERE id=$1 RETURNING *",
+      [id, patch.source_data ?? null, patch.publish_blocked],
     ),
   approve: async (a) =>
     (
@@ -295,7 +296,8 @@ const push = (b = bundle(), opts = {}, images = IMAGES()) => {
     },
     notify: async (text) => notes.push(text),
     riskRules,
-    now: NOW,
+    // 送る時刻は受け取りの2分後（SEND_DELAY_SEC）。既定は 16:13 に受け取り、16:15（NOW）に送る
+    now: PUSHED_AT,
     ...opts,
   }).then((r) => ({ ...r, notes }));
 };
@@ -435,11 +437,11 @@ test("claim の時間の窓: 締切の5分前（期限）を過ぎたら deadlin
   assert.equal(other.error_code, "deadline_policy_changed");
 });
 
-test("締切の8分前を過ぎて届いたら受け取らない（8分前ちょうどは拒否、その1秒前は受け取る）", async () => {
-  const late = await push(bundle(), { now: at("16:22:00") });
-  assert.match(late.reasons.join(), /8分前を過ぎた/);
+test("締切の15分前を過ぎて届いたら受け取らない（15分前ちょうどは拒否、その1秒前は受け取る。投票のリプを期限までに送る分を残す）", async () => {
+  const late = await push(bundle(), { now: at("16:15:00") });
+  assert.match(late.reasons.join(), /15分前を過ぎた/);
   assert.deepEqual(await counts(), NOTHING);
-  const ok = await push(bundle(), { now: at("16:21:59") });
+  const ok = await push(bundle(), { now: at("16:14:59") });
   assert.equal(ok.reasons, undefined);
   assert.ok(ok.job_id);
 });
@@ -944,7 +946,7 @@ const clearRows = () =>
   );
 /** 本投稿を 14:00 に受け取り、送り手が送り終えた（投票のリプは queued のまま）ところまで進める */
 async function postMain() {
-  await setClock(at("14:00:00"));
+  await setClock(at("14:02:00"));
   const main = await push(bundle(), { now: at("14:00:00") });
   await post(main.job_id, "1890000000000000010", "2037-10-26T05:01:00Z");
   return main;
@@ -1235,7 +1237,7 @@ test("投票のリプを送る: 本投稿へのリプで poll.options と durati
 });
 
 test("投票のリプは本投稿と対で枠を取る: 子の分の空きが無ければ本投稿も claim できない。本投稿を送った後は子の枠を他の親の job に使わせない", async () => {
-  await setClock(at("14:00:00"));
+  await setClock(at("14:02:00"));
   const main = await push(bundle(), { now: at("14:00:00") });
   // 受け取りの後に上限を1に下げると、本投稿の claim は子の分が入らず止まる（親だけ送らない）
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=1");
@@ -1431,7 +1433,7 @@ test("177: 承認の関数は snapshot.poll と下書きの x_poll の一致を�
 });
 
 test("177: 期限を過ぎた子・素材でない YouTube の子は予約に入らない", async () => {
-  await setClock(at("14:00:00"));
+  await setClock(at("14:02:00"));
   const main = await push(bundle(), { now: at("14:00:00") });
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=2");
   await post(main.job_id, "1890000000000000040", "2037-10-26T05:01:00Z");
@@ -1453,4 +1455,86 @@ test("177: 期限を過ぎた子・素材でない YouTube の子は予約に入
   await db.exec("UPDATE sns_x_send_jobs SET channel='youtube' WHERE id='" + second.poll_job_id + "'");
   const rows = await store.waitingChildren(at("14:00:00"));
   assert.ok(rows.every((r) => r.channel === "x"));
+});
+test("/code-review の指摘の固定: 送る時刻は受け取りの2分後（承認の途中で本投稿が claim されない）・月の予算も子の分を見る", async () => {
+  await setClock(PUSHED_AT);
+  const result = await push();
+  assert.equal(result.send_at, NOW.toISOString());
+  await assert.rejects(claim(result.job_id), /claimできません/);
+  await setClock(NOW);
+  // 予算: 本投稿だけなら入るが、投票のリプ（URL つきの額）の分は入らない
+  await db.exec(
+    "UPDATE sns_x_send_control SET reserved_microusd=budget_microusd-250000*2+1",
+  );
+  await assert.rejects(claim(result.job_id), /月額上限/);
+  await db.exec(
+    "UPDATE sns_x_send_control SET reserved_microusd=budget_microusd-250000*2",
+  );
+  assert.equal((await claim(result.job_id)).state, "sending");
+});
+
+test("/code-review の指摘の固定: begin_post は子の枠を数え直さない（claim の後に他の親の子が増えても止まらない）", async () => {
+  await setClock(at("14:02:00"));
+  const a = await push(bundle(), { now: at("14:00:00") });
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=2");
+  assert.equal((await claim(a.job_id)).state, "sending");
+  const other = "2037-10-26-05-12";
+  await db.query("INSERT INTO races VALUES($1,'2037-10-26','17:30:00',NULL)", [
+    other,
+  ]);
+  await db.query("INSERT INTO race_conditions VALUES($1,'優勝戦')", [other]);
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=4");
+  const b = await push(
+    bundle({
+      race_id: other,
+      deadline: "17:30",
+      images: imageNamesOf(other),
+      poll_text: "あなたの予想は？\n#ボートレース",
+    }),
+    { now: at("14:00:00") },
+    Object.fromEntries(
+      imageNamesOf(other).map((n, i) => [n, png(1080, 1350, 500 + i)]),
+    ),
+  );
+  assert.equal((await claim(b.job_id)).state, "sending");
+  await db.exec("UPDATE sns_x_send_control SET daily_limit_x=2");
+  const begun = await first(
+    "SELECT public.transition_sns_x_send($1,'begin_post','{}'::jsonb) r",
+    [a.job_id],
+  );
+  assert.equal(begun.r.state, "reconcile");
+});
+
+test("/code-review の指摘の固定: 作り直すと前の投票のリプの job は取り消す。展示後のリプの親は item でなく posted の job で探す", async () => {
+  const firstPush = await push();
+  await db.exec(
+    "UPDATE sns_x_send_jobs SET state='held', error_code='source_stale' WHERE parent_job_id IS NULL",
+  );
+  const retried = await push();
+  assert.ok(retried.job_id);
+  const old = await first(
+    "SELECT state, error_code FROM sns_x_send_jobs WHERE id=$1",
+    [firstPush.poll_job_id],
+  );
+  assert.deepEqual(
+    [old.state, old.error_code],
+    ["cancelled", "approval_invalidated"],
+  );
+  // 本投稿を送ったが item が sent でない（要照合の後で手で complete した等）
+  await clearRows();
+  const main = await postMain();
+  await db.exec(
+    "UPDATE sns_auto_send_items SET state='notified' WHERE variant='finals'",
+  );
+  await setClock(at("16:10:00"));
+  const reply = await push(replyBundle(), { now: at("16:10:00") });
+  assert.ok(reply.job_id, JSON.stringify(reply));
+  assert.equal(
+    (
+      await first("SELECT parent_job_id FROM sns_x_send_jobs WHERE id=$1", [
+        reply.job_id,
+      ])
+    ).parent_job_id,
+    main.job_id,
+  );
 });
