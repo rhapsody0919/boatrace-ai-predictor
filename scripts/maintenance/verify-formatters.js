@@ -6,6 +6,7 @@
  */
 import assert from "node:assert/strict";
 import {
+  formatExhibitionSt,
   formatPercent,
   formatDate,
   formatDateLocalized,
@@ -39,6 +40,47 @@ function recordGap(input, specification, run) {
   }
   KNOWN_GAPS.push({ tz: process.env.TZ, input, specification, current });
 }
+
+// 展示ST はタイムゾーンに依存しないため、3タイムゾーンのループ外で検査する。
+for (const [input, value, flag, expected] of [
+  ["0.15, null", 0.15, null, "0.15"],
+  ["0.15, undefined", 0.15, undefined, "0.15"],
+  ["0.05, null", 0.05, null, "0.05"],
+  ["0.1, null", 0.1, null, "0.10"],
+  ["0, null", 0, null, "0.00"],
+  ['"0.12", null', "0.12", null, "0.12"],
+  ["1.05, null", 1.05, null, "1.05"],
+  ['0.01, "F"', 0.01, "F", "F.01"],
+  ['0.15, "F"', 0.15, "F", "F.15"],
+  ['1.05, "F"', 1.05, "F", "F1.05"],
+  ['null, "L"', null, "L", "L"],
+  ['undefined, "L"', undefined, "L", "L"],
+  ['"", "L"', "", "L", "L"],
+  ['0.15, ""', 0.15, "", "0.15"],
+  ["null, null", null, null, null],
+  ["undefined, undefined", undefined, undefined, null],
+  ['"", null', "", null, null],
+  ["NaN, null", NaN, null, null],
+  ['"abc", null', "abc", null, null],
+  ["Infinity, null", Infinity, null, null],
+]) {
+  test(`formatExhibitionSt(${input}) 展示STの表記`, () => {
+    assert.equal(formatExhibitionSt(value, flag), expected);
+  });
+}
+
+recordGap('formatExhibitionSt(0.15, "X")', "未定（F・L 以外の印）", () =>
+  formatExhibitionSt(0.15, "X"),
+);
+recordGap('formatExhibitionSt(NaN, "F")', "未定（非数値と印）", () =>
+  formatExhibitionSt(NaN, "F"),
+);
+recordGap("formatExhibitionSt(-0.01, null)", "未定（正の数というDBの前提の範囲外）", () =>
+  formatExhibitionSt(-0.01, null),
+);
+recordGap("formatExhibitionSt(0.015, null)", "未定（toFixed の2進の丸め）", () =>
+  formatExhibitionSt(0.015, null),
+);
 
 const originalTz = process.env.TZ;
 try {
