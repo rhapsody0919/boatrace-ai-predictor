@@ -2677,7 +2677,11 @@ async function weightOnlyRetriesSlowly(weightOnly) {
    * ラッパと同じ computeRetryAt の retrySec）に従って、毎分の Cron の起動（分の頭）で取り直す。
    * publishedMinBefore 分前に公開されたとして、取得の回数と取れた時刻（締切の何分前）を返す
    */
-  const simulate = async ({ pollMinBefore, publishedMinBefore }) => {
+  const simulate = async ({
+    pollMinBefore,
+    publishedMinBefore,
+    cronDelaySec = 0,
+  }) => {
     let t = at(33);
     const end = at(7);
     let fetches = 0;
@@ -2722,8 +2726,12 @@ async function weightOnlyRetriesSlowly(weightOnly) {
       const next =
         res.retryAt ??
         computeRetryAt({ now: t, claimedAt: t, retrySec: ex.retrySec });
-      // 毎分の Cron: next 以降の最初の分の頭
-      t = new Date(Math.ceil(next.getTime() / 60000) * 60000);
+      // 毎分の Cron: next 以降の最初の分の頭（から cronDelaySec 遅れて起動）。ループの条件 t <= end は、
+      // claim_scrape_slots（075）の「期限＋許容幅 < now なら claim の前に expired」と同じ判定
+      t = new Date(
+        Math.ceil((next.getTime() - cronDelaySec * 1000) / 60000) * 60000 +
+          cronDelaySec * 1000,
+      );
     }
     return { fetches, claims, doneMinBefore };
   };
@@ -2733,9 +2741,9 @@ async function weightOnlyRetriesSlowly(weightOnly) {
     publishedMinBefore: 0,
   });
   check(
-    "予定の時刻（20・16・13・10・8・7分前）: 公開されないままなら、窓の中で取得は6回だけ（120秒おきなら13回）。最初の claim（33分前）は取得しない",
-    show(ex.pollMinBefore) === show([20, 16, 13, 10, 8, 7]) &&
-      notYet.fetches === 6,
+    "予定の時刻（20・16・13・10・8分前）: 公開されないままなら、窓の中で取得は5回だけ（120秒おきなら13回）。最初の claim（33分前）は取得しない",
+    show(ex.pollMinBefore) === show([20, 16, 13, 10, 8]) &&
+      notYet.fetches === 5,
     show(notYet),
   );
   const median = await simulate({
@@ -2754,10 +2762,30 @@ async function weightOnlyRetriesSlowly(weightOnly) {
       late.doneMinBefore === 8,
     show({ median, late }),
   );
+  // 毎分の Cron の起動が分の頭から数秒遅れても、予定の全ての取得が claim できる（窓の終わり＝7分前の予定は、
+  // 数秒の遅れで claim の前に expired になる。Codex の指摘、BOA-1145）
+  {
+    const delayed = await simulate({
+      pollMinBefore: ex.pollMinBefore,
+      publishedMinBefore: 0,
+      cronDelaySec: 5,
+    });
+    const withSeven = await simulate({
+      pollMinBefore: [...ex.pollMinBefore, 7],
+      publishedMinBefore: 0,
+      cronDelaySec: 5,
+    });
+    check(
+      "予定の時刻: Cron の起動が5秒遅れても、予定の全ての取得（5回）が窓の終わり（7分前。claim_scrape_slots の期限＋許容幅）より前に claim される。7分前を足した版は、7分前の取得が期限切れで消える（検出できる）",
+      delayed.fetches === ex.pollMinBefore.length &&
+        withSeven.fetches < ex.pollMinBefore.length + 1,
+      show({ delayed, withSeven }),
+    );
+  }
   const legacy = await simulate({ pollMinBefore: null, publishedMinBefore: 0 });
   check(
-    "変異検証: 予定の時刻を外した版（120秒おき）では、取得が6回を超える（『6回だけ』の検証が失敗する）",
-    legacy.fetches > 6,
+    "変異検証: 予定の時刻を外した版（120秒おき）では、取得が5回を超える（『5回だけ』の検証が失敗する）",
+    legacy.fetches > 5,
     show(legacy),
   );
 
@@ -2801,12 +2829,12 @@ async function weightOnlyRetriesSlowly(weightOnly) {
     );
   }
   check(
-    "nextPollTime: 20分前の予定で処理したら次は16分前、7分前の後は次なし（窓の終わりまで取りに行かない）。最初の予定の30秒前（時計のずれ）までは due、21分前は due でない",
+    "nextPollTime: 20分前の予定で処理したら次は16分前、8分前の後は次なし（窓の終わりまで取りに行かない）。最初の予定の30秒前（時計のずれ）までは due、21分前は due でない",
     nextPollTime(ex.pollMinBefore, {
       deadline: DEADLINE,
       now: at(20, 10),
     }).nextAt?.getTime() === at(16, 10).getTime() &&
-      nextPollTime(ex.pollMinBefore, { deadline: DEADLINE, now: at(7, 10) })
+      nextPollTime(ex.pollMinBefore, { deadline: DEADLINE, now: at(8, 10) })
         .nextAt === null &&
       nextPollTime(ex.pollMinBefore, { deadline: DEADLINE, now: at(20, 30) })
         .due === true &&
@@ -2826,8 +2854,9 @@ async function weightOnlyRetriesSlowly(weightOnly) {
   const bad = (patch) =>
     validateRegistry({ exhibition: { ...ex, ...patch } }).length > 0;
   check(
-    "レジストリの検査: pollMinBefore が降順でない・窓の外（33分前より前・7分前より後）・空・整数でない、breakerUrls が URL でない、は不正",
+    "レジストリの検査: pollMinBefore が降順でない・窓の外（33分前より前・窓の終わり7分前の1分前＝8分前より後）・空・整数でない、breakerUrls が URL でない、は不正",
     bad({ pollMinBefore: [10, 20] }) &&
+      bad({ pollMinBefore: [20, 8, 7] }) &&
       bad({ pollMinBefore: [40, 10] }) &&
       bad({ pollMinBefore: [20, 5] }) &&
       bad({ pollMinBefore: [] }) &&

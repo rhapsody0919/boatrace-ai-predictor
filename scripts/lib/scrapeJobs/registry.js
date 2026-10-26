@@ -69,13 +69,17 @@ export const SCRAPE_JOBS = Object.freeze({
   //
   // 取得の回数を減らす（BOA-1145。2026-10-26 15:50 から beforeinfo が当社の取得だけ 403 になった。10/25 は beforeinfo を
   // 1日1,874回、1レース約11回取っていた。うち -33 の窓が120秒おきで平均8.95回）:
-  //   - -33 の窓は、締切（races.start_time）の pollMinBefore 分前（20・16・13・10・8・7分前）にだけ取りに行く。-33 のスロットを
+  //   - -33 の窓は、締切（races.start_time）の pollMinBefore 分前（20・16・13・10・8分前）にだけ取りに行く。-33 のスロットを
   //     claim した時点で20分前より前なら、取得せずに20分前まで戻す（not_due。試行回数は数えない）。offsets の -33 は
   //     変えない（その日の予定表に既にある -33 のスロットと、新しい offset のスロットが二重にならないよう）。
   //     根拠（10/19〜25 の1,088レース、-33 のスロットの完了時刻の締切までの分）: 最も遅い公開は8.43分前、中央値16.4分前。
   //     この予定で1レース平均2.3〜2.5回（今は8.95回）、締切8分前までに取れる割合100%、10分前まで99.7%。
-  //     公開（20分前より前の公開は20分前とみなす）から取得までの遅れは平均約2分（今は約0.4分）。7分前（窓の終わり）の
-  //     後は取りに行かず、窓の終わりで期限切れにする（その後は +10 の補完が拾う）。切り戻し: pollMinBefore を消す（120秒おきに戻る）
+  //     公開（20分前より前の公開は20分前とみなす）から取得までの遅れは平均約2分（今は約0.4分）。8分前の後は
+  //     取りに行かず、窓の終わり（7分前）で期限切れにする（その後は +10 の補完が拾う）。7分前は予定に入れない: 窓の
+  //     終わり（offset＋許容幅＝−7）と同じ時刻で、claim_scrape_slots は「期限＋許容幅 < now」を claim の前に expired にする
+  //     （075）ため、毎分の Cron の起動が分の頭から数秒遅れるだけで取れない（Codex の指摘、BOA-1145）。許容幅を延ばして
+  //     窓の終わりを後ろへずらす案は、-60 の体重の窓（−60＋許容幅）が -33 の窓と重なり、offset ごとの許容幅（092）が要るうえ、
+  //     締切8分前にそろえる画面・材料の目標には8分前の取得で足りるため採らない。切り戻し: pollMinBefore を消す（120秒おきに戻る）
   //   - 体重だけの窓（-60）の再試行は900秒おき（最大2回。実測は平均1.00回）
   //   - claimLimit 8・concurrency 1・leaseSec 110: 1回の起動で1件ずつ取り、403 を受けたらパスのブレーカー（breakerUrls・
   //     politeFetch.js）が開いて、その起動の残りは叩かない（再開・半開の試行が、その起動では1件で止まる）。1分あたりの claim は、
@@ -88,7 +92,7 @@ export const SCRAPE_JOBS = Object.freeze({
     catchupRetrySec: 600,
     weightOnlyOffsets: [-60],
     weightOnlyRetrySec: 900,
-    pollMinBefore: [20, 16, 13, 10, 8, 7],
+    pollMinBefore: [20, 16, 13, 10, 8],
     graceMin: 26,
     retrySec: 120,
     leaseSec: 110,
@@ -938,9 +942,10 @@ export function validateRegistry(registry = SCRAPE_JOBS) {
         } else {
           const offset = main[0];
           const end = -(offset + graceMinFor(def, offset));
-          if (p[0] > -offset || p[p.length - 1] < end) {
+          // 最後の予定は、窓の終わりより1分以上前（毎分の Cron の起動の遅れで、claim の前に expired にならない。BOA-1145）
+          if (p[0] > -offset || p[p.length - 1] < end + 1) {
             problems.push(
-              `${name}: pollMinBefore(${JSON.stringify(p)}) が通常の窓（締切の${-offset}〜${end}分前）の外にあります`,
+              `${name}: pollMinBefore(${JSON.stringify(p)}) が通常の窓（締切の${-offset}〜${end + 1}分前。最後は窓の終わり${end}分前より1分以上前）の外にあります`,
             );
           }
         }
