@@ -634,6 +634,11 @@
       "guards": "直前情報タブ「今節展示情報」・今節タブの今節の切り出し（src/utils/meetGrouping.js の groupIntoMeetBeforeRace）。会場で絞らないと別会場の同じモーター番号の節が、表示中レースを目印にしないと節の初戦で前の節が「今節」として混ざる（BOA-591）"
     },
     {
+      "script": "verify-meet-best-rate.js",
+      "tier": "ci",
+      "guards": "今節タブの得点率の金枠の候補 meetRateBestCandidates（src/pure/seriesPoints.js、BOA-872）。公式の途中帰郷（officialWithdrawn）は得点率を「—」で出すので候補から外し、表に数字が出ている艇の最良に金枠を付けること。推定の途中帰郷は比べる・走数が少ない艇は比べるが光らせない（繰り下げない）は変えない"
+    },
+    {
       "script": "verify-meet-exclusion.js",
       "tier": "ci",
       "guards": "今節タブの順位の対象から外す選手と理由（src/pure/meetExclusion.js、getMeetScoreboard から切り出し。旧の src/services/meetExclusion.js は再 export）。公式の備考は予選の後だけ、今節Fは予選終了まで、途中帰郷は表示日に番組が無い選手、予選中は前夜の公式の途中帰郷を先に入れる（#1000・#1128・#1149・#1477 の再現）"
@@ -1128,6 +1133,11 @@
       "script": "verify-scrape-daily-jobs.js",
       "tier": "ci",
       "guards": "日次・低頻度ジョブ（B2〜B6）のVercel Cron実装"
+    },
+    {
+      "script": "verify-scrape-fetch-counts.js",
+      "tier": "ci",
+      "guards": "BOA-1148: scrape_slots の固定ページ数によるホスト×パス別日次近似。再試行・取得0 outcome・SQL集約・1000行超・読取失敗を検証する"
     },
     {
       "script": "verify-scrape-jobs.js",

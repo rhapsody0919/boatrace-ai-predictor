@@ -57,6 +57,7 @@ test("前夜の公式の表があれば、減点を引き、途中帰郷を順�
   const nasu = page.locator(".rmt-compare tbody tr", { hasText: "奈須" });
   // 理由まで出す（「対象外」だけだとスマホで理由が読めない。ファン評価3周目）
   await expect(nasu.locator(".rmt-rank")).toHaveText("途中帰郷（公式）");
+  await expect(nasu.locator(".rmt-rate")).toHaveText("—");
   // 順位の対象外は表の末尾（目安の点線の下）に回す（ファン評価3周目）
   await expect(page.locator(".rmt-compare tbody tr").last()).toContainText(
     "奈須",
@@ -77,6 +78,15 @@ test("前夜の公式の表があれば、減点を引き、途中帰郷を順�
   await expect(nasuForecast.locator(".rmt-needed")).toHaveText(
     "途中帰郷（公式）",
   );
+  await expect(nasuForecast.locator(".rmt-rate")).toHaveText("—");
+  await expect(nasuForecast.locator("td:nth-last-child(-n+6)")).toHaveText([
+    "—",
+    "—",
+    "—",
+    "—",
+    "—",
+    "—",
+  ]);
   // 注記は「今日の番組に残っていても外す」と書き、既存の途中帰郷の定義と食い違わない（指摘2）
   await expect(page.locator(".rmt-rank-note")).toContainText(
     "今日の番組に残っていても順位から外しています",
