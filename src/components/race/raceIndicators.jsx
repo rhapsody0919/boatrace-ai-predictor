@@ -91,7 +91,7 @@ const byBoat = (rows) => {
  * 速いほど良い数字なので best は最小値（`dir: "min"`）。1艇でも値が欠けている
  * 種別でも、値がある艇の中の最小に印を付ける（`bestOf` が null を除く）
  */
-const ORIGINAL_EXHIBITION_ROW_META = {
+export const ORIGINAL_EXHIBITION_ROW_META = {
   一周: { key: "oriLap", labelKey: "dataTable.rowOriLap" },
   半周ラップ: { key: "oriHalfLap", labelKey: "dataTable.rowOriHalfLap" },
   まわり足: { key: "oriTurn", labelKey: "dataTable.rowOriTurn" },
@@ -110,7 +110,7 @@ export function originalExhibitionKindLabels(t, kinds) {
     .map((meta) => t(meta.labelKey));
 }
 
-function buildOriginalExhibitionRows(t, originalExhibition) {
+export function buildOriginalExhibitionRows(t, originalExhibition) {
   if (!originalExhibition || originalExhibition.state !== "published")
     return [];
   const byBoat = originalExhibition.byBoat ?? {};
