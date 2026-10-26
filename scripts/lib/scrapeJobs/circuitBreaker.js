@@ -335,18 +335,24 @@ export function createCircuitBreaker({
       const wasProbing = s.probing;
       await refresh(hostKey, s, { force: true });
       const t = now();
-      // 既に開いている間（半開の試行でない）に届いた 403（並行の要求の後着）は段階を上げない（#1983 の審査 P1 と同じ穴）
-      if (s.openUntil > t && !wasProbing) {
+      // 既に開いている間（半開の試行でない）に届いた 403（並行の要求の後着）は段階を上げず、期限の長い方だけを残す
+      // （#1983 の審査 P1 と同じ穴）
+      const alreadyOpen = s.openUntil > t && !wasProbing;
+      const current = effectiveBlockLevel(s.level, s.openedAt, t, stepDownMs);
+      const level = alreadyOpen
+        ? current
+        : Math.min(levelCapOf(hostKey), current + 1);
+      const until = Math.max(
+        s.openUntil,
+        t + blockDurationOf(hostKey, Math.max(1, level)),
+      );
+      if (alreadyOpen && until <= s.openUntil) {
         s.probing = false;
         return;
       }
-      const level = Math.min(
-        levelCapOf(hostKey),
-        effectiveBlockLevel(s.level, s.openedAt, t, stepDownMs) + 1,
-      );
       s.level = level;
-      s.openedAt = t;
-      s.openUntil = Math.max(s.openUntil, t + blockDurationOf(hostKey, level));
+      if (!alreadyOpen) s.openedAt = t;
+      s.openUntil = until;
       s.probing = false;
       s.events = [];
       s.consecutive = 0;
@@ -354,7 +360,7 @@ export function createCircuitBreaker({
         await safe("開放の記録", () =>
           store.open(hostKey, s.openUntil, reason, {
             level,
-            openedAtMs: t,
+            openedAtMs: s.openedAt,
           }),
         );
       }
