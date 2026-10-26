@@ -108,8 +108,14 @@ export default function AnalogyFinderSection({
   // 描画のたびに時刻を読まないよう、最初の描画で1回だけ決める
   const [keepFrom] = useState(() => sonarKeepFrom(Date.now()));
 
-  const facts = useAnalogyFacts(raceId, "exhibition");
+  const facts = useAnalogyFacts(raceId, "exhibition", true, true);
   const status = facts.data?.status ?? null;
+  // 展示前に見ていた数字は、展示後の段が届いても自動で切り替えない。
+  if (
+    stageChoice === null &&
+    (status === "before_exhibition" || status === "exhibition_reflecting")
+  )
+    setStageChoice("racecard");
   const exhibitionReady = status === "exhibition_ready";
   const stage = exhibitionReady ? (stageChoice ?? "exhibition") : "racecard";
   // 節の中身（facts）が出たら、レースごとに1回だけ「表示した」を送る（公開時の最小限の計測）
