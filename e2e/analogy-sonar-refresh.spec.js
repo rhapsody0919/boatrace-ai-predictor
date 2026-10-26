@@ -12,6 +12,26 @@ async function setup(page, initial = "before_exhibition") {
   await page.addInitScript(() => {
     localStorage.setItem("boatai-language", "ja");
     localStorage.setItem("boatai:cookie-consent", "accepted");
+    // 展示の facts（stage=exhibition。similar 等も同じ stage を付けるので facts に限る）の応答を読み終えた回数。次の60秒の予約は
+    // 読み終えた後の then で入るため、時計を進める前にこれで待つ。
+    // MessageChannel は page.clock が差し替えないので、then の後に必ず回る。
+    window.__exhibitionFactsRead = 0;
+    const json = Response.prototype.json;
+    Response.prototype.json = function readJson() {
+      const exhibition =
+        this.url.includes("/api/analogy/facts/") &&
+        this.url.includes("stage=exhibition");
+      return json.call(this).then((body) => {
+        if (exhibition) {
+          const channel = new MessageChannel();
+          channel.port1.onmessage = () => {
+            window.__exhibitionFactsRead += 1;
+          };
+          channel.port2.postMessage(null);
+        }
+        return body;
+      });
+    };
   });
   await page.route("**/api/predictions/**", (route) =>
     route.fulfill({
@@ -48,7 +68,13 @@ async function setup(page, initial = "before_exhibition") {
   await page.route("**/rest/v1/**", (route) => route.fulfill({ json: [] }));
   await routeAnalogyV16(page);
   await page.route("**/api/analogy/facts/**", (route) => {
-    requests += 1;
+    // 数えるのは龍神ソナーの定期更新の対象（stage=exhibition）だけ。
+    // 基本情報タブの ST(30走)（getRaceSt30）も stage=racecard で facts を読むため、
+    // まとめて数えると開いた直後から 1 にならない。
+    if (
+      new URL(route.request().url()).searchParams.get("stage") === "exhibition"
+    )
+      requests += 1;
     return route.fulfill({ json: { ...analogyV16Facts(), status } });
   });
   await page.goto(`/race/${ID}`);
@@ -61,6 +87,10 @@ async function setup(page, initial = "before_exhibition") {
   return {
     section,
     count: () => requests,
+    waitRead: (n) =>
+      expect
+        .poll(() => page.evaluate(() => window.__exhibitionFactsRead))
+        .toBe(n),
     change: (next) => {
       status = next;
     },
@@ -128,6 +158,9 @@ test("内部タブとレース詳細タブを往復してもタイマーは重�
   await expect(state.section.locator(".af-ctl-box")).toBeVisible();
   await page.clock.runFor(61000);
   await expect.poll(state.count).toBe(2);
+  // 要求を数えるのは route の時点で、次の60秒の予約は応答を読み終えてから入る。
+  // 読み終える前に時計を進めると、予約が進めた後の時刻から始まり60秒に届かない。
+  await state.waitRead(2);
   await page.clock.runFor(61000);
   await expect.poll(state.count).toBe(3);
 });
