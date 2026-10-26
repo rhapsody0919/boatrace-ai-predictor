@@ -27,13 +27,12 @@ import { getTodayDateJST, parseDateArg } from "../lib/dateUtils.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
+import { DEFAULT_USER_AGENT } from "../lib/scrapeJobs/politeFetch.js";
 
 const SOURCE = "pcexpect_official";
 const FETCH_INTERVAL_MS = 1000;
-const USER_AGENT =
-  "BoatraceAIBot/1.0 (+https://github.com/tinaba96/boatrace-ai-predictor)";
 const FETCH_HEADERS = {
-  "User-Agent": USER_AGENT,
+  "User-Agent": DEFAULT_USER_AGENT,
   Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
   "Accept-Language": "ja,en-US;q=0.7,en;q=0.3",
 };

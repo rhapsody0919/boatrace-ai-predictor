@@ -76,6 +76,7 @@ import { createSupabaseStore } from "../lib/scrapeJobs/store.js";
 import { createMemoryStore } from "../lib/scrapeJobs/testing/memoryStore.js";
 import { getRaceSchedule } from "../lib/raceSchedule.js";
 import { fetchAll } from "../lib/supabaseClient.js";
+import { fetchHtml as fetchPcexpectHtml } from "../daily/scrape-pcexpect.js";
 
 // 検証対象のコードが出す警告・エラーのログ（テストが意図的に起こす失敗）で出力が埋まらないよう、
 // 検証中は console.warn・console.error を無効にし、結果の表示だけ元の関数で行う
@@ -653,6 +654,28 @@ check(
 // ---------------------------------------------------------------------------
 // (g) politeFetch
 // ---------------------------------------------------------------------------
+{
+  const originalFetch = globalThis.fetch;
+  const calls = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      calls.push({ url, headers: new Headers(init.headers) });
+      return new Response("pcexpect-body");
+    };
+    const url = "https://www.boatrace.jp/owpc/pc/race/pcexpect?hd=20261026&jcd=01&rno=1";
+    const html = await fetchPcexpectHtml(url);
+    check(
+      "pcexpect の送信 User-Agent は politeFetch の DEFAULT_USER_AGENT と一致する",
+      calls.length === 1 &&
+        calls[0].url === url &&
+        calls[0].headers.get("user-agent") === DEFAULT_USER_AGENT &&
+        html === "pcexpect-body",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+}
+
 {
   const mkResponse = (status, body = "<html></html>", headers = {}) =>
     new Response(status === 204 ? null : body, { status, headers });
