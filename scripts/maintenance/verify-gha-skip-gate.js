@@ -388,6 +388,53 @@ async function suite(mod, record) {
           cleared.reason === "tick_stale",
         show([other, cleared]),
       );
+      // last_error の形を絞る: DB の失敗（store.js の wrap・スケジュールの読み取り）は取得先の失敗に数えない
+      const dbErrors = [
+        "スロットの取得(odds)に失敗しました: canceling statement due to statement timeout",
+        "レーススケジュールの取得に失敗しました: timeout",
+        "network error while reading races",
+        "AbortError: The operation was aborted",
+      ];
+      record(
+        "isFetchFailureError: DB・スケジュールの失敗は取得先の失敗にしない（予備を止めない）。取得先の形だけを拾う",
+        dbErrors.every((e) => !mod.isFetchFailureError(e)) &&
+          mod.isFetchFailureError("HTTP 429 for https://www.boatrace.jp/x") &&
+          !mod.isFetchFailureError(null),
+        show(dbErrors.map((e) => mod.isFetchFailureError(e))),
+      );
+      // 古い失敗（その後も Vercel が起動し続けた）は、肩代わりを止める理由にしない
+      const staleFailure = await decide(
+        V,
+        [
+          healthy({
+            last_tick_at: stale,
+            updated_at: minutesAgo(NOW, 10 * 60),
+            consecutive_failures: 1,
+            last_error: "TypeError: fetch failed",
+          }),
+        ],
+        NOW,
+      );
+      const recentFailure = await decide(
+        V,
+        [
+          healthy({
+            last_tick_at: stale,
+            updated_at: minutesAgo(NOW, 31),
+            consecutive_failures: 5,
+            last_error: "TypeError: fetch failed",
+          }),
+        ],
+        NOW,
+      );
+      record(
+        "オッズ: 接続の失敗が最後の起動より5分超前（その後も起動が続いた）なら古い失敗として実行、最後の起動の頃の失敗ならスキップ",
+        staleFailure.skip === false &&
+          staleFailure.reason === "tick_stale" &&
+          recentFailure.skip === true &&
+          recentFailure.reason === "fetch_failure_no_takeover",
+        show([staleFailure, recentFailure]),
+      );
     }
     // レースの無い時間帯: 最終成功が半日前・なしでも、起動が新しければ（Vercelは動いている）誤って実行しない
     const quiet1 = await skipOf(
@@ -497,21 +544,57 @@ async function suite(mod, record) {
       "point_rank: mode=off → スキップ（どこからも取らない）",
       d7.skip === true && d7.reason === "mode_not_live",
     );
+    const ranAt = jst("2026-09-24 22:00").toISOString();
     const d8 = await decide(
       V,
       [
         row("point_rank", {
           consecutive_failures: 3,
           last_target_date: "2026-09-23",
-          last_tick_at: jst("2026-09-24 22:00").toISOString(),
+          last_tick_at: ranAt,
+          updated_at: ranAt,
+          last_error:
+            "HTTP 403 for https://www.boatrace.jp/owpc/pc/extra/pointrank",
         }),
       ],
       jst("2026-09-24 22:30"),
     );
     record(
-      "point_rank: 22:00 に Vercel が起動し、連続失敗3回・未処理 → スキップ（Vercel の失敗を GitHub の IP で叩き直さない。P0）",
-      d8.skip === true && d8.reason === "vercel_running",
+      "point_rank（再現 P0）: 22:00 に Vercel が起動し、403 で連続失敗3回・未処理 → スキップ（GitHub の IP で叩き直さない）",
+      d8.skip === true && d8.reason === "fetch_failure_no_takeover",
       show(d8),
+    );
+    const d8d = await decide(
+      V,
+      [
+        row("point_rank", {
+          consecutive_failures: 3,
+          last_target_date: "2026-09-23",
+          last_tick_at: ranAt,
+          updated_at: ranAt,
+          last_error: "point_rank の書き込みに失敗しました: permission denied",
+        }),
+      ],
+      jst("2026-09-24 22:30"),
+    );
+    const d8e = await decide(
+      V,
+      [
+        row("point_rank", {
+          consecutive_failures: 1,
+          last_target_date: "2026-09-23",
+          last_tick_at: ranAt,
+        }),
+      ],
+      jst("2026-09-24 22:30"),
+    );
+    record(
+      "point_rank: Vercel が起動し、取得先と関係ない失敗（DB・コード）が3回 → 実行（日次の予備）。失敗1回ならまだ待つ（スキップ）",
+      d8d.skip === false &&
+        d8d.reason === "daily_failures" &&
+        d8e.skip === true &&
+        d8e.reason === "vercel_running",
+      show([d8d, d8e]),
     );
     const d8b = await decide(
       V,
@@ -705,10 +788,26 @@ async function suite(mod, record) {
       ],
       N,
     );
+    const d5b = await decide(
+      V,
+      [
+        row("racer_profiles", {
+          last_tick_at: minutesAgo(N, 10),
+          updated_at: minutesAgo(N, 10),
+          consecutive_failures: 3,
+          last_error:
+            "取得に失敗しました（3回試行）: https://www.boatrace.jp/owpc/pc/data/racersearch/season — fetch failed",
+        }),
+      ],
+      N,
+    );
     record(
-      "racer_profiles: 起動中で連続失敗3回 → スキップ（P0）",
-      d5.skip === true && d5.reason === "vercel_running",
-      show(d5),
+      "racer_profiles: 起動中で取得先と関係ない失敗3回 → 実行。接続の失敗3回 → スキップ（P0）",
+      d5.skip === false &&
+        d5.reason === "daily_failures" &&
+        d5b.skip === true &&
+        d5b.reason === "fetch_failure_no_takeover",
+      show([d5, d5b]),
     );
     const d6 = await decide(
       V,
@@ -836,6 +935,24 @@ async function suite(mod, record) {
     );
     const d6 = await decide(V, [catchup()], NOW);
     record("結果取得: result の行なし → スキップ", d6.skip === true);
+    const vetoed = await decide(
+      V,
+      [
+        result({
+          last_error:
+            "HTTP 403 for https://www.boatrace.jp/owpc/pc/race/raceresult",
+          updated_at: minutesAgo(NOW, 2),
+          consecutive_failures: 4,
+        }),
+        catchup({ last_target_date: "2026-09-22" }),
+      ],
+      NOW,
+    );
+    record(
+      "結果取得（再現 P0）: result が 403 で止まっているなら、result_catchup が未処理でも変数ごとスキップ（raceresult を GitHub が叩かない）",
+      vetoed.skip === true && vetoed.reason === "fetch_failure_no_takeover",
+      show(vetoed),
+    );
     const client = fakeClient([result(), catchup()]);
     await mod.shouldSkipOnGha({
       varName: V,
@@ -1128,7 +1245,7 @@ async function suite(mod, record) {
         u.pathname === "/rest/v1/scrape_job_state" &&
         u.searchParams.get("job") === 'in.("odds","host:boatrace.jp")' &&
         u.searchParams.get("select") ===
-          "job,mode,last_tick_at,last_success_at,consecutive_failures,last_target_date,breaker_open_until,last_error" &&
+          "job,mode,last_tick_at,last_success_at,consecutive_failures,last_target_date,breaker_open_until,last_error,updated_at" &&
         calls[0].init.headers.apikey === "SERVICE_KEY" &&
         calls[0].init.headers.Authorization === "Bearer SERVICE_KEY" &&
         calls[0].init.signal instanceof AbortSignal &&
@@ -1238,7 +1355,7 @@ const MUTANTS = [
   ["時計の異常（未来の起動）を許す", "tickAge >= -1 && ", ""],
   [
     "直近の失敗（403・接続の失敗）の確認を外す（P0）",
-    "if (isFetchFailureError(row.last_error)) {",
+    "if (isFetchFailureError(row.last_error) && isRecentFailure(row)) {",
     "if (false) {",
   ],
   [
@@ -1255,6 +1372,26 @@ const MUTANTS = [
     "連続失敗で肩代わりを戻す（P0）",
     "    if (tickFresh) {\n      return noTakeover(",
     "    if (tickFresh && !(row.consecutive_failures >= 3)) {\n      return noTakeover(",
+  ],
+  [
+    "古い失敗も肩代わりを止める理由にする",
+    "return failedAt >= tick - TICK_WRITE_INTERVAL_MS;",
+    "return true;",
+  ],
+  [
+    "同じ変数の別のジョブの取得先の失敗で、変数ごと止めない",
+    "if (veto && unhealthy.length > 0) {",
+    "if (false) {",
+  ],
+  [
+    "日次: 取得先と関係ない失敗が続いても肩代わりしない",
+    "failures >= policy.maxDailyFailures",
+    "false",
+  ],
+  [
+    "last_error の形を広げる（DB の失敗も取得先の失敗に数える）",
+    "|fetch failed|",
+    "|に失敗しました|network|aborted|fetch failed|",
   ],
   [
     "日次: 指定時刻以降の起動を見ない（Vercel の失敗を肩代わりする）",

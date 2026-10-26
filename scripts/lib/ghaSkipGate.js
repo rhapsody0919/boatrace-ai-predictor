@@ -20,6 +20,8 @@
  *        別の IP から叩き直すのは回り込みになる。それ以外の失敗は監視の通知で人が見る）
  *     3. 取得先のブレーカー（ホスト・パス）が閉じている
  *     4. 直近の失敗（last_error）が、取得先の拒否・過負荷・接続の失敗（403・429・503・ネットワーク）ではない
+ *     （同じ変数の別のジョブが 3・4 で止まっているときも、変数ごと肩代わりしない）
+ *   日次だけの例外: 指定時刻以降に起動していても、取得先と関係ない失敗（コード・DB）が閾値以上続いていれば肩代わりする
  *
  * 判定は純関数（evaluateJobHealth・decideFromRows）と、IO（createRestJobStateClient・shouldSkipOnGha）に分ける。
  * 戻り値の healthy は「肩代わりしない（GitHub はスキップする）」の意味（名前は従来のまま）。
@@ -31,6 +33,7 @@
 import { SCRAPE_JOBS, HOST_JOB_PREFIX } from "./scrapeJobs/registry.js";
 import { resolveTargetDate } from "./scrapeJobs/dailyJob.js";
 import { TICK_WRITE_INTERVAL_MS } from "./scrapeJobs/store.js";
+import { THRESHOLDS } from "./scrapeJobs/monitor.js";
 import { hostKeyOf, pathKeyOf } from "./scrapeJobs/politeFetch.js";
 
 /** SKIP 変数 → Vercel 側のジョブ名（どのジョブも肩代わりの条件を満たさないときスキップする） */
@@ -55,6 +58,8 @@ export const GHA_SKIP_POLICY = Object.freeze({
    * tick は5分に1回しか書かれない（TICK_WRITE_INTERVAL_MS）ため、正常でも最大約6分古い。書き込み2回分+2分の余裕
    */
   tickMaxAgeMin: (TICK_WRITE_INTERVAL_MS / 60000) * 2 + 2,
+  /** 日次ジョブで、Vercel が起動したまま取得先と関係ない失敗がこの回数以上続いたら肩代わりする（monitor の通知閾値と同じ） */
+  maxDailyFailures: THRESHOLDS.consecutiveFailures,
   /** 日次ジョブで「対象日の指定時刻以降に起動した」とみなす、指定時刻の前の許容（Vercel と時計のずれ） */
   dailyStartSkewMin: 1,
   /** 日次ジョブの指定時刻からこの分数までは、Vercel の処理の完了を待つ価値がある（判定ステップの待機の上限） */
@@ -95,15 +100,37 @@ const hostKeysOf = (def) =>
 const pathKeysOf = (def) => (def?.breakerUrls ?? []).map(pathKeyOf);
 
 /**
- * 直近の失敗が、取得先の拒否・過負荷・接続の失敗か（last_error の文字列。htmlFetch の `HTTP 403 for …`、
- * politeFetch の FetchError・BreakerOpenError、Node の fetch のネットワークエラー）。この失敗が理由で
- * Vercel が取れていないなら、別の IP から叩き直さない
+ * 直近の失敗が、取得先の拒否・過負荷・接続の失敗か（last_error の文字列）。形は次の3つに限る:
+ *   htmlFetch の `HTTP 403 for <url>`（429・503 も）、politeFetch の FetchError `取得に失敗しました（N回試行）: <url> — …`
+ *   （タイムアウト・ネットワークエラーを含む）、BreakerOpenError `サーキットブレーカーが開いています（host:…`。
+ *   加えて Node の fetch のネットワークエラー（fetch failed・ECONN*・ETIMEDOUT・ENOTFOUND・EAI_AGAIN・UND_ERR_*）。
+ * store.js の `…に失敗しました:`（DB の失敗）は含めない。fetch failed 等は Supabase への接続の失敗でも出るが、
+ * そのときは GitHub も DB に書けないため、肩代わりしない側に倒して害は無い
  */
 export const FETCH_FAILURE_RE =
-  /HTTP (403|429|503)\b|取得に失敗しました|サーキットブレーカー|fetch failed|ECONN(RESET|REFUSED|ABORTED)|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR|socket hang up|network|timed? ?out|タイムアウト|aborted|AbortError/i;
+  /HTTP (403|429|503) for |取得に失敗しました（\d+回試行）|サーキットブレーカーが開いています（|fetch failed|ECONN(RESET|REFUSED|ABORTED)|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR_/;
 
 export const isFetchFailureError = (lastError) =>
   typeof lastError === "string" && FETCH_FAILURE_RE.test(lastError);
+
+/**
+ * last_error が「Vercel の直近の起動」の失敗か。recordFailure は updated_at を書き、touchTick は書かない。
+ * 失敗の後も起動（tick）が TICK_WRITE_INTERVAL_MS を超えて続いていれば、その失敗は古い（その後の起動は処理対象が
+ * 無かっただけ）とみなし、肩代わりを止める理由にしない（前夜の1回の失敗で翌朝の予備まで止めない）。
+ * 時刻を読めないときは直近とみなす（肩代わりしない側）
+ */
+function isRecentFailure(row) {
+  const failedAt = parseTime(row.updated_at);
+  const tick = parseTime(row.last_tick_at);
+  if (failedAt === null || tick === null) return true;
+  return failedAt >= tick - TICK_WRITE_INTERVAL_MS;
+}
+
+/** 取得先の都合（拒否・過負荷・接続の失敗）で肩代わりしない理由。1つの変数のどれかのジョブに出たら、変数ごと止める */
+const REMOTE_VETO_REASONS = new Set([
+  "breaker_open_no_takeover",
+  "fetch_failure_no_takeover",
+]);
 
 /**
  * 1ジョブについて、GitHub Actions が肩代わりしてよいか（純関数）。healthy=true は「肩代わりしない」。
@@ -170,7 +197,7 @@ export function evaluateJobHealth({
       `${job}: 取得先 ${openKey} のブレーカーが開いている（肩代わりしない）`,
     );
   }
-  if (isFetchFailureError(row.last_error)) {
+  if (isFetchFailureError(row.last_error) && isRecentFailure(row)) {
     return noTakeover(
       "fetch_failure_no_takeover",
       `${job}: 直近の失敗が取得先の拒否・接続の失敗（${String(row.last_error).slice(0, 120)}。肩代わりしない）`,
@@ -217,6 +244,21 @@ export function evaluateJobHealth({
       tick !== null &&
       targetInstant !== null &&
       tick >= targetInstant - policy.dailyStartSkewMin * 60000;
+    // 日次は Vercel の cron が指定時刻の後も数回起動する（races_init は終日2分おき）ため、起動していることだけでは
+    // 「Vercel が当日を処理できない」を判定できない。指定時刻以降に起動があり、取得先と関係ない失敗（上で 403・接続の
+    // 失敗は除いた。コード・DB の失敗）が閾値以上続いているときだけ肩代わりする。races が無いと当日の取得が全て止まる
+    // races_init の安全装置を、Vercel の不具合の日に生かすため
+    const failures = row.consecutive_failures;
+    if (
+      startedSinceTarget &&
+      Number.isInteger(failures) &&
+      failures >= policy.maxDailyFailures
+    ) {
+      return takeover(
+        "daily_failures",
+        `${job}: 対象日${target}が未処理で、Vercel が取得先と関係ない失敗を${failures}回続けている（${String(row.last_error ?? "").slice(0, 120)}）`,
+      );
+    }
     if (tickFresh || startedSinceTarget) {
       return noTakeover(
         "vercel_running",
@@ -277,6 +319,18 @@ export function decideFromRows({
     evaluateJobHealth({ job, rowsByJob, now, policy, registry }),
   );
   const unhealthy = results.filter((r) => !r.healthy);
+  // 同じ変数の別のジョブが、取得先の拒否・過負荷・接続の失敗で止まっているなら、変数ごと肩代わりしない
+  // （例: SKIP_RESULTS_ON_GHA の result が 403 なのに、result_catchup の未処理で GitHub が raceresult を叩く）
+  const veto = results.find((r) => REMOTE_VETO_REASONS.has(r.reason));
+  if (veto && unhealthy.length > 0) {
+    return {
+      skip: true,
+      reason: veto.reason,
+      message: `スキップ: 肩代わりしない（${veto.detail}。同じ変数の他のジョブも肩代わりしない）`,
+      retryable: false,
+      results,
+    };
+  }
   if (unhealthy.length === 0) {
     return {
       skip: true,
@@ -318,6 +372,7 @@ const STATE_COLUMNS = [
   "last_target_date",
   "breaker_open_until",
   "last_error",
+  "updated_at",
 ].join(",");
 
 /**
