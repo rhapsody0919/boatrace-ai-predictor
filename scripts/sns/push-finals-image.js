@@ -293,26 +293,38 @@ export async function pushFinalsImage(
   const reasons = checkFinalsImage(bundle, riskRules);
   if (reasons.length) return reject(reasons);
   // 起こす係（hq finals_run.py）は締切の25〜8分前に2分ごとに呼ぶ。同じレースの生きている item・送った item があれば
-  // 何も作らず、今の状態を返す（DB の一意の索引でも止まる、176）
+  // 何も作らず、今の状態を返す（DB の一意の索引でも止まる、176）。
+  // ただし自動の item の job が送らずに終わった（held・failed・cancelled）か、承認の途中で落ちて job が無いときは、
+  // その item を superseded で止めてから作り直す（期限までにやり直せるように。送った・送っている item は作り直さない）
   const live = (await store.finalsItems(bundle.race_id)).filter(
     (i) => !["stopped", "held_manual"].includes(i.state),
   );
-  if (live.length)
-    return {
-      already: true,
-      reason: `同じレースの finals_image が既にある（${live[0].state}）。作らなかった`,
-      status: await finalsStatus(bundle.race_id, { store }),
-    };
+  const retry = [];
+  for (const item of live) {
+    const job = await store.jobForDraft(item.draft_id);
+    if (item.state === "notified" && (!job || RETRYABLE_JOB_STATES.includes(job.state)))
+      retry.push({ item, job });
+    else
+      return {
+        already: true,
+        reason: `同じレースの finals_image が既にある（item ${item.state}・job ${job?.state ?? "なし"}）。作らなかった`,
+        status: statusOf(bundle.race_id, item, job),
+      };
+  }
   const names = bundle.images;
   const files = {};
+  const readErrors = [];
   for (const name of names) {
     try {
       files[name] = await readBytes(path.join(folder, name));
-    } catch {
+    } catch (error) {
       files[name] = undefined;
+      // 無い（ENOENT）は checkImages が「無い」と書く。それ以外（権限・I/O）は原因を残す
+      if (error?.code && error.code !== "ENOENT")
+        readErrors.push(`${name} を読めない（${error.code}: ${error.message}）`);
     }
   }
-  const imageReasons = checkImages(names, files);
+  const imageReasons = [...readErrors, ...checkImages(names, files)];
   if (imageReasons.length) return reject(imageReasons);
   const [race, stage, sendControl, todayJobs] = await Promise.all([
     store.race(bundle.race_id),
@@ -338,6 +350,12 @@ export async function pushFinalsImage(
       when,
     };
 
+  for (const { item } of retry)
+    await store.updateItem(item.id, "notified", {
+      state: "stopped",
+      stopped_at: now.toISOString(),
+      stopped_via: "superseded",
+    });
   const paths = names.map(
     (name) => `finals-image/${bundle.race_id}/${revision}/${name}`,
   );
@@ -389,10 +407,14 @@ export async function pushFinalsImage(
       out.job_id = job?.id ?? null;
       out.send_at = when.send_at;
     } catch (error) {
-      await store
-        .updateItem(item.id, "notified", { state: "manual" })
-        .catch(() => {});
       out.error = error.message;
+      try {
+        await store.updateItem(item.id, "notified", { state: "manual" });
+      } catch (updateError) {
+        // item が notified のまま job が無い。次の呼び出しで superseded にして作り直す
+        console.error(`item ${item.id} を manual に戻せない: ${updateError.message}`);
+        out.error += `（item を manual に戻せない: ${updateError.message}）`;
+      }
     }
   }
   const line = out.send_at
@@ -406,46 +428,52 @@ export async function pushFinalsImage(
   return { ...out, revision, when };
 }
 
-/** 送った時刻・tweet id（hq の記録用）。job が無ければ null */
+/** 作り直してよい job の状態（送らずに終わった） */
+export const RETRYABLE_JOB_STATES = ["held", "failed", "cancelled"];
+
+/** item と job から、hq に返す状態（純粋関数） */
+export const statusOf = (raceId, item, job) => ({
+  race_id: raceId,
+  item_state: item?.state ?? null,
+  job_id: job?.id ?? null,
+  job_state: job?.state ?? null,
+  error_code: job?.error_code ?? null,
+  posted_at: job?.posted_at ?? null,
+  tweet_id: job?.external_post_id ?? null,
+  tweet_url: job?.external_post_url ?? null,
+});
+
+/** 送った時刻・tweet id（hq の記録用）。新しい順に、生きている item（無ければ最新の item）の job。item が無ければ null */
 export async function finalsStatus(raceId, { store }) {
-  const [item] = (await store.finalsItems(raceId)).filter(
-    (i) => !["stopped", "held_manual"].includes(i.state),
-  );
+  const items = await store.finalsItems(raceId);
+  const item =
+    items.find((i) => !["stopped", "held_manual"].includes(i.state)) ?? items[0];
   if (!item) return null;
-  const job = await store.jobForDraft(item.draft_id);
-  return {
-    race_id: raceId,
-    item_state: item.state,
-    job_id: job?.id ?? null,
-    job_state: job?.state ?? null,
-    error_code: job?.error_code ?? null,
-    posted_at: job?.posted_at ?? null,
-    tweet_id: job?.external_post_id ?? null,
-    tweet_url: job?.external_post_url ?? null,
-  };
+  return statusOf(raceId, item, await store.jobForDraft(item.draft_id));
 }
 
 /** 送り手の結果を待つ間隔と、期限の後に待つ時間（送り手の最後の実行の終わりを待つ） */
 export const WAIT_POLL_SEC = 15;
 export const WAIT_AFTER_EXPIRES_SEC = 90;
-const DONE_STATES = ["posted", "held", "failed", "cancelled", "reconcile"];
+// reconcile は begin_post から complete までの送っている途中でもあるので、終わりに数えない（期限＋90秒まで待つ）
+const DONE_STATES = ["posted", ...RETRYABLE_JOB_STATES];
 
-/** job が送り終わる（posted・held 等）か、期限＋WAIT_AFTER_EXPIRES_SEC を過ぎるまで待つ */
+/** この push の job（draft で引く）が送り終わる（posted・held 等）か、期限＋WAIT_AFTER_EXPIRES_SEC を過ぎるまで待つ */
 export async function waitForSend(
   raceId,
-  { store, expiresAt, now = () => new Date(), sleep },
+  { store, draftId, expiresAt, now = () => new Date(), sleep },
 ) {
   const until = Date.parse(expiresAt) + WAIT_AFTER_EXPIRES_SEC * 1000;
   for (;;) {
-    const status = await finalsStatus(raceId, { store });
-    if (DONE_STATES.includes(status?.job_state) || now().getTime() >= until)
+    const status = statusOf(raceId, null, await store.jobForDraft(draftId));
+    if (DONE_STATES.includes(status.job_state) || now().getTime() >= until)
       return status;
     await sleep(WAIT_POLL_SEC);
   }
 }
 
-/** 結果の1行と exit の番号（純粋関数） */
-export function resultLine(raceId, result, status = null) {
+/** 結果の1行と exit の番号（純粋関数）。status は待った結果（--no-wait なら null） */
+export function resultLine(raceId, result, status = null, { waited = Boolean(status) } = {}) {
   const outcome = result.reasons?.length
     ? "rejected"
     : result.already
@@ -456,7 +484,7 @@ export function resultLine(raceId, result, status = null) {
           ? "dry_run_ok"
           : status?.job_state === "posted"
             ? "posted"
-            : result.job_id && !status
+            : result.job_id && !waited
               ? "queued"
               : "not_posted";
   const code = {
@@ -467,6 +495,7 @@ export function resultLine(raceId, result, status = null) {
     disabled: 3,
     already_exists: 4,
     not_posted: 5,
+    error: 6,
   }[outcome];
   const s = status ?? result.status ?? null;
   const line = {
@@ -647,6 +676,22 @@ async function main() {
       "utf8",
     ),
   ).rules;
+  let bundleRaceId = null;
+  try {
+    bundleRaceId = JSON.parse(
+      await readFile(path.join(folder, "bundle.json"), "utf8"),
+    ).race_id;
+  } catch {
+    /* 読めない bundle.json は pushFinalsImage が投げ、下で error の1行にする */
+  }
+  // どこで落ちても、最後の1行は FINALS_RESULT（exit 6）
+  const fail = (error) => {
+    console.error(error);
+    console.log(
+      `FINALS_RESULT ${JSON.stringify({ race_id: bundleRaceId ?? null, outcome: "error", reason: String(error?.message ?? error) })}`,
+    );
+    process.exit(6);
+  };
   const result = await pushFinalsImage(folder, {
     store,
     readBytes: async (p) => {
@@ -666,23 +711,16 @@ async function main() {
     },
     riskRules,
     dryRun,
-  });
+  }).catch(fail);
   console.log(JSON.stringify(result, null, 2));
-  let bundleRaceId = null;
-  try {
-    bundleRaceId = JSON.parse(
-      await readFile(path.join(folder, "bundle.json"), "utf8"),
-    ).race_id;
-  } catch {
-    /* 結果の行の race_id が null になるだけ */
-  }
   const status =
     result.job_id && !args.includes("--no-wait")
       ? await waitForSend(bundleRaceId, {
           store,
+          draftId: result.draft_id,
           expiresAt: result.when.expires_at,
           sleep: (sec) => new Promise((r) => setTimeout(r, sec * 1000)),
-        })
+        }).catch(fail)
       : null;
   const { code, text } = resultLine(bundleRaceId, result, status);
   console.log(text);

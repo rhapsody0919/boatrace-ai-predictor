@@ -69,7 +69,8 @@ BEGIN
   END IF;
 END $$;
 
--- 置き換え（158）: transition_sns_send_139。変更は v_kind・v_expiry_min と、finals_image_disabled・期限の照合の2行だけ
+-- 置き換え（158）: transition_sns_send_139。変更は v_kind・v_expiry_min と、finals_image_disabled・期限の照合の2行と、
+-- B の通り道が先に引く A の予定（v_a_pending）に finals_image を足すことだけ（期限の5分は push-finals-image.js の EXPIRES_BEFORE_MIN と同じ値）
 CREATE OR REPLACE FUNCTION public.transition_sns_send_139(p_job_id UUID, p_action TEXT, p_result JSONB DEFAULT '{}'::jsonb)
 RETURNS JSONB LANGUAGE plpgsql SET search_path=public AS $$
 DECLARE d public.sns_drafts; j public.sns_x_send_jobs; c public.sns_x_send_control; reason TEXT; day_count INTEGER;
@@ -99,7 +100,7 @@ BEGIN
   IF p_action='claim' AND j.channel='x' AND d.send_lane='B' THEN
     SELECT count(*) INTO v_a_pending FROM public.sns_drafts ad
       JOIN public.sns_auto_send_items ai ON ai.channel='x' AND (
-        (ai.kind='race' AND ad.bundle_import_id=ai.bundle_import_id) OR (ai.kind='digest' AND ad.id=ai.draft_id))
+        (ai.kind='race' AND ad.bundle_import_id=ai.bundle_import_id) OR (ai.kind IN ('digest','finals_image') AND ad.id=ai.draft_id))
       LEFT JOIN public.sns_x_send_jobs aj ON aj.draft_id=ad.id
       WHERE ad.send_lane='A' AND ad.platform='x' AND ad.status NOT IN ('posted','archived')
         AND ai.state IN ('checking','manual','notifying','notified')

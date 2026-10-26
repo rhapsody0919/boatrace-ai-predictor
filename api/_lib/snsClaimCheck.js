@@ -207,7 +207,8 @@ export function createReadCurrent({
       };
     }
     // 優勝戦の画像（176、scripts/sns/push-finals-image.js）: 全貌と同じ読み直しに、優勝戦であること・同じレースの finals_image を
-    // まだ送っていないこと・自動送信の許可（finals_image_enabled）を足す。違えば投げる（runner は claim しない）
+    // まだ送っていないこと・自動送信の許可（finals_image_enabled）を足す。違えば投げる（runner の claim の前の検査で止まる。
+    // claim の後の検査で投げた場合は claim で使った日次の枠・予約額が残る。許可は transition_sns_send_139（176）も claim で見る）
     if (draft?.source_data?.finals_image?.race_id) {
       const { race_id: raceId, revision } = draft.source_data.finals_image;
       const id = encodeURIComponent(raceId);

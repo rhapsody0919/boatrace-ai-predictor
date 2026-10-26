@@ -211,8 +211,8 @@ const store = {
     ),
   updateItem: (id, from, patch) =>
     first(
-      "UPDATE sns_auto_send_items SET state=$3 WHERE id=$1 AND state=$2 RETURNING *",
-      [id, from, patch.state],
+      "UPDATE sns_auto_send_items SET state=$3, stopped_at=$4, stopped_via=$5 WHERE id=$1 AND state=$2 RETURNING *",
+      [id, from, patch.state, patch.stopped_at ?? null, patch.stopped_via ?? null],
     ),
   approve: async (a) =>
     (
@@ -502,12 +502,24 @@ test("レースの検査: 中止・今日でない・優勝戦でない・deadli
   assert.ok(firstPush.job_id);
   const again = await push();
   assert.equal(again.already, true);
-  assert.match(again.reason, /既にある（notified）/);
+  assert.match(again.reason, /既にある（item notified・job queued）/);
   assert.equal(again.status.job_id, firstPush.job_id);
   assert.equal(resultLine(RACE, again).code, 4);
   assert.equal(Number((await first("SELECT count(*) n FROM sns_drafts")).n), 1);
   await db.exec("UPDATE sns_auto_send_items SET state='sent'");
-  assert.match((await push()).reason, /既にある（sent）/);
+  assert.match((await push()).reason, /既にある（item sent/);
+  // 自動の job が送らずに終わった（held）なら、前の item を superseded で止めて作り直す（期限までのやり直し）
+  await db.exec("UPDATE sns_auto_send_items SET state='notified'; UPDATE sns_x_send_jobs SET state='held', error_code='source_stale'");
+  const retried = await push();
+  assert.ok(retried.job_id);
+  assert.notEqual(retried.job_id, firstPush.job_id);
+  assert.deepEqual(
+    (await all("SELECT state, stopped_via FROM sns_auto_send_items ORDER BY created_at, state")).map((r) => [r.state, r.stopped_via]).sort(),
+    [["notified", null], ["stopped", "superseded"]],
+  );
+  // 送っている途中（reconcile）は作り直さない
+  await db.exec("UPDATE sns_x_send_jobs SET state='reconcile' WHERE id='" + retried.job_id + "'");
+  assert.equal((await push()).already, true);
 });
 
 test("許可が on で拒否したら Slack に理由を知らせる", async () => {
@@ -656,6 +668,10 @@ test("CLI の結果の1行と exit: 送った 0・拒否 1・許可 off 3・既�
   assert.equal(resultLine(RACE, { dryRun: true, disabled: false }).code, 0);
   assert.equal(resultLine(RACE, { job_id: "j1" }, { job_id: "j1", job_state: "held", error_code: "deadline_expired" }).code, 5);
   assert.equal(resultLine(RACE, { draft_id: "d", item_id: "i" }).code, 5); // 個別承認・承認の失敗
+  // --no-wait は予定に入れたら 0。待ったのに送れていない（止められた・要照合のまま）は 5
+  assert.equal(resultLine(RACE, { job_id: "j1" }).code, 0);
+  assert.equal(resultLine(RACE, { job_id: "j1" }, { job_id: "j1", job_state: "reconcile" }).code, 5);
+  assert.equal(resultLine(RACE, { job_id: "j1" }, null, { waited: true }).code, 5);
   assert.ok(!posted.text.includes("\n"));
 });
 
@@ -665,8 +681,10 @@ test("待つ: 送り手が送り終えたら（posted）返し、送らないま
   let clock = NOW.getTime();
   let sleeps = 0;
   // 2回目の確かめで送り手が送り終えた
+  const draftId = (await first("SELECT id FROM sns_drafts")).id;
   const status = await waitForSend(RACE, {
     store,
+    draftId,
     expiresAt: "2037-10-26T07:25:00.000Z",
     now: () => new Date(clock),
     sleep: async (sec) => {
@@ -685,11 +703,29 @@ test("待つ: 送り手が送り終えたら（posted）返し、送らないま
   assert.equal(status.job_state, "posted");
   assert.equal(status.tweet_id, "1890000000000000002");
   assert.equal(sleeps, 1);
+  // 送っている途中（reconcile）は待ち続ける
+  await db.exec("UPDATE sns_x_send_jobs SET state='reconcile'");
+  let polls = 0;
+  clock = NOW.getTime();
+  const inFlight = await waitForSend(RACE, {
+    store,
+    draftId,
+    expiresAt: "2037-10-26T07:25:00.000Z",
+    now: () => new Date(clock),
+    sleep: async (sec) => {
+      polls += 1;
+      clock += sec * 1000;
+      if (polls === 2) await db.exec("UPDATE sns_x_send_jobs SET state='posted'");
+    },
+  });
+  assert.equal(inFlight.job_state, "posted");
+  assert.equal(polls, 2);
   // 送られないまま（queued）期限を過ぎた
   await db.exec("UPDATE sns_x_send_jobs SET state='queued', external_post_id=NULL, posted_at=NULL, external_post_url=NULL");
   clock = Date.parse("2037-10-26T07:26:31.000Z");
   const late = await waitForSend(RACE, {
     store,
+    draftId,
     expiresAt: "2037-10-26T07:25:00.000Z",
     now: () => new Date(clock),
     sleep: async () => assert.fail("期限＋90秒の後は待たない"),
