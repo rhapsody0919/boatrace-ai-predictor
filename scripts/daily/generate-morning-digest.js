@@ -269,8 +269,8 @@ async function fetchBaseline() {
 }
 
 /**
- * /today の X 投稿の型 b の材料（級別の全国のコース別1着率と今日の選手のコース別の1着数、RPC 179）。
- * 窓は前々日まで（STATS_MAX_LAG_DAYS と同じ理由）。関数がまだ無い（マイグレーション 179 の適用前）・読めないときは
+ * /today の X 投稿の型 b の材料（級別の全国のコース別1着率と今日の選手のコース別の1着数、RPC 181）。
+ * 窓は前々日まで（STATS_MAX_LAG_DAYS と同じ理由）。関数がまだ無い（マイグレーション 181 の適用前）・読めないときは
  * 一覧の生成を止めず、notes.courseWin を unavailable にする（/today は型 a で送り、Slack の知らせに理由が出る）。
  * notes（匿名でも読める）には理由のコードだけを入れ、エラーの本文はログにだけ出す（system-architect の審査 P3）
  */
@@ -295,9 +295,9 @@ export async function fetchCourseWin(
   });
   if (error)
     return error.code === "PGRST202"
-      ? unavailable("rpc_missing", "関数が無い。マイグレーション179が未適用")
+      ? unavailable("rpc_missing", "関数が無い。マイグレーション181が未適用")
       : unavailable("rpc_error", error.message);
-  // 窓が全期間なので、時間はデータとともに伸びる。通信を含むこの値が6秒を超えたら窓の上限を入れて見直す（179 の注記）
+  // 窓が全期間なので、時間はデータとともに伸びる。通信を含むこの値が6秒を超えたら窓の上限を入れて見直す（181 の注記）
   console.log(`  コース別1着率の RPC: ${Date.now() - startedMs}ms`);
   try {
     return buildCourseWinNotes({
