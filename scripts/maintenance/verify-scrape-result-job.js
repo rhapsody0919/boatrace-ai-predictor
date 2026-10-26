@@ -39,6 +39,9 @@ import {
 import { fetchKFileText, parseKFileRankings } from "../lib/kfileParser.js";
 import {
   RESULT_DIGEST_COLUMNS,
+  START_TIMING_DIGEST_COLUMNS,
+  pickResultColumns,
+  pickStartTimingColumns,
   computeResultDigest,
 } from "../lib/scrapeJobs/resultDigest.js";
 import {
@@ -336,6 +339,94 @@ check(
   ),
   show(Object.keys(rowA).filter((c) => !RESULT_DIGEST_COLUMNS.includes(c))),
 );
+
+// BOA-1134: 列の取り出しをハッシュとは独立に固定する。
+{
+  check("pickResultColumns: null・空行は37列すべてnull",
+    [null, {}].every((row) => same(pickResultColumns(row), Array(37).fill(null))));
+  check("pickResultColumns: 列順・非有限数・undefined・余分な列",
+    same(pickResultColumns({
+      race_id: "2026-10-01-01-01", rank1: 1, rank2: "2", rank3: NaN,
+      rank4: Infinity, rank5: undefined, extra: 9,
+    }), ["2026-10-01-01-01", 1, "2", ...Array(34).fill(null)]));
+  check("pickResultColumns: result_atは除外",
+    same(pickResultColumns({ race_id: "x", result_at: "t" }),
+      pickResultColumns({ race_id: "x" })));
+  check("START_TIMING_DIGEST_COLUMNS: 列順",
+    same(START_TIMING_DIGEST_COLUMNS,
+      ["boat_number", "start_timing", "is_flying", "is_late_start"]));
+  check("pickStartTimingColumns: null・undefined・空配列",
+    [null, undefined, []].every((rows) => same(pickStartTimingColumns(rows), [])));
+  const cases = [
+    ["STなしを除外・艇番順・欠けた項目はnull", [
+      { boat_number: 3, start_timing: 0.12, is_flying: false, is_late_start: false },
+      { boat_number: 1, start_timing: 0.05, is_flying: true },
+      { boat_number: 2, start_timing: null }, { boat_number: 4 },
+    ], [[1, 0.05, true, null], [3, 0.12, false, false]]],
+    ["ST 0を残す", [
+      { boat_number: 2, start_timing: 0, is_flying: false, is_late_start: false },
+      { boat_number: 1, start_timing: 0.01, is_flying: true, is_late_start: false },
+    ], [[1, 0.01, true, false], [2, 0, false, false]]],
+    ["文字列の艇番は数で整列し値を保持", [
+      { boat_number: "10", start_timing: 0.1 },
+      { boat_number: "9", start_timing: 0.1 },
+    ], [["9", 0.1, null, null], ["10", 0.1, null, null]]],
+    ["NaNのSTは行を残してnull", [
+      { boat_number: 1, start_timing: NaN },
+    ], [[1, null, null, null]]],
+    ["STなしは重複に含めない", [
+      { boat_number: 1, start_timing: 0.1 },
+      { boat_number: 1, start_timing: null },
+    ], [[1, 0.1, null, null]]],
+  ];
+  for (const [label, rows, expected] of cases) {
+    check(`pickStartTimingColumns: ${label}`,
+      same(pickStartTimingColumns(rows), expected));
+  }
+  for (const boat of [1, "1"]) {
+    let message = "";
+    try {
+      pickStartTimingColumns([
+        { boat_number: 1, start_timing: 0.1 },
+        { boat_number: boat, start_timing: 0.2 },
+      ]);
+    } catch (error) {
+      message = error.message;
+    }
+    check(`pickStartTimingColumns: 重複を拒否（${typeof boat}）`,
+      message.includes("スタート情報に艇番の重複があります: [1,1]"));
+  }
+  const row = { race_id: "x" };
+  const timings = [
+    { boat_number: 2, start_timing: 0.1 },
+    { boat_number: 1, start_timing: 0.2 },
+  ];
+  check("digest: 最小入力でもSTの順に依存しない",
+    computeResultDigest(row, timings) === computeResultDigest(row, [...timings].reverse()));
+  const one = [{ boat_number: 1, start_timing: 0.1 }];
+  check("digest: STなしの出遅れ行を足しても同じ",
+    computeResultDigest(row, one) === computeResultDigest(row,
+      [...one, { boat_number: 2, start_timing: null, is_late_start: true }]));
+}
+
+// 未定義の入力は合否に含めず、現在の値だけを表示する。
+const KNOWN_GAPS = [
+  {
+    input: 'rank1: 1 と rank1: "1"', specification: "数と数の文字列の同一視は未定",
+    current: () => computeResultDigest({ race_id: "x", rank1: 1 }) ===
+      computeResultDigest({ race_id: "x", rank1: "1" }),
+  },
+  {
+    input: '艇番 "a" (ST 0.1)・"b" (ST 0.2)', specification: "数にならない艇番の扱いは未定",
+    current: () => pickStartTimingColumns([
+      { boat_number: "a", start_timing: 0.1 }, { boat_number: "b", start_timing: 0.2 },
+    ]),
+  },
+  {
+    input: '艇番1・ST "0.10"', specification: "文字列のSTの扱いは未定",
+    current: () => pickStartTimingColumns([{ boat_number: 1, start_timing: "0.10" }]),
+  },
+];
 
 const digestA = computeResultDigest(rowA, timingsA);
 check(
@@ -2260,6 +2351,17 @@ const catchupCtx = (
         }
       })(),
   );
+}
+
+printOut(`KNOWN_GAPS: ${KNOWN_GAPS.length}件（合否に含めない）`);
+for (const gap of KNOWN_GAPS) {
+  let current;
+  try {
+    current = gap.current();
+  } catch (error) {
+    current = { error: error.message };
+  }
+  printOut(show({ input: gap.input, specification: gap.specification, current }));
 }
 
 printOut(
