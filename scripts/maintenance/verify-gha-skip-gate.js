@@ -29,6 +29,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import * as realGate from "../lib/ghaSkipGate.js";
 import { main as gateMain } from "./gha-skip-gate.js";
 import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
+import { ResultHttpError } from "../daily/scrape-results.js";
+import { FetchError } from "../lib/scrapeJobs/politeFetch.js";
+import { BreakerOpenError } from "../lib/scrapeJobs/circuitBreaker.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "../..");
@@ -200,6 +203,11 @@ async function suite(mod, record) {
         "vercel_running",
       ],
       ["連続失敗が負", healthy({ consecutive_failures: -1 }), "vercel_running"],
+      [
+        "起動が5分後（時計のずれ）",
+        healthy({ last_tick_at: minutesAgo(NOW, -5) }),
+        "clock_skew",
+      ],
     ];
     for (const [label, r, reason] of noTakeoverCases) {
       const d = await decide(V, rowsFor(r), NOW);
@@ -222,11 +230,6 @@ async function suite(mod, record) {
       ],
       ["起動の記録なし", healthy({ last_tick_at: null }), false],
       ["起動の値が不正な文字列", healthy({ last_tick_at: "garbage" }), false],
-      [
-        "起動が5分後（時計の異常）",
-        healthy({ last_tick_at: minutesAgo(NOW, -5) }),
-        false,
-      ],
     ];
     for (const [label, r, expected] of cases) {
       const d = await decide(V, rowsFor(r), NOW);
@@ -313,13 +316,11 @@ async function suite(mod, record) {
         NOW,
       );
       record(
-        "展示: beforeinfo のパスのブレーカー（403）が開いている → 連続失敗が多くても、起動が古くてもスキップ。閉じていても、起動が新しければ連続失敗ではスキップ（P0）",
-        e1.skip === true &&
-          e1.reason === "breaker_open_no_takeover" &&
-          e2.skip === true &&
-          e2.reason === "vercel_running" &&
-          e3.skip === true &&
-          e3.reason === "breaker_open_no_takeover" &&
+        "展示: 条件によらず肩代わりしない（spec §8 G2。beforeinfo の 403 は跡が残らず、パスのブレーカーが閉じると拒否の理由が消えるため）",
+        [e1, e2, e3].every(
+          (d) => d.skip === true && d.reason === "never_takeover",
+        ) &&
+          mod.NEVER_TAKEOVER_VARS.includes(EX) &&
           show(mod.jobKeysFor(EX)) ===
             show([
               "exhibition",
@@ -327,6 +328,37 @@ async function suite(mod, record) {
               "host:boatrace.jp/owpc/pc/race/beforeinfo",
             ]),
         show([e1, e2, e3, mod.jobKeysFor(EX)]),
+      );
+      const e4 = await decide(
+        EX,
+        [
+          {
+            ...exRow,
+            last_tick_at: minutesAgo(NOW, 30),
+            consecutive_failures: 0,
+          },
+        ],
+        NOW,
+      );
+      // ジョブ単位の判定でも、403 のパスのブレーカーは肩代わりを止める（変数の例外が外れても守る）
+      const pathJudge = mod.evaluateJobHealth({
+        job: "exhibition",
+        rowsByJob: new Map([
+          ["exhibition", { ...exRow, last_tick_at: minutesAgo(NOW, 30) }],
+          ["host:boatrace.jp/owpc/pc/race/beforeinfo", pathOpen],
+        ]),
+        now: NOW,
+      });
+      record(
+        "展示（ジョブ単位）: beforeinfo のパスのブレーカーが開いていれば、起動が古くても肩代わりしない",
+        pathJudge.healthy === true &&
+          pathJudge.reason === "breaker_open_no_takeover",
+        show(pathJudge),
+      );
+      record(
+        "展示（再現）: 起動が古く・ブレーカーが閉じ・失敗の跡が無くても → スキップ（修正前は肩代わりした）",
+        e4.skip === true && e4.reason === "never_takeover",
+        show(e4),
       );
     }
     {
@@ -395,6 +427,31 @@ async function suite(mod, record) {
         "network error while reading races",
         "AbortError: The operation was aborted",
       ];
+      // 投げる側の実物の文字列（store.js の truncateError は message をそのまま入れる）
+      const realErrors = [
+        new ResultHttpError(
+          "https://www.boatrace.jp/owpc/pc/race/raceresult",
+          403,
+        ).message,
+        "HTTP 403", // race_info（update-race-info.js）・odds_final・point_rank・racerProfileSync の HTTP 503
+        "point_rank: 取得できません: HTTP 403",
+        "Kファイル取得失敗: HTTP 403 (https://www1.mbrace.or.jp/od2/K/x.lzh)",
+        "カテゴリ一覧取得に失敗しました(403): https://www.boatrace.jp/owpc/pc/site/news/",
+        "http_403",
+        "HTTP 503",
+        "HTTP 429 for https://www.boatrace.jp/x",
+        new FetchError("https://www.boatrace.jp/x", 3, new Error("timeout"))
+          .message,
+        new BreakerOpenError(
+          "host:boatrace.jp",
+          Date.parse("2026-09-24T03:00:00Z"),
+        ).message,
+      ];
+      record(
+        "isFetchFailureError（再現 P1）: 各ジョブが投げる実物の形（ResultHttpError・HTTP 403・Kファイル・racer_news の (403)・http_403・HTTP 503・FetchError・BreakerOpenError）を拾う",
+        realErrors.every((e) => mod.isFetchFailureError(e)),
+        show(realErrors.filter((e) => !mod.isFetchFailureError(e))),
+      );
       record(
         "isFetchFailureError: DB・スケジュールの失敗は取得先の失敗にしない（予備を止めない）。取得先の形だけを拾う",
         dbErrors.every((e) => !mod.isFetchFailureError(e)) &&
@@ -426,6 +483,23 @@ async function suite(mod, record) {
           }),
         ],
         NOW,
+      );
+      const dayOld = await decide(
+        V,
+        [
+          healthy({
+            last_tick_at: minutesAgo(NOW, 25 * 60),
+            updated_at: minutesAgo(NOW, 25 * 60),
+            consecutive_failures: 5,
+            last_error: "HTTP 403",
+          }),
+        ],
+        NOW,
+      );
+      record(
+        "オッズ: 24時間より前の失敗は数えない（前日の 403 で今日の予備を止めない）",
+        dayOld.skip === false && dayOld.reason === "tick_stale",
+        show(dayOld),
       );
       record(
         "オッズ: 接続の失敗が最後の起動より5分超前（その後も起動が続いた）なら古い失敗として実行、最後の起動の頃の失敗ならスキップ",
@@ -587,6 +661,40 @@ async function suite(mod, record) {
         }),
       ],
       jst("2026-09-24 22:30"),
+    );
+    const d8f = await decide(
+      V,
+      [
+        row("point_rank", {
+          consecutive_failures: 5,
+          last_target_date: "2026-09-23",
+          last_tick_at: ranAt,
+          updated_at: jst("2026-09-23 23:30").toISOString(),
+          last_error: "point_rank の書き込みに失敗しました: permission denied",
+        }),
+      ],
+      jst("2026-09-24 22:30"),
+    );
+    const d8g = await decide(
+      V,
+      [
+        row("point_rank", {
+          consecutive_failures: 5,
+          last_target_date: "2026-09-23",
+          last_tick_at: jst("2026-09-23 23:30").toISOString(),
+          updated_at: jst("2026-09-23 23:30").toISOString(),
+          last_error: "HTTP 403",
+        }),
+      ],
+      jst("2026-09-24 22:30"),
+    );
+    record(
+      "point_rank: 前日の失敗（指定時刻より前）は、今日の daily_failures にも 403 の拒否にも数えない（今日の起動ありならスキップ、起動なしなら実行）",
+      d8f.skip === true &&
+        d8f.reason === "vercel_running" &&
+        d8g.skip === false &&
+        d8g.reason === "target_pending",
+      show([d8f, d8g]),
     );
     record(
       "point_rank: Vercel が起動し、取得先と関係ない失敗（DB・コード）が3回 → 実行（日次の予備）。失敗1回ならまだ待つ（スキップ）",
@@ -783,6 +891,7 @@ async function suite(mod, record) {
       [
         row("racer_profiles", {
           last_tick_at: minutesAgo(N, 10),
+          updated_at: minutesAgo(N, 10),
           consecutive_failures: 3,
         }),
       ],
@@ -1352,11 +1461,15 @@ const MUTANTS = [
     "    if (tickFresh) {\n      return noTakeover(",
     "    if (false) {\n      return noTakeover(",
   ],
-  ["時計の異常（未来の起動）を許す", "tickAge >= -1 && ", ""],
+  [
+    "時計の異常（未来の起動）を許す",
+    "if (tickAge !== null && tickAge < -1) {",
+    "if (false) {",
+  ],
   [
     "直近の失敗（403・接続の失敗）の確認を外す（P0）",
-    "if (isFetchFailureError(row.last_error) && isRecentFailure(row)) {",
-    "if (false) {",
+    "isFetchFailureError(row.last_error) &&\n    isRecentFailure(row, failureFloorMs)",
+    "false",
   ],
   [
     "403 のパスのブレーカーの確認を外す（BOA-1145）",
@@ -1372,6 +1485,21 @@ const MUTANTS = [
     "連続失敗で肩代わりを戻す（P0）",
     "    if (tickFresh) {\n      return noTakeover(",
     "    if (tickFresh && !(row.consecutive_failures >= 3)) {\n      return noTakeover(",
+  ],
+  [
+    "失敗の期間の下限（当日の指定時刻・24時間）を外す",
+    "if (failedAt < floorMs) return false;",
+    "",
+  ],
+  [
+    "日次: 前日の失敗も daily_failures に数える",
+    "failedAt >= targetInstant &&",
+    "true &&",
+  ],
+  [
+    "展示も肩代わりの対象にする",
+    "if (NEVER_TAKEOVER_VARS.includes(varName)) {",
+    "if (false) {",
   ],
   [
     "古い失敗も肩代わりを止める理由にする",

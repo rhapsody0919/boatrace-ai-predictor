@@ -100,15 +100,16 @@ const hostKeysOf = (def) =>
 const pathKeysOf = (def) => (def?.breakerUrls ?? []).map(pathKeyOf);
 
 /**
- * 直近の失敗が、取得先の拒否・過負荷・接続の失敗か（last_error の文字列）。形は次の3つに限る:
- *   htmlFetch の `HTTP 403 for <url>`（429・503 も）、politeFetch の FetchError `取得に失敗しました（N回試行）: <url> — …`
- *   （タイムアウト・ネットワークエラーを含む）、BreakerOpenError `サーキットブレーカーが開いています（host:…`。
- *   加えて Node の fetch のネットワークエラー（fetch failed・ECONN*・ETIMEDOUT・ENOTFOUND・EAI_AGAIN・UND_ERR_*）。
- * store.js の `…に失敗しました:`（DB の失敗）は含めない。fetch failed 等は Supabase への接続の失敗でも出るが、
- * そのときは GitHub も DB に書けないため、肩代わりしない側に倒して害は無い
+ * 直近の失敗が、取得先の拒否・過負荷・接続の失敗か（last_error の文字列）。各ジョブが投げる形をすべて拾う:
+ *   htmlFetch `HTTP 403 for <url>`、scrape-results の ResultHttpError `…: HTTP 403 (<url>)`、race_info・odds_final・
+ *   point_rank `HTTP 403`、kfileParser `Kファイル取得失敗: HTTP 403 (<url>)`、racer_news `…に失敗しました(403): <url>`、
+ *   会場のジョブ `http_403`、racerProfileSync `HTTP 503`（429・503 も同じ）。politeFetch の FetchError
+ *   `取得に失敗しました（N回試行）`（タイムアウト・ネットワークエラーを含む）、BreakerOpenError、Node の fetch の
+ *   ネットワークエラー（fetch failed・ECONN*・ETIMEDOUT・ENOTFOUND・EAI_AGAIN・UND_ERR_*）。
+ * store.js の DB の失敗（timeout・network・aborted の語）は含めない。広すぎて拾っても肩代わりしない側に倒れるだけ
  */
 export const FETCH_FAILURE_RE =
-  /HTTP (403|429|503) for |取得に失敗しました（\d+回試行）|サーキットブレーカーが開いています（|fetch failed|ECONN(RESET|REFUSED|ABORTED)|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR_/;
+  /\bHTTP[ _]?(403|429|503)\b|http_(403|429|503)\b|\((403|429|503)\)|取得に失敗しました（\d+回試行）|サーキットブレーカーが開いています（|fetch failed|ECONN(RESET|REFUSED|ABORTED)|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|UND_ERR_/;
 
 export const isFetchFailureError = (lastError) =>
   typeof lastError === "string" && FETCH_FAILURE_RE.test(lastError);
@@ -117,14 +118,26 @@ export const isFetchFailureError = (lastError) =>
  * last_error が「Vercel の直近の起動」の失敗か。recordFailure は updated_at を書き、touchTick は書かない。
  * 失敗の後も起動（tick）が TICK_WRITE_INTERVAL_MS を超えて続いていれば、その失敗は古い（その後の起動は処理対象が
  * 無かっただけ）とみなし、肩代わりを止める理由にしない（前夜の1回の失敗で翌朝の予備まで止めない）。
+ * floorMs より前の失敗（日次は当日の指定時刻より前、窓型は24時間より前）も数えない。
  * 時刻を読めないときは直近とみなす（肩代わりしない側）
  */
-function isRecentFailure(row) {
+function isRecentFailure(row, floorMs) {
   const failedAt = parseTime(row.updated_at);
+  if (failedAt === null) return true;
+  if (failedAt < floorMs) return false;
   const tick = parseTime(row.last_tick_at);
-  if (failedAt === null || tick === null) return true;
+  if (tick === null) return true;
   return failedAt >= tick - TICK_WRITE_INTERVAL_MS;
 }
+
+/** 窓型で last_error を数える期間（1運用日。窓型の cron は JST 07:00〜24:00 のため、前日の失敗を今日に持ち越さない） */
+const WINDOW_FAILURE_MEMORY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * 肩代わりしない変数（spec §8 G2「展示は肩代わりしない」）。beforeinfo の 403 は BreakerOpenError でジョブの
+ * last_error に跡が残らず、パスのブレーカーが閉じると拒否の理由が消えるため、展示は条件によらず GitHub で取らない
+ */
+export const NEVER_TAKEOVER_VARS = Object.freeze(["SKIP_EXHIBITION_ON_GHA"]);
 
 /** 取得先の都合（拒否・過負荷・接続の失敗）で肩代わりしない理由。1つの変数のどれかのジョブに出たら、変数ごと止める */
 const REMOTE_VETO_REASONS = new Set([
@@ -197,7 +210,20 @@ export function evaluateJobHealth({
       `${job}: 取得先 ${openKey} のブレーカーが開いている（肩代わりしない）`,
     );
   }
-  if (isFetchFailureError(row.last_error) && isRecentFailure(row)) {
+  const targetInstant =
+    def.kind === "daily"
+      ? parseTime(
+          `${resolveTargetDate(now, def.targetTimeJst)}T${def.targetTimeJst}:00+09:00`,
+        )
+      : null;
+  const failureFloorMs =
+    def.kind === "daily"
+      ? (targetInstant ?? nowMs)
+      : nowMs - WINDOW_FAILURE_MEMORY_MS;
+  if (
+    isFetchFailureError(row.last_error) &&
+    isRecentFailure(row, failureFloorMs)
+  ) {
     return noTakeover(
       "fetch_failure_no_takeover",
       `${job}: 直近の失敗が取得先の拒否・接続の失敗（${String(row.last_error).slice(0, 120)}。肩代わりしない）`,
@@ -206,8 +232,13 @@ export function evaluateJobHealth({
 
   const tick = parseTime(row.last_tick_at);
   const tickAge = tick === null ? null : minutesSince(tick, nowMs);
-  const tickFresh =
-    tickAge !== null && tickAge >= -1 && tickAge < policy.tickMaxAgeMin;
+  if (tickAge !== null && tickAge < -1) {
+    return noTakeover(
+      "clock_skew",
+      `${job}: 最終起動が${-tickAge}分先（時計のずれ。確かめられないため肩代わりしない）`,
+    );
+  }
+  const tickFresh = tickAge !== null && tickAge < policy.tickMaxAgeMin;
 
   if (def.kind === "window") {
     if (tickFresh) {
@@ -239,7 +270,6 @@ export function evaluateJobHealth({
         `${job}: live・対象日${target}は処理済み（${done}）`,
       );
     }
-    const targetInstant = parseTime(`${target}T${def.targetTimeJst}:00+09:00`);
     const startedSinceTarget =
       tick !== null &&
       targetInstant !== null &&
@@ -249,8 +279,12 @@ export function evaluateJobHealth({
     // 失敗は除いた。コード・DB の失敗）が閾値以上続いているときだけ肩代わりする。races が無いと当日の取得が全て止まる
     // races_init の安全装置を、Vercel の不具合の日に生かすため
     const failures = row.consecutive_failures;
+    const failedAt = parseTime(row.updated_at);
     if (
       startedSinceTarget &&
+      failedAt !== null &&
+      targetInstant !== null &&
+      failedAt >= targetInstant &&
       Number.isInteger(failures) &&
       failures >= policy.maxDailyFailures
     ) {
@@ -315,6 +349,15 @@ export function decideFromRows({
       .filter((r) => r && typeof r.job === "string")
       .map((r) => [r.job, r]),
   );
+  if (NEVER_TAKEOVER_VARS.includes(varName)) {
+    return {
+      skip: true,
+      reason: "never_takeover",
+      message: `スキップ: ${varName} は肩代わりしない（展示は GitHub で取らない。spec §8 G2）`,
+      retryable: false,
+      results: [],
+    };
+  }
   const results = jobs.map((job) =>
     evaluateJobHealth({ job, rowsByJob, now, policy, registry }),
   );

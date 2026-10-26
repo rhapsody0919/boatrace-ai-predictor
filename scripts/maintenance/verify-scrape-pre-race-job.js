@@ -1951,29 +1951,20 @@ async function routingIsCorrect(handlerFactory) {
       ]).skip === true,
   );
   check(
-    "gate exhibition: mode が行なし・off・shadow の間はスキップ（どこからも取らない。P0）",
-    decide("SKIP_EXHIBITION_ON_GHA", []).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { mode: "off", last_tick_at: null }),
-      ]).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { mode: "shadow", last_tick_at: null }),
-      ]).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", []).results[0].reason === "no_row",
+    "gate exhibition: mode・起動・失敗によらず常にスキップ（展示は GitHub で肩代わりしない。spec §8 G2）",
+    [
+      [],
+      [row("exhibition", { mode: "off", last_tick_at: null })],
+      [row("exhibition", { mode: "shadow", last_tick_at: null })],
+      [row("exhibition")],
+      [row("exhibition", { last_tick_at: tick(30) })],
+      [row("exhibition", { last_tick_at: null })],
+      [row("exhibition", { consecutive_failures: 50 })],
+    ].every((rows) => {
+      const d = decide("SKIP_EXHIBITION_ON_GHA", rows);
+      return d.skip === true && d.reason === "never_takeover";
+    }),
     show(decide("SKIP_EXHIBITION_ON_GHA", [])),
-  );
-  check(
-    "gate exhibition: mode が live なら、他のジョブと同じ判定。起動が新しければ連続失敗があってもスキップ、起動が古い・記録なしなら実行（GitHubが肩代わり）",
-    decide("SKIP_EXHIBITION_ON_GHA", [row("exhibition")]).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { last_tick_at: tick(30) }),
-      ]).skip === false &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { consecutive_failures: 50 }),
-      ]).skip === true &&
-      decide("SKIP_EXHIBITION_ON_GHA", [
-        row("exhibition", { last_tick_at: null }),
-      ]).skip === false,
   );
   check(
     "gate: 行なし・live でないジョブは、どのジョブも肩代わりしない（healthy=true。どこからも取らない）",

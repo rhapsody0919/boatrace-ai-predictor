@@ -94,8 +94,8 @@ async function main() {
     (!raceInfoDue || (await gateSkips("SKIP_RACE_INFO_ON_GHA")));
   const hasUpdateRaces = !skipRaceInfo && raceInfoDue;
   // exhibition 内部: EXHIBITION_WINDOWS=[30,15,10] 各 ±3分
-  // 展示（BOA-313 Step 3。WS4b・T4b-06）: SKIP_EXHIBITION_ON_GHA=true の間は、他のジョブと同じく、肩代わりの条件を
-  // 満たすときだけ GitHub Actions が取る（mode が live でなければ取らない。scripts/lib/ghaSkipGate.js）
+  // 展示（BOA-313 Step 3。WS4b・T4b-06）: SKIP_EXHIBITION_ON_GHA=true の間は、GitHub Actions は展示を肩代わりしない
+  // （ゲートが常にスキップを返す。spec §8 G2。scripts/lib/ghaSkipGate.js の NEVER_TAKEOVER_VARS）
   const exhibitionDue = [30, 15, 10].some(
     (w) => getRacesInWindow(schedule, w, 3).length > 0,
   );
