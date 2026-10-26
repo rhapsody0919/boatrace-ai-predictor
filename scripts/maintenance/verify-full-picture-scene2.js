@@ -1952,7 +1952,7 @@ for (const f of fixtures) {
   for (const [a, b, n, what] of [[58.1, 54.6, 599, "s1-venue90 599件 z≈1.72"], [100, 58.1, 6, "s1-day 6R（正規近似の件数に足りない）"], [69.7, 55.2, 33, "s3-rough 33件 z≈1.67"]]) {
     const f = diffOf(a, b, n);
     assert.equal(f.direction, null, `${what} は向きを言わない`);
-    assert.equal(diffText("全国", f), "全国との差は確認できない", `${what} の文`);
+    assert.equal(diffText("全国", f), n < 10 ? "全国とは比べられない" : "全国との差は確認できない", `${what} の文`);
     assert.ok(checkLines(["大村の1号艇の1着率58.1%", "全国の54.6%より3.5ポイント高い"], f, null).some((w) => w.includes("z の根拠が無い")), `${what} で「高い」は文の検査で止まる`);
   }
   const g = diffOf(60, 50, 1000);

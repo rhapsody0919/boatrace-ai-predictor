@@ -19,18 +19,20 @@ export function zOf(a, b, n) {
  * 10/26 大村10R で 599件 z≈1.72・6R・33件 z≈1.67 の差を「高い」と言い切っていた）。件数が無ければ向きは言わない
  */
 export function diffOf(a, b, n) {
-  if (a === null || b === null || a === undefined || b === undefined) return { diffPt: null, direction: null, z: null, sig: false };
+  if (a === null || b === null || a === undefined || b === undefined) return { diffPt: null, direction: null, z: null, sig: false, few: false };
   const d = Math.round((a - b) * 10) / 10;
   const z = zOf(a, b, n);
   const sig = z !== null && Math.abs(z) >= Z_LINE && d !== 0;
-  return { diffPt: Math.abs(d), direction: sig ? (d > 0 ? "高い" : "低い") : null, z, sig };
+  // few: 件数が足りず z を出さなかった（検定して通らなかったのとは別。言い方を「比べられない」にする。wording-editor 2026-10-27 P2）
+  return { diffPt: Math.abs(d), direction: sig ? (d > 0 ? "高い" : "低い") : null, z, sig, few: z === null };
 }
 /**
  * 差の言い方（文型）。1ポイント未満は「ほぼ」と言わず「差は1ポイント未満」。差は小数1桁（19.0ポイント。BOA-913）。
- * 線（|z|>=1.96）を通らない差は向きを言わず「差は確認できない」（number-wording.md「差を確認できない」）
+ * 線（|z|>=1.96）を通らない差は向きを言わず「差は確認できない」（number-wording.md「差を確認できない」）。
+ * 件数が足りず z を出さない差は「とは比べられない」（件数は前の行に出ている。22字の幅に収める）（検定した文に読ませない。wording-editor 2026-10-27 P2）
  */
 export const diffWords = (f) =>
-  f.diffPt === null || f.diffPt === undefined ? null : f.diffPt < 1 ? "との差は1ポイント未満" : f.direction ? `より${f.diffPt.toFixed(1)}ポイント${f.direction}` : "との差は確認できない";
+  f.diffPt === null || f.diffPt === undefined ? null : f.diffPt < 1 ? "との差は1ポイント未満" : f.direction ? `より${f.diffPt.toFixed(1)}ポイント${f.direction}` : f.few ? "とは比べられない" : "との差は確認できない";
 export const diffText = (base, f) => {
   const w = diffWords(f);
   return w === null ? null : `${base}${w}`;
