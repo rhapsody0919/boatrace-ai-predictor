@@ -12,6 +12,7 @@
  *   艇ごとの選手の進入コースの成績（決まり手・期のコース別・進入の分布）と体重、会場のコース別の決まり手も写し、レースの日より後の集計を記録する
  */
 import assert from "node:assert/strict";
+import { diffOf, diffText, rankOf } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
   MAX_WIDTH,
@@ -561,7 +562,8 @@ for (const f of fixtures) {
   const noWind = (scenes) => scenes.map((x) => (x.id === "scene1" ? { ...x, data: { ...x.data, steps: x.data.steps.filter((st) => st.id !== "s1-wind") } } : x));
   const low = noWind(load1("2026-10-12-01-12.json.gz"));
   const lowAns = templateText(allBeats(low)).answers;
-  assert.ok(lowAns["s1-day"].some((l) => l.includes("90日の1着率")), "前提: 完全版の水面の答えは会場の90日の1着率と比べる");
+  // BOA-1157: 当日の数は件数だけで、90日の1着率とも比べない（割合も書かない）
+  assert.ok(!lowAns["s1-day"].some((l) => l.includes("90日") || l.includes("%")), `当日の水面の答えは件数だけ: ${lowAns["s1-day"]}`);
   const eLow = entryScenes(low, lowAns, { race: "桐生12R" });
   assert.ok(!eLow.scenes[0].data.steps.some((st) => st.id === "s1-venue90"), "前提: |z|<1.96 で会場の棒を外す");
   assert.ok(eLow.scenes[0].data.steps.some((st) => st.id === "s1-day"), "前提: 当日の水面の段がある");
@@ -576,7 +578,7 @@ for (const f of fixtures) {
   const noConc = low.map((x) => (x.id === "scene4" ? { ...x, data: { ...x.data, conclusion: null } } : x));
   const eDay = entryScenes(noConc, lowAns, { race: "桐生12R" });
   assert.equal(eDay.hero.source, "day");
-  assert.match(eDay.hero.value, /^\d+\.\d%$/, `水面の数字は小数1桁: ${eDay.hero.value}`);
+  assert.match(eDay.hero.value, /^\d+\/\d+R$/, `水面の数字は件数だけ（BOA-1157）: ${eDay.hero.value}`);
   assert.ok(HERO_MIN_N > 0);
 }
 // 入口版は59秒を越えたら会場の棒、次に今日の条件を外し、それでも越えたら止める
@@ -1944,6 +1946,74 @@ for (const f of fixtures) {
   assert.deepEqual(keyBoatsOf(m), { form: null, boats: [1] }, "鍵の艇も横一線に寄せない");
   const ans = templateText(allBeats(buildAll(m))).answers;
   for (const id of ["s4-slit-course"]) assert.deepEqual(checkLines(ans[id], dn.steps.find((st) => st.id === id).facts, null), [], "当てはまらない言い方も文の検査を通る");
+}
+
+// BOA-1157: 差の向き（高い・低い）は |z|>=1.96 のときだけ言い切る。z は hq の照合（fp_facts.py の pair_z）と同じ2標本の形。
+// 10/26 大村10R の3例は言い切らない（hq の値: s1-venue90 z=1.67、s3-rough 1.67、s1-day は 6/6 で件数が足りず z を出さない）
+{
+  const S = (ka, na, kb, nb) => ({ a: (ka / na) * 100, na, b: (kb / nb) * 100, nb });
+  const cases = [
+    [S(348, 599, 7640, 13985), 1.67, "全国との差は確認できない", "s1-venue90"],
+    [S(23, 33, 224035, 405581), 1.67, "全国との差は確認できない", "s3-rough"],
+    [S(6, 6, 348, 599), null, "全国とは比べられない", "s1-day 6/6"],
+  ];
+  for (const [smp, z, text, what] of cases) {
+    const f = diffOf(smp.a, smp.b, smp);
+    assert.equal(f.z, z, `${what} の z は hq と同じ`);
+    assert.equal(f.direction, null, `${what} は向きを言わない`);
+    assert.equal(diffText("全国", f), text, `${what} の文`);
+    assert.ok(checkLines(["大村の1号艇の1着率58.1%", "全国の54.6%より3.5ポイント高い"], f, null).some((w) => w.includes("z の根拠が無い")), `${what} で「高い」は文の検査で止まる`);
+  }
+  const g = diffOf(60, 50, S(600, 1000, 5000, 10000));
+  assert.equal(g.direction, "高い", "|z|>=1.96 なら今までどおり言い切る");
+  assert.equal(diffText("全国の50.0%", g), "全国の50.0%より10.0ポイント高い");
+  assert.equal(diffOf(40, 50, S(400, 1000, 5000, 10000)).direction, "低い");
+  assert.equal(diffOf(51, 50, null).direction, null, "件数が無ければ言い切らない");
+  assert.equal(diffText("全国", diffOf(50.5, 50, S(505, 1000, 5000, 10000))), "全国との差は1ポイント未満", "1ポイント未満は今までどおり");
+  // 小標本（どちらかが30件未満）は z を出さない。6/6 対 348/599 は z=2.07 でも止める（hq data-scientist 2026-10-27）
+  assert.equal(diffOf(60, 50, S(18, 29, 5000, 10000)).z, null, "29件は z を出さない");
+  // s1-day は件数だけ（割合・ポイント差・90日との比べを書かない。その日の1会場の比べは Bonferroni の線が約3.08）
+  const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  const day = buildAll(m).find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-day");
+  assert.ok(day, "前提: s1-day がある");
+  assert.equal(day.facts.direction, null);
+  assert.ok(day.lines.join("").includes("1着") && !/%|90日|高い|低い/.test(day.lines.join("")), `s1-day は件数だけ: ${day.lines.join(" / ")}`);
+  // 順位（最多）の言い切りも z で見る（hq 2026-10-27。7 対 6 は z≈0.28）
+  assert.deepEqual(rankOf(7, 6), { rankZ: 0.28, rankSig: false });
+  assert.equal(rankOf(30, 10).rankSig, true);
+  assert.equal(rankOf(5, 0).rankSig, true, "2位が無ければ言い切ってよい");
+  const sonar = { kind: "sonar", n: 20, top: { boat: 1, count: 7, pct: 35 }, next: { boat: 2, count: 6 }, ...rankOf(7, 6) };
+  assert.ok(checkLines(["類似レース20件で1着最多は1号艇", "7件（35%）、次は2号艇の6件"], sonar, null).some((w) => w.includes("順位を言い切った")), "7 対 6 で「最多」は止まる");
+  for (const st of buildAll(m).flatMap((x) => x.data.steps ?? [])) {
+    if (st.facts?.rankSig === false) assert.ok(!/最多|最高/.test(st.lines.join("")), `${st.id}: 線を通らない順位で最多と言わない: ${st.lines.join(" / ")}`);
+  }
+}
+
+// #1973 Codex P1・hq facts.py（2026-10-27）の再現
+{
+  // P1-1: 有意の判定は丸める前の件数・率で（700件中431勝・基準58.1%は生で z≈1.86、62%に丸めると2.09）
+  const raw = diffOf(62, 58.1, { a: (431 / 700) * 100, na: 700, b: 58.1, nb: 100000 });
+  assert.equal(raw.direction, null, `丸める前の率で判定する（z=${raw.z}）`);
+  // P1-2: 有意差の無い結論の文も字幕の幅（全角22字）に収める（709件・1号艇359・2号艇350）
+  const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  m.api.scenario.scenario.cells.waku.forms.any = { n: 709, tri: { "1-2-3": 359, "2-1-3": 350 } };
+  const d4 = buildAll(m).find((x) => x.id === "scene4").data;
+  for (const c of [d4.conclusionAny, d4.conclusion].filter(Boolean)) {
+    if (c.facts.rankSig === false) assert.ok(!/最多/.test(c.lines.join("")), c.lines.join(" / "));
+    assert.deepEqual(checkLines(c.lines, c.facts, null).filter((w) => /幅|字/.test(w)), [], `結論の文が幅に収まる: ${c.lines.join(" / ")}`);
+  }
+  assert.equal(d4.conclusionAny.facts.rankSig, false, "359 対 350 は線を通らない");
+  // 30件未満の母数に割合を付けない（hq: s4-course-flow「15件の66.7%」）
+  const m2 = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  m2.api.scenario.scenario.cells.waku.forms.flat = { n: 15, tri: { "1-2-3": 10, "2-1-3": 3, "3-1-2": 2 } };
+  m2.api.scenario.scenario.cells.waku.forms.any = m2.api.scenario.scenario.cells.waku.forms.flat;
+  for (const st of buildAll(m2).flatMap((x) => [...(x.data.steps ?? []), ...(x.data.conclusion ? [x.data.conclusion] : [])])) {
+    if ((st.facts?.n ?? 99) < 30 && /flow|tri|conclusion/.test(st.id)) assert.ok(!/%/.test(st.lines.join("")), `${st.id}: 30件未満に割合: ${st.lines.join(" / ")}`);
+  }
+  // 軸の文「1着なら2着は◯号艇」も2着の1位と2位の差が線を通ったときだけ
+  for (const st of buildAll(m).find((x) => x.id === "scene5").data.steps.filter((x) => x.facts?.kind === "followers" && x.lines.length)) {
+    if (st.facts.rankSig === false) assert.ok(!/2着は\d号艇/.test(st.lines.join("")), `${st.id}: ${st.lines.join(" / ")}`);
+  }
 }
 
 console.log("verify-full-picture-scene2: OK");
