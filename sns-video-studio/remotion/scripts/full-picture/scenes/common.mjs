@@ -11,12 +11,5 @@ export const pct1 = (p) => (p === null || p === undefined ? null : Math.round(p 
 /** 割合（0〜1）→ 整数の % の数 */
 export const pct0 = (p) => (p === null || p === undefined ? null : Math.round(p * 100));
 export const venueName = (code) => venueLabel(Number(code), t);
-/** 比べた差（ポイント、小数1桁）と向き */
-export function diffOf(a, b) {
-  if (a === null || b === null || a === undefined || b === undefined) return { diffPt: null, direction: null };
-  const d = Math.round((a - b) * 10) / 10;
-  return { diffPt: Math.abs(d), direction: d > 0 ? "高い" : d < 0 ? "低い" : null };
-}
-/** 差の言い方（文型）。1ポイント未満は「ほぼ」と言わず「差は1ポイント未満」。差は小数1桁（19.0ポイント。BOA-913） */
-export const diffText = (base, f) =>
-  f.diffPt === null ? null : f.diffPt < 1 ? `${base}との差は1ポイント未満` : `${base}より${f.diffPt.toFixed(1)}ポイント${f.direction}`;
+// 差の計算と言い方は diff.mjs（scene2-data.mjs からも使うので、scene2-data.mjs を読む common.mjs と分ける）
+export { Z_LINE, MIN_N, zOf, diffOf, diffWords, diffText, rankOf } from "./diff.mjs";

@@ -174,10 +174,10 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/roQuery.js` | 本番の読み取り専用ロール claude_ro で1文を実行する（scripts/db/ro-query.js の本体、ADR-0096）。 | checkReadStatement, parseRowLimit, checkRoUrl, runReadOnlyQuery, formatResult ほか4件 |
 | `scripts/lib/schemaDetect.js` | 「マイグレーションの列・テーブルが、接続先のDBに適用済みか」の判定（共通処理） | createSchemaDetector, DEFAULT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/scramVerifier.js` | PostgreSQL の SCRAM-SHA-256 の検証子（pg_authid.rolpassword の形）を作る。RFC 5802 / RFC 7677… | scramSha256Verifier, SCRAM_ITERATIONS |
-| `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | normalizeBreakerRead, createCircuitBreaker, BreakerOpenError, FetchStoppedError |
+| `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | normalizeBreakerRead, effectiveBlockLevel, blockDurationMs, createCircuitBreaker, BreakerOpenError ほか2件 |
 | `scripts/lib/scrapeJobs/cleanup.js` | 予定表の保守（scrape-cleanup、plan.md §3.9・T4a-11）。日次（JST 04:00）。 | cleanupCutoffs, runCleanup, SLOT_RETENTION_DAYS |
 | `scripts/lib/scrapeJobs/concurrency.js` | 並列度の上限つきの map（取得先への負荷を抑える。plan.md §8）。 | mapWithConcurrency, createSemaphore |
-| `scripts/lib/scrapeJobs/cronWrapper.js` | Vercel Cron 向けの共通ラッパ（plan.md §2.2）。各データセットの api/cron/*.js は、これを経由する。 | isAuthorized, defaultWorker, shouldEnsureSlots, runScrapeJob, createScrapeCronHandler ほか2件 |
+| `scripts/lib/scrapeJobs/cronWrapper.js` | Vercel Cron 向けの共通ラッパ（plan.md §2.2）。各データセットの api/cron/*.js は、これを経由する。 | isAuthorized, defaultWorker, shouldEnsureSlots, runScrapeJob, createScrapeCronHandler ほか3件 |
 | `scripts/lib/scrapeJobs/dailyJob.js` | 日次ジョブの共通部分（plan.md §4.3）。 | resolveTargetDate |
 | `scripts/lib/scrapeJobs/expectedUnpublished.js` | 発売開始の遅れ（想定内の未公開。BOA-386・完了の定義Bの見直し）: 「発走60分前のオッズが、その窓（±3分）の間は | laterOffsetsOf, firstRaceIdSet, slotDeadlineOf, isPastWindow, isExtensionSuccess ほか8件 |
 | `scripts/lib/scrapeJobs/fetchCounts.js` | M1: 最終 outcome と累積 attempts からの固定ページ数による近似。純粋関数。 | validateTargetDate, dailyFetchCounts, FETCH_COUNT_NOTES |
@@ -188,7 +188,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/oddsHandlers.js` | オッズ取得（A3）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseOddsRaceId, shouldProbeWinFirst, createOddsSlotHandler |
 | `scripts/lib/scrapeJobs/outcomes.js` | スロット・ジョブの結果（outcome）の扱い（純粋関数）。 | isFinalOutcome, truncateError, applyZeroRowGuard, computeRetryAt, FINAL_OUTCOMES ほか2件 |
 | `scripts/lib/scrapeJobs/pcexpectHandlers.js` | 公式コンピュータ予想（B1、external_predictions）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関… | parsePcexpectRaceId, createPcexpectSlotHandler |
-| `scripts/lib/scrapeJobs/politeFetch.js` | 取得先（boatrace.jp 等）への、負荷に配慮した取得（ADR-0067・BOA-368、plan.md §2.2・§8）。 | hostKeyOf, pathKeyOf, parseRetryAfterMs, createPoliteFetch, DEFAULT_USER_AGENT ほか2件 |
+| `scripts/lib/scrapeJobs/politeFetch.js` | 取得先（boatrace.jp 等）への、負荷に配慮した取得（ADR-0067・BOA-368、plan.md §2.2・§8）。 | hostKeyOf, pathKeyOf, describeBlockedResponse, parseRetryAfterMs, createPoliteFetch ほか4件 |
 | `scripts/lib/scrapeJobs/preRaceDigest.js` | レース情報（A1）・展示（A2）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | computeRaceInfoDigest, computeExhibitionDigest, RACE_ENTRY_DIGEST_COLUMNS, RACE_CONDITION_DIGEST_COLUMNS, EXHIBITION_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/preRaceHandlers.js` | レース情報（A1）・展示（A2）の Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parsePreRaceId, createScheduleLoader, createSeriesDayLoader, createRaceInfoSlotHandler, createExhibitionSlotHandler ほか5件 |
 | `scripts/lib/scrapeJobs/predictionOddsHandlers.js` | 買い目オッズ（A4、prediction_odds）を、A3（オッズ取得、race_odds）の成功フックから導出する（BOA-404、 | fetchPredictionsByModel, fetchLatestRaceOdds, deriveRowsForRaces, buildShadowDigest, deriveAndUpsertPredictionOdds ほか3件 |
@@ -388,4 +388,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 346 ファイル / export 1944 件。
+対象 346 ファイル / export 1950 件。

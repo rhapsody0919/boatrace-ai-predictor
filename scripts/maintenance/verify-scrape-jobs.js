@@ -967,6 +967,8 @@ check(
     const f = createPoliteFetch({
       breaker,
       sleep: noSleep,
+      // カナリア（race/index）は verify-scrape-breaker-canary.js で見る。ここではパス単位の動きだけ
+      canaryUrls: {},
       fetchImpl: async (url) => {
         fetched.push(url);
         return mkResponse(url.startsWith(BEFORE) ? beforeStatus : 200);
@@ -1029,12 +1031,12 @@ check(
         next.status === 200 &&
         breaker.snapshot(pathKeyOf(BEFORE)).openUntil === 0,
     );
-    // 上限は120分
+    // 上限は6時間（30分→1時間→2時間→4時間→6時間。段階は verify-scrape-breaker-level.js）
     const capped = createCircuitBreaker({ now: () => clock.t });
-    for (let i = 0; i < 5; i++) await capped.recordBlocked("k");
+    for (let i = 0; i < 6; i++) await capped.recordBlocked("k");
     check(
-      "403 で開く期間の上限は120分",
-      capped.snapshot("k").openUntil === clock.t + 120 * 60_000,
+      "403 で開く期間の上限は6時間",
+      capped.snapshot("k").openUntil === clock.t + 6 * 60 * 60_000,
     );
     // 別プロセス（新しいブレーカー）も、DB の期限で開いている扱い（パスのキーで共有）
     const log = [];
@@ -1052,6 +1054,7 @@ check(
       },
     };
     const p1 = createPoliteFetch({
+      canaryUrls: {},
       breaker: createCircuitBreaker({ store: sharedStore, now: () => clock.t }),
       sleep: noSleep,
       fetchImpl: async () => mkResponse(403),
@@ -1059,6 +1062,7 @@ check(
     await p1(`${BEFORE}?rno=1`).catch(() => {});
     let otherFetched = 0;
     const p2 = createPoliteFetch({
+      canaryUrls: {},
       breaker: createCircuitBreaker({
         store: sharedStore,
         now: () => clock.t,
@@ -1077,7 +1081,7 @@ check(
       "403 で開いたパスのブレーカーは DB（scrape_job_state の host:…/beforeinfo の行）に書かれ、別の起動も叩かない",
       log.length === 1 &&
         log[0][0] === "host:boatrace.jp/owpc/pc/race/beforeinfo" &&
-        log[0][1] === "HTTP 403" &&
+        /^HTTP 403\b/.test(log[0][1]) &&
         err instanceof BreakerOpenError &&
         otherFetched === 0,
       show(log),
@@ -1094,6 +1098,7 @@ check(
     const f = createPoliteFetch({
       breaker,
       sleep: noSleep,
+      canaryUrls: {},
       fetchImpl: async () => (n++, mkResponse(status)),
     });
     await f(`${BEFORE}?rno=1`).catch(() => {});
@@ -1634,15 +1639,18 @@ check(
         (x) => x.outcome === "breaker_open",
       );
       check(
-        "起動の途中で 403: 公式へのリクエストは1件だけ。403 の1件も残りの5件も breaker_open（ブレーカーの期限＝30分後まで再試行しない。全件失敗＝連続失敗に数えない）",
-        fetched === 1 &&
+        "起動の途中で 403: 公式へのリクエストは beforeinfo の1件とカナリア（race/index）の1件だけ。403 の1件も残りの5件も breaker_open（ブレーカーの期限＝30分後まで再試行しない。全件失敗＝連続失敗に数えない）",
+        fetched === 2 &&
           breakerOpen.length === 6 &&
           r.status === 200 &&
+          // カナリアも 403（この偽物は全部 403）: ホスト全体が60分開き、残りはホストの期限まで待つ
           breakerOpen.every(
-            (x) => x.retryAt.getTime() === clock.c.t + 30 * 60_000,
+            (x) => x.retryAt.getTime() >= clock.c.t + 30 * 60_000,
           ) &&
           store.breakerStore.byKey[pathKeyOf(BEFORE)] ===
-            clock.c.t + 30 * 60_000,
+            clock.c.t + 30 * 60_000 &&
+          store.breakerStore.byKey["host:boatrace.jp"] ===
+            clock.c.t + 60 * 60_000,
         show({ fetched, r: r.body, retried: store.retried.length }),
       );
     }
