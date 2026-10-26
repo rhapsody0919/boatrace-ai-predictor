@@ -32,6 +32,9 @@ import {
 } from "../../src/utils/analogySimilarRerank.js";
 
 export const MAX_RACES = 20;
+// 展示取得の最後の予定は8分前、並べ直しは2分ごと。最後の取得から2回分待ち、
+// 4分前以降は取得障害中でも今の気象で作る（BOA-788）。
+const WEATHER_WAIT_MINUTES = 4;
 const BOATS = [1, 2, 3, 4, 5, 6];
 
 const toJstDate = (d) =>
@@ -174,17 +177,35 @@ function poolLoader() {
   };
 }
 
-async function buildRace(raceId, racecardSnap, ctx, runId, loadPool) {
+async function buildRace(raceId, racecardSnap, ctx, runId, loadPool, timing) {
   const rc = racecardSnap;
   const emptyLayer = rc.status === "empty_layer";
-  const [file, todayRc, exhRows, conds, display, pool] = await Promise.all([
+  const conds = await rest(
+    `race_conditions?race_id=eq.${raceId}&select=weather,wind_direction,wind_speed,wave_height,weather_observed_at`,
+  );
+  const cond = conds[0] ?? {};
+  // 判定した観測と、並べ直しに使う気象は同じ読み取りの値にする。
+  // 1R・前走の時刻なし・観測時刻なしは従来どおり（鮮度を確かめられない）。
+  if (
+    timing.previous &&
+    cond.weather_observed_at &&
+    timing.now.getTime() < timing.deadline.getTime() - WEATHER_WAIT_MINUTES * 60000 &&
+    !(Date.parse(cond.weather_observed_at) >= timing.previous.getTime())
+  ) {
+    return {
+      waiting: {
+        race_id: raceId,
+        reason: "before_previous_race",
+        weather_observed_at: cond.weather_observed_at,
+        required_after: timing.previous.toISOString(),
+      },
+    };
+  }
+  const [file, todayRc, exhRows, display, pool] = await Promise.all([
     emptyLayer ? null : readObject(objectPath(raceId, rc.run_id, "similar", raceId)),
     readObject(objectPath(raceId, rc.run_id, "today", raceId)),
     rest(
       `exhibition_data?race_id=eq.${raceId}&select=boat_number,exhibition_time,exhibition_course,start_timing,start_flag,is_absent`,
-    ),
-    rest(
-      `race_conditions?race_id=eq.${raceId}&select=weather,wind_direction,wind_speed,wave_height`,
     ),
     // 表示用の値（無い回＝この列を足す前の朝のバッチの回は、値なしで並べ直す）
     emptyLayer ? null : readObject(objectPath(raceId, rc.run_id, "similar-display", raceId)),
@@ -194,7 +215,6 @@ async function buildRace(raceId, racecardSnap, ctx, runId, loadPool) {
     throw new Error(
       `${raceId}: 出走表の段のファイルが無い（run ${rc.run_id}）`,
     );
-  const cond = conds[0] ?? {};
   const offset = todayRc.wind_offset_deg ?? NaN;
   const live = buildLiveFeatures({
     boatNumbers: BOATS,
@@ -296,6 +316,7 @@ export async function runAnalogyV16Exhibition(ctx) {
     written: 0,
     failed: [],
     late: [],
+    waiting_weather: [],
   };
   const loadPool = poolLoader();
   for (const t of targets) {
@@ -320,7 +341,18 @@ export async function runAnalogyV16Exhibition(ctx) {
       else if (rc.status !== "ok" && rc.status !== "empty_layer")
         row = { ...base, status: "empty_layer", exact: true };
       else {
-        const { exact } = await buildRace(t.race_id, rc, ctx, runId, loadPool);
+        // race_id は YYYY-MM-DD-会場-レース番号。同日・同会場の直前の番号だけを使う。
+        const previousId = `${t.race_id.slice(0, -2)}${String(Number(t.race_id.slice(-2)) - 1).padStart(2, "0")}`;
+        const result = await buildRace(t.race_id, rc, ctx, runId, loadPool, {
+          now,
+          deadline: t.deadline,
+          previous: deadlineOf(races.find((r) => r.race_id === previousId)),
+        });
+        if (result.waiting) {
+          report.waiting_weather.push(result.waiting);
+          continue;
+        }
+        const { exact } = result;
         row = { ...base, status: rc.status, exact };
       }
       // 締切は書く直前に確かめ直す（起動時は締切前でも、前のレースの処理やこのレースの読み込みの間に締切を

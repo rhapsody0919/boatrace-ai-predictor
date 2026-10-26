@@ -1030,6 +1030,95 @@ check(
   await run({ mode: "shadow" });
 }
 
+// ---- BOA-788: 古い気象は待ち、取得障害中も締切4分前からは作る（実通信なし） ----
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const RACE = "2026-10-05-20-06";
+  const fixture = JSON.parse(fs.readFileSync(
+    new URL("../ml/analogy/testdata/v16-rerank.json", import.meta.url), "utf8",
+  ));
+  const file = { ...fixture.candidates, items_racecard: {},
+    results: fixture.candidates.candidates.map(() => ({})) };
+  const gz = (obj) => zlib.gzipSync(Buffer.from(JSON.stringify(obj)));
+  const runWeather = async (observed, time, options = {}) => {
+    const posts = [], writes = [], reads = [];
+    const raceId = options.first ? "2026-10-05-20-01" : RACE;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+      const u = new URL(url);
+      if (u.hostname !== "example.invalid") throw new Error("実通信は禁止");
+      const post = init?.method === "POST";
+      if (u.pathname.includes("/storage/")) {
+        reads.push(u.pathname);
+        if (post) {
+          writes.push(JSON.parse(zlib.gunzipSync(Buffer.from(init.body))));
+          return new Response("{}", { status: 200 });
+        }
+        if (u.pathname.includes("/similar/")) return new Response(gz(file));
+        if (u.pathname.includes("/today/")) return new Response(gz({ wind_offset_deg: 0 }));
+        return new Response("not found", { status: 404 });
+      }
+      if (post) {
+        posts.push(...JSON.parse(init.body));
+        return new Response("", { status: 201 });
+      }
+      let body;
+      if (u.pathname.endsWith("/analogy_v16_snapshots")) body = [{
+        race_id: raceId, stage: "racecard", status: options.status ?? "ok",
+        run_id: "r", n_layer: file.n_layer, pool_cutoff: "2026-10-04",
+      }];
+      else if (u.pathname.endsWith("/races")) body = [
+        ...(!options.first ? [{ race_id: "2026-10-05-20-05",
+          race_date: "2026-10-05", start_time: "13:00:00" }] : []),
+        { race_id: raceId, race_date: "2026-10-05", start_time: "13:30:00" },
+        // 別会場の直前のレースを基準にしない。
+        { race_id: "2026-10-05-19-05", race_date: "2026-10-05", start_time: "13:20:00" },
+      ];
+      else if (u.pathname.endsWith("/exhibition_data")) body = [1, 2, 3, 4, 5, 6].map((b) => ({
+        race_id: raceId, boat_number: b, exhibition_time: 6.7 + b / 100,
+        exhibition_course: b, start_timing: 0.15, start_flag: null,
+        is_absent: options.absent === true && b === 6,
+      }));
+      else if (u.pathname.endsWith("/race_conditions")) {
+        check("観測時刻を気象と一緒に読む", u.searchParams.get("select").includes("weather_observed_at"), true);
+        body = [{ weather_observed_at: observed, wind_speed: 3, wave_height: 2 }];
+      } else if (u.pathname.endsWith("/race_entries")) body = [];
+      else throw new Error(`想定外のREST: ${u.pathname}`);
+      return new Response(JSON.stringify(body));
+    };
+    try {
+      const result = await runAnalogyV16Exhibition({ mode: "live",
+        now: () => new Date(`2026-10-05T${time}+09:00`) });
+      return { ...result, posts, writes, reads };
+    } finally { globalThis.fetch = realFetch; }
+  };
+  const old = "2026-10-05T12:40:00+09:00";
+  const waiting = await runWeather(old, "13:10:00");
+  check("朝の気象ではStorageもsnapshotも書かない",
+    [waiting.posts.length, waiting.writes.length, waiting.reads.length, waiting.report.failed], [0, 0, 0, []]);
+  check("待機理由をreportに残す", waiting.report.waiting_weather?.map((r) => [r.race_id, r.reason]),
+    [[RACE, "before_previous_race"]]);
+  for (const observed of ["2026-10-05T13:05:00+09:00", "2026-10-05T04:00:00Z"] ) {
+    const fresh = await runWeather(observed, "13:10:00");
+    check("前のレース以降の観測（境界・UTC含む）は作る", fresh.posts.map((p) => p.status), ["ok"]);
+    check("確認した気象で作る", fresh.writes.find((w) => w.wind_speed !== undefined)?.wind_speed, 3);
+  }
+  check("4分前の直前は待つ", (await runWeather(old, "13:25:59")).posts.length, 0);
+  for (const time of ["13:26:00", "13:28:00", "13:29:59"]) {
+    const fallback = await runWeather(old, time);
+    check("403等で観測が更新されなくても締切4分前以降は作る", fallback.posts.map((p) => p.status), ["ok"]);
+  }
+  check("締切以降には作らない", (await runWeather(old, "13:30:00")).posts.length, 0);
+  for (const options of [{ first: true }, { absent: true }]) {
+    check("1R・欠場は待機しない", (await runWeather(old, "13:10:00", options)).posts.length, 1);
+  }
+  check("層0件も古い気象なら待つ", (await runWeather(old, "13:10:00", { status: "empty_layer" })).posts.length, 0);
+  check("層0件も4分前以降は作る", (await runWeather(old, "13:26:00", { status: "empty_layer" })).posts.map((p) => p.status), ["empty_layer"]);
+  check("観測時刻なしは従来どおり作る", (await runWeather(null, "13:10:00")).posts.length, 1);
+}
+
+
 // ---- 7. 展開シナリオの艇ごとの範囲（BOA-806） ------------------------------------
 {
   const keysOf = (b, cls) => ({
