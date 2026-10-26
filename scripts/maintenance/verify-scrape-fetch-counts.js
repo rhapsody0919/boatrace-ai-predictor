@@ -15,8 +15,45 @@ for (const outcome of ["skipped_have_data", "skipped_not_target", "skipped_other
   "cancelled_race", "breaker_open", "budget_exhausted", "not_due"]) {
   rows.push(row("exhibition", 100, outcome));
 }
+// BOA-1153: 窓型ジョブの取得パスの正本は registry。
+const expectedPaths = {
+  odds: ["oddstf", "odds2tf", "oddsk", "odds3t", "odds3f"],
+  odds_final: ["oddstf", "odds2tf", "oddsk", "odds3t", "odds3f"],
+  exhibition: ["beforeinfo"], result: ["raceresult"], race_info: ["racelist"],
+  pcexpect: ["pcexpect"], pit_reports: ["pitreport"],
+  boatcast_oriten: ["/txt/{jo}/bc_oriten_{YYYYMMDD}_{jo}_{RR}.txt"], pseudo: [],
+};
+for (const [name, job] of Object.entries(SCRAPE_JOBS)) {
+  if (job.kind !== "window") continue;
+  assert.ok(Array.isArray(job.fetchPaths), `${name}: fetchPaths が必要`);
+  const expected = expectedPaths[name].map((path) =>
+    path.startsWith("/") ? path : `/owpc/pc/race/${path}`);
+  assert.deepEqual(job.fetchPaths, expected);
+}
 const before = structuredClone(rows);
 const counts = dailyFetchCounts(rows, SCRAPE_JOBS, date);
+// 旧実装の出力を、ホスト・パス・件数・並び順を含めて固定する。
+assert.deepEqual(counts, [
+  ["race.boatcast.jp", "/txt/{jo}/bc_oriten_{YYYYMMDD}_{jo}_{RR}.txt", 2],
+  ["www.boatrace.jp", "/owpc/pc/race/beforeinfo", 5],
+  ["www.boatrace.jp", "/owpc/pc/race/odds2tf", 5],
+  ["www.boatrace.jp", "/owpc/pc/race/odds3f", 5],
+  ["www.boatrace.jp", "/owpc/pc/race/odds3t", 5],
+  ["www.boatrace.jp", "/owpc/pc/race/oddsk", 5],
+  ["www.boatrace.jp", "/owpc/pc/race/oddstf", 5],
+  ["www.boatrace.jp", "/owpc/pc/race/pcexpect", 1],
+  ["www.boatrace.jp", "/owpc/pc/race/pitreport", 1],
+  ["www.boatrace.jp", "/owpc/pc/race/racelist", 1],
+  ["www.boatrace.jp", "/owpc/pc/race/raceresult", 2],
+].map(([host, path, n]) => ({ host, path, attempts: n, pages: n })));
+const customRegistry = { new_window: { kind: "window", fetchPaths: ["/custom/path"] } };
+assert.deepEqual(dailyFetchCounts([row("new_window", 3)], customRegistry, date), [
+  { host: "www.boatrace.jp", path: "/custom/path", attempts: 3, pages: 3 },
+]);
+const missingPaths = { ...SCRAPE_JOBS, odds: { ...SCRAPE_JOBS.odds } };
+delete missingPaths.odds.fetchPaths;
+assert.throws(() => dailyFetchCounts([row("odds", 1)], missingPaths, date),
+  /ページ数が未定義です: odds/);
 const get = (path) => counts.find((r) => r.path === `/owpc/pc/race/${path}`);
 for (const path of ["oddstf", "odds2tf", "oddsk", "odds3t", "odds3f"]) {
   assert.deepEqual(get(path), { host: "www.boatrace.jp", path: `/owpc/pc/race/${path}`, attempts: 5, pages: 5 });
