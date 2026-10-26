@@ -3,6 +3,7 @@
  * docs/design/scraping-load-budget/spec.md §5.2、ADR-0101 決定6）。DB・ネットワークに接続しない。
  *
  *   (a) circuitBreaker: fetch_stop が立ったキーの check は FetchStoppedError（BreakerOpenError の一種）。下ろせば TTL の後に通る
+ *   (a2) 読み取りの完了前に来た並行の check も、読み取りを待って止まる（Codex の審査 P1）
  *   (b) politeFetch: ホストの fetch_stop で取得そのものをしない（fetchImpl を呼ばない）
  *   (c) store.breakerStore.read: fetch_stop を同じ SELECT で読む。列が無い（178 の前）ときだけ breaker_open_until を読み直す。
  *       他のエラーは投げる（非常停止を黙って無いことにしない）
@@ -120,6 +121,41 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
     console.warn = origWarn;
   }
   check("(a) 読み取りに失敗したら直前の値（止まったまま）", held);
+}
+
+// (a2) Codex の審査 P1: 読み取りの完了前に並行の check が来ても、読み取りを待って両方止まる
+{
+  const clock = mkClock();
+  let release;
+  const gate = new Promise((r) => (release = r));
+  let reads = 0;
+  const breaker = createCircuitBreaker({
+    store: {
+      read: async () => {
+        reads++;
+        await gate;
+        return { untilMs: 0, fetchStop: true };
+      },
+    },
+    now: clock.nowMs,
+  });
+  const p1 = breaker.check(HOST).then(
+    () => "passed",
+    (e) => e,
+  );
+  const p2 = breaker.check(HOST).then(
+    () => "passed",
+    (e) => e,
+  );
+  release();
+  const [r1, r2] = await Promise.all([p1, p2]);
+  check(
+    "(a2) 読み取り中に来た並行の check も同じ読み取りを待ち、両方 FetchStoppedError（DB は1回だけ読む）",
+    r1 instanceof FetchStoppedError &&
+      r2 instanceof FetchStoppedError &&
+      reads === 1,
+    show({ r1: String(r1), r2: String(r2), reads }),
+  );
 }
 
 // (b) politeFetch
