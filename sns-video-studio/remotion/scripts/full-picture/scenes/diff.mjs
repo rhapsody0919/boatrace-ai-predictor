@@ -4,24 +4,29 @@
 /** 差の向きを言い切る線（|z|>=1.96、docs/knowledge/number-wording.md・stat-findings.md） */
 export const Z_LINE = 1.96;
 /**
- * 率 a（%）の件数 n で、基準の率 b（%）と比べた z（基準を固定した1標本の比率の検定）。出せなければ null
- * @param {number|null|undefined} a @param {number|null|undefined} b @param {number|null|undefined} n
+ * 2つの率の z（2標本の比率の検定、合算した率で標準誤差を出す）。hq の照合（fp_facts.py の pair_z）と同じ形にそろえる
+ * （作り手と照合の判定が割れないように。BOA-1157）。比べる先が部分集合を含む（会場⊂全国 等）ときも独立として扱う。
+ * 含む分だけ比べる先が部分集合に寄り z は小さく出るので、言い切りは控えめな側に倒れる。出せなければ null
+ * @param {{a: number, na: number, b: number, nb: number}|null|undefined} s a・b は率（%、丸める前）、na・nb は件数
  */
-export function zOf(a, b, n) {
-  if ([a, b, n].some((x) => typeof x !== "number" || !Number.isFinite(x)) || n <= 0 || b <= 0 || b >= 100) return null;
-  const p0 = b / 100;
-  // 正規近似が使える件数のときだけ（n·p0 と n·(1−p0) がどちらも5以上。教科書の目安）。6R の当日の数などは z を出さない
-  if (n * p0 < 5 || n * (1 - p0) < 5) return null;
-  return Math.round(((a / 100 - p0) / Math.sqrt((p0 * (1 - p0)) / n)) * 100) / 100;
+export function zOf(s) {
+  if (!s || [s.a, s.na, s.b, s.nb].some((x) => typeof x !== "number" || !Number.isFinite(x)) || s.na <= 0 || s.nb <= 0) return null;
+  const pa = s.a / 100;
+  const pb = s.b / 100;
+  // 正規近似が使える件数のときだけ（各群で n·p と n·(1−p) がどちらも5以上。教科書の目安）。6R の当日の数などは z を出さない
+  if ([s.na * pa, s.na * (1 - pa), s.nb * pb, s.nb * (1 - pb)].some((x) => x < 5)) return null;
+  const p = (pa * s.na + pb * s.nb) / (s.na + s.nb);
+  const se = Math.sqrt(p * (1 - p) * (1 / s.na + 1 / s.nb));
+  return se > 0 ? Math.round(((pa - pb) / se) * 100) / 100 : null;
 }
 /**
- * 比べた差（ポイント、小数1桁）と向き。n は a の件数。|z|>=1.96 のときだけ向き（高い・低い）を持たせる（BOA-1157。
- * 10/26 大村10R で 599件 z≈1.72・6R・33件 z≈1.67 の差を「高い」と言い切っていた）。件数が無ければ向きは言わない
+ * 比べた差（ポイント、小数1桁）と向き。a・b は見せる率（%）、sample は z を出す材料（zOf）。|z|>=1.96 のときだけ向き（高い・低い）を持たせる（BOA-1157。
+ * 10/26 大村10R で 599件 z≈1.67・6R・33件 z≈1.67 の差を「高い」と言い切っていた）。件数が無ければ向きは言わない
  */
-export function diffOf(a, b, n) {
+export function diffOf(a, b, sample) {
   if (a === null || b === null || a === undefined || b === undefined) return { diffPt: null, direction: null, z: null, sig: false, few: false };
   const d = Math.round((a - b) * 10) / 10;
-  const z = zOf(a, b, n);
+  const z = zOf(sample);
   const sig = z !== null && Math.abs(z) >= Z_LINE && d !== 0;
   // few: 件数が足りず z を出さなかった（検定して通らなかったのとは別。言い方を「比べられない」にする。wording-editor 2026-10-27 P2）
   return { diffPt: Math.abs(d), direction: sig ? (d > 0 ? "高い" : "低い") : null, z, sig, few: z === null };

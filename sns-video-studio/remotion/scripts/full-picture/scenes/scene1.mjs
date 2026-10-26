@@ -43,6 +43,7 @@ function daySummary(races, raceNumber) {
     avgPayout: pays.length ? pays.reduce((a, b) => a + b, 0) / pays.length : null,
     manshuRate: pays.length ? pays.filter((v) => v >= 10000).length / pays.length : null,
     nigeCount: done.filter((r) => r.result.rank1 === 1 && r.result.winningTechnique === "逃げ").length,
+    winCount: done.filter((r) => r.result.rank1 === 1).length,
   };
 }
 
@@ -58,12 +59,14 @@ export function buildScene1(m) {
   const natOf = (b, k) => nat?.find((r) => r.boat === b)?.[k] ?? null;
   const rateOf = (b, k) => rates?.find((r) => r.boat === b)?.[k] ?? null;
   const total = outcome?.total_races ?? 0;
+  // 全国の件数（z の材料。nationalRates と同じ足し方）
+  const natTotal = Object.values(m.api.outcome ?? {}).reduce((s, o) => s + (o?.total_races ?? 0), 0);
 
   if (rates) {
     // ① 枠番別の1着率と全国平均
     const v1 = round1(rateOf(1, "winRate"));
     const n1 = round1(natOf(1, "winRate"));
-    const f = { kind: "venue90", boat: 1, venue, rate: v1, national: n1, races: total, ...diffOf(v1, n1, total) };
+    const f = { kind: "venue90", boat: 1, venue, rate: v1, national: n1, races: total, ...diffOf(v1, n1, { a: rateOf(1, "winRate"), na: total, b: natOf(1, "winRate"), nb: natTotal }) };
     steps.push({
       id: "s1-venue90",
       question: q,
@@ -85,7 +88,7 @@ export function buildScene1(m) {
     const t2 = round1(rateOf(1, "top2Rate"));
     const t3 = round1(rateOf(1, "top3Rate"));
     const n2 = round1(natOf(1, "top2Rate"));
-    const f2 = { kind: "place", boat: 1, venue, top2: t2, top3: t3, national2: n2, ...diffOf(t2, n2, total) };
+    const f2 = { kind: "place", boat: 1, venue, top2: t2, top3: t3, national2: n2, ...diffOf(t2, n2, { a: rateOf(1, "top2Rate"), na: total, b: natOf(1, "top2Rate"), nb: natTotal }) };
     steps.push({
       id: "s1-place",
       question: q,
@@ -111,8 +114,13 @@ export function buildScene1(m) {
   const day = daySummary(m.api.races, race?.raceNumber ?? 0);
   if (day.raceCount > 0) {
     const nige = pct1(day.nigeCount / day.raceCount);
+    const win = pct1(day.winCount / day.raceCount);
     const v1 = rates ? round1(rateOf(1, "winRate")) : null;
-    const f3 = { kind: "day", boat: 1, venue, races: day.raceCount, nigeCount: day.nigeCount, nigeRate: nige, venueRate: v1, ...diffOf(nige, v1, day.raceCount) };
+    // 比べるのは同じ指標どうし（今日の1着率と90日の1着率）。前は今日の逃げ率を90日の1着率と比べていた（hq 2026-10-27、BOA-1157）
+    const f3 = {
+      kind: "day", boat: 1, venue, races: day.raceCount, nigeCount: day.nigeCount, nigeRate: nige, winCount: day.winCount, winRate: win, venueRate: v1,
+      ...diffOf(win, v1, { a: (day.winCount / day.raceCount) * 100, na: day.raceCount, b: rateOf(1, "winRate"), nb: total }),
+    };
     steps.push({
       id: "s1-day",
       question: q,
@@ -124,16 +132,17 @@ export function buildScene1(m) {
           { label: "平均配当", value: day.avgPayout === null ? "—" : `${Math.round(day.avgPayout).toLocaleString("ja-JP")}円` },
           { label: "万舟率", value: day.manshuRate === null ? "—" : `${pct1(day.manshuRate)}%` },
           { label: "1号艇の逃げ率", value: `${d1(nige)}%`, note: `${day.nigeCount}/${day.raceCount}R` },
+          { label: "1号艇の1着率", value: `${d1(win)}%`, note: `${day.winCount}/${day.raceCount}R` },
         ],
       },
       press: null,
-      frames: [statsRow(2)],
+      frames: [statsRow(3)],
       facts: f3,
       lines: fitFirst(
-        // 今日の数を件数で言う（逃げ率と1着率を比べていると分かるように。wording-editor P2）
-        [`今日の${venue}の1号艇は${day.raceCount}R中${day.nigeCount}R逃げ（${d1(nige)}%）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
-        [`今日の${venue}の1号艇（全選手）の逃げ率${d1(nige)}%（${day.nigeCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
-        [`今日のレースの1号艇の逃げ率${d1(nige)}%（${day.nigeCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
+        // 今日の数を件数で言う。比べるのは1着率どうし（BOA-1157）
+        [`今日の${venue}の1号艇は${day.raceCount}R中${day.winCount}R1着（${d1(win)}%）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
+        [`今日の${venue}の1号艇（全選手）の1着率${d1(win)}%（${day.winCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
+        [`今日のレースの1号艇の1着率${d1(win)}%（${day.winCount}/${day.raceCount}R）`, v1 === null ? null : diffText(`90日の1着率${d1(v1)}%`, f3)],
       ),
     });
   } else omitted.push({ where: "scene1.day", reason: "このレースより前に確定したレースが無い" });
@@ -155,7 +164,7 @@ export function buildScene1(m) {
     const p1 = r1.p === null ? null : round1(r1.p);
     const b1 = r1.base === null ? null : round1(r1.base);
     const band = view.wind ?? windBand(w.windSpeed);
-    const f4 = { kind: "wind", boat: 1, venue, wind: `${w.windSpeed}m`, band, rate: p1, base: b1, races: view.n, ...diffOf(p1, b1, view.n) };
+    const f4 = { kind: "wind", boat: 1, venue, wind: `${w.windSpeed}m`, band, rate: p1, base: b1, races: view.n, ...diffOf(p1, b1, { a: r1.p, na: view.rows["1"]?.win?.[1] ?? null, b: r1.base, nb: usualOf(vaFacts, 1, 1)?.[1] ?? null }) };
     steps.push({
       id: "s1-wind",
       question: "今日の風の傾向は？",

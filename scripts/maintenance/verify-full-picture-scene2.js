@@ -1947,20 +1947,35 @@ for (const f of fixtures) {
   for (const id of ["s4-slit-course"]) assert.deepEqual(checkLines(ans[id], dn.steps.find((st) => st.id === id).facts, null), [], "当てはまらない言い方も文の検査を通る");
 }
 
-// BOA-1157: 差の向き（高い・低い）は |z|>=1.96 のときだけ言い切る。10/26 大村10R の3例は言い切らない
+// BOA-1157: 差の向き（高い・低い）は |z|>=1.96 のときだけ言い切る。z は hq の照合（fp_facts.py の pair_z）と同じ2標本の形。
+// 10/26 大村10R の3例は言い切らない（hq の値: s1-venue90 z=1.67、s3-rough 1.67、s1-day は 6/6 で件数が足りず z を出さない）
 {
-  for (const [a, b, n, what] of [[58.1, 54.6, 599, "s1-venue90 599件 z≈1.72"], [100, 58.1, 6, "s1-day 6R（正規近似の件数に足りない）"], [69.7, 55.2, 33, "s3-rough 33件 z≈1.67"]]) {
-    const f = diffOf(a, b, n);
+  const S = (ka, na, kb, nb) => ({ a: (ka / na) * 100, na, b: (kb / nb) * 100, nb });
+  const cases = [
+    [S(348, 599, 7640, 13985), 1.67, "全国との差は確認できない", "s1-venue90"],
+    [S(23, 33, 224035, 405581), 1.67, "全国との差は確認できない", "s3-rough"],
+    [S(6, 6, 348, 599), null, "全国とは比べられない", "s1-day 6/6"],
+  ];
+  for (const [smp, z, text, what] of cases) {
+    const f = diffOf(smp.a, smp.b, smp);
+    assert.equal(f.z, z, `${what} の z は hq と同じ`);
     assert.equal(f.direction, null, `${what} は向きを言わない`);
-    assert.equal(diffText("全国", f), n < 10 ? "全国とは比べられない" : "全国との差は確認できない", `${what} の文`);
+    assert.equal(diffText("全国", f), text, `${what} の文`);
     assert.ok(checkLines(["大村の1号艇の1着率58.1%", "全国の54.6%より3.5ポイント高い"], f, null).some((w) => w.includes("z の根拠が無い")), `${what} で「高い」は文の検査で止まる`);
   }
-  const g = diffOf(60, 50, 1000);
+  const g = diffOf(60, 50, S(600, 1000, 5000, 10000));
   assert.equal(g.direction, "高い", "|z|>=1.96 なら今までどおり言い切る");
   assert.equal(diffText("全国の50.0%", g), "全国の50.0%より10.0ポイント高い");
-  assert.equal(diffOf(40, 50, 1000).direction, "低い");
+  assert.equal(diffOf(40, 50, S(400, 1000, 5000, 10000)).direction, "低い");
   assert.equal(diffOf(51, 50, null).direction, null, "件数が無ければ言い切らない");
-  assert.equal(diffText("全国", diffOf(50.5, 50, 1000)), "全国との差は1ポイント未満", "1ポイント未満は今までどおり");
+  assert.equal(diffText("全国", diffOf(50.5, 50, S(505, 1000, 5000, 10000))), "全国との差は1ポイント未満", "1ポイント未満は今までどおり");
+  // s1-day は今日の1着率と90日の1着率（同じ指標）を比べる
+  const m = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+  const day = buildAll(m).find((x) => x.id === "scene1").data.steps.find((st) => st.id === "s1-day");
+  if (day) {
+    assert.equal(typeof day.facts.winRate, "number", "s1-day の facts に今日の1着率");
+    assert.ok(day.lines[0].includes("1着") && !day.lines[0].includes("逃げ"), `s1-day の1行目は1着: ${day.lines[0]}`);
+  }
 }
 
 console.log("verify-full-picture-scene2: OK");

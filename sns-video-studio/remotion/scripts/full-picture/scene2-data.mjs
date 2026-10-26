@@ -215,7 +215,8 @@ function cardOf(row, today, scopeFacts, values, omitted) {
   const usualPct = usual === null ? null : Math.round(usual * 1000) / 10;
   const d = line && usualPct !== null ? pct(line.rate) - usualPct : null;
   // 向きは |z|>=1.96 のときだけ（BOA-1157）。件数は今日の順位だった過去の件数
-  const zd = d === null ? null : diffOf(pct(line.rate), usualPct, line.hit[1]);
+  const uo = usualOf(scopeFacts, CARD_BOAT, TARGET);
+  const zd = d === null ? null : diffOf(pct(line.rate), usualPct, { a: line.rate * 100, na: line.hit[1], b: usual * 100, nb: uo?.[1] ?? null });
   const facts = {
     kind: "card",
     boat: CARD_BOAT,
