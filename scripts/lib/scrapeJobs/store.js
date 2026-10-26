@@ -11,7 +11,7 @@
  *   acquireLease(job, worker, leaseSec, now) → boolean
  *   releaseLease(job, worker)
  *   ensureSlots({date, jobs, now})       → 新規に作ったスロット数
- *   claimSlots({job, worker, mode, now}) → スロットの配列
+ *   claimSlots({job, worker, mode, now, limit}) → スロットの配列（limit は claimLimit の上書き。閉じた後の絞り）
  *                                       ※offset ごとの許容幅の上書き（レジストリの graceMinByOffset）があるジョブは、
  *                                         claim_scrape_slots_by_offset（マイグレーション092）で取る。その関数が無い
  *                                         （092が未適用）ときだけ、既存の claim_scrape_slots へフォールバックする
@@ -36,6 +36,9 @@ import { isColumnMissingError } from "../optionalColumns.js";
 
 /** fetch_stop の列が無い（マイグレーション178 の前）と分かった後、もう一度列を入れて読み直すまでの間隔 */
 export const FETCH_STOP_RECHECK_MS = 10 * 60 * 1000;
+
+/** マイグレーション178 で足した host:… の行の列（非常停止・段階）。どれかが無いエラーなら、178 の前として読み直す */
+const BREAKER_178_COLUMNS = ["fetch_stop", "breaker_level", "breaker_opened_at"];
 
 /** last_tick_at を更新する最小の間隔（毎分書くと、同じ行が1日1,000回更新され、無駄なdead tupleになる） */
 export const TICK_WRITE_INTERVAL_MS = 5 * 60 * 1000;
@@ -163,11 +166,12 @@ export function createSupabaseStore(client) {
       return data ?? 0;
     },
 
-    async claimSlots({ job, worker, mode, now }) {
+    async claimSlots({ job, worker, mode, now, limit }) {
       const def = SCRAPE_JOBS[job];
       const args = {
         p_job: job,
-        p_limit: def.claimLimit,
+        // limit: 1起動の上限の上書き（閉じた後24時間の絞りで半分にする。cronWrapper.js）
+        p_limit: limit ?? def.claimLimit,
         p_lease_sec: def.leaseSec,
         p_worker: worker,
         p_grace_min: def.graceMin,
@@ -263,16 +267,19 @@ export function createSupabaseStore(client) {
 
     /** @type {import("./circuitBreaker.js").BreakerStore} */
     breakerStore: {
-      // breaker_open_until と非常停止（fetch_stop、マイグレーション178）を同じ SELECT で読む。178 の前（列が無い）は
-      // breaker_open_until だけを読み直し、非常停止は無いものとする（列の不在は 42703 かつ列名つきのときだけ。他のエラーは投げる）
+      // breaker_open_until と、非常停止（fetch_stop）・段階（breaker_level・breaker_opened_at）（どちらもマイグレーション178）を
+      // 同じ SELECT で読む。178 の前（列が無い）は breaker_open_until だけを読み直し、非常停止なし・段階0とする
+      // （列の不在は 42703 かつ列名つきのときだけ。他のエラーは投げる）
       async read(hostKey) {
         const select = (columns) =>
           client.from(STATE).select(columns).eq("job", hostKey).maybeSingle();
         let data;
         let error;
         if (Date.now() >= fetchStopMissingUntil) {
-          ({ data, error } = await select("breaker_open_until, fetch_stop"));
-          if (error && isColumnMissingError(error, ["fetch_stop"])) {
+          ({ data, error } = await select(
+            "breaker_open_until, fetch_stop, breaker_level, breaker_opened_at",
+          ));
+          if (error && isColumnMissingError(error, BREAKER_178_COLUMNS)) {
             // 178 の前: しばらく（FETCH_STOP_RECHECK_MS）は列を入れずに読む（キーごと・10秒ごとの2往復を避ける）
             fetchStopMissingUntil = Date.now() + FETCH_STOP_RECHECK_MS;
             ({ data, error } = await select("breaker_open_until"));
@@ -282,21 +289,41 @@ export function createSupabaseStore(client) {
         }
         if (error) throw wrap(`ブレーカーの読み取り(${hostKey})`, error);
         const until = data?.breaker_open_until;
+        const openedAt = data?.breaker_opened_at;
         return {
           untilMs: until ? new Date(until).getTime() : 0,
           fetchStop: data?.fetch_stop === true,
+          level: typeof data?.breaker_level === "number" ? data.breaker_level : 0,
+          openedAtMs: openedAt ? new Date(openedAt).getTime() : 0,
         };
       },
-      async open(hostKey, untilMs, reason) {
-        const { error } = await client.from(STATE).upsert(
-          {
-            job: hostKey,
-            breaker_open_until: new Date(untilMs).toISOString(),
-            last_error: truncateError(reason),
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "job" },
+      // level（403 のとき）を渡すと段階と開いた時刻も書く。fetch_stop・mode は書かない（人が立てた値・既定の off に触れない）。
+      // 178 の前（段階の列が無い: PGRST204、列名つき）は段階を外して書き直す
+      async open(hostKey, untilMs, reason, level) {
+        const row = {
+          job: hostKey,
+          breaker_open_until: new Date(untilMs).toISOString(),
+          last_error: truncateError(reason),
+          updated_at: new Date().toISOString(),
+        };
+        const upsert = (payload) =>
+          client.from(STATE).upsert(payload, { onConflict: "job" });
+        let { error } = await upsert(
+          level
+            ? {
+                ...row,
+                breaker_level: level.level,
+                breaker_opened_at: new Date(level.openedAtMs).toISOString(),
+              }
+            : row,
         );
+        if (
+          error &&
+          level &&
+          isColumnMissingError(error, ["breaker_level", "breaker_opened_at"])
+        ) {
+          ({ error } = await upsert(row));
+        }
         if (error) throw wrap(`ブレーカーの開放(${hostKey})`, error);
       },
       async close(hostKey) {

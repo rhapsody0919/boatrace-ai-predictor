@@ -105,6 +105,8 @@ export function createMemoryStore({
       until: 0,
       byKey: {},
       fetchStop: {},
+      // levels: キーごとの段階と開いた時刻（{level, openedAtMs}。ブレーカーが 403 の open で書く。テストが直接入れてもよい）
+      levels: {},
       async read(hostKey) {
         return {
           untilMs: Math.max(
@@ -112,10 +114,13 @@ export function createMemoryStore({
             store.breakerStore.byKey[hostKey] ?? 0,
           ),
           fetchStop: store.breakerStore.fetchStop[hostKey] === true,
+          level: store.breakerStore.levels[hostKey]?.level ?? 0,
+          openedAtMs: store.breakerStore.levels[hostKey]?.openedAtMs ?? 0,
         };
       },
-      async open(hostKey, untilMs) {
+      async open(hostKey, untilMs, _reason, level) {
         store.breakerStore.byKey[hostKey] = untilMs;
+        if (level) store.breakerStore.levels[hostKey] = { ...level };
       },
       async close(hostKey) {
         // until はホストのキーの閉鎖でだけ消す（パスのキーの閉鎖で、テストが入れたホストの開放を消さない）

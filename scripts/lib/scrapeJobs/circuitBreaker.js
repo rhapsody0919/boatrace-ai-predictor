@@ -18,9 +18,14 @@
  *
  * 拒否（403）の扱い（BOA-1145）: 取得先が特定のページだけを 403 で拒んだ（2026-10-26 の beforeinfo）。過負荷の 429/503 と
  * 違い、待っても数分では戻らない見込みが高く、叩き続けるほど拒否が長引く恐れがある。recordBlocked は1回で開き、
- * 開く期間を blockOpenMs（30分）から開くたびに2倍（上限 blockMaxOpenMs＝120分）にする。倍にするのは同じプロセスの
- * 中だけ（DB には期限しか残さない）で、起動ごとに別のプロセスなら、30分ごとに1件の試行になる（1日最大48件）。
+ * 開く期間を段階（level）で決める: blockOpenMs（30分）× 2^(段階−1)、上限 blockMaxOpenMs（6時間）。つまり 30分→1時間→
+ * 2時間→4時間→6時間（spec §5.1）。段階と最後に開いた時刻は DB（breaker_level・breaker_opened_at、マイグレーション178）に残し、
+ * 別の起動（別プロセス）も同じ段階から上げる（以前は段階がプロセスの中だけで、起動ごとに30分に戻っていた）。
+ * 段階を下げる: 成功1回で0にしない。最後に開いてから stepDownMs（24時間）ごとに1段下げる（読むときに引く遅延評価。
+ * 書き込みは要らない。effectiveBlockLevel）。閉じた後の絞り: 自動で閉じた後 throttleMs（24時間）は isThrottled が true を
+ * 返し、共通ラッパがそのジョブの1起動の上限（claimLimit）を半分にする（spec §5.2）。
  * 期限後は同じ半開（1件だけ試行）。キーは呼び出し側が決める（politeFetch はページのパス単位にし、同じホストの他のページを巻き込まない）。
+ * 178 の前（列が無い）は段階を DB に残せず、プロセスの中だけで上げる（store.open が列を外して書き直す）。
  *
  * 非常停止（fetch_stop。マイグレーション178、ADR-0101 決定6）: store.read が {untilMs, fetchStop} を返し、fetchStop が true の
  * キー（人が `host:<ホスト>` の行で立てる）は、check が FetchStoppedError を投げる（BreakerOpenError の一種なので、呼び出し側は
@@ -58,24 +63,54 @@ export class FetchStoppedError extends BreakerOpenError {
   }
 }
 
+/** 段階の上限（DB の CHECK、マイグレーション178 と同じ） */
+export const MAX_BREAKER_LEVEL = 10;
+
+const finiteOr0 = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+
 /**
- * store.read の戻り値を {untilMs, fetchStop} にそろえる（数だけを返す旧い形・テストのストアも受ける）
+ * store.read の戻り値を {untilMs, fetchStop, level, openedAtMs} にそろえる（数だけを返す旧い形・テストのストアも受ける）
  * @param {unknown} value
- * @returns {{untilMs: number, fetchStop: boolean} | null} 解釈できなければ null（直前の値のまま）
+ * @returns {{untilMs: number, fetchStop: boolean, level: number, openedAtMs: number} | null} 解釈できなければ null（直前の値のまま）
  */
 export function normalizeBreakerRead(value) {
-  if (typeof value === "number") return { untilMs: value, fetchStop: false };
+  if (typeof value === "number")
+    return { untilMs: value, fetchStop: false, level: 0, openedAtMs: 0 };
   if (value && typeof value === "object" && typeof value.untilMs === "number") {
-    return { untilMs: value.untilMs, fetchStop: value.fetchStop === true };
+    const level = finiteOr0(value.level);
+    return {
+      untilMs: value.untilMs,
+      fetchStop: value.fetchStop === true,
+      level: Math.min(MAX_BREAKER_LEVEL, Math.max(0, Math.trunc(level))),
+      openedAtMs: finiteOr0(value.openedAtMs),
+    };
   }
   return null;
 }
 
 /**
+ * 今の段階（純関数）。最後に開いてから stepDownMs ごとに1段下げる（24時間 403 が無ければ1段下げる。spec §5.2）。
+ * 開いた時刻が無い（0）のに段階がある行は、下げる起点が分からないので段階のまま
+ */
+export function effectiveBlockLevel(level, openedAtMs, nowMs, stepDownMs) {
+  if (!(level > 0)) return 0;
+  if (!(openedAtMs > 0)) return level;
+  const steps = Math.floor(Math.max(0, nowMs - openedAtMs) / stepDownMs);
+  return Math.max(0, level - steps);
+}
+
+/** 段階 level（1以上）で開く期間（純関数）: openMs × 2^(level−1)、上限 maxOpenMs */
+export function blockDurationMs(level, openMs, maxOpenMs) {
+  return Math.min(maxOpenMs, openMs * 2 ** (Math.max(1, level) - 1));
+}
+
+/**
  * @typedef {Object} BreakerStore
- * @property {(hostKey: string) => Promise<number | {untilMs: number, fetchStop: boolean}>} read
- *   breaker_open_until（epoch ms。開いていなければ0）と fetch_stop。数だけを返すと fetchStop=false として扱う
- * @property {(hostKey: string, untilMs: number, reason: string) => Promise<void>} open
+ * @property {(hostKey: string) => Promise<number | {untilMs: number, fetchStop: boolean, level?: number, openedAtMs?: number}>} read
+ *   breaker_open_until（epoch ms。開いていなければ0）・fetch_stop・breaker_level・breaker_opened_at（epoch ms。無ければ0）。
+ *   数だけを返すと fetchStop=false・段階0として扱う
+ * @property {(hostKey: string, untilMs: number, reason: string, level?: {level: number, openedAtMs: number}) => Promise<void>} open
+ *   level を渡すと breaker_level・breaker_opened_at も書く（403 のとき。429/503 は渡さない）
  * @property {(hostKey: string) => Promise<void>} close
  */
 
@@ -93,10 +128,12 @@ export function createCircuitBreaker({
   openMs = 60 * 1000,
   maxOpenMs = 10 * 60 * 1000,
   blockOpenMs = 30 * 60 * 1000,
-  blockMaxOpenMs = 120 * 60 * 1000,
+  blockMaxOpenMs = 6 * 60 * 60 * 1000,
+  stepDownMs = 24 * 60 * 60 * 1000,
+  throttleMs = 24 * 60 * 60 * 1000,
   readTtlMs = 10 * 1000,
 } = {}) {
-  /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, openCount: number, probing: boolean, fetchStop: boolean, lastRead: number}>} */
+  /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, openCount: number, probing: boolean, fetchStop: boolean, level: number, openedAt: number, lastRead: number}>} */
   const hosts = new Map();
   const stateOf = (hostKey) => {
     let s = hosts.get(hostKey);
@@ -108,6 +145,9 @@ export function createCircuitBreaker({
         openCount: 0,
         probing: false,
         fetchStop: false,
+        // 403 で開いた段階と、最後に開いた時刻（DB の breaker_level・breaker_opened_at と同期する）
+        level: 0,
+        openedAt: 0,
         lastRead: -Infinity,
       };
       hosts.set(hostKey, s);
@@ -137,6 +177,13 @@ export function createCircuitBreaker({
     if (!read) return;
     if (read.untilMs > s.openUntil) s.openUntil = read.untilMs;
     s.fetchStop = read.fetchStop;
+    // 段階は、より新しく開いた側を採る（別の起動が開き直していれば、その段階から上げる）
+    if (read.openedAtMs > s.openedAt) {
+      s.level = read.level;
+      s.openedAt = read.openedAtMs;
+    } else if (read.openedAtMs === s.openedAt && read.level > s.level) {
+      s.level = read.level;
+    }
   };
 
   return {
@@ -183,26 +230,55 @@ export function createCircuitBreaker({
     },
 
     /**
-     * 拒否（403）を受けた。1回で開く（開く期間は blockOpenMs から開くたびに2倍、上限 blockMaxOpenMs）。
-     * 開いた期限は store に書き、他のジョブ・他の起動と共有する（半開の試行が 403 でも、ここで開き直す）
+     * 拒否（403）を受けた。1回で開く。段階を今の段階（24時間ごとに1段下げた値）＋1にし、開く期間は
+     * openMs × 2^(段階−1)、上限 maxOpenMs（既定は blockOpenMs・blockMaxOpenMs）。
+     * 期限・段階・開いた時刻は store に書き、他のジョブ・他の起動と共有する（半開の試行が 403 でも、ここで段階を上げて開き直す）
+     * @param {string} hostKey
+     * @param {string} [reason]
+     * @param {{openMs?: number, maxOpenMs?: number}} [durations] ホスト全体を開くとき等、期間を変える（spec §5.1 のホストは60分から）
      */
-    async recordBlocked(hostKey, reason = "HTTP 403") {
+    async recordBlocked(hostKey, reason = "HTTP 403", durations = {}) {
       const s = stateOf(hostKey);
       const t = now();
-      s.openCount++;
-      const duration = Math.min(
-        blockMaxOpenMs,
-        blockOpenMs * 2 ** (s.openCount - 1),
+      const level = Math.min(
+        MAX_BREAKER_LEVEL,
+        effectiveBlockLevel(s.level, s.openedAt, t, stepDownMs) + 1,
       );
-      s.openUntil = t + duration;
+      s.level = level;
+      s.openedAt = t;
+      s.openUntil =
+        t +
+        blockDurationMs(
+          level,
+          durations.openMs ?? blockOpenMs,
+          durations.maxOpenMs ?? blockMaxOpenMs,
+        );
       s.probing = false;
       s.events = [];
       s.consecutive = 0;
       if (store) {
         await safe("開放の記録", () =>
-          store.open(hostKey, s.openUntil, reason),
+          store.open(hostKey, s.openUntil, reason, {
+            level,
+            openedAtMs: t,
+          }),
         );
       }
+    },
+
+    /**
+     * 自動で閉じた後の絞りの期間か（spec §5.2「閉じた後24時間は1起動の上限を半分」）。check の後に呼ぶ（DB の段階は
+     * check の読み取りで同期済み）。開いている間（期限の前）は false（そもそも取らない）。
+     * 起点は、最後に開いた時刻＋その段階の期間（＝自動で閉じうる最初の時刻）。そこから throttleMs の間 true
+     */
+    isThrottled(hostKey) {
+      const s = stateOf(hostKey);
+      if (!(s.level > 0) || !(s.openedAt > 0)) return false;
+      const t = now();
+      if (s.openUntil > t) return false;
+      const closableAt =
+        s.openedAt + blockDurationMs(s.level, blockOpenMs, blockMaxOpenMs);
+      return t >= closableAt && t < closableAt + throttleMs;
     },
 
     /** 正常な応答を受けた（429/503 以外） */
@@ -234,6 +310,9 @@ export function createCircuitBreaker({
         openCount: s.openCount,
         probing: s.probing,
         fetchStop: s.fetchStop,
+        level: s.level,
+        effectiveLevel: effectiveBlockLevel(s.level, s.openedAt, now(), stepDownMs),
+        openedAt: s.openedAt,
         consecutive: s.consecutive,
         recentFailures: s.events.length,
       };
