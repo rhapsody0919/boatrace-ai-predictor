@@ -8,6 +8,7 @@
  *   (d) 同じプロセスで 403 が重なっても、カナリアは1件だけ
  *   (e) ホストの半開の試行は race/index で行う。200 で閉じてから要求されたページを取る。403 なら段階2（2時間）で開き直し、
  *       要求されたページは取らない
+ *   (e2) 半開の race/index が 404・500 なら閉じる（拒否・過負荷ではない。閉じないと全取得が詰まる）
  *   (f) 429 で開いたホストの半開も race/index で試す
  *   (g) カナリアを載せていないホスト（BOATCAST）は、従来どおり要求されたページで半開を試し、403 でもカナリアを取らない
  *
@@ -213,6 +214,24 @@ const setup = (statusOf) => {
       s2.store.db.levels[HOST]?.level === 2 &&
       s2.store.db.byKey[HOST] === s2.clock.t + 120 * MIN,
     show({ fetched: s2.fetched, db: s2.store.db }),
+  );
+}
+
+// (e2) 審査 P1-1: 半開の race/index が 404・500 でも閉じて、要求されたページを取る（詰まらない）
+for (const status of [404, 500]) {
+  const s = setup((url) => (url === INDEX ? status : 200));
+  await s.breaker.recordBlocked(HOST, "canary HTTP 403");
+  s.clock.t += 60 * MIN + 1;
+  const r = await s.tryFetch(ODDS);
+  const r2 = await s.tryFetch(ODDS);
+  check(
+    `(e2) 半開の race/index が ${status} なら閉じて要求されたページを取り、次の取得はカナリアを挟まない`,
+    r instanceof Response &&
+      r.status === 200 &&
+      r2 instanceof Response &&
+      show(s.fetched) === show([INDEX, ODDS, ODDS]) &&
+      !(HOST in s.store.db.byKey),
+    show({ fetched: s.fetched, db: s.store.db }),
   );
 }
 

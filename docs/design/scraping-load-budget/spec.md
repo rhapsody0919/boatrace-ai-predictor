@@ -173,12 +173,12 @@ R＝その日の races の件数（中止の確定を除く。朝の races_init 
 ### 5.2 段階の上げ下げ・通知・再開
 
 - 段階を下げる: 成功1回で0にしない。24時間そのパスに 403 が無ければ1段下げる（拒否が量で決まる場合に、閉じてすぐ元の量に戻って30分から繰り返すのを防ぐ）
-- 自動で閉じた後: 24時間は、そのパスを取るジョブの1起動の上限と窓を半分にする（自動の段階戻し）。予算は下げない（下げると午後に途中で止まる）
-- 半開: 期限が来たら1件だけ試す。パスの試行はそのパスのいちばん軽いページ（オッズなら単勝 oddstf）、ホストの試行は `race/index`。閉じるのは 2xx・3xx のときだけ（#1946 のまま）
+- 自動で閉じた後: 閉じた時刻（`breaker_closed_at`）から24時間は、そのパス（またはホスト）を取る窓型ジョブの1起動の上限（claimLimit）を半分にする（窓は変えない。ADR-0101 決定5 の文言どおり）。予算は下げない（下げると午後に途中で止まる）。日次のジョブと GHA は絞らない。10/22〜25 の実測では claimLimit に届く起動がほとんど無く、1日の件数はほぼ減らない（件数を減らすのは P4c・P8。2026-10-26 system-architect の審査）
+- 半開: 期限が来たら1件だけ試す。パスの試行はそのパスのいちばん軽いページ（オッズなら単勝 oddstf）、ホストの試行は `race/index`。パスが閉じるのは 2xx・3xx のときだけ（#1946 のまま）。ホストは 403・429・503 以外なら閉じる（§5.1 の「500・404 は成功の側」。閉じないと期限が過去のまま残り、全取得がカナリアに置き換わって詰まる）。「1件だけ」はプロセスの中の印で、期限の時刻に起動が重なるとプロセスごとに1件ずつ試す（全体で1件にする DB の予約は P4a ④）
 - 通知（Slack）: 開いたとき1回、段階が2時間以上になったとき・ホスト全体に広がったとき1回、閉じたとき1回。半開の試行ごとには知らせない。開いたままの日は朝夜のまとめに1行
 - 非常停止: `scrape_job_state` に専用の列（例 `fetch_stop boolean NOT NULL DEFAULT false`）を足し、`host:<ホスト>` の行で true にすると、そのホストのすべての取得（Vercel・ライブ・GHA）が止まる。mode を使い回さない（mode の既定は 'off' で、ブレーカーが作る host の行は mode を書かずに upsert されるため、本番の `host:boatrace-biwako.jp` は mode=off のまま。mode で読むと一度開いたホストが永久に止まる）。操作は `INSERT … ON CONFLICT (job) DO UPDATE SET fetch_stop = true`（行が無くても効く）。読むのは breakerStore.read の同じ SELECT（TTL 10秒）
 - 開いた段階を残す場所も専用の列（例 `breaker_level smallint`）にする。どちらも P4a のマイグレーションで system-architect を通す
-- 再開: 自動（半開）。人が早めたいときは `breaker_open_until` を NULL にする UPDATE。ホスト全体が開いた後の再開は §9.3 の順
+- 再開: 自動（半開）。人が早めたいときは `breaker_open_until` を今（`now()`）にする UPDATE（NULL にすると半開・カナリア・閉じた後の絞りがどれも起きない）。段階まで戻すなら `breaker_level = 0` も入れる。ホスト全体が開いた後の再開は §9.3 の順
 
 ### 5.3 止め方の状態
 
@@ -194,7 +194,7 @@ stateDiagram-v2
   パス半開 --> パス開: 403（段階+1）
   閉 --> ホスト開: 429/503 の連続・Retry-After>10秒
   ホスト開 --> ホスト半開: 期限（60分→…→6時間）
-  ホスト半開 --> 閉_絞り: race/index が 2xx・3xx
+  ホスト半開 --> 閉_絞り: race/index が 403・429・503 以外
   ホスト半開 --> ホスト開: 失敗（段階+1）
   閉_絞り --> 閉: 24時間（1起動の上限を半分で運転）
   閉 --> 段階止め: 予算の90%・100%
@@ -394,7 +394,7 @@ flowchart LR
 | 1（すぐ、並行） | P1 結果 +10・UA | result の offsets を +10 へ（registry と期待値）、pcexpect の UA をそろえる、pcexpect の claimLimit 6 | なし | fix。段階0 |
 | 1（すぐ、並行） | P2 数える（M1＋ライブ） | scrape_slots からホスト×パスの日次の数を SQL で出し、朝夜のまとめに出す（registry に `pagesPerAttempt`）。ライブが公式へ取りに行った数を残す。分析のスクリプトの写しを `scripts/analysis/scraping-load-budget/` へ移す | なし | feat |
 | 1（オーナーの操作） | 変数・cron-job.org | `SKIP_RACER_SEASON_ON_GHA=true`（11/2 03:00 JST の前）、cron-job.org の展示・race-notices のジョブを止める | なし | 操作 |
-| 1（すぐ、並行） | P4a 止めの列 | `fetch_stop`・`breaker_level` のマイグレーション、非常停止の読み取り（Vercel・ライブ・GHA）、段階を DB に残して24時間で下げる、閉じた後24時間の絞り、パスが開いたらカナリアでホストへ、ホストの半開を race/index に、403 のヘッダの記録、robots.txt | なし | feat。system-architect を通す |
+| 1（すぐ、並行） | P4a 止めの列 | `fetch_stop`・`breaker_level`・`breaker_opened_at`・`breaker_closed_at` のマイグレーション（178）、非常停止の読み取り（Vercel・ライブ）、段階を DB に残して24時間で下げる、閉じた後24時間の絞り、パスが開いたらカナリアでホストへ、ホストの半開を race/index に、403 のヘッダの記録（①〜③、#1963 から積む）。残り（④）: GHA の fetch_stop の読み取り（#1948 の後）、robots.txt、429 の段階化と Retry-After>10秒、半開の試行を DB の条件つき UPDATE で全体1件にする | なし | feat。system-architect を通す |
 | 1（並行） | P5 月次・日次 | 期別の月次を5・11月だけに、前検を節の初日の前日と初日だけに、月間スケジュールを週1回に | なし | feat |
 | 2 | P3 数える表（M2） | `fetch_counts` のマイグレーションと RPC の加算、politeFetch の数え（応答の種類・再試行）、ライブは N 件ごと | P2 | feat。system-architect を通す |
 | 3 | P4b 403 を全パスへ | M2 で2週間 403 が0だったパスから `breakerUrls` に入れる。5xx・タイムアウトで開くかを実数で決める | P3 の2週間の数 | feat |

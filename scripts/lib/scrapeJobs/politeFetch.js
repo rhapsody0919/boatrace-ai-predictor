@@ -202,7 +202,9 @@ export function createPoliteFetch({
 
   /**
    * ホストの半開の試行を、カナリアのページで行う（check(hostKey) が試行を予約した後に呼ぶ）。
-   * 2xx・3xx で閉じて戻る。それ以外は開いたまま（403 は段階を上げて開き直し、429/503 は開き直す）で例外を投げる
+   * 403 は段階を上げて開き直し、429/503 は開き直して例外を投げる。それ以外の応答（2xx・3xx・404・500・502・504）は閉じて戻る
+   * （spec §5.1 の「500・404 は成功の側」。閉じないと期限が過去のまま残り、全ての取得がカナリアに置き換わって詰まり、
+   * 期限で見る監視も知らせない。審査 P1-1）。接続の失敗は試行の印だけ外して例外を投げる
    */
   const probeHostWithCanary = async (hostKey, canaryUrl) => {
     let response;
@@ -212,10 +214,6 @@ export function createPoliteFetch({
       breaker.abortProbe(hostKey);
       throw new FetchError(canaryUrl, 1, error);
     }
-    if (isPassStatus(response.status)) {
-      await breaker.recordSuccess(hostKey);
-      return;
-    }
     if (BLOCKED_STATUSES.has(response.status)) {
       const reason = await describeBlockedResponse(response);
       console.warn(`⚠️ ${hostKey}: 半開のカナリアが拒否された（${reason}）`);
@@ -223,7 +221,13 @@ export function createPoliteFetch({
     } else if (RETRYABLE_STATUSES.has(response.status)) {
       await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
     } else {
-      breaker.abortProbe(hostKey);
+      if (!isPassStatus(response.status)) {
+        console.warn(
+          `⚠️ ${hostKey}: 半開のカナリア（${canaryUrl}）が HTTP ${response.status}。拒否・過負荷ではないので閉じる`,
+        );
+      }
+      await breaker.recordSuccess(hostKey);
+      return;
     }
     throw new BreakerOpenError(
       hostKey,
