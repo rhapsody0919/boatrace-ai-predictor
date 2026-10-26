@@ -166,9 +166,54 @@ export function json(body, status, cache) {
 /** URL の末尾の race_id と stage。不正なら RangeError */
 export function parseRequest(req) {
   const url = new URL(req.url);
-  const raceId = decodeURIComponent(url.pathname.split("/").pop());
+  const parts = url.pathname.split("/");
+  const raceId = parts.pop();
   if (!isRaceId(raceId)) throw new RangeError("raceId は YYYY-MM-DD-VV-RR");
-  const stage = url.searchParams.get("stage") || "racecard";
+  const date = raceId.slice(0, 10);
+  const calendar = new Date(`${date}T00:00:00Z`);
+  const venue = Number(raceId.slice(11, 13));
+  const race = Number(raceId.slice(14, 16));
+  if (
+    !Number.isFinite(calendar.getTime()) ||
+    calendar.toISOString().slice(0, 10) !== date ||
+    venue < 1 || venue > 24 || race < 1 || race > 12
+  )
+    throw new RangeError("raceId の日付・会場・レースが不正です");
+  const rules = {
+    stage: (v) => STAGES.includes(v),
+    include: (v) => v === "racers",
+    races: (v) => v === "1",
+    boats: (v) => v === "1",
+    scope: (v) => /^(VC|NC|NCR|VA|VG|NA)(:[0-9A-Za-z:-]+)?$/.test(v),
+    boat: (v) => /^[2-6]$/.test(v),
+  };
+  const keys = {
+    facts: ["stage", "include"],
+    similar: ["stage"],
+    layer: ["stage"],
+    scenario: ["stage", "races", "boats", "scope", "boat"],
+  }[parts.pop()];
+  if (!keys) throw new RangeError("API のパスが不正です");
+  // Vercel が足す動的ルートの組は、パスと同じ表記の1組だけ除く。
+  if (url.search && url.search.slice(1).split("&").includes(""))
+    throw new RangeError("クエリに空の組があります");
+  let routeSeen = false;
+  const raw = url.search.slice(1).split("&")
+    .filter((pair) => {
+      if (pair !== `raceId=${raceId}`) return true;
+      if (routeSeen) throw new RangeError("raceId が重複しています");
+      routeSeen = true;
+      return false;
+    }).join("&");
+  const canonical = [];
+  for (const key of keys) {
+    if (!url.searchParams.has(key)) continue;
+    const value = url.searchParams.get(key);
+    if (!rules[key](value)) throw new RangeError(`${key} の値が不正です`);
+    canonical.push(`${key}=${encodeURIComponent(value)}`);
+  }
+  if (raw !== canonical.join("&")) throw new RangeError("クエリの表記が不正です");
+  const stage = url.searchParams.get("stage") ?? "racecard";
   if (!STAGES.includes(stage))
     throw new RangeError(`stage は ${STAGES.join("|")}`);
   return { raceId, stage, url };
