@@ -1133,3 +1133,20 @@ export function pointsNeededForBorder(
  * `SMALL_SAMPLE_THRESHOLD`（n<6）は全期間の集計向けで、節には大きすぎるため別に持つ
  */
 export const MEET_SMALL_SAMPLE_RUNS = 3;
+
+/**
+ * 今節タブの得点率の最良（金枠）を決める `bestOf` の候補（BOA-872）。
+ *
+ * - 公式の途中帰郷（`officialWithdrawn`）は得点率を「—」で出すので、候補から外す。
+ *   比べる値に残すと、「—」のセルが最良として光るか、本来の最良の艇に金枠が付かない
+ * - 走数が少ない（⚠）艇は比べるが光らせない（`hidden`、`bestOf` の説明を参照）
+ *
+ * @param {Array<{boat: number, row: {rate: number, runs: number, excludedReason?: string|null}}>} compareRows
+ * @returns {Array<{boat: number, value: number|null, hidden: boolean}>}
+ */
+export const meetRateBestCandidates = (compareRows) =>
+  compareRows.map(({ boat, row }) => ({
+    boat,
+    value: row.excludedReason === "officialWithdrawn" ? null : row.rate,
+    hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
+  }));

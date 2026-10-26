@@ -53,6 +53,7 @@ import {
   SEMIFINAL_DEFAULT_SLOTS,
   SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
+  meetRateBestCandidates,
 } from "./seriesPoints";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { raceStageLabel } from "../../constants/raceStageConfig";
@@ -471,15 +472,10 @@ function RaceMeetTab({
   const tableHasInBorder = compareRows.some(({ row }) =>
     rankInBorder(row, slots),
   );
-  const bestRate = bestOf(
-    compareRows.map(({ boat, row }) => ({
-      boat,
-      value: row.rate,
-      hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
-    })),
-    "max",
-    { digits: 2 },
-  );
+  // 公式の途中帰郷は得点率を「—」で出すので候補から外す（BOA-872）
+  const bestRate = bestOf(meetRateBestCandidates(compareRows), "max", {
+    digits: 2,
+  });
   const bestRank = bestOf(
     compareRows.map(({ boat, row }) => ({
       boat,
