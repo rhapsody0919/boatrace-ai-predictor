@@ -85,7 +85,14 @@ export default async function handler(req) {
   }
   let params;
   try {
-    params = parseParams(new URL(req.url).searchParams);
+    const url = new URL(req.url);
+    params = parseParams(url.searchParams);
+    const canonical = Object.entries(params)
+      .filter(([key]) => url.searchParams.has(key))
+      .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+      .join("&");
+    if (url.search.slice(1) !== canonical)
+      throw new RangeError("クエリの表記が不正です");
   } catch (e) {
     return json({ error: e.message }, 400, "no-store");
   }
