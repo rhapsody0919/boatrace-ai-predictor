@@ -1667,7 +1667,8 @@ for (const f of fixtures) {
   assert.deepEqual(resolveType({ id: "e06-data-cheatsheet", attributes: { structure: "早見表", thumb: "表" } }, T).reasons, ["type_unsupported:structure（型 e06-data-cheatsheet は龍神の表に無い）", "type_unsupported:thumb（型 e06-data-cheatsheet は龍神の表に無い）"]);
   assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, thumb: "表" } }, T).reasons, ["type_unsupported:thumb"], "表の型でも実装していない項目は止める");
   assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, structure: "要点2つ" } }, T).reasons, ["type_unsupported:structure（文が変わった）"], "同じ id で文が変わった項目は止める（system-architect P2）");
-  assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（知らない項目）"]);
+  assert.deepEqual(resolveType({ id: "x", attributes: { bgm: "a" } }, T).reasons, ["type_unsupported:bgm（知らない項目）"]);
+  assert.deepEqual(resolveType({ id: "f01-landscape-voice-full", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（型 f01-landscape-voice-full は龍神の表に無い）"], "voice は知っている項目、型は表に無いので止まる");
   assert.match(resolveType({ id: "t-test", attributes: {} }, T).reasons[0], /^type_spec_invalid/);
   assert.ok(resolveType(ok).reasons.length > 0, "表に無い型は止まる");
   assert.deepEqual(lengthRange("25〜30"), [25, 30]);
