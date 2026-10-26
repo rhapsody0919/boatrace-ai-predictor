@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   getAnalogyFacts,
   getAnalogyLayer,
@@ -26,14 +26,28 @@ export function useAnalogyResource(
   const [fetched, setFetched] = useState(null);
   const [failedKey, setFailedKey] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const pendingRefresh = useRef(null);
 
   useEffect(() => {
     if (!enabled) return undefined;
     let alive = true;
     let timer;
-    const load = () =>
-      fetcher()
+    const load = () => {
+      // StrictMode の effect 再実行でも、同じ条件の処理中の要求は共有する。
+      // 定期更新を有効にしていない思考アシスト等の取得は変えない。
+      const request =
+        refreshBeforeExhibition && pendingRefresh.current?.key === key
+          ? pendingRefresh.current.request
+          : fetcher();
+      if (refreshBeforeExhibition)
+        pendingRefresh.current = { key, request };
+      const clearPending = () => {
+        if (pendingRefresh.current?.request === request)
+          pendingRefresh.current = null;
+      };
+      return request
         .then((data) => {
+          clearPending();
           if (!alive) return;
           setFailedKey((prev) => (prev === key ? null : prev));
           setFetched({ key, data });
@@ -47,10 +61,12 @@ export function useAnalogyResource(
             timer = setTimeout(load, 60_000);
         })
         .catch((error) => {
+          clearPending();
           if (!alive) return;
           console.error("[analogy] 取得に失敗:", key, error);
           setFailedKey(key);
         });
+    };
     load();
     return () => {
       clearTimeout(timer);
