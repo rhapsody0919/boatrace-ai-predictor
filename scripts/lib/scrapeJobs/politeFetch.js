@@ -205,6 +205,26 @@ export function createPoliteFetch({
   };
 
   /**
+   * カナリア（半開の試行・パスが開いた直後の確認）の 429/503。通常の取得と同じく、Retry-After が10秒を超えるならその時間
+   * （上限60分）開き、それ以外は連続の失敗に数える（#1983 の審査 P3・Codex の P1）
+   */
+  const recordCanaryOverload = async (hostKey, response) => {
+    const retryAfterMs = parseRetryAfterMs(
+      response.headers.get("retry-after"),
+      now(),
+    );
+    if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
+      await breaker.recordRetryAfter(
+        hostKey,
+        retryAfterMs,
+        `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
+      );
+    } else {
+      await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+    }
+  };
+
+  /**
    * ホストの半開の試行を、カナリアのページで行う（check(hostKey) が試行を予約した後に呼ぶ）。
    * 403 は段階を上げて開き直し、429/503 は開き直して例外を投げる。それ以外の応答（2xx・3xx・404・500・502・504）は閉じて戻る
    * （spec §5.1 の「500・404 は成功の側」。閉じないと期限が過去のまま残り、全ての取得がカナリアに置き換わって詰まり、
@@ -223,20 +243,7 @@ export function createPoliteFetch({
       console.warn(`⚠️ ${hostKey}: 半開のカナリアが拒否された（${reason}）`);
       await breaker.recordBlocked(hostKey, reason);
     } else if (RETRYABLE_STATUSES.has(response.status)) {
-      // Retry-After が10秒を超えるなら、その時間開く（通常の取得と同じ扱い。#1983 の審査 P3）
-      const retryAfterMs = parseRetryAfterMs(
-        response.headers.get("retry-after"),
-        now(),
-      );
-      if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
-        await breaker.recordRetryAfter(
-          hostKey,
-          retryAfterMs,
-          `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
-        );
-      } else {
-        await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
-      }
+      await recordCanaryOverload(hostKey, response);
     } else {
       if (!isPassStatus(response.status)) {
         console.warn(
@@ -288,7 +295,7 @@ export function createPoliteFetch({
         );
         await breaker.recordBlocked(hostKey, `canary ${reason}`);
       } else if (RETRYABLE_STATUSES.has(response.status)) {
-        await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+        await recordCanaryOverload(hostKey, response);
       } else {
         await breaker.recordSuccess(hostKey);
       }

@@ -7,6 +7,7 @@
  *   (f) 開いている間に届いた 429・403（並行の要求の後着）は段階を上げない（#1983 の審査 P1）
  *   (g) countOverload:false（/api/odds/live）の 429 は数えない。Retry-After>10秒ならその時間開く
  *   (h) 半開のカナリアの 429 も Retry-After を見る
+ *   (i) パスが 403 で開いた直後のカナリアの 429 も Retry-After を見る（Codex の P1）
  *   (c) Retry-After の上限は60分
  *   (d) Retry-After が10秒以下なら従来どおり待って再試行する
  *   (e) 403 で上がったホストの段階（4）を、429 で下げない
@@ -227,6 +228,33 @@ const setup = (responses) => {
   check(
     "(h) 半開のカナリアが Retry-After 900秒の 429 なら、その時間開く",
     e instanceof BreakerOpenError && store.breakerStore.byKey[HOST] === c.t + 900_000,
+    show({ e: String(e), db: store.breakerStore }),
+  );
+}
+
+// (i) パスが 403 で開いた直後のカナリアが 429（Retry-After 900秒）でも、その時間ホストを開く（Codex の P1）
+{
+  const c = { t: T0 };
+  const store = createMemoryStore();
+  const breaker = createCircuitBreaker({ store: store.breakerStore, now: () => c.t });
+  const INDEX = "https://www.boatrace.jp/owpc/pc/race/index";
+  const BEFORE = "https://www.boatrace.jp/owpc/pc/race/beforeinfo";
+  const f = createPoliteFetch({
+    breaker,
+    now: () => c.t,
+    sleep: async () => {},
+    fetchImpl: async (url) =>
+      url === INDEX
+        ? new Response("x", { status: 429, headers: { "retry-after": "900" } })
+        : new Response("denied", { status: 403 }),
+  });
+  const warn = console.warn;
+  console.warn = () => {};
+  const e = await f(`${BEFORE}?rno=1`).catch((x) => x);
+  console.warn = warn;
+  check(
+    "(i) パスが 403 で開いた直後のカナリアが Retry-After 900秒の 429 なら、ホストをその時間開く",
+    e instanceof BreakerOpenError && store.breakerStore.byKey[HOST] === T0 + 900_000,
     show({ e: String(e), db: store.breakerStore }),
   );
 }
