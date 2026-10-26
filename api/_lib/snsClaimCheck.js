@@ -206,6 +206,38 @@ export function createReadCurrent({
         source_revision: revision,
       };
     }
+    // 優勝戦の画像（176、scripts/sns/push-finals-image.js）: 全貌と同じ読み直しに、優勝戦であること・同じレースの finals_image を
+    // まだ送っていないこと・自動送信の許可（finals_image_enabled）を足す。違えば投げる（runner は claim しない）
+    if (draft?.source_data?.finals_image?.race_id) {
+      const { race_id: raceId, revision } = draft.source_data.finals_image;
+      const id = encodeURIComponent(raceId);
+      const [[race], entries, exhibition, [conditions], sent, [control]] =
+        await Promise.all([
+          db(
+            `races?race_id=eq.${id}&select=race_date,start_time,cancellation_status`,
+          ),
+          db(`race_entries?race_id=eq.${id}&select=is_absent`),
+          db(`exhibition_data?race_id=eq.${id}&select=is_absent`),
+          db(`race_conditions?race_id=eq.${id}&select=race_stage`),
+          db(
+            `sns_auto_send_items?kind=eq.finals_image&race_id=eq.${id}&state=eq.sent&select=id`,
+          ),
+          db("sns_auto_send_control?channel=eq.x&select=finals_image_enabled"),
+        ]);
+      if (!race) throw new Error("race_not_found");
+      if (control?.finals_image_enabled !== true)
+        throw new Error("finals_image_disabled");
+      if (conditions?.race_stage !== "優勝戦") throw new Error("not_finals");
+      if (sent.length) throw new Error("finals_already_sent");
+      return {
+        withdrawn: [...entries, ...exhibition].some(
+          (r) => r.is_absent === true,
+        ),
+        cancelled: race.cancellation_status != null,
+        deadline_at: deadlineIso(race),
+        source_revision: revision,
+      };
+    }
     const imported = draft?.sns_bundle_imports;
     if (imported?.schema_version !== "ryujin-preview/1")
       throw new Error("source_check_unsupported");

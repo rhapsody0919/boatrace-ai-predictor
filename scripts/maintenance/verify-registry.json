@@ -1272,6 +1272,11 @@
       "guards": "依頼4: 既存YouTube公開・停止したブログPRマージ（410・GitHub と DB に触れない、BOA-908）・通常承認・redoの外部操作排他（claim/reconcile/done）、サムネ失敗の非ブロック化、親画面の通知蓄積、ブログPR head SHA固定（138をPGlite、外部接続なし）"
     },
     {
+      "script": "verify-sns-finals-image.js",
+      "tier": "ci",
+      "guards": "優勝戦の思考の順の画像投稿（format=finals_image、マイグレーション 176、scripts/sns/push-finals-image.js、hq FT02）: item は X・variant=finals だけで1レース1件（全貌の X とは両立、送った後も2本目は入らない）、自動送信の許可 finals_image_enabled は既定 false で x の行だけ・off の間は push が何も書かない（Slack も）・承認の後に off にすると claim で held（finals_image_disabled）、--dry-run は書かない、on なら画像4枚を1件の job にして今すぐ送る（veto を待たない）・期限は締切の5分前（他の kind は30分前のまま）・締切の8分前を過ぎたら受け取らない、検査（禁止表現5語と risk-rules・加重280・置き場所・別レースのリンク・P0・画像4枚 PNG 1080x1350 5MB 以内・中止・今日・優勝戦・deadline の一致・X の日の上限）、images は <race_id>-1-map.png 等の4つ・この順・deadline は HH:MM で races.start_time と一致、2回目以降の呼び出しは何も作らず exit 4、結果の1行 FINALS_RESULT と exit（0 送った・1 拒否・3 許可 off・4 既にある・5 送れなかった）、送り終わるか期限＋90秒まで待つ、送り手の readCurrent（許可・優勝戦・送った finals_image・中止）と preflight の期限、送った後の tweet id。SQL176 までを PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-full-picture-windows.js",
       "tier": "ci",
       "guards": "全貌動画の測り時（SQL169、2026-10-19 オーナー決定）: 全貌は day_end（投稿日の JST 23:00）と 24h の job・JST 23:00 を過ぎた投稿は 24h だけ・日付は JST、それ以外は 48h・7d のまま、観測の表の CHECK（day_end は投稿日の JST 23:00 だけ・窓の名前は4つ）、JS の窓（windowsFor・observationPeriod・全貌に 48h を入れない）、画面は既定の 48h で全貌を当日の値・7d に全貌を出さない・全貌は型の版の確認をしない、CSV と collector の窓、169-runbook.md の1回で貼る SQL が154の状態から通り確認が全部 true・2回目は止まる。PGlite、外部接続なし"
