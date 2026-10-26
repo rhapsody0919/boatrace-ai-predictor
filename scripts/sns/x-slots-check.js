@@ -51,8 +51,19 @@ const sameDays = (a, b) =>
   JSON.stringify(sortedDays(a)) === JSON.stringify(sortedDays(b));
 const sqlDays = (days) => (days ? `'{${days.join(",")}}'` : "NULL");
 
-/** hq の行と DB の行を比べ、違いの説明と直す SQL を返す（純粋関数）。各曜日の取り置きの合計が上限を越えるかも見る */
-export function reserveDiff(hqRows, dbRows, { hqLimit, dbLimit }) {
+/** /today の返信の型（親と返信の2本、どちらも kind=digest）に要る取り置き */
+export const TODAY_REPLY_RESERVE = 2;
+
+/**
+ * hq の行と DB の行を比べ、違いの説明と直す SQL を返す（純粋関数）。各曜日の取り置きの合計が上限を越えるかも見る。
+ * todayReplyEnabled（龍神の config/today-variants.json の reply_enabled）が true なのに /today（digest）の取り置きが2未満なら違いとして出す
+ * （返信を始めたとき、取り置かれていない残りが無い日に親も返信も止まるのを先に見つける。hq 2026-10-27）
+ */
+export function reserveDiff(
+  hqRows,
+  dbRows,
+  { hqLimit, dbLimit, todayReplyEnabled = false },
+) {
   if (!Number.isInteger(hqLimit) || hqLimit < 1)
     throw new Error(`hq の daily_limit_x が不正（${hqLimit}）`);
   const lines = [];
@@ -90,6 +101,17 @@ export function reserveDiff(hqRows, dbRows, { hqLimit, dbLimit }) {
       `UPDATE public.sns_x_send_control SET daily_limit_x = ${hqLimit} WHERE id = true;`,
     );
   }
+  if (todayReplyEnabled)
+    for (const [where, rows] of [
+      ["hq", hqRows],
+      ["DB", dbRows],
+    ]) {
+      const count = rows.find((r) => r.kind === "digest")?.daily_count ?? 0;
+      if (count < TODAY_REPLY_RESERVE)
+        lines.push(
+          `/today の返信の型が有効（config/today-variants.json の reply_enabled=true）なのに、${where} の digest の取り置きが ${count}（2本要る。親と返信が止まる）`,
+        );
+    }
   for (let dow = 1; dow <= 7; dow++) {
     const sum = hqRows
       .filter((r) => !r.weekdays || r.weekdays.includes(dow))
@@ -133,9 +155,16 @@ async function main() {
       "sns_x_kind_reserves?select=kind,daily_count,weekdays",
     );
     const [control] = await get("sns_x_send_control?select=daily_limit_x");
+    const todayVariants = JSON.parse(
+      await readFile(
+        new URL("../../config/today-variants.json", import.meta.url),
+        "utf8",
+      ),
+    );
     const diff = reserveDiff(rows, dbRows, {
       hqLimit: config.daily_limit_x,
       dbLimit: control?.daily_limit_x ?? null,
+      todayReplyEnabled: todayVariants.reply_enabled === true,
     });
     for (const name of unknown)
       diff.lines.push(

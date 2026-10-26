@@ -505,6 +505,29 @@ test("x-slots-check: hq の取り置きを表の行に直し、違いと越え�
     () => reserveDiff(rows, rows, { hqLimit: undefined, dbLimit: 9 }),
     /daily_limit_x が不正/,
   );
+  // /today の返信の型が有効なのに digest の取り置きが2未満なら違いとして出す（hq 2026-10-27）
+  const one = [{ kind: "digest", daily_count: 1, weekdays: null }];
+  const two = [{ kind: "digest", daily_count: 2, weekdays: null }];
+  assert.equal(
+    reserveDiff(one, one, { hqLimit: 9, dbLimit: 9 }).ok,
+    true,
+  );
+  const replyOn = reserveDiff(one, one, {
+    hqLimit: 9,
+    dbLimit: 9,
+    todayReplyEnabled: true,
+  });
+  assert.equal(replyOn.ok, false);
+  assert.equal(
+    replyOn.lines.filter((l) => /reply_enabled=true.*digest の取り置きが 1/.test(l))
+      .length,
+    2,
+  );
+  assert.equal(
+    reserveDiff(two, two, { hqLimit: 9, dbLimit: 9, todayReplyEnabled: true })
+      .ok,
+    true,
+  );
   // 曜日ごとの取り置きの合計が上限を越えると知らせる
   const over = reserveDiff(rows, rows, { hqLimit: 8, dbLimit: 8 });
   assert.ok(over.lines.some((l) => /越える/.test(l)));
