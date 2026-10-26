@@ -91,7 +91,8 @@ export async function backfillMissingVenueDay(opts, deps) {
       strict: true,
       raceConcurrency: 4,
     });
-    const races = v?.races ?? [];
+    // scrapeVenue は1R〜12Rを必ず返す（beforeinfo を取らない。BOA-1145）ので、選手のいるレースを数える
+    const races = (v?.races ?? []).filter((r) => r.racers?.length > 0);
     if (races.length !== RACES_PER_DAY) {
       throw new Error(
         `会場${venue}: 出走表が${races.length}レース（12のはず）。書かずに止めます`,
