@@ -19,7 +19,8 @@
  *                                                              読むと消える。共通ラッパが、ログと last_report に残す
  *   completeSlot(slot, {worker, now, outcome, rowsWritten, resultDigest}) → boolean（リースを持っていたか）
  *   retrySlot(slot, {worker, now, outcome, error, retryAt}) → boolean
- *   breakerStore                         → {read, open, close}（circuitBreaker.js の BreakerStore）
+ *   breakerStore                         → {read, open, close}（circuitBreaker.js の BreakerStore。read は
+ *                                          {untilMs, fetchStop}。fetch_stop は人が立てる非常停止、マイグレーション178）
  *
  * 「テーブル・関数が無い」（マイグレーション075が未適用）エラーは、readState だけが available=false として
  * 返す。それ以外のDBエラーは、意味のあるメッセージを付けて投げる（「対象なし」に化けさせない）。
@@ -31,6 +32,7 @@ import {
 } from "./schemaErrors.js";
 import { addSeconds } from "./time.js";
 import { truncateError } from "./outcomes.js";
+import { isColumnMissingError } from "../optionalColumns.js";
 
 /** last_tick_at を更新する最小の間隔（毎分書くと、同じ行が1日1,000回更新され、無駄なdead tupleになる） */
 export const TICK_WRITE_INTERVAL_MS = 5 * 60 * 1000;
@@ -255,15 +257,21 @@ export function createSupabaseStore(client) {
 
     /** @type {import("./circuitBreaker.js").BreakerStore} */
     breakerStore: {
+      // breaker_open_until と非常停止（fetch_stop、マイグレーション178）を同じ SELECT で読む。178 の前（列が無い）は
+      // breaker_open_until だけを読み直し、非常停止は無いものとする（列の不在は 42703 かつ列名つきのときだけ。他のエラーは投げる）
       async read(hostKey) {
-        const { data, error } = await client
-          .from(STATE)
-          .select("breaker_open_until")
-          .eq("job", hostKey)
-          .maybeSingle();
+        const select = (columns) =>
+          client.from(STATE).select(columns).eq("job", hostKey).maybeSingle();
+        let { data, error } = await select("breaker_open_until, fetch_stop");
+        if (error && isColumnMissingError(error, ["fetch_stop"])) {
+          ({ data, error } = await select("breaker_open_until"));
+        }
         if (error) throw wrap(`ブレーカーの読み取り(${hostKey})`, error);
         const until = data?.breaker_open_until;
-        return until ? new Date(until).getTime() : 0;
+        return {
+          untilMs: until ? new Date(until).getTime() : 0,
+          fetchStop: data?.fetch_stop === true,
+        };
       },
       async open(hostKey, untilMs, reason) {
         const { error } = await client.from(STATE).upsert(
