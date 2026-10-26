@@ -32,7 +32,7 @@ import {
   renderTodayHeading,
 } from "./snsTodayVariants.js";
 import { randomBytes } from "node:crypto";
-import { checkXSlot, SLOT_KINDS, slotRoomBody } from "./snsXSlots.js";
+import { checkXSlot, SLOT_KINDS, xSlotRoomVia } from "./snsXSlots.js";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
@@ -915,12 +915,8 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
       )[0] ?? null,
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
-    // X の日の枠の取り置きの残り（179）。関数が無ければ HTTP 404（checkXSlot が止めない側に倒す）
-    xSlotRoom: (kind, need, draftId = null) =>
-      call("rpc/sns_x_slot_room", {
-        method: "POST",
-        body: slotRoomBody(kind, need, draftId),
-      }),
+    // X の日の枠の取り置きの残り（179）
+    xSlotRoom: xSlotRoomVia(call),
     async updateItem(id, fromState, patch) {
       return one(
         await call(`sns_auto_send_items?id=eq.${id}&state=eq.${fromState}`, {

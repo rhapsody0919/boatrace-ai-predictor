@@ -46,12 +46,15 @@ export function hqReserveRows(config, extraKinds = {}) {
   return { rows, unknown };
 }
 
+const sortedDays = (days) => (days ? [...days].sort((x, y) => x - y) : null);
 const sameDays = (a, b) =>
-  JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+  JSON.stringify(sortedDays(a)) === JSON.stringify(sortedDays(b));
 const sqlDays = (days) => (days ? `'{${days.join(",")}}'` : "NULL");
 
 /** hq の行と DB の行を比べ、違いの説明と直す SQL を返す（純粋関数）。各曜日の取り置きの合計が上限を越えるかも見る */
 export function reserveDiff(hqRows, dbRows, { hqLimit, dbLimit }) {
+  if (!Number.isInteger(hqLimit) || hqLimit < 1)
+    throw new Error(`hq の daily_limit_x が不正（${hqLimit}）`);
   const lines = [];
   const sql = [];
   const db = new Map(dbRows.map((r) => [r.kind, r]));

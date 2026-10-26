@@ -240,12 +240,19 @@ test("179: 親は自分の子の分も取り置きに入らなければ claim �
   const { main, claimed } = await finalsPair();
   assert.equal(claimed.state, "held");
   assert.equal(claimed.error_code, "kind_slot_full");
-  // 親を止めたので、子（投票）は送られない（parent_not_posted）
-  assert.equal(
-    (await first("SELECT state FROM sns_x_send_jobs WHERE id=$1", [main.id]))
-      .state,
-    "held",
+  // 親を止めたら、まだ claim していない子（投票）も止める（queued のまま親待ちの警告・取り込みの数えに残らない）
+  const states = await all(
+    "SELECT state, error_code FROM sns_x_send_jobs WHERE id=$1 OR parent_job_id=$1 ORDER BY parent_job_id NULLS FIRST",
+    [main.id],
   );
+  assert.deepEqual(
+    states.map((r) => [r.state, r.error_code]),
+    [
+      ["held", "kind_slot_full"],
+      ["held", "kind_slot_full"],
+    ],
+  );
+  assert.equal((await room("finals_image", 1, true)).booked, 0);
 });
 
 test("179: 他の親の claim 済みの子は、その出し物の予定として数え、二重に数えない", async () => {
@@ -471,6 +478,19 @@ test("x-slots-check: hq の取り置きを表の行に直し、違いと越え�
   assert.ok(diff.lines.some((l) => /daily_limit_x/.test(l)));
   assert.ok(
     diff.sql.some((s) => /INSERT INTO public\.sns_x_kind_reserves/.test(s)),
+  );
+  // 曜日の並びの違いは違いとしない。hq の上限が無い・不正なら投げる（undefined の SQL を出さない）
+  assert.equal(
+    reserveDiff(
+      [{ kind: "r", daily_count: 1, weekdays: [1, 3, 5] }],
+      [{ kind: "r", daily_count: 1, weekdays: [5, 1, 3] }],
+      { hqLimit: 9, dbLimit: 9 },
+    ).ok,
+    true,
+  );
+  assert.throws(
+    () => reserveDiff(rows, rows, { hqLimit: undefined, dbLimit: 9 }),
+    /daily_limit_x が不正/,
   );
   // 曜日ごとの取り置きの合計が上限を越えると知らせる
   const over = reserveDiff(rows, rows, { hqLimit: 8, dbLimit: 8 });

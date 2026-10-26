@@ -33,7 +33,7 @@ import {
 } from "../../api/_lib/snsDeadlineQueue.js";
 import { xPostValid } from "../../api/_lib/snsXLength.js";
 import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
-import { checkXSlot, SLOT_KINDS, slotRoomBody } from "../lib/snsXSlots.js";
+import { checkXSlot, SLOT_KINDS, xSlotRoomVia } from "../lib/snsXSlots.js";
 
 export const FULL_PICTURE_FORMAT = "full_picture";
 export const FILES = {
@@ -603,12 +603,8 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       ),
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
-    // X の日の枠の取り置きの残り（179）。関数が無ければ HTTP 404（checkXSlot が止めない側に倒す）
-    xSlotRoom: (kind, need, draftId = null) =>
-      call("rpc/sns_x_slot_room", {
-        method: "POST",
-        body: slotRoomBody(kind, need, draftId),
-      }),
+    // X の日の枠の取り置きの残り（179）
+    xSlotRoom: xSlotRoomVia(call),
     // 下書きの deadline_queue に親（完全版の job）を入れる。承認の前に入れないと、承認の queue の照合に通らない
     setParentJob: async (draft, parentJobId) =>
       one(

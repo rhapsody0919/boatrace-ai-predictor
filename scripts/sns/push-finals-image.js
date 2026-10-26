@@ -46,7 +46,7 @@ import {
 } from "../../api/_lib/snsClaimCheck.js";
 import { xPostValid } from "../../api/_lib/snsXLength.js";
 import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
-import { checkXSlot, SLOT_KINDS, slotRoomBody } from "../lib/snsXSlots.js";
+import { checkXSlot, SLOT_KINDS, xSlotRoomVia } from "../lib/snsXSlots.js";
 
 export const FINALS_IMAGE_FORMAT = "finals_image";
 /** 展示後のリプの bundle の format（下書きの format・item の kind は本投稿と同じ finals_image） */
@@ -997,12 +997,8 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
           "sns_x_send_control?id=eq.true&select=daily_limit,daily_limit_x,daily_baseline_date,daily_external_count",
         )
       )[0] ?? null,
-    // X の日の枠の取り置きの残り（179）。関数が無ければ HTTP 404（checkXSlot が止めない側に倒す）
-    xSlotRoom: (kind, need, draftId = null) =>
-      call("rpc/sns_x_slot_room", {
-        method: "POST",
-        body: slotRoomBody(kind, need, draftId),
-      }),
+    // X の日の枠の取り置きの残り（179）
+    xSlotRoom: xSlotRoomVia(call),
     // 今日（JST）に試行のある job（X・YouTube の両方。数えるのは dailyLimitReason が X だけ）
     jobsAttemptedOn: (day) =>
       call(

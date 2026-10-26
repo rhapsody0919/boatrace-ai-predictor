@@ -8,7 +8,8 @@
 --   2. 関数 sns_x_slot_room(kind, need, with_queued, job_id, draft_id): 出し物 k が need 本を足せるか。
 --      他経路 + B_k + Σ_{j≠k} max(r_j, B_j) + need ≤ daily_limit_x（r=今日の取り置き、B=今日の試行＋まだ claim していない分）。
 --      claim（with_queued=false）と取り込みの確かめ（true、rpc）で同じ式を使う
---   3. transition_sns_send_139（土台は 177）: X の claim で 2 を確かめ、越えるなら held（error_code=kind_slot_full）。177 の検査はそのまま残す
+--   3. transition_sns_send_139（土台は 177）: X の claim で 2 を確かめ、越えるなら自分とまだ claim していない自分の子を held
+--      （error_code=kind_slot_full）。177 の検査はそのまま残す
 -- 検証: scripts/maintenance/verify-sns-x-slots.js（PGlite、外部接続なし）
 -- 適用の順: コードが先でも後でもよい。適用前は取り込みの rpc が 404 で今のまま送る（claim も 177 のまま）。db-apply は master の HEAD の SQL を当てる
 --
@@ -88,7 +89,8 @@ BEGIN
     LEFT JOIN public.sns_auto_send_items i ON i.id=j.auto_item_id
     LEFT JOIN public.sns_x_send_jobs p ON p.id=j.parent_job_id
     LEFT JOIN public.sns_auto_send_items pi ON pi.id=p.auto_item_id
-    WHERE j.channel='x'),
+    -- 今日の試行のある job と queued だけを読む（claim は control の FOR UPDATE の中で呼ぶので、全件を走査しない。/code-review の指摘）
+    WHERE j.channel='x' AND (v_today = ANY(j.attempt_dates) OR j.state='queued')),
   used AS (
     SELECT jk.kind, count(*) AS n FROM jk, LATERAL unnest(jk.attempt_dates, jk.attempt_channels) a(day, ch)
       WHERE a.ch='x' AND a.day=v_today GROUP BY jk.kind),
@@ -213,6 +215,12 @@ BEGIN
       RAISE EXCEPTION '再承認が必要です'; END IF;
   END IF;
   IF p_action='begin_post' AND j.state<>'sending' THEN RAISE EXCEPTION '送信開始できません'; END IF;
+  -- 179: 通り道 B は 177 の子の数えを通らないので、自分の子（v_own）をここで数える（B の親が子の分を取らずに通る穴。/code-review の指摘）
+  IF p_action='claim' AND j.channel='x' AND d.send_lane='B' THEN
+    SELECT count(*) INTO v_own FROM public.sns_x_send_jobs cj JOIN public.sns_drafts cd ON cd.id=cj.draft_id
+      WHERE cj.parent_job_id=j.id AND cj.channel='x' AND cj.state='queued' AND cj.attempts=0
+        AND cd.bundle_import_id IS NULL AND cj.expires_at>now();
+  END IF;
   -- 179: 出し物ごとの取り置き（sns_x_kind_reserves）。claim のときだけ、自分（スレッドの兄弟を含む）と自分の子の本数を足したとき、
   -- 他の出し物の取り置きの残りを使わないかを sns_x_slot_room で確かめる（同じ式を取り込みも使う）。止めるときは例外にせず held にする
   -- （取り置きは後から空かない。例外だと queued のまま runner が2分ごとに Slack に知らせ続ける）。基準の日が未確認なら下の例外に任せる
@@ -221,6 +229,9 @@ BEGIN
     v_room := public.sns_x_slot_room(coalesce(v_kind, (SELECT pi.kind FROM public.sns_x_send_jobs p
       JOIN public.sns_auto_send_items pi ON pi.id=p.auto_item_id WHERE p.id=j.parent_job_id), ''), v_base + v_own, false, j.id);
     IF v_room->>'reason' = 'kind_slot_full' THEN
+      -- まだ claim していない自分の子も止める（親を止めた後に queued のまま残ると、期限まで親待ちの警告が出続け、取り込みの数えにも残る）
+      UPDATE public.sns_x_send_jobs SET state='held',error_code='kind_slot_full',updated_at=now()
+        WHERE parent_job_id=j.id AND state='queued' AND attempts=0;
       UPDATE public.sns_x_send_jobs SET state='held',error_code='kind_slot_full',updated_at=now() WHERE id=j.id RETURNING * INTO j;
       RETURN to_jsonb(j);
     END IF;

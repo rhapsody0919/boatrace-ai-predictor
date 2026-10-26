@@ -60,3 +60,10 @@ export const slotRoomBody = (kind, need, draftId = null) => ({
   p_job_id: null,
   p_draft_id: draftId,
 });
+
+/** REST の store に足す xSlotRoom（call は各 store の PostgREST の呼び出し。関数が無ければ HTTP 404 を投げ、checkXSlot が止めない側に倒す） */
+export const xSlotRoomVia = (call) => (kind, need, draftId = null) =>
+  call("rpc/sns_x_slot_room", {
+    method: "POST",
+    body: slotRoomBody(kind, need, draftId),
+  });
