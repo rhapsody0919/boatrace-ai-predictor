@@ -1813,6 +1813,62 @@ test("PostgREST の store: 親と返信の下書きを分けて返す（返信�
     ["p", "i1", "c", "i2"],
   );
 });
+test("179: X の日の枠の /today の取り置きに入らなければ自動の承認をしない（返信の型は親と返信の2本で数え、両方 held_manual）。179 の前（404）は今のまま", async () => {
+  await clearAll();
+  await putType(DATE, "t01-link-in-reply", {
+    heading: "本日のデータ一覧（{date}）",
+    link_position: "reply",
+  });
+  const asked = [];
+  sqlStore.xSlotRoom = async (kind, need) => {
+    asked.push([kind, need]);
+    return {
+      ok: false,
+      reason: "kind_slot_full",
+      kind,
+      need,
+      limit: 8,
+      reserve: 1,
+      booked: 0,
+      others_booked: 4,
+      held_for_others: 3,
+      external: 0,
+    };
+  };
+  try {
+    await withAuto(async () => {
+      const notes = [];
+      const result = await plan({ notes, loadVariants: () => TYPE_VARIANTS });
+      assert.match(
+        result.report.items[0].reason,
+        /auto_failed: X の日の枠に digest（2本）が入らない/,
+      );
+      assert.deepEqual(asked, [["digest", 2]]);
+      const items = await all("SELECT state FROM sns_auto_send_items");
+      assert.deepEqual(
+        items.map((i) => i.state),
+        ["held_manual", "held_manual"],
+      );
+      assert.equal((await all("SELECT * FROM sns_x_send_jobs")).length, 0);
+      assert.ok(notes.some((n) => /自動の承認に失敗したので送らない/.test(n)));
+    });
+    await clearAll();
+    sqlStore.xSlotRoom = async () => {
+      throw new Error(
+        "/today の計画の DB 操作に失敗: HTTP 404 POST rpc/sns_x_slot_room",
+      );
+    };
+    await withAuto(async () => {
+      const result = await plan({ loadVariants: () => TYPE_VARIANTS });
+      assert.equal(result.report.items[0].outcome, "notified");
+      assert.equal((await all("SELECT * FROM sns_x_send_jobs")).length, 1); // clearAll で型の列も消えるので返信の無い型
+    });
+  } finally {
+    delete sqlStore.xSlotRoom;
+    await clearAll();
+  }
+});
+
 test("返信: 返信の型を引き継いだ作り直しで自動でなくなっていたら（mode を manual に戻した）、親も子も held_manual にして送らない（/code-review の指摘）", async () => {
   await putType(DATE, "t01-link-in-reply", {
     heading: "本日のデータ一覧（{date}）",

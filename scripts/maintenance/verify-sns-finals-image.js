@@ -757,6 +757,43 @@ test("X の日の上限に入らないときは受け取らない（claim と同
   assert.match((await push()).reasons.join(), /daily_baseline_date/);
 });
 
+test("179: 優勝戦の取り置きに入らないときは受け取らない（本投稿は投票と対で2本）。179 の前（404）は日の上限だけで決める", async () => {
+  const asked = [];
+  store.xSlotRoom = async (kind, need) => {
+    asked.push([kind, need]);
+    return {
+      ok: false,
+      reason: "kind_slot_full",
+      kind,
+      need,
+      limit: 8,
+      reserve: 3,
+      booked: 2,
+      others_booked: 5,
+      held_for_others: 0,
+      external: 0,
+    };
+  };
+  try {
+    const full = await push();
+    assert.deepEqual(asked, [["finals_image", 2]]);
+    assert.match(
+      full.reasons.join(),
+      /X の日の枠に finals_image（2本）が入らない/,
+    );
+    assert.equal(
+      Number((await first("SELECT count(*) n FROM sns_auto_send_items")).n),
+      0,
+    );
+    store.xSlotRoom = async () => {
+      throw new Error("DB 操作に失敗: HTTP 404 POST rpc/sns_x_slot_room");
+    };
+    assert.ok((await push()).job_id);
+  } finally {
+    delete store.xSlotRoom;
+  }
+});
+
 test("CLI の結果の1行と exit: 送った 0・拒否 1・許可 off 3・既にある 4・送れなかった 5。最後の行は FINALS_RESULT の JSON", () => {
   const posted = resultLine(
     RACE,

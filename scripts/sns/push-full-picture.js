@@ -15,6 +15,7 @@
  *    --dry-run はここまで（DB・Storage に書かない）
  * 2. 動画を Storage（sns-hub-media/full-picture/{race_id}/{版}/）に上げる
  * 3. X・YouTube の下書き（send_lane=A、format=full_picture）と item（kind=full_picture）を作る
+ *    X の日の枠の全貌の取り置き（179）に1本が入らなければ X の下書きを作らず、YouTube（完全版・Shorts）だけを送る
  * 4. チャネルが mode=auto なら item を notified にして自動送信の承認者で承認する（送る時刻は締切の60分前と今から5分後の遅い方）。
  *    mode=manual なら item を manual にして、個別承認の画面に回す
  * 5. Slack（SLACK_WEBHOOK_URL、無ければ SLACK_DIGEST_WEBHOOK_URL）に、送る時刻と止める SQL を知らせる
@@ -32,6 +33,7 @@ import {
 } from "../../api/_lib/snsDeadlineQueue.js";
 import { xPostValid } from "../../api/_lib/snsXLength.js";
 import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
+import { checkXSlot, SLOT_KINDS, slotRoomBody } from "../lib/snsXSlots.js";
 
 export const FULL_PICTURE_FORMAT = "full_picture";
 export const FILES = {
@@ -387,14 +389,19 @@ export async function pushFullPicture(
     withShorts(bundle) &&
     now.getTime() >=
       Date.parse(minutesBefore(deadlineAt, SHORTS_LATEST_BEFORE_MIN));
+  // X の日の枠の全貌の取り置き（179、docs/design/x-daily-slots/plan.md）。入らないと分かったら X だけ作らない
+  // （claim で止まる job を作ると期限まで Slack が鳴る）。179 の前・読めないときは今のまま作る（claim が正）
+  const xSlot = store.xSlotRoom
+    ? await checkXSlot(store.xSlotRoom, SLOT_KINDS.fullPicture, 1)
+    : null;
   const channels = channelsOf(bundle).filter(
-    (c) => c !== "shorts" || !shortsLate,
+    (c) => (c !== "shorts" || !shortsLate) && (c !== "x" || !xSlot?.blocked),
   );
   const hash = createHash("sha256").update(JSON.stringify(bundle));
   // 版には受け取った動画を全部入れる（shorts.mp4 だけを直して入れ直しても、前の版の承認と同じ path を上書きしない）
   for (const channel of channelsOf(bundle)) hash.update(files[channel]);
   const revision = hash.digest("hex").slice(0, 32);
-  if (dryRun) return { dryRun: true, revision, when, shortsLate };
+  if (dryRun) return { dryRun: true, revision, when, shortsLate, xSlot };
 
   const paths = Object.fromEntries(
     channels.map((c) => [
@@ -504,6 +511,9 @@ export async function pushFullPicture(
     lines.push(
       `youtube（Shorts）: 下書き・item を作れなかったので作らなかった（X・完全版は送る）: ${shortsError}`,
     );
+  if (xSlot?.blocked)
+    lines.push(`x: 作らなかった（${xSlot.reason}）。YouTube は送る`);
+  if (xSlot?.note) lines.push(`x: ${xSlot.note}`);
   if (shortsLate)
     lines.push(
       `youtube（Shorts）: 締切の${SHORTS_LATEST_BEFORE_MIN}分前を過ぎて届いたので作らなかった（完全版の公開を待つ時間が無い）`,
@@ -511,7 +521,7 @@ export async function pushFullPicture(
   await notify(
     `SNS 全貌動画 ${bundle.race_id}（締切 ${jstTime(deadlineAt)}）\n${lines.join("\n")}\n止めるには: ${STOP_SQL}`,
   ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
-  return { channels: out, revision, when, shortsLate, shortsError };
+  return { channels: out, revision, when, shortsLate, shortsError, xSlot };
 }
 
 /** PostgREST・Storage の読み書き（service_role）。失敗は投げる */
@@ -593,6 +603,12 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       ),
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
+    // X の日の枠の取り置きの残り（179）。関数が無ければ HTTP 404（checkXSlot が止めない側に倒す）
+    xSlotRoom: (kind, need, draftId = null) =>
+      call("rpc/sns_x_slot_room", {
+        method: "POST",
+        body: slotRoomBody(kind, need, draftId),
+      }),
     // 下書きの deadline_queue に親（完全版の job）を入れる。承認の前に入れないと、承認の queue の照合に通らない
     setParentJob: async (draft, parentJobId) =>
       one(
