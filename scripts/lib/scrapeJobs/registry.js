@@ -30,6 +30,7 @@ export const SCRAPE_JOBS = Object.freeze({
   // 完了後に予測の再計算（案1。約8〜10秒）を1回呼ぶ余裕を含めて180秒（スロットの処理は、ソフトデッドライン150秒まで）
   race_info: {
     kind: "window",
+    fetchPaths: ["/owpc/pc/race/racelist"],
     offsets: [-60],
     graceMin: 3,
     retrySec: 60,
@@ -87,6 +88,7 @@ export const SCRAPE_JOBS = Object.freeze({
   //   - breakerUrls: 起動の最初に、このページのパスのブレーカーも見る（開いていれば claim せずに終える。cronWrapper.js）
   exhibition: {
     kind: "window",
+    fetchPaths: ["/owpc/pc/race/beforeinfo"],
     offsets: [-60, -33, 10],
     catchupOffsets: [10],
     catchupRetrySec: 600,
@@ -116,6 +118,7 @@ export const SCRAPE_JOBS = Object.freeze({
   // 延長は効かない。ログと last_report のアラートに残す。store.js）。切り戻し: graceMinByOffset を消す
   odds: {
     kind: "window",
+    fetchPaths: ["/owpc/pc/race/oddstf", "/owpc/pc/race/odds2tf", "/owpc/pc/race/oddsk", "/owpc/pc/race/odds3t", "/owpc/pc/race/odds3f"],
     offsets: [-60, -30, -15, -10, -5, 0],
     graceMin: 3,
     graceMinByOffset: { [-60]: 30 },
@@ -136,6 +139,7 @@ export const SCRAPE_JOBS = Object.freeze({
   // 実装: scripts/lib/scrapeJobs/finalOddsHandlers.js、api/cron/odds-final.js
   odds_final: {
     kind: "window",
+    fetchPaths: ["/owpc/pc/race/oddstf", "/owpc/pc/race/odds2tf", "/owpc/pc/race/oddsk", "/owpc/pc/race/odds3t", "/owpc/pc/race/odds3f"],
     offsets: [5],
     graceMin: 55,
     retrySec: 300,
@@ -146,11 +150,12 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
     hosts: ["boatrace.jp"],
   },
-  // A6 結果取得。発走5分後から90分後まで、5分おきに再試行
+  // A6 結果取得。発走10分後から90分後まで、5分おきに再試行
   result: {
     kind: "window",
-    offsets: [5],
-    graceMin: 85,
+    fetchPaths: ["/owpc/pc/race/raceresult"],
+    offsets: [10],
+    graceMin: 80,
     retrySec: 300,
     leaseSec: 180,
     claimLimit: 40,
@@ -160,15 +165,16 @@ export const SCRAPE_JOBS = Object.freeze({
     hosts: ["boatrace.jp"],
   },
   // B1 公式コンピュータ予想。朝（-720分）から発走30分前まで。1レース約10.6秒（GitHub Actionsの実測）のため、
-  // 20件×3並列で約75秒。公式予想は静的（2026-09-21の実測: 8.5時間後の再取得が朝の値と一致）で、朝1回の取得で足りる。
+  // 6件×3並列で約22秒。窓の始まりの取得の山をならす。公式予想は静的（2026-09-21の実測: 8.5時間後の再取得が朝の値と一致）で、朝1回の取得で足りる。
   // 実装: scripts/lib/scrapeJobs/pcexpectHandlers.js、api/cron/pcexpect.js（T4b-08）
   pcexpect: {
     kind: "window",
+    fetchPaths: ["/owpc/pc/race/pcexpect"],
     offsets: [-720],
     graceMin: 690,
     retrySec: 600,
     leaseSec: 300,
-    claimLimit: 20,
+    claimLimit: 6,
     concurrency: 3,
     slotSecEstimate: 12,
     maxDurationSec: 300,
@@ -190,6 +196,7 @@ export const SCRAPE_JOBS = Object.freeze({
   // 実装: scripts/lib/pitReportJob.js、api/cron/pit-reports.js
   pit_reports: {
     kind: "window",
+    fetchPaths: ["/owpc/pc/race/pitreport"],
     offsets: [-240],
     graceMin: 420,
     retrySec: 300,
@@ -359,6 +366,7 @@ export const SCRAPE_JOBS = Object.freeze({
   // 実装: scripts/lib/boatcast/oritenJob.js、api/cron/boatcast-oriten.js
   boatcast_oriten: {
     kind: "window",
+    fetchPaths: ["/txt/{jo}/bc_oriten_{YYYYMMDD}_{jo}_{RR}.txt"],
     offsets: [-20],
     graceMin: 40,
     retrySec: 300,
@@ -384,6 +392,7 @@ export const SCRAPE_JOBS = Object.freeze({
   // 期限計算の検証用。api/cron/scrape-pseudo.js）。Cronには登録しない（手動リクエストのみ）。検証後は削除してよい
   pseudo: {
     kind: "window",
+    fetchPaths: [],
     offsets: [-60],
     graceMin: 30,
     retrySec: 10,

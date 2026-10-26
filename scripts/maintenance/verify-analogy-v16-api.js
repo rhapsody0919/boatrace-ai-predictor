@@ -13,18 +13,21 @@
  * 7. 展開シナリオの艇ごとの範囲（boatScopes、BOA-806）: 種類は1号艇の確定した範囲に追従、VA・VG・NA は null、ファイルの無い艇は null
  */
 import {
+  objectPath,
   cacheControl,
   isRaceId,
   resolveStatus,
 } from "../../api/_lib/analogyV16.js";
 import fs from "fs";
+import { buildLiveFeatures } from "../../src/utils/analogyRaceFeatures.js";
 import zlib from "zlib";
 import { layerStatus } from "../../api/analogy/layer/[raceId].js";
-import { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
+import factsHandler, { withoutSeriesScoreOnFinal } from "../../api/analogy/facts/[raceId].js";
 import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
-import { boatScopes } from "../../api/analogy/scenario/[raceId].js";
+import scenarioHandler, { boatScopes } from "../../api/analogy/scenario/[raceId].js";
 import {
   CLEANUP,
+  cleanup,
   datesToClean,
   datesToMeasure,
   pruneLedger,
@@ -605,6 +608,101 @@ check(
   }
 }
 
+// ---- BOA-977: 2晩の掃除と途中失敗からの再開（外部接続なし） -----------------
+{
+  const day = (n) => new Date(Date.UTC(2026, 9, 26 + n)).toISOString().slice(0, 10);
+  const folders = [-730, -731, -732, ...Array.from({ length: 40 }, (_, i) => -i)].map(day);
+  const initial = folders.flatMap((d) => ["r1", "r2"].flatMap((r) =>
+    CLEANUP.map(([k]) => `${d}/${r}/${k}/a.json.gz`)));
+  initial.push(...Array.from({ length: 1001 }, (_, i) => `${day(-3)}/r1/pool/${i}.json.gz`));
+  const fake = () => {
+    const files = new Set(initial), calls = [], deleted = [], batches = [];
+    let ledger = null, failPrefix = null, failRemove = false, failWrite = false;
+    const io = {
+      list: async (prefix) => {
+        calls.push(prefix);
+        if (prefix === failPrefix) throw new Error("list failed");
+        const rows = new Map();
+        for (const path of files) {
+          if (!path.startsWith(prefix)) continue;
+          const tail = path.slice(prefix.length), name = tail.split("/")[0];
+          rows.set(name, { name, id: tail.includes("/") ? null : "file" });
+        }
+        return [...rows.values()];
+      },
+      remove: async (paths) => {
+        if (failRemove) throw new Error("delete failed");
+        batches.push(paths.length);
+        for (const path of paths) { deleted.push(path); files.delete(path); }
+      },
+      read: async (path) => {
+        check("掃除の控えは容量の控えと別のパス", path, "_usage/cleanup-days.json.gz");
+        return structuredClone(ledger);
+      },
+      write: async (path, value, opts) => {
+        check("掃除の控えの保存先", path, "_usage/cleanup-days.json.gz");
+        if (failWrite) throw new Error("write failed");
+        check("掃除の控えは上書き", opts, { upsert: true });
+        ledger = structuredClone(value);
+      },
+    };
+    return { io, calls, deleted, batches, files,
+      get ledger() { return ledger; },
+      failList: (p) => { failPrefix = p; },
+      failDelete: (v) => { failRemove = v; },
+      failSave: (v) => { failWrite = v; },
+    };
+  };
+  // 旧ループの削除集合を独立した日数判定で求める。
+  const expected = (paths, today) => paths.filter((p) => {
+    const [date, , kind] = p.split("/");
+    const keep = CLEANUP.find(([k]) => k === kind)[1];
+    const age = (Date.parse(today) - Date.parse(date)) / 86400000;
+    return age > keep && age <= keep + 30;
+  }).sort();
+  const f = fake();
+  const count = await cleanup(day(0), f.io);
+  check("初夜の削除集合は旧実装と同じ", [...f.deleted].sort(), expected(initial, day(0)));
+  check("初夜の件数", count, f.deleted.length);
+  const dateCalls = () => f.calls.filter((p) => /^\d{4}-\d{2}-\d{2}\/$/.test(p));
+  check("同じ日の一覧は1回だけ", new Set(dateCalls()).size, dateCalls().length);
+  check("削除は500件までの一括要求", [Math.max(...f.batches), f.batches.includes(1)], [500, true]);
+  const firstLists = f.calls.length;
+  const remaining = [...f.files];
+  f.calls.length = 0; f.deleted.length = 0;
+  await cleanup(day(1), f.io);
+  check("翌夜の削除集合も旧実装と同じ", [...f.deleted].sort(), expected(remaining, day(1)));
+  check("翌夜に見るのは新しく境目を越えた3日だけ", dateCalls().sort(),
+    [-730, -7, -1].map((n) => `${day(n)}/`).sort());
+  check("完了済みの種類を再び一覧しない", f.calls.includes(`${day(-3)}/r1/pool/`), false);
+  check("新しい種類だけを消し、同日に完了済みの種類は見ない",
+    f.calls.includes(`${day(-7)}/r1/similar-display/`), false);
+  console.log(`掃除の一覧要求（偽Storage）: 初夜 ${firstLists} → 翌夜 ${f.calls.length}`);
+  const beforeGap = [...f.files]; f.deleted.length = 0;
+  await cleanup(day(4), f.io);
+  check("休んだ夜の削除対象も拾う", [...f.deleted].sort(), expected(beforeGap, day(4)));
+  for (const failure of ["list", "delete", "write"]) {
+    const g = fake();
+    if (failure === "list") g.failList(`${day(-2)}/r2/pool/`);
+    if (failure === "delete") g.failDelete(true);
+    if (failure === "write") g.failSave(true);
+    let failed = false;
+    try { await cleanup(day(0), g.io); } catch { failed = true; }
+    check(`${failure} 失敗は呼び出し元に返す`, failed, true);
+    if (failure === "list") check("途中失敗した日は完了として保存しない",
+      g.ledger?.[day(-2)] === undefined, true);
+    if (failure === "write") check("保存失敗では完了の控えが残らない", g.ledger, null);
+    g.failList(null); g.failDelete(false); g.failSave(false);
+    g.calls.length = 0;
+    const left = [...g.files], deletedBefore = g.deleted.length;
+    await cleanup(day(1), g.io);
+    check(`${failure} 失敗の翌夜は残りを全て削除`,
+      g.deleted.slice(deletedBefore).sort(), expected(left, day(1)));
+    if (failure === "list") check("途中失敗した日は翌夜に一覧し直す",
+      g.calls.includes(`${day(-2)}/r2/pool/`), true);
+  }
+}
+
 // ---- 7. 展示後の段は、関数の上限の手前（shouldStop）で止まる -----------------------------
 {
   process.env.SUPABASE_URL = "https://example.invalid";
@@ -835,6 +933,191 @@ check(
     [[], [["ok", "2026-10-05T00:59:50.000Z"]]],
   );
 }
+
+// ---- BOA-796 F03: 層0件でも今日の展示を保存し、APIから読む（偽Storage・REST） ----
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const id = "2026-10-05-20-01";
+  const rc = { race_id: id, stage: "racecard", status: "empty_layer",
+    run_id: "morning", n_layer: 0, pool_cutoff: "2026-10-04" };
+  const today = { wind_offset_deg: 0, scope_keys: { 1: { VA: "VA:20" } } };
+  const rows = [1, 2, 3, 4, 5, 6].map((b) => ({ race_id: id,
+    boat_number: b, exhibition_time: 6.7 + b / 100, exhibition_course: b,
+    start_timing: b === 4 ? 0.05 : 0.15, start_flag: null, is_absent: false }));
+  const cond = { weather: "晴", wind_direction: "北", wind_speed: 3, wave_height: 2 };
+  const run = async ({ absent = false, late = false, mode = "live" } = {}) => {
+    const storage = new Map([[objectPath(id, rc.run_id, "today", id), today]]);
+    const snapshots = [rc], writes = [], reads = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+      const u = new URL(url);
+      const post = init?.method === "POST";
+      if (u.origin !== "https://example.invalid") throw new Error("外部接続は禁止");
+      if (u.pathname.includes("/storage/v1/object/")) {
+        const path = u.pathname.split("/analogy-v16/")[1];
+        if (post) {
+          storage.set(path, JSON.parse(zlib.gunzipSync(Buffer.from(init.body))));
+          writes.push(path);
+          return new Response("{}");
+        }
+        reads.push(path);
+        return storage.has(path)
+          ? new Response(zlib.gzipSync(Buffer.from(JSON.stringify(storage.get(path)))))
+          : new Response("not found", { status: 404 });
+      }
+      let body;
+      if (u.pathname.endsWith("/analogy_v16_snapshots")) {
+        if (post) {
+          check("層0件: snapshotより先に今日の展示を保存", storage.has(
+            objectPath(id, JSON.parse(init.body)[0].run_id, "today-exhibition", id)), !absent);
+          snapshots.push(...JSON.parse(init.body));
+          return new Response(null, { status: 201 });
+        }
+        body = snapshots;
+      } else if (u.pathname.endsWith("/races")) {
+        body = [{ race_id: id, race_date: "2026-10-05", start_time: "10:00:00" }];
+      } else if (u.pathname.endsWith("/exhibition_data")) {
+        body = rows.map((r) => ({ ...r, is_absent: absent && r.boat_number === 6 }));
+      } else if (u.pathname.endsWith("/race_conditions")) body = [cond];
+      else if (u.pathname.endsWith("/race_entries")) body = [];
+      else throw new Error(`未定義のREST: ${u.pathname}`);
+      return new Response(JSON.stringify(body));
+    };
+    let tick = 0;
+    try {
+      const result = await runAnalogyV16Exhibition({ mode,
+        now: () => new Date(`2026-10-05T${tick++ === 0 ? "09:59:30" : late ? "10:00:00" : "09:59:50"}+09:00`) });
+      const path = objectPath(id, "exh-20261005005930", "today-exhibition", id);
+      const expected = todayExhibition(rows, buildLiveFeatures({
+        boatNumbers: [1, 2, 3, 4, 5, 6], exhibition: rows,
+        conditions: cond, windOffset: today.wind_offset_deg,
+      }), cond);
+      if (!absent && mode === "live") {
+        const value = storage.get(path);
+        check("層0件: today-exhibitionを書いた", value !== undefined, true);
+        check("層0件: okと同じtodayExhibitionの形と値", value, expected);
+        if (value) {
+          check("層0件: 展示タイム6艇", value.exh_time.map((v) => Number(v.toFixed(2))),
+            rows.map((r) => Number(r.exhibition_time.toFixed(2))));
+          check("層0件: 展示タイム順位", value.exh_time_rank, [1, 2, 3, 4, 5, 6]);
+          check("層0件: 風・波・進入・ST・形", [value.wind_speed, value.wave_height,
+            value.course_by_boat, value.st_by_course, value.entry_type, value.forms],
+            [3, 2, [1, 2, 3, 4, 5, 6], [0.15, 0.15, 0.15, 0.05, 0.15, 0.15], "waku", ["wall", "kado"]]);
+        }
+      }
+      check("層0件: 類似レース関連を読まない", reads.some((p) => /\/(similar|similar-display|pool)\//.test(p)), false);
+      check("層0件: similar-exhibitionを作らない", writes.some((p) => p.includes("/similar-exhibition/")), false);
+      if (absent || mode !== "live") check("欠場・shadowはStorageに書かない", writes, []);
+      check("層0件: snapshotの状態・late", [snapshots.slice(1).map((s) => [s.status, s.exact]), result.report.late],
+        [late || mode !== "live" ? [] : [[absent ? "absent" : "empty_layer", absent ? null : true]], late ? [id] : []]);
+      if (!late && mode === "live") {
+        for (const [name, handler] of [["facts", factsHandler], ["scenario", scenarioHandler]]) {
+          for (const stage of ["exhibition", "racecard"]) {
+            const res = await handler(new Request(`https://example.invalid/api/analogy/${name}/${id}?stage=${stage}`));
+            const body = await res.json();
+            check(`${name}: 応答200`, res.status, 200);
+            check(`${name}: ${stage}の展示値`, body.exhibition ?? null,
+              stage === "exhibition" && !absent ? storage.get(path) ?? "missing" : null);
+          }
+        }
+      }
+    } finally { globalThis.fetch = realFetch; }
+  };
+  await run();
+  await run({ absent: true });
+  await run({ late: true });
+  await run({ mode: "shadow" });
+}
+
+// ---- BOA-788: 古い気象は待ち、取得障害中も締切4分前からは作る（実通信なし） ----
+{
+  process.env.SUPABASE_URL = "https://example.invalid";
+  process.env.SUPABASE_SERVICE_KEY = "test";
+  const RACE = "2026-10-05-20-06";
+  const fixture = JSON.parse(fs.readFileSync(
+    new URL("../ml/analogy/testdata/v16-rerank.json", import.meta.url), "utf8",
+  ));
+  const file = { ...fixture.candidates, items_racecard: {},
+    results: fixture.candidates.candidates.map(() => ({})) };
+  const gz = (obj) => zlib.gzipSync(Buffer.from(JSON.stringify(obj)));
+  const runWeather = async (observed, time, options = {}) => {
+    const posts = [], writes = [], reads = [];
+    const raceId = options.first ? "2026-10-05-20-01" : RACE;
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (url, init) => {
+      const u = new URL(url);
+      if (u.hostname !== "example.invalid") throw new Error("実通信は禁止");
+      const post = init?.method === "POST";
+      if (u.pathname.includes("/storage/")) {
+        reads.push(u.pathname);
+        if (post) {
+          writes.push(JSON.parse(zlib.gunzipSync(Buffer.from(init.body))));
+          return new Response("{}", { status: 200 });
+        }
+        if (u.pathname.includes("/similar/")) return new Response(gz(file));
+        if (u.pathname.includes("/today/")) return new Response(gz({ wind_offset_deg: 0 }));
+        return new Response("not found", { status: 404 });
+      }
+      if (post) {
+        posts.push(...JSON.parse(init.body));
+        return new Response("", { status: 201 });
+      }
+      let body;
+      if (u.pathname.endsWith("/analogy_v16_snapshots")) body = [{
+        race_id: raceId, stage: "racecard", status: options.status ?? "ok",
+        run_id: "r", n_layer: file.n_layer, pool_cutoff: "2026-10-04",
+      }];
+      else if (u.pathname.endsWith("/races")) body = [
+        ...(!options.first ? [{ race_id: "2026-10-05-20-05",
+          race_date: "2026-10-05", start_time: "13:00:00" }] : []),
+        { race_id: raceId, race_date: "2026-10-05", start_time: "13:30:00" },
+        // 別会場の直前のレースを基準にしない。
+        { race_id: "2026-10-05-19-05", race_date: "2026-10-05", start_time: "13:20:00" },
+      ];
+      else if (u.pathname.endsWith("/exhibition_data")) body = [1, 2, 3, 4, 5, 6].map((b) => ({
+        race_id: raceId, boat_number: b, exhibition_time: 6.7 + b / 100,
+        exhibition_course: b, start_timing: 0.15, start_flag: null,
+        is_absent: options.absent === true && b === 6,
+      }));
+      else if (u.pathname.endsWith("/race_conditions")) {
+        check("観測時刻を気象と一緒に読む", u.searchParams.get("select").includes("weather_observed_at"), true);
+        body = [{ weather_observed_at: observed, wind_speed: 3, wave_height: 2 }];
+      } else if (u.pathname.endsWith("/race_entries")) body = [];
+      else throw new Error(`想定外のREST: ${u.pathname}`);
+      return new Response(JSON.stringify(body));
+    };
+    try {
+      const result = await runAnalogyV16Exhibition({ mode: "live",
+        now: () => new Date(`2026-10-05T${time}+09:00`) });
+      return { ...result, posts, writes, reads };
+    } finally { globalThis.fetch = realFetch; }
+  };
+  const old = "2026-10-05T12:40:00+09:00";
+  const waiting = await runWeather(old, "13:10:00");
+  check("朝の気象ではStorageもsnapshotも書かない",
+    [waiting.posts.length, waiting.writes.length, waiting.reads.length, waiting.report.failed], [0, 0, 0, []]);
+  check("待機理由をreportに残す", waiting.report.waiting_weather?.map((r) => [r.race_id, r.reason]),
+    [[RACE, "before_previous_race"]]);
+  for (const observed of ["2026-10-05T13:05:00+09:00", "2026-10-05T04:00:00Z"] ) {
+    const fresh = await runWeather(observed, "13:10:00");
+    check("前のレース以降の観測（境界・UTC含む）は作る", fresh.posts.map((p) => p.status), ["ok"]);
+    check("確認した気象で作る", fresh.writes.find((w) => w.wind_speed !== undefined)?.wind_speed, 3);
+  }
+  check("4分前の直前は待つ", (await runWeather(old, "13:25:59")).posts.length, 0);
+  for (const time of ["13:26:00", "13:28:00", "13:29:59"]) {
+    const fallback = await runWeather(old, time);
+    check("403等で観測が更新されなくても締切4分前以降は作る", fallback.posts.map((p) => p.status), ["ok"]);
+  }
+  check("締切以降には作らない", (await runWeather(old, "13:30:00")).posts.length, 0);
+  for (const options of [{ first: true }, { absent: true }]) {
+    check("1R・欠場は待機しない", (await runWeather(old, "13:10:00", options)).posts.length, 1);
+  }
+  check("層0件も古い気象なら待つ", (await runWeather(old, "13:10:00", { status: "empty_layer" })).posts.length, 0);
+  check("層0件も4分前以降は作る", (await runWeather(old, "13:26:00", { status: "empty_layer" })).posts.map((p) => p.status), ["empty_layer"]);
+  check("観測時刻なしは従来どおり作る", (await runWeather(null, "13:10:00")).posts.length, 1);
+}
+
 
 // ---- 7. 展開シナリオの艇ごとの範囲（BOA-806） ------------------------------------
 {

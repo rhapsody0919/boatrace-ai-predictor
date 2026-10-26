@@ -2018,6 +2018,98 @@ const summaryOf = ({
     ...extra,
   });
 
+  // BOA-1151: 実ジョブから同期本体まで、対象月・保存・完了を確認する。
+  const monthlyRun = async (date, { newborn = true, chunkSize = 300, failOn = {}, registered = 3, newcomers = [2001] } = {}) => {
+    const tables = profileTables();
+    tables.racer_profiles = tables.racer_profiles.slice(0, registered);
+    tables.race_entries = newborn
+      ? newcomers.map((racer_id, i) => ({ race_id: "2099-01-01-01-01", boat_number: i + 1, racer_id }))
+      : [];
+    const client = createFakeClient({ tables, failOn });
+    // この fake は onConflict 未指定の既定PKを持たないため、実DBのPKを補う。
+    const from = client.from;
+    client.from = (table) => {
+      const query = from(table);
+      const upsert = query.upsert;
+      query.upsert = (rows, opts) => upsert(rows, opts ?? { onConflict: "racer_id" });
+      return query;
+    };
+    const urls = [];
+    const fetchImpl = async (url) => {
+      urls.push(String(url));
+      return new Response(String(url).includes("/profile?")
+        ? '<div class="racer1_bodyName">新人</div><dl class="list3"><dt>生年月日</dt><dd>2005/01/01</dd></dl>'
+        : seasonHtml(50));
+    };
+    const store = createMemoryStore({ rows: { racer_profiles: liveRow("racer_profiles") } });
+    const execute = (minute) => runJob({
+      job: "racer_profiles", store, client, politeFetch: fetchImpl,
+      at: jst(`${date}T03:${minute}:00`),
+      run: (ctx) => runRacerProfilesJob(ctx, {
+        chunkSize, log: () => {}, logError: () => {},
+        sync: (args) => runRacerProfileSync({
+          ...args, deps: { ...args.deps, sleep: noSleep },
+        }),
+      }),
+    });
+    const result = await execute("00");
+    return { result, row: store.state.get("racer_profiles"), client, urls, execute };
+  };
+  for (const date of ["2026-12-02", "2026-11-02", "2026-05-09", "2026-11-16"]) {
+    const { result, row, client, urls } = await monthlyRun(date);
+    const full = date.slice(5, 7) !== "12";
+    check(`BOA-1151 ${date}: 新人を保存し、全員取得月だけ既存3人も取得して完了`,
+      result.status === 200 && row.last_target_date === date && row.cursor.done === true &&
+      row.last_report.alerts.length === 0 && row.last_report.chunk.targetCount === (full ? 4 : 1) &&
+      urls.filter((url) => url.includes("/profile?")).length === 1 &&
+      urls.filter((url) => url.includes("/season?")).length === (full ? 4 : 1) &&
+      client.data.racer_profiles.some((r) => r.racer_id === 2001 && r.birth_date === "2005-01-01"),
+      show({ result, urls }));
+  }
+  {
+    const { result, row, urls } = await monthlyRun("2026-12-02", { newborn: false });
+    check("BOA-1151 新人0人: 取得も0件エラーも失敗率通知もなく対象日を完了",
+      result.status === 200 && row.last_target_date === "2026-12-02" &&
+      row.cursor.done === true && row.last_report.alerts.length === 0 &&
+      row.last_report.cycle.seasonTargets === 0 && urls.length === 0,
+      show({ result, urls }));
+  }
+  {
+    const { result, row, urls, execute } = await monthlyRun("2026-12-02", { chunkSize: 1 });
+    const count = urls.length;
+    await execute("10");
+    check("BOA-1151 新人だけのチャンク: 既存選手を残件に含めず、完了後は再取得しない",
+      result.status === 200 && row.cursor.afterRacerId === 2001 && row.cursor.done && urls.length === count);
+  }
+  {
+    const { result, row } = await monthlyRun("2026-12-02", {
+      failOn: { "racer_profiles:upsert": "disk full" },
+    });
+    check("BOA-1151 新人だけでもプロフィール保存エラーは未完了の失敗",
+      result.status === 500 && row.last_target_date === undefined);
+  }
+  {
+    const { result, row, urls, execute } = await monthlyRun("2026-12-02", {
+      chunkSize: 1, newcomers: [999, 2001],
+    });
+    const firstIncomplete = result.body.incomplete === true && row.cursor.afterRacerId === 999;
+    const next = await execute("10");
+    check("BOA-1151 新人2人: 保存後に対象集合が減っても登録番号で再開し、全員取得せず完了",
+      firstIncomplete && next.status === 200 && row.last_target_date === "2026-12-02" &&
+      row.cursor.afterRacerId === 2001 && row.last_report.cycle.profileSuccess === 2 &&
+      urls.length === 4);
+  }
+  for (const failOn of [{}, { "racer_profiles:select": "read error" }, { "race_entries:select": "read error" }]) {
+    const { result, row } = await monthlyRun("2026-12-02", {
+      newborn: false, registered: 0, failOn,
+    });
+    check(`BOA-1151 全体が空または読取失敗は成功扱いにしない: ${show(failOn)}`,
+      result.status === 500 && row.last_target_date === undefined);
+  }
+  check("BOA-1151 CLI既定: 登録済み3人と未登録1人を引き続き全員対象にする",
+    same(buildPopulation({ registered: new Map([[1001, {}], [1002, {}], [1003, {}]]),
+      recentIds: new Set([2001]), ...parseProfileArgs([]) }), [1001, 1002, 1003, 2001]));
+
   // afterRacerId: その番号より大きい選手だけ（件数の増減があっても位置がずれない）
   {
     const registered = new Map(ids.map((id) => [id, {}]));

@@ -36,9 +36,11 @@ import {
 import { shouldSkipOnGha } from "../lib/ghaSkipGate.js";
 
 /**
- * SKIP_<JOB>_ON_GHA=true のとき、Vercel が健全な場合に限りスキップする（フェイルセーフ付きSKIP）。
+ * SKIP_<JOB>_ON_GHA=true のとき、肩代わりの条件を満たす場合だけ false（実行）を返す（フェイルセーフ付きSKIP）。
  * 変数が true でない場合は、この関数は呼ばれない（呼び出し側が先に確認する。DB を読まず、現行と同じ動作）。
- * Vercel が live でない・止まっている・状態を読めない場合は false（実行）を返す。判定と理由はログに出る。
+ * 肩代わりは「mode=live・Vercel が起動していない・取得先のブレーカーが閉じている・直近の失敗が 403・接続の失敗でない」
+ * のときだけ。状態を読めないときもスキップ（素の fetch で公式を回り込んで叩かない。scraping-load-budget spec §0 の P0）。
+ * 判定と理由はログに出る。
  * 判定の定義: scripts/lib/ghaSkipGate.js、docs/design/scraping-vercel-consolidation/verification-runbook.md P
  */
 const gateSkips = async (varName) => (await shouldSkipOnGha({ varName })).skip;
@@ -72,7 +74,7 @@ async function main() {
   //   SKIP_ODDS_ON_GHA=true  オッズ取得を行わない（買い目オッズ A4 は別に動く。T4b-10 で扱う）
   // オッズ起点の予測リフレッシュのきっかけも消えるため、案1（REFRESH_ON_VERCEL・SKIP_ODDS_REFRESH_ON_GHA）が先。
   // 順序は scripts/lib/predictionRefresh.js の isOddsSkippedOnGha を参照
-  // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（健全でなければ、実行する）
+  // 変数が true のときだけ、対象のレースがあるときに、肩代わりの条件を確かめる（満たすときだけ実行する）
   const oddsDue = ODDS_WINDOWS.some(
     (w) => getRacesInWindow(schedule, w, 3).length > 0,
   );
@@ -85,16 +87,15 @@ async function main() {
   //   SKIP_RACE_INFO_ON_GHA=true  レース情報更新を行わない（GitHub側のレース情報起点の予測リフレッシュも、自然に無くなる）
   // 既定（未設定・true以外）は従来どおり実行する。予測リフレッシュのきっかけは、Vercel の REFRESH_ON_VERCEL=true
   // （race-info の変更を起点に再計算する。案1）が前提のため、案1が先。順序は verification-runbook.md Q
-  // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（健全でなければ、実行する）
+  // 変数が true のときだけ、対象のレースがあるときに、肩代わりの条件を確かめる（満たすときだけ実行する）
   const raceInfoDue = getRacesInWindow(schedule, 60).length > 0;
   const skipRaceInfo =
     process.env.SKIP_RACE_INFO_ON_GHA === "true" &&
     (!raceInfoDue || (await gateSkips("SKIP_RACE_INFO_ON_GHA")));
   const hasUpdateRaces = !skipRaceInfo && raceInfoDue;
   // exhibition 内部: EXHIBITION_WINDOWS=[30,15,10] 各 ±3分
-  // 展示（BOA-313 Step 3。WS4b・T4b-06）: SKIP_EXHIBITION_ON_GHA=true の間は、GitHub Actions 側での取得をスキップする。
-  // Vercel の展示の mode（scrape_job_state）が live になるまでは、従来の経路（cron-job.org 起点）が動くため、静的にスキップ
-  // する。live になった後は、他のジョブと同じく、Vercel が健全なときだけスキップする（scripts/lib/ghaSkipGate.js の LEGACY_PATH_JOBS）
+  // 展示（BOA-313 Step 3。WS4b・T4b-06）: SKIP_EXHIBITION_ON_GHA=true の間は、GitHub Actions は展示を肩代わりしない
+  // （ゲートが常にスキップを返す。spec §8 G2。scripts/lib/ghaSkipGate.js の NEVER_TAKEOVER_VARS）
   const exhibitionDue = [30, 15, 10].some(
     (w) => getRacesInWindow(schedule, w, 3).length > 0,
   );
@@ -199,7 +200,7 @@ async function main() {
   //   SKIP_RESULTS_ON_GHA=true  結果取得（と中止・順延の確定）を行わない。Kファイル同期は、下の変数で別に止める
   //   SKIP_KFILE_ON_GHA=true    Kファイル同期（進入コース・rank4〜6）を行わない
   // 既定（未設定・true以外）は、どちらも従来どおり実行する。
-  // 変数が true のときだけ、対象のレースがあるときに、Vercel が健全かを確認する（健全でなければ、実行する）
+  // 変数が true のときだけ、対象のレースがあるときに、肩代わりの条件を確かめる（満たすときだけ実行する）
   const resultsDue = finishedRaces.length > 0;
   const skipResults =
     process.env.SKIP_RESULTS_ON_GHA === "true" &&
