@@ -1,0 +1,86 @@
+// オッズの窓ごとの変化（読み取りのみ）。引数 FROM TO OUT（JST の race_date）
+import { withDb } from "./db.mjs";
+import { writeFileSync } from "node:fs";
+const Q = String.fromCharCode(39);
+const FROM = process.argv[2] || "2026-10-12";
+const TO = process.argv[3] || "2026-10-25";
+const OUT = process.argv[4] || "odds-scenarios.json";
+const WINDOWS = [-60, -30, -15, -10, -5, 0];
+const TYPES = ["win", "trifecta", "trio", "exacta", "quinella", "wide"];
+const TOPN = { win: 6, trifecta: 10, trio: 10, exacta: 10, quinella: 10, wide: 10 };
+function days(a, b) { const out = []; let d = new Date(a + "T00:00:00Z"); const e = new Date(b + "T00:00:00Z"); while (d <= e) { out.push(d.toISOString().slice(0, 10)); d = new Date(d.getTime() + 86400000); } return out; }
+function clean(obj) { const m = new Map(); if (!obj) return m; for (const k of Object.keys(obj)) { let v = obj[k]; if (v && typeof v === "object") v = v.low; v = Number(v); if (Number.isFinite(v) && v > 0) m.set(k, v); } return m; }
+function winMap(row) { const m = new Map(); for (let i = 1; i <= 6; i++) { const v = Number(row["odds_win_" + i]); if (row["odds_win_" + i] != null && Number.isFinite(v) && v > 0) m.set(String(i), v); } return m; }
+function ranked(m) { return [...m.entries()].sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1)); }
+function rk(a) { const idx = a.map((v, i) => [v, i]).sort((p, q) => p[0] - q[0]); const r = new Array(a.length); let i = 0; while (i < idx.length) { let j = i; while (j + 1 < idx.length && idx[j + 1][0] === idx[i][0]) j++; for (let k = i; k <= j; k++) r[idx[k][1]] = (i + j) / 2 + 1; i = j + 1; } return r; }
+function spearman(xs, ys) { const n = xs.length; if (n < 3) return null; const rx = rk(xs), ry = rk(ys); let mx = 0, my = 0; for (let i = 0; i < n; i++) { mx += rx[i]; my += ry[i]; } mx /= n; my /= n; let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < n; i++) { sxy += (rx[i] - mx) * (ry[i] - my); sxx += (rx[i] - mx) ** 2; syy += (ry[i] - my) ** 2; } return sxx && syy ? sxy / Math.sqrt(sxx * syy) : null; }
+function qt(arr, p) { if (!arr.length) return null; const s = [...arr].sort((a, b) => a - b); const pos = (s.length - 1) * p; const lo = Math.floor(pos), hi = Math.ceil(pos); return s[lo] + (s[hi] - s[lo]) * (pos - lo); }
+function r3(x) { return x == null ? null : Math.round(x * 1000) / 1000; }
+const L10 = Math.log(1.1);
+function compare(a, ref, n) {
+  if (!a || !ref || a.size === 0 || ref.size === 0) return null;
+  const rr = ranked(ref); const ra = ranked(a);
+  const refTop = rr.slice(0, n).map((e) => e[0]);
+  const aTop = ra.slice(0, n).map((e) => e[0]);
+  const favRef = rr[0][0];
+  const favSame = a.get(favRef) === ra[0][1] ? 1 : 0;
+  const xs = [], ys = [], d = [];
+  for (const k of refTop) { if (a.has(k)) { xs.push(a.get(k)); ys.push(ref.get(k)); d.push(Math.abs(Math.log(a.get(k) / ref.get(k)))); } }
+  const ov = aTop.filter((k) => refTop.includes(k)).length / Math.min(n, refTop.length);
+  const d1 = a.has(favRef) ? Math.abs(Math.log(a.get(favRef) / ref.get(favRef))) : null;
+  return { favSame, rho: spearman(xs, ys), overlap: ov, dAll: d, d1 };
+}
+function agg(list) {
+  const ok = list.filter(Boolean);
+  const all = ok.flatMap((x) => x.dAll);
+  const rhos = ok.map((x) => x.rho).filter((x) => x != null);
+  const d1 = ok.map((x) => x.d1).filter((x) => x != null);
+  const n = ok.length || 1;
+  return { n: ok.length, favSame: r3(ok.reduce((s, x) => s + x.favSame, 0) / n), rhoTopMedian: r3(qt(rhos, 0.5)), rhoTopP10: r3(qt(rhos, 0.1)), topOverlapMean: r3(ok.reduce((s, x) => s + x.overlap, 0) / n), absLogRatioMedian: r3(qt(all, 0.5)), absLogRatioP90: r3(qt(all, 0.9)), shareMoved10pct: r3(all.filter((x) => x >= L10).length / (all.length || 1)), fav1AbsLogRatioMedian: r3(qt(d1, 0.5)), fav1AbsLogRatioP90: r3(qt(d1, 0.9)) };
+}
+// 間引きの案ごとに、各窓の時点で見える値（残した窓のうち直前のもの）と、その窓の実際の値の差
+const VIEWS = { "-60": 547, "-30": 1140, "-15": 791, "-10": 1278, "-5": 1692, "0": 296 }; // GA4 レース詳細の閲覧 [w, 次の窓) 10/12-25（0 は 0..5 分）
+const SCEN = {
+  current: { all: WINDOWS },
+  drop_m30: { all: [-60, -15, -10, -5, 0] },
+  drop_m15: { all: [-60, -30, -10, -5, 0] },
+  drop_m10: { all: [-60, -30, -15, -5, 0] },
+  drop_m5: { all: [-60, -30, -15, -10, 0] },
+  drop_0: { all: [-60, -30, -15, -10, -5] },
+  sub_m30_m5: { trifecta: WINDOWS, win: WINDOWS, other: [-30, -5] },
+  sub_m60_m15_m5: { trifecta: WINDOWS, win: WINDOWS, other: [-60, -15, -5] },
+  sub_m15_m5: { trifecta: WINDOWS, win: WINDOWS, other: [-15, -5] },
+  sub_m5: { trifecta: WINDOWS, win: WINDOWS, other: [-5] },
+  sub_m10_0: { trifecta: WINDOWS, win: WINDOWS, other: [-10, 0] },
+};
+function keptFor(s, t) { return s.all || s[t] || s.other; }
+const res = await withDb(async (qq) => {
+  const acc = {};
+  let nR = 0;
+  for (const day of days(FROM, TO)) {
+    const D = Q + day + Q;
+    const odds = await qq("SELECT o.race_id, o.window_min, o.odds_win_1, o.odds_win_2, o.odds_win_3, o.odds_win_4, o.odds_win_5, o.odds_win_6, o.trifecta_all, o.trio_all, o.exacta_all, o.quinella_all, o.wide_all FROM race_odds o JOIN races r USING (race_id) WHERE r.race_date = " + D + " AND o.source = " + Q + "vercel" + Q + " AND o.window_min IS NOT NULL");
+    const byRace = new Map();
+    for (const o of odds) { if (!byRace.has(o.race_id)) byRace.set(o.race_id, {}); const m = { win: winMap(o) }; for (const t of TYPES.slice(1)) m[t] = clean(o[t + "_all"]); byRace.get(o.race_id)[o.window_min] = m; }
+    for (const [, ws] of byRace) {
+      nR++;
+      for (const [sn, s] of Object.entries(SCEN)) for (const t of TYPES) {
+        const kept = keptFor(s, t);
+        for (const w of WINDOWS) {
+          if (!ws[w]) continue;
+          const k = [...kept].filter((x) => x <= w).sort((a, b) => b - a)[0];
+          const key = sn + "|" + t + "|" + w;
+          acc[key] = acc[key] || { list: [], missing: 0 };
+          if (k === undefined || !ws[k]) { acc[key].missing++; continue; }
+          acc[key].list.push(compare(ws[k][t], ws[w][t], TOPN[t]));
+        }
+      }
+    }
+  }
+  const out = { period: { from: FROM, to: TO }, generatedAt: new Date().toISOString(), races: nR, viewsWeight: VIEWS, scenarios: {} };
+  for (const [key, v] of Object.entries(acc)) { const [sn, t, w] = key.split("|"); out.scenarios[sn] = out.scenarios[sn] || {}; out.scenarios[sn][t] = out.scenarios[sn][t] || {}; const a = agg(v.list); a.missing = v.missing; out.scenarios[sn][t][w] = a; }
+  for (const sn of Object.keys(out.scenarios)) for (const t of Object.keys(out.scenarios[sn])) { let sw = 0, sm = 0, sf = 0, smiss = 0; for (const w of WINDOWS) { const a = out.scenarios[sn][t][w]; const vw = VIEWS[String(w)]; if (!a) continue; sw += vw; sm += vw * (a.absLogRatioMedian ?? 0); sf += vw * (1 - (a.favSame ?? 1)); smiss += vw * (a.missing / ((a.n + a.missing) || 1)); } out.scenarios[sn][t].viewWeighted = { absLogRatioMedian: r3(sm / sw), favChanged: r3(sf / sw), missingShare: r3(smiss / sw) }; }
+  return out;
+});
+writeFileSync(OUT, JSON.stringify(res, null, 2));
+for (const [sn, o] of Object.entries(res.scenarios)) console.log(sn, Object.entries(o).map(([t, v]) => t + ":" + v.viewWeighted.absLogRatioMedian + "/" + v.viewWeighted.favChanged + "/" + v.viewWeighted.missingShare).join(" "));

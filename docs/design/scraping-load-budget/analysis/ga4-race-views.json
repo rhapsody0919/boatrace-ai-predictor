@@ -1,0 +1,778 @@
+{
+  "period": {
+    "from": "2026-10-12",
+    "to": "2026-10-25"
+  },
+  "generatedAt": "2026-10-26T08:47:24.963Z",
+  "source": "GA4 Data API screenPageViews, pagePath ^/race/{race_id}, host www.boat-ai.jp, dateHourMinute (property timezone assumed JST), offset = view minute - races.start_time (締切予定)",
+  "rowsFromGa4": 10903,
+  "totalViews": 11878,
+  "unmatchedViews": 0,
+  "byKind": {
+    "detail(no tab)": {
+      "total": 10713,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 26
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 1019
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 727
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 517
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 1044
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 729
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 1131
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 1437
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 257
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 355
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 196
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 403
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 331
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 569
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 1383
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 589
+        }
+      ]
+    },
+    "ALL": {
+      "total": 11878,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 26
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 1111
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 780
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 547
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 1140
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 791
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 1278
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 1692
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 296
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 391
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 210
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 441
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 357
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 614
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 1552
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 652
+        }
+      ]
+    },
+    "assist": {
+      "total": 1142,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 91
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 52
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 28
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 91
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 60
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 144
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 252
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 37
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 36
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 14
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 38
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 26
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 45
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 166
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 62
+        }
+      ]
+    },
+    "tab:beforeInfo": {
+      "total": 2,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 0
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 0
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 2
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 0
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 0
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 0
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 0
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 0
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 0
+        }
+      ]
+    },
+    "tab:aiPrediction": {
+      "total": 12,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 1
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 1
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 1
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 4
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 1
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 2
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 1
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 1
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 0
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 0
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 0
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 0
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 0
+        }
+      ]
+    },
+    "tab:sonar": {
+      "total": 4,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 1
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 0
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 0
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 1
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 0
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 0
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 0
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 2
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 0
+        }
+      ]
+    },
+    "tab:meet": {
+      "total": 1,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 0
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 0
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 0
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 0
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 0
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 0
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 0
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 1
+        }
+      ]
+    },
+    "tab:oddsList": {
+      "total": 3,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 1
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 1
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 1
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 0
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 0
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 0
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 0
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 0
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 0
+        }
+      ]
+    },
+    "tab:waku": {
+      "total": 1,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 0
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 0
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 0
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 0
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 0
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 0
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 1
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 0
+        }
+      ]
+    }
+  }
+}

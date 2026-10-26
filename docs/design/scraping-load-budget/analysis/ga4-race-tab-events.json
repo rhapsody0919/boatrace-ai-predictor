@@ -1,0 +1,1543 @@
+{
+  "period": {
+    "from": "2026-10-12",
+    "to": "2026-10-25"
+  },
+  "generatedAt": "2026-10-26T08:47:58.760Z",
+  "source": "GA4 Data API screenPageViews, pagePath ^/race/{race_id}, host www.boat-ai.jp, dateHourMinute (property timezone assumed JST), offset = view minute - races.start_time (締切予定)",
+  "rowsFromGa4": 9339,
+  "totalViews": 9901,
+  "unmatchedViews": 0,
+  "byKind": {
+    "tab:race_tab_initial:beforeInfo": {
+      "total": 207,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 1
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 5
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 37
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 28
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 24
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 19
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 9
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 17
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 12
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 18
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 9
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 7
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 19
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 2
+        }
+      ]
+    },
+    "ALL": {
+      "total": 9901,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 7
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 419
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 347
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 350
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 1046
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 869
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 1226
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 1786
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 292
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 328
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 157
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 296
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 250
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 418
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 1432
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 678
+        }
+      ]
+    },
+    "tab:race_tab_select:aiPrediction": {
+      "total": 2892,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 5
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 182
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 158
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 126
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 341
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 254
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 369
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 511
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 79
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 79
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 45
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 60
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 61
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 109
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 265
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 248
+        }
+      ]
+    },
+    "tab:race_tab_select:sonar": {
+      "total": 2110,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 1
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 95
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 87
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 82
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 254
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 209
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 320
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 400
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 61
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 63
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 24
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 44
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 35
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 57
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 272
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 106
+        }
+      ]
+    },
+    "tab:race_tab_select:waku": {
+      "total": 295,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 14
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 8
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 13
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 25
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 32
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 33
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 46
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 11
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 8
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 7
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 6
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 7
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 16
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 60
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 9
+        }
+      ]
+    },
+    "tab:race_tab_select:oddsList": {
+      "total": 243,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 12
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 17
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 16
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 32
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 23
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 34
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 27
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 10
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 9
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 3
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 10
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 6
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 6
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 33
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 5
+        }
+      ]
+    },
+    "tab:race_tab_select:motor": {
+      "total": 343,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 16
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 7
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 20
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 29
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 37
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 46
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 80
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 13
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 4
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 5
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 8
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 4
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 9
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 54
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 11
+        }
+      ]
+    },
+    "tab:race_tab_select:meet": {
+      "total": 640,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 1
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 19
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 10
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 23
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 100
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 74
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 92
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 196
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 18
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 15
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 5
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 17
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 5
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 9
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 43
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 13
+        }
+      ]
+    },
+    "tab:race_tab_initial:basic": {
+      "total": 68,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 0
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 0
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 0
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 3
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 4
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 3
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 42
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 16
+        }
+      ]
+    },
+    "tab:race_tab_select:beforeInfo": {
+      "total": 897,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 13
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 10
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 17
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 83
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 106
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 142
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 274
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 39
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 18
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 12
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 17
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 21
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 18
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 110
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 17
+        }
+      ]
+    },
+    "tab:race_tab_initial:aiPrediction": {
+      "total": 388,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 15
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 14
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 11
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 21
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 9
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 26
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 21
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 16
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 37
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 16
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 44
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 34
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 27
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 57
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 40
+        }
+      ]
+    },
+    "tab:race_tab_initial:sonar": {
+      "total": 341,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 22
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 12
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 8
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 15
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 15
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 27
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 49
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 10
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 36
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 8
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 15
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 12
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 29
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 53
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 30
+        }
+      ]
+    },
+    "tab:race_tab_select:basic": {
+      "total": 991,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 29
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 20
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 27
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 103
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 77
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 104
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 146
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 21
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 25
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 16
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 24
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 25
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 69
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 219
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 86
+        }
+      ]
+    },
+    "tab:race_tab_initial:motor": {
+      "total": 62,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 3
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 2
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 6
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 15
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 1
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 9
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 2
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 7
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 2
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 4
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 7
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 4
+        }
+      ]
+    },
+    "tab:race_tab_initial:oddsList": {
+      "total": 17,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 3
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 2
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 0
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 1
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 3
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 2
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 0
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 2
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 2
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 2
+        }
+      ]
+    },
+    "tab:race_tab_select:result": {
+      "total": 357,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 0
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 0
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 0
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 0
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 0
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 0
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 1
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 10
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 22
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 47
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 190
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 87
+        }
+      ]
+    },
+    "tab:race_tab_initial:waku": {
+      "total": 16,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 1
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 1
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 0
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 0
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 1
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 0
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 0
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 1
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 0
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 3
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 1
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 3
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 3
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 2
+        }
+      ]
+    },
+    "tab:race_tab_initial:meet": {
+      "total": 34,
+      "bins": [
+        {
+          "from": null,
+          "to": -720,
+          "views": 0
+        },
+        {
+          "from": -720,
+          "to": -180,
+          "views": 1
+        },
+        {
+          "from": -180,
+          "to": -60,
+          "views": 2
+        },
+        {
+          "from": -60,
+          "to": -30,
+          "views": 2
+        },
+        {
+          "from": -30,
+          "to": -15,
+          "views": 0
+        },
+        {
+          "from": -15,
+          "to": -10,
+          "views": 1
+        },
+        {
+          "from": -10,
+          "to": -5,
+          "views": 2
+        },
+        {
+          "from": -5,
+          "to": 0,
+          "views": 2
+        },
+        {
+          "from": 0,
+          "to": 5,
+          "views": 3
+        },
+        {
+          "from": 5,
+          "to": 10,
+          "views": 4
+        },
+        {
+          "from": 10,
+          "to": 15,
+          "views": 1
+        },
+        {
+          "from": 15,
+          "to": 30,
+          "views": 8
+        },
+        {
+          "from": 30,
+          "to": 60,
+          "views": 2
+        },
+        {
+          "from": 60,
+          "to": 180,
+          "views": 3
+        },
+        {
+          "from": 180,
+          "to": 1440,
+          "views": 3
+        },
+        {
+          "from": 1440,
+          "to": null,
+          "views": 0
+        }
+      ]
+    }
+  }
+}
