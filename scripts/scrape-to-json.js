@@ -381,18 +381,15 @@ export async function scrapeVenue(
   const results = await mapWithConcurrency(
     raceNos,
     raceConcurrency,
-    async (raceNo) => {
-      // strict では、失敗を捕捉して集め、会場全体の失敗として最後にまとめて投げる
-      const [settled] = await Promise.allSettled([
-        getRacelist(date, placeCd, raceNo, io),
-      ]);
-      return { raceNo, settled };
-    },
+    // strict では、失敗を捕捉して集め、会場全体の失敗として最後にまとめて投げる
+    (raceNo) =>
+      getRacelist(date, placeCd, raceNo, io).then(
+        (racelist) => ({ raceNo, racelist }),
+        (error) => ({ raceNo, error }),
+      ),
   );
 
-  const failures = results
-    .filter(({ settled }) => settled.status === "rejected")
-    .map(({ settled }) => settled.reason);
+  const failures = results.filter((r) => r.error).map((r) => r.error);
   if (failures.length > 0) {
     throw new Error(
       `会場${placeCd}: ${failures.length}ページの取得に失敗（例: ${failures[0].message}）`,
@@ -402,12 +399,11 @@ export async function scrapeVenue(
 
   // 非 strict で出走表が1レースも取れなければ、取得できなかった会場として null を返す
   // （従来の「直前情報が1レースも取れなければ null」に当たる）
-  if (results.every(({ settled }) => !settled.value)) return null;
+  if (results.every((r) => !r.racelist)) return null;
 
   // 出走表が取れなかったレース（非 strict）も、従来どおり選手が空のレースとして残す
   // （選手の無いレースは generate-predictions.js が races を作らない）
-  const venueRaces = results.map(({ raceNo, settled }) => {
-    const racelistData = settled.value;
+  const venueRaces = results.map(({ raceNo, racelist: racelistData }) => {
     return {
       date,
       placeCd,
@@ -421,8 +417,6 @@ export async function scrapeVenue(
     };
   });
 
-  // このレース場でデータが取得できた場合のみ返す
-  if (venueRaces.length === 0) return null;
   return {
     placeCd: placeCd,
     placeName: VENUES[placeCd] || `レース場${placeCd}`,

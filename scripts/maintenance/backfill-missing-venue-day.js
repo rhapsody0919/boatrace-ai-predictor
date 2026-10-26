@@ -7,6 +7,9 @@
  * 公式の出走表・発走時刻は今も残っているので、通常の朝の初期化と同じ経路（scrapeVenue → generateAndWriteFromRacesData）
  * で races・race_entries・race_conditions を作り、--cancelled のときは中止の確定（cancellation_status='confirmed'）を立てる。
  *
+ * 展示（exhibition_data）・気象は書かない。scrapeVenue は直前情報（beforeinfo）を取らない（BOA-1145）。過去の日の
+ * 展示タイムは K ファイルの欠落の補い（scripts/lib/kbGapFill.js）で埋まる。展示ST・気象は埋まらない。
+ *
  * 予想（predictions）は作らない。過去の日付は全レースが発走済みなので、generateAndWriteFromRacesData が書かない
  * （BOA-628 の発走済みの判定）。書いた後に、予想が0件であることも確かめる。
  *
