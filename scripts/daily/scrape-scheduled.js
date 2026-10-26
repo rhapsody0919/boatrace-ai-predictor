@@ -33,7 +33,7 @@ import {
   isOddsRefreshSkippedOnGha,
   isOddsSkippedOnGha,
 } from "../lib/predictionRefresh.js";
-import { shouldSkipOnGha } from "../lib/ghaSkipGate.js";
+import { isGhaFetchStopped, shouldSkipOnGha } from "../lib/ghaSkipGate.js";
 
 /**
  * SKIP_<JOB>_ON_GHA=true のとき、肩代わりの条件を満たす場合だけ false（実行）を返す（フェイルセーフ付きSKIP）。
@@ -52,6 +52,12 @@ async function main() {
   if (!isSupabaseEnabled()) {
     console.error("❌ Supabase環境変数が未設定です。");
     process.exit(1);
+  }
+
+  // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数に関係なく公式へ取りに行かない（ADR-0101 決定6）
+  if ((await isGhaFetchStopped()).stopped) {
+    console.log("⏭️ 取得の非常停止中のため、GitHub Actions の取得をすべて行わない");
+    return;
   }
 
   const date = parseDateArg() || getTodayDateJST();
