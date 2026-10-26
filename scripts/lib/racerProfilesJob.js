@@ -2,7 +2,8 @@
  * 選手プロフィール・期別成績（B6、racer_profiles）の共通ラッパ向けハンドラー（tasks.md T4b-16-1）。
  * api/cron/racer-profiles.js が createScrapeCronHandler の run に渡す。
  *
- * 月次（JST 毎月2日03:00〜05:50。5月・11月は9日・16日も。UTC 基準の1日・8日・15日の夜）に、約1,630人を、複数の呼び出しに分けて処理する
+ * 月次（JST 毎月2日03:00〜05:50。5月・11月は9日・16日も）に、新人のみ、
+ * 5月・11月は登録済みも含む約1,630人を、複数の呼び出しに分けて処理する
  * （チャンク処理。位置は scrape_job_state.cursor に保存して、次の起動が再開する）:
  *   - 1回の呼び出しは、時間の許す限り（ソフトデッドラインまで。最大 RACER_PROFILES_CHUNK 人）、登録番号の昇順に、
  *     同時 RACER_PROFILES_CONCURRENCY で処理する。1ページ約8〜10秒（2026-09-20の実測）のため、同時4で1回（300秒）あたり約110人（全体で約15回）
@@ -122,12 +123,15 @@ export async function runRacerProfilesJob(
   const afterRacerId = resume?.afterRacerId ?? null;
   const stats = resume?.stats ?? zeroStats();
 
+  // 起動時の月ではなく、再開中も固定された対象日の月で決める。
+  const newProfilesOnly = ![5, 11].includes(Number(date.slice(5, 7)));
   const options = {
     ...parseArgs([]),
     dryRun: ctx.mode === "shadow",
     limit: size,
     afterRacerId,
     concurrency,
+    newProfilesOnly,
   };
   const { summary } = await sync({
     client: ctx.client,
@@ -168,8 +172,12 @@ export async function runRacerProfilesJob(
     };
   }
 
-  // 最初のチャンクで対象が0人＝racer_profiles・race_entries が空（0件を成功にしない）
-  if (!resume && summary.targetCount === 0) {
+  // 新人だけの回で、登録済み選手がいるときの対象0人は正常。それ以外の空はエラー。
+  if (
+    !resume &&
+    summary.targetCount === 0 &&
+    !(newProfilesOnly && summary.registeredCount > 0)
+  ) {
     return {
       outcome: "error",
       error: "対象選手が0件でした（racer_profiles・直近の race_entries が空の疑い）",
