@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 102 |
+| テーブル・ビューの定義 | 103 |
 | 読んでいる（テーブルを直接） | 48 |
 | 読んでいる（RPC経由のみ） | 2 |
 | 画面から読んでいない（例外登録あり） | 29 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **23** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **24** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,7 +24,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（23件）
+## 要判断: 画面から読んでいない（例外登録なし）（24件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -45,6 +45,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `sns_oauth_tokens` | 表 | 154_sns_tokens_metric_jobs.sql | なし | 記述なし |  |
 | `sns_post_tracking` | 表 | 136_sns_metric_observations.sql | なし | 記述なし |  |
 | `sns_today_type_schedule` | 表 | 174_sns_today_type_schedule.sql | なし | 記述なし |  |
+| `sns_x_kind_reserves` | 表 | 182_sns_x_kind_reserves.sql | なし | 記述なし |  |
 | `sns_x_send_control` | 表 | 137_sns_x_send.sql | なし | 記述なし |  |
 | `sns_x_send_jobs` | 表 | 137_sns_x_send.sql | なし | 記述なし |  |
 | `sns_youtube_quota_attempts` | 表 | 146_sns_shorts_send.sql | なし | 記述なし |  |
