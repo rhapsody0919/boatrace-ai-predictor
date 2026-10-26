@@ -174,7 +174,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/roQuery.js` | 本番の読み取り専用ロール claude_ro で1文を実行する（scripts/db/ro-query.js の本体、ADR-0096）。 | checkReadStatement, parseRowLimit, checkRoUrl, runReadOnlyQuery, formatResult ほか4件 |
 | `scripts/lib/schemaDetect.js` | 「マイグレーションの列・テーブルが、接続先のDBに適用済みか」の判定（共通処理） | createSchemaDetector, DEFAULT_SCHEMA_CACHE_TTL_MS |
 | `scripts/lib/scramVerifier.js` | PostgreSQL の SCRAM-SHA-256 の検証子（pg_authid.rolpassword の形）を作る。RFC 5802 / RFC 7677… | scramSha256Verifier, SCRAM_ITERATIONS |
-| `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | createCircuitBreaker, BreakerOpenError |
+| `scripts/lib/scrapeJobs/circuitBreaker.js` | ホスト単位のサーキットブレーカー（BOA-368、plan.md §2.2・§8、ADR-0067）。 | normalizeBreakerRead, createCircuitBreaker, BreakerOpenError, FetchStoppedError |
 | `scripts/lib/scrapeJobs/cleanup.js` | 予定表の保守（scrape-cleanup、plan.md §3.9・T4a-11）。日次（JST 04:00）。 | cleanupCutoffs, runCleanup, SLOT_RETENTION_DAYS |
 | `scripts/lib/scrapeJobs/concurrency.js` | 並列度の上限つきの map（取得先への負荷を抑える。plan.md §8）。 | mapWithConcurrency, createSemaphore |
 | `scripts/lib/scrapeJobs/cronWrapper.js` | Vercel Cron 向けの共通ラッパ（plan.md §2.2）。各データセットの api/cron/*.js は、これを経由する。 | isAuthorized, defaultWorker, shouldEnsureSlots, runScrapeJob, createScrapeCronHandler ほか2件 |
@@ -196,7 +196,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/scrapeJobs/resultDigest.js` | 結果取得（A6）の shadow で記録する result_digest（scrape_slots.result_digest）の計算。 | pickResultColumns, pickStartTimingColumns, computeResultDigest, RESULT_DIGEST_COLUMNS, START_TIMING_DIGEST_COLUMNS |
 | `scripts/lib/scrapeJobs/resultHandlers.js` | 結果取得（A6）まわりの Vercel Cron ハンドラー（共通ラッパ cronWrapper.js に渡す関数の組み立て）。 | parseRaceId, addDays, overdueWindows, createResultSlotHandler, createResultOnTick ほか5件 |
 | `scripts/lib/scrapeJobs/schemaErrors.js` | 「予定表のテーブル・関数がDBに無い」エラーの判定。 | isScrapeSchemaMissingError, isClaimByOffsetMissingError, SCRAPE_SCHEMA_OBJECTS |
-| `scripts/lib/scrapeJobs/store.js` | 予定表（scrape_slots）・ジョブ状態（scrape_job_state）へのアクセス（Supabase実装）。 | createSupabaseStore, TICK_WRITE_INTERVAL_MS |
+| `scripts/lib/scrapeJobs/store.js` | 予定表（scrape_slots）・ジョブ状態（scrape_job_state）へのアクセス（Supabase実装）。 | createSupabaseStore, FETCH_STOP_RECHECK_MS, TICK_WRITE_INTERVAL_MS |
 | `scripts/lib/scrapeJobs/testing/fakeSupabaseClient.js` | テスト用のインメモリの Supabase クライアント（PostgREST の、検証に必要な部分だけ）。DB・取得先に接続しない。 | createFakeSupabaseClient |
 | `scripts/lib/scrapeJobs/testing/memoryStore.js` | テスト用のインメモリのストア（store.js と同じインターフェース）。共通ラッパの検証（verify-scrape-jobs.js）専用。 | createMemoryStore |
 | `scripts/lib/scrapeJobs/time.js` | 予定表（scrape_slots）まわりの時刻計算（純粋関数。実行環境のタイムゾーンに依存しない） | toJstDateString, jstStartOfDay, jstMinutesOfDay, raceStartInstant, slotDeadline ほか2件 |
@@ -388,4 +388,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 346 ファイル / export 1941 件。
+対象 346 ファイル / export 1944 件。
