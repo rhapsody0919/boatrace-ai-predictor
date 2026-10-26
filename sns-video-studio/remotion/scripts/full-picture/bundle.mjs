@@ -10,6 +10,7 @@
  * 題名・説明文は wording-editor・youtube-channel（2026-10-20）を通した。Shorts の題名の「同じ並び」は、入口版の結論の問い
  * 「同じ並びの過去は、どう決まった？」（2026-10-20 オーナー決定）にそろえている。
  */
+import { diffWords } from "./scenes/diff.mjs";
 export const BUNDLE_VERSION = 2;
 export const SITE = "https://www.boat-ai.jp";
 export const FULL_URL_SLOT = "{full_url}";
@@ -102,7 +103,7 @@ export function chaptersOk(text, durationSec) {
  * 数値は場面の facts（字幕と同じ値）から
  */
 function lines({ venue90, overview, conclusion }) {
-  const diff = (f, base) => (f.diffPt === null || f.diffPt === undefined ? "" : f.diffPt < 1 ? `、${base}との差は1ポイント未満` : `、${base}より${f.diffPt.toFixed(1)}ポイント${f.direction}`);
+  const diff = (f, base) => (diffWords(f) === null ? "" : `、${base}${diffWords(f)}`);
   return {
     venue: venue90
       ? `${venue90.venue}の1号艇の1着率は過去90日の${venue90.races.toLocaleString("ja-JP")}レースで${d1(venue90.rate)}%${diff(venue90, `全国の同じ期間の${d1(venue90.national)}%`)}`
@@ -110,7 +111,7 @@ function lines({ venue90, overview, conclusion }) {
     // 題名の後半（その日の向き）
     venueHead:
       venue90 && venue90.diffPt !== null && venue90.diffPt !== undefined
-        ? `${venue90.venue}の1着率は全国${venue90.diffPt < 1 ? "との差は1ポイント未満" : `より${venue90.direction}`}`
+        ? `${venue90.venue}の1着率は全国${venue90.diffPt < 1 ? "との差は1ポイント未満" : venue90.direction ? `より${venue90.direction}` : "との差は確認できない"}`
         : null,
     overview: overview
       ? `6艇比較の${overview.axesCount}項目で2位以内に入った数は、${overview.leaders.join("・")}号艇の${overview.maxTop2}が最多${overview.runner ? `、次は${overview.runner.boats.join("・")}号艇の${overview.runner.count}` : ""}`

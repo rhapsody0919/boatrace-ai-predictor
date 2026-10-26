@@ -220,7 +220,7 @@ function postText(answers) {
   let cardLine = null;
   if (card) {
     const f = card.facts;
-    const diff = f.usualDiffPt === null ? "" : f.usualDiffPt < 1 ? "との差は1ポイント未満" : `より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
+    const diff = f.usualDiffPt === null ? "" : f.usualDiffPt < 1 ? "との差は1ポイント未満" : f.direction ? `より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}` : "との差は確認できない";
     cardLine = `1号艇の材料: ${f.item}が今日${f.todayRank}位のときの1着率${f.todayRate}%（${fmtCount(f.todayN)}件）、同じ級別の1号艇${f.usual}%（${fmtCount(f.usualN)}件）${diff}`;
   }
   return [head, ov, cardLine, "データは龍神レーダーで。", "#ボートレース"].filter(Boolean).join("\n") + "\n";

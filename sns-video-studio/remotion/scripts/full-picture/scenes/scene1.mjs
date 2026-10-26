@@ -63,7 +63,7 @@ export function buildScene1(m) {
     // ① 枠番別の1着率と全国平均
     const v1 = round1(rateOf(1, "winRate"));
     const n1 = round1(natOf(1, "winRate"));
-    const f = { kind: "venue90", boat: 1, venue, rate: v1, national: n1, races: total, ...diffOf(v1, n1) };
+    const f = { kind: "venue90", boat: 1, venue, rate: v1, national: n1, races: total, ...diffOf(v1, n1, total) };
     steps.push({
       id: "s1-venue90",
       question: q,
@@ -85,7 +85,7 @@ export function buildScene1(m) {
     const t2 = round1(rateOf(1, "top2Rate"));
     const t3 = round1(rateOf(1, "top3Rate"));
     const n2 = round1(natOf(1, "top2Rate"));
-    const f2 = { kind: "place", boat: 1, venue, top2: t2, top3: t3, national2: n2, ...diffOf(t2, n2) };
+    const f2 = { kind: "place", boat: 1, venue, top2: t2, top3: t3, national2: n2, ...diffOf(t2, n2, total) };
     steps.push({
       id: "s1-place",
       question: q,
@@ -112,7 +112,7 @@ export function buildScene1(m) {
   if (day.raceCount > 0) {
     const nige = pct1(day.nigeCount / day.raceCount);
     const v1 = rates ? round1(rateOf(1, "winRate")) : null;
-    const f3 = { kind: "day", boat: 1, venue, races: day.raceCount, nigeCount: day.nigeCount, nigeRate: nige, venueRate: v1, ...diffOf(nige, v1) };
+    const f3 = { kind: "day", boat: 1, venue, races: day.raceCount, nigeCount: day.nigeCount, nigeRate: nige, venueRate: v1, ...diffOf(nige, v1, day.raceCount) };
     steps.push({
       id: "s1-day",
       question: q,
@@ -155,7 +155,7 @@ export function buildScene1(m) {
     const p1 = r1.p === null ? null : round1(r1.p);
     const b1 = r1.base === null ? null : round1(r1.base);
     const band = view.wind ?? windBand(w.windSpeed);
-    const f4 = { kind: "wind", boat: 1, venue, wind: `${w.windSpeed}m`, band, rate: p1, base: b1, races: view.n, ...diffOf(p1, b1) };
+    const f4 = { kind: "wind", boat: 1, venue, wind: `${w.windSpeed}m`, band, rate: p1, base: b1, races: view.n, ...diffOf(p1, b1, view.n) };
     steps.push({
       id: "s1-wind",
       question: "今日の風の傾向は？",

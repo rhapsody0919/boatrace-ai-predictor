@@ -6,6 +6,7 @@
  * 型の正本: ~/hq/drafts/full-picture-scene-contract.md の「全場面共通」「場面2」。
  */
 import { fitFirst } from "./fit.mjs";
+import { diffOf } from "./scenes/diff.mjs";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import {
@@ -179,7 +180,9 @@ export function templateLines(f) {
           ? `1位${f.rate1}%・6位${f.rate6}%`
           : f.usualDiffPt < 1
             ? `${who}${f.usual}%との差は1ポイント未満`
-            : `${who}${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`;
+            : f.direction
+              ? `${who}${f.usual}%より${f.usualDiffPt.toFixed(1)}ポイント${f.direction}`
+              : `${who}${f.usual}%との差は確認できない`;
       const l1s = [`${f.item}${f.todayRank}位だった過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去の${f.boat}号艇は1着${f.todayRate}%`, `${f.item}${f.todayRank}位の過去のレースで1着${f.todayRate}%`];
       return fitFirst(...l1s.flatMap((l1) => [[l1, base(`同じ級別の${f.boat}号艇の`)], [l1, base("同じ級別の")]]));
     }
@@ -211,6 +214,8 @@ function cardOf(row, today, scopeFacts, values, omitted) {
   const pct = (p) => Math.round(p * 100);
   const usualPct = usual === null ? null : Math.round(usual * 1000) / 10;
   const d = line && usualPct !== null ? pct(line.rate) - usualPct : null;
+  // 向きは |z|>=1.96 のときだけ（BOA-1157）。件数は今日の順位だった過去の件数
+  const zd = d === null ? null : diffOf(pct(line.rate), usualPct, line.hit[1]);
   const facts = {
     kind: "card",
     boat: CARD_BOAT,
@@ -223,7 +228,9 @@ function cardOf(row, today, scopeFacts, values, omitted) {
     spreadPt: Math.abs(pct(rates[0]) - pct(rates[5])),
     usual: usualPct,
     usualDiffPt: d === null ? null : Math.round(Math.abs(d) * 10) / 10,
-    direction: d === null ? null : d > 0 ? "高い" : "低い",
+    direction: zd?.direction ?? null,
+    z: zd?.z ?? null,
+    sig: zd?.sig ?? false,
     roundDay: finalDay ? (ROUND_NAME[today.round] ?? null) : null,
     // 優勝戦・準優勝戦の日の今節の着順点: 画面は今日の順位を出すが、棒の今日の位置は出さない（点の順がほぼ枠の順のため参考）
     todayRankRef: finalDay && r && r.from === r.to ? r.from : null,

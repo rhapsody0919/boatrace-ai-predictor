@@ -12,6 +12,7 @@
  *   艇ごとの選手の進入コースの成績（決まり手・期のコース別・進入の分布）と体重、会場のコース別の決まり手も写し、レースの日より後の集計を記録する
  */
 import assert from "node:assert/strict";
+import { diffOf, diffText } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
   MAX_WIDTH,
@@ -1944,6 +1945,22 @@ for (const f of fixtures) {
   assert.deepEqual(keyBoatsOf(m), { form: null, boats: [1] }, "鍵の艇も横一線に寄せない");
   const ans = templateText(allBeats(buildAll(m))).answers;
   for (const id of ["s4-slit-course"]) assert.deepEqual(checkLines(ans[id], dn.steps.find((st) => st.id === id).facts, null), [], "当てはまらない言い方も文の検査を通る");
+}
+
+// BOA-1157: 差の向き（高い・低い）は |z|>=1.96 のときだけ言い切る。10/26 大村10R の3例は言い切らない
+{
+  for (const [a, b, n, what] of [[58.1, 54.6, 599, "s1-venue90 599件 z≈1.72"], [100, 58.1, 6, "s1-day 6R（正規近似の件数に足りない）"], [69.7, 55.2, 33, "s3-rough 33件 z≈1.67"]]) {
+    const f = diffOf(a, b, n);
+    assert.equal(f.direction, null, `${what} は向きを言わない`);
+    assert.equal(diffText("全国", f), "全国との差は確認できない", `${what} の文`);
+    assert.ok(checkLines(["大村の1号艇の1着率58.1%", "全国の54.6%より3.5ポイント高い"], f, null).some((w) => w.includes("z の根拠が無い")), `${what} で「高い」は文の検査で止まる`);
+  }
+  const g = diffOf(60, 50, 1000);
+  assert.equal(g.direction, "高い", "|z|>=1.96 なら今までどおり言い切る");
+  assert.equal(diffText("全国の50.0%", g), "全国の50.0%より10.0ポイント高い");
+  assert.equal(diffOf(40, 50, 1000).direction, "低い");
+  assert.equal(diffOf(51, 50, null).direction, null, "件数が無ければ言い切らない");
+  assert.equal(diffText("全国", diffOf(50.5, 50, 1000)), "全国との差は1ポイント未満", "1ポイント未満は今までどおり");
 }
 
 console.log("verify-full-picture-scene2: OK");

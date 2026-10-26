@@ -75,7 +75,7 @@ export function buildScene3(m) {
     const x = Math.round(b.rate * 1000) / 10;
     const y = Math.round(b.base * 1000) / 10;
     const label = sameClassLabel(scope);
-    const f = { kind: "rough", boat: 1, scopeLabel: label, n: b.k === undefined ? null : b.n, rate: x, national: y, ...diffOf(x, y) };
+    const f = { kind: "rough", boat: 1, scopeLabel: label, n: b.k === undefined ? null : b.n, rate: x, national: y, ...diffOf(x, y, b.n) };
     steps.push({
       id: "s3-rough",
       question: Q,
@@ -132,7 +132,7 @@ export function buildScene3(m) {
     const rate = (g, k) => (g.n ? Math.round((g[k] / g.n) * 1000) / 10 : null);
     const hw = rate(here, "win");
     const aw = all.n ? Math.round((all.win / all.n) * 1000) / 10 : null;
-    const f = { kind: "venueRecord", boat: 1, name, venue, runs: here.n, wins: here.win, rate: hw, top2: rate(here, "top2"), allRuns: all.n, allWins: all.win, allRate: aw, ...diffOf(hw, aw) };
+    const f = { kind: "venueRecord", boat: 1, name, venue, runs: here.n, wins: here.win, rate: hw, top2: rate(here, "top2"), allRuns: all.n, allWins: all.win, allRate: aw, ...diffOf(hw, aw, here.n) };
     steps.push({
       id: "s3-venue",
       question: Q,
