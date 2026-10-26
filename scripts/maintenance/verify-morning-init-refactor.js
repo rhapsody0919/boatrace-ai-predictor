@@ -5,7 +5,8 @@
  *
  * 確認すること:
  *   (a) scrape-to-json.js: 分けた後の scrapeVenue・getTodayVenues が、分ける前の実装（旧 main() の取得部分）の出力と
- *       完全に一致する（実ページ4件のfixtureから、旧実装で作った golden との比較）。既定（非 strict）は、取得の失敗を従来どおり
+ *       完全に一致する（実ページ4件のfixtureから、旧実装で作った golden との比較）。ただし直前情報（beforeinfo）は
+ *       取らなくなったため（BOA-1145）、golden の直前情報の欄（気象・展示）は null に置き換えて比べる。既定（非 strict）は、取得の失敗を従来どおり
  *       null・空に化かし、strict は例外にする。並列度の上限が効く
  *   (b) generate-predictions.js: generateAndWriteFromRacesData が、races・race_entries・predictions・race_conditions を書き、
  *       2回目は変更の無い行を書かない。throwOnError のとき、書き込みの失敗を例外にする（既定は従来どおり握りつぶす）
@@ -85,7 +86,24 @@ async function rejects(promise) {
 const FX = new URL("../lib/racesInit/__fixtures__/", import.meta.url);
 const fixture = (name) => fs.readFileSync(new URL(name, FX), "utf8");
 const readJson = (name) => JSON.parse(fixture(name));
-const GOLDEN_VENUE = readJson("golden-venue-01.json");
+// 直前情報（beforeinfo）の欄を null にした golden（BOA-1145。scrapeVenue は beforeinfo を取らない）。
+// 旧 golden の値は、朝の実ページで全て空（weather "", windDirection 0, 他 null）で、予想・書き込みの結果は同じ
+const GOLDEN_VENUE = (() => {
+  const g = readJson("golden-venue-01.json");
+  return {
+    ...g,
+    races: g.races.map((r) => ({
+      ...r,
+      weather: null,
+      airTemp: null,
+      windDirection: null,
+      windVelocity: null,
+      waterTemp: null,
+      waveHeight: null,
+      exhibitionData: null,
+    })),
+  };
+})();
 const GOLDEN_VENUES = readJson("golden-venues-2026-09-21.json");
 const DATE = "2026-09-21";
 
@@ -180,15 +198,14 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
       racelist3Fails.races[2].racers.length === 0 &&
       racelist3Fails.races[3].racers.length === 6,
   );
-  const beforeinfo4Fails = await scrapeVenue(DATE, 1, {
+  const beforeinfoFails = await scrapeVenue(DATE, 1, {
     fetchHtml: createFixtureFetch({
-      fail: (u) => u.includes("beforeinfo") && u.includes("rno=4"),
+      fail: (u) => u.includes("beforeinfo"),
     }),
   });
   check(
-    "(a) 非 strict: beforeinfo の失敗は、そのレースが欠ける（従来どおり）",
-    beforeinfo4Fails.races.length === 11 &&
-      !beforeinfo4Fails.races.some((r) => r.raceNo === 4),
+    "(a) 非 strict: beforeinfo が取れなくても、全レースがそろう（beforeinfo は取らない。BOA-1145）",
+    same(beforeinfoFails, GOLDEN_VENUE),
   );
 
   // strict: 失敗は例外
@@ -216,17 +233,15 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
     e2 && /会場1/.test(e2.message),
     e2?.message,
   );
+  const beforeinfoLog = createFixtureFetch({
+    fail: (u) => u.includes("beforeinfo"),
+  });
   const e3 = await rejects(
-    scrapeVenue(DATE, 1, {
-      fetchHtml: createFixtureFetch({
-        fail: (u) => u.includes("beforeinfo") && u.includes("rno=4"),
-      }),
-      strict: true,
-    }),
+    scrapeVenue(DATE, 1, { fetchHtml: beforeinfoLog, strict: true }),
   );
   check(
-    "(a) strict: beforeinfo が1ページでも失敗したら、会場全体が例外",
-    e3 && /会場1/.test(e3.message),
+    "(a) strict: beforeinfo が全て失敗しても、会場は例外にならない（beforeinfo を取りに行かない。BOA-1145）",
+    e3 === null && !beforeinfoLog.log.some((u) => u.includes("beforeinfo")),
     e3?.message,
   );
   const e4 = await rejects(
@@ -259,15 +274,15 @@ function createFixtureFetch({ fail = () => false, latencyMs = 2 } = {}) {
   const limited = createFixtureFetch({ latencyMs: 8 });
   await scrapeVenue(DATE, 1, { fetchHtml: limited, raceConcurrency: 3 });
   check(
-    "(a) raceConcurrency=3: 同時リクエストは最大6（3レース×beforeinfo・racelist）",
-    limited.maxActive <= 6 && limited.maxActive >= 2,
+    "(a) raceConcurrency=3: 同時リクエストは最大3（3レース×racelist。beforeinfo は取らない）",
+    limited.maxActive <= 3 && limited.maxActive >= 2,
     `maxActive=${limited.maxActive}`,
   );
   const unlimited = createFixtureFetch({ latencyMs: 8 });
   await scrapeVenue(DATE, 1, { fetchHtml: unlimited });
   check(
-    "(a) 既定（12レース同時）: 従来どおり、24リクエストが同時に走る",
-    unlimited.maxActive === 24,
+    "(a) 既定（12レース同時）: 12リクエスト（racelist）が同時に走る",
+    unlimited.maxActive === 12,
     `maxActive=${unlimited.maxActive}`,
   );
 }

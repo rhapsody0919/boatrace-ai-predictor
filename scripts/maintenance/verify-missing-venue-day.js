@@ -162,6 +162,35 @@ const quiet = () => {};
   );
 }
 
+// (c2) 12レース返るが、選手のいないレースがある（scrapeVenue は beforeinfo を取らず、常に12レースを返す。BOA-1145）
+{
+  const client = fakeClient();
+  const w = writer(client);
+  let error = null;
+  try {
+    await backfillMissingVenueDay(
+      { date: DATE, venues: [3], apply: true, cancelled: true },
+      {
+        client,
+        scrapeVenue: async (d, c) => {
+          const v = venue(c);
+          v.races[4].racers = [];
+          return v;
+        },
+        writeVenues: w,
+        log: quiet,
+      },
+    );
+  } catch (e) {
+    error = e;
+  }
+  check(
+    "(c2) 12レースのうち1レースに選手がいない: 例外で止め、何も書かない",
+    error !== null && /11レース/.test(error.message) && w.calls.length === 0,
+    String(error?.message),
+  );
+}
+
 // (d) --apply --cancelled
 {
   const client = fakeClient();

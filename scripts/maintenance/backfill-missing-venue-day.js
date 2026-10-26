@@ -7,6 +7,9 @@
  * 公式の出走表・発走時刻は今も残っているので、通常の朝の初期化と同じ経路（scrapeVenue → generateAndWriteFromRacesData）
  * で races・race_entries・race_conditions を作り、--cancelled のときは中止の確定（cancellation_status='confirmed'）を立てる。
  *
+ * 展示（exhibition_data）・気象は書かない。scrapeVenue は直前情報（beforeinfo）を取らない（BOA-1145）。過去の日の
+ * 展示タイムは K ファイルの欠落の補い（scripts/lib/kbGapFill.js）で埋まる。展示ST・気象は埋まらない。
+ *
  * 予想（predictions）は作らない。過去の日付は全レースが発走済みなので、generateAndWriteFromRacesData が書かない
  * （BOA-628 の発走済みの判定）。書いた後に、予想が0件であることも確かめる。
  *
@@ -88,7 +91,8 @@ export async function backfillMissingVenueDay(opts, deps) {
       strict: true,
       raceConcurrency: 4,
     });
-    const races = v?.races ?? [];
+    // scrapeVenue は1R〜12Rを必ず返す（beforeinfo を取らない。BOA-1145）ので、選手のいるレースを数える
+    const races = (v?.races ?? []).filter((r) => r.racers?.length > 0);
     if (races.length !== RACES_PER_DAY) {
       throw new Error(
         `会場${venue}: 出走表が${races.length}レース（12のはず）。書かずに止めます`,
