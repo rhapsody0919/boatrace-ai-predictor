@@ -7,7 +7,7 @@
  *   today_digest、全貌動画の utm_content=race_id は X・YouTube と utm_term ごとに投稿日と翌日だけ）。
  *   それぞれ「龍神ソナーのタブを開いた人」も。毎日 D−3〜D−1（JST）を取り直す。流入元のリストは scripts/lib/snsGa4.js
  * - 値が変わった行だけ書く（読み直して比べる。取得のたびに全行を UPDATE しない）
- * - チャネル全体の日次は行が無い日も埋める（YouTube は「行を返さない」の欠測、GA4 は0）。UTM ごとの日次は行がある分だけ
+ * - チャネル全体の日次は行が無い日も埋める（YouTube は D−3 の件数だけ0確定、直近日と平均は欠測。GA4 は0）。UTM ごとの日次は行がある分だけ
  * - 片方の取得に失敗しても、もう片方は書いてから失敗として返す（補足の起動がやり直す）
  * - GA4 の鍵が未設定の間は GA4 を飛ばし、report.alerts で知らせる
  * - shadow は取得と比較までで、書かない
@@ -135,6 +135,7 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
   const rows = [];
   const errors = [];
   const alerts = [];
+  const youtubeZeroFinalizations = [];
   const push = (row) =>
     rows.push({
       draft_id: null,
@@ -151,7 +152,13 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
     const videos = await store.youtubeVideos(
       new Date(now.getTime() - ENGAGED_LOOKBACK_DAYS * 86400000).toISOString(),
     );
-    await collectYoutube({ yt, videos, ptDays, push });
+    await collectYoutube({
+      yt,
+      videos,
+      ptDays,
+      push,
+      youtubeZeroFinalizations,
+    });
     // 観測（pt3d）は日次の表と別に失敗を数える。動画ごとの失敗は collectEngaged の中で errors に入れて次へ進む
     try {
       observations = await collectEngaged({
@@ -232,6 +239,7 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
   const report = {
     jstDays,
     ptDays,
+    youtubeZeroFinalizations,
     parsed: rows.length,
     changed: changed.length,
     observations: observations.length,
@@ -250,7 +258,28 @@ export async function runSnsDaily(ctx, { store, youtube, ga4 }) {
   };
 }
 
-async function collectYoutube({ yt, videos, ptDays, push }) {
+async function collectYoutube({
+  yt,
+  videos,
+  ptDays,
+  push,
+  youtubeZeroFinalizations,
+}) {
+  const pushDaily = (args) => {
+    const finalDayWithoutRow = args.day === ptDays[0] && args.row === undefined;
+    const finalizeZero =
+      finalDayWithoutRow && CHANNEL_METRICS.includes(args.metric);
+    const row = ytRow({ ...args, finalDayWithoutRow, finalizeZero });
+    push(row);
+    if (finalizeZero)
+      youtubeZeroFinalizations.push({
+        day: row.day,
+        channel: row.channel,
+        draft_id: row.draft_id,
+        metric_name: row.metric_name,
+        reason: "Analytics が行を返さない日を D−3 で0と確定",
+      });
+  };
   const channelRows = await yt.report({
     startDate: ptDays[0],
     endDate: ptDays.at(-1),
@@ -260,14 +289,12 @@ async function collectYoutube({ yt, videos, ptDays, push }) {
   const byDay = new Map(channelRows.map((r) => [r.day, r]));
   for (const day of ptDays)
     for (const metric of CHANNEL_METRICS)
-      push(
-        ytRow({
-          day,
-          metric,
-          row: byDay.get(day),
-          definition: def.ytChannel(metric),
-        }),
-      );
+      pushDaily({
+        day,
+        metric,
+        row: byDay.get(day),
+        definition: def.ytChannel(metric),
+      });
 
   // 投稿日か翌日が取り直しの範囲に入る動画だけ。動画ごとに1回（クォータ1）
   for (const video of videos) {
@@ -284,15 +311,13 @@ async function collectYoutube({ yt, videos, ptDays, push }) {
     const videoByDay = new Map(videoRows.map((r) => [r.day, r]));
     for (const day of days)
       for (const metric of VIDEO_METRICS)
-        push(
-          ytRow({
-            day,
-            metric,
-            row: videoByDay.get(day),
-            definition: def.ytVideo(metric),
-            draft_id: video.draft_id,
-          }),
-        );
+        pushDaily({
+          day,
+          metric,
+          row: videoByDay.get(day),
+          definition: def.ytVideo(metric),
+          draft_id: video.draft_id,
+        });
   }
 }
 
@@ -388,8 +413,17 @@ async function collectEngaged({
   return out;
 }
 
-function ytRow({ day, metric, row, definition, draft_id = null }) {
-  const value = row?.[metric];
+function ytRow({
+  day,
+  metric,
+  row,
+  definition,
+  draft_id = null,
+  finalDayWithoutRow = false,
+  finalizeZero = false,
+}) {
+  // DB の CHECK は値と missing_reason のどちらか一方。規則による0の理由は report に残す。
+  const value = finalizeZero ? 0 : row?.[metric];
   const ok = Number.isFinite(value) && value >= 0;
   return {
     day,
@@ -398,7 +432,11 @@ function ytRow({ day, metric, row, definition, draft_id = null }) {
     source: "youtube-analytics",
     metric_name: metric,
     metric_value: ok ? value : null,
-    missing_reason: ok ? null : YT_MISSING,
+    missing_reason: ok
+      ? null
+      : finalDayWithoutRow
+        ? "Analytics が行を返さない日を D−3 で確定したが、視聴なしの平均は算出できない"
+        : YT_MISSING,
     definition,
   };
 }

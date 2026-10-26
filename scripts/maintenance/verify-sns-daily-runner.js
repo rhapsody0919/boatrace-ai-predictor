@@ -256,6 +256,145 @@ test("YouTube: チャネル全体は D−3〜D−1（PT）を埋め、動画は�
   );
 });
 
+test("YouTube: 行なしは PT の D−3 の件数だけ0確定し、平均と直近日は欠測", async () => {
+  videos = [
+    {
+      draft_id: draftId,
+      external_post_id: "empty",
+      posted_at: "2026-10-12T20:00:00Z",
+    },
+  ];
+  const deps = {
+    store,
+    youtube: async () => ({ report: async () => [] }),
+    ga4: null,
+  };
+  const result = await runSnsDaily(ctx(), deps);
+  const saved = await rows("channel='youtube'");
+  const counts = ["views", "engagedViews", "subscribersGained"];
+  const settled = saved.filter(
+    (r) => r.day === "2026-10-12" && counts.includes(r.metric_name),
+  );
+  assert.equal(settled.length, 6); // チャネルと動画の3指標
+  assert.ok(settled.every((r) => r.v === 0 && r.missing_reason === null));
+  const averages = saved.filter(
+    (r) => r.day === "2026-10-12" && !counts.includes(r.metric_name),
+  );
+  assert.equal(averages.length, 2);
+  assert.ok(
+    averages.every(
+      (r) => r.v === null && /平均.*算出できない/.test(r.missing_reason),
+    ),
+  );
+  const recent = saved.filter((r) => r.day !== "2026-10-12");
+  assert.equal(recent.length, 11);
+  assert.ok(
+    recent.every((r) => r.v === null && /未確定/.test(r.missing_reason)),
+  );
+  assert.deepEqual(
+    [...result.report.youtubeZeroFinalizations].sort(
+      (a, b) =>
+        a.metric_name.localeCompare(b.metric_name) ||
+        String(a.draft_id).localeCompare(String(b.draft_id)),
+    ),
+    settled
+      .map((r) => ({
+        day: r.day,
+        channel: r.channel,
+        draft_id: r.draft_id,
+        metric_name: r.metric_name,
+        reason: "Analytics が行を返さない日を D−3 で0と確定",
+      }))
+      .sort(
+        (a, b) =>
+          a.metric_name.localeCompare(b.metric_name) ||
+          String(a.draft_id).localeCompare(String(b.draft_id)),
+      ),
+  );
+  const again = await runSnsDaily(ctx(), deps);
+  assert.equal(again.rowsWritten, 0);
+  assert.deepEqual(
+    again.report.youtubeZeroFinalizations,
+    result.report.youtubeZeroFinalizations,
+  );
+});
+
+test("YouTube: D−2 の欠測は翌日の D−3 で同じキーの0へ更新する", async () => {
+  videos = [
+    {
+      draft_id: draftId,
+      external_post_id: "empty",
+      posted_at: "2026-10-13T20:00:00Z",
+    },
+  ];
+  const deps = {
+    store,
+    ga4: null,
+    youtube: async () => ({ report: async () => [] }),
+  };
+  await runSnsDaily(ctx(), deps);
+  const where = "channel='youtube' AND day='2026-10-13'";
+  const beforeRows = await rows(where);
+  assert.equal(beforeRows.length, 8);
+  assert.ok(beforeRows.every((r) => r.v === null));
+  await runSnsDaily(
+    {
+      ...ctx(),
+      now: () => new Date("2026-10-17T01:05:00Z"),
+      targetDate: "2026-10-17",
+    },
+    deps,
+  );
+  const afterRows = await rows(where);
+  assert.equal(afterRows.length, 8);
+  assert.ok(
+    afterRows
+      .filter((r) => !r.metric_name.startsWith("average"))
+      .every((r) => r.v === 0 && r.missing_reason === null),
+  );
+  assert.ok(
+    afterRows
+      .filter((r) => r.metric_name.startsWith("average"))
+      .every((r) => r.v === null),
+  );
+});
+
+test("YouTube: D−3 でも行の値が不正・欠落なら0にせず、明示0を規則の0として報告しない", async () => {
+  videos = [];
+  for (const value of [undefined, null, -1, NaN, "0", 0]) {
+    const result = await runSnsDaily(ctx(), {
+      store,
+      ga4: null,
+      youtube: async () => ({
+        report: async () => [{ day: "2026-10-12", views: value }],
+      }),
+    });
+    const saved = await rows("channel='youtube' AND day='2026-10-12'");
+    assert.equal(saved.length, 3);
+    assert.ok(
+      saved.every(
+        (r) => r.v === (r.metric_name === "views" && value === 0 ? 0 : null),
+      ),
+    );
+    assert.deepEqual(result.report.youtubeZeroFinalizations, []);
+  }
+});
+
+test("YouTube: API 失敗は0確定せず失敗結果とする", async () => {
+  const result = await runSnsDaily(ctx(), {
+    store,
+    ga4: null,
+    youtube: async () => ({
+      report: async () => {
+        throw new Error("fixture failure");
+      },
+    }),
+  });
+  assert.equal(result.outcome, "error");
+  assert.deepEqual(await rows("channel='youtube'"), []);
+  assert.deepEqual(result.report.youtubeZeroFinalizations, []);
+});
+
 test("GA4: チャネル全体は流入元をチャネルに足し行の無い日は0、UTM は下書きに結びつける", async () => {
   await runSnsDaily(ctx(), {
     store,
