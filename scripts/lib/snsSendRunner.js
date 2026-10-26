@@ -27,6 +27,22 @@ export const SNS_SEND_MAX_JOBS = 3;
 export const YOUTUBE_MAX_POLLS = 3;
 export const YOUTUBE_POLL_WAIT_SEC = 30;
 
+// PT の日付境界の前10分・後5分は、新しい YouTube 試行を始めない。
+// 固定の UTC 時差ではなく、夏時間を含む現地時刻で判定する。
+const pacificClock = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "America/Los_Angeles",
+  hourCycle: "h23",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+function youtubeQuotaDayWait(now) {
+  const parts = Object.fromEntries(
+    pacificClock.formatToParts(now).map(({ type, value }) => [type, value]),
+  );
+  const minute = Number(parts.hour) * 60 + Number(parts.minute);
+  return minute >= 24 * 60 - 10 || minute < 5;
+}
+
 const slug = (message) =>
   /^[a-z_]{1,64}$/.test(message ?? "") ? message : "unexpected_error";
 
@@ -146,6 +162,19 @@ export async function runSnsSend(
     }
     const result = { id: job.id, channel: job.channel };
     results.push(result);
+    const deferYoutube = () => {
+      if (job.channel !== "youtube" || !live ||
+          controls.youtube?.dry_run !== false || !youtubeQuotaDayWait(ctx.now()))
+        return false;
+      result.outcome = "youtube_quota_day_wait";
+      alerts.push({
+        key: `youtube_quota_day_wait:${job.id}`,
+        text: `SNS の送信: YouTube job ${job.id} は太平洋時間の日付境界（前10分・後5分）のため待機（claim していない）。期限 ${job.expires_at}`,
+        until: continuingUntil,
+      });
+      return true;
+    };
+    if (deferYoutube()) continue;
     try {
       await preflight(job);
     } catch (error) {
@@ -185,6 +214,8 @@ export async function runSnsSend(
       continue;
     }
     tokenChecked.add(job.channel);
+    // 検査やトークン取得を待つ間に停止窓へ入った場合も claim しない。
+    if (deferYoutube()) continue;
     attempted += 1;
     try {
       const done =
@@ -229,7 +260,8 @@ export async function runSnsSend(
   for (const a of previous) {
     const [kind, subject] = a.key.split(":");
     if (
-      (kind === "precheck" && !examined.has(subject)) ||
+      (["precheck", "youtube_quota_day_wait"].includes(kind) &&
+        !examined.has(subject)) ||
       (kind === "token" && !tokenChecked.has(subject))
     )
       alerts.push(a);
