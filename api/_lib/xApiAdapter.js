@@ -1,8 +1,8 @@
 /**
  * X API v2 の実 adapter（sns-pdca-loop tasks 17）。runXSendJob（snsXSend.js）の契約どおりの形にする:
- * initialize({size,type,category}) / append({id,index,bytes}) / finalize(id) / status(id) / createPost({text,mediaIds,replyTo})
+ * initialize({size,type,category}) / append({id,index,bytes}) / finalize(id) / status(id) / createPost({text,mediaIds,replyTo,poll})
  * - 媒体は v2 の分割アップロード（/2/media/upload/initialize・{id}/append・{id}/finalize、状態は GET /2/media/upload?command=STATUS）
- * - 投稿は POST /2/tweets。返信は reply.in_reply_to_tweet_id
+ * - 投稿は POST /2/tweets。返信は reply.in_reply_to_tweet_id、投票は poll.options・poll.duration_minutes（媒体と同じ投稿に載せられない）
  * - POST は自動で再試行しない（応答が分からない投稿は要照合に残す。契約どおり）
  * - posted_at は投稿の ID（snowflake）に入っている作成時刻から求める（読み取りの API を余分に呼ばない）
  */
@@ -129,13 +129,23 @@ export function createXApiAdapter({ accessToken, fetchImpl = fetch }) {
         ),
       };
     },
-    async createPost({ text, mediaIds = [], replyTo }) {
+    async createPost({ text, mediaIds = [], replyTo, poll }) {
+      if (poll && mediaIds.length)
+        throw new Error("X の投票と媒体は同じ投稿に載せられません");
       const body = await call("/2/tweets", {
         method: "POST",
         json: {
           text,
           ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
           ...(replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : {}),
+          ...(poll
+            ? {
+                poll: {
+                  options: poll.options,
+                  duration_minutes: poll.duration_minutes,
+                },
+              }
+            : {}),
         },
       });
       const id = body?.data?.id;

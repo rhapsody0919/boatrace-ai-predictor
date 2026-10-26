@@ -38,8 +38,16 @@
 - 残る壊れ方（有効にする前に直す）: (1) 予算・日次の上限の際で親だけが通る（親子の対で予約する transition_sns_send_139 の置き換えが要る）、(2) 親の公開の後に一覧の版・欠場が変わると子が source_changed で送れない（子は親の公開の後は版の照合を外す例外が要る）
 
 ## 追記: 優勝戦の画像（finals_image）は、止める窓なしで今すぐ送り、期限は締切の5分前（2026-10-26、hq FT02・マイグレーション 176）
-- 優勝戦の「展示を見た直前の思考の順」の画像4枚の X 投稿は、展示の後に作るので、締切の60分前に送る・30分前に切れるこの ADR の時刻に収まらない。送る時刻は push の時（veto_until＝今）、期限は締切の5分前、締切の8分前を過ぎて届いたものは受け取らない（scripts/sns/push-finals-image.js）
+- 優勝戦の「展示を見た直前の思考の順」の画像4枚の X 投稿は、展示の後に作るので、締切の60分前に送る・30分前に切れるこの ADR の時刻に収まらない。送る時刻は push の2分後（veto_until＝今、177 で2分遅らせた）、期限は締切の5分前、締切の15分前を過ぎて届いたものは受け取らない（scripts/sns/push-finals-image.js。177 で8分から15分に改め、投票のリプを期限までに送る分を残す）
 - 期限の照合（transition_sns_send_139 の expires_at = 締切 − expiry_minutes）は sns_x_send_control の1行の値で全部に効くので、item の kind で分ける（kind=finals_image だけ5分）。snapshot に分数を持たせない（依頼側が自分の期限を決められるため）
 - 自動送信の許可は `.claude/CLAUDE.md` の例外（全貌動画・/today）に無い。許可のフラグ `sns_auto_send_control.finals_image_enabled`（x の行、既定 false）を置き、false の間は push が何も書かず、送り手も claim・check・begin_post で held（finals_image_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのはオーナー本人
 - 1レース1件: item の variant=finals と 172 の一意の索引（race_id, channel, variant）。同じ優勝戦の全貌（full_picture・x・main）とは両立する
-- 残る壊れ方: 送り手（sns-send、2分ごと・リース300秒）の前の実行が長いと、締切の8分前の push は期限に間に合わず held（deadline_expired）になり得る。JST 23時台より後の締切は cron が動かず送れない
+- 残る壊れ方: 送り手（sns-send、2分ごと・リース300秒）の前の実行が長いと、締切の15分前に近い push は期限に間に合わず held（deadline_expired）になり得る。JST 23時台より後の締切は cron が動かず送れない
+
+## 追記: 優勝戦の思考投稿の本投稿へのリプ2つ（投票・展示後）と、リプの子の枠の予約（2026-10-26、hq FT02・マイグレーション 177）
+- オーナー 2026-10-26 決定: daily_limit_x=8（全貌4・/today 1・優勝戦3）。優勝戦は本投稿（締切の約3時間前、展示前の版）・投票のリプ（本投稿の直後、4択、締切で閉じる）・展示後のリプ（締切の25〜13分前、画像4枚）の3本で、1本ずつ数える。許可は 176 の finals_image_enabled を3本に共通にする（全部か無し）
+- 子は本投稿の job を deadline_queue.parent_job_id に持つ（/today の reply・全貌の Shorts と同じ待ち合わせ）。子の item も kind=finals_image で variant（finals_poll・finals_reply）だけを分ける。期限の5分・許可の照合・B 通り道の A の予定の数え・自動の承認者の notified の要求がそのまま効く
+- 投票は承認した版に入れる: 下書きの source_data.x_poll（選択肢と締切 closes_at）を snapshot.poll に写し、approve_sns_x_send が下書きとの一致を照合する。X の duration_minutes は送る時に「今から締切までの分（5〜10080）」で決める（承認するのは締切。分は送る時刻から決まる）
+- 枠の予約: transition_sns_send_139 は、通り道 B でない X の claim・begin_post で、まだ claim していないリプの子（素材のスレッドでない）を v_need に足す。親は自分の子の分の空きが無ければ claim できない（親だけ送って子が上限で止まる穴、174 の追記の (1) のうち日次の側を塞ぐ）。子でない job は、他の親（今日 claim 済み）の子の枠も取らない。子どうしは先に claim した方が通る
+- 残る壊れ方: (1) 枠に余りが無い（8＝予定の本数）。送れなかった試行も1枠使うので、その日に全貌のやり直しがあると本投稿は push の事前検査で落ちる (2) 月の予算の親子の対の予約はまだ無い（174 の追記の (1) のうち予算の側） (3) push（hq の Mac）と送り手（Vercel の cron）は別々にデプロイされるので、許可を入れるのは送り手の本番に 177 の対のコードが入った後だけ（古い送り手は snapshot.poll を無視して本文だけを送る） (4) X の投票の仕様（リプに付けられるか、和文の25字の数え方）は一次の文書で未確認。400 なら begin_post の後なので要照合に残る
+
