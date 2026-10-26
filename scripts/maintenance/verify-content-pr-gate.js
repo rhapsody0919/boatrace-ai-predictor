@@ -211,6 +211,42 @@ const revision = ({
   manifest: (m) => ({ ...m, kind: "revision" }),
 });
 
+// 免除の一覧（internalLinkGrandfathered）から記事の行を外す改稿（オーナー決定 2026-10-26、#1934→#1938）。
+// base の一覧に MD がある・HEAD の .md に内部リンクを足し・同じ PR で一覧からその1行だけを外す。manifest の paths に設定のパスは入れない
+const GATE_CONFIG = "scripts/content/content-pr-gate.json";
+const noLinkMd =
+  "# サンプル\n\n本文。\n\n![図](/images/blog/sample-guide-ja.jpg)\n";
+const grandfatherRemoval = ({
+  baseList = [...config.internalLinkGrandfathered, MD, MD_EN],
+  headList = [...config.internalLinkGrandfathered, MD_EN],
+  headCfgOver = {},
+  headMdText = baseMd,
+  diff,
+  manifest = (m) => m,
+} = {}) => {
+  const baseCfg = { ...config, internalLinkGrandfathered: baseList };
+  const headCfg = {
+    ...config,
+    internalLinkGrandfathered: headList,
+    ...headCfgOver,
+  };
+  const r = revision({ baseMdText: noLinkMd, headMdText });
+  return {
+    ...r,
+    ...(diff ? { diff } : {}),
+    extraDiff: [{ status: "M", path: GATE_CONFIG }],
+    headExtra: { [GATE_CONFIG]: enc(`${JSON.stringify(headCfg, null, 2)}\n`) },
+    base: {
+      ...r.base,
+      [MD_EN]: baseMdEn,
+      [GATE_CONFIG]: `${JSON.stringify(baseCfg, null, 2)}\n`,
+    },
+    basePaths: [...r.basePaths, MD_EN],
+    config: headCfg,
+    manifest: (m) => manifest(r.manifest(m)),
+  };
+};
+
 const withReview = (role, extra) => (m) => ({
   ...m,
   reviews: m.reviews.map((r) => (r.role === role ? { ...r, ...extra } : r)),
@@ -1251,6 +1287,76 @@ const cases = [
     "図のタグが最後の行（末尾の改行なし）でも通る",
     { md: `${baseMd}\n${CHART}`, basePaths: CHART_BASE },
     "ok",
+  ],
+  // ---- 免除の一覧から外す例外（オーナー決定 2026-10-26）
+  [
+    "改稿で内部リンクを足し、一覧からその記事の1行だけを外すと通る",
+    grandfatherRemoval(),
+    "ok",
+  ],
+  [
+    "一覧から他の記事の行を外すと落ちる",
+    grandfatherRemoval({
+      headList: [
+        ...config.internalLinkGrandfathered.filter(
+          (p) => p !== "public/blog/ai-vs-human.md",
+        ),
+        MD_EN,
+      ],
+    }),
+    /\[gate-config\].*public\/blog\/ai-vs-human\.md.*manifest/,
+  ],
+  [
+    "一覧に行を足すと落ちる",
+    grandfatherRemoval({
+      headList: [
+        ...config.internalLinkGrandfathered,
+        MD_EN,
+        "public/blog/x.md",
+      ],
+    }),
+    /\[gate-config\] .*internalLinkGrandfathered からの削除だけ/,
+  ],
+  [
+    "一覧の並べ替えは落ちる",
+    grandfatherRemoval({
+      headList: [MD_EN, ...config.internalLinkGrandfathered],
+    }),
+    /\[gate-config\] .*internalLinkGrandfathered からの削除だけ/,
+  ],
+  [
+    "一覧の削除に他のキーの変更が混ざると落ちる",
+    grandfatherRemoval({ headCfgOver: { judgementPhrases: [] } }),
+    /\[gate-config\] .*internalLinkGrandfathered からの削除だけ/,
+  ],
+  [
+    "manifest に無い記事（差分に無い翻訳）の行を外すと落ちる",
+    grandfatherRemoval({ headList: [...config.internalLinkGrandfathered] }),
+    /\[gate-config\].*sample-guide-en\.md.*manifest/,
+  ],
+  [
+    "内部リンクが無いのに外すと落ちる",
+    grandfatherRemoval({ headMdText: `${noLinkMd}\n追記した行\n` }),
+    /\[gate-config\].*sample-guide\.md.*内部リンクが無い/,
+  ],
+  [
+    "manifest の paths に設定のパスを入れると落ちる",
+    grandfatherRemoval({
+      manifest: (m) => ({ ...m, paths: [...m.paths, GATE_CONFIG] }),
+    }),
+    /\[manifest\] paths の scripts\/content\/content-pr-gate\.json/,
+  ],
+  [
+    "設定の一覧を変えずに整形だけ変えると落ちる",
+    grandfatherRemoval({
+      headList: [...config.internalLinkGrandfathered, MD, MD_EN],
+    }),
+    /\[gate-config\] .*internalLinkGrandfathered からの削除だけ/,
+  ],
+  [
+    "記事の PR でない（manifest の無い）設定の変更は今までどおり落ちる",
+    { extraDiff: [{ status: "M", path: GATE_CONFIG }] },
+    /\[gate-config\]|\[path\] scripts\/content\/content-pr-gate\.json/,
   ],
 ];
 

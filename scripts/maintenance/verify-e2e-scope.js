@@ -10,7 +10,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { classifyE2eScope } from "./e2e-scope.js";
+import {
+  classifyE2eScope,
+  GATE_CONFIG_PATH,
+  grandfatherRemovals,
+} from "./e2e-scope.js";
 
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -31,7 +35,8 @@ function check(label, actual, expected) {
       `${label}: 期待 ${JSON.stringify(expected)} / 実際 ${JSON.stringify(actual)}`,
     );
 }
-const scopeOf = (files, cfg = config) => classifyE2eScope(files, cfg).scope;
+const scopeOf = (files, cfg = config, opts) =>
+  classifyE2eScope(files, cfg, opts).scope;
 
 // --- 軽い組（記事の中身だけ） ---
 check(
@@ -105,6 +110,96 @@ check(
   classifyE2eScope(["public/blog/a.md", "src/b.js"], config).outside,
   ["src/b.js"],
 );
+
+// --- 免除の一覧から外すだけの設定の変更（オーナー決定 2026-10-26、#1934→#1938） ---
+{
+  const list = config.internalLinkGrandfathered;
+  const removed = { ...config, internalLinkGrandfathered: list.slice(1) };
+  check(
+    "一覧から1行を外すだけなら外した行を返す",
+    grandfatherRemovals(config, removed),
+    [list[0]],
+  );
+  check(
+    "行を足すと null",
+    grandfatherRemovals(config, {
+      ...config,
+      internalLinkGrandfathered: [...list, "public/blog/x.md"],
+    }),
+    null,
+  );
+  check(
+    "外して足すと null",
+    grandfatherRemovals(config, {
+      ...config,
+      internalLinkGrandfathered: [...list.slice(1), "public/blog/x.md"],
+    }),
+    null,
+  );
+  check(
+    "残った行の並べ替えは null",
+    grandfatherRemovals(config, {
+      ...config,
+      internalLinkGrandfathered: [...list.slice(2), list[1]],
+    }),
+    null,
+  );
+  check(
+    "他のキーの変更が混ざると null",
+    grandfatherRemovals(config, {
+      ...removed,
+      allowedPathPatterns: [...config.allowedPathPatterns, "^src/"],
+    }),
+    null,
+  );
+  check(
+    "キーの順の変更は null",
+    grandfatherRemovals(config, {
+      internalLinkGrandfathered: removed.internalLinkGrandfathered,
+      ...Object.fromEntries(
+        Object.entries(config).filter(
+          ([k]) => k !== "internalLinkGrandfathered",
+        ),
+      ),
+    }),
+    null,
+  );
+  check(
+    "変更なし（整形だけ）は null",
+    grandfatherRemovals(config, config),
+    null,
+  );
+  const articlePr = [
+    "public/blog/foo.md",
+    "src/data/blog-posts/foo.json",
+    "docs/content-manifests/foo.json",
+    GATE_CONFIG_PATH,
+  ];
+  check(
+    "記事の PR に一覧から外すだけの設定の変更が混ざっても軽い組",
+    scopeOf(articlePr, config, { gateConfigRemovalOnly: true }),
+    "light",
+  );
+  check(
+    "削除だけと確かめていなければ全部（今までどおり）",
+    scopeOf(articlePr),
+    "full",
+  );
+  check(
+    "削除だけでも src が混ざれば全部",
+    scopeOf([...articlePr, "src/App.jsx"], config, {
+      gateConfigRemovalOnly: true,
+    }),
+    "full",
+  );
+  check(
+    "印は設定のパスにだけ効く（e2e-scope.js 自身は全部）",
+    scopeOf([...articlePr, "scripts/maintenance/e2e-scope.js"], config, {
+      gateConfigRemovalOnly: true,
+    }),
+    "full",
+  );
+}
 
 // --- 一覧の改ざん ---
 // PR の側で一覧に src を足しても、master の一覧（ここでは今のファイル）で判定すれば全部に戻る

@@ -47,6 +47,8 @@
  *    一覧で判定するが、pull_request のワークフロー自体は PR の側の定義で動くので、.github を書き換えれば
  *    軽い組に逃げられる。そこでマージの時点で、master の一覧（origin/master の content-pr-gate.json）で
  *    差分を判定し直し、全部流すべき PR なのに e2e-shard が成功していなければ止める。
+ *    記事の PR が免除の一覧（internalLinkGrandfathered）から行を外すだけの設定の変更を含むときは、
+ *    PR の分岐元と先頭の設定を gh api で読んで確かめ、CI と同じく軽い組として扱う（オーナー決定 2026-10-26）。
  *    --auto で GitHub にチェックを任せる場合は、e2e の集約しか見られないので、.github/workflows を変える PR を止めて手のマージに回す。
  *
  * それ以外で判定できない場合（台帳に制約が無いときの番号不明、検査中にghが応答しない等）は素通しする。
@@ -60,7 +62,11 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PRECIOUS_PATHS } from "../lib/preciousPaths.js";
-import { classifyE2eScope } from "./e2e-scope.js";
+import {
+  classifyE2eScope,
+  GATE_CONFIG_PATH,
+  grandfatherRemovals,
+} from "./e2e-scope.js";
 import {
   judgeMergeOrder,
   ledgerPath,
@@ -477,17 +483,63 @@ function fetchPrFiles(pr) {
  * 手元の origin/master が古いと一覧の鍵が足りず full に倒れ、正しい軽い組の PR まで止めるので、先に取り直す
  * （取り直せなければ手元のままで判定する）。
  */
-function masterE2eScope(files) {
+function masterE2eScope(pr, files) {
   gitIn(["fetch", "-q", "origin", "master"]);
-  const raw = gitIn([
-    "show",
-    "origin/master:scripts/content/content-pr-gate.json",
-  ]);
+  const raw = gitIn(["show", `origin/master:${GATE_CONFIG_PATH}`]);
   try {
-    return classifyE2eScope(files, JSON.parse(raw ?? "")).scope;
+    return classifyE2eScope(files, JSON.parse(raw ?? ""), {
+      gateConfigRemovalOnly: prGateConfigRemovalOnly(pr, files),
+    }).scope;
   } catch {
     return "full";
   }
+}
+
+/** gh api で ref の時点の設定（content-pr-gate.json）を読む。読めなければ null */
+const readGateConfigAt = (ref) => {
+  const raw = gh([
+    "api",
+    "-H",
+    "Accept: application/vnd.github.raw",
+    `repos/{owner}/{repo}/contents/${GATE_CONFIG_PATH}?ref=${ref}`,
+  ]);
+  try {
+    return raw === null ? null : JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+const SHA_RE = /^[0-9a-f]{40}$/;
+
+/**
+ * PR の設定の変更が、免除の一覧（internalLinkGrandfathered）から外すだけか（オーナー決定 2026-10-26）。
+ * CI（e2e-scope.js）は base と PR のマージコミットを比べる。ここでは PR の分岐元（master との merge-base）と
+ * PR の先頭を比べる（分岐後に master で一覧が変わっても、PR が足した変更だけを見る）。
+ * 読めないときは false（full に倒す。軽い組を通す方へは倒さない）
+ */
+function prGateConfigRemovalOnly(pr, files) {
+  if (!files.includes(GATE_CONFIG_PATH)) return false;
+  const head = gh([
+    "pr",
+    "view",
+    pr,
+    "--json",
+    "headRefOid",
+    "-q",
+    ".headRefOid",
+  ]);
+  if (!head || !SHA_RE.test(head)) return false;
+  const mergeBase = gh([
+    "api",
+    `repos/{owner}/{repo}/compare/master...${head}`,
+    "--jq",
+    ".merge_base_commit.sha",
+  ]);
+  if (!mergeBase || !SHA_RE.test(mergeBase)) return false;
+  return (
+    grandfatherRemovals(readGateConfigAt(mergeBase), readGateConfigAt(head)) !==
+    null
+  );
 }
 
 /**
@@ -596,7 +648,7 @@ function main() {
       const gate = checks && judgeChecks(pr, checks);
       if (gate) respond(gate.decision, gate.reason);
       const scope =
-        files && checks && judgeE2eScope(pr, masterE2eScope(files), checks);
+        files && checks && judgeE2eScope(pr, masterE2eScope(pr, files), checks);
       if (scope) respond(scope.decision, scope.reason);
     }
 

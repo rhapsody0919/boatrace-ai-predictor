@@ -538,6 +538,39 @@ check(
     "deny",
   );
 }
+// 記事の PR に免除の一覧から外すだけの設定の変更が混ざる（オーナー決定 2026-10-26）。
+// 削除だけと確かめた PR は軽い組のままで、shard が skip でも止めない。確かめられなければ全部に倒れて止める
+{
+  const masterConfig = JSON.parse(
+    readFileSync(
+      path.join(repoRoot, "scripts/content/content-pr-gate.json"),
+      "utf8",
+    ),
+  );
+  const diff = [
+    "public/blog/a.md",
+    "docs/content-manifests/a.json",
+    "scripts/content/content-pr-gate.json",
+  ];
+  const removalScope = classifyE2eScope(diff, masterConfig, {
+    gateConfigRemovalOnly: true,
+  }).scope;
+  check("一覧から外すだけの記事の PR は軽い組", removalScope, "light");
+  check(
+    "一覧から外すだけの記事の PR は shard が skip でも止めない",
+    judgeE2eScope("1", removalScope, shardsSkipped),
+    null,
+  );
+  check(
+    "削除だけと確かめられない記事の PR は軽い組で済ませたら止める",
+    judgeE2eScope(
+      "1",
+      classifyE2eScope(diff, masterConfig).scope,
+      shardsSkipped,
+    )?.decision,
+    "deny",
+  );
+}
 check(
   "--auto でワークフローを変える PR は手のマージに回す",
   judgeAutoWorkflowChange("1", [".github/workflows/e2e-smoke-test.yml"])
