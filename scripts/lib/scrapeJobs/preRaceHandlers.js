@@ -31,6 +31,7 @@ import {
   SCRAPE_JOBS,
   isCatchupOffset,
   isWeightOnlyOffset,
+  nextPollTime,
 } from "./registry.js";
 import { isAuthorized, runScrapeJob } from "./cronWrapper.js";
 import { computeRetryAt, isFinalOutcome } from "./outcomes.js";
@@ -107,6 +108,7 @@ export function createSeriesDayLoader({
  *   窓の外の補完（発走の後のスロット）の判定と再試行の間隔。展示だけが持つ（BOA-382）
  * @param {{isWeightOnly: (offsetMin: number) => boolean, retrySec: number}} [options.weightOnly]
  *   体重だけの窓（発走60分前のスロット）の判定と再試行の間隔。展示だけが持つ（BOA-500）
+ * @param {number[]} [options.pollMinBefore] 通常の窓で取りに行く時刻（締切の何分前か。狭義の降順）。展示だけが持つ（BOA-1145）
  * @param {ReturnType<typeof createSeriesDayLoader>} [options.loadSeriesDays]
  *   レース情報だけが持つ（展示は race_conditions.series_day を書かない）
  */
@@ -117,6 +119,7 @@ function slotHandler({
   onChanged,
   catchup,
   weightOnly,
+  pollMinBefore,
 }) {
   const scheduleFor = loadSchedule ?? createScheduleLoader();
   return async function handleSlot(slot, ctx) {
@@ -126,6 +129,32 @@ function slotHandler({
       !isCatchup && (weightOnly?.isWeightOnly(slot.offset_min) ?? false);
     // 補完・体重だけの窓は、気象を書かず、予測の再計算の対象にせず、再試行の間隔を窓ごとに変える
     const special = isCatchup ? catchup : isWeightOnly ? weightOnly : null;
+    // 通常の窓の取りに行く時刻の予定（展示の pollMinBefore。BOA-1145）。締切（races.start_time）は、気象の観測時刻の
+    // 解決にも使うスケジュールから引く（同じ起動の中で1回だけ読む）。レースがスケジュールに無ければ、従来の retrySec
+    let poll = null;
+    if (!special && pollMinBefore) {
+      const entry = (await scheduleFor(ctx, race.date)).find(
+        (r) => r.race_id === slot.race_id,
+      );
+      if (entry?.start_time) {
+        const deadline = new Date(entry.start_time);
+        poll = {
+          deadline,
+          ...nextPollTime(pollMinBefore, {
+            deadline,
+            now: ctx.now?.() ?? new Date(),
+          }),
+        };
+        if (!poll.due) {
+          // 最初の予定より前: 取得せずに戻す（試行回数は数えない）
+          return {
+            outcome: "not_due",
+            retryAt: poll.retryAt,
+            releaseAttempt: true,
+          };
+        }
+      }
+    }
     const [result] = await run(
       [
         {
@@ -173,6 +202,11 @@ function slotHandler({
     }
     // 変更を書いた（live のみ。shadow は書かない）レースは、予測の再計算の対象として集める
     if (changed && ctx.mode === "live") onChanged?.(race.date, slot.race_id);
+    // 未完了なら、次の予定の時刻に取りに行く。最後の予定の後は、窓の終わりまで取りに行かない（締切の時刻に戻し、
+    // 窓の終わりで期限切れにする。+10 の補完が拾う）。ブレーカーの retryAt は、そのまま使う
+    if (poll && !isFinalOutcome(slotResult.outcome) && !slotResult.retryAt) {
+      slotResult.retryAt = poll.nextAt ?? poll.deadline;
+    }
     return slotResult;
   };
 }
@@ -223,6 +257,10 @@ export function createRaceInfoSlotHandler({
  *   既定はレジストリの exhibition の catchupOffsets・catchupRetrySec（テスト用の差し替え）
  * @param {{isWeightOnly: (offsetMin: number) => boolean, retrySec: number}} [options.weightOnly]
  *   既定はレジストリの exhibition の weightOnlyOffsets・weightOnlyRetrySec（テスト用の差し替え）
+ * @param {number[]|undefined} [options.pollMinBefore]
+ *   既定はレジストリの exhibition の pollMinBefore（通常の窓の -33 を、締切の20・16・13・10・8分前にだけ取る。BOA-1145）。
+ *   最初の予定より前に claim したら、取得せずに outcome "not_due"（試行回数を戻す）で最初の予定まで戻す。
+ *   undefined なら従来どおり retrySec（120秒）おき
  */
 export function createExhibitionSlotHandler({
   run = runExhibitionForRaces,
@@ -238,8 +276,16 @@ export function createExhibitionSlotHandler({
       isWeightOnlyOffset(SCRAPE_JOBS.exhibition, offsetMin),
     retrySec: SCRAPE_JOBS.exhibition.weightOnlyRetrySec,
   },
+  pollMinBefore = SCRAPE_JOBS.exhibition.pollMinBefore,
 } = {}) {
-  return slotHandler({ run, loadSchedule, onChanged, catchup, weightOnly });
+  return slotHandler({
+    run,
+    loadSchedule,
+    onChanged,
+    catchup,
+    weightOnly,
+    pollMinBefore,
+  });
 }
 
 /** mainRefresh を、必要なときだけ読み込む（無効なときは、従来と完全に同じ動作にする） */

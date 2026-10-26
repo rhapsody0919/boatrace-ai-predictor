@@ -10,18 +10,27 @@
  *     （取得しない）。429/503 は breaker.recordFailure() に、それ以外の応答は recordSuccess() に渡す。
  *     ネットワークエラー・タイムアウトは、ブレーカーの失敗としては数えない（こちらのネットワークの問題と
  *     取得先の過負荷を区別できないため。plan.md §8は「429/503が5件以上」）
+ *   - 拒否（403。BOA-1145）: 登録したパス（blockPathKeys。既定はレジストリの各ジョブの breakerUrls。今は boatrace.jp の
+ *     beforeinfo だけ）に限り、再試行せず、そのパス単位のキー（pathKeyOf。例 host:boatrace.jp/owpc/pc/race/beforeinfo）で
+ *     breaker.recordBlocked() を呼んで1回で開き、BreakerOpenError を投げる（呼び出し側は既存の breaker_open の扱いになり、
+ *     ジョブの連続失敗に数えない＝GHA の肩代わりの条件に入らない）。登録したパスは、取得の前にパスのキーも check() する。
+ *     同じホストの他のページ（odds・racelist 等）は巻き込まない。登録していないパスの 403 は従来どおり成功の側
+ *     （BOATCAST は未公開のファイルを 403 で返すのが通常。ADR-0067 の追記 2026-09-21・2026-10-26）
  *   - 並列度の上限: この関数の同時実行数を maxConcurrent に抑える（ジョブ単位の並列度とは別の、最後の砦）
  *   - User-Agent: 未指定なら BoatraceAIBot/1.0（既存のスクレイパーと同じ）
  *
  * 戻り値は、本文を読み込み済みの標準の Response（text()・json() が使える）。
  */
-import { HOST_JOB_PREFIX } from "./registry.js";
+import { HOST_JOB_PREFIX, SCRAPE_JOBS } from "./registry.js";
+import { BreakerOpenError } from "./circuitBreaker.js";
 import { createSemaphore } from "./concurrency.js";
 
 export const DEFAULT_USER_AGENT =
   "BoatraceAIBot/1.0 (+https://github.com/rhapsody0919/boatrace-ai-predictor)";
 
 const RETRYABLE_STATUSES = new Set([429, 503]);
+// 取得先の拒否。待っても数分では戻らない見込みが高いため、再試行せず、そのパスのブレーカーを開く（BOA-1145）
+const BLOCKED_STATUSES = new Set([403]);
 // 本文を持てないステータス（new Response(body, {status}) が例外になる）
 const NULL_BODY_STATUSES = new Set([101, 204, 205, 304]);
 
@@ -42,6 +51,18 @@ export function hostKeyOf(url) {
   const hostname = new URL(url).hostname.replace(/^www\d*\./, "");
   return `${HOST_JOB_PREFIX}${hostname}`;
 }
+
+/** 拒否（403）のブレーカーのキー。ホストのキー＋パス（クエリは含めない。例: host:boatrace.jp/owpc/pc/race/beforeinfo） */
+export function pathKeyOf(url) {
+  return `${hostKeyOf(url)}${new URL(url).pathname}`;
+}
+
+/** 403 でパスのブレーカーを開くパスのキー（レジストリの各ジョブの breakerUrls から） */
+export const DEFAULT_BLOCK_PATH_KEYS = new Set(
+  Object.values(SCRAPE_JOBS).flatMap((def) =>
+    (def.breakerUrls ?? []).map(pathKeyOf),
+  ),
+);
 
 /** Retry-After（秒、またはHTTP日付）をミリ秒に。解釈できなければ null */
 export function parseRetryAfterMs(value, nowMs = Date.now()) {
@@ -73,6 +94,7 @@ export function createPoliteFetch({
   jitterMs = 500,
   maxConcurrent = 20,
   userAgent = DEFAULT_USER_AGENT,
+  blockPathKeys = DEFAULT_BLOCK_PATH_KEYS,
 } = {}) {
   const semaphore = createSemaphore(maxConcurrent);
 
@@ -127,14 +149,28 @@ export function createPoliteFetch({
   async function politeFetch(url, init = {}) {
     return semaphore.run(async () => {
       const hostKey = hostKeyOf(url);
+      const pathKey = pathKeyOf(url);
+      const guarded = blockPathKeys.has(pathKey);
       let lastError;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        if (breaker) await breaker.check(hostKey);
+        if (breaker) {
+          await breaker.check(hostKey);
+          if (guarded) {
+            try {
+              await breaker.check(pathKey);
+            } catch (error) {
+              // ホストの半開の試行を予約していたら戻す（取得しないため）
+              breaker.abortProbe(hostKey);
+              throw error;
+            }
+          }
+        }
         let response;
         try {
           response = await fetchOnce(url, init);
         } catch (error) {
           breaker?.abortProbe(hostKey);
+          if (guarded) breaker?.abortProbe(pathKey);
           lastError = error;
           if (attempt < maxRetries) {
             await sleep(backoffMs(attempt, null));
@@ -142,7 +178,17 @@ export function createPoliteFetch({
           }
           throw new FetchError(url, attempt + 1, error);
         }
+        if (guarded && BLOCKED_STATUSES.has(response.status)) {
+          if (!breaker) return response;
+          breaker.abortProbe(hostKey);
+          await breaker.recordBlocked(pathKey, `HTTP ${response.status}`);
+          throw new BreakerOpenError(
+            pathKey,
+            breaker.snapshot(pathKey).openUntil,
+          );
+        }
         if (RETRYABLE_STATUSES.has(response.status)) {
+          if (guarded) breaker?.abortProbe(pathKey);
           await breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
           if (attempt < maxRetries) {
             await sleep(
@@ -156,6 +202,7 @@ export function createPoliteFetch({
           return response;
         }
         await breaker?.recordSuccess(hostKey);
+        if (guarded) await breaker?.recordSuccess(pathKey);
         return response;
       }
       // ループは必ず return か throw で終わる（maxRetries >= 0 のため）

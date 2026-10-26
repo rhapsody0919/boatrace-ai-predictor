@@ -9,6 +9,8 @@
  *   no_values         未公開（再試行）
  *   error             失敗（再試行）
  *   breaker_open      サーキットブレーカーが開いていた（ブレーカーが閉じる頃まで再試行を遅らせる）
+ *   not_due           取りに行く予定の時刻より前で、取得しなかった（展示の pollMinBefore。BOA-1145）。試行回数を戻して、
+ *                     予定の時刻まで pending に戻す。起動の成否（recordSuccess・全件失敗）の判定に数えない
  *   cancelled_race    確定中止（claim_scrape_slots が終端する。ハンドラーは返さない）
  */
 

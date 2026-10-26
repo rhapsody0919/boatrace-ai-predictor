@@ -30,7 +30,7 @@
  *       変異検証: 取得済みを再取得する・shadow で書く・気象を書く・再計算の対象にする・再試行の間隔が同じ、で失敗する
  *   (k) 体重だけの窓（BOA-500。展示の発走60分前のスロット）: 展示航走前のページから当日体重・調整重量を書いて完了（ok）する、
  *       表が無ければ no_values で300秒後に再試行、気象を書かない・スケジュールを読まない・予測の再計算の対象にしない、
- *       -33 のスロットは従来どおり（展示タイムが入るまで partial）。1レースあたりの取得は最大6回。
+ *       -33 のスロットは従来どおり（展示タイムが入るまで partial）。1レースあたりの取得は最大2回（BOA-1145。再試行900秒）。
  *       変異検証: 体重だけの窓として扱わない・再試行が120秒・気象を書く、で失敗する
  */
 import fs from "node:fs";
@@ -55,10 +55,12 @@ import {
   runSlotsWithRefresh,
 } from "../lib/scrapeJobs/preRaceHandlers.js";
 import { runScrapeJob } from "../lib/scrapeJobs/cronWrapper.js";
+import { computeRetryAt } from "../lib/scrapeJobs/outcomes.js";
 import {
   SCRAPE_JOBS,
   isCatchupOffset,
   isWeightOnlyOffset,
+  nextPollTime,
   slotDefsFor,
   validateRegistry,
 } from "../lib/scrapeJobs/registry.js";
@@ -1053,7 +1055,8 @@ async function runViaWrapper({
   return { result, store, db: database, fetcher: f };
 }
 const riHandler = () => createRaceInfoSlotHandler();
-const exHandler = () => createExhibitionSlotHandler();
+// 予定の時刻（pollMinBefore。BOA-1145）を外した、取得の経路そのものの検証。予定の時刻の検証は (l)
+const exHandler = () => createExhibitionSlotHandler({ pollMinBefore: null });
 
 for (const [job, createHandleSlot, offset] of [
   ["race_info", riHandler, -60],
@@ -1912,11 +1915,11 @@ async function routingIsCorrect(handlerFactory) {
     );
   }
   check(
-    "レジストリ exhibition: 体重だけの窓（BOA-500）は offsets の -60（発走60分前〜34分前。-33 の窓と重ならない）。再試行は300秒（-33 の120秒より長く、許容幅より短い）。判定（isWeightOnlyOffset）は -60 だけ",
+    "レジストリ exhibition: 体重だけの窓（BOA-500）は offsets の -60（発走60分前〜34分前。-33 の窓と重ならない）。再試行は900秒（BOA-1145。-33 の120秒より長く、許容幅より短い）。判定（isWeightOnlyOffset）は -60 だけ",
     ex.offsets.includes(-60) &&
       show(ex.weightOnlyOffsets) === show([-60]) &&
       -60 + ex.graceMin < -33 &&
-      ex.weightOnlyRetrySec === 300 &&
+      ex.weightOnlyRetrySec === 900 &&
       ex.weightOnlyRetrySec > ex.retrySec &&
       ex.weightOnlyRetrySec < ex.graceMin * 60 &&
       isWeightOnlyOffset(ex, -60) &&
@@ -1933,8 +1936,8 @@ async function routingIsCorrect(handlerFactory) {
     const attemptsIn = (retrySec) =>
       Math.floor((ex.graceMin * 60) / (retrySec - 10)) + 1;
     check(
-      "レジストリ exhibition: 体重だけの窓の取得は、1レースあたり最大6回（-33 と同じ再試行120秒なら15回）",
-      attemptsIn(ex.weightOnlyRetrySec) === 6 && attemptsIn(ex.retrySec) === 15,
+      "レジストリ exhibition: 体重だけの窓の取得は、1レースあたり最大2回（BOA-1145。300秒なら6回、-33 と同じ再試行120秒なら15回）",
+      attemptsIn(ex.weightOnlyRetrySec) === 2 && attemptsIn(ex.retrySec) === 15,
       show({
         weightOnly: attemptsIn(ex.weightOnlyRetrySec),
         primary: attemptsIn(ex.retrySec),
@@ -2559,7 +2562,7 @@ async function weightOnlyWritesNoWeather(run = realExhibitionRun) {
     !r.db.state.selects.some((sel) => sel.table === "races")
   );
 }
-/** 体重も未公開（直前情報の表が無い）なら no_values で、300秒おき（ゆらぎ10秒を引いて290秒後）に再試行する */
+/** 体重も未公開（直前情報の表が無い）なら no_values で、900秒おき（ゆらぎ10秒を引いて890秒後）に再試行する（BOA-1145） */
 async function weightOnlyRetriesSlowly(weightOnly) {
   const r = await exhibitionSlot({
     mode: "live",
@@ -2572,7 +2575,7 @@ async function weightOnlyRetriesSlowly(weightOnly) {
   return (
     r.store.completed.length === 0 &&
     r.store.retried[0]?.outcome === "no_values" &&
-    retryAfterSec === 290 &&
+    retryAfterSec === 890 &&
     upsertsOf(r.db, "exhibition_data").length === 0
   );
 }
@@ -2587,7 +2590,7 @@ async function weightOnlyRetriesSlowly(weightOnly) {
     await weightOnlyWritesNoWeather(),
   );
   check(
-    "体重だけの窓: 体重も未公開（表が無い）なら no_values・書き込み0で、300秒おき（290秒後）に再試行する",
+    "体重だけの窓: 体重も未公開（表が無い）なら no_values・書き込み0で、900秒おき（890秒後）に再試行する",
     await weightOnlyRetriesSlowly(),
   );
   const done = await exhibitionSlot({
@@ -2649,7 +2652,7 @@ async function weightOnlyRetriesSlowly(weightOnly) {
     })),
   );
   check(
-    "変異検証: 「体重だけの窓の再試行が、-33 と同じ120秒」版では、『300秒おき』検証が失敗する",
+    "変異検証: 「体重だけの窓の再試行が、-33 と同じ120秒」版では、『900秒おき』検証が失敗する",
     !(await weightOnlyRetriesSlowly({
       isWeightOnly: (offset) => offset === WEIGHT_OFFSET,
       retrySec: SCRAPE_JOBS.exhibition.retrySec,
@@ -2658,6 +2661,176 @@ async function weightOnlyRetriesSlowly(weightOnly) {
   check(
     "変異検証: 「体重だけの窓が、気象を書く」版では、『気象を書かない』検証が失敗する",
     !(await weightOnlyWritesNoWeather(withWeatherRun(realExhibitionRun))),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// (l) 取りに行く時刻の予定（BOA-1145。展示の -33 の窓を、締切の pollMinBefore 分前にだけ取る）
+// ---------------------------------------------------------------------------
+{
+  const ex = SCRAPE_JOBS.exhibition;
+  const DEADLINE = new Date(`${DATE}T14:21:00+09:00`); // RACE（12R）の締切
+  const at = (minBefore, sec = 0) =>
+    new Date(DEADLINE.getTime() - minBefore * 60000 - sec * 1000);
+  /**
+   * -33 のスロット1件を、窓の始まり（締切33分前）から窓の終わり（7分前）まで、ハンドラーの retryAt（無ければ
+   * ラッパと同じ computeRetryAt の retrySec）に従って、毎分の Cron の起動（分の頭）で取り直す。
+   * publishedMinBefore 分前に公開されたとして、取得の回数と取れた時刻（締切の何分前）を返す
+   */
+  const simulate = async ({ pollMinBefore, publishedMinBefore }) => {
+    let t = at(33);
+    const end = at(7);
+    let fetches = 0;
+    let claims = 0;
+    let doneMinBefore = null;
+    const handler = createExhibitionSlotHandler({
+      pollMinBefore,
+      loadSchedule: async () => [{ race_id: RACE, start_time: DEADLINE }],
+      run: async () => {
+        fetches++;
+        const mb = (DEADLINE.getTime() - t.getTime()) / 60000;
+        return [
+          {
+            race_id: RACE,
+            outcome: mb <= publishedMinBefore ? "ok" : "no_values",
+            rowsWritten: 0,
+          },
+        ];
+      },
+    });
+    while (t <= end) {
+      claims++;
+      const res = await handler(
+        {
+          job: "exhibition",
+          race_id: RACE,
+          offset_min: -33,
+          last_attempt_at: t.toISOString(),
+        },
+        {
+          now: () => t,
+          mode: "live",
+          politeFetch: () => {
+            throw new Error("no fetch");
+          },
+        },
+      );
+      if (res.outcome === "ok") {
+        doneMinBefore = (DEADLINE.getTime() - t.getTime()) / 60000;
+        break;
+      }
+      const next =
+        res.retryAt ??
+        computeRetryAt({ now: t, claimedAt: t, retrySec: ex.retrySec });
+      // 毎分の Cron: next 以降の最初の分の頭
+      t = new Date(Math.ceil(next.getTime() / 60000) * 60000);
+    }
+    return { fetches, claims, doneMinBefore };
+  };
+
+  const notYet = await simulate({
+    pollMinBefore: ex.pollMinBefore,
+    publishedMinBefore: 0,
+  });
+  check(
+    "予定の時刻（20・16・13・10・8分前）: 公開されないままなら、窓の中で取得は5回だけ（120秒おきなら13回）。最初の claim（33分前）は取得しない",
+    show(ex.pollMinBefore) === show([20, 16, 13, 10, 8]) &&
+      notYet.fetches === 5,
+    show(notYet),
+  );
+  const median = await simulate({
+    pollMinBefore: ex.pollMinBefore,
+    publishedMinBefore: 16.4,
+  });
+  const late = await simulate({
+    pollMinBefore: ex.pollMinBefore,
+    publishedMinBefore: 8.43,
+  });
+  check(
+    "予定の時刻: 中央値（16.4分前に公開）は2回目（16分前）で取れる。実測で最も遅い公開（8.43分前）も、締切8分前の最後の予定で取れる",
+    median.fetches === 2 &&
+      median.doneMinBefore === 16 &&
+      late.fetches === 5 &&
+      late.doneMinBefore === 8,
+    show({ median, late }),
+  );
+  const legacy = await simulate({ pollMinBefore: null, publishedMinBefore: 0 });
+  check(
+    "変異検証: 予定の時刻を外した版（120秒おき）では、取得が5回を超える（『5回だけ』の検証が失敗する）",
+    legacy.fetches > 5,
+    show(legacy),
+  );
+
+  // 最初の予定より前の claim: 取得せず not_due・試行回数を戻す・retryAt は20分前の10秒前
+  {
+    const store = createMemoryStore({
+      rows: {
+        exhibition: {
+          job: "exhibition",
+          mode: "live",
+          consecutive_failures: 0,
+        },
+      },
+      slots: [
+        slotOf("exhibition", RACE, -33, {
+          last_attempt_at: at(33).toISOString(),
+          lease_until: at(33, -90).toISOString(),
+        }),
+      ],
+    });
+    const fetcher = createFetcher(pagesHandler());
+    const r = await runScrapeJob({
+      job: "exhibition",
+      store,
+      handleSlot: createExhibitionSlotHandler(),
+      now: () => at(33),
+      worker: "test:exhibition",
+      client: freshDb(),
+      politeFetch: fetcher,
+    });
+    const retried = store.retried[0];
+    check(
+      "ラッパ A2: 締切20分前より前に claim した -33 のスロットは、公式へ取りに行かず not_due・試行回数を戻して、20分前（の10秒前）まで pending に戻す。起動の成功の記録にも数えない",
+      fetcher.calls.length === 0 &&
+        retried?.outcome === "not_due" &&
+        retried?.releaseAttempt === true &&
+        new Date(retried.retryAt).getTime() === at(20, 10).getTime() &&
+        r.status === 200 &&
+        !store.calls.some((c) => c.name === "recordSuccess"),
+      show({ retried, body: r.body }),
+    );
+  }
+  check(
+    "nextPollTime: 20分前の予定で処理したら次は16分前、8分前の後は次なし（窓の終わりまで取りに行かない）",
+    nextPollTime([20, 16, 13, 10, 8], {
+      deadline: DEADLINE,
+      now: at(20, 10),
+    }).nextAt?.getTime() === at(16, 10).getTime() &&
+      nextPollTime([20, 16, 13, 10, 8], { deadline: DEADLINE, now: at(8, 10) })
+        .nextAt === null &&
+      nextPollTime([20, 16, 13, 10, 8], { deadline: DEADLINE, now: at(25) })
+        .due === false,
+  );
+  check(
+    "レジストリ exhibition（BOA-1145）: claimLimit 6・concurrency 1（403 の後、その起動の残りを叩かない）、breakerUrls に beforeinfo、検査は正常",
+    ex.claimLimit === 6 &&
+      ex.concurrency === 1 &&
+      show(ex.breakerUrls) ===
+        show(["https://www.boatrace.jp/owpc/pc/race/beforeinfo"]) &&
+      validateRegistry().length === 0,
+    show(validateRegistry()),
+  );
+  const bad = (patch) =>
+    validateRegistry({ exhibition: { ...ex, ...patch } }).length > 0;
+  check(
+    "レジストリの検査: pollMinBefore が降順でない・窓の外（33分前より前・7分前より後）・空・整数でない、breakerUrls が URL でない、は不正",
+    bad({ pollMinBefore: [10, 20] }) &&
+      bad({ pollMinBefore: [40, 10] }) &&
+      bad({ pollMinBefore: [20, 5] }) &&
+      bad({ pollMinBefore: [] }) &&
+      bad({ pollMinBefore: [20.5] }) &&
+      bad({ breakerUrls: ["beforeinfo"] }) &&
+      !bad({}),
   );
 }
 

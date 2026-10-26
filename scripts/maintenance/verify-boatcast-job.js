@@ -1888,18 +1888,34 @@ async function runDaily({ mode, client, fetchImpl, rows, targetNow }) {
         /export default/.test(src),
     );
   }
-  check(
-    "(h) 共有の politeFetch・ブレーカーは変更しない（BOATCASTの403の扱いは、ジョブ内）: politeFetch.js は 429/503 だけを再試行の対象にしている",
-    /RETRYABLE_STATUSES = new Set\(\[429, 503\]\)/.test(
-      readRoot("scripts/lib/scrapeJobs/politeFetch.js"),
-    ) &&
-      !/403/.test(
-        readRoot("scripts/lib/scrapeJobs/politeFetch.js").replace(
-          /\/\*[\s\S]*?\*\//g,
-          "",
-        ),
-      ),
-  );
+  {
+    // 共有の politeFetch は、登録したパス（レジストリの breakerUrls。boatrace.jp の beforeinfo）の 403 でだけ
+    // ブレーカーを開く（BOA-1145）。BOATCAST の 403（未公開のファイル）は従来どおり成功の側で、ジョブ内で扱う
+    const pf = await import("../lib/scrapeJobs/politeFetch.js");
+    const cb = await import("../lib/scrapeJobs/circuitBreaker.js");
+    const breaker = cb.createCircuitBreaker();
+    let n = 0;
+    const f = pf.createPoliteFetch({
+      breaker,
+      sleep: async () => {},
+      fetchImpl: async () => (n++, new Response("", { status: 403 })),
+    });
+    const url = "https://race.boatcast.jp/txt/04/bc_oriten_20261026_04_01.txt";
+    const r1 = await f(url);
+    const r2 = await f(url);
+    check(
+      "(h) 共有の politeFetch: BOATCAST の 403 は再試行せず 403 をそのまま返し、ブレーカーを開かない（403 で開くのは登録したパスだけ。BOATCASTの403の扱いは、ジョブ内）。429/503 だけを再試行の対象にしている",
+      /RETRYABLE_STATUSES = new Set\(\[429, 503\]\)/.test(
+        readRoot("scripts/lib/scrapeJobs/politeFetch.js"),
+      ) &&
+        r1.status === 403 &&
+        r2.status === 403 &&
+        n === 2 &&
+        breaker.snapshot(pf.pathKeyOf(url)).openUntil === 0 &&
+        breaker.snapshot(pf.hostKeyOf(url)).openUntil === 0 &&
+        ![...pf.DEFAULT_BLOCK_PATH_KEYS].some((k) => k.includes("boatcast")),
+    );
+  }
 
   // DDL案とコードが書く行の一致・RLS
   const ddl = readRoot(
