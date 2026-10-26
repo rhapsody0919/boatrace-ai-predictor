@@ -10,8 +10,8 @@
  * content_type は PD02 の投稿の型で、テーブル sns_content_types（043、ネタの型）とは別物。
  */
 
-/** 型が持ちうる項目（hq config/pdca.json の type_attrs と同じ） */
-export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "angle", "caption"];
+/** 型が持ちうる項目（hq config/pdca.json の type_attrs と同じ）。voice は声の有無・話者（型 f01 の完全版、hq 2026-10-27） */
+export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "angle", "caption", "voice"];
 
 /**
  * 型の id → 実装（{attrs: 受け持つ項目, approved: 実装したときの hq の文, review: 関門の審査の記録, range: 変えてよい幅, ...部品}）。
