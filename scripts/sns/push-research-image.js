@@ -27,8 +27,8 @@
  * stdout の最後の1行は `RESEARCH_RESULT {...}`（research_id・outcome・job_id・job_state・tweet_id・tweet_url・posted_at・error_code・reason）
  * exit: 0 送った（--dry-run は検査が通った・--no-wait は予定に入れた）・1 検査で拒否・2 使い方・鍵の不足・3 許可が off なので書かなかった
  *   ・4 同じ日の research_image が既にある（何もしない）・5 予定に入れたが送れなかった（保留・期限切れ・自動モードでない）・6 想定外の失敗
- * --status は、その日の生きている item（無ければ最新）と job の状態・送れていない理由（held の error_code、待ちのまま送る時刻を過ぎていれば
- *   日の上限の見込み）を JSON で出す（hq の記録用。送れなかった理由は sns_x_send_jobs.error_code と item の held_reason に残る）
+ * --status は、その日の生きている item（無ければ最新）と job の状態・送れていない理由（held の error_code、送る前の検査で落ちた理由
+ *   precheck_reason（送り手の最後の報告から、30分だけ残る）、待ちのまま送る時刻を過ぎていれば日の上限の見込み blocked_hint）を JSON で出す（hq の記録用。送れなかった理由は sns_x_send_jobs.error_code と item の held_reason に残る）
  */
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFile, stat } from "node:fs/promises";
@@ -73,8 +73,11 @@ const jstTime = (iso) =>
   new Date(Date.parse(iso) + 9 * 3600000).toISOString().slice(11, 16);
 const jstDate = (date) =>
   new Date(date.getTime() + 9 * 3600000).toISOString().slice(0, 10);
+/** 時差（Z か ±HH:MM）つきの ISO だけ。時差の無い文字列は Node は手元の時刻、DB は接続の TimeZone で読み、別の時刻になる */
 const isIso = (v) =>
-  typeof v === "string" && /T/.test(v) && Number.isFinite(Date.parse(v));
+  typeof v === "string" &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(v) &&
+  Number.isFinite(Date.parse(v));
 
 /** bundle.json の検査（純粋関数）。時刻の窓は checkTiming が見る */
 export function checkResearchBundle(bundle, riskRules = []) {
@@ -101,7 +104,7 @@ export function checkResearchBundle(bundle, riskRules = []) {
   )
     reasons.push(`images が ["${bundle?.slug}.png"] の1枚でない`);
   if (!isIso(bundle?.source_observed_at))
-    reasons.push("source_observed_at が ISO の時刻でない");
+    reasons.push("source_observed_at が時差（Z か ±HH:MM）つきの ISO の時刻でない");
   if (bundle?.review?.p0_count !== 0)
     reasons.push(`機械の検査の P0 が0件でない（${bundle?.review?.p0_count}）`);
   const fields = { caption: bundle?.x_text, hashtags: bundle?.hashtags };
@@ -429,6 +432,18 @@ export async function researchStatus(date, { store, now = new Date() }) {
   if (!item) return null;
   const job = await store.jobForDraft(item.draft_id);
   const status = researchStatusOf(item, job);
+  // 送る前の検査（readCurrent・preflight）で落ちた job は claim されず queued のまま、期限の後に deadline_expired になるので、
+  // job に理由が残らない。送り手の最後の報告（scrape_job_state の sns_send の last_report.alerts、key は precheck:{job_id}:{理由}）から引く。
+  // 報告は2分ごとに上書きされ、理由は見直すまで30分だけ残る（snsSendRunner.js の CONTINUING_ALERT_MINUTES）。読めなければ null
+  if (job && job.state !== "posted" && store.sendReport) {
+    const report = await store.sendReport().catch((error) => {
+      console.error(`送り手の報告を読めない: ${error.message}`);
+      return null;
+    });
+    const prefix = `precheck:${job.id}:`;
+    const alert = (report?.alerts ?? []).find((a) => a?.key?.startsWith(prefix));
+    status.precheck_reason = alert ? alert.key.slice(prefix.length) : null;
+  }
   if (
     job?.state === "queued" &&
     job.scheduled_at &&
@@ -489,7 +504,9 @@ export function resultLine(
       (result.disabled
         ? "自動送信の許可（research_image_enabled）が off なので送らなかった"
         : outcome === "not_posted" && !result.job_id
-          ? "自動モードでないので job を作らなかった"
+          ? result.error
+            ? `自動の承認に失敗したので job を作らなかった: ${result.error}`
+            : "自動モードでないので job を作らなかった"
           : null),
   };
   return { code, text: `RESEARCH_RESULT ${JSON.stringify(line)}` };
@@ -536,6 +553,9 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       }
       return Object.fromEntries(rows.map((r) => [r.channel, r]));
     },
+    sendReport: async () =>
+      (await get("scrape_job_state?job=eq.sns_send&select=last_report"))[0]
+        ?.last_report ?? null,
     jobForDraft: async (draftId) =>
       (
         await get(
@@ -574,15 +594,6 @@ async function main() {
   }
   const webhook =
     process.env.SLACK_WEBHOOK_URL || process.env.SLACK_DIGEST_WEBHOOK_URL;
-  const riskRules = JSON.parse(
-    await readFile(
-      new URL(
-        "../../sns-video-studio/remotion/risk-rules.json",
-        import.meta.url,
-      ),
-      "utf8",
-    ),
-  ).rules;
   let researchId = null;
   try {
     const b = JSON.parse(
@@ -600,6 +611,12 @@ async function main() {
     );
     process.exit(6);
   };
+  const riskRules = await readFile(
+    new URL("../../sns-video-studio/remotion/risk-rules.json", import.meta.url),
+    "utf8",
+  )
+    .then((text) => JSON.parse(text).rules)
+    .catch(fail);
   const result = await pushResearchImage(folder, {
     store,
     readBytes: async (p) => {

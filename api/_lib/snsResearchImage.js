@@ -21,7 +21,8 @@ export function parseResearchId(id) {
 }
 
 /**
- * 禁止表現（hq と決めた語。risk-rules.json に加えて見る。NFKC でそろえて含むかを見る）。
+ * 禁止表現（hq と決めた語。NFKC でそろえ空白を除いて含むかを見る）。取り込みは risk-rules.json も当てる。送る直前の読み直し（cron sns-send）は
+ * risk-rules.json を関数に同梱していないので、この一覧が送る直前の最後の守り（risk-rules と重なる語はわざと二重に持つ。足すなら両方）。
  * 「競艇」は本文に使わない。ハッシュタグの「#競艇」（そのものだけ）は例外（.claude/rules/code-style.md の例外2・risk-rules の hashtag_exception と同じ）
  */
 export const RESEARCH_BANNED_WORDS = [
@@ -32,6 +33,7 @@ export const RESEARCH_BANNED_WORDS = [
   "似たレース",
 ];
 const KYOUTEI = "競艇";
+const squash = (value) => value.normalize("NFKC").replace(/[\s\u3000]/gu, "");
 const KYOUTEI_TAG = "#競艇";
 const HASHTAG = /^#[\p{L}\p{N}_]+$/u;
 /** ハッシュタグは0〜2個（型は「#ボートレース 1つ」。目安・根拠なし） */
@@ -69,16 +71,16 @@ export function researchTextReasons({ caption, hashtags }) {
   if (/[{}]|\$\{/.test(text))
     reasons.push("本文に置き場所（{ } ・${）が残っている");
   if (hasLink(text)) reasons.push("本文にリンクがある（この型はリンクなし）");
-  const body = caption.normalize("NFKC");
-  const banned = RESEARCH_BANNED_WORDS.filter((w) =>
-    text.normalize("NFKC").includes(w),
-  );
+  // NFKC でそろえ、空白（半角・全角）を除いてから見る（「競 艇」で抜けない。risk-rules の照合と同じ）
+  const body = squash(caption);
+  const all = squash(text);
+  const banned = RESEARCH_BANNED_WORDS.filter((w) => all.includes(w));
   if (body.includes(KYOUTEI)) banned.push(KYOUTEI);
   // ハッシュタグは「#競艇」そのものだけを許す（#競艇場 等は本文と同じく不可）
   if (
     tags.some(
       (t) =>
-        t.normalize("NFKC").includes(KYOUTEI) &&
+        squash(t).includes(KYOUTEI) &&
         t.normalize("NFKC") !== KYOUTEI_TAG,
     )
   )

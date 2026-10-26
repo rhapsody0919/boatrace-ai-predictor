@@ -558,6 +558,13 @@ test("検査: 禁止表現（各語・本文の「競艇」・risk-rules）・#�
     checkResearchBundle(bundle({ x_text: "競艇の数字" }), riskRules).join(),
     /禁止表現/,
   );
+  // 空白を挟んでも止める（送る直前は risk-rules を当てないので、この一覧だけで止まること）
+  for (const caption of ["競　艇の数字", "万 舟 券の数字", "儲 かる数字"])
+    assert.match(
+      researchTextReasons({ caption, hashtags: [] }).join(),
+      /禁止表現/,
+      caption,
+    );
   // ハッシュタグの #競艇 そのものは例外。#競艇場 は不可
   assert.deepEqual(
     checkResearchBundle(
@@ -578,7 +585,7 @@ test("検査: 禁止表現（各語・本文の「競艇」・risk-rules）・#�
     /hashtags/,
   );
   // 加重280（本文＋ハッシュタグの行）: 全角でちょうど280は通り、1字多いと超える
-  const tag = "\n\n#ボートレース"; // 2 + 1 + 6×2 = 15
+  // 「\n\n#ボートレース」は加重 2 + 1 + 6×2 = 15
   const fit = "あ".repeat((280 - 15 - 1) / 2) + "a"; // 132×2 + 1 + 15 = 280
   assert.deepEqual(checkResearchBundle(bundle({ x_text: fit }), riskRules), []);
   assert.match(
@@ -656,6 +663,11 @@ test("検査（時刻・画像）: 今日でない・期限の10分前を過ぎ�
     ),
     /古い/,
   );
+  // 時差の無い時刻は、Node と DB で別の時刻に読まれるので受け取らない
+  assert.match(
+    await reasonsOf(bundle({ source_observed_at: "2037-10-28T14:30:00" })),
+    /時差/,
+  );
   assert.match(await reasonsOf(bundle(), {}, png(1200, 1350)), /1080×1350/);
   assert.match(await reasonsOf(bundle(), {}, null), /無い/);
   assert.deepEqual(await counts(), NOTHING);
@@ -694,6 +706,17 @@ test("mode=manual なら held_manual で job を作らない（exit 5）", async
   // held_manual は1日1本から外れるので、自動に戻した後に入れ直せる
   await db.exec("UPDATE sns_auto_send_control SET mode='auto'");
   assert.ok((await push()).job_id);
+});
+
+test("自動の承認に失敗したら item を held_manual にし、結果の1行に失敗の理由を書く（exit 5）", async () => {
+  const result = await push(bundle(), {
+    store: { ...store, approve: async () => Promise.reject(new Error("承認の関数が拒否")) },
+  });
+  assert.equal(result.job_id, undefined);
+  assert.equal((await first("SELECT state FROM sns_auto_send_items")).state, "held_manual");
+  const line = resultLine(result);
+  assert.equal(line.code, 5);
+  assert.match(line.text, /自動の承認に失敗/);
 });
 
 test("送らずに終わった（held）job は作り直す: 前の item を stopped（superseded）にして新しい版を入れる", async () => {
@@ -829,6 +852,29 @@ test("送る: 19:00 に画像1枚と本文を X に渡し、送った後は item
     ).already,
     true,
   );
+});
+
+test("記録: 送る前の検査で落ちた job（claim されず queued）は、送り手の最後の報告の precheck の理由を precheck_reason に出す", async () => {
+  await push();
+  const job = await theJob();
+  const report = {
+    alerts: [
+      { key: "precheck:other:x", text: "別の job" },
+      { key: `precheck:${job.id}:research_text_rejected`, text: "検査で止まった" },
+    ],
+  };
+  const status = await researchStatus(DAY, {
+    store: { ...store, sendReport: async () => report },
+    now: at("19:10:00"),
+  });
+  assert.equal(status.precheck_reason, "research_text_rejected");
+  // 報告を読めなくても状態は返す
+  const broken = await researchStatus(DAY, {
+    store: { ...store, sendReport: async () => Promise.reject(new Error("HTTP 500")) },
+    now: at("19:10:00"),
+  });
+  assert.equal(broken.precheck_reason, null);
+  assert.equal(broken.job_state, "queued");
 });
 
 test("記録: 送る時刻を過ぎて queued のまま（claim が日の上限で投げている）なら blocked_hint に日の上限を出す", async () => {

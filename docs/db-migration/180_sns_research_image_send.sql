@@ -16,9 +16,13 @@
 --   SELECT count(*) FROM information_schema.columns WHERE table_name = 'sns_auto_send_control' AND column_name = 'research_image_enabled';  期待: 1（179 済み）
 --
 -- 適用後の確認（読み取り）:
---   SELECT prosrc LIKE '%research_image_disabled%' AND prosrc LIKE '%v_max_age%' FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: true
+--   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: dbc326553cecd51f7552ebbab0d006b7（この 180 の本文）
 --   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js
 --
+-- 許可を true にする前の確認（読み取り。system-architect の P1）: SELECT daily_limit_x FROM public.sns_x_send_control;
+--   月・水・金の X の予定の本数（全貌・/today と返信・優勝戦3・この型1）がこの値に収まること。2026-10-27 の本番は 9（記録の 8 から上がっている）。
+--   足りなければ同じ時に UPDATE public.sns_x_send_control SET daily_limit_x = <本数> WHERE id = true; を当てる（日の上限は運用の値なのでマイグレーションに固定しない）
+-- 当てる時刻: 179 は sns_auto_send_items に ACCESS EXCLUSIVE を取る。送り手の cron と重ならないよう、19:00 前後・優勝戦の送る時刻を避ける
 -- 自動送信を許す（オーナーの yes と .claude/CLAUDE.md の例外の追記の後だけ）:
 --   UPDATE public.sns_auto_send_control SET research_image_enabled = true WHERE channel = 'x';
 -- 止める: UPDATE public.sns_auto_send_control SET research_image_enabled = false WHERE channel = 'x';
@@ -28,8 +32,9 @@ BEGIN;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public'
-      AND table_name = 'sns_auto_send_control' AND column_name = 'research_image_enabled') THEN
+  -- information_schema は権限の無いロールに列を見せないので、pg_attribute で見る（system-architect の P3）
+  IF NOT EXISTS (SELECT 1 FROM pg_attribute WHERE attrelid = 'public.sns_auto_send_control'::regclass
+      AND attname = 'research_image_enabled' AND NOT attisdropped) THEN
     RAISE EXCEPTION '180: 179（research_image_enabled の列）を先に当てる';
   END IF;
 END $$;
