@@ -25,6 +25,7 @@ import { mergeExhibition } from "../../api/analogy/similar/[raceId].js";
 import { boatScopes } from "../../api/analogy/scenario/[raceId].js";
 import {
   CLEANUP,
+  cleanup,
   datesToClean,
   datesToMeasure,
   pruneLedger,
@@ -602,6 +603,101 @@ check(
     );
   } finally {
     globalThis.fetch = realFetch;
+  }
+}
+
+// ---- BOA-977: 2晩の掃除と途中失敗からの再開（外部接続なし） -----------------
+{
+  const day = (n) => new Date(Date.UTC(2026, 9, 26 + n)).toISOString().slice(0, 10);
+  const folders = [-730, -731, -732, ...Array.from({ length: 40 }, (_, i) => -i)].map(day);
+  const initial = folders.flatMap((d) => ["r1", "r2"].flatMap((r) =>
+    CLEANUP.map(([k]) => `${d}/${r}/${k}/a.json.gz`)));
+  initial.push(...Array.from({ length: 1001 }, (_, i) => `${day(-3)}/r1/pool/${i}.json.gz`));
+  const fake = () => {
+    const files = new Set(initial), calls = [], deleted = [], batches = [];
+    let ledger = null, failPrefix = null, failRemove = false, failWrite = false;
+    const io = {
+      list: async (prefix) => {
+        calls.push(prefix);
+        if (prefix === failPrefix) throw new Error("list failed");
+        const rows = new Map();
+        for (const path of files) {
+          if (!path.startsWith(prefix)) continue;
+          const tail = path.slice(prefix.length), name = tail.split("/")[0];
+          rows.set(name, { name, id: tail.includes("/") ? null : "file" });
+        }
+        return [...rows.values()];
+      },
+      remove: async (paths) => {
+        if (failRemove) throw new Error("delete failed");
+        batches.push(paths.length);
+        for (const path of paths) { deleted.push(path); files.delete(path); }
+      },
+      read: async (path) => {
+        check("掃除の控えは容量の控えと別のパス", path, "_usage/cleanup-days.json.gz");
+        return structuredClone(ledger);
+      },
+      write: async (path, value, opts) => {
+        check("掃除の控えの保存先", path, "_usage/cleanup-days.json.gz");
+        if (failWrite) throw new Error("write failed");
+        check("掃除の控えは上書き", opts, { upsert: true });
+        ledger = structuredClone(value);
+      },
+    };
+    return { io, calls, deleted, batches, files,
+      get ledger() { return ledger; },
+      failList: (p) => { failPrefix = p; },
+      failDelete: (v) => { failRemove = v; },
+      failSave: (v) => { failWrite = v; },
+    };
+  };
+  // 旧ループの削除集合を独立した日数判定で求める。
+  const expected = (paths, today) => paths.filter((p) => {
+    const [date, , kind] = p.split("/");
+    const keep = CLEANUP.find(([k]) => k === kind)[1];
+    const age = (Date.parse(today) - Date.parse(date)) / 86400000;
+    return age > keep && age <= keep + 30;
+  }).sort();
+  const f = fake();
+  const count = await cleanup(day(0), f.io);
+  check("初夜の削除集合は旧実装と同じ", [...f.deleted].sort(), expected(initial, day(0)));
+  check("初夜の件数", count, f.deleted.length);
+  const dateCalls = () => f.calls.filter((p) => /^\d{4}-\d{2}-\d{2}\/$/.test(p));
+  check("同じ日の一覧は1回だけ", new Set(dateCalls()).size, dateCalls().length);
+  check("削除は500件までの一括要求", [Math.max(...f.batches), f.batches.includes(1)], [500, true]);
+  const firstLists = f.calls.length;
+  const remaining = [...f.files];
+  f.calls.length = 0; f.deleted.length = 0;
+  await cleanup(day(1), f.io);
+  check("翌夜の削除集合も旧実装と同じ", [...f.deleted].sort(), expected(remaining, day(1)));
+  check("翌夜に見るのは新しく境目を越えた3日だけ", dateCalls().sort(),
+    [-730, -7, -1].map((n) => `${day(n)}/`).sort());
+  check("完了済みの種類を再び一覧しない", f.calls.includes(`${day(-3)}/r1/pool/`), false);
+  check("新しい種類だけを消し、同日に完了済みの種類は見ない",
+    f.calls.includes(`${day(-7)}/r1/similar-display/`), false);
+  console.log(`掃除の一覧要求（偽Storage）: 初夜 ${firstLists} → 翌夜 ${f.calls.length}`);
+  const beforeGap = [...f.files]; f.deleted.length = 0;
+  await cleanup(day(4), f.io);
+  check("休んだ夜の削除対象も拾う", [...f.deleted].sort(), expected(beforeGap, day(4)));
+  for (const failure of ["list", "delete", "write"]) {
+    const g = fake();
+    if (failure === "list") g.failList(`${day(-2)}/r2/pool/`);
+    if (failure === "delete") g.failDelete(true);
+    if (failure === "write") g.failSave(true);
+    let failed = false;
+    try { await cleanup(day(0), g.io); } catch { failed = true; }
+    check(`${failure} 失敗は呼び出し元に返す`, failed, true);
+    if (failure === "list") check("途中失敗した日は完了として保存しない",
+      g.ledger?.[day(-2)] === undefined, true);
+    if (failure === "write") check("保存失敗では完了の控えが残らない", g.ledger, null);
+    g.failList(null); g.failDelete(false); g.failSave(false);
+    g.calls.length = 0;
+    const left = [...g.files], deletedBefore = g.deleted.length;
+    await cleanup(day(1), g.io);
+    check(`${failure} 失敗の翌夜は残りを全て削除`,
+      g.deleted.slice(deletedBefore).sort(), expected(left, day(1)));
+    if (failure === "list") check("途中失敗した日は翌夜に一覧し直す",
+      g.calls.includes(`${day(-2)}/r2/pool/`), true);
   }
 }
 
