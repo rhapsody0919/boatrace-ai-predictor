@@ -4,8 +4,8 @@
  *
  * 方式: 日次のスナップショット（レジストリ motor_pretest、kind: daily）。その日の開催会場（races）ごとに、公式の
  * race/rankingmotor?jcd&hd を1ページ取得し、節の全選手（約45人）の前検タイム・前検順位・モーター/ボートの番号と2連対率を、
- * (日付, 会場, 選手) の行として保存する。「節初日の検出」は race_series に依存するため行わない（前検タイムは節の間は変わらず、
- * 2連対率は日々変わる。毎日1ページ×開催会場数（約13）で、負荷は小さい）。
+ * (日付, 会場, 選手) の行として保存する。race_series の初日に取得し、途中日は同じ節の保存行が無い場合か、
+ * 最新の保存日が対象日の6日前より古い場合だけ取得する（画面の参照窓を維持）。朝の前日取得は行わない。
  *
  * 実行時刻: JST 05:30・06:00・06:30（vercel.json の cron）。根拠（docs/design/scraping-vercel-consolidation/
  * verification-runbook.md T-1）:
@@ -225,10 +225,52 @@ export async function runMotorPretestJob(
     };
   }
 
+  // 会場ごとに最新1行だけ読む。前の節・未来の保存行を今回の節の取得済みと扱わない。
+  const dayMs = Date.parse(`${date}T00:00:00Z`);
+  const nextDate = new Date(dayMs + 86400000).toISOString().slice(0, 10);
+  const oldest = new Date(dayMs - 6 * 86400000).toISOString().slice(0, 10);
+  const venues = [];
+  for (const venue of expected.venues) {
+    const series = await ctx.client
+      .from("race_series")
+      .select("start_date, end_date")
+      .eq("venue_code", venue.venueCode)
+      .lt("start_date", nextDate)
+      .order("start_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (series.error)
+      throw new Error(`前検タイム: 節の取得に失敗しました: ${series.error.message}`);
+    if (!series.data || series.data.end_date < date) {
+      return {
+        rowsWritten: 0,
+        incomplete: true,
+        report: carry({ waiting: "race_series" }),
+        body: { waiting: "race_series" },
+      };
+    }
+    if (series.data.start_date === date) {
+      venues.push(venue);
+      continue;
+    }
+    const saved = await ctx.client
+      .from("motor_pretest_stats")
+      .select("race_date")
+      .eq("venue_code", venue.venueCode)
+      .gte("race_date", series.data.start_date)
+      .lt("race_date", nextDate)
+      .order("race_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (saved.error)
+      throw new Error(`前検タイム: 保存日の取得に失敗しました: ${saved.error.message}`);
+    if (!saved.data || saved.data.race_date < oldest) venues.push(venue);
+  }
+
   /** @type {Map<number, ReturnType<typeof summarizeVenueCoverage>>} */
   const coverageByVenue = new Map();
   const result = await runVenueDailyJob(ctx, {
-    venues: expected.venues.map((v) => ({
+    venues: venues.map((v) => ({
       venueCode: v.venueCode,
       name: venueName(v.venueCode),
     })),
