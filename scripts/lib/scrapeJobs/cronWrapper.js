@@ -128,6 +128,23 @@ async function isBreakerOpen(breaker, definition, nowMs) {
 }
 
 /**
+ * 閉じた後24時間の絞り（spec §5.2）にあるブレーカーのキー（ホスト・ページのパス）。isBreakerOpen の後に呼ぶ
+ * （check の読み取りで DB の段階を同期済み）。1つでもあれば、その起動の1起動の上限（claimLimit）を半分にする
+ */
+function throttledKeys(breaker, definition) {
+  if (typeof breaker.isThrottled !== "function") return [];
+  const keys = [
+    ...(definition.hosts ?? []).map((host) => hostKeyOf(`https://${host}/`)),
+    ...(definition.breakerUrls ?? []).map(pathKeyOf),
+  ];
+  return keys.filter((key) => breaker.isThrottled(key));
+}
+
+/** 絞りのときの1起動の上限（半分、切り上げ。1未満にしない） */
+export const throttledClaimLimit = (claimLimit) =>
+  Math.max(1, Math.ceil(claimLimit / 2));
+
+/**
  * ジョブを1回実行する（HTTPに依存しない。テストではこれを直接呼ぶ）。
  *
  * @returns {Promise<{status: number, body: Record<string, unknown>}>}
@@ -325,7 +342,20 @@ async function runWindow({
     });
   }
 
-  const slots = await store.claimSlots({ job, worker, mode });
+  const throttled = throttledKeys(breaker, definition);
+  const throttleInfo =
+    throttled.length > 0
+      ? {
+          throttled,
+          claimLimit: throttledClaimLimit(definition.claimLimit),
+        }
+      : {};
+  const slots = await store.claimSlots({
+    job,
+    worker,
+    mode,
+    ...(throttleInfo.claimLimit ? { limit: throttleInfo.claimLimit } : {}),
+  });
   // offset ごとの許容幅の上書きが効かなかった（マイグレーション092が未適用で、既存の関数へフォールバックした）場合は、
   // 黙って延長が効かない状態を放置しないよう、応答・ジョブ状態の last_report（監視が通知する）に残す。
   // 上書きのあるジョブが、正常に取れた実行では、前回のフォールバックのアラートを消す
@@ -339,7 +369,7 @@ async function runWindow({
   if (slots.length === 0) {
     return {
       failed: false,
-      body: { claimed: 0, ensured, ...fallbackInfo },
+      body: { claimed: 0, ensured, ...fallbackInfo, ...throttleInfo },
     };
   }
 
@@ -472,6 +502,7 @@ async function runWindow({
     outcomes: tally,
     rowsWritten,
     ...fallbackInfo,
+    ...throttleInfo,
   };
   if (allFailed) {
     return { failed: true, firstError: processed[0].error, body };
