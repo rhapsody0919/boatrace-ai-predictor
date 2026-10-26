@@ -1,6 +1,12 @@
 {
   "default": "本日のデータ一覧（{date}）",
   "reply_enabled": false,
+  "experiment": {
+    "id": "today-v2-course-win",
+    "start": null,
+    "pairs": 10,
+    "seed": "today-v2-course-win-20261027"
+  },
   "variants": [
     {
       "id": "a",
@@ -10,9 +16,10 @@
     },
     {
       "id": "b",
-      "uuid": "be74c247-fa8f-442e-a29f-4d1d7866919a",
-      "type_id": "today-a",
-      "heading": "本日のデータ一覧（{date}）"
+      "uuid": null,
+      "type_id": "today-b-course-win",
+      "body": "course_win",
+      "heading": "【今日の注目データ】{date}"
     }
   ]
 }

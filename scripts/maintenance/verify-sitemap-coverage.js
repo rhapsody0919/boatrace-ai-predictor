@@ -23,6 +23,8 @@ const EXPECTED_EXCLUSIONS = {
   "admin/sns-hub": "管理画面（SNSマーケティングハブ）。非公開",
   holmes: "α版・動線非公開ページ",
   poirot: "α版・動線非公開ページ",
+  "share/today-sheet":
+    "X の /today 投稿の型 b の画像を撮る撮影用のページ（人が見るページではない。noindex）",
 };
 
 function extractLocalizedRoutesBlock(source) {

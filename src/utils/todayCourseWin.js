@@ -104,6 +104,30 @@ export function normalQuantile(p) {
 /** その日の候補数 K からの Bonferroni の線（固定値にしない。K≈100 なら 3.48） */
 export const bonferroniLine = (k) => normalQuantile(1 - 0.025 / k);
 
+/** 片側の Bonferroni の有意水準（両側5%を K 人で割った上側） */
+export const bonferroniAlpha = (k) => 0.025 / k;
+
+/**
+ * 二項の上側確率 P(X ≥ wins | runs, p0)（正確な値、対数で足し上げる）。
+ * 言い切り（claim）はこれで判定する。正規近似の z は B1・B2（p0<0.5）で線上の確率が名目の最大約2倍に甘くなる
+ * （data-scientist の審査 P2-2、data/analysis/today-course-win/exact-vs-normal-tail.json）
+ */
+export function binomialUpperTail(wins, runs, p0) {
+  if (!(p0 > 0 && p0 < 1)) throw new Error(`p0 は 0〜1 の間: ${p0}`);
+  if (wins <= 0) return 1;
+  if (wins > runs) return 0;
+  const logFact = [0];
+  for (let i = 1; i <= runs; i += 1) logFact[i] = logFact[i - 1] + Math.log(i);
+  const lp = Math.log(p0);
+  const lq = Math.log(1 - p0);
+  let sum = 0;
+  for (let i = wins; i <= runs; i += 1)
+    sum += Math.exp(
+      logFact[runs] - logFact[i] - logFact[runs - i] + i * lp + (runs - i) * lq,
+    );
+  return Math.min(1, sum);
+}
+
 /**
  * RPC（181）の jsonb の1つを、行の配列（scope='grade'・'racer'、どの行にも窓）にする。形が違えば投げる
  * （集合で返すと PostgREST の上限1000行で黙って切れるので、関数は jsonb の1つで返す。system-architect の審査 P0）
@@ -257,5 +281,137 @@ export function buildCourseWinNotes({ races, entries, rpcRows, until }) {
       ]),
     ),
     candidates,
+  };
+}
+
+/** 選手名の表示（本文と画像で同じ関数を通す。空白は半角1つ） */
+export const courseWinDisplayName = (name) =>
+  String(name ?? "")
+    .replace(/\s+/g, " ") // \s は全角の空白も含む
+    .trim();
+
+/** 割合は件数÷母数を1回だけ丸めた整数の %（number-wording.md「割合は1回だけ丸める」） */
+export const courseWinPct = (wins, runs) => Math.round((wins / runs) * 100);
+
+/** 文字列の短い指紋（FNV-1a 32bit、16進8桁）。本文と画像が同じ行から作られたかの照合に使う（暗号の用途ではない） */
+export function fingerprint(text) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+/**
+ * その日の画像（と本文の注目の1人）の中身。送る時刻より後の締切で、除く行（欠場・中止。"race_id:艇番"）を外した候補から、
+ * 段ごとに「縮めた値−級の全国平均」の大きい順（同率は件数の多い方、さらに同じならレース ID）に上限まで。
+ * 本文の注目の1人は 1コースの段の1行目（hq §11）。差を書くのは、その人の z がその日の1コースの候補数 K の
+ * Bonferroni の線を通った日だけ（claim。本文が差を言うのは1コースの1人だけなので、K は1コースの段の数。DS r2 P1-5）
+ *
+ * 返り値: { ok: true, key, sections, featured, k, line, claim, window, sendAt } か { ok: false, reason }
+ * key は画像の撮影用のページと計画で同じになる指紋（行・窓・K・送る時刻から作る）
+ */
+export function buildCourseWinSheet(
+  courseWin,
+  { sendAt, excluded = new Set() } = {},
+) {
+  if (!courseWin) return { ok: false, reason: "no_course_win" };
+  if (courseWin.v !== COURSE_WIN_VERSION)
+    return { ok: false, reason: `version_${courseWin.v ?? "none"}` };
+  if (courseWin.status !== "ok")
+    return { ok: false, reason: courseWin.reason ?? courseWin.status };
+  if (!/^\d{2}:\d{2}$/.test(sendAt ?? ""))
+    throw new Error(`送る時刻（HH:MM）が要る: ${sendAt}`);
+  const live = courseWin.candidates.filter(
+    (c) =>
+      typeof c.start_time === "string" &&
+      c.start_time.slice(0, 5) > sendAt &&
+      !excluded.has(`${c.race_id}:${c.boat_number}`),
+  );
+  const order = (a, b) =>
+    b.gap_pt - a.gap_pt ||
+    b.runs - a.runs ||
+    a.race_id.localeCompare(b.race_id);
+  const sections = [];
+  const k = {};
+  for (const def of COURSE_WIN_SECTIONS) {
+    const list = live.filter((c) => c.section === def.key).sort(order);
+    k[def.key] = list.length;
+    if (!list.length) continue;
+    sections.push({
+      key: def.key,
+      boat: def.boat,
+      course: def.course,
+      rows: list.slice(0, def.limit).map((c, i) => {
+        const base = courseWin.baselines[`${c.grade}|${c.course}`];
+        return {
+          rank: i + 1,
+          race_id: c.race_id,
+          venue_code: c.venue_code,
+          race_number: c.race_number,
+          start_time: c.start_time.slice(0, 5),
+          boat_number: c.boat_number,
+          racer_id: c.racer_id,
+          racer_name: courseWinDisplayName(c.racer_name),
+          grade: c.grade,
+          runs: c.runs,
+          wins: c.wins,
+          pct: courseWinPct(c.wins, c.runs),
+          baseline_pct: courseWinPct(base.wins, base.runs),
+          z: c.z,
+        };
+      }),
+    });
+  }
+  const c1 = sections.find((s) => s.key === "c1");
+  if (!c1) return { ok: false, reason: "no_c1_rows" };
+  // 合計1行の日は画像の半分が空き「1枚に」の約束と合わないので出さない（x-channel・visual-designer の審査 P2・P1、型 a で送る）
+  if (sections.reduce((n, sec) => n + sec.rows.length, 0) < 2)
+    return { ok: false, reason: "one_row" };
+  const featured = c1.rows[0];
+  const line = bonferroniLine(k.c1);
+  const featuredBase = courseWin.baselines[`${featured.grade}|1`];
+  const tail = binomialUpperTail(
+    featured.wins,
+    featured.runs,
+    featuredBase.wins / featuredBase.runs,
+  );
+  const key = fingerprint(
+    JSON.stringify({
+      w: courseWin.window,
+      s: sendAt,
+      k,
+      r: sections.map((s) =>
+        s.rows.map((r) => [
+          r.race_id,
+          r.boat_number,
+          r.racer_id,
+          r.runs,
+          r.wins,
+          r.grade,
+        ]),
+      ),
+    }),
+  );
+  return {
+    ok: true,
+    key,
+    sections,
+    featured,
+    k,
+    line: round(line, 3),
+    // 言い切りは正確な二項の上側確率で判定する（z と line は記録・目安）
+    claim: tail <= bonferroniAlpha(k.c1),
+    tail: Number(tail.toPrecision(4)),
+    window: courseWin.window,
+    // 4コースの段に載せる最低の走数（級ごと、期待1着数5）。画像の注に出す
+    minRunsC4: Object.fromEntries(
+      ["A1", "A2"].map((g) => {
+        const b = courseWin.baselines[`${g}|4`];
+        return [g, b ? minRunsFor(b.wins / b.runs) : null];
+      }),
+    ),
+    sendAt,
   };
 }

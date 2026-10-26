@@ -32,6 +32,7 @@ import Profile from "./pages/Profile";
 import AccuracyHistory from "./pages/AccuracyHistory";
 import WinningTechniqueAnalysis from "./pages/WinningTechniqueAnalysis";
 import MorningDataDigest from "./pages/MorningDataDigest";
+import TodaySheet from "./pages/TodaySheet";
 import ThinkingAssistPage from "./pages/ThinkingAssistPage";
 import Holmes from "./pages/Holmes";
 import ContentHub from "./pages/ContentHub";
@@ -208,6 +209,8 @@ function LocalizedRoutes({ lng = "ja" }) {
       <Route path="winning-technique" element={<WinningTechniqueAnalysis />} />
       {/* 本日のデータ一覧（BOA-402）。ja専用のためTRANSLATED_PATHSには登録しない */}
       <Route path="today" element={<MorningDataDigest />} />
+      {/* /today の X 投稿の型 b の画像の撮影用（人が見るページではない。noindex、ja 専用） */}
+      <Route path="share/today-sheet" element={<TodaySheet />} />
       <Route path="privacy" element={<App tab="privacy" />} />
       <Route path="terms" element={<App tab="terms" />} />
       <Route path="contact" element={<App tab="contact" />} />

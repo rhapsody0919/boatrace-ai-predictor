@@ -28,9 +28,15 @@ import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import {
   TODAY_HEADING_BUILTIN,
   loadTodayVariants,
+  normalizeTodayVariants,
   pickTodayPost,
   renderTodayHeading,
 } from "./snsTodayVariants.js";
+import { buildCourseWinSheet } from "../../src/utils/todayCourseWin.js";
+import {
+  buildCourseWinPost,
+  checkCourseWinPost,
+} from "./snsTodayCourseWinPost.js";
 import { randomBytes } from "node:crypto";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
@@ -61,8 +67,110 @@ export function todaySchedule(date, now = null) {
   };
 }
 
-export const todayTrackingUrl = (date) =>
-  `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${date}`;
+/** utm_content は「日付-札」（札は実際に送った型 a・b。hq の比べが GA4 の流入を型で分ける、§10-5） */
+export const todayUtmContent = (date, sent) => `${date}-${sent}`;
+export const todayTrackingUrl = (date, sent = "a") =>
+  `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${todayUtmContent(date, sent)}`;
+
+// 型 b の画像の撮影用のページ（src/pages/TodaySheet.jsx）。1080×1350 をそのままの画素で撮る
+export const COURSE_WIN_SHEET_PATH = "/share/today-sheet";
+export const COURSE_WIN_SHEET_ELEMENT = "[data-today-sheet]";
+export const COURSE_WIN_SHEET_VIEWPORT = { width: 1080, height: 1350 };
+
+/** 撮影用のページの URL。渡すのは日付・送る時刻・除く行だけ（数字は渡さない。ページはサーバーの朝の一覧から作る） */
+export function courseWinSheetUrl(date, sendAt, skip = []) {
+  const params = new URLSearchParams({ date, from: sendAt });
+  if (skip.length) params.set("skip", [...skip].sort().join(","));
+  return `${SITE_BASE_URL}${COURSE_WIN_SHEET_PATH}?${params}`;
+}
+
+/**
+ * 型 b の中身（純粋でない: 欠場・中止を読む）。返り値 { ok: true, sheet, post, url, sheetUrl } か { ok: false, reason }。
+ * 候補のうち送る時刻より後の締切の全員の状態を読み、欠場・中止・締切の分からない行を除いてから並べる（上限までは後ろから補う）
+ */
+export async function prepareCourseWin(digest, { date, sendAt, raceDb, t }) {
+  const notes = digest.day?.notes?.courseWin;
+  const first = buildCourseWinSheet(notes, { sendAt });
+  if (!first.ok) return first;
+  const live = notes.candidates.filter(
+    (c) =>
+      typeof c.start_time === "string" && c.start_time.slice(0, 5) > sendAt,
+  );
+  const statuses = await pickRaceStatus(raceDb, live);
+  const skip = statuses
+    .filter((p) => p.reason)
+    .map((p) => `${p.race_id}:${p.boat_number}`);
+  const sheet = buildCourseWinSheet(notes, {
+    sendAt,
+    excluded: new Set(skip),
+  });
+  if (!sheet.ok) return sheet;
+  const url = todayTrackingUrl(date, "b");
+  const venueName = (code) => t(`venues.${code}`);
+  const text = buildCourseWinPost(sheet, { venueName, url });
+  const problems = checkCourseWinPost(text, sheet, {
+    imageKey: sheet.key,
+    url,
+    venueName,
+  });
+  if (problems.length)
+    return { ok: false, reason: `check_failed:${problems.join(",")}` };
+  return {
+    ok: true,
+    sheet,
+    url,
+    sheetUrl: courseWinSheetUrl(date, sendAt, skip),
+    post: {
+      text,
+      reply: null,
+      races: [],
+      // 送る直前に欠場・中止を読み直す対象（画像に載る全行）
+      picks: sheet.sections.flatMap((s) =>
+        s.rows.map((r) => ({ race_id: r.race_id, boat_number: r.boat_number })),
+      ),
+    },
+  };
+}
+
+/**
+ * 比べの a の日にも、その日に型 b を出せたかを残す（DB を読まない分だけ。欠場の読み直しと撮影は b の日にしか分からない）。
+ * 両方の日で b を出せた組だけで見る感度分析に使う（data-scientist の審査 P2-1）。返り値 { ok, reason? }
+ */
+export function courseWinFeasible(digest, { date, sendAt, t }) {
+  const sheet = buildCourseWinSheet(digest.day?.notes?.courseWin, { sendAt });
+  if (!sheet.ok) return { ok: false, reason: sheet.reason };
+  const url = todayTrackingUrl(date, "b");
+  const venueName = (code) => t(`venues.${code}`);
+  const problems = checkCourseWinPost(
+    buildCourseWinPost(sheet, { venueName, url }),
+    sheet,
+    { imageKey: sheet.key, url, venueName },
+  );
+  return problems.length
+    ? { ok: false, reason: `check_failed:${problems.join(",")}` }
+    : { ok: true };
+}
+
+/** config の型 a（b を出せない日に使う）。config が壊れていれば既定の文 */
+export function typeAOf(config) {
+  const { fallback, variants } = normalizeTodayVariants(config);
+  const a = variants[0];
+  return a
+    ? {
+        type_id: a.type_id,
+        heading: a.heading,
+        link_lead: a.link_lead,
+        link_position: a.link_position,
+        variant: { id: a.id, uuid: a.uuid },
+      }
+    : {
+        type_id: "today-a",
+        heading: fallback,
+        link_lead: null,
+        link_position: "after_heading",
+        variant: { id: "default", uuid: null },
+      };
+}
 
 // 本文に載せる区分と人数・最低の走数（2026-10-15 オーナー承認の型）。逃がし・注目レースは、選ぶ式の向きを /today 側で直すまで載せない
 // 見出し（2026-10-15 hq 承認の文）。割合は一覧に保存されたしきい値（morning_digest_days.notes.thresholds）を使う
@@ -345,20 +453,8 @@ export async function runTodayPlan(
       reason: `reply_item_${existing.reply.item.state}`,
     });
 
-  const trackingUrl = todayTrackingUrl(date);
-  // 欠場・中止・締切を確かめられない候補は除く（区分の上限までは後ろの rank から補う）
   // 載せるのは、締切が送る時刻（8:00、遅れた日はその時刻）より後のレースだけ
   const sendAt = jstHm(when.scheduled_at);
-  const featuredRow = todayFeatured(digest.rows, sendAt);
-  const statuses = await pickRaceStatus(raceDb, [
-    ...(featuredRow ? [featuredRow] : []),
-    ...todayCandidates(digest.rows, sendAt),
-  ]);
-  const excluded = new Set(
-    statuses
-      .filter((p) => p.reason)
-      .map((p) => `${p.race_id}:${p.boat_number}`),
-  );
   // 送信の設定は1回だけ読み、型の選び方（返信を選べるか）と自動の承認の両方に使う（2回読むと間で変わりうる）。
   // 確認用の作り直し（review）は自動にしない
   const control = !review && store.control ? await store.control() : null;
@@ -374,37 +470,110 @@ export async function runTodayPlan(
           content_type: existing.draft.source_data.content_type,
         }
       : await pickTodayType(date, { store, loadVariants, replyAllowed });
-  const { heading, variant } = picked;
-  const contentType = {
-    ...picked.content_type,
-    heading: picked.heading,
-    link_lead: picked.link_lead ?? null,
-    link_position: picked.link_position,
+
+  // 型 b（course_win、hq 2026-10-27）の本文と画像の中身。材料・機械の検査がそろわない日は型 a で送り、理由を残す
+  // （/today は機械の検査が通れば自動で送るので、検査を通らない b は送らない）
+  let courseWin = null;
+  let bFallback = null;
+  if (picked.body === "course_win") {
+    const made = await prepareCourseWin(digest, {
+      date,
+      sendAt,
+      raceDb,
+      t,
+    });
+    if (made.ok) courseWin = made;
+    else bFallback = made.reason;
+  }
+
+  // 型 a の本文（今の型）。b を作れなかった日・b が撮れなかった日もここに来る
+  const buildTypeA = async (fallbackReason) => {
+    const base = fallbackReason ? typeAOf(loadVariants()) : picked;
+    const url = todayTrackingUrl(date, "a");
+    // 欠場・中止・締切を確かめられない候補は除く（区分の上限までは後ろの rank から補う）
+    const featuredRow = todayFeatured(digest.rows, sendAt);
+    const statuses = await pickRaceStatus(raceDb, [
+      ...(featuredRow ? [featuredRow] : []),
+      ...todayCandidates(digest.rows, sendAt),
+    ]);
+    const excluded = new Set(
+      statuses
+        .filter((p) => p.reason)
+        .map((p) => `${p.race_id}:${p.boat_number}`),
+    );
+    const contentType = {
+      ...picked.content_type,
+      ...(fallbackReason
+        ? {
+            id: base.type_id,
+            fallback_reason: `course_win:${fallbackReason}`,
+          }
+        : {}),
+      heading: base.heading,
+      link_lead: base.link_lead ?? null,
+      link_position: base.link_position,
+      body: null,
+      sent: "a",
+      // 比べの a の日: その日に b を出せたか（DB を読まない分）
+      ...(!fallbackReason &&
+      picked.content_type?.side === "a" &&
+      picked.content_type?.pair != null
+        ? (() => {
+            const f = courseWinFeasible(digest, { date, sendAt, t });
+            return {
+              b_feasible: f.ok,
+              ...(f.ok ? {} : { b_reason: f.reason }),
+            };
+          })()
+        : {}),
+    };
+    const post = buildTodayPost(digest, {
+      date,
+      t,
+      url,
+      sendAt,
+      excluded,
+      heading: base.heading,
+      linkLead: contentType.link_lead,
+      linkPosition: contentType.link_position,
+    });
+    return {
+      post,
+      contentType,
+      trackingUrl: url,
+      variant: fallbackReason ? base.variant : picked.variant,
+    };
   };
-  const post = buildTodayPost(digest, {
-    date,
-    t,
-    url: trackingUrl,
-    sendAt,
-    excluded,
-    heading,
-    linkLead: contentType.link_lead,
-    linkPosition: contentType.link_position,
-  });
-  if (!post)
+  let chosen = courseWin
+    ? {
+        post: courseWin.post,
+        trackingUrl: courseWin.url,
+        variant: picked.variant,
+        contentType: {
+          ...picked.content_type,
+          heading: picked.heading,
+          link_lead: null,
+          link_position: "end",
+          body: "course_win",
+          sent: "b",
+        },
+      }
+    : await buildTypeA(bFallback);
+  if (!chosen.post)
     return done({ outcome: "skipped", reason: "no_candidates", revision });
-  const caption = post.text;
   const riskOf = (text) =>
     matchRiskRules(
       draftRiskFields({ platform: "x", caption_text: text, hashtags: [] }),
       "x",
       riskRules,
     );
-  const replyRisk = post.reply ? riskOf(post.reply) : [];
-  // 返信の文に禁止表現があれば、親も止める（リンクの無い親だけを送らない）
-  const risk = [...riskOf(caption), ...replyRisk];
-  if (!live)
+  if (!live) {
+    const risk = [
+      ...riskOf(chosen.post.text),
+      ...(chosen.post.reply ? riskOf(chosen.post.reply) : []),
+    ];
     return done({ outcome: risk.length ? "held_manual" : "manual", revision });
+  }
 
   // リンク先（/today）が未ログインで見えることを確かめる（送る直前の検査と同じ印）
   // 失敗の理由に起動の様子（残りの Chromium・空きメモリ）を添える。本番の関数のログを見ずに切り分けるため（2026-10-18）
@@ -423,42 +592,77 @@ export async function runTodayPlan(
     !markers[TODAY_SCREEN_KEY].every((m) => page.visibleSelectors?.includes(m))
   )
     throw new Error("today_page_not_ready");
-  // 画像: 対象レースの龍神ソナーの図。撮れないうちは何も書かない（例外で止め、次の実行でやり直す）
-  const shots = [];
-  const missing = [];
-  for (const race of post.races.slice(0, TODAY_MAX_IMAGES)) {
-    // 1枚は最悪 約75秒かかる。関数の時間（300秒）で止められると何も記録されないので、120秒を過ぎたら新しく撮らない
-    if (nowMs() - startedMs > SHOT_BUDGET_MS) {
-      missing.push(`${race.race_id}: time_budget`);
-      continue;
-    }
+  const waitOver = now >= new Date(`${date}T${SONAR_WAIT_UNTIL}:00+09:00`);
+  let shots = [];
+  if (courseWin) {
+    // 型 b の画像: 撮影用のページ1枚。ページが出した指紋が計画の物と同じとき（同じ行・同じ窓）だけ撮れる
     try {
       const shot = await headless.screenshot({
-        url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar`,
-        requiredSelectors: SONAR_READY,
-        viewport: { width: 390, height: 844 },
-        element: SONAR_ELEMENT,
-        edgeColorVar: SONAR_EDGE_COLOR_VAR,
-        label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
+        url: courseWin.sheetUrl,
+        requiredSelectors: [`[data-today-sheet-key="${courseWin.sheet.key}"]`],
+        viewport: COURSE_WIN_SHEET_VIEWPORT,
+        deviceScaleFactor: 1,
+        element: COURSE_WIN_SHEET_ELEMENT,
+        // label は渡さない。snsHeadless は label を要素の先頭に焼き込み、下余白が 64px を割る（コードレビューの P1）
       });
-      // X の画像は1枚 5 MB まで（承認の関数 160 と同じ）。超えたら撮れなかった扱い
       if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
-      shots.push(shot.png);
+      shots = [shot.png];
     } catch (error) {
-      missing.push(`${race.race_id}: ${firstLine(error.message)}${info()}`);
+      // 図を待つのと同じ 8:30 までは次の回にやり直す。過ぎたら型 a で送る（その日を落とさない）
+      if (!waitOver)
+        throw new Error(
+          `course_win_sheet_not_ready（${firstLine(error.message)}${info()}）`,
+        );
+      bFallback = `sheet_capture_failed: ${firstLine(error.message)}`;
+      courseWin = null;
+      chosen = await buildTypeA(bFallback);
+      if (!chosen.post)
+        return done({ outcome: "skipped", reason: "no_candidates", revision });
     }
   }
-  if (
-    !shots.length ||
-    (missing.length && now < new Date(`${date}T${SONAR_WAIT_UNTIL}:00+09:00`))
-  )
-    throw new Error(`sonar_not_ready（${missing.join(" / ")}）`);
+  if (!courseWin) shots = await shootSonar(chosen.post);
+  const { post, contentType, trackingUrl, variant } = chosen;
+  const caption = post.text;
+  const replyRisk = post.reply ? riskOf(post.reply) : [];
+  // 返信の文に禁止表現があれば、親も止める（リンクの無い親だけを送らない）
+  const risk = [...riskOf(caption), ...replyRisk];
   const checkedAt = now.toISOString();
-  const imagePaths = shots.map(
-    (_, i) => `today/${date}/${revision}-${i + 1}.png`,
-  );
+  const imagePaths = courseWin
+    ? [`today/${date}/${revision}-sheet.png`]
+    : shots.map((_, i) => `today/${date}/${revision}-${i + 1}.png`);
   for (const [i, png] of shots.entries()) await saveImage(imagePaths[i], png);
   const imagePath = imagePaths[0];
+
+  /** 型 a の画像: 対象レースの龍神ソナーの図。撮れないうちは何も書かない（例外で止め、次の実行でやり直す） */
+  async function shootSonar(aPost) {
+    const pngs = [];
+    const missing = [];
+    for (const race of aPost.races.slice(0, TODAY_MAX_IMAGES)) {
+      // 1枚は最悪 約75秒かかる。関数の時間（300秒）で止められると何も記録されないので、120秒を過ぎたら新しく撮らない
+      if (nowMs() - startedMs > SHOT_BUDGET_MS) {
+        missing.push(`${race.race_id}: time_budget`);
+        continue;
+      }
+      try {
+        const shot = await headless.screenshot({
+          url: `${SITE_BASE_URL}/race/${race.race_id}?tab=sonar`,
+          requiredSelectors: SONAR_READY,
+          viewport: { width: 390, height: 844 },
+          element: SONAR_ELEMENT,
+          edgeColorVar: SONAR_EDGE_COLOR_VAR,
+          label: `${t(`venues.${race.venue_code}`)}${race.race_number}R ${race.start_time.slice(0, 5)}締切`,
+        });
+        // X の画像は1枚 5 MB まで（承認の関数 160 と同じ）。超えたら撮れなかった扱い
+        if (shot.png.byteLength > 5_000_000) throw new Error("image_too_large");
+        pngs.push(shot.png);
+      } catch (error) {
+        missing.push(`${race.race_id}: ${firstLine(error.message)}${info()}`);
+      }
+    }
+    if (!pngs.length || (missing.length && !waitOver))
+      throw new Error(`sonar_not_ready（${missing.join(" / ")}）`);
+    return pngs;
+  }
   const releaseEvidence = {
     status: "released",
     url: TODAY_URL,
@@ -480,6 +684,35 @@ export async function runTodayPlan(
     today_variant: variant,
     // 型の札（PD02）。hq の毎日の PDCA は id を読む。source は schedule（型の列）か config、fallback_reason は列を使わなかった理由
     content_type: contentType,
+    // 型 b の記録（hq の比べと、言い切りの線の確かめ）。K は送る時刻での段ごとの候補数、line はその日の Bonferroni の線
+    ...(courseWin
+      ? {
+          course_win: {
+            key: courseWin.sheet.key,
+            k: courseWin.sheet.k,
+            line: courseWin.sheet.line,
+            claim: courseWin.sheet.claim,
+            tail: courseWin.sheet.tail,
+            window: courseWin.sheet.window,
+            send_at: courseWin.sheet.sendAt,
+            sheet_url: courseWin.sheetUrl,
+            featured: {
+              race_id: courseWin.sheet.featured.race_id,
+              boat_number: courseWin.sheet.featured.boat_number,
+              racer_id: courseWin.sheet.featured.racer_id,
+              runs: courseWin.sheet.featured.runs,
+              wins: courseWin.sheet.featured.wins,
+              grade: courseWin.sheet.featured.grade,
+              baseline_pct: courseWin.sheet.featured.baseline_pct,
+              z: courseWin.sheet.featured.z,
+            },
+            rows: courseWin.sheet.sections.map((sec) => ({
+              section: sec.key,
+              racers: sec.rows.map((r) => r.racer_id),
+            })),
+          },
+        }
+      : {}),
     deadline_queue: {
       deadline_at: when.deadline_at,
       expires_at: when.expires_at,
@@ -547,7 +780,7 @@ export async function runTodayPlan(
     utm_source: "x",
     utm_medium: "social",
     utm_campaign: "today_digest",
-    utm_content: date,
+    utm_content: todayUtmContent(date, contentType.sent),
     release_evidence: releaseEvidence,
   };
   let variantSaved = Boolean(variant.uuid);
@@ -752,7 +985,7 @@ export async function runTodayPlan(
             : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
-      `SNS /today（${date}）: ${head}\n${caption}${post.reply ? `\n\n（自分への返信）${post.reply}` : ""}${images
+      `SNS /today（${date}）: ${head}${bFallback ? `\n（型 b の日だったが型 a で送る: ${bFallback}）` : ""}\n${caption}${post.reply ? `\n\n（自分への返信）${post.reply}` : ""}${images
         .filter(Boolean)
         .map((url, i) => `\n画像${i + 1}: ${url}`)
         .join("")}`,
