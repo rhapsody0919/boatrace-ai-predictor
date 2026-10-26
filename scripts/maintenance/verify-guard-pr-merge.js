@@ -562,6 +562,16 @@ check(
     null,
   );
   check(
+    "確かめられなかった理由を止める理由に足す",
+    judgeE2eScope(
+      "1",
+      "full",
+      shardsSkipped,
+      "確かめられませんでした",
+    )?.reason.endsWith(" 確かめられませんでした"),
+    true,
+  );
+  check(
     "削除だけと確かめられない記事の PR は軽い組で済ませたら止める",
     judgeE2eScope(
       "1",

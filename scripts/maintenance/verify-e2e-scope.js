@@ -7,7 +7,16 @@
  * 触る PR は必ず全部。PR の側で一覧を書き換えても、master の一覧で判定すれば全部に戻る。
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -198,6 +207,59 @@ check(
       gateConfigRemovalOnly: true,
     }),
     "full",
+  );
+}
+
+// --- CLI の配線: CI のチェックアウト（HEAD）の設定を git show で読んで判定する ---
+// 一時の git リポジトリに base の設定を置き、HEAD で一覧から外す（または足す）。CI と同じく --config に base を渡す
+{
+  const script = fileURLToPath(new URL("./e2e-scope.js", import.meta.url));
+  const runCli = (headConfig) => {
+    const dir = mkdtempSync(path.join(tmpdir(), "e2e-scope-"));
+    try {
+      const git = (...args) =>
+        execFileSync(
+          "git",
+          ["-c", "user.name=t", "-c", "user.email=t@example.com", ...args],
+          { cwd: dir, stdio: "pipe" },
+        );
+      const gatePath = path.join(dir, GATE_CONFIG_PATH);
+      mkdirSync(path.dirname(gatePath), { recursive: true });
+      git("init", "-q");
+      writeFileSync(gatePath, JSON.stringify(config, null, 2));
+      git("add", ".");
+      git("commit", "-q", "-m", "base");
+      writeFileSync(gatePath, JSON.stringify(headConfig, null, 2));
+      git("commit", "-q", "-am", "head");
+      const basePath = path.join(dir, "base-config.json");
+      writeFileSync(basePath, JSON.stringify(config));
+      const filesPath = path.join(dir, "files.txt");
+      writeFileSync(
+        filesPath,
+        ["public/blog/foo.md", GATE_CONFIG_PATH].join("\n"),
+      );
+      return execFileSync(
+        process.execPath,
+        [script, "--config", basePath, "--files", filesPath],
+        { cwd: dir, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] },
+      ).trim();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+  const list = config.internalLinkGrandfathered;
+  check(
+    "CLI: HEAD が一覧から外すだけなら light",
+    runCli({ ...config, internalLinkGrandfathered: list.slice(1) }),
+    "scope=light",
+  );
+  check(
+    "CLI: HEAD が一覧に足すなら full",
+    runCli({
+      ...config,
+      internalLinkGrandfathered: [...list, "public/blog/x.md"],
+    }),
+    "scope=full",
   );
 }
 

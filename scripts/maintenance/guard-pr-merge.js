@@ -437,7 +437,7 @@ const isShardCheck = (c) => /^e2e-shard\b/.test(c?.name ?? "");
  * full なのに、e2e の集約が緑のまま e2e-shard が1つも無い・成功以外がある（skip を含む）なら止める。
  * e2e が緑でないときは judgeChecks が先に扱うので、ここでは見ない。
  */
-export function judgeE2eScope(pr, scope, checks) {
+export function judgeE2eScope(pr, scope, checks, note = "") {
   if (scope !== "full" || !Array.isArray(checks)) return null;
   if (checks.find((c) => c.name === "e2e")?.state !== "SUCCESS") return null;
   const shards = checks.filter(isShardCheck);
@@ -450,7 +450,8 @@ export function judgeE2eScope(pr, scope, checks) {
     reason:
       `PR #${pr} は master の一覧（scripts/content/content-pr-gate.json）では e2e を全部流すべき差分ですが、` +
       `全部の組が成功していません（${seen}）。軽い組・0件で済ませた e2e は、この差分には足りません。` +
-      `ワークフロー（.github/workflows/e2e-smoke-test.yml）や一覧を PR の側で変えていないか確かめ、e2e を全部流してからマージしてください。`,
+      `ワークフロー（.github/workflows/e2e-smoke-test.yml）や一覧を PR の側で変えていないか確かめ、e2e を全部流してからマージしてください。` +
+      (note ? ` ${note}` : ""),
   };
 }
 
@@ -486,12 +487,26 @@ function fetchPrFiles(pr) {
 function masterE2eScope(pr, files) {
   gitIn(["fetch", "-q", "origin", "master"]);
   const raw = gitIn(["show", `origin/master:${GATE_CONFIG_PATH}`]);
+  let config;
   try {
-    return classifyE2eScope(files, JSON.parse(raw ?? ""), {
-      gateConfigRemovalOnly: prGateConfigRemovalOnly(pr, files),
+    config = JSON.parse(raw ?? "");
+    const plain = classifyE2eScope(files, config).scope;
+    if (plain !== "full" || !files.includes(GATE_CONFIG_PATH))
+      return { scope: plain };
+    // 設定の変更が免除の一覧から外すだけなら軽い組で足りる差分か。足りない差分なら gh を呼ばずに full
+    const ifRemoval = classifyE2eScope(files, config, {
+      gateConfigRemovalOnly: true,
     }).scope;
+    if (ifRemoval === "full") return { scope: "full" };
+    if (prGateConfigRemovalOnly(pr, files)) return { scope: ifRemoval };
+    return {
+      scope: "full",
+      note:
+        `差分の ${GATE_CONFIG_PATH} が免除の一覧から外すだけの変更かを確かめられませんでした` +
+        "（外すだけでない、または gh api で PR の分岐元と先頭の設定を読めない）。外すだけの変更で、読み取りの一時的な失敗なら、もう一度マージを試してください。",
+    };
   } catch {
-    return "full";
+    return { scope: "full" };
   }
 }
 
@@ -647,9 +662,11 @@ function main() {
       const checks = fetchChecks(pr);
       const gate = checks && judgeChecks(pr, checks);
       if (gate) respond(gate.decision, gate.reason);
-      const scope =
-        files && checks && judgeE2eScope(pr, masterE2eScope(pr, files), checks);
-      if (scope) respond(scope.decision, scope.reason);
+      if (files && checks) {
+        const master = masterE2eScope(pr, files);
+        const scope = judgeE2eScope(pr, master.scope, checks, master.note);
+        if (scope) respond(scope.decision, scope.reason);
+      }
     }
 
     const data = checkWorktreeData(pr, command);

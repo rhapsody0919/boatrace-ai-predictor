@@ -187,7 +187,7 @@ computeContentSha256(files);
 | 条件 | 関門の見方 |
 |---|---|
 | 変更（M）である | 追加・削除・種類の変更は error |
-| `internalLinkGrandfathered` から行を外すだけ | base（分岐元）と HEAD の設定を JSON として読み、HEAD が「base の一覧から外した行を除いたもの」と完全に一致する。一覧の外のキー・キーの順・残った行の順が変わる、行を足す・重複させる、何も外さない（整形だけ）は error |
+| `internalLinkGrandfathered` から行を外すだけ | base（分岐元）と HEAD の設定を JSON として読み、HEAD が「base の一覧から外した行を除いたもの」と完全に一致する。一覧の外のキー・キーの順・残った行の順が変わる、行を足す・重複させる、何も外さない（整形だけ）は error。比べるのは JSON の値なので、行を外すのと同時に空白・字下げを変えても通る（値は同じ） |
 | 外した行が、この PR の manifest の記事 | 外した各パスが `public/blog/<name>.md` の形で、manifest の `paths` にある（日本語版・翻訳版のどちらも可。`paths` は1記事なので、他の記事の行は外せない） |
 | 外した記事の改稿後の本文に内部リンクがある | HEAD の .md を、上の「内部リンク」の関門と同じ数え方（`countInternalLinks`）で数えて1本以上 |
 
