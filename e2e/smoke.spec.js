@@ -5383,28 +5383,49 @@ test.describe("レース詳細のモータ情報タブ: 連対率の桁（BOA-47
     // 2桁で出すと同じモーターが 54.80 と 54.84 に見えるため1桁に揃えた
     // 列は位置でなく見出しで引く。会場内順位の列（BOA-428、「2位/65」）は会場のスナップショットが
     // あるときだけ出るので、位置で決め打ちすると録画の日によって別の列を読む（BOA-929）
-    const rateColumns = await table.locator("thead th").evaluateAll((ths) =>
-      ths
+    // 見出しと本体は同じ1回の evaluate で読む。会場内順位の列は一覧表を出したあとに
+    // スナップショットの取得を待って差し込まれる（MotorConditionChart の setVenueRanks）。
+    // 見出しを数えたあとで列が増えると、nth-child で読む列が1つ右へずれ、「3位/65」を
+    // 2連率として読んでいた（2026-10-26、e2e-shard で繰り返し落ちた）
+    const cells = await table.evaluate((tableEl) => {
+      const heads = [...tableEl.querySelectorAll("thead th")];
+      const rateIndexes = heads
         .map((th, i) => ({
           i,
           text: th.textContent.trim(),
           venueRank: th.classList.contains("motor-venue-rank-head"),
         }))
         .filter((h) => /連率/.test(h.text) && !h.venueRank)
-        .map((h) => h.i + 1),
-    );
-    expect(rateColumns.length).toBeGreaterThan(0);
-    for (const column of rateColumns) {
-      const cells = table.locator(`tbody tr td:nth-child(${column})`);
-      const count = await cells.count();
-      expect(count).toBeGreaterThan(0);
-      for (let i = 0; i < count; i += 1) {
+        .map((h) => h.i);
+      const rows = [...tableEl.querySelectorAll("tbody tr")].map((tr) => [
+        ...tr.children,
+      ]);
+      return {
+        headCount: heads.length,
+        rateIndexes,
+        rows: rows.map((tds) => ({
+          width: tds.length,
+          texts: rateIndexes.map((i) => ({
+            column: i + 1,
+            header: heads[i].textContent.trim(),
+            text: (tds[i]?.innerText ?? "").trim(),
+          })),
+        })),
+      };
+    });
+    expect(cells.rateIndexes.length).toBeGreaterThan(0);
+    expect(cells.rows.length).toBeGreaterThan(0);
+    for (const row of cells.rows) {
+      // 本体の列の数が見出しと違えば、位置で引いた値は別の列のもの
+      expect(row.width, "見出しと本体の列の数").toBe(cells.headCount);
+      for (const { column, header, text } of row.texts) {
         // セルには数値のあとに注記・札（「前の節までの走り（N走）で出た数字」「初下ろし」等）が
         // 付くことがある。桁を見るのは先頭の数値だけ
-        const text = (await cells.nth(i).innerText()).trim();
         const value = text.match(/^\d+(?:\.\d+)?/)?.[0];
         if (value === undefined) continue;
-        expect(value, `${column}列目: ${text}`).toMatch(/^\d+\.\d$/);
+        expect(value, `${column}列目（${header}）: ${text}`).toMatch(
+          /^\d+\.\d$/,
+        );
       }
     }
   });
