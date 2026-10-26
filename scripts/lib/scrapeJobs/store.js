@@ -38,7 +38,12 @@ import { isColumnMissingError } from "../optionalColumns.js";
 export const FETCH_STOP_RECHECK_MS = 10 * 60 * 1000;
 
 /** マイグレーション178 で足した host:… の行の列（非常停止・段階）。どれかが無いエラーなら、178 の前として読み直す */
-const BREAKER_178_COLUMNS = ["fetch_stop", "breaker_level", "breaker_opened_at"];
+const BREAKER_178_COLUMNS = [
+  "fetch_stop",
+  "breaker_level",
+  "breaker_opened_at",
+  "breaker_closed_at",
+];
 
 /** last_tick_at を更新する最小の間隔（毎分書くと、同じ行が1日1,000回更新され、無駄なdead tupleになる） */
 export const TICK_WRITE_INTERVAL_MS = 5 * 60 * 1000;
@@ -277,7 +282,7 @@ export function createSupabaseStore(client) {
         let error;
         if (Date.now() >= fetchStopMissingUntil) {
           ({ data, error } = await select(
-            "breaker_open_until, fetch_stop, breaker_level, breaker_opened_at",
+            "breaker_open_until, fetch_stop, breaker_level, breaker_opened_at, breaker_closed_at",
           ));
           if (error && isColumnMissingError(error, BREAKER_178_COLUMNS)) {
             // 178 の前: しばらく（FETCH_STOP_RECHECK_MS）は列を入れずに読む（キーごと・10秒ごとの2往復を避ける）
@@ -290,11 +295,13 @@ export function createSupabaseStore(client) {
         if (error) throw wrap(`ブレーカーの読み取り(${hostKey})`, error);
         const until = data?.breaker_open_until;
         const openedAt = data?.breaker_opened_at;
+        const closedAt = data?.breaker_closed_at;
         return {
           untilMs: until ? new Date(until).getTime() : 0,
           fetchStop: data?.fetch_stop === true,
           level: typeof data?.breaker_level === "number" ? data.breaker_level : 0,
           openedAtMs: openedAt ? new Date(openedAt).getTime() : 0,
+          closedAtMs: closedAt ? new Date(closedAt).getTime() : 0,
         };
       },
       // level（403 のとき）を渡すと段階と開いた時刻も書く。fetch_stop・mode は書かない（人が立てた値・既定の off に触れない）。
@@ -326,14 +333,28 @@ export function createSupabaseStore(client) {
         }
         if (error) throw wrap(`ブレーカーの開放(${hostKey})`, error);
       },
-      async close(hostKey) {
-        const { error } = await client
-          .from(STATE)
-          .update({
-            breaker_open_until: null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("job", hostKey);
+      // closed を渡すと閉じた時刻（breaker_closed_at、178）も書く。178 の前（PGRST204、列名つき）は外して書き直す
+      async close(hostKey, closed) {
+        const patch = {
+          breaker_open_until: null,
+          updated_at: new Date().toISOString(),
+        };
+        const update = (p) => client.from(STATE).update(p).eq("job", hostKey);
+        let { error } = await update(
+          closed
+            ? {
+                ...patch,
+                breaker_closed_at: new Date(closed.closedAtMs).toISOString(),
+              }
+            : patch,
+        );
+        if (
+          error &&
+          closed &&
+          isColumnMissingError(error, ["breaker_closed_at"])
+        ) {
+          ({ error } = await update(patch));
+        }
         if (error) throw wrap(`ブレーカーの解除(${hostKey})`, error);
       },
     },

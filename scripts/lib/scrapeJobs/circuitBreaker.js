@@ -19,11 +19,11 @@
  * 拒否（403）の扱い（BOA-1145）: 取得先が特定のページだけを 403 で拒んだ（2026-10-26 の beforeinfo）。過負荷の 429/503 と
  * 違い、待っても数分では戻らない見込みが高く、叩き続けるほど拒否が長引く恐れがある。recordBlocked は1回で開き、
  * 開く期間を段階（level）で決める: blockOpenMs（30分）× 2^(段階−1)、上限 blockMaxOpenMs（6時間）。つまり 30分→1時間→
- * 2時間→4時間→6時間（spec §5.1）。段階と最後に開いた時刻は DB（breaker_level・breaker_opened_at、マイグレーション178）に残し、
+ * 2時間→4時間→6時間（spec §5.1。ホスト全体のキーは60分から）。段階と最後に開いた時刻は DB（breaker_level・breaker_opened_at、マイグレーション178）に残し、
  * 別の起動（別プロセス）も同じ段階から上げる（以前は段階がプロセスの中だけで、起動ごとに30分に戻っていた）。
  * 段階を下げる: 成功1回で0にしない。最後に開いてから stepDownMs（24時間）ごとに1段下げる（読むときに引く遅延評価。
- * 書き込みは要らない。effectiveBlockLevel）。閉じた後の絞り: 自動で閉じた後 throttleMs（24時間）は isThrottled が true を
- * 返し、共通ラッパがそのジョブの1起動の上限（claimLimit）を半分にする（spec §5.2）。
+ * 書き込みは要らない。effectiveBlockLevel）。閉じた後の絞り: 半開の試行が成功して閉じた時刻（breaker_closed_at）から throttleMs（24時間）は
+ * isThrottled が true を返し、共通ラッパがそのジョブの1起動の上限（claimLimit）を半分にする（spec §5.2）。
  * 期限後は同じ半開（1件だけ試行）。キーは呼び出し側が決める（politeFetch はページのパス単位にし、同じホストの他のページを巻き込まない）。
  * 178 の前（列が無い）は段階を DB に残せず、プロセスの中だけで上げる（store.open が列を外して書き直す）。
  *
@@ -75,7 +75,13 @@ const finiteOr0 = (v) => (typeof v === "number" && Number.isFinite(v) ? v : 0);
  */
 export function normalizeBreakerRead(value) {
   if (typeof value === "number")
-    return { untilMs: value, fetchStop: false, level: 0, openedAtMs: 0 };
+    return {
+      untilMs: value,
+      fetchStop: false,
+      level: 0,
+      openedAtMs: 0,
+      closedAtMs: 0,
+    };
   if (value && typeof value === "object" && typeof value.untilMs === "number") {
     const level = finiteOr0(value.level);
     return {
@@ -83,6 +89,7 @@ export function normalizeBreakerRead(value) {
       fetchStop: value.fetchStop === true,
       level: Math.min(MAX_BREAKER_LEVEL, Math.max(0, Math.trunc(level))),
       openedAtMs: finiteOr0(value.openedAtMs),
+      closedAtMs: finiteOr0(value.closedAtMs),
     };
   }
   return null;
@@ -111,7 +118,7 @@ export function blockDurationMs(level, openMs, maxOpenMs) {
  *   数だけを返すと fetchStop=false・段階0として扱う
  * @property {(hostKey: string, untilMs: number, reason: string, level?: {level: number, openedAtMs: number}) => Promise<void>} open
  *   level を渡すと breaker_level・breaker_opened_at も書く（403 のとき。429/503 は渡さない）
- * @property {(hostKey: string) => Promise<void>} close
+ * @property {(hostKey: string, closed?: {closedAtMs: number}) => Promise<void>} close closed を渡すと breaker_closed_at も書く
  */
 
 /**
@@ -131,8 +138,20 @@ export function createCircuitBreaker({
   blockMaxOpenMs = 6 * 60 * 60 * 1000,
   stepDownMs = 24 * 60 * 60 * 1000,
   throttleMs = 24 * 60 * 60 * 1000,
+  hostBlockOpenMs = 60 * 60 * 1000,
   readTtlMs = 10 * 1000,
 } = {}) {
+  // ホスト全体のキー（host:boatrace.jp）か、ページのパスのキー（host:boatrace.jp/owpc/…）かで、開く期間の基準を変える
+  const blockBaseOf = (key) =>
+    String(key).includes("/") ? blockOpenMs : hostBlockOpenMs;
+  const blockDurationOf = (key, level) =>
+    blockDurationMs(level, blockBaseOf(key), blockMaxOpenMs);
+  // 期間が上限に届く段階より上へは上げない（上げても期間は同じで、下げに余計な日数がかかるだけ。審査 P3）
+  const levelCapOf = (key) =>
+    Math.min(
+      MAX_BREAKER_LEVEL,
+      Math.max(1, Math.ceil(Math.log2(blockMaxOpenMs / blockBaseOf(key))) + 1),
+    );
   /** @type {Map<string, {events: number[], consecutive: number, openUntil: number, openCount: number, probing: boolean, fetchStop: boolean, level: number, openedAt: number, lastRead: number}>} */
   const hosts = new Map();
   const stateOf = (hostKey) => {
@@ -148,6 +167,7 @@ export function createCircuitBreaker({
         // 403 で開いた段階と、最後に開いた時刻（DB の breaker_level・breaker_opened_at と同期する）
         level: 0,
         openedAt: 0,
+        closedAt: 0,
         lastRead: -Infinity,
       };
       hosts.set(hostKey, s);
@@ -167,9 +187,10 @@ export function createCircuitBreaker({
     }
   };
 
-  const refresh = async (hostKey, s) => {
+  // force: TTL を無視して読む（書く前に、別の起動が書いた長い期限を短く上書きしないため）
+  const refresh = async (hostKey, s, { force = false } = {}) => {
     if (!store) return;
-    if (now() - s.lastRead < readTtlMs) return;
+    if (!force && now() - s.lastRead < readTtlMs) return;
     s.lastRead = now();
     const read = normalizeBreakerRead(
       await safe("状態の読み取り", () => store.read(hostKey)),
@@ -184,6 +205,7 @@ export function createCircuitBreaker({
     } else if (read.openedAtMs === s.openedAt && read.level > s.level) {
       s.level = read.level;
     }
+    if (read.closedAtMs > s.closedAt) s.closedAt = read.closedAtMs;
   };
 
   return {
@@ -218,7 +240,9 @@ export function createCircuitBreaker({
       if (!shouldOpen) return;
       s.openCount++;
       const duration = Math.min(maxOpenMs, openMs * 2 ** (s.openCount - 1));
-      s.openUntil = t + duration;
+      // 別の起動が開いた長い期限（403 のホストの60分等）を短く上書きしない（書く前に DB を読み、長い方を書く）
+      await refresh(hostKey, s, { force: true });
+      s.openUntil = Math.max(s.openUntil, t + duration);
       s.probing = false;
       s.events = [];
       s.consecutive = 0;
@@ -231,28 +255,24 @@ export function createCircuitBreaker({
 
     /**
      * 拒否（403）を受けた。1回で開く。段階を今の段階（24時間ごとに1段下げた値）＋1にし、開く期間は
-     * openMs × 2^(段階−1)、上限 maxOpenMs（既定は blockOpenMs・blockMaxOpenMs）。
+     * 基準 × 2^(段階−1)、上限 blockMaxOpenMs。基準は、ページのパスのキー（host:…/パス）が blockOpenMs（30分）、
+     * ホスト全体のキー（host:…）が hostBlockOpenMs（60分。カナリアの 403 でホストを開くとき。spec §5.1）。
+     * 書く前に DB を読み直し（TTL を無視）、別の起動が上げた段階・長い期限を採る。
      * 期限・段階・開いた時刻は store に書き、他のジョブ・他の起動と共有する（半開の試行が 403 でも、ここで段階を上げて開き直す）
      * @param {string} hostKey
      * @param {string} [reason]
-     * @param {{openMs?: number, maxOpenMs?: number}} [durations] ホスト全体を開くとき等、期間を変える（spec §5.1 のホストは60分から）
      */
-    async recordBlocked(hostKey, reason = "HTTP 403", durations = {}) {
+    async recordBlocked(hostKey, reason = "HTTP 403") {
       const s = stateOf(hostKey);
+      await refresh(hostKey, s, { force: true });
       const t = now();
       const level = Math.min(
-        MAX_BREAKER_LEVEL,
+        levelCapOf(hostKey),
         effectiveBlockLevel(s.level, s.openedAt, t, stepDownMs) + 1,
       );
       s.level = level;
       s.openedAt = t;
-      s.openUntil =
-        t +
-        blockDurationMs(
-          level,
-          durations.openMs ?? blockOpenMs,
-          durations.maxOpenMs ?? blockMaxOpenMs,
-        );
+      s.openUntil = Math.max(s.openUntil, t + blockDurationOf(hostKey, level));
       s.probing = false;
       s.events = [];
       s.consecutive = 0;
@@ -267,18 +287,18 @@ export function createCircuitBreaker({
     },
 
     /**
-     * 自動で閉じた後の絞りの期間か（spec §5.2「閉じた後24時間は1起動の上限を半分」）。check の後に呼ぶ（DB の段階は
-     * check の読み取りで同期済み）。開いている間（期限の前）は false（そもそも取らない）。
-     * 起点は、最後に開いた時刻＋その段階の期間（＝自動で閉じうる最初の時刻）。そこから throttleMs の間 true
+     * 自動で閉じた後の絞りの期間か（spec §5.2「閉じた後24時間は1起動の上限を半分」）。check の後に呼ぶ（DB の段階・
+     * 閉じた時刻は check の読み取りで同期済み）。開いている間（期限の前）は false（そもそも取らない）。
+     * 起点は、最後に開いた後で半開の試行が成功して閉じた時刻（breaker_closed_at）。そこから throttleMs の間 true。
+     * （段階の下げとは別に数える。段階1で30分開いて閉じても、閉じてから24時間は絞る）
      */
     isThrottled(hostKey) {
       const s = stateOf(hostKey);
-      if (!(s.level > 0) || !(s.openedAt > 0)) return false;
+      if (!(s.level > 0) || !(s.closedAt > 0) || s.closedAt < s.openedAt)
+        return false;
       const t = now();
       if (s.openUntil > t) return false;
-      const closableAt =
-        s.openedAt + blockDurationMs(s.level, blockOpenMs, blockMaxOpenMs);
-      return t >= closableAt && t < closableAt + throttleMs;
+      return t - s.closedAt < throttleMs;
     },
 
     /** 正常な応答を受けた（429/503 以外） */
@@ -286,12 +306,16 @@ export function createCircuitBreaker({
       const s = stateOf(hostKey);
       s.consecutive = 0;
       if (!s.probing) return;
-      // 半開の試行が成功: 閉じる
+      // 半開の試行が成功: 閉じる（閉じた時刻は、閉じた後24時間の絞りの起点。DB の breaker_closed_at、178）
       s.probing = false;
       s.openUntil = 0;
       s.openCount = 0;
       s.events = [];
-      if (store) await safe("クローズの記録", () => store.close(hostKey));
+      s.closedAt = now();
+      if (store)
+        await safe("クローズの記録", () =>
+          store.close(hostKey, { closedAtMs: s.closedAt }),
+        );
     },
 
     /**
@@ -313,6 +337,7 @@ export function createCircuitBreaker({
         level: s.level,
         effectiveLevel: effectiveBlockLevel(s.level, s.openedAt, now(), stepDownMs),
         openedAt: s.openedAt,
+        closedAt: s.closedAt,
         consecutive: s.consecutive,
         recentFailures: s.events.length,
       };

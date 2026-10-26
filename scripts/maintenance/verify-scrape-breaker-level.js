@@ -6,11 +6,13 @@
  *   (b) 段階の下げ: 最後に開いてから24時間ごとに1段下げる（成功1回で0にしない）
  *   (c) 段階は DB に残り、別の起動（別プロセス）も同じ段階から上げる（以前は起動ごとに30分へ戻っていた）
  *   (d) 24時間 403 が無かった後の 403 は、下げた段階＋1
- *   (e) 閉じた後24時間の絞り: isThrottled は、開いている間は false、閉じうる時刻から24時間 true、その後 false
+ *   (e) 閉じた後24時間の絞り: isThrottled は、開いている間は false、閉じた時刻から24時間 true、その後 false（遅れて閉じても同じ。審査 P2-3）
  *   (f) 共通ラッパ: 絞りの間は claimLimit を半分（切り上げ）で claim し、応答に throttled を出す。絞りでなければ上書きしない
  *   (g) store: 403 の open は段階と時刻も書く・178 の前（PGRST204）は段階を外して書き直す・429 の open は段階を書かない・
  *       read は段階を返す
  *   (h) 半開の試行が成功して閉じても、段階は消えない（下げるのは時間だけ）
+ *   (i) 別の起動の 429 の開放が、403 で開いたホストの長い期限を短く上書きしない（審査 P2-1）
+ *   (j) close は閉じた時刻（breaker_closed_at）も書く。178 の前は外して書き直す
  *
  * 実行: node scripts/maintenance/verify-scrape-breaker-level.js
  */
@@ -59,9 +61,22 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
     opened.push((b.snapshot(KEY).openUntil - c.t) / MIN);
   }
   check(
-    "(a) 既定の recordBlocked も同じ順（上限6時間）",
-    show(opened) === show([30, 60, 120, 240, 360, 360]),
-    show(opened),
+    "(a) 既定の recordBlocked も同じ順（上限6時間）。段階は期間が上限に届く5で止める（下げに余計な日数をかけない）",
+    show(opened) === show([30, 60, 120, 240, 360, 360]) &&
+      b.snapshot(KEY).level === 5,
+    show({ opened, level: b.snapshot(KEY).level }),
+  );
+  const h = createCircuitBreaker({ now: () => c.t });
+  const hostOpened = [];
+  for (let i = 0; i < 5; i++) {
+    await h.recordBlocked("host:boatrace.jp");
+    hostOpened.push((h.snapshot("host:boatrace.jp").openUntil - c.t) / MIN);
+  }
+  check(
+    "(a) ホスト全体のキーは 60分→2時間→4時間→6時間、段階は4で止める",
+    show(hostOpened) === show([60, 120, 240, 360, 360]) &&
+      h.snapshot("host:boatrace.jp").level === 4,
+    show({ hostOpened, level: h.snapshot("host:boatrace.jp").level }),
   );
 }
 
@@ -161,11 +176,35 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
   await b.check(KEY).catch(() => {});
   await b.recordSuccess(KEY); // 半開の試行が成功して閉じた
   const after = b.isThrottled(KEY);
-  c.t = T0 + 30 * MIN + 24 * HOUR - 1;
+  c.t = T0 + 31 * MIN + 24 * HOUR - 1;
   const lastMoment = b.isThrottled(KEY);
-  c.t = T0 + 30 * MIN + 24 * HOUR;
+  c.t = T0 + 31 * MIN + 24 * HOUR;
   const ended = b.isThrottled(KEY);
   const fresh = createCircuitBreaker({ now: () => c.t });
+  // 審査 P2-3: 段階4で開いた後、30時間あけて人が再開した（期限を今にした）ときも、閉じた時刻から24時間絞る
+  const c2 = { t: T0 };
+  const store2 = createMemoryStore();
+  store2.breakerStore.levels[KEY] = { level: 4, openedAtMs: T0 };
+  store2.breakerStore.byKey[KEY] = T0 + 30 * HOUR; // 人が期限を今にする時刻
+  c2.t = T0 + 30 * HOUR;
+  const other = createCircuitBreaker({
+    store: store2.breakerStore,
+    now: () => c2.t,
+  });
+  await other.check(KEY); // 半開の試行を予約
+  await other.recordSuccess(KEY);
+  c2.t += 23 * HOUR;
+  const another = createCircuitBreaker({
+    store: store2.breakerStore,
+    now: () => c2.t,
+  });
+  await another.check(KEY);
+  const lateClose = another.isThrottled(KEY);
+  check(
+    "(e) 遅れて閉じても、閉じた時刻（breaker_closed_at、別の起動も読む）から24時間は絞る",
+    lateClose === true && store2.breakerStore.closedAt[KEY] === T0 + 30 * HOUR,
+    show(store2.breakerStore),
+  );
   check(
     "(e) 絞り: 開いている間は false、閉じた後24時間は true、その後 false、403 を受けていないキーは false",
     during === false &&
@@ -180,11 +219,12 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
 // (f) 共通ラッパ
 {
   const c = { t: T0 + 2 * HOUR };
-  const mkRun = async (levels) => {
+  const mkRun = async (levels, closedAt = {}) => {
     const store = createMemoryStore({
       rows: { exhibition: { job: "exhibition", mode: "live" } },
     });
     Object.assign(store.breakerStore.levels, levels);
+    Object.assign(store.breakerStore.closedAt, closedAt);
     const r = await runScrapeJob({
       job: "exhibition",
       store,
@@ -194,7 +234,10 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
     });
     return { r, claim: store.calls.find((x) => x.name === "claimSlots") };
   };
-  const t1 = await mkRun({ [KEY]: { level: 1, openedAtMs: T0 } });
+  const t1 = await mkRun(
+    { [KEY]: { level: 1, openedAtMs: T0 } },
+    { [KEY]: T0 + 31 * MIN },
+  );
   check(
     "(f) 絞りの間は claimLimit を半分（exhibition 8→4）で claim し、応答に throttled を出す",
     t1.claim?.limit === 4 &&
@@ -335,7 +378,7 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
         r.openedAtMs === T0 &&
         r.untilMs === 0 &&
         log[0].cols ===
-          "breaker_open_until, fetch_stop, breaker_level, breaker_opened_at",
+          "breaker_open_until, fetch_stop, breaker_level, breaker_opened_at, breaker_closed_at",
       show({ r, log }),
     );
   }
@@ -357,6 +400,58 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
       show({ r, log }),
     );
   }
+}
+
+// (i) 審査 P2-1: 別の起動の 429 の開放が、403 で開いたホストの長い期限を短く上書きしない
+{
+  const c = { t: T0 };
+  const store = createMemoryStore();
+  const HOST = "host:boatrace.jp";
+  const a = createCircuitBreaker({ store: store.breakerStore, now: () => c.t });
+  await a.check(HOST); // A は「閉じている」を読んで TTL の間持つ
+  const b = createCircuitBreaker({ store: store.breakerStore, now: () => c.t });
+  await b.recordBlocked(HOST, "canary HTTP 403"); // B がホストを60分開く
+  c.t += 2000;
+  for (let i = 0; i < 3; i++) await a.recordFailure(HOST, "HTTP 429");
+  check(
+    "(i) 別の起動の 429 の開放は、DB の長い期限（403 の60分）を短く上書きしない",
+    store.breakerStore.byKey[HOST] === T0 + 60 * MIN &&
+      a.snapshot(HOST).openUntil === T0 + 60 * MIN,
+    show({ db: store.breakerStore.byKey, a: a.snapshot(HOST) }),
+  );
+}
+// (j) close が閉じた時刻を書く・178 の前は外して書き直す
+{
+  const log = [];
+  const responses = [
+    {
+      error: {
+        code: "PGRST204",
+        message:
+          "Could not find the 'breaker_closed_at' column of 'scrape_job_state' in the schema cache",
+      },
+    },
+    { error: null },
+  ];
+  const client = {
+    from() {
+      return {
+        update(p) {
+          log.push(p);
+          return { eq: async () => responses.shift() };
+        },
+      };
+    },
+  };
+  await createSupabaseStore(client).breakerStore.close(KEY, { closedAtMs: T0 });
+  check(
+    "(j) close は breaker_closed_at も書き、178 の前は外して書き直す",
+    log.length === 2 &&
+      log[0].breaker_closed_at === new Date(T0).toISOString() &&
+      log[0].breaker_open_until === null &&
+      !("breaker_closed_at" in log[1]),
+    show(log),
+  );
 }
 
 if (failures > 0) {
