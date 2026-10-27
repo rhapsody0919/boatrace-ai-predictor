@@ -8,7 +8,8 @@
 --   breaker_level・breaker_opened_at・last_error は、期限を決めた側（新しい期限が今の期限以上のとき）の値にする。段階を GREATEST に
 --   しないのは、DB の段階は24時間ごとに読む側で下げる（遅延評価）ので、生の段階の大きい方を残すと下げが効かなくなるため。
 --   p_level が NULL なら段階・開いた時刻は変えない。fetch_stop・mode・breaker_closed_at は書かない（人が立てた値・既定の off に触れない）。
---   戻り値は書いた後の breaker_open_until（呼び出し側が「DB の値」として覚える）。
+--   戻り値は書いた後の breaker_open_until・breaker_level・breaker_opened_at（1行。呼び出し側が「DB の値」として覚え、別の起動の
+--   長い期限が勝ったときは段階・開いた時刻もその値にそろえる。期限しか返さないと、負けた側が段階を1つ低く持ち続ける。system-architect の審査 P3-1）。
 --
 -- コードは 184 の前でも動く: store.js の breakerStore.open は、この関数が無いエラー（PGRST202・42883、関数名つき）のときだけ今の upsert に
 --   戻る（scripts/maintenance/verify-scrape-breaker-greatest.js）。
@@ -20,6 +21,9 @@
 --   SELECT p.proname, pg_get_function_identity_arguments(p.oid), p.prosecdef FROM pg_proc p WHERE p.proname = 'scrape_breaker_open';
 --   期待: 1行、引数 (p_job text, p_until timestamp with time zone, p_reason text, p_level smallint, p_opened_at timestamp with time zone)、prosecdef=false
 --   SELECT has_function_privilege('anon', 'public.scrape_breaker_open(text,timestamptz,text,smallint,timestamptz)', 'EXECUTE');  期待: false
+--   SELECT has_function_privilege('authenticated', 'public.scrape_breaker_open(text,timestamptz,text,smallint,timestamptz)', 'EXECUTE');  期待: false
+--   SELECT has_function_privilege('service_role', 'public.scrape_breaker_open(text,timestamptz,text,smallint,timestamptz)', 'EXECUTE');  期待: true
+--   （service_role に EXECUTE が無いと RPC は 42501 で失敗し、upsert には戻らないので、ブレーカーが DB に書かれなくなる。審査 P3-3）
 --
 -- 戻し方（コードは関数が無ければ upsert に戻る）:
 --   DROP FUNCTION IF EXISTS public.scrape_breaker_open(TEXT, TIMESTAMPTZ, TEXT, SMALLINT, TIMESTAMPTZ);
@@ -32,7 +36,7 @@ CREATE OR REPLACE FUNCTION public.scrape_breaker_open(
   p_level SMALLINT DEFAULT NULL,
   p_opened_at TIMESTAMPTZ DEFAULT NULL
 )
-RETURNS TIMESTAMPTZ
+RETURNS TABLE (breaker_open_until TIMESTAMPTZ, breaker_level SMALLINT, breaker_opened_at TIMESTAMPTZ)
 LANGUAGE sql
 SECURITY INVOKER
 SET search_path = public
@@ -50,7 +54,7 @@ AS $$
         AND EXCLUDED.breaker_open_until >= COALESCE(s.breaker_open_until, '-infinity'::timestamptz)
       THEN p_opened_at ELSE s.breaker_opened_at END,
     updated_at = now()
-  RETURNING s.breaker_open_until;
+  RETURNING s.breaker_open_until, s.breaker_level, s.breaker_opened_at;
 $$;
 
 COMMENT ON FUNCTION public.scrape_breaker_open(TEXT, TIMESTAMPTZ, TEXT, SMALLINT, TIMESTAMPTZ) IS

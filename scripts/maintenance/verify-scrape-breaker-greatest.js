@@ -59,10 +59,10 @@ await db.exec(
 const call = async (job, until, reason, level = null, openedAt = null) =>
   (
     await db.query(
-      "SELECT public.scrape_breaker_open($1, $2::timestamptz, $3, $4::smallint, $5::timestamptz) AS u",
+      "SELECT * FROM public.scrape_breaker_open($1, $2::timestamptz, $3, $4::smallint, $5::timestamptz)",
       [job, until, reason, level, openedAt],
     )
-  ).rows[0].u;
+  ).rows[0].breaker_open_until;
 const row = async (job) =>
   (await db.query("SELECT * FROM scrape_job_state WHERE job = $1", [job]))
     .rows[0];
@@ -173,7 +173,16 @@ const H = "host:boatrace.jp";
   const T = Date.parse("2026-10-27T03:00:00Z");
   {
     const { client, log } = mkClient([
-      { data: "2026-10-27T09:00:00+00:00", error: null },
+      {
+        data: [
+          {
+            breaker_open_until: "2026-10-27T09:00:00.123456+00:00",
+            breaker_level: 4,
+            breaker_opened_at: "2026-10-27T03:00:00+00:00",
+          },
+        ],
+        error: null,
+      },
     ]);
     const r = await createSupabaseStore(client).breakerStore.open(
       H,
@@ -185,12 +194,15 @@ const H = "host:boatrace.jp";
       },
     );
     check(
-      "(f) open は RPC を呼び、書いた後の DB の期限を返す",
+      "(f) open は RPC を呼び、書いた後の DB の期限（文字列のまま）・段階・開いた時刻を返す",
       log.length === 1 &&
         log[0].name === "scrape_breaker_open" &&
         log[0].args.p_level === 1 &&
         log[0].args.p_until === new Date(T + 5 * 60_000).toISOString() &&
-        r.untilMs === Date.parse("2026-10-27T09:00:00Z"),
+        r.untilMs === Date.parse("2026-10-27T09:00:00.123Z") &&
+        r.untilRaw === "2026-10-27T09:00:00.123456+00:00" &&
+        r.level === 4 &&
+        r.openedAtMs === Date.parse("2026-10-27T03:00:00Z"),
       show({ log, r }),
     );
   }
@@ -246,15 +258,22 @@ const H = "host:boatrace.jp";
   const b = createCircuitBreaker({
     store: {
       read: async () => ({ untilMs: 0, fetchStop: false, untilRaw: null }),
-      open: async () => ({ untilMs: sixHours }),
+      open: async () => ({
+        untilMs: sixHours,
+        untilRaw: "2026-10-27T09:00:00.000123+00:00",
+        level: 3,
+        openedAtMs: T - 1000,
+      }),
       close: async () => true,
     },
     now: () => T,
   });
   for (let i = 0; i < 3; i++) await b.recordFailure(H, "HTTP 429");
   check(
-    "(h) DB が返した長い期限（別の起動の6時間）を、自分の期限として採る",
-    b.snapshot(H).openUntil === sixHours,
+    "(h) DB が返した長い期限（別の起動の6時間）を、その側の段階・開いた時刻とともに採る（審査 P3-1）",
+    b.snapshot(H).openUntil === sixHours &&
+      b.snapshot(H).level === 3 &&
+      b.snapshot(H).openedAt === T - 1000,
     show(b.snapshot(H)),
   );
 }

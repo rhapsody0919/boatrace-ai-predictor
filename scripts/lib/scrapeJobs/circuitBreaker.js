@@ -297,10 +297,21 @@ export function createCircuitBreaker({
   // store.open の戻り値（184 の RPC は書いた後の DB の期限 {untilMs}。別の起動の長い期限が勝ったらその値）から、書けた期限を決める
   const wroteUntil = (s, result) => ({
     untilMs: Math.max(s.openUntil, result?.untilMs ?? 0),
+    // 別の起動の長い期限が勝ったら、その側の段階・開いた時刻も採る（審査 P3-1）
+    won: (result?.untilMs ?? 0) > s.openUntil,
+    untilRaw: result?.untilRaw,
+    level: result?.level,
+    openedAtMs: result?.openedAtMs,
   });
   const adoptWritten = (s, wrote) => {
+    if (wrote.won) {
+      if (typeof wrote.level === "number") s.level = wrote.level;
+      if (typeof wrote.openedAtMs === "number") s.openedAt = wrote.openedAtMs;
+    }
     s.openUntil = wrote.untilMs;
     rememberDb(s, wrote.untilMs);
+    // DB が返した文字列をそのまま条件に使う（ms に丸めると、人が SQL で書いたマイクロ秒つきの値と一致しない。審査 P3-2）
+    if (typeof wrote.untilRaw === "string") s.untilRaw = wrote.untilRaw;
   };
 
   // 書けた DB の期限を覚える（0 は閉じた＝NULL）
