@@ -60,23 +60,33 @@ on:
       - Update Top Start Stats
       - Update Winning Technique Stats
   workflow_dispatch:
+  # 毎時の見回り（docs/design/ci-minutes-reduction/design.md 4.2 D）。成功の終わりでは scan を起こさないので、
+  # 失敗の起動を取りこぼしたときの拾い直しと、hq の鮮度の見張りの目印（schedule の run の成功）を兼ねる。
+  # 0分は混むので避ける。workflows: の一覧より後に置く（verify-job-watch.js が workflows: から workflow_dispatch: までを切り出す）
+  schedule:
+    - cron: '17 * * * *'
 
 permissions: {}
 
-# 見回りは毎回全部を見るので、待ちの間に来たイベントを落としても次の見回りで拾う。同時に2本は走らせない
-# （Issue を2件作らないため）
-concurrency:
-  group: job-watch
-  cancel-in-progress: false
-
 jobs:
+  # scan を起こすのは、見張る run が成功以外で終わったとき・カナリア（key-canary.yml）が成功したとき（鍵の Issue を閉じる）・
+  # 毎時・手の起動だけ。見張る run の成功では skip（0分）。見回りは毎回直近24時間を全部見るので、成功の起動を省いても拾い漏れない
+  # （design.md 4.2 D。7日で約2,500回の空の見回りがあった）。カナリアは名前でなく path で見る（job-watch.js の CANARY_PATH と同じ）
   scan:
     if: >-
       github.repository == 'rhapsody0919/boatrace-ai-predictor' &&
-      (github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' ||
       (github.event.workflow_run.head_repository.full_name == github.repository &&
       (github.event.workflow_run.event == 'schedule' || github.event.workflow_run.event == 'workflow_dispatch' ||
-      github.event.workflow_run.event == 'push')))
+      github.event.workflow_run.event == 'push') &&
+      (github.event.workflow_run.conclusion != 'success' ||
+      github.event.workflow_run.path == '.github/workflows/key-canary.yml')))
+    # 見回りは毎回全部を見るので、待ちの間に来たイベントを落としても次の見回りで拾う。同時に2本は走らせない
+    # （Issue を2件作らないため）。workflow の単位に置くと、scan が skip になる run も枠を取り、待っている scan を
+    # 置き換えて何もせずに終わる（失敗に気づくのが次のカナリアか毎時まで遅れる）ので、scan の job に置く
+    concurrency:
+      group: job-watch
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
