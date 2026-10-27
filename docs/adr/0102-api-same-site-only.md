@@ -16,7 +16,7 @@
 
 1. `/api/*` は自サイトの画面と自分の処理（Vercel の関数・cron、オーナーの Mac の hq、GitHub Actions の監視）だけが使う。外部への公開の API・MCP は出さない。AI 検索向けの HTML（ボット HTML・静的スナップショット）は公開ページの写しなので続ける
 2. 関門は `middleware.js` に置き、`/api/*` を既定で通し、除外（`/api/cron/*`・`/api/admin/*`・`/api/bot-page/*`。それぞれ既存の守りがある）だけを名指しする。除外の判定はデコードしたパスで行う
-3. 通すのは、合言葉のヘッダ（`x-ryujin-internal-key`、環境ごとに別の値、新旧2つを受け付けて回し替える）が一致する要求と、`Sec-Fetch-Site: same-origin`（無ければ同じ host の `Referer`）のブラウザの要求だけ。観測（通してログ）→強制（403 no-store）の2段で入れる
+3. 通すのは、合言葉のヘッダ（`x-ryujin-internal-key`、環境ごとに別の値、新旧2つを受け付けて回し替える）が一致する要求と、`Sec-Fetch-Site: same-origin`（無ければ同じ host の `Referer`）のブラウザの要求と、UA と公開の IP 範囲の両方で確かめた検索ボット（Googlebot・bingbot）の要求だけ。観測（通してログ）→強制（403 no-store）の2段で入れ、強制の前に検索ボットの疎通試験を通す
 4. CORS の `*` を外す
 5. 最後に Vercel Firewall で IP ごとの回数の上限を置く（合言葉の付いた要求は外す）
 

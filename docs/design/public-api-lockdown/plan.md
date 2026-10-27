@@ -72,7 +72,7 @@ flowchart LR
 | c7 | AI クローラー向けの静的スナップショット（`middleware.js` → `dist/ai-snapshots/`） | ビルド時に生成、配信は静的 | API は叩かない | — | 影響なし | なし |
 | c8 | cron-job.org | 外部 | `/api/cron/*` だけ（Bearer CRON_SECRET） | 別扱い | 影響なし | なし |
 | d1 | 外部の第三者（AI エージェント・スクレイパー・hq の壁打ち中の読み、BOA-1110 の5） | 不明 | 全部 | `Sec-Fetch-Site` 無し・`none`・`cross-site` | 拒む（目的どおり） | — |
-| d2 | 検索ボットのレンダリング（Googlebot の WRS 等。ADR-0089:110 のとおり Googlebot には SPA を返している） | Google 等 | 画面と同じ | WRS が `Sec-Fetch-Site` を送るかは**未確認** | **止めるおそれ**。予想系は Supabase 直のフォールバックで描けるが、`/api/analogy/*`・`/api/odds/live` にはフォールバックが無く、検索に見える race ページの中身が欠ける | 段階3で `ua_class=search_bot` を別に数え、段階4へ進む条件にする。止めていたら Vercel Firewall の verified bots で通す（UA だけで通すと偽装に負ける。オーナー承認） |
+| d2 | 検索ボットのレンダリング（Googlebot の WRS 等。ADR-0089:110 のとおり Googlebot には SPA を返している） | Google 等 | 画面と同じ | WRS が `Sec-Fetch-Site` を送るかは**未確認** | **止めるおそれ**。予想系は Supabase 直のフォールバックで描けるが、`/api/analogy/*`・`/api/odds/live` にはフォールバックが無く、検索に見える race ページの中身が欠ける | 段階3で `ua_class=search_bot` を別に数える。止めていたら §2.2 の `search_bot` の経路（middleware の中で、UA と公開の IP 範囲の両方で確かめる）で通し、疎通試験の成功を段階4へ進む条件にする。Firewall の verified bots の Bypass は残りの Firewall ルールを飛ばすだけで middleware は飛ばさないので、それだけでは救えない（Codex の審査、P1） |
 
 c 群のうち hq（c2・c3）は hq のファイルなので、この設計では書き換えない。hq に「合言葉のヘッダを付ける」受け渡しを出す（§5 の段階1）。
 
@@ -109,17 +109,22 @@ flowchart TD
   D -- はい --> X{デコード後が<br/>cron・admin・bot-page?}
   X -- はい --> PASS0[関門を通さない<br/>既存の守りのまま]
   X -- いいえ --> K{x-ryujin-internal-key が<br/>INTERNAL_API_KEY か<br/>INTERNAL_API_KEY_NEXT と一致?<br/>定数時間比較}
-  K -- はい --> OK1[通す reason=internal]
+  K -- 現行の鍵 --> OK1[通す reason=internal key_slot=current]
+  K -- NEXT の鍵 --> OK1b[通す reason=internal key_slot=next]
   K -- 付いているが不一致 --> BAD[段階に従う reason=bad_key]
   K -- 無し --> S{Sec-Fetch-Site = same-origin<br/>かつ Origin が無いか<br/>自分の host と同じ?}
   S -- はい --> OK2[通す reason=browser]
   S -- いいえ --> L{Sec-Fetch-Site が無く<br/>Referer の host が自分の host?<br/>古いブラウザ}
   L -- はい --> OK3[通す reason=browser_legacy]
-  L -- いいえ --> M{段階}
+  L -- いいえ --> G{UA が検索ボットを名乗り<br/>かつ接続元 IP が<br/>その事業者の公開の範囲?}
+  G -- はい --> OK4[通す reason=search_bot]
+  G -- いいえ --> M{段階}
   M -- 観測 --> LOG[通す + 1行のログ<br/>reason=would_deny]
   M -- 強制 --> DENY[403 no-store + 1行のログ<br/>reason=deny]
 ```
 
+- **検索ボットの経路**（Codex の審査 P1）: Googlebot の WRS がレンダリング中の `/api` の要求に `Sec-Fetch-Site`・同じ host の `Referer` を付けるかは未確認。付けないと関門で拒まれ、`/api/analogy/*`・`/api/odds/live` を使う部分が検索に見えなくなる。Vercel Firewall の verified bots の Bypass は残りの Firewall ルールを飛ばすだけで、middleware の判定は飛ばさない（[Vercel の仕様](https://vercel.com/docs/vercel-firewall/vercel-waf/rule-configuration#actions)）。そこで middleware の中で、UA が Googlebot・bingbot を名乗り、かつ接続元の IP（Vercel が付ける `x-real-ip`）が各社の公開の IP 範囲（Google の `googlebot.json`・`special-crawlers.json`、Bing の `bingbot.json`）に入るときだけ通す。範囲の表はビルド時に取り込み（要求のたびに取りに行かない）、取り込みに失敗したらビルドを落とさず前の表を使う。UA だけで通すと偽装に負けるので、UA だけの経路は作らない。Vercel が middleware に渡す「検証済みのボット」の印があればそちらを使う（あるかは未確認、段階0で確かめる）
+- **検索ボットの疎通試験**（段階4の条件）: 段階3の間に Search Console の URL 検査（公開 URL のテスト）で race ページを描かせ、龍神ソナーの節が描かれていること、ログに `reason=search_bot` または `browser` が出て `would_deny` が出ないことを確かめる
 - `Sec-Fetch-Site` を送らない古いブラウザ（Safari 16.4 より前など）は `Referer` で救う（`reason=browser_legacy` で別に数え、少なければ段階4の後に外してよい）。偽れる強さは `Sec-Fetch-Site` と同じ
 - 自分の host は `new URL(request.url).host` から取る（固定の一覧にしない。Preview の `*.vercel.app` でも同じ判定で通る）
 - **matcher はデコード前のパスで照合される**（`api/_lib/adminAuth.js:4-8`。2026-09-29 に `/api/admin/sns-h%75b/` が middleware を素通りした実例）。matcher には `/api/:path*` を足し、除外の判定は `new URL(request.url).pathname` をデコードしたパスで行う。`/%61pi/predictions/…` のように `api` 自体をエンコードした要求が関数に届くかは事前に Preview で実測する（§4 の段階0）。届くなら middleware だけでは穴になるので、Vercel Firewall のルールで塞ぐ（関数の入口に置いてもキャッシュに当たった要求には効かない）
@@ -134,7 +139,7 @@ flowchart TD
 
 鍵の名前（案）: `INTERNAL_API_KEY`、ヘッダは `x-ryujin-internal-key`。値は Vercel の環境変数と Mac の環境変数、GHA の secret にだけ置き、ログ・PR・チャットに出さない。
 - **環境ごとに別の値**: Preview はどのブランチのコードでも鍵を読めるので、Production と同じ値を置かない（Mac・GHA が叩くのは Production だけなので、配るのは Production の値）
-- **回し替え**: Vercel・Mac・hq・GHA は同時に更新できないので、`INTERNAL_API_KEY_NEXT` も受け付ける。新しい値を NEXT に置く → 呼び出し元を新しい値にする → `bad_key` と旧い値の利用が0になったら入れ替える
+- **回し替え**: Vercel・Mac・hq・GHA は同時に更新できないので、`INTERNAL_API_KEY_NEXT` も受け付ける。新しい値を NEXT に置く → 呼び出し元を新しい値にする → ログの `key_slot=current`（旧い値での成功）が、各定期処理の実行周期（hq の全貌動画・優勝戦は1日1回、GHA の `bot-html-parity` は毎日、Vercel の関数は常時）を一巡して0件になったことを確かめる → NEXT の値を現行に移し、NEXT を空にする。鍵の値はログに書かず、どちらの枠で一致したか（`key_slot`）だけを書く。`bad_key` だけを見ると、旧い値で成功し続けている呼び出し元を見落とす（Codex の審査 P2）
 
 ## 3. 非公開・廃止の項目を応答から外す
 
@@ -176,7 +181,7 @@ flowchart LR
 | 0 事前（コードのみ） | 判定の純関数と verify、`verify-middleware-routing.js` の拡張。Preview で `/%61pi/predictions/…` が関数に届くか、キャッシュに当たった要求（`x-vercel-cache: HIT`）でも middleware のログが出るかを実測 | `api/_lib/` に判定の関数、`scripts/maintenance/verify-*.js`（matcher にはまだ足さない） | 段階0の PR | 実測の結果で §2 の置き場所が成り立つ |
 | 1 合言葉を配る | 鍵を環境ごとに作り、Vercel・Mac・GHA（`bot-html-parity.yml` の `environment: prod-jobs`）に置く。b1（botPage・botRace）・b2（snsClaimCheck）、c1（fetch-materials・daily）、c3b（verify-bot-html-parity）、c5 の取得にヘッダを足す（鍵が無ければ付けないだけ。関門が無いので何も変わらない）。c4 には配らない。hq（c2・c3）に受け渡し | `api/_lib/botPage.js`・`botRace.js`・`snsClaimCheck.js`、`sns-video-studio/.../fetch-materials.mjs`・`daily.mjs`、`scripts/maintenance/verify-bot-html-parity.js`、`scripts/analysis/*`。`.github/workflows/bot-html-parity.yml` に env を1行 | 鍵の新設と配布・`.github` はオーナー。コードは段階0の PR | hq が c2・c3 を直したと返す |
 | 2 非公開の項目を外す | §3 で「外す」にした欄を `stripUnusedPredictionFields` に名指しで足す（今と同じ流儀）。再現テストを `verify-predictions-response.js` に足す | `api/_lib/predictionsResponse.js` | §3 の判定どおり（画面・hq が読まない欄だけ） | E2E・verify:ci が緑、hq の読み手が外れている |
-| 3 観測で入れる＋CORS | middleware の matcher に `/api/:path*` を足し、`API_GATE_MODE=observe` で判定とログだけ。同時に `Access-Control-Allow-Origin: *` を `vercel.json` と関数の中（§2.1 ①の一覧）から外す（同じ origin の画面には CORS ヘッダは要らない。CORS はその場で効く） | `middleware.js`、`vercel.json`、関数の CORS 定数 | `vercel.json` はオーナー | §6 の `would_deny`・`bad_key` のうち自分の呼び出し元が0件の日が、平日・土日を含めて連続2日。かつ `ua_class=search_bot` の `would_deny` が0件、または扱いを決め済み |
+| 3 観測で入れる＋CORS | middleware の matcher に `/api/:path*` を足し、`API_GATE_MODE=observe` で判定とログだけ（検索ボットの経路を含む）。同時に `Access-Control-Allow-Origin: *` を `vercel.json` と関数の中（§2.1 ①の一覧）から外す（同じ origin の画面には CORS ヘッダは要らない。CORS はその場で効く） | `middleware.js`、`vercel.json`、関数の CORS 定数 | `vercel.json` はオーナー | §6 の `would_deny`・`bad_key` のうち自分の呼び出し元が0件の日が、平日・土日を含めて連続2日。かつ `ua_class=search_bot` の `would_deny` が0件で、検索ボットの疎通試験（§2.2）が成功 |
 | 4 外部を拒む | Vercel の環境変数 `API_GATE_MODE=enforce` → Redeploy | 本番の環境変数（コード変更なし） | オーナー | — |
 | 5 回数の上限 | Vercel Firewall に `/api/`（cron・admin を除く）の IP ごとの上限。`x-ryujin-internal-key` が付いた要求は上限から外す（Vercel の関数の出口と Mac の hq は連続で取るので、IP で数えると先に 429 になる。偽の値を付けた要求は middleware が `bad_key` で拒むので抜け道にならない）。値は段階3のログの「画面の利用者1人あたりの最大の要求数」の実測から決める（根拠なしの数で決めない） | Vercel Firewall（本番） | オーナー（費用・プランの確認を含む） | — |
 
@@ -206,7 +211,7 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 | 2 | `.github/workflows/bot-html-parity.yml` に secret を env で渡す1行（`environment: prod-jobs`）。e2e の3本には渡さない | 1 | `.github` の変更 |
 | 3 | `vercel.json` の `/api/(.*)` の CORS ヘッダを外す | 3 | `vercel.json` の変更 |
 | 4 | Vercel の環境変数 `API_GATE_MODE` の追加と `enforce` への切り替え | 3・4 | 本番の設定。外からの呼び出しを実際に止める |
-| 5 | Vercel Firewall の回数の上限（含まれる範囲と超過の単価を先に確かめる。未確認）。検索ボットを止めていた場合の verified bots の許可。`/%61pi/` が関数に届いた場合に塞ぐルール | 3〜5 | 本番の設定・費用 |
+| 5 | Vercel Firewall の回数の上限（含まれる範囲と超過の単価を先に確かめる。未確認）。`/%61pi/` が関数に届いた場合に塞ぐルール | 3〜5 | 本番の設定・費用 |
 | 5b | 任意: 即時の切り替えを Edge Config で持つ、ログの保持が足りなければ Log Drain | 3・4 | 新しい資源・費用の可能性 |
 | 6 | 予想系を Supabase 側でも閉じるかどうか（§0、別チケット） | — | 費用・画面への影響、公開の方針 |
 
@@ -245,3 +250,10 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 | P3 | CORS は観測の段階が無くその場で効く。外す場所の一覧が不足 | `api/predictions/[date].js:25,47,82,96` 等 | §2.1 ①の一覧を補い、verify で固定 |
 | P3 | `verify-middleware-routing.js` に `/api` の振り分け | — | §2.2・段階0 |
 | — | 新しい ADR が要る | — | ADR-0102 をこの PR で追加、提案文書に取り下げを注記 |
+
+## 11. Codex の審査（#1991、2026-10-27）の指摘と対応
+
+| 重大度 | 指摘 | 確かめた根拠 | 対応 |
+|---|---|---|---|
+| P1 | 検索ボットの救済が Firewall の verified bots だけでは middleware の 403 を避けられない | Vercel の Firewall の Bypass は残りの Firewall ルールを飛ばす仕様（指摘の出典）。middleware は Firewall の後で別に動く | §2.2 に `search_bot` の経路（UA と公開の IP 範囲の両方）と疎通試験を足し、段階4の条件にした。§1.2 の d2・§7 を直した |
+| P2 | 回し替えで旧い鍵の利用を数えられない（`internal` にまとまる） | §2.2 の図とログの定義 | `key_slot=current/next` を記録し、各定期処理の周期を一巡して旧い枠の成功が0件になってから入れ替える手順にした |
