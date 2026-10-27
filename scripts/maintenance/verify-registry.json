@@ -326,7 +326,7 @@
     {
       "script": "verify-data-readers.js",
       "tier": "ci",
-      "guards": "データの読み手の台帳（docs/reference/data-readers.{json,md}、generate-data-readers.js）の抽出（構文木で .from()・.select()・絞り込み・insert/upsert/update/delete の列、.rpc()、/rest/v1/ と REST の包みの相対パス、fetch の method、1回だけ宣言した const の名前。Array.from・storage.from・コメントを拾わないこと、名前が式の箇所を unresolved にすること、検査の固定入力のファイルは写しの名前だけ）と組み立て（RPC の本体が読む・書く・呼ぶ表をコメントと文字列を外して写しから引くこと、権限の GRANT とポリシーの要約、トリガー、取得のジョブの入口からの import のたどり、外の読み手 data-readers.extra.json が写しの表・列を指すこと）。今のリポジトリで作れること・同じ入力で同じ出力・構文木にできないファイルが無いこと。コミット済みの台帳との一致は見ない（行番号を持つのでほぼ全 PR で変わる。ADR-0078 と同じ理由）"
+      "guards": "データの読み手の台帳（docs/reference/data-readers.{json,md}、generate-data-readers.js）の抽出（構文木で .from()・.select()・絞り込み・insert/upsert/update/delete の列、.rpc()、/rest/v1/ と REST の包みの相対パス、fetch の method、1回だけ宣言した const の名前。Array.from・storage.from・コメントを拾わないこと、名前が式の箇所を unresolved にすること、検査の固定入力のファイルは写しの名前だけ）と組み立て（RPC の本体が読む・書く・呼ぶ表をコメントと文字列を外して写しから引くこと、権限の GRANT とポリシーの要約、トリガー、取得のジョブの入口からの import のたどり、外の読み手 data-readers.extra.json が写しの表・列を指すこと）。今のリポジトリで作れること・同じ入力で同じ出力・構文木にできないファイルが無いこと。最新性は master へのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078。台帳は PR に含めない）"
     },
     {
       "script": "verify-db-apply.js",
