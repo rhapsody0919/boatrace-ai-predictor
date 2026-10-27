@@ -113,6 +113,7 @@
     "test:x-send-ui": "bash scripts/maintenance/run-heavy.sh playwright test --config playwright.x-send.config.js",
     "test:e2e:record": "E2E_RECORD=1 bash scripts/maintenance/run-heavy.sh playwright test",
     "test:e2e:live": "E2E_LIVE=1 bash scripts/maintenance/run-heavy.sh playwright test",
+    "build:e2e": "node scripts/maintenance/e2e-build.js",
     "e2e:recording:fetch": "node scripts/maintenance/e2e-recording.js fetch",
     "test:layout": "bash scripts/maintenance/run-heavy.sh playwright test --project=layout-mobile --project=layout-tablet --project=layout-laptop --project=layout-desktop --project=layout-wide",
     "check:e2e-skips": "node scripts/maintenance/check-e2e-skips.js",

@@ -1,4 +1,8 @@
 import { test, expect } from "./fixtures.js";
+import { closeSrcLoader, loadSrc } from "./src-modules.js";
+
+// 関数の検査は src/ をテストの側（Node）で読む（e2e/src-modules.js。build した束の preview でも通るように）
+test.afterAll(closeSrcLoader);
 
 /**
  * 展示STのフライング・出遅れ（BOA-759）。DB の start_timing は印を外した正の数（F.01→0.01）で、
@@ -32,12 +36,9 @@ test("直前情報の展示STは、展示でフライングした艇を F.01 と
   }
 });
 
-test("展示STの表記: 印があれば公式どおり F.01・L、無ければ値だけ", async ({
-  page,
-}) => {
-  await page.goto("/about", { waitUntil: "domcontentloaded" });
-  const out = await page.evaluate(async () => {
-    const { formatExhibitionSt } = await import("/src/utils/formatters.js");
+test("展示STの表記: 印があれば公式どおり F.01・L、無ければ値だけ", async () => {
+  const out = await (async () => {
+    const { formatExhibitionSt } = await loadSrc("/src/utils/formatters.js");
     return [
       formatExhibitionSt(0.01, "F"),
       formatExhibitionSt(0.05, "L"),
@@ -45,6 +46,6 @@ test("展示STの表記: 印があれば公式どおり F.01・L、無ければ�
       formatExhibitionSt(0.13, null),
       formatExhibitionSt(null, null),
     ];
-  });
+  })();
   expect(out).toEqual(["F.01", "L.05", "L", "0.13", null]);
 });

@@ -114,11 +114,19 @@ jobs:
           path: node_modules/.cache/boatai-e2e-recording
           key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
 
+      # 【実験 A、マージしない】build した束を vite preview で配る（design.md 4.2 A・6章）。
+      # Supabase の宛先は録画のオリジンで束に焼き込む（scripts/maintenance/e2e-build.js）
+      - name: Build (e2e の束、録画の再生用)
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:e2e
+
       # 録画に無い通信は本番へ素通しするので、本番の読み取り用キー（anon）を渡す。
       # レポートは blob で出し、集約ジョブ（e2e）が merge-reports で1つの JSON にまとめる
       - name: Run E2E smoke tests (録画の再生)
         env:
           CI: true
+          E2E_SERVE: preview
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           PLAYWRIGHT_BLOB_OUTPUT_NAME: report-${{ matrix.shard }}.zip
@@ -150,6 +158,53 @@ jobs:
           name: playwright-traces-${{ matrix.shard }}
           path: test-results/
           retention-days: 7
+
+  # 【実験 A、マージしない】非公開の 2 vCPU を模す（taskset -c 0,1）。e2e-shard と同じ組を同じ束で流し、所要だけを記録する。
+  # 名前は e2e-shard で始めない（guard-pr-merge.js の /^e2e-shard\b/ に数えさせない）。集約 e2e の needs に入れない
+  exp-2cpu:
+    needs: e2e-scope
+    if: needs.e2e-scope.outputs.scope == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.e2e-scope.outputs.matrix) }}
+    name: exp-2cpu (${{ matrix.shard }}/${{ strategy.job-total }})
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Cache E2E recording
+        uses: actions/cache@v4
+        with:
+          path: node_modules/.cache/boatai-e2e-recording
+          key: e2e-recording-${{ hashFiles('e2e/recording.json') }}
+
+      - name: Build (e2e の束、2 CPU)
+        env:
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: taskset -c 0,1 npm run build:e2e
+
+      - name: Run E2E (2 CPU に絞る)
+        env:
+          CI: true
+          E2E_SERVE: preview
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        # Playwright の既定の workers は os.cpus() の50%で、taskset では変わらない。本物の 2 vCPU では1になるので明示する
+        run: taskset -c 0,1 npx playwright test --fully-parallel --workers=1 --reporter=list ${{ matrix.args }}
 
   # 記事の中身だけの PR（scope=light）。記事の JSON は src/data/blogPosts.js の import.meta.glob（eager）で
   # 画面の束に入り、1つ壊れると全体が壊れるので、vite build と記事に関わる試験（@blog の印）は残す。

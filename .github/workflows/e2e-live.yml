@@ -36,11 +36,20 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
+      # 【実験 A、マージしない】本番データの束（再生の束と別。e2e-build.js の live）
+      - name: Build (e2e の束、本番データ用)
+        env:
+          E2E_LIVE: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:e2e
+
       - name: Run E2E (本番データ・実時刻)
         id: e2e
         env:
           CI: true
           E2E_LIVE: '1'
+          E2E_SERVE: preview
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |

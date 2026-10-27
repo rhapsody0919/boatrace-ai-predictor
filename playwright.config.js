@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { buildSupabaseUrl } from "./scripts/maintenance/e2e-build.js";
 
 // このマシンでは複数のgit worktreeが並行してdevサーバーを起動する運用のため、
 // 既定ポート5173を全worktreeで共有すると、reuseExistingServer:true経由で
@@ -37,6 +39,47 @@ function replayServerEnv() {
     );
   }
   return { ...process.env, VITE_SUPABASE_URL: source.supabaseOrigin };
+}
+
+// E2E_SERVE=preview: 先に build した束（dist/）を `vite preview` で配る（実験、docs/design/ci-minutes-reduction/
+// design.md 4.2 A・6章）。build は webServer の command に入れない（下の timeout 30秒で切れる）。前の step で
+// `npm run build:e2e`（scripts/maintenance/e2e-build.js）を流す。Supabase の宛先は build の時に束へ焼き込まれる
+// ので、replayServerEnv の差し替えはここでは効かない（e2e-build.js が同じ値で build する）。既定（未指定）は dev
+const servePreview = process.env.E2E_SERVE === "preview";
+if (servePreview) {
+  const mode = isReplay
+    ? "replay"
+    : process.env.E2E_LIVE === "1"
+      ? "live"
+      : "record";
+  let built;
+  try {
+    built = JSON.parse(readFileSync("dist/.e2e-build.json", "utf8"));
+  } catch (error) {
+    throw new Error(
+      `E2E_SERVE=preview なのに e2e の束が無い（先に npm run build:e2e）: ${error.message}`,
+    );
+  }
+  if (built.mode !== mode)
+    throw new Error(
+      `dist の束は ${built.mode} 用で、今は ${mode}。同じモードで npm run build:e2e し直す`,
+    );
+  // 焼き込んだ宛先も、今のモードで期待する値（再生はポインタか meta の supabaseOrigin）と同じか
+  const expected = buildSupabaseUrl(mode, process.env, (f) =>
+    JSON.parse(readFileSync(f, "utf8")),
+  );
+  if (built.supabaseUrl !== expected)
+    throw new Error(
+      `dist の束の Supabase の宛先（${built.supabaseUrl}）が今の期待（${expected}）と違う。npm run build:e2e し直す`,
+    );
+  // 古い束で緑にしない（src を直して build し直していない）。作業ツリーの未コミットの変更までは見ない
+  const head = execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+  if (built.commit !== head)
+    throw new Error(
+      `dist の束は ${built.commit} の build で、今は ${head}。npm run build:e2e し直す`,
+    );
 }
 
 const explicitPort = process.env.PW_PORT;
@@ -117,7 +160,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: `npm run dev -- --port ${port} --strictPort`,
+    command: servePreview
+      ? `npx vite preview --port ${port} --strictPort`
+      : `npm run dev -- --port ${port} --strictPort`,
     env: replayServerEnv(),
     url: `http://localhost:${port}`,
     // PW_PORTを明示指定した場合のみ既存サーバーの再利用を許可する
