@@ -97,3 +97,8 @@
 - 403 と 429/503 は同じ breaker_level を使う（止める側に倒れるので共用を採る）。24時間で1段下げ・閉じた後24時間の絞りは 429 にも効く。期間の表だけ分ける（403 のホスト60分から倍・上限6時間、429 は5・10・20・60分）（2026-10-27、#1983 の審査の決定、ADR-0101 決定5 の追記）
 - Retry-After が10秒を超える 429/503 は再試行せず、その時間（上限60分）ホストを開く。段階は上げない（2026-10-27、#1983 の審査の決定、scripts/lib/scrapeJobs/politeFetch.js）
 - 利用者の要求（/api/odds/live）の 429 は段階を上げない（countOverload:false）。外から呼べる口で定時の取得の止め方を強めさせない。Retry-After>10秒ならその時間開くのは同じ（2026-10-27、#1983 の審査の決定、api/odds/live.js）
+- 本番の /api を叩く素の Node の呼び出しは、ブラウザの判定（Sec-Fetch-Site）では通らない。GHA の bot-html-parity（verify-bot-html-parity.js:169）と full-picture の stage.cjs:3（preflight）は見落としやすい（2026-10-27、system-architect、BOA-1110）
+- Vercel の環境変数を変えても既存のデプロイには効かず、Redeploy が要る。即時に戻したい切り替えは Edge Config で持つ（2026-10-27、system-architect、BOA-1110 の審査）
+- analogy_contribution_profiles（118:97-98）・race_history_cache（020:16）・accuracy_cache（013・013b）は匿名に SELECT がある。/api を閉じても同じ値は匿名キーで取れる（2026-10-27、DDL で確認。本番の権限は check-anon-access.js で要確認）
+- /api の関門は除外だけを名指しにし、デコードしたパスで判定する（matcher はデコード前で照合、adminAuth.js:4-8）。/%61pi/ のように api をエンコードした要求が関数に届くかは実測する（2026-10-27、system-architect、BOA-1110）
+- Googlebot には SPA を返しているので（ADR-0089:110）、/api を閉じる前に検索ボットの拒む候補を別に数える。WRS が Sec-Fetch-Site を送るかは未確認（2026-10-27、system-architect、BOA-1110）
