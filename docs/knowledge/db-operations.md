@@ -105,7 +105,8 @@
 - WHATWG URL は %2F を区切りにしないので、pathname をデコードしてから前方一致で除外を判定すると /api/bot-page%2F..%2Fpredictions が /api/bot-page/ の除外に入る。デコード後に ..・.・//・\ のセグメントがあれば 400 にする（2026-10-27、node で実測、#1991 の代わりの審査）
 - 観測から強制へ進む条件を「自分の呼び出し元の拒否が0件」だけにすると母数0でも満たす。1日1回・手作業の呼び出し元は期間中に来ないことがあるので、秘密でない呼び出し元の名前のヘッダで群ごとの成功1件以上も条件にする（2026-10-27、#1991 の代わりの審査）
 - Search Console の URL 検査の取得の UA は Google-InspectionTool で、Googlebot の文字を含まない（Google の公開の一覧による、確度中・要確認）。UA を Googlebot に限った疎通試験は検索ボットの経路の証明にならない（2026-10-27、#1991 の代わりの審査）
-- e2e/fixtures.js の fetchRecorded は route.fetch() でブラウザの通信経路を通らずに出る（:18-20）。Sec-Fetch-Site で判定する関門では E2E の素通しがブラウザに見えないおそれがある（2026-10-27、#1991 の代わりの審査）
+- e2e/fixtures.js の fetchRecorded は route.fetch() でブラウザの通信経路を通らずに出る（:47,317-320）。Sec-Fetch-Site で判定する関門では E2E の素通しがブラウザに見えないおそれがある（2026-10-27、#1991 の代わりの審査）
+- 関門の判定の順が「ブラウザ（Sec-Fetch-Site）→検索ボット（UA と IP）」だと、本物のボットがブラウザの経路で通り reason=search_bot は0件になりうる。経路の件数を進む条件にせず、UA と IP の確認の結果（bot_verified）を reason と別にログに出して数え、経路の正しさは固定の IP の verify で固める（2026-10-27、#1991 の再審査）
 - Cron の口は2つある。共通の createScrapeCronHandler と、オッズの createOddsCronHandlerWithPredictionOdds（api/cron/odds.js、予測オッズの導出つき）。共通の口だけに足した仕組み（取得の数え等）はオッズに効かない。両方が使う小さな関数（createCronFetchContext）にまとめる（2026-10-27、system-architect の審査、BOA-1145 P3・185）
 - 取得の数えを起動の終わりの1回だけで書くと、関数の打ち切り（maxDuration）で溜まった分を全部失う。20件か60秒で裏で書き、handler の終わりは try/finally で残りを書く（2026-10-27、同、scripts/lib/scrapeJobs/fetchCounter.js）
 - 取得の数えでは、呼び出し側の中断（init.signal の abort。ソフトデッドライン等）を数えない。politeFetch 自身の打ち切りは kind=timeout に分けて、接続の失敗（network）と区別する（2026-10-27、同、185 の CHECK）
