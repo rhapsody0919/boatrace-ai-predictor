@@ -439,6 +439,11 @@
       "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）。in() の値を fetchAllInChunks で分けて読み（URL の長さの上限、BOA-1051）、in() の列がどの呼び出しでもテーブルの並びの先頭の列であること（分けた結果をつないでも並びが崩れない条件）"
     },
     {
+      "script": "verify-fetch-counter.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P3（spec §7.1 の M2）: 取得先への取得の数（fetch_counts・add_fetch_counts・fetch_counts_daily、マイグレーション185）。politeFetch が1回の fetch（再試行・カナリア・接続の失敗も）ごとに応答の種類で数え、Cron の起動の終わりに1回の RPC で足す（取得0の起動は書かない）、/api/odds/live は20件か60秒ごと、185 の前・書き込みの失敗でも取得を止めない（投げない・持ち越す）、パスは2桁以上の数字を {n} にまとめる、PGlite で加算・日の合計・RLS・権限"
+    },
+    {
       "script": "verify-fetchall-order.js",
       "tier": "ci",
       "guards": "共通の fetchAll（scripts/lib/supabaseClient.js）が並び順の無いページ送りをしないこと（BOA-753。1000行を超えるとページの間で行が重複・欠落する。BOA-595・BOA-745 に続く3回目で仕組みにした）。(a) 静的: scripts/・api/ の fetchAll の呼び出しすべてに、組み立て（第3引数、変数なら同じファイルの定義）の .order( か、理由付きの unordered があること。(b) 実行時: 並び順の無いクエリは最初のリクエストの前に例外（呼び出し元と直し方つき）、理由が空の unordered も例外。(c) 変異検証。確かめない範囲: await import() で取り出した fetchAll の呼び出し（実行時の検査が止める）"
@@ -1134,9 +1139,20 @@
       "guards": "マイグレーション適用判定・確認不能時の再試行・client別TTLキャッシュとclear（BOA-1075）"
     },
     {
+      "script": "verify-schema-snapshot.js",
+      "tier": "ci",
+      "args": ["--base=origin/master"],
+      "guards": "本番スキーマの写し docs/reference/schema-snapshot.json（ADR-0102）の取得の問い合わせ（scripts/db/schema-snapshot/*.sql）と組み立て（scripts/lib/schemaSnapshot.js）。PGlite で問い合わせを ro-query の READ ONLY の経路のまま実行し、表・ビュー・列・関数（ALTER した search_path を含む）・ポリシー・制約（外部キーの列の対応）・索引・トリガー・権限（列単位・PUBLIC・既定の権限の public と全体）を組み立てること、拡張の作った関数を入れないこと、行の並びに依らないこと。打ち切り（truncated）・問い合わせの欠け・知らない記号・一覧に無い表の子・鍵らしい文字列（JWT・sb_secret_・Slack の Webhook・URL の資格情報）・search_path 等以外の関数の設定で失敗すること。台帳のファイル単位の鮮度の判定（同じ番号の片方・013b・後で足された行）。コミット済みの写しが整形のままで件数・並びが中身と合い、base（origin/master）の写しより前の取得に戻っていないこと（古さでは落とさない）"
+    },
+    {
       "script": "verify-scrape-breaker-canary.js",
       "tier": "ci",
       "guards": "BOA-1145 P4a ③: パスが 403 で開いたら race/index を1件だけ取り、403 のときだけホスト全体を開く（60分から段階で倍）。ホストの半開は race/index で試す（止められたパスで開き直さない）。403 の応答の Server・server-timing・Akamai の参照番号・本文の先頭200字をブレーカーの記録に残す。BOATCAST はカナリアを取らない"
+    },
+    {
+      "script": "verify-scrape-breaker-greatest.js",
+      "tier": "ci",
+      "guards": "BOA-1159: ブレーカーの開放を DB で長い方に書く RPC scrape_breaker_open（マイグレーション184）を PGlite で実行し、短い期限で長い期限を縮めない・段階と理由は期限を決めた側・fetch_stop と mode を書かない・anon と authenticated は実行できないことを確かめる。store.js が RPC を使い、184 の前は upsert に戻ること、circuitBreaker が DB の返した長い期限を採ること"
     },
     {
       "script": "verify-scrape-breaker-level.js",

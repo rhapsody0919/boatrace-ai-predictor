@@ -23,6 +23,8 @@ import { handleLiveOddsRequest } from "../../scripts/lib/liveOdds.js";
 import { createCircuitBreaker } from "../../scripts/lib/scrapeJobs/circuitBreaker.js";
 import { createPoliteFetch } from "../../scripts/lib/scrapeJobs/politeFetch.js";
 import { createSupabaseStore } from "../../scripts/lib/scrapeJobs/store.js";
+import { createFetchCounter } from "../../scripts/lib/scrapeJobs/fetchCounter.js";
+import { waitUntil } from "@vercel/functions";
 
 export const config = {
   maxDuration: 30,
@@ -40,13 +42,20 @@ function getPoliteFetch() {
             ? createSupabaseStore(supabase).breakerStore
             : undefined,
         });
+        // 公式へ取りに行った数を数え、20件か60秒ごとに足す（長く生きるインスタンス。BOA-1145 P3）
+        const counter = createFetchCounter({
+          client: supabase ?? null,
+          source: "live",
+        });
         // 利用者の要求の 429 は段階を上げない（Retry-After>10秒ならその時間開く。BOA-1145 #1983 の審査）
-        return createPoliteFetch({
+        const politeFetch = createPoliteFetch({
           breaker,
           maxRetries: 0,
           timeoutMs: 12000,
           countOverload: false,
+          counter,
         });
+        return { politeFetch, counter };
       },
     );
   }
@@ -54,13 +63,23 @@ function getPoliteFetch() {
 }
 
 export default async function handler(req, res) {
+  const { politeFetch, counter } = await getPoliteFetch();
   const { status, cacheControl, body } = await handleLiveOddsRequest({
     query: req.query ?? {},
     method: req.method,
     // 生のクエリの形も検査する（並び替え・エンコードでキャッシュを外させない。BOA-1110）
     rawSearch: new URL(req.url ?? "", "http://localhost").search,
-    politeFetch: await getPoliteFetch(),
+    politeFetch,
   });
   res.setHeader("Cache-Control", cacheControl);
-  return res.status(status).json(body);
+  const sent = res.status(status).json(body);
+  // 数えの書き込みは応答の後に回す（利用者を待たせない。185 の審査 P3）。waitUntil が使えない環境（ローカル）はそのまま流す。
+  // fetchCounter は投げない
+  const pending = counter.maybeFlush();
+  try {
+    waitUntil(pending);
+  } catch {
+    void pending;
+  }
+  return sent;
 }

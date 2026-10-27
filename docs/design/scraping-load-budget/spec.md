@@ -288,7 +288,7 @@ BOA-500 で入れた先出しをやめる変更で、見せる時刻が遅くな
 | M1. scrape_slots から毎日数える（先に入れる） | 窓型ジョブの attempts × 1回のページ数（registry に `pagesPerAttempt`）を、ホスト×パスごとに日次で集計し、朝夜のまとめに出す | 窓型ジョブ（全体の約9割）の近似 | マイグレーション無し。取得0の outcome（skipped_*・cancelled_race・breaker_open・budget_exhausted）は除く。odds の no_values と odds_final の未確定は1ページ、partial の取り直しは足りない券種だけ。1日の slot は約9,000行で1,000行を超えるので SQL で集計する（PostgREST の1,000行で黙って切れない）。politeFetch の再試行は数えない |
 | M2. politeFetch が数える（次に入れる） | politeFetch が (ホスト, パス, 応答の種類) ごとに数え（再試行も1件）、RPC で `fetch_counts`（日・時・ホスト・パス・応答の種類・件数）に加算する | すべて（日次・ライブ・GHA も、同じ politeFetch を通せば） | マイグレーション1本（RLS、service_role のみ）。PostgREST の upsert では数を足せないので RPC。毎分の起動は1日約6,000回あるので、取得0の起動は書かない。ライブは長く生きるので N 件ごとに書く。日の合計は RPC の SUM で読む（行が1,000を超えうる）。古い行は scrape-cleanup で消す |
 
-推奨は M1 を先に、M2 を次に。ライブの回数は M1 の段階で数える（`/api/odds/live` で、公式へ取りに行った件数を1日1行の加算で残す。M2 の前の仮の数え方）。
+M2 は P3（マイグレーション185）で入れた: 時の表 `fetch_counts` に加えて、1分の上限（目安60）を見る分の表 `fetch_counts_minute`（日・分・ホスト・経路）も同じ RPC で足す。数えるのは Vercel の経路（Cron の各ジョブ・オッズの口・BOATCAST の probe・`/api/odds/live`）だけで、GitHub Actions の素の fetch は P6 で politeFetch を通すまで入らない。P4b〜d の判断に使う2週間の数は「Vercel の経路だけ」の数として読む。呼び出し側の中断（ソフトデッドライン）は数えず、politeFetch の打ち切りは timeout に分ける。推奨は M1 を先に、M2 を次に。ライブの回数は M1 の段階で数える（`/api/odds/live` で、公式へ取りに行った件数を1日1行の加算で残す。M2 の前の仮の数え方）。
 
 ### 7.2 知らせる条件
 

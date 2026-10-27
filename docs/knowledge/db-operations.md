@@ -102,3 +102,7 @@
 - analogy_contribution_profiles（118:97-98）・race_history_cache（020:16）・accuracy_cache（013・013b）は匿名に SELECT がある。/api を閉じても同じ値は匿名キーで取れる（2026-10-27、DDL で確認。本番の権限は check-anon-access.js で要確認）
 - /api の関門は除外だけを名指しにし、デコードしたパスで判定する（matcher はデコード前で照合、adminAuth.js:4-8）。/%61pi/ のように api をエンコードした要求が関数に届くかは実測する（2026-10-27、system-architect、BOA-1110）
 - Googlebot には SPA を返しているので（ADR-0089:110）、/api を閉じる前に検索ボットの拒む候補を別に数える。WRS が Sec-Fetch-Site を送るかは未確認（2026-10-27、system-architect、BOA-1110）
+- Cron の口は2つある。共通の createScrapeCronHandler と、オッズの createOddsCronHandlerWithPredictionOdds（api/cron/odds.js、予測オッズの導出つき）。共通の口だけに足した仕組み（取得の数え等）はオッズに効かない。両方が使う小さな関数（createCronFetchContext）にまとめる（2026-10-27、system-architect の審査、BOA-1145 P3・185）
+- 取得の数えを起動の終わりの1回だけで書くと、関数の打ち切り（maxDuration）で溜まった分を全部失う。20件か60秒で裏で書き、handler の終わりは try/finally で残りを書く（2026-10-27、同、scripts/lib/scrapeJobs/fetchCounter.js）
+- 取得の数えでは、呼び出し側の中断（init.signal の abort。ソフトデッドライン等）を数えない。politeFetch 自身の打ち切りは kind=timeout に分けて、接続の失敗（network）と区別する（2026-10-27、同、185 の CHECK）
+- 1分の上限（目安60）を見る数は、時の表をパスで割っても出ない。表を当てた後に分の列を足すとマイグレーションがもう1本要るので、最初から分の表（fetch_counts_minute、パス・種類なし）を一緒に作る（2026-10-27、同、185）
