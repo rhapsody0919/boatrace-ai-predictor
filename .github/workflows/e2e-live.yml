@@ -160,6 +160,8 @@ jobs:
         # 組が全部成功したのにレポートが無い（merge-reports の異常）ときも走らせて落とす（黙って skip にしない）
         if: always() && (needs.e2e-live.result == 'success' || hashFiles('e2e-results.json') != '')
         env:
+          # 一覧も実行と同じモードで集める（Codex の指摘。今の spec では replay でも一覧は同じだが、揃えておく）
+          E2E_LIVE: '1'
           PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
         run: |
           npx playwright test --list --reporter=json
