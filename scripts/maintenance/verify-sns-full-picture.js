@@ -885,7 +885,7 @@ test("BOA-1167: channels に x が無い束は x_text・full-x.mp4 を受けず�
   assert.ok(
     saved.slice(savedBefore).every(([p]) => !p.endsWith("/full-x.mp4")),
   );
-  assert.doesNotMatch(result.notes[0], /^x:/m);
+  assert.match(result.notes[0], /^x: 束の channels に無いので作らない$/m);
   // 版（revision）は bundle・完全版・Shorts の動画の順
   const { createHash } = await import("node:crypto");
   assert.equal(
@@ -939,6 +939,21 @@ test("BOA-1167: channels の検査。x を外すことだけができ（完全�
     ),
     [],
   );
+});
+
+test("BOA-1167: channels に x が無い束で Shorts の item を作れなければ、Slack に「X・」を付けずに完全版は送ると書く", async () => {
+  const b = bundleV2({ channels: ["youtube", "shorts"], x_text: undefined });
+  store.failInsertItem = (row) => row.variant === "shorts";
+  try {
+    const result = await push(b);
+    assert.deepEqual(Object.keys(result.channels), ["youtube"]);
+    assert.match(
+      result.notes[0],
+      /作れなかったので作らなかった（完全版は送る）/,
+    );
+  } finally {
+    store.failInsertItem = null;
+  }
 });
 
 test("BOA-1167: channels に x が無い束で完全版の動画が無ければ拒否する（full-x.mp4 の有無は問わない）", async () => {

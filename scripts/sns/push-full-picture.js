@@ -563,8 +563,9 @@ export async function pushFullPicture(
   );
   if (shortsError)
     lines.push(
-      `youtube（Shorts）: 下書き・item を作れなかったので作らなかった（X・完全版は送る）: ${shortsError}`,
+      `youtube（Shorts）: 下書き・item を作れなかったので作らなかった（${out.x ? "X・" : ""}完全版は送る）: ${shortsError}`,
     );
+  if (!wantsX(bundle)) lines.push("x: 束の channels に無いので作らない");
   if (xSlot?.blocked)
     lines.push(`x: 作らなかった（${xSlot.reason}）。YouTube は送る`);
   if (xSlot?.note) lines.push(`x: ${xSlot.note}`);
