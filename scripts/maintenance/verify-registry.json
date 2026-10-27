@@ -1414,6 +1414,11 @@
       "guards": "依頼9・10: YouTube Shorts案B（private insert→処理確認→public update→実公開確認）・PT/JST日跨ぎの日次枠・upload lease失効時の非公開残置・処理pollの上限3回・update応答喪失時の要照合（142をPGlite、モックadapter、外部接続なし）"
     },
     {
+      "script": "verify-sns-today-picks.js",
+      "tier": "ci",
+      "guards": "/today の X 投稿が使ったレースを hq の思考投稿（today_thinking、BOA-1169）の材料に出す読む口（scripts/sns/today-picks.js）: 型 a は本文の「注目レース：」の行があるときだけ picks の先頭が注目レース、型 b は course_win.featured、一覧は残りの picks。締切は races の JST（deadlineIso）、中止は cancelled、races に無いレースは null で出す。返信の子を除いた親1件、2件は投げる。外部接続なし"
+    },
+    {
       "script": "verify-sns-today-plan.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
