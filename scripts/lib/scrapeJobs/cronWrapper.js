@@ -107,9 +107,8 @@ async function isBreakerOpen(breaker, definition, nowMs) {
   ];
   for (const { key, host } of keys) {
     try {
-      await breaker.check(key);
-      // check() が半開の試行を予約した場合は、ここでは取得しないので戻す
-      breaker.abortProbe(key);
+      // 開いているかだけを見る（半開の試行を DB で予約しない。予約すると、この起動で取らないのに全体の試行を2分止める）
+      await breaker.check(key, { reserve: false });
     } catch (error) {
       if (error instanceof BreakerOpenError) {
         return {

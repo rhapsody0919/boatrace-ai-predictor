@@ -83,6 +83,7 @@ export function normalizeBreakerRead(value) {
       level: 0,
       openedAtMs: 0,
       closedAtMs: 0,
+      untilRaw: null,
     };
   if (value && typeof value === "object" && typeof value.untilMs === "number") {
     const level = finiteOr0(value.level);
@@ -92,6 +93,12 @@ export function normalizeBreakerRead(value) {
       level: Math.min(MAX_BREAKER_LEVEL, Math.max(0, Math.trunc(level))),
       openedAtMs: finiteOr0(value.openedAtMs),
       closedAtMs: finiteOr0(value.closedAtMs),
+      // DB の breaker_open_until の文字列そのまま（半開の試行を DB で予約するときの条件。ms に丸めると一致しない）
+      // 文字列・null（行が無い・閉じている）はそのまま。返さないストア（テストの旧い形）は undefined
+      untilRaw:
+        typeof value.untilRaw === "string" || value.untilRaw === null
+          ? value.untilRaw
+          : undefined,
     };
   }
   return null;
@@ -142,6 +149,7 @@ export function createCircuitBreaker({
   throttleMs = 24 * 60 * 60 * 1000,
   hostBlockOpenMs = 60 * 60 * 1000,
   readTtlMs = 10 * 1000,
+  probeHoldMs = 2 * 60 * 1000,
 } = {}) {
   // ホスト全体のキー（host:boatrace.jp）か、ページのパスのキー（host:boatrace.jp/owpc/…）かで、開く期間の基準を変える
   const blockBaseOf = (key) =>
@@ -169,6 +177,10 @@ export function createCircuitBreaker({
         level: 0,
         openedAt: 0,
         closedAt: 0,
+        // DB の breaker_open_until の文字列（最後に読んだ・書けた値。半開の試行の予約・閉じる条件）と、その ms
+        // （undefined はまだ DB を読んでいない）
+        untilRaw: null,
+        dbUntilMs: undefined,
         lastRead: -Infinity,
         inflight: null,
       };
@@ -206,7 +218,22 @@ export function createCircuitBreaker({
           await safe("状態の読み取り", () => store.read(hostKey)),
         );
         if (!read) return;
-        if (read.untilMs > s.openUntil) s.openUntil = read.untilMs;
+        if (
+          read.untilRaw !== undefined &&
+          s.dbUntilMs !== undefined &&
+          read.untilMs !== s.dbUntilMs
+        ) {
+          // DB の期限が、最後に読んだ・書けた値から変わった（別の起動が閉じた・予約した・人が早めた）: DB を正とする。
+          // 以前は長くなる向きにしか採らず、別の起動が閉じても自分の期限（最長6時間）まで開いたままだった。
+          // 変わったかは ms で比べる（DB が返す +00:00 と JS が書く Z で文字列が違う。④c の審査 P3-4）
+          s.openUntil = read.untilMs;
+        } else if (read.untilMs > s.openUntil) {
+          s.openUntil = read.untilMs;
+        }
+        if (read.untilRaw !== undefined) {
+          s.dbUntilMs = read.untilMs;
+          s.untilRaw = read.untilRaw;
+        }
         s.fetchStop = read.fetchStop;
         // 段階は、より新しく開いた側を採る（別の起動が開き直していれば、その段階から上げる）
         if (read.openedAtMs > s.openedAt) {
@@ -255,13 +282,22 @@ export function createCircuitBreaker({
     s.level = level;
     s.openUntil = until;
     if (store) {
-      await safe("開放の記録", () =>
-        store.open(hostKey, s.openUntil, reason, {
+      const wrote = await safe("開放の記録", async () => {
+        await store.open(hostKey, s.openUntil, reason, {
           level: s.level,
           openedAtMs: s.openedAt,
-        }),
-      );
+        });
+        return true;
+      });
+      // 書けたときだけ「DB の値」を覚える（書き込みの失敗の後の読み直しで、自分の開放を DB の古い値で消さない。④c の審査 P2-1）
+      if (wrote) rememberDb(s, s.openUntil);
     }
+  };
+
+  // 書けた DB の期限を覚える（0 は閉じた＝NULL）
+  const rememberDb = (s, untilMs) => {
+    s.dbUntilMs = untilMs;
+    s.untilRaw = untilMs > 0 ? new Date(untilMs).toISOString() : null;
   };
 
   return {
@@ -270,7 +306,7 @@ export function createCircuitBreaker({
      * @param {string} hostKey
      * @returns {Promise<{probe: true} | undefined>}
      */
-    async check(hostKey) {
+    async check(hostKey, { reserve = true } = {}) {
       const s = stateOf(hostKey);
       await refresh(hostKey, s);
       // 非常停止は期限・半開より先に見る（半開の試行も取らない）
@@ -278,8 +314,36 @@ export function createCircuitBreaker({
       if (s.openUntil === 0) return;
       const t = now();
       if (t < s.openUntil) throw new BreakerOpenError(hostKey, s.openUntil);
+      // reserve:false は「開いているか」だけを見る（共通ラッパの起動の前の確認。試行を予約しない）
+      if (!reserve) return;
       // 半開: 期限を過ぎた。1件だけ試行させる（呼び出し側が試行のページを選べるよう、予約したことを返す）
       if (s.probing) throw new BreakerOpenError(hostKey, t + 5000);
+      // 全体で1件にする: DB の期限が読んだ値のままの行だけを、今＋probeHoldMs に進める（条件つき UPDATE）。1行変わった
+      // プロセスだけが試す。他は開いている扱い（BOA-1145 P4a ④c）。DB に期限が無い（プロセスの中だけで開いた）・予約の口が無い・
+      // 予約に失敗した（DB の障害）ときは、従来どおりプロセスの中の1件で試す
+      if (store?.reserveProbe && s.untilRaw) {
+        const holdUntil = t + probeHoldMs;
+        let reserved = true;
+        let reserveFailed = false;
+        // 予約を待つ間に、同じプロセスの並行の要求が試さないよう、先に印を立てる（④c の審査 P3-2）
+        s.probing = true;
+        try {
+          reserved = await store.reserveProbe(hostKey, s.untilRaw, holdUntil);
+        } catch (error) {
+          reserveFailed = true;
+          console.warn(
+            `⚠️ ${hostKey}: 半開の試行の予約に失敗（プロセスの中の1件で試す）:`,
+            error?.message ?? error,
+          );
+        }
+        if (!reserved) {
+          // 別の起動が先に予約した（または開き直した）: 読み直して、開いている扱い
+          s.probing = false;
+          await refresh(hostKey, s, { force: true });
+          throw new BreakerOpenError(hostKey, Math.max(s.openUntil, t + 5000));
+        }
+        if (!reserveFailed) rememberDb(s, holdUntil);
+      }
       s.probing = true;
       return { probe: true };
     },
@@ -357,12 +421,14 @@ export function createCircuitBreaker({
       s.events = [];
       s.consecutive = 0;
       if (store) {
-        await safe("開放の記録", () =>
-          store.open(hostKey, s.openUntil, reason, {
+        const wrote = await safe("開放の記録", async () => {
+          await store.open(hostKey, s.openUntil, reason, {
             level,
             openedAtMs: s.openedAt,
-          }),
-        );
+          });
+          return true;
+        });
+        if (wrote) rememberDb(s, s.openUntil);
       }
     },
 
@@ -391,10 +457,19 @@ export function createCircuitBreaker({
       s.openUntil = 0;
       s.events = [];
       s.closedAt = now();
-      if (store)
-        await safe("クローズの記録", () =>
-          store.close(hostKey, { closedAtMs: s.closedAt }),
+      if (store) {
+        // 閉じるのは、DB の期限が自分の知っている値（予約した期限）のままのときだけ（条件つき）。その間に別の起動が開き直して
+        // いれば閉じない（条件のない close は、別の起動の開き直しを全体で消す。④c の審査 P2-2）
+        const expectedRaw = s.untilRaw;
+        const closed = await safe("クローズの記録", () =>
+          store.close(hostKey, { closedAtMs: s.closedAt, expectedRaw }),
         );
+        if (closed === false) {
+          await refresh(hostKey, s, { force: true });
+          return;
+        }
+        rememberDb(s, 0);
+      }
     },
 
     /**

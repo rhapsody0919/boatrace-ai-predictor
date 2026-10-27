@@ -1184,6 +1184,11 @@
       "guards": "レース情報（A1）・展示（A2）のVercel Cron実装"
     },
     {
+      "script": "verify-scrape-probe-reserve.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ④c: 半開の試行を、起動をまたいで全体で1件にする（scrape_job_state の breaker_open_until が読んだ文字列のままの行だけを今＋2分に進める条件つき UPDATE）。マイクロ秒つきの期限でも予約できる、試行の失敗・中断の後の再予約、予約の口の失敗はプロセスの中の1件、共通ラッパの起動の前の確認とパスが開いているときは予約しない、別の起動が閉じた・人が早めた期限を DB から採る"
+    },
+    {
       "script": "verify-scrape-result-job.js",
       "tier": "ci",
       "guards": "結果取得（A6）・Kファイル同期・結果のcatch-upのVercel Cron実装"

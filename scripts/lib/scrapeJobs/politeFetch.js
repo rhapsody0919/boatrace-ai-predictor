@@ -317,6 +317,9 @@ export function createPoliteFetch({
       let lastError;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         if (breaker) {
+          // 先に予約なしで両方を見る（パスが開いているのにホストの半開の試行を DB で予約して、全体の試行を止めないため）
+          await breaker.check(hostKey, { reserve: false });
+          if (guarded) await breaker.check(pathKey, { reserve: false });
           const hostCheck = await breaker.check(hostKey);
           if (guarded) {
             try {

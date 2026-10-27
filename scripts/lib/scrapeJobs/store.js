@@ -302,7 +302,23 @@ export function createSupabaseStore(client) {
           level: typeof data?.breaker_level === "number" ? data.breaker_level : 0,
           openedAtMs: openedAt ? new Date(openedAt).getTime() : 0,
           closedAtMs: closedAt ? new Date(closedAt).getTime() : 0,
+          untilRaw: typeof until === "string" ? until : null,
         };
+      },
+      // 半開の試行の予約（BOA-1145 P4a ④c）: breaker_open_until が読んだ値（expectedRaw。DB が返した文字列のまま）の行だけを
+      // newUntilMs に進める。1行変わったら予約できた（このプロセスだけが試す）。0行なら別の起動が先に予約・開き直した
+      async reserveProbe(hostKey, expectedRaw, newUntilMs) {
+        const { data, error } = await client
+          .from(STATE)
+          .update({
+            breaker_open_until: new Date(newUntilMs).toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("job", hostKey)
+          .eq("breaker_open_until", expectedRaw)
+          .select("job");
+        if (error) throw wrap(`半開の試行の予約(${hostKey})`, error);
+        return (data?.length ?? 0) === 1;
       },
       // level（403 のとき）を渡すと段階と開いた時刻も書く。fetch_stop・mode は書かない（人が立てた値・既定の off に触れない）。
       // 178 の前（段階の列が無い: PGRST204、列名つき）は段階を外して書き直す
@@ -334,13 +350,21 @@ export function createSupabaseStore(client) {
         if (error) throw wrap(`ブレーカーの開放(${hostKey})`, error);
       },
       // closed を渡すと閉じた時刻（breaker_closed_at、178）も書く。178 の前（PGRST204、列名つき）は外して書き直す
+      // closed を渡すと閉じた時刻（breaker_closed_at、178）も書く。178 の前（PGRST204、列名つき）は外して書き直す。
+      // closed.expectedRaw を渡すと、breaker_open_until がその値のままの行だけを閉じる（別の起動の開き直しを消さない。④c）。
+      // 戻り値: 閉じたら true、条件に合わず閉じなかったら false（expectedRaw が無いときは常に true）
       async close(hostKey, closed) {
         const patch = {
           breaker_open_until: null,
           updated_at: new Date().toISOString(),
         };
-        const update = (p) => client.from(STATE).update(p).eq("job", hostKey);
-        let { error } = await update(
+        const expectedRaw = closed?.expectedRaw ?? null;
+        const update = async (p) => {
+          let q = client.from(STATE).update(p).eq("job", hostKey);
+          if (expectedRaw) q = q.eq("breaker_open_until", expectedRaw);
+          return expectedRaw ? q.select("job") : q;
+        };
+        let { data, error } = await update(
           closed
             ? {
                 ...patch,
@@ -353,9 +377,10 @@ export function createSupabaseStore(client) {
           closed &&
           isColumnMissingError(error, ["breaker_closed_at"])
         ) {
-          ({ error } = await update(patch));
+          ({ data, error } = await update(patch));
         }
         if (error) throw wrap(`ブレーカーの解除(${hostKey})`, error);
+        return expectedRaw ? (data?.length ?? 0) === 1 : true;
       },
     },
   };
