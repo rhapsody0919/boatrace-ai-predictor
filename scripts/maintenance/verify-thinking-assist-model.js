@@ -788,8 +788,14 @@ check(
           params: { assist_metric: "st_course", assist_lens: "axis" },
         },
         { name: "assist_guide_step", params: { assist_guide_step: 1 } },
-        { name: "assist_sheet_open", params: { assist_sheet: "mark" } },
-        { name: "assist_sheet_open", params: { assist_sheet: "theory" } },
+        {
+          name: "assist_sheet_open",
+          params: { assist_sheet: "mark", assist_bet_type: "trifecta" },
+        },
+        {
+          name: "assist_sheet_open",
+          params: { assist_sheet: "theory", assist_bet_type: "trifecta" },
+        },
       ]),
     JSON.stringify(all),
   );
@@ -860,7 +866,11 @@ check(
     JSON.stringify(assistEventOf(st, { type: "target", target: 2 })) ===
       JSON.stringify({
         name: "assist_target",
-        params: { assist_target: 2, assist_lens: "axis" },
+        params: {
+          assist_target: 2,
+          assist_lens: "axis",
+          assist_bet_type: "trifecta",
+        },
       }) &&
       assistEventOf(st, { type: "target", target: 1 }) === null &&
       assistEventOf(
@@ -1073,6 +1083,18 @@ check(
           name: "assist_bet_box",
           params: { assist_bet_type: "exacta" },
         }),
+  );
+  check(
+    "イベント: マークシートを開いた・着順を替えたときも今の券種を送る（保存から戻った2連単も区別する）",
+    JSON.stringify(
+      assistEventOf({ ...st, betType: "exacta" }, { type: "sheet", sheet: "mark" }),
+    ) ===
+      JSON.stringify({
+        name: "assist_sheet_open",
+        params: { assist_sheet: "mark", assist_bet_type: "exacta" },
+      }) &&
+      assistEventOf({ ...st, betType: "exacta", target: 1 }, { type: "target", target: 3 })
+        .params.assist_bet_type === "exacta",
   );
 }
 

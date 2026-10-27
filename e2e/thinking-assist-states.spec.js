@@ -1856,7 +1856,11 @@ test.describe("思考アシスト: GA4 のイベント（公開後のフォロ�
       "assist_metric",
       "race_id",
     ]);
-    expect(events[4][1]).toEqual({ race_id: RACE_ID, assist_sheet: "mark" });
+    expect(events[4][1]).toEqual({
+      race_id: RACE_ID,
+      assist_sheet: "mark",
+      assist_bet_type: "trifecta",
+    });
     expect(events.slice(5).map(([, p]) => p.assist_guide_step)).toEqual([1, 2]);
   });
 });
@@ -2570,6 +2574,16 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
       .getByRole("button", { name: "マークシートを開く", exact: true })
       .click();
     const sheet = page.getByRole("dialog", { name: "マークシート" });
+    // マークシートを開いたイベントにも今の券種（計測の審査 P1）
+    expect(
+      await page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "assist_sheet_open")
+          .map((e) => e[2]),
+      ),
+    ).toEqual([
+      { race_id: RACE_ID, assist_sheet: "mark", assist_bet_type: "exacta" },
+    ]);
     // 2連単は3着の段を使わない（薄く残して押せない。入れた候補は残る）
     await expect(candidate(sheet, 4, 3)).toBeDisabled();
     await expect(candidate(sheet, 4, 3)).toHaveAttribute(
