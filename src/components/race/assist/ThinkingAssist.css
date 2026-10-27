@@ -2390,6 +2390,10 @@
   cursor: pointer;
 }
 
+.ta-bettype-cmp tbody tr {
+  cursor: pointer;
+}
+
 .ta-bettype-cmp tr.is-current td {
   background: color-mix(in srgb, var(--color-info-text) 12%, transparent);
   font-weight: var(--font-weight-bold);
@@ -2399,7 +2403,12 @@
   font-weight: var(--font-weight-bold);
 }
 
-/* 2連単の3着の段: 薄く残して押せなくする（入れた候補は残る） */
+/* 2連単の3着の段: 薄く残して押せなくする（入れた候補は残る）。レンズの艇の行の「3着」も同じ */
+.ta-pos3 button.is-unused {
+  opacity: 0.35;
+  cursor: default;
+}
+
 .ta-ms-row.is-unused > * {
   opacity: 0.35;
 }

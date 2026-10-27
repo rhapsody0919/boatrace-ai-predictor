@@ -306,7 +306,7 @@ test.describe("思考アシスト: ファン評価 1周目", () => {
       .click();
     const sheet = page.getByRole("dialog", { name: "マークシート" });
     await expect(sheet.getByText(/確定オッズではない/)).toBeVisible();
-    await expect(sheet.getByText(/締切まで動く/)).toHaveCount(0);
+    await expect(sheet.getByText(/締切まで(動く|変わる)/)).toHaveCount(0);
   });
 });
 
@@ -2552,8 +2552,17 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await expect(rows.nth(1)).toContainText(/2連単\s*1-23\s*2点/);
     await expect(footer(page)).toContainText("3連単 1-23-4（2点）");
 
-    await compare(page).getByRole("button", { name: "2連単" }).click();
+    // 行全体を押せる（券種の名前の外の、点数のセルを押す。承認モック 画面1）
+    await rows.nth(1).locator("td").nth(2).click();
     await expect(footer(page)).toContainText("2連単 1-23（2点）");
+    // レンズの艇の行の「3着」も、2連単では薄くして押せない（画面3）
+    await expect(candidate(page, 4, 3)).toBeDisabled();
+    await expect(
+      page
+        .locator(".ta-sum, .ta-split-fig, figure")
+        .getByText("2連単は1着・2着の組。3着の段は使わない（入れた候補は残る）")
+        .first(),
+    ).toBeVisible();
     await expect(
       betTypes(page).getByRole("button", { name: "2連単" }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -2648,6 +2657,70 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await expect(footer(page)).toContainText("2連単 1-2（1点）", {
       timeout: 20000,
     });
+  });
+
+  // mock-diff 2: 締切前（結果の無いレース）のスナップショットは「オッズは HH:MM の値。締切まで変わる」（承認モック 画面1・2）
+  test("締切前のレースは、買い目の下に「オッズは HH:MM の値。締切まで変わる」", async ({
+    page,
+  }) => {
+    const dropResult = (v) => {
+      if (Array.isArray(v)) return v.forEach(dropResult);
+      if (v && typeof v === "object") {
+        if (v.raceId === RACE_ID || v.race_id === RACE_ID) v.result = null;
+        Object.values(v).forEach(dropResult);
+      }
+    };
+    await page.route(
+      "**/api/predictions/**",
+      async (route) => {
+        const res = await fetchRecorded(route);
+        const body = await res.json();
+        dropResult(body);
+        await route.fulfill(res.fulfillOptions({ json: body }));
+      },
+    );
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await betTypes(page).getByRole("button", { name: "2連単" }).click();
+    await expect(
+      page
+        .locator(".ta-sum")
+        .getByText(/^オッズは\d{1,2}:\d{2}の値。締切まで変わる$/),
+    ).toBeVisible();
+    await expect(
+      page.locator(".ta-sum").getByText(/確定オッズではない/),
+    ).toHaveCount(0);
+  });
+
+  // ファン評価1周目 P2-2: 図の「1着人気」は選んでいる券種のオッズの合成（2連単は 1-x の5組）
+  test("2連単にすると、図の1着人気の合成オッズが2連単のオッズで出る", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds?*", async (route) => {
+      const res = await fetchRecorded(route);
+      const rows = await res.json();
+      for (const row of rows)
+        if (row.exacta_all)
+          row.exacta_all = Object.fromEntries(
+            Object.keys(row.exacta_all).map((k) => [
+              k,
+              k.startsWith("1-") ? 5 : 50,
+            ]),
+          );
+      await route.fulfill(res.fulfillOptions({ json: rows }));
+    });
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await betTypes(page).getByRole("button", { name: "2連単" }).click();
+    // 1-x の5組が全部 5.0 倍 → 合成 1.0 倍
+    await expect(
+      page
+        .getByRole("figure", { name: /レースの図/ })
+        .getByText(/1着人気 1番.*1\.0倍/)
+        .first(),
+    ).toBeVisible();
   });
 
   // セルフレビュー P2: 締切時オッズだけの取得の失敗で、図・買い目のオッズ全体を失敗にしない

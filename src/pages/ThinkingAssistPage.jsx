@@ -297,6 +297,9 @@ function ThinkingAssistBody() {
   const headerHeight = useAppHeaderHeight();
   const finalRound = Boolean(data.round);
   const trifecta = data.odds.data?.trifecta ?? null;
+  // 買い目レンズの図の「1着人気」（1着になる組の合成）は、選んでいる券種のオッズで出す（BOA-990 ファン評価1周目 P2-2）
+  const boardOdds =
+    data.odds.data?.byType?.[assistBetType(state.betType).id]?.odds ?? null;
   const post = data.stage === "post";
   const factsAll = v16Off ? null : (data.facts.data?.facts ?? null);
   const v16Exhibition = data.facts.data?.exhibition ?? null;
@@ -438,7 +441,7 @@ function ThinkingAssistBody() {
         stage: data.stage,
         metric: state.metric,
         racers,
-        trifecta,
+        trifecta: boardOdds,
         finalRound,
         hasToday: today != null,
         pastWin,
@@ -452,7 +455,7 @@ function ThinkingAssistBody() {
       state.metric,
       data.stage,
       racers,
-      trifecta,
+      boardOdds,
       finalRound,
       today,
       pastWin,
@@ -854,6 +857,15 @@ function ThinkingAssistBody() {
                 marks={marks}
                 target={state.target}
                 onTarget={onTarget}
+                // 2連単は3着の候補を使わない（マークシートと同じく薄くして押せない。BOA-990 画面3）
+                legs={betType.legs}
+                legUnusedNote={
+                  betType.legs < 3
+                    ? ASSIST_COPY.legUnused(
+                        ASSIST_COPY.betTypeLabels[betType.id],
+                      )
+                    : null
+                }
               />
             )}
             {/* 機力の差が今日だけか今節ずっとかを確かめる導線（BOA-885）。深掘り中の艇、無ければ1号艇 */}

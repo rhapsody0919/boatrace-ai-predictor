@@ -23,13 +23,14 @@ export default function BetTypeCompare({ rows, betType, onBetType }) {
           {rows.map((r) => {
             const current = r.id === betType;
             return (
-              <tr key={r.id} className={current ? "is-current" : undefined}>
+              // 行全体を押せる（承認モック 画面1）。キーボードは券種の名前のボタンで操作する（押すと行へ伝わる）
+              <tr
+                key={r.id}
+                className={current ? "is-current" : undefined}
+                onClick={() => onBetType(r.id)}
+              >
                 <td>
-                  <button
-                    type="button"
-                    aria-pressed={current}
-                    onClick={() => onBetType(r.id)}
-                  >
+                  <button type="button" aria-pressed={current}>
                     {ASSIST_COPY.betTypeLabels[r.id]}
                   </button>
                 </td>

@@ -177,7 +177,7 @@ export const ASSIST_COPY = Object.freeze({
   colBetPoints: "点数",
   colComposite: "合成オッズ",
   pointsCell: (n) => `${n}点`,
-  compareNote: "券種の名前を押すとその券種に切り替わる",
+  compareNote: "行を押すとその券種に切り替わる",
   legUnused: (type) =>
     `${type}は1着・2着の組。3着の段は使わない（入れた候補は残る）`,
   boxButton: "選んだ艇でボックス",
@@ -221,8 +221,8 @@ export const ASSIST_COPY = Object.freeze({
   missingOdds: (n) => `オッズの無い${n}点は配分に入れていない`,
   // 均等払戻で切り捨てた余りを足したとき（spec FR-8・D-43）
   toppedNote: "余りは払戻の少ない組に足した",
-  oddsCaution: (time) =>
-    `オッズは${time}時点で締切まで動く。返還があると配当は変わる`,
+  // 承認モック（BOA-990 画面1・2）の「オッズは 15:42 の値。締切まで変わる」
+  oddsCaution: (time) => `オッズは${time}の値。締切まで変わる`,
   // 終わったレース（振り返り）。取り込んだ最後のオッズで、確定オッズではない（ファン評価 1周目 指摘13）
   oddsCautionFinished: (time) =>
     `このレースは終わっています。オッズは${time}時点で、確定オッズではない`,
