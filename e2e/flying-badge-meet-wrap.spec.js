@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { srcCss } from "./src-modules.js";
 
 /**
  * F バッジの「今節」の印は、ST考察カードの1列（375pxで約49px）に入る。ko を「이번 절」から
@@ -9,7 +10,10 @@ test("今節の印は狭いセルでも語の切れ目で折り返し、はみ�
   page,
 }) => {
   await page.goto("/about", { waitUntil: "domcontentloaded" });
-  await page.evaluate(() => import("/src/components/race/FlyingBadge.css"));
+  // CSS は src/ の中身をそのまま当てる（以前は開発サーバーから import していた。build した束の preview では読めない）
+  await page.addStyleTag({
+    content: srcCss("/src/components/race/FlyingBadge.css"),
+  });
   const result = await page.evaluate(() => {
     const cell = document.createElement("div");
     cell.style.width = "49px";

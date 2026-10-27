@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { closeSrcLoader, loadSrc, srcFixedT } from "./src-modules.js";
 
 /**
  * 展開予測の的中は艇番で判定する（BOA-708）。予測が「枠なりを前提に N号艇が勝つ」という
@@ -10,6 +11,9 @@ const tab = (page, label) =>
   page.locator(".race-tabs-btn", { hasText: new RegExp(`^${label}$`) });
 
 test.describe("艇番とコースの表記（BOA-708）", () => {
+  // 関数の検査は src/ をテストの側（Node）で読む（e2e/src-modules.js。build した束の preview でも通るように）
+  test.afterAll(closeSrcLoader);
+
   test("前付けのあったレースでは、AI予想タブに1着の艇の進入コースを添える", async ({
     page,
   }) => {
@@ -40,16 +44,12 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     await expect(page.locator(".result-verify-entry-note")).toHaveCount(0);
   });
 
-  test("的中のシェア文は艇番で書き、進入が違うときだけコースを添える", async ({
-    page,
-  }) => {
-    await page.goto("/about", { waitUntil: "domcontentloaded" });
-    const texts = await page.evaluate(async () => {
-      const { generateTurnHitShareText } = await import("/src/utils/share.js");
-      const { default: i18n } = await import("/src/i18n.js");
+  test("的中のシェア文は艇番で書き、進入が違うときだけコースを添える", async () => {
+    const texts = await (async () => {
+      const { generateTurnHitShareText } = await loadSrc("/src/utils/share.js");
       // /hit-races は ja 専用なので ja の文面で確かめる（BOA-754 で文面を locale に移した）
-      const share = (race) =>
-        generateTurnHitShareText(race, i18n.getFixedT("ja"));
+      const t = await srcFixedT("ja");
+      const share = (race) => generateTurnHitShareText(race, t);
       const base = { venue: "津", raceNo: 6, date: "2026-08-11" };
       return {
         frontRunner: share({
@@ -68,7 +68,7 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
           winnerEntryCourse: null,
         }),
       };
-    });
+    })();
     expect(texts.frontRunner).toContain("4号艇が2コースから1着");
     expect(texts.sameCourse).toContain("1号艇が1着");
     expect(texts.sameCourse).not.toContain("コースから");
@@ -78,12 +78,11 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     }
   });
 
-  test("1着の艇の進入コースは actual_course を優先し、無ければ entry_course で補う", async ({
-    page,
-  }) => {
-    await page.goto("/about", { waitUntil: "domcontentloaded" });
-    const values = await page.evaluate(async () => {
-      const { winnerEntryCourseOf } = await import("/src/utils/raceOutcome.js");
+  test("1着の艇の進入コースは actual_course を優先し、無ければ entry_course で補う", async () => {
+    const values = await (async () => {
+      const { winnerEntryCourseOf } = await loadSrc(
+        "/src/utils/raceOutcome.js",
+      );
       return [
         // 確定済み（Kファイル同期後）: actual_course を使う
         winnerEntryCourseOf({ rank1: 4, actual_course_4: 2 }, 3),
@@ -94,34 +93,54 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
         // 結果が無い
         winnerEntryCourseOf(null, 2),
       ];
-    });
+    })();
     expect(values).toEqual([2, 2, null, null]);
   });
 
-  test("的中レース一覧の全期間（1500件超）でも、1着の艇の進入コースを取れる", async ({
-    page,
-  }) => {
-    test.slow();
-    await page.goto("/about", { waitUntil: "domcontentloaded" });
-    const result = await page.evaluate(async () => {
-      const { dataService } = await import("/src/services/dataService.js");
-      // 全期間（14日）を開いたときと同じ規模。1本の .in() では URL が長すぎて 400 になっていた
-      const ids = ["2026-08-13-01-02"];
-      for (let day = 1; day <= 14; day += 1) {
-        for (let venue = 1; venue <= 24; venue += 1) {
-          for (let race = 1; race <= 12; race += 1) {
-            ids.push(
-              `2026-08-${String(day).padStart(2, "0")}-${String(venue).padStart(2, "0")}-${String(race).padStart(2, "0")}`,
-            );
-          }
+  // 本番の Supabase に出さず、テストの側で fetch を差し替えて「.in() を500件ずつに分けて読み、つなぐ」ことを確かめる。
+  // 以前はブラウザで dataService を読み、録画の応答で確かめていた（500件の .in() が本番で通ることは、
+  // 分けた PR の時点で録画の応答として確かめ済み）。build した束では /src を読めないので形を変えた
+  test("的中レース一覧の全期間（1500件超）でも、1着の艇の進入コースを取れる", async () => {
+    const { dataService } = await loadSrc("/src/services/dataService.js");
+    // 全期間（14日）を開いたときと同じ規模。1本の .in() では URL が長すぎて 400 になっていた
+    const ids = ["2026-08-13-01-02"];
+    for (let day = 1; day <= 14; day += 1) {
+      for (let venue = 1; venue <= 24; venue += 1) {
+        for (let race = 1; race <= 12; race += 1) {
+          ids.push(
+            `2026-08-${String(day).padStart(2, "0")}-${String(venue).padStart(2, "0")}-${String(race).padStart(2, "0")}`,
+          );
         }
       }
-      const courses = await dataService.getRaceWinnerCourses(
-        ids.slice(0, 1600),
-      );
-      return courses["2026-08-13-01-02"];
-    });
-    expect(result).toEqual({ boat: 6, course: 1 });
+    }
+    const requested = [];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (input) => {
+      const url = new URL(typeof input === "string" ? input : input.url);
+      if (!url.pathname.endsWith("/rest/v1/race_results"))
+        throw new Error(`想定外の通信: ${url.pathname}`);
+      const inIds = /^in\.\((.*)\)$/
+        .exec(url.searchParams.get("race_id") ?? "")?.[1]
+        .split(",");
+      requested.push(inIds?.length ?? 0);
+      const rows = (inIds ?? []).includes("2026-08-13-01-02")
+        ? [{ race_id: "2026-08-13-01-02", rank1: 6, actual_course_6: 1 }]
+        : [];
+      return new Response(JSON.stringify(rows), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    };
+    let courses;
+    try {
+      courses = await dataService.getRaceWinnerCourses(ids.slice(0, 1600));
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    expect(courses["2026-08-13-01-02"]).toEqual({ boat: 6, course: 1 });
+    // 1600件を1本で読まず、500件以下ずつに分けて全部を読む
+    expect(Math.max(...requested)).toBeLessThanOrEqual(500);
+    expect(requested.reduce((a, b) => a + b, 0)).toBe(1600);
   });
 
   test("イン崩れの表は、比べる列と基準の列をどちらも1号艇で書く", async ({
