@@ -1,5 +1,10 @@
 import { test, expect } from "./fixtures.js";
-import { closeSrcLoader, loadSrc, srcFixedT } from "./src-modules.js";
+import {
+  closeSrcLoader,
+  liveSupabase,
+  loadSrc,
+  srcFixedT,
+} from "./src-modules.js";
 
 /**
  * 展開予測の的中は艇番で判定する（BOA-708）。予測が「枠なりを前提に N号艇が勝つ」という
@@ -98,8 +103,8 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
   });
 
   // 本番の Supabase に出さず、テストの側で fetch を差し替えて「.in() を500件ずつに分けて読み、つなぐ」ことを確かめる。
-  // 以前はブラウザで dataService を読み、録画の応答で確かめていた（500件の .in() が本番で通ることは、
-  // 分けた PR の時点で録画の応答として確かめ済み）。build した束では /src を読めないので形を変えた
+  // 以前はブラウザで dataService を読み、録画の応答で確かめていた。build した束では /src を読めないので形を変えた。
+  // 500件の .in() の URL を本番が受け付けること（400 にならない）は、本番データの実行（E2E_LIVE）でだけ本番に当てて確かめる
   test("的中レース一覧の全期間（1500件超）でも、1着の艇の進入コースを取れる", async () => {
     const { dataService } = await loadSrc("/src/services/dataService.js");
     // 全期間（14日）を開いたときと同じ規模。1本の .in() では URL が長すぎて 400 になっていた
@@ -117,15 +122,26 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
     const realFetch = globalThis.fetch;
     globalThis.fetch = async (input) => {
       const url = new URL(typeof input === "string" ? input : input.url);
-      if (!url.pathname.endsWith("/rest/v1/race_results"))
+      const inIds =
+        /^in\.\((.*)\)$/
+          .exec(url.searchParams.get("race_id") ?? "")?.[1]
+          .split(",") ?? [];
+      let rows;
+      if (url.pathname.endsWith("/rest/v1/race_results")) {
+        requested.push(inIds.length);
+        rows = [
+          // 確定済み: actual_course を使う
+          { race_id: "2026-08-13-01-02", rank1: 6, actual_course_6: 1 },
+          // 同期前: actual_course が無いので race_start_timings の entry_course で補う
+          { race_id: "2026-08-01-01-01", rank1: 2, actual_course_2: null },
+        ].filter((r) => inIds.includes(r.race_id));
+      } else if (url.pathname.endsWith("/rest/v1/race_start_timings")) {
+        rows = inIds.includes("2026-08-01-01-01")
+          ? [{ race_id: "2026-08-01-01-01", boat_number: 2, entry_course: 3 }]
+          : [];
+      } else {
         throw new Error(`想定外の通信: ${url.pathname}`);
-      const inIds = /^in\.\((.*)\)$/
-        .exec(url.searchParams.get("race_id") ?? "")?.[1]
-        .split(",");
-      requested.push(inIds?.length ?? 0);
-      const rows = (inIds ?? []).includes("2026-08-13-01-02")
-        ? [{ race_id: "2026-08-13-01-02", rank1: 6, actual_course_6: 1 }]
-        : [];
+      }
       return new Response(JSON.stringify(rows), {
         status: 200,
         headers: { "Content-Type": "application/json" },
@@ -138,9 +154,24 @@ test.describe("艇番とコースの表記（BOA-708）", () => {
       globalThis.fetch = realFetch;
     }
     expect(courses["2026-08-13-01-02"]).toEqual({ boat: 6, course: 1 });
+    expect(courses["2026-08-01-01-01"]).toEqual({ boat: 2, course: 3 });
     // 1600件を1本で読まず、500件以下ずつに分けて全部を読む
     expect(Math.max(...requested)).toBeLessThanOrEqual(500);
     expect(requested.reduce((a, b) => a + b, 0)).toBe(1600);
+
+    // 本番データの実行では、500件の .in() を本番に1本だけ当てて、URL の長さで 400 にならないことを確かめる
+    if (process.env.E2E_LIVE === "1") {
+      const res = await fetch(
+        `${liveSupabase.url}/rest/v1/race_results?select=race_id&race_id=in.(${ids.slice(0, 500).join(",")})&limit=1`,
+        {
+          headers: {
+            apikey: liveSupabase.key,
+            Authorization: `Bearer ${liveSupabase.key}`,
+          },
+        },
+      );
+      expect(res.status).toBe(200);
+    }
   });
 
   test("イン崩れの表は、比べる列と基準の列をどちらも1号艇で書く", async ({

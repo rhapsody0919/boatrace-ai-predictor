@@ -15,11 +15,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 let serverPromise = null;
 
+/** 読み込みの前の本番の宛先（E2E_LIVE の試験だけが、本番に当てる検査で使う） */
+export const liveSupabase = {
+  url: process.env.VITE_SUPABASE_URL ?? "",
+  key: process.env.VITE_SUPABASE_ANON_KEY ?? "",
+};
+
 function viteServer() {
-  // Supabase のクライアントは import.meta.env の宛先が無いと作られない（null）。テストの側で読むモジュールは
-  // ネットワークに出さない（spec が fetch を差し替える）ので、宛先が無い手元では置き場の値を入れる
-  process.env.VITE_SUPABASE_URL ||= "https://e2e-node.invalid";
-  process.env.VITE_SUPABASE_ANON_KEY ||= "e2e-node";
+  // テストの側（Node）の通信は、録画（ブラウザの routeFromHAR）も素通しの一覧（ADR-0077 §5）も通らない。
+  // 差し替え漏れで本番へ出て誰にも見えない、を防ぐため、宛先は常に届かない値にする（CI の secret の URL を使わない）。
+  // Supabase のクライアントは宛先が無いと作られない（null）ので、空にはしない
+  process.env.VITE_SUPABASE_URL = "https://e2e-node.invalid";
+  process.env.VITE_SUPABASE_ANON_KEY = "e2e-node";
   serverPromise ??= import("vite").then(({ createServer }) =>
     createServer({
       root: ROOT,
