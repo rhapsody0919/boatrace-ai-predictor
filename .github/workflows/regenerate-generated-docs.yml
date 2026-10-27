@@ -50,10 +50,15 @@ jobs:
         with:
           ref: master
 
-      # 生成スクリプトは Node 標準モジュールだけを使うので npm ci は不要
+      # データの読み手の台帳（generate-data-readers.js）は @babel/parser の構文木を使うので npm ci が要る。
+      # postinstall 等のスクリプトは要らないので --ignore-scripts（PR の verify の npm ci は cache つきで5〜9秒）
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
 
       - name: Regenerate
         run: node scripts/maintenance/generated-docs.js regenerate
