@@ -26,6 +26,9 @@
  * 10) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
  *     （content-ops.md フローC-11）。戦略メモの手動採用ボタン（PR #514）が
  *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
+ * 11) schemaSnapshot… 本番スキーマの写し docs/reference/schema-snapshot.json が台帳
+ *     docs/db-migration/APPLIED.md より古いか（ADR-0102）。写しの後に「適用済み」に
+ *     なった番号があれば stale=true と取り直しのコマンドを出す。DB には触れない
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -47,6 +50,11 @@ import {
   createDbPendingStore,
   mergePendingLists,
 } from "../lib/racerNews/pendingReview.js";
+import {
+  LEDGER_FILE,
+  SNAPSHOT_FILE,
+  snapshotFreshness,
+} from "../lib/schemaSnapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
@@ -150,6 +158,29 @@ async function checkGrowthSkillsFreshness() {
   };
 }
 
+async function checkSchemaSnapshot() {
+  try {
+    const [snapshotText, ledger] = await Promise.all([
+      fs.readFile(path.join(REPO_ROOT, SNAPSHOT_FILE), "utf-8"),
+      fs.readFile(path.join(REPO_ROOT, LEDGER_FILE), "utf-8"),
+    ]);
+    const snapshot = JSON.parse(snapshotText);
+    const freshness = snapshotFreshness(snapshot, ledger);
+    return {
+      ...freshness,
+      capturedAt: snapshot.capturedAt,
+      command: freshness.stale
+        ? "node --env-file=.env.local scripts/db/schema-snapshot.js で取り直し、PR にする（ADR-0102）"
+        : undefined,
+    };
+  } catch (error) {
+    return {
+      stale: null,
+      error: `${SNAPSHOT_FILE} の鮮度を確かめられない: ${error.message}`,
+    };
+  }
+}
+
 async function main() {
   const [
     xVideo,
@@ -163,6 +194,7 @@ async function main() {
     missingContentIndex,
     contentQualityAudit,
     pendingInsights,
+    schemaSnapshot,
   ] = await Promise.all([
     checkDailyPostStatus("data/analysis/x-posts/history.json"),
     checkRacerNewsPending(),
@@ -187,6 +219,7 @@ async function main() {
       error: error.message,
     })),
     checkPendingInsights(),
+    checkSchemaSnapshot(),
   ]);
 
   const staleVisualAssets = visualAssetAge.assets.filter(
@@ -218,6 +251,7 @@ async function main() {
           : undefined,
     },
     pendingInsights,
+    schemaSnapshot,
   };
 
   if (process.argv.includes("--json")) {
