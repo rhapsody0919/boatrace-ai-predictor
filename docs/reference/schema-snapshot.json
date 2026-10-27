@@ -6,8 +6,8 @@
     "手で書き換えない。definition・viewDefinition は行の配列（join(\"\\n\") で戻す）。行数の目安（reltuples）は入れない。"
   ],
   "format": 2,
-  "capturedAt": "2026-10-27T01:48:38.766Z",
-  "appliedThrough": 183,
+  "capturedAt": "2026-10-27T08:16:33.412Z",
+  "appliedThrough": 186,
   "appliedFilesAtCapture": [
     "001_schema.sql",
     "008_ADD_EXHIBITION_TO_RPC.sql",
@@ -153,18 +153,21 @@
     "180_sns_research_image_send.sql",
     "182_sns_x_kind_reserves.sql",
     "183_today_course_win_stats.sql",
+    "184_scrape_breaker_open_greatest.sql",
+    "185_fetch_counts.sql",
+    "186_sns_youtube_close_private.sql",
     "add-defense-distribution.sql"
   ],
   "serverVersionNum": "170006",
   "counts": {
-    "relations": 105,
-    "tables": 101,
+    "relations": 107,
+    "tables": 103,
     "views": 4,
-    "columns": 1487,
-    "functions": 65,
+    "columns": 1500,
+    "functions": 68,
     "policies": 56,
-    "constraints": 397,
-    "indexes": 214,
+    "constraints": 406,
+    "indexes": 216,
     "triggers": 10
   },
   "relations": [
@@ -3016,6 +3019,369 @@
           ],
           "grantable": []
         },
+        {
+          "grantee": "claude_ro",
+          "privileges": [
+            "SELECT"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "postgres",
+          "privileges": [
+            "DELETE",
+            "INSERT",
+            "MAINTAIN",
+            "REFERENCES",
+            "SELECT",
+            "TRIGGER",
+            "TRUNCATE",
+            "UPDATE"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "service_role",
+          "privileges": [
+            "DELETE",
+            "INSERT",
+            "MAINTAIN",
+            "REFERENCES",
+            "SELECT",
+            "TRIGGER",
+            "TRUNCATE",
+            "UPDATE"
+          ],
+          "grantable": []
+        }
+      ]
+    },
+    {
+      "name": "fetch_counts",
+      "kind": "table",
+      "owner": "postgres",
+      "rlsEnabled": true,
+      "rlsForced": false,
+      "options": null,
+      "comment": "取得先への取得の数（JST の日・時×ホスト×パス×応答の種類×経路）。politeFetch が数え、add_fetch_counts で足す。日の合計は fetch_counts_daily。BOA-1145 P3（spec §7.1 の M2）、185",
+      "viewDefinition": null,
+      "columns": [
+        {
+          "name": "day",
+          "position": 1,
+          "type": "date",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "hour",
+          "position": 2,
+          "type": "smallint",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "host",
+          "position": 3,
+          "type": "text",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "path",
+          "position": 4,
+          "type": "text",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "kind",
+          "position": 5,
+          "type": "text",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "source",
+          "position": 6,
+          "type": "text",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "count",
+          "position": 7,
+          "type": "integer",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "updated_at",
+          "position": 8,
+          "type": "timestamp with time zone",
+          "notNull": true,
+          "default": "now()",
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fetch_counts_count_check",
+          "type": "check",
+          "columns": [
+            "count"
+          ],
+          "definition": "CHECK (count > 0)",
+          "references": null,
+          "referencesColumns": null
+        },
+        {
+          "name": "fetch_counts_hour_check",
+          "type": "check",
+          "columns": [
+            "hour"
+          ],
+          "definition": "CHECK (hour >= 0 AND hour <= 23)",
+          "references": null,
+          "referencesColumns": null
+        },
+        {
+          "name": "fetch_counts_kind_check",
+          "type": "check",
+          "columns": [
+            "kind"
+          ],
+          "definition": "CHECK (kind = ANY (ARRAY['ok'::text, 'not_found'::text, 'blocked'::text, 'overload'::text, 'server_error'::text, 'client_error'::text, 'network'::text, 'timeout'::text]))",
+          "references": null,
+          "referencesColumns": null
+        },
+        {
+          "name": "fetch_counts_pkey",
+          "type": "primary_key",
+          "columns": [
+            "day",
+            "hour",
+            "host",
+            "path",
+            "kind",
+            "source"
+          ],
+          "definition": "PRIMARY KEY (day, hour, host, path, kind, source)",
+          "references": null,
+          "referencesColumns": null
+        },
+        {
+          "name": "fetch_counts_source_check",
+          "type": "check",
+          "columns": [
+            "source"
+          ],
+          "definition": "CHECK (source = ANY (ARRAY['vercel'::text, 'live'::text, 'gha'::text]))",
+          "references": null,
+          "referencesColumns": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fetch_counts_pkey",
+          "unique": true,
+          "primary": true,
+          "definition": "CREATE UNIQUE INDEX fetch_counts_pkey ON public.fetch_counts USING btree (day, hour, host, path, kind, source)"
+        }
+      ],
+      "policies": [],
+      "triggers": [],
+      "grants": [
+        {
+          "grantee": "claude_ro",
+          "privileges": [
+            "SELECT"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "postgres",
+          "privileges": [
+            "DELETE",
+            "INSERT",
+            "MAINTAIN",
+            "REFERENCES",
+            "SELECT",
+            "TRIGGER",
+            "TRUNCATE",
+            "UPDATE"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "service_role",
+          "privileges": [
+            "DELETE",
+            "INSERT",
+            "MAINTAIN",
+            "REFERENCES",
+            "SELECT",
+            "TRIGGER",
+            "TRUNCATE",
+            "UPDATE"
+          ],
+          "grantable": []
+        }
+      ]
+    },
+    {
+      "name": "fetch_counts_minute",
+      "kind": "table",
+      "owner": "postgres",
+      "rlsEnabled": true,
+      "rlsForced": false,
+      "options": null,
+      "comment": "取得先への取得の数（JST の日・分×ホスト×経路）。1分の上限（目安60）を見る。add_fetch_counts の p_minutes で足す。185",
+      "viewDefinition": null,
+      "columns": [
+        {
+          "name": "day",
+          "position": 1,
+          "type": "date",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "minute",
+          "position": 2,
+          "type": "smallint",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "host",
+          "position": 3,
+          "type": "text",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "source",
+          "position": 4,
+          "type": "text",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        },
+        {
+          "name": "count",
+          "position": 5,
+          "type": "integer",
+          "notNull": true,
+          "default": null,
+          "identity": null,
+          "generated": null,
+          "comment": null,
+          "grants": []
+        }
+      ],
+      "constraints": [
+        {
+          "name": "fetch_counts_minute_count_check",
+          "type": "check",
+          "columns": [
+            "count"
+          ],
+          "definition": "CHECK (count > 0)",
+          "references": null,
+          "referencesColumns": null
+        },
+        {
+          "name": "fetch_counts_minute_minute_check",
+          "type": "check",
+          "columns": [
+            "minute"
+          ],
+          "definition": "CHECK (minute >= 0 AND minute <= 1439)",
+          "references": null,
+          "referencesColumns": null
+        },
+        {
+          "name": "fetch_counts_minute_pkey",
+          "type": "primary_key",
+          "columns": [
+            "day",
+            "minute",
+            "host",
+            "source"
+          ],
+          "definition": "PRIMARY KEY (day, minute, host, source)",
+          "references": null,
+          "referencesColumns": null
+        },
+        {
+          "name": "fetch_counts_minute_source_check",
+          "type": "check",
+          "columns": [
+            "source"
+          ],
+          "definition": "CHECK (source = ANY (ARRAY['vercel'::text, 'live'::text, 'gha'::text]))",
+          "references": null,
+          "referencesColumns": null
+        }
+      ],
+      "indexes": [
+        {
+          "name": "fetch_counts_minute_pkey",
+          "unique": true,
+          "primary": true,
+          "definition": "CREATE UNIQUE INDEX fetch_counts_minute_pkey ON public.fetch_counts_minute USING btree (day, minute, host, source)"
+        }
+      ],
+      "policies": [],
+      "triggers": [],
+      "grants": [
         {
           "grantee": "claude_ro",
           "privileges": [
@@ -29543,6 +29909,66 @@
       ]
     },
     {
+      "name": "add_fetch_counts",
+      "identityArgs": "p_rows jsonb, p_minutes jsonb",
+      "result": "integer",
+      "kind": "function",
+      "language": "sql",
+      "volatility": "volatile",
+      "securityDefiner": false,
+      "config": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "prosrcMd5": "cd8c0368149af6e4e234e9d56d433e0d",
+      "definition": [
+        "CREATE OR REPLACE FUNCTION public.add_fetch_counts(p_rows jsonb, p_minutes jsonb DEFAULT '[]'::jsonb)",
+        " RETURNS integer",
+        " LANGUAGE sql",
+        " SET search_path TO 'public'",
+        "AS $function$",
+        "  -- 同じキーが1回の呼び出しに重なっても ON CONFLICT が同じ行を2度触らないよう、先に GROUP BY で足し合わせる",
+        "  WITH mins AS (",
+        "    INSERT INTO public.fetch_counts_minute AS m (day, minute, host, source, count)",
+        "    SELECT r.day, r.minute, r.host, r.source, sum(r.count)::INTEGER",
+        "    FROM jsonb_to_recordset(COALESCE(p_minutes, '[]'::jsonb)) AS r(day DATE, minute SMALLINT, host TEXT, source TEXT, count INTEGER)",
+        "    WHERE r.count > 0",
+        "    GROUP BY r.day, r.minute, r.host, r.source",
+        "    ON CONFLICT (day, minute, host, source) DO UPDATE SET count = m.count + EXCLUDED.count",
+        "    RETURNING 1",
+        "  ), ins AS (",
+        "    INSERT INTO public.fetch_counts AS f (day, hour, host, path, kind, source, count)",
+        "    SELECT r.day, r.hour, r.host, r.path, r.kind, r.source, sum(r.count)::INTEGER",
+        "    FROM jsonb_to_recordset(p_rows) AS r(day DATE, hour SMALLINT, host TEXT, path TEXT, kind TEXT, source TEXT, count INTEGER)",
+        "    WHERE r.count > 0",
+        "    GROUP BY r.day, r.hour, r.host, r.path, r.kind, r.source",
+        "    ON CONFLICT (day, hour, host, path, kind, source) DO UPDATE",
+        "      SET count = f.count + EXCLUDED.count, updated_at = now()",
+        "    RETURNING 1",
+        "  )",
+        "  -- 分の表の CTE も結果に含めて、必ず実行されるようにする",
+        "  SELECT (SELECT count(*)::INTEGER FROM ins) + 0 * (SELECT count(*)::INTEGER FROM mins);",
+        "$function$",
+        ""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "service_role",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        }
+      ]
+    },
+    {
       "name": "analogy_feedback_guard",
       "identityArgs": "",
       "result": "trigger",
@@ -31586,6 +32012,51 @@
         "",
         "    RETURN v_inserted;",
         "END;",
+        "$function$",
+        ""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "service_role",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        }
+      ]
+    },
+    {
+      "name": "fetch_counts_daily",
+      "identityArgs": "p_day date",
+      "result": "TABLE(host text, path text, kind text, source text, total bigint)",
+      "kind": "function",
+      "language": "sql",
+      "volatility": "stable",
+      "securityDefiner": false,
+      "config": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "prosrcMd5": "b983ca750470641225ce13869634b323",
+      "definition": [
+        "CREATE OR REPLACE FUNCTION public.fetch_counts_daily(p_day date)",
+        " RETURNS TABLE(host text, path text, kind text, source text, total bigint)",
+        " LANGUAGE sql",
+        " STABLE",
+        " SET search_path TO 'public'",
+        "AS $function$",
+        "  SELECT f.host, f.path, f.kind, f.source, sum(f.count)::BIGINT",
+        "  FROM public.fetch_counts f",
+        "  WHERE f.day = p_day",
+        "  GROUP BY f.host, f.path, f.kind, f.source",
+        "  ORDER BY f.host, f.path, f.kind, f.source;",
         "$function$",
         ""
       ],
@@ -34033,6 +34504,59 @@
       ]
     },
     {
+      "name": "scrape_breaker_open",
+      "identityArgs": "p_job text, p_until timestamp with time zone, p_reason text, p_level smallint, p_opened_at timestamp with time zone",
+      "result": "TABLE(breaker_open_until timestamp with time zone, breaker_level smallint, breaker_opened_at timestamp with time zone)",
+      "kind": "function",
+      "language": "sql",
+      "volatility": "volatile",
+      "securityDefiner": false,
+      "config": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "prosrcMd5": "cbed83541d469dff005119cb7c76c401",
+      "definition": [
+        "CREATE OR REPLACE FUNCTION public.scrape_breaker_open(p_job text, p_until timestamp with time zone, p_reason text, p_level smallint DEFAULT NULL::smallint, p_opened_at timestamp with time zone DEFAULT NULL::timestamp with time zone)",
+        " RETURNS TABLE(breaker_open_until timestamp with time zone, breaker_level smallint, breaker_opened_at timestamp with time zone)",
+        " LANGUAGE sql",
+        " SET search_path TO 'public'",
+        "AS $function$",
+        "  INSERT INTO public.scrape_job_state AS s (job, breaker_open_until, last_error, updated_at, breaker_level, breaker_opened_at)",
+        "  VALUES (p_job, p_until, p_reason, now(), COALESCE(p_level, 0), p_opened_at)",
+        "  ON CONFLICT (job) DO UPDATE SET",
+        "    breaker_open_until = GREATEST(COALESCE(s.breaker_open_until, '-infinity'::timestamptz), EXCLUDED.breaker_open_until),",
+        "    last_error = CASE WHEN EXCLUDED.breaker_open_until >= COALESCE(s.breaker_open_until, '-infinity'::timestamptz)",
+        "      THEN EXCLUDED.last_error ELSE s.last_error END,",
+        "    breaker_level = CASE WHEN p_level IS NOT NULL",
+        "        AND EXCLUDED.breaker_open_until >= COALESCE(s.breaker_open_until, '-infinity'::timestamptz)",
+        "      THEN p_level ELSE s.breaker_level END,",
+        "    breaker_opened_at = CASE WHEN p_level IS NOT NULL",
+        "        AND EXCLUDED.breaker_open_until >= COALESCE(s.breaker_open_until, '-infinity'::timestamptz)",
+        "      THEN p_opened_at ELSE s.breaker_opened_at END,",
+        "    updated_at = now()",
+        "  RETURNING s.breaker_open_until, s.breaker_level, s.breaker_opened_at;",
+        "$function$",
+        ""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "service_role",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        }
+      ]
+    },
+    {
       "name": "sns_bundle_send_allowed",
       "identityArgs": "d sns_drafts",
       "result": "boolean",
@@ -34857,7 +35381,7 @@
         "search_path=public"
       ],
       "owner": "postgres",
-      "prosrcMd5": "5ae12380ba47e6256388eec8691a603f",
+      "prosrcMd5": "06bd2a81976f9d0fa9d5f337899f5e5d",
       "definition": [
         "CREATE OR REPLACE FUNCTION public.transition_sns_x_send(p_job_id uuid, p_action text, p_result jsonb DEFAULT '{}'::jsonb)",
         " RETURNS jsonb",
@@ -34906,7 +35430,38 @@
         " ) THEN RAISE EXCEPTION '公開結果の確認が必要です'; END IF;",
         " IF j.channel='youtube' AND p_action='youtube_retain' THEN",
         "   IF j.state<>'reconcile' OR j.external_post_id IS NULL OR j.youtube_stage='update_started' THEN RAISE EXCEPTION '非公開残置を確定できません'; END IF;",
+        "   -- 186: 残した理由。試行のクォータの日が今の太平洋時間の日と違えば日付の境目（BOA-973）を優先する",
+        "   -- 理由が無い・知らない値は今までの youtube_private_retained のまま",
         "   UPDATE public.sns_x_send_jobs SET youtube_stage='private_retained',error_code='youtube_private_retained',updated_at=now() WHERE id=j.id RETURNING * INTO j;",
+        "   IF EXISTS (SELECT 1 FROM public.sns_youtube_quota_attempts qa WHERE qa.job_id=j.id AND qa.attempt=j.attempts AND qa.quota_day IS DISTINCT FROM v_day) THEN",
+        "     UPDATE public.sns_x_send_jobs SET error_code='youtube_retained_pt_day' WHERE id=j.id RETURNING * INTO j;",
+        "   ELSIF p_result->>'reason' IN ('budget','processing','check_failed','error') THEN",
+        "     UPDATE public.sns_x_send_jobs SET error_code='youtube_retained_'||(p_result->>'reason') WHERE id=j.id RETURNING * INTO j;",
+        "   END IF;",
+        "   RETURN to_jsonb(j);",
+        " END IF;",
+        " -- 186: 非公開のまま残した job を、公開しないで閉じる。期限の後（公開に進む道が無い）・リース切れ（実行中の worker がいない）・",
+        " -- 10分以内の読み取り（youtube_lookup）で自分の非公開の動画と確かめたものだけ。まだ claim していない子は held（parent_closed）",
+        " IF j.channel='youtube' AND p_action='youtube_close_private' THEN",
+        "   IF j.state<>'reconcile' OR j.youtube_stage IS DISTINCT FROM 'private_retained' OR j.external_post_id IS NULL",
+        "     OR j.expires_at IS NULL OR now()<j.expires_at OR (j.lease_until IS NOT NULL AND now()<j.lease_until) THEN",
+        "     RAISE EXCEPTION 'youtube_close_not_allowed';",
+        "   END IF;",
+        "   IF NOT EXISTS (SELECT 1 FROM public.sns_youtube_quota_reads WHERE job_id=j.id AND attempt=j.attempts AND created_at>=now()-interval '10 minutes') THEN",
+        "     RAISE EXCEPTION 'youtube_close_lookup_missing';",
+        "   END IF;",
+        "   -- 非公開: 自分の動画で privacyStatus=private・ID 一致。削除済み: videos.list が成功して items が空（found=false。2026-10-27、",
+        "   -- 0853d7d9・0883093d の動画はオーナーが Studio で消した）。どちらでもなければ（public・unlisted・他人の動画）閉じない",
+        "   IF NOT ((p_result->>'owned' IS NOT DISTINCT FROM 'true' AND p_result->>'privacyStatus' IS NOT DISTINCT FROM 'private'",
+        "       AND p_result->>'id' IS NOT DISTINCT FROM j.external_post_id)",
+        "     OR p_result->>'found' IS NOT DISTINCT FROM 'false') THEN",
+        "     RAISE EXCEPTION 'youtube_close_not_private';",
+        "   END IF;",
+        "   UPDATE public.sns_x_send_jobs SET state='held',error_code='parent_closed',updated_at=now()",
+        "     WHERE parent_job_id=j.id AND state='queued' AND attempts=0;",
+        "   UPDATE public.sns_x_send_jobs SET state='cancelled',lease_until=NULL,updated_at=now(),",
+        "     error_code=CASE WHEN p_result->>'found' IS NOT DISTINCT FROM 'false' THEN 'youtube_closed_deleted' ELSE 'youtube_closed_private' END",
+        "     WHERE id=j.id RETURNING * INTO j;",
         "   RETURN to_jsonb(j);",
         " END IF;",
         " IF j.channel='youtube' AND p_action IN ('youtube_poll','youtube_ready') THEN",
