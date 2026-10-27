@@ -36,11 +36,11 @@ export default function BetFooter({
       }}
     >
       <div className="ta-foot-text">
-        <b className="ta-num">{ASSIST_COPY.betLabel(
-            ASSIST_COPY.betTypeLabels[type.id],
-            betForm(bets, type.legs),
-            points,
-          )}</b>
+        {/* 「（9点）」を折らない（375px で数字と単位が別の行に分かれた。ファン評価1周目 指摘3） */}
+        <b className="ta-num">
+          {`${ASSIST_COPY.betTypeLabels[type.id]} ${betForm(bets, type.legs)}`}
+          <span className="ta-nowrap">{`（${points}点）`}</span>
+        </b>
         <span className="ta-num">
           {points === 0
             ? ASSIST_COPY.betEmptyFor(type.legs)

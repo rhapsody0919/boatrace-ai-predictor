@@ -163,7 +163,6 @@ export const ASSIST_COPY = Object.freeze({
 
   // 買い目（FR-7・FR-8）
   betRegion: "買い目",
-  betLabel: (type, form, points) => `${type} ${form}（${points}点）`,
   betEmpty: "1着・2着・3着の候補を入れると出る",
   // 券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。用語は「券種」、連単の組は「-」
   betTypeGroup: "券種",

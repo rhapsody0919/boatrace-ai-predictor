@@ -1985,6 +1985,12 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
     for (const b of [2, 3, 4, 5]) await cand(b, 3).click();
     const cmp = page.locator(".ta-bettype-cmp");
     await expect(cmp).toBeVisible();
+    // 固定フッターの「（9点）」は数字と単位を別の行に分けない（ファン評価1周目 指摘3）
+    expect(
+      await page
+        .locator(".ta-foot .ta-nowrap")
+        .evaluate((e) => e.getClientRects().length),
+    ).toBe(1);
     const overflow = (sel) =>
       page.evaluate((s) => {
         const e = document.querySelector(s);
