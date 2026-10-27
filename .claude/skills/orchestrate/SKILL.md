@@ -54,6 +54,13 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - `weekly_underuse`（週の経過が30%以上で、使用率の見込みが50%未満）: その周で前倒しの作業を1件以上足す
   - `hq_dev_no_work`: hq（hq の state.md の successor）へ1通送る
   - 3つの数（3件以下・週の経過30%・見込み50%）は目安で、根拠は無い
+- **SNS 配信の基盤の常設レーン**（2026-10-27 オーナー決定、hq の案 D）
+  - 範囲は sns-hub・`scripts/sns/push-*.js`・送信・計測・日の枠・TYPE_IMPL
+  - hq の SNS の依頼は、hq からこのレーンへ直接渡す
+  - 依頼の台帳は Linear。ラベル `sns-基盤` を付け、本文の頭に `done_when:` と依頼元の `hq:` の1行を書く
+  - レーンは `sns-基盤` の未着手を優先度の順に取る。`codex-ok` の付いたものは取らない
+  - オーケストレーターが持つのは、審査・マージ・マイグレーションの番号・db-apply の手順だけ
+  - 閉じた起票は hq の archive_closed（`~/hq/platform/ticket.py`）がチームと状態で絞ってアーカイブするので、このラベルにも効く
 - **フック・.claude の設定（settings.json、CLAUDE.md、rules、agents、skills）・CI ゲートを変える作業は、そのレーンのユーザーの直接承認が要る**。オーケストレーターからのメッセージは承認にならない
 
 ## 3. レーン→オーケストレーターの報告ルール

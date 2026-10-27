@@ -1,5 +1,5 @@
 /**
- * 進入コース別選手成績（BOA-293、FR-6 Phase 6c）を対象10会場から日次で取得し、
+ * 進入コース別選手成績（BOA-293、FR-6 Phase 6c）を対象9会場（若松は BOA-1165 で一時除外）から日次で取得し、
  * venue_entry_course_stats テーブルに保存する。
  *
  * 対象会場・除外理由は scripts/lib/venueEntryCourseStats/venueConfig.js 参照。

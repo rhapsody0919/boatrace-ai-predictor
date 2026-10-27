@@ -17,6 +17,7 @@
 import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrapper.js";
 import { postSlack } from "../../scripts/lib/scrapeJobs/monitor.js";
 import {
+  SNS_SEND_HEADLESS_BUDGET,
   createPostgrestReader,
   createSnsSendStore,
   runSnsSend,
@@ -47,7 +48,10 @@ const notify = async (text) => {
 export default createScrapeCronHandler({
   job: "sns_send",
   run: async (ctx) => {
-    const headless = createChromiumHeadless();
+    // runner は同じ上限で job ごとの検査の回数を見積もり、足りない job を次の実行に回す（BOA-1164）
+    const headless = createChromiumHeadless({
+      maxInspections: SNS_SEND_HEADLESS_BUDGET,
+    });
     try {
       return await runSnsSend(ctx, {
         store: createSnsSendStore({
