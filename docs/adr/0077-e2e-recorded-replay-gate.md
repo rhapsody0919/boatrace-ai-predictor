@@ -58,6 +58,8 @@
 
 2026-10-27 追記（BOA-1163）: schedule の JST14:00 は守られていない。2026-10-01〜26 の26回の起動は JST18:04〜21:52（4〜8時間の遅れ）。それでも落ちたテストに起動の時刻が原因のものは無かった。完了した16回（10/01〜10/18）の失敗はすべて次のどれかで説明がつく: (a) 直近N走・直近14日の一覧から固定の過去レースを探していた（選手ページの履歴・的中レース一覧、BOA-929 #1856・BOA-1051 #1846 で直した）、(b) page.route の中で `fetchRecorded` が本番の応答を待っている間にアサーションが通ってページが閉じ、「Target page, context or browser has been closed」で失敗扱いになる（live でだけ起きる。再生では録画からすぐ返る。BOA-509 の欠損の補い 15回中15回・SG の帯が無い日 14回中5回、BOA-1163 で直した）、(c) 揺れ（モータ情報の桁は #1962 で直した）。skip の28件はすべて画面幅で決まるもので、時刻で増えていない。テストは「JST14:00 に走る」ことを前提にしていない。前提にしているのは「JST のその日のうちに走る（本日のレースが DB にある）」ことだけで、起動が UTC15:00（JST の日付が変わる）を過ぎると、本日の会場一覧から開くテスト（`venue-grid-card--open` の first・`e2eTodayJST()`）が落ちうる。page.route の中で `fetchRecorded` を呼ぶ新しい処理は、ページが閉じた後の失敗を無視する（`page.isClosed() || /has been closed/`、`in-caution-assist.spec.js` と同じ形）。
 
+2026-10-27 追記: 組に分けた後の初回（run 40487069745）で、`analogy-contribution.spec.js` の「はっきりしないカードの札」だけが retry でも落ちた。応答はすべて固定（facts は `analogy-v16-fixture.js`）で、本番のデータにも時刻にも依らない。trace では facts の fulfill の約90ms後に `allInnerTexts()` が走り、カードが描かれる前に0件を読んでいた（失敗後の画面ではカードが出ている）。`allInnerTexts()`・`count()`・`all()` は待たないので、先に `expect(...).toBeVisible()` で描画を待つ。10/09〜10/13 の flaky 5回も同じテストで、同じ型と推定する（10/09 の追加時から待ちが無かった。当時のログは未確認）。
+
 ### 4. 既存の個別 `page.route` は優先される
 
 HAR は context に登録し、spec 側の `page.route` は page に登録される。page のルートが先に評価されるため、既存の差し替え（予測データ取得失敗・ピットレポートの回帰テスト）はそのまま効く。`route.fallback()` すれば HAR に落ちる。実測で確認した（`/rest/v1/venues*` を page.route で `[]` にした場合、HAR の応答ではなく `[]` が返った）。
