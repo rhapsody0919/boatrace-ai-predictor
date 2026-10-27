@@ -11,12 +11,13 @@
 --      main の枝は kind が finals_image・today_thinking でないとき。一意の索引 (race_id, channel, variant) は変えない
 --      （種類ごとに1レース1件の生きた item。同じレースの finals と thinking、全貌の main とは両立する）
 --   2. sns_auto_send_control.today_thinking_enabled（BOOLEAN NOT NULL DEFAULT false、x の行だけ true にできる）
---   3. transition_sns_send_139（土台は 182）: 変えるのは3か所だけ。today_thinking の期限は締切の5分前（v_expiry_min）、
+--   3. transition_sns_send_139（土台は 188。X の予約を送る文の URL の有無で決める版）: 変えるのは3か所だけ。today_thinking の期限は締切の5分前（v_expiry_min）、
 --      許可が false なら held（today_thinking_disabled）、通り道 B の claim が先に引く A の予定（v_a_pending）に today_thinking を足す
 -- 取り置き（sns_x_kind_reserves の today_thinking）と daily_limit_x はこのマイグレーションに入れない（運用の値。オーナーが旗 on と同じ
 --   トランザクションで当てる。取り置きは旗が off でも効くので、先に入れると他の出し物の残りを食う）
 -- 検証: scripts/maintenance/verify-sns-today-thinking.js（PGlite、外部接続なし）
--- 適用の順: コード（push-finals-image.js・snsClaimCheck.js の today_thinking の枝・snsXSlots.js）を先にデプロイしてから当てる。
+-- 適用の順: 188（X の予約を URL の有無で）の後。下の DO が 188 の本文の md5 を確かめ、188 の前に当てると全体を戻す。
+--   コード（push-finals-image.js・snsClaimCheck.js の today_thinking の枝・snsXSlots.js）を先にデプロイしてから当てる。
 --   どちらの順でも送らない側に倒れる: 列が無い間は push が off として扱い何も書かない。kind の CHECK が item を拒む。
 --   送り手は today_thinking の下書きが無いので通らない。db-apply は master の HEAD の SQL を当てる
 -- 当てる時刻: 22:00〜07:00 JST か 10:00〜13:00 JST（sns_auto_send_control・sns_auto_send_items に ACCESS EXCLUSIVE を取る。
@@ -25,7 +26,7 @@
 --   逆の順で取ると送り手とデッドロックしうる）
 --
 -- 適用前の確認（読み取り）:
---   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: c2b4835c416ff6e824a43fe9025c6518（182 の本文）
+--   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: ce1cd6fa756be8887f4033ab635a706b（188 の本文）
 --   SELECT conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid = 'public.sns_auto_send_items'::regclass
 --     AND conname IN ('sns_auto_send_items_kind_check','sns_auto_send_items_kind_source','sns_auto_send_items_variant_check','sns_auto_send_items_variant_scope');
 --   期待: 4行（kind は race・digest・full_picture・finals_image・research_image、variant は main・shorts・finals・finals_poll・finals_reply、
@@ -47,7 +48,7 @@
 -- 戻し方:
 --   1. 許可を false にする（上の「止める」）
 --   2. 取り置きと上限を戻す（入れていれば。today_thinking の行を消し、full_picture・daily_limit_x を前の値に戻す）
---   3. 関数を戻す: 182_sns_x_kind_reserves.sql の 144〜316 行（transition_sns_send_139 の CREATE OR REPLACE と REVOKE）だけを実行する
+--   3. 関数を戻す: 188_sns_x_cost_by_url.sql の transition_sns_send_139 の CREATE OR REPLACE と REVOKE だけを実行する（ファイル全体は流さない）
 --   4. CHECK と列は残してよい（today_thinking の item が無ければ今までと同じ意味）
 BEGIN;
 
@@ -57,10 +58,10 @@ LOCK TABLE public.sns_auto_send_items IN ACCESS EXCLUSIVE MODE;
 
 DO $$
 BEGIN
-  -- 土台は 182 の transition（出し物ごとの取り置き）。本文が違えば（182 の前・後の別の置き換え）全体を戻す。LIKE では版を区別できない
+  -- 土台は 188 の transition（182 の出し物ごとの取り置き＋188 の URL の有無での予約）。本文が違えば（188 の前・後の別の置き換え）全体を戻す。LIKE では版を区別できない
   IF NOT EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'transition_sns_send_139'
-      AND md5(prosrc) = 'c2b4835c416ff6e824a43fe9025c6518') THEN
-    RAISE EXCEPTION '189: transition_sns_send_139 の本文が 182 でない（md5 が c2b4835c… でない）';
+      AND md5(prosrc) = 'ce1cd6fa756be8887f4033ab635a706b') THEN
+    RAISE EXCEPTION '189: transition_sns_send_139 の本文が 188 でない（md5 が ce1cd6fa… でない）';
   END IF;
   IF EXISTS (SELECT 1 FROM public.sns_auto_send_items WHERE kind = 'today_thinking' OR variant LIKE 'thinking%') THEN
     RAISE EXCEPTION '189: 既存の item に today_thinking・thinking の行がある';
@@ -95,14 +96,14 @@ ALTER TABLE public.sns_auto_send_control ADD COLUMN today_thinking_enabled BOOLE
 ALTER TABLE public.sns_auto_send_control ADD CONSTRAINT sns_auto_send_control_today_thinking_x_only
   CHECK (channel = 'x' OR today_thinking_enabled = false);
 
--- 置き換え（182）: transition_sns_send_139。変更は v_expiry_min の today_thinking（締切の5分前、push-finals-image.js の EXPIRES_BEFORE_MIN と同じ値）、
+-- 置き換え（188）: transition_sns_send_139。変更は v_expiry_min の today_thinking（締切の5分前、push-finals-image.js の EXPIRES_BEFORE_MIN と同じ値）、
 -- today_thinking_disabled の1行（とその注記）、v_a_pending の kind の並びの3か所だけ（v_ceiling・v_rest の行は変えない）
 CREATE OR REPLACE FUNCTION public.transition_sns_send_139(p_job_id UUID, p_action TEXT, p_result JSONB DEFAULT '{}'::jsonb)
 RETURNS JSONB LANGUAGE plpgsql SET search_path=public AS $$
 DECLARE d public.sns_drafts; j public.sns_x_send_jobs; c public.sns_x_send_control; reason TEXT; day_count INTEGER;
   v_limit INTEGER; v_need INTEGER := 1; v_ceiling BIGINT; v_rest BIGINT := 0; v_a_pending INTEGER := 0;
   v_kind TEXT; v_expiry_min INTEGER; v_children INTEGER := 0;
-  v_base INTEGER; v_own INTEGER := 0; v_room JSONB; v_max_age INTEGER;
+  v_base INTEGER; v_own INTEGER := 0; v_room JSONB; v_max_age INTEGER; v_child_cost BIGINT := 0;
 BEGIN
   SELECT * INTO d FROM public.sns_drafts WHERE id=(SELECT draft_id FROM public.sns_x_send_jobs WHERE id=p_job_id) FOR UPDATE;
   SELECT * INTO c FROM public.sns_x_send_control WHERE id=true FOR UPDATE;
@@ -115,13 +116,18 @@ BEGIN
   -- 根拠の鮮度は集計の時刻から24時間（直近1年の集計なので、他の kind の max_source_age_seconds（本番 14400）は当てない）
   v_max_age := CASE WHEN v_kind='research_image' THEN 86400 ELSE c.max_source_age_seconds END;
   v_limit := CASE WHEN j.channel='youtube' THEN coalesce(c.daily_limit_youtube,c.daily_limit) ELSE coalesce(c.daily_limit_x,c.daily_limit) END;
+  -- 188: X の予約は、送る文に URL があれば ceiling_x_url、無ければ ceiling_x_plain（X の料金は Post: Create の URL の有無で変わる）。
+  -- 182 まではスレッドの親（thread_index=0）を全部 URL つきとして数えていた
   v_ceiling := CASE WHEN j.channel='youtube' THEN 0
-    WHEN d.thread_index=0 THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
+    WHEN public.sns_x_post_url_priced(j.snapshot) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
     ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END;
   IF p_action IN ('claim','begin_post') AND j.channel='x' AND d.thread_index=0 AND d.bundle_import_id IS NOT NULL THEN
-    SELECT count(*) INTO v_need FROM public.sns_drafts WHERE bundle_import_id=d.bundle_import_id AND platform='x' AND status<>'archived';
+    SELECT count(*), coalesce(sum(CASE WHEN public.sns_x_post_url_priced(jsonb_build_object('text', concat_ws(E'\n\n', sd.caption_text, array_to_string(sd.hashtags,' ')),
+          'media', CASE WHEN sd.video_storage_path IS NOT NULL OR sd.cover_image_path IS NOT NULL
+            OR jsonb_array_length(coalesce(sd.source_data->'image_paths','[]'::jsonb))>0 THEN '[{}]'::jsonb ELSE '[]'::jsonb END)) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
+        ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END) FILTER (WHERE sd.id<>d.id),0)
+      INTO v_need, v_rest FROM public.sns_drafts sd WHERE sd.bundle_import_id=d.bundle_import_id AND sd.platform='x' AND sd.status<>'archived';
     v_need := greatest(v_need,1);
-    v_rest := (v_need-1)*coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd);
   END IF;
   -- 182: 自分の本数（素材のスレッドの兄弟を含む）。出し物の取り置きの n はこれと自分の子
   v_base := v_need;
@@ -149,7 +155,10 @@ BEGIN
   -- claim のときだけ数える（v_a_pending と同じ。begin_post で数え直すと、間に他の親の子が増えたときに claim 済みの job が
   -- 予約額を使ったまま「日次全体上限です」で止まる。/code-review の指摘）。月の予算も子の分（URL つきの額）の空きを確かめる
   IF p_action='claim' AND j.channel='x' AND d.send_lane IS DISTINCT FROM 'B' THEN
-    SELECT count(*), count(*) FILTER (WHERE cj.parent_job_id=j.id) INTO v_children, v_own FROM public.sns_x_send_jobs cj
+    SELECT count(*), count(*) FILTER (WHERE cj.parent_job_id=j.id),
+        coalesce(sum(CASE WHEN public.sns_x_post_url_priced(cj.snapshot) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
+          ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END),0)
+      INTO v_children, v_own, v_child_cost FROM public.sns_x_send_jobs cj
       JOIN public.sns_drafts cd ON cd.id=cj.draft_id
       LEFT JOIN public.sns_x_send_jobs pj ON pj.id=cj.parent_job_id
       WHERE cj.parent_job_id IS NOT NULL AND cj.channel='x' AND cj.state='queued' AND cj.attempts=0 AND cj.id<>j.id
@@ -157,7 +166,7 @@ BEGIN
         AND (cj.parent_job_id=j.id OR (j.parent_job_id IS NULL AND pj.state IN ('sending','reconcile','posted')
           AND (now() AT TIME ZONE 'Asia/Tokyo')::date = ANY(pj.attempt_dates)));
     v_need := v_need + v_children;
-    v_rest := v_rest + v_children*coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd);
+    v_rest := v_rest + v_child_cost;
   END IF;
   IF p_action IN ('claim','begin_post','check') AND j.state IN ('queued','sending') THEN
     IF j.expires_at IS NULL THEN reason:='deadline_missing';

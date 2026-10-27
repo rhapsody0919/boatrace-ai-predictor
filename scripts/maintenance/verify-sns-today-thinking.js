@@ -1,7 +1,7 @@
 // /today の対象レースの思考投稿（today_thinking、BOA-1169、マイグレーション 189、scripts/sns/push-finals-image.js）の再現テスト。
-// PGlite に 182 までと 189 を当て、本番と同じ承認（approve_sns_x_send、177）・claim（transition_sns_x_send → transition_sns_send_139）で通す。
-// 189 の transition が 182 から3か所だけ変わり、優勝戦・数字で見たら・/today の claim が 182 と同じ結果になることを、
-// 182 だけを当てた別の PGlite と並べて確かめる。外部接続なし。X へは何も送らない
+// PGlite に 188 までと 189 を当て、本番と同じ承認（approve_sns_x_send、177）・claim（transition_sns_x_send → transition_sns_send_139）で通す。
+// 189 の transition が 188 から3か所だけ変わり、優勝戦・数字で見たら・/today の claim が 188 と同じ結果になることを、
+// 188 までを当てた別の PGlite と並べて確かめる。外部接続なし。X へは何も送らない
 import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -48,10 +48,13 @@ const BASE_FILES = [
   "179_sns_research_image_items.sql",
   "180_sns_research_image_send.sql",
   "182_sns_x_kind_reserves.sql",
+  "188_sns_x_cost_by_url.sql",
 ];
 const MIGRATION = "189_sns_today_thinking.sql";
-/** 182 の transition_sns_send_139 の本文の md5（本番の md5(prosrc) と一致を確認済み、189 の先頭の照合） */
+/** 182 の transition_sns_send_139 の本文の md5（本番の md5(prosrc) と一致を確認済み、188 の先頭の照合） */
 const MD5_182 = "c2b4835c416ff6e824a43fe9025c6518";
+/** 188 の transition_sns_send_139 の本文の md5（189 の先頭の照合） */
+const MD5_188 = "ce1cd6fa756be8887f4033ab635a706b";
 
 const sqlOf = (file) =>
   readFile(new URL("../../docs/db-migration/" + file, import.meta.url), "utf8");
@@ -66,13 +69,16 @@ const transitionBody = (s) => {
 };
 /** PGlite の時計に合わせて now() を test_now() にする（本文の md5 も変わるので、189 の照合の値をこちらの 182 の本文の md5 にそろえる） */
 const forTest = (s) => s.replaceAll("now()", "test_now()");
-async function migration189ForTest() {
-  const base = md5(transitionBody(forTest(await sqlOf(BASE_FILES.at(-1)))));
-  const text = forTest(await sqlOf(MIGRATION));
-  const guard = `md5(prosrc) = '${MD5_182}'`;
-  assert.equal(text.split(guard).length, 2, "189 の照合の md5 は1か所");
+/** md5 で土台を照合するマイグレーションを、試験の土台（now() を test_now() にした本文）の md5 に差し替える */
+async function guardedForTest(file, baseFile, baseMd5) {
+  const base = md5(transitionBody(forTest(await sqlOf(baseFile))));
+  const text = forTest(await sqlOf(file));
+  const guard = `md5(prosrc) = '${baseMd5}'`;
+  assert.equal(text.split(guard).length, 2, `${file} の照合の md5 は1か所`);
   return text.replace(guard, `md5(prosrc) = '${base}'`);
 }
+const migration189ForTest = () =>
+  guardedForTest(MIGRATION, BASE_FILES.at(-1), MD5_188);
 
 async function openDb(with189) {
   const pg = new PGlite();
@@ -88,7 +94,12 @@ async function openDb(with189) {
   await pg.exec(`
     CREATE TABLE races(race_id VARCHAR PRIMARY KEY, race_date DATE, start_time TIME, cancellation_status TEXT);
     CREATE TABLE race_conditions(race_id VARCHAR PRIMARY KEY, race_stage VARCHAR);`);
-  for (const file of BASE_FILES) await pg.exec(forTest(await sqlOf(file)));
+  for (const file of BASE_FILES)
+    await pg.exec(
+      file === "188_sns_x_cost_by_url.sql"
+        ? await guardedForTest(file, "182_sns_x_kind_reserves.sql", MD5_182)
+        : forTest(await sqlOf(file)),
+    );
   if (with189) await pg.exec(await migration189ForTest());
   return pg;
 }
@@ -431,10 +442,14 @@ const readCurrent = createReadCurrent({
   },
 });
 
-test("189 の土台: 182 の transition の本文の md5 が c2b4835c…。189 は 182 から3か所だけ変える（v_ceiling・v_rest は変えない）", async () => {
+test("189 の土台: 188 の transition の本文の md5 が ce1cd6fa…（182 は c2b4835c…）。189 は 188 から3か所だけ変える（v_ceiling・v_rest は変えない）", async () => {
+  assert.equal(
+    md5(transitionBody(await sqlOf("182_sns_x_kind_reserves.sql"))),
+    MD5_182,
+  );
   const before = transitionBody(await sqlOf(BASE_FILES.at(-1)));
   const after = transitionBody(await sqlOf(MIGRATION));
-  assert.equal(md5(before), MD5_182);
+  assert.equal(md5(before), MD5_188);
   // 行の差（最長共通部分列）。変わったまとまりが3つで、消えた行・足した行はこの3か所のものだけ
   const a = before.split("\n");
   const b = after.split("\n");
@@ -484,7 +499,7 @@ test("189 の土台: 182 の transition の本文の md5 が c2b4835c…。189 �
   );
   assert.ok(text.indexOf("SET LOCAL lock_timeout = '10s';") < lockControl);
   assert.ok(lockControl > 0 && lockControl < lockItems);
-  assert.ok(lockItems < text.indexOf("md5(prosrc) = '" + MD5_182 + "'"));
+  assert.ok(lockItems < text.indexOf("md5(prosrc) = '" + MD5_188 + "'"));
   // 取り置き・上限はマイグレーションに入れない（transition の本文の外。本文は claim で予約額を書く）
   const outside =
     text.slice(0, text.indexOf("CREATE OR REPLACE FUNCTION")) +
@@ -497,11 +512,11 @@ test("189 の土台: 182 の transition の本文の md5 が c2b4835c…。189 �
   );
 });
 
-test("189 の先頭の照合: transition の本文が 182 でなければ（189 を当てた後にもう一度当てても）全体を戻す", async () => {
+test("189 の先頭の照合: transition の本文が 188 でなければ（189 を当てた後にもう一度当てても）全体を戻す", async () => {
   const again = await migration189ForTest();
   await assert.rejects(
     db.exec(again),
-    /189: transition_sns_send_139 の本文が 182 でない/,
+    /189: transition_sns_send_139 の本文が 188 でない/,
   );
   await db.exec("ROLLBACK");
   // 戻ったので列は1つ（2回足されていない）、CHECK も1組
@@ -937,7 +952,7 @@ test("マイグレーションの前（許可の列が無く PostgREST が 400�
   assert.deepEqual(await counts(), NOTHING);
 });
 
-/** 182 だけ・182＋189 の PGlite で同じ claim を並べる（優勝戦・数字で見たら・/today） */
+/** 188 まで・188＋189 の PGlite で同じ claim を並べる（優勝戦・数字で見たら・/today） */
 async function claimScenario(pg) {
   const q = async (sql, args = []) => (await pg.query(sql, args)).rows[0];
   await pg.exec(CLEAR_SQL);
@@ -1029,7 +1044,7 @@ async function claimScenario(pg) {
   return out;
 }
 
-test("優勝戦・数字で見たら・/today の claim は 182 と同じ結果（182 だけを当てた PGlite と並べる）", async () => {
+test("優勝戦・数字で見たら・/today の claim は 188 と同じ結果（188 までを当てた PGlite と並べる）", async () => {
   const base = await openDb(false);
   try {
     const expected = await claimScenario(base);
