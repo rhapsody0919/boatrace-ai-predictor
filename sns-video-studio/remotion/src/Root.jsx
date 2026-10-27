@@ -3,6 +3,7 @@ import { FullPictureScene2 } from "./fullPicture/Scene2Compare.jsx";
 import { scene2Duration } from "./fullPicture/scene2Timeline.js";
 import { FullPictureStep } from "./fullPicture/FullPictureStep.jsx";
 import { FullPicture } from "./fullPicture/FullPicture.jsx";
+import { S02Card, S02Overlay } from "./fullPicture/S02.jsx";
 import { fullPictureTimeline } from "./fullPicture/fullPictureTimeline.js";
 import { stepTimeline } from "./fullPicture/stepTimeline.js";
 import { AshiyaCM, AmagasakiCM } from "./AshiyaCM.jsx";
@@ -606,6 +607,9 @@ export function RemotionRoot() {
           durationInFrames: props?.scenes?.length ? Math.max(30, fullPictureTimeline(props.scenes, props.answers).total) : 300,
         })}
       />
+      {/* 型 s02-loss-breakdown-card の札と重ね（静止画、scripts/full-picture/prototype-s02.mjs） */}
+      <Composition id="S02Card" component={S02Card} durationInFrames={1} fps={30} width={1080} height={1920} defaultProps={{ head: "", lines: [], band: { win: 1, loss: 1 } }} />
+      <Composition id="S02Overlay" component={S02Overlay} durationInFrames={1} fps={30} width={1080} height={1920} defaultProps={{}} />
       {/* 全貌動画の段の場面を1つ（場面ごとの確認用）。props: { scene, answers } */}
       <Composition
         id="FullPictureStep"
