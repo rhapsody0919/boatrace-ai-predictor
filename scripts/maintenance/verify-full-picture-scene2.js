@@ -1648,19 +1648,21 @@ for (const f of fixtures) {
 // ---- 投稿の型（hq PD02、type-spec.mjs・daily.mjs --type-spec）----
 // 型の表は今は空（オーナー 10/25: 中身を固めて試作を見てから載せる）。仕組みは試験用の表で確かめる
 {
-  const { resolveType, lengthRange, lengthReason, listTypes, TYPE_IMPL } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
+  const { resolveType, lengthRange, lengthReason, listTypes, TYPE_IMPL, reviewReasons } = await import(`${R}/scripts/full-picture/type-spec.mjs`);
   const { buildBundle, checkBundle } = await import(`${R}/scripts/full-picture/bundle.mjs`);
   const { mkdtempSync, writeFileSync: wf3, readFileSync: rf3, existsSync: ex3 } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const { spawnSync } = await import("node:child_process");
   // 型の表に載せるのは関門を通った型だけ。各型に審査の記録と変えてよい幅を持たせる（docs/design/full-picture-type-gate/spec.md の 7）
   assert.deepEqual(Object.keys(TYPE_IMPL), ["v2r1-answer-fill-explain"]);
-  for (const [id, impl] of Object.entries(TYPE_IMPL)) {
-    for (const k of ["direction", "blindCompare", "channels", "owner"]) assert.ok(typeof impl.review?.[k] === "string" && impl.review[k], `${id}: 審査の記録 ${k} がある`);
-    assert.equal(typeof impl.review.ownerMatchesGate, "boolean", `${id}: 評価役とオーナーの一致の記録`);
-    assert.ok(impl.range && typeof impl.range === "object", `${id}: 変えてよい幅（無ければ {}）`);
-    assert.ok(impl.approved && Object.keys(impl.approved).length, `${id}: 承認した文`);
-  }
+  for (const [id, impl] of Object.entries(TYPE_IMPL)) assert.deepEqual(reviewReasons(id, impl), [], `${id}: 審査の記録`);
+  // 段5の記録は P0 審査1件（2026-10-27〜）。伏せた比較（blindCompare）は段8を回す型だけの任意
+  const base = { approved: { structure: "x" }, range: {}, review: { direction: "d", owner: "o" } };
+  assert.deepEqual(reviewReasons("t", { ...base, review: { ...base.review, p0Review: { role: "youtube-channel", verdict: "P0 0件", date: "2026-10-28" } } }), [], "P0 審査1件で足りる（伏せた比較なし）");
+  assert.ok(reviewReasons("t", base).some((w) => w.includes("段5の記録")), "段5の記録が無ければ落ちる");
+  assert.ok(reviewReasons("t", { ...base, review: { ...base.review, p0Review: { role: "x", verdict: "P0 0件" } } }).some((w) => w.includes("P0 審査の記録")), "日付が無ければ落ちる");
+  assert.ok(reviewReasons("t", { ...base, review: { ...base.review, channels: "c" }, approved: {} }).some((w) => w.includes("承認した文")));
+  assert.ok(reviewReasons("t", { ...base, review: { owner: "o", channels: "c" } }).some((w) => w.includes("direction")));
   assert.deepEqual(listTypes().map((x) => x.id), ["v2r1-answer-fill-explain"]);
   // 試験用の表: 受け持つ項目と承認した文
   const T = { "t-test": { attrs: ["structure", "length_s"], approved: { structure: "要点1つ", length_s: "25〜30" } } };
