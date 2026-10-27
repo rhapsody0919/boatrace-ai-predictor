@@ -407,3 +407,20 @@ export function F01Landscape({
     </AbsoluteFill>
   );
 }
+
+/**
+ * サムネ（横 1280x720）。hq の型の thumb「問い10字前後＋数字1つ」（m02-thumb-word: 表・数字の羅列は載せない）。
+ * 数字は冒頭と同じ範囲の過去の1号艇の1着（約X割）
+ */
+export function F01Thumb({ head, question, number, numberLabel }) {
+  return (
+    <AbsoluteFill style={{ background: `linear-gradient(${BG_TOP}, ${BG_BOTTOM})`, fontFamily: FONT, color: "#fff", padding: "56px 72px" }}>
+      <div style={{ color: MUTED, fontSize: 40, fontWeight: 700 }}>{head}</div>
+      <div style={{ marginTop: 70, fontSize: 116, fontWeight: 900, lineHeight: 1.15 }}>{question}</div>
+      <div style={{ position: "absolute", left: 72, bottom: 64, display: "flex", alignItems: "baseline", gap: 28 }}>
+        <span style={{ fontSize: 44, fontWeight: 700, color: MUTED }}>{numberLabel}</span>
+        <span style={{ fontSize: 180, fontWeight: 900, color: GOLD, lineHeight: 1 }}>{number}</span>
+      </div>
+    </AbsoluteFill>
+  );
+}

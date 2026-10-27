@@ -10,8 +10,8 @@
  * content_type は PD02 の投稿の型で、テーブル sns_content_types（043、ネタの型）とは別物。
  */
 
-/** 型が持ちうる項目（hq config/pdca.json の type_attrs と同じ） */
-export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "angle", "caption"];
+/** 型が持ちうる項目（hq config/pdca.json の type_attrs と同じ。voice は hq が 10/27 に足した） */
+export const TYPE_ATTRS = ["hook", "title", "thumb", "length_s", "structure", "angle", "caption", "voice"];
 
 /**
  * 型の id → 実装（{attrs: 受け持つ項目, approved: 実装したときの hq の文, review: 関門の審査の記録, range: 変えてよい幅, ...部品}）。
@@ -37,6 +37,29 @@ export const TYPE_IMPL = {
       preSendCompare: "しない（オーナー 2026-10-25 選択肢3。今の型の直しで試作の審査を2周通ったため）",
     },
     // 変えてよい幅（hq の磨きの b が自動で試してよい範囲）。v2r1 は無し（変えるときは新しい型として関門を通す）
+    range: {},
+  },
+  // 完全版を横 16:9＋声に（YouTube の完全版だけ。入口版・Shorts・X は今の型のまま）。作るのは f01-build.mjs。
+  // 台本 docs/design/full-picture-type-gate/candidates/f01-landscape-voice-full/script.md
+  "f01-landscape-voice-full": {
+    attrs: ["structure", "length_s", "voice", "title", "thumb"],
+    // 完全版を f01 で作る（run-full.mjs）。length_s は完全版の尺（声の量で決める・下限なし）なので、入口版の尺の検査に使わない
+    full: "f01",
+    approved: {
+      structure:
+        "完全版を横 16:9 に。左に龍神の実画面（PC 幅で撮る）、右に章の札・範囲の札・答えの数字1行、下に字幕。章は機能の場所（龍神ソナー＞類似レース 等）。冒頭で『1号艇が負けたM件の内訳』と問い、⑤でその問いに答え、締めで自分で使う3手順",
+      length_s: "声の量で決める（目安 2分30秒〜3分、下限なし）",
+      voice: "VOICEVOX 青山龍星・speedScale 1.1。選手名は声で読まない",
+      title: "先頭『ボートレース{会場}{R}R {段} {日付}』＋冒頭の問い",
+      thumb: "問い10字前後＋数字1つ",
+    },
+    review: {
+      direction: "オーナー 2026-10-27 専用セッションで案1（横 16:9・1レース1本・声あり 青山龍星）、台本 v3 可、締めは案A（展示の取得が止まっている間は案B）",
+      stats: "BOA-1157・#1973 の線（順位・比べは |z|>=1.96、30件未満は件数だけ）。④「入れ替わる」は試作3レースとも両方の軸で線を通った",
+      p0Review: { role: "台本会議に出ていない新しいエージェント1つ（段5、#1998 の決まり）", verdict: "P0 なし（試作3本の声・字幕・右の列・説明欄・題の数字を材料と実画面に照合）", date: "2026-10-27" },
+      owner: "2026-10-27 試作3本を見て「デザインさえ整えれば OK」。余白を直して段7まで進めてよい",
+    },
+    // 変えてよい幅は無し（変えるときは新しい型として関門を通す）
     range: {},
   },
 };

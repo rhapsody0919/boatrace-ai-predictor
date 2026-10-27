@@ -10,7 +10,7 @@
  */
 import { buildAll } from "./build-all.mjs";
 import { answerOf } from "./answer.mjs";
-import { ROUND_NAME, SITE, utmUrl } from "./bundle.mjs";
+import { DISCLAIMER, FEATURES, FULL_TAGS, ROUND_NAME, SITE, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
 import { venueName } from "./scenes/common.mjs";
 
@@ -302,29 +302,36 @@ export function f01Script(m) {
     omitted,
     title: `ボートレース${raceName} ${date}｜${question}`,
     url,
-    // 締めの測り方（7b節: utm_content=close_a／close_b）。今の説明文の「レース ID/機能」の形に合わせる
-    closeUrl: utmUrl(m.raceId, "youtube").replace(`utm_content=${m.raceId}`, `utm_content=${m.raceId}/close_b`),
+    header: raceHeader({ year: y, month: mo, day: d, venue, raceNo: rn, round: m.api.facts?.today?.round ?? null, deadline: m.race?.startTime ?? null }),
+    place: `${venue}${rn}R`,
+    open: { n0, k0, lossN, p0: ans.p0, where },
     year: y,
   };
 }
 
 /**
- * 説明欄（今の C12・C3 の形の最小。1行目はこのレースのページ、クレジットを必ず入れる）
- * @param {ReturnType<typeof f01Script>} s @param {{name: string, at: number}[]} marks 章の始まり（秒）
+ * 説明欄。今の完全版の説明文の約束（hq 契約 10/24 C1・C3、bundle.mjs の checkBundle）に合わせる:
+ * 1行目は問いと「ボートレース {会場}{R}」（全角40字以内）、2・3行目に龍神ソナー・思考アシストへの導線、
+ * このレースの URL（utm_term=full）、章、クレジット「VOICEVOX:青山龍星」、末尾はハッシュタグ3つまで。
+ * 締めの声「ページは、説明欄の一番上に」は、一番上の導線（このレースの龍神ソナー）を指す
+ * @param {ReturnType<typeof f01Script>} s @param {string} chapters 章の行（f01-build.mjs の f01Chapters）
  */
-export function f01Description(s, marks) {
-  const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+export function f01Description(s, chapters) {
+  const o = s.open;
   return [
-    `このレースのページ: ${s.closeUrl}`,
+    fullLine1(s.question, s.place),
+    `${FEATURES.sonar.line}: ${featureUrl(s.raceId, "sonar")}`,
+    `${FEATURES.assist.line}: ${featureUrl(s.raceId, "assist")}`,
+    `ボートレース ${s.header}`,
     "",
-    `${s.raceName}（${s.date}）の材料を、龍神レーダーの画面で順に見ます。`,
+    `${o.where}で6艇の級の並びが同じ・枠なりの過去${cnt(o.n0)}件、1号艇の1着は${cnt(o.k0)}件（${o.p0.toFixed(1)}%）。負けた${cnt(o.lossN)}件の内訳から、龍神ソナーと思考アシストの画面で材料を順に見る動画です。`,
+    `このレースのデータ（龍神レーダー）: ${utmUrl(s.raceId, "youtube", "full")}`,
     "",
-    ...marks.map((c) => `${mmss(c.at)} ${c.name}`),
+    chapters.trim(),
     "",
-    "過去のレースを集計した参考の値です。結果を保証するものではありません。",
-    "",
+    DISCLAIMER,
     `音声: ${VOICE.credit}`,
-    "#ボートレース",
+    FULL_TAGS.map((x) => `#${x}`).join(" "),
   ].join("\n");
 }
 

@@ -4,7 +4,7 @@ import { scene2Duration } from "./fullPicture/scene2Timeline.js";
 import { FullPictureStep } from "./fullPicture/FullPictureStep.jsx";
 import { FullPicture } from "./fullPicture/FullPicture.jsx";
 import { S02Card, S02Overlay } from "./fullPicture/S02.jsx";
-import { F01Landscape } from "./fullPicture/F01.jsx";
+import { F01Landscape, F01Thumb } from "./fullPicture/F01.jsx";
 import { fullPictureTimeline } from "./fullPicture/fullPictureTimeline.js";
 import { stepTimeline } from "./fullPicture/stepTimeline.js";
 import { AshiyaCM, AmagasakiCM } from "./AshiyaCM.jsx";
@@ -622,6 +622,7 @@ export function RemotionRoot() {
         defaultProps={{ total: 30, chapters: [], subs: [], audio: [] }}
         calculateMetadata={({ props }) => ({ durationInFrames: props.total })}
       />
+      <Composition id="F01Thumb" component={F01Thumb} durationInFrames={1} fps={30} width={1280} height={720} defaultProps={{ head: "", question: "", number: "", numberLabel: "" }} />
       {/* 全貌動画の段の場面を1つ（場面ごとの確認用）。props: { scene, answers } */}
       <Composition
         id="FullPictureStep"
