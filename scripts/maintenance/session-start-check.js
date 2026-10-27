@@ -11,7 +11,8 @@
  * 1) xVideo        … data/analysis/x-posts/history.json の本日投稿状況
  * 2) racerNews     … 要確認リストの pending件数（DBの表 racer_news_pending＋移行期間の
  *                    data/analysis/racer-news-pending-review/pending.json を id で統合。DBが優先）
- * 3) growthSkills  … data/analysis/{x,note}-growth/ の最新レポート鮮度
+ * 3) growthSkills  … data/analysis/x-growth/ の最新レポート鮮度（note-growth は note.com/boatai の
+ *                    noindex が解除されるまで出さない。2026-10-27 オーナー決定、docs/knowledge/note.md）
  * 4) contentIndex  … docs/design/content-ops-flow/spec.md C5
  * 5) qualityBacklog… docs/design/content-ops-flow/spec.md C6
  * 6) recentFlowA   … docs/design/content-ops-flow/spec.md A4（sns-hub の型・題材の選び方への素材提示）
@@ -152,14 +153,11 @@ async function latestReportAgeDays(dirRelPath) {
 }
 
 async function checkGrowthSkillsFreshness() {
-  const [xGrowth, noteGrowth] = await Promise.all([
-    latestReportAgeDays("data/analysis/x-growth"),
-    latestReportAgeDays("data/analysis/note-growth"),
-  ]);
-  return {
-    xGrowth,
-    noteGrowth,
-  };
+  // note-growth の鮮度は出さない。note.com/boatai は noindex で、解除まで note の記事を作らず
+  // /note-growth-report も勧めない（2026-10-27 オーナー決定、docs/knowledge/note.md）。
+  // 解除されたら data/analysis/note-growth を戻す。
+  const xGrowth = await latestReportAgeDays("data/analysis/x-growth");
+  return { xGrowth };
 }
 
 async function checkSchemaSnapshot(now = new Date()) {
