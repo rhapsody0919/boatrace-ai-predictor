@@ -223,7 +223,7 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 
 ## 9. ADR と関係文書
 
-- 新しい ADR: `docs/adr/0102-api-same-site-only.md`（この PR で追加。番号は PR 作成時の master の最大＋1）
+- 新しい ADR: `docs/adr/0103-api-same-site-only.md`（この PR で追加。番号は PR 作成時の master の最大＋1）
 - ADR-0089（ボット HTML）: 材料の取得（自分の `/api/races/today`・`/api/predictions`）と監視（`bot-html-parity`）が合言葉を前提にすることを、段階1の PR で注記する
 - ADR-0032: matcher が `/api` に広がる注記と、「Edge Runtime（デフォルト）」の誤りの注記（ADR-0089:98 で既に指摘済み）を段階3の PR で足す
 - ADR-0059 §2（ブラウザから呼ぶ公開の口は CRON_SECRET と別の方式、IP ごとの上限）: 段階5がこの未実装分を埋める
@@ -249,7 +249,7 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 | P3 | `ua_class` に「無し」、`browser` は抜き取り | `fetch.cjs:4`（https.get） | §2.2 に追記 |
 | P3 | CORS は観測の段階が無くその場で効く。外す場所の一覧が不足 | `api/predictions/[date].js:25,47,82,96` 等 | §2.1 ①の一覧を補い、verify で固定 |
 | P3 | `verify-middleware-routing.js` に `/api` の振り分け | — | §2.2・段階0 |
-| — | 新しい ADR が要る | — | ADR-0102 をこの PR で追加、提案文書に取り下げを注記 |
+| — | 新しい ADR が要る | — | ADR-0103 をこの PR で追加、提案文書に取り下げを注記 |
 
 ## 11. Codex の審査（#1991、2026-10-27）の指摘と対応
 
