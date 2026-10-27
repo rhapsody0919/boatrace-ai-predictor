@@ -78,4 +78,4 @@
 - 自動送信の許可は `sns_auto_send_control.today_thinking_enabled`（x の行、既定 false）。false の間は push が何も書かず、送り手も claim・check・begin_post で held（today_thinking_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのもその後
 - 枠: 取り置き today_thinking 6（2レース×3本）・full_picture 0・daily_limit_x 11（オーナー 2026-10-27）。月水金は取り置きの合計11＝上限で残り0。取り置きは旗が off でも解けないので、行と上限は 189 に入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前にオーナーが当てる
 - readCurrent は source_data のキーで振り分けるので、新しい種類は別のキー（today_thinking）にし、枝の中で item の kind も確かめる（食い違えば投げる）
-- 残る壊れ方: (1) 全貌の X は取り置き0なので、月水金は送れず、他の曜日は取り置かれていない残りの1本を先に来た出し物と取り合う (2) /today の X 投稿が送れなかった日（held 等）でも、下書きが archived でなければ対象として受け取る
+- 残る壊れ方: (1) 全貌の X は取り置き0なので、月水金は送れず、他の曜日は取り置かれていない残りの1本を先に来た出し物と取り合う (2) 同じレースが優勝戦で、かつ /today の対象だと、優勝戦の3本と思考投稿の3本が両方の取り置きを使って出る（一意の索引は両立させる作り。出すかは hq・オーナーが決める）。push が受け取るのは、/today の X 投稿が送られた（status=posted）日の対象だけ
