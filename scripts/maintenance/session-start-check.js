@@ -26,9 +26,11 @@
  * 10) pendingInsights… sns_strategy_insightsのstatus='proposed'（要判断）件数
  *     （content-ops.md フローC-11）。戦略メモの手動採用ボタン（PR #514）が
  *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
- * 11) schemaSnapshot… 本番スキーマの写し docs/reference/schema-snapshot.json が台帳
- *     docs/db-migration/APPLIED.md より古いか（ADR-0102）。写しの後に「適用済み」に
- *     なったファイルがあれば stale=true と取り直しのコマンドを出す。DB には触れない
+ * 11) schemaSnapshot… 本番スキーマの写し docs/reference/schema-snapshot.json が7日以上古いか、
+ *     台帳 docs/db-migration/APPLIED.md より古い（本番と食い違う）か（ADR-0102）。写しの後に
+ *     「適用済み」になったファイルがあるか、取得（capturedAt）から7日以上なら stale=true と理由・
+ *     取り直しのコマンドを出す。日数は台帳に載らない変更（SQL Editor で直に当てた等）を拾うため
+ *     （オーナー 2026-10-27）。写しの取得日と台帳を読むだけで、DB には触れない
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -59,6 +61,8 @@ import {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
 const VISUAL_ASSET_STALE_DAYS = 90;
+// 本番スキーマの写しを日数でも取り直す（台帳に載らない変更を拾うため。オーナー 2026-10-27）
+const SCHEMA_SNAPSHOT_STALE_DAYS = 7;
 
 async function readJsonSafe(relPath, fallback) {
   try {
@@ -158,7 +162,7 @@ async function checkGrowthSkillsFreshness() {
   };
 }
 
-async function checkSchemaSnapshot() {
+async function checkSchemaSnapshot(now = new Date()) {
   try {
     const [snapshotText, ledger] = await Promise.all([
       fs.readFile(path.join(REPO_ROOT, SNAPSHOT_FILE), "utf-8"),
@@ -166,10 +170,31 @@ async function checkSchemaSnapshot() {
     ]);
     const snapshot = JSON.parse(snapshotText);
     const freshness = snapshotFreshness(snapshot, ledger);
+    const capturedMs = Date.parse(snapshot.capturedAt);
+    if (!Number.isFinite(capturedMs)) {
+      throw new Error(
+        `capturedAt が日時として読めない（${snapshot.capturedAt}）`,
+      );
+    }
+    const ageDays = Math.floor((now.getTime() - capturedMs) / 86400000);
+    // 台帳に載らない変更（SQL Editor で直に当てた等）は台帳の比較で出ないので、日数でも取り直す
+    const tooOld = ageDays >= SCHEMA_SNAPSHOT_STALE_DAYS;
+    const stale = freshness.stale || tooOld;
     return {
       ...freshness,
+      stale,
+      reasons: [
+        ...(freshness.stale
+          ? ["台帳で写しの後に適用済みになったファイルがある"]
+          : []),
+        ...(tooOld
+          ? [`取得から${ageDays}日（${SCHEMA_SNAPSHOT_STALE_DAYS}日以上）`]
+          : []),
+      ],
       capturedAt: snapshot.capturedAt,
-      command: freshness.stale
+      ageDays,
+      staleThresholdDays: SCHEMA_SNAPSHOT_STALE_DAYS,
+      command: stale
         ? "gh pr list --search schema-snapshot.json で開いた取り直しの PR が無いことを確かめ、git fetch で master の台帳に合わせてから node --env-file=.env.local scripts/db/schema-snapshot.js で取り直し、PR にする（ADR-0102）"
         : undefined,
     };

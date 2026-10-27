@@ -18,6 +18,7 @@ node scripts/maintenance/session-start-check.js
 | `visualAssetAge` | 90日以上更新されていない視覚素材 |
 | `deprecatedTerms` | 廃止済み用語の残存件数 |
 | `contentIndexCoverage` / `missingContentIndex` | トレーサビリティ索引の欠落・形式エラー |
+| `schemaSnapshot` | 本番スキーマの写し `docs/reference/schema-snapshot.json` が7日以上古い（または本番と食い違う）か。食い違いは台帳 `APPLIED.md` で写しの後に適用済みになったファイルで見る（本番には接続しない） |
 
 **該当が1件以上あれば、ユーザーから話しかけられるのを待たずに最初の応答で提示する。**
 「いいえ」または反応が無ければその日はスキップし、催促しない。
