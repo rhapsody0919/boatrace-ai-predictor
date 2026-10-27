@@ -141,6 +141,7 @@ export const NEVER_TAKEOVER_VARS = Object.freeze(["SKIP_EXHIBITION_ON_GHA"]);
 
 /** 取得先の都合（拒否・過負荷・接続の失敗）で肩代わりしない理由。1つの変数のどれかのジョブに出たら、変数ごと止める */
 const REMOTE_VETO_REASONS = new Set([
+  "fetch_stop_no_takeover",
   "breaker_open_no_takeover",
   "fetch_failure_no_takeover",
 ]);
@@ -200,6 +201,16 @@ export function evaluateJobHealth({
     );
   }
   const nowMs = now.getTime();
+  // 取得の非常停止（scrape_job_state.fetch_stop、マイグレーション178。人が host の行で立てる）の間は肩代わりしない
+  const stoppedKey = [...pathKeysOf(def), ...hostKeysOf(def)].find(
+    (key) => rowsByJob.get(key)?.fetch_stop === true,
+  );
+  if (stoppedKey) {
+    return noTakeover(
+      "fetch_stop_no_takeover",
+      `${job}: 取得先 ${stoppedKey} の非常停止（fetch_stop）が立っている（肩代わりしない）`,
+    );
+  }
   // 取得先のブレーカー（403 のパス・429/503 のホスト）が開いている間は、Vercel が止まっていても肩代わりしない
   const openKey =
     openBreakerKey(pathKeysOf(def), rowsByJob, nowMs) ??
@@ -414,6 +425,7 @@ const STATE_COLUMNS = [
   "consecutive_failures",
   "last_target_date",
   "breaker_open_until",
+  "fetch_stop",
   "last_error",
   "updated_at",
 ].join(",");
@@ -570,6 +582,62 @@ export async function shouldSkipOnGha({
 
 const describeError = (error) =>
   error instanceof Error ? error.message : String(error);
+
+/** GitHub Actions の取得が叩くホスト（scrape-scheduled・morning-init の素の fetch の取得先） */
+export const GHA_FETCH_HOSTS = Object.freeze(["boatrace.jp"]);
+
+/**
+ * 取得先のホストに非常停止（fetch_stop、マイグレーション178）が立っているか（IO込み）。SKIP 変数に関係なく、GitHub Actions の
+ * 取得（scrape-scheduled・morning-init）の最初に呼ぶ（変数が true でない＝人が GitHub を主に選んだ状態でも、非常停止は効かせる。
+ * ADR-0101 決定6「Vercel・ライブ・GitHub Actions のすべての取得が止まる」）。
+ * 読めないとき（鍵が無い・読み取りの失敗）は止めない側（stopped=false）。理由: 変数が true のジョブは shouldSkipOnGha が
+ * 読めなければスキップする（止める側）ので、ここで止めない側に倒れるのは人が GitHub を主に選んだジョブだけ。そこを DB の一時の
+ * 障害で止めない（Vercel の circuitBreaker の読み取りの失敗と同じ扱い）。理由はログに出す
+ * @returns {Promise<{stopped: boolean, reason: string, keys: string[]}>}
+ */
+export async function isGhaFetchStopped({
+  env = process.env,
+  client,
+  hosts = GHA_FETCH_HOSTS,
+  logger = console,
+  policy = GHA_SKIP_POLICY,
+} = {}) {
+  const keys = hosts.map((host) => hostKeyOf(`https://${host}/`));
+  const result = (stopped, reason) => {
+    logger?.log(`[gha-fetch-stop] ${stopped ? "止める" : "続ける"}: ${reason}`);
+    return { stopped, reason, keys };
+  };
+  let stateClient = client;
+  if (!stateClient) {
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
+      return result(false, "SUPABASE_URL・SUPABASE_SERVICE_KEY が未設定で非常停止を確かめられない");
+    }
+    stateClient = createRestJobStateClient({
+      url: env.SUPABASE_URL,
+      key: env.SUPABASE_SERVICE_KEY,
+      timeoutMs: policy.readTimeoutMs,
+    });
+  }
+  let rows;
+  try {
+    rows = await withTimeout(
+      Promise.resolve().then(() => stateClient.readJobStates(keys)),
+      policy.readTimeoutMs,
+    );
+  } catch (error) {
+    return result(false, `非常停止を読み取れない（${describeError(error)}）`);
+  }
+  const stopped = (Array.isArray(rows) ? rows : []).filter(
+    (row) => row?.fetch_stop === true && keys.includes(row.job),
+  );
+  if (stopped.length > 0) {
+    return result(
+      true,
+      `${stopped.map((r) => r.job).join("・")} の非常停止（fetch_stop）が立っている`,
+    );
+  }
+  return result(false, "非常停止は立っていない");
+}
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

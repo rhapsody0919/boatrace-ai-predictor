@@ -32,6 +32,7 @@ import {
   renderTodayHeading,
 } from "./snsTodayVariants.js";
 import { randomBytes } from "node:crypto";
+import { checkXSlot, SLOT_KINDS, xSlotRoomVia } from "./snsXSlots.js";
 
 export const TODAY_URL = `${SITE_BASE_URL}/today`;
 
@@ -668,9 +669,23 @@ export async function runTodayPlan(
   // 自動（mode=auto、2026-10-18 オーナー決定: /today も承認なし）: item を notified にして自動送信の承認者で承認する。
   // 送る時刻は 8:00 と下書きを作った時刻の遅い方（veto_until と同じ）。確認用の作り直し（review）は自動にしない
   let autoError = null;
+  let slotNote = null;
   const auto = state === "manual" && replyAllowed;
   if (auto) {
     try {
+      // X の日の枠の /today の取り置き（182、docs/design/x-daily-slots/plan.md）。返信の型は親と返信の2本。
+      // 入らないと分かったら自動の承認をしない（下の失敗の道で item を戻す）。182 の前・読めないときは今のまま（claim が正）
+      if (store.xSlotRoom) {
+        // 作り直し（版が同じ）では前の版の job が queued のまま残るので、この下書きの job は数えない（system-architect の P2）
+        const slot = await checkXSlot(
+          store.xSlotRoom,
+          SLOT_KINDS.today,
+          replyItem ? 2 : 1,
+          draft.id,
+        );
+        slotNote = slot.note ?? null;
+        if (slot.blocked) throw new Error(slot.reason);
+      }
       item = await store.updateItem(item.id, "manual", {
         state: "notified",
         notified_at: checkedAt,
@@ -752,7 +767,7 @@ export async function runTodayPlan(
             : "今日の投稿の下書きに禁止表現があり、止めた";
   try {
     await notify(
-      `SNS /today（${date}）: ${head}\n${caption}${post.reply ? `\n\n（自分への返信）${post.reply}` : ""}${images
+      `SNS /today（${date}）: ${head}${slotNote ? `\n${slotNote}` : ""}\n${caption}${post.reply ? `\n\n（自分への返信）${post.reply}` : ""}${images
         .filter(Boolean)
         .map((url, i) => `\n画像${i + 1}: ${url}`)
         .join("")}`,
@@ -900,6 +915,8 @@ export function createTodayStore({ url, key, fetchImpl = fetch }) {
       )[0] ?? null,
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
+    // X の日の枠の取り置きの残り（182）
+    xSlotRoom: xSlotRoomVia(call),
     async updateItem(id, fromState, patch) {
       return one(
         await call(`sns_auto_send_items?id=eq.${id}&state=eq.${fromState}`, {

@@ -1066,3 +1066,22 @@ test("PostgREST の読み取り: 親を待つ子は queued・親あり・期限�
     [],
   );
 });
+
+test("182: claim が出し物ごとの取り置き（kind_slot_full）で held を返したら、一度きりの事象として Slack に知らせる", async () => {
+  const x = await approvedJob("x");
+  const notices = [];
+  // 182 の claim が返す形（held・kind_slot_full）を、153 までの PGlite の hold で作る
+  const holding = {
+    ...store,
+    transition: (id, action, result) =>
+      action === "claim"
+        ? store.transition(id, "hold", { reason: "kind_slot_full" })
+        : store.transition(id, action, result),
+  };
+  await runSnsSend(
+    ctx(),
+    deps({ store: holding, notify: async (t) => notices.push(t) }),
+  );
+  assert.equal((await job(x.id)).error_code, "kind_slot_full");
+  assert.equal(notices.filter((t) => t.includes("kind_slot_full")).length, 1);
+});
