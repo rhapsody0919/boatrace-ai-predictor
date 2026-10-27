@@ -182,7 +182,10 @@ export function createPoliteFetch({
       count({ url, status: response.status });
       return response;
     } catch (error) {
-      count({ url, error });
+      // 呼び出し側の中断（ソフトデッドライン等）は数えない。自前の打ち切りは timeout として数える（審査 P2-3）
+      if (!init.signal?.aborted) {
+        count({ url, error, timedOut: error?.politeFetchTimedOut === true });
+      }
       throw error;
     }
   };
@@ -190,7 +193,11 @@ export function createPoliteFetch({
   // タイムアウトはヘッダーと本文の両方に効かせ、本文を読み込んだ Response を返す
   const fetchOnceRaw = async (url, init) => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
     // 呼び出し側の signal も尊重する（どちらかが中断すれば中断）
     if (init.signal) {
       if (init.signal.aborted) controller.abort();
@@ -220,6 +227,15 @@ export function createPoliteFetch({
       );
       Object.defineProperty(out, "url", { value: response.url ?? url });
       return out;
+    } catch (error) {
+      if (timedOut && error && typeof error === "object") {
+        try {
+          error.politeFetchTimedOut = true;
+        } catch {
+          // 凍結された例外には印を付けられない（network として数える）
+        }
+      }
+      throw error;
     } finally {
       clearTimeout(timer);
     }

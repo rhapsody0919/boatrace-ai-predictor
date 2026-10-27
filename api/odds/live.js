@@ -24,6 +24,7 @@ import { createCircuitBreaker } from "../../scripts/lib/scrapeJobs/circuitBreake
 import { createPoliteFetch } from "../../scripts/lib/scrapeJobs/politeFetch.js";
 import { createSupabaseStore } from "../../scripts/lib/scrapeJobs/store.js";
 import { createFetchCounter } from "../../scripts/lib/scrapeJobs/fetchCounter.js";
+import { waitUntil } from "@vercel/functions";
 
 export const config = {
   maxDuration: 30,
@@ -70,8 +71,15 @@ export default async function handler(req, res) {
     rawSearch: new URL(req.url ?? "", "http://localhost").search,
     politeFetch,
   });
-  // 数える側の失敗は応答に響かせない（fetchCounter は投げない）
-  await counter.maybeFlush();
   res.setHeader("Cache-Control", cacheControl);
-  return res.status(status).json(body);
+  const sent = res.status(status).json(body);
+  // 数えの書き込みは応答の後に回す（利用者を待たせない。185 の審査 P3）。waitUntil が使えない環境（ローカル）はそのまま流す。
+  // fetchCounter は投げない
+  const pending = counter.maybeFlush();
+  try {
+    waitUntil(pending);
+  } catch {
+    void pending;
+  }
+  return sent;
 }

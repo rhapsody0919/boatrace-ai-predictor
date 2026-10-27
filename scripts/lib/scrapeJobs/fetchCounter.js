@@ -2,7 +2,8 @@
  * 取得先への取得の数を数え、fetch_counts（マイグレーション185）へ足す（BOA-1145 P3 = spec §7.1 の M2、ADR-0101 決定2・7）。
  *
  * politeFetch が1回の fetch（再試行・カナリアも1件）ごとに add({url, status, error}) を呼ぶ。キーは JST の日・時・ホスト・パス・
- * 応答の種類・経路。flush() で、溜まった分を1回の RPC（add_fetch_counts）で足す。何も数えていなければ書かない（取得0の起動は書かない）。
+ * 応答の種類・経路（と、分の表のための JST の分・ホスト・経路）。20件か60秒で裏で書き、flush() で残りを1回の RPC（add_fetch_counts）で
+ * 足す。何も数えていなければ書かない（取得0の起動は書かない）。呼び出し側の中断（init.signal）は数えない（politeFetch）。
  *
  * 数えるのは監視のためで、取得の可否には使わない。そのため、どの失敗でも例外を投げない（警告だけ）:
  *   - RPC が無い（185 の前。PGRST202・42883、関数名つき）: そのプロセスでは数えるのをやめる（溜まった分も捨てる）
@@ -14,7 +15,9 @@ import { isScrapeSchemaMissingError } from "./schemaErrors.js";
 export const FETCH_COUNT_RPC = "add_fetch_counts";
 
 /** 応答の種類（fetch_counts.kind の CHECK と同じ） */
-export function fetchKindOf({ status, error } = {}) {
+export function fetchKindOf({ status, error, timedOut } = {}) {
+  // 自前の打ち切り（politeFetch の timeoutMs）は timeout に分ける（審査 P2-3）
+  if (timedOut) return "timeout";
   if (error || typeof status !== "number") return "network";
   if (status >= 200 && status < 400) return "ok";
   if (status === 404) return "not_found";
@@ -33,11 +36,12 @@ export function fetchTargetOf(url) {
   };
 }
 
-/** JST の日（YYYY-MM-DD）と時（0〜23） */
+/** JST の日（YYYY-MM-DD）と時（0〜23）と、日の中の分（0〜1439） */
 export function jstDayHour(date) {
   const day = toJstDateString(date);
-  const hour = new Date(date.getTime() + 9 * 3600 * 1000).getUTCHours();
-  return { day, hour };
+  const jst = new Date(date.getTime() + 9 * 3600 * 1000);
+  const hour = jst.getUTCHours();
+  return { day, hour, minute: hour * 60 + jst.getUTCMinutes() };
 }
 
 /**
@@ -56,16 +60,39 @@ export function createFetchCounter({
   flushEvery = 20,
   flushAfterMs = 60 * 1000,
   maxPending = 2000,
+  // add のたびに閾値（flushEvery 件・flushAfterMs）を見て、裏で書く（関数の打ち切りで溜まった分を全部失わないため。審査 P2-2）
+  autoFlush = true,
   logger = console,
 } = {}) {
   /** @type {Map<string, {day: string, hour: number, host: string, path: string, kind: string, source: string, count: number}>} */
   let pending = new Map();
+  /** 分の表（fetch_counts_minute）の行。1分の上限（目安60）を見るため。パス・種類は持たない（審査 P2-1） */
+  /** @type {Map<string, {day: string, minute: number, host: string, source: string, count: number}>} */
+  let pendingMinutes = new Map();
   let pendingFetches = 0;
   let firstPendingAt = null;
   let disabled = false;
   let flushing = null;
 
-  const add = ({ url, status, error } = {}) => {
+  const rowKey = (r) => [r.day, r.hour, r.host, r.path, r.kind, r.source].join("\u0000");
+  const minuteKey = (r) => [r.day, r.minute, r.host, r.source].join("\u0000");
+  const bump = (map, key, make, count = 1) => {
+    const cur = map.get(key);
+    if (cur) {
+      cur.count += count;
+      return true;
+    }
+    if (map.size >= maxPending) return false;
+    map.set(key, { ...make, count });
+    return true;
+  };
+
+  const due = () =>
+    pendingFetches > 0 &&
+    (pendingFetches >= flushEvery ||
+      (firstPendingAt !== null && now().getTime() - firstPendingAt >= flushAfterMs));
+
+  const add = ({ url, status, error, timedOut } = {}) => {
     if (disabled) return;
     let target;
     try {
@@ -74,86 +101,83 @@ export function createFetchCounter({
       return;
     }
     const t = now();
-    const { day, hour } = jstDayHour(t);
-    const kind = fetchKindOf({ status, error });
-    const key = [day, hour, target.host, target.path, kind, source].join(
-      "\u0000",
-    );
-    const row = pending.get(key);
-    if (row) row.count++;
-    else {
-      if (pending.size >= maxPending) {
-        logger?.warn?.(
-          `⚠️ fetch_counts: 持ち越しが上限（${maxPending}行）に達したので、新しいキーを数えない`,
-        );
-        return;
-      }
-      pending.set(key, { day, hour, ...target, kind, source, count: 1 });
+    const { day, hour, minute } = jstDayHour(t);
+    const kind = fetchKindOf({ status, error, timedOut });
+    const row = { day, hour, ...target, kind, source };
+    if (!bump(pending, rowKey(row), row)) {
+      logger?.warn?.(`⚠️ fetch_counts: 持ち越しが上限（${maxPending}行）に達したので、新しいキーを数えない`);
+      return;
     }
+    const m = { day, minute, host: target.host, source };
+    bump(pendingMinutes, minuteKey(m), m);
     pendingFetches++;
     if (firstPendingAt === null) firstPendingAt = t.getTime();
+    if (autoFlush && due()) void flush();
   };
 
-  const flush = async () => {
-    if (flushing) return flushing;
+  const restore = (rows, minutes) => {
+    for (const r of rows) {
+      const { count, ...make } = r;
+      bump(pending, rowKey(r), make, count);
+      pendingFetches += count;
+    }
+    for (const m of minutes) {
+      const { count, ...make } = m;
+      bump(pendingMinutes, minuteKey(m), make, count);
+    }
+    if (firstPendingAt === null) firstPendingAt = now().getTime();
+  };
+
+  const writeOnce = async () => {
     if (disabled || pending.size === 0 || !client) return 0;
     const rows = [...pending.values()];
+    const minutes = [...pendingMinutes.values()];
     pending = new Map();
+    pendingMinutes = new Map();
     pendingFetches = 0;
     firstPendingAt = null;
-    flushing = (async () => {
-      try {
-        const { error } = await client.rpc(FETCH_COUNT_RPC, { p_rows: rows });
-        if (!error) return rows.length;
-        if (isScrapeSchemaMissingError(error, [FETCH_COUNT_RPC])) {
-          disabled = true;
-          logger?.warn?.(
-            "⚠️ fetch_counts: add_fetch_counts が無い（マイグレーション185の前）。このプロセスでは数えない",
-          );
-          return 0;
-        }
-        throw new Error(error.message ?? String(error));
-      } catch (e) {
-        // 戻して次に足す（取得は止めない）
-        for (const r of rows) {
-          const key = [r.day, r.hour, r.host, r.path, r.kind, r.source].join(
-            "\u0000",
-          );
-          const cur = pending.get(key);
-          if (cur) cur.count += r.count;
-          else if (pending.size < maxPending) pending.set(key, r);
-          pendingFetches += r.count;
-        }
-        if (firstPendingAt === null) firstPendingAt = now().getTime();
-        logger?.warn?.(
-          `⚠️ fetch_counts の書き込みに失敗（次に持ち越す）: ${e?.message ?? e}`,
-        );
+    try {
+      const { error } = await client.rpc(FETCH_COUNT_RPC, {
+        p_rows: rows,
+        p_minutes: minutes,
+      });
+      if (!error) return rows.length;
+      if (isScrapeSchemaMissingError(error, [FETCH_COUNT_RPC])) {
+        disabled = true;
+        logger?.warn?.("⚠️ fetch_counts: add_fetch_counts が無い（マイグレーション185の前）。このプロセスでは数えない");
         return 0;
-      } finally {
-        flushing = null;
       }
-    })();
+      throw new Error(error.message ?? String(error));
+    } catch (e) {
+      // 戻して次に足す（取得は止めない）
+      restore(rows, minutes);
+      logger?.warn?.(`⚠️ fetch_counts の書き込みに失敗（次に持ち越す）: ${e?.message ?? e}`);
+      return 0;
+    }
+  };
+
+  /** 溜まった分を書く。書いている最中なら、それを待ってから残りを書く（投げない） */
+  const flush = async () => {
+    while (flushing) await flushing;
+    flushing = writeOnce().finally(() => {
+      flushing = null;
+    });
     return flushing;
   };
 
-  /** 溜まった取得が flushEvery 件以上、または最初に溜まってから flushAfterMs 以上なら書く（/api/odds/live 用） */
-  const maybeFlush = async () => {
-    if (pendingFetches === 0) return 0;
-    if (
-      pendingFetches >= flushEvery ||
-      (firstPendingAt !== null &&
-        now().getTime() - firstPendingAt >= flushAfterMs)
-    ) {
-      return flush();
-    }
-    return 0;
-  };
+  /** 溜まった取得が flushEvery 件以上、または最初に溜まってから flushAfterMs 以上なら書く */
+  const maybeFlush = async () => (due() ? flush() : 0);
 
   return {
     add,
     flush,
     maybeFlush,
     /** テスト・診断用 */
-    snapshot: () => ({ rows: [...pending.values()], pendingFetches, disabled }),
+    snapshot: () => ({
+      rows: [...pending.values()],
+      minutes: [...pendingMinutes.values()],
+      pendingFetches,
+      disabled,
+    }),
   };
 }

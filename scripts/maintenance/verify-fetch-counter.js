@@ -10,6 +10,9 @@
  *   (f) maybeFlush: 20件か60秒で書く（/api/odds/live）
  *   (g) PGlite で 185: 同じキーは加算・count 0 は無視・日の合計・RLS 有効・anon は実行できない
  *   (h) Cron の共通の口（createScrapeCronHandler）: 取得した起動の終わりに1回足す。取得0の起動は書かない
+ *   (i) オッズの口（createOddsCronHandlerWithPredictionOdds）も数える（185 の審査 P1-1）
+ *   (j) 呼び出し側の中断は数えず、自前の打ち切りは timeout（審査 P2-3）
+ *   (k) 20件で裏で書く（審査 P2-2）
  *
  * 実行: node scripts/maintenance/verify-fetch-counter.js
  */
@@ -165,7 +168,11 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
   const results = [];
   const client = {
     async rpc(name, args) {
-      calls.push({ name, rows: args.p_rows.map((r) => ({ ...r })) });
+      calls.push({
+        name,
+        rows: args.p_rows.map((r) => ({ ...r })),
+        minutes: (args.p_minutes ?? []).map((r) => ({ ...r })),
+      });
       return results.shift() ?? { data: 1, error: null };
     },
   };
@@ -292,11 +299,12 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
       "utf8",
     ),
   );
-  const add = async (rows) =>
+  const add = async (rows, minutes = []) =>
     (
-      await db.query("SELECT public.add_fetch_counts($1::jsonb) AS n", [
-        JSON.stringify(rows),
-      ])
+      await db.query(
+        "SELECT public.add_fetch_counts($1::jsonb, $2::jsonb) AS n",
+        [JSON.stringify(rows), JSON.stringify(minutes)],
+      )
     ).rows[0].n;
   const base = {
     day: "2026-10-27",
@@ -311,10 +319,22 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
     { ...base, kind: "overload", count: 2 },
     { ...base, kind: "blocked", count: 0 },
   ]);
-  const n2 = await add([
-    { ...base, count: 3 },
-    { ...base, hour: 16, count: 4 },
-  ]);
+  const mBase = { day: "2026-10-27", minute: 905, host: "boatrace.jp", source: "vercel" };
+  const n2 = await add(
+    [
+      { ...base, count: 3 },
+      { ...base, hour: 16, count: 4 },
+    ],
+    [
+      { ...mBase, count: 3 },
+      { ...mBase, count: 2 },
+      { ...mBase, minute: 906, count: 0 },
+    ],
+  );
+  await add([{ ...base, kind: "timeout", count: 1 }], [{ ...mBase, count: 1 }]);
+  const minutes = (
+    await db.query("SELECT minute, count FROM public.fetch_counts_minute ORDER BY minute")
+  ).rows;
   const daily = (
     await db.query(
       "SELECT * FROM public.fetch_counts_daily('2026-10-27'::date)",
@@ -323,9 +343,9 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
   const ok = daily.find((r) => r.kind === "ok");
   const rls = (
     await db.query(
-      "SELECT relrowsecurity FROM pg_class WHERE oid = 'public.fetch_counts'::regclass",
+      "SELECT bool_and(relrowsecurity) AS ok FROM pg_class WHERE oid IN ('public.fetch_counts'::regclass, 'public.fetch_counts_minute'::regclass)",
     )
-  ).rows[0].relrowsecurity;
+  ).rows[0].ok;
   const can = async (role, fn) =>
     (
       await db.query(
@@ -334,16 +354,21 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
     ).rows[0].ok;
   check(
     "(g) 185: 同じキーは加算、count 0 は無視、日の合計は時をまたいで SUM",
-    n1 === 2 && n2 === 2 && Number(ok?.total) === 12 && daily.length === 2,
+    n1 === 2 && n2 === 2 && Number(ok?.total) === 12 && daily.length === 3,
     show({ n1, n2, daily }),
+  );
+  check(
+    "(g) 185: 分の表にも同じ RPC で足す（同じ分は加算、count 0 は無視）。kind に timeout を受ける",
+    show(minutes) === show([{ minute: 905, count: 6 }]) && daily.some((r) => r.kind === "timeout"),
+    show({ minutes, daily }),
   );
   check(
     "(g) 185: RLS 有効。anon・authenticated は実行できず、service_role は実行できる",
     rls === true &&
-      (await can("anon", "public.add_fetch_counts(jsonb)")) === false &&
+      (await can("anon", "public.add_fetch_counts(jsonb,jsonb)")) === false &&
       (await can("authenticated", "public.fetch_counts_daily(date)")) ===
         false &&
-      (await can("service_role", "public.add_fetch_counts(jsonb)")) === true,
+      (await can("service_role", "public.add_fetch_counts(jsonb,jsonb)")) === true,
   );
 }
 // (h)
@@ -417,6 +442,86 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
   } finally {
     globalThis.fetch = realFetch;
   }
+}
+
+// (i) オッズの口（createOddsCronHandlerWithPredictionOdds）も数える（185 の審査 P1-1）
+{
+  const { createOddsCronHandlerWithPredictionOdds } = await import(
+    "../lib/scrapeJobs/predictionOddsHandlers.js"
+  );
+  process.env.CRON_SECRET = "test-secret";
+  const rpcCalls = [];
+  const client = {
+    async rpc(name, args) {
+      rpcCalls.push({ name, args });
+      return { data: 1, error: null };
+    },
+  };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("<html></html>", { status: 200 });
+  try {
+    const handler = createOddsCronHandlerWithPredictionOdds({
+      getClient: async () => client,
+      createStore: () =>
+        createMemoryStore({
+          rows: { odds: { job: "odds", mode: "live", consecutive_failures: 0 } },
+          slots: [
+            { job: "odds", race_id: "2026-10-27-04-01", offset_min: -30, attempts: 1, last_attempt_at: new Date().toISOString() },
+          ],
+        }),
+      createSlotHandler: () => async (_slot, ctx) => {
+        await ctx.politeFetch("https://www.boatrace.jp/owpc/pc/race/oddstf?rno=1&jcd=04&hd=20261027");
+        return { outcome: "ok", rowsWritten: 0 };
+      },
+    });
+    const res = { status: (c) => ((res.code = c), res), json: (b) => ((res.body = b), res) };
+    await handler({ headers: { authorization: "Bearer test-secret" }, query: {} }, res);
+    const adds = rpcCalls.filter((c) => c.name === "add_fetch_counts");
+    check(
+      "(i) オッズの口も、取得した起動の終わりに add_fetch_counts を呼ぶ",
+      adds.length === 1 && adds[0].args.p_rows[0]?.path === "/owpc/pc/race/oddstf",
+      show({ rpcCalls, body: res.body }),
+    );
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+}
+
+// (j) 呼び出し側の中断は数えない。自前の打ち切りは timeout（185 の審査 P2-3）
+{
+  const counter = createFetchCounter({ client: null, source: "vercel", now: () => T });
+  const hang = (url, init) =>
+    new Promise((_, reject) =>
+      init.signal.addEventListener("abort", () =>
+        reject(Object.assign(new Error("aborted"), { name: "AbortError" })),
+      ),
+    );
+  const ctrl = new AbortController();
+  const f = createPoliteFetch({ counter, maxRetries: 0, timeoutMs: 50, fetchImpl: hang });
+  const p1 = f("https://www.boatrace.jp/owpc/pc/race/oddstf?rno=1", { signal: ctrl.signal }).catch(() => {});
+  ctrl.abort();
+  await p1;
+  await f("https://www.boatrace.jp/owpc/pc/race/odds3t?rno=1").catch(() => {});
+  const rows = counter.snapshot().rows;
+  check(
+    "(j) 呼び出し側の中断は数えず、自前の打ち切り（timeoutMs）は timeout として数える",
+    !rows.some((r) => r.path === "/owpc/pc/race/oddstf") &&
+      rows.some((r) => r.path === "/owpc/pc/race/odds3t" && r.kind === "timeout"),
+    show(rows),
+  );
+}
+
+// (k) 20件で裏で書く（関数の打ち切りで溜まった分を全部失わない。185 の審査 P2-2）
+{
+  let written = 0;
+  const counter = createFetchCounter({
+    client: { rpc: async () => ((written++), { data: 1, error: null }) },
+    source: "vercel",
+    now: () => T,
+  });
+  for (let i = 0; i < 20; i++) counter.add({ url: "https://www.boatrace.jp/owpc/pc/race/oddstf", status: 200 });
+  await new Promise((r) => setTimeout(r, 0));
+  check("(k) 20件で、flush を待たずに裏で書く", written === 1 && counter.snapshot().pendingFetches === 0, show({ written }));
 }
 
 if (failures > 0) {

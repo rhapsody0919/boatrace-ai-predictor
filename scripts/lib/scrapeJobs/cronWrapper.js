@@ -145,6 +145,29 @@ export const throttledClaimLimit = (claimLimit) =>
   Math.max(1, Math.ceil(claimLimit / 2));
 
 /**
+ * Cron の1回の起動の取得の道具（ブレーカー・politeFetch・取得の数え。BOA-1145 P3）。Cron の口（createScrapeCronHandler と、
+ * オッズの口 createOddsCronHandlerWithPredictionOdds）が使う。数えは20件か60秒で裏で書き、finish() で残りを書く（取得0なら書かない）。
+ * finish は投げない（数える側の失敗は取得・応答に響かせない）。呼ぶ側は try/finally で必ず呼ぶ
+ */
+export function createCronFetchContext({ client, store, now }) {
+  const counter = createFetchCounter({
+    client,
+    source: "vercel",
+    ...(now ? { now } : {}),
+  });
+  const breaker = createCircuitBreaker({
+    store: store.breakerStore,
+    ...(now ? { now: () => now().getTime() } : {}),
+  });
+  return {
+    counter,
+    breaker,
+    politeFetch: createPoliteFetch({ breaker, counter }),
+    finish: () => counter.flush(),
+  };
+}
+
+/**
  * ジョブを1回実行する（HTTPに依存しない。テストではこれを直接呼ぶ）。
  *
  * @returns {Promise<{status: number, body: Record<string, unknown>}>}
@@ -640,23 +663,25 @@ export function createScrapeCronHandler({
     }
     const definition = SCRAPE_JOBS[job];
     const store = createStore(client);
-    // 取得の数を数え、起動の終わりに1回で足す（取得0の起動は書かない。数える側の失敗は取得・応答に響かせない。BOA-1145 P3）
-    const counter = createFetchCounter({ client, source: "vercel" });
-    const breaker = createCircuitBreaker({ store: store.breakerStore });
-    const { status, body } = await runScrapeJob({
-      job,
-      definition,
-      store,
-      handleSlot,
-      run,
-      onTick,
-      modeGated: modeGated ?? definition?.kind !== "monitor",
-      client,
-      query: req.query ?? {},
-      breaker,
-      politeFetch: createPoliteFetch({ breaker, counter }),
-    });
-    await counter.flush();
-    return res.status(status).json(body);
+    const fetching = createCronFetchContext({ client, store });
+    let result;
+    try {
+      result = await runScrapeJob({
+        job,
+        definition,
+        store,
+        handleSlot,
+        run,
+        onTick,
+        modeGated: modeGated ?? definition?.kind !== "monitor",
+        client,
+        query: req.query ?? {},
+        breaker: fetching.breaker,
+        politeFetch: fetching.politeFetch,
+      });
+    } finally {
+      await fetching.finish();
+    }
+    return res.status(result.status).json(result.body);
   };
 }
