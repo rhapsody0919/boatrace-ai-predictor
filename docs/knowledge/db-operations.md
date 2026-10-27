@@ -93,3 +93,7 @@
 - post-merge-checks.yml:69 は verify-no-undef.js を引数なしで直接呼ぶ。このスクリプトの既定の規則を増やすと、マージ後の Slack の範囲も広がる。規則を広げるのは引数（台帳の args）で行う（2026-10-24、system-architect の審査、ADR-0079 追記）
 - 共通ロジックの索引（generate-lib-index.js:39-55）の対象は scripts/lib・src/utils・src/services だけで、再 export の行は export に数えない。src/pure に移すときは TARGETS に足す（2026-10-24、system-architect の審査）
 - tsc の範囲を include で絞っても、JSDoc の import('...') 型と /// <reference> を伝って根の外が入る。既定の lib は DOM を含み、@types/* も自動で入る。閉じるには types: [] と DOM なしの lib（2026-10-24、system-architect の審査）
+- ブレーカーの段階は、開いている間（半開の試行でない）に届いた 429・403 では上げない。同時の要求12件の 429 で一気に段階4・60分になった（旧は8分）。上げるのは閉じている状態か半開から開くときだけ（2026-10-27、system-architect の審査、#1983、scripts/lib/scrapeJobs/circuitBreaker.js）
+- 403 と 429/503 は同じ breaker_level を使う（止める側に倒れるので共用を採る）。24時間で1段下げ・閉じた後24時間の絞りは 429 にも効く。期間の表だけ分ける（403 のホスト60分から倍・上限6時間、429 は5・10・20・60分）（2026-10-27、#1983 の審査の決定、ADR-0101 決定5 の追記）
+- Retry-After が10秒を超える 429/503 は再試行せず、その時間（上限60分）ホストを開く。段階は上げない（2026-10-27、#1983 の審査の決定、scripts/lib/scrapeJobs/politeFetch.js）
+- 利用者の要求（/api/odds/live）の 429 は段階を上げない（countOverload:false）。外から呼べる口で定時の取得の止め方を強めさせない。Retry-After>10秒ならその時間開くのは同じ（2026-10-27、#1983 の審査の決定、api/odds/live.js）
