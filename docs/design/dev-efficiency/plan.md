@@ -149,12 +149,12 @@ DAL の中の偏りは、DAL を変えた fix 54件の差分の hunk を、そ�
 ### 5. PGlite の共通の土台
 
 - 今の PGlite の verify（`scripts/maintenance/` に34本）は、それぞれ必要なマイグレーションだけを読む。全スキーマの土台は無く、マイグレーションの積み上げでは DROP・RENAME を追えない
-- 共通の土台は、本番のスキーマのスナップショット（`claude_ro` でカタログ（`pg_catalog`・`information_schema`）を読んで DDL にしたもの）を正本にする
+- 共通の土台は、本番のスキーマのスナップショット `docs/reference/schema-snapshot.json`（`claude_ro` で `pg_catalog` を読んだ JSON の記録。取得は手元の `scripts/db/schema-snapshot.js`、鮮度は session-start-check。job・鍵の追加は無し）を正本にする。形と扱いは [ADR-0102](../../adr/0102-prod-schema-snapshot-as-record.md)。`information_schema` は claude_ro の権限で行が欠けるので使わない。写しは先に入れ、写しから DDL を組み立てる PGlite の土台は後で作る
 - Supabase Branching は入れない（費用が掛かる。今の verify は PGlite で足りる）
 
 ### 6. ER図
 
-- 後回し。5 のスナップショットができれば機械で作れる（`docs/reference/database-design.md` の関係図と同じ考え方）
+- 後回し。5 のスナップショット（`relations[].constraints` の外部キーの `references`・`columns`・`referencesColumns`）から、DB に触れずに機械で作れる（`docs/reference/database-design.md` の関係図と同じ考え方）
 
 ## 3. Codex と Claude の分け方
 
@@ -165,7 +165,7 @@ DAL の中の偏りは、DAL を変えた fix 54件の差分の hunk を、そ�
 | 1b | — | 共有の根の決定（本 PR）、`verify-pure-imports.js`（G5 の守りの verify） |
 | 3+2 | 移した関数の試験の追加（段1・2 の範囲） | 切り出しの PR（DAL の変更を含むので Claude。自動マージしない） |
 | 4 | pure の根の中の型の注記の追加（段2、根が開いた後） | `typescript` の追加・jsconfig・verify の追加 |
-| 5 | スナップショットを使う verify の新規（段1） | スナップショットの job（`claude_ro` の鍵を使う。オーナーの承認） |
+| 5 | スナップショットを使う verify の新規（段1） | スナップショットの取得のスクリプトと写しの PR（手元の `claude_ro`。鍵の追加は無し。公開に載せる初回だけオーナーがマージで決める、ADR-0102） |
 
 ## 4. 最初の2週間（最短）
 
@@ -177,12 +177,11 @@ DAL の中の偏りは、DAL を変えた fix 54件の差分の hunk を、そ�
 | 2日目 | 1a の verify の拡張の PR、1b の verify-pure-imports.js の PR（並べる） | 1a の規則ごとの違反の一覧 |
 | 3日目 | 3+2 の1件目（候補の上位、`src/services` の下の別ファイルか pure の根） | 1件目の試験の追加 |
 | 4〜5日目 | 3+2 の2・3件目。3件の後に ADR-0072 のランナーの見直し | BOA-1015〜1018・1024 の解消 → `no-unused-vars` を入れる |
-| 2週目 | 4（`typescript` の追加と範囲を限った tsc）、5 のスナップショットの job（鍵の承認の後） | pure の根の中の型の注記、スナップショットを使う verify |
+| 2週目 | 4（`typescript` の追加と範囲を限った tsc）、5 のスナップショット（手元で取る、ADR-0102） | pure の根の中の型の注記、スナップショットを使う verify |
 
 最短を決めている制約:
 - 1b の決定（本 PR のマージ）→ verify-pure-imports.js → pure の根への切り出し
 - BOA-1015〜1018・1024 の解消 → `no-unused-vars` の error
-- オーナーの承認（スナップショットの job の鍵）→ 5
 
 ## 5. 成果の測り方
 
@@ -201,7 +200,8 @@ DAL の中の偏りは、DAL を変えた fix 54件の差分の hunk を、そ�
 
 | 物 | 誰 | 理由 |
 |---|---|---|
-| スナップショットの job の鍵（`claude_ro` を Actions か hq の定期 job で使う） | オーナー | 鍵とセキュリティ |
+| スナップショットの job の鍵 | 不要 | job を置かず手元の `claude_ro` で取る（ADR-0102）。Actions・hq の定期 job で取るように変えるときはオーナー（鍵とセキュリティ） |
+| 本番スキーマの写しを公開のリポジトリに載せること（初回） | オーナー | 公開の方針。写しの PR のマージで決める（ADR-0102 決定6）。以後の取り直しは同じ範囲なので聞かない |
 | Supabase Branching の費用 | オーナー | 新しい費用（本計画では入れない） |
 | 必須の check の追加（ruleset） | オーナー | 保護ルールの変更。本計画は verify:ci の中に入れるので、新しい必須の check は要らない |
 | それ以外（1a・1b・3+2・4 の設計） | 不要 | system-architect の審査を通して推奨どおり進める（`~/.claude/CLAUDE.md`「判断の流れ」） |
