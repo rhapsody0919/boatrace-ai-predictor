@@ -15,7 +15,7 @@
  * 鮮度は台帳（docs/db-migration/APPLIED.md）のファイルの名前で持つ。appliedFilesAtCapture は取得の時に「適用済み」だった
  * ファイル。今の台帳で適用済みなのにそこに無いファイルがあれば古い（snapshotFreshness）。appliedThrough は表示用の最大の番号。
  */
-import { LEDGER_STATES } from "./dbReconcile.js";
+import { ledgerState } from "./dbReconcile.js";
 
 export const SNAPSHOT_FORMAT = 2;
 
@@ -163,18 +163,18 @@ function rowsOf(raw) {
  * @returns {{ file: string, number: number | null, state: string | null }[]}
  */
 export function ledgerFiles(ledger) {
+  const text = String(ledger ?? "");
   const rows = [];
-  for (const line of String(ledger ?? "").split("\n")) {
+  for (const line of text.split("\n")) {
     if (!line.startsWith("|")) continue;
-    const cells = line.split("|").map((c) => c.trim());
-    const file = cells[2] ?? "";
+    const file = (line.split("|")[2] ?? "").trim();
     if (!file.endsWith(".sql")) continue;
-    const status = cells[3] ?? "";
     const num = /^(\d+)/.exec(file)?.[1];
     rows.push({
       file,
       number: num === undefined ? null : Number(num),
-      state: LEDGER_STATES.find((s) => status.startsWith(s)) ?? null,
+      // 状況の読み方は db-apply と同じ（「適用済み」等で始まるか）。「2026-09-24 適用」の形の行は null になる
+      state: ledgerState(text, file),
     });
   }
   return rows;
@@ -454,21 +454,20 @@ export function serializeSnapshot(snapshot) {
 
 /**
  * 写しが base（master）の写しより前の取得に戻っていないか。並行して取り直した古い PR が後で入ると、master の写しが巻き戻る。
- * @param {{ capturedAt: string, appliedFilesAtCapture?: string[] }} head
- * @param {{ capturedAt: string, appliedFilesAtCapture?: string[] } | null} base
- * @returns {string | null} 戻っていれば理由
+ * 比べるのは capturedAt だけ（台帳の行の後戻り・名前の直しで適用済みのファイルが減るのは正しい取り直しでも起きる）。
+ * @param {{ capturedAt: string }} head
+ * @param {{ capturedAt: string } | null} base
+ * @returns {string | null} 戻っていれば（または時刻が読めなければ）理由
  */
 export function snapshotRegression(head, base) {
   if (!base) return null;
-  if (Date.parse(head.capturedAt) < Date.parse(base.capturedAt)) {
-    return `capturedAt が base（${base.capturedAt}）より前（${head.capturedAt}）`;
+  const h = Date.parse(head.capturedAt);
+  const b = Date.parse(base.capturedAt);
+  if (Number.isNaN(h) || Number.isNaN(b)) {
+    return `capturedAt が時刻として読めない（head: ${head.capturedAt}、base: ${base.capturedAt}）`;
   }
-  const headFiles = new Set(head.appliedFilesAtCapture ?? []);
-  const lost = (base.appliedFilesAtCapture ?? []).filter(
-    (f) => !headFiles.has(f),
-  );
-  if (lost.length > 0) {
-    return `base の写しで適用済みだったファイルが無い（${lost.slice(0, 5).join(", ")}${lost.length > 5 ? " …" : ""}）`;
+  if (h < b) {
+    return `capturedAt が base（${base.capturedAt}）より前（${head.capturedAt}）`;
   }
   return null;
 }

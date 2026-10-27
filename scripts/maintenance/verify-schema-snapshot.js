@@ -575,17 +575,24 @@ check(
     snapshotRegression(snap, null) === null,
 );
 check(
-  "巻き戻り: base で適用済みだったファイルが写しに無ければ失敗",
-  /適用済みだったファイルが無い/.test(
-    snapshotRegression(
-      {
-        ...snap,
-        capturedAt: "2026-10-28T00:00:00.000Z",
-        appliedFilesAtCapture: ["001_a.sql"],
-      },
-      snap,
-    ) ?? "",
-  ),
+  "巻き戻り: 台帳の行の後戻りで適用済みのファイルが減った後の取り直しは通る",
+  snapshotRegression(
+    {
+      ...snap,
+      capturedAt: "2026-10-28T00:00:00.000Z",
+      appliedFilesAtCapture: ["001_a.sql"],
+    },
+    snap,
+  ) === null,
+);
+check(
+  "巻き戻り: capturedAt が時刻として読めなければ失敗（黙って通さない）",
+  /読めない/.test(
+    snapshotRegression(snap, { ...snap, capturedAt: undefined }) ?? "",
+  ) &&
+    /読めない/.test(
+      snapshotRegression({ ...snap, capturedAt: "x" }, snap) ?? "",
+    ),
 );
 
 // ---------------------------------------------------------------------------
@@ -606,15 +613,27 @@ function readBaseSnapshot() {
       maxBuffer: 64 * 1024 * 1024,
       stdio: ["ignore", "pipe", "ignore"],
     });
+  let ref = base;
   try {
-    git(["rev-parse", "--verify", "--quiet", `${base}^{commit}`]);
+    const baseSha = git([
+      "rev-parse",
+      "--verify",
+      "--quiet",
+      `${base}^{commit}`,
+    ]).trim();
+    const headSha = git(["rev-parse", "HEAD"]).trim();
+    // master への push の実行では base が HEAD そのもの。自分と比べても意味が無いので、直前の master（第1の親）と比べる
+    if (baseSha === headSha) ref = "HEAD^1";
   } catch {
     return { skip: `base（${base}）が無い` };
   }
   try {
-    return { snapshot: JSON.parse(git(["show", `${base}:${SNAPSHOT_FILE}`])) };
+    return {
+      ref,
+      snapshot: JSON.parse(git(["show", `${ref}:${SNAPSHOT_FILE}`])),
+    };
   } catch {
-    return { snapshot: null }; // base にまだ写しが無い（最初の PR）
+    return { ref, snapshot: null }; // base にまだ写しが無い（最初の PR）
   }
 }
 
@@ -689,7 +708,7 @@ if (!fs.existsSync(snapshotPath)) {
           ? snapshotRegression(committed, b.snapshot)
           : null;
       check(
-        `base（${base}）の写しより前の取得に戻っていない`,
+        `base（${b.ref}）の写しより前の取得に戻っていない`,
         reason === null,
         reason ?? "",
       );
