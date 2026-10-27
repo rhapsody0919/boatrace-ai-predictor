@@ -43,8 +43,8 @@ export function createDeadlinePreflight({ headless, markers, readCurrent, now = 
     const current = await readCurrent(job.draft_id);
     if (current?.withdrawn !== false || current.cancelled !== false) throw new Error('race_unconfirmed_or_withdrawn');
     if (!q.source_revision || current.source_revision !== q.source_revision || current.deadline_at !== q.deadline_at) throw new Error('source_changed');
-    // リンクを置かない型（「数字で見たら」、179・180）だけ、リンク先の表示の確認の代わりに、送る文にリンクが無いことを確かめる。
-    // public_check='none' を返すのは readCurrent が DB の item の kind（research_image）を確かめた後だけ
+    // リンクを置かない型（「数字で見たら」179・180、/today の対象レースの思考投稿 189）だけ、リンク先の表示の確認の代わりに、
+    // 送る文にリンクが無いことを確かめる。public_check='none' を返すのは readCurrent が DB の item の kind（research_image・today_thinking）を確かめた後だけ
     if (current.public_check === 'none') {
       if (hasLink(snapshot.text)) throw new Error('link_not_allowed');
     } else await checkPublicDisplay(q, headless, markers);

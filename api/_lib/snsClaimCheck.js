@@ -334,7 +334,9 @@ export function createReadCurrent({
           ),
           db(`race_entries?race_id=eq.${id}&select=is_absent`),
           db(`exhibition_data?race_id=eq.${id}&select=is_absent`),
-          db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind`),
+          db(
+            `sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id,variant`,
+          ),
           db(
             `sns_auto_send_items?kind=eq.${TODAY_THINKING_KIND}&variant=eq.${variant}&race_id=eq.${id}&state=eq.sent&select=id`,
           ),
@@ -342,8 +344,12 @@ export function createReadCurrent({
             "sns_auto_send_control?channel=eq.x&select=today_thinking_enabled",
           ),
         ]);
-      // 下書きのキーと item の kind が食い違う（別の種類の item にひもづく）なら送らない
-      if (item?.kind !== TODAY_THINKING_KIND)
+      // 下書きのキーと item の kind・レース・本数の種類（variant）が食い違うなら送らない
+      if (
+        item?.kind !== TODAY_THINKING_KIND ||
+        item.race_id !== raceId ||
+        item.variant !== variant
+      )
         throw new Error("thinking_item_mismatch");
       if (!race) throw new Error("race_not_found");
       if (control?.today_thinking_enabled !== true)
@@ -356,6 +362,9 @@ export function createReadCurrent({
         cancelled: race.cancellation_status != null,
         deadline_at: deadlineIso(race),
         source_revision: revision,
+        // 本文にリンクを置かない型（オーナー 2026-10-27）。リンク先の表示の確認の代わりに、送る文にリンクが無いことを preflight が見る
+        // （research_image と同じ契約。Chromium を使わない）
+        public_check: "none",
       };
     }
     const imported = draft?.sns_bundle_imports;

@@ -67,7 +67,7 @@ const transitionBody = (s) => {
   const a = s.indexOf("AS $$", i) + 5;
   return s.slice(a, s.indexOf("$$;", a));
 };
-/** PGlite の時計に合わせて now() を test_now() にする（本文の md5 も変わるので、189 の照合の値をこちらの 182 の本文の md5 にそろえる） */
+/** PGlite の時計に合わせて now() を test_now() にする（本文の md5 も変わるので、188・189 の照合の値をこちらの土台の本文の md5 にそろえる） */
 const forTest = (s) => s.replaceAll("now()", "test_now()");
 /** md5 で土台を照合するマイグレーションを、試験の土台（now() を test_now() にした本文）の md5 に差し替える */
 async function guardedForTest(file, baseFile, baseMd5) {
@@ -422,9 +422,10 @@ const readCurrent = createReadCurrent({
         [decodeURIComponent(p.match(/race_id=eq\.([^&]+)/)[1])],
       );
     if (table === "sns_auto_send_items" && /draft_id=eq\./.test(p))
-      return all("SELECT kind FROM sns_auto_send_items WHERE draft_id=$1", [
-        p.match(/draft_id=eq\.([0-9a-f-]+)/)[1],
-      ]);
+      return all(
+        "SELECT kind, race_id, variant FROM sns_auto_send_items WHERE draft_id=$1",
+        [p.match(/draft_id=eq\.([0-9a-f-]+)/)[1]],
+      );
     if (table === "sns_auto_send_items")
       return all(
         "SELECT id FROM sns_auto_send_items WHERE kind=$1 AND variant=$2 AND race_id=$3 AND state='sent'",
@@ -699,6 +700,13 @@ test("push の3本: 本投稿（画像4枚）・投票のリプ・展示後の�
   const line = resultLine(RACE, again);
   assert.equal(line.code, 4);
   assert.match(line.text, /^FINALS_RESULT \{.*"kind":"today_thinking"/);
+  // 優勝戦の行は今までと同じバイト列（kind を足さない、審査 P3）
+  const finalsLine = resultLine(RACE, { ...again, kind: "finals_image" });
+  assert.doesNotMatch(finalsLine.text, /"kind"/);
+  assert.equal(
+    finalsLine.text,
+    line.text.replace(',"kind":"today_thinking"', ""),
+  );
 });
 
 test("/today の X 投稿の対象でないレース・その日の /today の投稿が無いときは受け取らない（何も書かない）", async () => {
@@ -722,18 +730,40 @@ test("/today の X 投稿の対象でないレース・その日の /today の�
   // 純粋関数: 注目レース（featured）か一覧（list）にあれば通る
   assert.equal(
     todayTargetReason(
-      { draft_id: "d", featured: { race_id: RACE }, list: [] },
+      {
+        draft_id: "d",
+        status: "posted",
+        featured: { race_id: RACE },
+        list: [],
+      },
       RACE,
     ),
     null,
   );
   assert.equal(
     todayTargetReason(
-      { draft_id: "d", featured: null, list: [{ race_id: RACE }] },
+      {
+        draft_id: "d",
+        status: "posted",
+        featured: null,
+        list: [{ race_id: RACE }],
+      },
       RACE,
     ),
     null,
   );
+  // 送られていない（held・pending_review のまま）/today の投稿の候補には出さない（審査 P2）
+  for (const status of ["approved", "pending_review", null])
+    assert.match(
+      todayTargetReason(
+        { draft_id: "d", status, featured: { race_id: RACE }, list: [] },
+        RACE,
+      ),
+      /まだ送られていない/,
+    );
+  picks = todayPicksOf(DAY, { ...TODAY_DRAFT, status: "approved" }, []);
+  assert.match((await push()).reasons.join(), /まだ送られていない/);
+  assert.deepEqual(await counts(), NOTHING);
 });
 
 test("優勝戦の段を見ない: race_conditions が無くても・準優勝戦でも通る。優勝戦の束は今までどおり段を見る", async () => {
@@ -881,6 +911,8 @@ test("readCurrent の today_thinking の枝: 段を読まず、item の kind・�
     cancelled: false,
     deadline_at: DEADLINE,
     source_revision: draft.source_data.today_thinking.revision,
+    // リンクを置かない型なので、送る直前の表示の確認（Chromium）の代わりに文にリンクが無いことを見る（審査 P3）
+    public_check: "none",
   });
   assert.ok(!readTables.includes("race_conditions"));
   await db.exec(
@@ -902,6 +934,15 @@ test("readCurrent の today_thinking の枝: 段を読まず、item の kind・�
   // 下書きは today_thinking のキーなのに item が別の kind（優勝戦）にひもづく
   await db.exec(
     "UPDATE sns_auto_send_items SET kind='finals_image', variant='finals_poll' WHERE variant='thinking_poll'",
+  );
+  await assert.rejects(readCurrent(pollDraft.id), /thinking_item_mismatch/);
+  // item のレース・本数の種類（variant）が下書きと食い違っても投げる（審査 P3）
+  await db.exec(
+    "UPDATE sns_auto_send_items SET kind='today_thinking', variant='thinking_reply' WHERE variant='finals_poll'",
+  );
+  await assert.rejects(readCurrent(pollDraft.id), /thinking_item_mismatch/);
+  await db.exec(
+    "UPDATE sns_auto_send_items SET variant='thinking_poll', race_id='2037-10-27-01-01' WHERE variant='thinking_reply'",
   );
   await assert.rejects(readCurrent(pollDraft.id), /thinking_item_mismatch/);
   // 下書きに優勝戦のキーを入れない（入れると優勝戦の枝に振り分けられる）
