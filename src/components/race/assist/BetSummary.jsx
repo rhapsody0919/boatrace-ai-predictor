@@ -151,7 +151,7 @@ export default function BetSummary({
       {result?.topped && <p className="ta-note">{ASSIST_COPY.toppedNote}</p>}
       {result?.missing.length > 0 && (
         <p className="ta-note">
-          {ASSIST_COPY.missingOdds(result.missing.length)}
+          {ASSIST_COPY.missingOdds(result.missing.length, result.missing)}
         </p>
       )}
       {result && !result.insufficient && (

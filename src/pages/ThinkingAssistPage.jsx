@@ -442,6 +442,7 @@ function ThinkingAssistBody() {
         metric: state.metric,
         racers,
         trifecta: boardOdds,
+        betTypeLabel: ASSIST_COPY.betTypeLabels[assistBetType(state.betType).id],
         finalRound,
         hasToday: today != null,
         pastWin,
@@ -456,6 +457,7 @@ function ThinkingAssistBody() {
       data.stage,
       racers,
       boardOdds,
+      state.betType,
       finalRound,
       today,
       pastWin,
@@ -546,6 +548,7 @@ function ThinkingAssistBody() {
       id: t.id,
       form: betForm(bets, t.legs),
       points: tk.length,
+      priced: o ? tk.filter((k) => o[k] != null && o[k] > 0).length : tk.length,
       composite: o ? compositeOdds(tk.map((k) => o[k])) : null,
     };
   });
@@ -944,6 +947,12 @@ function ThinkingAssistBody() {
           <BetFooter
             bets={bets}
             betType={betType.id}
+            priced={
+              betOdds
+                ? tickets.filter((t) => betOdds[t] != null && betOdds[t] > 0)
+                    .length
+                : tickets.length
+            }
             points={tickets.length}
             composite={composite}
             oddsNote={oddsNote}

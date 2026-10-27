@@ -217,7 +217,17 @@ export const ASSIST_COPY = Object.freeze({
   trigamiLine: "合成オッズが1.0未満。どれが当たっても予算を下回る",
   totalLine: (total, remainder, lo, hi) =>
     `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・当たったときの倍率 ${lo}〜${hi}倍`,
-  missingOdds: (n) => `オッズの無い${n}点は配分に入れていない`,
+  // オッズの無い組は組番も出す（BOA-990 ファン評価2周目 P2-1）
+  missingOdds: (n, tickets = []) =>
+    `オッズの無い${n}点${tickets.length ? `（${tickets.join("・")}）` : ""}は配分と合成に入れていない`,
+  // 点数のうちオッズのある点数（オッズの無い組があるときだけ）
+  pointsPriced: (points, priced) =>
+    priced < points ? `${points}点（オッズあり${priced}点）` : `${points}点`,
+  // 図の「1着人気」の見出し（どの券種の合成か。ファン評価2周目 P2-2）
+  boardBetTitle: (type) => `1着になる組のオッズ（${type}の合成）`,
+  // 図の1着人気で、オッズの無い組を除いて合成した艇
+  boardMissingFirst: (boats) =>
+    `${boats.join("・")}号艇の1着人気は、オッズの無い組を除いた合成`,
   // 均等払戻で切り捨てた余りを足したとき（spec FR-8・D-43）
   toppedNote: "余りは払戻の少ない組に足した",
   // 承認モック（BOA-990 画面1・2）の「オッズは 15:42 の値。締切まで変わる」

@@ -217,7 +217,9 @@ export default function RaceLaneBoard({
           )}
           {model.left}
         </span>
-        <span className="ta-board-title">{model.title}</span>
+        <span className={`ta-board-title${bet ? " is-bet" : ""}`}>
+          {model.title}
+        </span>
         <span>
           {model.right}
           {model.good === "right" && (
@@ -344,6 +346,11 @@ export default function RaceLaneBoard({
         );
       })}
       {bet && legUnusedNote && <p className="ta-note">{legUnusedNote}</p>}
+      {bet && model.missingFirst?.length > 0 && (
+        <p className="ta-note">
+          {ASSIST_COPY.boardMissingFirst(model.missingFirst)}
+        </p>
+      )}
       {model.basis === "course" && (
         <p className="ta-note">{ASSIST_COPY.flowCourseNote}</p>
       )}

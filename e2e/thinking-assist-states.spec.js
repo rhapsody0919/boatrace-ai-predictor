@@ -2723,6 +2723,46 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     ).toBeVisible();
   });
 
+  // ファン評価2周目 P2-1: オッズの無い組（2026-10-27 蒲郡10R の 3-6・6-3 と同じ形）は点数を分け、組番を出す。
+  // P2-2: 図の見出しにどの券種の合成かを書く
+  test("オッズの無い組があると「5点（オッズあり4点）」・組番の注記、図の見出しに券種", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds?*", async (route) => {
+      const res = await fetchRecorded(route);
+      const rows = await res.json();
+      for (const row of rows)
+        if (row.exacta_all) {
+          delete row.exacta_all["3-6"];
+          delete row.exacta_all["6-3"];
+        }
+      await route.fulfill(res.fulfillOptions({ json: rows }));
+    });
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 3, 1).click();
+    for (const b of [1, 2, 4, 5, 6]) await candidate(page, b, 2).click();
+    await betTypes(page).getByRole("button", { name: "2連単" }).click();
+    await expect(compare(page).locator("tbody tr").nth(1)).toContainText(
+      "5点（オッズあり4点）",
+    );
+    await expect(footer(page)).toContainText("（5点・オッズあり4点）");
+    const fig = page.getByRole("figure", { name: /レースの図/ });
+    await expect(
+      fig.getByText("1着になる組のオッズ（2連単の合成）"),
+    ).toBeAttached();
+    await expect(
+      fig.getByText("3・6号艇の1着人気は、オッズの無い組を除いた合成"),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(
+      sheet.getByText("オッズの無い1点（3-6）は配分と合成に入れていない"),
+    ).toBeVisible();
+  });
+
   // セルフレビュー P2: 締切時オッズだけの取得の失敗で、図・買い目のオッズ全体を失敗にしない
   test("締切時オッズの取得に失敗しても、スナップショットのオッズで買い目を出し、取れなかったことを書く", async ({
     page,

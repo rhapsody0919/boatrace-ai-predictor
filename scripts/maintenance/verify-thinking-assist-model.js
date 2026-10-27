@@ -24,6 +24,7 @@ import {
   betForm,
   boxBets,
   oddsByBetType,
+  missingFirstBoats,
   boardModel,
   buildRacers,
   classLineup,
@@ -1016,6 +1017,20 @@ check(
 }
 
 // ---- 買い目の券種（BOA-990 ①: 3連単・2連単）----
+{
+  // ファン評価2周目 P2-1: 2026-10-27 蒲郡10R の exacta_all は 3-6・6-3 が無い。図の1着人気が欠けた組を除く艇
+  const ex = {};
+  for (const a of [1, 2, 3, 4, 5, 6])
+    for (const b of [1, 2, 3, 4, 5, 6])
+      if (a !== b && !["3-6", "6-3"].includes(`${a}-${b}`)) ex[`${a}-${b}`] = 10;
+  check(
+    "図の1着人気: オッズの無い組（3-6・6-3）がある1着の艇は 3・6号艇。欠場の6号艇を外すと 3 も外れる。全部あれば空",
+    JSON.stringify(missingFirstBoats(ex, [1, 2, 3, 4, 5, 6])) === "[3,6]" &&
+      JSON.stringify(missingFirstBoats(ex, [1, 2, 3, 4, 5])) === "[]" &&
+      JSON.stringify(missingFirstBoats({ ...ex, "3-6": 9, "6-3": 9 }, [1, 2, 3, 4, 5, 6])) === "[]" &&
+      JSON.stringify(missingFirstBoats(null, [1, 2])) === "[]",
+  );
+}
 {
   const B = (a, b, c) => ({ 1: new Set(a), 2: new Set(b), 3: new Set(c) });
   check(

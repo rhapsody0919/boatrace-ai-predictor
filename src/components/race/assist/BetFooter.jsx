@@ -15,6 +15,7 @@ export default function BetFooter({
   bets,
   betType = "trifecta",
   points,
+  priced = points,
   composite,
   oddsNote,
   removedNote,
@@ -39,7 +40,11 @@ export default function BetFooter({
         {/* 「（9点）」を折らない（375px で数字と単位が別の行に分かれた。ファン評価1周目 指摘3） */}
         <b className="ta-num">
           {`${ASSIST_COPY.betTypeLabels[type.id]} ${betForm(bets, type.legs)}`}
-          <span className="ta-nowrap">{`（${points}点）`}</span>
+          <span className="ta-nowrap">
+            {priced < points
+              ? `（${points}点・オッズあり${priced}点）`
+              : `（${points}点）`}
+          </span>
         </b>
         <span className="ta-num">
           {points === 0

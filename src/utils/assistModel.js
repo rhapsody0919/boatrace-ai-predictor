@@ -492,6 +492,28 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
 }
 
 /**
+ * 1着になる組のうちオッズの無い組がある艇（図の1着人気が欠けた組を除いた合成になる艇）。組の長さ（2連単は2艇、
+ * 3連単は3艇）はオッズの表のキーから読む。欠場の艇は出走する艇に入れない（D-38）
+ * @param {Record<string, number|null>|null} odds
+ * @param {number[]} boats 出走する艇
+ * @returns {number[]}
+ */
+export function missingFirstBoats(odds, boats) {
+  const keys = Object.keys(odds ?? {});
+  if (!keys.length) return [];
+  const legs = keys[0].split("-").length;
+  const priced = (k) => odds[k] != null && odds[k] > 0;
+  return boats.filter((b) => {
+    let combos = [[b]];
+    for (let i = 1; i < legs; i++)
+      combos = combos.flatMap((c) =>
+        boats.filter((x) => !c.includes(x)).map((x) => [...c, x]),
+      );
+    return combos.some((c) => !priced(c.join("-")));
+  });
+}
+
+/**
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
  * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
  *   pastWin: 買い目レンズの「過去の{着順}」（艇ごとの差がつく材料の範囲での target の着順。assistSummary.b1Usual）
@@ -517,6 +539,7 @@ export function boardModel({
   target = 1,
   stBasis = "course",
   stMissing = false,
+  betTypeLabel = "3連単",
 }) {
   // 過去の{着順}（件数は割合の括弧。BOA-831 承認モック v2）
   const pastNum = (past) => ({
@@ -758,7 +781,7 @@ export function boardModel({
   if (!comp.size)
     return {
       kind: "bet",
-      title: "1着になる組のオッズ（合成）",
+      title: ASSIST_COPY.boardBetTitle(betTypeLabel),
       left: "",
       right: "",
       good: null,
@@ -778,7 +801,11 @@ export function boardModel({
   const hiOdds = Math.max(300, sorted[sorted.length - 1]);
   return {
     kind: "bet",
-    title: "1着になる組のオッズ（合成）",
+    title: ASSIST_COPY.boardBetTitle(betTypeLabel),
+    missingFirst: missingFirstBoats(
+      trifecta,
+      racers.filter((r) => !r.absent).map((r) => r.boat),
+    ),
     left: "人気",
     right: "人気薄",
     // オッズは良し悪しでなく市場の見立て。「良い」の札は付けない（BOA-808 5、2026-10-10 ユーザー決定）

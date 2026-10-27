@@ -1985,6 +1985,12 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
     for (const b of [2, 3, 4, 5]) await cand(b, 3).click();
     const cmp = page.locator(".ta-bettype-cmp");
     await expect(cmp).toBeVisible();
+    // 図の見出し（どの券種の合成か）は 12px 以上（ファン評価2周目 P2-2）
+    expect(
+      await page
+        .locator(".ta-board-title.is-bet")
+        .evaluate((e) => parseFloat(getComputedStyle(e).fontSize)),
+    ).toBeGreaterThanOrEqual(12);
     // 固定フッターの「（9点）」は数字と単位を別の行に分けない（ファン評価1周目 指摘3）
     expect(
       await page
