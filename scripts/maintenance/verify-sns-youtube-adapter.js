@@ -225,7 +225,7 @@ test("非公開で上げ、サムネイル、処理の確認、公開、公開�
   assert.equal(ledger.processing_polls, 1);
 });
 
-test("処理中なら公開せず要照合のまま、サムネイルの 403 は公開せず非公開のまま残す", async () => {
+test("処理中なら公開せず要照合のまま、サムネイルの 403 は記録する先（onThumbnailFailed）が無い呼び出しなら公開せず非公開のまま残す", async () => {
   const processingJob = await approvedJob();
   const slow = fakeYoutube({ processing: "processing" });
   const waiting = await run(processingJob, slow);
@@ -254,6 +254,105 @@ test("処理中なら公開せず要照合のまま、サムネイルの 403 は
     forbidden.calls.some((c) => c.options.method === "PUT"),
     false,
   );
+});
+
+// BOA-1172: サムネイルが付かなくても動画の公開は止めず、理由を記録する
+test("BOA-1172: サムネイルの 403・通信の例外でも動画は公開まで進み、理由を onThumbnailFailed に渡す（API の本文は入れない）", async () => {
+  const throwing = (fake) => ({
+    ...fake,
+    fetchImpl: async (url, options) => {
+      if (new URL(url).pathname === "/upload/youtube/v3/thumbnails/set") {
+        fake.calls.push({ method: "POST", path: "thumb", options });
+        throw new TypeError("fetch failed");
+      }
+      return fake.fetchImpl(url, options);
+    },
+  });
+  for (const [label, makeFake, expected] of [
+    ["403", () => fakeYoutube({ thumbnailStatus: 403 }), /HTTP 403 forbidden/],
+    ["通信の例外", () => throwing(fakeYoutube()), /fetch failed/],
+  ]) {
+    const job = await approvedJob();
+    const fake = makeFake();
+    const reasons = [];
+    const done = await run(job, fake, {
+      onThumbnailFailed: (reason) => reasons.push(reason),
+    });
+    assert.equal(done.state, "posted", label);
+    assert.equal(reasons.length, 1, label);
+    assert.match(reasons[0], expected, label);
+    assert.ok(!reasons[0].includes("secret detail"), label);
+    assert.equal(
+      fake.calls.filter((c) => c.options.method === "PUT").length,
+      1,
+      `${label}: 公開の videos.update を呼ぶ`,
+    );
+    // 台帳には thumbnails.set の前の記録が残る（50単位を数えたまま。再試行しない）
+    assert.deepEqual(
+      (
+        await first(
+          "SELECT calls FROM sns_youtube_quota_attempts WHERE job_id=$1",
+          [job.id],
+        )
+      ).calls,
+      ["videos.insert", "thumbnails.set", "videos.update", "videos.list"],
+      label,
+    );
+  }
+});
+
+test("BOA-1172: thumbnails.set の前の検査・台帳への記録が落ちたら、サムネイルを呼ばず今までどおり非公開のまま残す（止める判断は続けない）", async () => {
+  // 送る前の検査は queue の1回・videos.insert の前・thumbnails.set の前の順。3回目で落とす
+  const checkJob = await approvedJob();
+  const checkFake = fakeYoutube();
+  let checks = 0;
+  const reasons = [];
+  await assert.rejects(
+    run(checkJob, checkFake, {
+      preflight: async () => {
+        if (++checks === 3) throw new Error("source_changed");
+      },
+      onThumbnailFailed: (reason) => reasons.push(reason),
+    }),
+    /source_changed/,
+  );
+  // 台帳が拒否した（クォータ・停止など）
+  const ledgerJob = await approvedJob();
+  const ledgerFake = fakeYoutube();
+  await assert.rejects(
+    run(ledgerJob, ledgerFake, {
+      store: {
+        transition: (id, action, result) =>
+          action === "youtube_call" && result?.method === "thumbnails.set"
+            ? Promise.reject(new Error("youtube_quota_limit"))
+            : store.transition(id, action, result),
+      },
+      onThumbnailFailed: (reason) => reasons.push(reason),
+    }),
+    /youtube_quota_limit/,
+  );
+  assert.deepEqual(reasons, [], "サムネイルの失敗としては記録しない");
+  for (const [job, fake] of [
+    [checkJob, checkFake],
+    [ledgerJob, ledgerFake],
+  ]) {
+    assert.deepEqual(
+      await first(
+        "SELECT state, youtube_stage FROM sns_x_send_jobs WHERE id=$1",
+        [job.id],
+      ),
+      { state: "reconcile", youtube_stage: "private_retained" },
+    );
+    assert.equal(
+      fake.calls.some((c) => c.path === "/upload/youtube/v3/thumbnails/set"),
+      false,
+      "thumbnails.set を呼ばない",
+    );
+    assert.equal(
+      fake.calls.some((c) => c.options.method === "PUT"),
+      false,
+    );
+  }
 });
 
 test("本人の動画と確かめられない（processingDetails が無い・題名が承認と違う）ときは公開しない", async () => {

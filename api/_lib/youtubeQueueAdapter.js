@@ -1,7 +1,8 @@
 /**
  * YouTube Data API v3 の実 adapter（sns-pdca-loop tasks 18）。snsDeadlineQueue.js の
  * runYoutubeQueueJob・runYoutubePublishJob・reconcileYoutubeJob の契約どおりの形にする（案B: 非公開で上げて確かめてから公開）:
- * - upload({snapshot, media, privacyStatus:'private', publishAt:null, beforeCall, uploaded}) → uploaded の戻り値
+ * - upload({snapshot, media, privacyStatus:'private', publishAt:null, beforeCall, uploaded, thumbnailFailed}) → uploaded の戻り値。
+ *   thumbnails.set の失敗（HTTP・通信）は、thumbnailFailed があればその理由を渡して続け、動画は公開まで進む（BOA-1172）。無ければ投げる
  * - processing(job) → {confirmed, id, privacyStatus, processingStatus}
  * - makePublic({job, privacyStatus:'public', publishAt:null, beforeCall}) → {confirmed, id, privacyStatus, posted_at}
  * - lookup(job) → 同上（照合の読み取り）
@@ -97,6 +98,7 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
       publishAt,
       beforeCall,
       uploaded,
+      thumbnailFailed,
     }) {
       if (privacyStatus !== "private" || publishAt !== null)
         throw new Error("YouTube は非公開でだけ上げる（案B）");
@@ -137,16 +139,25 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
         throw new Error("YouTube の動画 ID が返りません");
       const job = await uploaded(inserted.id);
       if (cover) {
+        // 送る前の検査・台帳への記録（beforeCall）の失敗は投げる。止める判断（停止・期限・リース・クォータ）で、
+        // 後の videos.update も同じ検査と台帳を通るので、ここで続けても公開できない。呼んでいないのでクォータも使っていない
         await beforeCall("thumbnails.set");
-        // サムネイルの Content-Type は媒体に合わせる（承認時に jpeg・png だけを通している）
-        await call(
-          `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(inserted.id)}&uploadType=media`,
-          {
-            method: "POST",
-            headers: { "Content-Type": cover.type },
-            body: cover.bytes,
-          },
-        );
+        try {
+          // サムネイルの Content-Type は媒体に合わせる（承認時に jpeg・png だけを通している）
+          await call(
+            `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(inserted.id)}&uploadType=media`,
+            {
+              method: "POST",
+              headers: { "Content-Type": cover.type },
+              body: cover.bytes,
+            },
+          );
+        } catch (error) {
+          // サムネイルが付かなくても動画は公開まで進める（BOA-1172）。理由は状態コードと Google の理由だけ（API の本文は入れない）。
+          // 403 はチャンネルの確認（カスタムサムネイルの権限）が無いときにも返る。自動で再試行しない
+          if (!thumbnailFailed) throw error;
+          thumbnailFailed(error.message);
+        }
       }
       return job;
     },
