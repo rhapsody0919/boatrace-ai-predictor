@@ -13,7 +13,7 @@
  *
  * 使い方: node scripts/maintenance/e2e-build.js   （E2E_LIVE・E2E_RECORD・E2E_RECORDING_SOURCE は playwright と同じ）
  */
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -52,7 +52,12 @@ function main() {
   const r = spawnSync("npx", ["vite", "build"], {
     cwd: ROOT,
     stdio: "inherit",
-    env: { ...process.env, VITE_SUPABASE_URL: supabaseUrl },
+    // GA の ID は空に固定する（本番の束の initGA は DEV で止まらない。live は外部ホストを止めないので本物の GA に送る）
+    env: {
+      ...process.env,
+      VITE_SUPABASE_URL: supabaseUrl,
+      VITE_GA_MEASUREMENT_ID: "",
+    },
   });
   if (r.status !== 0) {
     console.error(`::error::e2e の build が失敗した（終了コード ${r.status}）`);
@@ -60,7 +65,18 @@ function main() {
   }
   writeFileSync(
     path.join(ROOT, "dist/.e2e-build.json"),
-    `${JSON.stringify({ mode, supabaseUrl }, null, 2)}\n`,
+    `${JSON.stringify(
+      {
+        mode,
+        supabaseUrl,
+        commit: execFileSync("git", ["rev-parse", "HEAD"], {
+          cwd: ROOT,
+          encoding: "utf8",
+        }).trim(),
+      },
+      null,
+      2,
+    )}\n`,
   );
   console.log(
     `e2e の束: mode=${mode}・VITE_SUPABASE_URL=${supabaseUrl}・${((Date.now() - started) / 1000).toFixed(1)}秒`,

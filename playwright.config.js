@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { buildSupabaseUrl } from "./scripts/maintenance/e2e-build.js";
 
 // このマシンでは複数のgit worktreeが並行してdevサーバーを起動する運用のため、
 // 既定ポート5173を全worktreeで共有すると、reuseExistingServer:true経由で
@@ -61,6 +63,22 @@ if (servePreview) {
   if (built.mode !== mode)
     throw new Error(
       `dist の束は ${built.mode} 用で、今は ${mode}。同じモードで npm run build:e2e し直す`,
+    );
+  // 焼き込んだ宛先も、今のモードで期待する値（再生はポインタか meta の supabaseOrigin）と同じか
+  const expected = buildSupabaseUrl(mode, process.env, (f) =>
+    JSON.parse(readFileSync(f, "utf8")),
+  );
+  if (built.supabaseUrl !== expected)
+    throw new Error(
+      `dist の束の Supabase の宛先（${built.supabaseUrl}）が今の期待（${expected}）と違う。npm run build:e2e し直す`,
+    );
+  // 古い束で緑にしない（src を直して build し直していない）。作業ツリーの未コミットの変更までは見ない
+  const head = execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+  if (built.commit !== head)
+    throw new Error(
+      `dist の束は ${built.commit} の build で、今は ${head}。npm run build:e2e し直す`,
     );
 }
 

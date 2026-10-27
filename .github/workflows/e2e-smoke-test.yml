@@ -203,7 +203,8 @@ jobs:
           E2E_SERVE: preview
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: taskset -c 0,1 npx playwright test --fully-parallel --reporter=list ${{ matrix.args }}
+        # Playwright の既定の workers は os.cpus() の50%で、taskset では変わらない。本物の 2 vCPU では1になるので明示する
+        run: taskset -c 0,1 npx playwright test --fully-parallel --workers=1 --reporter=list ${{ matrix.args }}
 
   # 記事の中身だけの PR（scope=light）。記事の JSON は src/data/blogPosts.js の import.meta.glob（eager）で
   # 画面の束に入り、1つ壊れると全体が壊れるので、vite build と記事に関わる試験（@blog の印）は残す。
