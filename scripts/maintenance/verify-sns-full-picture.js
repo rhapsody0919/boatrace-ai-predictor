@@ -559,39 +559,120 @@ test("bundle の版2: Shorts の下書きを足し、親（完全版の job）�
 test("札（full_picture_variant、hq SQ08 v5）: bundle の札を送る下書き（X・完全版・Shorts）の source_data.full_picture_variant.id に写す。a・b 以外は受け取らない", async () => {
   const result = await push(bundleV2({ full_picture_variant: { id: "b" } }));
   assert.equal(result.reasons, undefined);
-  const rows = (await all("SELECT platform, source_data FROM sns_drafts WHERE format='full_picture' ORDER BY platform")).map((r) => r.source_data.full_picture_variant);
+  const rows = (
+    await all(
+      "SELECT platform, source_data FROM sns_drafts WHERE format='full_picture' ORDER BY platform",
+    )
+  ).map((r) => r.source_data.full_picture_variant);
   assert.equal(rows.length, 3);
-  assert.ok(rows.every((v) => v?.id === "b"), JSON.stringify(rows));
-  assert.ok(checkFullPicture({ ...bundleV2(), full_picture_variant: { id: "c" }, review: { p0_count: 0 } }, riskRules).some((r) => r.includes("full_picture_variant")));
+  assert.ok(
+    rows.every((v) => v?.id === "b"),
+    JSON.stringify(rows),
+  );
+  assert.ok(
+    checkFullPicture(
+      {
+        ...bundleV2(),
+        full_picture_variant: { id: "c" },
+        review: { p0_count: 0 },
+      },
+      riskRules,
+    ).some((r) => r.includes("full_picture_variant")),
+  );
   // 札の無い bundle は今までどおり（source_data に札を書かない）
-  assert.ok(!checkFullPicture({ ...bundleV2(), review: { p0_count: 0 } }, riskRules).some((r) => r.includes("full_picture_variant")));
+  assert.ok(
+    !checkFullPicture(
+      { ...bundleV2(), review: { p0_count: 0 } },
+      riskRules,
+    ).some((r) => r.includes("full_picture_variant")),
+  );
 });
 
 test("投稿の型（content_type、hq PD02）: bundle の型の id を送る下書き（X・完全版・Shorts）の source_data.content_type.id に写す。id の無い型は受け取らない", async () => {
-  const result = await push(bundleV2({ content_type: { id: "e03-one-point-30s" }, full_picture_variant: { id: "b" } }));
+  const result = await push(
+    bundleV2({
+      content_type: { id: "e03-one-point-30s" },
+      full_picture_variant: { id: "b" },
+    }),
+  );
   assert.equal(result.reasons, undefined);
-  const rows = (await all("SELECT source_data FROM sns_drafts WHERE format='full_picture'")).map((r) => r.source_data);
+  const rows = (
+    await all("SELECT source_data FROM sns_drafts WHERE format='full_picture'")
+  ).map((r) => r.source_data);
   assert.equal(rows.length, 3);
-  assert.ok(rows.every((d) => d.content_type?.id === "e03-one-point-30s" && d.full_picture_variant?.id === "b"), JSON.stringify(rows.map((d) => d.content_type)));
-  assert.ok(checkFullPicture({ ...bundleV2(), content_type: {}, review: { p0_count: 0 } }, riskRules).some((r) => r.includes("content_type")));
-  assert.ok(!checkFullPicture({ ...bundleV2(), review: { p0_count: 0 } }, riskRules).some((r) => r.includes("content_type")), "型の無い bundle は今までどおり");
+  assert.ok(
+    rows.every(
+      (d) =>
+        d.content_type?.id === "e03-one-point-30s" &&
+        d.full_picture_variant?.id === "b",
+    ),
+    JSON.stringify(rows.map((d) => d.content_type)),
+  );
+  assert.ok(
+    checkFullPicture(
+      { ...bundleV2(), content_type: {}, review: { p0_count: 0 } },
+      riskRules,
+    ).some((r) => r.includes("content_type")),
+  );
+  assert.ok(
+    !checkFullPicture(
+      { ...bundleV2(), review: { p0_count: 0 } },
+      riskRules,
+    ).some((r) => r.includes("content_type")),
+    "型の無い bundle は今までどおり",
+  );
 });
 
 test("完全版のタグ（youtube_full.tags、hq 契約 10/24 C1）: 完全版の下書きの hashtags に入り、承認の snapshot から YouTube の snippet.tags になる。X・Shorts には付けない", async () => {
   const base = bundleV2();
   // bundle.mjs と同じく、説明文の末尾にタグと同じハッシュタグ行がある
   const description = `${base.youtube_full.description}\n#ボートレース #龍神ソナー #思考アシスト`;
-  const result = await push({ ...base, youtube_full: { ...base.youtube_full, description, tags: ["ボートレース", "龍神ソナー", "思考アシスト", "龍神ソナー", ""] } });
+  const result = await push({
+    ...base,
+    youtube_full: {
+      ...base.youtube_full,
+      description,
+      tags: ["ボートレース", "龍神ソナー", "思考アシスト", "龍神ソナー", ""],
+    },
+  });
   assert.equal(result.reasons, undefined);
-  const job = (id) => first("SELECT j.snapshot_text, d.hashtags FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id WHERE j.id=$1", [id]);
+  const job = (id) =>
+    first(
+      "SELECT j.snapshot_text, d.hashtags FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id WHERE j.id=$1",
+      [id],
+    );
   const full = await job(result.channels.youtube.job_id);
-  assert.deepEqual(full.hashtags, ["#ボートレース", "#龍神ソナー", "#思考アシスト"], "重複と空は除く");
-  assert.deepEqual(youtubeTagsOf(JSON.parse(full.snapshot_text)), ["ボートレース", "龍神ソナー", "思考アシスト"]);
+  assert.deepEqual(
+    full.hashtags,
+    ["#ボートレース", "#龍神ソナー", "#思考アシスト"],
+    "重複と空は除く",
+  );
+  assert.deepEqual(youtubeTagsOf(JSON.parse(full.snapshot_text)), [
+    "ボートレース",
+    "龍神ソナー",
+    "思考アシスト",
+  ]);
   // 送る文（承認の snapshot の text）は bundle の説明文と同じ。末尾にタグの行が重ならない（代わりの審査 P2-1）
   const text = JSON.parse(full.snapshot_text).text;
-  assert.equal(text.replace(/\n\n#ボートレース #龍神ソナー #思考アシスト$/, "\n#ボートレース #龍神ソナー #思考アシスト"), description, "送る文は説明文と同じ（ハッシュタグ行の前の空行だけ違ってよい）");
-  assert.equal(text.match(/龍神ソナー/g).length, description.match(/龍神ソナー/g).length, "タグの語が増えない");
-  for (const ch of ["x", "shorts"]) assert.deepEqual((await job(result.channels[ch].job_id)).hashtags, [], `${ch} にタグは付けない`);
+  assert.equal(
+    text.replace(
+      /\n\n#ボートレース #龍神ソナー #思考アシスト$/,
+      "\n#ボートレース #龍神ソナー #思考アシスト",
+    ),
+    description,
+    "送る文は説明文と同じ（ハッシュタグ行の前の空行だけ違ってよい）",
+  );
+  assert.equal(
+    text.match(/龍神ソナー/g).length,
+    description.match(/龍神ソナー/g).length,
+    "タグの語が増えない",
+  );
+  for (const ch of ["x", "shorts"])
+    assert.deepEqual(
+      (await job(result.channels[ch].job_id)).hashtags,
+      [],
+      `${ch} にタグは付けない`,
+    );
 });
 
 test("bundle の版2の検査: 置き場所がちょうど1つ・題名が完全版と別・Shorts の機械の検査・shorts.mp4・版の値", async () => {
@@ -748,6 +829,148 @@ test("x_text の検査は1回だけ（{full_url} の欄のループに入れな�
   );
 });
 
+test("BOA-1167: channels に x が無い束は x_text・full-x.mp4 を受けず、X の下書き・item・job・日の枠の確認を作らない。完全版→Shorts の時刻と親は変えない", async () => {
+  const b = bundleV2({ channels: ["youtube", "shorts"], x_text: undefined });
+  const f = files(b);
+  delete f["/f/full-x.mp4"];
+  const asked = [];
+  store.xSlotRoom = async (kind, need) => {
+    asked.push([kind, need]);
+    return { ok: true };
+  };
+  const savedBefore = saved.length;
+  let result;
+  try {
+    result = await push(b, {
+      readBytes: async (p) => {
+        if (!f[p]) throw new Error("no file");
+        return f[p];
+      },
+    });
+  } finally {
+    delete store.xSlotRoom;
+  }
+  assert.equal(result.reasons, undefined);
+  assert.deepEqual(asked, []);
+  assert.equal(result.xSlot, null);
+  assert.deepEqual(Object.keys(result.channels), ["youtube", "shorts"]);
+  assert.deepEqual(
+    (await all("SELECT DISTINCT platform FROM sns_drafts")).map(
+      (r) => r.platform,
+    ),
+    ["youtube"],
+  );
+  assert.deepEqual(
+    (
+      await all(
+        "SELECT channel, variant FROM sns_auto_send_items ORDER BY channel, variant",
+      )
+    ).map((i) => [i.channel, i.variant]),
+    [
+      ["youtube", "main"],
+      ["youtube", "shorts"],
+    ],
+  );
+  const jobs = await all(
+    "SELECT id, parent_job_id, scheduled_at FROM sns_x_send_jobs ORDER BY scheduled_at",
+  );
+  assert.equal(jobs.length, 2);
+  // 完全版は締切の60分前（19:36）の4分後、Shorts はさらに4分後で完全版を親に持つ（X があるときと同じ並び）
+  assert.deepEqual(
+    jobs.map((j) => j.scheduled_at.toISOString()),
+    ["2037-10-18T10:40:00.000Z", "2037-10-18T10:44:00.000Z"],
+  );
+  assert.equal(jobs[1].parent_job_id, jobs[0].id);
+  // full-x.mp4 は上げない
+  assert.ok(
+    saved.slice(savedBefore).every(([p]) => !p.endsWith("/full-x.mp4")),
+  );
+  assert.match(result.notes[0], /^x: 束の channels に無いので作らない$/m);
+  // 版（revision）は bundle・完全版・Shorts の動画の順
+  const { createHash } = await import("node:crypto");
+  assert.equal(
+    result.revision,
+    createHash("sha256")
+      .update(JSON.stringify(b))
+      .update(VIDEO)
+      .update(SHORTS)
+      .digest("hex")
+      .slice(0, 32),
+  );
+});
+
+test("BOA-1167: channels の検査。x を外すことだけができ（完全版は必須・Shorts は版2と一致）、x を含めば x_text は今までどおり必須", () => {
+  const bad = (b) =>
+    checkFullPicture(b, riskRules).filter((r) => /channels/.test(r));
+  for (const b of [
+    bundleV2({ channels: ["shorts"] }),
+    bundleV2({ channels: ["youtube"] }),
+    bundleV2({ channels: ["youtube", "shorts", "shorts"] }),
+    bundleV2({ channels: ["youtube", "shorts", "tiktok"] }),
+    bundleV2({ channels: [] }),
+    bundleV2({ channels: "youtube,shorts" }),
+    bundle({ channels: ["youtube", "shorts"] }),
+  ])
+    assert.equal(bad(b).length, 1, JSON.stringify(b.channels));
+  // 版1の X なし（完全版だけ）・X ありの明示・版2の X なしは通る
+  for (const b of [
+    bundle({ channels: ["youtube"], x_text: undefined }),
+    bundle({ channels: ["x", "youtube"] }),
+    bundleV2({ channels: ["youtube", "shorts"], x_text: undefined }),
+    bundleV2({ channels: ["x", "youtube", "shorts"] }),
+  ])
+    assert.deepEqual(
+      checkFullPicture(b, riskRules),
+      [],
+      JSON.stringify(b.channels),
+    );
+  // x を含む channels では x_text が要る。x を含まなければ x_text の禁止表現・置き場所も見ない
+  assert.match(
+    checkFullPicture(
+      bundle({ channels: ["x", "youtube"], x_text: undefined }),
+      riskRules,
+    ).join(),
+    /x_text が無い/,
+  );
+  assert.deepEqual(
+    checkFullPicture(
+      bundleV2({ channels: ["youtube", "shorts"], x_text: "{full_url}" }),
+      riskRules,
+    ),
+    [],
+  );
+});
+
+test("BOA-1167: channels に x が無い束で Shorts の item を作れなければ、Slack に「X・」を付けずに完全版は送ると書く", async () => {
+  const b = bundleV2({ channels: ["youtube", "shorts"], x_text: undefined });
+  store.failInsertItem = (row) => row.variant === "shorts";
+  try {
+    const result = await push(b);
+    assert.deepEqual(Object.keys(result.channels), ["youtube"]);
+    assert.match(
+      result.notes[0],
+      /作れなかったので作らなかった（完全版は送る）/,
+    );
+  } finally {
+    store.failInsertItem = null;
+  }
+});
+
+test("BOA-1167: channels に x が無い束で完全版の動画が無ければ拒否する（full-x.mp4 の有無は問わない）", async () => {
+  const b = bundle({ channels: ["youtube"], x_text: undefined });
+  const f = files(b);
+  delete f["/f/full-youtube.mp4"];
+  delete f["/f/full-x.mp4"];
+  const result = await push(b, {
+    readBytes: async (p) => {
+      if (!f[p]) throw new Error("no file");
+      return f[p];
+    },
+  });
+  assert.deepEqual(result.reasons, ["full-youtube.mp4 が無い"]);
+  assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
+});
+
 // BOA-909: 検査で拒否した束は理由を1回通知し、試運転では通知しない。
 const rejectionCases = [
   ["欄", () => bundle({ x_text: undefined }), {}, /x_text/],
@@ -756,8 +979,18 @@ const rejectionCases = [
   ["動画欠落", bundleV2, { missingVideo: true }, /shorts.mp4 が無い/],
   ["レース無し", bundle, { race: null }, /レースが見つからない/],
   ["中止", bundle, { cancelled: true }, /レースが中止/],
-  ["締切45分前", bundle, { now: new Date("2037-10-18T19:51:00+09:00") }, /45分前/],
-  ["複数理由", () => bundle({ x_text: undefined, review: { p0_count: 1 } }), {}, /P0/],
+  [
+    "締切45分前",
+    bundle,
+    { now: new Date("2037-10-18T19:51:00+09:00") },
+    /45分前/,
+  ],
+  [
+    "複数理由",
+    () => bundle({ x_text: undefined, review: { p0_count: 1 } }),
+    {},
+    /P0/,
+  ],
 ];
 for (const [name, makeBundle, scenario, expected] of rejectionCases) {
   test(`BOA-909: ${name} の拒否理由と race_id を1回通知する（dry-run は通知しない）`, async () => {
@@ -770,16 +1003,24 @@ for (const [name, makeBundle, scenario, expected] of rejectionCases) {
     };
     const raceStore = {
       ...store,
-      race: async (id) => scenario.race === null ? null : {
-        ...(await store.race(id)),
-        ...(scenario.cancelled ? { cancellation_status: "confirmed" } : {}),
-      },
+      race: async (id) =>
+        scenario.race === null
+          ? null
+          : {
+              ...(await store.race(id)),
+              ...(scenario.cancelled
+                ? { cancellation_status: "confirmed" }
+                : {}),
+            },
     };
     const savedBefore = saved.length;
     let reasons;
     for (const dryRun of [false, true]) {
       const result = await push(b, {
-        store: raceStore, readBytes, dryRun, now: scenario.now ?? NOW,
+        store: raceStore,
+        readBytes,
+        dryRun,
+        now: scenario.now ?? NOW,
       });
       assert.match(result.reasons.join("\n"), expected);
       assert.equal(result.notes.length, dryRun ? 0 : 1);
