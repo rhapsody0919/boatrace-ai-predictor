@@ -596,3 +596,30 @@ test("32 MiB を超える動画は begin_post の前に held にし、何も呼�
     "held",
   );
 });
+test("BOA-1164 照合（lookup）: 自分の非公開は owned・found、削除済み（items が空）は found=false、items の無い応答は投げる", async () => {
+  const job = {
+    external_post_id: "closedvid01",
+    snapshot: { youtube_title: "全貌 唐津12R" },
+  };
+  const own = fakeYoutube({ videoId: "closedvid01" });
+  const mine = await createYoutubeQueueAdapter({
+    accessToken: "tok",
+    fetchImpl: own.fetchImpl,
+  }).lookup(job);
+  assert.equal(mine.owned, true);
+  assert.equal(mine.found, true);
+  assert.equal(mine.privacyStatus, "private");
+  const gone = await createYoutubeQueueAdapter({
+    accessToken: "tok",
+    fetchImpl: async () => json({ items: [] }),
+  }).lookup(job);
+  assert.equal(gone.found, false);
+  assert.equal(gone.owned, false);
+  await assert.rejects(
+    createYoutubeQueueAdapter({
+      accessToken: "tok",
+      fetchImpl: async () => json({}),
+    }).lookup(job),
+    /items がありません/,
+  );
+});

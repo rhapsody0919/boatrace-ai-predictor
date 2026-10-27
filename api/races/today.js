@@ -3,6 +3,8 @@
  * Supabase RPC関数を呼び出し、CDNでキャッシュ
  */
 
+import { badRequest, queryError } from '../_lib/strictQuery.js';
+
 export const config = {
   runtime: 'edge',
 };
@@ -22,6 +24,11 @@ export default async function handler(req) {
       },
     });
   }
+
+  // 画面・ボット向け HTML（api/_lib/botPage.js）・監視（verify-bot-html-parity.js）はクエリを付けない。
+  // 付いた要求はキャッシュ外しなので拒む（api/_lib/strictQuery.js）
+  const invalid = queryError(new URL(req.url), {});
+  if (invalid) return badRequest(invalid);
 
   try {
     // Supabase RPC関数を呼び出し

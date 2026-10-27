@@ -412,7 +412,9 @@ test("YouTube予約は時刻待ち、due時に再検査して公開、署名URL�
     ).state,
     "posted",
   );
-  assert.equal(checked, 5);
+  // begin_post の前・videos.insert の前・公開の準備の後・videos.update の前の4回。videos.list（公開の確認）の前は検査しない
+  // （videos.update の後で止められるものが無い。BOA-1164 の system-architect の指摘）
+  assert.equal(checked, 4);
   assert.equal(youtube.calls[0].payload.privacyStatus, "private");
   assert.equal(youtube.calls[0].payload.publishAt, null);
   assert.equal(youtube.calls[0].payload.snapshot.media[0].path, "demo/a.mp4");

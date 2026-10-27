@@ -76,7 +76,10 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
     const body = await call(
       `${API}/videos?part=status,snippet,processingDetails&id=${encodeURIComponent(id)}`,
     );
-    return body.items?.find((item) => item.id === id) ?? null;
+    // items が配列でない応答は「動画が無い（削除済み）」と読まない（閉じる遷移が削除済みとして閉じるため、BOA-1164）
+    if (!Array.isArray(body?.items))
+      throw new Error("YouTube API videos.list の応答に items がありません");
+    return body.items.find((item) => item.id === id) ?? null;
   }
   const approvedTitle = (job) => job?.snapshot?.youtube_title ?? null;
   const isOwnApproved = (video, job) =>
@@ -196,6 +199,9 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
       Number.isFinite(Date.parse(video.snippet?.publishedAt));
     return {
       confirmed,
+      // 自分が上げた承認の動画か・videos.list に出たか（非公開のまま閉じるときの確認に使う、BOA-1164。found=false は削除済み）
+      owned: isOwnApproved(video, job),
+      found: Boolean(video),
       id: video?.id ?? null,
       privacyStatus: video?.status?.privacyStatus ?? null,
       posted_at: confirmed ? video.snippet.publishedAt : null,
