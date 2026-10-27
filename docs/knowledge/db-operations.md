@@ -31,6 +31,9 @@
 - verify-migration-rls.js は REVOKE/GRANT の1文につき先頭の関数名しか読まない。複数の関数を並べた文は1関数1文に分ける（2026-10-08、memory feedback_codex_patch_intake_checklist）
 - race_entries が別の日の出走表で上書きされる汚染は、race_results が正常に入るので欠損を探す検知では見つからない。日次の data_health_entries_duplicates（マイグレーション100）で検知する（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-423）
 - 適用待ちキーを WARN にする RPC 検査は、終了コード0でも当該マイグレーションの成功証拠にならない。台帳・途中の WARN・対象日と同一 raceId の保存値/応答を併せて確認する（2026-10-13、2026-10-13-plan-review-20261013-22.md）
+- approve_sns_x_send の ON CONFLICT は、state が sending・reconcile・posted でない job の youtube_stage と external_post_id を NULL に戻す。cancelled 等で閉じた job は承認し直せるので、記録を残したいなら approve で拒むか、別の場所に残す（2026-10-27、system-architect、177:145）
+- transition_sns_x_send に足した新しい操作を古い DB に送ると、YouTube の分岐を素通りして transition_sns_send_139 の「不正な操作です」で落ちる。コードを先に出しても壊れない根拠になる（2026-10-27、system-architect、182:307）
+- verify-rpc-key-regression は `'値',` の形の文字列をキーとして集めるので、CASE の ELSE などで値の後ろに `,` が無くなると「消えた」と出る。元の文の形を残して後から上書きする（2026-10-27、BOA-1164、186）
 
 ## 画面からの読み取り
 - 画面から Supabase を読むのは src/services/supabaseClient.js の1つの入口だけ。.throwOnError() が既定で、失敗を「データなし」に化けさせない（BOA-359、.claude/rules/frontend-data-fetch.md）
