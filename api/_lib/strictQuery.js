@@ -3,8 +3,8 @@
  *
  * CDN はクエリごとに別のキャッシュを持つので、`?zz=乱数` を付けた要求は毎回 MISS で関数と DB まで届く
  * （2026-10-27 に x-vercel-cache: MISS を実測、docs/design/public-api-lockdown/plan.md）。
- * /api/predictions（api/_lib/predictionsResponse.js の validatePredictionsRequest）・/api/analogy/*
- * （api/_lib/analogyV16.js の parseRequest、BOA-1125）と同じ流儀で、生のクエリ文字列を見る。
+ * /api/analogy/*（api/_lib/analogyV16.js の parseRequest、BOA-1125）と同じ流儀で、生のクエリ文字列を見る。
+ * /api/predictions は validatePredictionsRequest（デコードした値の検査）の後にこれも通す（生の表記の違いを塞ぐ）。
  * % で書いた別表記（?venue%5Fcode=1）・同じキーの重複・空の組（?a=1&）も、キャッシュの別の鍵になるので拒む。
  *
  * 判定は DB・外部への取得の前に行う。キャッシュに当たった要求には効かない（当たるならもともと関数に届かない）。
@@ -12,8 +12,8 @@
 
 /** 値の検査（生の文字列。デコードしない） */
 export const rules = {
-  /** 会場コード 1〜24。画面は数（"1"）、全貌動画の材料も 1〜24 の数で送る。"01" の形も受ける（9通り増えるだけ） */
-  venueCode: (v) => /^(0?[1-9]|1\d|2[0-4])$/.test(v),
+  /** 会場コード 1〜24。画面は数（"1"）、全貌動画の材料も 1〜24 の数で送る。"01" の形は送る呼び出し元が無いので受けない */
+  venueCode: (v) => /^([1-9]|1\d|2[0-4])$/.test(v),
 };
 
 /**

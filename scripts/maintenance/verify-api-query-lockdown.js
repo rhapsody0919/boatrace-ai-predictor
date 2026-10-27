@@ -1,5 +1,5 @@
 /**
- * 公開 API の4本（accuracy・races/today・race-history/summary・outcome-distribution）が、画面の使うクエリ以外を
+ * 公開 API の5本（accuracy・races/today・race-history/summary・outcome-distribution・predictions/{date}）が、画面の使うクエリ以外を
  * DB の読み出しの前に 400・no-store で拒むこと（api/_lib/strictQuery.js）。`?zz=乱数` で CDN のキャッシュを外して
  * 関数と DB まで届く穴を塞ぐ（docs/design/public-api-lockdown/plan.md）。全 fetch を差し替え、DB に接続しない。
  * 正規の入力（画面・ボット向け HTML・全貌動画の材料が送る形）は 200 のまま、キャッシュの設定も変えないことも固定する。
@@ -29,13 +29,15 @@ globalThis.fetch = async (input) => {
           last_updated: "2026-10-27",
         },
       ]
-    : url.includes("/rpc/get_today_races")
+    : url.includes("/rpc/get_today_races") || url.includes("/rpc/get_predictions_by_date")
       ? { success: true, data: [] }
       : [{ data: { days: [] } }];
   return new Response(JSON.stringify(body), { status: 200 });
 };
 
+const PRED = "predictions/2026-10-24";
 const handlers = {
+  [PRED]: (await import("../../api/predictions/[date].js")).default,
   accuracy: (await import("../../api/accuracy/index.js")).default,
   "races/today": (await import("../../api/races/today.js")).default,
   "race-history/summary": (await import("../../api/race-history/summary.js"))
@@ -55,8 +57,9 @@ const good = {
     "?venue_code=1",
     "?venue_code=24",
     "?venue_code=12",
-    "?venue_code=01",
   ],
+  // 画面は ?light=true、Vercel は動的ルートの date をパスと同じ値で足す
+  [PRED]: ["", "?light=true", "?light=true&date=2026-10-24", "?date=2026-10-24&light=true", "?date=2026-10-24"],
 };
 const cacheBusters = ["?zz=8231", "?_=1", "?t=1730000000000", "?x"];
 const bad = {
@@ -83,11 +86,24 @@ const bad = {
     "?venue_code=0",
     "?venue_code=25",
     "?venue_code=001",
+    "?venue_code=01",
     "?venue_code=1.0",
     "?venue_code=+1",
     "?venue_code=",
     "?venue_code=1&",
     "",
+  ],
+  // デコードした値の検査（validatePredictionsRequest）だけでは通っていた生の表記の違い
+  [PRED]: [
+    ...cacheBusters,
+    "?l%69ght=true",
+    "?light=true&",
+    "?light=true&&",
+    "?&light=true",
+    "?light=true&light=true",
+    "?light=true&date=2026-10-24&date=2026-10-24",
+    "?light=false",
+    "?date=2026-10-23",
   ],
 };
 

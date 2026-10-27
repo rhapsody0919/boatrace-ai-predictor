@@ -35,13 +35,8 @@ export default async function handler(req) {
   if (invalid) return badRequest(invalid);
 
   try {
-    const days = Math.min(
-      Math.max(parseInt(url.searchParams.get("days") || "90", 10), 1),
-      365,
-    );
-
-    // race_history_cache テーブルから直接取得（RPC廃止）
-    const cacheKey = days <= 90 ? "race_history_summary_90" : "race_history_summary_90";
+    // race_history_cache テーブルから直接取得（RPC廃止）。キャッシュは90日の1つだけ
+    const cacheKey = "race_history_summary_90";
 
     const response = await fetch(
       `${SUPABASE_URL}/rest/v1/race_history_cache?key=eq.${cacheKey}&select=data`,
