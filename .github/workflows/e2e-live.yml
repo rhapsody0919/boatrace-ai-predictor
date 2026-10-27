@@ -50,7 +50,9 @@ jobs:
     needs: shards
     environment: prod-jobs
     runs-on: ubuntu-latest
-    # 再生の組は中央 約18分・最大 約32分（PR ゲートの7日）。本番の応答は再生より遅いので余裕を持たせる
+    # 再生の組は中央 約18分・最大 約32分（PR ゲートの7日）。1ジョブで最後まで走った 10/13〜10/18 は全件で
+    # 45.7〜55.4分（2 workers）なので、1組は10分台の見込み。落ちる試験が多い日（1件 60秒×2回）の伸びを見込んで
+    # 45分。目安で、live の組の実測は最初の数回で見る
     timeout-minutes: 45
     strategy:
       # 1組が落ちても他の組は最後まで走らせ、失敗を一度に全部見せる
@@ -149,12 +151,14 @@ jobs:
           exit 0
 
       - name: Check skipped tests
-        if: always() && hashFiles('e2e-results.json') != ''
+        # 組が全部成功したのにレポートが無い（merge-reports の異常）ときも走らせて落とす（黙って skip にしない）
+        if: always() && (needs.e2e-live.result == 'success' || hashFiles('e2e-results.json') != '')
         run: node scripts/maintenance/check-e2e-skips.js
 
       # 分け方（matrix、e2e/shards.json）が全テストを1回ずつ走らせたか（PR ゲートの集約と同じ検査）
       - name: Check shard coverage
-        if: always() && hashFiles('e2e-results.json') != ''
+        # 組が全部成功したのにレポートが無い（merge-reports の異常）ときも走らせて落とす（黙って skip にしない）
+        if: always() && (needs.e2e-live.result == 'success' || hashFiles('e2e-results.json') != '')
         env:
           PLAYWRIGHT_JSON_OUTPUT_NAME: e2e-list.json
         run: |
@@ -163,7 +167,8 @@ jobs:
 
       - name: Notify Slack (失敗時のみ)
         # skip・網羅の検査（直前、always()）が落ちても通知・失敗扱いが飛ばないよう always() を付ける
-        if: always() && (needs.shards.result != 'success' || needs.e2e-live.result != 'success')
+        # 組の落ちに加え、skip・網羅の検査の落ち（failure()）でも鳴らす
+        if: always() && (needs.shards.result != 'success' || needs.e2e-live.result != 'success' || failure())
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           SUMMARY: ${{ steps.merge.outputs.summary }}
