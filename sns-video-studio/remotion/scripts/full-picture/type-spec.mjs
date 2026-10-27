@@ -42,6 +42,28 @@ export const TYPE_IMPL = {
 };
 
 /**
+ * 型の表の審査の記録の検査（docs/design/full-picture-type-gate/spec.md の 7）。落ちた理由の一覧（空なら合格）。
+ * 要るのは direction（方針）・owner（オーナーが試作を見た可）・段5の記録。段5は 2026-10-27 から P0 審査1件（p0Review: 役・判定・日付）。
+ * それより前に通った型（v2r1）は評価役2つの記録（channels）を段5の記録として認める（記録は消さない）。
+ * blindCompare（今の型との伏せた比較）は段8を回す型だけの任意。ownerMatchesGate も任意（オーナーの確認を外す条件は 10/27 に削った）
+ * @param {string} id @param {object} impl
+ */
+export function reviewReasons(id, impl) {
+  const r = impl?.review ?? {};
+  const str = (v) => typeof v === "string" && v.length > 0;
+  const why = [];
+  for (const k of ["direction", "owner"]) if (!str(r[k])) why.push(`${id}: 審査の記録 ${k} が無い`);
+  const p0 = r.p0Review;
+  const p0ok = p0 && str(p0.role) && str(p0.verdict) && /^\d{4}-\d{2}-\d{2}$/.test(p0.date ?? "");
+  if (p0 !== undefined && !p0ok) why.push(`${id}: 段5の P0 審査の記録（role・verdict・date）が欠けている`);
+  if (!p0ok && !str(r.channels)) why.push(`${id}: 段5の記録（p0Review か、10/27 より前の型は channels）が無い`);
+  if (r.blindCompare !== undefined && !str(r.blindCompare)) why.push(`${id}: blindCompare は書くなら文で`);
+  if (!impl?.range || typeof impl.range !== "object") why.push(`${id}: 変えてよい幅（無ければ {}）が無い`);
+  if (!impl?.approved || !Object.keys(impl.approved).length) why.push(`${id}: 承認した文が無い`);
+  return why;
+}
+
+/**
  * 関門を通っている途中の型（試作だけで使う。daily.mjs からは渡せないので投稿には出ない）。
  * 関門を通ったら TYPE_IMPL に移し、審査の記録を足す（docs/design/full-picture-type-gate/spec.md の 7）
  */
