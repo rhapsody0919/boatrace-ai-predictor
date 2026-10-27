@@ -191,6 +191,9 @@ const run = (o = {}) => ({
     "    name: 'e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})'",
     "  replay:",
     "    timeout-minutes: 30",
+    "  scrape: # 行末の注釈",
+    "    name: 取得 # 行末の注釈",
+    "    timeout-minutes: 330 # 行末の注釈（scrape-racer-season-stats.yml の書き方）",
     "# 頭の字下げが無い注釈で jobs の読みを止めない",
     "  plain:",
     "    steps:",
@@ -211,9 +214,23 @@ const run = (o = {}) => ({
           timeout: 45,
         },
         { key: "replay", name: null, timeout: 30 },
+        { key: "scrape", name: "取得", timeout: 330 },
         { key: "plain", name: null, timeout: 360 },
       ]),
     JSON.stringify(jobTimeouts(matrix)),
+  );
+  check(
+    "見張る workflow の実物の行末の注釈を読める（scrape-racer-season-stats.yml の scrape は330分。Codex の指摘 #2021）",
+    jobTimeouts(
+      readFileSync(
+        path.join(ROOT, ".github/workflows/scrape-racer-season-stats.yml"),
+        "utf8",
+      ),
+    ).find((j) => j.key === "scrape")?.timeout === 330,
+  );
+  check(
+    "上限330分の job が330.3分で取り消された → 時間切れ（既定の360分で判定しない）",
+    cancelledByTimeout([job("scrape", 330.3)], matrix) === true,
   );
   check(
     "上限60分の job が60.3分で取り消された → 時間切れ",

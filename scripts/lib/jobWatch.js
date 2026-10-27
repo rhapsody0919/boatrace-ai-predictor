@@ -67,16 +67,19 @@ export function jobTimeouts(yamlText) {
     }
     if (/^[A-Za-z_]/.test(line)) inJobs = false;
     if (!inJobs) continue;
-    const key = line.match(/^ {2}([\w-]+):\s*$/);
+    // 行末の注釈（ #...）は読み飛ばす（scrape-racer-season-stats.yml の `timeout-minutes: 330 # ...`）
+    const key = line.match(/^ {2}([\w-]+):\s*(?:#.*)?$/);
     if (key) {
       cur = { key: key[1], name: null, timeout: DEFAULT_TIMEOUT_MINUTES };
       jobs.push(cur);
       continue;
     }
     if (!cur) continue;
-    const name = line.match(/^ {4}name:\s*(.+?)\s*$/);
-    if (name) cur.name = name[1].replace(/^(['"])(.*)\1$/, "$2");
-    const timeout = line.match(/^ {4}timeout-minutes:\s*(\d+)\s*$/);
+    const name = line.match(
+      /^ {4}name:\s*(?:(['"])(.*?)\1|(.+?))\s*(?:\s#.*)?$/,
+    );
+    if (name) cur.name = name[2] ?? name[3];
+    const timeout = line.match(/^ {4}timeout-minutes:\s*(\d+)\s*(?:#.*)?$/);
     if (timeout) cur.timeout = Number(timeout[1]);
   }
   return jobs;
