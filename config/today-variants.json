@@ -3,7 +3,7 @@
   "reply_enabled": false,
   "experiment": {
     "id": "today-v2-course-win",
-    "start": null,
+    "start": "2026-10-29",
     "pairs": 10,
     "seed": "today-v2-course-win-20261027"
   },
