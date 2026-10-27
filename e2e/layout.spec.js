@@ -1999,8 +1999,13 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
     expect(cmpBox.x + cmpBox.width).toBeLessThanOrEqual(
       cmpParent.x + cmpParent.width + 1,
     );
-    for (const b of await page.locator(".ta-bettype button").all())
-      expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    for (const b of await page
+      .locator(".ta-bettype button, .ta-bettype-cmp button")
+      .all()) {
+      const box = await b.boundingBox();
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+    }
     expect(
       await page.evaluate(
         () =>

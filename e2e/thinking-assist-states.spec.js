@@ -2636,6 +2636,72 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     });
   });
 
+  // セルフレビュー P2: 締切時オッズだけの取得の失敗で、図・買い目のオッズ全体を失敗にしない
+  test("締切時オッズの取得に失敗しても、スナップショットのオッズで買い目を出し、取れなかったことを書く", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds_final*", (route) =>
+      route.fulfill({ status: 500, json: { message: "boom" } }),
+    );
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await candidate(page, 3, 3).click();
+    await expect(footer(page)).toContainText(/合成 \d/);
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet.locator(".ta-table tbody tr").first()).toBeVisible();
+    await expect(
+      sheet.getByText(
+        "締切時オッズを取れなかったので、取り込んだ最後の値で出している",
+      ),
+    ).toBeVisible();
+    await expect(sheet.getByText(/オッズの取得に失敗/)).toHaveCount(0);
+  });
+
+  // セルフレビュー P3: 3連単のオッズはあるのに2連単だけ無いとき、「締切の約1時間前から出る」と書かない
+  test("2連単のオッズだけが無いときは「2連単のオッズは取れていない」", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds?*", async (route) => {
+      const res = await fetchRecorded(route);
+      const rows = await res.json();
+      for (const row of rows) row.exacta_all = null;
+      await route.fulfill(res.fulfillOptions({ json: rows }));
+    });
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await betTypes(page).getByRole("button", { name: "2連単" }).click();
+    await expect(footer(page)).toContainText("2連単のオッズは取れていない");
+    await expect(footer(page)).not.toContainText("締切の約1時間前");
+  });
+
+  // セルフレビュー P3: ボックスは使う段の数だけ艇が無いと押せない（3連単で2艇だと0点になる）
+  test("3連単で2艇しか選んでいないときは「選んだ艇でボックス」を押せない", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(
+      sheet.getByRole("button", { name: "選んだ艇でボックス" }),
+    ).toBeDisabled();
+    await betTypes(sheet).getByRole("button", { name: "2連単" }).click();
+    await expect(
+      sheet.getByRole("button", { name: "選んだ艇でボックス" }),
+    ).toBeEnabled();
+  });
+
   test("締切時オッズ（race_odds_final）がある券種はその値で、「確定オッズではない」を出さない", async ({
     page,
   }) => {

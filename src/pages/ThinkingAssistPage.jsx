@@ -198,11 +198,11 @@ function reducer(state, action) {
         ? { ...state, bets: state.boxUndo, boxUndo: null }
         : state;
     case "budget":
-      return { ...state, budget: action.budget };
+      return { ...state, budget: action.budget, boxUndo: null };
     case "mode":
-      return { ...state, mode: action.mode };
+      return { ...state, mode: action.mode, boxUndo: null };
     case "sheet":
-      return { ...state, sheet: action.sheet };
+      return { ...state, sheet: action.sheet, boxUndo: null };
     case "guide":
       // ガイドの段に合わせてレンズを切り替え、深掘りを閉じる。閉じても買い目・レンズは残す（FR-10）
       return action.step == null
@@ -506,7 +506,7 @@ function ThinkingAssistBody() {
     [state.bets, data.absentBoats, betType.legs],
   );
   const removedBoats = data.absentBoats.filter((b) =>
-    [1, 2, 3].some((k) => state.bets[k].has(b)),
+    [1, 2, 3].slice(0, betType.legs).some((k) => state.bets[k].has(b)),
   );
   const removedNote = removedBoats.length
     ? ASSIST_COPY.absentRemoved(
@@ -518,7 +518,11 @@ function ThinkingAssistBody() {
   const oddsNote =
     data.odds.status === "error"
       ? ASSIST_COPY.partFailed(ASSIST_COPY.partOdds)
-      : ASSIST_COPY.oddsNone;
+      : data.odds.data?.byType &&
+          Object.keys(data.odds.data.byType).length > 0 &&
+          !data.odds.data.byType[betType.id]
+        ? ASSIST_COPY.oddsTypeMissing(ASSIST_COPY.betTypeLabels[betType.id])
+        : ASSIST_COPY.oddsNone;
   const partNotes = [
     data.exhibition.status === "error" && ASSIST_COPY.partExhibition,
     data.rates.status === "error" && ASSIST_COPY.partRates,
@@ -579,6 +583,7 @@ function ThinkingAssistBody() {
     odds: betOdds ?? {},
     betType: betType.id,
     oddsFinal: typeOdds?.final === true,
+    oddsFinalFailed: data.odds.data?.finalFailed === true,
     budget: state.budget,
     mode: state.mode,
     oddsAt: betOddsAt,
@@ -783,6 +788,7 @@ function ThinkingAssistBody() {
           canPost={data.defaultStage === "post"}
           onStage={(stage) => dispatch({ type: "stage", stage })}
           oddsAt={oddsAt}
+          oddsFinal={data.odds.data?.byType?.trifecta?.final === true}
           showSonar={isAnalogyFinderEnabled()}
           tidal={data.venueInfo.data?.tidal === true}
           onVenue={() => act({ type: "sheet", sheet: "venue" })}
@@ -983,6 +989,7 @@ function ThinkingAssistBody() {
           odds={betOdds ?? {}}
           betType={betType.id}
           oddsFinal={typeOdds?.final === true}
+          oddsFinalFailed={data.odds.data?.finalFailed === true}
           onBetType={(id) => onBetType(id, "tab")}
           onBox={() => act({ type: "box" })}
           onUndoBox={() => dispatch({ type: "undoBox" })}

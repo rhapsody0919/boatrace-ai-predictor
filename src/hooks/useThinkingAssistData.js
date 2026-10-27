@@ -17,7 +17,11 @@ import {
   useAnalogySimilar,
 } from "./useAnalogyV16";
 import { supabaseDataService } from "../services/supabaseDataService";
-import { oddsByBetType, raceRound, stageFromExhibition } from "../utils/assistModel";
+import {
+  oddsByBetType,
+  raceRound,
+  stageFromExhibition,
+} from "../utils/assistModel";
 import { parseRaceId } from "../utils/raceId";
 
 /**
@@ -51,15 +55,26 @@ export function useThinkingAssistData(
 
   // 券種ごとのオッズ（BOA-990）。DB のスナップショット（race_odds）と締切時オッズ（race_odds_final）を読むだけで、
   // 公式への取得は増やさない。締切時オッズのある券種はその値、無ければ最新のスナップショット（券種ごとに選ぶ）。
-  // 取得の失敗は投げる（部分の失敗として出す。FR-11）
+  // スナップショットの取得の失敗は投げる（部分の失敗として出す。FR-11）。締切時オッズだけの失敗では図・買い目を
+  // 消さず、スナップショットで出して finalFailed の印を持つ（買い目に「締切時オッズを取れなかった」を出す）
   const odds = useAnalogyResource(
     `assist-odds|${raceId}`,
     async () => {
-      const [snaps, final] = await Promise.all([
+      const [snaps, final] = await Promise.allSettled([
         supabaseDataService.getRaceOddsSnapshots(raceId),
         supabaseDataService.getRaceFinalOdds(raceId),
       ]);
-      return oddsByBetType(snaps, final);
+      if (snaps.status === "rejected") throw snaps.reason;
+      const out = oddsByBetType(
+        snaps.value,
+        final.status === "fulfilled" ? final.value : null,
+      );
+      return final.status === "rejected"
+        ? {
+            ...(out ?? { byType: {}, trifecta: null, capturedAt: null }),
+            finalFailed: true,
+          }
+        : out;
     },
     enabled,
   );

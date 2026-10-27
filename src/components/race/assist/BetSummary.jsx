@@ -24,6 +24,7 @@ export default function BetSummary({
   odds,
   betType = "trifecta",
   oddsFinal = false,
+  oddsFinalFailed = false,
   budget,
   mode,
   oddsAt,
@@ -166,6 +167,9 @@ export default function BetSummary({
           {ASSIST_COPY.composite(compositeText(composite))}（
           {ASSIST_COPY.compositeNote}）
         </p>
+      )}
+      {oddsFinalFailed && finished && (
+        <p className="ta-note">{ASSIST_COPY.oddsFinalFailed}</p>
       )}
       {oddsFinal ? (
         <p className="ta-note">{ASSIST_COPY.oddsFinal}</p>

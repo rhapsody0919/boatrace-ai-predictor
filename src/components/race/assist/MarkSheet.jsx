@@ -68,7 +68,7 @@ export default function MarkSheet({
         <p className="ta-note">{ASSIST_COPY.legUnused(typeLabel)}</p>
       )}
       <div className="ta-box-short">
-        <button type="button" disabled={picked.size < 2} onClick={onBox}>
+        <button type="button" disabled={picked.size < type.legs} onClick={onBox}>
           {ASSIST_COPY.boxButton}
         </button>
         {canUndoBox && (

@@ -177,7 +177,7 @@ export const ASSIST_COPY = Object.freeze({
   colBetPoints: "点数",
   colComposite: "合成オッズ",
   pointsCell: (n) => `${n}点`,
-  compareNote: "行を押すとその券種に切り替わる",
+  compareNote: "券種の名前を押すとその券種に切り替わる",
   legUnused: (type) =>
     `${type}は1着・2着の組。3着の段は使わない（入れた候補は残る）`,
   boxButton: "選んだ艇でボックス",
@@ -228,6 +228,10 @@ export const ASSIST_COPY = Object.freeze({
     `このレースは終わっています。オッズは${time}時点で、確定オッズではない`,
   // 締切の後に公式の締切時オッズ（race_odds_final）が取れた券種（BOA-990）
   oddsFinal: "オッズは公式の締切時オッズ。返還があると配当は変わる",
+  oddsFinalFailed: "締切時オッズを取れなかったので、取り込んだ最後の値で出している",
+  // ほかの券種のオッズはあるのに、選んだ券種だけ無いとき（取得の欠け・古いレース）
+  oddsTypeMissing: (type) => `${type}のオッズは取れていない`,
+  oddsAtFinal: "オッズ 公式の締切時オッズ",
 
   // ---- レンズの要約（FR-4、screens「レンズごとの図 C」D 要約）と図の印 ----
   // 「数える」「集計」「算出」「対象」は使わない（D-41・D-42）。艇数には単位「艇」
