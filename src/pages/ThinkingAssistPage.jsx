@@ -41,8 +41,12 @@ import AssistViewSwitch from "../components/race/assist/AssistViewSwitch";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useThinkingAssistData } from "../hooks/useThinkingAssistData";
 import {
+  ASSIST_BET_TYPES,
   ROUND_LABEL,
   anyCell,
+  assistBetType,
+  betForm,
+  boxBets,
   baseVerdict,
   boardModel,
   buildRacers,
@@ -105,6 +109,10 @@ const initialState = {
   // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
+  // 買い目の券種（BOA-990）。候補の段は券種をまたいで共有する
+  betType: "trifecta",
+  // 「選んだ艇でボックス」を押す前の候補（押した直後だけ「元に戻す」を出す）。保存しない
+  boxUndo: null,
   budget: "1000",
   mode: "equalPayout",
   // "mark" | "rough" | "venue" | {type: "theory", id, boat} | {type: "term", term}
@@ -171,8 +179,24 @@ function reducer(state, action) {
       const next = new Set(state.bets[action.pos]);
       if (next.has(action.boat)) next.delete(action.boat);
       else next.add(action.boat);
-      return { ...state, bets: { ...state.bets, [action.pos]: next } };
+      return {
+        ...state,
+        bets: { ...state.bets, [action.pos]: next },
+        boxUndo: null,
+      };
     }
+    case "betType":
+      return { ...state, betType: action.betType, boxUndo: null };
+    case "box":
+      return {
+        ...state,
+        bets: boxBets(state.bets, assistBetType(state.betType).legs),
+        boxUndo: state.bets,
+      };
+    case "undoBox":
+      return state.boxUndo
+        ? { ...state, bets: state.boxUndo, boxUndo: null }
+        : state;
     case "budget":
       return { ...state, budget: action.budget };
     case "mode":
@@ -232,6 +256,7 @@ function ThinkingAssistBody() {
   }, [
     raceId,
     state.bets,
+    state.betType,
     state.budget,
     state.mode,
     state.target,
@@ -475,9 +500,10 @@ function ThinkingAssistBody() {
     () => withoutBoats(state.bets, data.absentBoats),
     [state.bets, data.absentBoats],
   );
+  const betType = assistBetType(state.betType);
   const tickets = useMemo(
-    () => expandTickets(state.bets, data.absentBoats),
-    [state.bets, data.absentBoats],
+    () => expandTickets(state.bets, data.absentBoats, betType.legs),
+    [state.bets, data.absentBoats, betType.legs],
   );
   const removedBoats = data.absentBoats.filter((b) =>
     [1, 2, 3].some((k) => state.bets[k].has(b)),
@@ -485,7 +511,7 @@ function ThinkingAssistBody() {
   const removedNote = removedBoats.length
     ? ASSIST_COPY.absentRemoved(
         removedBoats,
-        expandTickets(state.bets).length - tickets.length,
+        expandTickets(state.bets, [], betType.legs).length - tickets.length,
       )
     : null;
   // オッズが無い: 取得の失敗と、発売前（取得が成功して空）を分ける（FR-11・screens「オッズが無い」、Codex 依頼27 F01）
@@ -497,10 +523,27 @@ function ThinkingAssistBody() {
     data.exhibition.status === "error" && ASSIST_COPY.partExhibition,
     data.rates.status === "error" && ASSIST_COPY.partRates,
   ].filter(Boolean);
-  const composite = trifecta
-    ? compositeOdds(tickets.map((t) => trifecta[t]))
+  // 選んでいる券種のオッズ（締切時オッズがあればその値。BOA-990）。図・ヘッダー・よく出た3連単は3連単のまま
+  const typeOdds = data.odds.data?.byType?.[betType.id] ?? null;
+  const betOdds = typeOdds?.odds ?? null;
+  const composite = betOdds
+    ? compositeOdds(tickets.map((t) => betOdds[t]))
     : null;
   const oddsAt = formatObservedTime(data.odds.data?.capturedAt);
+  const betOddsAt = formatObservedTime(typeOdds?.capturedAt);
+  // 券種で比べる（同じ候補）の行（承認モック 画面1）
+  const compareRows = ASSIST_BET_TYPES.map((t) => {
+    const tk = expandTickets(state.bets, data.absentBoats, t.legs);
+    const o = data.odds.data?.byType?.[t.id]?.odds ?? null;
+    return {
+      id: t.id,
+      form: betForm(bets, t.legs),
+      points: tk.length,
+      composite: o ? compositeOdds(tk.map((k) => o[k])) : null,
+    };
+  });
+  const onBetType = (id, from) =>
+    act({ type: "betType", betType: id, from });
 
   const toggleBet = useCallback(
     (pos, boat) => dispatch({ type: "toggleBet", pos, boat }),
@@ -533,10 +576,12 @@ function ThinkingAssistBody() {
   const b1u = b1Usual(winFacts[0].scope);
   const betSummary = {
     tickets,
-    trifecta: trifecta ?? {},
+    odds: betOdds ?? {},
+    betType: betType.id,
+    oddsFinal: typeOdds?.final === true,
     budget: state.budget,
     mode: state.mode,
-    oddsAt,
+    oddsAt: betOddsAt,
     oddsNote,
     finished: Boolean(race?.result?.finished),
     onBudget: (budget) => dispatch({ type: "budget", budget }),
@@ -624,6 +669,10 @@ function ThinkingAssistBody() {
       bet: {
         points: tickets.length,
         summary: betSummary,
+        compare: compareRows,
+        onBetType,
+        trifecta: trifecta ?? {},
+        trifectaFinal: data.odds.data?.byType?.trifecta?.final === true,
         ranks: popularityRanks(trifecta ?? {}),
         oddsAt,
         finished: Boolean(race?.result?.finished),
@@ -876,6 +925,7 @@ function ThinkingAssistBody() {
         {!cancelled && (
           <BetFooter
             bets={bets}
+            betType={betType.id}
             points={tickets.length}
             composite={composite}
             oddsNote={oddsNote}
@@ -930,10 +980,16 @@ function ThinkingAssistBody() {
           onClose={closeSheet}
           points={tickets.length}
           tickets={tickets}
-          trifecta={trifecta ?? {}}
+          odds={betOdds ?? {}}
+          betType={betType.id}
+          oddsFinal={typeOdds?.final === true}
+          onBetType={(id) => onBetType(id, "tab")}
+          onBox={() => act({ type: "box" })}
+          onUndoBox={() => dispatch({ type: "undoBox" })}
+          canUndoBox={state.boxUndo != null}
           budget={state.budget}
           mode={state.mode}
-          oddsAt={oddsAt}
+          oddsAt={betOddsAt}
           finished={Boolean(race?.result?.finished)}
           onBudget={(budget) => dispatch({ type: "budget", budget })}
           onMode={(mode) => dispatch({ type: "mode", mode })}

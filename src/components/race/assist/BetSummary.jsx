@@ -4,7 +4,11 @@ import {
   allocateStakes,
   popularityRanks,
 } from "../../../utils/oddsMath";
-import { compositeText, hasPricedTicket } from "../../../utils/assistModel";
+import {
+  assistBetType,
+  compositeText,
+  hasPricedTicket,
+} from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
 const yen = (n) => n.toLocaleString("ja-JP");
@@ -12,11 +16,14 @@ const yen = (n) => n.toLocaleString("ja-JP");
 /**
  * 組んだ買い目の配分（FR-8、screens S-1a）: 予算・均等／均等払戻・組ごとのオッズ・人気・金額・払戻、
  * 最下行に合計・残り・丸めた後の倍率の幅。予算が 100円×点数 に足りなければ最低額だけを出す（F05）。
- * 類似レースがあれば組ごとの件数の列「類似」を並べる（FW-19。オッズと掛け合わせない）
+ * 類似レースがあれば組ごとの件数の列「類似」を並べる（FW-19。オッズと掛け合わせない）。類似の列は3連単だけ
+ * （BOA-990。ほかの券種は BOA-1171 の答えまで出さない）。オッズ・人気は選んでいる券種の値（odds）
  */
 export default function BetSummary({
   tickets,
-  trifecta,
+  odds,
+  betType = "trifecta",
+  oddsFinal = false,
   budget,
   mode,
   oddsAt,
@@ -27,13 +34,16 @@ export default function BetSummary({
   similarTri = null,
   similarN = null,
 }) {
-  const showSimilar = similarTri != null && similarN > 0;
+  const type = assistBetType(betType);
+  const typeLabel = ASSIST_COPY.betTypeLabels[type.id];
+  const showSimilar =
+    type.id === "trifecta" && similarTri != null && similarN > 0;
   const budgetId = useId();
-  const ranks = popularityRanks(trifecta);
+  const ranks = popularityRanks(odds);
   // オッズの付いた組が無い（発売前）ときは配分を出さない（screens「状態」）
-  const priced = hasPricedTicket(tickets, trifecta);
+  const priced = hasPricedTicket(tickets, odds);
   const result = priced
-    ? allocateStakes({ tickets, trifecta, budget: Number(budget), mode })
+    ? allocateStakes({ tickets, odds, budget: Number(budget), mode })
     : null;
   const composite = result && !result.insufficient ? result.composite : null;
   return (
@@ -71,7 +81,9 @@ export default function BetSummary({
           ))}
         </span>
       </div>
-      {!tickets.length && <p className="ta-note">{ASSIST_COPY.betEmpty}</p>}
+      {!tickets.length && (
+        <p className="ta-note">{ASSIST_COPY.betEmptyFor(type.legs)}</p>
+      )}
       {tickets.length > 0 && !priced && <p className="ta-note">{oddsNote}</p>}
       {result?.insufficient && (
         <p className="ta-warn">
@@ -141,6 +153,11 @@ export default function BetSummary({
           {ASSIST_COPY.missingOdds(result.missing.length)}
         </p>
       )}
+      {result && !result.insufficient && (
+        <p className="ta-note">
+          {ASSIST_COPY.popularityNote(typeLabel, type.combos)}
+        </p>
+      )}
       {showSimilar && result && !result.insufficient && (
         <p className="ta-note">{ASSIST_COPY.similarColNote(similarN)}</p>
       )}
@@ -150,12 +167,16 @@ export default function BetSummary({
           {ASSIST_COPY.compositeNote}）
         </p>
       )}
-      {oddsAt && (
-        <p className="ta-note">
-          {finished
-            ? ASSIST_COPY.oddsCautionFinished(oddsAt)
-            : ASSIST_COPY.oddsCaution(oddsAt)}
-        </p>
+      {oddsFinal ? (
+        <p className="ta-note">{ASSIST_COPY.oddsFinal}</p>
+      ) : (
+        oddsAt && (
+          <p className="ta-note">
+            {finished
+              ? ASSIST_COPY.oddsCautionFinished(oddsAt)
+              : ASSIST_COPY.oddsCaution(oddsAt)}
+          </p>
+        )
       )}
     </div>
   );

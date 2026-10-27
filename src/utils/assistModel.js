@@ -10,6 +10,7 @@ import {
 } from "./analogyAggregate.js";
 import { ROUNDS_FINAL } from "./analogyFacts.js";
 import { bestOf } from "./bestOf.js";
+import { latestSnapshotWith } from "./oddsMath.js";
 import { wilsonInterval } from "./wilson.js";
 import { getRaceStageKey } from "../constants/raceStageConfig.js";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy.js";
@@ -878,11 +879,67 @@ export function buildRacers({
 
 // ---- 買い目の表記（固定フッター・マークシート）----
 
-/** 1着・2着・3着の候補を「1-23-234」の形に（候補が無い着は「—」） */
-export const betForm = (bets) =>
+/**
+ * 買い目の券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。並びがタブと「券種で比べる」の行の順。
+ * legs は使う着の数、dataKey は getRaceOddsSnapshots・getRaceFinalOdds のキー、combos は全通りの数（人気の注記）。
+ * ① で3連単・2連単。3連複・2連複・拡連複は ②・③ で足す
+ */
+export const ASSIST_BET_TYPES = Object.freeze([
+  Object.freeze({ id: "trifecta", legs: 3, dataKey: "trifectaAll", combos: 120 }),
+  Object.freeze({ id: "exacta", legs: 2, dataKey: "exactaAll", combos: 30 }),
+]);
+export const ASSIST_BET_TYPE_IDS = ASSIST_BET_TYPES.map((t) => t.id);
+/** 券種の id → 定義。知らない id は3連単（古い保存・既定） */
+export const assistBetType = (id) =>
+  ASSIST_BET_TYPES.find((t) => t.id === id) ?? ASSIST_BET_TYPES[0];
+
+/**
+ * 券種ごとのオッズを選ぶ（BOA-990）。締切時オッズ（公式）のある券種はその値、無ければその券種の値を持つ最新の
+ * スナップショット。どの券種も無ければ null（発売前）。trifecta・capturedAt は3連単の値（図・よく出た3連単が使う）
+ * @param {Array<object>} snaps getRaceOddsSnapshots
+ * @param {object|null} final getRaceFinalOdds
+ * @returns {null | {byType: Record<string, {odds: Record<string, number>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null}}
+ */
+export function oddsByBetType(snaps, final) {
+  const byType = {};
+  for (const t of ASSIST_BET_TYPES) {
+    const f = final?.[t.dataKey];
+    if (f) {
+      byType[t.id] = { odds: f, capturedAt: final.capturedAt, final: true };
+      continue;
+    }
+    const s = latestSnapshotWith(snaps ?? [], t.dataKey);
+    if (s)
+      byType[t.id] = { odds: s[t.dataKey], capturedAt: s.capturedAt, final: false };
+  }
+  if (Object.keys(byType).length === 0) return null;
+  return {
+    byType,
+    trifecta: byType.trifecta?.odds ?? null,
+    capturedAt: byType.trifecta?.capturedAt ?? null,
+  };
+}
+
+/** 1着・2着・3着の候補を「1-23-234」の形に（候補が無い着は「—」）。legs=2 は「1-234」（2連単） */
+export const betForm = (bets, legs = 3) =>
   [1, 2, 3]
+    .slice(0, legs)
     .map((k) => [...bets[k]].sort((a, b) => a - b).join("") || "—")
     .join("-");
+
+/**
+ * 「選んだ艇でボックス」（承認モック 画面3）: どこかの使う段に入れた艇を、使う段すべてにそろえる。使わない段（2連単の3着）は触らない
+ * @param {{1: Set<number>, 2: Set<number>, 3: Set<number>}} bets
+ * @param {2|3} legs
+ */
+export function boxBets(bets, legs) {
+  const used = [1, 2, 3].slice(0, legs);
+  const all = new Set(used.flatMap((k) => [...bets[k]]));
+  return {
+    ...bets,
+    ...Object.fromEntries(used.map((k) => [k, new Set(all)])),
+  };
+}
 
 /** 合成オッズの表記（モック v7 と同じ小数2桁、丸める前の理論値） */
 export const compositeText = (v) => (v == null ? null : v.toFixed(2));

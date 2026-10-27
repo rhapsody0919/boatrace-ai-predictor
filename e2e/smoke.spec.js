@@ -530,6 +530,26 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
     await expect(page.getByRole("region", { name: "買い目" })).toBeVisible();
   });
 
+  // BOA-990 ①: 思考アシストの買い目に券種（3連単・2連単）のタブと「券種で比べる」の小表を足した
+  test("思考アシストの買い目レンズに券種のタブ（3連単・2連単）と券種で比べるの表が出る", async ({
+    page,
+  }) => {
+    await page.goto("/race/2026-10-06-18-10/assist");
+    await page
+      .getByRole("tablist", { name: "見方" })
+      .getByRole("tab", { name: "買い目", exact: true })
+      .click();
+    const types = page.getByRole("group", { name: "券種" });
+    await expect(types.getByRole("button", { name: "3連単" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(types.getByRole("button", { name: "2連単" })).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "券種で比べる（同じ候補）" }),
+    ).toBeVisible();
+  });
+
   test("翻訳済みページ（/en/guide）はリダイレクトされずlang=enで配信される", async ({
     page,
   }) => {

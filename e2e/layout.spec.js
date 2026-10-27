@@ -1967,6 +1967,64 @@ test.describe("レイアウト: 思考アシストの PC 表示（BOA-880）", (
   });
 });
 
+// 思考アシストの買い目の券種（BOA-990 ①）。「券種で比べる」の表・券種のタブ・マークシート（2連単で3着の段を薄く残す）が、
+// 375〜1920px で横にはみ出さず、タブ・ボタンは 44px 以上押せる
+test.describe("レイアウト: 思考アシストの買い目の券種（BOA-990）", () => {
+  test("券種で比べる・券種のタブ・マークシートが横にはみ出さない", async ({
+    page,
+  }) => {
+    await routeThinkingAssistV16(page);
+    await page.goto(`/race/${THINKING_ASSIST_RACE}/assist`);
+    const lens = page.getByRole("tablist", { name: "見方" });
+    await expect(lens).toBeVisible({ timeout: 30000 });
+    await lens.getByRole("tab", { name: "買い目", exact: true }).click();
+    const cand = (b, p) =>
+      page.getByRole("button", { name: `${b}号艇を${p}着の候補に` });
+    await cand(1, 1).click();
+    for (const b of [2, 3, 4]) await cand(b, 2).click();
+    for (const b of [2, 3, 4, 5]) await cand(b, 3).click();
+    const cmp = page.locator(".ta-bettype-cmp");
+    await expect(cmp).toBeVisible();
+    const overflow = (sel) =>
+      page.evaluate((s) => {
+        const e = document.querySelector(s);
+        return e.scrollWidth - e.clientWidth;
+      }, sel);
+    expect(await overflow(".ta-bettype-cmp")).toBeLessThanOrEqual(1);
+    const cmpBox = await cmp.boundingBox();
+    const cmpParent = await page
+      .locator(".ta-bettype-cmp")
+      .locator("xpath=..")
+      .boundingBox();
+    expect(cmpBox.x + cmpBox.width).toBeLessThanOrEqual(
+      cmpParent.x + cmpParent.width + 1,
+    );
+    for (const b of await page.locator(".ta-bettype button").all())
+      expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(2);
+
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await sheet
+      .getByRole("group", { name: "券種" })
+      .getByRole("button", { name: "2連単" })
+      .click();
+    await expect(sheet.locator(".ta-ms-row.is-unused").first()).toBeAttached();
+    expect(await overflow(".ta-sheet")).toBeLessThanOrEqual(1);
+    for (const b of await sheet
+      .locator(".ta-bettype button, .ta-box-short button")
+      .all())
+      expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
+  });
+});
 // 過去に発生した割合を見る（BOA-635 T5-1）。スリットの7形の一覧と強さの段が、375〜1920px で横にはみ出さない。
 // layer は固定データで返す（録画の時刻より後の、v16 公開後の確定済みレース。予想・結果は素通し）
 test.describe("レイアウト: 過去に発生した割合を見る（BOA-635）", () => {

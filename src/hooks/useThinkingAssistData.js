@@ -17,8 +17,7 @@ import {
   useAnalogySimilar,
 } from "./useAnalogyV16";
 import { supabaseDataService } from "../services/supabaseDataService";
-import { latestSnapshotWith } from "../utils/oddsMath";
-import { raceRound, stageFromExhibition } from "../utils/assistModel";
+import { oddsByBetType, raceRound, stageFromExhibition } from "../utils/assistModel";
 import { parseRaceId } from "../utils/raceId";
 
 /**
@@ -50,14 +49,17 @@ export function useThinkingAssistData(
     data: race,
   };
 
+  // 券種ごとのオッズ（BOA-990）。DB のスナップショット（race_odds）と締切時オッズ（race_odds_final）を読むだけで、
+  // 公式への取得は増やさない。締切時オッズのある券種はその値、無ければ最新のスナップショット（券種ごとに選ぶ）。
+  // 取得の失敗は投げる（部分の失敗として出す。FR-11）
   const odds = useAnalogyResource(
     `assist-odds|${raceId}`,
     async () => {
-      const snaps = await supabaseDataService.getRaceOddsSnapshots(raceId);
-      const latest = latestSnapshotWith(snaps, "trifectaAll");
-      return latest
-        ? { capturedAt: latest.capturedAt, trifecta: latest.trifectaAll }
-        : null;
+      const [snaps, final] = await Promise.all([
+        supabaseDataService.getRaceOddsSnapshots(raceId),
+        supabaseDataService.getRaceFinalOdds(raceId),
+      ]);
+      return oddsByBetType(snaps, final);
     },
     enabled,
   );

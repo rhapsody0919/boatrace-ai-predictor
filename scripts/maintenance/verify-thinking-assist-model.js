@@ -18,9 +18,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  assistBetType,
   baseVerdict,
   bestBoats,
   betForm,
+  boxBets,
+  oddsByBetType,
   boardModel,
   buildRacers,
   classLineup,
@@ -910,6 +913,7 @@ check(
 {
   const st = {
     bets: { 1: new Set([1]), 2: new Set([2, 3]), 3: new Set([2, 3, 4]) },
+    betType: "exacta",
     budget: "2000",
     mode: "equal",
     target: 3,
@@ -919,6 +923,13 @@ check(
     sheet: "mark",
   };
   const back = parseAssistSession(serializeAssistSession(st));
+  check(
+    "保存: 券種を戻し、知らない券種・券種の無い古い保存は券種を返さない（既定の3連単。BOA-990）",
+    back.betType === "exacta" &&
+      !("betType" in parseAssistSession('{"bets":{"1":[],"2":[],"3":[]},"betType":"win"}')) &&
+      !("betType" in parseAssistSession('{"bets":{"1":[],"2":[],"3":[]}}')),
+    JSON.stringify(back),
+  );
   check(
     "保存: 買い目・予算・配分の方式・着順・レンズ・相手レンズの軸の艇（BOA-845）を戻し、深掘り・シートは残さない",
     JSON.stringify([...back.bets[1]]) === "[1]" &&
@@ -991,6 +1002,77 @@ check(
       r5.nums[0].text === "12件（少ない）" &&
       m.rows[1].nums.length === 0,
     JSON.stringify(r5),
+  );
+}
+
+// ---- 買い目の券種（BOA-990 ①: 3連単・2連単）----
+{
+  const B = (a, b, c) => ({ 1: new Set(a), 2: new Set(b), 3: new Set(c) });
+  check(
+    "券種: 2連単の表記は1着・2着だけ（1-234）、3連単は今のまま（1-234-2345）。知らない券種は3連単",
+    betForm(B([1], [2, 3, 4], [2, 3, 4, 5]), 2) === "1-234" &&
+      betForm(B([1], [2, 3, 4], [2, 3, 4, 5])) === "1-234-2345" &&
+      assistBetType("zzz").id === "trifecta" &&
+      assistBetType("exacta").legs === 2,
+  );
+  const boxed = boxBets(B([1], [2, 3], [5]), 2);
+  check(
+    "ボックス: 2連単は1着・2着の段を選んだ艇（1・2・3）にそろえ、使わない3着の段は触らない",
+    JSON.stringify([...boxed[1]].sort()) === "[1,2,3]" &&
+      JSON.stringify([...boxed[2]].sort()) === "[1,2,3]" &&
+      JSON.stringify([...boxed[3]]) === "[5]",
+    JSON.stringify(boxed, (k, v) => (v instanceof Set ? [...v] : v)),
+  );
+  const boxed3 = boxBets(B([1], [2], [3, 4]), 3);
+  check(
+    "ボックス: 3連単は3段すべてを1・2・3・4にそろえる",
+    [1, 2, 3].every((k) => JSON.stringify([...boxed3[k]].sort()) === "[1,2,3,4]"),
+  );
+  const snaps = [
+    { capturedAt: "t1", trifectaAll: { "1-2-3": 5 }, exactaAll: { "1-2": 3 } },
+    { capturedAt: "t2", trifectaAll: { "1-2-3": 6 }, exactaAll: null },
+  ];
+  const o = oddsByBetType(snaps, null);
+  check(
+    "オッズ: 券種ごとに値を持つ最新のスナップショット（2連単は t2 が空なので t1）",
+    o.byType.trifecta.capturedAt === "t2" &&
+      o.byType.exacta.capturedAt === "t1" &&
+      o.byType.exacta.final === false &&
+      o.trifecta["1-2-3"] === 6,
+    JSON.stringify(o),
+  );
+  const of = oddsByBetType(snaps, {
+    capturedAt: "f",
+    trifectaAll: null,
+    exactaAll: { "1-2": 2.9 },
+  });
+  check(
+    "オッズ: 締切時オッズ（公式）のある券種はその値、無い券種はスナップショット",
+    of.byType.exacta.final === true &&
+      of.byType.exacta.odds["1-2"] === 2.9 &&
+      of.byType.trifecta.final === false &&
+      oddsByBetType([], null) === null,
+    JSON.stringify(of),
+  );
+  const st = { lens: "bet", deep: null, metric: null, betType: "trifecta" };
+  check(
+    "イベント: 券種を替えたら assist_bet_type（場所つき）、選んでいる券種の押し直しは送らない。ボックスは assist_bet_box",
+    JSON.stringify(
+      assistEventOf(st, { type: "betType", betType: "exacta", from: "compare" }),
+    ) ===
+      JSON.stringify({
+        name: "assist_bet_type",
+        params: { assist_bet_type: "exacta", assist_bet_from: "compare" },
+      }) &&
+      assistEventOf(st, { type: "betType", betType: "trifecta", from: "tab" }) ===
+        null &&
+      assistEventOf({ lens: "bet" }, { type: "betType", betType: "trifecta" }) ===
+        null &&
+      JSON.stringify(assistEventOf({ ...st, betType: "exacta" }, { type: "box" })) ===
+        JSON.stringify({
+          name: "assist_bet_box",
+          params: { assist_bet_type: "exacta" },
+        }),
   );
 }
 

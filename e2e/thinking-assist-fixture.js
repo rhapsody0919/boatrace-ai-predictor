@@ -52,6 +52,11 @@ export async function routeThinkingAssistV16(
     await page.addInitScript(() =>
       localStorage.setItem("boatai-user:thinking-assist-preview", "1"),
     );
+  // 締切時オッズ（race_odds_final、BOA-990 で読むようにした）は既定で「無い」にする。録画に無い取得を本番へ
+  // 素通しさせず、例のレースを従来どおりスナップショットのオッズで描く。締切時オッズの試験は後から route で上書きする
+  await page.route("**/rest/v1/race_odds_final*", (route) =>
+    route.fulfill({ json: [] }),
+  );
   await page.route("**/api/analogy/facts/**", (route) =>
     route.fulfill({ json: apply("facts", data.facts) }),
   );

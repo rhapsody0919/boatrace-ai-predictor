@@ -39,17 +39,17 @@ export function latestSnapshotWith(snapshots, dataKey) {
 
 // ---- 思考アシストの買い目（BOA-430、spec FR-7・FR-8・D-38）----
 
-/** 3連単の最小の購入単位（円） */
+/** 舟券の最小の購入単位（円） */
 export const STAKE_UNIT = 100;
 
 /**
- * 3連単のオッズの表（"1-2-3" → オッズ）から人気順（オッズの昇順、1始まり）を作る。
+ * その券種のオッズの表（"1-2-3" / "1-2" → オッズ）から人気順（オッズの昇順、1始まり）を作る。
  * 同じオッズは同じ順位にし、次の順位は飛ばす（1・2・2・4）。オッズの無い組（票なし・欠場）は順位を付けない
- * @param {Record<string, number|null>} trifecta
+ * @param {Record<string, number|null>} odds
  * @returns {Map<string, number>}
  */
-export function popularityRanks(trifecta) {
-  const entries = Object.entries(trifecta ?? {})
+export function popularityRanks(odds) {
+  const entries = Object.entries(odds ?? {})
     .filter(([, v]) => v != null && v > 0)
     .sort((a, b) => a[1] - b[1]);
   const ranks = new Map();
@@ -61,23 +61,24 @@ export function popularityRanks(trifecta) {
 }
 
 /**
- * 1着・2着・3着の候補から3連単の組を作る。同じ艇を2回以上含む組と、欠場の艇を含む組は除く（D-38）
+ * 1着・2着・3着の候補から連単の組を作る（legs=3 で3連単、legs=2 で2連単。BOA-990）。同じ艇を2回以上含む組と、
+ * 欠場の艇を含む組は除く（D-38）。2連単は3着の候補を使わない
  * @param {{1: Iterable<number>, 2: Iterable<number>, 3: Iterable<number>}} bets
  * @param {Iterable<number>} [absentBoats]
- * @returns {string[]} "a-b-c"（1着→2着→3着の艇番の昇順）
+ * @param {2|3} [legs]
+ * @returns {string[]} "a-b-c" / "a-b"（1着→2着→3着の艇番の昇順）
  */
-export function expandTickets(bets, absentBoats = []) {
+export function expandTickets(bets, absentBoats = [], legs = 3) {
   const absent = new Set(absentBoats);
   const sorted = (s) => [...new Set(s ?? [])].sort((a, b) => a - b);
-  const tickets = [];
-  for (const a of sorted(bets?.[1]))
-    for (const b of sorted(bets?.[2]))
-      for (const c of sorted(bets?.[3])) {
-        if (a === b || a === c || b === c) continue;
-        if (absent.has(a) || absent.has(b) || absent.has(c)) continue;
-        tickets.push(`${a}-${b}-${c}`);
-      }
-  return tickets;
+  let combos = [[]];
+  for (let pos = 1; pos <= legs; pos++) {
+    const list = sorted(bets?.[pos]).filter((b) => !absent.has(b));
+    combos = combos.flatMap((c) =>
+      list.filter((b) => !c.includes(b)).map((b) => [...c, b]),
+    );
+  }
+  return combos.map((c) => c.join("-"));
 }
 
 /**
@@ -86,12 +87,12 @@ export function expandTickets(bets, absentBoats = []) {
  *   equalPayout: どれが当たっても払戻がほぼ同じになるよう、オッズの逆数に比例させる（各組に最低100円）。
  *                切り捨てた後の余りは、払戻が一番少ない組から100円ずつ足す（予算は超えない。spec FR-8・D-43、BOA-801 6）
  * 予算が 100円×点数 に足りないときは配分を出さない（insufficient）。オッズの無い組は配分から外して missing に返す
- * @param {{tickets: string[], trifecta: Record<string, number|null>, budget: number, mode: "equal"|"equalPayout"}} args
+ * @param {{tickets: string[], odds: Record<string, number|null>, budget: number, mode: "equal"|"equalPayout"}} args その券種のオッズの表（組→オッズ）
  * @returns {{insufficient: true, minimum: number, missing: string[]} | {insufficient: false, rows: Array<{ticket: string, odds: number, stake: number, payout: number}>, total: number, remainder: number, composite: number|null, multiplier: {min: number, max: number}|null, trigami: boolean, missing: string[]}}
  */
-export function allocateStakes({ tickets, trifecta, budget, mode }) {
+export function allocateStakes({ tickets, odds: table, budget, mode }) {
   const priced = tickets.filter(
-    (t) => trifecta?.[t] != null && trifecta[t] > 0,
+    (t) => table?.[t] != null && table[t] > 0,
   );
   const missing = tickets.filter((t) => !priced.includes(t));
   const minimum = STAKE_UNIT * priced.length;
@@ -106,7 +107,7 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
     const each = Math.floor(units / priced.length);
     stakesInUnits = priced.map(() => each);
   } else {
-    const inv = priced.map((t) => 1 / trifecta[t]);
+    const inv = priced.map((t) => 1 / table[t]);
     const sumInv = inv.reduce((s, v) => s + v, 0);
     stakesInUnits = inv.map((v) =>
       Math.max(1, Math.floor((units * v) / sumInv)),
@@ -125,8 +126,8 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
       let i = 0;
       priced.forEach((t, j) => {
         if (
-          trifecta[t] * stakesInUnits[j] <
-          trifecta[priced[i]] * stakesInUnits[i]
+          table[t] * stakesInUnits[j] <
+          table[priced[i]] * stakesInUnits[i]
         )
           i = j;
       });
@@ -138,7 +139,7 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
 
   const rows = priced.map((ticket, i) => {
     const stake = stakesInUnits[i] * STAKE_UNIT;
-    const odds = trifecta[ticket];
+    const odds = table[ticket];
     // 払戻は100円あたりの払戻（オッズ×100、10円未満切り捨て）× 単位数。公式と同じ切り捨て。
     // 4.1×100＝409.99… のような浮動小数の誤差で10円落ちないよう、先に1円単位へ丸める
     const payout =
@@ -147,7 +148,7 @@ export function allocateStakes({ tickets, trifecta, budget, mode }) {
   });
   const total = rows.reduce((s, r) => s + r.stake, 0);
   const payouts = rows.map((r) => r.payout / total);
-  const composite = compositeOdds(priced.map((t) => trifecta[t]));
+  const composite = compositeOdds(priced.map((t) => table[t]));
   return {
     insufficient: false,
     rows,
