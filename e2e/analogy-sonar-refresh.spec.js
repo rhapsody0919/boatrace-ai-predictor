@@ -234,3 +234,46 @@ test("展示前にシナリオを開いてから展示後の段が届いたら�
   await after.click();
   await expect(state.section.locator(".af-today-badge").first()).toBeVisible();
 });
+
+test("展示後の段が届いた後のシナリオがまだ展示前の応答なら、次の60秒でもう一度読み直す", async ({
+  page,
+}) => {
+  const state = await setup(page);
+  // CDN が展示前の応答を返し続ける場合: 展示後の段が届いた後の1回目も exhibition: null、2回目で展示後
+  let ready = false;
+  let afterReady = 0;
+  await page.route("**/api/analogy/scenario/**", (route) => {
+    const body = analogyV16Scenario();
+    if (ready) afterReady += 1;
+    if (!ready || afterReady < 2) body.exhibition = null;
+    return route.fulfill({ json: body });
+  });
+  await state.section
+    .getByRole("tab", { name: "展開シナリオ", exact: true })
+    .click();
+  await expect(state.section.locator(".af-scn-blk").first()).toBeVisible();
+  state.change("exhibition_ready");
+  ready = true;
+  await page.clock.runFor(61000);
+  await expect.poll(state.count).toBe(2);
+  await expect.poll(() => afterReady).toBe(1);
+  const stage = state.section.locator('[data-af-control="stage"]');
+  await stage
+    .getByRole("button", { name: "展示後（直前情報も）", exact: true })
+    .click();
+  await expect(state.section.locator(".af-today-badge")).toHaveCount(0);
+  // 次の読み直しの予約は応答を読み終えた後に入るので、時計を少しずつ進める
+  await expect
+    .poll(
+      async () => {
+        await page.clock.runFor(5000);
+        return state.section.locator(".af-today-badge").count();
+      },
+      { timeout: 30000 },
+    )
+    .toBeGreaterThan(0);
+  expect(afterReady).toBe(2);
+  // 展示の情報が入ったら読み直しを止める
+  await page.clock.runFor(130000);
+  expect(afterReady).toBe(2);
+});
