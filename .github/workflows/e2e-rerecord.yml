@@ -160,12 +160,23 @@ jobs:
       - run: npx playwright install --with-deps chromium
         if: steps.gate.outputs.run == 'true'
 
+      # 【実験 A、マージしない】録画も再生と同じ配り方（build＋preview）にそろえる（design.md 4.2 A。片方だけ dev だと
+      # 素通しの集合が変わる）。撮りの束は今の VITE_SUPABASE_URL のまま（e2e-build.js の record）
+      - name: Build (e2e の束、撮り直し用)
+        if: steps.gate.outputs.run == 'true'
+        env:
+          E2E_RECORD: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:e2e
+
       - name: 録画（本番に繋いで全件）
         id: record
         if: steps.gate.outputs.run == 'true'
         env:
           CI: true
           E2E_RECORD: '1'
+          E2E_SERVE: preview
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: |
@@ -226,9 +237,17 @@ jobs:
           name: e2e-rerecord-recordings
           path: e2e/recordings/
 
+      # 【実験 A】撮った録画のオリジンで束を build する（e2e/recordings/meta.json、E2E_RECORDING_SOURCE=local）
+      - name: Build (e2e の束、撮った録画の再生用)
+        env:
+          E2E_RECORDING_SOURCE: local
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build:e2e
+
       - name: 撮った録画だけで再生（録画に無い通信は abort）
         env:
           CI: true
+          E2E_SERVE: preview
           E2E_RECORDING_SOURCE: local
           E2E_REPLAY_STRICT: '1'
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
