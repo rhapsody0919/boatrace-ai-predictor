@@ -330,7 +330,7 @@ export function createSupabaseStore(client) {
       // 178 の前（段階の列が無い: PGRST204、列名つき）は段階を外して書き直す
       async open(hostKey, untilMs, reason, level) {
         // 長い方を DB の中で取る RPC（184、BOA-1159）。無い（184 の前）ときだけ下の upsert に戻る（しばらく RPC を試さない）。
-        // 戻り値 {untilMs}: 書いた後の DB の期限（RPC のとき。別の起動の長い期限が勝ったら、その値）
+        // 戻り値 {untilMs, untilRaw?, level?, openedAtMs?}: 書いた後の DB の値（RPC のとき。別の起動の長い期限が勝ったら、その側の値）
         if (Date.now() >= breakerRpcMissingUntil) {
           const { data, error } = await client.rpc("scrape_breaker_open", {
             p_job: hostKey,
@@ -340,7 +340,18 @@ export function createSupabaseStore(client) {
             p_opened_at: level ? new Date(level.openedAtMs).toISOString() : null,
           });
           if (!error) {
-            return { untilMs: data ? new Date(data).getTime() : untilMs };
+            // 1行（書いた後の期限・段階・開いた時刻）。期限の文字列は DB が返したまま残す（条件つき UPDATE の条件に使う。審査 P3-2）
+            const r = Array.isArray(data) ? data[0] : data;
+            const raw = r?.breaker_open_until ?? null;
+            return {
+              untilMs: raw ? new Date(raw).getTime() : untilMs,
+              untilRaw: raw,
+              level:
+                typeof r?.breaker_level === "number" ? r.breaker_level : undefined,
+              openedAtMs: r?.breaker_opened_at
+                ? new Date(r.breaker_opened_at).getTime()
+                : undefined,
+            };
           }
           if (!isScrapeSchemaMissingError(error, ["scrape_breaker_open"])) {
             throw wrap(`ブレーカーの開放(${hostKey})`, error);
