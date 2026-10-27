@@ -66,15 +66,16 @@ flowchart LR
 | c2 | hq の優勝戦の選び（`~/hq/platform/finals_run.py:47,125`） | Mac | predictions | なし | **壊れる**（優勝戦の思考投稿が止まる） | hq が直す（読むだけで確認、書き込みはしない） |
 | c3 | hq の全貌動画の番組表と材料（`~/hq/scripts/full-picture-daily.sh:94`・`full-picture-lib.sh:11` → `~/full-picture/.../analysis/fetch.cjs:4,10`、`stage.cjs:3` の `preflight()`、hq の作業中の worktree にある `scripts/full-picture-nightly.sh:33`） | Mac（Node の `fetch`・`https.get`。UA を送らないものもある） | predictions・analogy/facts・similar・scenario | なし | **壊れる** | hq が直す |
 | c3b | ボット HTML の監視（`scripts/maintenance/verify-bot-html-parity.js:88,169`、GHA `bot-html-parity.yml` が毎日 JST 12:00） | GHA。`/api/races/today` は Node の素の `fetch`（UA は人を装うが `Sec-Fetch-Site` は付かない） | races/today | なし | **壊れる**（ADR-0089 の監視が落ちて Slack に流れる） | 取得に合言葉のヘッダ（Claude）＋ GHA の secret（`.github`、オーナー承認） |
-| c4 | 手元の開発サーバー・E2E（`vite.config.js:12-13,47` の proxy が `/api/` の読み取りの7種 を本番へ転送） | 手元の Mac、GHA の `e2e-smoke-test.yml`（録画に無い分の素通し）・`e2e-live.yml`・`e2e-rerecord.yml` | 読み取り API の全部 | ブラウザのヘッダのまま転送（`changeOrigin` で Host だけ本番に書き換わる）。同じ origin の GET なので `Origin` は付かず、`Sec-Fetch-Site: same-origin`。`Referer` は `http://localhost:…` | 通る（§2 の判定は `Sec-Fetch-Site` があるときは `Referer` を見ない） | なし。合言葉は配らない（e2e-smoke-test は PR ごとに動くので、secret を渡すと鍵がすべての PR の CI に広がる）。段階3のログで `browser` として数えられることだけ確かめる |
+| c4 | 手元の開発サーバー・E2E（`vite.config.js:12-13,47` の proxy が `/api/` の読み取りの7種 を本番へ転送） | 手元の Mac、GHA の `e2e-smoke-test.yml`（録画に無い分の素通し）・`e2e-live.yml`・`e2e-rerecord.yml` | 読み取り API の全部 | ブラウザのヘッダのまま転送（`changeOrigin` で Host だけ本番に書き換わる）。同じ origin の GET なので `Origin` は付かず、`Sec-Fetch-Site: same-origin`。`Referer` は `http://localhost:…` | 通る（§2 の判定は `Sec-Fetch-Site` があるときは `Referer` を見ない） | なし。合言葉は配らない（e2e-smoke-test は PR ごとに動くので、secret を渡すと鍵がすべての PR の CI に広がる）。段階3のログで `browser` として数えられることだけ確かめる。ただし `e2e/fixtures.js` の `fetchRecorded`（live・record・録画に無いときの `route.fetch()`。`:18-20` のとおりブラウザの通信経路を通らない）は `Sec-Fetch-Site` が付くか未確認。段階3で E2E の要求の `reason` を実測し、`would_deny` なら次の手を取る（先に決めておく）: e2e-smoke-test（PR ごと）は鍵を渡さず、録画に無い要求を録画に足して素通しを無くす。e2e-live・e2e-rerecord（手動・定時で PR に依らない）は `environment: prod-jobs` の job でだけ鍵を env で渡し、`fetchRecorded` の `route.fetch()` にヘッダを足す（`.github` の変更なのでオーナー、§7 の2b） |
 | c5 | 分析の手作業スクリプト（`scripts/analysis/full-picture-answer-stage/collect*.mjs`、`past-rate-check/*.mjs`、`analogy-judge-open-cards.js`、`in-collapse-caution/round1/fetch_c2.mjs`、`url-index-render-check.js`） | 手元 | analogy/*・predictions | なし | **壊れる**（手で回すときだけ） | 共通の取得に合言葉（Claude）。急がない |
 | c6 | GitHub Actions のその他 | GHA | workflow が呼ぶスクリプトまで grep して、本番の `/api` を叩くのは c3b だけ（e2e は c4） | — | 影響なし | なし |
 | c7 | AI クローラー向けの静的スナップショット（`middleware.js` → `dist/ai-snapshots/`） | ビルド時に生成、配信は静的 | API は叩かない | — | 影響なし | なし |
 | c8 | cron-job.org | 外部 | `/api/cron/*` だけ（Bearer CRON_SECRET） | 別扱い | 影響なし | なし |
 | d1 | 外部の第三者（AI エージェント・スクレイパー・hq の壁打ち中の読み、BOA-1110 の5） | 不明 | 全部 | `Sec-Fetch-Site` 無し・`none`・`cross-site` | 拒む（目的どおり） | — |
 | d2 | 検索ボットのレンダリング（Googlebot の WRS 等。ADR-0089:110 のとおり Googlebot には SPA を返している） | Google 等 | 画面と同じ | WRS が `Sec-Fetch-Site` を送るかは**未確認** | **止めるおそれ**。予想系は Supabase 直のフォールバックで描けるが、`/api/analogy/*`・`/api/odds/live` にはフォールバックが無く、検索に見える race ページの中身が欠ける | 段階3で `ua_class=search_bot` を別に数える。止めていたら §2.2 の `search_bot` の経路（middleware の中で、UA と公開の IP 範囲の両方で確かめる）で通し、疎通試験の成功を段階4へ進む条件にする。Firewall の verified bots の Bypass は残りの Firewall ルールを飛ばすだけで middleware は飛ばさないので、それだけでは救えない（Codex の審査、P1） |
+| e | 指示の文書に従う AI の読み（`.claude/agents/data-scientist.md:16`・`~/hq/.claude/agents/data-scientist.md:12` が「公開 API https://www.boat-ai.jp/api/... で確かめる」と指示、`docs/knowledge/data-definitions.md:6,52` も公開 API を確かめる手段に挙げる） | Claude のサブエージェント・hq の社員（curl・WebFetch） | predictions 等 | `Sec-Fetch-Site` 無し（d1 と同じ） | **壊れる**（UI/UX の前の統計検証の手段が黙って減る） | 段階4（強制）の前に、確かめる手段を「本番 DB の読み取り（claude_ro）か origin/master のコード」に書き換える。`.claude/agents/data-scientist.md`・`docs/knowledge/data-definitions.md` は Claude が PR で直す（`.claude` はオーナーの直接承認）。`~/hq/.claude/agents/data-scientist.md` は hq へ受け渡す（§5）。この設計の PR ではどれも書き換えない |
 
-c 群のうち hq（c2・c3）は hq のファイルなので、この設計では書き換えない。hq に「合言葉のヘッダを付ける」受け渡しを出す（§5 の段階1）。
+c 群のうち hq（c2・c3）と e の hq 側は hq のファイルなので、この設計では書き換えない。hq に「合言葉のヘッダを付ける」受け渡しを出す（§5 の段階1）。
 
 ## 2. 止め方の比較と推奨
 
@@ -106,7 +107,9 @@ c 群のうち hq（c2・c3）は hq のファイルなので、この設計で�
 flowchart TD
   R[要求 /api/...] --> D{パスをデコードできる?}
   D -- いいえ --> DENY0[400 no-store]
-  D -- はい --> X{デコード後が<br/>cron・admin・bot-page?}
+  D -- はい --> N{デコード後に<br/>.. か . のセグメント・//・バックスラッシュを含む?}
+  N -- はい --> DENY0
+  N -- いいえ --> X{デコード後が<br/>cron・admin・bot-page?}
   X -- はい --> PASS0[関門を通さない<br/>既存の守りのまま]
   X -- いいえ --> K{x-ryujin-internal-key が<br/>INTERNAL_API_KEY か<br/>INTERNAL_API_KEY_NEXT と一致?<br/>定数時間比較}
   K -- 現行の鍵 --> OK1[通す reason=internal key_slot=current]
@@ -123,23 +126,23 @@ flowchart TD
   M -- 強制 --> DENY[403 no-store + 1行のログ<br/>reason=deny]
 ```
 
-- **検索ボットの経路**（Codex の審査 P1）: Googlebot の WRS がレンダリング中の `/api` の要求に `Sec-Fetch-Site`・同じ host の `Referer` を付けるかは未確認。付けないと関門で拒まれ、`/api/analogy/*`・`/api/odds/live` を使う部分が検索に見えなくなる。Vercel Firewall の verified bots の Bypass は残りの Firewall ルールを飛ばすだけで、middleware の判定は飛ばさない（[Vercel の仕様](https://vercel.com/docs/vercel-firewall/vercel-waf/rule-configuration#actions)）。そこで middleware の中で、UA が Googlebot・bingbot を名乗り、かつ接続元の IP（Vercel が付ける `x-real-ip`）が各社の公開の IP 範囲（Google の `googlebot.json`・`special-crawlers.json`、Bing の `bingbot.json`）に入るときだけ通す。範囲の表はビルド時に取り込み（要求のたびに取りに行かない）、取り込みに失敗したらビルドを落とさず前の表を使う。UA だけで通すと偽装に負けるので、UA だけの経路は作らない。Vercel が middleware に渡す「検証済みのボット」の印があればそちらを使う（あるかは未確認、段階0で確かめる）
-- **検索ボットの疎通試験**（段階4の条件）: 段階3の間に Search Console の URL 検査（公開 URL のテスト）で race ページを描かせ、龍神ソナーの節が描かれていること、ログに `reason=search_bot` または `browser` が出て `would_deny` が出ないことを確かめる
+- **検索ボットの経路**（Codex の審査 P1）: Googlebot の WRS がレンダリング中の `/api` の要求に `Sec-Fetch-Site`・同じ host の `Referer` を付けるかは未確認。付けないと関門で拒まれ、`/api/analogy/*`・`/api/odds/live` を使う部分が検索に見えなくなる。Vercel Firewall の verified bots の Bypass は残りの Firewall ルールを飛ばすだけで、middleware の判定は飛ばさない（[Vercel の仕様](https://vercel.com/docs/vercel-firewall/vercel-waf/rule-configuration#actions)）。そこで middleware の中で、UA が Googlebot・Google-InspectionTool・bingbot を名乗り、かつ接続元の IP（Vercel が付ける `x-real-ip`）が各社の公開の IP 範囲（Google の `googlebot.json`・`special-crawlers.json`、Bing の `bingbot.json`）に入るときだけ通す。Search Console の URL 検査の取得の UA は `Google-InspectionTool` で `Googlebot` の文字を含まない（Google の公開のクローラーの一覧による。**確度中**、段階0で一覧と実際の UA・IP が `googlebot.json` か `special-crawlers.json` に入るかを確かめる）。**範囲の表の置き場**: Vercel のビルドに前回の状態は残らないので、表はリポジトリに JSON でコミットする（`api/_lib/` の判定の近く。名前は段階0の PR で決める）。更新は定期の PR（取得して差分があれば PR を出すスクリプト）と、表が公開の表と違うことを見る verify（`manual`）で行い、ビルドの中で取りに行かない。UA だけで通すと偽装に負けるので、UA だけの経路は作らない。Vercel が middleware に渡す「検証済みのボット」の印があればそちらを使う（あるかは未確認、段階0で確かめる）。Applebot・DuckDuckBot（`src/config/aiCrawlerBots.js:20-21`）は今は `/api/bot-page/*` に rewrite されて静的な HTML を受ける側で、JS を描いて `/api` を叩く検索ボットとして頼る理由が今は無いので経路に入れない（段階3で `ua_class` に出たら再検討）
+- **検索ボットの疎通試験**（段階4の条件）: 段階3の間に Search Console の URL 検査（公開 URL のテスト）で race ページを描かせ、龍神ソナーの節が描かれていること、ログに `reason=search_bot` が1件以上出て、検索ボットの `would_deny` が出ないことを確かめる（`browser` で通っただけでは `search_bot` の経路の証明にならない。本物の Googlebot の通信でも `reason=search_bot` が1件以上あることを段階4の条件にする）
 - `Sec-Fetch-Site` を送らない古いブラウザ（Safari 16.4 より前など）は `Referer` で救う（`reason=browser_legacy` で別に数え、少なければ段階4の後に外してよい）。偽れる強さは `Sec-Fetch-Site` と同じ
 - 自分の host は `new URL(request.url).host` から取る（固定の一覧にしない。Preview の `*.vercel.app` でも同じ判定で通る）
-- **matcher はデコード前のパスで照合される**（`api/_lib/adminAuth.js:4-8`。2026-09-29 に `/api/admin/sns-h%75b/` が middleware を素通りした実例）。matcher には `/api/:path*` を足し、除外の判定は `new URL(request.url).pathname` をデコードしたパスで行う。`/%61pi/predictions/…` のように `api` 自体をエンコードした要求が関数に届くかは事前に Preview で実測する（§4 の段階0）。届くなら middleware だけでは穴になるので、Vercel Firewall のルールで塞ぐ（関数の入口に置いてもキャッシュに当たった要求には効かない）
+- **matcher はデコード前のパスで照合される**（`api/_lib/adminAuth.js:4-8`。2026-09-29 に `/api/admin/sns-h%75b/` が middleware を素通りした実例）。matcher には `/api/:path*` を足し、除外の判定は `new URL(request.url).pathname` をデコードしたパスで行う。WHATWG URL は `%2F` を区切りにしないので、`/api/bot-page%2F..%2Fpredictions/2026-10-26` はデコードすると `/api/bot-page/../predictions/2026-10-26` になり、前方一致だけでは除外に入る（2026-10-27 に node で実測。`/api/cron/..%2fanalogy/…` も同じ）。そこで**デコード後に `..`・`.` のセグメント、`//`、`\` のどれかを含むパスは 400 no-store** にする（正規の画面・呼び出し元はこの形のパスを作らない。正規化してから判定する案より、正規化の差で前方一致が揺れない分単純）。`/%61pi/predictions/…` のように `api` 自体をエンコードした要求が関数に届くかは事前に Preview で実測する（§4 の段階0）。届くなら middleware だけでは穴になるので、Vercel Firewall のルールで塞ぐ（関数の入口に置いてもキャッシュに当たった要求には効かない）
 - 今の `middleware.js` に runtime の指定は無く、既定は Node.js（ADR-0089:98）。定数時間比較は `api/_lib/adminAuth.js:34-48` の `constantTimeEqual`（Web Crypto、どちらのランタイムでも動く）を export して使う（DRY）
 - 既存の分岐（`isAdminPath` が先、次に `resolveSnapshotPath`）の前に `/api` の分岐を置く。rewrite 先の `/api/bot-page/*` を直接叩かれても除外なので干渉しない
-- 判定は純関数にし、`verify-*.js` で固定する（エンコードしたパス・`/%61pi/`・鍵が空・鍵の不一致・`Sec-Fetch-Site` 無しで `Referer` あり・`Origin` が別）。`verify-middleware-routing.js`（CI）に `/api` の振り分けを足す
+- 判定は純関数にし、`verify-*.js` で固定する（エンコードしたパス・`/%61pi/`・`/api/bot-page%2F..%2Fpredictions/…`・`/api/cron/..%2f…`・`//`・`\` を含むパス・鍵が空・鍵の不一致・`Sec-Fetch-Site` 無しで `Referer` あり・`Origin` が別）。`verify-middleware-routing.js`（CI）に `/api` の振り分けを足す
 - `OPTIONS`（プリフライト）は同じ origin では発生しない。別 origin の `OPTIONS` は CORS を絞った後は許可のヘッダを返さないだけでよい（拒んでも同じ）
 - 鍵が未設定のときは「合言葉の経路が無い」だけにする（fail-closed。鍵が空のとき空のヘッダで通さない）。ブラウザの経路は鍵に依らない
 - 403 には `Cache-Control: no-store` を付ける（拒んだ結果を CDN に残さない）
-- ログは1要求1行の JSON（`{"api_gate":reason,"path":…,"sfs":…,"origin_host":…,"ua_class":…}`）。IP・UA の全文・鍵は書かない。UA は「ブラウザ／検索ボット（Googlebot・bingbot 等）／AI ボット名／node・python・curl／無し／その他」に丸める。`reason=browser` は件数が多い（odds/live のポーリング）ので抜き取りにし、それ以外は全件出す
+- ログは1要求1行の JSON（`{"api_gate":reason,"path":…,"sfs":…,"origin_host":…,"ua_class":…,"caller":…}`）。`caller` は呼び出し元が付ける秘密でない名前のヘッダ `x-ryujin-caller`（例 `hq-full-picture`・`bot-page`・`sns-claim-check`・`bot-html-parity`）を、`reason=internal` のときだけ英数字とハイフン32字までに丸めて書く（段階3の進む条件の母数に使う）。IP・UA の全文・鍵は書かない。UA は「ブラウザ／検索ボット（Googlebot・bingbot 等）／AI ボット名／node・python・curl／無し／その他」に丸める。`reason=browser` は件数が多い（odds/live のポーリング）ので抜き取りにし、それ以外は全件出す
 - 段階（観測／強制）は環境変数 `API_GATE_MODE`（`observe`／`enforce`、既定 `observe`）で切り替える。**Vercel の環境変数は既存のデプロイには効かず、Redeploy が要る**（数分。`ignoreCommand` の `scripts/vercel-ignore-build.js` が手動の Redeploy に効くかは未確認なので、Preview で一度試してから段階4に進む）。即時に切り替えたいなら Edge Config で持つ案もあるが、新しい資源なのでオーナー判断（§7）。KISS で環境変数＋Redeploy を推奨
 
 鍵の名前（案）: `INTERNAL_API_KEY`、ヘッダは `x-ryujin-internal-key`。値は Vercel の環境変数と Mac の環境変数、GHA の secret にだけ置き、ログ・PR・チャットに出さない。
 - **環境ごとに別の値**: Preview はどのブランチのコードでも鍵を読めるので、Production と同じ値を置かない（Mac・GHA が叩くのは Production だけなので、配るのは Production の値）
-- **回し替え**: Vercel・Mac・hq・GHA は同時に更新できないので、`INTERNAL_API_KEY_NEXT` も受け付ける。新しい値を NEXT に置く → 呼び出し元を新しい値にする → ログの `key_slot=current`（旧い値での成功）が、各定期処理の実行周期（hq の全貌動画・優勝戦は1日1回、GHA の `bot-html-parity` は毎日、Vercel の関数は常時）を一巡して0件になったことを確かめる → NEXT の値を現行に移し、NEXT を空にする。鍵の値はログに書かず、どちらの枠で一致したか（`key_slot`）だけを書く。`bad_key` だけを見ると、旧い値で成功し続けている呼び出し元を見落とす（Codex の審査 P2）
+- **回し替え**: Vercel・Mac・hq・GHA（段階5の後は Vercel Firewall の除外のルールも）は同時に更新できないので、`INTERNAL_API_KEY_NEXT` も受け付ける。新しい値を NEXT に置く → 呼び出し元を新しい値にする → ログの `key_slot=current`（旧い値での成功）が、各定期処理の実行周期（hq の全貌動画・優勝戦は1日1回、GHA の `bot-html-parity` は毎日、Vercel の関数は常時）を一巡して0件になったことを確かめる → NEXT の値を現行に移し、NEXT を空にする。鍵の値はログに書かず、どちらの枠で一致したか（`key_slot`）だけを書く。`bad_key` だけを見ると、旧い値で成功し続けている呼び出し元を見落とす（Codex の審査 P2）
 
 ## 3. 非公開・廃止の項目を応答から外す
 
@@ -178,12 +181,12 @@ flowchart LR
 
 | 段階 | やること | 変える所 | 誰の承認 | 進む条件 |
 |---|---|---|---|---|
-| 0 事前（コードのみ） | 判定の純関数と verify、`verify-middleware-routing.js` の拡張。Preview で `/%61pi/predictions/…` が関数に届くか、キャッシュに当たった要求（`x-vercel-cache: HIT`）でも middleware のログが出るかを実測 | `api/_lib/` に判定の関数、`scripts/maintenance/verify-*.js`（matcher にはまだ足さない） | 段階0の PR | 実測の結果で §2 の置き場所が成り立つ |
-| 1 合言葉を配る | 鍵を環境ごとに作り、Vercel・Mac・GHA（`bot-html-parity.yml` の `environment: prod-jobs`）に置く。b1（botPage・botRace）・b2（snsClaimCheck）、c1（fetch-materials・daily）、c3b（verify-bot-html-parity）、c5 の取得にヘッダを足す（鍵が無ければ付けないだけ。関門が無いので何も変わらない）。c4 には配らない。hq（c2・c3）に受け渡し | `api/_lib/botPage.js`・`botRace.js`・`snsClaimCheck.js`、`sns-video-studio/.../fetch-materials.mjs`・`daily.mjs`、`scripts/maintenance/verify-bot-html-parity.js`、`scripts/analysis/*`。`.github/workflows/bot-html-parity.yml` に env を1行 | 鍵の新設と配布・`.github` はオーナー。コードは段階0の PR | hq が c2・c3 を直したと返す |
+| 0 事前（コードのみ） | 判定の純関数と verify、`verify-middleware-routing.js` の拡張。Preview で `/%61pi/predictions/…`・`/api/bot-page%2F..%2Fpredictions/…`・`/api/cron/..%2fanalogy/…` が関数に届くか（届いても判定の関数が 400 にするか）、Google-InspectionTool の UA と IP の範囲、キャッシュに当たった要求（`x-vercel-cache: HIT`）でも middleware のログが出るかを実測 | `api/_lib/` に判定の関数、`scripts/maintenance/verify-*.js`（matcher にはまだ足さない） | 段階0の PR | 実測の結果で §2 の置き場所が成り立つ |
+| 1 合言葉を配る | 鍵を環境ごとに作り、Vercel・Mac・GHA（`bot-html-parity.yml` の `environment: prod-jobs`）に置く。b1（botPage・botRace）・b2（snsClaimCheck）、c1（fetch-materials・daily）、c3b（verify-bot-html-parity）、c5 の取得に合言葉と `x-ryujin-caller` のヘッダを足す（鍵が無ければ合言葉を付けないだけ。関門が無いので何も変わらない）。c4 には配らない。hq（c2・c3、e の hq 側）に受け渡し | `api/_lib/botPage.js`・`botRace.js`・`snsClaimCheck.js`、`sns-video-studio/.../fetch-materials.mjs`・`daily.mjs`、`scripts/maintenance/verify-bot-html-parity.js`、`scripts/analysis/*`。`.github/workflows/bot-html-parity.yml` に env を1行 | 鍵の新設と配布・`.github` はオーナー。コードは段階0の PR | hq が c2・c3 を直したと返す |
 | 2 非公開の項目を外す | §3 で「外す」にした欄を `stripUnusedPredictionFields` に名指しで足す（今と同じ流儀）。再現テストを `verify-predictions-response.js` に足す | `api/_lib/predictionsResponse.js` | §3 の判定どおり（画面・hq が読まない欄だけ） | E2E・verify:ci が緑、hq の読み手が外れている |
-| 3 観測で入れる＋CORS | middleware の matcher に `/api/:path*` を足し、`API_GATE_MODE=observe` で判定とログだけ（検索ボットの経路を含む）。同時に `Access-Control-Allow-Origin: *` を `vercel.json` と関数の中（§2.1 ①の一覧）から外す（同じ origin の画面には CORS ヘッダは要らない。CORS はその場で効く） | `middleware.js`、`vercel.json`、関数の CORS 定数 | `vercel.json` はオーナー | §6 の `would_deny`・`bad_key` のうち自分の呼び出し元が0件の日が、平日・土日を含めて連続2日。かつ `ua_class=search_bot` の `would_deny` が0件で、検索ボットの疎通試験（§2.2）が成功 |
+| 3 観測で入れる＋CORS | middleware の matcher に `/api/:path*` を足し、`API_GATE_MODE=observe` で判定とログだけ（検索ボットの経路を含む）。同時に `Access-Control-Allow-Origin: *` を `vercel.json` と関数の中（§2.1 ①の一覧）から外す（同じ origin の画面には CORS ヘッダは要らない。CORS はその場で効く） | `middleware.js`、`vercel.json`、関数の CORS 定数 | `vercel.json` はオーナー | §6 の `would_deny`・`bad_key` のうち自分の呼び出し元が0件の日が、平日・土日を含めて連続2日。ただし0件は母数が0でも満たすので、§1.2 の b・c 群（b1・b2・c1・c2・c3・c3b。c5 は手作業なので観測の期間に一度手で回す）ごとに `reason=internal` かつその `caller` が1件以上あること。`ua_class=search_bot` の `would_deny` が0件で、`reason=search_bot` が1件以上あり、検索ボットの疎通試験（§2.2）が成功。§1.2 の e の文書が書き換わっている |
 | 4 外部を拒む | Vercel の環境変数 `API_GATE_MODE=enforce` → Redeploy | 本番の環境変数（コード変更なし） | オーナー | — |
-| 5 回数の上限 | Vercel Firewall に `/api/`（cron・admin を除く）の IP ごとの上限。`x-ryujin-internal-key` が付いた要求は上限から外す（Vercel の関数の出口と Mac の hq は連続で取るので、IP で数えると先に 429 になる。偽の値を付けた要求は middleware が `bad_key` で拒むので抜け道にならない）。値は段階3のログの「画面の利用者1人あたりの最大の要求数」の実測から決める（根拠なしの数で決めない） | Vercel Firewall（本番） | オーナー（費用・プランの確認を含む） | — |
+| 5 回数の上限 | Vercel Firewall に `/api/`（cron・admin を除く）の IP ごとの上限。上限から外すのは鍵の検証を通る要求だけ。Firewall は middleware の判定を見られないので、除外の条件は「`x-ryujin-internal-key` が現行の値（回し替え中は NEXT も）と一致」にする（Vercel の関数の出口と Mac の hq は連続で取るので、IP で数えると先に 429 になる）。ヘッダが付いているだけで外すと、偽の値の要求は 403 になるが回数の上限が効かず、middleware の起動は数え放題になる。鍵の値が Firewall の設定に入る点と、回し替えのたびにルールを更新する点はオーナーの承認に含める（§7 の5）。値は段階3のログの「画面の利用者1人あたりの最大の要求数」の実測から決める（根拠なしの数で決めない） | Vercel Firewall（本番） | オーナー（費用・プランの確認を含む） | — |
 
 戻し方: 段階4は `API_GATE_MODE=observe` に戻して Redeploy（数分）。段階3は matcher を戻す PR。段階5は Firewall のルールを無効にする。
 
@@ -192,13 +195,15 @@ flowchart LR
 hq（c2・c3）は hq のファイルなので、こちらからは書き換えない。段階1で次を渡す。
 
 - `~/hq/platform/finals_run.py:125`（`urllib.request.urlopen(SCHEDULE_URL…)`）と `~/hq/scripts/full-picture-daily.sh:94`・`full-picture-lib.sh:11`・`~/full-picture/out/full-picture-template/*/analysis/fetch.cjs`・`stage.cjs:3`（`preflight()`）、hq の作業中の `scripts/full-picture-nightly.sh:33` の取得に、環境変数 `INTERNAL_API_KEY` があれば `x-ryujin-internal-key` を付ける
+- `~/hq/.claude/agents/data-scientist.md:12` の「公開 API https://www.boat-ai.jp/api/... で確かめる」を、段階4の前に「本番 DB の読み取りか origin/master のコード」に書き換える（§1.2 の e）
+- 取得に秘密でない呼び出し元の名前 `x-ryujin-caller`（例 `hq-finals`・`hq-full-picture`）を付ける（段階3の進む条件の母数）
 - §3 で外す欄を hq が読んでいないことの確認（前の調べでは hq に `predictions.safeBet` の参照がある、とされた。2026-10-27 の grep では `~/hq` の .py・.sh・.js・.cjs の本体に `safeBet`・`turnPrediction`・`inCaution` の参照は見当たらず、`company/tests/seo-human/fixtures/src/constants/index.js:43` の写しだけ。`~/full-picture/.../vendor/` の `hitCalculator.js`・`basicInfoStats.js` は本体の写しで、読むのは自前の材料。hq に最終の確認を頼む）
 
 ## 6. 誤って止めていないかを見る手順
 
 1. **数える**: middleware の1行ログ（`api_gate`）を Vercel の Runtime Logs（または Observability）で、`reason` × `path` の先頭2段 × `ua_class` × 時間帯で数える。Runtime Logs の保持は短い（Pro の保持期間は未確認）ので、1日1回では取りこぼす。数える処理をスクリプトにして数時間ごとに回し（`scripts/maintenance/` に置く。作るのは段階3の PR）、結果を hq の朝の報告に載せる。保持が足りなければ Log Drain（新しい設定。オーナー承認）
-2. **自分の呼び出し元を見分ける**: `bad_key` は配り間違い（外部と見分けるため別に数える）。`would_deny` のうち、`ua_class` が `node`・`python`・`curl`・無し で、時刻が hq の launchd の時刻（全貌動画・優勝戦）や cron の時刻と重なるものは配り漏れを疑う。§1.2 の表と照らして1件ずつ潰す
-3. **キャッシュの前で効いているか・抜け道が無いか**（段階0の Preview と段階3の直後に1回）: キャッシュ済みの `/api/accuracy` をヘッダ無しの curl で2回叩き、2回目（`x-vercel-cache: HIT`）も `would_deny` のログが出る（強制の後は 403）こと。`/api/accur%61cy`・`/%61pi/accuracy` も関門に掛かるか、関数に届かないこと。どちらかが外れたら関門の置き場所を見直す（§2.1 補足）
+2. **自分の呼び出し元を見分ける**: `reason=internal` を `caller` 別に数え、§1.2 の b・c 群ごとに1件以上あることを見る（0件の群は配り漏れか、観測の期間に動いていない。どちらか確かめるまで段階4へ進まない）。`bad_key` は配り間違い（外部と見分けるため別に数える）。`would_deny` のうち、`ua_class` が `node`・`python`・`curl`・無し で、時刻が hq の launchd の時刻（全貌動画・優勝戦）や cron の時刻と重なるものは配り漏れを疑う。§1.2 の表と照らして1件ずつ潰す
+3. **キャッシュの前で効いているか・抜け道が無いか**（段階0の Preview と段階3の直後に1回）: キャッシュ済みの `/api/accuracy` をヘッダ無しの curl で2回叩き、2回目（`x-vercel-cache: HIT`）も `would_deny` のログが出る（強制の後は 403）こと。`/api/accur%61cy`・`/%61pi/accuracy` も関門に掛かるか、関数に届かないこと。`/api/bot-page%2F..%2Faccuracy`・`/api/cron/..%2faccuracy`・`/api//accuracy` が 400 になること。どちらかが外れたら関門の置き場所を見直す（§2.1 補足）
 4. **画面が通っているか**: 段階3の間、`reason=browser` が今までの API の要求数と同じ桁で出ていること。E2E（`e2e-live.yml`・c4 の素通し）と `bot-html-parity.yml` が緑。`ua_class=search_bot` の `would_deny` を別に見る（d2）
 5. **強制の後**: 403 の件数を `ua_class` 別に毎日見る。`ua_class=browser` の 403 が出たら（古い端末で `Sec-Fetch-Site` を送らない等）、その UA を調べ、多ければ段階4を戻す
 6. **回数の上限の後**: 429 の件数（Firewall のログ）。画面の利用者の 429 が出たら上限を上げる
@@ -209,9 +214,11 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 |---|---|---|---|
 | 1 | 鍵 `INTERNAL_API_KEY` の新設と配布（Vercel の Production・Preview、オーナーの Mac、GHA の secret） | 1 | 鍵とセキュリティ |
 | 2 | `.github/workflows/bot-html-parity.yml` に secret を env で渡す1行（`environment: prod-jobs`）。e2e の3本には渡さない | 1 | `.github` の変更 |
+| 2b | 段階3で E2E の素通しが `would_deny` だったときだけ: `e2e-live.yml`・`e2e-rerecord.yml` に `environment: prod-jobs` で鍵を env で渡す（e2e-smoke-test には渡さない） | 3 | `.github` の変更・鍵の配布 |
+| 2c | `.claude/agents/data-scientist.md` の確かめる手段の書き換え（§1.2 の e） | 4 の前 | `.claude` の変更 |
 | 3 | `vercel.json` の `/api/(.*)` の CORS ヘッダを外す | 3 | `vercel.json` の変更 |
 | 4 | Vercel の環境変数 `API_GATE_MODE` の追加と `enforce` への切り替え | 3・4 | 本番の設定。外からの呼び出しを実際に止める |
-| 5 | Vercel Firewall の回数の上限（含まれる範囲と超過の単価を先に確かめる。未確認）。`/%61pi/` が関数に届いた場合に塞ぐルール | 3〜5 | 本番の設定・費用 |
+| 5 | Vercel Firewall の回数の上限（含まれる範囲と超過の単価を先に確かめる。未確認）。`/%61pi/` が関数に届いた場合に塞ぐルール。上限の除外の条件に鍵の値を入れること（回し替えのたびに更新） | 3〜5 | 本番の設定・費用・鍵 |
 | 5b | 任意: 即時の切り替えを Edge Config で持つ、ログの保持が足りなければ Log Drain | 3・4 | 新しい資源・費用の可能性 |
 | 6 | 予想系を Supabase 側でも閉じるかどうか（§0、別チケット） | — | 費用・画面への影響、公開の方針 |
 
@@ -224,6 +231,7 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 ## 9. ADR と関係文書
 
 - 新しい ADR: `docs/adr/0103-api-same-site-only.md`（この PR で追加。番号は PR 作成時の master の最大＋1）
+- ADR-0046: 背景の「`/api/*` は anon key と `Access-Control-Allow-Origin: *` で公開データを配る流儀が標準」を ADR-0103 が改める。ADR-0103 の関係する ADR に足した（この PR）
 - ADR-0089（ボット HTML）: 材料の取得（自分の `/api/races/today`・`/api/predictions`）と監視（`bot-html-parity`）が合言葉を前提にすることを、段階1の PR で注記する
 - ADR-0032: matcher が `/api` に広がる注記と、「Edge Runtime（デフォルト）」の誤りの注記（ADR-0089:98 で既に指摘済み）を段階3の PR で足す
 - ADR-0059 §2（ブラウザから呼ぶ公開の口は CRON_SECRET と別の方式、IP ごとの上限）: 段階5がこの未実装分を埋める
@@ -257,3 +265,21 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 |---|---|---|---|
 | P1 | 検索ボットの救済が Firewall の verified bots だけでは middleware の 403 を避けられない | Vercel の Firewall の Bypass は残りの Firewall ルールを飛ばす仕様（指摘の出典）。middleware は Firewall の後で別に動く | §2.2 に `search_bot` の経路（UA と公開の IP 範囲の両方）と疎通試験を足し、段階4の条件にした。§1.2 の d2・§7 を直した |
 | P2 | 回し替えで旧い鍵の利用を数えられない（`internal` にまとまる） | §2.2 の図とログの定義 | `key_slot=current/next` を記録し、各定期処理の周期を一巡して旧い枠の成功が0件になってから入れ替える手順にした |
+
+## 12. 代わりの審査（system-architect の役、#1991、2026-10-27）の指摘と対応
+
+Codex が環境なしで返らないため、設計に関わっていない system-architect の役が審査した（[PR のコメント](https://github.com/rhapsody0919/boatrace-ai-predictor/pull/1991#issuecomment-6432884392)）。
+
+| 重大度 | 指摘 | 確かめた根拠 | 対応 |
+|---|---|---|---|
+| P1 | デコード後の前方一致で `/api/bot-page%2F..%2Fpredictions/…` が除外に入り関門を素通りできる | node で `new URL(...).pathname` → `decodeURIComponent` を実測し再現 | §2.2 の図と matcher の節に「デコード後に `..`・`.` のセグメント・`//`・`\` を含めば 400」、verify の項目、段階0の実測、§6 の3 に `%2F..%2F`・`..%2f` を足した。ADR-0103 決定2 |
+| P2 | 「自分の呼び出し元の拒否が0件」は母数0でも満たす | c2・c3 は1日1回、c5 は手作業、b1 はキャッシュが外れたときだけ | 秘密でない `x-ryujin-caller` をログに出し、b・c 群ごとに `reason=internal` 1件以上を段階4の条件に（§2.2・§4・§5・§6 の2） |
+| P2 | 検索ボットの疎通試験が `search_bot` の経路を試していない。範囲の表の置き場が無い | URL 検査の UA は Google-InspectionTool（確度中） | UA の一覧に Google-InspectionTool、`reason=search_bot` 1件以上を段階4の条件に。表はリポジトリに JSON でコミットし、定期の PR と verify で更新（§2.2・§4） |
+| P2 | 指示の文書が公開 API を確かめる手段に挙げている | `.claude/agents/data-scientist.md:16`・`~/hq/.claude/agents/data-scientist.md:12`・`docs/knowledge/data-definitions.md:6,52` を読んで確認 | §1.2 に e 行。強制の前に書き換える（`.claude` はオーナーの直接承認、`~/hq` は hq へ受け渡し）。この PR では書き換えない（§5・§7 の2c） |
+| P2 | E2E の `fetchRecorded` の `route.fetch()` に `Sec-Fetch-Site` が付くとは限らない | `e2e/fixtures.js:18-20` のコメント | §1.2 の c4 に、`would_deny` だったときの手（smoke は録画に足す、live・rerecord は `environment` 付きで鍵）を先に決めた（§7 の2b） |
+| P3 | ADR-0046 を改める | ADR-0046 の背景 | ADR-0103 の関係する ADR と §9 に足した |
+| P3 | 段階5で鍵が付いているだけで上限から外すと数え放題 | Firewall は middleware の判定を見られない | 除外は「ヘッダが現行（と NEXT）の値と一致」だけ（§4・§7 の5） |
+| P3 | `db-operations.md` の Edge Config の行が規則に読める | plan では任意の案 | 「案（新しい資源・オーナー判断）」に弱めた |
+| P3 | Applebot・DuckDuckBot の扱い | `src/config/aiCrawlerBots.js:20-21` | 経路に入れない理由を §2.2 に1行 |
+| P3 | PR の本文の ADR 番号（0102 → 0103） | PR の本文 | 文書は 0103 で揃っている。PR の本文は親セッションが直す |
+

@@ -4,7 +4,7 @@
 
 提案（2026-10-27）。設計の正本は [docs/design/public-api-lockdown/plan.md](../design/public-api-lockdown/plan.md)（BOA-1110）。
 
-関係する ADR: [ADR-0032](./0032-ai-crawler-snapshot-delivery.md)（AI クローラー向けスナップショットと middleware）、[ADR-0059](./0059-new-endpoint-timeout-security-monitoring-standards.md) §2（ブラウザから呼ぶ口は CRON_SECRET と別の方式、IP ごとの上限）、[ADR-0066](./0066-scraping-execution-consolidation-to-vercel.md)（cron の基盤）、[ADR-0089](./0089-bot-html-for-daily-pages.md)（ボット HTML の材料と監視）。
+関係する ADR: [ADR-0046](./0046-sns-hub-data-access-pattern.md)（背景の「`/api/*` は anon key と `Access-Control-Allow-Origin: *` で公開データを配る流儀」をこの ADR が改める）、[ADR-0032](./0032-ai-crawler-snapshot-delivery.md)（AI クローラー向けスナップショットと middleware）、[ADR-0059](./0059-new-endpoint-timeout-security-monitoring-standards.md) §2（ブラウザから呼ぶ口は CRON_SECRET と別の方式、IP ごとの上限）、[ADR-0066](./0066-scraping-execution-consolidation-to-vercel.md)（cron の基盤）、[ADR-0089](./0089-bot-html-for-daily-pages.md)（ボット HTML の材料と監視）。
 
 ## 背景
 
@@ -15,10 +15,10 @@
 ## 決定
 
 1. `/api/*` は自サイトの画面と自分の処理（Vercel の関数・cron、オーナーの Mac の hq、GitHub Actions の監視）だけが使う。外部への公開の API・MCP は出さない。AI 検索向けの HTML（ボット HTML・静的スナップショット）は公開ページの写しなので続ける
-2. 関門は `middleware.js` に置き、`/api/*` を既定で通し、除外（`/api/cron/*`・`/api/admin/*`・`/api/bot-page/*`。それぞれ既存の守りがある）だけを名指しする。除外の判定はデコードしたパスで行う
-3. 通すのは、合言葉のヘッダ（`x-ryujin-internal-key`、環境ごとに別の値、新旧2つを受け付けて回し替える）が一致する要求と、`Sec-Fetch-Site: same-origin`（無ければ同じ host の `Referer`）のブラウザの要求と、UA と公開の IP 範囲の両方で確かめた検索ボット（Googlebot・bingbot）の要求だけ。観測（通してログ）→強制（403 no-store）の2段で入れ、強制の前に検索ボットの疎通試験を通す
+2. 関門は `middleware.js` に置き、`/api/*` を既定で通し、除外（`/api/cron/*`・`/api/admin/*`・`/api/bot-page/*`。それぞれ既存の守りがある）だけを名指しする。除外の判定はデコードしたパスで行い、デコード後に `..`・`.` のセグメント、`//`、`\` を含むパスは 400 にする（`%2F..%2F` で除外の前方一致に入れて関門を外すのを防ぐ）
+3. 通すのは、合言葉のヘッダ（`x-ryujin-internal-key`、環境ごとに別の値、新旧2つを受け付けて回し替える）が一致する要求と、`Sec-Fetch-Site: same-origin`（無ければ同じ host の `Referer`）のブラウザの要求と、UA と公開の IP 範囲の両方で確かめた検索ボット（Googlebot・Google-InspectionTool・bingbot。範囲の表はリポジトリにコミット）の要求だけ。観測（通してログ）→強制（403 no-store）の2段で入れる。強制の前に、検索ボットの疎通試験と、自分の呼び出し元の群ごとに合言葉で通った要求（秘密でない呼び出し元の名前のヘッダで数える）と `search_bot` で通った要求が1件以上あることを確かめる
 4. CORS の `*` を外す
-5. 最後に Vercel Firewall で IP ごとの回数の上限を置く（合言葉の付いた要求は外す）
+5. 最後に Vercel Firewall で IP ごとの回数の上限を置く（外すのは合言葉が現行の値と一致する要求だけ）
 
 ## 却下した選択肢
 

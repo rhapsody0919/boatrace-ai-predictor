@@ -98,10 +98,14 @@
 - Retry-After が10秒を超える 429/503 は再試行せず、その時間（上限60分）ホストを開く。段階は上げない（2026-10-27、#1983 の審査の決定、scripts/lib/scrapeJobs/politeFetch.js）
 - 利用者の要求（/api/odds/live）の 429 は段階を上げない（countOverload:false）。外から呼べる口で定時の取得の止め方を強めさせない。Retry-After>10秒ならその時間開くのは同じ（2026-10-27、#1983 の審査の決定、api/odds/live.js）
 - 本番の /api を叩く素の Node の呼び出しは、ブラウザの判定（Sec-Fetch-Site）では通らない。GHA の bot-html-parity（verify-bot-html-parity.js:169）と full-picture の stage.cjs:3（preflight）は見落としやすい（2026-10-27、system-architect、BOA-1110）
-- Vercel の環境変数を変えても既存のデプロイには効かず、Redeploy が要る。即時に戻したい切り替えは Edge Config で持つ（2026-10-27、system-architect、BOA-1110 の審査）
+- Vercel の環境変数を変えても既存のデプロイには効かず、Redeploy が要る。Edge Config なら即時に切り替わるが新しい資源になる（案。採るかはオーナー判断）（2026-10-27、system-architect、BOA-1110 の審査）
 - analogy_contribution_profiles（118:97-98）・race_history_cache（020:16）・accuracy_cache（013・013b）は匿名に SELECT がある。/api を閉じても同じ値は匿名キーで取れる（2026-10-27、DDL で確認。本番の権限は check-anon-access.js で要確認）
 - /api の関門は除外だけを名指しにし、デコードしたパスで判定する（matcher はデコード前で照合、adminAuth.js:4-8）。/%61pi/ のように api をエンコードした要求が関数に届くかは実測する（2026-10-27、system-architect、BOA-1110）
 - Googlebot には SPA を返しているので（ADR-0089:110）、/api を閉じる前に検索ボットの拒む候補を別に数える。WRS が Sec-Fetch-Site を送るかは未確認（2026-10-27、system-architect、BOA-1110）
+- WHATWG URL は %2F を区切りにしないので、pathname をデコードしてから前方一致で除外を判定すると /api/bot-page%2F..%2Fpredictions が /api/bot-page/ の除外に入る。デコード後に ..・.・//・\ のセグメントがあれば 400 にする（2026-10-27、node で実測、#1991 の代わりの審査）
+- 観測から強制へ進む条件を「自分の呼び出し元の拒否が0件」だけにすると母数0でも満たす。1日1回・手作業の呼び出し元は期間中に来ないことがあるので、秘密でない呼び出し元の名前のヘッダで群ごとの成功1件以上も条件にする（2026-10-27、#1991 の代わりの審査）
+- Search Console の URL 検査の取得の UA は Google-InspectionTool で、Googlebot の文字を含まない（Google の公開の一覧による、確度中・要確認）。UA を Googlebot に限った疎通試験は検索ボットの経路の証明にならない（2026-10-27、#1991 の代わりの審査）
+- e2e/fixtures.js の fetchRecorded は route.fetch() でブラウザの通信経路を通らずに出る（:18-20）。Sec-Fetch-Site で判定する関門では E2E の素通しがブラウザに見えないおそれがある（2026-10-27、#1991 の代わりの審査）
 - Cron の口は2つある。共通の createScrapeCronHandler と、オッズの createOddsCronHandlerWithPredictionOdds（api/cron/odds.js、予測オッズの導出つき）。共通の口だけに足した仕組み（取得の数え等）はオッズに効かない。両方が使う小さな関数（createCronFetchContext）にまとめる（2026-10-27、system-architect の審査、BOA-1145 P3・185）
 - 取得の数えを起動の終わりの1回だけで書くと、関数の打ち切り（maxDuration）で溜まった分を全部失う。20件か60秒で裏で書き、handler の終わりは try/finally で残りを書く（2026-10-27、同、scripts/lib/scrapeJobs/fetchCounter.js）
 - 取得の数えでは、呼び出し側の中断（init.signal の abort。ソフトデッドライン等）を数えない。politeFetch 自身の打ち切りは kind=timeout に分けて、接続の失敗（network）と区別する（2026-10-27、同、185 の CHECK）
