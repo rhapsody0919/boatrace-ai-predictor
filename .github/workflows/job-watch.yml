@@ -60,9 +60,10 @@ on:
       - Update Top Start Stats
       - Update Winning Technique Stats
   workflow_dispatch:
-  # 毎時の見回り（docs/design/ci-minutes-reduction/design.md 4.2 D）。成功の終わりでは scan を起こさないので、
-  # 失敗の起動を取りこぼしたときの拾い直しと、hq の鮮度の見張りの目印（schedule の run の成功）を兼ねる。
-  # 0分は混むので避ける。workflows: の一覧より後に置く（verify-job-watch.js が workflows: から workflow_dispatch: までを切り出す）
+  # 予備の見回り（docs/design/ci-minutes-reduction/design.md 4.2 D）。成功の終わりでは scan を起こさないので、
+  # 失敗の起動を取りこぼしたときの拾い直しに置く。ただしこのリポジトリの schedule は数時間おきにしか来ない
+  # （2026-10-26〜27、key-canary の 7,37 * * * * が約20時間で5回、間は最大約6.2時間）。主の受け皿は
+  # Vercel Cron が30分ごとに起こすカナリアの成功の scan。0分は混むので避ける。workflows: の一覧より後に置く（verify-job-watch.js が workflows: から workflow_dispatch: までを切り出す）
   schedule:
     - cron: '17 * * * *'
 
@@ -84,8 +85,13 @@ jobs:
     # 見回りは毎回全部を見るので、待ちの間に来たイベントを落としても次の見回りで拾う。同時に2本は走らせない
     # （Issue を2件作らないため）。workflow の単位に置くと、scan が skip になる run も枠を取り、待っている scan を
     # 置き換えて何もせずに終わる（失敗に気づくのが次のカナリアか毎時まで遅れる）ので、scan の job に置く
+    # skip になる起動（見張る run の成功）は自分だけの group に入れ、待っている scan に触れない
+    # （if が偽の job が group の待ちを置き換えるかは未確認のため、構造で避ける）
     concurrency:
-      group: job-watch
+      group: >-
+        ${{ (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.path != '.github/workflows/key-canary.yml') &&
+        format('job-watch-skip-{0}', github.run_id) || 'job-watch' }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 10

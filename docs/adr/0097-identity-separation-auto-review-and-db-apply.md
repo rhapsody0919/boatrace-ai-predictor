@@ -136,9 +136,9 @@ D はまず1〜2週間、当てずに「当てるはずだった」を通知す�
 
 7日（10/20〜10/27）で Job Watch は2,950回起き、そのうち中身が要るのは見張る run が成功以外（88回）とカナリアの成功（329回）だけだった。残りの約2,500回は同じ24時間の見回りを繰り返していた。
 
-- `scan` を起こすのは、見張る run が成功以外で終わったとき・カナリア（path `.github/workflows/key-canary.yml`）が成功したとき・毎時の schedule（`17 * * * *`）・手の起動だけ。見張る run の成功では skip（0分）。見回りは毎回直近24時間を全部見るので、成功の起動を省いても拾い漏れない
-- concurrency（`job-watch`、`cancel-in-progress: false`）は workflow の単位から `scan` の job へ移した。workflow の単位のままだと、scan が skip になる run も枠を取り、待っている scan を置き換えて何もせずに終わる（7日で258回の取り消し）。rerun の job には付けない（同じ group に入れると、待っている rerun が後の scan に置き換えられて消える）
-- 鮮度の見方が変わる: Job Watch の run は見張る run の成功の起動でも作られ（scan が skip の run。結論は success か skipped）、「最後の run」は見張りが動いている印にならない。hq の `config/platform.json` の `actions_fresh`（`"Job Watch": {"any": 8}`）は、schedule の run の成功を見る形に変える（別プロジェクト。この変更のマージ前に hq へ知らせる）
+- `scan` を起こすのは、見張る run が成功以外で終わったとき・カナリア（path `.github/workflows/key-canary.yml`）が成功したとき・予備の schedule（`17 * * * *`。このリポジトリの schedule は数時間おきにしか来ない実測があり、主の受け皿は Vercel Cron が30分ごとに起こすカナリアの成功）・手の起動だけ。見張る run の成功では skip（0分）。見回りは毎回直近24時間を全部見るので、成功の起動を省いても拾い漏れない
+- concurrency（`job-watch`、`cancel-in-progress: false`）は workflow の単位から `scan` の job へ移した。workflow の単位のままだと、scan が skip になる run も枠を取り、待っている scan を置き換えて何もせずに終わる（7日で258回の取り消し）。rerun の job には付けない（同じ group に入れると、待っている rerun が後の scan に置き換えられて消える）。skip になる起動（見張る run の成功）は `job-watch-skip-<run_id>` の自分だけの group に入れる（if が偽の job が group の待ちを置き換えるかは未確認のため、構造で避ける）
+- 鮮度の見方が変わる: Job Watch の run は見張る run の成功の起動でも作られ（scan が skip の run。結論は success か skipped）、「最後の run」は見張りが動いている印にならない。hq の `config/platform.json` の `actions_fresh`（`"Job Watch": {"any": 8}`。dashboard-collect.py の stale_workflows は createdAt だけを見て結論を見ない）は、結論が success の run を event を問わず見る形に変える（線は2〜3時間が目安、根拠なし。schedule だけで見るなら8時間以上。scan が skip の run の結論はマージ後に1件確かめてから渡す）（別プロジェクト。この変更のマージ前に hq へ知らせる）
 - `verify-job-watch.js` が、起動の条件（成功以外とカナリアの path）・毎時の schedule と置き場所・concurrency の置き場所を検査する
 
 ## 追記: 自動の適用の仕上げ（2026-10-20）

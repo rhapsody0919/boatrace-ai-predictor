@@ -313,9 +313,9 @@ const nameOf = (f) =>
       jw.indexOf("workflow_dispatch:") < jw.indexOf("\n  schedule:"),
   );
   check(
-    "concurrency は scan の job にあり、workflow の単位に無い（skip の run が待ちの scan を置き換えない）",
+    "concurrency は scan の job にあり、workflow の単位に無い。skip になる起動は自分だけの group（待ちの scan を置き換えない）",
     !/^concurrency:/m.test(jw) &&
-      /^ {4}concurrency:\n {6}group: job-watch\n {6}cancel-in-progress: false$/m.test(
+      /^ {4}concurrency:\n {6}group: >-\n[\s\S]*?format\('job-watch-skip-\{0\}', github\.run_id\) \|\| 'job-watch' \}\}\n {6}cancel-in-progress: false$/m.test(
         jobs.scan,
       ) &&
       !/concurrency:/.test(jobs.rerun),
