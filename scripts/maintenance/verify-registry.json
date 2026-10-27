@@ -1519,7 +1519,7 @@
     {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
-      "guards": "進入コース別選手成績パーサー（BOA-293）"
+      "guards": "進入コース別選手成績パーサー（BOA-293）と、若松（20）を取得の対象・drift の知らせから外していること（BOA-1165）"
     },
     {
       "script": "verify-venue-first-win-rate.js",
