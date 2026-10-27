@@ -506,6 +506,11 @@
       "guards": "マイグレーション117（関数・シーケンスの匿名権限の剥奪と既定権限の是正、BOA-575）をPGlite上で実際に適用して検証。画面が呼ぶ7本のRPCが残ること・トリガーが発火し続けること"
     },
     {
+      "script": "verify-function-search-path-migration.js",
+      "tier": "ci",
+      "guards": "マイグレーション187をPGlite上で適用して検証。本番の pg_proc で取った19関数（名前と引数の型）に search_path=public, pg_temp が付き本文（md5）は変わらないこと、analogy_feedback のガードが client_key を変えても全体で10分30行で止め（数える前に advisory lock、24時間の全体の上限は無い）、同じ client_key の24時間40行も残ること、races の削除で声が消えること（CASCADE）、2回当てても通り、戻し方で元に戻ること"
+    },
+    {
       "script": "verify-ga4-measurement-breaks.js",
       "tier": "ci",
       "guards": "GA4 の計測の切れ目（2026-09-29 の page_view 修正）をまたぐ期間の判定と注記（scripts/lib/ga4MeasurementBreaks.js）。崩れると計測修正による PV の増減を需要の変化と誤読する"
