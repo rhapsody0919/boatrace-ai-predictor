@@ -5,6 +5,7 @@
  * （3連単が成立したレースだけ。M＝N−K は「1着が1号艇でない件」）。順位の語は使わない（艇ごとの件数は艇番の順）。
  */
 import { ANSWER_RULE } from "./answer.mjs";
+import { rankOf } from "./scenes/diff.mjs";
 
 /** 札の秒（台本 0〜1.5秒）と、艇ごとの件数の札を答えの頁に重ねる秒 */
 export const S02_CARD_SECONDS = 3.5;
@@ -39,11 +40,10 @@ export function s02Facts(sc) {
     m,
     p: Math.round((k / n) * 1000) / 10,
     by: [2, 3, 4, 5, 6].map((b) => ({ boat: b, count: first[b - 1] })),
-    // 負けた件で1着の多い艇を強調するのは、2位との差が線を通った日だけ（BOA-1157 の rankOf と同じ式: (c1−c2)/√(c1+c2)>=1.96、c1+c2>=10）。
-    // rankOf は #1973（scenes/diff.mjs）で入る。マージ後はそちらを使う
+    // 負けた件で1着の多い艇を強調するのは、2位との差が線を通った日だけ（BOA-1157 の rankOf）
     top: (() => {
       const [a, b] = [2, 3, 4, 5, 6].map((x) => ({ boat: x, count: first[x - 1] })).sort((p, q) => q.count - p.count);
-      return a.count + b.count >= 10 && (a.count - b.count) / Math.sqrt(a.count + b.count) >= 1.96 ? a.boat : null;
+      return rankOf(a.count, b.count).rankSig ? a.boat : null;
     })(),
     period: sc?.period?.[0] && sc?.period?.[1] ? [sc.period[0], sc.period[1]] : null,
   };

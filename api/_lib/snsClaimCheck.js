@@ -15,6 +15,11 @@ import {
   isTodayDraft,
   pickRaceStatus,
 } from "./snsTodayDigest.js";
+import {
+  parseResearchId,
+  RESEARCH_IMAGE_KIND,
+  researchTextReasons,
+} from "./snsResearchImage.js";
 
 const TIMEOUT_MS = 15000;
 const RACE_ID = "\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}";
@@ -161,7 +166,7 @@ export function deadlineIso(race) {
 
 /**
  * 送る直前の preflight（createDeadlinePreflight）に渡す readCurrent。
- * 返り値 {withdrawn, cancelled, deadline_at, source_revision}。素材 v1 でない下書き・照合の不合格は投げる（fail-closed）
+ * 返り値 {withdrawn, cancelled, deadline_at, source_revision, public_check?}（public_check='none' は「数字で見たら」だけ）。素材 v1 でない下書き・照合の不合格は投げる（fail-closed）
  * /today の投稿（tasks 19b）は、その日の一覧を読み直して版を返す（レースではないので欠場・中止は無い。締切は下書きの値）
  * @param {{db: (path: string) => Promise<any[]>, fetchImpl?: typeof fetch, base?: string, getDigest?: (date: string) => Promise<object>}} deps db は PostgREST の読み取り
  */
@@ -218,8 +223,11 @@ export function createReadCurrent({
     // claim の後の検査で投げた場合は claim で使った日次の枠・予約額が残る。許可は transition_sns_send_139（176）も claim で見る）
     // 本投稿へのリプ（177）は同じ読み直しで、送ったかは自分の種類（variant）だけを見る（本投稿を送った後に子が止まらないように）
     if (draft?.source_data?.finals_image?.race_id) {
-      const { race_id: raceId, revision, part = "main" } =
-        draft.source_data.finals_image;
+      const {
+        race_id: raceId,
+        revision,
+        part = "main",
+      } = draft.source_data.finals_image;
       const variant = FINALS_PART_VARIANTS[part];
       if (!variant) throw new Error("finals_part_unknown");
       const id = encodeURIComponent(raceId);
@@ -248,6 +256,54 @@ export function createReadCurrent({
         cancelled: race.cancellation_status != null,
         deadline_at: deadlineIso(race),
         source_revision: revision,
+      };
+    }
+    // 「数字で見たら」の集計の画像1枚（179・180、scripts/sns/push-research-image.js）: レースを持たないので、中止・欠場・締切は無く、
+    // リンク先の表示の確認も無い（本文にリンクを置かない型。preflight は public_check='none' のとき本文にリンクが無いことだけを見る）。
+    // 代わりに、item が research_image であること・自動送信の許可（research_image_enabled）・同じ日に送った research_image が無いこと・
+    // 禁止表現・加重280・リンクなし・画像1枚を、DB の下書きから読み直して確かめる。違えば投げる（runner の claim の前の検査で止まる）
+    if (draft?.source_data?.research_image?.research_id) {
+      const { research_id: researchId, revision } =
+        draft.source_data.research_image;
+      const parsed = parseResearchId(researchId);
+      if (!parsed) throw new Error("research_id_invalid");
+      const [[item], sent, [control], [row]] = await Promise.all([
+        db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind,race_id`),
+        db(
+          `sns_auto_send_items?kind=eq.${RESEARCH_IMAGE_KIND}&channel=eq.x&race_id=like.${encodeURIComponent(`research:${parsed.date}:*`)}&state=eq.sent&select=id`,
+        ),
+        db("sns_auto_send_control?channel=eq.x&select=research_image_enabled"),
+        db(
+          `sns_drafts?id=eq.${draftId}&select=platform,caption_text,hashtags,cover_image_path,video_storage_path`,
+        ),
+      ]);
+      if (item?.kind !== RESEARCH_IMAGE_KIND || item.race_id !== researchId)
+        throw new Error("research_item_mismatch");
+      if (control?.research_image_enabled !== true)
+        throw new Error("research_image_disabled");
+      if (sent.length) throw new Error("research_already_sent_today");
+      const images = draft.source_data.image_paths;
+      if (
+        row?.platform !== "x" ||
+        row.video_storage_path ||
+        !Array.isArray(images) ||
+        images.length !== 1 ||
+        images[0] !== row.cover_image_path
+      )
+        throw new Error("research_image_count");
+      if (
+        researchTextReasons({
+          caption: row.caption_text,
+          hashtags: row.hashtags ?? [],
+        }).length
+      )
+        throw new Error("research_text_rejected");
+      return {
+        withdrawn: false,
+        cancelled: false,
+        deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
+        source_revision: revision,
+        public_check: "none",
       };
     }
     const imported = draft?.sns_bundle_imports;

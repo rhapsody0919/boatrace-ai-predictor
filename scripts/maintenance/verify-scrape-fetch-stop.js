@@ -240,7 +240,7 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
       r.fetchStop === true &&
         r.untilMs === Date.parse("2026-10-26T04:00:00Z") &&
         log.length === 1 &&
-        log[0].cols === "breaker_open_until, fetch_stop",
+        /^breaker_open_until, fetch_stop\b/.test(log[0].cols),
       show({ r, log }),
     );
   }

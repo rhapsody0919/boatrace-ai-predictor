@@ -239,6 +239,12 @@ export async function runSnsSend(
       result.outcome = done.state;
       result.error_code = done.error_code ?? null;
       if (done.state === "posted") posted += 1;
+      // 出し物ごとの取り置き（182）で claim が止めた。取り置きは後から空かないので一度きりの事象として知らせる
+      if (done.state === "held" && done.error_code === "kind_slot_full")
+        await tell(
+          `held:${job.id}`,
+          `SNS の送信を止めた（X の日の枠の出し物ごとの取り置きに入らない、kind_slot_full）: ${job.channel} job ${job.id}。送るなら取り置き（sns_x_kind_reserves）か daily_limit_x を見直して再承認する`,
+        );
       // 要照合になったら、この実行の report にも出す（次の実行からは DB の状態から作る）
       if (done.state === "reconcile")
         alerts.push({

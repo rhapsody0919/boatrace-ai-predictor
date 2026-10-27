@@ -281,6 +281,8 @@ test("X: 48h の窓の終わりから15分以内に読めた累積値を保存�
               likes: 3,
               shares: 1,
               saves: 0,
+              replies: 2,
+              quotes: 0,
             },
           },
           { at, calls },
@@ -301,6 +303,9 @@ test("X: 48h の窓の終わりから15分以内に読めた累積値を保存�
     [
       ["impressions", 120],
       ["likes", 3],
+      // 返信・引用（2026-10-27、/today の比べの副の数）
+      ["quotes", 0],
+      ["replies", 2],
       ["saves", 0],
       ["shares", 1],
       ["url_link_clicks", 4],
@@ -311,7 +316,7 @@ test("X: 48h の窓の終わりから15分以内に読めた累積値を保存�
     assert.equal(r.data_through.toISOString(), at.toISOString());
     assert.equal(r.source, "x-api");
   }
-  assert.equal(result.rowsWritten, 5);
+  assert.equal(result.rowsWritten, 7);
   assert.equal(await reserved(), 1000 + 1000); // 送信の1回分＋読み取り1回分
 });
 
@@ -327,7 +332,7 @@ test("窓の終わりから15分を過ぎてから処理する job は、外部�
   assert.equal(result.body.jobs[0].outcome, "missing");
   assert.equal((await metricJobs(draft.id))[0].state, "missing");
   const rows = await observations(draft.id);
-  assert.equal(rows.length, 5);
+  assert.equal(rows.length, 7);
   for (const r of rows) {
     assert.equal(r.v, null);
     assert.match(r.missing_reason, /取得が遅れた/);
@@ -537,6 +542,8 @@ test("X の読み取り: since_id・until_id で対象の1件に絞り、自分�
               like_count: 2,
               retweet_count: 1,
               bookmark_count: 0,
+              reply_count: 4,
+              quote_count: 1,
             },
             non_public_metrics: { impression_count: 50, url_link_clicks: 3 },
           },
@@ -558,6 +565,8 @@ test("X の読み取り: since_id・until_id で対象の1件に絞り、自分�
     url_link_clicks: 3,
     likes: 2,
     shares: 1,
+    replies: 4,
+    quotes: 1,
     saves: 0,
   });
   // 応答に無ければ空（呼び出し側がやり直す）、失敗は本文を出さずに状態コードだけ
@@ -677,6 +686,8 @@ test("値を保存した後に閉じるのが失敗しても、次の実行で�
               likes: 1,
               shares: 0,
               saves: 0,
+              replies: 0,
+              quotes: 0,
             },
           },
           { at: now },
@@ -690,7 +701,7 @@ test("値を保存した後に閉じるのが失敗しても、次の実行で�
   });
   assert.equal((await metricJobs(draft.id))[0].state, "done");
   const rows = await observations(draft.id);
-  assert.equal(rows.length, 5);
+  assert.equal(rows.length, 7);
   assert.ok(rows.every((r) => r.missing_reason === null));
 });
 

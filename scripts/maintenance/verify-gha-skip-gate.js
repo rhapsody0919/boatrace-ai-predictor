@@ -1354,7 +1354,7 @@ async function suite(mod, record) {
         u.pathname === "/rest/v1/scrape_job_state" &&
         u.searchParams.get("job") === 'in.("odds","host:boatrace.jp")' &&
         u.searchParams.get("select") ===
-          "job,mode,last_tick_at,last_success_at,consecutive_failures,last_target_date,breaker_open_until,last_error,updated_at" &&
+          "job,mode,last_tick_at,last_success_at,consecutive_failures,last_target_date,breaker_open_until,fetch_stop,last_error,updated_at" &&
         calls[0].init.headers.apikey === "SERVICE_KEY" &&
         calls[0].init.headers.Authorization === "Bearer SERVICE_KEY" &&
         calls[0].init.signal instanceof AbortSignal &&
@@ -1704,7 +1704,7 @@ await suite(realGate, record);
   const sched = read("scripts/daily/scrape-scheduled.js");
   record(
     "配線: scrape-scheduled.js は、SKIP変数がtrueかを先に確認してから（&&の左）Vercelの健全性を確認する（オッズ・結果・Kファイル・レース情報・展示）",
-    /import \{ shouldSkipOnGha \} from "\.\.\/lib\/ghaSkipGate\.js";/.test(
+    /import \{ isGhaFetchStopped, shouldSkipOnGha \} from "\.\.\/lib\/ghaSkipGate\.js";/.test(
       sched,
     ) &&
       /isOddsSkippedOnGha\(\) && \(!oddsDue \|\| \(await gateSkips\("SKIP_ODDS_ON_GHA"\)\)\)/.test(
