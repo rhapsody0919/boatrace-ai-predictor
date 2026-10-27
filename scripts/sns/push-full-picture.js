@@ -10,6 +10,8 @@
  *   full-x.mp4（X）、full-youtube.mp4（YouTube の完全版）。
  *   bundle_version: 2 のときだけ、youtube_shorts{title,description} と shorts.mp4（入口版、縦）を受け、YouTube の Shorts の下書きを足す
  *   （マイグレーション 172、BOA-912）。Shorts は完全版の公開の後に送り、説明文の {full_url} を完全版の URL に置き換える（parent_job_id）
+ *   channels（例 ["youtube","shorts"]）は送るチャネル。x を外すことだけができ、外したときは x_text・full-x.mp4 を受けず、
+ *   X の下書き・item・job を作らない（BOA-1167、2026-10-27 オーナー決定「全貌の入口は Shorts、X は不要」）。無い bundle は今までどおり X も出す
  *
  * 1. 検査: 欄・P0 が0件・機械の検査が全部通った・禁止表現・動画の大きさ・レースが今日あり中止でない・締切の45分前より前
  *    --dry-run はここまで（DB・Storage に書かない）
@@ -80,9 +82,15 @@ const jstTime = (iso) =>
 const nonEmpty = (v, max) =>
   typeof v === "string" && v.trim().length > 0 && v.length <= max;
 const withShorts = (bundle) => bundle?.bundle_version === SHORTS_BUNDLE_VERSION;
-/** 下書きを作るチャネル（shorts は DB では channel=youtube・variant=shorts） */
-const channelsOf = (bundle) =>
+/** 版で決まるチャネル（shorts は DB では channel=youtube・variant=shorts） */
+const versionChannels = (bundle) =>
   withShorts(bundle) ? ["x", "youtube", "shorts"] : ["x", "youtube"];
+/** 下書きを作るチャネル。bundle の channels があれば、その中にあるものだけ（検査は checkFullPicture） */
+const channelsOf = (bundle) =>
+  Array.isArray(bundle?.channels)
+    ? versionChannels(bundle).filter((c) => bundle.channels.includes(c))
+    : versionChannels(bundle);
+const wantsX = (bundle) => channelsOf(bundle).includes("x");
 const dbChannel = (channel) => (channel === "shorts" ? "youtube" : channel);
 // 置き換えで増える字数（送る時の fillFullUrl と同じ書式から求める）
 // 個別承認の道では親（完全版の job）が下書きに入らないので、承認しても送る前の検査（unresolved_placeholder）で止まる
@@ -108,20 +116,41 @@ export function checkFullPicture(bundle, riskRules = []) {
   // 型は無いか、{id: 空でない文字列} だけ
   if (
     bundle?.content_type !== undefined &&
-    !(typeof bundle.content_type?.id === "string" && bundle.content_type.id.trim())
+    !(
+      typeof bundle.content_type?.id === "string" &&
+      bundle.content_type.id.trim()
+    )
   )
     reasons.push("content_type.id が無い");
-  if (!nonEmpty(bundle?.x_text, 25000)) reasons.push("x_text が無い・長すぎる");
-  else {
-    if (!xPostValid(bundle.x_text, { long: true }))
-      reasons.push("x_text が X の長文の上限を超える");
-    const urls = twitterText.extractUrls(bundle.x_text);
-    if (urls.length !== 1 || urls[0].match(RACE_URL)?.[1] !== bundle.race_id)
-      reasons.push("x_text にこのレースの URL がちょうど1つ無い");
+  // channels は x を外すことだけができる（完全版は必須、Shorts は版2と一致。Shorts の親は完全版の job）
+  if (bundle?.channels !== undefined) {
+    const c = bundle.channels;
+    const all = versionChannels(bundle);
+    if (
+      !Array.isArray(c) ||
+      new Set(c).size !== c.length ||
+      c.some((v) => !all.includes(v)) ||
+      all.some((v) => v !== "x" && !c.includes(v))
+    )
+      reasons.push(
+        `channels が不正（x を外すことだけができる。必須は ${all.filter((v) => v !== "x").join("・")}）`,
+      );
+  }
+  // X を作らない bundle では x_text を見ない
+  if (wantsX(bundle)) {
+    if (!nonEmpty(bundle?.x_text, 25000))
+      reasons.push("x_text が無い・長すぎる");
+    else {
+      if (!xPostValid(bundle.x_text, { long: true }))
+        reasons.push("x_text が X の長文の上限を超える");
+      const urls = twitterText.extractUrls(bundle.x_text);
+      if (urls.length !== 1 || urls[0].match(RACE_URL)?.[1] !== bundle.race_id)
+        reasons.push("x_text にこのレースの URL がちょうど1つ無い");
+    }
   }
   // 完全版の URL の置き場所は Shorts の説明文だけ（ほかに入っていると、送る前の検査で初めて止まる）
   for (const [field, text] of [
-    ["x_text", bundle?.x_text],
+    ["x_text", wantsX(bundle) ? bundle?.x_text : undefined],
     ["youtube_full.title", bundle?.youtube_full?.title],
     ["youtube_full.description", bundle?.youtube_full?.description],
     ["youtube_shorts.title", bundle?.youtube_shorts?.title],
@@ -184,7 +213,13 @@ export function checkFullPicture(bundle, riskRules = []) {
 /** 完全版の YouTube のタグ（bundle の youtube_full.tags。hq 契約 10/24 C1） */
 export const fullTagsOf = (bundle) =>
   Array.isArray(bundle?.youtube_full?.tags)
-    ? [...new Set(bundle.youtube_full.tags.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim().replace(/^#+/, "")))]
+    ? [
+        ...new Set(
+          bundle.youtube_full.tags
+            .filter((t) => typeof t === "string" && t.trim())
+            .map((t) => t.trim().replace(/^#+/, "")),
+        ),
+      ]
     : [];
 
 /**
@@ -198,12 +233,18 @@ export function fullYoutubeText(bundle) {
   if (!tags.length) return { caption_text: description, hashtags: [] };
   const line = tags.map((t) => `#${t}`).join(" ");
   const lines = description.split("\n");
-  if (lines.at(-1) !== line) return { caption_text: description, hashtags: tags.map((t) => `#${t}`) };
-  return { caption_text: lines.slice(0, -1).join("\n").replace(/\n+$/, ""), hashtags: tags.map((t) => `#${t}`) };
+  if (lines.at(-1) !== line)
+    return { caption_text: description, hashtags: tags.map((t) => `#${t}`) };
+  return {
+    caption_text: lines.slice(0, -1).join("\n").replace(/\n+$/, ""),
+    hashtags: tags.map((t) => `#${t}`),
+  };
 }
 
 const draftTexts = (bundle) => ({
-  x: { platform: "x", caption_text: bundle?.x_text ?? "", hashtags: [] },
+  ...(wantsX(bundle)
+    ? { x: { platform: "x", caption_text: bundle?.x_text ?? "", hashtags: [] } }
+    : {}),
   youtube: {
     platform: "youtube",
     title: bundle?.youtube_full?.title ?? "",
@@ -241,7 +282,11 @@ const OFFSET_MIN = {
   youtube: YOUTUBE_OFFSET_MIN,
   shorts: YOUTUBE_OFFSET_MIN + SHORTS_OFFSET_MIN,
 };
-/** チャネルごとの送る時刻（YouTube の完全版は X の4分後、Shorts は完全版のさらに4分後。Shorts は完全版の公開まで待つ） */
+/**
+ * チャネルごとの送る時刻（YouTube の完全版は X の4分後、Shorts は完全版のさらに4分後。Shorts は完全版の公開まで待つ）。
+ * X を作らない bundle（channels）でもずらしは変えない（SHORTS_LATEST_BEFORE_MIN の余裕の計算がこの並びの上にある。
+ * 別のレース・別の型の X と同じ送信の実行に重なる見込みも減る、BOA-1167）
+ */
 export const sendAtOf = (when, channel) =>
   new Date(
     Date.parse(when.send_at) + OFFSET_MIN[channel] * 60000,
@@ -278,9 +323,13 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
       qa: bundle.qa,
     },
     // YouTube の型を比べる札（daily.mjs --variant、hq SQ08 v5）。hq が source_data.full_picture_variant.id で数える
-    ...(bundle.full_picture_variant ? { full_picture_variant: { id: bundle.full_picture_variant.id } } : {}),
+    ...(bundle.full_picture_variant
+      ? { full_picture_variant: { id: bundle.full_picture_variant.id } }
+      : {}),
     // 投稿の型の id（daily.mjs --type-spec、hq PD02）。hq が source_data.content_type.id で数える
-    ...(bundle.content_type ? { content_type: { id: bundle.content_type.id } } : {}),
+    ...(bundle.content_type
+      ? { content_type: { id: bundle.content_type.id } }
+      : {}),
     deadline_queue: queue(channel),
     release_evidence: {
       status: "released",
@@ -294,15 +343,19 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
     qa: { pass: true, numeric_claims_match: true, L0_hits: [] },
   });
   return {
-    x: {
-      ...common,
-      scheduled_at: sendAtOf(when, "x"),
-      platform: "x",
-      title: bundle.youtube_full.title,
-      caption_text: bundle.x_text,
-      video_storage_path: paths.x,
-      source_data: sourceData("x"),
-    },
+    ...(paths.x
+      ? {
+          x: {
+            ...common,
+            scheduled_at: sendAtOf(when, "x"),
+            platform: "x",
+            title: bundle.youtube_full.title,
+            caption_text: bundle.x_text,
+            video_storage_path: paths.x,
+            source_data: sourceData("x"),
+          },
+        }
+      : {}),
     youtube: {
       ...common,
       scheduled_at: sendAtOf(when, "youtube"),
@@ -331,7 +384,7 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
 
 /**
  * 受け取って送る予定に入れる。deps は DB・Storage・Slack（テストで差し替える）。
- * 返り値: { reasons } （不合格）か { channels: { x: {...}, youtube: {...} } }
+ * 返り値: { reasons } （不合格）か { channels: { x: {...}, youtube: {...}, shorts: {...} } }（作ったチャネルだけ）
  */
 export async function pushFullPicture(
   folder,
@@ -390,10 +443,11 @@ export async function pushFullPicture(
     now.getTime() >=
       Date.parse(minutesBefore(deadlineAt, SHORTS_LATEST_BEFORE_MIN));
   // X の日の枠の全貌の取り置き（182、docs/design/x-daily-slots/plan.md）。入らないと分かったら X だけ作らない
-  // （claim で止まる job を作ると期限まで Slack が鳴る）。182 の前・読めないときは今のまま作る（claim が正）
-  const xSlot = store.xSlotRoom
-    ? await checkXSlot(store.xSlotRoom, SLOT_KINDS.fullPicture, 1)
-    : null;
+  // （claim で止まる job を作ると期限まで Slack が鳴る）。182 の前・読めないときは今のまま作る（claim が正）。X を作らない bundle では見ない
+  const xSlot =
+    store.xSlotRoom && wantsX(bundle)
+      ? await checkXSlot(store.xSlotRoom, SLOT_KINDS.fullPicture, 1)
+      : null;
   const channels = channelsOf(bundle).filter(
     (c) => (c !== "shorts" || !shortsLate) && (c !== "x" || !xSlot?.blocked),
   );
