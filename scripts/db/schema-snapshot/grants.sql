@@ -39,19 +39,20 @@ items AS (
       WHERE d.classid = 'pg_catalog.pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e'
     )
   UNION ALL
-  -- 既定の権限: スキーマ public のもの（足すだけ）と、IN SCHEMA なしの全体のもの（作りつけの既定を置き換える）
+  -- 既定の権限: スキーマ public のもの（足すだけ）と、IN SCHEMA なしの全体のもの（作りつけの既定を置き換える）。
+  -- 全部を外して ACL が空（{}）の行も「誰にも付けない」の記録として残す（LEFT JOIN で grantee・privilege_type が NULL の1行）
   SELECT 'default:' || CASE WHEN da.defaclnamespace = 0 THEN 'global' ELSE 'public' END || ':' || da.defaclobjtype::text,
          pg_get_userbyid(da.defaclrole)::text, NULL, a.grantee, a.privilege_type, a.is_grantable
   FROM pg_catalog.pg_default_acl da
-  LEFT JOIN pg_catalog.pg_namespace n ON n.oid = da.defaclnamespace,
-       LATERAL aclexplode(da.defaclacl) a
+  LEFT JOIN pg_catalog.pg_namespace n ON n.oid = da.defaclnamespace
+  LEFT JOIN LATERAL aclexplode(da.defaclacl) a ON true
   WHERE da.defaclnamespace = 0 OR n.nspname = 'public'
 )
 SELECT object_type,
        name,
        identity_args,
        CASE WHEN grantee = 0 THEN 'PUBLIC' ELSE pg_get_userbyid(grantee)::text END AS grantee,
-       array_agg(DISTINCT privilege_type ORDER BY privilege_type) AS privileges,
+       array_agg(DISTINCT privilege_type ORDER BY privilege_type) FILTER (WHERE privilege_type IS NOT NULL) AS privileges,
        array_agg(DISTINCT privilege_type ORDER BY privilege_type) FILTER (WHERE is_grantable) AS grantable
 FROM items
 GROUP BY object_type, name, identity_args, grantee

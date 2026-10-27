@@ -382,11 +382,16 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
           `schema-snapshot: 知らない既定の権限の範囲 ${JSON.stringify(scope)}`,
         );
       }
+      // grantee が null の行は ACL が空（誰にも付けない）の記録。作りつけの既定（関数の PUBLIC の EXECUTE 等）とは逆の意味
       defaultPrivileges.push({
         scope,
         objectType: decode(DEFAULT_ACL_OBJECTS, objType, "defaclobjtype"),
         role: g.name,
-        ...grantEntry(g),
+        ...grantEntry({
+          ...g,
+          grantee: g.grantee ?? null,
+          privileges: g.privileges ?? [],
+        }),
       });
     } else {
       throw new Error(

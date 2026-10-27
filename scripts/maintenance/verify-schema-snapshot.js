@@ -84,6 +84,7 @@ CREATE ROLE authenticated NOLOGIN;
 CREATE ROLE service_role NOLOGIN BYPASSRLS;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT ON TABLES TO service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;
+ALTER DEFAULT PRIVILEGES FOR ROLE postgres REVOKE ALL ON TYPES FROM PUBLIC, postgres;
 CREATE EXTENSION pg_trgm;
 
 CREATE TABLE public.venues (code text PRIMARY KEY, name text NOT NULL);
@@ -326,6 +327,18 @@ check(
         d.objectType === "function" &&
         d.role === "postgres",
     ),
+  JSON.stringify(snap.defaultPrivileges),
+);
+check(
+  "既定の権限: 全部を外して ACL が空の行も残す（grantee null・権限なし）",
+  snap.defaultPrivileges.some(
+    (d) =>
+      d.scope === "global" &&
+      d.objectType === "type" &&
+      d.role === "postgres" &&
+      d.grantee === null &&
+      d.privileges.length === 0,
+  ),
   JSON.stringify(snap.defaultPrivileges),
 );
 check(
