@@ -13,6 +13,7 @@ YouTube（Shorts 含む）の投稿・タイトル・構成に固有の知見。
 - YouTube Data API の OAuth クライアントは「ウェブ アプリケーション」型で作り、承認済みリダイレクト URI に https://developers.google.com/oauthplayground を足す。「デスクトップ アプリ」型は redirect_uri_mismatch になる。External/Testing の同意画面は認可するアカウントをテストユーザーに足す（2026-09-02、memory content_pipeline_youtube_oauth_setup_2026_09_02）
 - YouTube は Data API v3 の正規のアップロードで自動投稿できる（承認→公開、api/admin/sns-hub/drafts/[id]/publish-youtube.js）（2026-09-02、memory content_multi_channel_pipeline_2026_09_01）
 - thumbnails.set の上限は 50MB・jpeg/png（約50単位）。よく言われる 2MB はモバイルから上げるときの上限で、API の上限ではない。403 forbidden は「権限が無い（カスタムサムネイルを設定できない）」でも返り、チャンネルの確認が原因のことがある。全貌の受け取りは承認のカバーの上限 32 MiB で止め、送るときの失敗は公開を止めない（2026-10-27、developers.google.com/youtube/v3/docs/thumbnails/set・support.google.com/youtube/answer/72431、BOA-1172）
+- 龍神のチャンネルはアカウント（電話番号）の確認が済んでいて、カスタムサムネイル（thumbnails.set）を使える。確認は youtube.com/verify の表示で見る（2026-10-27、オーナーが確認、YouTube ヘルプ answer/72431「アカウントを確認済みであれば独自のサムネイルをアップロードできる」、BOA-1172）
 
 ## 点検での見落としを防ぐ知見
 - タグありの承認snapshotと送信payloadのdescription・snippet.tagsを対応させ、成功fixtureだけで承認タグが送られたとしない。（2026-10-13、2026-10-13-plan-review-youtube-20261013-01.md）
