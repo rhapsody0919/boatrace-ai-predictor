@@ -106,7 +106,15 @@ const box = async (loc) => {
 const rel = (r, clip) => ({ x: r.x - clip.x, y: r.y - clip.y, w: r.w, h: r.h });
 
 async function shoot(page, clip, file, extra = {}) {
-  await page.screenshot({ path: file, clip: { x: clip.x, y: clip.y, width: clip.w, height: clip.h }, fullPage: true });
+  // 全体の撮影（fullPage）は画面の高さを広げ、高さが画面に合わせて変わる部品の分だけ下の部品がずれた（着順の流れが約100px）。
+  // 切り抜きを画面の中に送り、画面の座標で撮る（切り抜きは全て画面の高さ900より低い）
+  if (clip.h > page.viewportSize().height) throw new Error(`切り抜き ${Math.round(clip.h)}px が画面の高さより高い（${file}）`);
+  const sy = await page.evaluate((y) => {
+    window.scrollTo(0, Math.max(0, y - 20));
+    return window.scrollY;
+  }, clip.y);
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: file, clip: { x: clip.x, y: clip.y - sy, width: clip.w, height: clip.h } });
   const t = await textIn(page, clip);
   // 拡大は deviceScaleFactor まで（それ以上は撮った画素を引き伸ばすだけでぼける）
   const scale = Math.min(LEFT_BOX.h / clip.h, LEFT_BOX.w / clip.w, DPR);
@@ -141,11 +149,18 @@ async function openTab(page, name) {
   await page.waitForTimeout(2500);
 }
 
-/** 着順の流れの切り抜き: 部品の上の空白を入れず、図の暗い面の下端まで（visual-designer 2026-10-27） */
-async function flowClip(flow) {
-  const dark = await box(flow.locator(".af-dark").first());
-  const top = await box(flow.locator(".af-seg").first());
-  return pad(union([top, dark]));
+/**
+ * 部品そのものを撮る（Playwright が部品を画面に送って測る）。着順の流れは、上の部品の読み込みで撮る間に位置が約100px ずれたので、
+ * 測った座標で撮らず部品で撮る。座標（clip）は撮った直後に測る
+ */
+async function shootEl(page, loc, file, extra = {}) {
+  await loc.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(800);
+  await loc.screenshot({ path: file });
+  const clip = await box(loc);
+  const t = await textIn(page, clip);
+  const scale = Math.min(LEFT_BOX.h / clip.h, LEFT_BOX.w / clip.w, DPR);
+  return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, ...extra };
 }
 
 /** sankey の1着の帯を押す（押した後の切り抜き） */
@@ -241,11 +256,11 @@ export async function captureAll(m, s, outDir) {
       await openTab(page, "類似レース");
       await hideFixed(page);
       const flow = page.locator(".af-flow").first();
-      const clip2 = await flowClip(flow);
-      const before = await shoot(page, clip2, file("c2-pre"));
+      const before = await shootEl(page, flow, file("c2-pre"));
       const hit = await pickFirst(flow, c2.shot.firstBoat);
+      const at0 = await box(flow);
       await page.waitForTimeout(1200);
-      shots.c22 = await shoot(page, clip2, file("c22"), { pre: before.file, cursor: rel(hit, clip2), testid: "着順の流れ" });
+      shots.c22 = await shootEl(page, flow, file("c22"), { pre: before.file, cursor: rel(hit, at0), testid: "着順の流れ" });
     }
     if (c3) {
       await openTab(page, "展開シナリオ");
@@ -254,11 +269,11 @@ export async function captureAll(m, s, outDir) {
       await page.waitForTimeout(2500);
       await hideFixed(page);
       const flow = page.locator(".af-flow").last();
-      const clip2 = await flowClip(flow);
-      const before = await shoot(page, clip2, file("c3-pre"));
+      const before = await shootEl(page, flow, file("c3-pre"));
       const hit = await pickFirst(flow, c3.shot.firstBoat);
+      const at0 = await box(flow);
       await page.waitForTimeout(1200);
-      shots.c32 = await shoot(page, clip2, file("c32"), { pre: before.file, cursor: rel(hit, clip2), testid: "着順の流れ（展開）" });
+      shots.c32 = await shootEl(page, flow, file("c32"), { pre: before.file, cursor: rel(hit, at0), testid: "着順の流れ（展開）" });
     }
     // 思考アシスト＞相手
     const c4 = at("c4");
