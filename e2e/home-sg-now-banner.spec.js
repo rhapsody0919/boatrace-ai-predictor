@@ -19,8 +19,9 @@ async function rewriteTodayRaces(page, mutate) {
     try {
       const response = await fetchRecorded(route);
       const body = await response.json().catch(() => null);
+      // await しないと、fulfill の失敗が下の catch を素通りする
       if (!Array.isArray(body?.data))
-        return route.fulfill(response.fulfillOptions());
+        return await route.fulfill(response.fulfillOptions());
       mutate(body.data);
       await route.fulfill({
         status: response.status(),
