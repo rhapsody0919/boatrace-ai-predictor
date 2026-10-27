@@ -1,4 +1,7 @@
 /**
+ * 【捨てた型 s02 の試作（2026-10-27 オーナー不可）。本番では使わない】
+ * 既知の誤り: 範囲（全国・会場）の表示が scope に未対応で「全国」固定（scenario API は会場の件数が300件以上なら会場別の VC を返す。Codex P1、#1975）。
+ * 使い回すなら answer.mjs の scopeLabel に合わせて直す。
  * 型 s02-loss-breakdown-card（Shorts・X の冒頭の札・題・本文の差し替え）の数字と文（純関数）。
  * 台本: docs/design/full-picture-type-gate/candidates/s02-loss-breakdown-card/script.md（オーナー可 2026-10-27）。
  * 数字は冒頭の答え（answer.mjs）と同じセル（形を問わない `forms.any`）から作る。N はこのセルの件数で、3連単の件数の和と一致する
