@@ -19,6 +19,7 @@ export const HQ_KIND = {
   today: "digest",
   finals: "finals_image",
   research_rank: "research_image",
+  today_thinking: "today_thinking",
 };
 const DOW = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
 

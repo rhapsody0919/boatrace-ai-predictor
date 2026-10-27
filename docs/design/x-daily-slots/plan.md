@@ -7,7 +7,7 @@ X の1日の送信の枠（`sns_x_send_control.daily_limit_x`）を出し物（�
 - 今の上限は `daily_limit_x` の合計だけ。送り手の claim（`transition_sns_send_139`、177）が「今日の試行＋他経路＋必要な本数 ≤ 上限」を見る。先に claim した側が枠を取る
 - 送る前（取り込み）に枠を確かめるのは `scripts/sns/push-finals-image.js` の `dailyLimitReason` だけ。`push-full-picture.js` と /today（`scripts/lib/snsTodayPlanner.js`）には無い
 - 優勝戦は締切が遅い（16:30〜20:45）。全貌が多く送られた日は、優勝戦の本投稿と投票のリプの組が落ちる
-- 取り置きの数の正本は hq の `config/x-slots.json`（全貌4・/today 1・優勝戦3・数字で見たら1（月水金）、合計9。数字で見たらが無い曜日の1本は取り置かない）。本番（Vercel の送り手）から hq のファイルは読めない
+- 取り置きの数の正本は hq の `config/x-slots.json`（182 の時点は全貌4・/today 1・優勝戦3・数字で見たら1（月水金）、合計9。数字で見たらが無い曜日の1本は取り置かない。思考投稿の後の数は §2.1）。本番（Vercel の送り手）から hq のファイルは読めない
 - 実測（2026-10-27、読み取り）: `daily_limit_x=9`（10/26 の決定の8から、10/27 に数字で見たら分を上げた）・`daily_external_count=0`。直近7日の X の試行は /today 1本/日・全貌 1〜4本/日。/today の返信の型と優勝戦はまだ送っていない
 
 ## 2. 決めたこと
@@ -22,6 +22,7 @@ X の1日の送信の枠（`sns_x_send_control.daily_limit_x`）を出し物（�
 | note | text | 説明 |
 
 - 初期の行（182 で入れる）: `full_picture` 4・`digest` 1・`finals_image` 3・`research_image` 1（月水金だけ）。上限9なので、月水金は合計9＝上限で取り置かれていない残りは0、他の曜日は合計8で残り1
+- 思考投稿を足した後（オーナー 2026-10-27、BOA-1169・マイグレーション 189）: `full_picture` 0・`digest` 1・`finals_image` 3・`research_image` 1（月水金だけ）・`today_thinking` 6（2レース×本投稿・投票・展示後の3本）、`daily_limit_x` 11。月水金は合計11＝上限で残り0、他の曜日は合計10で残り1（全貌の X は取り置かれていない残りだけを使うので、月水金は送れず、他の曜日は先に来た1本）。行と上限は 189 に入れず、オーナーが旗 `today_thinking_enabled` を on にするのと同じトランザクションで、その日の最初の X 送信より前に当てる（取り置きは旗が off でも解けないため）
 - 番号: 179・180 は #1978（research_image の kind・許可・送り手の照合）、181 は #1977。182 は 180 の transition を土台にするので 180 の後に当てる（182 の最初の DO が確かめる）
 - 書き込みはオーナー（SQL Editor）だけ。service_role は読むだけ。RLS 有効・匿名の権限なし
 - hq の config との照合: `scripts/sns/x-slots-check.js <x-slots.json>`（読み取りだけ）が DB と比べ、違えば直す SQL を出す。hq が同じ Mac で回す。名前の対応（hq → kind）は `today→digest`・`finals→finals_image`・`full_picture→full_picture`・`research_rank→research_image`
@@ -70,6 +71,7 @@ JST の今日について、出し物 j ごとに
 | push-full-picture.js | full_picture | 1（X だけ） | X の下書きを作らず、YouTube（完全版・Shorts）は送る。Slack に1行 |
 | /today（snsTodayPlanner.js） | digest | 1、返信の型は2 | 自動の承認をせず、item を manual（返信の型は held_manual）に戻す（今の自動の承認の失敗と同じ道） |
 | push-finals-image.js | finals_image | 本投稿2（投票のリプと対）・展示後のリプ1 | 今の dailyLimitReason の拒否と同じ（exit 1）。dailyLimitReason（全体の上限）は残し、取り置きの確かめを足す |
+| push-finals-image.js（思考投稿、189） | today_thinking | 本投稿2（投票のリプと対）・展示後のリプ1 | 優勝戦と同じ（exit 1） |
 | push-research-image.js（#1978） | research_image | 1 | 今は確かめない（claim が 182 の式で止める）。両方が入った後に同じ `checkXSlot` を足す |
 
 ### 2.6 適用の順と互換
