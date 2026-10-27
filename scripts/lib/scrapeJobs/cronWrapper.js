@@ -62,6 +62,7 @@ import {
 } from "./outcomes.js";
 import { jstStartOfDay, toJstDateString } from "./time.js";
 import { createSupabaseStore } from "./store.js";
+import { createFetchCounter } from "./fetchCounter.js";
 
 /** 予定表を生成し直す間隔（分）。races が後から増えた場合の追従（plan.md §3.5） */
 export const ENSURE_SLOTS_EVERY_MIN = 10;
@@ -638,17 +639,24 @@ export function createScrapeCronHandler({
         .json({ success: false, job, error: "Supabase が設定されていません" });
     }
     const definition = SCRAPE_JOBS[job];
+    const store = createStore(client);
+    // 取得の数を数え、起動の終わりに1回で足す（取得0の起動は書かない。数える側の失敗は取得・応答に響かせない。BOA-1145 P3）
+    const counter = createFetchCounter({ client, source: "vercel" });
+    const breaker = createCircuitBreaker({ store: store.breakerStore });
     const { status, body } = await runScrapeJob({
       job,
       definition,
-      store: createStore(client),
+      store,
       handleSlot,
       run,
       onTick,
       modeGated: modeGated ?? definition?.kind !== "monitor",
       client,
       query: req.query ?? {},
+      breaker,
+      politeFetch: createPoliteFetch({ breaker, counter }),
     });
+    await counter.flush();
     return res.status(status).json(body);
   };
 }
