@@ -222,6 +222,23 @@ check(
   sel?.message,
 );
 
+const guardMd5 = (
+  await db.query(
+    "SELECT md5(prosrc) AS h FROM pg_proc WHERE oid = 'public.analogy_feedback_guard()'::regprocedure",
+  )
+).rows[0].h;
+check(
+  "(c) ガードの md5 は適用後の確認に書いた値（識別に使う）",
+  sql186.includes(`期待: ${guardMd5} |`),
+  guardMd5,
+);
+const tx = sql186.split("-- ROLLBACK-BEGIN")[0];
+check(
+  "(g) races の ACCESS EXCLUSIVE を長く待たない（DROP CONSTRAINT より前に lock_timeout 1s）",
+  /SET LOCAL lock_timeout = '1s';/.test(tx) &&
+    tx.indexOf("SET LOCAL lock_timeout") < tx.indexOf("DROP CONSTRAINT IF EXISTS analogy_feedback_race_id_fkey"),
+);
+
 // (d) 10分に30行。空の表から30行は通り、31行目で止まる
 await db.exec("DELETE FROM public.analogy_feedback");
 let firstReject = null;
