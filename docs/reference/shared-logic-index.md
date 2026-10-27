@@ -216,8 +216,9 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
 | `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか6件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
-| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, todayCandidates, todayFeatured, buildTodayPost, isTodayRebuild ほか19件 |
-| `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayPost, normalizeTodayVariants, loadTodayVariants, pickTodayHeading, normalizeTypeScheduleRow ほか6件 |
+| `scripts/lib/snsTodayCourseWinPost.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」）の本文と、その機械の検査（純関数）。 | buildCourseWinPost, checkCourseWinPost, COURSE_WIN_FOOT, COURSE_WIN_LINK_LEAD, xWeightedLength |
+| `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, courseWinSheetUrl, prepareCourseWin, courseWinFeasible, typeAOf ほか28件 |
+| `scripts/lib/snsTodayVariants.js` | /today の X 投稿の見出し（本文の1行目）を2案で日替わりに出す（2026-10-20 オーナー承認、hq 経由）。 | normalizeTodayPost, normalizeTodayVariants, normalizeTodayExperiment, pickExperimentSide, loadTodayVariants ほか9件 |
 | `scripts/lib/snsXSlots.js` | X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）を、取り込み（push-ful… | slotDecision, checkXSlot, SLOT_KINDS, isMissingFunction, slotRoomBody ほか1件 |
 | `scripts/lib/sourceFileWalk.js` | — | walkSourceFiles, readSourceFile |
 | `scripts/lib/statisticalTests.js` | 統計検証ユーティリティ（正規近似ベース、外部ライブラリ非依存） | normalCDF, pearsonCorrelation, pearsonPValue, proportionZTest |
@@ -345,7 +346,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
 | `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | techniqueColor |
 | `src/utils/theme.js` | — | getTheme, setTheme, subscribe |
-| `src/utils/todayCourseWin.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定）の材料（純関数）。 | minRunsFor, normalQuantile, courseWinRowsFromJson, buildCourseWinNotes, COURSE_WIN_VERSION ほか8件 |
+| `src/utils/todayCourseWin.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定）の材料（純関数）。 | minRunsFor, normalQuantile, binomialUpperTail, courseWinRowsFromJson, buildCourseWinNotes ほか14件 |
 | `src/utils/todayRaces.js` | get_today_races（RPC。Edge API /api/races/today はこの結果をそのまま返す）の出力を、画面の形に整える。 | transformTodayRaces |
 | `src/utils/trendDateLayout.js` | `MeetSparkline` の viewBox の幅と左右の余白。日付の見出しを点と同じ横位置に置くため共有する | dayTickLabels, sparkLeftPercent, dayCenter, layoutTrendByDate, SPARK_VIEW_W ほか1件 |
 | `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, techniqueDiffers, isAsPredicted |
@@ -392,4 +393,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 350 ファイル / export 1988 件。
+対象 351 ファイル / export 2011 件。
