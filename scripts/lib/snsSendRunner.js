@@ -166,13 +166,15 @@ export async function runSnsSend(
       const { adapter, error: tokenError } = await adapterFor("youtube");
       try {
         if (tokenError) throw tokenError;
-        await closeRetainedYoutubeJob(
+        const closed = await closeRetainedYoutubeJob(
           { ...job, state: "reconcile" },
           { store, lookup: (j) => adapter.lookup(j) },
         );
         await tell(
           `closed:${job.id}`,
-          `SNS の送信: YouTube job ${job.id} は非公開のまま期限を過ぎたので、公開しないで閉じた（${job.error_code ?? "理由なし"}）。動画 ${job.external_post_id} は YouTube に非公開で残る。Studio で消すか残すかはオーナー`,
+          closed?.error_code === "youtube_closed_deleted"
+            ? `SNS の送信: YouTube job ${job.id} は非公開のまま期限を過ぎ、動画 ${job.external_post_id} は YouTube で削除済みだったので、公開しないで閉じた（${job.error_code ?? "理由なし"}）`
+            : `SNS の送信: YouTube job ${job.id} は非公開のまま期限を過ぎたので、公開しないで閉じた（${job.error_code ?? "理由なし"}）。動画 ${job.external_post_id} は YouTube に非公開で残る。Studio で消すか残すかはオーナー`,
         );
       } catch (error) {
         closeNotes.set(job.id, error.message);

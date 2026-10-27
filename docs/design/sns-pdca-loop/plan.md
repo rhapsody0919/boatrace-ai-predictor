@@ -136,7 +136,7 @@ flowchart TD
 - **閉じる遷移 `youtube_close_private`**（186、`transition_sns_x_send` の YouTube の分岐に足す。153 の本文が土台）: 次を全部満たすときだけ `state='cancelled'`・`error_code='youtube_closed_private'` にする。`external_post_id`・`youtube_stage='private_retained'` は記録として残す（管理画面は「非公開のまま残置（削除はオーナー操作）」を出し続ける）
   - `channel='youtube'`・`state='reconcile'`・`youtube_stage='private_retained'`（`update_started` は retain にならないので、videos.update を呼んだかもしれない job は閉じない。BOA-988 の 666ebe45 のように後の実行で posted に戻る job は対象外）
   - `now() >= expires_at`（期限の後は youtube_call_guard が公開を許さないので、この job が公開に進む道はもう無い）・リースが切れている（実行中の worker がいない）
-  - 同じ試行の `youtube_lookup`（videos.list、クォータの読み取りの台帳）が10分以内にあり、結果が「自分の動画で非公開」（`owned=true`・`privacyStatus='private'`・`id=external_post_id`）。見つからない・public・unlisted・他人の動画は閉じない（要照合のまま）
+  - 同じ試行の `youtube_lookup`（videos.list、クォータの読み取りの台帳）が10分以内にあり、結果が「自分の動画で非公開」（`owned=true`・`privacyStatus='private'`・`id=external_post_id`）か「削除済み」（videos.list が成功して items が空、`found=false` → `error_code='youtube_closed_deleted'`。2026-10-27、0853d7d9・0883093d の動画はオーナーが Studio で消した。items の無い応答は adapter が投げるので削除済みと読まない）。public・unlisted・他人の動画は閉じない（要照合のまま）
   - 子（`parent_job_id` がこの job の queued・attempts=0）は `held`・`error_code='parent_closed'` にする（全貌の Shorts が親待ちのまま期限まで警告を出し続けないため）
   - 下書きと item は触らない（下書きは approved のまま、148 のガードの外になるが、自動の再承認は pending_review の下書きだけなので再送されない。item は notified のまま。レースは終わっている）
   - オーナーが手で承認し直すと、approve の ON CONFLICT が `external_post_id`・`youtube_stage` を NULL に戻す（177:145）。期限は過ぎているので再アップロードには進まない（sweep で held）。動画 ID は閉じたときの Slack の通知に残す（approve は変えない。審査の P2 の別案を採った: 期限の後のレースを承認し直す運用が無く、approve の置き換えは 177 の本文の写しで差分が大きい）

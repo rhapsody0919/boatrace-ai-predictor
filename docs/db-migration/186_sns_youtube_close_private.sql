@@ -9,6 +9,7 @@
 --        youtube_stage='private_retained'（videos.update を呼んだかもしれない update_started は retain にならないので対象外）・
 --        外部 ID がある・now() >= expires_at（期限の後は youtube_call_guard が公開を許さない）・リースが切れている・
 --        同じ試行の youtube_lookup（videos.list の読み取り）が10分以内にあり、結果が自分の動画で非公開（owned=true・privacyStatus=private・id 一致）
+--        か、削除済み（videos.list が成功して items が空、found=false → error_code='youtube_closed_deleted'）
 --      まだ claim していない子（parent_job_id がこの job、全貌の Shorts）は held（parent_closed）にする。下書き・item は触らない
 -- 検証: scripts/maintenance/verify-sns-send-runner.js（PGlite、外部接続なし）
 -- 適用の順: コードとどちらが先でもよい（186 の前の DB は youtube_retain の p_result を読まず、youtube_close_private は「不正な操作です」で
@@ -23,7 +24,8 @@
 --   （コードの deploy の後、sns_send の live の実行で）0853d7d9-8a9c-4685-8184-0eb85315c476・0883093d-5623-4468-a7ef-ccff52801a10 が閉じたか:
 --   SELECT id, state, error_code, youtube_stage, external_post_id FROM public.sns_x_send_jobs
 --     WHERE id IN ('0853d7d9-8a9c-4685-8184-0eb85315c476', '0883093d-5623-4468-a7ef-ccff52801a10');
---     期待: どちらも cancelled・youtube_closed_private・private_retained（動画 ID は残る）
+--     期待: どちらも cancelled・private_retained（動画 ID は残る）。error_code は youtube_closed_deleted（2件ともオーナーが 2026-10-27 に
+--     Studio で削除済み）。消していなければ youtube_closed_private
 --
 -- 戻し方: 153_sns_auto_send.sql の transition_sns_x_send の CREATE OR REPLACE（454〜602 行）と、186 の末尾と同じ REVOKE・GRANT をそのまま実行。
 --   閉じた job は cancelled のまま残る（要照合に戻す必要は無い）
@@ -100,13 +102,17 @@ BEGIN
    IF NOT EXISTS (SELECT 1 FROM public.sns_youtube_quota_reads WHERE job_id=j.id AND attempt=j.attempts AND created_at>=now()-interval '10 minutes') THEN
      RAISE EXCEPTION 'youtube_close_lookup_missing';
    END IF;
-   IF p_result->>'owned' IS DISTINCT FROM 'true' OR p_result->>'privacyStatus' IS DISTINCT FROM 'private'
-     OR p_result->>'id' IS DISTINCT FROM j.external_post_id THEN
+   -- 非公開: 自分の動画で privacyStatus=private・ID 一致。削除済み: videos.list が成功して items が空（found=false。2026-10-27、
+   -- 0853d7d9・0883093d の動画はオーナーが Studio で消した）。どちらでもなければ（public・unlisted・他人の動画）閉じない
+   IF NOT ((p_result->>'owned' IS NOT DISTINCT FROM 'true' AND p_result->>'privacyStatus' IS NOT DISTINCT FROM 'private'
+       AND p_result->>'id' IS NOT DISTINCT FROM j.external_post_id)
+     OR p_result->>'found' IS NOT DISTINCT FROM 'false') THEN
      RAISE EXCEPTION 'youtube_close_not_private';
    END IF;
    UPDATE public.sns_x_send_jobs SET state='held',error_code='parent_closed',updated_at=now()
      WHERE parent_job_id=j.id AND state='queued' AND attempts=0;
-   UPDATE public.sns_x_send_jobs SET state='cancelled',error_code='youtube_closed_private',lease_until=NULL,updated_at=now()
+   UPDATE public.sns_x_send_jobs SET state='cancelled',lease_until=NULL,updated_at=now(),
+     error_code=CASE WHEN p_result->>'found' IS NOT DISTINCT FROM 'false' THEN 'youtube_closed_deleted' ELSE 'youtube_closed_private' END
      WHERE id=j.id RETURNING * INTO j;
    RETURN to_jsonb(j);
  END IF;

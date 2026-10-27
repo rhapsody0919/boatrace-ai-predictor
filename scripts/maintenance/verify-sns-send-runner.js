@@ -1443,3 +1443,69 @@ test("BOA-1164 検査の枠: cron は Chromium の上限に runner と同じ値�
   );
   assert.match(cron, /maxInspections:\s*SNS_SEND_HEADLESS_BUDGET/);
 });
+test("BOA-1164 閉じる: YouTube で削除済み（videos.list の items が空）なら youtube_closed_deleted で閉じる。DB も found=false を受ける", async () => {
+  const { y } = await retainedJob();
+  const youtube = lookupAdapter({
+    found: false,
+    owned: false,
+    id: null,
+    privacyStatus: null,
+  });
+  const notices = [];
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: { youtube: async () => youtube },
+      notify: async (t) => notices.push(t),
+    }),
+  );
+  const row = await job(y.id);
+  assert.equal(row.state, "cancelled");
+  assert.equal(row.error_code, "youtube_closed_deleted");
+  assert.equal(row.external_post_id, "abcdefghijk");
+  assert.equal(
+    notices.filter((t) => t.includes("公開しないで閉じた")).length,
+    1,
+  );
+  // found が false 以外（未指定・true）なら、非公開の確認が要る
+  const { y: other } = await retainedJob2();
+  await store.transition(other.id, "youtube_lookup");
+  await assert.rejects(
+    store.transition(other.id, "youtube_close_private", {}),
+    /youtube_close_not_private/,
+  );
+  await assert.rejects(
+    store.transition(other.id, "youtube_close_private", { found: true }),
+    /youtube_close_not_private/,
+  );
+  assert.equal(
+    (
+      await store.transition(other.id, "youtube_close_private", {
+        found: false,
+      })
+    ).error_code,
+    "youtube_closed_deleted",
+  );
+});
+
+// 動画 ID が違う2件目の非公開の残置（external_post_id は一意）
+async function retainedJob2() {
+  const y = await approvedJob("youtube");
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({
+            processingStatus: "processing",
+            videoId: "secondvid01",
+          }),
+      },
+    }),
+  );
+  await db.query(
+    "UPDATE sns_x_send_jobs SET expires_at=now()-interval '1 minute', lease_until=now()-interval '1 minute' WHERE id=$1",
+    [y.id],
+  );
+  return { y };
+}

@@ -246,7 +246,9 @@ export async function closeRetainedYoutubeJob(job, { store, lookup }) {
     throw new Error('閉じる対象ではありません');
   await store.transition(job.id, 'youtube_lookup');
   const result = await lookup(job);
+  // 削除済み（videos.list が成功して items が空）も、公開されていないので閉じてよい（2026-10-27、オーナーが Studio で消した2件）
+  if (result?.found === false) return store.transition(job.id, 'youtube_close_private', { found: false });
   if (result?.owned !== true || result.privacyStatus !== 'private' || result.id !== job.external_post_id)
-    throw new Error(`youtube_close_not_private（${result?.privacyStatus ?? '動画が見つからない'}）`);
+    throw new Error(`youtube_close_not_private（${result?.privacyStatus ?? '不明'}）`);
   return store.transition(job.id, 'youtube_close_private', { owned: true, privacyStatus: 'private', id: result.id });
 }
