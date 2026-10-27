@@ -1371,7 +1371,7 @@
     {
       "script": "verify-sns-full-picture.js",
       "tier": "ci",
-      "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし"
+      "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし。BOA-1172: 型 f01 の完全版のサムネイル（youtube_full.thumbnail）を完全版の下書きの cover_image_path に入れ承認の media を2つにする（X・Shorts には付けない）、版の hash は動画の後にサムネイル（欄の無い束は今までの式）、画像が無い・PNG でも JPEG でもない・空・32 MiB 超・名前に区切りは束ごと拒否"
     },
     {
       "script": "verify-sns-headless.js",
@@ -1421,7 +1421,7 @@
     {
       "script": "verify-sns-send-runner.js",
       "tier": "ci",
-      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし"
+      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし。BOA-1172: サムネイルの失敗でも YouTube は posted まで進め、理由を report.jobs の thumbnail_error と Slack に1回（届かなければ report.alerts）"
     },
     {
       "script": "verify-sns-shorts-send.js",
@@ -1471,7 +1471,7 @@
     {
       "script": "verify-sns-youtube-adapter.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は非公開のまま残す、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
+      "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は記録する先（onThumbnailFailed）が無い呼び出しなら非公開のまま残す、渡せば 403・通信の例外でも公開まで進み理由を渡し、thumbnails.set の前の検査・台帳の拒否は非公開のまま残す（BOA-1172）、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
     },
     {
       "script": "verify-sonar-hint-order.js",
