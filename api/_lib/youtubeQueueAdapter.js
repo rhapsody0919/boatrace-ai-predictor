@@ -196,6 +196,8 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
       Number.isFinite(Date.parse(video.snippet?.publishedAt));
     return {
       confirmed,
+      // 自分が上げた承認の動画か（非公開のまま閉じるときの確認に使う、BOA-1164）
+      owned: isOwnApproved(video, job),
       id: video?.id ?? null,
       privacyStatus: video?.status?.privacyStatus ?? null,
       posted_at: confirmed ? video.snippet.publishedAt : null,

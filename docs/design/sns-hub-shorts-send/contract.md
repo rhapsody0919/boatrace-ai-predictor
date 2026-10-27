@@ -14,7 +14,7 @@ runYoutubePublishJobは別段階。1回の呼出しでyoutube_pollを先に記�
 
 公開結果は{confirmed:true,privacyStatus:'public',id,posted_at}。本人チャンネル・承認版・同一IDを確認した実公開時刻のみで、privateのpublishedAtやupload終了時刻は使わない。completeとdraft.posted_atは139の同一transactionで保存する。videos.update開始記録後の応答喪失・DB失敗はupdate_started/reconcileで照合に残し、非公開とは断定しない。通信開始後の停止・期限超過を取り消す保証はなく、実adapterのtimeout/時刻境界の通常検証が必要。
 
-期限切れ・承認失効・preflight失敗等でupdate開始前に停止したID判明動画はyoutube_retainでprivate_retained/reconcileと理由を保存。一覧は候補IDと「非公開のまま残置」を表示する。削除・要照合解除・再公開の自動経路はない（削除はオーナーが手で行う）。ID不明・保存応答喪失は要照合のまま。DB保存失敗時には一覧の残置表示まで保証できないため、照合運用で確認する。処理読取が別ID・public/unlisted・未確認を返した場合も非公開と断定せず要照合のまま。
+期限切れ・承認失効・preflight失敗等でupdate開始前に停止したID判明動画はyoutube_retainでprivate_retained/reconcileと理由を保存（error_code、186: youtube_retained_budget・processing・check_failed・pt_day・error）。一覧は候補IDと「非公開のまま残置」を表示する。削除・再公開の自動経路はない（削除はオーナーが手で行う）。要照合の自動解除は1つだけ: private_retained で期限とリースを過ぎ、10分以内の読み取り（youtube_lookup）で自分の非公開の動画と確かめた job を、公開しないで閉じる（youtube_close_private、cancelled・youtube_closed_private、186。BOA-1164）。ID不明・保存応答喪失は要照合のまま。DB保存失敗時には一覧の残置表示まで保証できないため、照合運用で確認する。処理読取が別ID・public/unlisted・未確認を返した場合も非公開と断定せず要照合のまま。
 
 ## クォータ
 
