@@ -507,6 +507,10 @@
       "guards": "PRが機械生成の文書（generated-docs.js の一覧）を変更していないこと。含めると並行PRが同じファイルでコンフリクトする（ADR-0078）"
     },
     {
+      "script": "verify-gha-fetch-stop.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P4a ④a: GitHub Actions の取得（scrape-scheduled・morning-init・肩代わりの判定）が、host の行の取得の非常停止 fetch_stop（マイグレーション178）で止まる。Vercel が止まっていて肩代わりの条件を満たしても、SKIP 変数が true でなくても、公式へ取りに行かない。読めないときは止めない側（変数が true のジョブは従来どおり読めなければスキップ）"
+    },    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
@@ -1395,6 +1399,11 @@
       "script": "verify-sns-x-send.js",
       "tier": "ci",
       "guards": "依頼3: X送信の承認版hash・編集時の承認失効・同時claim・$10予算予約・停止・要照合（外部成功後のDB失敗やPOST応答喪失で再送しない）・RLS/権限（135+137をPGlite、モックadapter、外部接続なし）"
+    },
+    {
+      "script": "verify-sns-x-slots.js",
+      "tier": "ci",
+      "guards": "X の日の枠の出し物ごとの取り置き（マイグレーション 182、docs/design/x-daily-slots/plan.md）: 全貌が取り置き4本を claim した後でも優勝戦の3本（本投稿・投票・展示後のリプ）と /today は claim でき、全貌の5本目は held（kind_slot_full）、取り置かれていない残りは先に来た出し物が使い出し物ごとの上限で止まる、合計は daily_limit_x を越えない、親は自分の子の分も数える、他の親の claim 済みの子は二重に数えない、取り込みの確かめは今日の queued も数える、曜日（JST・ISO）の取り置き、item の無い job（通り道 B）は全部の取り置きを空ける、他経路・基準の日、表と関数の権限（service_role は読むだけ）。取り込みの判定（scripts/lib/snsXSlots.js: kind_slot_full だけ止める・404 は止めない）と hq の config/x-slots.json との照合（scripts/sns/x-slots-check.js）。#1978 の数字で見たら（research_image、月水金）の取り置きと 180 の照合が重ねても残ること。SQL180・182 を PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-youtube-adapter.js",
