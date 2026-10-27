@@ -25,11 +25,17 @@ import fs from "fs";
 import path from "path";
 import { supabase } from "../lib/supabaseClient.js";
 import { parseArgs, runRacerProfileSync } from "../lib/racerProfileSync.js";
+import { isGhaFetchStopped } from "../lib/ghaSkipGate.js";
 
 const REPORT_DIR = "data/analysis/racer-fortune-telling";
 const REPORT_PATH = path.join(REPORT_DIR, "profile-scrape-report.json");
 
 async function main() {
+  // 取得の非常停止（fetch_stop、マイグレーション178）が立っていれば、SKIP 変数に関係なく公式へ取りに行かない（ADR-0101 決定6、BOA-1145 P4a ④a）
+  if ((await isGhaFetchStopped()).stopped) {
+    console.log("⏭️ 取得の非常停止中のため、取得を行わない");
+    return;
+  }
   const options = parseArgs(process.argv.slice(2));
   const { summary, verdict } = await runRacerProfileSync({
     client: supabase,

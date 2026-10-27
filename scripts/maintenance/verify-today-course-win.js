@@ -1,5 +1,5 @@
 // /today の X 投稿の型 b（コース別1着率）の材料の再現テスト。
-// - マイグレーション 181（compute_today_course_win_stats）を PGlite に当て、級別の全国の値（各走の級）・選手の値・前付けの回数・窓・権限を確かめる
+// - マイグレーション 183（compute_today_course_win_stats）を PGlite に当て、級別の全国の値（各走の級）・選手の値・前付けの回数・窓・権限を確かめる
 // - src/utils/todayCourseWin.js の buildCourseWinNotes（候補は率で絞らない・載せる条件・縮めた値・z・Bonferroni の線）
 // - generate-morning-digest.js の fetchCourseWin は関数が無い・読めないときに一覧を止めない
 // 外部接続なし
@@ -22,7 +22,7 @@ import { fetchCourseWin } from "../daily/generate-morning-digest.js";
 
 const db = new PGlite();
 const all = async (sql, args = []) => (await db.query(sql, args)).rows;
-/** 181 を呼び、jsonb の1つを行の配列にする（呼び出し側 fetchCourseWin と同じ変換） */
+/** 183 を呼び、jsonb の1つを行の配列にする（呼び出し側 fetchCourseWin と同じ変換） */
 async function call(until, ids) {
   const rows = await all(
     "SELECT compute_today_course_win_stats($1::date, $2::int[]) AS r",
@@ -80,7 +80,7 @@ before(async () => {
   await db.exec(
     await readFile(
       new URL(
-        "../../docs/db-migration/181_today_course_win_stats.sql",
+        "../../docs/db-migration/183_today_course_win_stats.sql",
         import.meta.url,
       ),
       "utf8",
@@ -119,7 +119,7 @@ before(async () => {
   await race("2037-10-04", [[1, 100, "A1", 1]], 1);
 });
 
-test("181: 級別の全国の値は各走の級で数え、窓は p_until までのデータの最初と最後の日", async () => {
+test("183: 級別の全国の値は各走の級で数え、窓は p_until までのデータの最初と最後の日", async () => {
   const rows = await call("2037-10-03", [100, 200, 300]);
   const grade = rows.filter((r) => r.scope === "grade");
   const pick = (g, c) => grade.find((r) => r.grade === g && r.course === c);
@@ -151,7 +151,7 @@ test("181: 級別の全国の値は各走の級で数え、窓は p_until まで
   }
 });
 
-test("181: 選手の行は1・4コースの走数・1着数・枠番と違うコースに入った回数（前付け）", async () => {
+test("183: 選手の行は1・4コースの走数・1着数・枠番と違うコースに入った回数（前付け）", async () => {
   const rows = (await call("2037-10-03", [100, 300]))
     .filter((r) => r.scope === "racer")
     .map(({ racer_id, course, runs, wins, off_frame_runs }) => ({
@@ -181,7 +181,7 @@ test("181: 選手の行は1・4コースの走数・1着数・枠番と違うコ
   });
 });
 
-test("181: 返り値は jsonb の1つ（集合で返すと PostgREST の上限1000行で黙って切れる。system-architect の審査 P0）", async () => {
+test("183: 返り値は jsonb の1つ（集合で返すと PostgREST の上限1000行で黙って切れる。system-architect の審査 P0）", async () => {
   const [row] = await all(
     "SELECT pg_get_function_result('compute_today_course_win_stats(date, integer[])'::regprocedure) AS t",
   );
@@ -190,7 +190,7 @@ test("181: 返り値は jsonb の1つ（集合で返すと PostgREST の上限10
   assert.throws(() => courseWinRowsFromJson(null), /形が違う/);
 });
 
-test("181: 匿名・ログインの役は呼べず、service_role だけが呼べる", async () => {
+test("183: 匿名・ログインの役は呼べず、service_role だけが呼べる", async () => {
   const [row] = await all(`SELECT
     has_function_privilege('anon', 'compute_today_course_win_stats(date, integer[])', 'EXECUTE') AS anon,
     has_function_privilege('authenticated', 'compute_today_course_win_stats(date, integer[])', 'EXECUTE') AS auth,

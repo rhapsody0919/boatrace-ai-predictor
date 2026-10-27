@@ -443,7 +443,7 @@ test("b を出せない日の型 a は config の a（壊れていれば既定�
   assert.equal(typeAOf(null).variant.id, "default");
 });
 
-test("リポジトリの config: b は型 b（course_win）、比べは10組で開始日はまだ入れない（材料の RPC 181 の適用と撮影の確認の後に入れる）", () => {
+test("リポジトリの config: b は型 b（course_win）、比べは10組で開始日はまだ入れない（材料の RPC 183 の適用と撮影の確認の後に入れる）", () => {
   const config = loadTodayVariants();
   const n = normalizeTodayVariants(config);
   assert.deepEqual(
