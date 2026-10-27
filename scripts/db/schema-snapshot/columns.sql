@@ -20,4 +20,4 @@ WHERE n.nspname = 'public'
     SELECT 1 FROM pg_catalog.pg_depend d
     WHERE d.classid = 'pg_catalog.pg_class'::regclass AND d.objid = c.oid AND d.deptype = 'e'
   )
-ORDER BY c.relname, a.attnum
+ORDER BY c.relname COLLATE "C", a.attnum

@@ -1,5 +1,5 @@
 -- 本番スキーマの写し（scripts/db/schema-snapshot.js）: public の関数。定義は pg_get_functiondef（SET search_path 等の設定を含む）。
--- 集約（prokind='a'）は pg_get_functiondef が受け付けないので定義を NULL にする。並びは名前、引数の型
+-- 集約（prokind='a'）は pg_get_functiondef が受け付けないので定義を NULL にする。並びは名前、引数の型（C の照合）
 SELECT p.proname AS name,
        pg_get_function_identity_arguments(p.oid) AS identity_args,
        pg_get_function_result(p.oid) AS result,
@@ -19,4 +19,4 @@ WHERE n.nspname = 'public'
     SELECT 1 FROM pg_catalog.pg_depend d
     WHERE d.classid = 'pg_catalog.pg_proc'::regclass AND d.objid = p.oid AND d.deptype = 'e'
   )
-ORDER BY p.proname, pg_get_function_identity_arguments(p.oid)
+ORDER BY p.proname COLLATE "C", pg_get_function_identity_arguments(p.oid) COLLATE "C"

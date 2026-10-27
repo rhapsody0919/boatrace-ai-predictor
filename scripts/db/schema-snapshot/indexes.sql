@@ -1,4 +1,4 @@
--- 本番スキーマの写し（scripts/db/schema-snapshot.js）: public の表の索引。並びは表の名前、索引の名前
+-- 本番スキーマの写し（scripts/db/schema-snapshot.js）: public の表の索引。並びは表の名前、索引の名前（C の照合）
 SELECT t.relname AS table_name,
        i.relname AS name,
        pg_get_indexdef(ix.indexrelid) AS definition,
@@ -9,4 +9,8 @@ JOIN pg_catalog.pg_class i ON i.oid = ix.indexrelid
 JOIN pg_catalog.pg_class t ON t.oid = ix.indrelid
 JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace
 WHERE n.nspname = 'public'
-ORDER BY t.relname, i.relname
+  AND NOT EXISTS (
+    SELECT 1 FROM pg_catalog.pg_depend d
+    WHERE d.classid = 'pg_catalog.pg_class'::regclass AND d.objid = t.oid AND d.deptype = 'e'
+  )
+ORDER BY t.relname COLLATE "C", i.relname COLLATE "C"

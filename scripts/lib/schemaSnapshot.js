@@ -5,18 +5,19 @@
  *
  * 守ること:
  *   * 1つでも truncated（--limit で打ち切り）なら失敗にする。写しが黙って欠けない
- *   * 列・制約・索引・ポリシー・権限が、取った表・ビュー・関数のどれにも当たらなければ失敗にする（問い合わせの食い違い）
+ *   * 列・制約・索引・ポリシー・トリガー・権限が、取った表・ビュー・関数のどれにも当たらなければ失敗にする（問い合わせの食い違い）
  *   * 知らない種類の記号（relkind・contype 等）が来たら失敗にする（Postgres の版の変化に気づく）
- *   * 鍵らしい文字列（JWT・sb_secret_）が入っていたら失敗にする（関数の本文に鍵を書いた等）
- *   * 並びは名前（関数は名前と引数の型）の順。同じスキーマなら capturedAt 以外は同じ出力になる
+ *   * 鍵らしい文字列（JWT・Slack の Webhook・URL に埋めた資格情報 等）と、search_path 等以外の関数の設定（proconfig）が
+ *     入っていたら失敗にする。リポジトリは公開なので、写しは公開に載る
+ *   * 並びはここで名前（C の照合と同じ code unit の順）に並べ直す。同じスキーマなら capturedAt 以外は同じ出力になる
  *   * 行数の目安（reltuples）は入れない（毎回変わり、記録の差分が読めなくなる）
  *
- * 鮮度は appliedThrough（docs/db-migration/APPLIED.md で「適用済み」の最大の番号）と
- * pendingAtCapture（それ以下で適用済みでなかった番号。欠番・台帳に行が無い番号を含む）で持つ。比べるのは snapshotFreshness。
+ * 鮮度は台帳（docs/db-migration/APPLIED.md）のファイルの名前で持つ。appliedFilesAtCapture は取得の時に「適用済み」だった
+ * ファイル。今の台帳で適用済みなのにそこに無いファイルがあれば古い（snapshotFreshness）。appliedThrough は表示用の最大の番号。
  */
-import { ledgerState } from "./dbReconcile.js";
+import { LEDGER_STATES } from "./dbReconcile.js";
 
-export const SNAPSHOT_FORMAT = 1;
+export const SNAPSHOT_FORMAT = 2;
 
 /** 写しの置き場所（リポジトリの根からの相対） */
 export const SNAPSHOT_FILE = "docs/reference/schema-snapshot.json";
@@ -31,6 +32,7 @@ export const SNAPSHOT_QUERIES = [
   "policies",
   "constraints",
   "indexes",
+  "triggers",
   "grants",
 ];
 
@@ -48,7 +50,6 @@ const CONTYPES = {
   c: "check",
   x: "exclusion",
   t: "constraint_trigger",
-  n: "not_null",
 };
 const POLCMDS = {
   r: "SELECT",
@@ -61,6 +62,13 @@ const PROKINDS = { f: "function", p: "procedure", a: "aggregate", w: "window" };
 const VOLATILITIES = { i: "immutable", s: "stable", v: "volatile" };
 const IDENTITIES = { "": null, a: "always", d: "by_default" };
 const GENERATED = { "": null, s: "stored", v: "virtual" };
+const TRIGGER_ENABLED = {
+  O: "origin",
+  D: "disabled",
+  R: "replica",
+  A: "always",
+};
+const DEFAULT_ACL_SCOPES = ["global", "public"];
 const DEFAULT_ACL_OBJECTS = {
   r: "table",
   S: "sequence",
@@ -69,9 +77,25 @@ const DEFAULT_ACL_OBJECTS = {
   n: "schema",
 };
 
+/** 関数の設定（proconfig）で写しに入れてよい名前。ほかの名前（app.* 等）は値が秘密になりうるので失敗にする */
+const ALLOWED_FUNCTION_SETTINGS = [
+  "search_path",
+  "statement_timeout",
+  "lock_timeout",
+];
+
 const SECRET_PATTERNS = [
-  /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, // JWT（Supabase の anon・service_role の鍵の形）
-  /sb_secret_[A-Za-z0-9_-]{8,}/, // Supabase の新しい秘密鍵の形
+  ["JWT", /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
+  ["Supabase の秘密鍵", /sb_secret_[A-Za-z0-9_-]{8,}/],
+  ["Slack の Webhook", /hooks\.slack\.com\/(services|workflows|triggers)\//],
+  ["URL に埋めた資格情報", /[a-z][a-z0-9+.-]*:\/\/[^\s/:@'"]+:[^\s/@'"]+@/i],
+  [
+    "GitHub のトークン",
+    /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}/,
+  ],
+  ["Slack のトークン", /\bxox[abprs]-[A-Za-z0-9-]{10,}/],
+  ["API の鍵（sk-）", /\bsk-[A-Za-z0-9_-]{20,}/],
+  ["AWS のアクセスキー", /\bAKIA[0-9A-Z]{16}\b/],
 ];
 
 function decode(map, code, what) {
@@ -88,8 +112,21 @@ function toLines(text) {
   return text === null || text === undefined ? null : String(text).split("\n");
 }
 
-const relationKey = (name) => `relation:${name}`;
-const functionKey = (name, args) => `function:${name}(${args})`;
+/** C の照合（バイトの順）と同じ並び。識別子は ASCII なので code unit の比較で一致する */
+const cmp = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const byKeys =
+  (...keys) =>
+  (a, b) => {
+    for (const k of keys) {
+      const d = cmp(String(a[k] ?? ""), String(b[k] ?? ""));
+      if (d !== 0) return d;
+    }
+    return 0;
+  };
+const byName = byKeys("name");
+const byGrantee = byKeys("grantee");
+
+const functionKey = (name, args) => `${name}(${args})`;
 
 function grantEntry(row) {
   return {
@@ -100,8 +137,7 @@ function grantEntry(row) {
 }
 
 /**
- * @param {Record<string, { fields?: string[], rows: Record<string, unknown>[], truncated: boolean }>} raw
- *   問い合わせの名前ごとの ro-query.js --json の出力
+ * @param {Record<string, { rows: Record<string, unknown>[], truncated: boolean, limit?: number }>} raw
  */
 function rowsOf(raw) {
   const out = {};
@@ -121,61 +157,79 @@ function rowsOf(raw) {
 }
 
 /**
- * 台帳（APPLIED.md）の番号つきの行の番号と適用状況（「（番号なし）」の行は数えない）
+ * 台帳（APPLIED.md）の表の行のファイルと適用状況。ファイルの名前を単位にする
+ * （同じ番号で状況の違う行（039・048 等）・013b のような番号がある）。
  * @param {string} ledger
- * @returns {{ number: number, state: string | null }[]}
+ * @returns {{ file: string, number: number | null, state: string | null }[]}
  */
-function ledgerRows(ledger) {
-  const text = String(ledger ?? "");
+export function ledgerFiles(ledger) {
   const rows = [];
-  for (const line of text.split("\n")) {
+  for (const line of String(ledger ?? "").split("\n")) {
     if (!line.startsWith("|")) continue;
     const cells = line.split("|").map((c) => c.trim());
-    if (!/^\d+$/.test(cells[1] ?? "")) continue;
-    rows.push({ number: Number(cells[1]), state: ledgerState(text, cells[2]) });
+    const file = cells[2] ?? "";
+    if (!file.endsWith(".sql")) continue;
+    const status = cells[3] ?? "";
+    const num = /^(\d+)/.exec(file)?.[1];
+    rows.push({
+      file,
+      number: num === undefined ? null : Number(num),
+      state: LEDGER_STATES.find((s) => status.startsWith(s)) ?? null,
+    });
   }
   return rows;
 }
 
-const appliedNumbers = (rows) =>
-  new Set(rows.filter((r) => r.state === "適用済み").map((r) => r.number));
-
 /**
- * 台帳から、適用済みの最大の番号と、それ以下で適用済みでない番号（未適用・不明・廃止・欠番・台帳に行が無い）を返す。
- * 行の無い番号も入れるのは、後から台帳に「適用済み」で足された番号（db-apply が行を足す等）を見落とさないため。
+ * 台帳で「適用済み」のファイル（名前の順）と、その最大の番号
  * @param {string} ledger
- * @returns {{ appliedThrough: number | null, pendingAtCapture: number[] }}
  */
 export function appliedLedgerState(ledger) {
-  const applied = appliedNumbers(ledgerRows(ledger));
-  if (applied.size === 0) return { appliedThrough: null, pendingAtCapture: [] };
-  const appliedThrough = Math.max(...applied);
-  const pendingAtCapture = [];
-  for (let n = 1; n <= appliedThrough; n++) {
-    if (!applied.has(n)) pendingAtCapture.push(n);
-  }
-  return { appliedThrough, pendingAtCapture };
+  const applied = ledgerFiles(ledger).filter((r) => r.state === "適用済み");
+  const numbers = applied.map((r) => r.number).filter((n) => n !== null);
+  return {
+    appliedThrough: numbers.length > 0 ? Math.max(...numbers) : null,
+    appliedFiles: [...new Set(applied.map((r) => r.file))].sort(cmp),
+  };
 }
 
 /**
- * 写しが台帳より古いか。写しの後に「適用済み」になった番号（appliedThrough より大きいもの、
- * または取得の時に未適用・不明だったもの）があれば古い。
- * @param {{ appliedThrough: number | null, pendingAtCapture?: number[] }} snapshot
+ * 写しが台帳より古いか。今の台帳で「適用済み」なのに、取得の時に適用済みでなかったファイルがあれば古い。
+ * 状況の後戻り（適用済み→不明）と台帳に載らない変更（SQL Editor で直に当てた等）は判定に出ない（ADR-0102）。
+ * @param {{ appliedThrough: number | null, appliedFilesAtCapture?: string[] }} snapshot
  * @param {string} ledger
  */
 export function snapshotFreshness(snapshot, ledger) {
-  const applied = appliedNumbers(ledgerRows(ledger));
-  const pending = new Set(snapshot.pendingAtCapture ?? []);
-  const through = snapshot.appliedThrough ?? -1;
-  const appliedSince = [...applied]
-    .filter((n) => n > through || pending.has(n))
-    .sort((a, b) => a - b);
+  const now = appliedLedgerState(ledger);
+  const atCapture = new Set(snapshot.appliedFilesAtCapture ?? []);
+  const appliedSince = now.appliedFiles.filter((f) => !atCapture.has(f));
   return {
     stale: appliedSince.length > 0,
     snapshotAppliedThrough: snapshot.appliedThrough,
-    ledgerAppliedThrough: applied.size > 0 ? Math.max(...applied) : null,
+    ledgerAppliedThrough: now.appliedThrough,
     appliedSince,
   };
+}
+
+function assertNoSecrets(snapshot) {
+  for (const fn of snapshot.functions) {
+    for (const setting of fn.config ?? []) {
+      const name = String(setting).split("=")[0];
+      if (!ALLOWED_FUNCTION_SETTINGS.includes(name)) {
+        throw new Error(
+          `schema-snapshot: 関数 ${fn.name}(${fn.identityArgs}) の設定 ${name} は写しに入れない（値が秘密になりうる。入れてよいのは ${ALLOWED_FUNCTION_SETTINGS.join("・")}）`,
+        );
+      }
+    }
+  }
+  const text = JSON.stringify(snapshot);
+  for (const [label, re] of SECRET_PATTERNS) {
+    if (re.test(text)) {
+      throw new Error(
+        `schema-snapshot: 鍵らしい文字列（${label}）が写しに入っている。書かない。どの関数・コメント・既定値かを確かめる`,
+      );
+    }
+  }
 }
 
 /**
@@ -187,7 +241,7 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
     throw new Error("schema-snapshot: capturedAt が無い");
   }
   const rows = rowsOf(raw);
-  const { appliedThrough, pendingAtCapture } = appliedLedgerState(ledger);
+  const { appliedThrough, appliedFiles } = appliedLedgerState(ledger);
   if (appliedThrough === null) {
     throw new Error(
       "schema-snapshot: 台帳（APPLIED.md）に適用済みの番号が無い",
@@ -209,6 +263,7 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
       constraints: [],
       indexes: [],
       policies: [],
+      triggers: [],
       grants: [],
     });
   }
@@ -239,14 +294,15 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
     columns.set(`${c.table_name}.${c.name}`, col);
   }
   for (const c of rows.constraints) {
+    const isFk =
+      c.references_table !== null && c.references_table !== undefined;
     relationOf(c.table_name, "制約").constraints.push({
       name: c.name,
       type: decode(CONTYPES, c.contype, "contype"),
+      columns: c.columns ?? [],
       definition: c.definition,
-      references:
-        c.references_table === null || c.references_table === undefined
-          ? null
-          : `${c.references_schema}.${c.references_table}`,
+      references: isFk ? `${c.references_schema}.${c.references_table}` : null,
+      referencesColumns: isFk ? (c.references_columns ?? []) : null,
     });
   }
   for (const i of rows.indexes) {
@@ -262,9 +318,17 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
       name: p.name,
       command: decode(POLCMDS, p.cmd, "polcmd"),
       permissive: p.permissive,
-      roles: p.roles,
+      roles: [...(p.roles ?? [])].sort(cmp),
       using: p.using_expr ?? null,
       withCheck: p.check_expr ?? null,
+    });
+  }
+  for (const t of rows.triggers) {
+    relationOf(t.table_name, "トリガー").triggers.push({
+      name: t.name,
+      enabled: decode(TRIGGER_ENABLED, t.enabled, "tgenabled"),
+      function: `${t.function_schema}.${functionKey(t.function_name, t.function_args)}`,
+      definition: t.definition,
     });
   }
 
@@ -289,16 +353,17 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
   const sequences = new Map();
   const defaultPrivileges = [];
   for (const g of rows.grants) {
-    if (g.object_type === "relation") {
+    const type = String(g.object_type);
+    if (type === "relation") {
       relationOf(g.name, "権限").grants.push(grantEntry(g));
-    } else if (g.object_type === "column") {
+    } else if (type === "column") {
       const col = columns.get(g.name);
       if (!col)
         throw new Error(
           `schema-snapshot: 列の権限の ${g.name} が列の一覧に無い`,
         );
       col.grants.push(grantEntry(g));
-    } else if (g.object_type === "function") {
+    } else if (type === "function") {
       const fn = functions.get(functionKey(g.name, g.identity_args));
       if (!fn) {
         throw new Error(
@@ -306,17 +371,20 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
         );
       }
       fn.grants.push(grantEntry(g));
-    } else if (g.object_type === "sequence") {
+    } else if (type === "sequence") {
       if (!sequences.has(g.name))
         sequences.set(g.name, { name: g.name, grants: [] });
       sequences.get(g.name).grants.push(grantEntry(g));
-    } else if (String(g.object_type).startsWith("default:")) {
+    } else if (type.startsWith("default:")) {
+      const [, scope, objType] = type.split(":");
+      if (!DEFAULT_ACL_SCOPES.includes(scope)) {
+        throw new Error(
+          `schema-snapshot: 知らない既定の権限の範囲 ${JSON.stringify(scope)}`,
+        );
+      }
       defaultPrivileges.push({
-        objectType: decode(
-          DEFAULT_ACL_OBJECTS,
-          g.object_type.slice("default:".length),
-          "defaclobjtype",
-        ),
+        scope,
+        objectType: decode(DEFAULT_ACL_OBJECTS, objType, "defaclobjtype"),
         role: g.name,
         ...grantEntry(g),
       });
@@ -327,53 +395,80 @@ export function buildSnapshot(raw, { capturedAt, ledger }) {
     }
   }
 
-  const relationList = [...relations.values()];
-  const functionList = [...functions.values()];
+  const relationList = [...relations.values()].sort(byName);
+  for (const r of relationList) {
+    r.columns.sort((a, b) => a.position - b.position);
+    for (const c of r.columns) c.grants.sort(byGrantee);
+    r.constraints.sort(byName);
+    r.indexes.sort(byName);
+    r.policies.sort(byName);
+    r.triggers.sort(byName);
+    r.grants.sort(byGrantee);
+  }
+  const functionList = [...functions.values()].sort(
+    byKeys("name", "identityArgs"),
+  );
+  for (const f of functionList) f.grants.sort(byGrantee);
+  const sequenceList = [...sequences.values()].sort(byName);
+  for (const s of sequenceList) s.grants.sort(byGrantee);
+  defaultPrivileges.sort(byKeys("scope", "objectType", "role", "grantee"));
+
+  const count = (k) => relationList.reduce((a, r) => a + r[k].length, 0);
+  const isView = (r) => r.kind === "view" || r.kind === "materialized_view";
   const snapshot = {
     $comment: [
-      "本番 DB（public）のスキーマの写し。記録であり生成物ではない（ADR-0102。ADR-0078 の生成物の一覧に入れない）。",
-      "作り直し: node --env-file=.env.local scripts/db/schema-snapshot.js（claude_ro で読むだけ。scripts/db/ro-query.js を問い合わせごとに呼ぶ）。",
-      "鮮度: appliedThrough は取得の時の docs/db-migration/APPLIED.md の適用済みの最大の番号、pendingAtCapture はそれ以下で適用済みでなかった番号（未適用・不明・欠番・台帳に行が無い）。",
-      "後で適用済みになった番号があれば古い（session-start-check の schemaSnapshot）。手で書き換えない。",
-      'definition・viewDefinition は行の配列（join("\\n") で戻す）。行数の目安（reltuples）は入れない。',
+      "本番 DB（public）のスキーマの写し。記録であり生成物ではない（ADR-0102。ADR-0078 の生成物の一覧に入れない）。リポジトリは公開なので、写しも公開に載る。",
+      "作り直し: git fetch して master の台帳に合わせてから node --env-file=.env.local scripts/db/schema-snapshot.js（claude_ro で読むだけ。scripts/db/ro-query.js を問い合わせごとに呼ぶ）。",
+      "鮮度: appliedFilesAtCapture は取得の時に docs/db-migration/APPLIED.md で適用済みだったファイル。今の台帳で適用済みなのにそこに無いファイルがあれば古い（session-start-check の schemaSnapshot）。",
+      '手で書き換えない。definition・viewDefinition は行の配列（join("\\n") で戻す）。行数の目安（reltuples）は入れない。',
     ],
     format: SNAPSHOT_FORMAT,
     capturedAt,
     appliedThrough,
-    pendingAtCapture,
+    appliedFilesAtCapture: appliedFiles,
     serverVersionNum: rows.meta[0]?.server_version_num ?? null,
     counts: {
       relations: relationList.length,
-      tables: relationList.filter(
-        (r) => r.kind !== "view" && r.kind !== "materialized_view",
-      ).length,
-      views: relationList.filter(
-        (r) => r.kind === "view" || r.kind === "materialized_view",
-      ).length,
-      columns: rows.columns.length,
+      tables: relationList.filter((r) => !isView(r)).length,
+      views: relationList.filter(isView).length,
+      columns: count("columns"),
       functions: functionList.length,
-      policies: rows.policies.length,
-      constraints: rows.constraints.length,
-      indexes: rows.indexes.length,
+      policies: count("policies"),
+      constraints: count("constraints"),
+      indexes: count("indexes"),
+      triggers: count("triggers"),
     },
     relations: relationList,
     functions: functionList,
-    sequences: [...sequences.values()],
+    sequences: sequenceList,
     defaultPrivileges,
   };
-
-  const text = JSON.stringify(snapshot);
-  for (const re of SECRET_PATTERNS) {
-    if (re.test(text)) {
-      throw new Error(
-        `schema-snapshot: 鍵らしい文字列（${re.source.slice(0, 12)}…）が写しに入っている。書かない。どの関数・コメントかを確かめる`,
-      );
-    }
-  }
+  assertNoSecrets(snapshot);
   return snapshot;
 }
 
 /** ファイルに書く形（2字下げ＋末尾の改行） */
 export function serializeSnapshot(snapshot) {
   return `${JSON.stringify(snapshot, null, 2)}\n`;
+}
+
+/**
+ * 写しが base（master）の写しより前の取得に戻っていないか。並行して取り直した古い PR が後で入ると、master の写しが巻き戻る。
+ * @param {{ capturedAt: string, appliedFilesAtCapture?: string[] }} head
+ * @param {{ capturedAt: string, appliedFilesAtCapture?: string[] } | null} base
+ * @returns {string | null} 戻っていれば理由
+ */
+export function snapshotRegression(head, base) {
+  if (!base) return null;
+  if (Date.parse(head.capturedAt) < Date.parse(base.capturedAt)) {
+    return `capturedAt が base（${base.capturedAt}）より前（${head.capturedAt}）`;
+  }
+  const headFiles = new Set(head.appliedFilesAtCapture ?? []);
+  const lost = (base.appliedFilesAtCapture ?? []).filter(
+    (f) => !headFiles.has(f),
+  );
+  if (lost.length > 0) {
+    return `base の写しで適用済みだったファイルが無い（${lost.slice(0, 5).join(", ")}${lost.length > 5 ? " …" : ""}）`;
+  }
+  return null;
 }

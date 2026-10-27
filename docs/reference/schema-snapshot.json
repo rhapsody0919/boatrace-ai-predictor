@@ -1,67 +1,158 @@
 {
   "$comment": [
-    "本番 DB（public）のスキーマの写し。記録であり生成物ではない（ADR-0102。ADR-0078 の生成物の一覧に入れない）。",
-    "作り直し: node --env-file=.env.local scripts/db/schema-snapshot.js（claude_ro で読むだけ。scripts/db/ro-query.js を問い合わせごとに呼ぶ）。",
-    "鮮度: appliedThrough は取得の時の docs/db-migration/APPLIED.md の適用済みの最大の番号、pendingAtCapture はそれ以下で未適用・不明だった番号。",
-    "後で適用済みになった番号があれば古い（session-start-check の schemaSnapshot）。手で書き換えない。",
-    "definition・viewDefinition は行の配列（join(\"\\n\") で戻す）。行数の目安（reltuples）は入れない。"
+    "本番 DB（public）のスキーマの写し。記録であり生成物ではない（ADR-0102。ADR-0078 の生成物の一覧に入れない）。リポジトリは公開なので、写しも公開に載る。",
+    "作り直し: git fetch して master の台帳に合わせてから node --env-file=.env.local scripts/db/schema-snapshot.js（claude_ro で読むだけ。scripts/db/ro-query.js を問い合わせごとに呼ぶ）。",
+    "鮮度: appliedFilesAtCapture は取得の時に docs/db-migration/APPLIED.md で適用済みだったファイル。今の台帳で適用済みなのにそこに無いファイルがあれば古い（session-start-check の schemaSnapshot）。",
+    "手で書き換えない。definition・viewDefinition は行の配列（join(\"\\n\") で戻す）。行数の目安（reltuples）は入れない。"
   ],
-  "format": 1,
-  "capturedAt": "2026-10-27T01:14:42.473Z",
+  "format": 2,
+  "capturedAt": "2026-10-27T01:31:07.378Z",
   "appliedThrough": 182,
-  "pendingAtCapture": [
-    2,
-    3,
-    4,
-    5,
-    6,
-    7,
-    10,
-    12,
-    16,
-    24,
-    40,
-    41,
-    46,
-    49,
-    53,
-    72,
-    73,
-    87,
-    88,
-    94,
-    95,
-    96,
-    98,
-    99,
-    101,
-    112,
-    114,
-    115,
-    120,
-    121,
-    122,
-    123,
-    124,
-    125,
-    127,
-    128,
-    129,
-    130,
-    141,
-    142,
-    144,
-    149,
-    150,
-    151,
-    156,
-    159,
-    162,
-    164,
-    165,
-    167,
-    173,
-    181
+  "appliedFilesAtCapture": [
+    "001_schema.sql",
+    "008_ADD_EXHIBITION_TO_RPC.sql",
+    "008_accuracy_rpc.sql",
+    "008_venue_rules.sql",
+    "009_RACE_HISTORY_RPC.sql",
+    "009_add_first_boat_avg_st.sql",
+    "011_prediction_odds.sql",
+    "013_accuracy_cache_table.sql",
+    "014_add_race_grade_to_races.sql",
+    "015_add_race_grade_to_get_today_races.sql",
+    "017_drop_race_grade_from_race_conditions.sql",
+    "018_add_race_grade_to_predictions_rpc.sql",
+    "019_restore_prediction_odds_to_rpc.sql",
+    "020_outcome_distribution.sql",
+    "020_race_history_cache.sql",
+    "021_external_predictions.sql",
+    "021_poirot_predictions.sql",
+    "022_moriarty_setup.sql",
+    "022_race_odds_trifecta_all.sql",
+    "023_winning_technique_stats.sql",
+    "025_top_start_stats.sql",
+    "026_losing_technique_stats.sql",
+    "027_nige_outcome_distribution.sql",
+    "028_exhibition_time_top_stats.sql",
+    "029_race_analysis_rpc.sql",
+    "029_watson_predictions.sql",
+    "030_ai_model_redesign_schema.sql",
+    "030_mycroft_predictions.sql",
+    "031_add_unified_fields_to_predictions_rpc.sql",
+    "032_add_place_odds_to_race_odds.sql",
+    "033_add_is_hit_turn_to_predictions.sql",
+    "034_get_today_races_unified_volatility.sql",
+    "035_create_racer_profiles.sql",
+    "035_sns_marketing_hub_schema.sql",
+    "036_create_racer_news.sql",
+    "037_add_racer_id_to_predictions_rpc.sql",
+    "038_add_series_day_to_race_rpcs.sql",
+    "039_sns_strategy_insights.sql",
+    "042_content_drafts_columns.sql",
+    "043_sns_topic_gate_schema.sql",
+    "044_sns_topic_categories.sql",
+    "045_sns_topics_rejection_reason.sql",
+    "047_race_cancellation_status.sql",
+    "048_drop_venues_avg_volatility_score.sql",
+    "050_race_entries_racer_id_index.sql",
+    "050_race_results_full_order_and_payouts.sql",
+    "051_get_predictions_by_date_full_order.sql",
+    "052_get_today_races_add_turn_prediction.sql",
+    "054_racer_grade_cache_table.sql",
+    "054_sns_campaigns_schema.sql",
+    "055_get_latest_racer_grades_rpc.sql",
+    "056_exhibition_data_tilt_parts.sql",
+    "057_venue_motor_stats.sql",
+    "058_race_conditions_race_stage.sql",
+    "059_exhibition_data_weight_prev_result.sql",
+    "059_venue_grade_boat_stats.sql",
+    "060_race_special_notes.sql",
+    "061_racer_profiles_season_stats.sql",
+    "062_add_race_stage_to_race_rpcs.sql",
+    "063_race_results_actual_course_kfile.sql",
+    "064_racer_series_points.sql",
+    "064_venue_entry_course_stats.sql",
+    "065_race_odds_all_combinations.sql",
+    "066_add_weather_to_predictions_rpc.sql",
+    "067_venues_course_entry_baseline.sql",
+    "068_restore_cancellation_status_in_rpcs.sql",
+    "069_race_conditions_weather_observed_at.sql",
+    "070_add_weather_observed_at_to_rpcs.sql",
+    "071_add_scraped_timestamps.sql",
+    "074_kb_archive_tables.sql",
+    "075_scrape_slots_and_job_state.sql",
+    "076_enable_rls_on_public_tables.sql",
+    "077_race_start_timings_boat_result.sql",
+    "078_race_results_status_refund.sql",
+    "079_race_payouts.sql",
+    "080_racer_news_pending.sql",
+    "081_race_entries_racelist_fields.sql",
+    "082_exhibition_data_beforeinfo_fields.sql",
+    "083_racer_period_stats.sql",
+    "084_race_series.sql",
+    "085_race_pit_reports.sql",
+    "086_race_pit_reports_public_read.sql",
+    "089_data_health_functions.sql",
+    "090_motor_pretest_stats.sql",
+    "091_boatcast_original_exhibition.sql",
+    "092_claim_scrape_slots_by_offset.sql",
+    "093_race_special_notes_unique_by_racer.sql",
+    "097_limit_trg_update_predictions_columns.sql",
+    "100_data_health_entries_duplicates.sql",
+    "102_add_cancellation_status_to_today_races_rpc.sql",
+    "103_restore_today_races_race_conditions_fields.sql",
+    "104_venue_motor_start_dates_public_read.sql",
+    "105_data_health_coverage_exhibition_row.sql",
+    "106_race_entries_weight_kg_comment.sql",
+    "107_data_health_cancellation_with_result.sql",
+    "108_race_odds_final.sql",
+    "109_predictions_rpc_race_status_payouts.sql",
+    "110_get_today_races_result_rank1.sql",
+    "111_admin_rule_performance_rpc.sql",
+    "113_revoke_anon_function_and_sequence_grants.sql",
+    "116_race_start_timings_official_finish_code.sql",
+    "117_prediction_hits_exclude_no_race_refund.sql",
+    "118_analogy_contribution_tables.sql",
+    "119_race_start_timings_official_row.sql",
+    "126_get_racer_accident_records.sql",
+    "131_morning_digest_rows_motor_race_count.sql",
+    "132_analogy_contribution_profiles_stage.sql",
+    "133_analogy_v16_snapshots.sql",
+    "134_venue_technique_period_stats.sql",
+    "135_sns_preview_bundle_import.sql",
+    "136_sns_metric_observations.sql",
+    "137_sns_x_send.sql",
+    "138_sns_external_operations.sql",
+    "139_sns_deadline_queue.sql",
+    "140_sns_mobile_approval.sql",
+    "143_analogy_feedback.sql",
+    "145_sns_edit_assist.sql",
+    "146_sns_shorts_send.sql",
+    "147_sns_draft_diff.sql",
+    "148_sns_posted_approval_guard.sql",
+    "152_fix_venues_water_type.sql",
+    "153_sns_auto_send.sql",
+    "154_sns_tokens_metric_jobs.sql",
+    "155_in_caution_gap_band_daily.sql",
+    "157_rpc_in_caution.sql",
+    "158_sns_lanes_digest_period.sql",
+    "160_sns_x_multiple_images.sql",
+    "161_sns_full_picture_items.sql",
+    "163_drop_sns_mobile_approval.sql",
+    "166_claude_ro_readonly_role.sql",
+    "168_drop_sns_edit_assist.sql",
+    "169_sns_full_picture_metric_windows.sql",
+    "170_data_health_freshness.sql",
+    "171_sns_today_heading_variants.sql",
+    "172_sns_full_picture_shorts.sql",
+    "174_sns_today_type_schedule.sql",
+    "175_sns_metric_observations_pt3d.sql",
+    "176_sns_finals_image_items.sql",
+    "177_sns_finals_replies.sql",
+    "178_scrape_job_state_fetch_stop.sql",
+    "179_sns_research_image_items.sql",
+    "180_sns_research_image_send.sql",
+    "182_sns_x_kind_reserves.sql",
+    "add-defense-distribution.sql"
   ],
   "serverVersionNum": "170006",
   "counts": {
@@ -69,10 +160,11 @@
     "tables": 101,
     "views": 4,
     "columns": 1487,
-    "functions": 64,
+    "functions": 65,
     "policies": 56,
     "constraints": 397,
-    "indexes": 214
+    "indexes": 214,
+    "triggers": 10
   },
   "relations": [
     {
@@ -123,8 +215,12 @@
         {
           "name": "accuracy_cache_pkey",
           "type": "primary_key",
+          "columns": [
+            "key"
+          ],
           "definition": "PRIMARY KEY (key)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -147,6 +243,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -379,50 +476,90 @@
         {
           "name": "analogy_contribution_profiles_boat_number_check",
           "type": "check",
+          "columns": [
+            "boat_number"
+          ],
           "definition": "CHECK (boat_number >= 0 AND boat_number <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_contribution_profiles_finish_target_check",
           "type": "check",
+          "columns": [
+            "finish_target"
+          ],
           "definition": "CHECK (finish_target = ANY (ARRAY[1, 2, 3]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_contribution_profiles_grade_check",
           "type": "check",
+          "columns": [
+            "grade"
+          ],
           "definition": "CHECK (grade = ANY (ARRAY['all'::text, 'ippan'::text, 'G3'::text, 'G2'::text, 'G1'::text, 'SG'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_contribution_profiles_model_version_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_version"
+          ],
           "definition": "FOREIGN KEY (model_version) REFERENCES analogy_models(model_version) ON DELETE CASCADE",
-          "references": "public.analogy_models"
+          "references": "public.analogy_models",
+          "referencesColumns": [
+            "model_version"
+          ]
         },
         {
           "name": "analogy_contribution_profiles_pkey",
           "type": "primary_key",
+          "columns": [
+            "model_version",
+            "stage",
+            "finish_target",
+            "venue_code",
+            "grade",
+            "round",
+            "boat_number"
+          ],
           "definition": "PRIMARY KEY (model_version, stage, finish_target, venue_code, grade, round, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_contribution_profiles_round_check",
           "type": "check",
+          "columns": [
+            "round"
+          ],
           "definition": "CHECK (round = ANY (ARRAY['all'::text, 'yosen'::text, 'junyu'::text, 'yusho'::text, 'other'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_contribution_profiles_stage_check",
           "type": "check",
+          "columns": [
+            "stage"
+          ],
           "definition": "CHECK (stage = ANY (ARRAY['exhibition'::text, 'racecard'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_contribution_profiles_venue_code_check",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 0 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -446,6 +583,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -634,68 +772,119 @@
         {
           "name": "analogy_feedback_analogy_stage_check",
           "type": "check",
+          "columns": [
+            "analogy_stage"
+          ],
           "definition": "CHECK (analogy_stage = ANY (ARRAY['racecard'::text, 'exhibition'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_analogy_tab_check",
           "type": "check",
+          "columns": [
+            "analogy_tab"
+          ],
           "definition": "CHECK (analogy_tab = ANY (ARRAY['facts'::text, 'similar'::text, 'scenario'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_comment_check",
           "type": "check",
+          "columns": [
+            "comment"
+          ],
           "definition": "CHECK (comment IS NULL OR char_length(comment) >= 1 AND char_length(comment) <= 200)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_kind_check",
           "type": "check",
+          "columns": [
+            "kind"
+          ],
           "definition": "CHECK (kind = ANY (ARRAY['vote'::text, 'detail'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_lang_check",
           "type": "check",
+          "columns": [
+            "lang"
+          ],
           "definition": "CHECK (lang = ANY (ARRAY['ja'::text, 'en'::text, 'zh-TW'::text, 'ko'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_once",
           "type": "unique",
+          "columns": [
+            "client_key",
+            "race_id",
+            "kind"
+          ],
           "definition": "UNIQUE (client_key, race_id, kind)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id)",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         },
         {
           "name": "analogy_feedback_reasons",
           "type": "check",
+          "columns": [
+            "reasons",
+            "kind",
+            "verdict"
+          ],
           "definition": "CHECK (reasons IS NULL OR kind = 'detail'::text AND verdict = 'lacking'::text AND cardinality(reasons) >= 1 AND cardinality(reasons) <= 5 AND reasons <@ ARRAY['few_races'::text, 'no_filter'::text, 'hard_to_read'::text, 'how_to_use'::text, 'other'::text])",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_verdict_check",
           "type": "check",
+          "columns": [
+            "verdict"
+          ],
           "definition": "CHECK (verdict = ANY (ARRAY['useful'::text, 'lacking'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_feedback_vote_bare",
           "type": "check",
+          "columns": [
+            "kind",
+            "comment"
+          ],
           "definition": "CHECK (kind = 'detail'::text OR comment IS NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -735,6 +924,14 @@
           ],
           "using": null,
           "withCheck": "true"
+        }
+      ],
+      "triggers": [
+        {
+          "name": "analogy_feedback_guard",
+          "enabled": "origin",
+          "function": "public.analogy_feedback_guard()",
+          "definition": "CREATE TRIGGER analogy_feedback_guard BEFORE INSERT ON analogy_feedback FOR EACH ROW EXECUTE FUNCTION analogy_feedback_guard()"
         }
       ],
       "grants": [
@@ -881,14 +1078,22 @@
         {
           "name": "analogy_models_pkey",
           "type": "primary_key",
+          "columns": [
+            "model_version"
+          ],
           "definition": "PRIMARY KEY (model_version)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_models_themes_is_array",
           "type": "check",
+          "columns": [
+            "themes"
+          ],
           "definition": "CHECK (jsonb_typeof(themes) = 'array'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -918,6 +1123,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -1095,44 +1301,78 @@
         {
           "name": "analogy_v16_snapshots_n_layer_check",
           "type": "check",
+          "columns": [
+            "n_layer"
+          ],
           "definition": "CHECK (n_layer >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_v16_snapshots_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "stage"
+          ],
           "definition": "PRIMARY KEY (race_id, stage)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_v16_snapshots_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         },
         {
           "name": "analogy_v16_snapshots_run_id_check",
           "type": "check",
+          "columns": [
+            "run_id"
+          ],
           "definition": "CHECK (run_id <> ''::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_v16_snapshots_stage_check",
           "type": "check",
+          "columns": [
+            "stage"
+          ],
           "definition": "CHECK (stage = ANY (ARRAY['racecard'::text, 'exhibition'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_v16_snapshots_stage_fields",
           "type": "check",
+          "columns": [
+            "stage",
+            "exact",
+            "status",
+            "racecard_hash"
+          ],
           "definition": "CHECK (stage = 'racecard'::text AND exact IS NULL AND status <> 'absent'::text AND racecard_hash IS NOT NULL OR stage = 'exhibition'::text AND racecard_hash IS NULL AND (status = 'absent'::text OR exact IS NOT NULL))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "analogy_v16_snapshots_status_check",
           "type": "check",
+          "columns": [
+            "status"
+          ],
           "definition": "CHECK (status = ANY (ARRAY['ok'::text, 'empty_layer'::text, 'absent'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -1162,6 +1402,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -1372,14 +1613,24 @@
         {
           "name": "bet_filters_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "FOREIGN KEY (model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "bet_filters_pkey",
           "type": "primary_key",
+          "columns": [
+            "filter_id"
+          ],
           "definition": "PRIMARY KEY (filter_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -1391,6 +1642,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -1587,26 +1839,49 @@
         {
           "name": "bet_recommendations_filter_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "filter_id"
+          ],
           "definition": "FOREIGN KEY (filter_id) REFERENCES bet_filters(filter_id)",
-          "references": "public.bet_filters"
+          "references": "public.bet_filters",
+          "referencesColumns": [
+            "filter_id"
+          ]
         },
         {
           "name": "bet_recommendations_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "FOREIGN KEY (model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "bet_recommendations_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "model_id"
+          ],
           "definition": "PRIMARY KEY (race_id, model_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "bet_recommendations_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -1641,6 +1916,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -1895,14 +2171,25 @@
         {
           "name": "daily_bet_summary_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "FOREIGN KEY (model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "daily_bet_summary_pkey",
           "type": "primary_key",
+          "columns": [
+            "date",
+            "model_id"
+          ],
           "definition": "PRIMARY KEY (date, model_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -1914,6 +2201,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -2176,26 +2464,45 @@
         {
           "name": "chk_ed_exhibition_course",
           "type": "check",
+          "columns": [
+            "exhibition_course"
+          ],
           "definition": "CHECK (exhibition_course >= 1 AND exhibition_course <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_ed_start_flag",
           "type": "check",
+          "columns": [
+            "start_flag"
+          ],
           "definition": "CHECK (start_flag = ANY (ARRAY['F'::text, 'L'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "exhibition_data_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "boat_number"
+          ],
           "definition": "PRIMARY KEY (race_id, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "exhibition_data_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -2219,6 +2526,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -2396,14 +2704,23 @@
         {
           "name": "exhibition_time_top_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "exhibition_time_top_stats_venue_code_boat_number_key",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "boat_number"
+          ],
           "definition": "UNIQUE (venue_code, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -2438,6 +2755,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -2615,14 +2933,25 @@
         {
           "name": "external_predictions_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "external_predictions_source_race_date_venue_code_race_no_key",
           "type": "unique",
+          "columns": [
+            "source",
+            "race_date",
+            "venue_code",
+            "race_no"
+          ],
           "definition": "UNIQUE (source, race_date, venue_code, race_no)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -2661,6 +2990,14 @@
           ],
           "using": "true",
           "withCheck": null
+        }
+      ],
+      "triggers": [
+        {
+          "name": "external_predictions_updated_at",
+          "enabled": "origin",
+          "function": "public.trg_external_predictions_updated_at()",
+          "definition": "CREATE TRIGGER external_predictions_updated_at BEFORE UPDATE ON external_predictions FOR EACH ROW EXECUTE FUNCTION trg_external_predictions_updated_at()"
         }
       ],
       "grants": [
@@ -2807,38 +3144,65 @@
         {
           "name": "in_caution_gap_band_daily_check",
           "type": "check",
+          "columns": [
+            "non_win",
+            "n"
+          ],
           "definition": "CHECK (non_win >= 0 AND non_win <= n)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "in_caution_gap_band_daily_gap_band_check",
           "type": "check",
+          "columns": [
+            "gap_band"
+          ],
           "definition": "CHECK (gap_band >= '-8'::integer AND gap_band <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "in_caution_gap_band_daily_n_check",
           "type": "check",
+          "columns": [
+            "n"
+          ],
           "definition": "CHECK (n > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "in_caution_gap_band_daily_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_date",
+            "round_grp",
+            "gap_band"
+          ],
           "definition": "PRIMARY KEY (race_date, round_grp, gap_band)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "in_caution_gap_band_daily_round_grp_check",
           "type": "check",
+          "columns": [
+            "round_grp"
+          ],
           "definition": "CHECK (round_grp = ANY (ARRAY['other'::text, 'junyu'::text, 'yusho'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "in_caution_gap_band_daily_source_check",
           "type": "check",
+          "columns": [
+            "source"
+          ],
           "definition": "CHECK (source = ANY (ARRAY['kb'::text, 'main'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -2850,6 +3214,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -3167,8 +3532,13 @@
         {
           "name": "kb_archive_boats_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "boat_number"
+          ],
           "definition": "PRIMARY KEY (race_id, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -3180,6 +3550,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -3497,8 +3868,12 @@
         {
           "name": "kb_archive_races_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -3510,6 +3885,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -3695,8 +4071,12 @@
         {
           "name": "kb_archive_venue_days_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_day_id"
+          ],
           "definition": "PRIMARY KEY (venue_day_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -3708,6 +4088,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -3860,14 +4241,24 @@
         {
           "name": "losing_technique_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "losing_technique_stats_venue_code_boat_number_losing_techni_key",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "boat_number",
+            "losing_technique"
+          ],
           "definition": "UNIQUE (venue_code, boat_number, losing_technique)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -3902,6 +4293,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -4112,20 +4504,39 @@
         {
           "name": "model_bet_candidates_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "FOREIGN KEY (model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "model_bet_candidates_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "model_id",
+            "pattern_index",
+            "bet_rank"
+          ],
           "definition": "PRIMARY KEY (race_id, model_id, pattern_index, bet_rank)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "model_bet_candidates_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -4154,6 +4565,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -4430,20 +4842,36 @@
         {
           "name": "model_experiments_control_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "control_model_id"
+          ],
           "definition": "FOREIGN KEY (control_model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "model_experiments_pkey",
           "type": "primary_key",
+          "columns": [
+            "experiment_id"
+          ],
           "definition": "PRIMARY KEY (experiment_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "model_experiments_treatment_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "treatment_model_id"
+          ],
           "definition": "FOREIGN KEY (treatment_model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         }
       ],
       "indexes": [
@@ -4455,6 +4883,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -4651,14 +5080,25 @@
         {
           "name": "model_performance_daily_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "FOREIGN KEY (model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "model_performance_daily_pkey",
           "type": "primary_key",
+          "columns": [
+            "model_id",
+            "date"
+          ],
           "definition": "PRIMARY KEY (model_id, date)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -4682,6 +5122,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -5068,14 +5509,24 @@
         {
           "name": "models_parent_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "parent_model_id"
+          ],
           "definition": "FOREIGN KEY (parent_model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "models_pkey",
           "type": "primary_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "PRIMARY KEY (model_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -5098,6 +5549,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -5286,20 +5738,34 @@
         {
           "name": "mdd_counts_nonneg",
           "type": "check",
+          "columns": [
+            "venue_count",
+            "race_count"
+          ],
           "definition": "CHECK (venue_count >= 0 AND race_count >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "mdd_window_order",
           "type": "check",
+          "columns": [
+            "window_end",
+            "window_start"
+          ],
           "definition": "CHECK (window_end >= window_start)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "morning_digest_days_pkey",
           "type": "primary_key",
+          "columns": [
+            "digest_date"
+          ],
           "definition": "PRIMARY KEY (digest_date)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -5323,6 +5789,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -5687,56 +6154,106 @@
         {
           "name": "mdr_boat_range",
           "type": "check",
+          "columns": [
+            "boat_number"
+          ],
           "definition": "CHECK (boat_number IS NULL OR boat_number >= 1 AND boat_number <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "mdr_course_range",
           "type": "check",
+          "columns": [
+            "course"
+          ],
           "definition": "CHECK (course IS NULL OR course >= 1 AND course <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "mdr_days_fk",
           "type": "foreign_key",
+          "columns": [
+            "digest_date"
+          ],
           "definition": "FOREIGN KEY (digest_date) REFERENCES morning_digest_days(digest_date) ON DELETE CASCADE",
-          "references": "public.morning_digest_days"
+          "references": "public.morning_digest_days",
+          "referencesColumns": [
+            "digest_date"
+          ]
         },
         {
           "name": "mdr_metric_fields_by_section",
           "type": "check",
+          "columns": [
+            "section",
+            "metric_value",
+            "metric_expected",
+            "metric_skill_delta",
+            "metric_venue_baseline",
+            "metric_predicted",
+            "sample_size",
+            "course"
+          ],
           "definition": "CHECK ((section = ANY (ARRAY['flying'::text, 'returned'::text])) OR metric_value IS NOT NULL AND metric_expected IS NOT NULL AND metric_skill_delta IS NOT NULL AND metric_venue_baseline IS NOT NULL AND metric_predicted IS NOT NULL AND sample_size IS NOT NULL AND course IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "mdr_race_fields_by_section",
           "type": "check",
+          "columns": [
+            "section",
+            "race_id",
+            "race_number",
+            "boat_number"
+          ],
           "definition": "CHECK (section = 'returned'::text AND race_id IS NULL AND race_number IS NULL AND boat_number IS NULL OR section <> 'returned'::text AND race_id IS NOT NULL AND race_number IS NOT NULL AND boat_number IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "mdr_rank_positive",
           "type": "check",
+          "columns": [
+            "rank"
+          ],
           "definition": "CHECK (rank >= 1)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "mdr_section_values",
           "type": "check",
+          "columns": [
+            "section"
+          ],
           "definition": "CHECK (section = ANY (ARRAY['featured'::text, 'nige'::text, 'makuri'::text, 'nigashi'::text, 'flying'::text, 'returned'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "mdr_venue_range",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 1 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "morning_digest_rows_pkey",
           "type": "primary_key",
+          "columns": [
+            "digest_date",
+            "section",
+            "rank"
+          ],
           "definition": "PRIMARY KEY (digest_date, section, rank)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -5766,6 +6283,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -5976,32 +6494,55 @@
         {
           "name": "chk_motor_pretest_stats_class",
           "type": "check",
+          "columns": [
+            "racer_class"
+          ],
           "definition": "CHECK (racer_class = ANY (ARRAY['A1'::text, 'A2'::text, 'B1'::text, 'B2'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_motor_pretest_stats_rank",
           "type": "check",
+          "columns": [
+            "pretest_rank"
+          ],
           "definition": "CHECK (pretest_rank IS NULL OR pretest_rank >= 1)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_motor_pretest_stats_time_rank",
           "type": "check",
+          "columns": [
+            "pretest_time",
+            "pretest_rank"
+          ],
           "definition": "CHECK ((pretest_time IS NULL) = (pretest_rank IS NULL))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_motor_pretest_stats_venue",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 1 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "motor_pretest_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_date",
+            "venue_code",
+            "racer_id"
+          ],
           "definition": "PRIMARY KEY (race_date, venue_code, racer_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -6025,6 +6566,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -6169,8 +6711,12 @@
         {
           "name": "mycroft_predictions_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -6193,6 +6739,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -6381,14 +6928,25 @@
         {
           "name": "nige_outcome_distribution_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "nige_outcome_distribution_venue_code_first_boat_second_boat_key",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "first_boat",
+            "second_boat",
+            "third_boat"
+          ],
           "definition": "UNIQUE (venue_code, first_boat, second_boat, third_boat)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -6423,6 +6981,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -6633,32 +7192,56 @@
         {
           "name": "nige_second_by_course_course_range",
           "type": "check",
+          "columns": [
+            "second_course"
+          ],
           "definition": "CHECK (second_course >= 2 AND second_course <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "nige_second_by_course_denominators",
           "type": "check",
+          "columns": [
+            "nige_races",
+            "total_races",
+            "second_count"
+          ],
           "definition": "CHECK (nige_races <= total_races AND second_count <= nige_races)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "nige_second_by_course_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "second_course"
+          ],
           "definition": "PRIMARY KEY (venue_code, second_course)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "nige_second_by_course_venue_range",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 1 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "nige_second_by_course_window_order",
           "type": "check",
+          "columns": [
+            "window_end",
+            "window_start"
+          ],
           "definition": "CHECK (window_end >= window_start)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -6682,6 +7265,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -6870,14 +7454,25 @@
         {
           "name": "outcome_distribution_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "outcome_distribution_venue_code_first_boat_second_boat_thir_key",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "first_boat",
+            "second_boat",
+            "third_boat"
+          ],
           "definition": "UNIQUE (venue_code, first_boat, second_boat, third_boat)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -6912,6 +7507,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -7067,8 +7663,13 @@
         {
           "name": "poirot_predictions_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "model_version"
+          ],
           "definition": "PRIMARY KEY (race_id, model_version)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -7097,6 +7698,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -7318,14 +7920,24 @@
         {
           "name": "prediction_odds_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "prediction_odds_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -7348,6 +7960,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -7635,26 +8248,47 @@
         {
           "name": "predictions_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "FOREIGN KEY (model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "predictions_pkey",
           "type": "primary_key",
+          "columns": [
+            "prediction_id"
+          ],
           "definition": "PRIMARY KEY (prediction_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "predictions_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         },
         {
           "name": "predictions_race_id_model_id_key",
           "type": "unique",
+          "columns": [
+            "race_id",
+            "model_id"
+          ],
           "definition": "UNIQUE (race_id, model_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -7707,6 +8341,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -7939,20 +8574,34 @@
         {
           "name": "chk_rc_race_distance_m",
           "type": "check",
+          "columns": [
+            "race_distance_m"
+          ],
           "definition": "CHECK (race_distance_m > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_conditions_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_conditions_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -7976,6 +8625,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -8362,26 +9012,45 @@
         {
           "name": "chk_re_f_count",
           "type": "check",
+          "columns": [
+            "f_count"
+          ],
           "definition": "CHECK (f_count >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_re_l_count",
           "type": "check",
+          "columns": [
+            "l_count"
+          ],
           "definition": "CHECK (l_count >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_entries_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "boat_number"
+          ],
           "definition": "PRIMARY KEY (race_id, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_entries_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -8422,6 +9091,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -8522,8 +9192,12 @@
         {
           "name": "race_history_cache_pkey",
           "type": "primary_key",
+          "columns": [
+            "key"
+          ],
           "definition": "PRIMARY KEY (key)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -8552,6 +9226,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -8674,8 +9349,13 @@
         {
           "name": "race_notices_health_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "check_date"
+          ],
           "definition": "PRIMARY KEY (venue_code, check_date)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -8687,6 +9367,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -9103,14 +9784,25 @@
         {
           "name": "race_odds_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "captured_at"
+          ],
           "definition": "PRIMARY KEY (race_id, captured_at)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_odds_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -9140,6 +9832,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -9306,14 +9999,24 @@
         {
           "name": "race_odds_final_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_odds_final_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -9337,6 +10040,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -9503,26 +10207,44 @@
         {
           "name": "chk_race_original_exhibition_item_count",
           "type": "check",
+          "columns": [
+            "item_count"
+          ],
           "definition": "CHECK (item_count >= 1 AND item_count <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_original_exhibition_status",
           "type": "check",
+          "columns": [
+            "measure_status"
+          ],
           "definition": "CHECK (measure_status = ANY (ARRAY[1, 2]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_original_exhibition_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_original_exhibition_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -9546,6 +10268,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -9679,20 +10402,36 @@
         {
           "name": "chk_race_original_exhibition_values_boat",
           "type": "check",
+          "columns": [
+            "boat_number"
+          ],
           "definition": "CHECK (boat_number >= 1 AND boat_number <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_original_exhibition_values_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "boat_number",
+            "kind"
+          ],
           "definition": "PRIMARY KEY (race_id, boat_number, kind)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_original_exhibition_values_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -9716,6 +10455,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -9904,8 +10644,16 @@
         {
           "name": "race_outcome_frequencies_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "rank1_boat",
+            "rank2_boat",
+            "rank3_boat",
+            "window_days"
+          ],
           "definition": "PRIMARY KEY (venue_code, rank1_boat, rank2_boat, rank3_boat, window_days)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -9934,6 +10682,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -10100,38 +10849,68 @@
         {
           "name": "chk_race_payouts_bet_type",
           "type": "check",
+          "columns": [
+            "bet_type"
+          ],
           "definition": "CHECK (bet_type = ANY (ARRAY['win'::text, 'place'::text, '2tan'::text, '2fuku'::text, 'wide'::text, '3tan'::text, '3fuku'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_payouts_consistency",
           "type": "check",
+          "columns": [
+            "payout_status",
+            "payout",
+            "combination"
+          ],
           "definition": "CHECK (payout_status = 'paid'::text AND payout IS NOT NULL AND combination IS NOT NULL OR payout_status = 'special'::text AND payout IS NOT NULL OR payout_status = 'no_amount'::text AND payout IS NULL AND combination IS NOT NULL OR payout_status = 'no_race'::text AND payout IS NULL AND combination IS NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_payouts_seq",
           "type": "check",
+          "columns": [
+            "seq"
+          ],
           "definition": "CHECK (seq >= 1)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_payouts_status",
           "type": "check",
+          "columns": [
+            "payout_status"
+          ],
           "definition": "CHECK (payout_status = ANY (ARRAY['paid'::text, 'special'::text, 'no_amount'::text, 'no_race'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_payouts_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "bet_type",
+            "seq"
+          ],
           "definition": "PRIMARY KEY (race_id, bet_type, seq)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_payouts_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -10155,6 +10934,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -10310,32 +11090,55 @@
         {
           "name": "chk_race_pit_comments_boat",
           "type": "check",
+          "columns": [
+            "boat_number"
+          ],
           "definition": "CHECK (boat_number >= 1 AND boat_number <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_pit_comments_prev",
           "type": "check",
+          "columns": [
+            "previous_race_number"
+          ],
           "definition": "CHECK (previous_race_number IS NULL OR previous_race_number >= 1 AND previous_race_number <= 12)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_pit_comments_stars",
           "type": "check",
+          "columns": [
+            "confidence_stars"
+          ],
           "definition": "CHECK (confidence_stars IS NULL OR confidence_stars >= 0 AND confidence_stars <= 3)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_pit_comments_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "boat_number"
+          ],
           "definition": "PRIMARY KEY (race_id, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_pit_comments_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -10359,6 +11162,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -10547,32 +11351,56 @@
         {
           "name": "chk_race_pit_reports_consistency",
           "type": "check",
+          "columns": [
+            "status",
+            "comment_count"
+          ],
           "definition": "CHECK (status = 'published'::text AND comment_count >= 1 OR status = 'not_target'::text AND comment_count = 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_pit_reports_status",
           "type": "check",
+          "columns": [
+            "status"
+          ],
           "definition": "CHECK (status = ANY (ARRAY['published'::text, 'not_target'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_pit_reports_target_range",
           "type": "check",
+          "columns": [
+            "target_from",
+            "target_to"
+          ],
           "definition": "CHECK (target_from IS NULL AND target_to IS NULL OR target_from >= 1 AND target_from <= 12 AND target_to >= 1 AND target_to <= 12 AND target_from <= target_to)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_pit_reports_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_pit_reports_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -10596,6 +11424,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -11213,26 +12042,44 @@
         {
           "name": "chk_race_results_status",
           "type": "check",
+          "columns": [
+            "race_status"
+          ],
           "definition": "CHECK (race_status = ANY (ARRAY['normal'::text, 'partial_refund'::text, 'no_race'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_results_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_results_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         },
         {
           "name": "race_results_race_id_key",
           "type": "unique",
+          "columns": [
+            "race_id"
+          ],
           "definition": "UNIQUE (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -11265,6 +12112,14 @@
           ],
           "using": "true",
           "withCheck": null
+        }
+      ],
+      "triggers": [
+        {
+          "name": "trg_update_predictions",
+          "enabled": "origin",
+          "function": "public.update_prediction_results()",
+          "definition": "CREATE TRIGGER trg_update_predictions AFTER INSERT OR UPDATE OF rank1, rank2, rank3, payout_win, payout_place_1, payout_place_2, payout_trifecta, payout_trio, race_status, refund_boats ON race_results FOR EACH ROW EXECUTE FUNCTION update_prediction_results()"
         }
       ],
       "grants": [
@@ -11455,44 +12310,76 @@
         {
           "name": "chk_race_series_class",
           "type": "check",
+          "columns": [
+            "class_code"
+          ],
           "definition": "CHECK (class_code = ANY (ARRAY['SG'::text, 'G1'::text, 'G2'::text, 'G3'::text, 'Ippan'::text, 'Lady'::text, 'Venus'::text, 'Rookie'::text, 'Takumi'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_series_dates",
           "type": "check",
+          "columns": [
+            "end_date",
+            "start_date"
+          ],
           "definition": "CHECK (end_date >= start_date)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_series_grade",
           "type": "check",
+          "columns": [
+            "grade"
+          ],
           "definition": "CHECK (grade IS NULL OR (grade = ANY (ARRAY['SG'::text, 'G1'::text, 'G2'::text, 'G3'::text, 'ippan'::text])))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_series_kind",
           "type": "check",
+          "columns": [
+            "kind"
+          ],
           "definition": "CHECK (kind = ANY (ARRAY['sg'::text, 'g1'::text, 'g2'::text, 'g3'::text, 'ippan'::text, 'lady'::text, 'venus'::text, 'rookie'::text, 'masters'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_series_total_days",
           "type": "check",
+          "columns": [
+            "total_days",
+            "end_date",
+            "start_date"
+          ],
           "definition": "CHECK (total_days = (end_date - start_date + 1))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_race_series_venue",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 1 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_series_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "start_date"
+          ],
           "definition": "PRIMARY KEY (venue_code, start_date)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -11522,6 +12409,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -11699,20 +12587,36 @@
         {
           "name": "race_special_notes_category_check",
           "type": "check",
+          "columns": [
+            "category"
+          ],
           "definition": "CHECK (category::text = ANY (ARRAY['accident'::character varying, 'equipment_change'::character varying, 'absence'::character varying]::text[]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_special_notes_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "uq_race_special_notes_dedup",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "race_date",
+            "category",
+            "detail_text",
+            "racer_name"
+          ],
           "definition": "UNIQUE (venue_code, race_date, category, detail_text, racer_name)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -11742,6 +12646,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -11938,32 +12843,55 @@
         {
           "name": "chk_race_start_timings_official_row",
           "type": "check",
+          "columns": [
+            "official_row"
+          ],
           "definition": "CHECK (official_row IS NULL OR official_row >= 1 AND official_row <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_rst_entry_course",
           "type": "check",
+          "columns": [
+            "entry_course"
+          ],
           "definition": "CHECK (entry_course >= 1 AND entry_course <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_rst_finish_rank",
           "type": "check",
+          "columns": [
+            "finish_rank"
+          ],
           "definition": "CHECK (finish_rank >= 1 AND finish_rank <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_start_timings_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "boat_number"
+          ],
           "definition": "PRIMARY KEY (race_id, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "race_start_timings_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -11993,6 +12921,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -12203,8 +13132,13 @@
         {
           "name": "racer_aggregated_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "racer_id",
+            "venue_code"
+          ],
           "definition": "PRIMARY KEY (racer_id, venue_code)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -12228,6 +13162,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -12537,44 +13472,87 @@
         {
           "name": "racer_course_technique_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "racer_id",
+            "course"
+          ],
           "definition": "PRIMARY KEY (racer_id, course)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "rcts_90d_rates_null_when_no_runs",
           "type": "check",
+          "columns": [
+            "runs_90d",
+            "nige_rate_90d",
+            "makuri_rate_90d",
+            "nigashi_rate_90d"
+          ],
           "definition": "CHECK (runs_90d > 0 OR nige_rate_90d IS NULL AND makuri_rate_90d IS NULL AND nigashi_rate_90d IS NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "rcts_counts_within_runs",
           "type": "check",
+          "columns": [
+            "makuri_count",
+            "runs",
+            "nige_count",
+            "nigashi_count"
+          ],
           "definition": "CHECK (makuri_count <= runs AND (nige_count IS NULL OR nige_count <= runs) AND (nigashi_count IS NULL OR nigashi_count <= runs))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "rcts_course_range",
           "type": "check",
+          "columns": [
+            "course"
+          ],
           "definition": "CHECK (course >= 1 AND course <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "rcts_rate_by_course",
           "type": "check",
+          "columns": [
+            "course",
+            "nige_count",
+            "nige_rate",
+            "nige_expected",
+            "nigashi_count",
+            "nigashi_rate",
+            "nigashi_expected"
+          ],
           "definition": "CHECK (course = 1 AND nige_count IS NOT NULL AND nige_rate IS NOT NULL AND nige_expected IS NOT NULL AND nigashi_count IS NULL AND nigashi_rate IS NULL AND nigashi_expected IS NULL OR course > 1 AND nige_count IS NULL AND nige_rate IS NULL AND nige_expected IS NULL AND nigashi_count IS NOT NULL AND nigashi_rate IS NOT NULL AND nigashi_expected IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "rcts_runs_positive",
           "type": "check",
+          "columns": [
+            "runs",
+            "runs_90d"
+          ],
           "definition": "CHECK (runs > 0 AND runs_90d >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "rcts_window_order",
           "type": "check",
+          "columns": [
+            "window_end",
+            "window_start"
+          ],
           "definition": "CHECK (window_end >= window_start)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -12598,6 +13576,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -12698,8 +13677,12 @@
         {
           "name": "racer_grade_cache_pkey",
           "type": "primary_key",
+          "columns": [
+            "key"
+          ],
           "definition": "PRIMARY KEY (key)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -12728,6 +13711,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -12883,8 +13867,12 @@
         {
           "name": "racer_news_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -12913,6 +13901,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -13090,14 +14079,22 @@
         {
           "name": "racer_news_pending_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "racer_news_pending_status_check",
           "type": "check",
+          "columns": [
+            "status"
+          ],
           "definition": "CHECK (status = ANY (ARRAY['pending'::text, 'approved'::text, 'rejected'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -13121,6 +14118,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -14681,26 +15679,45 @@
         {
           "name": "chk_racer_period_stats_calc",
           "type": "check",
+          "columns": [
+            "calc_to",
+            "calc_from"
+          ],
           "definition": "CHECK (calc_to >= calc_from)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_racer_period_stats_grade",
           "type": "check",
+          "columns": [
+            "grade"
+          ],
           "definition": "CHECK (grade IS NULL OR (grade = ANY (ARRAY['A1'::text, 'A2'::text, 'B1'::text, 'B2'::text])))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "chk_racer_period_stats_period_no",
           "type": "check",
+          "columns": [
+            "period_no"
+          ],
           "definition": "CHECK (period_no = ANY (ARRAY[1, 2]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "racer_period_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "racer_id",
+            "period_year",
+            "period_no"
+          ],
           "definition": "PRIMARY KEY (racer_id, period_year, period_no)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -14730,6 +15747,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -15017,8 +16035,12 @@
         {
           "name": "racer_profiles_pkey",
           "type": "primary_key",
+          "columns": [
+            "racer_id"
+          ],
           "definition": "PRIMARY KEY (racer_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -15041,6 +16063,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -15295,32 +16318,54 @@
         {
           "name": "racer_series_points_next_race_1_check",
           "type": "check",
+          "columns": [
+            "next_race_1"
+          ],
           "definition": "CHECK (next_race_1 >= 1 AND next_race_1 <= 12)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "racer_series_points_next_race_2_check",
           "type": "check",
+          "columns": [
+            "next_race_2"
+          ],
           "definition": "CHECK (next_race_2 >= 1 AND next_race_2 <= 12)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "racer_series_points_next_series_day_check",
           "type": "check",
+          "columns": [
+            "next_series_day"
+          ],
           "definition": "CHECK (next_series_day >= 1 AND next_series_day <= 9)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "racer_series_points_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "racer_series_points_venue_code_meet_start_date_racer_id_key",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "meet_start_date",
+            "racer_id"
+          ],
           "definition": "UNIQUE (venue_code, meet_start_date, racer_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -15356,6 +16401,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -15654,26 +16700,46 @@
         {
           "name": "races_cancellation_status_check",
           "type": "check",
+          "columns": [
+            "cancellation_status"
+          ],
           "definition": "CHECK (cancellation_status = ANY (ARRAY['tentative'::text, 'confirmed'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "races_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "races_race_date_venue_code_race_number_key",
           "type": "unique",
+          "columns": [
+            "race_date",
+            "venue_code",
+            "race_number"
+          ],
           "definition": "UNIQUE (race_date, venue_code, race_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "races_venue_code_fkey",
           "type": "foreign_key",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "FOREIGN KEY (venue_code) REFERENCES venues(code)",
-          "references": "public.venues"
+          "references": "public.venues",
+          "referencesColumns": [
+            "code"
+          ]
         }
       ],
       "indexes": [
@@ -15732,6 +16798,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -15898,14 +16965,24 @@
         {
           "name": "raw_snapshots_page_key_sha256_key",
           "type": "unique",
+          "columns": [
+            "page_type",
+            "key",
+            "sha256"
+          ],
           "definition": "UNIQUE (page_type, key, sha256)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "raw_snapshots_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -15923,6 +17000,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -16064,14 +17142,24 @@
         {
           "name": "rule_applications_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "rule_applications_rule_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "rule_id"
+          ],
           "definition": "FOREIGN KEY (rule_id) REFERENCES venue_rules(rule_id)",
-          "references": "public.venue_rules"
+          "references": "public.venue_rules",
+          "referencesColumns": [
+            "rule_id"
+          ]
         }
       ],
       "indexes": [
@@ -16101,6 +17189,14 @@
         }
       ],
       "policies": [],
+      "triggers": [
+        {
+          "name": "update_rule_applications_updated_at",
+          "enabled": "origin",
+          "function": "public.update_updated_at_column()",
+          "definition": "CREATE TRIGGER update_rule_applications_updated_at BEFORE UPDATE ON rule_applications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+        }
+      ],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -16352,20 +17448,32 @@
         {
           "name": "scrape_job_state_breaker_level_range",
           "type": "check",
+          "columns": [
+            "breaker_level"
+          ],
           "definition": "CHECK (breaker_level >= 0 AND breaker_level <= 10)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "scrape_job_state_mode_check",
           "type": "check",
+          "columns": [
+            "mode"
+          ],
           "definition": "CHECK (mode = ANY (ARRAY['off'::text, 'shadow'::text, 'live'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "scrape_job_state_pkey",
           "type": "primary_key",
+          "columns": [
+            "job"
+          ],
           "definition": "PRIMARY KEY (job)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -16377,6 +17485,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -16628,26 +17737,46 @@
         {
           "name": "scrape_slots_pkey",
           "type": "primary_key",
+          "columns": [
+            "job",
+            "race_id",
+            "offset_min"
+          ],
           "definition": "PRIMARY KEY (job, race_id, offset_min)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "scrape_slots_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         },
         {
           "name": "scrape_slots_run_mode_check",
           "type": "check",
+          "columns": [
+            "run_mode"
+          ],
           "definition": "CHECK (run_mode = ANY (ARRAY['live'::text, 'shadow'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "scrape_slots_status_check",
           "type": "check",
+          "columns": [
+            "status"
+          ],
           "definition": "CHECK (status = ANY (ARRAY['pending'::text, 'running'::text, 'done'::text, 'expired'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -16671,6 +17800,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -16768,14 +17898,22 @@
         {
           "name": "sns_approvers_display_name_key",
           "type": "unique",
+          "columns": [
+            "display_name"
+          ],
           "definition": "UNIQUE (display_name)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_approvers_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -16793,6 +17931,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -16967,44 +18106,78 @@
         {
           "name": "sns_auto_send_control_auto_approver_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "auto_approver_id"
+          ],
           "definition": "FOREIGN KEY (auto_approver_id) REFERENCES sns_approvers(id)",
-          "references": "public.sns_approvers"
+          "references": "public.sns_approvers",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_auto_send_control_channel_check",
           "type": "check",
+          "columns": [
+            "channel"
+          ],
           "definition": "CHECK (channel = ANY (ARRAY['x'::text, 'youtube'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_control_finals_image_x_only",
           "type": "check",
+          "columns": [
+            "channel",
+            "finals_image_enabled"
+          ],
           "definition": "CHECK (channel = 'x'::text OR finals_image_enabled = false)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_control_mode_check",
           "type": "check",
+          "columns": [
+            "mode"
+          ],
           "definition": "CHECK (mode = ANY (ARRAY['manual'::text, 'auto'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_control_pkey",
           "type": "primary_key",
+          "columns": [
+            "channel"
+          ],
           "definition": "PRIMARY KEY (channel)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_control_research_image_x_only",
           "type": "check",
+          "columns": [
+            "channel",
+            "research_image_enabled"
+          ],
           "definition": "CHECK (channel = 'x'::text OR research_image_enabled = false)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_control_switched_by_fkey",
           "type": "foreign_key",
+          "columns": [
+            "switched_by"
+          ],
           "definition": "FOREIGN KEY (switched_by) REFERENCES sns_approvers(id)",
-          "references": "public.sns_approvers"
+          "references": "public.sns_approvers",
+          "referencesColumns": [
+            "id"
+          ]
         }
       ],
       "indexes": [
@@ -17016,6 +18189,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -17124,26 +18298,44 @@
         {
           "name": "sns_auto_send_incidents_channel_check",
           "type": "check",
+          "columns": [
+            "channel"
+          ],
           "definition": "CHECK (channel = ANY (ARRAY['x'::text, 'youtube'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_incidents_item_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "item_id"
+          ],
           "definition": "FOREIGN KEY (item_id) REFERENCES sns_auto_send_items(id)",
-          "references": "public.sns_auto_send_items"
+          "references": "public.sns_auto_send_items",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_auto_send_incidents_note_check",
           "type": "check",
+          "columns": [
+            "note"
+          ],
           "definition": "CHECK (char_length(note) >= 1 AND char_length(note) <= 500)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_incidents_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -17155,6 +18347,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -17417,110 +18610,201 @@
         {
           "name": "sns_auto_send_items_bundle_import_id_channel_key",
           "type": "unique",
+          "columns": [
+            "bundle_import_id",
+            "channel"
+          ],
           "definition": "UNIQUE (bundle_import_id, channel)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_bundle_import_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "bundle_import_id"
+          ],
           "definition": "FOREIGN KEY (bundle_import_id) REFERENCES sns_bundle_imports(id)",
-          "references": "public.sns_bundle_imports"
+          "references": "public.sns_bundle_imports",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_auto_send_items_channel_check",
           "type": "check",
+          "columns": [
+            "channel"
+          ],
           "definition": "CHECK (channel = ANY (ARRAY['x'::text, 'youtube'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_check",
           "type": "check",
+          "columns": [
+            "notify_by",
+            "veto_until",
+            "deadline_at"
+          ],
           "definition": "CHECK (notify_by < veto_until AND veto_until < deadline_at)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_check1",
           "type": "check",
+          "columns": [
+            "state",
+            "checks"
+          ],
           "definition": "CHECK ((state <> ALL (ARRAY['manual'::text, 'notifying'::text, 'notified'::text, 'sent'::text])) OR NOT (checks -> 'passed'::text) IS DISTINCT FROM 'true'::jsonb)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_check2",
           "type": "check",
+          "columns": [
+            "state",
+            "stop_token_hash"
+          ],
           "definition": "CHECK ((state <> ALL (ARRAY['notifying'::text, 'notified'::text])) OR stop_token_hash IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_check3",
           "type": "check",
+          "columns": [
+            "state",
+            "notified_at"
+          ],
           "definition": "CHECK (state <> 'notified'::text OR notified_at IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_check4",
           "type": "check",
+          "columns": [
+            "state",
+            "stopped_at",
+            "stopped_via"
+          ],
           "definition": "CHECK (state <> 'stopped'::text OR stopped_at IS NOT NULL AND stopped_via IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_auto_send_items_kind_check",
           "type": "check",
+          "columns": [
+            "kind"
+          ],
           "definition": "CHECK (kind = ANY (ARRAY['race'::text, 'digest'::text, 'full_picture'::text, 'finals_image'::text, 'research_image'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_kind_source",
           "type": "check",
+          "columns": [
+            "kind",
+            "bundle_import_id",
+            "draft_id",
+            "channel"
+          ],
           "definition": "CHECK (kind = 'race'::text AND bundle_import_id IS NOT NULL AND draft_id IS NULL OR kind = 'digest'::text AND bundle_import_id IS NULL AND draft_id IS NOT NULL AND channel = 'x'::text OR kind = 'full_picture'::text AND bundle_import_id IS NULL AND draft_id IS NOT NULL OR kind = 'finals_image'::text AND bundle_import_id IS NULL AND draft_id IS NOT NULL AND channel = 'x'::text OR kind = 'research_image'::text AND bundle_import_id IS NULL AND draft_id IS NOT NULL AND channel = 'x'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_research_id",
           "type": "check",
+          "columns": [
+            "kind",
+            "race_id",
+            "variant"
+          ],
           "definition": "CHECK (kind <> 'research_image'::text OR race_id ~ '^research:[0-9]{4}-[0-9]{2}-[0-9]{2}:[a-z0-9][a-z0-9-]{0,39}$'::text AND variant = 'main'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_state_check",
           "type": "check",
+          "columns": [
+            "state"
+          ],
           "definition": "CHECK (state = ANY (ARRAY['checking'::text, 'held_manual'::text, 'manual'::text, 'notifying'::text, 'notified'::text, 'stopped'::text, 'sent'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_stop_token_hash_key",
           "type": "unique",
+          "columns": [
+            "stop_token_hash"
+          ],
           "definition": "UNIQUE (stop_token_hash)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_stopped_via_check",
           "type": "check",
+          "columns": [
+            "stopped_via"
+          ],
           "definition": "CHECK (stopped_via = ANY (ARRAY['link'::text, 'admin'::text, 'mode_off'::text, 'superseded'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_variant_check",
           "type": "check",
+          "columns": [
+            "variant"
+          ],
           "definition": "CHECK (variant = ANY (ARRAY['main'::text, 'shorts'::text, 'finals'::text, 'finals_poll'::text, 'finals_reply'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_auto_send_items_variant_scope",
           "type": "check",
+          "columns": [
+            "variant",
+            "kind",
+            "channel"
+          ],
           "definition": "CHECK (variant = 'main'::text AND kind <> 'finals_image'::text OR variant = 'shorts'::text AND kind = 'full_picture'::text AND channel = 'youtube'::text OR (variant = ANY (ARRAY['finals'::text, 'finals_poll'::text, 'finals_reply'::text])) AND kind = 'finals_image'::text AND channel = 'x'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -17568,6 +18852,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -17731,26 +19016,42 @@
         {
           "name": "sns_bundle_imports_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_bundle_imports_schema_version_check",
           "type": "check",
+          "columns": [
+            "schema_version"
+          ],
           "definition": "CHECK (schema_version = ANY (ARRAY['ryujin-preview/0'::text, 'ryujin-preview/1'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_bundle_imports_version_hash_check",
           "type": "check",
+          "columns": [
+            "version_hash"
+          ],
           "definition": "CHECK (version_hash ~ '^[a-f0-9]{64}$'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_bundle_imports_version_hash_key",
           "type": "unique",
+          "columns": [
+            "version_hash"
+          ],
           "definition": "UNIQUE (version_hash)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -17768,6 +19069,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -17964,20 +19266,36 @@
         {
           "name": "sns_campaign_entries_campaign_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "campaign_id"
+          ],
           "definition": "FOREIGN KEY (campaign_id) REFERENCES sns_campaigns(id) ON DELETE CASCADE",
-          "references": "public.sns_campaigns"
+          "references": "public.sns_campaigns",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_campaign_entries_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_campaign_entries_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id)",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -17995,6 +19313,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -18191,8 +19510,12 @@
         {
           "name": "sns_campaigns_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -18210,6 +19533,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -18384,56 +19708,101 @@
         {
           "name": "sns_channel_daily_channel_check",
           "type": "check",
+          "columns": [
+            "channel"
+          ],
           "definition": "CHECK (channel = ANY (ARRAY['x'::text, 'youtube'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_channel_daily_check",
           "type": "check",
+          "columns": [
+            "metric_value",
+            "missing_reason"
+          ],
           "definition": "CHECK ((metric_value IS NULL) <> (missing_reason IS NULL))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_channel_daily_definition_check",
           "type": "check",
+          "columns": [
+            "definition"
+          ],
           "definition": "CHECK (char_length(definition) >= 1 AND char_length(definition) <= 500)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_channel_daily_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_channel_daily_key",
           "type": "unique",
+          "columns": [
+            "day",
+            "channel",
+            "draft_id",
+            "utm_content",
+            "source",
+            "metric_name",
+            "definition"
+          ],
           "definition": "UNIQUE NULLS NOT DISTINCT (day, channel, draft_id, utm_content, source, metric_name, definition)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_channel_daily_metric_name_check",
           "type": "check",
+          "columns": [
+            "metric_name"
+          ],
           "definition": "CHECK (char_length(metric_name) >= 1 AND char_length(metric_name) <= 60)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_channel_daily_metric_value_check",
           "type": "check",
+          "columns": [
+            "metric_value"
+          ],
           "definition": "CHECK (metric_value IS NULL OR metric_value >= 0::numeric)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_channel_daily_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_channel_daily_source_check",
           "type": "check",
+          "columns": [
+            "source"
+          ],
           "definition": "CHECK (source = ANY (ARRAY['youtube-analytics'::text, 'site-analytics'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -18451,6 +19820,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -18603,14 +19973,22 @@
         {
           "name": "sns_content_types_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_content_types_type_key_key",
           "type": "unique",
+          "columns": [
+            "type_key"
+          ],
           "definition": "UNIQUE (type_key)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -18628,6 +20006,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -18747,14 +20126,24 @@
         {
           "name": "sns_draft_metrics_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id) ON DELETE CASCADE",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_draft_metrics_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -18772,6 +20161,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -19298,50 +20688,90 @@
         {
           "name": "sns_drafts_approver_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "approver_id"
+          ],
           "definition": "FOREIGN KEY (approver_id) REFERENCES sns_approvers(id)",
-          "references": "public.sns_approvers"
+          "references": "public.sns_approvers",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_drafts_bundle_import_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "bundle_import_id"
+          ],
           "definition": "FOREIGN KEY (bundle_import_id) REFERENCES sns_bundle_imports(id)",
-          "references": "public.sns_bundle_imports"
+          "references": "public.sns_bundle_imports",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_drafts_external_operation_state_check",
           "type": "check",
+          "columns": [
+            "external_operation_state"
+          ],
           "definition": "CHECK (external_operation_state = ANY (ARRAY['reconcile'::text, 'external_done'::text, 'done'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_drafts_parent_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "parent_draft_id"
+          ],
           "definition": "FOREIGN KEY (parent_draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_drafts_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_drafts_send_lane_check",
           "type": "check",
+          "columns": [
+            "send_lane"
+          ],
           "definition": "CHECK (send_lane = ANY (ARRAY['A'::text, 'B'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_drafts_template_variant_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "template_variant_id"
+          ],
           "definition": "FOREIGN KEY (template_variant_id) REFERENCES sns_template_variants(id)",
-          "references": "public.sns_template_variants"
+          "references": "public.sns_template_variants",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_drafts_thread_index_check",
           "type": "check",
+          "columns": [
+            "thread_index"
+          ],
           "definition": "CHECK (thread_index >= 0 AND thread_index <= 5)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -19395,6 +20825,32 @@
         }
       ],
       "policies": [],
+      "triggers": [
+        {
+          "name": "guard_sns_preview_bundle_draft",
+          "enabled": "origin",
+          "function": "public.guard_sns_preview_bundle_draft()",
+          "definition": "CREATE TRIGGER guard_sns_preview_bundle_draft BEFORE INSERT OR UPDATE ON sns_drafts FOR EACH ROW EXECUTE FUNCTION guard_sns_preview_bundle_draft()"
+        },
+        {
+          "name": "guard_sns_x_approval",
+          "enabled": "origin",
+          "function": "public.guard_sns_x_approval()",
+          "definition": "CREATE TRIGGER guard_sns_x_approval BEFORE UPDATE ON sns_drafts FOR EACH ROW EXECUTE FUNCTION guard_sns_x_approval()"
+        },
+        {
+          "name": "sns_diff_approval",
+          "enabled": "origin",
+          "function": "public.guard_sns_diff_approval()",
+          "definition": "CREATE TRIGGER sns_diff_approval BEFORE UPDATE ON sns_drafts FOR EACH ROW EXECUTE FUNCTION guard_sns_diff_approval()"
+        },
+        {
+          "name": "sns_guard_external",
+          "enabled": "origin",
+          "function": "public.sns_guard_external()",
+          "definition": "CREATE TRIGGER sns_guard_external BEFORE DELETE OR UPDATE ON sns_drafts FOR EACH ROW EXECUTE FUNCTION sns_guard_external()"
+        }
+      ],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -19558,50 +21014,86 @@
         {
           "name": "sns_metric_jobs_attempts_check",
           "type": "check",
+          "columns": [
+            "attempts"
+          ],
           "definition": "CHECK (attempts >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_jobs_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_metric_jobs_draft_id_window_source_key",
           "type": "unique",
+          "columns": [
+            "draft_id",
+            "window",
+            "source"
+          ],
           "definition": "UNIQUE (draft_id, \"window\", source)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_jobs_last_error_check",
           "type": "check",
+          "columns": [
+            "last_error"
+          ],
           "definition": "CHECK (last_error IS NULL OR char_length(last_error) <= 200)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_jobs_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_jobs_source_check",
           "type": "check",
+          "columns": [
+            "source"
+          ],
           "definition": "CHECK (source = ANY (ARRAY['youtube-data'::text, 'x-api'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_jobs_state_check",
           "type": "check",
+          "columns": [
+            "state"
+          ],
           "definition": "CHECK (state = ANY (ARRAY['pending'::text, 'done'::text, 'missing'::text, 'failed'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_jobs_window_check",
           "type": "check",
+          "columns": [
+            "window"
+          ],
           "definition": "CHECK (\"window\" = ANY (ARRAY['48h'::text, '7d'::text, 'day_end'::text, '24h'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -19625,6 +21117,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -19898,110 +21391,204 @@
         {
           "name": "sns_metric_observations_check",
           "type": "check",
+          "columns": [
+            "denominator_value",
+            "denominator_name"
+          ],
           "definition": "CHECK (denominator_value IS NULL OR denominator_name IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_check1",
           "type": "check",
+          "columns": [
+            "metric_value",
+            "missing_reason"
+          ],
           "definition": "CHECK (metric_value IS NULL AND length(TRIM(BOTH FROM missing_reason)) > 0 AND missing_reason IS NOT NULL OR metric_value IS NOT NULL AND missing_reason IS NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_check3",
           "type": "check",
+          "columns": [
+            "observed_at",
+            "period_end"
+          ],
           "definition": "CHECK (observed_at >= period_end)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_check4",
           "type": "check",
+          "columns": [
+            "data_through",
+            "period_start",
+            "observed_at"
+          ],
           "definition": "CHECK (data_through IS NULL OR data_through >= period_start AND data_through <= observed_at)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_curve_check",
           "type": "check",
+          "columns": [
+            "curve"
+          ],
           "definition": "CHECK (jsonb_typeof(curve) = 'array'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_definition_check",
           "type": "check",
+          "columns": [
+            "definition"
+          ],
           "definition": "CHECK (length(TRIM(BOTH FROM definition)) >= 1 AND length(TRIM(BOTH FROM definition)) <= 500)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_denominator_value_check",
           "type": "check",
+          "columns": [
+            "denominator_value"
+          ],
           "definition": "CHECK (denominator_value >= 0::numeric AND (denominator_value::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_metric_observations_draft_id_window_metric_name_source__key",
           "type": "unique",
+          "columns": [
+            "draft_id",
+            "window",
+            "metric_name",
+            "source",
+            "definition",
+            "measurement_kind",
+            "revision"
+          ],
           "definition": "UNIQUE (draft_id, \"window\", metric_name, source, definition, measurement_kind, revision)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_duration_seconds_check",
           "type": "check",
+          "columns": [
+            "duration_seconds"
+          ],
           "definition": "CHECK (duration_seconds > 0::numeric)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_measurement_kind_check",
           "type": "check",
+          "columns": [
+            "measurement_kind"
+          ],
           "definition": "CHECK (measurement_kind = ANY (ARRAY['period'::text, 'snapshot'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_metric_value_check",
           "type": "check",
+          "columns": [
+            "metric_value"
+          ],
           "definition": "CHECK (metric_value >= 0::numeric AND (metric_value::text <> ALL (ARRAY['NaN'::text, 'Infinity'::text, '-Infinity'::text])))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_period_end",
           "type": "check",
+          "columns": [
+            "window",
+            "period_end",
+            "period_start"
+          ],
           "definition": "CHECK (\nCASE \"window\"\n    WHEN '48h'::text THEN period_end = (period_start + '48:00:00'::interval)\n    WHEN '7d'::text THEN period_end = (period_start + '168:00:00'::interval)\n    WHEN '24h'::text THEN period_end = (period_start + '24:00:00'::interval)\n    WHEN 'day_end'::text THEN period_end = (((period_start AT TIME ZONE 'Asia/Tokyo'::text)::date + '23:00:00'::time without time zone) AT TIME ZONE 'Asia/Tokyo'::text) AND period_end > period_start\n    WHEN 'pt3d'::text THEN period_end = (((period_start AT TIME ZONE 'America/Los_Angeles'::text)::date + 3)::timestamp without time zone AT TIME ZONE 'America/Los_Angeles'::text)\n    ELSE NULL::boolean\nEND)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_revision_check",
           "type": "check",
+          "columns": [
+            "revision"
+          ],
           "definition": "CHECK (revision > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_snapshot_tolerance",
           "type": "check",
+          "columns": [
+            "measurement_kind",
+            "metric_value",
+            "observed_at",
+            "period_end"
+          ],
           "definition": "CHECK (measurement_kind <> 'snapshot'::text OR metric_value IS NULL OR observed_at >= period_end AND observed_at <= (period_end + '00:15:00'::interval))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_value_data_through",
           "type": "check",
+          "columns": [
+            "metric_value",
+            "measurement_kind",
+            "data_through",
+            "period_end",
+            "observed_at"
+          ],
           "definition": "CHECK (metric_value IS NULL OR measurement_kind = 'period'::text AND data_through = period_end OR measurement_kind = 'snapshot'::text AND data_through = observed_at)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_metric_observations_window_check",
           "type": "check",
+          "columns": [
+            "window"
+          ],
           "definition": "CHECK (\"window\" = ANY (ARRAY['48h'::text, '7d'::text, 'day_end'::text, '24h'::text, 'pt3d'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -20025,6 +21612,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -20188,20 +21776,32 @@
         {
           "name": "sns_oauth_tokens_key_version_check",
           "type": "check",
+          "columns": [
+            "key_version"
+          ],
           "definition": "CHECK (key_version > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_oauth_tokens_pkey",
           "type": "primary_key",
+          "columns": [
+            "provider"
+          ],
           "definition": "PRIMARY KEY (provider)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_oauth_tokens_provider_check",
           "type": "check",
+          "columns": [
+            "provider"
+          ],
           "definition": "CHECK (provider = 'x'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -20213,6 +21813,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "postgres",
@@ -20369,38 +21970,66 @@
         {
           "name": "sns_post_tracking_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_post_tracking_pkey",
           "type": "primary_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "PRIMARY KEY (draft_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_post_tracking_template_variant_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "template_variant_id"
+          ],
           "definition": "FOREIGN KEY (template_variant_id) REFERENCES sns_template_variants(id)",
-          "references": "public.sns_template_variants"
+          "references": "public.sns_template_variants",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_post_tracking_utm_campaign_check",
           "type": "check",
+          "columns": [
+            "utm_campaign"
+          ],
           "definition": "CHECK (utm_campaign = ANY (ARRAY['sonar-preview'::text, 'race-full'::text, 'today_digest'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_post_tracking_utm_medium_check",
           "type": "check",
+          "columns": [
+            "utm_medium"
+          ],
           "definition": "CHECK (utm_medium = 'social'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_post_tracking_utm_source_check",
           "type": "check",
+          "columns": [
+            "utm_source"
+          ],
           "definition": "CHECK (utm_source = 'x'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -20412,6 +22041,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -20619,14 +22249,24 @@
         {
           "name": "sns_strategy_insights_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_strategy_insights_superseded_by_fkey",
           "type": "foreign_key",
+          "columns": [
+            "superseded_by"
+          ],
           "definition": "FOREIGN KEY (superseded_by) REFERENCES sns_strategy_insights(id)",
-          "references": "public.sns_strategy_insights"
+          "references": "public.sns_strategy_insights",
+          "referencesColumns": [
+            "id"
+          ]
         }
       ],
       "indexes": [
@@ -20650,6 +22290,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -20780,14 +22421,23 @@
         {
           "name": "sns_target_accounts_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_target_accounts_platform_account_label_key",
           "type": "unique",
+          "columns": [
+            "platform",
+            "account_label"
+          ],
           "definition": "UNIQUE (platform, account_label)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -20805,6 +22455,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -20946,14 +22597,23 @@
         {
           "name": "sns_template_variants_format_variant_name_key",
           "type": "unique",
+          "columns": [
+            "format",
+            "variant_name"
+          ],
           "definition": "UNIQUE (format, variant_name)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_template_variants_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -20971,6 +22631,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -21079,26 +22740,42 @@
         {
           "name": "sns_today_type_schedule_pkey",
           "type": "primary_key",
+          "columns": [
+            "day"
+          ],
           "definition": "PRIMARY KEY (day)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_today_type_schedule_post_check",
           "type": "check",
+          "columns": [
+            "post"
+          ],
           "definition": "CHECK (jsonb_typeof(post) = 'object'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_today_type_schedule_source_check",
           "type": "check",
+          "columns": [
+            "source"
+          ],
           "definition": "CHECK (char_length(source) >= 1 AND char_length(source) <= 64)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_today_type_schedule_type_id_check",
           "type": "check",
+          "columns": [
+            "type_id"
+          ],
           "definition": "CHECK (type_id ~ '^[a-z0-9][a-z0-9-]{0,63}$'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -21110,6 +22787,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -21251,20 +22929,34 @@
         {
           "name": "sns_topic_categories_category_key_key",
           "type": "unique",
+          "columns": [
+            "category_key"
+          ],
           "definition": "UNIQUE (category_key)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_topic_categories_content_type_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "content_type_id"
+          ],
           "definition": "FOREIGN KEY (content_type_id) REFERENCES sns_content_types(id)",
-          "references": "public.sns_content_types"
+          "references": "public.sns_content_types",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topic_categories_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -21288,6 +22980,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -21396,20 +23089,35 @@
         {
           "name": "sns_topic_category_channels_category_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "category_id"
+          ],
           "definition": "FOREIGN KEY (category_id) REFERENCES sns_topic_categories(id) ON DELETE CASCADE",
-          "references": "public.sns_topic_categories"
+          "references": "public.sns_topic_categories",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topic_category_channels_category_id_platform_key",
           "type": "unique",
+          "columns": [
+            "category_id",
+            "platform"
+          ],
           "definition": "UNIQUE (category_id, platform)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_topic_category_channels_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -21427,6 +23135,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -21579,32 +23288,59 @@
         {
           "name": "sns_topic_targets_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topic_targets_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_topic_targets_target_account_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "target_account_id"
+          ],
           "definition": "FOREIGN KEY (target_account_id) REFERENCES sns_target_accounts(id)",
-          "references": "public.sns_target_accounts"
+          "references": "public.sns_target_accounts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topic_targets_topic_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "topic_id"
+          ],
           "definition": "FOREIGN KEY (topic_id) REFERENCES sns_topics(id) ON DELETE CASCADE",
-          "references": "public.sns_topics"
+          "references": "public.sns_topics",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topic_targets_topic_id_target_account_id_key",
           "type": "unique",
+          "columns": [
+            "topic_id",
+            "target_account_id"
+          ],
           "definition": "UNIQUE (topic_id, target_account_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -21634,6 +23370,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -21808,26 +23545,48 @@
         {
           "name": "sns_topics_approver_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "approver_id"
+          ],
           "definition": "FOREIGN KEY (approver_id) REFERENCES sns_approvers(id)",
-          "references": "public.sns_approvers"
+          "references": "public.sns_approvers",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topics_campaign_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "campaign_id"
+          ],
           "definition": "FOREIGN KEY (campaign_id) REFERENCES sns_campaigns(id)",
-          "references": "public.sns_campaigns"
+          "references": "public.sns_campaigns",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topics_content_type_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "content_type_id"
+          ],
           "definition": "FOREIGN KEY (content_type_id) REFERENCES sns_content_types(id)",
-          "references": "public.sns_content_types"
+          "references": "public.sns_content_types",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_topics_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -21857,6 +23616,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -21965,26 +23725,42 @@
         {
           "name": "sns_x_kind_reserves_daily_count_check",
           "type": "check",
+          "columns": [
+            "daily_count"
+          ],
           "definition": "CHECK (daily_count >= 0 AND daily_count <= 100)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_kind_reserves_kind_check",
           "type": "check",
+          "columns": [
+            "kind"
+          ],
           "definition": "CHECK (kind ~ '^[a-z][a-z_]{0,39}$'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_kind_reserves_pkey",
           "type": "primary_key",
+          "columns": [
+            "kind"
+          ],
           "definition": "PRIMARY KEY (kind)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_kind_reserves_weekdays_check",
           "type": "check",
+          "columns": [
+            "weekdays"
+          ],
           "definition": "CHECK (weekdays IS NULL OR cardinality(weekdays) >= 1 AND cardinality(weekdays) <= 7 AND weekdays <@ ARRAY[1::smallint, 2::smallint, 3::smallint, 4::smallint, 5::smallint, 6::smallint, 7::smallint])",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -21996,6 +23772,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -22247,98 +24024,164 @@
         {
           "name": "sns_queue_timing_order",
           "type": "check",
+          "columns": [
+            "schedule_minutes",
+            "expiry_minutes"
+          ],
           "definition": "CHECK (schedule_minutes > expiry_minutes)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_attempt_ceiling_microusd_check",
           "type": "check",
+          "columns": [
+            "attempt_ceiling_microusd"
+          ],
           "definition": "CHECK (attempt_ceiling_microusd > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_budget_microusd_check",
           "type": "check",
+          "columns": [
+            "budget_microusd"
+          ],
           "definition": "CHECK (budget_microusd >= 1 AND budget_microusd <= 200000000)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_ceiling_x_plain_microusd_check",
           "type": "check",
+          "columns": [
+            "ceiling_x_plain_microusd"
+          ],
           "definition": "CHECK (ceiling_x_plain_microusd > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_ceiling_x_url_microusd_check",
           "type": "check",
+          "columns": [
+            "ceiling_x_url_microusd"
+          ],
           "definition": "CHECK (ceiling_x_url_microusd > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_check",
           "type": "check",
+          "columns": [
+            "period_end",
+            "period_start"
+          ],
           "definition": "CHECK (period_end > period_start)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_daily_external_count_check",
           "type": "check",
+          "columns": [
+            "daily_external_count"
+          ],
           "definition": "CHECK (daily_external_count >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_daily_limit_check",
           "type": "check",
+          "columns": [
+            "daily_limit"
+          ],
           "definition": "CHECK (daily_limit > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_daily_limit_x_check",
           "type": "check",
+          "columns": [
+            "daily_limit_x"
+          ],
           "definition": "CHECK (daily_limit_x > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_daily_limit_youtube_check",
           "type": "check",
+          "columns": [
+            "daily_limit_youtube"
+          ],
           "definition": "CHECK (daily_limit_youtube > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_expiry_minutes_check",
           "type": "check",
+          "columns": [
+            "expiry_minutes"
+          ],
           "definition": "CHECK (expiry_minutes > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_id_check",
           "type": "check",
+          "columns": [
+            "id"
+          ],
           "definition": "CHECK (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_max_source_age_seconds_check",
           "type": "check",
+          "columns": [
+            "max_source_age_seconds"
+          ],
           "definition": "CHECK (max_source_age_seconds > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_reserved_microusd_check",
           "type": "check",
+          "columns": [
+            "reserved_microusd"
+          ],
           "definition": "CHECK (reserved_microusd >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_control_schedule_minutes_check",
           "type": "check",
+          "columns": [
+            "schedule_minutes"
+          ],
           "definition": "CHECK (schedule_minutes > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -22350,6 +24193,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -22700,68 +24544,121 @@
         {
           "name": "sns_send_attempt_history",
           "type": "check",
+          "columns": [
+            "attempt_dates",
+            "attempt_channels"
+          ],
           "definition": "CHECK (cardinality(attempt_dates) = cardinality(attempt_channels) AND array_position(attempt_dates, NULL::date) IS NULL AND array_position(attempt_channels, NULL::text) IS NULL AND attempt_channels <@ ARRAY['x'::text, 'youtube'::text])",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_jobs_approver_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "approver_id"
+          ],
           "definition": "FOREIGN KEY (approver_id) REFERENCES sns_approvers(id)",
-          "references": "public.sns_approvers"
+          "references": "public.sns_approvers",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_x_send_jobs_auto_item_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "auto_item_id"
+          ],
           "definition": "FOREIGN KEY (auto_item_id) REFERENCES sns_auto_send_items(id)",
-          "references": "public.sns_auto_send_items"
+          "references": "public.sns_auto_send_items",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_x_send_jobs_channel_check",
           "type": "check",
+          "columns": [
+            "channel"
+          ],
           "definition": "CHECK (channel = ANY (ARRAY['x'::text, 'youtube'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_jobs_draft_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "FOREIGN KEY (draft_id) REFERENCES sns_drafts(id)",
-          "references": "public.sns_drafts"
+          "references": "public.sns_drafts",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_x_send_jobs_draft_id_key",
           "type": "unique",
+          "columns": [
+            "draft_id"
+          ],
           "definition": "UNIQUE (draft_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_jobs_external_post_id_key",
           "type": "unique",
+          "columns": [
+            "external_post_id"
+          ],
           "definition": "UNIQUE (external_post_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_jobs_parent_job_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "parent_job_id"
+          ],
           "definition": "FOREIGN KEY (parent_job_id) REFERENCES sns_x_send_jobs(id)",
-          "references": "public.sns_x_send_jobs"
+          "references": "public.sns_x_send_jobs",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_x_send_jobs_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_jobs_state_check",
           "type": "check",
+          "columns": [
+            "state"
+          ],
           "definition": "CHECK (state = ANY (ARRAY['queued'::text, 'sending'::text, 'reconcile'::text, 'posted'::text, 'failed'::text, 'cancelled'::text, 'held'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_x_send_jobs_youtube_stage_check",
           "type": "check",
+          "columns": [
+            "youtube_stage"
+          ],
           "definition": "CHECK (youtube_stage = ANY (ARRAY['uploaded'::text, 'ready'::text, 'publishing'::text, 'update_started'::text, 'private_retained'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -22797,6 +24694,14 @@
         }
       ],
       "policies": [],
+      "triggers": [
+        {
+          "name": "sns_metric_jobs_on_posted",
+          "enabled": "origin",
+          "function": "public.enqueue_sns_metric_jobs()",
+          "definition": "CREATE TRIGGER sns_metric_jobs_on_posted AFTER UPDATE OF state ON sns_x_send_jobs FOR EACH ROW EXECUTE FUNCTION enqueue_sns_metric_jobs()"
+        }
+      ],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -22960,50 +24865,85 @@
         {
           "name": "sns_youtube_quota_attempts_attempt_check",
           "type": "check",
+          "columns": [
+            "attempt"
+          ],
           "definition": "CHECK (attempt > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_attempts_general_reserved_check",
           "type": "check",
+          "columns": [
+            "general_reserved"
+          ],
           "definition": "CHECK (general_reserved = 104)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_attempts_general_units_started_check",
           "type": "check",
+          "columns": [
+            "general_units_started"
+          ],
           "definition": "CHECK (general_units_started >= 0 AND general_units_started <= 104)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_attempts_job_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "job_id"
+          ],
           "definition": "FOREIGN KEY (job_id) REFERENCES sns_x_send_jobs(id)",
-          "references": "public.sns_x_send_jobs"
+          "references": "public.sns_x_send_jobs",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_youtube_quota_attempts_pkey",
           "type": "primary_key",
+          "columns": [
+            "job_id",
+            "attempt"
+          ],
           "definition": "PRIMARY KEY (job_id, attempt)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_attempts_processing_polls_check",
           "type": "check",
+          "columns": [
+            "processing_polls"
+          ],
           "definition": "CHECK (processing_polls >= 0 AND processing_polls <= 3)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_attempts_upload_calls_started_check",
           "type": "check",
+          "columns": [
+            "upload_calls_started"
+          ],
           "definition": "CHECK (upload_calls_started >= 0 AND upload_calls_started <= 1)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_attempts_upload_reserved_check",
           "type": "check",
+          "columns": [
+            "upload_reserved"
+          ],
           "definition": "CHECK (upload_reserved = 1)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -23021,6 +24961,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -23151,38 +25092,62 @@
         {
           "name": "sns_youtube_quota_control_external_general_check",
           "type": "check",
+          "columns": [
+            "external_general"
+          ],
           "definition": "CHECK (external_general >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_control_external_uploads_check",
           "type": "check",
+          "columns": [
+            "external_uploads"
+          ],
           "definition": "CHECK (external_uploads >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_control_general_limit_check",
           "type": "check",
+          "columns": [
+            "general_limit"
+          ],
           "definition": "CHECK (general_limit > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_control_id_check",
           "type": "check",
+          "columns": [
+            "id"
+          ],
           "definition": "CHECK (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_control_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_control_upload_limit_check",
           "type": "check",
+          "columns": [
+            "upload_limit"
+          ],
           "definition": "CHECK (upload_limit > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -23194,6 +25159,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -23324,32 +25290,54 @@
         {
           "name": "sns_youtube_quota_reads_attempt_check",
           "type": "check",
+          "columns": [
+            "attempt"
+          ],
           "definition": "CHECK (attempt > 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_reads_job_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "job_id"
+          ],
           "definition": "FOREIGN KEY (job_id) REFERENCES sns_x_send_jobs(id)",
-          "references": "public.sns_x_send_jobs"
+          "references": "public.sns_x_send_jobs",
+          "referencesColumns": [
+            "id"
+          ]
         },
         {
           "name": "sns_youtube_quota_reads_method_check",
           "type": "check",
+          "columns": [
+            "method"
+          ],
           "definition": "CHECK (method = 'videos.list'::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_reads_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "sns_youtube_quota_reads_units_check",
           "type": "check",
+          "columns": [
+            "units"
+          ],
           "definition": "CHECK (units = 1)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -23367,6 +25355,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -23585,32 +25574,56 @@
         {
           "name": "st_course_baseline_breakout_null_only_course1",
           "type": "check",
+          "columns": [
+            "course",
+            "breakout_count",
+            "breakout_rate"
+          ],
           "definition": "CHECK (course = 1 AND breakout_count IS NULL AND breakout_rate IS NULL OR course > 1 AND breakout_count IS NOT NULL AND breakout_rate IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "st_course_baseline_course_range",
           "type": "check",
+          "columns": [
+            "course"
+          ],
           "definition": "CHECK (course >= 1 AND course <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "st_course_baseline_grade_values",
           "type": "check",
+          "columns": [
+            "grade"
+          ],
           "definition": "CHECK (grade = ANY (ARRAY['A1'::text, 'A2'::text, 'B1'::text, 'B2'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "st_course_baseline_pkey",
           "type": "primary_key",
+          "columns": [
+            "course",
+            "grade"
+          ],
           "definition": "PRIMARY KEY (course, grade)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "st_course_baseline_window_order",
           "type": "check",
+          "columns": [
+            "window_end",
+            "window_start"
+          ],
           "definition": "CHECK (window_end >= window_start)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -23634,6 +25647,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -23811,14 +25825,23 @@
         {
           "name": "top_start_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "top_start_stats_venue_code_boat_number_key",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "boat_number"
+          ],
           "definition": "UNIQUE (venue_code, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -23853,6 +25876,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -24096,14 +26120,24 @@
         {
           "name": "user_visible_summary_model_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "model_id"
+          ],
           "definition": "FOREIGN KEY (model_id) REFERENCES models(model_id)",
-          "references": "public.models"
+          "references": "public.models",
+          "referencesColumns": [
+            "model_id"
+          ]
         },
         {
           "name": "user_visible_summary_pkey",
           "type": "primary_key",
+          "columns": [
+            "summary_id"
+          ],
           "definition": "PRIMARY KEY (summary_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -24132,6 +26166,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -24347,6 +26382,7 @@
       "constraints": [],
       "indexes": [],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -24517,6 +26553,7 @@
       "constraints": [],
       "indexes": [],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -24864,6 +26901,7 @@
       "constraints": [],
       "indexes": [],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -25058,6 +27096,7 @@
       "constraints": [],
       "indexes": [],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -25268,38 +27307,67 @@
         {
           "name": "vctb_course_range",
           "type": "check",
+          "columns": [
+            "course"
+          ],
           "definition": "CHECK (course >= 1 AND course <= 6)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "vctb_grade_values",
           "type": "check",
+          "columns": [
+            "race_grade"
+          ],
           "definition": "CHECK (race_grade = ANY (ARRAY['SG'::text, 'G1'::text, 'G2'::text, 'G3'::text, 'ippan'::text, 'ALL'::text]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "vctb_rate_by_course",
           "type": "check",
+          "columns": [
+            "course",
+            "nige_rate",
+            "nigashi_rate"
+          ],
           "definition": "CHECK (course = 1 AND nige_rate IS NOT NULL AND nigashi_rate IS NULL OR course > 1 AND nige_rate IS NULL AND nigashi_rate IS NOT NULL)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "vctb_venue_range",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 1 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "vctb_window_order",
           "type": "check",
+          "columns": [
+            "window_end",
+            "window_start"
+          ],
           "definition": "CHECK (window_end >= window_start)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_course_technique_baseline_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "race_grade",
+            "course"
+          ],
           "definition": "PRIMARY KEY (venue_code, race_grade, course)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -25323,6 +27391,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -25577,14 +27646,26 @@
         {
           "name": "venue_entry_course_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id",
+            "waku",
+            "entry_course"
+          ],
           "definition": "PRIMARY KEY (race_id, waku, entry_course)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_entry_course_stats_race_id_fkey",
           "type": "foreign_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "FOREIGN KEY (race_id) REFERENCES races(race_id) ON DELETE CASCADE",
-          "references": "public.races"
+          "references": "public.races",
+          "referencesColumns": [
+            "race_id"
+          ]
         }
       ],
       "indexes": [
@@ -25608,6 +27689,7 @@
         }
       ],
       "policies": [],
+      "triggers": [],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -25793,8 +27875,14 @@
         {
           "name": "venue_grade_boat_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "race_grade",
+            "boat_number"
+          ],
           "definition": "PRIMARY KEY (venue_code, race_grade, boat_number)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -25823,6 +27911,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -25923,14 +28012,23 @@
         {
           "name": "chk_venue_motor_start_dates_venue",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 1 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_motor_start_dates_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "start_date"
+          ],
           "definition": "PRIMARY KEY (venue_code, start_date)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -25954,6 +28052,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -26230,8 +28329,14 @@
         {
           "name": "venue_motor_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "motor_number",
+            "scraped_date"
+          ],
           "definition": "PRIMARY KEY (venue_code, motor_number, scraped_date)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -26261,6 +28366,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -26460,14 +28566,22 @@
         {
           "name": "venue_rules_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_rules_rule_id_key",
           "type": "unique",
+          "columns": [
+            "rule_id"
+          ],
           "definition": "UNIQUE (rule_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -26497,6 +28611,14 @@
         }
       ],
       "policies": [],
+      "triggers": [
+        {
+          "name": "update_venue_rules_updated_at",
+          "enabled": "origin",
+          "function": "public.update_updated_at_column()",
+          "definition": "CREATE TRIGGER update_venue_rules_updated_at BEFORE UPDATE ON venue_rules FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+        }
+      ],
       "grants": [
         {
           "grantee": "claude_ro",
@@ -26638,44 +28760,76 @@
         {
           "name": "venue_technique_period_stats_check",
           "type": "check",
+          "columns": [
+            "total_races",
+            "race_count"
+          ],
           "definition": "CHECK (total_races > 0 AND total_races >= race_count)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_technique_period_stats_check1",
           "type": "check",
+          "columns": [
+            "period_to",
+            "period_from"
+          ],
           "definition": "CHECK (period_to >= period_from)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_technique_period_stats_period_days_check",
           "type": "check",
+          "columns": [
+            "period_days"
+          ],
           "definition": "CHECK (period_days = ANY (ARRAY[90, 365]))",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_technique_period_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "venue_code",
+            "period_days",
+            "winning_technique"
+          ],
           "definition": "PRIMARY KEY (venue_code, period_days, winning_technique)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_technique_period_stats_race_count_check",
           "type": "check",
+          "columns": [
+            "race_count"
+          ],
           "definition": "CHECK (race_count >= 0)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_technique_period_stats_venue_code_check",
           "type": "check",
+          "columns": [
+            "venue_code"
+          ],
           "definition": "CHECK (venue_code >= 1 AND venue_code <= 24)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "venue_technique_period_stats_winning_technique_check",
           "type": "check",
+          "columns": [
+            "winning_technique"
+          ],
           "definition": "CHECK (winning_technique <> ''::text)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -26699,6 +28853,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -26865,8 +29020,12 @@
         {
           "name": "venues_pkey",
           "type": "primary_key",
+          "columns": [
+            "code"
+          ],
           "definition": "PRIMARY KEY (code)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -26889,6 +29048,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -27033,8 +29193,12 @@
         {
           "name": "watson_predictions_pkey",
           "type": "primary_key",
+          "columns": [
+            "race_id"
+          ],
           "definition": "PRIMARY KEY (race_id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -27057,6 +29221,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -27223,14 +29388,24 @@
         {
           "name": "winning_technique_stats_pkey",
           "type": "primary_key",
+          "columns": [
+            "id"
+          ],
           "definition": "PRIMARY KEY (id)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         },
         {
           "name": "winning_technique_stats_venue_code_boat_number_winning_tech_key",
           "type": "unique",
+          "columns": [
+            "venue_code",
+            "boat_number",
+            "winning_technique"
+          ],
           "definition": "UNIQUE (venue_code, boat_number, winning_technique)",
-          "references": null
+          "references": null,
+          "referencesColumns": null
         }
       ],
       "indexes": [
@@ -27265,6 +29440,7 @@
           "withCheck": null
         }
       ],
+      "triggers": [],
       "grants": [
         {
           "grantee": "anon",
@@ -28156,6 +30332,95 @@
         "WHERE NOT j.is_flying",
         "GROUP BY j.course, j.grade, w.ws, w.we",
         "ORDER BY j.course, j.grade;",
+        "$function$",
+        ""
+      ],
+      "grants": [
+        {
+          "grantee": "postgres",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        },
+        {
+          "grantee": "service_role",
+          "privileges": [
+            "EXECUTE"
+          ],
+          "grantable": []
+        }
+      ]
+    },
+    {
+      "name": "compute_today_course_win_stats",
+      "identityArgs": "p_until date, p_racer_ids integer[]",
+      "result": "jsonb",
+      "kind": "function",
+      "language": "sql",
+      "volatility": "stable",
+      "securityDefiner": false,
+      "config": [
+        "search_path=public"
+      ],
+      "owner": "postgres",
+      "prosrcMd5": "b4209dd368f539662c023861641b06d6",
+      "definition": [
+        "CREATE OR REPLACE FUNCTION public.compute_today_course_win_stats(p_until date, p_racer_ids integer[])",
+        " RETURNS jsonb",
+        " LANGUAGE sql",
+        " STABLE",
+        " SET search_path TO 'public'",
+        "AS $function$",
+        "WITH base AS MATERIALIZED (",
+        "  SELECT",
+        "    ra.race_date,",
+        "    e.racer_id,",
+        "    e.grade::TEXT                    AS grade,",
+        "    e.boat_number,",
+        "    (rr.rank1 = e.boat_number)       AS is_win,",
+        "    CASE e.boat_number",
+        "      WHEN 1 THEN rr.actual_course_1 WHEN 2 THEN rr.actual_course_2",
+        "      WHEN 3 THEN rr.actual_course_3 WHEN 4 THEN rr.actual_course_4",
+        "      WHEN 5 THEN rr.actual_course_5 WHEN 6 THEN rr.actual_course_6",
+        "    END AS course",
+        "  FROM races ra",
+        "  JOIN race_results rr ON rr.race_id = ra.race_id",
+        "  JOIN race_entries e  ON e.race_id  = ra.race_id",
+        "  WHERE rr.actual_course_1 IS NOT NULL",
+        "    AND rr.winning_technique IS NOT NULL AND rr.winning_technique <> ''",
+        "    AND COALESCE(rr.is_cancelled, false) = false",
+        "    AND COALESCE(rr.is_no_race, false)   = false",
+        "    AND COALESCE(e.is_absent, false)     = false",
+        "    AND e.racer_id IS NOT NULL",
+        "    AND ra.race_date <= p_until",
+        "),",
+        "grade_rows AS (",
+        "  SELECT b.grade, b.course::INTEGER AS course,",
+        "         COUNT(*)::INTEGER AS runs,",
+        "         COUNT(*) FILTER (WHERE b.is_win)::INTEGER AS wins",
+        "  FROM base b",
+        "  WHERE b.course BETWEEN 1 AND 6",
+        "    AND b.grade IN ('A1', 'A2', 'B1', 'B2')",
+        "  GROUP BY b.grade, b.course",
+        "),",
+        "racer_rows AS (",
+        "  SELECT b.racer_id, b.course::INTEGER AS course,",
+        "         COUNT(*)::INTEGER AS runs,",
+        "         COUNT(*) FILTER (WHERE b.is_win)::INTEGER AS wins,",
+        "         COUNT(*) FILTER (WHERE b.boat_number <> b.course)::INTEGER AS off_frame_runs",
+        "  FROM base b",
+        "  -- 使うのは 1コース（1号艇の段と前付けの判定）と 4コース（4号艇の段）だけ。全コースだと 10/27 で 3,706件・約460KB",
+        "  WHERE b.course IN (1, 4)",
+        "    AND b.racer_id = ANY (p_racer_ids)",
+        "  GROUP BY b.racer_id, b.course",
+        ")",
+        "SELECT jsonb_build_object(",
+        "  'window_start', (SELECT MIN(race_date) FROM base),",
+        "  'window_end',   (SELECT MAX(race_date) FROM base),",
+        "  'grade', COALESCE((SELECT jsonb_agg(to_jsonb(g) ORDER BY g.grade, g.course) FROM grade_rows g), '[]'::jsonb),",
+        "  'racer', COALESCE((SELECT jsonb_agg(to_jsonb(r) ORDER BY r.racer_id, r.course) FROM racer_rows r), '[]'::jsonb)",
+        ");",
         "$function$",
         ""
       ],
@@ -33431,6 +35696,7 @@
   ],
   "defaultPrivileges": [
     {
+      "scope": "global",
       "objectType": "function",
       "role": "postgres",
       "grantee": "postgres",
@@ -33440,6 +35706,17 @@
       "grantable": []
     },
     {
+      "scope": "public",
+      "objectType": "function",
+      "role": "postgres",
+      "grantee": "postgres",
+      "privileges": [
+        "EXECUTE"
+      ],
+      "grantable": []
+    },
+    {
+      "scope": "public",
       "objectType": "function",
       "role": "postgres",
       "grantee": "service_role",
@@ -33449,6 +35726,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "function",
       "role": "supabase_admin",
       "grantee": "anon",
@@ -33458,6 +35736,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "function",
       "role": "supabase_admin",
       "grantee": "authenticated",
@@ -33467,6 +35746,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "function",
       "role": "supabase_admin",
       "grantee": "postgres",
@@ -33476,6 +35756,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "function",
       "role": "supabase_admin",
       "grantee": "service_role",
@@ -33485,6 +35766,79 @@
       "grantable": []
     },
     {
+      "scope": "public",
+      "objectType": "sequence",
+      "role": "postgres",
+      "grantee": "postgres",
+      "privileges": [
+        "SELECT",
+        "UPDATE",
+        "USAGE"
+      ],
+      "grantable": []
+    },
+    {
+      "scope": "public",
+      "objectType": "sequence",
+      "role": "postgres",
+      "grantee": "service_role",
+      "privileges": [
+        "SELECT",
+        "UPDATE",
+        "USAGE"
+      ],
+      "grantable": []
+    },
+    {
+      "scope": "public",
+      "objectType": "sequence",
+      "role": "supabase_admin",
+      "grantee": "anon",
+      "privileges": [
+        "SELECT",
+        "UPDATE",
+        "USAGE"
+      ],
+      "grantable": []
+    },
+    {
+      "scope": "public",
+      "objectType": "sequence",
+      "role": "supabase_admin",
+      "grantee": "authenticated",
+      "privileges": [
+        "SELECT",
+        "UPDATE",
+        "USAGE"
+      ],
+      "grantable": []
+    },
+    {
+      "scope": "public",
+      "objectType": "sequence",
+      "role": "supabase_admin",
+      "grantee": "postgres",
+      "privileges": [
+        "SELECT",
+        "UPDATE",
+        "USAGE"
+      ],
+      "grantable": []
+    },
+    {
+      "scope": "public",
+      "objectType": "sequence",
+      "role": "supabase_admin",
+      "grantee": "service_role",
+      "privileges": [
+        "SELECT",
+        "UPDATE",
+        "USAGE"
+      ],
+      "grantable": []
+    },
+    {
+      "scope": "public",
       "objectType": "table",
       "role": "postgres",
       "grantee": "claude_ro",
@@ -33494,6 +35848,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "table",
       "role": "postgres",
       "grantee": "postgres",
@@ -33510,6 +35865,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "table",
       "role": "postgres",
       "grantee": "service_role",
@@ -33526,6 +35882,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "table",
       "role": "supabase_admin",
       "grantee": "anon",
@@ -33542,6 +35899,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "table",
       "role": "supabase_admin",
       "grantee": "authenticated",
@@ -33558,6 +35916,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "table",
       "role": "supabase_admin",
       "grantee": "postgres",
@@ -33574,6 +35933,7 @@
       "grantable": []
     },
     {
+      "scope": "public",
       "objectType": "table",
       "role": "supabase_admin",
       "grantee": "service_role",
@@ -33586,72 +35946,6 @@
         "TRIGGER",
         "TRUNCATE",
         "UPDATE"
-      ],
-      "grantable": []
-    },
-    {
-      "objectType": "sequence",
-      "role": "postgres",
-      "grantee": "postgres",
-      "privileges": [
-        "SELECT",
-        "UPDATE",
-        "USAGE"
-      ],
-      "grantable": []
-    },
-    {
-      "objectType": "sequence",
-      "role": "postgres",
-      "grantee": "service_role",
-      "privileges": [
-        "SELECT",
-        "UPDATE",
-        "USAGE"
-      ],
-      "grantable": []
-    },
-    {
-      "objectType": "sequence",
-      "role": "supabase_admin",
-      "grantee": "anon",
-      "privileges": [
-        "SELECT",
-        "UPDATE",
-        "USAGE"
-      ],
-      "grantable": []
-    },
-    {
-      "objectType": "sequence",
-      "role": "supabase_admin",
-      "grantee": "authenticated",
-      "privileges": [
-        "SELECT",
-        "UPDATE",
-        "USAGE"
-      ],
-      "grantable": []
-    },
-    {
-      "objectType": "sequence",
-      "role": "supabase_admin",
-      "grantee": "postgres",
-      "privileges": [
-        "SELECT",
-        "UPDATE",
-        "USAGE"
-      ],
-      "grantable": []
-    },
-    {
-      "objectType": "sequence",
-      "role": "supabase_admin",
-      "grantee": "service_role",
-      "privileges": [
-        "SELECT",
-        "UPDATE",
-        "USAGE"
       ],
       "grantable": []
     }

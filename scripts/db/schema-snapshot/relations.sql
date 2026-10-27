@@ -1,4 +1,4 @@
--- 本番スキーマの写し（scripts/db/schema-snapshot.js）: public の表・ビュー。拡張が作ったもの（pg_depend の deptype='e'）は除く
+-- 本番スキーマの写し（scripts/db/schema-snapshot.js）: public の表・ビュー。拡張が作ったもの（pg_depend の deptype='e'）は除く。並びは名前（C の照合）
 SELECT c.relname AS name,
        c.relkind::text AS relkind,
        pg_get_userbyid(c.relowner) AS owner,
@@ -15,4 +15,4 @@ WHERE n.nspname = 'public'
     SELECT 1 FROM pg_catalog.pg_depend d
     WHERE d.classid = 'pg_catalog.pg_class'::regclass AND d.objid = c.oid AND d.deptype = 'e'
   )
-ORDER BY c.relname
+ORDER BY c.relname COLLATE "C"
