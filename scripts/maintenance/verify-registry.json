@@ -1458,7 +1458,7 @@
     {
       "script": "verify-today-course-win.js",
       "tier": "ci",
-      "guards": "/today の X 投稿の型 b（コース別1着率、hq 2026-10-27）の材料: マイグレーション 181（compute_today_course_win_stats、jsonb の1つで返す）の級別の全国の値は各走の級で数え、1着は決まり手を問わない、中止・欠場・決まり手なし・p_until より後は数えない、窓は全行で同じ、選手の行は1・4コースだけで前付けの回数（枠番と違うコース）、anon・authenticated は呼べない。buildCourseWinNotes は率で絞らず載せる条件（30回・期待度数5・4コースは A1・A2・前付けのレースを外す）の全員を候補にし段ごとの数を残す、縮めた値・z・Bonferroni の線・分位点。fetchCourseWin は関数が無い・読めない・材料が壊れていても一覧を止めず unavailable、窓は前々日まで。SQL181 を PGlite、外部接続なし"
+      "guards": "/today の X 投稿の型 b（コース別1着率、hq 2026-10-27）の材料: マイグレーション 183（compute_today_course_win_stats、jsonb の1つで返す）の級別の全国の値は各走の級で数え、1着は決まり手を問わない、中止・欠場・決まり手なし・p_until より後は数えない、窓は全行で同じ、選手の行は1・4コースだけで前付けの回数（枠番と違うコース）、anon・authenticated は呼べない。buildCourseWinNotes は率で絞らず載せる条件（30回・期待度数5・4コースは A1・A2・前付けのレースを外す）の全員を候補にし段ごとの数を残す、縮めた値・z・Bonferroni の線・分位点。fetchCourseWin は関数が無い・読めない・材料が壊れていても一覧を止めず unavailable、窓は前々日まで。SQL183 を PGlite、外部接続なし"
     },
     {
       "script": "verify-turn-time-venues.js",

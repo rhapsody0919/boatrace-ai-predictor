@@ -1,4 +1,4 @@
--- 181: /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定）の材料。
+-- 183: /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定）の材料。
 -- 級別の全国のコース別1着率（各走の race_entries.grade で数える）と、今日の選手のコース別の走数・1着数を返す RPC。
 -- 1着は決まり手を問わない（rank1 = 枠番）。racer_course_technique_stats（098）は逃げ・まくりの数だけで、
 -- 4コースの1着数と級別の全国の値を持たないので、新しい関数にする（098 の表・関数は変えない）。
@@ -109,4 +109,4 @@ REVOKE ALL ON FUNCTION public.compute_today_course_win_stats(DATE, INTEGER[]) FR
 GRANT EXECUTE ON FUNCTION public.compute_today_course_win_stats(DATE, INTEGER[]) TO service_role;
 
 COMMENT ON FUNCTION public.compute_today_course_win_stats(DATE, INTEGER[]) IS
-  '/today の X 投稿の型 b の材料（181）。jsonb の1つで、級別の全国のコース別1着率（grade、各走の級）と、指定の選手のコース別の走数・1着数・枠番と違うコースに入った走数（racer）、窓（window_start・window_end）。母集団は compute_racer_course_technique_stats と同じ、race_date <= p_until。朝の一覧の生成だけが呼ぶ';
+  '/today の X 投稿の型 b の材料（183）。jsonb の1つで、級別の全国のコース別1着率（grade、各走の級）と、指定の選手のコース別の走数・1着数・枠番と違うコースに入った走数（racer）、窓（window_start・window_end）。母集団は compute_racer_course_technique_stats と同じ、race_date <= p_until。朝の一覧の生成だけが呼ぶ';

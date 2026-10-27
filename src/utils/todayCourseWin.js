@@ -5,7 +5,7 @@
  *
  * - 指標は「そのコースに入ったときの1着」（決まり手を問わない）。段は 1号艇（1コース）と 4号艇（4コース、A1・A2 だけ）
  * - 比べる相手は「同じ級の全国の、そのコースの1着率」。級は各走の race_entries.grade で数える（RPC
- *   compute_today_course_win_stats、マイグレーション 181）。候補の級は今日の出走表の級
+ *   compute_today_course_win_stats、マイグレーション 183）。候補の級は今日の出走表の級
  * - 並べは両段とも「縮めた値（級の全国平均へ寄せたベータ二項）−その選手の級の全国平均」の大きい順。同率は件数の多い方
  * - 候補は率で先に絞らない（今の nigeCandidates は逃げ率70%で絞った後の数で、K にならない）。
  *   載せる条件（走数・期待1着数・級・前付け）だけで決め、全員を残す
@@ -105,7 +105,7 @@ export function normalQuantile(p) {
 export const bonferroniLine = (k) => normalQuantile(1 - 0.025 / k);
 
 /**
- * RPC（181）の jsonb の1つを、行の配列（scope='grade'・'racer'、どの行にも窓）にする。形が違えば投げる
+ * RPC（183）の jsonb の1つを、行の配列（scope='grade'・'racer'、どの行にも窓）にする。形が違えば投げる
  * （集合で返すと PostgREST の上限1000行で黙って切れるので、関数は jsonb の1つで返す。system-architect の審査 P0）
  */
 export function courseWinRowsFromJson(data) {
