@@ -6,7 +6,7 @@
  * cwd は sns-video-studio/remotion（Remotion の src/index.jsx を読む）。ローカルの VOICEVOX engine が要る
  */
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { f01Check, f01Description, f01Script, splitSubs } from "./f01.mjs";
 import { synthAll } from "./f01-voice.mjs";
@@ -140,6 +140,7 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   };
   writeFileSync(join(out, "f01.json"), JSON.stringify(report, null, 2));
   writeFileSync(join(out, "description.txt"), description);
+  writeFileSync(join(out, "chapters.txt"), chapters);
   writeFileSync(join(out, "props.json"), JSON.stringify(props));
   if (why.length) return { reasons: ["type_unsupported:f01_check"], detail: why.join(" / "), report };
   const mp4 = join(out, "f01.mp4");
@@ -169,4 +170,26 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     execFileSync("ffmpeg", ["-y", "-v", "error", "-i", mp4, "-vf", `select='${sel}',scale=640:360,tile=3x${Math.ceil(picks.length / 3)}`, "-frames:v", "1", "-vsync", "vfr", join(out, "sheet.png")]);
   }
   return { reasons: [], mp4, thumb, seconds, title: s.title, description, chapters, report };
+}
+
+/**
+ * 作り済みの完全版（buildF01 の出力）を読む。run-full.mjs --bundle-only（描かずに bundle だけ作り直す）で使う。
+ * 無ければ type_unsupported:f01_missing（今の型の完全版で代えない）
+ * @param {string} out buildF01 の出力ディレクトリ
+ */
+export function loadF01(out) {
+  const files = ["f01.mp4", "thumb.png", "f01.json", "description.txt", "chapters.txt"];
+  const missing = files.filter((f) => !existsSync(join(out, f)));
+  if (missing.length) return { reasons: ["type_unsupported:f01_missing"], detail: `${out} に ${missing.join("・")} が無い（--bundle-only の前に f01 を描く）` };
+  const report = JSON.parse(readFileSync(join(out, "f01.json"), "utf8"));
+  return {
+    reasons: [],
+    mp4: join(out, "f01.mp4"),
+    thumb: join(out, "thumb.png"),
+    seconds: report.seconds,
+    title: report.title,
+    description: readFileSync(join(out, "description.txt"), "utf8"),
+    chapters: readFileSync(join(out, "chapters.txt"), "utf8"),
+    report,
+  };
 }

@@ -340,7 +340,13 @@ if (!noVideo && !bundleOnly) {
 
 // 型 f01: 完全版を横 16:9＋声で作る（声・実画面の撮影・描画）。作れなければ type_unsupported で止める（黙って今の型で作らない）
 // 読み込みは f01 のときだけ（声・撮影の依存（Playwright・VOICEVOX）を今の型の実行に持ち込まない）
-const f01Full = f01 && !noVideo && !bundleOnly ? await (await import("./f01-build.mjs")).buildF01(m, join(out, "f01"), { bgm, concurrency }) : null;
+// --bundle-only は描かずに作り済みの f01 を読む（題・説明欄・クレジット・サムネを bundle に入れるため。Codex P1 #2011）
+const f01Full = f01 && !noVideo
+  ? await (async () => {
+      const lib = await import("./f01-build.mjs");
+      return bundleOnly ? lib.loadF01(join(out, "f01")) : lib.buildF01(m, join(out, "f01"), { bgm, concurrency });
+    })()
+  : null;
 if (f01Full?.reasons.length) typeStop(f01Full.reasons, f01Full.detail);
 if (f01Full) writeFileSync(join(out, "chapters.txt"), f01Full.chapters);
 // 送信の道に渡すフォルダ（完全版と入口版の両方があるときだけ）。機械の検査が全部通ったときだけ作る

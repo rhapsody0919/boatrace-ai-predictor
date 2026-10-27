@@ -2074,6 +2074,21 @@ for (const f of fixtures) {
   assert.ok(f01Check(s0, { desc: VOICE.credit, kana: {}, shots: { c2: { text: "1号艇 78% 31 3件" } } }).length === 0, "空白の違いは同じとみなす");
   assert.ok(f01Check(s0, { desc: VOICE.credit, kana: {}, shots: { c2: { text: "1号艇 78% 312件" } } }).some((w) => w.includes("313件")));
   assert.ok(f01Check({ chapters: [] }, { desc: VOICE.credit, kana: { "c2-1": "サンビャクジュウサン/ゲン" }, shots: {} }).some((w) => w.includes("ゲン")));
+  // --bundle-only は作り済みの f01 を読む（読めないと voice_credit が false になり bundle が落ちた。Codex P1 #2011）
+  {
+    const { loadF01 } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const { mkdtempSync, writeFileSync: wf } = await import("node:fs");
+    const { tmpdir: td } = await import("node:os");
+    const dir = mkdtempSync(`${td()}/f01-`);
+    assert.deepEqual(loadF01(dir).reasons, ["type_unsupported:f01_missing"], "作り済みが無ければ止める（今の型で代えない）");
+    for (const f of ["f01.mp4", "thumb.png"]) wf(`${dir}/${f}`, "x");
+    wf(`${dir}/f01.json`, JSON.stringify({ title: "題", seconds: 137.6 }));
+    wf(`${dir}/description.txt`, `1行目\n音声: ${VOICE.credit}`);
+    wf(`${dir}/chapters.txt`, "0:00 冒頭\n");
+    const r = loadF01(dir);
+    assert.deepEqual(r.reasons, []);
+    assert.ok(r.description.includes(VOICE.credit) && r.title === "題" && r.thumb.endsWith("thumb.png"));
+  }
   // 選手名を声で読まない
   assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
 }
