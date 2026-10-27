@@ -98,3 +98,10 @@
 - JSDoc の型の import は、改行と行頭の ` * ` をはさんでも tsc が読む。コメントを正規表現で見るときは各行の先頭の `*` を取り除いてから照合し、取り出せない `import(` は不合格にする（2026-10-24 実測、PR #1842 の system-architect）
 - pure の根へ移すときの旧の置き場は `export * from` だけでよい。名前が落ちるのは default export があるときだけなので、移す前に `grep "export default"` で0件を確かめる（2026-10-24、PR #1843 の system-architect。seriesPoints・raceStageConfig・meetExclusion は0件）
 - ファイルを移したら、そのパスを名指しする CI の条件と、旧のパスの文字列を書き換える変異の試験を探して移した先へ向け直す。今は `quality-gates.yml` の ml-tests（raceStageConfig）と `verify-frontend-pure-functions.js` の変異が該当し、`post-merge-checks.yml` の paths（`src/**`）と verify-no-undef（`src`）は src/pure を含む（2026-10-24、PR #1843 の grep）
+- E2E Re-record の7日で唯一の採用（run 40279649935）は、その日4回目の完走で、前の3回は再生で1・1・2件失敗の不採用。揺れでは撮り直しに意味があり、「同じ日に2回で打ち切り」は採用を消す（2026-10-27、system-architect、judge のログ、docs/design/ci-minutes-reduction/design.md）
+- job-watch.yml の concurrency は workflow の単位なので、scan が skip になる run も枠を取り、待っている scan を置き換える（7日で258回取り消し）。scan を条件で絞るなら concurrency を job へ移す（2026-10-27、system-architect、job-watch.yml:66-70）
+- guard-pr-merge の judgeE2eScope は、集約 e2e が SUCCESS のときしか e2e-shard を見ない。e2e の失敗は ask で返るので、古い失敗が残る窓では文言が誤る。「full で e2e-shard の成功が無い」は e2e の状態によらず deny にする（2026-10-27、system-architect、guard-pr-merge.js:442）
+- hq の codex-pr.json:178 は e2e-shard (1/3)〜(3/3) を完全一致で期待し、codex-pr.py:478-480 は名前が無いと M2 を満たさない。#1791 で5組になってから食い違っている。組の数を変えるたびに hq 側も変える（2026-10-27、system-architect、grep）
+- Actions の課金の集計で `attempts/{run_attempt}/jobs` だけを取ると、rerun の前の attempt の分が抜ける（7日の E2E で12 run、約1,000分）（2026-10-27、system-architect）
+- E2E の組は時間の95%以上がテストの実行で、checkout・npm ci・Playwright の install は合わせて約40秒。キャッシュの効き目は小さい（2026-10-27 実測、run 39377214420 の step の時刻）
+- 非公開のリポジトリの ubuntu-latest は 2 vCPU・8GB（公開は 4 vCPU・16GB）。CPU が律速の E2E は非公開で遅くなる（2026-10-27、GitHub の公式の runner の仕様）
