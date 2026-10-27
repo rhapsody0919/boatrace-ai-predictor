@@ -31,6 +31,20 @@ export const sonarTabFilter = and(
   exact("customEvent:tab_id", "sonar"),
 );
 
+/** 思考アシストのページ表示。cron で記事ファイルを読まないよう src の言語設定に依存しない。 */
+export const assistPageFilter = and(
+  exact("eventName", "page_view"),
+  {
+    filter: {
+      fieldName: "pagePath",
+      stringFilter: {
+        matchType: "FULL_REGEXP",
+        value: "^/([a-z]{2}(-[A-Za-z]{2})?/)?race/[^/]+/assist/?$",
+      },
+    },
+  },
+);
+
 const GA4_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const TIMEOUT_MS = 30000;

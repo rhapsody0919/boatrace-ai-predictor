@@ -170,11 +170,12 @@ function mockYoutube(calls = [], { channelDays } = {}) {
 }
 
 // UTM の行: [日付, 流入元, campaign, content, term, 指標...]
-function mockGa4(calls = [], { utm = [], utmSonar = [] } = {}) {
+function mockGa4(calls = [], { utm = [], utmSonar = [], utmAssist = [] } = {}) {
   return async () => async (body) => {
     calls.push(body);
     const dims = body.dimensions.map((d) => d.name).join(",");
     const sonar = JSON.stringify(body.dimensionFilter).includes("race_tab");
+    if (JSON.stringify(body.dimensionFilter).includes("pagePath")) return utmAssist;
     if (dims === "date,sessionSource")
       return sonar
         ? [["20261014", "t.co", 2]]
@@ -1172,4 +1173,54 @@ test("pt3d の観測: 4指標のうち1つの保存に落ちたら、次の日�
       ["views", 200],
     ],
   );
+});
+
+
+test("思考アシストの UTM: page_view の人数を投稿日と翌日だけ全貌へ保存する", async () => {
+  const race = "2026-10-13-08-12";
+  const id = (await first(
+    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,status,posted_at,source_data) VALUES(gen_random_uuid(),'full_picture','youtube','ja','全貌','本文','posted','2026-10-13T08:05:00Z',$1) RETURNING id",
+    [{ full_picture: { race_id: race } }],
+  )).id;
+  const calls = [];
+  await runSnsDaily(ctx(), {
+    store, youtube: mockYoutube(),
+    ga4: mockGa4(calls, { utmAssist: [
+      ["20261013", "YouTube", "race-full", `${race}/assist`, "FULL", 3],
+      ["20261014", "youtube", "race-full", race, "shorts", 2],
+      ["20261015", "youtube", "race-full", race, "full", 9],
+      ["20261014", "youtube", "race-full", "2026-10-14-07-01/assist", "full", 9],
+    ] }),
+  });
+  const got = await all("SELECT day::text, channel, draft_id, utm_content, metric_value::float v, definition FROM sns_channel_daily WHERE metric_name='assist_users' ORDER BY day");
+  assert.deepEqual(got.map(r => [r.day, r.channel, r.draft_id, r.utm_content, r.v]), [
+    ["2026-10-13", "youtube", id, `${race}/assist`, 3],
+    ["2026-10-14", "youtube", id, race, 2],
+  ]);
+  assert.match(got[0].definition, /assist_users.*utm_term=full/);
+  assert.match(got[1].definition, /assist_users.*utm_term=shorts/);
+  const request = calls.find(c => JSON.stringify(c.dimensionFilter).includes("pagePath"));
+  assert.deepEqual(request.metrics, [{ name: "totalUsers" }]);
+  assert.equal(request.dimensions.length, 5);
+  const filter = request.dimensionFilter.andGroup.expressions.at(-1);
+  assert.deepEqual(filter.andGroup.expressions[0], {
+    filter: { fieldName: "eventName", stringFilter: { matchType: "EXACT", value: "page_view" } },
+  });
+  const path = filter.andGroup.expressions[1].filter;
+  assert.equal(path.fieldName, "pagePath");
+  assert.equal(path.stringFilter.matchType, "FULL_REGEXP");
+  const re = new RegExp(path.stringFilter.value);
+  for (const prefix of ["", "/en", "/zh-TW", "/ko"])
+    assert.ok(re.test(`${prefix}/race/${race}/assist`));
+  for (const path of [`/race/${race}`, `/race/${race}/assist/extra`, "/assist", `/race/${race}/assistant`])
+    assert.equal(re.test(path), false);
+  assert.equal(calls.filter(c => c.dimensions.length === 2).length, 2);
+});
+
+test("snsGa4 はブログ記事のファイルを読む src モジュールに依存しない", async () => {
+  const source = await readFile(new URL("../lib/snsGa4.js", import.meta.url), "utf8");
+  const { parse } = await import("espree");
+  const ast = parse(source, { ecmaVersion: "latest", sourceType: "module" });
+  const imports = ast.body.filter(n => n.type === "ImportDeclaration" || n.type === "ExportAllDeclaration" || n.type === "ExportNamedDeclaration" && n.source);
+  assert.deepEqual(imports.map(n => n.source.value), ["node:crypto"]);
 });
