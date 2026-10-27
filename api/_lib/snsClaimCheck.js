@@ -158,6 +158,15 @@ export const FINALS_PART_VARIANTS = Object.freeze({
   reply: "finals_reply",
 });
 
+/** /today の対象レースの思考投稿（BOA-1169、189）の部分（下書きの source_data.today_thinking.part）と item の variant。part の無い下書きは本投稿 */
+export const THINKING_PART_VARIANTS = Object.freeze({
+  main: "thinking",
+  poll: "thinking_poll",
+  reply: "thinking_reply",
+});
+/** /today の対象レースの思考投稿の item の kind（189） */
+export const TODAY_THINKING_KIND = "today_thinking";
+
 /** races の締切（発走の時刻、JST）を ISO にする。承認（auto-plan）と送る直前で同じ文字列になるよう、ここだけで作る */
 export function deadlineIso(race) {
   if (!race?.race_date || !race?.start_time) return null;
@@ -304,6 +313,49 @@ export function createReadCurrent({
         deadline_at: draft.source_data.deadline_queue?.deadline_at ?? null,
         source_revision: revision,
         public_check: "none",
+      };
+    }
+    // /today の対象レースの思考投稿（BOA-1169、189、scripts/sns/push-finals-image.js の today_thinking）: 優勝戦の画像と同じ読み直しから
+    // 段（race_stage）を外し、item が today_thinking であること・同じレースの自分の種類（variant）をまだ送っていないこと・
+    // 自動送信の許可（today_thinking_enabled）を見る。違えば投げる（許可は transition_sns_send_139（189）も claim で見る）
+    if (draft?.source_data?.today_thinking?.race_id) {
+      const {
+        race_id: raceId,
+        revision,
+        part = "main",
+      } = draft.source_data.today_thinking;
+      const variant = THINKING_PART_VARIANTS[part];
+      if (!variant) throw new Error("thinking_part_unknown");
+      const id = encodeURIComponent(raceId);
+      const [[race], entries, exhibition, [item], sent, [control]] =
+        await Promise.all([
+          db(
+            `races?race_id=eq.${id}&select=race_date,start_time,cancellation_status`,
+          ),
+          db(`race_entries?race_id=eq.${id}&select=is_absent`),
+          db(`exhibition_data?race_id=eq.${id}&select=is_absent`),
+          db(`sns_auto_send_items?draft_id=eq.${draftId}&select=kind`),
+          db(
+            `sns_auto_send_items?kind=eq.${TODAY_THINKING_KIND}&variant=eq.${variant}&race_id=eq.${id}&state=eq.sent&select=id`,
+          ),
+          db(
+            "sns_auto_send_control?channel=eq.x&select=today_thinking_enabled",
+          ),
+        ]);
+      // 下書きのキーと item の kind が食い違う（別の種類の item にひもづく）なら送らない
+      if (item?.kind !== TODAY_THINKING_KIND)
+        throw new Error("thinking_item_mismatch");
+      if (!race) throw new Error("race_not_found");
+      if (control?.today_thinking_enabled !== true)
+        throw new Error("today_thinking_disabled");
+      if (sent.length) throw new Error("thinking_already_sent");
+      return {
+        withdrawn: [...entries, ...exhibition].some(
+          (r) => r.is_absent === true,
+        ),
+        cancelled: race.cancellation_status != null,
+        deadline_at: deadlineIso(race),
+        source_revision: revision,
       };
     }
     const imported = draft?.sns_bundle_imports;

@@ -1424,6 +1424,11 @@
       "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-today-thinking.js",
+      "tier": "ci",
+      "guards": "/today の対象レースの思考投稿（today_thinking、BOA-1169、マイグレーション 189、scripts/sns/push-finals-image.js）: 182 の transition_sns_send_139 の本文の md5 が c2b4835c… で、189 は3か所だけ変える（v_ceiling・v_rest は変えない）・先頭で control→items の順に LOCK し md5 で照合（もう一度当てると全体が戻る）・取り置きと上限を入れない、CHECK（today_thinking は X・下書きにひもづく・variant は thinking 系だけ、YouTube・main・bundle 付きを拒む、同じレースの finals と両立）、許可 today_thinking_enabled は既定 false で x の行だけ・off なら push は何も書かず claim は held（today_thinking_disabled）、期限は締切の5分前、取り置き today_thinking（2本で数え kind_slot_full）、push の3本（本投稿・投票・展示後）が下書き・item・job になり source_data のキーは today_thinking だけ・Storage は today-thinking/、/today の X 投稿の対象でないレースは拒否、優勝戦の段を見ない、本文に URL があれば拒否（優勝戦はこのレースのページ1つなら通る）、マイグレーション前（列が無い 400）でも優勝戦の許可は読める、readCurrent の today_thinking の枝（item の kind の食い違いで投げる）、優勝戦・数字で見たら・/today の claim が 182 と同じ結果。SQL182・189 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-today-variants.js",
       "tier": "ci",
       "guards": "/today の X 投稿の見出しの日替わり（config/today-variants.json、2026-10-20）: 日替わりに交互・週ごとに順を逆、uuid が空・null なら札は null、設定が無い・壊れている（1案・同じ id・改行・uuid の形）ときは既定の文、リポジトリの設定が読める、日付の差し込み。外部接続なし"

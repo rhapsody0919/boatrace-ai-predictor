@@ -11,6 +11,7 @@ export const SLOT_KINDS = {
   today: "digest",
   finals: "finals_image",
   research: "research_image",
+  todayThinking: "today_thinking",
 };
 
 /**
