@@ -7,6 +7,7 @@
  *   1. 失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）
  *   2. 1本の失敗の扱い（rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ）と、鍵が直った後の追い上げ
  *   3. Issue の印（同じ run を2回書かない）
+ *   3b. 結論が cancelled の run のうち、GitHub の時間切れだけを拾う（concurrency の置き換え・人の取り消しは拾わない。BOA-1162）
  *   4. 登録の漏れ: Environment prod-jobs・ryujin-bot を使う workflow は全部見張りの一覧にあり、job-watch.yml の workflows に名前で並ぶ
  *   5. 許可の一覧: 見張りの一覧の中だけ。送信・master への push・db-apply・審査・10分ごとの job は入れない
  *   6. 配線: actions: write は rerun の job だけ、run に ${{ }} を書かない、action は SHA で固定、資格情報を残さない
@@ -15,9 +16,11 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  cancelledByTimeout,
   classifyLog,
   decideRun,
   handledMarkers,
+  jobTimeouts,
   jstDate,
   recoveryReruns,
   runMarker,
@@ -160,6 +163,114 @@ const run = (o = {}) => ({
   check(
     "Issue の本文とコメントから印を集める",
     got.has(m) && got.has("<!-- job-watch:rerun:9:2 -->") && got.size === 2,
+  );
+}
+
+// 3b. 時間切れの cancelled（BOA-1162）。GitHub は時間切れを timed_out でなく cancelled にし、ログは置き換えと同じ
+// 「The operation was canceled.」なので、上限の分まで動いたかで見分ける。値は 2026-10-26 の実測
+// （E2E Live run 40310393182: 上限60分で60.3分、Nightly DB Verify run 40411146454: 15分で15.3分、
+//  E2E Smoke の置き換え run 40464834865: 上限45分の e2e-shard が15.3分、run 40460912291 は job が0件）
+{
+  const job = (name, minutes, conclusion = "cancelled") => ({
+    name,
+    conclusion,
+    started_at: "2026-10-26T10:49:33Z",
+    completed_at: new Date(
+      Date.parse("2026-10-26T10:49:33Z") + minutes * 60_000,
+    ).toISOString(),
+  });
+  const oneJob =
+    "jobs:\n  e2e-live:\n    runs-on: ubuntu-latest\n    timeout-minutes: 60\n";
+  const matrix = [
+    "on: push",
+    "jobs:",
+    "  e2e-scope:",
+    "    timeout-minutes: 10",
+    "  e2e-shard:",
+    "    timeout-minutes: 45",
+    "    name: 'e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})'",
+    "  replay:",
+    "    timeout-minutes: 30",
+    "# 頭の字下げが無い注釈で jobs の読みを止めない",
+    "  plain:",
+    "    steps:",
+    "      - run: echo",
+    "        timeout-minutes: 3",
+    "env:",
+    "  other:",
+    "    timeout-minutes: 1",
+  ].join("\n");
+  check(
+    "YAML の job ごとの上限（書かない job は360分、step の timeout・jobs の外は読まない、name の引用符を外す）",
+    JSON.stringify(jobTimeouts(matrix)) ===
+      JSON.stringify([
+        { key: "e2e-scope", name: null, timeout: 10 },
+        {
+          key: "e2e-shard",
+          name: "e2e-shard (${{ matrix.shard }}/${{ strategy.job-total }})",
+          timeout: 45,
+        },
+        { key: "replay", name: null, timeout: 30 },
+        { key: "plain", name: null, timeout: 360 },
+      ]),
+    JSON.stringify(jobTimeouts(matrix)),
+  );
+  check(
+    "上限60分の job が60.3分で取り消された → 時間切れ",
+    cancelledByTimeout([job("e2e-live", 60.3)], oneJob) === true,
+  );
+  check(
+    "job が0件（待ちの間に concurrency で置き換え） → 時間切れでない",
+    cancelledByTimeout([], oneJob) === false,
+  );
+  check(
+    "上限より短く取り消された（動いている間の置き換え・人の取り消し） → 時間切れでない",
+    cancelledByTimeout([job("e2e-live", 2.8)], oneJob) === false,
+  );
+  check(
+    "matrix の job は name の式の前の字で当てる（上限45分の組が15.3分で置き換え → 時間切れでない。最短の10分で判定しない）",
+    cancelledByTimeout([job("e2e-shard (1/5)", 15.3)], matrix) === false,
+  );
+  check(
+    "matrix の job が上限45分まで動いた → 時間切れ",
+    cancelledByTimeout([job("e2e-shard (2/5)", 45.2)], matrix) === true,
+  );
+  check(
+    "name の無い matrix は「key (値)」で当てる",
+    cancelledByTimeout([job("replay (3/5)", 30.1)], matrix) === true &&
+      cancelledByTimeout([job("replay (3/5)", 12)], matrix) === false,
+  );
+  check(
+    "当たらない名前は、最も短い上限で判定する（見落とさない側）",
+    cancelledByTimeout([job("unknown", 10.2)], matrix) === true,
+  );
+  check(
+    "取り消されていない job（失敗・成功）は数えない",
+    cancelledByTimeout([job("e2e-live", 61, "failure")], oneJob) === false,
+  );
+  check(
+    "開始・終了の時刻が無い job は数えない",
+    cancelledByTimeout(
+      [
+        {
+          name: "e2e-live",
+          conclusion: "cancelled",
+          started_at: null,
+          completed_at: null,
+        },
+      ],
+      oneJob,
+    ) === false,
+  );
+  const src = readFileSync(
+    path.join(ROOT, "scripts/watch/job-watch.js"),
+    "utf8",
+  );
+  check(
+    "job-watch.js の scan が cancelled を候補に入れ、cancelledByTimeout で時間切れだけを拾う",
+    /r\.conclusion === "cancelled"\)/.test(src) &&
+      /cancelledByTimeout\(jobs, yaml\)/.test(src) &&
+      /if \(r\.conclusion === "cancelled" && !timedOut\) continue;/.test(src),
   );
 }
 
@@ -334,8 +445,8 @@ const nameOf = (f) =>
     /actions\/runs\?branch=master&created=/.test(js),
   );
   check(
-    "既に書いた run のログは読み直さない",
-    /if \(alreadyNoted\) \{[\s\S]{0,400}?continue;\s*\}\s*const category = classifyLog/.test(
+    "既に書いた run のログ・job は読み直さない（時間切れの判定の job の取得も、印の確認の後）",
+    /if \(alreadyNoted\) \{[\s\S]{0,500}?continue;\s*\}\s*const jobs = await runJobs\(r\.id\);/.test(
       js,
     ),
   );

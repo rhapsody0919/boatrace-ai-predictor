@@ -590,7 +590,7 @@
     {
       "script": "verify-job-watch.js",
       "tier": "ci",
-      "guards": "定期の job の見張り（.github/workflows/job-watch.yml・key-canary.yml・scripts/watch/job-watch.json・scripts/lib/jobWatch.js、ADR-0097 の追記）。失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）、rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ、鍵が直った後の追い上げ、Issue の印、Environment prod-jobs・ryujin-bot を使う workflow が全部見張りの一覧と job-watch.yml に登録されていること、許可の一覧に送信・push・db-apply・審査・頻繁な job を入れないこと、actions: write は rerun の job だけ"
+      "guards": "定期の job の見張り（.github/workflows/job-watch.yml・key-canary.yml・scripts/watch/job-watch.json・scripts/lib/jobWatch.js、ADR-0097 の追記）。失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）、rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ、鍵が直った後の追い上げ、Issue の印、結論が cancelled の run のうち GitHub の時間切れだけを拾うこと（job が上限の分まで動いたか。concurrency の置き換え・人の取り消しは拾わない、BOA-1162）、Environment prod-jobs・ryujin-bot を使う workflow が全部見張りの一覧と job-watch.yml に登録されていること、許可の一覧に送信・push・db-apply・審査・頻繁な job を入れないこと、actions: write は rerun の job だけ"
     },
     {
       "script": "verify-jst-date-utils.js",
