@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>買い目の式別</title>
+<title>買い目の券種</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
 <style>
@@ -85,8 +85,8 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
 <body>
 <div class="wrap">
   <div class="lead">
-    <h1>思考アシストの買い目に式別を足す（モック v1）</h1>
-    <p>3連単だけだった買い目に、3連複・2連単・2連複・拡連複を足す案。式別は上のタブで1つずつ切り替え、1着・2着・3着の候補は式別をまたいで共有する。買い目のレンズの頭に、同じ候補で5式別の点数と合成オッズを並べた小表を置く。</p>
+    <h1>思考アシストの買い目に券種を足す（モック v1）</h1>
+    <p>3連単だけだった買い目に、3連複・2連単・2連複・拡連複を足す案。券種は上のタブで1つずつ切り替え、1着・2着・3着の候補は券種をまたいで共有する。買い目のレンズの頭に、同じ候補で5券種の点数と合成オッズを並べた小表を置く。</p>
     <p class="ex">数字はすべてモックの例の値（架空）。例の候補: 1着 1号艇、2着 2・3・4号艇、3着 2・3・4・5号艇。</p>
   </div>
 
@@ -97,9 +97,9 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
       <div class="phone" aria-label="画面1 買い目のレンズ">
         <div class="lens"><span>軸</span><span>相手</span><span>展開</span><span>機力</span><span class="on">買い目</span></div>
         <div class="box">
-          <h3>式別で比べる（同じ候補）</h3>
+          <h3>券種で比べる（同じ候補）</h3>
           <table>
-            <thead><tr><th scope="col">式別</th><th scope="col">組</th><th scope="col">点数</th><th scope="col">合成オッズ</th></tr></thead>
+            <thead><tr><th scope="col">券種</th><th scope="col">組</th><th scope="col">点数</th><th scope="col">合成オッズ</th></tr></thead>
             <tbody class="num">
               <tr class="tap"><td>3連単</td><td>1-234-2345</td><td>9点</td><td>1.91</td></tr>
               <tr class="cur tap"><td>3連複</td><td>1=234=2345</td><td>6点</td><td>1.18</td></tr>
@@ -108,10 +108,10 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
               <tr class="tap"><td>拡連複</td><td>1=234</td><td>3点</td><td>—</td></tr>
             </tbody>
           </table>
-          <p class="note">行を押すとその式別に切り替わる。拡連複は同じレースで複数の組が払戻の対象になるので、合成オッズを出さない（下の表で組ごとに見る）</p>
+          <p class="note">行を押すとその券種に切り替わる。拡連複は複数の組が同時に当たることがあるので、合成オッズを出さない（下の表で組ごとに見る）</p>
         </div>
         <div class="box">
-          <div class="types" role="group" aria-label="式別">
+          <div class="types" role="group" aria-label="券種">
             <button type="button" aria-pressed="false">3連単</button>
             <button type="button" aria-pressed="true">3連複</button>
             <button type="button" aria-pressed="false">2連単</button>
@@ -123,13 +123,13 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
           <table>
             <thead><tr><th scope="col">組</th><th scope="col">オッズ</th><th scope="col">人気</th><th scope="col">金額</th><th scope="col">払戻</th></tr></thead>
             <tbody class="num">
-              <tr><td>1=2=3</td><td>3.4</td><td>1番人気</td><td>100</td><td class="warn">340 トリガミ</td></tr>
-              <tr><td>1=2=4</td><td>5.8</td><td>3番人気</td><td>100</td><td class="warn">580 トリガミ</td></tr>
-              <tr><td>1=2=5</td><td>8.9</td><td>6番人気</td><td>100</td><td>890</td></tr>
-              <tr><td>1=3=4</td><td>7.6</td><td>5番人気</td><td>100</td><td>760</td></tr>
-              <tr><td>1=3=5</td><td>12.4</td><td>9番人気</td><td>100</td><td>1,240</td></tr>
-              <tr><td>1=4=5</td><td>17.9</td><td>12番人気</td><td>100</td><td>1,790</td></tr>
-              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 600円・残り 0円・払戻は合計の 0.57〜2.98倍</b></td></tr>
+              <tr><td>1=2=3</td><td>3.4</td><td>1番</td><td>100</td><td class="warn">340 トリガミ</td></tr>
+              <tr><td>1=2=4</td><td>5.8</td><td>3番</td><td>100</td><td class="warn">580 トリガミ</td></tr>
+              <tr><td>1=2=5</td><td>8.9</td><td>6番</td><td>100</td><td>890</td></tr>
+              <tr><td>1=3=4</td><td>7.6</td><td>5番</td><td>100</td><td>760</td></tr>
+              <tr><td>1=3=5</td><td>12.4</td><td>9番</td><td>100</td><td>1,240</td></tr>
+              <tr><td>1=4=5</td><td>17.9</td><td>12番</td><td>100</td><td>1,790</td></tr>
+              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 600円・残り 0円・当たったときの倍率 0.57〜2.98倍</b></td></tr>
             </tbody>
           </table>
           <p class="note">人気は3連複のオッズの順（20通りの中で）</p>
@@ -146,7 +146,7 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
       <div class="phone" aria-label="画面2 マークシート 拡連複">
         <div class="box">
           <h3>マークシート</h3>
-          <div class="types" role="group" aria-label="式別">
+          <div class="types" role="group" aria-label="券種">
             <button type="button" aria-pressed="false">3連単</button>
             <button type="button" aria-pressed="false">3連複</button>
             <button type="button" aria-pressed="false">2連単</button>
@@ -161,21 +161,21 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
             <span class="h row-dim">3艇目</span>
             <span class="cell row-dim"><span class="badge c1">1</span></span><span class="cell on row-dim"><span class="badge c2">2</span></span><span class="cell on row-dim"><span class="badge c3">3</span></span><span class="cell on row-dim"><span class="badge c4">4</span></span><span class="cell on row-dim"><span class="badge c5">5</span></span><span class="cell row-dim"><span class="badge c6">6</span></span>
           </div>
-          <p class="note">拡連複は2艇の組。3段目は使わない（入れた候補は残る。3連の式別に戻すと使う）</p>
+          <p class="note">拡連複は2艇の組。3段目は使わない（入れた候補は残る。3連の券種に戻すと使う）</p>
           <div class="short"><button type="button">選んだ艇でボックス</button></div>
           <p class="note num">3点</p>
           <div class="calc"><span>予算（円）</span><span class="in num">900</span><span class="rad"><span>● 均等払戻</span><span>○ 均等</span></span></div>
           <table>
             <thead><tr><th scope="col">組</th><th scope="col">オッズ</th><th scope="col">人気</th><th scope="col">金額</th><th scope="col">払戻（下限）</th></tr></thead>
             <tbody class="num">
-              <tr><td>1=2</td><td>1.5〜1.9</td><td>1番人気</td><td>400</td><td class="warn">600 トリガミ</td></tr>
-              <tr><td>1=3</td><td>1.9〜2.5</td><td>2番人気</td><td>300</td><td class="warn">570 トリガミ</td></tr>
-              <tr><td>1=4</td><td>2.6〜3.4</td><td>4番人気</td><td>200</td><td class="warn">520 トリガミ</td></tr>
-              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 900円・残り 0円・1組だけ払戻のときは合計の 0.58〜0.67倍</b></td></tr>
+              <tr><td>1=2</td><td>1.5〜1.9</td><td>1番</td><td>400</td><td class="warn">600 トリガミ</td></tr>
+              <tr><td>1=3</td><td>1.9〜2.5</td><td>2番</td><td>300</td><td class="warn">570 トリガミ</td></tr>
+              <tr><td>1=4</td><td>2.6〜3.4</td><td>4番</td><td>200</td><td class="warn">520 トリガミ</td></tr>
+              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 900円・残り 0円・1組だけ当たったときの倍率 0.58〜0.67倍</b></td></tr>
             </tbody>
           </table>
-          <p class="note">拡連複のオッズは公式の下限〜上限。払戻とトリガミは下限で計算</p>
-          <p class="note">拡連複は3着以内の2艇の組なので、同じレースで最大3組が払戻の対象になる（そのときの払戻は組ごとの和）</p>
+          <p class="note">拡連複のオッズは公式の下限〜上限。払戻とトリガミは下限で、その組だけ当たったときの値で計算</p>
+          <p class="note">拡連複は3着以内の2艇の組なので、同じレースで最大3組が当たることがある（そのときの払戻は組ごとの和）</p>
           <p class="note">人気は拡連複のオッズの下限の順（15通りの中で）</p>
           <p class="note">オッズは 15:42 の値。締切まで変わる</p>
         </div>
@@ -188,7 +188,7 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
       <div class="phone" aria-label="画面3 2連単">
         <div class="box">
           <h3>マークシート</h3>
-          <div class="types" role="group" aria-label="式別">
+          <div class="types" role="group" aria-label="券種">
             <button type="button" aria-pressed="false">3連単</button>
             <button type="button" aria-pressed="false">3連複</button>
             <button type="button" aria-pressed="true">2連単</button>
@@ -210,10 +210,10 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
           <table>
             <thead><tr><th scope="col">組</th><th scope="col">オッズ</th><th scope="col">人気</th><th scope="col">金額</th><th scope="col">払戻</th></tr></thead>
             <tbody class="num">
-              <tr><td>1-2</td><td>3.9</td><td>1番人気</td><td>500</td><td>1,950</td></tr>
-              <tr><td>1-3</td><td>5.2</td><td>2番人気</td><td>300</td><td>1,560</td></tr>
-              <tr><td>1-4</td><td>8.7</td><td>4番人気</td><td>200</td><td>1,740</td></tr>
-              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 1,000円・残り 0円・払戻は合計の 1.56〜1.95倍</b></td></tr>
+              <tr><td>1-2</td><td>3.9</td><td>1番</td><td>500</td><td>1,950</td></tr>
+              <tr><td>1-3</td><td>5.2</td><td>2番</td><td>300</td><td>1,560</td></tr>
+              <tr><td>1-4</td><td>8.7</td><td>4番</td><td>200</td><td>1,740</td></tr>
+              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 1,000円・残り 0円・当たったときの倍率 1.56〜1.95倍</b></td></tr>
             </tbody>
           </table>
           <p class="note num">合成 1.77（合成オッズは丸める前の理論値）</p>
@@ -227,21 +227,23 @@ tr.tap td:first-child{color:var(--acc);text-decoration:underline}
     <section>
       <h2>このモックで決めた形（ファン4人の議論から）</h2>
       <ol>
-        <li>式別のタブ5つ（3連単｜3連複｜2連単｜2連複｜拡連複）で1つずつ切り替える。既定は今と同じ3連単。最後に選んだ式別は同じレースの中で覚える</li>
-        <li>買い目のレンズの頭に「式別で比べる」小表。同じ候補での組・点数・合成オッズだけを5行。行を押すとその式別へ</li>
-        <li>候補の段は全式別で共有。連複・拡連複は見出しを「1艇目・2艇目・3艇目（順不同）」に、2連の式別は3段目を薄く残して使わない旨を1行</li>
+        <li>券種のタブ5つ（3連単｜3連複｜2連単｜2連複｜拡連複）で1つずつ切り替える。既定は今と同じ3連単。最後に選んだ券種は同じレースの中で覚える</li>
+        <li>買い目のレンズの頭に「券種で比べる」小表。同じ候補での組・点数・合成オッズだけを5行。行を押すとその券種へ</li>
+        <li>候補の段は全券種で共有。連複・拡連複は見出しを「1艇目・2艇目・3艇目（順不同）」に、2連の券種は3段目を薄く残して使わない旨を1行</li>
         <li>近道「選んだ艇でボックス」と、押した直後の「元に戻す」</li>
-        <li>表記は連単「-」、連複・拡連複「=」。フッターの頭に式別の名前</li>
-        <li>拡連複のオッズは公式の幅のまま。払戻・トリガミは下限で計算。合成オッズは出さず、1組だけ払戻のときの倍率を出す</li>
-        <li>人気はその式別のオッズの順。類似レースの件数の列は、統計の答え（BOA-1171）が出るまで3連単だけ</li>
+        <li>表記は連単「-」、連複・拡連複「=」。フッターの頭に券種の名前</li>
+        <li>拡連複のオッズは公式の幅のまま。払戻・トリガミは下限で計算。合成オッズは出さず、1組だけ当たったときの倍率を出す</li>
+        <li>人気はその券種のオッズの順。類似レースの件数の列は、統計の答え（BOA-1171）が出るまで3連単だけ</li>
       </ol>
     </section>
     <section>
       <h2>オーナーに決めてほしいこと</h2>
       <ol>
-        <li>「核連複」は拡連複（ワイド）でよいか（推奨: 拡連複として作る）</li>
+        <li>「核連複」は拡連複（公式の呼び名。通称ワイド）のことでよいか（推奨: 拡連複として作る）</li>
         <li>切り替え（タブ）＋比べる小表の形でよいか（推奨: この形）</li>
-        <li>拡連複に合成オッズを出さず、1組だけ払戻のときの倍率を出す形でよいか（推奨: この形。拡連複は複数の組が同時に払戻の対象になるので、3連単と同じ合成オッズの式は当てはまらない）</li>
+        <li>候補の段を全券種で共有し、ボックスは近道にする形でよいか（推奨: この形。ファン3対1で、ボックスを主の入力にする案もある）</li>
+        <li>拡連複に合成オッズを出さず、1組だけ当たったときの倍率を出す形でよいか（推奨: この形。拡連複は複数の組が同時に当たることがあるので、3連単と同じ合成オッズの式は当てはまらない）</li>
+        <li>取得の予算の案 A5（3連複・2連・拡連複のオッズを締切60・15・5分前だけにする）を採るか（推奨: この機能のためには採らない。採ると買い目に出すオッズが最大10分古くなる）</li>
       </ol>
     </section>
   </div>
