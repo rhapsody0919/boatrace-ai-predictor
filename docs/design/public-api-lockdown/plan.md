@@ -227,6 +227,7 @@ hq（c2・c3）は hq のファイルなので、こちらからは書き換え�
 - **Supabase の匿名ロールで取れる範囲**（§0）。閉じるなら、匿名の RPC の GRANT を外し、画面の RPC 直のフォールバックをやめる設計が要る。オーナーの判断（§7 の6）
 - BOA-1110 の4（公式の出走表・結果の再配布に当たる範囲と規約）。外への API を閉じれば API による再配布は無くなるが、画面に出す範囲の規約の確認は別
 - 署名つきトークン（④）・Cloudflare（⑥）は、段階4の後のログでヘッダを偽る取得が目立ったら再検討
+- 関門の前に、キャッシュ外しのクエリ（`?zz=乱数` で `x-vercel-cache: MISS` になり関数と DB まで届く）は 400 で塞いだ。`/api/predictions`（`predictionsResponse.js`）・`/api/analogy/*`（`analogyV16.js`・`contribution.js`、BOA-1125）に続き、`accuracy`・`races/today`・`race-history/summary`・`outcome-distribution` も画面の使うクエリ以外を DB の前に 400・no-store にする（`api/_lib/strictQuery.js`、`verify-api-query-lockdown.js`）。費用の打ち手で、外からの呼び出しそのものは止めない
 
 ## 9. ADR と関係文書
 

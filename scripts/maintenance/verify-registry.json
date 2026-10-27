@@ -145,6 +145,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
     },
     {
+      "script": "verify-api-query-lockdown.js",
+      "tier": "ci",
+      "guards": "公開 API の4本（accuracy・races/today・race-history/summary・outcome-distribution）が、画面・ボット向け HTML・全貌動画の材料の送るクエリ以外（?zz=乱数 等のキャッシュ外し・%の別表記・重複・空の組）を DB の読み出しの前に 400・no-store で拒み、正規の入力は 200 とキャッシュの設定のまま返すこと（api/_lib/strictQuery.js）"
+    },
+    {
       "script": "verify-assist-class-exh-ranks.js",
       "tier": "ci",
       "guards": "思考アシストの restClassCounts・exhRanks・courseFilled・compositeText の現行値（級の艇数・同タイムのmin順位・5走未満の補い・小数2桁表記）を固定する。仕様未定の入力はKNOWN_GAPSで観測のみ（BOA-1114）"
