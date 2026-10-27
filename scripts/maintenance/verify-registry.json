@@ -439,6 +439,11 @@
       "guards": "フロントの fetchAllByIn（supabaseDataService.js）が、テーブルごとの主キーで並べてからページングすること。新しいテーブルの並びの足し忘れを CI で止める（BOA-595）。in() の値を fetchAllInChunks で分けて読み（URL の長さの上限、BOA-1051）、in() の列がどの呼び出しでもテーブルの並びの先頭の列であること（分けた結果をつないでも並びが崩れない条件）"
     },
     {
+      "script": "verify-fetch-counter.js",
+      "tier": "ci",
+      "guards": "BOA-1145 P3（spec §7.1 の M2）: 取得先への取得の数（fetch_counts・add_fetch_counts・fetch_counts_daily、マイグレーション185）。politeFetch が1回の fetch（再試行・カナリア・接続の失敗も）ごとに応答の種類で数え、Cron の起動の終わりに1回の RPC で足す（取得0の起動は書かない）、/api/odds/live は20件か60秒ごと、185 の前・書き込みの失敗でも取得を止めない（投げない・持ち越す）、パスは2桁以上の数字を {n} にまとめる、PGlite で加算・日の合計・RLS・権限"
+    },
+    {
       "script": "verify-fetchall-order.js",
       "tier": "ci",
       "guards": "共通の fetchAll（scripts/lib/supabaseClient.js）が並び順の無いページ送りをしないこと（BOA-753。1000行を超えるとページの間で行が重複・欠落する。BOA-595・BOA-745 に続く3回目で仕組みにした）。(a) 静的: scripts/・api/ の fetchAll の呼び出しすべてに、組み立て（第3引数、変数なら同じファイルの定義）の .order( か、理由付きの unordered があること。(b) 実行時: 並び順の無いクエリは最初のリクエストの前に例外（呼び出し元と直し方つき）、理由が空の unordered も例外。(c) 変異検証。確かめない範囲: await import() で取り出した fetchAll の呼び出し（実行時の検査が止める）"

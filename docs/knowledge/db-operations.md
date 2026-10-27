@@ -97,3 +97,7 @@
 - 403 と 429/503 は同じ breaker_level を使う（止める側に倒れるので共用を採る）。24時間で1段下げ・閉じた後24時間の絞りは 429 にも効く。期間の表だけ分ける（403 のホスト60分から倍・上限6時間、429 は5・10・20・60分）（2026-10-27、#1983 の審査の決定、ADR-0101 決定5 の追記）
 - Retry-After が10秒を超える 429/503 は再試行せず、その時間（上限60分）ホストを開く。段階は上げない（2026-10-27、#1983 の審査の決定、scripts/lib/scrapeJobs/politeFetch.js）
 - 利用者の要求（/api/odds/live）の 429 は段階を上げない（countOverload:false）。外から呼べる口で定時の取得の止め方を強めさせない。Retry-After>10秒ならその時間開くのは同じ（2026-10-27、#1983 の審査の決定、api/odds/live.js）
+- Cron の口は2つある。共通の createScrapeCronHandler と、オッズの createOddsCronHandlerWithPredictionOdds（api/cron/odds.js、予測オッズの導出つき）。共通の口だけに足した仕組み（取得の数え等）はオッズに効かない。両方が使う小さな関数（createCronFetchContext）にまとめる（2026-10-27、system-architect の審査、BOA-1145 P3・185）
+- 取得の数えを起動の終わりの1回だけで書くと、関数の打ち切り（maxDuration）で溜まった分を全部失う。20件か60秒で裏で書き、handler の終わりは try/finally で残りを書く（2026-10-27、同、scripts/lib/scrapeJobs/fetchCounter.js）
+- 取得の数えでは、呼び出し側の中断（init.signal の abort。ソフトデッドライン等）を数えない。politeFetch 自身の打ち切りは kind=timeout に分けて、接続の失敗（network）と区別する（2026-10-27、同、185 の CHECK）
+- 1分の上限（目安60）を見る数は、時の表をパスで割っても出ない。表を当てた後に分の列を足すとマイグレーションがもう1本要るので、最初から分の表（fetch_counts_minute、パス・種類なし）を一緒に作る（2026-10-27、同、185）

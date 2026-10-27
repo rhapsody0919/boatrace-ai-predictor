@@ -156,6 +156,8 @@ export function createPoliteFetch({
   // false: 429/503 をブレーカーの連続の失敗に数えない（段階を上げない）。利用者の要求（/api/odds/live）用。
   // Retry-After が10秒を超えるときにその時間開くのは同じ（#1983 の審査 P2 の決定）
   countOverload = true,
+  // 取得の数を数える（fetchCounter.js。1回の fetch＝再試行・カナリアも1件。BOA-1145 P3）。無ければ数えない
+  counter = null,
 } = {}) {
   const semaphore = createSemaphore(maxConcurrent);
   // カナリアを取っている最中のホスト（同じプロセスで同時に 403 が重なっても1件にする）
@@ -166,10 +168,36 @@ export function createPoliteFetch({
     return Math.min(maxDelayMs, base) + Math.floor(random() * jitterMs);
   };
 
-  // タイムアウトはヘッダーと本文の両方に効かせ、本文を読み込んだ Response を返す
+  // 1回の fetch を数える（数える側の失敗は取得に響かせない）
+  const count = (entry) => {
+    try {
+      counter?.add(entry);
+    } catch {
+      // 数えるのは監視のため。取得は止めない
+    }
+  };
   const fetchOnce = async (url, init) => {
+    try {
+      const response = await fetchOnceRaw(url, init);
+      count({ url, status: response.status });
+      return response;
+    } catch (error) {
+      // 呼び出し側の中断（ソフトデッドライン等）は数えない。自前の打ち切りは timeout として数える（審査 P2-3）
+      if (!init.signal?.aborted) {
+        count({ url, error, timedOut: error?.politeFetchTimedOut === true });
+      }
+      throw error;
+    }
+  };
+
+  // タイムアウトはヘッダーと本文の両方に効かせ、本文を読み込んだ Response を返す
+  const fetchOnceRaw = async (url, init) => {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
     // 呼び出し側の signal も尊重する（どちらかが中断すれば中断）
     if (init.signal) {
       if (init.signal.aborted) controller.abort();
@@ -199,6 +227,15 @@ export function createPoliteFetch({
       );
       Object.defineProperty(out, "url", { value: response.url ?? url });
       return out;
+    } catch (error) {
+      if (timedOut && error && typeof error === "object") {
+        try {
+          error.politeFetchTimedOut = true;
+        } catch {
+          // 凍結された例外には印を付けられない（network として数える）
+        }
+      }
+      throw error;
     } finally {
       clearTimeout(timer);
     }

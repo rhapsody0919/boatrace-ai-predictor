@@ -1614,7 +1614,10 @@ async function runOdds({ rows, slots, available, db, fetcher, run }) {
   check(
     "predictionOddsHandlers.js: createOddsCronHandlerWithPredictionOdds は job='odds'・createOddsSlotHandler を runScrapeJob に渡す",
     /job:\s*"odds"/.test(predictionOddsHandlersSource) &&
-      /createOddsSlotHandler\(/.test(predictionOddsHandlersSource),
+      /createSlotHandler = createOddsSlotHandler/.test(
+        predictionOddsHandlersSource,
+      ) &&
+      /handleSlot:\s*createSlotHandler\(/.test(predictionOddsHandlersSource),
   );
   const vercel = JSON.parse(
     fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8"),
