@@ -124,13 +124,13 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
     if (snapshot.text?.includes(FULL_URL_PLACEHOLDER)) throw new Error('unresolved_placeholder');
     // adapter が送る前に分かる不備（題名の長さ等）は begin_post の前に落とす。後で落ちると、何も上がっていない job が要照合に残る
     if (youtube.validate) youtube.validate(snapshot);
-    await preflight(job);
+    await checked(preflight, job);
     const beginning = await store.transition(id, 'begin_post');
     if (beginning.state !== 'reconcile') return beginning;
     started = true;
     // 実adapterは未提供。各Data API呼出しの直前に必ず台帳へ記録する契約。
     const beforeCall = async method => {
-      await preflight(job);
+      await checked(preflight, job);
       await store.transition(id, 'youtube_call', { method });
     };
     const uploaded = async videoId => {
@@ -142,11 +142,25 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
     publicationPhaseStarted = true;
     return await runYoutubePublishJob(uploadedJob, { store, youtube, preflight });
   } catch (error) {
-    if (started && uploadedKnown && !publicationPhaseStarted) { try { await store.transition(id, 'youtube_retain'); } catch { /* update開始後は残置扱いに戻さない */ } }
+    if (started && uploadedKnown && !publicationPhaseStarted) { try { await store.transition(id, 'youtube_retain', retainResult(error)); } catch { /* update開始後は残置扱いに戻さない */ } }
     if (!started) { try { await store.transition(id, 'hold', { reason: 'youtube_preflight_failed' }); } catch { /* reconcileを戻さない */ } }
     throw error;
   }
 }
+/**
+ * 送る前の検査の失敗に、非公開で残すときの理由（BOA-1164、186 の youtube_retain の reason）を付ける。
+ * Chromium の回数の上限は budget、ほかの検査の失敗は check_failed
+ */
+async function checked(preflight, job) {
+  try {
+    await preflight(job);
+  } catch (error) {
+    error.retainReason ??= error.message === 'public_check_budget' ? 'budget' : 'check_failed';
+    throw error;
+  }
+}
+const retainResult = error => ({ reason: error?.retainReason ?? 'error' });
+
 /** 処理pollは1回/呼出し、試行全体で最大3回。自動タイマー・再uploadなし。 */
 export async function runYoutubePublishJob(job, { store, youtube, preflight }) {
   let publishStarted = false, retainPrivate = true;
@@ -160,10 +174,12 @@ export async function runYoutubePublishJob(job, { store, youtube, preflight }) {
     if (processing.processingStatus === 'processing') return job;
     if (processing.processingStatus !== 'succeeded') throw new Error('youtube_processing_failed');
     job = await store.transition(job.id, 'youtube_ready');
-    await preflight(job);
+    await checked(preflight, job);
     job = await store.transition(job.id, 'youtube_publish_begin');
+    // videos.list（公開の確認の読み取り）の前は検査しない。videos.update の後なので止められるものが無く、落ちると確認だけを失って
+    // update_started の要照合に残る（BOA-1164 の system-architect の指摘。台帳への記録は今までどおり）
     const beforeCall = async method => {
-      await preflight(job);
+      if (method !== 'videos.list') await checked(preflight, job);
       await store.transition(job.id, 'youtube_call', { method });
       if (method === 'videos.update') publishStarted = true;
     };
@@ -174,7 +190,7 @@ export async function runYoutubePublishJob(job, { store, youtube, preflight }) {
   } catch (error) {
     // update開始後は公開済みかもしれない。非公開と決めつけず読取照合に残す。
     if (!publishStarted && retainPrivate) {
-      try { await store.transition(job.id, 'youtube_retain'); } catch { /* DB不明なら要照合を維持 */ }
+      try { await store.transition(job.id, 'youtube_retain', retainResult(error)); } catch { /* DB不明なら要照合を維持 */ }
     }
     throw error;
   }
@@ -219,4 +235,20 @@ export async function reconcileYoutubeJob(job, { store, lookup }) {
   if (result?.confirmed !== true || result.privacyStatus !== 'public' ||
     !/^[A-Za-z0-9_-]{11}$/.test(result.id || '') || !Number.isFinite(Date.parse(result.posted_at))) return job;
   return store.transition(job.id, 'complete', result);
+}
+
+/**
+ * 非公開のまま残した job を、公開しないで閉じる（BOA-1164、186 の youtube_close_private）。読み取り（videos.list）を台帳に記録してから
+ * 動画を読み、自分の非公開の動画と確かめたときだけ閉じる。閉じるかの条件（期限・リース・段）は DB が決める。それ以外は要照合のまま返す
+ */
+export async function closeRetainedYoutubeJob(job, { store, lookup }) {
+  if (job.channel !== 'youtube' || job.state !== 'reconcile' || job.youtube_stage !== 'private_retained' || !lookup)
+    throw new Error('閉じる対象ではありません');
+  await store.transition(job.id, 'youtube_lookup');
+  const result = await lookup(job);
+  // 削除済み（videos.list が成功して items が空）も、公開されていないので閉じてよい（2026-10-27、オーナーが Studio で消した2件）
+  if (result?.found === false) return store.transition(job.id, 'youtube_close_private', { found: false });
+  if (result?.owned !== true || result.privacyStatus !== 'private' || result.id !== job.external_post_id)
+    throw new Error(`youtube_close_not_private（${result?.privacyStatus ?? '不明'}）`);
+  return store.transition(job.id, 'youtube_close_private', { owned: true, privacyStatus: 'private', id: result.id });
 }

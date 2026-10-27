@@ -13,6 +13,7 @@
  *         scripts/lib/venueEntryCourseStatsJob.js（Vercel。結果は last_report.alerts へ）
  */
 import { DRIFT_ALERT_THRESHOLD_DAYS } from "../venueMotorStats/driftHealth.js";
+import { EXCLUDED_VENUES } from "./venueConfig.js";
 
 export const ENTRY_COURSE_STRUCTURAL_DRIFT_REASONS = new Set([
   "entry_course_table_not_found",
@@ -26,13 +27,18 @@ export function isEntryCourseStructuralDriftReason(reason) {
 
 /**
  * 履歴全体から、構造変化の疑いがある会場（閾値日数以上、構造起因のreasonで失敗し続けている会場）を抽出する。
+ *
+ * 取得の対象から外した会場（EXCLUDED_VENUES）は除く。履歴（GitHub Actions の health ファイル、
+ * Vercel の last_report.health）は外した会場のキーも持ち越し、二度と更新されないため、外す前の
+ * 失敗の連続が残って知らせが出続ける（venueMotorStats/driftHealth.js と同じ。BOA-1165 で若松を外したとき）
  * @param {Record<string, {consecutiveFailDays: number, lastReason: string|null}>} health
  * @returns {Array<{venueCode: string, consecutiveFailDays: number, lastReason: string}>}
  */
 export function findEntryCourseStatsDriftAlerts(health) {
   return Object.entries(health)
     .filter(
-      ([, entry]) =>
+      ([venueCode, entry]) =>
+        !(venueCode in EXCLUDED_VENUES) &&
         entry.consecutiveFailDays >= DRIFT_ALERT_THRESHOLD_DAYS &&
         isEntryCourseStructuralDriftReason(entry.lastReason),
     )

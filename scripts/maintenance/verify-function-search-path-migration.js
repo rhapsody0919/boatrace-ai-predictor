@@ -1,7 +1,7 @@
 /**
- * verify-function-search-path-migration.js - マイグレーション186（関数19本の search_path と analogy_feedback の流量の制限・連鎖）の検証。
+ * verify-function-search-path-migration.js - マイグレーション187（関数19本の search_path と analogy_feedback の流量の制限・連鎖）の検証。
  * インメモリの Postgres（PGlite）に、本番と同じロール・races の縮約版・143 の analogy_feedback と、
- * 19関数の同じ引数の仮の関数を作り、docs/db-migration/186_function_search_path_and_feedback_limits.sql を当てて次を確かめる。
+ * 19関数の同じ引数の仮の関数を作り、docs/db-migration/187_function_search_path_and_feedback_limits.sql を当てて次を確かめる。
  * 本番 DB には接続しない。
  *
  *   (a) ALTER FUNCTION の対象は本番の pg_proc で取った19本（名前と引数の型）と一致する
@@ -28,7 +28,7 @@ const read = (name) =>
     "utf8",
   );
 const sql143 = read("143_analogy_feedback.sql");
-const sql186 = read("186_function_search_path_and_feedback_limits.sql");
+const sql187 = read("187_function_search_path_and_feedback_limits.sql");
 
 // 本番の pg_proc（2026-10-27、claude_ro）: public・plpgsql/sql・search_path 未設定・拡張の所有でない19本
 const EXPECTED = [
@@ -151,7 +151,7 @@ const guardSrc = async (db) =>
     )
   ).rows[0];
 
-const rollbackSql = sql186
+const rollbackSql = sql187
   .match(/-- ROLLBACK-BEGIN\n([\s\S]*?)-- ROLLBACK-END/)?.[1]
   .split("\n")
   .map((l) => l.replace(/^-- ?/, ""))
@@ -159,7 +159,7 @@ const rollbackSql = sql186
 
 // (a)
 const altered = [
-  ...sql186
+  ...sql187
     .split("-- ROLLBACK-BEGIN")[0]
     .matchAll(
       /^ALTER FUNCTION public\.(\w+)\(([^)]*)\) SET search_path = public, pg_temp;$/gm,
@@ -176,7 +176,7 @@ const db = new PGlite();
 await db.exec(FIXTURE_SQL);
 await db.exec(sql143);
 const before = await fnState(db);
-await db.exec(sql186);
+await db.exec(sql187);
 const after = await fnState(db);
 
 // (b)
@@ -229,10 +229,10 @@ const guardMd5 = (
 ).rows[0].h;
 check(
   "(c) ガードの md5 は適用後の確認に書いた値（識別に使う）",
-  sql186.includes(`期待: ${guardMd5} |`),
+  sql187.includes(`期待: ${guardMd5} |`),
   guardMd5,
 );
-const tx = sql186.split("-- ROLLBACK-BEGIN")[0];
+const tx = sql187.split("-- ROLLBACK-BEGIN")[0];
 check(
   "(g) races の ACCESS EXCLUSIVE を長く待たない（DROP CONSTRAINT より前に lock_timeout 1s）",
   /SET LOCAL lock_timeout = '1s';/.test(tx) &&
@@ -321,7 +321,7 @@ check(
 
 // (h)
 const once = JSON.stringify([await fnState(db), await fkState(db), (await guardSrc(db)).prosrc]);
-check("(h) 2回当てても失敗しない", (await attemptExec(db, sql186)) === null);
+check("(h) 2回当てても失敗しない", (await attemptExec(db, sql187)) === null);
 check(
   "(h) 2回目の後も関数・外部キー・ガードの本文が1回目と同じ",
   JSON.stringify([await fnState(db), await fkState(db), (await guardSrc(db)).prosrc]) === once,

@@ -1,4 +1,4 @@
--- 186: public の関数19本の search_path を固定し、analogy_feedback に全体の流量の制限と races の削除での連鎖を足す
+-- 187: public の関数19本の search_path を固定し、analogy_feedback に全体の流量の制限と races の削除での連鎖を足す
 --   （セキュリティの評価 2026-10-27、system-architect の打ち手 M・L）
 --
 -- M（search_path）:
@@ -64,7 +64,7 @@
 --   SELECT conname, confdeltype, convalidated FROM pg_constraint WHERE conrelid = 'public.analogy_feedback'::regclass AND contype = 'f';
 --   期待: analogy_feedback_race_id_fkey | c | true の1行だけ
 --   SELECT md5(prosrc), proconfig FROM pg_proc WHERE oid = 'public.analogy_feedback_guard()'::regprocedure;
---   期待: b9d0117e1ab42c593514bad0b49c504d | {"search_path=public, pg_temp"}（186 の本文）
+--   期待: 4c5a907704a88a2716353bc2dadee912 | {"search_path=public, pg_temp"}（187 の本文）
 --   Supabase の advisor（security）で function_search_path_mutable が0件
 --
 -- 戻し方: 末尾の ROLLBACK-BEGIN〜ROLLBACK-END（search_path を外す・143 のトリガーの本文に戻す・外部キーを NO ACTION に戻す）
@@ -112,7 +112,7 @@ BEGIN
         AND created_at > now() - interval '24 hours') >= 40 THEN
     RAISE EXCEPTION 'analogy_feedback: too many from this client' USING ERRCODE = 'P0001';
   END IF;
-  -- 全体の上限（186）。実績は10分の最大2行（2026-10-09〜10-26 の14行）。根拠はファイルの冒頭
+  -- 全体の上限（187）。実績は10分の最大2行（2026-10-09〜10-26 の14行）。根拠はファイルの冒頭
   IF (SELECT count(*) FROM public.analogy_feedback
       WHERE created_at > now() - interval '10 minutes') >= 30 THEN
     RAISE EXCEPTION 'analogy_feedback: too many overall' USING ERRCODE = 'P0001';

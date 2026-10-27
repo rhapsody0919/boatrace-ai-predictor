@@ -145,6 +145,11 @@
       "command": "node --env-file=.env.local scripts/maintenance/verify-analogy-v16.js"
     },
     {
+      "script": "verify-api-gate.js",
+      "tier": "ci",
+      "guards": "/api の関門の判定（api/_lib/apiGate.js、BOA-1110・ADR-0103、plan §2.2 の順）: デコード後に「.」「..」のセグメント・「//」・バックスラッシュを含むパス（%2F..%2F・..%2f・二重のエンコード）とエンコードした「/」（%2F）とデコードできないパスは段階に依らず 400（2回目以降のデコードの失敗では落とさない）、/API/ 等の大文字も関門に掛ける、/api/cron・/api/admin・/api/bot-page だけ除外（/api/cronx 等は除外しない、/%61pi/ は /api として判定）、合言葉は current・next で通り key_slot を返し偽の鍵は bad_key（鍵が未設定・空なら通さない）、Sec-Fetch-Site: same-origin（Origin が無いか自分の host）は browser、Sec-Fetch-Site が無く同じ host の Referer は browser_legacy、Googlebot・Google-InspectionTool の UA で範囲の表の固定の IPv4・IPv6 だけ search_bot（範囲外・bingbot・Googlebot-Image は通さない）、それ以外は観測で would_deny・強制で 403 no-store。結果に鍵・IP・UA の全文・クエリを入れない"
+    },
+    {
       "script": "verify-assist-class-exh-ranks.js",
       "tier": "ci",
       "guards": "思考アシストの restClassCounts・exhRanks・courseFilled・compositeText の現行値（級の艇数・同タイムのmin順位・5走未満の補い・小数2桁表記）を固定する。仕様未定の入力はKNOWN_GAPSで観測のみ（BOA-1114）"
@@ -498,7 +503,7 @@
     {
       "script": "verify-function-search-path-migration.js",
       "tier": "ci",
-      "guards": "マイグレーション186をPGlite上で適用して検証。本番の pg_proc で取った19関数（名前と引数の型）に search_path=public, pg_temp が付き本文（md5）は変わらないこと、analogy_feedback のガードが client_key を変えても全体で10分30行で止め（数える前に advisory lock、24時間の全体の上限は無い）、同じ client_key の24時間40行も残ること、races の削除で声が消えること（CASCADE）、2回当てても通り、戻し方で元に戻ること"
+      "guards": "マイグレーション187をPGlite上で適用して検証。本番の pg_proc で取った19関数（名前と引数の型）に search_path=public, pg_temp が付き本文（md5）は変わらないこと、analogy_feedback のガードが client_key を変えても全体で10分30行で止め（数える前に advisory lock、24時間の全体の上限は無い）、同じ client_key の24時間40行も残ること、races の削除で声が消えること（CASCADE）、2回当てても通り、戻し方で元に戻ること"
     },
     {
       "script": "verify-ga4-measurement-breaks.js",
@@ -1237,6 +1242,13 @@
       "guards": "取得時刻の列（created_at・updated_at、マイグレーション071）を使う書き込みと計測"
     },
     {
+      "script": "verify-search-bot-ip-ranges.js",
+      "tier": "manual",
+      "guards": "/api の関門が検索ボットを通す IP の範囲の表（api/_lib/searchBotIpRanges.json）が、Google の公開の表（common-crawlers.json・special-crawlers.json）の範囲と一致すること（BOA-1110）。--write で表を書き直す（表は手で書かない）",
+      "reason": "Google の公開の表（developers.google.com）をネットワークで取るため。CI の中で外部に依らない",
+      "command": "node scripts/maintenance/verify-search-bot-ip-ranges.js"
+    },
+    {
       "script": "verify-seo-keyword-kpi.js",
       "tier": "ci",
       "guards": "SEOワード戦略のKPI集計（scripts/lib/seoKeywordKpi.js）のクラスタ分け・週の丸め・着地ページ分類。崩れると旧名系とAI予想一般が混ざり施策の効果を取り違える"
@@ -1524,7 +1536,7 @@
     {
       "script": "verify-venue-entry-course-stats-parser.js",
       "tier": "ci",
-      "guards": "進入コース別選手成績パーサー（BOA-293）"
+      "guards": "進入コース別選手成績パーサー（BOA-293）と、若松（20）を取得の対象・drift の知らせから外していること（BOA-1165）"
     },
     {
       "script": "verify-venue-first-win-rate.js",
