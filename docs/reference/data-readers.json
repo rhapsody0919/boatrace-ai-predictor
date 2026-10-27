@@ -1,20 +1,20 @@
 {
   "$comment": "機械生成（scripts/maintenance/generate-data-readers.js）。手で書き換えない。外の読み手は docs/reference/data-readers.extra.json に足す",
   "format": 1,
-  "snapshotCapturedAt": "2026-10-27T01:48:38.766Z",
+  "snapshotCapturedAt": "2026-10-27T08:16:33.412Z",
   "counts": {
-    "tables": 105,
-    "rpcs": 65,
-    "sourceFiles": 1540,
+    "tables": 107,
+    "rpcs": 68,
+    "sourceFiles": 1548,
     "filesWithAccess": 254,
-    "tableReaders": 881,
+    "tableReaders": 887,
     "tableWriters": 185,
     "rpcCallers": 49,
-    "nameMentions": 229,
-    "tablesWithoutReaders": 20,
-    "rpcsWithoutCallers": 6,
+    "nameMentions": 231,
+    "tablesWithoutReaders": 21,
+    "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 2,
+    "notInSnapshot": 0,
     "unresolved": 31,
     "parseErrors": 0,
     "uncoveredFiles": 54
@@ -1388,7 +1388,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:209",
+          "ref": "api/_lib/snsClaimCheck.js:218",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1397,7 +1397,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:240",
+          "ref": "api/_lib/snsClaimCheck.js:249",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1406,7 +1406,16 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:319",
+          "ref": "api/_lib/snsClaimCheck.js:336",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "is_absent",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:380",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -1810,9 +1819,10 @@
           "readers": [
             "api/_lib/analogyV16.js:103",
             "api/_lib/racerEntryExhibition.js:192",
-            "api/_lib/snsClaimCheck.js:209",
-            "api/_lib/snsClaimCheck.js:240",
-            "api/_lib/snsClaimCheck.js:319",
+            "api/_lib/snsClaimCheck.js:218",
+            "api/_lib/snsClaimCheck.js:249",
+            "api/_lib/snsClaimCheck.js:336",
+            "api/_lib/snsClaimCheck.js:380",
             "api/_lib/snsTodayDigest.js:54",
             "scripts/analysis/verify-race-analysis-rpc.js:127",
             "scripts/analysis/verify-race-analysis-rpc.js:151",
@@ -2032,9 +2042,10 @@
           "readers": [
             "api/_lib/analogyV16.js:103",
             "api/_lib/racerEntryExhibition.js:192",
-            "api/_lib/snsClaimCheck.js:209",
-            "api/_lib/snsClaimCheck.js:240",
-            "api/_lib/snsClaimCheck.js:319",
+            "api/_lib/snsClaimCheck.js:218",
+            "api/_lib/snsClaimCheck.js:249",
+            "api/_lib/snsClaimCheck.js:336",
+            "api/_lib/snsClaimCheck.js:380",
             "api/_lib/snsTodayDigest.js:54",
             "scripts/lib/analogyV16Exhibition.js:208",
             "scripts/lib/analogyV16Exhibition.js:296",
@@ -2307,6 +2318,149 @@
         "pcexpect"
       ]
     },
+    "fetch_counts": {
+      "kind": "table",
+      "rlsEnabled": true,
+      "access": {
+        "anon": [],
+        "authenticated": [],
+        "summary": "service だけ"
+      },
+      "readers": [],
+      "writers": [],
+      "readByRpc": [
+        "fetch_counts_daily"
+      ],
+      "writtenByRpc": [
+        "add_fetch_counts"
+      ],
+      "readByView": [],
+      "columns": {
+        "day": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts",
+            "rpc:fetch_counts_daily"
+          ]
+        },
+        "hour": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts"
+          ]
+        },
+        "host": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts",
+            "rpc:fetch_counts_daily"
+          ]
+        },
+        "path": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts",
+            "rpc:fetch_counts_daily"
+          ]
+        },
+        "kind": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts",
+            "rpc:fetch_counts_daily"
+          ]
+        },
+        "source": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts",
+            "rpc:fetch_counts_daily"
+          ]
+        },
+        "count": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts",
+            "rpc:fetch_counts_daily"
+          ]
+        },
+        "updated_at": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts"
+          ]
+        }
+      },
+      "columnsNotInSnapshot": [],
+      "mentions": [],
+      "external": [],
+      "scrapeJobs": []
+    },
+    "fetch_counts_minute": {
+      "kind": "table",
+      "rlsEnabled": true,
+      "access": {
+        "anon": [],
+        "authenticated": [],
+        "summary": "service だけ"
+      },
+      "readers": [],
+      "writers": [],
+      "readByRpc": [],
+      "writtenByRpc": [
+        "add_fetch_counts"
+      ],
+      "readByView": [],
+      "columns": {
+        "day": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts"
+          ]
+        },
+        "minute": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts"
+          ]
+        },
+        "host": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts"
+          ]
+        },
+        "source": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts"
+          ]
+        },
+        "count": {
+          "readers": [],
+          "writers": [],
+          "sql": [
+            "rpc:add_fetch_counts"
+          ]
+        }
+      },
+      "columnsNotInSnapshot": [],
+      "mentions": [],
+      "external": [],
+      "scrapeJobs": []
+    },
     "in_caution_gap_band_daily": {
       "kind": "table",
       "rlsEnabled": true,
@@ -2576,7 +2730,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1213",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1214",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -2820,7 +2974,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1187",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1188",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -4614,7 +4768,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1029",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1030",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -5522,7 +5676,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1050",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1051",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -6135,7 +6289,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:241",
+          "ref": "api/_lib/snsClaimCheck.js:250",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6326,7 +6480,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1211",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1212",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6358,7 +6512,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:970",
+          "ref": "scripts/sns/push-finals-image.js:1164",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6516,7 +6670,7 @@
         "race_id": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:173",
-            "api/_lib/snsClaimCheck.js:241",
+            "api/_lib/snsClaimCheck.js:250",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/analysis/backtest-unified-model-place-trifecta.js:101",
             "scripts/analysis/backtest-unified-model.js:116",
@@ -6533,9 +6687,9 @@
             "scripts/maintenance/backfill-race-series-meta.js:337",
             "scripts/maintenance/backfill-series-day.js:175",
             "scripts/maintenance/backfill-series-day.js:196",
-            "scripts/maintenance/verify-full-picture-scene2.js:1211",
+            "scripts/maintenance/verify-full-picture-scene2.js:1212",
             "scripts/ml/analogy/build-wind-basis.js:95",
-            "scripts/sns/push-finals-image.js:970",
+            "scripts/sns/push-finals-image.js:1164",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:155",
@@ -6682,11 +6836,11 @@
         },
         "race_stage": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:241",
+            "api/_lib/snsClaimCheck.js:250",
             "api/admin/sns-hub/send-probe.js:66",
             "scripts/lib/snsAutoPlanRunner.js:744",
-            "scripts/maintenance/verify-full-picture-scene2.js:1211",
-            "scripts/sns/push-finals-image.js:970",
+            "scripts/maintenance/verify-full-picture-scene2.js:1212",
+            "scripts/sns/push-finals-image.js:1164",
             "scripts/verification/verify-series-points-border.mjs:79",
             "scripts/verification/verify-series-points-needed.mjs:74",
             "scripts/verification/verify-series-points-official.mjs:155",
@@ -6781,7 +6935,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:208",
+          "ref": "api/_lib/snsClaimCheck.js:217",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6790,7 +6944,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:239",
+          "ref": "api/_lib/snsClaimCheck.js:248",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -6799,7 +6953,16 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:318",
+          "ref": "api/_lib/snsClaimCheck.js:335",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "is_absent",
+            "race_id"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:379",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -7533,7 +7696,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1091",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1092",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -8210,9 +8373,10 @@
           "readers": [
             "api/_lib/analogyV16.js:105",
             "api/_lib/racerEntryExhibition.js:171",
-            "api/_lib/snsClaimCheck.js:208",
-            "api/_lib/snsClaimCheck.js:239",
-            "api/_lib/snsClaimCheck.js:318",
+            "api/_lib/snsClaimCheck.js:217",
+            "api/_lib/snsClaimCheck.js:248",
+            "api/_lib/snsClaimCheck.js:335",
+            "api/_lib/snsClaimCheck.js:379",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/analysis/analyze-indicator-predictive-power.js:148",
             "scripts/analysis/analyze-venue-03-trifecta.js:67",
@@ -8892,9 +9056,10 @@
         "is_absent": {
           "readers": [
             "api/_lib/analogyV16.js:105",
-            "api/_lib/snsClaimCheck.js:208",
-            "api/_lib/snsClaimCheck.js:239",
-            "api/_lib/snsClaimCheck.js:318",
+            "api/_lib/snsClaimCheck.js:217",
+            "api/_lib/snsClaimCheck.js:248",
+            "api/_lib/snsClaimCheck.js:335",
+            "api/_lib/snsClaimCheck.js:379",
             "api/_lib/snsTodayDigest.js:52",
             "scripts/daily/generate-morning-digest.js:155",
             "scripts/lib/analogyV16Exhibition.js:299",
@@ -14185,14 +14350,14 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:976",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:977",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1225",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1226",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -15612,7 +15777,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:206",
+          "ref": "api/_lib/snsClaimCheck.js:215",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -15623,7 +15788,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:237",
+          "ref": "api/_lib/snsClaimCheck.js:246",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -15634,7 +15799,18 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:316",
+          "ref": "api/_lib/snsClaimCheck.js:333",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "cancellation_status",
+            "race_date",
+            "race_id",
+            "start_time"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:377",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16658,7 +16834,7 @@
           "columns": []
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:965",
+          "ref": "scripts/sns/push-finals-image.js:1159",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -16669,7 +16845,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-full-picture.js:614",
+          "ref": "scripts/sns/push-full-picture.js:689",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -17072,9 +17248,10 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:206",
-            "api/_lib/snsClaimCheck.js:237",
-            "api/_lib/snsClaimCheck.js:316",
+            "api/_lib/snsClaimCheck.js:215",
+            "api/_lib/snsClaimCheck.js:246",
+            "api/_lib/snsClaimCheck.js:333",
+            "api/_lib/snsClaimCheck.js:377",
             "api/_lib/snsTodayDigest.js:50",
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/backtest-unified-model-place-trifecta.js:94",
@@ -17159,8 +17336,8 @@
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
             "scripts/maintenance/verify-sns-auto-plan.js:615",
-            "scripts/sns/push-finals-image.js:965",
-            "scripts/sns/push-full-picture.js:614",
+            "scripts/sns/push-finals-image.js:1159",
+            "scripts/sns/push-full-picture.js:689",
             "scripts/sns/today-picks.js:83",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
@@ -17208,9 +17385,10 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:206",
-            "api/_lib/snsClaimCheck.js:237",
-            "api/_lib/snsClaimCheck.js:316",
+            "api/_lib/snsClaimCheck.js:215",
+            "api/_lib/snsClaimCheck.js:246",
+            "api/_lib/snsClaimCheck.js:333",
+            "api/_lib/snsClaimCheck.js:377",
             "scripts/analysis/analyze-upset-factors.js:108",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
@@ -17255,8 +17433,8 @@
             "scripts/maintenance/verify-pretest-row-pick.js:93",
             "scripts/maintenance/verify-rpc-output-keys.js:266",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
-            "scripts/sns/push-finals-image.js:965",
-            "scripts/sns/push-full-picture.js:614",
+            "scripts/sns/push-finals-image.js:1159",
+            "scripts/sns/push-full-picture.js:689",
             "scripts/sns/today-picks.js:83",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
@@ -17405,9 +17583,10 @@
           "readers": [
             "api/_lib/analogyV16.js:101",
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:206",
-            "api/_lib/snsClaimCheck.js:237",
-            "api/_lib/snsClaimCheck.js:316",
+            "api/_lib/snsClaimCheck.js:215",
+            "api/_lib/snsClaimCheck.js:246",
+            "api/_lib/snsClaimCheck.js:333",
+            "api/_lib/snsClaimCheck.js:377",
             "api/_lib/snsTodayDigest.js:50",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:130",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
@@ -17431,8 +17610,8 @@
             "scripts/maintenance/check-result-shadow.js:125",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
-            "scripts/sns/push-finals-image.js:965",
-            "scripts/sns/push-full-picture.js:614",
+            "scripts/sns/push-finals-image.js:1159",
+            "scripts/sns/push-full-picture.js:689",
             "scripts/sns/today-picks.js:83",
             "src/services/mycroftService.js:78",
             "src/services/poirotService.js:48",
@@ -17587,9 +17766,10 @@
         "cancellation_status": {
           "readers": [
             "api/_lib/racerEntryExhibition.js:196",
-            "api/_lib/snsClaimCheck.js:206",
-            "api/_lib/snsClaimCheck.js:237",
-            "api/_lib/snsClaimCheck.js:316",
+            "api/_lib/snsClaimCheck.js:215",
+            "api/_lib/snsClaimCheck.js:246",
+            "api/_lib/snsClaimCheck.js:333",
+            "api/_lib/snsClaimCheck.js:377",
             "api/_lib/snsTodayDigest.js:50",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:232",
             "scripts/analysis/past-rate-check/pool-contract-check.mjs:76",
@@ -17619,8 +17799,8 @@
             "scripts/maintenance/fix-cancellation-status-2025-12-2026-03.js:114",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-scrape-slots-on-db.js:69",
-            "scripts/sns/push-finals-image.js:965",
-            "scripts/sns/push-full-picture.js:614",
+            "scripts/sns/push-finals-image.js:1159",
+            "scripts/sns/push-full-picture.js:689",
             "scripts/sns/today-picks.js:83",
             "src/services/supabaseDataService.js:2513",
             "src/services/supabaseDataService.js:7227"
@@ -18189,7 +18369,9 @@
         }
       ],
       "readByRpc": [],
-      "writtenByRpc": [],
+      "writtenByRpc": [
+        "scrape_breaker_open"
+      ],
       "readByView": [],
       "columns": {
         "job": {
@@ -18222,7 +18404,9 @@
             "scripts/lib/racesInit/predictCodeCheck.js:115",
             "scripts/lib/scrapeJobs/store.js:102"
           ],
-          "sql": []
+          "sql": [
+            "rpc:scrape_breaker_open"
+          ]
         },
         "mode": {
           "readers": [
@@ -18277,7 +18461,9 @@
           "writers": [
             "scripts/lib/scrapeJobs/store.js:135"
           ],
-          "sql": []
+          "sql": [
+            "rpc:scrape_breaker_open"
+          ]
         },
         "consecutive_failures": {
           "readers": [
@@ -18318,7 +18504,9 @@
           "writers": [
             "scripts/lib/scrapeJobs/store.js:318"
           ],
-          "sql": []
+          "sql": [
+            "rpc:scrape_breaker_open"
+          ]
         },
         "last_report": {
           "readers": [
@@ -18345,7 +18533,9 @@
             "scripts/lib/scrapeJobs/store.js:135",
             "scripts/lib/scrapeJobs/store.js:318"
           ],
-          "sql": []
+          "sql": [
+            "rpc:scrape_breaker_open"
+          ]
         },
         "fetch_stop": {
           "readers": [],
@@ -18355,12 +18545,16 @@
         "breaker_level": {
           "readers": [],
           "writers": [],
-          "sql": []
+          "sql": [
+            "rpc:scrape_breaker_open"
+          ]
         },
         "breaker_opened_at": {
           "readers": [],
           "writers": [],
-          "sql": []
+          "sql": [
+            "rpc:scrape_breaker_open"
+          ]
         },
         "breaker_closed_at": {
           "readers": [],
@@ -19043,7 +19237,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:245",
+          "ref": "api/_lib/snsClaimCheck.js:254",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19052,12 +19246,21 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:275",
+          "ref": "api/_lib/snsClaimCheck.js:284",
           "op": "rest",
           "via": "rest",
           "columns": [
             "channel",
             "research_image_enabled"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:344",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "channel",
+            "today_thinking_enabled"
           ]
         },
         {
@@ -19082,7 +19285,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:439",
+          "ref": "scripts/lib/snsSendRunner.js:460",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19103,19 +19306,13 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:981",
+          "ref": "scripts/sns/push-finals-image.js:1179",
           "op": "rest",
           "via": "rest",
-          "columns": [
-            "auto_approver_id",
-            "channel",
-            "dry_run",
-            "finals_image_enabled",
-            "mode"
-          ]
+          "columns": []
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:989",
+          "ref": "scripts/sns/push-finals-image.js:1190",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19126,7 +19323,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-full-picture.js:621",
+          "ref": "scripts/sns/push-full-picture.js:696",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19171,15 +19368,15 @@
       "columns": {
         "channel": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:245",
-            "api/_lib/snsClaimCheck.js:275",
+            "api/_lib/snsClaimCheck.js:254",
+            "api/_lib/snsClaimCheck.js:284",
+            "api/_lib/snsClaimCheck.js:344",
             "api/_lib/snsXSendStore.js:139",
             "scripts/lib/snsAutoPlanRunner.js:719",
-            "scripts/lib/snsSendRunner.js:439",
+            "scripts/lib/snsSendRunner.js:460",
             "scripts/lib/snsTodayPlanner.js:1160",
-            "scripts/sns/push-finals-image.js:981",
-            "scripts/sns/push-finals-image.js:989",
-            "scripts/sns/push-full-picture.js:621",
+            "scripts/sns/push-finals-image.js:1190",
+            "scripts/sns/push-full-picture.js:696",
             "scripts/sns/push-research-image.js:543",
             "scripts/sns/push-research-image.js:551"
           ],
@@ -19194,11 +19391,10 @@
           "readers": [
             "api/_lib/snsXSendStore.js:139",
             "scripts/lib/snsAutoPlanRunner.js:719",
-            "scripts/lib/snsSendRunner.js:439",
+            "scripts/lib/snsSendRunner.js:460",
             "scripts/lib/snsTodayPlanner.js:1160",
-            "scripts/sns/push-finals-image.js:981",
-            "scripts/sns/push-finals-image.js:989",
-            "scripts/sns/push-full-picture.js:621",
+            "scripts/sns/push-finals-image.js:1190",
+            "scripts/sns/push-full-picture.js:696",
             "scripts/sns/push-research-image.js:543",
             "scripts/sns/push-research-image.js:551"
           ],
@@ -19212,11 +19408,10 @@
           "readers": [
             "api/_lib/snsXSendStore.js:139",
             "scripts/lib/snsAutoPlanRunner.js:719",
-            "scripts/lib/snsSendRunner.js:439",
+            "scripts/lib/snsSendRunner.js:460",
             "scripts/lib/snsTodayPlanner.js:1160",
-            "scripts/sns/push-finals-image.js:981",
-            "scripts/sns/push-finals-image.js:989",
-            "scripts/sns/push-full-picture.js:621",
+            "scripts/sns/push-finals-image.js:1190",
+            "scripts/sns/push-full-picture.js:696",
             "scripts/sns/push-research-image.js:543",
             "scripts/sns/push-research-image.js:551"
           ],
@@ -19249,9 +19444,8 @@
           "readers": [
             "scripts/lib/snsAutoPlanRunner.js:719",
             "scripts/lib/snsTodayPlanner.js:1160",
-            "scripts/sns/push-finals-image.js:981",
-            "scripts/sns/push-finals-image.js:989",
-            "scripts/sns/push-full-picture.js:621",
+            "scripts/sns/push-finals-image.js:1190",
+            "scripts/sns/push-full-picture.js:696",
             "scripts/sns/push-research-image.js:543",
             "scripts/sns/push-research-image.js:551"
           ],
@@ -19272,8 +19466,7 @@
         },
         "finals_image_enabled": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:245",
-            "scripts/sns/push-finals-image.js:981"
+            "api/_lib/snsClaimCheck.js:254"
           ],
           "writers": [],
           "sql": [
@@ -19282,7 +19475,7 @@
         },
         "research_image_enabled": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:275",
+            "api/_lib/snsClaimCheck.js:284",
             "scripts/sns/push-research-image.js:543"
           ],
           "writers": [],
@@ -19291,7 +19484,9 @@
           ]
         }
       },
-      "columnsNotInSnapshot": [],
+      "columnsNotInSnapshot": [
+        "today_thinking_enabled"
+      ],
       "mentions": [],
       "external": [],
       "scrapeJobs": []
@@ -19351,7 +19546,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:243",
+          "ref": "api/_lib/snsClaimCheck.js:252",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19363,7 +19558,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:271",
+          "ref": "api/_lib/snsClaimCheck.js:280",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19373,7 +19568,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:273",
+          "ref": "api/_lib/snsClaimCheck.js:282",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19382,6 +19577,29 @@
             "kind",
             "race_id",
             "state"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:338",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "draft_id",
+            "kind",
+            "race_id",
+            "variant"
+          ]
+        },
+        {
+          "ref": "api/_lib/snsClaimCheck.js:341",
+          "op": "rest",
+          "via": "rest",
+          "columns": [
+            "id",
+            "kind",
+            "race_id",
+            "state",
+            "variant"
           ]
         },
         {
@@ -19426,7 +19644,7 @@
           "test": true
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:974",
+          "ref": "scripts/sns/push-finals-image.js:1169",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -19473,7 +19691,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:1060",
+          "ref": "scripts/sns/push-finals-image.js:1263",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -19481,7 +19699,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-full-picture.js:653",
+          "ref": "scripts/sns/push-full-picture.js:728",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -19505,15 +19723,16 @@
       "columns": {
         "id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:243",
-            "api/_lib/snsClaimCheck.js:273",
+            "api/_lib/snsClaimCheck.js:252",
+            "api/_lib/snsClaimCheck.js:282",
+            "api/_lib/snsClaimCheck.js:341",
             "scripts/lib/snsAutoPlanRunner.js:775",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/lib/snsTodayPlanner.js:1169",
             "scripts/maintenance/verify-sns-auto-plan.js:621",
-            "scripts/sns/push-finals-image.js:1060",
-            "scripts/sns/push-finals-image.js:974",
-            "scripts/sns/push-full-picture.js:653",
+            "scripts/sns/push-finals-image.js:1169",
+            "scripts/sns/push-finals-image.js:1263",
+            "scripts/sns/push-full-picture.js:728",
             "scripts/sns/push-research-image.js:536"
           ],
           "writers": [],
@@ -19540,7 +19759,7 @@
         },
         "channel": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:273",
+            "api/_lib/snsClaimCheck.js:282",
             "scripts/sns/push-research-image.js:536"
           ],
           "writers": [],
@@ -19555,13 +19774,15 @@
         },
         "race_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:243",
-            "api/_lib/snsClaimCheck.js:271",
-            "api/_lib/snsClaimCheck.js:273",
+            "api/_lib/snsClaimCheck.js:252",
+            "api/_lib/snsClaimCheck.js:280",
+            "api/_lib/snsClaimCheck.js:282",
+            "api/_lib/snsClaimCheck.js:338",
+            "api/_lib/snsClaimCheck.js:341",
             "scripts/lib/snsAutoPlanRunner.js:750",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/maintenance/verify-sns-today-plan.js:730",
-            "scripts/sns/push-finals-image.js:974",
+            "scripts/sns/push-finals-image.js:1169",
             "scripts/sns/push-research-image.js:536"
           ],
           "writers": [],
@@ -19588,15 +19809,16 @@
         },
         "state": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:243",
-            "api/_lib/snsClaimCheck.js:273",
+            "api/_lib/snsClaimCheck.js:252",
+            "api/_lib/snsClaimCheck.js:282",
+            "api/_lib/snsClaimCheck.js:341",
             "scripts/lib/snsAutoPlanRunner.js:775",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/lib/snsTodayPlanner.js:1169",
             "scripts/maintenance/verify-sns-auto-plan.js:621",
-            "scripts/sns/push-finals-image.js:1060",
-            "scripts/sns/push-finals-image.js:974",
-            "scripts/sns/push-full-picture.js:653",
+            "scripts/sns/push-finals-image.js:1169",
+            "scripts/sns/push-finals-image.js:1263",
+            "scripts/sns/push-full-picture.js:728",
             "scripts/sns/push-research-image.js:536"
           ],
           "writers": [],
@@ -19647,11 +19869,13 @@
         },
         "created_at": {
           "readers": [
-            "scripts/sns/push-finals-image.js:974",
+            "scripts/sns/push-finals-image.js:1169",
             "scripts/sns/push-research-image.js:536"
           ],
           "writers": [],
-          "sql": []
+          "sql": [
+            "rpc:transition_sns_x_send"
+          ]
         },
         "updated_at": {
           "readers": [],
@@ -19665,12 +19889,14 @@
         },
         "kind": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:243",
-            "api/_lib/snsClaimCheck.js:271",
-            "api/_lib/snsClaimCheck.js:273",
+            "api/_lib/snsClaimCheck.js:252",
+            "api/_lib/snsClaimCheck.js:280",
+            "api/_lib/snsClaimCheck.js:282",
+            "api/_lib/snsClaimCheck.js:338",
+            "api/_lib/snsClaimCheck.js:341",
             "scripts/lib/snsTodayPlanner.js:1105",
             "scripts/maintenance/verify-sns-today-plan.js:730",
-            "scripts/sns/push-finals-image.js:974",
+            "scripts/sns/push-finals-image.js:1169",
             "scripts/sns/push-research-image.js:536"
           ],
           "writers": [],
@@ -19682,9 +19908,10 @@
         },
         "draft_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:271",
+            "api/_lib/snsClaimCheck.js:280",
+            "api/_lib/snsClaimCheck.js:338",
             "scripts/lib/snsTodayPlanner.js:1105",
-            "scripts/sns/push-finals-image.js:974",
+            "scripts/sns/push-finals-image.js:1169",
             "scripts/sns/push-research-image.js:536"
           ],
           "writers": [],
@@ -19698,8 +19925,10 @@
         },
         "variant": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:243",
-            "scripts/sns/push-finals-image.js:974"
+            "api/_lib/snsClaimCheck.js:252",
+            "api/_lib/snsClaimCheck.js:338",
+            "api/_lib/snsClaimCheck.js:341",
+            "scripts/sns/push-finals-image.js:1169"
           ],
           "writers": [],
           "sql": []
@@ -19724,7 +19953,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:182",
+          "ref": "api/_lib/snsClaimCheck.js:191",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -19777,7 +20006,7 @@
         },
         "schema_version": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:182",
+            "api/_lib/snsClaimCheck.js:191",
             "scripts/lib/snsAutoPlanRunner.js:729"
           ],
           "writers": [],
@@ -19789,7 +20018,7 @@
         },
         "bundle": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:182",
+            "api/_lib/snsClaimCheck.js:191",
             "scripts/lib/snsAutoPlanRunner.js:729"
           ],
           "writers": [],
@@ -20031,7 +20260,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/lib/snsDailyRunner.js:739",
+          "ref": "scripts/lib/snsDailyRunner.js:748",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20050,7 +20279,7 @@
       ],
       "writers": [
         {
-          "ref": "scripts/lib/snsDailyRunner.js:747",
+          "ref": "scripts/lib/snsDailyRunner.js:756",
           "op": "upsert",
           "via": "rest",
           "columns": [
@@ -20064,77 +20293,77 @@
       "columns": {
         "id": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739"
+            "scripts/lib/snsDailyRunner.js:748"
           ],
           "writers": [],
           "sql": []
         },
         "day": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739",
-            "scripts/lib/snsDailyRunner.js:747"
+            "scripts/lib/snsDailyRunner.js:748",
+            "scripts/lib/snsDailyRunner.js:756"
           ],
           "writers": [],
           "sql": []
         },
         "channel": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739",
-            "scripts/lib/snsDailyRunner.js:747"
+            "scripts/lib/snsDailyRunner.js:748",
+            "scripts/lib/snsDailyRunner.js:756"
           ],
           "writers": [],
           "sql": []
         },
         "draft_id": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739",
-            "scripts/lib/snsDailyRunner.js:747"
+            "scripts/lib/snsDailyRunner.js:748",
+            "scripts/lib/snsDailyRunner.js:756"
           ],
           "writers": [],
           "sql": []
         },
         "utm_content": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739",
-            "scripts/lib/snsDailyRunner.js:747"
+            "scripts/lib/snsDailyRunner.js:748",
+            "scripts/lib/snsDailyRunner.js:756"
           ],
           "writers": [],
           "sql": []
         },
         "source": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739",
-            "scripts/lib/snsDailyRunner.js:747"
+            "scripts/lib/snsDailyRunner.js:748",
+            "scripts/lib/snsDailyRunner.js:756"
           ],
           "writers": [],
           "sql": []
         },
         "metric_name": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739",
-            "scripts/lib/snsDailyRunner.js:747"
+            "scripts/lib/snsDailyRunner.js:748",
+            "scripts/lib/snsDailyRunner.js:756"
           ],
           "writers": [],
           "sql": []
         },
         "metric_value": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739"
+            "scripts/lib/snsDailyRunner.js:748"
           ],
           "writers": [],
           "sql": []
         },
         "missing_reason": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739"
+            "scripts/lib/snsDailyRunner.js:748"
           ],
           "writers": [],
           "sql": []
         },
         "definition": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:739",
-            "scripts/lib/snsDailyRunner.js:747"
+            "scripts/lib/snsDailyRunner.js:748",
+            "scripts/lib/snsDailyRunner.js:756"
           ],
           "writers": [],
           "sql": []
@@ -20277,7 +20506,7 @@
       },
       "readers": [
         {
-          "ref": "api/_lib/snsClaimCheck.js:182",
+          "ref": "api/_lib/snsClaimCheck.js:191",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20287,7 +20516,7 @@
           ]
         },
         {
-          "ref": "api/_lib/snsClaimCheck.js:277",
+          "ref": "api/_lib/snsClaimCheck.js:286",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20436,7 +20665,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsDailyRunner.js:727",
+          "ref": "scripts/lib/snsDailyRunner.js:736",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20448,7 +20677,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsDailyRunner.js:730",
+          "ref": "scripts/lib/snsDailyRunner.js:739",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -20569,7 +20798,7 @@
           "test": true
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:1011",
+          "ref": "scripts/sns/push-finals-image.js:1214",
           "op": "select",
           "via": "embed",
           "columns": [
@@ -20616,7 +20845,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:1051",
+          "ref": "scripts/sns/push-finals-image.js:1254",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -20624,7 +20853,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-full-picture.js:666",
+          "ref": "scripts/sns/push-full-picture.js:741",
           "op": "update",
           "via": "rest",
           "columns": [
@@ -20663,8 +20892,8 @@
       "columns": {
         "id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:182",
-            "api/_lib/snsClaimCheck.js:277",
+            "api/_lib/snsClaimCheck.js:191",
+            "api/_lib/snsClaimCheck.js:286",
             "api/_lib/snsHubHelpers.js:119",
             "api/_lib/snsHubHelpers.js:136",
             "api/_lib/snsXSendStore.js:60",
@@ -20674,8 +20903,8 @@
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsAutoPlanRunner.js:758",
             "scripts/lib/snsAutoPlanRunner.js:785",
-            "scripts/lib/snsDailyRunner.js:727",
-            "scripts/lib/snsDailyRunner.js:730",
+            "scripts/lib/snsDailyRunner.js:736",
+            "scripts/lib/snsDailyRunner.js:739",
             "scripts/lib/snsMetricsRunner.js:493",
             "scripts/lib/snsTodayPlanner.js:1102",
             "scripts/lib/snsTodayPlanner.js:1146",
@@ -20683,8 +20912,8 @@
             "scripts/maintenance/verify-data-readers.js:205",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
             "scripts/maintenance/verify-sns-today-plan.js:747",
-            "scripts/sns/push-finals-image.js:1051",
-            "scripts/sns/push-full-picture.js:666",
+            "scripts/sns/push-finals-image.js:1254",
+            "scripts/sns/push-full-picture.js:741",
             "scripts/sns/today-picks.js:75"
           ],
           "writers": [],
@@ -20732,7 +20961,7 @@
             "scripts/lib/contentRevisionHistory.js:34",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/lib/snsAutoPlanRunner.js:758",
-            "scripts/lib/snsDailyRunner.js:727",
+            "scripts/lib/snsDailyRunner.js:736",
             "scripts/lib/snsMetricsRunner.js:493",
             "scripts/lib/snsTodayPlanner.js:1102",
             "scripts/maintenance/verify-sns-today-plan.js:723",
@@ -20778,14 +21007,14 @@
         },
         "platform": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:277",
+            "api/_lib/snsClaimCheck.js:286",
             "api/_lib/snsXSendStore.js:60",
             "api/admin/sns-hub/revisions/index.js:57",
             "api/admin/sns-hub/send-probe.js:55",
             "scripts/analysis/youtube-posts-report.js:22",
             "scripts/lib/contentRevisionHistory.js:34",
             "scripts/lib/snsAutoPlanRunner.js:747",
-            "scripts/lib/snsDailyRunner.js:727",
+            "scripts/lib/snsDailyRunner.js:736",
             "scripts/lib/snsMetricsRunner.js:493"
           ],
           "writers": [],
@@ -20812,7 +21041,7 @@
             "scripts/maintenance/verify-data-readers.js:183",
             "scripts/maintenance/verify-sns-auto-plan.js:625",
             "scripts/maintenance/verify-sns-today-plan.js:747",
-            "scripts/sns/push-full-picture.js:666",
+            "scripts/sns/push-full-picture.js:741",
             "scripts/sns/today-picks.js:75"
           ],
           "writers": [],
@@ -20830,7 +21059,7 @@
         },
         "video_storage_path": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:277",
+            "api/_lib/snsClaimCheck.js:286",
             "api/admin/sns-hub/send-probe.js:55",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
@@ -20847,7 +21076,7 @@
         },
         "cover_image_path": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:277",
+            "api/_lib/snsClaimCheck.js:286",
             "api/admin/sns-hub/send-probe.js:52",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
@@ -20859,7 +21088,7 @@
         },
         "caption_text": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:277",
+            "api/_lib/snsClaimCheck.js:286",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/sns/today-picks.js:75"
           ],
@@ -20871,7 +21100,7 @@
         },
         "hashtags": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:277",
+            "api/_lib/snsClaimCheck.js:286",
             "scripts/lib/snsAutoPlanRunner.js:747"
           ],
           "writers": [],
@@ -20886,10 +21115,10 @@
         },
         "source_data": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:182",
+            "api/_lib/snsClaimCheck.js:191",
             "api/_lib/snsXSendStore.js:60",
             "scripts/lib/snsAutoPlanRunner.js:747",
-            "scripts/lib/snsDailyRunner.js:727",
+            "scripts/lib/snsDailyRunner.js:736",
             "scripts/lib/snsTodayPlanner.js:1102",
             "scripts/sns/today-picks.js:75"
           ],
@@ -20960,7 +21189,7 @@
           "readers": [
             "api/_lib/snsXSendStore.js:60",
             "scripts/analysis/youtube-posts-report.js:22",
-            "scripts/lib/snsDailyRunner.js:727",
+            "scripts/lib/snsDailyRunner.js:736",
             "scripts/lib/snsMetricsRunner.js:493"
           ],
           "writers": [],
@@ -20993,7 +21222,9 @@
             "scripts/maintenance/verify-data-readers.js:183"
           ],
           "writers": [],
-          "sql": []
+          "sql": [
+            "rpc:transition_sns_x_send"
+          ]
         },
         "updated_at": {
           "readers": [
@@ -21041,10 +21272,10 @@
         },
         "bundle_import_id": {
           "readers": [
-            "api/_lib/snsClaimCheck.js:182",
+            "api/_lib/snsClaimCheck.js:191",
             "scripts/lib/snsAutoPlanRunner.js:747",
             "scripts/maintenance/verify-sns-auto-plan.js:617",
-            "scripts/sns/push-finals-image.js:1011"
+            "scripts/sns/push-finals-image.js:1214"
           ],
           "writers": [],
           "sql": [
@@ -21379,7 +21610,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsDailyRunner.js:691",
+          "ref": "scripts/lib/snsDailyRunner.js:700",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -21435,7 +21666,7 @@
         "draft_id": {
           "readers": [
             "api/_lib/snsXSendStore.js:64",
-            "scripts/lib/snsDailyRunner.js:691",
+            "scripts/lib/snsDailyRunner.js:700",
             "scripts/lib/snsMetricsRunner.js:538"
           ],
           "writers": [],
@@ -21446,7 +21677,7 @@
         "window": {
           "readers": [
             "api/_lib/snsXSendStore.js:64",
-            "scripts/lib/snsDailyRunner.js:691",
+            "scripts/lib/snsDailyRunner.js:700",
             "scripts/lib/snsMetricsRunner.js:538"
           ],
           "writers": [],
@@ -21464,7 +21695,7 @@
         "observed_at": {
           "readers": [
             "api/_lib/snsXSendStore.js:64",
-            "scripts/lib/snsDailyRunner.js:691"
+            "scripts/lib/snsDailyRunner.js:700"
           ],
           "writers": [],
           "sql": [
@@ -21499,7 +21730,7 @@
         "source": {
           "readers": [
             "api/_lib/snsXSendStore.js:64",
-            "scripts/lib/snsDailyRunner.js:691",
+            "scripts/lib/snsDailyRunner.js:700",
             "scripts/lib/snsMetricsRunner.js:538"
           ],
           "writers": [],
@@ -21510,7 +21741,7 @@
         "metric_name": {
           "readers": [
             "api/_lib/snsXSendStore.js:64",
-            "scripts/lib/snsDailyRunner.js:691"
+            "scripts/lib/snsDailyRunner.js:700"
           ],
           "writers": [],
           "sql": [
@@ -21520,7 +21751,7 @@
         "metric_value": {
           "readers": [
             "api/_lib/snsXSendStore.js:64",
-            "scripts/lib/snsDailyRunner.js:691",
+            "scripts/lib/snsDailyRunner.js:700",
             "scripts/lib/snsMetricsRunner.js:538"
           ],
           "writers": [],
@@ -21540,7 +21771,7 @@
         "definition": {
           "readers": [
             "api/_lib/snsXSendStore.js:64",
-            "scripts/lib/snsDailyRunner.js:691"
+            "scripts/lib/snsDailyRunner.js:700"
           ],
           "writers": [],
           "sql": [
@@ -21556,7 +21787,7 @@
         },
         "denominator_value": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:691"
+            "scripts/lib/snsDailyRunner.js:700"
           ],
           "writers": [],
           "sql": [
@@ -22493,7 +22724,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/sns/x-slots-check.js:155",
+          "ref": "scripts/sns/x-slots-check.js:156",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22512,7 +22743,7 @@
       "columns": {
         "kind": {
           "readers": [
-            "scripts/sns/x-slots-check.js:155"
+            "scripts/sns/x-slots-check.js:156"
           ],
           "writers": [],
           "sql": [
@@ -22521,7 +22752,7 @@
         },
         "daily_count": {
           "readers": [
-            "scripts/sns/x-slots-check.js:155"
+            "scripts/sns/x-slots-check.js:156"
           ],
           "writers": [],
           "sql": [
@@ -22530,7 +22761,7 @@
         },
         "weekdays": {
           "readers": [
-            "scripts/sns/x-slots-check.js:155"
+            "scripts/sns/x-slots-check.js:156"
           ],
           "writers": [],
           "sql": [
@@ -22592,7 +22823,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:997",
+          "ref": "scripts/sns/push-finals-image.js:1198",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22604,7 +22835,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/x-slots-check.js:157",
+          "ref": "scripts/sns/x-slots-check.js:158",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22645,7 +22876,7 @@
             "api/_lib/snsXSendStore.js:137",
             "api/_lib/snsXSendStore.js:144",
             "scripts/lib/snsMetricsRunner.js:526",
-            "scripts/sns/push-finals-image.js:997"
+            "scripts/sns/push-finals-image.js:1198"
           ],
           "writers": [],
           "sql": [
@@ -22755,7 +22986,7 @@
         },
         "daily_limit": {
           "readers": [
-            "scripts/sns/push-finals-image.js:997"
+            "scripts/sns/push-finals-image.js:1198"
           ],
           "writers": [],
           "sql": [
@@ -22766,7 +22997,7 @@
         },
         "daily_baseline_date": {
           "readers": [
-            "scripts/sns/push-finals-image.js:997"
+            "scripts/sns/push-finals-image.js:1198"
           ],
           "writers": [],
           "sql": [
@@ -22778,7 +23009,7 @@
         },
         "daily_external_count": {
           "readers": [
-            "scripts/sns/push-finals-image.js:997"
+            "scripts/sns/push-finals-image.js:1198"
           ],
           "writers": [],
           "sql": [
@@ -22804,8 +23035,8 @@
         },
         "daily_limit_x": {
           "readers": [
-            "scripts/sns/push-finals-image.js:997",
-            "scripts/sns/x-slots-check.js:157"
+            "scripts/sns/push-finals-image.js:1198",
+            "scripts/sns/x-slots-check.js:158"
           ],
           "writers": [],
           "sql": [
@@ -22893,7 +23124,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsDailyRunner.js:722",
+          "ref": "scripts/lib/snsDailyRunner.js:731",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22916,7 +23147,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:449",
+          "ref": "scripts/lib/snsSendRunner.js:470",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22927,7 +23158,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:456",
+          "ref": "scripts/lib/snsSendRunner.js:477",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22937,7 +23168,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:468",
+          "ref": "scripts/lib/snsSendRunner.js:489",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22949,7 +23180,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:472",
+          "ref": "scripts/lib/snsSendRunner.js:493",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22959,7 +23190,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:481",
+          "ref": "scripts/lib/snsSendRunner.js:502",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -22975,7 +23206,7 @@
           ]
         },
         {
-          "ref": "scripts/lib/snsSendRunner.js:487",
+          "ref": "scripts/lib/snsSendRunner.js:508",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23001,7 +23232,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-send-runner.js:449",
+          "ref": "scripts/maintenance/verify-sns-send-runner.js:471",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23014,7 +23245,7 @@
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-sns-send-runner.js:1435",
+          "ref": "scripts/maintenance/verify-sns-send-runner.js:1526",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23031,7 +23262,7 @@
           "test": true
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:1005",
+          "ref": "scripts/sns/push-finals-image.js:1208",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23042,7 +23273,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:1011",
+          "ref": "scripts/sns/push-finals-image.js:1214",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23055,7 +23286,7 @@
           ]
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:1020",
+          "ref": "scripts/sns/push-finals-image.js:1223",
           "op": "rest",
           "via": "rest",
           "columns": [
@@ -23111,17 +23342,17 @@
             "api/_lib/snsXSendStore.js:47",
             "api/_lib/snsXSendStore.js:57",
             "scripts/lib/snsAutoPlanRunner.js:765",
-            "scripts/lib/snsSendRunner.js:449",
-            "scripts/lib/snsSendRunner.js:456",
-            "scripts/lib/snsSendRunner.js:468",
-            "scripts/lib/snsSendRunner.js:472",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/lib/snsSendRunner.js:487",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/maintenance/verify-sns-send-runner.js:449",
-            "scripts/sns/push-finals-image.js:1005",
-            "scripts/sns/push-finals-image.js:1011",
-            "scripts/sns/push-finals-image.js:1020",
+            "scripts/lib/snsSendRunner.js:470",
+            "scripts/lib/snsSendRunner.js:477",
+            "scripts/lib/snsSendRunner.js:489",
+            "scripts/lib/snsSendRunner.js:493",
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/lib/snsSendRunner.js:508",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/maintenance/verify-sns-send-runner.js:471",
+            "scripts/sns/push-finals-image.js:1208",
+            "scripts/sns/push-finals-image.js:1214",
+            "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23141,9 +23372,9 @@
             "api/_lib/snsXSendStore.js:124",
             "api/_lib/snsXSendStore.js:57",
             "scripts/lib/snsAutoPlanRunner.js:765",
-            "scripts/lib/snsDailyRunner.js:722",
+            "scripts/lib/snsDailyRunner.js:731",
             "scripts/lib/snsMetricsRunner.js:495",
-            "scripts/sns/push-finals-image.js:1020",
+            "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23164,19 +23395,19 @@
             "api/_lib/snsXSendStore.js:47",
             "api/_lib/snsXSendStore.js:57",
             "scripts/lib/snsAutoPlanRunner.js:765",
-            "scripts/lib/snsDailyRunner.js:722",
+            "scripts/lib/snsDailyRunner.js:731",
             "scripts/lib/snsMetricsRunner.js:495",
-            "scripts/lib/snsSendRunner.js:449",
-            "scripts/lib/snsSendRunner.js:456",
-            "scripts/lib/snsSendRunner.js:468",
-            "scripts/lib/snsSendRunner.js:472",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/lib/snsSendRunner.js:487",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/maintenance/verify-sns-send-runner.js:449",
-            "scripts/sns/push-finals-image.js:1005",
-            "scripts/sns/push-finals-image.js:1011",
-            "scripts/sns/push-finals-image.js:1020",
+            "scripts/lib/snsSendRunner.js:470",
+            "scripts/lib/snsSendRunner.js:477",
+            "scripts/lib/snsSendRunner.js:489",
+            "scripts/lib/snsSendRunner.js:493",
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/lib/snsSendRunner.js:508",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/maintenance/verify-sns-send-runner.js:471",
+            "scripts/sns/push-finals-image.js:1208",
+            "scripts/sns/push-finals-image.js:1214",
+            "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23194,8 +23425,8 @@
         "snapshot": {
           "readers": [
             "api/_lib/snsXSendStore.js:57",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/maintenance/verify-sns-send-runner.js:1435"
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/maintenance/verify-sns-send-runner.js:1526"
           ],
           "writers": [],
           "sql": [
@@ -23247,7 +23478,7 @@
           "readers": [
             "api/_lib/snsXSendStore.js:124",
             "api/_lib/snsXSendStore.js:57",
-            "scripts/lib/snsSendRunner.js:449",
+            "scripts/lib/snsSendRunner.js:470",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23259,9 +23490,9 @@
         "attempts": {
           "readers": [
             "api/_lib/snsXSendStore.js:124",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/sns/push-finals-image.js:1011"
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/sns/push-finals-image.js:1214"
           ],
           "writers": [],
           "sql": [
@@ -23289,11 +23520,11 @@
           "readers": [
             "api/_lib/snsXSendStore.js:124",
             "api/_lib/snsXSendStore.js:57",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/lib/snsSendRunner.js:487",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/maintenance/verify-sns-send-runner.js:449",
-            "scripts/sns/push-finals-image.js:1020",
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/lib/snsSendRunner.js:508",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/maintenance/verify-sns-send-runner.js:471",
+            "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23309,13 +23540,13 @@
           "readers": [
             "api/_lib/snsXSendStore.js:47",
             "api/_lib/snsXSendStore.js:57",
-            "scripts/lib/snsDailyRunner.js:722",
+            "scripts/lib/snsDailyRunner.js:731",
             "scripts/lib/snsMetricsRunner.js:495",
-            "scripts/lib/snsSendRunner.js:456",
-            "scripts/lib/snsSendRunner.js:472",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/sns/push-finals-image.js:1020",
+            "scripts/lib/snsSendRunner.js:477",
+            "scripts/lib/snsSendRunner.js:493",
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23328,7 +23559,7 @@
         "external_post_url": {
           "readers": [
             "api/_lib/snsXSendStore.js:124",
-            "scripts/sns/push-finals-image.js:1020",
+            "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23340,8 +23571,8 @@
           "readers": [
             "api/_lib/snsXSendStore.js:124",
             "api/_lib/snsXSendStore.js:57",
-            "scripts/lib/snsDailyRunner.js:722",
-            "scripts/sns/push-finals-image.js:1020",
+            "scripts/lib/snsDailyRunner.js:731",
+            "scripts/sns/push-finals-image.js:1223",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23366,14 +23597,14 @@
         },
         "channel": {
           "readers": [
-            "scripts/lib/snsDailyRunner.js:722",
+            "scripts/lib/snsDailyRunner.js:731",
             "scripts/lib/snsMetricsRunner.js:495",
-            "scripts/lib/snsSendRunner.js:468",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/lib/snsSendRunner.js:487",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/maintenance/verify-sns-send-runner.js:449",
-            "scripts/sns/push-finals-image.js:1011"
+            "scripts/lib/snsSendRunner.js:489",
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/lib/snsSendRunner.js:508",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/maintenance/verify-sns-send-runner.js:471",
+            "scripts/sns/push-finals-image.js:1214"
           ],
           "writers": [],
           "sql": [
@@ -23388,10 +23619,10 @@
           "readers": [
             "api/_lib/snsXSendStore.js:124",
             "api/_lib/snsXSendStore.js:57",
-            "scripts/lib/snsSendRunner.js:468",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/sns/push-finals-image.js:1011",
+            "scripts/lib/snsSendRunner.js:489",
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/sns/push-finals-image.js:1214",
             "scripts/sns/push-research-image.js:562"
           ],
           "writers": [],
@@ -23421,7 +23652,7 @@
         },
         "attempt_dates": {
           "readers": [
-            "scripts/sns/push-finals-image.js:1005"
+            "scripts/sns/push-finals-image.js:1208"
           ],
           "writers": [],
           "sql": [
@@ -23432,7 +23663,7 @@
         },
         "attempt_channels": {
           "readers": [
-            "scripts/sns/push-finals-image.js:1005"
+            "scripts/sns/push-finals-image.js:1208"
           ],
           "writers": [],
           "sql": [
@@ -23453,23 +23684,24 @@
         },
         "parent_job_id": {
           "readers": [
-            "scripts/lib/snsSendRunner.js:468",
-            "scripts/sns/push-finals-image.js:1011"
+            "scripts/lib/snsSendRunner.js:489",
+            "scripts/sns/push-finals-image.js:1214"
           ],
           "writers": [],
           "sql": [
             "rpc:approve_sns_x_send",
             "rpc:sns_x_slot_room",
-            "rpc:transition_sns_send_139"
+            "rpc:transition_sns_send_139",
+            "rpc:transition_sns_x_send"
           ]
         },
         "youtube_stage": {
           "readers": [
             "api/_lib/snsXSendStore.js:57",
-            "scripts/lib/snsSendRunner.js:481",
-            "scripts/lib/snsSendRunner.js:487",
-            "scripts/maintenance/verify-sns-send-runner.js:1435",
-            "scripts/maintenance/verify-sns-send-runner.js:449"
+            "scripts/lib/snsSendRunner.js:502",
+            "scripts/lib/snsSendRunner.js:508",
+            "scripts/maintenance/verify-sns-send-runner.js:1526",
+            "scripts/maintenance/verify-sns-send-runner.js:471"
           ],
           "writers": [],
           "sql": [
@@ -23577,7 +23809,9 @@
         "created_at": {
           "readers": [],
           "writers": [],
-          "sql": []
+          "sql": [
+            "rpc:transition_sns_x_send"
+          ]
         }
       },
       "columnsNotInSnapshot": [],
@@ -23726,7 +23960,9 @@
         "created_at": {
           "readers": [],
           "writers": [],
-          "sql": []
+          "sql": [
+            "rpc:transition_sns_x_send"
+          ]
         }
       },
       "columnsNotInSnapshot": [],
@@ -24538,14 +24774,14 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1002",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1003",
           "op": "rest",
           "via": "rest",
           "columns": [],
           "test": true
         },
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1334",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1335",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -25717,7 +25953,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1032",
+          "ref": "scripts/maintenance/verify-full-picture-scene2.js:1033",
           "op": "rest",
           "via": "rest",
           "columns": [],
@@ -25844,6 +26080,33 @@
       "calls": [],
       "external": []
     },
+    "add_fetch_counts": {
+      "kind": "function",
+      "securityDefiner": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "summary": "service だけ"
+      },
+      "callers": [
+        {
+          "ref": "scripts/lib/scrapeJobs/fetchCounter.js:140",
+          "via": "client"
+        }
+      ],
+      "mentions": [
+        "scripts/lib/scrapeJobs/fetchCounter.js:15"
+      ],
+      "triggerOn": [],
+      "calledByRpc": [],
+      "reads": [],
+      "writes": [
+        "fetch_counts",
+        "fetch_counts_minute"
+      ],
+      "calls": [],
+      "external": []
+    },
     "analogy_feedback_guard": {
       "kind": "function",
       "securityDefiner": true,
@@ -25879,7 +26142,7 @@
           "via": "rest"
         },
         {
-          "ref": "scripts/lib/snsDailyRunner.js:695",
+          "ref": "scripts/lib/snsDailyRunner.js:704",
           "via": "rest"
         },
         {
@@ -25887,7 +26150,7 @@
           "via": "rest"
         },
         {
-          "ref": "scripts/maintenance/verify-sns-daily-runner.js:1077",
+          "ref": "scripts/maintenance/verify-sns-daily-runner.js:1078",
           "via": "rest"
         }
       ],
@@ -25922,11 +26185,11 @@
           "via": "rest"
         },
         {
-          "ref": "scripts/sns/push-finals-image.js:1069",
+          "ref": "scripts/sns/push-finals-image.js:1272",
           "via": "rest"
         },
         {
-          "ref": "scripts/sns/push-full-picture.js:660",
+          "ref": "scripts/sns/push-full-picture.js:735",
           "via": "rest"
         }
       ],
@@ -26513,6 +26776,25 @@
       "writes": [
         "scrape_slots"
       ],
+      "calls": [],
+      "external": []
+    },
+    "fetch_counts_daily": {
+      "kind": "function",
+      "securityDefiner": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "summary": "service だけ"
+      },
+      "callers": [],
+      "mentions": [],
+      "triggerOn": [],
+      "calledByRpc": [],
+      "reads": [
+        "fetch_counts"
+      ],
+      "writes": [],
       "calls": [],
       "external": []
     },
@@ -27162,6 +27444,32 @@
       ],
       "external": []
     },
+    "scrape_breaker_open": {
+      "kind": "function",
+      "securityDefiner": false,
+      "access": {
+        "anon": false,
+        "authenticated": false,
+        "summary": "service だけ"
+      },
+      "callers": [
+        {
+          "ref": "scripts/lib/scrapeJobs/store.js:335",
+          "via": "client"
+        }
+      ],
+      "mentions": [
+        "scripts/lib/scrapeJobs/store.js:356"
+      ],
+      "triggerOn": [],
+      "calledByRpc": [],
+      "reads": [],
+      "writes": [
+        "scrape_job_state"
+      ],
+      "calls": [],
+      "external": []
+    },
     "sns_bundle_send_allowed": {
       "kind": "function",
       "securityDefiner": false,
@@ -27346,7 +27654,7 @@
       },
       "callers": [
         {
-          "ref": "scripts/lib/snsXSlots.js:67",
+          "ref": "scripts/lib/snsXSlots.js:68",
           "via": "rest"
         }
       ],
@@ -28710,7 +29018,7 @@
           "scripts/lib/scrapeJobs/store.js:269"
         ],
         "sns_channel_daily": [
-          "scripts/lib/snsDailyRunner.js:747"
+          "scripts/lib/snsDailyRunner.js:756"
         ],
         "sns_drafts": [
           "api/_lib/snsHubHelpers.js:136"
@@ -28821,22 +29129,7 @@
       }
     }
   ],
-  "notInSnapshot": [
-    {
-      "kind": "rpc",
-      "name": "add_fetch_counts",
-      "refs": [
-        "scripts/lib/scrapeJobs/fetchCounter.js:140"
-      ]
-    },
-    {
-      "kind": "rpc",
-      "name": "scrape_breaker_open",
-      "refs": [
-        "scripts/lib/scrapeJobs/store.js:335"
-      ]
-    }
-  ],
+  "notInSnapshot": [],
   "unresolved": [
     {
       "file": "scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs",
@@ -28920,7 +29213,7 @@
     },
     {
       "file": "scripts/lib/snsSendRunner.js",
-      "line": 419,
+      "line": 440,
       "reason": "REST の表の名前が式（/rest/v1/${…}）"
     },
     {
