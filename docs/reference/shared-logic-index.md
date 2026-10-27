@@ -343,6 +343,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/stDeviation.js` | 本番STと展示STのズレ（/本番ST − 展示ST/）。どちらかが無い（null・undefined）走は null。 | stDeviation |
 | `src/utils/techniqueColors.js` | 決まり手の色（グラフの棒・帯・凡例の点）。色そのものは design-tokens.css の | techniqueColor |
 | `src/utils/theme.js` | — | getTheme, setTheme, subscribe |
+| `src/utils/todayCourseWin.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定）の材料（純関数）。 | minRunsFor, normalQuantile, courseWinRowsFromJson, buildCourseWinNotes, COURSE_WIN_VERSION ほか8件 |
 | `src/utils/todayRaces.js` | get_today_races（RPC。Edge API /api/races/today はこの結果をそのまま返す）の出力を、画面の形に整える。 | transformTodayRaces |
 | `src/utils/trendDateLayout.js` | `MeetSparkline` の viewBox の幅と左右の余白。日付の見出しを点と同じ横位置に置くため共有する | dayTickLabels, sparkLeftPercent, dayCenter, layoutTrendByDate, SPARK_VIEW_W ほか1件 |
 | `src/utils/turnPrediction.js` | 決まり手ユーティリティ（フロントエンド用） | pickHitPattern, techniqueDiffers, isAsPredicted |
@@ -389,4 +390,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 347 ファイル / export 1958 件。
+対象 348 ファイル / export 1971 件。
