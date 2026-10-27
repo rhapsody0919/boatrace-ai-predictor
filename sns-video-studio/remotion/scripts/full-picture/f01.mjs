@@ -302,7 +302,8 @@ export function f01Script(m) {
     omitted,
     title: `ボートレース${raceName} ${date}｜${question}`,
     url,
-    closeUrl: utmUrl(m.raceId, "youtube", "close_b"),
+    // 締めの測り方（7b節: utm_content=close_a／close_b）。今の説明文の「レース ID/機能」の形に合わせる
+    closeUrl: utmUrl(m.raceId, "youtube").replace(`utm_content=${m.raceId}`, `utm_content=${m.raceId}/close_b`),
     year: y,
   };
 }
