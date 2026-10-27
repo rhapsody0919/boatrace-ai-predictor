@@ -1139,6 +1139,11 @@
       "guards": "BOA-1145 P4a ③: パスが 403 で開いたら race/index を1件だけ取り、403 のときだけホスト全体を開く（60分から段階で倍）。ホストの半開は race/index で試す（止められたパスで開き直さない）。403 の応答の Server・server-timing・Akamai の参照番号・本文の先頭200字をブレーカーの記録に残す。BOATCAST はカナリアを取らない"
     },
     {
+      "script": "verify-scrape-breaker-greatest.js",
+      "tier": "ci",
+      "guards": "BOA-1159: ブレーカーの開放を DB で長い方に書く RPC scrape_breaker_open（マイグレーション184）を PGlite で実行し、短い期限で長い期限を縮めない・段階と理由は期限を決めた側・fetch_stop と mode を書かない・anon と authenticated は実行できないことを確かめる。store.js が RPC を使い、184 の前は upsert に戻ること、circuitBreaker が DB の返した長い期限を採ること"
+    },
+    {
       "script": "verify-scrape-breaker-level.js",
       "tier": "ci",
       "guards": "BOA-1145 P4a ②: 403 のブレーカーの段階（breaker_level・breaker_opened_at、マイグレーション178）。開く期間 30分→1時間→2時間→4時間→6時間、段階は DB に残り別の起動も同じ段階から上げる（起動ごとに30分へ戻って30分おきに叩き直さない）、24時間 403 が無ければ1段下げる（成功1回で0にしない）、閉じた後24時間は claimLimit を半分、178 の前でも動く"

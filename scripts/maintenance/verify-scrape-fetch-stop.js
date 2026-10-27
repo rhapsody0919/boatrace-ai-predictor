@@ -203,6 +203,14 @@ const mkClock = (start = Date.parse("2026-10-26T03:00:00Z")) => {
     responses.push(...Array(5).fill({ data: { breaker_open_until: null }, error: null }));
     const log = [];
     const client = {
+      // 184 の前（scrape_breaker_open が無い）の形で、upsert に戻る経路を確かめる
+      rpc: async () => ({
+        data: null,
+        error: {
+          code: "PGRST202",
+          message: "Could not find the function public.scrape_breaker_open(p_job, p_level, p_opened_at, p_reason, p_until) in the schema cache",
+        },
+      }),
       from(table) {
         const q = {
           _sel: null,

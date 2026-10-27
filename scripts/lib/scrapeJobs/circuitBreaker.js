@@ -283,15 +283,24 @@ export function createCircuitBreaker({
     s.openUntil = until;
     if (store) {
       const wrote = await safe("開放の記録", async () => {
-        await store.open(hostKey, s.openUntil, reason, {
+        const result = await store.open(hostKey, s.openUntil, reason, {
           level: s.level,
           openedAtMs: s.openedAt,
         });
-        return true;
+        return wroteUntil(s, result);
       });
       // 書けたときだけ「DB の値」を覚える（書き込みの失敗の後の読み直しで、自分の開放を DB の古い値で消さない。④c の審査 P2-1）
-      if (wrote) rememberDb(s, s.openUntil);
+      if (wrote) adoptWritten(s, wrote);
     }
+  };
+
+  // store.open の戻り値（184 の RPC は書いた後の DB の期限 {untilMs}。別の起動の長い期限が勝ったらその値）から、書けた期限を決める
+  const wroteUntil = (s, result) => ({
+    untilMs: Math.max(s.openUntil, result?.untilMs ?? 0),
+  });
+  const adoptWritten = (s, wrote) => {
+    s.openUntil = wrote.untilMs;
+    rememberDb(s, wrote.untilMs);
   };
 
   // 書けた DB の期限を覚える（0 は閉じた＝NULL）
@@ -422,13 +431,13 @@ export function createCircuitBreaker({
       s.consecutive = 0;
       if (store) {
         const wrote = await safe("開放の記録", async () => {
-          await store.open(hostKey, s.openUntil, reason, {
+          const result = await store.open(hostKey, s.openUntil, reason, {
             level,
             openedAtMs: s.openedAt,
           });
-          return true;
+          return wroteUntil(s, result);
         });
-        if (wrote) rememberDb(s, s.openUntil);
+        if (wrote) adoptWritten(s, wrote);
       }
     },
 

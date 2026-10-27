@@ -34,6 +34,9 @@ import { addSeconds } from "./time.js";
 import { truncateError } from "./outcomes.js";
 import { isColumnMissingError } from "../optionalColumns.js";
 
+/** scrape_breaker_open（マイグレーション184）が無いと分かった後、もう一度 RPC を試すまでの間隔 */
+export const BREAKER_RPC_RECHECK_MS = 10 * 60 * 1000;
+
 /** fetch_stop の列が無い（マイグレーション178 の前）と分かった後、もう一度列を入れて読み直すまでの間隔 */
 export const FETCH_STOP_RECHECK_MS = 10 * 60 * 1000;
 
@@ -61,6 +64,9 @@ const wrap = (what, error) => {
 export function createSupabaseStore(client) {
   const STATE = "scrape_job_state";
   const SLOTS = "scrape_slots";
+
+  /** scrape_breaker_open（184）が無いと分かった後、upsert で書く期限（epoch ms） */
+  let breakerRpcMissingUntil = 0;
 
   /** fetch_stop の列が無い（178 の前）と分かった後、列を入れずに読む期限（epoch ms） */
   let fetchStopMissingUntil = 0;
@@ -323,6 +329,24 @@ export function createSupabaseStore(client) {
       // level（403 のとき）を渡すと段階と開いた時刻も書く。fetch_stop・mode は書かない（人が立てた値・既定の off に触れない）。
       // 178 の前（段階の列が無い: PGRST204、列名つき）は段階を外して書き直す
       async open(hostKey, untilMs, reason, level) {
+        // 長い方を DB の中で取る RPC（184、BOA-1159）。無い（184 の前）ときだけ下の upsert に戻る（しばらく RPC を試さない）。
+        // 戻り値 {untilMs}: 書いた後の DB の期限（RPC のとき。別の起動の長い期限が勝ったら、その値）
+        if (Date.now() >= breakerRpcMissingUntil) {
+          const { data, error } = await client.rpc("scrape_breaker_open", {
+            p_job: hostKey,
+            p_until: new Date(untilMs).toISOString(),
+            p_reason: truncateError(reason),
+            p_level: level ? level.level : null,
+            p_opened_at: level ? new Date(level.openedAtMs).toISOString() : null,
+          });
+          if (!error) {
+            return { untilMs: data ? new Date(data).getTime() : untilMs };
+          }
+          if (!isScrapeSchemaMissingError(error, ["scrape_breaker_open"])) {
+            throw wrap(`ブレーカーの開放(${hostKey})`, error);
+          }
+          breakerRpcMissingUntil = Date.now() + BREAKER_RPC_RECHECK_MS;
+        }
         const row = {
           job: hostKey,
           breaker_open_until: new Date(untilMs).toISOString(),
@@ -348,8 +372,8 @@ export function createSupabaseStore(client) {
           ({ error } = await upsert(row));
         }
         if (error) throw wrap(`ブレーカーの開放(${hostKey})`, error);
+        return { untilMs };
       },
-      // closed を渡すと閉じた時刻（breaker_closed_at、178）も書く。178 の前（PGRST204、列名つき）は外して書き直す
       // closed を渡すと閉じた時刻（breaker_closed_at、178）も書く。178 の前（PGRST204、列名つき）は外して書き直す。
       // closed.expectedRaw を渡すと、breaker_open_until がその値のままの行だけを閉じる（別の起動の開き直しを消さない。④c）。
       // 戻り値: 閉じたら true、条件に合わず閉じなかったら false（expectedRaw が無いときは常に true）
