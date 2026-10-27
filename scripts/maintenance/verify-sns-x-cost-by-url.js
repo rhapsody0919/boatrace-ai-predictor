@@ -254,7 +254,7 @@ test("188: 182 との差は予約額の行だけ（v_ceiling・素材のスレ�
   );
   assert.ok(
     added.every((l) =>
-      /v_child_cost|sns_x_post_has_url|ceiling_x_(url|plain)_microusd|^\s*-- (188|182 まで)|INTO v_need, v_rest|INTO v_children, v_own, v_child_cost|^\s*SELECT count\(\*\), count\(\*\) FILTER \(WHERE cj\.parent_job_id=j\.id\),$/.test(
+      /v_child_cost|sns_x_post_has_url|sns_x_post_url_priced|'media', CASE WHEN sd\.video_storage_path|OR jsonb_array_length\(coalesce\(sd\.source_data->'image_paths'|ceiling_x_(url|plain)_microusd|^\s*-- (188|182 まで)|INTO v_need, v_rest|INTO v_children, v_own, v_child_cost|^\s*SELECT count\(\*\), count\(\*\) FILTER \(WHERE cj\.parent_job_id=j\.id\),$/.test(
         l,
       ),
     ),
@@ -279,7 +279,10 @@ test("sns_x_post_has_url: twitter-text の extractUrls が URL と見る文は�
     "x.gg",
     "https://t.co/abcdef",
   ]) {
-    assert.ok(twitterText.extractUrls(t).length > 0, `試験の文が URL でない: ${t}`);
+    assert.ok(
+      twitterText.extractUrls(t).length > 0,
+      `試験の文が URL でない: ${t}`,
+    );
     assert.equal(await has(t), true, t);
   }
   for (const t of [
@@ -349,3 +352,44 @@ test("claim の残りの見込み（v_rest）: 今日 claim 済みの他の親�
   assert.equal((await transition(today.id, "claim")).state, "sending");
 });
 
+test("transition は予約の判定を sns_x_post_url_priced(snapshot) だけに任せる（画像だけの投稿を URL つきで数える版は、この関数の置き換えだけで出せる）", async () => {
+  const before = (
+    await first(
+      "SELECT md5(prosrc) m FROM pg_proc WHERE proname='transition_sns_send_139'",
+    )
+  ).m;
+  await db.exec(`CREATE OR REPLACE FUNCTION public.sns_x_post_url_priced(p_snapshot JSONB)
+    RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path=public AS $$
+      SELECT public.sns_x_post_has_url(p_snapshot->>'text') OR jsonb_array_length(coalesce(p_snapshot->'media','[]'::jsonb))>0;
+    $$;`);
+  try {
+    // 媒体のある URL の無い投稿は URL つきの額、媒体も URL も無い投稿（投票）は plain
+    const withMedia = await makeJob("finals_image", "優勝戦 思考の順");
+    await db.query(
+      "UPDATE sns_x_send_jobs SET snapshot = jsonb_set(snapshot, '{media}', '[{\"path\":\"a.png\"}]') WHERE id=$1",
+      [withMedia.id],
+    );
+    assert.equal(
+      Number((await transition(withMedia.id, "claim")).reserved_microusd),
+      10000,
+    );
+    const plain = await makeJob("finals_image", "どれが来る？");
+    assert.equal(
+      Number((await transition(plain.id, "claim")).reserved_microusd),
+      1000,
+    );
+    assert.equal(
+      (
+        await first(
+          "SELECT md5(prosrc) m FROM pg_proc WHERE proname='transition_sns_send_139'",
+        )
+      ).m,
+      before,
+    );
+  } finally {
+    await db.exec(`CREATE OR REPLACE FUNCTION public.sns_x_post_url_priced(p_snapshot JSONB)
+      RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path=public AS $$
+        SELECT public.sns_x_post_has_url(p_snapshot->>'text');
+      $$;`);
+  }
+});

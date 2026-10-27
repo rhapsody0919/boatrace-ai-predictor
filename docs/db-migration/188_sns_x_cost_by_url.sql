@@ -8,6 +8,8 @@
 --   1. 関数 sns_x_post_has_url(text): X が URL として数えそうな文字列（https?:// か www. か、「英数字.英字2字以上」のドメイン）があるか。
 --      X の判定の正確な規則は料金表に無いので、多めに URL と見る（取り逃すと予約が実額より少なくなる）。TLD を並べる形は youtu.be・
 --      .xyz・.tokyo 等を取り逃すので使わない（審査 P2-1。本番の X の下書き136件では twitter-text の extractUrls と全件一致）
+--   1b. 関数 sns_x_post_url_priced(snapshot): 送る1本を URL つきの額で予約するか。今は 1 の text の判定だけ。画像だけの投稿の請求が
+--      $0.200 と分かったら、この関数だけを置き換えて media のある投稿も真にする（transition の本文は変えない）
 --   2. transition_sns_send_139（土台は 182）: v_ceiling を自分の送る文（snapshot の text）の URL の有無で決める。素材のスレッドの兄弟
 --      （v_rest、本文と hashtags を buildPostText と同じく空行でつないだ文）と、まだ claim していない子（177 の v_children。自分の子と、
 --      今日 claim 済みの他の親の子）も、それぞれの文で数える。ほかは 182 のまま
@@ -18,7 +20,7 @@
 --      決めた値の書き換えにあたる（Orchestrate 経由でオーナーが 2026-10-27 に了承）
 -- 未確認（審査 P1-1）: 本文に URL が無く画像だけの投稿が $0.015 で請求されるか（X は画像に t.co のリンクを付ける）。10月の X の送信は
 --   全部 URL つきで、URL の無い投稿の実費はまだ測れていない。適用後に最初の URL の無い投稿を送ったら、翌日に X の Developer Console で
---   実費の増え方を見る。$0.200 で請求されていたら、snapshot の media のある投稿を URL つきとして数える版を出す（差は1日約 $0.6 に収まる）
+--   実費の増え方を見る。$0.200 で請求されていたら、sns_x_post_url_priced を media のある投稿も真にする版に置き換える（差は1日約 $0.6 に収まる）
 -- 検証: scripts/maintenance/verify-sns-x-cost-by-url.js（PGlite、外部接続なし）
 -- 適用の順: コードの変更は無い。182 の後（下の DO が transition の本文の md5 を確かめ、違えば全体を戻す）
 -- 適用の時刻: X を送らない時間（22:00〜07:00 JST か 10:00〜13:00 JST）。/today 8:00〜9:30、全貌の X 14:30〜21:15 頃、優勝戦 16:30〜20:45、
@@ -28,12 +30,12 @@
 --   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: c2b4835c416ff6e824a43fe9025c6518（182 の本文）
 --   SELECT ceiling_x_url_microusd, ceiling_x_plain_microusd, attempt_ceiling_microusd, budget_microusd, reserved_microusd FROM public.sns_x_send_control;
 --     期待: 250000・30000・250000（budget・reserved は控える）
---   SELECT to_regprocedure('public.sns_x_post_has_url(text)');  期待: NULL
+--   SELECT to_regprocedure('public.sns_x_post_has_url(text)'), to_regprocedure('public.sns_x_post_url_priced(jsonb)');  期待: どちらも NULL
 --
 -- 適用後の確認（読み取り）:
 --   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: 188 の本文の md5（verify-sns-x-cost-by-url.js がファイルから計算する値）
 --   SELECT ceiling_x_url_microusd, ceiling_x_plain_microusd FROM public.sns_x_send_control;  期待: 200000・15000
---   sns_x_post_has_url は claude_ro に EXECUTE が無いので呼ばない（SQL Editor のオーナーは呼べる）
+--   sns_x_post_has_url・sns_x_post_url_priced は claude_ro に EXECUTE が無いので呼ばない（SQL Editor のオーナーは呼べる）
 --   最初の URL の無い投稿の job の reserved_microusd が 15000 か。翌日に Console の実費（上の未確認）
 --   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js
 --
@@ -41,7 +43,8 @@
 --   transition_sns_send_139 の CREATE OR REPLACE と REVOKE（144〜316 行）だけを実行し、
 --   UPDATE public.sns_x_send_control SET ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000
 --     WHERE id = true AND ceiling_x_url_microusd = 200000 AND ceiling_x_plain_microusd = 15000;
---   sns_x_post_has_url は残してよい（呼ばれなければ効かない）。消すなら関数を戻した後に DROP FUNCTION public.sns_x_post_has_url(TEXT);
+--   sns_x_post_has_url・sns_x_post_url_priced は残してよい（呼ばれなければ効かない）。消すなら関数を戻した後に
+--   DROP FUNCTION public.sns_x_post_url_priced(JSONB); DROP FUNCTION public.sns_x_post_has_url(TEXT);
 BEGIN;
 
 DO $$
@@ -59,6 +62,15 @@ RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path=public AS $$
 $$;
 
 REVOKE ALL ON FUNCTION public.sns_x_post_has_url(TEXT) FROM PUBLIC, anon, authenticated, service_role;
+
+-- 送る1本（snapshot の形 {text, media}）を URL つきの額で予約するか。transition はこれだけを呼ぶ。画像だけの投稿が URL つきで
+-- 請求されると分かったら、この関数だけを置き換えて media のある投稿も真にする（transition の本文と md5 は変わらない）
+CREATE FUNCTION public.sns_x_post_url_priced(p_snapshot JSONB)
+RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path=public AS $$
+  SELECT public.sns_x_post_has_url(p_snapshot->>'text');
+$$;
+
+REVOKE ALL ON FUNCTION public.sns_x_post_url_priced(JSONB) FROM PUBLIC, anon, authenticated, service_role;
 
 DO $$
 BEGIN
@@ -91,10 +103,12 @@ BEGIN
   -- 188: X の予約は、送る文に URL があれば ceiling_x_url、無ければ ceiling_x_plain（X の料金は Post: Create の URL の有無で変わる）。
   -- 182 まではスレッドの親（thread_index=0）を全部 URL つきとして数えていた
   v_ceiling := CASE WHEN j.channel='youtube' THEN 0
-    WHEN public.sns_x_post_has_url(j.snapshot->>'text') THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
+    WHEN public.sns_x_post_url_priced(j.snapshot) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
     ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END;
   IF p_action IN ('claim','begin_post') AND j.channel='x' AND d.thread_index=0 AND d.bundle_import_id IS NOT NULL THEN
-    SELECT count(*), coalesce(sum(CASE WHEN public.sns_x_post_has_url(concat_ws(E'\n\n', sd.caption_text, array_to_string(sd.hashtags,' '))) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
+    SELECT count(*), coalesce(sum(CASE WHEN public.sns_x_post_url_priced(jsonb_build_object('text', concat_ws(E'\n\n', sd.caption_text, array_to_string(sd.hashtags,' ')),
+          'media', CASE WHEN sd.video_storage_path IS NOT NULL OR sd.cover_image_path IS NOT NULL
+            OR jsonb_array_length(coalesce(sd.source_data->'image_paths','[]'::jsonb))>0 THEN '[{}]'::jsonb ELSE '[]'::jsonb END)) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
         ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END) FILTER (WHERE sd.id<>d.id),0)
       INTO v_need, v_rest FROM public.sns_drafts sd WHERE sd.bundle_import_id=d.bundle_import_id AND sd.platform='x' AND sd.status<>'archived';
     v_need := greatest(v_need,1);
@@ -126,7 +140,7 @@ BEGIN
   -- 予約額を使ったまま「日次全体上限です」で止まる。/code-review の指摘）。月の予算も子の分（URL つきの額）の空きを確かめる
   IF p_action='claim' AND j.channel='x' AND d.send_lane IS DISTINCT FROM 'B' THEN
     SELECT count(*), count(*) FILTER (WHERE cj.parent_job_id=j.id),
-        coalesce(sum(CASE WHEN public.sns_x_post_has_url(cj.snapshot->>'text') THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
+        coalesce(sum(CASE WHEN public.sns_x_post_url_priced(cj.snapshot) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
           ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END),0)
       INTO v_children, v_own, v_child_cost FROM public.sns_x_send_jobs cj
       JOIN public.sns_drafts cd ON cd.id=cj.draft_id
