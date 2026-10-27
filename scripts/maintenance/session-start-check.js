@@ -28,7 +28,7 @@
  *     セッション開始時チェックを欠いたまま滞留するのを防ぐ
  * 11) schemaSnapshot… 本番スキーマの写し docs/reference/schema-snapshot.json が台帳
  *     docs/db-migration/APPLIED.md より古いか（ADR-0102）。写しの後に「適用済み」に
- *     なった番号があれば stale=true と取り直しのコマンドを出す。DB には触れない
+ *     なったファイルがあれば stale=true と取り直しのコマンドを出す。DB には触れない
  *
  * 使い方: node scripts/maintenance/session-start-check.js [--json]
  */
@@ -170,7 +170,7 @@ async function checkSchemaSnapshot() {
       ...freshness,
       capturedAt: snapshot.capturedAt,
       command: freshness.stale
-        ? "node --env-file=.env.local scripts/db/schema-snapshot.js で取り直し、PR にする（ADR-0102）"
+        ? "gh pr list --search schema-snapshot.json で開いた取り直しの PR が無いことを確かめ、git fetch で master の台帳に合わせてから node --env-file=.env.local scripts/db/schema-snapshot.js で取り直し、PR にする（ADR-0102）"
         : undefined,
     };
   } catch (error) {

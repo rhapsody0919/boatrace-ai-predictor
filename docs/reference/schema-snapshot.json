@@ -6,8 +6,8 @@
     "手で書き換えない。definition・viewDefinition は行の配列（join(\"\\n\") で戻す）。行数の目安（reltuples）は入れない。"
   ],
   "format": 2,
-  "capturedAt": "2026-10-27T01:31:07.378Z",
-  "appliedThrough": 182,
+  "capturedAt": "2026-10-27T01:34:11.578Z",
+  "appliedThrough": 183,
   "appliedFilesAtCapture": [
     "001_schema.sql",
     "008_ADD_EXHIBITION_TO_RPC.sql",
@@ -152,6 +152,7 @@
     "179_sns_research_image_items.sql",
     "180_sns_research_image_send.sql",
     "182_sns_x_kind_reserves.sql",
+    "183_today_course_win_stats.sql",
     "add-defense-distribution.sql"
   ],
   "serverVersionNum": "170006",

@@ -1136,7 +1136,8 @@
     {
       "script": "verify-schema-snapshot.js",
       "tier": "ci",
-      "guards": "本番スキーマの写し docs/reference/schema-snapshot.json（ADR-0102）の取得の問い合わせ（scripts/db/schema-snapshot/*.sql）と組み立て（scripts/lib/schemaSnapshot.js）。PGlite で問い合わせを ro-query の READ ONLY の経路のまま実行し、表・ビュー・列・関数（ALTER した search_path を含む）・ポリシー・制約・索引・権限（列単位・PUBLIC・既定の権限）を組み立てること、拡張の作った関数を入れないこと。打ち切り（truncated）・問い合わせの欠け・知らない記号・一覧に無い表の子・鍵らしい文字列で失敗すること。台帳の appliedThrough と、後から適用済みになった番号（小さい番号・台帳に行の無かった番号を含む）で古いと判定すること。コミット済みの写しが組み立ての出力の形のままで件数が中身と合うこと（古さでは落とさない）"
+      "args": ["--base=origin/master"],
+      "guards": "本番スキーマの写し docs/reference/schema-snapshot.json（ADR-0102）の取得の問い合わせ（scripts/db/schema-snapshot/*.sql）と組み立て（scripts/lib/schemaSnapshot.js）。PGlite で問い合わせを ro-query の READ ONLY の経路のまま実行し、表・ビュー・列・関数（ALTER した search_path を含む）・ポリシー・制約（外部キーの列の対応）・索引・トリガー・権限（列単位・PUBLIC・既定の権限の public と全体）を組み立てること、拡張の作った関数を入れないこと、行の並びに依らないこと。打ち切り（truncated）・問い合わせの欠け・知らない記号・一覧に無い表の子・鍵らしい文字列（JWT・sb_secret_・Slack の Webhook・URL の資格情報）・search_path 等以外の関数の設定で失敗すること。台帳のファイル単位の鮮度の判定（同じ番号の片方・013b・後で足された行）。コミット済みの写しが整形のままで件数・並びが中身と合い、base（origin/master）の写しより前の取得に戻っていないこと（古さでは落とさない）"
     },
     {
       "script": "verify-scrape-breaker-canary.js",
