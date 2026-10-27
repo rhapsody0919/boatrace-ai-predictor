@@ -813,10 +813,12 @@ function BetLensSummary({ m }) {
         onBetType={(id) => bet.onBetType(id, "compare")}
       />
       <section className="ta-box">
-        <BetTypeTabs
-          betType={bet.summary.betType}
-          onBetType={(id) => bet.onBetType(id, "tab")}
-        />
+        <div className="ta-bettype-side">
+          <BetTypeTabs
+            betType={bet.summary.betType}
+            onBetType={(id) => bet.onBetType(id, "tab")}
+          />
+        </div>
         <h3 className="ta-h3-row">
           {C.betBoxHeading(bet.points)}
           <TermButton term="合成オッズ" />

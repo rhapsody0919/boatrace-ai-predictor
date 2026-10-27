@@ -1985,6 +1985,15 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
     for (const b of [2, 3, 4, 5]) await cand(b, 3).click();
     const cmp = page.locator(".ta-bettype-cmp");
     await expect(cmp).toBeVisible();
+    // 1列の幅では券種のタブが艇の行より上、2列では右の列（ファン評価3周目 P2、2026-10-27 オーナー）
+    const tabs = page.getByRole("group", { name: "券種" });
+    await expect(tabs).toHaveCount(1);
+    const tabsBox = await tabs.boundingBox();
+    const laneBox = await page.locator(".ta-lane").first().boundingBox();
+    if (page.viewportSize().width < 1024)
+      expect(tabsBox.y + tabsBox.height).toBeLessThanOrEqual(laneBox.y);
+    else
+      expect(tabsBox.x).toBeGreaterThanOrEqual(laneBox.x + laneBox.width - 1);
     // 図の見出し（どの券種の合成か）は 12px 以上（ファン評価2周目 P2-2）
     expect(
       await page
@@ -2012,7 +2021,7 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
       cmpParent.x + cmpParent.width + 1,
     );
     for (const b of await page
-      .locator(".ta-bettype button, .ta-bettype-cmp button")
+      .locator(".ta-bettype button:visible, .ta-bettype-cmp button")
       .all()) {
       const box = await b.boundingBox();
       expect(box.height).toBeGreaterThanOrEqual(44);

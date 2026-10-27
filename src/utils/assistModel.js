@@ -822,8 +822,8 @@ export function boardModel({
         nums: [
           c != null && {
             metric: null,
-            label: ASSIST_COPY.popLabel(target),
-            short: ASSIST_COPY.popLabel(target),
+            label: ASSIST_COPY.popLabel(target, betTypeLabel),
+            short: ASSIST_COPY.popLabel(target, betTypeLabel),
             text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
             aria: null,
             best: false,

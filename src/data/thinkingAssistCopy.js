@@ -397,7 +397,9 @@ export const ASSIST_COPY = Object.freeze({
   pastText: (k, n) =>
     `${Math.round((k / n) * 100)}%（${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}）`,
   // 1着以外を選んだときの人気の札（人気は1着になる組のオッズのまま。D-44 (2)）
-  popLabel: (target = 1) => (target === 1 ? "1着人気" : "人気（1着）"),
+  // 何の値か行の近くで分かるよう、券種の合成と書く（BOA-990 ファン評価3周目 P2、2026-10-27 オーナー「推奨通りで良い」）
+  popLabel: (target = 1, type = "3連単") =>
+    target === 1 ? `1着人気（${type}の合成で）` : `人気（1着、${type}の合成で）`,
   // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",

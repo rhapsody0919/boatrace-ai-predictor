@@ -22,6 +22,7 @@ import LensBar from "../components/race/assist/LensBar";
 import RaceLaneBoard from "../components/race/assist/RaceLaneBoard";
 import BetFooter from "../components/race/assist/BetFooter";
 import MarkSheet from "../components/race/assist/MarkSheet";
+import BetTypeTabs from "../components/race/assist/BetTypeTabs";
 import LensSummary, {
   FlowConclusion,
 } from "../components/race/assist/LensSummary";
@@ -838,6 +839,16 @@ function ThinkingAssistBody() {
           <div className="ta-split-fig">
             {/* 展開は結論（形の見立て・今日の展示）を図の上に（spec D-47 (3)） */}
             {state.lens === "flow" && <FlowConclusion m={summary.flow} />}
+            {/* 1列の幅（〜1023px）では券種のタブを艇の行の上に置く。2列では右の列のタブを使う（CSS で出し分け。
+                BOA-990 ファン評価3周目 P2、2026-10-27 オーナー「推奨通りで良い」） */}
+            {state.lens === "bet" && !cancelled && (
+              <div className="ta-bettype-top">
+                <BetTypeTabs
+                  betType={betType.id}
+                  onBetType={(id) => onBetType(id, "tab")}
+                />
+              </div>
+            )}
             {cancelled && state.lens === "bet" ? (
               // 中止のレースは買い目レンズにこの1行だけ（D-38）
               <p className="ta-status">{ASSIST_COPY.cancelled}</p>

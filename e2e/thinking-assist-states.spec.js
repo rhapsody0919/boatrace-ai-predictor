@@ -2718,7 +2718,7 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await expect(
       page
         .getByRole("figure", { name: /レースの図/ })
-        .getByText(/1着人気 1番.*1\.0倍/)
+        .getByText(/1着人気（2連単の合成で） 1番.*1\.0倍/)
         .first(),
     ).toBeVisible();
   });
