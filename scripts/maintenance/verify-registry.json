@@ -324,6 +324,11 @@
       "guards": "Environment prod-jobs を使う workflow が、data_health の鮮度の項目か理由つきの除外に載ること（2026-10-20 の鍵の誤りで夜の集計が落ちて誰も気づかなかった件の再発防止）"
     },
     {
+      "script": "verify-data-readers.js",
+      "tier": "ci",
+      "guards": "データの読み手の台帳（docs/reference/data-readers.{json,md}、generate-data-readers.js）の抽出（構文木で .from()・.select()・絞り込み・insert/upsert/update/delete の列、.rpc()、/rest/v1/ と REST の包みの相対パス、fetch の method、1回だけ宣言した const の名前。Array.from・storage.from・コメントを拾わないこと、名前が式の箇所を unresolved にすること、検査の固定入力のファイルは写しの名前だけ）と組み立て（RPC の本体が読む・書く・呼ぶ表をコメントと文字列を外して写しから引くこと、権限の GRANT とポリシーの要約、トリガー、取得のジョブの入口からの import のたどり、外の読み手 data-readers.extra.json が写しの表・列を指すこと）。今のリポジトリで作れること・同じ入力で同じ出力・構文木にできないファイルが無いこと。コミット済みの台帳との一致は見ない（行番号を持つのでほぼ全 PR で変わる。ADR-0078 と同じ理由）"
+    },
+    {
       "script": "verify-db-apply.js",
       "tier": "ci",
       "guards": "本番 DB 適用ワークフロー（.github/workflows/db-apply.yml、scripts/lib/dbApplySql.js）。パスの検証（ディレクトリの外・大文字・別拡張子を通さない）、文の分割（文字列・$$・コメントの中の ; を区切りにしない）、拒否する SQL（先頭 BEGIN・末尾 COMMIT 以外のトランザクション制御、CONCURRENTLY・VACUUM・ALTER SYSTEM・psql のメタコマンド 等）、触るテーブルの抽出、台帳の更新、実ファイルで拒否されるのが 050・055 だけであること、ワークフローの配線（secret は承認後の job だけ、run に ${{ }} を直接書かない、書き込み権限は台帳の job だけ、定期の起動は schedule か dispatch の mode=reconcile だけで手での起動と台帳のファイルを混ぜない）"
