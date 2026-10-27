@@ -187,9 +187,18 @@ const nameOf = (f) =>
   const extra = config.watchedExtra ?? [];
   check(
     "watchedExtra の各行に path と理由がある",
-    extra.every((e) => typeof e.path === "string" && typeof e.reason === "string" && e.reason.length > 0),
+    extra.every(
+      (e) =>
+        typeof e.path === "string" &&
+        typeof e.reason === "string" &&
+        e.reason.length > 0,
+    ),
   );
-  const expected = [...uses, ".github/workflows/key-canary.yml", ...extra.map((e) => e.path)].sort();
+  const expected = [
+    ...uses,
+    ".github/workflows/key-canary.yml",
+    ...extra.map((e) => e.path),
+  ].sort();
   const watched = [...config.watched].sort();
   check(
     "prod-jobs・ryujin-bot を使う workflow は全部見張りの一覧にある（漏れも余りも無い）",
@@ -280,13 +289,56 @@ const nameOf = (f) =>
       jw,
     ),
   );
-  const js = readFileSync(path.join(ROOT, "scripts/watch/job-watch.js"), "utf8");
+  // 起動を絞る（docs/design/ci-minutes-reduction/design.md 4.2 D）
+  check(
+    "scan は見張る run が成功以外のときと、カナリア（path で判定）の成功のときだけ起きる",
+    /github\.event\.workflow_run\.conclusion != 'success' \|\|\s+github\.event\.workflow_run\.path == '\.github\/workflows\/key-canary\.yml'/.test(
+      jobs.scan,
+    ),
+  );
+  check(
+    "カナリアの path は job-watch.js の CANARY_PATH と同じ",
+    /const CANARY_PATH = "\.github\/workflows\/key-canary\.yml";/.test(
+      readFileSync(path.join(ROOT, "scripts/watch/job-watch.js"), "utf8"),
+    ),
+  );
+  check(
+    "毎時の schedule があり、scan は schedule でも起きる",
+    /^ {2}schedule:\n {4}- cron: '(?!0 )\d{1,2} \* \* \* \*'$/m.test(jw) &&
+      /github\.event_name == 'schedule'/.test(jobs.scan),
+  );
+  check(
+    "schedule は workflow_dispatch の後（workflows: の一覧の切り出しを壊さない）",
+    jw.indexOf("workflows:") < jw.indexOf("workflow_dispatch:") &&
+      jw.indexOf("workflow_dispatch:") < jw.indexOf("\n  schedule:"),
+  );
+  check(
+    "concurrency は scan の job にあり、workflow の単位に無い。skip になる起動は自分だけの group（待ちの scan を置き換えない）",
+    !/^concurrency:/m.test(jw) &&
+      /^ {4}concurrency:\n {6}group: >-\n[\s\S]*?format\('job-watch-skip-\{0\}', github\.run_id\) \|\| 'job-watch' \}\}\n {6}cancel-in-progress: false$/m.test(
+        jobs.scan,
+      ) &&
+      !/concurrency:/.test(jobs.rerun),
+  );
+  const js = readFileSync(
+    path.join(ROOT, "scripts/watch/job-watch.js"),
+    "utf8",
+  );
   check(
     "見回りは push で動く見張りの対象（Post-merge Checks 等）も数える",
-    /r\.event === "push"/.test(js) && /github\.event\.workflow_run\.event == 'push'/.test(jobs.scan),
+    /r\.event === "push"/.test(js) &&
+      /github\.event\.workflow_run\.event == 'push'/.test(jobs.scan),
   );
-  check("見回りは master の run だけを一覧で取る（PR の CI を取らない）", /actions\/runs\?branch=master&created=/.test(js));
-  check("既に書いた run のログは読み直さない", /if \(alreadyNoted\) \{[\s\S]{0,400}?continue;\s*\}\s*const category = classifyLog/.test(js));
+  check(
+    "見回りは master の run だけを一覧で取る（PR の CI を取らない）",
+    /actions\/runs\?branch=master&created=/.test(js),
+  );
+  check(
+    "既に書いた run のログは読み直さない",
+    /if \(alreadyNoted\) \{[\s\S]{0,400}?continue;\s*\}\s*const category = classifyLog/.test(
+      js,
+    ),
+  );
   check(
     "同じリポジトリの run だけ",
     /workflow_run\.head_repository\.full_name == github\.repository/.test(
