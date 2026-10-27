@@ -106,7 +106,7 @@ async function shoot(page, clip, file, extra = {}) {
 }
 
 /** 差がつく材料: 6艇の図と艇の行 */
-async function cutRadar(page, gold, rowsOnly = false) {
+async function cutRadar(page, gold, part) {
   const rows = page.locator("text=/\\d+項目中 \\d+ 項目で2位以内/");
   await rows.first().waitFor({ timeout: 30000 });
   const rowBoxes = [];
@@ -119,7 +119,7 @@ async function cutRadar(page, gold, rowsOnly = false) {
   }
   if (!radar) throw new Error("差がつく材料の図が見つからない");
   // ⑤は艇の行だけ（字を大きく。GOLD の枠を艇の行に重ねる）
-  const clip = pad(union(rowsOnly ? rowBoxes : [radar, ...rowBoxes]));
+  const clip = pad(part === "rows" ? union(rowBoxes) : radar);
   // 艇の行は上から1〜6号艇
   const goldBoxes = gold.map((b) => rel(rowBoxes[b - 1], clip));
   return { clip, goldBoxes };
@@ -165,11 +165,12 @@ export async function captureAll(m, s, outDir) {
     await page.getByRole("button", { name: "拒否する" }).click({ timeout: 4000 }).catch(() => {});
     await page.waitForTimeout(1500);
     await hideFixed(page);
-    for (const id of ["c1", "c5"]) {
-      const c = at(id);
+    // ①は図 → 艇の行の2カット（図と行を1枚にすると横幅で縮み、字が 10px 前後になる）。⑤は艇の行に GOLD の枠
+    for (const [id, cid, part] of [["c1", "c1", "radar"], ["c12", "c1", "rows"], ["c5", "c5", "rows"]]) {
+      const c = at(cid);
       if (!c) continue;
-      const r = await cutRadar(page, c.shot.gold, id === "c5");
-      shots[id] = await shoot(page, r.clip, file(id), { goldBoxes: r.goldBoxes, testid: "差がつく材料" });
+      const r = await cutRadar(page, id === "c5" ? c.shot.gold : [], part);
+      shots[id] = await shoot(page, r.clip, file(id), { goldBoxes: r.goldBoxes, testid: part === "radar" ? "差がつく材料（図）" : "差がつく材料（艇の行）" });
     }
     const c2 = at("c2");
     if (c2) {

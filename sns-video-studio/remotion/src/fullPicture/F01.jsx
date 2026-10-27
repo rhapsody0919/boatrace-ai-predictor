@@ -320,7 +320,10 @@ function Chapter({ c }) {
   );
 }
 
-/** 終了画面の要素の場所（要素は YouTube 側で置く。ここでは枠と、要素の外の上に説明の字） */
+/**
+ * 終了画面の要素の場所（要素は YouTube 側で置く。ここでは枠と、要素の外の上に説明の字）。
+ * 左の画面の下半分に暗い幕を重ねて置く（右の列の「説明欄の一番上」と、左上の押していない軸の枠は隠さない）
+ */
 function EndScreen({ from }) {
   const frame = useCurrentFrame();
   const o = fadeIn(frame, from);
@@ -340,8 +343,9 @@ function EndScreen({ from }) {
   );
   return (
     <AbsoluteFill>
-      {box(RIGHT.x, 250, 560, 315, "全貌 完全版の再生リスト")}
-      {box(RIGHT.x + 180, 620, 200, 200, "チャンネル登録", true)}
+      <div style={{ position: "absolute", left: 0, top: 420, width: RIGHT.x - 10, height: 460, background: "rgba(10,20,36,0.92)", opacity: o }} />
+      {box(120, 470, 600, 338, "全貌 完全版の再生リスト")}
+      {box(820, 540, 220, 220, "チャンネル登録", true)}
     </AbsoluteFill>
   );
 }

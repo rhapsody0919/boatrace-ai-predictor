@@ -43,11 +43,11 @@ console.log(`画面: ${Object.keys(shots).length}枚`);
 
 /** 章の中で、どの行で何を出すか（行の文の語で決める） */
 const CUE = {
-  c1: { answer: /2位以内/ },
+  c1: { answer: /2位以内/, cut2: /2位以内/ },
   c2: { answer: /1着は/, cut2: /号艇が勝った/ },
   c3: { gold: /形。/, answer: /1着は/, cut2: /この形の/, answer2: /号艇が勝った/ },
-  c4: { answer2: /1号艇が1着の/, answer: /軸を/, cut2: /軸を/ },
-  c5: { answer2: /2位以内/, gold: /2位以内/, answer: /材料があるのは|材料が少ない/ },
+  c4: { answer2: /1号艇が1着の/, answer: /軸を\d号艇に/, cut2: /軸を\d号艇に/ },
+  c5: { answer2: /2位以内/, gold: /2位以内/, answer: /項目が多いのは|材料が少ない/ },
   close: { gold: /号艇を軸に/, foot: /説明欄/ },
 };
 const f = (sec) => Math.round(sec * FPS);
@@ -157,7 +157,7 @@ for (const c of chapters) {
     if (c.cuts.length > 1) picks.push(c.from + Math.min(c.len - 5, c2.from + f(2)));
   }
 }
-if (end) picks.push(total - f(2));
+if (end) picks.push(total - f(1));
 const sel = picks.map((p) => `eq(n\\,${Math.round(p)})`).join("+");
 const rows = Math.ceil(picks.length / 3);
 execFileSync("ffmpeg", ["-y", "-v", "error", "-i", join(out, "f01.mp4"), "-vf", `select='${sel}',scale=640:360,tile=3x${rows}`, "-frames:v", "1", "-vsync", "vfr", join(out, "sheet.png")]);

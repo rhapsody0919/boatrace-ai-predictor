@@ -2,7 +2,7 @@
  * 型 f01 の試作: 声（VOICEVOX 青山龍星・ノーマル、speedScale 1.1）。ローカルの engine（既定 http://127.0.0.1:50021）に字幕の1行ずつ読ませる。
  * 読みは辞書（f01.mjs の VOICE_DICT）で置き換えた文で読ませ、audio_query の kana を返す（照合は f01Check）。
  */
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { VOICE, voiceText } from "./f01.mjs";
 
@@ -45,6 +45,17 @@ export async function synthAll(chapters, outDir, splitSubs) {
     const parts = c.subs.length ? c.subs : splitSubs(c.voice);
     for (const [i, sub] of parts.entries()) {
       const text = voiceText(sub);
+      const file = `voice-${c.id}-${i}.wav`;
+      const memo = join(outDir, `${file}.json`);
+      // 同じ文・同じ声なら作り直さない（試作のやり直しを速くする）
+      if (existsSync(memo)) {
+        const k = JSON.parse(readFileSync(memo, "utf8"));
+        if (k.text === text && k.speedScale === VOICE.speedScale) {
+          kana[`${c.id}-${i}`] = k.kana;
+          lines.push({ chapter: c.id, i, sub, file, sec: k.sec });
+          continue;
+        }
+      }
       const q = await fetch(`${ENGINE}/audio_query?speaker=${id}&text=${encodeURIComponent(text)}`, { method: "POST" });
       if (!q.ok) throw new Error(`audio_query: HTTP ${q.status}（${text}）`);
       const query = await q.json();
@@ -53,9 +64,10 @@ export async function synthAll(chapters, outDir, splitSubs) {
       const w = await fetch(`${ENGINE}/synthesis?speaker=${id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(query) });
       if (!w.ok) throw new Error(`synthesis: HTTP ${w.status}（${text}）`);
       const buf = Buffer.from(await w.arrayBuffer());
-      const file = `voice-${c.id}-${i}.wav`;
       writeFileSync(join(outDir, file), buf);
-      lines.push({ chapter: c.id, i, sub: sub, file, sec: Math.round(wavSeconds(buf) * 1000) / 1000 });
+      const sec = Math.round(wavSeconds(buf) * 1000) / 1000;
+      writeFileSync(memo, JSON.stringify({ text, speedScale: VOICE.speedScale, kana: query.kana, sec }));
+      lines.push({ chapter: c.id, i, sub, file, sec });
     }
   }
   return { lines, kana };

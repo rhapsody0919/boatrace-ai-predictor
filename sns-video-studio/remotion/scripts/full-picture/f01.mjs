@@ -19,7 +19,7 @@ export const VOICE = { speaker: "青山龍星", speedScale: 1.1, credit: "VOICEV
 /** 字幕1行の字数の上限（1920 幅・44px で約40字。句読点で区切る） */
 export const SUB_MAX = 34;
 /** 順位の語（線を通ったときだけ使う） */
-export const RANK_WORDS = /最も多|最多|次が|次は|2番目|一番|入れ替わ/;
+export const RANK_WORDS = /最も多|最多|次が|次は|2番目|一番(?!上)|入れ替わ/;
 /**
  * 声の読みの辞書（9b節: 「313件」がサンビャクジュウサンゲン、「今節」がコンフシ）。声の文だけ置き換え、字幕は元の字のまま。
  * bad は audio_query の kana に出たら落とす読み（機械の照合）
@@ -132,11 +132,13 @@ export function f01Script(m) {
       name: "6艇の差",
       tag: "龍神ソナー ＞ 差がつく材料",
       scope: `今日の6艇・${axes.length}項目`,
-      answer: `${leaders.join("・")}号艇が ${max}項目で2位以内`,
+      answer: `${leaders.join("・")}号艇 ${max}項目`,
+      answer2: `${axes.length}項目のうち2位以内に入った数`,
       path: "ソナー → 差がつく材料",
       voice: `まず龍神ソナーの、差がつく材料。${axes.map(label).join("、")}の${axes.length}項目で、2位以内に入ったのは、${leaders.map((b) => `${b}号艇`).join("と")}が${leaders.length > 1 ? "それぞれ" : ""}${max}項目。`,
-      shot: { page: "sonar", tab: "差がつく材料", cut: "radar", gold: [] },
-      expect: leaders.map((b) => `5項目中 ${top2[b]} 項目で2位以内`.replace("5項目", `${axes.length}項目`)),
+      shot: { page: "sonar", tab: "差がつく材料", cut: "radar", cut2: "rows", gold: [] },
+      expect: axes.map((a) => a.label),
+      expect2: leaders.map((b) => `5項目中 ${top2[b]} 項目で2位以内`.replace("5項目", `${axes.length}項目`)),
       facts: { top2, leaders, max },
     });
   }
@@ -166,7 +168,12 @@ export function f01Script(m) {
       tag: "龍神ソナー ＞ 類似レース",
       scope: `出走表の類似度の高い順 ${n}件`,
       answer: `1着 ${fb}号艇 ${counts[fb - 1]}件`,
-      answer2: sec ? `${fb}号艇1着のとき 2着 ${secOrder[0]}号艇 ${sec[secOrder[0] - 1]}件` : null,
+      // 2着の1位が線を通らない日は、上から3艇の件数を並べる（1艇だけ出すと「2着は◯号艇」と読める）
+      answer2: !sec
+        ? null
+        : secRank.rankSig
+          ? `${fb}号艇1着のとき 2着 ${secOrder[0]}号艇 ${sec[secOrder[0] - 1]}件`
+          : `${fb}号艇1着のとき 2着 ${secOrder.slice(0, 3).map((b) => `${b}号艇${sec[b - 1]}`).join("・")}`,
       path: "ソナー → 類似レース",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "類似レース", cut: "similarBars", cut2: sec ? "similarFlow" : null, firstBoat: fb },
@@ -248,12 +255,13 @@ export function f01Script(m) {
       name: "冒頭の問いの答え",
       tag: "龍神ソナー ＞ 差がつく材料",
       scope: `今日の6艇・${axes.length}項目`,
-      answer: best > 0 ? `今日の材料は ${bests.join("・")}号艇` : "3艇とも材料は少ない",
+      answer: best > 0 ? `項目が多いのは ${bests.join("・")}号艇` : "3艇とも項目は少ない",
       answer2: three.map((b) => `${b}号艇 ${top2[b]}項目`).join("・"),
       path: "ソナー → 差がつく材料",
       voice:
         `では、冒頭の問い。同じ${axes.length}項目で2位以内に入ったのは、${three.map((b, i) => `${b}号艇${i === three.length - 1 ? "は" : "が"}${top2[b]}項目`).join("、")}。` +
-        (best > 0 ? `今日の材料があるのは${bests.map((b) => `${b}号艇`).join("と")}。` : "この3艇には、今日の材料が少ない。") +
+        // 今日の6艇の記述（標本からの推定でない）。「材料があるのは」は他の艇に材料が無いと読めるので使わない
+        (best > 0 ? `この3艇で項目が多いのは${bests.map((b) => `${b}号艇`).join("と")}。` : "この3艇には、今日の材料が少ない。") +
         "展示の後は、今節の平均より速い展示タイムを出した艇を見る。",
       shot: { page: "sonar", tab: "差がつく材料", cut: "radar", gold: three },
       expect: three.map((b) => `${top2[b]} 項目で2位以内`),
