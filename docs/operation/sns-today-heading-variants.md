@@ -54,6 +54,7 @@ hq の毎日の PDCA（`~/hq/platform/pdca_daily.py`）が /today の型を日�
 - `experiment` を置いた日から、見出しの a・b の日替わり（日の偶奇、171 の札）は止まり、比べの外の日は全部 a（札 a）になる。`experiment` の鍵ごと消すと前の偶奇に戻り、型 b が1日おきに比べの外で出るので消さない（止めるときは `start` を null に）
 - 比べ: `config/today-variants.json` の `experiment`（`start`・`pairs`・`seed`）。連続2日を1組、組の中で `sha256(seed:組の番号)` の1ビットでどちらの日を b にするかを決める（日付と設定だけで決まり、作り直しても変わらない）。`start` が null の間・組の数を過ぎた後は全部 a。組の日は型の列（PD02）を使わない（理由 `experiment_pair`）
 - 始め方: 183 を本番に当て、翌朝の一覧で `notes.courseWin.status='ok'` を確かめ、撮影用のページが本番で出ることを確かめてから、`start` に組の1日目（翌日以降）を入れる小さな PR を出す
+- 今の設定: `start` は 2026-10-29（10/28 の朝の一覧で `status='ok'`、本番の撮影用のページを送信と同じ撮り方で1枚撮って確かめた）。組は 11/17 まで、b の日は 10/30・10/31・11/3・11/5・11/7・11/9・11/11・11/13・11/15・11/16（`verify-today-type-b.js` で固定）。始めた後に `seed`・`start`・`pairs` を変えない（割り当てが変わる）
 - 記録: `source_data.content_type` に `side`（割り当て）・`sent`（実際に送った型）・`experiment`・`pair`・`slot`、a の日は `b_feasible`（その日 b を出せたか。DB を読まない分）。b の日は `source_data.course_win`（指紋・段ごとの K・線・正確な確率・本文の人）。`utm_content` は「日付-実際に送った型」
 
 ### 比べの読み方（始める前に決めておく。data-scientist・x-channel の審査）
