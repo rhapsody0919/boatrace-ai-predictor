@@ -30,6 +30,8 @@
 - 除外するものを DB から読んで集合にするとき、エラーを見ずに (data || []) にすると、読み取りの失敗で除外が空になりガードが外れる（BOA-512 で開催した32レースを中止に一括更新）。失敗は例外にする（ADR-0069、verify-query-errors.js）。一括 UPDATE の跡は updated_at がミリ秒まで同じ行で見分けられる（2026-09-20、memory technical_supabase_read_error_swallowed_flips_guard、PR #743）
 - verify-migration-rls.js は REVOKE/GRANT の1文につき先頭の関数名しか読まない。複数の関数を並べた文は1関数1文に分ける（2026-10-08、memory feedback_codex_patch_intake_checklist）
 - race_entries が別の日の出走表で上書きされる汚染は、race_results が正常に入るので欠損を探す検知では見つからない。日次の data_health_entries_duplicates（マイグレーション100）で検知する（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-423）
+- transition_sns_send_139 を置き換えるマイグレーションの先頭の照合は md5(prosrc) の一致で行う（LIKE は前の版の印が残るので版を区別できない）。182 の本文は c2b4835c416ff6e824a43fe9025c6518。PGlite の verify は now() を test_now() にした本文の md5 に照合の値を差し替えて当てる（2026-10-27、BOA-1169、189・verify-sns-today-thinking.js）
+- sns_auto_send_items と sns_auto_send_control を同じマイグレーションで ALTER するときは、先頭で SET LOCAL lock_timeout の後に control → items の順に LOCK TABLE … ACCESS EXCLUSIVE を取る（送り手の transition_sns_x_send が control → items の順に読むので、逆だとデッドロックしうる）（2026-10-27、BOA-1169、189）
 - 適用待ちキーを WARN にする RPC 検査は、終了コード0でも当該マイグレーションの成功証拠にならない。台帳・途中の WARN・対象日と同一 raceId の保存値/応答を併せて確認する（2026-10-13、2026-10-13-plan-review-20261013-22.md）
 
 ## 画面からの読み取り

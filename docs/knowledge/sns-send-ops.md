@@ -19,8 +19,10 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - 素材取り込み CLI の点検は、取り込み可能・公開可能・運用段階移行を分けて範囲と停止位置を指定する（2026-10-13、2026-10-13-plan-1728.md）
 - 同じ SNS の仕組みでも cron の job が違えば、既存 runner の未配達持越しは新 runner へ自動では適用されない。manual/held_manual の再処理除外と、一度きりの通知の失敗時保存を同じ経路で見る（2026-10-14、2026-10-14-plan-review-20261014-01.md）
 - runner が失敗結果にも report.alerts を返しても、共通 wrapper が成功時だけ report を保存するなら監視に届かない。未設定＋他媒体失敗の組合せを wrapper/store まで追う（2026-10-14、2026-10-14-plan-review-20261014-03.md）
+- 送る直前の readCurrent（api/_lib/snsClaimCheck.js）は下書きの source_data のキー（digest・full_picture・finals_image・research_image・today_thinking）で振り分ける。新しい種類は別のキーにして他の種類のキーを入れず、枝の中で item の kind も読んで食い違えば投げる（2026-10-27、BOA-1169、snsClaimCheck.js の today_thinking の枝）
 
 ## 容量・上限
+- 取り置き（sns_x_kind_reserves）は旗が off でも・締切が過ぎても解けない。新しい出し物の取り置きと daily_limit_x はマイグレーションに入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前に当てる（先に入れると他の出し物の残りを食う）（2026-10-27、BOA-1169、ADR-0094 の 182 の追記の (2)・189 のヘッダー）
 - 容量・上限の境界は、上限より十分短い正常例と超過例だけで済ませない。ちょうどの正常例と+1の拒否を、生成→承認 snapshot→送信の各入口で分けて確認する（2026-10-15、2026-10-15-plan-review-20261015-03.md・2026-10-13-plan-review-20261013-23.md）
 - 上限の単位（添付 file.size の和・multipart 全体・UTF-16 長・加重長・完成本文）は入口ごとに違う。どれに適用するかを明記する（2026-10-13、2026-10-13-plan-review-20261013-27.md・2026-10-15-plan-review-20261015-03.md）
 - 再帰的な容量走査は、階層ごとの Promise.all を8にしても全体の同時取得数は8に収まらない。上限は共有キューで管理する（2026-10-13、2026-10-13-plan-review-20261013-13.md）
