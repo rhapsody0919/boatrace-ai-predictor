@@ -66,6 +66,12 @@
 - 通り道 B と kind=race は取り置きが0なので、取り置かれていない残りだけを使い、無ければ held。子（リプ）にも同じ式を当てる（親の claim が子の分を数え、他の claim は claim 済みの親の子を予定に数える）
 - 残る壊れ方: (1) 取り置きの合計＋他経路が上限を越える日は、取り置きの中でも後から来た出し物が止まる（DB では拒まず、取り込みと照合が警告する） (2) 取り置きはその日の締切が過ぎても・許可が off でも解けない (3) 取り込みの確かめは目安で、同時に2本を受けると両方通りうる（正は claim）
 
+## 追記: X の月の予約は、送る文の URL の有無で決める（2026-10-27、Orchestrate 依頼・マイグレーション 188）
+- claim（transition_sns_send_139）の予約額は、送る文（snapshot の text）に URL があれば ceiling_x_url、無ければ ceiling_x_plain。素材のスレッドの兄弟と、まだ claim していない子の確かめも、それぞれの文で数える。182 までの「thread_index=0 を URL つきの額で引く」（158、上の /today の返信の型の追記）は古い
+- 額は X API の料金表（Post: Create $0.015、with URL $0.200、2026-10-27）。今の値が 250000・30000 のときだけ 200000・15000 に書き換えた（予約の上乗せの幅を外す。オーナーが Orchestrate 経由で了承）。予算は $20 のまま（2026-10-27 オーナー）
+- 残る壊れ方: 本文に URL が無く画像だけの投稿が $0.015 で請求されるかは未確認（X は画像に t.co を付ける）。外れていれば URL の無い投稿1本あたり $0.185 少なく予約する。最初の URL の無い投稿の翌日に Developer Console で確かめ、外れていれば media のある投稿を URL つきとして数える
+- 親の claim で子の分を予算から一緒に引かないのは今までどおり（v_rest は確かめだけ）
+
 ## 追記: /today の対象レースの思考投稿（today_thinking）は、優勝戦の思考投稿と同じ型で別の種類にする（2026-10-27、オーナー決定・BOA-1169・マイグレーション 189）
 - 本投稿（画像4枚＋本文）・直後の4択の投票のリプ・締切の25〜13分前の展示後の画像4枚のリプの3本。push は scripts/sns/push-finals-image.js（bundle の format は today_thinking_image・today_thinking_reply）。item の kind は today_thinking、variant は thinking・thinking_poll・thinking_reply。時刻の窓・bundle の形・画像・投票は優勝戦と同じ
 - 期限は締切の5分前（transition_sns_send_139 の v_expiry_min、優勝戦と同じ）。優勝戦の段は見ず、代わりに race_id がその日の /today の X 投稿の対象（scripts/sns/today-picks.js の featured か list）であることを push の機械の検査に入れる。本文に URL を付けない（3本とも。extractUrls が1つでも返せば拒否。オーナー 2026-10-27）
@@ -73,4 +79,3 @@
 - 枠: 取り置き today_thinking 6（2レース×3本）・full_picture 0・daily_limit_x 11（オーナー 2026-10-27）。月水金は取り置きの合計11＝上限で残り0。取り置きは旗が off でも解けないので、行と上限は 189 に入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前にオーナーが当てる
 - readCurrent は source_data のキーで振り分けるので、新しい種類は別のキー（today_thinking）にし、枝の中で item の kind も確かめる（食い違えば投げる）
 - 残る壊れ方: (1) 全貌の X は取り置き0なので、月水金は送れず、他の曜日は取り置かれていない残りの1本を先に来た出し物と取り合う (2) /today の X 投稿が送れなかった日（held 等）でも、下書きが archived でなければ対象として受け取る
-

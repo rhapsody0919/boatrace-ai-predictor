@@ -1449,6 +1449,11 @@
       "guards": "sns-pdca-loop tasks 17: X API v2 の実 adapter（分割アップロード initialize・append（multipart の segment_index・media）・finalize・STATUS、POST /2/tweets の media・reply、トークンは runner が claim の前に取って渡す、投稿の失敗は再試行しない・X の詳細な本文をエラーに入れない・成功の応答を解釈できなければ理由つきで投げる・媒体の処理の失敗や append の失敗では begin_post に進まない・STATUS の応答に状態が無い・finalize に data が無いときも投稿しない・finalize の processing_info はキーが無いときだけ省略とみなし null・false・0・空文字・state の無い値と、data がオブジェクトでない応答は投稿の前に止める・媒体の処理の待ちは1〜30秒に収め check_after_secs が数でなければ投稿の前に止める・動画は finalize で省略されても STATUS で完了を確かめる、分割は 4 MiB、posted_at は投稿 ID の snowflake から）と、runXSendJob に実 adapter をつないだ承認から posted まで（SQL137 を PGlite、fetch はモックで外部接続なし）"
     },
     {
+      "script": "verify-sns-x-cost-by-url.js",
+      "tier": "ci",
+      "guards": "X の送信の月の予約を送る文の URL の有無で決める（マイグレーション 188）: 先頭の照合は 182 の transition_sns_send_139 の本文の md5（c2b4835c…）で、当て直すと止まる。182 との差は予約額の行だけ。sns_x_post_has_url はスキーム・www・よく使う TLD のドメイン（日本語が続いても）を URL、小数・日本語だけ・NULL を URL でないとする。claim は URL のある文を ceiling_x_url、無い文を ceiling_x_plain で予約し、まだ claim していない自分の子も子の文で数える。ceiling_x_url・ceiling_x_plain は 250000・30000 のときだけ 200000・15000 にし、ほかの値は触らない。SQL182・188 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-x-oauth.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 16（ADR 0093）: X の OAuth（PKCE）の連携の開始・コールバック（認証なしは401、state が Cookie と違う・拒否はトークンに替えない、コードの交換は Basic 認証と code_verifier、保存は暗号化した値とアカウント ID だけ）、トークンの AES-256-GCM（平文が残らない・鍵違い・改ざんを拒否）、access token の refresh（期限の5分前、同時に呼んでも refresh は1回、失敗時はロックを外して通知、保存に失敗したら連携のやり直しを通知、保存が成り立たず確かめる読み直しも失敗したときも通知）、PostgREST の条件付き UPDATE（外部接続なし）"
