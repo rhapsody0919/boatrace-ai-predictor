@@ -98,6 +98,6 @@ jobs:
           fi
           # payload は jq で組み立てる（文字列への変数の直書きで JSON が壊れないように。BOA-644）
           payload=$(jq -n --arg url "$RUN_URL" '{
-            text: ("機械生成の文書（共通ロジック索引・表示カバレッジ台帳）の再生成に失敗しました。masterの生成物が古いままです: " + $url)
+            text: ("機械生成の文書（共通ロジック索引・表示カバレッジ台帳・データの読み手の台帳）の再生成に失敗しました。masterの生成物が古いままです: " + $url)
           }')
           curl -s -X POST "$SLACK_WEBHOOK_URL" -H "Content-Type: application/json" -d "$payload"

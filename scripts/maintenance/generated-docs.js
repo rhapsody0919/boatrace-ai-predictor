@@ -39,10 +39,20 @@ export const GENERATED_DOCS = Object.freeze([
     output: "docs/reference/display-coverage.md",
     generator: "scripts/maintenance/generate-display-coverage.js",
   },
+  // データの読み手の台帳。1回の生成で md と json の2つを書く（@babel/parser を使うのでワークフローで npm ci する）
+  {
+    output: "docs/reference/data-readers.md",
+    generator: "scripts/maintenance/generate-data-readers.js",
+  },
+  {
+    output: "docs/reference/data-readers.json",
+    generator: "scripts/maintenance/generate-data-readers.js",
+  },
 ]);
 
 function regenerate() {
-  for (const { generator } of GENERATED_DOCS) {
+  // 1つの生成スクリプトが複数の生成物を書くことがあるので、スクリプトごとに1回
+  for (const generator of new Set(GENERATED_DOCS.map((d) => d.generator))) {
     // 1本でも失敗したら非ゼロで終わる（途中までの生成物をコミットさせない）
     execFileSync("node", [path.join(repoRoot, generator)], {
       stdio: "inherit",

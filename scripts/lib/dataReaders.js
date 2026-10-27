@@ -1539,7 +1539,7 @@ export function renderMarkdown(ledger) {
   L.push("# データの読み手の台帳");
   L.push("");
   L.push(
-    "> 機械生成（`node scripts/maintenance/generate-data-readers.js`）。手で書き換えない。表・列・RPC を変える・消す前に、ここで読み手と書き手を確かめる。マージ後の自動の作り直しはまだ無いので、読む前に手元で作り直す（`--check` で今のコードと一致するかが分かる）。機械で拾えない repo の外の読み手（hq 等）は `docs/reference/data-readers.extra.json` に手で足す。",
+    "> 機械生成（`node scripts/maintenance/generate-data-readers.js`）。手で書き換えない。表・列・RPC を変える・消す前に、ここで読み手と書き手を確かめる。master へのマージ後に CI（regenerate-generated-docs.yml）が作り直す。PR には含めない（ADR-0078）。作業中の枝の影響を見るときは手元で作り直して読み、コミットせずに戻す。機械で拾えない repo の外の読み手（hq 等）は `docs/reference/data-readers.extra.json` に手で足す。",
   );
   L.push(">");
   L.push(

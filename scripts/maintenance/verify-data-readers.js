@@ -7,9 +7,9 @@
  * 固定の入力で1つずつ確かめる。続けて、今のリポジトリで台帳が作れること（DB に触れない、書き込まない）、
  * 同じ入力で同じ出力になること、手で足す外の読み手（data-readers.extra.json）が写しにある名前を指すことを確かめる。
  *
- * コミット済みの台帳と今のコードの一致は見ない。行番号まで持つので、ほぼ全 PR で変わり、並行する PR が
- * 同じファイルで衝突する（ADR-0078 の理由と同じ）。作り直しは手元の `node scripts/maintenance/generate-data-readers.js`
- * （一致の確かめは `--check`）。
+ * コミット済みの台帳と今のコードの一致は見ない。台帳は機械生成の文書（generated-docs.js の GENERATED_DOCS）で、
+ * PR には含めず、master へのマージ後に regenerate-generated-docs.yml が作り直す（ADR-0078。行番号まで持つので
+ * ほぼ全 PR で変わり、PR に含めると並行する PR が同じファイルで衝突する）。
  */
 import {
   buildLedger,
