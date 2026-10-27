@@ -13,6 +13,11 @@
 const API = "https://www.googleapis.com/youtube/v3";
 const UPLOAD_API = "https://www.googleapis.com/upload/youtube/v3";
 const TIMEOUT_MS = 120000;
+/**
+ * thumbnails.set の待ちの上限。失敗しても公開に進むので、120秒待つと公開の段（videos.update）が関数の上限（300秒）に近づき、
+ * update と list の間で切れると update_started の要照合になる（BOA-1172 の審査 P3）。画像は 1280x720 の PNG で小さい
+ */
+export const THUMBNAIL_TIMEOUT_MS = 30000;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 // videos.update の part=status は status を丸ごと書き換える（指定しない項目は既定値に戻る）。
 // upload と公開で同じ項目を送るよう、privacyStatus 以外はここにまとめる
@@ -42,12 +47,15 @@ export function validateYoutubeSnapshot(snapshot) {
 
 export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
   if (!accessToken) throw new Error("YouTube の access token がありません");
-  async function call(url, { method = "GET", headers = {}, body } = {}) {
+  async function call(
+    url,
+    { method = "GET", headers = {}, body, timeoutMs = TIMEOUT_MS } = {},
+  ) {
     const response = await fetchImpl(url, {
       method,
       headers: { Authorization: `Bearer ${accessToken}`, ...headers },
       body,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const text = await response.text();
     let parsed = null;
@@ -150,6 +158,7 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
               method: "POST",
               headers: { "Content-Type": cover.type },
               body: cover.bytes,
+              timeoutMs: THUMBNAIL_TIMEOUT_MS,
             },
           );
         } catch (error) {

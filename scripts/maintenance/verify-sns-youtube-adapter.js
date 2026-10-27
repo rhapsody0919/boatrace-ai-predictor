@@ -10,7 +10,10 @@ import {
   reconcileYoutubeJob,
   runYoutubeQueueJob,
 } from "../../api/_lib/snsDeadlineQueue.js";
-import { createYoutubeQueueAdapter } from "../../api/_lib/youtubeQueueAdapter.js";
+import {
+  createYoutubeQueueAdapter,
+  THUMBNAIL_TIMEOUT_MS,
+} from "../../api/_lib/youtubeQueueAdapter.js";
 
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -299,6 +302,35 @@ test("BOA-1172: サムネイルの 403・通信の例外でも動画は公開ま
       label,
     );
   }
+});
+
+test("BOA-1172: thumbnails.set の待ちは30秒（ほかの呼び出しは120秒）。失敗しても公開に進むので、公開の段が関数の上限に近づかない（審査 P3）", async (t) => {
+  const timeouts = [];
+  const original = AbortSignal.timeout;
+  t.mock.method(AbortSignal, "timeout", (ms) => {
+    timeouts.push(ms);
+    return original.call(AbortSignal, ms);
+  });
+  const job = await approvedJob();
+  const fake = fakeYoutube();
+  const seen = [];
+  const done = await run(job, {
+    ...fake,
+    fetchImpl: async (url, options) => {
+      seen.push([new URL(url).pathname, timeouts.at(-1)]);
+      return fake.fetchImpl(url, options);
+    },
+  });
+  assert.equal(done.state, "posted");
+  assert.equal(THUMBNAIL_TIMEOUT_MS, 30000);
+  const thumb = seen.filter(([p]) => p === "/upload/youtube/v3/thumbnails/set");
+  assert.equal(thumb.length, 1);
+  assert.equal(thumb[0][1], 30000);
+  assert.ok(
+    seen
+      .filter(([p]) => p !== "/upload/youtube/v3/thumbnails/set")
+      .every(([, ms]) => ms === 120000),
+  );
 });
 
 test("BOA-1172: thumbnails.set の前の検査・台帳への記録が落ちたら、サムネイルを呼ばず今までどおり非公開のまま残す（止める判断は続けない）", async () => {
