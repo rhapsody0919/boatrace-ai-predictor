@@ -8,6 +8,7 @@ import {
   checkFullPicture,
   pushFullPicture,
   schedule,
+  THUMBNAIL_MAX_BYTES,
 } from "../sns/push-full-picture.js";
 import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
 import { youtubeTagsOf } from "../../api/_lib/youtubeQueueAdapter.js";
@@ -143,12 +144,13 @@ const store = {
         )
       ).map((r) => [r.channel, r]),
     ),
-  saveFile: async (p, bytes) => saved.push([p, bytes.byteLength]),
+  saveFile: async (p, bytes, contentType = "video/mp4") =>
+    saved.push([p, bytes.byteLength, contentType]),
   insertDraft: (row) =>
     first(
       `INSERT INTO sns_drafts(content_group_id,platform,language,status,format,title,caption_text,hashtags,publish_blocked,
-        publication_hold_reasons,send_lane,scheduled_at,video_storage_path,source_data)
-       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+        publication_hold_reasons,send_lane,scheduled_at,video_storage_path,source_data,cover_image_path)
+       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
       [
         row.content_group_id,
         row.platform,
@@ -164,6 +166,7 @@ const store = {
         row.scheduled_at,
         row.video_storage_path,
         row.source_data,
+        row.cover_image_path ?? null,
       ],
     ),
   insertItem: (row) =>
@@ -214,8 +217,13 @@ const store = {
     ),
 };
 
-const push = (b = bundle(), opts = {}, shorts = SHORTS) => {
-  const f = files(b, shorts);
+// opts.files: フォルダに足すファイル（サムネイル等、BOA-1172）
+const push = (
+  b = bundle(),
+  { files: extra = {}, ...opts } = {},
+  shorts = SHORTS,
+) => {
+  const f = { ...files(b, shorts), ...extra };
   const notes = [];
   return pushFullPicture("/f", {
     store,
@@ -1055,4 +1063,175 @@ test("BOA-909: notify の同期例外・非同期拒否でも元の拒否理由�
     assert.deepEqual(result.reasons, reasons);
   }
   assert.equal(errors.length, 2);
+});
+
+// BOA-1172: 型 f01 の完全版のサムネイル（bundle の youtube_full.thumbnail と bundle/thumb-full.png、run-full.mjs）
+const PNG = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13,
+]);
+const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 16, 1, 2]);
+const withThumbnail = (b, thumbnail = "thumb-full.png") => ({
+  ...b,
+  youtube_full: { ...b.youtube_full, thumbnail },
+});
+const bundleF01 = (thumbnail) =>
+  withThumbnail(bundleV2({ channels: ["youtube", "shorts"] }), thumbnail);
+const draftOf = (jobId) =>
+  first(
+    "SELECT d.cover_image_path, d.video_storage_path, j.snapshot_text FROM sns_x_send_jobs j JOIN sns_drafts d ON d.id=j.draft_id WHERE j.id=$1",
+    [jobId],
+  );
+const clearSent = () =>
+  db.exec(
+    "UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_youtube_quota_attempts; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+  );
+
+test("BOA-1172: f01 の束のサムネイルは完全版の下書きの cover_image_path に入り、承認の snapshot の media が2つになる。Shorts には付けない", async () => {
+  for (const [bytes, ext, type] of [
+    [PNG, "png", "image/png"],
+    [JPEG, "jpg", "image/jpeg"],
+  ]) {
+    await clearSent();
+    const savedBefore = saved.length;
+    const result = await push(bundleF01(), {
+      files: { "/f/thumb-full.png": bytes },
+    });
+    assert.equal(result.reasons, undefined, ext);
+    const cover = `full-picture/${RACE}/${result.revision}/thumb-full.${ext}`;
+    // 保存の拡張子と Content-Type は中身（先頭のバイト列）で決める
+    assert.deepEqual(
+      saved.slice(savedBefore).find(([p]) => p === cover),
+      [cover, bytes.byteLength, type],
+      ext,
+    );
+    const full = await draftOf(result.channels.youtube.job_id);
+    assert.equal(full.cover_image_path, cover, ext);
+    const snapshot = JSON.parse(full.snapshot_text);
+    assert.deepEqual(
+      snapshot.media.map((m) => [m.path, m.type, m.size]),
+      [
+        [full.video_storage_path, "video/mp4", VIDEO.byteLength],
+        [cover, type, bytes.byteLength],
+      ],
+      ext,
+    );
+    assert.equal(snapshot.source.cover_image_path, cover, ext);
+    const shorts = await draftOf(result.channels.shorts.job_id);
+    assert.equal(shorts.cover_image_path, null, `${ext}: Shorts には付けない`);
+    assert.equal(JSON.parse(shorts.snapshot_text).media.length, 1, ext);
+    assert.equal(result.channels.x, undefined);
+  }
+});
+
+test("BOA-1172: X も出す束でも、サムネイルは完全版だけ。版（revision）は動画の後にサムネイルを足した sha256", async () => {
+  const { createHash } = await import("node:crypto");
+  const b = withThumbnail(bundleV2());
+  const expected = createHash("sha256")
+    .update(JSON.stringify(b))
+    .update(VIDEO)
+    .update(VIDEO)
+    .update(SHORTS)
+    .update(PNG)
+    .digest("hex")
+    .slice(0, 32);
+  const thumb = { "/f/thumb-full.png": PNG };
+  assert.equal(
+    (await push(b, { files: thumb, dryRun: true })).revision,
+    expected,
+  );
+  // サムネイルだけ違えば版も変わる（前の版の承認と同じ path を上書きしない）
+  assert.notEqual(
+    (await push(b, { files: { "/f/thumb-full.png": JPEG }, dryRun: true }))
+      .revision,
+    expected,
+  );
+  const result = await push(b, { files: thumb });
+  assert.equal(result.reasons, undefined);
+  assert.equal(
+    (await draftOf(result.channels.x.job_id)).cover_image_path,
+    null,
+  );
+  assert.match(
+    (await draftOf(result.channels.youtube.job_id)).cover_image_path,
+    /\/thumb-full\.png$/,
+  );
+});
+
+test("BOA-1172: 欄の無い束は今までどおり（cover なし・media は1つ・版の式も同じ）。フォルダに画像があっても読まない", async () => {
+  const { createHash } = await import("node:crypto");
+  const b = bundleV2();
+  const expected = createHash("sha256")
+    .update(JSON.stringify(b))
+    .update(VIDEO)
+    .update(VIDEO)
+    .update(SHORTS)
+    .digest("hex")
+    .slice(0, 32);
+  const savedBefore = saved.length;
+  const result = await push(b, { files: { "/f/thumb-full.png": PNG } });
+  assert.equal(result.reasons, undefined);
+  assert.equal(result.revision, expected);
+  const full = await draftOf(result.channels.youtube.job_id);
+  assert.equal(full.cover_image_path, null);
+  assert.equal(JSON.parse(full.snapshot_text).media.length, 1);
+  assert.ok(saved.slice(savedBefore).every(([p]) => !p.includes("thumb")));
+});
+
+test("BOA-1172: サムネイルの欄があるのに画像が無い・PNG でも JPEG でもない・空・上限を超える・名前に区切りがあるときは束ごと拒否する", async () => {
+  const big = new Uint8Array(THUMBNAIL_MAX_BYTES + 1);
+  big.set(PNG);
+  const gif = new TextEncoder().encode("GIF89a0000");
+  const cases = [
+    ["画像が無い", bundleF01(), {}, /thumb-full\.png が無い/],
+    [
+      "GIF",
+      bundleF01(),
+      { "/f/thumb-full.png": gif },
+      /PNG でも JPEG でもない/,
+    ],
+    [
+      "空",
+      bundleF01(),
+      { "/f/thumb-full.png": new Uint8Array() },
+      /大きさが不正（0 バイト）/,
+    ],
+    ["上限を超える", bundleF01(), { "/f/thumb-full.png": big }, /大きさが不正/],
+    [
+      "上の階層",
+      bundleF01("../thumb-full.png"),
+      { "/thumb-full.png": PNG },
+      /ファイル名でない/,
+    ],
+    [
+      "下の階層",
+      bundleF01("a/thumb-full.png"),
+      { "/f/a/thumb-full.png": PNG },
+      /ファイル名でない/,
+    ],
+    ["\\ を含む", bundleF01("a\\thumb-full.png"), {}, /ファイル名でない/],
+    ["..", bundleF01(".."), {}, /ファイル名でない/],
+    ["空の名前", bundleF01(""), {}, /ファイル名でない/],
+    ["文字列でない", bundleF01(true), {}, /ファイル名でない/],
+  ];
+  await clearSent();
+  for (const [label, b, extra, expected] of cases) {
+    const savedBefore = saved.length;
+    const result = await push(b, { files: extra });
+    assert.ok(result.reasons?.length, label);
+    assert.match(result.reasons.join("\n"), expected, label);
+    assert.equal(saved.length, savedBefore, `${label}: 何も保存しない`);
+  }
+  assert.equal((await all("SELECT * FROM sns_x_send_jobs")).length, 0);
+  // 上限ちょうどは通る（承認の snapshot のカバーの上限と同じ）
+  const edge = new Uint8Array(THUMBNAIL_MAX_BYTES);
+  edge.set(PNG);
+  assert.equal(
+    (
+      await push(bundleF01(), {
+        files: { "/f/thumb-full.png": edge },
+        dryRun: true,
+      })
+    ).reasons,
+    undefined,
+  );
 });

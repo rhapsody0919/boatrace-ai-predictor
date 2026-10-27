@@ -12,10 +12,12 @@
  *   （マイグレーション 172、BOA-912）。Shorts は完全版の公開の後に送り、説明文の {full_url} を完全版の URL に置き換える（parent_job_id）
  *   channels（例 ["youtube","shorts"]）は送るチャネル。x を外すことだけができ、外したときは x_text・full-x.mp4 を受けず、
  *   X の下書き・item・job を作らない（BOA-1167、2026-10-27 オーナー決定「全貌の入口は Shorts、X は不要」）。無い bundle は今までどおり X も出す
+ *   youtube_full.thumbnail（型 f01、例 "thumb-full.png"）があれば、フォルダのその名前の画像（PNG・JPEG）を完全版のサムネイルとして
+ *   完全版の下書きの cover_image_path に入れる。送信は動画の upload の後に thumbnails.set で上げる（BOA-1172）。欄が無い bundle は今までどおり
  *
  * 1. 検査: 欄・P0 が0件・機械の検査が全部通った・禁止表現・動画の大きさ・レースが今日あり中止でない・締切の45分前より前
  *    --dry-run はここまで（DB・Storage に書かない）
- * 2. 動画を Storage（sns-hub-media/full-picture/{race_id}/{版}/）に上げる
+ * 2. 動画（とサムネイル）を Storage（sns-hub-media/full-picture/{race_id}/{版}/）に上げる
  * 3. X・YouTube の下書き（send_lane=A、format=full_picture）と item（kind=full_picture）を作る
  *    X の日の枠の全貌の取り置き（182）に1本が入らなければ X の下書きを作らず、YouTube（完全版・Shorts）だけを送る
  * 4. チャネルが mode=auto なら item を notified にして自動送信の承認者で承認する（送る時刻は締切の60分前と今から5分後の遅い方）。
@@ -27,7 +29,10 @@ import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import twitterText from "twitter-text";
-import { createXSnapshot } from "../../api/_lib/snsXSend.js";
+import {
+  createXSnapshot,
+  YOUTUBE_MEDIA_MAX_BYTES,
+} from "../../api/_lib/snsXSend.js";
 import { deadlineIso } from "../../api/_lib/snsClaimCheck.js";
 import {
   FULL_URL_PLACEHOLDER,
@@ -49,6 +54,33 @@ export const MAX_BYTES = {
   youtube: 32 * 1024 * 1024,
   shorts: 32 * 1024 * 1024,
 };
+/**
+ * 完全版のサムネイルの上限。YouTube の thumbnails.set は 50MB まで（公式の API 文書、2026-10-27 に確認。
+ * 以前の 2MB はモバイルからの上限に残るだけ）。承認の snapshot（createXSnapshot・approve_sns_x_send）がカバーを 32 MiB までにしているので、
+ * 先に効くその値で受け取りを止める（超えた束を受けると、承認で落ちて完全版ごと個別承認に回る）
+ */
+export const THUMBNAIL_MAX_BYTES = YOUTUBE_MEDIA_MAX_BYTES;
+/** サムネイルの中身の判定（先頭のバイト列）。保存の拡張子と Content-Type はこれで決める（名前の拡張子は見ない） */
+const THUMBNAIL_KINDS = [
+  {
+    signature: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+    ext: "png",
+    contentType: "image/png",
+  },
+  { signature: [0xff, 0xd8, 0xff], ext: "jpg", contentType: "image/jpeg" },
+];
+export const thumbnailKind = (bytes) =>
+  THUMBNAIL_KINDS.find(({ signature }) =>
+    signature.every((b, i) => bytes[i] === b),
+  ) ?? null;
+/** サムネイルの名前はフォルダの中のファイル名だけ（区切り・. と .. を拒否する） */
+const thumbnailNameOk = (name) =>
+  typeof name === "string" &&
+  name.length > 0 &&
+  name.length <= 255 &&
+  !/[/\\\0]/.test(name) &&
+  name !== "." &&
+  name !== "..";
 /** Shorts を受ける bundle の版。版の欄が無い bundle は今までどおり X・YouTube（完全版）の2件 */
 export const SHORTS_BUNDLE_VERSION = 2;
 /** Shorts（入口版）の機械の検査として、qa.machine に true で入っていなければならない項目（全貌レーンとの契約） */
@@ -163,6 +195,13 @@ export function checkFullPicture(bundle, riskRules = []) {
     reasons.push("youtube_full.title が無い・100字を超える");
   if (!nonEmpty(bundle?.youtube_full?.description, 5000))
     reasons.push("youtube_full.description が無い・5000字を超える");
+  if (
+    bundle?.youtube_full?.thumbnail !== undefined &&
+    !thumbnailNameOk(bundle.youtube_full.thumbnail)
+  )
+    reasons.push(
+      "youtube_full.thumbnail がファイル名でない（区切り・空は受けない）",
+    );
   if (bundle?.bundle_version != null && !withShorts(bundle))
     reasons.push(`bundle_version が不正（${bundle.bundle_version}）`);
   if (withShorts(bundle)) {
@@ -363,6 +402,8 @@ export function draftRows(bundle, { revision, paths, when, observedAt }) {
       title: bundle.youtube_full.title,
       ...fullYoutubeText(bundle),
       video_storage_path: paths.youtube,
+      // 完全版のサムネイル（BOA-1172）。X・Shorts には付けない
+      ...(paths.thumbnail ? { cover_image_path: paths.thumbnail } : {}),
       source_data: sourceData("youtube"),
     },
     ...(paths.shorts
@@ -429,6 +470,23 @@ export async function pushFullPicture(
       reasons.push(`${name} が無い`);
     }
   }
+  // 完全版のサムネイル（BOA-1172）。欄があるのに画像が無い・不正なら、作り手の不具合なので束ごと拒否する（黙って外さない）
+  const thumbName = bundle?.youtube_full?.thumbnail;
+  let thumbnail = null;
+  if (thumbName !== undefined && thumbnailNameOk(thumbName)) {
+    try {
+      const bytes = await readBytes(path.join(folder, thumbName));
+      const kind = thumbnailKind(bytes);
+      if (!bytes.byteLength || bytes.byteLength > THUMBNAIL_MAX_BYTES)
+        reasons.push(
+          `${thumbName} の大きさが不正（${bytes.byteLength} バイト）`,
+        );
+      else if (!kind) reasons.push(`${thumbName} が PNG でも JPEG でもない`);
+      else thumbnail = { bytes, ...kind };
+    } catch {
+      reasons.push(`${thumbName} が無い`);
+    }
+  }
   if (reasons.length) return reject(reasons);
   const race = await store.race(bundle.race_id);
   const deadlineAt = race && deadlineIso(race);
@@ -454,6 +512,8 @@ export async function pushFullPicture(
   const hash = createHash("sha256").update(JSON.stringify(bundle));
   // 版には受け取った動画を全部入れる（shorts.mp4 だけを直して入れ直しても、前の版の承認と同じ path を上書きしない）
   for (const channel of channelsOf(bundle)) hash.update(files[channel]);
+  // サムネイルは動画の後に足す（欄の無い束の式は変えない）
+  if (thumbnail) hash.update(thumbnail.bytes);
   const revision = hash.digest("hex").slice(0, 32);
   if (dryRun) return { dryRun: true, revision, when, shortsLate, xSlot };
 
@@ -465,6 +525,14 @@ export async function pushFullPicture(
   );
   for (const channel of channels)
     await store.saveFile(paths[channel], files[channel]);
+  if (thumbnail) {
+    paths.thumbnail = `full-picture/${bundle.race_id}/${revision}/thumb-full.${thumbnail.ext}`;
+    await store.saveFile(
+      paths.thumbnail,
+      thumbnail.bytes,
+      thumbnail.contentType,
+    );
+  }
   const observedAt = now.toISOString();
   const rows = draftRows(bundle, { revision, paths, when, observedAt });
   const controls = await store.controls();
@@ -529,9 +597,16 @@ export async function pushFullPicture(
           );
         draft = await store.setParentJob(draft, parentJobId);
       }
+      // 承認の媒体は動画と、完全版ならサムネイル（createXSnapshot が cover_image_path を2つ目に読む）
+      const media = {
+        [paths[channel]]: files[channel],
+        ...(channel === "youtube" && thumbnail
+          ? { [paths.thumbnail]: thumbnail.bytes }
+          : {}),
+      };
       const snapshot = await createXSnapshot(draft, async (p) =>
-        p === paths[channel]
-          ? files[channel]
+        Object.hasOwn(media, p)
+          ? media[p]
           : Promise.reject(new Error("媒体の path が違う")),
       );
       const job = await store.approve({
@@ -622,21 +697,21 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
           )
         ).map((r) => [r.channel, r]),
       ),
-    async saveFile(p, bytes) {
+    async saveFile(p, bytes, contentType = "video/mp4") {
       const response = await fetchImpl(
         `${url}/storage/v1/object/sns-hub-media/${p}`,
         {
           method: "POST",
           headers: {
             ...headers,
-            "Content-Type": "video/mp4",
+            "Content-Type": contentType,
             "x-upsert": "true",
           },
           body: bytes,
         },
       );
       if (!response.ok)
-        throw new Error(`動画を保存できない: HTTP ${response.status} ${p}`);
+        throw new Error(`媒体を保存できない: HTTP ${response.status} ${p}`);
     },
     insertDraft: async (row) =>
       one(

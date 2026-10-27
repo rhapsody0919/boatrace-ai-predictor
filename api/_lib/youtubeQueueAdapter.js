@@ -1,7 +1,8 @@
 /**
  * YouTube Data API v3 の実 adapter（sns-pdca-loop tasks 18）。snsDeadlineQueue.js の
  * runYoutubeQueueJob・runYoutubePublishJob・reconcileYoutubeJob の契約どおりの形にする（案B: 非公開で上げて確かめてから公開）:
- * - upload({snapshot, media, privacyStatus:'private', publishAt:null, beforeCall, uploaded}) → uploaded の戻り値
+ * - upload({snapshot, media, privacyStatus:'private', publishAt:null, beforeCall, uploaded, thumbnailFailed}) → uploaded の戻り値。
+ *   thumbnails.set の失敗（HTTP・通信）は、thumbnailFailed があればその理由を渡して続け、動画は公開まで進む（BOA-1172）。無ければ投げる
  * - processing(job) → {confirmed, id, privacyStatus, processingStatus}
  * - makePublic({job, privacyStatus:'public', publishAt:null, beforeCall}) → {confirmed, id, privacyStatus, posted_at}
  * - lookup(job) → 同上（照合の読み取り）
@@ -12,6 +13,11 @@
 const API = "https://www.googleapis.com/youtube/v3";
 const UPLOAD_API = "https://www.googleapis.com/upload/youtube/v3";
 const TIMEOUT_MS = 120000;
+/**
+ * thumbnails.set の待ちの上限。失敗しても公開に進むので、120秒待つと公開の段（videos.update）が関数の上限（300秒）に近づき、
+ * update と list の間で切れると update_started の要照合になる（BOA-1172 の審査 P3）。画像は 1280x720 の PNG で小さい
+ */
+export const THUMBNAIL_TIMEOUT_MS = 30000;
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
 // videos.update の part=status は status を丸ごと書き換える（指定しない項目は既定値に戻る）。
 // upload と公開で同じ項目を送るよう、privacyStatus 以外はここにまとめる
@@ -41,12 +47,15 @@ export function validateYoutubeSnapshot(snapshot) {
 
 export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
   if (!accessToken) throw new Error("YouTube の access token がありません");
-  async function call(url, { method = "GET", headers = {}, body } = {}) {
+  async function call(
+    url,
+    { method = "GET", headers = {}, body, timeoutMs = TIMEOUT_MS } = {},
+  ) {
     const response = await fetchImpl(url, {
       method,
       headers: { Authorization: `Bearer ${accessToken}`, ...headers },
       body,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     const text = await response.text();
     let parsed = null;
@@ -97,6 +106,7 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
       publishAt,
       beforeCall,
       uploaded,
+      thumbnailFailed,
     }) {
       if (privacyStatus !== "private" || publishAt !== null)
         throw new Error("YouTube は非公開でだけ上げる（案B）");
@@ -137,16 +147,26 @@ export function createYoutubeQueueAdapter({ accessToken, fetchImpl = fetch }) {
         throw new Error("YouTube の動画 ID が返りません");
       const job = await uploaded(inserted.id);
       if (cover) {
+        // 送る前の検査・台帳への記録（beforeCall）の失敗は投げる。止める判断（停止・期限・リース・クォータ）で、
+        // 後の videos.update も同じ検査と台帳を通るので、ここで続けても公開できない。呼んでいないのでクォータも使っていない
         await beforeCall("thumbnails.set");
-        // サムネイルの Content-Type は媒体に合わせる（承認時に jpeg・png だけを通している）
-        await call(
-          `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(inserted.id)}&uploadType=media`,
-          {
-            method: "POST",
-            headers: { "Content-Type": cover.type },
-            body: cover.bytes,
-          },
-        );
+        try {
+          // サムネイルの Content-Type は媒体に合わせる（承認時に jpeg・png だけを通している）
+          await call(
+            `${UPLOAD_API}/thumbnails/set?videoId=${encodeURIComponent(inserted.id)}&uploadType=media`,
+            {
+              method: "POST",
+              headers: { "Content-Type": cover.type },
+              body: cover.bytes,
+              timeoutMs: THUMBNAIL_TIMEOUT_MS,
+            },
+          );
+        } catch (error) {
+          // サムネイルが付かなくても動画は公開まで進める（BOA-1172）。理由は状態コードと Google の理由だけ（API の本文は入れない）。
+          // 403 はチャンネルの確認（カスタムサムネイルの権限）が無いときにも返る。自動で再試行しない
+          if (!thumbnailFailed) throw error;
+          thumbnailFailed(error.message);
+        }
       }
       return job;
     },
