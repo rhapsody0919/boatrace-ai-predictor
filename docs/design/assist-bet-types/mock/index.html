@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>買い目の式別</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#f6f4ee; --card:#fffdf8; --ink:#1d1f24; --sub:#5d6068; --line:#dcd7cb;
+  --acc:#1f5fa8; --acc-soft:#e6eef8; --warn:#b2361f; --warn-soft:#fbe9e4; --dim:#a7a49b;
+  --b1:#ffffff; --b1t:#1d1f24; --b2:#1d1f24; --b3:#d93a2b; --b4:#2a74d0; --b5:#e9c21b; --b5t:#1d1f24; --b6:#3f9a46;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#a6a8ae; --line:#373b43;
+    --acc:#8db8f0; --acc-soft:#22324a; --warn:#f08a73; --warn-soft:#3d2620; --dim:#62656c;
+    --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#16181c; --card:#1f2228; --ink:#eceae4; --sub:#a6a8ae; --line:#373b43;
+  --acc:#8db8f0; --acc-soft:#22324a; --warn:#f08a73; --warn-soft:#3d2620; --dim:#62656c;
+  --b1:#eceae4; --b1t:#16181c; --b2:#55595f;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;line-height:1.6;padding:24px 16px 48px}
+.wrap{max-width:1360px;margin:0 auto;display:grid;gap:32px}
+h1{font-size:1.5rem;margin:0}
+h2{font-size:1.1rem;margin:0}
+p{margin:0}
+.num{font-variant-numeric:tabular-nums}
+.lead{display:grid;gap:8px;max-width:820px}
+.sub{color:var(--sub);font-size:.85rem}
+.screens{display:grid;grid-template-columns:repeat(3,minmax(0,375px));gap:24px;justify-content:start;align-items:start}
+@media (max-width:1240px){.screens{grid-template-columns:repeat(2,minmax(0,375px))}}
+@media (max-width:820px){.screens{grid-template-columns:minmax(0,1fr)}}
+.col{display:grid;gap:10px;min-width:0}
+.cap{font-size:.85rem;font-weight:700}
+.cap .tag{font-size:.7rem;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--acc-soft);color:var(--acc);margin-right:6px}
+.phone{width:100%;max-width:375px;border:1px solid var(--line);border-radius:20px;padding:12px;display:grid;gap:12px;background:var(--bg)}
+.lens{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.lens span{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;font-weight:700;font-size:.85rem}
+.lens span.on{background:var(--ink);color:var(--card);border-color:var(--ink)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;min-width:0}
+.box h3{font-size:1rem;margin:0}
+.note{font-size:.75rem;color:var(--sub)}
+.warn{color:var(--warn)}
+.types{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--ink);border-radius:8px;overflow:hidden}
+.types button{min-height:44px;font:inherit;font-size:.8rem;font-weight:700;background:transparent;color:var(--ink);border:0;border-left:1px solid var(--ink);padding:0 2px;cursor:pointer}
+.types button:first-child{border-left:0}
+.types button[aria-pressed="true"]{background:var(--ink);color:var(--card)}
+button:focus-visible{outline:3px solid var(--acc);outline-offset:-3px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th,td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-weight:500;color:var(--sub);font-size:.72rem}
+th:first-child,td:first-child{text-align:left}
+tr.cur td{background:var(--acc-soft);font-weight:700}
+tr.tap td:first-child{color:var(--acc);text-decoration:underline}
+.ms{display:grid;grid-template-columns:5.6em repeat(6,1fr);gap:4px;align-items:center}
+.ms .h{font-size:.72rem;color:var(--sub);line-height:1.3}
+.ms .cell{min-height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.ms .cell.on{border:2px solid var(--ink);background:var(--card)}
+.ms.dim .cell,.ms .row-dim{opacity:.35}
+.badge{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.8rem;color:#fff;border:1px solid transparent}
+.c1{background:var(--b1);color:var(--b1t);border-color:var(--b1t)} .c2{background:var(--b2)} .c3{background:var(--b3)} .c4{background:var(--b4)} .c5{background:var(--b5);color:var(--b5t)} .c6{background:var(--b6)}
+.short{display:flex;gap:6px;flex-wrap:wrap}
+.short button{min-height:44px;font:inherit;font-size:.8rem;font-weight:700;border:1px solid var(--ink);border-radius:8px;background:transparent;color:var(--ink);padding:0 12px}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:8px;border:1px solid var(--ink);border-radius:12px;padding:8px 10px;background:var(--card)}
+.foot b{display:block;font-size:.9rem}
+.foot span{font-size:.75rem;color:var(--sub)}
+.foot button{min-height:44px;font:inherit;font-size:.8rem;font-weight:700;border:0;border-radius:8px;background:var(--ink);color:var(--card);padding:0 10px}
+.calc{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.82rem}
+.calc .in{border:1px solid var(--line);border-radius:6px;padding:4px 8px;min-width:5em;background:var(--bg)}
+.calc .rad{display:flex;gap:10px}
+.side{display:grid;gap:16px;max-width:900px}
+.side section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:8px}
+.side ol,.side ul{margin:0;padding-left:1.3em;display:grid;gap:4px;font-size:.9rem}
+.ex{font-size:.75rem;color:var(--sub);border-left:3px solid var(--line);padding-left:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="lead">
+    <h1>思考アシストの買い目に式別を足す（モック v1）</h1>
+    <p>3連単だけだった買い目に、3連複・2連単・2連複・拡連複を足す案。式別は上のタブで1つずつ切り替え、1着・2着・3着の候補は式別をまたいで共有する。買い目のレンズの頭に、同じ候補で5式別の点数と合成オッズを並べた小表を置く。</p>
+    <p class="ex">数字はすべてモックの例の値（架空）。例の候補: 1着 1号艇、2着 2・3・4号艇、3着 2・3・4・5号艇。</p>
+  </div>
+
+  <div class="screens">
+    <!-- 画面1 -->
+    <div class="col">
+      <p class="cap"><span class="tag">画面1</span>買い目のレンズ（3連複を選んだとき）</p>
+      <div class="phone" aria-label="画面1 買い目のレンズ">
+        <div class="lens"><span>軸</span><span>相手</span><span>展開</span><span>機力</span><span class="on">買い目</span></div>
+        <div class="box">
+          <h3>式別で比べる（同じ候補）</h3>
+          <table>
+            <thead><tr><th scope="col">式別</th><th scope="col">組</th><th scope="col">点数</th><th scope="col">合成オッズ</th></tr></thead>
+            <tbody class="num">
+              <tr class="tap"><td>3連単</td><td>1-234-2345</td><td>9点</td><td>1.91</td></tr>
+              <tr class="cur tap"><td>3連複</td><td>1=234=2345</td><td>6点</td><td>1.18</td></tr>
+              <tr class="tap"><td>2連単</td><td>1-234</td><td>3点</td><td>1.77</td></tr>
+              <tr class="tap"><td>2連複</td><td>1=234</td><td>3点</td><td>1.44</td></tr>
+              <tr class="tap"><td>拡連複</td><td>1=234</td><td>3点</td><td>—</td></tr>
+            </tbody>
+          </table>
+          <p class="note">行を押すとその式別に切り替わる。拡連複は同じレースで複数の組が払戻の対象になるので、合成オッズを出さない（下の表で組ごとに見る）</p>
+        </div>
+        <div class="box">
+          <div class="types" role="group" aria-label="式別">
+            <button type="button" aria-pressed="false">3連単</button>
+            <button type="button" aria-pressed="true">3連複</button>
+            <button type="button" aria-pressed="false">2連単</button>
+            <button type="button" aria-pressed="false">2連複</button>
+            <button type="button" aria-pressed="false">拡連複</button>
+          </div>
+          <h3>組んだ買い目（6点）</h3>
+          <div class="calc"><span>予算（円）</span><span class="in num">600</span><span class="rad"><span>○ 均等払戻</span><span>● 均等</span></span></div>
+          <table>
+            <thead><tr><th scope="col">組</th><th scope="col">オッズ</th><th scope="col">人気</th><th scope="col">金額</th><th scope="col">払戻</th></tr></thead>
+            <tbody class="num">
+              <tr><td>1=2=3</td><td>3.4</td><td>1番人気</td><td>100</td><td class="warn">340 トリガミ</td></tr>
+              <tr><td>1=2=4</td><td>5.8</td><td>3番人気</td><td>100</td><td class="warn">580 トリガミ</td></tr>
+              <tr><td>1=2=5</td><td>8.9</td><td>6番人気</td><td>100</td><td>890</td></tr>
+              <tr><td>1=3=4</td><td>7.6</td><td>5番人気</td><td>100</td><td>760</td></tr>
+              <tr><td>1=3=5</td><td>12.4</td><td>9番人気</td><td>100</td><td>1,240</td></tr>
+              <tr><td>1=4=5</td><td>17.9</td><td>12番人気</td><td>100</td><td>1,790</td></tr>
+              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 600円・残り 0円・払戻は合計の 0.57〜2.98倍</b></td></tr>
+            </tbody>
+          </table>
+          <p class="note">人気は3連複のオッズの順（20通りの中で）</p>
+          <p class="note num">合成 1.18（合成オッズは丸める前の理論値）</p>
+          <p class="note">オッズは 15:42 の値。締切まで変わる</p>
+        </div>
+        <div class="foot"><div><b class="num">3連複 1=234=2345（6点）</b><span class="num">合成 1.18</span></div><button type="button">マークシートを開く</button></div>
+      </div>
+    </div>
+
+    <!-- 画面2 -->
+    <div class="col">
+      <p class="cap"><span class="tag">画面2</span>マークシート（拡連複を選んだとき）</p>
+      <div class="phone" aria-label="画面2 マークシート 拡連複">
+        <div class="box">
+          <h3>マークシート</h3>
+          <div class="types" role="group" aria-label="式別">
+            <button type="button" aria-pressed="false">3連単</button>
+            <button type="button" aria-pressed="false">3連複</button>
+            <button type="button" aria-pressed="false">2連単</button>
+            <button type="button" aria-pressed="false">2連複</button>
+            <button type="button" aria-pressed="true">拡連複</button>
+          </div>
+          <div class="ms">
+            <span class="h">1艇目<br>（順不同）</span>
+            <span class="cell on"><span class="badge c1">1</span></span><span class="cell"><span class="badge c2">2</span></span><span class="cell"><span class="badge c3">3</span></span><span class="cell"><span class="badge c4">4</span></span><span class="cell"><span class="badge c5">5</span></span><span class="cell"><span class="badge c6">6</span></span>
+            <span class="h">2艇目<br>（順不同）</span>
+            <span class="cell"><span class="badge c1">1</span></span><span class="cell on"><span class="badge c2">2</span></span><span class="cell on"><span class="badge c3">3</span></span><span class="cell on"><span class="badge c4">4</span></span><span class="cell"><span class="badge c5">5</span></span><span class="cell"><span class="badge c6">6</span></span>
+            <span class="h row-dim">3艇目</span>
+            <span class="cell row-dim"><span class="badge c1">1</span></span><span class="cell on row-dim"><span class="badge c2">2</span></span><span class="cell on row-dim"><span class="badge c3">3</span></span><span class="cell on row-dim"><span class="badge c4">4</span></span><span class="cell on row-dim"><span class="badge c5">5</span></span><span class="cell row-dim"><span class="badge c6">6</span></span>
+          </div>
+          <p class="note">拡連複は2艇の組。3段目は使わない（入れた候補は残る。3連の式別に戻すと使う）</p>
+          <div class="short"><button type="button">選んだ艇でボックス</button></div>
+          <p class="note num">3点</p>
+          <div class="calc"><span>予算（円）</span><span class="in num">900</span><span class="rad"><span>● 均等払戻</span><span>○ 均等</span></span></div>
+          <table>
+            <thead><tr><th scope="col">組</th><th scope="col">オッズ</th><th scope="col">人気</th><th scope="col">金額</th><th scope="col">払戻（下限）</th></tr></thead>
+            <tbody class="num">
+              <tr><td>1=2</td><td>1.5〜1.9</td><td>1番人気</td><td>400</td><td class="warn">600 トリガミ</td></tr>
+              <tr><td>1=3</td><td>1.9〜2.5</td><td>2番人気</td><td>300</td><td class="warn">570 トリガミ</td></tr>
+              <tr><td>1=4</td><td>2.6〜3.4</td><td>4番人気</td><td>200</td><td class="warn">520 トリガミ</td></tr>
+              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 900円・残り 0円・1組だけ払戻のときは合計の 0.58〜0.67倍</b></td></tr>
+            </tbody>
+          </table>
+          <p class="note">拡連複のオッズは公式の下限〜上限。払戻とトリガミは下限で計算</p>
+          <p class="note">拡連複は3着以内の2艇の組なので、同じレースで最大3組が払戻の対象になる（そのときの払戻は組ごとの和）</p>
+          <p class="note">人気は拡連複のオッズの下限の順（15通りの中で）</p>
+          <p class="note">オッズは 15:42 の値。締切まで変わる</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 画面3 -->
+    <div class="col">
+      <p class="cap"><span class="tag">画面3</span>2連単に切り替えたとき・ボックスの近道</p>
+      <div class="phone" aria-label="画面3 2連単">
+        <div class="box">
+          <h3>マークシート</h3>
+          <div class="types" role="group" aria-label="式別">
+            <button type="button" aria-pressed="false">3連単</button>
+            <button type="button" aria-pressed="false">3連複</button>
+            <button type="button" aria-pressed="true">2連単</button>
+            <button type="button" aria-pressed="false">2連複</button>
+            <button type="button" aria-pressed="false">拡連複</button>
+          </div>
+          <div class="ms">
+            <span class="h">1着</span>
+            <span class="cell on"><span class="badge c1">1</span></span><span class="cell"><span class="badge c2">2</span></span><span class="cell"><span class="badge c3">3</span></span><span class="cell"><span class="badge c4">4</span></span><span class="cell"><span class="badge c5">5</span></span><span class="cell"><span class="badge c6">6</span></span>
+            <span class="h">2着</span>
+            <span class="cell"><span class="badge c1">1</span></span><span class="cell on"><span class="badge c2">2</span></span><span class="cell on"><span class="badge c3">3</span></span><span class="cell on"><span class="badge c4">4</span></span><span class="cell"><span class="badge c5">5</span></span><span class="cell"><span class="badge c6">6</span></span>
+            <span class="h row-dim">3着</span>
+            <span class="cell row-dim"><span class="badge c1">1</span></span><span class="cell on row-dim"><span class="badge c2">2</span></span><span class="cell on row-dim"><span class="badge c3">3</span></span><span class="cell on row-dim"><span class="badge c4">4</span></span><span class="cell on row-dim"><span class="badge c5">5</span></span><span class="cell row-dim"><span class="badge c6">6</span></span>
+          </div>
+          <p class="note">2連単は1着・2着の組。3着の段は使わない（入れた候補は残る）</p>
+          <div class="short"><button type="button">選んだ艇でボックス</button><button type="button">元に戻す</button></div>
+          <p class="note">「選んだ艇でボックス」は、どこかの段に入れた艇を使う段すべてにそろえる。押した直後に「元に戻す」が出る</p>
+          <p class="note num">3点</p>
+          <table>
+            <thead><tr><th scope="col">組</th><th scope="col">オッズ</th><th scope="col">人気</th><th scope="col">金額</th><th scope="col">払戻</th></tr></thead>
+            <tbody class="num">
+              <tr><td>1-2</td><td>3.9</td><td>1番人気</td><td>500</td><td>1,950</td></tr>
+              <tr><td>1-3</td><td>5.2</td><td>2番人気</td><td>300</td><td>1,560</td></tr>
+              <tr><td>1-4</td><td>8.7</td><td>4番人気</td><td>200</td><td>1,740</td></tr>
+              <tr><td colspan="5" style="text-align:left;white-space:normal"><b>合計 1,000円・残り 0円・払戻は合計の 1.56〜1.95倍</b></td></tr>
+            </tbody>
+          </table>
+          <p class="note num">合成 1.77（合成オッズは丸める前の理論値）</p>
+        </div>
+        <div class="foot"><div><b class="num">2連単 1-234（3点）</b><span class="num">合成 1.77</span></div><button type="button">マークシートを開く</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="side">
+    <section>
+      <h2>このモックで決めた形（ファン4人の議論から）</h2>
+      <ol>
+        <li>式別のタブ5つ（3連単｜3連複｜2連単｜2連複｜拡連複）で1つずつ切り替える。既定は今と同じ3連単。最後に選んだ式別は同じレースの中で覚える</li>
+        <li>買い目のレンズの頭に「式別で比べる」小表。同じ候補での組・点数・合成オッズだけを5行。行を押すとその式別へ</li>
+        <li>候補の段は全式別で共有。連複・拡連複は見出しを「1艇目・2艇目・3艇目（順不同）」に、2連の式別は3段目を薄く残して使わない旨を1行</li>
+        <li>近道「選んだ艇でボックス」と、押した直後の「元に戻す」</li>
+        <li>表記は連単「-」、連複・拡連複「=」。フッターの頭に式別の名前</li>
+        <li>拡連複のオッズは公式の幅のまま。払戻・トリガミは下限で計算。合成オッズは出さず、1組だけ払戻のときの倍率を出す</li>
+        <li>人気はその式別のオッズの順。類似レースの件数の列は、統計の答え（BOA-1171）が出るまで3連単だけ</li>
+      </ol>
+    </section>
+    <section>
+      <h2>オーナーに決めてほしいこと</h2>
+      <ol>
+        <li>「核連複」は拡連複（ワイド）でよいか（推奨: 拡連複として作る）</li>
+        <li>切り替え（タブ）＋比べる小表の形でよいか（推奨: この形）</li>
+        <li>拡連複に合成オッズを出さず、1組だけ払戻のときの倍率を出す形でよいか（推奨: この形。拡連複は複数の組が同時に払戻の対象になるので、3連単と同じ合成オッズの式は当てはまらない）</li>
+      </ol>
+    </section>
+  </div>
+</div>
+</body>
+</html>
