@@ -66,6 +66,8 @@ function TabError({ onRetry }) {
   );
 }
 
+const SCENARIO_RETRY_MAX = 3;
+
 export default function AnalogyFinderSection({
   raceId,
   players = null,
@@ -108,9 +110,28 @@ export default function AnalogyFinderSection({
   // 描画のたびに時刻を読まないよう、最初の描画で1回だけ決める
   const [keepFrom] = useState(() => sonarKeepFrom(Date.now()));
 
-  const facts = useAnalogyFacts(raceId, "exhibition");
+  const facts = useAnalogyFacts(raceId, "exhibition", true, true);
   const status = facts.data?.status ?? null;
+  // 展示前に見ていた数字は、展示後の段が届いても自動で切り替えない。
+  if (
+    stageChoice === null &&
+    (status === "before_exhibition" || status === "exhibition_reflecting")
+  )
+    setStageChoice("racecard");
   const exhibitionReady = status === "exhibition_ready";
+  // 展示前に開いたページで、定期の読み直しが展示後の段を届けたか。取得済みのシナリオは
+  // 展示前の応答（exhibition: null）なので、そのときはキャッシュを使わず読み直す。
+  // 開いた時点で展示後なら false のまま（読み直さない）。
+  const [sawBeforeExhibition, setSawBeforeExhibition] = useState(false);
+  if (
+    !sawBeforeExhibition &&
+    (status === "before_exhibition" || status === "exhibition_reflecting")
+  )
+    setSawBeforeExhibition(true);
+  const readyAfterOpen = sawBeforeExhibition && exhibitionReady;
+  // 読み直したシナリオがまだ展示の情報を持たない（CDN が展示前の応答を最大90秒返す）ときは、
+  // 60秒ごとにあと SCENARIO_RETRY_MAX 回まで読み直す
+  const [scenarioRetry, setScenarioRetry] = useState(0);
   const stage = exhibitionReady ? (stageChoice ?? "exhibition") : "racecard";
   // 節の中身（facts）が出たら、レースごとに1回だけ「表示した」を送る（公開時の最小限の計測）
   const factsReady = Boolean(facts.data?.today);
@@ -225,7 +246,18 @@ export default function AnalogyFinderSection({
     "exhibition",
     Boolean(opened.scenario),
     true, // 2〜6号艇の級をそろえた範囲も取る（③④。BOA-806）
+    readyAfterOpen ? 1 + scenarioRetry : 0,
   );
+  const scenarioLacksExhibition =
+    readyAfterOpen &&
+    scenario.status === "ready" &&
+    scenario.data?.exhibition == null &&
+    scenarioRetry < SCENARIO_RETRY_MAX;
+  useEffect(() => {
+    if (!scenarioLacksExhibition) return undefined;
+    const timer = setTimeout(() => setScenarioRetry((n) => n + 1), 60_000);
+    return () => clearTimeout(timer);
+  }, [scenarioLacksExhibition, scenarioRetry]);
 
   const [, , , venueCode, raceNumber] = String(raceId).split("-");
   const heading = t("aiPredictionTab.analogy.heading", {
