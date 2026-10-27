@@ -150,6 +150,11 @@
       "guards": "/api の関門の判定（api/_lib/apiGate.js、BOA-1110・ADR-0103、plan §2.2 の順）: デコード後に「.」「..」のセグメント・「//」・バックスラッシュを含むパス（%2F..%2F・..%2f・二重のエンコード）とエンコードした「/」（%2F）とデコードできないパスは段階に依らず 400（2回目以降のデコードの失敗では落とさない）、/API/ 等の大文字も関門に掛ける、/api/cron・/api/admin・/api/bot-page だけ除外（/api/cronx 等は除外しない、/%61pi/ は /api として判定）、合言葉は current・next で通り key_slot を返し偽の鍵は bad_key（鍵が未設定・空なら通さない）、Sec-Fetch-Site: same-origin（Origin が無いか自分の host）は browser、Sec-Fetch-Site が無く同じ host の Referer は browser_legacy、Googlebot・Google-InspectionTool の UA で範囲の表の固定の IPv4・IPv6 だけ search_bot（範囲外・bingbot・Googlebot-Image は通さない）、それ以外は観測で would_deny・強制で 403 no-store。結果に鍵・IP・UA の全文・クエリを入れない"
     },
     {
+      "script": "verify-api-query-lockdown.js",
+      "tier": "ci",
+      "guards": "公開 API の5本（accuracy・races/today・race-history/summary・outcome-distribution・predictions/{date}）が、画面・ボット向け HTML・全貌動画の材料の送るクエリ以外（?zz=乱数 等のキャッシュ外し・%の別表記・重複・空の組）を DB の読み出しの前に 400・no-store で拒み、正規の入力は 200 とキャッシュの設定のまま返すこと（api/_lib/strictQuery.js）"
+    },
+    {
       "script": "verify-assist-class-exh-ranks.js",
       "tier": "ci",
       "guards": "思考アシストの restClassCounts・exhRanks・courseFilled・compositeText の現行値（級の艇数・同タイムのmin順位・5走未満の補い・小数2桁表記）を固定する。仕様未定の入力はKNOWN_GAPSで観測のみ（BOA-1114）"
