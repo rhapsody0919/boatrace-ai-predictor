@@ -31,7 +31,7 @@ SNS 配信の基盤レーン（範囲: sns-hub・`scripts/sns/push-*.js`・送�
 
 | チケット | 内容 | 状態 |
 |---|---|---|
-| BOA-1164 | 全貌の YouTube 完全版が `private_retained` で残り、要照合の知らせが止まらない | サブエージェントが進めている。終わったらこのレーンが引き継ぐ |
+| BOA-1164 | 全貌の YouTube 完全版が `private_retained` で残り、要照合の知らせが止まらない | #2006 でマージ済み。マイグレーション 186 はオーナーの db-apply 待ち。当たった後の最初の sns_send の live で、job 0853d7d9・0883093d が cancelled・youtube_closed_deleted になるか、要照合の知らせが止まったか、verify-rpc-output-keys.js が通るかを見る |
 | BOA-988 | YouTube 初回で見えた3点: 一度 reconcile（`post_outcome_unknown`）に落ちてから posted に戻った／posted の後も `youtube_stage=update_started`／埋め込み無効（oEmbed 401） | Backlog |
 | BOA-981 | /today のまくりの行の図が、本文の注目の艇ではなく1号艇を強調する（/today の型の変更なので x-channel が要る） | Backlog |
 | BOA-973 | YouTube の送信が太平洋時間の日付の境目（JST 16:00、11/1 から 17:00）をまたぐと、非公開のまま `youtube_quota_unconfirmed` で止まる | 2026-10-27 に Linear で見つからない（アーカイブか削除）。直っていない |
