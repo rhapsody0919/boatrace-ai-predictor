@@ -6068,19 +6068,29 @@ test.describe("レース詳細の見出し: グレードとレース種別（BOA
     // 実データのまま（kicker・最終日の補完元として使う。useDatePredictions が
     // 同じ会場の他レースから値を拾う）
     await page.route("**/api/predictions/2026-09-04*", async (route) => {
-      // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
-      const response = await fetchRecorded(route);
-      const body = await response.json();
-      const races = (body.races || []).map((race) =>
-        race.raceId === "2026-09-04-06-09"
-          ? { ...race, raceStage: null, isFinalDay: null, raceTitle: null }
-          : race,
-      );
-      await route.fulfill({
-        status: response.status(),
-        headers: response.headers(),
-        json: { ...body, races },
-      });
+      try {
+        // route.fetch() は録画を通らないため fetchRecorded を使う（ADR-0077）
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        const races = (body.races || []).map((race) =>
+          race.raceId === "2026-09-04-06-09"
+            ? { ...race, raceStage: null, isFinalDay: null, raceTitle: null }
+            : race,
+        );
+        await route.fulfill({
+          status: response.status(),
+          headers: response.headers(),
+          json: { ...body, races },
+        });
+      } catch (e) {
+        // 本番データの定期実行（E2E_LIVE=1）では fetchRecorded が本番の応答を待つ。アサーションが
+        // 先に通ってページが閉じた後に2回目の取得の応答が届き、「Target page, context or browser
+        // has been closed」で失敗扱いになっていた（e2e-live.yml、10/02〜10/18 の15回すべて。
+        // アサーションは全部通っていた。BOA-1163）。ページが閉じた後の失敗だけ無視する
+        if (page.isClosed() || /has been closed/.test(String(e?.message)))
+          return;
+        throw e;
+      }
     });
     await page.goto("/race/2026-09-04-06-09");
     await expect(kicker(page)).toContainText("クラウンメロン杯", {

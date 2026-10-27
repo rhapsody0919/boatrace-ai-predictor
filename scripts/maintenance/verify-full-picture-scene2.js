@@ -13,6 +13,7 @@
  */
 import assert from "node:assert/strict";
 import { s02Check, s02Facts, s02Text } from "../../sns-video-studio/remotion/scripts/full-picture/s02.mjs";
+import { RANK_WORDS, SUB_MAX, VOICE, f01Check, f01Description, f01Script, splitSubs, voiceText } from "../../sns-video-studio/remotion/scripts/full-picture/f01.mjs";
 import { diffOf, diffText, rankOf } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
@@ -1653,7 +1654,7 @@ for (const f of fixtures) {
   const { tmpdir } = await import("node:os");
   const { spawnSync } = await import("node:child_process");
   // 型の表に載せるのは関門を通った型だけ。各型に審査の記録と変えてよい幅を持たせる（docs/design/full-picture-type-gate/spec.md の 7）
-  assert.deepEqual(Object.keys(TYPE_IMPL), ["v2r1-answer-fill-explain"]);
+  assert.deepEqual(Object.keys(TYPE_IMPL), ["v2r1-answer-fill-explain", "f01-landscape-voice-full"]);
   for (const [id, impl] of Object.entries(TYPE_IMPL)) assert.deepEqual(reviewReasons(id, impl), [], `${id}: 審査の記録`);
   // 段5の記録は P0 審査1件（2026-10-27〜）。伏せた比較（blindCompare）は段8を回す型だけの任意
   const base = { approved: { structure: "x" }, range: {}, review: { direction: "d", owner: "o" } };
@@ -1662,7 +1663,14 @@ for (const f of fixtures) {
   assert.ok(reviewReasons("t", { ...base, review: { ...base.review, p0Review: { role: "x", verdict: "P0 0件" } } }).some((w) => w.includes("P0 審査の記録")), "日付が無ければ落ちる");
   assert.ok(reviewReasons("t", { ...base, review: { ...base.review, channels: "c" }, approved: {} }).some((w) => w.includes("承認した文")));
   assert.ok(reviewReasons("t", { ...base, review: { owner: "o", channels: "c" } }).some((w) => w.includes("direction")));
-  assert.deepEqual(listTypes().map((x) => x.id), ["v2r1-answer-fill-explain"]);
+  assert.deepEqual(listTypes().map((x) => x.id), ["v2r1-answer-fill-explain", "f01-landscape-voice-full"]);
+  // 型 f01: hq の文のまま渡せば完全版を f01 で作る印（full）が付く。length_s は完全版の尺の文で、入口版の尺の検査に使わない（run-full）
+  {
+    const f01t = resolveType(listTypes().find((x) => x.id === "f01-landscape-voice-full"));
+    assert.deepEqual(f01t.reasons, []);
+    assert.equal(f01t.impl.full, "f01");
+    assert.equal(lengthRange(f01t.attributes.length_s), null, "f01 の length_s は秒の範囲として読めない（入口版には当てない）");
+  }
   // 試験用の表: 受け持つ項目と承認した文
   const T = { "t-test": { attrs: ["structure", "length_s"], approved: { structure: "要点1つ", length_s: "25〜30" } } };
   const ok = { id: "t-test", attributes: { structure: "要点1つ", length_s: "25〜30" } };
@@ -1672,7 +1680,9 @@ for (const f of fixtures) {
   assert.deepEqual(resolveType({ id: "e06-data-cheatsheet", attributes: { structure: "早見表", thumb: "表" } }, T).reasons, ["type_unsupported:structure（型 e06-data-cheatsheet は龍神の表に無い）", "type_unsupported:thumb（型 e06-data-cheatsheet は龍神の表に無い）"]);
   assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, thumb: "表" } }, T).reasons, ["type_unsupported:thumb"], "表の型でも実装していない項目は止める");
   assert.deepEqual(resolveType({ ...ok, attributes: { ...ok.attributes, structure: "要点2つ" } }, T).reasons, ["type_unsupported:structure（文が変わった）"], "同じ id で文が変わった項目は止める（system-architect P2）");
-  assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（知らない項目）"]);
+  // voice は hq が 10/27 に type_attrs へ足した（型 f01）。知らない項目の例は bgm
+  assert.deepEqual(resolveType({ id: "x", attributes: { bgm: "a" } }, T).reasons, ["type_unsupported:bgm（知らない項目）"]);
+  assert.deepEqual(resolveType({ id: "x", attributes: { voice: "a" } }, T).reasons, ["type_unsupported:voice（型 x は龍神の表に無い）"]);
   assert.match(resolveType({ id: "t-test", attributes: {} }, T).reasons[0], /^type_spec_invalid/);
   assert.ok(resolveType(ok).reasons.length > 0, "表に無い型は止まる");
   assert.deepEqual(lengthRange("25〜30"), [25, 30]);
@@ -1806,7 +1816,7 @@ for (const f of fixtures) {
     const r3 = runDaily(daily, ["--list-types"]);
     assert.equal(r3.status, 0);
     const lt = JSON.parse(r3.stdout);
-    assert.deepEqual(lt.types.map((x) => x.id), ["v2r1-answer-fill-explain"], "型の表は関門を通った型だけ");
+    assert.deepEqual(lt.types.map((x) => x.id), ["v2r1-answer-fill-explain", "f01-landscape-voice-full"], "型の表は関門を通った型だけ");
   }
   // 送信の鍵と一緒に起動されたら止める（--env-file=.env.local で起動した等）
   {
@@ -2036,6 +2046,51 @@ for (const f of fixtures) {
   assert.ok(s02Check(f, { ...tx, shortsTitle: tx.shortsTitle + " 最多は2号艇" }, 39.5).some((w) => w.includes("順位の語")));
   assert.equal(s02Facts({ cells: { waku: { forms: { any: { n: 29, tri: {} } } } } }).kind, "thin_data", "30件未満は作らない");
   assert.equal(s02Facts({ cells: { waku: { forms: { any: { n: 213, tri } } } } }).kind, "count_mismatch", "件数と3連単の和が合わない日は作らない");
+}
+
+// 型 f01-landscape-voice-full（関門の段4の試作）: 順位の語は線を通ったときだけ・字幕の幅・声の読みの辞書・説明欄のクレジット・左の画面の照合
+{
+  for (const name of ["2026-10-12-01-12", "2026-10-15-15-10", "2026-10-16-24-11", "2026-10-19-19-10"]) {
+    const mf = JSON.parse(gunzipSync(readFileSync(new URL(`${name}.json.gz`, FX))).toString("utf8"));
+    const s = f01Script(mf);
+    if (!s.ok) continue;
+    for (const c of s.chapters) {
+      const sig = c.facts?.secRank?.rankSig || c.facts?.swap;
+      if (RANK_WORDS.test(c.voice)) assert.ok(sig, `${name} ${c.id}: 線を通らない順位の語: ${c.voice}`);
+      for (const l of c.subs) assert.ok(l.length <= SUB_MAX + 2, `${name} ${c.id}: 字幕 ${l.length}字`);
+    }
+    assert.equal(s.chapters[0].id, "open");
+    assert.equal(s.chapters[0].subs.length, 0, "冒頭は字幕を出さない（見本の「最も多く…次が」は線を通らない）");
+    const desc = f01Description(s, "0:00 冒頭\n");
+    // 今の完全版の説明文の約束（1行目40字以内・2/3行目に機能への導線・URL の utm_term=full）
+    assert.ok(desc.split("\n")[1].includes("tab=sonar") && desc.split("\n")[2].includes("/assist?") && desc.includes("utm_term=full"), desc);
+    assert.ok(desc.includes(VOICE.credit));
+    assert.ok(f01Check(s, { desc: desc.replace(VOICE.credit, ""), kana: {}, shots: {} }).some((w) => w.includes("VOICEVOX")), "クレジットが無ければ落とす");
+  }
+  assert.equal(voiceText("313件・今節"), "313けん・こんせつ");
+  assert.deepEqual(splitSubs("あ。い、う"), ["あ。", "い、う"]);
+  // 照合: 左の画面に右の列の数字が無ければ落とす。読みの辞書: 件がゲンと読まれたら落とす
+  const s0 = { chapters: [{ id: "c2", voice: "", subs: [], expect: ["313件"] }] };
+  assert.ok(f01Check(s0, { desc: VOICE.credit, kana: {}, shots: { c2: { text: "1号艇 78% 31 3件" } } }).length === 0, "空白の違いは同じとみなす");
+  assert.ok(f01Check(s0, { desc: VOICE.credit, kana: {}, shots: { c2: { text: "1号艇 78% 312件" } } }).some((w) => w.includes("313件")));
+  assert.ok(f01Check({ chapters: [] }, { desc: VOICE.credit, kana: { "c2-1": "サンビャクジュウサン/ゲン" }, shots: {} }).some((w) => w.includes("ゲン")));
+  // --bundle-only は作り済みの f01 を読む（読めないと voice_credit が false になり bundle が落ちた。Codex P1 #2011）
+  {
+    const { loadF01 } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const { mkdtempSync, writeFileSync: wf } = await import("node:fs");
+    const { tmpdir: td } = await import("node:os");
+    const dir = mkdtempSync(`${td()}/f01-`);
+    assert.deepEqual(loadF01(dir).reasons, ["type_unsupported:f01_missing"], "作り済みが無ければ止める（今の型で代えない）");
+    for (const f of ["f01.mp4", "thumb.png"]) wf(`${dir}/${f}`, "x");
+    wf(`${dir}/f01.json`, JSON.stringify({ title: "題", seconds: 137.6 }));
+    wf(`${dir}/description.txt`, `1行目\n音声: ${VOICE.credit}`);
+    wf(`${dir}/chapters.txt`, "0:00 冒頭\n");
+    const r = loadF01(dir);
+    assert.deepEqual(r.reasons, []);
+    assert.ok(r.description.includes(VOICE.credit) && r.title === "題" && r.thumb.endsWith("thumb.png"));
+  }
+  // 選手名を声で読まない
+  assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
 }
 
 console.log("verify-full-picture-scene2: OK");

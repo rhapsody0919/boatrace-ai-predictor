@@ -30,6 +30,8 @@
 - 除外するものを DB から読んで集合にするとき、エラーを見ずに (data || []) にすると、読み取りの失敗で除外が空になりガードが外れる（BOA-512 で開催した32レースを中止に一括更新）。失敗は例外にする（ADR-0069、verify-query-errors.js）。一括 UPDATE の跡は updated_at がミリ秒まで同じ行で見分けられる（2026-09-20、memory technical_supabase_read_error_swallowed_flips_guard、PR #743）
 - verify-migration-rls.js は REVOKE/GRANT の1文につき先頭の関数名しか読まない。複数の関数を並べた文は1関数1文に分ける（2026-10-08、memory feedback_codex_patch_intake_checklist）
 - race_entries が別の日の出走表で上書きされる汚染は、race_results が正常に入るので欠損を探す検知では見つからない。日次の data_health_entries_duplicates（マイグレーション100）で検知する（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-423）
+- transition_sns_send_139 を置き換えるマイグレーションの先頭の照合は md5(prosrc) の一致で行う（LIKE は前の版の印が残るので版を区別できない）。182 の本文は c2b4835c416ff6e824a43fe9025c6518。PGlite の verify は now() を test_now() にした本文の md5 に照合の値を差し替えて当てる（2026-10-27、BOA-1169、189・verify-sns-today-thinking.js）
+- sns_auto_send_items と sns_auto_send_control を同じマイグレーションで ALTER するときは、先頭で SET LOCAL lock_timeout の後に control → items の順に LOCK TABLE … ACCESS EXCLUSIVE を取る（送り手の transition_sns_x_send が control → items の順に読むので、逆だとデッドロックしうる）（2026-10-27、BOA-1169、189）
 - 適用待ちキーを WARN にする RPC 検査は、終了コード0でも当該マイグレーションの成功証拠にならない。台帳・途中の WARN・対象日と同一 raceId の保存値/応答を併せて確認する（2026-10-13、2026-10-13-plan-review-20261013-22.md）
 - approve_sns_x_send の ON CONFLICT は、state が sending・reconcile・posted でない job の youtube_stage と external_post_id を NULL に戻す。cancelled 等で閉じた job は承認し直せるので、記録を残したいなら approve で拒むか、別の場所に残す（2026-10-27、system-architect、177:145）
 - transition_sns_x_send に足した新しい操作を古い DB に送ると、YouTube の分岐を素通りして transition_sns_send_139 の「不正な操作です」で落ちる。コードを先に出しても壊れない根拠になる（2026-10-27、system-architect、182:307）
@@ -57,6 +59,7 @@
 - 新verifyの台帳登録を取り込み側へ委ねた場合、登録と品質ゲートでの実行確認が済むまで取り込み判定に残作業を明記する。（2026-10-13、2026-10-13-task-72-check-codex-patches.md）
 - 鍵を読まず本番接続を避けるローカル検証ではstrict replay・API_PROXY_TARGET空文字に加えViteのenvDirを空ディレクトリにし、複合npmスクリプトの引数転送先も確認する。（2026-10-13、2026-10-13-boa-744-part2.md）
 - verify実行前にimport先の秘密ファイル読込と実通信を確認し、本番接続禁止のレーンではmanualのDB検証をローカル純関数検査と区別して未実行と報告する。（2026-10-13、2026-10-13-boa-856.md）
+- 表・列・RPC を変える・止める・消す前に docs/reference/data-readers.md で読み手（src・api・scripts・sns-video-studio のファイル:行）・書き手・RPC の本体が読む表・取得のジョブ・repo の外の読み手（data-readers.extra.json）を確かめる。名前が式の箇所・Python・SQL の直書きは拾わないので「拾えなかったもの」の節も見る。台帳は master へのマージ後に CI が作り直す機械生成の文書で、PR に含めない（2026-10-27、基盤の計画 B、ADR-0078）
 - 表・関数を DROP する前の参照確認は、本番の pg_depend（deptype<>'i'）・prosrc の ILIKE・pg_views・pg_constraint の confrelid の4つで行う。plpgsql の本文は pg_depend に出ないので prosrc の検索が要る（2026-10-19、system-architect、163）
 - DROP だけのマイグレーションでも APPLIED.md の行が無いと verify-migration-numbers（--base origin/master）が CI で落ちる。display-coverage.md は手で直さず、マージ後の再生成に任せる（ADR-0078）（2026-10-19、163）
 - 本番に pg_cron は入っていない（cron.job が無い）。DB の DROP で cron の依存を気にしなくてよい（2026-10-19、system-architect の本番読み取り）

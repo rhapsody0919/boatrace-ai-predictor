@@ -43,8 +43,8 @@ export function createDeadlinePreflight({ headless, markers, readCurrent, now = 
     const current = await readCurrent(job.draft_id);
     if (current?.withdrawn !== false || current.cancelled !== false) throw new Error('race_unconfirmed_or_withdrawn');
     if (!q.source_revision || current.source_revision !== q.source_revision || current.deadline_at !== q.deadline_at) throw new Error('source_changed');
-    // リンクを置かない型（「数字で見たら」、179・180）だけ、リンク先の表示の確認の代わりに、送る文にリンクが無いことを確かめる。
-    // public_check='none' を返すのは readCurrent が DB の item の kind（research_image）を確かめた後だけ
+    // リンクを置かない型（「数字で見たら」179・180、/today の対象レースの思考投稿 189）だけ、リンク先の表示の確認の代わりに、
+    // 送る文にリンクが無いことを確かめる。public_check='none' を返すのは readCurrent が DB の item の kind（research_image・today_thinking）を確かめた後だけ
     if (current.public_check === 'none') {
       if (hasLink(snapshot.text)) throw new Error('link_not_allowed');
     } else await checkPublicDisplay(q, headless, markers);
@@ -89,8 +89,10 @@ export function fillFullUrl(text, videoId) {
  * YouTube publishAtによる外部の自動公開は最終検査を保証できないため今回提供しない。
  * uploadはprivateのみ。processingとmakePublicは別段階。全て自動retry禁止。
  * 142のクォータ予約・呼出し前記録・公開確認契約はsns-hub-shorts-send/contract.md参照。
+ * onThumbnailFailed(reason): サムネイル（thumbnails.set）の失敗を受け取る。渡すと失敗しても公開まで進み、渡さなければ今までどおり
+ * 非公開のまま残す（BOA-1172。記録する先の無い呼び出しで黙って外さない）
  */
-export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMedia }) {
+export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMedia, onThumbnailFailed }) {
   if (!youtube || !preflight) throw new Error('YouTube adapterは未接続です');
   const job = await store.transition(id, 'claim');
   if (job.state !== 'sending') return job;
@@ -138,7 +140,8 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
       uploadedKnown = true;
       return saved;
     };
-    const uploadedJob = await youtube.upload({ snapshot, media: verifiedMedia, privacyStatus: 'private', publishAt: null, beforeCall, uploaded });
+    const uploadedJob = await youtube.upload({ snapshot, media: verifiedMedia, privacyStatus: 'private', publishAt: null, beforeCall, uploaded,
+      thumbnailFailed: onThumbnailFailed });
     publicationPhaseStarted = true;
     return await runYoutubePublishJob(uploadedJob, { store, youtube, preflight });
   } catch (error) {
@@ -207,7 +210,13 @@ export function createMockYoutubeAdapter({ privacyStatus = 'public', failAt, aft
     await call('videos.insert', 'upload');
     const job = await payload.uploaded(videoId);
     if (afterUpload) await afterUpload();
-    if (payload.media.length > 1) await call('thumbnails.set', 'thumbnail');
+    // 実 adapter と同じく、サムネイルの失敗は thumbnailFailed があれば渡して続ける（BOA-1172）
+    if (payload.media.length > 1) {
+      try { await call('thumbnails.set', 'thumbnail'); } catch (error) {
+        if (error.message !== 'mock_failure' || !payload.thumbnailFailed) throw error;
+        payload.thumbnailFailed(error.message);
+      }
+    }
     return job;
   }, async processing(job) {
     calls.push({method:'videos.list:processing',payload:job});

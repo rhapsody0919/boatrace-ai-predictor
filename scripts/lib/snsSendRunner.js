@@ -14,6 +14,8 @@
  * - 1回の実行の Chromium の上限（SNS_SEND_HEADLESS_BUDGET）を job ごとの必要数（headlessNeed）で見積もり、足りない job から先は
  *   次の実行に回す（BOA-1164）
  * - 非公開のまま期限を過ぎた YouTube は、自分の非公開の動画と確かめて公開しないで閉じる（youtube_close_private、186）
+ * - YouTube のサムネイル（thumbnails.set）が失敗しても動画は公開まで進め、理由を report.jobs の thumbnail_error に入れて Slack に1回知らせる
+ *   （BOA-1172。届かなければ report.alerts に残す）
  * - 保留の理由・要照合は report.alerts に入れ、監視（scrape-monitor）が Slack に流す（同じ key は再通知の間隔ごと）
  *   - 要照合は、毎回 DB の状態（state='reconcile'）から作る。オーナーが照合して解けるまで出し続ける（非公開のまま期限を過ぎた YouTube は runner が閉じて解く、BOA-1164）。
  *     実行のメモリに置いた通知は、途中で落ちると保存されず、sweep（DB の now()）と runner の時刻のずれでも漏れるため
@@ -323,6 +325,9 @@ export async function runSnsSend(
               wait,
               shouldStop: ctx.shouldStop,
               pollWaitSec,
+              onThumbnailFailed: (reason) => {
+                result.thumbnail_error = reason;
+              },
             });
       result.outcome = done.state;
       result.error_code = done.error_code ?? null;
@@ -348,6 +353,12 @@ export async function runSnsSend(
         `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
       );
     }
+    // サムネイルの失敗は一度きりの事象（動画の送信は続けた。後で公開に失敗したときも、サムネイルの理由は別に知らせる）
+    if (result.thumbnail_error)
+      await tell(
+        `thumbnail:${job.id}`,
+        `SNS の送信: YouTube job ${job.id} のサムネイルを設定できなかった（動画の送信は続けた）: ${result.thumbnail_error}。403 はチャンネルの確認（カスタムサムネイルの権限）が無いときにも返る。付けるなら Studio で設定する`,
+      );
   }
   // この実行で見直さなかった job の検査の理由・確かめなかったチャネルのトークンの失敗は、期限まで残す
   const examined = new Set(results.map((r) => r.id));
@@ -371,13 +382,23 @@ export async function runSnsSend(
 /** YouTube: アップロード→処理の確認（最大3回）→公開。3回で処理が終わらなければ非公開のまま残す */
 async function sendYoutube(
   job,
-  { store, youtube, preflight, loadMedia, wait, shouldStop, pollWaitSec },
+  {
+    store,
+    youtube,
+    preflight,
+    loadMedia,
+    wait,
+    shouldStop,
+    pollWaitSec,
+    onThumbnailFailed,
+  },
 ) {
   let current = await runYoutubeQueueJob(job.id, {
     store,
     youtube,
     preflight,
     loadMedia,
+    onThumbnailFailed,
   });
   for (
     let poll = 1;

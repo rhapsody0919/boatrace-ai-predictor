@@ -31,6 +31,7 @@ import { withSourceBadges } from "../../src/fullPicture/sourceBadge.js";
 import { MATERIALS_SCHEMA, validate } from "./materials-contract.mjs";
 import { FULL_MIN_SECONDS, buildBundle, chaptersOk, checkBundle, raceHeader } from "./bundle.mjs";
 import { PROTOTYPE_IMPL, lengthReason, resolveType } from "./type-spec.mjs";
+import { VOICE } from "./f01.mjs";
 import { answerOf, scopeLabel } from "./answer.mjs";
 import { MAX_BYTES as PUSH_MAX_BYTES } from "../../../../scripts/sns/push-full-picture.js";
 import { t } from "./scene2-data.mjs";
@@ -108,6 +109,8 @@ function typeStop(reasons, detail = null) {
   process.exit(1);
 }
 if (type?.reasons.length) typeStop(type.reasons);
+// 完全版を型 f01（横 16:9＋声、f01-build.mjs）で作る。入口版・Shorts・X は今の型のまま
+const f01 = type?.impl?.full === "f01";
 // 冒頭の答え（v2r1）。データが薄いレース（この組み合わせの過去が30件未満）は作らない（オーナー 10/25）
 const answer = type?.impl?.answer ? answerPage() : null;
 function answerPage() {
@@ -251,8 +254,8 @@ function chapters(answers) {
 const entryAnswers = templateAnswers;
 const entry = entryScenes(scenes, entryAnswers, { race: header, answer });
 {
-  // 型の尺（length_s）に入口版が入らなければ止める（作り直さない）
-  const why = lengthReason(type?.attributes, entry.total / 30);
+  // 型の尺（length_s）に入口版が入らなければ止める（作り直さない）。f01 の length_s は完全版の尺なので入口版には当てない
+  const why = f01 ? null : lengthReason(type?.attributes, entry.total / 30);
   if (why) typeStop(why.reason, why.detail);
 }
 const entryStepAnswers = Object.fromEntries(entry.scenes.flatMap((x) => (x.kind === "step" ? x.data.steps.map((s) => [s.id, entry.answers[s.id] ?? s.lines]) : [])));
@@ -313,7 +316,7 @@ for (const mode of modes) {
     console.log(`つないだ版: ${text.beats.length}拍中 ${on}拍につなぐ語、${back}拍は検査に落ちてつなぐ語なし`);
   }
   const { total } = fullPictureTimeline(scenes, text.answers);
-  if (!noVideo) {
+  if (!noVideo && !f01) {
     const dir = join(out, mode);
     mkdirSync(dir, { recursive: true });
     Object.assign(seconds, render(scenes, text.answers, dir, "full-picture", { badgePlace: "band" }));
@@ -335,9 +338,20 @@ if (!noVideo && !bundleOnly) {
   console.log(`${dir}: 入口版 ${(entry.total / 30).toFixed(1)}秒の MP4・静止画（描画 ${seconds.render.toFixed(0)}秒）`);
 }
 
+// 型 f01: 完全版を横 16:9＋声で作る（声・実画面の撮影・描画）。作れなければ type_unsupported で止める（黙って今の型で作らない）
+// 読み込みは f01 のときだけ（声・撮影の依存（Playwright・VOICEVOX）を今の型の実行に持ち込まない）
+// --bundle-only は描かずに作り済みの f01 を読む（題・説明欄・クレジット・サムネを bundle に入れるため。Codex P1 #2011）
+const f01Full = f01 && !noVideo
+  ? await (async () => {
+      const lib = await import("./f01-build.mjs");
+      return bundleOnly ? lib.loadF01(join(out, "f01")) : lib.buildF01(m, join(out, "f01"), { bgm, concurrency });
+    })()
+  : null;
+if (f01Full?.reasons.length) typeStop(f01Full.reasons, f01Full.detail);
+if (f01Full) writeFileSync(join(out, "chapters.txt"), f01Full.chapters);
 // 送信の道に渡すフォルダ（完全版と入口版の両方があるときだけ）。機械の検査が全部通ったときだけ作る
 // 完全版はこの実行の版のもの（古い版の MP4 を入れない。代わりの審査 P2）
-const fullMp4 = join(out, textMode === "both" ? "connected" : textMode, "full-picture.mp4");
+const fullMp4 = f01 ? join(out, "f01", "f01.mp4") : join(out, textMode === "both" ? "connected" : textMode, "full-picture.mp4");
 const entryMp4 = join(out, "entry", "entry.mp4");
 if (!noVideo && existsSync(fullMp4) && existsSync(entryMp4)) {
   const f = probe(fullMp4);
@@ -351,14 +365,19 @@ if (!noVideo && existsSync(fullMp4) && existsSync(entryMp4)) {
     shorts_vertical: e.width === 1080 && e.height === 1920,
     shorts_max_60s: e.seconds <= 60,
     shorts_size: e.bytes <= MAX_BYTES,
-    // 縦で3分以下は Shorts になる。完全版は通常の動画で出す（youtube-channel 2026-10-20 P1）
-    full_min185s: f.seconds >= FULL_MIN_SECONDS,
+    // 縦で3分以下は Shorts になる。完全版は通常の動画で出す（youtube-channel 2026-10-20 P1）。
+    // 型 f01 は横 16:9 なので尺の下限を外し、横であることと声のクレジットを見る（hq 6節「16:9 では qa.machine.full_min185s を外す」）
+    ...(f01
+      ? { full_landscape: f.width === 1920 && f.height === 1080, voice_credit: Boolean(f01Full?.description.includes(VOICE.credit)) }
+      : { full_min185s: f.seconds >= FULL_MIN_SECONDS }),
   };
   // 章は描いた完全版の拍の並びのもの（つないだ版はつなぐ語の分だけ長さが変わる）。実ファイルの尺で自動チャプターの条件を見る
   const chaptersPath = join(out, "chapters.txt");
   const chaptersText = existsSync(chaptersPath) ? readFileSync(chaptersPath, "utf8") : chapters(entryAnswers);
   qa.chapters = chaptersOk(chaptersText, f.seconds);
   const b = bundleText(qa, chaptersText, f.seconds);
+  // 型 f01: 完全版の題・説明欄は f01 の物（説明欄は今の約束 C1・C3 の形）。サムネは bundle/thumb-full.png
+  if (f01Full) b.youtube_full = { ...b.youtube_full, title: f01Full.title, description: f01Full.description, thumbnail: "thumb-full.png" };
   const why = checkBundle(b);
   if (why.length) stop("bundle", why);
   const dir = join(out, "bundle");
@@ -366,6 +385,7 @@ if (!noVideo && existsSync(fullMp4) && existsSync(entryMp4)) {
   writeJson(join(dir, "bundle.json"), b);
   copyFileSync(entryMp4, join(dir, "full-x.mp4"));
   copyFileSync(fullMp4, join(dir, "full-youtube.mp4"));
+  if (f01Full) copyFileSync(f01Full.thumb, join(dir, "thumb-full.png"));
   copyFileSync(entryMp4, join(dir, "shorts.mp4"));
   // X と Shorts は同じ入口版（同じバイト列）。送信側は中身を解析しないので、作り手が確かめる（送信レーン 2026-10-20、x-channel P2）
   const sha = (file) => createHash("sha256").update(readFileSync(file)).digest("hex");

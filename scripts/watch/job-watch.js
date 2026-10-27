@@ -15,6 +15,7 @@ import { appendFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  cancelledByTimeout,
   classifyLog,
   decideRun,
   handledMarkers,
@@ -46,12 +47,17 @@ const repo = process.env.GITHUB_REPOSITORY ?? "";
 if (!token) fail("GITHUB_TOKEN が無い");
 if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) fail("GITHUB_REPOSITORY の形が違う");
 
-async function gh(method, pathAndQuery, body, { raw = false } = {}) {
+async function gh(
+  method,
+  pathAndQuery,
+  body,
+  { raw = false, accept = "application/vnd.github+json" } = {},
+) {
   const res = await fetch(`https://api.github.com${pathAndQuery}`, {
     method,
     headers: {
       Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
+      Accept: accept,
       "X-GitHub-Api-Version": "2022-11-28",
       ...(body ? { "Content-Type": "application/json" } : {}),
     },
@@ -88,16 +94,21 @@ const isProductionRun = (r) =>
   r.head_repository?.full_name === repo &&
   // push は master へのマージ・自動コミットで動くもの（Post-merge Checks・Regenerate Generated Docs 等）。
   // rerun の許可の一覧には入っていないので、知らせるだけになる
-  (r.event === "schedule" || r.event === "workflow_dispatch" || r.event === "push");
+  (r.event === "schedule" ||
+    r.event === "workflow_dispatch" ||
+    r.event === "push");
 
-async function failedJobLog(runId) {
-  const jobs = await listAll(
-    `/repos/${repo}/actions/runs/${runId}/jobs?filter=latest`,
-    "jobs",
-  );
+const runJobs = (runId) =>
+  listAll(`/repos/${repo}/actions/runs/${runId}/jobs?filter=latest`, "jobs");
+
+// 時間切れの job は cancelled になる（BOA-1162）。時間切れと分かった run だけ cancelled の job のログも読む
+async function failedJobLog(jobs, { timedOut = false } = {}) {
   const texts = [];
   for (const j of jobs.filter(
-    (x) => x.conclusion === "failure" || x.conclusion === "timed_out",
+    (x) =>
+      x.conclusion === "failure" ||
+      x.conclusion === "timed_out" ||
+      (timedOut && x.conclusion === "cancelled"),
   )) {
     const text = await gh(
       "GET",
@@ -108,6 +119,21 @@ async function failedJobLog(runId) {
     texts.push(text.slice(-LOG_TAIL));
   }
   return texts.join("\n");
+}
+
+/**
+ * 結論が cancelled の run が GitHub の時間切れか（concurrency の置き換え・人の取り消しでないか）。
+ * 上限はその run の SHA の workflow の YAML から読む（master の今の値は、その後に変わっていることがある）
+ */
+async function timedOutCancel(r, jobs) {
+  if (!jobs.some((j) => j.conclusion === "cancelled")) return false;
+  const yaml = await gh(
+    "GET",
+    `/repos/${repo}/contents/${r.path}?ref=${r.head_sha}`,
+    null,
+    { raw: true, accept: "application/vnd.github.raw" },
+  );
+  return cancelledByTimeout(jobs, yaml);
 }
 
 async function openIssue(label) {
@@ -127,7 +153,7 @@ async function issueTexts(issue) {
 }
 
 const line = (r, reason) =>
-  `- [${r.name} #${r.run_number}（${r.attempt}回目）](${r.html_url}) ${jstDate(r.createdAt)} ${reason}`;
+  `- [${r.name} #${r.run_number}（${r.attempt}回目）](${r.html_url}) ${jstDate(r.createdAt)} ${r.timedOut ? "時間切れ（GitHub の上限で cancelled）・" : ""}${reason}`;
 
 async function writeIssue(label, title, intro, items) {
   if (items.length === 0) return;
@@ -176,29 +202,40 @@ async function scan() {
         (o.conclusion === "success" || o.status !== "completed"),
     );
 
-  const failed = runs.filter(
+  // cancelled は、時間切れ（BOA-1162）かを下で確かめる。concurrency の置き換え・人の取り消しは数えない
+  const candidates = runs.filter(
     (r) =>
       r.status === "completed" &&
-      (r.conclusion === "failure" || r.conclusion === "timed_out"),
+      (r.conclusion === "failure" ||
+        r.conclusion === "timed_out" ||
+        r.conclusion === "cancelled"),
   );
+  let failedCount = 0;
   const keyItems = [];
   const failureItems = [];
   const reruns = [];
   const classified = [];
-  for (const r of failed) {
+  for (const r of candidates) {
     const kinds = ["key", "failure", "rerun"].map((k) =>
       runMarker(r.id, r.attempt, k),
     );
     const alreadyNoted = kinds.some((m) => done.has(m));
     if (alreadyNoted) {
+      // 印は時間切れと判った cancelled にしか書かないので、印のある run はどれも失敗に数える
+      failedCount += 1;
       // 既に書いた run のログは読み直さない。鍵の Issue に書いたものは、鍵が直った後の追い上げの候補にだけ入れる
       if (done.has(runMarker(r.id, r.attempt, "key"))) {
         classified.push({ ...r, category: "config", newerRun: newerRun(r) });
       }
       continue;
     }
-    const category = classifyLog(await failedJobLog(r.id));
-    const run = { ...r, category, newerRun: newerRun(r) };
+    const jobs = await runJobs(r.id);
+    const timedOut =
+      r.conclusion === "cancelled" && (await timedOutCancel(r, jobs));
+    if (r.conclusion === "cancelled" && !timedOut) continue;
+    failedCount += 1;
+    const category = classifyLog(await failedJobLog(jobs, { timedOut }));
+    const run = { ...r, category, timedOut, newerRun: newerRun(r) };
     classified.push(run);
     const d = decideRun(run, { rerunAllowed, now });
     if (d.action === "key-issue") {
@@ -270,7 +307,7 @@ async function scan() {
   const value = JSON.stringify([...new Set(reruns)]);
   if (out) appendFileSync(out, `reruns=${value}\n`);
   console.log(
-    `失敗 ${failed.length} 件（新しく書いた: 鍵 ${keyItems.length}・その他 ${failureItems.length}）、rerun ${value}`,
+    `失敗 ${failedCount} 件（時間切れの cancelled を含む。新しく書いた: 鍵 ${keyItems.length}・その他 ${failureItems.length}）、rerun ${value}`,
   );
 }
 

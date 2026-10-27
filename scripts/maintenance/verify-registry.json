@@ -324,6 +324,11 @@
       "guards": "Environment prod-jobs を使う workflow が、data_health の鮮度の項目か理由つきの除外に載ること（2026-10-20 の鍵の誤りで夜の集計が落ちて誰も気づかなかった件の再発防止）"
     },
     {
+      "script": "verify-data-readers.js",
+      "tier": "ci",
+      "guards": "データの読み手の台帳（docs/reference/data-readers.{json,md}、generate-data-readers.js）の抽出（構文木で .from()・.select()・絞り込み・insert/upsert/update/delete の列、.rpc()、/rest/v1/ と REST の包みの相対パス、fetch の method、1回だけ宣言した const の名前。Array.from・storage.from・コメントを拾わないこと、名前が式の箇所を unresolved にすること、検査の固定入力のファイルは写しの名前だけ）と組み立て（RPC の本体が読む・書く・呼ぶ表をコメントと文字列を外して写しから引くこと、権限の GRANT とポリシーの要約、トリガー、取得のジョブの入口からの import のたどり、外の読み手 data-readers.extra.json が写しの表・列を指すこと）。今のリポジトリで作れること・同じ入力で同じ出力・構文木にできないファイルが無いこと。最新性は master へのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078。台帳は PR に含めない）"
+    },
+    {
       "script": "verify-db-apply.js",
       "tier": "ci",
       "guards": "本番 DB 適用ワークフロー（.github/workflows/db-apply.yml、scripts/lib/dbApplySql.js）。パスの検証（ディレクトリの外・大文字・別拡張子を通さない）、文の分割（文字列・$$・コメントの中の ; を区切りにしない）、拒否する SQL（先頭 BEGIN・末尾 COMMIT 以外のトランザクション制御、CONCURRENTLY・VACUUM・ALTER SYSTEM・psql のメタコマンド 等）、触るテーブルの抽出、台帳の更新、実ファイルで拒否されるのが 050・055 だけであること、ワークフローの配線（secret は承認後の job だけ、run に ${{ }} を直接書かない、書き込み権限は台帳の job だけ、定期の起動は schedule か dispatch の mode=reconcile だけで手での起動と台帳のファイルを混ぜない）"
@@ -563,7 +568,7 @@
     {
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
-      "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
+      "guards": "対応言語（src/config/languages.js の SUPPORTED_LANGUAGES）のロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）と、翻訳ファイルの無い対応言語（src/i18n.js は dev でだけ throw するので、本番の束で流す E2E では止まらない）"
     },
     {
       "script": "verify-id-path-utils.js",
@@ -590,7 +595,7 @@
     {
       "script": "verify-job-watch.js",
       "tier": "ci",
-      "guards": "定期の job の見張り（.github/workflows/job-watch.yml・key-canary.yml・scripts/watch/job-watch.json・scripts/lib/jobWatch.js、ADR-0097 の追記）。失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）、rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ、鍵が直った後の追い上げ、Issue の印、Environment prod-jobs・ryujin-bot を使う workflow が全部見張りの一覧と job-watch.yml に登録されていること、許可の一覧に送信・push・db-apply・審査・頻繁な job を入れないこと、actions: write は rerun の job だけ"
+      "guards": "定期の job の見張り（.github/workflows/job-watch.yml・key-canary.yml・scripts/watch/job-watch.json・scripts/lib/jobWatch.js、ADR-0097 の追記）。失敗のログの分類（鍵・設定／外部の 403・429・503／一時的／その他）、rerun は許可の一覧・1回目・同じ日・後の run が無いときだけ、鍵が直った後の追い上げ、Issue の印、結論が cancelled の run のうち GitHub の時間切れだけを拾うこと（job が上限の分まで動いたか。concurrency の置き換え・人の取り消しは拾わない、BOA-1162）、Environment prod-jobs・ryujin-bot を使う workflow が全部見張りの一覧と job-watch.yml に登録されていること、許可の一覧に送信・push・db-apply・審査・頻繁な job を入れないこと、actions: write は rerun の job だけ"
     },
     {
       "script": "verify-jst-date-utils.js",
@@ -1366,7 +1371,7 @@
     {
       "script": "verify-sns-full-picture.js",
       "tier": "ci",
-      "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし"
+      "guards": "全貌動画（format=full_picture、マイグレーション 161、scripts/sns/push-full-picture.js、2026-10-18 オーナー決定の承認なしの自動送信）: item の種類 full_picture（下書きに直接ひもづく）、hq のフォルダから X・YouTube の下書きと item を作り mode=auto なら自動送信の承認者で承認（送る時刻は締切の60分前と5分後の遅い方、失効30分前）、送る直前の読み直しは中止・欠場・締切と取り込んだ版、P0・機械の検査・別レースの URL・禁止表現・動画なし・40分前を過ぎた・中止は受け取らない、mode=manual・承認の失敗は manual、claim は60分前まで veto_window_open で待つ。SQL161 までを PGlite、外部接続なし。BOA-1172: 型 f01 の完全版のサムネイル（youtube_full.thumbnail）を完全版の下書きの cover_image_path に入れ承認の media を2つにする（X・Shorts には付けない）、版の hash は動画の後にサムネイル（欄の無い束は今までの式）、画像が無い・PNG でも JPEG でもない・空・32 MiB 超・名前に区切りは束ごと拒否"
     },
     {
       "script": "verify-sns-headless.js",
@@ -1416,7 +1421,7 @@
     {
       "script": "verify-sns-send-runner.js",
       "tier": "ci",
-      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし"
+      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし。BOA-1172: サムネイルの失敗でも YouTube は posted まで進め、理由を report.jobs の thumbnail_error と Slack に1回（届かなければ report.alerts）"
     },
     {
       "script": "verify-sns-shorts-send.js",
@@ -1432,6 +1437,11 @@
       "script": "verify-sns-today-plan.js",
       "tier": "ci",
       "guards": "sns-pdca-loop tasks 19b: /today の画像つき X 投稿の計画（cron sns_auto_plan の中、JST 5:30〜7:45）。一覧が公開されたら未ログインで撮った画像・決まった型の本文・UTM today_digest で下書き（send_lane A）と item（kind digest）を manual に作り Slack に画像のリンク、本人の個別承認（140 の DB 側の条件）で 7:45 の job ができ、送る直前の検査は一覧の版の一致で通り版が変われば source_changed、同じ一覧では何も書かない、一覧がやり直されたら撮り直して承認を外し知らせる、時間外・未公開・shadow は書かない、撮れなければ何も書かない、禁止表現は held_manual で作り直さない、PostgREST の条件、vercel.json の locale の同梱。SQL158 までを PGlite、外部接続なし"
+    },
+    {
+      "script": "verify-sns-today-thinking.js",
+      "tier": "ci",
+      "guards": "/today の対象レースの思考投稿（today_thinking、BOA-1169、マイグレーション 189、scripts/sns/push-finals-image.js）: 188 の transition_sns_send_139 の本文の md5 が ce1cd6fa…（182 は c2b4835c…）で、189 は 188 から3か所だけ変える（v_ceiling・v_rest は変えない）・先頭で control→items の順に LOCK し md5 で照合（もう一度当てると全体が戻る）・取り置きと上限を入れない、CHECK（today_thinking は X・下書きにひもづく・variant は thinking 系だけ、YouTube・main・bundle 付きを拒む、同じレースの finals と両立）、許可 today_thinking_enabled は既定 false で x の行だけ・off なら push は何も書かず claim は held（today_thinking_disabled）、期限は締切の5分前、取り置き today_thinking（2本で数え kind_slot_full）、push の3本（本投稿・投票・展示後）が下書き・item・job になり source_data のキーは today_thinking だけ・Storage は today-thinking/、/today の X 投稿の対象でない・まだ送られていない投稿の対象のレースは拒否、優勝戦の段を見ない、本文に URL があれば拒否（優勝戦はこのレースのページ1つなら通る）、マイグレーション前（列が無い 400）でも優勝戦の許可は読める、readCurrent の today_thinking の枝（item の kind・レース・variant の食い違いで投げる、リンク先の表示の確認の代わりに public_check=none）、優勝戦・数字で見たら・/today の claim が 188 までと同じ結果。SQL182・188・189 を PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-today-variants.js",
@@ -1466,7 +1476,7 @@
     {
       "script": "verify-sns-youtube-adapter.js",
       "tier": "ci",
-      "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は非公開のまま残す、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
+      "guards": "sns-pdca-loop tasks 18: YouTube Data API v3 の実 adapter（非公開の multipart upload・selfDeclaredMadeForKids=false、サムネイルの Content-Type は媒体どおり、processingDetails と承認の題名で本人の動画を確かめてから公開、videos.update の後に videos.list で公開を確認し posted_at は公開後の publishedAt、処理中は要照合のまま、サムネイルの 403 は記録する先（onThumbnailFailed）が無い呼び出しなら非公開のまま残す、渡せば 403・通信の例外でも公開まで進み理由を渡し、thumbnails.set の前の検査・台帳の拒否は非公開のまま残す（BOA-1172）、videos.update の失敗は update_started の要照合・公開の確認で private なら公開済みにしない、題名の不備・32 MiB を超える動画は begin_post の前に held、承認したタグと本文（承認の hash に入る値）を送る、JPEG の表紙、100文字の境界、upload の非 JSON・通信の例外・公開の確認の読み取りの喪失・publishedAt の欠落、動画 ID の無い照合は呼ばない、Google の詳細な本文をエラーに入れない、クォータの台帳に呼び出しの前に記録）と runYoutubeQueueJob・reconcileYoutubeJob（SQL146 までを PGlite、fetch はモックで外部接続なし）"
     },
     {
       "script": "verify-sonar-hint-order.js",

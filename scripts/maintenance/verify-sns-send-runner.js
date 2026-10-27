@@ -151,7 +151,7 @@ after(() => db.close());
 
 async function approvedJob(
   platform = "x",
-  { parentJobId = null, scheduledOffsetMin = -1 } = {},
+  { parentJobId = null, scheduledOffsetMin = -1, cover = null } = {},
 ) {
   const deadline = new Date(Date.now() + 2 * 3600000).toISOString();
   const queue = {
@@ -163,8 +163,8 @@ async function approvedJob(
     ...(parentJobId ? { parent_job_id: parentJobId } : {}),
   };
   const draft = await first(
-    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,source_data) VALUES(gen_random_uuid(),'short',$1,'ja','全貌','本文','v.mp4',$2) RETURNING *",
-    [platform, { deadline_queue: queue }],
+    "INSERT INTO sns_drafts(content_group_id,format,platform,language,title,caption_text,video_storage_path,source_data,cover_image_path) VALUES(gen_random_uuid(),'short',$1,'ja','全貌','本文','v.mp4',$2,$3) RETURNING *",
+    [platform, { deadline_queue: queue }, cover],
   );
   return (
     await first("SELECT approve_sns_x_send($1,$2,$3,$4) r", [
@@ -303,7 +303,10 @@ for (const [at, paused] of [
       { ...ctx(), now: () => new Date(at) },
       deps({
         maxJobs: paused ? 1 : 2,
-        store: { ...store, dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args) },
+        store: {
+          ...store,
+          dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args),
+        },
         adapters: {
           x: async () => createMockXAdapter(),
           youtube: async () => youtube,
@@ -314,12 +317,21 @@ for (const [at, paused] of [
     const row = await job(y.id);
     assert.equal(row.state, paused ? "queued" : "posted");
     assert.equal(row.attempts, paused ? 0 : 1);
-    assert.equal(Number((await first("SELECT count(*) n FROM sns_youtube_quota_attempts")).n), paused ? 0 : 1);
-    assert.equal(result.body.jobs.find((r) => r.id === y.id).outcome,
-      paused ? "youtube_quota_day_wait" : "posted");
+    assert.equal(
+      Number(
+        (await first("SELECT count(*) n FROM sns_youtube_quota_attempts")).n,
+      ),
+      paused ? 0 : 1,
+    );
+    assert.equal(
+      result.body.jobs.find((r) => r.id === y.id).outcome,
+      paused ? "youtube_quota_day_wait" : "posted",
+    );
     assert.equal((await job(x.id)).state, "posted");
-    assert.deepEqual(result.report.alerts.map((a) => a.key),
-      paused ? [`youtube_quota_day_wait:${y.id}`] : []);
+    assert.deepEqual(
+      result.report.alerts.map((a) => a.key),
+      paused ? [`youtube_quota_day_wait:${y.id}`] : [],
+    );
     assert.deepEqual(notices, []);
     if (paused) assert.deepEqual(youtube.calls, []);
   });
@@ -329,13 +341,18 @@ test("検査・トークン取得中に PT の停止窓へ入ったら claim せ
   const y = await approvedJob("youtube");
   let at = "2026-10-27T06:49:59Z";
   const clock = { ...ctx(), now: () => new Date(at) };
-  const runnerStore = { ...store, dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args) };
+  const runnerStore = {
+    ...store,
+    dueJobs: (_, ...args) => store.dueJobs(new Date(), ...args),
+  };
   const options = deps({
     store: runnerStore,
-    adapters: { youtube: async () => {
-      at = "2026-10-27T06:50:00Z";
-      return createMockYoutubeAdapter();
-    } },
+    adapters: {
+      youtube: async () => {
+        at = "2026-10-27T06:50:00Z";
+        return createMockYoutubeAdapter();
+      },
+    },
   });
   const waiting = await runSnsSend(clock, options);
   assert.equal(waiting.body.jobs[0].outcome, "youtube_quota_day_wait");
@@ -343,7 +360,12 @@ test("検査・トークン取得中に PT の停止窓へ入ったら claim せ
   assert.equal((await job(y.id)).state, "queued");
   const carried = await runSnsSend(
     { ...clock, state: { last_report: waiting.report } },
-    deps({ store: { ...runnerStore, dueJobs: async () => ({ jobs: [], nextCursor: null }) } }),
+    deps({
+      store: {
+        ...runnerStore,
+        dueJobs: async () => ({ jobs: [], nextCursor: null }),
+      },
+    }),
   );
   assert.deepEqual(carried.report.alerts, waiting.report.alerts);
   at = "2026-10-27T07:05:00Z";
@@ -1109,6 +1131,66 @@ const budgetedPreflight = () => {
   };
 };
 
+test("BOA-1172: サムネイルの設定に失敗しても YouTube は posted まで進め、理由を report.jobs に入れて Slack に1回知らせる。届かなければ report.alerts に残す", async () => {
+  const y = await approvedJob("youtube", { cover: "c.png" });
+  const notices = [];
+  const result = await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () => createMockYoutubeAdapter({ failAt: "thumbnail", videoId: "thumbfail01" }),
+      },
+      notify: async (t) => notices.push(t),
+    }),
+  );
+  assert.equal((await job(y.id)).state, "posted");
+  const row = result.body.jobs.find((r) => r.id === y.id);
+  assert.equal(row.outcome, "posted");
+  assert.equal(row.thumbnail_error, "mock_failure");
+  const told = notices.filter((t) => t.includes("サムネイル"));
+  assert.equal(told.length, 1);
+  assert.match(
+    told[0],
+    new RegExp(`job ${y.id} のサムネイルを設定できなかった`),
+  );
+  assert.match(told[0], /動画の送信は続けた/);
+
+  // Slack に届かなければ report.alerts に残す（一度きりの事象と同じ扱い）
+  const z = await approvedJob("youtube", { cover: "c.png" });
+  const undelivered = await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () => createMockYoutubeAdapter({ failAt: "thumbnail", videoId: "thumbfail02" }),
+      },
+      notify: async () => {
+        throw new Error("webhook_down");
+      },
+    }),
+  );
+  assert.equal((await job(z.id)).state, "posted");
+  assert.ok(
+    undelivered.report.alerts.some(
+      (a) => a.key === `undelivered:thumbnail:${z.id}`,
+    ),
+  );
+  // サムネイルが通れば知らせない
+  const w = await approvedJob("youtube", { cover: "c.png" });
+  const quiet = [];
+  await runSnsSend(
+    ctx(),
+    deps({
+      adapters: {
+        youtube: async () =>
+          createMockYoutubeAdapter({ videoId: "thumbpass01" }),
+      },
+      notify: async (t) => quiet.push(t),
+    }),
+  );
+  assert.equal((await job(w.id)).state, "posted");
+  assert.equal(quiet.filter((t) => t.includes("サムネイル")).length, 0);
+});
+
 test("BOA-1164 検査の枠: 先に別レースの X が検査を使った実行では YouTube を claim せず次の実行に回し、次の実行で公開する", async () => {
   const x = await approvedJob("x", { scheduledOffsetMin: -3 });
   const y = await approvedJob("youtube", { scheduledOffsetMin: -2 });
@@ -1165,7 +1247,10 @@ test("BOA-1164 検査の枠: X は1回の実行で2件まで（3件目は次の�
     "UPDATE sns_auto_send_control SET dry_run=true WHERE channel='x'",
   );
   const extra = await approvedJob("x");
-  const dry = await runSnsSend(ctx(), deps({ preflight: budgetedPreflight(), headlessBudget: 6 }));
+  const dry = await runSnsSend(
+    ctx(),
+    deps({ preflight: budgetedPreflight(), headlessBudget: 6 }),
+  );
   assert.deepEqual(
     dry.body.jobs.map((r) => r.outcome),
     ["dry_run", "dry_run"],
@@ -1192,7 +1277,11 @@ test("BOA-1164 残した理由: 処理の確認を使い切った・検査の枠
   // 公開の準備の後の検査（runner の検査から数えて4回目）で落ちる
   for (const [message, code, videoId] of [
     ["public_check_budget", "youtube_retained_budget", "bbbbbbbbbbb"],
-    ["public_component_missing", "youtube_retained_check_failed", "ccccccccccc"],
+    [
+      "public_component_missing",
+      "youtube_retained_check_failed",
+      "ccccccccccc",
+    ],
   ]) {
     await db.exec(
       "UPDATE sns_x_send_jobs SET state='cancelled' WHERE state IN ('queued','reconcile')",
@@ -1206,7 +1295,9 @@ test("BOA-1164 残した理由: 処理の確認を使い切った・検査の枠
           n += 1;
           if (n === 4) throw new Error(message);
         },
-        adapters: { youtube: async () => createMockYoutubeAdapter({ videoId }) },
+        adapters: {
+          youtube: async () => createMockYoutubeAdapter({ videoId }),
+        },
         notify: async () => {},
       }),
     );

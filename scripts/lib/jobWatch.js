@@ -47,6 +47,88 @@ export function classifyLog(text) {
   return "other";
 }
 
+/** GitHub の job の既定の上限（timeout-minutes を書かないとき） */
+const DEFAULT_TIMEOUT_MINUTES = 360;
+
+/**
+ * workflow の YAML から、job ごとの name と timeout-minutes を読む（jobs: の下の2字下げの key と、その直下の4字下げの行だけ）。
+ * 書いていない job は既定の360分。式（${{ }}）で書いた timeout-minutes は読めないので既定のまま
+ * @param {string} yamlText
+ * @returns {{ key: string, name: string | null, timeout: number }[]}
+ */
+export function jobTimeouts(yamlText) {
+  const jobs = [];
+  let inJobs = false;
+  let cur = null;
+  for (const line of String(yamlText ?? "").split("\n")) {
+    if (/^jobs:\s*$/.test(line)) {
+      inJobs = true;
+      continue;
+    }
+    if (/^[A-Za-z_]/.test(line)) inJobs = false;
+    if (!inJobs) continue;
+    // 行末の注釈（ #...）は読み飛ばす（scrape-racer-season-stats.yml の `timeout-minutes: 330 # ...`）
+    const key = line.match(/^ {2}([\w-]+):\s*(?:#.*)?$/);
+    if (key) {
+      cur = { key: key[1], name: null, timeout: DEFAULT_TIMEOUT_MINUTES };
+      jobs.push(cur);
+      continue;
+    }
+    if (!cur) continue;
+    const name = line.match(
+      /^ {4}name:\s*(?:(['"])(.*?)\1|(.+?))\s*(?:\s#.*)?$/,
+    );
+    if (name) cur.name = name[2] ?? name[3];
+    const timeout = line.match(/^ {4}timeout-minutes:\s*(\d+)\s*(?:#.*)?$/);
+    if (timeout) cur.timeout = Number(timeout[1]);
+  }
+  return jobs;
+}
+
+/**
+ * API の job の名前（matrix は「key (値)」か、name の式を解いたもの）に当たる YAML の job の上限。
+ * 当たらなければ、その workflow の中で最も短い上限（時間切れを見落とさない側に倒す）
+ */
+function timeoutFor(apiName, jobs) {
+  const prefixOf = (name) =>
+    name?.includes("${{") ? name.slice(0, name.indexOf("${{")) : "";
+  const hit = jobs.find(
+    (j) =>
+      apiName === j.key ||
+      apiName === j.name ||
+      apiName.startsWith(`${j.key} (`) ||
+      (prefixOf(j.name) !== "" && apiName.startsWith(prefixOf(j.name))),
+  );
+  if (hit) return hit.timeout;
+  return jobs.length > 0
+    ? Math.min(...jobs.map((j) => j.timeout))
+    : DEFAULT_TIMEOUT_MINUTES;
+}
+
+/**
+ * 結論が cancelled の run が、GitHub の時間切れ（timeout-minutes）で止まったものか（BOA-1162）。
+ * GitHub は時間切れの job を timed_out でなく cancelled にする（run の結論も cancelled）。ログはどちらも
+ * 「The operation was canceled.」で、時間切れの文言は check run の annotation にしか出ない（見張りの token は checks を読めない）。
+ * そこで、取り消された job が、その job の上限の分まで動いていたかで見分ける（2026-10-26 の実測: 上限 60分で 60.3分、15分で 15.3分）。
+ * - job が1つも無い: 待ちの間に concurrency で後の run に置き換えられた → 時間切れでない
+ * - 上限より短く取り消された: 動いている間に concurrency で置き換えられたか、人が取り消した → 時間切れでない
+ * 上限の分まで動いた後に置き換え・人の取り消しが来たものは時間切れに数える（知らせる側に倒す）
+ *
+ * @param {{ name: string, conclusion: string | null, started_at: string | null, completed_at: string | null }[]} apiJobs
+ * @param {string} yamlText その run の SHA の workflow の YAML
+ */
+export function cancelledByTimeout(apiJobs, yamlText) {
+  const jobs = jobTimeouts(yamlText);
+  return apiJobs.some(
+    (j) =>
+      j.conclusion === "cancelled" &&
+      Boolean(j.started_at && j.completed_at) &&
+      // started_at は秒の丸めで実際の開始より少し後になりうるので、0.5分の余裕を見る
+      (Date.parse(j.completed_at) - Date.parse(j.started_at)) / 60_000 >=
+        timeoutFor(j.name, jobs) - 0.5,
+  );
+}
+
 /** JST の日付（YYYY-MM-DD） */
 export const jstDate = (iso) =>
   new Date(Date.parse(iso) + 9 * 3_600_000).toISOString().slice(0, 10);

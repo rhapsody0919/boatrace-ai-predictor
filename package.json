@@ -36,6 +36,7 @@
     "verify:er-diagram": "node scripts/maintenance/verify-plan-erd.js",
     "verify:lib-index": "node scripts/maintenance/verify-lib-index.js",
     "generate:lib-index": "node scripts/maintenance/generate-lib-index.js",
+    "verify:data-readers": "node scripts/maintenance/verify-data-readers.js",
     "verify:display-coverage": "node scripts/maintenance/verify-display-coverage.js",
     "generate:display-coverage": "node scripts/maintenance/generate-display-coverage.js",
     "verify:actual-course-kfile": "node scripts/maintenance/verify-actual-course-kfile-parser.js",
@@ -166,6 +167,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
+    "@babel/parser": "^7.28.5",
     "@electric-sql/pglite": "^0.5.8",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.59.1",
