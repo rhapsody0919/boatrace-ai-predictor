@@ -563,7 +563,7 @@
     {
       "script": "verify-i18n-consistency.js",
       "tier": "ci",
-      "guards": "4言語ロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）"
+      "guards": "対応言語（src/config/languages.js の SUPPORTED_LANGUAGES）のロケールのキー欠落・プレースホルダ不一致・全言語空（src/locales/*/common.json）と、翻訳ファイルの無い対応言語（src/i18n.js は dev でだけ throw するので、本番の束で流す E2E では止まらない）"
     },
     {
       "script": "verify-id-path-utils.js",

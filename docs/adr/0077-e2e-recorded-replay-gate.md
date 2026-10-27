@@ -111,6 +111,26 @@ HAR は context に登録し、spec 側の `page.route` は page に登録され
 
 固定の race_id を開くテストを書くときは、撮影日が進んでも前提が変わらないか（結果の確定・今日との前後・後日の走の追加）を確かめる。
 
+### 8. 配り方: build した束を `vite preview` で配る（案。CI の分数の削減の段2の PR のマージで採用、それまでは dev のまま）
+
+#1319（BOA-769 B）は「/src を直に import する4ファイルが preview で通らない」で閉じた。#1997 の実験で4ファイルを Node 側の読み込みに替え、課金の分は中央 94分→39分（約 −58%、4 vCPU、dev 3回・preview 2回）、件数・合否・skip（28件、全部が画面幅だけで決まるもの）は dev と同じだった（docs/design/ci-minutes-reduction/design.md 4.2 A・6章、#1997 の結果のコメント）。
+
+- **束は3つ**。`npm run build:e2e`（`scripts/maintenance/e2e-build.js`）がモードごとに build する。build は webServer の command に入れない（`timeout: 30000` で切れる）。前の step で流し、webServer は `vite preview` だけ
+  - 再生: `e2e/recording.json` の `supabaseOrigin`（撮った録画の strict 再生は `e2e/recordings/meta.json`、`E2E_RECORDING_SOURCE=local`）
+  - 撮り（`E2E_RECORD=1`）・本番データ（`E2E_LIVE=1`）: 今の `VITE_SUPABASE_URL`
+- **宛先は束に焼き込まれる**。dev では `playwright.config.js` の `replayServerEnv` が起動のたびに録画のオリジンへ差し替えるが、preview では効かない。違う宛先で build すると HAR の URL の完全一致が外れ、全件が本番へ素通しになる（#1319 の 1,132 種類）。`VITE_GA_MEASUREMENT_ID` は空に固定する（本番の束の initGA は DEV で止まらない）
+- **起動の前に束を照合する**。`dist/.e2e-build.json` に mode・焼き込んだ宛先・build のコミット（`git rev-parse HEAD`）を書き、`playwright.config.js` が今のモードの期待（`buildSupabaseUrl`）と HEAD に合わなければ止める（再生の束で本番データを走らせない・古い束で緑にしない）。未コミットの変更までは見ない（手元の既定は dev）
+- **4つを同時に切り替える**: PR ゲート（e2e-shard・e2e-light）、撮り（record）、撮った録画の strict 再生、E2E Live。撮りと再生の片方だけを変えると、下の素通しの集合が配り方の差でずれる。撮り直しは `checkout ref: master` で動くので、ブランチでは「preview で撮って preview で再生」を測れない（#1997 の審査 P1）。**マージ後の最初の撮り直しの採用で確かめる**（採用の条件は緩めない: strict 再生が全件通る・skip が増えない）
+- **Node 側で読む src は HAR の外**。関数・CSS の検査（`e2e/src-modules.js` の `loadSrc`・`srcFixedT`・`srcCss`）はブラウザを通らないので、録画にも素通しの一覧にも出ない。宛先は `https://e2e-node.invalid` に固定し、差し替え漏れで本番へ出ないようにする。通信が要る検査は `globalThis.fetch` を差し替えて確かめ、本番に当てる1本だけを `E2E_LIVE=1` で流す
+- **dev でだけ見ていたもの**は CI で見なくなる: StrictMode の二重描画、dev の警告（console を見る spec は `flying-late-badge.spec.js` の1つ）、`src/i18n.js` の翻訳ファイルの欠落の throw（本番の束では `console.error` で ja に落ちるだけ）。最後のものは `verify-i18n-consistency.js` が `SUPPORTED_LANGUAGES` から言語を読んで代わりに止める。手元の既定（`E2E_SERVE` 未指定）は dev のまま
+- **素通しの集合は、配り方でも同じ配り方の実行どうしでも厳密には同じにならない**（2026-10-27 の実測）。原因は in() の並び（決定2）ではない。テストの途中の画面遷移とテストの終わりで、応答待ちの続きの要求（`fetchAllPages` の2ページ目 `offset=1000`、選手の窓・モーターの指数の続きの読み）が切られるかが、配る速さで変わる
+  - #1997 の preview の2回目で dev より増えた9種類のうち7種類は `offset=1000` の2ページ目で、1ページ目は録画に1000行で入っていた。`race-detail-details.spec.js` が住之江のレースを開いた後に大村のレースへ移り、その遷移で前の画面の選手6人分の読みが切れる。速い preview は遷移の前に2ページ目まで進む。残る2種類は、同じテストの選手の展示の読み（`race_original_exhibition_values` の in()）と、`race-detail-accident-rate.spec.js` の選手1人の窓の読み（`racer_id=eq.4856`。録画にはこの選手の読みが1件も無い）。後者は遷移でなくテストの終わりで切れた型とみられる（未検証）
+  - dev どうし（#1993〜#1996 で7〜11種類）の揺れも同じ型（`smoke.spec.js` の今節の前走のテストで、モーターの指数の `race_entries` の束 `global_2rate` が遷移の前に出るか）
+  - in() の束は並びで揺れない。`fetchAllInChunks` は値を並べてから分け、`chunkArray` に渡す一覧は DB の並び。録画の in() はすべて並び済みだった
+  - 撮りで context を閉じる前に静かな時間（新しい要求が出ない0.5秒）を待つ形は採らない。`race-detail-details.spec.js` の部分録画を手元で撮って確かめたところ、テストの終わりの画面（大村）の2ページ目は今の録画にも入っており、増えた7種類（遷移の前の画面の住之江）は待っても入らなかった。テストの終わりで切れる型（上の `racer_id=eq.4856`）には効きうるが、1種類のために全テストの撮りを延ばさない
+  - 素通しは失敗にしない（決定5）ので合否は変わらない。採用の線は「dev と同じ集合」でなく「増えた分が、続きのページか遷移の前の画面の読みだけであること」にする。撮りと再生を同じ配り方にそろえると、撮りの時点で preview の速さの分まで録画に入る
+- **戻す手順**: 4つのワークフローの `E2E_SERVE: preview` と `npm run build:e2e` の step を外す（dev に戻る）。録画の形式は配り方に依らないので撮り直さなくてよい。戻した後の最初の撮り直しで、素通しの集合は dev のものに戻る。マージ後の最初の撮り直しが採用されなければ戻す
+
 ### 7. 録画の本体は GitHub Release に置く
 
 本体（`api.har` と `bodies/`、約90MB）はリポジトリに置かない。撮り直しのたびに圧縮後10〜12MB ずつ履歴が増え、毎日撮り直す運用では1年で約4GBになる。
