@@ -23,6 +23,8 @@ import {
   scrapeJobWriters,
   sqlTableRefs,
   validateExtra,
+  pythonMentions,
+  resolveHelperAccesses,
 } from "../lib/dataReaders.js";
 import { generate } from "./generate-data-readers.js";
 
@@ -186,6 +188,7 @@ check(
     name: "sns_drafts",
     columns: ["id", "status", "created_at"],
     onConflict: ["id"],
+    embeds: [],
   },
 );
 check(
@@ -374,6 +377,16 @@ const miniSnapshot = {
       columns: [{ name: "race_id" }, { name: "race_date" }],
       triggers: [{ function: "public.trg()" }],
     },
+    {
+      name: "v_r",
+      kind: "view",
+      rlsEnabled: false,
+      grants: [],
+      policies: [],
+      columns: [{ name: "race_id" }],
+      triggers: [],
+      viewDefinition: [" SELECT race_id", "   FROM races"],
+    },
   ],
   functions: [
     {
@@ -381,7 +394,9 @@ const miniSnapshot = {
       kind: "function",
       securityDefiner: false,
       grants: [],
-      definition: ["CREATE FUNCTION get_x() AS $$ SELECT 1 FROM races $$"],
+      definition: [
+        "CREATE FUNCTION get_x() AS $$ SELECT race_date FROM races $$",
+      ],
     },
     {
       name: "trg",
@@ -483,6 +498,96 @@ check(
     renderMarkdown(ledger).includes(s),
   ),
   [true, true, true],
+);
+check(
+  "組み立て: RPC・ビューの本文に出る列・定義で読むビュー",
+  [ledger.tables.races.columns.race_date.sql, ledger.tables.races.readByView],
+  [["rpc:get_x"], ["v_r"]],
+);
+
+// --- 名前を引数で受け取る部品（upsertChangedRows(client, "表") 等）を呼び手で数える ---
+{
+  const files = new Map([
+    [
+      "scripts/lib/rows.js",
+      extractAccesses(
+        `export async function upsertRows(client, table, rows) {
+  const old = await Promise.all(rows.map((r) => client.from(table).select("*").eq("id", r.id)));
+  return client.from(table).upsert(rows);
+}
+export function wrap(c, t) { return upsertRows(c, t, []); }`,
+        "scripts/lib/rows.js",
+        known,
+      ),
+    ],
+    [
+      "scripts/daily/job.js",
+      extractAccesses(
+        `import { upsertRows, wrap } from "../lib/rows.js";
+await upsertRows(client, "races", rows);
+await wrap(client, "race_entries");
+await upsertRows(client, "not_a_table", rows);`,
+        "scripts/daily/job.js",
+        known,
+      ),
+    ],
+  ]);
+  check(
+    "部品の中の .from(引数) は unresolved にしない（無名の関数の中も）",
+    files.get("scripts/lib/rows.js").unresolved,
+    [],
+  );
+  check(
+    "部品の呼び出しを呼び手の行の読み書きにする（包む部品もたどる・写しに無い名前は捨てる）",
+    resolveHelperAccesses(files, known).map(
+      (a) => `${a.file}:${a.line}:${a.name}:${a.op}`,
+    ),
+    [
+      "scripts/daily/job.js:2:races:select",
+      "scripts/daily/job.js:2:races:upsert",
+      "scripts/daily/job.js:3:race_entries:select",
+      "scripts/daily/job.js:3:race_entries:upsert",
+    ],
+  );
+}
+
+// --- REST の埋め込み・URLSearchParams の select・宣言の行の二重・文の中の /rest/v1/* ---
+check(
+  "REST の select の埋め込みと URLSearchParams の select",
+  pick(`await fetch(\`\${U}/rest/v1/races?select=race_id,race_entries(racer_id)\`);
+async function list() {
+  const params = new URLSearchParams();
+  params.set("select", "id, predictions(top_pick)");
+  return fetch(\`\${U}/rest/v1/sns_drafts?\${params}\`);
+}`).map((a) => `${a.name}:${a.via}:${a.columns.join("|")}`),
+  [
+    "race_entries:embed:racer_id",
+    "races:rest:race_id",
+    "predictions:embed:top_pick",
+    "sns_drafts:rest:id",
+  ],
+);
+check(
+  "テンプレートの式で使う const は宣言の行で数えない",
+  pick(`const base = "sns_drafts?select=id";
+await fetch(\`\${U}/rest/v1/\${base}\`);`).map((a) => a.line),
+  [2],
+);
+check(
+  "文の中の /rest/v1/* は読み書きでも式でもない",
+  parseRestPath("/rest/v1/* の素通し"),
+  null,
+);
+
+// --- Python の名前の文字列 ---
+check(
+  "Python: 表?select・rpc/・コメントの行は除く",
+  pythonMentions(
+    `r = get("predictions?select=race_id")\n# "races"\npost("rpc/get_x", {})\nx = "hello"`,
+    "scripts/ml/a.py",
+    known,
+  ).map((m) => `${m.kind}:${m.name}:${m.line}`),
+  ["table:predictions:1", "rpc:get_x:3"],
 );
 
 if (failures.length) {

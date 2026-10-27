@@ -24,6 +24,7 @@ import {
   buildLedger,
   extractAccesses,
   isSourceFile,
+  pythonMentions,
   renderMarkdown,
   validateExtra,
 } from "../lib/dataReaders.js";
@@ -51,9 +52,9 @@ function cronStrings(source) {
   );
 }
 
-/** Python は構文木で読まない。DB を読み書きしうるものだけを「拾えなかった」に出す */
-function isUncoveredDbFile(file, source) {
-  return file.endsWith(".py") && /rest\/v1|\.table\(|supabase/i.test(source);
+/** Python は構文木で読まない。DB を読み書きしうるもの（写しの名前の文字列があるか、REST・クライアントの語）を「拾えなかった」に出す */
+function isUncoveredDbFile(source, mentions) {
+  return mentions.length > 0 || /rest\/v1|\.table\(|supabase/i.test(source);
 }
 
 export function generate() {
@@ -73,14 +74,17 @@ export function generate() {
   };
   const perFile = new Map();
   const uncoveredFiles = [];
+  const otherMentions = [];
   for (const file of trackedFiles()) {
     const source = readFileSync(path.join(ROOT, file), "utf8");
     if (isSourceFile(file)) {
       const result = extractAccesses(source, file, known);
       if (/^api\/cron\//.test(file)) result.strings = cronStrings(source);
       perFile.set(file, result);
-    } else if (isUncoveredDbFile(file, source)) {
-      uncoveredFiles.push(file);
+    } else if (file.endsWith(".py")) {
+      const mentions = pythonMentions(source, file, known);
+      if (isUncoveredDbFile(source, mentions)) uncoveredFiles.push(file);
+      otherMentions.push(...mentions);
     }
   }
   const ledger = buildLedger({
@@ -89,6 +93,7 @@ export function generate() {
     extra,
     scrapeJobNames: Object.keys(SCRAPE_JOBS),
     uncoveredFiles,
+    otherMentions,
   });
   // 抽出が壊れて空になったものを書かない
   if (ledger.counts.tableReaders < 100 || ledger.counts.rpcCallers < 10) {

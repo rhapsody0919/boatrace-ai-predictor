@@ -1,10 +1,9 @@
 {
-  "$comment": "repo の外の読み手（hq 等）を手で足す欄。docs/reference/data-readers.md に載る。kind は table か rpc、name は本番スキーマの写しにある名前、access は read か write、columns は任意（写しの列の名前）。表・列・RPC を止める・消す前に、ここに載った読み手の持ち主へ先に知らせる。消すのは読み手が参照を外したとき",
+  "$comment": "repo の外の読み手（hq 等）を手で足す欄。docs/reference/data-readers.md に載る。kind は table か rpc、name は本番スキーマの写しにある名前、access は read か write、columns は任意（写しの列の名前。確かめた列だけを書き、分からなければ書かない＝全部の列を読みうる扱い）。表・列・RPC を止める・消す前に、ここに載った読み手の持ち主へ先に知らせる。消すのは読み手が参照を外したとき",
   "readers": [
     {
       "kind": "table",
       "name": "predictions",
-      "columns": ["model_id", "top_pick", "top_2nd", "top_3rd"],
       "reader": "platform/finals_sheet.py",
       "repo": "hq",
       "access": "read",

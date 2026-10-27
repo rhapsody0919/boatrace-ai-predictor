@@ -27,6 +27,8 @@ const SKIP_PATH = /(?:^|\/)(?:node_modules|dist|build|out|coverage)\//;
 /** 検査のための固定入力を持つファイル。`.from("x")` が偽の表のことが多いので、写しに有る名前だけを拾う */
 export function isFixtureLike(file) {
   return (
+    // 台帳を作るスクリプト自身（判定の文字列に "/rest/v1/" を持つ）
+    file === "scripts/lib/dataReaders.js" ||
     /^scripts\/maintenance\/verify-[^/]+\.js$/.test(file) ||
     /^scripts\/tests\//.test(file) ||
     /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file)
@@ -315,21 +317,22 @@ export function parseRestPath(text) {
   const isRpc = Boolean(m[1]);
   // 名前の無い「/rest/v1/」だけの文字列（前置きの定数・判定の文字列）は読み書きではない
   if (m[2] === "") return null;
+  // 名前が式（${path}）。式でもなく名前でもない（`/rest/v1/*` 等の文）は読み書きではない
+  if (m[2].startsWith("\u0000")) return { dynamic: true, isRpc };
   const nameMatch = m[2].match(/^[A-Za-z_][A-Za-z0-9_]*/);
-  if (!nameMatch || m[2].length !== nameMatch[0].length) {
-    // 名前が式（${path}）か、途中で切れている
-    return { dynamic: true, isRpc };
-  }
+  if (!nameMatch) return null;
+  if (m[2].length !== nameMatch[0].length) return { dynamic: true, isRpc };
   const columns = new Set();
+  const embeds = [];
   let onConflict = [];
   for (const part of (m[3] ?? "").slice(1).split("&")) {
     if (!part) continue;
     const [key, value = ""] = part.split("=");
     if (!key || key.includes("\u0000")) continue;
     if (key === "select" && !value.includes("\u0000")) {
-      parseSelect(decodeURIComponentSafe(value)).columns.forEach((c) =>
-        columns.add(c),
-      );
+      const parsed = parseSelect(decodeURIComponentSafe(value));
+      parsed.columns.forEach((c) => columns.add(c));
+      embeds.push(...parsed.embeds);
     } else if (key === "on_conflict" && !value.includes("\u0000")) {
       onConflict = value.split(",").filter((c) => IDENT.test(c));
     } else if (key === "order" && !value.includes("\u0000")) {
@@ -348,7 +351,37 @@ export function parseRestPath(text) {
     name: nameMatch[0],
     columns: [...columns],
     onConflict,
+    embeds,
   };
+}
+
+/**
+ * 関数の中で REST の select に渡す文字列（`params.set("select", "…")`・`{ select: "…" }`）。
+ * URL を URLSearchParams で組む書き方の select（埋め込みの表を含む）を拾う
+ */
+function selectLiteralsIn(fnNode, consts) {
+  const out = [];
+  if (!fnNode) return out;
+  walk(fnNode, (node) => {
+    if (
+      isCall(node) &&
+      ["set", "append"].includes(memberName(node.callee)) &&
+      literalString(node.arguments[0]) === "select"
+    ) {
+      const v = staticStrings(node.arguments[1], consts);
+      if (v) out.push(...v);
+    }
+    if (
+      node.type === "ObjectProperty" &&
+      !node.computed &&
+      ((node.key.type === "Identifier" && node.key.name === "select") ||
+        (node.key.type === "StringLiteral" && node.key.value === "select"))
+    ) {
+      const v = staticStrings(node.value, consts);
+      if (v) out.push(...v);
+    }
+  });
+  return out;
 }
 
 function decodeURIComponentSafe(s) {
@@ -418,6 +451,35 @@ const REST_METHOD_OP = {
   DELETE: "delete",
 };
 
+const FUNCTION_TYPES = new Set([
+  "FunctionDeclaration",
+  "FunctionExpression",
+  "ArrowFunctionExpression",
+]);
+
+/** いちばん内側の関数の名前と引数の名前（名前の付かない関数は name が null） */
+function enclosingFunction(node, parents) {
+  let cur = parents.get(node);
+  while (cur && !FUNCTION_TYPES.has(cur.type)) cur = parents.get(cur);
+  if (!cur) return null;
+  const params = cur.params.map((p) =>
+    p.type === "Identifier"
+      ? p.name
+      : p.type === "AssignmentPattern" && p.left.type === "Identifier"
+        ? p.left.name
+        : null,
+  );
+  let name = cur.id?.name ?? null;
+  const parent = parents.get(cur);
+  if (
+    !name &&
+    parent?.type === "VariableDeclarator" &&
+    parent.id.type === "Identifier"
+  )
+    name = parent.id.name;
+  return { name, params, node: cur };
+}
+
 /**
  * 1つのファイルから、表・RPC への読み書きと、拾えなかった箇所と、相対 import を集める。
  * @param {string} source
@@ -429,6 +491,10 @@ export function extractAccesses(source, file, known = {}) {
   const unresolved = [];
   const imports = [];
   const mentions = [];
+  // 表・RPC の名前を引数で受け取る部品（upsertChangedRows(client, table, …) 等）と、関数の呼び出し
+  const helperDefs = [];
+  const callSites = [];
+  const importBindings = {};
   let ast;
   try {
     ast = parse(source, {
@@ -441,13 +507,46 @@ export function extractAccesses(source, file, known = {}) {
       allowUndeclaredExports: true,
     });
   } catch (e) {
-    return { accesses, unresolved, imports, mentions, parseError: e.message };
+    return {
+      accesses,
+      unresolved,
+      imports,
+      mentions,
+      helperDefs,
+      callSites,
+      importBindings,
+      parseError: e.message,
+    };
   }
   const fixture = isFixtureLike(file);
   const keepTable = (name) => !fixture || known.knownTables?.has(name);
   const keepFn = (name) => !fixture || known.knownFunctions?.has(name);
   const line = (n) => n.loc?.start.line ?? 0;
   const consts = collectConstStrings(ast.program);
+  // `${x}` の式に使う const は、宣言の行ではなく使う行で数える
+  const templateIdents = new Set();
+  walk(ast.program, (node) => {
+    if (node.type === "TemplateLiteral")
+      node.expressions.forEach((e) => {
+        if (e.type === "Identifier") templateIdents.add(e.name);
+      });
+  });
+  /** 名前が引数（部品の中）なら部品として記録して true */
+  const noteHelper = (argNode, parents, at, kind, op) => {
+    if (argNode?.type !== "Identifier") return false;
+    // 内側の無名の関数（chunks.map((c) => client.from(table)…)）を越えて、名前を引数に持つ関数まで上がる
+    let fn = enclosingFunction(at, parents);
+    while (fn && !fn.params.includes(argNode.name))
+      fn = enclosingFunction(fn.node, parents);
+    if (!fn?.name) return false;
+    helperDefs.push({
+      fn: fn.name,
+      paramIndex: fn.params.indexOf(argNode.name),
+      kind,
+      op,
+    });
+    return true;
+  };
 
   walk(ast.program, (node, parents) => {
     if (
@@ -457,6 +556,17 @@ export function extractAccesses(source, file, known = {}) {
       node.source
     ) {
       imports.push(node.source.value);
+      if (node.type === "ImportDeclaration")
+        for (const sp of node.specifiers) {
+          if (sp.type === "ImportSpecifier")
+            importBindings[sp.local.name] = {
+              source: node.source.value,
+              imported:
+                sp.imported.type === "Identifier"
+                  ? sp.imported.name
+                  : sp.imported.value,
+            };
+        }
       return;
     }
     if (
@@ -469,6 +579,22 @@ export function extractAccesses(source, file, known = {}) {
     }
     if (isCall(node)) {
       const callee = node.callee;
+      if (callee.type === "Identifier" && node.arguments.length > 0) {
+        const fn = enclosingFunction(node, parents);
+        const args = node.arguments.map((a) => {
+          const lits = staticStrings(a, consts);
+          const param =
+            a.type === "Identifier" && fn ? fn.params.indexOf(a.name) : -1;
+          return { lits, param: param >= 0 ? param : null };
+        });
+        if (args.some((a) => a.lits || a.param !== null))
+          callSites.push({
+            callee: callee.name,
+            line: line(node),
+            encl: fn?.name ?? null,
+            args,
+          });
+      }
       const name = memberName(callee);
       if (name === "from" && node.arguments.length === 1) {
         const obj = callee.object;
@@ -479,7 +605,10 @@ export function extractAccesses(source, file, known = {}) {
         const opLink = chain.find((c) => DB_OPS.has(c.name));
         const tableNames = staticStrings(node.arguments[0], consts);
         if (tableNames === null) {
-          if (opLink)
+          if (
+            opLink &&
+            !noteHelper(node.arguments[0], parents, node, "table", opLink.name)
+          )
             unresolved.push({
               file,
               line: line(callee.property),
@@ -561,11 +690,12 @@ export function extractAccesses(source, file, known = {}) {
       if (name === "rpc" && node.arguments.length >= 1) {
         const fnNames = staticStrings(node.arguments[0], consts);
         if (fnNames === null) {
-          unresolved.push({
-            file,
-            line: line(callee.property),
-            reason: "RPC の名前が変数（.rpc(式)）",
-          });
+          if (!noteHelper(node.arguments[0], parents, node, "rpc", "call"))
+            unresolved.push({
+              file,
+              line: line(callee.property),
+              reason: "RPC の名前が変数（.rpc(式)）",
+            });
           return;
         }
         for (const fn of fnNames) {
@@ -593,7 +723,26 @@ export function extractAccesses(source, file, known = {}) {
           mentions.push({ kind: "table", name: value, file, line: line(node) });
       }
       // テンプレートの中の文字列は TemplateElement（別の型）なので二重には拾わない
+      const decl = parents.get(node);
+      if (
+        decl?.type === "VariableDeclarator" &&
+        decl.init === node &&
+        decl.id.type === "Identifier" &&
+        consts.has(decl.id.name) &&
+        templateIdents.has(decl.id.name)
+      )
+        return; // `${base}` で使う所で数える
       const method = enclosingFetchMethod(node, parents);
+      const fnCtx = enclosingFunction(node, parents);
+      // REST の包みの中（`/rest/v1/${path}` の path が引数）。呼び手が渡す相対のパスで拾う
+      const wrapperParam =
+        node.type === "TemplateLiteral" &&
+        node.expressions.some(
+          (e) =>
+            e.type === "Identifier" &&
+            fnCtx?.name &&
+            fnCtx.params.includes(e.name),
+        );
       for (const text of templateTexts(node, consts)) {
         // REST の包み（db("rpc/f", …)・db(`表?…`)）に渡す、/rest/v1/ を省いた相対のパス
         const bare = text.match(/^(rpc\/)?([A-Za-z_][A-Za-z0-9_]*)(\?|$)/);
@@ -608,6 +757,7 @@ export function extractAccesses(source, file, known = {}) {
         );
         if (!rest) continue;
         if (rest.dynamic) {
+          if (wrapperParam) continue;
           unresolved.push({
             file,
             line: line(node),
@@ -632,8 +782,34 @@ export function extractAccesses(source, file, known = {}) {
           continue;
         }
         if (!keepTable(rest.name)) continue;
-        const op = method ? (REST_METHOD_OP[method] ?? "rest") : "rest";
+        let op = method ? (REST_METHOD_OP[method] ?? "rest") : "rest";
+        if (op === "insert" && rest.onConflict.length) op = "upsert";
         const columns = new Set([...rest.columns, ...rest.onConflict]);
+        const embeds = [...rest.embeds];
+        if (op === "select" || op === "rest") {
+          for (const sel of selectLiteralsIn(fnCtx?.node, consts)) {
+            const parsed = parseSelect(sel);
+            parsed.columns.forEach((c) => columns.add(c));
+            embeds.push(...parsed.embeds);
+          }
+        }
+        const pushRestEmbeds = (list) => {
+          for (const e of list) {
+            if (known.knownTables?.has(e.name) && keepTable(e.name))
+              accesses.push({
+                kind: "table",
+                name: e.name,
+                op: "select",
+                via: "embed",
+                file,
+                line: line(node),
+                columns: [...new Set(e.columns)].sort(),
+                writeColumns: [],
+              });
+            pushRestEmbeds(e.embeds);
+          }
+        };
+        pushRestEmbeds(embeds);
         accesses.push({
           kind: "table",
           name: rest.name,
@@ -669,7 +845,37 @@ export function extractAccesses(source, file, known = {}) {
     unresolved: fixture ? [] : unresolved,
     imports: [...new Set(imports)].sort(),
     mentions: keptMentions,
+    helperDefs,
+    callSites: fixture ? [] : callSites,
+    importBindings,
   };
+}
+
+/**
+ * 構文木で読まない言語（Python）のファイルの、写しにある名前の文字列（`"表?select=…"`・`"rpc/関数"`・`"表"`）。
+ * 読み書きの別は分からないので「名前の文字列」として出す
+ * @returns {Array<{ kind: "table" | "rpc", name: string, file: string, line: number }>}
+ */
+export function pythonMentions(source, file, known) {
+  const out = [];
+  source.split("\n").forEach((text, i) => {
+    if (/^\s*#/.test(text)) return;
+    for (const m of text.matchAll(
+      /["'](?:\/rest\/v1\/)?(rpc\/)?([A-Za-z_][A-Za-z0-9_]*)(?:\?[^"']*)?["']/g,
+    )) {
+      const kind = m[1]
+        ? "rpc"
+        : known.knownTables.has(m[2])
+          ? "table"
+          : known.knownFunctions.has(m[2])
+            ? "rpc"
+            : null;
+      if (!kind) continue;
+      if (kind === "rpc" && !known.knownFunctions.has(m[2])) continue;
+      out.push({ kind, name: m[2], file, line: i + 1 });
+    }
+  });
+  return out;
 }
 
 /** SQL の本文からコメントと文字列の中身を外す（$$ の本体は残す） */
@@ -826,7 +1032,7 @@ export function resolveImport(from, spec, files) {
  * @param {string[]} jobNames
  * @param {Map<string, { accesses: unknown[], imports: string[], strings?: Set<string> }>} perFile
  */
-export function scrapeJobWriters(jobNames, perFile) {
+export function scrapeJobWriters(jobNames, perFile, extraAccesses = []) {
   const files = new Set(perFile.keys());
   const cronFiles = [...files].filter((f) => /^api\/cron\/[^/]+\.js$/.test(f));
   const jobs = [];
@@ -859,7 +1065,10 @@ export function scrapeJobWriters(jobNames, perFile) {
     }
     const writes = new Map();
     for (const f of seen) {
-      for (const a of perFile.get(f)?.accesses ?? []) {
+      for (const a of [
+        ...(perFile.get(f)?.accesses ?? []),
+        ...extraAccesses.filter((x) => x.file === f),
+      ]) {
         if (a.kind === "table" && WRITE_OPS.has(a.op)) {
           if (!writes.has(a.name)) writes.set(a.name, []);
           writes.get(a.name).push(ref(a));
@@ -876,6 +1085,92 @@ export function scrapeJobWriters(jobNames, perFile) {
     });
   }
   return { jobs, unresolved };
+}
+
+/**
+ * 表・RPC の名前を引数で受け取る部品（`upsertChangedRows(client, "表", …)`・`fetchAll(client, "表")` 等）の
+ * 呼び出しを、呼び手のファイル:行の読み書きにする。部品を包む部品（引数をそのまま渡す関数）もたどる。
+ * 呼ぶ関数は、同じファイルの関数か、相対 import の名前つき import で解決する。
+ * @param {Map<string, { helperDefs?: Array<{ fn: string, paramIndex: number, kind: string, op: string }>, callSites?: Array<{ callee: string, line: number, encl: string | null, args: Array<{ lits: string[] | null, param: number | null }> }>, importBindings?: Record<string, { source: string, imported: string }> }>} perFile
+ * @param {{ knownTables: Set<string>, knownFunctions: Set<string> }} known
+ */
+export function resolveHelperAccesses(perFile, known) {
+  const files = new Set(perFile.keys());
+  /** `${file}#${fn}` → Map<`${paramIndex}:${kind}:${op}`, def> */
+  const helpers = new Map();
+  const addHelper = (key, def) => {
+    if (!helpers.has(key)) helpers.set(key, new Map());
+    const k = `${def.paramIndex}:${def.kind}:${def.op}`;
+    if (helpers.get(key).has(k)) return false;
+    helpers.get(key).set(k, def);
+    return true;
+  };
+  for (const [file, p] of perFile)
+    for (const d of p.helperDefs ?? []) addHelper(`${file}#${d.fn}`, d);
+  const calleeKey = (file, name) => {
+    const local = `${file}#${name}`;
+    if (helpers.has(local)) return local;
+    const bindings = perFile.get(file)?.importBindings ?? {};
+    if (!Object.hasOwn(bindings, name)) return null;
+    const b = bindings[name];
+    const target = resolveImport(file, b.source, files);
+    return target ? `${target}#${b.imported}` : null;
+  };
+  // 包む部品を不動点までたどる
+  for (let changed = true, round = 0; changed && round < 10; round += 1) {
+    changed = false;
+    for (const [file, p] of perFile) {
+      for (const c of p.callSites ?? []) {
+        if (!c.encl) continue;
+        const key = calleeKey(file, c.callee);
+        if (!key) continue;
+        for (const d of helpers.get(key)?.values() ?? []) {
+          const param = c.args[d.paramIndex]?.param;
+          if (param !== null && param !== undefined)
+            changed =
+              addHelper(`${file}#${c.encl}`, {
+                ...d,
+                fn: c.encl,
+                paramIndex: param,
+              }) || changed;
+        }
+      }
+    }
+  }
+  const out = [];
+  for (const [file, p] of perFile) {
+    for (const c of p.callSites ?? []) {
+      const key = calleeKey(file, c.callee);
+      if (!key) continue;
+      for (const d of helpers.get(key)?.values() ?? []) {
+        for (const name of c.args[d.paramIndex]?.lits ?? []) {
+          const ok =
+            d.kind === "table"
+              ? known.knownTables.has(name)
+              : known.knownFunctions.has(name);
+          if (!ok) continue;
+          out.push({
+            kind: d.kind,
+            name,
+            op: d.op,
+            via: `helper:${c.callee}`,
+            file,
+            line: c.line,
+            columns: [],
+            writeColumns: WRITE_OPS.has(d.op) && d.op !== "delete" ? ["?"] : [],
+          });
+        }
+      }
+    }
+  }
+  // 同じ呼び出しで同じ表・操作は1つに
+  const seen = new Set();
+  return out.filter((a) => {
+    const k = `${a.file}:${a.line}:${a.kind}:${a.name}:${a.op}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
 /** 手で足す外の読み手（data-readers.extra.json）の形を確かめる。誤りの文の一覧を返す */
@@ -925,7 +1220,7 @@ export function validateExtra(extra, snapshot) {
 
 /**
  * 台帳を組み立てる。
- * @param {{ perFile: Map<string, { accesses: Array<Record<string, unknown>>, unresolved: unknown[], imports: string[], parseError?: string }>, snapshot: any, extra: any, scrapeJobNames: string[], uncoveredFiles: string[] }} input
+ * @param {{ perFile: Map<string, { accesses: Array<Record<string, unknown>>, unresolved: unknown[], imports: string[], parseError?: string }>, snapshot: any, extra: any, scrapeJobNames: string[], uncoveredFiles: string[], otherMentions?: Array<{ kind: string, name: string, file: string, line: number }> }} input
  */
 export function buildLedger({
   perFile,
@@ -933,12 +1228,33 @@ export function buildLedger({
   extra,
   scrapeJobNames,
   uncoveredFiles,
+  otherMentions,
 }) {
   const relationNames = new Set(snapshot.relations.map((r) => r.name));
   const functionNames = new Set(snapshot.functions.map((f) => f.name));
-  const all = [...perFile.values()].flatMap((p) => p.accesses).sort(byRef);
-  const mentions = [...perFile.values()]
-    .flatMap((p) => p.mentions ?? [])
+  const helperAccesses = resolveHelperAccesses(perFile, {
+    knownTables: relationNames,
+    knownFunctions: functionNames,
+  });
+  const all = [
+    ...[...perFile.values()].flatMap((p) => p.accesses),
+    ...helperAccesses,
+  ].sort(byRef);
+  // 部品の呼び出しで拾った行の近くの名前の文字列は、読み書きとして数えたので外す
+  const mentions = [
+    ...[...perFile.values()].flatMap((p) => p.mentions ?? []),
+    ...(otherMentions ?? []),
+  ]
+    .filter(
+      (m) =>
+        !helperAccesses.some(
+          (a) =>
+            a.file === m.file &&
+            a.kind === m.kind &&
+            a.name === m.name &&
+            Math.abs(a.line - m.line) <= 3,
+        ),
+    )
     .sort(byRef);
   const mentionRefs = (kind, name) =>
     mentions.filter((m) => m.kind === kind && m.name === name).map(ref);
@@ -975,6 +1291,33 @@ export function buildLedger({
         : refs,
     );
   }
+  // ビューの定義が読む表（DROP は依存で止まるか、CASCADE でビューごと消える）
+  const viewBody = new Map();
+  for (const rel of snapshot.relations) {
+    if (!Array.isArray(rel.viewDefinition)) continue;
+    viewBody.set(
+      rel.name,
+      sqlTableRefs(
+        rel.viewDefinition.join("\n"),
+        relationNames,
+        functionNames,
+        rel.name,
+      ),
+    );
+  }
+  // 列の名前が RPC・ビューの本文に出るか（コメントと文字列を外した本文で語として）
+  const sqlText = new Map();
+  for (const fn of snapshot.functions)
+    sqlText.set(
+      `rpc:${fn.name}`,
+      `${sqlText.get(`rpc:${fn.name}`) ?? ""}\n${stripSqlNoise(fn.definition.join("\n"))}`,
+    );
+  for (const rel of snapshot.relations)
+    if (Array.isArray(rel.viewDefinition))
+      sqlText.set(
+        `view:${rel.name}`,
+        stripSqlNoise(rel.viewDefinition.join("\n")),
+      );
   const extraReaders = extra?.readers ?? [];
 
   // 検査の固定入力のファイル（verify-*.js 等）の箇所には test を付ける。写しにある名前だけを拾っている
@@ -1020,6 +1363,21 @@ export function buildLedger({
       .filter(([, b]) => b.writes.includes(rel.name))
       .map(([n]) => n)
       .sort();
+    const readByView = [...viewBody.entries()]
+      .filter(([, b]) => b.reads.includes(rel.name))
+      .map(([n]) => n)
+      .sort();
+    const sqlReaders = [
+      ...viaRpc.map((n) => `rpc:${n}`),
+      ...writtenByRpc.map((n) => `rpc:${n}`),
+      ...readByView.map((n) => `view:${n}`),
+    ];
+    for (const c of Object.keys(columns)) {
+      const re = new RegExp(`\\b${c}\\b`, "i");
+      columns[c].sql = sortStr(
+        sqlReaders.filter((k) => re.test(sqlText.get(k) ?? "")),
+      );
+    }
     tables[rel.name] = {
       kind: rel.kind,
       rlsEnabled: rel.rlsEnabled,
@@ -1028,6 +1386,7 @@ export function buildLedger({
       writers: writers.map((a) => entry(a, a.writeColumns)),
       readByRpc: viaRpc,
       writtenByRpc,
+      readByView,
       columns,
       columnsNotInSnapshot: [...unknownColumns].sort(),
       mentions: mentionRefs("table", rel.name),
@@ -1076,7 +1435,7 @@ export function buildLedger({
     notInSnapshot[key].refs.push(ref(a));
   }
 
-  const scrape = scrapeJobWriters(scrapeJobNames, perFile);
+  const scrape = scrapeJobWriters(scrapeJobNames, perFile, helperAccesses);
   for (const j of scrape.jobs) {
     for (const t of Object.keys(j.writes)) {
       if (tables[t]) {
@@ -1103,9 +1462,7 @@ export function buildLedger({
       tables: Object.keys(tables).length,
       rpcs: Object.keys(rpcs).length,
       sourceFiles: perFile.size,
-      filesWithAccess: [...perFile.values()].filter(
-        (p) => p.accesses.length > 0,
-      ).length,
+      filesWithAccess: new Set(all.map((a) => a.file)).size,
       tableReaders: all.filter(
         (a) => a.kind === "table" && !WRITE_OPS.has(a.op),
       ).length,
@@ -1116,7 +1473,10 @@ export function buildLedger({
       tablesWithoutReaders: Object.values(tables).filter(
         (t) =>
           t.readers.length === 0 &&
-          t.readByRpc.length === 0 &&
+          // data_health_* は件数・鮮度の監視で、使う読み手ではない
+          t.readByRpc.filter((n) => !n.startsWith("data_health_")).length ===
+            0 &&
+          t.readByView.length === 0 &&
           t.mentions.length === 0 &&
           t.external.length === 0,
       ).length,
@@ -1179,7 +1539,7 @@ export function renderMarkdown(ledger) {
   L.push("# データの読み手の台帳");
   L.push("");
   L.push(
-    "> 機械生成（`node scripts/maintenance/generate-data-readers.js`）。手で書き換えない。表・列・RPC を変える・消す前に、ここで読み手と書き手を確かめる。機械で拾えない repo の外の読み手（hq 等）は `docs/reference/data-readers.extra.json` に手で足す。",
+    "> 機械生成（`node scripts/maintenance/generate-data-readers.js`）。手で書き換えない。表・列・RPC を変える・消す前に、ここで読み手と書き手を確かめる。マージ後の自動の作り直しはまだ無いので、読む前に手元で作り直す（`--check` で今のコードと一致するかが分かる）。機械で拾えない repo の外の読み手（hq 等）は `docs/reference/data-readers.extra.json` に手で足す。",
   );
   L.push(">");
   L.push(
@@ -1200,7 +1560,7 @@ export function renderMarkdown(ledger) {
     rpcCallers: "RPC の呼び手（箇所）",
     nameMentions: "名前の文字列だけの箇所（呼ぶ経路は式）",
     tablesWithoutReaders:
-      "読み手の見つからない表（RPC 経由・名前の文字列・外も無し）",
+      "読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む）",
     rpcsWithoutCallers:
       "呼び手の見つからない RPC（RPC 経由・名前の文字列・トリガー・外も無し）",
     external: "外の読み手（手で足した行）",
@@ -1219,12 +1579,12 @@ export function renderMarkdown(ledger) {
   );
   L.push("");
   L.push(
-    "| 表 | 種類 | 権限 | 読み手 | 書き手 | 本体で読む RPC | 本体で書く RPC | 取得のジョブ | 外の読み手 |",
+    "| 表 | 種類 | 権限 | 読み手 | 書き手 | 本体で読む RPC・ビュー | 本体で書く RPC | 取得のジョブ | 外の読み手 |",
   );
   L.push("|---|---|---|---|---|---|---|---|---|");
   for (const [name, t] of Object.entries(ledger.tables)) {
     L.push(
-      `| [${name}](#t-${name}) | ${t.kind} | ${t.access.summary} | ${t.readers.length} | ${t.writers.length} | ${cell(shortList(t.readByRpc, 3))} | ${cell(shortList(t.writtenByRpc, 3))} | ${cell(shortList(t.scrapeJobs, 3))} | ${t.external.map((e) => cell(`${e.repo}:${e.reader}`)).join(", ")} |`,
+      `| [${name}](#t-${name}) | ${t.kind} | ${t.access.summary} | ${t.readers.length} | ${t.writers.length} | ${cell(shortList([...t.readByRpc, ...t.readByView.map((v) => `view:${v}`)], 3))} | ${cell(shortList(t.writtenByRpc, 3))} | ${cell(shortList(t.scrapeJobs, 3))} | ${t.external.map((e) => cell(`${e.repo}:${e.reader}`)).join(", ")} |`,
     );
   }
   L.push("");
@@ -1264,6 +1624,8 @@ export function renderMarkdown(ledger) {
     L.push(
       `- 権限: ${t.access.summary}（anon: ${t.access.anon.join("・") || "なし"} / authenticated: ${t.access.authenticated.join("・") || "なし"}、RLS ${t.rlsEnabled ? "有効" : "無効"}）`,
     );
+    if (t.readByView.length)
+      L.push(`- 定義で読むビュー: ${t.readByView.join(", ")}`);
     if (t.readByRpc.length)
       L.push(`- 本体で読む RPC: ${t.readByRpc.join(", ")}`);
     if (t.writtenByRpc.length)
@@ -1292,22 +1654,32 @@ export function renderMarkdown(ledger) {
       `- 書き手（${t.writers.length}）: ${t.writers.length ? "" : "なし"}`,
     );
     for (const a of t.writers) L.push(`  - ${fmt(a)}`);
+    const externalColumns = new Set(t.external.flatMap((e) => e.columns ?? []));
     const unread = Object.entries(t.columns)
-      .filter(([, v]) => v.readers.length === 0)
+      .filter(
+        ([k, v]) =>
+          v.readers.length === 0 &&
+          v.sql.length === 0 &&
+          !externalColumns.has(k),
+      )
       .map(([k]) => k);
-    if (
+    const unknownReader =
       t.readers.some(
         (a) =>
           a.columns.includes("*") ||
           a.columns.includes("?") ||
           a.columns.length === 0,
-      )
-    ) {
+      ) ||
+      t.mentions.length > 0 ||
+      t.external.some((e) => !e.columns);
+    if (unknownReader) {
       L.push(
-        '- 列: `select("*")` か列の分からない読み手があるので、名指しの無い列も読まれうる',
+        '- 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる',
       );
     } else if (unread.length) {
-      L.push(`- 名指しで読まれていない列: ${unread.join(", ")}`);
+      L.push(
+        `- コード・RPC・ビューのどれからも名指しの無い列（Python・SQL の直書き・repo の外は見ていない）: ${unread.join(", ")}`,
+      );
     }
     L.push("");
   }
