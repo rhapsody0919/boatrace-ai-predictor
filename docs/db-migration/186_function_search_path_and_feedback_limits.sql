@@ -19,11 +19,12 @@
 --   (1) 全体の流量の制限を足す。今のトリガー（143）は「同じ client_key で24時間に40行」「全体で1時間に300行」。
 --       client_key はブラウザの乱数なので、毎回変えれば1つめは効かず、全体は1日に7,200行まで入る。
 --       本番の実績（2026-10-09〜10-26 の14行）: 10分の最大2行・1日の最大5行・8ブラウザ・1ブラウザ最大3行。
---       1回の回答は最大2行（vote・detail）。そこで次の2つに置き換える（1時間300行はこの2つより緩いので外す）:
---         全体で直近10分に30行 … 実績の最大の15倍。X の投稿などで15人が10分に2段目まで答えても通る
---         全体で直近24時間に300行 … 実績の最大の60倍。荒らしが入っても、hq の週のまとめに混ざるのは1日300行まで
---       その代わり、荒らしが上限を埋める（10分30行なら約100分）と、窓が空くまで正規の声も最大24時間「送れませんでした」になり、
---       弾いた回数はどこにも残らない（汚染の量を抑える方を採る。気づく仕組みは hq の週のまとめの側で別に扱う）
+--       1回の回答は最大2行（vote・detail）。そこで「全体で1時間に300行」を「全体で直近10分に30行」に置き換える
+--       （実績の最大の15倍。X の投稿などで15人が10分に2段目まで答えても通る。根拠は実績の倍数で、目安）。
+--       荒らしの入る量は1時間180行・1日4,320行まで（今の1時間300行・1日7,200行から4割減）。
+--       24時間の全体の上限（案の段の300行）は入れない: 荒らしが約100分で埋めると、正規の声も最大24時間「送れませんでした」になり、
+--       弾いた回数はどこにも残らない（system-architect・/code-review の指摘）。10分の窓なら止まるのは最大10分で、荒らしの行は表に残るので
+--       hq のまとめで見つけて service_role で消せる（声が黙って止まるより、行が残って気づける方を採る）
 --       数える前に pg_advisory_xact_lock で INSERT を1本ずつにする（同時の INSERT が互いの行を見ずに上限を越えないように。
 --       流量は1日数行なので待ちは生じない）。超えたときは今と同じ P0001 で、画面は「送れませんでした」になる。
 --   (2) races への外部キーを ON DELETE CASCADE にする。races を参照する外部キー21本のうち、NO ACTION は
@@ -63,7 +64,7 @@
 --   SELECT conname, confdeltype, convalidated FROM pg_constraint WHERE conrelid = 'public.analogy_feedback'::regclass AND contype = 'f';
 --   期待: analogy_feedback_race_id_fkey | c | true の1行だけ
 --   SELECT md5(prosrc), proconfig FROM pg_proc WHERE oid = 'public.analogy_feedback_guard()'::regprocedure;
---   期待: 33d2d34c2631f8635ebc04344e3ff341 | {"search_path=public, pg_temp"}（186 の本文）
+--   期待: b9d0117e1ab42c593514bad0b49c504d | {"search_path=public, pg_temp"}（186 の本文）
 --   Supabase の advisor（security）で function_search_path_mutable が0件
 --
 -- 戻し方: 末尾の ROLLBACK-BEGIN〜ROLLBACK-END（search_path を外す・143 のトリガーの本文に戻す・外部キーを NO ACTION に戻す）
@@ -95,7 +96,7 @@ ALTER FUNCTION public.update_prediction_results() SET search_path = public, pg_t
 ALTER FUNCTION public.update_updated_at_column() SET search_path = public, pg_temp;
 ALTER FUNCTION public.update_venue_stats() SET search_path = public, pg_temp;
 
--- L(1): 全体の流量の制限（143 の本文に10分・24時間の全体の上限を足し、1時間300行を外す）
+-- L(1): 全体の流量の制限（143 の全体の上限「1時間300行」を「10分30行」に置き換える）
 CREATE OR REPLACE FUNCTION public.analogy_feedback_guard()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -111,13 +112,9 @@ BEGIN
         AND created_at > now() - interval '24 hours') >= 40 THEN
     RAISE EXCEPTION 'analogy_feedback: too many from this client' USING ERRCODE = 'P0001';
   END IF;
-  -- 全体の上限（186）。実績は10分の最大2行・1日の最大5行（2026-10-09〜10-26 の14行）。根拠はファイルの冒頭
+  -- 全体の上限（186）。実績は10分の最大2行（2026-10-09〜10-26 の14行）。根拠はファイルの冒頭
   IF (SELECT count(*) FROM public.analogy_feedback
       WHERE created_at > now() - interval '10 minutes') >= 30 THEN
-    RAISE EXCEPTION 'analogy_feedback: too many overall' USING ERRCODE = 'P0001';
-  END IF;
-  IF (SELECT count(*) FROM public.analogy_feedback
-      WHERE created_at > now() - interval '24 hours') >= 300 THEN
     RAISE EXCEPTION 'analogy_feedback: too many overall' USING ERRCODE = 'P0001';
   END IF;
   RETURN NEW;

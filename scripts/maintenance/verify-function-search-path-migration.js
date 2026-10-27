@@ -8,7 +8,7 @@
  *   (b) 19本とも proconfig が search_path=public, pg_temp になり、本文（md5(prosrc)）は変わらない
  *   (c) ガードは SECURITY DEFINER・search_path のまま、anon は今までどおり INSERT できる（SELECT はできない）
  *   (d) 全体で直近10分に30行を超える INSERT を拒む（client_key を毎回変えても止まる）
- *   (e) 全体で直近24時間に300行を超える INSERT を拒む（10分の窓の外の行も数える）
+ *   (e) 10分より前の行は全体の上限に数えない。全体の24時間の上限は無い。数える前に advisory lock を取る
  *   (f) 同じ client_key の24時間40行の制限は残る
  *   (g) races を消すと声も消える（ON DELETE CASCADE、制約の名前は同じ）
  *   (h) 2回当てても失敗しない（冪等）
@@ -252,29 +252,29 @@ check(
   JSON.stringify(firstReject),
 );
 
-// (e) 24時間に300行。10分の窓の外（1時間前）に299行、窓の中は0行
+// (e) 10分の窓の外（11分前）に100行あっても通る。24時間の全体の上限は入れない（ファイル冒頭の判断）
 await db.exec("DELETE FROM public.analogy_feedback");
 await seed(
   db,
-  Array.from({ length: 299 }, (_, i) => ({
+  Array.from({ length: 100 }, (_, i) => ({
     n: 1000 + i,
     race: (i % 40) + 1,
-    ago: "1 hour",
+    ago: "11 minutes",
   })),
 );
-check("(e) 300行目は通る", (await attempt(db, row(2000), "anon")) === null);
-const e301 = await attempt(db, row(2001), "anon");
 check(
-  "(e) 301行目は24時間の上限で止まる",
-  e301 !== null && /too many overall/.test(e301.message),
-  e301?.message,
+  "(e) 10分より前の行は全体の上限に数えない",
+  (await attempt(db, row(2000), "anon")) === null,
 );
-await db.exec(
-  "UPDATE public.analogy_feedback SET created_at = now() - interval '25 hours'",
+const body = (await guardSrc(db)).prosrc;
+check(
+  "(e) 全体の24時間の上限は無い（正規の声を最大24時間止めない）",
+  !/now\(\) - interval '24 hours'\) >= 300/.test(body),
 );
 check(
-  "(e) 24時間より前の行は数えない",
-  (await attempt(db, row(2002), "anon")) === null,
+  "(e) 数える前に advisory lock を取る（同時の INSERT で上限を越えない）",
+  body.includes("pg_advisory_xact_lock") &&
+    body.indexOf("pg_advisory_xact_lock") < body.indexOf("count(*)"),
 );
 
 // (f) 同じ client_key は24時間に40行
@@ -320,10 +320,11 @@ check(
 );
 
 // (h)
+const once = JSON.stringify([await fnState(db), await fkState(db), (await guardSrc(db)).prosrc]);
 check("(h) 2回当てても失敗しない", (await attemptExec(db, sql186)) === null);
 check(
-  "(h) 2回目の後も19本の search_path は同じ",
-  (await fnState(db)).every((f) => f.proconfig?.length === 1),
+  "(h) 2回目の後も関数・外部キー・ガードの本文が1回目と同じ",
+  JSON.stringify([await fnState(db), await fkState(db), (await guardSrc(db)).prosrc]) === once,
 );
 
 // (i)
