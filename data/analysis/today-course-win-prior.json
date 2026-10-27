@@ -1,0 +1,88 @@
+{
+  "purpose": "/today の X 投稿の型 b（コース別1着率）で、選手の率を級の全国平均へ縮めるときの事前の重み（ベータ二項の α+β）の目安。src/utils/todayCourseWin.js の COURSE_WIN_PRIOR_STRENGTH の根拠",
+  "measured_at": "2026-10-27",
+  "source": "本番 Supabase（読み取り）。races × race_results × race_entries、compute_racer_course_technique_stats（098）と同じ母集団、race_date <= 2026-10-25（窓 2025-12-02〜2026-10-25）。枠番 1・4 の走だけ、選手×実進入コースで30走以上",
+  "method": "モーメント法。選手の率の分散 var_p から二項のばらつき p(1-p)·mean(1/n) を引いた真の分散 v で、m = p(1-p)/v − 1",
+  "query": "WITH base AS (... 098 と同じ条件 ...), r AS (SELECT racer_id, course, max(grade) g, count(*) n, count(*) FILTER (WHERE is_win) w FROM base WHERE course IN (1,4) GROUP BY racer_id, course HAVING count(*) >= 30) SELECT course, g, count(*), avg(w::numeric/n), var_samp(w::numeric/n), avg(1.0/n) FROM r GROUP BY course, g",
+  "rows": [
+    {
+      "course": 1,
+      "grade": "A1",
+      "racers": 218,
+      "mean_p": 0.7329,
+      "var_p": 0.00869,
+      "mean_inv_n": 0.02078,
+      "m": 41
+    },
+    {
+      "course": 1,
+      "grade": "A2",
+      "racers": 293,
+      "mean_p": 0.6444,
+      "var_p": 0.00853,
+      "mean_inv_n": 0.02296,
+      "m": 69
+    },
+    {
+      "course": 1,
+      "grade": "B1",
+      "racers": 270,
+      "mean_p": 0.5087,
+      "var_p": 0.01818,
+      "mean_inv_n": 0.0286,
+      "m": 22
+    },
+    {
+      "course": 1,
+      "grade": "B2",
+      "racers": 19,
+      "mean_p": 0.6257,
+      "var_p": 0.01405,
+      "mean_inv_n": 0.02749,
+      "m": null,
+      "note": "19人で不安定のため出さない"
+    },
+    {
+      "course": 4,
+      "grade": "A1",
+      "racers": 149,
+      "mean_p": 0.1621,
+      "var_p": 0.00561,
+      "mean_inv_n": 0.02957,
+      "m": 84
+    },
+    {
+      "course": 4,
+      "grade": "A2",
+      "racers": 208,
+      "mean_p": 0.1227,
+      "var_p": 0.00552,
+      "mean_inv_n": 0.02902,
+      "m": 44
+    }
+  ],
+  "grade_baselines_all_runs": {
+    "note": "各走の級で数えた全国の1着（1着数/走数、30走以上に限らない全走）",
+    "c1": {
+      "A1": "11456/16129",
+      "A2": "8353/13822",
+      "B1": "7685/19169",
+      "B2": "486/1371"
+    },
+    "c4": {
+      "A1": "1867/11658",
+      "A2": "1474/11845",
+      "B1": "1742/24216",
+      "B2": "125/2772"
+    }
+  },
+  "chosen": 40,
+  "why": "段・級で 22〜84 と幅がある。並べの順にだけ効き、差を言うかの関門（Bonferroni の線）には使わないので、真ん中の 40 を1つだけ使う（段・級ごとに変えると、日によって推定が揺れる）",
+  "k_example": {
+    "date": "2026-10-27",
+    "races": 168,
+    "c1_runs30": 102,
+    "c1_after_front_exclusion": 89,
+    "front_races": 21
+  }
+}

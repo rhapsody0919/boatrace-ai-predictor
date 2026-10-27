@@ -1461,6 +1461,11 @@
       "guards": "思考アシスト（BOA-430）のレンズの要約・図の印・深掘りのモデル src/utils/assistSummary.js。2026-10-06 徳山10R の本番 v16 の値（e2e/thinking-assist-fixture.json.gz）で、差がつく材料の範囲（VC 300件未満は全国、準優勝戦は NCR に絞る。D-37）、札の今日の位置と準優勝戦の今節の点を使わないこと（FR-5）、図の良い方の札、平均ST の手がかり・スリットの形・進入の型（展開）、展示の表の最良（F を外す）・チルト・部品交換（機力）、今節の走（今日の走を点に入れない。D-29）・今節より前の5走（今節と後の走を除く。D-36 (10)）・進入コースで集めるコースの1着（D-36 (11)）、成績から付けた札（D-41。PR4）"
     },
     {
+      "script": "verify-today-course-win.js",
+      "tier": "ci",
+      "guards": "/today の X 投稿の型 b（コース別1着率、hq 2026-10-27）の材料: マイグレーション 183（compute_today_course_win_stats、jsonb の1つで返す）の級別の全国の値は各走の級で数え、1着は決まり手を問わない、中止・欠場・決まり手なし・p_until より後は数えない、窓は全行で同じ、選手の行は1・4コースだけで前付けの回数（枠番と違うコース）、anon・authenticated は呼べない。buildCourseWinNotes は率で絞らず載せる条件（30回・期待度数5・4コースは A1・A2・前付けのレースを外す）の全員を候補にし段ごとの数を残す、縮めた値・z・Bonferroni の線・分位点。fetchCourseWin は関数が無い・読めない・材料が壊れていても一覧を止めず unavailable、窓は前々日まで。SQL183 を PGlite、外部接続なし"
+    },
+    {
       "script": "verify-turn-time-venues.js",
       "tier": "ci",
       "guards": "まわり足が会場独自の計測で他場と値の水準が違う会場の判定（src/utils/turnTimeVenues.js、data-catalog E12）。住之江・尼崎・徳山だけを対象にし、scripts/lib/boatcast/publicMap.js の直線なし（TWO）の会場と一致すること"
