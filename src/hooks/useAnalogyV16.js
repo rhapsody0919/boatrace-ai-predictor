@@ -126,10 +126,11 @@ export const useAnalogyScenario = (
   stage,
   enabled = true,
   boats = false,
+  fresh = false, // true ならキャッシュを使わず読む（展示前に開いたページに展示後の段が届いた後の読み直し）
 ) =>
   useAnalogyResource(
-    `scenario|${raceId}|${scope ?? ""}|${stage}|${boats ? "boats" : ""}`,
-    () => getAnalogyScenario(raceId, scope, stage, boats),
+    `scenario|${raceId}|${scope ?? ""}|${stage}|${boats ? "boats" : ""}|${fresh ? "fresh" : ""}`,
+    () => getAnalogyScenario(raceId, scope, stage, boats, fresh),
     enabled,
   );
 

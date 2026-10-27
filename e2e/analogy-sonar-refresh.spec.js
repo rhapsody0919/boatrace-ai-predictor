@@ -1,5 +1,9 @@
 import { test, expect } from "./fixtures.js";
-import { analogyV16Facts, routeAnalogyV16 } from "./analogy-v16-fixture.js";
+import {
+  analogyV16Facts,
+  analogyV16Scenario,
+  routeAnalogyV16,
+} from "./analogy-v16-fixture.js";
 
 const DATE = "2026-10-26";
 const ID = `${DATE}-09-01`;
@@ -195,4 +199,38 @@ test("定期の読み直しが失敗しても前の値を残し、次の60秒で
   await expect(state.section.locator(".af-tab-error")).toHaveCount(0);
   await page.clock.runFor(61000);
   expect(state.count()).toBe(3);
+});
+
+test("展示前にシナリオを開いてから展示後の段が届いたら、展示後でシナリオも展示後の値になる", async ({
+  page,
+}) => {
+  const state = await setup(page);
+  // 展示前の scenario は exhibition: null（api/analogy/scenario の展示前の応答と同じ）
+  let scenarioExhibition = false;
+  await page.route("**/api/analogy/scenario/**", (route) => {
+    const body = analogyV16Scenario();
+    if (!scenarioExhibition) body.exhibition = null;
+    return route.fulfill({ json: body });
+  });
+  await state.section
+    .getByRole("tab", { name: "展開シナリオ", exact: true })
+    .click();
+  await expect(state.section.locator(".af-scn-blk").first()).toBeVisible();
+  state.change("exhibition_ready");
+  scenarioExhibition = true;
+  await page.clock.runFor(61000);
+  await expect.poll(state.count).toBe(2);
+  const stage = state.section.locator('[data-af-control="stage"]');
+  const after = stage.getByRole("button", {
+    name: "展示後（直前情報も）",
+    exact: true,
+  });
+  await expect(after).toBeEnabled();
+  // 時点は自動で切り替えない
+  await expect(
+    stage.getByRole("button", { name: "展示前（出走表）", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(state.section.locator(".af-today-badge")).toHaveCount(0);
+  await after.click();
+  await expect(state.section.locator(".af-today-badge").first()).toBeVisible();
 });

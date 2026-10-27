@@ -117,6 +117,16 @@ export default function AnalogyFinderSection({
   )
     setStageChoice("racecard");
   const exhibitionReady = status === "exhibition_ready";
+  // 展示前に開いたページで、定期の読み直しが展示後の段を届けたか。取得済みのシナリオは
+  // 展示前の応答（exhibition: null）なので、そのときはキャッシュを使わず読み直す。
+  // 開いた時点で展示後なら false のまま（読み直さない）。
+  const [sawBeforeExhibition, setSawBeforeExhibition] = useState(false);
+  if (
+    !sawBeforeExhibition &&
+    (status === "before_exhibition" || status === "exhibition_reflecting")
+  )
+    setSawBeforeExhibition(true);
+  const readyAfterOpen = sawBeforeExhibition && exhibitionReady;
   const stage = exhibitionReady ? (stageChoice ?? "exhibition") : "racecard";
   // 節の中身（facts）が出たら、レースごとに1回だけ「表示した」を送る（公開時の最小限の計測）
   const factsReady = Boolean(facts.data?.today);
@@ -231,6 +241,7 @@ export default function AnalogyFinderSection({
     "exhibition",
     Boolean(opened.scenario),
     true, // 2〜6号艇の級をそろえた範囲も取る（③④。BOA-806）
+    readyAfterOpen,
   );
 
   const [, , , venueCode, raceNumber] = String(raceId).split("-");
