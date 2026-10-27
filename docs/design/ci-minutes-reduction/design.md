@@ -206,7 +206,7 @@ flowchart LR
   - verify-guard-pr-merge.js に「draft の失敗が残った窓」の入力を足して固定する
 - Claude の PR は draft で作り、Codex の審査の指摘を直し終えたら ready にする。codex/ の PR（ほぼ1 push）は今のまま
 - patrol.sh・e2e-rerun.js（draft を除く作り、e2e-rerun.js:7）が draft の失敗を警報にしないかを確かめる
-- `@codex review` が draft で動くかは**未確認**。動かなければ ready にしてから頼み、B の効き目は小さくなる
+- Codex の審査は「draft を ready にしたとき」と「`@codex review` のコメント」で起動する（このリポジトリの Codex の案内、#1992 のコメント）。draft で開いただけでは自動で起動しないので、draft の間は `@codex review` で頼む（draft の PR で通るかは実装の PR で1回確かめる）。ready にすると自動の審査がもう1回走る
 
 **E ubuntu-slim**（候補: Job Watch・Key Canary・Slack PR Notification・AI Review の gate・llm・approve・e2e-scope・Regenerate Generated Docs・Verify Cache Configuration・ml-tests。materials は psql を入れるので除く）
 - 候補に集約 `e2e`（npm ci と `--list` を3回、中央36秒、月約2,100分）も足せる
@@ -281,7 +281,7 @@ flowchart LR
 - 非公開の 2 vCPU での E2E の所要（6章で模して測る）
 - self-hosted の料金の今（2025-12 の発表の延期の後）
 - merge queue が個人のアカウントのリポジトリで使えるか（L は不採用の理由がほかにあるので結論は変わらない）
-- `@codex review` が draft の PR で動くか（B の効き目に効く）
+- `@codex review` のコメントが draft の PR でも審査を起動するか（案内では起動の条件に draft の区別が無い。B の効き目に効く）
 - E2E Live の60分切れの原因（組分けで足りるか、本番の応答の遅さか）
 - docs/ で始まるブランチで full が18回・1,255分（7日）。docs 以外を触った正しい full か、none の一覧の漏れか（ADR-0100 の一覧の点検で確かめる）
 - hq の codex-pr が今止めている件数（codex-pr.json の cycle が measure のため未確認）
