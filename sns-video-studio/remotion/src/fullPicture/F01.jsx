@@ -1,10 +1,11 @@
 /**
- * 型 f01-landscape-voice-full（完全版を横 16:9＋声に）の試作の composition。関門の段4。型の表にはまだ載せない。
+ * 型 f01-landscape-voice-full（完全版を横 16:9＋声に）の composition。作るのは scripts/full-picture/f01-build.mjs。
  * 台本: docs/design/full-picture-type-gate/candidates/f01-landscape-voice-full/script.md、仕様は hq drafts/fp-youtube-type-20261027.md の6節。
- * 値はすべて props（scripts/full-picture/prototype-f01.mjs が材料・声・撮った画面から作る）。ここでは並べるだけ。
+ * 値はすべて props（材料・声・撮った画面から作る）。ここでは並べるだけ。
  * - 冒頭: 全幅。見出しは題の問い、根拠の行に1号艇が負けた件の内訳の棒（承認した見本 v1 0-open.png の形。順位の色分けはしない）
- * - 章: 左に龍神の実画面（x24〜1260・y20〜870）、右 650px に章の札・範囲の札・答えの数字1行・自分で見るなら
- * - 字幕: y890〜960 に1行（声と同じ文）。下の y972〜 は使わない
+ * - 章: 左に龍神の実画面（x48〜1184・y32〜870）、右 632px（x1240〜1872）に章の札・範囲・答えの数字・自分で見るなら。
+ *   外の余白48・間の溝56、右の列の頭と画像の頭を y32 で揃える（オーナー 10/27「余白が気になる」→ visual-designer の案）
+ * - 字幕: y890〜960 に1行（声と同じ文）。帯は敷かず字の影だけ（全幅の黒い帯が下の空きとつながって塊に見えた）
  * - 強調: 実画面の色は変えず、GOLD の枠を0.3秒で重ねる。カーソルは押す0.5秒前から動き、押した後は消す
  */
 import {
@@ -21,8 +22,9 @@ import { BG_BOTTOM, BG_TOP, MUTED, clamp, ease, textWidth } from "./parts.js";
 import { BOAT_COLORS } from "../../../../src/utils/colors.js";
 
 const GOLD = "#d4af37";
-const LEFT = { x: 24, y: 20, w: 1236, h: 850 };
-const RIGHT = { x: 1290, w: 600 };
+/** scripts/full-picture/f01-capture.mjs の LEFT_BOX と同じ */
+const LEFT = { x: 48, y: 32, w: 1136, h: 838 };
+const RIGHT = { x: 1240, w: 632 };
 const FADE = 9; // 0.3秒
 
 const fadeIn = (frame, from) =>
@@ -51,15 +53,22 @@ function Badge({ boat, size = 56 }) {
   );
 }
 
-function Open({ open, from }) {
+/** 冒頭（字幕が無いので y960 まで使う）。棒の塊は件数の字の幅を含めて左右中央 */
+function Open({ open }) {
   const frame = useCurrentFrame();
   const max = Math.max(...open.bars.map((b) => b.count));
+  const BAR = 820;
+  const label = (b) => `${b.count.toLocaleString("ja-JP")}件`;
+  const countW = Math.max(
+    ...open.bars.map((b) => textWidth(label(b), 58, 800)),
+  );
+  const left = Math.round((1920 - (190 + 24 + BAR + 24 + countW)) / 2);
   return (
-    <AbsoluteFill style={{ alignItems: "center" }}>
+    <AbsoluteFill>
       <div
         style={{
           position: "absolute",
-          top: 86,
+          top: 96,
           width: "100%",
           textAlign: "center",
           color: MUTED,
@@ -72,7 +81,7 @@ function Open({ open, from }) {
       <div
         style={{
           position: "absolute",
-          top: 160,
+          top: 168,
           width: "100%",
           textAlign: "center",
           fontSize: 84,
@@ -82,13 +91,13 @@ function Open({ open, from }) {
       >
         {open.title}
       </div>
-      <div style={{ position: "absolute", top: 320, left: 500, width: 1000 }}>
+      <div style={{ position: "absolute", top: 330, left }}>
         {open.bars.map((b, i) => {
-          const at = from + 20 + i * 8;
+          const at = 20 + i * 8;
           const w = interpolate(
             frame,
             [at, at + 15],
-            [0, (b.count / max) * 640],
+            [0, (b.count / max) * BAR],
             { ...clamp, easing: ease },
           );
           return (
@@ -97,34 +106,34 @@ function Open({ open, from }) {
               style={{
                 display: "flex",
                 alignItems: "center",
-                height: 95,
+                height: 104,
                 opacity: fadeIn(frame, at),
               }}
             >
               <div
                 style={{
-                  width: 160,
+                  width: 190,
                   display: "flex",
                   alignItems: "center",
                   gap: 14,
-                  fontSize: 44,
+                  fontSize: 52,
                   fontWeight: 800,
                 }}
               >
-                <Badge boat={b.boat} size={50} />
+                <Badge boat={b.boat} size={60} />
                 <span>号艇</span>
               </div>
               <div
                 style={{
                   width: w,
-                  height: 52,
+                  height: 60,
                   background: "#5a6478",
-                  marginLeft: 20,
+                  marginLeft: 24,
                 }}
               />
-              <div
-                style={{ marginLeft: 20, fontSize: 46, fontWeight: 800 }}
-              >{`${b.count.toLocaleString("ja-JP")}件`}</div>
+              <div style={{ marginLeft: 24, fontSize: 58, fontWeight: 800 }}>
+                {label(b)}
+              </div>
             </div>
           );
         })}
@@ -132,7 +141,7 @@ function Open({ open, from }) {
       <div
         style={{
           position: "absolute",
-          top: 812,
+          top: 884,
           width: "100%",
           textAlign: "center",
           color: MUTED,
@@ -146,26 +155,37 @@ function Open({ open, from }) {
   );
 }
 
-/** 答えの数字1行: 64px・14字まで、越えたら 48px、まだ越えたら2行 */
+/** 答えの数字: 64px、収まらなければ 48px、まだ越えたら2行 */
 function AnswerLine({ text }) {
   const size = textWidth(text, 64, 900) <= RIGHT.w ? 64 : 48;
   return (
     <div
-      style={{ color: GOLD, fontSize: size, fontWeight: 900, lineHeight: 1.4 }}
+      style={{ color: GOLD, fontSize: size, fontWeight: 900, lineHeight: 1.3 }}
     >
       {text}
     </div>
   );
 }
 
-function Cut({ cut, frame }) {
-  const sw = cut.clip.w * cut.scale;
-  const sh = cut.clip.h * cut.scale;
-  const ox = LEFT.x + (LEFT.w - sw) / 2;
-  // 上に揃える（同じ部品の押す前・押した後で、高さが変わっても位置がずれない）
-  const oy = LEFT.y;
+/** 答え2: 1行に入らなければ「・」で区切って1区切り1行（1字だけが次の行に落ちないように） */
+function SubLine({ text }) {
+  const lines = textWidth(text, 36, 700) <= RIGHT.w ? [text] : text.split("・");
+  return (
+    <div style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.4 }}>
+      {lines.map((l, i) => (
+        <div key={i}>{l}</div>
+      ))}
+    </div>
+  );
+}
+
+function Cut({ cut, frame, boxH }) {
   const s = cut.scale;
-  // カーソル: 押す0.5秒前（15コマ）に画面の右下から動き始め、押した後は消す
+  const sw = cut.clip.w * s;
+  const sh = cut.clip.h * s;
+  const ox = LEFT.x + (LEFT.w - sw) / 2;
+  // 章の中でいちばん高いカットの箱で縦の中央に置き、その箱の中では上に揃える（押す前・押した後で位置がずれない）
+  const oy = LEFT.y + (LEFT.h - boxH) / 2;
   let cursor = null;
   if (cut.cursor) {
     const { x, y, w, h, at } = cut.cursor;
@@ -175,8 +195,7 @@ function Cut({ cut, frame }) {
       ...clamp,
       easing: ease,
     });
-    const vis = frame >= at - 15 && frame < at + 6;
-    if (vis)
+    if (frame >= at - 15 && frame < at + 6)
       cursor = (
         <svg
           width={44}
@@ -207,7 +226,7 @@ function Cut({ cut, frame }) {
           top: oy,
           width: sw,
           height: sh,
-          borderRadius: 6,
+          borderRadius: 8,
           boxShadow: "0 6px 24px rgba(0,0,0,0.45)",
         }}
       />
@@ -234,14 +253,15 @@ function Cut({ cut, frame }) {
 function Chapter({ c }) {
   const frame = useCurrentFrame();
   const cut = [...c.cuts].reverse().find((x) => frame >= x.from) ?? c.cuts[0];
+  const boxH = Math.max(...c.cuts.map((x) => x.clip.h * x.scale));
   return (
     <AbsoluteFill>
-      {cut && <Cut cut={cut} frame={frame} />}
+      {cut && <Cut cut={cut} frame={frame} boxH={boxH} />}
       <div
         style={{
           position: "absolute",
           left: RIGHT.x,
-          top: 40,
+          top: LEFT.y,
           width: RIGHT.w,
           display: "flex",
           flexDirection: "column",
@@ -256,7 +276,7 @@ function Chapter({ c }) {
               border: `2px solid ${MUTED}`,
               borderRadius: 8,
               padding: "6px 16px",
-              fontSize: 30,
+              fontSize: 32,
               fontWeight: 700,
             }}
           >
@@ -264,7 +284,7 @@ function Chapter({ c }) {
           </div>
         )}
         {c.scope && (
-          <div style={{ color: MUTED, fontSize: 30, fontWeight: 400 }}>
+          <div style={{ color: MUTED, fontSize: 32, fontWeight: 400 }}>
             {c.scope}
           </div>
         )}
@@ -275,14 +295,8 @@ function Chapter({ c }) {
           </div>
         )}
         {c.answer2 && (
-          <div
-            style={{
-              fontSize: 34,
-              fontWeight: 700,
-              opacity: fadeIn(frame, c.answer2At),
-            }}
-          >
-            {c.answer2}
+          <div style={{ opacity: fadeIn(frame, c.answer2At) }}>
+            <SubLine text={c.answer2} />
           </div>
         )}
       </div>
@@ -291,7 +305,7 @@ function Chapter({ c }) {
           style={{
             position: "absolute",
             left: RIGHT.x,
-            top: 700,
+            top: 774,
             width: RIGHT.w,
             opacity: fadeIn(frame, c.pathAt),
           }}
@@ -305,15 +319,15 @@ function Chapter({ c }) {
           style={{
             position: "absolute",
             left: RIGHT.x,
-            top: 760,
+            top: 600,
             width: RIGHT.w,
-            fontSize: 40,
-            fontWeight: 800,
-            color: "#fff",
             opacity: fadeIn(frame, c.footAt),
           }}
         >
-          {c.foot}
+          <div style={{ color: MUTED, fontSize: 28 }}>このレースのページは</div>
+          <div style={{ fontSize: 40, fontWeight: 800, color: "#fff" }}>
+            {c.foot}
+          </div>
         </div>
       )}
     </AbsoluteFill>
@@ -343,9 +357,19 @@ function EndScreen({ from }) {
   );
   return (
     <AbsoluteFill>
-      <div style={{ position: "absolute", left: 0, top: 420, width: RIGHT.x - 10, height: 460, background: "rgba(10,20,36,0.92)", opacity: o }} />
-      {box(120, 470, 600, 338, "全貌 完全版の再生リスト")}
-      {box(820, 540, 220, 220, "チャンネル登録", true)}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 420,
+          width: RIGHT.x - 28,
+          height: 460,
+          background: "rgba(10,20,36,0.92)",
+          opacity: o,
+        }}
+      />
+      {box(LEFT.x + 72, 470, 600, 338, "全貌 完全版の再生リスト")}
+      {box(LEFT.x + 772, 540, 220, 220, "チャンネル登録", true)}
     </AbsoluteFill>
   );
 }
@@ -377,7 +401,7 @@ export function F01Landscape({
           durationInFrames={c.len}
           layout="none"
         >
-          {c.open ? <Open open={c.open} from={0} /> : <Chapter c={c} />}
+          {c.open ? <Open open={c.open} /> : <Chapter c={c} />}
         </Sequence>
       ))}
       {end && <EndScreen from={end.from} />}
@@ -389,13 +413,20 @@ export function F01Landscape({
             top: 890,
             width: 1920,
             height: 70,
-            background: "rgba(5,10,20,0.88)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}
         >
-          <span style={{ fontSize: 40, fontWeight: 700 }}>{sub.text}</span>
+          <span
+            style={{
+              fontSize: 44,
+              fontWeight: 700,
+              textShadow: "0 2px 8px rgba(0,0,0,0.8)",
+            }}
+          >
+            {sub.text}
+          </span>
         </div>
       )}
       {audio.map((a) => (
@@ -414,12 +445,43 @@ export function F01Landscape({
  */
 export function F01Thumb({ head, question, number, numberLabel }) {
   return (
-    <AbsoluteFill style={{ background: `linear-gradient(${BG_TOP}, ${BG_BOTTOM})`, fontFamily: FONT, color: "#fff", padding: "56px 72px" }}>
+    <AbsoluteFill
+      style={{
+        background: `linear-gradient(${BG_TOP}, ${BG_BOTTOM})`,
+        fontFamily: FONT,
+        color: "#fff",
+        padding: "56px 72px",
+      }}
+    >
       <div style={{ color: MUTED, fontSize: 40, fontWeight: 700 }}>{head}</div>
-      <div style={{ marginTop: 70, fontSize: 116, fontWeight: 900, lineHeight: 1.15 }}>{question}</div>
-      <div style={{ position: "absolute", left: 72, bottom: 64, display: "flex", alignItems: "baseline", gap: 28 }}>
-        <span style={{ fontSize: 44, fontWeight: 700, color: MUTED }}>{numberLabel}</span>
-        <span style={{ fontSize: 180, fontWeight: 900, color: GOLD, lineHeight: 1 }}>{number}</span>
+      <div
+        style={{
+          marginTop: 70,
+          fontSize: 116,
+          fontWeight: 900,
+          lineHeight: 1.15,
+        }}
+      >
+        {question}
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 72,
+          bottom: 64,
+          display: "flex",
+          alignItems: "baseline",
+          gap: 28,
+        }}
+      >
+        <span style={{ fontSize: 44, fontWeight: 700, color: MUTED }}>
+          {numberLabel}
+        </span>
+        <span
+          style={{ fontSize: 180, fontWeight: 900, color: GOLD, lineHeight: 1 }}
+        >
+          {number}
+        </span>
       </div>
     </AbsoluteFill>
   );

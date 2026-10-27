@@ -9,11 +9,18 @@ import { join } from "node:path";
 import process from "node:process";
 
 export const SITE = process.env.F01_SITE ?? "https://www.boat-ai.jp";
+/**
+ * 撮る幅。横長の部品（6艇の図・艇の行・類似レースの1着・形の札）はスマホ幅で撮り、左の枠の縦横比に近づける
+ * （1280幅の本文の列は比2〜2.5で、左の枠の下が約40%空いた。visual-designer 2026-10-27、オーナー「余白が気になる」）。
+ * 縦長の部品（着順の流れ・思考アシストの相手）は PC 幅のまま
+ */
 export const VIEWPORT = { width: 1280, height: 900 };
-export const DPR = 2;
-/** 左の枠（1920x1080 の中）。高さ 850px（仕様 v2） */
-export const LEFT_BOX = { x: 24, y: 20, w: 1236, h: 850 };
-const PAD = 10;
+export const NARROW = { width: 430, height: 900 };
+/** 拡大の上限も同じ倍率（撮った画素を引き伸ばさない） */
+export const DPR = 3;
+/** 左の枠（1920x1080 の中、F01.jsx の LEFT と同じ）。外の余白48・右の列との溝56 */
+export const LEFT_BOX = { x: 48, y: 32, w: 1136, h: 838 };
+const PAD = 8;
 
 function routeMaterials(page, m) {
   const keys = m.api.facts?.today?.scope_keys?.["1"] ?? {};
@@ -112,11 +119,13 @@ async function cutRadar(page, gold, part) {
   await rows.first().waitFor({ timeout: 30000 });
   const rowBoxes = [];
   for (let i = 0; i < (await rows.count()); i++) rowBoxes.push(await box(rows.nth(i).locator("xpath=ancestor::*[self::button or self::li or self::div][1]")));
+  // 図は艇の行の左（PC 幅）か上（スマホ幅）にある、いちばん大きい svg
   const svgs = page.locator("svg");
   let radar = null;
   for (let i = 0; i < (await svgs.count()); i++) {
     const b = await box(svgs.nth(i));
-    if (b.w > 250 && Math.abs(b.y - rowBoxes[0].y) < 200 && b.x < rowBoxes[0].x) radar = b;
+    const near = b.x + b.w <= rowBoxes[0].x + 4 ? Math.abs(b.y - rowBoxes[0].y) < 200 : b.y + b.h <= rowBoxes[0].y + 4 && rowBoxes[0].y - (b.y + b.h) < 700;
+    if (b.w > 250 && near && (!radar || b.w * b.h > radar.w * radar.h)) radar = b;
   }
   if (!radar) throw new Error("差がつく材料の図が見つからない");
   // ⑤は艇の行だけ（字を大きく。GOLD の枠を艇の行に重ねる）
@@ -130,6 +139,13 @@ async function openTab(page, name) {
   await showFixed(page);
   await page.getByRole("tab", { name }).first().click();
   await page.waitForTimeout(2500);
+}
+
+/** 着順の流れの切り抜き: 部品の上の空白を入れず、図の暗い面の下端まで（visual-designer 2026-10-27） */
+async function flowClip(flow) {
+  const dark = await box(flow.locator(".af-dark").first());
+  const top = await box(flow.locator(".af-seg").first());
+  return pad(union([top, dark]));
 }
 
 /** sankey の1着の帯を押す（押した後の切り抜き） */
@@ -154,68 +170,91 @@ async function pickFirst(flow, boat) {
  */
 export async function captureAll(m, s, outDir) {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: DPR, locale: "ja-JP" });
-  const page = await ctx.newPage();
-  await routeMaterials(page, m);
+  const open = async (viewport) => {
+    const ctx = await browser.newContext({ viewport, deviceScaleFactor: DPR, locale: "ja-JP" });
+    const page = await ctx.newPage();
+    await routeMaterials(page, m);
+    return page;
+  };
   const shots = {};
   const file = (n) => join(outDir, `${n}.png`);
   const at = (c) => s.chapters.find((x) => x.id === c);
-  try {
-    // 龍神ソナー
+  const sonar = async (page) => {
     await page.goto(`${SITE}/race/${m.raceId}?tab=sonar`, { waitUntil: "networkidle" });
     await page.getByRole("button", { name: "拒否する" }).click({ timeout: 4000 }).catch(() => {});
     await page.waitForTimeout(1500);
     await hideFixed(page);
-    // ①は図 → 艇の行の2カット（図と行を1枚にすると横幅で縮み、字が 10px 前後になる）。⑤は艇の行に GOLD の枠
+  };
+  try {
+    // スマホ幅: 横長の部品
+    const narrow = await open(NARROW);
+    await sonar(narrow);
+    // ①は図 → 艇の行の2カット。⑤は艇の行に GOLD の枠
     for (const [id, cid, part] of [["c1", "c1", "radar"], ["c12", "c1", "rows"], ["c5", "c5", "rows"]]) {
       const c = at(cid);
       if (!c) continue;
-      const r = await cutRadar(page, id === "c5" ? c.shot.gold : [], part);
-      shots[id] = await shoot(page, r.clip, file(id), { goldBoxes: r.goldBoxes, testid: part === "radar" ? "差がつく材料（図）" : "差がつく材料（艇の行）" });
+      const r = await cutRadar(narrow, id === "c5" ? c.shot.gold : [], part);
+      shots[id] = await shoot(narrow, r.clip, file(id), { goldBoxes: r.goldBoxes, testid: part === "radar" ? "差がつく材料（図）" : "差がつく材料（艇の行）" });
     }
     const c2 = at("c2");
     if (c2) {
-      await openTab(page, "類似レース");
-      await hideFixed(page);
-      const h = page.getByRole("heading", { name: "どの艇が勝った？" }).first();
-      const h2 = page.getByRole("heading", { name: "どう決まった？" }).first();
-      const top = await box(page.getByRole("heading", { name: "類似レースの決まり方" }).first());
-      const end = await box(h2);
-      const hb = await box(h);
-      const clip = pad({ x: top.x, y: top.y, w: Math.max(top.w, hb.w), h: end.y - top.y - 12 });
-      shots.c2 = await shoot(page, clip, file("c2"), { testid: "類似レースの決まり方" });
-      if (c2.shot.cut2) {
-        const flow = page.locator(".af-flow").first();
-        const band = await box(flow);
-        const clip2 = pad(band);
-        const before = await shoot(page, clip2, file("c2-pre"));
-        const hit = await pickFirst(flow, c2.shot.firstBoat);
-        await page.waitForTimeout(1200);
-        shots.c22 = await shoot(page, clip2, file("c22"), { pre: before.file, cursor: rel(hit, clip2), testid: "着順の流れ" });
-      }
+      await openTab(narrow, "類似レース");
+      await hideFixed(narrow);
+      // 見出し「類似レースの決まり方」から、1着の棒の6号艇の行の下まで（下の空白・次の段を入れない）
+      const top = await box(narrow.getByRole("heading", { name: "類似レースの決まり方" }).first());
+      const end = await box(narrow.getByRole("heading", { name: "どう決まった？" }).first());
+      const rows = await narrow.evaluate(
+        ({ y0, y1 }) =>
+          [...document.querySelectorAll("body *")]
+            .filter((e) => e.children.length === 0 && /6号艇/.test(e.textContent))
+            .map((e) => e.getBoundingClientRect())
+            .map((r) => r.y + scrollY + r.height)
+            .filter((b) => b > y0 && b < y1),
+        { y0: top.y, y1: end.y },
+      );
+      const bottom = rows.length ? Math.max(...rows) + 6 : end.y - 12;
+      const clip = pad({ x: top.x, y: top.y, w: Math.max(top.w, 380), h: bottom - top.y });
+      shots.c2 = await shoot(narrow, clip, file("c2"), { testid: "類似レースの決まり方" });
     }
     const c3 = at("c3");
     if (c3) {
-      await openTab(page, "展開シナリオ");
-      await hideFixed(page);
-      const pats = page.locator(".af-pats").first();
+      await openTab(narrow, "展開シナリオ");
+      await hideFixed(narrow);
+      const pats = narrow.locator(".af-pats").first();
       const btn = pats.locator("button", { hasText: c3.shot.form }).first();
-      // 形の札は選んだ札と隣の札の2枚だけ（7枚の全幅だと字が小さすぎる）
+      // 形の札は選んだ札と隣の札の2枚（同じ行）。外周は狭く（隣の札の縁を入れない）
       const cards = pats.locator("button");
       const all = [];
       for (let i = 0; i < (await cards.count()); i++) all.push(await box(cards.nth(i)));
       const b = await box(btn);
       const row = all.filter((r) => Math.abs(r.y - b.y) < 4);
       const i0 = row.findIndex((r) => Math.abs(r.x - b.x) < 2);
-      const pair = i0 > 0 ? [row[i0 - 1], row[i0]] : row.slice(0, 2);
-      const clip = pad(union(pair));
-      shots.c3 = await shoot(page, clip, file("c3"), { goldBoxes: [rel(b, clip)], testid: "スタートの形" });
-      await btn.click();
+      const pair = row.length < 2 ? [b] : i0 > 0 ? [row[i0 - 1], row[i0]] : row.slice(0, 2);
+      const u = union(pair);
+      const clip = { x: u.x - 4, y: u.y - 4, w: u.w + 8, h: u.h + 8 };
+      shots.c3 = await shoot(narrow, clip, file("c3"), { goldBoxes: [rel(b, clip)], testid: "スタートの形" });
+    }
+    // PC 幅: 縦長の部品（着順の流れ・思考アシストの相手）
+    const page = await open(VIEWPORT);
+    if (c2?.shot.cut2 || c3) await sonar(page);
+    if (c2?.shot.cut2) {
+      await openTab(page, "類似レース");
+      await hideFixed(page);
+      const flow = page.locator(".af-flow").first();
+      const clip2 = await flowClip(flow);
+      const before = await shoot(page, clip2, file("c2-pre"));
+      const hit = await pickFirst(flow, c2.shot.firstBoat);
+      await page.waitForTimeout(1200);
+      shots.c22 = await shoot(page, clip2, file("c22"), { pre: before.file, cursor: rel(hit, clip2), testid: "着順の流れ" });
+    }
+    if (c3) {
+      await openTab(page, "展開シナリオ");
+      await hideFixed(page);
+      await page.locator(".af-pats").first().locator("button", { hasText: c3.shot.form }).first().click();
       await page.waitForTimeout(2500);
       await hideFixed(page);
-      const flows = page.locator(".af-flow");
-      const flow = flows.last();
-      const clip2 = pad(await box(flow));
+      const flow = page.locator(".af-flow").last();
+      const clip2 = await flowClip(flow);
       const before = await shoot(page, clip2, file("c3-pre"));
       const hit = await pickFirst(flow, c3.shot.firstBoat);
       await page.waitForTimeout(1200);
