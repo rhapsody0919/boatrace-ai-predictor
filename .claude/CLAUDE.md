@@ -46,7 +46,7 @@ Claude と Codex に共通する規約（運用前提・ブランチ・用語・
 | `boatrace-fan-reviewer` | 変更画面をファン視点の固定7観点でPreview URL上から評価（P0〜P3） | 「ファン評価あり」の作業で、CI緑の後に周ごと新規起動（`.claude/rules/review-fix-cycle.md`） |
 | `mock-diff-checker` | 承認済みモックと Preview の実画面を比べ、承認範囲の内外の差分を列挙する | UI PR を段階0で自己マージする前（`.claude/skills/orchestrate/SKILL.md` §4） |
 | `user-proxy-reviewer` | ユーザーの過去の判断（memory・CLAUDE.md・rules）から、提案が通るかを判定する | 段階1の代理判定（同 §4） |
-| `data-scientist` | 指標の効き目・言える範囲（相関・1着率の差・母集団） | 障害の対応で今すぐ数字が要るとき、または社員の答えが2周で返らないとき（試用のあいだ） |
+| `data-scientist` | 指標の効き目・言える範囲（相関・1着率の差・母集団） | 障害の対応で今すぐ数字が要るとき、または社員の答えが2周で返らないとき（試用のあいだ）。全貌動画の型の関門の段2（台本会議） |
 | `visual-designer` | 画面（UI/UX）と SNS 動画の見た目・動き | モック・Preview・動画ができた後、図と動きを決めるとき |
 | `official-data-spec` | 公式データの定義・桁・切り替わる時点と、サイトの値との照合 | 公式の値と一致させる画面・バッチを作る・直すとき |
 | `measurement-planner` | 仕様の段階の計測設計（イベント・GA4 登録）と公開後の読み方 | spec を書くとき、公開後に反応を読むとき |
