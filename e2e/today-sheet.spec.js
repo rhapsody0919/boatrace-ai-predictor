@@ -133,26 +133,22 @@ for (const picks of [
   });
 }
 
-test("/share/today-sheet: 1行の日・材料の無い日・URL の形が違う日は画像を出さない", async ({
-  page,
-}) => {
-  await open(page, notesOf([PEOPLE[0]]));
-  await expect(page.locator('[data-today-sheet-error="one_row"]')).toBeVisible({
-    timeout: 30000,
+// 1件ごとに別の試験にする（ページは試験ごとに新しい。途中で page.unroute しない、verify-e2e-no-unroute.js）
+for (const [label, courseWin, query, reason] of [
+  ["1行の日", () => notesOf([PEOPLE[0]]), undefined, "one_row"],
+  [
+    "材料の無い日",
+    () => ({ v: 1, status: "unavailable", reason: "rpc_missing" }),
+    undefined,
+    "rpc_missing",
+  ],
+  ["URL の形が違う日", () => notesOf(PEOPLE), `date=${D}&from=8:00`, "params"],
+]) {
+  test(`/share/today-sheet: ${label}は画像を出さない`, async ({ page }) => {
+    await open(page, courseWin(), query);
+    await expect(
+      page.locator(`[data-today-sheet-error="${reason}"]`),
+    ).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("[data-today-sheet]")).toHaveCount(0);
   });
-  await expect(page.locator("[data-today-sheet]")).toHaveCount(0);
-  // 朝の一覧は画面のキャッシュ（localStorage）に残るので、次の応答を読ませる前に消す
-  await page.evaluate(() => localStorage.clear());
-  await page.unrouteAll();
-  await open(page, { v: 1, status: "unavailable", reason: "rpc_missing" });
-  await expect(
-    page.locator('[data-today-sheet-error="rpc_missing"]'),
-  ).toBeVisible({ timeout: 30000 });
-  // 朝の一覧は画面のキャッシュ（localStorage）に残るので、次の応答を読ませる前に消す
-  await page.evaluate(() => localStorage.clear());
-  await page.unrouteAll();
-  await open(page, notesOf(PEOPLE), `date=${D}&from=8:00`);
-  await expect(page.locator('[data-today-sheet-error="params"]')).toBeVisible({
-    timeout: 30000,
-  });
-});
+}
