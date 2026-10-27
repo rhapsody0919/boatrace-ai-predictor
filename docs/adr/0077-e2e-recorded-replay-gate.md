@@ -54,6 +54,8 @@
 
 `E2E_LIVE=1`（`npm run test:e2e:live`）で従来どおり本番データ・実時刻で走る。`.github/workflows/e2e-live.yml` が JST14:00（UTC05:00）に実行し、失敗を Slack に流す（`nightly-verify-db.yml` と同じ webhook・attachments 形式）。`workflow_dispatch` も付けた。
 
+2026-10-27 追記: 1ジョブで全件を流していた間、2026-10-20〜26 の7回とも60分の上限で取り消され、本番データでの検知が1週間働いていなかった（docs/design/ci-minutes-reduction/design.md 2.4）。PR ゲートと同じ `e2e/shards.json` の組に分け（`e2e-shards.js --matrix`、各組 45分まで）、`report` のジョブが組のレポートをまとめて skip・組の網羅を見て、落ちていれば Slack に1回だけ流す。`verify-e2e-shards.js` が e2e-live.yml の組も e2e/shards.json から作ることを検査する。
+
 ### 4. 既存の個別 `page.route` は優先される
 
 HAR は context に登録し、spec 側の `page.route` は page に登録される。page のルートが先に評価されるため、既存の差し替え（予測データ取得失敗・ピットレポートの回帰テスト）はそのまま効く。`route.fallback()` すれば HAR に落ちる。実測で確認した（`/rest/v1/venues*` を page.route で `[]` にした場合、HAR の応答ではなく `[]` が返った）。
