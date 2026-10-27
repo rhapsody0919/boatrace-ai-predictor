@@ -19,6 +19,9 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - 素材取り込み CLI の点検は、取り込み可能・公開可能・運用段階移行を分けて範囲と停止位置を指定する（2026-10-13、2026-10-13-plan-1728.md）
 - 同じ SNS の仕組みでも cron の job が違えば、既存 runner の未配達持越しは新 runner へ自動では適用されない。manual/held_manual の再処理除外と、一度きりの通知の失敗時保存を同じ経路で見る（2026-10-14、2026-10-14-plan-review-20261014-01.md）
 - runner が失敗結果にも report.alerts を返しても、共通 wrapper が成功時だけ report を保存するなら監視に届かない。未設定＋他媒体失敗の組合せを wrapper/store まで追う（2026-10-14、2026-10-14-plan-review-20261014-03.md）
+- private_retained からは poll・publish・update のどの遷移にも進めない。posted に戻る道は lookup の public から complete だけ（2026-10-27、system-architect、153:495-501,573）
+- 要照合を自動で解く経路を足すときは、docs/design/sns-hub-shorts-send/contract.md の「要照合解除」の文と、snsSendRunner.js の冒頭の説明も直す（2026-10-27、system-architect、BOA-1164）
+- X の job は Chromium を3回使う（runner の検査1・runXSendJob の2）。上限6では1回の実行で X は2件までで、3件目は検査に落ちていた。runner は必要数を見積もって次の実行に回す（2026-10-27、BOA-1164、snsSendRunner.js headlessNeed）
 - 送る直前の readCurrent（api/_lib/snsClaimCheck.js）は下書きの source_data のキー（digest・full_picture・finals_image・research_image・today_thinking）で振り分ける。新しい種類は別のキーにして他の種類のキーを入れず、枝の中で item の kind も読んで食い違えば投げる（2026-10-27、BOA-1169、snsClaimCheck.js の today_thinking の枝）
 
 ## 容量・上限
@@ -51,9 +54,10 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - refresh成功後の条件付き保存が不成立のときは、確認用の再読取の失敗も通知対象に含め、再読取例外で元の理由や再連携案内が脱落しないか点検する。（2026-10-13、2026-10-13-plan-review-xoauth-20261013-03.md）
 - 再連携とrefreshの競合は古いrefreshの保存0行と古いrefreshの失敗を分け、新行利用か停止かがspec未定義なら競合全体を解消済みとしない。（2026-10-13、2026-10-13-plan-review-xoauth-20261013-03.md）
 - IDなしlookupの外部通信抑止と読取台帳の消費は別に確認し、外部通信0を台帳消費0としない。（2026-10-13、2026-10-13-plan-review-youtube-20261013-01.md）
-- 全貌の YouTube の job（カバー画像なし）は、1回の実行で Chromium を6回使う（runner の検査1・送信の中の検査1・videos.insert の直前1・公開の準備の後の検査1・videos.update の直前1・videos.list の直前1）。上限6をちょうど使い切るので、同じ実行で前に何かが検査を使うと、非公開のまま残る（retain）（2026-10-20、system-architect、snsDeadlineQueue.js:100-143・snsHeadless.js:55）
+- カバーありの YouTube は Chromium を7回使い、7回目は videos.update の後・videos.list の前に当たる。上限6で落ちると retain ではなく update_started の要照合になっていたので、videos.list の前の検査を外した。今は全貌の YouTube（カバーなし）は5回、カバーありは6回（2026-10-27、system-architect、BOA-1164・snsDeadlineQueue.js）
 - YouTube の upload→処理の確認→公開は1回の実行の中で終わり、終わらなければ youtube_retain。後の実行で続きをする経路は無い（dueJobs は queued だけを読む）（2026-10-20、system-architect、snsSendRunner.js:232-262,297）
 - job の順番の待ち合わせは parent_job_id を使う。pickDueJobs で Chromium を使わずに外し、transition_sns_send_139 が claim で parent_not_posted として止める。claim の後に JS で待つと、日次の枠とクォータを使ったまま held で終わる（2026-10-20、system-architect、158:144-145・snsSendRunner.js:323-331。全貌の Shorts はこれで完全版を待つ、172）
 - 期限切れの queued は sweep で held/deadline_expired になるが、Slack に知らせる経路は無かった。親を待つ子は、送る前の検査の alert も出ないまま切れるので、runner が期限の10分前から parent_waiting で知らせる（2026-10-20、system-architect、139:204-205）
 - claim が日次の上限で例外になると、job は queued のまま残り、runner が2分ごとに Slack へ「送信が止まった」を送り続ける。全貌の YouTube が1レース2件になると daily_limit_youtube=2 は1日1レースで使い切る（2026-10-20、system-architect、158:169・snsSendRunner.js:203-210、本番の値は同日の読み取り）
+- 全貌の束から X を外す（`channels`、BOA-1167）ときも、完全版・Shorts の送る時刻のずらし（X から4分・8分）は残す。Shorts の受付の上限（締切の50分前）がこの並びの上で計算されており、ずらしを詰めると別のレース・別の型の X と同じ送信の実行に重なりやすい（2026-10-27、push-full-picture.js の OFFSET_MIN・SHORTS_LATEST_BEFORE_MIN）
 - push-full-pictureの拒否理由をnotifyのthrow/reject後も保持できることと、CLIがWebhookのHTTP失敗を検出することは別に検証する。fetchは非2xxだけではrejectしないため、注入notifyの合格だけで実配達を保証しない（2026-10-21、BOA-909、scripts/sns/push-full-picture.js・scripts/maintenance/verify-sns-full-picture.js）

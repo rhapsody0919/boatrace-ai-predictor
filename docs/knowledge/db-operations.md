@@ -33,6 +33,9 @@
 - transition_sns_send_139 を置き換えるマイグレーションの先頭の照合は md5(prosrc) の一致で行う（LIKE は前の版の印が残るので版を区別できない）。182 の本文は c2b4835c416ff6e824a43fe9025c6518。PGlite の verify は now() を test_now() にした本文の md5 に照合の値を差し替えて当てる（2026-10-27、BOA-1169、189・verify-sns-today-thinking.js）
 - sns_auto_send_items と sns_auto_send_control を同じマイグレーションで ALTER するときは、先頭で SET LOCAL lock_timeout の後に control → items の順に LOCK TABLE … ACCESS EXCLUSIVE を取る（送り手の transition_sns_x_send が control → items の順に読むので、逆だとデッドロックしうる）（2026-10-27、BOA-1169、189）
 - 適用待ちキーを WARN にする RPC 検査は、終了コード0でも当該マイグレーションの成功証拠にならない。台帳・途中の WARN・対象日と同一 raceId の保存値/応答を併せて確認する（2026-10-13、2026-10-13-plan-review-20261013-22.md）
+- approve_sns_x_send の ON CONFLICT は、state が sending・reconcile・posted でない job の youtube_stage と external_post_id を NULL に戻す。cancelled 等で閉じた job は承認し直せるので、記録を残したいなら approve で拒むか、別の場所に残す（2026-10-27、system-architect、177:145）
+- transition_sns_x_send に足した新しい操作を古い DB に送ると、YouTube の分岐を素通りして transition_sns_send_139 の「不正な操作です」で落ちる。コードを先に出しても壊れない根拠になる（2026-10-27、system-architect、182:307）
+- verify-rpc-key-regression は `'値',` の形の文字列をキーとして集めるので、CASE の ELSE などで値の後ろに `,` が無くなると「消えた」と出る。元の文の形を残して後から上書きする（2026-10-27、BOA-1164、186）
 
 ## 画面からの読み取り
 - 画面から Supabase を読むのは src/services/supabaseClient.js の1つの入口だけ。.throwOnError() が既定で、失敗を「データなし」に化けさせない（BOA-359、.claude/rules/frontend-data-fetch.md）

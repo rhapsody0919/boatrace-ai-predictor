@@ -209,12 +209,12 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/snapshotStatus.js` | AI クローラー向けスナップショット生成（generate-ai-snapshots.js）の結果を、見える形にまとめる。 | summarizeSnapshotRun, addSnapshotGroup, failedSnapshotGroups |
 | `scripts/lib/snsAutoPlanRunner.js` | SNS の自動送信の計画（sns-pdca-loop tasks 12 の前半、cron `sns_auto_plan`、plan §2、ADR 0094）。 | runSnsAutoPlan, planCandidates, evaluateChannel, reviewGate, createAutoPlanStore ほか8件 |
 | `scripts/lib/snsDailyRunner.js` | SNS の暦日の値の取り込み（sns-pdca-loop tasks 22、cron `sns_daily`、plan §5）。JST 10:00 に1日1回、… | ptMidnightUtc, runSnsDaily, mergeSameKey, createYoutubeAnalyticsClient, createSnsDailyStore ほか7件 |
-| `scripts/lib/snsGa4.js` | SNS の流入の GA4 の共通部分（sns-pdca-loop plan §5）。分析スクリプト（scripts/analysis/sns-pdca-base… | getServiceAccountToken, createGa4Client, X_SOURCES, YOUTUBE_SOURCES, SITE_HOST ほか5件 |
+| `scripts/lib/snsGa4.js` | SNS の流入の GA4 の共通部分（sns-pdca-loop plan §5）。分析スクリプト（scripts/analysis/sns-pdca-base… | getServiceAccountToken, createGa4Client, X_SOURCES, YOUTUBE_SOURCES, SITE_HOST ほか6件 |
 | `scripts/lib/snsMetricsRunner.js` | SNS の 48h・7d の取り込み（sns-pdca-loop tasks 21、cron `sns_metrics`、plan §5）。 | runSnsMetrics, createYoutubeMetricsReader, createXMetricsReader, dailySendMicrousd, createSnsMetricsStore ほか7件 |
 | `scripts/lib/snsObservationCollector.js` | — | collectDueObservations, mockObservationProvider |
 | `scripts/lib/snsPostTracking.js` | X の親の投稿の UTM（sns-pdca-loop tasks 23、plan §2・§5、spec C3）。 | insertTrackingUrl, prepareRaceTracking, createPostTrackingStore |
 | `scripts/lib/snsScreenMarkers.js` | 送る前のリンク先の表示の確認（sns-pdca-loop tasks 10、spec A2、ADR 0091）で見る、画面ごとの印。 | SCREEN_MARKERS, SCREEN_TABS |
-| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs, SNS_SEND_MAX_JOBS ほか6件 |
+| `scripts/lib/snsSendRunner.js` | SNS の送信の runner（sns-pdca-loop tasks 19、cron `sns_send`）。2分ごとに、送る時刻を過ぎた job を最大 m… | headlessNeed, runSnsSend, createPostgrestReader, createSnsSendStore, pickDueJobs ほか10件 |
 | `scripts/lib/snsStrategyInsights.js` | SNSマーケティングハブ Phase 2用 sns_strategy_insights 共通操作関数 | getActiveInsights, getProposedInsights, createInsight |
 | `scripts/lib/snsTodayCourseWinPost.js` | /today の X 投稿の型 b（v2「今日走る選手のコース別1着率」）の本文と、その機械の検査（純関数）。 | buildCourseWinPost, checkCourseWinPost, COURSE_WIN_FOOT, COURSE_WIN_LINK_LEAD, xWeightedLength |
 | `scripts/lib/snsTodayPlanner.js` | /today（本日のデータ一覧）の画像つき X 投稿の計画（sns-pdca-loop tasks 19b、通り道 A、plan §8）。 | todaySchedule, courseWinSheetUrl, prepareCourseWin, courseWinFeasible, typeAOf ほか28件 |
@@ -393,4 +393,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 351 ファイル / export 2011 件。
+対象 351 ファイル / export 2016 件。

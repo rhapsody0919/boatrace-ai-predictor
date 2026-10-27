@@ -13,6 +13,10 @@
  *   - 訳し漏れ（キーがそのまま出る・{{}} が残る・undefined / NaN）が無い
  */
 import fs from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { createRequire } from "node:module";
+import { build as bundle } from "esbuild";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { aiCopyPageUrl, buildAiCopyText } from "../../src/utils/aiCopyText.js";
@@ -130,10 +134,80 @@ const build = (lang, overrides = {}) => {
   };
 };
 
+// 実際の行生成を実行する。DBを読むフック・サービスだけを置換し、
+// raceIndicators の整形・訳語は実物を使う（JSX は esbuild で変換）。
+const bundled = await bundle({
+  stdin: {
+    contents: fs.readFileSync(path.join(ROOT, "src/hooks/useAiCopyText.js"), "utf8") +
+      "\nexport { buildRows, buildOriginalExhibitionRows };",
+    resolveDir: path.join(ROOT, "src/hooks"),
+    loader: "js",
+  },
+  bundle: true,
+  write: false,
+  platform: "node",
+  format: "cjs",
+  packages: "external",
+  jsx: "automatic",
+  plugins: [{
+    name: "offline-copy",
+    setup(b) {
+      // 描画の span を入れ子にしても、コピーの値はプレーンテキストのまま。
+      b.onLoad({ filter: /raceIndicators\.jsx$/ }, (args) => ({
+        contents: fs.readFileSync(args.path, "utf8").replace(
+          /<span className="drt-value">\{value\.toFixed\(2\)\}<\/span>/g,
+          '<span className="drt-value"><b>{value.toFixed(2)}</b></span>',
+        ).replace(
+          '<span className="drt-value">{formatValue(p)}</span>',
+          '<span className="drt-value"><b>{formatValue(p)}</b></span>',
+        ),
+        loader: "jsx",
+      }));
+      b.onResolve({ filter: /^react-i18next$/ },
+        () => ({ path: "translation", namespace: "offline" }));
+      // 文面生成は上の ESM import で実物を検証。ここでは buildRows だけを取り出す。
+      b.onResolve({ filter: /utils\/aiCopyText$/ },
+        () => ({ path: "copy-text", namespace: "copy-text" }));
+      b.onLoad({ filter: /.*/, namespace: "copy-text" }, () => ({
+        contents: "export const aiCopyPageUrl = () => {}; export const buildAiCopyText = ({ rows }) => rows;",
+      }));
+      b.onResolve({ filter: /(?:useRaceAnalysisData|useRaceEntryFlyingRows|useCurrentMeetFlyingBoats|supabaseDataService)$/ },
+        (args) => ({ path: args.path, namespace: "offline" }));
+      b.onLoad({ filter: /.*/, namespace: "offline" }, (args) => ({
+        contents: args.path === "translation"
+          ? 'export const useTranslation = () => ({ t: (key) => key, i18n: { resolvedLanguage: "ja" } });'
+          : args.path.endsWith("useRaceAnalysisData")
+            ? 'export const useRaceAnalysisData = () => ({ loading: false });'
+            : args.path.endsWith("useRaceEntryFlyingRows")
+              ? 'export const useRaceEntryFlyingRows = () => new Map();'
+              : args.path.endsWith("useCurrentMeetFlyingBoats")
+                ? 'export const useCurrentMeetFlyingBoats = () => new Set();'
+                : 'export const supabaseDataService = { getRaceOriginalExhibition: () => { throw new Error("DB access forbidden"); } };',
+      }));
+    },
+  }],
+});
+const bundledModule = { exports: {} };
+new Function("require", "module", "exports", bundled.outputFiles[0].text)(
+  createRequire(import.meta.url), bundledModule, bundledModule.exports,
+);
+const { buildRows, buildOriginalExhibitionRows, useAiCopyText } = bundledModule.exports;
+
 const failures = [];
 const check = (name, ok, detail = "") => {
   if (!ok) failures.push(`${name}${detail ? `: ${detail}` : ""}`);
 };
+
+// SSR は effect が始まる前の状態。展示の取得が未完了でもコピーは押せる。
+let pendingCopy;
+function PendingCopy() {
+  pendingCopy = useAiCopyText({ raceId: RACE_ID, prediction: { allPlayers: players } });
+  return null;
+}
+renderToStaticMarkup(createElement(PendingCopy));
+check("オリジナル展示が未取得でもコピー可能", pendingCopy.isReady === true);
+check("オリジナル展示が未取得ならその行は省略",
+  !pendingCopy.buildText("win").some((r) => r.originalExhibitionLabel));
 
 for (const lang of LANGS) {
   const { dict, text } = build(lang);
@@ -307,6 +381,60 @@ for (const lang of LANGS) {
       bad.length === 0,
       bad.join(" / "),
     );
+  }
+}
+
+// BOA-772: 取得関数の戻り値の形を行生成へ渡し、その行を文面にする。
+for (const lang of LANGS) {
+  const t = makeT(loadLocale(lang));
+  const kinds = ["一周", "半周ラップ", "まわり足", "直線"];
+  const labelKeys = ["rowOriLap", "rowOriHalfLap", "rowOriTurn", "rowOriStraight"];
+  const byBoat = { 1: { 一周: 36.1, 半周ラップ: 18, まわり足: 5.12, 直線: 7.009 } };
+  const cases = [
+    [{ state: "published", kinds, byBoat }, [0, 1, 2, 3]],
+    [{ state: "published", kinds: ["一周", "まわり足"], byBoat }, [0, 2]],
+    [{ state: "empty", kinds: [], byBoat: {} }, []],
+    [{ state: "forbidden", kinds, byBoat }, []],
+    [null, []],
+    [{ state: "published", kinds, byBoat: { 1: { 一周: 36.1 } } }, [0]],
+  ];
+  for (const [input, indices] of cases) {
+    const rows = buildRows(t, players, {}, { rows: new Map(), currentMeet: new Set() }, RACE_ID, input);
+    const { text } = build(lang, { rows });
+    // 入れ子 JSX の表とコピーの値が一致する（欠測艇も含む）。
+    for (const r of buildOriginalExhibitionRows(t, input)) {
+      const copyRow = rows.find((copy) => copy.key === r.key);
+      for (const p of players) {
+        const displayed = renderToStaticMarkup(createElement("div", null, r.render(p)))
+          .replace(/<[^>]*>/g, "");
+        check(`[${lang}] ${r.key} ${p.number}号艇の表とコピーの一致`,
+          displayed === copyRow.values[p.number - 1]);
+      }
+    }
+    for (let i = 0; i < kinds.length; i++) {
+      const label = t(`dataTable.${labelKeys[i]}`);
+      const line = `| ${label} | ${["36.10", "18.00", "5.12", "7.01"][i]} | — | — | — | — | — |`;
+      check(`[${lang}] ${input?.state ?? "null"} ${kinds[i]}の行と欠測艇`,
+        indices.includes(i) ? text.includes(line) : !text.includes(label));
+    }
+    const source = t("beforeInfo.originalExhibitionSource", {
+      items: indices.map((i) => t(`dataTable.${labelKeys[i]}`))
+        .join(t("beforeInfo.originalExhibitionItemSeparator")),
+    });
+    check(`[${lang}] 実際の行だけの出典1行`, indices.length
+      ? text.split("\n").filter((line) => line === `- ${source}`).length === 1
+      : !text.includes("BOATCAST"));
+    check(`[${lang}] オリジナル展示の訳・値に欠落なし`,
+      !/dataTable\.|beforeInfo\.|\{\{|undefined|NaN|競艇|\[object Object\]/.test(text));
+    check(`[${lang}] オリジナル展示に的中を示唆する語なし`,
+      !/的中|当た|勝てる|儲|稼|狙い目|guaranteed|적중|명중|必中|穩賺/i.test(
+        rows.filter((r) => r.originalExhibitionLabel).map((r) => r.label).join(" ") + source,
+      ));
+    if (indices.length) {
+      const keys = rows.map((r) => r.key);
+      check(`[${lang}] 展示タイムの直後にオリジナル展示`,
+        keys[keys.indexOf("exhibition") + 1] === "oriLap");
+    }
   }
 }
 
