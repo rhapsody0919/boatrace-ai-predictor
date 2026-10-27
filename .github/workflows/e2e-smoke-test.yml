@@ -35,8 +35,12 @@ permissions:
 
 jobs:
   # 差分から流す範囲（none / light / full）を決める。判定できないときは full
+  # timeout-minutes（design.md 2.4）: 既定は360分で、止まった組が6時間ランナーを使い続けた（2026-10-13 run 38477122383 は
+  # 3組で計 約427分）。7日の実測（成功の run）は e2e-scope 最大 0.4分・e2e-shard 最大 32.1分（10/18 は36分）・
+  # e2e-light 最大 7.3分・e2e 最大 0.8分。e2e-shard は e2e-rerun.js の「止まった」判定（50分）より前に切れるようにする
   e2e-scope:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     outputs:
       scope: ${{ steps.scope.outputs.scope }}
       matrix: ${{ steps.shards.outputs.matrix }}
@@ -86,6 +90,7 @@ jobs:
     needs: e2e-scope
     if: needs.e2e-scope.outputs.scope == 'full'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     strategy:
       # 1組が落ちても他の組は最後まで走らせ、失敗を一度に全部見せる
       fail-fast: false
@@ -158,6 +163,7 @@ jobs:
     needs: e2e-scope
     if: needs.e2e-scope.outputs.scope == 'light'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -230,6 +236,7 @@ jobs:
     # この job が skipped になり、e2e を通らずに自動マージされえた。取り消しは最後の段で失敗にする
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       SCOPE: ${{ needs.e2e-scope.outputs.scope }}
     steps:

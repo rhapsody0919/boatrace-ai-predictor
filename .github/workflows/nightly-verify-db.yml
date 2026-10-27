@@ -32,7 +32,12 @@ jobs:
   verify:
     environment: prod-jobs
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 15分では 10/20〜10/27 の毎晩、verify-analogy-v16 --cleanup の途中で取り消された（BOA-977。#1956 の後の
+    # 10/26 22:16Z の run も同じ）。掃除は日ごとに控え（_usage/cleanup-days.json.gz）を書くので、溜まった分は
+    # 夜ごとに減る。2026-10-27 の読み取りだけの実測で、1日の run は約145個・1回の一覧は約0.17秒、残りの
+    # 掃除は約27の日と種類（1つ約25秒、計 約11分）と、容量の数え直し（新しい9日）。溜まった分を一晩で終えられる
+    # 長さにする（design.md 2.4。目安、根拠は上の見積もりだけ）
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -58,9 +63,12 @@ jobs:
             # Storage の合計を1行出す。80GB を超えたら失敗にして Slack に流す
             ARGS=""
             if [ "$script" = "verify-analogy-v16" ]; then ARGS="--cleanup"; fi
-            RESULT=$(node "scripts/maintenance/$script.js" $ARGS 2>&1)
-            CODE=$?
-            echo "$RESULT"
+            # 出力は tee で流す（$(...) に溜めると、時間切れの run ではどこで止まったかが残らない）
+            START=$(date +%s)
+            node "scripts/maintenance/$script.js" $ARGS 2>&1 | tee "$RUNNER_TEMP/verify-out.txt"
+            CODE=${PIPESTATUS[0]}
+            RESULT=$(cat "$RUNNER_TEMP/verify-out.txt")
+            echo "--- $script: 終了コード $CODE・$(( $(date +%s) - START ))秒"
             if [ "$CODE" -ne 0 ]; then
               EXIT_CODE=1
               OUTPUT="${OUTPUT}[$script]\n${RESULT}\n\n"
