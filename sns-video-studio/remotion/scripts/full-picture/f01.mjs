@@ -33,10 +33,7 @@ export const VOICE_DICT = [
 const BOATS = [1, 2, 3, 4, 5, 6];
 /** 件数（字幕は 11,160、声は「1万1160」） */
 const cnt = (n) => n.toLocaleString("ja-JP");
-const sayN = (n) => (n >= 10000 ? `${Math.floor(n / 10000)}万${n % 10000 || ""}` : String(n));
 const wari = (k, n) => Math.round((k / n) * 10);
-/** 割合の声（「37.0」は「37」と読む） */
-const sayPct = (r) => String(r).replace(/\.0$/, "");
 const stepOf = (scenes, sid, id) => scenes.find((s) => s.id === sid)?.data?.steps?.find((x) => x.id === id) ?? null;
 /** sankey の links（[段, a, b, 件]）→ 1着が a のときの2着の件数（艇番の順） */
 const secondOf = (links, a) => BOATS.map((b) => links.filter((l) => l[0] === 0 && l[1] === a && l[2] === b).reduce((s, l) => s + l[3], 0));
@@ -45,7 +42,7 @@ const firstOf = (links) => BOATS.map((a) => links.filter((l) => l[0] === 0 && l[
 const desc = (counts, except = []) =>
   BOATS.filter((b) => counts[b - 1] > 0 && !except.includes(b)).sort((x, y) => counts[y - 1] - counts[x - 1] || x - y);
 /** 「2号艇24件、4号艇17件、…」。順位の語は付けない */
-const listCounts = (counts, order, unit = "件") => order.map((b) => `${b}号艇${counts[b - 1]}${unit}`).join("、");
+const listCounts = (counts, order, unit = "件") => order.map((b) => `${b}号艇${cnt(counts[b - 1])}${unit}`).join("、");
 
 /**
  * 1文を字幕の行に分ける（句点で切り、長い文は読点で SUB_MAX 字以内に詰める）
@@ -69,8 +66,15 @@ export function splitSubs(text) {
   }
   return out;
 }
-/** 声の文（辞書で読みを置き換える） */
-export const voiceText = (sub) => VOICE_DICT.reduce((s, d) => s.split(d.word).join(d.say), sub);
+/** 声の文（字幕の字 → 読み。桁区切りを外し、「37.0%」は「37パーセント」、辞書で読みを置き換える） */
+export const voiceText = (sub) =>
+  VOICE_DICT.reduce(
+    (s, d) => s.split(d.word).join(d.say),
+    sub
+      .replace(/(\d),(?=\d{3})/g, "$1")
+      .replace(/(\d+)\.0%/g, "$1%")
+      .replace(/%/g, "パーセント"),
+  );
 
 /**
  * 材料 → 章の並び（声・字幕・右の列・左の画面の撮り方）。作れない章は omitted に理由を書いて省く
@@ -106,7 +110,7 @@ export function f01Script(m) {
   chapters.push({
     id: "open",
     name: "冒頭",
-    voice: `${sayRace}。1号艇が${wari(k0, n0)}割勝つ組み合わせで、崩すならどの艇か。${where}で、6艇の級の並びが同じ、枠なりの過去${n0}件。1号艇が負けた${lossN}件の内訳は、${listCounts(first, lossOrder)}。`,
+    voice: `${sayRace}。1号艇が${wari(k0, n0)}割勝つ組み合わせで、崩すならどの艇か。${where}で、6艇の級の並びが同じ、枠なりの過去${cnt(n0)}件。1号艇が負けた${cnt(lossN)}件の内訳は、${listCounts(first, lossOrder)}。`,
     open: {
       head: `${raceName}  ${date}`,
       title: `1号艇が負けた${lossN}回、勝ったのは？`,
@@ -197,7 +201,7 @@ export function f01Script(m) {
     const secRank = rankOf(sec[secOrder[0] - 1], sec[secOrder[1] - 1] ?? 0);
     const lines = [
       `展開のタブでは、スタートの形を見る。今日の6艇は、コース別の平均スタートで${form}形。`,
-      `${n0}件のうち、この形の${nForm}件で、1着は${fb}号艇が${fc[fb - 1]}件。`,
+      `${cnt(n0)}件のうち、この形の${cnt(nForm)}件で、1着は${fb}号艇が${fc[fb - 1]}件。`,
       secRank.rankSig
         ? `${fb}号艇が勝った${fc[fb - 1]}件の2着は、${secOrder[0]}号艇が${sec[secOrder[0] - 1]}件で最も多い。`
         : `${fb}号艇が勝った${fc[fb - 1]}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
@@ -206,7 +210,7 @@ export function f01Script(m) {
       id: "c3",
       name: "スタートの形",
       tag: "龍神ソナー ＞ 展開シナリオ",
-      scope: `${n0}件のうち ${form} ${nForm}件`,
+      scope: `${cnt(n0)}件のうち ${form} ${cnt(nForm)}件`,
       answer: `1着 ${fb}号艇 ${fc[fb - 1]}件`,
       answer2: `2着 ${secOrder.slice(0, 3).map((b) => `${b}号艇${sec[b - 1]}`).join("・")}`,
       path: "ソナー → 展開シナリオ",
@@ -236,8 +240,8 @@ export function f01Script(m) {
       answer2: `1号艇軸なら 2着は${ax1.second.boat}号艇 ${ax1.second.rate}%`,
       path: "アシスト → 相手 → 軸",
       voice:
-        `ここからは思考アシスト。軸を選ぶと、相手の割合が出る。${ax1.venue}で1号艇が1着の${sayN(ax1.n)}件では、2着は${ax1.second.boat}号艇が${sayPct(ax1.second.rate)}パーセント。` +
-        `軸を${axisK}号艇に変えると、${sayN(axK.n)}件で、2着は${axK.second.boat}号艇が${sayPct(axK.second.rate)}パーセント${swap ? "に入れ替わる" : ""}。`,
+        `ここからは思考アシスト。軸を選ぶと、相手の割合が出る。${ax1.venue}で1号艇が1着の${cnt(ax1.n)}件では、2着は${ax1.second.boat}号艇が${ax1.second.rate}%。` +
+        `軸を${axisK}号艇に変えると、${cnt(axK.n)}件で、2着は${axK.second.boat}号艇が${axK.second.rate}%${swap ? "に入れ替わる" : ""}。`,
       shot: { page: "assist", cut: "follow", axis: 1, axis2: axisK },
       expect: [`2着は${ax1.second.boat}号艇 ${Math.round(Number(ax1.second.rate))}%`],
       expect2: [`2着は${axK.second.boat}号艇 ${Math.round(Number(axK.second.rate))}%`],
