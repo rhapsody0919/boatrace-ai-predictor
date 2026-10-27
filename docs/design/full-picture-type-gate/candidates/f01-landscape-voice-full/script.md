@@ -127,3 +127,5 @@ node scripts/full-picture/prototype-f01.mjs <材料.json> <出力> --bgm <mp3>  
 - hq の structure の文「締めで自分で使う3手順」は、7b節（締めは案A・案B）の決定より古い。龍神の実装は 7b節に従っている。文を変えると同じ id のまま文が変わるので、変えるなら hq と龍神の表を同時に直す
 
 通しの確かめ（2026-10-27）: `run-full.mjs <大村10R の材料> --type-spec <hq の f01 の型の json>` で、入口版（35.6秒、今の型）と完全版（f01、1920x1080・137.7秒）を作り、bundle の qa.machine は全て true（full_landscape・voice_credit を含む）、送信の道の受け取りの検査 `checkFullPicture` は理由0件。
+
+方針の確かめ（2026-10-27）: hq の 11c 節（10/27 15:20「今の12場面のカードを横に置き直し、吹き出しを読む」、Orchestrate 経由）と、この型（左に龍神の実画面、台本 v3）が食い違ったので、オーナーに聞いた。オーナー「#2011（実画面）のまま」。11c は取り下げ（hq の正本の直しは hq の持ち物）。
