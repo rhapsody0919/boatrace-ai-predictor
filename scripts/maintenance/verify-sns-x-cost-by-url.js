@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createHash, randomBytes } from "node:crypto";
 import { PGlite } from "@electric-sql/pglite";
+import twitterText from "twitter-text";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 
 const db = new PGlite();
@@ -261,7 +262,7 @@ test("188: 182 との差は予約額の行だけ（v_ceiling・素材のスレ�
   );
 });
 
-test("sns_x_post_has_url: スキーム・www・よく使う TLD のドメインは URL（日本語が続いても）。数字の小数・日本語だけ・NULL は URL でない", async () => {
+test("sns_x_post_has_url: twitter-text の extractUrls が URL と見る文は必ず真（取り逃すと予約が実額より少なくなる）。URL の無い文は偽", async () => {
   const has = async (t) =>
     (await first("SELECT sns_x_post_has_url($1) r", [t])).r;
   for (const t of [
@@ -270,15 +271,26 @@ test("sns_x_post_has_url: スキーム・www・よく使う TLD のドメイン�
     "www.boat-ai.jp",
     "詳しくは boat-ai.jp で",
     "BOAT-AI.JP",
-  ])
+    "youtu.be/abcdefghijk",
+    "amzn.to/xyz",
+    "example.xyz",
+    "boat.tokyo",
+    "a.shop・b.online・c.club",
+    "x.gg",
+    "https://t.co/abcdef",
+  ]) {
+    assert.ok(twitterText.extractUrls(t).length > 0, `試験の文が URL でない: ${t}`);
     assert.equal(await has(t), true, t);
+  }
   for (const t of [
     "優勝戦 思考の順\n1号艇 逃げ切った割合 84.91%（全国53走）",
     "No.1 の 4.5 点",
     "",
-    null,
-  ])
-    assert.equal(await has(t), false, String(t));
+  ]) {
+    assert.equal(twitterText.extractUrls(t).length, 0, t);
+    assert.equal(await has(t), false, t);
+  }
+  assert.equal(await has(null), false);
 });
 
 test("claim の予約: URL のある文は ceiling_x_url、無い文（優勝戦の本投稿）は ceiling_x_plain。182 は親を全部 ceiling_x_url で数えていた", async () => {
@@ -318,3 +330,22 @@ test("claim の残りの見込み（v_rest）: まだ claim していない自�
   });
   await assert.rejects(transition(main2.id, "claim"), /月額上限です/);
 });
+
+test("claim の残りの見込み（v_rest）: 今日 claim 済みの他の親の、まだ claim していない子も子の文で数える（URL の無い子は ceiling_x_plain）", async () => {
+  const main = await makeJob("finals_image", "優勝戦 思考の順");
+  await makeJob("finals_image", "どれが来る？", {
+    variant: "finals_poll",
+    parentJobId: main.id,
+  });
+  assert.equal((await transition(main.id, "claim")).state, "sending");
+  // 他の親（優勝戦の本投稿）は claim 済み、その子（投票）はまだ。/today（URL つき 10000）＋他の親の子（plain 1000）が予算に入れば通る
+  await db.exec(
+    "UPDATE sns_x_send_control SET budget_microusd = reserved_microusd + 11000",
+  );
+  const today = await makeJob(
+    "digest",
+    "今日の一覧はこちら：https://www.boat-ai.jp/today",
+  );
+  assert.equal((await transition(today.id, "claim")).state, "sending");
+});
+

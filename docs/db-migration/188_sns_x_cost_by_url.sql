@@ -5,13 +5,20 @@
 -- URL の無い投稿（優勝戦の思考・数字で見たら・投票のリプ・展示後のリプ）も $0.25 で数えていて、月 $20 を早く使い切る見込みだった
 -- （2026-10-27 の今月: X 20本で 5,278,000、直近7日19本。Orchestrate の依頼「費用を正しく数える直し」）
 -- 変えるもの:
---   1. 関数 sns_x_post_has_url(text): X が URL として数えそうな文字列（https?:// か www. か、よく使う TLD のドメイン）があるか。
---      X の判定の正確な規則は料金表に無いので、多めに URL と見る（取り逃すと予約が実額より少なくなる）
+--   1. 関数 sns_x_post_has_url(text): X が URL として数えそうな文字列（https?:// か www. か、「英数字.英字2字以上」のドメイン）があるか。
+--      X の判定の正確な規則は料金表に無いので、多めに URL と見る（取り逃すと予約が実額より少なくなる）。TLD を並べる形は youtu.be・
+--      .xyz・.tokyo 等を取り逃すので使わない（審査 P2-1。本番の X の下書き136件では twitter-text の extractUrls と全件一致）
 --   2. transition_sns_send_139（土台は 182）: v_ceiling を自分の送る文（snapshot の text）の URL の有無で決める。素材のスレッドの兄弟
---      （v_rest）と、まだ claim していない自分の子（177 の v_children）も、それぞれの文で数える。ほかは 182 のまま
+--      （v_rest、本文と hashtags を buildPostText と同じく空行でつないだ文）と、まだ claim していない子（177 の v_children。自分の子と、
+--      今日 claim 済みの他の親の子）も、それぞれの文で数える。ほかは 182 のまま
 --   3. sns_x_send_control の ceiling_x_url_microusd 250000 → 200000、ceiling_x_plain_microusd 30000 → 15000（今の値が 250000・30000
 --      のときだけ。違えばオーナーが別に決めた値なので触らず NOTICE）。attempt_ceiling_microusd（費用未確認の判定と、列が NULL のときの
---      代わり）は変えない。予算（budget_microusd）は変えない（予算の線はオーナー）
+--      代わり）は変えない。予算（budget_microusd）は変えない（予算の線はオーナー、2026-10-27 に $20 のまま）。
+--      250000・30000 は料金に上乗せした予約の幅（画像のアップロードの費用が未確認なための余裕、153-runbook）で、これはオーナーが
+--      決めた値の書き換えにあたる（Orchestrate 経由でオーナーが 2026-10-27 に了承）
+-- 未確認（審査 P1-1）: 本文に URL が無く画像だけの投稿が $0.015 で請求されるか（X は画像に t.co のリンクを付ける）。10月の X の送信は
+--   全部 URL つきで、URL の無い投稿の実費はまだ測れていない。適用後に最初の URL の無い投稿を送ったら、翌日に X の Developer Console で
+--   実費の増え方を見る。$0.200 で請求されていたら、snapshot の media のある投稿を URL つきとして数える版を出す（差は1日約 $0.6 に収まる）
 -- 検証: scripts/maintenance/verify-sns-x-cost-by-url.js（PGlite、外部接続なし）
 -- 適用の順: コードの変更は無い。182 の後（下の DO が transition の本文の md5 を確かめ、違えば全体を戻す）
 -- 適用の時刻: X を送らない時間（22:00〜07:00 JST か 10:00〜13:00 JST）。/today 8:00〜9:30、全貌の X 14:30〜21:15 頃、優勝戦 16:30〜20:45、
@@ -24,13 +31,16 @@
 --   SELECT to_regprocedure('public.sns_x_post_has_url(text)');  期待: NULL
 --
 -- 適用後の確認（読み取り）:
---   SELECT prosrc LIKE '%sns_x_post_has_url%' FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: true
+--   SELECT md5(prosrc) FROM pg_proc WHERE proname = 'transition_sns_send_139';  期待: 188 の本文の md5（verify-sns-x-cost-by-url.js がファイルから計算する値）
 --   SELECT ceiling_x_url_microusd, ceiling_x_plain_microusd FROM public.sns_x_send_control;  期待: 200000・15000
---   SELECT public.sns_x_post_has_url('今日の一覧はこちら：https://www.boat-ai.jp/today'), public.sns_x_post_has_url('優勝戦の思考の順');  期待: true・false
+--   sns_x_post_has_url は claude_ro に EXECUTE が無いので呼ばない（SQL Editor のオーナーは呼べる）
+--   最初の URL の無い投稿の job の reserved_microusd が 15000 か。翌日に Console の実費（上の未確認）
 --   node --env-file=.env.local scripts/maintenance/verify-rpc-output-keys.js
 --
--- 戻し方: 182_sns_x_kind_reserves.sql の transition_sns_send_139 の CREATE OR REPLACE と REVOKE（144〜316 行）だけを実行し、
---   UPDATE public.sns_x_send_control SET ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000 WHERE id = true;
+-- 戻し方: 189 を当てた後なら 189 を先に戻す（182 の本文を当てると 189 の変更も消える）。182_sns_x_kind_reserves.sql の
+--   transition_sns_send_139 の CREATE OR REPLACE と REVOKE（144〜316 行）だけを実行し、
+--   UPDATE public.sns_x_send_control SET ceiling_x_url_microusd = 250000, ceiling_x_plain_microusd = 30000
+--     WHERE id = true AND ceiling_x_url_microusd = 200000 AND ceiling_x_plain_microusd = 15000;
 --   sns_x_post_has_url は残してよい（呼ばれなければ効かない）。消すなら関数を戻した後に DROP FUNCTION public.sns_x_post_has_url(TEXT);
 BEGIN;
 
@@ -45,7 +55,7 @@ END $$;
 -- X が URL として数えそうな文字列があるか。多めに真にする（偽にすると予約が実額より少なくなる）
 CREATE FUNCTION public.sns_x_post_has_url(p_text TEXT)
 RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path=public AS $$
-  SELECT coalesce(p_text, '') ~* '(https?://|www\.|[a-z0-9-]+\.(com|net|org|jp|io|co|me|ly|gl|app|dev|info|tv|ai|link|site)(?![a-z0-9]))';
+  SELECT coalesce(p_text, '') ~* '(https?://|www\.|[a-z0-9-]+\.[a-z]{2,}(?![a-z0-9-]))';
 $$;
 
 REVOKE ALL ON FUNCTION public.sns_x_post_has_url(TEXT) FROM PUBLIC, anon, authenticated, service_role;
@@ -59,7 +69,7 @@ BEGIN
   END IF;
 END $$;
 
--- 置き換え（182）: transition_sns_send_139。変更は v_ceiling・素材のスレッドの兄弟の v_rest・自分の子の v_rest だけ
+-- 置き換え（182）: transition_sns_send_139。変更は v_ceiling・素材のスレッドの兄弟の v_rest・まだ claim していない子の v_rest だけ
 CREATE OR REPLACE FUNCTION public.transition_sns_send_139(p_job_id UUID, p_action TEXT, p_result JSONB DEFAULT '{}'::jsonb)
 RETURNS JSONB LANGUAGE plpgsql SET search_path=public AS $$
 DECLARE d public.sns_drafts; j public.sns_x_send_jobs; c public.sns_x_send_control; reason TEXT; day_count INTEGER;
@@ -84,7 +94,7 @@ BEGIN
     WHEN public.sns_x_post_has_url(j.snapshot->>'text') THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
     ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END;
   IF p_action IN ('claim','begin_post') AND j.channel='x' AND d.thread_index=0 AND d.bundle_import_id IS NOT NULL THEN
-    SELECT count(*), coalesce(sum(CASE WHEN public.sns_x_post_has_url(sd.caption_text) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
+    SELECT count(*), coalesce(sum(CASE WHEN public.sns_x_post_has_url(concat_ws(E'\n\n', sd.caption_text, array_to_string(sd.hashtags,' '))) THEN coalesce(c.ceiling_x_url_microusd,c.attempt_ceiling_microusd)
         ELSE coalesce(c.ceiling_x_plain_microusd,c.attempt_ceiling_microusd) END) FILTER (WHERE sd.id<>d.id),0)
       INTO v_need, v_rest FROM public.sns_drafts sd WHERE sd.bundle_import_id=d.bundle_import_id AND sd.platform='x' AND sd.status<>'archived';
     v_need := greatest(v_need,1);
