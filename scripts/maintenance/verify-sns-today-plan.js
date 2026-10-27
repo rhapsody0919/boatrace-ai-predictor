@@ -21,6 +21,11 @@ import {
   runTodayPlan,
   todaySchedule,
 } from "../lib/snsTodayPlanner.js";
+import { buildCourseWinNotes } from "../../src/utils/todayCourseWin.js";
+import {
+  normalizeTodayExperiment,
+  pickExperimentSide,
+} from "../lib/snsTodayVariants.js";
 
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
@@ -510,7 +515,7 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   assert.ok(
     draft.caption_text.includes(
-      `）\n\n今日の一覧はこちら：https://www.boat-ai.jp/today?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=2037-10-17\n\n${FEATURED_LINE}\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。`,
+      `）\n\n今日の一覧はこちら：https://www.boat-ai.jp/today?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=2037-10-17-a\n\n${FEATURED_LINE}\n\n${EXPECTED_LINES}\n\n過去の実績は当日の結果を保証しません。展示後は進入と展示タイムも確認してください。`,
     ),
     draft.caption_text,
   );
@@ -538,7 +543,8 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
     ],
   );
   // リンクは見出しの直後（3行目）に1回だけ。末尾は注意書き（2026-10-22 オーナー「前倒しで押される形」）
-  const todayUrl = `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${DATE}`;
+  // utm_content は「日付-札」（実際に送った型、hq §10-5）
+  const todayUrl = `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${DATE}-a`;
   const captionLines = draft.caption_text.split("\n");
   assert.equal(captionLines[1], "");
   assert.equal(captionLines[2], `今日の一覧はこちら：${todayUrl}`);
@@ -566,7 +572,7 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
   );
   assert.deepEqual(
     [tracking.utm_campaign, tracking.utm_content],
-    ["today_digest", DATE],
+    ["today_digest", `${DATE}-a`],
   );
   assert.equal(notes.length, 1);
   // 個別承認の画面は 2026-10-18 に撤去した。manual のときは送らないと知らせる
@@ -1438,11 +1444,12 @@ test("171: /today の見出しの2案の行を入れる。もう一度当てて�
       "utf8",
     ),
   );
+  // b は型 b（course_win、2026-10-27）に替えたので、見出しの案 b の行（171）の札は付けない（別の中身に同じ札を付けない）
   assert.deepEqual(
     config.variants.map((v) => [v.id, v.uuid]),
     [
       ["a", rows[0].id],
-      ["b", rows[1].id],
+      ["b", null],
     ],
   );
 });
@@ -2014,4 +2021,535 @@ test("返信: 子を親につないだ後、子の承認の前に関数が落ち
     assert.equal(job.state, "queued");
     assert.ok(job.parent_job_id);
   });
+});
+
+// ---------- 型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定） ----------
+const CW_BASE = [
+  ["A1", 1, 16129, 11456],
+  ["A2", 1, 13822, 8353],
+  ["B1", 1, 19169, 7685],
+  ["A1", 4, 11658, 1867],
+  ["A2", 4, 11845, 1474],
+];
+/** 朝の一覧の notes.courseWin（buildCourseWinNotes で作る。生成と同じ関数） */
+function courseWinOf() {
+  const races = [
+    [`${DATE}-04-12`, 4, 12, "16:14:00"],
+    [`${DATE}-24-10`, 24, 10, "19:36:00"],
+    [`${DATE}-22-12`, 22, 12, "16:40:00"],
+    [`${DATE}-06-12`, 6, 12, "16:23:00"],
+    // 締切が送る時刻より前のレースは載せない
+    [`${DATE}-01-01`, 1, 1, "07:50:00"],
+  ].map(([race_id, venue_code, race_number, start_time]) => ({
+    race_id,
+    venue_code,
+    race_number,
+    start_time,
+  }));
+  const entries = [
+    [`${DATE}-04-12`, 1, 1001, "A1", "高橋\u3000竜矢"],
+    [`${DATE}-24-10`, 1, 1002, "A1", "西村\u3000\u3000拓也"],
+    [`${DATE}-22-12`, 1, 1003, "A2", "上田\u3000龍星"],
+    [`${DATE}-06-12`, 4, 1004, "A2", "山下\u3000大輝"],
+    [`${DATE}-01-01`, 1, 1005, "A1", "早朝\u3000一郎"],
+  ].map(([race_id, boat_number, racer_id, grade, player_name]) => ({
+    race_id,
+    boat_number,
+    racer_id,
+    grade,
+    player_name,
+  }));
+  const w = { window_start: "2025-12-02", window_end: "2037-10-15" };
+  const rows = [
+    ...CW_BASE.map(([grade, course, runs, wins]) => ({
+      scope: "grade",
+      grade,
+      course,
+      runs,
+      wins,
+      ...w,
+    })),
+    ...[
+      [1001, 1, 47, 42],
+      [1002, 1, 56, 47],
+      [1003, 1, 42, 33],
+      [1004, 4, 45, 14],
+      [1005, 1, 60, 58],
+    ].map(([racer_id, course, runs, wins]) => ({
+      scope: "racer",
+      racer_id,
+      course,
+      runs,
+      wins,
+      off_frame_runs: 0,
+      ...w,
+    })),
+  ];
+  return buildCourseWinNotes({
+    races,
+    entries,
+    rpcRows: rows,
+    until: "2037-10-15",
+  });
+}
+const withCourseWin = (courseWin = courseWinOf()) => {
+  const d = digestOf();
+  return { ...d, day: { ...d.day, notes: { ...d.day.notes, courseWin } } };
+};
+/** DATE が型 b の日になる比べの設定（組の1日目か2日目かは乱数で決まるので、b になる方を選ぶ） */
+function abVariants() {
+  const base = {
+    default: "本日のデータ一覧（{date}）",
+    variants: [
+      {
+        id: "a",
+        uuid: null,
+        type_id: "today-a",
+        heading: "本日のデータ一覧（{date}）",
+      },
+      {
+        id: "b",
+        uuid: null,
+        type_id: "today-b-course-win",
+        body: "course_win",
+        heading: "【今日の注目データ】{date}",
+      },
+    ],
+  };
+  for (const start of [DATE, "2037-10-16"]) {
+    const experiment = { id: "t-ab", start, pairs: 10, seed: "verify" };
+    if (
+      pickExperimentSide(normalizeTodayExperiment(experiment), DATE).side ===
+      "b"
+    )
+      return { ...base, experiment };
+  }
+  throw new Error("b の日を作れない");
+}
+/** 撮影用のページ（指紋の印が出る）と /today・ソナーの図 */
+/**
+ * 撮影用のページ（指紋の印が出る）と /today・ソナーの図。pageKey を渡すと、ページはその指紋を出す（計画の指紋と違えば、
+ * 本物の snsHeadless と同じく待つ印が見えず screenshot_component_missing）
+ */
+function sheetShooter({ sheetFails = false, pageKey = null } = {}) {
+  const inner = shooter();
+  return {
+    ...inner,
+    async screenshot(request) {
+      if (request.url.includes("/share/today-sheet")) {
+        inner.calls.push(request);
+        if (sheetFails) throw new Error("screenshot_component_missing");
+        if (
+          pageKey &&
+          !request.requiredSelectors.includes(
+            `[data-today-sheet-key="${pageKey}"]`,
+          )
+        )
+          throw new Error("screenshot_component_missing");
+        return { finalUrl: request.url, png: new Uint8Array([...PNG, 9]) };
+      }
+      return inner.screenshot(request);
+    },
+  };
+}
+const clearDrafts = () =>
+  db.exec(
+    "DELETE FROM sns_post_tracking; DELETE FROM sns_x_send_jobs; DELETE FROM sns_auto_send_items; ALTER TABLE sns_drafts DISABLE TRIGGER USER; DELETE FROM sns_drafts; ALTER TABLE sns_drafts ENABLE TRIGGER USER;",
+  );
+
+test("型 b: b の日は本文が「N回中M回。」の型、画像は撮影用のページ1枚（指紋の一致が条件）、札は b、K・線を記録し、自動の承認で job ができる", async () => {
+  const headless = sheetShooter();
+  const saved = [];
+  const notes = [];
+  await withAuto(async () => {
+    const result = await plan({
+      digest: withCourseWin(),
+      headless,
+      saved,
+      notes,
+      loadVariants: abVariants,
+    });
+    assert.equal(result.report.items[0].outcome, "notified");
+  });
+  const draft = await first("SELECT * FROM sns_drafts");
+  const url = `${TODAY_URL}?utm_source=x&utm_medium=social&utm_campaign=today_digest&utm_content=${DATE}-b`;
+  // 並べは縮めた値−級の平均。1コースの1行目（本文の人）は高橋（A1 42/47）。名前の全角の空白は半角1つにそろう
+  assert.equal(
+    draft.caption_text,
+    [
+      "47回中42回。",
+      "",
+      "今日の平和島12R、1号艇 高橋 竜矢が",
+      "1コースに入ったときに1着になった数。",
+      // 正確な二項の上側確率 0.0025 がその日の1コースの候補3人の Bonferroni の水準 0.025/3 を下回った日だけ、差を書く
+      "A1級の全国平均 71% を上回る。",
+      "",
+      "今日走る選手のコース別1着率を1枚に。",
+      "締切前に見返すなら保存を。",
+      "",
+      `全レースの一覧 → ${url}`,
+      "※過去の数字です #ボートレース",
+    ].join("\n"),
+  );
+  const sd = draft.source_data;
+  assert.equal(sd.content_type.sent, "b");
+  assert.equal(sd.content_type.body, "course_win");
+  assert.equal(sd.content_type.id, "today-b-course-win");
+  assert.equal(sd.content_type.experiment, "t-ab");
+  assert.deepEqual(sd.image_paths, [
+    `today/${DATE}/${sd.digest.revision}-sheet.png`,
+  ]);
+  assert.equal(draft.cover_image_path, sd.image_paths[0]);
+  // 締切が 8:00 より前の 早朝 一郎 は K に入らない。1コース 3人・4コース 1人
+  assert.deepEqual(sd.course_win.k, { c1: 3, c4: 1 });
+  assert.equal(sd.course_win.claim, true);
+  assert.ok(sd.course_win.tail < 0.025 / 3);
+  assert.ok(Math.abs(sd.course_win.line - 2.394) < 1e-3);
+  assert.equal(sd.course_win.featured.racer_id, 1001);
+  assert.deepEqual(
+    sd.digest.picks.map((p) => p.race_id).sort(),
+    [`${DATE}-04-12`, `${DATE}-06-12`, `${DATE}-22-12`, `${DATE}-24-10`].sort(),
+  );
+  // 撮影用のページ: 渡すのは日付・送る時刻だけ。指紋が計画と同じときだけ撮れる。ソナーの図は撮らない
+  const sheetCall = headless.calls.find((c) => c.url.includes("today-sheet"));
+  assert.equal(
+    sheetCall.url,
+    `https://www.boat-ai.jp/share/today-sheet?date=${DATE}&from=08%3A00`,
+  );
+  assert.deepEqual(sheetCall.requiredSelectors, [
+    `[data-today-sheet-key="${sd.course_win.key}"]`,
+  ]);
+  assert.deepEqual(sheetCall.viewport, { width: 1080, height: 1350 });
+  // 撮るのは画像の要素だけ。label は渡さない（snsHeadless が要素の先頭に焼き込み、下余白が減る。コードレビューの P1）
+  assert.equal(sheetCall.element, "[data-today-sheet]");
+  assert.equal(sheetCall.label, undefined);
+  assert.equal(
+    headless.calls.filter((c) => c.url.includes("tab=sonar")).length,
+    0,
+  );
+  assert.equal(saved.length, 1);
+  const tracking = await first("SELECT * FROM sns_post_tracking");
+  assert.equal(tracking.utm_content, `${DATE}-b`);
+  assert.equal(tracking.tracking_url, url);
+  const job = await first("SELECT * FROM sns_x_send_jobs WHERE draft_id=$1", [
+    draft.id,
+  ]);
+  assert.equal(job.state, "queued");
+  assert.doesNotMatch(notes[0], /型 b の日だったが/);
+});
+
+test("型 b: 欠場・中止の行は外して後ろから補い、撮影用のページに skip で渡す", async () => {
+  const headless = sheetShooter();
+  await plan({
+    digest: withCourseWin(),
+    headless,
+    raceDb: raceDbOf({ absent: [`${DATE}-04-12:1`] }),
+    loadVariants: abVariants,
+  });
+  const draft = await first("SELECT * FROM sns_drafts");
+  // 高橋が欠場 → 1コースの1行目は上田（A2 33/42。縮めた値−A2 の平均が、西村（A1 47/56）より大きい）
+  assert.match(
+    draft.caption_text,
+    /^42回中33回。\n\n今日の福岡12R、1号艇 上田 龍星が/,
+  );
+  assert.deepEqual(draft.source_data.course_win.k, { c1: 2, c4: 1 });
+  const sheetCall = headless.calls.find((c) => c.url.includes("today-sheet"));
+  assert.match(sheetCall.url, new RegExp(`skip=${DATE}-04-12%3A1$`));
+});
+
+test("型 b: 材料が無い日（RPC 未適用など）は型 a で送り、理由を content_type と Slack に残す（b を送らない）", async () => {
+  const notes = [];
+  const headless = sheetShooter();
+  await plan({
+    digest: withCourseWin({
+      v: 1,
+      status: "unavailable",
+      reason: "rpc_missing",
+    }),
+    headless,
+    notes,
+    loadVariants: abVariants,
+  });
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.match(draft.caption_text, /^本日のデータ一覧（/);
+  const ct = draft.source_data.content_type;
+  assert.equal(ct.side, "b");
+  assert.equal(ct.sent, "a");
+  assert.equal(ct.id, "today-a");
+  assert.equal(ct.fallback_reason, "course_win:rpc_missing");
+  assert.equal(draft.source_data.course_win, undefined);
+  assert.match(draft.caption_text, /utm_content=2037-10-17-a/);
+  assert.match(notes[0], /型 b の日だったが型 a で送る: rpc_missing/);
+  assert.equal(
+    headless.calls.filter((c) => c.url.includes("today-sheet")).length,
+    0,
+  );
+});
+
+test("型 b: 1コースの候補が0人の日・形の版が違う日も型 a", async () => {
+  for (const [courseWin, reason] of [
+    [
+      {
+        ...courseWinOf(),
+        candidates: courseWinOf().candidates.filter((c) => c.section === "c4"),
+      },
+      "no_c1_rows",
+    ],
+    [{ ...courseWinOf(), v: 2 }, "version_2"],
+  ]) {
+    await clearDrafts();
+    await plan({
+      digest: withCourseWin(courseWin),
+      headless: sheetShooter(),
+      loadVariants: abVariants,
+    });
+    const draft = await first("SELECT * FROM sns_drafts");
+    assert.equal(
+      draft.source_data.content_type.fallback_reason,
+      `course_win:${reason}`,
+    );
+  }
+});
+
+test("型 b: 撮影用のページが撮れないときは 8:30 までやり直し（何も書かない）、過ぎたら型 a で送る", async () => {
+  await assert.rejects(
+    plan({
+      now: at("08:00"),
+      digest: withCourseWin(),
+      headless: sheetShooter({ sheetFails: true }),
+      loadVariants: abVariants,
+    }),
+    /course_win_sheet_not_ready/,
+  );
+  assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
+  const headless = sheetShooter({ sheetFails: true });
+  await plan({
+    now: at("08:35"),
+    digest: withCourseWin(),
+    headless,
+    loadVariants: abVariants,
+  });
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "a");
+  assert.match(
+    draft.source_data.content_type.fallback_reason,
+    /^course_win:sheet_capture_failed: screenshot_component_missing/,
+  );
+  assert.ok(headless.calls.some((c) => c.url.includes("tab=sonar")));
+});
+
+test("型 b: 作り直し（一覧の版が変わった）でも、その日の型（b）を変えない", async () => {
+  await plan({
+    digest: withCourseWin(),
+    headless: sheetShooter(),
+    loadVariants: abVariants,
+  });
+  const d = withCourseWin();
+  const again = await plan({
+    now: at("07:55"),
+    digest: { ...d, day: { ...d.day, generated_at: `${DATE}T06:30:00Z` } },
+    headless: sheetShooter(),
+    // 設定が a だけになっても、作った下書きの型を引き継ぐ
+    loadVariants: () => ({ ...abVariants(), experiment: { start: null } }),
+  });
+  assert.equal(again.report.items[0].outcome, "rebuilt");
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "b");
+  assert.match(draft.caption_text, /^47回中42回。/);
+});
+
+test("リポジトリの config: 比べの開始日が入るまでは型 b を選ばない（全部 a）", async () => {
+  await plan({ digest: withCourseWin(), headless: sheetShooter() });
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "a");
+  assert.equal(
+    draft.source_data.content_type.fallback_reason,
+    "no_schedule_row",
+  );
+});
+
+test("型 b: 比べの a の日にも、その日に b を出せたか（b_feasible）を残す。比べの外の日は残さない", async () => {
+  const v = abVariants();
+  // DATE が組の a の日になる開始日を選ぶ
+  const aConfig = ["2037-10-16", DATE, "2037-10-15", "2037-10-14"]
+    .map((start) => ({ ...v, experiment: { ...v.experiment, start } }))
+    .find((c) => {
+      const s = pickExperimentSide(
+        normalizeTodayExperiment(c.experiment),
+        DATE,
+      );
+      return s.side === "a" && s.pair !== null;
+    });
+  assert.ok(aConfig);
+  await plan({
+    digest: withCourseWin(),
+    headless: sheetShooter(),
+    loadVariants: () => aConfig,
+  });
+  let draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "a");
+  assert.equal(draft.source_data.content_type.b_feasible, true);
+  await clearDrafts();
+  await plan({
+    digest: withCourseWin({
+      v: 1,
+      status: "unavailable",
+      reason: "rpc_missing",
+    }),
+    headless: sheetShooter(),
+    loadVariants: () => aConfig,
+  });
+  draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.b_feasible, false);
+  assert.equal(draft.source_data.content_type.b_reason, "rpc_missing");
+  await clearDrafts();
+  await plan({ digest: withCourseWin(), headless: sheetShooter() });
+  draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.b_feasible, undefined);
+});
+
+test("型 b: ページの指紋が計画と違う（別の行・窓で作られた）ときは撮らない。8:30 まではやり直し、過ぎたら型 a", async () => {
+  await assert.rejects(
+    plan({
+      now: at("08:00"),
+      digest: withCourseWin(),
+      headless: sheetShooter({ pageKey: "deadbeef" }),
+      loadVariants: abVariants,
+    }),
+    /course_win_sheet_not_ready/,
+  );
+  assert.equal((await all("SELECT * FROM sns_drafts")).length, 0);
+  await plan({
+    now: at("08:35"),
+    digest: withCourseWin(),
+    headless: sheetShooter({ pageKey: "deadbeef" }),
+    loadVariants: abVariants,
+  });
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "a");
+  assert.match(
+    draft.source_data.content_type.fallback_reason,
+    /^course_win:sheet_capture_failed/,
+  );
+});
+
+test("型 b: 締切の無い候補が混ざっても落ちない（その行は載せない）", async () => {
+  const cw = courseWinOf();
+  const broken = {
+    ...cw,
+    candidates: [
+      ...cw.candidates,
+      { ...cw.candidates[0], race_id: `${DATE}-03-01`, start_time: null },
+    ],
+  };
+  await plan({
+    digest: withCourseWin(broken),
+    headless: sheetShooter(),
+    loadVariants: abVariants,
+  });
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "b");
+  assert.deepEqual(draft.source_data.course_win.k, { c1: 3, c4: 1 });
+});
+
+test("型 b: 作り直しで b を作れなくなった（一覧が変わり材料が無い）日は、黙らずに型 a へ倒し、理由を残して知らせる", async () => {
+  await plan({
+    digest: withCourseWin(),
+    headless: sheetShooter(),
+    loadVariants: abVariants,
+  });
+  const d = withCourseWin({
+    v: 1,
+    status: "unavailable",
+    reason: "rpc_error",
+  });
+  const notes = [];
+  const again = await plan({
+    now: at("07:55"),
+    digest: { ...d, day: { ...d.day, generated_at: `${DATE}T06:30:00Z` } },
+    headless: sheetShooter(),
+    notes,
+    loadVariants: abVariants,
+  });
+  assert.equal(again.report.items[0].outcome, "rebuilt");
+  const draft = await first("SELECT * FROM sns_drafts");
+  const ct = draft.source_data.content_type;
+  assert.equal(ct.side, "b");
+  assert.equal(ct.sent, "a");
+  assert.equal(ct.fallback_reason, "course_win:rpc_error");
+  // b を割り当てた日に a へ倒れた日には、a の日用の b_feasible を付けない
+  assert.equal(ct.b_feasible, undefined);
+  assert.equal(draft.source_data.course_win, undefined);
+  assert.match(draft.caption_text, /^本日のデータ一覧（/);
+  assert.match(notes[0], /型 b の日だったが型 a で送る: rpc_error/);
+});
+
+test("型 b: 候補が100レースを超える日も、欠場・中止を100レースずつに分けて読み、後ろのレースの欠場も外す（Codex の審査 P1）", async () => {
+  const n = 150;
+  const races = Array.from({ length: n }, (_, i) => ({
+    race_id: `${DATE}-${String(1 + (i % 24)).padStart(2, "0")}-${String(100 + i)}`,
+    venue_code: 1 + (i % 24),
+    race_number: 1 + (i % 12),
+    start_time: "18:00:00",
+  }));
+  const w = { window_start: "2025-12-02", window_end: "2037-10-15" };
+  const notes = buildCourseWinNotes({
+    races,
+    entries: races.map((r, i) => ({
+      race_id: r.race_id,
+      boat_number: 1,
+      racer_id: 5000 + i,
+      grade: "A1",
+      player_name: `選手 ${i}`,
+    })),
+    rpcRows: [
+      ...CW_BASE.map(([grade, course, runs, wins]) => ({
+        scope: "grade",
+        grade,
+        course,
+        runs,
+        wins,
+        ...w,
+      })),
+      // 最後のレースの選手がいちばん上に来る（1着の数が多い）
+      ...races.map((r, i) => ({
+        scope: "racer",
+        racer_id: 5000 + i,
+        course: 1,
+        runs: 40,
+        wins: i === n - 1 ? 39 : 30,
+        off_frame_runs: 0,
+        ...w,
+      })),
+    ],
+    until: "2037-10-15",
+  });
+  const last = races[n - 1].race_id;
+  const sizes = [];
+  const base = raceDbOf({ absent: [`${last}:1`] });
+  const raceDb = async (path) => {
+    if (path.startsWith("race_entries"))
+      sizes.push(
+        decodeURIComponent(path)
+          .match(/in\.\(([^)]*)\)/)[1]
+          .split(",").length,
+      );
+    return base(path);
+  };
+  await plan({
+    digest: withCourseWin(notes),
+    headless: sheetShooter(),
+    raceDb,
+    loadVariants: abVariants,
+  });
+  assert.ok(sizes.length >= 2, String(sizes));
+  assert.ok(
+    sizes.every((s) => s <= 100),
+    String(sizes),
+  );
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.content_type.sent, "b");
+  // 欠場の選手（最後のレース）は載せず、K からも外す
+  assert.equal(draft.source_data.course_win.k.c1, n - 1);
+  assert.notEqual(draft.source_data.course_win.featured.race_id, last);
 });

@@ -8,6 +8,7 @@
  * - 設定が無い・壊れているときは既定の文に戻す
  */
 import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
 
 export const TODAY_HEADING_BUILTIN = "本日のデータ一覧（{date}）";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,6 +30,11 @@ const TYPE_ID = /^[a-z0-9][a-z0-9-]{0,63}$/;
 export const TODAY_POST_FIELDS = ["heading", "link_lead", "link_position"];
 /** config の案に型の id が無いときの既定（hq の today 群の最初の基準の型） */
 export const TODAY_BASE_TYPE_ID = "today-a";
+/**
+ * 本文の作り方。null は今の型（見出し＋一覧）。course_win は型 b（v2「今日走る選手のコース別1着率」、hq 2026-10-27 オーナー決定。
+ * 本文は scripts/lib/snsTodayCourseWinPost.js、画像は撮影用のページ1枚。見出しは画像の上の行に使う）
+ */
+export const TODAY_BODIES = ["course_win"];
 
 /**
  * 投稿の型の中身（見出し・リンクの前の文・リンクの置き場）を検査する（純粋関数）。
@@ -71,6 +77,7 @@ export function normalizeTodayVariants(config) {
       ({ v, n }) =>
         v &&
         n.post &&
+        (v.body == null || TODAY_BODIES.includes(v.body)) &&
         VARIANT_ID.test(v.id ?? "") &&
         (v.uuid == null || v.uuid === "" || UUID.test(v.uuid)) &&
         (v.type_id == null || TYPE_ID.test(v.type_id)),
@@ -83,10 +90,58 @@ export function normalizeTodayVariants(config) {
           id: v.id,
           uuid: v.uuid || null,
           type_id: v.type_id ?? TODAY_BASE_TYPE_ID,
+          body: v.body ?? null,
           ...n.post,
         }))
       : [],
+    experiment: normalizeTodayExperiment(config?.experiment),
   };
+}
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const dayNumber = (date) =>
+  Math.floor(Date.parse(`${date}T00:00:00Z`) / 86400000);
+
+/**
+ * 比べの設定（config.experiment）。連続2日を1組にし、組の中でどちらの日を b にするかを乱数で決める（hq §6・§10-5）。
+ * start（組の1日目）が null・壊れているときは比べをしない（全部 a）。pairs は組の数（既定 10。5組で組の中の SD を見直し、
+ * 1.0 を超えたら hq が 20 に上げる）。乱数は seed と組の番号の SHA-256 で、日付と設定だけから決まる（作り直しても変わらない。覗き見で変えない）
+ * 返り値: null（config に experiment が無い＝前からの日替わり）か { id, start, pairs, seed }（start は null もある）
+ */
+export function normalizeTodayExperiment(experiment) {
+  if (experiment === undefined) return null;
+  const e = experiment && typeof experiment === "object" ? experiment : {};
+  const start =
+    typeof e.start === "string" &&
+    DATE.test(e.start) &&
+    Number.isFinite(dayNumber(e.start))
+      ? e.start
+      : null;
+  const pairs =
+    Number.isInteger(e.pairs) && e.pairs > 0 && e.pairs <= 100 ? e.pairs : 10;
+  return {
+    id: typeof e.id === "string" && TYPE_ID.test(e.id) ? e.id : "today-ab",
+    start,
+    pairs,
+    seed: typeof e.seed === "string" && e.seed ? e.seed : "today-ab",
+  };
+}
+
+/**
+ * その日が比べのどの組のどちらか（純粋関数）。比べの外（start が無い・start より前・組の数を過ぎた）は side a・pair null
+ * 返り値: { side: "a"|"b", pair: number|null, slot: 0|1|null }
+ */
+export function pickExperimentSide(experiment, date) {
+  if (!experiment?.start) return { side: "a", pair: null, slot: null };
+  const offset = dayNumber(date) - dayNumber(experiment.start);
+  if (!(offset >= 0) || offset >= experiment.pairs * 2)
+    return { side: "a", pair: null, slot: null };
+  const pair = Math.floor(offset / 2);
+  const slot = offset % 2;
+  const coin =
+    createHash("sha256").update(`${experiment.seed}:${pair}`).digest()[0] & 1;
+  // coin=1 なら組の1日目が b、0 なら2日目が b
+  return { side: (slot === 0) === (coin === 1) ? "b" : "a", pair, slot };
 }
 
 /** 設定のファイルを読む。無い・読めない・JSON でなければ null（既定の文に戻る） */
@@ -150,11 +205,14 @@ export function pickTodayPost(
   date,
   { row = null, scheduleError = null, allowReply = true } = {},
 ) {
-  const { fallback, variants } = normalizeTodayVariants(config);
-  const day = Math.floor(Date.parse(`${date}T00:00:00Z`) / 86400000);
-  const side = variants.length ? (day % 2 === 0 ? "a" : "b") : "default";
+  const { fallback, variants, experiment } = normalizeTodayVariants(config);
+  const day = dayNumber(date);
+  // 比べの設定があれば組と乱数で選ぶ（比べの外は a）。無ければ前からの日の偶奇
+  const ab = experiment ? pickExperimentSide(experiment, date) : null;
+  const index = ab ? (ab.side === "a" ? 0 : 1) : day % 2;
+  const side = variants.length ? (index === 0 ? "a" : "b") : "default";
   const base = variants.length
-    ? variants[day % 2]
+    ? variants[index]
     : {
         id: "default",
         uuid: null,
@@ -162,35 +220,57 @@ export function pickTodayPost(
         heading: fallback,
         link_lead: null,
         link_position: "after_heading",
+        body: null,
       };
   const variant = { id: base.id, uuid: base.uuid };
   // 返信は X の投稿が1日1本増え、月の予約も URL つきの額で2本分引く（158 の thread_index=0）。費用の線はオーナーの判断なので、
   // config の reply_enabled が true の間だけ選べる（既定は false。system-architect の審査 P1-1）
   const replyOn = config?.reply_enabled === true;
-  const checked = row
-    ? normalizeTypeScheduleRow(row, date, { allowReply: allowReply && replyOn })
-    : null;
+  // 比べの組の日は型の列を使わない（列の型が入ると a・b の束が別の型で汚れる）。理由は fallback_reason に残す
+  const inPair = Boolean(ab && ab.pair !== null);
+  const checked =
+    row && !inPair
+      ? normalizeTypeScheduleRow(row, date, {
+          allowReply: allowReply && replyOn,
+        })
+      : null;
   if (checked?.reason === "reply_not_allowed" && !replyOn)
     checked.reason = "reply_disabled";
   // 列の型の日は、見出しの a・b の札（today_variant・template_variant_id）を付けない。札と実際の文面が食い違い、
   // a・b の比較の母数を汚すため（x-channel の審査 P1）。型の比較は content_type で行う
+  // 比べの組（hq が数える）。比べの外は付けない
+  const pairTag =
+    ab && ab.pair !== null
+      ? { experiment: experiment.id, pair: ab.pair, slot: ab.slot }
+      : {};
   if (checked?.post)
     return {
       ...checked.post,
+      body: null,
       variant: { id: "schedule", uuid: null },
-      content_type: { id: checked.type_id, side, source: "schedule" },
+      content_type: {
+        id: checked.type_id,
+        side,
+        source: "schedule",
+        ...pairTag,
+      },
     };
-  const reason = scheduleError ?? checked?.reason ?? "no_schedule_row";
+  const reason =
+    row && inPair
+      ? "experiment_pair"
+      : (scheduleError ?? checked?.reason ?? "no_schedule_row");
   return {
     heading: base.heading,
     link_lead: base.link_lead,
     link_position: base.link_position,
+    body: base.body ?? null,
     variant,
     content_type: {
       id: base.type_id,
       side,
       source: "config",
       fallback_reason: reason,
+      ...pairTag,
     },
   };
 }
