@@ -3,7 +3,8 @@
  *
  *   - タイムアウト: 15秒（ヘッダーと本文の両方。scripts/lib/supabaseClient.js の fetchWithTimeout はヘッダーのみで、
  *     本文の読み取りが止まると関数の最大実行時間まで固まるため、ここでは本文も含める）
- *   - 429/503: 指数バックオフ＋ジッターで最大2回まで再試行（Retry-After があれば尊重する。上限10秒）。
+ *   - 429/503: 指数バックオフ＋ジッターで最大2回まで再試行（Retry-After があれば尊重する。上限10秒）。Retry-After が10秒を
+ *     超えるときは再試行せず、ホストのブレーカーをその時間（上限60分）開いて、その応答を返す（BOA-1145 P4a ④b）。
  *     上限に達したら、429/503 のままの応答を返す（呼び出し側が判断する）
  *   - ネットワークエラー・タイムアウト: 同じ再試行。上限に達したら FetchError を投げる
  *   - サーキットブレーカー: 取得の前に breaker.check() を呼び、開いていれば BreakerOpenError を投げる
@@ -152,6 +153,9 @@ export function createPoliteFetch({
   userAgent = DEFAULT_USER_AGENT,
   blockPathKeys = DEFAULT_BLOCK_PATH_KEYS,
   canaryUrls = DEFAULT_CANARY_URLS,
+  // false: 429/503 をブレーカーの連続の失敗に数えない（段階を上げない）。利用者の要求（/api/odds/live）用。
+  // Retry-After が10秒を超えるときにその時間開くのは同じ（#1983 の審査 P2 の決定）
+  countOverload = true,
 } = {}) {
   const semaphore = createSemaphore(maxConcurrent);
   // カナリアを取っている最中のホスト（同じプロセスで同時に 403 が重なっても1件にする）
@@ -201,6 +205,26 @@ export function createPoliteFetch({
   };
 
   /**
+   * カナリア（半開の試行・パスが開いた直後の確認）の 429/503。通常の取得と同じく、Retry-After が10秒を超えるならその時間
+   * （上限60分）開き、それ以外は連続の失敗に数える（#1983 の審査 P3・Codex の P1）
+   */
+  const recordCanaryOverload = async (hostKey, response) => {
+    const retryAfterMs = parseRetryAfterMs(
+      response.headers.get("retry-after"),
+      now(),
+    );
+    if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
+      await breaker.recordRetryAfter(
+        hostKey,
+        retryAfterMs,
+        `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
+      );
+    } else {
+      await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+    }
+  };
+
+  /**
    * ホストの半開の試行を、カナリアのページで行う（check(hostKey) が試行を予約した後に呼ぶ）。
    * 403 は段階を上げて開き直し、429/503 は開き直して例外を投げる。それ以外の応答（2xx・3xx・404・500・502・504）は閉じて戻る
    * （spec §5.1 の「500・404 は成功の側」。閉じないと期限が過去のまま残り、全ての取得がカナリアに置き換わって詰まり、
@@ -219,7 +243,7 @@ export function createPoliteFetch({
       console.warn(`⚠️ ${hostKey}: 半開のカナリアが拒否された（${reason}）`);
       await breaker.recordBlocked(hostKey, reason);
     } else if (RETRYABLE_STATUSES.has(response.status)) {
-      await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+      await recordCanaryOverload(hostKey, response);
     } else {
       if (!isPassStatus(response.status)) {
         console.warn(
@@ -271,7 +295,7 @@ export function createPoliteFetch({
         );
         await breaker.recordBlocked(hostKey, `canary ${reason}`);
       } else if (RETRYABLE_STATUSES.has(response.status)) {
-        await breaker.recordFailure(hostKey, `HTTP ${response.status}`);
+        await recordCanaryOverload(hostKey, response);
       } else {
         await breaker.recordSuccess(hostKey);
       }
@@ -346,14 +370,24 @@ export function createPoliteFetch({
         }
         if (RETRYABLE_STATUSES.has(response.status)) {
           if (guarded) breaker?.abortProbe(pathKey);
-          await breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
-          if (attempt < maxRetries) {
-            await sleep(
-              backoffMs(
-                attempt,
-                parseRetryAfterMs(response.headers.get("retry-after"), now()),
-              ),
+          const retryAfterMs = parseRetryAfterMs(
+            response.headers.get("retry-after"),
+            now(),
+          );
+          if (retryAfterMs !== null && retryAfterMs > maxDelayMs) {
+            // 待つ時間が再試行の上限（10秒）を超える: 再試行せず、ホストをその時間（上限60分）開く（spec §5.1、BOA-1145 P4a ④b）
+            await breaker?.recordRetryAfter(
+              hostKey,
+              retryAfterMs,
+              `HTTP ${response.status} Retry-After ${Math.round(retryAfterMs / 1000)}s`,
             );
+            return response;
+          }
+          if (countOverload)
+            await breaker?.recordFailure(hostKey, `HTTP ${response.status}`);
+          else breaker?.abortProbe(hostKey);
+          if (attempt < maxRetries) {
+            await sleep(backoffMs(attempt, retryAfterMs));
             continue;
           }
           return response;

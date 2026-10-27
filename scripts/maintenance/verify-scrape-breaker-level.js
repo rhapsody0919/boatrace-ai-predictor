@@ -59,6 +59,7 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
   for (let i = 0; i < 6; i++) {
     await b.recordBlocked(KEY);
     opened.push((b.snapshot(KEY).openUntil - c.t) / MIN);
+    c.t = b.snapshot(KEY).openUntil + 1; // 期限の後（半開）に次の 403
   }
   check(
     "(a) 既定の recordBlocked も同じ順（上限6時間）。段階は期間が上限に届く5で止める（下げに余計な日数をかけない）",
@@ -71,6 +72,7 @@ const T0 = Date.parse("2026-10-26T06:50:00Z");
   for (let i = 0; i < 5; i++) {
     await h.recordBlocked("host:boatrace.jp");
     hostOpened.push((h.snapshot("host:boatrace.jp").openUntil - c.t) / MIN);
+    c.t = h.snapshot("host:boatrace.jp").openUntil + 1;
   }
   check(
     "(a) ホスト全体のキーは 60分→2時間→4時間→6時間、段階は4で止める",
