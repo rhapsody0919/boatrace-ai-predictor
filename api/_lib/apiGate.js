@@ -5,7 +5,9 @@
  * 判定の順（plan §2.2 の図）:
  *   1. パスをデコードできない、またはデコード後に「.」「..」のセグメント・「//」・「\」を含む → 400
  *      （%2F..%2F で除外の前方一致に入れて関門を外すのを防ぐ。段階に依らず観測中も 400）
- *      二重のエンコード（%252F 等）も、デコードが変わらなくなるまで繰り返して同じ形を探す
+ *      二重のエンコード（%252F 等）も、デコードが変わらなくなるまで繰り返して同じ形を探す。
+ *      エンコードした「/」（%2F）も 400（/api%2Fcron/… が1回のデコードで除外に入るのを防ぐ）
+ *   1b. /API/… のように大文字にした形も /api として関門に掛ける（除外は大文字小文字を区別）
  *   2. デコード後が /api/cron・/api/admin・/api/bot-page → 関門を通さない（既存の守りのまま）
  *   3. 合言葉 x-ryujin-internal-key が INTERNAL_API_KEY（current）か INTERNAL_API_KEY_NEXT（next）と一致 → 通す
  *      付いているのに一致しない → bad_key（段階に従う）
@@ -44,6 +46,8 @@ const AI_BOT_NAMES = AI_CRAWLER_USER_AGENTS.filter(
 );
 
 const MAX_DECODE_ROUNDS = 4;
+// 鍵が空の枠と比べる捨てる値（一致しても key が null なので通さない。比べる回数をそろえるだけ）
+const UNSET_KEY_PLACEHOLDER = "\u0000unset";
 const MAX_LOG_PATH = 200;
 
 /** API_GATE_MODE は "enforce" のときだけ強制。未設定・その他の値は観測（plan §2.2、既定 observe） */
@@ -56,27 +60,40 @@ const hasForbiddenForm = (path) =>
   path.includes("\\") ||
   path.split("/").some((segment) => segment === "." || segment === "..");
 
+// エンコードした「/」。/api%2Fcron/… を1回デコードすると /api/cron/… になり除外に入るが、
+// 経路の振り分けがデコードしないと別の関数に届きうる。正規の呼び出し元は「/」をエンコードしない
+const ENCODED_SLASH = /%2f/i;
+
 /**
  * パスをデコードして、禁じた形を探す。
  * 返り値: { ok: false } か { ok: true, decoded }（decoded は1回デコードした値。除外の判定に使う）
+ * 1回目のデコードに失敗したら 400。2回目以降のデコードの失敗は、そこで止める
+ * （/api/x/50%25 の「%」は文字として扱う。二重のエンコードを探すための繰り返しで正規のパスを落とさない）
  */
 export function inspectApiPath(rawPathname) {
-  let current = rawPathname;
-  let first = null;
-  for (let round = 0; round < MAX_DECODE_ROUNDS; round++) {
+  if (ENCODED_SLASH.test(rawPathname)) return { ok: false };
+  let first;
+  try {
+    first = decodeURIComponent(rawPathname);
+  } catch {
+    return { ok: false };
+  }
+  let current = first;
+  for (let round = 1; ; round++) {
+    if (hasForbiddenForm(current) || ENCODED_SLASH.test(current)) {
+      return { ok: false };
+    }
     let next;
     try {
       next = decodeURIComponent(current);
     } catch {
-      return { ok: false };
+      return { ok: true, decoded: first };
     }
-    if (first === null) first = next;
-    if (hasForbiddenForm(next)) return { ok: false };
     if (next === current) return { ok: true, decoded: first };
+    // 4回デコードしても変わり続ける（%25 の重ね）は正規の呼び出し元が作らない
+    if (round >= MAX_DECODE_ROUNDS) return { ok: false };
     current = next;
   }
-  // 4回デコードしても変わり続ける（%25 の重ね）は正規の呼び出し元が作らない
-  return { ok: false };
 }
 
 const isUnder = (path, prefix) =>
@@ -91,11 +108,16 @@ const hostOf = (value) => {
   }
 };
 
-const nameIn = (ua, name) =>
-  // Googlebot-Image のような別の名前に一致させない（名前の直後は "/" か区切り）
-  new RegExp(
-    `(?:^|[^A-Za-z0-9-])${name.replace(/[-]/g, "\\-")}(?:/|;|\\)|\\s|$)`,
-  ).test(ua);
+// Googlebot-Image のような別の名前に一致させない（名前の直後は "/" か区切り）。要求ごとに作らない
+const NAME_PATTERNS = new Map(
+  SEARCH_BOT_NAMES.map((name) => [
+    name,
+    new RegExp(
+      `(?:^|[^A-Za-z0-9-])${name.replace(/[-]/g, "\\-")}(?:/|;|\\)|\\s|$)`,
+    ),
+  ]),
+);
+const nameIn = (ua, name) => NAME_PATTERNS.get(name).test(ua);
 
 /** UA を数えるための分類に丸める（全文はログに書かない） */
 export function classifyUserAgent(ua) {
@@ -271,7 +293,9 @@ export async function decideApiGate({
     return result({ outcome: "reject", status: 400, reason: "bad_path" });
   }
   const path = inspected.decoded;
-  if (!isUnder(path, "/api")) return result({ reason: "not_api" });
+  // /API/… のように大文字にした形も関門に掛ける（除外の判定は大文字小文字を区別したまま＝除外を広げない）
+  if (!isUnder(path.toLowerCase(), "/api"))
+    return result({ reason: "not_api" });
   if (API_GATE_EXCLUDED_PREFIXES.some((prefix) => isUnder(path, prefix))) {
     return result({ reason: "excluded" });
   }
@@ -281,12 +305,17 @@ export async function decideApiGate({
     const slots = [
       ["current", keys?.current],
       ["next", keys?.next],
-    ].filter(([, key]) => typeof key === "string" && key !== "");
-    // 両方の枠を必ず比べ、どちらで一致したかを時間差で漏らさない
+    ].map(([slot, key]) => [
+      slot,
+      typeof key === "string" && key !== "" ? key : null,
+    ]);
+    // 両方の枠を必ず比べ（空の枠も捨てる値と比べる）、どちらで一致したか・NEXT があるかを時間差で漏らさない
     const matches = await Promise.all(
-      slots.map(([, key]) => constantTimeEqual(provided, key)),
+      slots.map(([, key]) =>
+        constantTimeEqual(provided, key ?? UNSET_KEY_PLACEHOLDER),
+      ),
     );
-    const hit = slots.find((_, i) => matches[i]);
+    const hit = slots.find(([, key], i) => key !== null && matches[i]);
     if (hit) {
       return result({
         reason: "internal",

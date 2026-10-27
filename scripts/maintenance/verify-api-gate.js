@@ -103,6 +103,11 @@ const BAD_PATHS = [
   // 二重のエンコード（関数の側でもう1回デコードされても抜けない）
   "/api/cron/%252e%252e/accuracy",
   "/api/bot-page%252F..%252Faccuracy",
+  // エンコードした「/」（1回のデコードで除外に入る形）
+  "/api%2Fcron/odds",
+  "/api%2fbot-page/top",
+  "/api/admin%2Fsns-hub/drafts",
+  "/api/races%2Ftoday",
   // デコードできない
   "/api/accuracy%E0%A4%A",
   "/api/%",
@@ -136,6 +141,15 @@ check(
     "/api/analogy/facts/2026-10-26-01-01" &&
     inspectApiPath("/%61pi/accuracy").decoded === "/api/accuracy",
 );
+// 2回目以降のデコードの失敗では落とさない（「%」を文字として含むパス）
+for (const path of ["/api/x/50%25", "/api/x/%25E3", "/api/a%2525b"]) {
+  const d = await gate(path);
+  check(
+    `${path} は 400 にしない → would_deny`,
+    d.reason === "would_deny",
+    show(d),
+  );
+}
 
 console.log("[2] 除外のパスと似た名前、/%61pi/");
 for (const path of [
@@ -170,6 +184,10 @@ for (const path of [
   "/api/bot-pages/top",
   "/api/administrator",
   "/api/Cron/odds",
+  // 大文字にした /api も関門に掛ける（not_api にしない）
+  "/API/accuracy",
+  "/Api/predictions/2026-10-26",
+  "/API/cron/odds",
 ]) {
   const d = await gate(path);
   check(
