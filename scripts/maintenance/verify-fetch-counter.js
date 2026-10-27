@@ -13,6 +13,7 @@
  *   (i) オッズの口（createOddsCronHandlerWithPredictionOdds）も数える（185 の審査 P1-1）
  *   (j) 呼び出し側の中断は数えず、自前の打ち切りは timeout（審査 P2-3）
  *   (k) 20件で裏で書く（審査 P2-2）
+ *   (l) 裏で書いている最中の maybeFlush は、その完了を待つ（Codex の P1）
  *
  * 実行: node scripts/maintenance/verify-fetch-counter.js
  */
@@ -522,6 +523,37 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
   for (let i = 0; i < 20; i++) counter.add({ url: "https://www.boatrace.jp/owpc/pc/race/oddstf", status: 200 });
   await new Promise((r) => setTimeout(r, 0));
   check("(k) 20件で、flush を待たずに裏で書く", written === 1 && counter.snapshot().pendingFetches === 0, show({ written }));
+}
+
+// (l) add の自動 flush が実行中なら、maybeFlush はその RPC の完了まで待つ（waitUntil が待てる。Codex の P1）
+{
+  let release;
+  const gate = new Promise((r) => (release = r));
+  let done = false;
+  const counter = createFetchCounter({
+    client: {
+      rpc: async () => {
+        await gate;
+        done = true;
+        return { data: 1, error: null };
+      },
+    },
+    source: "live",
+    now: () => T,
+  });
+  for (let i = 0; i < 20; i++)
+    counter.add({ url: "https://www.boatrace.jp/owpc/pc/race/oddstf", status: 200 });
+  let settled = false;
+  const waited = counter.maybeFlush().then(() => (settled = true));
+  await new Promise((r) => setTimeout(r, 0));
+  const beforeRelease = settled;
+  release();
+  await waited;
+  check(
+    "(l) 自動 flush の RPC が終わるまで maybeFlush は解決しない（終わった後に解決する）",
+    beforeRelease === false && settled === true && done === true,
+    show({ beforeRelease, settled, done }),
+  );
 }
 
 if (failures > 0) {

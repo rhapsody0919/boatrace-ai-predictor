@@ -166,7 +166,13 @@ export function createFetchCounter({
   };
 
   /** 溜まった取得が flushEvery 件以上、または最初に溜まってから flushAfterMs 以上なら書く */
-  const maybeFlush = async () => (due() ? flush() : 0);
+  // 閾値に届いていなくても、裏で書いている最中（add の自動 flush）なら、その完了を待つ
+  // （/api/odds/live の waitUntil が実行中の RPC を待たずに関数が凍結され、数が消えるのを防ぐ。Codex の P1）
+  const maybeFlush = async () => {
+    if (due()) return flush();
+    if (flushing) return flushing;
+    return 0;
+  };
 
   return {
     add,
