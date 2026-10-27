@@ -28,6 +28,8 @@
  *    「本日」は JST の日付。vercel.json の no-store は、本日かどうかによらず id の形のパスだけ配る UA を除外する
  * 9. 選手ページ（/racer/{4桁}、BOA-848）は配る UA のときだけ /ai-snapshots/racer/{番号}.html へ振り分ける。
  *    Googlebot・人のブラウザ・番号の形が違うもの・言語の接頭辞付き・/racers は振り分けない
+ * 12. /api の関門（BOA-1110、api/_lib/apiGate.js）: rewrite 先の /api/bot-page/* と /api/admin/* は関門の除外。
+ *    段階0 は matcher に /api を足さない（公開の読み取り API・cron・bot-page は middleware で素通り）
  *
  * Vercel の matcher は path-to-regexp 構文。このリポジトリが使う
  * 「固定パス」と「/prefix/:path*」の2形だけを解釈し、それ以外の形が足されたら
@@ -42,6 +44,12 @@ import {
   BOT_PAGE_USER_AGENTS,
   resolveSnapshotPath,
 } from "../../src/config/aiCrawlerBots.js";
+import { compileIpRanges, decideApiGate } from "../../api/_lib/apiGate.js";
+
+// [12] の判定に使う IP の範囲（検索ボットの経路は verify-api-gate.js が本物の表で固定する）
+const GATE_TEST_RANGES = compileIpRanges({
+  sources: [{ prefixes: ["192.0.2.0/24"] }],
+});
 
 const USER = "verify-user";
 const PASSWORD = "verify-pass";
@@ -842,6 +850,57 @@ console.log(
   for (const path of ["/api/races/today", "/assets/index.js"]) {
     check(`${path} は no-store の規則に入らない`, !noStoreFor(path, HUMAN_UA));
   }
+}
+
+console.log(
+  "[12] /api の振り分け（BOA-1110 段階0: 関門の判定は api/_lib/apiGate.js、matcher にはまだ足さない）",
+);
+{
+  const gateOf = (path) =>
+    decideApiGate({
+      url: `${ORIGIN}${path}`,
+      headers: new Headers(),
+      ip: null,
+      mode: "observe",
+      keys: {},
+      ipRanges: GATE_TEST_RANGES,
+    });
+  // middleware が rewrite する先の /api/bot-page/* は、関門の除外に入る（二重に判定しない、plan §1.1）
+  const rewriteTargets = [...BOT_PAGE_ROUTES, ...RACE_ROUTES]
+    .map(([, target]) => target)
+    .filter((target) => target.startsWith("/api/"));
+  check("rewrite 先の /api/bot-page/* が1件以上ある", rewriteTargets.length > 0);
+  for (const target of rewriteTargets) {
+    const d = await gateOf(target);
+    check(`${target} は関門の除外`, d.reason === "excluded", d.reason);
+  }
+  // Basic 認証の /api/admin/* は関門の除外（既存の守りのまま）
+  for (const path of ADMIN_PATHS.filter((p) => p.startsWith("/api/"))) {
+    const d = await gateOf(path);
+    check(`${path} は関門の除外`, d.reason === "excluded", d.reason);
+  }
+  // 段階0 は本番の動きを変えない: 公開の読み取り API・cron・bot-page は matcher に入っておらず、
+  // middleware を呼んでも素通り。段階3で matcher に "/api/:path*" を足したら、この項目を書き換える
+  const STAGE0_API_PATHS = [
+    ["/api/predictions/2026-10-26", "would_deny"],
+    ["/api/races/today", "would_deny"],
+    ["/api/accuracy", "would_deny"],
+    ["/api/analogy/facts/2026-10-26-01-01", "would_deny"],
+    ["/api/odds/live", "would_deny"],
+    ["/api/cron/odds", "excluded"],
+    ["/api/bot-page/top", "excluded"],
+  ];
+  for (const [path, want] of STAGE0_API_PATHS) {
+    check(`${path} は matcher に入っていない（段階0）`, !matchesMatcher(path));
+    const res = await call(path);
+    check(`${path} は middleware で素通り`, res === undefined, describe(res));
+    const d = await gateOf(path);
+    check(`${path} の関門の判定は ${want}`, d.reason === want, d.reason);
+  }
+  check(
+    'matcher に "/api/:path*" はまだ無い（段階0）',
+    !config.matcher.includes("/api/:path*"),
+  );
 }
 
 if (failures.length > 0) {
