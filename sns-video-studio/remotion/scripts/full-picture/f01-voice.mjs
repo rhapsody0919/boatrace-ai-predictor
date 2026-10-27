@@ -3,7 +3,9 @@
  * 読みは辞書（f01.mjs の VOICE_DICT）で置き換えた文で読ませ、audio_query の kana を返す（照合は f01Check）。
  */
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { Buffer } from "node:buffer";
 import { join } from "node:path";
+import process from "node:process";
 import { VOICE, voiceText } from "./f01.mjs";
 
 export const ENGINE = process.env.VOICEVOX_URL ?? "http://127.0.0.1:50021";

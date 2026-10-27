@@ -6,6 +6,7 @@
  */
 import { chromium } from "playwright";
 import { join } from "node:path";
+import process from "node:process";
 
 export const SITE = process.env.F01_SITE ?? "https://www.boat-ai.jp";
 export const VIEWPORT = { width: 1280, height: 900 };
