@@ -10,6 +10,7 @@ import {
 } from "./analogyAggregate.js";
 import { ROUNDS_FINAL } from "./analogyFacts.js";
 import { bestOf } from "./bestOf.js";
+import { latestSnapshotWith } from "./oddsMath.js";
 import { wilsonInterval } from "./wilson.js";
 import { getRaceStageKey } from "../constants/raceStageConfig.js";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy.js";
@@ -491,6 +492,28 @@ export function firstPlaceComposite(trifecta, absentBoats = []) {
 }
 
 /**
+ * 1着になる組のうちオッズの無い組がある艇（図の1着人気が欠けた組を除いた合成になる艇）。組の長さ（2連単は2艇、
+ * 3連単は3艇）はオッズの表のキーから読む。欠場の艇は出走する艇に入れない（D-38）
+ * @param {Record<string, number|null>|null} odds
+ * @param {number[]} boats 出走する艇
+ * @returns {number[]}
+ */
+export function missingFirstBoats(odds, boats) {
+  const keys = Object.keys(odds ?? {});
+  if (!keys.length) return [];
+  const legs = keys[0].split("-").length;
+  const priced = (k) => odds[k] != null && odds[k] > 0;
+  return boats.filter((b) => {
+    let combos = [[b]];
+    for (let i = 1; i < legs; i++)
+      combos = combos.flatMap((c) =>
+        boats.filter((x) => !c.includes(x)).map((x) => [...c, x]),
+      );
+    return combos.some((c) => !priced(c.join("-")));
+  });
+}
+
+/**
  * レンズ（または6艇比較の項目）の図のモデル。純粋関数
  * @param {{lens: string, stage: "pre"|"post", metric?: string|null, racers: object[], trifecta?: object|null, finalRound?: boolean, hasToday?: boolean, pastWin?: Map<number, {k: number, n: number}>|null}} args
  *   pastWin: 買い目レンズの「過去の{着順}」（艇ごとの差がつく材料の範囲での target の着順。assistSummary.b1Usual）
@@ -516,6 +539,7 @@ export function boardModel({
   target = 1,
   stBasis = "course",
   stMissing = false,
+  betTypeLabel = "3連単",
 }) {
   // 過去の{着順}（件数は割合の括弧。BOA-831 承認モック v2）
   const pastNum = (past) => ({
@@ -757,7 +781,7 @@ export function boardModel({
   if (!comp.size)
     return {
       kind: "bet",
-      title: "1着になる組のオッズ（合成）",
+      title: ASSIST_COPY.boardBetTitle(betTypeLabel),
       left: "",
       right: "",
       good: null,
@@ -777,7 +801,11 @@ export function boardModel({
   const hiOdds = Math.max(300, sorted[sorted.length - 1]);
   return {
     kind: "bet",
-    title: "1着になる組のオッズ（合成）",
+    title: ASSIST_COPY.boardBetTitle(betTypeLabel),
+    missingFirst: missingFirstBoats(
+      trifecta,
+      racers.filter((r) => !r.absent).map((r) => r.boat),
+    ),
     left: "人気",
     right: "人気薄",
     // オッズは良し悪しでなく市場の見立て。「良い」の札は付けない（BOA-808 5、2026-10-10 ユーザー決定）
@@ -794,8 +822,8 @@ export function boardModel({
         nums: [
           c != null && {
             metric: null,
-            label: ASSIST_COPY.popLabel(target),
-            short: ASSIST_COPY.popLabel(target),
+            label: ASSIST_COPY.popLabel(target, betTypeLabel),
+            short: ASSIST_COPY.popLabel(target, betTypeLabel),
             text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
             aria: null,
             best: false,
@@ -878,11 +906,67 @@ export function buildRacers({
 
 // ---- 買い目の表記（固定フッター・マークシート）----
 
-/** 1着・2着・3着の候補を「1-23-234」の形に（候補が無い着は「—」） */
-export const betForm = (bets) =>
+/**
+ * 買い目の券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。並びがタブと「券種で比べる」の行の順。
+ * legs は使う着の数、dataKey は getRaceOddsSnapshots・getRaceFinalOdds のキー、combos は全通りの数（人気の注記）。
+ * ① で3連単・2連単。3連複・2連複・拡連複は ②・③ で足す
+ */
+export const ASSIST_BET_TYPES = Object.freeze([
+  Object.freeze({ id: "trifecta", legs: 3, dataKey: "trifectaAll", combos: 120 }),
+  Object.freeze({ id: "exacta", legs: 2, dataKey: "exactaAll", combos: 30 }),
+]);
+export const ASSIST_BET_TYPE_IDS = ASSIST_BET_TYPES.map((t) => t.id);
+/** 券種の id → 定義。知らない id は3連単（古い保存・既定） */
+export const assistBetType = (id) =>
+  ASSIST_BET_TYPES.find((t) => t.id === id) ?? ASSIST_BET_TYPES[0];
+
+/**
+ * 券種ごとのオッズを選ぶ（BOA-990）。締切時オッズ（公式）のある券種はその値、無ければその券種の値を持つ最新の
+ * スナップショット。どの券種も無ければ null（発売前）。trifecta・capturedAt は3連単の値（図・よく出た3連単が使う）
+ * @param {Array<object>} snaps getRaceOddsSnapshots
+ * @param {object|null} final getRaceFinalOdds
+ * @returns {null | {byType: Record<string, {odds: Record<string, number>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null}}
+ */
+export function oddsByBetType(snaps, final) {
+  const byType = {};
+  for (const t of ASSIST_BET_TYPES) {
+    const f = final?.[t.dataKey];
+    if (f) {
+      byType[t.id] = { odds: f, capturedAt: final.capturedAt, final: true };
+      continue;
+    }
+    const s = latestSnapshotWith(snaps ?? [], t.dataKey);
+    if (s)
+      byType[t.id] = { odds: s[t.dataKey], capturedAt: s.capturedAt, final: false };
+  }
+  if (Object.keys(byType).length === 0) return null;
+  return {
+    byType,
+    trifecta: byType.trifecta?.odds ?? null,
+    capturedAt: byType.trifecta?.capturedAt ?? null,
+  };
+}
+
+/** 1着・2着・3着の候補を「1-23-234」の形に（候補が無い着は「—」）。legs=2 は「1-234」（2連単） */
+export const betForm = (bets, legs = 3) =>
   [1, 2, 3]
+    .slice(0, legs)
     .map((k) => [...bets[k]].sort((a, b) => a - b).join("") || "—")
     .join("-");
+
+/**
+ * 「選んだ艇でボックス」（承認モック 画面3）: どこかの使う段に入れた艇を、使う段すべてにそろえる。使わない段（2連単の3着）は触らない
+ * @param {{1: Set<number>, 2: Set<number>, 3: Set<number>}} bets
+ * @param {2|3} legs
+ */
+export function boxBets(bets, legs) {
+  const used = [1, 2, 3].slice(0, legs);
+  const all = new Set(used.flatMap((k) => [...bets[k]]));
+  return {
+    ...bets,
+    ...Object.fromEntries(used.map((k) => [k, new Set(all)])),
+  };
+}
 
 /** 合成オッズの表記（モック v7 と同じ小数2桁、丸める前の理論値） */
 export const compositeText = (v) => (v == null ? null : v.toFixed(2));

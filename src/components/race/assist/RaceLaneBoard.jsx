@@ -144,6 +144,8 @@ export default function RaceLaneBoard({
   marks = null,
   target = 1,
   onTarget = null,
+  legs = 3,
+  legUnusedNote = null,
 }) {
   const bet = model.kind === "bet";
   // 「+」で候補のボタンを開いている行（開くのは1行だけ。レンズが替わったら閉じる。BOA-801 7）
@@ -215,7 +217,9 @@ export default function RaceLaneBoard({
           )}
           {model.left}
         </span>
-        <span className="ta-board-title">{model.title}</span>
+        <span className={`ta-board-title${bet ? " is-bet" : ""}`}>
+          {model.title}
+        </span>
         <span>
           {model.right}
           {model.good === "right" && (
@@ -307,6 +311,8 @@ export default function RaceLaneBoard({
                     <button
                       key={k}
                       type="button"
+                      className={bet && k > legs ? "is-unused" : undefined}
+                      disabled={bet && k > legs}
                       aria-label={ASSIST_COPY.candidateAria(row.boat, k)}
                       aria-pressed={bets[k].has(row.boat)}
                       onClick={() => onToggleBet(k, row.boat)}
@@ -339,6 +345,12 @@ export default function RaceLaneBoard({
           </div>
         );
       })}
+      {bet && legUnusedNote && <p className="ta-note">{legUnusedNote}</p>}
+      {bet && model.missingFirst?.length > 0 && (
+        <p className="ta-note">
+          {ASSIST_COPY.boardMissingFirst(model.missingFirst)}
+        </p>
+      )}
       {model.basis === "course" && (
         <p className="ta-note">{ASSIST_COPY.flowCourseNote}</p>
       )}

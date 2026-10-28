@@ -533,6 +533,7 @@
 
 .ta-board-title {
   font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
   text-align: center;
   /* 空白の所で折り返す（「左ほど早い」を語の途中で切らない。BOA-815）。収まらないときだけ途中で折る */
   word-break: keep-all;
@@ -2331,4 +2332,136 @@
 .ta-deep .ta-meetform-link {
   display: inline-block;
   margin-top: var(--spacing-1);
+}
+
+/* ---- 買い目の券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）---- */
+.ta-bettype {
+  display: grid;
+  grid-template-columns: repeat(var(--ta-bettype-n, 5), minmax(0, 1fr));
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.ta-bettype button {
+  min-height: 44px;
+  border: 0;
+  border-left: 1px solid var(--text-primary);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.ta-bettype button:first-child {
+  border-left: 0;
+}
+
+.ta-bettype button[aria-pressed="true"] {
+  background: var(--text-primary);
+  color: var(--surface-card);
+}
+
+.ta-bettype button:focus-visible,
+.ta-bettype-cmp button:focus-visible,
+.ta-box-short button:focus-visible {
+  outline: 3px solid var(--color-info-text);
+  outline-offset: -3px;
+}
+
+.ta-bettype-cmp td,
+.ta-bettype-cmp th {
+  white-space: nowrap;
+}
+
+.ta-bettype-cmp button {
+  min-height: 44px;
+  min-width: 44px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: var(--color-info-text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ta-bettype-cmp tbody tr {
+  cursor: pointer;
+}
+
+.ta-bettype-cmp tr.is-current td {
+  background: color-mix(in srgb, var(--color-info-text) 12%, transparent);
+  font-weight: var(--font-weight-bold);
+}
+
+.ta-bettype-cmp tr.is-current button {
+  font-weight: var(--font-weight-bold);
+}
+
+/* 券種のタブの置き場: 1列（〜1023px）は艇の行の上、2列（1024px〜）は右の列（ファン評価3周目 P2） */
+.ta-bettype-top {
+  margin-bottom: var(--spacing-2);
+}
+
+.ta-bettype-side {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .ta-bettype-top {
+    display: none;
+  }
+
+  .ta-bettype-side {
+    display: block;
+  }
+}
+
+/* 買い目の図の見出し（どの券種の合成か）は 12px で読ませる（BOA-990 ファン評価2周目 P2-2） */
+.ta-board-axis .ta-board-title.is-bet {
+  font-size: var(--font-size-xs);
+}
+
+/* 2連単の3着の段: 薄く残して押せなくする（入れた候補は残る）。レンズの艇の行の「3着」も同じ */
+.ta-pos3 button.is-unused {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.ta-ms-row.is-unused > * {
+  opacity: 0.35;
+}
+
+.ta-ms-row.is-unused button {
+  cursor: default;
+}
+
+.ta-box-short {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-1-5);
+}
+
+.ta-box-short button {
+  min-height: 44px;
+  border: 1px solid var(--text-primary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  padding: 0 var(--spacing-3);
+  cursor: pointer;
+}
+
+.ta-box-short button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

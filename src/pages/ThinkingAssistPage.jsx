@@ -22,6 +22,7 @@ import LensBar from "../components/race/assist/LensBar";
 import RaceLaneBoard from "../components/race/assist/RaceLaneBoard";
 import BetFooter from "../components/race/assist/BetFooter";
 import MarkSheet from "../components/race/assist/MarkSheet";
+import BetTypeTabs from "../components/race/assist/BetTypeTabs";
 import LensSummary, {
   FlowConclusion,
 } from "../components/race/assist/LensSummary";
@@ -41,8 +42,12 @@ import AssistViewSwitch from "../components/race/assist/AssistViewSwitch";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useThinkingAssistData } from "../hooks/useThinkingAssistData";
 import {
+  ASSIST_BET_TYPES,
   ROUND_LABEL,
   anyCell,
+  assistBetType,
+  betForm,
+  boxBets,
   baseVerdict,
   boardModel,
   buildRacers,
@@ -105,6 +110,10 @@ const initialState = {
   // 買い目の着順（1＝1着・2＝2着以内・3＝3着以内。BOA-831、spec D-44・D-46）。ページ内だけ
   target: 1,
   bets: { 1: new Set(), 2: new Set(), 3: new Set() },
+  // 買い目の券種（BOA-990）。候補の段は券種をまたいで共有する
+  betType: "trifecta",
+  // 「選んだ艇でボックス」を押す前の候補（押した直後だけ「元に戻す」を出す）。保存しない
+  boxUndo: null,
   budget: "1000",
   mode: "equalPayout",
   // "mark" | "rough" | "venue" | {type: "theory", id, boat} | {type: "term", term}
@@ -171,14 +180,30 @@ function reducer(state, action) {
       const next = new Set(state.bets[action.pos]);
       if (next.has(action.boat)) next.delete(action.boat);
       else next.add(action.boat);
-      return { ...state, bets: { ...state.bets, [action.pos]: next } };
+      return {
+        ...state,
+        bets: { ...state.bets, [action.pos]: next },
+        boxUndo: null,
+      };
     }
+    case "betType":
+      return { ...state, betType: action.betType, boxUndo: null };
+    case "box":
+      return {
+        ...state,
+        bets: boxBets(state.bets, assistBetType(state.betType).legs),
+        boxUndo: state.bets,
+      };
+    case "undoBox":
+      return state.boxUndo
+        ? { ...state, bets: state.boxUndo, boxUndo: null }
+        : state;
     case "budget":
-      return { ...state, budget: action.budget };
+      return { ...state, budget: action.budget, boxUndo: null };
     case "mode":
-      return { ...state, mode: action.mode };
+      return { ...state, mode: action.mode, boxUndo: null };
     case "sheet":
-      return { ...state, sheet: action.sheet };
+      return { ...state, sheet: action.sheet, boxUndo: null };
     case "guide":
       // ガイドの段に合わせてレンズを切り替え、深掘りを閉じる。閉じても買い目・レンズは残す（FR-10）
       return action.step == null
@@ -232,6 +257,7 @@ function ThinkingAssistBody() {
   }, [
     raceId,
     state.bets,
+    state.betType,
     state.budget,
     state.mode,
     state.target,
@@ -272,6 +298,9 @@ function ThinkingAssistBody() {
   const headerHeight = useAppHeaderHeight();
   const finalRound = Boolean(data.round);
   const trifecta = data.odds.data?.trifecta ?? null;
+  // 買い目レンズの図の「1着人気」（1着になる組の合成）は、選んでいる券種のオッズで出す（BOA-990 ファン評価1周目 P2-2）
+  const boardOdds =
+    data.odds.data?.byType?.[assistBetType(state.betType).id]?.odds ?? null;
   const post = data.stage === "post";
   const factsAll = v16Off ? null : (data.facts.data?.facts ?? null);
   const v16Exhibition = data.facts.data?.exhibition ?? null;
@@ -413,7 +442,8 @@ function ThinkingAssistBody() {
         stage: data.stage,
         metric: state.metric,
         racers,
-        trifecta,
+        trifecta: boardOdds,
+        betTypeLabel: ASSIST_COPY.betTypeLabels[assistBetType(state.betType).id],
         finalRound,
         hasToday: today != null,
         pastWin,
@@ -427,7 +457,8 @@ function ThinkingAssistBody() {
       state.metric,
       data.stage,
       racers,
-      trifecta,
+      boardOdds,
+      state.betType,
       finalRound,
       today,
       pastWin,
@@ -475,32 +506,55 @@ function ThinkingAssistBody() {
     () => withoutBoats(state.bets, data.absentBoats),
     [state.bets, data.absentBoats],
   );
+  const betType = assistBetType(state.betType);
   const tickets = useMemo(
-    () => expandTickets(state.bets, data.absentBoats),
-    [state.bets, data.absentBoats],
+    () => expandTickets(state.bets, data.absentBoats, betType.legs),
+    [state.bets, data.absentBoats, betType.legs],
   );
   const removedBoats = data.absentBoats.filter((b) =>
-    [1, 2, 3].some((k) => state.bets[k].has(b)),
+    [1, 2, 3].slice(0, betType.legs).some((k) => state.bets[k].has(b)),
   );
   const removedNote = removedBoats.length
     ? ASSIST_COPY.absentRemoved(
         removedBoats,
-        expandTickets(state.bets).length - tickets.length,
+        expandTickets(state.bets, [], betType.legs).length - tickets.length,
       )
     : null;
   // オッズが無い: 取得の失敗と、発売前（取得が成功して空）を分ける（FR-11・screens「オッズが無い」、Codex 依頼27 F01）
   const oddsNote =
     data.odds.status === "error"
       ? ASSIST_COPY.partFailed(ASSIST_COPY.partOdds)
-      : ASSIST_COPY.oddsNone;
+      : data.odds.data?.byType &&
+          Object.keys(data.odds.data.byType).length > 0 &&
+          !data.odds.data.byType[betType.id]
+        ? ASSIST_COPY.oddsTypeMissing(ASSIST_COPY.betTypeLabels[betType.id])
+        : ASSIST_COPY.oddsNone;
   const partNotes = [
     data.exhibition.status === "error" && ASSIST_COPY.partExhibition,
     data.rates.status === "error" && ASSIST_COPY.partRates,
   ].filter(Boolean);
-  const composite = trifecta
-    ? compositeOdds(tickets.map((t) => trifecta[t]))
+  // 選んでいる券種のオッズ（締切時オッズがあればその値。BOA-990）。図・ヘッダー・よく出た3連単は3連単のまま
+  const typeOdds = data.odds.data?.byType?.[betType.id] ?? null;
+  const betOdds = typeOdds?.odds ?? null;
+  const composite = betOdds
+    ? compositeOdds(tickets.map((t) => betOdds[t]))
     : null;
   const oddsAt = formatObservedTime(data.odds.data?.capturedAt);
+  const betOddsAt = formatObservedTime(typeOdds?.capturedAt);
+  // 券種で比べる（同じ候補）の行（承認モック 画面1）
+  const compareRows = ASSIST_BET_TYPES.map((t) => {
+    const tk = expandTickets(state.bets, data.absentBoats, t.legs);
+    const o = data.odds.data?.byType?.[t.id]?.odds ?? null;
+    return {
+      id: t.id,
+      form: betForm(bets, t.legs),
+      points: tk.length,
+      priced: o ? tk.filter((k) => o[k] != null && o[k] > 0).length : tk.length,
+      composite: o ? compositeOdds(tk.map((k) => o[k])) : null,
+    };
+  });
+  const onBetType = (id, from) =>
+    act({ type: "betType", betType: id, from });
 
   const toggleBet = useCallback(
     (pos, boat) => dispatch({ type: "toggleBet", pos, boat }),
@@ -533,10 +587,13 @@ function ThinkingAssistBody() {
   const b1u = b1Usual(winFacts[0].scope);
   const betSummary = {
     tickets,
-    trifecta: trifecta ?? {},
+    odds: betOdds ?? {},
+    betType: betType.id,
+    oddsFinal: typeOdds?.final === true,
+    oddsFinalFailed: data.odds.data?.finalFailed === true,
     budget: state.budget,
     mode: state.mode,
-    oddsAt,
+    oddsAt: betOddsAt,
     oddsNote,
     finished: Boolean(race?.result?.finished),
     onBudget: (budget) => dispatch({ type: "budget", budget }),
@@ -624,6 +681,10 @@ function ThinkingAssistBody() {
       bet: {
         points: tickets.length,
         summary: betSummary,
+        compare: compareRows,
+        onBetType,
+        trifecta: trifecta ?? {},
+        trifectaFinal: data.odds.data?.byType?.trifecta?.final === true,
         ranks: popularityRanks(trifecta ?? {}),
         oddsAt,
         finished: Boolean(race?.result?.finished),
@@ -734,6 +795,7 @@ function ThinkingAssistBody() {
           canPost={data.defaultStage === "post"}
           onStage={(stage) => dispatch({ type: "stage", stage })}
           oddsAt={oddsAt}
+          oddsFinal={data.odds.data?.byType?.trifecta?.final === true}
           showSonar={isAnalogyFinderEnabled()}
           tidal={data.venueInfo.data?.tidal === true}
           onVenue={() => act({ type: "sheet", sheet: "venue" })}
@@ -777,6 +839,16 @@ function ThinkingAssistBody() {
           <div className="ta-split-fig">
             {/* 展開は結論（形の見立て・今日の展示）を図の上に（spec D-47 (3)） */}
             {state.lens === "flow" && <FlowConclusion m={summary.flow} />}
+            {/* 1列の幅（〜1023px）では券種のタブを艇の行の上に置く。2列では右の列のタブを使う（CSS で出し分け。
+                BOA-990 ファン評価3周目 P2、2026-10-27 オーナー「推奨通りで良い」） */}
+            {state.lens === "bet" && !cancelled && (
+              <div className="ta-bettype-top">
+                <BetTypeTabs
+                  betType={betType.id}
+                  onBetType={(id) => onBetType(id, "tab")}
+                />
+              </div>
+            )}
             {cancelled && state.lens === "bet" ? (
               // 中止のレースは買い目レンズにこの1行だけ（D-38）
               <p className="ta-status">{ASSIST_COPY.cancelled}</p>
@@ -799,6 +871,15 @@ function ThinkingAssistBody() {
                 marks={marks}
                 target={state.target}
                 onTarget={onTarget}
+                // 2連単は3着の候補を使わない（マークシートと同じく薄くして押せない。BOA-990 画面3）
+                legs={betType.legs}
+                legUnusedNote={
+                  betType.legs < 3
+                    ? ASSIST_COPY.legUnused(
+                        ASSIST_COPY.betTypeLabels[betType.id],
+                      )
+                    : null
+                }
               />
             )}
             {/* 機力の差が今日だけか今節ずっとかを確かめる導線（BOA-885）。深掘り中の艇、無ければ1号艇 */}
@@ -876,6 +957,13 @@ function ThinkingAssistBody() {
         {!cancelled && (
           <BetFooter
             bets={bets}
+            betType={betType.id}
+            priced={
+              betOdds
+                ? tickets.filter((t) => betOdds[t] != null && betOdds[t] > 0)
+                    .length
+                : tickets.length
+            }
             points={tickets.length}
             composite={composite}
             oddsNote={oddsNote}
@@ -930,10 +1018,17 @@ function ThinkingAssistBody() {
           onClose={closeSheet}
           points={tickets.length}
           tickets={tickets}
-          trifecta={trifecta ?? {}}
+          odds={betOdds ?? {}}
+          betType={betType.id}
+          oddsFinal={typeOdds?.final === true}
+          oddsFinalFailed={data.odds.data?.finalFailed === true}
+          onBetType={(id) => onBetType(id, "tab")}
+          onBox={() => act({ type: "box" })}
+          onUndoBox={() => dispatch({ type: "undoBox" })}
+          canUndoBox={state.boxUndo != null}
           budget={state.budget}
           mode={state.mode}
-          oddsAt={oddsAt}
+          oddsAt={betOddsAt}
           finished={Boolean(race?.result?.finished)}
           onBudget={(budget) => dispatch({ type: "budget", budget })}
           onMode={(mode) => dispatch({ type: "mode", mode })}

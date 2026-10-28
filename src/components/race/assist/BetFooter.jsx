@@ -1,15 +1,21 @@
-import { betForm, compositeText } from "../../../utils/assistModel";
+import {
+  assistBetType,
+  betForm,
+  compositeText,
+} from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 import { useCookieBannerHeight } from "../../../hooks/useCookieBannerHeight";
 
 /**
- * 固定フッター（FR-7、screens S-1 F）。買い目の要約・点数・合成オッズ（理論値）。押すとマークシート
+ * 固定フッター（FR-7、screens S-1 F）。買い目の要約（頭に券種の名前。BOA-990）・点数・合成オッズ（理論値）。押すとマークシート
  * ガイドの①〜④の間は隠す（光らせた場所に重ならないように。screens S-1c）
- * @param {{bets: object, points: number, composite: number|null, oddsNote: string, removedNote: string|null, onOpen: () => void, hidden?: boolean}} props
+ * @param {{bets: object, betType?: string, points: number, composite: number|null, oddsNote: string, removedNote: string|null, onOpen: () => void, hidden?: boolean}} props
  */
 export default function BetFooter({
   bets,
+  betType = "trifecta",
   points,
+  priced = points,
   composite,
   oddsNote,
   removedNote,
@@ -19,6 +25,7 @@ export default function BetFooter({
   // 未同意の利用者では、サイト共通の Cookie の同意バナーがフッターを覆うのでその上に出す
   const bannerHeight = useCookieBannerHeight();
   const c = compositeText(composite);
+  const type = assistBetType(betType);
   return (
     <section
       className="ta-foot"
@@ -30,10 +37,18 @@ export default function BetFooter({
       }}
     >
       <div className="ta-foot-text">
-        <b className="ta-num">{ASSIST_COPY.betLabel(betForm(bets), points)}</b>
+        {/* 「（9点）」を折らない（375px で数字と単位が別の行に分かれた。ファン評価1周目 指摘3） */}
+        <b className="ta-num">
+          {`${ASSIST_COPY.betTypeLabels[type.id]} ${betForm(bets, type.legs)}`}
+          <span className="ta-nowrap">
+            {priced < points
+              ? `（${points}点・オッズあり${priced}点）`
+              : `（${points}点）`}
+          </span>
+        </b>
         <span className="ta-num">
           {points === 0
-            ? ASSIST_COPY.betEmpty
+            ? ASSIST_COPY.betEmptyFor(type.legs)
             : c
               ? ASSIST_COPY.composite(c)
               : oddsNote}

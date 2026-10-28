@@ -41,12 +41,22 @@ const DIMENSIONS = {
     "assist_deep_open",
     "assist_metric_compare",
     "assist_target",
+    "assist_place_axis",
   ],
-  assist_boat: ["assist_deep_open"],
+  assist_boat: ["assist_deep_open", "assist_place_axis"],
   assist_metric: ["assist_metric_compare"],
   assist_sheet: ["assist_sheet_open"],
   assist_guide_step: ["assist_guide_step"],
   assist_target: ["assist_target"],
+  assist_form: ["assist_flow_form"],
+  // 買い目の券種（BOA-990）。シート・着順のイベントにも今の券種を載せる
+  assist_bet_type: [
+    "assist_bet_type",
+    "assist_bet_box",
+    "assist_sheet_open",
+    "assist_target",
+  ],
+  assist_bet_from: ["assist_bet_type"],
 };
 
 if (

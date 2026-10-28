@@ -1,6 +1,8 @@
 import BaseBar from "./BaseBar";
 import Bars6 from "./Bars6";
 import BetSummary from "./BetSummary";
+import BetTypeCompare from "./BetTypeCompare";
+import BetTypeTabs from "./BetTypeTabs";
 import ClassLineup from "./ClassLineup";
 import Fold from "./Fold";
 import ScopeTable from "./ScopeTable";
@@ -804,7 +806,19 @@ function BetLensSummary({ m }) {
       : null;
   return (
     <>
+      {/* 券種で比べる（同じ候補）と券種のタブ（BOA-990、承認モック 画面1） */}
+      <BetTypeCompare
+        rows={bet.compare}
+        betType={bet.summary.betType}
+        onBetType={(id) => bet.onBetType(id, "compare")}
+      />
       <section className="ta-box">
+        <div className="ta-bettype-side">
+          <BetTypeTabs
+            betType={bet.summary.betType}
+            onBetType={(id) => bet.onBetType(id, "tab")}
+          />
+        </div>
         <h3 className="ta-h3-row">
           {C.betBoxHeading(bet.points)}
           <TermButton term="合成オッズ" />
@@ -858,7 +872,12 @@ function BetLensSummary({ m }) {
           </h3>
           {/* 件数は過去、オッズ・人気は今日の値（BOA-808 P3） */}
           <p className="ta-note ta-num">
-            {C.simTopNote(similar.n, bet.oddsAt, bet.finished)}
+            {C.simTopNote(
+              similar.n,
+              bet.oddsAt,
+              bet.finished,
+              bet.trifectaFinal,
+            )}
           </p>
           <table className="ta-table">
             <thead>
@@ -872,7 +891,7 @@ function BetLensSummary({ m }) {
             <tbody>
               {similar.topTrifecta.map(([x, k]) => {
                 const key = x.join("-");
-                const odds = bet.summary.trifecta?.[key];
+                const odds = bet.trifecta?.[key];
                 const rank = bet.ranks.get(key);
                 return (
                   <tr key={key}>
