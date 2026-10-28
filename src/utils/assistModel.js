@@ -538,6 +538,7 @@ export function boardModel({
   target = 1,
   stBasis = "course",
   stMissing = false,
+  finalWin = null,
 }) {
   // 過去の{着順}（件数は割合の括弧。BOA-831 承認モック v2）
   const pastNum = (past) => ({
@@ -770,15 +771,25 @@ export function boardModel({
     };
   }
 
-  // 買い目: 1着になる組の合成オッズ（左ほど人気）。オッズが無ければ艇番順に並べるだけ
-  const comp = firstPlaceComposite(
-    trifecta,
-    racers.filter((r) => r.absent).map((r) => r.boat),
+  // 買い目: 1着人気（左ほど人気）。締切前は1着になる組（3連単）の合成オッズ、締切後は公式の単勝の締切時オッズ
+  // （race_odds_final.win_all。票0は 0 なので値を出さない。2026-10-28 オーナー決定。BOA-1174 で2026-10-26 桐生1R の6艇が公式の締切時オッズと一致）。
+  // オッズが無ければ艇番順に並べるだけ
+  const absentBoats = racers.filter((r) => r.absent).map((r) => r.boat);
+  const winMap = new Map(
+    Object.entries(finalWin ?? {})
+      .map(([b, v]) => [Number(b), Number(v)])
+      .filter(([b, v]) => v > 0 && !absentBoats.includes(b)),
   );
+  const useWin = winMap.size > 0;
+  const comp = useWin ? winMap : firstPlaceComposite(trifecta, absentBoats);
+  const title = useWin
+    ? ASSIST_COPY.boardBetTitleWin
+    : ASSIST_COPY.boardBetTitle;
+  const popLabel = useWin ? ASSIST_COPY.popLabelWin : ASSIST_COPY.popLabel;
   if (!comp.size)
     return {
       kind: "bet",
-      title: ASSIST_COPY.boardBetTitle,
+      title,
       left: "",
       right: "",
       good: null,
@@ -798,11 +809,13 @@ export function boardModel({
   const hiOdds = Math.max(300, sorted[sorted.length - 1]);
   return {
     kind: "bet",
-    title: ASSIST_COPY.boardBetTitle,
-    missingFirst: missingFirstBoats(
-      trifecta,
-      racers.filter((r) => !r.absent).map((r) => r.boat),
-    ),
+    title,
+    missingFirst: useWin
+      ? []
+      : missingFirstBoats(
+          trifecta,
+          racers.filter((r) => !r.absent).map((r) => r.boat),
+        ),
     left: "人気",
     right: "人気薄",
     // オッズは良し悪しでなく市場の見立て。「良い」の札は付けない（BOA-808 5、2026-10-10 ユーザー決定）
@@ -819,8 +832,8 @@ export function boardModel({
         nums: [
           c != null && {
             metric: null,
-            label: ASSIST_COPY.popLabel,
-            short: ASSIST_COPY.popLabel,
+            label: popLabel,
+            short: popLabel,
             text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
             aria: null,
             best: false,
@@ -908,7 +921,7 @@ export function buildRacers({
  * （3連単｜3連複｜2連単｜2連複。拡連複は ③ で足す）。
  * legs は使う段の数、ordered は着順を問うか（連複は false。組は昇順、表記は「=」）、dataKey は getRaceOddsSnapshots・
  * getRaceFinalOdds のキー、combos は全通りの数（人気の注記）。
- * 図の「1着人気」は券種によらずいつも3連単の合成（2026-10-28 オーナー決定 案 c。ThinkingAssistPage）
+ * 図の「1着人気」は券種によらず、締切前は3連単の合成、締切後は公式の単勝（2026-10-28 オーナー決定。boardModel）
  */
 export const ASSIST_BET_TYPES = Object.freeze([
   Object.freeze({
@@ -950,7 +963,8 @@ export const assistBetType = (id) =>
  * スナップショット。どの券種も無ければ null（発売前）。trifecta・capturedAt は3連単の値（図・よく出た3連単が使う）
  * @param {Array<object>} snaps getRaceOddsSnapshots
  * @param {object|null} final getRaceFinalOdds
- * @returns {null | {byType: Record<string, {odds: Record<string, number>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null}}
+ * finalWin は公式の単勝の締切時オッズ（race_odds_final.win_all。締切後だけ。図の1着人気）
+ * @returns {null | {byType: Record<string, {odds: Record<string, number>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null, finalWin: Record<string, number>|null}}
  */
 export function oddsByBetType(snaps, final) {
   const byType = {};
@@ -973,6 +987,8 @@ export function oddsByBetType(snaps, final) {
     byType,
     trifecta: byType.trifecta?.odds ?? null,
     capturedAt: byType.trifecta?.capturedAt ?? null,
+    // 公式の単勝の締切時オッズ（締切後だけ。図の1着人気に使う）
+    finalWin: final?.win ?? null,
   };
 }
 

@@ -905,6 +905,39 @@ check(
       r1[1].label === "過去の1着",
     JSON.stringify({ r1, r2 }),
   );
+  // 締切後は公式の単勝の締切時オッズ（2026-10-28 オーナー決定）。票0（0）と欠場の艇は値を出さない
+  const winRows = boardModel({
+    lens: "bet",
+    stage: "post",
+    racers: racers.map((r) => (r.boat === 6 ? { ...r, absent: true } : r)),
+    trifecta: tri,
+    finalWin: { 1: 2.5, 2: 1.8, 3: 0, 4: 12.0, 5: 30.1, 6: 5.0 },
+    target: 1,
+  });
+  const winNum = (b) => winRows.rows.find((r) => r.boat === b).nums[0];
+  check(
+    "買い目: 締切後は図の1着人気を公式の単勝で出す（2号艇 1番 1.8倍、1号艇 2番）。票0の3号艇・欠場の6号艇は値なし。見出しも単勝",
+    winRows.title === "1着のオッズ（公式の単勝の締切時オッズ）" &&
+      winNum(2).label === "1着人気（公式の単勝）" &&
+      winNum(2).text === "1番（1.8倍）" &&
+      winNum(1).text === "2番（2.5倍）" &&
+      winRows.rows.find((r) => r.boat === 3).nums.every((n) => !/倍/.test(n.text ?? "")) &&
+      winRows.rows.find((r) => r.boat === 6).nums.every((n) => !/倍/.test(n.text ?? "")),
+    JSON.stringify(winRows.rows.map((r) => r.nums)),
+  );
+  const tri0 = boardModel({
+    lens: "bet",
+    stage: "post",
+    racers,
+    trifecta: tri,
+    finalWin: null,
+    target: 1,
+  });
+  check(
+    "買い目: 締切前（単勝の締切時オッズが無い）は3連単から見た1着人気のまま",
+    tri0.title === "1着になる組のオッズ（3連単の合成。公式の単勝人気とは別）" &&
+      tri0.rows[0].nums[0].label === "3連単から見た1着人気",
+  );
   const noOdds = boardModel({
     lens: "bet",
     stage: "post",

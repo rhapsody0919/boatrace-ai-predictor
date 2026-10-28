@@ -3004,4 +3004,42 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await candidate(sheet, 3, 3).click();
     await expect(sheet.getByText(/確定オッズではない/)).toBeVisible();
   });
+
+  // 2026-10-28 オーナー決定: 締切後（単勝の締切時オッズがある）は図の1着人気を公式の単勝で出す。券種のタブで動かない
+  test("締切時の単勝（race_odds_final.win_all）があると、図は「1着人気（公式の単勝）」で単勝の順", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds_final*", (route) =>
+      route.fulfill({
+        json: [
+          {
+            captured_at: "2026-10-06T08:00:00+00:00",
+            win_all: { 1: 9.9, 2: 1.5, 3: 0, 4: 20.4, 5: 40.0, 6: 6.6 },
+            place_all: null,
+            trifecta_all: null,
+            trio_all: null,
+            exacta_all: null,
+            quinella_all: null,
+            wide_all: null,
+          },
+        ],
+      }),
+    );
+    await open(page);
+    await lensTab(page, "買い目").click();
+    const fig = page.getByRole("figure", { name: /レースの図/ });
+    await expect(
+      fig.getByText("1着のオッズ（公式の単勝の締切時オッズ）"),
+    ).toBeAttached();
+    const pops = () => fig.getByText(/^1着人気（公式の単勝）/).allInnerTexts();
+    // 票0の3号艇は値を出さないので5艇
+    await expect(fig.getByText(/^1着人気（公式の単勝）/)).toHaveCount(5);
+    const base = await pops();
+    expect(base.join()).toMatch(/1番（1\.5倍）/);
+    await expect(fig.getByText(/^3連単から見た1着人気/)).toHaveCount(0);
+    for (const name of ["2連単", "3連複"]) {
+      await betTypes(page).getByRole("button", { name, exact: true }).click();
+      expect(await pops()).toEqual(base);
+    }
+  });
 });
