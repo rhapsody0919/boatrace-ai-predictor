@@ -1159,6 +1159,11 @@
       "guards": "マイグレーション適用判定・確認不能時の再試行・client別TTLキャッシュとclear（BOA-1075）"
     },
     {
+      "script": "verify-schema-er-diagram.js",
+      "tier": "ci",
+      "guards": "DB 全体の ER 図（docs/reference/schema-er-diagram.md、generate-schema-er-diagram.js、基盤の計画 段6）の組み立て（scripts/lib/schemaErDiagram.js）。外部キーの多重度（主キー・一意なら1対1、NULL を許すなら親が0か1）、mermaid に書ける型、名前によるまとまりの振り分け、線も鍵も無い表を落とさないこと、DDL 版（generate-er-diagram.js {slug}）の書き方が変わらないこと。今の写しで全部の表がちょうど1つのまとまりに入り、全部の外部キーが子の表のまとまりの図に出て、写しの並びに依らず同じ md になり、mermaid の行の形が崩れていないこと。最新性は master へのマージ後に regenerate-generated-docs.yml が担保する（ADR-0078。図は PR に含めない）"
+    },
+    {
       "script": "verify-schema-snapshot.js",
       "tier": "ci",
       "args": ["--base=origin/master"],
