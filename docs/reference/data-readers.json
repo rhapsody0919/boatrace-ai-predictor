@@ -5,10 +5,10 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1553,
+    "sourceFiles": 1554,
     "filesWithAccess": 254,
-    "tableReaders": 887,
-    "tableWriters": 185,
+    "tableReaders": 888,
+    "tableWriters": 184,
     "rpcCallers": 49,
     "nameMentions": 231,
     "tablesWithoutReaders": 21,
@@ -9299,6 +9299,12 @@
           "columns": []
         },
         {
+          "ref": "scripts/analysis/check-win-odds-vs-final.js:45",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
+        },
+        {
           "ref": "scripts/analysis/train-conditional-logit.js:103",
           "op": "select",
           "via": "helper:fetchAll",
@@ -9690,6 +9696,12 @@
         "summary": "anon 可"
       },
       "readers": [
+        {
+          "ref": "scripts/analysis/check-win-odds-vs-final.js:50",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
+        },
         {
           "ref": "scripts/lib/scrapeJobs/finalOddsHandlers.js:129",
           "op": "select",
@@ -16727,19 +16739,6 @@
           ]
         },
         {
-          "ref": "scripts/maintenance/update-today-recommended-models.js:59",
-          "op": "select",
-          "via": "client",
-          "columns": [
-            "race_date",
-            "race_id",
-            "recommended_model",
-            "venue_code",
-            "volatility_level",
-            "volatility_score"
-          ]
-        },
-        {
           "ref": "scripts/maintenance/update-venue-stats.js:32",
           "op": "select",
           "via": "client",
@@ -17201,14 +17200,6 @@
           "columns": [
             "?"
           ]
-        },
-        {
-          "ref": "scripts/maintenance/update-today-recommended-models.js:128",
-          "op": "update",
-          "via": "client",
-          "columns": [
-            "recommended_model"
-          ]
         }
       ],
       "readByRpc": [
@@ -17328,8 +17319,6 @@
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:256",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/migrate-to-supabase.js:249",
-            "scripts/maintenance/update-today-recommended-models.js:128",
-            "scripts/maintenance/update-today-recommended-models.js:59",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-data-readers.js:557",
@@ -17426,7 +17415,6 @@
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/motor-pretest-backfill.js:231",
-            "scripts/maintenance/update-today-recommended-models.js:59",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-analogy-v16.js:276",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
@@ -17512,7 +17500,6 @@
             "scripts/maintenance/delete-phantom-race-days.js:103",
             "scripts/maintenance/fix-tsu-2025-12-02-date.js:71",
             "scripts/maintenance/motor-pretest-backfill.js:231",
-            "scripts/maintenance/update-today-recommended-models.js:59",
             "scripts/maintenance/update-venue-stats.js:32",
             "scripts/maintenance/verify-pretest-row-pick.js:128",
             "scripts/maintenance/verify-pretest-row-pick.js:93",
@@ -17639,8 +17626,7 @@
             "scripts/analysis/redesign-volatility-by-venue.js:133",
             "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
             "scripts/analysis/verify-all-venues-label-accuracy.js:76",
-            "scripts/analysis/verify-label-accuracy.js:72",
-            "scripts/maintenance/update-today-recommended-models.js:59"
+            "scripts/analysis/verify-label-accuracy.js:72"
           ],
           "writers": [],
           "sql": [
@@ -17650,19 +17636,14 @@
         "volatility_level": {
           "readers": [
             "scripts/analysis/analyze-upset-factors.js:108",
-            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109",
-            "scripts/maintenance/update-today-recommended-models.js:59"
+            "scripts/analysis/turn-prediction-venue-deep-analysis.js:109"
           ],
           "writers": [],
           "sql": []
         },
         "recommended_model": {
-          "readers": [
-            "scripts/maintenance/update-today-recommended-models.js:59"
-          ],
-          "writers": [
-            "scripts/maintenance/update-today-recommended-models.js:128"
-          ],
+          "readers": [],
+          "writers": [],
           "sql": []
         },
         "volatility_reasons": {
