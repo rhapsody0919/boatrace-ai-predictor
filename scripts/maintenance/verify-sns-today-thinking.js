@@ -786,6 +786,18 @@ test("本文に URL を付けない: today_thinking の3本は URL が1つでも
   const url = `https://www.boat-ai.jp/race/${RACE}?tab=sonar`;
   assert.deepEqual(checkTodayThinkingImage(bundle(), riskRules), []);
   assert.deepEqual(checkTodayThinkingReply(replyBundle(), riskRules), []);
+  // 展示後のリプは画像1枚（1枚目の思考の地図）でも受ける（2026-10-28 オーナー決定）。2枚目だけ等は受けない
+  assert.deepEqual(
+    checkTodayThinkingReply(replyBundle({ images: [NAMES[0]] }), riskRules),
+    [],
+  );
+  assert.match(
+    checkTodayThinkingReply(
+      replyBundle({ images: [NAMES[1]] }),
+      riskRules,
+    ).join(),
+    /images が/,
+  );
   for (const b of [
     checkTodayThinkingImage(bundle({ x_text: `若松8R\n${url}` }), riskRules),
     checkTodayThinkingImage(bundle({ poll_text: `投票 ${url}` }), riskRules),

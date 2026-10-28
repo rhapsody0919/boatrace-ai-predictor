@@ -11,8 +11,8 @@
  *   本投稿（展示前の版、締切の約3時間前）: {format:"finals_image", race_id, x_text, deadline:"HH:MM"（JST）, images:[4つの名前],
  *     review:{p0_count, by}, poll:[4つの選択肢（各25字まで）], poll_text}
  *     本投稿と、その直後に本投稿へのリプで出す投票（本文 poll_text、締切で閉じる。177）の2つを作る。投票のリプは本投稿が posted になってから送る
- *   展示後のリプ（締切の25〜13分前）: {format:"finals_reply", race_id, x_text, deadline:"HH:MM", images:[4つの名前], review:{p0_count, by}}
- *     本投稿（posted）へのリプで画像4枚と本文。13分前を過ぎたら受け取らない（出さない）
+ *   展示後のリプ（締切の25〜13分前）: {format:"finals_reply", race_id, x_text, deadline:"HH:MM", images:[1枚目の名前] か [4つの名前], review:{p0_count, by}}
+ *     本投稿（posted）へのリプで画像（1枚目の思考の地図だけ、2026-10-28 オーナー決定。今までの4枚も受ける）と本文。13分前を過ぎたら受け取らない（出さない）
  *   images は <race_id>-1-map.png・-2-q12.png・-3-q3.png・-4-routes.png のこの順（この順で1投稿に付く）
  *
  * 自動送信の許可（sns_auto_send_control の x の行の finals_image_enabled）は既定 off。
@@ -211,21 +211,40 @@ function textReasons(text, raceId, riskRules, label, { noUrl = false } = {}) {
   return reasons;
 }
 
-/** 本投稿と展示後のリプに共通の bundle の検査（純粋関数）。text は textReasons の追加の設定 */
-function commonReasons(bundle, format, riskRules, text = {}) {
+/**
+ * 展示後のリプは画像1枚（1枚目の思考の地図＝今日の展示 ST・展示の進入入り）か、今までの4枚（2026-10-28 オーナー決定で1枚へ。
+ * 2〜4枚目は本投稿とほぼ同じなので外す。hq が切り替えるまで4枚も受ける）。本投稿は4枚のまま
+ */
+const replyImageSets = (raceId) => [
+  imageNamesOf(raceId).slice(0, 1),
+  imageNamesOf(raceId),
+];
+
+/** 本投稿と展示後のリプに共通の bundle の検査（純粋関数）。text は textReasons の追加の設定、imageSets は受ける画像の並び */
+function commonReasons(
+  bundle,
+  format,
+  riskRules,
+  text = {},
+  imageSets = [imageNamesOf(bundle?.race_id)],
+) {
   const reasons = [];
   if (bundle?.format !== format) reasons.push(`format が ${format} でない`);
   if (!/^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}$/.test(bundle?.race_id ?? ""))
     reasons.push("race_id が不正");
   if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(bundle?.deadline ?? ""))
     reasons.push("deadline が HH:MM でない");
-  const expected = imageNamesOf(bundle?.race_id);
   if (
     !Array.isArray(bundle?.images) ||
-    bundle.images.length !== expected.length ||
-    bundle.images.some((name, i) => name !== expected[i])
+    !imageSets.some(
+      (expected) =>
+        bundle.images.length === expected.length &&
+        bundle.images.every((name, i) => name === expected[i]),
+    )
   )
-    reasons.push(`images が ${expected.join(",")} の4つ・この順でない`);
+    reasons.push(
+      `images が ${imageSets.map((e) => e.join(",")).join(" か ")} の並びでない`,
+    );
   if (bundle?.review?.p0_count !== 0)
     reasons.push(`機械の検査の P0 が0件でない（${bundle?.review?.p0_count}）`);
   return [
@@ -260,7 +279,13 @@ export function checkFinalsImage(bundle, riskRules = []) {
 
 /** 展示後のリプの bundle.json の検査（純粋関数） */
 export function checkFinalsReply(bundle, riskRules = []) {
-  return commonReasons(bundle, FINALS_REPLY_FORMAT, riskRules);
+  return commonReasons(
+    bundle,
+    FINALS_REPLY_FORMAT,
+    riskRules,
+    {},
+    replyImageSets(bundle?.race_id),
+  );
 }
 
 /** 思考投稿の本投稿（format=today_thinking_image）の検査（純粋関数）。優勝戦の本投稿と同じ検査に、本文に URL が無いことを足す */
@@ -272,9 +297,13 @@ export function checkTodayThinkingImage(bundle, riskRules = []) {
 
 /** 思考投稿の展示後のリプ（format=today_thinking_reply）の検査（純粋関数） */
 export function checkTodayThinkingReply(bundle, riskRules = []) {
-  return commonReasons(bundle, TODAY_THINKING_REPLY_FORMAT, riskRules, {
-    noUrl: true,
-  });
+  return commonReasons(
+    bundle,
+    TODAY_THINKING_REPLY_FORMAT,
+    riskRules,
+    { noUrl: true },
+    replyImageSets(bundle?.race_id),
+  );
 }
 
 /** 種類と部分ごとの bundle の検査 */
@@ -298,7 +327,7 @@ export function pngSize(bytes) {
   return { width: view.getUint32(16), height: view.getUint32(20) };
 }
 
-/** 画像4枚の検査（純粋関数）。names は bundle.images、files は名前→バイト（無いものは undefined） */
+/** 画像の検査（純粋関数）。names は bundle.images、files は名前→バイト（無いものは undefined） */
 export function checkImages(names, files) {
   const reasons = [];
   for (const name of names) {
@@ -568,7 +597,7 @@ async function liveOf(store, raceId, variant, kind) {
   return { retry };
 }
 
-/** フォルダの画像4枚を読み、検査する。読めない（ENOENT 以外）は原因を残す */
+/** フォルダの画像（bundle.images の名前）を読み、検査する。読めない（ENOENT 以外）は原因を残す */
 async function readImages(folder, names, readBytes) {
   const files = {};
   const readErrors = [];

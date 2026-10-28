@@ -1270,7 +1270,10 @@ test("投票のリプを送る: 本投稿へのリプで poll.options と durati
     /poll_invalid/,
   );
   assert.deepEqual(x2.calls, []);
-  assert.deepEqual(actions, [["claim", null], ["hold", "poll_invalid"]]);
+  assert.deepEqual(actions, [
+    ["claim", null],
+    ["hold", "poll_invalid"],
+  ]);
 });
 
 test("投票のリプは本投稿と対で枠を取る: 子の分の空きが無ければ本投稿も claim できない。本投稿を送った後は子の枠を他の親の job に使わせない", async () => {
@@ -1286,21 +1289,35 @@ test("投票のリプは本投稿と対で枠を取る: 子の分の空きが無
   // 別の優勝戦の本投稿（親）を受け取る（上限4: 今日の試行1＋2）。上限を3に下げると、その claim は
   // 今日の試行1＋自分1＋自分の子1＋送った本投稿の子（投票のリプ、まだ claim していない）1＝4 で入らない
   const other = "2037-10-26-05-12";
-  await db.query("INSERT INTO races VALUES($1,'2037-10-26','17:30:00',NULL)", [other]);
+  await db.query("INSERT INTO races VALUES($1,'2037-10-26','17:30:00',NULL)", [
+    other,
+  ]);
   await db.query("INSERT INTO race_conditions VALUES($1,'優勝戦')", [other]);
   const otherImages = Object.fromEntries(
     imageNamesOf(other).map((name, i) => [name, png(1080, 1350, 300 + i)]),
   );
-  const otherBundle = bundle({ race_id: other, deadline: "17:30", images: imageNamesOf(other), poll_text: "あなたの予想は？\n#ボートレース" });
+  const otherBundle = bundle({
+    race_id: other,
+    deadline: "17:30",
+    images: imageNamesOf(other),
+    poll_text: "あなたの予想は？\n#ボートレース",
+  });
   // push の事前検査も claim と同じく予約の子を数える（上限3: 試行1＋予約の子1＋2 は入らない）
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=3");
   assert.match(
-    (await push(otherBundle, { now: at("14:00:00") }, otherImages)).reasons.join(),
+    (
+      await push(otherBundle, { now: at("14:00:00") }, otherImages)
+    ).reasons.join(),
     /日の上限 3 に2本が入らない（今日の試行 1・他経路 0・予約の子 1）/,
   );
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=4");
   const second = await push(
-    bundle({ race_id: other, deadline: "17:30", images: imageNamesOf(other), poll_text: "あなたの予想は？\n#ボートレース" }),
+    bundle({
+      race_id: other,
+      deadline: "17:30",
+      images: imageNamesOf(other),
+      poll_text: "あなたの予想は？\n#ボートレース",
+    }),
     { now: at("14:00:00") },
     otherImages,
   );
@@ -1364,6 +1381,43 @@ test("展示後のリプ: 締切の25〜13分前だけ受け取り、本投稿�
     (await finalsStatus(RACE, { store })).reply.job_id,
     reply.job_id,
   );
+});
+
+test("展示後のリプは画像1枚（1枚目の思考の地図）でも受け取り、媒体は1つで送る。4枚も受ける。本投稿は4枚のまま（2026-10-28 オーナー決定）", async () => {
+  const one = { images: [NAMES[0]] };
+  assert.deepEqual(checkFinalsReply(replyBundle(one), riskRules), []);
+  assert.deepEqual(checkFinalsReply(replyBundle(), riskRules), []);
+  for (const images of [
+    [NAMES[1]],
+    NAMES.slice(0, 2),
+    [],
+    [NAMES[0], NAMES[0]],
+  ])
+    assert.match(
+      checkFinalsReply(replyBundle({ images }), riskRules).join(),
+      /images が/,
+      JSON.stringify(images),
+    );
+  assert.match(
+    checkFinalsImage(bundle({ images: [NAMES[0]] }), riskRules).join(),
+    /images が/,
+  );
+  await postMain();
+  await setClock(at("16:16:59"));
+  const reply = await push(
+    replyBundle(one),
+    { now: at("16:16:59") },
+    {
+      [NAMES[0]]: IMAGES()[NAMES[0]],
+    },
+  );
+  assert.ok(reply.job_id, JSON.stringify(reply));
+  const job = await first("SELECT * FROM sns_x_send_jobs WHERE id=$1", [
+    reply.job_id,
+  ]);
+  const snapshot = JSON.parse(job.snapshot_text);
+  assert.equal(snapshot.media.length, 1);
+  assert.match(snapshot.media[0].path, /reply-.*1-map\.png$/);
 });
 
 test("展示後のリプは本投稿が送られていなければ受け取らない（親が無い）。許可が off なら何も書かない", async () => {
@@ -1453,20 +1507,46 @@ test("177: 承認の関数は snapshot.poll と下書きの x_poll の一致を�
   let caught = null;
   failing.approve = async (a) => {
     if (a.p_snapshot.poll) {
-      const bad = { ...a.p_snapshot, poll: { ...a.p_snapshot.poll, options: [...POLL.slice(0, 3), "E 5号艇"] } };
-      caught = await store.approve({ ...a, p_snapshot: bad }).then(() => null, (e) => e);
-      const withMedia = { ...a.p_snapshot, media: [{ path: "x.png", sha256: "a".repeat(64), size: 1, type: "image/png" }] };
-      caught = [caught, await store.approve({ ...a, p_snapshot: withMedia }).then(() => null, (e) => e)];
+      const bad = {
+        ...a.p_snapshot,
+        poll: {
+          ...a.p_snapshot.poll,
+          options: [...POLL.slice(0, 3), "E 5号艇"],
+        },
+      };
+      caught = await store.approve({ ...a, p_snapshot: bad }).then(
+        () => null,
+        (e) => e,
+      );
+      const withMedia = {
+        ...a.p_snapshot,
+        media: [
+          { path: "x.png", sha256: "a".repeat(64), size: 1, type: "image/png" },
+        ],
+      };
+      caught = [
+        caught,
+        await store.approve({ ...a, p_snapshot: withMedia }).then(
+          () => null,
+          (e) => e,
+        ),
+      ];
       const noPoll = { ...a.p_snapshot };
       delete noPoll.poll;
-      caught.push(await store.approve({ ...a, p_snapshot: noPoll }).then(() => null, (e) => e));
+      caught.push(
+        await store.approve({ ...a, p_snapshot: noPoll }).then(
+          () => null,
+          (e) => e,
+        ),
+      );
     }
     return store.approve(a);
   };
   const result = await push(bundle(), { store: failing });
   assert.ok(result.poll_job_id, JSON.stringify(result));
   assert.equal(caught.length, 3);
-  for (const e of caught) assert.match(String(e?.message), /承認中に投票が変わりました/);
+  for (const e of caught)
+    assert.match(String(e?.message), /承認中に投票が変わりました/);
 });
 
 test("177: 期限を過ぎた子・素材でない YouTube の子は予約に入らない", async () => {
@@ -1475,21 +1555,37 @@ test("177: 期限を過ぎた子・素材でない YouTube の子は予約に入
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=2");
   await post(main.job_id, "1890000000000000040", "2037-10-26T05:01:00Z");
   // 投票のリプの期限を過ぎた扱いにすると、他の親の claim の予約から外れる
-  await db.query("UPDATE sns_x_send_jobs SET expires_at=$2 WHERE id=$1", [main.poll_job_id, "2037-10-26T04:59:00Z"]);
+  await db.query("UPDATE sns_x_send_jobs SET expires_at=$2 WHERE id=$1", [
+    main.poll_job_id,
+    "2037-10-26T04:59:00Z",
+  ]);
   const other = "2037-10-26-05-12";
-  await db.query("INSERT INTO races VALUES($1,'2037-10-26','17:30:00',NULL)", [other]);
+  await db.query("INSERT INTO races VALUES($1,'2037-10-26','17:30:00',NULL)", [
+    other,
+  ]);
   await db.query("INSERT INTO race_conditions VALUES($1,'優勝戦')", [other]);
   await db.exec("UPDATE sns_x_send_control SET daily_limit_x=3");
   const second = await push(
-    bundle({ race_id: other, deadline: "17:30", images: imageNamesOf(other), poll_text: "あなたの予想は？\n#ボートレース" }),
+    bundle({
+      race_id: other,
+      deadline: "17:30",
+      images: imageNamesOf(other),
+      poll_text: "あなたの予想は？\n#ボートレース",
+    }),
     { now: at("14:00:00") },
-    Object.fromEntries(imageNamesOf(other).map((n, i) => [n, png(1080, 1350, 400 + i)])),
+    Object.fromEntries(
+      imageNamesOf(other).map((n, i) => [n, png(1080, 1350, 400 + i)]),
+    ),
   );
   assert.ok(second.job_id, JSON.stringify(second));
   // 試行1＋自分1＋自分の子1＝3。期限切れの子は数えない
   assert.equal((await claim(second.job_id)).state, "sending");
   // YouTube の子（全貌の Shorts）は X の予約に入らない
-  await db.exec("UPDATE sns_x_send_jobs SET channel='youtube' WHERE id='" + second.poll_job_id + "'");
+  await db.exec(
+    "UPDATE sns_x_send_jobs SET channel='youtube' WHERE id='" +
+      second.poll_job_id +
+      "'",
+  );
   const rows = await store.waitingChildren(at("14:00:00"));
   assert.ok(rows.every((r) => r.channel === "x"));
 });
