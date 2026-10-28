@@ -106,7 +106,9 @@ const dayNumber = (date) =>
  * 比べの設定（config.experiment）。連続2日を1組にし、組の中でどちらの日を b にするかを乱数で決める（hq §6・§10-5）。
  * start（組の1日目）が null・壊れているときは比べをしない（全部 a）。pairs は組の数（既定 10。5組で組の中の SD を見直し、
  * 1.0 を超えたら hq が 20 に上げる）。乱数は seed と組の番号の SHA-256 で、日付と設定だけから決まる（作り直しても変わらない。覗き見で変えない）
- * 返り値: null（config に experiment が無い＝前からの日替わり）か { id, start, pairs, seed }（start は null もある）
+ * mode "all_b"（2026-10-28 オーナー決定）は組を作らず、start から days 日（既定 10）を毎日 b、その後は a にする（比べは過去の a の日との前後比べ）。
+ * mode が無い・知らない値は "pairs"（上の組の方式）
+ * 返り値: null（config に experiment が無い＝前からの日替わり）か { id, mode, start, pairs, seed }（all_b は pairs の代わりに days。start は null もある）
  */
 export function normalizeTodayExperiment(experiment) {
   if (experiment === undefined) return null;
@@ -117,23 +119,31 @@ export function normalizeTodayExperiment(experiment) {
     Number.isFinite(dayNumber(e.start))
       ? e.start
       : null;
-  const pairs =
-    Number.isInteger(e.pairs) && e.pairs > 0 && e.pairs <= 100 ? e.pairs : 10;
+  const count = (v) => (Number.isInteger(v) && v > 0 && v <= 100 ? v : 10);
+  const id = typeof e.id === "string" && TYPE_ID.test(e.id) ? e.id : "today-ab";
+  if (e.mode === "all_b")
+    return { id, mode: "all_b", start, days: count(e.days) };
   return {
-    id: typeof e.id === "string" && TYPE_ID.test(e.id) ? e.id : "today-ab",
+    id,
+    mode: "pairs",
     start,
-    pairs,
+    pairs: count(e.pairs),
     seed: typeof e.seed === "string" && e.seed ? e.seed : "today-ab",
   };
 }
 
 /**
  * その日が比べのどの組のどちらか（純粋関数）。比べの外（start が無い・start より前・組の数を過ぎた）は side a・pair null
- * 返り値: { side: "a"|"b", pair: number|null, slot: 0|1|null }
+ * mode "all_b" は start から days 日が side b（day に start からの日数 0〜days-1）、その外は a
+ * 返り値: { side: "a"|"b", pair: number|null, slot: 0|1|null, day?: number }
  */
 export function pickExperimentSide(experiment, date) {
   if (!experiment?.start) return { side: "a", pair: null, slot: null };
   const offset = dayNumber(date) - dayNumber(experiment.start);
+  if (experiment.mode === "all_b")
+    return offset >= 0 && offset < experiment.days
+      ? { side: "b", pair: null, slot: null, day: offset }
+      : { side: "a", pair: null, slot: null };
   if (!(offset >= 0) || offset >= experiment.pairs * 2)
     return { side: "a", pair: null, slot: null };
   const pair = Math.floor(offset / 2);
@@ -226,8 +236,8 @@ export function pickTodayPost(
   // 返信は X の投稿が1日1本増え、月の予約も URL つきの額で2本分引く（158 の thread_index=0）。費用の線はオーナーの判断なので、
   // config の reply_enabled が true の間だけ選べる（既定は false。system-architect の審査 P1-1）
   const replyOn = config?.reply_enabled === true;
-  // 比べの組の日は型の列を使わない（列の型が入ると a・b の束が別の型で汚れる）。理由は fallback_reason に残す
-  const inPair = Boolean(ab && ab.pair !== null);
+  // 比べの日（組の日・all_b の b の日）は型の列を使わない（列の型が入ると a・b の束が別の型で汚れる）。理由は fallback_reason に残す
+  const inPair = Boolean(ab && (ab.pair !== null || ab.day !== undefined));
   const checked =
     row && !inPair
       ? normalizeTypeScheduleRow(row, date, {
@@ -239,10 +249,17 @@ export function pickTodayPost(
   // 列の型の日は、見出しの a・b の札（today_variant・template_variant_id）を付けない。札と実際の文面が食い違い、
   // a・b の比較の母数を汚すため（x-channel の審査 P1）。型の比較は content_type で行う
   // 比べの組（hq が数える）。比べの外は付けない
-  const pairTag =
-    ab && ab.pair !== null
-      ? { experiment: experiment.id, pair: ab.pair, slot: ab.slot }
-      : {};
+  // mode を残す（pairs は組の中の比べ、all_b は過去の a の日との前後比べ。読み方が違う）
+  const pairTag = !inPair
+    ? {}
+    : ab.pair !== null
+      ? {
+          experiment: experiment.id,
+          mode: experiment.mode,
+          pair: ab.pair,
+          slot: ab.slot,
+        }
+      : { experiment: experiment.id, mode: experiment.mode, day: ab.day };
   if (checked?.post)
     return {
       ...checked.post,
@@ -257,7 +274,9 @@ export function pickTodayPost(
     };
   const reason =
     row && inPair
-      ? "experiment_pair"
+      ? ab.pair !== null
+        ? "experiment_pair"
+        : "experiment_all_b"
       : (scheduleError ?? checked?.reason ?? "no_schedule_row");
   return {
     heading: base.heading,
