@@ -439,8 +439,8 @@ function ThinkingAssistBody() {
         stage: data.stage,
         metric: state.metric,
         racers,
-        // 図の「1着人気」は券種によらずいつも3連単の合成（券種のタブで順位が動かない。BOA-990、
-        // 2026-10-28 オーナー決定 案 c。公式の単勝オッズ＝案 d は BOA-1174 の後）
+        // 図の「1着人気」は券種によらず、締切前は3連単の合成、締切後は公式の単勝の締切時オッズ（finalWin）。
+        // 券種のタブで順位が動かない（BOA-990、2026-10-28 オーナー決定）
         trifecta,
         // 締切後は公式の単勝の締切時オッズ（2026-10-28 オーナー決定）
         finalWin: data.odds.data?.finalWin ?? null,
