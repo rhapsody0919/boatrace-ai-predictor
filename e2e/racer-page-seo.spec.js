@@ -112,3 +112,13 @@ test("会場別・枠番別の表の1着の割合は「1着率」と書く（「
   await expect(headers.filter({ hasText: "1着率" }).first()).toBeVisible();
   await expect(headers.filter({ hasText: /^勝率$/ })).toHaveCount(0);
 });
+
+test("F率には期間と走数を添え、公式の期別成績の F の回数と別の集計だと分かるようにする", async ({
+  page,
+}) => {
+  // 3941 は 2025年12月以降に F がある（ファン評価 GS00 3周目で「F率 0.4%」と公式の F0回が食い違って見えた）
+  await page.goto("/racer/3941");
+  const fRate = page.locator(".racer-stat-sub", { hasText: "F率" });
+  await expect(fRate).toContainText("当サイト集計・2025年12月以降");
+  await expect(fRate).toContainText(/・\d+走/);
+});

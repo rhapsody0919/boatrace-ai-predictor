@@ -625,7 +625,13 @@ export default function RacerPerformanceStats({
               </span>
               {aggregatedStats?.flying_rate > 0 && (
                 <span className="racer-stat-sub">
-                  F率（当サイト集計） {(aggregatedStats.flying_rate * 100).toFixed(1)}%
+                  {/* 期間と走数を添える。公式の期別成績（その期の F の回数）と別の集計だと分かるように（ファン評価 GS00 3周目） */}
+                  F率 {(aggregatedStats.flying_rate * 100).toFixed(1)}%
+                  （当サイト集計・2025年12月以降
+                  {aggregatedStats.total_races > 0
+                    ? `・${aggregatedStats.total_races}走`
+                    : ""}
+                  ）
                 </span>
               )}
             </div>
