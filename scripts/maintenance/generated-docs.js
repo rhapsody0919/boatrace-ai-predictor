@@ -48,6 +48,11 @@ export const GENERATED_DOCS = Object.freeze([
     output: "docs/reference/data-readers.json",
     generator: "scripts/maintenance/generate-data-readers.js",
   },
+  // DB 全体の ER 図（基盤の計画 段6）。入力は本番スキーマの写しだけで、DB に触れない
+  {
+    output: "docs/reference/schema-er-diagram.md",
+    generator: "scripts/maintenance/generate-schema-er-diagram.js",
+  },
 ]);
 
 function regenerate() {
