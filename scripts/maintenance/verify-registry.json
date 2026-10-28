@@ -608,6 +608,11 @@
       "guards": "翻訳対象のページ（/・/race・/venue・/guide・/venues・/winning-technique と共通の枠）に、t() を通らない日本語が新しく直書きされること。既存分は jsx-japanese-baseline.json に所属チケット付きで固定（BOA-653〜656）"
     },
     {
+      "script": "verify-kb-archive-stage.js",
+      "tier": "ci",
+      "guards": "K/B取り込みの classifyStage の優勝戦判定が v2 と一致し、GP優勝戦・サントリー優・王座決定戦・ダービー優勝・バッチこい優を final として行変換に反映すること（BOA-1181、通信・DB接続なし）"
+    },
+    {
       "script": "verify-kb-file-parser.js",
       "tier": "ci",
       "guards": "K/Bファイルの全項目パーサー・アーカイブ行変換・バックフィルCLI"
