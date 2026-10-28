@@ -3,6 +3,7 @@ export { default as RacerProfileCard } from "./RacerProfileCard";
 export { default as RacerMotorStatusCard } from "./RacerMotorStatusCard";
 export { default as RacerPerformanceStats } from "./RacerPerformanceStats";
 export { default as RacerNewsList } from "./RacerNewsList";
+export { default as RacerOfficialStats } from "./RacerOfficialStats";
 export { default as BranchFilterSelect } from "./BranchFilterSelect";
 export { default as RangeFilterInput } from "./RangeFilterInput";
 export { default as GradeFilterChips } from "./GradeFilterChips";

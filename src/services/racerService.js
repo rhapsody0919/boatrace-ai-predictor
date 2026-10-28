@@ -203,6 +203,14 @@ export async function getRacerCurrentMotorStatus(racerId) {
  * @param {number|string} racerId
  * @returns {Promise<{ formSummary: object|null, formTrend: object|null, techniqueProfile: object|null, aggregatedStats: object|null, exhibitionTimeTrend: object|null, boatReturnRate: object[], venueStats: object[], officialAvgSt: {period: object|null, avgSt: number|null} }>}
  */
+/**
+ * 選手ページの公式の期別成績（racer_period_stats の全期）。成績・調子とは別に取り、表示をブロックしない
+ * @param {number|string} racerId
+ */
+export function getRacerAllPeriodStats(racerId) {
+  return supabaseDataService.getRacerAllPeriodStats(racerId);
+}
+
 export async function getRacerStats(racerId) {
   const [
     formSummary,

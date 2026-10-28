@@ -31,6 +31,9 @@
 - 新記事が検索に出ないときは、まず Search Console の URL 検査で未インデックスかを分ける。2026-03-12 公開の13本は7本が未インデックスで、内部リンク数・文字数と関係が無かった。一括確認は urlInspection API で1件ごとに300〜400ms 空ける（scripts/analysis/check-venue-indexing.js）（2026-08-26、memory boa_pv_plateau_diagnosis_2026_07、PR #406）
 - 選手ページの index の判定は src/utils/racerIndexPolicy.js をページと sitemap で共用する（2026-10-02 時点は現役A1の322人）。/races/:date は sitemap に直近7日だけ、/race/:raceId は sitemap の対象外（2026-10-02、memory seo_keyword_strategy_2026_09_29、PR #1120）
 - Search Console の反映は数日〜2週間遅れ、新しい記事や title・description の修正の効果は2〜4週間後に出る。CTR の低いページを改善候補に出す前に git log -- <ファイル> で直近に直していないか確かめる（2026-08〜09、memory feedback_growth_pdca_design・growth_pdca_2026_09_05・growth_report_skills_2026_08）
+- 選手ページは取得に失敗すると noindex を付けていた。2026-10-03 の Googlebot の描画で、条件を満たす85人が noindex になり、canonical が2ページ（/racer/4760・5208）に集まった（失敗の画面が全員同じ中身）。noindex の判定は取得が成功したときだけにする（2026-10-28、Search Console の URL 検査 10/25・本番 DB、PR #2049）
+- URL 検査で同じ型のページの googleCanonical が1ページに集まっていたら、Googlebot が同じ中身（読み込み中・エラーの画面）を見た印。描画の失敗を疑う（2026-10-28、同上）
+- 選手ページの title・description は全選手が同型で、登録番号は画面に無く、name_kana は取得していたが未使用だった。description に登録番号・支部・級、画面に登録番号とよみ、取得中・失敗・該当なしの画面にも登録番号を入れた（2026-10-28、seo-marketer、PR #2050）
 - Search Console レポートの順位変動は「+ が下落、− が上昇」で、見た目と逆になる（2026-09-05、memory growth_pdca_2026_09_05）
 
 ## AI 検索での見え方

@@ -1,0 +1,12 @@
+{
+  "feature": "GS00 選手ページの公式成績（期別成績の推移・進入コース別成績）",
+  "released": "2026-10-28",
+  "content": {
+    "static_pages": ["/racer/:racerId"],
+    "note_articles": [],
+    "blog_posts": [],
+    "youtube_videos": [],
+    "x_posts": []
+  },
+  "not_applicable": false
+}

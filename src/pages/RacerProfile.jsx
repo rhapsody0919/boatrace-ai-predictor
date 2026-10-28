@@ -8,11 +8,14 @@ import {
   RacerMotorStatusCard,
   RacerPerformanceStats,
   RacerNewsList,
+  RacerOfficialStats,
 } from "../components/racer";
+import InlineFetchError from "../components/InlineFetchError";
 import {
   getRacerPageData,
   getRacerStats,
   getRacerCurrentMotorStatus,
+  getRacerAllPeriodStats,
 } from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import DataFetchError from "../components/DataFetchError";
@@ -47,6 +50,10 @@ export default function RacerProfile() {
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [motorStatus, setMotorStatus] = useState(null);
+  // 公式の期別成績（GS00）。取得結果と失敗を racerId つきで持ち、別の選手の値を混ぜない
+  const [periodStats, setPeriodStats] = useState(null);
+  const [periodStatsFailedId, setPeriodStatsFailedId] = useState(null);
+  const [periodStatsRetry, setPeriodStatsRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +118,26 @@ export default function RacerProfile() {
       cancelled = true;
     };
   }, [racerId, validId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (validId ? getRacerAllPeriodStats(racerId) : Promise.resolve([]))
+      .then((rows) => {
+        if (cancelled) return;
+        setPeriodStats({ racerId, rows });
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("公式の期別成績の取得エラー:", err.message);
+        setPeriodStatsFailedId(racerId);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [racerId, validId, periodStatsRetry]);
+  const periodRows =
+    periodStats?.racerId === racerId ? periodStats.rows : null;
+  const periodFailed = periodStatsFailedId === racerId && !periodRows;
 
   const hasNews = (data?.news?.length ?? 0) > 0;
   // インデックス判定は sitemap と共通（src/utils/racerIndexPolicy.js）。ニュースがある選手、または
@@ -205,6 +232,21 @@ export default function RacerProfile() {
               racerId={racerId}
             />
             <RacerProfileCard profile={data.profile} racerId={racerId} />
+            {periodFailed ? (
+              <InlineFetchError
+                onRetry={() => {
+                  setPeriodStatsFailedId(null);
+                  setPeriodStatsRetry((n) => n + 1);
+                }}
+              />
+            ) : (
+              periodRows && (
+                <RacerOfficialStats
+                  rows={periodRows}
+                  racerName={data.profile ? displayName : null}
+                />
+              )
+            )}
             <RacerMotorStatusCard status={motorStatus} />
             <RacerPerformanceStats
               racerId={racerId}
