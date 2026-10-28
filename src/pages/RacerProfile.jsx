@@ -105,7 +105,10 @@ export default function RacerProfile() {
     latestRaceDate: data?.latestRaceDate ?? null,
     activeSince: getDaysAgoJST(RACER_INDEX_ACTIVE_DAYS),
   });
-  useRobotsMeta(!loading && !indexable);
+  // 取得に失敗したときは noindex にしない。失敗は「index にしない選手」の証拠ではない。
+  // 2026-10-03 の Googlebot の描画で、条件を満たす現役 A1 の85人が取得の失敗の画面（全員同じ中身）で
+  // noindex になり、Search Console で同じ1ページを canonical にされたまま残った（inspect 10/25）
+  useRobotsMeta(!loading && !error && !indexable);
 
   // 今節のモーター状況（直近出走）の日付が本日なら、その会場を選手ページの
   // 会場フィルタで「本日出走」として案内する（会場フィルタが全24会場から
