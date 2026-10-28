@@ -625,13 +625,13 @@ export default function RacerPerformanceStats({
               </span>
               {aggregatedStats?.flying_rate > 0 && (
                 <span className="racer-stat-sub">
-                  F率 {(aggregatedStats.flying_rate * 100).toFixed(1)}%
+                  F率（当サイト集計） {(aggregatedStats.flying_rate * 100).toFixed(1)}%
                 </span>
               )}
             </div>
             <p className="racer-stat-note">
               {officialAvgSt?.period
-                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の成績（勝率と同じ期の公式の期別成績）・全会場`
+                ? `${slashDate(officialAvgSt.period.calcFrom)}〜${slashDate(officialAvgSt.period.calcTo)} の公式の期別成績・全会場（「選手調子（全国勝率）」は出走表の値で、集計の期間が違います）`
                 : "公式の期別成績・全会場"}
             </p>
             <p className="racer-stat-note">

@@ -60,6 +60,11 @@ test("取得に失敗した画面にも登録番号を入れる", async ({ page 
     "登録番号3941",
   );
   await expect(page).toHaveTitle("選手 登録番号3941 | 龍神レーダー");
+  // 内部のエラー文は出さず、再読み込みと選手一覧への道を出す（ファン評価 GS00 2周目）
+  const errorBox = page.locator(".racer-profile-error");
+  await expect(errorBox).not.toContainText("Failed");
+  await expect(errorBox.locator("button")).toBeVisible();
+  await expect(errorBox.locator("a[href='/racers']")).toBeVisible();
 });
 
 test("取得の失敗は1回だけ取り直し、2回目が通れば選手のページを出す", async ({

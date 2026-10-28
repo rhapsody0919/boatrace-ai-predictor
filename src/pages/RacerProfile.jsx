@@ -15,6 +15,7 @@ import {
   getRacerCurrentMotorStatus,
 } from "../services/racerService";
 import { useRobotsMeta } from "../hooks/useRobotsMeta";
+import DataFetchError from "../components/DataFetchError";
 import {
   isRacerIndexable,
   RACER_INDEX_ACTIVE_DAYS,
@@ -62,6 +63,7 @@ export default function RacerProfile() {
       })
       .catch((err) => {
         if (cancelled) return;
+        console.error("選手ページの取得エラー:", errorMessageOf(err));
         setError(errorMessageOf(err));
         setLoading(false);
       });
@@ -181,9 +183,15 @@ export default function RacerProfile() {
           </p>
         )}
         {error && (
-          <p className="racer-profile-error">
-            登録番号{racerId}の選手を読み込めませんでした（{error}）
-          </p>
+          <div className="racer-profile-error">
+            {/* 内部のエラー文（Failed to fetch 等）は出さない。通信の失敗か選手がいないのか読めないため（ファン評価 GS00 2周目） */}
+            <DataFetchError
+              detail={`登録番号${racerId}の選手を読み込めませんでした。`}
+            />
+            <p>
+              <Link to="/racers">選手一覧から探す →</Link>
+            </p>
+          </div>
         )}
 
         {!loading && !error && (
