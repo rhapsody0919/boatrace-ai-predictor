@@ -56,7 +56,7 @@ flowchart TD
 
 | PR | 中身 | 挙動 | 前提 | 承認 |
 |---|---|---|---|---|
-| **R-0**（このあと出す1本目） | `verify-legacy-prediction-readers.js`（ci）: 止める物の名前（`prediction_odds`・`predictionOdds`・`safeBet`・`upsetFocus`・`ai_score_*`・5列）が出てくるファイルを、今の一覧より増やさない。一覧から外れたファイルが残っていたら一覧も直させる（減る向きにだけ動く）。F8 の手動のスクリプトを消す | 変わらない（CI の検査と、呼ばれないファイルの削除） | なし | 段階0 |
+| **R-0**（#2044） | `verify-legacy-prediction-readers.js`（ci）: 止める物の名前（`prediction_odds`・`predictionOdds`・`safeBet`・`upsetFocus`・`ai_score_*`・5列）が出てくるファイルを、今の一覧より増やさない。名前が消えたファイルは注意だけ出し `--prune` で一覧から外す（減る向きにだけ動く。他のレーンの PR は止めない）。F8 の手動のスクリプトを消す | 変わらない（CI の検査と、呼ばれないファイルの削除） | なし | 段階0 |
 | R1-1 | `generate-moriarty.yml`・`update-moriarty.yml`・`train-moriarty.yml` を止める。`/holmes` の Moriarty の欄は D1 の決めどおり（止めた日までの記録を出す、または欄を外す） | `/holmes` の Moriarty が更新されなくなる | D1 | `.github` はオーナー |
 | R1-2 | `scrape_job_state` の `prediction_odds` を off（本番のデータの変更）。`scrape-scheduled.yml` の A4 の段を外す | `prediction_odds` が増えなくなる | R1-1 | 本番の行・`.github` はオーナー |
 | R1-3 | `generate-predictions.js` で safeBet・upsetFocus の行と `ai_score_*` を書かない（standard・unified は今のまま）。`verify-feature-contributions-dedup.js` 等の期待を合わせる | 予想の行が1レース2行減る | R1-2、H1、D1（`/accuracy/history`） | 段階0（コードのみ） |
