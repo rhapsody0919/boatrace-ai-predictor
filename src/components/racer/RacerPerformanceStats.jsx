@@ -711,7 +711,7 @@ export default function RacerPerformanceStats({
             <span className="h3-hint">枠番をクリックで絞り込み →</span>
           </h3>
           <p className="racer-vc-note">
-            ※何号艇で出たかで分けた成績です。実際に入ったコースで分けた成績は、上の「進入コース別成績（公式）」にあります
+            ※何号艇で出たかで分けた成績です。実際に入ったコースで分けた成績は、公式の期別成績がある選手なら上の「進入コース別成績（公式）」にあります
           </p>
           <StatBreakdownTable
             headers={["枠番", "出走数", "勝数", "1着率", "2連率", "3連率"]}

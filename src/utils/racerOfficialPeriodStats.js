@@ -50,6 +50,8 @@ export function buildPeriodRows(rows) {
       const starts = num(r.starts) ?? 0;
       const firsts = num(r.first_count) ?? 0;
       const seconds = num(r.second_count) ?? 0;
+      // コース別の列が全部 NULL の期は3着の回数が分からないので、3連対率を出さない
+      const hasCourseCols = COURSES.some((c) => num(r[`c${c}_p3`]) !== null);
       const thirds = COURSES.reduce(
         (sum, c) => sum + (num(r[`c${c}_p3`]) ?? 0),
         0,
@@ -64,7 +66,9 @@ export function buildPeriodRows(rows) {
         winRate: starts > 0 ? num(r.win_rate) : null,
         top2Rate: starts > 0 ? num(r.top2_rate) : null,
         top3Rate:
-          starts > 0 ? ratio(firsts + seconds + thirds, starts) * 100 : null,
+          starts > 0 && hasCourseCols
+            ? ratio(firsts + seconds + thirds, starts) * 100
+            : null,
         starts,
         firsts,
         seconds,
@@ -77,14 +81,19 @@ export function buildPeriodRows(rows) {
 
 /**
  * 進入コース別（直近 periods 期の合算）。出走のある期を新しい順に periods 個使う（出走0の期は数えない）。
- * 平均STは、期ごとの値を「進入 − F − L」で重み付けした平均（公式の期の値からの近似。±0.01以内が99.9%、data-scientist）。
+ * 平均STは、期ごとの値を「進入 − F − L − 欠場」で重み付けした平均（公式の期の値からの近似。±0.01以内が99.9%、data-scientist）。
  * 公式は F・L を除いた走で ST を平均し、該当する走が無いと 0 を入れるので、0 は重みに入れない（data-accuracy-verifier）。
  * 平均スタート順位は合算の妥当性を確かめていないので出さない
  * @returns {{ periods: object[], courses: object[] } | null} 行が無ければ null
  */
 export function buildCourseRows(rows, periods = COURSE_SUM_PERIODS) {
   const used = [...(rows ?? [])]
-    .filter((r) => (num(r.starts) ?? 0) > 0)
+    // 出走があり、コース別の列が入っている期だけを数える
+    .filter(
+      (r) =>
+        (num(r.starts) ?? 0) > 0 &&
+        COURSES.some((c) => num(r[`c${c}_entries`]) !== null),
+    )
     .sort((a, b) => b.period_year - a.period_year || b.period_no - a.period_no)
     .slice(0, periods);
   if (used.length === 0) return null;
@@ -105,7 +114,9 @@ export function buildCourseRows(rows, periods = COURSE_SUM_PERIODS) {
         n -
         (num(r[`c${c}_f`]) ?? 0) -
         (num(r[`c${c}_l0`]) ?? 0) -
-        (num(r[`c${c}_l1`]) ?? 0);
+        (num(r[`c${c}_l1`]) ?? 0) -
+        (num(r[`c${c}_k0`]) ?? 0) -
+        (num(r[`c${c}_k1`]) ?? 0);
       if (stRuns > 0 && st !== null && st > 0) {
         stWeighted += st * stRuns;
         stN += stRuns;
@@ -129,7 +140,19 @@ export function buildCourseRows(rows, periods = COURSE_SUM_PERIODS) {
     };
   });
 
+  // 合算に使った期が連続しているか（出走0の期を飛ばすと連続しない）
+  const contiguous = used.every((r, i) => {
+    if (i === 0) return true;
+    const prev = used[i - 1];
+    const expected =
+      prev.period_no === 2
+        ? [prev.period_year, 1]
+        : [prev.period_year - 1, 2];
+    return r.period_year === expected[0] && r.period_no === expected[1];
+  });
+
   return {
+    contiguous,
     periods: used.map((r) => ({
       label: periodLabel(r.period_year, r.period_no),
       range: periodRangeLabel(r.calc_from, r.calc_to),

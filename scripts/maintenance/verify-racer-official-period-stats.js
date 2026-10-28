@@ -125,6 +125,34 @@ const gapRows = [
 const gap = buildCourseRows(gapRows);
 check("出走0の期を飛ばして3期を使う", gap.periods.length, 3);
 check("3期の最古は2025年前期", gap.periods.at(-1).label, "2025年前期");
+check("出走0の期を飛ばしたら連続していない", gap.contiguous, false);
+check("穴が無ければ連続", buildCourseRows(rows).contiguous, true);
+
+// 欠場（K）の走も ST が無いので重みから外す（(0.10×10+0.20×10)/20）
+const kRows = [
+  row(2026, 2, { ...course(3, 13, 1, 2, 2, "0.10"), c3_k1: 3 }),
+  row(2026, 1, course(3, 10, 1, 2, 2, "0.20")),
+];
+check("欠場の走は重みから外す", buildCourseRows(kRows).courses[2].avgSt, 0.15);
+
+// コース別の列が NULL の期: 3連対率を出さない・合算の期に数えない
+const nullCourse = Object.fromEntries(
+  [1, 2, 3, 4, 5, 6].flatMap((c) =>
+    ["entries", "p1", "p2", "p3", "avg_st"].map((k) => [`c${c}_${k}`, null]),
+  ),
+);
+check(
+  "コース別の列が NULL の期は3連対率を出さない",
+  buildPeriodRows([row(2026, 2, nullCourse)])[0].top3Rate,
+  null,
+);
+check(
+  "コース別の列が NULL の期は合算に数えない",
+  buildCourseRows([row(2026, 2, nullCourse), row(2026, 1), row(2025, 2)])
+    .periods.length,
+  2,
+);
+
 check(
   "全期が出走0なら進入コース別は出さない",
   buildCourseRows([row(2026, 2, { starts: 0 })]),

@@ -106,7 +106,8 @@ function CourseSection({ summary }) {
   return (
     <div className="racer-official-block">
       <h3>
-        進入コース別成績（公式・{rangeText}の{summary.periods.length}期）
+        進入コース別成績（公式・{rangeText}の{summary.periods.length}期
+        {summary.contiguous ? "" : "、出走のない期を除く"}）
       </h3>
       <p className="racer-official-note">
         実際に何コースに入ったかで分けた公式の成績です（何号艇で出たかで分けた成績は、下の「枠番別成績」）。
@@ -169,7 +170,8 @@ function CourseSection({ summary }) {
       <p className="racer-official-note">
         元の期:{" "}
         {summary.periods.map((p) => `${p.label}（${p.range}）`).join("・")}。
-        率は3期の着の回数を足して出しています。平均STは期ごとの値を進入の数で重み付けした近似です。
+        率は{summary.periods.length}
+        期の着の回数を足して出しています。平均STは、期ごとの値を F・L・欠場を除いた走の数で重み付けした近似です。
       </p>
     </div>
   );

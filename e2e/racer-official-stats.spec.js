@@ -71,15 +71,14 @@ test("勝率の折れ線は開いた時点で全期の点が出て、最後の�
       };
     });
   const first = await measure();
-  const rows = await page
-    .locator(".racer-official-table")
-    .first()
-    .locator("tbody tr")
+  // 点は出走のある期だけ（「出走なし」の行には点を置かない）
+  const periodRows = page.locator(
+    ".racer-official-stats .racer-official-block:first-of-type .racer-official-table tbody tr",
+  );
+  const withStarts = await periodRows
+    .filter({ hasNot: page.locator(".racer-official-empty") })
     .count();
-  const hidden = await page
-    .locator(".racer-official-more .racer-official-table tbody tr")
-    .count();
-  expect(first.dots.length).toBe(rows + hidden);
+  expect(first.dots.length).toBe(withStarts);
   expect(first.lineShownRatio).toBeGreaterThan(0.99);
   // 最新の期（表の先頭の行）の目盛りが右端にあり、最後の点と同じ位置
   const latestLabel = (
