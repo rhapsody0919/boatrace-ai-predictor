@@ -12,6 +12,7 @@
 - 内部タブの中身を包む要素にも区切りの余白を付ける。外側の gap は中まで届かない（2026-10-09、龍神ソナーの3タブ、docs/design/analogy-finder/sonar-tab/uiux-review-spacing.md、#1337）
 - 横あふれは表示項目を削らずデザインで解く（ユーザー指摘、memory feedback_dont_remove_info_for_layout）
 - 横あふれはまず真因を切り分ける。CSS Grid は子の min-width:auto のせいで、折り返せない中身があると列の指定を無視してはみ出す。子に min-width:0 を付ける（.venue-grid > *）（2026-08-29、memory venue_list_redesign_2026_08_28・feedback_dont_remove_info_for_layout）
+- 横スクロールする成績表は1列目（期・コース）を固定する。固定しないと 375px で右の列を見たとき、どの行か分からなくなる（2026-10-28、ファン評価、PR #2051）
 
 ## 押せる部品・選択の見た目
 - 押せる部品はスマホで高さ44px以上。見た目を小さくしたい「?」等は見た目16px のまま押せる範囲を24×24に広げる（src/components/race/TermHintButton.css の ::before、e2e/race-tab-width.spec.js）

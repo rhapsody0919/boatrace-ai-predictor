@@ -118,3 +118,57 @@ test("公式の期別成績の取得に失敗したらエラー表示を出す�
   await expect(page.locator(".inline-fetch-error").first()).toBeVisible();
   await expect(page.locator(".racer-official-stats")).toHaveCount(0);
 });
+
+test("全期出走なしの選手は、空の折れ線を出さず「この N 期に出走はありません」と書く", async ({
+  page,
+}) => {
+  // 3391 は 15期すべて出走なし（公式の期別成績も「-」）
+  await page.goto("/racer/3391");
+  const section = page.locator(".racer-official-stats");
+  await expect(section).toContainText(/この\d+期に出走はありません/);
+  await expect(section.locator(".racer-official-chart")).toHaveCount(0);
+});
+
+test("375px: 成績表は1列目を固定し、進入コース別の表は幅に収まる", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto("/racer/3941");
+  const section = page.locator(".racer-official-stats");
+  await section.locator(".racer-official-table").first().waitFor();
+  const firstCellPosition = await section
+    .locator(".racer-official-table tbody th")
+    .first()
+    .evaluate((el) => getComputedStyle(el).position);
+  expect(firstCellPosition).toBe("sticky");
+  const course = await section
+    .locator(".racer-official-table-wrap")
+    .last()
+    .evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }));
+  expect(course.sw).toBeLessThanOrEqual(course.cw);
+});
+
+test("折れ線のツールチップに集計期間を出す（今の半期と取り違えない）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/racer/3941");
+  const dot = page.locator(".racer-official-chart .recharts-line-dot").last();
+  await dot.hover();
+  await expect(
+    page.locator(".racer-official-chart .recharts-tooltip-wrapper"),
+  ).toContainText("集計 2025/11/01〜2026/04/30");
+});
+
+test("375px: 折れ線の中央の点のツールチップが画面の右端で切れない", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto("/racer/3941");
+  const dots = page.locator(".racer-official-chart .recharts-line-dot");
+  await dots.nth(7).hover();
+  const tip = page.locator(".racer-official-chart .recharts-tooltip-wrapper");
+  await expect(tip).toContainText("勝率");
+  const right = await tip.evaluate((el) => el.getBoundingClientRect().right);
+  expect(right).toBeLessThanOrEqual(375);
+});

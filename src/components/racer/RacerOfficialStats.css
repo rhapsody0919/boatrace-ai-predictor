@@ -63,6 +63,26 @@
   text-align: left;
 }
 
+/* 横に送っても、どの期・どのコースの行か分かるよう1列目を固定する（ファン評価 #2051 1周目） */
+.racer-official-table th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface-card);
+}
+
+/* 「出走なし」は横に送らなくても見える左端に置く */
+.racer-official-table td.racer-official-empty[colspan] {
+  text-align: left;
+}
+
+@media (max-width: 480px) {
+  .racer-official-table th,
+  .racer-official-table td {
+    padding: var(--spacing-2) var(--spacing-1);
+  }
+}
+
 .racer-official-sub {
   display: block;
   font-size: var(--font-size-xs);

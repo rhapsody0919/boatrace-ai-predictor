@@ -171,7 +171,8 @@ function CourseSection({ summary }) {
         元の期:{" "}
         {summary.periods.map((p) => `${p.label}（${p.range}）`).join("・")}。
         率は{summary.periods.length}
-        期の着の回数を足して出しています。平均STは、期ごとの値を F・L・欠場を除いた走の数で重み付けした近似です。
+        期の着の回数を足して出しています（率は小数1桁で切り捨て、公式と同じ）。平均STは、期ごとの値を
+        F・L・欠場を除いた走の数で重み付けした近似です。
       </p>
     </div>
   );
@@ -190,7 +191,7 @@ export default function RacerOfficialStats({ rows, racerName }) {
   // 折れ線は古い期から順に左→右。出走0の期は点を置かない
   const chartData = [...periodRows]
     .reverse()
-    .map((r) => ({ label: r.label, winRate: r.winRate }));
+    .map((r) => ({ label: r.label, range: r.range, winRate: r.winRate }));
   // 縦軸は値の幅いっぱいに広げない（小さな上下が大きく見え、推移を「調子」と読ませる。data-scientist）
   const rates = chartData.map((d) => d.winRate).filter((v) => v !== null);
   const chartDomain =
@@ -229,7 +230,12 @@ export default function RacerOfficialStats({ rows, racerName }) {
           期別成績（公式・{oldest.range.split("〜")[0]}以降の{periodRows.length}
           期）
         </h3>
-        {chartData.length > 1 && (
+        {rates.length === 0 && (
+          <p className="racer-official-note">
+            この{periodRows.length}期に出走はありません。
+          </p>
+        )}
+        {chartData.length > 1 && rates.length > 0 && (
           <div className="racer-official-chart">
             <ResponsiveContainer width="100%" height={200}>
               <LineChart
@@ -244,13 +250,24 @@ export default function RacerOfficialStats({ rows, racerName }) {
                   interval="preserveStartEnd"
                 />
                 <YAxis tick={{ fontSize: 11 }} domain={chartDomain} />
-                <Tooltip formatter={(value) => value?.toFixed(2)} />
+                {/* 期の名前だけだと今の半期と読み違えるので、集計期間を添える（ファン評価 #2051 1周目）。
+                    375px で右端が切れないよう、系列名は短くする */}
+                <Tooltip
+                  wrapperStyle={{ maxWidth: 200 }}
+                  contentStyle={{ whiteSpace: "normal" }}
+                  formatter={(value) => value?.toFixed(2)}
+                  labelFormatter={(label, payload) =>
+                    payload?.[0]?.payload?.range
+                      ? `${label}（集計 ${payload[0].payload.range}）`
+                      : label
+                  }
+                />
                 {/* 線を左から描く動きは止める（isAnimationActive）。描きかけの途中で見ると最後の点が左に寄って見え、
                     最新の期と位置が合わない（Orchestrate の Preview の確認 10/28）。ボットの描画も最終の形で読む */}
                 <Line
                   type="linear"
                   dataKey="winRate"
-                  name="勝率（公式・期別）"
+                  name="勝率"
                   stroke="var(--brand-accent-primary)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
