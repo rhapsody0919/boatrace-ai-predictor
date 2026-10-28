@@ -8,6 +8,7 @@ import {
   assistBetType,
   compositeText,
   hasPricedTicket,
+  ticketLabel,
 } from "../../../utils/assistModel";
 import { ASSIST_COPY } from "../../../data/thinkingAssistCopy";
 
@@ -83,7 +84,9 @@ export default function BetSummary({
         </span>
       </div>
       {!tickets.length && (
-        <p className="ta-note">{ASSIST_COPY.betEmptyFor(type.legs)}</p>
+        <p className="ta-note">
+          {ASSIST_COPY.betEmptyFor(type.legs, type.ordered)}
+        </p>
       )}
       {tickets.length > 0 && !priced && <p className="ta-note">{oddsNote}</p>}
       {result?.insufficient && (
@@ -111,7 +114,9 @@ export default function BetSummary({
               const tg = r.payout < result.total;
               return (
                 <tr key={r.ticket}>
-                  <td className="ta-num">{r.ticket}</td>
+                  <td className="ta-num">
+                    {ticketLabel(r.ticket, type.ordered)}
+                  </td>
                   <td className="ta-num">{r.odds}</td>
                   <td className="ta-num">
                     {ASSIST_COPY.popularity(ranks.get(r.ticket))}
@@ -151,7 +156,10 @@ export default function BetSummary({
       {result?.topped && <p className="ta-note">{ASSIST_COPY.toppedNote}</p>}
       {result?.missing.length > 0 && (
         <p className="ta-note">
-          {ASSIST_COPY.missingOdds(result.missing.length, result.missing)}
+          {ASSIST_COPY.missingOdds(
+            result.missing.length,
+            result.missing.map((t) => ticketLabel(t, type.ordered)),
+          )}
         </p>
       )}
       {result && !result.insufficient && (

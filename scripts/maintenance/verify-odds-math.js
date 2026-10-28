@@ -96,6 +96,31 @@ check(
   JSON.stringify(expandTickets({ 1: [1, 2], 2: [1, 2, 3], 3: [] }, [3], 2)) ===
     JSON.stringify(["1-2", "2-1"]),
 );
+// 3連複・2連複（BOA-990 ②）: 各段から1艇ずつ選んだ組を昇順に並べ替え、同じ組を1つにまとめる（承認モック 画面1）
+check(
+  "expandTickets: 3連複 1=234=2345 は6点（昇順のキー、同じ組は1つ）",
+  JSON.stringify(
+    expandTickets({ 1: [1], 2: [2, 3, 4], 3: [2, 3, 4, 5] }, [], 3, false),
+  ) ===
+    JSON.stringify(["1-2-3", "1-2-4", "1-2-5", "1-3-4", "1-3-5", "1-4-5"]),
+);
+check(
+  "expandTickets: 2連複 1=234 は3点、ボックス 123=123 は3点（1-2・1-3・2-3）、欠場（3）を含む組は除く",
+  JSON.stringify(
+    expandTickets({ 1: [1], 2: [2, 3, 4], 3: [2, 3, 4, 5] }, [], 2, false),
+  ) === JSON.stringify(["1-2", "1-3", "1-4"]) &&
+    JSON.stringify(
+      expandTickets({ 1: [1, 2, 3], 2: [1, 2, 3], 3: [] }, [], 2, false),
+    ) === JSON.stringify(["1-2", "1-3", "2-3"]) &&
+    JSON.stringify(
+      expandTickets({ 1: [1, 2, 3], 2: [1, 2, 3], 3: [] }, [3], 2, false),
+    ) === JSON.stringify(["1-2"]),
+);
+check(
+  "expandTickets: 3連複の段の順を入れ替えても同じ組（2=1=3 と 1=2=3）",
+  JSON.stringify(expandTickets({ 1: [2], 2: [1], 3: [3] }, [], 3, false)) ===
+    JSON.stringify(expandTickets({ 1: [1], 2: [2], 3: [3] }, [], 3, false)),
+);
 const ranks = popularityRanks({ a: 2, b: 1, c: 2, d: null, e: 5, f: 0 });
 check(
   "popularityRanks: オッズの昇順、同じオッズは同じ順位で次を飛ばす、オッズの無い組は順位なし",

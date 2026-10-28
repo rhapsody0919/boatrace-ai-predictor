@@ -39,7 +39,7 @@ export default function BetFooter({
       <div className="ta-foot-text">
         {/* 「（9点）」を折らない（375px で数字と単位が別の行に分かれた。ファン評価1周目 指摘3） */}
         <b className="ta-num">
-          {`${ASSIST_COPY.betTypeLabels[type.id]} ${betForm(bets, type.legs)}`}
+          {`${ASSIST_COPY.betTypeLabels[type.id]} ${betForm(bets, type.legs, type.ordered)}`}
           <span className="ta-nowrap">
             {priced < points
               ? `（${points}点・オッズあり${priced}点）`
@@ -48,7 +48,7 @@ export default function BetFooter({
         </b>
         <span className="ta-num">
           {points === 0
-            ? ASSIST_COPY.betEmptyFor(type.legs)
+            ? ASSIST_COPY.betEmptyFor(type.legs, type.ordered)
             : c
               ? ASSIST_COPY.composite(c)
               : oddsNote}

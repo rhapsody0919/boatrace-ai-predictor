@@ -145,6 +145,7 @@ export default function RaceLaneBoard({
   target = 1,
   onTarget = null,
   legs = 3,
+  ordered = true,
   legUnusedNote = null,
 }) {
   const bet = model.kind === "bet";
@@ -307,17 +308,27 @@ export default function RaceLaneBoard({
                   role="group"
                   aria-label={`${row.boat}号艇の候補`}
                 >
+                  {/* 連複は札の近くに「順不同」（1着の数字の横で「1艇目＝1着」と読まれないように。BOA-990 ② ファン評価1周目 P2-2） */}
+                  {bet && !ordered && (
+                    <span className="ta-pos3-cap">
+                      {ASSIST_COPY.unorderedMark}
+                    </span>
+                  )}
                   {[1, 2, 3].map((k) => (
                     <button
                       key={k}
                       type="button"
                       className={bet && k > legs ? "is-unused" : undefined}
                       disabled={bet && k > legs}
-                      aria-label={ASSIST_COPY.candidateAria(row.boat, k)}
+                      aria-label={ASSIST_COPY.candidateAria(
+                        row.boat,
+                        k,
+                        !bet || ordered,
+                      )}
                       aria-pressed={bets[k].has(row.boat)}
                       onClick={() => onToggleBet(k, row.boat)}
                     >
-                      {ASSIST_COPY.candidateLabel(k)}
+                      {ASSIST_COPY.candidateLabel(k, !bet || ordered)}
                     </button>
                   ))}
                 </div>

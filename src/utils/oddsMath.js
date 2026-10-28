@@ -61,14 +61,22 @@ export function popularityRanks(odds) {
 }
 
 /**
- * 1着・2着・3着の候補から連単の組を作る（legs=3 で3連単、legs=2 で2連単。BOA-990）。同じ艇を2回以上含む組と、
- * 欠場の艇を含む組は除く（D-38）。2連単は3着の候補を使わない
+ * 1着・2着・3着の候補から組を作る（legs=3 で3連、legs=2 で2連。BOA-990）。同じ艇を2回以上含む組と、
+ * 欠場の艇を含む組は除く（D-38）。2連の券種は3段目の候補を使わない。
+ * ordered=false（3連複・2連複）は各段から1艇ずつ選んだ組を艇番の昇順に並べ替え、同じ組を1つにまとめる
+ * （承認モック 画面1: 1=234=2345 は6点）。キーは race_odds.trio_all・quinella_all と同じ昇順の "a-b-c" / "a-b"
  * @param {{1: Iterable<number>, 2: Iterable<number>, 3: Iterable<number>}} bets
  * @param {Iterable<number>} [absentBoats]
  * @param {2|3} [legs]
- * @returns {string[]} "a-b-c" / "a-b"（1着→2着→3着の艇番の昇順）
+ * @param {boolean} [ordered]
+ * @returns {string[]} "a-b-c" / "a-b"（連単は1着→2着→3着の艇番の昇順、連複は組の昇順）
  */
-export function expandTickets(bets, absentBoats = [], legs = 3) {
+export function expandTickets(
+  bets,
+  absentBoats = [],
+  legs = 3,
+  ordered = true,
+) {
   const absent = new Set(absentBoats);
   const sorted = (s) => [...new Set(s ?? [])].sort((a, b) => a - b);
   let combos = [[]];
@@ -78,7 +86,10 @@ export function expandTickets(bets, absentBoats = [], legs = 3) {
       list.filter((b) => !c.includes(b)).map((b) => [...c, b]),
     );
   }
-  return combos.map((c) => c.join("-"));
+  if (ordered) return combos.map((c) => c.join("-"));
+  const keys = combos.map((c) => [...c].sort((a, b) => a - b).join("-"));
+  // 艇番は1桁なので文字列の順が組の昇順
+  return [...new Set(keys)].sort();
 }
 
 /**
@@ -91,9 +102,7 @@ export function expandTickets(bets, absentBoats = [], legs = 3) {
  * @returns {{insufficient: true, minimum: number, missing: string[]} | {insufficient: false, rows: Array<{ticket: string, odds: number, stake: number, payout: number}>, total: number, remainder: number, composite: number|null, multiplier: {min: number, max: number}|null, trigami: boolean, missing: string[]}}
  */
 export function allocateStakes({ tickets, odds: table, budget, mode }) {
-  const priced = tickets.filter(
-    (t) => table?.[t] != null && table[t] > 0,
-  );
+  const priced = tickets.filter((t) => table?.[t] != null && table[t] > 0);
   const missing = tickets.filter((t) => !priced.includes(t));
   const minimum = STAKE_UNIT * priced.length;
   if (priced.length === 0 || !(budget >= minimum))
@@ -125,10 +134,7 @@ export function allocateStakes({ tickets, odds: table, budget, mode }) {
     while (left > 0) {
       let i = 0;
       priced.forEach((t, j) => {
-        if (
-          table[t] * stakesInUnits[j] <
-          table[priced[i]] * stakesInUnits[i]
-        )
+        if (table[t] * stakesInUnits[j] < table[priced[i]] * stakesInUnits[i])
           i = j;
       });
       stakesInUnits[i] += 1;

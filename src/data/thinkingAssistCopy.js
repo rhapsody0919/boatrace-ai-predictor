@@ -153,8 +153,15 @@ export const ASSIST_COPY = Object.freeze({
   absentRemoved: (boats, k) =>
     `${boats.join("・")}号艇の欠場で${k}点を外しました`,
   cancelled: "このレースは中止です",
-  candidateAria: (boat, pos) => `${boat}号艇を${pos}着の候補に`,
-  candidateLabel: (pos) => `${pos}着`,
+  // 連複（着順を問わない券種。BOA-990 ②）の段は「1艇目・2艇目・3艇目」（承認モック 画面2）
+  candidateAria: (boat, pos, ordered = true) =>
+    ordered
+      ? `${boat}号艇を${pos}着の候補に`
+      : `${boat}号艇を${pos}艇目の候補に`,
+  candidateLabel: (pos, ordered = true) =>
+    ordered ? `${pos}着` : `${pos}艇目`,
+  // マークシートの使う段の見出しの2行目（連複だけ。承認モックの「（順不同）」。括弧を外して 375px のマスの 44px を保つ）
+  unorderedMark: "順不同",
   // 図の右端の「+」。押すとその行に1着・2着・3着の候補のボタンを出す（BOA-801 7、spec D-43）
   markAria: (boat, positions) =>
     positions.length
@@ -166,19 +173,30 @@ export const ASSIST_COPY = Object.freeze({
   betEmpty: "1着・2着・3着の候補を入れると出る",
   // 券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。用語は「券種」、連単の組は「-」
   betTypeGroup: "券種",
-  betTypeLabels: Object.freeze({ trifecta: "3連単", exacta: "2連単" }),
-  betEmptyFor: (legs) =>
-    legs === 2
-      ? "1着・2着の候補を入れると出る"
-      : "1着・2着・3着の候補を入れると出る",
+  betTypeLabels: Object.freeze({
+    trifecta: "3連単",
+    trio: "3連複",
+    exacta: "2連単",
+    quinella: "2連複",
+  }),
+  betEmptyFor: (legs, ordered = true) =>
+    ordered
+      ? legs === 2
+        ? "1着・2着の候補を入れると出る"
+        : "1着・2着・3着の候補を入れると出る"
+      : legs === 2
+        ? "1艇目・2艇目の候補を入れると出る"
+        : "1艇目・2艇目・3艇目の候補を入れると出る",
   compareHeading: "券種で比べる（同じ候補）",
   colBetType: "券種",
   colBetPoints: "点数",
   colComposite: "合成オッズ",
   pointsCell: (n) => `${n}点`,
   compareNote: "行を押すとその券種に切り替わる",
-  legUnused: (type) =>
-    `${type}は1着・2着の組。3着の段は使わない（入れた候補は残る）`,
+  legUnused: (type, ordered = true) =>
+    ordered
+      ? `${type}は1着・2着の組。3着の段は使わない（入れた候補は残る）`
+      : `${type}は2艇の組。3段目は使わない（入れた候補は残る。3連の券種に戻すと使う）`,
   boxButton: "選んだ艇でボックス",
   boxUndo: "元に戻す",
   boxNote:
@@ -210,8 +228,8 @@ export const ASSIST_COPY = Object.freeze({
       final
         ? "オッズ・人気はこのレースの公式の締切時オッズ"
         : finished
-        ? `オッズ・人気はこのレースの${time ? `${time}時点` : "取り込んだ最後の値"}で、確定オッズではない`
-        : `オッズ・人気は今日${time ? `の${time}時点` : "の値"}`
+          ? `オッズ・人気はこのレースの${time ? `${time}時点` : "取り込んだ最後の値"}で、確定オッズではない`
+          : `オッズ・人気は今日${time ? `の${time}時点` : "の値"}`
     }`,
   trigami: "トリガミ",
   trigamiLine: "合成オッズが1.0未満。どれが当たっても予算を下回る",
@@ -223,8 +241,9 @@ export const ASSIST_COPY = Object.freeze({
   // 点数のうちオッズのある点数（オッズの無い組があるときだけ）
   pointsPriced: (points, priced) =>
     priced < points ? `${points}点（オッズあり${priced}点）` : `${points}点`,
-  // 図の「1着人気」の見出し（どの券種の合成か。ファン評価2周目 P2-2）
-  boardBetTitle: (type) => `1着になる組のオッズ（${type}の合成）`,
+  // 図の「1着人気」の見出し。券種によらずいつも3連単の合成（BOA-990、2026-10-28 オーナー決定 案 c）。
+  // 公式の単勝人気とは別の値だと分かるように書く
+  boardBetTitle: "1着になる組のオッズ（3連単の合成。公式の単勝人気とは別）",
   // 図の1着人気で、オッズの無い組を除いて合成した艇
   boardMissingFirst: (boats) =>
     `${boats.join("・")}号艇の1着人気は、オッズの無い組を除いた合成`,
@@ -237,7 +256,8 @@ export const ASSIST_COPY = Object.freeze({
     `このレースは終わっています。オッズは${time}時点で、確定オッズではない`,
   // 締切の後に公式の締切時オッズ（race_odds_final）が取れた券種（BOA-990）
   oddsFinal: "オッズは公式の締切時オッズ。返還があると配当は変わる",
-  oddsFinalFailed: "締切時オッズを取れなかったので、取り込んだ最後の値で出している",
+  oddsFinalFailed:
+    "締切時オッズを取れなかったので、取り込んだ最後の値で出している",
   // ほかの券種のオッズはあるのに、選んだ券種だけ無いとき（取得の欠け・古いレース）
   oddsTypeMissing: (type) => `${type}のオッズは取れていない`,
   oddsAtFinal: "オッズ 公式の締切時オッズ",
@@ -396,10 +416,10 @@ export const ASSIST_COPY = Object.freeze({
   pastLabel: (target = 1) => `過去の${TARGET_LABEL[target]}`,
   pastText: (k, n) =>
     `${Math.round((k / n) * 100)}%（${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}）`,
-  // 1着以外を選んだときの人気の札（人気は1着になる組のオッズのまま。D-44 (2)）
-  // 何の値か行の近くで分かるよう、券種の合成と書く（BOA-990 ファン評価3周目 P2、2026-10-27 オーナー「推奨通りで良い」）
-  popLabel: (target = 1, type = "3連単") =>
-    target === 1 ? `1着人気（${type}の合成で）` : `人気（1着、${type}の合成で）`,
+  // 図の行の人気の札。着順を替えても値は1着になる組のオッズのまま（D-44 (2)）。
+  // 券種によらずいつも3連単の合成で、公式の単勝人気と別物と分かる名前にする（BOA-990、2026-10-28 オーナー決定 案 c。
+  // 単勝のデータの直し BOA-1174 が済めば公式の単勝オッズ＝案 d に移す予定）
+  popLabel: "3連単から見た1着人気",
   // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",
@@ -793,7 +813,7 @@ export const ASSIST_COPY = Object.freeze({
   guidePowerSubPre: "展示は展示の後に出る。今はモーター2連率を見る",
   guidePlaceSub: "●が2着以内・○が3着以内。行の＋で相手を候補に",
   guideBetSub:
-    "券種を選び、着ごとに候補を押して組む。合成オッズ1.0未満はトリガミ",
+    "券種を選び、段ごとに候補を押して組む。合成オッズ1.0未満はトリガミ",
 });
 
 /**
@@ -889,7 +909,7 @@ export const GLOSSARY = Object.freeze({
   },
   トリガミ: { lead: "当たったのに、払戻が賭けた合計を下回ること" },
   人気: {
-    lead: "その券種の全通り（3連単120通り・2連単30通り）のオッズが低い順の順番。1番人気が一番売れている",
+    lead: "その券種の全通り（3連単120通り・3連複20通り・2連単30通り・2連複15通り）のオッズが低い順の順番。1番人気が一番売れている",
   },
   過去の1着: {
     lead: "この艇番・この級で、差がつく材料と同じ集めたレースで1着になった割合",

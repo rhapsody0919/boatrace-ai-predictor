@@ -32,7 +32,7 @@ export default function MarkSheet({
   return (
     <BottomSheet title={ASSIST_COPY.sheetTitle} onClose={onClose}>
       <BetTypeTabs betType={type.id} onBetType={onBetType} />
-      <div className="ta-ms">
+      <div className={type.ordered ? "ta-ms" : "ta-ms is-unordered"}>
         {[1, 2, 3].map((k) => {
           const unused = k > type.legs;
           return (
@@ -41,7 +41,16 @@ export default function MarkSheet({
               className={unused ? "ta-ms-row is-unused" : "ta-ms-row"}
               style={{ display: "contents" }}
             >
-              <span className="ta-ms-h">{ASSIST_COPY.candidateLabel(k)}</span>
+              <span className="ta-ms-h">
+                {ASSIST_COPY.candidateLabel(k, type.ordered)}
+                {/* 連複の使う段は「1艇目／順不同」の2行（承認モック 画面2） */}
+                {!type.ordered && !unused && (
+                  <>
+                    <br />
+                    {ASSIST_COPY.unorderedMark}
+                  </>
+                )}
+              </span>
               {[1, 2, 3, 4, 5, 6].map((n) =>
                 absentBoats.includes(n) ? (
                   <span key={n} className="ta-ms-h">
@@ -51,7 +60,7 @@ export default function MarkSheet({
                   <button
                     key={n}
                     type="button"
-                    aria-label={ASSIST_COPY.candidateAria(n, k)}
+                    aria-label={ASSIST_COPY.candidateAria(n, k, type.ordered)}
                     aria-pressed={bets[k].has(n)}
                     disabled={unused}
                     onClick={() => onToggle(k, n)}
@@ -65,10 +74,16 @@ export default function MarkSheet({
         })}
       </div>
       {type.legs < 3 && (
-        <p className="ta-note">{ASSIST_COPY.legUnused(typeLabel)}</p>
+        <p className="ta-note">
+          {ASSIST_COPY.legUnused(typeLabel, type.ordered)}
+        </p>
       )}
       <div className="ta-box-short">
-        <button type="button" disabled={picked.size < type.legs} onClick={onBox}>
+        <button
+          type="button"
+          disabled={picked.size < type.legs}
+          onClick={onBox}
+        >
           {ASSIST_COPY.boxButton}
         </button>
         {canUndoBox && (

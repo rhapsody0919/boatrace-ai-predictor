@@ -2049,6 +2049,55 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
       .locator(".ta-bettype button, .ta-box-short button")
       .all())
       expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
+
+    // BOA-990 ②: 連複は段の見出しが「1艇目／順不同」の2行。見出しの文字が隣のマスにはみ出さず、6艇のマスは 44px 以上
+    for (const name of ["3連複", "2連複"]) {
+      await sheet
+        .getByRole("group", { name: "券種" })
+        .getByRole("button", { name, exact: true })
+        .click();
+      await expect(sheet.locator(".ta-ms.is-unordered")).toBeVisible();
+      expect(await overflow(".ta-sheet")).toBeLessThanOrEqual(1);
+      // 見出しは「1艇目」「順不同」の2行まで（折り返して3行以上にならない。セルフレビュー #5）
+      const heads = await sheet.locator(".ta-ms-h").evaluateAll((els) =>
+        els
+          .filter((e) => /艇目/.test(e.textContent))
+          .map((e) => ({
+            over: e.scrollWidth - e.clientWidth,
+            h: e.getBoundingClientRect().height,
+            fs: parseFloat(getComputedStyle(e).fontSize),
+          })),
+      );
+      expect(heads.length).toBe(3);
+      for (const d of heads) {
+        expect(d.over).toBeLessThanOrEqual(1);
+        expect(d.h).toBeLessThanOrEqual(d.fs * 2 * 1.8);
+      }
+      // マスは 44px 以上（4em の見出しで 375px が 41px になった。セルフレビュー #2）
+      for (const b of await sheet
+        .getByRole("button", { name: /艇目の候補に$/ })
+        .all()) {
+        const box = await b.boundingBox();
+        expect(box.height).toBeGreaterThanOrEqual(44);
+        expect(box.width).toBeGreaterThanOrEqual(44);
+      }
+    }
+    await sheet.getByRole("button", { name: "閉じる" }).first().click();
+    // 図の艇の行の候補のボタン「1艇目」も横にはみ出さない（最後に選んだ2連複のまま）
+    await expect(
+      page.getByRole("button", { name: "1号艇を1艇目の候補に" }),
+    ).toBeVisible();
+    const pos = await page.locator(".ta-pos3 button").evaluateAll((els) =>
+      els.map((e) => e.scrollWidth - e.clientWidth),
+    );
+    for (const d of pos) expect(d).toBeLessThanOrEqual(1);
+    expect(
+      await page.evaluate(
+        () =>
+          document.documentElement.scrollWidth -
+          document.documentElement.clientWidth,
+      ),
+    ).toBeLessThanOrEqual(2);
   });
 });
 // 過去に発生した割合を見る（BOA-635 T5-1）。スリットの7形の一覧と強さの段が、375〜1920px で横にはみ出さない。

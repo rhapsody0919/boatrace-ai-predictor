@@ -471,8 +471,7 @@ export const exhRanks = (racers) =>
     r.exhTime == null
       ? null
       : 1 +
-        racers.filter((o) => o.exhTime != null && o.exhTime < r.exhTime)
-          .length,
+        racers.filter((o) => o.exhTime != null && o.exhTime < r.exhTime).length,
   );
 
 /**
@@ -539,7 +538,6 @@ export function boardModel({
   target = 1,
   stBasis = "course",
   stMissing = false,
-  betTypeLabel = "3連単",
 }) {
   // 過去の{着順}（件数は割合の括弧。BOA-831 承認モック v2）
   const pastNum = (past) => ({
@@ -569,8 +567,7 @@ export function boardModel({
       back:
         metric === "exh_st" && lens === "flow"
           ? ASSIST_COPY.backTo(
-              METRICS[stBasis === "overall" ? "st_mean30" : "st_course"]
-                .label,
+              METRICS[stBasis === "overall" ? "st_mean30" : "st_course"].label,
             )
           : null,
       left: st ? ".00" : (def.tick ?? def.text)(s.lo),
@@ -781,7 +778,7 @@ export function boardModel({
   if (!comp.size)
     return {
       kind: "bet",
-      title: ASSIST_COPY.boardBetTitle(betTypeLabel),
+      title: ASSIST_COPY.boardBetTitle,
       left: "",
       right: "",
       good: null,
@@ -801,7 +798,7 @@ export function boardModel({
   const hiOdds = Math.max(300, sorted[sorted.length - 1]);
   return {
     kind: "bet",
-    title: ASSIST_COPY.boardBetTitle(betTypeLabel),
+    title: ASSIST_COPY.boardBetTitle,
     missingFirst: missingFirstBoats(
       trifecta,
       racers.filter((r) => !r.absent).map((r) => r.boat),
@@ -822,8 +819,8 @@ export function boardModel({
         nums: [
           c != null && {
             metric: null,
-            label: ASSIST_COPY.popLabel(target, betTypeLabel),
-            short: ASSIST_COPY.popLabel(target, betTypeLabel),
+            label: ASSIST_COPY.popLabel,
+            short: ASSIST_COPY.popLabel,
             text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
             aria: null,
             best: false,
@@ -907,13 +904,41 @@ export function buildRacers({
 // ---- 買い目の表記（固定フッター・マークシート）----
 
 /**
- * 買い目の券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。並びがタブと「券種で比べる」の行の順。
- * legs は使う着の数、dataKey は getRaceOddsSnapshots・getRaceFinalOdds のキー、combos は全通りの数（人気の注記）。
- * ① で3連単・2連単。3連複・2連複・拡連複は ②・③ で足す
+ * 買い目の券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。並びがタブと「券種で比べる」の行の順
+ * （3連単｜3連複｜2連単｜2連複。拡連複は ③ で足す）。
+ * legs は使う段の数、ordered は着順を問うか（連複は false。組は昇順、表記は「=」）、dataKey は getRaceOddsSnapshots・
+ * getRaceFinalOdds のキー、combos は全通りの数（人気の注記）。
+ * 図の「1着人気」は券種によらずいつも3連単の合成（2026-10-28 オーナー決定 案 c。ThinkingAssistPage）
  */
 export const ASSIST_BET_TYPES = Object.freeze([
-  Object.freeze({ id: "trifecta", legs: 3, dataKey: "trifectaAll", combos: 120 }),
-  Object.freeze({ id: "exacta", legs: 2, dataKey: "exactaAll", combos: 30 }),
+  Object.freeze({
+    id: "trifecta",
+    legs: 3,
+    ordered: true,
+    dataKey: "trifectaAll",
+    combos: 120,
+  }),
+  Object.freeze({
+    id: "trio",
+    legs: 3,
+    ordered: false,
+    dataKey: "trioAll",
+    combos: 20,
+  }),
+  Object.freeze({
+    id: "exacta",
+    legs: 2,
+    ordered: true,
+    dataKey: "exactaAll",
+    combos: 30,
+  }),
+  Object.freeze({
+    id: "quinella",
+    legs: 2,
+    ordered: false,
+    dataKey: "quinellaAll",
+    combos: 15,
+  }),
 ]);
 export const ASSIST_BET_TYPE_IDS = ASSIST_BET_TYPES.map((t) => t.id);
 /** 券種の id → 定義。知らない id は3連単（古い保存・既定） */
@@ -937,7 +962,11 @@ export function oddsByBetType(snaps, final) {
     }
     const s = latestSnapshotWith(snaps ?? [], t.dataKey);
     if (s)
-      byType[t.id] = { odds: s[t.dataKey], capturedAt: s.capturedAt, final: false };
+      byType[t.id] = {
+        odds: s[t.dataKey],
+        capturedAt: s.capturedAt,
+        final: false,
+      };
   }
   if (Object.keys(byType).length === 0) return null;
   return {
@@ -947,12 +976,19 @@ export function oddsByBetType(snaps, final) {
   };
 }
 
-/** 1着・2着・3着の候補を「1-23-234」の形に（候補が無い着は「—」）。legs=2 は「1-234」（2連単） */
-export const betForm = (bets, legs = 3) =>
+/**
+ * 1着・2着・3着の候補を「1-23-234」の形に（候補が無い着は「—」）。legs=2 は「1-234」（2連単）。
+ * ordered=false（連複）は「1=23=234」（承認モック: 連単は「-」、連複は「=」）
+ */
+export const betForm = (bets, legs = 3, ordered = true) =>
   [1, 2, 3]
     .slice(0, legs)
     .map((k) => [...bets[k]].sort((a, b) => a - b).join("") || "—")
-    .join("-");
+    .join(ordered ? "-" : "=");
+
+/** 組のキー（"1-2-3"）の表記。連複は「1=2=3」 */
+export const ticketLabel = (ticket, ordered = true) =>
+  ordered ? ticket : ticket.replaceAll("-", "=");
 
 /**
  * 「選んだ艇でボックス」（承認モック 画面3）: どこかの使う段に入れた艇を、使う段すべてにそろえる。使わない段（2連単の3着）は触らない
