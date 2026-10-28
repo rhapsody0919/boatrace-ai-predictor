@@ -52,11 +52,15 @@ hq の毎日の PDCA（`~/hq/platform/pdca_daily.py`）が /today の型を日�
 - 型 b を出さない日（型 a で送る）: 材料なし（183 の未適用など）・形の版違い・1コースが0行・合計1行・検査の不合格・撮影の失敗。作り直しの回に b を作れなくなった日も型 a へ倒す（その日の型を変えない決まりの唯一の例外。送らないより a を送る）。理由は `source_data.content_type.fallback_reason`（`course_win:…`）と Slack の知らせ
 - config の b の `heading` は本文に使わないが、作り直しで型を引き継ぐ条件（`content_type.heading`）に要るので消さない
 - `experiment` を置いた日から、見出しの a・b の日替わり（日の偶奇、171 の札）は止まり、比べの外の日は全部 a（札 a）になる。`experiment` の鍵ごと消すと前の偶奇に戻り、型 b が1日おきに比べの外で出るので消さない（止めるときは `start` を null に）
-- 比べ: `config/today-variants.json` の `experiment`（`start`・`pairs`・`seed`）。連続2日を1組、組の中で `sha256(seed:組の番号)` の1ビットでどちらの日を b にするかを決める（日付と設定だけで決まり、作り直しても変わらない）。`start` が null の間・組の数を過ぎた後は全部 a。組の日は型の列（PD02）を使わない（理由 `experiment_pair`）
-- 始め方: 183 を本番に当て、翌朝の一覧で `notes.courseWin.status='ok'` を確かめ、撮影用のページが本番で出ることを確かめてから、`start` に組の1日目（翌日以降）を入れる小さな PR を出す
-- 記録: `source_data.content_type` に `side`（割り当て）・`sent`（実際に送った型）・`experiment`・`pair`・`slot`、a の日は `b_feasible`（その日 b を出せたか。DB を読まない分）。b の日は `source_data.course_win`（指紋・段ごとの K・線・正確な確率・本文の人）。`utm_content` は「日付-実際に送った型」
+- 比べの形は `experiment.mode` で選ぶ。`pairs`（既定）は連続2日を1組、組の中で `sha256(seed:組の番号)` の1ビットでどちらの日を b にするかを決める（日付と設定だけで決まり、作り直しても変わらない。`start` が null の間・組の数を過ぎた後は全部 a、組の日は型の列（PD02）を使わない。理由 `experiment_pair`）。`all_b` は `start` から `days` 日を毎日 b、その後は a（b の日は型の列を使わない。理由 `experiment_all_b`）
+- 始め方: 183 を本番に当て、翌朝の一覧で `notes.courseWin.status='ok'` を確かめ、撮影用のページが本番で出ることを確かめてから、`start` に1日目（翌日以降）を入れる小さな PR を出す
+- 今の設定（2026-10-28 オーナー決定、hq のセッション。原文「a の型は過去数日ずっと出ているはずなので、それを比較に使えば良い。b で比較ができるようになるまでずっと出して欲しい」）: `mode: "all_b"`・`start` 2026-10-29・`days` 30。10/29〜11/27 が毎日 b、11/28 から a（`verify-today-type-b.js` で固定）。基準は過去の a の日（10/19〜25 の6日分、log 表示の SD 0.70）で、計測と判定は hq（DS）が持つ。終わりは判定ができるまで、最短 b 30日。途中は hq が日別の値と中央値だけを出す。延ばすときは `days` を増やす PR（`start` は変えない）。b を出せない日は今までどおり型 a に落ち、理由を `fallback_reason` に残す
+- 前後比べなので、曜日・開催の並び・季節・アカウントの伸び（フォロワーの増減）と型の差を分けられない。組の中の比べ（`pairs`）より言い切りが弱く、差が出ても「b の期間は a の期間より多かった」までしか言えない
+- 記録: `source_data.content_type` に `side`（割り当て）・`sent`（実際に送った型）・`experiment`・`mode`（`pairs`／`all_b`）、`pairs` は `pair`・`slot`、`all_b` は `day`（`start` からの日数 0〜）。`pairs` の a の日は `b_feasible`（その日 b を出せたか。DB を読まない分）。b の日は `source_data.course_win`（指紋・段ごとの K・線・正確な確率・本文の人）。`utm_content` は「日付-実際に送った型」
 
 ### 比べの読み方（始める前に決めておく。data-scientist・x-channel の審査）
+
+- 下は `pairs` の読み方（10/27 の審査）。`all_b`（10/29〜の今の設定）の読み方は hq（DS）が持ち、上の「前後比べ」の限界がかかる
 
 - 主の分析は割り当てどおり（ITT）: `content_type.side` と組で、組の中の差 log1p(b の 48h 表示) − log1p(a の 48h 表示) を取る。検定は組の中の符号の入れ替え（10組なら 2^10 通りの正確な並べ替え検定）。表示の比の点推定と95%区間で出す
 - 実際に送った型（`sent`・`content_type.id`・`utm_content`）での集計は参考にとどめ、b を出せなかった日数と理由を必ず並べる。両方の日で b を出せた組（a の日の `b_feasible` が true）だけの感度分析も並べる

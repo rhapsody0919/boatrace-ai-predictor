@@ -1,6 +1,8 @@
 # 集客PDCA月次統合サマリー
 
-Search Console/GA4（SEO）・X・note の集客PDCAスキルは別々に実行されるので、事業ゴール（役所広告受注に向けたPV・認知度実績づくり）への進捗を横断して確認する。月1回、各スキルの直近レポートを集約し、主要KPIの推移と中期目標への進捗を1枚にまとめる。
+Search Console/GA4（SEO）・X の集客PDCAスキルは別々に実行されるので、事業ゴール（役所広告受注に向けたPV・認知度実績づくり）への進捗を横断して確認する。月1回、各スキルの直近レポートを集約し、主要KPIの推移と中期目標への進捗を1枚にまとめる。
+
+note は noindex が解除されるまで集客チャネルとして測るのを止めている（2026-10-27 オーナー決定、`docs/knowledge/note.md`）。note.com/boatai は全記事に noindex が付き、記事も作らない。月次の KPI・配分の対象から外す。
 
 「集客の月次まとめを見せて」「今月の集客どうだった？」等の自然言語依頼でも起動する。
 
@@ -13,10 +15,9 @@ Search Console/GA4（SEO）・X・note の集客PDCAスキルは別々に実行�
 - `data/analysis/search-console/report-*.json`（直近と約1ヶ月前の2時点）
 - `data/analysis/i18n-demand/report-*.json`（直近と約1ヶ月前の2時点）
 - `data/analysis/x-growth/report-*.json`（直近と約1ヶ月前、無ければ`/x-growth-report`未実施と明記）
-- `data/analysis/note-growth/report-*.json`（直近と約1ヶ月前、無ければ`/note-growth-report`未実施と明記）
 - `data/analysis/x-posts/history.json`の投稿実施率（`status: posted`と`status: skipped`の比率。セッションが開かれず確認自体が無かった日はどちらの母数にも含めない）
 
-各データが1ヶ月以上古い場合は、その時点で該当スキル（`/growth-pdca`・`/x-growth-report`・`/note-growth-report`）を先に実行してから本サマリーを作成する（データが古いまま集約すると実態と乖離したサマリーになるため）。
+各データが1ヶ月以上古い場合は、その時点で該当スキル（`/growth-pdca`・`/x-growth-report`）を先に実行してから本サマリーを作成する（データが古いまま集約すると実態と乖離したサマリーになるため）。
 
 ### 2. KPIサマリー表を作成
 
@@ -26,7 +27,6 @@ Search Console/GA4（SEO）・X・note の集客PDCAスキルは別々に実行�
 - Search Console クリック/日・表示回数/日
 - 多言語PV（English/繁體中文/한국어）— 動きが無くても必ず記載する（`.claude/CLAUDE.md`の「調査・分析結果の報告原則」に従う）
 - Xフォロワー数・直近投稿の平均インプレッション
-- note の直近記事の PV・スキ
 - X動画投稿の実施率（history.jsonのposted/skipped比率）
 
 ### 3. 中期目標への進捗確認
@@ -63,5 +63,5 @@ Search Console APIでは取得できず、Web UI限定でしか確認できな�
 
 - `/growth-pdca`: SEO/GA4側の定点観測・施策立案
 - `/x-growth-report`: X自体のパフォーマンス
-- `/note-growth-report`: note自体のパフォーマンス
+- `/note-growth-report`: note自体のパフォーマンス（noindex の解除まで止めている）
 - 会場ガイド拡充の中期目標: memory `venue_guide_expansion_project`

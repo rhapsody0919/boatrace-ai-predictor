@@ -12,7 +12,7 @@ node scripts/maintenance/session-start-check.js
 |---|---|
 | `xVideo` | X の本日の投稿本数が目標に達しているか |
 | `racerNews` | 選手ニュースの要確認（自動投入されなかった候補） |
-| `growthSkills` | `/x-growth-report`・`/note-growth-report` の最新レポートが1週間以上前か |
+| `growthSkills` | `/x-growth-report` の最新レポートが1週間以上前か（`/note-growth-report` は note の noindex が解除されるまで止めている。2026-10-27 オーナー決定、`docs/knowledge/note.md`） |
 | `pendingInsights` | 戦略メモ（`sns_strategy_insights`）の承認待ち |
 | `qualityBacklog` | Linearの `content-quality` ラベルの古いもの2〜3件 |
 | `visualAssetAge` | 90日以上更新されていない視覚素材 |

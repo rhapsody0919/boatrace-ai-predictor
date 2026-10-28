@@ -20,12 +20,14 @@ paths:
 
 ## フローA: 新機能マルチチャネル展開
 
-新機能の実装完了からYouTube解説動画・ブログ記事・X投稿・note投稿へ展開する一連の流れ。全体設計は [`docs/design/content-ops-flow/spec.md`](../../docs/design/content-ops-flow/spec.md) を参照。
+新機能の実装完了からYouTube解説動画・ブログ記事・X投稿へ展開する一連の流れ。全体設計は [`docs/design/content-ops-flow/spec.md`](../../docs/design/content-ops-flow/spec.md) を参照。
+
+**note は noindex が解除されるまで作らない**（2026-10-27 オーナー決定、`docs/knowledge/note.md`）。note.com/boatai は全記事に noindex が付いているため、フローAの展開先から外している。
 
 **ネタ駆動のパイプライン（止まっている）**: 新機能／会場特性／データ知見／成績の4系統のネタから、チャネルごとにブログ・note・X・YouTubeのコンテンツを作る仕組みだった。`sns_topics`/`sns_topic_targets`によるネタゲート＋チャネル別パイプライン。Routine は止まり、ネタを書く口（朝の digest の登録・提案の起動・企画の検出・管理画面）も 2026-10-24 に消したので、今は新しいネタが作られない。今動いている投稿は全貌動画（hq の作り手→push-full-picture.js）と /today の X（snsTodayPlanner.js）（`docs/operation/sns-pipeline-{blog,note,x,youtube}.md`、設計は`docs/design/sns-topic-gate/`・ADR 0036〜0038）。sns-hub管理画面（`/admin/sns-hub`）で下書きの承認・（blog/youtubeは）自動公開を行う。管理画面のネタ承認・ネタ型設定・修正の依頼の口は、直近30日の利用0件のため 2026-10-24 に撤去した（hq SH01 R2）
 
 ### フローA-1: 並列着手とチャネル展開の基本ルール
-- 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆は**並列で着手できる**。X・note投稿は両方の完成を待ってから着手する（記事だけ先に公開されて動画が後追いだとリンクが死ぬため）
+- 機能実装完了（PRマージ）を単一トリガーとし、YouTube解説動画制作とブログ記事執筆は**並列で着手できる**。X投稿は両方の完成を待ってから着手する（記事だけ先に公開されて動画が後追いだとリンクが死ぬため）
 - 別セッションが機能PRをマージして終了すると、誰も気づかず埋もれる。`session-start-check.js`の`missingContentIndex`が、AppRouter.jsxの新規ルートのうちcontent-index.json未カバーのものを検知して提示する（新ルート＝ブログが要る新機能とは限らないため強制はせず提示のみ）
 - ブランド一貫性: 新しいチャネル向け画像・動画を作成する前に、必ず [`docs/reference/brand-kit.md`](../../docs/reference/brand-kit.md) のギャラリーを確認する。既存の採用実例と矛盾する独自デザイン（新しいロゴバッジの発明、実ヘッダーと異なるフォント処理等）を作らない。承認されたら、その場で`brand-kit.md`のギャラリーに実例を追記する
 - 重複制作防止: フローA着手時、対応するLinearチケットを`In Progress`に変更する。新規の排他制御機構は作らない（並行時の実害は「同じ動画を2回作る」程度に留まるため）
@@ -34,7 +36,7 @@ paths:
 ### フローA-2: トレーサビリティ索引（content-index.json）
 機能変更のたびに「どのページ・どのコンテンツが影響を受けるか」を機械的に特定するための索引。
 
-- 新機能ごとに `docs/design/{feature-slug}/content-index.json` を作成する（テンプレート: `docs/design/_template/content-index.json`）。その機能に言及する静的ページ・note記事・ブログ記事・YouTube動画・X投稿を記録する
+- 新機能ごとに `docs/design/{feature-slug}/content-index.json` を作成する（テンプレート: `docs/design/_template/content-index.json`）。その機能に言及する静的ページ・ブログ記事・YouTube動画・X投稿を記録する（note 記事は noindex の解除まで作らないので足さない）
 - 対象チャネルが無い機能は、空配列のまま放置せず `not_applicable: true` を明記する（「対象チャネルなしと確認済み」と「確認自体をしていない」を見分けるため）
 - 既存の`content-index.json`の形式は`npm run verify:content-index`で確かめる（CI でも走る）。「本来必要なのに作られていない」の全自動検出はしない。新規作成は、その PR の完了条件として作業者が判断する
 
@@ -124,14 +126,14 @@ Xは「可能な範囲で毎日投稿する」運用（`docs/operation/x-operati
 - 掲載頻度自体が月1〜2件と低い。溜まっている場合は実行状況（Vercelの`racer_news`ジョブ＝`scrape_job_state`の`last_success_at`・`last_error`、予備の`.github/workflows/collect-racer-news.yml`）も確認する
 
 ### フローC-5: セッション開始時の集客調査スキル実行確認
-SNSマーケティングハブ Phase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/note-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）。外部調査はクラウドRoutineでは実行できないため、対話セッション側でのスキル定期実行に依存する。鮮度は`session-start-check.js`の`growthSkills`で取得できる。
+SNSマーケティングハブ Phase 2（改善案の自律立案ループ、`docs/design/sns-hub-phase2-pdca-loop/`）は、`/x-growth-report`・`/note-growth-report`の定期実行結果をinsightとしてDBに登録し（ADR 0027）、週次で生成Routineへの反映を判定する（ADR 0030）。外部調査はクラウドRoutineでは実行できないため、対話セッション側でのスキル定期実行に依存する。鮮度は`session-start-check.js`の`growthSkills`で取得できる。`/note-growth-report`は note の noindex が解除されるまで止めている（2026-10-27 オーナー決定、`docs/knowledge/note.md`）。
 
-- `data/analysis/x-growth/`・`data/analysis/note-growth/`それぞれの最新レポートファイルの日付を確認し、どちらかが1週間以上前であれば、**このセッションの最初の応答で**該当スキル（`/x-growth-report`・`/note-growth-report`）の実行を自発的に提案する
-- 「はい」と回答があれば該当スキルを実行する（両方が該当する場合、まとめて提案してよい）
+- `data/analysis/x-growth/`の最新レポートファイルの日付を確認し、1週間以上前であれば、**このセッションの最初の応答で**`/x-growth-report`の実行を自発的に提案する。`/note-growth-report`は noindex の解除まで勧めない
+- 「はい」と回答があれば該当スキルを実行する
 - 「いいえ」または反応が無ければその日はスキップし、次のタスクに進む（催促を続けない）
 
-### フローC-6: 自然言語「集客状況を調査して」トリガー時は3スキルセットで実行
-「集客を分析して」「集客状況どう？」等の自然言語依頼（`/growth-pdca`と明示コマンド指定しない場合）では、`/growth-pdca`（Search Console/GA4、検索流入・ブログ側）に加えて`/x-growth-report`（Xの実績）・`/note-growth-report`（noteの実績）も続けてまとめて実行する。X・note の実績確認には Claude in Chrome での画面操作を含むので、実行時間が伸びる。`/growth-pdca`と明示コマンドで呼ばれた場合は対象外（Search Console/GA4単体で実行する）。
+### フローC-6: 自然言語「集客状況を調査して」トリガー時は2スキルセットで実行
+「集客を分析して」「集客状況どう？」等の自然言語依頼（`/growth-pdca`と明示コマンド指定しない場合）では、`/growth-pdca`（Search Console/GA4、検索流入・ブログ側）に加えて`/x-growth-report`（Xの実績）も続けてまとめて実行する。X の実績確認には Claude in Chrome での画面操作を含むので、実行時間が伸びる。`/note-growth-report`は note の noindex が解除されるまで止めているので含めない（2026-10-27 オーナー決定、`docs/knowledge/note.md`）。`/growth-pdca`と明示コマンドで呼ばれた場合は対象外（Search Console/GA4単体で実行する）。
 - 過去レポートが1件も無い場合は「初回実行の提案」として扱う
 
 ### フローC-7: 視覚素材の鮮度チェック
