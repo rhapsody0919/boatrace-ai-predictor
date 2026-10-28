@@ -172,3 +172,27 @@ test("375px: 折れ線の中央の点のツールチップが画面の右端で�
   const right = await tip.evaluate((el) => el.getBoundingClientRect().right);
   expect(right).toBeLessThanOrEqual(375);
 });
+
+test("375px では期別の表に横に送れる目印を出し、1440px では出さない", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.goto("/racer/3941");
+  const hint = page.locator(".racer-official-scroll-hint").first();
+  await expect(hint).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(hint).toBeHidden();
+});
+
+test("進入コース別は公式サイトのコース別のページと期間が違うと書き、全期出走なしの選手には後の走が載る時期を書く", async ({
+  page,
+}) => {
+  await page.goto("/racer/3941");
+  await expect(page.locator(".racer-official-stats")).toContainText(
+    "公式サイトの選手のコース別成績のページとは集計の期間が違う",
+  );
+  await page.goto("/racer/3391");
+  await expect(page.locator(".racer-official-stats")).toContainText(
+    /より後の走は、その期が終わって公式の期別成績が公開されると載ります/,
+  );
+});

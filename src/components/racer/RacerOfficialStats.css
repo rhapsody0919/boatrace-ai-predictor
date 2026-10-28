@@ -69,6 +69,22 @@
   left: 0;
   z-index: 1;
   background: var(--surface-card);
+  /* 固定の列と、その下を流れる列の境目を見せる（見出しが「均ST」のように欠けて見えないように） */
+  box-shadow: 1px 0 0 var(--border-hairline);
+}
+
+/* 横に送れる目印。表が幅に収まる広い画面では出さない */
+.racer-official-scroll-hint {
+  display: none;
+  margin: 0 0 var(--spacing-1) 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 767px) {
+  .racer-official-scroll-hint {
+    display: block;
+  }
 }
 
 /* 「出走なし」は横に送らなくても見える左端に置く */

@@ -31,8 +31,19 @@ const pct = (v) =>
   v === null ? "-" : `${(Math.floor(v * 10 + 1e-9) / 10).toFixed(1)}%`;
 const st = (v) => (v === null ? "-" : v.toFixed(2));
 
+// 狭い幅では表が横に長い。送れることが分からず、端で切れた数字（116 が「11」）を読み違えた（ファン評価 #2051 2周目）
+function ScrollHint() {
+  return (
+    <p className="racer-official-scroll-hint" aria-hidden="true">
+      ← 表は横にスクロールできます →
+    </p>
+  );
+}
+
 function PeriodTable({ rows }) {
   return (
+    <>
+    <ScrollHint />
     <div className="racer-official-table-wrap">
       <table className="racer-official-table">
         <thead>
@@ -83,6 +94,7 @@ function PeriodTable({ rows }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -112,6 +124,9 @@ function CourseSection({ summary }) {
       <p className="racer-official-note">
         実際に何コースに入ったかで分けた公式の成績です（何号艇で出たかで分けた成績は、下の「枠番別成績」）。
         進入が10走未満のコースは率を出さず、10〜29走は「参考」と付けています。
+      </p>
+      <p className="racer-official-note">
+        公式サイトの選手のコース別成績のページとは集計の期間が違うため、値が合わないことがあります（このページは上の期間の期別成績を足したものです）。
       </p>
       <ul className="racer-official-bars" aria-label="進入コース別の2連対率">
         {summary.courses.map((c) => (
@@ -171,7 +186,7 @@ function CourseSection({ summary }) {
         元の期:{" "}
         {summary.periods.map((p) => `${p.label}（${p.range}）`).join("・")}。
         率は{summary.periods.length}
-        期の着の回数を足して出しています（率は小数1桁で切り捨て、公式と同じ）。平均STは、期ごとの値を
+        期の着の回数を足して出しています（率は小数1桁で切り捨て。切り捨ての向きは公式と同じ）。平均STは、期ごとの値を
         F・L・欠場を除いた走の数で重み付けした近似です。
       </p>
     </div>
@@ -233,6 +248,8 @@ export default function RacerOfficialStats({ rows, racerName }) {
         {rates.length === 0 && (
           <p className="racer-official-note">
             この{periodRows.length}期に出走はありません。
+            {latest.range.split("〜")[1]}
+            より後の走は、その期が終わって公式の期別成績が公開されると載ります。
           </p>
         )}
         {chartData.length > 1 && rates.length > 0 && (
