@@ -298,9 +298,10 @@ function ThinkingAssistBody() {
   const headerHeight = useAppHeaderHeight();
   const finalRound = Boolean(data.round);
   const trifecta = data.odds.data?.trifecta ?? null;
-  // 買い目レンズの図の「1着人気」（1着になる組の合成）は、選んでいる券種のオッズで出す（BOA-990 ファン評価1周目 P2-2）
-  const boardOdds =
-    data.odds.data?.byType?.[assistBetType(state.betType).id]?.odds ?? null;
+  // 買い目レンズの図の「1着人気」（1着になる組の合成）は、選んでいる券種のオッズで出す（BOA-990 ファン評価1周目 P2-2）。
+  // 連複は着順の無い組なので、同じ艇の数の連単（3連複→3連単、2連複→2連単）で出す（boardId。行の言葉に券種が出る）
+  const boardTypeId = assistBetType(state.betType).boardId;
+  const boardOdds = data.odds.data?.byType?.[boardTypeId]?.odds ?? null;
   const post = data.stage === "post";
   const factsAll = v16Off ? null : (data.facts.data?.facts ?? null);
   const v16Exhibition = data.facts.data?.exhibition ?? null;
@@ -443,7 +444,7 @@ function ThinkingAssistBody() {
         metric: state.metric,
         racers,
         trifecta: boardOdds,
-        betTypeLabel: ASSIST_COPY.betTypeLabels[assistBetType(state.betType).id],
+        betTypeLabel: ASSIST_COPY.betTypeLabels[boardTypeId],
         finalRound,
         hasToday: today != null,
         pastWin,
@@ -458,7 +459,7 @@ function ThinkingAssistBody() {
       data.stage,
       racers,
       boardOdds,
-      state.betType,
+      boardTypeId,
       finalRound,
       today,
       pastWin,
@@ -508,8 +509,14 @@ function ThinkingAssistBody() {
   );
   const betType = assistBetType(state.betType);
   const tickets = useMemo(
-    () => expandTickets(state.bets, data.absentBoats, betType.legs),
-    [state.bets, data.absentBoats, betType.legs],
+    () =>
+      expandTickets(
+        state.bets,
+        data.absentBoats,
+        betType.legs,
+        betType.ordered,
+      ),
+    [state.bets, data.absentBoats, betType.legs, betType.ordered],
   );
   const removedBoats = data.absentBoats.filter((b) =>
     [1, 2, 3].slice(0, betType.legs).some((k) => state.bets[k].has(b)),
@@ -517,7 +524,8 @@ function ThinkingAssistBody() {
   const removedNote = removedBoats.length
     ? ASSIST_COPY.absentRemoved(
         removedBoats,
-        expandTickets(state.bets, [], betType.legs).length - tickets.length,
+        expandTickets(state.bets, [], betType.legs, betType.ordered).length -
+          tickets.length,
       )
     : null;
   // オッズが無い: 取得の失敗と、発売前（取得が成功して空）を分ける（FR-11・screens「オッズが無い」、Codex 依頼27 F01）
@@ -543,18 +551,17 @@ function ThinkingAssistBody() {
   const betOddsAt = formatObservedTime(typeOdds?.capturedAt);
   // 券種で比べる（同じ候補）の行（承認モック 画面1）
   const compareRows = ASSIST_BET_TYPES.map((t) => {
-    const tk = expandTickets(state.bets, data.absentBoats, t.legs);
+    const tk = expandTickets(state.bets, data.absentBoats, t.legs, t.ordered);
     const o = data.odds.data?.byType?.[t.id]?.odds ?? null;
     return {
       id: t.id,
-      form: betForm(bets, t.legs),
+      form: betForm(bets, t.legs, t.ordered),
       points: tk.length,
       priced: o ? tk.filter((k) => o[k] != null && o[k] > 0).length : tk.length,
       composite: o ? compositeOdds(tk.map((k) => o[k])) : null,
     };
   });
-  const onBetType = (id, from) =>
-    act({ type: "betType", betType: id, from });
+  const onBetType = (id, from) => act({ type: "betType", betType: id, from });
 
   const toggleBet = useCallback(
     (pos, boat) => dispatch({ type: "toggleBet", pos, boat }),
@@ -871,12 +878,15 @@ function ThinkingAssistBody() {
                 marks={marks}
                 target={state.target}
                 onTarget={onTarget}
-                // 2連単は3着の候補を使わない（マークシートと同じく薄くして押せない。BOA-990 画面3）
+                // 2連の券種は3段目の候補を使わない（マークシートと同じく薄くして押せない。BOA-990 画面2・3）。
+                // 連複は段の名前を「1艇目・2艇目・3艇目」に
                 legs={betType.legs}
+                ordered={betType.ordered}
                 legUnusedNote={
                   betType.legs < 3
                     ? ASSIST_COPY.legUnused(
                         ASSIST_COPY.betTypeLabels[betType.id],
+                        betType.ordered,
                       )
                     : null
                 }

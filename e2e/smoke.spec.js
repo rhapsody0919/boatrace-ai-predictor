@@ -531,7 +531,7 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
   });
 
   // BOA-990 ①: 思考アシストの買い目に券種（3連単・2連単）のタブと「券種で比べる」の小表を足した
-  test("思考アシストの買い目レンズに券種のタブ（3連単・2連単）と券種で比べるの表が出る", async ({
+  test("思考アシストの買い目レンズに券種のタブ（3連単・3連複・2連単・2連複）と券種で比べるの表が出る", async ({
     page,
   }) => {
     await page.goto("/race/2026-10-06-18-10/assist");
@@ -545,6 +545,16 @@ test.describe("多言語: 未翻訳パスのjaリダイレクト", () => {
       "true",
     );
     await expect(types.getByRole("button", { name: "2連単" })).toBeVisible();
+    // BOA-990 ②: 3連複・2連複のタブ。押すとフッターの頭がその券種になる
+    for (const name of ["3連複", "2連複"]) {
+      await types.getByRole("button", { name, exact: true }).click();
+      await expect(
+        types.getByRole("button", { name, exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByRole("region", { name: "買い目" })).toContainText(
+        name,
+      );
+    }
     await expect(
       page.getByRole("region", { name: "券種で比べる（同じ候補）" }),
     ).toBeVisible();

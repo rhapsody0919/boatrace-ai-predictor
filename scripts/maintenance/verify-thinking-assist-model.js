@@ -18,7 +18,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  ASSIST_BET_TYPES,
   assistBetType,
+  ticketLabel,
   baseVerdict,
   bestBoats,
   betForm,
@@ -1039,6 +1041,32 @@ check(
       betForm(B([1], [2, 3, 4], [2, 3, 4, 5])) === "1-234-2345" &&
       assistBetType("zzz").id === "trifecta" &&
       assistBetType("exacta").legs === 2,
+  );
+  // BOA-990 ②: 連複の表記は「=」、組の表記も「=」。タブの並びは 3連単｜3連複｜2連単｜2連複
+  check(
+    "券種: 3連複は 1=234=2345、2連複は 1=234。組の表記 1=2=3。並びは承認モックの順。連複の図の1着人気は同じ艇の数の連単",
+    betForm(B([1], [2, 3, 4], [2, 3, 4, 5]), 3, false) === "1=234=2345" &&
+      betForm(B([1], [2, 3, 4], [2, 3, 4, 5]), 2, false) === "1=234" &&
+      ticketLabel("1-2-3", false) === "1=2=3" &&
+      ticketLabel("1-2", true) === "1-2" &&
+      JSON.stringify(ASSIST_BET_TYPES.map((t) => t.id)) ===
+        JSON.stringify(["trifecta", "trio", "exacta", "quinella"]) &&
+      assistBetType("trio").boardId === "trifecta" &&
+      assistBetType("quinella").boardId === "exacta" &&
+      assistBetType("trio").ordered === false &&
+      assistBetType("quinella").legs === 2,
+  );
+  const tq = oddsByBetType(
+    [{ capturedAt: "t1", trifectaAll: { "1-2-3": 5 }, trioAll: { "1-2-3": 2.1 }, quinellaAll: { "1-2": 1.4 } }],
+    { capturedAt: "f", trioAll: { "1-2-3": 2.3 } },
+  );
+  check(
+    "オッズ: 3連複は締切時オッズ（trio_all）、2連複は締切時オッズが無いのでスナップショット（quinella_all）",
+    tq.byType.trio.final === true &&
+      tq.byType.trio.odds["1-2-3"] === 2.3 &&
+      tq.byType.quinella.final === false &&
+      tq.byType.quinella.odds["1-2"] === 1.4,
+    JSON.stringify(tq),
   );
   const boxed = boxBets(B([1], [2, 3], [5]), 2);
   check(

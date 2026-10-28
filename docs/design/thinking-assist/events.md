@@ -32,7 +32,7 @@
 | assist_sheet | `mark` マークシート / `rough` 堅い？荒れる？の材料 / `venue` 会場の特徴 / `theory` セオリーカード / `term` 用語 |
 | assist_target | `1`（1着）/ `2`（2着以内）/ `3`（3着以内） |
 | assist_guide_step | 1〜（段の番号） |
-| assist_bet_type | `trifecta` 3連単 / `exacta` 2連単（BOA-990 ①。3連複・2連複・拡連複は ②・③ で足す）。`assist_bet_type`・`assist_bet_box` に加え、`assist_sheet_open`・`assist_target` でもそのときの券種 |
+| assist_bet_type | `trifecta` 3連単 / `trio` 3連複 / `exacta` 2連単 / `quinella` 2連複（BOA-990 ①・②。拡連複は ③ で足す）。`assist_bet_type`・`assist_bet_box` に加え、`assist_sheet_open`・`assist_target` でもそのときの券種 |
 | assist_bet_from | `tab` 券種のタブ（買い目レンズ・マークシート） / `compare` 「券種で比べる」の行 |
 | assist_form | `flat` 横一線 / `wall` 内3艇そろう / `d2` 2コース凹み / `d3` カド受け凹み / `kado` カド一撃 / `d1` イン凹み / `dash` ダッシュ勢先行 |
 
@@ -57,7 +57,7 @@
 | アシストの比較項目 | イベント | 思考アシストで6艇比較にした項目（nat_win・st_mean30 等） | `assist_metric` |
 | アシストのシート | イベント | 思考アシストで開いたシート（mark・rough・venue・theory・term） | `assist_sheet` |
 | アシストの着順 | イベント | 思考アシストの買い目で選んだ着順（1=1着 / 2=2着以内 / 3=3着以内） | `assist_target` |
-| アシストの券種 | イベント | 思考アシストの買い目で選んだ券種（trifecta・exacta 等。BOA-990） | `assist_bet_type` |
+| アシストの券種 | イベント | 思考アシストの買い目で選んだ券種（trifecta・trio・exacta・quinella 等。BOA-990） | `assist_bet_type` |
 | アシストの券種の場所 | イベント | 券種を替えた場所（tab・compare） | `assist_bet_from` |
 
 登録日（登録より前には遡らない。読み取りの期間はこの日から）:

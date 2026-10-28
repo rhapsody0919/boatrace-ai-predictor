@@ -2547,13 +2547,16 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await candidate(page, 3, 2).click();
     await candidate(page, 4, 3).click();
     const rows = compare(page).locator("tbody tr");
-    await expect(rows).toHaveCount(2);
+    // 並びは承認モックの順（3連単｜3連複｜2連単｜2連複。BOA-990 ②）
+    await expect(rows).toHaveCount(4);
     await expect(rows.nth(0)).toContainText(/3連単\s*1-23-4\s*2点/);
-    await expect(rows.nth(1)).toContainText(/2連単\s*1-23\s*2点/);
+    await expect(rows.nth(1)).toContainText(/3連複\s*1=23=4\s*2点/);
+    await expect(rows.nth(2)).toContainText(/2連単\s*1-23\s*2点/);
+    await expect(rows.nth(3)).toContainText(/2連複\s*1=23\s*2点/);
     await expect(footer(page)).toContainText("3連単 1-23-4（2点）");
 
     // 行全体を押せる（券種の名前の外の、点数のセルを押す。承認モック 画面1）
-    await rows.nth(1).locator("td").nth(2).click();
+    await rows.nth(2).locator("td").nth(2).click();
     await expect(footer(page)).toContainText("2連単 1-23（2点）");
     // レンズの艇の行の「3着」も、2連単では薄くして押せない（画面3）
     await expect(candidate(page, 4, 3)).toBeDisabled();
@@ -2614,6 +2617,102 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await expect(sheet.getByRole("columnheader", { name: "類似" })).toHaveCount(
       0,
     );
+  });
+
+  // BOA-990 ②: 3連複・2連複（着順を問わない）。組は各段から1艇ずつ選んだ組を昇順にまとめる（承認モック 画面1: 1=234=2345 は6点）
+  test("3連複・2連複: 券種で比べるに 1=234=2345（6点）・1=234（3点）、組は「=」、段は「1艇目（順不同）」", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    for (const b of [2, 3, 4]) await candidate(page, b, 2).click();
+    for (const b of [2, 3, 4, 5]) await candidate(page, b, 3).click();
+    const rows = compare(page).locator("tbody tr");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.nth(0)).toContainText(/3連単\s*1-234-2345\s*9点/);
+    await expect(rows.nth(1)).toContainText(/3連複\s*1=234=2345\s*6点/);
+    await expect(rows.nth(2)).toContainText(/2連単\s*1-234\s*3点/);
+    await expect(rows.nth(3)).toContainText(/2連複\s*1=234\s*3点/);
+
+    await betTypes(page).getByRole("button", { name: "3連複", exact: true }).click();
+    await expect(footer(page)).toContainText("3連複 1=234=2345（6点）");
+    // 図の艇の行の段の名前は「1艇目・2艇目・3艇目」。図の1着人気は着順のある3連単の合成で、行の言葉に券種が出る
+    await expect(
+      page.getByRole("button", { name: "2号艇を3艇目の候補に" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page
+        .getByRole("figure", { name: /レースの図/ })
+        .getByText(/1着人気（3連単の合成で）/)
+        .first(),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const sheet = page.getByRole("dialog", { name: "マークシート" });
+    await expect(sheet.locator(".ta-ms-h").filter({ hasText: "1艇目" })).toHaveText(
+      "1艇目（順不同）",
+    );
+    const first = sheet.locator(".ta-table tbody tr").first().locator("td");
+    await expect(first.first()).toHaveText("1=2=3");
+    await expect(
+      sheet.getByText("人気は3連複のオッズの順（20通りの中で）"),
+    ).toBeVisible();
+    await expect(sheet.getByRole("columnheader", { name: "類似" })).toHaveCount(0);
+    expect(
+      await page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "assist_sheet_open")
+          .map((e) => e[2].assist_bet_type),
+      ),
+    ).toEqual(["trio"]);
+
+    // 2連複は3段目を薄く残して押せない（入れた候補は残る）
+    await betTypes(sheet).getByRole("button", { name: "2連複", exact: true }).click();
+    await expect(sheet.getByText("3点", { exact: true })).toBeVisible();
+    await expect(
+      sheet.getByRole("button", { name: "2号艇を3艇目の候補に" }),
+    ).toBeDisabled();
+    await expect(
+      sheet.getByRole("button", { name: "2号艇を3艇目の候補に" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      sheet.getByText(
+        "2連複は2艇の組。3段目は使わない（入れた候補は残る。3連の券種に戻すと使う）",
+      ),
+    ).toBeVisible();
+    await expect(first.first()).toHaveText("1=2");
+    await expect(
+      sheet.getByText("人気は2連複のオッズの順（15通りの中で）"),
+    ).toBeVisible();
+    // ボックス: 1〜4号艇（使う2段に入れた艇）の2連複ボックスは6点。3段目は触らない
+    await sheet.getByRole("button", { name: "選んだ艇でボックス" }).click();
+    await expect(sheet.getByText("6点", { exact: true })).toBeVisible();
+  });
+
+  // 連複のオッズは昇順のキー（race_odds.quinella_all "1-2"）。表の組・人気・合成はそのキーで引く
+  test("2連複のオッズは quinella_all の昇順のキーで引き、合成オッズが出る", async ({
+    page,
+  }) => {
+    await page.route("**/rest/v1/race_odds?*", async (route) => {
+      const res = await fetchRecorded(route);
+      const rows = await res.json();
+      for (const row of rows)
+        if (row.quinella_all)
+          row.quinella_all = Object.fromEntries(
+            Object.keys(row.quinella_all).map((k) => [k, k === "1-2" ? 2 : 50]),
+          );
+      await route.fulfill(res.fulfillOptions({ json: rows }));
+    });
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 2, 1).click();
+    await candidate(page, 1, 2).click();
+    await betTypes(page).getByRole("button", { name: "2連複", exact: true }).click();
+    // 段の順（1艇目=2、2艇目=1）に関係なく組は 1=2、オッズ 2.0 → 合成 2.00
+    await expect(footer(page)).toContainText("2連複 2=1（1点）");
+    await expect(footer(page)).toContainText("合成 2.00");
   });
 
   test("選んだ艇でボックスは使う段をそろえ、元に戻すで押す前に戻る", async ({
@@ -2743,7 +2842,7 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await candidate(page, 3, 1).click();
     for (const b of [1, 2, 4, 5, 6]) await candidate(page, b, 2).click();
     await betTypes(page).getByRole("button", { name: "2連単" }).click();
-    await expect(compare(page).locator("tbody tr").nth(1)).toContainText(
+    await expect(compare(page).locator("tbody tr").nth(2)).toContainText(
       "5点（オッズあり4点）",
     );
     await expect(footer(page)).toContainText("（5点・オッズあり4点）");

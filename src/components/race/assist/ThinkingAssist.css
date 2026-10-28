@@ -900,6 +900,11 @@
   align-items: center;
 }
 
+/* 連複の段の見出し「1艇目（順不同）」が入る幅（BOA-990 ②、承認モック 画面2） */
+.ta-ms.is-unordered {
+  grid-template-columns: 4em repeat(6, minmax(0, 1fr));
+}
+
 .ta-ms-h {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
