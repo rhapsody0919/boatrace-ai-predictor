@@ -18,6 +18,7 @@ X の投稿・返信・動画に固有の知見。複数チャネルに共通す
 ## API と運用
 - X API は 2026-02 に従量課金が既定になった（読み取り1件 $0.005、月200万件まで。旧 Basic の月$200 は新規不可）。2026-08-29 時点は導入見送り（memory sns_marketing_hub_operational_state、要確認）
 - X・note の戦略と1週間分の下書きを 2025-12-24 に作ったが、Week2 以降が無く約8か月止まった。下書きを作っても投稿する人・頻度・確認の流れが無いと続かない（2026-08-04 オーナー確認、memory feedback_x_strategy_lapsed_2025_12）
+- X API の Post: Create の請求（Developer Console、日付は UTC）: 10/25・10/26 は送った本数と一致し全部 ContentCreateWithUrl（本文に URL）。10/27 UTC は WithUrl 2・Content Create 2 の計4本で、DB の送信は5本（全貌 URL つき・優勝戦の本投稿 画像4枚 URL なし・投票 URL なし・展示後のリプ 画像4枚 URL なし・/today URL つき 23:00:54）と1本合わない。/today がまだ数えられていなければ、URL の無い画像の投稿の1本が WithUrl（$0.200）で数えられた。区別は、10/28 UTC の数字で見たら（10:00 UTC、URL なし・画像1枚）がどちらに入るかで付く。予約は多めに倒して、媒体のある投稿を URL つきで数える（マイグレーション 190）（2026-10-28、オーナーのスクリーンショット、sns_x_send_jobs の snapshot）
 
 ## 点検での見落としを防ぐ知見
 - UTM付きURLを含む投稿の文字数は、生文字数・全角換算・XのURL換算を分けて記録する。（2026-10-12、2026-10-12-task-37-x-thread-12R.md）

@@ -28,6 +28,17 @@ const transitionBody = (sql) => {
   const open = sql.indexOf("AS $$", start) + "AS $$".length;
   return sql.slice(open, sql.indexOf("$$;", open));
 };
+/** 188 の sns_x_post_url_priced をファイルのとおりに戻す（本文の md5 を 188 と同じにする。190 の照合がこれを見る） */
+const restore188UrlPriced = async () => {
+  const sql = await migration("188_sns_x_cost_by_url.sql");
+  const start = sql.indexOf("CREATE FUNCTION public.sns_x_post_url_priced");
+  const end = sql.indexOf("$$;", sql.indexOf("AS $$", start)) + 3;
+  await db.exec(
+    sql
+      .slice(start, end)
+      .replace("CREATE FUNCTION", "CREATE OR REPLACE FUNCTION"),
+  );
+};
 let autoApprover;
 let seq = 0;
 
@@ -387,9 +398,54 @@ test("transition は予約の判定を sns_x_post_url_priced(snapshot) だけに
       before,
     );
   } finally {
-    await db.exec(`CREATE OR REPLACE FUNCTION public.sns_x_post_url_priced(p_snapshot JSONB)
-      RETURNS BOOLEAN LANGUAGE sql IMMUTABLE SET search_path=public AS $$
-        SELECT public.sns_x_post_has_url(p_snapshot->>'text');
-      $$;`);
+    await restore188UrlPriced();
+  }
+});
+
+test("190: sns_x_post_url_priced を媒体のある投稿も真にする版に置き換える（transition は変えない）。188 の本文でなければ止まる", async () => {
+  const before = (
+    await first(
+      "SELECT md5(prosrc) m FROM pg_proc WHERE proname='transition_sns_send_139'",
+    )
+  ).m;
+  const sql = await migration("190_sns_x_cost_media_as_url.sql");
+  await restore188UrlPriced();
+  await db.exec(sql);
+  try {
+    const has = async (snapshot) =>
+      (await first("SELECT sns_x_post_url_priced($1) r", [snapshot])).r;
+    assert.equal(await has({ text: "優勝戦 思考の順", media: [{}] }), true);
+    assert.equal(await has({ text: "どれが来る？", media: [] }), false);
+    assert.equal(await has({ text: "どれが来る？" }), false);
+    assert.equal(
+      await has({ text: "https://www.boat-ai.jp/today", media: [] }),
+      true,
+    );
+    // 媒体のある URL の無い投稿は URL つきの額で予約する
+    const withMedia = await makeJob("finals_image", "優勝戦 思考の順");
+    await db.query(
+      "UPDATE sns_x_send_jobs SET snapshot = jsonb_set(snapshot, '{media}', '[{\"path\":\"a.png\"}]') WHERE id=$1",
+      [withMedia.id],
+    );
+    assert.equal(
+      Number((await transition(withMedia.id, "claim")).reserved_microusd),
+      10000,
+    );
+    assert.equal(
+      (
+        await first(
+          "SELECT md5(prosrc) m FROM pg_proc WHERE proname='transition_sns_send_139'",
+        )
+      ).m,
+      before,
+    );
+    // 当て直すと、関数の本文が 188 でないので全体を戻す
+    await assert.rejects(
+      db.exec(sql),
+      /190: sns_x_post_url_priced が 188 の本文でない/,
+    );
+    await db.exec("ROLLBACK");
+  } finally {
+    await restore188UrlPriced();
   }
 });

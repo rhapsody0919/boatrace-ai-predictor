@@ -1456,7 +1456,7 @@
     {
       "script": "verify-sns-x-cost-by-url.js",
       "tier": "ci",
-      "guards": "X の送信の月の予約を送る文の URL の有無で決める（マイグレーション 188）: 先頭の照合は 182 の transition_sns_send_139 の本文の md5（c2b4835c…）で、当て直すと止まる。182 との差は予約額の行だけ。sns_x_post_has_url はスキーム・www・よく使う TLD のドメイン（日本語が続いても）を URL、小数・日本語だけ・NULL を URL でないとする。claim は URL のある文を ceiling_x_url、無い文を ceiling_x_plain で予約し、まだ claim していない自分の子も子の文で数える。ceiling_x_url・ceiling_x_plain は 250000・30000 のときだけ 200000・15000 にし、ほかの値は触らない。SQL182・188 を PGlite、外部接続なし"
+      "guards": "X の送信の月の予約を送る文の URL の有無で決める（マイグレーション 188）: 先頭の照合は 182 の transition_sns_send_139 の本文の md5（c2b4835c…）で、当て直すと止まる。182 との差は予約額の行だけ。sns_x_post_has_url はスキーム・www・よく使う TLD のドメイン（日本語が続いても）を URL、小数・日本語だけ・NULL を URL でないとする。claim は URL のある文を ceiling_x_url、無い文を ceiling_x_plain で予約し、まだ claim していない自分の子も子の文で数える。ceiling_x_url・ceiling_x_plain は 250000・30000 のときだけ 200000・15000 にし、ほかの値は触らない。transition は判定を sns_x_post_url_priced(snapshot) だけに任せ、190 はこの関数だけを媒体のある投稿も真にする版に置き換える（transition の md5 は変わらない、188 の本文でなければ止まる）。SQL182・188・190 を PGlite、外部接続なし"
     },
     {
       "script": "verify-sns-x-oauth.js",
