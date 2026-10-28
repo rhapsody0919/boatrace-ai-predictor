@@ -4216,7 +4216,9 @@ export const supabaseDataService = {
   getRacerAllPeriodStats(racerId) {
     const courseCols = [1, 2, 3, 4, 5, 6]
       .flatMap((c) =>
-        ["entries", "p1", "p2", "p3", "avg_st"].map((k) => `c${c}_${k}`),
+        ["entries", "p1", "p2", "p3", "avg_st", "f", "l0", "l1"].map(
+          (k) => `c${c}_${k}`,
+        ),
       )
       .join(", ");
     return withCache(`racer-period-stats-v1-${racerId}`, async () => {

@@ -28,6 +28,72 @@ test("期別成績と進入コース別成績（公式）を出し、期の呼�
   }
 });
 
+test("勝率の折れ線は開いた時点で全期の点が出て、最後の点が最新の期の目盛りに重なる", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 800, height: 900 });
+  await page.goto("/racer/3941");
+  const chart = page.locator(".racer-official-chart");
+  // 目盛りの文字が出た直後に1回だけ測る（描く動きが終わるのを待たない）
+  await chart
+    .locator(".recharts-cartesian-axis-tick-value", { hasText: "期" })
+    .last()
+    .waitFor({ state: "attached" });
+  // 描く動きがあると、開いた直後は点が出ていない・線が途中で止まって見える
+  const measure = () =>
+    chart.evaluate((el) => {
+      const center = (n) => {
+        const r = n.getBoundingClientRect();
+        return r.x + r.width / 2;
+      };
+      const dots = [...el.querySelectorAll(".recharts-line-dot")].map(center);
+      const lastTickLine = [
+        ...el.querySelectorAll(
+          ".recharts-xAxis .recharts-cartesian-axis-tick-line",
+        ),
+      ].at(-1);
+      // 目盛りの文字は軸の線と別の層に描かれる。横軸の文字は「期」で終わるものだけ
+      const lastTickValue = [
+        ...el.querySelectorAll(".recharts-cartesian-axis-tick-value"),
+      ]
+        .filter((t) => t.textContent.endsWith("期"))
+        .at(-1);
+      // 線の見えている長さ。描く動きの途中は stroke-dasharray の1つ目が線の全長より短く、
+      // 線が途中（例: 2023年後期の辺り）で止まって見える
+      const path = el.querySelector(".recharts-line-curve");
+      const dash = path?.getAttribute("stroke-dasharray");
+      const visible = dash ? parseFloat(dash) : path.getTotalLength();
+      return {
+        dots,
+        lastTickX: lastTickLine ? center(lastTickLine) : null,
+        lastTickText: lastTickValue?.textContent ?? "",
+        lineShownRatio: visible / path.getTotalLength(),
+      };
+    });
+  const first = await measure();
+  const rows = await page
+    .locator(".racer-official-table")
+    .first()
+    .locator("tbody tr")
+    .count();
+  const hidden = await page
+    .locator(".racer-official-more .racer-official-table tbody tr")
+    .count();
+  expect(first.dots.length).toBe(rows + hidden);
+  expect(first.lineShownRatio).toBeGreaterThan(0.99);
+  // 最新の期（表の先頭の行）の目盛りが右端にあり、最後の点と同じ位置
+  const latestLabel = (
+    await page
+      .locator(".racer-official-table")
+      .first()
+      .locator("tbody tr th")
+      .first()
+      .innerText()
+  ).split("\n")[0];
+  expect(first.lastTickText).toBe(latestLabel);
+  expect(Math.abs(first.dots.at(-1) - first.lastTickX)).toBeLessThan(2);
+});
+
 test("枠番別成績は当サイト集計と書き、進入コース別（公式）と分ける", async ({
   page,
 }) => {

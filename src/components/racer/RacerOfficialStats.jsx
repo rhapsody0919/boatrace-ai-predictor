@@ -26,7 +26,9 @@ import "./RacerOfficialStats.css";
 
 const DEFAULT_VISIBLE_PERIODS = 4;
 
-const pct = (v) => (v === null ? "-" : `${v.toFixed(1)}%`);
+// 率は小数1桁で切り捨てる。公式の2連対率（fan）は切り捨てで、同じ行の中で丸め方をそろえる（data-accuracy-verifier）
+const pct = (v) =>
+  v === null ? "-" : `${(Math.floor(v * 10 + 1e-9) / 10).toFixed(1)}%`;
 const st = (v) => (v === null ? "-" : v.toFixed(2));
 
 function PeriodTable({ rows }) {
@@ -215,9 +217,9 @@ export default function RacerOfficialStats({ rows, racerName }) {
         )}
       </h2>
       <p className="racer-official-note">
-        ボートレース公式の期別成績です。最新は{latest.label}（集計{" "}
+        ボートレース公式の期別成績です。この表の最新は{latest.label}（集計{" "}
         {latest.range}
-        ）で、それより後の成績はまだ公開されていません。出走表に出る全国勝率とは集計の期間が違います。
+        ）です。公式の期別成績は、半年ごとの期が終わってから公開されます。出走表に出る全国勝率とは集計の期間が違います。
       </p>
 
       <div className="racer-official-block">
@@ -233,9 +235,16 @@ export default function RacerOfficialStats({ rows, racerName }) {
                 margin={{ top: 5, right: 16, left: -8, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                {/* 最後（最新）の期の目盛りは必ず出す。表の先頭の行と折れ線の右端を対応させるため */}
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10 }}
+                  interval="preserveStartEnd"
+                />
                 <YAxis tick={{ fontSize: 11 }} domain={chartDomain} />
                 <Tooltip formatter={(value) => value?.toFixed(2)} />
+                {/* 線を左から描く動きは止める（isAnimationActive）。描きかけの途中で見ると最後の点が左に寄って見え、
+                    最新の期と位置が合わない（Orchestrate の Preview の確認 10/28）。ボットの描画も最終の形で読む */}
                 <Line
                   type="linear"
                   dataKey="winRate"
@@ -244,6 +253,7 @@ export default function RacerOfficialStats({ rows, racerName }) {
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   connectNulls={false}
+                  isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>

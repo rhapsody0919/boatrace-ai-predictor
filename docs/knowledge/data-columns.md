@@ -28,6 +28,7 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 
 ## 公式ファイル・公式ページと取得の時点
 - 公式の K/B ファイルは kb_archive_* に 2019-04-01〜2025-12-02 を取り込み済み（kb_archive_boats 約221万行）。2025-12-03 以降は race_entries・race_results 等にあり、kb は作りの上で止めている（kb-backfill.js の MAIN_TABLES_START、書き手の cron なし）。kb_archive は匿名で読めず、racer_id の索引も無い（2026-10-28、system-architect・本番の読み取り。元は 2026-09-25、BOA-403・BOA-422）
+- 公式の fan ファイルに現役の選手が載らないことがある。fan2604 には 4650 が無いが、公式の選手ページには 2026年後期（41走）がある。直近2週に出走した 1,407人のうち欠けはこの1人。画面で「それより後は未公開」と言い切らない（2026-10-28、data-accuracy-verifier、PR #2051）
 - B ファイルの体重は登録体重（整数）、race_entries.weight_kg は当日の体重（小数）で別の値。player_name は表記、local_win_rate は取得の時点が違う。B ファイルで上書きする前に同じ値かを確かめる（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、PR #840）
 - K ファイルは開催日の夜〜翌日に公開され、kfile-sync は JST 07:00・12:00 に動く。前日の進入コース（race_results.actual_course_*）を使う集計は当日の昼より後にそろう（2026-09-25、memory morning_data_digest_2026_09_25、ADR-0066）
 - 公式の直前情報（beforeinfo）と結果（raceresult）のページは HTML の作りが別。beforeinfo は .table1 の2番目→tbody 6つ→各4行で .table1_boatImage1 が無い。raceresult は .table1_boatImage1 で艇の情報を取れる（memory technical_supabase_scraping_turnpred_notes）

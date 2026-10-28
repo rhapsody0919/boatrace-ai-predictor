@@ -94,6 +94,43 @@ check("9走でも進入数は出す", c6single.entries, 9);
 
 check("行が無ければ null", buildCourseRows([]), null);
 
+// 平均STの重みは「進入 − F − L」。公式は該当する走が無いと 0 を入れるので、0 は重みに入れない
+// （data-accuracy-verifier の再現: 5313 の3コース、20走 0.15 と 1走 F の 0 で 0.1429 と出ていた）
+const stRows = [
+  row(2026, 2, course(3, 20, 2, 3, 3, "0.15")),
+  row(2026, 1, { ...course(3, 1, 0, 0, 0, "0"), c3_f: 1 }),
+];
+check(
+  "F だけのコースの ST 0 は平均に入れない",
+  buildCourseRows(stRows).courses[2].avgSt,
+  0.15,
+);
+const lRows = [
+  row(2026, 2, { ...course(3, 12, 1, 2, 2, "0.10"), c3_l1: 2 }),
+  row(2026, 1, course(3, 10, 1, 2, 2, "0.20")),
+];
+check(
+  "L の走は重みから外す（(0.10×10+0.20×10)/20）",
+  buildCourseRows(lRows).courses[2].avgSt,
+  0.15,
+);
+
+// 出走0の期は合算の3期に数えない（直近3期に穴があっても、出走のある3期を使う）
+const gapRows = [
+  row(2026, 2),
+  row(2026, 1, { starts: 0 }),
+  row(2025, 2),
+  row(2025, 1),
+];
+const gap = buildCourseRows(gapRows);
+check("出走0の期を飛ばして3期を使う", gap.periods.length, 3);
+check("3期の最古は2025年前期", gap.periods.at(-1).label, "2025年前期");
+check(
+  "全期が出走0なら進入コース別は出さない",
+  buildCourseRows([row(2026, 2, { starts: 0 })]),
+  null,
+);
+
 if (failures.length > 0) {
   console.error(`❌ ${failures.length}/${checked} 件が不一致`);
   for (const f of failures) console.error(`  - ${f}`);

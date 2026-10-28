@@ -76,13 +76,15 @@ export function buildPeriodRows(rows) {
 }
 
 /**
- * 進入コース別（直近 periods 期の合算）。期は新しい順に periods 個を使う。
- * 平均STは、期ごとの値を進入数で重み付けした平均（公式の期の値からの近似。±0.01以内が99.9%、data-scientist）。
+ * 進入コース別（直近 periods 期の合算）。出走のある期を新しい順に periods 個使う（出走0の期は数えない）。
+ * 平均STは、期ごとの値を「進入 − F − L」で重み付けした平均（公式の期の値からの近似。±0.01以内が99.9%、data-scientist）。
+ * 公式は F・L を除いた走で ST を平均し、該当する走が無いと 0 を入れるので、0 は重みに入れない（data-accuracy-verifier）。
  * 平均スタート順位は合算の妥当性を確かめていないので出さない
  * @returns {{ periods: object[], courses: object[] } | null} 行が無ければ null
  */
 export function buildCourseRows(rows, periods = COURSE_SUM_PERIODS) {
   const used = [...(rows ?? [])]
+    .filter((r) => (num(r.starts) ?? 0) > 0)
     .sort((a, b) => b.period_year - a.period_year || b.period_no - a.period_no)
     .slice(0, periods);
   if (used.length === 0) return null;
@@ -99,9 +101,14 @@ export function buildCourseRows(rows, periods = COURSE_SUM_PERIODS) {
         placeCounts[p] += num(r[`c${c}_p${p + 1}`]) ?? 0;
       }
       const st = num(r[`c${c}_avg_st`]);
-      if (n > 0 && st !== null) {
-        stWeighted += st * n;
-        stN += n;
+      const stRuns =
+        n -
+        (num(r[`c${c}_f`]) ?? 0) -
+        (num(r[`c${c}_l0`]) ?? 0) -
+        (num(r[`c${c}_l1`]) ?? 0);
+      if (stRuns > 0 && st !== null && st > 0) {
+        stWeighted += st * stRuns;
+        stN += stRuns;
       }
     }
     const show = entries >= COURSE_RATE_MIN_ENTRIES;
