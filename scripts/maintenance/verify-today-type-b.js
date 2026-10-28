@@ -5,6 +5,7 @@
 // - config/today-variants.json の型 b の行
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   COURSE_WIN_VERSION,
   bonferroniLine,
@@ -386,6 +387,7 @@ test("比べの組: 連続2日を1組にし、組の中でちょうど1日が b�
   // 壊れた値は既定（10組）・開始なし
   assert.deepEqual(normalizeTodayExperiment({ start: "10/29", pairs: -1 }), {
     id: "today-ab",
+    mode: "pairs",
     start: null,
     pairs: 10,
     seed: "today-ab",
@@ -404,6 +406,7 @@ test("その日の型: 組の b の日は body=course_win と組の札。組の�
   assert.equal(b.content_type.side, "b");
   assert.equal(b.content_type.experiment, "today-v2-course-win");
   assert.equal(b.content_type.pair, 0);
+  assert.equal(b.content_type.mode, "pairs");
   const row = {
     day: bDay,
     type_id: "t03-x",
@@ -432,6 +435,64 @@ test("その日の型: 組の b の日は body=course_win と組の札。組の�
   assert.equal(pickTodayPost(broken, bDay).variant.id, "default");
 });
 
+// 2026-10-28 オーナー決定（hq）: 10/29 から毎日 b、比べは過去の a の日との前後比べ。判定ができるまで、最短 b 30日（11/27 まで。基準の a が6日分で SD 0.70 のため、hq の DS の審査）
+test("リポジトリの config: all_b で 10/29〜11/27 は毎日 b、11/28 と 10/28 は a。b の日は mode・day を記録し、型の列を使わない", () => {
+  const config = JSON.parse(
+    readFileSync(
+      new URL("../../config/today-variants.json", import.meta.url),
+      "utf8",
+    ),
+  );
+  const exp = normalizeTodayExperiment(config.experiment);
+  assert.deepEqual(exp, {
+    id: "today-v2-course-win",
+    mode: "all_b",
+    start: "2026-10-29",
+    days: 30,
+  });
+  for (let i = 0; i < 30; i += 1) {
+    const date = dayOf("2026-10-29", i);
+    assert.deepEqual(pickExperimentSide(exp, date), {
+      side: "b",
+      pair: null,
+      slot: null,
+      day: i,
+    });
+    const p = pickTodayPost(config, date);
+    assert.equal(p.body, "course_win", date);
+    assert.equal(p.content_type.side, "b");
+    assert.equal(p.content_type.mode, "all_b");
+    assert.equal(p.content_type.day, i);
+    assert.equal(p.content_type.experiment, "today-v2-course-win");
+  }
+  assert.equal(dayOf("2026-10-29", 29), "2026-11-27");
+  for (const date of ["2026-10-28", "2026-11-28"]) {
+    assert.deepEqual(pickExperimentSide(exp, date), {
+      side: "a",
+      pair: null,
+      slot: null,
+    });
+    const p = pickTodayPost(config, date);
+    assert.equal(p.body, null, date);
+    assert.equal(p.content_type.side, "a");
+    assert.equal(p.content_type.mode, undefined);
+  }
+  const row = {
+    day: "2026-10-30",
+    type_id: "t03-x",
+    post: { heading: "別の型（{date}）" },
+  };
+  const withRow = pickTodayPost(config, "2026-10-30", { row });
+  assert.equal(withRow.body, "course_win");
+  assert.equal(withRow.content_type.fallback_reason, "experiment_all_b");
+  // days が壊れていれば既定の 10日
+  assert.equal(
+    normalizeTodayExperiment({ mode: "all_b", start: "2026-10-29", days: 0 })
+      .days,
+    10,
+  );
+});
+
 test("b を出せない日の型 a は config の a（壊れていれば既定の文）", () => {
   assert.deepEqual(typeAOf(AB), {
     type_id: "today-a",
@@ -443,7 +504,7 @@ test("b を出せない日の型 a は config の a（壊れていれば既定�
   assert.equal(typeAOf(null).variant.id, "default");
 });
 
-test("リポジトリの config: b は型 b（course_win）、比べは10組で 2026-10-29 に始める（10/28 の本番で notes.courseWin.status='ok' と撮影用のページを確かめた）", () => {
+test("リポジトリの config: b は型 b（course_win）、2026-10-29 から all_b（10/28 の本番で notes.courseWin.status='ok' と撮影用のページを確かめた）", () => {
   const config = loadTodayVariants();
   const n = normalizeTodayVariants(config);
   assert.deepEqual(
@@ -454,43 +515,10 @@ test("リポジトリの config: b は型 b（course_win）、比べは10組で 
     ],
   );
   assert.equal(n.variants[1].uuid, null);
-  assert.equal(n.experiment.pairs, 10);
+  assert.equal(n.experiment.mode, "all_b");
   assert.equal(n.experiment.start, "2026-10-29");
-  assert.equal(n.experiment.id, "today-v2-course-win");
-  assert.equal(n.experiment.seed, "today-v2-course-win-20261027");
   assert.notEqual(config.reply_enabled, true);
-  // 割り当ては日付と設定だけで決まる。始めた後に seed・start を変えると割り当てが変わり比べが壊れるので、b の日を固定する
-  const sides = Array.from({ length: 20 }, (_, i) =>
-    pickExperimentSide(n.experiment, dayOf("2026-10-29", i)),
-  );
-  assert.deepEqual(
-    sides.flatMap((s, i) => (s.side === "b" ? [dayOf("2026-10-29", i)] : [])),
-    [
-      "2026-10-30",
-      "2026-10-31",
-      "2026-11-03",
-      "2026-11-05",
-      "2026-11-07",
-      "2026-11-09",
-      "2026-11-11",
-      "2026-11-13",
-      "2026-11-15",
-      "2026-11-16",
-    ],
-  );
-  // 前日（10/28）と組の後（11/18）は比べの外（全部 a）
-  for (const date of ["2026-10-28", "2026-11-18"])
-    assert.deepEqual(pickExperimentSide(n.experiment, date), {
-      side: "a",
-      pair: null,
-      slot: null,
-    });
-  // 1日目（10/29）は a。ここに間に合わずマージされても、最初の b（10/30）より前なら b の日を落とさない
-  assert.deepEqual(pickExperimentSide(n.experiment, "2026-10-29"), {
-    side: "a",
-    pair: 0,
-    slot: 0,
-  });
+  // 日ごとの割り当ては下の all_b のテストで固定する
 });
 
 test("言い切りの判定は正確な二項の上側確率（正規近似は B 級で甘い）。合計1行の日は型 b を作らない", async () => {
