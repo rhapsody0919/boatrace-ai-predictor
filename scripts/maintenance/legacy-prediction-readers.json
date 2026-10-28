@@ -1,0 +1,248 @@
+{
+  "$comment": [
+    "止める予定の予想・列の名前が出てくるファイルの一覧（基盤の計画 R1・R2、docs/design/legacy-prediction-cleanup/plan.md の R-0）。",
+    "verify-legacy-prediction-readers.js（ci）が、一覧に無いファイルに名前が出てきたら落とす（新しい読み手・書き手を作らない）。名前が消えたファイルが残っていても落とす（node scripts/maintenance/verify-legacy-prediction-readers.js --prune で外す）。",
+    "手でファイルを足さない。止める作業の PR で減らすだけ。名前を足す・消すのは plan.md を直す PR で。",
+    "対象: git ls-files の src・api・scripts・sns-video-studio の .js .jsx .mjs .cjs .ts .tsx .py .sql .sh（部分一致）。docs は見ない。"
+  ],
+  "tokens": {
+    "prediction_odds": {
+      "plan": "R1",
+      "files": [
+        "api/cron/odds.js",
+        "api/odds/live.js",
+        "scripts/analysis/data-health-report.js",
+        "scripts/analysis/train-moriarty-calibration.js",
+        "scripts/daily/generate-moriarty-recommendations.js",
+        "scripts/daily/scrape-prediction-odds.js",
+        "scripts/lib/liveOdds.js",
+        "scripts/lib/predictionOddsDerive.js",
+        "scripts/lib/scrapeJobs/finalOddsHandlers.js",
+        "scripts/lib/scrapeJobs/monitor.js",
+        "scripts/lib/scrapeJobs/oddsHandlers.js",
+        "scripts/lib/scrapeJobs/predictionOddsHandlers.js",
+        "scripts/lib/scrapeJobs/registry.js",
+        "scripts/lib/unchangedRows.js",
+        "scripts/maintenance/check-prediction-odds-shadow.js",
+        "scripts/maintenance/delete-phantom-races.js",
+        "scripts/maintenance/fix-opening-day-race-id-date.js",
+        "scripts/maintenance/fix-tsu-2025-12-02-date.js",
+        "scripts/maintenance/generate-display-coverage.js",
+        "scripts/maintenance/verify-display-coverage.js",
+        "scripts/maintenance/verify-prediction-odds-derive.js",
+        "scripts/maintenance/verify-scrape-monitor.js",
+        "scripts/maintenance/verify-scrape-odds-job.js"
+      ]
+    },
+    "predictionOdds": {
+      "plan": "R1",
+      "files": [
+        "api/_lib/predictionsResponse.js",
+        "api/cron/odds.js",
+        "scripts/lib/predictionOddsDerive.js",
+        "scripts/lib/scrapeJobs/monitor.js",
+        "scripts/lib/scrapeJobs/oddsHandlers.js",
+        "scripts/lib/scrapeJobs/predictionOddsHandlers.js",
+        "scripts/maintenance/check-prediction-odds-shadow.js",
+        "scripts/maintenance/verify-fetch-counter.js",
+        "scripts/maintenance/verify-prediction-odds-derive.js",
+        "scripts/maintenance/verify-predictions-response.js",
+        "scripts/maintenance/verify-rpc-output-keys.js",
+        "scripts/maintenance/verify-scrape-odds-job.js"
+      ]
+    },
+    "safeBet": {
+      "plan": "R1",
+      "files": [
+        "scripts/analysis/analyze-expected-value-strategy.js",
+        "scripts/analysis/analyze-prediction-ensemble.js",
+        "scripts/analysis/calibration-report.js",
+        "scripts/analysis/campaign-backtest-fetch-races.js",
+        "scripts/analysis/compare-pcexpect.js",
+        "scripts/analysis/expected-value-report.js",
+        "scripts/analysis/find-missing-dates.js",
+        "scripts/analysis/generate-venue-docs.js",
+        "scripts/analysis/train-moriarty-calibration.js",
+        "scripts/analysis/turnprediction-guided-outcome-distribution.js",
+        "scripts/analysis/validate-outcome-distribution.js",
+        "scripts/analysis/verify-calculations.js",
+        "scripts/daily/calculate-accuracy.js",
+        "scripts/daily/generate-moriarty-recommendations.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/daily/scrape-prediction-odds.js",
+        "scripts/lib/predictionOddsDerive.js",
+        "scripts/lib/racesInit/predictCodeCheck.js",
+        "scripts/maintenance/backfill-refund-hit-flags.js",
+        "scripts/maintenance/delete-cancelled-race-predictions.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-feature-contributions-dedup.js",
+        "scripts/maintenance/verify-prediction-odds-derive.js",
+        "scripts/maintenance/verify-prediction-refresh.js",
+        "scripts/maintenance/verify-predictions-response.js",
+        "src/components/race/PredictionPanel.jsx",
+        "src/constants/index.js",
+        "src/pages/AccuracyHistory.jsx",
+        "src/services/moriartyService.js",
+        "src/services/supabaseDataService.js"
+      ]
+    },
+    "upsetFocus": {
+      "plan": "R1",
+      "files": [
+        "scripts/analysis/analyze-expected-value-strategy.js",
+        "scripts/analysis/analyze-prediction-ensemble.js",
+        "scripts/analysis/calibration-report.js",
+        "scripts/analysis/campaign-backtest-fetch-races.js",
+        "scripts/analysis/compare-pcexpect.js",
+        "scripts/analysis/expected-value-report.js",
+        "scripts/analysis/find-missing-dates.js",
+        "scripts/analysis/generate-venue-docs.js",
+        "scripts/analysis/train-moriarty-calibration.js",
+        "scripts/analysis/turnprediction-guided-outcome-distribution.js",
+        "scripts/analysis/validate-outcome-distribution.js",
+        "scripts/analysis/verify-calculations.js",
+        "scripts/daily/calculate-accuracy.js",
+        "scripts/daily/generate-moriarty-recommendations.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/daily/scrape-prediction-odds.js",
+        "scripts/lib/predictionOddsDerive.js",
+        "scripts/lib/racesInit/predictCodeCheck.js",
+        "scripts/maintenance/backfill-refund-hit-flags.js",
+        "scripts/maintenance/delete-cancelled-race-predictions.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-feature-contributions-dedup.js",
+        "scripts/maintenance/verify-prediction-odds-derive.js",
+        "scripts/maintenance/verify-prediction-refresh.js",
+        "src/components/race/PredictionPanel.jsx",
+        "src/constants/index.js",
+        "src/pages/AccuracyHistory.jsx",
+        "src/services/moriartyService.js",
+        "src/services/supabaseDataService.js"
+      ]
+    },
+    "ai_score_standard": {
+      "plan": "R1",
+      "files": [
+        "scripts/analysis/train-moriarty-calibration.js",
+        "scripts/daily/generate-moriarty-recommendations.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/lib/raceEntriesKbRestore.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-race-entries-restore.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    },
+    "ai_score_safe_bet": {
+      "plan": "R1",
+      "files": [
+        "scripts/analysis/train-moriarty-calibration.js",
+        "scripts/daily/generate-moriarty-recommendations.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/lib/raceEntriesKbRestore.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-race-entries-restore.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    },
+    "ai_score_upset_focus": {
+      "plan": "R1",
+      "files": [
+        "scripts/analysis/train-moriarty-calibration.js",
+        "scripts/daily/generate-moriarty-recommendations.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/lib/raceEntriesKbRestore.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-race-entries-restore.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    },
+    "aiScoreStandard": {
+      "plan": "R1",
+      "files": [
+        "api/_lib/predictionsResponse.js",
+        "scripts/maintenance/verify-predictions-response.js",
+        "scripts/maintenance/verify-rpc-output-keys.js",
+        "src/services/supabaseDataService.js"
+      ]
+    },
+    "aiScoreSafeBet": {
+      "plan": "R1",
+      "files": [
+        "api/_lib/predictionsResponse.js",
+        "scripts/maintenance/verify-predictions-response.js",
+        "scripts/maintenance/verify-rpc-output-keys.js"
+      ]
+    },
+    "aiScoreUpsetFocus": {
+      "plan": "R1",
+      "files": [
+        "api/_lib/predictionsResponse.js",
+        "scripts/maintenance/verify-predictions-response.js",
+        "scripts/maintenance/verify-rpc-output-keys.js"
+      ]
+    },
+    "volatility_score": {
+      "plan": "R2",
+      "files": [
+        "scripts/analysis/analyze-upset-factors.js",
+        "scripts/analysis/redesign-volatility-by-venue.js",
+        "scripts/analysis/turn-prediction-venue-deep-analysis.js",
+        "scripts/analysis/verify-all-venues-label-accuracy.js",
+        "scripts/analysis/verify-label-accuracy.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-migration-numbers.js",
+        "scripts/maintenance/verify-races-derived-backfill.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    },
+    "volatility_level": {
+      "plan": "R2",
+      "files": [
+        "scripts/analysis/analyze-upset-factors.js",
+        "scripts/analysis/turn-prediction-venue-deep-analysis.js",
+        "scripts/daily/calculate-accuracy.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    },
+    "recommended_model": {
+      "plan": "R2",
+      "files": [
+        "scripts/daily/generate-predictions.js",
+        "scripts/maintenance/build-races-derived-backfill-sql.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-races-derived-backfill.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    },
+    "recommendedModel": {
+      "plan": "R2",
+      "files": [
+        "scripts/daily/generate-predictions.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-rpc-key-regression.js"
+      ]
+    },
+    "volatility_reasons": {
+      "plan": "R2",
+      "files": [
+        "scripts/daily/generate-predictions.js",
+        "scripts/maintenance/migrate-to-supabase.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    },
+    "first_boat_avg_st": {
+      "plan": "R2",
+      "files": [
+        "scripts/analysis/redesign-volatility-by-venue.js",
+        "scripts/daily/generate-predictions.js",
+        "scripts/lib/unchangedRows.js",
+        "scripts/maintenance/build-races-derived-backfill-sql.js",
+        "scripts/maintenance/verify-migration-numbers.js",
+        "scripts/maintenance/verify-unchanged-rows.js"
+      ]
+    }
+  }
+}
