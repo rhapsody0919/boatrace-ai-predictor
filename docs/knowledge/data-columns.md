@@ -38,7 +38,9 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - 現行の気象取得は33〜7分前の展示窓で、展示タイム未公開でも気象を先に反映する。60分前の体重用窓は updateWeather=false。表示条件（思考アシストは展示後）と取得時点を分ける（2026-10-14、2026-10-14-ryujin-feature-catalog.md）
 
 ## オッズ
-- 公式は票が0の艇の単勝を「0.0」、複勝を「0.0-0.0」と出す。0 を欠損として扱うと単勝の解析が失敗扱いになり、解析済みの3連単も捨てる。scrape_slots.outcome="no_values" は「単勝の値が無い」だけを表し、「何も発売されていない」と区別できない（2026-09-28、memory feedback_verify_status_label_branch_before_using_as_evidence・project_data_foundation_orchestration_2026_09_19、BOA-486、scrape-odds.js の scrapeWinOdds。今も同じ実装かは要確認）
+- 公式は票が0の艇の単勝を「0.0」、複勝を「0.0-0.0」と出す。0 を欠損として扱うと単勝の解析が失敗扱いになり、解析済みの3連単も捨てる。scrape_slots.outcome="no_values" は「単勝の値が無い」だけを表し、「何も発売されていない」と区別できない（2026-09-28、memory feedback_verify_status_label_branch_before_using_as_evidence・project_data_foundation_orchestration_2026_09_19、BOA-486、scrape-odds.js の scrapeWinOdds。2026-10-28 に今も同じ実装と確認。race_odds は票0を null、race_odds_final は 0 で残す）
+- 発売中の単勝（race_odds.odds_win_N）の 1.0・null は公式のページの値そのまま（取得・解析の誤りではない）。公式の発売中の単勝は票が少なく、1番人気の艇が下限の 1.0 に張り付き、票0の艇は「0.0」（保存は null）になる。2026-10-28 児島5R の締切10分前に公式を1回取得し、1.0・0.0・15.5・15.5・23.2・23.2 で、12秒後の race_odds の -10 の行と一致。締切時の race_odds_final.win_all は 2026-10-26 桐生1R で公式の締切時オッズと6艇とも一致（2026-10-28、BOA-1174、scripts/analysis/check-win-odds-vs-final.js）
+- 10/20〜10/27 の race_odds で、6艇とも単勝があるのは -60 で 147/1333・-10 で 513/1321・0 で 998/1317、1号艇が 1.0 は -10 で 508・0 で 293。締切時（race_odds_final 1316 行）は 6艇そろうのが 1227、1号艇 1.0 は 154。発売中の単勝の1番人気が締切時の単勝の1番人気と同じなのは -10 で 835/1295・-5 で 890/1295、3連単の合成の1着人気は -10 で 1054/1295・-5 で 1074/1295。締切前に1着人気を出すなら、発売中の単勝より3連単の合成のほうが締切時の単勝に近い（2026-10-28、BOA-1174、scripts/analysis/check-win-odds-vs-final.js）
 - 締切60分前の窓でオッズが取れないのは、公式がまだ発売していないため（1分ごとに17〜30回試みても値が無い）。取得の不具合ではない（2026-09-28、memory project_data_foundation_orchestration_2026_09_19、BOA-465）
 - race_results.remark の「同着あり」は2着以下の同着も含む（12か月で18件のうち1着の同着は1件）。1着の同着は race_start_timings.finish_rank=1 が2艇以上かで判定する（2026-10-20、data-accuracy-verifier、docs/reference/venue-course-win-rate.md）
 - race_start_timings.entry_course は 2025-12-06 以降の約9,400レースにだけ入っていて、その範囲では race_results.actual_course_* と1着艇の進入コースが 9,386/9,386 で一致（2026-10-20、同）
