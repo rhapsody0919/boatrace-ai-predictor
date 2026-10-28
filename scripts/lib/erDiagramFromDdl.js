@@ -112,7 +112,9 @@ export function parseTablesFromSql(rawSqlText) {
 
       table.columns.push({ name: columnName, type, isPk });
 
-      const ref = rest.match(/REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i);
+      const ref = rest.match(
+        /REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i,
+      );
       if (ref) {
         relationships.push({
           fromTable: tableName,
@@ -146,7 +148,9 @@ export function parseTablesFromSql(rawSqlText) {
       const type = (typeMatch?.[1] || rest.split(/\s+/)[0]).trim();
       table.columns.push({ name: columnName, type, isPk: false });
 
-      const ref = rest.match(/REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i);
+      const ref = rest.match(
+        /REFERENCES\s+(?:public\.)?(\w+)\s*\(\s*(\w+)\s*\)/i,
+      );
       if (ref) {
         relationships.push({
           fromTable: tableName,
@@ -181,6 +185,10 @@ export async function findLinkedMigrations(slug) {
 
 /**
  * パース結果からmermaid erDiagramのコードブロック本文（```mermaid行は含まない）を生成する。
+ *
+ * 本番スキーマの写しからの全体図（scripts/lib/schemaErDiagram.js）も使う。そのための任意の欄:
+ * - rel.fromCardinality / rel.toCardinality: 線の両端の記号（既定は DDL 版と同じ `}o` と `||`）
+ * - col.keys: 列の印の配列（例 ["PK", "FK"]）。無ければ col.isPk から PK だけを付ける
  */
 export function buildMermaidErDiagram({ tables, relationships }) {
   const lines = ["erDiagram"];
@@ -190,14 +198,19 @@ export function buildMermaidErDiagram({ tables, relationships }) {
       rel.fromColumn === rel.toColumn
         ? rel.fromColumn
         : `${rel.fromColumn} -> ${rel.toColumn}`;
-    lines.push(`    ${rel.fromTable} }o--|| ${rel.toTable} : "${label}"`);
+    const from = rel.fromCardinality ?? "}o";
+    const to = rel.toCardinality ?? "||";
+    lines.push(
+      `    ${rel.fromTable} ${from}--${to} ${rel.toTable} : "${label}"`,
+    );
   }
 
   for (const table of tables) {
     if (table.columns.length === 0) continue;
     lines.push(`    ${table.name} {`);
     for (const col of table.columns) {
-      const pk = col.isPk ? " PK" : "";
+      const keys = col.keys ?? (col.isPk ? ["PK"] : []);
+      const pk = keys.length ? ` ${keys.join(", ")}` : "";
       const safeType = (col.type || "text").replace(/\s+/g, "_");
       lines.push(`        ${safeType} ${col.name}${pk}`);
     }
