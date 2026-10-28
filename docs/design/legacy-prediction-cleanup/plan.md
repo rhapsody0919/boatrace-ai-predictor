@@ -46,7 +46,7 @@ D1・D2（2026-10-28）を入れた後の形。`/holmes` に影響する段（�
 ```mermaid
 flowchart TD
   R0["R-0（#2044 マージ済み）<br/>読み手を増やさない検査<br/>＋呼ばれない手動の1本を消す"]
-  R0b["R-0b 検査から R1 の名前を外す<br/>（/holmes の作業を止めない）"]
+  R0b["R-0b（#2047 マージ済み）<br/>検査から R1 の名前を外す<br/>（/holmes の作業を止めない）"]
   R14["R1-4 RPC から aiScore*・predictionOdds<br/>を外す（BOA-1126、次にこの RPC を<br/>変えるマイグレーションに同梱）"]
   B822["R2-1 BOA-822 の公開の PR で<br/>/accuracy の旧3段階の荒れ度の的中を外す<br/>（calculate-accuracy の volatilityStats も）"]
   R22["R2-2 races の5列を書かない<br/>（generate-predictions）"]
@@ -59,7 +59,7 @@ flowchart TD
 | PR | 中身 | 挙動 | 前提 | 承認 |
 |---|---|---|---|---|
 | **R-0**（#2044、マージ済み） | `verify-legacy-prediction-readers.js`（ci）: 止める物の名前が出てくるファイルを、今の一覧より増やさない。F8 の手動のスクリプトを消した | 変わらない | なし | 段階0 |
-| R-0b | R-0 の検査の名前から R1 の物（`prediction_odds`・`predictionOdds`・`safeBet`・`upsetFocus`・`ai_score_*`・`aiScore*`）を外し、R2 の5列（と `recommendedModel`）だけを残す。D1 で R1 の物は止めないので、検査を残すと tinaba の `/holmes` の作業で新しいファイルがこれらの名前を使うたびに CI が落ちる | 変わらない（CI の検査の範囲が狭まる） | D1 | 段階0 |
+| **R-0b**（#2047、マージ済み） | R-0 の検査の名前から R1 の物（`prediction_odds`・`predictionOdds`・`safeBet`・`upsetFocus`・`ai_score_*`・`aiScore*`）を外し、R2 の5列（と `recommendedModel`）だけを残す。D1 で R1 の物は止めないので、検査を残すと tinaba の `/holmes` の作業で新しいファイルがこれらの名前を使うたびに CI が落ちる。#2042 の `schemaErDiagram.js`（`prediction_odds`）で master の verify が赤になっていたのも、これで直った | 変わらない（CI の検査の範囲が狭まる） | D1 | 段階0 |
 | R1-4 | `get_predictions_by_date(_light)` から `aiScore*`・`predictionOdds` を外す（BOA-1126 の言うとおり、次にこの RPC を変えるマイグレーションに同梱）。`verify-rpc-output-keys` の更新。Moriarty はこの RPC を呼ばず（F3）、`/api` は #1906 で既に外したので、`/holmes`・画面に影響しない | 匿名キーの RPC 直の応答から欄が減る | なし（同梱する先のマイグレーション） | db-apply はオーナー |
 | R2-1 | **BOA-822（イン崩れ注意度）の公開の PR に入れる**（D2）。`/accuracy` の `VolatilityAccuracySection`（旧 high/medium/low の的中）を外し、`calculate-accuracy.js:178-202` の `volatilityStats` の集計と、`supabaseDataService.js:1861-1869` の読み出しを消す。`accuracy_cache` の古い `volatilityStats` の鍵は、読み手を消した後は残っても害が無い | `/accuracy` から旧3段階の荒れ度の的中の節が消える | BOA-822 の公開 | BOA-822 の公開の承認に含める |
 | R2-2 | `generate-predictions.js` で5列を書かない（`writeToSupabase`・`planRacesVolatilityUpdates`）。`unchangedRows.js:42`・`verify-unchanged-rows.js` を合わせる。分析の5本は scripts/archive へ | なし（R2-1 の後は読み手0） | R2-1 がマージ済み | 段階0 |
@@ -82,4 +82,4 @@ flowchart TD
 
 ## 5. R-0 の検査が台帳のゲートと別に要る理由
 
-台帳（B）と DROP のゲートは、表・列・RPC の名前で読み手を見る。safeBet・upsetFocus は `model_id` の値と JSON の鍵（`predictions.safeBet`）で、列ではないので台帳に出ない。R-0 は名前の文字列で見るので、この2つも拾う。D1（2026-10-28）で safeBet・upsetFocus・`prediction_odds`・`ai_score_*` は止めないので、R-0b でこれらを検査から外し、R2 の5列だけを見る形にする。対象のファイルの一覧は、止める作業の PR だけが減らす（新しい読み手を足す PR は CI で落ちる）。共有の一覧に読み手の登録を求めないという B の方針（基盤の計画「CI で落とすもの」）とは、新しい読み手を足させないという向きが逆なので衝突しない。
+台帳（B）と DROP のゲートは、表・列・RPC の名前で読み手を見る。safeBet・upsetFocus は `model_id` の値と JSON の鍵（`predictions.safeBet`）で、列ではないので台帳に出ない。R-0 は名前の文字列で見るので、この2つも拾う。D1（2026-10-28）で safeBet・upsetFocus・`prediction_odds`・`ai_score_*` は止めないので、R-0b（#2047）でこれらを検査から外し、R2 の5列だけを見る形にした。対象のファイルの一覧は、止める作業の PR だけが減らす（新しい読み手を足す PR は CI で落ちる）。共有の一覧に読み手の登録を求めないという B の方針（基盤の計画「CI で落とすもの」）とは、新しい読み手を足させないという向きが逆なので衝突しない。
