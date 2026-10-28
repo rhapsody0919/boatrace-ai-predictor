@@ -645,7 +645,7 @@
     {
       "script": "verify-legacy-prediction-readers.js",
       "tier": "ci",
-      "guards": "止める予定の予想・列（基盤の計画 R1・R2、docs/design/legacy-prediction-cleanup/plan.md の R-0。safeBet・upsetFocus の予想、prediction_odds、race_entries.ai_score_*、races の旧い荒れ度の5列と API の鍵）の名前が出てくるファイルを legacy-prediction-readers.json の一覧より増やさないこと。名前が消えたファイルが一覧に残っていれば注意だけ出し（--prune で外す。足さない）、一覧は減る向きにだけ動かす。台帳（data-readers.md）が拾わない model_id の値と JSON の鍵を文字列で見る。git ls-files のソースだけを読み、DB に触れない"
+      "guards": "止める予定の列（基盤の計画 R2、docs/design/legacy-prediction-cleanup/plan.md の R-0・R-0b。races の旧い荒れ度の5列と API の鍵 recommendedModel）の名前が出てくるファイルを legacy-prediction-readers.json の一覧より増やさないこと。名前が消えたファイルが一覧に残っていれば注意だけ出し（--prune で外す。足さない）、一覧は減る向きにだけ動かす。R1 の名前（safeBet・upsetFocus・prediction_odds・ai_score_* 等）は /holmes（tinaba の担当）が読むので見ず、一覧に戻らないことを自己検査で確かめる（オーナー 2026-10-28）。git ls-files のソースだけを読み、DB に触れない"
     },
     {
       "script": "verify-lib-index.js",
