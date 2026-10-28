@@ -75,7 +75,7 @@ export default function RacerConditionStats({ history }) {
             <tr>
               <th>条件</th>
               <th>出走数</th>
-              <th>勝率</th>
+              <th>1着率</th>
               <th>2連率</th>
               <th>3連率</th>
             </tr>
