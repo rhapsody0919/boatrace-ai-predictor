@@ -1,7 +1,7 @@
 {
   "$comment": [
     "止める予定の予想・列の名前が出てくるファイルの一覧（基盤の計画 R1・R2、docs/design/legacy-prediction-cleanup/plan.md の R-0）。",
-    "verify-legacy-prediction-readers.js（ci）が、一覧に無いファイルに名前が出てきたら落とす（新しい読み手・書き手を作らない）。名前が消えたファイルが残っていても落とす（node scripts/maintenance/verify-legacy-prediction-readers.js --prune で外す）。",
+    "verify-legacy-prediction-readers.js（ci）が、一覧に無いファイルに名前が出てきたら落とす（新しい読み手・書き手を作らない）。名前が消えたファイルが残っていると注意を出す（落とさない。node scripts/maintenance/verify-legacy-prediction-readers.js --prune で外す）。",
     "手でファイルを足さない。止める作業の PR で減らすだけ。名前を足す・消すのは plan.md を直す PR で。",
     "対象: git ls-files の src・api・scripts・sns-video-studio の .js .jsx .mjs .cjs .ts .tsx .py .sql .sh（部分一致）。docs は見ない。"
   ],

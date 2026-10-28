@@ -5,9 +5,9 @@
  * 設計: docs/design/legacy-prediction-cleanup/plan.md（R-0）。止める物は、廃止した3モデルのうち safeBet・upsetFocus の
  * 予想、prediction_odds、race_entries.ai_score_*（R1）と、races の旧い荒れ度の5列（R2）。止める作業の途中で
  * 新しい読み手が増えると、止めた日に壊れる。そこで、名前の文字列が出てくるファイルの一覧を
- * legacy-prediction-readers.json に固定し、次の2つで落とす。
- *   1. 一覧に無いファイルに名前が出てきた（新しい読み手・書き手。止める物を使わずに書く）
- *   2. 一覧にあるファイルから名前が消えた・ファイルが無くなった（一覧が古い。--prune で一覧から外す）
+ * legacy-prediction-readers.json に固定し、次で見る。
+ *   1. 落とす: 一覧に無いファイルに名前が出てきた（新しい読み手・書き手。止める物を使わずに書く）
+ *   2. 知らせるだけ: 一覧にあるファイルから名前が消えた・ファイルが無くなった（--prune で一覧から外す。他のレーンの PR を止めない）
  * 一覧は減る向きにだけ動く。台帳（data-readers.md）は表・列・RPC の名前で見るので、model_id の値と JSON の鍵
  * （predictions.safeBet 等）は拾わない。これはその穴を文字列で埋める。
  *
@@ -169,9 +169,11 @@ function main() {
     lines.push(
       `${file} に ${token} が出てくる。止める予定の物（docs/design/legacy-prediction-cleanup/plan.md）なので、新しい読み手・書き手を作らない。今の物（standard・unified の予想、unified の volatilityPercentile、race_odds）を使う`,
     );
+  // 消えた側は落とさず知らせるだけ。止める物に触れる他のレーンの PR（例 BOA-1110 の段階2）を、
+  // 一覧の手入れのために止めない。残った行は、その名前がそのファイルにまた出てくるのを見逃すだけ
   for (const { token, file } of stale)
-    lines.push(
-      `${file} から ${token} が消えた（またはファイルが無い）。node ${SELF} --prune で一覧から外す`,
+    console.warn(
+      `verify-legacy-prediction-readers: 注意: ${file} から ${token} が消えた（またはファイルが無い）。node ${SELF} --prune で一覧から外せる`,
     );
   for (const token of unsorted)
     lines.push(`${LIST_FILE} の ${token} の files が名前の順でない`);
