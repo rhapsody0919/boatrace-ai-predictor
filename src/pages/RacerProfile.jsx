@@ -175,7 +175,11 @@ export default function RacerProfile() {
 
         {!loading && !error && (
           <>
-            <RacerProfileHeader profile={data.profile} grade={data.grade} />
+            <RacerProfileHeader
+              profile={data.profile}
+              grade={data.grade}
+              racerId={racerId}
+            />
             <RacerProfileCard profile={data.profile} racerId={racerId} />
             <RacerMotorStatusCard status={motorStatus} />
             <RacerPerformanceStats

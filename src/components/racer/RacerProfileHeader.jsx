@@ -1,14 +1,15 @@
 import "./RacerProfileHeader.css";
-import { splitRacerName } from "../../utils/racerName";
+import { formatRacerKana } from "../../utils/racerName";
 
 /**
  * 選手個別ページのヒーロー部分（氏名・よみ・支部・級別）
  * よみは「選手名のよみ」で探す人と同姓同名の見分けのために出す（GS00、2026-10-28）
+ * プロフィールが無い選手は見出しに登録番号を入れ、全員が同じ見出しにならないようにする
  */
-export default function RacerProfileHeader({ profile, grade }) {
-  const name = profile?.name?.replace(/\s+/g, "") ?? "選手情報なし";
-  // name_kana は姓と名の間に全角スペースが入るので、半角1つでつなぎ直す
-  const kana = splitRacerName(profile?.name_kana).join(" ");
+export default function RacerProfileHeader({ profile, grade, racerId }) {
+  const name =
+    profile?.name?.replace(/\s+/g, "") ?? `登録番号${racerId}の選手情報なし`;
+  const kana = formatRacerKana(profile?.name_kana);
 
   return (
     <div className="racer-profile-header">

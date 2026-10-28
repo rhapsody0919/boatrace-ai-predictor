@@ -75,3 +75,13 @@ test("取得の失敗は1回だけ取り直し、2回目が通れば選手のペ
   await expect(page.locator(".racer-profile-header h1")).toHaveText("池田浩二");
   await expect(page.locator(".racer-profile-error")).toHaveCount(0);
 });
+
+test("プロフィールが無い選手の見出しにも登録番号を入れる（全員が同じ見出しにならない）", async ({
+  page,
+}) => {
+  // 3081 はプロフィール未取得の選手（smoke の「プロフィール未取得の選手ページ」と同じ）
+  await page.goto("/racer/3081");
+  await expect(page.locator(".racer-profile-header h1")).toHaveText(
+    "登録番号3081の選手情報なし",
+  );
+});
