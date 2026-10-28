@@ -33,6 +33,18 @@ test("現役の A1 選手（ニュース無し）は index にし、成績の語
   await expect(page.locator(".racer-profile-header")).not.toContainText("競艇");
 });
 
+test("取得に失敗した選手ページは noindex にしない（失敗を「index にしない選手」に化けさせない）", async ({
+  page,
+}) => {
+  // プロフィールの取得を落とす。Googlebot の描画で取得が落ちると、条件を満たす選手まで noindex になっていた
+  await page.route("**/rest/v1/racer_profiles*", (route) => route.abort());
+  await page.goto("/racer/3941");
+  await expect(page.locator(".racer-profile-error")).toBeVisible();
+  // 初期値（index.html の静的 robots）で先に通らないよう、描画後の副作用が終わってから1回だけ見る
+  await page.waitForLoadState("networkidle");
+  expect(await robotsOf(page)).not.toContain("noindex");
+});
+
 test("B1 選手（ニュース無し）は noindex のまま", async ({ page }) => {
   await page.goto("/racer/2878");
   await expect(page.locator(".racer-profile-header h1")).toBeVisible();

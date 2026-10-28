@@ -25,7 +25,8 @@ test.describe("選手ページの表とグラフ（BOA-583）", () => {
       .filter({ has: page.locator("h3", { hasText: "平均ST" }) })
       .first();
     await expect(stCard.locator("h3")).toHaveText("平均ST（公式）");
-    await expect(stCard).toContainText("の成績（勝率と同じ期の公式の期別成績）・全会場");
+    await expect(stCard).toContainText("の公式の期別成績・全会場");
+    await expect(stCard).not.toContainText("勝率と同じ期");
     await expect(stCard).toContainText("直近30走:");
     await expect(stCard.locator(".racer-stat-value")).toHaveText(/^0\.\d{2}$/);
   });

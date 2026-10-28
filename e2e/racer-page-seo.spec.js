@@ -60,6 +60,11 @@ test("取得に失敗した画面にも登録番号を入れる", async ({ page 
     "登録番号3941",
   );
   await expect(page).toHaveTitle("選手 登録番号3941 | 龍神レーダー");
+  // 内部のエラー文は出さず、再読み込みと選手一覧への道を出す（ファン評価 GS00 2周目）
+  const errorBox = page.locator(".racer-profile-error");
+  await expect(errorBox).not.toContainText("Failed");
+  await expect(errorBox.locator("button")).toBeVisible();
+  await expect(errorBox.locator("a[href='/racers']")).toBeVisible();
 });
 
 test("取得の失敗は1回だけ取り直し、2回目が通れば選手のページを出す", async ({
@@ -106,4 +111,14 @@ test("会場別・枠番別の表の1着の割合は「1着率」と書く（「
   const headers = page.locator(".racer-performance-stats th");
   await expect(headers.filter({ hasText: "1着率" }).first()).toBeVisible();
   await expect(headers.filter({ hasText: /^勝率$/ })).toHaveCount(0);
+});
+
+test("F率には期間と走数を添え、公式の期別成績の F の回数と別の集計だと分かるようにする", async ({
+  page,
+}) => {
+  // 3941 は 2025年12月以降に F がある（ファン評価 GS00 3周目で「F率 0.4%」と公式の F0回が食い違って見えた）
+  await page.goto("/racer/3941");
+  const fRate = page.locator(".racer-stat-sub", { hasText: "F率" });
+  await expect(fRate).toContainText("当サイト集計・2025年12月以降");
+  await expect(fRate).toContainText(/・\d+走/);
 });
