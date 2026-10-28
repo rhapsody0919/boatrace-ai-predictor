@@ -84,4 +84,26 @@ test("プロフィールが無い選手の見出しにも登録番号を入れ�
   await expect(page.locator(".racer-profile-header h1")).toHaveText(
     "登録番号3081の選手情報なし",
   );
+  // 次に進む先（選手一覧）を案内する
+  await expect(
+    page.locator(".racer-profile-card-empty a[href='/racers']"),
+  ).toBeVisible();
+});
+
+test("数字でない番号は DB に問い合わせず「該当なし」の画面にする（内部のエラー文を出さない）", async ({
+  page,
+}) => {
+  await page.goto("/racer/abc");
+  await expect(page.locator(".racer-profile-card-empty")).toBeVisible();
+  await expect(page.locator(".racer-profile-error")).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("invalid input");
+});
+
+test("会場別・枠番別の表の1着の割合は「1着率」と書く（「勝率」は公式の点の勝率と紛れる）", async ({
+  page,
+}) => {
+  await page.goto("/racer/3941");
+  const headers = page.locator(".racer-performance-stats th");
+  await expect(headers.filter({ hasText: "1着率" }).first()).toBeVisible();
+  await expect(headers.filter({ hasText: /^勝率$/ })).toHaveCount(0);
 });

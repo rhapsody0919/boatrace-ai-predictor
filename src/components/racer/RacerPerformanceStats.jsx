@@ -688,7 +688,7 @@ export default function RacerPerformanceStats({
           </h3>
           <StatBreakdownTable
             translateNo
-            headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
+            headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
             rows={venueStats.map((row) => ({
               key: row.venue_code,
               onClick: () => setVcVenue(String(row.venue_code)),
@@ -714,7 +714,7 @@ export default function RacerPerformanceStats({
             ※実際の進入コース変化（前づけ）は現時点では区別できないため、発走前に決まる枠番（艇番）基準で表示しています
           </p>
           <StatBreakdownTable
-            headers={["枠番", "出走数", "勝数", "勝率", "2連率", "3連率"]}
+            headers={["枠番", "出走数", "勝数", "1着率", "2連率", "3連率"]}
             rows={courseStats.map((row) => ({
               key: row.course,
               onClick: () => setVcBoat(String(row.course)),
@@ -739,7 +739,7 @@ export default function RacerPerformanceStats({
           </h3>
           {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
-              headers={["枠番", "出走数", "勝率", "2連率", "3連率"]}
+              headers={["枠番", "出走数", "1着率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
                 key: row.key,
                 onClick: () => setVcBoat(String(row.key)),
@@ -770,7 +770,7 @@ export default function RacerPerformanceStats({
           {vcCrossData && vcCrossData.length > 0 ? (
             <StatBreakdownTable
               translateNo
-              headers={["会場", "出走数", "勝率", "2連率", "3連率"]}
+              headers={["会場", "出走数", "1着率", "2連率", "3連率"]}
               rows={vcCrossData.map((row) => ({
                 key: row.key,
                 onClick: () => setVcVenue(String(row.key)),
@@ -846,7 +846,7 @@ export default function RacerPerformanceStats({
       {vcVenueFixed && vcBoatFixed && vcData && vcData.n > 0 && (
         <div className="racer-stat-cards-grid racer-vc-cards-grid">
           <div className="racer-stat-card">
-            <h3>勝率</h3>
+            <h3>1着率</h3>
             <span className="racer-stat-value">
               {vcData.winRate !== null ? formatPercent(vcData.winRate) : "-"}
             </span>

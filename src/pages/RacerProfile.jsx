@@ -25,8 +25,19 @@ import { errorMessageOf } from "../utils/errorMessage.js";
 
 const SITE_URL = "https://www.boat-ai.jp";
 
+// 登録番号は数字だけ。数字でない URL（/racer/abc）は DB に問い合わせず「該当する選手なし」にする
+// （問い合わせると型のエラーの英文がそのまま画面に出た。ファン評価 GS00 1周目）
+const isRacerIdFormat = (racerId) => /^\d+$/.test(racerId ?? "");
+const NOT_FOUND_PAGE_DATA = Object.freeze({
+  profile: null,
+  grade: null,
+  latestRaceDate: null,
+  news: [],
+});
+
 export default function RacerProfile() {
   const { racerId } = useParams();
+  const validId = isRacerIdFormat(racerId);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,8 +51,10 @@ export default function RacerProfile() {
     let cancelled = false;
     // 失敗したら1回だけ取り直す。Googlebot の描画で取得が落ちると、全選手が同じ「失敗の画面」になり
     // 1ページの重複として扱われた（Search Console の URL 検査 10/25、/racer/4760 に76件）
-    getRacerPageData(racerId)
-      .catch(() => getRacerPageData(racerId))
+    const load = validId
+      ? getRacerPageData(racerId).catch(() => getRacerPageData(racerId))
+      : Promise.resolve(NOT_FOUND_PAGE_DATA);
+    load
       .then((result) => {
         if (cancelled) return;
         setData(result);
@@ -55,11 +68,11 @@ export default function RacerProfile() {
     return () => {
       cancelled = true;
     };
-  }, [racerId]);
+  }, [racerId, validId]);
 
   useEffect(() => {
     let cancelled = false;
-    getRacerStats(racerId)
+    (validId ? getRacerStats(racerId) : Promise.resolve(null))
       .then((result) => {
         if (cancelled) return;
         setStats(result);
@@ -73,7 +86,7 @@ export default function RacerProfile() {
     return () => {
       cancelled = true;
     };
-  }, [racerId]);
+  }, [racerId, validId]);
 
   useEffect(() => {
     // racerId変更時に前選手のmotorStatusを残さずリセットする。
@@ -83,7 +96,7 @@ export default function RacerProfile() {
     // 防御的に対応。RacerPerformanceStats.jsxのフィルタリセットと同じ考え方）
     setMotorStatus(null);
     let cancelled = false;
-    getRacerCurrentMotorStatus(racerId)
+    (validId ? getRacerCurrentMotorStatus(racerId) : Promise.resolve(null))
       .then((result) => {
         if (cancelled) return;
         setMotorStatus(result);
@@ -95,7 +108,7 @@ export default function RacerProfile() {
     return () => {
       cancelled = true;
     };
-  }, [racerId]);
+  }, [racerId, validId]);
 
   const hasNews = (data?.news?.length ?? 0) > 0;
   // インデックス判定は sitemap と共通（src/utils/racerIndexPolicy.js）。ニュースがある選手、または
