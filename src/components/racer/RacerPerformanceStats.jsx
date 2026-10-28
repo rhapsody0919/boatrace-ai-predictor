@@ -707,11 +707,11 @@ export default function RacerPerformanceStats({
       {!vcVenueFixed && !vcBoatFixed && hasCourseStats && (
         <div className="racer-technique-profile">
           <h3>
-            枠番別成績（全会場計）
+            枠番別成績（当サイト集計・2025年12月以降・全会場計）
             <span className="h3-hint">枠番をクリックで絞り込み →</span>
           </h3>
           <p className="racer-vc-note">
-            ※実際の進入コース変化（前づけ）は現時点では区別できないため、発走前に決まる枠番（艇番）基準で表示しています
+            ※何号艇で出たかで分けた成績です。実際に入ったコースで分けた成績は、上の「進入コース別成績（公式）」にあります
           </p>
           <StatBreakdownTable
             headers={["枠番", "出走数", "勝数", "1着率", "2連率", "3連率"]}

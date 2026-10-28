@@ -1059,6 +1059,11 @@
       "guards": "選手ニュースFR2の題・要約の定型文、返却キー2つ、入力表記の保持と禁止語の非追加。空・undefinedは仕様未定としてKNOWN_GAPSに出力"
     },
     {
+      "script": "verify-racer-official-period-stats.js",
+      "tier": "ci",
+      "guards": "選手ページの公式の期別成績・進入コース別成績（src/utils/racerOfficialPeriodStats.js）。崩れると前期・後期の取り違え、進入の少ないセルの率、率の平均での合算が画面に出る"
+    },
+    {
       "script": "verify-racer-profile-sync.js",
       "tier": "ci",
       "guards": "選手プロフィール・期別成績ジョブ（scripts/lib/racerProfileSync.js）"

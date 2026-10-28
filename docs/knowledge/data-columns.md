@@ -27,7 +27,7 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - 本番進入を表示する新カードは、統計用 actualCourse だけでなく既存の表示用 entryCourse の優先順位を引き継ぐ。当日の ST 進入が取れていても、K ファイル待ちの actualCourse は null（2026-10-16、2026-10-16-review-20261016-06.md）
 
 ## 公式ファイル・公式ページと取得の時点
-- 公式の K/B ファイルは 2019-04 から全期間を取り込み済み（kb_archive_* テーブル、kb_archive_boats 約223万行）（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-403・BOA-422）
+- 公式の K/B ファイルは kb_archive_* に 2019-04-01〜2025-12-02 を取り込み済み（kb_archive_boats 約221万行）。2025-12-03 以降は race_entries・race_results 等にあり、kb は作りの上で止めている（kb-backfill.js の MAIN_TABLES_START、書き手の cron なし）。kb_archive は匿名で読めず、racer_id の索引も無い（2026-10-28、system-architect・本番の読み取り。元は 2026-09-25、BOA-403・BOA-422）
 - B ファイルの体重は登録体重（整数）、race_entries.weight_kg は当日の体重（小数）で別の値。player_name は表記、local_win_rate は取得の時点が違う。B ファイルで上書きする前に同じ値かを確かめる（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、PR #840）
 - K ファイルは開催日の夜〜翌日に公開され、kfile-sync は JST 07:00・12:00 に動く。前日の進入コース（race_results.actual_course_*）を使う集計は当日の昼より後にそろう（2026-09-25、memory morning_data_digest_2026_09_25、ADR-0066）
 - 公式の直前情報（beforeinfo）と結果（raceresult）のページは HTML の作りが別。beforeinfo は .table1 の2番目→tbody 6つ→各4行で .table1_boatImage1 が無い。raceresult は .table1_boatImage1 で艇の情報を取れる（memory technical_supabase_scraping_turnpred_notes）
