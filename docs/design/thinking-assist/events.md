@@ -64,8 +64,8 @@
 
 | パラメータ | 登録日 |
 |---|---|
-| assist_bet_type | 未登録 |
-| assist_bet_from | 未登録 |
+| assist_bet_type | 2026-10-28 |
+| assist_bet_from | 2026-10-28 |
 | アシストのガイドの段 | イベント | 思考アシストのガイドで出した段（1〜） | `assist_guide_step` |
 | アシストのスリットの形 | イベント | 思考アシストの展開レンズで選んだスリットの形（d2・kado 等） | `assist_form` |
 
