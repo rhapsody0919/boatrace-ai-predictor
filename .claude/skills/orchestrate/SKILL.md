@@ -118,7 +118,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/patrol.sh"
   - 止まる指摘が出たら直して、その観点の審査を回し直す
   - 判断が要るもの（事業・法務・ブランドの表記、「競艇」の例外、誇大・的中率・回収率の表現、原稿の主張を変える改稿）は F に当たらず、ユーザーに回す
   - ただし記事の JSON の `metaTitle`・`metaDescription` の「競艇」は例外で、F で出してよい（オーナー決定 2026-10-20、`.claude/rules/code-style.md` 例外1 と同じ扱い。関門は `scripts/content/content-pr-gate.json` の `kyoteiMetaAllowedKeys`）。本文・見出し・画面の title・description・tags・category の「競艇」は今までどおり F に当たらない。役所への営業の前に外す暫定の措置なので、F でマージした記事の PR 本文に「meta に競艇あり: <記事 id>」を書く（関門の結果の `metaKyotei` の id）
-  - sns-hub（SNS 投稿）とは別の扱い。SNS 投稿の最終送信は引き続きユーザーの承認。例外（機械の検査が通れば自動で送るもの。全貌動画・/today の X 投稿・優勝戦の思考投稿 `finals_image`・数字で見たら `research_image`）の範囲と条件は `.claude/CLAUDE.md`「確認のバッチ化を標準運用にする」の例外が正本
+  - sns-hub（SNS 投稿）とは別の扱い。SNS 投稿の最終送信は引き続きユーザーの承認。例外（機械の検査が通れば自動で送るもの。全貌動画・/today の X 投稿・優勝戦の思考投稿 `finals_image`・数字で見たら `research_image`・/today の思考投稿 `today_thinking_image`・`today_thinking_reply`）の範囲と条件は `.claude/CLAUDE.md`「確認のバッチ化を標準運用にする」の例外が正本
 
 - G. ユーザーが中身を直接決めた .claude の変更を、決定どおりに書いた PR（2026-10-13 ユーザー決定）。自動モード以外のセッションで書かれ、編集の許可をユーザーが直接出したもの。オーケストレーターが差分を読み、決定から外れた語・範囲が入っていないことを確かめ、CI が全部緑ならマージする。マージの承認を改めて取らない。外れていればユーザーに回す
 
