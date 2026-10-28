@@ -2,6 +2,8 @@
  * RacerStructuredData - 選手個別ページの構造化データ（schema.org/Person JSON-LD）
  * VenueStructuredData.jsxと同じ形式を踏襲。プロフィール未取得の選手では何も出力しない
  */
+import { splitRacerName } from "../utils/racerName";
+
 const SITE_URL = "https://www.boat-ai.jp";
 
 export default function RacerStructuredData({ profile, racerId }) {
@@ -11,6 +13,12 @@ export default function RacerStructuredData({ profile, racerId }) {
     "@context": "https://schema.org",
     "@type": "Person",
     name: profile.name?.replace(/\s+/g, ""),
+    // 画面に出している値だけを入れる（登録番号・よみ・支部。本文と食い違わせない）
+    identifier: String(racerId),
+    ...(profile.name_kana
+      ? { alternateName: splitRacerName(profile.name_kana).join(" ") }
+      : {}),
+    jobTitle: "ボートレーサー",
     ...(profile.birth_date ? { birthDate: profile.birth_date } : {}),
     ...(profile.hometown ? { homeLocation: profile.hometown } : {}),
     url: `${SITE_URL}/racer/${racerId}`,

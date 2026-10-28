@@ -38,7 +38,10 @@ export default function RacerProfile() {
 
   useEffect(() => {
     let cancelled = false;
+    // 失敗したら1回だけ取り直す。Googlebot の描画で取得が落ちると、全選手が同じ「失敗の画面」になり
+    // 1ページの重複として扱われた（Search Console の URL 検査 10/25、/racer/4760 に76件）
     getRacerPageData(racerId)
+      .catch(() => getRacerPageData(racerId))
       .then((result) => {
         if (cancelled) return;
         setData(result);
@@ -118,12 +121,21 @@ export default function RacerProfile() {
   const displayName = data?.profile?.name?.replace(/\s+/g, "") ?? "選手";
   // title・description は画面に表示されないメタ情報なので「競艇」を含めてよい（code-style.md 例外1の暫定措置。
   // 役所への営業前に外す）。選手名＋成績で検索されるので、成績の語を前に置く（集客レーン、2026-10-02）
+  // プロフィールが無い・取得中・失敗のときも登録番号を入れ、選手ごとに別のページにする（同じ中身の重複を避ける）
   const title = data?.profile
     ? `${displayName}（競艇）選手の成績・勝率・決まり手 | 龍神レーダー`
-    : `${displayName} 選手プロフィール | 龍神レーダー`;
+    : `選手 登録番号${racerId} | 龍神レーダー`;
+  // description は登録番号・支部・級を入れて選手ごとに変える（全選手が同じ文だった。seo-marketer GS00）
+  const who = [
+    `登録番号${racerId}`,
+    data?.profile?.branch ? `${data.profile.branch}支部` : null,
+    data?.grade ?? null,
+  ]
+    .filter(Boolean)
+    .join("・");
   const description = data?.profile
-    ? `${displayName}選手の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別成績、枠番別成績、決まり手傾向とプロフィール（支部・出身地等）をまとめて紹介。`
-    : "選手プロフィール | 龍神レーダー";
+    ? `${displayName}選手（${who}）の競艇（ボートレース）成績データ。全国勝率・当地勝率の推移、平均ST、会場別・枠番別成績、決まり手、直近のレース一覧とプロフィール。`
+    : `登録番号${racerId}の選手のページ | 龍神レーダー`;
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
   // AI クローラー向けスナップショット（scripts/generate-ai-snapshots.js、BOA-848）が保存してよいかの目印。
   // プロフィールと成績の両方が揃ったときだけ付ける。成績の取得に失敗したページは保存しない（SPA の外枠に戻る）
@@ -150,16 +162,25 @@ export default function RacerProfile() {
           <Link to="/racers">選手一覧へ →</Link>
         </nav>
 
-        {loading && <p className="racer-profile-loading">読み込み中...</p>}
-        {error && <p className="racer-profile-error">{error}</p>}
+        {loading && (
+          <p className="racer-profile-loading">
+            登録番号{racerId}の選手を読み込み中...
+          </p>
+        )}
+        {error && (
+          <p className="racer-profile-error">
+            登録番号{racerId}の選手を読み込めませんでした（{error}）
+          </p>
+        )}
 
         {!loading && !error && (
           <>
             <RacerProfileHeader profile={data.profile} grade={data.grade} />
-            <RacerProfileCard profile={data.profile} />
+            <RacerProfileCard profile={data.profile} racerId={racerId} />
             <RacerMotorStatusCard status={motorStatus} />
             <RacerPerformanceStats
               racerId={racerId}
+              racerName={data.profile ? displayName : null}
               stats={stats}
               loading={statsLoading}
               todayVenueCode={todayVenueCode}

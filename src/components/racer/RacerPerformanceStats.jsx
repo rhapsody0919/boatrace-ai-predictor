@@ -137,6 +137,7 @@ const slashDate = (ymd) => ymd.split("-").map(Number).join("/");
 
 export default function RacerPerformanceStats({
   racerId,
+  racerName,
   stats,
   loading,
   todayVenueCode,
@@ -446,10 +447,19 @@ export default function RacerPerformanceStats({
     hasCourseStats ||
     hasVenueStats;
 
+  // 見出しに選手名を入れる（「選手名 成績」の語を見出しにも出す。seo-marketer GS00）
+  const heading = racerName ? (
+    <>
+      <span translate="no">{racerName}</span>の成績・調子
+    </>
+  ) : (
+    "成績・調子"
+  );
+
   if (loading) {
     return (
       <div className="racer-performance-stats">
-        <h2>成績・調子</h2>
+        <h2>{heading}</h2>
         <p className="racer-stat-loading">読み込み中...</p>
       </div>
     );
@@ -459,7 +469,7 @@ export default function RacerPerformanceStats({
 
   return (
     <div className="racer-performance-stats">
-      <h2>成績・調子</h2>
+      <h2>{heading}</h2>
 
       {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが
           空（出走実績が薄い選手）でも全会場を選べるようにするため、この
