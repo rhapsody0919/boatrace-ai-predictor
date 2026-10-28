@@ -241,8 +241,9 @@ export const ASSIST_COPY = Object.freeze({
   // 点数のうちオッズのある点数（オッズの無い組があるときだけ）
   pointsPriced: (points, priced) =>
     priced < points ? `${points}点（オッズあり${priced}点）` : `${points}点`,
-  // 図の「1着人気」の見出し（どの券種の合成か。ファン評価2周目 P2-2）
-  boardBetTitle: (type) => `1着になる組のオッズ（${type}の合成）`,
+  // 図の「1着人気」の見出し。券種によらずいつも3連単の合成（BOA-990、2026-10-28 オーナー決定 案 c）。
+  // 公式の単勝人気とは別の値だと分かるように書く
+  boardBetTitle: "1着になる組のオッズ（3連単の合成。公式の単勝人気とは別）",
   // 図の1着人気で、オッズの無い組を除いて合成した艇
   boardMissingFirst: (boats) =>
     `${boats.join("・")}号艇の1着人気は、オッズの無い組を除いた合成`,
@@ -415,12 +416,10 @@ export const ASSIST_COPY = Object.freeze({
   pastLabel: (target = 1) => `過去の${TARGET_LABEL[target]}`,
   pastText: (k, n) =>
     `${Math.round((k / n) * 100)}%（${k.toLocaleString("ja-JP")}/${n.toLocaleString("ja-JP")}）`,
-  // 1着以外を選んだときの人気の札（人気は1着になる組のオッズのまま。D-44 (2)）
-  // 何の値か行の近くで分かるよう、券種の合成と書く（BOA-990 ファン評価3周目 P2、2026-10-27 オーナー「推奨通りで良い」）
-  popLabel: (target = 1, type = "3連単") =>
-    target === 1
-      ? `1着人気（${type}の合成で）`
-      : `人気（1着、${type}の合成で）`,
+  // 図の行の人気の札。着順を替えても値は1着になる組のオッズのまま（D-44 (2)）。
+  // 券種によらずいつも3連単の合成で、公式の単勝人気と別物と分かる名前にする（BOA-990、2026-10-28 オーナー決定 案 c。
+  // 単勝のデータの直し BOA-1174 が済めば公式の単勝オッズ＝案 d に移す予定）
+  popLabel: "3連単から見た1着人気",
   // 優勝戦・準優勝戦の日でも、展開はラウンドを問わずに集める（形・進入の件数が要るため）。そうと分かる呼び名にする
   flowScopeLabel: (final) =>
     final ? "全国・級の並びが同じ（予選も含む）" : "全国・級の並びが同じ",

@@ -298,10 +298,6 @@ function ThinkingAssistBody() {
   const headerHeight = useAppHeaderHeight();
   const finalRound = Boolean(data.round);
   const trifecta = data.odds.data?.trifecta ?? null;
-  // 買い目レンズの図の「1着人気」（1着になる組の合成）は、選んでいる券種のオッズで出す（BOA-990 ファン評価1周目 P2-2）。
-  // 連複は着順の無い組なので、同じ艇の数の連単（3連複→3連単、2連複→2連単）で出す（boardId。行の言葉に券種が出る）
-  const boardTypeId = assistBetType(state.betType).boardId;
-  const boardOdds = data.odds.data?.byType?.[boardTypeId]?.odds ?? null;
   const post = data.stage === "post";
   const factsAll = v16Off ? null : (data.facts.data?.facts ?? null);
   const v16Exhibition = data.facts.data?.exhibition ?? null;
@@ -443,8 +439,9 @@ function ThinkingAssistBody() {
         stage: data.stage,
         metric: state.metric,
         racers,
-        trifecta: boardOdds,
-        betTypeLabel: ASSIST_COPY.betTypeLabels[boardTypeId],
+        // 図の「1着人気」は券種によらずいつも3連単の合成（券種のタブで順位が動かない。BOA-990、
+        // 2026-10-28 オーナー決定 案 c。公式の単勝オッズ＝案 d は BOA-1174 の後）
+        trifecta,
         finalRound,
         hasToday: today != null,
         pastWin,
@@ -458,8 +455,7 @@ function ThinkingAssistBody() {
       state.metric,
       data.stage,
       racers,
-      boardOdds,
-      boardTypeId,
+      trifecta,
       finalRound,
       today,
       pastWin,

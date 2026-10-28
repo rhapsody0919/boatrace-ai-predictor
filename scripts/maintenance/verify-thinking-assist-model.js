@@ -896,11 +896,11 @@ check(
   const r2 = row(2);
   check(
     "買い目: 2着以内を選ぶと「人気（1着）」を薄く、「過去の2着以内 70%（83/119）」。1着では「1着人気」「過去の1着」",
-    r2[0].label === "人気（1着、3連単の合成で）" &&
+    r2[0].label === "3連単から見た1着人気" &&
       r2[0].muted === true &&
       r2[1].label === "過去の2着以内" &&
       r2[1].text === "70%（83/119）" &&
-      r1[0].label === "1着人気（3連単の合成で）" &&
+      r1[0].label === "3連単から見た1着人気" &&
       r1[0].muted === false &&
       r1[1].label === "過去の1着",
     JSON.stringify({ r1, r2 }),
@@ -1044,15 +1044,13 @@ check(
   );
   // BOA-990 ②: 連複の表記は「=」、組の表記も「=」。タブの並びは 3連単｜3連複｜2連単｜2連複
   check(
-    "券種: 3連複は 1=234=2345、2連複は 1=234。組の表記 1=2=3。並びは承認モックの順。連複の図の1着人気は同じ艇の数の連単",
+    "券種: 3連複は 1=234=2345、2連複は 1=234。組の表記 1=2=3。並びは承認モックの順。",
     betForm(B([1], [2, 3, 4], [2, 3, 4, 5]), 3, false) === "1=234=2345" &&
       betForm(B([1], [2, 3, 4], [2, 3, 4, 5]), 2, false) === "1=234" &&
       ticketLabel("1-2-3", false) === "1=2=3" &&
       ticketLabel("1-2", true) === "1-2" &&
       JSON.stringify(ASSIST_BET_TYPES.map((t) => t.id)) ===
         JSON.stringify(["trifecta", "trio", "exacta", "quinella"]) &&
-      assistBetType("trio").boardId === "trifecta" &&
-      assistBetType("quinella").boardId === "exacta" &&
       assistBetType("trio").ordered === false &&
       assistBetType("quinella").legs === 2,
   );

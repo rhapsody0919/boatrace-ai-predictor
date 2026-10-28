@@ -752,6 +752,13 @@
   margin-top: var(--spacing-1);
 }
 
+/* 連複の候補の札の上の「順不同」（BOA-990 ②） */
+.ta-pos3-cap {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
 .ta-pos3 button {
   border: 1px solid var(--border-hairline);
   background: transparent;

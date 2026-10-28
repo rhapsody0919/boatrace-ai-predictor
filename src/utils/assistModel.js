@@ -538,7 +538,6 @@ export function boardModel({
   target = 1,
   stBasis = "course",
   stMissing = false,
-  betTypeLabel = "3連単",
 }) {
   // 過去の{着順}（件数は割合の括弧。BOA-831 承認モック v2）
   const pastNum = (past) => ({
@@ -779,7 +778,7 @@ export function boardModel({
   if (!comp.size)
     return {
       kind: "bet",
-      title: ASSIST_COPY.boardBetTitle(betTypeLabel),
+      title: ASSIST_COPY.boardBetTitle,
       left: "",
       right: "",
       good: null,
@@ -799,7 +798,7 @@ export function boardModel({
   const hiOdds = Math.max(300, sorted[sorted.length - 1]);
   return {
     kind: "bet",
-    title: ASSIST_COPY.boardBetTitle(betTypeLabel),
+    title: ASSIST_COPY.boardBetTitle,
     missingFirst: missingFirstBoats(
       trifecta,
       racers.filter((r) => !r.absent).map((r) => r.boat),
@@ -820,8 +819,8 @@ export function boardModel({
         nums: [
           c != null && {
             metric: null,
-            label: ASSIST_COPY.popLabel(target, betTypeLabel),
-            short: ASSIST_COPY.popLabel(target, betTypeLabel),
+            label: ASSIST_COPY.popLabel,
+            short: ASSIST_COPY.popLabel,
             text: `${1 + sorted.filter((o) => o < c).length}番（${c.toFixed(1)}倍）`,
             aria: null,
             best: false,
@@ -909,8 +908,7 @@ export function buildRacers({
  * （3連単｜3連複｜2連単｜2連複。拡連複は ③ で足す）。
  * legs は使う段の数、ordered は着順を問うか（連複は false。組は昇順、表記は「=」）、dataKey は getRaceOddsSnapshots・
  * getRaceFinalOdds のキー、combos は全通りの数（人気の注記）。
- * boardId は図の「1着人気」に使う券種。連複の組は着順を持たず「1着になる組」を作れないので、同じ艇の数の連単で出す
- * （行の言葉にその券種の名前が出る）
+ * 図の「1着人気」は券種によらずいつも3連単の合成（2026-10-28 オーナー決定 案 c。ThinkingAssistPage）
  */
 export const ASSIST_BET_TYPES = Object.freeze([
   Object.freeze({
@@ -919,7 +917,6 @@ export const ASSIST_BET_TYPES = Object.freeze([
     ordered: true,
     dataKey: "trifectaAll",
     combos: 120,
-    boardId: "trifecta",
   }),
   Object.freeze({
     id: "trio",
@@ -927,7 +924,6 @@ export const ASSIST_BET_TYPES = Object.freeze([
     ordered: false,
     dataKey: "trioAll",
     combos: 20,
-    boardId: "trifecta",
   }),
   Object.freeze({
     id: "exacta",
@@ -935,7 +931,6 @@ export const ASSIST_BET_TYPES = Object.freeze([
     ordered: true,
     dataKey: "exactaAll",
     combos: 30,
-    boardId: "exacta",
   }),
   Object.freeze({
     id: "quinella",
@@ -943,7 +938,6 @@ export const ASSIST_BET_TYPES = Object.freeze([
     ordered: false,
     dataKey: "quinellaAll",
     combos: 15,
-    boardId: "exacta",
   }),
 ]);
 export const ASSIST_BET_TYPE_IDS = ASSIST_BET_TYPES.map((t) => t.id);

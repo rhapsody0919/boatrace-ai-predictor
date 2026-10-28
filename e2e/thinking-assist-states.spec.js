@@ -2637,16 +2637,13 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
 
     await betTypes(page).getByRole("button", { name: "3連複", exact: true }).click();
     await expect(footer(page)).toContainText("3連複 1=234=2345（6点）");
-    // 図の艇の行の段の名前は「1艇目・2艇目・3艇目」。図の1着人気は着順のある3連単の合成で、行の言葉に券種が出る
+    // 図の艇の行の段の名前は「1艇目・2艇目・3艇目」で、札の近くに「順不同」（ファン評価1周目 P2-2）
     await expect(
       page.getByRole("button", { name: "2号艇を3艇目の候補に" }),
     ).toHaveAttribute("aria-pressed", "true");
-    await expect(
-      page
-        .getByRole("figure", { name: /レースの図/ })
-        .getByText(/1着人気（3連単の合成で）/)
-        .first(),
-    ).toBeVisible();
+    const pos2 = page.getByRole("group", { name: "2号艇の候補" });
+    await expect(pos2.locator(".ta-pos3-cap")).toHaveText("順不同");
+    await expect(pos2.getByRole("button", { name: "2号艇を1艇目の候補に" })).toHaveText("1艇目");
     await page
       .getByRole("button", { name: "マークシートを開く", exact: true })
       .click();
@@ -2822,8 +2819,9 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     ).toHaveCount(0);
   });
 
-  // ファン評価1周目 P2-2: 図の「1着人気」は選んでいる券種のオッズの合成（2連単は 1-x の5組）
-  test("2連単にすると、図の1着人気の合成オッズが2連単のオッズで出る", async ({
+  // 図の「1着人気」は券種によらずいつも3連単の合成（2026-10-28 オーナー決定 案 c）。2連単の 1-x を全部 5.0 倍に
+  // 書き換えても（2連単の合成なら1号艇が 1.0倍）、券種のタブで順位・倍率が動かない
+  test("券種のタブを替えても、図の「3連単から見た1着人気」の順位・倍率は動かない", async ({
     page,
   }) => {
     await page.route("**/rest/v1/race_odds?*", async (route) => {
@@ -2841,19 +2839,26 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     });
     await open(page);
     await lensTab(page, "買い目").click();
-    await betTypes(page).getByRole("button", { name: "2連単" }).click();
-    // 1-x の5組が全部 5.0 倍 → 合成 1.0 倍
+    const fig = page.getByRole("figure", { name: /レースの図/ });
+    const pops = () => fig.getByText(/^3連単から見た1着人気/).allInnerTexts();
+    await expect(fig.getByText(/^3連単から見た1着人気/)).toHaveCount(6);
+    const base = await pops();
+    expect(base.join()).not.toMatch(/（1\.0倍）/);
     await expect(
-      page
-        .getByRole("figure", { name: /レースの図/ })
-        .getByText(/1着人気（2連単の合成で） 1番.*1\.0倍/)
-        .first(),
-    ).toBeVisible();
+      fig.getByText("1着になる組のオッズ（3連単の合成。公式の単勝人気とは別）"),
+    ).toBeAttached();
+    for (const name of ["3連複", "2連単", "2連複", "3連単"]) {
+      await betTypes(page).getByRole("button", { name, exact: true }).click();
+      await expect(
+        betTypes(page).getByRole("button", { name, exact: true }),
+      ).toHaveAttribute("aria-pressed", "true");
+      expect(await pops()).toEqual(base);
+    }
   });
 
   // ファン評価2周目 P2-1: オッズの無い組（2026-10-27 蒲郡10R の 3-6・6-3 と同じ形）は点数を分け、組番を出す。
-  // P2-2: 図の見出しにどの券種の合成かを書く
-  test("オッズの無い組があると「5点（オッズあり4点）」・組番の注記、図の見出しに券種", async ({
+  // 図の1着人気はいつも3連単の合成なので、3連単の 3-6-x・6-3-x も欠くと3・6号艇に注記が出る
+  test("オッズの無い組があると「5点（オッズあり4点）」・組番の注記、図の見出しは3連単の合成", async ({
     page,
   }) => {
     await page.route("**/rest/v1/race_odds?*", async (route) => {
@@ -2863,6 +2868,8 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
         if (row.exacta_all) {
           delete row.exacta_all["3-6"];
           delete row.exacta_all["6-3"];
+          for (const k of Object.keys(row.trifecta_all ?? {}))
+            if (/^(3-6|6-3)-/.test(k)) delete row.trifecta_all[k];
         }
       await route.fulfill(res.fulfillOptions({ json: rows }));
     });
@@ -2877,7 +2884,7 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await expect(footer(page)).toContainText("（5点・オッズあり4点）");
     const fig = page.getByRole("figure", { name: /レースの図/ });
     await expect(
-      fig.getByText("1着になる組のオッズ（2連単の合成）"),
+      fig.getByText("1着になる組のオッズ（3連単の合成。公式の単勝人気とは別）"),
     ).toBeAttached();
     await expect(
       fig.getByText("3・6号艇の1着人気は、オッズの無い組を除いた合成"),
