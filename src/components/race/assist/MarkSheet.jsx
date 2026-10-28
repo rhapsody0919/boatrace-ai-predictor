@@ -43,7 +43,7 @@ export default function MarkSheet({
             >
               <span className="ta-ms-h">
                 {ASSIST_COPY.candidateLabel(k, type.ordered)}
-                {/* 連複の使う段は「1艇目（順不同）」（承認モック 画面2） */}
+                {/* 連複の使う段は「1艇目／順不同」の2行（承認モック 画面2） */}
                 {!type.ordered && !unused && (
                   <>
                     <br />

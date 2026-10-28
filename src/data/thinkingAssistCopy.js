@@ -160,8 +160,8 @@ export const ASSIST_COPY = Object.freeze({
       : `${boat}号艇を${pos}艇目の候補に`,
   candidateLabel: (pos, ordered = true) =>
     ordered ? `${pos}着` : `${pos}艇目`,
-  // マークシートの使う段の見出しの2行目（連複だけ）
-  unorderedMark: "（順不同）",
+  // マークシートの使う段の見出しの2行目（連複だけ。承認モックの「（順不同）」。括弧を外して 375px のマスの 44px を保つ）
+  unorderedMark: "順不同",
   // 図の右端の「+」。押すとその行に1着・2着・3着の候補のボタンを出す（BOA-801 7、spec D-43）
   markAria: (boat, positions) =>
     positions.length
@@ -814,7 +814,7 @@ export const ASSIST_COPY = Object.freeze({
   guidePowerSubPre: "展示は展示の後に出る。今はモーター2連率を見る",
   guidePlaceSub: "●が2着以内・○が3着以内。行の＋で相手を候補に",
   guideBetSub:
-    "券種を選び、着ごとに候補を押して組む。合成オッズ1.0未満はトリガミ",
+    "券種を選び、段ごとに候補を押して組む。合成オッズ1.0未満はトリガミ",
 });
 
 /**

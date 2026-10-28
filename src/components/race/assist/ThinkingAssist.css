@@ -900,9 +900,10 @@
   align-items: center;
 }
 
-/* 連複の段の見出し「1艇目（順不同）」が入る幅（BOA-990 ②、承認モック 画面2） */
+/* 連複の段の見出し「1艇目／順不同」の2行が入る幅（BOA-990 ②、承認モック 画面2）。
+   4em にすると 375px でマスが 41px になり 44px を割った（セルフレビュー #2）。12px の3文字が入る 2.75em */
 .ta-ms.is-unordered {
-  grid-template-columns: 4em repeat(6, minmax(0, 1fr));
+  grid-template-columns: 2.75em repeat(6, minmax(0, 1fr));
 }
 
 .ta-ms-h {

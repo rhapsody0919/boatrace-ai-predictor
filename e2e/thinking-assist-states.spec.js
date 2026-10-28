@@ -2620,7 +2620,7 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
   });
 
   // BOA-990 ②: 3連複・2連複（着順を問わない）。組は各段から1艇ずつ選んだ組を昇順にまとめる（承認モック 画面1: 1=234=2345 は6点）
-  test("3連複・2連複: 券種で比べるに 1=234=2345（6点）・1=234（3点）、組は「=」、段は「1艇目（順不同）」", async ({
+  test("3連複・2連複: 券種で比べるに 1=234=2345（6点）・1=234（3点）、組は「=」、段は「1艇目／順不同」", async ({
     page,
   }) => {
     await open(page);
@@ -2652,7 +2652,7 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
       .click();
     const sheet = page.getByRole("dialog", { name: "マークシート" });
     await expect(sheet.locator(".ta-ms-h").filter({ hasText: "1艇目" })).toHaveText(
-      "1艇目（順不同）",
+      "1艇目順不同",
     );
     const first = sheet.locator(".ta-table tbody tr").first().locator("td");
     await expect(first.first()).toHaveText("1=2=3");
@@ -2689,6 +2689,35 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     // ボックス: 1〜4号艇（使う2段に入れた艇）の2連複ボックスは6点。3段目は触らない
     await sheet.getByRole("button", { name: "選んだ艇でボックス" }).click();
     await expect(sheet.getByText("6点", { exact: true })).toBeVisible();
+  });
+
+  // セルフレビュー #6: 比べる表の行から連複へ替えたイベントと、再読み込みでの券種の復元
+  test("比べる表の2連複の行を押すと assist_bet_type=quinella（compare）、再読み込みしても2連複", async ({
+    page,
+  }) => {
+    await open(page);
+    await lensTab(page, "買い目").click();
+    await candidate(page, 1, 1).click();
+    await candidate(page, 2, 2).click();
+    await compare(page).locator("tbody tr").nth(3).locator("td").nth(2).click();
+    await expect(footer(page)).toContainText("2連複 1=2（1点）");
+    expect(
+      await page.evaluate(() =>
+        window.__events
+          .filter((e) => e[0] === "event" && e[1] === "assist_bet_type")
+          .map((e) => e[2]),
+      ),
+    ).toEqual([
+      {
+        race_id: RACE_ID,
+        assist_bet_type: "quinella",
+        assist_bet_from: "compare",
+      },
+    ]);
+    await page.reload();
+    await expect(footer(page)).toContainText("2連複 1=2（1点）", {
+      timeout: 20000,
+    });
   });
 
   // 連複のオッズは昇順のキー（race_odds.quinella_all "1-2"）。表の組・人気・合成はそのキーで引く

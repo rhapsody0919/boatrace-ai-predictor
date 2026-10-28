@@ -2050,7 +2050,7 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
       .all())
       expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
 
-    // BOA-990 ②: 連複は段の見出しが「1艇目（順不同）」。見出しの文字が隣のマスにはみ出さず、6艇のマスは 44px 以上
+    // BOA-990 ②: 連複は段の見出しが「1艇目／順不同」の2行。見出しの文字が隣のマスにはみ出さず、6艇のマスは 44px 以上
     for (const name of ["3連複", "2連複"]) {
       await sheet
         .getByRole("group", { name: "券種" })
@@ -2058,19 +2058,28 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
         .click();
       await expect(sheet.locator(".ta-ms.is-unordered")).toBeVisible();
       expect(await overflow(".ta-sheet")).toBeLessThanOrEqual(1);
+      // 見出しは「1艇目」「順不同」の2行まで（折り返して3行以上にならない。セルフレビュー #5）
       const heads = await sheet.locator(".ta-ms-h").evaluateAll((els) =>
         els
           .filter((e) => /艇目/.test(e.textContent))
-          .map((e) => e.scrollWidth - e.clientWidth),
+          .map((e) => ({
+            over: e.scrollWidth - e.clientWidth,
+            h: e.getBoundingClientRect().height,
+            fs: parseFloat(getComputedStyle(e).fontSize),
+          })),
       );
       expect(heads.length).toBe(3);
-      for (const d of heads) expect(d).toBeLessThanOrEqual(1);
+      for (const d of heads) {
+        expect(d.over).toBeLessThanOrEqual(1);
+        expect(d.h).toBeLessThanOrEqual(d.fs * 2 * 1.8);
+      }
+      // マスは 44px 以上（4em の見出しで 375px が 41px になった。セルフレビュー #2）
       for (const b of await sheet
         .getByRole("button", { name: /艇目の候補に$/ })
         .all()) {
         const box = await b.boundingBox();
         expect(box.height).toBeGreaterThanOrEqual(44);
-        expect(box.width).toBeGreaterThanOrEqual(30);
+        expect(box.width).toBeGreaterThanOrEqual(44);
       }
     }
     await sheet.getByRole("button", { name: "閉じる" }).first().click();
