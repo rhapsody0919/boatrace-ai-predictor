@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 /**
- * verify-legacy-prediction-readers.js — 止める予定の予想・列の名前を、新しいファイルに広げない（基盤の計画 R1・R2）。
+ * verify-legacy-prediction-readers.js — 止める予定の列の名前を、新しいファイルに広げない（基盤の計画 R2）。
  *
- * 設計: docs/design/legacy-prediction-cleanup/plan.md（R-0）。止める物は、廃止した3モデルのうち safeBet・upsetFocus の
- * 予想、prediction_odds、race_entries.ai_score_*（R1）と、races の旧い荒れ度の5列（R2）。止める作業の途中で
- * 新しい読み手が増えると、止めた日に壊れる。そこで、名前の文字列が出てくるファイルの一覧を
- * legacy-prediction-readers.json に固定し、次で見る。
+ * 設計: docs/design/legacy-prediction-cleanup/plan.md（R-0・R-0b）。止める物は races の旧い荒れ度の5列
+ * （volatility_score・volatility_level・recommended_model・volatility_reasons・first_boat_avg_st）と API の鍵
+ * recommendedModel。止める作業の途中で新しい読み手が増えると、止めた日に壊れる。そこで、名前の文字列が出てくる
+ * ファイルの一覧を legacy-prediction-readers.json に固定し、次で見る。
  *   1. 落とす: 一覧に無いファイルに名前が出てきた（新しい読み手・書き手。止める物を使わずに書く）
  *   2. 知らせるだけ: 一覧にあるファイルから名前が消えた・ファイルが無くなった（--prune で一覧から外す。他のレーンの PR を止めない）
- * 一覧は減る向きにだけ動く。台帳（data-readers.md）は表・列・RPC の名前で見るので、model_id の値と JSON の鍵
- * （predictions.safeBet 等）は拾わない。これはその穴を文字列で埋める。
+ * 一覧は減る向きにだけ動く。
+ * R1 の物（safeBet・upsetFocus の予想、prediction_odds、race_entries.ai_score_*）は見ない。/holmes（Moriarty）が読み、
+ * /holmes は tinaba の担当で触らない（オーナー 2026-10-28「触らなくて良い。/holmes は tinaba の担当」）。
  *
  *   node scripts/maintenance/verify-legacy-prediction-readers.js          # 検査
  *   node scripts/maintenance/verify-legacy-prediction-readers.js --prune  # 名前が消えたファイルを一覧から外す（足さない）
@@ -54,6 +55,25 @@ export function findMentions(tokens, files) {
  * @returns {{ added: Array<{ token: string, file: string }>, stale: Array<{ token: string, file: string }>,
  *   unsorted: string[] }}
  */
+/** R1 の名前。/holmes が読むので止めない。一覧に戻ってこないことを自己検査で見る（R-0b）。 */
+export const R1_TOKENS = [
+  "prediction_odds",
+  "predictionOdds",
+  "safeBet",
+  "upsetFocus",
+  "ai_score_",
+  "aiScore",
+];
+
+/**
+ * 一覧の名前のうち、R1 の名前を含むもの（部分一致。ai_score_safe_bet も ai_score_ に当たる）。
+ * @param {string[]} tokens
+ * @returns {string[]}
+ */
+export function r1TokensIn(tokens) {
+  return tokens.filter((t) => R1_TOKENS.some((r) => t.includes(r)));
+}
+
 export function compareMentions(listed, found) {
   const added = [];
   const stale = [];
@@ -84,7 +104,7 @@ function trackedSources() {
     }));
 }
 
-function selfTest() {
+function selfTest(listedTokens) {
   const failures = [];
   const eq = (label, actual, expected) => {
     if (JSON.stringify(actual) !== JSON.stringify(expected))
@@ -130,17 +150,35 @@ function selfTest() {
     compareMentions({ safeBet: { files: ["b.js"] } }, found),
     { added: [], stale: [], unsorted: [] },
   );
+  // 再現テスト（R-0b）: 今の一覧で、新しいファイルに R2 の名前を書くと落ち、R1 の名前を書いても落ちない
+  const emptyList = Object.fromEntries(
+    listedTokens.map((t) => [t, { files: [] }]),
+  );
+  const newFile = [
+    {
+      file: "new.js",
+      text: 'select("volatility_level"); m.safeBet; from("prediction_odds"); ai_score_upset_focus; aiScoreStandard; predictionOdds; upsetFocus',
+    },
+  ];
+  const addedTokens = compareMentions(
+    emptyList,
+    findMentions(listedTokens, newFile),
+  ).added.map(({ token }) => token);
+  eq("R2 の名前を新しいファイルに書くと落ちる", addedTokens, [
+    "volatility_level",
+  ]);
+  eq("一覧に R1 の名前が無い", r1TokensIn(listedTokens), []);
   return failures;
 }
 
 function main() {
-  const failures = selfTest();
+  const list = JSON.parse(readFileSync(path.join(ROOT, LIST_FILE), "utf8"));
+  const failures = selfTest(Object.keys(list.tokens));
   if (failures.length) {
     console.error("verify-legacy-prediction-readers: 自己検査の失敗");
     for (const f of failures) console.error(`  - ${f}`);
     process.exit(1);
   }
-  const list = JSON.parse(readFileSync(path.join(ROOT, LIST_FILE), "utf8"));
   const tokens = Object.keys(list.tokens);
   const found = findMentions(tokens, trackedSources());
   const { added, stale, unsorted } = compareMentions(list.tokens, found);
@@ -167,7 +205,7 @@ function main() {
   const lines = [];
   for (const { token, file } of added)
     lines.push(
-      `${file} に ${token} が出てくる。止める予定の物（docs/design/legacy-prediction-cleanup/plan.md）なので、新しい読み手・書き手を作らない。今の物（standard・unified の予想、unified の volatilityPercentile、race_odds）を使う`,
+      `${file} に ${token} が出てくる。止める予定の物（docs/design/legacy-prediction-cleanup/plan.md）なので、新しい読み手・書き手を作らない。今の物（unified の volatilityPercentile）を使う`,
     );
   // 消えた側は落とさず知らせるだけ。止める物に触れる他のレーンの PR（例 BOA-1110 の段階2）を、
   // 一覧の手入れのために止めない。残った行は、その名前がそのファイルにまた出てくるのを見逃すだけ
