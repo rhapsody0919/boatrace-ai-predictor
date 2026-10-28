@@ -144,17 +144,14 @@ function MeetPage() {
 
   return (
     <>
-      {/* 節タイトルが届く前に「9/28開幕の節」の仮の title を出すと、届いた後に書き換わる
-          （クローラーやテストが仮の値を読む）。読み込み中は出さない */}
+      {/* 取得待ちでも URL から決まる会場・開幕日と canonical を出す。節名は取得後に更新する */}
+      <title>{metaTitle}</title>
+      <link
+        rel="canonical"
+        href={`https://www.boat-ai.jp${localize(canonicalPath)}`}
+      />
       {(page || failed || !validParams) && (
-        <>
-          <title>{metaTitle}</title>
-          <meta name="description" content={metaDescription} />
-          <link
-            rel="canonical"
-            href={`https://www.boat-ai.jp${localize(canonicalPath)}`}
-          />
-        </>
+        <meta name="description" content={metaDescription} />
       )}
       <Header />
       <div className="meet-page">
