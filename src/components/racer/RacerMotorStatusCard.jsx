@@ -30,8 +30,13 @@ export default function RacerMotorStatusCard({ status }) {
     latestPartsEvent,
     venueMotorStats,
     preGeneration,
+    meetEnded,
   } = status;
   const venueName = VENUE_NAMES[venueCode] ?? `${venueCode}`;
+  // 直近出走の節が終わっていたら「今節」とは呼ばない（BOA-1182。race_series.end_date で判定済み）
+  const isPrevMeet = !preGeneration && meetEnded === true;
+  const meetLabel = isPrevMeet ? "前節" : "今節";
+  const captionHead = preGeneration ? "直近の節" : meetLabel;
   // 同じ日に2回走ると横軸に同じ日付が並び、何の違いか読めない。レース番号を
   // 添える（BOA-513）。その日だけに付けると、付く点と付かない点が混ざって
   // 読みにくいので、1日でも2回走った日があれば全部の点に付ける（BOA-557）
@@ -74,7 +79,10 @@ export default function RacerMotorStatusCard({ status }) {
     <div className="racer-motor-status-card">
       {/* 直近出走が入れ替え前（数ヶ月前）なら「今節」とは呼ばない */}
       <h2 className="racer-motor-status-title">
-        🔧 {preGeneration ? "直近出走のモーター状況" : "今節のモーター状況"}
+        🔧{" "}
+        {preGeneration
+          ? "直近出走のモーター状況"
+          : `${meetLabel}のモーター状況`}
       </h2>
       <p className="racer-motor-status-subtitle">
         {venueName}・{motorNumber}号機
@@ -130,7 +138,9 @@ export default function RacerMotorStatusCard({ status }) {
       {chartData.length > 1 ? (
         <>
           <p className="racer-motor-status-chart-caption">
-            {`${preGeneration ? "直近の節" : "今節"}（${chartData[0].day}〜${
+            {`${captionHead}（${
+              isPrevMeet ? `${venueName} ` : ""
+            }${chartData[0].day}〜${
               chartData[chartData.length - 1].day
             }）、この選手がこのモーターで出走してからの展示タイム`}
           </p>
@@ -155,7 +165,9 @@ export default function RacerMotorStatusCard({ status }) {
         </>
       ) : (
         <p className="racer-motor-status-empty">
-          今節はまだこのモーターでの出走数が少なく、推移は表示できません。
+          {isPrevMeet
+            ? "前節はこのモーターでの出走数が少なく、推移は表示できません。"
+            : "今節はまだこのモーターでの出走数が少なく、推移は表示できません。"}
         </p>
       )}
 
