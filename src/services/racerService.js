@@ -129,7 +129,7 @@ async function getSeriesOfRace(venueCode, raceDate) {
  * race_idは「YYYY-MM-DD-会場コード-レース番号」形式のため、会場コードは
  * 追加クエリ無しでrace_idから直接取り出せる
  * @param {number|string} racerId
- * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { date: string, exhibition_time: number }[], latestPartsEvent: { date: string, propellerChanged: boolean, parts: string[]|null } | null, venueMotorStats: object|null } | null>}
+ * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { date: string, exhibition_time: number }[], latestPartsEvent: { date: string, propellerChanged: boolean, parts: string[]|null } | null, venueMotorStats: object|null, preGeneration: boolean, meetEnded: boolean|null } | null>}
  */
 export async function getRacerCurrentMotorStatus(racerId) {
   if (!supabase) return null;
@@ -164,7 +164,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
     preGeneration
       ? null
       : supabaseDataService.getVenueMotorStats(venueCode, data.motor_number),
-    getSeriesOfRace(venueCode, date),
+    preGeneration ? null : getSeriesOfRace(venueCode, date),
   ]);
 
   const meetRaceIds = meetEntries.map((e) => e.race_id);
