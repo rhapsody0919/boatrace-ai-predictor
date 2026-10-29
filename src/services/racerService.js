@@ -100,6 +100,26 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
 }
 
 /**
+ * レースが属する節（race_series）の日程を返す。中止で順延した節があるので、
+ * 節が終わったかは日付の連続性ではなく race_series.end_date で決める（BOA-1182）。
+ * 節の行が無ければ null。クエリの失敗は supabase クライアントが例外にする
+ * @param {number} venueCode
+ * @param {string} raceDate YYYY-MM-DD
+ * @returns {Promise<{ start_date: string, end_date: string } | null>}
+ */
+async function getSeriesOfRace(venueCode, raceDate) {
+  const { data } = await supabase
+    .from("race_series")
+    .select("start_date,end_date")
+    .eq("venue_code", venueCode)
+    .lte("start_date", raceDate)
+    .gte("end_date", raceDate)
+    .order("start_date", { ascending: false })
+    .limit(1);
+  return data?.[0] ?? null;
+}
+
+/**
  * 選手の直近出走から今節（開催中の会場）のモーター番号を特定し、
  * そのモーターの機力指数（通算・他選手も含む実績との比較）と、
  * この選手自身が今節このモーターに乗ってからの展示タイム推移を取得する（BOA-265）
@@ -109,7 +129,7 @@ async function getCurrentMeetRaceEntries(racerId, motorNumber) {
  * race_idは「YYYY-MM-DD-会場コード-レース番号」形式のため、会場コードは
  * 追加クエリ無しでrace_idから直接取り出せる
  * @param {number|string} racerId
- * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { date: string, exhibition_time: number }[], latestPartsEvent: { date: string, propellerChanged: boolean, parts: string[]|null } | null, venueMotorStats: object|null } | null>}
+ * @returns {Promise<{ raceId: string, venueCode: number, motorNumber: number, powerIndex: object, meetTrend: { date: string, exhibition_time: number }[], latestPartsEvent: { date: string, propellerChanged: boolean, parts: string[]|null } | null, venueMotorStats: object|null, preGeneration: boolean, meetEnded: boolean|null } | null>}
  */
 export async function getRacerCurrentMotorStatus(racerId) {
   if (!supabase) return null;
@@ -136,7 +156,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
   const generationStart =
     await supabaseDataService.getMotorGenerationStart(venueCode);
   const preGeneration = generationStart !== null && date < generationStart;
-  const [powerIndex, meetEntries, venueMotorStats] = await Promise.all([
+  const [powerIndex, meetEntries, venueMotorStats, series] = await Promise.all([
     preGeneration
       ? null
       : supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),
@@ -144,6 +164,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
     preGeneration
       ? null
       : supabaseDataService.getVenueMotorStats(venueCode, data.motor_number),
+    preGeneration ? null : getSeriesOfRace(venueCode, date),
   ]);
 
   const meetRaceIds = meetEntries.map((e) => e.race_id);
@@ -194,6 +215,9 @@ export async function getRacerCurrentMotorStatus(racerId) {
     meetTrend,
     latestPartsEvent,
     venueMotorStats,
+    // 直近出走の節が終わっているか（BOA-1182）。race_series.end_date が JST の今日より前。
+    // 節の行が引けなければ null（終わったかどうか分からない。壁時計の推定はしない）
+    meetEnded: series ? series.end_date < getTodayJST() : null,
     preGeneration,
   };
 }
