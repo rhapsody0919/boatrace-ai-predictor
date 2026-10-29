@@ -45,13 +45,14 @@ export function exhibitionSparklineY(t, min, max, height) {
  * 範囲だけ渡すと recharts が目盛りを自動で決め、範囲が 1〜8 だと 1 / 3 / 5 / 8 と
  * 不等間隔になった。端を整数にそろえ、目盛りを 1 刻み（幅が 6 を超えるときは 2 刻み）で明示する。
  * 縦軸を値の幅いっぱいにしない（小さな上下が大きく見え、推移を「調子」と読ませる。
- * data-scientist）ので、最小・最大の外に 1 以上の余白を残す。下端は 0 を下回らない。
+ * data-scientist）ので、最小・最大の外に 1 以上の余白を残す（下端は 0 を下回らないので、最小が 1 未満なら下の余白は最小の分）。
+ * 2 刻みのときは上端が最大 + 1 より 1 伸びることがある。
  *
  * @param {Array<number|null|undefined>} values 描く勝率
  * @returns {{domain: [number, number], ticks: Array<number>}|null} 値が無ければ null
  */
 export function winRateAxis(values) {
-  const nums = (values ?? []).filter((v) => typeof v === "number");
+  const nums = (values ?? []).filter((v) => Number.isFinite(v));
   if (nums.length === 0) return null;
   const lo = Math.max(0, Math.floor(Math.min(...nums)) - 1);
   const rawHi = Math.ceil(Math.max(...nums)) + 1;
