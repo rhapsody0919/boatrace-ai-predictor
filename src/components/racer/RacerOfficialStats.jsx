@@ -8,6 +8,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { winRateAxis } from "../../utils/chartDomain";
 import {
   buildPeriodRows,
   buildCourseRows,
@@ -207,15 +208,10 @@ export default function RacerOfficialStats({ rows, racerName }) {
   const chartData = [...periodRows]
     .reverse()
     .map((r) => ({ label: r.label, range: r.range, winRate: r.winRate }));
-  // 縦軸は値の幅いっぱいに広げない（小さな上下が大きく見え、推移を「調子」と読ませる。data-scientist）
+  // 縦軸は値の幅いっぱいに広げず（小さな上下が大きく見え、推移を「調子」と読ませる。data-scientist）、
+  // 整数の刻みで等間隔に目盛る（BOA-1196。自動だと 1 / 3 / 5 / 8 になる）
   const rates = chartData.map((d) => d.winRate).filter((v) => v !== null);
-  const chartDomain =
-    rates.length > 0
-      ? [
-          Math.max(0, Math.floor(Math.min(...rates)) - 1),
-          Math.ceil(Math.max(...rates)) + 1,
-        ]
-      : ["auto", "auto"];
+  const rateAxis = winRateAxis(rates);
   const visible = periodRows.slice(0, DEFAULT_VISIBLE_PERIODS);
   const rest = periodRows.slice(DEFAULT_VISIBLE_PERIODS);
 
@@ -266,7 +262,13 @@ export default function RacerOfficialStats({ rows, racerName }) {
                   tick={{ fontSize: 10 }}
                   interval="preserveStartEnd"
                 />
-                <YAxis tick={{ fontSize: 11 }} domain={chartDomain} />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  domain={rateAxis?.domain}
+                  ticks={rateAxis?.ticks}
+                  interval={0}
+                  allowDecimals={false}
+                />
                 {/* 期の名前だけだと今の半期と読み違えるので、集計期間を添える（ファン評価 #2051 1周目）。
                     375px で右端が切れないよう、系列名は短くする */}
                 <Tooltip
