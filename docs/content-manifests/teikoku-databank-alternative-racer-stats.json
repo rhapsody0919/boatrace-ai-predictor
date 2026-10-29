@@ -1,0 +1,62 @@
+{
+ "schema": "content-pr-manifest/v1",
+ "id": "teikoku-databank-alternative-racer-stats",
+ "kind": "new",
+ "ticket": "OC-20261029T100200-seo-human-1",
+ "paths": [
+  "public/blog/teikoku-databank-alternative-racer-stats.md",
+  "src/data/blog-posts/teikoku-databank-alternative-racer-stats.json"
+ ],
+ "files": {
+  "public/blog/teikoku-databank-alternative-racer-stats.md": "3b5ec1339916464330b0dfe0b013d3fa3edc334fcaafeb2266f3bebeb1a45deb",
+  "src/data/blog-posts/teikoku-databank-alternative-racer-stats.json": "01e06fa67a8b32f08eb12bba53e9058d65dff33266c3aa99e616e730e0a9e1a8"
+ },
+ "content_sha256": "82b2a95b95319e2b7a576ff1aeef40597c77e679ec36c86e9f7c211f13fdb519",
+ "judgement_words": [],
+ "reviews": [
+  {
+   "role": "content-qa",
+   "agent": "hq-review:article+content-qa",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "82b2a95b95319e2b7a576ff1aeef40597c77e679ec36c86e9f7c211f13fdb519",
+   "model": "codex-default/high",
+   "at": "2026-10-29T10:10:24+09:00"
+  },
+  {
+   "role": "wording-editor",
+   "agent": "hq-review:wording",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "82b2a95b95319e2b7a576ff1aeef40597c77e679ec36c86e9f7c211f13fdb519",
+   "model": "codex-default/high",
+   "at": "2026-10-29T10:10:24+09:00"
+  },
+  {
+   "role": "fan",
+   "agent": "hq-review:fan",
+   "result": "pass",
+   "p0": 0,
+   "p1": 1,
+   "reviewed_sha256": "82b2a95b95319e2b7a576ff1aeef40597c77e679ec36c86e9f7c211f13fdb519",
+   "model": "codex-default/high",
+   "at": "2026-10-29T10:10:24+09:00"
+  },
+  {
+   "role": "seo-marketer",
+   "agent": "hq-review:seo+marketing",
+   "result": "pass",
+   "p0": 0,
+   "p1": 0,
+   "reviewed_sha256": "82b2a95b95319e2b7a576ff1aeef40597c77e679ec36c86e9f7c211f13fdb519",
+   "model": "codex-default/high",
+   "at": "2026-10-29T10:10:24+09:00"
+  }
+ ],
+ "author": "hq-employee:seo-human",
+ "created_at": "2026-10-29T10:12:32+09:00",
+ "run": "20261029T100200-seo-human",
+ "engine": "codex"
+}
