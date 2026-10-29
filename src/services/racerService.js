@@ -215,10 +215,10 @@ export async function getRacerCurrentMotorStatus(racerId) {
     meetTrend,
     latestPartsEvent,
     venueMotorStats,
-    preGeneration,
     // 直近出走の節が終わっているか（BOA-1182）。race_series.end_date が JST の今日より前。
     // 節の行が引けなければ null（終わったかどうか分からない。壁時計の推定はしない）
     meetEnded: series ? series.end_date < getTodayJST() : null,
+    preGeneration,
   };
 }
 
