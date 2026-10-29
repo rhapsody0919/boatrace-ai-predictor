@@ -12,7 +12,7 @@
 | RPC（写しの関数） | 68 |
 | 読んだファイル | 1560 |
 | 読み書きのあるファイル | 255 |
-| 表の読み手（箇所） | 890 |
+| 表の読み手（箇所） | 891 |
 | 表の書き手（箇所） | 184 |
 | RPC の呼び手（箇所） | 49 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 231 |
@@ -75,7 +75,7 @@
 | [race_pit_comments](#t-race_pit_comments) | table | anon 可 | 2 | 2 |  |  | pit_reports |  |
 | [race_pit_reports](#t-race_pit_reports) | table | anon 可 | 4 | 1 | data_health_pit_reports, data_health_table_rows |  | pit_reports |  |
 | [race_results](#t-race_results) | table | anon 可 | 124 | 10 | compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline ほか17 |  | kfile_sync, race_status, result ほか1 |  |
-| [race_series](#t-race_series) | table | anon 可 | 7 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
+| [race_series](#t-race_series) | table | anon 可 | 8 | 0 | data_health_race_series, data_health_table_rows |  |  |  |
 | [race_special_notes](#t-race_special_notes) | table | service だけ | 1 | 1 | data_health_table_rows |  | race_notices |  |
 | [race_start_timings](#t-race_start_timings) | table | anon 可 | 29 | 6 | compute_st_course_baseline, data_health_coverage, data_health_table_rows ほか2 |  | kfile_sync, race_status, result ほか1 |  |
 | [racer_aggregated_stats](#t-racer_aggregated_stats) | table | anon 可 | 13 | 1 | data_health_nightly_freshness |  |  |  |
@@ -404,7 +404,7 @@
   - `scripts/maintenance/verify-analogy-v16.js:286` rest(rest) [boat_number, exhibition_time, is_absent, race_id] （検査）
   - `scripts/ml/export-inference-data.js:115` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:79` select(helper:fetchAll)
-  - `src/services/racerService.js:153` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
+  - `src/services/racerService.js:174` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
   - `src/services/sherlockService.js:83` select [boat_number, exhibition_time, race_id, start_timing]
   - `src/services/supabaseDataService.js:467` select [boat_number, race_id, start_flag]
   - `src/services/supabaseDataService.js:770` select(helper:fetchAllByIn)
@@ -909,7 +909,7 @@
   - `src/services/mycroftService.js:82` select [boat_number, player_name, race_id]
   - `src/services/racerService.js:31` select [grade, race_id, racer_id]
   - `src/services/racerService.js:84` select [boat_number, motor_number, race_id, racer_id]
-  - `src/services/racerService.js:118` select [motor_number, race_id, racer_id]
+  - `src/services/racerService.js:138` select [motor_number, race_id, racer_id]
   - `src/services/sherlockService.js:77` select [boat_2rate, boat_number, grade, local_win_rate, motor_2rate, player_name, race_id, win_rate]
   - `src/services/supabaseDataService.js:513` select [?, race_id, racer_id]
   - `src/services/supabaseDataService.js:658` select [motor_2rate, race_id]
@@ -1258,11 +1258,12 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 本体で読む RPC: data_health_race_series, data_health_table_rows
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:282`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:73`
-- 読み手（7）: 
+- 読み手（8）: 
   - `scripts/lib/raceSeriesLookup.js:161` select [end_date, start_date, venue_code]
   - `scripts/maintenance/backfill-race-series-meta.js:58` select(helper:fetchAll)
   - `scripts/maintenance/backfill-race-series-meta.js:358` select(helper:fetchAll)
   - `scripts/maintenance/backfill-series-day.js:64` select(helper:fetchAll)
+  - `src/services/racerService.js:112` select [end_date, start_date, venue_code]
   - `src/services/supabaseDataService.js:1402` select [end_date, start_date, venue_code]
   - `src/services/supabaseDataService.js:5543` select [end_date, start_date, venue_code]
   - `src/services/supabaseDataService.js:7250` select [end_date, grade, start_date, title, venue_code]
