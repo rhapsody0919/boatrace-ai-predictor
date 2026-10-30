@@ -456,7 +456,7 @@ erDiagram
 - 集合で返すと PostgREST の上限1000行で黙って切れるので jsonb の1つで返す（183 と同じ）
 - authenticator の statement_timeout は 8秒（pg_roles の実測）。kb は半月、main は 50人ずつに分けて、1回を 8秒より十分短くする
 - kb は `race_id >= p_from AND race_id < p_to`（kb_archive_boats の PK の先頭）で読む。main は `race_entries` の (racer_id, race_id) 索引
-- 境目の日は SQL に定数で書く（kb `<= DATE '2025-12-02'`、本体 `>= DATE '2025-12-03'`）。`verify-racer-career-stats.js` が `kbArchiveBoundary.js` と照合する
+- 境目の日は SQL に定数で書く（kb `<= DATE '2025-12-02'`、本体 `>= DATE '2025-12-03'`）。`verify-racer-career-tables.js` が `kbArchiveBoundary.js` と照合する
 
 ### 14.4 判定の材料（書き手、`scripts/lib/racerCareerJob.js`）
 

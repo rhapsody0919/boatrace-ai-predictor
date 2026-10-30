@@ -25,6 +25,7 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - boolean を some(x===true) で見ると、空配列・全 NULL が false になる。NULL が未判定の列では、読取成功・欠場 true なし・欠場なし確認済みを分け、確認済みにする取得源の false を契約に明示する（2026-10-13、2026-10-13-plan-review-20261013-32.md・2026-10-15-plan-review-20261015-09.md）
 - morning_digest_rows.course は生成時に当日の boat_number と同値で保存するが、参照する統計は選手の過去の実進入コース別実績。「当日の2号艇」と「過去の2コース」を分け、当日の実進入確定値として扱わない（2026-10-15、2026-10-15-plan-review-20261015-11.md）
 - 本番進入を表示する新カードは、統計用 actualCourse だけでなく既存の表示用 entryCourse の優先順位を引き継ぐ。当日の ST 進入が取れていても、K ファイル待ちの actualCourse は null（2026-10-16、2026-10-16-review-20261016-06.md）
+- racer_profiles.sex は全行 NULL（083 の列はあるが sync-profiles が未実行）。性別を前提にした判定（レディースのレースの見分け等）にはまだ使えない（2026-10-31、本番の読み取り、GS00 案2）
 
 ## 公式ファイル・公式ページと取得の時点
 - 公式の K/B ファイルは kb_archive_* に 2019-04-01〜2025-12-02 を取り込み済み（kb_archive_boats 約221万行）。2025-12-03 以降は race_entries・race_results 等にあり、kb は作りの上で止めている（kb-backfill.js の MAIN_TABLES_START、書き手の cron なし）。kb_archive は匿名で読めず、racer_id の索引も無い（2026-10-28、system-architect・本番の読み取り。元は 2026-09-25、BOA-403・BOA-422）

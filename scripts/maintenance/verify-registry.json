@@ -1052,7 +1052,7 @@
       "guards": "照合の関門（本番の読み取り、claude_ro）。選手×期の出走・1着・2着・勝率（BOA-1193 の純関数）・優勝・優出と、進入コース別の着のコードを、公式の racer_period_stats と比べる。kb 層の CLI と main 層の全選手の計算の後に Claude が実行し、一致しない選手の一覧を完了報告に出す"
     },
     {
-      "script": "verify-racer-career-stats.js",
+      "script": "verify-racer-career-tables.js",
       "tier": "ci",
       "guards": "選手ページの集計の表（マイグレーション190、GS00 案2）と書き手（scripts/lib/racerCareerJob.js・api/cron/racer-career-main.js・racer-career-backfill.js）。PGlite で 3つの RPC の着のコード・期・優勝戦（isFinalStage v2、stage_kind を使わない）・グレードの補正（QC・CC・唐津）・境目（kb ≤ 2025-12-02、本体 ≥ 2025-12-03）・権限（5表は匿名の SELECT だけ、RPC は service_role だけ）、kb の1回の計算と main の毎晩の計算の冪等・消えたセルの削除と多すぎるときの停止・kb の指紋の見張り、レジストリと vercel.json の時刻、照合の関門の比べ方"
     },

@@ -35,7 +35,7 @@
   - 唐津 2024-10-12〜14 のバトルトーナメント: G1
   - どれにも当たらず元の値も無いレースは `unknown`（勝率の点が決まらない。件数は数える）
 - 期: 5〜10月は その年の 5/1、11〜12月は その年の 11/1、1〜4月は 前の年の 11/1 を `term_start` にする（公式の期別成績の算出期間）
-- 境目: kb は race_date ≤ 2025-12-02、本体は ≥ 2025-12-03（`scripts/lib/kbArchiveBoundary.js`）
+- 境目: kb は race_date ≤ 2025-12-02、本体は ≥ 2025-12-03（`scripts/lib/kbArchiveBoundary.js`。kb-backfill.js・venueTechniquePeriod.js もここから読む）
 - 未照合: 2019〜2023-10 と 2025-05〜12-02 の勝率の定義、CC の組の分け方、優出に S0・K0・L0 を含めるか。照合の関門（§6）で確かめる
 
 ## 4. 見せ方の注意（画面の PR への申し送り。data-scientist、[analysis/display-scope.md](./analysis/display-scope.md)）
@@ -55,7 +55,7 @@
 
 - `scripts/maintenance/verify-racer-career-gate.js`（manual、claude_ro）
 - 選手×期（2019-05-01〜2025-11-01 の14期）で、2つの層を足した値を `racer_period_stats` と比べる
-  - 出走・1着・2着・勝率（BOA-1193 の純関数）← `racer_term_stats`
+  - 出走・1着・2着・勝率（BOA-1193 の純関数 isStartCode・winRatePoints・winRateOf。名前は BOA-1193 の下書きのコメントに合わせ、違えば関門が止まる）← `racer_term_stats`
   - 優勝・優出 ← `racer_championships`（優出は S0・K0・L0 を含める・含めない の両方で一致の数を出す）
   - 進入コース別の着のコード（c1〜c6 の p1〜p6・f・l0・l1・k0・k1・s0・s1・s2）← `racer_course_stats`
 - 一致しない選手の一覧を完了報告に出す。全期・全選手が一致するまで画面に出さない（一致しない理由が説明でき、オーナーが出すと決めたものを除く）
@@ -89,4 +89,3 @@
 
 - 画面（選手ページの表示）、BOA-1193 の純関数（Codex）
 - `kb_archive_races.stage_kind` の規則と v2 の食い違いの修正（審査の「食い違い」、Orchestrate が起票）
-- `scripts/lib/venueTechniquePeriod.js` の境目の日付の定数を `kbArchiveBoundary.js` に寄せること（同じ値。今は直さない）

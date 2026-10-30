@@ -47,6 +47,7 @@
 - 予想を作るときの「前日まで」はレースの日付で読む（race_date < 対象日）。「最新まで」で読むと過去の日を作り直したときに結果が混ざる（2026-10-12、BOA-628 と同じ系統、同 architecture-y.md）
 - fetchAll の .range() で全件を読むときは .order("race_id") 等の一意の並びを付ける。並びが無いとページの境目で行が重なったり抜けたりする（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-403）
 - Supabase は Small。Nano のときは get_predictions_by_date が2.3〜12秒かかり、anon の statement_timeout（3秒）を超えて「開催なし」と誤って表示した。DB は ap-southeast-2 で、api/cron/* も syd1 に固定している（2026-09-19、memory project_data_foundation_orchestration_2026_09_19、PR #747）
+- authenticator の statement_timeout は 8秒、service_role はロールの設定が無い。PostgREST 経由の service_role の RPC も 8秒で切れるので、重い集計は呼び出しを分ける（2026-10-31、pg_roles の実測、マイグレーション 190）
 
 - SNS の送信（承認・claim・runner・通知・容量）に関する知見は [sns-send-ops.md](sns-send-ops.md) へ移動（2026-10-18）
 - 複数 bundle の下書きを limit だけでまとめて読むと、取得の打切りが素材の本数不備に化ける。対象日の抽出前の上限と下書き集合の完全性を別に確認し、超過を不合格素材として確定しない（2026-10-14、2026-10-14-plan-review-20261014-01.md）

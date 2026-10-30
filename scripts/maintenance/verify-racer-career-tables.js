@@ -979,16 +979,10 @@ test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足�
   ]);
   const PTS = { "01": 10, "02": 8, "03": 6, "04": 4, "05": 2, "06": 1 };
   const career = {
-    isStart: (c) => START.has(c),
-    winRate: (rows) => {
-      const s = rows.filter((r) => START.has(r.finishRaw));
-      return s.length === 0
-        ? null
-        : Math.round(
-            (s.reduce((a, r) => a + (PTS[r.finishRaw] ?? 0), 0) / s.length) *
-              100,
-          ) / 100;
-    },
+    isStartCode: (c) => START.has(c),
+    winRatePoints: (c, _grade, _isFinal) => (START.has(c) ? (PTS[c] ?? 0) : null),
+    winRateOf: (t) =>
+      t.starts > 0 ? Math.round((t.points / t.starts) * 100) / 100 : null,
   };
   const zero = Object.fromEntries(COUNT_COLUMNS.map((c) => [c, 0]));
   const termRows = [

@@ -62,9 +62,19 @@ export const FINALS_VARIANTS = Object.freeze({
   without_absent: (code) => !["S0", "K0", "L0"].includes(code),
 });
 
+/** BOA-1193 の下書き（Linear のコメント、Orchestrate 2026-10-28）の名前。Codex がこれに沿って作る見込み */
+export const CAREER_FUNCTION_NAMES = Object.freeze([
+  "isStartCode",
+  "winRatePoints",
+  "tallyRuns",
+  "winRateOf",
+  "isFinalRaceStage",
+]);
+
 /**
- * BOA-1193 の純関数を読み込む。名前が違えば何が要るかを出して止める（関数の名前は BOA-1193 の本文の「作るもの」に合わせる）。
- * @returns {Promise<{isStart: (code: string|null) => boolean, winRate: (rows: Array<{grade: string, isFinal: boolean, finishRaw: string}>) => number|null}>}
+ * BOA-1193 の純関数を読み込む。名前が違えば、何が要るかを出して止める。
+ *   isStartCode(code) → bool、winRatePoints(code, grade, isFinal) → 点 | null、winRateOf({starts, points}) → 小数2桁 | null
+ * @returns {Promise<Record<string, Function>>}
  */
 export async function loadCareerFunctions() {
   let mod;
@@ -75,13 +85,12 @@ export async function loadCareerFunctions() {
       `src/pure/racerCareerStats.js が読めない（BOA-1193 のマージ待ち）: ${error.message}`,
     );
   }
-  const isStart = mod.isStart ?? mod.isStartCode;
-  const winRate = mod.winRate ?? mod.officialWinRate;
-  if (typeof isStart !== "function" || typeof winRate !== "function")
+  const missing = CAREER_FUNCTION_NAMES.filter((n) => typeof mod[n] !== "function");
+  if (missing.length > 0)
     throw new Error(
-      `src/pure/racerCareerStats.js に isStart(finishRaw) と winRate(rows) が無い（あるのは ${Object.keys(mod).join(", ")}）。この関門の読み込みを BOA-1193 の名前に合わせる`,
+      `src/pure/racerCareerStats.js に ${missing.join("・")} が無い（あるのは ${Object.keys(mod).join(", ")}）。この関門の読み込みを BOA-1193 の名前に合わせる`,
     );
-  return { isStart, winRate };
+  return mod;
 }
 
 const termOf = (date) => {
@@ -91,8 +100,9 @@ const termOf = (date) => {
 };
 
 /**
- * 照合（純関数。テストは verify-racer-career-stats.js）。
- * @param {{termRows: object[], courseRows: object[], champRows: object[], official: object[], career: {isStart: Function, winRate: Function}}} input
+ * 照合（純関数。テストは verify-racer-career-tables.js）。
+ * @param {{termRows: object[], courseRows: object[], champRows: object[], official: object[],
+ *   career: {isStartCode: Function, winRatePoints: Function, winRateOf: Function}}} input
  */
 export function compareCareerToOfficial({
   termRows,
@@ -115,15 +125,17 @@ export function compareCareerToOfficial({
       });
     return ours.get(k);
   };
-  // 件数のまま持ち、勝率を出すときだけ1走1行に広げる（全選手×期を広げると数百万行になる）
-  const expand = (o) => {
-    const rows = [];
+  // 件数のまま持ち、グレード×優勝戦か×着のコードごとに純関数で出走と着順点を数える
+  const tallyOf = (o) => {
+    let starts = 0;
+    let points = 0;
     for (const [b, n] of o.buckets) {
-      const [grade, isFinal, finishRaw] = b.split("|");
-      for (let i = 0; i < n; i++)
-        rows.push({ grade, isFinal: isFinal === "1", finishRaw });
+      const [grade, isFinal, code] = b.split("|");
+      if (!career.isStartCode(code)) continue;
+      starts += n;
+      points += n * (career.winRatePoints(code, grade, isFinal === "1") ?? 0);
     }
-    return rows;
+    return { starts, points };
   };
   for (const r of termRows) {
     const o = ensure(key(r.racer_id, r.term_start));
@@ -179,13 +191,13 @@ export function compareCareerToOfficial({
       course: {},
       champ: [],
     };
-    const rows = expand(o);
-    const starts = rows.filter((r) => career.isStart(r.finishRaw)).length;
+    const tally = tallyOf(o);
+    const starts = tally.starts;
     const got = {
       starts,
       first_count: o.first,
       second_count: o.second,
-      win_rate: starts === 0 ? null : career.winRate(rows),
+      win_rate: career.winRateOf(tally),
       wins: o.champ.filter((c) => c === "01").length,
     };
     const want = {
@@ -240,7 +252,7 @@ export function compareCareerToOfficial({
   const extra = [];
   for (const [k, o] of ours) {
     if (seen.has(k)) continue;
-    if (expand(o).some((r) => career.isStart(r.finishRaw))) extra.push(k);
+    if (tallyOf(o).starts > 0) extra.push(k);
   }
   return { compared, perTerm, finalsMatch, mismatches, extra };
 }

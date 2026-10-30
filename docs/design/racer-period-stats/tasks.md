@@ -42,7 +42,7 @@
 - [x] 書き手の共通部分 `scripts/lib/racerCareerJob.js`（判定の材料・足し合わせ・消えたセル・指紋）と境目の定数 `scripts/lib/kbArchiveBoundary.js`
 - [x] kb の1回の CLI と main の全選手の計算 `scripts/maintenance/racer-career-backfill.js`
 - [x] main の毎晩の Cron `api/cron/racer-career-main.js`（レジストリ `racer_career_main`、vercel.json の 23:30・01:00 JST）
-- [x] 検証 `verify-racer-career-stats.js`（ci、PGlite）と照合の関門 `verify-racer-career-gate.js`（manual）
+- [x] 検証 `verify-racer-career-tables.js`（ci、PGlite）と照合の関門 `verify-racer-career-gate.js`（manual）
 - [x] ADR-0104
 
 ### 適用の後（オーナーの操作 → Claude の確認。順は plan.md §14.8）
