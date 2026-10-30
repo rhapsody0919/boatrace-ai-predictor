@@ -535,7 +535,8 @@
       "script": "verify-gha-fetch-stop.js",
       "tier": "ci",
       "guards": "BOA-1145 P4a ④a: GitHub Actions の取得（scrape-scheduled・morning-init・肩代わりの判定）が、host の行の取得の非常停止 fetch_stop（マイグレーション178）で止まる。Vercel が止まっていて肩代わりの条件を満たしても、SKIP 変数が true でなくても、公式へ取りに行かない。読めないときは止めない側（変数が true のジョブは従来どおり読めなければスキップ）"
-    },    {
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
