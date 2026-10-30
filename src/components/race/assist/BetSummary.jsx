@@ -57,9 +57,11 @@ export default function BetSummary({
     result && !result.insufficient && !wide ? result.composite : null;
   const oddsCell = (r) => {
     const w = wide ? oddsRange?.[r.ticket] : null;
+    if (!wide) return r.odds;
+    // 上限が欠けた組は下限だけ（同じ桁の表記）
     return w?.high != null
       ? ASSIST_COPY.oddsRange(formatOdds(w.low), formatOdds(w.high))
-      : r.odds;
+      : formatOdds(r.odds);
   };
   return (
     <div className="ta-bar">

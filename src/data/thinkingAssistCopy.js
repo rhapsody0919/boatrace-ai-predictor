@@ -193,10 +193,9 @@ export const ASSIST_COPY = Object.freeze({
   colBetPoints: "点数",
   colComposite: "合成オッズ",
   pointsCell: (n) => `${n}点`,
-  compareNote: "行を押すとその券種に切り替わる",
   // 拡連複は合成オッズを出さない（承認モック 画面1の注記。BOA-990 ③）
-  compareNoteWide:
-    "拡連複は複数の組が同時に当たることがあるので、合成オッズを出さない（下の表で組ごとに見る）",
+  compareNote:
+    "行を押すとその券種に切り替わる。拡連複は複数の組が同時に当たることがあるので、合成オッズを出さない（下の表で組ごとに見る）",
   legUnused: (type, ordered = true) =>
     ordered
       ? `${type}は1着・2着の組。3着の段は使わない（入れた候補は残る）`

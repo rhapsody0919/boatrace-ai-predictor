@@ -10,7 +10,7 @@ import {
 } from "./analogyAggregate.js";
 import { ROUNDS_FINAL } from "./analogyFacts.js";
 import { bestOf } from "./bestOf.js";
-import { latestSnapshotWith } from "./oddsMath.js";
+import { compositeOdds, latestSnapshotWith } from "./oddsMath.js";
 import { wilsonInterval } from "./wilson.js";
 import { getRaceStageKey } from "../constants/raceStageConfig.js";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy.js";
@@ -980,14 +980,30 @@ export const wideLowTable = (table) =>
       .map(([k, v]) => [k, v.low]),
   );
 
+/** 拡連複の幅の表から、下限のある組だけを残す（odds と同じ組の集合にする） */
+const widePricedRange = (table) =>
+  Object.fromEntries(
+    Object.entries(table ?? {}).filter(([, v]) => v?.low != null && v.low > 0),
+  );
+
+/**
+ * 券種の合成オッズ（その券種のオッズの表で、組んだ組の合成）。拡連複（range）は同じレースで最大3組が当たり
+ * 合成オッズの式（どれか1組だけ当たる前提）が当てはまらないので null（BOA-990 ③ 承認モック 画面1・2）
+ * @param {{range?: boolean}} type ASSIST_BET_TYPES の1つ
+ * @param {Record<string, number>|null} odds
+ * @param {string[]} tickets
+ */
+export const betTypeComposite = (type, odds, tickets) =>
+  odds && !type.range ? compositeOdds(tickets.map((k) => odds[k])) : null;
+
 /**
  * 券種ごとのオッズを選ぶ（BOA-990）。締切時オッズ（公式）のある券種はその値、無ければその券種の値を持つ最新の
  * スナップショット。どの券種も無ければ null（発売前）。trifecta・capturedAt は3連単の値（図・よく出た3連単が使う）
  * @param {Array<object>} snaps getRaceOddsSnapshots
  * @param {object|null} final getRaceFinalOdds
  * finalWin は公式の単勝の締切時オッズ（race_odds_final.win_all。締切後だけ。図の1着人気）
- * 拡連複（range）は odds に下限の表、range に元の幅の表（{low, high}）を入れる
- * @returns {null | {byType: Record<string, {odds: Record<string, number>, range?: Record<string, {low: number, high: number}>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null, finalWin: Record<string, number>|null}}
+ * 拡連複（range）は odds に下限の表、range に下限のある組の幅（{low, high}。high は null のことがある）を入れる
+ * @returns {null | {byType: Record<string, {odds: Record<string, number>, range?: Record<string, {low: number, high: number|null}>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null, finalWin: Record<string, number>|null}}
  */
 export function oddsByBetType(snaps, final) {
   const byType = {};
@@ -995,7 +1011,7 @@ export function oddsByBetType(snaps, final) {
     t.range
       ? {
           odds: wideLowTable(table),
-          range: table,
+          range: widePricedRange(table),
           capturedAt,
           final: isFinal,
         }

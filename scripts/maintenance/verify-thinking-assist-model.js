@@ -27,6 +27,7 @@ import {
   boxBets,
   oddsByBetType,
   wideLowTable,
+  betTypeComposite,
   missingFirstBoats,
   boardModel,
   buildRacers,
@@ -1126,6 +1127,29 @@ check(
       JSON.stringify(wideLowTable({ "1-2": { low: 1.7, high: 2 }, "1-3": { low: 0, high: 0 }, "1-4": null })) ===
         JSON.stringify({ "1-2": 1.7 }),
     JSON.stringify(tw),
+  );
+  check(
+    "合成オッズ: 拡連複は出さない（null）、2連複は合成、オッズの表が無ければ null。拡連複の幅は下限のある組だけ",
+    betTypeComposite(assistBetType("wide"), { "1-2": 2 }, ["1-2"]) === null &&
+      betTypeComposite(assistBetType("quinella"), { "1-2": 2 }, ["1-2"]) === 2 &&
+      betTypeComposite(assistBetType("trio"), null, ["1-2-3"]) === null &&
+      JSON.stringify(
+        Object.keys(
+          oddsByBetType(
+            [
+              {
+                capturedAt: "t",
+                wideAll: {
+                  "1-2": { low: 1.7, high: 2 },
+                  "1-3": { low: 0, high: 0 },
+                  "1-4": null,
+                },
+              },
+            ],
+            null,
+          ).byType.wide.range,
+        ),
+      ) === JSON.stringify(["1-2"]),
   );
   const boxed = boxBets(B([1], [2, 3], [5]), 2);
   check(

@@ -43,6 +43,7 @@ import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useThinkingAssistData } from "../hooks/useThinkingAssistData";
 import {
   ASSIST_BET_TYPES,
+  betTypeComposite,
   ROUND_LABEL,
   anyCell,
   assistBetType,
@@ -78,11 +79,7 @@ import { ATTACK_BOAT } from "../utils/analogyScenario";
 import { guideSteps, theoryCard } from "../utils/assistTheory";
 import { assistEventOf } from "../utils/assistEvents";
 import { trackEvent } from "../utils/analytics";
-import {
-  compositeOdds,
-  expandTickets,
-  popularityRanks,
-} from "../utils/oddsMath";
+import { expandTickets, popularityRanks } from "../utils/oddsMath";
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
@@ -543,11 +540,8 @@ function ThinkingAssistBody() {
   // 選んでいる券種のオッズ（締切時オッズがあればその値。BOA-990）。図・ヘッダー・よく出た3連単は3連単のまま
   const typeOdds = data.odds.data?.byType?.[betType.id] ?? null;
   const betOdds = typeOdds?.odds ?? null;
-  // 拡連複は合成オッズを出さない（同じレースで最大3組が当たる。BOA-990 ③ 承認モック 画面1・2）
-  const composite =
-    betOdds && !betType.range
-      ? compositeOdds(tickets.map((t) => betOdds[t]))
-      : null;
+  // 拡連複は合成オッズを出さない（betTypeComposite。BOA-990 ③）
+  const composite = betTypeComposite(betType, betOdds, tickets);
   const oddsAt = formatObservedTime(data.odds.data?.capturedAt);
   const betOddsAt = formatObservedTime(typeOdds?.capturedAt);
   // 券種で比べる（同じ候補）の行（承認モック 画面1）
@@ -559,7 +553,7 @@ function ThinkingAssistBody() {
       form: betForm(bets, t.legs, t.ordered),
       points: tk.length,
       priced: o ? tk.filter((k) => o[k] != null && o[k] > 0).length : tk.length,
-      composite: o && !t.range ? compositeOdds(tk.map((k) => o[k])) : null,
+      composite: betTypeComposite(t, o, tk),
     };
   });
   const onBetType = (id, from) => act({ type: "betType", betType: id, from });
