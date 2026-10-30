@@ -37,10 +37,13 @@ function addDays(d, n) {
   x.setUTCDate(x.getUTCDate() + n);
   return x.toISOString().slice(0, 10);
 }
+// m か月前の同じ日の翌日（窓の始まり）。月末は丸める（3/31 の1か月前は 2/28。setUTCMonth だと 3/3 に繰り越す）
 function monthsBack(d, m) {
-  const x = new Date(d + "T00:00:00Z");
-  x.setUTCMonth(x.getUTCMonth() - m);
-  return addDays(x.toISOString().slice(0, 10), 1);
+  const [y, mo, day] = d.split("-").map(Number);
+  const first = new Date(Date.UTC(y, mo - 1 - m, 1));
+  const last = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  first.setUTCDate(Math.min(day, last));
+  return addDays(first.toISOString().slice(0, 10), 1);
 }
 const TO_PREV = addDays(monthsBack(TO, 1), -1); // 1か月前の12か月の窓の終わり
 const FETCH_FROM = monthsBack(TO_PREV, 12);
@@ -156,6 +159,12 @@ for (const w of Object.keys(W)) {
   const list = inW(w);
   per[w] = { ...W[w], all: summarize(list), venues: {} };
   for (let v = 1; v <= 24; v++) per[w].venues[String(v).padStart(2, "0")] = { name: VN[v], ...summarize(list.filter((r) => r.venue === v)) };
+}
+// 信頼性・中央値・順位相関は24会場がそろう前提（median は24行で 11・12 番目を取る）。
+// 改修などで窓の中にレースが0の会場があると NaN や null が黙って JSON に入るので止める
+for (const w of Object.keys(W)) {
+  const empty = Object.values(per[w].venues).filter((s) => s.races === 0).map((s) => s.name);
+  if (empty.length) throw new Error(`窓 ${w}（${W[w].from}〜${W[w].to}）にレースが0の会場がある: ${empty.join("・")}。会場を除く扱いを決めてから数え直す`);
 }
 const vkeys = Object.keys(per["12m"].venues);
 function metricRows(w, kind, key) {
