@@ -26,6 +26,7 @@ import {
   betForm,
   boxBets,
   oddsByBetType,
+  wideLowTable,
   missingFirstBoats,
   boardModel,
   buildRacers,
@@ -1083,7 +1084,10 @@ check(
       ticketLabel("1-2-3", false) === "1=2=3" &&
       ticketLabel("1-2", true) === "1-2" &&
       JSON.stringify(ASSIST_BET_TYPES.map((t) => t.id)) ===
-        JSON.stringify(["trifecta", "trio", "exacta", "quinella"]) &&
+        JSON.stringify(["trifecta", "trio", "exacta", "quinella", "wide"]) &&
+      assistBetType("wide").legs === 2 &&
+      assistBetType("wide").ordered === false &&
+      assistBetType("wide").range === true &&
       assistBetType("trio").ordered === false &&
       assistBetType("quinella").legs === 2,
   );
@@ -1098,6 +1102,30 @@ check(
       tq.byType.quinella.final === false &&
       tq.byType.quinella.odds["1-2"] === 1.4,
     JSON.stringify(tq),
+  );
+  // 拡連複（BOA-990 ③）: wide_all は {low, high}。計算は下限の表、表示は幅。下限の無い組・票0 は下限の表に入れない
+  const tw = oddsByBetType(
+    [
+      {
+        capturedAt: "t1",
+        trifectaAll: { "1-2-3": 5 },
+        wideAll: {
+          "1-2": { low: 1.7, high: 2 },
+          "1-3": { low: 0, high: 0 },
+          "1-4": { low: null, high: null },
+        },
+      },
+    ],
+    { capturedAt: "f", wideAll: { "1-2": { low: 1.8, high: 2.4 } } },
+  );
+  check(
+    "オッズ: 拡連複は締切時オッズ（wide_all）があればその幅、計算用の odds は下限（票0・下限なしは除く）",
+    tw.byType.wide.final === true &&
+      JSON.stringify(tw.byType.wide.odds) === JSON.stringify({ "1-2": 1.8 }) &&
+      tw.byType.wide.range["1-2"].high === 2.4 &&
+      JSON.stringify(wideLowTable({ "1-2": { low: 1.7, high: 2 }, "1-3": { low: 0, high: 0 }, "1-4": null })) ===
+        JSON.stringify({ "1-2": 1.7 }),
+    JSON.stringify(tw),
   );
   const boxed = boxBets(B([1], [2, 3], [5]), 2);
   check(

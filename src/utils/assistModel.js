@@ -918,9 +918,11 @@ export function buildRacers({
 
 /**
  * 買い目の券種（BOA-990、承認モック docs/design/assist-bet-types/mock/）。並びがタブと「券種で比べる」の行の順
- * （3連単｜3連複｜2連単｜2連複。拡連複は ③ で足す）。
- * legs は使う段の数、ordered は着順を問うか（連複は false。組は昇順、表記は「=」）、dataKey は getRaceOddsSnapshots・
+ * （3連単｜3連複｜2連単｜2連複｜拡連複）。
+ * legs は使う段の数、ordered は着順を問うか（連複・拡連複は false。組は昇順、表記は「=」）、dataKey は getRaceOddsSnapshots・
  * getRaceFinalOdds のキー、combos は全通りの数（人気の注記）。
+ * range は拡連複（BOA-990 ③）: オッズが公式の下限〜上限の幅（{low, high}）。配分・払戻・人気・トリガミは下限で
+ * 「その組だけ当たったとき」で出し、合成オッズは出さない（同じレースで最大3組が当たるので式が当てはまらない。承認モック 画面2）
  * 図の「1着人気」は券種によらず、締切前は3連単の合成、締切後は公式の単勝（2026-10-28 オーナー決定。boardModel）
  */
 export const ASSIST_BET_TYPES = Object.freeze([
@@ -952,6 +954,14 @@ export const ASSIST_BET_TYPES = Object.freeze([
     dataKey: "quinellaAll",
     combos: 15,
   }),
+  Object.freeze({
+    id: "wide",
+    legs: 2,
+    ordered: false,
+    range: true,
+    dataKey: "wideAll",
+    combos: 15,
+  }),
 ]);
 export const ASSIST_BET_TYPE_IDS = ASSIST_BET_TYPES.map((t) => t.id);
 /** 券種の id → 定義。知らない id は3連単（古い保存・既定） */
@@ -959,28 +969,45 @@ export const assistBetType = (id) =>
   ASSIST_BET_TYPES.find((t) => t.id === id) ?? ASSIST_BET_TYPES[0];
 
 /**
+ * 拡連複の幅の表（"1-2" → {low, high}）から、計算に使う下限の表（"1-2" → low）を作る。下限の無い組は入れない
+ * @param {Record<string, {low: number|null, high: number|null}|null>|null} table
+ * @returns {Record<string, number>}
+ */
+export const wideLowTable = (table) =>
+  Object.fromEntries(
+    Object.entries(table ?? {})
+      .filter(([, v]) => v?.low != null && v.low > 0)
+      .map(([k, v]) => [k, v.low]),
+  );
+
+/**
  * 券種ごとのオッズを選ぶ（BOA-990）。締切時オッズ（公式）のある券種はその値、無ければその券種の値を持つ最新の
  * スナップショット。どの券種も無ければ null（発売前）。trifecta・capturedAt は3連単の値（図・よく出た3連単が使う）
  * @param {Array<object>} snaps getRaceOddsSnapshots
  * @param {object|null} final getRaceFinalOdds
  * finalWin は公式の単勝の締切時オッズ（race_odds_final.win_all。締切後だけ。図の1着人気）
- * @returns {null | {byType: Record<string, {odds: Record<string, number>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null, finalWin: Record<string, number>|null}}
+ * 拡連複（range）は odds に下限の表、range に元の幅の表（{low, high}）を入れる
+ * @returns {null | {byType: Record<string, {odds: Record<string, number>, range?: Record<string, {low: number, high: number}>, capturedAt: string, final: boolean}>, trifecta: Record<string, number>|null, capturedAt: string|null, finalWin: Record<string, number>|null}}
  */
 export function oddsByBetType(snaps, final) {
   const byType = {};
+  const entry = (t, table, capturedAt, isFinal) =>
+    t.range
+      ? {
+          odds: wideLowTable(table),
+          range: table,
+          capturedAt,
+          final: isFinal,
+        }
+      : { odds: table, capturedAt, final: isFinal };
   for (const t of ASSIST_BET_TYPES) {
     const f = final?.[t.dataKey];
     if (f) {
-      byType[t.id] = { odds: f, capturedAt: final.capturedAt, final: true };
+      byType[t.id] = entry(t, f, final.capturedAt, true);
       continue;
     }
     const s = latestSnapshotWith(snaps ?? [], t.dataKey);
-    if (s)
-      byType[t.id] = {
-        odds: s[t.dataKey],
-        capturedAt: s.capturedAt,
-        final: false,
-      };
+    if (s) byType[t.id] = entry(t, s[t.dataKey], s.capturedAt, false);
   }
   if (Object.keys(byType).length === 0) return null;
   return {
@@ -1002,7 +1029,7 @@ export const betForm = (bets, legs = 3, ordered = true) =>
     .map((k) => [...bets[k]].sort((a, b) => a - b).join("") || "—")
     .join(ordered ? "-" : "=");
 
-/** 組のキー（"1-2-3"）の表記。連複は「1=2=3」 */
+/** 組のキー（"1-2-3"）の表記。連複・拡連複は「1=2=3」 */
 export const ticketLabel = (ticket, ordered = true) =>
   ordered ? ticket : ticket.replaceAll("-", "=");
 

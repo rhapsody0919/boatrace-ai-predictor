@@ -44,7 +44,8 @@ export default function BetTypeCompare({ rows, betType, onBetType }) {
           })}
         </tbody>
       </table>
-      <p className="ta-note">{ASSIST_COPY.compareNote}</p>
+      {/* 拡連複の行の合成オッズは「—」（BOA-990 ③ 承認モック 画面1） */}
+      <p className="ta-note">{`${ASSIST_COPY.compareNote}。${ASSIST_COPY.compareNoteWide}`}</p>
     </section>
   );
 }
