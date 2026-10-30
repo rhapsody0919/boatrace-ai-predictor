@@ -108,6 +108,7 @@
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}}／1号艇の1着率 {{rate}}%",
+    "collapsedTeaserNoSummary": "1号艇の1着率 {{rate}}%",
     "title": "この会場の特徴（過去90日）",
     "note": "AIデータ分析が参照しているのと同じ会場別データです。枠番ごとの1着率と、勝った際に多い決まり手を確認できます。",
     "nationalAverageTooltip": "全国平均{{value}}%",

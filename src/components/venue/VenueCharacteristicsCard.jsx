@@ -108,10 +108,16 @@ export default function VenueCharacteristicsCard({
     ? t(`venueCharacteristics.waterType.${venueInfo.waterType}`)
     : null;
   // 折りたたんだ見出しの要約1行: 水面・傾向と、1号艇の1着率（中身の代表値）
-  const collapsedTeaser = t("venueCharacteristics.collapsedTeaser", {
-    summary: venueSummary ?? "",
-    rate: boatRows[0].winRate.toFixed(1),
-  });
+  // 水面が不明なときは先頭に区切りだけが残らないよう、水面なしの文にする
+  const collapsedTeaser = t(
+    venueSummary
+      ? "venueCharacteristics.collapsedTeaser"
+      : "venueCharacteristics.collapsedTeaserNoSummary",
+    {
+      summary: venueSummary ?? "",
+      rate: boatRows[0].winRate.toFixed(1),
+    },
+  );
 
   return (
     <div
