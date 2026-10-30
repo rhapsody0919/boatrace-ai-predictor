@@ -36,6 +36,7 @@
 - approve_sns_x_send の ON CONFLICT は、state が sending・reconcile・posted でない job の youtube_stage と external_post_id を NULL に戻す。cancelled 等で閉じた job は承認し直せるので、記録を残したいなら approve で拒むか、別の場所に残す（2026-10-27、system-architect、177:145）
 - transition_sns_x_send に足した新しい操作を古い DB に送ると、YouTube の分岐を素通りして transition_sns_send_139 の「不正な操作です」で落ちる。コードを先に出しても壊れない根拠になる（2026-10-27、system-architect、182:307）
 - verify-rpc-key-regression は `'値',` の形の文字列をキーとして集めるので、CASE の ELSE などで値の後ろに `,` が無くなると「消えた」と出る。元の文の形を残して後から上書きする（2026-10-27、BOA-1164、186）
+- 2分ごとに繰り返す理由を残す表は、UNIQUE と PostgREST の `on_conflict` ＋ `Prefer: resolution=ignore-duplicates` で初出だけを書く。同じ理由の繰り返しは行を書かず WAL を増やさない（2026-10-31、system-architect、BOA-1201・191 の sns_send_events）
 
 ## 画面からの読み取り
 - 画面から Supabase を読むのは src/services/supabaseClient.js の1つの入口だけ。.throwOnError() が既定で、失敗を「データなし」に化けさせない（BOA-359、.claude/rules/frontend-data-fetch.md）
