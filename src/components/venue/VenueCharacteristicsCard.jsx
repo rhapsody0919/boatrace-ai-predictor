@@ -102,8 +102,10 @@ export default function VenueCharacteristicsCard({
   const hasAnyWinRate = boatRows.some((row) => row.winRate > 0);
   if (!hasAnyWinRate) return null;
 
-  const venueSummary = venueInfo
-    ? `${t(`venueCharacteristics.waterType.${venueInfo.waterType}`)}${t("listSeparator")}${t(`venueCharacteristics.cluster.${venueInfo.cluster}`)}`
+  // 水面（淡水・汽水・海水）だけを出す。「イン強い／アウト強い」は venues.cluster を
+  // 読んでいたが、この値は更新されず実績と食い違う（BOA-1202）。カードの作り直しは BOA-1189
+  const venueSummary = venueInfo?.waterType
+    ? t(`venueCharacteristics.waterType.${venueInfo.waterType}`)
     : null;
   // 折りたたんだ見出しの要約1行: 水面・傾向と、1号艇の1着率（中身の代表値）
   const collapsedTeaser = t("venueCharacteristics.collapsedTeaser", {

@@ -362,7 +362,8 @@ test("英語のレース詳細に公式の記号・円・日本語のラベル�
 });
 
 // BOA-656: 会場特性の要約は「水面・傾向」を日本語の中黒で連結していた（全言語で「Freshwater ・ Balanced」）
-test("会場特性の要約は言語ごとの区切りで連結する（BOA-656）", async ({
+// BOA-1202: 傾向（venues.cluster）の表示を外したので、要約は水面だけ。中黒・傾向の語が出ないことを守る
+test("会場特性の要約に日本語の中黒と傾向の語が出ない（BOA-656・BOA-1202）", async ({
   page,
 }) => {
   // venue-characteristics-teaser は VenueCharacteristicsCard が collapsible
@@ -395,15 +396,12 @@ test("会場特性の要約は言語ごとの区切りで連結する（BOA-656�
       json: { ...body, races },
     });
   });
-  for (const [path, sep] of [
-    ["/en/venue/2", ", "],
-    ["/zh-TW/venue/2", "、"],
-  ]) {
+  for (const path of ["/en/venue/2", "/zh-TW/venue/2"]) {
     await page.goto(path);
     const teaser = page.getByTestId("venue-characteristics-teaser");
     await teaser.waitFor({ timeout: 30000 });
     await expect(teaser).not.toContainText("・");
-    await expect(teaser).toContainText(sep);
+    await expect(teaser).not.toContainText(/Balanced|Inside|Outside/i);
   }
 });
 
