@@ -1,5 +1,5 @@
 // SNS の送信の runner（sns-pdca-loop tasks 19）・鍵の健全性 API・死活の稼働時間の再現テスト。
-// SQL153 と 186（BOA-1164 の閉じる遷移・残した理由）を PGlite に入れ、X・YouTube はモックの adapter。外部接続なし。
+// SQL153 と 186（BOA-1164 の閉じる遷移・残した理由）・191（送らなかった理由、BOA-1201）を PGlite に入れ、X・YouTube はモックの adapter。外部接続なし。
 import { test, before, beforeEach, after } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -11,6 +11,7 @@ import {
 import { createMockYoutubeAdapter } from "../../api/_lib/snsDeadlineQueue.js";
 import {
   PARENT_WAIT_ALERT_MINUTES,
+  createPostgrestEventWriter,
   createSnsSendStore,
   pickDueJobs,
   runSnsSend,
@@ -92,6 +93,13 @@ const store = {
         "SELECT id, channel, error_code, youtube_stage FROM sns_x_send_jobs WHERE state='reconcile' ORDER BY id",
       )
     ).rows,
+  // 本番の PostgREST の書き込み（createPostgrestEventWriter、on_conflict と resolution=ignore-duplicates）と同じ意味
+  recordEvent: async (e) => {
+    await db.query(
+      "INSERT INTO sns_send_events(job_id,stage,reason,detail) VALUES($1,$2,$3,$4) ON CONFLICT (job_id,stage,reason) DO NOTHING",
+      [e.job_id, e.stage, e.reason, e.detail],
+    );
+  },
   // 本番の PostgREST の読み取り（createSnsSendStore の retainedYoutubeJobs）と同じ条件
   retainedYoutubeJobs: async (now, limit) =>
     (
@@ -126,6 +134,7 @@ before(async () => {
     "148_sns_posted_approval_guard.sql",
     "153_sns_auto_send.sql",
     "186_sns_youtube_close_private.sql",
+    "191_sns_send_events.sql",
   ])
     await db.exec(
       await readFile(
@@ -1138,7 +1147,11 @@ test("BOA-1172: サムネイルの設定に失敗しても YouTube は posted �
     ctx(),
     deps({
       adapters: {
-        youtube: async () => createMockYoutubeAdapter({ failAt: "thumbnail", videoId: "thumbfail01" }),
+        youtube: async () =>
+          createMockYoutubeAdapter({
+            failAt: "thumbnail",
+            videoId: "thumbfail01",
+          }),
       },
       notify: async (t) => notices.push(t),
     }),
@@ -1161,7 +1174,11 @@ test("BOA-1172: サムネイルの設定に失敗しても YouTube は posted �
     ctx(),
     deps({
       adapters: {
-        youtube: async () => createMockYoutubeAdapter({ failAt: "thumbnail", videoId: "thumbfail02" }),
+        youtube: async () =>
+          createMockYoutubeAdapter({
+            failAt: "thumbnail",
+            videoId: "thumbfail02",
+          }),
       },
       notify: async () => {
         throw new Error("webhook_down");
@@ -1600,3 +1617,213 @@ async function retainedJob2() {
   );
   return { y };
 }
+
+// ---- BOA-1201: 送らなかった理由を sns_send_events（191）に (job, 段, 理由) ごとに初出だけ残す ----
+
+const events = async () =>
+  (
+    await db.query(
+      "SELECT job_id, stage, reason, detail FROM sns_send_events ORDER BY at, reason",
+    )
+  ).rows;
+
+test("BOA-1201 理由の記録: 送る前の検査に落ちると stage=precheck の1行が入る", async () => {
+  const j = await approvedJob("x");
+  await runSnsSend(ctx(), deps({ preflight: failingPreflight }));
+  assert.deepEqual(await events(), [
+    {
+      job_id: j.id,
+      stage: "precheck",
+      reason: "source_check_unconfigured",
+      detail: "source_check_unconfigured",
+    },
+  ]);
+});
+
+test("BOA-1201 理由の記録: 同じ理由で3回回しても1行のまま。理由が変わると2行になる", async () => {
+  const j = await approvedJob("x");
+  for (let i = 0; i < 3; i++)
+    await runSnsSend(ctx(), deps({ preflight: failingPreflight }));
+  assert.equal((await events()).length, 1);
+  await runSnsSend(
+    ctx(),
+    deps({
+      preflight: async () => {
+        throw new Error("source_changed");
+      },
+    }),
+  );
+  assert.deepEqual(
+    (await events()).map((e) => [e.job_id, e.stage, e.reason]),
+    [
+      [j.id, "precheck", "source_check_unconfigured"],
+      [j.id, "precheck", "source_changed"],
+    ],
+  );
+});
+
+for (const [label, failure, alerted] of [
+  ["表が無い（404・PGRST205）", { tableMissing: true }, false],
+  ["それ以外の失敗", { tableMissing: false }, true],
+])
+  test(`BOA-1201 理由の記録: 書き込みが落ちても送信は続く（${label}）`, async () => {
+    const a = await approvedJob("x", { scheduledOffsetMin: -3 });
+    const b = await approvedJob("x", { scheduledOffsetMin: -1 });
+    const result = await runSnsSend(
+      ctx(),
+      deps({
+        store: {
+          ...store,
+          recordEvent: async () => {
+            throw Object.assign(
+              new Error("sns_send_events の書き込みに失敗"),
+              failure,
+            );
+          },
+        },
+        preflight: async (j) => {
+          if (j.id === a.id) throw new Error("source_changed");
+        },
+      }),
+    );
+    assert.deepEqual(
+      result.body.jobs.map((r) => [r.id, r.outcome]),
+      [
+        [a.id, "precheck_failed"],
+        [b.id, "posted"],
+      ],
+    );
+    assert.equal((await job(b.id)).state, "posted");
+    // 表が無い間（191 は db-apply でデプロイの後）は Slack を鳴らし続けない
+    assert.equal(
+      result.report.alerts.some((x) => x.key === "send_events"),
+      alerted,
+    );
+  });
+
+test("BOA-1201 理由の記録: shadow では書かない", async () => {
+  await approvedJob("x");
+  const result = await runSnsSend(
+    ctx("shadow"),
+    deps({ preflight: failingPreflight }),
+  );
+  assert.equal(result.body.jobs[0].outcome, "precheck_failed");
+  assert.deepEqual(await events(), []);
+});
+
+test("BOA-1201 理由の記録: YouTube の送信の中で public_component_missing なら held（youtube_preflight_failed）と stage=send の1行。日本語の失敗は holdReasonOf の code", async () => {
+  const y = await approvedJob("youtube");
+  // runner の検査（1回目）は通し、送信の中の検査（2回目）で落とす
+  let calls = 0;
+  const result = await runSnsSend(
+    ctx(),
+    deps({
+      preflight: async () => {
+        calls += 1;
+        if (calls >= 2) throw new Error("public_component_missing");
+      },
+    }),
+  );
+  assert.equal(result.body.jobs[0].reason, "public_component_missing");
+  const row = await job(y.id);
+  assert.equal(row.state, "held");
+  assert.equal(row.error_code, "youtube_preflight_failed");
+  assert.deepEqual(await events(), [
+    {
+      job_id: y.id,
+      stage: "send",
+      reason: "public_component_missing",
+      detail: "public_component_missing",
+    },
+  ]);
+  // 媒体の照合の失敗（日本語の文言）は「youtube_preflight_種類」の code、文言は detail
+  const z = await approvedJob("youtube");
+  await runSnsSend(
+    ctx(),
+    deps({ loadMedia: async () => new Uint8Array([9, 9, 9]) }),
+  );
+  assert.equal((await job(z.id)).error_code, "youtube_preflight_failed");
+  assert.deepEqual(
+    (await events()).filter((e) => e.job_id === z.id),
+    [
+      {
+        job_id: z.id,
+        stage: "send",
+        reason: "youtube_preflight_media_changed",
+        detail: "媒体が変更されています",
+      },
+    ],
+  );
+});
+
+test("BOA-1201 PostgREST の書き込み: on_conflict と ignore-duplicates で POST し、404・PGRST205 は tableMissing、ほかの失敗は投げる", async () => {
+  const calls = [];
+  const respond = (status, body) => async (url, init) => {
+    calls.push({ url, init });
+    return new Response(body === undefined ? null : JSON.stringify(body), {
+      status,
+    });
+  };
+  const event = {
+    job_id: "00000000-0000-0000-0000-000000000001",
+    stage: "precheck",
+    reason: "source_changed",
+    detail: "source_changed",
+  };
+  await createPostgrestEventWriter({
+    url: "https://db.example",
+    key: "k",
+    fetchImpl: respond(201),
+  })(event);
+  assert.equal(
+    calls[0].url,
+    "https://db.example/rest/v1/sns_send_events?on_conflict=job_id,stage,reason",
+  );
+  assert.equal(calls[0].init.method, "POST");
+  assert.equal(
+    calls[0].init.headers.Prefer,
+    "resolution=ignore-duplicates,return=minimal",
+  );
+  assert.deepEqual(JSON.parse(calls[0].init.body), event);
+  for (const [status, body, missing] of [
+    [404, { code: "PGRST205", message: "Could not find the table" }, true],
+    [404, null, true],
+    [409, { code: "23503", message: "fk" }, false],
+    [500, null, false],
+  ]) {
+    const error = await createPostgrestEventWriter({
+      url: "https://db.example",
+      key: "k",
+      fetchImpl: respond(status, body ?? undefined),
+    })(event).then(
+      () => null,
+      (e) => e,
+    );
+    assert.ok(error, `HTTP ${status} は投げる`);
+    assert.equal(error.tableMissing, missing, `HTTP ${status}`);
+    assert.doesNotMatch(error.message, /Could not find|fk$/);
+  }
+  // runner の store に渡す
+  assert.equal(
+    createSnsSendStore({ db: async () => [], xSendStore: {}, writeEvent: 1 })
+      .recordEvent,
+    1,
+  );
+});
+
+test("BOA-1201 理由の記録: detail は文字単位で300字までに切る", async () => {
+  await approvedJob("x");
+  const long = "あ".repeat(299) + "😀" + "い".repeat(10);
+  await runSnsSend(
+    ctx(),
+    deps({
+      preflight: async () => {
+        throw new Error(long);
+      },
+    }),
+  );
+  const [row] = await events();
+  assert.equal(row.reason, "unexpected_error");
+  assert.equal(Array.from(row.detail).length, 300);
+  assert.ok(row.detail.endsWith("😀"));
+});

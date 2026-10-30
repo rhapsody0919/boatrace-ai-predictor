@@ -1,6 +1,7 @@
 import { xPostValid } from './snsXLength.js';
 import { SCREEN_TABS } from '../../scripts/lib/snsScreenMarkers.js';
 import { hasLink } from './snsResearchImage.js';
+import { holdReasonOf } from './snsXSend.js';
 
 // 推奨値は運用承認ではない。DB timing_approved=falseが初期値。
 export const QUEUE_TIMING_PROPOSAL = { scheduleMinutes: 90, expiryMinutes: 30 };
@@ -146,7 +147,12 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
     return await runYoutubePublishJob(uploadedJob, { store, youtube, preflight });
   } catch (error) {
     if (started && uploadedKnown && !publicationPhaseStarted) { try { await store.transition(id, 'youtube_retain', retainResult(error)); } catch { /* update開始後は残置扱いに戻さない */ } }
-    if (!started) { try { await store.transition(id, 'hold', { reason: 'youtube_preflight_failed' }); } catch { /* reconcileを戻さない */ } }
+    if (!started) {
+      try { await store.transition(id, 'hold', { reason: 'youtube_preflight_failed' }); } catch { /* reconcileを戻さない */ }
+      // job の error_code は begin_post の前の全部の失敗で youtube_preflight_failed。元の理由は runner の report と
+      // sns_send_events（191、stage=send）に残す（BOA-1201。X の runXSendJob と同じ holdReason）
+      error.holdReason ??= holdReasonOf(error, 'youtube_preflight');
+    }
     throw error;
   }
 }

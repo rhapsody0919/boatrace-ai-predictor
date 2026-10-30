@@ -21,6 +21,8 @@
  *     実行のメモリに置いた通知は、途中で落ちると保存されず、sweep（DB の now()）と runner の時刻のずれでも漏れるため
  *     （開発の補助の点検 2026-10-13-28 の D2）
  *   - 送る前の検査・トークンの失敗は、候補を20件ずつ巡回するので、次にその job・チャネルを見直すまで（最長 CONTINUING_ALERT_MINUTES）残す
+ * - 送らなかった理由（送る前の検査の失敗・送信の中の失敗）は、live のときだけ DB の sns_send_events（191）にも (job, 段, 理由) ごとに
+ *   初出の1行を残す。hq の見張りは Slack を読めないので DB で読む（BOA-1201）。書けなくても送信は止めない
  */
 import { runXSendJob } from "../../api/_lib/snsXSend.js";
 import {
@@ -82,6 +84,13 @@ export const CONTINUING_ALERT_MINUTES = 30;
 /** 親を待つ子の期限が、この分数より近くなったら知らせる */
 export const PARENT_WAIT_ALERT_MINUTES = 10;
 
+/** 送らなかった理由の detail の上限（191 の CHECK）。サロゲートペアを割らないよう文字単位で切る */
+const EVENT_DETAIL_MAX = 300;
+const clip = (text) =>
+  Array.from(String(text ?? ""))
+    .slice(0, EVENT_DETAIL_MAX)
+    .join("");
+
 /** 走査位置（scrape_job_state.cursor）: 送る時刻と id の組。次の実行はこの位置の後から読む（開発の補助の点検 D1） */
 const positionOf = (job) => ({ scheduled_at: job.scheduled_at, id: job.id });
 
@@ -131,6 +140,34 @@ export async function runSnsSend(
           until: new Date(
             now.getTime() + UNDELIVERED_ALERT_HOURS * 3600000,
           ).toISOString(),
+        });
+    }
+  };
+  // 送らなかった理由を sns_send_events（191）に残す。shadow は DB を変えない。同じ (job, 段, 理由) は UNIQUE で書かない。
+  // 書けなくても送信は止めない。表が無い（191 は db-apply でコードのデプロイの後に当たる）間は console だけにし、Slack を鳴らし続けない
+  const recordEvent = async (job, stage, reason, message) => {
+    if (!live || !store.recordEvent) return;
+    try {
+      await store.recordEvent({
+        job_id: job.id,
+        stage,
+        reason,
+        detail: clip(message),
+      });
+    } catch (error) {
+      if (error.tableMissing) {
+        console.warn(
+          `送らなかった理由を残せない（sns_send_events が無い、191 未適用）: ${job.id} ${stage} ${reason}`,
+        );
+        return;
+      }
+      console.error(
+        `送らなかった理由を残せない: ${job.id} ${stage} ${reason}: ${error.message}`,
+      );
+      if (!alerts.some((a) => a.key === "send_events"))
+        alerts.push({
+          key: "send_events",
+          text: `SNS の送信: 送らなかった理由を sns_send_events に書けない（送信は続けた）: ${error.message}`,
         });
     }
   };
@@ -275,6 +312,7 @@ export async function runSnsSend(
         text: `送る前の検査で止めた（claim していない）: ${job.channel} job ${job.id} 理由 ${result.reason}`,
         until: continuingUntil,
       });
+      await recordEvent(job, "precheck", result.reason, error.message);
       continue;
     }
     // dry_run の行が無い（153 未適用など）ときも送らない（fail-closed）
@@ -348,6 +386,7 @@ export async function runSnsSend(
       // job の状態（held・要照合）は送信の関数が DB に残している。ここでは理由を知らせるだけ
       result.outcome = "error";
       result.reason = error.holdReason ?? slug(error.message);
+      await recordEvent(job, "send", result.reason, error.message);
       await tell(
         `send:${job.id}`,
         `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
@@ -448,9 +487,42 @@ export function createPostgrestReader({ url, key, fetchImpl = fetch }) {
   };
 }
 
-/** 送信の job の読み書き。xSendStore（api/_lib/snsXSendStore.js）の送信の操作に、runner の読み取りを足す */
-export function createSnsSendStore({ db, xSendStore }) {
+/**
+ * PostgREST の書き込み（service_role）: 送らなかった理由を sns_send_events（191）に1行。同じ (job, 段, 理由) は UNIQUE で
+ * 止まり、resolution=ignore-duplicates で行を書かずに成功する（2分ごとの繰り返しで WAL を増やさない）。
+ * 失敗は投げる。表が無い（404・PGRST205）ときは tableMissing を付ける
+ */
+export function createPostgrestEventWriter({ url, key, fetchImpl = fetch }) {
+  return async (event) => {
+    const response = await fetchImpl(
+      `${url}/rest/v1/sns_send_events?on_conflict=job_id,stage,reason`,
+      {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=ignore-duplicates,return=minimal",
+        },
+        body: JSON.stringify(event),
+      },
+    );
+    if (response.ok) return;
+    // 本文は code だけ読む（message・details は残さない）
+    const code = (await response.json().catch(() => null))?.code ?? null;
+    const error = new Error(
+      `sns_send_events の書き込みに失敗: HTTP ${response.status}${code ? ` ${code}` : ""}`,
+    );
+    error.tableMissing =
+      response.status === 404 || code === "PGRST205" || code === "42P01";
+    throw error;
+  };
+}
+
+/** 送信の job の読み書き。xSendStore（api/_lib/snsXSendStore.js）の送信の操作に、runner の読み取りと送らなかった理由の書き込みを足す */
+export function createSnsSendStore({ db, xSendStore, writeEvent }) {
   return {
+    recordEvent: writeEvent,
     transition: (id, action, result) =>
       xSendStore.transition(id, action, result),
     parent: (id) => xSendStore.parent(id),
