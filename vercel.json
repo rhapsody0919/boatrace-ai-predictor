@@ -217,6 +217,14 @@
       "schedule": "0 8 * * *"
     },
     {
+      "path": "/api/cron/racer-career-main",
+      "schedule": "30 14 * * *"
+    },
+    {
+      "path": "/api/cron/racer-career-main",
+      "schedule": "0 16 * * *"
+    },
+    {
       "path": "/api/cron/morning-digest",
       "schedule": "30 20 * * *"
     },

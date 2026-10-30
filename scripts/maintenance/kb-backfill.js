@@ -47,8 +47,10 @@ import { buildArchiveRows, KB_ARCHIVE_TABLES } from "../lib/kbArchiveRows.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
 
-// 本体テーブル（races等）が持つ最古の日。これ以降のK/Bはアーカイブへ投入しない（重複）
-export const MAIN_TABLES_START = "2025-12-03";
+// 本体テーブル（races等）が持つ最古の日。これ以降のK/Bはアーカイブへ投入しない（重複）。
+// 値は scripts/lib/kbArchiveBoundary.js が正本（選手の集計の表 190 の書き手と共有する）
+import { MAIN_TABLES_START } from "../lib/kbArchiveBoundary.js";
+export { MAIN_TABLES_START };
 const EARLIEST_AVAILABLE = "2005-01-01";
 
 const HARD_MIN_INTERVAL_MS = 3000; // 公式サイトへの最小間隔（ADR-0067）。これ未満は指定できない
