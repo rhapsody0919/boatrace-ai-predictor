@@ -33,3 +33,26 @@
 - [ ] 節の初日が `races` に欠けている件（plan.md §9.5）の原因調査・修復
 - [x] fan の Vercel Cron 化（2026-10-03 ユーザー承認。`fan_period` ジョブ、台帳 `raw_snapshots` はマイグレーション125。有効化は verification-runbook.md の V）
 - [ ] `race_series.grade` が NULL の節の補完（K/B の節名から）、`races.race_grade` との食い違いの実測
+
+## GS00 案2: 選手の集計の表（plan.md §14、spec.md、マイグレーション 190）
+
+### この PR（コード・DDL案・検証）
+
+- [x] 190（5表・RPC 3つ、RLS と権限）と APPLIED.md の「未適用」行
+- [x] 書き手の共通部分 `scripts/lib/racerCareerJob.js`（判定の材料・足し合わせ・消えたセル・指紋）と境目の定数 `scripts/lib/kbArchiveBoundary.js`
+- [x] kb の1回の CLI と main の全選手の計算 `scripts/maintenance/racer-career-backfill.js`
+- [x] main の毎晩の Cron `api/cron/racer-career-main.js`（レジストリ `racer_career_main`、vercel.json の 23:30・01:00 JST）
+- [x] 検証 `verify-racer-career-stats.js`（ci、PGlite）と照合の関門 `verify-racer-career-gate.js`（manual）
+- [x] ADR-0104
+
+### 適用の後（オーナーの操作 → Claude の確認。順は plan.md §14.8）
+
+- [ ] 190 を当てる → 権限（relrowsecurity・anon の SELECT だけ・RPC は service_role だけ）と get_advisors（security）を確かめる
+- [ ] kb 層の CLI（数えるだけ → --apply）。前後の Disk IO を記録する
+- [ ] main 層の CLI `--all`（数えるだけ → --apply）
+- [ ] Cron を live にする
+- [ ] BOA-1193 のマージの後に、照合の関門を通す（14期×選手。一致しない選手の一覧を報告）
+- [ ] 本番実測: 期待件数（算出根拠: kb は `racer_career_meta.fingerprint.boats_by_year`＝`kb_archive_boats` の着のコードがある艇の行数、main は本体の着のコードがある艇の数。表の行数は spec §8 の見積り）に対し、過去分を含めて充足率99%以上であることを実測クエリで確認する
+- [ ] タイミング実測: 可変データではない（確定した着順の集計）。main 層は、土日を含む直近5日で、前日までの着のコードが当日 23:30 の計算に入っていること（`racer_career_meta.computed_at`・`source_to`）を確かめる（欠けは2%以内）
+- [ ] 継続監視: 毎晩のジョブ（`racer_career_main`）の成否・最終成功からの経過が日次で自動計測され、失敗・未実行・kb の指紋の変化で Slack 通知されることを確認する
+
