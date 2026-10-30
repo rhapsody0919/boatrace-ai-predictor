@@ -1044,6 +1044,11 @@
       "guards": "出走表（racelist）の過去分バックフィルCLI"
     },
     {
+      "script": "verify-racer-career-stats.js",
+      "tier": "ci",
+      "guards": "BOA-1193 の勝率用着順点・優勝戦加点・出走の分母・丸め・着回数と優出優勝を合成データで固定する。実 fan 照合は別の集計表の関門で行う"
+    },
+    {
       "script": "verify-racer-condition-stats.js",
       "tier": "ci",
       "guards": "選手ページ「レース条件別の成績」（BOA-336、src/utils/racerConditionStats.js）。天候の3区分（雪・台風は雨にまとめる）、風速5m・波高5cmの境目、江戸川を波の行から外すこと、条件の無い走を全体に混ぜないこと、着順の付かない走の数え方、5走未満の条件を出さないこと"
