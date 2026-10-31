@@ -27,6 +27,8 @@ import {
   PredictionSection,
   RaceBottomNav,
   RaceNavCard,
+  RaceNumberStrip,
+  RaceSummaryTable,
 } from "../components/race";
 import DataFetchError from "../components/DataFetchError";
 import {
@@ -38,7 +40,7 @@ import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
-import { getRaceStatus } from "../utils/raceStatus";
+import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
 import { formatDateLocalized } from "../utils/formatters";
 // 見出し・title・description・canonical・パンくずは、ボット向け HTML（ADR 0089 第2段）と同じ関数で組む
 import {
@@ -322,6 +324,23 @@ function RaceDetailPage({ showViewSwitch = false }) {
             </div>
           ) : (
             <>
+              {/* 1R〜12R の帯と6艇の要約（BOA-1189 GS01-c、2026-10-31 オーナー決定）。タブの上に置く */}
+              <RaceNumberStrip
+                races={venueRaces}
+                currentRaceId={raceId}
+                venueCode={parsed.venueCode}
+                date={date}
+              />
+              {!prediction?.error && (
+                <RaceSummaryTable
+                  players={prediction?.allPlayers}
+                  exhibitionData={prediction?.exhibitionData}
+                  result={prediction?.result}
+                  showExhibitionPending={
+                    isToday && status === RACE_STATUS.UPCOMING
+                  }
+                />
+              )}
               <PredictionSection
                 prediction={prediction}
                 selectedRace={selectedRace}

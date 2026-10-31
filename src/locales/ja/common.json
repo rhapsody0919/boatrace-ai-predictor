@@ -2459,6 +2459,25 @@
     "noPrevRace": "前のレースなし",
     "noNextRace": "次のレースなし"
   },
+  "raceSummary": {
+    "title": "出走6艇の要約",
+    "colFinish": "着順",
+    "colBoat": "艇番",
+    "colRacer": "選手",
+    "colGrade": "級別",
+    "colExh": "展示タイム",
+    "finishValue": "{{rank}}着",
+    "exhRank": "({{rank}}位)",
+    "exhRankTied": "({{rank}}位タイ)",
+    "exhNote": "展示タイムは小さいほど速い。括弧は6艇の中の順位",
+    "exhPending": "展示は締切の約15分前",
+    "noValue": "—"
+  },
+  "raceStrip": {
+    "label": "{{venue}}のレース",
+    "meetLink": "この節の得点率・勝ち上がり ›",
+    "meetFetchError": "節の情報を読み込めませんでした"
+  },
   "raceStage": {
     "final": "優勝戦",
     "semifinal": "準優勝戦",

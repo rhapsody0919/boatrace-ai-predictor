@@ -15,6 +15,8 @@ export { default as AttackDefenseTable } from "./AttackDefenseTable";
 export { default as PredictionPanel } from "./PredictionPanel";
 export { default as RaceBottomNav } from "./RaceBottomNav";
 export { default as RaceNavCard } from "./RaceNavCard";
+export { default as RaceNumberStrip } from "./RaceNumberStrip";
+export { default as RaceSummaryTable } from "./RaceSummaryTable";
 export { default as OutcomePatternPreview } from "./OutcomePatternPreview";
 export { default as PredictionSection } from "./PredictionSection";
 export { default as DataRaceTable } from "./DataRaceTable";

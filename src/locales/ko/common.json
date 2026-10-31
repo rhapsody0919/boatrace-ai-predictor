@@ -636,6 +636,25 @@
     "noPrevRace": "이전 경주가 없습니다",
     "noNextRace": "다음 경주가 없습니다"
   },
+  "raceSummary": {
+    "title": "출주 6정 요약",
+    "colFinish": "착순",
+    "colBoat": "번호",
+    "colRacer": "선수",
+    "colGrade": "등급",
+    "colExh": "전시 타임",
+    "finishValue": "{{rank}}착",
+    "exhRank": "({{rank}}위)",
+    "exhRankTied": "(공동 {{rank}}위)",
+    "exhNote": "전시 타임은 작을수록 빠릅니다. 괄호는 6정 중 순위",
+    "exhPending": "전시는 마감 약 15분 전",
+    "noValue": "—"
+  },
+  "raceStrip": {
+    "label": "{{venue}} 레이스",
+    "meetLink": "이번 시리즈 득점률·진출 ›",
+    "meetFetchError": "시리즈 정보를 불러오지 못했습니다"
+  },
   "raceStage": {
     "final": "우승전",
     "semifinal": "준결승전",

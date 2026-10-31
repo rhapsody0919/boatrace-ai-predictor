@@ -1040,6 +1040,11 @@
       "guards": "中止・順延の早期確定（race_status）"
     },
     {
+      "script": "verify-race-summary-rows.js",
+      "tier": "ci",
+      "guards": "レース詳細のタブの上の6艇の要約（BOA-1189 GS01-c、src/utils/raceSummaryRows.js）。並びは艇番・展示タイムの順位は小さいほど上で同タイムは同順位（競技順位方式）・欠場（0・null）は順位に入れない・確定後だけ着順を出し艇に正しく付く"
+    },
+    {
       "script": "verify-racelist-backfill.js",
       "tier": "ci",
       "guards": "出走表（racelist）の過去分バックフィルCLI"
