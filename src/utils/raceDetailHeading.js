@@ -27,6 +27,27 @@ export function getSeriesDayLabel(seriesDay, isFinalDay, t) {
   return null;
 }
 
+/**
+ * 会場・日付単位の日目の表示（トップの会場カード、BOA-1199）。
+ * レース詳細の見出し（getRaceDetailHeading）と同じ値になるよう、同じ取り方にする:
+ * 値の入っているレースから項目ごとに補い、丸一日中止の日は出さない（BOA-509・658）
+ *
+ * @param {Array<{seriesDay?: number|null, isFinalDay?: boolean|null, cancellationStatus?: string|null, result?: object|null}>} venueRaces
+ * @param {(key: string, params?: object) => string} t
+ * @returns {string|null}
+ */
+export function getVenueSeriesDayLabel(venueRaces, t) {
+  if (venueRaces.length === 0 || venueRaces.every((r) => isRaceCancelled(r)))
+    return null;
+  const venueValue = (key) =>
+    venueRaces.find((r) => r[key] != null)?.[key] ?? null;
+  return getSeriesDayLabel(
+    venueValue("seriesDay"),
+    venueValue("isFinalDay"),
+    t,
+  );
+}
+
 // 見出しの種別チップ（BOA-509）。分類できたものは分類名、できないもの
 // （会場の企画レース名）は公式表記のまま出す。race_stage はレースごとの値なので
 // 他レースで補わない（無ければ出さない）

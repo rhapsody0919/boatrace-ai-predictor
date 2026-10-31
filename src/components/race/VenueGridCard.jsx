@@ -1,6 +1,6 @@
 /**
  * VenueGridCard - 開催場一覧グリッドの1会場分カード
- * 開催中: 大会名・グレードバッジ・時間帯アイコン・次レース時刻を表示しリンク化
+ * 開催中: 大会名・節の日目（BOA-1199）・グレードバッジ・時間帯アイコン・次レース時刻を表示しリンク化
  * 非開催: 次開催日（BOA-225）が分かれば「次開催 M/D」、無ければ「本日開催なし」（リンクなし）
  */
 import { Link } from "react-router-dom";
@@ -16,6 +16,7 @@ import {
 } from "../../constants/raceStageConfig";
 import { getVenueTimeOfDay, TIME_OF_DAY } from "../../utils/raceTimeOfDay";
 import { formatMonthDay } from "../../utils/nextOpenDate";
+import { getVenueSeriesDayLabel } from "../../utils/raceDetailHeading";
 import "./VenueGridCard.css";
 
 const TIME_OF_DAY_ICON = {
@@ -82,11 +83,20 @@ function VenueGridCard({
     highlightedStageRace && getRaceStageBadge(highlightedStageRace.raceStage);
 
   const nextRace = nowHHMM ? findNextRace(races, nowHHMM) : null;
+  // 節の何日目か（BOA-1199）。レース詳細の見出しと同じ値。全レース終了の会場には出さない
+  const seriesDayLabel = nextRace ? getVenueSeriesDayLabel(races, t) : null;
 
   return (
     <Link to={linkTo} className="venue-grid-card venue-grid-card--open">
       <div className="venue-grid-card__header">
-        <span className="venue-grid-card__name">{venueName}</span>
+        <span className="venue-grid-card__name-row">
+          <span className="venue-grid-card__name">{venueName}</span>
+          {seriesDayLabel && (
+            <span className="venue-grid-card__series-day">
+              {seriesDayLabel}
+            </span>
+          )}
+        </span>
         {timeIcon && (
           <span
             className="venue-grid-card__time-icon"

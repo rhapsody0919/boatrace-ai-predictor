@@ -7,6 +7,7 @@ import {
   fetchRecorded,
 } from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
+import { rewriteTodayRaces } from "./today-races-rewrite.js";
 import { ANALOGY_V16_RACE, routeAnalogyV16 } from "./analogy-v16-fixture.js";
 import {
   THINKING_ASSIST_RACE,
@@ -2190,4 +2191,62 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
     expect(m.right, "部品の右端").toBeLessThanOrEqual(m.vw + 1);
     expect(m.wide, "部品の枠からはみ出す要素の数").toBe(0);
   });
+});
+
+/**
+ * BOA-1199: トップの会場カードの日目の札。いちばん幅を取る組み合わせ（札・優勝戦・SG・時間帯の
+ * アイコン、英語の「Opening day」）でも、札がカードからはみ出さず、会場名を省略記号で削らず、
+ * 横スクロールが出ないこと。全会場を「次のレースあり」に書き換えて全カードで測る
+ */
+test.describe("レイアウト: トップの会場カードの日目の札（BOA-1199）", () => {
+  for (const { path, day, isFinalDay, label } of [
+    { path: "/", day: 6, isFinalDay: true, label: "最終日" },
+    { path: "/en", day: 1, isFinalDay: false, label: "Opening day" },
+    { path: "/en", day: 5, isFinalDay: false, label: "Day 5" },
+  ]) {
+    test(`${path} の「${label}」の札がカードに収まる`, async ({ page }) => {
+      await rewriteTodayRaces(page, (venues) => {
+        for (const v of venues)
+          (v.races ?? []).forEach((r, i, races) => {
+            r.startTime = "23:59";
+            r.seriesDay = day;
+            r.isFinalDay = isFinalDay;
+            r.cancellationStatus = null;
+            r.raceGrade = "SG";
+            r.raceStage = i === races.length - 1 ? "優勝戦" : null;
+          });
+      });
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(
+        page.locator(".venue-grid-card__series-day").first(),
+      ).toHaveText(label, { timeout: 30000 });
+      const problems = await page.evaluate((tolerance) => {
+        const out = [];
+        const de = document.documentElement;
+        if (de.scrollWidth > de.clientWidth + tolerance)
+          out.push({
+            scrollWidth: de.scrollWidth,
+            clientWidth: de.clientWidth,
+          });
+        for (const card of document.querySelectorAll(
+          ".venue-grid-card--open",
+        )) {
+          const badge = card.querySelector(".venue-grid-card__series-day");
+          if (!badge) continue;
+          const c = card.getBoundingClientRect();
+          const b = badge.getBoundingClientRect();
+          const name = card.querySelector(".venue-grid-card__name");
+          if (b.right > c.right + tolerance || b.left < c.left - tolerance)
+            out.push({ card: card.getAttribute("href"), badgeOut: true });
+          if (name.scrollWidth > name.clientWidth + 1)
+            out.push({
+              card: card.getAttribute("href"),
+              nameClipped: name.textContent,
+            });
+        }
+        return out;
+      }, OVERFLOW_TOLERANCE_PX);
+      expect(problems, JSON.stringify(problems, null, 2)).toEqual([]);
+    });
+  }
 });
