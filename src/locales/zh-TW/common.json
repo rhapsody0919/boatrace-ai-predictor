@@ -96,50 +96,51 @@
   },
   "venueRaceList": {
     "title": "比賽一覽",
-    "metaTitle": "{{venue}}今日賽程、AI數據分析 - 龍神雷達",
-    "metaDescription": "{{venue}}賽艇場今日全部比賽一覽。確認截止時間與級別後，可查看各場比賽的AI數據分析。",
+    "metaTitle": "{{venue}}賽艇預測、出走表｜今日全部比賽AI預測 - 龍神雷達",
+    "metaDescription": "{{venue}}賽艇場今日的出走表與全部比賽的AI預測。可查看截止時間、轉彎預測，以及近1年各進場道次第1名率與決勝方式。",
     "backToVenues": "← 返回賽場一覽",
     "jumpToNextRace": "前往{{race}}R",
     "nextDeadlineMarker": "{{venue}}　下一場截止 {{race}}R {{time}}",
     "allClosedMarker": "{{venue}}　今日比賽皆已截止",
     "todayTitle": "今日賽程、AI預測",
-    "metaTitleSeries": "{{venue}}今日賽程（{{series}}）、AI數據分析 - 龍神雷達",
-    "metaDescriptionSeries": "{{venue}}賽艇場舉辦{{series}}期間的今日全部比賽一覽。確認截止時間與級別後，可查看各場比賽的AI數據分析。"
+    "metaTitleSeries": "{{venue}}賽艇預測、出走表（{{series}}）｜今日AI預測 - 龍神雷達",
+    "metaDescriptionSeries": "{{venue}}賽艇場舉辦{{series}}期間的今日出走表與全部比賽AI預測，並可查看本節的得分率排名。"
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}}／1號艇第1名率 {{rate}}%",
-    "collapsedTeaserNoSummary": "1號艇第1名率 {{rate}}%",
-    "title": "本賽場的特徵（近90天）",
-    "note": "與AI數據分析所參考的相同賽場數據。可查看各艇號的第1名機率，以及獲勝時最常見的獲勝方式。",
-    "nationalAverageTooltip": "全國平均{{value}}%",
-    "techniqueHeader": "主要獲勝方式",
-    "footnote": "統計最近{{count}}場比賽（截至{{date}}）。僅反映過去的比賽傾向，不保證當日結果。",
-    "unknownDate": "更新日期不明",
+    "collapsedTeaser": "水質：{{summary}}。展開各進場道次第1名率與決勝方式表",
+    "collapsedTeaserNoSummary": "展開各進場道次第1名率與決勝方式表",
+    "title": "本賽場的特徵（近1年）",
+    "note": "第1名的比例依實際進場道次（非艇號）顯示。決勝方式為占全部比賽的比例。",
+    "nationalAverageTooltip": "全國{{value}}%",
+    "footnote": "統計{{from}}〜{{to}}的{{count}}場比賽（不含停賽、不成立）。全國數值為同期間{{nationalCount}}場比賽。4〜6道第1名次數較少，賽場的排名可能逐年變動。僅為過去的統計，不代表未來結果。",
     "waterType": {
       "fresh": "淡水",
       "brackish": "汽水",
       "sea": "海水"
     },
-    "cluster": {
-      "in_strong": "內道優勢",
-      "out_strong": "外道優勢",
-      "balanced": "平衡型"
-    },
-    "fetchError": "無法載入本場地的水面特性。",
+    "fetchError": "無法載入近90天各艇號的數據。",
     "details": {
-      "summary": "查看更多（2連率、3連率、決勝方式明細）",
-      "placeRatesTitle": "各艇號的連對率",
+      "summary": "查看更多（近90天、各艇號的2連率、3連率與獲勝時的決勝方式）",
+      "placeRatesTitle": "各艇號的2連率、3連率（近90天）",
       "placeRatesNote": "2連率為進入前2名、3連率為進入前3名的比例（{{count}}場）",
       "boat": "艇",
-      "winRate": "第1名率",
       "top2Rate": "2連率",
       "top3Rate": "3連率",
-      "techniqueTitle": "獲勝時的決勝方式",
+      "techniqueTitle": "各艇號獲勝時的決勝方式（近90天）",
       "techniqueNote": "各艇號獲得第1名的比賽中，決勝方式的明細。括號內為次數",
       "winCount": "第1名{{count}}次",
       "smallSampleNote": "第1名次數較少的艇號，比例容易波動。",
       "outcomeLink": "查看此賽場的常見結果排行（分析工具）"
-    }
+    },
+    "courseHeader": "各進場道次第1名率",
+    "courseLabel": "{{course}}道",
+    "techniqueTitle": "決勝方式（占全部比賽的比例）",
+    "techniqueName": "決勝方式",
+    "techniqueVenue": "本賽場",
+    "techniqueNational": "全國",
+    "megumareNote": "幸運勝出為{{races}}場中{{count}}次（全國為{{nationalRaces}}場中{{nationalCount}}次）。次數較少，不以比例比較賽場。",
+    "winsOfRaces": "{{races}}場中{{count}}次",
+    "nationalLegend": "縱線為全國數值"
   },
   "raceDetailPage": {
     "assistSwitch": {
@@ -3860,5 +3861,18 @@
       "where": "注意度顯示在比賽詳情的「AI預測」分頁、各場地比賽列表的標籤，以及首頁的「今日的1號位失守注意度」。",
       "sparseNote": "因勝率差區段的過去比賽太少而未給出注意度的{{n}}場比賽，計入全部比賽，但不列入任何一段。"
     }
+  },
+  "venueSummary": {
+    "label": "本賽場摘要（近1年）",
+    "course1Higher": "{{venue}}近1年（至{{to}}，{{races}}場），進場道次1道的第1名率為{{rate}}%，高於全國（{{nationalRaces}}場）的{{nationalRate}}%",
+    "course1Lower": "{{venue}}近1年（至{{to}}，{{races}}場），進場道次1道的第1名率為{{rate}}%，低於全國（{{nationalRaces}}場）的{{nationalRate}}%",
+    "course1Unclear": "{{venue}}近1年（至{{to}}，{{races}}場），進場道次1道的第1名率為{{rate}}%。與全國（{{nationalRaces}}場）的{{nationalRate}}%之間的差異並不明確",
+    "techniques": "逃走以外，占比最高的3種決勝方式為{{list}}（占全部比賽的比例）",
+    "techniqueItem": "{{name}}{{rate}}%"
+  },
+  "venueMeetBanner": {
+    "inProgress": "舉辦中",
+    "link": "查看本節得分率排名與晉級名單",
+    "fetchError": "無法載入舉辦中的節頁面入口。"
   }
 }

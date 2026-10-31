@@ -97,51 +97,52 @@
   },
   "venueRaceList": {
     "title": "Race list",
-    "metaTitle": "Today's races at {{venue}} - AI data analysis | Ryujin Radar",
-    "metaDescription": "All of today's races at {{venue}} boat race stadium. Check deadlines and grades, then view AI data analysis for each race.",
+    "metaTitle": "{{venue}} Boat Race Predictions & Race Card Today - AI Data | Ryujin Radar",
+    "metaDescription": "Today's race card and AI predictions for every race at {{venue}} boat race stadium. Check deadlines, the turn prediction, and the last 12 months' 1st-place rate by starting course and winning techniques.",
     "backToVenues": "← Back to venues",
     "jumpToNextRace": "Go to R{{race}}",
     "nextDeadlineMarker": "{{venue}}: next deadline R{{race}} {{time}}",
     "allClosedMarker": "{{venue}}: all races today have closed",
     "todayTitle": "Today's races & AI predictions",
-    "metaTitleSeries": "Today's races at {{venue}} ({{series}}) - AI data analysis | Ryujin Radar",
-    "metaDescriptionSeries": "All of today's races at {{venue}} boat race stadium during {{series}}. Check deadlines and grades, then view AI data analysis for each race."
+    "metaTitleSeries": "{{venue}} Boat Race Predictions & Race Card ({{series}}) - AI Data | Ryujin Radar",
+    "metaDescriptionSeries": "Today's race card and AI predictions for every race at {{venue}} boat race stadium during {{series}}, plus the meet's score rate ranking."
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}} / Boat 1 win rate {{rate}}%",
-    "collapsedTeaserNoSummary": "Boat 1 win rate {{rate}}%",
-    "title": "This Venue's Tendencies (last 90 days)",
-    "note": "Same venue-level data our AI data analysis uses. See each boat's 1st-place rate and its most common winning technique.",
-    "nationalAverageTooltip": "National average: {{value}}%",
-    "techniqueHeader": "Top technique",
-    "footnote": "Based on the last {{count}} races (as of {{date}}). Reflects past tendencies only and does not guarantee today's results.",
-    "unknownDate": "unknown",
+    "collapsedTeaser": "Water: {{summary}}. Open the 1st-place rate by starting course and the winning-technique table",
+    "collapsedTeaserNoSummary": "Open the 1st-place rate by starting course and the winning-technique table",
+    "title": "This Venue's Tendencies (last 12 months)",
+    "note": "1st-place rates are shown by the starting course each boat actually took (not the lane number). Winning techniques are shares of all races.",
+    "nationalAverageTooltip": "National {{value}}%",
+    "footnote": "Based on {{count}} races from {{from}} to {{to}} (excluding cancelled and void races). National figures cover {{nationalCount}} races in the same period. Courses 4–6 have few wins, so venue rankings can change from year to year. Past figures only; they do not indicate future results.",
     "waterType": {
       "fresh": "Freshwater",
       "brackish": "Brackish water",
       "sea": "Seawater"
     },
-    "cluster": {
-      "in_strong": "Inside-lane favoring",
-      "out_strong": "Outside-lane favoring",
-      "balanced": "Balanced"
-    },
-    "fetchError": "Could not load this venue's water characteristics.",
+    "fetchError": "Couldn't load the last 90 days' data by lane.",
     "details": {
-      "summary": "More details (top-2 / top-3 rates, winning techniques)",
-      "placeRatesTitle": "Finish rates by boat number",
+      "summary": "More details (last 90 days by lane: top-2 and top-3 rates, winning techniques)",
+      "placeRatesTitle": "Top-2 / top-3 rates by lane (last 90 days)",
       "placeRatesNote": "Top-2 rate = finished 1st or 2nd; top-3 rate = finished in the top 3 ({{count}} races)",
       "boat": "Boat",
-      "winRate": "Win",
       "top2Rate": "Top 2",
       "top3Rate": "Top 3",
-      "techniqueTitle": "How each boat won",
+      "techniqueTitle": "Winning techniques by lane when winning (last 90 days)",
       "techniqueNote": "Breakdown of winning techniques in races each boat number won. Counts in parentheses.",
       "winCount_one": "{{count}} win",
       "winCount_other": "{{count}} wins",
       "smallSampleNote": "Shares for boats with few wins can swing widely.",
       "outcomeLink": "See this venue's most common results (Analysis tools)"
-    }
+    },
+    "courseHeader": "1st-place rate by starting course",
+    "courseLabel": "Course {{course}}",
+    "techniqueTitle": "Winning techniques (share of all races)",
+    "techniqueName": "Technique",
+    "techniqueVenue": "This venue",
+    "techniqueNational": "National",
+    "megumareNote": "Lucky win: {{count}} of {{races}} races (national: {{nationalCount}} of {{nationalRaces}} races). Too few to compare venues by share.",
+    "winsOfRaces": "{{count}} of {{races}} races",
+    "nationalLegend": "The vertical line marks the national value"
   },
   "raceDetailPage": {
     "assistSwitch": {
@@ -3870,5 +3871,18 @@
       "where": "The caution level appears in the AI Prediction tab of each race, on the badges in each venue's race list, and in \"Today's Lane-1 upset caution level\" on the home page.",
       "sparseNote": "{{n}} races with too few past races in their win-rate-gap band got no caution level; they are counted in all races but in no tier."
     }
+  },
+  "venueSummary": {
+    "label": "Venue summary (last 12 months)",
+    "course1Higher": "{{venue}}, last 12 months to {{to}} ({{races}} races): the 1st-place rate from starting course 1 was {{rate}}%, higher than the national {{nationalRate}}% ({{nationalRaces}} races)",
+    "course1Lower": "{{venue}}, last 12 months to {{to}} ({{races}} races): the 1st-place rate from starting course 1 was {{rate}}%, lower than the national {{nationalRate}}% ({{nationalRaces}} races)",
+    "course1Unclear": "{{venue}}, last 12 months to {{to}} ({{races}} races): the 1st-place rate from starting course 1 was {{rate}}%. The difference from the national {{nationalRate}}% ({{nationalRaces}} races) is not clear",
+    "techniques": "Top 3 winning techniques other than Escape: {{list}} (share of all races)",
+    "techniqueItem": "{{name}} {{rate}}%"
+  },
+  "venueMeetBanner": {
+    "inProgress": "in progress",
+    "link": "See the meet score rate ranking and who advanced",
+    "fetchError": "Couldn't load the link to the current meet page."
   }
 }

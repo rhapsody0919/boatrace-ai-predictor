@@ -96,50 +96,51 @@
   },
   "venueRaceList": {
     "title": "경주 일람",
-    "metaTitle": "{{venue}} 오늘의 경주 일람, AI 데이터 분석 - 용신 레이더",
-    "metaDescription": "{{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다.",
+    "metaTitle": "{{venue}} 경정 예측·출주표 | 오늘의 전 경주 AI 예측 - 용신 레이더",
+    "metaDescription": "{{venue}} 경정장의 오늘 출주표와 전 경주 AI 예측. 마감 시각, 전개 예측, 최근 1년 진입 코스별 1착률과 결정수를 확인할 수 있습니다.",
     "backToVenues": "← 경정장 목록으로",
     "jumpToNextRace": "{{race}}R로",
     "nextDeadlineMarker": "{{venue}} 다음 마감 {{race}}R {{time}}",
     "allClosedMarker": "{{venue}} 오늘 레이스는 모두 마감",
     "todayTitle": "오늘의 경주, AI 예측",
-    "metaTitleSeries": "{{venue}} 오늘의 경주 일람({{series}}), AI 데이터 분석 - 용신 레이더",
-    "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 전체 경주 일람. 마감 시각과 등급을 확인하고 각 경주의 AI 데이터 분석을 볼 수 있습니다."
+    "metaTitleSeries": "{{venue}} 경정 예측·출주표 ({{series}}) | 오늘의 AI 예측 - 용신 레이더",
+    "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 출주표와 전 경주 AI 예측, 이번 시리즈의 득점률 순위를 공개합니다."
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}} / 1번 보트 1착률 {{rate}}%",
-    "collapsedTeaserNoSummary": "1번 보트 1착률 {{rate}}%",
-    "title": "이 경정장의 특징 (최근 90일)",
-    "note": "AI 데이터 분석이 참고하는 것과 동일한 경정장별 데이터입니다. 번호별 1착률과, 우승 시 가장 많이 나온 결정수를 확인할 수 있습니다.",
-    "nationalAverageTooltip": "전국 평균 {{value}}%",
-    "techniqueHeader": "주요 결정수",
-    "footnote": "최근 {{count}}경주를 집계 ({{date}} 기준). 과거 경주 경향이며 당일 결과를 보장하지 않습니다.",
-    "unknownDate": "갱신일 불명",
+    "collapsedTeaser": "수질: {{summary}}. 진입 코스별 1착률과 결정수 표 열기",
+    "collapsedTeaserNoSummary": "진입 코스별 1착률과 결정수 표 열기",
+    "title": "이 경정장의 특징 (최근 1년)",
+    "note": "1착 비율을 실제 진입 코스별(번호가 아님)로 보여줍니다. 결정수는 전 경주 중 비율입니다.",
+    "nationalAverageTooltip": "전국 {{value}}%",
+    "footnote": "{{from}}~{{to}}의 {{count}}경주(중지·불성립 제외)를 집계. 전국 수치는 같은 기간 {{nationalCount}}경주 기준입니다. 4~6코스는 1착 건수가 적어 경정장 순위가 해마다 바뀔 수 있습니다. 과거 집계이며 앞으로의 결과를 나타내지 않습니다.",
     "waterType": {
       "fresh": "담수",
       "brackish": "기수",
       "sea": "해수"
     },
-    "cluster": {
-      "in_strong": "인코스 강세",
-      "out_strong": "아웃코스 강세",
-      "balanced": "균형형"
-    },
-    "fetchError": "경기장 수면 특성을 불러오지 못했습니다.",
+    "fetchError": "최근 90일 번호별 데이터를 불러오지 못했습니다.",
     "details": {
-      "summary": "자세히 보기 (2연대율·3연대율, 결정수 내역)",
-      "placeRatesTitle": "정번별 연대율",
-      "placeRatesNote": "2연대율은 2착 이내, 3연대율은 3착 이내에 든 비율 ({{count}}레이스)",
+      "summary": "자세히 보기 (최근 90일·번호별 2연대율·3연대율, 이겼을 때의 결정수)",
+      "placeRatesTitle": "번호별 2연대율·3연대율 (최근 90일)",
+      "placeRatesNote": "2연대율은 2착 이내, 3연대율은 3착 이내에 든 비율 ({{count}}경주)",
       "boat": "정",
-      "winRate": "1착률",
       "top2Rate": "2연대율",
       "top3Rate": "3연대율",
-      "techniqueTitle": "이겼을 때의 결정수",
+      "techniqueTitle": "번호별 이겼을 때의 결정수 (최근 90일)",
       "techniqueNote": "정번별로 1착한 레이스의 결정수 내역. 괄호 안은 횟수",
       "winCount": "1착 {{count}}회",
       "smallSampleNote": "1착 횟수가 적은 정번은 비율이 크게 흔들릴 수 있습니다.",
       "outcomeLink": "이 경기장의 자주 나온 결과 순위 보기 (분석 도구)"
-    }
+    },
+    "courseHeader": "진입 코스별 1착률",
+    "courseLabel": "{{course}}코스",
+    "techniqueTitle": "결정수 (전 경주 중 비율)",
+    "techniqueName": "결정수",
+    "techniqueVenue": "이 경정장",
+    "techniqueNational": "전국",
+    "megumareNote": "어부지리는 {{races}}경주 중 {{count}}회(전국은 {{nationalRaces}}경주 중 {{nationalCount}}회). 횟수가 적어 비율로 경정장을 비교하지 않습니다.",
+    "winsOfRaces": "{{races}}경주 중 {{count}}회",
+    "nationalLegend": "세로선은 전국 값"
   },
   "raceDetailPage": {
     "assistSwitch": {
@@ -3860,5 +3861,18 @@
       "where": "주의도는 레이스 상세의 'AI 예상' 탭, 경기장 레이스 목록의 배지, 홈의 '오늘의 1코스 이변 주의도'에 표시됩니다.",
       "sparseNote": "승률차 구간의 과거 레이스가 적어 주의도를 내지 않은 {{n}}레이스는 전체 레이스에는 포함하고, 어느 단계에도 넣지 않았습니다."
     }
+  },
+  "venueSummary": {
+    "label": "이 경정장 요약 (최근 1년)",
+    "course1Higher": "{{venue}}의 최근 1년({{to}}까지, {{races}}경주), 진입 1코스의 1착률은 {{rate}}%로 전국({{nationalRaces}}경주) {{nationalRate}}%보다 높습니다",
+    "course1Lower": "{{venue}}의 최근 1년({{to}}까지, {{races}}경주), 진입 1코스의 1착률은 {{rate}}%로 전국({{nationalRaces}}경주) {{nationalRate}}%보다 낮습니다",
+    "course1Unclear": "{{venue}}의 최근 1년({{to}}까지, {{races}}경주), 진입 1코스의 1착률은 {{rate}}%입니다. 전국({{nationalRaces}}경주) {{nationalRate}}%와의 차이는 분명하지 않습니다",
+    "techniques": "인빠지기 이외의 결정수 상위 3개는 {{list}} (전 경주 중 비율)입니다",
+    "techniqueItem": "{{name}} {{rate}}%"
+  },
+  "venueMeetBanner": {
+    "inProgress": "개최 중",
+    "link": "이번 시리즈의 득점률 순위·진출 선수 보기",
+    "fetchError": "개최 중인 시리즈 페이지 입구를 불러오지 못했습니다."
   }
 }

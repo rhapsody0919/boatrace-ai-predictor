@@ -1652,6 +1652,11 @@
       "guards": "会場ページの title に節タイトルを入れる判定（SG・G1のみ、先頭レースの値、NFKC）。崩れると一般戦の title が長くなるか、SG開催週の検索需要を取り逃す"
     },
     {
+      "script": "verify-venue-summary.js",
+      "tier": "ci",
+      "guards": "会場ページ（/venue/N）の常設の要約2行と「この会場の特徴」カードの数字（BOA-1189）。src/data/venueSummaryStats.js が data/analysis/venue-summary-stats/venue-techniques.json から build-venue-summary.mjs で作った値と一致すること・12か月の窓・会場1,000レース以上・割合は件数から1回だけ丸めること・全国より高い/低いの文は Bonferroni を通った会場だけ（ほかは「差ははっきりしない」）・2行目に逃げの割合を入れないこと・4言語24会場の文に補間の残りと使わない言葉が無いこと"
+    },
+    {
       "script": "verify-venue-technique-period.js",
       "tier": "ci",
       "guards": "会場の決まり手の期間の表 venue_technique_period_stats（BOA-430・ADR 0088・マイグレーション 134）。CI では集計の純関数（scripts/lib/venueTechniquePeriod.js）を固定データで確かめる: 期間は集計日の前日まで N 日、長期の表（〜2025-12-02）と新しい表（2025-12-03〜）の境目と 2025-12-02 の重複を数えないこと、総数＝決まり手の件数の合計、90日 ⊂ 365日、除外（中止・不成立・1着なし・決まり手なし）、長期の表が0件なら失敗（新しい表だけを数えた 2,196件の誤りの再発防止）。VERIFY_PRODUCTION=1 のときだけ本番の表を読み、last_updated が2日より古い行・総数の不一致・365日の行が無い会場があれば exit 1。nightly-verify-db.yml が毎晩この形で実行する"

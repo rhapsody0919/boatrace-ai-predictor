@@ -182,6 +182,48 @@ check(
   kiryu.meta.canonical,
   "https://www.boat-ai.jp/venue/1",
 );
+
+// ---- 2. 会場ページの title（予想・出走表）と常設の要約2行（BOA-1189 GS02-b）。24場すべて ----
+{
+  const { venueSummaryLines } = await import("../../src/utils/venueSummary.js");
+  // 数字は月1回作り直すので、期待の文は静的な値から組む（文の形と、高い・はっきりしないの出し分けを見る）
+  const { VENUE_SUMMARY_STATS: S } =
+    await import("../../src/data/venueSummaryStats.js");
+  const c1 = (b) => b.courses[0].rate.toFixed(1);
+  const n = (x) => x.toLocaleString("en-US");
+  const nat = `全国（${n(S.national.races)}レース）の${c1(S.national)}%`;
+  const to = S.to.replaceAll("-", "/");
+  for (let code = 1; code <= 24; code += 1) {
+    const model = buildVenueModel(fresh(), code, { t });
+    const name = ja.venues[code];
+    check(
+      `会場${code}: title は「{会場}競艇の予想・出走表」で始まる`,
+      model.meta.title.startsWith(`${name}競艇の予想・出走表`),
+      true,
+    );
+    const lines = venueSummaryLines(t, code);
+    check(
+      `会場${code}: 要約2行は人の画面と同じ関数の文（開催なしの日も出す）`,
+      model.summaryLines,
+      [lines.course, lines.techniques],
+    );
+    check(
+      `会場${code}: 要約の1行目は会場名と直近1年で始まる`,
+      model.summaryLines[0].startsWith(`${name}の直近1年（`),
+      true,
+    );
+  }
+  check(
+    "若松: 要約の1行目（全国より高い会場）",
+    buildVenueModel(fresh(), 20, { t }).summaryLines[0],
+    `若松の直近1年（${to}まで、${n(S.venues[20].races)}レース）、1コースの1着率は${c1(S.venues[20])}%で、${nat}より高い`,
+  );
+  check(
+    "多摩川: 要約の1行目（全国との差が確かめられない会場）",
+    buildVenueModel(fresh(), 5, { t }).summaryLines[0],
+    `多摩川の直近1年（${to}まで、${n(S.venues[5].races)}レース）、1コースの1着率は${c1(S.venues[5])}%。${nat}との差ははっきりしない`,
+  );
+}
 check("桐生: 1R", kiryu.races[0], {
   raceNumber: 1,
   venueName: "桐生",

@@ -401,6 +401,8 @@ export function renderVenueHtml(model, viewLabel, { siteJsonLd = [] } = {}) {
   });
   const body = [
     `<h1>${escapeHtml(model.heading)}</h1>`,
+    // 見出しの直下の常設の要約2行（BOA-1189）
+    ...(model.summaryLines ?? []).map((line) => `<p>${escapeHtml(line)}</p>`),
     model.emptyText ? `<p>${escapeHtml(model.emptyText)}</p>` : "",
     items.length > 0 ? `<ol>\n${items.join("\n")}\n</ol>` : "",
   ]
