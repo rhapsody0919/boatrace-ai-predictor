@@ -45,3 +45,12 @@ export function planRacerSnapshots({ vercelEnv, limit, sitemapXml }) {
     reason: `RACER_SNAPSHOT_LIMIT=${n}: sitemap の ${ids.length} 人のうち先頭 ${Math.min(n, ids.length)} 人`,
   };
 }
+
+/** BOA-1183: 保存直前のHTMLを検査する。目印欠落・取得失敗も保存しない。 */
+export function canSaveRacerSnapshot(html) {
+  return /data-snapshot-ready="true"/.test(html) &&
+    /data-snapshot-motor="(?:done|empty)"/.test(html) &&
+    /data-snapshot-history="(?:done|empty)"/.test(html) &&
+    !/data-snapshot-(?:motor|history)="(?:loading|error)"/.test(html) &&
+    !/集計中|読み込み中/.test(html);
+}
