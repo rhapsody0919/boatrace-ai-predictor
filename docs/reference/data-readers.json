@@ -5,9 +5,9 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1568,
-    "filesWithAccess": 256,
-    "tableReaders": 896,
+    "sourceFiles": 1569,
+    "filesWithAccess": 257,
+    "tableReaders": 900,
     "tableWriters": 185,
     "rpcCallers": 49,
     "nameMentions": 231,
@@ -2554,6 +2554,12 @@
             "race_id",
             "start_timing"
           ]
+        },
+        {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:66",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
         }
       ],
       "writers": [],
@@ -2722,6 +2728,12 @@
             "payout_3tan",
             "race_id"
           ]
+        },
+        {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:64",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
         },
         {
           "ref": "scripts/daily/update-winning-technique-stats.js:212",
@@ -10967,6 +10979,12 @@
         },
         {
           "ref": "scripts/analysis/validate-outcome-distribution.js:177",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
+        },
+        {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:78",
           "op": "select",
           "via": "helper:fetchAll",
           "columns": []
@@ -25721,6 +25739,15 @@
       },
       "readers": [
         {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "cluster",
+            "code"
+          ]
+        },
+        {
           "ref": "scripts/daily/generate-predictions.js:42",
           "op": "select",
           "via": "client",
@@ -25801,6 +25828,7 @@
       "columns": {
         "code": {
           "readers": [
+            "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
             "scripts/daily/generate-predictions.js:42",
             "scripts/maintenance/update-venue-stats.js:46",
             "scripts/maintenance/update-venue-stats.js:58",
@@ -25828,6 +25856,7 @@
         },
         "cluster": {
           "readers": [
+            "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
             "src/services/supabaseDataService.js:2015"
           ],
           "writers": [],
