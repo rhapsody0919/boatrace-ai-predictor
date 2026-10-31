@@ -29,8 +29,11 @@ export function getSeriesDayLabel(seriesDay, isFinalDay, t) {
 
 /**
  * 会場・日付単位の日目の表示（トップの会場カード、BOA-1199）。
- * レース詳細の見出し（getRaceDetailHeading）と同じ値になるよう、同じ取り方にする:
- * 値の入っているレースから項目ごとに補い、丸一日中止の日は出さない（BOA-509・658）
+ * レース詳細の見出し（getRaceDetailHeading）と同じ値・同じ文言にする:
+ * 値の入っているレースから項目ごとに補い、丸一日中止の日は出さない（BOA-509・658）。
+ * 最終日の印はレースごとに入る時点がずれる（BOA-509: 浜名湖で 1R は false・12R は true の日があった）。
+ * カードは会場の1日を表すので、どれか1レースでも最終日なら「最終日」にする
+ * （その日の優勝戦のレース詳細の見出しと同じになる）
  *
  * @param {Array<{seriesDay?: number|null, isFinalDay?: boolean|null, cancellationStatus?: string|null, result?: object|null}>} venueRaces
  * @param {(key: string, params?: object) => string} t
@@ -41,11 +44,10 @@ export function getVenueSeriesDayLabel(venueRaces, t) {
     return null;
   const venueValue = (key) =>
     venueRaces.find((r) => r[key] != null)?.[key] ?? null;
-  return getSeriesDayLabel(
-    venueValue("seriesDay"),
-    venueValue("isFinalDay"),
-    t,
-  );
+  const isFinalDay = venueRaces.some((r) => r.isFinalDay === true)
+    ? true
+    : venueValue("isFinalDay");
+  return getSeriesDayLabel(venueValue("seriesDay"), isFinalDay, t);
 }
 
 // 見出しの種別チップ（BOA-509）。分類できたものは分類名、できないもの

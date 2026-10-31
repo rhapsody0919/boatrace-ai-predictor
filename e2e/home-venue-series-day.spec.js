@@ -14,11 +14,28 @@ test.describe.configure({ timeout: 180_000 });
 const cardOf = (page, code, prefix = "") =>
   page.locator(`a.venue-grid-card--open[href="${prefix}/venue/${code}"]`);
 
+// 録画（または E2E_LIVE の本番）に開催中の会場が n 未満なら、足りない分を作って足す。
+// 開催の少ない日でもテストが黙って緩まない・タイムアウトで落ちないようにする
+function ensureOpenVenues(venues, n) {
+  const open = venues.filter((v) => (v.races ?? []).length > 0);
+  const used = new Set(venues.map(venueCodeOf));
+  for (let code = 1; open.length < n && code <= 24; code++) {
+    if (used.has(code)) continue;
+    const venue = {
+      place_cd: code,
+      races: [{ raceNo: 12, startTime: "23:59", placeCd: code, date: null }],
+    };
+    venues.push(venue);
+    open.push(venue);
+  }
+  return open;
+}
+
 // 最初に races のある会場を書き換え、その会場コードを返す
 function rewriteFirstVenue(page, edit) {
   const picked = { code: null };
   const ready = rewriteTodayRaces(page, (venues) => {
-    const venue = venues.find((v) => (v.races ?? []).length > 0);
+    const venue = ensureOpenVenues(venues, 1)[0];
     picked.code = venueCodeOf(venue);
     venue.races.forEach((r, i) => {
       r.cancellationStatus = null;
@@ -52,7 +69,9 @@ test("最終日は「最終日」と書き、優勝戦のバッジと並べる�
   const { picked, ready } = rewriteFirstVenue(page, (r, i, n) => {
     r.startTime = "23:59";
     r.seriesDay = 6;
-    r.isFinalDay = true;
+    // 最終日の印は優勝戦のレースにだけ入っている（レースごとに入る時点がずれる。BOA-509 の浜名湖）。
+    // 先頭レースの false を使うと「6日目」になる
+    r.isFinalDay = i === n - 1;
     if (i === n - 1) r.raceStage = "優勝戦";
   });
   await ready;
@@ -66,9 +85,7 @@ test("最終日は「最終日」と書き、優勝戦のバッジと並べる�
   await expect(card).not.toContainText("6日目");
 });
 
-test("英語のトップでも同じ札を4言語の文言で出す（Last day）", async ({
-  page,
-}) => {
+test("英語のトップでは英語の文言で出す（Last day）", async ({ page }) => {
   const { picked, ready } = rewriteFirstVenue(page, (r) => {
     r.startTime = "23:59";
     r.seriesDay = 4;
@@ -88,7 +105,7 @@ test("全レース終了の会場・丸一日中止の会場・次開催の会�
 }) => {
   const codes = { finished: null, cancelled: null };
   await rewriteTodayRaces(page, (venues) => {
-    const open = venues.filter((v) => (v.races ?? []).length > 0);
+    const open = ensureOpenVenues(venues, 3);
     for (const v of open)
       for (const r of v.races) {
         r.startTime = "23:59";
@@ -100,12 +117,10 @@ test("全レース終了の会場・丸一日中止の会場・次開催の会�
     codes.finished = venueCodeOf(open[0]);
     for (const r of open[0].races) r.startTime = "00:00";
     // 丸一日中止（結果の無い confirmed）
-    if (open.length >= 3) {
-      codes.cancelled = venueCodeOf(open[1]);
-      for (const r of open[1].races) {
-        r.cancellationStatus = "confirmed";
-        r.result = null;
-      }
+    codes.cancelled = venueCodeOf(open[1]);
+    for (const r of open[1].races) {
+      r.cancellationStatus = "confirmed";
+      r.result = null;
     }
   });
   await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -120,11 +135,9 @@ test("全レース終了の会場・丸一日中止の会場・次開催の会�
   const finished = cardOf(page, codes.finished);
   await expect(finished).toContainText("全レース終了");
   await expect(finished.locator(".venue-grid-card__series-day")).toHaveCount(0);
-  if (codes.cancelled != null) {
-    await expect(
-      cardOf(page, codes.cancelled).locator(".venue-grid-card__series-day"),
-    ).toHaveCount(0);
-  }
+  await expect(
+    cardOf(page, codes.cancelled).locator(".venue-grid-card__series-day"),
+  ).toHaveCount(0);
   await expect(
     page.locator(".venue-grid-card--closed .venue-grid-card__series-day"),
   ).toHaveCount(0);
