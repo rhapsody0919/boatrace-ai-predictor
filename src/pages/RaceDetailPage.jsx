@@ -28,7 +28,7 @@ import {
   RaceBottomNav,
   RaceNavCard,
   RaceNumberStrip,
-  RaceSummaryTable,
+  RaceEntrantsSummary,
 } from "../components/race";
 import DataFetchError from "../components/DataFetchError";
 import {
@@ -342,7 +342,7 @@ function RaceDetailPage({ showViewSwitch = false }) {
             </div>
           ) : (
             <>
-              {/* 1R〜12R の帯と6艇の要約（BOA-1189 GS01-c、2026-10-31 オーナー決定）。タブの上に置く */}
+              {/* 1R〜12R の帯と出走6艇の1〜2行（BOA-1189 GS01-c、2026-10-31 オーナー決定、11-01 A案で要約を縮めた）。タブの上に置く */}
               <RaceNumberStrip
                 races={venueRaces}
                 currentRaceId={raceId}
@@ -351,18 +351,9 @@ function RaceDetailPage({ showViewSwitch = false }) {
                 raceGrade={racePrediction.raceGrade ?? null}
                 raceTitle={racePrediction.raceTitle ?? null}
               />
-              {/* 中止のレースは要約を出さない。「—」が並ぶと展示待ちに読め、中止の知らせが最初の
-                  画面の外に押し出された（ファン評価1周目 指摘1） */}
+              {/* 中止のレースは出走6艇を出さない。中止の知らせを最初の画面に残す（ファン評価1周目 指摘1） */}
               {!prediction?.error && !isRaceCancelled(prediction) && (
-                <RaceSummaryTable
-                  raceId={raceId}
-                  players={prediction?.allPlayers}
-                  exhibitionData={prediction?.exhibitionData}
-                  result={prediction?.result}
-                  showExhibitionPending={
-                    isToday && status === RACE_STATUS.UPCOMING
-                  }
-                />
+                <RaceEntrantsSummary players={prediction?.allPlayers} />
               )}
               <PredictionSection
                 prediction={prediction}

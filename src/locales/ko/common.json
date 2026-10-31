@@ -637,19 +637,7 @@
     "noNextRace": "다음 경주가 없습니다"
   },
   "raceSummary": {
-    "title": "출주 6정 요약",
-    "colFinish": "착순",
-    "colBoat": "번호",
-    "colRacer": "선수",
-    "colGrade": "등급",
-    "colExh": "전시 타임",
-    "finishRefunded": "반환",
-    "finishMarkRefunded": "{{mark}}(반환)",
-    "exhRank": "({{rank}}위)",
-    "exhRankTied": "(공동 {{rank}}위)",
-    "exhNote": "전시 타임은 작을수록 빠릅니다. 괄호는 6정 중 전시 타임 순위",
-    "exhPending": "전시 타임은 마감 약 15분 전에 표시됩니다",
-    "noValue": "—"
+    "title": "출주 6정"
   },
   "raceStrip": {
     "label": "{{venue}} 레이스",

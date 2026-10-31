@@ -1,0 +1,36 @@
+/* レース詳細のタブの上の出走6艇（BOA-1189 GS01-c、2026-11-01 A案）。375px で2行（3艇ずつ）、広い幅で1行。
+   件数がデータで変わるので固定列数にせず、折り返しの flex にする（component-reuse.md） */
+.race-entrants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.race-entrants__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+/* 押せる高さを確保しつつ行を詰める */
+.race-entrants__name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  color: var(--color-info-text);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.race-entrants__grade {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}

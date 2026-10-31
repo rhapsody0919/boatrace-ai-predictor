@@ -228,9 +228,6 @@ test.describe("イン崩れ注意度の計測（BOA-822 task 27、?caution=1）"
     await open(page, 4);
     const card = page.locator(".in-caution-card");
     await expect(card).toBeVisible({ timeout: 20000 });
-    // タブの上に1R〜12Rの帯と6艇の要約が入り（BOA-1189 GS01-c）、1280x720 ではカードが最初の画面の
-    // 外に出る。計測は「画面に入ったら」なので、カードまでスクロールしてから見る
-    await card.scrollIntoViewIfNeeded();
     await expect
       .poll(async () => (await named(page, "caution_visible")).length)
       .toBe(1);
