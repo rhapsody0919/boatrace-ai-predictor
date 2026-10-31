@@ -7,7 +7,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, rmSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import {
@@ -122,6 +123,15 @@ test("名前の順に挿した2つの PR は衝突せずに合わさる（離れ
     ],
   );
   assert.deepEqual(registryOrderProblems(entries), []);
+});
+
+test("実物の verify-registry.json は --sort が通り、並べ直しても変わらない（BOA-1184）", () => {
+  const file = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    "verify-registry.json",
+  );
+  const text = readFileSync(file, "utf8");
+  assert.equal(sortRegistryText(text), text);
 });
 
 test("末尾に足した2つの PR は衝突する（直す前の運用の再現）", () => {

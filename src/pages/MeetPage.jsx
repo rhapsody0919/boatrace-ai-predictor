@@ -86,7 +86,8 @@ function MeetPage() {
   const noindex =
     !validParams ||
     (page &&
-      (["notFound", "outOfScope"].includes(page.state) || !page.knownMeet));
+      (["preOpen", "notFound", "outOfScope"].includes(page.state) ||
+        !page.knownMeet));
   // 宣言的な <meta> は index.html の静的 robots と重複するので DOM を書き換える
   useRobotsMeta(Boolean(noindex));
 
