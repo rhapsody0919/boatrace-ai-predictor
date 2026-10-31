@@ -163,7 +163,7 @@ test("SG・G1・G2 の開催中だけ節のページへの帯を出す（BOA-118
   page,
 }) => {
   await page.route("**/rest/v1/race_series*", (route) =>
-    route.fulfill({ json: [{ start_date: "2026-09-25" }] }),
+    route.fulfill({ json: [{ start_date: "2026-09-25", end_date: "2026-09-30", title: null, grade: "SG" }] }),
   );
   await openVenue(page, 13, {
     grade: "SG",
@@ -219,7 +219,7 @@ for (const width of [375, 768, 1440]) {
   }) => {
     await page.setViewportSize({ width, height: 900 });
     await page.route("**/rest/v1/race_series*", (route) =>
-      route.fulfill({ json: [{ start_date: "2026-09-25" }] }),
+      route.fulfill({ json: [{ start_date: "2026-09-25", end_date: "2026-09-30", title: null, grade: "SG" }] }),
     );
     await openVenue(page, 13, {
       grade: "SG",
@@ -279,7 +279,7 @@ test("会場の特徴は最初は畳まれ、開くと中身が出る。375px �
 }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.route("**/rest/v1/race_series*", (route) =>
-    route.fulfill({ json: [{ start_date: "2026-09-25" }] }),
+    route.fulfill({ json: [{ start_date: "2026-09-25", end_date: "2026-09-30", title: null, grade: "SG" }] }),
   );
   await openVenue(page, 13, { grade: "SG", title: "第７３回ボートレースダービー" });
   await expect(page.getByTestId("venue-meet-banner")).toBeVisible({

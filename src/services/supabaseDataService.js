@@ -1346,6 +1346,12 @@ function generateReasoning(topPickPlayer, modelType) {
 /**
  * Supabase データサービス
  */
+/**
+ * 順延で節の予定の最終日より後に走る日を、同じ節とみなす日数（getSeriesOfDate）。
+ * 目安（根拠なし）。荒天の順延は1〜2日が多く、3日あれば足りるとみた
+ */
+const SERIES_POSTPONE_TOLERANCE_DAYS = 3;
+
 export const supabaseDataService = {
   /**
    * レースデータを取得（races.json形式で返す）
@@ -1408,26 +1414,36 @@ export const supabaseDataService = {
   },
 
   /**
-   * 会場で今日を含む節（race_series）の初日。会場ページの節のページへの帯（BOA-1189）に使う。
-   * 呼ぶのは今日の先頭レースが SG/G1/G2 のときだけなので、今日以前の直近10日に始まった最新の節を返す。
-   * end_date で絞らない（中止で節が延びて end_date が直っていない日にも、最終日まで帯を出す）。
-   * 節が無ければ null。取得の失敗は投げる（帯が出ないことと区別するため）
+   * その日の会場の節（race_series）を1件返す。レース詳細の 1R〜12R の帯で、節ページ
+   * （/venue/N/meet/初日）へのリンクの初日に使う（BOA-1189 GS01-c）。初日は seriesDay から逆算しない
+   * （中止で日目が振り直されるため。memory boatrace_series_day_renumbering_on_cancellation）。
+   *
+   * race_series は月間スケジュールの「予定」で、順延した節の日程は直らない（docs/db-migration/084）。
+   * 順延で予定の最終日より後に走る日（優勝戦など）も同じ節として返すため、その日以前に始まった
+   * いちばん新しい節を取り、最終日から SERIES_POSTPONE_TOLERANCE_DAYS 日以内なら同じ節とみなす。
+   * 次の節が始まっていれば、そちらが先に取れる。
+   * 行が無ければ null。クエリの失敗は supabase クライアントが例外にする
    * @param {number} venueCode
-   * @param {string} today - JST の YYYY-MM-DD
-   * @returns {Promise<string|null>}
+   * @param {string} date YYYY-MM-DD
+   * @returns {Promise<{start_date: string, end_date: string, title: string|null, grade: string|null} | null>}
    */
-  async getCurrentMeetStartDate(venueCode, today) {
-    return withCache(`venue-current-meet-${venueCode}-${today}`, async () => {
+  async getSeriesOfDate(venueCode, date) {
+    return withCache(`venue-series-of-date-${venueCode}-${date}`, async () => {
       if (!supabase) throw new Error("Supabase client not initialized");
       const { data } = await supabase
         .from("race_series")
-        .select("start_date")
+        .select("start_date,end_date,title,grade")
         .eq("venue_code", venueCode)
-        .lte("start_date", today)
-        .gte("start_date", shiftDate(today, -10))
+        .lte("start_date", date)
         .order("start_date", { ascending: false })
         .limit(1);
-      return data?.[0]?.start_date ?? null;
+      const series = data?.[0] ?? null;
+      if (!series) return null;
+      const daysAfterEnd =
+        (Date.parse(`${date}T00:00:00Z`) -
+          Date.parse(`${series.end_date}T00:00:00Z`)) /
+        86400000;
+      return daysAfterEnd <= SERIES_POSTPONE_TOLERANCE_DAYS ? series : null;
     });
   },
 

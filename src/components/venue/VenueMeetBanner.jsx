@@ -3,7 +3,7 @@
  *
  * SG・G1・G2 の開催中だけ出す（節のページの対象と同じ MEET_PAGE_GRADES。グランプリ等の対象外の節は出さない）。
  * 開催中かどうかは今日のレース（先頭レースのグレードと節タイトル。title の判定・会場カードのバッジと同じ代表値）で決め、
- * 節の初日だけを race_series から引く。取得に失敗したら、帯が無いのと区別して InlineFetchError を出す。
+ * 節の初日は race_series から引く（レース詳細の帯と同じ getSeriesOfDate。順延で予定の最終日より後に走る日も同じ節）。取得に失敗したら、帯が無いのと区別して InlineFetchError を出す。
  */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -28,8 +28,9 @@ export default function VenueMeetBanner({ venueCode, races, today }) {
     if (!key) return undefined;
     let cancelled = false;
     supabaseDataService
-      .getCurrentMeetStartDate(venueCode, today)
-      .then((startDate) => {
+      .getSeriesOfDate(venueCode, today)
+      .then((meet) => {
+        const startDate = meet?.start_date ?? null;
         if (cancelled) return;
         setFailedKey(null);
         setLoaded({ key, startDate });

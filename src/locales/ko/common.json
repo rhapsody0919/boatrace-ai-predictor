@@ -637,6 +637,14 @@
     "noPrevRace": "이전 경주가 없습니다",
     "noNextRace": "다음 경주가 없습니다"
   },
+  "raceSummary": {
+    "title": "출주 6정"
+  },
+  "raceStrip": {
+    "label": "{{venue}} 레이스",
+    "meetLink": "이번 시리즈 득점률·진출 ›",
+    "meetFetchError": "시리즈 정보를 불러오지 못했습니다"
+  },
   "raceStage": {
     "final": "우승전",
     "semifinal": "준결승전",

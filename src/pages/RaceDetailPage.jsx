@@ -27,6 +27,8 @@ import {
   PredictionSection,
   RaceBottomNav,
   RaceNavCard,
+  RaceNumberStrip,
+  RaceEntrantsSummary,
 } from "../components/race";
 import DataFetchError from "../components/DataFetchError";
 import {
@@ -38,7 +40,8 @@ import { useLocalizedPath } from "../hooks/useLocalizedPath";
 import { useNowHHMM } from "../hooks/useNowHHMM";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
-import { getRaceStatus } from "../utils/raceStatus";
+import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
+import { isRaceCancelled } from "../utils/raceCancellation";
 import { formatDateLocalized } from "../utils/formatters";
 // 見出し・title・description・canonical・パンくずは、ボット向け HTML（ADR 0089 第2段）と同じ関数で組む
 import {
@@ -291,6 +294,23 @@ function RaceDetailPage({ showViewSwitch = false }) {
                   </span>
                 </>
               )}
+              {/* 本日の締切前は締切時刻を見出しにも出す。タブの上に帯と要約を置いたので、下の
+                  「データ分析結果（締切 …）」が375pxの最初の画面から外れた（BOA-1189 ファン評価2周目 指摘2） */}
+              {isToday &&
+                status === RACE_STATUS.UPCOMING &&
+                racePrediction?.startTime && (
+                  <>
+                    {" "}
+                    <span
+                      className="race-detail-deadline"
+                      data-testid="race-detail-deadline"
+                    >
+                      {t("section.resultTitleDeadline", {
+                        time: racePrediction.startTime,
+                      })}
+                    </span>
+                  </>
+                )}
               {!isToday &&
                 ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}
             </h1>
@@ -322,6 +342,19 @@ function RaceDetailPage({ showViewSwitch = false }) {
             </div>
           ) : (
             <>
+              {/* 1R〜12R の帯と出走6艇の1〜2行（BOA-1189 GS01-c、2026-10-31 オーナー決定、11-01 A案で要約を縮めた）。タブの上に置く */}
+              <RaceNumberStrip
+                races={venueRaces}
+                currentRaceId={raceId}
+                venueCode={parsed.venueCode}
+                date={date}
+                raceGrade={racePrediction.raceGrade ?? null}
+                raceTitle={racePrediction.raceTitle ?? null}
+              />
+              {/* 中止のレースは出走6艇を出さない。中止の知らせを最初の画面に残す（ファン評価1周目 指摘1） */}
+              {!prediction?.error && !isRaceCancelled(prediction) && (
+                <RaceEntrantsSummary players={prediction?.allPlayers} />
+              )}
               <PredictionSection
                 prediction={prediction}
                 selectedRace={selectedRace}

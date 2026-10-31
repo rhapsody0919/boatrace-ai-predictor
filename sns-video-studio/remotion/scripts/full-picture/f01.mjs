@@ -153,7 +153,9 @@ export function f01Script(m) {
   if (!sonar) omitted.push({ chapter: "c2", reason: "類似レースの材料が無い" });
   else {
     const n = sonar.facts.n;
-    const counts = sonar.page.counts;
+    // 1着の件数は画面（龍神ソナーの「どの艇が勝った？」）と同じ数え方: 1〜3着がそろった類似レースだけ（analogyAggregate の aggregateNeighbors）。
+    // 着順の流れの元（ag.tri）から数える。sonar.page.counts は着順の欠けたレースも数え、画面と2件ずれた（10/30 児島10R 293 対 291）
+    const counts = flow ? firstOf(flow.page.links) : sonar.page.counts;
     const order = desc(counts).slice(0, 3);
     const fb = order[0];
     const sec = flow ? secondOf(flow.page.links, fb) : null;

@@ -7,6 +7,7 @@ import {
   fetchRecorded,
 } from "./fixtures.js";
 import { contribution } from "./analogy-contribution-fixture.js";
+import { rewriteTodayRaces } from "./today-races-rewrite.js";
 import { ANALOGY_V16_RACE, routeAnalogyV16 } from "./analogy-v16-fixture.js";
 import {
   THINKING_ASSIST_RACE,
@@ -2190,4 +2191,176 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
     expect(m.right, "部品の右端").toBeLessThanOrEqual(m.vw + 1);
     expect(m.wide, "部品の枠からはみ出す要素の数").toBe(0);
   });
+});
+
+/**
+ * レース詳細の 1R〜12R の帯（BOA-1189 GS01-c）。レース数は会場・日で変わりうるので、
+ * 件数を差し替えて、スマホの2段目の残りが横いっぱいに伸びないこと・768px 以上で1行に並ぶことを見る
+ * （component-reuse.md「件数がデータで変わるグリッド」）。8件は会場16の 1〜7R と 12R
+ */
+/**
+ * レース詳細の出走6艇（BOA-1189 GS01-c、A案）。スマホの2行で、選手名のリンクの押せる高さが
+ * 44px 以上あり、上下・左右の選手のリンクと押せる範囲が重ならないこと（ui-layout.md。
+ * 32px で上下の行の間が4pxだった。ファン評価 A案の周 P2）
+ */
+test("レイアウト: レース詳細の出走6艇の選手名は 44px 以上で重ならない（BOA-1189）", async ({
+  page,
+}) => {
+  test.skip(
+    page.viewportSize().width >= 768,
+    viewportSkipReason("スマホ幅（2行になる幅）で確認"),
+  );
+  await gotoAndSettle(page, "/race/2026-09-29-16-12");
+  const links = page.locator(
+    '[data-testid="race-entrants"] a[href^="/racer/"]',
+  );
+  await expect(links).toHaveCount(6, { timeout: 30000 });
+  const rects = await links.evaluateAll((els) =>
+    els.map((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    }),
+  );
+  for (const r of rects) {
+    expect(
+      r.bottom - r.top,
+      `高さ ${JSON.stringify(r)}`,
+    ).toBeGreaterThanOrEqual(44);
+  }
+  // 2行に分かれている（検査の空振り防止）
+  expect(new Set(rects.map((r) => Math.round(r.top))).size).toBeGreaterThan(1);
+  for (let i = 0; i < rects.length; i += 1) {
+    for (let j = i + 1; j < rects.length; j += 1) {
+      const a = rects[i];
+      const b = rects[j];
+      const overlap =
+        a.left < b.right - 0.5 &&
+        b.left < a.right - 0.5 &&
+        a.top < b.bottom - 0.5 &&
+        b.top < a.bottom - 0.5;
+      expect(overlap, `重なり ${JSON.stringify([a, b])}`).toBe(false);
+    }
+  }
+});
+
+test.describe("レイアウト: レース詳細の 1R〜12R の帯は件数によらずそろう（BOA-1189）", () => {
+  for (const keep of [8, 12]) {
+    test(`帯が${keep}件のとき、項目の幅がそろう`, async ({ page }) => {
+      await page.route("**/api/predictions/2026-09-29**", async (route) => {
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        if (keep < 12) {
+          body.races = (body.races ?? []).filter(
+            (r) =>
+              r.venueCode !== 16 ||
+              r.raceNumber <= keep - 1 ||
+              r.raceNumber === 12,
+          );
+        }
+        await route.fulfill(response.fulfillOptions({ json: body }));
+      });
+      await gotoAndSettle(page, "/race/2026-09-29-16-12");
+      const items = page.locator(".race-number-strip__list > li");
+      await expect(items).toHaveCount(keep, { timeout: 30000 });
+      const boxes = await items.evaluateAll((els) =>
+        els.map((el) => {
+          const r = el.getBoundingClientRect();
+          return { w: Math.round(r.width), top: Math.round(r.top) };
+        }),
+      );
+      const widths = boxes.map((b) => b.w);
+      expect(
+        Math.max(...widths) - Math.min(...widths),
+        `帯の項目の幅がそろっていません: ${JSON.stringify(widths)}`,
+      ).toBeLessThanOrEqual(1);
+      if (page.viewportSize().width >= 768) {
+        expect(
+          new Set(boxes.map((b) => b.top)).size,
+          `768px 以上で帯が1行に並んでいません: ${JSON.stringify(boxes)}`,
+        ).toBe(1);
+      }
+    });
+  }
+});
+
+/**
+ * BOA-1199: トップの会場カードの日目の札。いちばん幅を取る組み合わせ（札・優勝戦・SG・時間帯の
+ * アイコン、英語の「Opening day」）でも、札がカードからはみ出さず、会場名を省略記号で削らず、
+ * 横スクロールが出ないこと。全会場を「次のレースあり」に書き換えて全カードで測る
+ */
+test.describe("レイアウト: トップの会場カードの日目の札（BOA-1199）", () => {
+  for (const { path, day, isFinalDay, label, stage } of [
+    { path: "/", day: 6, isFinalDay: true, label: "最終日", stage: "優勝戦" },
+    {
+      path: "/en",
+      day: 1,
+      isFinalDay: false,
+      label: "Opening day",
+      stage: "優勝戦",
+    },
+    {
+      path: "/en",
+      day: 5,
+      isFinalDay: false,
+      label: "Day 5",
+      stage: "準優勝戦",
+    },
+  ]) {
+    test(`${path} の「${label}」の札がカードに収まる`, async ({ page }) => {
+      await rewriteTodayRaces(page, (venues) => {
+        for (const v of venues)
+          (v.races ?? []).forEach((r, i, races) => {
+            r.startTime = "23:59";
+            r.seriesDay = day;
+            r.isFinalDay = isFinalDay;
+            r.cancellationStatus = null;
+            r.raceGrade = "SG";
+            r.raceStage = i === races.length - 1 ? stage : null;
+          });
+      });
+      await page.goto(path, { waitUntil: "domcontentloaded" });
+      await expect(
+        page.locator(".venue-grid-card__series-day").first(),
+      ).toHaveText(label, { timeout: 30000 });
+      const problems = await page.evaluate((tolerance) => {
+        const out = [];
+        const de = document.documentElement;
+        if (de.scrollWidth > de.clientWidth + tolerance)
+          out.push({
+            scrollWidth: de.scrollWidth,
+            clientWidth: de.clientWidth,
+          });
+        for (const card of document.querySelectorAll(
+          ".venue-grid-card--open",
+        )) {
+          const badge = card.querySelector(".venue-grid-card__series-day");
+          if (!badge) continue;
+          const c = card.getBoundingClientRect();
+          const name = card.querySelector(".venue-grid-card__name");
+          // 日目の札と、同じ行に並べた優勝戦・準優勝戦のバッジ（A案）がカードに収まる
+          for (const el of card.querySelectorAll(
+            ".venue-grid-card__series-day, .venue-grid-card__stage",
+          )) {
+            const b = el.getBoundingClientRect();
+            if (b.right > c.right + tolerance || b.left < c.left - tolerance)
+              out.push({ card: card.getAttribute("href"), out: el.className });
+            // バッジの中で2行に割れない（英語の「Semifinal 9R」が時間帯のアイコンのある会場で割れた。ファン評価1周目）
+            if (b.height > badge.getBoundingClientRect().height + 1)
+              out.push({
+                card: card.getAttribute("href"),
+                split: el.className,
+                height: b.height,
+              });
+          }
+          if (name.scrollWidth > name.clientWidth + 1)
+            out.push({
+              card: card.getAttribute("href"),
+              nameClipped: name.textContent,
+            });
+        }
+        return out;
+      }, OVERFLOW_TOLERANCE_PX);
+      expect(problems, JSON.stringify(problems, null, 2)).toEqual([]);
+    });
+  }
 });
