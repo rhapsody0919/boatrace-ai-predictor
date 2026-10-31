@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures.js";
+import { test, expect, fetchRecorded } from "./fixtures.js";
 
 // レース詳細の 6艇の要約と 1R〜12R の帯（BOA-1189 GS01-c、2026-10-31 オーナー決定）
 // done_when: 過去の確定済みの1件で、/racer/ へのリンクが6件、/race/ へのリンクが2件以上ある
@@ -99,8 +99,9 @@ test.describe("レース詳細: 6艇の要約と 1R〜12R の帯", () => {
         .locator("tbody tr")
         .nth(boat - 1)
         .locator(".race-summary-table__finish");
-    await expect(finishOf(2)).toHaveText("返還");
-    await expect(finishOf(3)).toHaveText("返還");
+    // 「返還」だけでなく記号（F）まで出す。結果タブ・節ページの「F」とそろえる（ファン評価2周目 指摘1）
+    await expect(finishOf(2)).toHaveText("F（返還）");
+    await expect(finishOf(3)).toHaveText("F（返還）");
     await expect(finishOf(1)).toHaveText(/^\d着$/);
   });
 
@@ -115,6 +116,42 @@ test.describe("レース詳細: 6艇の要約と 1R〜12R の帯", () => {
     });
     await expect(page.getByTestId("race-number-strip")).toBeVisible();
     await expect(page.getByTestId("race-summary-table")).toHaveCount(0);
+  });
+
+  test("本日の締切前は、見出しに締切時刻を出す（ファン評価2周目 指摘2）", async ({
+    page,
+  }) => {
+    // smoke.spec.js の「AI用にコピー」と同じ固定: 戸田8R（2026-09-18）の締切前の 13:46 に時計を置き、
+    // 結果を外して締切前の状態にする
+    await page.clock.setFixedTime(new Date("2026-09-18T13:46:00+09:00"));
+    await page.route("**/api/predictions/2026-09-18*", async (route) => {
+      const response = await fetchRecorded(route);
+      const body = await response.json();
+      const races = (body.races || []).map((race) =>
+        race.raceId === "2026-09-18-02-08" ? { ...race, result: null } : race,
+      );
+      await route.fulfill(
+        response.fulfillOptions({ json: { ...body, races } }),
+      );
+    });
+    await page.goto("/race/2026-09-18-02-08");
+    await expect(page.getByTestId("race-summary-table")).toBeVisible({
+      timeout: 30000,
+    });
+    const deadline = page.locator("h1").getByTestId("race-detail-deadline");
+    await expect(deadline).toHaveText(/^（締切 \d{2}:\d{2}）$/);
+    // 確定前は着順の列を出さない
+    await expect(
+      page.getByTestId("race-summary-table").locator("thead th").first(),
+    ).toHaveText("艇番");
+  });
+
+  test("確定済みのレースでは見出しに締切時刻を出さない", async ({ page }) => {
+    await page.goto(G1_RACE);
+    await expect(page.getByTestId("race-summary-table")).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.getByTestId("race-detail-deadline")).toHaveCount(0);
   });
 
   test("節の取得に失敗したら、帯は出したまま失敗を表示する（データなしに化けさせない）", async ({

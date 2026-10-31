@@ -2468,6 +2468,7 @@
     "colExh": "展示タイム",
     "finishValue": "{{rank}}着",
     "finishRefunded": "返還",
+    "finishMarkRefunded": "{{mark}}（返還）",
     "exhRank": "({{rank}}位)",
     "exhRankTied": "({{rank}}位タイ)",
     "exhNote": "展示タイムは小さいほど速い。括弧は展示タイムの6艇の中の順位",

@@ -294,6 +294,23 @@ function RaceDetailPage({ showViewSwitch = false }) {
                   </span>
                 </>
               )}
+              {/* 本日の締切前は締切時刻を見出しにも出す。タブの上に帯と要約を置いたので、下の
+                  「データ分析結果（締切 …）」が375pxの最初の画面から外れた（BOA-1189 ファン評価2周目 指摘2） */}
+              {isToday &&
+                status === RACE_STATUS.UPCOMING &&
+                racePrediction?.startTime && (
+                  <>
+                    {" "}
+                    <span
+                      className="race-detail-deadline"
+                      data-testid="race-detail-deadline"
+                    >
+                      {t("section.resultTitleDeadline", {
+                        time: racePrediction.startTime,
+                      })}
+                    </span>
+                  </>
+                )}
               {!isToday &&
                 ` (${formatDateLocalized(date, i18n.resolvedLanguage)})`}
             </h1>
@@ -338,6 +355,7 @@ function RaceDetailPage({ showViewSwitch = false }) {
                   画面の外に押し出された（ファン評価1周目 指摘1） */}
               {!prediction?.error && !isRaceCancelled(prediction) && (
                 <RaceSummaryTable
+                  raceId={raceId}
                   players={prediction?.allPlayers}
                   exhibitionData={prediction?.exhibitionData}
                   result={prediction?.result}
