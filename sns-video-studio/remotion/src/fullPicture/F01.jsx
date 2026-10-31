@@ -21,7 +21,7 @@ import {
 import { FONT } from "../fonts.js";
 import { BG_BOTTOM, BG_TOP, MUTED, clamp, ease } from "./parts.js";
 import { BOAT_COLORS } from "../../../../src/utils/colors.js";
-import { NB, OPEN, RIGHT } from "./f01Right.js";
+import { NB, OPEN, RIGHT, SMALL, TODAY } from "./f01Right.js";
 
 const GOLD = "#d4af37";
 /** scripts/full-picture/f01-capture.mjs の LEFT_BOX と同じ */
@@ -90,7 +90,21 @@ function Open({ open }) {
       >
         {open.title}
       </div>
-      <div style={{ position: "absolute", top: 330, left }}>
+      {/* 範囲（過去の何件か）は見出しの直下。棒の名前は今日その枠にいる選手で、件数は枠ごとの過去の集計（x-channel・youtube-channel、#2079） */}
+      <div
+        style={{
+          position: "absolute",
+          top: 284,
+          width: "100%",
+          textAlign: "center",
+          color: MUTED,
+          fontSize: 32,
+          fontWeight: 400,
+        }}
+      >
+        {open.note}
+      </div>
+      <div style={{ position: "absolute", top: 352, left }}>
         {open.bars.map((b, i) => {
           const at = 20 + i * 8;
           const w = interpolate(
@@ -123,16 +137,17 @@ function Open({ open }) {
                 <Badge boat={b.boat} size={OPEN.badge} />
                 <span>号艇</span>
                 <span
-                  translate="no"
                   style={{
                     marginLeft: OPEN.nameGap - OPEN.gap,
                     fontSize: OPEN.nameSize,
                     fontWeight: 700,
+                    color: MUTED,
                   }}
                 >
-                  {b.name}
+                  {TODAY}
+                  <span translate="no">{b.name}</span>
                   {NB}
-                  {b.grade}
+                  {b.grade}）
                 </span>
               </div>
               <div
@@ -150,28 +165,34 @@ function Open({ open }) {
           );
         })}
       </div>
-      <div
-        style={{
-          position: "absolute",
-          top: 884,
-          width: "100%",
-          textAlign: "center",
-          color: MUTED,
-          fontSize: 30,
-          fontWeight: 400,
-        }}
-      >
-        {open.note}
-      </div>
     </AbsoluteFill>
   );
 }
 
-/** 「3号艇 品川二千翔 A1」の名前と級（自動翻訳で名前が崩れないよう translate="no"） */
-const WHO = new RegExp(`(\\d号艇${NB}[^${NB}]+${NB}[AB][12])`);
+/**
+ * 名前と級（自動翻訳で名前が崩れないよう translate="no"）。「3号艇 品川二千翔 A1」（今日の6艇の属性）と、
+ * 「3号艇（今日は品川二千翔 A1）」（過去の集計の艇。括弧は SMALL 倍・薄い色）
+ */
+const WHO = new RegExp(
+  `(\\d号艇${NB}[^${NB}]+${NB}[AB][12]|${TODAY}[^${NB}）]+${NB}[AB][12]）)`,
+);
 function WithNames({ text }) {
   return text.split(WHO).map((part, i) => {
     if (i % 2 === 0) return part;
+    if (part.startsWith(TODAY)) {
+      const [name, grade] = part.slice(TODAY.length, -1).split(NB);
+      return (
+        <span
+          key={i}
+          style={{ fontSize: `${SMALL}em`, color: MUTED, fontWeight: 700 }}
+        >
+          {TODAY}
+          <span translate="no">{name}</span>
+          {NB}
+          {grade}）
+        </span>
+      );
+    }
     const [boat, name, grade] = part.split(NB);
     return (
       <span key={i}>

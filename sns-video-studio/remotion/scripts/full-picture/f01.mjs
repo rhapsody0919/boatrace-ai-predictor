@@ -14,7 +14,7 @@ import { answerOf } from "./answer.mjs";
 import { DISCLAIMER, FEATURES, FULL_TAGS, ROUND_NAME, SITE, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
 import { venueName } from "./scenes/common.mjs";
-import { MIN_FONT_PX, NB, boatWho, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
+import { MIN_FONT_PX, NB, TODAY, boatToday, boatWho, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
 
 export const F01_VERSION = "f01-proto-1";
 export const VOICE = { speaker: "青山龍星", speedScale: 1.1, credit: "VOICEVOX:青山龍星" };
@@ -97,6 +97,10 @@ export function f01Script(m) {
   const who = (b) => boatWho(racers, b);
   // 艇と、その艇の数字は同じ行に置く（間で折り返すと、次の行の数字が別の艇の数字に読める）
   const withN = (b, n) => `${who(b)}${NB}${n}`;
+  // 過去の集計（枠ごとの件数・割合）の艇は「3号艇（今日は名前 級）」。数字の主語は艇番（枠）にし、範囲の行には名前を入れない
+  // （x-channel P0・youtube-channel P1、#2079: 「3号艇 梶原正 B1が1着 1,998件」が本人の通算に読まれた）
+  const past = (b) => boatToday(racers, b);
+  const pastN = (b, n) => `${past(b)}${NB}${n}`;
 
   // 冒頭: 1号艇が負けた件の内訳（answer.mjs と同じセル forms.any）
   const sc = m.api.scenario?.scenario;
@@ -181,13 +185,13 @@ export function f01Script(m) {
       name: "類似レース",
       tag: "龍神ソナー ＞ 類似レース",
       scope: `出走表の類似度の高い順 ${n}件`,
-      answer: `${who(fb)}\n1着 ${counts[fb - 1]}件`,
+      answer: `${past(fb)}\n類似レースで1着 ${counts[fb - 1]}件`,
       // 2着の1位が線を通らない日は、上から3艇の件数を並べる（1艇だけ出すと「2着は◯号艇」と読める）
       answer2: !sec
         ? null
         : secRank.rankSig
-          ? `${who(fb)}が1着のとき\n2着${NB}${withN(secOrder[0], `${sec[secOrder[0] - 1]}件`)}`
-          : `${who(fb)}が1着のとき\n2着${NB}${secOrder.slice(0, 3).map((b) => withN(b, `${sec[b - 1]}件`)).join("・")}`,
+          ? `${fb}号艇が1着のとき\n2着${NB}${pastN(secOrder[0], `${sec[secOrder[0] - 1]}件`)}`
+          : `${fb}号艇が1着のとき\n2着${NB}${secOrder.slice(0, 3).map((b) => pastN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 類似レース",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "類似レース", cut: "similarBars", cut2: sec ? "similarFlow" : null, firstBoat: fb },
@@ -221,8 +225,8 @@ export function f01Script(m) {
       name: "スタートの形",
       tag: "龍神ソナー ＞ 展開シナリオ",
       scope: `${cnt(n0)}件のうち ${form} ${cnt(nForm)}件`,
-      answer: `${who(fb)}\n1着 ${fc[fb - 1]}件`,
-      answer2: `2着${NB}${secOrder.slice(0, 3).map((b) => withN(b, `${sec[b - 1]}件`)).join("・")}`,
+      answer: `${past(fb)}\nこの形で1着 ${fc[fb - 1]}件`,
+      answer2: `2着${NB}${secOrder.slice(0, 3).map((b) => pastN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 展開シナリオ",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "展開シナリオ", cut: "slitForms", cut2: "scenarioFlow", form, firstBoat: fb },
@@ -245,9 +249,9 @@ export function f01Script(m) {
       id: "c4",
       name: "相手",
       tag: "思考アシスト ＞ 相手",
-      scope: `${ax1.venue}の全期間 ${who(axisK)}が1着 ${cnt(axK.n)}件`,
-      answer: `${who(axK.second.boat)}\n2着 ${axK.second.rate}%`,
-      answer2: `${who(1)}が軸なら\n2着${NB}${withN(ax1.second.boat, `${ax1.second.rate}%`)}`,
+      scope: `${ax1.venue}の全期間・全選手 ${axisK}号艇が1着 ${cnt(axK.n)}件`,
+      answer: `軸 ${past(axisK)}\n2着${NB}${pastN(axK.second.boat, `${axK.second.rate}%`)}`,
+      answer2: `軸 ${past(1)}なら\n2着${NB}${pastN(ax1.second.boat, `${ax1.second.rate}%`)}`,
       path: "アシスト → 相手 → 軸",
       voice:
         `ここからは思考アシスト。軸を選ぶと、相手の割合が出る。${ax1.venue}で1号艇が1着の${cnt(ax1.n)}件では、2着は${ax1.second.boat}号艇が${ax1.second.rate}%。` +
@@ -409,18 +413,34 @@ export function f01RacerCheck(s, racers) {
       else if (L.minFontPx < RIGHT_MIN_FONT_PX) why.push(`open: 字が ${L.minFontPx}px（線 ${RIGHT_MIN_FONT_PX}px）`);
       continue;
     }
+    // 範囲の行（scope）には名前を入れない（集計が選手個人の成績に読まれる）。艇番は、同じ章の答えで名前と級を付けていればよい。
+    // 答え・答え2の艇番は、すべて隣に「 名前 級」（今日の6艇の属性）か「（今日は名前 級）」（過去の集計）
+    const named = new Set();
+    const bareScope = new Set();
     for (const k of RIGHT_KEYS) {
       const text = c[k];
       if (!text) continue;
+      if (k === "scope") {
+        for (const e of Object.values(racers)) if (text.includes(e.name)) why.push(`${c.id}: 範囲の行に選手名「${e.name}」（集計が個人の成績に読まれる）`);
+        for (const mm of text.matchAll(/(\d)号艇/g)) bareScope.add(Number(mm[1]));
+        continue;
+      }
       for (const mm of text.matchAll(/(\d)号艇/g)) {
         const b = Number(mm[1]);
         const e = racers[b];
         const after = text.slice(mm.index + mm[0].length);
-        const got = after.match(new RegExp(`^${NB}([^${NB}\\s]+)${NB}([AB][12])`));
-        if (!got) why.push(`${c.id}: ${k} の ${b}号艇の隣に名前と級が無い`);
-        else if (!e || got[1] !== e.name || got[2] !== e.grade) why.push(`${c.id}: ${k} の ${b}号艇「${got[1]} ${got[2]}」が出走表「${e?.name ?? "なし"} ${e?.grade ?? "なし"}」と違う`);
+        const got = after.match(new RegExp(`^(?:${NB}([^${NB}\\s]+)${NB}([AB][12])|${TODAY}([^${NB}）]+)${NB}([AB][12])）)`));
+        if (!got) {
+          // 「3号艇が1着のとき」のように、同じ章で既に名前を付けた艇は艇番だけでよい
+          if (!named.has(b)) why.push(`${c.id}: ${k} の ${b}号艇の隣に名前と級が無い`);
+          continue;
+        }
+        const [name, grade] = got[1] ? [got[1], got[2]] : [got[3], got[4]];
+        if (!e || name !== e.name || grade !== e.grade) why.push(`${c.id}: ${k} の ${b}号艇「${name} ${grade}」が出走表「${e?.name ?? "なし"} ${e?.grade ?? "なし"}」と違う`);
+        named.add(b);
       }
     }
+    for (const b of bareScope) if (!named.has(b)) why.push(`${c.id}: 範囲の行の ${b}号艇に、答えで名前と級が付いていない`);
     if (RIGHT_KEYS.some((k) => c[k])) {
       if (!c.right?.ok) why.push(`${c.id}: 右の列が収まらない（${c.right?.reason ?? "行を決めていない"}）`);
       else if (c.right.minFontPx < RIGHT_MIN_FONT_PX) why.push(`${c.id}: 右の列の字が ${c.right.minFontPx}px（線 ${RIGHT_MIN_FONT_PX}px）`);

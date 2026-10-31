@@ -38,15 +38,32 @@ export function racersOf(m) {
   return { racers, missing };
 }
 
-/** 「3号艇 品川二千翔 A1」（折り返さない空白でつなぐ） */
+/** 「3号艇 品川二千翔 A1」（折り返さない空白でつなぐ）。今日の6艇の属性（c1・c5 の項目の数）に使う */
 export const boatWho = (racers, b) =>
   `${b}号艇${NB}${racers[b].name}${NB}${racers[b].grade}`;
+
+/**
+ * 過去の集計（枠ごとの件数・割合）の艇。「3号艇（今日は品川二千翔 A1）」。数字の主語は艇番（枠）で、名前は今日その枠にいる選手と分かるように
+ * 括弧の小さい字（SMALL 倍・薄い色）にする（x-channel・youtube-channel の評価、#2079。名前の隣の件数が選手個人の成績に読まれた）
+ */
+export const TODAY = "（今日は";
+export const SMALL = 0.7;
+export const boatToday = (racers, b) =>
+  `${b}号艇${TODAY}${racers[b].name}${NB}${racers[b].grade}）`;
+/** 括弧の小さい字の部分（「（今日は名前 級）」）。描く側（F01.jsx）・幅の見積り・検査で同じ形を使う */
+export const TODAY_RE = /（今日は[^）]*）/g;
 
 /**
  * 字の幅（em）の見積り。Noto Sans JP の実測より広めに取る（狭く見積もると右の列からはみ出す）:
  * 全角1、英数 0.66、% 0.9、空白・句読の半角 0.3、その他の半角 0.6
  */
 export function emWidth(text) {
+  // 括弧の小さい字の部分は SMALL 倍
+  const small = [...text.matchAll(TODAY_RE)].map((m) => m[0]);
+  const rest = text.replace(TODAY_RE, "");
+  return charsEm(rest) + small.reduce((w, x) => w + charsEm(x) * SMALL, 0);
+}
+export function charsEm(text) {
   let w = 0;
   for (const c of text) {
     if (c === " " || c === NB || c === "," || c === ".") w += 0.3;
@@ -141,7 +158,17 @@ export function layoutRight(c) {
           answer2: { size: a2, lines: a2l },
           bottom: Math.round(RIGHT.top + height),
           limit: bottom,
-          minFontPx: Math.min(...sizes),
+          // 括弧の小さい字があれば、その欄の SMALL 倍が最小
+          minFontPx: Math.min(
+            ...sizes,
+            ...[
+              [scope, FIELD.scope.sizes[0]],
+              [al, a],
+              [a2l, a2],
+            ]
+              .filter(([ls]) => ls.some((l) => l.includes(TODAY)))
+              .map(([, z]) => z * SMALL),
+          ),
         };
       }
       why = `下の線（y${bottom}）を越える（y${Math.round(RIGHT.top + height)}）`;
@@ -150,18 +177,21 @@ export function layoutRight(c) {
   return { ok: false, reason: `答えが${why}` };
 }
 
-/** 冒頭の棒（F01.jsx の Open と同じ寸法）。艇の札60・号艇52px・名前と級40px・件数58px */
+/** 冒頭の棒（F01.jsx の Open と同じ寸法）。艇の札60・号艇52px・「（今日は名前 級）」34px（薄い色）・件数58px */
 export const OPEN = {
   badge: 60,
   gap: 14,
   boatSize: 52,
-  nameSize: 40,
+  nameSize: 34,
   nameGap: 16,
   countSize: 58,
   barMax: 820,
   barMin: 360,
   margin: 72,
 };
+
+/** 冒頭の棒の名前と級（過去の件数の隣なので、今日その枠にいる選手と分かる形） */
+export const openName = (b) => `${TODAY}${b.name}${NB}${b.grade}）`;
 
 /**
  * 冒頭の棒の行の幅（名前と級の列の幅と、棒の長さの上限）。棒が barMin より短くなるなら ok=false
@@ -174,7 +204,7 @@ export function layoutOpen(bars) {
       o.gap +
       emWidth("号艇") * o.boatSize +
       o.nameGap +
-      Math.max(0, ...bars.map((b) => emWidth(`${b.name}${NB}${b.grade}`))) *
+      Math.max(0, ...bars.map((b) => charsEm(openName(b)))) *
         o.nameSize,
   );
   const countW = Math.ceil(

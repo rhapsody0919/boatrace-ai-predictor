@@ -2153,7 +2153,11 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
         const texts = c.open ? c.open.bars.map((b) => `${b.boat}号艇${NB}${b.name}${NB}${b.grade}`) : [c.scope, c.answer, c.answer2].filter(Boolean);
         const boats = texts.join(" ").match(/\d号艇/g) ?? [];
         named += boats.length;
-        for (const b of boats) assert.ok(texts.join(" ").includes(`${b}${NB}${racers[b[0]].name}${NB}${racers[b[0]].grade}`), `${name} ${id}: ${b}の隣に名前と級`);
+        // 今日の6艇の属性（c1・c5・冒頭の棒）は「N号艇 名前 級」、過去の集計（c2〜c4）は「N号艇（今日は名前 級）」
+        const form = (b) => (["c2", "c3", "c4"].includes(id) ? `${b}（今日は${racers[b[0]].name}${NB}${racers[b[0]].grade}）` : `${b}${NB}${racers[b[0]].name}${NB}${racers[b[0]].grade}`);
+        for (const b of boats) assert.ok(texts.join(" ").includes(form(b)), `${name} ${id}: ${b}の隣に名前と級`);
+        // 範囲の行に名前を入れない（集計が個人の成績に読まれる。x-channel P0 #2079）
+        for (const r of Object.values(racers)) assert.ok(!(c.scope ?? "").includes(r.name), `${name} ${id}: 範囲の行に名前`);
         // 行ごとの幅（見積りは Noto Sans JP の実測以上。2026-11-01 に Chromium で 10 種を測って確かめた）
         if (c.right) for (const k of ["scope", "answer", "answer2"]) for (const l of c.right[k].lines) assert.ok(emWidth(l) * c.right[k].size <= RIGHT.w, `${name} ${id}: 「${l}」が幅を越える`);
       }
@@ -2184,6 +2188,9 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     const mf = f01Fixture("2026-10-19-19-10");
     const s = f01Script(mf);
     const { racers } = racersOf(mf);
+    // 範囲の行に名前を入れたら落とす。過去の集計の形「（今日は名前 級）」も出走表と照合する
+    assert.ok(f01RacerCheck({ chapters: [{ id: "c4", scope: `丸亀の全期間 3号艇${NB}${racers[3].name}${NB}${racers[3].grade}が1着`, answer: `軸 3号艇（今日は${racers[3].name}${NB}${racers[3].grade}）`, right: { ok: true, minFontPx: 32 } }] }, racers).some((w) => w.includes("範囲の行に選手名")));
+    assert.ok(f01RacerCheck({ chapters: [{ id: "c4", answer: `軸 3号艇（今日は別人${NB}A1）`, right: { ok: true, minFontPx: 32 } }] }, racers).some((w) => w.includes("出走表")));
     // 出走表と違う名前・級は落とす
     assert.ok(f01RacerCheck(s, { ...racers, 1: { ...racers[1], grade: racers[1].grade === "A1" ? "A2" : "A1" } }).some((w) => w.includes("出走表")), "級の違いを落とす");
     assert.ok(f01RacerCheck(s, { ...racers, 1: { ...racers[1], name: "別人" } }).some((w) => w.includes("出走表")), "名前の違いを落とす");
