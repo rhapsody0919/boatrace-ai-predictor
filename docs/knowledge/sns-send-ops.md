@@ -24,6 +24,8 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - X の job は Chromium を3回使う（runner の検査1・runXSendJob の2）。上限6では1回の実行で X は2件までで、3件目は検査に落ちていた。runner は必要数を見積もって次の実行に回す（2026-10-27、BOA-1164、snsSendRunner.js headlessNeed）
 - X の送信の月の予約は claim のたびに足し、送った後に実額で戻さない（月の切り替えで0に戻すだけ、153:665・158:277）。188 から、送る文に URL があれば ceiling_x_url（$0.200）、無ければ ceiling_x_plain（$0.015）で数える（X API の料金表の Post: Create、2026-10-27）。182 までは親を全部 $0.25 で数えていた。出し物を増やす設計は「1日の本数×URL の有無×30」を budget_microusd（本番 $20）と比べる（2026-10-27、system-architect、本番の今月の posted 20本は全部 URL つき）
 - 送る直前の readCurrent（api/_lib/snsClaimCheck.js）は下書きの source_data のキー（digest・full_picture・finals_image・research_image・today_thinking）で振り分ける。新しい種類は別のキーにして他の種類のキーを入れず、枝の中で item の kind も読んで食い違えば投げる（2026-10-27、BOA-1169、snsClaimCheck.js の today_thinking の枝）
+- 全貌の動画・題・説明文には締切の時刻（races.start_time）が焼き込まれているので、締切が延びた束は送る側で通さず（deadline_changed）、作り手が作り直して push し直し、前の束を差し替える（2026-10-31、system-architect・BOA-1201、sns-video-studio/remotion/scripts/full-picture/bundle.mjs:65-75 の raceHeader）
+- 差し替えは、前の item を stopped（stopped_via=superseded）にすると一意の索引 sns_auto_send_items_race_channel（WHERE state NOT IN ('stopped','held_manual')）から外れて、同じレースの新しい item を入れられる。job は item の後に hold（理由 superseded）にする。先に item を止めておけば、hold の前に claim されても auto_stopped で止まる（2026-10-31、BOA-1201、docs/db-migration/172:42・153:51）
 
 ## 容量・上限
 - 取り置き（sns_x_kind_reserves）は旗が off でも・締切が過ぎても解けない。新しい出し物の取り置きと daily_limit_x はマイグレーションに入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前に当てる（先に入れると他の出し物の残りを食う）（2026-10-27、BOA-1169、ADR-0094 の 182 の追記の (2)・189 のヘッダー）
