@@ -66,6 +66,7 @@ async function showFixed(page) {
 async function textIn(page, rect) {
   return page.evaluate((r) => {
     const out = [];
+    const sizes = [];
     let minFont = Infinity;
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -83,9 +84,13 @@ async function textIn(page, rect) {
       const y = b.y + scrollY;
       if (b.width === 0 || x + b.width < r.x || x > r.x + r.w || y + b.height < r.y || y > r.y + r.h) continue;
       out.push(t);
-      minFont = Math.min(minFont, parseFloat(cs.fontSize));
+      // svg の中の字は viewBox の縮尺を掛けた画面の上の大きさ（計算した font-size は svg の単位）
+      const px = parseFloat(cs.fontSize) * (el instanceof SVGElement ? (el.getScreenCTM()?.a ?? 1) : 1);
+      sizes.push([Math.round(px * 10) / 10, t.slice(0, 20)]);
+      minFont = Math.min(minFont, px);
     }
-    return { text: out.join(" "), minFont: Number.isFinite(minFont) ? minFont : null };
+    sizes.sort((a, b) => a[0] - b[0]);
+    return { text: out.join(" "), minFont: Number.isFinite(minFont) ? minFont : null, small: sizes.slice(0, 6) };
   }, rect);
 }
 
@@ -118,7 +123,7 @@ async function shoot(page, clip, file, extra = {}) {
   const t = await textIn(page, clip);
   // 拡大は deviceScaleFactor まで（それ以上は撮った画素を引き伸ばすだけでぼける）
   const scale = Math.min(LEFT_BOX.h / clip.h, LEFT_BOX.w / clip.w, DPR);
-  return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, ...extra };
+  return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, small: t.small.map(([px, s]) => [Math.round(px * scale * 10) / 10, s]), ...extra };
 }
 
 /** 差がつく材料: 6艇の図と艇の行 */
@@ -160,7 +165,7 @@ async function shootEl(page, loc, file, extra = {}) {
   const clip = await box(loc);
   const t = await textIn(page, clip);
   const scale = Math.min(LEFT_BOX.h / clip.h, LEFT_BOX.w / clip.w, DPR);
-  return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, ...extra };
+  return { file, clip, scale, text: t.text, minFontPx: t.minFont === null ? null : Math.round(t.minFont * scale * 10) / 10, small: t.small.map(([px, s]) => [Math.round(px * scale * 10) / 10, s]), ...extra };
 }
 
 /** sankey の1着の帯を押す（押した後の切り抜き） */
@@ -181,7 +186,9 @@ async function pickFirst(flow, boat) {
  * @param {object} m 材料 JSON
  * @param {{chapters: object[]}} s f01Script の結果
  * @param {string} outDir 撮った画像を置くフォルダ（public-dir）
- * @returns {Promise<Record<string, object>>} 章の id（2カット目は id+"2"）→ 撮った物
+ * @returns {Promise<Record<string, object>>} 撮った物の名前 → 撮った物。名前と章の並べ方は f01-build.mjs の PLAN。
+ *   字の小ささ（2026-10-30 の f01 で7章が目安 28px に届かなかった、hq 11d 節）を直すため、章ごとに見せる部品だけを撮る
+ *   （説明の行・凡例・ボタンを入れない）。部品の外枠で撮れば、左の枠いっぱいまで拡大できる
  */
 export async function captureAll(m, s, outDir) {
   const browser = await chromium.launch();
@@ -215,52 +222,55 @@ export async function captureAll(m, s, outDir) {
     if (c2) {
       await openTab(narrow, "類似レース");
       await hideFixed(narrow);
-      // 見出し「類似レースの決まり方」から、1着の棒の6号艇の行の下まで（下の空白・次の段を入れない）
-      const top = await box(narrow.getByRole("heading", { name: "類似レースの決まり方" }).first());
+      // 1着の棒だけ: 見出し「どの艇が勝った？」から6号艇の行の下まで（上の件数の見出し・凡例を入れない）
+      const top = await box(narrow.getByRole("heading", { name: "どの艇が勝った？" }).first());
       const end = await box(narrow.getByRole("heading", { name: "どう決まった？" }).first());
       const rows = await narrow.evaluate(
         ({ y0, y1 }) =>
-          [...document.querySelectorAll("body *")]
-            .filter((e) => e.children.length === 0 && /6号艇/.test(e.textContent))
-            .map((e) => e.getBoundingClientRect())
-            .map((r) => r.y + scrollY + r.height)
-            .filter((b) => b > y0 && b < y1),
+          (() => {
+            const out = [];
+            const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            for (let n = w.nextNode(); n; n = w.nextNode()) {
+              if (!/[1-6]号艇/.test(n.textContent)) continue;
+              const r = document.createRange();
+              r.selectNodeContents(n);
+              out.push(r.getBoundingClientRect());
+            }
+            return out;
+          })()
+            .map((r) => ({ y: r.y + scrollY, b: r.y + scrollY + r.height }))
+            .filter((r) => r.y > y0 && r.b < y1),
         { y0: top.y, y1: end.y },
       );
-      const bottom = rows.length ? Math.max(...rows) + 6 : end.y - 12;
-      const clip = pad({ x: top.x, y: top.y, w: Math.max(top.w, 380), h: bottom - top.y });
-      shots.c2 = await shoot(narrow, clip, file("c2"), { testid: "類似レースの決まり方" });
+      if (rows.length < 2) throw new Error("類似レースの1着の棒の行が見つからない");
+      const clip = pad({ x: top.x, y: top.y, w: Math.max(top.w, 380), h: Math.max(...rows.map((r) => r.b)) + 6 - top.y });
+      shots.c2 = await shoot(narrow, clip, file("c2"), { testid: "類似レースの1着の棒" });
     }
     const c3 = at("c3");
     if (c3) {
+      // 形の札は選んだ1枚だけ（狭い幅 360 で撮っても札の中の図の艇番は同じ割合で小さくなり、かえって 20.6px に下がった）
       await openTab(narrow, "展開シナリオ");
       await hideFixed(narrow);
-      const pats = narrow.locator(".af-pats").first();
-      const btn = pats.locator("button", { hasText: c3.shot.form }).first();
-      // 形の札は選んだ札と隣の札の2枚（同じ行）。外周は狭く（隣の札の縁を入れない）
-      const cards = pats.locator("button");
-      const all = [];
-      for (let i = 0; i < (await cards.count()); i++) all.push(await box(cards.nth(i)));
+      const btn = narrow.locator(".af-pats").first().locator("button", { hasText: c3.shot.form }).first();
       const b = await box(btn);
-      const row = all.filter((r) => Math.abs(r.y - b.y) < 4);
-      const i0 = row.findIndex((r) => Math.abs(r.x - b.x) < 2);
-      const pair = row.length < 2 ? [b] : i0 > 0 ? [row[i0 - 1], row[i0]] : row.slice(0, 2);
-      const u = union(pair);
-      const clip = { x: u.x - 4, y: u.y - 4, w: u.w + 8, h: u.h + 8 };
+      const clip = { x: b.x - 4, y: b.y - 4, w: b.w + 8, h: b.h + 8 };
       shots.c3 = await shoot(narrow, clip, file("c3"), { goldBoxes: [rel(b, clip)], testid: "スタートの形" });
     }
-    // PC 幅: 縦長の部品（着順の流れ・思考アシストの相手）
+    // PC 幅: 着順の流れ（図の暗い面だけを撮る。押す前・押した後）
     const page = await open(VIEWPORT);
     if (c2?.shot.cut2 || c3) await sonar(page);
+    const flowShots = async (flow, pre, post, firstBoat, testid) => {
+      const dark = flow.locator(".af-dark").first();
+      shots[pre] = await shootEl(page, dark, file(pre));
+      const hit = await pickFirst(flow, firstBoat);
+      const at0 = await box(dark);
+      await page.waitForTimeout(1200);
+      shots[post] = await shootEl(page, dark, file(post), { cursor: rel(hit, at0), testid });
+    };
     if (c2?.shot.cut2) {
       await openTab(page, "類似レース");
       await hideFixed(page);
-      const flow = page.locator(".af-flow").first();
-      const before = await shootEl(page, flow, file("c2-pre"));
-      const hit = await pickFirst(flow, c2.shot.firstBoat);
-      const at0 = await box(flow);
-      await page.waitForTimeout(1200);
-      shots.c22 = await shootEl(page, flow, file("c22"), { pre: before.file, cursor: rel(hit, at0), testid: "着順の流れ" });
+      await flowShots(page.locator(".af-flow").first(), "c2-pre", "c22", c2.shot.firstBoat, "着順の流れ");
     }
     if (c3) {
       await openTab(page, "展開シナリオ");
@@ -268,37 +278,37 @@ export async function captureAll(m, s, outDir) {
       await page.locator(".af-pats").first().locator("button", { hasText: c3.shot.form }).first().click();
       await page.waitForTimeout(2500);
       await hideFixed(page);
-      const flow = page.locator(".af-flow").last();
-      const before = await shootEl(page, flow, file("c3-pre"));
-      const hit = await pickFirst(flow, c3.shot.firstBoat);
-      const at0 = await box(flow);
-      await page.waitForTimeout(1200);
-      shots.c32 = await shootEl(page, flow, file("c32"), { pre: before.file, cursor: rel(hit, at0), testid: "着順の流れ（展開）" });
+      await flowShots(page.locator(".af-flow").last(), "c3-pre", "c32", c3.shot.firstBoat, "着順の流れ（展開）");
     }
-    // 思考アシスト＞相手
+    // 思考アシスト＞相手（スマホ幅）。上＝軸のボタン・見出し・結論の1行、下＝2着の棒、の2カット
     const c4 = at("c4");
     if (c4) {
-      await page.goto(`${SITE}/race/${m.raceId}/assist`, { waitUntil: "networkidle" });
-      await page.waitForTimeout(1500);
-      await page.getByRole("button", { name: "拒否する" }).click({ timeout: 3000 }).catch(() => {});
-      await page.getByRole("tab", { name: "相手" }).click();
-      await page.waitForTimeout(1500);
-      await hideFixed(page);
-      const follow = page.locator(".ta-box", { hasText: "軸（1着）" }).first();
+      await narrow.goto(`${SITE}/race/${m.raceId}/assist`, { waitUntil: "networkidle" });
+      await narrow.waitForTimeout(1500);
+      await narrow.getByRole("button", { name: "拒否する" }).click({ timeout: 3000 }).catch(() => {});
+      await narrow.getByRole("tab", { name: "相手" }).click();
+      await narrow.waitForTimeout(1500);
+      await hideFixed(narrow);
+      const follow = narrow.locator(".ta-box", { hasText: "軸（1着）" }).first();
       const radio = (b) => follow.getByRole("radio", { name: `${b}号艇を軸` });
+      const topClip = async () => pad(union([await box(follow.locator(".ta-axis-pick-row").first()), await box(follow.locator(".ta-follow-concl").first())]));
+      const bars = follow.locator("table.ta-follow").first();
       if ((await radio(c4.shot.axis).getAttribute("aria-checked")) !== "true") await radio(c4.shot.axis).click();
-      await page.waitForTimeout(1200);
-      const clip = pad(await box(follow));
+      await narrow.waitForTimeout(1200);
+      const clip = await topClip();
       const target = rel(await box(radio(c4.shot.axis2)), clip);
-      shots.c4 = await shoot(page, clip, file("c4"), { testid: "相手（軸1号艇）" });
+      shots.c4 = await shoot(narrow, clip, file("c4"), { testid: "相手（軸1号艇）" });
+      shots.c4b = await shootEl(narrow, bars, file("c4b"), { testid: "相手の2着の棒（軸1号艇）" });
       await radio(c4.shot.axis2).click();
-      await page.waitForTimeout(1500);
-      const clip2 = pad(await box(follow));
-      shots.c42 = await shoot(page, clip2, file("c42"), { cursorFrom: target, testid: `相手（軸${c4.shot.axis2}号艇）` });
+      await narrow.waitForTimeout(1500);
+      const clip2 = await topClip();
+      shots.c42 = await shoot(narrow, clip2, file("c42"), { cursorFrom: target, testid: `相手（軸${c4.shot.axis2}号艇）` });
+      shots.c42b = await shootEl(narrow, bars, file("c42b"), { testid: `相手の2着の棒（軸${c4.shot.axis2}号艇）` });
       const close = at("close");
       if (close) {
-        const g = rel(await box(radio(close.shot.goldAxis)), clip2);
-        shots.close = await shoot(page, clip2, file("close"), { goldBoxes: [g], testid: "相手（押していない軸）" });
+        const clip3 = await topClip();
+        const g = rel(await box(radio(close.shot.goldAxis)), clip3);
+        shots.close = await shoot(narrow, clip3, file("close"), { goldBoxes: [g], testid: "相手（押していない軸）" });
       }
     }
   } finally {
