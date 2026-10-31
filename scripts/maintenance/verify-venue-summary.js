@@ -230,6 +230,16 @@ for (const lang of LANGS) {
       const listed = ["sashi", "makuri", "makurizashi", "nuki"]
         .sort((a, b) => v.techniques[b].count - v.techniques[a].count)
         .slice(0, 3);
+      // 差が確かめられない決まり手は「はっきりしない」と書く（1つも無ければ「差がはっきりした決まり手は無い」）
+      const flaggedCount = listed.filter((slug) => v.vsNational[slug]).length;
+      check(
+        `${lang} 会場${code}: 差が確かめられない決まり手を黙らない`,
+        [
+          lines.techniques.includes(t("venueSummary.techniquesNone")),
+          lines.techniques.includes(t("venueSummary.techniquesRest")),
+        ],
+        [flaggedCount === 0, flaggedCount > 0 && flaggedCount < 3],
+      );
       // 文の型から names を除いた固定の部分（「は全国より多い」等）。向きの無い会場に出ていないことを見る
       const stemOf = (dir) =>
         t(
@@ -248,7 +258,7 @@ for (const lang of LANGS) {
           dir === "higher"
             ? "venueSummary.techniquesHigher"
             : "venueSummary.techniquesLower",
-          { names: expected.join(t("listSeparator")) },
+          { names: expected.join(t("venueSummary.namesSeparator")) },
         );
         check(
           `${lang} 会場${code}: 2行目の「全国より${dir === "higher" ? "多い" : "少ない"}」は差が確かめられた決まり手だけ`,

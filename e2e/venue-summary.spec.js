@@ -359,7 +359,9 @@ test("要約2行目の決まり手に全国の値を添え、多い・少ない�
   await expect(second).toContainText(
     `差し${rateOf(13, "sashi")}%（全国${nat("sashi")}%）`,
   );
-  await expect(second).toContainText("。まくりは全国より少ない");
+  await expect(second).toContainText(
+    "。まくりは全国より少ない。ほかは全国との差がはっきりしない",
+  );
   await expect(second).not.toContainText("まくり差しは全国");
   await expect(second).not.toContainText("全国より多い");
   // 多摩川: 上位3つに差が確かめられた決まり手が無いので、多い・少ないを書かない
@@ -369,4 +371,5 @@ test("要約2行目の決まり手に全国の値を添え、多い・少ない�
   const tamagawa = page.getByTestId("venue-summary-lines").locator("p").nth(1);
   await expect(tamagawa).toContainText(`（全国${nat("makuri")}%）`);
   await expect(tamagawa).not.toContainText(/全国より(多い|少ない)/);
+  await expect(tamagawa).toContainText("全国との差がはっきりした決まり手は無い");
 });

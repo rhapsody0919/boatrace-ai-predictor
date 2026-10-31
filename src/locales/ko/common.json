@@ -3867,12 +3867,15 @@
     "course1Higher": "{{venue}}의 최근 1년({{to}}까지, {{races}}경주), 진입 1코스의 1착률은 {{rate}}%로 전국({{nationalRaces}}경주) {{nationalRate}}%보다 높습니다",
     "course1Lower": "{{venue}}의 최근 1년({{to}}까지, {{races}}경주), 진입 1코스의 1착률은 {{rate}}%로 전국({{nationalRaces}}경주) {{nationalRate}}%보다 낮습니다",
     "course1Unclear": "{{venue}}의 최근 1년({{to}}까지, {{races}}경주), 진입 1코스의 1착률은 {{rate}}%입니다. 전국({{nationalRaces}}경주) {{nationalRate}}%와의 차이는 분명하지 않습니다",
-    "techniques": "인빠지기 이외의 결정수 상위 3개는 {{list}} (전 경주 중 비율)입니다",
+    "techniques": "전 경주 중 비율로 보면 인빠지기 이외의 결정수 상위 3개는 {{list}}입니다",
     "techniqueItem": "{{name}} {{rate}}%(전국 {{nationalRate}}%)",
-    "techniquesHigher": "전국보다 많은 결정수: {{names}}",
-    "techniquesLower": "전국보다 적은 결정수: {{names}}",
+    "techniquesHigher": "{{names}}는 전국보다 많습니다",
+    "techniquesLower": "{{names}}는 전국보다 적습니다",
     "techniquesWithCompare": "{{line}}. {{compare}}",
-    "compareSeparator": " / "
+    "compareSeparator": ". ",
+    "techniquesRest": "나머지는 전국과의 차이가 분명하지 않습니다",
+    "techniquesNone": "전국과 차이가 분명한 결정수는 없습니다",
+    "namesSeparator": ", "
   },
   "venueMeetBanner": {
     "inProgress": "개최 중",

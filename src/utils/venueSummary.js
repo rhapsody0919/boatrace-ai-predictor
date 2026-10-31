@@ -69,7 +69,9 @@ export function venueSummaryLines(t, venueCode, stats = VENUE_SUMMARY_STATS) {
   const line = t("venueSummary.techniques", {
     list: items.join(t("listSeparator")),
   });
-  // 「全国より多い／少ない」は、全国との差が Bonferroni を通った決まり手（まくり・まくり差し）だけ
+  // 「全国より多い／少ない」は、全国との差が Bonferroni を通った決まり手（まくり・まくり差し）だけ。
+  // ほかは「差がはっきりしない」と書き、値だけ並べて黙らない（読者が自分で多少を読むため。wording-editor 2026-11-01）
+  const flagged = topSlugs.filter((slug) => venue.vsNational[slug]);
   const compare = ["higher", "lower"]
     .map((dir) => {
       const names = topSlugs
@@ -80,17 +82,17 @@ export function venueSummaryLines(t, venueCode, stats = VENUE_SUMMARY_STATS) {
         dir === "higher"
           ? "venueSummary.techniquesHigher"
           : "venueSummary.techniquesLower",
-        { names: names.join(t("listSeparator")) },
+        { names: names.join(t("venueSummary.namesSeparator")) },
       );
     })
     .filter(Boolean);
-  const techniques =
-    compare.length > 0
-      ? t("venueSummary.techniquesWithCompare", {
-          line,
-          compare: compare.join(t("venueSummary.compareSeparator")),
-        })
-      : line;
+  if (flagged.length === 0) compare.push(t("venueSummary.techniquesNone"));
+  else if (flagged.length < topSlugs.length)
+    compare.push(t("venueSummary.techniquesRest"));
+  const techniques = t("venueSummary.techniquesWithCompare", {
+    line,
+    compare: compare.join(t("venueSummary.compareSeparator")),
+  });
   return { course, techniques };
 }
 
