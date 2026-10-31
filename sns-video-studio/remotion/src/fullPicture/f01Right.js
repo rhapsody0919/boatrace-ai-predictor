@@ -15,8 +15,8 @@ export const GRADES = ["A1", "A2", "B1", "B2"];
  */
 export const MIN_FONT_PX = 20;
 
-/** 出走表の名前（「篠崎　　仁志」）→ フルネーム（空白を詰める） */
-export const fullName = (name) => String(name ?? "").replace(/[\s　]+/g, "");
+/** 出走表の名前（「篠崎」と「仁志」の間に全角の空白）→ フルネーム（空白を詰める。JS の \s は全角の空白も含む） */
+export const fullName = (name) => String(name ?? "").replace(/\s+/g, "");
 
 /**
  * 材料の出走表（m.api.races の対象レースの entries。元は race_entries.player_name・grade）→ 艇番ごとの名前と級。
