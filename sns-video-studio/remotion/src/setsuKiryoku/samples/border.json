@@ -19,7 +19,7 @@
    "need": "2着以上"
   },
   {
-   "rank": 22,
+   "rank": 20,
    "racer": "小池 修平",
    "rate": 5.75,
    "race": "10R",
@@ -27,12 +27,12 @@
    "need": "2着以上"
   },
   {
-   "rank": 28,
-   "racer": "新田 雄史",
-   "rate": 5.4,
-   "race": "4R",
-   "boat": 4,
-   "need": "1着だけ"
+   "rank": 23,
+   "racer": "篠崎 元志",
+   "rate": 5.6,
+   "race": "6R",
+   "boat": 3,
+   "need": "2着以上"
   }
  ],
  "texts": {

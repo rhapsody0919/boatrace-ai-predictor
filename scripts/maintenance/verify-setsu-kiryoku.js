@@ -18,11 +18,15 @@ import {
   LEFT,
   SAFE,
   VARIANTS,
+  SIX,
   barsLayout,
   checkBundle,
   closeLayout,
+  daysLabel,
   fmtAvg,
   hookLayout,
+  sixChipW,
+  sixPitch,
   timeline,
 } from "../../sns-video-studio/remotion/src/setsuKiryoku/model.js";
 
@@ -233,6 +237,52 @@ t("border の3人・順位・得点率・要る着の食い違いを落とす", 
   const i = clone(b);
   [i.racers[0], i.racers[1]] = [i.racers[1], i.racers[0]];
   fails(i, /順位の順でない/, "並び");
+});
+
+t(
+  "/code-review の再現: 全角の数・空白入りの言い切り・要素の形・締めの末尾・画面と同じ書き方の数",
+  () => {
+    const g = load("motor_gap");
+    const a = clone(g);
+    a.texts.hook[2] = { text: "８走中７回 1位", em: true };
+    fails(a, /画面の文の数「8」/, "全角の数");
+    const c = clone(g);
+    c.youtube.title = "今節は 節 イチ？";
+    fails(c, /言い切りの語「節イチ」/, "空白入りの言い切り");
+    const d = clone(g);
+    d.texts.hook[1] = null;
+    fails(d, /texts.hook\[1\] が文字列か/, "null の要素");
+    const e = clone(g);
+    e.texts.close = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"];
+    fails(e, /y1400 を越える: 節の機力は龍神レーダーで/, "締めの末尾の位置");
+    const u = clone(load("motor_up"));
+    u.texts.close[0] = "コースの平均 3.3 と 3.3";
+    assert.deepEqual(check(u), [], "画面（Halves）と同じ 3.3 の形は通る");
+    const b = clone(load("border"));
+    b.texts.hook[2] = { text: "得点率 6.0", em: true };
+    assert.deepEqual(check(b), [], "得点率 6.0 の形も通る");
+  },
+);
+
+t("final_six の札は走が多くても重ならず x920 まで（9走まで）", () => {
+  for (const n of [6, 7, 8, 9]) {
+    const pitch = sixPitch(n);
+    const w = sixChipW(pitch);
+    assert.ok(pitch - w >= 8, `${n}走で札が重なる`);
+    assert.ok(SIX.chipX + (n - 1) * pitch + w <= 920, `${n}走で x920 を越える`);
+    assert.ok(Math.min(48, w - 6) >= 36, `${n}走で札の字が36px未満`);
+  }
+  const f = clone(load("final_six"));
+  const extra = f.six[0].runs[0];
+  f.six[0].runs = Array.from({ length: 10 }, () => ({ ...extra }));
+  fails(f, /走数（10）が多く/, "10走");
+});
+
+t("日の札: 月をまたぐ節は「〜」にしない", () => {
+  const d = (...xs) => xs.map((x) => ({ day: `${x}日` }));
+  assert.equal(daysLabel(d(27, 28)), "27・28日");
+  assert.equal(daysLabel(d(29, 30, 30, 31)), "29〜31日");
+  assert.equal(daysLabel(d(30, 31, 1)), "30・31・1日");
 });
 
 t("平均の順位の書き方", () => {

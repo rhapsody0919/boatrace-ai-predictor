@@ -41,6 +41,7 @@ import {
   fmtRate,
   hookLayout,
   runsRowH,
+  sixChipW,
   sixPitch,
   sixStats,
   splitHalves,
@@ -219,7 +220,7 @@ function RunsTable({ b }) {
         ["順位", 470],
         ["展示タイム", 680],
       ].map(([s, x]) => (
-        <T key={s} x={x} y={RUNS_TOP - 60} size={32} color={GR} weight={400}>
+        <T key={s} x={x} y={RUNS_TOP - 64} size={36} color={GR} weight={400}>
           {s}
         </T>
       ))}
@@ -360,7 +361,8 @@ function RankChart({ b }) {
       ? (shown - k) *
         Math.hypot(pts[k + 1].x - pts[k].x, pts[k + 1].y - pts[k].y)
       : 0);
-  const labSize = pts.length > 8 ? 28 : 32;
+  // 字は最小36px（video-composition.md）
+  const labSize = 36;
   return (
     <>
       <T align="center" y={260} size={48}>
@@ -410,7 +412,7 @@ function RankChart({ b }) {
           ) : null,
         )}
       </svg>
-      <T x={30} y={CHART.y1 + 96} size={28} color={GR} weight={400}>
+      <T x={40} y={CHART.y1 + 92} size={36} color={GR} weight={400}>
         コース
       </T>
       {pts.map((p, i) => (
@@ -520,11 +522,12 @@ function SixTable({ b }) {
               return (
                 <div
                   key={j}
+                  data-sk=""
                   style={{
                     position: "absolute",
                     left: cx,
                     top: y + 8,
-                    width: SIX.chipW,
+                    width: sixChipW(pitch),
                     height: 84,
                     borderRadius: 12,
                     background: bg,
@@ -537,7 +540,7 @@ function SixTable({ b }) {
                   <span
                     data-sk=""
                     style={{
-                      fontSize: 48,
+                      fontSize: Math.min(48, sixChipW(pitch) - 6),
                       fontWeight: 900,
                       color: x.rank <= 2 ? NAVY : WH,
                     }}

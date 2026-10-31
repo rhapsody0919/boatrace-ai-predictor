@@ -111,7 +111,11 @@ export const courseAvg = (courses) => Math.round(mean(courses) * 10) / 10;
 export function daysLabel(runs) {
   const days = [...new Set(runs.map((r) => String(r.day).replace(/日$/, "")))];
   if (days.length === 1) return `${days[0]}日`;
-  if (days.length === 2) return `${days.join("・")}日`;
+  // 月をまたぐ節（30・31・1日）は日の数が戻るので「〜」にしない（逆向きの範囲に読める。/code-review）
+  const rising = days.every(
+    (d, i) => i === 0 || Number(d) === Number(days[i - 1]) + 1,
+  );
+  if (days.length === 2 || !rising) return `${days.join("・")}日`;
   return `${days[0]}〜${days[days.length - 1]}日`;
 }
 /** motor_up の前半・後半（halves の courses の数で runs を切る） */
@@ -135,7 +139,9 @@ export const tagText = (b) =>
       ? `${b.venue} ${b.grade} 予選最終日`
       : `${b.venue} ${b.grade} 開催中`;
 export const closeTail = (b) =>
-  b.variant === "border" ? "得点率の表は 龍神レーダーで" : "節の機力は龍神レーダーで";
+  b.variant === "border"
+    ? "得点率の表は 龍神レーダーで"
+    : "節の機力は龍神レーダーで";
 /** 得点率の書き方（6 → "6.00"） */
 export const fmtRate = (v) => v.toFixed(2);
 
@@ -145,7 +151,10 @@ export const fmtRate = (v) => v.toFixed(2);
  * 中央寄せの文の並び（hook・close）。各行の大きさと y。
  * afterEm: 金の行より後の白い行（close の「準優・優勝戦の展示も見る」等の添え）の大きさの上限と、前の空き（見本 mk.py と同じ間）
  */
-export function stackLayout(lines, { top, plainMax, emMax, gap = 0.3, afterEm = null }) {
+export function stackLayout(
+  lines,
+  { top, plainMax, emMax, gap = 0.3, afterEm = null },
+) {
   let y = top;
   let seenEm = false;
   return lines.map((l) => {
@@ -153,7 +162,11 @@ export function stackLayout(lines, { top, plainMax, emMax, gap = 0.3, afterEm = 
     const em = lineEm(l);
     const note = afterEm && seenEm && !em;
     if (note) y += afterEm.space;
-    const size = fitSize(text, CENTER_MAX_W, em ? emMax : note ? afterEm.max : plainMax);
+    const size = fitSize(
+      text,
+      CENTER_MAX_W,
+      em ? emMax : note ? afterEm.max : plainMax,
+    );
     const box = { text, em, size, y };
     y += (size ?? MIN_FONT) * (1 + gap);
     seenEm = seenEm || em;
@@ -235,7 +248,7 @@ export function barsLayout(b) {
 }
 
 /** motor_up の線（x 150〜880、1位 y420〜6位 y1180） */
-export const CHART = { x0: 150, x1: 880, y0: 420, y1: 1180 };
+export const CHART = { x0: 210, x1: 880, y0: 420, y1: 1180 };
 export function chartPoints(runs) {
   const n = runs.length;
   return runs.map((r, i) => ({
@@ -256,8 +269,17 @@ export const SIX = {
   chipRight: 920,
   chipW: 62,
 };
-export const sixPitch = (maxRuns) =>
-  Math.min(72, Math.floor((SIX.chipRight - SIX.chipX + 10) / maxRuns));
+/** 札の間隔: 最後の札の右端（chipX + (n-1)×間隔 + 札の幅）が chipRight を越えない最大（72まで） */
+export function sixPitch(maxRuns) {
+  const span = SIX.chipRight - SIX.chipX;
+  const thin = Math.floor((span + 8) / maxRuns); // 札の幅 = 間隔 − 8 のとき
+  const wide =
+    maxRuns > 1 ? Math.floor((span - SIX.chipW) / (maxRuns - 1)) : 72; // 札の幅 = 62 のとき
+  // 両方の上限の小さい方なら、札の幅がどちらになっても右端を越えない
+  return Math.min(72, thin, wide);
+}
+/** 札の幅（間を8px以上空ける。走が多いと札を細くする。/code-review: 8走で札が重なった） */
+export const sixChipW = (pitch) => Math.min(SIX.chipW, pitch - 8);
 
 // ---------- 検査（P0: 事実の誤り・禁止語・数字の不一致）。理由の配列を返す（空なら通る） ----------
 
@@ -270,6 +292,11 @@ export const ASSERTIVE_WORDS = [
   "節イチ",
 ];
 
+/** 全角の英数字を半角に（数の照合・語の照合の前） */
+const norm = (t) =>
+  String(t).replace(/[Ａ-Ｚａ-ｚ０-９．]/g, (c) =>
+    String.fromCharCode(c.charCodeAt(0) - 0xfee0),
+  );
 const isInt = (v, lo, hi) => Number.isInteger(v) && v >= lo && v <= hi;
 
 function runReasons(r, where) {
@@ -291,7 +318,8 @@ export function screenTexts(b) {
   if (b.variant === "final_six")
     for (const r of b.six ?? []) t.push(String(r.racer ?? ""));
   else if (b.variant === "border")
-    for (const r of b.racers ?? []) t.push(String(r.racer ?? ""), String(r.need ?? ""));
+    for (const r of b.racers ?? [])
+      t.push(String(r.racer ?? ""), String(r.need ?? ""));
   else t.push(String(b.racer ?? ""));
   return t;
 }
@@ -307,11 +335,15 @@ export function allowedNumbers(b) {
   };
   if (b.variant === "border") {
     add(b.border?.cut);
-    if (typeof b.border?.line === "number") add(fmtRate(b.border.line));
+    if (typeof b.border?.line === "number")
+      [fmtRate(b.border.line), b.border.line.toFixed(1), b.border.line].forEach(
+        add,
+      );
     add((b.racers ?? []).length);
     for (const r of b.racers ?? []) {
       add(r.rank);
-      if (typeof r.rate === "number") add(fmtRate(r.rate));
+      if (typeof r.rate === "number")
+        [fmtRate(r.rate), r.rate.toFixed(1), r.rate].forEach(add);
       add(String(r.race ?? "").replace(/R$/, ""));
       add(r.boat);
     }
@@ -342,6 +374,7 @@ export function allowedNumbers(b) {
     for (const k of ["early", "late"]) {
       add(fmtAvg(b.halves[k].avg));
       add(courseAvg(b.halves[k].courses));
+      add(courseAvg(b.halves[k].courses).toFixed(1)); // 画面（Halves）は 3.0 の形で出す
     }
   }
   return s;
@@ -362,6 +395,20 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
     why.push("texts.hook が無い");
   if (!Array.isArray(b.texts?.close) || !b.texts.close.length)
     why.push("texts.close が無い");
+  for (const k of ["hook", "close"])
+    (Array.isArray(b.texts?.[k]) ? b.texts[k] : []).forEach((l, i) => {
+      const ok =
+        typeof l === "string"
+          ? l.length > 0
+          : l &&
+            typeof l === "object" &&
+            typeof l.text === "string" &&
+            l.text.length > 0;
+      if (!ok)
+        why.push(
+          `texts.${k}[${i}] が文字列か { text, em } でない: ${JSON.stringify(l)}`,
+        );
+    });
   if (typeof b.youtube?.title !== "string" || !b.youtube.title)
     why.push("youtube.title が無い");
   if (typeof b.youtube?.description !== "string" || !b.youtube.description)
@@ -370,22 +417,37 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
 
   if (b.variant === "border") {
     const bd = b.border;
-    if (!bd || !isInt(bd.cut, 1, 52) || typeof bd.line !== "number" || bd.line < 0 || bd.line > 10)
-      return [`border の cut（人数）・line（得点率）が無いか範囲の外: ${JSON.stringify(bd)}`];
+    if (
+      !bd ||
+      !isInt(bd.cut, 1, 52) ||
+      typeof bd.line !== "number" ||
+      bd.line < 0 ||
+      bd.line > 10
+    )
+      return [
+        `border の cut（人数）・line（得点率）が無いか範囲の外: ${JSON.stringify(bd)}`,
+      ];
     if (!Array.isArray(b.racers) || b.racers.length !== 3)
       return [`racers が3人でない: ${b.racers?.length}`];
     b.racers.forEach((r, i) => {
-      if (typeof r.racer !== "string" || !r.racer) why.push(`racers[${i}].racer が無い`);
-      if (!isInt(r.rank, bd.cut + 1, 60)) why.push(`racers[${i}].rank（${r.rank}）が ${bd.cut} 位より下でない`);
+      if (typeof r.racer !== "string" || !r.racer)
+        why.push(`racers[${i}].racer が無い`);
+      if (!isInt(r.rank, bd.cut + 1, 60))
+        why.push(`racers[${i}].rank（${r.rank}）が ${bd.cut} 位より下でない`);
       if (typeof r.rate !== "number" || r.rate >= bd.line || r.rate < 0)
-        why.push(`racers[${i}].rate（${r.rate}）が線 ${fmtRate(bd.line)} より下でない`);
-      if (typeof r.race !== "string" || !/^([1-9]|1[0-2])R$/.test(r.race)) why.push(`racers[${i}].race が「11R」の形でない: ${r.race}`);
-      if (!isInt(r.boat, 1, 6)) why.push(`racers[${i}].boat が1〜6でない: ${r.boat}`);
+        why.push(
+          `racers[${i}].rate（${r.rate}）が線 ${fmtRate(bd.line)} より下でない`,
+        );
+      if (typeof r.race !== "string" || !/^([1-9]|1[0-2])R$/.test(r.race))
+        why.push(`racers[${i}].race が「11R」の形でない: ${r.race}`);
+      if (!isInt(r.boat, 1, 6))
+        why.push(`racers[${i}].boat が1〜6でない: ${r.boat}`);
       if (typeof r.need !== "string" || !/^(1着だけ|[2-5]着以上)$/.test(r.need))
         why.push(`racers[${i}].need が「N着以上」「1着だけ」でない: ${r.need}`);
     });
     for (let i = 1; i < b.racers.length; i++)
-      if (b.racers[i].rank <= b.racers[i - 1].rank) why.push("racers が順位の順でない");
+      if (b.racers[i].rank <= b.racers[i - 1].rank)
+        why.push("racers が順位の順でない");
   } else if (b.variant === "final_six") {
     if (!Array.isArray(b.six) || b.six.length !== 6)
       return [`six が6艇でない: ${b.six?.length}`];
@@ -455,7 +517,7 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
 
   // 数字の不一致: hook・close に bundle の値から作れない数が出ていないか
   const ok = allowedNumbers(b);
-  for (const t of [...b.texts.hook, ...b.texts.close].map(lineText))
+  for (const t of [...b.texts.hook, ...b.texts.close].map(lineText).map(norm))
     for (const num of t.match(/\d+(?:\.\d+)?/g) ?? [])
       if (!ok.has(num))
         why.push(`画面の文の数「${num}」が bundle の値に無い: ${t}`);
@@ -463,10 +525,12 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
   // 禁止語・言い切り・z（画面・題・説明欄）
   const screen = screenTexts(b);
   const all = [...screen, b.youtube.title, b.youtube.description];
-  for (const t of all) {
+  for (const t0 of all) {
+    // 全角・空白の揺れで抜けないよう、risk-rules と同じく全角英数を半角に、空白を除いてから見る
+    const t = norm(t0).replace(/[ \u3000]/g, "");
     for (const w of ASSERTIVE_WORDS)
-      if (t.includes(w)) why.push(`言い切りの語「${w}」: ${t.slice(0, 40)}`);
-    if (/(^|[^A-Za-z])[zZｚＺ]\s*[=＝]/.test(t))
+      if (t.includes(w)) why.push(`言い切りの語「${w}」: ${t0.slice(0, 40)}`);
+    if (/(^|[^A-Za-z])[zZ][=＝]/.test(t))
       why.push(`z を出している: ${t.slice(0, 40)}`);
   }
   if (matchRiskRules) {
@@ -480,7 +544,11 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
   }
 
   // 字が最小の大きさで収まるか
-  const fits = [...hookLayout(b).lines, ...closeLayout(b).lines];
+  const fits = [
+    ...hookLayout(b).lines,
+    ...closeLayout(b).lines,
+    closeLayout(b).tail,
+  ];
   const sub = hookLayout(b).sub;
   if (sub) fits.push(sub);
   for (const l of fits)
@@ -493,7 +561,7 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
       why.push(`文が y${SAFE.bottom} を越える: ${l.text}`);
   if (b.variant === "final_six") {
     const maxRuns = Math.max(...b.six.map((r) => r.runs.length));
-    if (sixPitch(maxRuns) < 44)
+    if (sixPitch(maxRuns) < 50)
       why.push(`final_six の走数（${maxRuns}）が多く順位の札が入らない`);
   }
   return why;
