@@ -7,6 +7,14 @@
   border-radius: var(--radius-lg);
 }
 
+/* 広い画面で表を列いっぱいに広げると、選手名と級・展示タイムの間が約500px空いて行を追いにくい
+   （1440px で確認）。表は 720px で止める */
+@media (min-width: 769px) {
+  .race-summary-table {
+    max-width: 720px;
+  }
+}
+
 .race-summary-table__table {
   width: 100%;
   border-collapse: collapse;

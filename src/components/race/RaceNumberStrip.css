@@ -47,7 +47,8 @@
 .race-number-strip__link.is-current {
   border-color: var(--brand-accent-primary);
   background: var(--brand-accent-primary);
-  color: var(--color-white);
+  /* 文字は面の色にする。ダークでは金の面に紺、ライトでは茶の面に生成りで、白より読める */
+  color: var(--surface-page);
   font-weight: var(--font-weight-bold);
 }
 
