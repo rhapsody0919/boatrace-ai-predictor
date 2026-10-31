@@ -120,6 +120,16 @@ check(
   refund.rows.map((r) => r.finish),
   [2, 1, null, null, null, null],
 );
+check(
+  "返還艇の印（着順の欄に「返還」）",
+  refund.rows.map((r) => r.refunded),
+  [false, false, false, false, true, false],
+);
+check(
+  "確定前は返還の印を付けない",
+  before.rows.some((r) => r.refunded),
+  false,
+);
 // 成立状態が未判定（078以前・null）は今までどおり rank の列を使う
 const unknown = buildRaceSummaryRows(players, exh, {
   rank1: 3,

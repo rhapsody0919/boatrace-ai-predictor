@@ -3,7 +3,9 @@ import { test, expect } from "./fixtures.js";
 // レース詳細の 6艇の要約と 1R〜12R の帯（BOA-1189 GS01-c、2026-10-31 オーナー決定）
 // done_when: 過去の確定済みの1件で、/racer/ へのリンクが6件、/race/ へのリンクが2件以上ある
 const G1_RACE = "/race/2026-09-29-16-12"; // 児島12R（G1 児島キングカップ 2026-09-28〜10-03、確定済み）
-const IPPAN_RACE = "/race/2026-09-21-02-05"; // 戸田5R（一般、確定済み）
+const IPPAN_RACE = "/race/2026-09-22-02-05"; // 戸田5R（一般、確定済み）
+const CANCELLED_RACE = "/race/2026-09-21-02-05"; // 戸田5R（一般、この日は全レース中止）
+const REFUND_RACE = "/race/2026-09-29-16-11"; // 児島11R（確定、2・3号艇が返還）
 // 帯が引く節（supabaseDataService.getSeriesOfDate）。race_series は他の部品も別の列で引く
 const SERIES_OF_DATE =
   /\/rest\/v1\/race_series\?select=start_date(,|%2C)end_date(,|%2C)title(,|%2C)grade/;
@@ -84,6 +86,35 @@ test.describe("レース詳細: 6艇の要約と 1R〜12R の帯", () => {
     await expect(strip.locator('a[aria-current="page"]')).toHaveText("5R");
     await expect(page.getByTestId("race-number-strip-meet")).toHaveCount(0);
     expect(seriesRequests).toEqual([]);
+  });
+
+  test("返還艇の着順は「—」でなく「返還」（ファン評価1周目 指摘2）", async ({
+    page,
+  }) => {
+    await page.goto(REFUND_RACE);
+    const summary = page.getByTestId("race-summary-table");
+    await expect(summary).toBeVisible({ timeout: 30000 });
+    const finishOf = (boat) =>
+      summary
+        .locator("tbody tr")
+        .nth(boat - 1)
+        .locator(".race-summary-table__finish");
+    await expect(finishOf(2)).toHaveText("返還");
+    await expect(finishOf(3)).toHaveText("返還");
+    await expect(finishOf(1)).toHaveText(/^\d着$/);
+  });
+
+  test("中止のレースは要約を出さない（中止の知らせを押し下げない。ファン評価1周目 指摘1）", async ({
+    page,
+  }) => {
+    await page.goto(CANCELLED_RACE);
+    await expect(
+      page.getByText("このレースは中止となりました").first(),
+    ).toBeVisible({
+      timeout: 30000,
+    });
+    await expect(page.getByTestId("race-number-strip")).toBeVisible();
+    await expect(page.getByTestId("race-summary-table")).toHaveCount(0);
   });
 
   test("節の取得に失敗したら、帯は出したまま失敗を表示する（データなしに化けさせない）", async ({

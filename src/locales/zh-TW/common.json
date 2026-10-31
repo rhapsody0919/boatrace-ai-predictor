@@ -644,6 +644,7 @@
     "colGrade": "級別",
     "colExh": "展示時間",
     "finishValue": "第{{rank}}名",
+    "finishRefunded": "退款",
     "exhRank": "(第{{rank}})",
     "exhRankTied": "(並列第{{rank}})",
     "exhNote": "展示時間越小越快。括號內為展示時間在6艇中的排名",

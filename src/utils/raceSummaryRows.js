@@ -26,7 +26,7 @@ const validTime = (v) => {
  * @param {Array<{number: number, name?: string, racerId?: number|null, grade?: string}>} players
  * @param {Array<{boat_number: number, exhibition_time: number|null}>|null} exhibitionData
  * @param {{rank1?: number|null, rank2?: number|null, rank3?: number|null, rank4?: number|null, rank5?: number|null, rank6?: number|null}|null} result
- * @returns {{rows: Array<{number: number, name: string, racerId: number|null, grade: string|null, exhTime: number|null, exhRank: number|null, exhTied: boolean, finish: number|null}>, hasExhibition: boolean, hasResult: boolean}}
+ * @returns {{rows: Array<{number: number, name: string, racerId: number|null, grade: string|null, exhTime: number|null, exhRank: number|null, exhTied: boolean, finish: number|null, refunded: boolean}>, hasExhibition: boolean, hasResult: boolean}}
  */
 export function buildRaceSummaryRows(players, exhibitionData, result) {
   const timeOf = new Map(
@@ -66,6 +66,8 @@ export function buildRaceSummaryRows(players, exhibitionData, result) {
         exhRank: ranked?.rank ?? null,
         exhTied: (ranked?.tied ?? 0) > 1,
         finish: finishOf.get(Number(p.number)) ?? null,
+        // 返還艇（F・L・欠）。着順の欄に「—」でなく「返還」と出す（ファン評価1周目 指摘2）
+        refunded: finishOf.size > 0 && isBoatRefunded(result, p.number),
       };
     });
   return {

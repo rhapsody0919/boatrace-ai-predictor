@@ -650,6 +650,7 @@
     "colGrade": "Class",
     "colExh": "Exhibition time",
     "finishValue": "{{rank}}",
+    "finishRefunded": "Refunded",
     "exhRank": "(rank {{rank}})",
     "exhRankTied": "(tied rank {{rank}})",
     "exhNote": "A lower exhibition time is faster. Brackets show the exhibition-time rank among the six boats.",

@@ -644,6 +644,7 @@
     "colGrade": "등급",
     "colExh": "전시 타임",
     "finishValue": "{{rank}}착",
+    "finishRefunded": "반환",
     "exhRank": "({{rank}}위)",
     "exhRankTied": "(공동 {{rank}}위)",
     "exhNote": "전시 타임은 작을수록 빠릅니다. 괄호는 6정 중 전시 타임 순위",

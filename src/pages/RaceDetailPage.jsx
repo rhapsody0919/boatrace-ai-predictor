@@ -334,15 +334,15 @@ function RaceDetailPage({ showViewSwitch = false }) {
                 raceGrade={racePrediction.raceGrade ?? null}
                 raceTitle={racePrediction.raceTitle ?? null}
               />
-              {!prediction?.error && (
+              {/* 中止のレースは要約を出さない。「—」が並ぶと展示待ちに読め、中止の知らせが最初の
+                  画面の外に押し出された（ファン評価1周目 指摘1） */}
+              {!prediction?.error && !isRaceCancelled(prediction) && (
                 <RaceSummaryTable
                   players={prediction?.allPlayers}
                   exhibitionData={prediction?.exhibitionData}
                   result={prediction?.result}
                   showExhibitionPending={
-                    isToday &&
-                    status === RACE_STATUS.UPCOMING &&
-                    !isRaceCancelled(prediction)
+                    isToday && status === RACE_STATUS.UPCOMING
                   }
                 />
               )}

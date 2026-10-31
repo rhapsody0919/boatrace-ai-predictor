@@ -90,13 +90,6 @@
   color: var(--text-secondary);
 }
 
-.race-summary-table__exh--pending {
-  white-space: normal;
-  font-size: var(--font-size-xs);
-  color: var(--text-secondary);
-  text-align: center;
-}
-
 .race-summary-table__note {
   margin: 0.375rem 0 0;
   font-size: var(--font-size-xs);
