@@ -2817,7 +2817,11 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     // 下限 1.5・2.0・3.0 の均等払戻（合成 0.67 相当）はどれもその組だけ当たると予算を下回る
     for (let i = 0; i < 3; i++)
       await expect(body.nth(i).locator("td").last()).toContainText("トリガミ");
-    await expect(body.last()).toContainText("1組だけ当たったときの倍率");
+    // 合計の行の倍率は組ごとの幅。表のオッズの「〜」（下限〜上限）と読み違えないよう「から」で書く（ファン評価1周目 P2-1）
+    await expect(body.last()).toContainText(
+      /1組だけ当たったときの倍率 \d\.\d\d倍から\d\.\d\d倍（当たる組による）/,
+    );
+    await expect(body.last()).not.toContainText(/\d〜\d/);
     await expect(
       sheet.getByText(
         "拡連複のオッズは公式の下限〜上限。払戻とトリガミは下限で、その組だけ当たったときの値で計算",

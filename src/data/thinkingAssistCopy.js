@@ -246,8 +246,14 @@ export const ASSIST_COPY = Object.freeze({
     }`,
   trigami: "トリガミ",
   trigamiLine: "合成オッズが1.0未満。どれが当たっても予算を下回る",
+  // 拡連複は表のオッズの「〜」（下限〜上限）と読み違えないよう、組ごとの幅を「から」と「当たる組による」で書く
+  // （BOA-990 ③ ファン評価1周目 P2-1）。倍率は下限の払戻から
   totalLine: (total, remainder, lo, hi, wide = false) =>
-    `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・${wide ? "1組だけ当たったときの倍率" : "当たったときの倍率"} ${lo}〜${hi}倍`,
+    `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・${
+      wide
+        ? `1組だけ当たったときの倍率 ${lo}倍から${hi}倍（当たる組による）`
+        : `当たったときの倍率 ${lo}〜${hi}倍`
+    }`,
   // オッズの無い組は組番も出す（BOA-990 ファン評価2周目 P2-1）
   missingOdds: (n, tickets = [], wide = false) =>
     `オッズの無い${n}点${tickets.length ? `（${tickets.join("・")}）` : ""}は${wide ? "配分" : "配分と合成"}に入れていない`,
