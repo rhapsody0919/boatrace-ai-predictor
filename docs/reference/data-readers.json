@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1560,
+    "sourceFiles": 1562,
     "filesWithAccess": 255,
     "tableReaders": 891,
     "tableWriters": 184,
@@ -14065,7 +14065,7 @@
       },
       "readers": [
         {
-          "ref": "scripts/generate-sitemap.js:443",
+          "ref": "scripts/generate-sitemap.js:465",
           "op": "select",
           "via": "client",
           "columns": [
@@ -14140,7 +14140,7 @@
         },
         "racer_id": {
           "readers": [
-            "scripts/generate-sitemap.js:443",
+            "scripts/generate-sitemap.js:465",
             "src/services/racerService.js:46"
           ],
           "writers": [
@@ -14202,7 +14202,7 @@
         },
         "created_at": {
           "readers": [
-            "scripts/generate-sitemap.js:443",
+            "scripts/generate-sitemap.js:465",
             "src/services/racerService.js:46"
           ],
           "writers": [],
@@ -16249,7 +16249,7 @@
           ]
         },
         {
-          "ref": "scripts/generate-sitemap.js:382",
+          "ref": "scripts/generate-sitemap.js:379",
           "op": "select",
           "via": "client",
           "columns": [
@@ -16258,7 +16258,7 @@
           ]
         },
         {
-          "ref": "scripts/generate-sitemap.js:591",
+          "ref": "scripts/generate-sitemap.js:613",
           "op": "select",
           "via": "client",
           "columns": [
@@ -17433,8 +17433,8 @@
             "scripts/daily/scrape-results.js:1550",
             "scripts/daily/scrape-results.js:961",
             "scripts/daily/todays-volatility-digest.js:80",
-            "scripts/generate-sitemap.js:382",
-            "scripts/generate-sitemap.js:591",
+            "scripts/generate-sitemap.js:379",
+            "scripts/generate-sitemap.js:613",
             "scripts/lib/analogyDispatch.js:75",
             "scripts/lib/analogyV16Exhibition.js:291",
             "scripts/lib/boatcast/oritenJob.js:401",
@@ -17526,8 +17526,8 @@
             "scripts/daily/scrape-results.js:1550",
             "scripts/daily/update-moriarty-outcomes.js:58",
             "scripts/daily/update-outcome-frequencies.js:43",
-            "scripts/generate-sitemap.js:382",
-            "scripts/generate-sitemap.js:591",
+            "scripts/generate-sitemap.js:379",
+            "scripts/generate-sitemap.js:613",
             "scripts/lib/motorPretestRows.js:112",
             "scripts/lib/raceSeriesLookup.js:174",
             "scripts/lib/raceStatusJob.js:109",

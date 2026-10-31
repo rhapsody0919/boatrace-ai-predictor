@@ -535,7 +535,8 @@
       "script": "verify-gha-fetch-stop.js",
       "tier": "ci",
       "guards": "BOA-1145 P4a ④a: GitHub Actions の取得（scrape-scheduled・morning-init・肩代わりの判定）が、host の行の取得の非常停止 fetch_stop（マイグレーション178）で止まる。Vercel が止まっていて肩代わりの条件を満たしても、SKIP 変数が true でなくても、公式へ取りに行かない。読めないときは止めない側（変数が true のジョブは従来どおり読めなければスキップ）"
-    },    {
+    },
+    {
       "script": "verify-gha-skip-gate.js",
       "tier": "ci",
       "guards": "フェイルセーフ付きSKIP（scripts/lib/ghaSkipGate.js）と日次ワークフローの配線"
@@ -1042,6 +1043,11 @@
       "script": "verify-racelist-backfill.js",
       "tier": "ci",
       "guards": "出走表（racelist）の過去分バックフィルCLI"
+    },
+    {
+      "script": "verify-racer-career-stats.js",
+      "tier": "ci",
+      "guards": "BOA-1193 の勝率用着順点・優勝戦加点・出走の分母・丸め・着回数と優出優勝を合成データで固定する。実 fan 照合は別の集計表の関門で行う"
     },
     {
       "script": "verify-racer-condition-stats.js",

@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1560 |
+| 読んだファイル | 1562 |
 | 読み書きのあるファイル | 255 |
 | 表の読み手（箇所） | 891 |
 | 表の書き手（箇所） | 184 |
@@ -1374,7 +1374,7 @@
 - 権限: anon 可（anon: SELECT / authenticated: SELECT、RLS 有効）
 - 取得のジョブ: racer_news
 - 読み手（3）: 
-  - `scripts/generate-sitemap.js:443` select [created_at, racer_id]
+  - `scripts/generate-sitemap.js:465` select [created_at, racer_id]
   - `scripts/lib/racerNews/dedup.js:34` select [id, source_url]
   - `src/services/racerService.js:46` select [created_at, id, published_at, racer_id, source_name, source_url, summary, title]
 - 書き手（2）: 
@@ -1504,8 +1504,8 @@
   - `scripts/daily/update-outcome-frequencies.js:43` select [race_id, venue_code]
   - `scripts/daily/update-race-history-cache.js:48` select(helper:fetchAll)
   - `scripts/daily/update-race-info.js:174` select [cancellation_check_streak, cancellation_status, race_grade, race_id]
-  - `scripts/generate-sitemap.js:382` select [race_date, venue_code]
-  - `scripts/generate-sitemap.js:591` select [race_date, venue_code]
+  - `scripts/generate-sitemap.js:379` select [race_date, venue_code]
+  - `scripts/generate-sitemap.js:613` select [race_date, venue_code]
   - `scripts/lib/analogyDispatch.js:75` select [cancellation_status, race_date, race_id, start_time]
   - `scripts/lib/analogyV16Exhibition.js:291` rest(rest) [race_date, race_id, start_time]
   - `scripts/lib/boatcast/oritenJob.js:401` select [race_date, race_id, start_time]
