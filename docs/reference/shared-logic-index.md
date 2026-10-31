@@ -21,6 +21,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/pure/finishPosition.js` | レース内順位の判定（純関数）。 | finishPositionOf |
 | `src/pure/meetExclusion.js` | 今節の順位の対象から外す選手と、その理由（途中帰郷・賞典除外）の判定（純関数）。 | meetExclusionsOf |
 | `src/pure/raceStageConfig.js` | レースステージ（予選/準優勝戦/優勝戦等）のバッジ表示設定 | getRaceStageKey, isFinalStage, getRaceStageBadge, getRaceStageCategory, raceStageLabel |
+| `src/pure/racerCareerStats.js` | — | isCareerStart, careerFinishPoints, careerWinRate, careerFinishCounts |
 | `src/pure/seriesPoints.js` | seriesPoints - 今節の得点率（phase a FR-3 Phase B） | normalizeStage, classifyStage, isExcludedStage, scoreTableFor, prelimEndRaceIdOf ほか33件 |
 
 ## scripts/lib — バッチ・取得・集計の共通ロジック
@@ -160,7 +161,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/racerProfileSync.js` | — | parseArgs, fetchHtmlWithRetry, parseProfileHtml, getProfileUrl, toSeasonStatsRow ほか16件 |
 | `scripts/lib/racerProfilesJob.js` | 選手プロフィール・期別成績（B6、racer_profiles）の共通ラッパ向けハンドラー（tasks.md T4b-16-1）。 | resolveChunkSize, runRacerProfilesJob, RACER_PROFILES_CHUNK, RACER_PROFILES_CONCURRENCY |
 | `scripts/lib/racerSeasonStats.js` | — | getSeasonStatsUrl, isRacerPageNotFound, derivePeriodLabel, parseSeasonStatsHtml, scrapeSeasonStats ほか2件 |
-| `scripts/lib/racerSnapshotPlan.js` | 選手ページのスナップショット（BOA-848）を、このビルドで作るか・どの選手を作るかを決める。 | planRacerSnapshots |
+| `scripts/lib/racerSnapshotPlan.js` | 選手ページのスナップショット（BOA-848）を、このビルドで作るか・どの選手を作るかを決める。 | planRacerSnapshots, canSaveRacerSnapshot |
 | `scripts/lib/racerStStats.js` | 選手のST統計（racer_aggregated_stats の avg_st / avg_st_last_30 / st_stddev / | countsAsStart, computeRacerStStats, fetchRacerEntries, fetchStartTimingsForEntries, RECENT_ST_WINDOW ほか1件 |
 | `scripts/lib/racesInit/digest.js` | 朝の初期化（races-init）の shadow で記録する、レースごとのダイジェスト（純粋関数。DB・取得先に接続しない）。 | raceIdOf, digestScrapedRace, digestScrapedVenue, digestDbRace, compareRaceDigests |
 | `scripts/lib/racesInit/ghaSkip.js` | GitHub Actions 側の朝の初期化（morning-init.js）を止める変数 SKIP_MORNING_INIT_ON_GHA の判定（純粋関数）… | decideMorningInitOnGha, FALLBACK_FROM_JST_HOUR |
@@ -396,4 +397,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 354 ファイル / export 2066 件。
+対象 355 ファイル / export 2071 件。

@@ -141,6 +141,7 @@ export default function RacerPerformanceStats({
   stats,
   loading,
   todayVenueCode,
+  onHistoryStateChange,
 }) {
   const { t } = useTranslation();
   // 推移グラフのツールチップの見出し。日付だけだと同じ日の2走を見分けられない（BOA-583）
@@ -205,6 +206,16 @@ export default function RacerPerformanceStats({
     vcHistoryState.fetching;
   const vcHistoryError =
     vcHistoryState.racerId === racerId && vcHistoryState.error;
+
+  // 履歴はレース一覧・ST推移・条件別の共通入力。別選手の履歴は未完了とする。
+  const snapshotHistoryState = vcHistoryError
+    ? "error"
+    : vcHistory === null
+      ? "loading"
+      : vcHistory.length ? "done" : "empty";
+  useEffect(() => {
+    onHistoryStateChange?.({ racerId, state: snapshotHistoryState });
+  }, [racerId, snapshotHistoryState, onHistoryStateChange]);
 
   useEffect(() => {
     // 決まり手・推移・レース一覧を常時表示するため（ADR-0063）、フィルタ操作を
@@ -458,17 +469,19 @@ export default function RacerPerformanceStats({
 
   if (loading) {
     return (
-      <div className="racer-performance-stats">
+      <div className="racer-performance-stats" data-snapshot-history={snapshotHistoryState}>
         <h2>{heading}</h2>
         <p className="racer-stat-loading">読み込み中...</p>
       </div>
     );
   }
 
-  if (!hasAnyData) return null;
+  if (!hasAnyData) {
+    return <span hidden data-snapshot-history={snapshotHistoryState} />;
+  }
 
   return (
-    <div className="racer-performance-stats">
+    <div className="racer-performance-stats" data-snapshot-history={snapshotHistoryState}>
       <h2>{heading}</h2>
 
       {/* フィルタ: 見出し直下・最上部に常時表示（ADR-0063）。venueStatsが

@@ -137,9 +137,6 @@ const staticPages = [
     priority: "0.7",
   },
   // 会場別レース一覧（本日、/venue/1〜24。venue-list-redesign）
-  // 個別レース詳細（/race/:raceId）は1日最大288件の細粒度動的ページで
-  // 検索需要が見込めず、クロールバジェット浪費（BOA-84の教訓）を避けるため
-  // sitemap非対象とする（docs/adr/0026参照）
   ...Array.from({ length: 24 }, (_, i) => ({
     loc: `/venue/${i + 1}`,
     lastmodFrom: "venueRaceData",
@@ -421,6 +418,31 @@ async function getRacePages() {
   return racePages;
 }
 
+// BOA-1186: 検索露出のある詳細を、日本語・JSTの本日を含む7日だけ追加。
+// 結果の存在は画面と同じ rank1 で判定する（confirmed が残っていても結果を優先）。
+// 最大24会場×12R×7日=2016 URL。失敗時は生成を止め、既存の sitemap を保つ。
+async function getRaceDetailPages() {
+  const { isSupabaseEnabled, fetchAll } =
+    await import("./lib/supabaseClient.js");
+  if (!isSupabaseEnabled()) return [];
+  const rows = await fetchAll(
+    "races",
+    "race_id, race_date, race_results!inner(rank1)",
+    (q) =>
+      q
+        .gte("race_date", getDaysAgoJST(6))
+        .lte("race_date", getDaysAgoJST(0))
+        .not("race_results.rank1", "is", null)
+        .order("race_id"),
+  );
+  return rows.map((row) => ({
+    loc: `/race/${row.race_id}`,
+    lastmod: row.race_date,
+    changefreq: "weekly",
+    priority: "0.6",
+  }));
+}
+
 // 選手個別ページ（/racer/:racerId）を取得
 // 対象はページ側の noindex 判定（RacerProfile.jsx）と同じ isRacerIndexable（src/utils/racerIndexPolicy.js）:
 // ニュースがある選手、または現役の A1 選手（最新の出走が A1 で直近30日以内。集客レーン、2026-10-02）。
@@ -621,6 +643,7 @@ function alternatesFor(loc) {
 async function generateSitemap() {
   const blogPosts = getBlogPosts();
   const racePages = await getRacePages();
+  const raceDetailPages = await getRaceDetailPages();
   const racerPages = await getRacerPages();
   const latest = await getLatestRaceDates();
   const meetPages = await getMeetPages(latest);
@@ -659,9 +682,15 @@ async function generateSitemap() {
     ...localizedPages,
     ...blogPosts,
     ...racePages,
+    ...raceDetailPages,
     ...racerPages,
     ...meetPages,
   ];
+
+  // 単一 sitemap の上限。超過した XML は書き出さない。
+  if (allPages.length > 50000) {
+    throw new Error(`sitemap URL 上限超過: ${allPages.length}`);
+  }
 
   let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
   xml +=
