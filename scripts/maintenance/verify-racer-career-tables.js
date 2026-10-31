@@ -282,6 +282,11 @@ before(async () => {
     grade: null,
     boats: six([961, 962, 963, 964, 965, 966]),
   });
+  // 着のコードの書き換えが 10/27 01:00 JST（UTC では 10/26）。JST の日付の窓（10/27〜）に入る
+  await mainRace("2026-02-10-07-01", {
+    boats: six([971, 972, 973, 974, 975, 976]),
+    updatedAt: "2026-10-26T16:00:00Z",
+  });
   // 直近の走。着のコードがまだ無い（K の未着）走は数えない
   await mainRace("2026-10-28-01-01", {
     boats: six(
@@ -341,6 +346,22 @@ test("特別な節: 連続した日を1つにまとめ、QC・CC・唐津の日�
       title: "ファン感謝3daysボートレースバトルトーナメント",
     },
     { venue_code: 1, race_date: "2024-12-30", title: "第5回太田双葉CCカップ" },
+    // main はレースごとの題で日を拾う。同じ日が題を変えて2回来ても1日、丸一日の中止（12/27 が無い）でも節を割らない
+    {
+      venue_code: 24,
+      race_date: "2025-12-26",
+      title: "第14回クイーンズクライマックス",
+    },
+    {
+      venue_code: 24,
+      race_date: "2025-12-26",
+      title: "第14回クイーンズクライマックス/G3QCシリーズ",
+    },
+    {
+      venue_code: 24,
+      race_date: "2025-12-28",
+      title: "第14回クイーンズクライマックス/G3QCシリーズ",
+    },
   ]);
   assert.deepEqual(
     groups.map((g) => [g.rule.id, g.venueDays, g.lastDay]),
@@ -348,6 +369,7 @@ test("特別な節: 連続した日を1つにまとめ、QC・CC・唐津の日�
       ["qc", ["2024-12-30-07", "2024-12-31-07"], "2024-12-31-07"],
       ["cc", ["2024-11-24-19"], "2024-11-24-19"],
       ["karatsu-2024-battle", ["2024-10-12-23"], "2024-10-12-23"],
+      ["qc", ["2025-12-26-24", "2025-12-28-24"], "2025-12-28-24"],
     ],
   );
 });
@@ -445,6 +467,15 @@ test("足し合わせ: 件数の区分は同じキーを足し、優勝戦の行
     [{ a: 2, b: false }],
   );
   assert.deepEqual(chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
+  // 今ある行（消える前のセル）が新しい行より多ければ、そちらで決める（300＋132 → 2人ずつ）
+  assert.equal(
+    existingChunkSize(
+      [{ racer_id: 9 }],
+      132,
+      Array.from({ length: 300 }, () => ({ racer_id: 9 })),
+    ),
+    2,
+  );
   // 既存行の読みは2層とも返る。この層の1人100行＋もう一方の層の上限132行で232行 → 900行に収まる3人ずつ
   assert.equal(
     existingChunkSize(
@@ -897,7 +928,7 @@ test("main 層: 全選手の計算・境目・race_series の補い・未着の�
   const meta = rowsOf(client, "racer_career_meta", (r) => r.era === "main")[0];
   assert.ok(meta.report.full_computed_at);
 
-  // 毎晩: 直近3日（10/27〜）に出走表に載った 101〜106 と、着のコードが 10/29 に書き換わった 901〜906 だけ
+  // 毎晩: 直近3日（10/27〜）に出走表に載った 101〜106 と、着のコードが 10/29・10/27 01:00 JST に書き換わった 901〜906・971〜976 だけ
   client.rpcCalls.length = 0;
   const nightly = await runMainEra({
     client,
@@ -905,14 +936,60 @@ test("main 層: 全選手の計算・境目・race_series の補い・未着の�
     dryRun: false,
     log: quiet,
   });
-  assert.equal(nightly.racers, 12);
+  assert.equal(nightly.racers, 18);
   const ids = client.rpcCalls
     .filter((c) => c.name === "compute_racer_career_counts")
     .flatMap((c) => c.args.p_racer_ids);
   assert.deepEqual(
     ids,
-    [101, 102, 103, 104, 105, 106, 901, 902, 903, 904, 905, 906],
+    [
+      101, 102, 103, 104, 105, 106, 901, 902, 903, 904, 905, 906, 971, 972, 973,
+      974, 975, 976,
+    ],
   );
+  // 時間切れで止まったら続きの選手を cursor に残し、同じ日の次の起動は続きから始める
+  client.rpcCalls.length = 0;
+  let calls = 0;
+  const stopped = await runMainEra({
+    client,
+    today: "2026-10-30",
+    dryRun: false,
+    batchSize: 6,
+    shouldStop: () => calls++ >= 1,
+    log: quiet,
+  });
+  assert.deepEqual(
+    [stopped.complete, stopped.cursor],
+    [false, { date: "2026-10-30", lastRacerId: 106 }],
+  );
+  client.rpcCalls.length = 0;
+  const resumed = await runMainEra({
+    client,
+    today: "2026-10-30",
+    dryRun: false,
+    batchSize: 6,
+    resume: stopped.cursor,
+    log: quiet,
+  });
+  assert.deepEqual(
+    [resumed.complete, resumed.cursor, resumed.done],
+    [true, null, 12],
+  );
+  assert.equal(
+    client.rpcCalls
+      .filter((c) => c.name === "compute_racer_career_counts")
+      .flatMap((c) => c.args.p_racer_ids)[0],
+    901,
+  );
+  // 別の日の cursor は使わない
+  const otherDay = await runMainEra({
+    client,
+    today: "2026-10-30",
+    dryRun: false,
+    resume: { date: "2026-10-29", lastRacerId: 106 },
+    log: quiet,
+  });
+  assert.equal(otherDay.done, 18);
   // 部分の計算でも、全選手を計算した時刻は消さない
   assert.equal(
     rowsOf(client, "racer_career_meta", (r) => r.era === "main")[0].report
@@ -1064,8 +1141,8 @@ test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足�
   const PTS = { "01": 10, "02": 8, "03": 6, "04": 4, "05": 2, "06": 1 };
   const career = {
     isStartCode: (c) => START.has(c),
-    winRatePoints: (c, _grade, _isFinal) =>
-      START.has(c) ? (PTS[c] ?? 0) : null,
+    // 一般の非優勝戦の点だけ（この試験はグレード・優勝戦の加点を使わない）
+    winRatePoints: (c) => (START.has(c) ? (PTS[c] ?? 0) : null),
     winRateOf: (t) =>
       t.starts > 0 ? Math.round((t.points / t.starts) * 100) / 100 : null,
   };

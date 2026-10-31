@@ -24,11 +24,6 @@ import {
 /** 判定の規則の版。isFinalStage の v2・グレードの補正 v2（class_code の読み替え）・着のコードの体系 v1。規則を変えたら上げ、kb を計算し直す */
 export const RULE_VERSION = "career-v1(stage-v2,grade-v2,code-v1)";
 
-export const ERAS = Object.freeze({
-  kb: { from: KB_FIRST_DATE, last: KB_LAST_DATE },
-  main: { from: MAIN_TABLES_START, last: null },
-});
-
 /** 着のコードごとの件数の列（190 の表と RPC の戻り値で同じ名前） */
 export const COUNT_COLUMNS = Object.freeze([
   "p1",
@@ -141,11 +136,15 @@ const addDays = (date, n) => {
   return d.toISOString().slice(0, 10);
 };
 
+/** 節の中で欠けてよい日数（中止・順延で丸一日開催が無い日） */
+export const SERIES_GAP_DAYS = 2;
+
 /**
- * 開催日の一覧（{venue_code, race_date, title}）から、特別な節を見つけ、連続した日を1つの節にまとめる。
+ * 開催日の一覧（{venue_code, race_date, title}）から、特別な節を見つけ、同じ会場の近い日を1つの節にまとめる。
  * @param {Array<{venue_code: number, race_date: string, title: string|null}>} series
  * @returns {Array<{rule: object, venueDays: string[], lastDay: string}>}
  */
+
 export function specialSeriesGroups(series) {
   if (!Array.isArray(series)) throw new Error("開催日の一覧が配列ではない");
   const hits = [];
@@ -161,20 +160,28 @@ export function specialSeriesGroups(series) {
         title: t,
       });
   }
-  hits.sort(
+  // main は「レースごとの題」で日を拾うので、同じ開催日が題を変えて2回来ることがある。開催日で1つにする
+  const seen = new Set();
+  const unique = hits.filter((h) => {
+    const k = `${h.rule.id}|${venueDayIdOf(h.day)}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+  unique.sort(
     (a, b) =>
       a.day.venue_code - b.day.venue_code ||
       a.day.race_date.localeCompare(b.day.race_date),
   );
+  // 同じ規則・同じ会場で、間が SERIES_GAP_DAYS 日以内なら同じ節（丸一日の中止で日が欠けても割らない）
   const groups = [];
-  for (const h of hits) {
+  for (const h of unique) {
     const last = groups.at(-1);
     if (
       last &&
       last.rule === h.rule &&
       last.venueCode === h.day.venue_code &&
-      last.title === h.title &&
-      addDays(last.lastDate, 1) === h.day.race_date
+      h.day.race_date <= addDays(last.lastDate, SERIES_GAP_DAYS + 1)
     ) {
       last.venueDays.push(venueDayIdOf(h.day));
       last.lastDate = h.day.race_date;
@@ -504,11 +511,20 @@ export const PAGE_ROWS = 1000;
  * 900行に収まる人数にする。1選手だけで収まらなければ止める
  * @param {object[]} rows この層の新しい行
  * @param {number} otherEraMax もう一方の層の1選手の上限
+ * @param {object[]} [existingRows] この層の今ある行のキー（racer_id を持つ）
  */
-export function existingChunkSize(rows, otherEraMax = 0) {
-  const per = new Map();
-  for (const r of rows) per.set(r.racer_id, (per.get(r.racer_id) ?? 0) + 1);
-  const max = Math.max(1, ...per.values()) + otherEraMax;
+export function existingChunkSize(rows, otherEraMax = 0, existingRows = []) {
+  // この層は「新しい行」と「今ある行（消える前のセルを含む）」の多い方を見る
+  const count = (list) => {
+    const per = new Map();
+    for (const r of list) per.set(r.racer_id, (per.get(r.racer_id) ?? 0) + 1);
+    return per;
+  };
+  const fresh = count(rows);
+  const old = count(existingRows);
+  const ids = new Set([...fresh.keys(), ...old.keys()]);
+  const perRacer = [...ids].map((id) => Math.max(fresh.get(id) ?? 0, old.get(id) ?? 0));
+  const max = Math.max(1, ...perRacer) + otherEraMax;
   if (max > 900)
     throw new Error(`1選手の行が2層で ${max} 行になりうる。既存行の読みが1000行の上限で切れる`);
   return Math.max(1, Math.floor(900 / max));
@@ -516,7 +532,8 @@ export function existingChunkSize(rows, otherEraMax = 0) {
 
 /**
  * 層の行を書き、新しい計算に無いセルを消す。racerIds を渡すとその選手だけを置き換える（main の毎晩）。
- * 4表とも、消すセルを先に決めて多すぎないかを見てから書く（途中の表まで書いて止まらない）。
+ * 4表とも、消すセルを先に決めて多すぎないかを見てから書く（大量に消す判定で途中の表まで書いて止まらない）。
+ * 書き込みの途中の失敗（通信・読みの上限）では表の間がそろわないまま残る。次の計算し直し（main は次の晩、kb は CLI の再実行）でそろう。
  * @returns {Promise<{written: number, deleted: number, rows: number, perTable: object}>}
  */
 export async function writeCareerRows(
@@ -539,14 +556,14 @@ export async function writeCareerRows(
       throw new Error(
         `${spec.table}（${era}）: 消えるセルが ${stale.length}/${existing.length} 件で多すぎる。元の表の読み取りを確かめる（意図どおりなら --allow-mass-delete）`,
       );
-    plans.push({ spec, incoming, stale });
+    plans.push({ spec, incoming, stale, existing });
   }
 
   let written = 0;
   let deleted = 0;
   let rows = 0;
   const perTable = {};
-  for (const { spec, incoming, stale } of plans) {
+  for (const { spec, incoming, stale, existing } of plans) {
     rows += incoming.length;
     // 既存行の読み取りは選手の数だけ並列に投げるので、選手 upsertBatchRacers 人ずつに分ける
     const byRacer = new Map();
@@ -557,11 +574,16 @@ export async function writeCareerRows(
     let tableWritten = 0;
     for (const ids of chunk([...byRacer.keys()], upsertBatchRacers)) {
       const batch = ids.flatMap((id) => byRacer.get(id));
+      const idSet = new Set(ids);
       const res = await upsertChangedRows(client, spec.table, batch, {
         onConflict: spec.keyColumns.join(","),
         keyColumns: spec.keyColumns,
         chunkColumn: "racer_id",
-        chunkSize: existingChunkSize(batch, OTHER_ERA_MAX_ROWS[spec.table] ?? 0),
+        chunkSize: existingChunkSize(
+          batch,
+          OTHER_ERA_MAX_ROWS[spec.table] ?? 0,
+          existing.filter((r) => idSet.has(r.racer_id)),
+        ),
         // 1回の読みがちょうど上限で返ったら、切れた既存行のまま書かずに止める
         fullPageRows: PAGE_ROWS,
         failOnFetchError: true,
@@ -741,6 +763,7 @@ export async function runMainEra({
   batchSize = 50,
   shouldStop = () => false,
   allowMassDelete = false,
+  resume = null,
   log = console.log,
 }) {
   const startedAt = new Date().toISOString();
@@ -766,8 +789,15 @@ export async function runMainEra({
   let rows = 0;
   let boatRows = 0;
   let maxRaceDate = null;
+  // 同じ日の前の起動が時間切れで止まっていたら、その続き（lastRacerId より後の選手）から始める
+  const resumeAfter =
+    resume && resume.date === today && Number.isFinite(resume.lastRacerId)
+      ? resume.lastRacerId
+      : null;
+  const todo = resumeAfter === null ? racerIds : racerIds.filter((id) => id > resumeAfter);
   let done = 0;
-  for (const ids of chunk(racerIds, batchSize)) {
+  let lastRacerId = resumeAfter;
+  for (const ids of chunk(todo, batchSize)) {
     if (shouldStop()) break;
     const result = await computeCounts(client, {
       era: "main",
@@ -794,8 +824,9 @@ export async function runMainEra({
     )
       maxRaceDate = result.max_race_date;
     done += ids.length;
+    lastRacerId = ids.at(-1);
   }
-  const complete = done === racerIds.length;
+  const complete = done === todo.length;
   if (complete) {
     // 全選手を計算し直した時刻（初回の CLI --all）は、毎晩の部分の計算で消さずに持ち越す。
     // 画面は full_computed_at が無い main 層を「未計算」として扱う
@@ -830,6 +861,8 @@ export async function runMainEra({
   }
   return {
     racers: racerIds.length,
+    resumedAfter: resumeAfter,
+    cursor: complete ? null : { date: today, lastRacerId },
     done,
     complete,
     written,
@@ -848,6 +881,7 @@ export async function runRacerCareerMainJob({
   client,
   today,
   dryRun,
+  resume = null,
   shouldStop = () => false,
   log = console.log,
 }) {
@@ -855,7 +889,7 @@ export async function runRacerCareerMainJob({
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(today)))
     throw new Error(`対象日が YYYY-MM-DD ではない: ${today}`);
 
-  const res = await runMainEra({ client, today, dryRun, shouldStop, log });
+  const res = await runMainEra({ client, today, dryRun, shouldStop, resume, log });
 
   // kb 層の指紋の見張り（kb 層がまだ計算されていなければ、知らせるだけで失敗にしない）
   const { data: kbMeta, error } = await client
@@ -899,6 +933,8 @@ export async function runRacerCareerMainJob({
     rowsParsed: res.rows,
     // 時間切れで全選手を終えていなければ、補足の起動（01:00 JST）がもう一度処理する
     incomplete: !res.complete,
+    // 時間切れのときだけ、続きの選手を共通ラッパの cursor に残す（同じ日の補足の起動が続きから始める）
+    cursor: res.cursor,
     report,
   };
 }

@@ -232,7 +232,7 @@ BEGIN
           UNION
           SELECT re.racer_id FROM race_start_timings rst
           JOIN race_entries re ON re.race_id = rst.race_id AND re.boat_number = rst.boat_number
-          WHERE rst.updated_at >= p_active_from AND rst.race_id >= '2025-12-03' AND rst.race_id < v_to AND re.racer_id IS NOT NULL
+          WHERE rst.updated_at >= (p_active_from::timestamp AT TIME ZONE 'Asia/Tokyo') AND rst.race_id >= '2025-12-03' AND rst.race_id < v_to AND re.racer_id IS NOT NULL
         ) x
       ), '[]'::jsonb) END
     );

@@ -39,5 +39,6 @@ export default createScrapeCronHandler({
       today: ctx.targetDate,
       dryRun: ctx.mode !== "live",
       shouldStop: ctx.shouldStop,
+      resume: ctx.state?.cursor ?? null,
     }),
 });
