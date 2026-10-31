@@ -47,8 +47,10 @@ import { buildArchiveRows, KB_ARCHIVE_TABLES } from "../lib/kbArchiveRows.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.join(__dirname, "../..");
 
-// 本体テーブル（races等）が持つ最古の日。これ以降のK/Bはアーカイブへ投入しない（重複）
-export const MAIN_TABLES_START = "2025-12-03";
+// 本体テーブル（races等）が持つ最古の日。これ以降のK/Bはアーカイブへ投入しない（重複）。
+// 値は scripts/lib/kbArchiveBoundary.js が正本（選手の集計の表 190 の書き手と共有する）
+import { MAIN_TABLES_START } from "../lib/kbArchiveBoundary.js";
+export { MAIN_TABLES_START };
 const EARLIEST_AVAILABLE = "2005-01-01";
 
 const HARD_MIN_INTERVAL_MS = 3000; // 公式サイトへの最小間隔（ADR-0067）。これ未満は指定できない
@@ -825,6 +827,12 @@ async function cmdLoad(opts) {
   console.log(
     `\nload: ${JSON.stringify(summary)}（処理 ${processedDays}日 / 投入済みスキップ ${dates.length - processedDays}日）`,
   );
+  // kb_archive を書き換えたら、選手の集計の表の kb 層（マイグレーション 190）が古くなる。
+  // 毎晩の Cron の指紋（行数・最大の日付）は、値だけを書き換える再投入を検知しない
+  if (summary.written > 0)
+    console.log(
+      "⚠️ kb_archive に書き込みました。選手の集計の表の kb 層を計算し直す: node scripts/maintenance/racer-career-backfill.js --era=kb（数えるだけ）→ --apply",
+    );
   if (summary.failedDays > 0) return 1;
   if (processedDays === 0) {
     console.log("対象は全て投入済みです（再投入は --force）");

@@ -25,6 +25,8 @@
 - racer_period_stats.grade はその期の成績で決まった級（次の行の grade_prev と 22,167/22,167 一致、適用は算出期間の終わりの2か月後から半年）。コース別の2連率は 2021年1期まで四捨五入、2021年2期から切り捨て。コース別の進入数の合計は 13% の行で starts と ±1〜5 違う。勝率は着回数からは再現できない（2026-10-28、data-scientist、data/analysis/racer-period-stats/period-stats-display-scope.json）
 - c{N}_avg_st=0 は、そのコースの進入が全部 F・L で ST が無い印（14セル）。期をまたいで平均するときは重みから外し、重みは (進入 − F − L) にする。3連対率 (first_count+second_count+Σc_p3)/starts は公式の選手ページ（season）と一致し、公式の表示は小数2桁の切り捨て（73.276→73.27%）（2026-10-28、data-accuracy-verifier、PR #2051）
 - racer_series_points は 2026-09-16 以降の SG・G1 の7節（358行）だけ。今節の得点率は一般戦では出せない（2026-10-28、data-scientist、本番の読み取り）
+- QC の節の種別の原文は年で変わる（QC優勝戦・QC順位決定・賞女順位決定・賞金女王決定・シリーズ優勝）。本体の races.race_grade は QC シリーズのレースも G1 で入るので、QC と QC シリーズの格はレースごとに分ける（2026-10-31、本番の読み取り、docs/design/racer-period-stats/plan.md §14.4）
+- race_series の class_code が Lady・Rookie・Takumi・Venus の節は grade が NULL で、races.race_grade も 2026-02 より前は NULL。kb と 2026-02 以降の races の値から、Lady・Takumi は G3、Rookie・Venus は ippan に写せる（2026-10-31、system-architect、本番の読み取り）
 
 ## 率の桁
 - 2連率・3連率は公式と同じ小数2桁で持つ。朝の初期化（generate-predictions）が1桁に丸めていたのを直した。過去の118レースは取り直さない（2026-10-11、BOA-829、PR #1388、オーケストレーター判断）

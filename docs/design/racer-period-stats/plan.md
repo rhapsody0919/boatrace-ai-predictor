@@ -1,5 +1,7 @@
 # 選手の期別成績（fan）と節メタ（月間スケジュール）の取り込み
 
+§1〜§13 は fan・月間スケジュールの取り込み。§14 は GS00 案2 の選手の集計の表（マイグレーション 190、仕様は [spec.md](./spec.md)）。
+
 対応: [optimal-scraping-design.md](../scraping-vercel-consolidation/optimal-scraping-design.md) §2.5 / [data-catalog.md](../scraping-vercel-consolidation/data-catalog.md) の N13（平均ST）・N16（節メタ）・N21（期別成績・能力指数・コース別成績）・N22（プロフィール全項目）/ [orchestration.md](../scraping-vercel-consolidation/orchestration.md)（決定事項）/ [kb-longterm-backfill/plan.md](../kb-longterm-backfill/plan.md)（K/Bの長期バックフィル。CLIの構成を揃えた）/ [ADR-0067](../../adr/0067-official-site-content-redisplay-policy.md)
 
 ユーザー承認（2026-09-20）: 全データ設計の Q1〜Q10 を推奨案で承認。**Q2＝選手系の取得元は、選手別スクレイピング（B6）でなく公式の期別成績ファイル（fan）に置き換える。** Q3＝節・払戻明細・艇別を新設し既存列を拡張。Q1＝取り直せないページ以外の生ファイルは保管しない。ただし K・B・fan のファイルは、再解析の起点として保管する。
@@ -299,3 +301,211 @@ kb-longterm-backfill/plan.md に倣う。**実行はユーザーの端末（別�
 - `racer_period_stats` の実際の行サイズ・容量（概算のみ。DDL適用後に実測）。
 - fan にいて `racer_profiles` にいない新人の人数（少なくとも15人。B6の新人登録の実行状況による）。
 - ユーザー端末での応答時間（この環境は約9.5秒）。
+
+## 14. 選手の集計の表（GS00 案2、マイグレーション 190）
+
+仕様は [spec.md](./spec.md)、決定は [ADR-0104](../../adr/0104-racer-career-stats-two-layer-tables.md)、審査は [analysis/aggregate-tables-review.md](./analysis/aggregate-tables-review.md)（設計 C）。§1〜§13 の fan・月間スケジュールとは別の作業で、`racer_period_stats` は照合の相手として読むだけ。
+
+### 14.1 流れ
+
+```mermaid
+flowchart LR
+  subgraph kb["kb 層（≤ 2025-12-02、1回だけ）"]
+    KBT[(kb_archive_boats / races / venue_days)]
+  end
+  subgraph main["main 層（≥ 2025-12-03、毎晩）"]
+    MT[(races / race_entries / race_start_timings / race_results / race_conditions / race_series)]
+  end
+  CLI["racer-career-backfill.js --era=kb（オーナー）"] -->|"① racer_career_inputs（年ごと）"| KBT
+  CLI -->|"② isFinalStage・グレードの補正（JS）"| CLI
+  CLI -->|"③ compute_racer_career_counts（半月ずつ約160回）"| KBT
+  CRON["api/cron/racer-career-main.js（23:30・01:00 JST）"] -->|"① 直近3日の選手・種別・開催の題"| MT
+  CRON -->|"③ compute（50人ずつ）"| MT
+  CLI -->|"④ upsertChangedRows ＋ 消えたセルの削除"| T[(racer_venue_stats / racer_term_stats / racer_course_stats / racer_championships)]
+  CRON -->|"④"| T
+  CLI --> META[(racer_career_meta)]
+  CRON --> META
+  T -->|"anon の SELECT"| UI["選手ページ（別 PR）"]
+  T -->|"claude_ro"| GATE["verify-racer-career-gate.js"]
+  RPS[(racer_period_stats（公式）)] --> GATE
+```
+
+### 14.2 表（ER 図は `node scripts/maintenance/generate-er-diagram.js racer-period-stats` の出力から、190 の表だけを抜いた）
+
+```mermaid
+erDiagram
+    racer_venue_stats {
+        integer racer_id PK
+        smallint venue_code PK
+        text era PK
+        text race_grade PK
+        boolean is_final PK
+        integer p1
+        integer p2
+        integer p3
+        integer p4
+        integer p5
+        integer p6
+        integer f
+        integer l0
+        integer l1
+        integer k0
+        integer k1
+        integer s0
+        integer s1
+        integer s2
+        integer code00
+        integer other_code
+        timestamptz updated_at
+    }
+    racer_term_stats {
+        integer racer_id PK
+        date term_start PK
+        text era PK
+        text race_grade PK
+        boolean is_final PK
+        integer p1
+        integer p2
+        integer p3
+        integer p4
+        integer p5
+        integer p6
+        integer f
+        integer l0
+        integer l1
+        integer k0
+        integer k1
+        integer s0
+        integer s1
+        integer s2
+        integer code00
+        integer other_code
+        timestamptz updated_at
+    }
+    racer_course_stats {
+        integer racer_id PK
+        smallint course PK
+        date term_start PK
+        text era PK
+        integer p1
+        integer p2
+        integer p3
+        integer p4
+        integer p5
+        integer p6
+        integer f
+        integer l0
+        integer l1
+        integer k0
+        integer k1
+        integer s0
+        integer s1
+        integer s2
+        integer code00
+        integer other_code
+        timestamptz updated_at
+    }
+    racer_championships {
+        text race_id PK
+        integer racer_id PK
+        text era
+        date race_date
+        smallint venue_code
+        text race_grade
+        text series_title
+        text stage
+        smallint boat_number
+        smallint course
+        text finish_code
+        timestamptz updated_at
+    }
+    racer_career_meta {
+        text era PK
+        timestamptz computed_at
+        text rule_version
+        date source_from
+        date source_to
+        bigint source_rows
+        jsonb fingerprint
+        jsonb report
+        timestamptz updated_at
+    }
+```
+
+| 表 | 主キー | 索引 | 1選手の最大の行数（目安） |
+|---|---|---|---|
+| racer_venue_stats | (racer_id, venue_code, era, race_grade, is_final) | 主キーだけ（選手で引くので先頭が racer_id） | 2層で約100 |
+| racer_term_stats | (racer_id, term_start, era, race_grade, is_final) | 主キーだけ | 約60 |
+| racer_course_stats | (racer_id, course, term_start, era) | 主キーだけ | 約90（6コース×15期） |
+| racer_championships | (race_id, racer_id) | (racer_id, race_date DESC) | 優出の回数 |
+| racer_career_meta | (era) | — | 2行 |
+
+- 件数の列は p1〜p6・f・l0・l1・k0・k1・s0・s1・s2・code00・other_code（integer、0以上の CHECK）。率・出走・勝率の点・優出の回数は持たない
+- `updated_at` は値が変わった行だけに書き手が入れる（`upsertChangedRows(..., {stampUpdatedAt: true})`）
+- RLS 有効。anon・authenticated に `FOR SELECT` のポリシーと `GRANT SELECT`。書き込みは service_role だけ
+- 画面は1選手を `.eq("racer_id", id)` で読み、2層を JS で足す。どの表も1選手で1000行に遠い
+
+### 14.3 RPC（どれも STABLE・SECURITY INVOKER・service_role だけ・jsonb の1つを返す）
+
+| 関数 | 中身 | 1回の重さ（2026-10-31 の本番の読み取りで同じ SELECT を実行） |
+|---|---|---|
+| racer_career_inputs(p_era, p_from, p_to, p_active_from) | 範囲の種別の原文の一覧、開催日ごとの題、main だけ直近の選手（出走表に載った・着のコードが書き換わった） | main の全期間で本文 0.53秒（開催日 4,334・選手 821人、system-architect の再審査の実測） |
+| racer_career_special_races(p_era, p_venue_days) | 指定した開催日のレースと出た選手 | 約100開催日で小さい |
+| compute_racer_career_counts(p_era, p_from, p_to, p_racer_ids, p_final_stages, p_override_race_ids, p_override_grades) | 着のコードごとの件数を、場別・期別・進入コース別と、優勝戦の出走の4つで返す | kb の半月で本文 約0.5〜0.8秒・2.9MB、main の50人で1回目 5.6秒・2回目以降 0.34〜0.54秒（shared hit だけ）（再審査の実測） |
+
+- 集合で返すと PostgREST の上限1000行で黙って切れるので jsonb の1つで返す（183 と同じ）
+- authenticator の statement_timeout は 8秒（pg_roles の実測）。kb は半月、main は 50人ずつに分けて、1回を 8秒より十分短くする。main の1回目の 5.6秒は余裕が小さいので、打ち切り（57014）が出たら人数を半分にする処理を足す（ADR-0104 の限界）
+- kb の dry-run で照らす値: 約31万行（場別 8.1万・期別 5.7万・進入コース別 13.5万・優勝戦 3.4万）
+- kb は `race_id >= p_from AND race_id < p_to`（kb_archive_boats の PK の先頭）で読む。main は `race_entries` の (racer_id, race_id) 索引
+- 境目の日は SQL に定数で書く（kb `<= DATE '2025-12-02'`、本体 `>= DATE '2025-12-03'`）。`verify-racer-career-tables.js` が `kbArchiveBoundary.js` と照合する
+
+### 14.4 判定の材料（書き手、`scripts/lib/racerCareerJob.js`）
+
+1. 優勝戦: `racer_career_inputs` が返す種別の原文に `isFinalStage` を当て、当たる原文の一覧を `p_final_stages` に渡す（SQL は `stage = ANY(...)` だけ）。判定の正本は JS の1か所
+2. グレードの補正（`SPECIAL_SERIES_RULES`）: 開催日の題を NFKC にして当て、連続した日を1つの節にまとめる。`racer_career_special_races` で節のレースと選手を読み、同じレースに出た選手を結んだ組（union-find）で分ける
+   - QC: トライアルのレースを含む組が G1、残りが G3（kb の 2019〜2024 は「トライアル」が毎年6レース）
+   - CC: 最終日の 12R を含む組が SG、残りが G2
+   - 唐津 2024-10-12〜14: 節の全レースを G1
+   - 基準のレースが見つからない節は止める（節の作りが変わった）
+3. 規則を変えたら `RULE_VERSION` を上げ、kb と main を計算し直す（`racer_career_meta.rule_version` に残る）
+
+### 14.5 書き方
+
+- kb（CLI、1回だけ）: 年ごとに `racer_career_inputs` → 判定の材料 → 半月ずつ `compute` → JS で層の全期間に足し合わせる → 書く前に kb_archive の指紋を取り直し、途中で変わっていたら書かずに止める → 選手100人ずつ `upsertChangedRows` → 新しい計算に無いキーを消す → `racer_career_meta` に指紋（開催日・レースの数・最大の日付）と年ごとの艇の行数
+- main（毎晩）: 直近3日の選手を 50人ずつ、main の全期間で `compute` → その選手の main の行だけを置き換える。全選手を終えたときだけ記録を書く（時間切れは `incomplete` で 01:00 の補足に回す）。初回は CLI `--era=main --all` で全選手を計算し、`report.full_computed_at` を残す（毎晩の部分の計算はこれを消さない）
+- 消えたセル: 書く前に層（と選手）の今のキーを全部読み（1000行ずつ）、新しい計算に無いキーを決める。2割（最小50件）を超えたら何も書かずに止める（`--allow-mass-delete` で外す）
+- 毎晩は kb の指紋も比べ、kb 層の計算の後に kb_archive が変わっていたら、main を書いた後で error にして知らせる
+
+### 14.6 審査（設計 C）からの変えた点
+
+| 審査の案 | この設計 | 理由 |
+|---|---|---|
+| racer_year_stats（選手×年×層） | racer_term_stats（選手×期×層×グレード×優勝戦か） | 照合の関門が選手×期で比べる。公式は暦の年で持たず、「年別」と言わない（data-scientist） |
+| racer_course_stats（選手×コース×層） | 期も主キーに入れる | 公式の期別のコース別成績と着のコードごとに照合でき、直近の期だけを足せる（data-scientist は直近3期の合算を主に出すと結論） |
+| 列に starts・finals・wins | 持たない | 出走は着のコードから純関数で出る。優出・優勝は racer_championships と is_final のキーから出る。同じ値を2か所に持たない |
+| 場別・期別に grade の軸（加点がグレード×種別で変わるなら） | race_grade（SG/G1/G2/G3/ippan/unknown）と is_final をキーに入れた | official-data-spec が、加点はグレードと優勝戦かで変わると確定した |
+| 年ごとに7回に分けて読む | 年ごとに種別・題を読み、件数は半月ずつ | 1か月で約3秒（本番の読み取り）。8秒の打ち切りに対して余裕を取る |
+| 優勝の行（wins） | 優勝戦に出た全艇（着のコードつき） | 優出の数え方（S0・K0 を含むか）が未決。着のコードを持てば読み手が決められる |
+
+### 14.7 壊れ方と手当て（審査の10項目）
+
+| # | 壊れ方 | 手当て |
+|---|---|---|
+| 1 | 2025-12-02 の12レースを二重に数える | SQL の定数で kb ≤ 12-02・本体 ≥ 12-03。verify が `kbArchiveBoundary.js` と照合し、PGlite で両方に入れた日を1回だけ数えることを確かめる |
+| 2 | 差分を足すと重複で倍・未配信で欠ける | 選手の層の全期間を毎回計算し直して置き換える。3日の窓で未配信を拾う |
+| 3 | 列の集合が違う行のバルク upsert で NULL | 件数の列は RPC がいつも全部返し、`mergeCareerResult` が16列をそろえる |
+| 4 | 件数が0になったセルが残る | 新しい計算に無いキーを消す（多すぎれば止める） |
+| 5 | 読み取りの失敗が「優勝0回」に化ける | 書き手は失敗を例外にする。画面は「未計算」（記録が無い）と取得の失敗（InlineFetchError）を分ける（spec §4） |
+| 6 | stage_kind・is_final_day で GP 等の優勝を落とす | `isFinalStage` の原文の一覧だけを使う（PGlite の試験で stage_kind=other の GP優勝戦を数える） |
+| 7 | 成績コード NULL の艇を優出に数える | RPC はコード NULL の艇を数えない |
+| 8 | race_grade の欠けでグレードが空 | race_series.grade、その次に race_series.class_code（Lady・Takumi は G3、Rookie・Venus は ippan）で補い、無ければ unknown（件数は残る。関門は unknown_runs として出す） |
+| 9 | 暦年と期を取り違える | 表は期だけで持つ。画面で「年別」と言わない |
+| 10 | kb を load し直すと kb 層が古い | 指紋（行数・日付）を毎晩比べ、変われば error で知らせる。値だけの書き換えは検知しないので、kb-backfill.js が書いた後に再計算を促す |
+
+### 14.8 オーナーに頼む操作の順
+
+1. 190 を当てる（マージ後に db-apply の reconcile が拾う。GRANT と関数があるので heavy＝オーナーの1タップ。SQL Editor でもよい）
+2. kb 層: `node scripts/maintenance/racer-career-backfill.js --era=kb`（数えるだけ）→ 出力の行数を Claude が見積りと照らす → `--apply`（夜に。前後で Disk IO を記録）
+3. main 層: `node scripts/maintenance/racer-career-backfill.js --era=main --all` → `--apply`
+4. 毎晩の Cron を live にする: `UPDATE scrape_job_state SET mode = 'live' WHERE job = 'racer_career_main';`（行が無ければ最初の起動が off の行を作る。先に shadow で1晩見てもよい）
+5. Claude が照合の関門（`verify-racer-career-gate.js`）と権限・行数を確かめ、結果を報告する
