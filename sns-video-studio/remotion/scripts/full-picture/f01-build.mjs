@@ -112,7 +112,9 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
   }
   // 終了画面: 締めの声の約4秒目から重ね、声の後の静止は約8秒
   const close = chapters.find((c) => c.id === "close");
-  const lastVoiceEnd = Math.max(...voice.lines.map((l) => audio.find((a) => a.file === l.file).from + f(l.sec)));
+  // 置いた声だけから（字の小ささ等で省いた章の声は voice.lines に残る。Codex P1 #2075）
+  const placed = new Map(voice.lines.map((l) => [l.file, l.sec]));
+  const lastVoiceEnd = Math.max(0, ...audio.map((a) => a.from + f(placed.get(a.file))));
   const end = close ? { from: close.from + f(4) } : null;
   const total = Math.round(Math.max(t * FPS, lastVoiceEnd + f(8)));
   if (close) close.len = total - close.from;

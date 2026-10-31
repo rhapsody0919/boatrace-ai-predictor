@@ -2119,6 +2119,10 @@ for (const f of fixtures) {
     assert.ok(cuts.every((c, i) => i === 0 || c.from >= cuts[i - 1].from), "切り替えは時刻の順");
     assert.ok(cuts[2].cursor && cuts[3].from === cuts[2].from + 15, "押す前の画面でカーソルを動かし、0.5秒後に押した後へ");
     assert.equal(cuts[0].boxH, cuts[3].boxH, "同じ部品（軸のボタン）は同じ箱の高さ（切り替えで位置がずれない）");
+    // 章を省いても（声は voice.lines に残る）動画の時間の並びを作れる（Codex P1 #2075: audio.find が undefined で落ちた）
+    const voice2 = { lines: [...voice.lines, { chapter: "c3", i: 0, sub: "省いた章の声", file: "c3-0.wav", sec: 3 }] };
+    const r2 = f01Timeline({ chapters: [{ id: "c4", name: "相手", subs: lines }] }, voice2, shots2);
+    assert.ok(r2.props.total > 0 && !r2.props.audio.some((x) => x.file === "c3-0.wav"), "省いた章の声は置かない");
   }
   // 選手名を声で読まない
   assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
