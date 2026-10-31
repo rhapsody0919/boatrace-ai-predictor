@@ -2254,6 +2254,13 @@ test.describe("レイアウト: トップの会場カードの日目の札（BOA
             const b = el.getBoundingClientRect();
             if (b.right > c.right + tolerance || b.left < c.left - tolerance)
               out.push({ card: card.getAttribute("href"), out: el.className });
+            // バッジの中で2行に割れない（英語の「Semifinal 9R」が時間帯のアイコンのある会場で割れた。ファン評価1周目）
+            if (b.height > badge.getBoundingClientRect().height + 1)
+              out.push({
+                card: card.getAttribute("href"),
+                split: el.className,
+                height: b.height,
+              });
           }
           if (name.scrollWidth > name.clientWidth + 1)
             out.push({

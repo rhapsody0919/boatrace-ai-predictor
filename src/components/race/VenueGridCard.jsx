@@ -97,7 +97,7 @@ function VenueGridCard({
             </span>
           )}
           {/* 承認したモック（A案）どおり、優勝戦・準優勝戦のバッジは日目の札と同じ行に並べる。
-              入らない幅（375px の3列）では次の行へ折り返す */}
+              入らない幅（375px の3列）ではバッジごと次の行へ送る（バッジの中では折り返さない） */}
           {stageConfig && (
             <span
               className="venue-grid-card__stage"
@@ -107,16 +107,18 @@ function VenueGridCard({
               {raceNumberLabel(highlightedStageRace.raceNo)}
             </span>
           )}
+          {/* 時間帯のアイコンも同じ行に入れ、右端へ寄せる。行の外に置くと、アイコンのある会場だけ
+              札・バッジに使える幅が狭くなり、英語の「Semifinal 9R」がバッジの中で割れた（ファン評価1周目） */}
+          {timeIcon && (
+            <span
+              className="venue-grid-card__time-icon"
+              title={timeLabel ?? undefined}
+              aria-label={timeLabel ?? undefined}
+            >
+              {timeIcon}
+            </span>
+          )}
         </span>
-        {timeIcon && (
-          <span
-            className="venue-grid-card__time-icon"
-            title={timeLabel ?? undefined}
-            aria-label={timeLabel ?? undefined}
-          >
-            {timeIcon}
-          </span>
-        )}
       </div>
 
       <div className="venue-grid-card__badges">
