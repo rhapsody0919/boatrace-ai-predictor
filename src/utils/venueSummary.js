@@ -57,7 +57,8 @@ export function venueSummaryLines(t, venueCode, stats = VENUE_SUMMARY_STATS) {
     .slice(0, SECOND_LINE_COUNT)
     .map((slug) =>
       t("venueSummary.techniqueItem", {
-        name: t(`techniquesShort.${slug}`),
+        // 用語集どおり「ローマ字＋英語」（Nige (Escape)）。カードの表・もっと詳しくと同じ表記にする
+        name: t(`techniques.${slug}`),
         rate: formatRate(venue.techniques[slug].rate),
       }),
     );

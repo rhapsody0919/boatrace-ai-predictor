@@ -307,9 +307,11 @@ function VenueRaceListPage() {
   // ファン評価3周目を受けたユーザー判断）。最上部に置くときは従来どおり全部を出す
   const venueCards = (
     <>
+      {/* 会場の特徴は、どの位置でも最初は畳む（見出しと要約1行）。見出しの直下に要約2行があるので、
+          出走表・「開催なし」を1画面目に近づける（BOA-1189 ファン評価 P2、Orchestrate の判断） */}
       <VenueCharacteristicsCard
         venueCode={venueCode}
-        collapsible={showCardsInGrid}
+        collapsible
       />
 
       {/* この日の水面傾向（phase a FR-5 / BOA-222）。直上の

@@ -175,7 +175,7 @@ for (const lang of LANGS) {
   });
   const t = inst.t.bind(inst);
   const words = COMPARE_WORDS[lang];
-  const nige = t("techniquesShort.nige");
+  const nige = t("techniques.nige");
   for (let code = 1; code <= 24; code += 1) {
     const lines = venueSummaryLines(t, code);
     const text = `${lines.course}\n${lines.techniques}`;
@@ -210,6 +210,14 @@ for (const lang of LANGS) {
         `${nige}${lang === "ja" || lang === "zh-TW" ? "" : " "}${S.venues[code].techniques.nige.rate.toFixed(1)}%`,
       ),
       false,
+    );
+    // 決まり手の名前は用語集どおり techniques.*（en は "Makuri (Outside sweep)" の形）。表・もっと詳しくと同じ表記
+    check(
+      `${lang} 会場${code}: 2行目の決まり手は techniques.* の表記`,
+      ["sashi", "makuri", "makurizashi", "nuki"].filter((k) =>
+        lines.techniques.includes(t(`techniques.${k}`)),
+      ).length,
+      3,
     );
     check(
       `${lang} 会場${code}: 2行目は決まり手3つ`,

@@ -294,11 +294,17 @@ test.describe("差し込んだ会場カードの折りたたみ（ユーザー�
     expect(await again.evaluate((e) => e.open)).toBe(true);
   });
 
-  test("最上部に置くとき（1R発走前）は折りたたまず従来どおり全部を出す", async ({
+  test("最上部に置くとき（1R発走前）は、この日の水面傾向は全部を出し、会場の特徴だけ畳む（BOA-1189）", async ({
     page,
   }) => {
     await open(page, { at: "09:00" });
-    await expect(page.locator("details.collapsible-section")).toHaveCount(0);
+    // 会場の特徴は見出しの直下の要約2行と重なるので、どの位置でも最初は畳む（BOA-1189 ファン評価 P2）
+    const folds = page.locator("details.collapsible-section");
+    await expect(folds).toHaveCount(1);
+    expect(await folds.first().evaluate((e) => e.open)).toBe(false);
+    await expect(
+      page.locator(".venue-characteristics-card details.collapsible-section"),
+    ).toHaveCount(1);
     await expect(page.locator(".venue-hud-row")).toHaveCount(6);
   });
 });

@@ -268,3 +268,69 @@ test("375pxの英語で、コース名と30回未満の回数がそれぞれの�
   );
   expect(overflows).toEqual([]);
 });
+
+// BOA-1189 ファン評価 P2: 会場の特徴を最初から全部見せると、出走表が本番より約500px 下がった（375px で
+// 尼崎の最初のレースカードが 1331px → 1825px）。最初は畳み、開くと中身が出る。最初のレースカードは
+// 本番（1331px、2026-10-31 のファン評価で測った値）+200px 以内に置く
+const PROD_FIRST_CARD_Y_375 = 1331;
+
+test("会場の特徴は最初は畳まれ、開くと中身が出る。375px で最初のレースカードが本番+200px 以内（BOA-1189）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.route("**/rest/v1/race_series*", (route) =>
+    route.fulfill({ json: [{ start_date: "2026-09-25" }] }),
+  );
+  await openVenue(page, 13, { grade: "SG", title: "第７３回ボートレースダービー" });
+  await expect(page.getByTestId("venue-meet-banner")).toBeVisible({
+    timeout: 20000,
+  });
+  const fold = page.locator(
+    ".venue-characteristics-card details.collapsible-section",
+  );
+  await expect(fold).toHaveCount(1);
+  expect(await fold.evaluate((el) => el.open)).toBe(false);
+  await expect(page.getByTestId("venue-characteristics-teaser")).toBeVisible();
+  await expect(page.getByTestId("venue-hud-course-1")).toBeHidden();
+
+  const firstCardY = await page
+    .locator(".race-grid > .race-card")
+    .first()
+    .evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+  expect(firstCardY).toBeLessThanOrEqual(PROD_FIRST_CARD_Y_375 + 200);
+
+  await fold.locator(":scope > summary").click();
+  expect(await fold.evaluate((el) => el.open)).toBe(true);
+  await expect(page.getByTestId("venue-hud-course-1")).toBeVisible();
+  await expect(page.getByTestId("venue-technique-table")).toBeVisible();
+  // 直近1年の脚注は、1年の表の直後・過去90日の「もっと詳しく」より上
+  const order = await page.evaluate(() => {
+    const foot = document.querySelector(".venue-characteristics-footnote");
+    const details = document.querySelector('[data-testid="venue-details"]');
+    const table = document.querySelector('[data-testid="venue-technique-table"]');
+    const before = (a, b) =>
+      Boolean(a && b && a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return {
+      tableBeforeFoot: before(table, foot),
+      footBeforeDetails: details ? before(foot, details) : null,
+    };
+  });
+  expect(order.tableBeforeFoot).toBe(true);
+  if (order.footBeforeDetails !== null) expect(order.footBeforeDetails).toBe(true);
+});
+
+test("英語の決まり手は用語集どおり「Nige (Escape)」の形で、要約と表でそろう（BOA-1189）", async ({
+  page,
+}) => {
+  await openVenue(page, 20, {}, "/en/venue/20");
+  await expect(page.getByTestId("venue-summary-lines")).toContainText(
+    "Makuri (Outside sweep)",
+  );
+  const fold = page.locator(
+    ".venue-characteristics-card details.collapsible-section",
+  );
+  await fold.locator(":scope > summary").click();
+  const table = page.getByTestId("venue-technique-table");
+  await expect(table).toContainText("Nige (Escape)");
+  await expect(table).not.toContainText(/^Escape/);
+});

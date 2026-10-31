@@ -176,7 +176,7 @@ export default function VenueCharacteristicsCard({
           <tbody>
             {TABLE_TECHNIQUES.map((slug) => (
               <tr key={slug}>
-                <th scope="row">{t(`techniquesShort.${slug}`)}</th>
+                <th scope="row">{t(`techniques.${slug}`)}</th>
                 <td>{formatRate(venue.techniques[slug].rate)}%</td>
                 <td>{formatRate(national.techniques[slug].rate)}%</td>
               </tr>
@@ -192,7 +192,7 @@ export default function VenueCharacteristicsCard({
           })}
         </p>
 
-        <VenueCharacteristicsDetails venueCode={venueCode} />
+        {/* 直近1年の脚注は、1年の表の直後・過去90日の「もっと詳しく」より上に置く（90日の説明に読ませない） */}
         <p className="venue-characteristics-footnote">
           {t("venueCharacteristics.footnote", {
             count: formatCount(venue.races),
@@ -201,6 +201,7 @@ export default function VenueCharacteristicsCard({
             to: period.to,
           })}
         </p>
+        <VenueCharacteristicsDetails venueCode={venueCode} />
       </CollapsibleSection>
     </div>
   );
