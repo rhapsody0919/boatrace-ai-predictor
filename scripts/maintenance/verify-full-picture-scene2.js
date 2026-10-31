@@ -2089,6 +2089,18 @@ for (const f of fixtures) {
     assert.deepEqual(r.reasons, []);
     assert.ok(r.description.includes(VOICE.credit) && r.title === "題" && r.thumb.endsWith("thumb.png"));
   }
+  // ②の1着の件数は画面と同じ数え方（1〜3着がそろった類似レースだけ）。着順の欠けたレースを数えると画面と食い違い、照合で止まった（10/30 児島10R 293 対 291）
+  {
+    const mf = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+    const nb = mf.api.similar?.similar?.neighbors;
+    if (nb?.length) {
+      nb[0] = { ...nb[0], finish: [nb[0].finish?.[0] ?? 1] }; // 1着だけ分かっているレース
+      const c2 = f01Script(mf).chapters.find((c) => c.id === "c2");
+      const flow = buildAll(mf).find((x) => x.id === "scene2b").data.steps.find((x) => x.id === "s2b-flow-1");
+      assert.ok(c2 && flow, "類似レースの章と着順の流れがある");
+      assert.equal(c2.facts.counts.reduce((a, b) => a + b, 0), flow.page.n, "1着の件数の和は着順のそろった件数（画面の棒と同じ）");
+    }
+  }
   // 字の小ささ（hq 11d 節、10/30 に7章が 13.5〜21px）: 線を下回る撮った物の章・最初のカットを撮れなかった章は出さない。
   // ④は「軸のボタン → 2着の棒 → 軸のボタン（カーソル）→ 押した後 → 2着の棒」の順に、声の行に合わせて切り替える
   {
