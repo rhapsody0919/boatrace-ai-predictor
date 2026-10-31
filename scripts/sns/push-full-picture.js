@@ -16,7 +16,11 @@
  *   完全版の下書きの cover_image_path に入れる。送信は動画の upload の後に thumbnails.set で上げる（BOA-1172）。欄が無い bundle は今までどおり
  *
  * 1. 検査: 欄・P0 が0件・機械の検査が全部通った・禁止表現・動画の大きさ・レースが今日あり中止でない・締切の45分前より前
- *    --dry-run はここまで（DB・Storage に書かない）
+ *    文に焼き込んだ「締切HH:MM」が今の締切と合う（文に無ければ見ない、bakedDeadlineReasons）
+ *    同じレースの生きた全貌の item があれば、締切が違い・前の束がまだ送信を始めていない・版が違うときだけ差し替える（BOA-1201、supersedePlan）。
+ *    ほかは拒否する（同じ締切は重複）
+ *    --dry-run はここまで（DB・Storage に書かない。差し替えも書かない）
+ * 1b. 差し替え: 前の item を stopped（superseded）にし、続けて前の job を hold（superseded）にする。落ちたら新しい束を作らない
  * 2. 動画（とサムネイル）を Storage（sns-hub-media/full-picture/{race_id}/{版}/）に上げる
  * 3. X・YouTube の下書き（send_lane=A、format=full_picture）と item（kind=full_picture）を作る
  *    X の日の枠の全貌の取り置き（182）に1本が入らなければ X の下書きを作らず、YouTube（完全版・Shorts）だけを送る
@@ -331,6 +335,110 @@ export const sendAtOf = (when, channel) =>
     Date.parse(when.send_at) + OFFSET_MIN[channel] * 60000,
   ).toISOString();
 
+/**
+ * 送信を始めた job の状態（外へ出たか出かけた）。held・failed・cancelled は試行の数によらず公開されていない
+ * （transition_sns_x_send の hold は queued・sending から、fail は sending からだけ移す。外への POST は begin_post で reconcile に
+ * 移した後。docs/db-migration/153:414-423・189:252-261。reconcile から cancelled へ移すのは非公開・削除済みの YouTube を閉じる
+ * youtube_close_private だけ、186:112-116）。締切が延びて送る直前の検査の deadline_changed で held になった job こそ差し替えたい
+ */
+const STARTED_STATES = ["sending", "reconcile", "posted"];
+const itemLabel = (item) =>
+  `${item.channel}${item.variant === "shorts" ? "（Shorts）" : ""}`;
+
+/**
+ * 同じレースの生きた全貌の item への対応（純粋関数、BOA-1201）。全貌は締切の時刻を動画・題・説明文に焼き込む
+ * （sns-video-studio/remotion/scripts/full-picture/bundle.mjs の raceHeader）ので、締切が変わった束は送る側で通さない
+ * （snsDeadlineQueue.js の deadline_changed）。作り手が作り直して push し直し、ここで前の束を差し替える。
+ * live: [{id, draft_id, channel, variant, state, deadline_at, revision, jobs: [{id, state, attempts}]}]
+ * 返り値: { reasons }（拒否）か { items, from }（差し替える item。生きた item が無ければ items は空）
+ */
+export function supersedePlan(live, { deadlineAt, revision }) {
+  if (!live.length) return { items: [] };
+  // sending・reconcile・posted の job は外へ出たかもしれないので差し替えない
+  const started = live.flatMap((item) =>
+    item.jobs
+      .filter((j) => STARTED_STATES.includes(j.state))
+      .map(
+        (j) =>
+          `${itemLabel(item)} の job ${j.id} が ${j.state}（試行 ${j.attempts}）`,
+      ),
+  );
+  if (started.length)
+    return {
+      reasons: [
+        `前の束の送信が始まっているので差し替えない（${started.join("・")}）`,
+      ],
+    };
+  const to = jstTime(deadlineAt);
+  if (live.every((i) => Date.parse(i.deadline_at) === Date.parse(deadlineAt)))
+    return {
+      reasons: [`同じレースの全貌が同じ締切 ${to} で既に入っている（重複）`],
+    };
+  const from = [...new Set(live.map((i) => jstTime(i.deadline_at)))].join("・");
+  // 締切だけ変わって束が同じなら、前の締切が焼き込まれたまま（作り直していない）
+  if (live.some((i) => i.revision === revision))
+    return {
+      reasons: [
+        `締切が ${from}→${to} に変わったのに束が前と同じ版（作り直してから push する）`,
+      ],
+    };
+  return { items: live, from };
+}
+
+/**
+ * 束の文に焼き込まれた「締切HH:MM」が今の締切と合うか（純粋関数、BOA-1201）。版の違いだけでは、締切が変わる前の材料で
+ * 作り直した束を見分けられない（前の item が無い初回も同じ）。作り手の raceHeader（bundle.mjs 65-75）の形「締切16:44」を拾い、
+ * 時は0埋めの違いを同じと扱う。「締切HH:MM」が1つも無い文は見ない（型によっては入らない）
+ * 返り値: 拒否の理由の配列（合っていれば空）
+ */
+export function bakedDeadlineReasons(bundle, deadlineAt) {
+  const current = jstTime(deadlineAt);
+  const texts = [
+    ["x_text", wantsX(bundle) ? bundle?.x_text : undefined],
+    ["youtube_full.title", bundle?.youtube_full?.title],
+    ["youtube_full.description", bundle?.youtube_full?.description],
+    ...(withShorts(bundle)
+      ? [
+          ["youtube_shorts.title", bundle?.youtube_shorts?.title],
+          ["youtube_shorts.description", bundle?.youtube_shorts?.description],
+        ]
+      : []),
+  ];
+  const stale = new Map();
+  for (const [field, text] of texts) {
+    if (typeof text !== "string") continue;
+    for (const [, h, m] of text.matchAll(/締切(\d{1,2}):(\d{2})/g)) {
+      const hm = `${h.padStart(2, "0")}:${m}`;
+      if (hm !== current) stale.set(hm, [...(stale.get(hm) ?? []), field]);
+    }
+  }
+  return [...stale].map(
+    ([hm, fields]) =>
+      `束の締切 ${hm} が今の締切 ${current} と違う（作り直す。${[...new Set(fields)].join("・")}）`,
+  );
+}
+
+/**
+ * 前の束を止める（BOA-1201）。item を先に stopped（superseded）にして一意の索引（172 の sns_auto_send_items_race_channel）から外し、
+ * 続けて queued の job を hold（理由 superseded）にする。item が先なのは、hold の前に claim されても transition_sns_x_send が
+ * auto_stopped で止めるため。どこかで落ちたら投げる（呼ぶ側は新しい束を作らない）
+ */
+async function supersede(store, items, now) {
+  for (const item of items)
+    await store.updateItem(item.id, item.state, {
+      state: "stopped",
+      stopped_at: now.toISOString(),
+      stopped_via: "superseded",
+    });
+  let held = 0;
+  for (const item of items)
+    for (const job of item.jobs.filter((j) => j.state === "queued")) {
+      await store.holdJob(job.id, "superseded");
+      held += 1;
+    }
+  return held;
+}
+
 /** 下書きの行（純粋関数）。public_url は送る直前の表示の確認に使う（UTM・タブ以外の query を付けない） */
 export function draftRows(bundle, { revision, paths, when, observedAt }) {
   const raceUrl = `https://www.boat-ai.jp/race/${bundle.race_id}?tab=sonar`;
@@ -492,9 +600,24 @@ export async function pushFullPicture(
   const deadlineAt = race && deadlineIso(race);
   if (!deadlineAt) return reject(["レースが見つからない"]);
   if (race.cancellation_status != null) return reject(["レースが中止"]);
+  // 締切が変わる前の材料で作った束は、差し替えでも初回でも通さない（送る直前の検査の deadline_changed は push の時の締切と比べるので、文の時刻のずれを見ない）
+  const stale = bakedDeadlineReasons(bundle, deadlineAt);
+  if (stale.length) return reject(stale);
   const when = schedule(deadlineAt, now);
   if (now.getTime() >= Date.parse(when.latest))
     return reject([`締切の${LATEST_BEFORE_MIN}分前を過ぎた`]);
+  const hash = createHash("sha256").update(JSON.stringify(bundle));
+  // 版には受け取った動画を全部入れる（shorts.mp4 だけを直して入れ直しても、前の版の承認と同じ path を上書きしない）
+  for (const channel of channelsOf(bundle)) hash.update(files[channel]);
+  // サムネイルは動画の後に足す（欄の無い束の式は変えない）
+  if (thumbnail) hash.update(thumbnail.bytes);
+  const revision = hash.digest("hex").slice(0, 32);
+  // 同じレースの生きた全貌の item（BOA-1201）。あれば一意の索引（172）に当たるので、差し替えるか拒否するかを先に決める
+  const plan = supersedePlan(await store.liveFullPicture(bundle.race_id), {
+    deadlineAt,
+    revision,
+  });
+  if (plan.reasons) return reject(plan.reasons);
   // Shorts は、期限までに完全版の公開を待てる時刻に届いたときだけ作る
   const shortsLate =
     withShorts(bundle) &&
@@ -502,20 +625,35 @@ export async function pushFullPicture(
       Date.parse(minutesBefore(deadlineAt, SHORTS_LATEST_BEFORE_MIN));
   // X の日の枠の全貌の取り置き（182、docs/design/x-daily-slots/plan.md）。入らないと分かったら X だけ作らない
   // （claim で止まる job を作ると期限まで Slack が鳴る）。182 の前・読めないときは今のまま作る（claim が正）。X を作らない bundle では見ない
+  // 差し替えるときは前の X の下書きの job を数えない（差し替えで hold にするので、二重に数えて X を落とさない）
   const xSlot =
     store.xSlotRoom && wantsX(bundle)
-      ? await checkXSlot(store.xSlotRoom, SLOT_KINDS.fullPicture, 1)
+      ? await checkXSlot(
+          store.xSlotRoom,
+          SLOT_KINDS.fullPicture,
+          1,
+          plan.items.find((i) => i.channel === "x")?.draft_id ?? null,
+        )
       : null;
   const channels = channelsOf(bundle).filter(
     (c) => (c !== "shorts" || !shortsLate) && (c !== "x" || !xSlot?.blocked),
   );
-  const hash = createHash("sha256").update(JSON.stringify(bundle));
-  // 版には受け取った動画を全部入れる（shorts.mp4 だけを直して入れ直しても、前の版の承認と同じ path を上書きしない）
-  for (const channel of channelsOf(bundle)) hash.update(files[channel]);
-  // サムネイルは動画の後に足す（欄の無い束の式は変えない）
-  if (thumbnail) hash.update(thumbnail.bytes);
-  const revision = hash.digest("hex").slice(0, 32);
-  if (dryRun) return { dryRun: true, revision, when, shortsLate, xSlot };
+  const replacing = plan.items.length
+    ? { from: plan.from, to: jstTime(deadlineAt), items: plan.items.length }
+    : null;
+  if (dryRun)
+    return { dryRun: true, revision, when, shortsLate, xSlot, replacing };
+
+  if (replacing) {
+    try {
+      replacing.held_jobs = await supersede(store, plan.items, now);
+    } catch (error) {
+      // 新しい item は作らない（送らない側に倒す）。止めた item の job は claim で auto_stopped、残った item は deadline_changed で止まる
+      return reject([
+        `前の束（締切 ${replacing.from}）の差し替えに失敗したので、新しい束を作らない: ${error.message}`,
+      ]);
+    }
+  }
 
   const paths = Object.fromEntries(
     channels.map((c) => [
@@ -636,6 +774,10 @@ export async function pushFullPicture(
         ? `${label[channel]}: 自動の承認に失敗（個別承認に回した）: ${r.error}${channel === "shorts" ? SHORTS_MANUAL_NOTE : ""}`
         : `${label[channel]}: 自動モードでないので個別承認の画面で承認する${channel === "shorts" ? SHORTS_MANUAL_NOTE : ""}`,
   );
+  if (replacing)
+    lines.unshift(
+      `締切 ${replacing.from}→${replacing.to} で差し替えた（前の item ${replacing.items}件を stopped（superseded）、job ${replacing.held_jobs}件を held（superseded））`,
+    );
   if (shortsError)
     lines.push(
       `youtube（Shorts）: 下書き・item を作れなかったので作らなかった（${out.x ? "X・" : ""}完全版は送る）: ${shortsError}`,
@@ -651,7 +793,15 @@ export async function pushFullPicture(
   await notify(
     `SNS 全貌動画 ${bundle.race_id}（締切 ${jstTime(deadlineAt)}）\n${lines.join("\n")}\n止めるには: ${STOP_SQL}`,
   ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
-  return { channels: out, revision, when, shortsLate, shortsError, xSlot };
+  return {
+    channels: out,
+    revision,
+    when,
+    shortsLate,
+    shortsError,
+    xSlot,
+    replacing,
+  };
 }
 
 /** PostgREST・Storage の読み書き（service_role）。失敗は投げる */
@@ -733,6 +883,33 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
       ),
     approve: (args) =>
       call("rpc/approve_sns_x_send", { method: "POST", body: args }),
+    // 同じレースの生きた全貌の item（172 の一意の索引に当たるもの）と、その下書きの版・job（BOA-1201）
+    async liveFullPicture(raceId) {
+      const items = await call(
+        `sns_auto_send_items?race_id=eq.${encodeURIComponent(raceId)}&kind=eq.full_picture&state=not.in.(stopped,held_manual)&select=id,draft_id,channel,variant,state,deadline_at`,
+      );
+      if (!items.length) return [];
+      const ids = items.map((i) => i.draft_id).join(",");
+      const [drafts, jobs] = await Promise.all([
+        call(
+          `sns_drafts?id=in.(${ids})&select=id,revision:source_data->full_picture->>revision`,
+        ),
+        call(
+          `sns_x_send_jobs?draft_id=in.(${ids})&select=id,draft_id,state,attempts`,
+        ),
+      ]);
+      return items.map((i) => ({
+        ...i,
+        revision: drafts.find((d) => d.id === i.draft_id)?.revision ?? null,
+        jobs: jobs.filter((j) => j.draft_id === i.draft_id),
+      }));
+    },
+    // job を保留にする（transition_sns_x_send の hold。理由は英小文字と _ なら error_code に入る、139・189）
+    holdJob: (jobId, reason) =>
+      call("rpc/transition_sns_x_send", {
+        method: "POST",
+        body: { p_job_id: jobId, p_action: "hold", p_result: { reason } },
+      }),
     // X の日の枠の取り置きの残り（182）
     xSlotRoom: xSlotRoomVia(call),
     // 下書きの deadline_queue に親（完全版の job）を入れる。承認の前に入れないと、承認の queue の照合に通らない
