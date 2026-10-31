@@ -4134,6 +4134,21 @@ test.describe("AI用にコピー機能（BOA-194: race-ai-copy）", () => {
 
     const bannerButton = page.locator(".ai-copy-btn-banner");
     await expect(bannerButton).toBeVisible({ timeout: 15000 });
+    // タブの上に1R〜12Rの帯と6艇の要約が入り（BOA-1189 GS01-c）、ボタンが最初の画面の外に出た。
+    // click が自分でスクロールした分を「コピーで動いた」と数えないよう、先に画面へ入れてから測る
+    // 画面に入れた後も、上の表示（AI分析中の演出・後から届くデータ）で高さが変わると位置がずれるので、
+    // 0.5秒動かなくなるまで待ってから測る
+    await expect
+      .poll(
+        async () => {
+          await bannerButton.scrollIntoViewIfNeeded();
+          const y = await page.evaluate(() => window.scrollY);
+          await page.waitForTimeout(500);
+          return (await page.evaluate(() => window.scrollY)) === y;
+        },
+        { timeout: 15000 },
+      )
+      .toBe(true);
     const scrollBefore = await page.evaluate(() => window.scrollY);
     await bannerButton.click();
 
