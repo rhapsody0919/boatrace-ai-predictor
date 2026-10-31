@@ -18,6 +18,7 @@ import { createScrapeCronHandler } from "../../scripts/lib/scrapeJobs/cronWrappe
 import { postSlack } from "../../scripts/lib/scrapeJobs/monitor.js";
 import {
   SNS_SEND_HEADLESS_BUDGET,
+  createPostgrestEventWriter,
   createPostgrestReader,
   createSnsSendStore,
   runSnsSend,
@@ -60,6 +61,11 @@ export default createScrapeCronHandler({
             key: SUPABASE_SERVICE_KEY,
           }),
           xSendStore,
+          // 送らなかった理由（sns_send_events、191）。live のときだけ runner が書く（BOA-1201）
+          writeEvent: createPostgrestEventWriter({
+            url: SUPABASE_URL,
+            key: SUPABASE_SERVICE_KEY,
+          }),
         }),
         adapters: {
           x: async () =>

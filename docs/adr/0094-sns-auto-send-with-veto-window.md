@@ -88,3 +88,11 @@
 - 差し替えは、前の item を先に stopped（stopped_via=superseded、153 の CHECK にある値）にして一意の索引（172 の sns_auto_send_items_race_channel）から外し、続けて queued の job を transition_sns_x_send の hold（理由 superseded が error_code に入る、139 から同じ）にしてから、新しい束を作る。どこかで落ちたら新しい束を作らない（止めた item の job は claim で auto_stopped、残った item の job は送る前の検査の deadline_changed で止まる）。Slack に「締切 15:57→16:05 で差し替えた」の形で前と新の締切を書く。--dry-run は差し替えも書かない
 - 差し替えは全貌（full_picture）だけ。優勝戦・思考投稿・数字で見たら（push-finals-image.js・push-research-image.js）は今までの作り直しのまま
 - 却下: 締切が延びた束を送る側で通す（焼き込んだ時刻が違う）。push が前の束を黙って上書きする（送信を始めた束を差し替えると二重に出る）
+
+## 追記: 送らなかった理由は sns_send_events に (job, 段, 理由) ごとに1行残す（2026-10-31、system-architect の推奨・BOA-1201・マイグレーション 191）
+- 送る側（cron sns_send）が送らなかった理由は report.alerts（Slack）にしか残らず、hq の見張りは Slack を読めない。live の実行だけが、表 `sns_send_events` に (job_id, stage, reason) ごとに初出の1行を書く（shadow は DB を変えない）。stage は precheck（runner の送る前の検査に落ち、claim していない）・send（claim から begin_post までの送信の中で落ちた）・after_post（begin_post の後に落ちた。要照合で出たかもしれないので、送らなかった理由と分ける）。detail は元の文言の先頭300字
+- claim の DB の拒否は、snsXSendStore が全部「X送信のDB操作に失敗しました」に包む。元の文言（RAISE の文）を error.cause に持たせ、runner が短い code（claim_daily_limit・claim_monthly_budget・claim_paused_or_unpriced・claim_not_allowed 等、`CLAIM_REJECTION_CODES`）に写す。写せない文言は db_rejected で、detail に元の文言
+- 書き方は PostgREST の POST `sns_send_events?on_conflict=job_id,stage,reason` に `Prefer: resolution=ignore-duplicates`。2分ごとの同じ理由の繰り返しは UNIQUE で止まり行を書かない
+- YouTube の begin_post の前の失敗は、job の error_code が今までどおり youtube_preflight_failed（承認の hash・媒体・validate・親・preflight の全部）。原因は stage=send の reason（holdReasonOf の code、英小文字と _ の理由はそのまま）で見る
+- 書けなくても送信は止めない。表が無い（404・PGRST205）ときは console だけ（db-apply はマージの後に当たるので、その間 Slack を鳴らし続けない）。それ以外の失敗は report.alerts に出す
+- 残る壊れ方: 再承認は job の行を使い回す（177 の ON CONFLICT(draft_id) DO UPDATE）。再承認の後に同じ理由が出ても行は増えず、初出の時刻のまま残る。hq は e.at < j.approved_at の行を前の版のものとして読む

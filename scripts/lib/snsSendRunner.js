@@ -21,6 +21,10 @@
  *     実行のメモリに置いた通知は、途中で落ちると保存されず、sweep（DB の now()）と runner の時刻のずれでも漏れるため
  *     （開発の補助の点検 2026-10-13-28 の D2）
  *   - 送る前の検査・トークンの失敗は、候補を20件ずつ巡回するので、次にその job・チャネルを見直すまで（最長 CONTINUING_ALERT_MINUTES）残す
+ * - 送らなかった理由（送る前の検査の失敗・送信の中の失敗）は、live のときだけ DB の sns_send_events（191）にも (job, 段, 理由) ごとに
+ *   初出の1行を残す。hq の見張りは Slack を読めないので DB で読む（BOA-1201）。書けなくても送信は止めない
+ *   - 段は precheck（claim の前）・send（claim から begin_post まで。claim の DB の拒否は CLAIM_REJECTION_CODES の code）・
+ *     after_post（begin_post の後。要照合で、出たかもしれないので送らなかった理由と分ける）
  */
 import { runXSendJob } from "../../api/_lib/snsXSend.js";
 import {
@@ -71,6 +75,51 @@ function youtubeQuotaDayWait(now) {
 const slug = (message) =>
   /^[a-z_]{1,64}$/.test(message ?? "") ? message : "unexpected_error";
 
+/**
+ * claim の段で DB（transition_sns_x_send・transition_sns_send_139 の RAISE）が拒否した文言 → 送らなかった理由の code（BOA-1201）。
+ * 文言は 186・189 の claim で通る RAISE の全部。snsXSendStore は拒否を全部「X送信のDB操作に失敗しました」に包むので、
+ * 元の文言（error.cause.message）で引く。ここに無い文言は db_rejected にして detail に元の文言を残す
+ */
+export const CLAIM_REJECTION_CODES = Object.freeze({
+  // 189 transition_sns_send_139
+  jobが見つかりません: "claim_job_missing",
+  "X送信は停止中・費用未確認です": "claim_paused_or_unpriced",
+  再承認が必要です: "claim_reapproval_required",
+  "日次全体上限・他経路の本数が未確認です": "claim_daily_unconfirmed",
+  日次全体上限です: "claim_daily_limit",
+  claimできません: "claim_not_allowed",
+  月額上限です: "claim_monthly_budget",
+  // 186 transition_sns_x_send（139 の前後の X・YouTube 共通の段と、YouTube のクォータ）
+  auto_stopped: "claim_auto_stopped",
+  dry_run: "claim_dry_run",
+  veto_window_open: "claim_veto_window_open",
+  youtube_quota_unconfirmed: "claim_youtube_quota_unconfirmed",
+  youtube_quota_limit: "claim_youtube_quota_limit",
+});
+
+/**
+ * 送信の中の失敗 → sns_send_events の段・理由・detail（純粋関数、BOA-1201）
+ * - 段: begin_post の後（error.postStarted、要照合で出たかもしれない）は after_post、それ以外は send
+ * - 理由: 送信の関数が付けた holdReason → DB の拒否（claim の段は CLAIM_REJECTION_CODES、英小文字と _ の文言はそのまま、
+ *   ほかは db_rejected）→ 英小文字と _ の文言はそのまま、ほかは unexpected_error
+ * - detail: DB の拒否は元の文言（無ければ HTTP の状態）、それ以外は error.message
+ */
+export function sendFailureOf(error) {
+  const stage = error?.postStarted ? "after_post" : "send";
+  const rejected = error?.cause?.kind === "db_rejected" ? error.cause : null;
+  const detail = rejected
+    ? (rejected.message ?? `${error.message}（HTTP ${rejected.status}）`)
+    : String(error?.message ?? "");
+  if (error?.holdReason) return { stage, reason: error.holdReason, detail };
+  if (!rejected) return { stage, reason: slug(error?.message), detail };
+  const message = rejected.message ?? "";
+  const reason =
+    (stage === "send" && Object.hasOwn(CLAIM_REJECTION_CODES, message)
+      ? CLAIM_REJECTION_CODES[message]
+      : null) ?? (/^[a-z_]{1,64}$/.test(message) ? message : "db_rejected");
+  return { stage, reason, detail };
+}
+
 /** 1回の実行で読む候補（queued の行）の上限。送る前の検査に落ちた job は送信の件数（maxJobs）に数えない */
 export const SNS_SEND_MAX_CANDIDATES = 20;
 /** 届かなかった一度きりの通知を report.alerts に残す時間（監視が再通知の間隔ごとに流す） */
@@ -81,6 +130,13 @@ export const CONTINUING_ALERT_MINUTES = 30;
 
 /** 親を待つ子の期限が、この分数より近くなったら知らせる */
 export const PARENT_WAIT_ALERT_MINUTES = 10;
+
+/** 送らなかった理由の detail の上限（191 の CHECK）。サロゲートペアを割らないよう文字単位で切る */
+const EVENT_DETAIL_MAX = 300;
+const clip = (text) =>
+  Array.from(String(text ?? ""))
+    .slice(0, EVENT_DETAIL_MAX)
+    .join("");
 
 /** 走査位置（scrape_job_state.cursor）: 送る時刻と id の組。次の実行はこの位置の後から読む（開発の補助の点検 D1） */
 const positionOf = (job) => ({ scheduled_at: job.scheduled_at, id: job.id });
@@ -131,6 +187,34 @@ export async function runSnsSend(
           until: new Date(
             now.getTime() + UNDELIVERED_ALERT_HOURS * 3600000,
           ).toISOString(),
+        });
+    }
+  };
+  // 送らなかった理由を sns_send_events（191）に残す。shadow は DB を変えない。同じ (job, 段, 理由) は UNIQUE で書かない。
+  // 書けなくても送信は止めない。表が無い（191 は db-apply でコードのデプロイの後に当たる）間は console だけにし、Slack を鳴らし続けない
+  const recordEvent = async (job, stage, reason, message) => {
+    if (!live || !store.recordEvent) return;
+    try {
+      await store.recordEvent({
+        job_id: job.id,
+        stage,
+        reason,
+        detail: clip(message),
+      });
+    } catch (error) {
+      if (error.tableMissing) {
+        console.warn(
+          `送らなかった理由を残せない（sns_send_events が無い、191 未適用）: ${job.id} ${stage} ${reason}`,
+        );
+        return;
+      }
+      console.error(
+        `送らなかった理由を残せない: ${job.id} ${stage} ${reason}: ${error.message}`,
+      );
+      if (!alerts.some((a) => a.key === "send_events"))
+        alerts.push({
+          key: "send_events",
+          text: `SNS の送信: 送らなかった理由を sns_send_events に書けない（送信は続けた）: ${error.message}`,
         });
     }
   };
@@ -275,6 +359,7 @@ export async function runSnsSend(
         text: `送る前の検査で止めた（claim していない）: ${job.channel} job ${job.id} 理由 ${result.reason}`,
         until: continuingUntil,
       });
+      await recordEvent(job, "precheck", result.reason, error.message);
       continue;
     }
     // dry_run の行が無い（153 未適用など）ときも送らない（fail-closed）
@@ -347,7 +432,9 @@ export async function runSnsSend(
     } catch (error) {
       // job の状態（held・要照合）は送信の関数が DB に残している。ここでは理由を知らせるだけ
       result.outcome = "error";
-      result.reason = error.holdReason ?? slug(error.message);
+      const failure = sendFailureOf(error);
+      result.reason = failure.reason;
+      await recordEvent(job, failure.stage, failure.reason, failure.detail);
       await tell(
         `send:${job.id}`,
         `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
@@ -420,9 +507,13 @@ async function sendYoutube(
     current.state === "reconcile" &&
     ["uploaded", "ready"].includes(current.youtube_stage)
   )
-    current = await store.transition(current.id, "youtube_retain", {
-      reason: "processing",
-    });
+    current = await store
+      .transition(current.id, "youtube_retain", { reason: "processing" })
+      .catch((error) => {
+        // 上がった後（要照合）の失敗。送らなかった理由と分けて stage=after_post に残す（BOA-1201）
+        error.postStarted = true;
+        throw error;
+      });
   return current;
 }
 
@@ -448,9 +539,42 @@ export function createPostgrestReader({ url, key, fetchImpl = fetch }) {
   };
 }
 
-/** 送信の job の読み書き。xSendStore（api/_lib/snsXSendStore.js）の送信の操作に、runner の読み取りを足す */
-export function createSnsSendStore({ db, xSendStore }) {
+/**
+ * PostgREST の書き込み（service_role）: 送らなかった理由を sns_send_events（191）に1行。同じ (job, 段, 理由) は UNIQUE で
+ * 止まり、resolution=ignore-duplicates で行を書かずに成功する（2分ごとの繰り返しで WAL を増やさない）。
+ * 失敗は投げる。表が無い（404・PGRST205）ときは tableMissing を付ける
+ */
+export function createPostgrestEventWriter({ url, key, fetchImpl = fetch }) {
+  return async (event) => {
+    const response = await fetchImpl(
+      `${url}/rest/v1/sns_send_events?on_conflict=job_id,stage,reason`,
+      {
+        method: "POST",
+        headers: {
+          apikey: key,
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          Prefer: "resolution=ignore-duplicates,return=minimal",
+        },
+        body: JSON.stringify(event),
+      },
+    );
+    if (response.ok) return;
+    // 本文は code だけ読む（message・details は残さない）
+    const code = (await response.json().catch(() => null))?.code ?? null;
+    const error = new Error(
+      `sns_send_events の書き込みに失敗: HTTP ${response.status}${code ? ` ${code}` : ""}`,
+    );
+    error.tableMissing =
+      response.status === 404 || code === "PGRST205" || code === "42P01";
+    throw error;
+  };
+}
+
+/** 送信の job の読み書き。xSendStore（api/_lib/snsXSendStore.js）の送信の操作に、runner の読み取りと送らなかった理由の書き込みを足す */
+export function createSnsSendStore({ db, xSendStore, writeEvent }) {
   return {
+    recordEvent: writeEvent,
     transition: (id, action, result) =>
       xSendStore.transition(id, action, result),
     parent: (id) => xSendStore.parent(id),

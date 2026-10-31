@@ -1452,6 +1452,11 @@
       "guards": "X の「数字で見たら」の集計の画像1枚（format=research_image、マイグレーション 179・180、scripts/sns/push-research-image.js、hq XR01）: item は X・variant=main・race_id は research:{日}:{slug} だけで1日1本（別の slug も・送った後も2本目は入らない、held_manual・stopped は外れる）、許可 research_image_enabled は既定 false で x の行だけ・off の間は push が何も書かない（Slack も）・承認の後に off にすると claim で held（research_image_disabled）、--dry-run は書かない、on なら画像1枚の job を送る時刻（19:00）に入れる（締切は送る時刻＋120分・期限は＋60分）、鮮度は research_image だけ集計から24時間（他の kind の max_source_age_seconds はそのまま）、通り道 B の claim は今日の research_image の分を先に枠から引く、検査（禁止表現と本文の競艇・#競艇 のタグだけ可・risk-rules・加重280・リンクなし・置き場所・本文のハッシュタグ・画像1枚 PNG 1080x1350・P0・send_time 08:00〜21:30・今日・期限の10分前・集計の時刻・X の日の上限）、送り手の readCurrent（許可・同じ日に送った research_image・item の kind・本文・画像の数）と preflight（リンク先の表示を開かず、送る文にリンクがあれば止める。他の型は表示を確かめる）、送った後の item sent と tweet id、結果の1行 RESEARCH_RESULT と exit、177 の transition_sns_send_139 の md5 が本番と一致。SQL180 までを PGlite、外部接続なし"
     },
     {
+      "script": "verify-sns-send-events.js",
+      "tier": "ci",
+      "guards": "SNS の送信で送らなかった理由の表 sns_send_events（マイグレーション 191、BOA-1201）: 冒頭の確認の SQL（適用前・適用後、db-apply の job summary の節）が期待値どおり、RLS・anon と authenticated は INSERT も SELECT も不可（Supabase の既定の権限を再現して REVOKE を確かめる）・service_role は書ける・claude_ro は読むだけ、UNIQUE (job_id, stage, reason) と ON CONFLICT DO NOTHING で同じ理由は1行（初出の detail のまま）、job の削除で CASCADE・無い job は外部キーで拒否、CHECK（stage は precheck・send・after_post、reason の形と長さ・detail 300字）、hq の読み方の SQL（再承認より前の行に before_reapproval）、戻し方の DROP。PGlite、外部接続なし"
+    },
+    {
       "script": "verify-sns-send-probe.js",
       "tier": "ci",
       "guards": "送信の試験（投稿しない、/api/admin/sns-hub/send-probe、2026-10-18 /today の初送信が原因不明で止まった件）: 媒体は initialize→append（4 MiB ずつ）→finalize→status まで行い createPost を呼ばない、落ちた段階を「段階_種類」で返す、表示の確認は印の有無と Chromium の落ちを区別する。外部接続なし"
@@ -1459,7 +1464,7 @@
     {
       "script": "verify-sns-send-runner.js",
       "tier": "ci",
-      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし。BOA-1172: サムネイルの失敗でも YouTube は posted まで進め、理由を report.jobs の thumbnail_error と Slack に1回（届かなければ report.alerts）"
+      "guards": "token-health の x_read で refresh の後に保存できなかったら Slack に知らせる（handler の既定の通知の経路）。sns-pdca-loop tasks 19: 送信の runner（送る前の検査に落ちたら・shadow・dry_run・トークンを取れないときは claim しない＝予約と日次の枠を消費しない、live で X・YouTube を送って posted、最大件数、YouTube の処理が3回で終わらなければ非公開のまま残す、スレッドの子は親が posted になってから選ぶ、PostgREST の読み取りの条件）、鍵の健全性 API（refresh の可否と scope だけを返しトークンの値を返さない、X は読むだけで refresh しない、youtube.upload だけでは公開に切り替えられないと出す、Basic 認証）、検査に落ちた job は送信の件数に数えない・走査位置（cursor）を進めて落ち続ける job が後ろを塞がない・トークンは1回の実行で1回・要照合は毎回 DB の状態から report.alerts に作る（保存の前に落ちた実行・sweep と runner の時刻のずれでも漏らさない）・送る前の検査とトークンの失敗は見直すまで期限つきで残す・その場の通知が届かなければ report.alerts に期限つきで持ち越す、死活の監視の稼働時間（sns_send は JST 8:00〜21:00 だけ）。SQL153 までを PGlite、外部接続なし。BOA-1172: サムネイルの失敗でも YouTube は posted まで進め、理由を report.jobs の thumbnail_error と Slack に1回（届かなければ report.alerts）。BOA-1201: live のときだけ送らなかった理由を sns_send_events（191）に (job, 段, 理由) ごとに初出の1行（送る前の検査は stage=precheck、送信の中は stage=send、begin_post の後は stage=after_post、claim の DB の拒否は文言ごとの code（日次全体上限と月額上限は別の行）・写せない文言は db_rejected で detail に元の文言、YouTube の begin_post の前の失敗は job が held・youtube_preflight_failed のまま reason に holdReasonOf の code）、shadow は書かない、書き込みが落ちても送信は続け表が無い（404・PGRST205）ときは Slack に出さない、PostgREST の POST は on_conflict と resolution=ignore-duplicates、detail は文字単位で300字"
     },
     {
       "script": "verify-sns-shorts-send.js",

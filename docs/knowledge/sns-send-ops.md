@@ -28,6 +28,7 @@ SNS の自動送信（承認 snapshot・claim・runner・通知・容量・cron�
 - 差し替えは、前の item を stopped（stopped_via=superseded）にすると一意の索引 sns_auto_send_items_race_channel（WHERE state NOT IN ('stopped','held_manual')）から外れて、同じレースの新しい item を入れられる。job は item の後に hold（理由 superseded）にする。先に item を止めておけば、hold の前に claim されても auto_stopped で止まる（2026-10-31、BOA-1201、docs/db-migration/172:42・153:51）
 - 差し替えを止める前の job は sending・reconcile・posted だけ。transition_sns_x_send の hold は queued・sending から、fail は sending からしか移さず、外への POST は begin_post で reconcile にした後なので、試行1以上の held・failed は公開されていない（2026-10-31、BOA-1201、docs/db-migration/153:414-423・189:252-261）
 - 版の違いでは「締切が変わる前の材料で作り直した束」を見分けられない。push は束の文の「締切HH:MM」と今の締切を比べて拒否する（2026-10-31、BOA-1201、scripts/sns/push-full-picture.js の bakedDeadlineReasons）
+- YouTube の job の error_code の youtube_preflight_failed は preflight だけでなく、begin_post の前の全部の失敗（承認の hash・媒体・validate・親・preflight）で書かれる。原因は sns_send_events（191）の stage=send の reason（holdReasonOf の code）で見る（2026-10-31、BOA-1201、api/_lib/snsDeadlineQueue.js:151）
 
 ## 容量・上限
 - 取り置き（sns_x_kind_reserves）は旗が off でも・締切が過ぎても解けない。新しい出し物の取り置きと daily_limit_x はマイグレーションに入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前に当てる（先に入れると他の出し物の残りを食う）（2026-10-27、BOA-1169、ADR-0094 の 182 の追記の (2)・189 のヘッダー）
