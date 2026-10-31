@@ -143,6 +143,30 @@ assert.deepEqual(templateLines(overview), [
   "今日の6艇で2位以内の項目が最多は2号艇",
   "5項目中4、次は1号艇の3",
 ]);
+assert.deepEqual(templateLines({ ...overview, leaders: [2, 4] }), [
+  "今日の6艇で2位以内の項目が最多は2・4号艇",
+  "5項目中4、次は1号艇の3",
+]);
+// BOA-1109: 2026-10-25 06場11R。既存の facts の leaders だけを変えて再現する。
+const overviewFiveLeaders = { ...overview, leaders: [1, 2, 4, 5, 6] };
+for (const f of [
+  overviewFiveLeaders,
+  { ...overview, leaders: [2, 4, 6] },
+  { ...overview, leaders: [2, 3, 4, 6] },
+  { ...overview, leaders: [1, 2, 3, 4, 5, 6], runner: null },
+]) {
+  const lines = templateLines(f);
+  for (const line of lines)
+    assert.ok(
+      lineWidth(line) <= MAX_WIDTH,
+      `最多が${f.leaders.length}艇でも全角${MAX_WIDTH}字分以内: ${line}（${lineWidth(line)}）`,
+    );
+  assert.deepEqual(checkLines(lines, f, null), [], "最多が並ぶ文型が検査を通る");
+}
+assert.deepEqual(templateLines(overviewFiveLeaders), [
+  "今日の6艇で2位以内の項目が最多で並ぶ",
+  "5項目中4、次は1号艇の3",
+]);
 assert.deepEqual(templateLines(focus1), [
   "1号艇の選手は全国勝率8.06で6人中1位",
   "2番手は2号艇の7.61、ほか2項目も1位",
