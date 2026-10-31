@@ -22,6 +22,25 @@ const CUE = {
   c5: { answer2: /2位以内/, gold: /2位以内/, answer: /項目が多いのは|材料が少ない/ },
   close: { gold: /号艇を軸に/, foot: /説明欄/ },
 };
+/**
+ * 章ごとの左の画面の並び（撮った物の名前・切り替える行の語・カーソル）。行の語は前のカットの行から後ろを探す。
+ * cursor: そのカットの上で、次に押す所（cursor の名前の撮った物の cursor / cursorFrom）へカーソルを動かし、0.5秒後に次のカットへ
+ * delay: 同じ行の語のカットの、0.5秒後に出す
+ */
+export const PLAN = {
+  c1: [{ k: "c1" }, { k: "c12", re: /2位以内/ }],
+  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22" }, { k: "c22", re: /号艇が勝った/, delay: 15 }],
+  c3: [{ k: "c3" }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }],
+  c4: [{ k: "c4" }, { k: "c4b", re: /2着は/ }, { k: "c4", re: /軸を\d号艇に/, cursor: "c42" }, { k: "c42", re: /軸を\d号艇に/, delay: 15 }, { k: "c42b", re: /2着は/ }],
+  c5: [{ k: "c5" }],
+  close: [{ k: "close" }],
+};
+/**
+ * 左の画面の字の小ささの線（縮めた後の最小の字の高さ px）。下回る撮った物を含む章は出さず警告にする（hq 6節「2カットでも届かなければその章を出さず警報」）。
+ * 目安（根拠なし、2026-10-31 の試作で決めた）: 部品だけを撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px で最も小さく、
+ * ほかは 26〜31px。6節の目安 28px（根拠なし）は着順の流れでは左の枠の高さ 838 では届かない
+ */
+export const MIN_FONT_PX = 20;
 const f = (sec) => Math.round(sec * FPS);
 const LEAD = 0.5;
 const GAP = 0.25;
@@ -59,24 +78,32 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
       ch.answer2At = at(cue.answer2, len / 2);
       ch.pathAt = f(lineAt[lineAt.length - 1] ?? 0);
       ch.footAt = at(cue.foot);
-      const one = shots[c.id];
-      const two = shots[`${c.id}2`];
-      // 押す前・押した後で同じ部品を撮った物は同じ倍率にそろえる。④と締めは同じ部品（思考アシストの相手）
-      const same = two && Math.abs(two.clip.x - one.clip.x) < 2 && Math.abs(two.clip.w - one.clip.w) < 2;
-      const sc = c.id === "c4" || c.id === "close" ? Math.min(shots.c4.scale, shots.c42.scale) : same ? Math.min(one.scale, two.scale) : null;
-      const cut = (sh, from, extra = {}) => ({ file: basename(sh.file), clip: sh.clip, scale: sc ?? sh.scale, from, ...extra });
+      // 同じ部品（押す前・押した後、④と締めの軸のボタン）は同じ倍率・同じ箱の高さにそろえる（切り替えで位置と大きさが動かない）
+      const plan = PLAN[c.id] ?? [{ k: c.id }];
+      const group = (sh) => Object.values(shots).filter((o) => Math.abs(o.clip.x - sh.clip.x) < 2 && Math.abs(o.clip.w - sh.clip.w) < 2 && Math.abs(o.clip.h - sh.clip.h) < 24);
+      const cut = (sh, from, extra = {}) => {
+        const g = group(sh);
+        const scale = Math.min(...g.map((o) => o.scale));
+        return { file: basename(sh.file), clip: sh.clip, scale, boxH: Math.max(...g.map((o) => o.clip.h)) * scale, from, ...extra };
+      };
       const gAt = at(cue.gold);
-      ch.cuts = [cut(one, 0, { gold: (one.goldBoxes ?? []).map((g) => ({ ...g, at: gAt })) })];
-      if (two) {
-        const T = at(cue.cut2);
-        if (two.pre) {
-          // 押す前の画面を出し、0.5秒でカーソルが帯に届いたら押した後の画面にする
-          ch.cuts.push({ ...cut({ ...two, file: two.pre }, T), cursor: { ...two.cursor, at: T + 15 } });
-          ch.cuts.push(cut(two, T + 15));
-        } else if (two.cursorFrom) {
-          ch.cuts[0].cursor = { ...two.cursorFrom, at: T + 15 };
-          ch.cuts.push(cut(two, T + 15));
-        } else ch.cuts.push(cut(two, T));
+      ch.cuts = [];
+      let pos = 0;
+      for (const p of plan) {
+        const sh = shots[p.k];
+        if (!sh) continue;
+        let T = 0;
+        if (p.re) {
+          const i = lines.findIndex((l, j) => j >= pos && p.re.test(l.sub));
+          if (i < 0) continue;
+          pos = i;
+          T = f(lineAt[i]) + (p.delay ?? 0);
+        }
+        const extra = { gold: (sh.goldBoxes ?? []).map((g) => ({ ...g, at: gAt })) };
+        const next = p.cursor ? shots[p.cursor] : null;
+        // カーソルは押す所へ0.5秒で動く（押す前の画面の座標）
+        if (next) extra.cursor = { ...(next.cursor ?? next.cursorFrom), at: T + 15 };
+        ch.cuts.push(cut(sh, T, extra));
       }
     }
     chapters.push(ch);
@@ -85,11 +112,33 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
   }
   // 終了画面: 締めの声の約4秒目から重ね、声の後の静止は約8秒
   const close = chapters.find((c) => c.id === "close");
-  const lastVoiceEnd = Math.max(...voice.lines.map((l) => audio.find((a) => a.file === l.file).from + f(l.sec)));
+  // 置いた声だけから（字の小ささ等で省いた章の声は voice.lines に残る。Codex P1 #2075）
+  const placed = new Map(voice.lines.map((l) => [l.file, l.sec]));
+  const lastVoiceEnd = Math.max(0, ...audio.map((a) => a.from + f(placed.get(a.file))));
   const end = close ? { from: close.from + f(4) } : null;
   const total = Math.round(Math.max(t * FPS, lastVoiceEnd + f(8)));
   if (close) close.len = total - close.from;
   return { props: { total, chapters, subs, audio, bgm: bgm ? "bgm.mp3" : null, end }, marks };
+}
+
+/**
+ * 字の小ささの線を下回る章（撮った物の minFontPx が MIN_FONT_PX 未満）と、最初のカットが撮れなかった章
+ * @param {{chapters: {id: string}[]}} s @param {Record<string, {minFontPx: number|null}>} shots
+ * @returns {{id: string, reason: string}[]}
+ */
+export function f01SmallChapters(s, shots) {
+  const out = [];
+  for (const c of s.chapters) {
+    const plan = PLAN[c.id];
+    if (!plan) continue;
+    if (!shots[plan[0].k]) {
+      out.push({ id: c.id, reason: `左の画面（${plan[0].k}）を撮れなかった` });
+      continue;
+    }
+    const low = plan.map((p) => p.k).filter((k, i, a) => shots[k] && a.indexOf(k) === i && (shots[k].minFontPx ?? 0) < MIN_FONT_PX);
+    if (low.length) out.push({ id: c.id, reason: `字が小さい（${low.map((k) => `${k} ${shots[k].minFontPx}px`).join("・")}、線 ${MIN_FONT_PX}px）` });
+  }
+  return out;
 }
 
 /** YouTube の章の行（「0:00 冒頭」）。10秒未満の章は前の章に含める */
@@ -117,6 +166,13 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     return { reasons: ["type_unsupported:voice"], detail: `VOICEVOX: ${e instanceof Error ? e.message : String(e)}` };
   }
   const shots = await captureAll(m, s, pub);
+  // 字の小ささの線（MIN_FONT_PX）: 下回る撮った物を含む章・撮れなかった章は出さず、警告として残す
+  const small = f01SmallChapters(s, shots);
+  if (small.length) {
+    s.chapters = s.chapters.filter((c) => !small.some((x) => x.id === c.id));
+    s.omitted.push(...small.map((x) => ({ chapter: x.id, reason: x.reason })));
+    for (const x of small) console.warn(`[f01 で省いた章] ${x.id}: ${x.reason}`);
+  }
   const { props, marks } = f01Timeline(s, voice, shots, { bgm });
   if (bgm) copyFileSync(bgm, join(pub, "bgm.mp3"));
   const chapters = f01Chapters(marks);
@@ -133,6 +189,8 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     omitted: s.omitted,
     checks: why,
     minFontPx: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.minFontPx])),
+    minFontLine: MIN_FONT_PX,
+    smallText: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.small ?? []])),
     dpr: DPR,
     chapters: s.chapters.map((c) => ({ id: c.id, name: c.name, voice: c.voice, answer: c.answer ?? null, answer2: c.answer2 ?? null, scope: c.scope ?? null, facts: c.facts })),
     marks,
