@@ -10,9 +10,12 @@
 
 export const PERIOD_DAYS = [90, 365];
 
-/** 長期の表（kb_archive_races）で数える最後の日。新しい表はこの翌日から */
-export const ARCHIVE_LAST_DATE = "2025-12-02";
-export const LIVE_FIRST_DATE = "2025-12-03";
+/** 長期の表（kb_archive_races）で数える最後の日。新しい表はこの翌日から（値の正本は kbArchiveBoundary.js） */
+import {
+  KB_LAST_DATE as ARCHIVE_LAST_DATE,
+  MAIN_TABLES_START as LIVE_FIRST_DATE,
+} from "./kbArchiveBoundary.js";
+export { ARCHIVE_LAST_DATE, LIVE_FIRST_DATE };
 
 export const VENUE_CODES = Array.from({ length: 24 }, (_, i) => i + 1);
 

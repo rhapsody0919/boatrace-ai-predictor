@@ -223,8 +223,15 @@ test("preflight: 照合が通れば次のリンク先の表示の確認へ進み
     preflight(job({ source_revision: "old" })),
     /source_changed/,
   );
+  // 締切だけの違いは deadline_changed（全貌は締切を焼き込むので作り直して差し替える、BOA-1201）。版も違えば source_changed
   await assert.rejects(
     preflight(job({ deadline_at: "2026-10-16T06:35:00.000Z" })),
+    /deadline_changed/,
+  );
+  await assert.rejects(
+    preflight(
+      job({ source_revision: "old", deadline_at: "2026-10-16T06:35:00.000Z" }),
+    ),
     /source_changed/,
   );
   const withdrawn = createDeadlinePreflight({

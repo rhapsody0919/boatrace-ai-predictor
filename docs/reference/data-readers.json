@@ -5,17 +5,17 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1562,
-    "filesWithAccess": 255,
-    "tableReaders": 891,
-    "tableWriters": 184,
+    "sourceFiles": 1569,
+    "filesWithAccess": 257,
+    "tableReaders": 900,
+    "tableWriters": 185,
     "rpcCallers": 49,
     "nameMentions": 231,
     "tablesWithoutReaders": 21,
     "rpcsWithoutCallers": 7,
     "external": 1,
-    "notInSnapshot": 0,
-    "unresolved": 31,
+    "notInSnapshot": 1,
+    "unresolved": 32,
     "parseErrors": 0,
     "uncoveredFiles": 54
   },
@@ -2554,6 +2554,12 @@
             "race_id",
             "start_timing"
           ]
+        },
+        {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:66",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
         }
       ],
       "writers": [],
@@ -2724,9 +2730,21 @@
           ]
         },
         {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:64",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
+        },
+        {
           "ref": "scripts/daily/update-winning-technique-stats.js:212",
           "op": "select",
           "via": "helper:fetchAll",
+          "columns": []
+        },
+        {
+          "ref": "scripts/lib/racerCareerJob.js:650",
+          "op": "select",
+          "via": "helper:count",
           "columns": []
         },
         {
@@ -2886,7 +2904,22 @@
         "authenticated": [],
         "summary": "service だけ"
       },
-      "readers": [],
+      "readers": [
+        {
+          "ref": "scripts/lib/racerCareerJob.js:640",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "race_date"
+          ]
+        },
+        {
+          "ref": "scripts/lib/racerCareerJob.js:649",
+          "op": "select",
+          "via": "helper:count",
+          "columns": []
+        }
+      ],
       "writers": [],
       "readByRpc": [],
       "writtenByRpc": [],
@@ -2898,7 +2931,9 @@
           "sql": []
         },
         "race_date": {
-          "readers": [],
+          "readers": [
+            "scripts/lib/racerCareerJob.js:640"
+          ],
           "writers": [],
           "sql": []
         },
@@ -10949,6 +10984,12 @@
           "columns": []
         },
         {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:78",
+          "op": "select",
+          "via": "helper:fetchAll",
+          "columns": []
+        },
+        {
           "ref": "scripts/analysis/verify-all-venues-label-accuracy.js:106",
           "op": "select",
           "via": "client",
@@ -18618,6 +18659,7 @@
         "race_notices",
         "race_series",
         "race_status",
+        "racer_career_main",
         "racer_course_technique_stats",
         "racer_news",
         "racer_profiles",
@@ -19165,6 +19207,7 @@
         "race_notices",
         "race_series",
         "race_status",
+        "racer_career_main",
         "racer_course_technique_stats",
         "racer_news",
         "racer_profiles",
@@ -25696,6 +25739,15 @@
       },
       "readers": [
         {
+          "ref": "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
+          "op": "select",
+          "via": "client",
+          "columns": [
+            "cluster",
+            "code"
+          ]
+        },
+        {
           "ref": "scripts/daily/generate-predictions.js:42",
           "op": "select",
           "via": "client",
@@ -25776,6 +25828,7 @@
       "columns": {
         "code": {
           "readers": [
+            "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
             "scripts/daily/generate-predictions.js:42",
             "scripts/maintenance/update-venue-stats.js:46",
             "scripts/maintenance/update-venue-stats.js:58",
@@ -25803,6 +25856,7 @@
         },
         "cluster": {
           "readers": [
+            "scripts/analysis/venue-summary-stats/count-venue-techniques.mjs:89",
             "src/services/supabaseDataService.js:2015"
           ],
           "writers": [],
@@ -28718,6 +28772,31 @@
       }
     },
     {
+      "job": "racer_career_main",
+      "entry": "api/cron/racer-career-main.js",
+      "reachableFiles": 19,
+      "writes": {
+        "racer_career_meta": [
+          "scripts/lib/racerCareerJob.js:620"
+        ],
+        "scrape_job_state": [
+          "scripts/lib/scrapeJobs/store.js:102",
+          "scripts/lib/scrapeJobs/store.js:110",
+          "scripts/lib/scrapeJobs/store.js:129",
+          "scripts/lib/scrapeJobs/store.js:135",
+          "scripts/lib/scrapeJobs/store.js:147",
+          "scripts/lib/scrapeJobs/store.js:161",
+          "scripts/lib/scrapeJobs/store.js:318",
+          "scripts/lib/scrapeJobs/store.js:368",
+          "scripts/lib/scrapeJobs/store.js:398"
+        ],
+        "scrape_slots": [
+          "scripts/lib/scrapeJobs/store.js:233",
+          "scripts/lib/scrapeJobs/store.js:269"
+        ]
+      }
+    },
+    {
       "job": "racer_course_technique_stats",
       "entry": "api/cron/racer-course-technique-stats.js",
       "reachableFiles": 18,
@@ -29151,7 +29230,17 @@
       }
     }
   ],
-  "notInSnapshot": [],
+  "notInSnapshot": [
+    {
+      "kind": "table",
+      "name": "racer_career_meta",
+      "refs": [
+        "scripts/lib/racerCareerJob.js:620",
+        "scripts/lib/racerCareerJob.js:845",
+        "scripts/lib/racerCareerJob.js:907"
+      ]
+    }
+  ],
   "unresolved": [
     {
       "file": "scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs",
@@ -29221,6 +29310,11 @@
     {
       "file": "scripts/lib/raceSeriesSync.js",
       "line": 104,
+      "reason": "表の名前が変数（.from(式)）"
+    },
+    {
+      "file": "scripts/lib/racerCareerJob.js",
+      "line": 602,
       "reason": "表の名前が変数（.from(式)）"
     },
     {
@@ -29300,7 +29394,7 @@
     },
     {
       "file": "scripts/maintenance/kb-backfill.js",
-      "line": 774,
+      "line": 776,
       "reason": "表の名前が変数（.from(式)）"
     },
     {

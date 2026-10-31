@@ -558,6 +558,17 @@ export const SCRAPE_JOBS = Object.freeze({
     maxDurationSec: 300,
   },
 
+  // GS00 案2 選手ページの集計の表の main 層（racer_venue_stats・racer_term_stats・racer_course_stats・racer_championships、
+  // マイグレーション190）。外部サイトへの通信は無く、数えるのは SQL 側（RPC compute_racer_career_counts）。
+  // 23:30 指定（cron: 23:30・01:00 JST）。直近3日に出た選手（約700〜950人）を50人ずつ、main の全期間で計算し直す。
+  // 1回の RPC は実測で約3秒（100人、2026-10-31 の本番の読み取り）。実装: scripts/lib/racerCareerJob.js
+  racer_career_main: {
+    kind: "daily",
+    targetTimeJst: "23:30",
+    leaseSec: 300,
+    maxDurationSec: 300,
+  },
+
   // BOA-402 「本日のデータ一覧」（/today）の抽出結果。外部サイトへの通信は無い。
   // 実測の実行時間は約5秒。実装: scripts/daily/generate-morning-digest.js
   //

@@ -108,6 +108,7 @@
   },
   "venueCharacteristics": {
     "collapsedTeaser": "{{summary}}／1號艇第1名率 {{rate}}%",
+    "collapsedTeaserNoSummary": "1號艇第1名率 {{rate}}%",
     "title": "本賽場的特徵（近90天）",
     "note": "與AI數據分析所參考的相同賽場數據。可查看各艇號的第1名機率，以及獲勝時最常見的獲勝方式。",
     "nationalAverageTooltip": "全國平均{{value}}%",
