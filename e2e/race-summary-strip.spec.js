@@ -179,6 +179,13 @@ test.describe("レース詳細: 6艇の要約と 1R〜12R の帯", () => {
     await expect(summary).toBeVisible({ timeout: 30000 });
     await expect(summary.locator('a[href^="/racer/"]')).toHaveCount(6);
     await expect(summary.locator("thead th").first()).toHaveText("Finish");
+    // 着順は序数（結果タブと同じ result.rank*）。素の数字だと隣の艇番と紛れる（ファン評価3周目 指摘1）
+    await expect(
+      summary
+        .locator("tbody tr")
+        .first()
+        .locator(".race-summary-table__finish"),
+    ).toHaveText(/^\d(st|nd|rd|th)$/);
     const strip = page.getByTestId("race-number-strip");
     await expect(strip.locator('a[aria-current="page"]')).toHaveAttribute(
       "href",

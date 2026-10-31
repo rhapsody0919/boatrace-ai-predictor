@@ -643,7 +643,6 @@
     "colRacer": "선수",
     "colGrade": "등급",
     "colExh": "전시 타임",
-    "finishValue": "{{rank}}착",
     "finishRefunded": "반환",
     "finishMarkRefunded": "{{mark}}(반환)",
     "exhRank": "({{rank}}위)",

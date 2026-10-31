@@ -2466,7 +2466,6 @@
     "colRacer": "選手",
     "colGrade": "級別",
     "colExh": "展示タイム",
-    "finishValue": "{{rank}}着",
     "finishRefunded": "返還",
     "finishMarkRefunded": "{{mark}}（返還）",
     "exhRank": "({{rank}}位)",

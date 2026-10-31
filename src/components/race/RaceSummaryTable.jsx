@@ -115,7 +115,9 @@ export default function RaceSummaryTable({
                   }
                 >
                   {row.finish != null
-                    ? t("raceSummary.finishValue", { rank: row.finish })
+                    ? // 結果タブと同じ言い方（ja「1着」、en「1st」）。英語で素の数字にすると隣の艇番と紛れた
+                      // （ファン評価1周目・3周目、wording-editor で同じ指摘）
+                      t(`result.rank${row.finish}`)
                     : row.refunded
                       ? refundLabel(row.number).text
                       : t("raceSummary.noValue")}
