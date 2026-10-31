@@ -348,7 +348,7 @@ function VenueRaceListPage() {
 
           {/* 会場の常設の要約2行（直近1年、BOA-1189 GS02-b）。数字は静的な値なので読み込みを待たずに出す */}
           {isToday && <VenueSummaryLines venueCode={venueCode} />}
-          {/* SG・G1・G2 の開催中だけ、節のページ（得点率ランキング・準優ボーダー）への帯（BOA-1189） */}
+          {/* SG・G1・G2 の開催中だけ、節のページ（得点率ランキング・勝ち上がり）への帯（BOA-1189） */}
           {isToday && !loading && !error && (
             <VenueMeetBanner
               venueCode={venueCode}

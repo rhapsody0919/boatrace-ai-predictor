@@ -121,7 +121,7 @@
     "fetchError": "無法載入近90天各艇號的數據。",
     "details": {
       "summary": "查看更多（近90天、各艇號的2連率、3連率與獲勝時的決勝方式）",
-      "placeRatesTitle": "各艇號的連對率（近90天）",
+      "placeRatesTitle": "各艇號的2連率、3連率（近90天）",
       "placeRatesNote": "2連率為進入前2名、3連率為進入前3名的比例（{{count}}場）",
       "boat": "艇",
       "top2Rate": "2連率",
@@ -3871,7 +3871,7 @@
   },
   "venueMeetBanner": {
     "inProgress": "舉辦中",
-    "link": "查看本節得分率排名與準優門檻",
+    "link": "查看本節得分率排名與晉級名單",
     "fetchError": "無法載入舉辦中的節頁面入口。"
   }
 }

@@ -173,7 +173,7 @@ test("SG・G1・G2 の開催中だけ節のページへの帯を出す（BOA-118
   await expect(banner).toBeVisible({ timeout: 20000 });
   await expect(banner).toHaveAttribute("href", "/venue/13/meet/2026-09-25");
   await expect(banner).toContainText("SG 第73回ボートレースダービー 開催中");
-  await expect(banner).toContainText("得点率ランキング・準優の目安");
+  await expect(banner).toContainText("得点率ランキング・勝ち上がり");
 
   // 英語のページでは言語の接頭辞を付ける
   await openVenue(

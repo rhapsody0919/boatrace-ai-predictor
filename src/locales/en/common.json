@@ -3881,7 +3881,7 @@
   },
   "venueMeetBanner": {
     "inProgress": "in progress",
-    "link": "See the meet's score rate ranking and semi-final line",
+    "link": "See the meet score rate ranking and who advanced",
     "fetchError": "Couldn't load the link to the current meet page."
   }
 }
