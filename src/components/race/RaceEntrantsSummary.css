@@ -1,0 +1,39 @@
+/* レース詳細のタブの上の出走6艇（BOA-1189 GS01-c、2026-11-01 A案）。375px で2行（3艇ずつ）、広い幅で1行。
+   件数がデータで変わるので固定列数にせず、折り返しの flex にする（component-reuse.md） */
+.race-entrants {
+  display: flex;
+  flex-wrap: wrap;
+  /* 行の間は0。リンクの押せる高さ（44px）がそのまま行の間隔になる */
+  gap: 0 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.race-entrants__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+/* 押せる高さは 44px（docs/knowledge/ui-layout.md）。32px だと 375px の2行で上下の選手と近く、
+   押し違えが起きた（BOA-1189 ファン評価 A案の周 P2）。見た目の高さを変えずに広げると、
+   上下の行（間4px）の押せる範囲が重なるので、素直に 44px にする */
+.race-entrants__name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--color-info-text);
+  font-weight: var(--font-weight-medium);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
+.race-entrants__grade {
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}

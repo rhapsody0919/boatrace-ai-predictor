@@ -642,6 +642,14 @@
     "noPrevRace": "No previous race",
     "noNextRace": "No next race"
   },
+  "raceSummary": {
+    "title": "Six entrants"
+  },
+  "raceStrip": {
+    "label": "Races at {{venue}}",
+    "meetLink": "Score rate and advancement for this meet ›",
+    "meetFetchError": "Could not load the meet information"
+  },
   "raceStage": {
     "final": "Final",
     "semifinal": "Semifinal",

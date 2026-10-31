@@ -636,6 +636,14 @@
     "noPrevRace": "沒有上一場比賽",
     "noNextRace": "沒有下一場比賽"
   },
+  "raceSummary": {
+    "title": "出賽6艇"
+  },
+  "raceStrip": {
+    "label": "{{venue}}的比賽",
+    "meetLink": "本節得分率、晉級 ›",
+    "meetFetchError": "無法載入本節資訊"
+  },
   "raceStage": {
     "final": "優勝戰",
     "semifinal": "準優勝戰",

@@ -2459,6 +2459,14 @@
     "noPrevRace": "前のレースなし",
     "noNextRace": "次のレースなし"
   },
+  "raceSummary": {
+    "title": "出走6艇"
+  },
+  "raceStrip": {
+    "label": "{{venue}}のレース",
+    "meetLink": "この節の得点率・勝ち上がり ›",
+    "meetFetchError": "節の情報を読み込めませんでした"
+  },
   "raceStage": {
     "final": "優勝戦",
     "semifinal": "準優勝戦",
