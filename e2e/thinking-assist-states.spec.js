@@ -2853,6 +2853,23 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
     await expect(footer(page)).toContainText("拡連複 1=234（3点）", {
       timeout: 20000,
     });
+
+    // 1点だけのときは倍率を1つの値で（「1.50倍から1.50倍」にしない。ファン評価2周目 P2-1）
+    await lensTab(page, "買い目").click();
+    for (const b of [3, 4])
+      await page
+        .getByRole("button", { name: `${b}号艇を2艇目の候補に` })
+        .click();
+    await expect(footer(page)).toContainText("拡連複 1=2（1点）");
+    await page
+      .getByRole("button", { name: "マークシートを開く", exact: true })
+      .click();
+    const total = page
+      .getByRole("dialog", { name: "マークシート" })
+      .locator(".ta-table tbody tr")
+      .last();
+    await expect(total).toContainText("1組だけ当たったときの倍率 1.50倍");
+    await expect(total).not.toContainText("から");
   });
 
   test("選んだ艇でボックスは使う段をそろえ、元に戻すで押す前に戻る", async ({

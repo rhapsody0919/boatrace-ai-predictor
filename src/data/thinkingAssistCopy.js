@@ -251,7 +251,10 @@ export const ASSIST_COPY = Object.freeze({
   totalLine: (total, remainder, lo, hi, wide = false) =>
     `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・${
       wide
-        ? `1組だけ当たったときの倍率 ${lo}倍から${hi}倍（当たる組による）`
+        ? lo === hi
+          ? // 1点だけ・どの組も同じ倍率のときは1つの値（ファン評価2周目 P2-1）
+            `1組だけ当たったときの倍率 ${lo}倍`
+          : `1組だけ当たったときの倍率 ${lo}倍から${hi}倍（当たる組による）`
         : `当たったときの倍率 ${lo}〜${hi}倍`
     }`,
   // オッズの無い組は組番も出す（BOA-990 ファン評価2周目 P2-1）
