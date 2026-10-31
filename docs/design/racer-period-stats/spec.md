@@ -55,7 +55,7 @@
 
 - `scripts/maintenance/verify-racer-career-gate.js`（manual、claude_ro）
 - 選手×期（2019-05-01〜2025-11-01 の14期）で、2つの層を足した値を `racer_period_stats` と比べる
-  - 出走・1着・2着・勝率（BOA-1193 の純関数 isStartCode・winRatePoints・winRateOf。名前は BOA-1193 の下書きのコメントに合わせ、違えば関門が止まる）← `racer_term_stats`
+  - 出走・1着・2着・勝率（BOA-1193 の純関数 isCareerStart・careerFinishPoints・careerWinRate。名前が違えば関門が止まる）← `racer_term_stats`
   - 優勝・優出 ← `racer_championships`（優出は S0・K0・L0 を含める・含めない の両方で一致の数を出す）
   - 進入コース別の着のコード（c1〜c6 の p1〜p6・f・l0・l1・k0・k1・s0・s1・s2）← `racer_course_stats`
 - 一致しない選手の一覧を完了報告に出す。全期・全選手が一致するまで画面に出さない（一致しない理由が説明でき、オーナーが出すと決めたものを除く）

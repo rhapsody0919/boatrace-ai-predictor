@@ -62,18 +62,17 @@ export const FINALS_VARIANTS = Object.freeze({
   without_absent: (code) => !["S0", "K0", "L0"].includes(code),
 });
 
-/** BOA-1193 の下書き（Linear のコメント、Orchestrate 2026-10-28）の名前。Codex がこれに沿って作る見込み */
+/** BOA-1193（#2066）の src/pure/racerCareerStats.js の名前。関門はこの3つを使う */
 export const CAREER_FUNCTION_NAMES = Object.freeze([
-  "isStartCode",
-  "winRatePoints",
-  "tallyRuns",
-  "winRateOf",
-  "isFinalRaceStage",
+  "isCareerStart",
+  "careerFinishPoints",
+  "careerWinRate",
 ]);
 
 /**
  * BOA-1193 の純関数を読み込む。名前が違えば、何が要るかを出して止める。
- *   isStartCode(code) → bool、winRatePoints(code, grade, isFinal) → 点 | null、winRateOf({starts, points}) → 小数2桁 | null
+ *   isCareerStart(finishRaw) → bool、careerFinishPoints(grade, isFinal, finishRaw) → 点 | null、
+ *   careerWinRate(rows: {grade, stage, finish_raw}[]) → 小数2桁 | null
  * @returns {Promise<Record<string, Function>>}
  */
 export async function loadCareerFunctions() {
@@ -102,7 +101,7 @@ const termOf = (date) => {
 /**
  * 照合（純関数。テストは verify-racer-career-tables.js）。
  * @param {{termRows: object[], courseRows: object[], champRows: object[], official: object[],
- *   career: {isStartCode: Function, winRatePoints: Function, winRateOf: Function}}} input
+ *   career: {isCareerStart: Function, careerFinishPoints: Function, careerWinRate: Function}}} input
  */
 export function compareCareerToOfficial({
   termRows,
@@ -125,21 +124,28 @@ export function compareCareerToOfficial({
       });
     return ours.get(k);
   };
-  // 件数のまま持ち、グレード×優勝戦か×着のコードごとに純関数で出走と着順点を数える
-  // 点が決まらない走（純関数が null を返す・グレードが unknown）は点に足さず、unknownRuns として数える（0点にしない）
+  // 件数のまま持ち、グレード×優勝戦か×着のコードごとに純関数で出走を数える。勝率は選手×期ごとに1走1行に広げて
+  // careerWinRate に渡す（丸めを BOA-1193 と同じにするため。広げるのは1選手×1期の数百行だけ）。
+  // 点が決まらない走（グレードが unknown・点が null）は勝率に入れず、unknownRuns として数える（0点にしない）
+  const FINAL_STAGE = "優勝戦";
+  const OTHER_STAGE = "予選";
   const tallyOf = (o) => {
     let starts = 0;
-    let points = 0;
     let unknownRuns = 0;
+    const rows = [];
     for (const [b, n] of o.buckets) {
       const [grade, isFinal, code] = b.split("|");
-      if (!career.isStartCode(code)) continue;
+      if (!career.isCareerStart(code)) continue;
       starts += n;
-      const pts = grade === "unknown" ? null : career.winRatePoints(code, grade, isFinal === "1");
-      if (pts === null || pts === undefined) unknownRuns += n;
-      else points += n * pts;
+      const pts = grade === "unknown" ? null : career.careerFinishPoints(grade, isFinal === "1", code);
+      if (pts === null || pts === undefined) {
+        unknownRuns += n;
+        continue;
+      }
+      const row = { grade, stage: isFinal === "1" ? FINAL_STAGE : OTHER_STAGE, finish_raw: code };
+      for (let i = 0; i < n; i++) rows.push(row);
     }
-    return { starts, points, unknownRuns };
+    return { starts, unknownRuns, winRate: rows.length === 0 ? null : career.careerWinRate(rows) };
   };
   for (const r of termRows) {
     const o = ensure(key(r.racer_id, r.term_start));
@@ -204,7 +210,7 @@ export function compareCareerToOfficial({
       starts,
       first_count: o.first,
       second_count: o.second,
-      win_rate: career.winRateOf(tally),
+      win_rate: tally.winRate,
       wins: o.champ.filter((c) => c === "01").length,
     };
     const want = {

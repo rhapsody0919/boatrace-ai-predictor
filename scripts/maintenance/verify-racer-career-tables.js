@@ -1122,30 +1122,11 @@ test("CLI の引数: --era は必須、kb に --all・--today は付けない", 
 });
 
 test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足し、期・コード・優勝・優出の数え方ごとに比べる", async () => {
-  const { compareCareerToOfficial } =
-    await import("./verify-racer-career-gate.js");
-  // BOA-1193 の純関数の代わり（この試験は比べ方だけを見る。定義そのものは BOA-1193 の verify が固定する）
-  const START = new Set([
-    "01",
-    "02",
-    "03",
-    "04",
-    "05",
-    "06",
-    "F",
-    "L1",
-    "K1",
-    "S1",
-    "S2",
-  ]);
-  const PTS = { "01": 10, "02": 8, "03": 6, "04": 4, "05": 2, "06": 1 };
-  const career = {
-    isStartCode: (c) => START.has(c),
-    // 一般の非優勝戦の点だけ（この試験はグレード・優勝戦の加点を使わない）
-    winRatePoints: (c) => (START.has(c) ? (PTS[c] ?? 0) : null),
-    winRateOf: (t) =>
-      t.starts > 0 ? Math.round((t.points / t.starts) * 100) / 100 : null,
-  };
+  // BOA-1193（#2066）の実物の純関数で比べる。読み込みは関門と同じ loadCareerFunctions（名前が違えば止まる）
+  const { compareCareerToOfficial, loadCareerFunctions } = await import("./verify-racer-career-gate.js");
+  const career = await loadCareerFunctions();
+
+
   const zero = Object.fromEntries(COUNT_COLUMNS.map((c) => [c, 0]));
   const termRows = [
     {
