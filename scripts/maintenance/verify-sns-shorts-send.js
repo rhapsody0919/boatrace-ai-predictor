@@ -78,7 +78,7 @@ beforeEach(async () => {
 after(() => db.close());
 async function enable(uploadLimit = 100, generalLimit = 10000) {
   await db.exec(
-    "UPDATE test_clock SET value=NULL; UPDATE sns_x_send_control SET paused=false,timing_approved=true,daily_limit=1000,daily_baseline_date=(now() AT TIME ZONE 'Asia/Tokyo')::date,daily_external_count=0,max_source_age_seconds=3600,period_start=date_trunc('month',now()),period_end=date_trunc('month',now())+interval '1 month',attempt_ceiling_microusd=1,reserved_microusd=0;",
+    "UPDATE test_clock SET value=NULL; UPDATE sns_x_send_control SET paused=false,timing_approved=true,daily_limit=1000,daily_baseline_date=(now() AT TIME ZONE 'Asia/Tokyo')::date,daily_external_count=0,max_source_age_seconds=3600,period_start=date_trunc('month',now())-interval '1 month',period_end=date_trunc('month',now())+interval '2 months',attempt_ceiling_microusd=1,reserved_microusd=0;",
   );
   if (!process.env.SNS_SHORTS_BASELINE)
     await db.query(
