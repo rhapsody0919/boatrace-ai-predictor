@@ -126,16 +126,20 @@ export function compareCareerToOfficial({
     return ours.get(k);
   };
   // 件数のまま持ち、グレード×優勝戦か×着のコードごとに純関数で出走と着順点を数える
+  // 点が決まらない走（純関数が null を返す・グレードが unknown）は点に足さず、unknownRuns として数える（0点にしない）
   const tallyOf = (o) => {
     let starts = 0;
     let points = 0;
+    let unknownRuns = 0;
     for (const [b, n] of o.buckets) {
       const [grade, isFinal, code] = b.split("|");
       if (!career.isStartCode(code)) continue;
       starts += n;
-      points += n * (career.winRatePoints(code, grade, isFinal === "1") ?? 0);
+      const pts = grade === "unknown" ? null : career.winRatePoints(code, grade, isFinal === "1");
+      if (pts === null || pts === undefined) unknownRuns += n;
+      else points += n * pts;
     }
-    return { starts, points };
+    return { starts, points, unknownRuns };
   };
   for (const r of termRows) {
     const o = ensure(key(r.racer_id, r.term_start));
@@ -174,6 +178,7 @@ export function compareCareerToOfficial({
   );
   let compared = 0;
   const seen = new Set();
+  const unknownRuns = [];
   for (const off of official) {
     const term = String(off.calc_from).slice(0, 10);
     const t = (perTerm[term] ??= {
@@ -193,6 +198,8 @@ export function compareCareerToOfficial({
     };
     const tally = tallyOf(o);
     const starts = tally.starts;
+    if (tally.unknownRuns > 0)
+      unknownRuns.push({ racer_id: off.racer_id, term, unknown_runs: tally.unknownRuns });
     const got = {
       starts,
       first_count: o.first,
@@ -254,7 +261,7 @@ export function compareCareerToOfficial({
     if (seen.has(k)) continue;
     if (tallyOf(o).starts > 0) extra.push(k);
   }
-  return { compared, perTerm, finalsMatch, mismatches, extra };
+  return { compared, perTerm, finalsMatch, mismatches, extra, unknownRuns };
 }
 
 function parseArgs(argv) {
@@ -350,6 +357,12 @@ async function main() {
     console.log(
       `  ${term}: ${t.racers - t.mismatched}/${t.racers} 一致  不一致の内訳 ${JSON.stringify(t.byField)}`,
     );
+  console.log(
+    `点が決まらない走（unknown_runs）がある選手×期: ${res.unknownRuns.length}${res.unknownRuns.length ? `（例 ${JSON.stringify(res.unknownRuns.slice(0, 10))}）` : ""}`,
+  );
+  console.log(
+    `公式に無い選手×期で出走があるもの: ${res.extra.length}${res.extra.length ? `（例 ${res.extra.slice(0, 10).join(", ")}）` : ""}`,
+  );
   console.log(
     `優出の数え方ごとの一致: ${JSON.stringify(res.finalsMatch)}（${res.compared} 中）`,
   );

@@ -21,8 +21,8 @@ import {
   MAIN_TABLES_START,
 } from "./kbArchiveBoundary.js";
 
-/** 判定の規則の版。isFinalStage の v2・グレードの補正 v1・着のコードの体系 v1。規則を変えたら上げ、kb を計算し直す */
-export const RULE_VERSION = "career-v1(stage-v2,grade-v1,code-v1)";
+/** 判定の規則の版。isFinalStage の v2・グレードの補正 v2（class_code の読み替え）・着のコードの体系 v1。規則を変えたら上げ、kb を計算し直す */
+export const RULE_VERSION = "career-v1(stage-v2,grade-v2,code-v1)";
 
 export const ERAS = Object.freeze({
   kb: { from: KB_FIRST_DATE, last: KB_LAST_DATE },
@@ -484,46 +484,52 @@ export async function fetchExistingKeys(
   return out;
 }
 
-/** 1選手あたりの最大の行数から、既存行の読み取り（fetchExistingRows）の1回の選手数を決める（2層ぶんで1000行を超えない） */
-export function existingChunkSize(rows) {
+/**
+ * もう一方の層の、1選手あたりの行数の上限（既存行の読み取りは2層とも読むため）。
+ * kb の実測の最大（system-architect の再審査、2026-10-31）: 場別 132・期別 106・進入コース別 90。
+ * 優勝戦の出走は kb の最大を同じ程度と置いた。main は1年で kb の数分の1なので、同じ値を上限に使う
+ */
+export const OTHER_ERA_MAX_ROWS = Object.freeze({
+  racer_venue_stats: 132,
+  racer_term_stats: 106,
+  racer_course_stats: 90,
+  racer_championships: 132,
+});
+
+/** PostgREST の1回の読みの上限 */
+export const PAGE_ROWS = 1000;
+
+/**
+ * 既存行の読み取り（fetchExistingRows）の1回の選手数。この層の新しい行の1選手の最大と、もう一方の層の上限の和で、
+ * 900行に収まる人数にする。1選手だけで収まらなければ止める
+ * @param {object[]} rows この層の新しい行
+ * @param {number} otherEraMax もう一方の層の1選手の上限
+ */
+export function existingChunkSize(rows, otherEraMax = 0) {
   const per = new Map();
   for (const r of rows) per.set(r.racer_id, (per.get(r.racer_id) ?? 0) + 1);
-  const max = Math.max(1, ...per.values());
-  return Math.max(1, Math.floor(800 / (2 * max + 10)));
+  const max = Math.max(1, ...per.values()) + otherEraMax;
+  if (max > 900)
+    throw new Error(`1選手の行が2層で ${max} 行になりうる。既存行の読みが1000行の上限で切れる`);
+  return Math.max(1, Math.floor(900 / max));
 }
 
 /**
  * 層の行を書き、新しい計算に無いセルを消す。racerIds を渡すとその選手だけを置き換える（main の毎晩）。
+ * 4表とも、消すセルを先に決めて多すぎないかを見てから書く（途中の表まで書いて止まらない）。
  * @returns {Promise<{written: number, deleted: number, rows: number, perTable: object}>}
  */
 export async function writeCareerRows(
   client,
-  {
-    era,
-    acc,
-    racerIds = null,
-    dryRun,
-    allowMassDelete = false,
-    upsertBatchRacers = 100,
-  },
+  { era, acc, racerIds = null, dryRun, allowMassDelete = false, upsertBatchRacers = 100 },
 ) {
-  let written = 0;
-  let deleted = 0;
-  let rows = 0;
-  const perTable = {};
+  const plans = [];
   for (const [part, spec] of Object.entries(CAREER_TABLES)) {
     const incoming = [...(acc.get(part)?.values() ?? [])];
-    rows += incoming.length;
-    // 消すセルは書く前に決め、多すぎれば何も書かずに止める
-    const existing = await fetchExistingKeys(
-      client,
-      spec.table,
-      spec.keyColumns,
-      {
-        era,
-        racerIds,
-      },
-    );
+    const existing = await fetchExistingKeys(client, spec.table, spec.keyColumns, {
+      era,
+      racerIds,
+    });
     const stale = staleRowsOf(existing, incoming, spec.keyColumns);
     if (
       !allowMassDelete &&
@@ -533,7 +539,16 @@ export async function writeCareerRows(
       throw new Error(
         `${spec.table}（${era}）: 消えるセルが ${stale.length}/${existing.length} 件で多すぎる。元の表の読み取りを確かめる（意図どおりなら --allow-mass-delete）`,
       );
-    // 既存行の読み取り（fetchExistingRows）は選手の数だけ並列に投げるので、選手 upsertBatchRacers 人ずつに分ける
+    plans.push({ spec, incoming, stale });
+  }
+
+  let written = 0;
+  let deleted = 0;
+  let rows = 0;
+  const perTable = {};
+  for (const { spec, incoming, stale } of plans) {
+    rows += incoming.length;
+    // 既存行の読み取りは選手の数だけ並列に投げるので、選手 upsertBatchRacers 人ずつに分ける
     const byRacer = new Map();
     for (const r of incoming) {
       if (!byRacer.has(r.racer_id)) byRacer.set(r.racer_id, []);
@@ -546,7 +561,10 @@ export async function writeCareerRows(
         onConflict: spec.keyColumns.join(","),
         keyColumns: spec.keyColumns,
         chunkColumn: "racer_id",
-        chunkSize: existingChunkSize(batch),
+        chunkSize: existingChunkSize(batch, OTHER_ERA_MAX_ROWS[spec.table] ?? 0),
+        // 1回の読みがちょうど上限で返ったら、切れた既存行のまま書かずに止める
+        fullPageRows: PAGE_ROWS,
+        failOnFetchError: true,
         label: `${spec.table}（${era}）`,
         dryRun,
         stampUpdatedAt: true,
@@ -560,18 +578,12 @@ export async function writeCareerRows(
         for (const c of spec.keyColumns) q = q.eq(c, key[c]);
         const { error } = await q;
         if (error)
-          throw new Error(
-            `${spec.table} の古いセルの削除に失敗: ${error.message}`,
-          );
+          throw new Error(`${spec.table} の古いセルの削除に失敗: ${error.message}`);
       }
     }
     written += tableWritten;
     deleted += stale.length;
-    perTable[spec.table] = {
-      rows: incoming.length,
-      written: tableWritten,
-      stale: stale.length,
-    };
+    perTable[spec.table] = { rows: incoming.length, written: tableWritten, stale: stale.length };
   }
   return { written, deleted, rows, perTable };
 }

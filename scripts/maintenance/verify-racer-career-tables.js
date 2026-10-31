@@ -131,7 +131,7 @@ before(async () => {
     CREATE TABLE race_results(race_id VARCHAR PRIMARY KEY, actual_course_1 SMALLINT, actual_course_2 SMALLINT, actual_course_3 SMALLINT,
       actual_course_4 SMALLINT, actual_course_5 SMALLINT, actual_course_6 SMALLINT);
     CREATE TABLE race_conditions(race_id VARCHAR PRIMARY KEY, race_stage VARCHAR, race_title VARCHAR);
-    CREATE TABLE race_series(venue_code SMALLINT, start_date DATE, end_date DATE, title TEXT, grade TEXT, PRIMARY KEY (venue_code, start_date));`);
+    CREATE TABLE race_series(venue_code SMALLINT, start_date DATE, end_date DATE, title TEXT, grade TEXT, class_code TEXT, PRIMARY KEY (venue_code, start_date));`);
   await db.exec(SQL190);
 
   // --- kb ---
@@ -267,6 +267,20 @@ before(async () => {
   await mainRace("2026-01-10-06-01", {
     boats: six([901, 902, 903, 904, 905, 906]),
     updatedAt: "2026-10-29T00:00:00Z",
+  });
+  // 2025-12〜2026-02 の Lady・Rookie の節は races.race_grade も race_series.grade も NULL。class_code で G3・ippan に読み替える
+  await db.query(
+    `INSERT INTO race_series(venue_code, start_date, end_date, title, grade, class_code) VALUES
+       (8,'2026-01-18','2026-01-23','オールレディース','', 'Lady'), (9,'2026-01-18','2026-01-23','ルーキーシリーズ',NULL,'Rookie')`,
+  );
+  await db.exec("UPDATE race_series SET grade = NULL WHERE venue_code = 8");
+  await mainRace("2026-01-20-08-01", {
+    grade: null,
+    boats: six([951, 952, 953, 954, 955, 956]),
+  });
+  await mainRace("2026-01-20-09-01", {
+    grade: null,
+    boats: six([961, 962, 963, 964, 965, 966]),
   });
   // 直近の走。着のコードがまだ無い（K の未着）走は数えない
   await mainRace("2026-10-28-01-01", {
@@ -431,10 +445,21 @@ test("足し合わせ: 件数の区分は同じキーを足し、優勝戦の行
     [{ a: 2, b: false }],
   );
   assert.deepEqual(chunk([1, 2, 3, 4, 5], 2), [[1, 2], [3, 4], [5]]);
-  // 1人100行なら2層で200行。1000行の上限を超えないよう、1回に読む選手は3人
+  // 既存行の読みは2層とも返る。この層の1人100行＋もう一方の層の上限132行で232行 → 900行に収まる3人ずつ
   assert.equal(
-    existingChunkSize(Array.from({ length: 100 }, () => ({ racer_id: 9 }))),
+    existingChunkSize(
+      Array.from({ length: 100 }, () => ({ racer_id: 9 })),
+      132,
+    ),
     3,
+  );
+  assert.throws(
+    () =>
+      existingChunkSize(
+        Array.from({ length: 800 }, () => ({ racer_id: 9 })),
+        132,
+      ),
+    /1000行の上限で切れる/,
   );
 });
 
@@ -754,6 +779,56 @@ test("消えるセルが多すぎれば何も書かずに止める", async () =>
     /消えるセルが 100\/100 件で多すぎる/,
   );
   assert.equal(client.data.racer_venue_stats.length, 100);
+
+  // 後の表（進入コース別）で止まるときも、前の表（場別）に書かない（4表とも判定してから書く）
+  const course = existing.map(
+    ({ venue_code: _v, race_grade: _g, is_final: _f, ...r }) => ({
+      ...r,
+      course: 1,
+      term_start: "2019-05-01",
+    }),
+  );
+  const client2 = createFakeSupabaseClient({
+    tables: { racer_course_stats: course },
+  });
+  const acc2 = new Map([
+    ["venue", new Map([["x", { ...existing[0], racer_id: 999 }]])],
+    ["term", new Map()],
+    ["course", new Map()],
+    ["finals", new Map()],
+  ]);
+  await assert.rejects(
+    writeCareerRows(client2, { era: "kb", acc: acc2, dryRun: false }),
+    /racer_course_stats（kb）: 消えるセル/,
+  );
+  assert.equal((client2.data.racer_venue_stats ?? []).length, 0);
+});
+
+test("既存行の読みがちょうど1000行で返ったら、書かずに止める（上限で切れた既存行で比べない）", async () => {
+  const { upsertChangedRows } = await import("../lib/unchangedRows.js");
+  const rows = Array.from({ length: 1000 }, (_, i) => ({
+    racer_id: 1,
+    venue_code: i,
+    p1: 1,
+  }));
+  const client = createFakeSupabaseClient({
+    tables: { racer_venue_stats: rows },
+  });
+  const res = await upsertChangedRows(
+    client,
+    "racer_venue_stats",
+    [{ racer_id: 1, venue_code: 0, p1: 2 }],
+    {
+      onConflict: "racer_id,venue_code",
+      keyColumns: ["racer_id", "venue_code"],
+      chunkColumn: "racer_id",
+      fullPageRows: 1000,
+      failOnFetchError: true,
+    },
+  );
+  assert.match(res.error.message, /1000 行で返った/);
+  assert.equal(res.written, 0);
+  assert.equal(client.data.racer_venue_stats[0].p1, 1);
 });
 
 test("main 層: 全選手の計算・境目・race_series の補い・未着の走・毎晩の対象（直近の出走と着の書き換え）", async () => {
@@ -781,6 +856,15 @@ test("main 層: 全選手の計算・境目・race_series の補い・未着の�
     [c.series_title, c.course, c.race_grade],
     ["ＸＸ記念", 2, "G2"],
   );
+  // グレードが races にも race_series.grade にも無い節は class_code から（Lady は G3、Rookie は ippan）
+  const gradeOf = (racer) => [
+    ...new Set(
+      rowsOf(client, "racer_venue_stats", (r) => r.racer_id === racer).map(
+        (r) => r.race_grade,
+      ),
+    ),
+  ];
+  assert.deepEqual([gradeOf(951), gradeOf(961)], [["G3"], ["ippan"]]);
   // QC（本体）: シリーズは G3 に直る
   assert.deepEqual(
     [
@@ -980,7 +1064,8 @@ test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足�
   const PTS = { "01": 10, "02": 8, "03": 6, "04": 4, "05": 2, "06": 1 };
   const career = {
     isStartCode: (c) => START.has(c),
-    winRatePoints: (c, _grade, _isFinal) => (START.has(c) ? (PTS[c] ?? 0) : null),
+    winRatePoints: (c, _grade, _isFinal) =>
+      START.has(c) ? (PTS[c] ?? 0) : null,
     winRateOf: (t) =>
       t.starts > 0 ? Math.round((t.points / t.starts) * 100) / 100 : null,
   };
@@ -1082,4 +1167,26 @@ test("照合の関門（verify-racer-career-gate.js）の比べ方: 2層を足�
     c3_p1: { ours: 0, official: 1 },
   });
   assert.equal(ng.perTerm["2025-11-01"].mismatched, 1);
+  // グレードが unknown の走は0点にせず、選手×期ごとに unknown_runs として出す
+  const unk = compareCareerToOfficial({
+    termRows: [
+      ...termRows,
+      {
+        racer_id: 1,
+        term_start: "2025-11-01",
+        race_grade: "unknown",
+        is_final: false,
+        ...zero,
+        p3: 2,
+      },
+    ],
+    courseRows,
+    champRows,
+    official: [off],
+    career,
+  });
+  assert.deepEqual(unk.unknownRuns, [
+    { racer_id: 1, term: "2025-11-01", unknown_runs: 2 },
+  ]);
+  assert.equal(ok.unknownRuns.length, 0);
 });

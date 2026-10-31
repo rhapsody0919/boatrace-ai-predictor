@@ -827,6 +827,12 @@ async function cmdLoad(opts) {
   console.log(
     `\nload: ${JSON.stringify(summary)}（処理 ${processedDays}日 / 投入済みスキップ ${dates.length - processedDays}日）`,
   );
+  // kb_archive を書き換えたら、選手の集計の表の kb 層（マイグレーション 190）が古くなる。
+  // 毎晩の Cron の指紋（行数・最大の日付）は、値だけを書き換える再投入を検知しない
+  if (summary.written > 0)
+    console.log(
+      "⚠️ kb_archive に書き込みました。選手の集計の表の kb 層を計算し直す: node scripts/maintenance/racer-career-backfill.js --era=kb（数えるだけ）→ --apply",
+    );
   if (summary.failedDays > 0) return 1;
   if (processedDays === 0) {
     console.log("対象は全て投入済みです（再投入は --force）");

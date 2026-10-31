@@ -449,12 +449,13 @@ erDiagram
 
 | 関数 | 中身 | 1回の重さ（2026-10-31 の本番の読み取りで同じ SELECT を実行） |
 |---|---|---|
-| racer_career_inputs(p_era, p_from, p_to, p_active_from) | 範囲の種別の原文の一覧、開催日ごとの題、main だけ直近の選手（出走表に載った・着のコードが書き換わった） | main の全期間で約3秒（開催日 4,334・選手 945人） |
+| racer_career_inputs(p_era, p_from, p_to, p_active_from) | 範囲の種別の原文の一覧、開催日ごとの題、main だけ直近の選手（出走表に載った・着のコードが書き換わった） | main の全期間で本文 0.53秒（開催日 4,334・選手 821人、system-architect の再審査の実測） |
 | racer_career_special_races(p_era, p_venue_days) | 指定した開催日のレースと出た選手 | 約100開催日で小さい |
-| compute_racer_career_counts(p_era, p_from, p_to, p_racer_ids, p_final_stages, p_override_race_ids, p_override_grades) | 着のコードごとの件数を、場別・期別・進入コース別と、優勝戦の出走の4つで返す | kb の1か月で約3秒・3.2MB、main の100人で約3秒・0.7MB |
+| compute_racer_career_counts(p_era, p_from, p_to, p_racer_ids, p_final_stages, p_override_race_ids, p_override_grades) | 着のコードごとの件数を、場別・期別・進入コース別と、優勝戦の出走の4つで返す | kb の半月で本文 約0.5〜0.8秒・2.9MB、main の50人で1回目 5.6秒・2回目以降 0.34〜0.54秒（shared hit だけ）（再審査の実測） |
 
 - 集合で返すと PostgREST の上限1000行で黙って切れるので jsonb の1つで返す（183 と同じ）
-- authenticator の statement_timeout は 8秒（pg_roles の実測）。kb は半月、main は 50人ずつに分けて、1回を 8秒より十分短くする
+- authenticator の statement_timeout は 8秒（pg_roles の実測）。kb は半月、main は 50人ずつに分けて、1回を 8秒より十分短くする。main の1回目の 5.6秒は余裕が小さいので、打ち切り（57014）が出たら人数を半分にする処理を足す（ADR-0104 の限界）
+- kb の dry-run で照らす値: 約31万行（場別 8.1万・期別 5.7万・進入コース別 13.5万・優勝戦 3.4万）
 - kb は `race_id >= p_from AND race_id < p_to`（kb_archive_boats の PK の先頭）で読む。main は `race_entries` の (racer_id, race_id) 索引
 - 境目の日は SQL に定数で書く（kb `<= DATE '2025-12-02'`、本体 `>= DATE '2025-12-03'`）。`verify-racer-career-tables.js` が `kbArchiveBoundary.js` と照合する
 
@@ -497,9 +498,9 @@ erDiagram
 | 5 | 読み取りの失敗が「優勝0回」に化ける | 書き手は失敗を例外にする。画面は「未計算」（記録が無い）と取得の失敗（InlineFetchError）を分ける（spec §4） |
 | 6 | stage_kind・is_final_day で GP 等の優勝を落とす | `isFinalStage` の原文の一覧だけを使う（PGlite の試験で stage_kind=other の GP優勝戦を数える） |
 | 7 | 成績コード NULL の艇を優出に数える | RPC はコード NULL の艇を数えない |
-| 8 | race_grade の欠けでグレードが空 | race_series.grade で補い、無ければ unknown（件数は残る） |
+| 8 | race_grade の欠けでグレードが空 | race_series.grade、その次に race_series.class_code（Lady・Takumi は G3、Rookie・Venus は ippan）で補い、無ければ unknown（件数は残る。関門は unknown_runs として出す） |
 | 9 | 暦年と期を取り違える | 表は期だけで持つ。画面で「年別」と言わない |
-| 10 | kb を load し直すと kb 層が古い | 指紋を毎晩比べ、変われば error で知らせる |
+| 10 | kb を load し直すと kb 層が古い | 指紋（行数・日付）を毎晩比べ、変われば error で知らせる。値だけの書き換えは検知しないので、kb-backfill.js が書いた後に再計算を促す |
 
 ### 14.8 オーナーに頼む操作の順
 

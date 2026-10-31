@@ -27,7 +27,8 @@
 --     場別・期別はその2つをキーに入れる（進入コース別は勝率を出さないので入れない）
 --   - 優勝戦かどうかは、呼び出し側が src/pure/raceStageConfig.js の isFinalStage で種別の原文を判定し、p_final_stages で渡す
 --     （kb_archive_races.stage_kind・is_final_day は使わない。GP優勝戦・賞金女王決定等を落とす）
---   - グレードは kb は kb_archive_venue_days.race_grade、main は races.race_grade、無ければ race_series.grade。
+--   - グレードは kb は kb_archive_venue_days.race_grade、main は races.race_grade、無ければ race_series.grade、それも無ければ
+--     race_series.class_code（Lady・Takumi は G3、Rookie・Venus は ippan）。
 --     QC/QCシリーズ・CC/レディースCC・唐津 2024-10-12〜14 は、呼び出し側がレースごとに決めて p_override_* で渡す
 --   - kb は race_id の範囲（PK の先頭）で読む。kb_archive_boats に racer_id の索引は足さない
 --   - main は race_entries の (racer_id, race_id) の索引で選手ごとに読む
@@ -344,7 +345,12 @@ BEGIN
   ),
   mn AS (
     SELECT re.racer_id, ra.race_id, ra.race_date, ra.venue_code, rc.race_stage AS stage,
-           COALESCE(ra.race_grade, rs.grade) AS base_grade, COALESCE(rc.race_title, rs.title) AS title,
+           -- 2025-12-03〜2026-02-02 の Lady・Rookie・Takumi・Venus の節は races.race_grade も race_series.grade も NULL
+           -- （876レース、system-architect の再審査）。月間スケジュールの class_code から公式の格に読み替える
+           COALESCE(ra.race_grade, rs.grade,
+                    CASE rs.class_code WHEN 'Lady' THEN 'G3' WHEN 'Takumi' THEN 'G3'
+                                       WHEN 'Rookie' THEN 'ippan' WHEN 'Venus' THEN 'ippan' END) AS base_grade,
+           COALESCE(rc.race_title, rs.title) AS title,
            re.boat_number,
            CASE re.boat_number
              WHEN 1 THEN rr.actual_course_1 WHEN 2 THEN rr.actual_course_2 WHEN 3 THEN rr.actual_course_3
@@ -357,7 +363,7 @@ BEGIN
     LEFT JOIN race_results rr ON rr.race_id = re.race_id
     LEFT JOIN race_conditions rc ON rc.race_id = re.race_id
     LEFT JOIN LATERAL (
-      SELECT s.grade, s.title FROM race_series s
+      SELECT s.grade, s.class_code, s.title FROM race_series s
       WHERE s.venue_code = ra.venue_code AND ra.race_date BETWEEN s.start_date AND s.end_date
       ORDER BY s.start_date DESC LIMIT 1
     ) rs ON true
@@ -443,7 +449,7 @@ REVOKE ALL ON FUNCTION public.compute_racer_career_counts(text, date, date, inte
 REVOKE ALL ON FUNCTION public.compute_racer_career_counts(text, date, date, integer[], text[], text[], text[]) FROM anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.compute_racer_career_counts(text, date, date, integer[], text[], text[], text[]) TO service_role;
 
-COMMENT ON TABLE racer_venue_stats IS '選手×会場×層（kb=2019-04〜2025-12-02、main=2025-12-03〜）×グレード×優勝戦か の、着のコードごとの件数（190、GS00 案2）。率・勝率は持たない（src/pure/racerCareerStats.js で計算）。書き手は scripts/maintenance/racer-career-kb.js（kb）と api/cron/racer-career-main.js（main）';
+COMMENT ON TABLE racer_venue_stats IS '選手×会場×層（kb=2019-04〜2025-12-02、main=2025-12-03〜）×グレード×優勝戦か の、着のコードごとの件数（190、GS00 案2）。率・勝率は持たない（src/pure/racerCareerStats.js で計算）。書き手は scripts/maintenance/racer-career-backfill.js（kb・main の初回）と api/cron/racer-career-main.js（main の毎晩）';
 COMMENT ON TABLE racer_term_stats IS '選手×期（term_start=5/1 か 11/1、公式の期別成績の算出期間）×層×グレード×優勝戦か の、着のコードごとの件数（190）。暦の年ではない。kb の 2018-11-01 の期は 2019-04 の1か月だけ';
 COMMENT ON TABLE racer_course_stats IS '選手×進入コース×期×層 の、着のコードごとの件数（190）。進入コースは kb_archive_boats.course・race_results.actual_course_N';
 COMMENT ON TABLE racer_championships IS '優勝戦（src/pure/raceStageConfig.js の isFinalStage）に出た艇（190）。優勝は finish_code=''01''。優出に S0・K0 等を含めるかは読み手が finish_code で決める';

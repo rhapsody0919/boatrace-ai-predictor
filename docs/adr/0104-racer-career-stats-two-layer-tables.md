@@ -32,8 +32,8 @@
    - `racer_career_meta`（層ごとの計算の記録と、元の表の指紋）
 2. **率・勝率の点は持たない。** 着のコード（01〜06・F・L0・L1・K0・K1・S0・S1・S2・00、知らないコードは other_code）ごとの件数だけを持つ。勝率・出走は `src/pure/racerCareerStats.js`（BOA-1193）の純関数で読み手の側が計算する。勝率の着順点はグレードと優勝戦かで変わる（official-data-spec、fan と3期 4,673人で全員一致）ので、場別・期別はその2つをキーに入れる
 3. **優勝戦の判定は `src/pure/raceStageConfig.js` の `isFinalStage`（v2）だけで行う。** 書き手が範囲の種別の原文を判定し、RPC に一覧で渡す。`kb_archive_races.stage_kind`・`is_final_day`・`race_series.end_date` は使わない（GP優勝戦・賞金女王決定・〜優 を落とす）
-4. **グレードの補正は書き手が決めて RPC に渡す。** 元は kb が `kb_archive_venue_days.race_grade`、本体が `races.race_grade`、無ければ `race_series.grade`。同じ開催日に2つの格が混ざる QC/QCシリーズ（G1/G3）・CC/レディースCC（SG/G2）は、同じレースに出た選手のつながりで組に分ける。唐津 2024-10-12〜14 のバトルトーナメントは G1（公式がそう数えた）
-5. **kb 層は1回だけ計算する。** 手動の CLI（`scripts/maintenance/racer-career-backfill.js --era=kb`）をオーナーが実行する。`kb_archive_boats` は race_id の範囲（PK の先頭）で半月ずつ読み、racer_id の索引は足さない。開催日・レースの数・最大の日付の指紋を `racer_career_meta` に残す
+4. **グレードの補正は書き手が決めて RPC に渡す。** 元は kb が `kb_archive_venue_days.race_grade`、本体が `races.race_grade`、無ければ `race_series.grade`、それも無ければ `race_series.class_code`（Lady・Takumi は G3、Rookie・Venus は ippan。2025-12-03〜2026-02-02 の876レース）。同じ開催日に2つの格が混ざる QC/QCシリーズ（G1/G3）・CC/レディースCC（SG/G2）は、同じレースに出た選手のつながりで組に分ける。唐津 2024-10-12〜14 のバトルトーナメントは G1（公式がそう数えた）
+5. **kb 層は1回だけ計算する。** 手動の CLI（`scripts/maintenance/racer-career-backfill.js --era=kb`）をオーナーが実行する。`kb_archive_boats` は race_id の範囲（PK の先頭）で半月ずつ読み、racer_id の索引は足さない。開催日・レースの数・最大の日付の指紋を `racer_career_meta` に残す（行数・日付が変わる再投入だけを検知する）
 6. **main 層は毎晩「計算し直す」。** Vercel Cron（`api/cron/racer-career-main.js`、23:30・01:00 JST）が、直近3日に出走表に載った選手と着のコードが直近3日に書き換わった選手について、main の全期間を数え直して upsert する。差分を足す方式は取らない（重複配信で倍にならず、未配信は次の晩の窓が拾う）。件数が0になったセルは消す
 7. **書き手は service_role だけ。** 集計の RPC 3つは STABLE・SECURITY INVOKER・service_role だけ（1関数1文で REVOKE と GRANT）。表は RLS を有効にし、anon・authenticated に SELECT だけを付ける
 8. **照合を関門にする。** `verify-racer-career-gate.js`（manual）が、選手×期の出走・1着・2着・勝率・優勝・優出と進入コース別の着のコードを `racer_period_stats` と比べる。一致しない選手を完了報告に出す。2019〜2023-10 と 2025-05〜12-02 の勝率の定義は、この関門で初めて確かめる
@@ -50,7 +50,11 @@
 
 - 匿名に読ませるのは件数の表だけで、`kb_archive_*` そのものは今までどおり service_role だけ
 - 毎晩の対象は「直近3日」なので、それより前のレースの種別・グレードの訂正（race_conditions・race_series の書き換え）は拾わない。拾うには CLI の `--era=main --all` を流す。規則を変えたら `RULE_VERSION` を上げ、kb と main を計算し直す
-- kb_archive を誰かが load し直すと kb 層は古いまま残る。毎晩の Cron が指紋の違いを error にして知らせる（自動では計算し直さない。412MB を読むのはオーナーの判断で）
+- kb_archive を誰かが load し直すと kb 層は古いまま残る。毎晩の Cron の指紋（開催日・レースの数・最大の日付）は、行数・日付が変わる再投入だけを検知して error にする。値だけを書き換える再投入は検知しないので、kb-backfill.js は kb_archive に書いたら終わりに「racer-career-backfill.js --era=kb を再実行する」と出す（自動では計算し直さない。412MB を読むのはオーナーの判断で）
 - CC の SG の組は「最終日の 12R の組」と置いた。照合の関門の勝率（SG と G2 は加点が1違う）で確かめる。外れたら規則を直す
 - 優出に S0・K0・L0 を含めるかは未決（BOA-1193 の質問）。`racer_championships` は着のコードを持つので、読み手が後から決められる
+- RPC が打ち切り（57014）で落ちても、範囲・人数を半分にしてやり直す仕組みは無い。今は8秒に余裕がある（main の50人は1回目 5.6秒・2回目以降 0.34〜0.54秒、kb の半月は約0.5〜0.8秒）。落ちたら半分にしてやり直す処理を足す
+- 特別な節は「同じ題で連続した日」だけでまとめる。丸一日の中止で日が欠けると節が割れ、基準のレースが無い側で止まる。main は「レースごとの題」で日を拾うので、同じ日に題が2種類あると日が二重に入るおそれがある（どれも黙って壊れず、止まって知らせる）
+- 毎晩の対象は今の出走表に載っている選手だけ。race_entries の racer_id が後から直されると、前の選手の main の行が残る（`--era=main --all` で直る）
+- 公式の照合を待つもの: 津 2026-10-10〜12 のバトルトーナメントは両方の元で ippan のまま。唐津 2024 の規則は会場と日付の決め打ちなので、2026-05 の期の公式が出たら関門で見る。GP と GPシリーズのように同じ日に格が同居する節は規則に無い。11月期の関門でずれたら規則に足す
 - 見直しの契機は ADR-0067 と同じ（公式・会場からの通知、事業形態の変化、表示の量や範囲の大きな変化、規約・法令の変化）

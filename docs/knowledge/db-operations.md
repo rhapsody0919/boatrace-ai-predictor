@@ -19,6 +19,9 @@
 - 「適用済み」はそのマイグレーションだけが持つ差分で確かめる。他の版も入れるキーを見ても区別できない（063/068 の取り違え、memory migration_applied_check_needs_discriminating_observation）
 - CREATE OR REPLACE FUNCTION は古い定義を土台にすると、後のマイグレーションが足したキーを黙って消す。適用後に scripts/maintenance/verify-rpc-output-keys.js を実行する（BOA-363・BOA-431、ADR-0074 で PR 時の検査あり、.claude/CLAUDE.md）
 - PostgREST のバルク upsert はキーの集合が違う行を混ぜると、その列を持たない行に NULL を書く。scripts/lib/unchangedRows.js の diffRows で列をそろえる（2026-09-27 に1,729行が NULL、PR #870、memory technical_postgrest_bulk_upsert_nulls_missing_keys）
+- upsertChangedRows の既存行の読み取りは、chunkColumn の IN だけで読み、ほかの条件で絞れない。同じ racer_id に別の層（era）の行がある表では、chunkSize を両方の層を足した選手あたりの行数から決めないと、上限1000行で黙って切れて「変更の無い行」まで書き直す（2026-10-31、system-architect、unchangedRows.js:391・racerCareerJob.js:487。190 の書き手は fullPageRows・failOnFetchError で止める）
+- kb_archive_* は created_at だけで updated_at が無く、kb-backfill は upsertChangedRows で値を書き換える。件数と日付の指紋では、値だけの再投入を検知できない（2026-10-31、system-architect）
+- 多くの値を1つの jsonb で返す SELECT を `x->'a', x->'b'` のように何度も読むと、副問い合わせが展開されて同じ計算を何回も行い、実測が数倍になる。重さを測るときは `OFFSET 0` を付けるか、EXPLAIN ANALYZE の Execution Time で見る（2026-10-31、system-architect の実測）
 - 外部キー・制約の確認は pg_constraint で行う。information_schema の多段 JOIN は黙って0行を返す（races を参照する FK は18本、memory technical_pg_constraint_not_information_schema_for_fks）
 - PK のリネーム等は全種類の制約（FK・UNIQUE・CHECK 等）を洗い、1件で先に試す（ユーザー指摘、memory feedback_pk_migration_verify_all_constraints_and_single_row_test）
 - 既存の RPC の本文だけを差し替えるマイグレーションも、114番以降は関数ごとに GRANT/REVOKE か `-- function-exempt` を書かないと verify:migration-rls で CI が落ちる（2026-10-13、BOA-822 の 157、scripts/maintenance/verify-migration-rls.js:340）
@@ -47,7 +50,7 @@
 - 予想を作るときの「前日まで」はレースの日付で読む（race_date < 対象日）。「最新まで」で読むと過去の日を作り直したときに結果が混ざる（2026-10-12、BOA-628 と同じ系統、同 architecture-y.md）
 - fetchAll の .range() で全件を読むときは .order("race_id") 等の一意の並びを付ける。並びが無いとページの境目で行が重なったり抜けたりする（2026-09-25、memory project_data_foundation_orchestration_2026_09_19、BOA-403）
 - Supabase は Small。Nano のときは get_predictions_by_date が2.3〜12秒かかり、anon の statement_timeout（3秒）を超えて「開催なし」と誤って表示した。DB は ap-southeast-2 で、api/cron/* も syd1 に固定している（2026-09-19、memory project_data_foundation_orchestration_2026_09_19、PR #747）
-- authenticator の statement_timeout は 8秒、service_role はロールの設定が無い。PostgREST 経由の service_role の RPC も 8秒で切れるので、重い集計は呼び出しを分ける（2026-10-31、pg_roles の実測、マイグレーション 190）
+- 本番の statement_timeout は authenticator 8s・anon 3s・authenticated 8s・service_role 未設定・claude_ro 30s で、authenticator には safeupdate も入っている。service_role の RPC も PostgREST 経由なら 8秒で打ち切られるので、重い集計は呼び出しを分ける（2026-10-31、pg_roles.rolconfig、system-architect、マイグレーション 190）
 
 - SNS の送信（承認・claim・runner・通知・容量）に関する知見は [sns-send-ops.md](sns-send-ops.md) へ移動（2026-10-18）
 - 複数 bundle の下書きを limit だけでまとめて読むと、取得の打切りが素材の本数不備に化ける。対象日の抽出前の上限と下書き集合の完全性を別に確認し、超過を不合格素材として確定しない（2026-10-14、2026-10-14-plan-review-20261014-01.md）
