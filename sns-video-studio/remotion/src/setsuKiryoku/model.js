@@ -291,6 +291,8 @@ export const ASSERTIVE_WORDS = [
   "化けた",
   "節イチ",
 ];
+/** リポジトリの言い方の規則の禁止語（AGENTS.md「言い方の規則」・docs/knowledge/glossary.md）。risk-rules.json に無いのでここで見る（Codex P1、#2076） */
+export const BANNED_WORDS = ["数え", "似た", "似て", "ふつう", "いつも"];
 
 /** 全角の英数字を半角に（数の照合・語の照合の前） */
 const norm = (t) =>
@@ -530,6 +532,8 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
     const t = norm(t0).replace(/[ \u3000]/g, "");
     for (const w of ASSERTIVE_WORDS)
       if (t.includes(w)) why.push(`言い切りの語「${w}」: ${t0.slice(0, 40)}`);
+    for (const w of BANNED_WORDS)
+      if (t.includes(w)) why.push(`禁止語「${w}」: ${t0.slice(0, 40)}`);
     if (/(^|[^A-Za-z])[zZ][=＝]/.test(t))
       why.push(`z を出している: ${t.slice(0, 40)}`);
   }

@@ -278,6 +278,22 @@ t("final_six の札は走が多くても重ならず x920 まで（9走まで）
   fails(f, /走数（10）が多く/, "10走");
 });
 
+t(
+  "リポジトリの禁止語（数える・似た・ふつう・いつも）を説明欄・画面で落とす（Codex P1、#2076）",
+  () => {
+    const g = load("motor_gap");
+    const a = clone(g);
+    a.youtube.description = a.youtube.description.replace(
+      "上の順位にそろえる",
+      "上位に数える",
+    );
+    fails(a, /禁止語「数え」/, "説明欄の「数える」");
+    const c = clone(g);
+    c.texts.close[2] = "いつもの展示とは別物？";
+    fails(c, /禁止語「いつも」/, "画面の「いつも」");
+  },
+);
+
 t("日の札: 月をまたぐ節は「〜」にしない", () => {
   const d = (...xs) => xs.map((x) => ({ day: `${x}日` }));
   assert.equal(daysLabel(d(27, 28)), "27・28日");
