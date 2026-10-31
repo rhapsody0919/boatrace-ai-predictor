@@ -2469,8 +2469,8 @@
     "finishValue": "{{rank}}着",
     "exhRank": "({{rank}}位)",
     "exhRankTied": "({{rank}}位タイ)",
-    "exhNote": "展示タイムは小さいほど速い。括弧は6艇の中の順位",
-    "exhPending": "展示は締切の約15分前",
+    "exhNote": "展示タイムは小さいほど速い。括弧は展示タイムの6艇の中の順位",
+    "exhPending": "展示タイムは締切の約15分前に出る",
     "noValue": "—"
   },
   "raceStrip": {

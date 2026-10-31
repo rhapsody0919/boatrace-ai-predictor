@@ -650,10 +650,10 @@
     "colGrade": "Class",
     "colExh": "Exhibition time",
     "finishValue": "{{rank}}",
-    "exhRank": "(#{{rank}})",
-    "exhRankTied": "(T-#{{rank}})",
-    "exhNote": "Lower exhibition time is faster. Brackets show the rank among the six boats.",
-    "exhPending": "Exhibition about 15 min before the deadline",
+    "exhRank": "(rank {{rank}})",
+    "exhRankTied": "(tied rank {{rank}})",
+    "exhNote": "A lower exhibition time is faster. Brackets show the exhibition-time rank among the six boats.",
+    "exhPending": "Exhibition times appear about 15 min before the deadline",
     "noValue": "—"
   },
   "raceStrip": {

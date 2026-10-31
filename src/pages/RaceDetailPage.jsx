@@ -41,6 +41,7 @@ import { useNowHHMM } from "../hooks/useNowHHMM";
 import { parseRaceId } from "../utils/raceId";
 import { getTodayJST } from "../utils/dateUtils";
 import { getRaceStatus, RACE_STATUS } from "../utils/raceStatus";
+import { isRaceCancelled } from "../utils/raceCancellation";
 import { formatDateLocalized } from "../utils/formatters";
 // 見出し・title・description・canonical・パンくずは、ボット向け HTML（ADR 0089 第2段）と同じ関数で組む
 import {
@@ -330,6 +331,8 @@ function RaceDetailPage({ showViewSwitch = false }) {
                 currentRaceId={raceId}
                 venueCode={parsed.venueCode}
                 date={date}
+                raceGrade={racePrediction.raceGrade ?? null}
+                raceTitle={racePrediction.raceTitle ?? null}
               />
               {!prediction?.error && (
                 <RaceSummaryTable
@@ -337,7 +340,9 @@ function RaceDetailPage({ showViewSwitch = false }) {
                   exhibitionData={prediction?.exhibitionData}
                   result={prediction?.result}
                   showExhibitionPending={
-                    isToday && status === RACE_STATUS.UPCOMING
+                    isToday &&
+                    status === RACE_STATUS.UPCOMING &&
+                    !isRaceCancelled(prediction)
                   }
                 />
               )}

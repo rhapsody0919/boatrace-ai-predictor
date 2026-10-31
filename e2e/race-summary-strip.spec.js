@@ -4,6 +4,9 @@ import { test, expect } from "./fixtures.js";
 // done_when: 過去の確定済みの1件で、/racer/ へのリンクが6件、/race/ へのリンクが2件以上ある
 const G1_RACE = "/race/2026-09-29-16-12"; // 児島12R（G1 児島キングカップ 2026-09-28〜10-03、確定済み）
 const IPPAN_RACE = "/race/2026-09-21-02-05"; // 戸田5R（一般、確定済み）
+// 帯が引く節（supabaseDataService.getSeriesOfDate）。race_series は他の部品も別の列で引く
+const SERIES_OF_DATE =
+  /\/rest\/v1\/race_series\?select=start_date(,|%2C)end_date(,|%2C)title(,|%2C)grade/;
 
 test.describe("レース詳細: 6艇の要約と 1R〜12R の帯", () => {
   test.slow();
@@ -12,7 +15,12 @@ test.describe("レース詳細: 6艇の要約と 1R〜12R の帯", () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
+    // G1 では節を引く（一般戦の「引かない」の検査が空振りしないよう、同じ照合で引くことも見る）
+    const seriesRequest = page.waitForRequest(SERIES_OF_DATE, {
+      timeout: 60000,
+    });
     await page.goto(G1_RACE);
+    await seriesRequest;
     const summary = page.getByTestId("race-summary-table");
     await expect(summary).toBeVisible({ timeout: 30000 });
 
@@ -60,19 +68,22 @@ test.describe("レース詳細: 6艇の要約と 1R〜12R の帯", () => {
     expect(summaryBox.y).toBeLessThan(tabsBox.y);
   });
 
-  test("一般戦では節ページへのリンクを出さない", async ({ page }) => {
-    await page.goto(IPPAN_RACE);
-    const strip = page.getByTestId("race-number-strip");
-    await expect(strip.locator('a[aria-current="page"]')).toHaveText("5R", {
-      timeout: 30000,
+  test("一般戦では節を引かず、節ページへのリンクを出さない", async ({
+    page,
+  }) => {
+    // 一般戦はレースのグレード（ippan）で SG/G1/G2 でないと分かるので、race_series を引かない。
+    // 引かないことを見る（取得中もリンクは出ないので、リンクが無いことだけでは空振りする）
+    const seriesRequests = [];
+    page.on("request", (req) => {
+      if (SERIES_OF_DATE.test(req.url())) seriesRequests.push(req.url());
     });
-    // 節の取得が終わるまで待つ（取得中も出ないので、通信が落ち着いてから見る）
-    await page
-      .waitForLoadState("networkidle", { timeout: 15000 })
-      .catch((error) => {
-        if (error.name !== "TimeoutError") throw error;
-      });
+    await page.goto(IPPAN_RACE);
+    const summary = page.getByTestId("race-summary-table");
+    await expect(summary).toBeVisible({ timeout: 30000 });
+    const strip = page.getByTestId("race-number-strip");
+    await expect(strip.locator('a[aria-current="page"]')).toHaveText("5R");
     await expect(page.getByTestId("race-number-strip-meet")).toHaveCount(0);
+    expect(seriesRequests).toEqual([]);
   });
 
   test("節の取得に失敗したら、帯は出したまま失敗を表示する（データなしに化けさせない）", async ({

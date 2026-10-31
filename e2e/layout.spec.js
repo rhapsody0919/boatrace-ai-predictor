@@ -2191,3 +2191,48 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
     expect(m.wide, "部品の枠からはみ出す要素の数").toBe(0);
   });
 });
+
+/**
+ * レース詳細の 1R〜12R の帯（BOA-1189 GS01-c）。レース数は会場・日で変わりうるので、
+ * 件数を差し替えて、スマホの2段目の残りが横いっぱいに伸びないこと・768px 以上で1行に並ぶことを見る
+ * （component-reuse.md「件数がデータで変わるグリッド」）。8件は会場16の 1〜7R と 12R
+ */
+test.describe("レイアウト: レース詳細の 1R〜12R の帯は件数によらずそろう（BOA-1189）", () => {
+  for (const keep of [8, 12]) {
+    test(`帯が${keep}件のとき、項目の幅がそろう`, async ({ page }) => {
+      await page.route("**/api/predictions/2026-09-29**", async (route) => {
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        if (keep < 12) {
+          body.races = (body.races ?? []).filter(
+            (r) =>
+              r.venueCode !== 16 ||
+              r.raceNumber <= keep - 1 ||
+              r.raceNumber === 12,
+          );
+        }
+        await route.fulfill(response.fulfillOptions({ json: body }));
+      });
+      await gotoAndSettle(page, "/race/2026-09-29-16-12");
+      const items = page.locator(".race-number-strip__list > li");
+      await expect(items).toHaveCount(keep, { timeout: 30000 });
+      const boxes = await items.evaluateAll((els) =>
+        els.map((el) => {
+          const r = el.getBoundingClientRect();
+          return { w: Math.round(r.width), top: Math.round(r.top) };
+        }),
+      );
+      const widths = boxes.map((b) => b.w);
+      expect(
+        Math.max(...widths) - Math.min(...widths),
+        `帯の項目の幅がそろっていません: ${JSON.stringify(widths)}`,
+      ).toBeLessThanOrEqual(1);
+      if (page.viewportSize().width >= 768) {
+        expect(
+          new Set(boxes.map((b) => b.top)).size,
+          `768px 以上で帯が1行に並んでいません: ${JSON.stringify(boxes)}`,
+        ).toBe(1);
+      }
+    });
+  }
+});

@@ -646,8 +646,8 @@
     "finishValue": "{{rank}}착",
     "exhRank": "({{rank}}위)",
     "exhRankTied": "(공동 {{rank}}위)",
-    "exhNote": "전시 타임은 작을수록 빠릅니다. 괄호는 6정 중 순위",
-    "exhPending": "전시는 마감 약 15분 전",
+    "exhNote": "전시 타임은 작을수록 빠릅니다. 괄호는 6정 중 전시 타임 순위",
+    "exhPending": "전시 타임은 마감 약 15분 전에 표시됩니다",
     "noValue": "—"
   },
   "raceStrip": {

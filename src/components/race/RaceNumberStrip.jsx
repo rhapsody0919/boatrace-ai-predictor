@@ -22,6 +22,8 @@ export default function RaceNumberStrip({
   currentRaceId,
   venueCode,
   date,
+  raceGrade = null,
+  raceTitle = null,
 }) {
   const { t } = useTranslation();
   const localize = useLocalizedPath();
@@ -30,8 +32,12 @@ export default function RaceNumberStrip({
   const [loaded, setLoaded] = useState(null);
   const [failedKey, setFailedKey] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // レースのグレードが分かっていて SG/G1/G2 でなければ、節は引かない（一般戦・G3 でリンクは出ない）。
+  // 分からないときだけ引く
+  const needsSeries = !raceGrade || MEET_PAGE_GRADES.includes(raceGrade);
 
   useEffect(() => {
+    if (!needsSeries) return undefined;
     let cancelled = false;
     supabaseDataService
       .getSeriesOfDate(venueCode, date)
@@ -48,15 +54,16 @@ export default function RaceNumberStrip({
     return () => {
       cancelled = true;
     };
-  }, [venueCode, date, key, reloadKey]);
+  }, [venueCode, date, key, reloadKey, needsSeries]);
 
   if (!races || races.length === 0) return null;
 
-  const series = loaded?.key === key ? loaded.series : null;
+  const series = needsSeries && loaded?.key === key ? loaded.series : null;
+  // 判定は節ページ（MeetPage の meetPageState）と同じく、節の値が無ければレースの値で補う
   const showMeetLink =
     series &&
-    MEET_PAGE_GRADES.includes(series.grade) &&
-    !isOutOfScopeMeetTitle(series.title);
+    MEET_PAGE_GRADES.includes(series.grade ?? raceGrade) &&
+    !isOutOfScopeMeetTitle(series.title ?? raceTitle);
 
   return (
     <nav
@@ -89,7 +96,7 @@ export default function RaceNumberStrip({
           {t("raceStrip.meetLink")}
         </Link>
       )}
-      {failedKey === key && (
+      {needsSeries && failedKey === key && (
         <InlineFetchError
           message={t("raceStrip.meetFetchError")}
           onRetry={() => setReloadKey((k) => k + 1)}
