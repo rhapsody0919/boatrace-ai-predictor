@@ -178,6 +178,7 @@ export const ASSIST_COPY = Object.freeze({
     trio: "3連複",
     exacta: "2連単",
     quinella: "2連複",
+    wide: "拡連複",
   }),
   betEmptyFor: (legs, ordered = true) =>
     ordered
@@ -192,7 +193,9 @@ export const ASSIST_COPY = Object.freeze({
   colBetPoints: "点数",
   colComposite: "合成オッズ",
   pointsCell: (n) => `${n}点`,
-  compareNote: "行を押すとその券種に切り替わる",
+  // 拡連複は合成オッズを出さない（承認モック 画面1の注記。BOA-990 ③）
+  compareNote:
+    "行を押すとその券種に切り替わる。拡連複は複数の組が同時に当たることがあるので、合成オッズを出さない（下の表で組ごとに見る）",
   legUnused: (type, ordered = true) =>
     ordered
       ? `${type}は1着・2着の組。3着の段は使わない（入れた候補は残る）`
@@ -202,6 +205,16 @@ export const ASSIST_COPY = Object.freeze({
   boxNote:
     "「選んだ艇でボックス」は、どこかの段に入れた艇を使う段すべてにそろえる。押した直後に「元に戻す」が出る",
   popularityNote: (type, n) => `人気は${type}のオッズの順（${n}通りの中で）`,
+  // 拡連複（BOA-990 ③、承認モック 画面2）。オッズは幅、払戻・トリガミ・人気は下限
+  popularityNoteWide: (n) => `人気は拡連複のオッズの下限の順（${n}通りの中で）`,
+  oddsRange: (lo, hi) => `${lo}〜${hi}`,
+  colPayoutLow: "払戻（下限）",
+  wideCalcNote:
+    "拡連複のオッズは公式の下限〜上限。払戻とトリガミは下限で、その組だけ当たったときの値で計算",
+  wideMultiNote:
+    "拡連複は3着以内の2艇の組なので、同じレースで最大3組が当たることがある（そのときの払戻は組ごとの和）",
+  // 固定フッターの2行目（拡連複は合成オッズの代わりに）
+  wideFoot: "合成オッズは出さない（組ごとに見る）",
   composite: (v) => `合成 ${v}`,
   compositeNote: "合成オッズは丸める前の理論値",
   openSheet: "マークシートを開く",
@@ -233,11 +246,20 @@ export const ASSIST_COPY = Object.freeze({
     }`,
   trigami: "トリガミ",
   trigamiLine: "合成オッズが1.0未満。どれが当たっても予算を下回る",
-  totalLine: (total, remainder, lo, hi) =>
-    `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・当たったときの倍率 ${lo}〜${hi}倍`,
+  // 拡連複は表のオッズの「〜」（下限〜上限）と読み違えないよう、組ごとの幅を「から」と「当たる組による」で書く
+  // （BOA-990 ③ ファン評価1周目 P2-1）。倍率は下限の払戻から
+  totalLine: (total, remainder, lo, hi, wide = false) =>
+    `合計 ${total.toLocaleString("ja-JP")}円・残り${remainder.toLocaleString("ja-JP")}円・${
+      wide
+        ? lo === hi
+          ? // 1点だけ・どの組も同じ倍率のときは1つの値（ファン評価2周目 P2-1）
+            `1組だけ当たったときの倍率 ${lo}倍`
+          : `1組だけ当たったときの倍率 ${lo}倍から${hi}倍（当たる組による）`
+        : `当たったときの倍率 ${lo}〜${hi}倍`
+    }`,
   // オッズの無い組は組番も出す（BOA-990 ファン評価2周目 P2-1）
-  missingOdds: (n, tickets = []) =>
-    `オッズの無い${n}点${tickets.length ? `（${tickets.join("・")}）` : ""}は配分と合成に入れていない`,
+  missingOdds: (n, tickets = [], wide = false) =>
+    `オッズの無い${n}点${tickets.length ? `（${tickets.join("・")}）` : ""}は${wide ? "配分" : "配分と合成"}に入れていない`,
   // 点数のうちオッズのある点数（オッズの無い組があるときだけ）
   pointsPriced: (points, priced) =>
     priced < points ? `${points}点（オッズあり${priced}点）` : `${points}点`,
@@ -908,11 +930,12 @@ export const GLOSSARY = Object.freeze({
     items: [
       "100円単位に丸めると組ごとに少しずれる",
       "1.0未満だと、当たっても賭けた金額を下回る（トリガミ）",
+      "拡連複は同じレースで複数の組が当たることがあるので出さない（組ごとの払戻の下限で見る）",
     ],
   },
   トリガミ: { lead: "当たったのに、払戻が賭けた合計を下回ること" },
   人気: {
-    lead: "その券種の全通り（3連単120通り・3連複20通り・2連単30通り・2連複15通り）のオッズが低い順の順番。1番人気が一番売れている",
+    lead: "その券種の全通り（3連単120通り・3連複20通り・2連単30通り・2連複15通り・拡連複15通り）のオッズが低い順の順番（拡連複は下限の順）。1番人気が一番売れている",
   },
   過去の1着: {
     lead: "この艇番・この級で、差がつく材料と同じ集めたレースで1着になった割合",

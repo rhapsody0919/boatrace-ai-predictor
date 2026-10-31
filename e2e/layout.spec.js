@@ -2051,7 +2051,8 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
       expect((await b.boundingBox()).height).toBeGreaterThanOrEqual(44);
 
     // BOA-990 ②: 連複は段の見出しが「1艇目／順不同」の2行。見出しの文字が隣のマスにはみ出さず、6艇のマスは 44px 以上
-    for (const name of ["3連複", "2連複"]) {
+    // BOA-990 ③: 拡連複も同じ段（2艇の組）
+    for (const name of ["3連複", "2連複", "拡連複"]) {
       await sheet
         .getByRole("group", { name: "券種" })
         .getByRole("button", { name, exact: true })
@@ -2082,14 +2083,22 @@ test.describe("レイアウト: 思考アシストの買い目の券種（BOA-99
         expect(box.width).toBeGreaterThanOrEqual(44);
       }
     }
+    // BOA-990 ③: 拡連複の配分の表（オッズの列が「1.9〜2.3」、見出し「払戻（下限）」）がシートの幅に収まる
+    const wideTable = sheet.locator(".ta-table").last();
+    await expect(
+      wideTable.getByRole("columnheader", { name: "払戻（下限）" }),
+    ).toBeVisible();
+    const tBox = await wideTable.boundingBox();
+    const sBox = await sheet.boundingBox();
+    expect(tBox.x + tBox.width).toBeLessThanOrEqual(sBox.x + sBox.width + 1);
     await sheet.getByRole("button", { name: "閉じる" }).first().click();
     // 図の艇の行の候補のボタン「1艇目」も横にはみ出さない（最後に選んだ2連複のまま）
     await expect(
       page.getByRole("button", { name: "1号艇を1艇目の候補に" }),
     ).toBeVisible();
-    const pos = await page.locator(".ta-pos3 button").evaluateAll((els) =>
-      els.map((e) => e.scrollWidth - e.clientWidth),
-    );
+    const pos = await page
+      .locator(".ta-pos3 button")
+      .evaluateAll((els) => els.map((e) => e.scrollWidth - e.clientWidth));
     for (const d of pos) expect(d).toBeLessThanOrEqual(1);
     expect(
       await page.evaluate(

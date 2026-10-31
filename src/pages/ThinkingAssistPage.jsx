@@ -43,6 +43,7 @@ import { useRobotsMeta } from "../hooks/useRobotsMeta";
 import { useThinkingAssistData } from "../hooks/useThinkingAssistData";
 import {
   ASSIST_BET_TYPES,
+  betTypeComposite,
   ROUND_LABEL,
   anyCell,
   assistBetType,
@@ -78,11 +79,7 @@ import { ATTACK_BOAT } from "../utils/analogyScenario";
 import { guideSteps, theoryCard } from "../utils/assistTheory";
 import { assistEventOf } from "../utils/assistEvents";
 import { trackEvent } from "../utils/analytics";
-import {
-  compositeOdds,
-  expandTickets,
-  popularityRanks,
-} from "../utils/oddsMath";
+import { expandTickets, popularityRanks } from "../utils/oddsMath";
 import { formatObservedTime } from "../components/race/weatherInfo";
 import { isRaceCancelled } from "../utils/raceCancellation";
 import { ASSIST_COPY } from "../data/thinkingAssistCopy";
@@ -543,9 +540,8 @@ function ThinkingAssistBody() {
   // 選んでいる券種のオッズ（締切時オッズがあればその値。BOA-990）。図・ヘッダー・よく出た3連単は3連単のまま
   const typeOdds = data.odds.data?.byType?.[betType.id] ?? null;
   const betOdds = typeOdds?.odds ?? null;
-  const composite = betOdds
-    ? compositeOdds(tickets.map((t) => betOdds[t]))
-    : null;
+  // 拡連複は合成オッズを出さない（betTypeComposite。BOA-990 ③）
+  const composite = betTypeComposite(betType, betOdds, tickets);
   const oddsAt = formatObservedTime(data.odds.data?.capturedAt);
   const betOddsAt = formatObservedTime(typeOdds?.capturedAt);
   // 券種で比べる（同じ候補）の行（承認モック 画面1）
@@ -557,7 +553,7 @@ function ThinkingAssistBody() {
       form: betForm(bets, t.legs, t.ordered),
       points: tk.length,
       priced: o ? tk.filter((k) => o[k] != null && o[k] > 0).length : tk.length,
-      composite: o ? compositeOdds(tk.map((k) => o[k])) : null,
+      composite: betTypeComposite(t, o, tk),
     };
   });
   const onBetType = (id, from) => act({ type: "betType", betType: id, from });
@@ -594,6 +590,7 @@ function ThinkingAssistBody() {
   const betSummary = {
     tickets,
     odds: betOdds ?? {},
+    oddsRange: typeOdds?.range ?? null,
     betType: betType.id,
     oddsFinal: typeOdds?.final === true,
     oddsFinalFailed: data.odds.data?.finalFailed === true,
@@ -1019,28 +1016,18 @@ function ThinkingAssistBody() {
       </main>
       {state.sheet === "mark" && (
         <MarkSheet
+          // 配分の props はレンズの買い目と同じ betSummary（拡連複の幅 oddsRange の渡し忘れを防ぐ。BOA-990 ③）
+          {...betSummary}
           bets={bets}
           removedNote={removedNote}
-          oddsNote={oddsNote}
           absentBoats={data.absentBoats}
           onToggle={toggleBet}
           onClose={closeSheet}
           points={tickets.length}
-          tickets={tickets}
-          odds={betOdds ?? {}}
-          betType={betType.id}
-          oddsFinal={typeOdds?.final === true}
-          oddsFinalFailed={data.odds.data?.finalFailed === true}
           onBetType={(id) => onBetType(id, "tab")}
           onBox={() => act({ type: "box" })}
           onUndoBox={() => dispatch({ type: "undoBox" })}
           canUndoBox={state.boxUndo != null}
-          budget={state.budget}
-          mode={state.mode}
-          oddsAt={betOddsAt}
-          finished={Boolean(race?.result?.finished)}
-          onBudget={(budget) => dispatch({ type: "budget", budget })}
-          onMode={(mode) => dispatch({ type: "mode", mode })}
           similarTri={similar?.tri ?? null}
           similarN={similar?.n ?? null}
         />

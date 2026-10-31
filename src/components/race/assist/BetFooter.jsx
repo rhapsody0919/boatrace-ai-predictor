@@ -51,7 +51,9 @@ export default function BetFooter({
             ? ASSIST_COPY.betEmptyFor(type.legs, type.ordered)
             : c
               ? ASSIST_COPY.composite(c)
-              : oddsNote}
+              : type.range && priced > 0
+                ? ASSIST_COPY.wideFoot
+                : oddsNote}
         </span>
         {removedNote && <span className="ta-warn">{removedNote}</span>}
       </div>

@@ -2,6 +2,7 @@ import { useId } from "react";
 import {
   STAKE_UNIT,
   allocateStakes,
+  formatOdds,
   popularityRanks,
 } from "../../../utils/oddsMath";
 import {
@@ -18,11 +19,14 @@ const yen = (n) => n.toLocaleString("ja-JP");
  * 組んだ買い目の配分（FR-8、screens S-1a）: 予算・均等／均等払戻・組ごとのオッズ・人気・金額・払戻、
  * 最下行に合計・残り・丸めた後の倍率の幅。予算が 100円×点数 に足りなければ最低額だけを出す（F05）。
  * 類似レースがあれば組ごとの件数の列「類似」を並べる（FW-19。オッズと掛け合わせない）。類似の列は3連単だけ
- * （BOA-990。ほかの券種は BOA-1171 の答えまで出さない）。オッズ・人気は選んでいる券種の値（odds）
+ * （BOA-990。ほかの券種は BOA-1171 の答えまで出さない）。オッズ・人気は選んでいる券種の値（odds）。
+ * 拡連複（BOA-990 ③、承認モック 画面2）は odds が下限の表、oddsRange が公式の幅。オッズの列は「下限〜上限」、
+ * 払戻・トリガミ・人気・倍率は下限で「その組だけ当たったとき」。合成オッズとその1行は出さない
  */
 export default function BetSummary({
   tickets,
   odds,
+  oddsRange = null,
   betType = "trifecta",
   oddsFinal = false,
   oddsFinalFailed = false,
@@ -47,7 +51,18 @@ export default function BetSummary({
   const result = priced
     ? allocateStakes({ tickets, odds, budget: Number(budget), mode })
     : null;
-  const composite = result && !result.insufficient ? result.composite : null;
+  const wide = type.range === true;
+  // 拡連複は同じレースで最大3組が当たるので、合成オッズの式（どれか1組だけ当たる前提）が当てはまらない
+  const composite =
+    result && !result.insufficient && !wide ? result.composite : null;
+  const oddsCell = (r) => {
+    const w = wide ? oddsRange?.[r.ticket] : null;
+    if (!wide) return r.odds;
+    // 上限が欠けた組は下限だけ（同じ桁の表記）
+    return w?.high != null
+      ? ASSIST_COPY.oddsRange(formatOdds(w.low), formatOdds(w.high))
+      : formatOdds(r.odds);
+  };
   return (
     <div className="ta-bar">
       <div className="ta-calc">
@@ -106,7 +121,9 @@ export default function BetSummary({
               <th scope="col">{ASSIST_COPY.colPopularity}</th>
               {showSimilar && <th scope="col">{ASSIST_COPY.colSimilar}</th>}
               <th scope="col">{ASSIST_COPY.colStake}</th>
-              <th scope="col">{ASSIST_COPY.colPayout}</th>
+              <th scope="col">
+                {wide ? ASSIST_COPY.colPayoutLow : ASSIST_COPY.colPayout}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -117,7 +134,7 @@ export default function BetSummary({
                   <td className="ta-num">
                     {ticketLabel(r.ticket, type.ordered)}
                   </td>
-                  <td className="ta-num">{r.odds}</td>
+                  <td className="ta-num">{oddsCell(r)}</td>
                   <td className="ta-num">
                     {ASSIST_COPY.popularity(ranks.get(r.ticket))}
                   </td>
@@ -146,6 +163,7 @@ export default function BetSummary({
                     result.remainder,
                     result.multiplier.min.toFixed(2),
                     result.multiplier.max.toFixed(2),
+                    wide,
                   )}
                 </b>
               </td>
@@ -159,12 +177,21 @@ export default function BetSummary({
           {ASSIST_COPY.missingOdds(
             result.missing.length,
             result.missing.map((t) => ticketLabel(t, type.ordered)),
+            wide,
           )}
         </p>
       )}
+      {wide && result && !result.insufficient && (
+        <>
+          <p className="ta-note">{ASSIST_COPY.wideCalcNote}</p>
+          <p className="ta-note">{ASSIST_COPY.wideMultiNote}</p>
+        </>
+      )}
       {result && !result.insufficient && (
         <p className="ta-note">
-          {ASSIST_COPY.popularityNote(typeLabel, type.combos)}
+          {wide
+            ? ASSIST_COPY.popularityNoteWide(type.combos)
+            : ASSIST_COPY.popularityNote(typeLabel, type.combos)}
         </p>
       )}
       {showSimilar && result && !result.insufficient && (
