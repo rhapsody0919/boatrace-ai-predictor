@@ -2052,10 +2052,11 @@ for (const f of fixtures) {
 // 型 f01 の写しの材料は build が読んだ所だけで、出走表の名前は1艇目だけ・級は無い（make-fixture.mjs が落とす）。
 // f01 の検査では、級を同じ写しの facts.today.classes から、名前を6字（race_entries の最長、2026-09〜の実測）の仮の名前で埋める
 const F01_LONG_NAMES = ["壱壱壱壱壱壱", "弐弐弐弐弐弐", "参参参参参参", "肆肆肆肆肆肆", "伍伍伍伍伍伍", "陸陸陸陸陸陸"];
-const f01Fixture = (name) => {
+const F01_SHORT_NAMES = ["堤昇", "齋藤勇", "西村", "山田", "佐藤", "鈴木"];
+const f01Fixture = (name, names = F01_LONG_NAMES) => {
   const mf = JSON.parse(gunzipSync(readFileSync(new URL(`${name}.json.gz`, FX))).toString("utf8"));
   const race = mf.api.races.find((r) => r.raceId === mf.raceId);
-  race.entries = [1, 2, 3, 4, 5, 6].map((b) => ({ ...race.entries.find((e) => e.number === b), number: b, name: F01_LONG_NAMES[b - 1], grade: mf.api.facts.today.classes[b - 1] }));
+  race.entries = [1, 2, 3, 4, 5, 6].map((b) => ({ ...race.entries.find((e) => e.number === b), number: b, name: names[b - 1], grade: mf.api.facts.today.classes[b - 1] }));
   return mf;
 };
 
@@ -2159,6 +2160,26 @@ const f01Fixture = (name) => {
       assert.ok(named >= 3, `${name}: 右の列に名前と級の付いた艇が出る（${named}）`);
       // 声は艇番だけ（名前は読まない）
       for (const c of s.chapters) for (const n of F01_LONG_NAMES) assert.ok(!c.voice.includes(n), `${name} ${c.id}: 声に名前`);
+    }
+    // 短い名前（2〜3字）でも、艇と、その艇の数字を別の行に分けない（行末が級・行頭が数字だと、数字が次の艇のものに読める。/code-review #2079）
+    for (const name of ["2026-10-12-01-12", "2026-10-15-15-10", "2026-10-16-24-11", "2026-10-19-19-10"]) {
+      const ms = f01Fixture(name, F01_SHORT_NAMES);
+      const s = f01Script(ms);
+      assert.deepEqual(f01RacerCheck(s, racersOf(ms).racers), [], name);
+      for (const c of s.chapters.filter((x) => x.right?.ok))
+        for (const k of ["answer2"])
+          for (const l of c.right[k].lines) assert.ok(!/^[\d,.]+(件|項目|%)(・|$)/.test(l), `${name} ${c.id} ${k}: 「${l}」が数字から始まる（前の行の艇の数字が落ちた）`);
+    }
+    // 艇と数字の組（例: c3 の2着の3艇）は、どの名前の長さでも同じ行
+    {
+      const lines = layoutRight({ answer2: `2着${NB}2号艇${NB}西村${NB}A1${NB}1,041件・3号艇${NB}山田${NB}A1${NB}30件・4号艇${NB}佐藤${NB}A1${NB}20件`, path: "p" }).answer2.lines;
+      assert.ok(lines.every((l) => /号艇\u00a0[^\u00a0]+\u00a0[AB][12]\u00a0[\d,]+件$/.test(l)), JSON.stringify(lines));
+    }
+    // 出走表の読み方（艇番の対応、名前の空白を詰める、級が A1〜B2 でなければ欠け）
+    {
+      const r = racersOf({ raceId: "x", api: { races: [{ raceId: "x", entries: [{ number: 2, name: "篠崎　　仁志", grade: "A1" }, { number: 1, name: "梶原　　　正", grade: "B1" }, { number: 3, name: "西村 拓也", grade: "x" }] }] } });
+      assert.deepEqual(r.racers, { 1: { name: "梶原正", grade: "B1" }, 2: { name: "篠崎仁志", grade: "A1" } });
+      assert.deepEqual(r.missing, [3, 4, 5, 6]);
     }
     const mf = f01Fixture("2026-10-19-19-10");
     const s = f01Script(mf);

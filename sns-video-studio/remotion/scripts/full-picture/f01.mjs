@@ -14,7 +14,7 @@ import { answerOf } from "./answer.mjs";
 import { DISCLAIMER, FEATURES, FULL_TAGS, ROUND_NAME, SITE, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
 import { venueName } from "./scenes/common.mjs";
-import { NB, boatWho, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
+import { MIN_FONT_PX, NB, boatWho, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
 
 export const F01_VERSION = "f01-proto-1";
 export const VOICE = { speaker: "青山龍星", speedScale: 1.1, credit: "VOICEVOX:青山龍星" };
@@ -95,6 +95,8 @@ export function f01Script(m) {
   const { racers, missing } = racersOf(m);
   if (missing.length) return { ok: false, kind: "racer_name_grade", reason: `出走表に名前か級が無い艇: ${missing.map((b) => `${b}号艇`).join("・")}（race_entries.player_name・grade）` };
   const who = (b) => boatWho(racers, b);
+  // 艇と、その艇の数字は同じ行に置く（間で折り返すと、次の行の数字が別の艇の数字に読める）
+  const withN = (b, n) => `${who(b)}${NB}${n}`;
 
   // 冒頭: 1号艇が負けた件の内訳（answer.mjs と同じセル forms.any）
   const sc = m.api.scenario?.scenario;
@@ -184,8 +186,8 @@ export function f01Script(m) {
       answer2: !sec
         ? null
         : secRank.rankSig
-          ? `${who(fb)}が1着のとき\n2着 ${who(secOrder[0])} ${sec[secOrder[0] - 1]}件`
-          : `${who(fb)}が1着のとき\n2着 ${secOrder.slice(0, 3).map((b) => `${who(b)} ${sec[b - 1]}件`).join("・")}`,
+          ? `${who(fb)}が1着のとき\n2着${NB}${withN(secOrder[0], `${sec[secOrder[0] - 1]}件`)}`
+          : `${who(fb)}が1着のとき\n2着${NB}${secOrder.slice(0, 3).map((b) => withN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 類似レース",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "類似レース", cut: "similarBars", cut2: sec ? "similarFlow" : null, firstBoat: fb },
@@ -220,7 +222,7 @@ export function f01Script(m) {
       tag: "龍神ソナー ＞ 展開シナリオ",
       scope: `${cnt(n0)}件のうち ${form} ${cnt(nForm)}件`,
       answer: `${who(fb)}\n1着 ${fc[fb - 1]}件`,
-      answer2: `2着 ${secOrder.slice(0, 3).map((b) => `${who(b)} ${sec[b - 1]}件`).join("・")}`,
+      answer2: `2着${NB}${secOrder.slice(0, 3).map((b) => withN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 展開シナリオ",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "展開シナリオ", cut: "slitForms", cut2: "scenarioFlow", form, firstBoat: fb },
@@ -245,7 +247,7 @@ export function f01Script(m) {
       tag: "思考アシスト ＞ 相手",
       scope: `${ax1.venue}の全期間 ${who(axisK)}が1着 ${cnt(axK.n)}件`,
       answer: `${who(axK.second.boat)}\n2着 ${axK.second.rate}%`,
-      answer2: `${who(1)}が軸なら\n2着 ${who(ax1.second.boat)} ${ax1.second.rate}%`,
+      answer2: `${who(1)}が軸なら\n2着${NB}${withN(ax1.second.boat, `${ax1.second.rate}%`)}`,
       path: "アシスト → 相手 → 軸",
       voice:
         `ここからは思考アシスト。軸を選ぶと、相手の割合が出る。${ax1.venue}で1号艇が1着の${cnt(ax1.n)}件では、2着は${ax1.second.boat}号艇が${ax1.second.rate}%。` +
@@ -268,7 +270,7 @@ export function f01Script(m) {
       tag: "龍神ソナー ＞ 差がつく材料",
       scope: `今日の6艇・${axes.length}項目`,
       answer: best > 0 ? `項目が多いのは\n${bests.map(who).join("・")}` : "3艇とも項目は少ない",
-      answer2: three.map((b) => `${who(b)} ${top2[b]}項目`).join("・"),
+      answer2: three.map((b) => withN(b, `${top2[b]}項目`)).join("・"),
       path: "ソナー → 差がつく材料",
       voice:
         `では、冒頭の問い。同じ${axes.length}項目で2位以内に入ったのは、${three.map((b, i) => `${b}号艇${i === three.length - 1 ? "は" : "が"}${top2[b]}項目`).join("、")}。` +
@@ -387,8 +389,8 @@ export function f01Check(s, r) {
 
 /** 右の列の欄（範囲・答え・答え2）。章の札と「自分で見るなら」に艇番は出ない */
 const RIGHT_KEYS = ["scope", "answer", "answer2"];
-/** 字の小ささの線（右の列・冒頭の棒）。f01-build.mjs の MIN_FONT_PX（左の画面）と同じ値 */
-export const RIGHT_MIN_FONT_PX = 20;
+/** 字の小ささの線（右の列・冒頭の棒）。左の画面と同じ線（f01Right.js の MIN_FONT_PX）。今の字の大きさの候補（32px 以上）では下回らないが、候補を変えたときに止める */
+const RIGHT_MIN_FONT_PX = MIN_FONT_PX;
 
 /**
  * 名前と級の照合（落ちた理由の一覧）。艇番の隣が「 名前 級」でない・出走表と違う・右の列が幅か下の線を越える・字が線より小さい

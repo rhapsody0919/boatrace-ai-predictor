@@ -9,6 +9,11 @@
 /** 名前と級の区切り（折り返さない空白）。「3号艇 品川二千翔 A1」をひとまとまりで扱う */
 export const NB = " ";
 export const GRADES = ["A1", "A2", "B1", "B2"];
+/**
+ * 字の小ささの線（縮めた後の最小の字の高さ px）。左の画面（f01-build.mjs）・右の列（f01.mjs の f01RacerCheck）で同じ線。
+ * 目安（根拠なし、2026-10-31 の試作で決めた）。左の画面の根拠は f01-build.mjs の説明を見る
+ */
+export const MIN_FONT_PX = 20;
 
 /** 出走表の名前（「篠崎　　仁志」）→ フルネーム（空白を詰める） */
 export const fullName = (name) => String(name ?? "").replace(/[\s　]+/g, "");
@@ -89,7 +94,7 @@ export const FIELD = {
 
 /**
  * 右の列の行と字の大きさ。答え・答え2を大きい順に試し、幅にも下の線にも収まる最初の組を使う。
- * 収まらなければ ok=false と理由（その章は出さない。検査で落とす）
+ * 収まらなければ ok=false と理由（検査 f01RacerCheck で落とし、その日の完全版を作らない）
  * @param {{tag?: string|null, scope?: string|null, answer?: string|null, answer2?: string|null, path?: string|null, foot?: string|null}} c
  */
 export function layoutRight(c) {
