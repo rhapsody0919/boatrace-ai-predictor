@@ -560,6 +560,11 @@ const jobTables = ({ initState = null, extraEntries = [] } = {}) => ({
     ...extraEntries,
   ],
   scrape_job_state: initState ? [initState] : [],
+  race_series: [2, 18].map((venue_code) => ({
+    venue_code,
+    start_date: DATE,
+    end_date: "2026-09-28",
+  })),
   motor_pretest_stats: [],
 });
 const runJob = ({ store, client, politeFetch, when, deps }) =>
@@ -574,6 +579,93 @@ const runJob = ({ store, client, politeFetch, when, deps }) =>
   });
 const jcdOf = (url) => new URL(url).searchParams.get("jcd");
 const hdOf = (url) => new URL(url).searchParams.get("hd");
+
+// P5a: 初日・保存済み3日目・6日窓の境界・8日目・取りこぼし。
+for (const [start, saved, shouldFetch] of [
+  [DATE, DATE, true],
+  ["2026-09-19", "2026-09-19", false],
+  ["2026-09-15", "2026-09-15", false],
+  ["2026-09-14", "2026-09-14", true],
+  ["2026-09-19", null, true],
+  ["2026-09-19", "2026-09-22", true], // 未来の行は使わない
+  ["2026-09-19", "2026-09-10", true], // 前の節の行は使わない
+]) {
+  const tables = jobTables();
+  tables.race_series[1].start_date = start;
+  if (saved) tables.motor_pretest_stats.push({
+    venue_code: 18,
+    race_date: saved,
+    racer_id: 4529,
+  });
+  const client = createFakeSupabaseClient({ tables });
+  const store = createMemoryStore({ rows: { [JOB]: liveRow() } });
+  const fetched = [];
+  const res = await runJob({
+    store, client, when: at("05:30:00"),
+    politeFetch: throwingFetch(),
+    deps: {
+      fetchVenue: async (venueCode) => {
+        fetched.push(venueCode);
+        return {
+          rows: [{ venue_code: venueCode, race_date: DATE,
+            racer_id: 4529, pretest_time: 6.7 }],
+          reason: null,
+        };
+      },
+    },
+  });
+  const row = store.state.get(JOB);
+  check(`P5a: 初日Aと開始${start}・保存${saved}のB: B取得=${shouldFetch}`,
+    res.status === 200 &&
+    same(fetched.sort((a, b) => a - b), shouldFetch ? [2, 18] : [2]) &&
+    row.last_target_date === DATE && row.consecutive_failures === 0 &&
+    row.last_rows_written === (shouldFetch ? 2 : 1) &&
+    (shouldFetch || row.last_report.health[18] === undefined), show(res));
+}
+{
+  const tables = jobTables();
+  tables.race_series.forEach((s) => { s.start_date = "2026-09-19"; });
+  tables.motor_pretest_stats = [2, 18].map((venue_code) => ({
+    venue_code, race_date: "2026-09-19", racer_id: 4529,
+  }));
+  const client = createFakeSupabaseClient({ tables });
+  const health = { 18: { consecutiveFailDays: 1, lastReason: "timeout" } };
+  const store = createMemoryStore({ rows: {
+    [JOB]: { ...liveRow(), last_report: { health } },
+  } });
+  const f = throwingFetch();
+  const res = await runJob({ store, client, politeFetch: f, when: at("05:30:00") });
+  check("P5a: 全会場が保存済み途中日なら取得・書き込み0で日次成功",
+    res.status === 200 && f.count === 0 &&
+    client.writesTo("motor_pretest_stats").length === 0 &&
+    store.state.get(JOB).last_target_date === DATE &&
+    store.state.get(JOB).consecutive_failures === 0 &&
+    same(store.state.get(JOB).last_report.health, health), show(res));
+}
+
+for (const table of ["race_series", "motor_pretest_stats"]) {
+  const tables = jobTables();
+  tables.race_series.forEach((s) => { s.start_date = "2026-09-19"; });
+  const client = createFakeSupabaseClient({ tables,
+    failOn: { [`${table}:select`]: "stub read failure" } });
+  const store = createMemoryStore({ rows: { [JOB]: liveRow() } });
+  const f = throwingFetch();
+  const res = await runJob({ store, client, politeFetch: f, when: at("05:30:00") });
+  check(`P5a: ${table} 読取失敗は未保存とみなさず取得0で失敗`,
+    res.status === 500 && f.count === 0 &&
+    store.state.get(JOB).last_target_date === undefined, show(res));
+}
+{
+  const tables = jobTables();
+  tables.race_series = [];
+  const store = createMemoryStore({ rows: { [JOB]: liveRow() } });
+  const f = throwingFetch();
+  const res = await runJob({ store, client: createFakeSupabaseClient({ tables }),
+    politeFetch: f, when: at("05:30:00") });
+  check("P5a: 節が未取得なら取得せず補足起動を待つ",
+    res.status === 200 && res.body.incomplete === true && f.count === 0 &&
+    store.state.get(JOB).last_target_date === undefined, show(res));
+}
 
 {
   // off・行なし・075未適用は、何も取得せず、DBのデータテーブルにもアクセスしない（マージしても本番の挙動が変わらない）
