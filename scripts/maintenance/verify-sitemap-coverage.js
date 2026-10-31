@@ -5,6 +5,10 @@
 
 import { promises as fs } from "fs";
 import path from "path";
+import assert from "node:assert/strict";
+import vm from "node:vm";
+import { renderUrlEntry } from "../lib/sitemapLastmod.js";
+import { getDaysAgoJST } from "../../src/utils/dateUtils.js";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -56,11 +60,151 @@ function extractSitemapStaticLocs(sitemapSource) {
   return new Set(matches.map((m) => m[1]));
 }
 
+// 生成器の実関数だけを隔離して実行し、DB・鍵・生成物に触れない。
+export async function raceDetailFixture(source, rows, { fail = false } = {}) {
+  const match = source.match(
+    /async function getRaceDetailPages\(\) \{[\s\S]*?\n\}/,
+  );
+  assert.ok(match, "確定済み /race の生成関数が無い");
+  const now = new Date("2026-10-30T15:30:00Z"); // JST 10/31、UTC 10/30
+  const query = {
+    gte(key, value) {
+      rows = rows.filter((r) => r[key] >= value);
+      return this;
+    },
+    lte(key, value) {
+      rows = rows.filter((r) => r[key] <= value);
+      return this;
+    },
+    not(key, op, value) {
+      assert.equal(key, "race_results.rank1");
+      assert.equal(op, "is");
+      assert.equal(value, null);
+      rows = rows.filter((r) => r.race_results?.rank1 != null);
+      return this;
+    },
+    order(key) {
+      assert.equal(key, "race_id");
+      return this;
+    },
+  };
+  const fetchSource = await fs.readFile(
+    path.join(__dirname, "../lib/supabaseClient.js"),
+    "utf8",
+  );
+  const fetchCode = fetchSource
+    .match(/export async function fetchAll\([\s\S]*?\n\}/)[0]
+    .replace("export ", "");
+  const fetchAll = vm.runInNewContext(
+    `(() => { ${fetchCode}; return fetchAll; })()`,
+    {
+      assertOrdered: () => {},
+    },
+  );
+  let range;
+  query.range = (from, to) => {
+    range = [from, to];
+    return query;
+  };
+  query.select = () => query;
+  query.then = (resolve) =>
+    resolve({ data: rows.slice(range[0], range[1] + 1), error: null });
+  const client = {
+    isSupabaseEnabled: () => true,
+    fetchAll: async (table, columns, build) => {
+      assert.equal(table, "races");
+      assert.match(columns, /race_results!inner\(rank1\)/);
+      if (fail) throw new Error("fixture read failed");
+      return fetchAll(table, columns, build, { client: { from: () => query } });
+    },
+  };
+  const code = match[0].replace(
+    /await import\("\.\/lib\/supabaseClient\.js"\)/g,
+    "client",
+  );
+  return vm.runInNewContext(
+    `(async () => { ${code}; return getRaceDetailPages(); })()`,
+    {
+      client,
+      getDaysAgoJST: (days) => getDaysAgoJST(days, now),
+    },
+  );
+}
+
+export async function sitemapFixture(source, pages, baseCount = 0) {
+  const code = source.match(
+    /async function generateSitemap\(\) \{[\s\S]*?\n\}/,
+  )[0];
+  return vm.runInNewContext(
+    `(async () => { ${code}; return generateSitemap(); })()`,
+    {
+      getBlogPosts: () => [],
+      getRacePages: async () => [],
+      getRaceDetailPages: async () => pages,
+      getRacerPages: async () => [],
+      getLatestRaceDates: async () => ({ overall: null, byVenue: new Map() }),
+      getMeetPages: async () => [],
+      staticPages: Array.from({ length: baseCount }, () => ({ loc: "/" })),
+      localizedPages: [],
+      SITE_URL: "https://www.boat-ai.jp",
+      renderUrlEntry,
+      alternatesFor: () => [],
+    },
+  );
+}
+
+async function verifyRaceDetails(source) {
+  const row = (date, n, rank1 = 1) => ({
+    race_id: `${date}-01-${String(n).padStart(2, "0")}`,
+    race_date: date,
+    race_results: rank1 == null ? null : { rank1 },
+  });
+  const rows = [
+    row("2026-10-31", 1),
+    row("2026-10-25", 1),
+    row("2026-10-24", 1),
+    row("2026-11-01", 1),
+    row("2026-10-31", 2, null),
+    { ...row("2026-10-31", 5), race_results: { rank1: null } },
+    { ...row("2026-10-31", 3, null), cancellation_status: "confirmed" },
+    { ...row("2026-10-31", 4), cancellation_status: "confirmed" },
+  ];
+  const pages = await raceDetailFixture(source, rows);
+  assert.deepEqual(
+    Array.from(pages, (p) => p.loc),
+    [
+      "/race/2026-10-31-01-01",
+      "/race/2026-10-25-01-01",
+      "/race/2026-10-31-01-04",
+    ],
+  );
+  const many = Array.from({ length: 2016 }, (_, i) => row("2026-10-31", i));
+  assert.equal((await raceDetailFixture(source, many)).length, 2016);
+  await assert.rejects(
+    raceDetailFixture(source, [], { fail: true }),
+    /fixture read failed/,
+  );
+  const xml = await sitemapFixture(source, pages);
+  assert.equal((xml.match(/<url>/g) ?? []).length, 3);
+  for (const page of pages)
+    assert.ok(xml.includes(`<loc>https://www.boat-ai.jp${page.loc}</loc>`));
+  assert.equal(
+    ((await sitemapFixture(source, [], 50000)).match(/<url>/g) ?? []).length,
+    50000,
+  );
+  await assert.rejects(sitemapFixture(source, pages, 49998), /上限超過/);
+  console.log(
+    `✅ /race 掲載条件・取得失敗・1000件超・総数上限を確認（固定データ${pages.length}件）`,
+  );
+}
+
 async function main() {
   const [appRouterSource, sitemapSource] = await Promise.all([
     fs.readFile(APP_ROUTER_PATH, "utf-8"),
     fs.readFile(SITEMAP_SCRIPT_PATH, "utf-8"),
   ]);
+
+  await verifyRaceDetails(sitemapSource);
 
   const routesBlock = extractLocalizedRoutesBlock(appRouterSource);
   const routePaths = extractStaticRoutePaths(routesBlock);
@@ -102,7 +246,8 @@ async function main() {
   process.exit(1);
 }
 
-main().catch((error) => {
-  console.error("❌ 検証中にエラーが発生しました:", error.message);
-  process.exit(1);
-});
+if (process.argv[1] === fileURLToPath(import.meta.url))
+  main().catch((error) => {
+    console.error("❌ 検証中にエラーが発生しました:", error.message);
+    process.exit(1);
+  });

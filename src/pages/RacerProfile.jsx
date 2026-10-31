@@ -50,6 +50,10 @@ export default function RacerProfile() {
   const [stats, setStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
   const [motorStatus, setMotorStatus] = useState(null);
+  const [motorLoad, setMotorLoad] = useState(null);
+  const [historyLoad, setHistoryLoad] = useState(null);
+  const motorState = motorLoad?.racerId === racerId ? motorLoad.state : "loading";
+  const historyState = historyLoad?.racerId === racerId ? historyLoad.state : "loading";
   // 公式の期別成績（GS00）。取得結果と失敗を racerId つきで持ち、別の選手の値を混ぜない
   const [periodStats, setPeriodStats] = useState(null);
   const [periodStatsFailedId, setPeriodStatsFailedId] = useState(null);
@@ -109,10 +113,12 @@ export default function RacerProfile() {
       .then((result) => {
         if (cancelled) return;
         setMotorStatus(result);
+        setMotorLoad({ racerId, state: result ? "done" : "empty" });
       })
       .catch((err) => {
         if (cancelled) return;
         console.error("今節のモーター状況取得エラー:", err.message);
+        setMotorLoad({ racerId, state: "error" });
       });
     return () => {
       cancelled = true;
@@ -183,9 +189,12 @@ export default function RacerProfile() {
     : `登録番号${racerId}の選手のページ | 龍神レーダー`;
   const canonicalUrl = `${SITE_URL}/racer/${racerId}`;
   // AI クローラー向けスナップショット（scripts/generate-ai-snapshots.js、BOA-848）が保存してよいかの目印。
-  // プロフィールと成績の両方が揃ったときだけ付ける。成績の取得に失敗したページは保存しない（SPA の外枠に戻る）
+  // プロフィール・成績に加え、モーターと履歴の正常完了も待つ。
   const snapshotReady =
-    !loading && !error && Boolean(data?.profile) && !statsLoading && !!stats;
+    !loading && !error && Boolean(data?.profile) && !statsLoading && !!stats &&
+    [motorState, historyState].every(
+      (state) => state === "done" || state === "empty",
+    );
 
   return (
     <>
@@ -200,6 +209,7 @@ export default function RacerProfile() {
 
       <div
         className="racer-profile-page"
+        data-snapshot-motor={motorState}
         data-snapshot-ready={snapshotReady ? "true" : undefined}
       >
         <nav className="racer-profile-breadcrumb">
@@ -254,6 +264,7 @@ export default function RacerProfile() {
               stats={stats}
               loading={statsLoading}
               todayVenueCode={todayVenueCode}
+              onHistoryStateChange={setHistoryLoad}
             />
             <RacerNewsList news={data.news} />
           </>
