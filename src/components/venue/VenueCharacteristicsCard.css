@@ -233,6 +233,14 @@
   line-height: 1;
 }
 
+/* 数字の列が少ない棒は列いっぱいに広げない。1440px で6コースの棒から値まで約1000px 離れた
+   （ui-layout.md の 720 上限、BOA-1189 ファン評価3周目） */
+.venue-hud-legend,
+.venue-hud-header-row,
+.venue-hud-rows {
+  max-width: 720px;
+}
+
 .venue-characteristics-subtitle {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);

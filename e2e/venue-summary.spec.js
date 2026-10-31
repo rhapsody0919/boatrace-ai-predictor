@@ -373,3 +373,20 @@ test("要約2行目の決まり手に全国の値を添え、多い・少ない�
   await expect(tamagawa).not.toContainText(/全国より(多い|少ない)/);
   await expect(tamagawa).toContainText("全国との差がはっきりした決まり手は無い");
 });
+
+// ファン評価3周目: 1440px で棒が列いっぱいに広がり、6コースの棒から値まで約1000px 離れた。
+// 棒と値の行は 720px を上限にする（docs/knowledge/ui-layout.md）
+test("1440pxで進入コース別の棒と値が離れすぎない（720px 以内、BOA-1189）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openVenue(page, 13);
+  const fold = page.locator(
+    ".venue-characteristics-card details.collapsible-section",
+  );
+  await fold.locator(":scope > summary").click();
+  const row = page.getByTestId("venue-hud-course-6");
+  await expect(row).toBeVisible();
+  const width = await row.evaluate((el) => el.getBoundingClientRect().width);
+  expect(width).toBeLessThanOrEqual(720);
+});
