@@ -5,9 +5,17 @@
  *   順位の色で「1号艇の足が良い」と読ませない。docs/knowledge/stat-findings.md「直前情報・展示」）
  * - 展示タイムの順位は小さいほど上。同タイムは同じ順位（競技順位方式、method=min。
  *   準優・優勝戦の1号艇は23%が他艇と同タイム。docs/knowledge/data-definitions.md）
- * - 着順は確定後だけ。結果に載っていない艇（失格・欠場等）は null
+ * - 着順は確定後だけ。結果に載っていない艇（失格・欠場等）は null。結果タブ（RaceResult の
+ *   finish_mark が無いときの経路）と同じく、不成立（race_status=no_race）のレースは着順を出さず、
+ *   返還艇（F・L・欠）は着順から外す。完走が3艇未満のレースは rank1〜3 に非完走艇が行順で入る
+ *   （scripts/lib/raceResultRows.js、NOT NULL 制約）ので、rank の列をそのまま着順にしない（Codex P1）
  */
 import { competitionRank } from "./competitionRank.js";
+import {
+  RACE_OUTCOME,
+  getRaceOutcomeState,
+  isBoatRefunded,
+} from "./raceOutcome.js";
 
 const validTime = (v) => {
   const n = Number(v);
@@ -29,10 +37,14 @@ export function buildRaceSummaryRows(players, exhibitionData, result) {
   );
   const times = [...timeOf.values()].filter((v) => v != null);
   const finishOf = new Map();
-  if (result?.rank1) {
+  if (result?.rank1 && getRaceOutcomeState(result) !== RACE_OUTCOME.NO_RACE) {
     [1, 2, 3, 4, 5, 6].forEach((pos) => {
       const boat = result[`rank${pos}`];
-      if (boat != null && !finishOf.has(Number(boat)))
+      if (
+        boat != null &&
+        !finishOf.has(Number(boat)) &&
+        !isBoatRefunded(result, boat)
+      )
         finishOf.set(Number(boat), pos);
     });
   }

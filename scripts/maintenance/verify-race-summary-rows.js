@@ -94,6 +94,45 @@ check(
   [false, false],
 );
 
+// 不成立のレース（完走3艇未満）は rank1〜3 に非完走艇が行順で入るので、着順を出さない（Codex P1）
+const noRace = buildRaceSummaryRows(players, exh, {
+  rank1: 1,
+  rank2: 2,
+  rank3: 3,
+  raceStatus: "no_race",
+  refundBoats: [4],
+});
+check(
+  "不成立は着順の列を出さない",
+  [noRace.hasResult, noRace.rows.map((r) => r.finish)],
+  [false, Array(6).fill(null)],
+);
+// 返還艇（F・L・欠）が rank の列に残っていても着順にしない
+const refund = buildRaceSummaryRows(players, exh, {
+  rank1: 2,
+  rank2: 1,
+  rank3: 5,
+  raceStatus: "partial_refund",
+  refundBoats: [5],
+});
+check(
+  "返還艇は着順なし",
+  refund.rows.map((r) => r.finish),
+  [2, 1, null, null, null, null],
+);
+// 成立状態が未判定（078以前・null）は今までどおり rank の列を使う
+const unknown = buildRaceSummaryRows(players, exh, {
+  rank1: 3,
+  rank2: 1,
+  rank3: 2,
+  raceStatus: null,
+});
+check(
+  "未判定は rank の列",
+  unknown.rows.map((r) => r.finish),
+  [2, 3, 1, null, null, null],
+);
+
 if (failures.length > 0) {
   console.error(
     `❌ verify-race-summary-rows: ${failures.length}/${checked} 件失敗`,
