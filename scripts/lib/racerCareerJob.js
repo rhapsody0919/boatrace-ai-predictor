@@ -288,10 +288,13 @@ export function gradeOverridesOf(groups, races) {
     const split = splitByRacerLinks(groupRaces, (r) =>
       g.rule.isSeed(r, { lastDay: g.lastDay }),
     );
-    if (split.primary.size === 0)
-      throw new Error(
-        `グレードの補正（${g.rule.id}、${g.venueDays[0]}〜）: 基準のレースが見つからない。節の作りが変わった可能性がある`,
-      );
+    // 基準のレースがまだ無い（main で、開催中の QC のトライアルの前など）。補正せずに元のグレードのまま数え、
+    // 報告に seedMissing を残す（その節の選手は出走中なので、基準のレースが入った後の晩に数え直される）。
+    // kb は終わった節だけなので、runKbEra が seedMissing を見つけたら止める
+    if (split.primary.size === 0) {
+      report.push({ rule: g.rule.id, venueDays: g.venueDays, races: groupRaces.length, seedMissing: true });
+      continue;
+    }
     for (const r of groupRaces) {
       if (!split.judged.has(r.race_id)) continue;
       out.set(
@@ -689,6 +692,11 @@ export async function runKbEra({
     `優勝戦の種別 ${inputs.finalStages.length}/${inputs.stageCount}、グレードの補正 ${inputs.overrides.raceIds.length}レース`,
   );
   for (const r of inputs.overrides.report) log(`  補正: ${JSON.stringify(r)}`);
+  const missingSeed = inputs.overrides.report.filter((r) => r.seedMissing);
+  if (missingSeed.length > 0)
+    throw new Error(
+      `グレードの補正: 基準のレースが見つからない節がある（${missingSeed.map((r) => `${r.rule} ${r.venueDays[0]}〜`).join("、")}）。節の作りが変わった可能性がある`,
+    );
 
   const acc = new Map();
   const boatsByYear = {};
@@ -789,9 +797,12 @@ export async function runMainEra({
   let rows = 0;
   let boatRows = 0;
   let maxRaceDate = null;
-  // 同じ日の前の起動が時間切れで止まっていたら、その続き（lastRacerId より後の選手）から始める
+  // 同じ日・同じモード（shadow と live を混ぜない）の前の起動が時間切れで止まっていたら、その続きから始める
   const resumeAfter =
-    resume && resume.date === today && Number.isFinite(resume.lastRacerId)
+    resume &&
+    resume.date === today &&
+    resume.dryRun === dryRun &&
+    Number.isFinite(resume.lastRacerId)
       ? resume.lastRacerId
       : null;
   const todo = resumeAfter === null ? racerIds : racerIds.filter((id) => id > resumeAfter);
@@ -862,7 +873,7 @@ export async function runMainEra({
   return {
     racers: racerIds.length,
     resumedAfter: resumeAfter,
-    cursor: complete ? null : { date: today, lastRacerId },
+    cursor: complete ? null : { date: today, dryRun, lastRacerId },
     done,
     complete,
     written,

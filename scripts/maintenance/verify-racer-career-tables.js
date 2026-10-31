@@ -392,18 +392,12 @@ test("選手のつながりで分け、基準のレースの組を primary に�
       title: "クイーンズクライマックス/QCシリーズ",
     },
   ]);
-  assert.throws(
-    () =>
-      gradeOverridesOf(groups, [
-        {
-          race_id: "2024-12-31-07-01",
-          race_number: 1,
-          stage: "一般",
-          racer_ids: [1],
-        },
-      ]),
-    /基準のレースが見つからない/,
-  );
+  // 基準のレース（トライアル）がまだ無い節は補正せず seedMissing を残す（開催中の QC。kb の計算はこれで止まる）
+  const pending = gradeOverridesOf(groups, [
+    { race_id: "2024-12-31-07-01", race_number: 1, stage: "一般", racer_ids: [1] },
+  ]);
+  assert.deepEqual(pending.raceIds, []);
+  assert.equal(pending.report[0].seedMissing, true);
 });
 
 test("半月の範囲は切れ目なく続き、最後の日の翌日で終わる（年をまたぐ）", () => {
@@ -960,7 +954,7 @@ test("main 層: 全選手の計算・境目・race_series の補い・未着の�
   });
   assert.deepEqual(
     [stopped.complete, stopped.cursor],
-    [false, { date: "2026-10-30", lastRacerId: 106 }],
+    [false, { date: "2026-10-30", dryRun: false, lastRacerId: 106 }],
   );
   client.rpcCalls.length = 0;
   const resumed = await runMainEra({
@@ -981,6 +975,9 @@ test("main 層: 全選手の計算・境目・race_series の補い・未着の�
       .flatMap((c) => c.args.p_racer_ids)[0],
     901,
   );
+  // shadow（dryRun）の cursor は live の続きに使わない（書いていない選手を飛ばさない）
+  const fromShadow = await runMainEra({ client, today: "2026-10-30", dryRun: false, resume: { ...stopped.cursor, dryRun: true }, log: quiet });
+  assert.equal(fromShadow.done, 18);
   // 別の日の cursor は使わない
   const otherDay = await runMainEra({
     client,
