@@ -16,6 +16,7 @@
  *   完全版の下書きの cover_image_path に入れる。送信は動画の upload の後に thumbnails.set で上げる（BOA-1172）。欄が無い bundle は今までどおり
  *
  * 1. 検査: 欄・P0 が0件・機械の検査が全部通った・禁止表現・動画の大きさ・レースが今日あり中止でない・締切の45分前より前
+ *    文に焼き込んだ「締切HH:MM」が今の締切と合う（文に無ければ見ない、bakedDeadlineReasons）
  *    同じレースの生きた全貌の item があれば、締切が違い・前の束がまだ送信を始めていない・版が違うときだけ差し替える（BOA-1201、supersedePlan）。
  *    ほかは拒否する（同じ締切は重複）
  *    --dry-run はここまで（DB・Storage に書かない。差し替えも書かない）
@@ -334,7 +335,12 @@ export const sendAtOf = (when, channel) =>
     Date.parse(when.send_at) + OFFSET_MIN[channel] * 60000,
   ).toISOString();
 
-/** 送信を始めた job の状態（このどれか、または attempts が1以上なら、外へ出たか出かけた） */
+/**
+ * 送信を始めた job の状態（外へ出たか出かけた）。held・failed・cancelled は試行の数によらず公開されていない
+ * （transition_sns_x_send の hold は queued・sending から、fail は sending からだけ移す。外への POST は begin_post で reconcile に
+ * 移した後。docs/db-migration/153:414-423・189:252-261。reconcile から cancelled へ移すのは非公開・削除済みの YouTube を閉じる
+ * youtube_close_private だけ、186:112-116）。締切が延びて送る直前の検査の deadline_changed で held になった job こそ差し替えたい
+ */
 const STARTED_STATES = ["sending", "reconcile", "posted"];
 const itemLabel = (item) =>
   `${item.channel}${item.variant === "shorts" ? "（Shorts）" : ""}`;
@@ -348,10 +354,10 @@ const itemLabel = (item) =>
  */
 export function supersedePlan(live, { deadlineAt, revision }) {
   if (!live.length) return { items: [] };
-  // 1回でも claim した job（attempts が1以上）は送信を始めている。外へ出たかもしれないので差し替えない
+  // sending・reconcile・posted の job は外へ出たかもしれないので差し替えない
   const started = live.flatMap((item) =>
     item.jobs
-      .filter((j) => j.attempts > 0 || STARTED_STATES.includes(j.state))
+      .filter((j) => STARTED_STATES.includes(j.state))
       .map(
         (j) =>
           `${itemLabel(item)} の job ${j.id} が ${j.state}（試行 ${j.attempts}）`,
@@ -377,6 +383,39 @@ export function supersedePlan(live, { deadlineAt, revision }) {
       ],
     };
   return { items: live, from };
+}
+
+/**
+ * 束の文に焼き込まれた「締切HH:MM」が今の締切と合うか（純粋関数、BOA-1201）。版の違いだけでは、締切が変わる前の材料で
+ * 作り直した束を見分けられない（前の item が無い初回も同じ）。作り手の raceHeader（bundle.mjs 65-75）の形「締切16:44」を拾い、
+ * 時は0埋めの違いを同じと扱う。「締切HH:MM」が1つも無い文は見ない（型によっては入らない）
+ * 返り値: 拒否の理由の配列（合っていれば空）
+ */
+export function bakedDeadlineReasons(bundle, deadlineAt) {
+  const current = jstTime(deadlineAt);
+  const texts = [
+    ["x_text", wantsX(bundle) ? bundle?.x_text : undefined],
+    ["youtube_full.title", bundle?.youtube_full?.title],
+    ["youtube_full.description", bundle?.youtube_full?.description],
+    ...(withShorts(bundle)
+      ? [
+          ["youtube_shorts.title", bundle?.youtube_shorts?.title],
+          ["youtube_shorts.description", bundle?.youtube_shorts?.description],
+        ]
+      : []),
+  ];
+  const stale = new Map();
+  for (const [field, text] of texts) {
+    if (typeof text !== "string") continue;
+    for (const [, h, m] of text.matchAll(/締切(\d{1,2}):(\d{2})/g)) {
+      const hm = `${h.padStart(2, "0")}:${m}`;
+      if (hm !== current) stale.set(hm, [...(stale.get(hm) ?? []), field]);
+    }
+  }
+  return [...stale].map(
+    ([hm, fields]) =>
+      `束の締切 ${hm} が今の締切 ${current} と違う（作り直す。${[...new Set(fields)].join("・")}）`,
+  );
 }
 
 /**
@@ -561,6 +600,9 @@ export async function pushFullPicture(
   const deadlineAt = race && deadlineIso(race);
   if (!deadlineAt) return reject(["レースが見つからない"]);
   if (race.cancellation_status != null) return reject(["レースが中止"]);
+  // 締切が変わる前の材料で作った束は、差し替えでも初回でも通さない（送る直前の検査の deadline_changed は push の時の締切と比べるので、文の時刻のずれを見ない）
+  const stale = bakedDeadlineReasons(bundle, deadlineAt);
+  if (stale.length) return reject(stale);
   const when = schedule(deadlineAt, now);
   if (now.getTime() >= Date.parse(when.latest))
     return reject([`締切の${LATEST_BEFORE_MIN}分前を過ぎた`]);

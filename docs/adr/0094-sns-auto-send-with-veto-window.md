@@ -83,7 +83,8 @@
 ## 追記: 締切・版が変わった全貌の束は送らず、作り手が作り直して差し替える（2026-10-31、system-architect・BOA-1201）
 - 全貌の束は締切の時刻（races.start_time）を動画・題・説明文に焼き込む（sns-video-studio/remotion/scripts/full-picture/bundle.mjs の raceHeader「締切HH:MM」）。締切が延びた束を送る側で通すと、違う時刻を出す。契約（docs/design/sns-hub-deadline-queue/contract.md）の「source_data の変更は再承認」のとおり、送る側では通さない
 - 送る直前の検査（createDeadlinePreflight、api/_lib/snsDeadlineQueue.js）は、版の違いを source_changed、締切だけの違いを deadline_changed で止める（全チャネル）。X は holdReasonOf がこの文字列のまま error_code に入れる
-- 作り手（hq）が作り直して push し直す。push（scripts/sns/push-full-picture.js）は、同じレースの生きた全貌の item（stopped・held_manual でないもの）があれば次で決める: 前の job が1つでも送信を始めていれば（試行1以上、または sending・reconcile・posted）拒否する。締切が全部同じなら重複として拒否する。締切が違っても版が同じ（作り直していない）なら拒否する。それ以外は差し替える
+- 作り手（hq）が作り直して push し直す。push（scripts/sns/push-full-picture.js）は、同じレースの生きた全貌の item（stopped・held_manual でないもの）があれば次で決める: 前の job が1つでも sending・reconcile・posted なら拒否する（held・failed・cancelled は試行の数によらず公開されていないので止めない。送る直前の検査の deadline_changed で held になった job こそ差し替える）。締切が全部同じなら重複として拒否する。締切が違っても版が同じ（作り直していない）なら拒否する。それ以外は差し替える
+- 版の違いだけでは、締切が変わる前の材料で作り直した束を見分けられない（前の item が無い初回も同じ）。push は束の文（x_text・youtube_full と、版2なら youtube_shorts の題・説明文）の「締切HH:MM」を全部拾い、1つでも今の締切と違えば、差し替えでも初回でも拒否する（時の0埋めの違いは同じと扱う。「締切HH:MM」が無い文は見ない）
 - 差し替えは、前の item を先に stopped（stopped_via=superseded、153 の CHECK にある値）にして一意の索引（172 の sns_auto_send_items_race_channel）から外し、続けて queued の job を transition_sns_x_send の hold（理由 superseded が error_code に入る、139 から同じ）にしてから、新しい束を作る。どこかで落ちたら新しい束を作らない（止めた item の job は claim で auto_stopped、残った item の job は送る前の検査の deadline_changed で止まる）。Slack に「締切 15:57→16:05 で差し替えた」の形で前と新の締切を書く。--dry-run は差し替えも書かない
 - 差し替えは全貌（full_picture）だけ。優勝戦・思考投稿・数字で見たら（push-finals-image.js・push-research-image.js）は今までの作り直しのまま
 - 却下: 締切が延びた束を送る側で通す（焼き込んだ時刻が違う）。push が前の束を黙って上書きする（送信を始めた束を差し替えると二重に出る）

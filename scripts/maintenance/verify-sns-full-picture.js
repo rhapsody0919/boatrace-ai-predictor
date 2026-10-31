@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import {
+  bakedDeadlineReasons,
   checkFullPicture,
   pushFullPicture,
   schedule,
@@ -1439,4 +1440,116 @@ test("BOA-1201: 前の item を止めた後に job の hold が落ちたら、�
     [claimed.r.state, claimed.r.error_code],
     ["cancelled", "auto_stopped"],
   );
+});
+
+test("BOA-1201: 文に焼き込んだ締切が今の締切と違う束は、初回でも差し替えでも拒否する。合う束・締切の文が無い束は通る", async () => {
+  // 初回（前の item が無い）: 締切が 20:44 に延びた後に、20:36 の材料で作った束が届く
+  await db.query("UPDATE races SET start_time='20:44:00'");
+  const first1 = await push(remade("20:36"));
+  assert.deepEqual(first1.reasons, [
+    "束の締切 20:36 が今の締切 20:44 と違う（作り直す。youtube_full.title・youtube_full.description）",
+  ]);
+  assert.match(first1.notes[0], /検査で拒否した/);
+  assert.equal((await all("SELECT id FROM sns_drafts")).length, 0);
+  // --dry-run でも同じく拒否する
+  assert.match(
+    (await push(remade("20:36"), { dryRun: true })).reasons.join(),
+    /束の締切 20:36 が今の締切 20:44 と違う/,
+  );
+  // 締切が合う束は通る
+  assert.equal((await push(remade("20:44"))).reasons, undefined);
+  assert.equal((await all("SELECT id FROM sns_drafts")).length, 3);
+
+  // 差し替え: 20:44 の束が入った後に 20:50 へ延び、版は違うが締切が古いまま（20:44）の束が届く
+  await db.query("UPDATE races SET start_time='20:50:00'");
+  const staleRemade = remade("20:44");
+  staleRemade.youtube_full.title += "（作り直し）";
+  const second = await push(staleRemade);
+  assert.deepEqual(second.reasons, [
+    "束の締切 20:44 が今の締切 20:50 と違う（作り直す。youtube_full.title・youtube_full.description）",
+  ]);
+  assert.equal((await all("SELECT id FROM sns_drafts")).length, 3);
+  assert.ok((await itemsAndJobs()).every((r) => r.state === "notified"));
+  // 締切の文が無い束は今までどおり見ない（差し替えの判定に進む）
+  assert.equal((await push(bundleV2())).reasons, undefined);
+});
+
+test("BOA-1201: 締切の文は x_text・完全版・Shorts の題と説明文を全部見て、時の0埋めの違いは同じと扱う", () => {
+  const at = (hm) => `2037-10-18T${hm}:00+09:00`;
+  const all5 = bundleV2({
+    x_text: `9/1 締切9:05\nhttps://www.boat-ai.jp/race/${RACE}`,
+    youtube_full: { title: "締切09:05", description: "締切9:05" },
+    youtube_shorts: { title: "締切9:05", description: "締切09:05 {full_url}" },
+  });
+  assert.deepEqual(bakedDeadlineReasons(all5, at("09:05")), []);
+  assert.deepEqual(bakedDeadlineReasons(all5, at("09:06")), [
+    "束の締切 09:05 が今の締切 09:06 と違う（作り直す。x_text・youtube_full.title・youtube_full.description・youtube_shorts.title・youtube_shorts.description）",
+  ]);
+  // 違う時刻が2つあれば、時刻ごとに理由を出す
+  assert.deepEqual(
+    bakedDeadlineReasons(
+      bundleV2({
+        youtube_shorts: {
+          title: "締切20:30",
+          description: "締切20:36 {full_url}",
+        },
+      }),
+      at("20:44"),
+    ),
+    [
+      "束の締切 20:30 が今の締切 20:44 と違う（作り直す。youtube_shorts.title）",
+      "束の締切 20:36 が今の締切 20:44 と違う（作り直す。youtube_shorts.description）",
+    ],
+  );
+  // 版1では youtube_shorts を、X を外した束では x_text を見ない（送らない文）
+  assert.deepEqual(
+    bakedDeadlineReasons(
+      bundle({
+        youtube_shorts: { title: "締切20:30", description: "締切20:30" },
+      }),
+      at("20:44"),
+    ),
+    [],
+  );
+  assert.deepEqual(
+    bakedDeadlineReasons(
+      bundleV2({ channels: ["youtube", "shorts"], x_text: "締切20:30" }),
+      at("20:44"),
+    ),
+    [],
+  );
+  // 締切の文が無い束は見ない
+  assert.deepEqual(bakedDeadlineReasons(bundleV2(), at("20:44")), []);
+});
+
+test("BOA-1201: 試行1以上でも held・failed の job（外へ出ていない）は差し替えを止めない。hold は queued の job だけにかける", async () => {
+  await push(bundleV2());
+  const old = await itemsAndJobs();
+  await db.query("UPDATE races SET start_time='20:44:00'");
+  const jobOf = (channel, variant) =>
+    old.find((r) => r.channel === channel && r.variant === variant).job_id;
+  // 締切が延びて、送る直前の検査の deadline_changed で held になった X（claim 済みで試行1）と、POST の前に落ちた完全版
+  await db.query(
+    "UPDATE sns_x_send_jobs SET state='held', attempts=1, error_code='deadline_changed' WHERE id=$1",
+    [jobOf("x", "main")],
+  );
+  await db.query(
+    "UPDATE sns_x_send_jobs SET state='failed', attempts=1, error_code='pre_post_failed' WHERE id=$1",
+    [jobOf("youtube", "main")],
+  );
+  const result = await push(remade());
+  assert.equal(result.reasons, undefined);
+  assert.equal(result.replacing.held_jobs, 1);
+  const rows = await itemsAndJobs();
+  assert.deepEqual(
+    rows
+      .filter((r) => old.some((o) => o.id === r.id))
+      .map((r) => [r.channel, r.variant, r.state, r.job_state, r.error_code]),
+    [
+      ["x", "main", "stopped", "held", "deadline_changed"],
+      ["youtube", "main", "stopped", "failed", "pre_post_failed"],
+      ["youtube", "shorts", "stopped", "held", "superseded"],
+    ],
+  );
+  assert.equal(rows.filter((r) => r.state === "notified").length, 3);
 });
