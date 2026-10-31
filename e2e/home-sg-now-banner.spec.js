@@ -1,4 +1,5 @@
-import { test, expect, fetchRecorded } from "./fixtures.js";
+import { test, expect } from "./fixtures.js";
+import { rewriteTodayRaces } from "./today-races-rewrite.js";
 
 /**
  * トップの「SG開催中」帯（集客レーン、2026-10-02）の固定。
@@ -11,33 +12,6 @@ import { test, expect, fetchRecorded } from "./fixtures.js";
 
 // 開発機の負荷が高いと、最初に開くトップの変換・読み込みが既定の60秒を超えることがある
 test.describe.configure({ timeout: 180_000 });
-
-const TODAY_RACES = /\/api\/races\/today|\/rest\/v1\/rpc\/get_today_races/;
-
-async function rewriteTodayRaces(page, mutate) {
-  await page.route(TODAY_RACES, async (route) => {
-    try {
-      const response = await fetchRecorded(route);
-      const body = await response.json().catch(() => null);
-      // await しないと、fulfill の失敗が下の catch を素通りする
-      if (!Array.isArray(body?.data))
-        return await route.fulfill(response.fulfillOptions());
-      mutate(body.data);
-      await route.fulfill({
-        status: response.status(),
-        headers: response.headers(),
-        json: body,
-      });
-    } catch (e) {
-      // 本番データの定期実行（E2E_LIVE=1）では fetchRecorded が本番の応答を待つ。トップは本日のレースを
-      // 2回以上読むので、アサーションが先に通ってページが閉じた後に残りの応答が届き、
-      // 「Target page, context or browser has been closed」でテストが失敗扱いになっていた
-      // （e2e-live.yml、10/03〜10/18 の14回中5回。BOA-1163）。ページが閉じた後の失敗だけ無視する
-      if (page.isClosed() || /has been closed/.test(String(e?.message))) return;
-      throw e;
-    }
-  });
-}
 
 test("SGの会場がある日は、トップに開催中の帯を出し、会場ページへリンクする", async ({
   page,
