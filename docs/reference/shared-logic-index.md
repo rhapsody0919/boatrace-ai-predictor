@@ -97,6 +97,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/isDirectRun.js` | そのモジュールが `node <path>` で直接実行されたかを判定する。 | isDirectRun |
 | `scripts/lib/isotonic-regression.js` | — | IsotonicCalibrator |
 | `scripts/lib/jobWatch.js` | 定期の job の見張り（.github/workflows/job-watch.yml、ADR-0097 の追記「定期の job の見張り」）の純粋関数。 | classifyLog, jobTimeouts, cancelledByTimeout, decideRun, rerunBlockers ほか4件 |
+| `scripts/lib/kbArchiveBoundary.js` | K/B の長期アーカイブ（kb_archive_*）と本体テーブル（races ほか）の境目の日。 | MAIN_TABLES_START, KB_LAST_DATE, KB_FIRST_DATE |
 | `scripts/lib/kbArchiveRows.js` | K/B中間形式（kb-day/v1）→ アーカイブ表（kb_archive_*）の行への変換 | raceTimeToSeconds, classifyStage, buildArchiveRows, KB_ARCHIVE_TABLES |
 | `scripts/lib/kbFileParser.js` | 公式ダウンロードデータ（Kファイル=競走成績、Bファイル=番組表）の全項目パーサー | buildKbUrl, kbArchiveRelPath, decodeLzhText, decodeLzhBytes, classifyKFileVenues ほか9件 |
 | `scripts/lib/kbGapFill.js` | K/Bファイル（kb-day/v1。kb-backfill.js parse の出力）から、本体テーブルの欠落を補う行を作る（純関数）。 | assertColumnSet, buildStartTimingRows, buildMissingBoatRows, buildExhibitionRows, normalizeKStage ほか7件 |
@@ -153,6 +154,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/raceStatusJob.js` | 中止・順延の早期確定（race_status、共通ラッパ cronWrapper.js の continuous ジョブ）。 | runRaceStatusJob, RACE_STATUS_CONCURRENCY, CONFIRM_REASON |
 | `scripts/lib/raceStatusParsers.js` | 開催場一覧（race/index）と結果ページ（raceresult）から、中止・順延の告知を読み取る純粋関数。 | raceIndexUrl, raceResultUrl, classifyStatusText, parseVenueStatuses, isRaceCancelledPage |
 | `scripts/lib/racelistBackfillRows.js` | 出走表（racelist）過去分バックフィルの、行の組み立て・URL・アーカイブパス（純関数。DB・取得先に接続しない） | parseRaceId, buildRacelistUrl, racelistArchiveRelPath, buildFillRow, buildFillRowsForRace ほか2件 |
+| `scripts/lib/racerCareerJob.js` | 選手ページ（GS00 案2）の集計の表（マイグレーション 190）の書き手の共通部分。 | finalStagesOf, specialSeriesGroups, splitByRacerLinks, gradeOverridesOf, mergeCareerResult ほか23件 |
 | `scripts/lib/racerNews/dedup.js` | — | isAlreadyProcessed |
 | `scripts/lib/racerNews/officialGradeAnnouncements.js` | — | collectGradeAnnouncementNews |
 | `scripts/lib/racerNews/pendingReview.js` | — | listPending, listAll, hasItemForSourceUrl, addPendingItem, updateStatus ほか3件 |
@@ -243,7 +245,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `scripts/lib/venueMotorStatsJob.js` | 会場別モーター成績（B3、venue_motor_stats）の共通ラッパ向けハンドラー（tasks.md T4b-14-1）。 | runVenueMotorStatsJob, VENUE_MOTOR_STATS_CONCURRENCY |
 | `scripts/lib/venueNames.js` | 会場コードの正準表。Node・Edge共通、副作用なし。 | VENUE_NAMES |
 | `scripts/lib/venueParameters.js` | 会場別パラメータ | getVolatilityThreshold, getVenueType, VENUE_1COURSE_WIN_RATE, VENUE_1COURSE_AVG, VENUE_VOLATILITY_THRESHOLD ほか2件 |
-| `scripts/lib/venueTechniquePeriod.js` | 会場の決まり手を期間（直近90日・直近365日）ごとに数える（BOA-430 思考アシスト、ADR 0088、マイグレーション 134）。 | addDays, periodRange, sourceRanges, fromLiveRow, fromArchiveRow ほか8件 |
+| `scripts/lib/venueTechniquePeriod.js` | 会場の決まり手を期間（直近90日・直近365日）ごとに数える（BOA-430 思考アシスト、ADR 0088、マイグレーション 134）。 | addDays, periodRange, sourceRanges, fromLiveRow, fromArchiveRow ほか6件 |
 | `scripts/lib/vercelIgnoreBuild.js` | Vercel の Ignored Build Step（vercel.json の ignoreCommand）の判定（BOA-908）。 | isSiteIrrelevant, shouldSkipBuild, IGNORED_DIRS, ALWAYS_BUILD |
 | `scripts/lib/verifyRegistryOrder.js` | verify-registry.json の entries を script の名前の順に保つ（BOA-938）。 | registryOrderProblems, sortRegistryText |
 | `scripts/lib/volatilityFactors.js` | イン崩れ因子（複合スコア・会場内パーセンタイル変換） | boat1StReason, calculateVolatilityComposite, toVolatilityPercentile |
@@ -397,4 +399,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 355 ファイル / export 2071 件。
+対象 357 ファイル / export 2100 件。
