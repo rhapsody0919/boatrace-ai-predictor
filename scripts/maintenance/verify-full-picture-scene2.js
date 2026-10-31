@@ -13,7 +13,8 @@
  */
 import assert from "node:assert/strict";
 import { s02Check, s02Facts, s02Text } from "../../sns-video-studio/remotion/scripts/full-picture/s02.mjs";
-import { RANK_WORDS, SUB_MAX, VOICE, f01Check, f01Description, f01Script, splitSubs, voiceText } from "../../sns-video-studio/remotion/scripts/full-picture/f01.mjs";
+import { RANK_WORDS, SUB_MAX, VOICE, f01Check, f01Description, f01RacerCheck, f01Script, splitSubs, voiceText } from "../../sns-video-studio/remotion/scripts/full-picture/f01.mjs";
+import { NB, RIGHT, emWidth, layoutRight, racersOf } from "../../sns-video-studio/remotion/src/fullPicture/f01Right.js";
 import { diffOf, diffText, rankOf } from "../../sns-video-studio/remotion/scripts/full-picture/scenes/diff.mjs";
 import { templateLines } from "../../sns-video-studio/remotion/scripts/full-picture/scene2-data.mjs";
 import {
@@ -2048,12 +2049,22 @@ for (const f of fixtures) {
   assert.equal(s02Facts({ cells: { waku: { forms: { any: { n: 213, tri } } } } }).kind, "count_mismatch", "件数と3連単の和が合わない日は作らない");
 }
 
+// 型 f01 の写しの材料は build が読んだ所だけで、出走表の名前は1艇目だけ・級は無い（make-fixture.mjs が落とす）。
+// f01 の検査では、級を同じ写しの facts.today.classes から、名前を6字（race_entries の最長、2026-09〜の実測）の仮の名前で埋める
+const F01_LONG_NAMES = ["壱壱壱壱壱壱", "弐弐弐弐弐弐", "参参参参参参", "肆肆肆肆肆肆", "伍伍伍伍伍伍", "陸陸陸陸陸陸"];
+const f01Fixture = (name) => {
+  const mf = JSON.parse(gunzipSync(readFileSync(new URL(`${name}.json.gz`, FX))).toString("utf8"));
+  const race = mf.api.races.find((r) => r.raceId === mf.raceId);
+  race.entries = [1, 2, 3, 4, 5, 6].map((b) => ({ ...race.entries.find((e) => e.number === b), number: b, name: F01_LONG_NAMES[b - 1], grade: mf.api.facts.today.classes[b - 1] }));
+  return mf;
+};
+
 // 型 f01-landscape-voice-full（関門の段4の試作）: 順位の語は線を通ったときだけ・字幕の幅・声の読みの辞書・説明欄のクレジット・左の画面の照合
 {
   for (const name of ["2026-10-12-01-12", "2026-10-15-15-10", "2026-10-16-24-11", "2026-10-19-19-10"]) {
-    const mf = JSON.parse(gunzipSync(readFileSync(new URL(`${name}.json.gz`, FX))).toString("utf8"));
+    const mf = f01Fixture(name);
     const s = f01Script(mf);
-    if (!s.ok) continue;
+    assert.ok(s.ok, `${name}: ${s.reason}`);
     for (const c of s.chapters) {
       const sig = c.facts?.secRank?.rankSig || c.facts?.swap;
       if (RANK_WORDS.test(c.voice)) assert.ok(sig, `${name} ${c.id}: 線を通らない順位の語: ${c.voice}`);
@@ -2091,7 +2102,7 @@ for (const f of fixtures) {
   }
   // ②の1着の件数は画面と同じ数え方（1〜3着がそろった類似レースだけ）。着順の欠けたレースを数えると画面と食い違い、照合で止まった（10/30 児島10R 293 対 291）
   {
-    const mf = JSON.parse(gunzipSync(readFileSync(new URL("2026-10-19-19-10.json.gz", FX))).toString("utf8"));
+    const mf = f01Fixture("2026-10-19-19-10");
     const nb = mf.api.similar?.similar?.neighbors;
     if (nb?.length) {
       nb[0] = { ...nb[0], finish: [nb[0].finish?.[0] ?? 1] }; // 1着だけ分かっているレース
@@ -2126,6 +2137,59 @@ for (const f of fixtures) {
   }
   // 選手名を声で読まない
   assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
+
+  // 右の列と冒頭の棒に、艇番の隣の「フルネーム 級」（オーナーの恒久の決まり 2026-11-01。10/30 丸亀9R の f01.json では名前も級も0件だった）
+  {
+    for (const name of ["2026-10-12-01-12", "2026-10-15-15-10", "2026-10-16-24-11", "2026-10-19-19-10"]) {
+      const mf = f01Fixture(name);
+      const s = f01Script(mf);
+      const { racers } = racersOf(mf);
+      assert.deepEqual(f01RacerCheck(s, racers), [], `${name}: 名前と級が出走表と一致し、6字の名前でも右の列に収まる`);
+      let named = 0;
+      for (const id of ["open", "c1", "c2", "c3", "c4", "c5"]) {
+        const c = s.chapters.find((x) => x.id === id);
+        if (!c) continue;
+        const texts = c.open ? c.open.bars.map((b) => `${b.boat}号艇${NB}${b.name}${NB}${b.grade}`) : [c.scope, c.answer, c.answer2].filter(Boolean);
+        const boats = texts.join(" ").match(/\d号艇/g) ?? [];
+        named += boats.length;
+        for (const b of boats) assert.ok(texts.join(" ").includes(`${b}${NB}${racers[b[0]].name}${NB}${racers[b[0]].grade}`), `${name} ${id}: ${b}の隣に名前と級`);
+        // 行ごとの幅（見積りは Noto Sans JP の実測以上。2026-11-01 に Chromium で 10 種を測って確かめた）
+        if (c.right) for (const k of ["scope", "answer", "answer2"]) for (const l of c.right[k].lines) assert.ok(emWidth(l) * c.right[k].size <= RIGHT.w, `${name} ${id}: 「${l}」が幅を越える`);
+      }
+      assert.ok(named >= 3, `${name}: 右の列に名前と級の付いた艇が出る（${named}）`);
+      // 声は艇番だけ（名前は読まない）
+      for (const c of s.chapters) for (const n of F01_LONG_NAMES) assert.ok(!c.voice.includes(n), `${name} ${c.id}: 声に名前`);
+    }
+    const mf = f01Fixture("2026-10-19-19-10");
+    const s = f01Script(mf);
+    const { racers } = racersOf(mf);
+    // 出走表と違う名前・級は落とす
+    assert.ok(f01RacerCheck(s, { ...racers, 1: { ...racers[1], grade: racers[1].grade === "A1" ? "A2" : "A1" } }).some((w) => w.includes("出走表")), "級の違いを落とす");
+    assert.ok(f01RacerCheck(s, { ...racers, 1: { ...racers[1], name: "別人" } }).some((w) => w.includes("出走表")), "名前の違いを落とす");
+    // 艇番だけ（名前と級が隣に無い）を落とす
+    const bare = { chapters: [{ id: "c2", scope: "x", answer: "1着 1号艇 322件", right: layoutRight({ answer: "1着 1号艇 322件", path: "p" }) }] };
+    assert.ok(f01RacerCheck(bare, racers).some((w) => w.includes("名前と級が無い")), "艇番だけを落とす");
+    // 欠けたら作らない（黙って空にしない）
+    for (const drop of [{ grade: null }, { name: "" }, { grade: "C1" }]) {
+      const m2 = f01Fixture("2026-10-19-19-10");
+      const race = m2.api.races.find((r) => r.raceId === m2.raceId);
+      Object.assign(race.entries[2], drop);
+      const r2 = f01Script(m2);
+      assert.equal(r2.ok, false, JSON.stringify(drop));
+      assert.equal(r2.kind, "racer_name_grade");
+      assert.ok(r2.reason.includes("3号艇"));
+    }
+    // 右の列: 収まらなければ字を縮め、縮めても下の線を越えたら ok=false（その章は検査で落ちる）
+    const six = [1, 2, 3, 4, 5, 6].map((b) => `${b}号艇${NB}${F01_LONG_NAMES[b - 1]}${NB}A1`).join("・");
+    const lo = layoutRight({ tag: "龍神ソナー ＞ 差がつく材料", scope: "今日の6艇・5項目", answer: `${six}\nそれぞれ 2項目`, answer2: "5項目のうち2位以内に入った数", path: "p" });
+    assert.ok(!lo.ok || lo.answer.size < 64, "6艇が並ぶと字を縮めるか、収まらない");
+    const huge = layoutRight({ answer: `${six}・${six}`, answer2: six, path: "p" });
+    assert.equal(huge.ok, false, "下の線を越えたら収まらない");
+    assert.ok(f01RacerCheck({ chapters: [{ id: "c1", answer: "x", right: huge }] }, racers).some((w) => w.includes("右の列が収まらない")));
+    // 名前と級の塊は折り返さない（「品川二千翔」と「A1」が別の行に分かれない）
+    const one = layoutRight({ answer: `2着 1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1 41.9%`, path: "p" });
+    assert.ok(one.ok && one.answer.lines.some((l) => l.includes(`1号艇${NB}${F01_LONG_NAMES[0]}${NB}A1`)));
+  }
 }
 
 console.log("verify-full-picture-scene2: OK");

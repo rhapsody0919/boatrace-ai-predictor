@@ -6,6 +6,7 @@
  * - 章: 左に龍神の実画面（x48〜1184・y32〜870）、右 632px（x1240〜1872）に章の札・範囲・答えの数字・自分で見るなら。
  *   外の余白48・間の溝56、右の列の頭と画像の頭を y32 で揃える（オーナー 10/27「余白が気になる」→ visual-designer の案）
  * - 字幕: y890〜960 に1行（声と同じ文）。帯は敷かず字の影だけ（全幅の黒い帯が下の空きとつながって塊に見えた）
+ * - 選手: 右の列と冒頭の棒は、艇番の隣に「フルネーム 級」（オーナー 2026-11-01）。行と字の大きさは作る側が決めて props で渡す（f01Right.js）
  * - 強調: 実画面の色は変えず、GOLD の枠を0.3秒で重ねる。カーソルは押す0.5秒前から動き、押した後は消す
  */
 import {
@@ -18,13 +19,14 @@ import {
   useCurrentFrame,
 } from "remotion";
 import { FONT } from "../fonts.js";
-import { BG_BOTTOM, BG_TOP, MUTED, clamp, ease, textWidth } from "./parts.js";
+import { BG_BOTTOM, BG_TOP, MUTED, clamp, ease } from "./parts.js";
 import { BOAT_COLORS } from "../../../../src/utils/colors.js";
+import { NB, OPEN, RIGHT } from "./f01Right.js";
 
 const GOLD = "#d4af37";
 /** scripts/full-picture/f01-capture.mjs の LEFT_BOX と同じ */
 const LEFT = { x: 48, y: 32, w: 1136, h: 838 };
-const RIGHT = { x: 1240, w: 632 };
+
 const FADE = 9; // 0.3秒
 
 const fadeIn = (frame, from) =>
@@ -57,12 +59,9 @@ function Badge({ boat, size = 56 }) {
 function Open({ open }) {
   const frame = useCurrentFrame();
   const max = Math.max(...open.bars.map((b) => b.count));
-  const BAR = 820;
+  // 名前と級の列の幅・棒の長さ・左の位置は作る側が決める（f01Right.js の layoutOpen）
+  const { labelW, bar: BAR, left } = open.layout;
   const label = (b) => `${b.count.toLocaleString("ja-JP")}件`;
-  const countW = Math.max(
-    ...open.bars.map((b) => textWidth(label(b), 58, 800)),
-  );
-  const left = Math.round((1920 - (190 + 24 + BAR + 24 + countW)) / 2);
   return (
     <AbsoluteFill>
       <div
@@ -112,16 +111,29 @@ function Open({ open }) {
             >
               <div
                 style={{
-                  width: 190,
+                  width: labelW,
                   display: "flex",
                   alignItems: "center",
-                  gap: 14,
-                  fontSize: 52,
+                  gap: OPEN.gap,
+                  fontSize: OPEN.boatSize,
                   fontWeight: 800,
+                  whiteSpace: "nowrap",
                 }}
               >
-                <Badge boat={b.boat} size={60} />
+                <Badge boat={b.boat} size={OPEN.badge} />
                 <span>号艇</span>
+                <span
+                  translate="no"
+                  style={{
+                    marginLeft: OPEN.nameGap - OPEN.gap,
+                    fontSize: OPEN.nameSize,
+                    fontWeight: 700,
+                  }}
+                >
+                  {b.name}
+                  {NB}
+                  {b.grade}
+                </span>
               </div>
               <div
                 style={{
@@ -155,25 +167,32 @@ function Open({ open }) {
   );
 }
 
-/** 答えの数字: 64px、収まらなければ 48px、まだ越えたら2行 */
-function AnswerLine({ text }) {
-  const size = textWidth(text, 64, 900) <= RIGHT.w ? 64 : 48;
-  return (
-    <div
-      style={{ color: GOLD, fontSize: size, fontWeight: 900, lineHeight: 1.3 }}
-    >
-      {text}
-    </div>
-  );
+/** 「3号艇 品川二千翔 A1」の名前と級（自動翻訳で名前が崩れないよう translate="no"） */
+const WHO = new RegExp(`(\\d号艇${NB}[^${NB}]+${NB}[AB][12])`);
+function WithNames({ text }) {
+  return text.split(WHO).map((part, i) => {
+    if (i % 2 === 0) return part;
+    const [boat, name, grade] = part.split(NB);
+    return (
+      <span key={i}>
+        {boat}
+        {NB}
+        <span translate="no">{name}</span>
+        {NB}
+        {grade}
+      </span>
+    );
+  });
 }
 
-/** 答え2: 1行に入らなければ「・」で区切って1区切り1行（1字だけが次の行に落ちないように） */
-function SubLine({ text }) {
-  const lines = textWidth(text, 36, 700) <= RIGHT.w ? [text] : text.split("・");
+/** 右の列の1欄。行と字の大きさは作る側が決めたもの（f01Right.js の layoutRight。幅と下の線に収まることを検査済み） */
+function Lines({ field, style }) {
   return (
-    <div style={{ fontSize: 36, fontWeight: 700, lineHeight: 1.4 }}>
-      {lines.map((l, i) => (
-        <div key={i}>{l}</div>
+    <div style={{ fontSize: field.size, ...style }}>
+      {field.lines.map((l, i) => (
+        <div key={i} style={{ whiteSpace: "nowrap" }}>
+          <WithNames text={l} />
+        </div>
       ))}
     </div>
   );
@@ -284,19 +303,26 @@ function Chapter({ c }) {
           </div>
         )}
         {c.scope && (
-          <div style={{ color: MUTED, fontSize: 32, fontWeight: 400 }}>
-            {c.scope}
-          </div>
+          <Lines
+            field={c.right.scope}
+            style={{ color: MUTED, fontWeight: 400, lineHeight: 1.4 }}
+          />
         )}
         <div style={{ height: 40 }} />
         {c.answer && (
           <div style={{ opacity: fadeIn(frame, c.answerAt) }}>
-            <AnswerLine text={c.answer} />
+            <Lines
+              field={c.right.answer}
+              style={{ color: GOLD, fontWeight: 900, lineHeight: 1.3 }}
+            />
           </div>
         )}
         {c.answer2 && (
           <div style={{ opacity: fadeIn(frame, c.answer2At) }}>
-            <SubLine text={c.answer2} />
+            <Lines
+              field={c.right.answer2}
+              style={{ fontWeight: 700, lineHeight: 1.4 }}
+            />
           </div>
         )}
       </div>

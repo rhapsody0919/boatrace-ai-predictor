@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { f01Check, f01Description, f01Script, splitSubs } from "./f01.mjs";
+import { fullName, racersOf } from "../../src/fullPicture/f01Right.js";
 import { synthAll } from "./f01-voice.mjs";
 import { DPR, captureAll } from "./f01-capture.mjs";
 
@@ -71,7 +72,7 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
       const i = lines.findIndex((l) => re.test(l.sub));
       return f(i >= 0 ? lineAt[i] : def);
     };
-    const ch = { id: c.id, from: f(start), len: f(len), tag: c.tag ?? null, scope: c.scope ?? null, answer: c.answer ?? null, answer2: c.answer2 ?? null, path: c.path ?? null, foot: c.foot ?? null };
+    const ch = { id: c.id, from: f(start), len: f(len), tag: c.tag ?? null, scope: c.scope ?? null, answer: c.answer ?? null, answer2: c.answer2 ?? null, path: c.path ?? null, foot: c.foot ?? null, right: c.right ?? null };
     if (c.open) ch.open = c.open;
     else {
       ch.answerAt = at(cue.answer, 1);
@@ -178,8 +179,9 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   const chapters = f01Chapters(marks);
   const description = f01Description(s, chapters);
   // 選手名（姓・名の両方。声で読まないことの照合）
-  const names = (m.api.races?.find((r) => r.raceId === m.raceId)?.entries ?? []).flatMap((e) => (e.name ?? "").split(/\s+/)).filter((x) => x.length >= 2);
-  const why = f01Check(s, { desc: description, kana: voice.kana, shots, names });
+  const names = (m.api.races?.find((r) => r.raceId === m.raceId)?.entries ?? []).flatMap((e) => [...(e.name ?? "").split(/\s+/), fullName(e.name)]).filter((x) => x.length >= 2);
+  // 名前と級の照合は、台本とは別に材料の出走表から読み直して比べる
+  const why = f01Check(s, { desc: description, kana: voice.kana, shots, names, racers: racersOf(m).racers });
   const seconds = props.total / FPS;
   const report = {
     version: s.version,
@@ -192,7 +194,8 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     minFontLine: MIN_FONT_PX,
     smallText: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.small ?? []])),
     dpr: DPR,
-    chapters: s.chapters.map((c) => ({ id: c.id, name: c.name, voice: c.voice, answer: c.answer ?? null, answer2: c.answer2 ?? null, scope: c.scope ?? null, facts: c.facts })),
+    chapters: s.chapters.map((c) => ({ id: c.id, name: c.name, voice: c.voice, answer: c.answer ?? null, answer2: c.answer2 ?? null, scope: c.scope ?? null, right: c.right ?? null, bars: c.open?.bars ?? null, openLayout: c.open?.layout ?? null, facts: c.facts })),
+    racers: s.racers,
     marks,
     kana: voice.kana,
   };
