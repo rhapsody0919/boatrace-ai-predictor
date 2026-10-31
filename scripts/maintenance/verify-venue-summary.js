@@ -220,10 +220,45 @@ for (const lang of LANGS) {
       3,
     );
     check(
-      `${lang} 会場${code}: 2行目は決まり手3つ`,
+      `${lang} 会場${code}: 2行目は決まり手3つと、それぞれの全国の値（割合が6つ）`,
       (lines.techniques.match(/\d+\.\d%/g) ?? []).length,
-      3,
+      6,
     );
+    // 「全国より多い／少ない」は、上位3つのうち Bonferroni を通った決まり手があるときだけ（オーナー決定 2026-11-01）
+    {
+      const v = S.venues[code];
+      const listed = ["sashi", "makuri", "makurizashi", "nuki"]
+        .sort((a, b) => v.techniques[b].count - v.techniques[a].count)
+        .slice(0, 3);
+      // 文の型から names を除いた固定の部分（「は全国より多い」等）。向きの無い会場に出ていないことを見る
+      const stemOf = (dir) =>
+        t(
+          dir === "higher"
+            ? "venueSummary.techniquesHigher"
+            : "venueSummary.techniquesLower",
+          { names: "\u0000" },
+        )
+          .split("\u0000")
+          .sort((x, y) => y.length - x.length)[0];
+      for (const dir of ["higher", "lower"]) {
+        const expected = listed
+          .filter((slug) => v.vsNational[slug] === dir)
+          .map((slug) => t(`techniques.${slug}`));
+        const phrase = t(
+          dir === "higher"
+            ? "venueSummary.techniquesHigher"
+            : "venueSummary.techniquesLower",
+          { names: expected.join(t("listSeparator")) },
+        );
+        check(
+          `${lang} 会場${code}: 2行目の「全国より${dir === "higher" ? "多い" : "少ない"}」は差が確かめられた決まり手だけ`,
+          expected.length > 0
+            ? lines.techniques.includes(phrase)
+            : !lines.techniques.includes(stemOf(dir)),
+          true,
+        );
+      }
+    }
     if (lang === "ja") {
       check(
         `ja 会場${code}: 使わない言葉が無い`,

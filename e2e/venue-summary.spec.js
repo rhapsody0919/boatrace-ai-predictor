@@ -339,3 +339,34 @@ test("英語の決まり手は用語集どおり「Nige (Escape)」の形で、�
   await expect(table).toContainText("Nige (Escape)");
   await expect(table).not.toContainText(/^Escape/);
 });
+// 2026-11-01 オーナー決定: 2行目の決まり手のどれにも全国の値を添え、「全国より多い／少ない」は
+// 全国との差が確かめられた決まり手（Bonferroni）だけに書く（ファン評価2周目: 上位がどの会場もまくりで、
+// 全国より多いと読まれた）
+test("要約2行目の決まり手に全国の値を添え、多い・少ないは差が確かめられた決まり手だけ（BOA-1189）", async ({
+  page,
+}) => {
+  const rateOf = (code, slug) =>
+    S.venues[code].techniques[slug].rate.toFixed(1);
+  const nat = (slug) => S.national.techniques[slug].rate.toFixed(1);
+  // 尼崎: まくりは全国より少ない（Bonferroni）、まくり差しは差が確かめられない
+  expect(S.venues[13].vsNational.makuri).toBe("lower");
+  expect(S.venues[13].vsNational.makurizashi).toBe(null);
+  await openVenue(page, 13);
+  const second = page.getByTestId("venue-summary-lines").locator("p").nth(1);
+  await expect(second).toContainText(
+    `まくり${rateOf(13, "makuri")}%（全国${nat("makuri")}%）`,
+  );
+  await expect(second).toContainText(
+    `差し${rateOf(13, "sashi")}%（全国${nat("sashi")}%）`,
+  );
+  await expect(second).toContainText("。まくりは全国より少ない");
+  await expect(second).not.toContainText("まくり差しは全国");
+  await expect(second).not.toContainText("全国より多い");
+  // 多摩川: 上位3つに差が確かめられた決まり手が無いので、多い・少ないを書かない
+  expect(S.venues[5].vsNational.makuri).toBe(null);
+  expect(S.venues[5].vsNational.makurizashi).toBe(null);
+  await openVenue(page, 5);
+  const tamagawa = page.getByTestId("venue-summary-lines").locator("p").nth(1);
+  await expect(tamagawa).toContainText(`（全国${nat("makuri")}%）`);
+  await expect(tamagawa).not.toContainText(/全国より(多い|少ない)/);
+});

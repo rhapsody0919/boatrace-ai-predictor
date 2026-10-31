@@ -3868,7 +3868,11 @@
     "course1Lower": "{{venue}}の直近1年（{{to}}まで、{{races}}レース）、1コースの1着率は{{rate}}%で、全国（{{nationalRaces}}レース）の{{nationalRate}}%より低い",
     "course1Unclear": "{{venue}}の直近1年（{{to}}まで、{{races}}レース）、1コースの1着率は{{rate}}%。全国（{{nationalRaces}}レース）の{{nationalRate}}%との差ははっきりしない",
     "techniques": "逃げ以外の決まり手の上位3つは{{list}}（全レースのうちの割合）",
-    "techniqueItem": "{{name}}{{rate}}%"
+    "techniqueItem": "{{name}}{{rate}}%（全国{{nationalRate}}%）",
+    "techniquesHigher": "{{names}}は全国より多い",
+    "techniquesLower": "{{names}}は全国より少ない",
+    "techniquesWithCompare": "{{line}}。{{compare}}",
+    "compareSeparator": "、"
   },
   "venueMeetBanner": {
     "inProgress": "開催中",

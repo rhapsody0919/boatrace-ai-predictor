@@ -3868,7 +3868,11 @@
     "course1Lower": "{{venue}}近1年（至{{to}}，{{races}}場），進場道次1道的第1名率為{{rate}}%，低於全國（{{nationalRaces}}場）的{{nationalRate}}%",
     "course1Unclear": "{{venue}}近1年（至{{to}}，{{races}}場），進場道次1道的第1名率為{{rate}}%。與全國（{{nationalRaces}}場）的{{nationalRate}}%之間的差異並不明確",
     "techniques": "逃走以外，占比最高的3種決勝方式為{{list}}（占全部比賽的比例）",
-    "techniqueItem": "{{name}}{{rate}}%"
+    "techniqueItem": "{{name}}{{rate}}%（全國{{nationalRate}}%）",
+    "techniquesHigher": "{{names}}多於全國",
+    "techniquesLower": "{{names}}少於全國",
+    "techniquesWithCompare": "{{line}}。{{compare}}",
+    "compareSeparator": "，"
   },
   "venueMeetBanner": {
     "inProgress": "舉辦中",

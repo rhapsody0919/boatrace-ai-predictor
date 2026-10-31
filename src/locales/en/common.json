@@ -3878,7 +3878,11 @@
     "course1Lower": "{{venue}}, last 12 months to {{to}} ({{races}} races): the 1st-place rate from starting course 1 was {{rate}}%, lower than the national {{nationalRate}}% ({{nationalRaces}} races)",
     "course1Unclear": "{{venue}}, last 12 months to {{to}} ({{races}} races): the 1st-place rate from starting course 1 was {{rate}}%. The difference from the national {{nationalRate}}% ({{nationalRaces}} races) is not clear",
     "techniques": "Top 3 winning techniques other than Escape: {{list}} (share of all races)",
-    "techniqueItem": "{{name}} {{rate}}%"
+    "techniqueItem": "{{name}} {{rate}}% (national {{nationalRate}}%)",
+    "techniquesHigher": "more common than nationally: {{names}}",
+    "techniquesLower": "less common than nationally: {{names}}",
+    "techniquesWithCompare": "{{line}}. {{compare}}",
+    "compareSeparator": "; "
   },
   "venueMeetBanner": {
     "inProgress": "in progress",

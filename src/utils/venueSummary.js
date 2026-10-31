@@ -3,7 +3,8 @@
  *
  * - 1行目: 直近1年の1コースの1着率と全国の値。全国と比べる文（高い・低い）は、その会場を除く全国との差が
  *   Bonferroni を通った会場だけ（vsNational.course1）。ほかの会場は「差ははっきりしない」
- * - 2行目: 逃げ以外の決まり手の上位3つ（「上位3つ」と書く。全部の列挙に読ませない）（全レースのうちの割合）。逃げは1コース1着の95.6%で、
+ * - 2行目: 逃げ以外の決まり手の上位3つ（「上位3つ」と書く。全部の列挙に読ませない）。どれにも全国の値を添え、
+ *   「全国より多い／少ない」は全国との差が Bonferroni を通った決まり手（vsNational.makuri・makurizashi）だけに書く（全レースのうちの割合）。逃げは1コース1着の95.6%で、
  *   1行目と同じことを言い直すので文に入れない（docs/reference/venue-summary-stats.md「1コースの逃げと…」）
  *
  * 人の画面（VenueSummaryLines）とボット向け HTML（botPageModel.js の buildVenueModel）が同じ関数を使う。
@@ -48,23 +49,48 @@ export function venueSummaryLines(t, venueCode, stats = VENUE_SUMMARY_STATS) {
       nationalRate: formatRate(national1.rate),
     },
   );
-  const top = [...SECOND_LINE_TECHNIQUES]
+  const topSlugs = [...SECOND_LINE_TECHNIQUES]
     .sort(
       (a, b) =>
         venue.techniques[b].count - venue.techniques[a].count ||
         SECOND_LINE_TECHNIQUES.indexOf(a) - SECOND_LINE_TECHNIQUES.indexOf(b),
     )
-    .slice(0, SECOND_LINE_COUNT)
-    .map((slug) =>
-      t("venueSummary.techniqueItem", {
-        // 用語集どおり「ローマ字＋英語」（Nige (Escape)）。カードの表・もっと詳しくと同じ表記にする
-        name: t(`techniques.${slug}`),
-        rate: formatRate(venue.techniques[slug].rate),
-      }),
-    );
-  const techniques = t("venueSummary.techniques", {
-    list: top.join(t("listSeparator")),
+    .slice(0, SECOND_LINE_COUNT);
+  // どの決まり手にも全国の値を添える（会場の上位は全国の順とほぼ同じなので、値だけだと「全国より多い」と
+  // 読まれる。BOA-1189 ファン評価2周目、2026-11-01 オーナー決定）
+  const items = topSlugs.map((slug) =>
+    t("venueSummary.techniqueItem", {
+      // 用語集どおり「ローマ字＋英語」（Nige (Escape)）。カードの表・もっと詳しくと同じ表記にする
+      name: t(`techniques.${slug}`),
+      rate: formatRate(venue.techniques[slug].rate),
+      nationalRate: formatRate(stats.national.techniques[slug].rate),
+    }),
+  );
+  const line = t("venueSummary.techniques", {
+    list: items.join(t("listSeparator")),
   });
+  // 「全国より多い／少ない」は、全国との差が Bonferroni を通った決まり手（まくり・まくり差し）だけ
+  const compare = ["higher", "lower"]
+    .map((dir) => {
+      const names = topSlugs
+        .filter((slug) => venue.vsNational[slug] === dir)
+        .map((slug) => t(`techniques.${slug}`));
+      if (names.length === 0) return null;
+      return t(
+        dir === "higher"
+          ? "venueSummary.techniquesHigher"
+          : "venueSummary.techniquesLower",
+        { names: names.join(t("listSeparator")) },
+      );
+    })
+    .filter(Boolean);
+  const techniques =
+    compare.length > 0
+      ? t("venueSummary.techniquesWithCompare", {
+          line,
+          compare: compare.join(t("venueSummary.compareSeparator")),
+        })
+      : line;
   return { course, techniques };
 }
 
