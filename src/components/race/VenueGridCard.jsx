@@ -96,6 +96,17 @@ function VenueGridCard({
               {seriesDayLabel}
             </span>
           )}
+          {/* 承認したモック（A案）どおり、優勝戦・準優勝戦のバッジは日目の札と同じ行に並べる。
+              入らない幅（375px の3列）では次の行へ折り返す */}
+          {stageConfig && (
+            <span
+              className="venue-grid-card__stage"
+              style={{ background: stageConfig.color }}
+            >
+              {stageConfig.emoji} {t(stageConfig.i18nKey)}{" "}
+              {raceNumberLabel(highlightedStageRace.raceNo)}
+            </span>
+          )}
         </span>
         {timeIcon && (
           <span
@@ -109,15 +120,6 @@ function VenueGridCard({
       </div>
 
       <div className="venue-grid-card__badges">
-        {stageConfig && (
-          <span
-            className="venue-grid-card__stage"
-            style={{ background: stageConfig.color }}
-          >
-            {stageConfig.emoji} {t(stageConfig.i18nKey)}{" "}
-            {raceNumberLabel(highlightedStageRace.raceNo)}
-          </span>
-        )}
         {gradeConfig && (
           <span
             className="venue-grid-card__grade"

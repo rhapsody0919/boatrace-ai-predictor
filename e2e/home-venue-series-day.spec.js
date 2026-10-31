@@ -81,7 +81,9 @@ test("最終日は「最終日」と書き、優勝戦のバッジと並べる�
     "最終日",
     { timeout: 30000 },
   );
-  await expect(card.locator(".venue-grid-card__stage")).toContainText("優勝戦");
+  await expect(
+    card.locator(".venue-grid-card__name-row .venue-grid-card__stage"),
+  ).toContainText("優勝戦");
   await expect(card).not.toContainText("6日目");
 });
 

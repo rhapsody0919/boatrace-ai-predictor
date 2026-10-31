@@ -2199,10 +2199,22 @@ test.describe("レイアウト: 過去に発生した割合を見る（BOA-635�
  * 横スクロールが出ないこと。全会場を「次のレースあり」に書き換えて全カードで測る
  */
 test.describe("レイアウト: トップの会場カードの日目の札（BOA-1199）", () => {
-  for (const { path, day, isFinalDay, label } of [
-    { path: "/", day: 6, isFinalDay: true, label: "最終日" },
-    { path: "/en", day: 1, isFinalDay: false, label: "Opening day" },
-    { path: "/en", day: 5, isFinalDay: false, label: "Day 5" },
+  for (const { path, day, isFinalDay, label, stage } of [
+    { path: "/", day: 6, isFinalDay: true, label: "最終日", stage: "優勝戦" },
+    {
+      path: "/en",
+      day: 1,
+      isFinalDay: false,
+      label: "Opening day",
+      stage: "優勝戦",
+    },
+    {
+      path: "/en",
+      day: 5,
+      isFinalDay: false,
+      label: "Day 5",
+      stage: "準優勝戦",
+    },
   ]) {
     test(`${path} の「${label}」の札がカードに収まる`, async ({ page }) => {
       await rewriteTodayRaces(page, (venues) => {
@@ -2213,7 +2225,7 @@ test.describe("レイアウト: トップの会場カードの日目の札（BOA
             r.isFinalDay = isFinalDay;
             r.cancellationStatus = null;
             r.raceGrade = "SG";
-            r.raceStage = i === races.length - 1 ? "優勝戦" : null;
+            r.raceStage = i === races.length - 1 ? stage : null;
           });
       });
       await page.goto(path, { waitUntil: "domcontentloaded" });
@@ -2234,10 +2246,15 @@ test.describe("レイアウト: トップの会場カードの日目の札（BOA
           const badge = card.querySelector(".venue-grid-card__series-day");
           if (!badge) continue;
           const c = card.getBoundingClientRect();
-          const b = badge.getBoundingClientRect();
           const name = card.querySelector(".venue-grid-card__name");
-          if (b.right > c.right + tolerance || b.left < c.left - tolerance)
-            out.push({ card: card.getAttribute("href"), badgeOut: true });
+          // 日目の札と、同じ行に並べた優勝戦・準優勝戦のバッジ（A案）がカードに収まる
+          for (const el of card.querySelectorAll(
+            ".venue-grid-card__series-day, .venue-grid-card__stage",
+          )) {
+            const b = el.getBoundingClientRect();
+            if (b.right > c.right + tolerance || b.left < c.left - tolerance)
+              out.push({ card: card.getAttribute("href"), out: el.className });
+          }
           if (name.scrollWidth > name.clientWidth + 1)
             out.push({
               card: card.getAttribute("href"),
