@@ -179,13 +179,14 @@ function SubLine({ text }) {
   );
 }
 
-function Cut({ cut, frame, boxH }) {
+function Cut({ cut, frame }) {
   const s = cut.scale;
   const sw = cut.clip.w * s;
   const sh = cut.clip.h * s;
   const ox = LEFT.x + (LEFT.w - sw) / 2;
-  // 章の中でいちばん高いカットの箱で縦の中央に置き、その箱の中では上に揃える（押す前・押した後で位置がずれない）
-  const oy = LEFT.y + (LEFT.h - boxH) / 2;
+  // 同じ部品のカット（押す前・押した後）の箱の高さ boxH で縦の中央に置き、その箱の中では上に揃える（切り替えで位置がずれない）。
+  // 違う部品は部品ごとに中央（形の札が上に小さく寄り、中央が空いていた。hq 11d 節）
+  const oy = LEFT.y + (LEFT.h - (cut.boxH ?? sh)) / 2;
   let cursor = null;
   if (cut.cursor) {
     const { x, y, w, h, at } = cut.cursor;
@@ -253,10 +254,9 @@ function Cut({ cut, frame, boxH }) {
 function Chapter({ c }) {
   const frame = useCurrentFrame();
   const cut = [...c.cuts].reverse().find((x) => frame >= x.from) ?? c.cuts[0];
-  const boxH = Math.max(...c.cuts.map((x) => x.clip.h * x.scale));
   return (
     <AbsoluteFill>
-      {cut && <Cut cut={cut} frame={frame} boxH={boxH} />}
+      {cut && <Cut cut={cut} frame={frame} />}
       <div
         style={{
           position: "absolute",
@@ -336,7 +336,7 @@ function Chapter({ c }) {
 
 /**
  * 終了画面の要素の場所（要素は YouTube 側で置く。ここでは枠と、要素の外の上に説明の字）。
- * 左の画面の下半分に暗い幕を重ねて置く（右の列の「説明欄の一番上」と、左上の押していない軸の枠は隠さない）
+ * 左の画面は暗い地にして枠だけを置く（実画面の上に重ねると読めなかった。hq 11d 節）。右の列の「説明欄の一番上」は隠さない
  */
 function EndScreen({ from }) {
   const frame = useCurrentFrame();
@@ -361,15 +361,16 @@ function EndScreen({ from }) {
         style={{
           position: "absolute",
           left: 0,
-          top: 420,
+          top: 0,
           width: RIGHT.x - 28,
-          height: 460,
-          background: "rgba(10,20,36,0.92)",
+          height: 880,
+          // 終了画面の枠の下に実画面を写さない（重なって読めなかった。hq 11d 節）
+          background: `linear-gradient(${BG_TOP}, ${BG_BOTTOM})`,
           opacity: o,
         }}
       />
-      {box(LEFT.x + 72, 470, 600, 338, "全貌 完全版の再生リスト")}
-      {box(LEFT.x + 772, 540, 220, 220, "チャンネル登録", true)}
+      {box(LEFT.x + 72, 270, 600, 338, "全貌 完全版の再生リスト")}
+      {box(LEFT.x + 772, 330, 220, 220, "チャンネル登録", true)}
     </AbsoluteFill>
   );
 }

@@ -2089,6 +2089,25 @@ for (const f of fixtures) {
     assert.deepEqual(r.reasons, []);
     assert.ok(r.description.includes(VOICE.credit) && r.title === "題" && r.thumb.endsWith("thumb.png"));
   }
+  // 字の小ささ（hq 11d 節、10/30 に7章が 13.5〜21px）: 線を下回る撮った物の章・最初のカットを撮れなかった章は出さない。
+  // ④は「軸のボタン → 2着の棒 → 軸のボタン（カーソル）→ 押した後 → 2着の棒」の順に、声の行に合わせて切り替える
+  {
+    const { f01SmallChapters, f01Timeline, MIN_FONT_PX, PLAN } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const sh = (k, px, clip = { x: 0, y: 0, w: 400, h: 150 }) => ({ file: `/x/${k}.png`, clip, scale: 2.8, minFontPx: px });
+    const s1 = { chapters: [{ id: "c2" }, { id: "c3" }, { id: "c4" }, { id: "c5" }] };
+    const shots1 = { c2: sh("c2", 26.4), c3: sh("c3", MIN_FONT_PX - 0.1), c4: sh("c4", 29.8), c4b: sh("c4b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
+    assert.deepEqual(f01SmallChapters(s1, shots1).map((x) => x.id), ["c3", "c5"], "線の下（c3）と撮れなかった章（c5）を省く");
+    assert.deepEqual(PLAN.c4.map((p) => p.k), ["c4", "c4b", "c4", "c42", "c42b"]);
+    const lines = ["ここからは思考アシスト。", "軸を選ぶと、相手の割合が出る。", "大村で1号艇が1着の11,160件では、", "2着は2号艇が34.7%。", "軸を4号艇に変えると、1,375件で、", "2着は1号艇が37%に入れ替わる。"];
+    const voice = { lines: lines.map((sub, i) => ({ chapter: "c4", i, sub, file: `v${i}.wav`, sec: 2 })) };
+    const shots2 = { ...shots1, c42: { ...sh("c42", 29.8), cursorFrom: { x: 1, y: 1, w: 10, h: 10 } }, c42b: sh("c42b", 31.1, { x: 8, y: 0, w: 380, h: 170 }) };
+    const { props } = f01Timeline({ chapters: [{ id: "c4", name: "相手", subs: lines }] }, voice, shots2);
+    const cuts = props.chapters[0].cuts;
+    assert.deepEqual(cuts.map((c) => c.file), ["c4.png", "c4b.png", "c4.png", "c42.png", "c42b.png"]);
+    assert.ok(cuts.every((c, i) => i === 0 || c.from >= cuts[i - 1].from), "切り替えは時刻の順");
+    assert.ok(cuts[2].cursor && cuts[3].from === cuts[2].from + 15, "押す前の画面でカーソルを動かし、0.5秒後に押した後へ");
+    assert.equal(cuts[0].boxH, cuts[3].boxH, "同じ部品（軸のボタン）は同じ箱の高さ（切り替えで位置がずれない）");
+  }
   // 選手名を声で読まない
   assert.ok(f01Check({ chapters: [{ id: "c1", voice: "西村は", subs: [] }] }, { desc: VOICE.credit, kana: {}, shots: {}, names: ["西村"] }).some((w) => w.includes("選手名")));
 }
