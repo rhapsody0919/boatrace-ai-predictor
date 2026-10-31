@@ -57,15 +57,13 @@ export default function VenueCharacteristicsCard({
   const venueSummary = waterType
     ? t(`venueCharacteristics.waterType.${waterType}`)
     : null;
-  // 折りたたんだ見出しの要約1行: 水面と、1コースの1着率（中身の代表値）
+  // 折りたたんだ見出しの1行: 水質と、開くと何が出るか。見出しの直下の要約2行と同じ数字を繰り返さない
+  // （畳んだカードが完成した部品に見えて開かれない。BOA-1189 ファン評価2周目）
   const collapsedTeaser = t(
     venueSummary
       ? "venueCharacteristics.collapsedTeaser"
       : "venueCharacteristics.collapsedTeaserNoSummary",
-    {
-      summary: venueSummary ?? "",
-      rate: formatRate(rows.find((r) => r.course === 1).rate),
-    },
+    { summary: venueSummary ?? "" },
   );
 
   return (
@@ -99,6 +97,10 @@ export default function VenueCharacteristicsCard({
         <h3 className="venue-characteristics-subtitle">
           {t("venueCharacteristics.courseHeader")}
         </h3>
+        <p className="venue-hud-legend">
+          <span className="venue-hud-legend-tick" aria-hidden="true" />
+          {t("venueCharacteristics.nationalLegend")}
+        </p>
         <div className="venue-hud-header-row" aria-hidden="true">
           <span />
           <span className="venue-hud-axis-labels">

@@ -107,8 +107,8 @@
     "metaDescriptionSeries": "{{series}} 개최 중인 {{venue}} 경정장의 오늘 출주표와 전 경주 AI 예측, 이번 시리즈의 득점률 순위를 공개합니다."
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}} / 1코스 1착률 {{rate}}%",
-    "collapsedTeaserNoSummary": "1코스 1착률 {{rate}}%",
+    "collapsedTeaser": "수질: {{summary}}. 진입 코스별 1착률과 결정수 표 열기",
+    "collapsedTeaserNoSummary": "진입 코스별 1착률과 결정수 표 열기",
     "title": "이 경정장의 특징 (최근 1년)",
     "note": "1착 비율을 실제 진입 코스별(번호가 아님)로 보여줍니다. 결정수는 전 경주 중 비율입니다.",
     "nationalAverageTooltip": "전국 {{value}}%",
@@ -139,7 +139,8 @@
     "techniqueVenue": "이 경정장",
     "techniqueNational": "전국",
     "megumareNote": "어부지리는 {{races}}경주 중 {{count}}회(전국은 {{nationalRaces}}경주 중 {{nationalCount}}회). 횟수가 적어 비율로 경정장을 비교하지 않습니다.",
-    "winsOfRaces": "{{races}}경주 중 {{count}}회"
+    "winsOfRaces": "{{races}}경주 중 {{count}}회",
+    "nationalLegend": "세로선은 전국 값"
   },
   "raceDetailPage": {
     "assistSwitch": {

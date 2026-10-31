@@ -205,6 +205,34 @@
   white-space: nowrap;
 }
 
+/* 縦の線（全国の値）の凡例。目盛りの線と見分けるため、バーの印と同じ形を1つ見せる */
+.venue-hud-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-secondary);
+}
+
+.venue-hud-legend-tick {
+  display: inline-block;
+  width: 2px;
+  height: 0.9rem;
+  background: var(--text-secondary);
+}
+
+/* 畳んだときの1行は、押すと開くことが分かる色にし、開閉の印を大きくする（ファン評価2周目） */
+.venue-characteristics-card .collapsible-section:not([open]) .venue-characteristics-teaser {
+  color: var(--brand-accent-secondary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.venue-characteristics-card .collapsible-section__summary::after {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
 .venue-characteristics-subtitle {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);

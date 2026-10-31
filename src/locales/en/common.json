@@ -108,8 +108,8 @@
     "metaDescriptionSeries": "Today's race card and AI predictions for every race at {{venue}} boat race stadium during {{series}}, plus the meet's score rate ranking."
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}} / Course 1 1st-place rate {{rate}}%",
-    "collapsedTeaserNoSummary": "Course 1 1st-place rate {{rate}}%",
+    "collapsedTeaser": "Water: {{summary}}. Open the 1st-place rate by starting course and the winning-technique table",
+    "collapsedTeaserNoSummary": "Open the 1st-place rate by starting course and the winning-technique table",
     "title": "This Venue's Tendencies (last 12 months)",
     "note": "1st-place rates are shown by the starting course each boat actually took (not the lane number). Winning techniques are shares of all races.",
     "nationalAverageTooltip": "National {{value}}%",
@@ -141,7 +141,8 @@
     "techniqueVenue": "This venue",
     "techniqueNational": "National",
     "megumareNote": "Lucky win: {{count}} of {{races}} races (national: {{nationalCount}} of {{nationalRaces}} races). Too few to compare venues by share.",
-    "winsOfRaces": "{{count}} of {{races}} races"
+    "winsOfRaces": "{{count}} of {{races}} races",
+    "nationalLegend": "The vertical line marks the national value"
   },
   "raceDetailPage": {
     "assistSwitch": {

@@ -107,8 +107,8 @@
     "metaDescriptionSeries": "{{venue}}競艇（ボートレース{{venue}}）で{{series}}開催中。本日の出走表と全レースのAI予想、節の得点率ランキングを無料・登録不要で公開しています。"
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}}／1コースの1着率 {{rate}}%",
-    "collapsedTeaserNoSummary": "1コースの1着率 {{rate}}%",
+    "collapsedTeaser": "水質は{{summary}}。進入コース別の1着率と決まり手の表を開く",
+    "collapsedTeaserNoSummary": "進入コース別の1着率と決まり手の表を開く",
     "title": "この会場の特徴（直近1年）",
     "note": "1着の割合を、実際に入った進入コース別（枠番ではない）に出しています。決まり手は全レースのうちの割合です。",
     "nationalAverageTooltip": "全国{{value}}%",
@@ -139,7 +139,8 @@
     "techniqueVenue": "この会場",
     "techniqueNational": "全国",
     "megumareNote": "恵まれは{{races}}レース中{{count}}回（全国は{{nationalRaces}}レース中{{nationalCount}}回）。回数が少ないので割合で会場を比べません。",
-    "winsOfRaces": "{{races}}レース中{{count}}回"
+    "winsOfRaces": "{{races}}レース中{{count}}回",
+    "nationalLegend": "縦の線は全国の値"
   },
   "raceDetailPage": {
     "assistSwitch": {

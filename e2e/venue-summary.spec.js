@@ -290,7 +290,10 @@ test("会場の特徴は最初は畳まれ、開くと中身が出る。375px �
   );
   await expect(fold).toHaveCount(1);
   expect(await fold.evaluate((el) => el.open)).toBe(false);
-  await expect(page.getByTestId("venue-characteristics-teaser")).toBeVisible();
+  // 畳んだ1行は開くと何が出るかを書き、要約と同じ1コースの値を繰り返さない（ファン評価2周目）
+  const teaser = page.getByTestId("venue-characteristics-teaser");
+  await expect(teaser).toContainText("進入コース別の1着率と決まり手の表を開く");
+  await expect(teaser).not.toContainText(`${r1(S.venues[13])}%`);
   await expect(page.getByTestId("venue-hud-course-1")).toBeHidden();
 
   const firstCardY = await page
@@ -303,6 +306,8 @@ test("会場の特徴は最初は畳まれ、開くと中身が出る。375px �
   expect(await fold.evaluate((el) => el.open)).toBe(true);
   await expect(page.getByTestId("venue-hud-course-1")).toBeVisible();
   await expect(page.getByTestId("venue-technique-table")).toBeVisible();
+  // 縦の線（全国の値）の凡例
+  await expect(page.locator(".venue-hud-legend")).toHaveText("縦の線は全国の値");
   // 直近1年の脚注は、1年の表の直後・過去90日の「もっと詳しく」より上
   const order = await page.evaluate(() => {
     const foot = document.querySelector(".venue-characteristics-footnote");

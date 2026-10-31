@@ -107,8 +107,8 @@
     "metaDescriptionSeries": "{{venue}}賽艇場舉辦{{series}}期間的今日出走表與全部比賽AI預測，並可查看本節的得分率排名。"
   },
   "venueCharacteristics": {
-    "collapsedTeaser": "{{summary}}／1道第1名率 {{rate}}%",
-    "collapsedTeaserNoSummary": "1道第1名率 {{rate}}%",
+    "collapsedTeaser": "水質：{{summary}}。展開各進場道次第1名率與決勝方式表",
+    "collapsedTeaserNoSummary": "展開各進場道次第1名率與決勝方式表",
     "title": "本賽場的特徵（近1年）",
     "note": "第1名的比例依實際進場道次（非艇號）顯示。決勝方式為占全部比賽的比例。",
     "nationalAverageTooltip": "全國{{value}}%",
@@ -139,7 +139,8 @@
     "techniqueVenue": "本賽場",
     "techniqueNational": "全國",
     "megumareNote": "幸運勝出為{{races}}場中{{count}}次（全國為{{nationalRaces}}場中{{nationalCount}}次）。次數較少，不以比例比較賽場。",
-    "winsOfRaces": "{{races}}場中{{count}}次"
+    "winsOfRaces": "{{races}}場中{{count}}次",
+    "nationalLegend": "縱線為全國數值"
   },
   "raceDetailPage": {
     "assistSwitch": {
