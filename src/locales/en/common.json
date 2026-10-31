@@ -642,6 +642,26 @@
     "noPrevRace": "No previous race",
     "noNextRace": "No next race"
   },
+  "raceSummary": {
+    "title": "Summary of the six boats",
+    "colFinish": "Finish",
+    "colBoat": "Boat #",
+    "colRacer": "Racer",
+    "colGrade": "Class",
+    "colExh": "Exhibition time",
+    "finishRefunded": "Refunded",
+    "finishMarkRefunded": "{{mark}} (refunded)",
+    "exhRank": "(rank {{rank}})",
+    "exhRankTied": "(tied rank {{rank}})",
+    "exhNote": "A lower exhibition time is faster. Brackets show the exhibition-time rank among the six boats.",
+    "exhPending": "Exhibition times appear about 15 min before the deadline",
+    "noValue": "—"
+  },
+  "raceStrip": {
+    "label": "Races at {{venue}}",
+    "meetLink": "Score rate and advancement for this meet ›",
+    "meetFetchError": "Could not load the meet information"
+  },
   "raceStage": {
     "final": "Final",
     "semifinal": "Semifinal",

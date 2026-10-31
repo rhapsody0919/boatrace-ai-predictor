@@ -636,6 +636,26 @@
     "noPrevRace": "沒有上一場比賽",
     "noNextRace": "沒有下一場比賽"
   },
+  "raceSummary": {
+    "title": "6艇摘要",
+    "colFinish": "名次",
+    "colBoat": "艇號",
+    "colRacer": "選手",
+    "colGrade": "級別",
+    "colExh": "展示時間",
+    "finishRefunded": "退款",
+    "finishMarkRefunded": "{{mark}}（退款）",
+    "exhRank": "(第{{rank}})",
+    "exhRankTied": "(並列第{{rank}})",
+    "exhNote": "展示時間越小越快。括號內為展示時間在6艇中的排名",
+    "exhPending": "展示時間約在截止前15分鐘顯示",
+    "noValue": "—"
+  },
+  "raceStrip": {
+    "label": "{{venue}}的比賽",
+    "meetLink": "本節得分率、晉級 ›",
+    "meetFetchError": "無法載入本節資訊"
+  },
   "raceStage": {
     "final": "優勝戰",
     "semifinal": "準優勝戰",
