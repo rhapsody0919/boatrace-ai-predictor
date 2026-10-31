@@ -248,3 +248,23 @@ for (const width of [375, 768, 1440]) {
     }
   });
 }
+
+test("375pxの英語で、コース名と30回未満の回数がそれぞれの列からはみ出さない（BOA-1189）", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  // 福岡は6コースの1着が30回未満（回数の行が出る）
+  await openVenue(page, 22, {}, "/en/venue/22");
+  const card = page.locator(".venue-characteristics-card");
+  const fold = card.locator(".collapsible-section");
+  if ((await fold.count()) > 0 && !(await fold.evaluate((el) => el.open))) {
+    await fold.locator("summary").first().click();
+  }
+  await expect(page.locator(".venue-hud-count")).toHaveCount(1);
+  const overflows = await page.evaluate(() =>
+    [...document.querySelectorAll(".venue-hud-lane, .venue-hud-values > span")]
+      .filter((el) => el.scrollWidth > el.parentElement.clientWidth + 0.5 || el.scrollWidth > el.clientWidth + 0.5)
+      .map((el) => el.textContent),
+  );
+  expect(overflows).toEqual([]);
+});

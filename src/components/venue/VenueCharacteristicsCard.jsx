@@ -34,11 +34,10 @@ export default function VenueCharacteristicsCard({
   collapsible = false,
 }) {
   const { t } = useTranslation();
-  const stats = VENUE_SUMMARY_STATS;
-  const venue = stats.venues[venueCode];
+  const venue = VENUE_SUMMARY_STATS.venues[venueCode];
   if (!venue) return null;
-  const national = stats.national;
-  const period = venueSummaryPeriod(stats);
+  const national = VENUE_SUMMARY_STATS.national;
+  const period = venueSummaryPeriod();
 
   const rows = venue.courses.map((c) => ({
     ...c,
@@ -63,7 +62,10 @@ export default function VenueCharacteristicsCard({
     venueSummary
       ? "venueCharacteristics.collapsedTeaser"
       : "venueCharacteristics.collapsedTeaserNoSummary",
-    { summary: venueSummary ?? "", rate: formatRate(rows[0].rate) },
+    {
+      summary: venueSummary ?? "",
+      rate: formatRate(rows.find((r) => r.course === 1).rate),
+    },
   );
 
   return (
@@ -109,7 +111,9 @@ export default function VenueCharacteristicsCard({
           <span />
         </div>
         <div className="venue-hud-rows">
-          {rows.map((row, index) => (
+          {rows.map((row, index) => {
+            const count = countText(row);
+            return (
             <div
               className="venue-hud-row"
               key={row.course}
@@ -141,9 +145,7 @@ export default function VenueCharacteristicsCard({
                 <span className="venue-hud-own-value">
                   {formatRate(row.rate)}%
                 </span>
-                {countText(row) && (
-                  <span className="venue-hud-count">{countText(row)}</span>
-                )}
+                {count && <span className="venue-hud-count">{count}</span>}
                 {row.national != null && (
                   <span className="venue-hud-national-value">
                     {t("venueCharacteristics.nationalAverageTooltip", {
@@ -153,7 +155,8 @@ export default function VenueCharacteristicsCard({
                 )}
               </span>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         <h3 className="venue-characteristics-subtitle">

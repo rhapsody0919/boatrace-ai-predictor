@@ -72,6 +72,9 @@ for (const [label, b] of [["全国", S.national], ...Object.entries(S.venues)]) 
     b.courses.reduce((a, c) => a + c.wins, 0),
     b.courseRaces,
   );
+  // カードの「N レース中X回」は courseRaces、脚注は races。同じ「レース」の数として出すので一致を守る
+  // （1着艇の進入コースが不明なレースが出たら、カードの文言を見直す）
+  check(`${label}: 進入コースが分かるレース数 = レース数`, b.courseRaces, b.races);
   check(
     `${label}: コースの割合は件数から`,
     b.courses.map((c) => c.rate),

@@ -261,8 +261,12 @@
 @media (max-width: 480px) {
   .venue-hud-row,
   .venue-hud-header-row {
-    grid-template-columns: 3.4rem 1fr 6.8rem;
+    grid-template-columns: 4rem 1fr 7.4rem;
     gap: var(--spacing-2);
+  }
+
+  .venue-hud-lane {
+    font-size: var(--font-size-xs);
   }
 
   /* 狭い幅では 25・75 の目盛りの文字を出さない（75 と 100% が重なる）。線は残る */

@@ -48,7 +48,10 @@ export default function VenueMeetBanner({ venueCode, races, today }) {
     return (
       <InlineFetchError
         message={t("venueMeetBanner.fetchError")}
-        onRetry={() => setReloadKey((n) => n + 1)}
+        onRetry={() => {
+          setFailedKey(null);
+          setReloadKey((n) => n + 1);
+        }}
       />
     );
   }

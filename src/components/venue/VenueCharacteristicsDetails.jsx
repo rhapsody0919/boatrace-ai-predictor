@@ -76,7 +76,11 @@ export default function VenueCharacteristicsDetails({ venueCode }) {
     return (
       <InlineFetchError
         message={t("venueCharacteristics.fetchError")}
-        onRetry={() => setReloadKey((n) => n + 1)}
+        onRetry={() => {
+          // エラーの表示を消してから取り直す（押したことが見て分かるように）
+          setFailedVenue(null);
+          setReloadKey((n) => n + 1);
+        }}
       />
     );
   }
