@@ -21,6 +21,8 @@ import Breadcrumb from "../components/Breadcrumb";
 import LoadingScreen from "../components/LoadingScreen";
 import { RaceCard } from "../components/race";
 import VenueCharacteristicsCard from "../components/venue/VenueCharacteristicsCard";
+import VenueSummaryLines from "../components/venue/VenueSummaryLines";
+import VenueMeetBanner from "../components/venue/VenueMeetBanner";
 import VenueDaySummaryCard from "../components/race/VenueDaySummaryCard";
 import DataFetchError from "../components/DataFetchError";
 import {
@@ -311,7 +313,7 @@ function VenueRaceListPage() {
       />
 
       {/* この日の水面傾向（phase a FR-5 / BOA-222）。直上の
-          VenueCharacteristicsCard は過去90日のベースラインで、
+          VenueCharacteristicsCard は直近1年（BOA-1189）で、
           こちらはこの日1日分。カードの注記で日付とレース数を明示する */}
       <VenueDaySummaryCard
         venueCode={venueCode}
@@ -343,6 +345,17 @@ function VenueRaceListPage() {
               {t("venueRaceList.backToVenues")}
             </Link>
           </header>
+
+          {/* 会場の常設の要約2行（直近1年、BOA-1189 GS02-b）。数字は静的な値なので読み込みを待たずに出す */}
+          {isToday && <VenueSummaryLines venueCode={venueCode} />}
+          {/* SG・G1・G2 の開催中だけ、節のページ（得点率ランキング・準優ボーダー）への帯（BOA-1189） */}
+          {isToday && !loading && !error && (
+            <VenueMeetBanner
+              venueCode={venueCode}
+              races={venueRaces.map((r) => r.rawData)}
+              today={date}
+            />
+          )}
 
           {/* 本日ビューでは、レースの並びが決まるまで会場カードを出さない（最上部に出してから次の発走レースの
               直前へ移すと、カードが飛んで見える＝レイアウトシフト） */}

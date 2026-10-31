@@ -1,16 +1,20 @@
 /**
  * VenueCharacteristicsDetails - 会場特徴カードの「もっと詳しく」（BOA-269）
- * 枠番別の1着率・2連率・3連率の表と、枠番ごとの勝ったときの決まり手の全内訳を、
- * 初期は閉じた折りたたみで出す。カードが既に取得した2つのデータだけを使う。
+ * 過去90日・枠番別の2連率・3連率の表と、枠番ごとの勝ったときの決まり手の全内訳を、
+ * 初期は閉じた折りたたみで出す。出目分布（outcome_distribution）と決まり手（winning_technique_stats）を自分で取る。
+ * 1着率の列は BOA-1189 で外した（カードの上は直近1年・進入コース別の1着率。同じ画面に期間の違う同じ指標を並べない）。
  * 出目のランキングは分析ツールの出目タブにあるため、ここにはリンクだけを置く
  * （2026-10-02 ユーザー承認）。
  */
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { translateTechnique } from "../race/raceIndicators";
 import { SMALL_SAMPLE_THRESHOLD } from "../race/basicInfoStats";
 import { BOAT_COLORS } from "../../utils/colors";
 import { localizePath } from "../../config/languages";
+import { supabaseDataService } from "../../services/supabaseDataService";
+import InlineFetchError from "../InlineFetchError";
 import {
   placeRatesByBoat,
   techniqueBreakdown,
@@ -38,12 +42,47 @@ function Lane({ boat }) {
   );
 }
 
-export default function VenueCharacteristicsDetails({
-  venueCode,
-  outcomeData,
-  techniqueData,
-}) {
+// このレース数を下回る会場は出さない（ノイズが大きいため。以前のカードと同じ）
+const MIN_TOTAL_RACES = 20;
+
+export default function VenueCharacteristicsDetails({ venueCode }) {
   const { t, i18n } = useTranslation();
+  // 取得結果は会場とセットで持つ（会場を移ったときに前の会場の表が混ざらない）
+  const [loaded, setLoaded] = useState({ venueCode: null, data: null });
+  const [failedVenue, setFailedVenue] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      supabaseDataService.getOutcomeDistribution(venueCode),
+      supabaseDataService.getWinningTechniqueStats(venueCode),
+    ])
+      .then(([outcomeData, techniqueData]) => {
+        if (cancelled) return;
+        setFailedVenue(null);
+        setLoaded({ venueCode, data: { outcomeData, techniqueData } });
+      })
+      .catch((err) => {
+        console.error("会場の過去90日のデータ取得エラー:", err?.message ?? String(err));
+        if (!cancelled) setFailedVenue(venueCode);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [venueCode, reloadKey]);
+
+  if (failedVenue === venueCode) {
+    return (
+      <InlineFetchError
+        message={t("venueCharacteristics.fetchError")}
+        onRetry={() => setReloadKey((n) => n + 1)}
+      />
+    );
+  }
+  if (loaded.venueCode !== venueCode) return null;
+  const { outcomeData, techniqueData } = loaded.data;
+  if (!outcomeData || outcomeData.total_races < MIN_TOTAL_RACES) return null;
   const rates = placeRatesByBoat(outcomeData);
   if (!rates) return null;
   const pct = (v) => `${v.toFixed(1)}%`;
@@ -69,7 +108,6 @@ export default function VenueCharacteristicsDetails({
             <thead>
               <tr>
                 <th scope="col">{t("venueCharacteristics.details.boat")}</th>
-                <th scope="col">{t("venueCharacteristics.details.winRate")}</th>
                 <th scope="col">
                   {t("venueCharacteristics.details.top2Rate")}
                 </th>
@@ -84,7 +122,6 @@ export default function VenueCharacteristicsDetails({
                   <td>
                     <Lane boat={r.boat} />
                   </td>
-                  <td>{pct(r.winRate)}</td>
                   <td>{pct(r.top2Rate)}</td>
                   <td>{pct(r.top3Rate)}</td>
                 </tr>

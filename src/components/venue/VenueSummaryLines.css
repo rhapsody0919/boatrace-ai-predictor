@@ -1,0 +1,30 @@
+/* 会場ページの見出しの直下の要約2行（BOA-1189）。ページ背景に直接乗るので意味トークンを使う */
+.venue-summary-lines {
+  margin: calc(-1 * var(--spacing-2)) 0 var(--spacing-4);
+  padding-left: var(--spacing-3);
+  border-left: 3px solid var(--brand-accent-primary);
+}
+
+.venue-summary-lines p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+.venue-summary-lines p + p {
+  margin-top: var(--spacing-1);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 480px) {
+  .venue-summary-lines {
+    margin-bottom: var(--spacing-3);
+    padding-left: var(--spacing-2);
+  }
+
+  .venue-summary-lines p {
+    font-size: var(--font-size-sm);
+  }
+}

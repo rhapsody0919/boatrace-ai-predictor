@@ -1408,6 +1408,28 @@ export const supabaseDataService = {
   },
 
   /**
+   * 会場で今日を含む節（race_series）の初日。会場ページの節のページへの帯（BOA-1189）に使う。
+   * 節が無ければ null。取得の失敗は投げる（帯が出ないことと区別するため）
+   * @param {number} venueCode
+   * @param {string} today - JST の YYYY-MM-DD
+   * @returns {Promise<string|null>}
+   */
+  async getCurrentMeetStartDate(venueCode, today) {
+    return withCache(`venue-current-meet-${venueCode}-${today}`, async () => {
+      if (!supabase) throw new Error("Supabase client not initialized");
+      const { data } = await supabase
+        .from("race_series")
+        .select("start_date")
+        .eq("venue_code", venueCode)
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .order("start_date", { ascending: false })
+        .limit(1);
+      return data?.[0]?.start_date ?? null;
+    });
+  },
+
+  /**
    * 1着の艇と、その艇が実際に入ったコースをレースごとに返す（BOA-708）。
    * 的中判定は艇番で行い、表示だけ「N号艇（Mコース）」と添えるために使う。
    * 進入は race_results.actual_course を優先し、無いレース（当日分）だけ
@@ -4216,9 +4238,18 @@ export const supabaseDataService = {
   getRacerAllPeriodStats(racerId) {
     const courseCols = [1, 2, 3, 4, 5, 6]
       .flatMap((c) =>
-        ["entries", "p1", "p2", "p3", "avg_st", "f", "l0", "l1", "k0", "k1"].map(
-          (k) => `c${c}_${k}`,
-        ),
+        [
+          "entries",
+          "p1",
+          "p2",
+          "p3",
+          "avg_st",
+          "f",
+          "l0",
+          "l1",
+          "k0",
+          "k1",
+        ].map((k) => `c${c}_${k}`),
       )
       .join(", ");
     return withCache(`racer-period-stats-v1-${racerId}`, async () => {

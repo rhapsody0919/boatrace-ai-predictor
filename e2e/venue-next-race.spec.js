@@ -250,8 +250,9 @@ test.describe("差し込んだ会場カードの折りたたみ（ユーザー�
     for (const d of await details.all()) {
       expect(await d.evaluate((e) => e.open)).toBe(false);
     }
+    // 要約1行は1コースの1着率（直近1年・進入コース別、BOA-1189）
     await expect(page.getByTestId("venue-characteristics-teaser")).toContainText(
-      "1号艇の1着率",
+      "1コースの1着率",
     );
     await expect(page.getByTestId("venue-day-summary-teaser")).toContainText(
       "確定",

@@ -58,7 +58,7 @@
 
 .venue-hud-header-row {
   display: grid;
-  grid-template-columns: 2.2rem 1fr 8rem;
+  grid-template-columns: 4.5rem 1fr 8rem;
   align-items: end;
   gap: var(--spacing-3);
   margin-bottom: var(--spacing-2);
@@ -112,31 +112,22 @@
 .venue-hud-rows {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-7);
+  gap: var(--spacing-3);
 }
 
 .venue-hud-row {
   display: grid;
-  grid-template-columns: 2.2rem 1fr 8rem;
+  grid-template-columns: 4.5rem 1fr 8rem;
   align-items: center;
   gap: var(--spacing-3);
 }
 
 .venue-hud-lane {
-  width: 2.2rem;
-  height: 2.2rem;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
-    monospace;
+  /* 進入コースの行。艇の色は枠番の行にだけ使う（docs/knowledge/number-wording.md）ので、中立の色にする */
   font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-base);
-  flex-shrink: 0;
-  /* 1号艇(白背景)がライトモードのカード背景(ほぼ白のivory)に対して
-     輪郭が消える問題への対応。他の艇番色でも一律に付けて統一感を保つ */
-  box-shadow: inset 0 0 0 1px var(--border-hairline);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .venue-hud-track {
@@ -188,62 +179,65 @@
   opacity: 0.9;
 }
 
-/* トラック下に浮かせる「全国XX.X%」ラベル（参考値、控えめな配色）。
-   会場自体の数値（venue-hud-own-label、トラック上側）と上下で分離し重なりを避ける */
-.venue-hud-national-label {
-  position: absolute;
-  top: calc(100% + 0.15rem);
-  transform: translateX(-50%);
-  white-space: nowrap;
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-secondary);
+/* 右の列: その会場の値（主役）・30回未満の回数・全国の値 */
+.venue-hud-values {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  line-height: 1.2;
-  pointer-events: none;
+  align-items: flex-end;
+  line-height: 1.25;
+  text-align: right;
+  min-width: 0;
 }
 
-.venue-hud-national-label-line {
-  width: 1px;
-  height: 0.4rem;
-  background: var(--text-secondary);
-  margin-bottom: 0.1rem;
-  opacity: 0.9;
-}
-
-/* トラック上に浮かせる、その会場自体の1着率ラベル（主役の数値のため強調表示） */
-.venue-hud-own-label {
-  position: absolute;
-  bottom: calc(100% + 0.15rem);
-  transform: translateX(-50%);
-  white-space: nowrap;
+.venue-hud-own-value {
   font-family: ui-monospace, "SF Mono", "Cascadia Code", "Roboto Mono",
     monospace;
   font-variant-numeric: tabular-nums;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   color: var(--brand-accent-primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  line-height: 1.2;
-  pointer-events: none;
 }
 
-.venue-hud-own-label-line {
-  width: 1px;
-  height: 0.4rem;
-  background: var(--brand-accent-primary);
-  margin-top: 0.1rem;
-  opacity: 0.9;
-}
-
-.venue-hud-technique {
+.venue-hud-count,
+.venue-hud-national-value {
   font-size: var(--font-size-xs);
   color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.venue-characteristics-subtitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
+  margin: var(--spacing-5) 0 var(--spacing-3) 0;
+}
+
+/* 決まり手（全レースのうちの割合）の表。数字の列が2つなので幅を絞る（ui-layout.md） */
+.venue-technique-table {
+  width: 100%;
+  max-width: 28rem;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: var(--spacing-2);
+}
+
+.venue-technique-table th,
+.venue-technique-table td {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-bottom: 1px solid var(--border-hairline);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
   text-align: right;
+}
+
+.venue-technique-table th:first-child {
+  text-align: left;
+  font-weight: var(--font-weight-semibold);
+}
+
+.venue-technique-table thead th {
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-semibold);
 }
 
 .venue-characteristics-footnote {
@@ -267,11 +261,13 @@
 @media (max-width: 480px) {
   .venue-hud-row,
   .venue-hud-header-row {
-    grid-template-columns: 1.8rem 1fr;
+    grid-template-columns: 3.4rem 1fr 6.8rem;
+    gap: var(--spacing-2);
   }
 
-  .venue-hud-technique,
-  .venue-hud-header-technique {
+  /* 狭い幅では 25・75 の目盛りの文字を出さない（75 と 100% が重なる）。線は残る */
+  .venue-hud-axis-labels span:nth-child(2),
+  .venue-hud-axis-labels span:nth-child(4) {
     display: none;
   }
 }

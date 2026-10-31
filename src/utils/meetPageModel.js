@@ -41,6 +41,19 @@ export function isOutOfScopeMeetTitle(title) {
   return OUT_OF_SCOPE_TITLE.test(String(title).normalize("NFKC"));
 }
 
+/**
+ * 会場ページの節のページへの帯（VenueMeetBanner、BOA-1189）を出す節か。出すならグレードと節タイトル、出さないなら null。
+ * 判定は今日の先頭レース（会場ページの title・会場カードのバッジと同じ代表値）
+ * @param {{raceGrade?: string|null, raceTitle?: string|null}[]} races - 会場の本日のレース（レース番号順）
+ */
+export function meetBannerSeriesOf(races) {
+  const first = races?.[0];
+  if (!first || !MEET_PAGE_GRADES.includes(first.raceGrade)) return null;
+  const title = first.raceTitle?.normalize("NFKC").trim() || null;
+  if (isOutOfScopeMeetTitle(title)) return null;
+  return { grade: first.raceGrade, title };
+}
+
 const dateOf = (raceId) => String(raceId).slice(0, 10);
 
 /**

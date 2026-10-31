@@ -1,0 +1,39 @@
+/* 会場ページの、開催中の節のページへの帯（BOA-1189） */
+.venue-meet-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2) var(--spacing-3);
+  min-height: 44px;
+  margin: 0 0 var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+  border: 1px solid var(--brand-accent-primary);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.venue-meet-banner:hover,
+.venue-meet-banner:focus-visible {
+  border-color: var(--text-primary);
+}
+
+.venue-meet-banner__series {
+  font-weight: var(--font-weight-bold);
+  min-width: 0;
+}
+
+.venue-meet-banner__link {
+  color: var(--brand-accent-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+@media (max-width: 480px) {
+  .venue-meet-banner {
+    padding: var(--spacing-2) var(--spacing-3);
+    margin-bottom: var(--spacing-3);
+  }
+}
