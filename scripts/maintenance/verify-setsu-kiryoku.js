@@ -25,6 +25,7 @@ import {
   daysLabel,
   fmtAvg,
   hookLayout,
+  rankLabel,
   sixChipW,
   sixPitch,
   timeline,
@@ -293,6 +294,29 @@ t(
     fails(c, /禁止語「いつも」/, "画面の「いつも」");
   },
 );
+
+t("border の同率（tied）: true で「同率20位」、bool でない値で止まる", () => {
+  const b = load("border");
+  assert.equal(
+    b.racers[1].tied,
+    true,
+    "見本は小池だけ同率（hq の正本、尼崎 10/30）",
+  );
+  assert.equal(rankLabel(b.racers[1]), "同率20位");
+  assert.equal(rankLabel(b.racers[0]), "19位");
+  assert.deepEqual(check(b), []);
+  const a = clone(b);
+  a.racers[1].tied = "yes";
+  fails(a, /racers\[1\].tied が true・false か無しでない/, "bool でない tied");
+  const c = clone(b);
+  c.racers[1].tied = 1;
+  fails(c, /racers\[1\].tied/, "数の tied");
+  const d = clone(b);
+  d.racers[2].rank = 20;
+  fails(d, /順位の順でない/, "同率でない同じ順位");
+  d.racers[2].tied = true;
+  assert.deepEqual(check(d), [], "両方が同率なら同じ順位を許す");
+});
 
 t("日の札: 月をまたぐ節は「〜」にしない", () => {
   const d = (...xs) => xs.map((x) => ({ day: `${x}日` }));

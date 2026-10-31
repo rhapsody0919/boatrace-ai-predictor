@@ -38,7 +38,9 @@ import {
   courseAvg,
   daysLabel,
   fmtAvg,
+  estWidth,
   fmtRate,
+  rankLabel,
   hookLayout,
   runsRowH,
   sixChipW,
@@ -622,8 +624,9 @@ function ThreeCards({ b }) {
         return (
           <div key={i} style={{ opacity: o }}>
             <div style={{ position: "absolute", left: LEFT, top: y, width: RIGHT - LEFT, height: 220, borderRadius: 20, background: "#1a3a5c" }} />
-            <T x={90} y={y + 30} size={36} color={GR} weight={400}>{`${r.rank}位`}</T>
-            <T x={200} y={y + 20} size={52}>{shortName(r.racer)}</T>
+            <T x={90} y={y + 30} size={36} color={GR} weight={400}>{rankLabel(r)}</T>
+            {/* 名前は順位の札の後ろ（「同率20位」で札が長くなっても重ならない） */}
+            <T x={Math.max(200, 90 + Math.ceil(estWidth(rankLabel(r), 36)) + 24)} y={y + 20} size={52}>{shortName(r.racer)}</T>
             <T x={560} w={310} align="right" y={y + 30} size={36} color={GR} weight={400}>{`得点率 ${fmtRate(r.rate)}`}</T>
             <T x={90} y={y + 128} size={40} weight={400}>{`今日 ${r.race} ${r.boat}号艇`}</T>
             <div style={{ position: "absolute", left: 560, top: y + 100, width: 310, height: 96, borderRadius: 18, background: GOLD, display: "flex", alignItems: "center", justifyContent: "center", opacity: fadeIn(f, 14 + i * 14, 6) }}>

@@ -12,7 +12,7 @@
  * 4つ目の型 border（「準優に残れるか」、SG/G1 の予選最終日の朝だけ。hq drafts/shorts-border-person-20261031.md、10/31 オーナー決定）。
  * 節の機力とは別の型だが、同じ composition の variant にした。この型で足した形（hq の束の形が決まったら合わせる）:
  *   "border": { "cut": 18, "line": 6.0 }（準優に残れる人数と、前夜のその順位の得点率）
- *   "racers": [{ "rank": 19, "racer": "峰 竜太", "rate": 5.8, "race": "11R", "boat": 4, "need": "2着以上" }]（ボーダー際の3人）
+ *   "racers": [{ "rank": 19, "racer": "峰 竜太", "rate": 5.8, "race": "11R", "boat": 4, "need": "2着以上", "tied": false }]（ボーダー際の3人。tied は任意、true で「同率20位」）
  *   need（要る着）は hq の集計が出す。ここでは形（「N着以上」「1着だけ」）と並び（順位は cut より下・得点率は line より下）だけ確かめる
  */
 
@@ -144,6 +144,8 @@ export const closeTail = (b) =>
     : "節の機力は龍神レーダーで";
 /** 得点率の書き方（6 → "6.00"） */
 export const fmtRate = (v) => v.toFixed(2);
+/** border の順位の札。tied（同率、hq の BR02 が出す）なら「同率20位」 */
+export const rankLabel = (r) => `${r.tied === true ? "同率" : ""}${r.rank}位`;
 
 // ---------- 配置（描画と検査で同じ値） ----------
 
@@ -444,11 +446,14 @@ export function checkBundle(b, { rules = [], matchRiskRules = null } = {}) {
         why.push(`racers[${i}].race が「11R」の形でない: ${r.race}`);
       if (!isInt(r.boat, 1, 6))
         why.push(`racers[${i}].boat が1〜6でない: ${r.boat}`);
+      if (r.tied !== undefined && typeof r.tied !== "boolean")
+        why.push(`racers[${i}].tied が true・false か無しでない: ${JSON.stringify(r.tied)}`);
       if (typeof r.need !== "string" || !/^(1着だけ|[2-5]着以上)$/.test(r.need))
         why.push(`racers[${i}].need が「N着以上」「1着だけ」でない: ${r.need}`);
     });
     for (let i = 1; i < b.racers.length; i++)
-      if (b.racers[i].rank <= b.racers[i - 1].rank)
+      // 同じ順位は、両方が同率（tied）のときだけ許す
+      if (b.racers[i].rank < b.racers[i - 1].rank || (b.racers[i].rank === b.racers[i - 1].rank && !(b.racers[i].tied === true && b.racers[i - 1].tied === true)))
         why.push("racers が順位の順でない");
   } else if (b.variant === "final_six") {
     if (!Array.isArray(b.six) || b.six.length !== 6)

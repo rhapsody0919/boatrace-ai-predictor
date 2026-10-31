@@ -24,7 +24,8 @@
    "rate": 5.75,
    "race": "10R",
    "boat": 3,
-   "need": "2着以上"
+   "need": "2着以上",
+   "tied": true
   },
   {
    "rank": 23,
