@@ -81,7 +81,8 @@
 - 残る壊れ方: (1) 全貌の X は取り置き0なので、月水金は送れず、他の曜日は取り置かれていない残りの1本を先に来た出し物と取り合う (2) 同じレースが優勝戦で、かつ /today の対象だと、優勝戦の3本と思考投稿の3本が両方の取り置きを使って出る（一意の索引は両立させる作り。出すかは hq・オーナーが決める）。push が受け取るのは、/today の X 投稿が送られた（status=posted）日の対象だけ
 
 ## 追記: 送らなかった理由は sns_send_events に (job, 段, 理由) ごとに1行残す（2026-10-31、system-architect の推奨・BOA-1201・マイグレーション 191）
-- 送る側（cron sns_send）が送らなかった理由は report.alerts（Slack）にしか残らず、hq の見張りは Slack を読めない。live の実行だけが、表 `sns_send_events` に (job_id, stage, reason) ごとに初出の1行を書く（shadow は DB を変えない）。stage は precheck（runner の送る前の検査に落ち、claim していない）と send（送信の中で落ちた）。detail は元の文言の先頭300字
+- 送る側（cron sns_send）が送らなかった理由は report.alerts（Slack）にしか残らず、hq の見張りは Slack を読めない。live の実行だけが、表 `sns_send_events` に (job_id, stage, reason) ごとに初出の1行を書く（shadow は DB を変えない）。stage は precheck（runner の送る前の検査に落ち、claim していない）・send（claim から begin_post までの送信の中で落ちた）・after_post（begin_post の後に落ちた。要照合で出たかもしれないので、送らなかった理由と分ける）。detail は元の文言の先頭300字
+- claim の DB の拒否は、snsXSendStore が全部「X送信のDB操作に失敗しました」に包む。元の文言（RAISE の文）を error.cause に持たせ、runner が短い code（claim_daily_limit・claim_monthly_budget・claim_paused_or_unpriced・claim_not_allowed 等、`CLAIM_REJECTION_CODES`）に写す。写せない文言は db_rejected で、detail に元の文言
 - 書き方は PostgREST の POST `sns_send_events?on_conflict=job_id,stage,reason` に `Prefer: resolution=ignore-duplicates`。2分ごとの同じ理由の繰り返しは UNIQUE で止まり行を書かない
 - YouTube の begin_post の前の失敗は、job の error_code が今までどおり youtube_preflight_failed（承認の hash・媒体・validate・親・preflight の全部）。原因は stage=send の reason（holdReasonOf の code、英小文字と _ の理由はそのまま）で見る
 - 書けなくても送信は止めない。表が無い（404・PGRST205）ときは console だけ（db-apply はマージの後に当たるので、その間 Slack を鳴らし続けない）。それ以外の失敗は report.alerts に出す

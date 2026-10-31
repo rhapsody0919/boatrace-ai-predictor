@@ -23,6 +23,8 @@
  *   - 送る前の検査・トークンの失敗は、候補を20件ずつ巡回するので、次にその job・チャネルを見直すまで（最長 CONTINUING_ALERT_MINUTES）残す
  * - 送らなかった理由（送る前の検査の失敗・送信の中の失敗）は、live のときだけ DB の sns_send_events（191）にも (job, 段, 理由) ごとに
  *   初出の1行を残す。hq の見張りは Slack を読めないので DB で読む（BOA-1201）。書けなくても送信は止めない
+ *   - 段は precheck（claim の前）・send（claim から begin_post まで。claim の DB の拒否は CLAIM_REJECTION_CODES の code）・
+ *     after_post（begin_post の後。要照合で、出たかもしれないので送らなかった理由と分ける）
  */
 import { runXSendJob } from "../../api/_lib/snsXSend.js";
 import {
@@ -72,6 +74,51 @@ function youtubeQuotaDayWait(now) {
 
 const slug = (message) =>
   /^[a-z_]{1,64}$/.test(message ?? "") ? message : "unexpected_error";
+
+/**
+ * claim の段で DB（transition_sns_x_send・transition_sns_send_139 の RAISE）が拒否した文言 → 送らなかった理由の code（BOA-1201）。
+ * 文言は 186・189 の claim で通る RAISE の全部。snsXSendStore は拒否を全部「X送信のDB操作に失敗しました」に包むので、
+ * 元の文言（error.cause.message）で引く。ここに無い文言は db_rejected にして detail に元の文言を残す
+ */
+export const CLAIM_REJECTION_CODES = Object.freeze({
+  // 189 transition_sns_send_139
+  jobが見つかりません: "claim_job_missing",
+  "X送信は停止中・費用未確認です": "claim_paused_or_unpriced",
+  再承認が必要です: "claim_reapproval_required",
+  "日次全体上限・他経路の本数が未確認です": "claim_daily_unconfirmed",
+  日次全体上限です: "claim_daily_limit",
+  claimできません: "claim_not_allowed",
+  月額上限です: "claim_monthly_budget",
+  // 186 transition_sns_x_send（139 の前後の X・YouTube 共通の段と、YouTube のクォータ）
+  auto_stopped: "claim_auto_stopped",
+  dry_run: "claim_dry_run",
+  veto_window_open: "claim_veto_window_open",
+  youtube_quota_unconfirmed: "claim_youtube_quota_unconfirmed",
+  youtube_quota_limit: "claim_youtube_quota_limit",
+});
+
+/**
+ * 送信の中の失敗 → sns_send_events の段・理由・detail（純粋関数、BOA-1201）
+ * - 段: begin_post の後（error.postStarted、要照合で出たかもしれない）は after_post、それ以外は send
+ * - 理由: 送信の関数が付けた holdReason → DB の拒否（claim の段は CLAIM_REJECTION_CODES、英小文字と _ の文言はそのまま、
+ *   ほかは db_rejected）→ 英小文字と _ の文言はそのまま、ほかは unexpected_error
+ * - detail: DB の拒否は元の文言（無ければ HTTP の状態）、それ以外は error.message
+ */
+export function sendFailureOf(error) {
+  const stage = error?.postStarted ? "after_post" : "send";
+  const rejected = error?.cause?.kind === "db_rejected" ? error.cause : null;
+  const detail = rejected
+    ? (rejected.message ?? `${error.message}（HTTP ${rejected.status}）`)
+    : String(error?.message ?? "");
+  if (error?.holdReason) return { stage, reason: error.holdReason, detail };
+  if (!rejected) return { stage, reason: slug(error?.message), detail };
+  const message = rejected.message ?? "";
+  const reason =
+    (stage === "send" && Object.hasOwn(CLAIM_REJECTION_CODES, message)
+      ? CLAIM_REJECTION_CODES[message]
+      : null) ?? (/^[a-z_]{1,64}$/.test(message) ? message : "db_rejected");
+  return { stage, reason, detail };
+}
 
 /** 1回の実行で読む候補（queued の行）の上限。送る前の検査に落ちた job は送信の件数（maxJobs）に数えない */
 export const SNS_SEND_MAX_CANDIDATES = 20;
@@ -385,8 +432,9 @@ export async function runSnsSend(
     } catch (error) {
       // job の状態（held・要照合）は送信の関数が DB に残している。ここでは理由を知らせるだけ
       result.outcome = "error";
-      result.reason = error.holdReason ?? slug(error.message);
-      await recordEvent(job, "send", result.reason, error.message);
+      const failure = sendFailureOf(error);
+      result.reason = failure.reason;
+      await recordEvent(job, failure.stage, failure.reason, failure.detail);
       await tell(
         `send:${job.id}`,
         `SNS の送信が止まった: ${job.channel} job ${job.id}: ${error.message}`,
@@ -459,9 +507,13 @@ async function sendYoutube(
     current.state === "reconcile" &&
     ["uploaded", "ready"].includes(current.youtube_stage)
   )
-    current = await store.transition(current.id, "youtube_retain", {
-      reason: "processing",
-    });
+    current = await store
+      .transition(current.id, "youtube_retain", { reason: "processing" })
+      .catch((error) => {
+        // 上がった後（要照合）の失敗。送らなかった理由と分けて stage=after_post に残す（BOA-1201）
+        error.postStarted = true;
+        throw error;
+      });
   return current;
 }
 

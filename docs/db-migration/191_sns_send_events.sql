@@ -2,8 +2,11 @@
 -- 送る側（cron sns_send、scripts/lib/snsSendRunner.js）が送らなかった理由は、今は report.alerts（Slack）にしか残らず、
 -- hq の見張りは Slack を読めない。live の実行だけが、(job, 段, 理由) ごとに初出の1行を書く（shadow は DB を変えない）。
 --   stage='precheck': runner の送る前の検査に落ちた（claim していない）
---   stage='send':     送信の中で落ちた（YouTube の begin_post の前の失敗は job が held・error_code=youtube_preflight_failed のまま。
---                     原因は reason に holdReasonOf の code、detail に元の文言の先頭300字）
+--   stage='send':     claim から begin_post までの送信の中で落ちた（YouTube の begin_post の前の失敗は job が held・
+--                     error_code=youtube_preflight_failed のまま。原因は reason に holdReasonOf の code、detail に元の文言の先頭300字）。
+--                     claim の DB の拒否（RAISE の文）は claim_daily_limit・claim_monthly_budget 等の code（runner の
+--                     CLAIM_REJECTION_CODES）、写せない文言は db_rejected で detail に元の文言
+--   stage='after_post': begin_post の後に落ちた（job は要照合。出たかもしれないので送らなかった理由と分ける）
 -- 書き込みは PostgREST の POST sns_send_events?on_conflict=job_id,stage,reason と Prefer: resolution=ignore-duplicates。
 -- 2分ごとの同じ理由の繰り返しは UNIQUE で止まり行を書かない（WAL を増やさない）。
 -- 再承認（approve_sns_x_send、177 の ON CONFLICT(draft_id) DO UPDATE）は job の行を使い回す。再承認の後に同じ理由が出ても
@@ -43,7 +46,7 @@ SET LOCAL lock_timeout = '10s';
 CREATE TABLE public.sns_send_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   job_id uuid NOT NULL REFERENCES public.sns_x_send_jobs(id) ON DELETE CASCADE,
-  stage text NOT NULL CHECK (stage IN ('precheck','send')),
+  stage text NOT NULL CHECK (stage IN ('precheck','send','after_post')),
   reason text NOT NULL CHECK (reason ~ '^[a-z_]{1,64}$'),
   detail text CHECK (char_length(detail) <= 300),
   at timestamptz NOT NULL DEFAULT now(),

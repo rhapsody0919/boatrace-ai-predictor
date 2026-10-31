@@ -1827,3 +1827,157 @@ test("BOA-1201 理由の記録: detail は文字単位で300字までに切る",
   assert.equal(Array.from(row.detail).length, 300);
   assert.ok(row.detail.endsWith("😀"));
 });
+
+// ---- BOA-1201（#2070 の審査）: claim の DB の拒否を文言ごとの code に、begin_post の後は stage=after_post に ----
+
+// 本番の xSendStore（api/_lib/snsXSendStore.js）の transition を、PostgREST の応答の形で PGlite につなぐ。
+// RAISE は PostgREST と同じく HTTP 400 と {code, message, details, hint} で返す。override は action ごとに応答を差し替える
+async function withPostgrestTransition(fn, override = {}) {
+  const { xSendStore } = await import("../../api/_lib/snsXSendStore.js");
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    assert.match(String(url), /rpc\/transition_sns_x_send$/);
+    const body = JSON.parse(options.body);
+    if (override[body.p_action]) return override[body.p_action]();
+    try {
+      const r = await store.transition(
+        body.p_job_id,
+        body.p_action,
+        body.p_result,
+      );
+      return new Response(JSON.stringify(r), { status: 200 });
+    } catch (e) {
+      return new Response(
+        JSON.stringify({
+          code: e.code ?? "P0001",
+          message: e.message,
+          details: null,
+          hint: null,
+        }),
+        { status: 400 },
+      );
+    }
+  };
+  try {
+    return await fn({
+      ...store,
+      transition: (id, action, result) =>
+        xSendStore.transition(id, action, result),
+    });
+  } finally {
+    globalThis.fetch = original;
+  }
+}
+
+test("BOA-1201 claim の拒否: 日次全体上限と月額上限は別の reason の2行（detail は元の文言）、利用者に見せる文言は今までどおり", async () => {
+  const j = await approvedJob("x");
+  const notices = [];
+  await withPostgrestTransition(async (pgStore) => {
+    await db.exec("UPDATE sns_x_send_control SET daily_external_count=1000");
+    const daily = await runSnsSend(
+      ctx(),
+      deps({ store: pgStore, notify: async (t) => notices.push(t) }),
+    );
+    assert.equal(daily.body.jobs[0].reason, "claim_daily_limit");
+    await db.exec(
+      "UPDATE sns_x_send_control SET daily_external_count=0, reserved_microusd=budget_microusd",
+    );
+    const monthly = await runSnsSend(
+      ctx(),
+      deps({ store: pgStore, notify: async (t) => notices.push(t) }),
+    );
+    assert.equal(monthly.body.jobs[0].reason, "claim_monthly_budget");
+  });
+  assert.equal((await job(j.id)).state, "queued");
+  assert.deepEqual(await events(), [
+    {
+      job_id: j.id,
+      stage: "send",
+      reason: "claim_daily_limit",
+      detail: "日次全体上限です",
+    },
+    {
+      job_id: j.id,
+      stage: "send",
+      reason: "claim_monthly_budget",
+      detail: "月額上限です",
+    },
+  ]);
+  assert.match(notices[0], /X送信のDB操作に失敗しました/);
+});
+
+for (const [label, response, detail] of [
+  [
+    "表に無い文言",
+    () =>
+      new Response(
+        JSON.stringify({ code: "P0001", message: "知らない拒否です" }),
+        { status: 400 },
+      ),
+    "知らない拒否です",
+  ],
+  [
+    "本文の無い 503",
+    () => new Response("", { status: 503 }),
+    "X送信のDB操作に失敗しました（HTTP 503）",
+  ],
+])
+  test(`BOA-1201 claim の拒否: 写せない（${label}）は db_rejected で、detail に元の文言`, async () => {
+    const j = await approvedJob("x");
+    const result = await withPostgrestTransition(
+      (pgStore) => runSnsSend(ctx(), deps({ store: pgStore })),
+      { claim: response },
+    );
+    assert.equal(result.body.jobs[0].reason, "db_rejected");
+    assert.deepEqual(await events(), [
+      { job_id: j.id, stage: "send", reason: "db_rejected", detail },
+    ]);
+  });
+
+test("BOA-1201 claim の拒否: 英小文字と _ の文言（YouTube のクォータ）も code に写す", async () => {
+  const y = await approvedJob("youtube");
+  await db.exec("UPDATE sns_youtube_quota_control SET external_uploads=10");
+  const result = await withPostgrestTransition((pgStore) =>
+    runSnsSend(ctx(), deps({ store: pgStore })),
+  );
+  assert.equal(result.body.jobs[0].reason, "claim_youtube_quota_limit");
+  assert.deepEqual(await events(), [
+    {
+      job_id: y.id,
+      stage: "send",
+      reason: "claim_youtube_quota_limit",
+      detail: "youtube_quota_limit",
+    },
+  ]);
+});
+
+for (const [label, channel, adapters] of [
+  [
+    "X の投稿",
+    "x",
+    { x: async () => createMockXAdapter({ failAt: "createPost" }) },
+  ],
+  [
+    "YouTube のアップロード",
+    "youtube",
+    { youtube: async () => createMockYoutubeAdapter({ failAt: "upload" }) },
+  ],
+  [
+    "YouTube の公開",
+    "youtube",
+    { youtube: async () => createMockYoutubeAdapter({ failAt: "update" }) },
+  ],
+])
+  test(`BOA-1201 begin_post の後の失敗は stage=after_post（${label}、要照合）`, async () => {
+    const j = await approvedJob(channel);
+    const result = await runSnsSend(
+      ctx(),
+      deps({ adapters: { ...deps().adapters, ...adapters } }),
+    );
+    assert.equal(result.body.jobs[0].outcome, "error");
+    assert.equal((await job(j.id)).state, "reconcile");
+    assert.deepEqual(
+      (await events()).map((e) => [e.job_id, e.stage, e.reason]),
+      [[j.id, "after_post", "mock_failure"]],
+    );
+  });

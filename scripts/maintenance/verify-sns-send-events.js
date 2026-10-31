@@ -161,7 +161,7 @@ test("job を消すと理由の行も消える（ON DELETE CASCADE）。無い j
   );
 });
 
-test("CHECK: stage は precheck・send だけ、reason は英小文字と _ の1〜64字、detail は300字まで（NULL 可）", async () => {
+test("CHECK: stage は precheck・send・after_post だけ、reason は英小文字と _ の1〜64字、detail は300字まで（NULL 可）", async () => {
   const job = await newJob();
   const insert = (stage, reason, detail = null) =>
     fails(
@@ -188,6 +188,9 @@ test("CHECK: stage は precheck・send だけ、reason は英小文字と _ の1
     /check/,
   );
   assert.equal(await insert("precheck", "detail_null"), null);
+  // begin_post の後の失敗（要照合）は送らなかった理由と分けて after_post（#2070 の審査）
+  assert.equal(await insert("after_post", "mock_failure"), null);
+  assert.match((await insert("after", "a"))?.message ?? "", /check/);
 });
 
 test("hq の読み方: 理由と job を並べ、再承認より前の行に before_reapproval が付く", async () => {

@@ -152,6 +152,9 @@ export async function runYoutubeQueueJob(id, { store, youtube, preflight, loadMe
       // job の error_code は begin_post の前の全部の失敗で youtube_preflight_failed。元の理由は runner の report と
       // sns_send_events（191、stage=send）に残す（BOA-1201。X の runXSendJob と同じ holdReason）
       error.holdReason ??= holdReasonOf(error, 'youtube_preflight');
+    } else {
+      // begin_post の後（要照合、上がったかもしれない）。runner は stage=after_post に残す（BOA-1201）
+      error.postStarted = true;
     }
     throw error;
   }
@@ -201,6 +204,8 @@ export async function runYoutubePublishJob(job, { store, youtube, preflight }) {
     if (!publishStarted && retainPrivate) {
       try { await store.transition(job.id, 'youtube_retain', retainResult(error)); } catch { /* DB不明なら要照合を維持 */ }
     }
+    // 呼ばれるのは begin_post の後（要照合）だけ。runner は stage=after_post に残す（BOA-1201）
+    error.postStarted = true;
     throw error;
   }
 }
