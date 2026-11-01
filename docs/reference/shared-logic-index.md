@@ -306,7 +306,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/inCautionLevel.js` | BOA-822 イン崩れ注意度の段・帯の判定（生成 scripts/lib/inCaution.js と画面で同じ関数を使う）。 | pctOf, levelOf, rateCents, bandOf, bandRange ほか4件 |
 | `src/utils/losingTechnique.js` | 会場の負けの決まり手（losing_technique_stats、90日・会場×枠）の行を枠ごとにまとめる（純関数）。 | groupLosingTechniqueRows |
 | `src/utils/meetGrouping.js` | meetGrouping - 節（開催）のグルーピング共通ロジック | groupIntoCurrentMeet, groupIntoMeetBeforeRace, findMeetStartDate, seriesDayByDate, meetDaysFromRows ほか1件 |
-| `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, meetDaysOf, meetPageState, officialAsOfDate, pickMeetAnchor ほか5件 |
+| `src/utils/meetPageModel.js` | 節ページ（/venue/:venueCode/meet/:startDate、BOA-682）の純関数。 | isOutOfScopeMeetTitle, meetBannerSeriesOf, meetDaysOf, meetPageState, officialAsOfDate ほか6件 |
 | `src/utils/motorFreshRate.js` | 新しいモーターの最初の開催で、公式の2連率が 0 のときに何を出すか（BOA-830、 | isWithinFreshMotorWindow, motorRateView, motorRate3View, FRESH_MOTOR_WINDOW_DAYS |
 | `src/utils/motorGeneration.js` | モーターの世代（入れ替え単位）の判定。 | currentMotorGenerationStart, motorGenerationStartAsOf, isInMotorGeneration, isVenueRankSnapshotBeforeGeneration, formatGenerationDate ほか2件 |
 | `src/utils/motorUsage.js` | モーターの使用回数と「未使用（新モーター・実績なし）」の判定（BOA-702）。 | motorUsageCount, isUnusedMotor |
@@ -360,6 +360,7 @@ fixが2026-08-15以降で26件あった（うち何件かは同一ファイル�
 | `src/utils/venueMotorRanking.js` | 会場のモーターの順位と並べ替え（純関数、BOA-428）。 | rankBy, sortMotorRows, formatMotorRate, formatSlashDate, currentSeriesRiders ほか3件 |
 | `src/utils/venuePlaceRates.js` | 会場特徴カードの「もっと詳しく」（BOA-269）の集計。 | placeRatesByBoat, techniqueBreakdown, nationalWinRateByBoat, groupWinningTechniqueRows, poolTechniqueCounts ほか1件 |
 | `src/utils/venueSeriesTitle.js` | 会場ページの title・description に入れる節タイトルを決める（集客レーン Phase3、2026-09-30）。 | getVenueSeriesTitle |
+| `src/utils/venueSummary.js` | 会場ページ（/venue/N）の見出しの直下に置く常設の要約2行（BOA-1189 GS02-b、2026-10-31 オーナー決定）。 | venueSummaryLines, venueSummaryPeriod, formatCount, formatRate |
 | `src/utils/venueUtils.js` | — | VENUE_CODE_TO_BLOG_ID, getVenueBlogId, getVenueGuidePath |
 | `src/utils/volatilityHighlights.js` | ホームの「本日のイン崩れ注意度ハイライト」で、「イン崩れ注意（高）」と「本命有利」に出すレースを選ぶ | pickVolatilityHighlights |
 | `src/utils/volatilityLevel.js` | getVolatilityLevel - イン崩れ指数（percentile）からレベルを判定する共通ヘルパー | getVolatilityLevel, volatilityDisplayValue |
@@ -399,4 +400,4 @@ Supabaseへのクエリ。クライアントの生成は supabaseClient.js に�
 
 ---
 
-対象 357 ファイル / export 2106 件。
+対象 358 ファイル / export 2111 件。

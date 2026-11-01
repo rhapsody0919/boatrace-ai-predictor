@@ -10,7 +10,7 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1572 |
+| 読んだファイル | 1578 |
 | 読み書きのあるファイル | 257 |
 | 表の読み手（箇所） | 904 |
 | 表の書き手（箇所） | 186 |
@@ -256,10 +256,10 @@
 | result_catchup | api/cron/result-catchup.js | 32 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 68 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 70 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 19 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 24 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 59 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_send | api/cron/sns-send.js | 61 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 25 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手

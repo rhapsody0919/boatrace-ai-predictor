@@ -5,7 +5,7 @@
   "counts": {
     "tables": 107,
     "rpcs": 68,
-    "sourceFiles": 1572,
+    "sourceFiles": 1578,
     "filesWithAccess": 257,
     "tableReaders": 904,
     "tableWriters": 186,
@@ -29132,7 +29132,7 @@
     {
       "job": "sns_auto_plan",
       "entry": "api/cron/sns-auto-plan.js",
-      "reachableFiles": 68,
+      "reachableFiles": 70,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
@@ -29244,7 +29244,7 @@
     {
       "job": "sns_send",
       "entry": "api/cron/sns-send.js",
-      "reachableFiles": 59,
+      "reachableFiles": 61,
       "writes": {
         "scrape_job_state": [
           "scripts/lib/scrapeJobs/store.js:102",
