@@ -8,7 +8,8 @@
 import { execFileSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { f01Check, f01Description, f01Script, splitSubs } from "./f01.mjs";
+import { f01Check, f01Description, f01RacerCheck, f01Script, splitSubs } from "./f01.mjs";
+import { MIN_FONT_PX, fullName, racersOf } from "../../src/fullPicture/f01Right.js";
 import { synthAll } from "./f01-voice.mjs";
 import { DPR, captureAll } from "./f01-capture.mjs";
 
@@ -40,7 +41,7 @@ export const PLAN = {
  * 目安（根拠なし、2026-10-31 の試作で決めた）: 部品だけを撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px で最も小さく、
  * ほかは 26〜31px。6節の目安 28px（根拠なし）は着順の流れでは左の枠の高さ 838 では届かない
  */
-export const MIN_FONT_PX = 20;
+export { MIN_FONT_PX };
 const f = (sec) => Math.round(sec * FPS);
 const LEAD = 0.5;
 const GAP = 0.25;
@@ -71,7 +72,7 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
       const i = lines.findIndex((l) => re.test(l.sub));
       return f(i >= 0 ? lineAt[i] : def);
     };
-    const ch = { id: c.id, from: f(start), len: f(len), tag: c.tag ?? null, scope: c.scope ?? null, answer: c.answer ?? null, answer2: c.answer2 ?? null, path: c.path ?? null, foot: c.foot ?? null };
+    const ch = { id: c.id, from: f(start), len: f(len), tag: c.tag ?? null, scope: c.scope ?? null, answer: c.answer ?? null, answer2: c.answer2 ?? null, path: c.path ?? null, foot: c.foot ?? null, right: c.right ?? null };
     if (c.open) ch.open = c.open;
     else {
       ch.answerAt = at(cue.answer, 1);
@@ -159,6 +160,9 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   mkdirSync(pub, { recursive: true });
   const s = f01Script(m);
   if (!s.ok) return { reasons: [`type_unsupported:${s.kind}`], detail: s.reason };
+  // 右の列の名前と級・収まりは声と撮影の前に確かめる（純関数。落ちる日に声と撮影の数分を使わない）
+  const racerWhy = f01RacerCheck(s, racersOf(m).racers);
+  if (racerWhy.length) return { reasons: ["type_unsupported:f01_check"], detail: racerWhy.join(" / ") };
   let voice;
   try {
     voice = await synthAll(s.chapters, pub, splitSubs);
@@ -178,8 +182,9 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   const chapters = f01Chapters(marks);
   const description = f01Description(s, chapters);
   // 選手名（姓・名の両方。声で読まないことの照合）
-  const names = (m.api.races?.find((r) => r.raceId === m.raceId)?.entries ?? []).flatMap((e) => (e.name ?? "").split(/\s+/)).filter((x) => x.length >= 2);
-  const why = f01Check(s, { desc: description, kana: voice.kana, shots, names });
+  const names = (m.api.races?.find((r) => r.raceId === m.raceId)?.entries ?? []).flatMap((e) => [...(e.name ?? "").split(/\s+/), fullName(e.name)]).filter((x) => x.length >= 2);
+  // 名前と級の照合（右の列の文と、材料の出走表 racersOf の名前と級。racersOf 自体の読み方は verify で固定）
+  const why = f01Check(s, { desc: description, kana: voice.kana, shots, names, racers: racersOf(m).racers });
   const seconds = props.total / FPS;
   const report = {
     version: s.version,
@@ -192,7 +197,8 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     minFontLine: MIN_FONT_PX,
     smallText: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.small ?? []])),
     dpr: DPR,
-    chapters: s.chapters.map((c) => ({ id: c.id, name: c.name, voice: c.voice, answer: c.answer ?? null, answer2: c.answer2 ?? null, scope: c.scope ?? null, facts: c.facts })),
+    chapters: s.chapters.map((c) => ({ id: c.id, name: c.name, voice: c.voice, answer: c.answer ?? null, answer2: c.answer2 ?? null, scope: c.scope ?? null, right: c.right ?? null, bars: c.open?.bars ?? null, openLayout: c.open?.layout ?? null, facts: c.facts })),
+    racers: s.racers,
     marks,
     kana: voice.kana,
   };
