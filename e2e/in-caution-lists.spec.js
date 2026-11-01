@@ -313,6 +313,9 @@ test.describe("イン崩れ注意度の計測（ホーム・会場の一覧、BO
     await expect(page.locator(".venue-race-list__in-caution-note")).toBeVisible(
       { timeout: 30000 },
     );
+    // 会場カードが直近1年の静的な値で読み込みを待たずに出るようになり（BOA-1189）、1画面目の下に押し出される。
+    // ホームの欄と同じく、画面に入れてから数える
+    await page.locator(".venue-race-list__in-caution-note").scrollIntoViewIfNeeded();
     await expect
       .poll(async () => (await named(page, "caution_visible")).length)
       .toBe(1);

@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures.js";
+import { VENUE_SUMMARY_STATS } from "../src/data/venueSummaryStats.js";
 
 /**
  * 会場特徴カードに venues.cluster 由来の「イン強い／アウト強い／バランス型」を出さない（BOA-1202）。
@@ -38,8 +39,10 @@ test("若松の会場特徴カードに「アウト強い」を出さない（BO
   await page.goto(`/venue/${VENUE}`, { waitUntil: "domcontentloaded" });
   const card = page.locator(".venue-characteristics-card");
   await card.waitFor({ state: "attached", timeout: 30000 });
-  // カードが描画されたことを、1号艇の1着率の表示で確かめる（空振りで通さない）
-  await expect(card).toContainText("60.0%");
+  // カードが描画されたことを、1コースの1着率（直近1年、BOA-1189）の表示で確かめる（空振りで通さない）
+  await expect(card).toContainText(
+    `${VENUE_SUMMARY_STATS.venues[VENUE].courses[0].rate.toFixed(1)}%`,
+  );
   // 折りたたまれていても textContent には出る。見出し・要約・本文の全体で出ないこと
   const text = await card.evaluate((el) => el.textContent ?? "");
   expect(text).not.toContain("アウト強い");

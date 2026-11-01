@@ -881,6 +881,29 @@ for (const code of [1, 24]) {
       ),
       true,
     );
+    // 見出しの直下の常設の要約2行（BOA-1189）。その言語の文で、h1 の直後に出る
+    {
+      const { venueSummaryLines } =
+        await import("../../src/utils/venueSummary.js");
+      const lines = venueSummaryLines(tl, 1);
+      check(
+        `${lang} 会場: 要約2行が h1 の直後に出る`,
+        vhtml.includes(
+          `</h1>\n<p>${escapeHtml(lines.course)}</p>\n<p>${escapeHtml(lines.techniques)}</p>`,
+        ),
+        true,
+      );
+      if (lang === BOT_PAGE_PREFIXED_LANGS[0]) {
+        const jaLines = venueSummaryLines(t, 1);
+        check(
+          "ja 会場: 要約2行が h1 の直後に出る",
+          jaVenue.includes(
+            `</h1>\n<p>${escapeHtml(jaLines.course)}</p>\n<p>${escapeHtml(jaLines.techniques)}</p>`,
+          ),
+          true,
+        );
+      }
+    }
     check(
       `${lang} 会場: レース詳細へのリンク（人と同じ /${lang}/race/{id}）`,
       links(vhtml),
