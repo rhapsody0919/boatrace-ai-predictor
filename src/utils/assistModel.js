@@ -108,7 +108,7 @@ export function baseVerdict(k, n, base) {
 }
 
 /**
- * 堅い？荒れる？の2本（1号艇の1着・万舟）。scope.few なら verdict を null にする（「件数少なめ」、D-37）
+ * 堅い？荒れる？の2本（1号艇の1着・万舟）。scope.few なら verdict を null にする（同じラウンドが30件未満で NC に戻したため、D-37）
  * @param {ReturnType<typeof sameClassScope>} scope
  * @param {object|null} nationalCell 全国の全レース（scenario NA の全体のセル）
  */
