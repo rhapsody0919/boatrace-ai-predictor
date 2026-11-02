@@ -29,7 +29,8 @@
  *   today_thinking_reply（展示後のリプ）で、形・時刻の窓・画像の名前・投票4択は優勝戦と同じ。違うのは次だけ:
  *   item の kind は today_thinking・variant は thinking・thinking_poll・thinking_reply、下書きの format は3本とも today_thinking_image・
  *   source_data のキーは today_thinking、許可は today_thinking_enabled、取り置きは today_thinking、Storage は today-thinking/、
- *   優勝戦の段（race_stage）は見ない。代わりに、race_id がその日の /today の X 投稿の対象（today-picks.js の featured か list）であること
+ *   優勝戦の段（race_stage）は見ない。代わりに、その日の /today の X 投稿が posted で、race_id がその対象（today-picks.js の featured か list）か、
+ *   その日の格の最上位（SG ＞ PG1 ＞ G1）の場の 10〜12R であること。同じ格が2場以上なら 12R の締切が遅い方の場（hq の a2、オーナー 2026-10-31・11-02 の (a)）
  *   node --env-file=.env.local scripts/sns/push-finals-image.js --status <race_id> --kind today_thinking   思考投稿の状態
  *
  * stdout の最後の1行は `FINALS_RESULT {...}`（race_id・part（main・reply）・kind（finals_image・today_thinking）・outcome・job_id・job_state・
@@ -609,10 +610,70 @@ async function approveDraft(
 }
 
 /**
- * その日の /today の X 投稿の対象（today-picks.js の readTodayPicks の featured か list）に race_id が入っているか（純粋関数）。
- * 入っていなければ理由を返す（思考投稿は /today の対象レースだけに出す。審査の P2）
+ * グレードの日に /today の対象の外でも受ける格（races.race_grade の値、強い順。hq の a2、オーナー 2026-10-31・11-02 の (a)）。
+ * races.race_grade は raceListParser.js が SG・G1・G2・G3・ippan で書き、PG1 は G1 として入る（本番 2026 年の値に PG1 は0件。
+ * BBCトーナメント・スピードクイーンメモリアル・マスターズチャンピオン・レディースチャンピオン・ヤングダービーの行は G1、
+ * race_series.grade も G1。2026-11-02 に読み取りで確認）。そのため今の DB では PG1 と G1 の場は同じ格として比べる。
+ * 他の書き手が PG1 と書けば G1 より上として扱う
  */
-export function todayTargetReason(picks, raceId) {
+export const THINKING_GRADE_DAY_GRADES = Object.freeze(["SG", "PG1", "G1"]);
+/** グレードの日に受けるレース番号（hq は開催場の 12R→11R→10R から選ぶ） */
+export const THINKING_GRADE_DAY_MIN_RACE_NUMBER = 10;
+export const THINKING_GRADE_DAY_MAX_RACE_NUMBER = 12;
+
+const gradeRankOf = (grade) =>
+  typeof grade === "string"
+    ? THINKING_GRADE_DAY_GRADES.indexOf(grade.toUpperCase())
+    : -1;
+/** race_id（YYYY-MM-DD-会場-R）の日と会場の部分 */
+const venueKeyOf = (raceId) =>
+  typeof raceId === "string" ? raceId.slice(0, 13) : null;
+
+/**
+ * その日の思考投稿を受ける場（純粋関数）。twelves はその日の 12R の races の行（race_id・race_grade・start_time）。
+ * 格の最上位（SG ＞ PG1 ＞ G1）の場で、同じ格が2場以上なら 12R の締切（start_time）が遅い方。締切も同じなら race_id の小さい方
+ * （行の順に依らず、本投稿と展示後のリプで同じ場を選ぶ）。中止は見ない（日中に中止が入っても場が入れ替わらないように。
+ * 中止のレースそのものは checkRace がはじく）。当たる場が無ければ null。返り値は race_id の日と会場の部分（例 2026-11-01-13）
+ */
+export function thinkingGradeDayVenue(twelves) {
+  const better = (a, b) =>
+    gradeRankOf(a.race_grade) - gradeRankOf(b.race_grade) ||
+    b.start_time.localeCompare(a.start_time) ||
+    a.race_id.localeCompare(b.race_id);
+  const best = (twelves ?? [])
+    .filter(
+      (r) =>
+        typeof r?.race_id === "string" &&
+        gradeRankOf(r?.race_grade) >= 0 &&
+        typeof r?.start_time === "string",
+    )
+    .reduce((top, r) => (!top || better(r, top) < 0 ? r : top), null);
+  return best ? venueKeyOf(best.race_id) : null;
+}
+
+const inVenueRange = (race, venue) => {
+  const n = race?.race_number;
+  return (
+    venue !== null &&
+    venueKeyOf(race?.race_id) === venue &&
+    Number.isInteger(n) &&
+    n >= THINKING_GRADE_DAY_MIN_RACE_NUMBER &&
+    n <= THINKING_GRADE_DAY_MAX_RACE_NUMBER
+  );
+};
+
+/** races の行が、その日の受ける場（thinkingGradeDayVenue）の 10〜12R か（純粋関数） */
+export const isThinkingGradeDayRace = (race, twelves) =>
+  inVenueRange(race, thinkingGradeDayVenue(twelves));
+
+/**
+ * 思考投稿を受けるレースか（純粋関数）。その日の /today の X 投稿が送られている（posted）ことを求めたうえで、次のどちらか:
+ *   - その投稿の対象（today-picks.js の readTodayPicks の featured か list）に race_id が入っている（審査の P2）
+ *   - その日の格の最上位（SG ＞ PG1 ＞ G1）の場の 10〜12R。同じ格が2場以上なら 12R の締切が遅い方の場
+ *     （hq の a2、オーナー 2026-10-31・11-02 の (a)。正本は hq の drafts/x-thinking-today-20261027.md v2）
+ * どちらでもなければ理由を返す。race は races の行（race_number）、twelves はその日の 12R の races の行
+ */
+export function todayTargetReason(picks, raceId, race = null, twelves = []) {
   if (!picks?.draft_id)
     return "その日の /today の X 投稿が無い（today_thinking の対象を確かめられない）";
   // 送られた /today の投稿の対象だけ（held・pending_review のまま出ていない投稿の候補には出さない。hq は呼び直すので、8:00 の後に通る）
@@ -621,9 +682,14 @@ export function todayTargetReason(picks, raceId) {
   const ids = [picks.featured, ...(picks.list ?? [])]
     .filter(Boolean)
     .map((r) => r.race_id);
-  return ids.includes(raceId)
-    ? null
-    : `/today の X 投稿の対象でない（${raceId}）`;
+  if (ids.includes(raceId)) return null;
+  const notToday = `/today の X 投稿の対象でない（${raceId}）`;
+  // races の行が無い・別のレースの行なら、グレードを見ずにそう書く（checkRace も行が無いことを別に書く）
+  if (race?.race_id !== raceId)
+    return `${notToday}。races の行が無くグレードを確かめられない`;
+  const venue = thinkingGradeDayVenue(twelves);
+  if (inVenueRange(race, venue)) return null;
+  return `${notToday}。その日の格の最上位の場（${venue ?? "SG・PG1・G1 の場が無い"}）の ${THINKING_GRADE_DAY_MIN_RACE_NUMBER}〜${THINKING_GRADE_DAY_MAX_RACE_NUMBER}R でもない（race_grade=${race.race_grade ?? "不明"}・race_number=${race.race_number ?? "不明"}）`;
 }
 
 /**
@@ -705,7 +771,7 @@ export async function pushFinalsImage(
     readBytes,
   );
   if (imageReasons.length) return reject(imageReasons);
-  const [race, stage, sendControl, todayJobs, children, picks] =
+  const [race, stage, sendControl, todayJobs, children, picks, twelves] =
     await Promise.all([
       store.race(bundle.race_id),
       // 段を見ない種類（思考投稿）は race_conditions を読まない
@@ -714,6 +780,8 @@ export async function pushFinalsImage(
       store.jobsAttemptedOn(jstDate(now)),
       reply ? [] : store.waitingChildren(now),
       cfg.todayTarget ? store.todayPicks(jstDate(now)) : null,
+      // その日の 12R（格の最上位の場を決める。思考投稿だけ）
+      cfg.todayTarget ? store.twelfthRaces(jstDate(now)) : [],
     ]);
   const raceCheck = checkRace({
     bundle,
@@ -738,7 +806,12 @@ export async function pushFinalsImage(
   });
   if (limitReason) raceCheck.reasons.push(limitReason);
   if (cfg.todayTarget) {
-    const targetReason = todayTargetReason(picks, bundle.race_id);
+    const targetReason = todayTargetReason(
+      picks,
+      bundle.race_id,
+      race,
+      twelves,
+    );
     if (targetReason) raceCheck.reasons.push(targetReason);
   }
   // 出し物ごとの取り置き（182、docs/design/x-daily-slots/plan.md）。他の出し物の取り置きの残りを使わないか。
@@ -1156,9 +1229,14 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
     race: async (raceId) =>
       (
         await call(
-          `races?race_id=eq.${id(raceId)}&select=race_id,race_date,start_time,cancellation_status`,
+          `races?race_id=eq.${id(raceId)}&select=race_id,race_date,start_time,cancellation_status,race_grade,race_number`,
         )
       )[0] ?? null,
+    // その日の 12R（思考投稿の受ける場を決める。thinkingGradeDayVenue）
+    twelfthRaces: (date) =>
+      call(
+        `races?race_date=eq.${encodeURIComponent(date)}&race_number=eq.12&select=race_id,race_grade,start_time&order=race_id`,
+      ),
     stage: async (raceId) =>
       (
         await call(`race_conditions?race_id=eq.${id(raceId)}&select=race_stage`)

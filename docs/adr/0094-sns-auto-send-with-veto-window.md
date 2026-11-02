@@ -75,6 +75,7 @@
 ## 追記: /today の対象レースの思考投稿（today_thinking）は、優勝戦の思考投稿と同じ型で別の種類にする（2026-10-27、オーナー決定・BOA-1169・マイグレーション 189）
 - 本投稿（画像4枚＋本文）・直後の4択の投票のリプ・締切の25〜13分前の展示後の画像4枚のリプの3本。push は scripts/sns/push-finals-image.js（bundle の format は today_thinking_image・today_thinking_reply）。item の kind は today_thinking、variant は thinking・thinking_poll・thinking_reply。時刻の窓・bundle の形・画像・投票は優勝戦と同じ
 - 期限は締切の5分前（transition_sns_send_139 の v_expiry_min、優勝戦と同じ）。優勝戦の段は見ず、代わりに race_id がその日の /today の X 投稿の対象（scripts/sns/today-picks.js の featured か list）であることを push の機械の検査に入れる。本文に URL を付けない（3本とも。extractUrls が1つでも返せば拒否。オーナー 2026-10-27）
+- 2026-10-31 オーナー決定（hq の a2。正本は hq の drafts/x-thinking-today-20261027.md v2）: その日の /today の X 投稿が posted であることは残したうえで、その日の格の最上位（SG ＞ PG1 ＞ G1、races.race_grade）の場の 10〜12R も /today の対象の外で受ける。同じ格が2場以上なら 12R の締切が遅い方の場（2026-11-02 オーナー決定の (a)、`thinkingGradeDayVenue`・`isThinkingGradeDayRace`）。races.race_grade は PG1 を G1 として持つので、今の DB では PG1 と G1 の場は同じ格として締切で比べる。hq がグレードの日に開催場の 12R→11R→10R から選んだレースが、/today の対象でないため毎回拒否されていた（10/31 午後・11/1 は0本）
 - 自動送信の許可は `sns_auto_send_control.today_thinking_enabled`（x の行、既定 false）。false の間は push が何も書かず、送り手も claim・check・begin_post で held（today_thinking_disabled）にする。true にするのはオーナーの yes の後で、`.claude/CLAUDE.md` の例外に足すのもその後
 - 枠: 取り置き today_thinking 6（2レース×3本）・full_picture 0・daily_limit_x 11（オーナー 2026-10-27）。月水金は取り置きの合計11＝上限で残り0。取り置きは旗が off でも解けないので、行と上限は 189 に入れず、旗 on と同じトランザクションで、その日の最初の X 送信より前にオーナーが当てる
 - readCurrent は source_data のキーで振り分けるので、新しい種類は別のキー（today_thinking）にし、枝の中で item の kind も確かめる（食い違えば投げる）
