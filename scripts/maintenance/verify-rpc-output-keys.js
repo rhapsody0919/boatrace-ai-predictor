@@ -201,6 +201,11 @@ const MIGRATION_196_REMOVED_KEYS = {
  * @param {number} migration
  */
 function reportRemovedKeys(label, items, keys, migration) {
+  if (items.length === 0) {
+    // 何も見ていないのに OK と出さない（他の入れ子の SKIP と同じ扱い）
+    console.log(`  [SKIP] ${label}: 全レースで空（検査対象なし）`);
+    return false;
+  }
   const present = keys
     .map((key) => ({
       key,

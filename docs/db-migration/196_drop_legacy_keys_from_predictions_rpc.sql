@@ -70,6 +70,14 @@ BEGIN
   IF drifted IS NOT NULL THEN
     RAISE EXCEPTION '196 の前提の検査に失敗（本番の本文が 157 とも 196 とも違う。土台を取り直す）: %', drifted;
   END IF;
+  -- 名前ごとに1本だけ、引数が (date) であること（改名・削除・別の引数の版があれば、上の検査は空振りする）
+  IF (SELECT count(*) FROM pg_proc p
+       WHERE p.pronamespace = 'public'::regnamespace
+         AND p.proname IN ('get_predictions_by_date', 'get_predictions_by_date_light')) <> 2
+     OR to_regprocedure('public.get_predictions_by_date(date)') IS NULL
+     OR to_regprocedure('public.get_predictions_by_date_light(date)') IS NULL THEN
+    RAISE EXCEPTION '196 の前提の検査に失敗: get_predictions_by_date(date)・get_predictions_by_date_light(date) が1本ずつではない';
+  END IF;
 END
 $precheck$;
 

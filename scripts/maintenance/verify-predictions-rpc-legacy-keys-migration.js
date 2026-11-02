@@ -10,7 +10,8 @@
  *   (d) search_path=public, pg_temp と anon の EXECUTE が保たれる
  *   (e) 本文が 157 と違う関数には当たらない（前提の検査で失敗し、何も変わらない）
  *   (f) もう一度当てても通る（適用後の本文も前提の検査で受け付ける）
- *   (g) 戻し方（157 の2関数＋187 の ALTER）で元の本文（md5）に戻る
+ *   (g) 戻し方（196 の頭のコメントのとおり、157 の2関数の本文に SET search_path を付けて当てる）で元の本文（md5）と属性に戻る
+ *   (h) 2関数のどちらかが無い（改名・削除）と前提の検査で失敗する
  *
  * 実行: node scripts/maintenance/verify-predictions-rpc-legacy-keys-migration.js（@electric-sql/pglite は devDependency）
  */
@@ -45,6 +46,12 @@ const REMOVED_ENTRY_KEYS = [
   "aiScoreUpsetFocus",
 ];
 const REMOVED_RACE_KEYS = ["predictionOdds"];
+
+// 本番の適用前の md5（2026-11-03 の読み取り、187 の記録と一致）。関数ごとに照合する
+const PROD_MD5_BEFORE = {
+  get_predictions_by_date: "012ecc95edba6dee8757a763c65d7d04",
+  get_predictions_by_date_light: "2cd99677b99cb450b85e92ecd6cf0351",
+};
 
 /** 157 から2関数の定義（CREATE OR REPLACE 〜 $$;）だけを取り出す。戻し方と同じ範囲 */
 function extract157Functions() {
@@ -92,8 +99,9 @@ INSERT INTO public.races (race_id, race_date, venue_code, race_number) VALUES ('
 INSERT INTO public.race_entries (race_id, boat_number, player_name, ai_score_standard, ai_score_safe_bet, ai_score_upset_focus)
   VALUES ('${RACE}', 1, 'A', 80, 70, 60), ('${RACE}', 2, 'B', 50, 40, 30);
 INSERT INTO public.prediction_odds (race_id, trifecta_pred_standard, trifecta_odds_standard) VALUES ('${RACE}', '1-2-3', 12.3);
+INSERT INTO public.race_conditions (race_id, weather, wind_speed, weather_observed_at) VALUES ('${RACE}', '晴', 2, now());
 INSERT INTO public.predictions (race_id, model_id, top_pick, top_2nd, top_3rd, feature_contributions)
-  VALUES ('${RACE}', 'unified', 1, 2, 3, '{"inCaution": {"level": "low"}}'),
+  VALUES ('${RACE}', 'unified', 1, 2, 3, '{"inCaution": {"level": "low"}, "volatilityPercentile": 0.5, "turnPrediction": {}, "racerStats": {}}'),
          ('${RACE}', 'safeBet', 1, 2, 3, '{}');
 INSERT INTO public.exhibition_data (race_id, boat_number, exhibition_time) VALUES ('${RACE}', 1, 6.7);
 INSERT INTO public.race_results (race_id, rank1, race_status) VALUES ('${RACE}', 1, 'normal');
@@ -154,6 +162,9 @@ async function keyShape(db, fn) {
     entries: nested(race.entries),
     result: nested(race.result),
     exhibitionData: nested(race.exhibitionData),
+    weather: nested(race.weather),
+    volatility: nested(race.volatility),
+    predictionsModel: nested(race.predictions?.unified),
   };
 }
 
@@ -168,13 +179,14 @@ async function main() {
   const before = await fnState(db);
   const md5s = expectedMd5s();
   check(
-    "(a) 157 の本文の md5 が 196 の前提の検査の適用前の値と一致する",
+    "(a) 157 の本文の md5 が関数ごとに本番の適用前の値と一致し、196 の前提の検査にも書いてある",
     before.length === 2 &&
-      before.every((r) => md5s.includes(r.md5)) &&
-      md5s.includes("012ecc95edba6dee8757a763c65d7d04") &&
-      md5s.includes("2cd99677b99cb450b85e92ecd6cf0351"),
+      before.every(
+        (r) => r.md5 === PROD_MD5_BEFORE[r.proname] && md5s.includes(r.md5),
+      ),
     JSON.stringify(before.map((r) => [r.proname, r.md5])),
   );
+
   const shapeBefore = Object.fromEntries(
     await Promise.all(FUNCS.map(async (f) => [f, await keyShape(db, f)])),
   );
@@ -238,7 +250,14 @@ async function main() {
           JSON.stringify(after.entries) &&
         JSON.stringify(b.result) === JSON.stringify(after.result) &&
         JSON.stringify(b.exhibitionData) ===
-          JSON.stringify(after.exhibitionData),
+          JSON.stringify(after.exhibitionData) &&
+        JSON.stringify(b.weather) === JSON.stringify(after.weather) &&
+        JSON.stringify(b.volatility) === JSON.stringify(after.volatility) &&
+        JSON.stringify(b.predictionsModel) ===
+          JSON.stringify(after.predictionsModel) &&
+        [b.weather, b.volatility, b.predictionsModel].every(
+          (k) => Array.isArray(k) && k.length > 0,
+        ),
       JSON.stringify({ before: b, after }),
     );
   }
@@ -269,11 +288,12 @@ async function main() {
     String(againErr?.message ?? ""),
   );
 
-  // (g) 戻し方
+  // (g) 戻し方（196 の頭のコメントの手順: 157 の2関数の本文に SET search_path を付ける）
   await db.exec(
-    `${extract157Functions()}
-ALTER FUNCTION public.get_predictions_by_date(date) SET search_path = public, pg_temp;
-ALTER FUNCTION public.get_predictions_by_date_light(date) SET search_path = public, pg_temp;`,
+    extract157Functions().replace(
+      /^STABLE$/gm,
+      "STABLE\nSET search_path = public, pg_temp",
+    ),
   );
   const restored = await fnState(db);
   check(
@@ -281,6 +301,24 @@ ALTER FUNCTION public.get_predictions_by_date_light(date) SET search_path = publ
     JSON.stringify(restored) === JSON.stringify(before),
     JSON.stringify(restored),
   );
+
+  // (h) 片方が無い
+  const missing = new PGlite();
+  await missing.exec(FIXTURE_SQL);
+  await missing.exec(PROD_STATE_SQL);
+  await missing.exec(
+    "DROP FUNCTION public.get_predictions_by_date_light(date)",
+  );
+  const missingErr = await attemptExec(missing, sql196);
+  const missingAfter = await fnState(missing);
+  check(
+    "(h) _light が無いと前提の検査で失敗し、作り直さない",
+    missingErr != null &&
+      /196 の前提の検査に失敗/.test(String(missingErr.message)) &&
+      missingAfter.length === 1,
+    String(missingErr?.message ?? "失敗しなかった"),
+  );
+  await missing.close();
 
   await db.close();
   if (failures > 0) {
