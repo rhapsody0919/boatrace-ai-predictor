@@ -630,31 +630,29 @@ const venueKeyOf = (raceId) =>
   typeof raceId === "string" ? raceId.slice(0, 13) : null;
 
 /**
- * その日の思考投稿を受ける場（純粋関数）。twelves はその日の 12R の races の行（race_id・race_grade・start_time・cancellation_status）。
- * 格の最上位（SG ＞ PG1 ＞ G1）の場で、同じ格が2場以上なら 12R の締切（start_time）が遅い方。中止の 12R の場は数えない。
- * 当たる場が無ければ null。返り値は race_id の日と会場の部分（例 2026-11-01-13）
+ * その日の思考投稿を受ける場（純粋関数）。twelves はその日の 12R の races の行（race_id・race_grade・start_time）。
+ * 格の最上位（SG ＞ PG1 ＞ G1）の場で、同じ格が2場以上なら 12R の締切（start_time）が遅い方。締切も同じなら race_id の小さい方
+ * （行の順に依らず、本投稿と展示後のリプで同じ場を選ぶ）。中止は見ない（日中に中止が入っても場が入れ替わらないように。
+ * 中止のレースそのものは checkRace がはじく）。当たる場が無ければ null。返り値は race_id の日と会場の部分（例 2026-11-01-13）
  */
 export function thinkingGradeDayVenue(twelves) {
+  const better = (a, b) =>
+    gradeRankOf(a.race_grade) - gradeRankOf(b.race_grade) ||
+    b.start_time.localeCompare(a.start_time) ||
+    a.race_id.localeCompare(b.race_id);
   const best = (twelves ?? [])
     .filter(
       (r) =>
-        r?.cancellation_status == null &&
+        typeof r?.race_id === "string" &&
         gradeRankOf(r?.race_grade) >= 0 &&
         typeof r?.start_time === "string",
     )
-    .reduce((top, r) => {
-      if (!top) return r;
-      const d = gradeRankOf(top.race_grade) - gradeRankOf(r.race_grade);
-      if (d !== 0) return d < 0 ? top : r;
-      return r.start_time > top.start_time ? r : top;
-    }, null);
+    .reduce((top, r) => (!top || better(r, top) < 0 ? r : top), null);
   return best ? venueKeyOf(best.race_id) : null;
 }
 
-/** races の行が、その日の受ける場（thinkingGradeDayVenue）の 10〜12R か（純粋関数） */
-export function isThinkingGradeDayRace(race, twelves) {
+const inVenueRange = (race, venue) => {
   const n = race?.race_number;
-  const venue = thinkingGradeDayVenue(twelves);
   return (
     venue !== null &&
     venueKeyOf(race?.race_id) === venue &&
@@ -662,7 +660,11 @@ export function isThinkingGradeDayRace(race, twelves) {
     n >= THINKING_GRADE_DAY_MIN_RACE_NUMBER &&
     n <= THINKING_GRADE_DAY_MAX_RACE_NUMBER
   );
-}
+};
+
+/** races の行が、その日の受ける場（thinkingGradeDayVenue）の 10〜12R か（純粋関数） */
+export const isThinkingGradeDayRace = (race, twelves) =>
+  inVenueRange(race, thinkingGradeDayVenue(twelves));
 
 /**
  * 思考投稿を受けるレースか（純粋関数）。その日の /today の X 投稿が送られている（posted）ことを求めたうえで、次のどちらか:
@@ -685,8 +687,8 @@ export function todayTargetReason(picks, raceId, race = null, twelves = []) {
   // races の行が無い・別のレースの行なら、グレードを見ずにそう書く（checkRace も行が無いことを別に書く）
   if (race?.race_id !== raceId)
     return `${notToday}。races の行が無くグレードを確かめられない`;
-  if (isThinkingGradeDayRace(race, twelves)) return null;
   const venue = thinkingGradeDayVenue(twelves);
+  if (inVenueRange(race, venue)) return null;
   return `${notToday}。その日の格の最上位の場（${venue ?? "SG・PG1・G1 の場が無い"}）の ${THINKING_GRADE_DAY_MIN_RACE_NUMBER}〜${THINKING_GRADE_DAY_MAX_RACE_NUMBER}R でもない（race_grade=${race.race_grade ?? "不明"}・race_number=${race.race_number ?? "不明"}）`;
 }
 
@@ -1233,7 +1235,7 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
     // その日の 12R（思考投稿の受ける場を決める。thinkingGradeDayVenue）
     twelfthRaces: (date) =>
       call(
-        `races?race_date=eq.${encodeURIComponent(date)}&race_number=eq.12&select=race_id,race_grade,start_time,cancellation_status`,
+        `races?race_date=eq.${encodeURIComponent(date)}&race_number=eq.12&select=race_id,race_grade,start_time&order=race_id`,
       ),
     stage: async (raceId) =>
       (
