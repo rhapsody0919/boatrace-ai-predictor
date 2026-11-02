@@ -2220,4 +2220,38 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
   }
 }
 
+// ---- f01 の c12: 撮る画面の時点を材料にそろえる（2026-11-02、10-30 15場9R・11-01 4場10R で「5項目中」対「6項目中」）----
+// 出走表の段の facts の応答も status は exhibition_ready で exhibition は null。画面は既定で展示後になり、値の無い展示タイムの軸を
+// 数えた（n だけ +1、値の無い軸は2位以内に数えないので k は同じ）。撮影は材料の時点（pageStageOf）を押してから撮る
+{
+  const { buildScene2 } = await import(`${R}/scripts/full-picture/scene2-data.mjs`);
+  const { pageStageOf } = await import(`${R}/scripts/full-picture/f01-capture.mjs`);
+  const { radarAxisItems, radarBoats, todayValues } = await import("../../src/utils/analogyFacts.js");
+  const m = JSON.parse(gunzipSync(readFileSync(new URL(fixtures[0], FX))).toString("utf8"));
+  const facts = m.api.facts?.data ?? m.api.facts;
+  const resp = { ...facts, status: "exhibition_ready", exhibition: null };
+  const s2 = buildScene2(resp);
+  const site = (stage) => {
+    const items = radarAxisItems(resp.today, stage === "exhibition");
+    const boats = radarBoats(resp.today, resp.facts, todayValues(resp.today, resp.exhibition), items, 1, null);
+    return { n: items.length, top2: boats.map((b) => b.top2) };
+  };
+  assert.equal(m.stage, "racecard");
+  assert.equal(pageStageOf(m), "racecard", "材料が出走表なら画面も出走表で撮る");
+  assert.equal(pageStageOf({ stage: "exhibition" }), "exhibition");
+  assert.equal(pageStageOf({}), "racecard", "時点の無い材料は出走表");
+  const want = site(pageStageOf(m));
+  assert.equal(want.n, s2.radar.axes.length, "撮る時点の画面の「N項目中」と f01 の項目の数が同じ");
+  assert.deepEqual(want.top2, s2.radar.boats.map((b) => b.top2), "「k 項目で2位以内」の k も同じ");
+  // 直す前（展示後のまま撮った）は n だけずれた
+  const old = site("exhibition");
+  assert.equal(old.n, s2.radar.axes.length + 1, "展示後の画面は値の無い展示タイムの軸を数える");
+  assert.deepEqual(old.top2, want.top2, "値の無い軸は k を変えない");
+  // 展示後の材料なら展示タイムの軸が入り、画面（展示後）と同じ
+  const ex = { ...resp, exhibition: { exh_time: [6.6, 6.7, 6.8, 6.75, 6.72, 6.81] } };
+  const s2e = buildScene2(ex);
+  assert.ok(s2e.radar.axes.some((a) => a.key === "exh_time"));
+  assert.equal(radarAxisItems(ex.today, true).length, s2e.radar.axes.length, "展示後の材料は展示後の画面と同じ項目の数");
+}
+
 console.log("verify-full-picture-scene2: OK");

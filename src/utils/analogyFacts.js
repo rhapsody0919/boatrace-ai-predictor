@@ -347,6 +347,24 @@ export function boatScopeKey(keys, countOf, picked) {
 }
 
 /**
+ * 七角形の軸の項目（差がつく材料の図と、艇の行の「{n}項目中」の n）。ボート2連率は着順との関係が小さいので入れない
+ * （承認モック mock-compare-v3）。展示タイムは展示後の時点だけ。優勝戦・準優勝戦の日と節の初日は今節の平均着順点を入れない
+ * （Q-F1・BOA-802）。値の有無では外さない（6艇とも値が無い軸も数える）。全貌動画 f01 も同じ関数で軸を決める
+ * @param {object} today facts の応答の today
+ * @param {boolean} exhibitionStage 画面の時点が展示後か
+ */
+export function radarAxisItems(today, exhibitionStage) {
+  const drop =
+    hidesSeriesScoreLine(today) || seriesScoreNote(today) === "first";
+  return FACT_ITEMS.filter(
+    (it) =>
+      it.key !== "boat_2" &&
+      (exhibitionStage || it.key !== "exh_time") &&
+      !(drop && it.key === "series_score"),
+  );
+}
+
+/**
  * 七角形と項目の表の値（承認モック sonar-tab mock-compare-v3）。6艇それぞれ、その艇を一番上で選んだときと
  * 同じ集めたレース（boatScopeKey）で出す。cells は items の順で、今日の順位の区分（bucket、線を描く順位）・
  * 表示の順位（同じ値は幅）・その区分のときの [当たり, 件数]
