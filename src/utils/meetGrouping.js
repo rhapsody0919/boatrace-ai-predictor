@@ -68,7 +68,7 @@
  *     （`groupIntoMeetBeforeRace`）
  *   - `getRacerMeetExhibitionTrendBefore`: 選手＋モーター番号＋**会場**＋表示中
  *     レースの目印（`groupIntoMeetBeforeRace`）
- *   - `racerService.getCurrentMeetRaceEntries`: 選手＋モーター番号＋**会場**＋直近30走
+ *   - `currentMeetEntries.fetchCurrentMeetRaceEntries`: 選手＋モーター番号＋**会場**＋直近30走
  *
  * **モーター番号は会場フィルタの代わりにならない**。番号は会場ごとに振られるので、
  * 別会場の同じ番号のモーターの節が混ざる（BOA-591: 2026-09-21 津1Rで、節の初戦の
@@ -266,4 +266,24 @@ export function meetDaysFromRows(dates, conditions) {
  */
 export function meetStartFromRows(dates, conditions, targetDate) {
   return findMeetStartDate(meetDaysFromRows(dates, conditions), targetDate);
+}
+
+/** 同一選手・会場・モーターの走（race_id 昇順）から今節の走を返す。 */
+export function groupCurrentMeetFromRows(sortedAscEntries, conditions) {
+  if (!sortedAscEntries?.length) return [];
+  const rows = conditions ?? [];
+  const targetDate = sortedAscEntries.at(-1).race_id.slice(0, 10);
+  // 開催日は種別の行の日付に、選手の出走日（対象日を含む）を合わせる。種別の行だけが欠けた日
+  // （race_conditions だけ書けなかった日）を、開催休み（空き2日以上で別の節）や前の節の続きと
+  // 誤らないため（BOA-861 の審査 P1・P2）。種別の行が1つも無いときは従来の推定に戻す。
+  const start = meetStartFromRows(
+    rows.length > 0
+      ? [...rows.map((row) => row.race_id.slice(0, 10)), ...sortedAscEntries.map((e) => e.race_id.slice(0, 10))]
+      : [],
+    rows,
+    targetDate,
+  );
+  return start === null
+    ? groupIntoCurrentMeet(sortedAscEntries)
+    : sortedAscEntries.filter((entry) => entry.race_id.slice(0, 10) >= start);
 }

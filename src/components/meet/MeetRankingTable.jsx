@@ -6,6 +6,7 @@ import {
   pointsNeededForBorder,
 } from "../race/seriesPoints";
 import { borderTieOf } from "../../utils/meetPageModel";
+import RacerLink from "../race/assist/RacerLink";
 import "./MeetRankingTable.css";
 
 // 着順の欄に出る公式の記号（今節タブと同じく公式の表記のまま出す）。記号は訳さず、
@@ -249,9 +250,9 @@ function MeetRankingTable({
               >
                 <td className="meet-ranking__c-rank">{r.rank}</td>
                 <td className="meet-ranking__c-racer">
-                  <span className="meet-ranking__name" translate="no">
+                  <RacerLink racerId={r.racerId} className="meet-ranking__name">
                     {r.playerName}
-                  </span>
+                  </RacerLink>
                   <span className="meet-ranking__line2">
                     {renderFinishes(r.finishes)}
                     {/* 得点の合計と減点。特別配点（ドリーム戦等）や減点があると、着順から
@@ -305,9 +306,9 @@ function MeetRankingTable({
               >
                 <td className="meet-ranking__c-rank">－</td>
                 <td className="meet-ranking__c-racer">
-                  <span className="meet-ranking__name" translate="no">
+                  <RacerLink racerId={r.racerId} className="meet-ranking__name">
                     {r.playerName}
-                  </span>
+                  </RacerLink>
                   {/* 理由は名前の下の段に出す。得点率の列は狭く、「賞典除外」や英語の
                       "Prize excluded" が切れていた（ファン評価1周目） */}
                   <span className="meet-ranking__line2">

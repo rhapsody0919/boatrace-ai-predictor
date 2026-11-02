@@ -41,8 +41,12 @@ export const ASSIST_COPY = Object.freeze({
   weatherAfterExhibition: "風・波・天候は展示の後に出る",
   observedAt: (time) => `${time}観測`,
   oddsAt: (time) => `オッズ ${time}時点`,
-  // オッズは締切の60分前から取り込む（発売は朝から）。「発売後」と書くと発売中のレースで事実と違う（2026-10-08 ユーザー決定）
-  oddsNone: "オッズは締切の約1時間前から出る",
+  // 画面のオッズは DB の取り込み（締切の60分前から）を読む。「発売後」と書くと発売中のレースで事実と違う（2026-10-08 ユーザー決定）。
+  // 朝の会場（三国・鳴門・徳山・芦屋・唐津）の1〜3Rは、締切60分前にまだ発売していない日があり、遅いと締切30分前ごろに出る
+  // （2026-10-03〜11-02 の scrape_slots。締切10時以降は 4,462/4,464 が60分前に取れた）。公式の発売開始の時刻・前日発売は
+  // 公式の一次情報で確かめられなかったので書かない（BOA-1180、official-data-spec・wording-editor）
+  oddsNone:
+    "オッズは締切の約1時間前から出る（朝の早いレースは遅れることがある）",
   sonarLink: "もっと詳しく見る（龍神ソナー）",
 
   // 堅い？荒れる？（FW-22、D-21・D-37）
@@ -52,6 +56,9 @@ export const ASSIST_COPY = Object.freeze({
   roughManshu: "万舟",
   roughBase: (pct) => `全国${pct}%`,
   roughFew: "件数少なめ",
+  // D-37: 少ないのは同じラウンドの件数。全ラウンドへ広げた後の件数とは分ける（BOA-893）
+  roughRoundFallback: (round) =>
+    `${round}だけでは30件未満のため、全ラウンドの値（矢印なし）`,
   // 優勝戦・準優勝戦に絞った値のときは、数えた範囲が分かるようラウンドを添える（D-37）
   roughCount: (n, round) =>
     `${round ? `${round} ` : ""}${n.toLocaleString("ja-JP")}件 ›`,

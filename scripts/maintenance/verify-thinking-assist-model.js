@@ -14,6 +14,11 @@ import {
   parseAssistSession,
   serializeAssistSession,
 } from "../../src/utils/assistSession.js";
+import { build } from "esbuild";
+import { createRequire } from "node:module";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { SCRAPE_JOBS } from "../lib/scrapeJobs/registry.js";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,6 +34,8 @@ import {
   wideLowTable,
   betTypeComposite,
   missingFirstBoats,
+  nextOddsRefreshDelay,
+  ODDS_SNAPSHOT_WINDOWS_MIN,
   boardModel,
   buildRacers,
   classLineup,
@@ -112,7 +119,13 @@ check(
 
 // BOA-822（FR-4）: 1着のバーはイン崩れ注意度の裏返し。AI予想タブの注意度と足して 100%（丸め直さない）
 // 2026-10-11 戸田4R の値（pct 64.8% → 65、35,181件）。nonWin/n の丸めと pct がずれる .5 の境目も見る
-const icToda = { pct: 65, n: 35181, nonWin: 22797, basePct: 45, lowSample: false };
+const icToda = {
+  pct: 65,
+  n: 35181,
+  nonWin: 22797,
+  basePct: 45,
+  lowSample: false,
+};
 const icCard = roughWithInCaution(card, icToda);
 check(
   "注意度 65% の1着のバーは 35%（和が 100%）、基準は 100 − 45 = 55%、万舟は級の並びのまま",
@@ -125,7 +138,13 @@ check(
   JSON.stringify(icCard.b1),
 );
 // nonWin/n = 50.5%（pct は四捨五入で 51）。1着を k/n で丸めると 50 になり、和が 101 になる
-const icHalf = roughWithInCaution(card, { pct: 51, n: 200, nonWin: 101, basePct: 45, lowSample: true });
+const icHalf = roughWithInCaution(card, {
+  pct: 51,
+  n: 200,
+  nonWin: 101,
+  basePct: 45,
+  lowSample: true,
+});
 check(
   "pct 51（nonWin 50.5%）の1着は 49%（k/n を丸め直すと 50 で和が 101）。件数少なめは矢印なし",
   pct(icHalf.b1.rate) === 49 &&
@@ -167,13 +186,92 @@ const fewScope = sameClassScope({
 });
 const fewCard = roughCard(fewScope, na);
 check(
-  "NCR が30件未満なら NC（3,276件）に戻し、few で verdict は null（「件数少なめ」）",
+  "NCR が30件未満なら NC（3,276件）に戻し、few で verdict は null（D-37 を維持）",
   fewScope.kind === "NC" &&
     fewScope.cell.n === 3276 &&
     fewScope.few === true &&
     fewCard.b1.verdict === null &&
+    fewCard.manshu.verdict === null &&
     fewCard.few === true &&
     sameClassLabel(fewScope) === "全国・級の並びが同じ",
+);
+// BOA-893: 実際のカードを SSR し、NC の件数と NCR 不足の説明を分けて検査する。
+// ブラウザの見た目・親ページからの取得経路は E2E で別に確認する。
+const componentBundle = await build({
+  entryPoints: [path.join(here, "../../src/components/race/assist/RoughCard.jsx")],
+  bundle: true,
+  write: false,
+  platform: "node",
+  format: "cjs",
+  packages: "external",
+  jsx: "automatic",
+  loader: { ".css": "empty" },
+  define: { "import.meta.env": "{}" },
+});
+const componentModule = { exports: {} };
+new Function("require", "module", "exports", componentBundle.outputFiles[0].text)(
+  createRequire(import.meta.url),
+  componentModule,
+  componentModule.exports,
+);
+const RoughCard = componentModule.exports.default;
+const renderRough = (scope, inCautionMode, inCaution = null) => {
+  const rough = roughCard(scope, na);
+  return renderToStaticMarkup(createElement(RoughCard, {
+    scope,
+    rough: inCaution ? roughWithInCaution(rough, inCaution) : rough,
+    lineup: null,
+    classes: null,
+    status: "ready",
+    onOpen: () => {},
+    inCautionMode,
+  }));
+};
+for (const [round, label] of [["junyu", "準優勝戦"], ["yusho", "優勝戦"]]) {
+  const fallback = sameClassScope({
+    today: { ...fx.today, round }, scenarios: fewScenarios,
+  });
+  for (const mode of [false, true]) {
+    const html = renderRough(fallback, mode);
+    check(
+      `${label} NCR29件→NC3,276件（注意度モード${mode}）: 件数少なめを付けず、広げた理由と矢印なしを説明`,
+      !html.includes("件数少なめ") && html.includes("3,276件") &&
+        html.includes(`${label}だけでは30件未満のため、全ラウンドの値（矢印なし）`),
+    );
+  }
+}
+const lowSampleHtml = renderRough(fewScope, true, {
+  pct: 51, n: 200, nonWin: 101, basePct: 45, lowSample: true,
+});
+check(
+  "注意度の lowSample の件数少なめは残し、万舟の NC3,276件には付けない",
+  (lowSampleHtml.match(/件数少なめ/g) ?? []).length === 1 &&
+    lowSampleHtml.includes("件数少なめ・勝率差が同じくらい 200件") &&
+    lowSampleHtml.includes("級の並びが同じ 3,276件"),
+);
+for (const n of [30, 112]) {
+  const scenarios = structuredClone(fx.scenario);
+  Object.assign(scenarios[keys.NCR].scenario.cells.all.forms.any, {
+    n, b1_win: Math.round(n * 0.58), manshu: Math.round(n * 0.21), payout_known: n,
+  });
+  const enough = sameClassScope({ today: fx.today, scenarios });
+  const html = renderRough(enough, true);
+  check(
+    `NCR${n}件は同じラウンドのまま、広げた理由を出さない`,
+    enough.kind === "NCR" && !enough.few &&
+      roughCard(enough, na).manshu.verdict !== null &&
+      html.includes(`級の並びが同じ準優勝戦 ${n}件`) &&
+      !html.includes("全ラウンドの値"),
+  );
+}
+const qualifying = sameClassScope({
+  today: { ...fx.today, round: "yosen" }, scenarios: fx.scenario,
+});
+check(
+  "予選（round=null）は NC のまま、広げた理由を出さない",
+  qualifying.round === null && !qualifying.few &&
+    roughCard(qualifying, na).manshu.verdict !== null &&
+    !renderRough(qualifying, true).includes("全ラウンドの値"),
 );
 const noNcrToday = {
   ...fx.today,
@@ -923,8 +1021,12 @@ check(
       winNum(2).label === "1着人気（公式の単勝）" &&
       winNum(2).text === "1番（1.8倍）" &&
       winNum(1).text === "2番（2.5倍）" &&
-      winRows.rows.find((r) => r.boat === 3).nums.every((n) => !/倍/.test(n.text ?? "")) &&
-      winRows.rows.find((r) => r.boat === 6).nums.every((n) => !/倍/.test(n.text ?? "")),
+      winRows.rows
+        .find((r) => r.boat === 3)
+        .nums.every((n) => !/倍/.test(n.text ?? "")) &&
+      winRows.rows
+        .find((r) => r.boat === 6)
+        .nums.every((n) => !/倍/.test(n.text ?? "")),
     JSON.stringify(winRows.rows.map((r) => r.nums)),
   );
   const tri0 = boardModel({
@@ -974,7 +1076,10 @@ check(
   check(
     "保存: 券種を戻し、知らない券種・券種の無い古い保存は券種を返さない（既定の3連単。BOA-990）",
     back.betType === "exacta" &&
-      !("betType" in parseAssistSession('{"bets":{"1":[],"2":[],"3":[]},"betType":"win"}')) &&
+      !(
+        "betType" in
+        parseAssistSession('{"bets":{"1":[],"2":[],"3":[]},"betType":"win"}')
+      ) &&
       !("betType" in parseAssistSession('{"bets":{"1":[],"2":[],"3":[]}}')),
     JSON.stringify(back),
   );
@@ -1059,12 +1164,15 @@ check(
   const ex = {};
   for (const a of [1, 2, 3, 4, 5, 6])
     for (const b of [1, 2, 3, 4, 5, 6])
-      if (a !== b && !["3-6", "6-3"].includes(`${a}-${b}`)) ex[`${a}-${b}`] = 10;
+      if (a !== b && !["3-6", "6-3"].includes(`${a}-${b}`))
+        ex[`${a}-${b}`] = 10;
   check(
     "図の1着人気: オッズの無い組（3-6・6-3）がある1着の艇は 3・6号艇。欠場の6号艇を外すと 3 も外れる。全部あれば空",
     JSON.stringify(missingFirstBoats(ex, [1, 2, 3, 4, 5, 6])) === "[3,6]" &&
       JSON.stringify(missingFirstBoats(ex, [1, 2, 3, 4, 5])) === "[]" &&
-      JSON.stringify(missingFirstBoats({ ...ex, "3-6": 9, "6-3": 9 }, [1, 2, 3, 4, 5, 6])) === "[]" &&
+      JSON.stringify(
+        missingFirstBoats({ ...ex, "3-6": 9, "6-3": 9 }, [1, 2, 3, 4, 5, 6]),
+      ) === "[]" &&
       JSON.stringify(missingFirstBoats(null, [1, 2])) === "[]",
   );
 }
@@ -1093,7 +1201,14 @@ check(
       assistBetType("quinella").legs === 2,
   );
   const tq = oddsByBetType(
-    [{ capturedAt: "t1", trifectaAll: { "1-2-3": 5 }, trioAll: { "1-2-3": 2.1 }, quinellaAll: { "1-2": 1.4 } }],
+    [
+      {
+        capturedAt: "t1",
+        trifectaAll: { "1-2-3": 5 },
+        trioAll: { "1-2-3": 2.1 },
+        quinellaAll: { "1-2": 1.4 },
+      },
+    ],
     { capturedAt: "f", trioAll: { "1-2-3": 2.3 } },
   );
   check(
@@ -1124,14 +1239,20 @@ check(
     tw.byType.wide.final === true &&
       JSON.stringify(tw.byType.wide.odds) === JSON.stringify({ "1-2": 1.8 }) &&
       tw.byType.wide.range["1-2"].high === 2.4 &&
-      JSON.stringify(wideLowTable({ "1-2": { low: 1.7, high: 2 }, "1-3": { low: 0, high: 0 }, "1-4": null })) ===
-        JSON.stringify({ "1-2": 1.7 }),
+      JSON.stringify(
+        wideLowTable({
+          "1-2": { low: 1.7, high: 2 },
+          "1-3": { low: 0, high: 0 },
+          "1-4": null,
+        }),
+      ) === JSON.stringify({ "1-2": 1.7 }),
     JSON.stringify(tw),
   );
   check(
     "合成オッズ: 拡連複は出さない（null）、2連複は合成、オッズの表が無ければ null。拡連複の幅は下限のある組だけ",
     betTypeComposite(assistBetType("wide"), { "1-2": 2 }, ["1-2"]) === null &&
-      betTypeComposite(assistBetType("quinella"), { "1-2": 2 }, ["1-2"]) === 2 &&
+      betTypeComposite(assistBetType("quinella"), { "1-2": 2 }, ["1-2"]) ===
+        2 &&
       betTypeComposite(assistBetType("trio"), null, ["1-2-3"]) === null &&
       JSON.stringify(
         Object.keys(
@@ -1162,7 +1283,9 @@ check(
   const boxed3 = boxBets(B([1], [2], [3, 4]), 3);
   check(
     "ボックス: 3連単は3段すべてを1・2・3・4にそろえる",
-    [1, 2, 3].every((k) => JSON.stringify([...boxed3[k]].sort()) === "[1,2,3,4]"),
+    [1, 2, 3].every(
+      (k) => JSON.stringify([...boxed3[k]].sort()) === "[1,2,3,4]",
+    ),
   );
   const snaps = [
     { capturedAt: "t1", trifectaAll: { "1-2-3": 5 }, exactaAll: { "1-2": 3 } },
@@ -1194,17 +1317,28 @@ check(
   check(
     "イベント: 券種を替えたら assist_bet_type（場所つき）、選んでいる券種の押し直しは送らない。ボックスは assist_bet_box",
     JSON.stringify(
-      assistEventOf(st, { type: "betType", betType: "exacta", from: "compare" }),
+      assistEventOf(st, {
+        type: "betType",
+        betType: "exacta",
+        from: "compare",
+      }),
     ) ===
       JSON.stringify({
         name: "assist_bet_type",
         params: { assist_bet_type: "exacta", assist_bet_from: "compare" },
       }) &&
-      assistEventOf(st, { type: "betType", betType: "trifecta", from: "tab" }) ===
-        null &&
-      assistEventOf({ lens: "bet" }, { type: "betType", betType: "trifecta" }) ===
-        null &&
-      JSON.stringify(assistEventOf({ ...st, betType: "exacta" }, { type: "box" })) ===
+      assistEventOf(st, {
+        type: "betType",
+        betType: "trifecta",
+        from: "tab",
+      }) === null &&
+      assistEventOf(
+        { lens: "bet" },
+        { type: "betType", betType: "trifecta" },
+      ) === null &&
+      JSON.stringify(
+        assistEventOf({ ...st, betType: "exacta" }, { type: "box" }),
+      ) ===
         JSON.stringify({
           name: "assist_bet_box",
           params: { assist_bet_type: "exacta" },
@@ -1213,14 +1347,111 @@ check(
   check(
     "イベント: マークシートを開いた・着順を替えたときも今の券種を送る（保存から戻った2連単も区別する）",
     JSON.stringify(
-      assistEventOf({ ...st, betType: "exacta" }, { type: "sheet", sheet: "mark" }),
+      assistEventOf(
+        { ...st, betType: "exacta" },
+        { type: "sheet", sheet: "mark" },
+      ),
     ) ===
       JSON.stringify({
         name: "assist_sheet_open",
         params: { assist_sheet: "mark", assist_bet_type: "exacta" },
       }) &&
-      assistEventOf({ ...st, betType: "exacta", target: 1 }, { type: "target", target: 3 })
-        .params.assist_bet_type === "exacta",
+      assistEventOf(
+        { ...st, betType: "exacta", target: 1 },
+        { type: "target", target: 3 },
+      ).params.assist_bet_type === "exacta",
+  );
+}
+
+// ---- オッズの読み直しの時刻（BOA-1180）----
+{
+  // 締切 13:14 のレース。2026-10-29〜11-02 の本番の実測で、各窓の値は窓の始まりの約0.6分後に DB に入る
+  const dl = Date.parse("2026-10-06T13:14:00+09:00");
+  const at = (hm) => Date.parse(`2026-10-06T${hm}+09:00`);
+  const snap = (hm) => ({
+    byType: {
+      trifecta: {
+        odds: {},
+        capturedAt: new Date(at(hm)).toISOString(),
+        final: false,
+      },
+    },
+    capturedAt: new Date(at(hm)).toISOString(),
+  });
+  const min = (ms) => (ms == null ? null : ms / 60_000);
+  check(
+    "読み直し: 13:07 に -10（13:04:38）の値を読んだら、-5 の値が入る 13:10:30 に読み直す（直す前は読み直さなかった）",
+    min(nextOddsRefreshDelay(dl, at("13:07:00"), snap("13:04:38"))) === 3.5,
+    String(min(nextOddsRefreshDelay(dl, at("13:07:00"), snap("13:04:38")))),
+  );
+  check(
+    "読み直し: 最初の読み込みが入っているはずの窓より古い（キャッシュ）なら、すぐ1回読み直す。読み直しの結果なら（窓の始まりから5分まで）1分おき",
+    nextOddsRefreshDelay(dl, at("13:11:00"), snap("13:04:38")) === 0 &&
+      min(nextOddsRefreshDelay(dl, at("13:11:00"), snap("13:04:38"), true)) ===
+        1,
+  );
+  const finalOf = (ids) => ({
+    byType: Object.fromEntries(
+      ids.map((id) => [
+        id,
+        {
+          odds: {},
+          capturedAt: new Date(at("13:21:00")).toISOString(),
+          final: true,
+        },
+      ]),
+    ),
+    capturedAt: new Date(at("13:21:00")).toISOString(),
+  });
+  check(
+    "読み直し: 締切の後は締切時オッズが入る 11・20・30・45・61分後。全部の券種の締切時オッズがそろうか、61分後を過ぎたら終わり（一部の券種だけでは続ける）",
+    min(nextOddsRefreshDelay(dl, at("13:16:00"), snap("13:14:36"))) === 9 &&
+      min(nextOddsRefreshDelay(dl, at("13:26:00"), snap("13:14:36"), true)) ===
+        8 &&
+      min(nextOddsRefreshDelay(dl, at("13:50:00"), snap("13:14:36"), true)) ===
+        9 &&
+      nextOddsRefreshDelay(dl, at("14:15:00"), snap("13:14:36")) === null &&
+      nextOddsRefreshDelay(
+        dl,
+        at("13:22:00"),
+        finalOf(ASSIST_BET_TYPES.map((t) => t.id)),
+      ) === null &&
+      min(
+        nextOddsRefreshDelay(dl, at("13:26:00"), finalOf(["trifecta"]), true),
+      ) === 8,
+  );
+  check(
+    "読み直し: 読み直しても入っているはずの窓の値が無ければ（取得の遅れ）、窓の始まりから5分までは1分おきに読む",
+    min(nextOddsRefreshDelay(dl, at("12:46:00"), snap("12:14:37"), true)) ===
+      1 &&
+      min(nextOddsRefreshDelay(dl, at("12:50:00"), snap("12:14:37"), true)) ===
+        10.5,
+  );
+  check(
+    "読み直し: 締切時オッズの失敗で byType が空でも、発売前として2分おきに読む",
+    min(
+      nextOddsRefreshDelay(
+        dl,
+        at("12:20:00"),
+        { byType: {}, capturedAt: null, finalFailed: true },
+        true,
+      ),
+    ) === 2,
+  );
+  check(
+    "読み直し: 窓は取得の registry（odds.offsets）と同じ",
+    JSON.stringify(SCRAPE_JOBS.odds.offsets.map((o) => -o)) ===
+      JSON.stringify(ODDS_SNAPSHOT_WINDOWS_MIN),
+  );
+  check(
+    "読み直し: 発売前（オッズが無い）で -60〜-30 の間は2分おき、-60 より前は -60 の値が入る時刻、-30 の後は次の窓",
+    min(nextOddsRefreshDelay(dl, at("12:20:00"), null, true)) === 2 &&
+      min(nextOddsRefreshDelay(dl, at("12:00:00"), null)) === 15.5 &&
+      min(nextOddsRefreshDelay(dl, at("12:50:00"), null, true)) === 10.5,
+  );
+  check(
+    "読み直し: 締切が分からなければ読み直さない",
+    nextOddsRefreshDelay(null, at("13:07:00"), snap("13:04:38")) === null,
   );
 }
 

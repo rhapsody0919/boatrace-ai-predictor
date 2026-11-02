@@ -14,6 +14,25 @@ const TECHNIQUE_ORDER = {
   恵まれ: 6,
 };
 
+// 色の番号の順と公式の表示の順は別。
+export const OFFICIAL_TECHNIQUE_ORDER = [
+  "逃げ",
+  "まくり",
+  "差し",
+  "まくり差し",
+  "抜き",
+  "恵まれ",
+];
+
+/** 入力を変更せず公式順に並べる。一覧に無い名前は末尾で入力順を保つ。 */
+export function sortTechniquesOfficial(names) {
+  const rank = (name) => {
+    const index = OFFICIAL_TECHNIQUE_ORDER.indexOf(name);
+    return index === -1 ? OFFICIAL_TECHNIQUE_ORDER.length : index;
+  };
+  return [...names].sort((a, b) => rank(a) - rank(b));
+}
+
 const PALETTE_SIZE = 7;
 const OTHER = 6;
 

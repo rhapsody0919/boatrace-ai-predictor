@@ -91,14 +91,10 @@
   border: 2px solid transparent;
 }
 
-/* hover背景(#f0f9ff)・ボーダー(#0ea5e9)はCTAブルー系の装飾アクセントのため対象外
-   （.claude/CLAUDE.mdのピットフォール定義は#0ea5e9/#0284c7自体を対象とするが、
-   このホバー時のみの薄い色味も同系統の装飾として扱い、意図的に据え置く） */
 .article-card:hover {
-  background: #f0f9ff;
-  border-color: #0ea5e9;
+  border-color: var(--brand-accent-secondary);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.15);
+  box-shadow: var(--shadow-xl);
 }
 
 .article-card h3 {

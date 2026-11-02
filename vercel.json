@@ -363,7 +363,7 @@
     {
       "source": "/",
       "missing": [
-        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|Google-GeminiNotebook|bingbot|Applebot|DuckDuckBot).*" }
       ],
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -374,7 +374,7 @@
     {
       "source": "/venue/((?:[1-9]|1\\d|2[0-4]))",
       "missing": [
-        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|Google-GeminiNotebook|bingbot|Applebot|DuckDuckBot).*" }
       ],
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -385,7 +385,7 @@
     {
       "source": "/((?:en|zh-TW|ko)/?)",
       "missing": [
-        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|Google-GeminiNotebook|bingbot|Applebot|DuckDuckBot).*" }
       ],
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -396,7 +396,7 @@
     {
       "source": "/((?:en|zh-TW|ko)/venue/(?:[1-9]|1\\d|2[0-4]))",
       "missing": [
-        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|Google-GeminiNotebook|bingbot|Applebot|DuckDuckBot).*" }
       ],
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -407,7 +407,7 @@
     {
       "source": "/today",
       "missing": [
-        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|Google-GeminiNotebook|bingbot|Applebot|DuckDuckBot).*" }
       ],
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },
@@ -418,7 +418,7 @@
     {
       "source": "/((?:(?:en|zh-TW|ko)/)?race/\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2})",
       "missing": [
-        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|Google-Extended|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|bingbot|Applebot|DuckDuckBot).*" }
+        { "type": "header", "key": "user-agent", "value": ".*(?:GPTBot|ClaudeBot|PerplexityBot|facebookexternalhit|Twitterbot|OAI-SearchBot|ChatGPT-User|Claude-SearchBot|Claude-User|Perplexity-User|Google-GeminiNotebook|bingbot|Applebot|DuckDuckBot).*" }
       ],
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate, s-maxage=0" },

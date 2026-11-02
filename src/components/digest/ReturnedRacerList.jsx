@@ -6,6 +6,7 @@
  * （理由の有無で出し分けない）。
  */
 import { useTranslation } from "react-i18next";
+import RacerLink from "../race/assist/RacerLink";
 import "./RacerPlainList.css";
 
 function ReturnedRacerList({ rows, suppressedVenues = [] }) {
@@ -22,7 +23,7 @@ function ReturnedRacerList({ rows, suppressedVenues = [] }) {
               <span className="racer-plain-list__id" translate="no">
                 {row.racer_id}
               </span>
-              <span translate="no">{row.racer_name}</span>
+              <RacerLink racerId={row.racer_id}>{row.racer_name}</RacerLink>
             </span>
             <span className="racer-plain-list__meta">
               <span translate="no">{t(`venues.${row.venue_code}`)}</span>

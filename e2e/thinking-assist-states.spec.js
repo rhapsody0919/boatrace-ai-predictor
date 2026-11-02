@@ -450,7 +450,11 @@ test.describe("思考アシスト: ユーザー決定（2026-10-08）", () => {
     await open(page);
     await lensTab(page, "買い目").click();
     await expect(
-      page.getByText("オッズは締切の約1時間前から出る").first(),
+      page
+        .getByText(
+          "オッズは締切の約1時間前から出る（朝の早いレースは遅れることがある）",
+        )
+        .first(),
     ).toBeVisible();
     await expect(page.getByText(/発売後/)).toHaveCount(0);
   });
@@ -3169,5 +3173,51 @@ test.describe("思考アシスト: 買い目の券種（BOA-990）", () => {
       await betTypes(page).getByRole("button", { name, exact: true }).click();
       expect(await pops()).toEqual(base);
     }
+  });
+});
+
+test.describe("思考アシスト: 開いたままのページのオッズ（BOA-1180）", () => {
+  test.beforeEach(async ({ page }) => {
+    await routeThinkingAssistV16(page);
+  });
+
+  // 例のレース（徳山10R、締切 13:14）の録画のスナップショットは -10 が 13:04:38、-5 が 13:09:38。
+  // 13:07 に開くと -10 の値が出る。次の窓（-5）の値が DB に入った後（13:10:30）に読み直し、ヘッダーの時刻が進む。
+  // 直す前は最初の1回しか読まず、締切まで 13:04 の値のままだった
+  test("次の窓の値が DB に入る時刻に読み直し、新しいオッズを出す", async ({
+    page,
+  }) => {
+    await page.clock.install({ time: new Date("2026-10-06T13:07:00+09:00") });
+    let reads = 0;
+    await page.route("**/rest/v1/race_odds*", async (route) => {
+      if (route.request().url().includes("race_odds_final"))
+        return route.fallback();
+      reads += 1;
+      const res = await fetchRecorded(route);
+      const rows = await res.json();
+      // 1回目は 13:05 より前の行だけ（-10 まで）、2回目以降は -5 まで
+      const until = Date.parse(
+        reads === 1 ? "2026-10-06T13:05:00+09:00" : "2026-10-06T13:10:00+09:00",
+      );
+      await route.fulfill(
+        res.fulfillOptions({
+          json: rows.filter((r) => Date.parse(r.captured_at) < until),
+        }),
+      );
+    });
+    await open(page);
+    await expect(page.getByText("オッズ 13:04時点").first()).toBeVisible();
+    expect(reads).toBe(1);
+    // 読み直しの予約は出走表（締切の時刻）が届いた後に入る。予約の前に時計を進めると予約が先へずれるので、
+    // 15秒ずつ進めて新しい値が出るまで待つ（13:10:30 の読み直しの前に 13:09 は出ない）
+    await page.clock.runFor(3 * 60_000);
+    expect(reads).toBe(1);
+    await expect(async () => {
+      await page.clock.runFor(15_000);
+      await expect(page.getByText("オッズ 13:09時点").first()).toBeVisible({
+        timeout: 1000,
+      });
+    }).toPass({ timeout: 30_000 });
+    expect(reads).toBe(2);
   });
 });

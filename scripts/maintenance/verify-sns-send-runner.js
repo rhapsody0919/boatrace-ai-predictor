@@ -1,6 +1,6 @@
 // SNS の送信の runner（sns-pdca-loop tasks 19）・鍵の健全性 API・死活の稼働時間の再現テスト。
 // SQL153 と 186（BOA-1164 の閉じる遷移・残した理由）・191（送らなかった理由、BOA-1201）を PGlite に入れ、X・YouTube はモックの adapter。外部接続なし。
-import { test, before, beforeEach, after } from "node:test";
+import { test, before, beforeEach, after, mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
@@ -21,6 +21,9 @@ import { handleTokenHealth } from "../../api/admin/sns-hub/token-health.js";
 import { livenessCheckable } from "../lib/scrapeJobs/monitor.js";
 import { SCRAPE_JOBS, activeMinutesOf } from "../lib/scrapeJobs/registry.js";
 
+// PT の日付境界の外に固定する。Date だけを止め、PGlite の now()・承認・期限も同じ時計で動かす。
+const TEST_NOW = Date.parse("2026-10-27T03:00:00Z");
+mock.timers.enable({ apis: ["Date"], now: TEST_NOW });
 const db = new PGlite();
 const first = async (sql, args = []) => (await db.query(sql, args)).rows[0];
 const bytes = new Uint8Array([1, 2, 3]);
@@ -113,6 +116,7 @@ const store = {
 };
 
 before(async () => {
+  assert.equal((await first("SELECT now() AS at")).at.getTime(), TEST_NOW);
   await db.exec(
     "CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;",
   );
@@ -146,6 +150,7 @@ before(async () => {
     .id;
 });
 beforeEach(async () => {
+  mock.timers.setTime(TEST_NOW);
   await db.exec(
     "DELETE FROM sns_youtube_quota_reads; DELETE FROM sns_youtube_quota_attempts; UPDATE sns_x_send_jobs SET parent_job_id=NULL; DELETE FROM sns_x_send_jobs; DELETE FROM sns_drafts;",
   );
@@ -156,7 +161,13 @@ beforeEach(async () => {
     UPDATE sns_youtube_quota_control SET verified=true,baseline_day=(now() AT TIME ZONE 'America/Los_Angeles')::date,upload_limit=10,general_limit=10000,external_uploads=0,external_general=0;
     UPDATE sns_auto_send_control SET dry_run=false;`);
 });
-after(() => db.close());
+after(async () => {
+  try {
+    await db.close();
+  } finally {
+    mock.timers.reset();
+  }
+});
 
 async function approvedJob(
   platform = "x",
@@ -287,7 +298,7 @@ test("live・dry_run=false: X と YouTube を送って posted、最大件数を�
   );
 });
 
-// runner の時計だけを固定する。SQL の now() と承認・失効は実時刻のままにし、
+// 境界の検査では runner の時計だけを変える。SQL の now() と承認・失効は TEST_NOW のままにし、
 // dueJobs の取得時刻だけ合わせる（SQL の日次ガードを別の日に偽装しない）。
 for (const [at, paused] of [
   ["2026-10-27T06:49:59Z", false],
@@ -1645,6 +1656,8 @@ test("BOA-1201 理由の記録: 同じ理由で3回回しても1行のまま。�
   for (let i = 0; i < 3; i++)
     await runSnsSend(ctx(), deps({ preflight: failingPreflight }));
   assert.equal((await events()).length, 1);
+  // created_at 順の検査なので、別の理由を記録する前に固定時計を進める。
+  mock.timers.tick(1);
   await runSnsSend(
     ctx(),
     deps({

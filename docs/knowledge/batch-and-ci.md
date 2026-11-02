@@ -56,6 +56,48 @@
 - 水質 verify の成功をブログ本文の照合結果に読み替えない。verify-venue-water-profiles.js は表示定数・3言語の会場ガイド等を検査し、場別ブログ本文と JSON メタは読まない（2026-10-13、2026-10-13-plan-review-20261013-17.md）
 - 会場の警告抽出を直しても、監視が保存済みの last_report.alerts を読むなら、新しい報告が保存されるまで旧警告が残る。health からの再計算と保存 alerts の更新を分ける（2026-10-13、2026-10-13-plan-review-20261013-20.md）
 - 会場モーター成績の health は取得を止めた会場のキーを保持する。通知側は現在の取得対象一覧で絞って判定し、固定の除外一覧との一致を仮定しない（2026-10-13、2026-10-13-boa-876.md）
+- 変更履歴の監視では追加行だけで新機能と判断せず、版・記事日・削除行・前後の全文を照合する。取得日を公開日とみなさず、過去版の追記・移動・リンク修正を分け、切断された差分は網羅未確認とする（2026-10-24、tech-trends、codex-changelog・anthropic-api-release-notes の差分照合）。
+- lint の再現件数が指定土台でも違うときは、インストール済みプラグインと lockfile の版を照合する。対象の誤検知・既存の別ルールの違反・全体の新規違反を分けて記録する（2026-10-24、BOA-1017、react-hooks 7.1.1 と lockfile の7.0.1の比較）。
+- CLI の直接実行判定をファイル名の endsWith だけで行うと、verify-harville.js のように同じ末尾を持つ検証からの import でも自己試験が動く。直接実行と import を区別して確認する（2026-10-24、BOA-1032、scripts/lib/harville.js・verify-harville.js）。
+- git numstat のパスは日本語・制御文字がC形式の引用と8進バイト列になる。拡張子判定前に復元し、追跡パスとの照合には NUL 区切りの ls-tree を使う（2026-10-24、BOA-1037、scripts/analysis/rank-fix-hotspots.js）。
+- 丸めを含む関数では、定数を変えても全入力の出力が同じ場合がある。変異試験は実際に出力が変わる入力があるか確認し、同値の変異と検出不足を分ける（2026-10-25、BOA-1060、verify-venue-parameters.js の weight 40→41・50の比較）。
+- softmax の最大値減算の試験は、温度で割ったスコア差が指数のあふれる大きさになる入力を使う。絶対値が大きい1000・1001だけでは最小値減算への変異を見逃し、0・1000なら検出できる（2026-10-25、BOA-1076、verify-unified-model-softmax.js）。
+- 欄名からキーへの写像を検証するときは、欠損記号だけでなく非null値も入力する。欠損→nullだけでは、誤ったキーで読んだ undefined もnullになり、写像の破損を見逃す（2026-10-25、BOA-1077、verify-racer-season-stats-parse.js）。
+- 実データが clamp の範囲内だけなら、全件照合でも上限・下限の破損を検出できない。両側の範囲外入力を別に試し、表へ仮入力を足す場合は try/finally で復元する（2026-10-25、BOA-1078、verify-venue-parameters.js）。
+- verify の失敗後も後続試験が動くことを確かめるには、独立した2入力を同時に壊し、FAIL 2件・後続への到達・終了コード1を確認する（2026-10-25、BOA-1079、verify-cover-image-strategy.js）。
+- 件数の閾値は、直接値を返す分岐と補完平均に含める分岐を別々に試す。全コースに直接値がある入力だけでは補完側の境界変更を見逃すため、直接値の無いコースも用意する（2026-10-25、BOA-1080、verify-technique-placement-tables.js）。
+- 率から成功数への丸めを検証する試験は、丸め前後で Wilson 下限が抽出閾値をまたぐ入力を使う。56%・8走では下限が25.71%から整数4成功の21.52%へ変わる（2026-10-25、BOA-1084、verify-digest-metrics.js）。
+- Platt の検証は、対称入力・陽性率半分での予測合計だけに頼らない。反復不足を検出するには非対称入力を使い、切片と正則化つき傾きのスコアも確認する（2026-10-25、BOA-1090、verify-parametric-calibration.js）。
+- politeFetch の同時取得上限を変えるときは、ページの実測所要時間から slotSecEstimate・leaseSec・claimLimit も計算し直す。同時数だけ下げるとリース内に処理が収まらなくなる（2026-10-26、system-architect、BOA-1145・scrapeJobs/registry.js）。
+- 朝の races_init・scrape-to-json は beforeinfo を取得しない。展示前で値が無く、その取得失敗が races 作成まで止めていたため、朝の出走表作成と直前情報取得を分ける（2026-10-26、BOA-1145、PR #1945）。
+- 記事の関門は TRACKED_DIRS 配下だけを ls-tree で読み、base の内容を作る。記事ディレクトリ外のファイルを比較対象に足す場合は、この取得範囲にも追加する（2026-10-26、PR #1942、scripts/content/check-content-pr.js）。
+- 全貌の材料取得で、選手ごとの読みと約3,000行の全会場表を並列にすると30秒の時間切れが発生した。全会場表は選手の読みの後へ分ける（2026-10-26、PR #1927、fetch-materials.mjs の boatTendency）。
+- 試験追加だけの変更は、同じ変異を追加前後へ当て、旧試験は成功・追加後は失敗・復元後は成功を確認する。通常の変更前試験が緑でも、既存の見逃しと追加試験の検出を区別できる（2026-10-26、BOA-1117、verify-racer-condition-stats.js）。
+- import.meta.url 基準で本体ソースを読むverifyの変異検証は、import先に加え readFileSync の基準URLも元の配置へそろえる。隔離コピーのENOENTによる停止は変異検出の証拠にしない（2026-10-26、BOA-1120、変異検証報告）。
+- 動的ルートの組を生クエリから除いて正規表記を比べる場合は、除外前に空の組を拒否する。?raceId=<同値>& を先に除いてjoinすると空文字になり、クエリなしと誤認する（2026-10-26、BOA-1125、analogyV16.js・verify-analogy-query.js）。
+- 順位の間接試験とは別に、NaNなどの欠損を除く関数を直接試す。Mapの中身は entries を配列にして比較し、欠損が残っても順位だけは同じになるケースを検出する（2026-10-26、BOA-1127、verify-venue-motor-ranking.js）。
+- 気象ありの判定は全項目入りfixtureだけで済ませず、全nullから1項目だけ設定する入力を使う。各項目の欠落と、数値0をfalse扱いする回帰を直接検出する（2026-10-26、BOA-1131、verify-weather-parsing.js）。
+- JSON.stringify で配列を比較すると undefined・NaN・Infinity はnullになる。これらをnullへ正規化する処理の欠落は検出できないため、正規化の試験は値の型も保つ比較で分ける（2026-10-26、BOA-1134、resultDigest.js・verify-scrape-result-job.js）。
+- 組の件数や一致件数だけの試験では、組内の並べ替え削除を検出できない。順序が契約に含まれる関数は、返す組の配列そのものも比較する（2026-10-26、BOA-1136、verify-past-rate-count.js の orderCombos 変異）。
+- pcexpect の claimLimit は verify-scrape-jobs.js だけでなく verify-morning-init-jobs.js の(j)も検証する。上限変更時は両方の契約を照合する（2026-10-26、BOA-1146、PR #1950 差し戻し）。
+- scrape_slots の最終outcomeと累積attemptsだけでは、試行ごとの確認ページ数やpartialの内訳を復元できない。固定ページ数の近似では、最終outcomeで過去試行まで除く影響も注記する（2026-10-26、BOA-1148の回答1、fetchCounts.js）。
+- 「DBに書かない」という検査でも、assertがテーブル名の文字列禁止なら読み取り追加も拒否する。既存期待値を変更できない依頼では、試作前にassert本体と必要な変更の整合を確認する（2026-10-26、BOA-1149、verify-odds-live-api.js:450-453）。
+- 前検の取得を省略する判定は画面の6日参照窓に合わせる。同じ節の最新保存日が6日前なら省略でき、7日前なら再取得する。前の節や未来の保存行は使わない（2026-10-26、BOA-1150の質問回答、verify-motor-pretest.js）。
+- 1つの生成スクリプトが複数の文書を書く場合は、GENERATED_DOCS に生成物ごとに登録し、regenerate はスクリプトごとに1回だけ実行する（2026-10-27、PR #2026、scripts/maintenance/generated-docs.js）。
+- regenerate-generated-docs.yml は npm ci --ignore-scripts 後に生成する。npm依存を使う生成スクリプトも登録できるが、postinstallなどの実行を前提にしない（2026-10-27、PR #2024、.github/workflows/regenerate-generated-docs.yml）。
+- 公開APIのクエリは strictQuery.js で許可名を明示する。verify-cache-config.js は各ファイルの最初の Cache-Control を読むため、400のno-store応答は共通関数に置き、通常応答のキャッシュ検査と分ける（2026-10-27、PR #2004）。
+- Googleのcommon crawlersのIP表は /static/crawling/ipranges/common-crawlers.json。旧 /static/search/apis/ipranges/googlebot.json は301で転送され、Google-InspectionToolもcommon crawlersに含まれる（2026-10-27、BOA-1110段階0、PR #2002、Google公式一覧とcurlの確認）。
+- GHAは起動ごとに新しいプロセスなので、DBガードの「初回読取失敗は止めない」が毎回適用されうる。非常停止は長寿命プロセス内のキャッシュ前提にせず、GHAの起動単位でも失敗時の扱いを確認する（2026-10-27、PR #1982、scripts/lib/ghaSkipGate.js）。
+- entry_course_stats・venue_motor_stats は registry の hosts が空で、host:boatrace.jp の非常停止の対象外。全取得を止める確認ではホスト登録の無いジョブも別に点検する（2026-10-27、PR #1982、scrapeJobs/registry.js）。
+- 朝の一覧生成は完全性チェックを通った回だけ集計RPCを呼ぶ。3つの起動枠があっても重い集計を毎日3回行うわけではない（2026-10-27、system-architect、generate-morning-digest.js・PR #1977）。
+- ホストの半開をカナリアへ固定するときは、403・429・503以外の応答でも状態を確定させる。期限を過去のまま残すと半開で詰まるため、それ以外の応答は閉じる（2026-10-27、system-architectの再現、PR #1965）。
+- 例外の子クラスを足すときは、呼び出し側の error.name の完全一致も点検する。子のnameは親と違うため、親も含めて扱う箇所は instanceof で判定する（2026-10-27、PR #1963、FetchStoppedError・BreakerOpenError）。
+- Storage掃除の完了控えは日付だけでなく種類・保持日数も持たせる。全対象の削除後だけ保存し、一覧・削除・控え保存の各失敗から翌晩に再試行できることを確認する（2026-10-26、BOA-977、verify-analogy-v16-api.js）。
+- racer_profiles の MIN_SAMPLE_FOR_ZERO_GUARD=10 は1チャンクの0件検知用で、完了サイクルの season_fail_rate 通知の母数下限ではない。別の母集団の通知へ流用しない（2026-10-27、BOA-1152、scripts/lib/racerProfilesJob.js）。
+- snsGa4.js から src/config/languages.js をimportすると、翻訳ブログのファイル読み込みもcron起動時に連鎖する。記事ディレクトリを収録しない配備ではENOENTになるため、サーバー用GA4フィルタの依存を分ける（2026-10-27、BOA-1154、PR #1966差し戻し・verify-sns-daily-runner.js）。
+- 廃止を複数PRに分ける場合は参照ファイル一覧を固定し、減る向きだけ許す検査を置く。verify-legacy-prediction-readers.js は列名を見るため、model_id の値やJSONキーの読み手は別に点検する（2026-10-28、PR #2044）。
+- ファイル数上限のある依頼は、実装前に翻訳・試験・verify台帳登録まで含めて必要ファイル数を見積もる。4言語の文言に新規verifyと登録を足すと6ファイルになる（2026-10-28、BOA-1192、run-verify-registry.js）。
+- PGliteの時刻固定はJSのDateだけでなくSQLの now() もassertする。BOA-1211の使用版ではDB作成前の mock.timers.enable({apis:['Date'],now}) がSQLにも効き、created_at の順を試す箇所は時計を進める必要があった（2026-10-31、verify-sns-send-runner.js・verify-sns-metrics-runner.js）。
 
 ## E2E
 - dev サーバーと e2e は本番と別の経路を通る。EDGE_API_BASE="" で /api/predictions/{date} が index.html を返し、Supabase 直のフォールバックになる。本番は Edge API→RPC。両者の差（BOA-304 の weather、BOA-254 の cancellationStatus）は e2e で検知できない（2026-09-19、memory technical_e2e_depends_on_live_supabase_flakiness_2026_09_19。録画の導入後の扱いは要確認）
@@ -106,3 +148,8 @@
 - Actions の課金の集計で `attempts/{run_attempt}/jobs` だけを取ると、rerun の前の attempt の分が抜ける（7日の E2E で12 run、約1,000分）（2026-10-27、system-architect）
 - E2E の組は時間の95%以上がテストの実行で、checkout・npm ci・Playwright の install は合わせて約40秒。キャッシュの効き目は小さい（2026-10-27 実測、run 39377214420 の step の時刻）
 - 非公開のリポジトリの ubuntu-latest は 2 vCPU・8GB（公開は 4 vCPU・16GB）。CPU が律速の E2E は非公開で遅くなる（2026-10-27、GitHub の公式の runner の仕様）
+- ubuntu-latest は 2026-11 に ubuntu-26.04 へ移り、Playwright 1.59.1 の `playwright install --with-deps chromium` が「Playwright does not support chromium on ubuntu26.04-x64」で落ちる。Chromium を入れるジョブ（e2e-smoke-test の e2e-shard・e2e-light、e2e-live、e2e-rerecord の record・replay、post-merge-checks、bot-html-parity）を一時 ubuntu-24.04 に固定した（#2084）。26.04 の対応は Playwright 1.61 から（公式 release notes）。Playwright を 1.64.1（Chromium 156）に上げて7ジョブとも ubuntu-latest に戻した（2026-11-02。1.59 の失敗は run 41365586023・41365899809、#2084。26.04 の上で `playwright install --with-deps chromium` が通ったのは #2102 の run 41377856927）
+- Playwright を上げると、Vercel と SNS の画像（api/_lib/snsHeadless.js）では Chromium は変わらず、それを動かす playwright-core だけが変わる。Vercel 上は playwright-core が @sparticuz/chromium（package.json の版。2026-11 時点の最新は 153）を起動するので、playwright-core が同梱の版より新しい Chromium を前提にしても古い 153 を動かすことになる。上げたら CI の verify-sns-japanese-font（Linux で起動して日本語を撮る）と Vercel の build の AI スナップショットの両方で確かめる（1.64.1 × 153 は両方緑、#2102）。Remotion は自前の Chrome Headless Shell を使い、playwright と無関係。f01 の撮影（f01-capture.mjs）は playwright の Chromium で、1.59.1（Chromium 147）と 1.64.1（Chromium 156）で macOS の撮った14枚が画素まで同じ・最小の字の大きさも同じだった（2026-11-02 実測、2026-10-30-15-09）
+- Playwright 1.64 の routeFromHAR は、HAR の content._file が HAR のある場所の外（絶対パスを含む）を指すと「HAR entry _file escapes base directory」で応答を返さない。E2E の再生は HAR のコピーを test-results 配下に置いて _file を絶対パスにしていたため、全ての録画の応答が失敗し、データ待ちのテストが落ちた（shard 1・5 で計十数件。1.59.1 では同じテストが通る）。コピーは api.har と同じ場所に置き、_file は相対パスのまま渡す（2026-11-02、#2102、verify-e2e-replay-har-path.js）
+- E2E_LIVE=1 の fetchRecorded は本番応答を待つため、アサーション成功後にページが閉じると route.fetch が終了エラーになる。ページ終了による失敗だけを区別し、通信やassertの失敗を一括で無視しない（2026-10-27、BOA-1163、PR #2016）。
+- E2Eの **/rest/v1/race_odds* は race_odds_final にも一致する。発売中と締切時オッズで応答が違う試験は、routeの対象を区別する（2026-10-27、BOA-990①、PR #2027）。

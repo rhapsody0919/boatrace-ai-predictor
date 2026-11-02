@@ -55,6 +55,27 @@ test("予選終了後の節は、46人の順位・18位の下の準優の線・�
   await expect(page.locator("main, .meet-page")).not.toContainText("競艇");
 });
 
+test("ランキングと順位外の選手名は日本語の選手ページへ移る", async ({ page }) => {
+  await afterTheMeet(page);
+  for (const path of [KOJIMA, `/en${KOJIMA}`]) {
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+    const rows = page.locator(".meet-ranking__table tbody tr.meet-ranking__row");
+    await expect(rows).toHaveCount(52, { timeout: 60000 });
+    const names = rows.locator(".meet-ranking__name");
+    await expect(names).toHaveCount(52);
+    for (const name of await names.all()) {
+      await expect(name).toHaveJSProperty("tagName", "A");
+      await expect(name).toHaveAttribute("href", /^\/racer\/\d{4}$/);
+      await expect(name).toHaveAttribute("translate", "no");
+    }
+    await expect(page.locator("tr.is-excluded a.meet-ranking__name")).toHaveCount(6);
+    const first = names.first();
+    const href = await first.getAttribute("href");
+    await first.click();
+    await expect(page).toHaveURL(new RegExp(`${href}$`));
+  }
+});
+
 test("節の途中の日を初日として開くと「見つからない」を出し、索引させない", async ({
   page,
 }) => {
