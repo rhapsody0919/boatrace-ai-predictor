@@ -114,14 +114,19 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
     marks.push({ id: c.id, name: c.name, at: start });
     t += len;
   }
-  // 終了画面: 締めの声の約4秒目から重ね、声の後の静止は約8秒
+  // 終了画面: 締めの声が終わってから（声と字幕の途中に重ねると、字幕が終了画面に重なった。オーナー 11/2）。声の後の静止は約8秒
   const close = chapters.find((c) => c.id === "close");
   // 置いた声だけから（字の小ささ等で省いた章の声は voice.lines に残る。Codex P1 #2075）
   const placed = new Map(voice.lines.map((l) => [l.file, l.sec]));
   const lastVoiceEnd = Math.max(0, ...audio.map((a) => a.from + f(placed.get(a.file))));
-  const end = close ? { from: close.from + f(4) } : null;
+  const lastSubEnd = Math.max(0, ...subs.map((x) => x.to));
+  const end = close ? { from: Math.max(lastVoiceEnd, lastSubEnd) } : null;
   const total = Math.round(Math.max(t * FPS, lastVoiceEnd + f(8)));
-  if (close) close.len = total - close.from;
+  if (close) {
+    close.len = total - close.from;
+    // 終了画面では章の札・範囲を出さない（④の札「思考アシスト > 相手」が最後まで残っていた。オーナー 11/2）。章の中の秒
+    close.tagUntil = end.from - close.from;
+  }
   return { props: { total, chapters, subs, audio, bgm: bgm ? "bgm.mp3" : null, end }, marks };
 }
 
