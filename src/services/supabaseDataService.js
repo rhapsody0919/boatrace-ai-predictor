@@ -40,6 +40,7 @@ import {
   pickMeetAnchor,
   buildQualifiers,
   officialAsOfDate,
+  seriesCoveringDate,
 } from "../utils/meetPageModel.js";
 import { meetExclusionsOf } from "./meetExclusion.js";
 import { buildRacerScopedRaceRows } from "./racerScopedRaceRows.js";
@@ -1346,12 +1347,6 @@ function generateReasoning(topPickPlayer, modelType) {
 /**
  * Supabase データサービス
  */
-/**
- * 順延で節の予定の最終日より後に走る日を、同じ節とみなす日数（getSeriesOfDate）。
- * 目安（根拠なし）。荒天の順延は1〜2日が多く、3日あれば足りるとみた
- */
-const SERIES_POSTPONE_TOLERANCE_DAYS = 3;
-
 export const supabaseDataService = {
   /**
    * レースデータを取得（races.json形式で返す）
@@ -1420,7 +1415,7 @@ export const supabaseDataService = {
    *
    * race_series は月間スケジュールの「予定」で、順延した節の日程は直らない（docs/db-migration/084）。
    * 順延で予定の最終日より後に走る日（優勝戦など）も同じ節として返すため、その日以前に始まった
-   * いちばん新しい節を取り、最終日から SERIES_POSTPONE_TOLERANCE_DAYS 日以内なら同じ節とみなす。
+   * いちばん新しい節を取り、最終日から SERIES_POSTPONE_TOLERANCE_DAYS（meetPageModel.js の seriesCoveringDate）日以内なら同じ節とみなす。
    * 次の節が始まっていれば、そちらが先に取れる。
    * 行が無ければ null。クエリの失敗は supabase クライアントが例外にする
    * @param {number} venueCode
@@ -1437,13 +1432,7 @@ export const supabaseDataService = {
         .lte("start_date", date)
         .order("start_date", { ascending: false })
         .limit(1);
-      const series = data?.[0] ?? null;
-      if (!series) return null;
-      const daysAfterEnd =
-        (Date.parse(`${date}T00:00:00Z`) -
-          Date.parse(`${series.end_date}T00:00:00Z`)) /
-        86400000;
-      return daysAfterEnd <= SERIES_POSTPONE_TOLERANCE_DAYS ? series : null;
+      return seriesCoveringDate(data?.[0] ?? null, date);
     });
   },
 
