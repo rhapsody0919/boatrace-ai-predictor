@@ -273,9 +273,11 @@ export function groupCurrentMeetFromRows(sortedAscEntries, conditions) {
   if (!sortedAscEntries?.length) return [];
   const rows = conditions ?? [];
   const targetDate = sortedAscEntries.at(-1).race_id.slice(0, 10);
-  // getVenueMeetStart と同じく、開催日は種別の行を基準にする。
+  // getVenueMeetStart と同じく、開催日は種別の行を基準にする。対象日の種別の行がまだ無い日
+  // （race_conditions だけ書けなかった日）でも前の節と繋がらないよう、対象日を開催日に足す。
+  // 種別の行が1つも無いときは足さず、従来の推定に戻す。
   const start = meetStartFromRows(
-    rows.map((row) => row.race_id.slice(0, 10)),
+    rows.length > 0 ? [...rows.map((row) => row.race_id.slice(0, 10)), targetDate] : [],
     rows,
     targetDate,
   );

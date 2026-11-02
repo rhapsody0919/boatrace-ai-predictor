@@ -451,6 +451,14 @@ for (const firstDate of ["2026-10-12", "2026-10-13"]) {
   check(`BOA-861: ${firstDate} 種別が null なら従来の区間`,
     groupCurrentMeetFromRows(entries, null), groupIntoCurrentMeet(entries));
 }
+// 審査 P2: 新しい節の初日（10/12）の種別の行がまだ無くても、前の節（10/05〜10/10、10/10 が最終日）の走を混ぜない
+{
+  const entries = ["2026-10-07", "2026-10-12"].map((date) => ({ race_id: `${date}-02-01`, boat_number: 1 }));
+  const conditions = ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09"]
+    .map((date, i) => cond(date, i + 1)).concat([cond("2026-10-10", 6, true)]);
+  check("BOA-861: 対象日の種別の行が無くても前の節の走を混ぜない",
+    groupCurrentMeetFromRows(entries, conditions), entries.slice(1));
+}
 check("BOA-861: 出走が空なら空", groupCurrentMeetFromRows([], []), []);
 
 // サービス本体に偽のクライアントを渡して実行する。本番クライアントは読み込まない。
