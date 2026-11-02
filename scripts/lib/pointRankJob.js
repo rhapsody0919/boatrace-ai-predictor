@@ -22,6 +22,16 @@ import { run as runPointRank } from "../daily/scrape-point-rank.js";
 export const POINT_RANK_CONCURRENCY = 3;
 
 /**
+ * 写しの取り直し（pendingVenues）の最後の機会か。補足の起動は 23:30・01:30 JST で、01:00〜21:59 JST の起動は
+ * その対象日の最後（次の 22:00 は翌日を対象にする）。ここで pending が残れば、その日の値は失うので失敗にして知らせる
+ * @param {Date} now
+ */
+export function isLastChanceForPending(now) {
+  const jstHour = (now.getUTCHours() + 9) % 24;
+  return jstHour >= 1 && jstHour < 22;
+}
+
+/**
  * @param {Object} ctx 共通ラッパが渡す実行の文脈（cronWrapper.js の ctx。targetDate は日次ジョブで解決済み）
  * @param {Object} [deps] テスト用の差し替え
  */
@@ -57,6 +67,21 @@ export async function runPointRankJob(
     daily: result.daily ?? null,
   };
 
+  const pending = result.daily?.pendingVenues ?? [];
+  if (
+    result.failures.length === 0 &&
+    pending.length > 0 &&
+    isLastChanceForPending(ctx.now())
+  ) {
+    // 補足の最後の起動でも、表にその日の結果が出ていない: その日の写しを失う（後から取り直せない）。成功にせず知らせる
+    result.failures.push(
+      ...pending.map(
+        (v) =>
+          `会場${v.venueCode}(${v.seriesDay}日目): 補足の最後の起動でも表が${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（最終${v.lastRace}R）。日ごとの写しはこの日の値を欠く（${v.reason}）`,
+      ),
+    );
+  }
+
   if (result.failures.length > 0) {
     return {
       outcome: "error",
@@ -75,9 +100,7 @@ export async function runPointRankJob(
     // ソフトデッドラインで着手しなかった会場がある: 対象日を処理済みにせず、補足の起動がもう一度処理する
     // 写しの対象（SG/G1）で、表にその日の結果がまだ出ていない会場がある（BOA-1210）: 同じく補足の起動で取り直す。
     // pointrank は過去の日付で取り直せないため、成功にして済ませるとその日の値を失う
-    incomplete:
-      result.venuesNotAttempted.length > 0 ||
-      (result.daily?.pendingVenues?.length ?? 0) > 0,
+    incomplete: result.venuesNotAttempted.length > 0 || pending.length > 0,
     report,
     body: {
       expectedVenues: result.expectedVenues,

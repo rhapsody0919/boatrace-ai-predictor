@@ -75,7 +75,8 @@ erDiagram
 - 主キーの先頭は snapshot_date（書き手は対象日で既存行を読む）。hq の会場×日付の範囲の読みは (venue_code, snapshot_date) の索引
 - RLS 有効。anon・authenticated は SELECT のポリシーと GRANT SELECT だけ（racer_series_points と同じく公開の値）。claude_ro に SELECT を明示。書くのは service_role だけ
 - hq の読み（例。予選最終日 $d・その日目 $n）: `SELECT * FROM racer_series_points_daily WHERE venue_code = $1 AND snapshot_date < $d AND snapshot_date >= $d - 9 AND series_day = $n - 1` の、snapshot_date が最大の日の行。meet_start_date は順延で1日ずれうるのでキーにしない（system-architect）。as_of_race が最後のレースより前なら途中の値（注記を付ける）。行が無い日は hq が自前で計算する
-- 写すのは SG/G1 だけ（G2 以下の表は写さない）
+- 写すのは SG/G1 だけ（G2 以下の表は写さない）。グレードが未取得の会場は写さず skippedVenues（grade_unknown）に出す
+- 取り直し（incomplete）が補足の最後の起動（01:00 JST 以降）でも解けなければ、実行を失敗にして知らせる（その日の値を欠くため）。GitHub Actions の肩代わりには補足の起動が無いので、その場で失敗にする
 
 ## 5. 適用とデプロイの順
 

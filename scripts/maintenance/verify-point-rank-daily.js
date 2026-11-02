@@ -154,6 +154,8 @@ const opts = (client, fetchImpl = fakeFetch) => ({
   venueDelayMs: 0,
 });
 const DAILY = "racer_series_points_daily";
+/** 22:00 JST の起動（補足の最後の起動ではない） */
+const AT_2200 = () => new Date("2026-09-18T13:00:00Z");
 
 // --- 予選3日目の夜: 写しを書く -------------------------------------------------
 const client = createFakeClient(tablesFor("2026-09-18", 3));
@@ -250,6 +252,7 @@ check(
     politeFetch: fakeFetch,
     mode: "live",
     shouldStop: () => false,
+    now: AT_2200,
   });
   check(
     "192 未適用: 写しを書かず report.daily.tableMissing=true、racer_series_points は52行書き、実行は失敗にしない",
@@ -277,6 +280,7 @@ check(
     politeFetch: fakeFetch,
     mode: "live",
     shouldStop: () => false,
+    now: AT_2200,
   });
   check(
     "写しの既存行が読めない: 書かずに outcome=error（対象日を処理済みにせず、補足の起動が再試行する）",
@@ -357,6 +361,7 @@ check(
     politeFetch: fetchFor(3, G1_NOTE(3, 11)),
     mode: "live",
     shouldStop: () => false,
+    now: AT_2200,
   });
   check(
     "3日目11R終了時点（最後は12R）: 写しを as_of_race=11 で書き、incomplete（対象日を済みにしない）",
@@ -378,6 +383,7 @@ check(
     politeFetch: fetchFor(3, G1_NOTE(3, 11)),
     mode: "live",
     shouldStop: () => false,
+    now: AT_2200,
   });
   check(
     "12R が中止の日の11R終了時点: 書いて incomplete にしない",
@@ -395,6 +401,7 @@ check(
     politeFetch: fetchFor(2),
     mode: "live",
     shouldStop: () => false,
+    now: AT_2200,
   });
   check(
     "3日目の対象日に表が2日目の時点: 写しに書かず incomplete（その日の値は後から取り直せない）",
@@ -402,6 +409,38 @@ check(
       (c.data[DAILY] ?? []).length === 0 &&
       res.report.daily?.pendingVenues?.[0]?.reason === "day_not_reflected",
     show({ incomplete: res.incomplete, daily: res.report.daily }),
+  );
+}
+
+// --- 補足の最後の起動（01:30 JST）でも表が前の日のまま: 失敗にして知らせる ---------------------------
+{
+  const c = createFakeClient(tablesFor("2026-09-18", 3));
+  const res = await runPointRankJob({
+    targetDate: "2026-09-18",
+    client: c,
+    politeFetch: fetchFor(2),
+    mode: "live",
+    shouldStop: () => false,
+    now: () => new Date("2026-09-18T16:30:00Z"),
+  });
+  check(
+    "01:30 JST の起動でも表が2日目の時点: outcome=error（その日の写しを欠くことを知らせる）",
+    res.outcome === "error" && /補足の最後の起動/.test(res.error ?? ""),
+    show({ outcome: res.outcome, error: res.error }),
+  );
+}
+
+// --- グレードが未取得の会場: 写さず skipped に grade_unknown で出す -------------------------------
+{
+  const t = tablesFor("2026-09-18", 3);
+  for (const r of t.races) if (r.race_id.includes("-05-")) r.race_grade = null;
+  const c = createFakeClient(t);
+  const res = await run("2026-09-18", opts(c));
+  check(
+    "グレードが未取得の会場: 写しに書かず skippedVenues に grade_unknown",
+    (c.data[DAILY] ?? []).length === 0 &&
+      res.daily?.skippedVenues?.[0]?.reason === "grade_unknown",
+    show(res.daily),
   );
 }
 
@@ -415,6 +454,7 @@ check(
     politeFetch: fetchFor(2),
     mode: "live",
     shouldStop: () => false,
+    now: AT_2200,
   });
   check(
     "丸一日の中止で表が前の日の時点: 書かず skipped、incomplete にしない",
@@ -464,7 +504,9 @@ check(
     "parsePointRankAsOf: 「初日１２Ｒ終了時点」は1日目12R",
     show(
       parsePointRankAsOf(
-        cheerio.load("<ul><li>初日１２Ｒ終了時点 ※当日の結果が…</li></ul>"),
+        cheerio.load(
+          '<ul class="notes2"><li>初日１２Ｒ終了時点 ※当日の結果が…</li></ul>',
+        ),
       ),
     ) === show({ seriesDay: 1, raceNumber: 12 }),
   );

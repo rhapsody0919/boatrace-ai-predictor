@@ -114,9 +114,9 @@ export function parseHayamiSeriesDay(text) {
  * @returns {{seriesDay: number, raceNumber: number}|null} 注記が無い・読めないときは null
  */
 export function parsePointRankAsOf($) {
-  // 表の上の注記（<ul class="notes2"><li>…終了時点 ※当日の結果が…</li>）。ページ全体から拾うと別の欄の文字に当たりうるので、
-  // 「終了時点」を含む li の最初の1つだけを見る
-  const note = $("li")
+  // 表の上の注記（<ul class="notes2"><li>…終了時点 ※当日の結果が…</li>）だけを見る。ページ全体から拾うと別の欄の文字に
+  // 当たりうる。notes2 が無くなったら null（呼び出し側が SG/G1 なら失敗にして知らせる）
+  const note = $("ul.notes2 li")
     .filter((_, li) => $(li).text().includes("終了時点"))
     .first()
     .text();

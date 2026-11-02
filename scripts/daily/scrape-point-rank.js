@@ -79,6 +79,12 @@ const FETCH_HEADERS = {
 const TABLE_EXPECTED_GRADES = ["SG", "G1"];
 const TABLE_EXPECTED_FROM_SERIES_DAY = 4;
 
+/**
+ * 予選の最後の日目（普通の6日の SG/G1。2025-12〜2026-10 の SG 7節・G1 34節、official-data-spec 2026-11-02）。
+ * 写しで「表が前の日のまま」を取り直す（incomplete）のはこの日目まで。5日目以降は表が4日目で止まるのが正常
+ */
+const QUALIFYING_LAST_SERIES_DAY = 4;
+
 const FETCH_TIMEOUT_MS = 15000;
 
 /**
@@ -140,6 +146,15 @@ function selectDailyVenues(venueResults, lastRaces) {
   const pending = [];
   const failures = [];
   for (const v of venueResults) {
+    if (v.raceGrade == null) {
+      // グレードが未取得: SG/G1 か分からないので写さない。黙って落とさず report に出す
+      skipped.push({
+        venueCode: v.venueCode,
+        seriesDay: v.seriesDay,
+        reason: "grade_unknown",
+      });
+      continue;
+    }
     if (!TABLE_EXPECTED_GRADES.includes(v.raceGrade)) continue;
     const lastRace = lastRaces.get(v.venueCode) ?? null;
     const base = {
@@ -159,7 +174,7 @@ function selectDailyVenues(venueResults, lastRaces) {
         pending.push({ ...base, reason: "race_not_final" });
     } else if (
       v.asOf.seriesDay === v.seriesDay - 1 &&
-      v.seriesDay <= TABLE_EXPECTED_FROM_SERIES_DAY &&
+      v.seriesDay <= QUALIFYING_LAST_SERIES_DAY &&
       lastRace != null
     ) {
       pending.push({ ...base, reason: "day_not_reflected" });
@@ -626,7 +641,9 @@ export async function run(date, options = {}) {
   failures.push(...dailyVenues.failures);
   for (const v of dailyVenues.skipped)
     console.log(
-      `  ➖ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（対象日は${v.seriesDay}日目）。日ごとの写しに書かない`,
+      v.reason === "grade_unknown"
+        ? `  ➖ ${VENUE_NAMES[v.venueCode]}: グレードが未取得のため日ごとの写しに書かない`
+        : `  ➖ ${VENUE_NAMES[v.venueCode]}: 表は${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（対象日は${v.seriesDay}日目）。日ごとの写しに書かない`,
     );
   for (const v of dailyVenues.pending)
     console.warn(
@@ -673,7 +690,12 @@ async function main() {
   }
   const date = parseDateArg() || resolveTargetDate();
   console.log(`📅 対象日: ${date}`);
-  const { failures } = await run(date);
+  const { failures, daily } = await run(date);
+  // GitHub Actions の肩代わりには補足の起動が無い。表にその日の結果が出ていない会場は、取り直せないので失敗にして知らせる
+  for (const v of daily?.pendingVenues ?? [])
+    failures.push(
+      `会場${v.venueCode}(${v.seriesDay}日目): 表が${v.asOfSeriesDay}日目${v.asOfRace}Rの時点（最終${v.lastRace}R、${v.reason}）`,
+    );
   if (failures.length > 0) {
     console.error(`❌ 得点率取得に失敗（${failures.length}件）:`);
     for (const f of failures) console.error(`  - ${f}`);
