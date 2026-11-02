@@ -2644,7 +2644,7 @@
       "winRate": "F1/F2 = false starts this term on the race card; \"(this meet)\" means at least one was from this meet up to yesterday (excluded from this meet's semifinal and final). L1 = late starts this term",
       "motor": "Top-2 rate of this motor over the past 90 days (only since the current motor set was introduced), calculated by this site. Differs from the meet-start rate on the official race card",
       "form": "Current national win rate minus the national win rate about 90 days ago. ↑ up, ↓ down",
-      "avgSt": "The average start timing on the official race card (seconds; the official term record for the same term as the win rate, 2 decimals). Smaller means a faster start",
+      "avgSt": "The average start timing on the official race card (seconds; official term record, all venues; 2 decimals). \"Racer form (national win rate)\" is the race card value and uses a different calculation period. Smaller means a faster start",
       "avgSt30": "Average start timing over the last 30 races up to the previous day (seconds; excludes flying and late starts; same value as Ryujin Sonar and Thinking Assist). Smaller means a faster start",
       "st": "Average gap between exhibition ST and race ST over the past 90 days (seconds). The smaller the number after ±, the more the racer starts as in the exhibition",
       "exSt": "Start timing in today's start exhibition. F.01 etc. means a flying start in the exhibition, L means a late start (official notation)",
@@ -3622,8 +3622,8 @@
     "localWinRate": "The racer's win rate at this venue. A guide to whether this is one of their strong venues",
     "motor": "The share of races this motor finished 1st or 2nd. A higher figure suggests a motor in good condition",
     "form": "The difference between the racer's recent win rate and their usual win rate, showing whether they are trending up or down",
-    "avgSt": "The average start timing on the official race card (official term record, same term as the win rate). Smaller means faster starts",
-    "avgStOfficialPeriod": "The average start timing on the official race card (record from {{from}} to {{to}}, the official term record for the same term as the win rate). Smaller means faster starts",
+    "avgSt": "The average start timing on the official race card (official term record, all venues). \"Racer form (national win rate)\" is the race card value and uses a different calculation period. Smaller means faster starts",
+    "avgStOfficialPeriod": "The average start timing on the official race card (record from {{from}} to {{to}}, official term record, all venues). \"Racer form (national win rate)\" is the race card value and uses a different calculation period. Smaller means faster starts",
     "avgSt30": "Average start timing over the last 30 races up to the previous day (excludes flying and late starts). Same value as Ryujin Sonar and Thinking Assist. Smaller means faster starts",
     "st": "How little the racer's start timing varies. Smaller means consistently steady starts",
     "exSt": "Start timing in the pre-race exhibition run",
@@ -3668,7 +3668,7 @@
     "stLate": "The share of starts 0.1 seconds or more behind the fastest starter in that race. Because this tends to rise on outer courses, the gap from the average for the same course and class is shown too. Flying starts are excluded. This is our own aggregation and will not match similarly named stats on other sites",
     "flyingCount": "Class is the value on this race's program. F is the number of flying starts this term (gold = 1, red = 2) and resets to 0 on May 1 and November 1. A \"this meet\" tag means the racer had a flying start between the first day of this meet and yesterday: they still run the rest of the meet but cannot enter this meet's semifinal or final (excluded from prizes; today's F is not counted). L is the number of late starts, which is different from \"Slow\" below. Consistent and Slow exclude races with a flying start",
     "nigeSimulation": "Using only races where the course 1 boat won by Nige (Escape), the share of each course that finished 2nd. This is aggregated from this venue's actual results, not a prediction",
-    "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card (record from {{from}} to {{to}}, the official term record for the same term as the win rate). It cannot be filtered by grade, so choosing a grade switches to \"Current term\""
+    "basicInfoOfficial": "\"Official\" shows the win rate, top-2 rate, top-3 rate and Avg ST from the official race card. Avg ST is the official term record, all venues from {{from}} to {{to}}. \"Racer form (national win rate)\" is the race card value and uses a different calculation period. It cannot be filtered by grade, so choosing a grade switches to \"Current term\""
   },
   "weatherInEscape": {
     "loading": "Loading…",
