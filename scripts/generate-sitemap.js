@@ -412,7 +412,7 @@ async function getRacePages() {
       `📊 Supabase から直近7日分のレースデータを取得（${uniqueDates.length}日分・会場別${dateVenuePairs.length}件）`,
     );
   } catch (err) {
-    console.error("レースページ取得エラー:", err.message);
+    throw new Error(`レースページ取得エラー: ${err.message}`, { cause: err });
   }
 
   return racePages;
@@ -531,7 +531,7 @@ async function getRacerPages() {
       `📊 Supabase から選手ページを取得（${racerPages.length}人: ニュース掲載 ${byNews}人・現役A1 ${byGrade}人）`,
     );
   } catch (err) {
-    console.error("選手ページ取得エラー:", err.message);
+    throw new Error(`選手ページ取得エラー: ${err.message}`, { cause: err });
   }
 
   return racerPages;
@@ -676,7 +676,7 @@ async function getLatestRaceDates() {
       result.overall = laterDate(result.overall, date);
     }
   } catch (err) {
-    console.error("開催日の取得エラー:", err.message);
+    throw new Error(`開催日の取得エラー: ${err.message}`, { cause: err });
   }
   return result;
 }
