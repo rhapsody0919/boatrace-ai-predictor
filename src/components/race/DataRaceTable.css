@@ -239,11 +239,10 @@ thead tr:last-child:not(:first-child) .drt-label-th {
   white-space: nowrap;
 }
 
-/* 小標本（n<6）の視覚的区別（BOA-304、RaceBasicInfoTabのis-small-sampleと
-   同じ配色規約: RaceBasicInfoTab.css参照） */
+/* 小標本（n<6）は灰。RaceWakuInfoTab.css の is-small-sample と同じ規約（BOA-711 U5） */
 .drt-n-small-sample {
-  color: var(--color-warning-text);
-  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-normal);
 }
 
 /* 調子（勝率の変化）。上がった＝緑、下がった＝赤（race-detail-ui-unify R2）。以前は株価のように

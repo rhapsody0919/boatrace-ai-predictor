@@ -4,16 +4,17 @@
  * race_series は、過去分の一括（monthly-schedule-backfill.js、2019-04〜2026-09）で入れたきりで、定期取得が無く、
  * 2026-10 以降の節が0件だった（節の日目のフォールバック・長期データのグレードの補完が、10月以降に効かない）。
  *
- * 毎日1回、対象日の月（JST）を当月として、前月・当月・翌月の月間スケジュール（3リクエスト）を取得し、
+ * 月曜と月末3日・月初3日、対象日の月（JST）を当月として、前月・当月・翌月の月間スケジュール（3リクエスト）を取得し、
  * 開始日が当月・翌月の節を書く（値の違う行だけ。変わらなければ書き込み0件）。
  *   - 前月のページは、当月の左端に接する節の開始日の確定に使う。翌々月のページは、まだ公開されていない
  *     （2026-10-02 の実測で 202612 は表なし）ため取らない。翌月の右端に接する節は確定できないので、翌月の取得で書く
  *   - 翌月の節は、日程と色分けだけが先に載り、節名のリンクは後から付く（2026-10-02 の実測で 202611 に30件）。
- *     この要確認だけは許し、節名を NULL で書く。節名が載った後の取得で書き直す。毎日取るのはこのため
+ *     この要確認だけは許し、節名を NULL で書く。節名が載った後の取得で書き直す
  *   - それ以外の要確認（未知の色分け・節の範囲の矛盾等）や会場数の違いは、構造の変更とみなして何も書かない（error）
  *
  * mode: shadow は取得・解析のみ（race_series へ書かない）。off は何もしない（共通ラッパ）。
  */
+import { SCRAPE_JOBS, isScheduledDate } from "./scrapeJobs/registry.js";
 import {
   buildMonthlyScheduleUrl,
   parseMonthlySchedule,
@@ -40,6 +41,13 @@ export async function runRaceSeriesJob(
   const date = ctx.targetDate;
   if (!date)
     throw new Error("対象日を解決できません（ctx.targetDate がありません）");
+  if (!isScheduledDate(SCRAPE_JOBS.race_series, date))
+    return {
+      rowsWritten: 0,
+      rowsParsed: 0,
+      report: { date, mode: ctx.mode, skipped: "not_scheduled" },
+      body: { skipped: "not_scheduled" },
+    };
   const month = ymOf(date);
   const yms = [shiftYm(month, -1), month, shiftYm(month, 1)];
 

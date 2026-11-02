@@ -36,6 +36,15 @@
   color: var(--text-primary);
 }
 
+.racer-plain-list__name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.racer-plain-list__name a:hover {
+  text-decoration: underline;
+}
+
 .racer-plain-list__id {
   font-size: var(--font-size-2xs);
   font-weight: 400;

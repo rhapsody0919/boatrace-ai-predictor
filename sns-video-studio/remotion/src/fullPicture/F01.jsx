@@ -309,7 +309,7 @@ function Chapter({ c }) {
           lineHeight: 1.4,
         }}
       >
-        {c.tag && (
+        {c.tag && (c.tagUntil == null || frame < c.tagUntil) && (
           <div
             style={{
               alignSelf: "flex-start",
@@ -323,7 +323,7 @@ function Chapter({ c }) {
             {c.tag}
           </div>
         )}
-        {c.scope && (
+        {c.scope && (c.tagUntil == null || frame < c.tagUntil) && (
           <Lines
             field={c.right.scope}
             style={{ color: MUTED, fontWeight: 400, lineHeight: 1.4 }}
@@ -382,26 +382,13 @@ function Chapter({ c }) {
 }
 
 /**
- * 終了画面の要素の場所（要素は YouTube 側で置く。ここでは枠と、要素の外の上に説明の字）。
- * 左の画面は暗い地にして枠だけを置く（実画面の上に重ねると読めなかった。hq 11d 節）。右の列の「説明欄の一番上」は隠さない
+ * 終了画面: 左の画面を暗い地にするだけ。YouTube の終了画面の要素（再生リスト・登録）は YouTube Data API v3 では設定できない
+ * （videos の資源に終了画面の項目が無い）ので、置き場の点線の枠と見出しは描かない（空の枠が「バグっぽい」。オーナー 11/2）。
+ * 右の列の「説明欄の一番上」は隠さない
  */
 function EndScreen({ from }) {
   const frame = useCurrentFrame();
   const o = fadeIn(frame, from);
-  const box = (left, top, w, h, label, round = false) => (
-    <div style={{ position: "absolute", left, top, opacity: o }}>
-      <div style={{ color: MUTED, fontSize: 26, marginBottom: 8 }}>{label}</div>
-      <div
-        style={{
-          width: w,
-          height: h,
-          border: `2px dashed ${MUTED}`,
-          borderRadius: round ? h / 2 : 8,
-          background: "rgba(10,20,36,0.85)",
-        }}
-      />
-    </div>
-  );
   return (
     <AbsoluteFill>
       <div
@@ -411,13 +398,11 @@ function EndScreen({ from }) {
           top: 0,
           width: RIGHT.x - 28,
           height: 880,
-          // 終了画面の枠の下に実画面を写さない（重なって読めなかった。hq 11d 節）
+          // 実画面を写さない（重なって読めなかった。hq 11d 節）
           background: `linear-gradient(${BG_TOP}, ${BG_BOTTOM})`,
           opacity: o,
         }}
       />
-      {box(LEFT.x + 72, 270, 600, 338, "全貌 完全版の再生リスト")}
-      {box(LEFT.x + 772, 330, 220, 220, "チャンネル登録", true)}
     </AbsoluteFill>
   );
 }

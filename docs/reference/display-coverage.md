@@ -11,11 +11,11 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 | 区分 | 件数 |
 |---|---|
-| テーブル・ビューの定義 | 111 |
+| テーブル・ビューの定義 | 112 |
 | 読んでいる（テーブルを直接） | 48 |
 | 読んでいる（RPC経由のみ） | 2 |
 | 画面から読んでいない（例外登録あり） | 29 |
-| **画面から読んでいない（例外登録なし＝要判断）** | **32** |
+| **画面から読んでいない（例外登録なし＝要判断）** | **33** |
 | 画面から読んでいるが匿名SELECT権限の記述が無い | 1 |
 
 「例外登録なし」は、取得したのに表示に繋がっていない候補。表示するか、`scripts/maintenance/display-coverage-exceptions.json` に理由を書いて例外にするかのどちらかを選ぶ。
@@ -24,7 +24,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 
 画面が呼んでいるRPC: `append_sns_metric_observation` / `get_admin_rule_performance` / `get_race_exhibition_trend` / `get_race_return_rate` / `get_race_st_predictability` / `get_race_technique_profile` / `get_racer_accident_records` / `get_today_races` / `import_sns_preview_bundle`
 
-## 要判断: 画面から読んでいない（例外登録なし）（32件）
+## 要判断: 画面から読んでいない（例外登録なし）（33件）
 
 | 名前 | 種別 | 定義元 | 画面からの参照 | 匿名SELECT | 備考 |
 |---|---|---|---|---|---|
@@ -39,6 +39,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `racer_career_meta` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
 | `racer_championships` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
 | `racer_course_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
+| `racer_series_points_daily` | 表 | 192_racer_series_points_daily.sql | なし | GRANT（192_racer_series_points_daily.sql） |  |
 | `racer_term_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
 | `racer_venue_stats` | 表 | 190_racer_career_stats.sql | なし | GRANT（190_racer_career_stats.sql） |  |
 | `raw_snapshots` | 表 | 125_raw_snapshots.sql | なし | 記述なし |  |
@@ -128,7 +129,7 @@ masterへのマージ後に `regenerate-generated-docs.yml` が作り直して�
 | `race_pit_comments` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_pit_reports` | 表 | 085_race_pit_reports.sql | 画面が直接 | GRANT（086_race_pit_reports_public_read.sql） |  |
 | `race_results` | 表 | 001_schema.sql | 画面が直接 / RPC経由: get_admin_rule_performance(API), get_race_return_rate(画面), get_race_technique_profile(画面), get_today_races(API・画面) | ポリシー（001_schema.sql） |  |
-| `race_series` | 表 | 084_race_series.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
+| `race_series` | 表 | 084_race_series.sql | API・画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |
 | `racer_grade_cache` | 表 | 054_racer_grade_cache_table.sql | 画面が直接 | GRANT（054_racer_grade_cache_table.sql） |  |
 | `racer_news` | 表 | 036_create_racer_news.sql | 画面が直接 | ポリシー（036_create_racer_news.sql） |  |
 | `racer_period_stats` | 表 | 083_racer_period_stats.sql | 画面が直接 | GRANT（095_phase_a_numeric_public_read.sql） |  |

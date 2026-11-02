@@ -122,3 +122,19 @@
 - 取得の数えを起動の終わりの1回だけで書くと、関数の打ち切り（maxDuration）で溜まった分を全部失う。20件か60秒で裏で書き、handler の終わりは try/finally で残りを書く（2026-10-27、同、scripts/lib/scrapeJobs/fetchCounter.js）
 - 取得の数えでは、呼び出し側の中断（init.signal の abort。ソフトデッドライン等）を数えない。politeFetch 自身の打ち切りは kind=timeout に分けて、接続の失敗（network）と区別する（2026-10-27、同、185 の CHECK）
 - 1分の上限（目安60）を見る数は、時の表をパスで割っても出ない。表を当てた後に分の列を足すとマイグレーションがもう1本要るので、最初から分の表（fetch_counts_minute、パス・種類なし）を一緒に作る（2026-10-27、同、185）
+- ブレーカーが作る scrape_job_state の host・パス行は mode を指定せず作るため既定の off になる。host 行の mode を非常停止の旗として使い回さない（2026-10-26、system-architect、scrapeJobs/store.js・075_scrape_slots_and_job_state.sql）。
+- /api でRPC応答の不要欄を落とすときは削除するキーを名指しする。残すキーの列挙では、後からRPCへ足したキーが /api だけで消え、RPCのキー回帰検査や直読みのフォールバックでは検出できない（2026-10-25、BOA-1110、PR #1906、system-architect）。
+- racer_course_technique_stats は window_end・window_days が日々変わるため、値の差分だけを想定しても毎日ほぼ全行を書き換える。更新量の見積もりには窓の列も含める（2026-10-25、system-architect、PR #1905、9,503行中9,499行更新）。
+- verify-rpc-key-regression は RETURNS TABLE と OR REPLACE の無い CREATE FUNCTION を検査しない。この構文の変更は同検査の成功だけで出力互換を保証できない（2026-10-25、system-architect、PR #1905）。
+- パスの禁止セグメント検査は二重符号化も考慮する。1回のデコードだけでは %252e%252e が残り、除外の前方一致へ入るため、デコードが安定するまで禁じた形を検査する（2026-10-27、BOA-1110段階0、verify-api-gate.js）。
+- PostgREST のeqは列の型へキャストして比較する。timestamptz の +00:00 と Z は同じ時刻なら一致するが、1ms違えば条件から外れる。条件付き更新にはDBが返した時刻をそのまま使う（2026-10-27、PR #1985、scrapeJobs/store.js の reserveProbe）。
+- DBを正として状態を読み直す処理は、書き込みを条件付きにし、成功した後だけ「最後に書いた値」を更新する。書けなかった値を次の照合条件へ使わない（2026-10-27、PR #1985、半開試行の条件付きUPDATE）。
+- STABLE関数をplpgsql内の独立した代入文 v := f(...) から呼ぶ場合、その文のsnapshotで読む。先行するFOR UPDATEの待機後に、待っていたclaimのコミットを反映する集計は、呼び出し文の位置も確認する（2026-10-27、system-architect、PR #1979）。
+- マイグレーションの事前確認で本番設定値を期待する場合は、適用直前に読み直す。設計時の上限値を不変と扱わない（2026-10-27、system-architect、daily_limit_x が8から9へ変わったPR #1979の確認）。
+- plpgsqlのELSIF式は初めて評価するときに準備される。未追加列を読む式の評価まで進む呼び出しはkindに関係なく落ちるため、関数置換と同じSQLの先頭で pg_attribute により必要列を確認する（2026-10-27、system-architect、マイグレーション180・PR #1978）。
+- Supabaseの1000行上限はRPCのRETURNS TABLE・SETOFにも効き、エラーなしで切れる。1000行を超えうる結果はページング可能な契約か単一jsonbで返し、上限件数を完全取得の証拠にしない（2026-10-27、system-architect、マイグレーション181・PR #1977）。
+- 多行を単一jsonbで返すRPCは jsonb_agg の中へ ORDER BY を付け、返却配列の順を明示する。行上限を避ける変更と順序の保証を別に確認する（2026-10-27、system-architect、マイグレーション181・PR #1977）。
+- 人がブレーカーの取得を早めに再開する場合、breaker_open_until はNULLでなく現在時刻にする。NULLは閉じた状態になり、半開カナリアと再開後の絞りを通らない（2026-10-27、system-architect、PR #1965）。
+- PostgRESTのSELECTで未知の列を指定すると、PGの42703・HTTP 400になる。列追加前の互換処理は isColumnMissingError で対象列を確認して分岐する（2026-10-27、system-architect、マイグレーション178・PR #1963）。
+- update_venue_stats() は048で削除した venues.avg_volatility_score に書く定義のまま残る。呼び手が0でも再利用可能とみなさず、現行スキーマと本文を照合する（2026-10-28、docs/design/legacy-prediction-cleanup/plan.md §1 F7）。
+- DB全体のER図は docs/reference/schema-er-diagram.md を見る。本番スキーマの写しから機械生成し、マージ後にCIが作り直すため、生成物をPRへ含めない（2026-10-28、PR #2042、基盤の計画段6）。

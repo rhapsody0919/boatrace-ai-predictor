@@ -122,3 +122,55 @@ test("F率には期間と走数を添え、公式の期別成績の F の回数�
   await expect(fRate).toContainText("当サイト集計・2025年12月以降");
   await expect(fRate).toContainText(/・\d+走/);
 });
+
+
+test("選手のパンくずを画面と同じ3項目で出し、取得失敗時には構造化データを出さない", async ({
+  page,
+}) => {
+  const scripts = page.locator('script[type="application/ld+json"]');
+  const ofType = (type) =>
+    scripts.evaluateAll(
+      (nodes, type) =>
+        nodes
+          .map((node) => JSON.parse(node.textContent))
+          .filter((data) => data["@type"] === type),
+      type,
+    );
+  await page.goto("/racer/3941");
+  await expect(page.locator(".racer-profile-header h1")).toHaveText("池田浩二");
+  await expect.poll(() => ofType("BreadcrumbList")).toEqual([
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "ホーム",
+          item: "https://www.boat-ai.jp/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "選手一覧",
+          item: "https://www.boat-ai.jp/racers",
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: "池田浩二",
+          item: "https://www.boat-ai.jp/racer/3941",
+        },
+      ],
+    },
+  ]);
+  const people = await ofType("Person");
+  expect(people).toHaveLength(1);
+  expect(people[0]).toMatchObject({ name: "池田浩二", identifier: "3941" });
+
+  await page.route("**/rest/v1/racer_profiles*", (route) => route.abort());
+  await page.reload();
+  await expect(page.locator(".racer-profile-error")).toBeVisible();
+  expect(await ofType("BreadcrumbList")).toEqual([]);
+  expect(await ofType("Person")).toEqual([]);
+});

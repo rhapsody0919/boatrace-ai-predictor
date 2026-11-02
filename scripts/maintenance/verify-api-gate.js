@@ -662,7 +662,10 @@ console.log("[9] UA の丸め・IP の読み方・範囲の表");
       "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)",
       "ai_bot:GPTBot",
     ],
-    ["Mozilla/5.0 (compatible; Google-Extended)", "ai_bot:Google-Extended"],
+    [
+      "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Mobile Safari/537.36 (compatible; Google-GeminiNotebook; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-gemininotebook)",
+      "ai_bot:Google-GeminiNotebook",
+    ],
     ["curl/8.4.0", "tool:curl"],
     ["python-requests/2.31", "tool:python"],
     ["Python-urllib/3.12", "tool:python"],

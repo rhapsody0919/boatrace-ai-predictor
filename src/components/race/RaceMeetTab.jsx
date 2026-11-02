@@ -54,6 +54,7 @@ import {
   SEMIFINAL_SPLIT_DEFAULT_SLOTS,
   MEET_SMALL_SAMPLE_RUNS,
   meetRateBestCandidates,
+  meetRateHidden,
 } from "./seriesPoints";
 import { finishMarkKeyOf } from "../../utils/prevResult";
 import { raceStageLabel } from "../../constants/raceStageConfig";
@@ -658,7 +659,7 @@ function RaceMeetTab({
                         b.row.rate - a.row.rate,
                     )
                     .map(({ player: p, row }, i, arr) => {
-                      const hideRate = row.excludedReason === "officialWithdrawn";
+                      const hideRate = meetRateHidden(row);
                       const tied = tiedCount(row.rank);
                       const inBorder = showBorderBadge && rankInBorder(row, slots);
                       // 目安内の最後の行に太い罫線を引く。「誰が線の上か」は
@@ -1064,7 +1065,7 @@ function RaceMeetTab({
                       {forecastRows.map(
                         ({ player: p, row, cells, needed, remaining }) => {
                           const color = BOAT_COLORS[p.number] || {};
-                          const hideRate = row.excludedReason === "officialWithdrawn";
+                          const hideRate = meetRateHidden(row);
                           return (
                             <tr
                               key={p.number}
@@ -1425,7 +1426,7 @@ function RaceMeetTab({
                 ? "basicInfo.meetScorePrelimOver"
                 : "basicInfo.meetScore",
               {
-                rate: mine.rate.toFixed(2),
+                rate: meetRateHidden(mine) ? "—" : mine.rate.toFixed(2),
                 n: mine.runs,
                 // 公式の得点率一覧がある開催では公式の値をそのまま出している。
                 // 出典を「当社計算」と書いたままにすると嘘になる（BOA-475）

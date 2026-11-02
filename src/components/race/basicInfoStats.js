@@ -244,9 +244,10 @@ export function getRecentRaces(records, count = 5) {
       typeof r.exhibitionTime === "number" ? r.exhibitionTime : null,
     exhibitionRank:
       typeof r.exhibitionRank === "number" ? r.exhibitionRank : null,
-    // フライングの走は、平均から外した startTiming の代わりに F の ST を出す（表は「F.01」。BOA-583）
+    // F・出遅れは平均から外した ST を表示用の欄から出す（BOA-583・BOA-1052）
     startTiming:
-      r.startTiming ?? (r.isFlying ? (r.flyingStartTiming ?? null) : null),
+      r.startTiming ??
+      (r.isFlying ? (r.flyingStartTiming ?? null) : (r.lateStartTiming ?? null)),
     isFlying: r.isFlying === true,
     // そのレースの6艇の中でのST順位（Fを除く。BOA-623 の直近10走で ST に添える）
     startTimingRank: r.stRank ?? null,

@@ -22,8 +22,8 @@
  *    `rank5`/`rank6` が null になる（例: 2026-09-23 若松9R）
  * 4. **準優勝戦・優勝戦は算入しない**（公式の表も「予選終了時点」と明記している）
  *
- * 賞典除外・途中帰郷の選手は公式が得点率を出さない（「-」）。ここでは判定材料を
- * 持っていないので、走った分から計算した値をそのまま返す。
+ * 賞典除外・途中帰郷の選手は公式が得点率を出さない（「-」）。内部の値は並びのため数で残し、
+ * 公式の除外理由がある行は meetRateHidden で画面の得点率を隠す。
  */
 import { finishPositionOf } from "./finishPosition.js";
 import { getRaceStageKey } from "./raceStageConfig.js";
@@ -876,6 +876,17 @@ export function shouldUseOfficialSeries(currentStage, raceId, prelimEndRaceId) {
 }
 
 /**
+ * 公式の減点欄を賞典除外の印と引く点に分ける。
+ * 109を99（印）＋10（減点）と読むのは推測（確度 中、BOA-1053）。
+ */
+export function readOfficialPenalty(penalty) {
+  return {
+    awardExcluded: penalty >= 99,
+    deduct: penalty >= 99 ? penalty - 99 : penalty,
+  };
+}
+
+/**
  * 公式の得点率一覧（`racer_series_points`）の1行を、当社の
  * `{points, runs, rate, finishes}` に読み替える（純関数、BOA-475）。
  *
@@ -898,15 +909,15 @@ export function shouldUseOfficialSeries(currentStage, raceId, prelimEndRaceId) {
  * 2026-09-28に収録済みの全101行で検算し、`(得点 − 減点) ÷ 得点率` と
  * **得点率のある94行すべてで一致**した。
  *
- * ## 減点99は引かない
+ * ## 賞典除外の印99と減点を分ける
  *
  * `penalty_points = 99` は**賞典除外の印**で、実際に引く点数ではない
- * （マイグレーション064のCOMMENT）。引くと得点が負になる（実データ: 得点40・減点99）。
+ * （マイグレーション064のCOMMENT）。99以上は印を除いた減点だけ引く。
  *
  * @param {{placements: string|null, total_points: number|null,
  *   penalty_points: number|null}} row
  * @returns {{points: number, runs: number, rate: number,
- *   finishes: Array<number|null>}|null} 読み替えられなければ null
+ *   finishes: Array<number|null>, awardExcluded: boolean}|null} 読み替えられなければ null
  */
 export function officialSeriesScore(row) {
   if (!row) return null;
@@ -914,10 +925,9 @@ export function officialSeriesScore(row) {
   const finishes = parseOfficialPlacements(row.placements);
   const runs = finishes.length;
   if (runs === 0) return null;
-  const penalty = row.penalty_points ?? 0;
-  // 99は賞典除外の印。引き算の対象ではない
-  const points = row.total_points - (penalty === 99 ? 0 : penalty);
-  return { points, runs, rate: points / runs, finishes };
+  const { awardExcluded, deduct } = readOfficialPenalty(row.penalty_points ?? 0);
+  const points = row.total_points - deduct;
+  return { points, runs, rate: points / runs, finishes, awardExcluded };
 }
 
 /**
@@ -944,9 +954,8 @@ export function prelimOfficialAdjustments(officialRows, asOf, raceDate) {
   if (rows.length === 0 || !asOf || !raceDate || asOf >= raceDate) return null;
   const penaltyByRacer = {};
   for (const r of rows) {
-    const p = r.penalty_points ?? 0;
-    // 99 は賞典除外の印で、引く点数ではない（officialSeriesScore と同じ）
-    if (p > 0 && p !== 99) penaltyByRacer[r.racer_id] = p;
+    const { deduct } = readOfficialPenalty(r.penalty_points ?? 0);
+    if (deduct > 0) penaltyByRacer[r.racer_id] = deduct;
   }
   const withdrawnRacerIds = rows
     .filter((r) => r.remarks?.includes("途中帰郷"))
@@ -1007,7 +1016,7 @@ export function buildMeetRanking(scoreboard) {
   if (entries.length === 0) return [];
   const prelimEndRaceId = scoreboard?.prelimEndRaceId ?? null;
   // 途中で節を離脱した選手（途中帰郷）は順位の対象から外す。公式の順位表と
-  // 同じ扱い。得点率自体は出すので、行が消えることはない（rank が null になる）
+  // 同じ扱い。内部の得点率は数で残し、行は消さない（rank が null になる）
   const withdrawn = new Set(scoreboard?.withdrawnRacerIds ?? []);
   // 順位から外す理由（BOA-587）。賞典除外と途中帰郷で画面の説明が違う
   const reasons = scoreboard?.exclusionReasonByRacer ?? {};
@@ -1061,6 +1070,7 @@ export function buildMeetRanking(scoreboard) {
           : listSeriesFinishes(runs, { prelimEndRaceId }),
         // この行が公式の値か（画面が出典の注記を出し分ける）
         fromOfficial: Boolean(official),
+        awardExcluded: official?.awardExcluded ?? false,
       };
     })
     .filter((r) => r.rate !== null)
@@ -1072,12 +1082,13 @@ export function buildMeetRanking(scoreboard) {
   let prev = null;
   let counted = 0;
   return rows.map((r) => {
-    if (withdrawn.has(r.racerId))
+    if (withdrawn.has(r.racerId) || r.awardExcluded)
       return {
         ...r,
         rank: null,
         withdrawn: true,
-        excludedReason: reasons[r.racerId] ?? "withdrawn",
+        excludedReason:
+          reasons[r.racerId] ?? (r.awardExcluded ? "awardExcluded" : "withdrawn"),
       };
     counted += 1;
     if (prev === null || Math.abs(r.rate - prev) > 0.0001) rank = counted;
@@ -1134,10 +1145,14 @@ export function pointsNeededForBorder(
  */
 export const MEET_SMALL_SAMPLE_RUNS = 3;
 
+/** 公式が得点率を出さない理由の行は、内部の数値を画面に出さない。 */
+export const meetRateHidden = (row) =>
+  row.excludedReason === "officialWithdrawn" || row.excludedReason === "awardExcluded";
+
 /**
  * 今節タブの得点率の最良（金枠）を決める `bestOf` の候補（BOA-872）。
  *
- * - 公式の途中帰郷（`officialWithdrawn`）は得点率を「—」で出すので、候補から外す。
+ * - 公式の途中帰郷・賞典除外は得点率を「—」で出すので、候補から外す。
  *   比べる値に残すと、「—」のセルが最良として光るか、本来の最良の艇に金枠が付かない
  * - 走数が少ない（⚠）艇は比べるが光らせない（`hidden`、`bestOf` の説明を参照）
  *
@@ -1147,6 +1162,6 @@ export const MEET_SMALL_SAMPLE_RUNS = 3;
 export const meetRateBestCandidates = (compareRows) =>
   compareRows.map(({ boat, row }) => ({
     boat,
-    value: row.excludedReason === "officialWithdrawn" ? null : row.rate,
+    value: meetRateHidden(row) ? null : row.rate,
     hidden: row.runs < MEET_SMALL_SAMPLE_RUNS,
   }));

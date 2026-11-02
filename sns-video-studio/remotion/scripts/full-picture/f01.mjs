@@ -13,6 +13,7 @@ import { buildAll } from "./build-all.mjs";
 import { answerOf } from "./answer.mjs";
 import { DISCLAIMER, FEATURES, FULL_TAGS, ROUND_NAME, SITE, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
+import { bannedIn } from "./scene2-text.mjs";
 import { venueName } from "./scenes/common.mjs";
 import { MIN_FONT_PX, NB, TODAY, boatToday, boatWho, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
 
@@ -173,30 +174,30 @@ export function f01Script(m) {
     const sec = flow ? secondOf(flow.page.links, fb) : null;
     const secOrder = sec ? desc(sec) : [];
     const secRank = sec && secOrder.length ? rankOf(sec[secOrder[0] - 1], sec[secOrder[1] - 1] ?? 0) : null;
-    const lines = [`次に、類似レースのタブ。条件がそろう類似レースを${n}件集めると、1着は${order.map((b, i) => (i === 0 ? `${b}号艇が${counts[b - 1]}件` : `${b}号艇${counts[b - 1]}件`)).join("、")}。`];
+    const lines = [`次に、類似レースのタブ。条件がそろう類似レースを${n}件集めると、1着は${order.map((b, i) => (i === 0 ? `${b}号艇が${cnt(counts[b - 1])}件` : `${b}号艇${cnt(counts[b - 1])}件`)).join("、")}。`];
     if (sec)
       lines.push(
         secRank.rankSig
-          ? `${fb}号艇が勝った${counts[fb - 1]}件では、2着は${secOrder[0]}号艇が${sec[secOrder[0] - 1]}件で最も多い。`
-          : `${fb}号艇が勝った${counts[fb - 1]}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
+          ? `${fb}号艇が勝った${cnt(counts[fb - 1])}件では、2着は${secOrder[0]}号艇が${cnt(sec[secOrder[0] - 1])}件で最も多い。`
+          : `${fb}号艇が勝った${cnt(counts[fb - 1])}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
       );
     chapters.push({
       id: "c2",
       name: "類似レース",
       tag: "龍神ソナー ＞ 類似レース",
       scope: `出走表の類似度の高い順 ${n}件`,
-      answer: `${past(fb)}\n類似レースで1着 ${counts[fb - 1]}件`,
+      answer: `${past(fb)}\n類似レースで1着 ${cnt(counts[fb - 1])}件`,
       // 2着の1位が線を通らない日は、上から3艇の件数を並べる（1艇だけ出すと「2着は◯号艇」と読める）
       answer2: !sec
         ? null
         : secRank.rankSig
-          ? `${fb}号艇が1着のとき\n2着${NB}${pastN(secOrder[0], `${sec[secOrder[0] - 1]}件`)}`
+          ? `${fb}号艇が1着のとき\n2着${NB}${pastN(secOrder[0], `${cnt(sec[secOrder[0] - 1])}件`)}`
           : `${fb}号艇が1着のとき\n2着${NB}${secOrder.slice(0, 3).map((b) => pastN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 類似レース",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "類似レース", cut: "similarBars", cut2: sec ? "similarFlow" : null, firstBoat: fb },
-      expect: [`${counts[fb - 1]}件`],
-      expect2: sec ? [`${sec[secOrder[0] - 1]}件`] : [],
+      expect: [`${cnt(counts[fb - 1])}件`],
+      expect2: sec ? [`${cnt(sec[secOrder[0] - 1])}件`] : [],
       facts: { n, counts, fb, sec, secRank },
     });
   }
@@ -215,23 +216,23 @@ export function f01Script(m) {
     const secRank = rankOf(sec[secOrder[0] - 1], sec[secOrder[1] - 1] ?? 0);
     const lines = [
       `展開のタブでは、スタートの形を見る。今日の6艇は、コース別の平均スタートで${form}形。`,
-      `${cnt(n0)}件のうち、この形の${cnt(nForm)}件で、1着は${fb}号艇が${fc[fb - 1]}件。`,
+      `${cnt(n0)}件のうち、この形の${cnt(nForm)}件で、1着は${fb}号艇が${cnt(fc[fb - 1])}件。`,
       secRank.rankSig
-        ? `${fb}号艇が勝った${fc[fb - 1]}件の2着は、${secOrder[0]}号艇が${sec[secOrder[0] - 1]}件で最も多い。`
-        : `${fb}号艇が勝った${fc[fb - 1]}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
+        ? `${fb}号艇が勝った${cnt(fc[fb - 1])}件の2着は、${secOrder[0]}号艇が${cnt(sec[secOrder[0] - 1])}件で最も多い。`
+        : `${fb}号艇が勝った${cnt(fc[fb - 1])}件の2着は、${listCounts(sec, secOrder.slice(0, 3))}と割れる。`,
     ];
     chapters.push({
       id: "c3",
       name: "スタートの形",
       tag: "龍神ソナー ＞ 展開シナリオ",
       scope: `${cnt(n0)}件のうち ${form} ${cnt(nForm)}件`,
-      answer: `${past(fb)}\nこの形で1着 ${fc[fb - 1]}件`,
+      answer: `${past(fb)}\nこの形で1着 ${cnt(fc[fb - 1])}件`,
       answer2: `2着${NB}${secOrder.slice(0, 3).map((b) => pastN(b, `${sec[b - 1]}件`)).join("・")}`,
       path: "ソナー → 展開シナリオ",
       voice: lines.join(""),
       shot: { page: "sonar", tab: "展開シナリオ", cut: "slitForms", cut2: "scenarioFlow", form, firstBoat: fb },
       expect: [form],
-      expect2: [`${fc[fb - 1]}件`],
+      expect2: [`${cnt(fc[fb - 1])}件`],
       facts: { form, nForm, fc, fb, sec, secRank },
     });
   }
@@ -355,6 +356,21 @@ export function f01Description(s, chapters) {
   ].join("\n");
 }
 
+/** 回収率を出さない（2026-10-20 オーナー決定。収益を連想させる。今の型の場面3③の回収率の拍を外したのと同じ） */
+export const NO_RETURN_RATE = /回収率/;
+/** 章の中の、画面と声に出る文字（facts・撮り方・照合の期待は除く） */
+export function f01Texts(c) {
+  const out = [];
+  const walk = (v, key) => {
+    if (["facts", "shot", "expect", "expect2"].includes(key)) return;
+    if (typeof v === "string") out.push(v);
+    else if (Array.isArray(v)) v.forEach((x) => walk(x, null));
+    else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walk(x, k);
+  };
+  walk(c, null);
+  return out;
+}
+
 /**
  * 機械の検査（落ちた理由の一覧。空なら合格）
  * @param {ReturnType<typeof f01Script>} s @param {{desc: string, kana: Record<string, string>, shots: Record<string, {text: string}>, names?: string[], racers?: Record<number, {name: string, grade: string}>}} r
@@ -362,6 +378,13 @@ export function f01Description(s, chapters) {
 export function f01Check(s, r) {
   const why = [];
   if (!r.desc.includes(VOICE.credit)) why.push(`説明欄に「${VOICE.credit}」が無い`);
+  // 禁止表現（risk-rules.json、YouTube）と回収率を、題・説明欄・各章の声・字幕・右の列・冒頭の全部に当てる
+  // （run-full の checkPost は今の型の題・説明欄にしか当たらず、f01 の文は検査の外だった。Orchestrate 11/2）
+  for (const [where, text] of [["題", s.title], ["説明欄", r.desc], ...s.chapters.flatMap((c) => f01Texts(c).map((t) => [c.id, t]))]) {
+    if (typeof text !== "string") continue;
+    for (const w of bannedIn(text, "youtube")) why.push(`${where}: ${w}`);
+    if (NO_RETURN_RATE.test(text)) why.push(`${where}: 回収率を出さない（${text.match(NO_RETURN_RATE)[0]}）`);
+  }
   for (const c of s.chapters) {
     // 順位の語は線を通ったときだけ（②・③の「最も多い」、④の「入れ替わる」）
     const sig = c.facts?.secRank?.rankSig || c.facts?.swap;
@@ -384,8 +407,10 @@ export function f01Check(s, r) {
         why.push(`${c.id}${cut}: 左の画面が無い`);
         continue;
       }
-      const flat = shot.text.replace(/\s+/g, "");
-      for (const e of exp) if (!flat.includes(e.replace(/\s+/g, ""))) why.push(`${c.id}${cut}: 左の画面に「${e}」が無い`);
+      // 空白と桁区切りは比べない（画面は「1,553件」、台本の件数は「1553件」の日があった。11/01 14-10 で止まった）
+      const norm = (x) => x.replace(/\s+/g, "").replace(/(\d),(?=\d{3})/g, "$1");
+      const flat = norm(shot.text);
+      for (const e of exp) if (!flat.includes(norm(e))) why.push(`${c.id}${cut}: 左の画面に「${e}」が無い`);
     }
   }
   return why;

@@ -314,6 +314,9 @@ const SEARCH_BOT_UAS = {
   Applebot:
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)",
   DuckDuckBot: "DuckDuckBot/1.1; (+http://duckduckgo.com/duckduckbot.html)",
+  // BOA-899: Gemini Notebook の利用者起点の取得器。UA 全文は https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers（2026-11-02）
+  "Google-GeminiNotebook":
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 (compatible; Google-GeminiNotebook; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-gemininotebook)",
 };
 for (const [name, ua] of Object.entries(SEARCH_BOT_UAS)) {
   for (const path of ["/blog/some-article", "/today"]) {
@@ -329,6 +332,15 @@ for (const [name, ua] of Object.entries(SEARCH_BOT_UAS)) {
 }
 const NOT_SNAPSHOT_UAS = {
   Googlebot: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+  // BOA-899: Google の取得器は Google-GeminiNotebook 以外に配らない（ADR 0032 追記）
+  "Google-InspectionTool":
+    "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36 (compatible; Google-InspectionTool/1.0;)",
+  GoogleOther:
+    "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36 (compatible; GoogleOther)",
+  "Google-Agent":
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko; compatible; Google-Agent; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-agent) Chrome/141.0.0.0 Safari/537.36",
+  // robots.txt の印。この文字列を名乗る取得は無いが、名乗っても配らない
+  "Google-Extended": "Mozilla/5.0 (compatible; Google-Extended)",
   "Edge（人間）":
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0",
   "Safari（人間）":

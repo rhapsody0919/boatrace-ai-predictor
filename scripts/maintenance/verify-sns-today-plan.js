@@ -468,22 +468,22 @@ test("7:40 に一覧を撮って下書き・item（digest）を作り、本人�
     headless.calls.map((c) => [c.url, c.element, c.label]),
     [
       [
-        `https://www.boat-ai.jp/race/${DATE}-04-12?tab=sonar`,
+        `https://www.boat-ai.jp/race/${DATE}-04-12?tab=sonar&boat=1`,
         ".af-hep .af-dark",
         "平和島12R 20:35締切",
       ],
       [
-        `https://www.boat-ai.jp/race/${DATE}-02-05?tab=sonar`,
+        `https://www.boat-ai.jp/race/${DATE}-02-05?tab=sonar&boat=3`,
         ".af-hep .af-dark",
         "戸田5R 13:15締切",
       ],
       [
-        `https://www.boat-ai.jp/race/${DATE}-04-03?tab=sonar`,
+        `https://www.boat-ai.jp/race/${DATE}-04-03?tab=sonar&boat=1`,
         ".af-hep .af-dark",
         "平和島3R 14:15締切",
       ],
       [
-        `https://www.boat-ai.jp/race/${DATE}-04-05?tab=sonar`,
+        `https://www.boat-ai.jp/race/${DATE}-04-05?tab=sonar&boat=1`,
         ".af-hep .af-dark",
         "平和島5R 15:15締切",
       ],

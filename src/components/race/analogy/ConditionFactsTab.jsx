@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { parseBoatParam, RACE_BOAT_PARAM } from "../../../utils/raceUrlState";
 import NoteList, { NotesFold } from "./NoteList";
 import ScopeCombo from "./ScopeCombo";
 import BoatBadge from "../BoatBadge";
@@ -15,6 +17,7 @@ import {
   hidesSeriesScoreLine,
   openCardKeys,
   parseScopeKey,
+  radarAxisItems,
   radarBoats,
   rateOf,
   scopeKind,
@@ -41,7 +44,10 @@ const FACT_SCOPES = ["VC", "NC", "NCR", "VA"];
  */
 export default function ConditionFactsTab({ data, stage, target, feedback }) {
   const { t } = useTranslation();
-  const [boat, setBoat] = useState(1);
+  const [searchParams] = useSearchParams();
+  const [boat, setBoat] = useState(
+    () => parseBoatParam(searchParams.get(RACE_BOAT_PARAM)) ?? 1,
+  );
   const cardsRef = useRef(null);
   // 手で選んだ範囲の種類（VC・NC・NCR・VA）。選んでいなければ既定（screens「細部の約束」）
   const [pickedKind, setPickedKind] = useState(null);
@@ -62,11 +68,6 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
   // 節の初日は今節の平均着順点を今日に当てはめられないので、七角形の軸もカードも出さず1行で断る（BOA-802）
   const note = seriesScoreNote(today);
   const firstDay = note === "first";
-  const items = FACT_ITEMS.filter(
-    (it) =>
-      (exhibitionStage || it.key !== "exh_time") &&
-      !((finalDay || firstDay) && it.key === "series_score"),
-  );
   const vs = (key) => values[key] ?? null;
   const scope = scopeName(scopeKey, t, { short: true });
   const venue = today.venue_code;
@@ -78,8 +79,8 @@ export default function ConditionFactsTab({ data, stage, target, feedback }) {
           ?.bucket ?? null)
       : null;
   };
-  // 七角形の軸（ボート2連率は着順との関係が小さい項目なので入れない。承認モック mock-compare-v3）
-  const radarItems = items.filter((it) => it.key !== "boat_2");
+  // 七角形の軸（ボート2連率・展示前の展示タイム・優勝戦と初日の今節の着順点は入れない）
+  const radarItems = radarAxisItems(today, exhibitionStage);
   const radar = radarBoats(
     today,
     facts,

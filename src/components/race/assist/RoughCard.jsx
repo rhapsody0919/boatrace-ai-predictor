@@ -49,11 +49,10 @@ export default function RoughCard({
 }) {
   const counts = restClassCounts(classes);
   const titleId = useId();
-  // 「件数少なめ」は件数の前（フラグの外の「件数少なめ・3,276件 ›」と同じ順。#1604 wording-editor P3）
   const round = scope?.kind === "NCR" ? ROUND_LABEL[scope.round] : null;
   const classScope =
     rough &&
-    `${rough.few ? `${ASSIST_COPY.roughFew}・` : ""}${ASSIST_COPY.roughScopeClass(scope.cell.n, round)}`;
+    ASSIST_COPY.roughScopeClass(scope.cell.n, round);
   const ic = rough?.inCaution ?? null;
   // 注意度の裏返しの1着のバーが画面に入ったら、レースごとに1回 caution_visible（BOA-822 task 27、assist_rough）
   const visibleRef = useVisibleOnce(
@@ -131,13 +130,17 @@ export default function RoughCard({
                 ASSIST_COPY.roughOpen
               ) : (
                 <>
-                  {rough.few && `${ASSIST_COPY.roughFew}・`}
                   {ASSIST_COPY.roughCount(scope.cell.n, round)}
                 </>
               )}
             </span>
           </span>
         </button>
+      )}
+      {rough?.few && (
+        <p className="ta-note" data-testid="rough-round-fallback">
+          {ASSIST_COPY.roughRoundFallback(ROUND_LABEL[scope.round])}
+        </p>
       )}
       {inCautionMode && ic && (
         <p className="ta-note ta-num" data-testid="rough-in-caution-flip">

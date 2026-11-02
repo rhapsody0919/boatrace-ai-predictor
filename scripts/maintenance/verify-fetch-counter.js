@@ -14,6 +14,7 @@
  *   (j) 呼び出し側の中断は数えず、自前の打ち切りは timeout（審査 P2-3）
  *   (k) 20件で裏で書く（審査 P2-2）
  *   (l) 裏で書いている最中の maybeFlush は、その完了を待つ（Codex の P1）
+ *   (m) politeFetch を渡さずに runScrapeJob を呼ぶ口（展示 beforeinfo・レース情報 racelist の runSlotsWithRefresh）も数える（10/27〜11/2 の本番で beforeinfo が0行だった）
  *
  * 実行: node scripts/maintenance/verify-fetch-counter.js
  */
@@ -554,6 +555,64 @@ const T = new Date("2026-10-27T06:00:00Z"); // JST 15:00
     beforeRelease === false && settled === true && done === true,
     show({ beforeRelease, settled, done }),
   );
+}
+
+// (m) 展示・レース情報の口（runSlotsWithRefresh）も数える。この口は politeFetch を渡さずに runScrapeJob を呼ぶので、runScrapeJob の既定が数えないと
+//     fetch_counts に入らない（10/27〜11/2 の本番: exhibition の試行は1日約370〜530回あったのに、beforeinfo の行が0）
+{
+  const { runSlotsWithRefresh } = await import(
+    "../lib/scrapeJobs/preRaceHandlers.js"
+  );
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("<html></html>", { status: 200 });
+  try {
+    for (const [job, page] of [
+      ["exhibition", "beforeinfo"],
+      ["race_info", "racelist"],
+    ]) {
+      const rpcCalls = [];
+      const client = {
+        async rpc(name, args) {
+          rpcCalls.push({ name, args });
+          return { data: 1, error: null };
+        },
+      };
+      const { status } = await runSlotsWithRefresh({
+        job,
+        createHandleSlot: () => async (_slot, ctx) => {
+          await ctx.politeFetch(
+            `https://www.boatrace.jp/owpc/pc/race/${page}?rno=1&jcd=04&hd=20261027`,
+          );
+          return { outcome: "ok", rowsWritten: 0 };
+        },
+        refresh: async () => {},
+        client,
+        store: createMemoryStore({
+          rows: { [job]: { job, mode: "live", consecutive_failures: 0 } },
+          slots: [
+            {
+              job,
+              race_id: "2026-10-27-04-01",
+              offset_min: job === "exhibition" ? -33 : -60,
+              attempts: 0,
+            },
+          ],
+        }),
+        env: {},
+      });
+      const adds = rpcCalls.filter((c) => c.name === "add_fetch_counts");
+      check(
+        `(m) ${job} の口（runSlotsWithRefresh）も、取得した起動の終わりに add_fetch_counts を呼ぶ（/owpc/pc/race/${page}、source=vercel）`,
+        status === 200 &&
+          adds.length === 1 &&
+          adds[0].args.p_rows[0]?.path === `/owpc/pc/race/${page}` &&
+          adds[0].args.p_rows[0]?.source === "vercel",
+        show({ status, rpcCalls }),
+      );
+    }
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 }
 
 if (failures > 0) {

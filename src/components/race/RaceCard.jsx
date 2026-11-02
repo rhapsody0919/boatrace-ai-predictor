@@ -35,7 +35,7 @@ import { cautionClickEvent } from "../../utils/cautionEvents";
 const aiTabHref = (href) =>
   `${href}${href.includes("?") ? "&" : "?"}tab=aiPrediction`;
 
-function RaceCard({ race, raceHref, nowHHMM = null }) {
+function RaceCard({ race, raceHref, nowHHMM = null, linkRacerNames = false }) {
   const { t } = useTranslation();
   const racePrediction = race.rawData;
   const volatility = racePrediction?.volatility;
@@ -217,7 +217,11 @@ function RaceCard({ race, raceHref, nowHHMM = null }) {
           )}
         </div>
       )}
-      <RaceCardDataTable raceId={race.id} players={racePrediction?.players} />
+      <RaceCardDataTable
+        raceId={race.id}
+        players={racePrediction?.players}
+        linkRacerNames={linkRacerNames}
+      />
       {/* 遷移先の URL を持つリンクにする。button の onClick だと検索エンジンがレース詳細へのリンクを辿れない（SEO 点検 F3） */}
       <Link
         className="predict-btn"

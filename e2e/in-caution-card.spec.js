@@ -149,11 +149,15 @@ test.describe("イン崩れ注意度のカード（BOA-822、?caution=1）", () 
     await open(page, 4);
     const card = page.locator(".in-caution-card");
     await expect(card).toBeVisible({ timeout: 20000 });
-    const main = await card.locator(".in-caution-card-main").boundingBox();
-    const side = await card.locator(".in-caution-card-side").boundingBox();
-    expect(side.x).toBeGreaterThan(main.x + main.width - 1);
-    // 同じ行に並ぶ（上端の差は数 px。CI と手元でフォントが違うので、行の高さに比べて小さいことだけを見る）
-    expect(Math.abs(side.y - main.y)).toBeLessThan(main.height / 4);
+    // カードが出た直後は中身の読み込みで高さが動く。並びが落ち着くまで測り直す
+    // （BOA-1225。10/31 の E2E Live で上端の差 83px を一度だけ読み、再試行では通った）
+    await expect(async () => {
+      const main = await card.locator(".in-caution-card-main").boundingBox();
+      const side = await card.locator(".in-caution-card-side").boundingBox();
+      expect(side.x).toBeGreaterThan(main.x + main.width - 1);
+      // 同じ行に並ぶ（上端の差は数 px。CI と手元でフォントが違うので、行の高さに比べて小さいことだけを見る）
+      expect(Math.abs(side.y - main.y)).toBeLessThan(main.height / 4);
+    }).toPass({ timeout: 10000 });
     const cardBox = await card.boundingBox();
     const pattern = await page
       .locator(".in-caution-tab > :nth-child(2)")

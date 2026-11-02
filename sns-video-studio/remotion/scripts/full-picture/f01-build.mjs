@@ -30,19 +30,22 @@ const CUE = {
  */
 export const PLAN = {
   c1: [{ k: "c1" }, { k: "c12", re: /2位以内/ }],
-  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22" }, { k: "c22", re: /号艇が勝った/, delay: 15 }],
-  c3: [{ k: "c3" }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }],
+  // 着順の流れは押した後を上・下の2カット（下は押してから3秒後）。③の札は図 → 名前と件数の2カット（オーナー 11/2「22.4px の章は2カットに分けて」）
+  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22" }, { k: "c22", re: /号艇が勝った/, delay: 15 }, { k: "c22b", re: /号艇が勝った/, delay: 105 }],
+  c3: [{ k: "c3i" }, { k: "c3", re: /形。/ }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }, { k: "c32b", re: /号艇が勝った/ }],
   c4: [{ k: "c4" }, { k: "c4b", re: /2着は/ }, { k: "c4", re: /軸を\d号艇に/, cursor: "c42" }, { k: "c42", re: /軸を\d号艇に/, delay: 15 }, { k: "c42b", re: /2着は/ }],
   c5: [{ k: "c5" }],
   close: [{ k: "close" }],
 };
 /**
  * 左の画面の字の小ささの線（縮めた後の最小の字の高さ px）。下回る撮った物を含む章は出さず警告にする（hq 6節「2カットでも届かなければその章を出さず警報」）。
- * 目安（根拠なし、2026-10-31 の試作で決めた）: 部品だけを撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px で最も小さく、
- * ほかは 26〜31px。6節の目安 28px（根拠なし）は着順の流れでは左の枠の高さ 838 では届かない
+ * 線は 24px（オーナー 2026-11-02）。部品だけを1カットで撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px 止まりだったので、
+ * 着順の流れは上下2カット、形の札は図と名前の2カットに分けた（PLAN）。6節の目安 28px（根拠なし）は線にしない
  */
 export { MIN_FONT_PX };
 const f = (sec) => Math.round(sec * FPS);
+/** 終了画面（締めの声の後の暗い地）の秒。YouTube の終了画面の要素を置ける最短（オーナー 11/2） */
+export const END_SECONDS = 5;
 const LEAD = 0.5;
 const GAP = 0.25;
 const TAIL = 0.9;
@@ -102,8 +105,10 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
         }
         const extra = { gold: (sh.goldBoxes ?? []).map((g) => ({ ...g, at: gAt })) };
         const next = p.cursor ? shots[p.cursor] : null;
-        // カーソルは押す所へ0.5秒で動く（押す前の画面の座標）
-        if (next) extra.cursor = { ...(next.cursor ?? next.cursorFrom), at: T + 15 };
+        // カーソルは押す所へ0.5秒で動く。座標はこのカット（押す前の画面）の物: 着順の流れの押す前は半分に切ってあり、
+        // splitHalves が切った分だけずらした cursor を持つ（下半分のとき、押した後の上のカットの座標を使うと約47% 上を指した。#2087 の審査）。
+        // 思考アシストの軸のボタンは押す前のカットに cursor が無いので、押した後のカットの cursorFrom（押す前の画面の座標）
+        if (next) extra.cursor = { ...(sh.cursor ?? next.cursorFrom ?? next.cursor), at: T + 15 };
         ch.cuts.push(cut(sh, T, extra));
       }
     }
@@ -111,14 +116,20 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
     marks.push({ id: c.id, name: c.name, at: start });
     t += len;
   }
-  // 終了画面: 締めの声の約4秒目から重ね、声の後の静止は約8秒
+  // 終了画面: 締めの声が終わってから（声と字幕の途中に重ねると、字幕が終了画面に重なった。オーナー 11/2）。
+  // 長さは5秒（オーナー 11/2「終了画面は短くして」。YouTube の終了画面の要素は動画の最後の5〜20秒に置ける、ヘルプ 6388789）
   const close = chapters.find((c) => c.id === "close");
   // 置いた声だけから（字の小ささ等で省いた章の声は voice.lines に残る。Codex P1 #2075）
   const placed = new Map(voice.lines.map((l) => [l.file, l.sec]));
   const lastVoiceEnd = Math.max(0, ...audio.map((a) => a.from + f(placed.get(a.file))));
-  const end = close ? { from: close.from + f(4) } : null;
-  const total = Math.round(Math.max(t * FPS, lastVoiceEnd + f(8)));
-  if (close) close.len = total - close.from;
+  const lastSubEnd = Math.max(0, ...subs.map((x) => x.to));
+  const end = close ? { from: Math.max(lastVoiceEnd, lastSubEnd) } : null;
+  const total = Math.round(Math.max(t * FPS, end ? end.from + f(END_SECONDS) : lastVoiceEnd + f(8)));
+  if (close) {
+    close.len = total - close.from;
+    // 終了画面では章の札・範囲を出さない（④の札「思考アシスト > 相手」が最後まで残っていた。オーナー 11/2）。章の中の秒
+    close.tagUntil = end.from - close.from;
+  }
   return { props: { total, chapters, subs, audio, bgm: bgm ? "bgm.mp3" : null, end }, marks };
 }
 
@@ -142,10 +153,33 @@ export function f01SmallChapters(s, shots) {
   return out;
 }
 
+/**
+ * 撮影の時間切れ（Playwright の TimeoutError）のときだけ、1回だけ撮り直す（オーナー 2026-11-02「時間切れのときは1回だけ撮り直すようにして」。
+ * ソナーの時点のボタンを押す所が3回に1回止まった）。照合の不一致・字の小ささなど時間切れ以外の失敗はやり直さない（撮影はそれらを投げない）。
+ * 2回目も時間切れなら、その失敗を投げる（retries=1 を付ける）
+ * @template T @param {() => Promise<T>} fn @param {(e: Error) => void} [onRetry]
+ * @returns {Promise<{value: T, retries: number}>}
+ */
+export async function retryOnTimeout(fn, onRetry = () => {}) {
+  try {
+    return { value: await fn(), retries: 0 };
+  } catch (e) {
+    if (e?.name !== "TimeoutError") throw e;
+    onRetry(e);
+    try {
+      return { value: await fn(), retries: 1 };
+    } catch (e2) {
+      if (e2 && typeof e2 === "object") e2.retries = 1;
+      throw e2;
+    }
+  }
+}
+
 /** YouTube の章の行（「0:00 冒頭」）。10秒未満の章は前の章に含める */
-export const f01Chapters = (marks) => {
+export const f01Chapters = (marks, totalSec = Infinity) => {
   const mmss = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
-  const keep = marks.filter((x, i) => i === 0 || (marks[i + 1]?.at ?? Infinity) - x.at >= 10 || i === marks.length - 1);
+  // 最後の章も10秒以上のときだけ（終了画面を5秒にして締めが短くなる日がある。YouTube の自動チャプターは各章10秒以上）
+  const keep = marks.filter((x, i) => i === 0 || (marks[i + 1]?.at ?? totalSec) - x.at >= 10);
   return keep.map((x, i) => `${i === 0 ? "0:00" : mmss(x.at)} ${x.name}`).join("\n") + "\n";
 };
 
@@ -169,7 +203,15 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   } catch (e) {
     return { reasons: ["type_unsupported:voice"], detail: `VOICEVOX: ${e instanceof Error ? e.message : String(e)}` };
   }
-  const shots = await captureAll(m, s, pub);
+  let shots;
+  let captureRetries = 0;
+  try {
+    ({ value: shots, retries: captureRetries } = await retryOnTimeout(() => captureAll(m, s, pub), (e) => console.warn(`[f01 の撮影を撮り直す] 時間切れ: ${e.message.split("\n")[0]}`)));
+  } catch (e) {
+    // 2回とも時間切れ（またはほかの失敗）は今までどおり止める。やり直した回数は f01.json に残す
+    writeFileSync(join(out, "f01.json"), JSON.stringify({ version: s.version, raceId: s.raceId, captureRetries: e?.retries ?? 0, captureError: String(e?.message ?? e).split("\n")[0] }, null, 2));
+    throw e;
+  }
   // 字の小ささの線（MIN_FONT_PX）: 下回る撮った物を含む章・撮れなかった章は出さず、警告として残す
   const small = f01SmallChapters(s, shots);
   if (small.length) {
@@ -179,7 +221,7 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
   }
   const { props, marks } = f01Timeline(s, voice, shots, { bgm });
   if (bgm) copyFileSync(bgm, join(pub, "bgm.mp3"));
-  const chapters = f01Chapters(marks);
+  const chapters = f01Chapters(marks, props.total / FPS);
   const description = f01Description(s, chapters);
   // 選手名（姓・名の両方。声で読まないことの照合）
   const names = (m.api.races?.find((r) => r.raceId === m.raceId)?.entries ?? []).flatMap((e) => [...(e.name ?? "").split(/\s+/), fullName(e.name)]).filter((x) => x.length >= 2);
@@ -195,6 +237,7 @@ export async function buildF01(m, out, { bgm = null, concurrency = 4, sheet = fa
     checks: why,
     minFontPx: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.minFontPx])),
     minFontLine: MIN_FONT_PX,
+    captureRetries,
     smallText: Object.fromEntries(Object.entries(shots).map(([k, v]) => [k, v.small ?? []])),
     dpr: DPR,
     chapters: s.chapters.map((c) => ({ id: c.id, name: c.name, voice: c.voice, answer: c.answer ?? null, answer2: c.answer2 ?? null, scope: c.scope ?? null, right: c.right ?? null, bars: c.open?.bars ?? null, openLayout: c.open?.layout ?? null, facts: c.facts })),

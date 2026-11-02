@@ -11,6 +11,7 @@
  */
 import assert from "node:assert/strict";
 import { calcAge } from "../../src/components/racer/racerFilterUtils.js";
+import { formatTodayHeadingJST } from "../../src/utils/dateUtils.js";
 import {
   formatDate,
   formatDateObject,
@@ -105,9 +106,33 @@ try {
         assert.equal(calcAge(birthDate), expected);
       });
     }
+    // 画面は引数なしで呼ぶ（既定の「今」= new Date()）。その経路も JST の暦日になること
+    test(`${tz} formatTodayHeadingJST()（引数なし）`, () => {
+      assert.equal(formatTodayHeadingJST(), "2026年10月25日（日）");
+    });
   }
 } finally {
   globalThis.Date = RealDate;
+  if (originalTz === undefined) delete process.env.TZ;
+  else process.env.TZ = originalTz;
+}
+
+// 成績の見出しの今日（BOA-1094・BOA-1100）。JST の朝 0:30 は UTC・米国では前日、年始は前年になる時刻で検証する。
+try {
+  for (const tz of TIMEZONES) {
+    process.env.TZ = tz;
+    for (const [iso, expected] of [
+      ["2026-10-25T00:30:00+09:00", "2026年10月25日（日）"],
+      ["2026-01-01T08:59:59+09:00", "2026年1月1日（木）"],
+      ["2025-12-31T23:59:59+09:00", "2025年12月31日（水）"],
+      ["2024-02-29T00:00:00+09:00", "2024年2月29日（木）"],
+    ]) {
+      test(`${tz} formatTodayHeadingJST(${iso})`, () => {
+        assert.equal(formatTodayHeadingJST(new Date(iso)), expected);
+      });
+    }
+  }
+} finally {
   if (originalTz === undefined) delete process.env.TZ;
   else process.env.TZ = originalTz;
 }
