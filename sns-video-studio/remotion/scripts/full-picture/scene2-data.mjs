@@ -134,16 +134,15 @@ function focusFacts(b, radar, axes, values) {
  * 「項目＋値＋順位」を1文にまとめ、2行目で比べる相手を出す
  */
 export function templateLines(f) {
-  if (f.kind === "overview")
-    return [
-      // 今日の6艇（選手・機械）の比較と分かるように
-      f.leaders.length >= 3
-        ? "今日の6艇で2位以内の項目が最多で並ぶ"
-        : `今日の6艇で2位以内の項目が最多は${f.leaders.join("・")}号艇`,
-      f.runner
-        ? `${f.axesCount}項目中${f.maxTop2}、次は${f.runner.boats.join("・")}号艇の${f.runner.count}`
-        : `6艇とも${f.axesCount}項目中${f.maxTop2}`,
-    ];
+  if (f.kind === "overview") {
+    const boats = `${f.leaders.join("・")}号艇`;
+    const l2 = f.runner
+      ? `${f.axesCount}項目中${f.maxTop2}、次は${f.runner.boats.join("・")}号艇の${f.runner.count}`
+      : `6艇とも${f.axesCount}項目中${f.maxTop2}`;
+    // 今日の6艇（選手・機械）の比較と分かるように。最多の艇が多く幅を越えるときだけ頭の「今日の6艇で」を外す。
+    // 艇番は必ず残し、主語の無い文（「最多で並ぶ」等）にはしない（BOA-1109、2026-10-26）
+    return fitFirst([`今日の6艇で2位以内の項目が最多は${boats}`, l2], [`2位以内の項目が最多は${boats}`, l2]);
+  }
   if (f.kind === "focus") {
     if (!f.item) return [`${f.boat}号艇は比べられる値が無い`];
     const cmp = (c) => `${c.boat}号艇の${c.sameDisplay ? "同じ" : ""}${c.value}`;

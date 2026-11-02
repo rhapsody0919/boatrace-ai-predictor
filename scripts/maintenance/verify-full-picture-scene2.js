@@ -148,25 +148,35 @@ assert.deepEqual(templateLines({ ...overview, leaders: [2, 4] }), [
   "今日の6艇で2位以内の項目が最多は2・4号艇",
   "5項目中4、次は1号艇の3",
 ]);
-// BOA-1109: 2026-10-25 06場11R。既存の facts の leaders だけを変えて再現する。
-const overviewFiveLeaders = { ...overview, leaders: [1, 2, 4, 5, 6] };
-for (const f of [
-  overviewFiveLeaders,
-  { ...overview, leaders: [2, 4, 6] },
-  { ...overview, leaders: [2, 3, 4, 6] },
-  { ...overview, leaders: [1, 2, 3, 4, 5, 6], runner: null },
-]) {
+// BOA-1109: 2026-10-25 06場11R。最多が5艇（1・2・4・5・6号艇）で、次点は残りの3号艇。
+// 長い文が幅に入るときは変えず、越えたときだけ頭の「今日の6艇で」を外す。艇番は必ず残す。
+const overviewThreeLeaders = { ...overview, leaders: [2, 4, 6], runner: { boats: [1, 3, 5], count: 3 } };
+const overviewFourLeaders = { ...overview, leaders: [2, 3, 4, 6], runner: { boats: [1, 5], count: 3 } };
+const overviewFiveLeaders = { ...overview, leaders: [1, 2, 4, 5, 6], runner: { boats: [3], count: 3 } };
+const overviewSixLeaders = { ...overview, leaders: [1, 2, 3, 4, 5, 6], runner: null };
+for (const f of [overviewThreeLeaders, overviewFourLeaders, overviewFiveLeaders, overviewSixLeaders]) {
   const lines = templateLines(f);
   for (const line of lines)
     assert.ok(
       lineWidth(line) <= MAX_WIDTH,
       `最多が${f.leaders.length}艇でも全角${MAX_WIDTH}字分以内: ${line}（${lineWidth(line)}）`,
     );
+  assert.ok(lines[0].includes(`${f.leaders.join("・")}号艇`), `最多の艇番を消さない: ${lines[0]}`);
   assert.deepEqual(checkLines(lines, f, null), [], "最多が並ぶ文型が検査を通る");
 }
+// 3艇は長い文のまま（21.75 で幅に入る）
+assert.deepEqual(templateLines(overviewThreeLeaders), [
+  "今日の6艇で2位以内の項目が最多は2・4・6号艇",
+  "5項目中4、次は1・3・5号艇の3",
+]);
+// 5艇は幅を越えるので短い文
 assert.deepEqual(templateLines(overviewFiveLeaders), [
-  "今日の6艇で2位以内の項目が最多で並ぶ",
-  "5項目中4、次は1号艇の3",
+  "2位以内の項目が最多は1・2・4・5・6号艇",
+  "5項目中4、次は3号艇の3",
+]);
+assert.deepEqual(templateLines(overviewSixLeaders), [
+  "2位以内の項目が最多は1・2・3・4・5・6号艇",
+  "6艇とも5項目中4",
 ]);
 assert.deepEqual(templateLines(focus1), [
   "1号艇の選手は全国勝率8.06で6人中1位",
