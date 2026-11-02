@@ -13,6 +13,9 @@ import { hasLayerDate } from "../utils/pastRate/layer.js";
  * 取得の状態の持ち方は思考アシスト（BOA-430）の取得でも使う（export）。
  * @returns {{status: "idle"|"loading"|"ready"|"error", data: object|null, retry: () => void}}
  *   refreshBeforeExhibition=true の呼び出しだけ展示前の間60秒ごとに取得する。
+ *   scheduleRefresh（(data, refresh) => 次に読み直すまでの ms。null なら読み直さない）を渡すと、その時刻に
+ *   fetcher(true)（読み直し）を呼ぶ（思考アシストのオッズ。BOA-1180）。関数が変わると読み直して予約し直す
+ *   （useCallback で渡す）。読み直しの失敗は前の値を残し、scheduleRefresh が続ける間だけ再試行する。
  *   定期の読み直しが失敗しても前の値を残し、次の60秒で読み直しを続ける（最初の読み込みの失敗は error）。
  *   enabled=false の間は取得しない（タブを開いたときに初めて取得する）。
  *   error は取得の失敗（「データなし」に倒さない。.claude/rules/frontend-data-fetch.md）。
@@ -23,24 +26,27 @@ export function useAnalogyResource(
   fetcher,
   enabled,
   refreshBeforeExhibition = false,
+  scheduleRefresh = null,
 ) {
   const [fetched, setFetched] = useState(null);
   const [failedKey, setFailedKey] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const pendingRefresh = useRef(null);
+  // 最後に読めた値（scheduleRefresh の失敗の再試行と、関数が変わったときの読み直しに使う）
+  const shown = useRef(null);
 
   useEffect(() => {
     if (!enabled) return undefined;
     let alive = true;
     let timer;
-    // refresh=true は展示前の定期の読み直し（最初の読み込みではない）
-    const load = (refresh = false) => {
+    // refresh=true は定期の読み直し（最初の読み込みではない）。keep=true は失敗しても見えている値を残す
+    const load = (refresh = false, keep = false) => {
       // StrictMode の effect 再実行でも、同じ条件の処理中の要求は共有する。
       // 定期更新を有効にしていない思考アシスト等の取得は変えない。
       const request =
         refreshBeforeExhibition && pendingRefresh.current?.key === key
           ? pendingRefresh.current.request
-          : fetcher();
+          : fetcher(refresh);
       if (refreshBeforeExhibition) pendingRefresh.current = { key, request };
       const clearPending = () => {
         if (pendingRefresh.current?.request === request)
@@ -52,8 +58,14 @@ export function useAnalogyResource(
           if (!alive) return;
           setFailedKey((prev) => (prev === key ? null : prev));
           setFetched({ key, data });
-          // 応答の締切後は exhibition_missing。時計で独自に状態を判定しない。
+          shown.current = { key, data };
           // 完了してから次を予約し、遅い応答でも要求を重ねない。
+          if (scheduleRefresh) {
+            const delay = scheduleRefresh(data, refresh);
+            if (delay != null) timer = setTimeout(() => load(true), delay);
+            return;
+          }
+          // 応答の締切後は exhibition_missing。時計で独自に状態を判定しない。
           if (
             refreshBeforeExhibition &&
             (data.status === "before_exhibition" ||
@@ -66,27 +78,33 @@ export function useAnalogyResource(
           if (!alive) return;
           // 定期の読み直しの失敗は、見えている値をエラー表示に置き換えない。
           // 開いたままのページを壊さないよう前の値を残し、次の60秒で読み直しを続ける
-          if (refresh) {
+          if (refresh || keep) {
             console.error(
-              "[analogy] 定期の読み直しに失敗（前の値を残し60秒後に再試行）:",
+              "[analogy] 定期の読み直しに失敗（前の値を残し再試行）:",
               key,
               error,
             );
-            timer = setTimeout(() => load(true), 60_000);
+            // scheduleRefresh があれば、それが読み直しを続ける間だけ（早くても60秒後に）再試行する
+            const next = scheduleRefresh
+              ? scheduleRefresh(shown.current?.data ?? null, true)
+              : 60_000;
+            if (next != null)
+              timer = setTimeout(() => load(true), Math.max(next, 60_000));
             return;
           }
           console.error("[analogy] 取得に失敗:", key, error);
           setFailedKey(key);
         });
     };
-    load();
+    // scheduleRefresh が変わって取り直すときは、見えている値を失敗で消さない
+    load(false, Boolean(scheduleRefresh) && shown.current?.key === key);
     return () => {
       clearTimeout(timer);
       alive = false;
     };
     // fetcher は key から決まる（key に含めた値だけで取り直す）
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, enabled, reloadKey, refreshBeforeExhibition]);
+  }, [key, enabled, reloadKey, refreshBeforeExhibition, scheduleRefresh]);
 
   const retry = useCallback(() => {
     setFailedKey(null);
