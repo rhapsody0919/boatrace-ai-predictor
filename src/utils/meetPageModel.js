@@ -42,6 +42,50 @@ export function isOutOfScopeMeetTitle(title) {
 }
 
 /**
+ * 順延で節の予定の最終日より後に走る日を、同じ節とみなす日数（seriesCoveringDate）。
+ * 目安（根拠なし）。荒天の順延は1〜2日が多く、3日あれば足りるとみた
+ */
+export const SERIES_POSTPONE_TOLERANCE_DAYS = 3;
+
+/**
+ * その日以前に始まったいちばん新しい節（race_series の1行）が、その日を含むか。含めばその行、含まなければ null。
+ * race_series は「予定」で順延した節の日程は直らないため、予定の最終日から SERIES_POSTPONE_TOLERANCE_DAYS 日以内も同じ節とみなす。
+ * 画面（supabaseDataService.getSeriesOfDate）とボット向け HTML（api/_lib/botRace.js）が使う
+ * @param {{start_date: string, end_date: string}|null|undefined} latest
+ * @param {string} date YYYY-MM-DD
+ */
+export function seriesCoveringDate(latest, date) {
+  if (!latest) return null;
+  const daysAfterEnd =
+    (Date.parse(`${date}T00:00:00Z`) -
+      Date.parse(`${latest.end_date}T00:00:00Z`)) /
+    86400000;
+  return daysAfterEnd <= SERIES_POSTPONE_TOLERANCE_DAYS ? latest : null;
+}
+
+/**
+ * レース詳細の 1R〜12R の帯で、節（race_series）を引く必要があるか。
+ * レースのグレードが分かっていて SG/G1/G2 でなければ引かない（一般戦・G3 でリンクは出ない）。分からないときだけ引く
+ */
+export function needsMeetSeries(raceGrade) {
+  return !raceGrade || MEET_PAGE_GRADES.includes(raceGrade);
+}
+
+/**
+ * レース詳細の帯に節のページへのリンクを出すなら、その初日（YYYY-MM-DD）。出さないなら null。
+ * 判定は節ページ（meetPageState）と同じく、節の値が無ければレースの値で補う。
+ * 画面（RaceNumberStrip）とボット向け HTML（api/_lib/botRace.js）が使う
+ * @param {{start_date: string, grade?: string|null, title?: string|null}|null} series
+ */
+export function meetLinkStartDateOf(series, raceGrade, raceTitle) {
+  if (!series) return null;
+  const show =
+    MEET_PAGE_GRADES.includes(series.grade ?? raceGrade) &&
+    !isOutOfScopeMeetTitle(series.title ?? raceTitle);
+  return show ? series.start_date : null;
+}
+
+/**
  * 会場ページの節のページへの帯（VenueMeetBanner、BOA-1189）を出す節か。出すならグレードと節タイトル、出さないなら null。
  * 判定は今日の先頭レース（会場ページの title・会場カードのバッジと同じ代表値）
  * @param {{raceGrade?: string|null, raceTitle?: string|null}[]} races - 会場の本日のレース（レース番号順）
