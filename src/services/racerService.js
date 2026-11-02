@@ -9,9 +9,8 @@
 import { supabase } from "./supabaseClient";
 import { supabaseDataService } from "./supabaseDataService";
 import { parseRaceId } from "../utils/raceId";
-import { groupCurrentMeetFromRows } from "../utils/meetGrouping";
+import { fetchCurrentMeetRaceEntries } from "./currentMeetEntries";
 import { getTodayJST } from "../utils/dateUtils";
-import { addDaysToDateString } from "../../scripts/lib/dateUtils.js";
 
 async function getRacerProfile(racerId) {
   if (!supabase) return null;
@@ -75,44 +74,6 @@ export async function getRacerPageData(racerId) {
 }
 
 /**
- * 選手の直近出走と同じ会場・モーターの走を、種別から決めた節の初日で切る。
- * 種別が取れない場合は、従来の日付の連続性による推定に戻す（BOA-861）。
- */
-async function getCurrentMeetRaceEntries(racerId, motorNumber) {
-  const { data: entries } = await supabase
-    .from("race_entries")
-    .select("race_id, boat_number")
-    .eq("racer_id", racerId)
-    .eq("motor_number", motorNumber)
-    .order("race_id", { ascending: false })
-    .limit(30);
-
-  if (!entries || entries.length === 0) return [];
-
-  // 最新の走と同じ会場に絞る（BOA-591）。モーター番号は会場ごとに振られるので、
-  // 番号だけだと別会場の同じ番号のモーターの節が地続きのときに繋がる
-  const venue = entries[0].race_id.slice(11, 13);
-  const sorted = entries
-    .filter((e) => e.race_id.slice(11, 13) === venue)
-    .sort((a, b) => a.race_id.localeCompare(b.race_id));
-  const targetDate = sorted.at(-1).race_id.slice(0, 10);
-  try {
-    // 12日窓・1会場で最大13日×12R。Supabase の1000行上限には届かない。
-    const { data: conditions } = await supabase
-      .from("race_conditions")
-      .select("race_id, series_day, is_final_day")
-      .gte("race_id", addDaysToDateString(targetDate, -12))
-      .lte("race_id", `${targetDate}-zz`)
-      .like("race_id", `__________-${venue}-__`);
-    return groupCurrentMeetFromRows(sorted, conditions);
-  } catch (error) {
-    // 種別だけの取得失敗は、今節の走を空にせず従来の推定で補う。
-    console.warn("今節の種別を取得できないため、日付から推定します", error);
-    return groupCurrentMeetFromRows(sorted, null);
-  }
-}
-
-/**
  * レースが属する節（race_series）の日程を返す。中止で順延した節があるので、
  * 節が終わったかは日付の連続性ではなく race_series.end_date で決める（BOA-1182）。
  * 節の行が無ければ null。クエリの失敗は supabase クライアントが例外にする
@@ -173,7 +134,7 @@ export async function getRacerCurrentMotorStatus(racerId) {
     preGeneration
       ? null
       : supabaseDataService.getMotorPowerIndex(venueCode, data.motor_number),
-    getCurrentMeetRaceEntries(racerId, data.motor_number),
+    fetchCurrentMeetRaceEntries(supabase, racerId, data.motor_number),
     preGeneration
       ? null
       : supabaseDataService.getVenueMotorStats(venueCode, data.motor_number),

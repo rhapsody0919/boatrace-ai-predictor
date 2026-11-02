@@ -68,7 +68,7 @@
  *     （`groupIntoMeetBeforeRace`）
  *   - `getRacerMeetExhibitionTrendBefore`: 選手＋モーター番号＋**会場**＋表示中
  *     レースの目印（`groupIntoMeetBeforeRace`）
- *   - `racerService.getCurrentMeetRaceEntries`: 選手＋モーター番号＋**会場**＋直近30走
+ *   - `currentMeetEntries.fetchCurrentMeetRaceEntries`: 選手＋モーター番号＋**会場**＋直近30走
  *
  * **モーター番号は会場フィルタの代わりにならない**。番号は会場ごとに振られるので、
  * 別会場の同じ番号のモーターの節が混ざる（BOA-591: 2026-09-21 津1Rで、節の初戦の
