@@ -52,6 +52,9 @@ export const ASSIST_COPY = Object.freeze({
   roughManshu: "万舟",
   roughBase: (pct) => `全国${pct}%`,
   roughFew: "件数少なめ",
+  // D-37: 少ないのは同じラウンドの件数。全ラウンドへ広げた後の件数とは分ける（BOA-893）
+  roughRoundFallback: (round) =>
+    `${round}だけでは30件未満のため、全ラウンドの値（矢印なし）`,
   // 優勝戦・準優勝戦に絞った値のときは、数えた範囲が分かるようラウンドを添える（D-37）
   roughCount: (n, round) =>
     `${round ? `${round} ` : ""}${n.toLocaleString("ja-JP")}件 ›`,
