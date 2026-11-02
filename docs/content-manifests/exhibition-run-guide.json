@@ -8,55 +8,59 @@
   "src/data/blog-posts/exhibition-run-guide.json"
  ],
  "files": {
-  "public/blog/exhibition-run-guide.md": "a3d2b3e435a127015ed962b65b71dac8260c5655811cd58de8828a61bfb5dd39",
+  "public/blog/exhibition-run-guide.md": "aefd4191af8d808b7028547f7b88d16a4d759f3f7c6dce0cd27718cf9aad8201",
   "src/data/blog-posts/exhibition-run-guide.json": "0a13495cbb96c8c2410b6d523cf2a4f02ab3f98e62c86f32b29dde1c876ccd58"
  },
- "content_sha256": "54a11bb497ea3ee8d14ea1405ea0cd320e11b71ba4c8ead90b00229327cbd774",
+ "content_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
  "judgement_words": [],
  "reviews": [
   {
    "role": "content-qa",
-   "agent": "hq-review:article+content-qa",
-   "result": "pass",
+   "agent": "content-qa",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "54a11bb497ea3ee8d14ea1405ea0cd320e11b71ba4c8ead90b00229327cbd774",
-   "model": "opus",
-   "at": "2026-11-01T10:09:22+09:00"
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
   },
   {
    "role": "wording-editor",
-   "agent": "hq-review:wording",
-   "result": "pass",
+   "agent": "wording-editor",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "54a11bb497ea3ee8d14ea1405ea0cd320e11b71ba4c8ead90b00229327cbd774",
-   "model": "opus",
-   "at": "2026-11-01T10:09:22+09:00"
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
   },
   {
    "role": "fan",
-   "agent": "hq-review:fan",
-   "result": "pass",
+   "agent": "boatrace-fan-reviewer",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "54a11bb497ea3ee8d14ea1405ea0cd320e11b71ba4c8ead90b00229327cbd774",
-   "model": "opus",
-   "at": "2026-11-01T10:09:22+09:00"
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
   },
   {
    "role": "seo-marketer",
-   "agent": "hq-review:seo+marketing",
-   "result": "pass",
+   "agent": "seo-marketer",
    "p0": 0,
    "p1": 0,
-   "reviewed_sha256": "54a11bb497ea3ee8d14ea1405ea0cd320e11b71ba4c8ead90b00229327cbd774",
-   "model": "opus",
-   "at": "2026-11-01T10:09:22+09:00"
+   "result": "pass",
+   "reviewed_sha256": "139c092c42d99aba6e65de44d9aa57f9bdf469416ed8c011616cc9d4770e1926",
+   "model": "opus-5.5",
+   "at": "2026-11-02T22:32:10Z"
   }
  ],
- "author": "hq-employee:seo-human",
- "created_at": "2026-11-01T10:10:48+09:00",
+ "author": {
+  "model": "claude",
+  "lane": "hq-employee:seo-human"
+ },
+ "created_at": "2026-11-02T22:32:40Z",
  "run": "20261101T100219-seo-human",
- "engine": "claude"
+ "engine": "claude",
+ "content_at": "2026-11-02T22:32:02Z"
 }
