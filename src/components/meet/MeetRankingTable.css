@@ -131,6 +131,15 @@
   overflow-wrap: anywhere;
 }
 
+a.meet-ranking__name {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.meet-ranking__name:hover {
+  text-decoration: underline;
+}
+
 .meet-ranking__line2 {
   display: flex;
   flex-wrap: wrap;
