@@ -46,7 +46,8 @@ permissions:
 jobs:
   check:
     environment: prod-jobs
-    runs-on: ubuntu-latest
+    # Playwright 1.59 は ubuntu-26.04（ubuntu-latest の移行先）で chromium を入れられないため固定する。Playwright を 1.61 以上に上げたら ubuntu-latest に戻す
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
