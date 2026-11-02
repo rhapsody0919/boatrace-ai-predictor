@@ -15,6 +15,7 @@ SNS 配信の基盤レーン（範囲: sns-hub・`scripts/sns/push-*.js`・送�
 - 全貌: bundle の版2（`bundle_version: 2`）で YouTube の Shorts を足す。Shorts は `parent_job_id` で完全版の公開を待ち、説明文の `{full_url}` を送る時に完全版の URL に置き換える（#1714、ADR-0094 の追記、マイグレーション 172 の `sns_auto_send_items.variant`）。契約の表は `docs/design/full-picture-remotion/handoff.md`「送信の道への受け渡し」
 - 全貌の束の `channels`（例 `["youtube","shorts"]`）で X を外せる。外すと `x_text`・`full-x.mp4` を受けず、X の下書き・item・job と日の枠の確認（`sns_x_slot_room`）を作らない。完全版・Shorts の送る時刻は X があるときと同じ（BOA-1167）
 - 全貌の URL の UTM: `utm_campaign=race-full`・`utm_content=<race_id>`（YouTube は `utm_term=full|shorts`）。作り手が付ける（#1767）
+- 節の機力の計測: 48h・7d は posted のトリガー（169）が全貌以外の型と同じく作る（Shorts `setsu_kiryoku_short`・X `setsu_kiryoku` とも変更なし）。`sns_daily` の YouTube Analytics（動画ごとの日次・pt3d）は format で絞らないので Shorts も入る。GA4 は Shorts の説明欄の会場のページのリンクにある utm_* と `landingPage` で下書きに結びつけ、投稿日と翌日の users・sessions を残す（`snsDailyRunner.js` の collectSetsuShort）。リンクに `utm_source`・`utm_medium`・`utm_content` のどれかが無ければ結びつけない（同じ会場のページへの別の投稿の流入を拾わない）。同じ会場・同じ utm が続く日は、その日の流入を当日の投稿に付ける。X の節の機力は本文にリンクが無いので GA4 の行は無い
 
 ## 本番の設定（2026-10-20〜21 にオーナーが適用）
 

@@ -117,6 +117,26 @@ test("全貌は day_end（投稿日の JST 23:00）と 24h の job、それ以�
   ]);
 });
 
+test("節の機力（Shorts の setsu_kiryoku_short・X の setsu_kiryoku）も posted で 48h・7d の job が予約される（BOA-1209）", async () => {
+  const short = await posted(
+    "setsu_kiryoku_short",
+    "2026-11-02T12:30:00Z",
+    "youtube",
+  );
+  const x = await posted("setsu_kiryoku", "2026-11-02T12:30:00Z", "x");
+  for (const id of [short, x])
+    assert.deepEqual(await jobsOf(id), [
+      ["48h", "2026-11-04T12:30:00.000Z"],
+      ["7d", "2026-11-09T12:30:00.000Z"],
+    ]);
+  const sources = await all(
+    "SELECT draft_id, array_agg(DISTINCT source) s FROM sns_metric_jobs GROUP BY draft_id",
+  );
+  const sourceOf = (id) => sources.find((r) => r.draft_id === id).s;
+  assert.deepEqual(sourceOf(short), ["youtube-data"]);
+  assert.deepEqual(sourceOf(x), ["x-api"]);
+});
+
 test("JST 23:00 を過ぎてから投稿された全貌は 24h だけ（day_end を作らない）、日付は JST で数える", async () => {
   // 2026-10-19 23:10 JST（UTC では同じ 10/19）
   const late = await posted("full_picture", "2026-10-19T14:10:00Z");
