@@ -1317,6 +1317,11 @@
       "guards": "セッション長の検知（session-progress.js）。長くなっても黙るようになっていないこと"
     },
     {
+      "script": "verify-setsu-kiryoku.js",
+      "tier": "ci",
+      "guards": "YouTube Shorts「節の機力」（sns-video-studio/remotion/src/setsuKiryoku/、型 motor_gap・motor_up・final_six と「準優に残れるか」border）: 見本の bundle が検査を通る、尺が約15秒（border は3章）、border の3人・順位・得点率・要る着の形・同率（tied は bool か無し、true で「同率20位」）、検査が禁止語（risk-rules.json、説明欄末尾の #競艇 は例外）・言い切りの語（足が良い・上がった・化けた・節イチ）・リポジトリの禁止語（数える・似た・ふつう・いつも）・z・画面の文の bundle に無い数・2連率の下から何番目と all の食い違い・前半後半の平均とコースと runs の食い違い・6艇でない・走の値の範囲・必須の欄を落とす、hook・close が36px以上で y1400 より上、2連率の札が x60〜900。外部接続なし"
+    },
+    {
       "script": "verify-sexagenary-cycle.js",
       "tier": "ci",
       "guards": "六十干支の日柱の基準日4点・基準日前日、干支の端点と個数、固定2年分の連続性と60日周期（BOA-1044）"
