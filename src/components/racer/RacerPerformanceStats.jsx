@@ -427,19 +427,23 @@ export default function RacerPerformanceStats({
   // 枠番別成績（全会場計）。出走履歴が届いたら、会場別・条件別・レース一覧と同じ履歴から数える（BOA-1190）。
   // 日次の集計（course_race_counts）は race_results の course_1〜6 が空のレース（結果はあるのに
   // 進入の列が無い、本番で約4%）を数えず、同じ画面の「全体」の走数と合わなかった（/racer/3941 で 218走と 232走）。
-  // 履歴の読み込み中・失敗のときは、これまでどおり日次の集計を出す
-  const historyCourseStats = vcHistory
-    ? aggregateRacerCrossStats(vcHistory, {}, "boat", null, null).map(
-        (row) => ({
-          course: row.key,
-          total: row.n,
-          wins: row.win,
-          winRate: row.winRate,
-          top2Rate: row.top2Rate,
-          top3Rate: row.top3Rate,
-        }),
-      )
-    : null;
+  // 履歴の読み込み中・失敗・空のときは、これまでどおり日次の集計を出す
+  const historyCourseStats = useMemo(
+    () =>
+      vcHistory?.length
+        ? aggregateRacerCrossStats(vcHistory, {}, "boat", null, null).map(
+            (row) => ({
+              course: row.key,
+              total: row.n,
+              wins: row.win,
+              winRate: row.winRate,
+              top2Rate: row.top2Rate,
+              top3Rate: row.top3Rate,
+            }),
+          )
+        : null,
+    [vcHistory],
+  );
   // course_race_counts: { "1": { total, wins, top2, top3 }, ... } → コース番号昇順の配列に変換
   const courseStats = (
     historyCourseStats ??
