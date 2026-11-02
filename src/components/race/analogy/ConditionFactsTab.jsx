@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
+import { parseBoatParam, RACE_BOAT_PARAM } from "../../../utils/raceUrlState";
 import NoteList, { NotesFold } from "./NoteList";
 import ScopeCombo from "./ScopeCombo";
 import BoatBadge from "../BoatBadge";
@@ -42,7 +44,10 @@ const FACT_SCOPES = ["VC", "NC", "NCR", "VA"];
  */
 export default function ConditionFactsTab({ data, stage, target, feedback }) {
   const { t } = useTranslation();
-  const [boat, setBoat] = useState(1);
+  const [searchParams] = useSearchParams();
+  const [boat, setBoat] = useState(
+    () => parseBoatParam(searchParams.get(RACE_BOAT_PARAM)) ?? 1,
+  );
   const cardsRef = useRef(null);
   // 手で選んだ範囲の種類（VC・NC・NCR・VA）。選んでいなければ既定（screens「細部の約束」）
   const [pickedKind, setPickedKind] = useState(null);

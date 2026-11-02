@@ -34,6 +34,9 @@ import {
   SPECIAL_SCORE_POINTS,
   TOKUSEN_SCORE_POINTS,
   officialSeriesScore,
+  readOfficialPenalty,
+  meetRateHidden,
+  meetRateBestCandidates,
   shouldUseOfficialSeries,
   prelimOfficialAdjustments,
   parseOfficialPlacements,
@@ -76,6 +79,40 @@ function check(label, actual, expected) {
     failures += 1;
     console.error(`❌ ${label}: expected ${e}, got ${a}`);
   }
+}
+
+// BOA-1053: 賞典除外の印と減点を分け、行を保持する。
+for (const [penalty, excluded, deduct] of [[0, false, 0], [10, false, 10], [99, true, 0], [109, true, 10]]) {
+  check(`減点の読み方 ${penalty}`, readOfficialPenalty(penalty), { awardExcluded: excluded, deduct });
+}
+{
+  const row = { placements: "１２３４５６", total_points: 31, penalty_points: 109 };
+  check("109は10点だけ引く", officialSeriesScore(row), {
+    points: 21, runs: 6, rate: 3.5, finishes: [1, 2, 3, 4, 5, 6], awardExcluded: true,
+  });
+  for (const p of [5, 7, 10, 15, 99]) {
+    const score = officialSeriesScore({ ...row, total_points: 40, penalty_points: p });
+    check(`既存減点 ${p}`, [score.points, score.rate, score.awardExcluded],
+      [40 - (p === 99 ? 0 : p), (40 - (p === 99 ? 0 : p)) / 6, p === 99]);
+  }
+  const entries = [1, 2, 3].map((racerId) => ({ racerId, playerName: String(racerId) }));
+  const officialByRacer = Object.fromEntries(entries.map(({ racerId }) => [racerId,
+    { ...row, total_points: racerId === 1 ? 40 : racerId === 2 ? 31 : 12, penalty_points: 0 }]));
+  const baseline = buildMeetRanking({ entries, officialByRacer });
+  officialByRacer[2].penalty_points = 109;
+  for (const withdrawnRacerIds of [[], [2]]) {
+    const ranked = buildMeetRanking({ entries, officialByRacer, withdrawnRacerIds });
+    const excluded = ranked.find((r) => r.racerId === 2);
+    check("賞典除外の行・着順・走数を保持", [ranked.length, excluded.rank, excluded.withdrawn, excluded.excludedReason, excluded.finishes, excluded.runs],
+      [3, null, true, "awardExcluded", [1, 2, 3, 4, 5, 6], 6]);
+    check("下位の順位を詰める", ranked.find((r) => r.racerId === 3).rank,
+      baseline.find((r) => r.racerId === 3).rank - 1);
+  }
+  check("前夜の減点も印を除く", prelimOfficialAdjustments([109, 99, 10].map((penalty_points, racer_id) => ({ racer_id, penalty_points })), "2026-10-18", "2026-10-19").penaltyByRacer, { 0: 10, 2: 10 });
+  for (const excludedReason of ["officialWithdrawn", "awardExcluded", "flying", "withdrawn", null]) {
+    check(`得点率を隠す ${excludedReason}`, meetRateHidden({ excludedReason }), ["officialWithdrawn", "awardExcluded"].includes(excludedReason));
+  }
+  check("賞典除外は金枠の候補外", meetRateBestCandidates([{ boat: 2, row: { rate: 3.5, runs: 6, excludedReason: "awardExcluded" } }])[0].value, null);
 }
 
 // ---- 1. 配点区分 -----------------------------------------------------------
@@ -942,7 +979,7 @@ for (const gap of KNOWN_GAPS) console.log(JSON.stringify(gap));
       total_points: 38,
       penalty_points: 10,
     }),
-    { points: 28, runs: 6, rate: 28 / 6, finishes: [3, 2, 1, 4, 5, 2] },
+    { points: 28, runs: 6, rate: 28 / 6, finishes: [3, 2, 1, 4, 5, 2], awardExcluded: false },
   );
   // 若松G1の吉田裕平。減点99は賞典除外の印で、引くと得点が負になる
   check(
@@ -961,7 +998,7 @@ for (const gap of KNOWN_GAPS) console.log(JSON.stringify(gap));
       total_points: 24,
       penalty_points: 0,
     }),
-    { points: 24, runs: 3, rate: 8, finishes: [1, 2, 3] },
+    { points: 24, runs: 3, rate: 8, finishes: [1, 2, 3], awardExcluded: false },
   );
   check(
     "得点が無い行は読み替えない",

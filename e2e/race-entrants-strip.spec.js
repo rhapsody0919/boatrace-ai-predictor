@@ -106,14 +106,24 @@ test.describe("レース詳細: 出走6艇と 1R〜12R の帯", () => {
     // 結果を外して締切前の状態にする
     await page.clock.setFixedTime(new Date("2026-09-18T13:46:00+09:00"));
     await page.route("**/api/predictions/2026-09-18*", async (route) => {
-      const response = await fetchRecorded(route);
-      const body = await response.json();
-      const races = (body.races || []).map((race) =>
-        race.raceId === "2026-09-18-02-08" ? { ...race, result: null } : race,
-      );
-      await route.fulfill(
-        response.fulfillOptions({ json: { ...body, races } }),
-      );
+      try {
+        const response = await fetchRecorded(route);
+        const body = await response.json();
+        const races = (body.races || []).map((race) =>
+          race.raceId === "2026-09-18-02-08" ? { ...race, result: null } : race,
+        );
+        await route.fulfill(
+          response.fulfillOptions({ json: { ...body, races } }),
+        );
+      } catch (error) {
+        // live では fetchRecorded が本番の応答を待つ。アサーションが先に通ってページが閉じた後の
+        // 失敗（「Target page, context or browser has been closed」）はテストの結果ではない
+        // （BOA-1225。smoke.spec.js の routeUnfinished と同じ考え方。page のルートを途中で0件にしない
+        // 決まり（e2e/fixtures.js）があるので unrouteAll は足さず、閉じた後の失敗だけを捨てる）
+        if (page.isClosed() || /has been closed/.test(String(error?.message)))
+          return;
+        throw error;
+      }
     });
     await page.goto("/race/2026-09-18-02-08");
     await expect(page.getByTestId("race-entrants")).toBeVisible({

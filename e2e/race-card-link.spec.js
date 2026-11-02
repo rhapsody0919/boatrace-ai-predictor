@@ -92,3 +92,28 @@ test("リンクにしても、ボタンと同じ見た目（幅いっぱい・�
     "締切前のカードがある会場が見つからない（録画の時刻とデータを確かめる）",
   );
 });
+
+// BOA-1231: 会場だけでミニ出走表から ja 専用の選手ページへ進める。
+test("会場のミニ出走表の6選手名は、日英とも選手ページへのリンク", async ({ page }) => {
+  for (const home of ["/", "/en/"]) {
+    await page.goto(home, { waitUntil: "domcontentloaded" });
+    await page.locator(".venue-grid-card--open").first().click();
+    const card = page.locator(".race-card").first();
+    const names = card.locator(".rcdt-name-th a");
+    await expect(names).toHaveCount(6);
+    for (const name of await names.all()) {
+      await expect(name).toHaveAttribute("href", /^\/racer\/\d{4}$/);
+      await expect(name).toHaveAttribute("translate", "no");
+      await expect(name.locator(".rcdt-name-part").first()).toBeVisible();
+      await expect(name).toHaveCSS("text-decoration-line", "none");
+    }
+    const href = await names.first().getAttribute("href");
+    await names.first().click();
+    await expect(page).toHaveURL(new RegExp(`${href}$`));
+    await page.goBack();
+    const detail = page.locator(".race-card .predict-btn").first();
+    const detailHref = await detail.getAttribute("href");
+    await detail.click();
+    await expect(page).toHaveURL(new RegExp(`${detailHref}$`));
+  }
+});

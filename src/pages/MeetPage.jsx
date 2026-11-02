@@ -16,6 +16,7 @@ import {
   buildMeetRanking,
   listAbsentOnlyRacers,
   SEMIFINAL_DEFAULT_SLOTS,
+  readOfficialPenalty,
 } from "../components/race/seriesPoints";
 import { pickShobugake } from "../utils/meetPageModel";
 import "./MeetPage.css";
@@ -316,8 +317,8 @@ function MeetBody({ page }) {
           officialLink={`https://www.boatrace.jp/owpc/pc/race/pointrank?jcd=${String(page.venueCode).padStart(2, "0")}&hd=${getTodayJST().replaceAll("-", "")}`}
           penaltyByRacer={Object.fromEntries(
             Object.entries(board?.officialByRacer ?? {})
-              .map(([id, o]) => [id, o?.penalty_points ?? 0])
-              .filter(([, p]) => p > 0 && p !== 99),
+              .map(([id, o]) => [id, readOfficialPenalty(o?.penalty_points ?? 0).deduct])
+              .filter(([, p]) => p > 0),
           )}
         />
         )}

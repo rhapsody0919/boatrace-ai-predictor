@@ -80,6 +80,127 @@ const blogTag = (path) =>
 /** 横スクロールの許容誤差（スクロールバー・小数丸めの分） */
 const OVERFLOW_TOLERANCE_PX = 2;
 
+test("BOA-1025: 直前情報の小標本は375pxで灰・通常の太さになる", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/race/2026-09-29-16-12?tab=beforeInfo");
+  const table = page.locator(".rbi-card .drt-table").first();
+  await expect(table).toBeVisible();
+  for (const theme of ["light", "dark"]) {
+    const styles = await table.evaluate((table, theme) => {
+      document.documentElement.setAttribute("data-theme", theme);
+      const sample = document.createElement("span");
+      sample.className = "drt-sub drt-n-small-sample";
+      sample.textContent = "⚠n=2";
+      table.querySelector("td").append(sample);
+      const probe = document.createElement("span");
+      probe.style.color = "var(--text-secondary)";
+      document.body.append(probe);
+      const result = {
+        color: getComputedStyle(sample).color,
+        expectedColor: getComputedStyle(probe).color,
+        weight: getComputedStyle(sample).fontWeight,
+      };
+      sample.remove();
+      probe.remove();
+      return result;
+    }, theme);
+    expect(styles.color, theme).toBe(styles.expectedColor);
+    expect(styles.weight, theme).toBe("400");
+  }
+});
+
+for (const theme of ["light", "dark"]) {
+  for (const target of [
+    {
+      name: "注目記事",
+      path: "/",
+      selector: ".blog-preview-grid >> nth=0",
+      card: ".blog-preview-card",
+    },
+    {
+      name: "新着記事",
+      path: "/",
+      selector: ".blog-preview-grid >> nth=1",
+      card: ".blog-preview-card",
+    },
+    {
+      name: "ガイド",
+      path: "/guide",
+      selector: ".article-grid",
+      card: ".article-card",
+    },
+  ]) {
+    test(`BOA-1014: ${target.name}のカードが${theme}のホバー後も読める @blog`, async ({
+      page,
+    }) => {
+      await page.goto(target.path);
+      const card = page
+        .locator(target.selector)
+        .first()
+        .locator(target.card)
+        .first();
+      await expect(card).toBeVisible();
+      await page.mouse.move(0, 0);
+      await page.evaluate((theme) => {
+        document.documentElement.setAttribute("data-theme", theme);
+      }, theme);
+      const background =
+        theme === "dark" ? "rgb(13, 27, 46)" : "rgb(247, 243, 234)";
+      await expect(card).toHaveCSS("background-color", background);
+      const before = await card.evaluate(
+        (element) => getComputedStyle(element).backgroundColor,
+      );
+      await card.hover();
+      await expect(card).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, -4)");
+      const colors = await card.evaluate((element) => {
+        // WCAG の sRGB 相対輝度。透明色を不透明色として誤判定しない。
+        const luminance = (color) => {
+          const channels = color.match(/[\d.]+/g).map(Number);
+          if (channels.length === 4 && channels[3] !== 1) {
+            throw new Error(`透明な色: ${color}`);
+          }
+          const [r, g, b] = channels.slice(0, 3).map((value) => {
+            const s = value / 255;
+            return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
+        const style = getComputedStyle(element);
+        const bg = luminance(style.backgroundColor);
+        const contrast = (selector) => {
+          const fg = luminance(
+            getComputedStyle(element.querySelector(selector)).color,
+          );
+          return (Math.max(fg, bg) + 0.05) / (Math.min(fg, bg) + 0.05);
+        };
+        const probe = document.createElement("span");
+        probe.style.borderColor = "var(--brand-accent-secondary)";
+        probe.style.boxShadow = "var(--shadow-xl)";
+        element.append(probe);
+        const tokenStyle = getComputedStyle(probe);
+        const result = {
+          background: style.backgroundColor,
+          title: contrast("h3"),
+          description: contrast("p"),
+          border: style.borderTopColor,
+          shadow: style.boxShadow,
+          expectedBorder: tokenStyle.borderTopColor,
+          expectedShadow: tokenStyle.boxShadow,
+        };
+        probe.remove();
+        return result;
+      });
+      expect.soft(colors.title, JSON.stringify(colors)).toBeGreaterThanOrEqual(4.5);
+      expect
+        .soft(colors.description, JSON.stringify(colors))
+        .toBeGreaterThanOrEqual(4.5);
+      expect.soft(colors.background).toBe(before);
+      expect.soft(colors.border).toBe(colors.expectedBorder);
+      expect.soft(colors.shadow).toBe(colors.expectedShadow);
+    });
+  }
+}
+
 for (const theme of ["light", "dark"]) {
   test(`BOA-894: 会場一覧へ戻るリンクが375pxの${theme}で意味トークンを使う`, async ({
     page,

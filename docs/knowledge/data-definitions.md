@@ -90,3 +90,7 @@
 - 公式の得点率一覧の減点の欄は、賞典除外で 99 だけでなく 109 も出る（大村 2026-10-18 節 5088、公式 pointrank のページで確認）。109 は「99＋減点10」とみられるが推測。「99 ちょうど」だけを印と見ると得点率が −13.00 になる（2026-10-25、BOA-1049・BOA-1053、src/components/race/seriesPoints.js の officialSeriesScore）
 - 公式は途中帰郷・賞典除外の行の得点率を「-」で出さない。(得点−減点)÷走数 は負になりうる（若松 2026-10-13 節 4188 「転５」: (2−5)/2）が、公式が負を出すか0で止めるかは未確認。得点率のある274行で得点−減点が0以下の行は0件（2026-10-25、BOA-1049、本番 racer_series_points 306行）
 - 公式の着順の文字列の「転」「エ」は走数に入る（得点率のある行で公式の値と一致: 若松 10/13 4762・4262、大村 10/18 4928）。「欠」を走数に入れるかは未照合（2026-10-25、BOA-1049、racer_series_points）
+- 艇番別と進入コース別の1着回数の差は、「その艇番が内のコースから勝った回数」ではない。他の艇番がそのコースで勝った分も含むため、内から勝った回数には勝者の艇番×進入コースの内訳が要る（2026-10-24、seo-human、six-boat-first-place-rate.md:38-40 の審査）。
+- placedRanks を使う1着集計で rank1 が返還艇なら、1着が無いレースとして母数からも除く。説明は「1着の艇が返還艇のレースは母数からも1着からも除く」とし、分子だけの除外に読ませない（2026-10-25、BOA-1108、raceOutcomeFilters.js・count-venue-course-wins.mjs）。
+- venue_course_technique_baseline は会場コード1〜24だけで全国行が無い。全国値は各会場の率×runs/100を回数へ戻して合計する。DBの ROUND(numeric,2) を浮動小数の Math.round で再現せず、整数で丸める（2026-10-26、PR #1927、verify-full-picture-scene2.js）。
+- 条件別成績は画面で別定義。基本情報の buildConditionRows は当地・波5cm以上・F有無、選手ページの aggregateRacerConditionStats は風5m以上・波5cm以上で5走未満を出さず、着欄の記号も母数に入る。風の条件を基本情報へ転用しない（2026-10-26、PR #1910、basicInfoStats.js・racerConditionStats.js）。

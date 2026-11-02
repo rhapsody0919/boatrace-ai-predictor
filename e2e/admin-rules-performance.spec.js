@@ -319,6 +319,8 @@ test.describe("管理画面 /admin/rules の運用成績", () => {
       0,
     );
     await expect(page.locator(".history-tab .history-summary")).toBeVisible();
-    expect(historyRequestCount).toBeGreaterThanOrEqual(2);
+    // 再試行を押すとエラーを消してから取り直すので、要約は再取得の要求より先に出ることがある。
+    // 要求が届くまで待つ（BOA-1225。10/30 の E2E Live で 1 のまま読んで落ちた）
+    await expect.poll(() => historyRequestCount).toBeGreaterThanOrEqual(2);
   });
 });

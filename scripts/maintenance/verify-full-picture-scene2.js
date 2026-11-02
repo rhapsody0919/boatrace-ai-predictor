@@ -144,6 +144,40 @@ assert.deepEqual(templateLines(overview), [
   "今日の6艇で2位以内の項目が最多は2号艇",
   "5項目中4、次は1号艇の3",
 ]);
+assert.deepEqual(templateLines({ ...overview, leaders: [2, 4] }), [
+  "今日の6艇で2位以内の項目が最多は2・4号艇",
+  "5項目中4、次は1号艇の3",
+]);
+// BOA-1109: 2026-10-25 06場11R。最多が5艇（1・2・4・5・6号艇）で、次点は残りの3号艇。
+// 長い文が幅に入るときは変えず、越えたときだけ頭の「今日の6艇で」を外す。艇番は必ず残す。
+const overviewThreeLeaders = { ...overview, leaders: [2, 4, 6], runner: { boats: [1, 3, 5], count: 3 } };
+const overviewFourLeaders = { ...overview, leaders: [2, 3, 4, 6], runner: { boats: [1, 5], count: 3 } };
+const overviewFiveLeaders = { ...overview, leaders: [1, 2, 4, 5, 6], runner: { boats: [3], count: 3 } };
+const overviewSixLeaders = { ...overview, leaders: [1, 2, 3, 4, 5, 6], runner: null };
+for (const f of [overviewThreeLeaders, overviewFourLeaders, overviewFiveLeaders, overviewSixLeaders]) {
+  const lines = templateLines(f);
+  for (const line of lines)
+    assert.ok(
+      lineWidth(line) <= MAX_WIDTH,
+      `最多が${f.leaders.length}艇でも全角${MAX_WIDTH}字分以内: ${line}（${lineWidth(line)}）`,
+    );
+  assert.ok(lines[0].includes(`${f.leaders.join("・")}号艇`), `最多の艇番を消さない: ${lines[0]}`);
+  assert.deepEqual(checkLines(lines, f, null), [], "最多が並ぶ文型が検査を通る");
+}
+// 3艇は長い文のまま（21.75 で幅に入る）
+assert.deepEqual(templateLines(overviewThreeLeaders), [
+  "今日の6艇で2位以内の項目が最多は2・4・6号艇",
+  "5項目中4、次は1・3・5号艇の3",
+]);
+// 5艇は幅を越えるので短い文
+assert.deepEqual(templateLines(overviewFiveLeaders), [
+  "2位以内の項目が最多は1・2・4・5・6号艇",
+  "5項目中4、次は3号艇の3",
+]);
+assert.deepEqual(templateLines(overviewSixLeaders), [
+  "2位以内の項目が最多は1・2・3・4・5・6号艇",
+  "6艇とも5項目中4",
+]);
 assert.deepEqual(templateLines(focus1), [
   "1号艇の選手は全国勝率8.06で6人中1位",
   "2番手は2号艇の7.61、ほか2項目も1位",
@@ -2165,6 +2199,54 @@ const f01Fixture = (name, names = F01_LONG_NAMES) => {
     const s5 = { chapters: [{ id: "c3", voice: "", subs: [], expect2: ["1,553件"] }] };
     assert.deepEqual(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1553件" } } }), []);
     assert.ok(f01Check(s5, { desc: VOICE.credit, kana: {}, shots: { c32: { text: "1,552件" } } }).length === 1, "違う数は落とす");
+  }
+  // 終了画面（オーナー 11/2「最後がバグっぽい」）: 締めの声・字幕が終わってから出す（字幕と重ならない）、終了画面では章の札を出さない、
+  // YouTube Data API では終了画面の要素を設定できないので置き場の点線の枠を描かない
+  {
+    const { f01Timeline } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const cl = ["まだ押していない軸がある。", "もし4号艇を軸にしたら、相手はどう変わるか。", "思考アシストで、残りの軸もこのレースのまま押せる。", "ページは、説明欄の一番上に。"];
+    const vc = { lines: cl.map((sub, i) => ({ chapter: "close", i, sub, file: `e${i}.wav`, sec: 3 })) };
+    const shotsC = { close: { file: "/x/close.png", clip: { x: 0, y: 0, w: 400, h: 150 }, scale: 2.8, minFontPx: 29.8 } };
+    const { props } = f01Timeline({ chapters: [{ id: "close", name: "締め", tag: "思考アシスト ＞ 相手", subs: cl }] }, vc, shotsC);
+    const close = props.chapters.find((c) => c.id === "close");
+    const lastSub = Math.max(...props.subs.map((x) => x.to));
+    assert.ok(props.end.from >= lastSub, `終了画面（${props.end.from}）は最後の字幕の終わり（${lastSub}）より後`);
+    assert.equal(close.tagUntil, props.end.from - close.from, "終了画面から章の札を出さない");
+    assert.equal(props.total - props.end.from, 5 * 30, "終了画面は5秒（オーナー 11/2「短くして」、YouTube の終了画面の要素の最短）");
+    // 章: 最後の章も10秒以上のときだけ残す（短ければ前の章に含める）。尺の検査（chaptersOk）と同じ条件
+    const { f01Chapters } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01-build.mjs");
+    const { chaptersOk } = await import("../../sns-video-studio/remotion/scripts/full-picture/bundle.mjs");
+    const marksA = [{ name: "冒頭", at: 0 }, { name: "6艇の差", at: 30 }, { name: "相手", at: 100 }, { name: "締め", at: 130 }];
+    assert.equal(f01Chapters(marksA, 138), "0:00 冒頭\n0:30 6艇の差\n1:40 相手\n", "8秒の締めは前の章に含める");
+    assert.equal(f01Chapters(marksA, 145), "0:00 冒頭\n0:30 6艇の差\n1:40 相手\n2:10 締め\n");
+    for (const tot of [138, 145]) assert.ok(chaptersOk(f01Chapters(marksA, tot), tot), `章が自動チャプターの条件を満たす（${tot}秒）`);
+    const jsx = readFileSync(new URL("../../sns-video-studio/remotion/src/fullPicture/F01.jsx", import.meta.url), "utf8");
+    assert.ok(!/dashed/.test(jsx), "終了画面の置き場の点線の枠を描かない");
+  }
+  // 禁止表現・回収率・章の条件（Orchestrate 11/2）: わざと落ちる入力で、f01 の実行時の検査が落とすことを固定する
+  {
+    const { NO_RETURN_RATE } = await import("../../sns-video-studio/remotion/scripts/full-picture/f01.mjs");
+    const { chaptersOk } = await import("../../sns-video-studio/remotion/scripts/full-picture/bundle.mjs");
+    const base = { title: "ボートレース大村10R 準優勝戦 10/26｜1号艇を崩す材料はどの艇に？", chapters: [{ id: "c2", voice: "類似レースの1着は1号艇が313件。", subs: ["類似レースの1着は1号艇が313件。"], answer: "1着 1号艇 313件" }] };
+    const ok = (s6, desc = VOICE.credit) => f01Check(s6, { desc, kana: {}, shots: {} });
+    assert.deepEqual(ok(base), [], "ふつうの文は通る");
+    // banned: risk-rules.json の禁止表現（「稼げる」は既存の「稼げ」で当たる）を、声・字幕・右の列・題・説明欄のどこに入れても落とす
+    for (const w of ["必ず当たる", "稼げる", "万舟券", "儲かる"]) {
+      assert.ok(ok({ ...base, chapters: [{ ...base.chapters[0], voice: `${w}レース。` }] }).some((x) => x.startsWith("c2: 禁止表現")), `声の「${w}」`);
+      assert.ok(ok({ ...base, chapters: [{ ...base.chapters[0], answer2: w }] }).some((x) => x.startsWith("c2: 禁止表現")), `右の列の「${w}」`);
+      assert.ok(ok({ ...base, title: `${base.title}${w}` }).some((x) => x.startsWith("題: 禁止表現")), `題の「${w}」`);
+      assert.ok(ok(base, `${VOICE.credit}\n${w}`).some((x) => x.startsWith("説明欄: 禁止表現")), `説明欄の「${w}」`);
+    }
+    // no-return-rate: 回収率を出さない
+    assert.ok(NO_RETURN_RATE.test("回収率"));
+    assert.ok(ok({ ...base, chapters: [{ ...base.chapters[0], subs: ["回収率は120%。"] }] }).some((x) => x.includes("回収率を出さない")), "字幕の回収率");
+    assert.ok(ok(base, `${VOICE.credit}\n回収率`).some((x) => x.includes("回収率を出さない")), "説明欄の回収率");
+    // chapters: 0:00 から・3つ以上・各10秒以上でなければ落とす（run-full の qa.chapters。f01Chapters は短い最後の章を前に含める）
+    assert.equal(chaptersOk("0:00 冒頭\n0:30 類似レース\n1:00 締め\n", 80), true);
+    assert.equal(chaptersOk("0:05 冒頭\n0:30 類似レース\n1:00 締め\n", 80), false, "0:00 から始まらない");
+    assert.equal(chaptersOk("0:00 冒頭\n0:30 締め\n", 80), false, "3つ未満");
+    assert.equal(chaptersOk("0:00 冒頭\n0:30 類似レース\n0:35 締め\n", 80), false, "10秒未満の章");
+    assert.equal(chaptersOk("0:00 冒頭\n0:30 類似レース\n1:00 締め\n", 68), false, "最後の章が10秒未満");
   }
   // 撮影の時間切れは1回だけ撮り直す（オーナー 11/2）。時間切れ以外はやり直さない、2回とも時間切れなら止める
   {
