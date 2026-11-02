@@ -22,6 +22,7 @@ import {
   buildMeetRanking,
   prelimEndRaceIdOf,
   officialSeriesScore,
+  readOfficialPenalty,
   parseOfficialPlacements,
 } from "../../src/components/race/seriesPoints.js";
 
@@ -63,7 +64,7 @@ const fail = (msg) => {
   const bad = [];
   for (const r of official) {
     if (r.score_rate === null || r.total_points === null) continue;
-    const penalty = r.penalty_points === 99 ? 0 : (r.penalty_points ?? 0);
+    const penalty = readOfficialPenalty(r.penalty_points ?? 0).deduct;
     const derived = (r.total_points - penalty) / Number(r.score_rate);
     const chars = parseOfficialPlacements(r.placements).length;
     checked += 1;
@@ -83,18 +84,20 @@ const fail = (msg) => {
 //      順位の比較からは外れるので、ここでしか見られない。
 //      得点率が負になるのは破綻ではない: 途中帰郷で減点が得点を上回ると (得点−減点)/走数 は負になる
 //      （若松 2026-10-13 節 4188「転５」得点2・減点5 → −1.50。公式はこの行の得点率を「-」で出さないので、
-//      負を出すか0で止めるかは未確認。BOA-1049 の official-data-spec の調査）。代わりに、引いた減点が
-//      99 以上なら破綻とみる。99 は賞典除外の印で、引く点数ではないため（大村 2026-10-18 節 5088 の
-//      減点 109 を丸ごと引いて −13.00 になる。当社の算出の誤りとして BOA-1053 で直す）
+//      負を出すか0で止めるかは未確認。BOA-1049 の調査）。
+//      BOA-1053: 99以上は賞典除外の印と減点に分け、読み替えと除外フラグを照合する。
 {
   const noRate = official.filter((r) => r.score_rate === null);
+  const awardExcluded = noRate.filter((r) => readOfficialPenalty(r.penalty_points ?? 0).awardExcluded);
+  console.log(`  賞典除外（減点99以上）: ${awardExcluded.length}行`);
   const broken = noRate.filter((r) => {
     const v = officialSeriesScore(r);
     return (
       !v ||
       !Number.isFinite(v.rate) ||
       v.rate > 12 ||
-      r.total_points - v.points >= 99
+      r.total_points - v.points !== readOfficialPenalty(r.penalty_points ?? 0).deduct ||
+      v.awardExcluded !== readOfficialPenalty(r.penalty_points ?? 0).awardExcluded
     );
   });
   console.log(
