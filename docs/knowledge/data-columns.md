@@ -49,3 +49,24 @@ DB の列名・テーブルの読み違いと、公式ファイル・公式ペ�
 - CSVの抽出完了報告だけで受領済みと扱わず、分析前に指定パスの実ファイル・列定義・対象期間・取得時刻を確認する。未配置なら母数や時点を検証できないため、再配置を依頼してから分析する（2026-10-21、BOA-991、data-scientist のCSV受領点検）
 - 記事の6艇比較表は、全国勝率・2連率・当地勝率・モーター2連率・級を日付つきの同じ出走表の写しからそろえる。一部の列しかない画面を別日時の資料で継ぎ足さない。public/data/races.jsonを使う場合も対象日を確認し、含まれない開催名は別の根拠を残す（2026-10-20、BOA-922、seo-human、public/data/races.json）
 - weather-in-escape.jsonのwind.venues.*.bins.*.techniquesは、その区分の全レースを分母とする勝者の決まり手内訳。逃げ件数は1コース1着数ではなく、1コースの抜き・恵まれ等もあるため「1コースが負けたとき」の内訳へ変換しない。決まり手合計は各binのn、風5区分のnの和は会場のall.nに対応する（2026-10-20、seo-human、data/analysis/weather-in-escape.json）
+- racer_aggregated_stats.course_entry_tendency の対象期間末日は calculated_at のJST日付の前日。過去レースへの未来情報混入は calculated_at 当日でなく、この末日で判定する（2026-10-25、PR #1903 の /code-review、api/_lib/racerEntryExhibition.js の tendencyThrough）。
+- racer_course_technique_stats・venue_course_technique_baseline の last_updated は値が変わった日で、集計窓の終わりは window_end。レース当日を含むかは window_end とレース日を比較する（2026-10-25、docs/db-migration/098_morning_data_digest.sql）。
+- getPlacementBaseline の未知の決まり手の補完は、全体平均から勝者コースを除いて再正規化する。保持される sampleSize=7642 は補完元の母数で、未知の決まり手の実測件数ではない（2026-10-25、BOA-1066、placementDistribution.js・verify-technique-placement-tables.js）。
+- top_3rd=null の3連複・3連単は、calculateHits では false・配当0、buildPredictionHitUpdate では判定対象外NULLになる。両者を同じ欠測契約と扱わず、未定義部分を期待値として固定しない（2026-10-25、BOA-1082、hitCalculator.js・verify-hit-calculator.js の KNOWN_GAPS）。
+- 展示タイムの当社取得は締切予定基準で中央値16.4分前、15分前まで77.7%、9分前まで99.95%。12Rは中央値20.4分前。取得間隔の遅れを含み、公式公開や展示航走の開始時刻を直接測った値ではない（2026-10-26、10/12〜25、docs/design/scraping-load-budget/analysis/freshness-need.md）。
+- 当日体重は朝の出走表には無く、調査期間の beforeinfo は締切60分前の最初の取得でそろった。race_entries.weight_kg と today_weight は98.9%一致するが同一保証は無く、調整重量は beforeinfo だけにある（2026-10-26、10/12〜25、docs/design/scraping-load-budget/analysis/freshness-need.md）。
+- 結果の取得は着順・払戻と決まり手を分けて見る。調査期間では締切予定10分後に着順・払戻99.7%、決まり手までそろうのは15分後75.1%・20分後95.7%・25分後99.1%。当社の取得時刻で、公式公開時刻の直接観測ではない（2026-10-26、docs/design/scraping-load-budget/analysis/freshness-need.md）。
+- 前検 rankingmotor の値は10/12〜25の同じ節の前日・翌日6,349組で全件一致した。毎日の再取得を減らす判断材料にできるが、公式仕様として不変を保証したものではない（2026-10-26、docs/design/scraping-load-budget/analysis/freshness-need.md）。
+- オリジナル展示の項目名は race_original_exhibition.item_labels を正とする。三国・津・鳴門は「一周・まわり足・直線」で、半周ラップがある前提を置かない（2026-10-26、PR #1910、10/20三国・10/21津・10/25鳴門の取得照合）。
+- race_start_timings は finish_mark='L' でも start_timing が残る行がある。Lを除く集計は数値の有無だけで判定せず、finish_mark も確認する（2026-10-25、data-accuracy-verifier、PR #1905、Lの31行中6行にSTあり）。
+- L・欠場の艇は actual_course が欠ける。確認したLの確定30行中12行、欠場505行すべてがNULLだった。コース別集計の欠落を認識し、コース不明を発生なしへ読み替えない（2026-10-25、data-accuracy-verifier、PR #1905）。
+- scrape_slots の日付列は race_date で、実際の取得日ではなく開催日への帰属。分析入力を target_date と呼ぶ場合はSQLで明示的に別名化する（2026-10-26、BOA-1148、075_scrape_slots_and_job_state.sql・daily-fetch-counts.js）。
+- 3連複・2連単・2連複・拡連複の保存列は race_odds の trio_all・exacta_all・quinella_all・wide_all、締切時は race_odds_final の同名列。2連単と2連複はodds2tf、単勝と複勝はoddstfの同じページで取得する（2026-10-27、PR #2017、065・108・scrape-odds.js）。
+- 拡連複のオッズは下限・上限の幅を持ち、払戻は3着以内の2艇の組で最大3組になる。単一値の券種と同じデータ形や的中1組だけの前提を置かない（2026-10-27、official-data-spec、docs/design/assist-bet-types/spec.md）。
+- オッズ検知遅延の平均試行間隔は、-60延長中の成功と期限後の後続窓での成功で計算分岐が違う。confirmedに絞るだけで既存監視と同値とせず、detectionLagOf の later_window も照合する（2026-10-26、BOA-465、scrapeJobs/expectedUnpublished.js）。
+- 龍神ソナーの empty_layer は類似レースの層が0件という意味で、当日の展示値が無い意味ではない。当日の展示の保存・読出しと、類似レースの並べ直しを分けて点検する（2026-10-27、BOA-796、analogyV16Exhibition.js・verify-analogy-v16-api.js）。
+- races.volatility_level は accuracy_cache.volatilityStats 経由で /accuracy が読み、standard予想の feature_contributions.racerStats はレース詳細が直読みする。旧予想が画面に出ないことを派生値の読み手ゼロとみなさない（2026-10-28、docs/design/legacy-prediction-cleanup/plan.md §1）。
+- 思考アシストの買い目は券種ごとに、race_odds_final があればその値、無ければその券種を持つ最新スナップショットを選ぶ。全券種へ同じ窓を一律に使わない（2026-10-27、BOA-990①、src/utils/assistModel.js の oddsByBetType）。
+- K/B取込の stage_kind のfinal判定は isFinalStage v2 を共用する。コード更新だけでは保存済み stage_kind は変わらず、既存行の再分類には退避・差分審査・承認を別に行う（2026-10-28、BOA-1181、kbArchiveRows.js・verify-kb-archive-stage.js）。
+- race_odds・race_odds_final の wide_all は各組が {low, high} の形で最大15通り。早い窓の-60・-30・-15分には14通りのレースもあり、列があることを全組充足とみなさない（2026-10-31、本番の直近3日照合、BOA-990③・PR #2061）。
+- race_results.course_1〜6 は実際の進入コースとして使わない。進入コースには actual_course_N を使う。照合49,036件中2,762件で値が違った（2026-10-31、data-accuracy-verifier、BOA-1189、docs/reference/venue-course-win-rate.md）。

@@ -83,3 +83,9 @@
 - 審査後に本文の見出しを直したら、記事設計のh2も更新し、出稿前に順序と文面を照合する。設計に古い結論を残したまま、本文の問いと根拠が対応していると判断しない（2026-10-23、seo-human、桐生記事のoutlineと本文h2の不一致への審査助言）
 - seo-measures.jsonの構文・kind・id検査とverify-seo-keyword-kpiの成功だけでは、施策の欠落を検知できない。出典台帳のPR集合とmaster入り日を照合し、各施策が月曜始まりの該当週へ配置されることも別に検証する（2026-10-23、BOA-906、Codex報告2026-10-23-boa-906.md、scripts/maintenance/verify-seo-keyword-kpi.js・scripts/analysis/search-console-report.js）
 - llms.txtのブログ一覧は、タイトルのMarkdownエスケープだけでなく、記事IDを括弧も含めURLの1区画として符号化し、説明の改行やリンク構造の混入も抑止する。特殊文字を含む入力で行・リンク構造を検証する（2026-10-23、BOA-920、Codex報告2026-10-23-boa-920.md、scripts/maintenance/verify-output-escape.js）
+- /today のボットHTMLは区分固有の emptyMessage を優先する。逃がしは保存行があっても2号艇の抽出後に0件になりうるので、行なしと全行3号艇を両方検査する（2026-10-24、BOA-1004、api/_lib/botToday.js・verify-bot-today-function.js）。
+- breadcrumbLd.js の isValidCrumbs は名前とURLの非空文字列だけを確認し、文字列の /undefined は通す。有効判定を未定義値混入の防止保証と扱わない（2026-10-24、BOA-1040、verify-breadcrumb-ld.js の KNOWN_GAPS）。
+- /venue/:venueCode は数字の文字列を整数化するため /venue/3 と /venue/03 は同じ会場を開く。ブログの内部リンクは既存記事に合わせ、先頭0なしの /venue/3 にそろえる（2026-10-25、seo-human、src/pages/VenueRaceListPage.jsx）。
+- 古い記事の改稿は数値だけでなく、用語の説明・会場例・閾値・選手名を含む主張を1文ずつデータか定義へ照合する。根拠の無い定性説明は数字の追加では直らないため、書き直すか外す（2026-10-31、seo-human、course-prediction-tips.md と venue-course-win-rate.json の照合）。
+- /race の状態別メタを変えるときは、共通メタ関数だけでなく人・ボットの両呼び出し元が状態を渡すか確認する。識別情報だけの引数のままでは状態別に切り替えられない（2026-10-31、BOA-1200、RaceDetailPage.jsx・api/_lib/botRace.js）。
+- 節ページは初日でも出走表と当日の節の日があれば、結果0件だけで preOpen にはならない。サイトマップ除外条件で「初日の結果待ち」とpreOpenを同一視しない（2026-10-31、BOA-1204、BOA-1187取込SHA ca2c9e2 の meetPageState 固定入力確認）。
