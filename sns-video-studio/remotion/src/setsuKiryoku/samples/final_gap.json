@@ -1,0 +1,203 @@
+{
+ "format": "setsu_kiryoku_short",
+ "date": "2026-11-01",
+ "variant": "final_gap",
+ "venue": "尼崎",
+ "grade": "SG",
+ "when": "today",
+ "as_of": "2026-10-31 12R まで",
+ "hero": {
+  "racer": "茅原 悠紀",
+  "class": "A1",
+  "motor": 20,
+  "motor_2rate": {
+   "value": 26.57,
+   "rank_from_bottom": 1,
+   "n": 52,
+   "all": [
+    26.57,
+    26.76,
+    26.9,
+    27.56,
+    28.08,
+    28.17,
+    28.26,
+    28.47,
+    28.66,
+    28.68,
+    28.78,
+    28.79,
+    29.05,
+    29.53,
+    30.08,
+    30.38,
+    30.71,
+    31.72,
+    31.72,
+    32.45,
+    32.48,
+    33.78,
+    33.99,
+    34.03,
+    34.62,
+    34.67,
+    35.71,
+    35.81,
+    36.42,
+    36.96,
+    37.09,
+    37.5,
+    37.66,
+    37.82,
+    38.51,
+    38.67,
+    39.07,
+    39.24,
+    40.27,
+    40.27,
+    40.54,
+    40.94,
+    41.3,
+    41.5,
+    42.96,
+    43.66,
+    45.07,
+    45.11,
+    46.21,
+    47.89,
+    50,
+    50.35
+   ]
+  },
+  "runs": [
+   {
+    "race": "27日12R",
+    "course": 5,
+    "rank": 2
+   },
+   {
+    "race": "28日2R",
+    "course": 2,
+    "rank": 2
+   },
+   {
+    "race": "28日8R",
+    "course": 3,
+    "rank": 1
+   },
+   {
+    "race": "29日8R",
+    "course": 6,
+    "rank": 3
+   },
+   {
+    "race": "30日3R",
+    "course": 4,
+    "rank": 1
+   },
+   {
+    "race": "30日12R",
+    "course": 1,
+    "rank": 3
+   },
+   {
+    "race": "31日11R",
+    "course": 4,
+    "rank": 1
+   }
+  ]
+ },
+ "six": [
+  {
+   "racer": "茅原 悠紀",
+   "class": "A1",
+   "motor": 20,
+   "motor_2rate": 26.57,
+   "rank_in_all": 52,
+   "wins": 3,
+   "runs_n": 7,
+   "avg_rank": 1.86
+  },
+  {
+   "racer": "島村 隆幸",
+   "class": "A1",
+   "motor": 1,
+   "motor_2rate": 33.78,
+   "rank_in_all": 31,
+   "wins": 2,
+   "runs_n": 7,
+   "avg_rank": 2.86
+  },
+  {
+   "racer": "小池 修平",
+   "class": "A1",
+   "motor": 15,
+   "motor_2rate": 33.99,
+   "rank_in_all": 30,
+   "wins": 2,
+   "runs_n": 6,
+   "avg_rank": 2.67
+  },
+  {
+   "racer": "山田 康二",
+   "class": "A1",
+   "motor": 2,
+   "motor_2rate": 34.67,
+   "rank_in_all": 27,
+   "wins": 3,
+   "runs_n": 7,
+   "avg_rank": 3.0
+  },
+  {
+   "racer": "吉田 拡郎",
+   "class": "A1",
+   "motor": 37,
+   "motor_2rate": 37.09,
+   "rank_in_all": 22,
+   "wins": 2,
+   "runs_n": 7,
+   "avg_rank": 2.0
+  },
+  {
+   "racer": "馬場 貴也",
+   "class": "A1",
+   "motor": 35,
+   "motor_2rate": 39.07,
+   "rank_in_all": 16,
+   "wins": 2,
+   "runs_n": 7,
+   "avg_rank": 1.86
+  }
+ ],
+ "texts": {
+  "hook": [
+   "2連率",
+   {
+    "text": "尼崎52機で 一番下",
+    "em": true
+   },
+   "そのモーターが",
+   {
+    "text": "優勝戦に",
+    "em": true
+   }
+  ],
+  "close": [
+   "信じるのは",
+   {
+    "text": "2連率？",
+    "em": true
+   },
+   {
+    "text": "今節の足？",
+    "em": true
+   },
+   "コメントで教えて"
+  ]
+ },
+ "youtube": {
+  "title": "2連率 尼崎52機で一番下のモーターが優勝戦に #ボートレース #Shorts",
+  "description": "尼崎の優勝戦に乗る 茅原 悠紀（A1、モーター20）。\n・2連率は 10/27 時点のこのモーターの過去の2連率（尼崎の全52機の中の位置）\n・展示タイムの順位は同じレースの6艇の中の順位（今節の予選と準優、同タイムは上の順位にそろえる）。展示タイムは体重・風でも変わる\n節の機力・展示のデータは龍神レーダーで\nhttps://www.boat-ai.jp/venue/13?utm_source=youtube&utm_medium=shorts&utm_content=final_gap\n#ボートレース"
+ },
+ "source_observed_at": "2026-11-01T08:00:00+09:00"
+}
