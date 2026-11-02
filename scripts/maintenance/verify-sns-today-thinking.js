@@ -20,6 +20,7 @@ import {
   THINKING_URL_REASON,
   todayTargetReason,
   isThinkingGradeDayRace,
+  thinkingGradeDayVenue,
 } from "../sns/push-finals-image.js";
 import { todayPicksOf } from "../sns/today-picks.js";
 import { createReadCurrent } from "../../api/_lib/snsClaimCheck.js";
@@ -228,6 +229,11 @@ const store = {
     assert.equal(date, DAY);
     return picks;
   },
+  twelfthRaces: (date) =>
+    all(
+      "SELECT race_id, race_grade, start_time::text, cancellation_status FROM races WHERE race_date=$1 AND race_number=12",
+      [date],
+    ),
   jobForDraft: (draftId) =>
     first(
       "SELECT id, state, error_code, posted_at, external_post_id, external_post_url FROM sns_x_send_jobs WHERE draft_id=$1",
@@ -767,35 +773,54 @@ test("/today の X 投稿の対象でないレース・その日の /today の�
   assert.deepEqual(await counts(), NOTHING);
 });
 
-test("グレードの日（hq の a2、オーナー 2026-10-31）: /today の対象でなくても SG・PG1・G1 の 10〜12R は受ける。9R・一般戦・/today が posted でない日ははじく", async () => {
+test("グレードの日（hq の a2、オーナー 2026-10-31・11-02 の (a)）: /today の対象の外でも、その日の格の最上位の場の 10〜12R だけ受ける。同じ格が2場なら 12R の締切が遅い方", async () => {
   // /today の X 投稿の対象は OTHER_RACE だけ（RACE は対象の外）
   const offPicks = () =>
     todayPicksOf(DAY, {
       ...TODAY_DRAFT,
       source_data: { digest: { date: DAY, picks: [{ race_id: OTHER_RACE }] } },
     });
-  // 一般戦だけの日: 11R でも対象の外ははじく（何も書かない）
+  // RACE の場（12）の 12R と、別の場（05）の 12R を置く
+  const OWN_12 = "2037-10-26-12-12";
+  const OTHER_12 = "2037-10-26-05-12";
+  const setDay = async ({ own, other, ownAt = "20:40", otherAt = "20:30" }) => {
+    await db.query("DELETE FROM races WHERE race_number=12");
+    await db.query(
+      "INSERT INTO races VALUES($1,$3,$4,NULL,$5,12),($2,$3,$6,NULL,$7,12)",
+      [OWN_12, OTHER_12, DAY, `${ownAt}:00`, own, `${otherAt}:00`, other],
+    );
+    await db.query(
+      "UPDATE races SET race_grade=$2, race_number=11 WHERE race_id=$1",
+      [RACE, own],
+    );
+  };
   picks = offPicks();
-  await db.query(
-    "UPDATE races SET race_grade='ippan', race_number=11 WHERE race_id=$1",
-    [RACE],
-  );
+  // 一般戦だけの日: 11R でも対象の外ははじく（何も書かない）
+  await setDay({ own: "ippan", other: "ippan" });
   let out = await push();
   assert.match(
     out.reasons.join(),
     /\/today の X 投稿の対象でない（2037-10-26-12-08）/,
   );
-  assert.match(out.reasons.join(), /race_grade=ippan・race_number=11/);
+  assert.match(out.reasons.join(), /SG・PG1・G1 の場が無い/);
+  assert.deepEqual(await counts(), NOTHING);
+  // SG と G1 が同じ日: G1 の場の 11R ははじく
+  await setDay({ own: "G1", other: "SG" });
+  out = await push();
+  assert.match(out.reasons.join(), /格の最上位の場（2037-10-26-05）/);
+  assert.deepEqual(await counts(), NOTHING);
+  // G1 が2場: 12R の締切が早い方の場ははじく
+  await setDay({ own: "G1", other: "G1", ownAt: "20:30", otherAt: "20:45" });
+  out = await push();
+  assert.match(out.reasons.join(), /格の最上位の場（2037-10-26-05）/);
   assert.deepEqual(await counts(), NOTHING);
   // SG の場の 9R ははじく
-  await db.query(
-    "UPDATE races SET race_grade='SG', race_number=9 WHERE race_id=$1",
-    [RACE],
-  );
+  await setDay({ own: "SG", other: "G1" });
+  await db.query("UPDATE races SET race_number=9 WHERE race_id=$1", [RACE]);
   out = await push();
-  assert.match(out.reasons.join(), /SG・PG1・G1 の 10〜12R でもない/);
+  assert.match(out.reasons.join(), /10〜12R でもない/);
   assert.deepEqual(await counts(), NOTHING);
-  // /today が posted でなければ SG の 11R でもはじく
+  // /today が posted でない・無い日は SG の 11R でもはじく
   await db.query("UPDATE races SET race_number=11 WHERE race_id=$1", [RACE]);
   picks = todayPicksOf(DAY, { ...TODAY_DRAFT, status: "approved" }, []);
   assert.match((await push()).reasons.join(), /まだ送られていない/);
@@ -810,42 +835,59 @@ test("グレードの日（hq の a2、オーナー 2026-10-31）: /today の対
   out = await push();
   assert.equal(out.reasons, undefined, JSON.stringify(out));
   assert.ok(out.job_id && out.poll_job_id);
-  // 純粋関数: SG・PG1・G1（大文字小文字は問わない）の 10〜12R だけ
-  const posted = { draft_id: "d", status: "posted", featured: null, list: [] };
-  for (const [race_grade, race_number, ok] of [
-    ["SG", 10, true],
-    ["SG", 12, true],
-    ["PG1", 11, true],
-    ["G1", 12, true],
-    ["g1", 10, true],
-    ["SG", 9, false],
-    ["G1", 13, false],
-    ["G2", 12, false],
-    ["G3", 12, false],
-    ["ippan", 12, false],
-    [null, 12, false],
-    ["SG", null, false],
-  ]) {
-    const race = { race_id: RACE, race_grade, race_number };
+
+  // 純粋関数: 受ける場
+  const r12 = (venue, race_grade, start_time, cancellation_status = null) => ({
+    race_id: `2037-10-26-${venue}-12`,
+    race_grade,
+    start_time: `${start_time}:00`,
+    cancellation_status,
+  });
+  for (const [twelves, venue] of [
+    [[r12("12", "SG", "20:40"), r12("05", "G1", "20:45")], "2037-10-26-12"],
+    [[r12("12", "G1", "20:40"), r12("05", "PG1", "20:30")], "2037-10-26-05"],
+    [[r12("12", "g1", "20:40"), r12("05", "G1", "20:45")], "2037-10-26-05"],
+    [[r12("12", "G1", "20:50"), r12("05", "G1", "20:45")], "2037-10-26-12"],
+    // 中止の 12R の場は数えない
+    [
+      [r12("12", "SG", "20:40", "confirmed"), r12("05", "G1", "20:45")],
+      "2037-10-26-05",
+    ],
+    [[r12("12", "G2", "20:40"), r12("05", "ippan", "20:45")], null],
+    [[r12("12", null, "20:40")], null],
+    [[], null],
+  ])
     assert.equal(
-      isThinkingGradeDayRace(race),
-      ok,
-      `${race_grade} ${race_number}`,
+      thinkingGradeDayVenue(twelves),
+      venue,
+      JSON.stringify(twelves),
     );
-    assert.equal(todayTargetReason(posted, RACE, race) === null, ok);
-    // posted でなければ、グレードの日でも通さない
+  // 純粋関数: 受ける場の 10〜12R だけ
+  const day = [r12("12", "SG", "20:40"), r12("05", "G1", "20:45")];
+  const posted = { draft_id: "d", status: "posted", featured: null, list: [] };
+  for (const [race_id, race_number, ok] of [
+    ["2037-10-26-12-10", 10, true],
+    ["2037-10-26-12-12", 12, true],
+    ["2037-10-26-12-09", 9, false],
+    ["2037-10-26-12-12", null, false],
+    ["2037-10-26-05-11", 11, false],
+  ]) {
+    const race = { race_id, race_grade: "SG", race_number };
+    assert.equal(isThinkingGradeDayRace(race, day), ok, race_id);
+    assert.equal(todayTargetReason(posted, race_id, race, day) === null, ok);
+    // posted でなければ、受ける場でも通さない
     assert.match(
-      todayTargetReason({ ...posted, status: "approved" }, RACE, race),
+      todayTargetReason({ ...posted, status: "approved" }, race_id, race, day),
       /まだ送られていない/,
     );
   }
   // 別のレースの行・行が無いときは通さず、行が無いと書く（race_id の取り違えを防ぐ）
   for (const race of [
-    { race_id: OTHER_RACE, race_grade: "SG", race_number: 11 },
+    { race_id: "2037-10-26-12-11", race_grade: "SG", race_number: 11 },
     null,
   ])
     assert.match(
-      todayTargetReason(posted, RACE, race),
+      todayTargetReason(posted, "2037-10-26-12-10", race, day),
       /races の行が無くグレードを確かめられない/,
     );
 });
