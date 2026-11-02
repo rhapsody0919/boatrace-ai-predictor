@@ -10,10 +10,10 @@
 |---|---|
 | 表・ビュー（写し） | 107 |
 | RPC（写しの関数） | 68 |
-| 読んだファイル | 1585 |
-| 読み書きのあるファイル | 259 |
-| 表の読み手（箇所） | 909 |
-| 表の書き手（箇所） | 186 |
+| 読んだファイル | 1588 |
+| 読み書きのあるファイル | 260 |
+| 表の読み手（箇所） | 932 |
+| 表の書き手（箇所） | 187 |
 | RPC の呼び手（箇所） | 50 |
 | 名前の文字列だけの箇所（呼ぶ経路は式） | 231 |
 | 読み手の見つからない表（RPC・ビュー経由・名前の文字列・外も無し。data_health_* の監視だけのものは含む） | 21 |
@@ -38,7 +38,7 @@
 | [bet_filters](#t-bet_filters) | table | service だけ | 0 | 0 |  |  |  |  |
 | [bet_recommendations](#t-bet_recommendations) | table | anon 可 | 5 | 4 | data_health_morning_freshness, data_health_nightly_freshness | update_prediction_results |  |  |
 | [daily_bet_summary](#t-daily_bet_summary) | table | service だけ | 0 | 0 |  |  |  |  |
-| [exhibition_data](#t-exhibition_data) | table | anon 可 | 47 | 3 | data_health_coverage, data_health_table_rows, get_predictions_by_date ほか3 |  | exhibition, race_info, races_init |  |
+| [exhibition_data](#t-exhibition_data) | table | anon 可 | 49 | 3 | data_health_coverage, data_health_table_rows, get_predictions_by_date ほか3 |  | exhibition, race_info, races_init |  |
 | [exhibition_time_top_stats](#t-exhibition_time_top_stats) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  |  |  |
 | [external_predictions](#t-external_predictions) | table | anon 可 | 2 | 1 | data_health_table_rows |  | pcexpect |  |
 | [fetch_counts](#t-fetch_counts) | table | service だけ | 0 | 0 | fetch_counts_daily | add_fetch_counts |  |  |
@@ -62,8 +62,8 @@
 | [poirot_predictions](#t-poirot_predictions) | table | anon 可 | 2 | 1 | data_health_morning_freshness |  |  |  |
 | [prediction_odds](#t-prediction_odds) | table | anon 可 | 4 | 2 | get_predictions_by_date, get_predictions_by_date_light |  | odds |  |
 | [predictions](#t-predictions) | table | anon 可 | 55 | 10 | get_accuracy_summary, get_admin_rule_performance, get_predictions_by_date ほか6 | update_prediction_results | exhibition, kfile_sync, race_info ほか4 | hq:platform/finals_sheet.py |
-| [race_conditions](#t-race_conditions) | table | anon 可 | 39 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか4 |  |
-| [race_entries](#t-race_entries) | table | anon 可 | 140 | 10 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
+| [race_conditions](#t-race_conditions) | table | anon 可 | 41 | 6 | data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields ほか5 |  | exhibition, kfile_sync, race_info ほか4 |  |
+| [race_entries](#t-race_entries) | table | anon 可 | 142 | 10 | compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats ほか16 |  | exhibition, race_info, races_init |  |
 | [race_history_cache](#t-race_history_cache) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
 | [race_notices_health](#t-race_notices_health) | table | service だけ | 2 | 1 |  |  | race_notices |  |
 | [race_odds](#t-race_odds) | table | anon 可 | 15 | 3 | data_health_coverage, data_health_table_rows |  | odds, odds_final |  |
@@ -86,22 +86,22 @@
 | [racer_period_stats](#t-racer_period_stats) | table | anon 可 | 8 | 0 | data_health_racer_period_stats, data_health_table_rows |  |  |  |
 | [racer_profiles](#t-racer_profiles) | table | anon 可 | 14 | 3 | data_health_table_rows |  | racer_profiles |  |
 | [racer_series_points](#t-racer_series_points) | table | anon 可 | 5 | 1 | data_health_nightly_freshness, data_health_table_rows |  | point_rank |  |
-| [races](#t-races) | table | anon 可 | 142 | 20 | claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course ほか24 |  | exhibition, kfile_sync, race_info ほか4 |  |
+| [races](#t-races) | table | anon 可 | 144 | 20 | claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course ほか24 |  | exhibition, kfile_sync, race_info ほか4 |  |
 | [raw_snapshots](#t-raw_snapshots) | table | service だけ | 0 | 1 |  |  | fan_period |  |
 | [rule_applications](#t-rule_applications) | table | service だけ | 1 | 2 |  |  |  |  |
 | [scrape_job_state](#t-scrape_job_state) | table | service だけ | 12 | 14 |  | scrape_breaker_open | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか41 |  |
 | [scrape_slots](#t-scrape_slots) | table | service だけ | 10 | 9 | claim_scrape_slots, claim_scrape_slots_by_offset | claim_scrape_slots, claim_scrape_slots_by_offset, ensure_scrape_slots | analogy_dispatch_morning, analogy_dispatch_train, analogy_v16_exhibition ほか41 |  |
 | [sns_approvers](#t-sns_approvers) | table | service だけ | 2 | 0 | approve_sns_x_send |  |  |  |
-| [sns_auto_send_control](#t-sns_auto_send_control) | table | service だけ | 12 | 0 | approve_sns_x_send, transition_sns_send_139, transition_sns_x_send |  |  |  |
+| [sns_auto_send_control](#t-sns_auto_send_control) | table | service だけ | 15 | 0 | approve_sns_x_send, transition_sns_send_139, transition_sns_x_send |  |  |  |
 | [sns_auto_send_incidents](#t-sns_auto_send_incidents) | table | service だけ | 0 | 0 |  |  |  |  |
-| [sns_auto_send_items](#t-sns_auto_send_items) | table | service だけ | 12 | 4 | approve_sns_x_send, sns_bundle_send_allowed, sns_x_slot_room ほか3 | stop_sns_auto_item, transition_sns_x_send | sns_auto_plan |  |
+| [sns_auto_send_items](#t-sns_auto_send_items) | table | service だけ | 16 | 4 | approve_sns_x_send, sns_bundle_send_allowed, sns_x_slot_room ほか3 | stop_sns_auto_item, transition_sns_x_send | sns_auto_plan |  |
 | [sns_bundle_imports](#t-sns_bundle_imports) | table | service だけ | 2 | 0 | guard_sns_preview_bundle_draft, import_sns_preview_bundle, sns_bundle_send_allowed | import_sns_preview_bundle |  |  |
 | [sns_campaign_entries](#t-sns_campaign_entries) | table | service だけ | 0 | 0 |  |  |  |  |
 | [sns_campaigns](#t-sns_campaigns) | table | service だけ | 0 | 0 |  |  |  |  |
 | [sns_channel_daily](#t-sns_channel_daily) | table | service だけ | 1 | 1 |  |  | sns_daily |  |
 | [sns_content_types](#t-sns_content_types) | table | service だけ | 0 | 0 |  |  |  |  |
 | [sns_draft_metrics](#t-sns_draft_metrics) | table | service だけ | 0 | 0 |  |  |  |  |
-| [sns_drafts](#t-sns_drafts) | table | service だけ | 32 | 5 | append_sns_metric_observation, approve_sns_x_send, enqueue_sns_metric_jobs ほか10 | approve_sns_x_send, import_sns_preview_bundle, save_sns_draft_diff ほか7 | sns_auto_plan, sns_daily, sns_metrics ほか1 |  |
+| [sns_drafts](#t-sns_drafts) | table | service だけ | 33 | 6 | append_sns_metric_observation, approve_sns_x_send, enqueue_sns_metric_jobs ほか10 | approve_sns_x_send, import_sns_preview_bundle, save_sns_draft_diff ほか7 | sns_auto_plan, sns_daily, sns_metrics ほか1 |  |
 | [sns_metric_jobs](#t-sns_metric_jobs) | table | service だけ | 3 | 2 |  | enqueue_sns_metric_jobs | sns_metrics |  |
 | [sns_metric_observations](#t-sns_metric_observations) | table | service だけ | 4 | 0 | append_sns_metric_observation | append_sns_metric_observation |  |  |
 | [sns_oauth_tokens](#t-sns_oauth_tokens) | table | service だけ | 1 | 4 |  |  | sns_metrics, sns_send |  |
@@ -115,11 +115,11 @@
 | [sns_topic_targets](#t-sns_topic_targets) | table | service だけ | 0 | 0 |  |  |  |  |
 | [sns_topics](#t-sns_topics) | table | service だけ | 0 | 0 |  |  |  |  |
 | [sns_x_kind_reserves](#t-sns_x_kind_reserves) | table | service だけ | 1 | 0 | sns_x_slot_room |  |  |  |
-| [sns_x_send_control](#t-sns_x_send_control) | table | service だけ | 5 | 1 | approve_sns_x_send, reserve_sns_x_read, roll_sns_x_send_period ほか3 | renew_sns_x_send_period, reserve_sns_x_read, roll_sns_send_baselines ほか2 | sns_auto_plan, sns_send |  |
-| [sns_x_send_jobs](#t-sns_x_send_jobs) | table | service だけ | 21 | 0 | approve_sns_x_send, guard_sns_diff_approval, guard_sns_preview_bundle_draft ほか5 | approve_sns_x_send, guard_sns_x_approval, sweep_sns_deadline_queue ほか2 |  |  |
-| [sns_youtube_quota_attempts](#t-sns_youtube_quota_attempts) | table | service だけ | 0 | 0 | transition_sns_x_send | transition_sns_x_send |  |  |
-| [sns_youtube_quota_control](#t-sns_youtube_quota_control) | table | service だけ | 0 | 0 | transition_sns_x_send | roll_sns_send_baselines |  |  |
-| [sns_youtube_quota_reads](#t-sns_youtube_quota_reads) | table | service だけ | 0 | 0 | transition_sns_x_send | transition_sns_x_send |  |  |
+| [sns_x_send_control](#t-sns_x_send_control) | table | service だけ | 6 | 1 | approve_sns_x_send, reserve_sns_x_read, roll_sns_x_send_period ほか3 | renew_sns_x_send_period, reserve_sns_x_read, roll_sns_send_baselines ほか2 | sns_auto_plan, sns_send |  |
+| [sns_x_send_jobs](#t-sns_x_send_jobs) | table | service だけ | 24 | 0 | approve_sns_x_send, guard_sns_diff_approval, guard_sns_preview_bundle_draft ほか5 | approve_sns_x_send, guard_sns_x_approval, sweep_sns_deadline_queue ほか2 |  |  |
+| [sns_youtube_quota_attempts](#t-sns_youtube_quota_attempts) | table | service だけ | 1 | 0 | transition_sns_x_send | transition_sns_x_send |  |  |
+| [sns_youtube_quota_control](#t-sns_youtube_quota_control) | table | service だけ | 1 | 0 | transition_sns_x_send | roll_sns_send_baselines |  |  |
+| [sns_youtube_quota_reads](#t-sns_youtube_quota_reads) | table | service だけ | 1 | 0 | transition_sns_x_send | transition_sns_x_send |  |  |
 | [st_course_baseline](#t-st_course_baseline) | table | anon 可 | 2 | 1 | data_health_nightly_freshness |  |  |  |
 | [top_start_stats](#t-top_start_stats) | table | anon 可 | 1 | 2 | data_health_nightly_freshness |  |  |  |
 | [user_visible_summary](#t-user_visible_summary) | table | anon 可 | 0 | 0 | view:v_performance_comparison |  |  |  |
@@ -256,10 +256,10 @@
 | result_catchup | api/cron/result-catchup.js | 32 | predictions, race_conditions, race_payouts, race_results, race_start_timings, races, scrape_job_state, scrape_slots |
 | scrape-cleanup | api/cron/scrape-cleanup.js | 17 | scrape_job_state, scrape_slots |
 | scrape-monitor | api/cron/scrape-monitor.js | 18 | scrape_job_state, scrape_slots |
-| sns_auto_plan | api/cron/sns-auto-plan.js | 70 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_auto_plan | api/cron/sns-auto-plan.js | 71 | scrape_job_state, scrape_slots, sns_auto_send_items, sns_drafts, sns_post_tracking, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | sns_daily | api/cron/sns-daily.js | 19 | scrape_job_state, scrape_slots, sns_channel_daily, sns_drafts, sns_strategy_insights |
 | sns_metrics | api/cron/sns-metrics.js | 24 | scrape_job_state, scrape_slots, sns_drafts, sns_metric_jobs, sns_oauth_tokens, sns_strategy_insights |
-| sns_send | api/cron/sns-send.js | 61 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
+| sns_send | api/cron/sns-send.js | 62 | scrape_job_state, scrape_slots, sns_drafts, sns_oauth_tokens, sns_send_events, sns_strategy_insights, sns_x_send_control |
 | venue_motor_stats | api/cron/venue-motor-stats.js | 25 | scrape_job_state, scrape_slots, venue_motor_stats |
 
 ## 表ごとの読み手・書き手
@@ -376,13 +376,14 @@
 - 本体で読む RPC: data_health_coverage, data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light, get_race_exhibition_trend, get_race_st_predictability
 - 取得のジョブ: exhibition, race_info, races_init
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:8`, `scripts/maintenance/backfill-kb-gaps.js:82`, `scripts/maintenance/delete-phantom-races.js:86`, `scripts/maintenance/fix-opening-day-race-id-date.js:72`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:45`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（47）: 
+- 読み手（49）: 
   - `api/_lib/analogyV16.js:103` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:192` rest(rest) [boat_number, exhibition_time, is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:218` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:249` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:336` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:380` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:222` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:253` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:340` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:414` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:439` rest(rest) [is_absent, race_id]
   - `api/_lib/snsTodayDigest.js:54` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/analysis/original-exhibition/fetch.mjs:59` select(helper:all)
   - `scripts/analysis/train-conditional-logit.js:90` select(helper:fetchAll)
@@ -405,6 +406,7 @@
   - `scripts/maintenance/verify-analogy-v16.js:286` rest(rest) [boat_number, exhibition_time, is_absent, race_id] （検査）
   - `scripts/ml/export-inference-data.js:115` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:79` select(helper:fetchAll)
+  - `scripts/sns/push-setsu-kiryoku-short.js:969` rest(rest) [is_absent, race_id]
   - `src/services/racerService.js:174` select [boat_number, exhibition_time, parts_changed, propeller_change, race_id]
   - `src/services/sherlockService.js:83` select [boat_number, exhibition_time, race_id, start_timing]
   - `src/services/supabaseDataService.js:468` select [boat_number, race_id, start_flag]
@@ -760,9 +762,10 @@
 - 本体で読む RPC: data_health_coverage, data_health_nightly_freshness, data_health_pre_race_fields, data_health_table_rows, get_predictions_by_date, get_predictions_by_date_light, get_racer_accident_records, get_today_races
 - 取得のジョブ: exhibition, kfile_sync, race_info, race_status, races_init, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:75`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:9`, `scripts/maintenance/delete-phantom-races.js:87`, `scripts/maintenance/fix-opening-day-race-id-date.js:70`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:43`
-- 読み手（39）: 
+- 読み手（41）: 
   - `api/_lib/racerEntryExhibition.js:173` rest(rest) [is_final_day, race_id, series_day]
-  - `api/_lib/snsClaimCheck.js:250` rest(rest) [race_id, race_stage]
+  - `api/_lib/snsClaimCheck.js:254` rest(rest) [race_id, race_stage]
+  - `api/_lib/snsClaimCheck.js:407` rest(rest) [race_id, race_stage]
   - `api/admin/sns-hub/send-probe.js:66` rest(rest) [race_id, race_stage]
   - `scripts/analysis/backtest-unified-model-place-trifecta.js:101` select [race_id, wave_height, wind_speed]
   - `scripts/analysis/backtest-unified-model.js:116` select [race_id, wave_height, wind_speed]
@@ -791,6 +794,7 @@
   - `scripts/ml/export-inference-data.js:119` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:83` select(helper:fetchAll)
   - `scripts/sns/push-finals-image.js:1242` rest(rest) [race_id, race_stage]
+  - `scripts/sns/push-setsu-kiryoku-short.js:962` rest(rest) [race_id, race_stage]
   - `scripts/verification/verify-series-points-border.mjs:79` select [race_id, race_stage]
   - `scripts/verification/verify-series-points-needed.mjs:74` select [race_id, race_stage]
   - `scripts/verification/verify-series-points-official.mjs:155` select [is_final_day, race_id, race_stage]
@@ -817,13 +821,14 @@
 - 取得のジョブ: exhibition, race_info, races_init
 - 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: name
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:77`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:7`, `scripts/maintenance/backfill-kb-gaps.js:81`, `scripts/maintenance/delete-phantom-races.js:88`, `scripts/maintenance/fix-opening-day-race-id-date.js:66`, `scripts/maintenance/fix-tsu-2025-12-02-date.js:39`, `scripts/ml/analogy/v16_morning.py:292`
-- 読み手（140）: 
+- 読み手（142）: 
   - `api/_lib/analogyV16.js:105` rest(rest) [boat_number, is_absent, race_id]
   - `api/_lib/racerEntryExhibition.js:171` rest(rest) [boat_number, race_id, racer_id]
-  - `api/_lib/snsClaimCheck.js:217` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:248` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:335` rest(rest) [is_absent, race_id]
-  - `api/_lib/snsClaimCheck.js:379` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:221` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:252` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:339` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:413` rest(rest) [is_absent, race_id]
+  - `api/_lib/snsClaimCheck.js:438` rest(rest) [is_absent, race_id]
   - `api/_lib/snsTodayDigest.js:52` rest(rest) [boat_number, is_absent, race_id]
   - `scripts/analysis/aggregate-racer-stats.js:569` select [racer_id]
   - `scripts/analysis/analyze-indicator-predictive-power.js:148` select [boat_number, local_win_rate, motor_2rate, race_id, racer_id, win_rate]
@@ -909,6 +914,7 @@
   - `scripts/maintenance/verify-pretest-row-pick.js:93` select(embed) [racer_id] （検査）
   - `scripts/ml/export-inference-data.js:111` select(helper:fetchByRaceIds)
   - `scripts/ml/export-training-data.js:75` select(helper:fetchAll)
+  - `scripts/sns/push-setsu-kiryoku-short.js:968` rest(rest) [is_absent, race_id]
   - `scripts/verification/verify-series-points-border.mjs:47` select [boat_number, player_name, race_id, racer_id]
   - `scripts/verification/verify-series-points-needed.mjs:41` select [boat_number, player_name, race_id, racer_id]
   - `scripts/verification/verify-series-points-official.mjs:146` select [boat_number, player_name, race_id, racer_id]
@@ -1467,13 +1473,14 @@
 - 本体で読む RPC: claim_scrape_slots, claim_scrape_slots_by_offset, compute_nige_second_by_course, compute_racer_course_technique_stats, compute_st_course_baseline, compute_today_course_win_stats, compute_venue_course_entry_baseline, compute_venue_course_technique_baseline, data_health_cancellation_with_result, data_health_coverage, data_health_entries_duplicates, data_health_monthly_result, data_health_morning_freshness, data_health_nightly_freshness, data_health_pit_reports, data_health_pre_race_fields, data_health_race_series, data_health_racer_period_stats, data_health_table_rows, ensure_scrape_slots, get_predictions_by_date, get_predictions_by_date_light, get_race_history_summary, get_today_races, update_venue_stats
 - 取得のジョブ: exhibition, kfile_sync, race_info, race_status, races_init, result, result_catchup
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/analysis/analogy-finder-fr2-holdout.py:340`, `scripts/analysis/analogy-finder-fr2-strat/features_prod.py:169`, `scripts/analysis/analogy-finder-fr2-strat/features_prod.py:348`, `scripts/analysis/analogy-finder-fr2-strat/features_prod.py:354`, `scripts/analysis/analogy-finder-phase-m/build_dataset.py:127`, `scripts/analysis/analogy-finder-phase-m/build_dataset.py:280`, `scripts/analysis/analogy-finder-phase-m/build_dataset.py:294`, `scripts/analysis/analogy-finder-phase-m/md3_odds.py:94`, `scripts/analysis/analogy-finder-phase-m/md3_odds_v2.py:235`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule.py:263`, `scripts/analysis/analogy-finder-t1/t1_1_stage_rule_fetch.mjs:74`, `scripts/analysis/analogy-finder-t1/t1_2_series_runs.py:133`, `scripts/analysis/analogy-finder-t1/t1_2_series_runs.py:157`, `scripts/analysis/analogy-finder-t1/t1_2_series_runs.py:159`, `scripts/analysis/analogy-finder-t1/t1_4_hint_threshold.py:108`, `scripts/analysis/analogy-finder-t1/t1_5_boat1_exhibition.py:112`, `scripts/analysis/analogy-finder-t1/t1_5_boat1_exhibition.py:173`, `scripts/analysis/analogy-finder-t1/t1_5_boat1_exhibition.py:198`, `scripts/analysis/analogy-finder-v16/t2_4_rerank_agreement.py:88`, `scripts/analysis/boa845-axis-place/build_pool.py:47`, `scripts/analysis/boa845-axis-place/common.py:98`, `scripts/analysis/boa845-axis-place/common.py:105`, `scripts/analysis/boa845-axis-place/common.py:110`, `scripts/analysis/boa845-axis-place/display.py:58`, `scripts/analysis/boa845-axis-place/mark_rule.py:82`, `scripts/analysis/boa845-axis-place/today_counts.py:42`, `scripts/analysis/in-collapse-caution/round1/fetch_delta.mjs:6`, `scripts/analysis/in-collapse-caution/round2/c2_rebuild.py:25`, `scripts/analysis/in-collapse-caution/round3/c2_round3.py:29`, `scripts/analysis/in-collapse-caution/round4/sparse_cells.py:29`, `scripts/analysis/in-collapse-caution/round4/sparse_cells.py:56`, `scripts/analysis/original-exhibition/analyze.py:87`, `scripts/analysis/original-exhibition/analyze.py:92`, `scripts/analysis/original-exhibition/analyze.py:93`, `scripts/analysis/original-exhibition/analyze.py:105`, `scripts/analysis/original-exhibition/analyze2.py:11`, `scripts/analysis/original-exhibition/analyze4.py:86`, `scripts/analysis/original-exhibition/analyze4.py:100`, `scripts/analysis/original-exhibition/analyze4.py:141`, `scripts/analysis/original-exhibition/analyze4.py:152`, `scripts/analysis/original-exhibition/analyze4.py:165`, `scripts/analysis/original-exhibition/build.py:6`, `scripts/analysis/original-exhibition/forecast-slit.py:24`, `scripts/analysis/original-exhibition/forecast-slit.py:27`, `scripts/analysis/past-rate-check/label-threshold.py:142`, `scripts/analysis/past-rate-check/label-threshold.py:443`, `scripts/analysis/past-rate-check/slit-pattern-rates.py:76`, `scripts/analysis/past-rate-check/slit-pattern-rates.py:90`, `scripts/maintenance/delete-phantom-races.js:89`, `scripts/ml/analogy/features.py:303`, `scripts/ml/analogy/features.py:540`, `scripts/ml/analogy/features.py:546`, `scripts/ml/analogy/make_treeshap_testdata.py:219`, `scripts/ml/analogy/perrace.py:159`, `scripts/ml/analogy/tests/test_in_caution_bands.py:100`, `scripts/ml/analogy/tests/test_perrace.py:110`, `scripts/ml/analogy/tests/test_v16_pool.py:107`, `scripts/ml/analogy/tests/test_v16_scenario.py:56`, `scripts/ml/analogy/tests/test_v16_scenario.py:59`, `scripts/ml/analogy/tests/test_v16_scenario.py:64`, `scripts/ml/analogy/v16_history.py:53`, `scripts/ml/analogy/v16_morning.py:289`, `scripts/ml/analogy/v16_morning.py:373`, `scripts/ml/analogy/v16_pool.py:74`, `scripts/ml/analogy/v16_scenario.py:69`
-- 読み手（142）: 
+- 読み手（144）: 
   - `api/_lib/analogyV16.js:101` rest(rest) [race_date, race_id, start_time, venue_code]
   - `api/_lib/racerEntryExhibition.js:196` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:215` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:246` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:333` rest(rest) [cancellation_status, race_date, race_id, start_time]
-  - `api/_lib/snsClaimCheck.js:377` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:219` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:250` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:337` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `api/_lib/snsClaimCheck.js:412` rest(rest) [cancellation_status, race_id]
+  - `api/_lib/snsClaimCheck.js:436` rest(rest) [cancellation_status, race_date, race_id, start_time]
   - `api/_lib/snsTodayDigest.js:50` rest(rest) [cancellation_status, race_id, start_time]
   - `scripts/analysis/analyze-upset-factors.js:108` select [first_boat_motor_2rate, first_boat_win_rate, motor_2rate_stddev, race_date, race_id, venue_code, volatility_level, volatility_score, win_rate_stddev]
   - `scripts/analysis/backtest-unified-model-place-trifecta.js:94` select [race_id, venue_code]
@@ -1590,6 +1597,7 @@
   - `scripts/sns/push-finals-image.js:1232` rest(rest) [cancellation_status, race_date, race_grade, race_id, race_number, start_time]
   - `scripts/sns/push-finals-image.js:1238` rest(rest) [race_date, race_grade, race_id, race_number, start_time]
   - `scripts/sns/push-full-picture.js:839` rest(rest) [cancellation_status, race_date, race_id, start_time]
+  - `scripts/sns/push-setsu-kiryoku-short.js:967` rest(rest) [cancellation_status, race_id]
   - `scripts/sns/today-picks.js:83` rest(rest) [cancellation_status, race_date, race_id, start_time]
   - `src/services/mycroftService.js:78` select [race_date, race_id, race_number, start_time, venue_code]
   - `src/services/poirotService.js:48` select [race_date, race_id, race_number, start_time, venue_code]
@@ -1730,11 +1738,12 @@
 
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: approve_sns_x_send, transition_sns_send_139, transition_sns_x_send
-- 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: today_thinking_enabled
-- 読み手（12）: 
-  - `api/_lib/snsClaimCheck.js:254` rest(rest) [channel, finals_image_enabled]
-  - `api/_lib/snsClaimCheck.js:284` rest(rest) [channel, research_image_enabled]
-  - `api/_lib/snsClaimCheck.js:344` rest(rest) [channel, today_thinking_enabled]
+- 写しに無い列の名前（埋め込みの別名・JSON のキー・誤りのどれか）: setsu_kiryoku_short_enabled, today_thinking_enabled
+- 読み手（15）: 
+  - `api/_lib/snsClaimCheck.js:258` rest(rest) [channel, finals_image_enabled]
+  - `api/_lib/snsClaimCheck.js:288` rest(rest) [channel, research_image_enabled]
+  - `api/_lib/snsClaimCheck.js:348` rest(rest) [channel, today_thinking_enabled]
+  - `api/_lib/snsClaimCheck.js:395` rest(rest) [channel, setsu_kiryoku_short_enabled]
   - `api/_lib/snsXSendStore.js:151` rest(rest) [channel, dry_run, mode]
   - `scripts/lib/snsAutoPlanRunner.js:719` rest(rest) [auto_approver_id, channel, dry_run, mode]
   - `scripts/lib/snsSendRunner.js:584` rest(rest) [channel, dry_run, mode]
@@ -1744,6 +1753,8 @@
   - `scripts/sns/push-full-picture.js:846` rest(rest) [auto_approver_id, channel, dry_run, mode]
   - `scripts/sns/push-research-image.js:543` rest(rest) [auto_approver_id, channel, dry_run, mode, research_image_enabled]
   - `scripts/sns/push-research-image.js:551` rest(rest) [auto_approver_id, channel, dry_run, mode]
+  - `scripts/sns/push-setsu-kiryoku-short.js:887` rest(rest) [auto_approver_id, channel, dry_run, mode, setsu_kiryoku_short_enabled]
+  - `scripts/sns/push-setsu-kiryoku-short.js:900` rest(rest) [auto_approver_id, channel, dry_run, mode]
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -1761,12 +1772,14 @@
 - 本体で書く RPC: stop_sns_auto_item, transition_sns_x_send
 - 取得のジョブ: sns_auto_plan
 - 名前の文字列（`.from(式)` 等の先で読む・書く見込み）: `scripts/lib/snsAutoPlanRunner.js:770`
-- 読み手（12）: 
-  - `api/_lib/snsClaimCheck.js:252` rest(rest) [id, kind, race_id, state, variant]
-  - `api/_lib/snsClaimCheck.js:280` rest(rest) [draft_id, kind, race_id]
-  - `api/_lib/snsClaimCheck.js:282` rest(rest) [channel, id, kind, race_id, state]
-  - `api/_lib/snsClaimCheck.js:338` rest(rest) [draft_id, kind, race_id, variant]
-  - `api/_lib/snsClaimCheck.js:341` rest(rest) [id, kind, race_id, state, variant]
+- 読み手（16）: 
+  - `api/_lib/snsClaimCheck.js:256` rest(rest) [id, kind, race_id, state, variant]
+  - `api/_lib/snsClaimCheck.js:284` rest(rest) [draft_id, kind, race_id]
+  - `api/_lib/snsClaimCheck.js:286` rest(rest) [channel, id, kind, race_id, state]
+  - `api/_lib/snsClaimCheck.js:342` rest(rest) [draft_id, kind, race_id, variant]
+  - `api/_lib/snsClaimCheck.js:345` rest(rest) [id, kind, race_id, state, variant]
+  - `api/_lib/snsClaimCheck.js:390` rest(rest) [draft_id, kind, race_id]
+  - `api/_lib/snsClaimCheck.js:392` rest(rest) [channel, id, kind, race_id, state]
   - `scripts/lib/snsAutoPlanRunner.js:750` rest(rest) [*, race_id]
   - `scripts/lib/snsTodayPlanner.js:1105` rest(rest) [draft_id, id, kind, race_id, state]
   - `scripts/maintenance/verify-sns-auto-plan.js:621` rest(rest) [id, state] （検査）
@@ -1774,6 +1787,8 @@
   - `scripts/sns/push-finals-image.js:1247` rest(rest) [created_at, draft_id, id, kind, race_id, state, variant]
   - `scripts/sns/push-full-picture.js:889` rest(rest) [channel, deadline_at, draft_id, id, kind, race_id, state, variant]
   - `scripts/sns/push-research-image.js:536` rest(rest) [channel, created_at, draft_id, held_reason, id, kind, race_id, state]
+  - `scripts/sns/push-setsu-kiryoku-short.js:913` rest(rest) [channel, created_at, draft_id, held_reason, id, kind, race_id, state]
+  - `scripts/sns/push-setsu-kiryoku-short.js:922` rest(rest) [draft_id, id, race_id, state]
 - 書き手（4）: 
   - `scripts/lib/snsAutoPlanRunner.js:775` update(rest) [?]
   - `scripts/lib/snsTodayPlanner.js:1169` update(rest) [?]
@@ -1787,7 +1802,7 @@
 - 本体で読む RPC: guard_sns_preview_bundle_draft, import_sns_preview_bundle, sns_bundle_send_allowed
 - 本体で書く RPC: import_sns_preview_bundle
 - 読み手（2）: 
-  - `api/_lib/snsClaimCheck.js:191` select(embed) [bundle, schema_version]
+  - `api/_lib/snsClaimCheck.js:195` select(embed) [bundle, schema_version]
   - `scripts/lib/snsAutoPlanRunner.js:729` rest(rest) [bundle, created_at, id, qa, schema_version]
 - 書き手（0）: なし
 
@@ -1836,9 +1851,9 @@
 - 本体で読む RPC: append_sns_metric_observation, approve_sns_x_send, enqueue_sns_metric_jobs, guard_sns_preview_bundle_draft, import_sns_preview_bundle, read_sns_draft_diff, save_sns_draft_diff, sns_claim_external, sns_finish_external, sns_x_slot_room, stop_sns_auto_item, transition_sns_send_139, transition_sns_x_send
 - 本体で書く RPC: approve_sns_x_send, import_sns_preview_bundle, save_sns_draft_diff, sns_claim_external, sns_finish_external, sns_record_external, sns_update_external_warning, stop_sns_auto_item, transition_sns_send_139, transition_sns_x_send
 - 取得のジョブ: sns_auto_plan, sns_daily, sns_metrics, sns_send
-- 読み手（32）: 
-  - `api/_lib/snsClaimCheck.js:191` rest(rest) [bundle_import_id, id, source_data]
-  - `api/_lib/snsClaimCheck.js:286` rest(rest) [caption_text, cover_image_path, hashtags, id, platform, video_storage_path]
+- 読み手（33）: 
+  - `api/_lib/snsClaimCheck.js:195` rest(rest) [bundle_import_id, id, source_data]
+  - `api/_lib/snsClaimCheck.js:290` rest(rest) [caption_text, cover_image_path, hashtags, id, platform, video_storage_path]
   - `api/_lib/snsHubHelpers.js:119` select(rest) [*, id]
   - `api/_lib/snsXSendStore.js:72` rest(rest) [format, id, platform, posted_at, scheduled_at, source_data, status, title]
   - `api/admin/sns-hub/drafts/index.js:43` select(rest) [*]
@@ -1868,13 +1883,15 @@
   - `scripts/maintenance/verify-sns-today-plan.js:747` rest(rest) [id, status] （検査）
   - `scripts/sns/push-finals-image.js:1292` select(embed) [bundle_import_id]
   - `scripts/sns/push-full-picture.js:895` rest(rest) [id, source_data]
+  - `scripts/sns/push-setsu-kiryoku-short.js:918` rest(rest) [format, id]
   - `scripts/sns/today-picks.js:75` rest(rest) [caption_text, format, id, send_lane, source_data, status]
-- 書き手（5）: 
+- 書き手（6）: 
   - `api/_lib/snsHubHelpers.js:136` update(rest) [?]
   - `scripts/lib/snsAutoPlanRunner.js:785` update(rest) [?]
   - `scripts/lib/snsTodayPlanner.js:1146` update(rest) [?]
   - `scripts/sns/push-finals-image.js:1332` update(rest) [?]
   - `scripts/sns/push-full-picture.js:918` update(rest) [?]
+  - `scripts/sns/push-setsu-kiryoku-short.js:876` update(rest) [?]
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
 ### <a id="t-sns_metric_jobs"></a>sns_metric_jobs
@@ -2010,11 +2027,12 @@
 - 本体で読む RPC: approve_sns_x_send, reserve_sns_x_read, roll_sns_x_send_period, sns_x_slot_room, transition_sns_send_139, transition_sns_x_send
 - 本体で書く RPC: renew_sns_x_send_period, reserve_sns_x_read, roll_sns_send_baselines, roll_sns_x_send_period, transition_sns_send_139
 - 取得のジョブ: sns_auto_plan, sns_send
-- 読み手（5）: 
+- 読み手（6）: 
   - `api/_lib/snsXSendStore.js:139` rest(rest) [budget_microusd, id, paused, reserved_microusd]
   - `api/_lib/snsXSendStore.js:149` rest(rest) [id, paused]
   - `scripts/lib/snsMetricsRunner.js:526` rest(rest) [*, id]
   - `scripts/sns/push-finals-image.js:1276` rest(rest) [daily_baseline_date, daily_external_count, daily_limit, daily_limit_x, id]
+  - `scripts/sns/push-setsu-kiryoku-short.js:908` rest(rest) [daily_baseline_date, daily_external_count, daily_limit, daily_limit_youtube, expiry_minutes, id, max_source_age_seconds]
   - `scripts/sns/x-slots-check.js:158` rest(rest) [daily_limit_x]
 - 書き手（1）: 
   - `api/_lib/snsXSendStore.js:156` update(rest) [?]
@@ -2025,7 +2043,7 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: approve_sns_x_send, guard_sns_diff_approval, guard_sns_preview_bundle_draft, guard_sns_x_approval, sns_x_slot_room, stop_sns_auto_item, transition_sns_send_139, transition_sns_x_send
 - 本体で書く RPC: approve_sns_x_send, guard_sns_x_approval, sweep_sns_deadline_queue, transition_sns_send_139, transition_sns_x_send
-- 読み手（21）: 
+- 読み手（24）: 
   - `api/_lib/snsXSendStore.js:59` rest(rest) [external_post_id, id, state]
   - `api/_lib/snsXSendStore.js:69` rest(rest) [draft_id, error_code, expires_at, external_post_id, id, posted_at, scheduled_at, snapshot, state, youtube_stage]
   - `api/_lib/snsXSendStore.js:136` rest(rest) [attempts, draft_id, error_code, expires_at, external_post_url, id, posted_at, scheduled_at, state]
@@ -2047,6 +2065,9 @@
   - `scripts/sns/push-finals-image.js:1301` rest(rest) [draft_id, error_code, external_post_id, external_post_url, id, posted_at, state]
   - `scripts/sns/push-full-picture.js:898` rest(rest) [attempts, draft_id, id, state]
   - `scripts/sns/push-research-image.js:562` rest(rest) [draft_id, error_code, expires_at, external_post_id, external_post_url, id, posted_at, scheduled_at, state]
+  - `scripts/sns/push-setsu-kiryoku-short.js:927` rest(rest) [draft_id, error_code, expires_at, external_post_id, external_post_url, id, posted_at, scheduled_at, state]
+  - `scripts/sns/push-setsu-kiryoku-short.js:931` rest(rest) [attempt_channels, attempt_dates, id, state]
+  - `scripts/sns/push-setsu-kiryoku-short.js:936` rest(rest) [attempts, channel, draft_id, expires_at, id, scheduled_at, state]
 - 書き手（0）: なし
 - 列: 列の分からない読み手（`select("*")`・部品の呼び出し・名前の文字列・列を書いていない外の読み手）があるので、名指しの無い列も読まれうる
 
@@ -2055,7 +2076,8 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: transition_sns_x_send
 - 本体で書く RPC: transition_sns_x_send
-- 読み手（0）: なし
+- 読み手（1）: 
+  - `scripts/sns/push-setsu-kiryoku-short.js:948` rest(rest) [general_reserved, quota_day, upload_reserved]
 - 書き手（0）: なし
 
 ### <a id="t-sns_youtube_quota_control"></a>sns_youtube_quota_control
@@ -2063,7 +2085,8 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: transition_sns_x_send
 - 本体で書く RPC: roll_sns_send_baselines
-- 読み手（0）: なし
+- 読み手（1）: 
+  - `scripts/sns/push-setsu-kiryoku-short.js:941` rest(rest) [baseline_day, external_general, external_uploads, general_limit, id, upload_limit, verified]
 - 書き手（0）: なし
 
 ### <a id="t-sns_youtube_quota_reads"></a>sns_youtube_quota_reads
@@ -2071,7 +2094,8 @@
 - 権限: service だけ（anon: なし / authenticated: なし、RLS 有効）
 - 本体で読む RPC: transition_sns_x_send
 - 本体で書く RPC: transition_sns_x_send
-- 読み手（0）: なし
+- 読み手（1）: 
+  - `scripts/sns/push-setsu-kiryoku-short.js:950` rest(rest) [quota_day, units]
 - 書き手（0）: なし
 
 ### <a id="t-st_course_baseline"></a>st_course_baseline
