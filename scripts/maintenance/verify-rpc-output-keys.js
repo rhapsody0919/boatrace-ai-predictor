@@ -66,9 +66,7 @@ const PREDICTION_NESTED_CHECKS = [
       "motor2Rate",
       "boatNumber",
       "boat2Rate",
-      "aiScoreStandard",
-      "aiScoreSafeBet",
-      "aiScoreUpsetFocus",
+      // aiScoreStandard・aiScoreSafeBet・aiScoreUpsetFocus は 196 で外した（下の MIGRATION_196_REMOVED_KEYS）
     ],
   },
   {
@@ -88,23 +86,6 @@ const PREDICTION_NESTED_CHECKS = [
   {
     path: "exhibitionData", // 008
     keys: ["boatNumber", "exhibitionTime", "startTiming"],
-  },
-  {
-    path: "predictionOdds", // 011・019
-    keys: [
-      "trifectaPredStandard",
-      "trifectaOddsStandard",
-      "trioPredStandard",
-      "trioOddsStandard",
-      "trifectaPredSafeBet",
-      "trifectaOddsSafeBet",
-      "trioPredSafeBet",
-      "trioOddsSafeBet",
-      "trifectaPredUpsetFocus",
-      "trifectaOddsUpsetFocus",
-      "trioPredUpsetFocus",
-      "trioOddsUpsetFocus",
-    ],
   },
   {
     path: "result", // 051（全着順・払戻・人気）
@@ -204,6 +185,52 @@ const MIGRATION_110_TODAY_RACE_KEYS = ["result"];
 // 157（BOA-822）: レース直下の inCaution（unified の feature_contributions.inCaution をそのまま。無ければ null）。
 // get_predictions_by_date / _light / get_today_races の3関数。台帳で 157 が「適用済み」になるまでは欠落を WARN にとどめる
 const MIGRATION_157_IN_CAUTION_KEYS = ["inCaution"];
+
+// 196（BOA-1126）: 応答から外したキー。台帳で 196 が「適用済み」なら、残っていたら失敗にする（未適用の間は WARN）。
+// 表 prediction_odds・列 race_entries.ai_score_* は残る（/holmes が直接読む）。RPC の応答から無くなることだけを見る
+const MIGRATION_196_REMOVED_KEYS = {
+  race: ["predictionOdds"],
+  entries: ["aiScoreStandard", "aiScoreSafeBet", "aiScoreUpsetFocus"],
+};
+
+/**
+ * 外したはずのキーが残っていないかの検査。失敗したかを返す。
+ * @param {string} label
+ * @param {unknown[]} items
+ * @param {string[]} keys
+ * @param {number} migration
+ */
+function reportRemovedKeys(label, items, keys, migration) {
+  const present = keys
+    .map((key) => ({
+      key,
+      count: items.filter(
+        (item) => item != null && typeof item === "object" && key in item,
+      ).length,
+    }))
+    .filter(({ count }) => count > 0);
+  if (present.length === 0) {
+    console.log(
+      isMigrationApplied(migration)
+        ? `  [OK]   ${label}: ${migration} で外したキー（${keys.join("・")}）は無い`
+        : `  [WARN] ${label}: ${migration} で外すキー（${keys.join("・")}）は無いが、台帳（APPLIED.md）の${migration}が「適用済み」になっていない。台帳を更新する`,
+    );
+    return false;
+  }
+  const detail = present
+    .map(({ key, count }) => `${key}: ${count}件`)
+    .join("、");
+  if (!isMigrationApplied(migration)) {
+    console.log(
+      `  [WARN] ${label}: ${migration} は台帳で未適用のため、残っているキー（${detail}）は失敗にしない`,
+    );
+    return false;
+  }
+  console.log(
+    `  [FAIL] ${label}: ${migration} で外したキーが残っている（${detail}）`,
+  );
+  return true;
+}
 
 /**
  * 台帳の適用状況で、欠落を失敗にするか WARN にとどめるかを分けるキーの検査。失敗したかを返す。
@@ -344,6 +371,20 @@ async function main() {
         data.races,
         MIGRATION_157_IN_CAUTION_KEYS,
         157,
+      ) || failed;
+    failed =
+      reportRemovedKeys(
+        "レース（196）",
+        data.races,
+        MIGRATION_196_REMOVED_KEYS.race,
+        196,
+      ) || failed;
+    failed =
+      reportRemovedKeys(
+        "entries（196）",
+        collectNested(data.races, "entries"),
+        MIGRATION_196_REMOVED_KEYS.entries,
+        196,
       ) || failed;
     for (const { path, keys } of PREDICTION_NESTED_CHECKS) {
       const items = collectNested(data.races, path);

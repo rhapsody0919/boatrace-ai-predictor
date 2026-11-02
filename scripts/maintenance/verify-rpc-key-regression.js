@@ -74,6 +74,27 @@ const ALLOWED_KEY_REMOVALS = {
     "146 で本体を transition_sns_send_139 に改名（キーは改名先に残る）",
   "transition_sns_x_send.daily_claim_date_changed":
     "146 で本体を transition_sns_send_139 に改名（キーは改名先に残る）",
+  // 196（BOA-1126）: 廃止した3モデルの点と予想オッズを応答から外した。/api は #1906 で外し済み、src・hq は読まない。
+  // 表 prediction_odds・列 race_entries.ai_score_* は /holmes（Moriarty）が直接読むので残す（オーナー決定 D1 2026-10-28）
+  ...Object.fromEntries(
+    ["get_predictions_by_date", "get_predictions_by_date_light"].flatMap((fn) =>
+      [
+        "aiScoreStandard",
+        "aiScoreSafeBet",
+        "aiScoreUpsetFocus",
+        "predictionOdds",
+        ...["trifecta", "trio"].flatMap((bet) =>
+          ["Standard", "SafeBet", "UpsetFocus"].flatMap((model) => [
+            `${bet}Pred${model}`,
+            `${bet}Odds${model}`,
+          ]),
+        ),
+      ].map((key) => [
+        `${fn}.${key}`,
+        "196 で応答から外した（廃止した3モデルの点と予想オッズ、BOA-1126）",
+      ]),
+    ),
+  ),
 };
 
 /** ファイル名から番号（"103" 等。サブ番号付きの "013b" も許す）を取り出す */

@@ -138,3 +138,5 @@
 - PostgRESTのSELECTで未知の列を指定すると、PGの42703・HTTP 400になる。列追加前の互換処理は isColumnMissingError で対象列を確認して分岐する（2026-10-27、system-architect、マイグレーション178・PR #1963）。
 - update_venue_stats() は048で削除した venues.avg_volatility_score に書く定義のまま残る。呼び手が0でも再利用可能とみなさず、現行スキーマと本文を照合する（2026-10-28、docs/design/legacy-prediction-cleanup/plan.md §1 F7）。
 - DB全体のER図は docs/reference/schema-er-diagram.md を見る。本番スキーマの写しから機械生成し、マージ後にCIが作り直すため、生成物をPRへ含めない（2026-10-28、PR #2042、基盤の計画段6）。
+- CREATE OR REPLACE FUNCTION が保つのは ACL と所有者だけ。SET search_path・STABLE・SECURITY DEFINER は書いた内容で置き換わる。187 で search_path を付けた関数を置き換えるときは SET を書き直し、末尾の DO で proconfig・provolatile・prosecdef を確かめる（2026-11-03、system-architect、BOA-1126 の 196）
+- 187 より前のマイグレーションの「元に戻す: 前の版を再実行」は search_path を消す。戻しは前の版の本文に SET search_path = public, pg_temp を付けて新しい番号で当てる。戻しの SQL を字面のままコメントに貼らない（verify-rpc-key-regression がコメント中の定義も最新として拾う）（2026-11-03、system-architect、157:35・187）
