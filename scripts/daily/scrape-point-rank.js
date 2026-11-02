@@ -48,6 +48,7 @@ import { isGhaFetchStopped } from "../lib/ghaSkipGate.js";
 import { mapWithConcurrency } from "../lib/scrapeJobs/concurrency.js";
 import { upsertWithOptionalColumns } from "../lib/optionalColumns.js";
 import { upsertChangedRows } from "../lib/unchangedRows.js";
+import { isCancellationConfirmed } from "../lib/cancellationStatus.js";
 import { isScrapeSchemaMissingError } from "../lib/scrapeJobs/schemaErrors.js";
 
 /**
@@ -330,7 +331,7 @@ function buildVenueGrades(races) {
 function buildVenueLastRaces(races) {
   const lastRaces = new Map();
   for (const r of races) {
-    if (r.cancellation_status === "confirmed") continue;
+    if (isCancellationConfirmed(r.cancellation_status)) continue;
     const venueCode = extractVenueCodeFromRaceId(r.race_id);
     const raceNumber = Number(r.race_id.slice(-2));
     if (raceNumber > (lastRaces.get(venueCode) ?? 0))
