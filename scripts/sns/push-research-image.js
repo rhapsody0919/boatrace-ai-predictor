@@ -98,7 +98,13 @@ export const PUSH_RULES = {
       meet_id: bundle.meet_id ?? null,
       neta: bundle.neta ?? null,
       racers: bundle.racers,
-      as_of: bundle.source_observed_at,
+      // hq 33bd771 からは as_of の欄（「YYYY-MM-DD NR まで」）を別に出す。古い束は source_observed_at が as_of の形
+      as_of:
+        typeof bundle.as_of === "string"
+          ? bundle.as_of
+          : AS_OF.test(bundle.source_observed_at ?? "")
+            ? bundle.source_observed_at
+            : null,
     }),
   },
 };

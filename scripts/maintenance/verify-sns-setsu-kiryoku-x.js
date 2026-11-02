@@ -880,6 +880,37 @@ test("X の日の枠: hq の出し物の名前 setsu_kiryoku と取り込みの�
   assert.equal(SETSU_TYPE.kind, "setsu_kiryoku");
 });
 
+test("hq 33bd771 の形: source_observed_at は時差つき ISO、as_of は別の欄。ISO の時刻で鮮度を見る（古ければ拒む）、as_of は下書きに残す", async () => {
+  const b = bundle({
+    source_observed_at: at("21:02:00").toISOString().replace("Z", "+00:00"),
+    as_of: `${DAY} 11R まで`,
+  });
+  assert.deepEqual(checkResearchBundle(b, riskRules, SETSU_TYPE), []);
+  const result = await push(b);
+  assert.ok(result.job_id, JSON.stringify(result));
+  const draft = await first("SELECT * FROM sns_drafts");
+  assert.equal(draft.source_data.setsu_kiryoku.as_of, `${DAY} 11R まで`);
+  assert.equal(
+    Date.parse(draft.source_data.deadline_queue.source_observed_at),
+    at("21:02:00").getTime(),
+  );
+  // 集計の時刻が送る時刻の期限（22:30）より24時間以上前なら拒む（前の日の 22:00 に作った束）
+  const stale = await push(
+    bundle({
+      slug: "v04-motor-gap",
+      images: ["v04-motor-gap.png"],
+      source_observed_at: "2037-11-02T22:00:00+09:00",
+      as_of: `${DAY} 11R まで`,
+    }),
+  );
+  assert.match(stale.reasons.join(), /source_observed_at が古い/);
+  // 集計の時刻が今より後なら拒む
+  const future = await push(
+    bundle({ source_observed_at: "2037-11-03T21:10:00+09:00" }),
+  );
+  assert.match(future.reasons.join(), /今より後/);
+});
+
 test("当てる順: 193 の前に 194 を当てると先頭の照合で止まり、全体が戻る（kind・列・索引は増えない）", async () => {
   const pg = new PGlite();
   try {
