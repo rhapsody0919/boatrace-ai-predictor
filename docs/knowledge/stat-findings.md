@@ -4,6 +4,7 @@
 
 ## 直前情報・展示
 - 展示タイムは直前情報で一番効く。全国の枠なり313,938R、攻める艇の1着率は展示タイム順位の上位(1〜2位)→下位(5〜6位)でカド一撃0.403→0.223、イン凹み0.384→0.235。7形すべてでモーター2連率の順位より差が大きい（2026-10-11、docs/design/analogy-finder/slit-hint/mark1.md）
+- モーター2連率の順位も、全国の枠なり313,938R（2019-04-01〜2026-09-26）では上位(1〜2位)ほど1着が多い。攻める艇の1着率はカド一撃0.349→0.274（上位→下位、forms.kado.scopes.nat.attacker.byMotorRank）、攻める艇・1号艇とも7形すべてで上位と下位の Wilson 95% 区間が重ならない。因果ではなく出走表時点の2連率。記事の「N レース中X回」は data/analysis/motor-2rate-rank-first-place.json で照合する（2026-11-02、BOA-1224、scripts/analysis/extract-motor-2rate-rank-first-place.js・docs/design/analogy-finder/slit-hint/mark1.json）
 - 1着モデルの重要度で展示タイム偏差は3位（0.068、艇番0.313・勝率偏差0.111に次ぐ）（2026-10-11、docs/design/analogy-finder/analysis/phase-m-result.md）
 - 1号艇は同じ選手でも展示タイムが約0.017秒速く出る（2026-10-11、docs/design/analogy-finder/analysis/t1/t1-result.md）
 - 展示ST と本番ST の相関は艇ごと0.08（平均ST は0.28）。着順への上積みも無い。判断材料の主役にせず「参考」と注記する（2026-10-11、docs/design/analogy-finder/slit-hint/slitpred.md・analysis/phase-m-result.md）
@@ -95,3 +96,7 @@
 ## 検証の進め方
 - 専任のデータ分析レーンは無い。分析は BOA-271 の学習側・実装側レーンが行った（Phase M、slit-hint）。問い合わせはオーケストレーター経由（2026-10-11、Orchestrate）
 - 2026-10-20: 1号艇が20〜45走の選手の単勝・複勝回収率は、時期を分けると前後の順位相関が0.055・0.033（496人）で、選手の差を示さない。同じ組で1着率は0.449、2連率は0.315。20〜45走の回収率の95%区間は単勝±34〜50pt・複勝±29〜43pt（1号艇の1走あたりの払戻の標準偏差 単勝115円・複勝99円、直近180日28,282走）。出典 data/analysis/full-picture-boat1-return/boat1-return-rate-noise.json、docs/design/full-picture-remotion/analysis/boat1-return-rate-noise.md（data-scientist）
+- 3連単の上位10点は隣接窓間で中央値6〜11%動く。1窓省略のずれは閲覧で重み付けすると1.2%（-30分）〜2.1%（-5分）で、影響時間内の差とは分ける（2026-10-26、10/12〜25、docs/design/scraping-load-budget/analysis/freshness-need.md・odds-scenarios.json）。
+- 単勝は0分窓から締切時オッズまで全艇の中央値28%動いた。スナップショットを確定値として表示しない（2026-10-26、10/12〜25、docs/design/scraping-load-budget/analysis/freshness-need.md・odds-windows.json）。
+- 1コース1着率を級別全国平均と比べる正規近似zは、B1・B2でBonferroni境界の正確な確率が名目の最大約2倍になった。言い切りの判定は正確な二項で行う（2026-10-27、data-scientist、scripts/analysis/today-course-win/check-exact-tail.mjs・data/analysis/today-course-win/exact-vs-normal-tail.json）。
+- 選手×コースの1着率を縮める重みα+βは、30走以上の本番データのモーメント法で22〜84。/today型bの40は全区分共通の採用値で、各区分の推定値そのものではない（2026-10-27、data/analysis/today-course-win-prior.json、PR #1977）。

@@ -3,6 +3,8 @@
  * X の下書きと自動送信の item を作って、送る時刻（19:00 等）の予定に入れる（hq XR01、マイグレーション 179・180）。
  * hq の作業役が同じ Mac の本リポジトリで実行する（15:00 に作り、--no-wait で入れて 19:00 に送り手が送る）。
  * 鍵は本リポジトリの .env.local（SUPABASE_URL・SUPABASE_SERVICE_KEY）だけを使う。
+ * 同じ形の「節の機力」（kind=setsu_kiryoku、毎日 21:30、BOA-1209、マイグレーション 194）も、この口が型（DAILY_IMAGE_TYPES）ごとに受け取る。
+ * 入口は scripts/sns/push-setsu-kiryoku.js（hq の setsu_sheet.py の出力）。違いは PUSH_RULES の注記を見る
  *
  * 使い方:
  *   node --env-file=.env.local scripts/sns/push-research-image.js <フォルダ> [--dry-run] [--no-wait]
@@ -36,11 +38,10 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { createXSnapshot } from "../../api/_lib/snsXSend.js";
 import {
-  parseResearchId,
-  RESEARCH_IMAGE_KIND,
-  RESEARCH_SLUG,
-  researchIdOf,
+  DAILY_IMAGE_TYPES,
+  dailyIdOf,
   researchTextReasons,
+  setsuRacerReasons,
 } from "../../api/_lib/snsResearchImage.js";
 import { matchRiskRules, draftRiskFields } from "../lib/riskRuleMatcher.js";
 import {
@@ -52,7 +53,8 @@ import {
   waitForSend,
 } from "./push-finals-image.js";
 
-export const RESEARCH_FORMAT = RESEARCH_IMAGE_KIND;
+export const RESEARCH_TYPE = DAILY_IMAGE_TYPES.research_image;
+export const SETSU_TYPE = DAILY_IMAGE_TYPES.setsu_kiryoku;
 /** 締切は送る時刻の120分後、期限は締切の60分前（180 の transition_sns_send_139 の research_image の期限と同じ値） */
 export const DEADLINE_AFTER_MIN = 120;
 export const EXPIRES_BEFORE_MIN = 60;
@@ -64,8 +66,52 @@ export const SEND_DELAY_SEC = 120;
 export const MAX_SOURCE_AGE_SEC = 86400;
 export const SEND_TIME_EARLIEST = "08:00";
 export const SEND_TIME_LATEST = "21:30";
-const STOP_SQL =
-  "UPDATE public.sns_auto_send_control SET research_image_enabled = false WHERE channel = 'x';";
+/**
+ * 型ごとの取り込みの決まり。結果の1行の札（tag）・送る時刻の幅・機械の検査の P0 の要否・集計の時刻の書き方。
+ * 節の機力: 送る時刻は 21:30 だけ（hq config/setsu-kiryoku.json の send_time、正本 hq drafts/x-setsu-kiryoku-20261031.md）。
+ *   hq の作り手は review を出さない（関門は setsu_sheet.py の verify が作る前に見る）ので、review は有れば P0 が0件であることだけを見る。
+ *   source_observed_at は時差つきの ISO か、hq の集計の as_of（「YYYY-MM-DD NR まで」、日は date と同じ）。as_of のときは
+ *   時刻を持たないので、その日の 00:00 JST（いちばん古い見積り）を集計の時刻として DB の鮮度の照合（24時間）に渡し、as_of の文字列は
+ *   下書きに残す（受け取った時刻にすると、作り直しのたびに新しく見え、鮮度の照合が名前だけになる。/code-review の指摘）。
+ *   選手（racers）は必ず名前と級（setsuRacerReasons、オーナー 2026-11-01）。dryRunAhead: --dry-run で今日でない束を送る時刻の時計で通す
+ *   （hq の見本を前の日に試すため。数字で見たらは今までどおり今日の束だけ）。extraSource: 下書きの source_data に足す欄
+ */
+export const PUSH_RULES = {
+  research_image: {
+    tag: "RESEARCH_RESULT",
+    earliest: SEND_TIME_EARLIEST,
+    latest: SEND_TIME_LATEST,
+    requireReview: true,
+    allowAsOf: false,
+    dryRunAhead: false,
+    extraSource: () => ({}),
+  },
+  setsu_kiryoku: {
+    tag: "SETSU_RESULT",
+    earliest: "21:30",
+    latest: "21:30",
+    requireReview: false,
+    allowAsOf: true,
+    dryRunAhead: true,
+    // 画像の材料の選手（名前と級。送る直前の読み直しが見る）と節・ネタ・集計の as_of
+    extraSource: (bundle) => ({
+      meet_id: bundle.meet_id ?? null,
+      neta: bundle.neta ?? null,
+      racers: bundle.racers,
+      // hq 33bd771 からは as_of の欄（「YYYY-MM-DD NR まで」）を別に出す。古い束は source_observed_at が as_of の形
+      as_of:
+        typeof bundle.as_of === "string"
+          ? bundle.as_of
+          : AS_OF.test(bundle.source_observed_at ?? "")
+            ? bundle.source_observed_at
+            : null,
+    }),
+  },
+};
+const stopSql = (type) =>
+  `UPDATE public.sns_auto_send_control SET ${type.enabledColumn} = false WHERE channel = 'x';`;
+/** hq の集計の as_of（「2026-11-03 12R まで」） */
+const AS_OF = /^(\d{4}-\d{2}-\d{2}) \d{1,2}R まで$/;
 
 const addMin = (iso, min) =>
   new Date(Date.parse(iso) + min * 60000).toISOString();
@@ -76,26 +122,39 @@ const jstDate = (date) =>
 /** 時差（Z か ±HH:MM）つきの ISO だけ。時差の無い文字列は Node は手元の時刻、DB は接続の TimeZone で読み、別の時刻になる */
 const isIso = (v) =>
   typeof v === "string" &&
-  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(v) &&
+  /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/.test(
+    v,
+  ) &&
   Number.isFinite(Date.parse(v));
 
-/** bundle.json の検査（純粋関数）。時刻の窓は checkTiming が見る */
-export function checkResearchBundle(bundle, riskRules = []) {
+/** bundle.json の検査（純粋関数）。時刻の窓は checkTiming が見る。type は DAILY_IMAGE_TYPES の1つ（既定は数字で見たら） */
+export function checkResearchBundle(
+  bundle,
+  riskRules = [],
+  type = RESEARCH_TYPE,
+) {
+  const rules = PUSH_RULES[type.kind];
   const reasons = [];
-  if (bundle?.format !== RESEARCH_FORMAT)
-    reasons.push(`format が ${RESEARCH_FORMAT} でない`);
+  if (bundle?.format !== type.bundleFormat)
+    reasons.push(`format が ${type.bundleFormat} でない`);
+  if (bundle?.kind !== undefined && bundle.kind !== type.kind)
+    reasons.push(`kind が ${type.kind} でない（${bundle.kind}）`);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(bundle?.date ?? ""))
     reasons.push("date が YYYY-MM-DD でない");
-  if (!RESEARCH_SLUG.test(bundle?.slug ?? ""))
-    reasons.push("slug が英小文字・数字・ハイフンの40字までの形でない");
+  if (!type.slug.test(bundle?.slug ?? ""))
+    reasons.push(
+      `slug が ${type.slug.source} の形（英小文字・数字・ハイフンの40字まで）でない`,
+    );
   const sendTime = bundle?.send_time ?? "";
   if (
     !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(sendTime) ||
-    sendTime < SEND_TIME_EARLIEST ||
-    sendTime > SEND_TIME_LATEST
+    sendTime < rules.earliest ||
+    sendTime > rules.latest
   )
     reasons.push(
-      `send_time が ${SEND_TIME_EARLIEST}〜${SEND_TIME_LATEST} の HH:MM でない`,
+      rules.earliest === rules.latest
+        ? `send_time が ${rules.earliest} でない`
+        : `send_time が ${rules.earliest}〜${rules.latest} の HH:MM でない`,
     );
   if (
     !Array.isArray(bundle?.images) ||
@@ -103,10 +162,25 @@ export function checkResearchBundle(bundle, riskRules = []) {
     bundle.images[0] !== `${bundle?.slug}.png`
   )
     reasons.push(`images が ["${bundle?.slug}.png"] の1枚でない`);
-  if (!isIso(bundle?.source_observed_at))
-    reasons.push("source_observed_at が時差（Z か ±HH:MM）つきの ISO の時刻でない");
-  if (bundle?.review?.p0_count !== 0)
+  const asOf = rules.allowAsOf
+    ? AS_OF.exec(bundle?.source_observed_at ?? "")
+    : null;
+  if (asOf && asOf[1] !== bundle?.date)
+    reasons.push(
+      `source_observed_at（集計の as_of）の日 ${asOf[1]} が date ${bundle?.date} と違う`,
+    );
+  else if (!asOf && !isIso(bundle?.source_observed_at))
+    reasons.push(
+      rules.allowAsOf
+        ? "source_observed_at が時差（Z か ±HH:MM）つきの ISO の時刻でも「YYYY-MM-DD NR まで」でもない"
+        : "source_observed_at が時差（Z か ±HH:MM）つきの ISO の時刻でない",
+    );
+  if (
+    (rules.requireReview || bundle?.review !== undefined) &&
+    bundle?.review?.p0_count !== 0
+  )
     reasons.push(`機械の検査の P0 が0件でない（${bundle?.review?.p0_count}）`);
+  if (type.hasRacers) reasons.push(...setsuRacerReasons(bundle?.racers));
   const fields = { caption: bundle?.x_text, hashtags: bundle?.hashtags };
   reasons.push(...researchTextReasons(fields));
   const hits = matchRiskRules(
@@ -145,15 +219,44 @@ export function schedule(bundle, now) {
   };
 }
 
+/**
+ * --dry-run の時計（純粋関数）。date が今日（JST）でなければ、その日の send_time の2分前（SEND_DELAY_SEC）。今日か形が違えば null（今の時計のまま）
+ */
+export function dryRunClock(bundle, now) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(bundle?.date ?? "") ||
+    !/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(bundle?.send_time ?? "") ||
+    bundle.date === jstDate(now)
+  )
+    return null;
+  return new Date(
+    Date.parse(`${bundle.date}T${bundle.send_time}:00+09:00`) -
+      SEND_DELAY_SEC * 1000,
+  );
+}
+
+/** 集計の時刻（ISO）。as_of（「YYYY-MM-DD NR まで」）は時刻を持たないのでその日の 00:00 JST にする（純粋関数。PUSH_RULES の注記） */
+export const observedAtOf = (bundle) => {
+  const asOf = AS_OF.exec(bundle?.source_observed_at ?? "");
+  return asOf
+    ? new Date(`${asOf[1]}T00:00:00+09:00`).toISOString()
+    : bundle.source_observed_at;
+};
+
 /** 時刻の検査（純粋関数）。date は今日（JST）、期限の10分前より前、集計の時刻は今より前で期限まで24時間以内 */
-export function checkTiming(bundle, when, now) {
+export function checkTiming(
+  bundle,
+  when,
+  now,
+  observedAt = bundle.source_observed_at,
+) {
   const reasons = [];
   if (bundle.date !== jstDate(now)) reasons.push("date が今日（JST）でない");
   if (now.getTime() >= Date.parse(when.latest))
     reasons.push(
       `期限（${jstTime(when.expires_at)}）の${LATEST_BEFORE_EXPIRES_MIN}分前を過ぎた`,
     );
-  const observed = Date.parse(bundle.source_observed_at);
+  const observed = Date.parse(observedAt);
   if (observed > now.getTime()) reasons.push("source_observed_at が今より後");
   if (Date.parse(when.expires_at) - observed >= MAX_SOURCE_AGE_SEC * 1000)
     reasons.push(
@@ -163,15 +266,20 @@ export function checkTiming(bundle, when, now) {
 }
 
 /** 下書きの行（純粋関数）。リンクは置かないので、送る直前のリンク先の表示の確認は無い（screen_key は none） */
-export function draftRow(bundle, { revision, imagePath, when, observedAt }) {
-  const researchId = researchIdOf(bundle.date, bundle.slug);
+export function draftRow(
+  bundle,
+  { revision, imagePath, when, observedAt },
+  type = RESEARCH_TYPE,
+) {
+  const researchId = dailyIdOf(type, bundle.date, bundle.slug);
+  const extra = PUSH_RULES[type.kind].extraSource(bundle);
   return {
     content_group_id: randomUUID(),
     language: "ja",
     status: "pending_review",
-    format: RESEARCH_FORMAT,
+    format: type.kind,
     platform: "x",
-    title: `数字で見たら ${bundle.date} ${bundle.slug}`,
+    title: `${type.label} ${bundle.date} ${bundle.slug}`,
     caption_text: bundle.x_text,
     hashtags: bundle.hashtags,
     publish_blocked: false,
@@ -182,12 +290,13 @@ export function draftRow(bundle, { revision, imagePath, when, observedAt }) {
     source_data: {
       // 管理画面の一覧・記録（snsXSendStore の race_id）が読む
       race_id: researchId,
-      research_image: {
-        research_id: researchId,
+      [type.sourceKey]: {
+        [type.idField]: researchId,
         date: bundle.date,
         slug: bundle.slug,
         revision,
-        review: bundle.review,
+        review: bundle.review ?? null,
+        ...extra,
       },
       // 承認の関数（160）が媒体をこの順で照合する（先頭は cover_image_path）。この型は1枚だけ
       image_paths: [imagePath],
@@ -205,18 +314,26 @@ export function draftRow(bundle, { revision, imagePath, when, observedAt }) {
 }
 
 /** item の行（純粋関数）。自動（notified）は止めるリンクを作らない（全貌・優勝戦と同じ。153 の CHECK が要るので使わない乱数のハッシュ） */
-function itemRow(bundle, { draftId, when, state, checkedAt, heldReason }) {
+function itemRow(
+  bundle,
+  { draftId, when, state, checkedAt, heldReason },
+  type = RESEARCH_TYPE,
+) {
   return {
-    kind: RESEARCH_IMAGE_KIND,
+    kind: type.kind,
     variant: "main",
     draft_id: draftId,
     channel: "x",
-    race_id: researchIdOf(bundle.date, bundle.slug),
+    race_id: dailyIdOf(type, bundle.date, bundle.slug),
     deadline_at: when.deadline_at,
     notify_by: when.notify_by,
     veto_until: when.veto_until,
     state,
-    checks: { passed: true, review: bundle.review, checked_at: checkedAt },
+    checks: {
+      passed: true,
+      review: bundle.review ?? null,
+      checked_at: checkedAt,
+    },
     ...(heldReason ? { held_reason: heldReason } : {}),
     ...(state === "notified"
       ? {
@@ -231,7 +348,7 @@ function itemRow(bundle, { draftId, when, state, checkedAt, heldReason }) {
  * 同じ日の生きている item を見る。送った・送っている・待っている item があれば { already } を返す（1日1本）。
  * 自動の item の job が送らずに終わった（held・failed・cancelled）か、承認の途中で落ちて job が無い item は、作り直す対象として返す
  */
-async function liveOf(store, date) {
+async function liveOf(store, date, type) {
   const live = (await store.researchItems(date)).filter(
     (i) => !["stopped", "held_manual"].includes(i.state),
   );
@@ -247,8 +364,8 @@ async function liveOf(store, date) {
       return {
         already: {
           already: true,
-          reason: `同じ日の research_image が既にある（${item.race_id}・item ${item.state}・job ${job?.state ?? "なし"}）。作らなかった`,
-          status: researchStatusOf(item, job),
+          reason: `同じ日の ${type.kind} が既にある（${item.race_id}・item ${item.state}・job ${job?.state ?? "なし"}）。作らなかった`,
+          status: dailyStatusOf(type, item, job),
         },
       };
   }
@@ -256,56 +373,78 @@ async function liveOf(store, date) {
 }
 
 /** item と job から、hq に返す状態（純粋関数） */
-export const researchStatusOf = (item, job) => ({
+export const dailyStatusOf = (type, item, job) => ({
   ...statusOf(item?.race_id ?? null, item, job),
-  research_id: item?.race_id ?? null,
+  [type.idField]: item?.race_id ?? null,
   held_reason: item?.held_reason ?? null,
 });
+export const researchStatusOf = (item, job) =>
+  dailyStatusOf(RESEARCH_TYPE, item, job);
 
 /**
  * 受け取って送る予定に入れる。deps は DB・Storage・Slack（テストで差し替える）。
  * 返り値: { reasons }（不合格）・{ dryRun, disabled }（書かなかった）・{ already }・{ research_id, draft_id, item_id, job_id, send_at, ... }
  */
-export async function pushResearchImage(
+export const pushResearchImage = (folder, deps) =>
+  pushDailyImage(folder, { ...deps, type: RESEARCH_TYPE });
+export const pushSetsuKiryoku = (folder, deps) =>
+  pushDailyImage(folder, { ...deps, type: SETSU_TYPE });
+
+/** 型（type）ごとの受け取り。返り値の id は type.idField（research_id・setsu_id）のキー */
+export async function pushDailyImage(
   folder,
   {
     store,
     readBytes,
     notify = async () => {},
     riskRules = [],
-    now = new Date(),
+    now: realNow = new Date(),
     dryRun = false,
+    type = RESEARCH_TYPE,
   },
 ) {
+  const idKey = type.idField;
   const bundle = JSON.parse(
     new TextDecoder().decode(await readBytes(path.join(folder, "bundle.json"))),
   );
+  // --dry-run で今日でない日の束（hq の見本・前日の試し）は、その日の送る時刻の2分前の時計で時刻の検査を通す（dryRunAhead の型だけ。
+  // push-setsu-kiryoku-short.js と同じ時計）。その日の X の日の上限はまだ決まらないので見ない（limit_checked=false、結果の1行に simulated_now）。
+  // Shorts は今の値で上限を見るが、X の上限は daily_baseline_date が今日の分しか無いので、別の日には当てられない。書く道では使わない
+  const simulated =
+    dryRun && PUSH_RULES[type.kind].dryRunAhead
+      ? dryRunClock(bundle, realNow)
+      : null;
+  const extra = simulated
+    ? { simulated_now: simulated.toISOString(), limit_checked: false }
+    : {};
+  const now = simulated ?? realNow;
   const researchId =
     bundle?.date && bundle?.slug
-      ? researchIdOf(bundle.date, bundle.slug)
+      ? dailyIdOf(type, bundle.date, bundle.slug)
       : null;
   const controls = await store.controls();
-  // 列が無い（179 が未適用）・行が無いときも off（fail-closed）
-  const enabled = controls.x?.research_image_enabled === true;
+  // 列が無い（179・194 が未適用）・行が無いときも off（fail-closed）
+  const enabled = controls.x?.[type.enabledColumn] === true;
   const writes = enabled && !dryRun;
   const reject = async (reasons) => {
     if (writes)
       await notify(
-        `SNS 数字で見たら ${researchId ?? "不明"} を検査で拒否した\n${reasons.join("\n")}`,
+        `SNS ${type.label} ${researchId ?? "不明"} を検査で拒否した\n${reasons.join("\n")}`,
       ).catch((error) =>
         console.error(`Slack に通知できません: ${error.message}`),
       );
-    return { research_id: researchId, reasons };
+    return { [idKey]: researchId, reasons, ...extra };
   };
-  const reasons = checkResearchBundle(bundle, riskRules);
+  const reasons = checkResearchBundle(bundle, riskRules, type);
   if (reasons.length) return reject(reasons);
-  if (!parseResearchId(researchId)) return reject(["research_id が作れない"]);
+  if (!type.parseId(researchId)) return reject([`${idKey} が作れない`]);
   const when = schedule(bundle, now);
-  const timing = checkTiming(bundle, when, now);
+  const observedAt = observedAtOf(bundle);
+  const timing = checkTiming(bundle, when, now, observedAt);
   if (timing.length) return reject(timing);
   // 同じ日の生きている item・送った item があれば何も作らず、今の状態を返す（DB の一意の索引でも止まる、179）
-  const live = await liveOf(store, bundle.date);
-  if (live.already) return { research_id: researchId, ...live.already };
+  const live = await liveOf(store, bundle.date, type);
+  if (live.already) return { [idKey]: researchId, ...live.already };
   const [name] = bundle.images;
   let bytes;
   try {
@@ -317,24 +456,31 @@ export async function pushResearchImage(
   }
   const imageReasons = checkImages([name], { [name]: bytes });
   if (imageReasons.length) return reject(imageReasons);
-  const [sendControl, todayJobs] = await Promise.all([
-    store.sendControl(),
-    store.jobsAttemptedOn(jstDate(now)),
-  ]);
-  const limitReason = dailyLimitReason({ sendControl, jobs: todayJobs, now });
-  if (limitReason) return reject([limitReason]);
+  if (!simulated) {
+    const [sendControl, todayJobs] = await Promise.all([
+      store.sendControl(),
+      store.jobsAttemptedOn(jstDate(now)),
+    ]);
+    const limitReason = dailyLimitReason({
+      sendControl,
+      jobs: todayJobs,
+      now,
+    });
+    if (limitReason) return reject([limitReason]);
+  }
   const hash = createHash("sha256").update(JSON.stringify(bundle));
   hash.update(bytes);
   const revision = hash.digest("hex").slice(0, 32);
   if (!writes)
     return {
-      research_id: researchId,
+      [idKey]: researchId,
       dryRun: true,
       enabled,
       // --dry-run でなく、許可が off なので書かなかった（exit 3）
       disabled: !dryRun,
       revision,
       when,
+      ...extra,
     };
 
   // 前の item を止め、下書きを公開保留に戻す（148 のトリガーが承認を外し、queued・held の job を取り消す）
@@ -346,31 +492,30 @@ export async function pushResearchImage(
     });
     await store.updateDraft(item.draft_id, { publish_blocked: true });
   }
-  const imagePath = `research-image/${bundle.date}/${bundle.slug}/${revision}.png`;
+  const imagePath = `${type.storagePrefix}/${bundle.date}/${bundle.slug}/${revision}.png`;
   await store.saveFile(imagePath, bytes);
   const checkedAt = now.toISOString();
   const auto = controls.x?.mode === "auto" && controls.x?.auto_approver_id;
   const draft = await store.insertDraft(
-    draftRow(bundle, {
-      revision,
-      imagePath,
-      when,
-      observedAt: bundle.source_observed_at,
-    }),
+    draftRow(bundle, { revision, imagePath, when, observedAt }, type),
   );
   const item = await store.insertItem(
-    itemRow(bundle, {
-      draftId: draft.id,
-      when,
-      state: auto ? "notified" : "held_manual",
-      checkedAt,
-      heldReason: auto
-        ? null
-        : "自動モードでない（この型は自動の道だけで送る）",
-    }),
+    itemRow(
+      bundle,
+      {
+        draftId: draft.id,
+        when,
+        state: auto ? "notified" : "held_manual",
+        checkedAt,
+        heldReason: auto
+          ? null
+          : "自動モードでない（この型は自動の道だけで送る）",
+      },
+      type,
+    ),
   );
   const out = {
-    research_id: researchId,
+    [idKey]: researchId,
     draft_id: draft.id,
     item_id: item.id,
     auto: Boolean(auto),
@@ -414,7 +559,7 @@ export async function pushResearchImage(
       ? `x: 自動の承認に失敗（送らない）: ${out.error}`
       : "x: 自動モードでないので送らない";
   await notify(
-    `SNS 数字で見たら ${researchId}\n${line}\n止めるには: ${STOP_SQL}`,
+    `SNS ${type.label} ${researchId}\n${line}\n止めるには: ${stopSql(type)}`,
   ).catch((error) => console.error(`Slack に通知できません: ${error.message}`));
   return { ...out, revision, when };
 }
@@ -424,14 +569,17 @@ export async function pushResearchImage(
  * job が queued のまま送る時刻を過ぎていれば、日の上限の見込み（blocked_hint）を添える（claim が「日次全体上限です」で投げている間は
  * job に error_code が残らず、期限の後に deadline_expired になるため）
  */
-export async function researchStatus(date, { store, now = new Date() }) {
+export async function researchStatus(
+  date,
+  { store, now = new Date(), type = RESEARCH_TYPE },
+) {
   const items = await store.researchItems(date);
   const item =
     items.find((i) => !["stopped", "held_manual"].includes(i.state)) ??
     items[0];
   if (!item) return null;
   const job = await store.jobForDraft(item.draft_id);
-  const status = researchStatusOf(item, job);
+  const status = dailyStatusOf(type, item, job);
   // 送る前の検査（readCurrent・preflight）で落ちた job は claim されず queued のまま、期限の後に deadline_expired になるので、
   // job に理由が残らない。送り手の最後の報告（scrape_job_state の sns_send の last_report.alerts、key は precheck:{job_id}:{理由}）から引く。
   // 報告は2分ごとに上書きされ、理由は見直すまで30分だけ残る（snsSendRunner.js の CONTINUING_ALERT_MINUTES）。読めなければ null
@@ -441,7 +589,9 @@ export async function researchStatus(date, { store, now = new Date() }) {
       return null;
     });
     const prefix = `precheck:${job.id}:`;
-    const alert = (report?.alerts ?? []).find((a) => a?.key?.startsWith(prefix));
+    const alert = (report?.alerts ?? []).find((a) =>
+      a?.key?.startsWith(prefix),
+    );
     status.precheck_reason = alert ? alert.key.slice(prefix.length) : null;
   }
   if (
@@ -464,8 +614,9 @@ export async function researchStatus(date, { store, now = new Date() }) {
 export function resultLine(
   result,
   status = null,
-  { waited = Boolean(status) } = {},
+  { waited = Boolean(status), type = RESEARCH_TYPE } = {},
 ) {
+  const idKey = type.idField;
   const outcome = result.reasons?.length
     ? "rejected"
     : result.already
@@ -490,7 +641,7 @@ export function resultLine(
   }[outcome];
   const s = status ?? result.status ?? null;
   const line = {
-    research_id: result.research_id ?? null,
+    [idKey]: result[idKey] ?? null,
     outcome,
     job_id: s?.job_id ?? result.job_id ?? null,
     job_state: s?.job_state ?? null,
@@ -502,21 +653,28 @@ export function resultLine(
       result.reasons?.join(" / ") ??
       result.reason ??
       (result.disabled
-        ? "自動送信の許可（research_image_enabled）が off なので送らなかった"
+        ? `自動送信の許可（${type.enabledColumn}）が off なので送らなかった`
         : outcome === "not_posted" && !result.job_id
           ? result.error
             ? `自動の承認に失敗したので job を作らなかった: ${result.error}`
             : "自動モードでないので job を作らなかった"
           : null),
+    // --dry-run を別の日の時計で通したとき（日の上限は見ていない）。hq は1行だけを読むので、ここに出す
+    ...(result.simulated_now ? { simulated_now: result.simulated_now } : {}),
   };
-  return { code, text: `RESEARCH_RESULT ${JSON.stringify(line)}` };
+  return { code, text: `${PUSH_RULES[type.kind].tag} ${JSON.stringify(line)}` };
 }
 
 /**
  * PostgREST・Storage の読み書き（service_role）。共通の読み書きは push-finals-image.js の store を使い、
  * この型の item の読み取りと許可の列だけを足す。失敗は投げる
  */
-export function createRestStore({ url, key, fetchImpl = fetch }) {
+export function createRestStore({
+  url,
+  key,
+  fetchImpl = fetch,
+  type = RESEARCH_TYPE,
+}) {
   const base = createFinalsRestStore({ url, key, fetchImpl });
   async function get(p) {
     const response = await fetchImpl(`${url}/rest/v1/${p}`, {
@@ -531,21 +689,23 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
   }
   return {
     ...base,
+    // この型（type）の item（名前は数字で見たらのときのまま）
     researchItems: (date) =>
       get(
-        `sns_auto_send_items?kind=eq.${RESEARCH_IMAGE_KIND}&channel=eq.x&race_id=like.${encodeURIComponent(`research:${date}:*`)}&select=id,state,draft_id,race_id,held_reason&order=created_at.desc`,
+        `sns_auto_send_items?kind=eq.${type.kind}&channel=eq.x&race_id=like.${encodeURIComponent(`${type.idPrefix}:${date}:*`)}&select=id,state,draft_id,race_id,held_reason&order=created_at.desc`,
       ),
-    // research_image_enabled が無い（179 が未適用）と PostgREST が 400 を返すので、その時は列なしで読み直して off とする
+    // 許可の列（research_image_enabled・setsu_kiryoku_enabled）が無い（179・194 が未適用）と PostgREST が 400 を返すので、
+    // その時は列なしで読み直して off とする
     async controls() {
       let rows;
       try {
         rows = await get(
-          "sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id,research_image_enabled",
+          `sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id,${type.enabledColumn}`,
         );
       } catch (error) {
         if (!/HTTP 400/.test(error.message)) throw error;
         console.error(
-          "research_image_enabled の列が無い（マイグレーション 179 が未適用）。許可は off として扱う",
+          `${type.enabledColumn} の列が無い（マイグレーションが未適用）。許可は off として扱う`,
         );
         rows = await get(
           "sns_auto_send_control?select=channel,mode,dry_run,auto_approver_id",
@@ -565,24 +725,28 @@ export function createRestStore({ url, key, fetchImpl = fetch }) {
   };
 }
 
-async function main() {
+/** CLI。型ごとの入口（push-research-image.js・push-setsu-kiryoku.js）から呼ぶ */
+export async function main(
+  type = RESEARCH_TYPE,
+  script = "push-research-image.js",
+) {
   const args = process.argv.slice(2);
-  const usage =
-    "使い方: node --env-file=.env.local scripts/sns/push-research-image.js <フォルダ> [--dry-run] [--no-wait] | --status <YYYY-MM-DD>";
+  const tag = PUSH_RULES[type.kind].tag;
+  const usage = `使い方: node --env-file=.env.local scripts/sns/${script} <フォルダ> [--dry-run] [--no-wait] | --status <YYYY-MM-DD>`;
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) {
     console.error("SUPABASE_URL・SUPABASE_SERVICE_KEY が無い（.env.local）");
     process.exit(2);
   }
-  const store = createRestStore({ url, key });
+  const store = createRestStore({ url, key, type });
   if (args[0] === "--status") {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(args[1] ?? "")) {
       console.error(usage);
       process.exit(2);
     }
     console.log(
-      JSON.stringify(await researchStatus(args[1], { store }), null, 2),
+      JSON.stringify(await researchStatus(args[1], { store, type }), null, 2),
     );
     return;
   }
@@ -599,15 +763,15 @@ async function main() {
     const b = JSON.parse(
       await readFile(path.join(folder, "bundle.json"), "utf8"),
     );
-    if (b?.date && b?.slug) researchId = researchIdOf(b.date, b.slug);
+    if (b?.date && b?.slug) researchId = dailyIdOf(type, b.date, b.slug);
   } catch {
     /* 読めない bundle.json は pushResearchImage が投げ、下で error の1行にする */
   }
-  // どこで落ちても、最後の1行は RESEARCH_RESULT（exit 6）
+  // どこで落ちても、最後の1行は RESEARCH_RESULT・SETSU_RESULT（exit 6）
   const fail = (error) => {
     console.error(error);
     console.log(
-      `RESEARCH_RESULT ${JSON.stringify({ research_id: researchId, outcome: "error", reason: String(error?.message ?? error) })}`,
+      `${tag} ${JSON.stringify({ [type.idField]: researchId, outcome: "error", reason: String(error?.message ?? error) })}`,
     );
     process.exit(6);
   };
@@ -617,7 +781,8 @@ async function main() {
   )
     .then((text) => JSON.parse(text).rules)
     .catch(fail);
-  const result = await pushResearchImage(folder, {
+  const result = await pushDailyImage(folder, {
+    type,
     store,
     readBytes: async (p) => {
       await stat(p);
@@ -640,14 +805,17 @@ async function main() {
   console.log(JSON.stringify(result, null, 2));
   const status =
     result.job_id && !args.includes("--no-wait")
-      ? await waitForSend(result.research_id, {
+      ? await waitForSend(result[type.idField], {
           store,
           draftId: result.draft_id,
           expiresAt: result.when.expires_at,
           sleep: (sec) => new Promise((r) => setTimeout(r, sec * 1000)),
         }).catch(fail)
       : null;
-  const { code, text } = resultLine(result, status);
+  const { code, text } = resultLine(result, status, {
+    waited: Boolean(status),
+    type,
+  });
   console.log(text);
   process.exit(code);
 }

@@ -284,6 +284,35 @@ for (const { term, pattern, use, row } of KO_RETIRED_TERMS) {
   }
 }
 
+// 7. レース確定後・中止のメタ情報（BOA-1185。接続は BOA-1200）
+const raceMetaKeys = [
+  "metaTitleResult",
+  "metaDescriptionResult",
+  "metaTitleCancelled",
+  "metaDescriptionCancelled",
+];
+const raceMetaPlaceholders = new Set(["venue", "race", "date"]);
+for (const lang of LANGS) {
+  for (const key of raceMetaKeys) {
+    checked += 1;
+    const fullKey = `raceDetailPage.${key}`;
+    const value = locales[lang][fullKey];
+    if (typeof value !== "string" || value.trim() === "") {
+      failures.push(`${lang}: ${fullKey} がありません、または空です`);
+      continue;
+    }
+    if (!sameSet(placeholdersOf(value), raceMetaPlaceholders)) {
+      failures.push(`${lang}: ${fullKey} の差し込みは venue・race・date が必要です`);
+    }
+    if (lang === BASE_LANG) {
+      const word = key.endsWith("Result") ? "結果" : "中止";
+      if (!value.includes(word)) {
+        failures.push(`${lang}: ${fullKey} に「${word}」がありません`);
+      }
+    }
+  }
+}
+
 if (failures.length > 0) {
   console.error(`NG: ${LANGS.length}言語のロケールが揃っていません`);
   for (const f of failures) console.error(`  - ${f}`);

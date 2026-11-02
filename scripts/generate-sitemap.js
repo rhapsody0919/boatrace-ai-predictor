@@ -554,7 +554,7 @@ async function getMeetPages(latest) {
     console.warn("⚠️ Supabase未設定のため、節ページはスキップします");
     return [];
   }
-  const { isOutOfScopeMeetTitle, MEET_PAGE_GRADES } =
+  const { isOutOfScopeMeetTitle, MEET_PAGE_GRADES, meetDaysOf, meetPageState } =
     await import("../src/utils/meetPageModel.js");
   const todayJst = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const until = new Date(todayJst);
@@ -574,8 +574,57 @@ async function getMeetPages(latest) {
   const meets = rows.filter((r) => !isOutOfScopeMeetTitle(r.title));
   const pages = [];
   for (const m of meets) {
+    // ページと同じ初日〜+7日の窓・節の区切りを使う。結果の有無は index 判定に影響しない。
+    const end = new Date(`${m.start_date}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 7);
+    const vv = String(m.venue_code).padStart(2, "0");
+    const inWindow = (q) =>
+      q
+        .gte("race_id", m.start_date)
+        .lte("race_id", `${end.toISOString().slice(0, 10)}-zz`)
+        .like("race_id", `__________-${vv}-__`)
+        .order("race_id");
+    const [windowConditions, windowEntries, windowRaces] = await Promise.all([
+      fetchAll(
+        "race_conditions",
+        "race_id, series_day, is_final_day, race_stage",
+        inWindow,
+        { client: supabase },
+      ),
+      fetchAll(
+        "race_entries",
+        "race_id, boat_number",
+        (q) => inWindow(q).order("boat_number"),
+        { client: supabase },
+      ),
+      fetchAll("races", "race_id, race_grade", inWindow, { client: supabase }),
+    ]);
+    const meetDays = meetDaysOf(m.start_date, windowConditions, windowEntries);
+    const inMeet = (r) => meetDays.includes(r.race_id.slice(0, 10));
+    const conditions = windowConditions.filter(inMeet);
+    const entries = windowEntries.filter(inMeet);
+    const state = meetPageState({
+      today: todayJst.toISOString().slice(0, 10),
+      startDate: m.start_date,
+      meetDays,
+      hasEntries: entries.length > 0,
+      startDateGrade:
+        windowRaces.find(
+          (r) => r.race_id.startsWith(`${m.start_date}-`) && r.race_grade,
+        )?.race_grade ?? null,
+      grade: m.grade,
+      title: m.title,
+      conditions,
+      // 終了後の各状態も掲載対象なので、結果を取得する必要は無い。
+      doneRaceIds: new Set(),
+      raceIds: [...new Set([...conditions, ...entries].map((r) => r.race_id))],
+      windowHasRaces: [...windowConditions, ...windowEntries].some((r) =>
+        r.race_id.startsWith(m.start_date),
+      ),
+    });
+    if (["preOpen", "notFound", "outOfScope"].includes(state)) continue;
     const venueLatest = latest.byVenue.get(m.venue_code) ?? null;
-    // 開幕前の節は lastmod を出さない。開催中・終了後は節の最終日と最新の開催日の早いほう
+    // 掲載する節の lastmod は、節の最終日と最新の開催日の早いほう
     const lastmod =
       venueLatest && venueLatest >= m.start_date
         ? venueLatest < m.end_date
