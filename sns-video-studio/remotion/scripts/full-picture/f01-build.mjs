@@ -30,16 +30,17 @@ const CUE = {
  */
 export const PLAN = {
   c1: [{ k: "c1" }, { k: "c12", re: /2位以内/ }],
-  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22" }, { k: "c22", re: /号艇が勝った/, delay: 15 }],
-  c3: [{ k: "c3" }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }],
+  // 着順の流れは押した後を上・下の2カット（下は押してから3秒後）。③の札は図 → 名前と件数の2カット（オーナー 11/2「22.4px の章は2カットに分けて」）
+  c2: [{ k: "c2" }, { k: "c2-pre", re: /号艇が勝った/, cursor: "c22" }, { k: "c22", re: /号艇が勝った/, delay: 15 }, { k: "c22b", re: /号艇が勝った/, delay: 105 }],
+  c3: [{ k: "c3i" }, { k: "c3", re: /形。/ }, { k: "c3-pre", re: /この形の/, cursor: "c32" }, { k: "c32", re: /この形の/, delay: 15 }, { k: "c32b", re: /号艇が勝った/ }],
   c4: [{ k: "c4" }, { k: "c4b", re: /2着は/ }, { k: "c4", re: /軸を\d号艇に/, cursor: "c42" }, { k: "c42", re: /軸を\d号艇に/, delay: 15 }, { k: "c42b", re: /2着は/ }],
   c5: [{ k: "c5" }],
   close: [{ k: "close" }],
 };
 /**
  * 左の画面の字の小ささの線（縮めた後の最小の字の高さ px）。下回る撮った物を含む章は出さず警告にする（hq 6節「2カットでも届かなければその章を出さず警報」）。
- * 目安（根拠なし、2026-10-31 の試作で決めた）: 部品だけを撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px で最も小さく、
- * ほかは 26〜31px。6節の目安 28px（根拠なし）は着順の流れでは左の枠の高さ 838 では届かない
+ * 線は 24px（オーナー 2026-11-02）。部品だけを1カットで撮ると、着順の流れ（正方形の図、字は図の高さの約2.7%）と形の札の図の艇番が約22px 止まりだったので、
+ * 着順の流れは上下2カット、形の札は図と名前の2カットに分けた（PLAN）。6節の目安 28px（根拠なし）は線にしない
  */
 export { MIN_FONT_PX };
 const f = (sec) => Math.round(sec * FPS);
@@ -102,8 +103,10 @@ export function f01Timeline(s, voice, shots, { bgm = null } = {}) {
         }
         const extra = { gold: (sh.goldBoxes ?? []).map((g) => ({ ...g, at: gAt })) };
         const next = p.cursor ? shots[p.cursor] : null;
-        // カーソルは押す所へ0.5秒で動く（押す前の画面の座標）
-        if (next) extra.cursor = { ...(next.cursor ?? next.cursorFrom), at: T + 15 };
+        // カーソルは押す所へ0.5秒で動く。座標はこのカット（押す前の画面）の物: 着順の流れの押す前は半分に切ってあり、
+        // splitHalves が切った分だけずらした cursor を持つ（下半分のとき、押した後の上のカットの座標を使うと約47% 上を指した。#2087 の審査）。
+        // 思考アシストの軸のボタンは押す前のカットに cursor が無いので、押した後のカットの cursorFrom（押す前の画面の座標）
+        if (next) extra.cursor = { ...(sh.cursor ?? next.cursorFrom ?? next.cursor), at: T + 15 };
         ch.cuts.push(cut(sh, T, extra));
       }
     }
