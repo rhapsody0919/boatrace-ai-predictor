@@ -3,8 +3,9 @@
 
 // Googlebot は入れない（JS を描画して人間と同じ画面を見るため。UA で出し分けない）。
 // Google の取得器のうち入れるのは Google-GeminiNotebook だけ（BOA-899、ADR 0032 追記）。
-// Google-InspectionTool・GoogleOther は Googlebot と同じ扱いで入れない。Google-Agent（利用者の代わりに
-// ページを操作する代理）は操作できる SPA のままにするため入れない。
+// Google-InspectionTool・GoogleOther は Googlebot と同じ扱いで入れない。Google-Agent は利用者の代わりに
+// ページを操作する Chrome 型の代理（Google の文書）で、取得して読むだけの GeminiNotebook と型が違う。
+// 操作できる SPA のままにするため入れない。
 // Google-Extended は robots.txt の印で、取得の UA には現れない（Google の文書）ので入れない
 export const AI_CRAWLER_USER_AGENTS = [
   "GPTBot",

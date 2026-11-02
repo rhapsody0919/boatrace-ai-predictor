@@ -314,7 +314,7 @@ const SEARCH_BOT_UAS = {
   Applebot:
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.1.1 Safari/605.1.15 (Applebot/0.1; +http://www.apple.com/go/applebot)",
   DuckDuckBot: "DuckDuckBot/1.1; (+http://duckduckgo.com/duckduckbot.html)",
-  // BOA-899: Gemini Notebook の利用者起点の取得器（Google の user-triggered fetchers の文書の形）
+  // BOA-899: Gemini Notebook の利用者起点の取得器。UA 全文は https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers（2026-11-02）
   "Google-GeminiNotebook":
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 (compatible; Google-GeminiNotebook; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-gemininotebook)",
 };

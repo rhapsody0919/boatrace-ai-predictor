@@ -16,7 +16,7 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 **Edge Runtime（デフォルト）のRouting Middleware（`middleware.js`）で、`@vercel/functions`の`rewrite()`ヘルパーを使い、対象ボットのリクエストのみをビルド時生成済みの静的スナップショットHTML（`dist/ai-snapshots/{page}.html`）へrewriteする。**
 
 - `middleware.js`の`matcher`に対象パス（`/blog/:path*`、`/winning-technique`）を追加し、既存のSNSハブBasic認証（`/admin/sns-hub*`）と1ファイル内で共存させる（パスごとに条件分岐）
-- ボット判定はUser-Agentヘッダの文字列マッチ（`GPTBot`/`ClaudeBot`/`PerplexityBot`/`Google-Extended`/`facebookexternalhit`/`Twitterbot`等）で行う
+- ボット判定はUser-Agentヘッダの文字列マッチ（`GPTBot`/`ClaudeBot`/`PerplexityBot`/`Google-Extended`/`facebookexternalhit`/`Twitterbot`等）で行う（Google-Extended は UA を持たず一致しなかった。追記「Google の取得器の扱い」）
 - `rewrite()`はURLを書き換えるだけで、実際のファイル配信はVercelの静的アセット配信層に任せる。**ファイルシステム（`fs`）アクセスは不要**なため、Edge Runtimeのデフォルト設定のまま実装できる
 - `rewrite()`は`redirect()`と異なりクライアント側のURLを変えない（ボットからは同一URLへのアクセスとして見える）ため、正規URLと配信コンテンツの対応が崩れない
 
@@ -62,7 +62,7 @@ boatAIはSSR無しの純粋なSPA（React + Vite）で、ページ固有のコ�
 | Google-InspectionTool | URL 検査・リッチリザルトテスト | 配らない（Googlebot と同じ画面を見せる） |
 | GoogleOther | 製品を決めない汎用のクローラー | 配らない |
 | Google-Agent | 利用者の代わりにページを操作する代理 | 配らない（操作できる SPA のままにする） |
-| Google-GeminiNotebook | Gemini Notebook の利用者が出典に渡した URL を取る | **配る**（ChatGPT-User・Claude-User と同じ利用者起点の取得） |
+| Google-GeminiNotebook | Gemini Notebook の利用者が出典に渡した URL を取る。UA は Chrome の文字列に `(compatible; Google-GeminiNotebook; +https://developers.google.com/crawling/docs/crawlers-fetchers/google-gemininotebook)` が付く。旧名 Google-NotebookLM は文書で「2026年8月まで」とされ、足さない | **配る**（ChatGPT-User・Claude-User と同じ利用者起点の取得） |
 | Google-Extended | robots.txt の印。「doesn't have a separate HTTP request user agent string」 | 一覧から外した。この名前を名乗る取得は無く、UA の照合では何にも一致しなかった（当初の決定の誤り） |
 
 - Gemini API の url_context の取得 UA は公式文書（ai.google.dev/gemini-api/docs/url-context）に書かれていない。文書は「まず内部の索引キャッシュ、無ければその場で取得」とだけ書く。2026-11-02 の hq の試験で /blog/meet-score-rate-guide は本文が取れ、/blog/toda-losing-makuri-share と /racer/3256 は殻だったが、3つとも配信の経路は同じ（人・Google の各 UA に殻、上の配る UA に描画済み）。この追記は url_context の差を直すものではない

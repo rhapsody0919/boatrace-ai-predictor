@@ -83,3 +83,7 @@
 - 審査後に本文の見出しを直したら、記事設計のh2も更新し、出稿前に順序と文面を照合する。設計に古い結論を残したまま、本文の問いと根拠が対応していると判断しない（2026-10-23、seo-human、桐生記事のoutlineと本文h2の不一致への審査助言）
 - seo-measures.jsonの構文・kind・id検査とverify-seo-keyword-kpiの成功だけでは、施策の欠落を検知できない。出典台帳のPR集合とmaster入り日を照合し、各施策が月曜始まりの該当週へ配置されることも別に検証する（2026-10-23、BOA-906、Codex報告2026-10-23-boa-906.md、scripts/maintenance/verify-seo-keyword-kpi.js・scripts/analysis/search-console-report.js）
 - llms.txtのブログ一覧は、タイトルのMarkdownエスケープだけでなく、記事IDを括弧も含めURLの1区画として符号化し、説明の改行やリンク構造の混入も抑止する。特殊文字を含む入力で行・リンク構造を検証する（2026-10-23、BOA-920、Codex報告2026-10-23-boa-920.md、scripts/maintenance/verify-output-escape.js）
+- Google-Extended は robots.txt の印で、取得の UA には現れない（Google の common crawlers の文書）。UA の一覧に入れても何にも一致しない。ボット向け HTML を出す Google の取得器は利用者起点の Google-GeminiNotebook だけで、Googlebot・Google-InspectionTool・GoogleOther・Google-Agent には出さない（2026-11-02、BOA-899、ADR 0032 追記）
+- UA を足すときは各社の文書の UA 全文を verify-middleware-routing.js に写し、出典を添える。照合は部分一致なので、綴りの1字違いは「何も配られない」形で黙って壊れる。一覧は aiCrawlerBots.js と vercel.json の missing 6か所の2つにあり、一致は同スクリプトの [7] が守る（2026-11-02、system-architect の審査、BOA-899）
+- Gemini API の url_context は「まず内部の索引キャッシュ、無ければその場で取得」で、取得 UA は公式文書に無い。2026-11-02 に配信の経路が同じ3 URL のうち1つだけ本文が取れたので、url_context の差を UA の一覧で直そうとしない（2026-11-02、BOA-899、hq の試験と curl）
+- 選手ページは URL 検査が PASS・登録済みで、10月に選手名の検索で42件に表示がある（選手名は JS の描画後にしか無い）ので Google は描画して索引している。平均順位30前後・クリック0は描画ではなく競争力（内部リンク・中身）の問題として扱う（2026-11-02、Search Console の query+page、BOA-899）
