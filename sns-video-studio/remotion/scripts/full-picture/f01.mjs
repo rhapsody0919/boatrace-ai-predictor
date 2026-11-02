@@ -13,6 +13,7 @@ import { buildAll } from "./build-all.mjs";
 import { answerOf } from "./answer.mjs";
 import { DISCLAIMER, FEATURES, FULL_TAGS, ROUND_NAME, SITE, featureUrl, fullLine1, raceHeader, utmUrl } from "./bundle.mjs";
 import { rankOf } from "./scenes/diff.mjs";
+import { bannedIn } from "./scene2-text.mjs";
 import { venueName } from "./scenes/common.mjs";
 import { MIN_FONT_PX, NB, TODAY, boatToday, boatWho, layoutOpen, layoutRight, racersOf } from "../../src/fullPicture/f01Right.js";
 
@@ -355,6 +356,21 @@ export function f01Description(s, chapters) {
   ].join("\n");
 }
 
+/** 回収率を出さない（2026-10-20 オーナー決定。収益を連想させる。今の型の場面3③の回収率の拍を外したのと同じ） */
+export const NO_RETURN_RATE = /回収率/;
+/** 章の中の、画面と声に出る文字（facts・撮り方・照合の期待は除く） */
+export function f01Texts(c) {
+  const out = [];
+  const walk = (v, key) => {
+    if (["facts", "shot", "expect", "expect2"].includes(key)) return;
+    if (typeof v === "string") out.push(v);
+    else if (Array.isArray(v)) v.forEach((x) => walk(x, null));
+    else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walk(x, k);
+  };
+  walk(c, null);
+  return out;
+}
+
 /**
  * 機械の検査（落ちた理由の一覧。空なら合格）
  * @param {ReturnType<typeof f01Script>} s @param {{desc: string, kana: Record<string, string>, shots: Record<string, {text: string}>, names?: string[], racers?: Record<number, {name: string, grade: string}>}} r
@@ -362,6 +378,13 @@ export function f01Description(s, chapters) {
 export function f01Check(s, r) {
   const why = [];
   if (!r.desc.includes(VOICE.credit)) why.push(`説明欄に「${VOICE.credit}」が無い`);
+  // 禁止表現（risk-rules.json、YouTube）と回収率を、題・説明欄・各章の声・字幕・右の列・冒頭の全部に当てる
+  // （run-full の checkPost は今の型の題・説明欄にしか当たらず、f01 の文は検査の外だった。Orchestrate 11/2）
+  for (const [where, text] of [["題", s.title], ["説明欄", r.desc], ...s.chapters.flatMap((c) => f01Texts(c).map((t) => [c.id, t]))]) {
+    if (typeof text !== "string") continue;
+    for (const w of bannedIn(text, "youtube")) why.push(`${where}: ${w}`);
+    if (NO_RETURN_RATE.test(text)) why.push(`${where}: 回収率を出さない（${text.match(NO_RETURN_RATE)[0]}）`);
+  }
   for (const c of s.chapters) {
     // 順位の語は線を通ったときだけ（②・③の「最も多い」、④の「入れ替わる」）
     const sig = c.facts?.secRank?.rankSig || c.facts?.swap;
