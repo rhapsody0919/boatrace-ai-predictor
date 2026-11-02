@@ -49,7 +49,8 @@ jobs:
   e2e-live:
     needs: shards
     environment: prod-jobs
-    runs-on: ubuntu-latest
+    # Playwright 1.59 は ubuntu-26.04（ubuntu-latest の移行先）で chromium を入れられないため固定する。Playwright を 1.61 以上に上げたら ubuntu-latest に戻す
+    runs-on: ubuntu-24.04
     # 再生の組は中央 約18分・最大 約32分（PR ゲートの7日）。1ジョブで最後まで走った 10/13〜10/18 は全件で
     # 45.7〜55.4分（2 workers）なので、1組は10分台の見込み。落ちる試験が多い日（1件 60秒×2回）の伸びを見込んで
     # 45分。目安で、live の組の実測は最初の数回で見る
